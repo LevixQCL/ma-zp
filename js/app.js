@@ -467,8 +467,9 @@ async function onSubmit(e) {
       await openParty(id); location.hash = '#hp';
     } else if (kind === 'rename' || kind === 'profil') {
       const z = myZone();
-      const nom = form.nom.value.trim().slice(0, 24);
-      const code = form.code ? form.code.value.trim() : z.code;
+	const champ = (n) => { const el = form.elements.namedItem(n); return el && typeof el.value === 'string' ? el.value : null; };
+	const nom = String(champ('nom') ?? z.nom ?? '').trim().slice(0, 24);
+	const code = String(champ('code') ?? z.code ?? '').trim();
       if (!nom || !/^\d{4}$/.test(code)) { toast('Nom requis et code à 4 chiffres.'); return; }
       const pseudo = form.pseudo ? form.pseudo.value.trim().slice(0, 24) : ((S.player && S.player.pseudo) || '');
       const profile = { code, nom, couleur: S.profilColor || z.couleur, pseudo };
