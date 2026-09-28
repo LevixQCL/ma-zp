@@ -29,11 +29,32 @@ function route() {
   return ROUTES.includes(h) ? h : 'hp';
 }
 
+// Chargement avec garde-fou : si rien ne se passe en 20 secondes, on affiche la cause au lieu de tourner sans fin.
+let chargementDepuis = 0, garde = null;
 function loading(msg = 'Chargement…') {
   app.innerHTML = `<main class="center-screen" aria-busy="true"><h1 class="brand">Ma ZP</h1><p class="sub">${esc(msg)}</p></main>`;
+  if (!chargementDepuis) chargementDepuis = Date.now();
+  clearTimeout(garde);
+  garde = setTimeout(() => { if (app.querySelector('[aria-busy="true"]')) bloque(); }, 20000);
 }
+function bloque(err = S.lastError) {
+  const msg = err ? String(err.code || '') + ' ' + String(err.message || err) : 'aucune réponse du serveur';
+  let conseil = 'Vérifie ta connexion, puis réessaie.';
+  if (/permission/i.test(msg)) conseil = 'La base refuse l’accès : vérifie que les règles de firestore.rules ont bien été publiées (Firestore › Règles › Publier).';
+  else if (/offline|unavailable|backend|network|failed to fetch/i.test(msg)) conseil = 'Le jeu n’arrive pas à joindre la base Firestore. Vérifie que la base existe (Databases & Storage › Firestore) et qu’elle s’appelle « (default) ». Un réseau d’entreprise ou un bloqueur de publicités peut aussi bloquer la connexion : essaie depuis le partage de connexion de ton téléphone.';
+  else if (/not.?found|does not exist/i.test(msg)) conseil = 'La base Firestore « (default) » est introuvable : crée-la dans Databases & Storage › Firestore, en édition Standard.';
+  app.innerHTML = `<main class="center-screen"><h1 class="brand">Ma ZP</h1><div class="card red" style="max-width:420px">
+    <h2 class="card-title">Le chargement n’aboutit pas</h2>
+    <p class="small" style="margin:0">${esc(conseil)}</p>
+    <p class="tiny muted mono" style="margin:0;word-break:break-word">Détail : ${esc(msg.trim())}</p>
+    <div class="row" style="gap:8px;flex-wrap:wrap"><button class="btn primary" data-action="reload">Réessayer</button><button class="btn ghost" data-action="logout">Se déconnecter</button></div>
+  </div></main>`;
+}
+window.addEventListener('error', (e) => { S.lastError = e.error || e.message; });
+window.addEventListener('unhandledrejection', (e) => { S.lastError = e.reason; });
 
 function render() {
+  chargementDepuis = 0; clearTimeout(garde);
   const demo = S.backend && S.backend.mode === 'demo';
   let banner = demo ? '<div class="demo-banner">Mode démo · la partie tourne sur cet appareil avec des zones robots</div>' : '';
   if (S.state && isOutdated(S.state)) banner += '<div class="demo-banner" role="alert" style="display:flex;gap:10px;align-items:center;justify-content:center">Une nouvelle version du jeu est disponible. <button class="btn small primary" data-action="reload">Mettre à jour</button></div>';
@@ -113,12 +134,12 @@ async function loadTurnData() {
 
 async function afterAuth() {
   if (!S.user) { if (unsubState) unsubState(); unsubState = null; S.state = undefined; lastTurnKey = null; render(); return; }
-  try { S.parties = await S.backend.listMyParties(S.user.uid); } catch (e) { console.warn(e); S.parties = []; }
+  try { S.parties = await S.backend.listMyParties(S.user.uid); } catch (e) { console.warn(e); S.lastError = e; S.parties = []; }
   let id = null;
   try { id = localStorage.getItem(`mazp-partie-${S.user.uid}`); } catch (e) { /* stockage indisponible */ }
   if (!S.parties.some((p) => p.id === id)) id = S.parties[0] ? S.parties[0].id : null;
   if (!id) { S.noParty = true; S.state = null; render(); return; }
-  await openParty(id);
+  try { await openParty(id); } catch (e) { console.error(e); S.lastError = e; bloque(e); }
 }
 
 /** Ouvre une partie : on se désabonne de l'ancienne et on recharge tout. */
@@ -136,9 +157,9 @@ async function openParty(id) {
   if (!unsubState) {
     unsubState = S.backend.subscribeState(async (state) => {
       S.state = migrateState(state);
-      if (state && S.user && state.zones[S.user.uid]) await loadTurnData();
+      if (state && S.user && state.zones[S.user.uid]) { try { await loadTurnData(); } catch (e) { console.error(e); S.lastError = e; } }
       render();
-    });
+    }, (e) => { S.lastError = e; if (S.state === undefined) bloque(e); });
   }
   if (!unsubRadio) unsubRadio = S.backend.subscribeRadio((msgs) => { S.radio = msgs; if (S.route === 'radio') rerender(); });
   render();
