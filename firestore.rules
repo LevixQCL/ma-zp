@@ -1,0 +1,123 @@
+rules_version = '2';
+
+// Règles de sécurité de « Ma ZP » (plusieurs parties).
+// À copier dans la console Firebase : Firestore Database → Règles.
+// Remplacez votre.adresse@gmail.com par l'adresse du super-administrateur (la même que dans js/config.js).
+// MAX_PARTIES (ici 3) doit correspondre à maxPartiesParJoueur dans js/config.js.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function superAdmin() { return signedIn() && request.auth.token.email in ['votre.adresse@gmail.com']; }
+    function partie(gid) { return get(/databases/$(database)/documents/parties/$(gid)).data; }
+    function master(gid) { return superAdmin() || (signedIn() && partie(gid).owner == request.auth.uid); }
+    function member(gid) { return signedIn() && exists(/databases/$(database)/documents/parties/$(gid)/players/$(request.auth.uid)); }
+    function st(gid) { return get(/databases/$(database)/documents/parties/$(gid)/state/current).data; }
+    function afterDeadline(gid) { return request.time.toMillis() >= st(gid).nextDeadline; }
+    function currentTurn(gid, season, turn) { return season == st(gid).season && turn == st(gid).turn; }
+    function pastTurn(gid, season, turn) {
+      return season < st(gid).season || (season == st(gid).season && turn < st(gid).turn);
+    }
+
+    // Liste des parties d'un joueur, et nombre de parties qu'il a créées.
+    match /users/{uid} {
+      allow read: if signedIn() && (request.auth.uid == uid || superAdmin());
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.get('possedees', 0) <= 3;
+      allow update: if signedIn() && request.auth.uid == uid
+        && request.resource.data.get('possedees', 0) <= 3
+        && request.resource.data.get('possedees', 0) >= resource.data.get('possedees', 0);
+    }
+
+    // Codes d'invitation : on peut lire un code qu'on connaît, pas lister les codes.
+    match /codes/{code} {
+      allow get: if signedIn();
+      allow list: if superAdmin();
+      allow create: if signedIn() && request.resource.data.owner == request.auth.uid;
+      allow delete: if superAdmin();
+    }
+
+    match /parties/{gid} {
+      allow get: if signedIn();
+      allow list: if superAdmin();
+      allow create: if signedIn() && request.resource.data.owner == request.auth.uid
+        && request.resource.data.nom is string && request.resource.data.nom.size() > 0 && request.resource.data.nom.size() <= 40
+        && getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data.possedees <= 3;
+      allow update: if master(gid) && request.resource.data.owner == resource.data.owner;
+      allow delete: if superAdmin();
+
+      // État de la partie : un seul document.
+      match /state/{doc} {
+        // Lisible par qui connaît la partie (via son code), pour pouvoir s'y inscrire.
+        allow read: if signedIn();
+        allow create, delete: if master(gid);
+        allow update: if master(gid)
+          // Résolution d'un tour : uniquement après l'heure limite, et le tour doit avancer.
+          || (member(gid) && afterDeadline(gid)
+              && request.resource.data.nextDeadline > resource.data.nextDeadline
+              && (request.resource.data.turn != resource.data.turn || request.resource.data.season != resource.data.season))
+          // Inscription : un joueur ne peut ajouter que sa propre zone.
+          || (member(gid)
+              && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['zones'])
+              && request.resource.data.zones.diff(resource.data.zones).affectedKeys().hasOnly([request.auth.uid])
+              && !(request.auth.uid in resource.data.zones));
+      }
+
+      // Profils des joueurs de cette partie (code, nom et couleur de zone).
+      match /players/{uid} {
+        allow read: if member(gid) || master(gid);
+        allow create, update: if master(gid) || (signedIn() && request.auth.uid == uid
+          && request.resource.data.nom is string && request.resource.data.nom.size() > 0 && request.resource.data.nom.size() <= 24
+          && request.resource.data.code is string && request.resource.data.code.matches('^[0-9]{4}$')
+          && (!('pseudo' in request.resource.data) || (request.resource.data.pseudo is string && request.resource.data.pseudo.size() <= 24)));
+        allow delete: if master(gid);
+      }
+
+      // Ordres : secrets jusqu'à l'heure limite, modifiables uniquement pendant le tour en cours.
+      match /orders/{id} {
+        allow read: if member(gid) && (resource.data.uid == request.auth.uid
+          || afterDeadline(gid) || pastTurn(gid, resource.data.season, resource.data.turn));
+        allow create, update: if member(gid)
+          && request.resource.data.uid == request.auth.uid
+          && id == string(request.resource.data.season) + '_' + string(request.resource.data.turn) + '_' + request.auth.uid
+          && currentTurn(gid, request.resource.data.season, request.resource.data.turn)
+          && !afterDeadline(gid);
+        allow delete: if master(gid);
+      }
+
+      // Quêtes du jour : une réponse donnée est définitive, seul le bonus peut être ajouté.
+      match /quests/{id} {
+        allow read: if member(gid);
+        allow update: if member(gid)
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.statut == resource.data.statut
+          && request.resource.data.tentatives == resource.data.tentatives
+          && !afterDeadline(gid);
+        allow create: if member(gid)
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.slot in [0, 1, 2]
+          && id == string(request.resource.data.season) + '_' + string(request.resource.data.turn) + '_' + request.auth.uid + '_' + string(request.resource.data.slot)
+          && currentTurn(gid, request.resource.data.season, request.resource.data.turn)
+          && !afterDeadline(gid);
+        allow delete: if master(gid);
+      }
+
+      // Gazettes : écrites une seule fois, au moment de la résolution.
+      match /gazettes/{id} {
+        allow read: if member(gid) || master(gid);
+        allow create: if member(gid) && afterDeadline(gid);
+        allow update, delete: if master(gid);
+      }
+
+      // Radio : messages de la partie.
+      match /radio/{id} {
+        allow read: if member(gid) || master(gid);
+        allow create: if member(gid) && request.resource.data.uid == request.auth.uid
+          && request.resource.data.texte is string
+          && request.resource.data.texte.size() > 0 && request.resource.data.texte.size() <= 280;
+        allow delete: if master(gid);
+      }
+    }
+  }
+}
