@@ -16,7 +16,10 @@ export async function createFirebaseBackend(config) {
   ]);
   const app = initializeApp(config.firebase);
   const auth = A.getAuth(app);
-  const fs = F.getFirestore(app);
+  // Connexion en « long polling » : plus lente de quelques millisecondes, mais elle passe
+  // à travers les réseaux d'entreprise et les proxys qui bloquent les flux Firestore.
+  let fs;
+  try { fs = F.initializeFirestore(app, { experimentalForceLongPolling: true }); } catch (e) { fs = F.getFirestore(app); }
   // Chaque partie a ses propres données : parties/{id}/state, players, orders, quests, gazettes, radio.
   let gid = null, meta = null;
   const stateRef = () => F.doc(fs, 'parties', gid, 'state', 'current');
@@ -153,6 +156,12 @@ export async function createFirebaseBackend(config) {
       const out = {};
       snap.forEach((d) => { const v = d.data(); (out[v.uid] ||= [null, null, null])[v.slot ?? 0] = v; });
       return out;
+    },
+
+    /** Toutes les réponses aux quêtes de la partie (pour le classement des énigmes). */
+    async listQuestResults() {
+      const snap = await F.getDocs(col('quests'));
+      return snap.docs.map((d) => { const v = d.data(); return { uid: v.uid, season: v.season, turn: v.turn, statut: v.statut, type: v.type }; });
     },
 
     async commitResolution(prev, next, gazette) {
