@@ -127,10 +127,12 @@ async function loadTurnData() {
   if (key === lastTurnKey) return;
   const isNew = lastTurnKey !== null;
   lastTurnKey = key;
+  // Chaque lecture est indépendante : si l'une échoue, les autres s'affichent quand même.
+  const lire = (p, defaut, quoi) => p.catch((e) => { console.warn(`Lecture impossible (${quoi}) :`, e.message); return defaut; });
   const [orders, quest, gazettes] = await Promise.all([
-    S.backend.getOrders(uid, st.season, st.turn),
-    S.backend.getQuests(uid, st.season, st.turn),
-    S.backend.listGazettes(10),
+    lire(S.backend.getOrders(uid, st.season, st.turn), null, 'ordres'),
+    lire(S.backend.getQuests(uid, st.season, st.turn), null, 'quêtes'),
+    lire(S.backend.listGazettes(10), [], 'gazettes'),
   ]);
   S.savedOrders = orders; S.ordersDirty = false; S.draft = null; S.decisionOpen = false;
   S.questResults = quest || [null, null, null]; S.quests = null; S.questPick = null;
@@ -139,7 +141,6 @@ async function loadTurnData() {
   if (isNew) toast(`Tour ${st.turn} : la Gazette est parue !`);
   render();
 }
-
 async function afterAuth() {
   if (!S.user) { if (unsubState) unsubState(); unsubState = null; S.state = undefined; lastTurnKey = null; render(); return; }
   try { S.parties = await S.backend.listMyParties(S.user.uid); } catch (e) { console.warn(e); S.lastError = e; S.parties = []; }
