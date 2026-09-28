@@ -130,6 +130,15 @@ export function createLocalBackend(config) {
       return Array.isArray(v) ? v : [null, null, null];
     },
     async getAllQuests(season, turn) { return JSON.parse(JSON.stringify(self.quests[key(season, turn)] || {})); },
+    /** Toutes les réponses aux quêtes de la partie (pour le classement des énigmes). */
+    async listQuestResults() {
+      const out = [];
+      for (const [k, parUid] of Object.entries(self.quests || {})) {
+        const [season, turn] = k.split(/[^0-9]+/).filter(Boolean).map(Number);
+        for (const [uid, arr] of Object.entries(parUid || {})) for (const q of (Array.isArray(arr) ? arr : [arr])) if (q) out.push({ uid, season, turn, statut: q.statut, type: q.type });
+      }
+      return out;
+    },
 
     async commitResolution(prev, next, gazette) {
       if (self.state.turn !== prev.turn || self.state.season !== prev.season) return false;
