@@ -106,7 +106,7 @@ export async function createFirebaseBackend(config) {
     },
 
     async getState() { const s = await F.getDoc(stateRef()); return s.exists() ? s.data() : null; },
-    subscribeState(cb) { return F.onSnapshot(stateRef(), (s) => cb(s.exists() ? s.data() : null), (e) => console.error(e)); },
+    subscribeState(cb, onErr) { return F.onSnapshot(stateRef(), (s) => cb(s.exists() ? s.data() : null), (e) => { console.error(e); if (onErr) onErr(e); }); },
 
     async getPlayer(uid) { try { const s = await F.getDoc(docIn('players', uid)); return s.exists() ? s.data() : null; } catch (e) { return null; } },
     async getPlayers() {
