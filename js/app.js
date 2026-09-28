@@ -471,7 +471,7 @@ async function onSubmit(e) {
 	const nom = String(champ('nom') ?? z.nom ?? '').trim().slice(0, 24);
 	const code = String(champ('code') ?? z.code ?? '').trim();
       if (!nom || !/^\d{4}$/.test(code)) { toast('Nom requis et code à 4 chiffres.'); return; }
-      const pseudo = form.pseudo ? form.pseudo.value.trim().slice(0, 24) : ((S.player && S.player.pseudo) || '');
+      const pseudo = String(champ('pseudo') ?? (S.player && S.player.pseudo) ?? '').trim().slice(0, 24);
       const profile = { code, nom, couleur: S.profilColor || z.couleur, pseudo };
       await b.savePlayer(S.user.uid, profile);
       S.player = { ...(S.player || {}), ...profile };
