@@ -74,10 +74,14 @@ service cloud.firestore {
         allow delete: if master(gid);
       }
 
-      // Ordres : secrets jusqu'à l'heure limite, modifiables uniquement pendant le tour en cours.
-      match /orders/{id} {
-        allow read: if member(gid) && (resource.data.uid == request.auth.uid
+	// Ordres : secrets jusqu'à l'heure limite, modifiables uniquement pendant le tour en cours.
+    	  match /orders/{id} {
+        // Lire un ordre précis : le sien (même pas encore créé), ou celui des autres après l'heure limite.
+        allow get: if member(gid) && (resource == null
+          || resource.data.uid == request.auth.uid
           || afterDeadline(gid) || pastTurn(gid, resource.data.season, resource.data.turn));
+        // Lire tous les ordres d'un tour : seulement au moment de la résolution.
+        allow list: if member(gid) && (afterDeadline(gid) || pastTurn(gid, resource.data.season, resource.data.turn));
         allow create, update: if member(gid)
           && request.resource.data.uid == request.auth.uid
           && id == string(request.resource.data.season) + '_' + string(request.resource.data.turn) + '_' + request.auth.uid
