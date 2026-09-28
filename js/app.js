@@ -79,7 +79,15 @@ function render() {
       case 'carte': html = renderCarte(); break;
       case 'radio': html = renderRadio(); S.radioSeen = S.radio.length; break;
       case 'gazette': html = renderGazette(); break;
-      case 'classement': html = renderClassement(); break;
+      case 'classement':
+        if (!S.questStatsAt || Date.now() - S.questStatsAt > 60000) {
+          S.questStatsAt = Date.now();
+          Promise.resolve(S.backend.listQuestResults ? S.backend.listQuestResults() : [])
+            .then((r) => { S.questStats = r; S.questStatsErreur = false; })
+            .catch((e) => { console.warn(e); S.questStatsErreur = true; })
+            .then(() => { if (S.route === 'classement') rerender(); });
+        }
+        html = renderClassement(); break;
       case 'profil': html = renderProfil(); break;
       case 'admin': html = S.backend.isMaster(S.user) ? renderAdmin() : renderHP(); break;
       default: html = renderHP();
