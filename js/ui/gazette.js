@@ -62,6 +62,28 @@ function enqueteGazette(g) {
   return `<div class="rule"></div><section class="col" style="gap:4px"><span class="k">Enquête et FIPA</span>${l.join('')}</section>`;
 }
 
+// Esprit vif : taux de réussite aux énigmes du jour, depuis le début de la partie.
+const MIN_ENIGMES = 6;
+function classementEnigmes(me) {
+  const res = S.questStats;
+  if (!res) return `<section class="card"><h2 class="card-title">Esprit vif · énigmes du jour</h2><p class="small muted" style="margin:0">${S.questStatsErreur ? 'Classement indisponible pour le moment.' : 'Chargement…'}</p></section>`;
+  const par = {};
+  for (const r of res) {
+    if (!S.state.zones[r.uid] || (r.statut !== 'ok' && r.statut !== 'rate')) continue;
+    const x = (par[r.uid] ||= { ok: 0, n: 0, saison: 0, saisonN: 0 });
+    x.n++; if (r.statut === 'ok') x.ok++;
+    if (r.season === S.state.season) { x.saisonN++; if (r.statut === 'ok') x.saison++; }
+  }
+  const lignes = Object.entries(par).map(([uid, x]) => ({ z: S.state.zones[uid], ...x, pct: x.n ? (100 * x.ok) / x.n : 0, classe: x.n >= MIN_ENIGMES }))
+    .sort((a, b) => (b.classe - a.classe) || (b.pct - a.pct) || (b.ok - a.ok));
+  let rang = 0;
+  return `<section class="card"><h2 class="card-title">Esprit vif · énigmes du jour</h2>
+    ${lignes.length ? `<table class="rank"><thead><tr><th>#</th><th>Zone</th><th class="num">Réussies</th><th class="num">Réussite</th></tr></thead><tbody>
+      ${lignes.map((l) => `<tr class="${l.z.uid === me.uid ? 'me' : ''}"><td>${l.classe ? ++rang : '–'}</td><td>${zoneName(l.z)}${S.players && S.players[l.z.uid] && S.players[l.z.uid].pseudo ? `<br><span class="tiny muted">${esc(S.players[l.z.uid].pseudo)}</span>` : ''}</td><td class="num">${l.ok}/${l.n}</td><td class="num"><strong>${Math.round(l.pct)} %</strong>${l.saisonN && l.saisonN !== l.n ? `<br><span class="tiny muted">saison : ${Math.round((100 * l.saison) / l.saisonN)} %</span>` : ''}</td></tr>`).join('')}
+    </tbody></table>` : '<p class="small muted" style="margin:0">Personne n’a encore répondu à une énigme.</p>'}
+    <p class="small muted" style="margin:0">Toutes les énigmes répondues depuis le début de la partie, y compris aujourd’hui. Classé à partir de ${MIN_ENIGMES} réponses ; les énigmes laissées sans réponse ne comptent pas.</p></section>`;
+}
+
 export function renderClassement() {
   const me = myZone();
   const rows = classementLive(S.state);
@@ -75,7 +97,9 @@ export function renderClassement() {
 
     <section class="card"><h2 class="card-title">Fin limier · points d’enquête</h2>
       <table class="rank"><tbody>${Object.values(S.state.zones).sort((a, b) => b.stats.limier - a.stats.limier).map((z) => `<tr class="${z.uid === me.uid ? 'me' : ''}"><td>${zoneName(z)}</td><td class="num">${z.stats.decouvertes} déc. · ${z.stats.arrestations} arr.</td><td class="num">${z.stats.limier}</td></tr>`).join('')}</tbody></table>
-      <p class="small muted" style="margin:0">Découverte : 40 à 100 pts selon le jour. Arrestation : 30. Indice partagé qui a aidé : 15.</p></section>
+      <p class="small muted" style="margin:0">Découverte : 40 à 100 pts selon le jour. Arrestation : 30. Pièce partagée qui a aidé : 25.</p></section>
+
+    ${classementEnigmes(me)}
 
     <section class="card"><div class="between"><h2 class="card-title">Ton grade : ${g.nom}</h2><span class="mono small">${me.ps} PS</span></div>
       <div class="gauge"><div class="bar" role="img" aria-label="Progression ${pct} %"><div style="width:${pct}%;background:var(--amber)"></div></div></div>
