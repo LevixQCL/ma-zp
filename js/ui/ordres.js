@@ -1,5 +1,6 @@
 // Écran des ordres du tour.
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
+import { AIDE } from '../engine/rivalites.js';
 import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, SEASON_LENGTH, tourEffet } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
@@ -32,8 +33,34 @@ export function initDraft() {
   S.draft = d;
 }
 
+/** Grand événement du district ouvert aujourd'hui ? (sinon les agents « envoyés » ne partent pas). */
+const evenementDuJour = () => !!(S.state.evenement && S.state.evenement.tour === S.state.turn);
+
 function engages(d) {
-  return Object.values(d.engagements).reduce((s, e) => s + (e.agents || 0), 0) + (d.evenement || 0) + (d.renfort && S.state.zones[d.renfort.cible] && operationActive(S.state.zones[d.renfort.cible], S.state.turn) ? d.renfort.agents || 0 : 0);
+  return Object.values(d.engagements).reduce((s, e) => s + (e.agents || 0), 0) + (evenementDuJour() ? d.evenement || 0 : 0) + (d.renfort && S.state.zones[d.renfort.cible] && operationActive(S.state.zones[d.renfort.cible], S.state.turn) ? d.renfort.agents || 0 : 0);
+}
+
+/**
+ * Où sont mes agents ? Tout ce qui retient des agents hors des cinq services,
+ * avec un indicateur « bloqué » quand l'engagement n'est plus visible ailleurs à l'écran.
+ */
+export function agentsHorsServices() {
+  const st = S.state, d = S.draft, z = myZone(), l = [];
+  for (const [id, e] of Object.entries(d.engagements)) {
+    if (!e.agents) continue;
+    const a = st.affaires.find((x) => x.id === id);
+    const moiChef = a && a.zone === z.uid;
+    const cand = a && !moiChef ? maCandidature(a) : null;
+    const bloque = !a ? 'affaire terminée' : moiChef ? null : !cand ? 'aucune candidature envoyée' : cand.statut === 'refusee' ? 'candidature refusée' : null;
+    l.push({ k: `eng:${id}`, t: `Affaire « ${a ? a.titre : '?'} »`, n: e.agents, bloque });
+  }
+  if (d.evenement) l.push({ k: 'ev', t: 'Grand événement du district', n: d.evenement, bloque: evenementDuJour() ? null : 'pas d’événement aujourd’hui', compte: evenementDuJour() });
+  if (d.renfort && d.renfort.agents) {
+    const cz = st.zones[d.renfort.cible];
+    const actif = cz && operationActive(cz, st.turn);
+    l.push({ k: 'renfort', t: `Renfort prêté à ${cz ? esc(cz.nom) : '?'}`, n: d.renfort.agents, bloque: actif ? null : 'plus d’opération chez eux', compte: !!actif });
+  }
+  return l;
 }
 
 export function estimations() {
@@ -154,6 +181,51 @@ function decisionPicker(z, T, d) {
   </div>`;
 }
 
+/** Panneau « Où sont mes agents ? » : le compte complet, et de quoi rapatrier. */
+function ventilationHtml(z, e) {
+  const st = S.state, d = S.draft, T = st.turn;
+  const ligne = (t, n, cls = '', extra = '') => `<div class="between vent-l ${cls}"><span class="small">${t}</span><span class="row" style="gap:8px">${extra}<span class="mono small" style="min-width:28px;text-align:right">${n}</span></span></div>`;
+  const signe = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
+  const recus = (z.renforts || []).filter((r) => r.debut <= T && r.retour > T).reduce((s, r) => s + r.n, 0);
+  const actifs = (z.blesses || []).filter((b) => b.retour > T);
+  const pretes = actifs.filter((b) => b.motif === 'prêté').reduce((s, b) => s + b.n, 0);
+  const blesses = actifs.filter((b) => b.motif !== 'prêté').reduce((s, b) => s + b.n, 0);
+  const fo = enFormation(z, T);
+  const academie = (z.academie || []).reduce((s, a) => s + a.n, 0);
+  const hors = agentsHorsServices();
+  const btnRap = (k) => `<button type="button" class="btn small ghost" data-action="rapatrier" data-k="${esc(k)}">Rapatrier</button>`;
+  const services = SERVICES.reduce((s, k) => s + d.alloc[k], 0);
+  const prises = [];
+  if (d.traque && d.traque.agents) prises.push(['Traque (pris en Intervention)', d.traque.agents]);
+  if ((d.demarches || []).includes('temoin')) prises.push(['Audition (pris en Recherche)', 2]);
+  const f = agentsFipaCeSoir(); if (f) prises.push(['FIPA (pris d’abord en Proximité)', f]);
+  const opPris = Object.values(e.opx.pris || {}).reduce((s, v) => s + v, 0); if (opPris) prises.push(['Opération d’envergure', opPris]);
+  const aide = d.aide && d.aide.cible && d.aide.agents ? d.aide.agents : 0;
+  const bloques = hors.filter((h) => h.bloque);
+  return `<div class="vent col">
+    <span class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.6px">Effectif</span>
+    ${ligne('Agents de la zone', z.agents)}
+    ${recus ? ligne('Renforts reçus d’autres zones', signe(recus), 'ok') : ''}
+    ${blesses ? ligne('Blessés', signe(-blesses), 'bad') : ''}
+    ${pretes ? ligne('Prêtés à une autre zone (entraide)', signe(-pretes), 'warn') : ''}
+    ${fo ? ligne('En formation', signe(-fo), 'warn') : ''}
+    ${z.absents ? ligne('En congé maladie (moral bas)', signe(-z.absents), 'bad') : ''}
+    ${ligne('<strong>Disponibles ce soir</strong>', `<strong>${e.dispo}</strong>`, 'tot')}
+    <span class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-top:6px">Où ils sont</span>
+    ${ligne('Dans les cinq services', services)}
+    ${hors.map((h) => ligne(`${h.t}${h.bloque ? ` <span class="tiny bad">· ${esc(h.bloque)}</span>` : ''}`, h.compte === false ? `(${h.n})` : h.n, h.bloque ? 'bad' : '', btnRap(h.k))).join('')}
+    ${ligne(e.reste >= 0 ? '<strong>Sans affectation</strong>' : '<strong>De trop</strong>', `<strong>${Math.abs(e.reste)}</strong>`, `tot ${e.reste > 0 ? 'warn' : e.reste < 0 ? 'bad' : 'ok'}`)}
+    ${prises.length ? `<span class="tiny muted" style="margin-top:4px">Pris dans tes services pour la journée (déjà comptés ci-dessus) : ${prises.map(([t, n]) => `${t} ${n}`).join(' · ')}.</span>` : ''}
+    ${aide ? `<span class="tiny muted">Entraide : ${aide} agent${aide > 1 ? 's' : ''} partiront demain pour ${AIDE.dureePret} tours.</span>` : ''}
+    ${academie ? `<span class="tiny muted">À l’académie : ${academie} recrue${academie > 1 ? 's' : ''}, pas encore disponible${academie > 1 ? 's' : ''}.</span>` : ''}
+    ${bloques.length ? `<p class="tiny bad" style="margin:2px 0 0">Des agents sont bloqués : rapatrie-les pour les réaffecter.</p>` : ''}
+    <div class="row" style="gap:8px;margin-top:4px;flex-wrap:wrap">
+      ${hors.length ? '<button type="button" class="btn small grow" data-action="rapatrier" data-k="tout">Tout rapatrier</button>' : ''}
+      ${e.reste > 0 ? `<button type="button" class="btn small primary grow" data-action="repartir">${e.reste > 1 ? `Répartir les ${e.reste} libres` : 'Répartir l’agent libre'}</button>` : ''}
+    </div>
+  </div>`;
+}
+
 /** Aide courte de chaque service, avec la situation actuelle de la zone. */
 function aide(s, z) {
   const f = (v) => fmt1(v);
@@ -222,7 +294,7 @@ export function renderOrdres() {
         ${eg.agents ? '' : '<p class="tiny warn" style="margin:0">Sans agents de ta part, l’affaire n’est pas lancée ce soir.</p>'}
         <p class="tiny muted" style="margin:0">Équipe : ${acc.length ? acc.map((c) => `${esc(S.state.zones[c.uid] ? S.state.zones[c.uid].nom : '?')} (${c.agents})`).join(', ') : 'toi seul pour l’instant'} · places restantes : ${placesRestantes(a)} sur ${a.agentsMax}${att ? ` · <a href="#prive">${att} candidature${att > 1 ? 's' : ''} à traiter</a>` : ''}</p>`;
     } else if (cand) {
-      corps = `<p class="tiny" style="margin:0">Ta candidature auprès de ${esc(chef ? chef.nom : '?')} : ${statutLabel(cand.statut)}</p>${cand.statut !== 'refusee' ? stepper : ''}`;
+      corps = `<p class="tiny" style="margin:0">Ta candidature auprès de ${esc(chef ? chef.nom : '?')} : ${statutLabel(cand.statut)}</p>${cand.statut !== 'refusee' ? stepper : eg.agents ? `<div class="between"><span class="tiny bad">${eg.agents} agent${eg.agents > 1 ? 's' : ''} encore réservé${eg.agents > 1 ? 's' : ''} ici</span><button type="button" class="btn small ghost" data-action="rapatrier" data-k="eng:${a.id}">Rapatrier</button></div>` : ''}`;
     } else {
       corps = `<p class="tiny muted" style="margin:0">Dirigée par ${chef ? zoneName(chef) : '?'}. <a href="#carte">Postuler depuis la Carte</a></p>`;
     }
@@ -270,6 +342,8 @@ export function renderOrdres() {
 
     <section class="card" aria-label="Affectation des agents" style="gap:6px">
       <div class="between"><h2 class="card-title">Affectation</h2><span id="alloc-status">${statusHtml(e)}</span></div>
+      <button type="button" class="btn small ghost block" data-action="ventilation" aria-expanded="${!!S.ventilation}">${S.ventilation ? 'Masquer le détail' : 'Où sont mes agents ?'}${agentsHorsServices().some((h) => h.bloque) ? ' <span class="bad">· agents bloqués</span>' : ''}</button>
+      ${S.ventilation ? ventilationHtml(z, e) : ''}
       ${SERVICES.map((s2) => `<div class="col" style="gap:0">
         <div class="between" style="min-height:48px">
           <span class="row" style="gap:2px"><span style="font-weight:600;font-size:14px">${SERVICE_LABELS[s2]}</span>

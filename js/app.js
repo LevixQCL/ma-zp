@@ -15,7 +15,7 @@ import { ouvrirBudget } from './ui/logistique.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { operationActive } from './engine/zone.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
-import { renderOrdres, initDraft, updateOrdresLive, estimations } from './ui/ordres.js';
+import { renderOrdres, initDraft, updateOrdresLive, estimations, agentsHorsServices } from './ui/ordres.js';
 import { renderQuete } from './ui/quete.js';
 import { renderGuide } from './ui/guide.js';
 import { renderDiplomatie, ongletsRadio } from './ui/diplomatie.js';
@@ -26,7 +26,7 @@ import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES } from './quests/quests.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
-import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT } from './engine/constants.js';
+import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC } from './engine/constants.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
 
 const app = document.getElementById('app');
@@ -451,6 +451,29 @@ async function onClick(e) {
           al[k]++;
         }
         S.ordersDirty = true; rerender(); break;
+      }
+      case 'ventilation': S.ventilation = !S.ventilation; rerender(); break;
+      case 'rapatrier': {
+        const k = el.dataset.k, d = S.draft;
+        const lib = (key) => {
+          if (key.startsWith('eng:')) {
+            const id = key.slice(4), eg = d.engagements[id];
+            if (eg && eg.acceptes && eg.acceptes.length) eg.agents = 0; else delete d.engagements[id];
+          } else if (key === 'ev') d.evenement = 0;
+          else if (key === 'renfort') d.renfort = null;
+        };
+        if (k === 'tout') agentsHorsServices().forEach((h) => lib(h.k)); else lib(k);
+        S.ordersDirty = true; toast('Agents rapatriés : ils sont libres, à réaffecter.'); rerender(); break;
+      }
+      case 'repartir': {
+        // Les agents libres rejoignent les services, selon la répartition de base.
+        const al = S.draft.alloc; const n = estimations().reste; if (n <= 0) break;
+        const poids = SERVICES.map((s2) => [s2, DEFAULT_ALLOC[s2]]);
+        const tot = poids.reduce((s2, [, p]) => s2 + p, 0);
+        const parts = poids.map(([s2, p]) => ({ s: s2, n: Math.floor((n * p) / tot), r: ((n * p) / tot) % 1 }));
+        let reste = n - parts.reduce((s2, x) => s2 + x.n, 0);
+        parts.sort((x, y) => y.r - x.r).forEach((x) => { if (reste > 0) { x.n++; reste--; } al[x.s] += x.n; });
+        S.ordersDirty = true; toast(`${n} agent${n > 1 ? 's' : ''} réparti${n > 1 ? 's' : ''} dans les services.`); rerender(); break;
       }
       case 'ord-open': S.ordOpen = { ...(S.ordOpen || {}), [el.dataset.k]: !(S.ordOpen && S.ordOpen[el.dataset.k]) }; rerender(); break;
       case 'toggle-decision': S.decisionOpen = !S.decisionOpen; rerender(); break;
