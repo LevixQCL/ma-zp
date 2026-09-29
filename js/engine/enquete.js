@@ -572,7 +572,7 @@ export function enquetePre(state, uids, ord, push) {
     for (const u of uids) {
       const t = ord[u].traque;
       if (!t || t.n !== tr.n) continue;
-      const dispo = (ord[u].alloc && ord[u].alloc.intervention) || 0;
+      const dispo = ((ord[u].alloc && ord[u].alloc.intervention) || 0) + (ord[u]._libres || 0); // agents sans affectation d'abord
       const n = Math.min(t.agents, dispo);
       if (n <= 0) continue;
       prendre(u, 'intervention', n);

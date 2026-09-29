@@ -12,7 +12,7 @@ export function newZone({ uid, code, nom, couleur }, turn, base = {}) {
   for (const s of SERVICES) { niveaux[s] = (base.niveaux && base.niveaux[s]) || 1; equip[s] = (base.equip && base.equip[s]) || 1; }
   return {
     uid, code: String(code || '0000'), nom: nom || 'Nouvelle zone', couleur: couleur || '#5AB0F0',
-    joinedTurn: turn,
+    joinedTurn: turn, arrivee: base.arrivee ?? 0, // ordre d'arrivée : fixe la place de la zone sur la carte
     agents: base.agents ?? START.agents,
     blesses: [], formations: [], academie: [], absents: 0,
     budget: base.budget ?? START.budget,
@@ -113,6 +113,17 @@ export function enFormation(zone, turn) {
 export function agentsDisponibles(zone, turn) {
   const renforts = (zone.renforts || []).filter((r) => r.debut <= turn && r.retour > turn).reduce((s, r) => s + r.n, 0);
   return Math.max(0, zone.agents + renforts - blessesActifs(zone, turn) - enFormation(zone, turn) - (zone.absents || 0));
+}
+
+/**
+ * Agents disponibles laissés sans affectation dans les ordres : ce sont eux qui partent
+ * en premier en audition, en traque ou en FIPA (avant de puiser dans les services).
+ */
+export function agentsLibres(zone, o, turn) {
+  if (!o) return 0;
+  const services = Object.values(o.alloc || {}).reduce((s, n) => s + (n || 0), 0);
+  const eng = Object.values(o.engagements || {}).reduce((s, e) => s + ((e && e.agents) || 0), 0);
+  return Math.max(0, agentsDisponibles(zone, turn) - services - eng - (o.evenement || 0) - ((o.renfort && o.renfort.agents) || 0));
 }
 
 export function vehiculesDisponibles(zone, turn) {

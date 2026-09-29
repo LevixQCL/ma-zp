@@ -89,9 +89,11 @@ export function fipaPre(state, uids, ord, push, T) {
         const al = uids.includes(u) ? ord[u].alloc : {};
         const p = {};
         let reste = n;
+        const libres = Math.min(reste, uids.includes(u) ? ((ord[u] && ord[u]._libres) || 0) : 0);
+        if (libres > 0) { p.proximite = libres; reste -= libres; } // retirés d'abord des agents sans affectation (à la résolution)
         for (const s of ['proximite', 'intervention', 'roulage', 'recherche', 'admin']) {
           const k = Math.min(reste, al[s] || 0);
-          if (k > 0) { p[s] = k; reste -= k; }
+          if (k > 0) { p[s] = (p[s] || 0) + k; reste -= k; }
         }
         prises[u] = prises[u] || {};
         for (const [s, k] of Object.entries(p)) prises[u][s] = (prises[u][s] || 0) + k;

@@ -67,14 +67,33 @@ export function agentsHorsServices() {
  * Agents pris dans les services pour la journée (même ordre que la résolution) :
  * opération d'envergure, puis audition, traque et FIPA. Renvoie { s: [[n, motif], …] }.
  */
-export function prisesDuJour(z, d, opx) {
+/** Agents partis pour la journée hors des services : audition, traque, FIPA. */
+export function missionsEnquete(d) {
+  const l = [];
+  if ((d.demarches || []).includes('temoin')) l.push({ k: 'audition', t: 'Audition de la victime (enquête)', n: 2, service: 'recherche' });
+  if (d.traque && d.traque.agents) l.push({ k: 'traque', t: 'Traque du suspect (enquête)', n: d.traque.agents, service: 'intervention' });
+  const f = agentsFipaCeSoir();
+  if (f) l.push({ k: 'FIPA', t: 'FIPA (dispositif commun)', n: f, service: null });
+  return l;
+}
+
+/**
+ * Agents pris dans les services pour la journée (même ordre que la résolution) : opération d'envergure,
+ * puis audition, traque et FIPA, qui partent d'abord parmi les agents laissés sans affectation.
+ * Renvoie { s: [[n, motif], …] } (seulement ce qui manque dans les services).
+ */
+export function prisesDuJour(z, d, opx, libres0 = 0) {
   const al = d.alloc, pris = {};
   const ajoute = (s, n, motif) => { if (n > 0) (pris[s] ||= []).push([n, motif]); };
   for (const [s, n] of Object.entries(opx.pris || {})) ajoute(s, n, 'l’opération');
-  if ((d.demarches || []).includes('temoin')) ajoute('recherche', Math.min(2, al.recherche || 0), 'audition');
-  if (d.traque && d.traque.agents) ajoute('intervention', Math.min(d.traque.agents, al.intervention || 0), 'traque');
-  let f = agentsFipaCeSoir();
-  for (const s of ['proximite', 'intervention', 'roulage', 'recherche', 'admin']) { const k = Math.min(f, al[s] || 0); ajoute(s, k, 'FIPA'); f -= k; }
+  let libres = Math.max(0, libres0);
+  for (const m of missionsEnquete(d)) {
+    let n = m.n;
+    const k = Math.min(libres, n); libres -= k; n -= k;
+    if (!n) continue;
+    if (m.service) ajoute(m.service, Math.min(n, al[m.service] || 0), m.k);
+    else for (const s of ['proximite', 'intervention', 'roulage', 'recherche', 'admin']) { const k2 = Math.min(n, al[s] || 0); ajoute(s, k2, m.k); n -= k2; }
+  }
   return pris;
 }
 
@@ -82,7 +101,10 @@ export function estimations() {
   const z = myZone(), st = S.state, d = S.draft;
   const opts = { rythme: d.rythme, turn: st.turn };
   const opx = effetsOperation(z, d.alloc, d.operation, st.turn);
-  const prises = prisesDuJour(z, d, opx);
+  const dispo0 = agentsDisponibles(z, st.turn);
+  const resteBase = dispo0 - SERVICES.reduce((s, k) => s + d.alloc[k], 0) - engages(d);
+  const enquete = missionsEnquete(d).reduce((s, m) => s + m.n, 0);
+  const prises = prisesDuJour(z, d, opx, resteBase);
   const eff = { ...opx.eff };
   for (const [s, l] of Object.entries(prises)) for (const [n, motif] of l) if (motif !== 'l’opération') eff[s] = Math.max(0, (eff[s] || 0) - n);
   const pr = {};
@@ -97,10 +119,11 @@ export function estimations() {
   const amendes = cap.roulage * 0.7;
   const total = SERVICES.reduce((s, k) => s + eff[k], 0) || 1;
   const chasse = eff.roulage / total > 0.25 && !z.infra.anpr;
-  const dispo = agentsDisponibles(z, st.turn);
-  const reste = dispo - SERVICES.reduce((s, k) => s + d.alloc[k], 0) - engages(d);
+  const dispo = dispo0;
+  // Les agents en mission d'enquête ou en FIPA sortent du total : ils ne sont plus à répartir.
+  const reste = resteBase - enquete;
   const coutDep = coutDepenses(dep);
-  return { attendus, couverts, pap, amendes, chasse, dispo, reste, opx, coutDep, prises };
+  return { attendus, couverts, pap, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, prises };
 }
 
 /** « dont 2 en audition » sous un service : ces agents ne travaillent pas dans le service aujourd'hui. */
@@ -123,6 +146,7 @@ function opCouvHtml(e) {
 function statusHtml(e) {
   if (e.reste === 0) return `<span class="small ok" style="font-weight:600">${e.dispo} agents affectés</span>`;
   if (e.reste > 0) return `<span class="small warn" style="font-weight:600">${e.reste} agent${e.reste > 1 ? 's' : ''} sans affectation</span>`;
+  if (e.resteBase >= 0) return `<span class="small warn" style="font-weight:600">${-e.reste} pris dans tes services pour l’enquête</span>`;
   return `<span class="small bad" style="font-weight:600">${-e.reste} agent${e.reste < -1 ? 's' : ''} de trop</span>`;
 }
 
@@ -137,7 +161,7 @@ export function updateOrdresLive() {
   set('est-pap', e.pap <= 0 ? `−${-e.pap} dossiers` : `+${e.pap} dossiers`);
   set('est-am', `+${fmt1(e.amendes)} k€`);
   const ch = document.getElementById('est-chasse'); if (ch) ch.hidden = !e.chasse;
-  const btn = document.getElementById('btn-valider'); if (btn) btn.disabled = e.reste < 0;
+  const btn = document.getElementById('btn-valider'); if (btn) btn.disabled = e.resteBase < 0;
   const dirty = document.getElementById('dirty'); if (dirty) dirty.hidden = !S.ordersDirty;
 }
 
@@ -285,10 +309,8 @@ function ventilationHtml(z, e) {
   const btnRap = (k) => `<button type="button" class="btn small ghost" data-action="rapatrier" data-k="${esc(k)}">Rapatrier</button>`;
   const services = SERVICES.reduce((s, k) => s + d.alloc[k], 0);
   const prises = [];
-  if (d.traque && d.traque.agents) prises.push(['Traque (pris en Intervention)', d.traque.agents]);
-  if ((d.demarches || []).includes('temoin')) prises.push(['Audition (pris en Recherche)', 2]);
-  const f = agentsFipaCeSoir(); if (f) prises.push(['FIPA (pris d’abord en Proximité)', f]);
-  const opPris = Object.values(e.opx.pris || {}).reduce((s, v) => s + v, 0); if (opPris) prises.push(['Opération d’envergure', opPris]);
+  for (const [s, l] of Object.entries(e.prises || {})) for (const [n, m] of l) if (m !== 'l’opération') prises.push([`${m} (pris en ${SERVICE_LABELS[s]}, faute d’agents libres)`, n]);
+  const opPris = Object.values(e.opx.pris || {}).reduce((s, v) => s + v, 0); if (opPris) prises.push(['Opération d’envergure (dans les services)', opPris]);
   const aide = d.aide && d.aide.cible && d.aide.agents ? d.aide.agents : 0;
   const bloques = hors.filter((h) => h.bloque);
   return `<div class="vent col">
@@ -302,9 +324,10 @@ function ventilationHtml(z, e) {
     ${ligne('<strong>Disponibles ce soir</strong>', `<strong>${e.dispo}</strong>`, 'tot')}
     <span class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-top:6px">Où ils sont</span>
     ${ligne('Dans les cinq services', services)}
+    ${missionsEnquete(d).map((m) => ligne(esc(m.t), m.n, 'warn')).join('')}
     ${hors.map((h) => ligne(`${h.t}${h.bloque ? ` <span class="tiny bad">· ${esc(h.bloque)}</span>` : ''}`, h.compte === false ? `(${h.n})` : h.n, h.bloque ? 'bad' : '', btnRap(h.k))).join('')}
-    ${ligne(e.reste >= 0 ? '<strong>Sans affectation</strong>' : '<strong>De trop</strong>', `<strong>${Math.abs(e.reste)}</strong>`, `tot ${e.reste > 0 ? 'warn' : e.reste < 0 ? 'bad' : 'ok'}`)}
-    ${prises.length ? `<span class="tiny muted" style="margin-top:4px">Pris dans tes services pour la journée (déjà comptés ci-dessus) : ${prises.map(([t, n]) => `${t} ${n}`).join(' · ')}.</span>` : ''}
+    ${ligne(e.reste >= 0 ? '<strong>Sans affectation</strong>' : e.resteBase >= 0 ? '<strong>Manquent pour l’enquête</strong>' : '<strong>De trop</strong>', `<strong>${Math.abs(e.reste)}</strong>`, `tot ${e.reste > 0 ? 'warn' : e.reste < 0 ? 'bad' : 'ok'}`)}
+    ${prises.length ? `<span class="tiny warn" style="margin-top:4px">Pris dans tes services pour la journée : ${prises.map(([t, n]) => `${t} ${n}`).join(' · ')}. Enlève des agents d’un service pour les laisser libres, sinon ces services tourneront avec moins de monde.</span>` : ''}
     ${aide ? `<span class="tiny muted">Entraide : ${aide} agent${aide > 1 ? 's' : ''} partiront demain pour ${AIDE.dureePret} tours.</span>` : ''}
     ${academie ? `<span class="tiny muted">À l’académie : ${academie} recrue${academie > 1 ? 's' : ''}, pas encore disponible${academie > 1 ? 's' : ''}.</span>` : ''}
     ${bloques.length ? `<p class="tiny bad" style="margin:2px 0 0">Des agents sont bloqués : rapatrie-les pour les réaffecter.</p>` : ''}
@@ -335,7 +358,7 @@ function prisesHtml() {
   const f = agentsFipaCeSoir();
   if (f) l.push(`${f} agents partent en FIPA (pris d’abord en Proximité)`);
   const fo = d.decision && d.decision.type === 'former' ? `<p class="small muted" style="margin:0">Formation choisie : ${AGENTS_EN_FORMATION} agents seront absents demain (${DUREE_FORMATION} tour), ils sortiront alors du total disponible.</p>` : '';
-  return (l.length ? `<p class="small warn" style="margin:0">Enquête et FIPA : ${l.join(' ; ')}. Ils quittent leur service pour la journée (indiqué sous chaque service).</p>` : '') + fo;
+  return (l.length ? `<p class="small warn" style="margin:0">Enquête et FIPA : ${l.join(' ; ')}. Ils sont retirés du total à répartir ; s’il ne reste pas assez d’agents libres, ils sont pris dans le service indiqué.</p>` : '') + fo;
 }
 
 export function situationHtml(z) {
@@ -411,7 +434,7 @@ export function renderOrdres() {
 
   return `<main class="screen">
     <header class="col" style="gap:3px"><h1 class="big">Ordres du tour ${T}</h1>
-      <p class="sub">${e.dispo} agents disponibles${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p></header>
+      <p class="sub">${e.dispo} agents disponibles${e.enquete ? `, dont ${e.enquete} en mission (enquête ou FIPA) : ${e.dispo - e.enquete} à répartir` : ''}${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p></header>
 
     ${saved ? `<div class="card green" style="flex-direction:row;align-items:center;justify-content:space-between;padding:10px 10px 10px 14px">
         <span class="ok" style="font-weight:700">${icon('check', 16)} Ordres validés</span><span class="tiny muted">modifiables jusqu’à 20:00</span></div>`
