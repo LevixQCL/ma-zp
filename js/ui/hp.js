@@ -65,8 +65,8 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
   if (st.conseil && st.conseil.tour === st.turn) items.push({ ok: Object.keys(d.votes || {}).length > 0, href: '#diplomatie', t: 'Conseil de police : voter', s: 'une voix par zone, résultat à 20:00' });
   if (invit) items.push({ ok: !!d.duelReponse, href: '#diplomatie', t: 'Répondre au défi en duel', s: 'sans réponse, c’est un refus' });
   const reste = items.filter((i) => !i.ok).length;
-  return `<section class="card" aria-label="Ce soir à 20:00" style="gap:8px">
-    <div class="between" style="align-items:flex-end"><div class="col" style="gap:2px"><span class="small muted">Résolution dans</span>
+  return `<section class="card" aria-label="Prochain tour" style="gap:8px">
+    <div class="between" style="align-items:flex-end"><div class="col" style="gap:2px"><span class="small muted">Prochain tour dans</span>
       <span class="mono" id="countdown" style="font-size:28px;letter-spacing:1px">${formatCountdown(st.nextDeadline - Date.now())}</span></div>
       <span class="pill ${reste ? 'amber' : 'green'}">${reste ? `${reste} chose${reste > 1 ? 's' : ''} à faire` : 'Tout est prêt'}</span></div>
     ${reste ? `<div class="col" style="gap:6px">${items.map((i) => `<a class="todo ${i.ok ? 'done' : ''}" href="${i.href}"><span class="box" aria-hidden="true">${i.ok ? icon('check', 14) : ''}</span>
@@ -131,6 +131,7 @@ export function renderHP() {
       </div>
     </header>
 
+    ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit })}
     <section class="card" aria-label="Ma zone">
       <div class="between">
         <div class="row" style="gap:10px;min-width:0">
@@ -164,7 +165,6 @@ export function renderHP() {
     ${logistiqueHtml()}
 
     ${nuitHtml(z)}
-    ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit })}
 
 
     ${z.peril ? `<section class="card red" aria-label="Zone en péril"><span class="kicker" style="color:var(--red-soft)">Zone en péril · faillite dans ${z.peril.fin - T + 1} résolution${z.peril.fin - T + 1 > 1 ? 's' : ''}</span>
