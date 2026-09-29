@@ -12,6 +12,9 @@ const page = await ctx.newPage();
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g|Failed to load resource/.test(m.text())) errors.push(`console: ${m.text()}`); });
 
+// Fenêtres d'aide ou de nouveautés qui s'ouvrent d'elles-mêmes : on les ferme dès qu'elles gênent un clic.
+await page.addLocatorHandler(page.locator('.aide-wrap'), async () => { await page.evaluate(() => document.querySelectorAll('.aide-wrap').forEach((x) => x.remove())); });
+
 const shot = async (name) => { await page.waitForTimeout(250); await page.screenshot({ path: `${OUT}/${name}.png`, fullPage: true }); };
 
 await page.goto(BASE);
@@ -37,7 +40,7 @@ const engBtn = page.locator('[data-action="eng"][data-d="1"]').first();
 if (await engBtn.count()) { await engBtn.click(); await engBtn.click(); await engBtn.click(); }
 await page.click('[data-action="ord-open"][data-k="decision"]');
 await shot('04-ordres-decision');
-await page.locator('[data-action="decision"]:not([disabled])').nth(8).click();
+await page.locator('.dtuile[data-action="decision"]:not([disabled])').first().click();
 await page.click('.savebar [data-action="save-orders"]');
 await page.waitForSelector('.card.green');
 await shot('05-ordres-valides');
@@ -49,6 +52,12 @@ await shot('06-quete');
 await page.goto(`${BASE}#carte`);
 await page.waitForSelector('svg[role="img"]');
 await shot('07-carte');
+// Quartiers : toucher un quartier, envoyer une patrouille, la déplacer.
+await page.locator('polygon[data-action="quartier"]').first().click({ force: true });
+await page.waitForSelector('.qrow.sel');
+await page.locator('.qrow [data-action="patrouille"][data-d="1"]:not([disabled])').first().click();
+if ((await page.locator('.qrow .stepper .n', { hasText: /^[1-9]/ }).count()) < 1) errors.push('Quartiers : la patrouille n’est pas affectée');
+await shot('07b-carte-patrouille');
 await page.goto(`${BASE}#radio`);
 await page.fill('#radio-msg', 'Salut le district, qui fait équipe sur le trafic ?');
 await page.click('[data-form="radio"] button');
@@ -76,12 +85,16 @@ await shot('13-admin');
 
 // Enquête : constatation, vérification ciblée, tableau MMO, accusation, notes.
 await page.goto(`${BASE}#enquete`);
+await page.waitForSelector('h1.big');
+await shot('16-enquete-suspects');
+await page.click('[data-action="enq-tab"][data-t="scene"]');
 await page.waitForSelector('.constat');
-await shot('16-enquete-tableau');
+await shot('16b-enquete-scene');
+await page.click('[data-action="enq-tab"][data-t="suspects"]');
 await page.locator('[data-action="enq-open"]').first().click();
 await page.waitForSelector('.suspect .dem-row');
-await page.locator('[data-action="dem-toggle"]:not([disabled])').first().click();
-await page.locator('[data-action="dem-toggle"]:not([disabled]):not([aria-pressed="true"])').first().click();
+await page.locator('button.dem[data-action="dem-toggle"]:not([disabled])').first().click();
+await page.locator('button.dem[data-action="dem-toggle"]:not([disabled]):not([aria-pressed="true"])').first().click();
 if ((await page.locator('[data-action="dem-toggle"][aria-pressed="true"]').count()) !== 2) errors.push('Enquête : les deux démarches ne sont pas demandées');
 await page.locator('[data-action="mmo-mark"]').first().click();
 await page.locator('[data-action="mmo-mark"]').nth(1).click();
@@ -103,7 +116,7 @@ await page.click('[data-action="enq-tab"][data-t="planques"]');
 await page.waitForSelector('[data-action="carnet-mark"][data-t="p"]');
 await page.click('[data-action="enq-tab"][data-t="notes"]');
 if ((await page.inputValue('#carnet-notes')) !== 'Comparer les heures des alibis.') errors.push('Notes du carnet perdues');
-await page.click('[data-action="enq-tab"][data-t="tableau"]');
+await page.click('[data-action="enq-tab"][data-t="suspects"]');
 await page.click('.savebar [data-action="save-orders"]');
 await page.waitForTimeout(300);
 if (await page.locator('.savebar').count()) errors.push('Choix d’enquête non enregistrés');

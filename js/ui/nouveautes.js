@@ -27,7 +27,7 @@ export const NOTE_MAJ = {
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP ! Équilibrage : Roulage moins rentable au-delà de 6 agents, « chasse aux PV » à 40 % avec les caméras, prime au personnel dégressive quand le moral est haut. Nouveau : détail de l'IPZ dans le rapport, carte plus lisible. Recharge la page si besoin !`;
+  return `📣 Mise à jour de Ma ZP ! Nouveau sur la Carte : tes 6 quartiers ont leur tension (zones chaudes), un point chaud est annoncé chaque jour (2 agents sur place le désamorcent) et tu peux envoyer des patrouilles de Proximité quartier par quartier. Attention, trop d'agents au même endroit repoussent la délinquance chez le voisin ! Recharge la page si besoin.`;
 }
 
 
@@ -58,5 +58,8 @@ export function ouvrirNouveautes() {
 export function nouveautesAuBesoin() {
   if (S.majMontree || noteVue() || document.querySelector('.aide-wrap')) return;
   S.majMontree = true;
+  // Nouveau joueur : les « nouveautés » ne le concernent pas, il découvre tout en même temps.
+  const z = S.state && S.user && S.state.zones[S.user.uid];
+  if (z && !z.toursJoues) { try { localStorage.setItem(cle(), '1'); } catch (e) { /* pas de stockage */ } return; }
   setTimeout(ouvrirNouveautes, 400);
 }
