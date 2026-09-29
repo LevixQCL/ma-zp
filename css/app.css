@@ -509,3 +509,11 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .trophee .d { font-size: 11px; line-height: 1.3; }
 .trophee.on { border: 1px solid var(--amber-line); background: var(--amber-bg); color: var(--amber); }
 .trophee.on .n { color: var(--text); }
+
+/* Où sont mes agents ? */
+.vent { gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+.vent-l { min-height: 30px; gap: 8px; }
+.vent-l.tot { border-top: 1px solid var(--line); padding-top: 4px; margin-top: 2px; }
+.vent-l.ok .mono { color: var(--green-soft); }
+.vent-l.warn .mono { color: var(--amber); }
+.vent-l.bad .mono { color: var(--red-soft); }
