@@ -218,6 +218,7 @@ async function onClick(e) {
       case 'admin-all-parties': S.allParties = await b.listAllParties(); rerender(); break;
       case 'diplo-open': { const k = el.dataset.k; const cur = S.diploOpen && k in S.diploOpen ? S.diploOpen[k] : !!document.querySelector(`section[data-k="${k}"]`); S.diploOpen = { ...(S.diploOpen || {}), [k]: !cur }; rerender(); break; }
       case 'aide': ouvrirAide(el.dataset.k); break;
+      case 'carte-zoom': S.carteZoom = el.dataset.v === '1'; rerender(); break;
       case 'renfort-n': {
         const cible = el.dataset.uid, dd = Number(el.dataset.d);
         const ancien = S.draft.renfort && S.draft.renfort.cible !== cible ? S.draft.renfort.agents : 0;
