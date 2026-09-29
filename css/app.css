@@ -341,3 +341,10 @@ h1.brand-xl { font-size: clamp(64px, 20vw, 96px); letter-spacing: 2px; line-heig
   border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 600; font-size: 14px; text-decoration: none; }
 .backlink svg { color: var(--amber); }
 .backlink:hover { border-color: var(--amber-line); color: var(--text); }
+
+/* Onglets Radio / Diplomatie toujours visibles en haut de l'écran */
+.onglets-flottants { position: sticky; top: 0; z-index: 12; margin: -18px -16px 0; padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: rgba(11,17,25,.88); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.onglets-flottants .seg2 { box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+.segl { position: relative; gap: 6px; }
+.pastille { width: 8px; height: 8px; border-radius: 50%; background: var(--red); display: inline-block; flex-shrink: 0; }
