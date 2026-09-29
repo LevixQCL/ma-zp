@@ -62,7 +62,7 @@ function nuitHtml(z) {
       <button class="btn small ghost" data-action="nuit-ok">OK</button></div>
     ${lignes.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${lignes.map(([l, v, a, u]) => `<span class="pill">${l} ${fmt1(v)}${u || ''} ${delta(v, a)}</span>`).join('')}</div>` : ''}
     <div class="col" style="gap:4px">${importants.map((l) => `<p class="small" style="margin:0;color:var(--text2)">• ${esc(l)}</p>`).join('')}</div>
-    <div class="row"><button class="btn small grow" data-action="toggle-rapport">Rapport complet</button><a class="btn small grow" href="#gazette">La Gazette</a></div>
+    <div class="row"><button class="btn small grow" data-action="voir-rapport">Rapport complet</button><a class="btn small grow" href="#gazette">La Gazette</a></div>
   </section>`;
 }
 
@@ -220,7 +220,7 @@ export function renderHP() {
         <a class="btn" href="#gazette">${icon('news', 18)}<span>${last ? `Gazette <span class="mono tiny muted">T${last.turn}</span>` : 'Gazette'}</span></a>
         <a class="btn" href="#classement">${icon('trophy', 18)}<span>Classement</span></a>
       </div>
-      ${S.showRapport ? `<div class="card tight"><span class="kicker">Rapport du dernier tour</span>${ipzDetailHtml(z)}${(z.rapport && z.rapport.length ? z.rapport.filter((l) => !(z.ipzComp && l.startsWith('IPZ du jour'))) : ['Pas encore de rapport : le premier tour n’a pas été résolu.']).map((l) => `<p class="small" style="margin:0">• ${esc(l)}</p>`).join('')}</div>` : ''}
+      ${S.showRapport ? `<div class="card tight" id="rapport-complet" style="scroll-margin-top:16px"><span class="kicker">Rapport du dernier tour</span>${ipzDetailHtml(z)}${(z.rapport && z.rapport.length ? z.rapport.filter((l) => !(z.ipzComp && l.startsWith('IPZ du jour'))) : ['Pas encore de rapport : le premier tour n’a pas été résolu.']).map((l) => `<p class="small" style="margin:0">• ${esc(l)}</p>`).join('')}</div>` : ''}
       <div class="row">
         <a class="btn ghost small grow" href="#guide">${icon('news', 16)} Guide du joueur</a>
         <button type="button" class="btn ghost small grow" data-action="maj-voir">${icon('star', 16)} Nouveautés</button>
