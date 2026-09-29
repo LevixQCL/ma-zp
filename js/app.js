@@ -77,7 +77,7 @@ function render() {
       case 'ordres': html = renderOrdres(); break;
       case 'quete': html = renderQuete(); break;
       case 'enquete': html = renderEnquete(); break;
-      case 'guide': html = renderGuide(); break;
+      case 'guide': html = renderGuide(); if (S.guideSection === 'debut') { S.premiersPasVus = true; try { localStorage.setItem('mazp-premiers-pas-vus', '1'); } catch (e) { /* pas de stockage */ } } break;
       case 'diplomatie': html = renderDiplomatie(); break;
       case 'carte': html = renderCarte(); break;
       case 'radio': html = renderRadio(); S.radioSeen = S.radio.length; break;
