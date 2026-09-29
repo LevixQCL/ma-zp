@@ -58,8 +58,8 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
     <div class="between" style="align-items:flex-end"><div class="col" style="gap:2px"><span class="small muted">Résolution dans</span>
       <span class="mono" id="countdown" style="font-size:28px;letter-spacing:1px">${formatCountdown(st.nextDeadline - Date.now())}</span></div>
       <span class="pill ${reste ? 'amber' : 'green'}">${reste ? `${reste} chose${reste > 1 ? 's' : ''} à faire` : 'Tout est prêt'}</span></div>
-    <div class="col" style="gap:6px">${items.map((i) => `<a class="todo ${i.ok ? 'done' : ''}" href="${i.href}"><span class="box" aria-hidden="true">${i.ok ? icon('check', 14) : ''}</span>
-      <span class="col grow" style="gap:0"><span style="font-weight:600">${i.t}</span><span class="tiny muted">${i.s}</span></span>${icon('chevron', 16)}</a>`).join('')}</div>
+    ${reste ? `<div class="col" style="gap:6px">${items.map((i) => `<a class="todo ${i.ok ? 'done' : ''}" href="${i.href}"><span class="box" aria-hidden="true">${i.ok ? icon('check', 14) : ''}</span>
+      <span class="col grow" style="gap:0"><span style="font-weight:600">${i.t}</span><span class="tiny muted">${i.s}</span></span>${icon('chevron', 16)}</a>`).join('')}</div>` : ''}
   </section>`;
 }
 
@@ -152,7 +152,6 @@ export function renderHP() {
 
     ${nuitHtml(z)}
     ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit })}
-    ${z.toursJoues < 2 ? '<a class="list-row" href="#guide-debut" style="border-color:var(--amber-line)"><span class="bullet" style="background:var(--amber)"></span><span class="col grow" style="gap:1px"><span style="font-weight:600">Nouveau ? Lis les « Premiers pas »</span><span class="small muted">2 minutes pour comprendre ta journée de chef de zone</span></span></a>' : ''}
 
 
     ${z.peril ? `<section class="card red" aria-label="Zone en péril"><span class="kicker" style="color:var(--red-soft)">Zone en péril · faillite dans ${z.peril.fin - T + 1} résolution${z.peril.fin - T + 1 > 1 ? 's' : ''}</span>
@@ -189,6 +188,7 @@ export function renderHP() {
       </div>
       ${S.backend.mode === 'demo' ? '<button class="btn outline block" data-action="demo-next">Démo : passer au tour suivant</button>' : ''}
     </section>
+    ${z.toursJoues < 2 ? '<a class="list-row" href="#guide-debut" style="border-color:var(--amber-line)"><span class="bullet" style="background:var(--amber)"></span><span class="col grow" style="gap:1px"><span style="font-weight:600">Nouveau ? Lis les « Premiers pas »</span><span class="small muted">2 minutes pour comprendre ta journée de chef de zone</span></span></a>' : ''}
   </main>${tabbar('hp', { questBadge: !questDone, radioBadge: S.radio.length > S.radioSeen })}`;
 }
 
