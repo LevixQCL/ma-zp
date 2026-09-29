@@ -1,4 +1,4 @@
-// Écran de la quête du jour.
+// Écran de l’énigme du jour.
 import { S, esc, icon, tabbar } from './common.js';
 import { SERVICES, SERVICE_LABELS } from '../engine/constants.js';
 
@@ -66,11 +66,11 @@ export function renderQuete() {
     </section>` : '';
 
   return `<main class="screen">
-    <div class="seg" role="tablist" aria-label="Quêtes du jour">${S.quests.map((x, k) => `
+    <div class="seg" role="tablist" aria-label="Énigmes du jour">${S.quests.map((x, k) => `
       <button type="button" role="tab" data-action="quest-tab" data-i="${k}" aria-pressed="${k === i}" aria-selected="${k === i}"><span class="t">Énigme ${k + 1}${icone(results[k])}</span><span class="d">${esc(x.typeLabel)}</span></button>`).join('')}</div>
     ${bonusCard}
     <header class="between" style="align-items:flex-start">
-      <div class="col" style="gap:3px"><span class="kicker">Quête ${i + 1} sur 3</span><h1 class="big">${esc(q.typeLabel)}</h1></div>
+      <div class="col" style="gap:3px"><span class="kicker">Énigme ${i + 1} sur 3</span><h1 class="big">${esc(q.typeLabel)}</h1></div>
       <div class="col" style="gap:4px;align-items:flex-end"><span class="pill">Difficulté ${q.difficulte}/5</span>
         <span class="tiny muted">${fini ? 'terminée' : 'une seule réponse'}</span></div>
     </header>
@@ -101,6 +101,6 @@ export function renderQuete() {
       <p class="tiny muted" style="margin:0">−1 de moral. De nouvelles énigmes demain après 20:00.</p></section>` : ''}
     ${fini && results.some((x) => !x || !x.statut) ? `<button class="btn outline block" data-action="quest-tab" data-i="${results.findIndex((x) => !x || !x.statut)}">Énigme suivante</button>` : ''}
     <p class="tiny muted" style="margin:0">Chaque joueur reçoit ses propres variantes : on peut en discuter, mais la réponse d’un collègue ne marchera pas chez toi. 2 bonnes réponses sur 3 débloquent un bonus.</p>
-    <a class="small" href="#guide-quetes" style="text-align:center">Règles des quêtes</a>
+    <a class="small" href="#guide-quetes" style="text-align:center">Règles des énigmes</a>
   </main>${tabbar('quete', { questBadge: false })}`;
 }

@@ -6,10 +6,11 @@ import { S, toast, myZone, esc } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil } from './ui/hp.js';
 import { ouvrirAide } from './ui/aide.js';
+import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations } from './ui/ordres.js';
 import { renderQuete } from './ui/quete.js';
 import { renderGuide } from './ui/guide.js';
-import { renderDiplomatie } from './ui/diplomatie.js';
+import { renderDiplomatie, ongletsRadio } from './ui/diplomatie.js';
 import { renderParties } from './ui/parties.js';
 import { renderEnquete, lireCarnet, ecrireCarnet } from './ui/enquete.js';
 import { genererAffaire } from './engine/enquete.js';
@@ -21,8 +22,8 @@ import { SERVICES, COULEURS_ZONE, SERVICE_LABELS } from './engine/constants.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
 
 const app = document.getElementById('app');
-const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'diplomatie', 'parties', 'quete', 'carte', 'radio', 'gazette', 'classement', 'profil', 'admin'];
-let unsubState = null, unsubRadio = null, lastTurnKey = null;
+const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'diplomatie', 'parties', 'quete', 'carte', 'radio', 'prive', 'gazette', 'classement', 'profil', 'admin'];
+let unsubState = null, unsubRadio = null, unsubPrive = null, lastTurnKey = null;
 
 function route() {
   const h = (location.hash || '#hp').slice(1);
@@ -80,7 +81,8 @@ function render() {
       case 'guide': html = renderGuide(); if (S.guideSection === 'debut') { S.premiersPasVus = true; try { localStorage.setItem('mazp-premiers-pas-vus', '1'); } catch (e) { /* pas de stockage */ } } break;
       case 'diplomatie': html = renderDiplomatie(); break;
       case 'carte': html = renderCarte(); break;
-      case 'radio': html = renderRadio(); S.radioSeen = S.radio.length; break;
+      case 'radio': html = renderRadio(); break;
+      case 'prive': html = renderPrive(); break;
       case 'gazette': html = renderGazette(); break;
       case 'classement':
         if (!S.questStatsAt || Date.now() - S.questStatsAt > 60000) {
@@ -105,8 +107,19 @@ function render() {
   if (S.keepScroll) window.scrollTo(0, scroll);
   S.keepScroll = false;
   if (S.route === 'guide' && S.guideSection && !S.keepScrollGuide) { const g = document.getElementById(`g-${S.guideSection}`); if (g) g.scrollIntoView({ block: 'start' }); }
+  if (S.route === 'prive') { const l = document.getElementById('prive-list'); if (l && l.lastElementChild) l.lastElementChild.scrollIntoView({ block: 'nearest' }); }
   if (S.route === 'radio') { const l = document.getElementById('radio-list'); if (l && l.lastElementChild) l.lastElementChild.scrollIntoView({ block: 'nearest' }); }
 }
+
+/** Pastilles « nouveau » sans redessiner l'écran (une saisie en cours n'est pas perdue). */
+function majPastilles() {
+  majPastilleRadio();
+  if (['radio', 'prive', 'diplomatie'].includes(S.route)) {
+    const o = document.querySelector('.onglets-flottants');
+    if (o) { const t = document.createElement('div'); t.innerHTML = ongletsRadio(S.route); o.replaceWith(t.firstElementChild); }
+  }
+}
+const champActif = (id) => document.activeElement && document.activeElement.id === id && document.activeElement.value;
 
 const rerender = () => { S.keepScroll = true; render(); };
 
@@ -134,7 +147,7 @@ async function loadTurnData() {
   const lire = (p, defaut, quoi) => p.catch((e) => { console.warn(`Lecture impossible (${quoi}) :`, e.message); return defaut; });
   const [orders, quest, gazettes] = await Promise.all([
     lire(S.backend.getOrders(uid, st.season, st.turn), null, 'ordres'),
-    lire(S.backend.getQuests(uid, st.season, st.turn), null, 'quêtes'),
+    lire(S.backend.getQuests(uid, st.season, st.turn), null, 'énigmes'),
     lire(S.backend.listGazettes(10), [], 'gazettes'),
   ]);
   S.savedOrders = orders; S.ordersDirty = false; S.draft = null; S.decisionOpen = false;
@@ -158,8 +171,9 @@ async function afterAuth() {
 async function openParty(id) {
   if (unsubState) unsubState();
   if (unsubRadio) unsubRadio();
-  unsubState = null; unsubRadio = null;
-  Object.assign(S, { noParty: false, state: undefined, draft: null, quests: null, savedOrders: null, ordersDirty: false, gazettes: [], radio: [], radioSeen: 0, signup: null, questResults: [null, null, null] });
+  if (unsubPrive) unsubPrive();
+  unsubState = null; unsubRadio = null; unsubPrive = null;
+  Object.assign(S, { noParty: false, state: undefined, draft: null, quests: null, savedOrders: null, ordersDirty: false, gazettes: [], radio: [], prives: [], priveAvec: null, vu: null, signup: null, questResults: [null, null, null] });
   lastTurnKey = null;
   render();
   S.partie = await S.backend.useGame(id);
@@ -173,7 +187,8 @@ async function openParty(id) {
       render();
     }, (e) => { S.lastError = e; if (S.state === undefined) bloque(e); });
   }
-  if (!unsubRadio) unsubRadio = S.backend.subscribeRadio((msgs) => { S.radio = msgs; if (S.route === 'radio') rerender(); });
+  if (!unsubRadio) unsubRadio = S.backend.subscribeRadio((msgs) => { S.radio = msgs; if (S.route === 'radio') rerender(); else majPastilles(); });
+  if (!unsubPrive && S.backend.subscribePrives) unsubPrive = S.backend.subscribePrives(S.user.uid, (msgs) => { S.prives = msgs; if (S.route === 'prive' && !champActif('prive-msg')) rerender(); else majPastilles(); });
   render();
   tick(true);
 }
@@ -201,6 +216,8 @@ async function onClick(e) {
       case 'admin-all-parties': S.allParties = await b.listAllParties(); rerender(); break;
       case 'diplo-open': { const k = el.dataset.k; const cur = S.diploOpen && k in S.diploOpen ? S.diploOpen[k] : !!document.querySelector(`section[data-k="${k}"]`); S.diploOpen = { ...(S.diploOpen || {}), [k]: !cur }; rerender(); break; }
       case 'aide': ouvrirAide(el.dataset.k); break;
+      case 'prive-ouvrir': S.priveAvec = el.dataset.uid; render(); window.scrollTo(0, document.body.scrollHeight); break;
+      case 'prive-fermer': S.priveAvec = null; render(); window.scrollTo(0, 0); break;
       case 'nuit-ok': {
         const z = myZone();
         const k = `mazp-nuit-${b.gameId ? b.gameId() : ''}-${S.state.season}-${S.state.turn}-${z.uid}`;
@@ -426,7 +443,7 @@ async function submitQuest(reponse) {
 
 async function saveQuestBonus(bonus, service) {
   const st = S.state;
-  // Le bonus est enregistré sur la dernière quête réussie.
+  // Le bonus est enregistré sur la dernière énigme réussie.
   const i = S.questResults.map((r, k) => (r && r.statut === 'ok' ? k : -1)).filter((k) => k >= 0).pop();
   if (i === undefined) return;
   S.questResults[i] = { ...S.questResults[i], bonus, ...(service ? { service } : {}) };
@@ -493,6 +510,13 @@ async function onSubmit(e) {
       if (!texte) return;
       await b.sendRadio(S.user.uid, texte);
       form.texte.value = '';
+    } else if (kind === 'prive') {
+      const texte = form.texte.value.trim();
+      if (!texte || !S.priveAvec) return;
+      await b.sendPrive(S.user.uid, S.priveAvec, texte);
+      form.texte.value = '';
+      rerender();
+      const i = document.getElementById('prive-msg'); if (i) i.focus();
     }
   } catch (err) {
     console.error(err);
@@ -602,7 +626,7 @@ async function boot() {
   document.addEventListener('submit', onSubmit);
   document.addEventListener('input', onInput);
   document.addEventListener('change', onChange);
-  window.addEventListener('hashchange', () => { S.route = route(); window.scrollTo(0, 0); render(); });
+  window.addEventListener('hashchange', () => { S.route = route(); if (S.route !== 'prive') S.priveAvec = null; window.scrollTo(0, 0); render(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(true); });
   setInterval(() => {
     const el = document.getElementById('countdown');

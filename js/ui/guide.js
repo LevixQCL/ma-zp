@@ -29,7 +29,7 @@ export function sections() {
           '<strong>Lis la Gazette</strong> de la veille et ton rapport : ce qui s’est passé chez toi et dans le district.',
           '<strong>Passe tes ordres</strong> : répartis tes agents entre les cinq services, choisis ton rythme, éventuellement une grande décision et des dépenses du jour.',
           '<strong>Avance l’enquête</strong> : lance jusqu’à deux démarches, partage des indices, accuse quand tu es sûr.',
-          '<strong>Fais tes trois quêtes du jour</strong> : trois petites énigmes, une seule réponse chacune.',
+          '<strong>Résous tes trois énigmes du jour</strong> : trois petits casse-tête, une seule réponse chacun.',
           'Réponds aux <strong>FIPA</strong> et aux collègues sur la <strong>Radio</strong> si besoin.',
         ])}
         <p>Tu peux modifier tes ordres autant de fois que tu veux jusqu'à 20:00. Si tu oublies un jour, le <strong>pilote automatique</strong> reprend ta dernière répartition (voir « Absences »).</p>
@@ -38,7 +38,7 @@ export function sections() {
           ['HP', 'Hôtel de police : compte à rebours, état de ta zone, situation du jour, FIPA, enquête, alertes, rapport.'],
           ['Ordres', 'Répartition des agents, rythme, opérations, affaires disputées, grande décision, dépenses du jour.'],
           ['Enquête', 'L’affaire en cours : démarches, pièces, carnet, accusation, traque.'],
-          ['Quête', 'Les trois énigmes du jour.'],
+          ['Énigmes', 'Les trois énigmes du jour.'],
           ['Carte', 'Le plan de la ville, les territoires, les affaires disputées, la liste des zones.'],
           ['Radio', 'Messagerie commune entre tous les chefs de zone.'],
         ])}`,
@@ -47,7 +47,7 @@ export function sections() {
       id: 'zone', titre: 'Ta zone et ses jauges', html: `
         <p>Chaque zone démarre avec ${START.agents} agents, ${k(START.budget)}, ${START.vehicules} véhicules, un moral de ${START.moral}, une satisfaction et une réputation de ${START.satisfaction}.</p>
         ${table(['Jauge', 'Ce qui la fait monter', 'Ce qui la fait baisser'], [
-          ['<strong>Moral</strong> (0 à 100)', 'rythme allégé, prime, salle de sport, succès, bonnes nouvelles', 'rythme renforcé, incidents ratés en série, budget négatif, erreurs aux quêtes, coups durs'],
+          ['<strong>Moral</strong> (0 à 100)', 'rythme allégé, prime, salle de sport, succès, bonnes nouvelles', 'rythme renforcé, incidents ratés en série, budget négatif, erreurs aux énigmes, coups durs'],
           ['<strong>Satisfaction</strong> citoyenne', 'incidents traités, Proximité, dossiers élucidés, opérations et FIPA réussies', 'incidents ratés, criminalité au-dessus de 55, vieux dossiers, « chasse aux PV », fiascos'],
           ['<strong>Réputation</strong> auprès des collègues', 'partager des indices, affaires gagnées à deux, FIPA partagées, arrestations', 'fausses accusations, fiascos'],
           ['<strong>Budget</strong>', `dotation ${k(ECONOMIE.dotation)} par tour, amendes du Roulage, primes`, `salaires (${k(ECONOMIE.salaire)} par agent), entretien (${k(ECONOMIE.entretienVehicule)} par véhicule), décisions, dépenses, démarches`],
@@ -126,7 +126,7 @@ export function sections() {
         <p>Deux démarches au maximum par tour, toujours fructueuses. Le résultat arrive à 20:00 dans ton dossier. Une démarche qui n'a plus rien à t'apprendre est grisée.</p>
         ${table(['Démarche', 'Coût', 'Apprend'], Object.values(DEMARCHES).map((d) => [d.nom + (d.cible ? ' (sur un suspect)' : ' (constatation)'), d.cout ? k(d.cout) + (d.cible ? ', le double hors de ta cellule' : '') : `${d.agents} agents de Recherche pour la journée`, d.dit + (d.planque ? ', puis un indice sur la planque' : '')]))}
         <p><strong>Enquête de voisinage</strong> : chaque soir, tes enquêteurs peuvent rapporter une pièce gratuite. La chance augmente avec ta capacité de Recherche (jusqu'à 50 %).</p>
-        <p><strong>Bonus de quête</strong> : avec deux bonnes réponses aux quêtes du jour, tu peux choisir « +1 indice ».</p>
+        <p><strong>Bonus d’énigme</strong> : avec deux bonnes réponses aux énigmes du jour, tu peux choisir « +1 indice ».</p>
         <h3>Les cellules et le partage</h3>
         ${ul([
           `Dès que plusieurs zones jouent, le parquet répartit les suspects entre ${ENQ.maxCellules} cellules de zones au plus. Vérifier un suspect de ta cellule coûte le prix normal, un autre coûte le double.`,
@@ -216,10 +216,10 @@ export function sections() {
         ])}`,
     },
     {
-      id: 'quetes', titre: 'Les quêtes du jour', html: `
+      id: 'quetes', titre: 'Les énigmes du jour', html: `
         <p>Trois énigmes par jour, de difficultés différentes, publiées à 20:00. Elles se corsent au fil de la semaine.</p>
         ${ul([
-          '<strong>Une seule réponse par quête</strong>, confirmée avant envoi : une erreur est définitive et coûte 1 point de moral.',
+          '<strong>Une seule réponse par énigme</strong>, confirmée avant envoi : une erreur est définitive et coûte 1 point de moral.',
           'Chaque joueur reçoit ses propres données : on peut en discuter, mais la réponse d’un collègue ne marche pas chez toi.',
           `Chaque bonne réponse : +${PS.queteOk} PS (une tentative ratée : +${PS.queteTentee}). Trois sur trois : +5 PS en plus.`,
           'Deux bonnes réponses débloquent un bonus au choix : +1 indice d’enquête, +3 de moral, +2 k€ ou +10 % de capacité pour un service.',
@@ -263,7 +263,7 @@ export function sections() {
         <h3>Points de service (PS)</h3>
         <p>Ils récompensent l'assiduité et ne se perdent jamais, même d'une saison à l'autre. Maximum ${PS.plafondJour} PS par jour.</p>
         ${table(['Action', 'PS'], [
-          ['Passer ses ordres', `+${PS.ordres}`], ['Bonne réponse à une quête', `+${PS.queteOk} (tentative ratée : +${PS.queteTentee})`], ['Trois quêtes sur trois', '+5'],
+          ['Passer ses ordres', `+${PS.ordres}`], ['Bonne réponse à une énigme', `+${PS.queteOk} (tentative ratée : +${PS.queteTentee})`], ['Trois énigmes sur trois', '+5'],
           ['Découverte d’un auteur', '+15'], ['Arrestation', '+10'], ['Participer à une FIPA', '+10'], ['Partager un indice', '+5'], ['Indice qui aide une découverte', '+5'],
           ['Finir une saison classé', `+${PS.finSaison}`],
         ])}
@@ -279,7 +279,7 @@ export function sections() {
         <h3>Titres de fin de saison</h3>
         ${table(['Titre', 'Pour'], [
           ['Zone de l’année', 'la meilleure moyenne d’IPZ'], ['Phénix', 'finir dans le top 3 après une faillite (badge)'], ['Fin limier', 'le plus de points d’enquête'], ['Collègue en or', 'la meilleure réputation'],
-          ['Esprit vif', 'le plus de quêtes réussies'], ['Roi de la paperasse', 'la plus haute pile de paperasse (titre moqueur)'],
+          ['Esprit vif', 'le plus d’énigmes réussies'], ['Roi de la paperasse', 'la plus haute pile de paperasse (titre moqueur)'],
         ])}`,
     },
     {
@@ -299,7 +299,7 @@ export function sections() {
         <h3>Pourquoi mes ordres n'ont-ils pas eu l'effet prévu ?</h3><p>Lis ton rapport sur l'écran HP : blessés, opération, traque, audition ou FIPA peuvent avoir pris des agents. L'écran Ordres affiche aussi ces prélèvements avant 20:00.</p>
         <h3>Quelqu'un qui joue plus tôt est-il avantagé ?</h3><p>Non. Tout est résolu en même temps à 20:00 : ordres, accusations, traques, FIPA.</p>
         <h3>Un collègue peut-il voir mes ordres ?</h3><p>Pas avant 20:00. Ensuite, la Gazette raconte ce qui s'est passé.</p>
-        <h3>Je me suis trompé à une quête, puis-je corriger ?</h3><p>Non : une réponse est définitive. C'est voulu.</p>
+        <h3>Je me suis trompé à une énigme, puis-je corriger ?</h3><p>Non : une réponse est définitive. C'est voulu.</p>
         <h3>Mes notes de carnet sont-elles visibles des autres ?</h3><p>Non. Elles restent sur ton appareil (et ne suivent pas si tu changes de téléphone).</p>
         <h3>Le jeu utilise-t-il de vraies données de police ?</h3><p>Non. Tout est fictif : le district, les zones, les affaires, les personnes.</p>
         <h3>Un bouton « Mettre à jour » s'affiche</h3><p>Une nouvelle version est en ligne. Touche le bouton : ta partie est conservée.</p>`,

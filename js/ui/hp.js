@@ -54,7 +54,7 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
   const items = [];
   items.push({ ok: ordresOk, href: '#ordres', t: ordresOk ? 'Ordres validés' : S.ordersDirty ? 'Ordres modifiés : à valider' : 'Passer et valider tes ordres', s: ordresOk ? 'modifiables jusqu’à 20:00' : 'sans ordres validés, ce tour ne compte pas pour le classement' });
   if (st.enquete) items.push({ ok: nbDem >= 1 || (d.accusation !== null && d.accusation !== undefined), href: '#enquete', t: `Enquête : ${nbDem} démarche${nbDem > 1 ? 's' : ''} sur 2`, s: (st.traques || []).length ? 'une traque est en cours !' : 'constatations, vérifications, partage, accusation' });
-  items.push({ ok: faites >= 3, href: '#quete', t: `Quêtes : ${faites} sur 3`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
+  items.push({ ok: faites >= 3, href: '#quete', t: `Énigmes : ${faites} sur 3`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
   const fipa = (st.fipas || []).filter((f) => (f.demandeur === z.uid && f.etape === 'demande' && f.tourDecision === st.turn) || (f.partenaire === z.uid && f.etape === 'invite' && f.tourReponse === st.turn) || (f.etape === 'accepte' && f.tourJ === st.turn && (f.demandeur === z.uid || f.partenaire === z.uid)));
   if (fipa.length) items.push({ ok: !!(d.fipa || d.fipaReponse || d.fipaChoix), href: '#hp-fipa', t: 'FIPA : une décision t’attend', s: 'voir la carte FIPA ci-dessous' });
   if (st.conseil && st.conseil.tour === st.turn) items.push({ ok: Object.keys(d.votes || {}).length > 0, href: '#diplomatie', t: 'Conseil de police : voter', s: 'une voix par zone, résultat à 20:00' });
@@ -170,7 +170,7 @@ export function renderHP() {
 
     <a href="#quete" class="card amber" style="flex-direction:row;align-items:center;gap:12px">
       <span style="width:42px;height:42px;flex-shrink:0;border-radius:12px;background:var(--amber);color:var(--amber-ink);display:flex;align-items:center;justify-content:center">${icon('quete', 22)}</span>
-      <span class="col grow" style="gap:2px"><span class="kicker">Quêtes du jour</span>
+      <span class="col grow" style="gap:2px"><span class="kicker">Énigmes du jour</span>
         <span style="font-size:16px;font-weight:600">${S.quests ? S.quests.map((x) => esc(QUEST_LABELS[x.type])).join(' · ') : '3 énigmes'}</span>
         <span class="small" style="color:var(--amber-soft)">${faites ? `${faites} sur 3 faite${faites > 1 ? 's' : ''} · ${reussies} réussie${reussies > 1 ? 's' : ''}${reussies < 2 && faites < 3 ? ` · encore ${2 - reussies} pour le bonus` : reussies >= 2 ? ' · bonus débloqué' : ''}` : '3 énigmes · bonus dès 2 bonnes réponses'}</span></span>
       ${icon('chevron', 20)}
@@ -195,7 +195,7 @@ export function renderHP() {
       ${S.backend.mode === 'demo' ? '<button class="btn outline block" data-action="demo-next">Démo : passer au tour suivant</button>' : ''}
     </section>
     ${z.toursJoues < 2 && !premiersPasVus() ? '<a class="list-row" href="#guide-debut" style="border-color:var(--amber-line)"><span class="bullet" style="background:var(--amber)"></span><span class="col grow" style="gap:1px"><span style="font-weight:600">Nouveau ? Lis les « Premiers pas »</span><span class="small muted">2 minutes pour comprendre ta journée de chef de zone</span></span></a>' : ''}
-  </main>${tabbar('hp', { questBadge: !questDone, radioBadge: S.radio.length > S.radioSeen })}`;
+  </main>${tabbar('hp', { questBadge: !questDone })}`;
 }
 
 function enqueteCarte(st, z) {

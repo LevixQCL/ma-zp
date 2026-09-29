@@ -5,6 +5,7 @@ import { territoires, W, H } from './ville.js';
 import { hashString } from '../engine/rng.js';
 import { fiabilite } from '../engine/fipa.js';
 import { ongletsRadio } from './diplomatie.js';
+import { marquerRadioLue } from './prive.js';
 import { GRADES, gradeFor } from '../engine/constants.js';
 import { blasonSvg, insigne } from './blasons.js';
 const gradeIdx = (ps) => GRADES.indexOf(gradeFor(ps));
@@ -113,6 +114,7 @@ export function renderRadio() {
     return z ? { nom: `${z.nom}${pseudoDe(uid) ? ` · ${pseudoDe(uid)}` : ''}`, code: z.code, couleur: z.couleur } : { nom: 'Ancienne zone', code: '', couleur: '#9FB0C0' };
   };
   const msgs = S.radio.slice(-50);
+  marquerRadioLue();
   return `<main class="screen">
     ${ongletsRadio('radio')}
     <header class="col" style="gap:3px"><h1 class="big">Radio Delta</h1><p class="sub">Canal public de tout le district. Négociez, chambrez, mais restez corrects.</p></header>
