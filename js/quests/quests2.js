@@ -34,8 +34,8 @@ const VOYELLES = new Set(['A', 'E', 'Y']);
 const TEMOINS_PLAQUE = ['Le pompiste', 'Une passante', 'Le chauffeur de bus', 'La caméra du carrefour', 'Un cycliste', 'La commerçante d’en face', 'Le gardien du parking', 'Un livreur'];
 
 function plaque(rng, diff) {
-  const nCand = diff <= 1 ? 5 : diff <= 3 ? 7 : 9;
-  const besoin = diff <= 1 ? 2 : diff <= 3 ? 2 : 3;
+  const nCand = diff <= 1 ? 5 : diff <= 3 ? 7 : diff >= 6 ? 12 : 9;
+  const besoin = diff <= 1 ? 2 : diff <= 3 ? 2 : diff >= 6 ? 4 : 3;
   for (let essai = 0; essai < 400; essai++) {
     const fab = () => ({ d: rng.int(1, 2), l: [rng.pick(LETTRES), rng.pick(LETTRES), rng.pick(LETTRES)], c: [rng.int(0, 9), rng.int(0, 9), rng.int(0, 9)] });
     const txt = (p) => `${p.d}-${p.l.join('')}-${p.c.join('')}`;
@@ -145,14 +145,14 @@ function photoSvg(places, cols, miroir, heure) {
 
 function photos(rng, diff) {
   const cols = diff <= 2 ? 3 : 4;
-  const n = diff <= 1 ? 6 : diff <= 3 ? 8 : 12;
+  const n = diff <= 1 ? 6 : diff <= 3 ? 8 : diff >= 6 ? 16 : 12;
   const miroir = diff >= 4;
   const types = Object.keys(TYPES_AUTO);
   const places = Array.from({ length: n }, () => (rng.chance(0.15) ? null : { type: rng.pick(types), col: rng.int(0, COULEURS_AUTO.length - 1), barres: rng.chance(0.25) }));
   const apres = places.map((p) => (p ? { ...p } : null));
   const i = rng.int(0, n - 1);
   let quoi;
-  const modes = diff <= 1 ? ['part', 'arrive'] : diff <= 3 ? ['part', 'arrive', 'couleur'] : ['couleur', 'type', 'barres'];
+  const modes = diff <= 1 ? ['part', 'arrive'] : diff <= 3 ? ['part', 'arrive', 'couleur'] : diff >= 6 ? ['type', 'barres'] : ['couleur', 'type', 'barres'];
   let mode = rng.pick(modes);
   if (!places[i] && mode !== 'arrive') mode = 'arrive';
   if (places[i] && mode === 'arrive') mode = 'part';
@@ -185,7 +185,7 @@ const NOM_DIR = ['le nord', 'l’est', 'le sud', 'l’ouest'];
 
 function filature(rng, diff) {
   const N = 5;
-  const nMoves = diff <= 1 ? 3 : diff <= 2 ? 4 : diff <= 3 ? 5 : diff <= 4 ? 6 : 7;
+  const nMoves = diff <= 1 ? 3 : diff <= 2 ? 4 : diff <= 3 ? 5 : diff <= 4 ? 6 : diff <= 5 ? 7 : 9;
   for (let essai = 0; essai < 500; essai++) {
     let x = rng.int(0, N - 1), y = rng.int(0, N - 1), d = rng.int(0, 3);
     const start = { x, y, d };
@@ -216,7 +216,7 @@ function filature(rng, diff) {
     const cles = new Set([`${x},${y}`, `${start.x},${start.y}`]);
     const lieux = [{ x, y }];
     if (pos(faux.x, faux.y) && !cles.has(`${faux.x},${faux.y}`)) { lieux.push(faux); cles.add(`${faux.x},${faux.y}`); }
-    const nLieux = diff <= 2 ? 5 : 7;
+    const nLieux = diff <= 2 ? 5 : diff >= 6 ? 9 : 7;
     for (let g = 0; lieux.length < nLieux && g < 100; g++) {
       const p = { x: rng.int(0, N - 1), y: rng.int(0, N - 1) };
       if (!cles.has(`${p.x},${p.y}`)) { cles.add(`${p.x},${p.y}`); lieux.push(p); }
@@ -260,8 +260,8 @@ function filature(rng, diff) {
 const OBJETS = ['la montre', 'le collier', 'la bague', 'le tableau', 'l’ordinateur', 'la statuette', 'le vélo électrique', 'les boucles d’oreilles'];
 
 function butin(rng, diff) {
-  const n = diff <= 2 ? 3 : 4;
-  for (let essai = 0; essai < 500; essai++) {
+  const n = diff <= 2 ? 3 : diff >= 6 ? 5 : 4;
+  for (let essai = 0; essai < 800; essai++) {
     const objs = rng.shuffle(OBJETS).slice(0, n);
     const v = objs.map(() => 50 * rng.int(2, 40));
     if (new Set(v).size < n) continue;
@@ -322,8 +322,8 @@ const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 const ARRETS = ['Gare du Delta', 'Place des Martyrs', 'Les Casernes', 'Champ de Foire', 'Écluse', 'Quartier Stade', 'Les Viviers', 'Porte Sud'];
 
 function horaires(rng, diff) {
-  const nArrets = diff <= 2 ? 4 : 5;
-  const nGens = diff <= 1 ? 3 : diff <= 3 ? 4 : 5;
+  const nArrets = diff <= 2 ? 4 : diff >= 6 ? 7 : 5;
+  const nGens = diff <= 1 ? 3 : diff <= 3 ? 4 : diff >= 6 ? 6 : 5;
   for (let essai = 0; essai < 300; essai++) {
     const arrets = rng.shuffle(ARRETS).slice(0, nArrets);
     const trajets = arrets.slice(1).map(() => rng.int(3, 9)); // minutes entre deux arrêts
@@ -344,13 +344,13 @@ function horaires(rng, diff) {
       if (g === menteur) {
         // Deux façons de mentir : un bus qui ne passe pas à cette heure-là, ou une arrivée trop tôt.
         if (rng.chance(0.5)) {
-          let faux = monte + rng.pick([-4, -3, 3, 4]);
+          let faux = monte + rng.pick(diff >= 6 ? [-2, -1, 1, 2] : [-4, -3, 3, 4]);
           // Il ne faut pas tomber par hasard sur un autre passage réel.
           if (departs.some((d0) => d0 + cumul[a] === faux)) { bon = false; break; }
           texteMonte = hm(faux);
           raison = `aucun bus ne passe à ${arrets[a]} à ${hm(faux)} (passages à ${departs.map((d0) => hm(d0 + cumul[a])).slice(0, 4).join(', ')}…)`;
         } else {
-          arrivee = descend + marche - rng.int(3, 6);
+          arrivee = descend + marche - (diff >= 6 ? rng.int(1, 2) : rng.int(3, 6));
           raison = `le bus de ${hm(monte)} n’arrive à ${arrets[b]} qu’à ${hm(descend)}${marche ? `, plus ${marche} minutes à pied : au plus tôt ${hm(descend + marche)}` : ''}, pas à ${hm(arrivee)}`;
         }
       }
@@ -393,7 +393,7 @@ function ecritureSvg(texte, f, signature) {
 }
 
 function ecriture(rng, diff) {
-  const n = diff <= 1 ? 3 : diff <= 3 ? 4 : 5;
+  const n = diff <= 1 ? 3 : diff <= 3 ? 4 : diff >= 6 ? 6 : 5;
   const stylo = diff >= 4; // l'auteur a changé de stylo : l'encre ne compte pas
   const traits = ['pente', 'taille', 'espace', 'souligne', 'encre'];
   const valeurs = { pente: 3, taille: 2, espace: 2, souligne: 2, encre: 2 };

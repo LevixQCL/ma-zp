@@ -100,7 +100,7 @@ service cloud.firestore {
           && !afterDeadline(gid);
         allow create: if member(gid)
           && request.resource.data.uid == request.auth.uid
-          && request.resource.data.slot in [0, 1, 2]
+          && request.resource.data.slot in [0, 1, 2, 3]
           && id == string(request.resource.data.season) + '_' + string(request.resource.data.turn) + '_' + request.auth.uid + '_' + string(request.resource.data.slot)
           && currentTurn(gid, request.resource.data.season, request.resource.data.turn)
           && !afterDeadline(gid);

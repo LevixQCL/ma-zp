@@ -69,8 +69,10 @@ function classementEnigmes(me) {
   const res = S.questStats;
   if (!res) return `<section class="card"><h2 class="card-title">Esprit vif · énigmes du jour</h2><p class="small muted" style="margin:0">${S.questStatsErreur ? 'Classement indisponible pour le moment.' : 'Chargement…'}</p></section>`;
   const par = {};
+  const noirs = {};
   for (const r of res) {
     if (!S.state.zones[r.uid] || (r.statut !== 'ok' && r.statut !== 'rate')) continue;
+    if (r.slot === 3) { const y = (noirs[r.uid] ||= { ok: 0, n: 0 }); y.n++; if (r.statut === 'ok') y.ok++; continue; }
     const x = (par[r.uid] ||= { ok: 0, n: 0, saison: 0, saisonN: 0 });
     x.n++; if (r.statut === 'ok') x.ok++;
     if (r.season === S.state.season) { x.saisonN++; if (r.statut === 'ok') x.saison++; }
@@ -79,10 +81,10 @@ function classementEnigmes(me) {
     .sort((a, b) => (b.classe - a.classe) || (b.pct - a.pct) || (b.ok - a.ok));
   let rang = 0;
   return `<section class="card"><h2 class="card-title">Esprit vif · énigmes du jour</h2>
-    ${lignes.length ? `<table class="rank"><thead><tr><th>#</th><th>Zone</th><th class="num">Réussies</th><th class="num">Réussite</th></tr></thead><tbody>
-      ${lignes.map((l) => `<tr class="${l.z.uid === me.uid ? 'me' : ''}"><td>${l.classe ? ++rang : '–'}</td><td>${zoneName(l.z)}${S.players && S.players[l.z.uid] && S.players[l.z.uid].pseudo ? `<br><span class="tiny muted">${esc(S.players[l.z.uid].pseudo)}</span>` : ''}</td><td class="num">${l.ok}/${l.n}</td><td class="num"><strong>${Math.round(l.pct)} %</strong>${l.saisonN && l.saisonN !== l.n ? `<br><span class="tiny muted">saison : ${Math.round((100 * l.saison) / l.saisonN)} %</span>` : ''}</td></tr>`).join('')}
+    ${lignes.length ? `<table class="rank"><thead><tr><th>#</th><th>Zone</th><th class="num">Réussies</th><th class="num">Réussite</th><th class="num" title="Dossiers noirs résolus">Noirs</th></tr></thead><tbody>
+      ${lignes.map((l) => `<tr class="${l.z.uid === me.uid ? 'me' : ''}"><td>${l.classe ? ++rang : '–'}</td><td>${zoneName(l.z)}${S.players && S.players[l.z.uid] && S.players[l.z.uid].pseudo ? `<br><span class="tiny muted">${esc(S.players[l.z.uid].pseudo)}</span>` : ''}</td><td class="num">${l.ok}/${l.n}</td><td class="num"><strong>${Math.round(l.pct)} %</strong>${l.saisonN && l.saisonN !== l.n ? `<br><span class="tiny muted">saison : ${Math.round((100 * l.saison) / l.saisonN)} %</span>` : ''}</td><td class="num">${noirs[l.z.uid] ? `${noirs[l.z.uid].ok}/${noirs[l.z.uid].n}` : '–'}</td></tr>`).join('')}
     </tbody></table>` : '<p class="small muted" style="margin:0">Personne n’a encore répondu à une énigme.</p>'}
-    <p class="small muted" style="margin:0">Toutes les énigmes répondues depuis le début de la partie, y compris aujourd’hui. Classé à partir de ${MIN_ENIGMES} réponses ; les énigmes laissées sans réponse ne comptent pas.</p></section>`;
+    <p class="small muted" style="margin:0">Toutes les énigmes répondues depuis le début de la partie, y compris aujourd’hui. Classé à partir de ${MIN_ENIGMES} réponses ; les énigmes laissées sans réponse ne comptent pas. « Noirs » : dossiers noirs résolus (hors pourcentage). Le plus fort de la saison reçoit le titre « Cerveau du district ».</p></section>`;
 }
 
 const ONGLETS_CLASSEMENT = [['ipz', 'IPZ'], ['limier', 'Enquête'], ['enigmes', 'Énigmes'], ['grade', 'Grades'], ['palmares', 'Palmarès']];

@@ -1,5 +1,6 @@
 // Écran de l’énigme du jour.
 import { S, esc, icon, tabbar } from './common.js';
+import { QUEST_TYPES, QUEST_LABELS } from '../quests/quests.js';
 import { SERVICES, SERVICE_LABELS } from '../engine/constants.js';
 
 /** Le joueur a-t-il déjà changé une énigme aujourd'hui ? */
@@ -40,11 +41,29 @@ function renderRoue(q) {
   </section>`;
 }
 
+/** Barre de l'entraînement : type, difficulté, statistiques personnelles. */
+function entrainementBarre() {
+  let st = {};
+  try { st = JSON.parse(localStorage.getItem('mazp-entrainement') || '{}'); } catch (e) { /* rien */ }
+  const t = S.trainType || 'quiment', d = S.trainDiff || 3;
+  const x = st[t];
+  return `<section class="card tight" aria-label="Réglages de l’entraînement" style="gap:8px">
+    <label class="field" style="margin:0">Type d’énigme
+      <select class="text" data-change="train-type" style="min-height:44px;font-size:14px">${QUEST_TYPES.map((k) => `<option value="${k}" ${k === t ? 'selected' : ''}>${esc(QUEST_LABELS[k])}</option>`).join('')}</select></label>
+    <div class="col" style="gap:4px"><span class="small" style="font-weight:600">Difficulté</span>
+      <div class="segn" style="grid-template-columns:repeat(6,minmax(0,1fr))">${[1, 2, 3, 4, 5, 6].map((n) => `<button type="button" aria-selected="${n === d}" data-action="train-diff" data-v="${n}">${n === 6 ? 'HC' : n}</button>`).join('')}</div></div>
+    <span class="tiny muted">${x ? `Ton entraînement en ${esc(QUEST_LABELS[t])} : ${x.ok} réussie${x.ok > 1 ? 's' : ''} sur ${x.n}.` : 'Rien ne compte ici : ni classement, ni moral, ni PS.'} « HC » = niveau hardcore, celui du dossier noir.</span>
+  </section>`;
+}
+
 export function renderQuete() {
-  const i = Math.min(S.questIdx || 0, 2);
-  const q = S.quests[i];
+  const train = S.questMode === 'train';
+  const i = Math.min(S.questIdx || 0, 3);
+  const noir = !train && i === 3;
+  const q = train ? S.train : noir ? S.noir : S.quests[i];
   const results = S.questResults || [];
-  const r = results[i] || { statut: null, tentatives: 0 };
+  const r = train ? (S.trainRes ? { statut: S.trainRes.ok ? 'ok' : 'rate', reponse: S.trainRes.reponse } : { statut: null })
+    : noir ? (S.noirResult || { statut: null, tentatives: 0 }) : (results[i] || { statut: null, tentatives: 0 });
   const fini = r.statut === 'ok' || r.statut === 'rate';
   const picked = S.questPick;
   const ok = results.filter((x) => x && x.statut === 'ok').length;
@@ -56,7 +75,7 @@ export function renderQuete() {
         <span ${q.mono ? 'class="mono" style="letter-spacing:1px"' : ''}>${esc(c.label)}</span>${c.sub ? `<span class="s">${esc(c.sub)}</span>` : ''}</button>`).join('')}
     </div>` : '';
 
-  const bonusCard = ok >= 2 ? `<section class="card green">
+  const bonusCard = !train && !noir && ok >= 2 ? `<section class="card green">
       ${bonusPris ? `<p class="small" style="margin:0;font-weight:600">Bonus du jour : ${bonusPris.bonus === 'moral' ? '+3 de moral' : bonusPris.bonus === 'budget' ? '+2 k€' : bonusPris.bonus === 'indice' ? '+1 indice pour l’enquête' : `+10 % de capacité en ${SERVICE_LABELS[bonusPris.service]}`}. Il sera appliqué à 20:00.</p>`
         : `<span class="ok" style="font-weight:700">${ok} bonnes réponses : choisis ton bonus du jour</span>
         <div class="choices" style="grid-template-columns:repeat(3,minmax(0,1fr))">
@@ -68,16 +87,21 @@ export function renderQuete() {
           <select class="text" data-change="quest-capacite"><option value="">Choisir un service…</option>${SERVICES.map((s) => `<option value="${s}">${SERVICE_LABELS[s]}</option>`).join('')}</select></label>`}
     </section>` : '';
 
-  return `<main class="screen">
-    <div class="seg" role="tablist" aria-label="Énigmes du jour">${S.quests.map((x, k) => `
-      <button type="button" role="tab" data-action="quest-tab" data-i="${k}" aria-pressed="${k === i}" aria-selected="${k === i}"><span class="t">Énigme ${k + 1}${icone(results[k])}</span><span class="d">${esc(x.typeLabel)}</span></button>`).join('')}</div>
+  const modes = `<div class="seg2" role="tablist" aria-label="Mode"><button type="button" role="tab" aria-selected="${!train}" data-action="quest-mode" data-v="jour">Énigmes du jour</button><button type="button" role="tab" aria-selected="${train}" data-action="quest-mode" data-v="train">Entraînement</button></div>`;
+  const onglets = train ? entrainementBarre() : `<div class="seg quatre" role="tablist" aria-label="Énigmes du jour">${S.quests.map((x, k) => `
+      <button type="button" role="tab" data-action="quest-tab" data-i="${k}" aria-pressed="${k === i}" aria-selected="${k === i}"><span class="t">Énigme ${k + 1}${icone(results[k])}</span><span class="d">${esc(x.typeLabel)}</span></button>`).join('')}
+      <button type="button" role="tab" class="noir" data-action="quest-tab" data-i="3" aria-pressed="${noir}" aria-selected="${noir}"><span class="t">Dossier noir${icone(S.noirResult)}</span><span class="d">facultatif</span></button></div>`;
+  return `<main class="screen ${noir ? 'mode-noir' : ''}">
+    ${modes}
+    ${onglets}
     ${bonusCard}
     <header class="between" style="align-items:flex-start">
-      <div class="col" style="gap:3px"><span class="kicker">Énigme ${i + 1} sur 3</span><h1 class="big">${esc(q.typeLabel)}</h1></div>
-      <div class="col" style="gap:4px;align-items:flex-end"><span class="pill">Difficulté ${q.difficulte}/5</span>
-        <span class="tiny muted">${fini ? 'terminée' : 'une seule réponse'}</span></div>
+      <div class="col" style="gap:3px"><span class="kicker" ${noir ? 'style="color:#E0625A"' : ''}>${train ? 'Entraînement · ne compte pas' : noir ? 'Dossier noir · niveau hardcore' : `Énigme ${i + 1} sur 3`}</span><h1 class="big">${esc(q.typeLabel)}</h1></div>
+      <div class="col" style="gap:4px;align-items:flex-end"><span class="pill" ${q.difficulte >= 6 ? 'style="background:#2A1414;border-color:#6B2E2A;color:#F59A92"' : ''}>${q.difficulte >= 6 ? 'Hardcore' : `Difficulté ${q.difficulte}/5`}</span>
+        <span class="tiny muted">${fini ? 'terminée' : train ? 'correction immédiate' : 'une seule réponse'}</span></div>
     </header>
-    ${!fini && !rerollUtilise() ? `<button type="button" class="btn small ghost block" data-action="quest-reroll">${icon('refresh', 16)} Pas ton style ? Changer cette énigme (une fois par jour)</button>` : ''}
+    ${noir && !fini ? '<p class="small" style="margin:0;color:var(--red-soft)">Le dossier que personne n’a su boucler. Pas de coup de pouce, une seule réponse. Une erreur ne coûte rien ; une réussite rapporte des PS et compte pour le titre « Cerveau du district ».</p>' : ''}
+    ${!train && !noir && !fini && !rerollUtilise() ? `<button type="button" class="btn small ghost block" data-action="quest-reroll">${icon('refresh', 16)} Pas ton style ? Changer cette énigme (une fois par jour)</button>` : ''}
     ${q.variante ? '<p class="tiny muted" style="margin:0">Énigme changée : c’est ton changement du jour.</p>' : ''}
     <p style="margin:0;font-size:14px;line-height:1.45;color:var(--text2)">${esc(q.contexte)}</p>
     ${q.figures ? `<section class="figs ${q.type === 'photos' ? 'deux' : ''}" aria-label="Documents">${q.figures.map((f) => `<figure class="fig"><figcaption>${esc(f.titre)}</figcaption>${f.svg}</figure>`).join('')}</section>` : ''}
@@ -97,7 +121,7 @@ export function renderQuete() {
       ${q.consigne ? `<p class="small muted" style="margin:0">${esc(q.consigne)}</p>` : ''}
       ${choixHtml}
       ${q.mode === 'texte' || q.mode === 'exact' ? `<form data-form="quest-text" class="row"><label class="sr" for="qtext">Ta réponse</label><input id="qtext" class="text grow ${q.mode === 'exact' ? 'mono' : ''}" name="reponse" autocomplete="off" ${q.inputmode ? `inputmode="${q.inputmode}"` : 'autocapitalize="characters"'} placeholder="${esc(q.placeholder || 'Ta réponse')}"><button class="btn primary" type="submit">Valider</button></form>` : ''}
-      <p class="tiny muted" style="margin:0">Une seule réponse possible : une erreur est définitive (−1 de moral).</p>
+      <p class="tiny muted" style="margin:0">${train ? 'Entraînement : la réponse est corrigée tout de suite, sans effet sur ta zone.' : noir ? 'Une seule réponse, sans pénalité en cas d’erreur.' : 'Une seule réponse possible : une erreur est définitive (−1 de moral).'}</p>
       ${q.mode !== 'texte' && q.mode !== 'exact' ? `<button class="btn primary block" data-action="quest-submit" ${picked == null ? 'disabled' : ''}>Valider ma réponse</button>` : ''}
     </section>` : ''}
 
@@ -105,9 +129,10 @@ export function renderQuete() {
       <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p></section>` : ''}
     ${r.statut === 'rate' ? `<section class="card"><span style="font-size:15px;font-weight:700">Mauvaise réponse${r.reponse ? ` : ${esc(r.reponse)}` : ''}</span>
       <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p>
-      <p class="tiny muted" style="margin:0">−1 de moral. De nouvelles énigmes demain après 20:00.</p></section>` : ''}
-    ${fini && results.some((x) => !x || !x.statut) ? `<button class="btn outline block" data-action="quest-tab" data-i="${results.findIndex((x) => !x || !x.statut)}">Énigme suivante</button>` : ''}
-    <p class="tiny muted" style="margin:0">Chaque joueur reçoit ses propres variantes : on peut en discuter, mais la réponse d’un collègue ne marchera pas chez toi. 2 bonnes réponses sur 3 débloquent un bonus.</p>
+      <p class="tiny muted" style="margin:0">${train ? 'Aucune conséquence : c’était pour s’entraîner.' : noir ? 'Aucune conséquence. Un nouveau dossier noir demain après 20:00.' : '−1 de moral. De nouvelles énigmes demain après 20:00.'}</p></section>` : ''}
+    ${train && fini ? '<button class="btn primary block" data-action="train-new">Une autre énigme</button>' : ''}
+    ${!train && fini && results.some((x) => !x || !x.statut) ? `<button class="btn outline block" data-action="quest-tab" data-i="${results.findIndex((x) => !x || !x.statut)}">Énigme suivante</button>` : ''}
+    ${train ? '' : `<p class="tiny muted" style="margin:0">Chaque joueur reçoit ses propres variantes : on peut en discuter, mais la réponse d’un collègue ne marchera pas chez toi. 2 bonnes réponses sur 3 débloquent un bonus.</p>`}
     <a class="small" href="#guide-quetes" style="text-align:center">Règles des énigmes</a>
   </main>${tabbar('quete', { questBadge: false })}`;
 }
