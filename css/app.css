@@ -539,3 +539,13 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .ipz-table th:not(:first-child), .ipz-table td:not(:first-child) { text-align: right; }
 
 .surligne-bloc { animation: surligne 1.8s ease-out; }
+
+details.journal { border-top: 1px solid var(--line); }
+details.journal > summary { list-style: none; cursor: pointer; display: flex; justify-content: flex-start; align-items: center; gap: 8px; min-height: 40px; }
+details.journal > summary::-webkit-details-marker { display: none; }
+details.journal > summary::after { content: '›'; color: var(--muted); margin-left: 6px; transition: transform .15s; }
+details.journal[open] > summary::after { transform: rotate(90deg); }
+details.journal .j-l { padding: 3px 0 3px 10px; gap: 10px; }
+details.journal > summary > span:last-of-type { margin-left: auto; }
+details.journal { padding: 0 !important; margin: 0 !important; background: none !important; border-radius: 0 !important; box-shadow: none !important; }
+details.journal > summary { padding: 6px 2px !important; min-height: 38px; }
