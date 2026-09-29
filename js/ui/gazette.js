@@ -138,6 +138,17 @@ export function renderClassement() {
   </main>${tabbar('hp')}`;
 }
 
+/** « vu il y a 12 min », « vu hier à 21:04 »… */
+function vuTexte(t) {
+  if (!t) return 'jamais vu depuis la mise à jour';
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 6) return 'en ligne';
+  if (m < 60) return `vu il y a ${m} min`;
+  if (m < 24 * 60) return `vu il y a ${Math.round(m / 60)} h (${formatHeureBe(t)})`;
+  return `vu le ${formatDateBe(t)} à ${formatHeureBe(t)}`;
+}
+const vuClasse = (t) => (!t ? 'muted' : Date.now() - t < 6 * 60000 ? 'ok' : Date.now() - t > 48 * 3600000 ? 'bad' : 'muted');
+
 export function renderAdmin() {
   // (note de mise à jour : voir ui/nouveautes.js)
   const st = S.state;
@@ -162,9 +173,10 @@ export function renderAdmin() {
     <section class="card"><h2 class="card-title">Résolution</h2>
       <p class="small muted" style="margin:0">Force la résolution du tour en cours maintenant (utile pour tester). Les joueurs ne pourront plus modifier leurs ordres de ce tour.</p>
       <button class="btn block" data-action="admin-force">Résoudre le tour maintenant</button></section>
-    <section class="card"><h2 class="card-title">Joueurs (${zones.length})</h2>
-      ${zones.map((z) => `<div class="between"><span class="small">${zoneName(z)} <span class="tiny muted">· ${z.toursJoues} tours joués${z.toursSansOrdres ? ` · ${z.toursSansOrdres} sans ordres` : ''}</span></span>
-        ${z.uid !== S.user.uid ? `<button class="btn small danger" data-action="admin-remove" data-uid="${esc(z.uid)}">Retirer</button>` : ''}</div>`).join('')}
+    <section class="card"><div class="between"><h2 class="card-title">Joueurs (${zones.length})</h2><button class="btn small ghost" data-action="admin-vus">Actualiser</button></div>
+      ${zones.slice().sort((a, b) => (((S.players || {})[b.uid] || {}).vuLe || 0) - (((S.players || {})[a.uid] || {}).vuLe || 0)).map((z) => { const p = (S.players || {})[z.uid] || {}; return `<div class="between" style="gap:8px"><span class="small">${zoneName(z)}${p.pseudo ? ` <span class="muted">(${esc(p.pseudo)})</span>` : ''}<br><span class="tiny ${vuClasse(p.vuLe)}">${vuTexte(p.vuLe)}</span><span class="tiny muted"> · ${z.toursJoues} tours joués${z.toursSansOrdres ? ` · ${z.toursSansOrdres} sans ordres` : ''}</span></span>
+        ${z.uid !== S.user.uid ? `<button class="btn small danger" data-action="admin-remove" data-uid="${esc(z.uid)}">Retirer</button>` : ''}</div>`; }).join('')}
+      <p class="tiny muted" style="margin:0">Dernière connexion : mise à jour quand le joueur a le jeu ouvert (au plus toutes les 5 minutes). « Jamais vu » : pas revenu depuis cette mise à jour.</p>
     </section>
     <section class="card"><h2 class="card-title">Sauvegarde</h2>
       <p class="small muted" style="margin:0">Télécharge une copie de la partie (zones, profils) avant une mise à jour importante. Tu pourras la restaurer si besoin.</p>

@@ -117,6 +117,10 @@ export async function createFirebaseBackend(config) {
       try { snap = await F.getDocs(col('players')); } catch (e) { return {}; }
       const out = {}; snap.forEach((d) => { out[d.id] = d.data(); }); return out;
     },
+    /** Dernière connexion du joueur (pour la page du maître du jeu). */
+    async touchPlayer(uid) {
+      await F.updateDoc(docIn('players', uid), { vuLe: Date.now() });
+    },
     async savePlayer(uid, profile) {
       await F.setDoc(docIn('players', uid), plain({ ...profile, updatedAt: Date.now() }), { merge: true });
     },
