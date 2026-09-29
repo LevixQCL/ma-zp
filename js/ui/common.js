@@ -62,6 +62,7 @@ const PATHS = {
   star: '<path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.6l-6.1 3.2 1.2-6.8-5-4.8 6.9-.9z"/>',
   trophy: '<path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0zM17 5h3a3 3 0 0 1-3 4M7 5H4a3 3 0 0 0 3 4"/>',
   news: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/>',
+  marteau: '<path d="M13.5 3.5l7 7M10.5 6.5l7 7M12 5l-3.5 3.5M19 12l-3.5 3.5M12 12l-8.5 8.5M3 21h9"/>',
 };
 
 export function icon(name, size = 22, extra = '') {

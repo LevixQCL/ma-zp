@@ -1,7 +1,7 @@
 // Relations entre zones : entraide, manœuvres, duels, Conseil de police, péril et faillite.
 import { makeRng } from './rng.js';
-import { GRADES, gradeFor, PS, START } from './constants.js';
-import { agentsDisponibles, clamp, round1, newZone } from './zone.js';
+import { GRADES, gradeFor, PS, START, TUTELLE, REPUTATION } from './constants.js';
+import { agentsDisponibles, clamp, round1, newZone, enDifficulte } from './zone.js';
 
 export const absT = (state, T = state.turn) => (state.season - 1) * 100 + T;
 const nomZone = (z) => `ZP ${z.code} ${z.nom}`;
@@ -36,6 +36,7 @@ export function chanceBase(state, z, T = state.turn) {
 export function cibleImpossible(state, cible, T = state.turn) {
   if (!cible) return 'Zone inconnue';
   if (cible.peril) return 'Zone en péril : on ne s’acharne pas sur un collègue à terre';
+  if (cible.tutelle) return 'Zone sous tutelle : on ne s’acharne pas sur un collègue à terre';
   if ((cible.protegeJusqua || 0) > absT(state, T)) return 'Nouvelle zone, protégée quelques tours';
   return null;
 }
@@ -110,13 +111,13 @@ export function rivalitesPre(state, uids, ord, push, T) {
       z.blesses.push({ n: agents, retour: T + 1 + AIDE.dureePret, motif: 'prêté' });
       c.renforts = [...(c.renforts || []), { n: agents, debut: T + 1, retour: T + 1 + AIDE.dureePret, de: u }];
     }
-    const bonus = c.peril ? 5 : (c.blesses || []).some((b) => b.retour > T && b.motif !== 'prêté') ? 3 : 1;
+    const bonus = enDifficulte(c) ? 5 : (c.blesses || []).some((b) => b.retour > T && b.motif !== 'prêté') ? 3 : 1;
     z.reputation += bonus; z.stats.aides = (z.stats.aides || 0) + 1;
-    if (c.peril) z.stats.sauvetages = (z.stats.sauvetages || 0) + 1;
+    if (enDifficulte(c)) z.stats.sauvetages = (z.stats.sauvetages || 0) + 1;
     const quoi = [budget ? `${String(budget).replace('.', ',')} k€` : '', agents ? `${agents} agent${agents > 1 ? 's' : ''} pour ${AIDE.dureePret} tours` : ''].filter(Boolean).join(' et ');
     z.rapport.push(`Entraide : tu envoies ${quoi} à ${nomZone(c)} (+${bonus} de réputation).`);
     c.rapport.push(`Entraide : ${nomZone(z)} t’envoie ${quoi}.`);
-    if (c.peril || bonus >= 3) push(6, 'Solidarité', `${nomZone(z)} vient en aide à ${nomZone(c)}`, `${quoi.charAt(0).toUpperCase()}${quoi.slice(1)}.`);
+    if (enDifficulte(c) || bonus >= 3) push(6, 'Solidarité', `${nomZone(z)} vient en aide à ${nomZone(c)}`, `${quoi.charAt(0).toUpperCase()}${quoi.slice(1)}.`);
   }
 
   // 2. Manœuvres.
@@ -165,7 +166,10 @@ export function rivalitesPre(state, uids, ord, push, T) {
       default: break;
     }
     const nom = MANOEUVRES[m.type].nom;
-    z.rapport.push(`Manœuvre ${nom.toLowerCase()} contre ${nomZone(c)} : ${ok ? 'réussie' : 'échec'}${detail ? `, ${detail}` : ''} (−${MAN.coutReputation} de réputation).`);
+    // Scandale : une zone bien vue qui se fait prendre la main dans le sac perd davantage.
+    let scandale = '';
+    if (!ok && z.reputation + MAN.coutReputation > REPUTATION.scandale) { z.reputation -= REPUTATION.scandaleMalus; scandale = `, scandale : −${REPUTATION.scandaleMalus} de plus, ta bonne réputation fait parler`; }
+    z.rapport.push(`Manœuvre ${nom.toLowerCase()} contre ${nomZone(c)} : ${ok ? 'réussie' : 'échec'}${detail ? `, ${detail}` : ''} (−${MAN.coutReputation} de réputation${scandale}).`);
     c.rapport.push(`Une zone a tenté un ${nom.toLowerCase()} contre toi : ${ok ? 'réussi' : 'raté'}. La Gazette révélera son nom demain.`);
     push(ok ? 7 : 5, 'Manœuvre', `${nom} ${ok ? 'réussi' : 'raté'} contre ${nomZone(c)}`, 'L’auteur sera révélé demain.');
     state.aReveler.push({ titre: `C’était ${nomZone(z)}`, texte: `${nom} contre ${nomZone(c)}, ${ok ? 'réussi' : 'raté'}.` });
@@ -304,16 +308,35 @@ export function rivalitesPost(state, uids, push, T, nextWeekday, players = {}) {
   }
   state.duels = (state.duels || []).filter((d) => !d.fini);
 
-  // Péril et faillite.
+  // Péril, tutelle et faillite.
   state.toursSansFaillite = (state.toursSansFaillite || 0) + 1;
+  res.tutelles = [];
   for (const u of uids) {
     const z = state.zones[u];
     const raisons = enPeril(z, T);
+    if (z.tutelle) {
+      if (T < z.tutelle.fin) {
+        z.tutelle.raisons = raisons;
+        const n = z.tutelle.fin - T;
+        z.rapport.push(`Sous tutelle : encore ${n} tour${n > 1 ? 's' : ''}.${raisons.length ? ` Toujours en difficulté : ${raisons.join(', ')}.` : ' La zone tient le cap.'}`);
+      } else if (raisons.length) {
+        faillite(state, z, push, T, players);
+        res.faillites.push(nomZone(z));
+      } else {
+        z.tutelle = null;
+        z.rapport.push('Fin de la tutelle : ta zone a retrouvé son autonomie. Bravo.');
+        push(8, 'Redressement', `${nomZone(z)} sort de tutelle`, 'La zone a tenu bon et retrouve son autonomie.');
+      }
+      continue;
+    }
     if (z.peril) {
       if (!raisons.length) {
         z.rapport.push('Zone sortie de péril : bravo, la barre est redressée.');
         push(7, 'Redressement', `${nomZone(z)} sort de la zone rouge`, 'Le chef a redressé la barre à temps.');
         z.peril = null;
+      } else if (T >= z.peril.fin && !z.tutelleSaison) {
+        mettreSousTutelle(z, push, T, raisons);
+        res.tutelles.push(nomZone(z));
       } else if (T >= z.peril.fin) {
         faillite(state, z, push, T, players);
         res.faillites.push(nomZone(z));
@@ -324,7 +347,8 @@ export function rivalitesPost(state, uids, push, T, nextWeekday, players = {}) {
     } else if (raisons.length) {
       z.peril = { debut: T, fin: T + PERIL.tours, raisons };
       res.perils.push(nomZone(z));
-      z.rapport.push(`Alerte : ta zone est en péril (${raisons.join(', ')}). Tu as ${PERIL.tours} tours pour redresser la barre, sinon c’est la faillite.`);
+      const suite = z.tutelleSaison ? 'sinon c’est la faillite (la tutelle a déjà servi cette saison)' : 'sinon ta zone passe sous tutelle';
+      z.rapport.push(`Alerte : ta zone est en péril (${raisons.join(', ')}). Tu as ${PERIL.tours} tours pour redresser la barre, ${suite}.`);
       push(12, 'Zone en péril', `${nomZone(z)} au bord de la faillite`, `${raisons.join(', ')}. Les autres zones peuvent l’aider.`);
     }
   }
@@ -336,6 +360,18 @@ export function rivalitesPost(state, uids, push, T, nextWeekday, players = {}) {
     push(3, 'Conseil de police', 'Le Conseil de police se réunit demain', 'Les chefs de zone votent pendant le tour, résultats à 20:00.');
   }
   return res;
+}
+
+/** Dernière chance : la zone passe sous tutelle (une fois par saison). */
+function mettreSousTutelle(z, push, T, raisons) {
+  z.peril = null;
+  z.tutelle = { debut: T + 1, fin: T + TUTELLE.tours, raisons };
+  z.tutelleSaison = true;
+  z.budget += TUTELLE.avance;
+  (z._compta ||= []).push({ k: 'tutelle', l: 'Avance de trésorerie (tutelle)', v: TUTELLE.avance });
+  z.moral = clamp(z.moral + TUTELLE.moral, 0, 100);
+  z.rapport.push(`Tutelle : ta zone n’a pas pu se redresser à temps (${raisons.join(', ')}). Pendant ${TUTELLE.tours} tours, pas de manœuvre, de duel, d’enchère, d’heures sup, d’agents de réserve ni de grande décision (sauf recruter). Avance de ${TUTELLE.avance} k€ et +${TUTELLE.moral} de moral. Si la zone est encore en péril à la fin : faillite.`);
+  push(14, 'Tutelle', `${nomZone(z)} placée sous tutelle`, `Dernière chance avant la faillite : ${TUTELLE.tours} tours pour se redresser, sous contrôle. Les autres zones peuvent l’aider.`);
 }
 
 function faillite(state, z, push, T, players) {

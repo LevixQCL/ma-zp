@@ -18,6 +18,7 @@ import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations, agentsHorsServices } from './ui/ordres.js';
 import { renderQuete } from './ui/quete.js';
 import { renderGuide } from './ui/guide.js';
+import { offreApres } from './ui/encheres.js';
 import { renderDiplomatie, ongletsRadio } from './ui/diplomatie.js';
 import { renderParties } from './ui/parties.js';
 import { renderEnquete, lireCarnet, ecrireCarnet } from './ui/enquete.js';
@@ -297,6 +298,13 @@ async function onClick(e) {
         S.draft.decision = d0 && d0.type === 'agrandir' && d0.batiment === el.dataset.b ? null : { type: 'agrandir', batiment: el.dataset.b };
         S.ordersDirty = true; rerender(); break;
       }
+      case 'offre': {
+        if (!S.state.enchere) break;
+        const n = offreApres(Number(el.dataset.d));
+        S.draft.offre = n ? { id: S.state.enchere.id, montant: n } : null;
+        S.ordersDirty = true; rerender(); break;
+      }
+      case 'offre-retirer': S.draft.offre = null; S.ordersDirty = true; rerender(); break;
       case 'carte-zoom': S.carteZoom = el.dataset.v === '1'; rerender(); break;
       case 'renfort-n': {
         const cible = el.dataset.uid, dd = Number(el.dataset.d);

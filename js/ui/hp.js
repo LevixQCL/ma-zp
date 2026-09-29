@@ -13,6 +13,8 @@ import { PERIL, DUEL_INDICATEURS } from '../engine/rivalites.js';
 import { genererAffaire, dossierDe, pointsDecouverte, ENQ } from '../engine/enquete.js';
 import { aideBtn } from './aide.js';
 import { logistiqueHtml } from './logistique.js';
+import { encheresHtml } from './encheres.js';
+import { TUTELLE } from '../engine/constants.js';
 import { equipeHtml } from './equipe.js';
 import { fraisFixes } from '../engine/zone.js';
 const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations().amendes; } catch (e) { /* pas de brouillon */ } return fraisFixes(z, S.state, { amendes, rythme: (S.draft && S.draft.rythme) || 'normal' }).total; };
@@ -113,8 +115,8 @@ export function renderHP() {
   const invit = (st.duels || []).find((d) => d.b === z.uid && d.etape === 'propose' && d.tourReponse === T);
   if (invit) alertes.unshift({ cls: 'amber', titre: `${esc(st.zones[invit.a]?.nom || 'Une zone')} te défie en duel`, texte: `${esc(DUEL_INDICATEURS[invit.ind].nom.toLowerCase())} · réponds avant 20:00`, href: '#diplomatie' });
   for (const a of appelsRenfort()) if (!renfortPrevu(a.uid)) alertes.unshift({ cls: 'amber', titre: `${esc(a.zone.nom)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » · prête des agents contre de la réputation`, href: '#prive' });
-  const perils = Object.values(st.zones).filter((x) => x.peril && x.uid !== z.uid);
-  if (perils.length) alertes.push({ cls: 'red', titre: `${perils.map((x) => esc(x.nom)).join(', ')} en péril`, texte: 'un coup de main rapporte +5 de réputation', href: '#diplomatie' });
+  const perils = Object.values(st.zones).filter((x) => (x.peril || x.tutelle) && x.uid !== z.uid);
+  if (perils.length) alertes.push({ cls: 'red', titre: `${perils.map((x) => esc(x.nom)).join(', ')} en difficulté`, texte: 'un coup de main rapporte +5 de réputation', href: '#diplomatie' });
   const op = operationActive(z, T);
   if (op) alertes.unshift({ cls: 'red', titre: `Opération d\u2019envergure : ${esc(op.titre)}`, texte: `dispositif à régler dans tes ordres${op.duree > 1 ? ` · jour ${T - op.tourDebut + 1} sur ${op.duree}` : ''}`, href: '#ordres' });
   const dotColor = { red: 'var(--red)', amber: 'var(--amber)', blue: 'var(--blue)' };
@@ -164,15 +166,20 @@ export function renderHP() {
       </div>
     </section>
     ${logistiqueHtml()}
+    ${encheresHtml()}
     ${equipeHtml()}
 
     ${nuitHtml(z)}
 
 
-    ${z.peril ? `<section class="card red" aria-label="Zone en péril"><span class="kicker" style="color:var(--red-soft)">Zone en péril · faillite dans ${z.peril.fin - T + 1} résolution${z.peril.fin - T + 1 > 1 ? 's' : ''}</span>
+    ${z.tutelle ? `<section class="card red" aria-label="Zone sous tutelle"><span class="kicker" style="color:var(--red-soft)">Zone sous tutelle · verdict dans ${z.tutelle.fin - T + 1} résolution${z.tutelle.fin - T + 1 > 1 ? 's' : ''}</span>
+      <span style="font-weight:700">${(z.tutelle.raisons || []).length ? esc(z.tutelle.raisons.join(', ')) : 'La zone tient le cap : continue comme ça'}</span>
+      <span class="small">Dernière chance : si ta zone est encore en péril au tour ${z.tutelle.fin}, c’est la faillite. En attendant : pas de rythme renforcé, d’agents de réserve, de manœuvre, de duel ni d’enchère, et seul le recrutement est permis comme grande décision. Tes collègues peuvent t’aider.</span>
+      <a class="small" href="#guide-faillite">Tutelle et faillite dans le guide</a></section>` : ''}
+    ${z.peril ? `<section class="card red" aria-label="Zone en péril"><span class="kicker" style="color:var(--red-soft)">Zone en péril · ${z.tutelleSaison ? 'faillite' : 'tutelle'} dans ${z.peril.fin - T + 1} résolution${z.peril.fin - T + 1 > 1 ? 's' : ''}</span>
       <span style="font-weight:700">${esc((z.peril.raisons || []).join(', '))}</span>
       <span class="small">Pour t’en sortir : budget au-dessus de ${PERIL.budget} k€, au moins ${PERIL.agents} agents disponibles, moral au-dessus de ${PERIL.moral}. Rythme allégé, prime, moins de dépenses ; tes collègues peuvent t’aider.</span>
-      <a class="small" href="#guide-faillite">Ce qui se passe en cas de faillite</a></section>` : ''}
+      <a class="small" href="#guide-faillite">${z.tutelleSaison ? 'Ce qui se passe en cas de faillite' : `Tutelle (${TUTELLE.tours} tours sous contrôle) puis faillite`}</a></section>` : ''}
     ${situationHtml(z)}
     ${opActive(z, T) ? `<section class="card red" aria-label="Renfort" style="gap:8px"><span class="kicker" style="color:var(--red-soft)">Opération d’envergure · ${esc(opActive(z, T).titre)}</span>${demandeRenfortHtml()}</section>` : ''}
     <div id="hp-fipa">${fipaCards()}</div>

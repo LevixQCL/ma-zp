@@ -3,7 +3,7 @@
 import { S, esc, icon, tabbar } from './common.js';
 import {
   SERVICE_LABELS, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION,
-  INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION } from '../engine/constants.js';
+  INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE } from '../engine/constants.js';
 import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
 import { ENQ, DEMARCHES, POINTS, pointsDecouverte } from '../engine/enquete.js';
 import { PARTAGE, FIPA } from '../engine/fipa.js';
@@ -48,14 +48,22 @@ export function sections() {
         ${table(['Jauge', 'Ce qui la fait monter', 'Ce qui la fait baisser'], [
           ['<strong>Moral</strong> (0 à 100)', 'rythme allégé, prime, salle de sport, succès, bonnes nouvelles', 'rythme renforcé, incidents ratés en série, budget négatif, erreurs aux énigmes, coups durs'],
           ['<strong>Satisfaction</strong> citoyenne', 'incidents traités, Proximité, dossiers élucidés, opérations et FIPA réussies', 'incidents ratés, criminalité au-dessus de 55, vieux dossiers, « chasse aux PV », fiascos'],
-          ['<strong>Réputation</strong> auprès des collègues', 'partager des indices, affaires gagnées à deux, FIPA partagées, arrestations', 'fausses accusations, fiascos'],
-          ['<strong>Budget</strong>', `dotation ${k(ECONOMIE.dotation)} par tour, amendes du Roulage, primes`, `salaires (${k(ECONOMIE.salaire)} par agent), entretien (${k(ECONOMIE.entretienVehicule)} par véhicule), décisions, dépenses, démarches`],
+          ['<strong>Réputation</strong> (collègues et autorités)', 'partager des indices, aider une zone en difficulté, affaires gagnées à deux, FIPA partagées, renforts, arrestations', 'fausses accusations, manœuvres (et scandale), blâme du Conseil, fiascos'],
+          ['<strong>Budget</strong>', `dotation ${k(ECONOMIE.dotation)} par tour, subside communal (${k(SUBSIDE.parAgent)} par agent au-delà de ${SUBSIDE.seuil}), confiance de la commune, amendes du Roulage, primes`, `salaires (${k(ECONOMIE.salaire)} par agent), entretien (${k(ECONOMIE.entretienVehicule)} par véhicule), décisions, dépenses, démarches`],
           ['<strong>Criminalité</strong>', 'elle monte d’elle-même chaque jour', 'Proximité, campagne de prévention'],
           ['<strong>Paperasse</strong>', 'chaque incident traité et chaque nouveau dossier', 'Accueil et administration, sous-traitance, logiciel'],
         ])}
+        <h3>Ce que rapporte la réputation</h3>
+        ${ul([
+          `<strong>Confiance de la commune</strong> : ${k(SUBSIDE.confiance)} par point au-dessus (ou en dessous) de 50, chaque tour. Réputation 80 : +${String(30 * SUBSIDE.confiance).replace('.', ',')} k€ ; réputation 20 : −${String(30 * SUBSIDE.confiance).replace('.', ',')} k€.`,
+          `<strong>Recrutement</strong> : à ${REPUTATION.recrueHaute} ou plus, une recrue coûte ${k(REPUTATION.coutRecrueHaute)} au lieu de ${k(COUTS.recrue)} ; sous ${REPUTATION.recrueBasse}, elle coûte ${k(REPUTATION.coutRecrueBasse)}.`,
+          `<strong>Salle des ventes</strong> : certains lots sont réservés aux zones de réputation ${ENCHERE.repReserve} ou plus, et la réputation départage les offres égales.`,
+          `<strong>Scandale</strong> : une manœuvre ratée par une zone de réputation supérieure à ${REPUTATION.scandale} coûte ${REPUTATION.scandaleMalus} points de plus.`,
+          'Au-dessus de 60, moins de plaintes contre ta zone ; en fin de saison, la meilleure réputation reçoit le titre « Collègue en or ».',
+        ])}
         <p>Le moral multiplie l'efficacité de tous tes agents : de 60 % (moral 0) à 120 % (moral 100). Sous 40, 10 % des agents restent absents ; sous 20, un agent démissionne.</p>
         <h3>Logistique : les bâtiments</h3>
-        <p>Chaque zone a un <strong>hôtel de police</strong> et un <strong>garage</strong>, du niveau 1 au niveau ${BATIMENT_MAX}. L’hôtel de police fixe le nombre d’agents que tu peux avoir (recrues à l’académie comprises), le garage le nombre de véhicules. Agrandir est une grande décision : ${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux, puis un entretien plus élevé, que le subside communal ne compense qu’en partie.</p>
+        <p>Chaque zone a un <strong>hôtel de police</strong> et un <strong>garage</strong>, du niveau 1 au niveau ${BATIMENT_MAX}. L’hôtel de police fixe le nombre d’agents que tu peux avoir (recrues à l’académie comprises), le garage le nombre de véhicules. Agrandir est une grande décision : ${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux, puis un entretien plus élevé. En contrepartie, la commune verse un <strong>subside de ${k(SUBSIDE.parAgent)} par tour pour chaque agent au-delà de ${SUBSIDE.seuil}</strong> (la moitié de son salaire) : grandir coûte moins cher, sans être gratuit.</p>
         ${table(['Bâtiment', 'Capacité par niveau', 'Agrandir', 'Entretien par tour'], Object.values(BATIMENTS).map((B) => [B.nom, [1, 2, 3, 4, 5].map((n) => B.capacite(n)).join(' / ') + ' ' + B.unite, [1, 2, 3, 4].map((n) => B.coutAgrandir(n)).join(' / ') + ' k€', [1, 2, 3, 4, 5].map((n) => String(B.entretien(n)).replace('.', ',')).join(' / ') + ' k€']))}
         <p>Chaque annexe (salle de sport, logiciel, caméras…) coûte ${String(ENTRETIEN_ANNEXE).replace('.', ',')} k€ d’entretien par tour. Une zone nettement moins équipée que la moyenne du district reçoit une péréquation de ${String(PEREQUATION.montant).replace('.', ',')} k€ par tour. </p>
         <h3>Ton équipe et tes trophées</h3>
@@ -190,7 +198,7 @@ export function sections() {
         <h3>Entraide</h3>
         ${ul([
           `Envoie jusqu’à ${AIDE.budgetMax} k€ (reçus le soir même) et prête jusqu’à ${AIDE.agentsMax} agents pour ${AIDE.dureePret} tours. Tu gardes toujours au moins 8 agents.`,
-          'Aider une zone en péril : +5 de réputation. Une zone frappée par un coup dur : +3. Sinon : +1.',
+          'Aider une zone en péril ou sous tutelle : +5 de réputation. Une zone frappée par un coup dur : +3. Sinon : +1.',
         ])}
         <h3>Duels</h3>
         ${ul([
@@ -207,16 +215,25 @@ export function sections() {
           `<strong>Motion de Chef de corps</strong>, une par saison : ${Object.values(MOTIONS_CHEF).map((m) => m.titre.toLowerCase()).join(', ')}.`,
         ])}
         <h3>Manœuvres</h3>
-        <p>Une manœuvre par tour. Chance de réussite : ${pc(MAN.base)} pour la première, puis ${MAN.pas * 100} points de moins par manœuvre des ${MAN.fenetre} derniers tours (minimum ${pc(MAN.min)}), avant les parades de la cible. Réussie ou non, elle coûte ${MAN.coutReputation} de réputation ; la cible le sait tout de suite, la Gazette révèle l'auteur le lendemain.</p>
+        <p>Une manœuvre par tour. Chance de réussite : ${pc(MAN.base)} pour la première, puis ${MAN.pas * 100} points de moins par manœuvre des ${MAN.fenetre} derniers tours (minimum ${pc(MAN.min)}), avant les parades de la cible. Réussie ou non, elle coûte ${MAN.coutReputation} de réputation (et ${REPUTATION.scandaleMalus} de plus si elle rate alors que ta réputation dépasse ${REPUTATION.scandale} : le scandale) ; la cible le sait tout de suite, la Gazette révèle l'auteur le lendemain.</p>
         ${table(['Manœuvre', 'Effet', 'Parade'], Object.values(MANOEUVRES).map((m) => [m.nom, esc(m.texte), esc(m.parade)]))}
-        ${note(`On ne peut viser ni une zone en péril, ni une zone arrivée depuis moins de ${MAN.protectionTours} tours. L’enquête reste coopérative : aucune manœuvre sur les indices.`)}`,
+        ${note(`On ne peut viser ni une zone en péril ou sous tutelle, ni une zone arrivée depuis moins de ${MAN.protectionTours} tours. L’enquête reste coopérative : aucune manœuvre sur les indices.`)}`,
     },
     {
-      id: 'faillite', titre: 'Péril et faillite', html: `
+      id: 'faillite', titre: 'Péril, tutelle et faillite', html: `
         <p>Une zone est <strong>en péril</strong> dès que l'une de ces conditions est atteinte :</p>
         ${ul([`budget sous ${PERIL.budget} k€ ;`, `moins de ${PERIL.agents} agents disponibles ;`, `moral sous ${PERIL.moral}.`])}
         <p>Le chef a alors <strong>${PERIL.tours} tours pour redresser la barre</strong>. Un bandeau rouge s'affiche sur l'HP ; les autres zones peuvent l'aider (entraide) et ne peuvent plus la viser par une manœuvre.</p>
-        <h3>Si la zone est encore en péril au bout de ${PERIL.tours} tours</h3>
+        <h3>Toujours en péril au bout de ${PERIL.tours} tours : la tutelle</h3>
+        <p>La première fois de la saison, la zone passe <strong>sous tutelle pendant ${TUTELLE.tours} tours</strong> : c'est la dernière chance.</p>
+        ${ul([
+          `Avance de trésorerie de ${k(TUTELLE.avance)} et +${TUTELLE.moral} de moral (la nouvelle direction rassure).`,
+          'Interdit : rythme renforcé, agents de réserve, manœuvres, duels, enchères, et toute grande décision sauf recruter.',
+          'La zone reste intouchable (pas de manœuvre contre elle) et l’entraide rapporte toujours +5 de réputation.',
+          `À la fin des ${TUTELLE.tours} tours : si la zone n'est plus en péril, elle retrouve son autonomie ; sinon, c'est la faillite.`,
+          'Une zone qui a déjà connu la tutelle cette saison passe directement du péril à la faillite.',
+        ])}
+        <h3>La faillite</h3>
         ${ul([
           '<strong>Tout est perdu</strong> : budget, infrastructures, équipement, niveaux. Le chef repart aussitôt avec une nouvelle zone et les ressources de départ.',
           '<strong>Rétrogradation</strong> d’un grade (jamais sous Aspirant).',
@@ -224,6 +241,19 @@ export function sections() {
           'La Gazette lui consacre sa une, et le compteur « District Delta : N tours sans faillite » retombe à zéro.',
           'Le nombre de faillites reste affiché à vie sur le profil. Finir dans le top 3 d’une saison après une faillite donne le badge <strong>Phénix</strong>.',
         ])}`,
+    },
+    {
+      id: 'ventes', titre: 'La salle des ventes', html: `
+        <p>Chaque soir à 20:00, un nouveau lot est mis en vente : matériel, renfort, subside, formation… La carte <strong>Salle des ventes</strong> de l'HP le présente, avec sa mise à prix.</p>
+        ${ul([
+          `Tu places une <strong>offre secrète</strong> (de la mise à prix à ${k(ENCHERE.max)}) : elle part avec tes ordres, personne ne la voit avant 20:00.`,
+          'Le plus offrant gagne et <strong>paie son offre</strong> ; les autres ne paient rien. À égalité, la meilleure réputation l’emporte.',
+          'L’offre est refusée si ton budget ne la couvre pas au moment de la vente.',
+          `Après un lot gagné, tu ne peux plus enchérir pendant ${ENCHERE.delaiGain} tours : pas de razzia.`,
+          `Environ un lot sur quatre est réservé aux zones de réputation ${ENCHERE.repReserve} ou plus.`,
+          'Les bonus « jusqu’à la fin de la saison » disparaissent à la nouvelle saison ; les effets immédiats (véhicule, formation, agents…) suivent les règles habituelles.',
+        ])}
+        ${table(['Lot', 'Effet', 'Mise à prix'], Object.values(LOTS).map((l) => [`${l.nom}${l.reserve ? ` <span class="tiny muted">(réputation ${ENCHERE.repReserve}+)</span>` : ''}`, esc(l.effet), `environ ${l.prix} k€`]))}`,
     },
     {
       id: 'quetes', titre: 'Les énigmes du jour', html: `

@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 9;
+export const APP_VERSION = 10;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -125,16 +125,49 @@ export const BATIMENTS = {
     capacite: (n) => 14 + 8 * n,          // 22, 30, 38, 46, 54 agents
     coutAgrandir: (n) => 10 + 8 * n,      // passer de n à n+1 : 18, 26, 34, 42 k€
     entretien: (n) => 0.5 * n,            // k€ par tour
-    subside: (n) => 0.3 * (n - 1),        // subside communal pour un plus grand commissariat
   },
   garage: {
     nom: 'Garage', unite: 'véhicules', texte: 'Places de parking et pont de levage : fixe le nombre de véhicules de la zone.',
     capacite: (n) => 2 + 2 * n,           // 4, 6, 8, 10, 12 véhicules
     coutAgrandir: (n) => 6 + 4 * n,       // 10, 14, 18, 22 k€
     entretien: (n) => 0.25 * n,
-    subside: () => 0,
   },
 };
+// Subside communal : la commune finance une partie de chaque agent au-delà de l'effectif de départ,
+// et ajoute (ou retire) un montant selon la confiance qu'elle a dans la zone (sa réputation).
+export const SUBSIDE = { parAgent: 0.15, seuil: START.agents, confiance: 0.05 };
+
+// Réputation : effets concrets.
+export const REPUTATION = {
+  recrueHaute: 65, coutRecrueHaute: 1.5,   // zone réputée : les candidats se bousculent
+  recrueBasse: 35, coutRecrueBasse: 2.5,   // zone mal vue : il faut payer plus pour attirer
+  scandale: 60, scandaleMalus: 3,          // manœuvre ratée d'une zone bien vue : le scandale fait plus de bruit
+};
+
+// ───── Salle des ventes (enchères) ─────
+// Un lot par jour, offres secrètes dans les ordres, résolues à 20:00. Le plus offrant paie son offre.
+export const ENCHERE = { max: 30, delaiGain: 7, repReserve: 60, partReserve: 0.25 };
+export const LOTS = {
+  chien:     { nom: 'Chien pisteur', texte: 'Un malinois dressé et son maître-chien rejoignent tes enquêteurs.', effet: 'Recherche +15 % jusqu’à la fin de la saison', prix: 5, bonus: { recherche: 1.15 } },
+  drone:     { nom: 'Drone de surveillance', texte: 'Un drone avec caméra thermique, et un agent formé pour le piloter.', effet: 'Intervention +10 % jusqu’à la fin de la saison', prix: 6, bonus: { intervention: 1.1 } },
+  radar:     { nom: 'Radar-tronçon mobile', texte: 'Un radar de vitesse moyenne qu’on déplace d’une route à l’autre.', effet: 'Roulage +15 % jusqu’à la fin de la saison', prix: 4, bonus: { roulage: 1.15 } },
+  analyse:   { nom: 'Logiciel d’analyse criminelle', texte: 'Une licence de logiciel qui trie les dossiers et repère les séries.', effet: 'Accueil et administration +15 % jusqu’à la fin de la saison, et −6 dossiers de paperasse tout de suite', prix: 5, bonus: { admin: 1.15 }, immediat: 'paperasse' },
+  banalise:  { nom: 'Véhicule banalisé saisi', texte: 'Une berline confisquée par la justice, remise en état.', effet: '+1 véhicule tout de suite, même si le garage est plein', prix: 4, immediat: 'vehicule' },
+  prevention:{ nom: 'Subside européen de prévention', texte: 'Un appel à projets gagné sur le fil : éclairage, caméras, animateurs de rue.', effet: 'Criminalité −10 et +4 de satisfaction tout de suite', prix: 4, immediat: 'prevention' },
+  stage:     { nom: 'Stage de formation offert', texte: 'Une place libérée à la dernière minute dans un stage spécialisé.', effet: '+1 niveau de formation dans ton service le plus faible (sans agents immobilisés)', prix: 6, immediat: 'stage' },
+  gilets:    { nom: 'Lot de gilets et de radios', texte: 'Du matériel neuf racheté à une zone qui s’est trop équipée.', effet: 'Équipement de l’Intervention +1 niveau', prix: 5, immediat: 'gilets' },
+  // Lots réservés aux zones qui ont bonne réputation.
+  parquet:   { nom: 'Convention avec le parquet', texte: 'Le parquet accepte de traiter tes dossiers en priorité.', effet: 'Recherche +20 % jusqu’à la fin de la saison', prix: 7, bonus: { recherche: 1.2 }, reserve: true },
+  quartier:  { nom: 'Bureau de quartier prêté par la commune', texte: 'Un rez-de-chaussée en plein centre, gratuit pour la saison.', effet: 'Proximité +20 % jusqu’à la fin de la saison', prix: 6, bonus: { proximite: 1.2 }, reserve: true },
+  cellule:   { nom: 'Cellule d’appui de la police fédérale', texte: 'Deux spécialistes détachés pour épauler ta zone.', effet: '+2 agents tout de suite (salaire à ta charge), même si l’hôtel de police est plein', prix: 7, immediat: 'agents', reserve: true },
+};
+
+// ───── Tutelle : dernière chance avant la faillite ─────
+// Une zone encore en péril au bout du délai passe sous tutelle (une fois par saison) :
+// avance de trésorerie, mais plus de manœuvres, de duels, d'enchères, d'heures sup ni de grande décision
+// (sauf recruter). Si elle est toujours en péril à la fin de la tutelle : faillite.
+export const TUTELLE = { tours: 5, avance: 10, moral: 8 };
+
 export const TRAVAUX_TOURS = 1;          // durée d'un agrandissement
 export const ENTRETIEN_ANNEXE = 0.3;     // k€ par tour et par annexe (salle de sport, logiciel…)
 // Péréquation : une zone nettement moins équipée que la moyenne du district reçoit un coup de pouce.

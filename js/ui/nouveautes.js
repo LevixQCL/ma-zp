@@ -3,25 +3,19 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-29e',
-  titre: 'Mise à jour du 29 septembre (soir)',
+  id: '2026-09-29f',
+  titre: 'Mise à jour du 29 septembre (nuit)',
   points: [
-    ['Carte', 'le district s’agrandit quand une zone arrive : la carte dézoome et la nouvelle zone s’installe en bordure, sans déplacer les autres.'],
-    ['Agents en mission', 'audition, traque et FIPA sortent du total à répartir (« 20 disponibles, dont 2 en mission : 18 à répartir ») et partent d’abord parmi les agents laissés libres.'],
-    ['Mon équipe', 'tu peux renommer les membres de ton équipe.'],
-    ['Où sont mes agents ?', 'dans tes ordres, sous « Affectation » : le détail de ton effectif, les agents bloqués, un bouton pour les rapatrier et un autre pour répartir les libres. Sous chaque service, tu vois aussi ceux qui partent en audition, en traque ou en FIPA.'],
-    ['Grande décision', 'chaque option affiche ce qu’elle change pour ta zone, chiffré sur ta répartition du jour (incidents, amendes, rentabilité, entretien).'],
-    ['Économie', 'dotation fédérale 10 k€ par tour (au lieu de 8), matériel moins cher (5, 7, 9, 11 k€) et plus efficace (+15 % par niveau), annexes à 10 k€. Caméras de lecture de plaques : radars automatiques +1 k€ par tour en plus de Roulage +20 %.'],
-    ['Véhicules', 'chaque intervention use le parc ; sous 80 % d’état, l’Intervention perd de l’efficacité. Nouvelle dépense du jour : révision du parc (2 k€, +20 %).'],
-    ['Énigmes', '3 sur 3 : prime « sans faute » de +3 k€ et +2 de moral en plus du bonus. Message codé plus retors (groupes de 5 lettres, mots-clés). « Qui ment ? » : la règle du menteur est expliquée.'],
-    ['Affaires disputées', 'toujours dirigées par une zone, et jamais deux dans la même zone.'],
-    ['Diplomatie', 'la liste des zones en difficulté (péril, coup dur) avec le gain de réputation ; les manœuvres expliquent ce que tu gagnes, ce que subit la cible et comment elle se protège.'],
+    ['Salle des ventes', 'chaque soir, un lot est mis en vente (chien pisteur, drone, véhicule banalisé, stage…). Offre secrète depuis la carte de l’HP : le plus offrant gagne et paie son offre, la réputation départage les égalités. Un lot gagné bloque les enchères 7 tours.'],
+    ['Subside communal', 'il ne dépend plus du niveau de l’hôtel de police : la commune verse 0,15 k€ par tour pour chaque agent au-delà de 20, soit la moitié de son salaire. Grandir coûte moins cher.'],
+    ['Réputation', 'elle rapporte enfin : bonus (ou malus) de la commune chaque tour, recrues moins chères à 65 et plus (plus chères sous 35), lots réservés à 60 et plus. Attention : une manœuvre ratée par une zone bien vue fait scandale (−3 en plus).'],
+    ['Tutelle', 'une zone encore en péril après 3 tours passe d’abord sous tutelle 5 tours (avance de 10 k€, +8 de moral, mais ni manœuvre, ni duel, ni enchère, ni heures sup, ni grande décision sauf recruter). Faillite seulement si ça ne suffit pas, ou si la tutelle a déjà servi dans la saison.'],
   ],
 };
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP ! Détail « Où sont mes agents ? » avec rapatriement, grandes décisions chiffrées, dotation à 10 k€ et matériel moins cher, usure et révision des véhicules, prime « sans faute » aux énigmes, message codé plus retors, entraide et manœuvres expliquées. Recharge la page si besoin !`;
+  return `📣 Mise à jour de Ma ZP ! Nouvelle salle des ventes (un lot par jour, offres secrètes), subside communal par agent au-delà de 20, la réputation rapporte (commune, recrues, lots réservés), et une tutelle de 5 tours avant la faillite. Recharge la page si besoin !`;
 }
 
 
