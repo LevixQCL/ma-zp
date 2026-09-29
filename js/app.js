@@ -66,6 +66,7 @@ window.addEventListener('error', (e) => { S.lastError = e.error || e.message; })
 window.addEventListener('unhandledrejection', (e) => { S.lastError = e.reason; });
 
 function render() {
+  signalerPresence();
   chargementDepuis = 0; clearTimeout(garde);
   const demo = S.backend && S.backend.mode === 'demo';
   let banner = demo ? '<div class="demo-banner">Mode démo · la partie tourne sur cet appareil avec des zones robots</div>' : '';
@@ -219,8 +220,18 @@ async function openParty(id) {
   tick(true);
 }
 
-let lastTick = 0;
+let lastTick = 0, lastVu = 0;
+/** Signale la présence du joueur (au plus toutes les 5 minutes, quand la page est visible). */
+function signalerPresence() {
+  if (!S.user || !S.player || !S.backend.touchPlayer || document.hidden) return;
+  if (Date.now() - lastVu < 5 * 60 * 1000) return;
+  lastVu = Date.now();
+  S.backend.touchPlayer(S.user.uid).catch((e) => console.warn(e));
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) signalerPresence(); });
+
 async function tick(force = false) {
+  signalerPresence();
   if (!S.user || !S.state) return;
   if (!force && Date.now() - lastTick < 15000) return;
   lastTick = Date.now();
@@ -514,6 +525,7 @@ async function onClick(e) {
       case 'quest-bonus': await saveQuestBonus(el.dataset.v); break;
       case 'gazette-nav': S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
       case 'admin-create': await b.adminCreateGame(); toast('Partie lancée !'); break;
+      case 'admin-vus': S.players = await b.getPlayers(); toast('Connexions actualisées.'); rerender(); break;
       case 'admin-force': await b.adminForceResolution(); await tick(true); toast('Tour résolu.'); break;
       case 'admin-remove': if (await askConfirm('Retirer ce joueur de la partie ?', 'Retirer')) { await b.adminRemovePlayer(el.dataset.uid); toast('Joueur retiré.'); } break;
       case 'admin-reset': if (await askConfirm('Recommencer la partie ? Toutes les zones repartent de zéro.', 'Recommencer')) { await b.adminReset(); lastTurnKey = null; toast('Nouvelle partie lancée.'); location.hash = '#hp'; } break;

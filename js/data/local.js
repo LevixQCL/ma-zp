@@ -96,6 +96,7 @@ export function createLocalBackend(config) {
 
     async getPlayer(uid) { return self.players[uid] || null; },
     async getPlayers() { return JSON.parse(JSON.stringify(self.players)); },
+    async touchPlayer(uid) { if (self.players[uid]) { self.players[uid].vuLe = Date.now(); persist(); } },
     async savePlayer(uid, profile) {
       self.players[uid] = { ...(self.players[uid] || {}), ...profile };
       if (self.state.zones[uid]) { self.state.zones[uid].nom = profile.nom ?? self.state.zones[uid].nom; self.state.zones[uid].code = profile.code ?? self.state.zones[uid].code; self.state.zones[uid].couleur = profile.couleur ?? self.state.zones[uid].couleur; }
