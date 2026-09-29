@@ -7,7 +7,7 @@ import {
 import { makeRng, hashString } from './rng.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
-import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe } from './equipe.js';
+import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms } from './equipe.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, capacite,
   forceEngagement, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses,
@@ -152,7 +152,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // Mise à jour des noms, codes et couleurs (renommage) et retraits.
   for (const [uid, z] of Object.entries(state.zones)) {
     const p = players[uid];
-    if (p) { if (p.nom) z.nom = String(p.nom).slice(0, 24); if (p.code) z.code = String(p.code).slice(0, 4); if (p.couleur) z.couleur = p.couleur; }
+    if (p) { if (p.nom) z.nom = String(p.nom).slice(0, 24); if (p.code) z.code = String(p.code).slice(0, 4); if (p.couleur) z.couleur = p.couleur; if (p.equipeNoms) appliquerNoms(z.equipe, uid, p.equipeNoms); }
     if (p && p.retire) delete state.zones[uid];
   }
 
