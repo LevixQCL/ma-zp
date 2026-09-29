@@ -340,6 +340,8 @@ async function onClick(e) {
       }
       case 'class-tab': S.classTab = el.dataset.t; rerender(); break;
       case 'enq-tab': S.enqTab = el.dataset.t; rerender(); break;
+      case 'enq-filtre': S.enqFiltre = el.dataset.v; rerender(); break;
+      case 'pieces-filtre': S.piecesFiltre = el.dataset.v; rerender(); break;
       case 'enq-open': S.enqOpen = { ...(S.enqOpen || {}), [el.dataset.i]: !(S.enqOpen || {})[el.dataset.i] }; rerender(); break;
       case 'mmo-mark': {
         const n = S.state.enquete.n, c = lireCarnet(n), k = `${el.dataset.i}:${el.dataset.e}`;
@@ -692,7 +694,10 @@ async function boot() {
   });
   document.addEventListener('click', onClick);
   // Sections repliables : on se souvient de celles qui sont ouvertes.
-  document.addEventListener('toggle', (e) => { const d = e.target; if (d && d.tagName === 'DETAILS' && d.dataset.k) S.ouverts = { ...(S.ouverts || {}), [d.dataset.k]: d.open }; }, true);
+  // (seulement quand le joueur clique : un <details> affiché ouvert déclenche aussi « toggle »)
+  let clicResume = 0;
+  document.addEventListener('click', (e) => { if (e.target.closest('summary')) clicResume = Date.now(); }, true);
+  document.addEventListener('toggle', (e) => { const d = e.target; if (d && d.tagName === 'DETAILS' && d.dataset.k && Date.now() - clicResume < 800) S.ouverts = { ...(S.ouverts || {}), [d.dataset.k]: d.open }; }, true);
   document.addEventListener('submit', onSubmit);
   document.addEventListener('input', onInput);
   document.addEventListener('change', onChange);

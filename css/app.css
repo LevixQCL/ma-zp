@@ -409,3 +409,26 @@ details.repli > summary { font-size: 14px; }
 table.horaire { width: 100%; border-collapse: collapse; font-size: 13px; }
 table.horaire th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; padding: 4px; border-bottom: 1px solid var(--line); }
 table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
+
+/* Enquête : synthèse, filtres, carte du jour */
+.recit > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: var(--amber-soft); font-weight: 600; }
+.recit > summary::-webkit-details-marker { display: none; }
+.recit[open] > summary svg { transform: rotate(90deg); }
+.aujourdhui { border-color: var(--amber-line); }
+.lien { background: none; border: none; padding: 0; color: var(--amber); text-decoration: underline; font: inherit; cursor: pointer; }
+.chip { min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text2); font: 600 12.5px var(--body); }
+.chip.on { background: var(--amber-bg); border-color: var(--amber); color: var(--amber); }
+.onglets-enq button { font-size: 12px; }
+.synthese { display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px; }
+.syn-l { display: grid; grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 1fr)); gap: 4px; align-items: center; }
+.syn-h span { font-size: 10.5px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .5px; text-align: center; }
+.syn-h span:first-child { text-align: left; padding-left: 4px; }
+.syn-nom { font-weight: 700; font-size: 14px; padding-left: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.syn-nom .cel { font-style: normal; color: var(--green-soft); font-size: 9px; vertical-align: middle; }
+.syn-c { min-height: 38px; border-radius: 9px; border: 1.5px solid #3A4A5E; background: transparent; color: var(--muted); font: 700 16px var(--mono); }
+.syn-c.m-ok { border-color: rgba(76,195,138,.6); background: rgba(76,195,138,.14); color: var(--green-soft); }
+.syn-c.m-x { border-color: #8A3F3A; background: rgba(232,93,80,.12); color: var(--red-soft); }
+.syn-l.exclu .syn-nom { color: var(--muted); text-decoration: line-through; }
+.syn-l.complet .syn-nom { color: var(--green-soft); }
+.onglets-enq button { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; padding: 2px; }
+.onglets-enq button small { font: 600 10px var(--mono); opacity: .75; }
