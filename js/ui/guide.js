@@ -148,7 +148,7 @@ export function sections() {
         <p><strong>Bonus d’énigme</strong> : avec deux bonnes réponses aux énigmes du jour, tu peux choisir « +1 indice ».</p>
         <h3>Les cellules et le partage</h3>
         ${ul([
-          `Dès que plusieurs zones jouent, le parquet répartit les suspects entre ${ENQ.maxCellules} cellules de zones au plus. Vérifier un suspect de ta cellule coûte le prix normal, un autre coûte le double.`,
+          `Le parquet répartit les zones en cellules : une seule jusqu’à 3 zones, deux de 4 à 6 zones, trois à partir de 7. Chaque cellule compte au moins deux zones et suit au moins deux suspects (avec trois cellules, un suspect est suivi par deux cellules à la fois). Vérifier un suspect de ta cellule coûte le prix normal, un autre coûte le double.`,
           'L’écran te dit quelles zones suivent chaque suspect : demande-leur leurs pièces à la radio, et propose les tiennes.',
           `Tu peux partager jusqu’à ${ENQ.maxPartages} pièces par tour, à une zone ou à toutes. Elles arrivent le soir même, avec ton nom : +5 PS et +1 de réputation par pièce transmise (une pièce envoyée à toutes les zones compte une fois). Une pièce que le destinataire a déjà n’est pas comptée.`,
           `Si une pièce que tu as donnée se trouve dans le dossier d’une zone qui identifie l’auteur, tu touches ${POINTS.contribution} points d’enquête.`,

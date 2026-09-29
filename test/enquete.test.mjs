@@ -46,10 +46,25 @@ r = resolveTurn(state, { players, orders: { A: { ...base, demarches: ['labo', 'a
 state = r.state;
 assert.equal(state.zones.B.enquete.exclu, true, 'fausse accusation : B est écarté');
 assert.ok(state.zones.A.enquete.pieces.some((p) => p.f === 'c:moy') && state.zones.A.enquete.pieces.some((p) => p.f === 'occ:0'), 'démarches reçues');
-// Cellules : trois zones, trois cellules ; un suspect d'une autre cellule coûte le double.
-assert.equal(state.enquete.nbCellules, 3);
-const horsA = [0, 1, 2, 3, 4].find((i) => celluleSuspect(state, i) !== celluleDe(state, 'A'));
-assert.equal(coutDemarche(state, 'A', `alibi:${horsA}`), 4);
+// Cellules : jusqu'à trois zones, une seule cellule (personne n'est seul dans la sienne).
+assert.equal(state.enquete.nbCellules, 1);
+// Avec 7 zones : 3 cellules, au moins 2 zones et 2 suspects chacune ; un suspect hors cellule coûte le double.
+{
+  const { cellulesSuspect, dansMaCellule } = await import('../js/engine/enquete.js');
+  const { newZone } = await import('../js/engine/zone.js');
+  const s7 = JSON.parse(JSON.stringify(state));
+  for (const u of ['D', 'E', 'F', 'G']) s7.zones[u] = newZone({ uid: u, code: '9999', nom: u }, 1);
+  const { nouvelleAffaire } = await import('../js/engine/enquete.js');
+  nouvelleAffaire(s7);
+  assert.equal(s7.enquete.nbCellules, 3);
+  for (let c = 0; c < 3; c++) {
+    assert.ok(Object.values(s7.enquete.cellules).filter((x) => x === c).length >= 2, 'au moins deux zones par cellule');
+    assert.ok([0, 1, 2, 3, 4].filter((i) => cellulesSuspect(s7, i).includes(c)).length >= 2, 'au moins deux suspects par cellule');
+  }
+  const horsA = [0, 1, 2, 3, 4].find((i) => !dansMaCellule(s7, 'A', i));
+  assert.equal(coutDemarche(s7, 'A', `alibi:${horsA}`), 4);
+  void celluleSuspect; void celluleDe;
+}
 assert.ok(state.zones.A.budget < state.zones.C.budget, 'les démarches sont payées');
 
 // A partage tout ce qu'il a avec C ; C doit le recevoir le soir même.
