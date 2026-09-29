@@ -187,7 +187,7 @@ function aujourdhui(aff, dos) {
   else etape = 'Tous les suspects sont exclus dans ton tableau : une coche est sans doute fausse. Relis les pièces.';
   const miens = aff.suspects.map((s2, i) => (dansMaCellule(st, S.user.uid, i) ? s2.prenom : null)).filter(Boolean);
   return `<section class="card tight aujourdhui" aria-label="Aujourd’hui" style="gap:8px">
-    <div class="between"><span style="font-weight:700">Aujourd’hui : ${dem.length} démarche${dem.length > 1 ? 's' : ''} sur ${ENQ.maxDemarches}</span><span class="small mono">${fmt1(coutTotal(d))} k€</span></div>
+    <div class="between"><span style="font-weight:700">Aujourd’hui : ${dem.length} démarche${dem.length > 1 ? 's' : ''} sur ${ENQ.maxDemarches}</span><span class="small mono" style="white-space:nowrap">${fmt1(coutTotal(d))} k€</span></div>
     ${dem.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${dem.map((x) => `<button type="button" class="chip on" data-action="dem-toggle" data-k="${x}" aria-label="Annuler : ${esc(nomDem(x))}">${esc(nomDem(x))} ✕</button>`).join('')}</div>` : ''}
     <p class="small" style="margin:0;line-height:1.5">${etape}</p>
     <span class="tiny muted">Résultats à 20:00 · budget restant ${fmt1(z.budget - coutTotal(d))} k€${st.enquete.nbCellules > 1 ? ` · ta cellule : ${esc(miens.join(', '))} (les autres suspects coûtent le double)` : ''}</span>
