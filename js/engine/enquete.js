@@ -393,7 +393,26 @@ export function celluleDe(state, uid) {
   return hashString(`${state.seed}:${e.n}:${uid}`) % e.nbCellules;
 }
 export const celluleSuspect = (state, i) => (state.enquete && state.enquete.nbCellules > 1 ? i % state.enquete.nbCellules : 0);
-export const dansMaCellule = (state, uid, i) => celluleDe(state, uid) === celluleSuspect(state, i);
+/**
+ * Cellules qui suivent un suspect. Chaque cellule a au moins deux suspects : avec 3 cellules et 5 suspects,
+ * la troisième (qui n'en aurait qu'un) suit aussi un suspect d'une autre cellule, qui est alors suivi à deux.
+ */
+export function cellulesSuspect(state, i) {
+  const e = state.enquete;
+  const nb = e && e.nbCellules > 1 ? e.nbCellules : 1;
+  if (nb <= 1) return [0];
+  const out = [i % nb];
+  const tous = [...Array(ENQ.nbSuspects).keys()];
+  const de = (c) => tous.filter((k) => k % nb === c);
+  for (let c = 0; c < nb; c++) {
+    if (de(c).length >= 2 || c === i % nb) continue;
+    // Suspect « partagé » : le second suspect d'une cellule qui en a deux, en alternant d'une affaire à l'autre.
+    const partageables = tous.filter((k) => k >= nb && de(k % nb).length >= 2);
+    if (partageables.length && i === partageables[(e.n || 0) % partageables.length]) out.push(c);
+  }
+  return out;
+}
+export const dansMaCellule = (state, uid, i) => cellulesSuspect(state, i).includes(celluleDe(state, uid));
 
 /** Coût d'une démarche pour cette zone (double pour un suspect d'une autre cellule). */
 export function coutDemarche(state, uid, x) {
@@ -405,7 +424,8 @@ export function coutDemarche(state, uid, x) {
 
 /** Zones qui suivent ce suspect (même cellule). */
 export function zonesDuSuspect(state, i) {
-  return Object.values(state.zones || {}).filter((z) => celluleDe(state, z.uid) === celluleSuspect(state, i)).map((z) => z.uid);
+  const cs = cellulesSuspect(state, i);
+  return Object.values(state.zones || {}).filter((z) => cs.includes(celluleDe(state, z.uid))).map((z) => z.uid);
 }
 
 // ─────────────────────────────── Dossiers ───────────────────────────────
@@ -477,11 +497,12 @@ export function recitFinal(aff) {
   return `À ${hm(aff.heure)}, ${s.nom}, ${s.role} ${mobile}, ${moyen} ; ${occ}. ${cap(il)} a caché le butin dans la planque « ${p.nom} » (${p.lieu}). Les autres étaient innocents : ${innocents.join(', ')}.`;
 }
 
-/** Cellules : les zones actives sont réparties en 1 à 3 groupes, chacun chargé de certains suspects. */
+/** Cellules : les zones actives sont réparties en 1 à 3 groupes (au moins deux zones chacun), chacun chargé de certains suspects. */
 function repartirCellules(state) {
   const e = state.enquete;
   const actives = Object.values(state.zones).filter((z) => (z.toursSansOrdres || 0) < 3).map((z) => z.uid).sort();
-  const nb = Math.max(1, Math.min(ENQ.maxCellules, actives.length));
+  // Au moins deux zones par cellule : 1 cellule jusqu'à 3 zones, 2 de 4 à 6, 3 à partir de 7.
+  const nb = Math.max(1, Math.min(ENQ.maxCellules, actives.length <= 3 ? 1 : actives.length <= 6 ? 2 : 3));
   const ordre = makeRng(`${state.seed}:cellules:${e.n}`).shuffle(actives);
   e.nbCellules = nb;
   e.cellules = Object.fromEntries(ordre.map((u, k) => [u, k % nb]));
