@@ -344,7 +344,7 @@ function faillite(state, z, push, T, players) {
   const ps = g > 0 ? GRADES[g - 1].ps : 0;
   const p = players[uid] || {};
   const nz = newZone({ uid, code: p.code || z.code, nom: p.nom || z.nom, couleur: z.couleur }, T + 1, {
-    ps, badges: z.badges, titres: z.titres,
+    ps, badges: z.badges, titres: z.titres, arrivee: z.arrivee || 0,
   });
   // On garde la saison en cours pour le classement (3 tours comptés à 0) et les statistiques.
   nz.ipzSomme = z.ipzSomme; nz.toursJoues = z.toursJoues + 3; nz.ipzHist = z.ipzHist;

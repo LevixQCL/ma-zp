@@ -9,7 +9,7 @@ import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms } from './equipe.js';
 import {
-  clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, capacite,
+  clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
   forceEngagement, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses,
 } from './zone.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
@@ -42,7 +42,7 @@ export function buildJoinZone(state, uid, profile, turn = state.turn) {
       base.equip[s] = Math.round(median(existants.map((z) => z.equip[s])));
     }
   }
-  const z = newZone({ uid, code: profile.code, nom: profile.nom, couleur: profile.couleur }, turn, base);
+  const z = newZone({ uid, code: profile.code, nom: profile.nom, couleur: profile.couleur }, turn, { ...base, arrivee: Date.now() });
   // Site sensible : le même que celui que calculeraient tous les autres appareils.
   const tmp = { seed: state.seed, zones: { ...clone(state.zones || {}), [uid]: clone(z) } };
   attribuerSites(tmp);
@@ -186,6 +186,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   const theme = themeActif(state, T);
 
   // Enquête (partages, accusations, traques) et FIPA : avant la simulation des zones.
+  // Les agents laissés sans affectation partent en premier (audition, traque, FIPA).
+  for (const u of uids) ord[u]._libres = agentsLibres(state.zones[u], ord[u], T);
   const pre = enquetePre(state, uids, ord, push, T);
   const fp = fipaPre(state, uids, ord, push, T);
 
@@ -409,10 +411,11 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Opération d'envergure : ses agents quittent leur service pour la journée.
     const opx = effetsOperation(z, o.alloc, o.operation, T);
     const alloc = opx.eff;
-    // Agents partis en traque, en audition ou en FIPA.
+    // Agents partis en traque, en audition ou en FIPA : d'abord ceux laissés sans affectation, puis les services.
+    let libres = agentsLibres(z, o, T);
     for (const pr2 of [pre.prises[uid], fp.prises[uid]]) {
       if (!pr2) continue;
-      for (const [s, n] of Object.entries(pr2)) alloc[s] = Math.max(0, (alloc[s] || 0) - n);
+      for (const [s, n0] of Object.entries(pr2)) { const k = Math.min(libres, n0); libres -= k; alloc[s] = Math.max(0, (alloc[s] || 0) - (n0 - k)); }
       const n = Object.values(pr2).reduce((a2, b2) => a2 + b2, 0);
       if (n && pr2 === fp.prises[uid]) z.rapport.push(`FIPA : ${n} agent${n > 1 ? 's' : ''} mobilisé${n > 1 ? 's' : ''} sur le dispositif commun.`);
     }
@@ -776,7 +779,7 @@ function finDeSaison(state, classement) {
     // Héritage : formations et bâtiments baissent d'un niveau, les annexes restent.
     const baisse = (n) => Math.max(1, (n || 1) - HERITAGE_PERTE);
     const niveaux = Object.fromEntries(SERVICES.map((s) => [s, baisse(z.niveaux && z.niveaux[s])]));
-    const nz = newZone({ uid, code: z.code, nom: z.nom, couleur: z.couleur }, 1, { ps: z.ps, badges: z.badges, titres: z.titres, faillites: z.faillites, niveaux });
+    const nz = newZone({ uid, code: z.code, nom: z.nom, couleur: z.couleur }, 1, { ps: z.ps, badges: z.badges, titres: z.titres, faillites: z.faillites, niveaux, arrivee: z.arrivee || 0 });
     const b = z.batiments || {};
     nz.batiments = { bureaux: baisse(b.bureaux), garage: baisse(b.garage) };
     nz.infra = { ...(z.infra || {}) };

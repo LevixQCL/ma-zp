@@ -40,30 +40,37 @@ function centroid(poly) {
   return a ? [cx / (6 * a), cy / (6 * a)] : poly[0];
 }
 
+// Le monde est plus grand que le district : le district s'étend quand des zones arrivent,
+// sans jamais redistribuer les territoires existants (la carte « dézoome »).
+export const WW = W * 2;
+export const HH = H * 2;
+const TAILLE = 6; // quartiers par zone
+
 let cacheVille = null;
 
-/** Quartiers de la ville (indépendants du nombre de zones). */
+/** Quartiers du monde (indépendants du nombre de zones). */
 export function ville(seed = 'delta') {
   if (cacheVille && cacheVille.seed === seed) return cacheVille;
-  const rng = makeRng(`${seed}:ville`);
+  const rng = makeRng(`${seed}:monde`);
   const sites = [];
-  const cols = 6, rows = 7;
+  const cols = 12, rows = 14;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      if (sites.length >= 40) break;
-      const x = (c + 0.5 + rng.float(-0.35, 0.35)) * (W / cols);
-      const y = (r + 0.5 + rng.float(-0.35, 0.35)) * (H / rows);
+      const x = (c + 0.5 + rng.float(-0.35, 0.35)) * (WW / cols);
+      const y = (r + 0.5 + rng.float(-0.35, 0.35)) * (HH / rows);
       sites.push([x, y]);
     }
   }
+  const noms = rng.shuffle(NOMS_QUARTIERS);
   const cells = sites.map((p, i) => {
-    let poly = [[0, 0], [W, 0], [W, H], [0, H]];
+    let poly = [[0, 0], [WW, 0], [WW, HH], [0, HH]];
     for (let j = 0; j < sites.length; j++) {
       if (i === j) continue;
       const q = sites[j];
+      if ((q[0] - p[0]) ** 2 + (q[1] - p[1]) ** 2 > (3 * WW / cols) ** 2) continue; // voisins lointains : sans effet
       poly = clip(poly, q[0] - p[0], q[1] - p[1], (q[0] ** 2 + q[1] ** 2 - p[0] ** 2 - p[1] ** 2) / 2);
     }
-    return { i, site: p, poly: poly.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]), nom: NOMS_QUARTIERS[i % NOMS_QUARTIERS.length] };
+    return { i, site: p, poly: poly.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]), nom: noms[i % noms.length] };
   });
   for (const c of cells) c.c = centroid(c.poly);
   // Voisinage : deux quartiers qui partagent un côté.
@@ -72,58 +79,62 @@ export function ville(seed = 'delta') {
   const edges = [];
   for (let i = 0; i < cells.length; i++) {
     for (let j = i + 1; j < cells.length; j++) {
+      if ((cells[i].site[0] - cells[j].site[0]) ** 2 + (cells[i].site[1] - cells[j].site[1]) ** 2 > (2.5 * WW / cols) ** 2) continue;
       const shared = cells[i].poly.filter((p) => cells[j].poly.some((q) => near(p, q)));
       if (shared.length >= 2) { adj[i].push(j); adj[j].push(i); edges.push([i, j, shared[0], shared[1]]); }
     }
   }
-  cacheVille = { seed, cells, adj, edges };
+  // Ordre d'urbanisation : du centre vers la périphérie, avec un peu d'irrégularité.
+  const bruit = makeRng(`${seed}:urbanisation`);
+  const d0 = cells.map((c) => Math.hypot(c.c[0] - WW / 2, c.c[1] - HH / 2) * (1 + bruit.float(-0.12, 0.12)));
+  const centre = cells.map((c) => c.i).sort((a, b) => d0[a] - d0[b]);
+  // Noms : les plus connus au centre, puis « Nord », « Sud »… en périphérie.
+  const suff = ['Nord', 'Sud', 'Est', 'Ouest', 'Haut'];
+  centre.forEach((i, r) => { cells[i].nom = r < noms.length ? noms[r] : `${noms[r % noms.length]} ${suff[Math.floor(r / noms.length) - 1] || ''}`.trim(); });
+  cacheVille = { seed, cells, adj, edges, centre, d0 };
   return cacheVille;
 }
 
-/** Répartit les quartiers entre les zones (territoires d'un seul tenant, de tailles proches). */
-export function territoires(seed, uids) {
+/** Ordre d'arrivée des zones : il fixe leur place sur la carte, une fois pour toutes. */
+export function ordreArrivee(zones) {
+  return zones.slice().sort((a, b) => ((a.arrivee || 0) - (b.arrivee || 0)) || (hashString(a.uid) - hashString(b.uid))).map((z) => z.uid);
+}
+
+/**
+ * Territoires : chaque zone, dans l'ordre d'arrivée, prend un bloc de quartiers libres
+ * au plus près du centre. Une nouvelle zone s'ajoute en bordure sans rien déplacer.
+ */
+export function territoires(seed, zones) {
   const v = ville(seed);
-  const n = uids.length;
   const owner = new Array(v.cells.length).fill(-1);
-  if (!n) return { ...v, owner, zones: [] };
-  // Capitales éloignées les unes des autres (tirage déterministe).
-  const rng = makeRng(`${seed}:terr:${n}`);
-  const caps = [rng.int(0, v.cells.length - 1)];
-  while (caps.length < Math.min(n, v.cells.length)) {
-    let best = -1, bestD = -1;
-    for (const c of v.cells) {
-      if (caps.includes(c.i)) continue;
-      const d = Math.min(...caps.map((k) => (v.cells[k].c[0] - c.c[0]) ** 2 + (v.cells[k].c[1] - c.c[1]) ** 2));
-      if (d > bestD) { bestD = d; best = c.i; }
-    }
-    caps.push(best);
-  }
-  const order = uids.slice().sort((a, b) => hashString(a) - hashString(b));
-  // Croissance équilibrée : à chaque étape, la zone la plus petite prend le quartier libre
-  // voisin le plus proche de sa capitale.
-  caps.forEach((c, k) => { owner[c] = k; });
-  const taille = caps.map(() => 1);
-  const dist2 = (i, k) => (v.cells[i].c[0] - v.cells[caps[k]].c[0]) ** 2 + (v.cells[i].c[1] - v.cells[caps[k]].c[1]) ** 2;
-  for (let guard = 0; guard < v.cells.length * 4; guard++) {
-    const candidats = caps.map((_, k) => {
-      let best = -1;
-      for (let i = 0; i < owner.length; i++) {
-        if (owner[i] !== k) continue;
-        for (const nb of v.adj[i]) if (owner[nb] === -1 && (best === -1 || dist2(nb, k) < dist2(best, k))) best = nb;
+  const order = ordreArrivee(zones);
+  const libres = (i) => owner[i] === -1;
+  const assez = (start) => { // au moins TAILLE quartiers libres d'un seul tenant autour de `start`
+    const vu = new Set([start]), file = [start];
+    while (file.length && vu.size < TAILLE) { const i = file.shift(); for (const nb of v.adj[i]) if (libres(nb) && !vu.has(nb)) { vu.add(nb); file.push(nb); } }
+    return vu.size >= TAILLE;
+  };
+  const out = [];
+  order.forEach((uid, k) => {
+    const cap = v.centre.find((i) => libres(i) && assez(i)) ?? v.centre.find(libres);
+    if (cap === undefined) { out.push({ uid, k, quartiers: [], capitale: 0, label: [WW / 2, HH / 2] }); return; }
+    owner[cap] = k;
+    const mine = [cap];
+    const cc = v.cells[cap].c;
+    while (mine.length < TAILLE) {
+      let best = -1, bestS = Infinity;
+      for (const i of mine) for (const nb of v.adj[i]) {
+        if (!libres(nb)) continue;
+        const c = v.cells[nb].c;
+        const sc = Math.hypot(c[0] - cc[0], c[1] - cc[1]) + 0.4 * v.d0[nb];
+        if (sc < bestS) { bestS = sc; best = nb; }
       }
-      return best;
-    });
-    const possibles = caps.map((_, k) => k).filter((k) => candidats[k] !== -1);
-    if (!possibles.length) break;
-    const k = possibles.sort((x, y) => taille[x] - taille[y])[0];
-    owner[candidats[k]] = k; taille[k]++;
-  }
-  for (let i = 0; i < owner.length; i++) if (owner[i] === -1) owner[i] = 0;
-  const zones = order.map((uid, k) => {
-    const mine = v.cells.filter((c) => owner[c.i] === k);
-    const cx = mine.reduce((s, c) => s + c.c[0], 0) / (mine.length || 1);
-    const cy = mine.reduce((s, c) => s + c.c[1], 0) / (mine.length || 1);
-    return { uid, k, quartiers: mine.map((c) => c.i), capitale: caps[k], label: [cx, cy] };
+      if (best === -1) break;
+      owner[best] = k; mine.push(best);
+    }
+    const cx = mine.reduce((s, i) => s + v.cells[i].c[0], 0) / mine.length;
+    const cy = mine.reduce((s, i) => s + v.cells[i].c[1], 0) / mine.length;
+    out.push({ uid, k, quartiers: mine, capitale: cap, label: [cx, cy] });
   });
-  return { ...v, owner, zones, order };
+  return { ...v, owner, zones: out, order };
 }

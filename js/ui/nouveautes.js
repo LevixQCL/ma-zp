@@ -3,9 +3,12 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-29d',
+  id: '2026-09-29e',
   titre: 'Mise à jour du 29 septembre (soir)',
   points: [
+    ['Carte', 'le district s’agrandit quand une zone arrive : la carte dézoome et la nouvelle zone s’installe en bordure, sans déplacer les autres.'],
+    ['Agents en mission', 'audition, traque et FIPA sortent du total à répartir (« 20 disponibles, dont 2 en mission : 18 à répartir ») et partent d’abord parmi les agents laissés libres.'],
+    ['Mon équipe', 'tu peux renommer les membres de ton équipe.'],
     ['Où sont mes agents ?', 'dans tes ordres, sous « Affectation » : le détail de ton effectif, les agents bloqués, un bouton pour les rapatrier et un autre pour répartir les libres. Sous chaque service, tu vois aussi ceux qui partent en audition, en traque ou en FIPA.'],
     ['Grande décision', 'chaque option affiche ce qu’elle change pour ta zone, chiffré sur ta répartition du jour (incidents, amendes, rentabilité, entretien).'],
     ['Économie', 'dotation fédérale 10 k€ par tour (au lieu de 8), matériel moins cher (5, 7, 9, 11 k€) et plus efficace (+15 % par niveau), annexes à 10 k€. Caméras de lecture de plaques : radars automatiques +1 k€ par tour en plus de Roulage +20 %.'],

@@ -738,7 +738,7 @@ function onInput(e) {
   if (!sl) return;
   const s = sl.dataset.slider;
   S.draft.alloc[s] = Number(sl.value);
-  const reste = estimations().reste;
+  const reste = estimations().resteBase;
   if (reste < 0) { S.draft.alloc[s] = Math.max(0, S.draft.alloc[s] + reste); sl.value = S.draft.alloc[s]; }
   S.ordersDirty = true;
   if (S.savedOrders) {
