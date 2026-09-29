@@ -96,7 +96,7 @@ export function sections() {
         ${table(['Décision', 'Coût', 'Effet'], [
           ['Recruter (1 à 3)', `${k(COUTS.recrue)} par recrue`, `arrivée après ${DELAI_ACADEMIE} tours d’académie`],
           ['Former un service', k(COUTS.formation), `+1 niveau ; 2 agents indisponibles ${DUREE_FORMATION} tours`],
-          ['Équiper un service', `${k(COUTS.equipementBase)} × niveau actuel`, '+1 équipement'],
+          ['Équiper un service', `${k(COUTS.equipementBase)}, puis +2 k€ par niveau`, '+15 % d’efficacité par niveau'],
           ['Acheter un véhicule', k(COUTS.vehicule), 'plus d’agents utiles en Intervention'],
           ['Construire', 'selon l’infrastructure', 'effet permanent (tableau ci-dessous)'],
         ])}
@@ -236,7 +236,7 @@ export function sections() {
         <p>Chaque jour, une 4<sup>e</sup> énigme facultative, de niveau hardcore : plus d’indices à croiser, des pièges assumés, aucun coup de pouce, et pas de changement possible. Une seule réponse, mais une erreur ne coûte rien. Une réussite rapporte +15 PS et compte pour le titre de fin de saison « Cerveau du district ».</p>
         <h3>L’entraînement</h3>
         <p>Dans l’écran Énigmes, l’onglet « Entraînement » permet de choisir un type et une difficulté (jusqu’au niveau hardcore) et de s’exercer autant qu’on veut. La correction est immédiate et rien ne compte : ni classement, ni moral, ni PS.</p>`,
-          'Deux bonnes réponses débloquent un bonus au choix : +1 indice d’enquête, +3 de moral, +2 k€ ou +10 % de capacité pour un service.',
+          'Deux bonnes réponses débloquent un bonus au choix : +1 indice d’enquête, +3 de moral, +2 k€ ou +10 % de capacité pour un service. Trois sur trois : prime « sans faute » en plus (+3 k€, +2 de moral, +5 PS).',
         ])}
         <h3>Les outils</h3>
         ${ul([

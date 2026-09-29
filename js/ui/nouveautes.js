@@ -3,28 +3,24 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-29c',
-  titre: 'Mise à jour du 29 septembre',
+  id: '2026-09-29d',
+  titre: 'Mise à jour du 29 septembre (soir)',
   points: [
-    ['Nouvel onglet Terrain', 'tout ce qui se passe chez toi, chez les voisins et dans le district, avec de quoi agir. L’Enquête est au centre de la barre du bas.'],
-    ['Affaires disputées', 'la zone où l’affaire éclate la dirige ; les autres postulent depuis la Carte, et la zone qui dirige accepte ou refuse.'],
-    ['Appel à renfort', 'pendant une opération d’envergure, demande des agents sur la radio ; les autres en prêtent pour la journée contre de la réputation.'],
-    ['Messages privés', 'onglet Privé à côté de la Radio, avec les invitations qui t’attendent (FIPA, duels, candidatures, renforts).'],
-    ['Nouvelle carte', 'plan de nuit, zoom sur ta zone, et un site sensible par zone (stade, usine Seveso, gare…) qui provoque ses propres imprévus.'],
-    ['Logistique et budget', 'hôtel de police et garage à niveaux sur l’HP ; touche la tuile Budget pour le détail de ce qui coûte et rapporte.'],
-    ['Énigmes', '11 types au lieu de 5 (plaque, photos, filature, écriture…) et tu peux en changer une par jour.'],
-    ['Dossier noir', 'chaque jour, une 4e énigme facultative de niveau hardcore. Sans coup de pouce ni pénalité : une réussite rapporte +15 PS et compte pour le titre « Cerveau du district ».'],
-    ['Entraînement', 'dans l’écran Énigmes, entraîne-toi sur le type et la difficulté de ton choix, correction immédiate. Rien ne compte.'],
-    ['Mon équipe', 'cinq figures de ta zone gagnent des surnoms avec l’expérience, et 11 trophées sont à décrocher (HP → Mon équipe et mes trophées).'],
-    ['La Gazette', 'nouvelle mise en page, rubriques « Au tribunal » (le procès après chaque arrestation), « Tableau d’honneur », « Échos du district » et « Le bêtisier ». Lis-la bien…'],
-    ['Règles', 'recrues en 2 tours, formation et travaux en 1 tour ; à la fin de la saison, formations et bâtiments sont conservés (un niveau de moins).'],
+    ['Où sont mes agents ?', 'dans tes ordres, sous « Affectation » : le détail de ton effectif, les agents bloqués, un bouton pour les rapatrier et un autre pour répartir les libres. Sous chaque service, tu vois aussi ceux qui partent en audition, en traque ou en FIPA.'],
+    ['Grande décision', 'chaque option affiche ce qu’elle change pour ta zone, chiffré sur ta répartition du jour (incidents, amendes, rentabilité, entretien).'],
+    ['Économie', 'dotation fédérale 10 k€ par tour (au lieu de 8), matériel moins cher (5, 7, 9, 11 k€) et plus efficace (+15 % par niveau), annexes à 10 k€.'],
+    ['Véhicules', 'chaque intervention use le parc ; sous 80 % d’état, l’Intervention perd de l’efficacité. Nouvelle dépense du jour : révision du parc (2 k€, +20 %).'],
+    ['Énigmes', '3 sur 3 : prime « sans faute » de +3 k€ et +2 de moral en plus du bonus. Message codé plus retors (groupes de 5 lettres, mots-clés). « Qui ment ? » : la règle du menteur est expliquée.'],
+    ['Affaires disputées', 'toujours dirigées par une zone, et jamais deux dans la même zone.'],
+    ['Diplomatie', 'la liste des zones en difficulté (péril, coup dur) avec le gain de réputation ; les manœuvres expliquent ce que tu gagnes, ce que subit la cible et comment elle se protège.'],
   ],
 };
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP ! Nouvel onglet Terrain, affaires disputées dirigées par la zone concernée (les autres postulent), appels à renfort, messages privés, nouvelle carte avec un site sensible par zone, logistique et détail du budget, 11 types d’énigmes (une à changer par jour), un dossier noir hardcore chaque jour, un mode entraînement, délais raccourcis et héritage entre saisons. Tout le détail s’affiche à ta prochaine ouverture du jeu (ou HP → Nouveautés). Recharge la page si besoin !`;
+  return `📣 Mise à jour de Ma ZP ! Détail « Où sont mes agents ? » avec rapatriement, grandes décisions chiffrées, dotation à 10 k€ et matériel moins cher, usure et révision des véhicules, prime « sans faute » aux énigmes, message codé plus retors, entraide et manœuvres expliquées. Recharge la page si besoin !`;
 }
+
 
 const cle = () => `mazp-maj-vue-${NOTE_MAJ.id}`;
 export function noteVue() { try { return !!localStorage.getItem(cle()); } catch (e) { return true; } }

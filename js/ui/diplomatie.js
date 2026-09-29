@@ -65,12 +65,23 @@ function duelsHtml() {
 function aideHtml() {
   const d = S.draft;
   const a = d.aide || { cible: '', budget: 0, agents: 0 };
-  const perils = autres().filter((z) => z.peril);
+  const T = S.state.turn;
+  const statut = (z) => {
+    if (z.peril) return { cls: 'bad', t: 'en péril', d: `${(z.peril.raisons || []).join(', ') || 'zone en difficulté'} · faillite au tour ${z.peril.fin} sans redressement`, bonus: 5 };
+    const bl = (z.blesses || []).filter((b) => b.retour > T && b.motif !== 'prêté').reduce((s, b) => s + b.n, 0);
+    const cd = z.dernierCoupDur && T - z.dernierCoupDur.tour <= 2 ? z.dernierCoupDur : null;
+    if (bl || cd) return { cls: 'warn', t: 'coup dur', d: [cd ? `${cd.titre.toLowerCase()} au tour ${cd.tour}` : '', bl ? `${bl} blessé${bl > 1 ? 's' : ''} ou absent${bl > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · '), bonus: bl ? 3 : 1 };
+    if (z.budget < 0) return { cls: 'warn', t: 'budget négatif', d: `${fmt1(z.budget)} k€`, bonus: 1 };
+    return null;
+  };
+  const enDiff = autres().map((z) => ({ z, s: statut(z) })).filter((x) => x.s);
   return `<section class="card" aria-label="Entraide"><h2 class="card-title" style="margin:0">Entraide</h2>
-    <p class="small muted" style="margin:0">Envoie du budget (immédiat) ou prête des agents pour ${AIDE.dureePret} tours. Aider une zone en péril rapporte +5 de réputation, une zone frappée par un coup dur +3.</p>
-    ${perils.length ? `<p class="small bad" style="margin:0">En péril : ${perils.map((z) => zoneName(z)).join(', ')}.</p>` : ''}
+    <p class="small muted" style="margin:0">Envoie du budget (immédiat) ou prête des agents pour ${AIDE.dureePret} tours. Réputation gagnée : +5 pour une zone en péril, +3 pour une zone qui a des blessés après un coup dur, +1 sinon.</p>
+    <div class="col" style="gap:4px"><span class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.6px">Zones en difficulté</span>
+      ${enDiff.length ? enDiff.map(({ z, s }) => `<div class="between small" style="gap:8px"><span>${zoneName(z)} <span class="${s.cls}" style="font-weight:700">· ${s.t}</span><br><span class="tiny muted">${esc(s.d)}</span></span><span class="pill ${s.cls === 'bad' ? 'red' : 'amber'}">+${s.bonus} rép.</span></div>`).join('') : '<span class="small muted">Aucune pour l’instant. Une zone passe « en péril » quand son budget tombe sous −15 k€, qu’il lui reste moins de 8 agents disponibles ou que son moral passe sous 10.</span>'}
+    </div>
     <label class="field">Zone aidée<select class="text" data-change="aide-cible" style="min-height:44px;font-size:14px"><option value="">Personne</option>
-      ${autres().map((z) => `<option value="${esc(z.uid)}" ${a.cible === z.uid ? 'selected' : ''}>${zoneName(z)}${z.peril ? ' · en péril' : ''}</option>`).join('')}</select></label>
+      ${autres().map((z) => `<option value="${esc(z.uid)}" ${a.cible === z.uid ? 'selected' : ''}>${zoneName(z)}${statut(z) ? ` · ${statut(z).t}` : ''}</option>`).join('')}</select></label>
     ${a.cible ? `<div class="between"><span class="small">Budget envoyé</span><span class="stepper"><button type="button" data-action="aide-n" data-k="budget" data-d="-1" aria-label="1 k€ de moins">−</button><span class="n">${a.budget} k€</span><button type="button" data-action="aide-n" data-k="budget" data-d="1" aria-label="1 k€ de plus">+</button></span></div>
       <div class="between"><span class="small">Agents prêtés</span><span class="stepper"><button type="button" data-action="aide-n" data-k="agents" data-d="-1" aria-label="Un agent de moins">−</button><span class="n">${a.agents}</span><button type="button" data-action="aide-n" data-k="agents" data-d="1" aria-label="Un agent de plus">+</button></span></div>
       <p class="tiny muted" style="margin:0">Maximum ${AIDE.budgetMax} k€ et ${AIDE.agentsMax} agents ; tu gardes toujours au moins 8 agents.</p>` : ''}
@@ -83,7 +94,9 @@ function manoeuvreHtml() {
   const chance = Math.round(chanceBase(st, z) * 100);
   return `<section class="card" aria-label="Manœuvres"><h2 class="card-title" style="margin:0">Manœuvres</h2>
     <p class="small muted" style="margin:0">Une manœuvre par tour. Réussie ou non, elle coûte ${MAN.coutReputation} de réputation et la Gazette révèle ton nom le lendemain. Chance de la prochaine : <strong class="warn">${chance} %</strong> avant les parades de la cible (elle baisse à chaque manœuvre des 7 derniers tours).</p>
-    <div class="col" style="gap:6px">${Object.entries(MANOEUVRES).map(([k, v]) => `<button type="button" class="choice" data-action="man-type" data-v="${k}" aria-pressed="${m.type === k}" style="text-align:left;align-items:flex-start">${esc(v.nom)}<span class="s">${esc(v.texte)} Parade : ${esc(v.parade.charAt(0).toLowerCase() + v.parade.slice(1))}</span></button>`).join('')}</div>
+    <div class="man-regles"><strong>Comment ça se passe.</strong> Tout est secret jusqu’à 20:00 : la cible ne voit rien venir et ne peut pas réagir sur le moment. Sa défense, c’est l’état de sa zone ce soir-là (moral, dossiers, paperasse, Proximité). Juste après 20:00, elle lit dans son rapport qu’une zone l’a visée et si ça a marché, sans savoir laquelle ; la Gazette du lendemain soir révèle ton nom. Elle peut alors riposter (duel, manœuvre) ou te le faire payer au Conseil (blâme). Les zones en péril et les nouvelles zones sont intouchables.</div>
+    <div class="col" style="gap:6px">${Object.entries(MANOEUVRES).map(([k, v]) => `<button type="button" class="choice" data-action="man-type" data-v="${k}" aria-pressed="${m.type === k}" style="text-align:left;align-items:flex-start">${esc(v.nom)}<span class="s">${esc(v.texte)}</span>
+      ${m.type === k ? `<span class="s"><strong>Tu gagnes :</strong> ${esc(v.gain)}.</span><span class="s"><strong>La cible :</strong> ${esc(v.cible)}.</span><span class="s"><strong>Elle se protège par :</strong> ${esc(v.defense)}</span>` : `<span class="s">Parade : ${esc(v.parade.charAt(0).toLowerCase() + v.parade.slice(1))}</span>`}</button>`).join('')}</div>
     ${m.type ? `<label class="field">Zone visée<select class="text" data-change="man-cible" style="min-height:44px;font-size:14px"><option value="">Choisir…</option>
       ${autres().map((c) => { const r = cibleImpossible(st, c); return `<option value="${esc(c.uid)}" ${m.cible === c.uid ? 'selected' : ''} ${r ? 'disabled' : ''}>${zoneName(c)}${r ? ` (${esc(r.split(' :')[0].toLowerCase())})` : ''}</option>`; }).join('')}</select></label>
       <button class="btn small ghost" data-action="man-annuler">Pas de manœuvre ce tour</button>` : ''}

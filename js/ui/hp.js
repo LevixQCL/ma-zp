@@ -155,7 +155,7 @@ export function renderHP() {
         <div class="tile"><span class="l">Agents</span><span class="v">${dispo}<span class="muted" style="font-size:13px"> / ${z.agents}</span></span>
           <span class="s ${blesses ? 'bad' : ''}">${blesses ? `${blesses} absent${blesses > 1 ? 's' : ''}` : form ? `${form} en formation` : z.academie.length ? `${z.academie.reduce((s, a) => s + a.n, 0)} à l’académie` : 'tous disponibles'}</span></div>
         <button type="button" class="tile tile-btn" data-action="budget" aria-label="Détail du budget"><span class="l row" style="gap:4px">Budget ${icon('chevron', 12)}</span><span class="v ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s ${fraisFixesDuJour(z) < 0 ? 'bad' : ''}">${fraisFixesDuJour(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(fraisFixesDuJour(z)))} k€/jour · détail</span></button>
-        <div class="tile"><span class="l">Véhicules</span><span class="v">${vDispo}<span class="muted" style="font-size:13px"> / ${z.vehicules}</span></span><span class="s">état ${Math.round(100 - z.usure)} %</span></div>
+        <div class="tile"><span class="l">Véhicules</span><span class="v">${vDispo}<span class="muted" style="font-size:13px"> / ${z.vehicules}</span></span><span class="s ${100 - z.usure < 60 ? 'bad' : 100 - z.usure < 80 ? 'warn' : ''}">état ${Math.round(100 - z.usure)} %${100 - z.usure < 80 ? ' · révision ?' : ''}</span></div>
       </div>
       <div class="col" style="gap:9px">
         ${gauge('Moral', z.moral, 'var(--amber)', delta(z.moral, z.hier && z.hier.moral) + aideBtn('moral'))}

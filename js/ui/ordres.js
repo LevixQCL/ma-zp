@@ -1,7 +1,7 @@
 // Écran des ordres du tour.
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
 import { AIDE } from '../engine/rivalites.js';
-import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, SEASON_LENGTH, tourEffet } from '../engine/constants.js';
+import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, tourEffet, malusEtat, coutEquipement, multNiveau, multEquip, ECONOMIE } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel } from './affaires.js';
@@ -63,11 +63,28 @@ export function agentsHorsServices() {
   return l;
 }
 
+/**
+ * Agents pris dans les services pour la journée (même ordre que la résolution) :
+ * opération d'envergure, puis audition, traque et FIPA. Renvoie { s: [[n, motif], …] }.
+ */
+export function prisesDuJour(z, d, opx) {
+  const al = d.alloc, pris = {};
+  const ajoute = (s, n, motif) => { if (n > 0) (pris[s] ||= []).push([n, motif]); };
+  for (const [s, n] of Object.entries(opx.pris || {})) ajoute(s, n, 'l’opération');
+  if ((d.demarches || []).includes('temoin')) ajoute('recherche', Math.min(2, al.recherche || 0), 'audition');
+  if (d.traque && d.traque.agents) ajoute('intervention', Math.min(d.traque.agents, al.intervention || 0), 'traque');
+  let f = agentsFipaCeSoir();
+  for (const s of ['proximite', 'intervention', 'roulage', 'recherche', 'admin']) { const k = Math.min(f, al[s] || 0); ajoute(s, k, 'FIPA'); f -= k; }
+  return pris;
+}
+
 export function estimations() {
   const z = myZone(), st = S.state, d = S.draft;
   const opts = { rythme: d.rythme, turn: st.turn };
   const opx = effetsOperation(z, d.alloc, d.operation, st.turn);
-  const eff = opx.eff;
+  const prises = prisesDuJour(z, d, opx);
+  const eff = { ...opx.eff };
+  for (const [s, l] of Object.entries(prises)) for (const [n, motif] of l) if (motif !== 'l’opération') eff[s] = Math.max(0, (eff[s] || 0) - n);
   const pr = {};
   for (const p of z.pressions || []) Object.assign(pr, p.effet);
   const dep = d.depenses || {};
@@ -83,7 +100,15 @@ export function estimations() {
   const dispo = agentsDisponibles(z, st.turn);
   const reste = dispo - SERVICES.reduce((s, k) => s + d.alloc[k], 0) - engages(d);
   const coutDep = coutDepenses(dep);
-  return { attendus, couverts, pap, amendes, chasse, dispo, reste, opx, coutDep };
+  return { attendus, couverts, pap, amendes, chasse, dispo, reste, opx, coutDep, prises };
+}
+
+/** « dont 2 en audition » sous un service : ces agents ne travaillent pas dans le service aujourd'hui. */
+function prisHtml(e, s) {
+  const l = (e.prises || {})[s];
+  if (!l || !l.length) return '';
+  const n = l.reduce((t, [k]) => t + k, 0);
+  return `<span class="tiny warn">dont ${l.map(([k, m]) => `${k} ${m === 'l’opération' ? 'sur l’opération' : `en ${m}`}`).join(', ')} : ${Math.max(0, S.draft.alloc[s] - n)} au travail dans le service</span>`;
 }
 
 function opCouvHtml(e) {
@@ -105,7 +130,7 @@ function statusHtml(e) {
 export function updateOrdresLive() {
   const e = estimations();
   const set = (id, html) => { const el = document.getElementById(id); if (el) el.innerHTML = html; };
-  for (const s of SERVICES) set(`val-${s}`, `${S.draft.alloc[s]}${e.opx.pris[s] ? ` <span class="tiny warn">dont ${e.opx.pris[s]} sur l\u2019opération</span>` : ''}`);
+  for (const s of SERVICES) set(`pris-${s}`, prisHtml(e, s));
   if (e.opx.op) set('op-couv', opCouvHtml(e));
   set('alloc-status', statusHtml(e));
   set('est-inc', `${e.couverts} sur ${e.attendus}`);
@@ -131,7 +156,7 @@ function decisionOptions(z, T) {
   for (const n of [1, 2, 3]) opts.push({ d: { type: 'recruter', n }, sub: `${COUTS.recrue * n} k€ · arrivée dans ${DELAI_ACADEMIE} tour${DELAI_ACADEMIE > 1 ? 's' : ''}` });
   for (const s of SERVICES) opts.push({ d: { type: 'former', service: s }, sub: `${COUTS.formation} k€ · 2 agents absents ${DUREE_FORMATION} tour${DUREE_FORMATION > 1 ? 's' : ''}` });
   opts.push({ d: { type: 'equiper', cible: 'vehicule' }, sub: `${COUTS.vehicule} k€ · ${z.vehicules} véhicules actuellement` });
-  for (const s of SERVICES) opts.push({ d: { type: 'equiper', cible: s }, sub: `${COUTS.equipementBase * z.equip[s]} k€` });
+  for (const s of SERVICES) opts.push({ d: { type: 'equiper', cible: s }, sub: `${coutEquipement(z.equip[s])} k€` });
   for (const [id, B] of Object.entries(BATIMENTS)) if (z.batiments[id] < BATIMENT_MAX) opts.push({ d: { type: 'agrandir', batiment: id }, sub: `${B.coutAgrandir(z.batiments[id])} k€ · ${B.capacite(z.batiments[id] + 1)} ${B.unite} · ${TRAVAUX_TOURS} tours de travaux` });
   for (const [id, inf] of Object.entries(INFRAS)) if (!z.infra[id]) opts.push({ d: { type: 'construire', infra: id }, sub: `${inf.cout} k€ · ${inf.effet} · entretien ${String(ENTRETIEN_ANNEXE).replace('.', ',')} k€/tour` });
   return opts.map((o) => ({ ...o, refus: decisionImpossible(z, o.d, T) }));
@@ -140,6 +165,68 @@ function decisionOptions(z, T) {
 const DEC_CATS = [['recruter', 'Recruter'], ['former', 'Former'], ['equiper', 'Équiper'], ['batir', 'Bâtir']];
 const catDe = (dec) => (!dec ? null : dec.type === 'construire' || dec.type === 'agrandir' ? 'batir' : dec.type);
 const niv = (n, max = NIVEAU_MAX) => `<span class="niv" aria-label="niveau ${n} sur ${max}">${Array.from({ length: max }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
+
+/** Gain d'un service avec une zone modifiée, à répartition actuelle : { avant, apres } en capacité. */
+function gainService(z, s, modif) {
+  const z2 = JSON.parse(JSON.stringify(z));
+  modif(z2);
+  const n = S.draft.alloc[s] || 0, o = { rythme: S.draft.rythme, turn: S.state.turn };
+  return { avant: capacite(z, s, n, o), apres: capacite(z2, s, n, o), n };
+}
+
+/** Ce que change concrètement une grande décision, chiffré sur la répartition du jour. */
+function detailDecision(z, dec, T) {
+  const cout = coutDecision(z, dec);
+  const l = [];
+  const pct = (a, b) => (a > 0 ? `${b >= a ? '+' : '−'}${Math.round(Math.abs(b / a - 1) * 100)} %` : '—');
+  const argent = (s, g, entretien = 0) => {
+    if (s !== 'roulage') return;
+    const gain = (g.apres - g.avant) * ECONOMIE.amendeParCapacite - entretien;
+    l.push(`Amendes : ${gain >= 0 ? '+' : '−'}${fmt1(Math.abs(gain))} k€ par tour${entretien ? ' (entretien déduit)' : ''} avec tes ${g.n} agents en Roulage${gain > 0 ? `, rentabilisé en ${Math.ceil(cout / gain)} tours environ` : ''}.`);
+  };
+  const effet = (s, g) => {
+    if (!g.n) { l.push(`Tu n’as aucun agent en ${SERVICE_LABELS[s]} aujourd’hui : le gain dépendra de ceux que tu y mettras.`); return; }
+    if (s === 'intervention') l.push(`Intervention : environ ${Math.floor(g.avant / 1.1)} → ${Math.floor(g.apres / 1.1)} incidents traités par jour avec tes ${g.n} agents.`);
+    else if (s === 'admin') l.push(`Paperasse : environ ${fmt1(g.avant * 1.2)} → ${fmt1(g.apres * 1.2)} dossiers traités par jour.`);
+    else if (s === 'recherche') l.push(`Recherche : tes dossiers avancent ${pct(g.avant, g.apres)} plus vite.`);
+    else if (s === 'proximite') l.push(`Proximité : la criminalité baisse ${pct(g.avant, g.apres)} plus vite.`);
+  };
+  if (dec.type === 'recruter') {
+    l.push(`${dec.n} agent${dec.n > 1 ? 's' : ''} de plus au tour ${T + DELAI_ACADEMIE} (académie). Effectif ${effectifPrevu(z)} → ${effectifPrevu(z) + dec.n} sur ${capaciteAgents(z)} places.`);
+    l.push(`Coût : ${cout} k€ maintenant, puis ${fmt1(dec.n * ECONOMIE.salaire)} k€ de salaires en plus par tour. Mis en Roulage, un agent rapporte environ ${fmt1(capacite(z, 'roulage', 1, { turn: T }) * ECONOMIE.amendeParCapacite)} k€ par tour.`);
+  } else if (dec.type === 'former') {
+    const s = dec.service, n = z.niveaux[s];
+    const g = gainService(z, s, (x) => { x.niveaux[s] = n + 1; });
+    l.push(`${SERVICE_LABELS[s]} niveau ${n} → ${n + 1} : efficacité ${pct(multNiveau(n), multNiveau(n + 1))}.`);
+    l.push(`${AGENTS_EN_FORMATION} agents absents au tour ${T + 1}, niveau gagné à la résolution du tour ${T + DUREE_FORMATION + 1}. Conservé à la saison suivante (un niveau de moins).`);
+    effet(s, g); argent(s, g);
+  } else if (dec.type === 'equiper' && dec.cible === 'vehicule') {
+    const inter = S.draft.alloc.intervention || 0, lim = (v) => v * 2.5;
+    const g = gainService(z, 'intervention', (x) => { x.usure = x.usure * x.vehicules / (x.vehicules + 1); x.vehicules += 1; });
+    l.push(`${z.vehicules} → ${z.vehicules + 1} véhicules, dès le tour ${T + 1}. Chaque véhicule emmène pleinement 2,5 agents d’Intervention : ${fmt1(lim(z.vehicules))} → ${fmt1(lim(z.vehicules + 1))} (tu en mets ${inter}).`);
+    l.push(`L’usure du parc se répartit sur un véhicule de plus. Entretien : +${fmt1(ECONOMIE.entretienVehicule)} k€ par tour.`);
+    if (inter <= lim(z.vehicules)) l.push('Aujourd’hui, tes véhicules suffisent déjà : un véhicule de plus ne sert que si tu renforces l’Intervention.');
+    else effet('intervention', g);
+  } else if (dec.type === 'equiper') {
+    const s = dec.cible, n = z.equip[s];
+    const g = gainService(z, s, (x) => { x.equip[s] = n + 1; });
+    l.push(`Matériel ${SERVICE_LABELS[s]} ${n} → ${n + 1} : efficacité ${pct(multEquip(n), multEquip(n + 1))}, dès le tour ${T + 1}. Pas d’entretien. Remis à zéro en fin de saison.`);
+    effet(s, g); argent(s, g);
+  } else if (dec.type === 'agrandir') {
+    const B = BATIMENTS[dec.batiment], n = z.batiments[dec.batiment];
+    l.push(`${B.nom} niveau ${n} → ${n + 1} après ${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux : ${B.capacite(n)} → ${B.capacite(n + 1)} ${B.unite}.`);
+    l.push(`Entretien ${fmt1(B.entretien(n))} → ${fmt1(B.entretien(n + 1))} k€ par tour${B.subside(n + 1) ? `, subside communal ${fmt1(B.subside(n))} → ${fmt1(B.subside(n + 1))} k€` : ''}. Utile seulement si tu comptes ${dec.batiment === 'bureaux' ? 'recruter' : 'acheter des véhicules'} au-delà de la capacité actuelle.`);
+  } else if (dec.type === 'construire') {
+    const id = dec.infra, inf = INFRAS[id];
+    l.push(`${inf.effet}. Permanent, conservé d’une saison à l’autre. Entretien ${fmt1(ENTRETIEN_ANNEXE)} k€ par tour.`);
+    const svc = { anpr: 'roulage', antenne: 'proximite', audition: 'recherche', logiciel: 'admin' }[id];
+    if (svc) { const g = gainService(z, svc, (x) => { x.infra[id] = true; }); effet(svc, g); argent(svc, g, ENTRETIEN_ANNEXE); }
+    if (id === 'anpr') l.push('Surtout : plus d’effet « chasse aux PV », tu peux dépasser 25 % d’agents en Roulage.');
+    if (id === 'garage') l.push(`Usure des véhicules divisée par deux (état du parc : ${Math.round(100 - z.usure)} %). Pannes et accidents plus rares.`);
+    if (id === 'sport') l.push('+1 de moral chaque tour : le moral multiplie l’efficacité de tous les services.');
+  }
+  return `<span class="tiny" style="font-weight:700;color:var(--amber)">Ce que ça change · ${cout} k€</span>${l.map((x) => `<p class="small" style="margin:0">${esc(x)}</p>`).join('')}`;
+}
 
 /** Sélecteur de grande décision : quatre catégories, des tuiles compactes. */
 function decisionPicker(z, T, d) {
@@ -154,24 +241,24 @@ function decisionPicker(z, T, d) {
     return `<button type="button" class="dtuile ${trop ? 'tard' : ''}" data-action="decision" data-json='${esc(JSON.stringify(dec))}' aria-pressed="${choisi(dec)}" ${refus && !choisi(dec) ? 'disabled' : ''}>
       <span class="t">${titre}</span>${extra}<span class="d">${esc(refus || detail)}</span><span class="c">${cout} k€</span></button>`;
   };
+  const pc = (x) => `${x >= 0 ? '+' : '−'}${Math.round(Math.abs(x) * 100)} %`;
+  const ent = (v) => `${fmt1(v)} k€`;
   let corps = '';
   if (cat === 'recruter') {
-    corps = `<p class="tiny muted" style="margin:0">Effectif : ${effectifPrevu(z)} sur ${capaciteAgents(z)} places à l’hôtel de police. Arrivée après ${3} tours d’académie, puis ${String(0.3).replace('.', ',')} k€ de salaire par tour et par agent.</p>
-      <div class="dgrille trois">${[1, 2, 3].map((n) => tuile({ type: 'recruter', n }, `+${n} agent${n > 1 ? 's' : ''}`, `arrivée dans ${DELAI_ACADEMIE} tour${DELAI_ACADEMIE > 1 ? 's' : ''}`, COUTS.recrue * n)).join('')}</div>`;
+    corps = `<div class="dgrille trois">${[1, 2, 3].map((n) => tuile({ type: 'recruter', n }, `+${n} agent${n > 1 ? 's' : ''}`, `au tour ${T + DELAI_ACADEMIE} · +${fmt1(n * ECONOMIE.salaire)} k€/tour de salaire`, COUTS.recrue * n)).join('')}</div>`;
   } else if (cat === 'former') {
-    corps = `<p class="tiny muted" style="margin:0">Un service gagne un niveau d’efficacité. 2 agents sont absents pendant ${DUREE_FORMATION} tour${DUREE_FORMATION > 1 ? 's' : ''}. Le niveau est conservé à la saison suivante (moins un).</p>
-      <div class="dgrille">${SERVICES.map((sv) => tuile({ type: 'former', service: sv }, SERVICE_LABELS[sv], `niveau ${z.niveaux[sv]} → ${z.niveaux[sv] + 1}`, COUTS.formation, niv(z.niveaux[sv]))).join('')}</div>`;
+    corps = `<div class="dgrille">${SERVICES.map((sv) => tuile({ type: 'former', service: sv }, SERVICE_LABELS[sv], `niveau ${z.niveaux[sv]} → ${z.niveaux[sv] + 1} · efficacité ${pc(multNiveau(z.niveaux[sv] + 1) / multNiveau(z.niveaux[sv]) - 1)}`, COUTS.formation, niv(z.niveaux[sv]))).join('')}</div>`;
   } else if (cat === 'equiper') {
-    corps = `<p class="tiny muted" style="margin:0">Un véhicule de plus, ou du meilleur matériel pour un service (effet immédiat).</p>
-      <div class="dgrille">${tuile({ type: 'equiper', cible: 'vehicule' }, 'Véhicule', `${z.vehicules} sur ${capaciteVehicules(z)} places au garage`, COUTS.vehicule)}
-      ${SERVICES.map((sv) => tuile({ type: 'equiper', cible: sv }, SERVICE_LABELS[sv], `matériel ${z.equip[sv]} → ${z.equip[sv] + 1}`, COUTS.equipementBase * z.equip[sv], niv(z.equip[sv]))).join('')}</div>`;
+    corps = `<div class="dgrille">${tuile({ type: 'equiper', cible: 'vehicule' }, 'Véhicule', `${z.vehicules} → ${z.vehicules + 1} véhicules (garage : ${capaciteVehicules(z)} places) · +${fmt1(ECONOMIE.entretienVehicule)} k€/tour`, COUTS.vehicule)}
+      ${SERVICES.map((sv) => tuile({ type: 'equiper', cible: sv }, SERVICE_LABELS[sv], `matériel ${z.equip[sv]} → ${z.equip[sv] + 1} · efficacité ${pc(multEquip(z.equip[sv] + 1) / multEquip(z.equip[sv]) - 1)}`, coutEquipement(z.equip[sv]), niv(z.equip[sv]))).join('')}</div>`;
   } else {
     const faites = Object.entries(INFRAS).filter(([id]) => z.infra[id]).map(([, i]) => i.nom);
-    corps = `<p class="tiny muted" style="margin:0">Agrandir : ${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux, puis plus de places mais plus d’entretien (conservé à la saison suivante, moins un niveau). Annexe : effet permanent, ${String(ENTRETIEN_ANNEXE).replace('.', ',')} k€ d’entretien par tour.</p>
-      <div class="dgrille">${Object.entries(BATIMENTS).map(([id, B]) => (z.batiments[id] >= BATIMENT_MAX ? '' : tuile({ type: 'agrandir', batiment: id }, `Agrandir : ${B.nom}`, `${B.capacite(z.batiments[id] + 1)} ${B.unite}`, B.coutAgrandir(z.batiments[id]), niv(z.batiments[id], BATIMENT_MAX)))).join('')}
-      ${Object.entries(INFRAS).filter(([id]) => !z.infra[id]).map(([id, inf]) => tuile({ type: 'construire', infra: id }, inf.nom, inf.effet, inf.cout)).join('')}</div>
+    corps = `<div class="dgrille">${Object.entries(BATIMENTS).map(([id, B]) => { const n = z.batiments[id]; return n >= BATIMENT_MAX ? '' : tuile({ type: 'agrandir', batiment: id }, `Agrandir : ${B.nom}`, `${B.capacite(n)} → ${B.capacite(n + 1)} ${B.unite} · entretien ${ent(B.entretien(n))} → ${ent(B.entretien(n + 1))}/tour`, B.coutAgrandir(n), niv(n, BATIMENT_MAX)); }).join('')}
+      ${Object.entries(INFRAS).filter(([id]) => !z.infra[id]).map(([id, inf]) => tuile({ type: 'construire', infra: id }, inf.nom, `${inf.effet} · entretien ${ent(ENTRETIEN_ANNEXE)}/tour`, inf.cout)).join('')}</div>
       ${faites.length ? `<p class="tiny muted" style="margin:0">Déjà construit : ${esc(faites.join(', '))}.</p>` : ''}`;
   }
+  const det = d.decision && catDe(d.decision) === cat ? detailDecision(z, d.decision, T) : '';
+  corps += det ? `<div class="ddetail">${det}</div>` : '<p class="tiny muted" style="margin:0">Touche une option : le détail de ce qu’elle change pour ta zone s’affiche ici.</p>';
   return `<div class="col" style="gap:10px">
     <div class="between dchoix"><span class="col" style="gap:1px"><span class="tiny muted">Ta grande décision de ce soir</span><strong>${esc(decisionLabel(z, d.decision))}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}</strong></span>
       ${d.decision ? '<button type="button" class="btn small ghost" data-action="decision" data-json="null">Aucune</button>' : ''}</div>
@@ -230,7 +317,7 @@ function ventilationHtml(z, e) {
 function aide(s, z) {
   const f = (v) => fmt1(v);
   switch (s) {
-    case 'intervention': return `Traite les incidents du jour (environ 1 agent par incident, ${Math.max(1, Math.round(1.5 + z.criminalite / 14))} attendus). Incident traité : +0,5 de satisfaction ; raté : −1,8. Au-delà de 2,5 agents par véhicule, les agents en trop comptent pour moitié.`;
+    case 'intervention': return `Traite les incidents du jour (environ 1 agent par incident, ${Math.max(1, Math.round(1.5 + z.criminalite / 14))} attendus). Incident traité : +0,5 de satisfaction ; raté : −1,8. Au-delà de 2,5 agents par véhicule, les agents en trop comptent pour moitié. Chaque intervention use les véhicules : état du parc ${Math.round(100 - z.usure)} %${malusEtat(100 - z.usure) < 1 ? ` (efficacité −${Math.round((1 - malusEtat(100 - z.usure)) * 100)} %)` : ''} ; sous 80 %, l’Intervention perd de l’efficacité. Une révision du parc (dépense du jour, 2 k€) rend +20 %.`;
     case 'proximite': return `Prévention : fait baisser la criminalité (actuellement ${Math.round(z.criminalite)}). Environ 4 agents la stabilisent. Au-dessus de 55, la criminalité coûte de la satisfaction chaque jour et augmente les incidents. Effet lent, visible sur plusieurs jours.`;
     case 'recherche': return `Fait avancer tes dossiers locaux (${z.dossiers.length} en cours). Dossier élucidé : des points et +2 de satisfaction. Un dossier de plus de 6 tours coûte de la satisfaction chaque jour.`;
     case 'roulage': return `Rapporte environ 0,7 k€ par agent et par jour. Au-delà de 25 % de tes effectifs : « chasse aux PV », −2 de satisfaction par jour.`;
@@ -245,7 +332,8 @@ function prisesHtml() {
   if ((d.demarches || []).includes('temoin')) l.push('2 agents de Recherche passent la journée sur une audition');
   const f = agentsFipaCeSoir();
   if (f) l.push(`${f} agents partent en FIPA (pris d’abord en Proximité)`);
-  return l.length ? `<p class="small warn" style="margin:0">Enquête et FIPA : ${l.join(' ; ')}. Ils quittent leur service pour la journée.</p>` : '';
+  const fo = d.decision && d.decision.type === 'former' ? `<p class="small muted" style="margin:0">Formation choisie : ${AGENTS_EN_FORMATION} agents seront absents demain (${DUREE_FORMATION} tour), ils sortiront alors du total disponible.</p>` : '';
+  return (l.length ? `<p class="small warn" style="margin:0">Enquête et FIPA : ${l.join(' ; ')}. Ils quittent leur service pour la journée (indiqué sous chaque service).</p>` : '') + fo;
 }
 
 export function situationHtml(z) {
@@ -275,7 +363,7 @@ export function renderOrdres() {
   const pap = (v) => (v < 0 ? `−${-v}` : v > 0 ? `+${v}` : '±0');
   const nbEng = Object.values(d.engagements).filter((x) => x.agents > 0).length;
   const dep = d.depenses || {};
-  const nbDep = (dep.reserve ? 1 : 0) + ['prime', 'prevention', 'soustraitance'].filter((k) => dep[k]).length;
+  const nbDep = (dep.reserve ? 1 : 0) + ['prime', 'prevention', 'soustraitance', 'revision'].filter((k) => dep[k]).length;
 
   const affairesHtml = st.affaires.map((a) => {
     const eg = d.engagements[a.id] || { agents: 0, acceptes: [] };
@@ -313,9 +401,9 @@ export function renderOrdres() {
       ${dep.reserve ? `<label class="field" style="font-weight:500">Service renforcé
         <select class="text" data-change="dep-service" style="min-height:44px;font-size:14px">${SERVICES.map((s2) => `<option value="${s2}" ${dep.reserveService === s2 ? 'selected' : ''}>${SERVICE_LABELS[s2]}</option>`).join('')}</select></label>` : ''}
     </div>
-    <div class="col" style="gap:6px">${['prime', 'prevention', 'soustraitance'].map((k) => `
+    <div class="col" style="gap:6px">${['prime', 'prevention', 'soustraitance', 'revision'].map((k) => `
       <button type="button" class="choice" data-action="dep-toggle" data-k="${k}" aria-pressed="${!!dep[k]}" style="flex-direction:row;justify-content:space-between;text-align:left">
-        <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(DEPENSES[k].nom)}</span><span class="s">${esc(DEPENSES[k].texte)}</span></span><span class="mono small">${fmt1(DEPENSES[k].cout)} k€</span></button>`).join('')}
+        <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(DEPENSES[k].nom)}</span><span class="s">${esc(DEPENSES[k].texte)}${k === 'revision' ? ` · état actuel ${Math.round(100 - z.usure)} %` : ''}</span></span><span class="mono small">${fmt1(DEPENSES[k].cout)} k€</span></button>`).join('')}
     </div>
     <p class="tiny muted" style="margin:0">Payées à 20:00 si le budget le permet (${fmt1(z.budget)} k€). Elles ne sont pas reconduites le lendemain.</p>`;
 
@@ -352,7 +440,7 @@ export function renderOrdres() {
           <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button>
             <span class="n" style="min-width:34px">${d.alloc[s2]}</span>
             <button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
-        ${e.opx.pris[s2] ? `<span class="tiny warn">dont ${e.opx.pris[s2]} sur l’opération</span>` : ''}
+        <span id="pris-${s2}">${prisHtml(e, s2)}</span>
         ${S.help && S.help[s2] ? `<p class="tiny" style="margin:2px 0 6px;color:var(--text2);line-height:1.45">${esc(aide(s2, z))}</p>` : ''}
       </div>`).join('')}
       <p class="tiny muted" style="margin:0">Touche + : si aucun agent n’est libre, il est pris dans ton service le plus fourni.</p>

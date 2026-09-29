@@ -524,3 +524,6 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .roue-c2 { color: #7FD18B; }
 .roue-c3 { color: #F08BB4; }
 .roue-lecture { font-family: var(--mono); font-size: 16px; letter-spacing: 1px; line-height: 1.6; word-spacing: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-weight: 600; }
+.ddetail { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--amber-line, var(--line)); }
+.man-regles { font-size: 13px; line-height: 1.45; color: var(--text2); padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+.pill.red { background: var(--red-bg); border-color: var(--red-line); color: var(--red-soft); }
