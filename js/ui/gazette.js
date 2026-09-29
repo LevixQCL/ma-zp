@@ -1,4 +1,5 @@
 import { noteCourte } from './nouveautes.js';
+import { partageHtml } from './invitation.js';
 // La Gazette du Delta, le classement, l'espace maître du jeu.
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1, classementLive } from './common.js';
 import { GRADES } from '../engine/constants.js';
@@ -137,7 +138,8 @@ export function renderAdmin() {
       <p class="sub">Mode ${S.backend.mode === 'demo' ? 'démo (sur cet appareil)' : 'en ligne (Firebase)'} · saison ${st.season}, tour ${st.turn} · prochaine résolution ${formatDateBe(st.nextDeadline)} à ${formatHeureBe(st.nextDeadline)}</p></header>
     ${S.partie ? `<section class="card amber"><h2 class="card-title">Inviter des collègues</h2>
       <p class="small" style="margin:0;color:var(--amber-soft)">Partie « ${esc(S.partie.nom)} » · code d’invitation <strong class="mono" style="color:var(--text);font-size:16px;letter-spacing:2px">${esc(S.partie.code)}</strong></p>
-      <p class="small" style="margin:0">Message à copier : « Rejoins ma partie de Ma ZP : ouvre ${esc(location.origin + location.pathname)}, connecte-toi, puis Mes parties → Rejoindre, avec le code ${esc(S.partie.code)}. »</p></section>` : ''}
+      <p class="small" style="margin:0">Envoie le lien : ton collègue se connecte et arrive directement dans la partie, sans taper de code.</p>
+      ${partageHtml(S.partie)}</section>` : ''}
     ${S.backend.isSuperAdmin && S.backend.isSuperAdmin(S.user) && S.backend.mode !== 'demo' ? `<section class="card"><h2 class="card-title">Toutes les parties</h2>
       <p class="small muted" style="margin:0">Tu es super-administrateur : tu peux ouvrir n’importe quelle partie pour aider son maître du jeu.</p>
       <button class="btn small" data-action="admin-all-parties">Afficher la liste</button>

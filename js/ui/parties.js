@@ -1,5 +1,6 @@
 // Écran « Mes parties » : ouvrir, créer ou rejoindre une partie.
 import { S, esc, icon } from './common.js';
+import { partageHtml } from './invitation.js';
 
 export function renderParties() {
   const b = S.backend;
@@ -17,6 +18,7 @@ export function renderParties() {
         <div class="between"><span style="font-weight:700;font-size:16px">${esc(p.nom)}</span>${p.owner === S.user.uid ? '<span class="tag" style="background:var(--amber-bg);color:var(--amber)">maître du jeu</span>' : ''}</div>
         <div class="between"><span class="small muted">Code d’invitation : <strong class="mono" style="color:var(--text)">${esc(p.code)}</strong></span>
           ${p.id === current ? '<span class="small good">partie ouverte</span>' : `<button class="btn small" data-action="party-open" data-id="${esc(p.id)}">Ouvrir</button>`}</div>
+        ${p.code && p.id !== 'demo' ? partageHtml(p, { compact: true }) : ''}
       </div>`).join('')}</section>` : `<div class="card amber"><p class="small" style="margin:0;color:var(--amber-soft)">Tu ne fais encore partie d’aucune partie. Rejoins celle d’un collègue avec son code, ou crée la tienne.</p></div>`}
 
     <form class="card" data-form="party-join" style="gap:10px">
