@@ -11,6 +11,7 @@ import { blasonSvg, BLASONS, insigne } from './blasons.js';
 import { GRADES, gradeFor } from '../engine/constants.js';
 import { PERIL, DUEL_INDICATEURS } from '../engine/rivalites.js';
 import { genererAffaire, dossierDe, pointsDecouverte, ENQ } from '../engine/enquete.js';
+import { aideBtn } from './aide.js';
 
 /** Petite flèche d'évolution depuis la veille. */
 function delta(v, avant) {
@@ -118,10 +119,6 @@ export function renderHP() {
       </div>
     </header>
 
-    ${nuitHtml(z)}
-    ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit })}
-    ${z.toursJoues < 2 ? '<a class="list-row" href="#guide-debut" style="border-color:var(--amber-line)"><span class="bullet" style="background:var(--amber)"></span><span class="col grow" style="gap:1px"><span style="font-weight:600">Nouveau ? Lis les « Premiers pas »</span><span class="small muted">2 minutes pour comprendre ta journée de chef de zone</span></span></a>' : ''}
-
     <section class="card" aria-label="Ma zone">
       <div class="between">
         <div class="row" style="gap:10px;min-width:0">
@@ -131,27 +128,32 @@ export function renderHP() {
             ${S.editingName ? `<form class="row" data-form="rename" style="gap:6px"><label class="sr" for="nom-zone">Nom de la zone</label>
               <input id="nom-zone" class="text" name="nom" maxlength="24" value="${esc(z.nom)}" style="min-height:36px;width:150px;font:700 18px var(--display)">
               <button class="btn primary small" type="submit">OK</button></form>`
-              : `<div class="row" style="gap:2px"><h2 style="margin:0;font-family:var(--display);font-size:25px;font-weight:700;line-height:1.05;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(z.nom)}</h2>
+              : `<div class="row" style="gap:2px"><h2 style="margin:0;font-family:var(--display);font-size:25px;font-weight:700;line-height:1.05;overflow-wrap:break-word">${esc(z.nom)}</h2>
               <button class="iconbtn" data-action="rename" aria-label="Renommer la zone">${icon('pencil', 16)}</button></div>`}
           </div>
         </div>
-        <div class="col" style="gap:0;align-items:flex-end;flex-shrink:0">
-          <a href="#guide-zone" class="mono" style="font-size:18px;color:var(--text);text-decoration:none" aria-label="Indice de performance de zone : ${fmt1(z.ipz)}">IPZ ${fmt1(z.ipz)} ${delta(z.ipz, z.hier && z.hier.ipz)}</a>
+        <div class="col" style="gap:2px;align-items:flex-end;flex-shrink:1;text-align:right">
+          <span class="row" style="gap:6px;flex-shrink:0;white-space:nowrap"><span class="mono" style="font-size:18px" aria-label="Indice de performance de zone : ${fmt1(z.ipz)}">IPZ ${fmt1(z.ipz)}</span>${delta(z.ipz, z.hier && z.hier.ipz)}${aideBtn('ipz', 'Qu’est-ce que l’IPZ ?')}</span>
           <span class="tiny muted">${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total} zone${total > 1 ? 's' : ''}` : `non classé · ${z.toursJoues}/5 tours joués`}</span>
         </div>
       </div>
       <div class="tiles">
         <div class="tile"><span class="l">Agents</span><span class="v">${dispo}<span class="muted" style="font-size:13px"> / ${z.agents}</span></span>
           <span class="s ${blesses ? 'bad' : ''}">${blesses ? `${blesses} absent${blesses > 1 ? 's' : ''}` : form ? `${form} en formation` : z.academie.length ? `${z.academie.reduce((s, a) => s + a.n, 0)} à l’académie` : 'tous disponibles'}</span></div>
-        <div class="tile"><span class="l">Budget</span><span class="v ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s">dotation 8 k€/tour</span></div>
+        <div class="tile"><span class="l row" style="gap:4px">Budget ${aideBtn('budget')}</span><span class="v ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s">dotation 8 k€/tour</span></div>
         <div class="tile"><span class="l">Véhicules</span><span class="v">${vDispo}<span class="muted" style="font-size:13px"> / ${z.vehicules}</span></span><span class="s">état ${Math.round(100 - z.usure)} %</span></div>
       </div>
       <div class="col" style="gap:9px">
-        ${gauge(`Moral ${delta(z.moral, z.hier && z.hier.moral)}`, z.moral, 'var(--amber)')}
-        ${gauge(`Satisfaction citoyenne ${delta(z.satisfaction, z.hier && z.hier.satisfaction)}`, z.satisfaction, 'var(--blue)')}
-        ${gauge(`Réputation ${delta(z.reputation, z.hier && z.hier.reputation)}`, z.reputation, 'var(--green)')}
+        ${gauge('Moral', z.moral, 'var(--amber)', delta(z.moral, z.hier && z.hier.moral) + aideBtn('moral'))}
+        ${gauge('Satisfaction citoyenne', z.satisfaction, 'var(--blue)', delta(z.satisfaction, z.hier && z.hier.satisfaction) + aideBtn('satisfaction'))}
+        ${gauge('Réputation', z.reputation, 'var(--green)', delta(z.reputation, z.hier && z.hier.reputation) + aideBtn('reputation'))}
       </div>
     </section>
+
+    ${nuitHtml(z)}
+    ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit })}
+    ${z.toursJoues < 2 ? '<a class="list-row" href="#guide-debut" style="border-color:var(--amber-line)"><span class="bullet" style="background:var(--amber)"></span><span class="col grow" style="gap:1px"><span style="font-weight:600">Nouveau ? Lis les « Premiers pas »</span><span class="small muted">2 minutes pour comprendre ta journée de chef de zone</span></span></a>' : ''}
+
 
     ${z.peril ? `<section class="card red" aria-label="Zone en péril"><span class="kicker" style="color:var(--red-soft)">Zone en péril · faillite dans ${z.peril.fin - T + 1} résolution${z.peril.fin - T + 1 > 1 ? 's' : ''}</span>
       <span style="font-weight:700">${esc((z.peril.raisons || []).join(', '))}</span>

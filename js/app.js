@@ -5,6 +5,7 @@ import { resolvePending } from './data/resolver.js';
 import { S, toast, myZone, esc } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil } from './ui/hp.js';
+import { ouvrirAide } from './ui/aide.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations } from './ui/ordres.js';
 import { renderQuete } from './ui/quete.js';
 import { renderGuide } from './ui/guide.js';
@@ -199,6 +200,7 @@ async function onClick(e) {
       case 'demo-start': await b.signInDemo(); break;
       case 'admin-all-parties': S.allParties = await b.listAllParties(); rerender(); break;
       case 'diplo-open': { const k = el.dataset.k; const cur = S.diploOpen && k in S.diploOpen ? S.diploOpen[k] : !!document.querySelector(`section[data-k="${k}"]`); S.diploOpen = { ...(S.diploOpen || {}), [k]: !cur }; rerender(); break; }
+      case 'aide': ouvrirAide(el.dataset.k); break;
       case 'nuit-ok': {
         const z = myZone();
         const k = `mazp-nuit-${b.gameId ? b.gameId() : ''}-${S.state.season}-${S.state.turn}-${z.uid}`;
