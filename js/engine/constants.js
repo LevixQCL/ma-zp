@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 3;
+export const APP_VERSION = 4;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -55,8 +55,8 @@ export const DEPENSES = {
   soustraitance: { nom: 'Sous-traitance administrative', cout: 3, texte: '−5 dossiers de paperasse' },
 };
 
-export const DELAI_ACADEMIE = 3;       // tours avant l'arrivée d'une recrue
-export const DUREE_FORMATION = 2;      // tours d'indisponibilité
+export const DELAI_ACADEMIE = 2;       // tours avant l'arrivée d'une recrue
+export const DUREE_FORMATION = 1;      // tours d'indisponibilité
 export const AGENTS_EN_FORMATION = 2;
 export const NIVEAU_MAX = 5;
 
@@ -124,7 +124,20 @@ export const BATIMENTS = {
     subside: () => 0,
   },
 };
-export const TRAVAUX_TOURS = 2;          // durée d'un agrandissement
+export const TRAVAUX_TOURS = 1;          // durée d'un agrandissement
 export const ENTRETIEN_ANNEXE = 0.3;     // k€ par tour et par annexe (salle de sport, logiciel…)
 // Péréquation : une zone nettement moins équipée que la moyenne du district reçoit un coup de pouce.
 export const PEREQUATION = { ecart: 2, montant: 1.5 };
+
+// Héritage de fin de saison : ce qui est conservé (niveaux baissés de HERITAGE_PERTE, minimum 1).
+// Le budget, les effectifs, les véhicules, le moral et le reste repartent des valeurs de départ.
+export const HERITAGE_PERTE = 1;
+
+/** Tour où une décision prise au tour `turn` produira son effet (null = immédiat). */
+export function tourEffet(decision, turn) {
+  if (!decision) return null;
+  if (decision.type === 'recruter') return turn + DELAI_ACADEMIE;
+  if (decision.type === 'former') return turn + DUREE_FORMATION + 1;
+  if (decision.type === 'agrandir') return turn + TRAVAUX_TOURS;
+  return null;
+}

@@ -1,6 +1,6 @@
 // Écran des ordres du tour.
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
-import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE } from '../engine/constants.js';
+import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, SEASON_LENGTH, tourEffet } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel } from './affaires.js';
@@ -101,8 +101,8 @@ function decisionLabel(z, d) {
 
 function decisionOptions(z, T) {
   const opts = [];
-  for (const n of [1, 2, 3]) opts.push({ d: { type: 'recruter', n }, sub: `${COUTS.recrue * n} k€ · arrivée dans 3 tours` });
-  for (const s of SERVICES) opts.push({ d: { type: 'former', service: s }, sub: `${COUTS.formation} k€ · 2 agents absents 2 tours` });
+  for (const n of [1, 2, 3]) opts.push({ d: { type: 'recruter', n }, sub: `${COUTS.recrue * n} k€ · arrivée dans ${DELAI_ACADEMIE} tour${DELAI_ACADEMIE > 1 ? 's' : ''}` });
+  for (const s of SERVICES) opts.push({ d: { type: 'former', service: s }, sub: `${COUTS.formation} k€ · 2 agents absents ${DUREE_FORMATION} tour${DUREE_FORMATION > 1 ? 's' : ''}` });
   opts.push({ d: { type: 'equiper', cible: 'vehicule' }, sub: `${COUTS.vehicule} k€ · ${z.vehicules} véhicules actuellement` });
   for (const s of SERVICES) opts.push({ d: { type: 'equiper', cible: s }, sub: `${COUTS.equipementBase * z.equip[s]} k€` });
   for (const [id, B] of Object.entries(BATIMENTS)) if (z.batiments[id] < BATIMENT_MAX) opts.push({ d: { type: 'agrandir', batiment: id }, sub: `${B.coutAgrandir(z.batiments[id])} k€ · ${B.capacite(z.batiments[id] + 1)} ${B.unite} · ${TRAVAUX_TOURS} tours de travaux` });
@@ -118,17 +118,21 @@ const niv = (n, max = NIVEAU_MAX) => `<span class="niv" aria-label="niveau ${n} 
 function decisionPicker(z, T, d) {
   const cat = S.decCat || catDe(d.decision) || 'recruter';
   const choisi = (dec) => JSON.stringify(d.decision) === JSON.stringify(dec);
-  const tuile = (dec, titre, detail, cout, extra = '') => {
+  const tuile = (dec, titre, detail0, cout, extra = '') => {
+    let detail = detail0;
     const refus = decisionImpossible(z, dec, T);
-    return `<button type="button" class="dtuile" data-action="decision" data-json='${esc(JSON.stringify(dec))}' aria-pressed="${choisi(dec)}" ${refus && !choisi(dec) ? 'disabled' : ''}>
+    const te = tourEffet(dec, T);
+    const trop = te !== null && te > SEASON_LENGTH;
+    if (trop && !refus) detail = `⚠ effet au tour ${te} : après la fin de saison, perdu`;
+    return `<button type="button" class="dtuile ${trop ? 'tard' : ''}" data-action="decision" data-json='${esc(JSON.stringify(dec))}' aria-pressed="${choisi(dec)}" ${refus && !choisi(dec) ? 'disabled' : ''}>
       <span class="t">${titre}</span>${extra}<span class="d">${esc(refus || detail)}</span><span class="c">${cout} k€</span></button>`;
   };
   let corps = '';
   if (cat === 'recruter') {
     corps = `<p class="tiny muted" style="margin:0">Effectif : ${effectifPrevu(z)} sur ${capaciteAgents(z)} places à l’hôtel de police. Arrivée après ${3} tours d’académie, puis ${String(0.3).replace('.', ',')} k€ de salaire par tour et par agent.</p>
-      <div class="dgrille trois">${[1, 2, 3].map((n) => tuile({ type: 'recruter', n }, `+${n} agent${n > 1 ? 's' : ''}`, 'arrivée dans 3 tours', COUTS.recrue * n)).join('')}</div>`;
+      <div class="dgrille trois">${[1, 2, 3].map((n) => tuile({ type: 'recruter', n }, `+${n} agent${n > 1 ? 's' : ''}`, `arrivée dans ${DELAI_ACADEMIE} tour${DELAI_ACADEMIE > 1 ? 's' : ''}`, COUTS.recrue * n)).join('')}</div>`;
   } else if (cat === 'former') {
-    corps = `<p class="tiny muted" style="margin:0">Un service gagne un niveau d’efficacité. 2 agents sont absents pendant 2 tours.</p>
+    corps = `<p class="tiny muted" style="margin:0">Un service gagne un niveau d’efficacité. 2 agents sont absents pendant ${DUREE_FORMATION} tour${DUREE_FORMATION > 1 ? 's' : ''}. Le niveau est conservé à la saison suivante (moins un).</p>
       <div class="dgrille">${SERVICES.map((sv) => tuile({ type: 'former', service: sv }, SERVICE_LABELS[sv], `niveau ${z.niveaux[sv]} → ${z.niveaux[sv] + 1}`, COUTS.formation, niv(z.niveaux[sv]))).join('')}</div>`;
   } else if (cat === 'equiper') {
     corps = `<p class="tiny muted" style="margin:0">Un véhicule de plus, ou du meilleur matériel pour un service (effet immédiat).</p>
@@ -136,7 +140,7 @@ function decisionPicker(z, T, d) {
       ${SERVICES.map((sv) => tuile({ type: 'equiper', cible: sv }, SERVICE_LABELS[sv], `matériel ${z.equip[sv]} → ${z.equip[sv] + 1}`, COUTS.equipementBase * z.equip[sv], niv(z.equip[sv]))).join('')}</div>`;
   } else {
     const faites = Object.entries(INFRAS).filter(([id]) => z.infra[id]).map(([, i]) => i.nom);
-    corps = `<p class="tiny muted" style="margin:0">Agrandir : ${TRAVAUX_TOURS} tours de travaux, puis plus de places mais plus d’entretien. Annexe : effet permanent, ${String(ENTRETIEN_ANNEXE).replace('.', ',')} k€ d’entretien par tour.</p>
+    corps = `<p class="tiny muted" style="margin:0">Agrandir : ${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux, puis plus de places mais plus d’entretien (conservé à la saison suivante, moins un niveau). Annexe : effet permanent, ${String(ENTRETIEN_ANNEXE).replace('.', ',')} k€ d’entretien par tour.</p>
       <div class="dgrille">${Object.entries(BATIMENTS).map(([id, B]) => (z.batiments[id] >= BATIMENT_MAX ? '' : tuile({ type: 'agrandir', batiment: id }, `Agrandir : ${B.nom}`, `${B.capacite(z.batiments[id] + 1)} ${B.unite}`, B.coutAgrandir(z.batiments[id]), niv(z.batiments[id], BATIMENT_MAX)))).join('')}
       ${Object.entries(INFRAS).filter(([id]) => !z.infra[id]).map(([id, inf]) => tuile({ type: 'construire', infra: id }, inf.nom, inf.effet, inf.cout)).join('')}</div>
       ${faites.length ? `<p class="tiny muted" style="margin:0">Déjà construit : ${esc(faites.join(', '))}.</p>` : ''}`;
