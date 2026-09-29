@@ -20,7 +20,7 @@ export async function createFirebaseBackend(config) {
   // à travers les réseaux d'entreprise et les proxys qui bloquent les flux Firestore.
   let fs;
   try { fs = F.initializeFirestore(app, { experimentalForceLongPolling: true }); } catch (e) { fs = F.getFirestore(app); }
-  // Chaque partie a ses propres données : parties/{id}/state, players, orders, quests, gazettes, radio.
+  // Chaque partie a ses propres données : parties/{id}/state, players, orders, quests, gazettes, radio, prives.
   let gid = null, meta = null;
   const stateRef = () => F.doc(fs, 'parties', gid, 'state', 'current');
   const col = (name) => F.collection(fs, 'parties', gid, name);
@@ -158,7 +158,7 @@ export async function createFirebaseBackend(config) {
       return out;
     },
 
-    /** Toutes les réponses aux quêtes de la partie (pour le classement des énigmes). */
+    /** Toutes les réponses aux énigmes de la partie (pour le classement des énigmes). */
     async listQuestResults() {
       const snap = await F.getDocs(col('quests'));
       return snap.docs.map((d) => { const v = d.data(); return { uid: v.uid, season: v.season, turn: v.turn, statut: v.statut, type: v.type }; });
@@ -192,6 +192,15 @@ export async function createFirebaseBackend(config) {
     },
     async sendRadio(uid, texte) {
       await F.addDoc(col('radio'), { uid, texte: String(texte).slice(0, 280), at: Date.now() });
+    },
+
+    // Messages privés : lisibles uniquement par les deux zones concernées.
+    subscribePrives(uid, cb) {
+      const q = F.query(col('prives'), F.where('participants', 'array-contains', uid));
+      return F.onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.at - b.at)), (e) => console.error(e));
+    },
+    async sendPrive(de, a, texte) {
+      await F.addDoc(col('prives'), { de, a, participants: [de, a], texte: String(texte).slice(0, 500), at: Date.now() });
     },
 
     // Maître du jeu

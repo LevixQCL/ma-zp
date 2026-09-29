@@ -1,4 +1,4 @@
-// Générateurs de quêtes du jour. Chaque joueur reçoit sa propre variante
+// Générateurs d’énigmes du jour. Chaque joueur reçoit sa propre variante
 // (noms, heures, chiffres différents), à partir d'une graine unique.
 // Chaque énigme est vérifiée à la génération : une seule solution, et
 // aucune ne se résout d'un coup d'œil (il faut croiser plusieurs indices).
@@ -15,7 +15,7 @@ export const QUESTS_PAR_JOUR = 3;
 // Difficulté selon le jour : lundi facile, dimanche corsé.
 const DIFF_PAR_JOUR = [2, 3, 3, 4, 4, 5, 5];
 
-/** Les 3 quêtes du jour d'un joueur : trois types différents, qui tournent sur toute la saison. */
+/** Les 3 énigmes du jour d'un joueur : trois types différents, qui tournent sur toute la saison. */
 export function questsFor({ seed, uid, season, turn, weekday = 0 }) {
   const order = makeRng(`${seed}:qorder:${uid}:${season}`).shuffle(QUEST_TYPES);
   const base = DIFF_PAR_JOUR[weekday] || 3;

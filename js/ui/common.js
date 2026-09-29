@@ -1,3 +1,4 @@
+import { nonLus, invitations } from './prive.js';
 // Outils partagés par tous les écrans.
 import { gradeFor, nextGrade } from '../engine/constants.js';
 import { moyenneIpz } from '../engine/zone.js';
@@ -7,7 +8,7 @@ export const S = {
   backend: null, config: null, user: null, player: null, state: null, players: {},
   route: 'hp', draft: null, savedOrders: null, ordersDirty: false,
   quests: null, questResults: [null, null, null], questIdx: 0, questPick: null,
-  radio: [], radioSeen: 0, gazettes: [], gazetteIndex: 0,
+  radio: [], prives: [], gazettes: [], gazetteIndex: 0,
   editingName: false, busy: false, decisionOpen: false, showRapport: false,
 };
 
@@ -65,15 +66,14 @@ export function icon(name, size = 22, extra = '') {
 }
 
 export function tabbar(active, { questBadge = false, radioBadge = false } = {}) {
-  const tabs = [['hp', 'HP'], ['ordres', 'Ordres'], ['enquete', 'Enquête'], ['quete', 'Quête'], ['carte', 'Carte'], ['radio', 'Radio']];
+  const tabs = [['hp', 'HP'], ['ordres', 'Ordres'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['carte', 'Carte'], ['radio', 'Radio']];
   const st = S.state, me = S.user && st && st.zones ? st.zones[S.user.uid] : null;
   const faites = (S.questResults || []).filter((r) => r && (r.statut === 'ok' || r.statut === 'rate')).length;
   const dots = {
     ordres: !S.savedOrders || S.ordersDirty,
     enquete: !!(st && (st.traques || []).length && !(S.draft && S.draft.traque)),
     quete: questBadge || faites < 3,
-    radio: radioBadge || !!(st && ((st.conseil && st.conseil.tour === st.turn && !(S.draft && Object.keys(S.draft.votes || {}).length))
-      || (me && (st.duels || []).some((d) => d.b === me.uid && d.etape === 'propose' && d.tourReponse === st.turn)))),
+    radio: radioBadge || (() => { const n = nonLus(); return n.radio + n.prive > 0 || invitations().length > 0; })(),
   };
   return `<nav class="tabs" aria-label="Navigation principale">${tabs.map(([id, label]) => `
     <a href="#${id}" ${active === id ? 'aria-current="page"' : ''}>${icon(id)}<span>${id === 'radio' ? 'Radio' : label}</span>${dots[id] ? '<span class="dot" aria-label="à faire"></span>' : ''}</a>`).join('')}

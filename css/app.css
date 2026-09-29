@@ -348,3 +348,13 @@ h1.brand-xl { font-size: clamp(64px, 20vw, 96px); letter-spacing: 2px; line-heig
 .onglets-flottants .seg2 { box-shadow: 0 6px 18px rgba(0,0,0,.35); }
 .segl { position: relative; gap: 6px; }
 .pastille { width: 8px; height: 8px; border-radius: 50%; background: var(--red); display: inline-block; flex-shrink: 0; }
+
+/* Onglets à trois (Radio / Privé / Diplomatie) */
+.seg3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
+.onglets-flottants .seg3 { box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+
+/* Messages privés */
+.bulle { max-width: 85%; align-self: flex-start; display: flex; flex-direction: column; gap: 4px; padding: 9px 12px; border-radius: 14px 14px 14px 4px; background: var(--surface); border: 1px solid var(--line); }
+.bulle.moi { align-self: flex-end; border-radius: 14px 14px 4px 14px; background: var(--amber-bg); border-color: var(--amber-line); }
+.bulle.moi .tiny { text-align: right; }
+.compteur { min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--red); color: #fff; font: 700 12px/22px var(--body); text-align: center; flex-shrink: 0; }

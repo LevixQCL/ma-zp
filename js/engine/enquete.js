@@ -37,7 +37,7 @@ export const DEMARCHES = {
   banque: { nom: 'Comptes et entourage', motif: 'Extraits de compte via le parquet, téléphonie, entourage.', cout: 3, cible: 'mob', dit: 'dettes, rancunes, fréquentations' },
 };
 export const SOURCES = {
-  ouverture: 'Ouverture du dossier', voisinage: 'Enquête de voisinage', quete: 'Bonus de quête', partage: 'Partagé', rebond: 'Rebondissement',
+  ouverture: 'Ouverture du dossier', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', partage: 'Partagé', rebond: 'Rebondissement',
   ...Object.fromEntries(Object.entries(DEMARCHES).map(([k, d]) => [k, d.nom])),
 };
 
@@ -640,7 +640,7 @@ function pieceHasard(state, z, aff, rng) {
   return pool.length ? rng.pick(pool) : null;
 }
 
-/** Bonus de quête : une pièce de l'affaire en cours. */
+/** Bonus d’énigme : une pièce de l'affaire en cours. */
 export function indiceBonus(state, z, rng) {
   if (!state.enquete || !z.enquete) return false;
   const aff = genererAffaire(state.seed, state.enquete.n);

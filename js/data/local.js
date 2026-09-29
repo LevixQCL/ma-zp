@@ -28,7 +28,7 @@ function save(db) {
 
 export function createLocalBackend(config) {
   let db = load();
-  const listeners = { state: new Set(), radio: new Set(), auth: new Set() };
+  const listeners = { state: new Set(), radio: new Set(), prive: new Set(), auth: new Set() };
   const emit = (k, v) => listeners[k].forEach((cb) => { try { cb(v); } catch (e) { console.error(e); } });
   const hour = config.resolutionHour ?? 20;
 
@@ -50,7 +50,7 @@ export function createLocalBackend(config) {
   if (!db || !db.parties) { db = fresh(); save(db); }
   // Raccourcis vers la partie ouverte.
   const P = () => db.parties[db.current];
-  const self = { get state() { return P().state; }, set state(v) { P().state = v; }, get players() { return P().players; }, set players(v) { P().players = v; }, get orders() { return P().orders; }, get quests() { return P().quests; }, get gazettes() { return P().gazettes; }, get radio() { return P().radio; } };
+  const self = { get state() { return P().state; }, set state(v) { P().state = v; }, get players() { return P().players; }, set players(v) { P().players = v; }, get orders() { return P().orders; }, get quests() { return P().quests; }, get gazettes() { return P().gazettes; }, get radio() { return P().radio; }, get prives() { return (P().prives ||= []); } };
 
   const persist = () => save(db);
   const key = (s, t) => `${s}-${t}`;
@@ -130,7 +130,7 @@ export function createLocalBackend(config) {
       return Array.isArray(v) ? v : [null, null, null];
     },
     async getAllQuests(season, turn) { return JSON.parse(JSON.stringify(self.quests[key(season, turn)] || {})); },
-    /** Toutes les réponses aux quêtes de la partie (pour le classement des énigmes). */
+    /** Toutes les réponses aux énigmes de la partie (pour le classement des énigmes). */
     async listQuestResults() {
       const out = [];
       for (const [k, parUid] of Object.entries(self.quests || {})) {
@@ -162,6 +162,16 @@ export function createLocalBackend(config) {
       return Object.values(self.gazettes).sort((a, b) => (b.season - a.season) || (b.turn - a.turn)).slice(0, max);
     },
 
+    subscribePrives(uid, cb) { const f = (l) => cb(l.filter((m) => m.participants.includes(uid))); const w = (l) => f(l); listeners.prive.add(w); f(self.prives); return () => listeners.prive.delete(w); },
+    async sendPrive(de, a, texte) {
+      self.prives.push({ id: `p${Date.now()}`, de, a, participants: [de, a], texte: String(texte).slice(0, 500), at: Date.now() });
+      persist(); emit('prive', self.prives.slice());
+      // En démo, la zone robot répond quelques secondes plus tard.
+      if (String(a).startsWith('bot')) {
+        const rep = ['Bien reçu. On en reparle après 20:00.', 'Intéressant… Qu’est-ce que tu proposes en échange ?', 'Ça marche, compte sur moi.', 'Je dois consulter mon chef de corps.', 'Pas cette fois, désolé.'];
+        setTimeout(() => { self.prives.push({ id: `p${Date.now()}`, de: a, a: de, participants: [a, de], texte: rep[Math.floor(Math.random() * rep.length)], at: Date.now() }); persist(); emit('prive', self.prives.slice()); }, 2500);
+      }
+    },
     subscribeRadio(cb) { listeners.radio.add(cb); cb(self.radio.slice(-50)); return () => listeners.radio.delete(cb); },
     async sendRadio(uid, texte) {
       self.radio.push({ id: `r${Date.now()}`, uid, texte: String(texte).slice(0, 280), at: Date.now() });

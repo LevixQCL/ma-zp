@@ -122,6 +122,19 @@ service cloud.firestore {
           && request.resource.data.texte.size() > 0 && request.resource.data.texte.size() <= 280;
         allow delete: if master(gid);
       }
+
+      // Messages privés : seules les deux zones concernées peuvent les lire (pas même le maître du jeu).
+      match /prives/{id} {
+        allow read: if signedIn() && request.auth.uid in resource.data.participants;
+        allow create: if member(gid)
+          && request.resource.data.de == request.auth.uid
+          && request.resource.data.a is string && request.resource.data.a != request.auth.uid
+          && exists(/databases/$(database)/documents/parties/$(gid)/players/$(request.resource.data.a))
+          && request.resource.data.participants == [request.auth.uid, request.resource.data.a]
+          && request.resource.data.texte is string
+          && request.resource.data.texte.size() > 0 && request.resource.data.texte.size() <= 500;
+        allow delete: if master(gid);
+      }
     }
   }
 }

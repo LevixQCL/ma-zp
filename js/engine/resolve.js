@@ -94,7 +94,7 @@ function genererAffaires(state, rng) {
 /**
  * Résout le tour `state.turn`.
  * @param {object} state  état de la partie
- * @param {object} input  { orders: {uid: ordres}, quests: {uid: quête}, players: {uid: profil} }
+ * @param {object} input  { orders: {uid: ordres}, quests: {uid: énigme}, players: {uid: profil} }
  * @returns {{ state: object, gazette: object }}
  */
 export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, nextWeekday = null } = {}) {
@@ -301,7 +301,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       push(coupDur.id === 'rebellion' ? 9 : 5, 'Coup dur', `${coupDur.titre} à ${zoneLabel(z)}`, texte, uid);
     }
 
-    // Quêtes du jour (jusqu'à 3) : bonus au choix dès 2 bonnes réponses.
+    // Énigmes du jour (jusqu'à 3) : bonus au choix dès 2 bonnes réponses.
     let bonusService = null;
     const qs = (Array.isArray(q) ? q : q ? [q] : []).filter(Boolean);
     const ok = qs.filter((x) => x.statut === 'ok').length;
@@ -311,7 +311,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z._ps += ok * PS.queteOk + faux * PS.queteTentee;
       if (faux) z.moral -= faux;
       const b = qs.find((x) => x.bonus);
-      let txt = `Quêtes du jour : ${ok} bonne${ok > 1 ? 's' : ''} réponse${ok > 1 ? 's' : ''} sur ${qs.length}${faux ? ` (−${faux} de moral)` : ''}`;
+      let txt = `Énigmes du jour : ${ok} bonne${ok > 1 ? 's' : ''} réponse${ok > 1 ? 's' : ''} sur ${qs.length}${faux ? ` (−${faux} de moral)` : ''}`;
       if (ok >= 2 && b) {
         if (b.bonus === 'moral') { z.moral += 3; txt += ', bonus +3 de moral'; }
         else if (b.bonus === 'budget') { z.budget += 2; txt += ', bonus +2 k€'; }

@@ -30,7 +30,7 @@ export const AIDES = {
       `<strong>IPZ</strong> : compte pour ${pc(IPZ_POIDS.moral)} · au-dessus de 70, moins de grippes et de débauchages`,
     ],
     monte: 'rythme allégé, prime, salle de sport, succès',
-    baisse: 'rythme renforcé, incidents ratés, budget négatif, erreurs aux quêtes, coups durs',
+    baisse: 'rythme renforcé, incidents ratés, budget négatif, erreurs aux énigmes, coups durs',
     guide: 'guide-zone',
   },
   satisfaction: {
