@@ -400,3 +400,12 @@ details.repli > summary { font-size: 14px; }
 .niv { display: inline-flex; gap: 3px; }
 .niv i { width: 12px; height: 6px; border-radius: 2px; background: var(--line); }
 .niv i.on { background: var(--amber); }
+
+/* Énigmes : documents (photos, plans, échantillons d'écriture) et fiche horaire */
+.figs { display: flex; flex-direction: column; gap: 10px; }
+.figs.deux { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fig { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.fig figcaption { font-size: 11px; font-weight: 700; color: var(--amber); text-transform: uppercase; letter-spacing: .6px; }
+table.horaire { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.horaire th { text-align: left; font-size: 11px; color: var(--muted); font-weight: 600; padding: 4px; border-bottom: 1px solid var(--line); }
+table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }

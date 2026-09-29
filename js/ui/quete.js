@@ -2,6 +2,9 @@
 import { S, esc, icon, tabbar } from './common.js';
 import { SERVICES, SERVICE_LABELS } from '../engine/constants.js';
 
+/** Le joueur a-t-il déjà changé une énigme aujourd'hui ? */
+function rerollUtilise() { return (S.quests || []).some((q) => q.variante); }
+
 const lire = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } };
 
 // Grille de déduction à cocher : ✗ impossible, ✓ certain (mémorisée sur cet appareil).
@@ -50,7 +53,7 @@ export function renderQuete() {
 
   const choixHtml = q.mode === 'choix' ? `<div class="choices ${q.choix.length > 4 || q.choix.some((c) => c.label.length > 12) ? 'one' : ''}" role="group" aria-label="Réponses">
       ${q.choix.map((c) => `<button type="button" class="choice" data-action="quest-pick" data-v="${esc(c.id)}" aria-pressed="${picked === c.id}" ${fini ? 'disabled' : ''}>
-        <span>${esc(c.label)}</span>${c.sub ? `<span class="s">${esc(c.sub)}</span>` : ''}</button>`).join('')}
+        <span ${q.mono ? 'class="mono" style="letter-spacing:1px"' : ''}>${esc(c.label)}</span>${c.sub ? `<span class="s">${esc(c.sub)}</span>` : ''}</button>`).join('')}
     </div>` : '';
 
   const bonusCard = ok >= 2 ? `<section class="card green">
@@ -74,7 +77,11 @@ export function renderQuete() {
       <div class="col" style="gap:4px;align-items:flex-end"><span class="pill">Difficulté ${q.difficulte}/5</span>
         <span class="tiny muted">${fini ? 'terminée' : 'une seule réponse'}</span></div>
     </header>
+    ${!fini && !rerollUtilise() ? `<button type="button" class="btn small ghost block" data-action="quest-reroll">${icon('refresh', 16)} Pas ton style ? Changer cette énigme (une fois par jour)</button>` : ''}
+    ${q.variante ? '<p class="tiny muted" style="margin:0">Énigme changée : c’est ton changement du jour.</p>' : ''}
     <p style="margin:0;font-size:14px;line-height:1.45;color:var(--text2)">${esc(q.contexte)}</p>
+    ${q.figures ? `<section class="figs ${q.type === 'photos' ? 'deux' : ''}" aria-label="Documents">${q.figures.map((f) => `<figure class="fig"><figcaption>${esc(f.titre)}</figcaption>${f.svg}</figure>`).join('')}</section>` : ''}
+    ${q.tableau ? `<section class="card tight" aria-label="Fiche horaire">${q.tableau}</section>` : ''}
 
     ${q.elements && q.elements.length ? `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who ${q.type === 'cadenas' ? 'mono' : ''}" ${q.type === 'cadenas' ? 'style="font-size:17px;letter-spacing:2px;color:var(--text)"' : ''}>${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>` : ''}
     ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${q.type === 'grille' ? 'Auditions' : 'Indices'}</h2>${q.indices.map((t) => `<p class="small" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
