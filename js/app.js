@@ -261,6 +261,7 @@ async function onClick(e) {
         const dd = (S.draft.depenses ||= { reserve: 0, reserveService: 'intervention' });
         dd[el.dataset.k] = !dd[el.dataset.k]; S.ordersDirty = true; rerender(); break;
       }
+      case 'class-tab': S.classTab = el.dataset.t; rerender(); break;
       case 'enq-tab': S.enqTab = el.dataset.t; rerender(); break;
       case 'enq-open': S.enqOpen = { ...(S.enqOpen || {}), [el.dataset.i]: !(S.enqOpen || {})[el.dataset.i] }; rerender(); break;
       case 'mmo-mark': {

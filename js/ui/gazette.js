@@ -84,32 +84,43 @@ function classementEnigmes(me) {
     <p class="small muted" style="margin:0">Toutes les énigmes répondues depuis le début de la partie, y compris aujourd’hui. Classé à partir de ${MIN_ENIGMES} réponses ; les énigmes laissées sans réponse ne comptent pas.</p></section>`;
 }
 
+const ONGLETS_CLASSEMENT = [['ipz', 'IPZ'], ['limier', 'Enquête'], ['enigmes', 'Énigmes'], ['grade', 'Grades'], ['palmares', 'Palmarès']];
+
 export function renderClassement() {
   const me = myZone();
-  const rows = classementLive(S.state);
   const { g, n, pct } = gradeInfo(me.ps);
-  return `<main class="screen">
-    <a href="#hp" class="row small" style="text-decoration:none;color:var(--muted)">${icon('back', 16)} HP</a>
-    <header class="col" style="gap:3px"><span class="kicker">Saison ${S.state.season} · tour ${S.state.turn} sur 14</span><h1 class="big">Classement</h1><p class="sub">Moyenne de l’IPZ par tour où tu as validé tes ordres. « – » : moins de 5 tours joués, pas encore classé.</p></header>
-    <table class="rank"><thead><tr><th>#</th><th>Zone</th><th class="num">Tours</th><th class="num">IPZ moy.</th></tr></thead><tbody>
+  const onglets = ONGLETS_CLASSEMENT.filter(([k]) => k !== 'palmares' || (S.state.palmares && S.state.palmares.length));
+  const tab = onglets.some(([k]) => k === S.classTab) ? S.classTab : 'ipz';
+  let corps = '';
+  if (tab === 'ipz') {
+    const rows = classementLive(S.state);
+    corps = `<section class="card"><h2 class="card-title">Performance · IPZ moyen de la saison</h2>
+      <p class="small muted" style="margin:0">Moyenne de l’IPZ par tour où tu as validé tes ordres. « – » : moins de 5 tours joués, pas encore classé.</p>
+      <table class="rank"><thead><tr><th>#</th><th>Zone</th><th class="num">Tours</th><th class="num">IPZ moy.</th></tr></thead><tbody>
       ${rows.map((r, i) => `<tr class="${r.z.uid === me.uid ? 'me' : ''}"><td>${r.classe ? i + 1 : '–'}</td><td><span class="bullet" style="display:inline-block;background:${esc(r.z.couleur)};margin-right:6px"></span>${zoneName(r.z)}${S.players && S.players[r.z.uid] && S.players[r.z.uid].pseudo ? `<br><span class="tiny muted">${esc(S.players[r.z.uid].pseudo)}</span>` : ''}</td><td class="num">${r.z.toursJoues}</td><td class="num">${fmt1(r.moyenne)}</td></tr>`).join('')}
-    </tbody></table>
-
-    <section class="card"><h2 class="card-title">Fin limier · points d’enquête</h2>
-      <table class="rank"><tbody>${Object.values(S.state.zones).sort((a, b) => b.stats.limier - a.stats.limier).map((z) => `<tr class="${z.uid === me.uid ? 'me' : ''}"><td>${zoneName(z)}</td><td class="num">${z.stats.decouvertes} déc. · ${z.stats.arrestations} arr.</td><td class="num">${z.stats.limier}</td></tr>`).join('')}</tbody></table>
-      <p class="small muted" style="margin:0">Découverte : 40 à 100 pts selon le jour. Arrestation : 30. Pièce partagée qui a aidé : 25.</p></section>
-
-    ${classementEnigmes(me)}
-
-    <section class="card"><div class="between"><h2 class="card-title">Ton grade : ${g.nom}</h2><span class="mono small">${me.ps} PS</span></div>
+      </tbody></table></section>`;
+  } else if (tab === 'limier') {
+    corps = `<section class="card"><h2 class="card-title">Fin limier · points d’enquête</h2>
+      <table class="rank"><thead><tr><th>#</th><th>Zone</th><th class="num">Bilan</th><th class="num">Points</th></tr></thead><tbody>${Object.values(S.state.zones).sort((a, b) => b.stats.limier - a.stats.limier).map((z, i) => `<tr class="${z.uid === me.uid ? 'me' : ''}"><td>${i + 1}</td><td>${zoneName(z)}</td><td class="num">${z.stats.decouvertes} déc. · ${z.stats.arrestations} arr.</td><td class="num">${z.stats.limier}</td></tr>`).join('')}</tbody></table>
+      <p class="small muted" style="margin:0">Découverte : 40 à 100 pts selon le jour. Arrestation : 30. Pièce partagée qui a aidé : 25.</p></section>`;
+  } else if (tab === 'enigmes') {
+    corps = classementEnigmes(me);
+  } else if (tab === 'grade') {
+    corps = `<section class="card"><div class="between"><h2 class="card-title">Ton grade : ${g.nom}</h2><span class="mono small">${me.ps} PS</span></div>
       <div class="gauge"><div class="bar" role="img" aria-label="Progression ${pct} %"><div style="width:${pct}%;background:var(--amber)"></div></div></div>
       <p class="small muted" style="margin:0">${n ? `Encore ${n.ps - me.ps} PS pour devenir ${n.nom}.` : 'Grade maximum atteint.'} Ordres +10, quête réussie +5, découverte +15, arrestation +10, FIPA +10, indice partagé +5. Maximum 40 PS par jour.</p>
       <table class="rank"><tbody>${GRADES.map((gr) => `<tr class="${gr.nom === g.nom ? 'me' : ''}"><td>${gr.nom}</td><td class="num">${gr.ps}</td><td class="small muted">${gr.debloque}</td></tr>`).join('')}</tbody></table>
-    </section>
-
-    ${S.state.palmares && S.state.palmares.length ? `<section class="card"><h2 class="card-title">Palmarès</h2>
+    </section>`;
+  } else {
+    corps = `<section class="card"><h2 class="card-title">Palmarès</h2>
       ${S.state.palmares.slice().reverse().map((p) => `<div class="col" style="gap:2px"><span class="small" style="font-weight:700">Saison ${p.season}</span>
-        ${p.titres.map((t) => { const z = S.state.zones[t.uid]; return `<span class="small muted">${esc(t.titre)} : ${z ? zoneName(z) : 'zone disparue'}</span>`; }).join('')}</div>`).join('')}</section>` : ''}
+        ${p.titres.map((t) => { const z = S.state.zones[t.uid]; return `<span class="small muted">${esc(t.titre)} : ${z ? zoneName(z) : 'zone disparue'}</span>`; }).join('')}</div>`).join('')}</section>`;
+  }
+  return `<main class="screen">
+    <a href="#hp" class="row small" style="text-decoration:none;color:var(--muted)">${icon('back', 16)} HP</a>
+    <header class="col" style="gap:3px"><span class="kicker">Saison ${S.state.season} · tour ${S.state.turn} sur 14</span><h1 class="big">Classements</h1></header>
+    <div class="segn" role="tablist" aria-label="Classements" style="grid-template-columns:repeat(${onglets.length},minmax(0,1fr))">${onglets.map(([k, l]) => `<button type="button" role="tab" aria-selected="${tab === k}" data-action="class-tab" data-t="${k}">${l}</button>`).join('')}</div>
+    ${corps}
   </main>${tabbar('hp')}`;
 }
 
