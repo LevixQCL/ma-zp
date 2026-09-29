@@ -14,6 +14,7 @@ import {
 } from './zone.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
+import { encheresResoudre, annoncerLot } from './encheres.js';
 import { rivalitesPre, rivalitesPost, postesContre, themeActif, appliquerConsignes, absT, MAN } from './rivalites.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, EVENEMENTS_COLLECTIFS, COUPS_DURS, ALEAS, OPERATIONS, PRESSIONS, PRESSION_WEEKEND } from './contenu.js';
 
@@ -58,7 +59,7 @@ export function buildJoinZone(state, uid, profile, turn = state.turn) {
  */
 export function migrateState(state) {
   if (!state) return state;
-  const defaults = { version: 1, season: 1, turn: 1, zones: {}, affaires: [], evenement: null, affaireSeq: 0, palmares: [], minClientVersion: 0, enquete: null, enqueteSeq: 0, traques: [], fipas: [], fipaSeq: 0, fipaPaires: {}, duels: [], postes: [], conseil: null, theme: null, motionsChef: [], toursSansFaillite: 0, aReveler: [] };
+  const defaults = { version: 1, season: 1, turn: 1, zones: {}, affaires: [], evenement: null, affaireSeq: 0, palmares: [], minClientVersion: 0, enquete: null, enqueteSeq: 0, traques: [], fipas: [], fipaSeq: 0, fipaPaires: {}, duels: [], postes: [], conseil: null, theme: null, motionsChef: [], toursSansFaillite: 0, aReveler: [], enchere: null, enchereResultat: null, lotsRecents: [] };
   for (const [k, v] of Object.entries(defaults)) if (state[k] === undefined) state[k] = v;
   for (const z of Object.values(state.zones)) migrateZone(z);
   attribuerSites(state);
@@ -103,6 +104,7 @@ export function createGame({ seed = 'delta', turnDeadline = 0 } = {}) {
   };
   genererAffaires(state, makeRng(`${seed}:s1:t0:affaires`));
   nouvelleAffaire(state);
+  annoncerLot(state);
   return state;
 }
 
@@ -184,6 +186,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // Relations entre zones (entraide, manœuvres, duels, Conseil).
   const riv = rivalitesPre(state, uids, ord, push, T);
   const theme = themeActif(state, T);
+  // Salle des ventes : le lot gagné sert dès ce soir.
+  const ench = encheresResoudre(state, uids, ord, push, T);
 
   // Enquête (partages, accusations, traques) et FIPA : avant la simulation des zones.
   // Les agents laissés sans affectation partent en premier (audition, traque, FIPA).
@@ -709,6 +713,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     conseil: riv.conseil,
     rivalites: rivPost,
     toursSansFaillite: state.toursSansFaillite,
+    enchere: ench,
     fipa: fp.res,
     classement,
     rapports: Object.fromEntries(uids.map((u) => [u, state.zones[u].rapport])),
@@ -732,6 +737,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Les événements collectifs sont remplacés par les FIPA (plus de nouvel événement).
   }
   genererAffaires(state, makeRng(`${state.seed}:s${state.season}:t${state.turn}:affaires`));
+  const prochain = annoncerLot(state);
+  gazette.prochainLot = prochain;
   return { state, gazette };
 }
 

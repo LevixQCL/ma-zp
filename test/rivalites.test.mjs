@@ -60,6 +60,20 @@ const g2 = tour({ A: { ...base, manoeuvre: { type: 'debauchage', cible: 'C' } } 
 assert.ok(s.zones.A.rapport.some((l) => l.includes('Manœuvre annulée')), 'zone en péril protégée');
 void g2;
 tour(); g = tour();
+// Au bout du délai : tutelle (dernière chance), pas encore la faillite.
+assert.ok(s.zones.C.tutelle, 'zone sous tutelle');
+assert.equal(s.zones.C.faillites || 0, 0);
+assert.equal(s.zones.C.peril, null);
+assert.ok([g.une, ...g.breves].some((n) => n.kicker === 'Tutelle'));
+// Sous tutelle : ni manœuvre, ni heures sup, ni grande décision autre que recruter ; zone protégée.
+tour({ C: { ...base, rythme: 'renforce', manoeuvre: { type: 'poste', cible: 'A' }, decision: { type: 'former', service: 'admin' } },
+  A: { ...base, manoeuvre: { type: 'poste', cible: 'C' } } });
+assert.ok(!s.zones.C.rapport.some((l) => l.includes('Manœuvre')), 'pas de manœuvre sous tutelle');
+assert.ok(!s.zones.C.rapport.some((l) => l.includes('Formation lancée')), 'pas de grande décision sous tutelle');
+assert.ok(s.zones.A.rapport.some((l) => l.includes('Manœuvre annulée')), 'zone sous tutelle protégée');
+s.zones.C.budget = -60;
+for (let i = 0; i < 3; i++) tour();
+g = tour();
 assert.equal(s.zones.C.faillites, 1, 'faillite comptée');
 assert.equal(s.zones.C.budget > 40, true, 'nouvelle zone');
 assert.equal(s.zones.C.peril, null);

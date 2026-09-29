@@ -133,7 +133,7 @@ export function planVille(st, me, { zoom = false } = {}) {
     const z = st.zones[tz.uid];
     const [x, y] = tz.label;
     return `<text x="${f1(x)}" y="${f1(y)}" text-anchor="middle" class="zl">${esc(z.nom.toUpperCase().slice(0, 16))}</text>
-      <text x="${f1(x)}" y="${f1(y + 11)}" text-anchor="middle" class="zc">ZP ${esc(z.code)}${gradeIdx(z.ps) >= 3 ? ` ${'★'.repeat(gradeIdx(z.ps) - 2)}` : ''}${z.peril ? ' ⚠' : ''}${pseudoDe(tz.uid) ? ` · ${esc(pseudoDe(tz.uid))}` : ''}</text>`;
+      <text x="${f1(x)}" y="${f1(y + 11)}" text-anchor="middle" class="zc">ZP ${esc(z.code)}${gradeIdx(z.ps) >= 3 ? ` ${'★'.repeat(gradeIdx(z.ps) - 2)}` : ''}${z.peril || z.tutelle ? ' ⚠' : ''}${pseudoDe(tz.uid) ? ` · ${esc(pseudoDe(tz.uid))}` : ''}</text>`;
   }).join('');
   const sitesPos = T.zones.map((tz) => { const z = st.zones[tz.uid]; const s = siteDe(z); return s ? { tz, z, s, c: celluleSite(T, tz, s) } : null; }).filter(Boolean);
   const occupe = [...T.zones.map((tz) => tz.label), ...sitesPos.map((p) => p.c.c), [WW * 0.3, HH * 0.78]];

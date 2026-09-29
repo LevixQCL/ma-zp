@@ -2,7 +2,7 @@ import { noteCourte } from './nouveautes.js';
 import { partageHtml } from './invitation.js';
 // La Gazette du Delta, le classement, l'espace maître du jeu.
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1, classementLive } from './common.js';
-import { GRADES } from '../engine/constants.js';
+import { GRADES, LOTS, ENCHERE } from '../engine/constants.js';
 import { insigne } from './blasons.js';
 import { formatDateBe, formatHeureBe } from '../engine/time.js';
 
@@ -29,7 +29,8 @@ export function renderGazette() {
         <div class="meta"><span>Édition du soir · n° ${g.turn}</span><span>Saison ${g.season}</span></div>
         <h1>La Gazette du Delta</h1>
         <div class="devise">Le quotidien du district · ${g.date ? `${formatDateBe(g.date)}, ${formatHeureBe(g.date)}` : `tour ${g.turn}`}</div>
-        ${g.toursSansFaillite !== undefined ? `<div class="chantier">District Delta : <strong>${g.toursSansFaillite}</strong> tour${g.toursSansFaillite > 1 ? 's' : ''} sans faillite</div>` : ''}</header>
+        ${g.toursSansFaillite !== undefined ? `<div class="chantier">District Delta : <strong>${g.toursSansFaillite}</strong> tour${g.toursSansFaillite > 1 ? 's' : ''} sans faillite</div>` : ''}
+        ${g.prochainLot && LOTS[g.prochainLot.lot] ? `<div class="devise">Aujourd’hui à la salle des ventes : <strong>${esc(LOTS[g.prochainLot.lot].nom)}</strong>, mise à prix ${g.prochainLot.prixMin} k€${LOTS[g.prochainLot.lot].reserve ? ` (réputation ${ENCHERE.repReserve}+)` : ''}</div>` : ''}</header>
       ${g.finSaison ? `<section class="box sombre"><span class="k" style="color:#F2B544">Fin de la saison ${g.finSaison.season}</span>
         ${g.finSaison.titres.map((t) => { const z = S.state.zones[t.uid]; return `<p style="color:#F4EFE3">${icon('trophy', 13)} <strong>${esc(t.titre)}</strong> : ${z ? zoneName(z) : ''}</p>`; }).join('')}
         <p style="color:#C9B68F">La saison ${g.finSaison.saisonSuivante} commence : budgets et effectifs repartent de zéro, bâtiments et formations sont conservés avec un niveau de moins.</p></section>` : ''}

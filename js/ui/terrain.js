@@ -68,9 +68,9 @@ export function renderTerrain() {
     const o = operationActive(x, T);
     voisins.push(`<div class="list-row"><span class="bullet" style="background:var(--red)"></span><span class="col grow" style="gap:1px"><span style="font-weight:600">${zoneName(x)} · ${esc(o.titre)}</span><span class="small muted">Opération en cours · pas d’appel à renfort pour l’instant</span></span></div>`);
   }
-  const perils = Object.values(st.zones).filter((x) => x.peril && x.uid !== z.uid);
+  const perils = Object.values(st.zones).filter((x) => (x.peril || x.tutelle) && x.uid !== z.uid);
   if (perils.length) voisins.push(`<a class="list-row" href="#diplomatie" style="background:var(--red-bg);border-color:var(--red-line)"><span class="bullet" style="background:var(--red)"></span>
-    <span class="col grow" style="gap:1px"><span style="font-weight:600">${perils.map((x) => esc(x.nom)).join(', ')} en péril</span><span class="small muted">Entraide : budget ou agents, +5 de réputation</span></span>${icon('chevron', 16)}</a>`);
+    <span class="col grow" style="gap:1px"><span style="font-weight:600">${perils.map((x) => esc(x.nom)).join(', ')} en difficulté</span><span class="small muted">Entraide : budget ou agents, +5 de réputation</span></span>${icon('chevron', 16)}</a>`);
 
   // ───── District ─────
   const ev = st.evenement;

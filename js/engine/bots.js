@@ -5,6 +5,7 @@ import { agentsDisponibles, coutDecision, decisionImpossible, operationActive, N
 import { genererAffaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ } from './enquete.js';
 import { fipaPour, invitationImpossible, FIPA } from './fipa.js';
 import { cibleImpossible, enDuel } from './rivalites.js';
+import { encherePossible } from './encheres.js';
 
 export const BOT_PROFILES = [
   { uid: 'bot-canal', code: '5301', nom: 'Canal', pseudo: 'Sam', couleur: '#3CC6B8', style: 'equilibre' },
@@ -163,7 +164,7 @@ function botRivalites(zone, state, style, rng) {
   const out = {};
   const autres = Object.values(state.zones).filter((z) => z.uid !== zone.uid && z.toursSansOrdres < 3);
   // Entraide : les robots coopératifs aident une zone en péril.
-  const peril = autres.find((z) => z.peril);
+  const peril = autres.find((z) => z.peril || z.tutelle);
   if (peril && style !== 'agressif' && zone.budget > 30 && rng.chance(0.6)) out.aide = { cible: peril.uid, budget: 5, agents: agentsDisponibles(zone, state.turn) > 15 ? 1 : 0 };
   // Manœuvres : surtout le robot agressif.
   const envie = style === 'agressif' ? 0.18 : style === 'distrait' ? 0.04 : 0.02;
@@ -180,6 +181,12 @@ function botRivalites(zone, state, style, rng) {
   }
   const invit = (state.duels || []).find((d) => d.b === zone.uid && d.etape === 'propose' && d.tourReponse === state.turn);
   if (invit) out.duelReponse = { id: invit.id, accepte: rng.chance(style === 'prudent' ? 0.3 : 0.65) };
+  // Salle des ventes : les robots enchérissent quand ils ont de la marge.
+  const e = state.enchere;
+  if (e && !encherePossible(state, zone) && zone.budget > 30 && rng.chance(style === 'agressif' ? 0.45 : style === 'prudent' ? 0.15 : 0.3)) {
+    const montant = Math.min(Math.floor(zone.budget - 25), e.prixMin + rng.int(0, style === 'agressif' ? 6 : 3));
+    if (montant >= e.prixMin) out.offre = { id: e.id, montant };
+  }
   // Conseil.
   if (state.conseil && state.conseil.tour === state.turn) {
     out.votes = {};

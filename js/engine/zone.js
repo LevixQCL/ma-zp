@@ -1,7 +1,7 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
 import {
-  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, malusEtat, coutEquipement, multNiveau, multEquip } from './constants.js';
+  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, malusEtat, coutEquipement, multNiveau, multEquip } from './constants.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -24,7 +24,7 @@ export function newZone({ uid, code, nom, couleur }, turn, base = {}) {
     criminalite: START.criminalite, paperasse: START.paperasse, paperassePic: START.paperasse,
     dossiers: [], dossierSeq: 0,
     operation: null, pressions: [],
-    renforts: [], peril: null, manoeuvres: [], faillites: base.faillites ?? 0, protegeJusqua: 0, motionSaison: false, failliteSaison: false,
+    renforts: [], peril: null, tutelle: null, tutelleSaison: false, lots: [], derniereEnchere: -99, manoeuvres: [], faillites: base.faillites ?? 0, protegeJusqua: 0, motionSaison: false, failliteSaison: false,
     dernierOrdre: null, toursSansOrdres: 0, toursJoues: 0,
     ipz: 0, ipzSomme: 0, ipzHist: [],
     ps: base.ps ?? 0, badges: base.badges ?? [], titres: base.titres ?? [],
@@ -69,6 +69,21 @@ export const capaciteVehicules = (z) => BATIMENTS.garage.capacite(z.batiments.ga
 export const effectifPrevu = (z) => z.agents + (z.academie || []).reduce((s, a) => s + a.n, 0);
 export const niveauEquipement = (z) => z.batiments.bureaux + z.batiments.garage + Object.values(z.infra || {}).filter(Boolean).length;
 
+/** Subside communal : une part du salaire de chaque agent au-delà de l'effectif de départ. */
+export const subsideAgents = (z) => SUBSIDE.parAgent * Math.max(0, z.agents - SUBSIDE.seuil);
+/** Bonus (ou malus) communal selon la réputation : 0 à 50, jusqu'à ±2,5 k€ par tour aux extrêmes. */
+export const confianceCommune = (z) => round1((clamp(z.reputation, 0, 100) - 50) * SUBSIDE.confiance);
+/** Prix d'une recrue selon la réputation de la zone. */
+export function coutRecrue(z) {
+  if (z.reputation >= REPUTATION.recrueHaute) return REPUTATION.coutRecrueHaute;
+  if (z.reputation < REPUTATION.recrueBasse) return REPUTATION.coutRecrueBasse;
+  return COUTS.recrue;
+}
+/** Vrai si la zone est sous tutelle pendant le tour `turn`. */
+export const sousTutelle = (z, turn) => !!(z && z.tutelle && turn <= z.tutelle.fin);
+/** Zone en difficulté (péril ou tutelle) : protégée des manœuvres, aide mieux récompensée. */
+export const enDifficulte = (z) => !!(z && (z.peril || z.tutelle));
+
 /** Péréquation : zone nettement moins équipée que la moyenne des zones actives. */
 export function perequation(z, state) {
   const zs = Object.values((state && state.zones) || {}).filter((x) => x.toursSansOrdres < 3);
@@ -86,7 +101,8 @@ export function fraisFixes(z, state, { amendes = 0, rythme = 'normal' } = {}) {
   const b = z.batiments;
   const lignes = [
     { k: 'dotation', l: 'Dotation fédérale', v: ECONOMIE.dotation },
-    { k: 'subside', l: 'Subside communal (hôtel de police)', v: BATIMENTS.bureaux.subside(b.bureaux) + BATIMENTS.garage.subside(b.garage) },
+    { k: 'subside', l: `Subside communal (${Math.max(0, z.agents - SUBSIDE.seuil)} agents au-delà de ${SUBSIDE.seuil})`, v: subsideAgents(z) },
+    { k: 'confiance', l: 'Confiance de la commune (réputation)', v: confianceCommune(z) },
     { k: 'perequation', l: 'Péréquation (zone moins équipée)', v: perequation(z, state) },
     { k: 'amendes', l: 'Amendes du Roulage', v: amendes },
     { k: 'radars', l: 'Radars automatiques (caméras)', v: z.infra && z.infra.anpr ? INFRAS.anpr.fixe : 0 },
@@ -147,7 +163,15 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
   if (service === 'roulage' && zone.infra.anpr) c *= 1.2;
   if (service === 'recherche' && zone.infra.audition) c *= 1.2;
   if (service === 'admin') c *= (zone.infra.logiciel ? 1.5 : 1) * adminMult;
+  c *= bonusLots(zone, service);
   return c;
+}
+
+/** Multiplicateur apporté par les lots gagnés aux enchères pour un service. */
+export function bonusLots(zone, service) {
+  let m = 1;
+  for (const l of zone.lots || []) { const b = LOTS[l.id] && LOTS[l.id].bonus; if (b && b[service]) m *= b[service]; }
+  return m;
 }
 
 export function forceEngagement(zone, n) {
@@ -161,7 +185,8 @@ export function sanitizeOrders(zone, raw, state) {
   const o = raw && typeof raw === 'object' ? raw : {};
   const alloc = {};
   for (const s of SERVICES) alloc[s] = Math.max(0, Math.floor(Number(o.alloc && o.alloc[s]) || 0));
-  const rythme = RYTHMES[o.rythme] ? o.rythme : 'normal';
+  const tutelle = sousTutelle(zone, turn);
+  const rythme = RYTHMES[o.rythme] && !(tutelle && o.rythme === 'renforce') ? o.rythme : 'normal';
 
   const affIds = new Set((state.affaires || []).map((a) => a.id));
   const engagements = {};
@@ -209,11 +234,12 @@ export function sanitizeOrders(zone, raw, state) {
     else if (d.type === 'equiper' && (d.cible === 'vehicule' || SERVICES.includes(d.cible))) decision = { type: 'equiper', cible: d.cible };
     else if (d.type === 'construire' && INFRAS[d.infra]) decision = { type: 'construire', infra: d.infra };
     else if (d.type === 'agrandir' && BATIMENTS[d.batiment]) decision = { type: 'agrandir', batiment: d.batiment };
+    if (tutelle && decision && decision.type !== 'recruter') decision = null;
   }
   const operation = ['complet', 'reduit', 'aucun'].includes(o.operation) ? o.operation : 'reduit';
   const dp = o.depenses && typeof o.depenses === 'object' ? o.depenses : {};
   const depenses = {
-    reserve: clamp(Math.floor(Number(dp.reserve) || 0), 0, DEPENSES.reserve.max),
+    reserve: tutelle ? 0 : clamp(Math.floor(Number(dp.reserve) || 0), 0, DEPENSES.reserve.max),
     reserveService: SERVICES.includes(dp.reserveService) ? dp.reserveService : 'intervention',
     prime: !!dp.prime, prevention: !!dp.prevention, soustraitance: !!dp.soustraitance, revision: !!dp.revision,
   };
@@ -235,7 +261,9 @@ export function sanitizeOrders(zone, raw, state) {
   const votes = {};
   if (o.votes && typeof o.votes === 'object') for (const [k2, v] of Object.entries(o.votes)) if (['dotation', 'theme', 'blame', 'chef'].includes(k2) && Number.isInteger(v)) votes[k2] = clamp(v, 0, 5);
   const motionChef = ['prime', 'amnistie', 'subside'].includes(o.motionChef) ? o.motionChef : null;
-  return { alloc, rythme, engagements, evenement: evenement0, renfort, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre, aide, duel, duelReponse, votes, motionChef };
+  const montant = o.offre && typeof o.offre === 'object' ? int(o.offre.montant, 0, ENCHERE.max) : 0;
+  const offre = montant > 0 && !tutelle ? { id: str(o.offre.id), montant } : null;
+  return { alloc, rythme, engagements, evenement: evenement0, renfort, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */
@@ -281,7 +309,7 @@ export function autopilotOrders(zone, state) {
 export function coutDecision(zone, decision) {
   if (!decision) return 0;
   switch (decision.type) {
-    case 'recruter': return COUTS.recrue * decision.n;
+    case 'recruter': return coutRecrue(zone) * decision.n;
     case 'former': return COUTS.formation;
     case 'equiper': return decision.cible === 'vehicule' ? COUTS.vehicule : coutEquipement(zone.equip[decision.cible]);
     case 'construire': return INFRAS[decision.infra].cout;
@@ -293,6 +321,7 @@ export function coutDecision(zone, decision) {
 /** Indique pourquoi une décision est impossible (ou null si elle l'est). */
 export function decisionImpossible(zone, decision, turn) {
   if (!decision) return null;
+  if (sousTutelle(zone, turn) && decision.type !== 'recruter') return 'Zone sous tutelle : seul le recrutement est autorisé';
   const cout = coutDecision(zone, decision);
   if (zone.budget < cout) return 'Budget insuffisant';
   if (decision.type === 'former') {

@@ -1,7 +1,7 @@
 // Logistique (bâtiments de la zone) et détail du budget : ce qui coûte, ce qui rapporte.
 import { S, esc, icon, fmt1, myZone } from './common.js';
-import { BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION } from '../engine/constants.js';
-import { fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation } from '../engine/zone.js';
+import { BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE } from '../engine/constants.js';
+import { fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
 import { coutDemarche } from '../engine/enquete.js';
 import { PERIL } from '../engine/rivalites.js';
 import { estimations } from './ordres.js';
@@ -21,6 +21,7 @@ export function previsionBudget() {
   const dem = (d.demarches || []).reduce((s, x) => s + coutDemarche(st, z.uid, x), 0);
   if (dem) choix.push({ l: 'Démarches d’enquête', v: -dem });
   if (d.aide && d.aide.cible && d.aide.budget) choix.push({ l: 'Entraide envoyée', v: -d.aide.budget });
+  if (d.offre && st.enchere && d.offre.id === st.enchere.id && d.offre.montant) choix.push({ l: 'Offre à la salle des ventes (si tu l’emportes)', v: -d.offre.montant });
   const totalChoix = choix.reduce((s, x) => s + x.v, 0);
   return { fixes: ff, choix, totalChoix, solde: ff.total + totalChoix, apres: z.budget + ff.total + totalChoix };
 }
@@ -53,7 +54,7 @@ export function ouvrirBudget() {
     ${c && c.lignes ? `<h3 class="compta-t">Relevé du dernier tour (tour ${c.tour})</h3>
       ${lignes(c.lignes)}
       <div class="between compta total"><span>${fmt1(c.debut)} k€ → ${fmt1(c.fin)} k€</span><span class="mono ${c.fin - c.debut >= 0 ? 'ok' : 'bad'}">${k(Math.round((c.fin - c.debut) * 10) / 10)}</span></div>` : ''}
-    <p class="tiny muted" style="margin:0">Budget négatif deux tours de suite : Inspection générale (−5 k€). Sous −${Math.abs(PERIL.budget)} k€ : zone en péril, faillite après ${PERIL.tours} résolutions sans redressement.</p>
+    <p class="tiny muted" style="margin:0">Budget négatif deux tours de suite : Inspection générale (−5 k€). Sous −${Math.abs(PERIL.budget)} k€ : zone en péril ; sans redressement en ${PERIL.tours} résolutions, tutelle, puis faillite.</p>
     <a class="small" href="#guide-zone" data-close>Règles du budget dans le guide</a>`;
   ouvrirPanneau(html);
 }
@@ -94,12 +95,12 @@ export function logistiqueHtml() {
     return `<div class="bat">
       <div class="between"><span style="font-weight:700">${B.nom}</span><span class="niv" aria-label="Niveau ${n} sur ${BATIMENT_MAX}">${Array.from({ length: BATIMENT_MAX }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span></div>
       <span class="tiny muted">${B.texte}</span>
-      <div class="between small"><span class="${plein[id] ? 'warn' : ''}">${occupation[id]}${plein[id] ? ' · plein' : ''}</span><span class="mono tiny muted">entretien ${fmt1(B.entretien(n))} k€${B.subside(n) ? ` · subside +${fmt1(B.subside(n))}` : ''}</span></div>
+      <div class="between small"><span class="${plein[id] ? 'warn' : ''}">${occupation[id]}${plein[id] ? ' · plein' : ''}</span><span class="mono tiny muted">entretien ${fmt1(B.entretien(n))} k€</span></div>
       ${enTravaux ? `<span class="small warn" style="font-weight:600">Travaux en cours : niveau ${n + 1} au tour ${z.travaux.fin}</span>`
         : n >= BATIMENT_MAX ? '<span class="small ok" style="font-weight:600">Niveau maximum</span>'
         : `<button type="button" class="btn small block ${choisi ? 'primary' : ''}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''}>
             ${choisi ? '✓ Agrandissement prévu ce soir · annuler' : `Agrandir : niveau ${n + 1} · ${B.capacite(n + 1)} ${B.unite} · ${fmt1(B.coutAgrandir(n))} k€`}</button>
-          <span class="tiny muted">${refus && !choisi ? esc(refus) : `${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux · entretien ensuite ${fmt1(B.entretien(n + 1))} k€/tour${B.subside(n + 1) ? `, subside +${fmt1(B.subside(n + 1))}` : ''} · c’est ta grande décision du jour`}</span>`}
+          <span class="tiny muted">${refus && !choisi ? esc(refus) : `${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux · entretien ensuite ${fmt1(B.entretien(n + 1))} k€/tour · c’est ta grande décision du jour`}</span>`}
     </div>`;
   }).join('');
   const peq = perequation(z, st);
@@ -110,6 +111,7 @@ export function logistiqueHtml() {
       <div class="bat"><div class="between"><span style="font-weight:700">Annexes</span><span class="mono tiny muted">${fmt1(ENTRETIEN_ANNEXE)} k€/tour chacune</span></div>
         <span class="small">${annexes.length ? annexes.map(([, i]) => esc(i.nom)).join(' · ') : 'Aucune pour l’instant.'}</span>
         <a class="tiny" href="#ordres">Construire une annexe (grande décision, dans tes ordres)</a></div>
+      ${z.agents > SUBSIDE.seuil ? `<p class="tiny ok" style="margin:0">Subside communal : +${fmt1(subsideAgents(z))} k€ par tour pour tes ${z.agents - SUBSIDE.seuil} agents au-delà de ${SUBSIDE.seuil} (${fmt1(SUBSIDE.parAgent)} k€ chacun).</p>` : `<p class="tiny muted" style="margin:0">Subside communal : ${fmt1(SUBSIDE.parAgent)} k€ par tour pour chaque agent au-delà de ${SUBSIDE.seuil}.</p>`}
       ${peq ? `<p class="tiny ok" style="margin:0">Péréquation : ta zone est moins équipée que la moyenne du district, elle reçoit +${fmt1(PEREQUATION.montant)} k€ par tour.</p>` : ''}
       <p class="tiny muted" style="margin:0">À la saison suivante, tes bâtiments sont conservés avec un niveau de moins, et tes annexes restent.</p>
     </div></details>`;

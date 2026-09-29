@@ -1,6 +1,7 @@
 // Écran Diplomatie : Conseil de police, duels, entraide, manœuvres.
 import { S, esc, icon, tabbar, myZone, zoneName, fmt1 } from './common.js';
-import { gradeFor } from '../engine/constants.js';
+import { gradeFor, REPUTATION } from '../engine/constants.js';
+import { sousTutelle } from '../engine/zone.js';
 import { nonLus, invitations } from './prive.js';
 import {
   MANOEUVRES, MAN, chanceBase, cibleImpossible, DUEL, DUEL_INDICATEURS, enDuel, AIDE, MOTIONS_CHEF, themeActif, THEMES,
@@ -52,6 +53,8 @@ function duelsHtml() {
       html += `<p class="small" style="margin:0">Duel en cours contre <strong>${zoneName(autre)}</strong> : ${esc(DUEL_INDICATEURS[mien.ind].nom.toLowerCase())}. Fin au tour ${mien.fin}.</p>
         <div class="tiles"><div class="tile"><span class="l">Toi</span><span class="v">${gMoi}</span></div><div class="tile"><span class="l">${esc(autre.nom)}</span><span class="v">${gLui}</span></div></div>`;
     }
+  } else if (sousTutelle(st.zones[me], st.turn)) {
+    html += '<p class="small warn" style="margin:0">Ta zone est sous tutelle : pas de nouveau duel pour l’instant.</p>';
   } else {
     const dd = d.duel || { cible: '', ind: 'satisfaction' };
     html += `<p class="small muted" style="margin:0">Défie une zone pendant ${DUEL.duree} tours. Le gagnant prend ${DUEL.enjeu} points de réputation au perdant. Un seul duel à la fois.</p>
@@ -67,7 +70,8 @@ function aideHtml() {
   const a = d.aide || { cible: '', budget: 0, agents: 0 };
   const T = S.state.turn;
   const statut = (z) => {
-    if (z.peril) return { cls: 'bad', t: 'en péril', d: `${(z.peril.raisons || []).join(', ') || 'zone en difficulté'} · faillite au tour ${z.peril.fin} sans redressement`, bonus: 5 };
+    if (z.tutelle) return { cls: 'bad', t: 'sous tutelle', d: `${(z.tutelle.raisons || []).join(', ') || 'zone en redressement'} · faillite au tour ${z.tutelle.fin} si elle est encore en péril`, bonus: 5 };
+    if (z.peril) return { cls: 'bad', t: 'en péril', d: `${(z.peril.raisons || []).join(', ') || 'zone en difficulté'} · ${z.tutelleSaison ? 'faillite' : 'tutelle'} au tour ${z.peril.fin} sans redressement`, bonus: 5 };
     const bl = (z.blesses || []).filter((b) => b.retour > T && b.motif !== 'prêté').reduce((s, b) => s + b.n, 0);
     const cd = z.dernierCoupDur && T - z.dernierCoupDur.tour <= 2 ? z.dernierCoupDur : null;
     if (bl || cd) return { cls: 'warn', t: 'coup dur', d: [cd ? `${cd.titre.toLowerCase()} au tour ${cd.tour}` : '', bl ? `${bl} blessé${bl > 1 ? 's' : ''} ou absent${bl > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · '), bonus: bl ? 3 : 1 };
@@ -76,7 +80,7 @@ function aideHtml() {
   };
   const enDiff = autres().map((z) => ({ z, s: statut(z) })).filter((x) => x.s);
   return `<section class="card" aria-label="Entraide"><h2 class="card-title" style="margin:0">Entraide</h2>
-    <p class="small muted" style="margin:0">Envoie du budget (immédiat) ou prête des agents pour ${AIDE.dureePret} tours. Réputation gagnée : +5 pour une zone en péril, +3 pour une zone qui a des blessés après un coup dur, +1 sinon.</p>
+    <p class="small muted" style="margin:0">Envoie du budget (immédiat) ou prête des agents pour ${AIDE.dureePret} tours. Réputation gagnée : +5 pour une zone en péril ou sous tutelle, +3 pour une zone qui a des blessés après un coup dur, +1 sinon.</p>
     <div class="col" style="gap:4px"><span class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.6px">Zones en difficulté</span>
       ${enDiff.length ? enDiff.map(({ z, s }) => `<div class="between small" style="gap:8px"><span>${zoneName(z)} <span class="${s.cls}" style="font-weight:700">· ${s.t}</span><br><span class="tiny muted">${esc(s.d)}</span></span><span class="pill ${s.cls === 'bad' ? 'red' : 'amber'}">+${s.bonus} rép.</span></div>`).join('') : '<span class="small muted">Aucune pour l’instant. Une zone passe « en péril » quand son budget tombe sous −15 k€, qu’il lui reste moins de 8 agents disponibles ou que son moral passe sous 10.</span>'}
     </div>
@@ -91,10 +95,11 @@ function aideHtml() {
 function manoeuvreHtml() {
   const st = S.state, d = S.draft, z = myZone();
   const m = d.manoeuvre || { type: '', cible: '' };
+  if (sousTutelle(z, st.turn)) return `<section class="card" aria-label="Manœuvres"><h2 class="card-title" style="margin:0">Manœuvres</h2><p class="small warn" style="margin:0">Ta zone est sous tutelle : pas de manœuvre ni de duel jusqu’au tour ${z.tutelle.fin}.</p></section>`;
   const chance = Math.round(chanceBase(st, z) * 100);
   return `<section class="card" aria-label="Manœuvres"><h2 class="card-title" style="margin:0">Manœuvres</h2>
     <p class="small muted" style="margin:0">Une manœuvre par tour. Réussie ou non, elle coûte ${MAN.coutReputation} de réputation et la Gazette révèle ton nom le lendemain. Chance de la prochaine : <strong class="warn">${chance} %</strong> avant les parades de la cible (elle baisse à chaque manœuvre des 7 derniers tours).</p>
-    <div class="man-regles"><strong>Comment ça se passe.</strong> Tout est secret jusqu’à 20:00 : la cible ne voit rien venir et ne peut pas réagir sur le moment. Sa défense, c’est l’état de sa zone ce soir-là (moral, dossiers, paperasse, Proximité). Juste après 20:00, elle lit dans son rapport qu’une zone l’a visée et si ça a marché, sans savoir laquelle ; la Gazette du lendemain soir révèle ton nom. Elle peut alors riposter (duel, manœuvre) ou te le faire payer au Conseil (blâme). Les zones en péril et les nouvelles zones sont intouchables.</div>
+    <div class="man-regles"><strong>Comment ça se passe.</strong> Tout est secret jusqu’à 20:00 : la cible ne voit rien venir et ne peut pas réagir sur le moment. Sa défense, c’est l’état de sa zone ce soir-là (moral, dossiers, paperasse, Proximité). Juste après 20:00, elle lit dans son rapport qu’une zone l’a visée et si ça a marché, sans savoir laquelle ; la Gazette du lendemain soir révèle ton nom. Elle peut alors riposter (duel, manœuvre) ou te le faire payer au Conseil (blâme). Les zones en péril ou sous tutelle et les nouvelles zones sont intouchables. Une manœuvre ratée par une zone de réputation supérieure à ${REPUTATION.scandale} fait scandale : −${REPUTATION.scandaleMalus} de réputation en plus.</div>
     <div class="col" style="gap:6px">${Object.entries(MANOEUVRES).map(([k, v]) => `<button type="button" class="choice" data-action="man-type" data-v="${k}" aria-pressed="${m.type === k}" style="text-align:left;align-items:flex-start">${esc(v.nom)}<span class="s">${esc(v.texte)}</span>
       ${m.type === k ? `<span class="s"><strong>Tu gagnes :</strong> ${esc(v.gain)}.</span><span class="s"><strong>La cible :</strong> ${esc(v.cible)}.</span><span class="s"><strong>Elle se protège par :</strong> ${esc(v.defense)}</span>` : `<span class="s">Parade : ${esc(v.parade.charAt(0).toLowerCase() + v.parade.slice(1))}</span>`}</button>`).join('')}</div>
     ${m.type ? `<label class="field">Zone visée<select class="text" data-change="man-cible" style="min-height:44px;font-size:14px"><option value="">Choisir…</option>
@@ -115,7 +120,7 @@ export function ongletsRadio(actif) {
 /** Section repliée tant que le joueur ne l'ouvre pas (sauf si elle demande une action). */
 function repli(key, titre, resume, html, ouvertParDefaut) {
   const o = S.diploOpen && key in S.diploOpen ? S.diploOpen[key] : ouvertParDefaut;
-  if (o) return html.replace('<section class="card"', `<section class="card" data-k="${key}"`).replace(/(<h2 class="card-title"[^>]*>)([^<]*)(<\/h2>)/, `$1$2$3<button type="button" class="btn small ghost" data-action="diplo-open" data-k="${key}" style="position:absolute;right:10px;top:8px">Replier</button>`);
+  if (o) return html.replace('<section class="card"', `<section class="card" data-k="${key}"`).replace(/(<h2 class="card-title"[^>]*>)([^<]*)(<\/h2>)/, `<div class="between" style="gap:8px">$1$2$3<button type="button" class="btn small ghost" data-action="diplo-open" data-k="${key}" style="flex-shrink:0">Replier</button></div>`);
   return `<button type="button" class="list-row" data-action="diplo-open" data-k="${key}" style="width:100%;text-align:left"><span class="col grow" style="gap:1px"><span style="font-weight:600">${titre}</span><span class="small muted">${resume}</span></span>${icon('chevron', 18)}</button>`;
 }
 
@@ -123,14 +128,14 @@ export function renderDiplomatie() {
   const st = S.state, d = S.draft, me = S.user.uid;
   const mien = (st.duels || []).find((x) => x.a === me || x.b === me);
   const duelAction = !!(mien && mien.etape === 'propose' && mien.b === me && mien.tourReponse === st.turn);
-  const perils = Object.values(st.zones).filter((z) => z.peril && z.uid !== me).length;
+  const perils = Object.values(st.zones).filter((z) => (z.peril || z.tutelle) && z.uid !== me).length;
   return `<main class="screen">
     ${ongletsRadio('diplomatie')}
     <header class="col" style="gap:3px"><h1 class="big">Diplomatie</h1>
       <p class="sub">Conseil, duels, entraide et manœuvres : tout part avec tes ordres et se résout à 20:00.</p></header>
     ${conseilHtml()}
     ${repli('duel', 'Duels', mien ? (duelAction ? '<strong class="warn">Un défi attend ta réponse</strong>' : 'Un duel en cours') : d.duel ? 'Défi prêt à partir ce soir' : 'Défier une zone pendant 5 tours', duelsHtml(), duelAction)}
-    ${repli('aide', 'Entraide', perils ? `<strong class="bad">${perils} zone${perils > 1 ? 's' : ''} en péril</strong>` : d.aide && d.aide.cible ? 'Aide prévue ce soir' : 'Envoyer du budget ou prêter des agents', aideHtml(), false)}
+    ${repli('aide', 'Entraide', perils ? `<strong class="bad">${perils} zone${perils > 1 ? 's' : ''} en difficulté</strong>` : d.aide && d.aide.cible ? 'Aide prévue ce soir' : 'Envoyer du budget ou prêter des agents', aideHtml(), false)}
     ${repli('man', 'Manœuvres', d.manoeuvre && d.manoeuvre.type ? 'Manœuvre prévue ce soir' : 'Gêner une autre zone, à tes risques', manoeuvreHtml(), false)}
     <a class="small" href="#guide-diplomatie" style="text-align:center">Règles de la diplomatie et des manœuvres</a>
   </main>${tabbar('radio')}`;
