@@ -40,7 +40,7 @@ export const POINTS_CHAUDS = [
 export function niveauTension(t) {
   if (t >= 70) return { id: 'chaud', nom: 'chaud', couleur: '#E0625A' };
   if (t >= 55) return { id: 'tendu', nom: 'tendu', couleur: '#E8913A' };
-  if (t >= 40) return { id: 'surveille', nom: 'à surveiller', couleur: '#E2C04A' };
+  if (t >= 45) return { id: 'surveille', nom: 'à surveiller', couleur: '#E2C04A' };
   return { id: 'calme', nom: 'calme', couleur: '#4FBF8A' };
 }
 

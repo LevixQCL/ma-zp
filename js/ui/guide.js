@@ -90,7 +90,7 @@ export function sections() {
         ${table(['Rythme', 'Effet'], Object.values(RYTHMES).map((r) => [r.label, `${r.mult === 1 ? 'efficacité normale' : `efficacité ${r.mult > 1 ? '+' : '−'}${Math.round(Math.abs(r.mult - 1) * 100)} %`}${r.moral ? `, ${r.moral > 0 ? '+' : ''}${r.moral} de moral` : ''}${r.cout ? `, ${k(r.cout)} d’heures supplémentaires` : ''}`]))}
         ${note('Trois tours de suite en rythme renforcé : risque d’épuisement, un agent absent 5 tours.')}
         <h3>Les quartiers et les patrouilles</h3>
-        <p>Ta zone compte six quartiers, chacun avec sa <strong>tension</strong> : calme (moins de 40), à surveiller, tendu (55 et plus), chaud (70 et plus). La criminalité de ta zone est la moyenne de ses quartiers. Au-dessus de 55, un quartier coûte un peu de satisfaction chaque jour.</p>
+        <p>Ta zone compte six quartiers, chacun avec sa <strong>tension</strong> : calme (moins de 45), à surveiller, tendu (55 et plus : coûte de la satisfaction), chaud (70 et plus). La criminalité de ta zone est la moyenne de ses quartiers. Au-dessus de 55, un quartier coûte un peu de satisfaction chaque jour.</p>
         <ul class="aide-liste">
           <li><strong>Patrouilles ciblées</strong> : sur la Carte, envoie des agents de Proximité dans un quartier précis. Les autres patrouillent partout, comme d’habitude. Là où tu concentres, la tension baisse davantage ; ailleurs, elle baisse moins.</li>
           <li><strong>Point chaud</strong> : presque chaque jour, un quartier est signalé la veille (deal, rodéos, cambriolages…). 2 agents sur place le désamorcent (+1 de satisfaction) ; sinon, la tension y grimpe fortement.</li>
