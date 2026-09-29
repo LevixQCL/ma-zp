@@ -181,12 +181,12 @@ export function renderHP() {
         <span class="col" style="gap:1px"><span style="font-weight:600">${a.titre}</span><span class="small muted">${a.texte}</span></span></a>`).join('')}</section>` : ''}
 
     <section class="col">
-      <button class="list-row" data-action="toggle-rapport" aria-expanded="${S.showRapport}" style="width:100%;text-align:left">${icon('news', 18)}<span class="grow" style="font-weight:600">Rapport du dernier tour</span>${icon('chevron', 16, S.showRapport ? 'style="transform:rotate(90deg)"' : '')}</button>
-      ${S.showRapport ? `<div class="card tight">${(z.rapport && z.rapport.length ? z.rapport : ['Pas encore de rapport : le premier tour n’a pas été résolu.']).map((l) => `<p class="small" style="margin:0">• ${esc(l)}</p>`).join('')}</div>` : ''}
-      <div class="row">
-        <a class="btn grow" href="#gazette">${icon('news', 18)} ${last ? `Gazette du tour ${last.turn}` : 'La Gazette'}</a>
-        <a class="btn grow" href="#classement">${icon('trophy', 18)} Classement</a>
+      <div class="trio">
+        <button type="button" class="btn" data-action="toggle-rapport" aria-expanded="${!!S.showRapport}" ${S.showRapport ? 'style="border-color:var(--amber-line);background:var(--amber-bg)"' : ''}>${icon('news', 18)}<span>Rapport</span></button>
+        <a class="btn" href="#gazette">${icon('news', 18)}<span>${last ? `Gazette <span class="mono tiny muted">T${last.turn}</span>` : 'Gazette'}</span></a>
+        <a class="btn" href="#classement">${icon('trophy', 18)}<span>Classement</span></a>
       </div>
+      ${S.showRapport ? `<div class="card tight"><span class="kicker">Rapport du dernier tour</span>${(z.rapport && z.rapport.length ? z.rapport : ['Pas encore de rapport : le premier tour n’a pas été résolu.']).map((l) => `<p class="small" style="margin:0">• ${esc(l)}</p>`).join('')}</div>` : ''}
       <div class="row">
         <a class="btn ghost small grow" href="#guide">${icon('news', 16)} Guide du joueur</a>
         <a class="btn ghost small grow" href="#profil">${icon('gear', 16)} Profil</a>
