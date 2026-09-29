@@ -91,7 +91,7 @@ export function renderQuete() {
   const onglets = train ? entrainementBarre() : `<div class="seg quatre" role="tablist" aria-label="Énigmes du jour">${S.quests.map((x, k) => `
       <button type="button" role="tab" data-action="quest-tab" data-i="${k}" aria-pressed="${k === i}" aria-selected="${k === i}"><span class="t">Énigme ${k + 1}${icone(results[k])}</span><span class="d">${esc(x.typeLabel)}</span></button>`).join('')}
       <button type="button" role="tab" class="noir" data-action="quest-tab" data-i="3" aria-pressed="${noir}" aria-selected="${noir}"><span class="t">Dossier noir${icone(S.noirResult)}</span><span class="d">facultatif</span></button></div>`;
-  return `<main class="screen ${noir ? 'mode-noir' : ''}">
+  return `<main class="screen ${noir ? 'mode-noir' : ''} ${train ? '' : 'sans-copie'}">
     ${modes}
     ${onglets}
     ${bonusCard}

@@ -9,6 +9,7 @@ import { ouvrirAide } from './ui/aide.js';
 import { monAppel } from './ui/renfort.js';
 import { maCandidature } from './ui/affaires.js';
 import { renderTerrain } from './ui/terrain.js';
+import { installerAntiTriche } from './ui/antitriche.js';
 import { ouvrirBudget } from './ui/logistique.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { operationActive } from './engine/zone.js';
@@ -750,6 +751,7 @@ async function boot() {
     if (changed) afterAuth();
   });
   document.addEventListener('click', onClick);
+  installerAntiTriche();
   // Sections repliables : on se souvient de celles qui sont ouvertes.
   // (seulement quand le joueur clique : un <details> affiché ouvert déclenche aussi « toggle »)
   let clicResume = 0;
