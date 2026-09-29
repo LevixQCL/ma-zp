@@ -14,7 +14,7 @@ export const MANOEUVRES = {
   debauchage: { nom: 'Débauchage', texte: 'Attirer un agent de la zone visée chez toi. Plus son moral est bas, plus ça marche.', parade: 'Garder un bon moral, ou verser une prime au personnel ce jour-là.' },
   dessaisissement: { nom: 'Dessaisissement', texte: 'Demander au parquet de te confier son plus vieux dossier (ouvert depuis plus de 3 tours). Il faut plus de Recherche qu’elle ce jour-là.', parade: 'Ne pas laisser vieillir ses dossiers.' },
   signalement: { nom: 'Signalement à l’Inspection', texte: 'Signaler une zone dont la paperasse déborde (plus de 14 dossiers). Vrai : Inspection chez elle et +3 de réputation pour toi. Faux : −5 de réputation.', parade: 'Garder sa paperasse à jour.' },
-  poste: { nom: 'Poste avancé', texte: 'Pendant 5 tours, +30 % de force contre cette zone sur les affaires disputées où vous êtes en concurrence.', parade: '6 agents ou plus en Proximité annulent le bonus.' },
+  poste: { nom: 'Poste avancé', texte: 'Pendant 5 tours, tu prélèves 30 % des points des affaires résolues par cette zone (sauf si tu y participes).', parade: '6 agents ou plus en Proximité annulent le bonus.' },
 };
 export const MAN = { base: 0.7, pas: 0.15, min: 0.1, fenetre: 7, coutReputation: 2, protectionTours: 5 };
 
@@ -249,6 +249,13 @@ function appliquerMotion(state, m, choix, votants, T) {
 /** Thème de la semaine en cours (ou null). */
 export function themeActif(state, T = state.turn) {
   return state.theme && state.theme.jusqua >= absT(state, T) ? state.theme : null;
+}
+
+/** Zones qui ont un poste avancé actif chez `cible` (annulé si la cible met 6 agents ou plus en Proximité). */
+export function postesContre(state, cible, ord, T = state.turn) {
+  const A = absT(state, T);
+  if (ord[cible] && ord[cible].alloc && ord[cible].alloc.proximite >= 6) return [];
+  return [...new Set((state.postes || []).filter((p) => p.cible === cible && p.jusqua >= A).map((p) => p.auteur))];
 }
 
 /** Bonus de force d'un poste avancé contre une zone concurrente. */

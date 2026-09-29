@@ -31,11 +31,11 @@ export function botOrders(zone, state, style = 'equilibre') {
     evenement = Math.min(part, Math.floor(reste / 4));
     reste -= evenement;
   }
-  for (const a of state.affaires || []) {
-    const envie = style === 'agressif' ? 0.8 : style === 'prudent' ? 0.25 : 0.45;
+  for (const a of (state.affaires || []).filter((x) => x.zone === zone.uid)) {
+    const envie = style === 'prudent' ? 0.7 : 0.9; // ses propres affaires : presque toujours
     if (reste > 12 && rng.chance(envie)) {
       const n = Math.min(reste - 10, a.forceConseillee + rng.int(-1, 2));
-      if (n > 0) { engagements[a.id] = { agents: n, partenaire: null }; reste -= n; }
+      if (n > 0) { engagements[a.id] = { agents: n, acceptes: [] }; reste -= n; }
     }
   }
   const poids = { intervention: 0.36, proximite: 0.18, recherche: 0.18, roulage: 0.12, admin: 0.16 };

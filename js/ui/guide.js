@@ -101,11 +101,13 @@ export function sections() {
     },
     {
       id: 'affaires', titre: 'Affaires disputées', html: `
-        <p>Des affaires apparaissent sur la carte et <strong>toutes les zones peuvent s'y engager</strong> depuis l'écran Ordres. Les agents engagés quittent leurs services pour la journée.</p>
+        <p>Chaque affaire éclate <strong>dans une zone</strong> (sa punaise est sur son territoire). Cette zone la dirige : elle seule décide de la lancer, en y engageant des agents dans ses ordres.</p>
         ${ul([
-          'La zone (ou le duo) avec la plus grande force l’emporte, à condition d’atteindre la force minimale. La force dépend du nombre d’agents, du niveau en Recherche ou Intervention et du moral.',
-          '<strong>Opération conjointe</strong> : deux zones qui se désignent mutuellement comme partenaires additionnent leurs forces et se partagent les points (+1 de réputation chacune).',
-          'Échec avec plus de 5 agents engagés : −3 de moral.',
+          '<strong>Postuler</strong> : les autres zones proposent un nombre d’agents depuis la Carte. La candidature arrive dans l’onglet Privé de la zone qui dirige.',
+          '<strong>Accepter ou refuser</strong> : la zone qui dirige répond depuis son onglet Privé. Les zones acceptées participent dans la limite des places (nombre maximum d’agents sur l’affaire, zone qui dirige comprise).',
+          'Candidature refusée, sans réponse, ou affaire non lancée : tes agents restent au travail chez toi, en Intervention.',
+          'L’équipe réussit si sa force totale atteint la force minimale. La force dépend du nombre d’agents, du niveau en Recherche ou Intervention et du moral.',
+          'Les points sont partagés selon le nombre d’agents fournis. La zone qui dirige gagne aussi de la satisfaction ; chaque zone venue en renfort gagne +2 de réputation.',
           'Une affaire non résolue reste un tour de plus, avec une récompense réduite.',
         ])}`,
     },

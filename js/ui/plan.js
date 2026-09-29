@@ -123,7 +123,11 @@ export function planVille(st, me, { zoom = false } = {}) {
 
   // Repères du jeu : HP, affaires, opération en cours, événement collectif.
   const pin = (c, inner) => `<g transform="translate(${f1(c.c[0] + 10)} ${f1(c.c[1] - 14)})"><path d="M0 9c-5-5.5-8-8.6-8-12.4a8 8 0 0 1 16 0C8 .4 5 3.5 0 9z" fill="#F2B544" stroke="#0B1119" stroke-width="1.5"/><text y="-.6" text-anchor="middle" class="pn">${inner}</text></g>`;
-  const pinsAff = st.affaires.map((a, k) => pin(T.cells[Math.abs(hashString(a.id)) % T.cells.length], k + 1)).join('');
+  const pinsAff = st.affaires.map((a, k) => {
+    const tz = T.zones.find((x) => x.uid === a.zone);
+    const i = tz ? tz.quartiers[Math.abs(hashString(a.id)) % tz.quartiers.length] : Math.abs(hashString(a.id)) % T.cells.length;
+    return pin(T.cells[i], k + 1);
+  }).join('');
   const op = operationActive(me, st.turn);
   const opPin = op && moi ? (() => {
     const s = op.site ? sitesPos.find((p) => p.z.uid === me.uid) : null;

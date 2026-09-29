@@ -199,8 +199,8 @@ export async function createFirebaseBackend(config) {
       const q = F.query(col('prives'), F.where('participants', 'array-contains', uid));
       return F.onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })).sort((a, b) => a.at - b.at)), (e) => console.error(e));
     },
-    async sendPrive(de, a, texte) {
-      await F.addDoc(col('prives'), { de, a, participants: [de, a], texte: String(texte).slice(0, 500), at: Date.now() });
+    async sendPrive(de, a, texte, extra = {}) {
+      await F.addDoc(col('prives'), { ...extra, de, a, participants: [de, a], texte: String(texte).slice(0, 500), at: Date.now() });
     },
 
     // Maître du jeu

@@ -117,6 +117,17 @@ export function createLocalBackend(config) {
         const o = botOrders(self.state.zones[uid], self.state, p.style);
         if (o) mine[uid] = o;
       }
+      // Les robots qui ont postulé engagent les agents proposés.
+      for (const m of self.prives) {
+        if (!m.candidature || !String(m.de).startsWith('bot') || m.candidature.season !== season || m.candidature.turn !== turn || !mine[m.de]) continue;
+        (mine[m.de].engagements ||= {})[m.candidature.aid] = { agents: m.candidature.agents, acceptes: [] };
+      }
+      // Les robots qui dirigent une affaire intègrent les candidatures qu'ils ont acceptées.
+      for (const m of self.prives) {
+        if (!m.reponse || !m.reponse.accepte || !String(m.de).startsWith('bot') || m.reponse.season !== season || m.reponse.turn !== turn || !mine[m.de]) continue;
+        const e = (mine[m.de].engagements ||= {})[m.reponse.aid];
+        if (e) e.acceptes = [...new Set([...(e.acceptes || []), m.a])];
+      }
       // Les robots coopératifs répondent aux appels à renfort du jour.
       const appels = self.radio.filter((m) => m.renfort && m.renfort.season === season && m.renfort.turn === turn && !String(m.uid).startsWith('bot'));
       if (appels.length) {
@@ -151,6 +162,16 @@ export function createLocalBackend(config) {
       if (self.state.turn !== prev.turn || self.state.season !== prev.season) return false;
       self.state = next;
       self.gazettes[key(prev.season, prev.turn)] = gazette;
+      // En démo, un robot postule sur chaque affaire que tu diriges.
+      for (const a of next.affaires || []) {
+        if (a.zone !== ME) continue;
+        const bots = Object.entries(self.players).filter(([u, p]) => p.bot && next.zones[u]);
+        if (!bots.length) continue;
+        const [bu] = bots[Math.abs([...a.id].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7)) % bots.length];
+        const n = 2 + (a.forceMin % 3);
+        self.prives.push({ id: `p${Date.now()}${a.id}`, de: bu, a: ME, participants: [bu, ME], texte: `📋 Candidature sur « ${a.titre} » : je te propose ${n} agents.`, candidature: { aid: a.id, agents: n, season: next.season, turn: next.turn }, at: Date.now() });
+      }
+      emit('prive', self.prives.slice());
       // Un robot commente parfois sur la radio.
       const rng = makeRng(`radio:${prev.season}:${prev.turn}`);
       if (rng.chance(0.6)) {
@@ -170,11 +191,15 @@ export function createLocalBackend(config) {
     },
 
     subscribePrives(uid, cb) { const f = (l) => cb(l.filter((m) => m.participants.includes(uid))); const w = (l) => f(l); listeners.prive.add(w); f(self.prives); return () => listeners.prive.delete(w); },
-    async sendPrive(de, a, texte) {
-      self.prives.push({ id: `p${Date.now()}`, de, a, participants: [de, a], texte: String(texte).slice(0, 500), at: Date.now() });
+    async sendPrive(de, a, texte, extra = {}) {
+      self.prives.push({ ...extra, id: `p${Date.now()}`, de, a, participants: [de, a], texte: String(texte).slice(0, 500), at: Date.now() });
       persist(); emit('prive', self.prives.slice());
       // En démo, la zone robot répond quelques secondes plus tard.
-      if (String(a).startsWith('bot')) {
+      if (extra.candidature && String(a).startsWith('bot')) {
+        // En démo, la zone robot accepte la candidature après quelques secondes.
+        const c = extra.candidature;
+        setTimeout(() => { self.prives.push({ id: `p${Date.now()}`, de: a, a: de, participants: [a, de], texte: 'Candidature acceptée, bienvenue dans l’équipe !', reponse: { aid: c.aid, accepte: true, season: c.season, turn: c.turn }, at: Date.now() }); persist(); emit('prive', self.prives.slice()); }, 2000);
+      } else if (String(a).startsWith('bot') && !extra.reponse) {
         const rep = ['Bien reçu. On en reparle après 20:00.', 'Intéressant… Qu’est-ce que tu proposes en échange ?', 'Ça marche, compte sur moi.', 'Je dois consulter mon chef de corps.', 'Pas cette fois, désolé.'];
         setTimeout(() => { self.prives.push({ id: `p${Date.now()}`, de: a, a: de, participants: [a, de], texte: rep[Math.floor(Math.random() * rep.length)], at: Date.now() }); persist(); emit('prive', self.prives.slice()); }, 2500);
       }

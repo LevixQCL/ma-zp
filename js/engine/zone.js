@@ -107,7 +107,8 @@ export function sanitizeOrders(zone, raw, state) {
     for (const [id, e] of Object.entries(o.engagements)) {
       if (!affIds.has(id) || !e) continue;
       const n = Math.max(0, Math.floor(Number(e.agents) || 0));
-      if (n > 0) engagements[id] = { agents: n, partenaire: typeof e.partenaire === 'string' && e.partenaire !== zone.uid ? e.partenaire : null };
+      const acceptes = Array.isArray(e.acceptes) ? [...new Set(e.acceptes.filter((u) => typeof u === 'string' && u !== zone.uid))].slice(0, 8) : [];
+      if (n > 0) engagements[id] = { agents: n, acceptes };
     }
   }
   const ev = state.evenement && state.evenement.tour === turn ? Math.max(0, Math.floor(Number(o.evenement) || 0)) : 0;
