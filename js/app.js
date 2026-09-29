@@ -22,7 +22,7 @@ import { renderEnquete, lireCarnet, ecrireCarnet } from './ui/enquete.js';
 import { genererAffaire } from './engine/enquete.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
-import { questsFor, checkAnswer } from './quests/quests.js';
+import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES } from './quests/quests.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
 import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT } from './engine/constants.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
@@ -146,6 +146,7 @@ function loadQuest() {
   const rerolls = new Set((S.questResults || []).map((r, k) => (r && r.variante ? k : -1)).filter((k) => k >= 0));
   try { const v = localStorage.getItem(cleReroll()); if (v !== null && !(S.questResults || []).some((r) => r && r.variante)) rerolls.add(Number(v)); } catch (e) { /* pas de stockage */ }
   S.quests = questsFor({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn, weekday: weekdayBe(st.nextDeadline), rerolls: [...rerolls].slice(0, 1) });
+  S.noir = dossierNoir({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn });
 }
 
 async function loadTurnData() {
@@ -163,7 +164,7 @@ async function loadTurnData() {
     lire(S.backend.listGazettes(10), [], 'gazettes'),
   ]);
   S.savedOrders = orders; S.ordersDirty = false; S.draft = null; S.decisionOpen = false;
-  S.questResults = quest || [null, null, null]; S.quests = null; S.questPick = null;
+  S.questResults = (quest || [null, null, null]).slice(0, 3); S.noirResult = (quest && quest[3]) || null; S.quests = null; S.questPick = null;
   S.questIdx = Math.max(0, (S.questResults || []).findIndex((r) => !r || (r.statut !== 'ok' && r.statut !== 'rate')));
   S.gazettes = gazettes; S.gazetteIndex = 0;
   if (isNew) toast(`Tour ${st.turn} : la Gazette est parue !`);
@@ -446,10 +447,10 @@ async function onClick(e) {
         toast('C’est validé ! Tu peux encore modifier jusqu’à 20:00.'); rerender(); break;
       }
       case 'quest-pick': S.questPick = el.dataset.v; rerender(); break;
-      case 'quest-tab': S.questIdx = Number(el.dataset.i); S.questPick = null; render(); break;
-      case 'roue': { const id = S.quests[S.questIdx || 0].id; S.roue = { ...(S.roue || {}), [id]: ((S.roue || {})[id] || 0) + Number(el.dataset.d) }; rerender(); break; }
+      case 'quest-tab': S.questIdx = Number(el.dataset.i); S.questMode = 'jour'; S.questPick = null; render(); break;
+      case 'roue': { const id = questCourante().id; S.roue = { ...(S.roue || {}), [id]: ((S.roue || {})[id] || 0) + Number(el.dataset.d) }; rerender(); break; }
       case 'grille-mark': case 'grille-reset': {
-        const q = S.quests[S.questIdx || 0];
+        const q = questCourante();
         const m = { ...((S.grilleMarks || {})[q.id] || {}) };
         if (el.dataset.action === 'grille-reset') Object.keys(m).forEach((k) => delete m[k]);
         else { const k = el.dataset.k; m[k] = !m[k] ? '✗' : m[k] === '✗' ? '✓' : ''; if (!m[k]) delete m[k]; }
@@ -458,6 +459,10 @@ async function onClick(e) {
         rerender(); break;
       }
       case 'quest-submit': await submitQuest(S.questPick); break;
+      case 'quest-mode': S.questMode = el.dataset.v; if (S.questMode === 'train' && !S.train) nouvelEntrainement(); S.questPick = null; rerender(); break;
+      case 'train-type': S.trainType = el.dataset.v; nouvelEntrainement(); rerender(); break;
+      case 'train-diff': S.trainDiff = Number(el.dataset.v); nouvelEntrainement(); rerender(); break;
+      case 'train-new': nouvelEntrainement(); rerender(); window.scrollTo(0, 0); break;
       case 'quest-reroll': {
         const i = S.questIdx || 0;
         const r = (S.questResults || [])[i];
@@ -506,10 +511,47 @@ function takeAgent() {
   return true;
 }
 
+/** Énigme affichée : entraînement, dossier noir ou énigme du jour. */
+function questCourante() { return S.questMode === 'train' ? S.train : (S.questIdx || 0) === 3 ? S.noir : S.quests[S.questIdx || 0]; }
+
+/** Statistiques d'entraînement, gardées sur l'appareil. */
+function compterEntrainement(type, ok) {
+  let st = {};
+  try { st = JSON.parse(localStorage.getItem('mazp-entrainement') || '{}'); } catch (e) { /* rien */ }
+  const x = (st[type] ||= { ok: 0, n: 0 }); x.n++; if (ok) x.ok++;
+  try { localStorage.setItem('mazp-entrainement', JSON.stringify(st)); } catch (e) { /* rien */ }
+}
+function nouvelEntrainement() {
+  const type = S.trainType || 'quiment', diff = S.trainDiff || 3;
+  S.train = { ...generateQuest(type, `train:${S.user.uid}:${Date.now()}:${Math.random()}`, diff), id: `train-${Date.now()}` };
+  S.trainRes = null; S.questPick = null;
+}
+
 async function submitQuest(reponse) {
   if (reponse == null || reponse === '') return;
   const st = S.state;
   const i = S.questIdx || 0;
+  // Entraînement : correction immédiate, rien n'est enregistré dans la partie.
+  if (S.questMode === 'train') {
+    const q = S.train;
+    if (!q || S.trainRes) return;
+    const ok = checkAnswer(q, reponse);
+    S.trainRes = { ok, reponse: String(reponse).slice(0, 60) };
+    compterEntrainement(q.type, ok);
+    S.questPick = null; rerender(); return;
+  }
+  // Dossier noir : 4e emplacement, sans pénalité.
+  if (i === 3) {
+    const q = S.noir, r = S.noirResult || { statut: null, tentatives: 0 };
+    if (!q || r.statut === 'ok' || r.statut === 'rate') return;
+    if (!(await askConfirm('Valider ta réponse au dossier noir ? Une seule chance, mais aucune pénalité en cas d\u2019erreur.', 'Valider'))) return;
+    const ok = checkAnswer(q, reponse);
+    S.noirResult = { ...r, tentatives: 1, statut: ok ? 'ok' : 'rate', type: q.type, reponse: String(reponse).slice(0, 60) };
+    S.questPick = null;
+    await S.backend.saveQuest(S.user.uid, st.season, st.turn, 3, S.noirResult);
+    toast(ok ? 'Dossier noir résolu. Chapeau !' : 'Raté, sans conséquence.');
+    rerender(); return;
+  }
   const q = S.quests[i];
   const r = S.questResults[i] || { statut: null, tentatives: 0 };
   if (r.statut === 'ok' || r.statut === 'rate') return;
@@ -658,6 +700,7 @@ async function onChange(e) {
     if (eg) eg.partenaire = el.value || null;
     S.ordersDirty = true; rerender();
   }
+  if (el.dataset.change === 'train-type') { S.trainType = el.value; nouvelEntrainement(); rerender(); }
   if (el.dataset.change === 'quest-capacite' && el.value) await saveQuestBonus('capacite', el.value);
   if (el.dataset.change === 'partage-zone' && el.value) {
     const p = (S.draft.partages ||= []);

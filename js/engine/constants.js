@@ -84,7 +84,7 @@ export const GRADES = [
   { nom: 'Chef de corps', ps: 3000, debloque: 'Proposer une motion au Conseil, une fois par saison' },
 ];
 
-export const PS = { ordres: 10, queteOk: 5, queteTentee: 2, evenement: 10, finSaison: 50, plafondJour: 40 };
+export const PS = { ordres: 10, queteOk: 5, queteTentee: 2, noir: 15, evenement: 10, finSaison: 50, plafondJour: 40 };
 
 // Poids de l'IPZ en version 1 (l'enquête arrivera en version 2).
 export const IPZ_POIDS = { satisfaction: 0.35, affaires: 0.30, moral: 0.15, budget: 0.10, reputation: 0.10 };

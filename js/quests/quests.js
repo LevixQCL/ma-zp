@@ -46,6 +46,19 @@ export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [] }
 
 export function questFor(args) { return questsFor(args)[0]; }
 
+// ───── Dossier noir : 4e énigme facultative, niveau 6, sans coup de pouce ─────
+export const HARDCORE_TYPES = ['quiment', 'grille', 'cadenas', 'chronologie', 'plaque', 'filature', 'horaires', 'photos', 'ecriture', 'butin'];
+export const DIFF_NOIR = 6;
+export const SLOT_NOIR = 3;
+
+export function dossierNoir({ seed, uid, season, turn }) {
+  const order = makeRng(`${seed}:noir-order:${uid}:${season}`).shuffle(HARDCORE_TYPES);
+  const type = order[(turn - 1) % order.length];
+  const q = GENERATORS[type](makeRng(`${seed}:noir:${uid}:${season}:${turn}`), DIFF_NOIR);
+  const { astuce, ...sans } = q;
+  return { ...sans, type, typeLabel: QUEST_LABELS[type], difficulte: DIFF_NOIR, slot: SLOT_NOIR, noir: true, id: `${season}-${turn}-noir` };
+}
+
 export function generateQuest(type, seedStr, diff = 2) {
   const q = GENERATORS[type](makeRng(seedStr), diff);
   return { ...q, type, typeLabel: QUEST_LABELS[type], difficulte: diff };
@@ -125,8 +138,8 @@ const CONTEXTES_MENT = [
 
 function quiment(rng, diff) {
   const deux = diff >= 5;
-  const n = diff >= 2 ? 5 : 4;
-  const besoin = diff <= 3 ? 2 : 3;
+  const n = diff >= 6 ? 6 : diff >= 2 ? 5 : 4;
+  const besoin = diff >= 6 ? 4 : diff <= 3 ? 2 : 3;
   const gens = rng.shuffle(PERSONNES).slice(0, n);
   const noms = gens.map((g) => g[0]);
   const fem = (...ix) => ix.every((i) => gens[i][1] === 'f');
@@ -242,7 +255,7 @@ const LETTRES = ['A', 'B', 'C', 'D', 'E', 'F'];
 
 function chronologie(rng, diff) {
   const n = diff <= 2 ? 4 : diff === 3 ? 5 : 6;
-  const besoin = diff <= 1 ? 1 : diff <= 3 ? 2 : 3;
+  const besoin = diff <= 1 ? 1 : diff <= 3 ? 2 : diff >= 6 ? 4 : 3;
   const piege = diff >= 5;
   let meilleur = null;
   for (let essai = 0; essai < 300; essai++) {
@@ -432,7 +445,7 @@ const CADENAS = [
 ];
 
 function cadenas(rng, diff) {
-  const len = diff >= 4 ? 4 : 3;
+  const len = diff >= 6 ? 5 : diff >= 4 ? 4 : 3;
   const maxAucun = diff <= 1 ? 2 : diff === 2 ? 1 : 0;
   const all = [];
   for (let i = 0; i < 10 ** len; i++) {
@@ -471,7 +484,7 @@ function cadenas(rng, diff) {
   };
   // Au niveau 5, on tire plusieurs codes et on garde celui dont les essais sont les moins parlants.
   let res = null;
-  for (let t = 0; t < (diff >= 5 ? 4 : 1) || !res; t++) {
+  for (let t = 0; t < (diff >= 6 ? 6 : diff >= 5 ? 4 : 1) || !res; t++) {
     const r = essai();
     if (r && (!res || r.clues.length > res.clues.length || (r.clues.length === res.clues.length && r.fort > res.fort))) res = r;
   }
@@ -508,9 +521,9 @@ function permutations(arr) {
 
 function grille(rng, diff) {
   const n = diff >= 4 ? 4 : 3;
-  const seuil = diff <= 1 ? 2 : diff <= 3 ? 3 : diff === 4 ? 4 : 5;
+  const seuil = diff <= 1 ? 2 : diff <= 3 ? 3 : diff === 4 ? 4 : diff === 5 ? 5 : 6;
   let meilleur = null;
-  for (let t = 0; t < 60; t++) {
+  for (let t = 0; t < (diff >= 6 ? 160 : 60); t++) {
     const r = grilleEssai(rng, n, diff);
     if (!r) continue;
     if (!meilleur || r.q.pas > meilleur.q.pas) meilleur = r;

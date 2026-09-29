@@ -447,3 +447,11 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .dtuile:disabled .c { color: var(--muted); }
 .dtuile.tard { border-style: dashed; border-color: var(--red-line); }
 .dtuile.tard .d { color: var(--red-soft); }
+
+/* Énigmes : 4 onglets (dont le dossier noir) */
+.seg.quatre { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.seg.quatre button .t { font-size: 12px; }
+.seg button.noir { background: #1A0F10; border-color: #4A2220; }
+.seg button.noir .t { color: #F59A92; }
+.seg button.noir[aria-pressed="true"] { border: 1.5px solid #E0625A; background: #2A1414; }
+.mode-noir .statement, .mode-noir .card.tight { border-color: #3A2222; }

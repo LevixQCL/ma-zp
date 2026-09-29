@@ -28,7 +28,7 @@ export function newZone({ uid, code, nom, couleur }, turn, base = {}) {
     ipz: 0, ipzSomme: 0, ipzHist: [],
     ps: base.ps ?? 0, badges: base.badges ?? [], titres: base.titres ?? [],
     budgetNegSuite: 0, inspectionCooldown: 0, renforceSuite: 0,
-    stats: { incidents: 0, traites: 0, affairesGagnees: 0, pointsAffaires: 0, dossiersResolus: 0, contributions: 0, evenementsManques: 0, quetesOk: 0, limier: 0, decouvertes: 0, arrestations: 0, indicesPartages: 0, fipaFaites: 0, fipaHonorees: 0 },
+    stats: { incidents: 0, traites: 0, affairesGagnees: 0, pointsAffaires: 0, dossiersResolus: 0, contributions: 0, evenementsManques: 0, quetesOk: 0, noirs: 0, limier: 0, decouvertes: 0, arrestations: 0, indicesPartages: 0, fipaFaites: 0, fipaHonorees: 0 },
     rapport: [],
   };
 }

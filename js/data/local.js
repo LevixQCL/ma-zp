@@ -153,7 +153,7 @@ export function createLocalBackend(config) {
       const out = [];
       for (const [k, parUid] of Object.entries(self.quests || {})) {
         const [season, turn] = k.split(/[^0-9]+/).filter(Boolean).map(Number);
-        for (const [uid, arr] of Object.entries(parUid || {})) for (const q of (Array.isArray(arr) ? arr : [arr])) if (q) out.push({ uid, season, turn, statut: q.statut, type: q.type });
+        for (const [uid, arr] of Object.entries(parUid || {})) (Array.isArray(arr) ? arr : [arr]).forEach((q, slot) => { if (q) out.push({ uid, season, turn, statut: q.statut, type: q.type, slot: q.slot ?? slot }); });
       }
       return out;
     },

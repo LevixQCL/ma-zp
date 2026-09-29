@@ -360,7 +360,11 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
     // Énigmes du jour (jusqu'à 3) : bonus au choix dès 2 bonnes réponses.
     let bonusService = null;
-    const qs = (Array.isArray(q) ? q : q ? [q] : []).filter(Boolean);
+    const tous = (Array.isArray(q) ? q : q ? [q] : []);
+    const qs = tous.filter((x, k) => x && (x.slot ?? k) !== 3);
+    const noir = tous.find((x, k) => x && (x.slot ?? k) === 3);
+    if (noir && noir.statut === 'ok') { z.stats.noirs = (z.stats.noirs || 0) + 1; z._ps += PS.noir; z.rapport.push(`Dossier noir résolu : chapeau (+${PS.noir} PS).`); }
+    else if (noir && noir.statut === 'rate') z.rapport.push('Dossier noir : raté cette fois, sans conséquence.');
     const ok = qs.filter((x) => x.statut === 'ok').length;
     const faux = qs.filter((x) => x.statut === 'rate').length;
     if (qs.length) {
@@ -700,6 +704,8 @@ function finDeSaison(state, classement) {
   if (byLimier && byLimier.stats.limier > 0) give(byLimier.uid, 'Fin limier');
   const byQuest = zones.slice().sort((a, b) => b.stats.quetesOk - a.stats.quetesOk)[0];
   if (byQuest && byQuest.stats.quetesOk > 0) give(byQuest.uid, 'Esprit vif');
+  const byNoir = zones.slice().sort((a, b) => (b.stats.noirs || 0) - (a.stats.noirs || 0))[0];
+  if (byNoir && (byNoir.stats.noirs || 0) > 0) give(byNoir.uid, 'Cerveau du district');
 
   for (const c of classes) state.zones[c.uid].ps += PS.finSaison;
   for (const c of classes.slice(0, 3)) {
