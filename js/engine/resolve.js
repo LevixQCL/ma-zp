@@ -10,7 +10,7 @@ import { genererEchos } from './gazette.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms } from './equipe.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
-  forceEngagement, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz,
+  forceEngagement, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, fermerJournal,
 } from './zone.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
@@ -181,19 +181,27 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z._points = 0;
     z._compta = z._compta || [];
     z._ps = 0;
+    // Photo d'avant le tour (pour les évolutions affichées au joueur) et journal des jauges.
+    z.hier = { moral: z.moral, satisfaction: z.satisfaction, reputation: z.reputation, budget: z.budget, ipz: z.ipz, turn: T };
+    ouvrirJournal(z);
   }
+  const jalonTous = (label) => { for (const u of uids) jalon(state.zones[u], label); };
 
   // Relations entre zones (entraide, manœuvres, duels, Conseil).
   const riv = rivalitesPre(state, uids, ord, push, T);
+  jalonTous('Diplomatie (entraide, manœuvres, duels, Conseil)');
   const theme = themeActif(state, T);
   // Salle des ventes : le lot gagné sert dès ce soir.
   const ench = encheresResoudre(state, uids, ord, push, T);
+  jalonTous('Salle des ventes');
 
   // Enquête (partages, accusations, traques) et FIPA : avant la simulation des zones.
   // Les agents laissés sans affectation partent en premier (audition, traque, FIPA).
   for (const u of uids) ord[u]._libres = agentsLibres(state.zones[u], ord[u], T);
   const pre = enquetePre(state, uids, ord, push, T);
+  jalonTous('Enquête (partages, accusation, traque)');
   const fp = fipaPre(state, uids, ord, push, T);
+  jalonTous('FIPA');
 
   // 3. Affaires disputées : la zone où l'affaire éclate la dirige ; les autres postulent,
   // et seules celles qu'elle accepte participent, dans la limite des places (agentsMax).
@@ -252,6 +260,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     aff._resolue = true;
   }
 
+  jalonTous('Affaires disputées');
   // 4. Événement collectif.
   let evResultat = null;
   if (state.evenement && state.evenement.tour === T) {
@@ -278,6 +287,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     state.evenement = null;
   }
 
+  jalonTous('Événement collectif');
   // 4 bis. Renforts prêtés pour une opération d'envergure (pour la journée).
   const renfortsRecus = {};
   for (const u of uids) {
@@ -297,6 +307,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     push(7, 'Solidarité', `${noms.join(', ')} ${l.length > 1 ? 'volent' : 'vole'} au secours de ${zoneLabel(state.zones[cible])}`, `${n} agent${n > 1 ? 's' : ''} en renfort sur l’opération d’envergure.`, cible);
   }
 
+  jalonTous('Renforts prêtés');
   // 5. Simulation locale de chaque zone.
   for (const uid of uids) {
     const z = state.zones[uid];
@@ -304,8 +315,6 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const zr = makeRng(`${state.seed}:s${state.season}:t${T}:${uid}`);
     const q = quests[uid];
 
-    // Photo de la veille, pour montrer les évolutions au joueur.
-    z.hier = { moral: z.moral, satisfaction: z.satisfaction, reputation: z.reputation, budget: z.budget, ipz: z.ipz, turn: T };
 
     // Fins de formation, arrivées de l'académie.
     if (z.travaux && z.travaux.fin <= T) {
@@ -332,6 +341,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (e.adminMult) adminMult *= e.adminMult;
       if (e.vehiculeHS) z.vehiculesHS.push({ retour: T + 1 });
       z.rapport.push(`${a.titre} : ${a.texte}`);
+      jalon(z, `Imprévu : ${a.titre}`);
       push(2, 'Insolite', `${zoneLabel(z)} : ${a.titre.charAt(0).toLowerCase()}${a.titre.slice(1)}`, a.texte, uid);
     }
     let coupDur = null;
@@ -378,6 +388,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       }
       z.rapport.push(`Coup dur, ${coupDur.titre.toLowerCase()} : ${texte}`);
       z.dernierCoupDur = { titre: coupDur.titre, texte, tour: T };
+      jalon(z, `Coup dur : ${coupDur.titre.toLowerCase()}`);
       push(coupDur.id === 'rebellion' ? 9 : 5, 'Coup dur', `${coupDur.titre} à ${zoneLabel(z)}`, texte, uid);
     }
 
@@ -406,6 +417,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`${txt}.`);
     }
 
+    jalon(z, 'Énigmes du jour');
     // Situation du jour (annoncée au début du tour).
     const pr = {};
     for (const p of z.pressions || []) Object.assign(pr, p.effet);
@@ -453,6 +465,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       }
     }
 
+    jalon(z, 'Opération d’envergure');
     // Dépenses du jour (payées seulement si le budget le permet).
     const dep = o.depenses || {};
     let reserve = 0;
@@ -469,6 +482,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (paye) z._compta.push({ k: 'depenses', l: 'Dépenses du jour', v: -paye });
     }
 
+    jalon(z, 'Dépenses du jour (prime…)');
     // Capacités des services (avec les agents restés à leur poste, plus la réserve).
     const cap = {};
     for (const s of SERVICES) {
@@ -480,6 +494,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Enquête : démarches et enquête de voisinage.
     enqueteZone(state, z, o, makeRng(`${state.seed}:s${state.season}:t${T}:${uid}:enq`), cap, pre);
 
+    jalon(z, 'Enquête (démarches)');
     // Intervention : incidents du jour.
     const incidents = clamp(Math.round(1.5 + z.criminalite / 14) + (pr.incidents || 0) + zr.int(-1, 1), 1, 14);
     const traites = Math.min(incidents, Math.floor(cap.intervention / 1.1));
@@ -493,6 +508,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       else { z.satisfaction -= 4; z.rapport.push(`Visite du bourgmestre : ${rates} incident${rates > 1 ? 's' : ''} raté${rates > 1 ? 's' : ''}, −4 de satisfaction.`); }
     }
 
+    jalon(z, `Intervention : ${traites} incident${traites > 1 ? 's' : ''} traité${traites > 1 ? 's' : ''} sur ${incidents}${pr.bourgmestre ? ', visite du bourgmestre' : ''}`);
     // Proximité : prévention.
     z.criminalite = clamp(z.criminalite + 2.4 + zr.float(-1, 1) - cap.proximite * 0.6, 10, 95);
     z.satisfaction += cap.proximite * 0.12;
@@ -502,6 +518,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (z.criminalite > 70) z.rapport.push(`Criminalité élevée (${Math.round(z.criminalite)}) : le quartier s\u2019inquiète (−${Math.round(malus * 10) / 10} de satisfaction). Renforce la Proximité.`);
     }
 
+    jalon(z, `Proximité (criminalité ${Math.round(z.criminalite)})`);
     // Recherche : dossiers locaux.
     let nouveauDossier = 0;
     if (zr.chance(0.6)) {
@@ -527,6 +544,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (vieux) { z.satisfaction -= vieux; z.rapport.push(`Le parquet réclame ${vieux} dossier${vieux > 1 ? 's' : ''} en retard (−${vieux} de satisfaction).`); }
     }
     z.stats.dossiersResolus += resolus;
+    jalon(z, 'Recherche : dossiers élucidés ou en retard');
 
     // Roulage : amendes et sécurité routière.
     const recettes = cap.roulage * ECONOMIE.amendeParCapacite;
@@ -539,11 +557,13 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.satisfaction -= 2; z.rapport.push(`Roulage : plus de ${Math.round(seuilChasse(z) * 100)} % des effectifs, effet « chasse aux PV » (−2 de satisfaction).`);
     } else z.satisfaction += cap.roulage * 0.1;
 
+    jalon(z, 'Roulage');
     // Administration : la pile de paperasse.
     z.paperasse = Math.max(0, z.paperasse + traites * 0.4 + nouveauDossier + 1.2 - cap.admin * 1.2);
     z.paperassePic = Math.max(z.paperassePic || 0, z.paperasse);
     if (z.paperasse > 14) { z.moral -= 2; z.satisfaction -= 1; z.rapport.push(`Paperasse : ${Math.round(z.paperasse)} dossiers en attente (−2 de moral).`); }
 
+    jalon(z, 'Paperasse');
     // Grande décision.
     const dec = o.decision;
     if (dec) {
@@ -575,13 +595,21 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.rapport.push(`Véhicules : ${traites} intervention${traites > 1 ? 's' : ''}, usure +${fmt1(z.usure - avant)} %, état du parc ${etat} %${malus ? ` (Intervention −${malus} %, pense à une révision)` : ''}.`);
 
     // Moral.
-    z.moral += (60 - z.moral) * 0.08 + RYTHMES[o.rythme].moral + (z.infra.sport ? 1 : 0);
+    jalon(z, 'Grande décision');
+    z.moral += (60 - z.moral) * 0.08;
+    jalon(z, 'Retour naturel du moral vers 60');
+    z.moral += RYTHMES[o.rythme].moral;
+    jalon(z, `Rythme ${RYTHMES[o.rythme].label.toLowerCase()}`);
+    if (z.infra.sport) z.moral += 1;
+    jalon(z, 'Salle de sport');
     if (z.budget < 0) z.moral -= 3;
+    jalon(z, 'Budget négatif');
     z.renforceSuite = o.rythme === 'renforce' ? z.renforceSuite + 1 : 0;
 
     // Dérives naturelles.
     z.satisfaction += (50 - z.satisfaction) * 0.04;
     z.reputation += (50 - z.reputation) * 0.03;
+    jalon(z, 'Retour naturel vers 50');
 
     // Malus : chef absent, inspection générale.
     if (z.toursSansOrdres >= 2) { z.satisfaction -= 2; z.moral -= 2; z.rapport.push('Chef absent depuis plusieurs tours : −2 de satisfaction et de moral.'); }
@@ -595,11 +623,13 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       push(7, 'Inspection générale', `L’Inspection débarque à ${zoneLabel(z)}`, `Motif : ${motif}. Amende de 5 k€.`, uid);
     }
 
+    jalon(z, 'Chef absent ou Inspection générale');
     // Bornes.
     z.moral = clamp(z.moral, 0, 100);
     z.satisfaction = clamp(z.satisfaction, 0, 100);
     z.reputation = clamp(z.reputation, 0, 100);
 
+    jalon(z, 'Plafond (jauges entre 0 et 100)');
     // Absences et démissions pour le tour suivant.
     z.absents = z.moral < 40 ? Math.ceil(z.agents * 0.1) : 0;
     if (z.moral < 20 && z.agents > 5) {
@@ -612,6 +642,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.renforts = (z.renforts || []).filter((x) => x.retour > T + 1);
 
     // IPZ.
+    jalon(z, 'Divers');
     const comp = ipzComposantes(z, { ratio: incidents ? traites / incidents : 1, points: z._points });
     const ipzHier = z.ipz, compHier = z.ipzComp || null;
     z.ipz = ipzFrom(comp);
@@ -652,7 +683,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
   // Enquête : fin d'affaire, nouvelle affaire ; nouvelles demandes de FIPA.
   enquetePost(state, pre, push);
+  jalonTous('Enquête (fin d’affaire)');
   const rivPost = rivalitesPost(state, uids, push, T, nextWeekday, players);
+  jalonTous('Duels, péril, tutelle');
   fipaGenerer(state, T, T >= SEASON_LENGTH - 3);
 
   // 5 bis. Situation du jour et opérations d'envergure pour le tour suivant.
@@ -730,6 +763,13 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const autres = round1(z.budget - budget0[u] - lignes.reduce((s, x) => s + x.v, 0));
     if (Math.abs(autres) >= 0.1) lignes.push({ k: 'autres', l: 'Autres mouvements', v: autres });
     z.compta = { tour: T, debut: round1(budget0[u]), fin: z.budget, lignes };
+    // Journal des jauges (moral, satisfaction, réputation, points de résultats).
+    if (z._pt) {
+      jalon(z, 'Divers');
+      const j = fermerJournal(z);
+      z.journal = { tour: T, avant: z.hier ? { moral: z.hier.moral, satisfaction: z.hier.satisfaction, reputation: z.hier.reputation } : null, apres: { moral: z.moral, satisfaction: z.satisfaction, reputation: z.reputation }, lignes: j };
+      (gazette.journaux ||= {})[u] = { journal: z.journal, ipz: z.ipz, ipzComp: z.ipzComp, ipzCompHier: z.ipzCompHier, ipzDetail: z.ipzDetail, hierIpz: z.hier ? z.hier.ipz : null, compta: z.compta };
+    }
     delete z._joue; delete z._points; delete z._ps; delete z._compta; delete z._decouverteJour;
   }
 

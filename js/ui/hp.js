@@ -30,20 +30,62 @@ function delta(v, avant) {
   return `<span class="delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${fmt1(Math.abs(d))}</span>`;
 }
 
+const evol = (v) => (Math.abs(v) < 0.1 ? '<span class="muted">=</span>' : `<span class="${v > 0 ? 'ok' : 'bad'}">${v > 0 ? '▲' : '▼'}${fmt1(Math.abs(v))}</span>`);
+const sgn1 = (v) => `${v > 0 ? '+' : '−'}${fmt1(Math.abs(v))}`;
+
 /** Tableau « Détail de l'IPZ » : ce que chaque composante rapporte, et son évolution depuis la veille. */
-function ipzDetailHtml(z) {
-  if (!z.ipzComp) return '';
-  const pts = pointsIpz(z.ipzComp), ptsH = z.ipzCompHier ? pointsIpz(z.ipzCompHier) : null;
-  const d = z.hier && z.hier.ipz !== undefined && z.ipzCompHier ? Math.round((z.ipz - z.hier.ipz) * 10) / 10 : null;
-  const ev = (v) => (Math.abs(v) < 0.1 ? '<span class="muted">=</span>' : `<span class="${v > 0 ? 'ok' : 'bad'}">${v > 0 ? '▲' : '▼'}${fmt1(Math.abs(v))}</span>`);
-  const ligne = (k) => `<tr><td>${IPZ_LABELS[k]}</td><td class="mono">${Math.round(z.ipzComp[k])}</td><td class="mono muted">×${Math.round(IPZ_POIDS[k] * 100)} %</td><td class="mono">${fmt1(pts[k])}</td><td class="mono">${ptsH ? ev(Math.round((pts[k] - ptsH[k]) * 10) / 10) : ''}</td></tr>`;
-  const det = z.ipzDetail;
-  return `<div class="col" style="gap:4px;margin:2px 0 6px">
-    <div class="between"><span style="font-weight:700">IPZ ${fmt1(z.ipz)}</span>${d !== null ? `<span class="small">${ev(d)} depuis hier</span>` : ''}</div>
-    <table class="ipz-table"><thead><tr><th>Composante</th><th>Valeur</th><th>Poids</th><th>Points</th><th>vs hier</th></tr></thead>
+function ipzDetailHtml(d) {
+  if (!d.ipzComp) return '';
+  const pts = pointsIpz(d.ipzComp), ptsH = d.ipzCompHier ? pointsIpz(d.ipzCompHier) : null;
+  const delta = d.hierIpz !== null && d.hierIpz !== undefined && d.ipzCompHier ? Math.round((d.ipz - d.hierIpz) * 10) / 10 : null;
+  const ligne = (k) => `<tr><td>${IPZ_LABELS[k]}</td><td class="mono">${Math.round(d.ipzComp[k])}</td><td class="mono muted">×${Math.round(IPZ_POIDS[k] * 100)} %</td><td class="mono">${fmt1(pts[k])}</td><td class="mono">${ptsH ? evol(Math.round((pts[k] - ptsH[k]) * 10) / 10) : ''}</td></tr>`;
+  const det = d.ipzDetail;
+  return `<div class="col" style="gap:4px">
+    <div class="between"><span style="font-weight:700">IPZ ${fmt1(d.ipz)}</span>${delta !== null ? `<span class="small">${evol(delta)} depuis la veille</span>` : ''}</div>
+    <table class="ipz-table"><thead><tr><th>Composante</th><th>Valeur</th><th>Poids</th><th>Points</th><th>vs veille</th></tr></thead>
       <tbody>${Object.keys(IPZ_POIDS).map(ligne).join('')}</tbody></table>
-    <span class="tiny muted">Résultats = 60 × part des incidents traités + 6 par point d’affaires (max 100)${det ? ` · hier soir : ${det.traites}/${det.incidents} incidents, ${fmt1(det.points)} pts` : ''}. Budget = 50 + 1,5 × budget en k€.</span>
+    <span class="tiny muted"><strong>Résultats terrain</strong> (ce ne sont pas les PS, qui servent aux grades) = 60 × part des incidents traités + 6 par point de résultat (affaires, dossiers élucidés, opérations, enquête), plafonné à 100${det ? ` · ce tour : ${det.traites}/${det.incidents} incidents, ${fmt1(det.points)} points` : ''}. <strong>Budget</strong> = 50 + 1,5 × budget en k€ (100 dès 34 k€).</span>
   </div>`;
+}
+
+const JAUGES = [['moral', 'Moral'], ['satisfaction', 'Satisfaction'], ['reputation', 'Réputation']];
+/** « Pourquoi mes jauges ont bougé » : chaque variation du tour, avec sa cause. */
+function journalHtml(j) {
+  if (!j || !j.lignes) return '';
+  const bloc = (k, nom) => {
+    const l = (j.lignes[k] || []).slice().sort((a, b) => Math.abs(b.v) - Math.abs(a.v));
+    const av = j.avant && j.avant[k], ap = j.apres && j.apres[k];
+    const tot = av !== undefined && ap !== undefined ? Math.round((ap - av) * 10) / 10 : null;
+    return `<details class="journal"><summary><span style="font-weight:600">${nom}</span><span class="mono small">${av !== undefined ? `${fmt1(av)} → ${fmt1(ap)} ` : ''}${tot !== null ? evol(tot) : ''}</span></summary>
+      ${l.length ? l.map((x) => `<div class="between small j-l"><span>${esc(x.l)}</span><span class="mono ${x.v > 0 ? 'ok' : 'bad'}">${sgn1(x.v)}</span></div>`).join('') : '<p class="tiny muted" style="margin:0">Aucun changement.</p>'}</details>`;
+  };
+  const pts = j.lignes.points || [];
+  return `<div class="col" style="gap:2px"><span class="kicker" style="margin-top:4px">Pourquoi tes jauges ont bougé</span>
+    ${JAUGES.map(([k, n]) => bloc(k, n)).join('')}
+    ${pts.length ? `<details class="journal"><summary><span style="font-weight:600">Points de résultats terrain</span><span class="mono small">${fmt1(pts.reduce((s2, x) => s2 + x.v, 0))}</span></summary>
+      ${pts.map((x) => `<div class="between small j-l"><span>${esc(x.l)}</span><span class="mono ok">${sgn1(x.v)}</span></div>`).join('')}</details>` : ''}
+    <span class="tiny muted">Touche une jauge pour voir le détail, de la plus grosse cause à la plus petite.</span></div>`;
+}
+
+/** Rapport d'un tour : le dernier (données de la zone) ou un plus ancien (archives de la Gazette). */
+function rapportHtml(z) {
+  const archives = (S.gazettes || []).filter((g) => g.rapports && g.rapports[z.uid]);
+  const idx = Math.max(0, Math.min(archives.length - 1, S.rapportIdx || 0));
+  const g = archives[idx];
+  const d = idx === 0 || !g
+    ? { tour: z.journal ? z.journal.tour : g && g.turn, lignes: z.rapport, journal: z.journal, ipz: z.ipz, ipzComp: z.ipzComp, ipzCompHier: z.ipzCompHier, ipzDetail: z.ipzDetail, hierIpz: z.hier ? z.hier.ipz : null }
+    : { tour: g.turn, lignes: g.rapports[z.uid], ...((g.journaux && g.journaux[z.uid]) || {}) };
+  const lignes = (d.lignes && d.lignes.length ? d.lignes.filter((l) => !(d.ipzComp && l.startsWith('IPZ du jour'))) : ['Pas encore de rapport : le premier tour n’a pas été résolu.']);
+  const nav = archives.length > 1 ? `<span class="row" style="gap:4px">
+      <button type="button" class="iconbtn" data-action="rapport-nav" data-d="1" ${idx >= archives.length - 1 ? 'disabled' : ''} aria-label="Tour précédent" style="width:34px;height:34px">${icon('back', 16)}</button>
+      <button type="button" class="iconbtn" data-action="rapport-nav" data-d="-1" ${idx === 0 ? 'disabled' : ''} aria-label="Tour suivant" style="width:34px;height:34px">${icon('chevron', 16)}</button></span>` : '';
+  return `<div class="card tight" id="rapport-complet" style="scroll-margin-top:16px">
+    <div class="between"><span class="kicker">Rapport du tour ${d.tour || ''}${idx === 0 ? ' · le dernier' : ''}</span>${nav}</div>
+    ${ipzDetailHtml(d)}
+    ${journalHtml(d.journal)}
+    ${!d.journal && idx > 0 ? '<p class="tiny muted" style="margin:0">Détail des jauges indisponible pour les tours d’avant la mise à jour.</p>' : ''}
+    <span class="kicker" style="margin-top:6px">Tout ce qui s’est passé</span>
+    ${lignes.map((l) => `<p class="small" style="margin:0">• ${esc(l)}</p>`).join('')}</div>`;
 }
 
 function cleNuit(z) { return `mazp-nuit-${S.backend.gameId ? S.backend.gameId() : ''}-${S.state.season}-${S.state.turn}-${z.uid}`; }
@@ -220,7 +262,7 @@ export function renderHP() {
         <a class="btn" href="#gazette">${icon('news', 18)}<span>${last ? `Gazette <span class="mono tiny muted">T${last.turn}</span>` : 'Gazette'}</span></a>
         <a class="btn" href="#classement">${icon('trophy', 18)}<span>Classement</span></a>
       </div>
-      ${S.showRapport ? `<div class="card tight" id="rapport-complet" style="scroll-margin-top:16px"><span class="kicker">Rapport du dernier tour</span>${ipzDetailHtml(z)}${(z.rapport && z.rapport.length ? z.rapport.filter((l) => !(z.ipzComp && l.startsWith('IPZ du jour'))) : ['Pas encore de rapport : le premier tour n’a pas été résolu.']).map((l) => `<p class="small" style="margin:0">• ${esc(l)}</p>`).join('')}</div>` : ''}
+      ${S.showRapport ? rapportHtml(z) : ''}
       <div class="row">
         <a class="btn ghost small grow" href="#guide">${icon('news', 16)} Guide du joueur</a>
         <button type="button" class="btn ghost small grow" data-action="maj-voir">${icon('star', 16)} Nouveautés</button>

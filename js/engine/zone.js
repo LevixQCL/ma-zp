@@ -356,7 +356,39 @@ export function ipzFrom(comp) {
   return round1(v);
 }
 
-export const IPZ_LABELS = { satisfaction: 'Satisfaction', affaires: 'Résultats', moral: 'Moral', budget: 'Budget', reputation: 'Réputation' };
+// ───── Journal des jauges : d'où vient chaque variation du tour ─────
+export const JOURNAL_CLES = ['moral', 'satisfaction', 'reputation', 'points'];
+const valeurJournal = (z, k) => (k === 'points' ? z._points || 0 : z[k]);
+/** Démarre le journal d'un tour (à appeler avant tout changement). */
+export function ouvrirJournal(z) {
+  z._journal = {};
+  z._pt = Object.fromEntries(JOURNAL_CLES.map((k) => [k, valeurJournal(z, k)]));
+}
+/** Note ce qui a changé depuis le jalon précédent, sous l'étiquette `label`. */
+export function jalon(z, label) {
+  if (!z || !z._pt) return;
+  for (const k of JOURNAL_CLES) {
+    const v = valeurJournal(z, k), d = v - z._pt[k];
+    if (Math.abs(d) >= 0.05) {
+      const l = (z._journal[k] ||= []);
+      const der = l[l.length - 1];
+      if (der && der.l === label) der.v += d; else l.push({ l: label, v: d });
+    }
+    z._pt[k] = v;
+  }
+}
+/** Ferme le journal : valeurs arrondies, lignes nulles retirées. */
+export function fermerJournal(z) {
+  const out = {};
+  for (const k of JOURNAL_CLES) {
+    const l = (z._journal && z._journal[k] || []).map((x) => ({ l: x.l, v: round1(x.v) })).filter((x) => Math.abs(x.v) >= 0.1);
+    if (l.length) out[k] = l;
+  }
+  delete z._journal; delete z._pt;
+  return out;
+}
+
+export const IPZ_LABELS = { satisfaction: 'Satisfaction', affaires: 'Résultats terrain', moral: 'Moral', budget: 'Budget', reputation: 'Réputation' };
 
 /** Points apportés à l'IPZ par chaque composante (valeur × poids). */
 export function pointsIpz(comp) {
