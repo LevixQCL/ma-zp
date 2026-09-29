@@ -23,7 +23,6 @@ export function equipeHtml() {
           <label class="field grow" style="margin:0">Nom<input class="text" name="nom" maxlength="20" required value="${esc(m.nom)}"></label></div>
         <label class="field" style="margin:0">Intitulé<select class="text" name="f" style="min-height:44px;font-size:14px"><option value="0" ${m.f ? '' : 'selected'}>${esc(roleDe(m).m)}</option><option value="1" ${m.f ? 'selected' : ''}>${esc(roleDe(m).f)}</option></select></label>
         <div class="row" style="gap:8px"><button type="button" class="btn small ghost grow" data-action="equipe-edit" data-role="">Annuler</button>
-          <button type="button" class="btn small grow" data-action="equipe-origine" data-role="${m.role}">Nom d’origine</button>
           <button type="submit" class="btn small primary grow">Enregistrer</button></div>
       </form>`;
     }
