@@ -90,9 +90,13 @@ function manoeuvreHtml() {
 }
 
 export function ongletsRadio(actif) {
-  return `<div class="seg2" role="tablist" aria-label="Radio et diplomatie">
-    <a role="tab" href="#radio" aria-selected="${actif === 'radio'}" class="segl">Radio</a>
-    <a role="tab" href="#diplomatie" aria-selected="${actif === 'diplomatie'}" class="segl">Diplomatie</a></div>`;
+  const st = S.state, me = myZone();
+  const diploAFaire = !!(st && ((st.conseil && st.conseil.tour === st.turn && !(S.draft && Object.keys(S.draft.votes || {}).length))
+    || (me && (st.duels || []).some((d) => d.b === me.uid && d.etape === 'propose' && d.tourReponse === st.turn))));
+  const radioNouveau = S.radio && S.radio.length > (S.radioSeen || 0);
+  return `<div class="onglets-flottants"><div class="seg2" role="tablist" aria-label="Radio et diplomatie">
+    <a role="tab" href="#radio" aria-selected="${actif === 'radio'}" class="segl">Radio${actif !== 'radio' && radioNouveau ? '<span class="pastille" aria-label="nouveaux messages"></span>' : ''}</a>
+    <a role="tab" href="#diplomatie" aria-selected="${actif === 'diplomatie'}" class="segl">Diplomatie${diploAFaire ? '<span class="pastille" aria-label="à faire"></span>' : ''}</a></div></div>`;
 }
 
 /** Section repliée tant que le joueur ne l'ouvre pas (sauf si elle demande une action). */
