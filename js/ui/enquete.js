@@ -2,7 +2,7 @@
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
 import {
   ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, genererAffaire, dossierDe, dossierAffaire, texteFait, titrePiece,
-  ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies,
+  ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee,
 } from '../engine/enquete.js';
 
 // ───── Carnet : marques et notes, gardées sur l'appareil ─────
@@ -38,13 +38,17 @@ function partageCtl(piece) {
     return `<span class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end"><span class="tag" style="background:rgba(90,176,240,.14);color:var(--blue-soft)">Partage prévu ${qui}</span>
       <button class="btn small ghost" data-action="partage-annuler" data-f="${piece.f}">Annuler</button></span>`;
   }
-  if ((d.partages || []).length >= ENQ.maxPartages) return `<span class="tiny muted">${ENQ.maxPartages} partages maximum par tour</span>`;
+  const deja = dejaPartagee(S.state, S.user.uid, piece.f);
+  const dejaTxt = deja.size ? `<span class="tiny muted" style="text-align:right">Déjà chez : ${[...deja].filter((u) => S.state.zones[u]).map((u) => zoneName(S.state.zones[u])).join(', ')}</span>` : '';
+  const restantes = autresZones().filter((z) => !deja.has(z.uid));
+  if (!restantes.length) return `<span class="col" style="gap:2px;align-items:flex-end"><span class="tag" style="background:rgba(60,198,184,.14);color:var(--green)">Partagée avec toutes les zones</span>${dejaTxt}</span>`;
+  if ((d.partages || []).length >= ENQ.maxPartages) return `<span class="col" style="gap:2px;align-items:flex-end"><span class="tiny muted">${ENQ.maxPartages} partages maximum par tour</span>${dejaTxt}</span>`;
   const id = `pz-${piece.f.replace(':', '-')}`;
-  return `<span class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">
+  return `<span class="col" style="gap:4px;align-items:flex-end"><span class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">
     <label class="sr" for="${id}">Partager à une zone</label>
     <select id="${id}" class="text" data-change="partage-zone" data-f="${piece.f}" style="min-height:40px;font-size:12.5px;padding:0 8px;max-width:150px">
-      <option value="">Partager à…</option>${autresZones().map((z) => `<option value="${esc(z.uid)}">${zoneName(z)}</option>`).join('')}</select>
-    <button class="btn small" data-action="partage" data-f="${piece.f}" data-a="*">À tous</button></span>`;
+      <option value="">Partager à…</option>${restantes.map((z) => `<option value="${esc(z.uid)}">${zoneName(z)}</option>`).join('')}</select>
+    <button class="btn small" data-action="partage" data-f="${piece.f}" data-a="*">${deja.size ? 'Aux autres' : 'À tous'}</button></span>${dejaTxt}</span>`;
 }
 
 function sourceDe(p) {

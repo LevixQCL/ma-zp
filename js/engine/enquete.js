@@ -423,6 +423,23 @@ export function dossierDe(state, z) {
   return base;
 }
 
+/**
+ * Zones qui ont déjà cette pièce grâce à `uid` (partagée par lui) ou qui la lui ont donnée.
+ * Calculé à partir des dossiers : juste, même pour les partages faits avant cette fonction.
+ */
+export function dejaPartagee(state, uid, f) {
+  const out = new Set();
+  const moi = state.zones[uid];
+  const mienne = moi && dossierDe(state, moi) && dossierDe(state, moi).pieces.find((p) => p.f === f);
+  if (mienne && mienne.src === 'partage' && mienne.de) out.add(mienne.de);
+  for (const z of Object.values(state.zones)) {
+    if (z.uid === uid) continue;
+    const d = dossierDe(state, z);
+    if (d && d.pieces.some((p) => p.f === f && p.src === 'partage' && p.de === uid)) out.add(z.uid);
+  }
+  return out;
+}
+
 /** Pièces d'une zone sur l'affaire n (en cours ou précédente, pour la traque). */
 export function dossierAffaire(state, z, n) {
   if (state.enquete && state.enquete.n === n) return dossierDe(state, z);
