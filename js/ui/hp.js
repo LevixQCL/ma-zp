@@ -13,6 +13,7 @@ import { PERIL, DUEL_INDICATEURS } from '../engine/rivalites.js';
 import { genererAffaire, dossierDe, pointsDecouverte, ENQ } from '../engine/enquete.js';
 import { aideBtn } from './aide.js';
 import { logistiqueHtml } from './logistique.js';
+import { equipeHtml } from './equipe.js';
 import { fraisFixes } from '../engine/zone.js';
 const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations().amendes; } catch (e) { /* pas de brouillon */ } return fraisFixes(z, S.state, { amendes, rythme: (S.draft && S.draft.rythme) || 'normal' }).total; };
 import { demandeRenfortHtml, appelsRenfort, renfortPrevu } from './renfort.js';
@@ -163,6 +164,7 @@ export function renderHP() {
       </div>
     </section>
     ${logistiqueHtml()}
+    ${equipeHtml()}
 
     ${nuitHtml(z)}
 

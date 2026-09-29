@@ -1,3 +1,4 @@
+import { PEINES } from './contenu.js';
 // Enquête principale : une affaire de 7 jours au plus, résolue par le trio
 // Mobile · Moyen · Occasion. Cinq suspects ; le coupable est le seul à réunir
 // les trois. Les constatations disent ce qu'il fallait (l'heure exacte, la façon
@@ -548,7 +549,7 @@ export function enquetePre(state, uids, ord, push) {
     const cs = aff.suspects[aff.coupable];
     for (const u of justes) {
       const z = state.zones[u];
-      z.stats.limier += pts; z.stats.decouvertes += 1; z._points += 8; z._ps += 15; z.satisfaction += 3;
+      z.stats.limier += pts; z.stats.decouvertes += 1; z._decouverteJour = true; z._points += 8; z._ps += 15; z.satisfaction += 3;
       z.rapport.push(`Enquête : bien vu, ${cs.nom} est l’auteur des faits (+${pts} pts d’enquête).`);
       for (const p of z.enquete.pieces) if (p.de && !justes.includes(p.de)) contributeurs.add(p.de);
     }
@@ -559,7 +560,7 @@ export function enquetePre(state, uids, ord, push) {
       z.rapport.push(`Enquête : tes pièces ont aidé à identifier l’auteur (+${POINTS.contribution} pts d’enquête).`);
     }
     res.recit = recitFinal(aff);
-    res.decouverte = { suspect: cs.nom, zones: justes.map((u) => nomZone(state.zones[u])), uids: justes, pts, contributeurs: [...contributeurs].map((u) => nomZone(state.zones[u])) };
+    res.decouverte = { suspect: cs.nom, zones: justes.map((u) => nomZone(state.zones[u])), uids: justes, pts, contributeurs: [...contributeurs].map((u) => nomZone(state.zones[u])), contribUids: [...contributeurs] };
     push(14, 'Enquête', `${aff.titre} : ${cs.nom} identifié${cs.f ? 'e' : ''} par ${res.decouverte.zones.join(' et ')}`,
       `Mandat d’arrêt délivré. ${cs.f ? 'Elle' : 'Il'} se cache : la traque commence, 2 tours pour l’arrêter.${res.decouverte.contributeurs.length ? ` Avec les pièces de ${res.decouverte.contributeurs.join(', ')}.` : ''}`);
   }
@@ -591,6 +592,12 @@ export function enquetePre(state, uids, ord, push) {
       }
       const noms = gagnants.map((g) => nomZone(state.zones[g.u]));
       res.arrestations.push({ titre: a.titre, suspect: s.nom, planque: a.planques[a.planque].nom, zones: noms });
+      // Le procès : les zones qui ont trouvé ou apporté des pièces sont citées à la barre.
+      const temoins = [...new Set([...(tr.decouvreurs || []), ...(tr.contributeurs || [])])].filter((u) => state.zones[u]).map((u) => nomZone(state.zones[u]));
+      const pr = makeRng(`${state.seed}:proces:${tr.n}`);
+      const peine = pr.pick(PEINES).replace('condamné·e', s.f ? 'condamnée' : 'condamné');
+      (res.proces ||= []).push({ titre: a.titre, suspect: s.nom, peine, temoins, arrestation: noms, mobile: a.suspects[a.coupable].rumeur || '' });
+      push(13, 'Au tribunal', `${s.nom} ${peine}`, `Affaire « ${a.titre} ». ${temoins.length ? `À la barre, les enquêteurs de ${temoins.join(', ')}.` : ''} Interpellation par ${noms.join(' et ')}.`);
       push(15, 'Arrestation', `${s.nom} arrêté${s.f ? 'e' : ''} à ${a.planques[a.planque].nom}`, `Interpellation menée par ${noms.join(' et ')}. Affaire « ${a.titre} » bouclée.`);
       tr.fini = true;
     } else if (tr.tours <= 1) {
@@ -659,7 +666,7 @@ export function enquetePost(state, pre, push) {
   state.traques = (state.traques || []).filter((t) => !t.fini).map((t) => ({ ...t, tours: t.tours - 1 }));
   const accroche = 'Cinq suspects : une seule personne réunit le mobile, le moyen et l’occasion.';
   if (pre.res.decouverte) {
-    state.traques.push({ n: e.n, tours: ENQ.traqueTours, decouvreurs: pre.res.decouverte.uids });
+    state.traques.push({ n: e.n, tours: ENQ.traqueTours, decouvreurs: pre.res.decouverte.uids, contributeurs: pre.res.decouverte.contribUids || [] });
     const a = nouvelleAffaire(state);
     pre.res.nouvelle = a.titre;
     push(5, 'Nouvelle affaire', a.titre, `${a.texte} ${accroche}`);

@@ -58,7 +58,44 @@ export const ALEAS = [
   { id: 'stagiaire', titre: 'Un stagiaire très motivé', effet: { paperasse: -3 }, texte: '3 dossiers traités en bonus.' },
   { id: 'fuite', titre: 'Fuite d’eau dans les vestiaires', effet: { moral: -2, budget: -1 }, texte: '−2 de moral, 1 k€ de réparations.' },
   { id: 'chien', titre: 'Un chien errant adopté par le service', effet: { moral: 2 }, texte: '+2 de moral. Il s’appelle Matricule.' },
+  // Bêtisier : l'absurde du quotidien, qui fait les délices de la Gazette.
+  { id: 'cheval', betise: true, titre: 'Un cheval en liberté trotte sur le ring', effet: { paperasse: 1, moral: 1 }, texte: 'Deux heures de poursuite au trot. +1 de moral, +1 dossier.' },
+  { id: 'cafe', betise: true, titre: 'La machine à café du dispatching est en panne', effet: { moral: -2 }, texte: '−2 de moral. Une cellule de crise a été envisagée.' },
+  { id: 'pigeon', betise: true, titre: 'Un pigeon s’est installé dans la salle radio', effet: { adminMult: 0.8 }, texte: 'L’administration tourne à 80 % le temps de l’évacuer.' },
+  { id: 'cles', betise: true, titre: 'Les clés du combi retrouvées dans la poubelle du réfectoire', effet: { vehiculeHS: 1 }, texte: 'Un véhicule indisponible pour un tour, le temps de trier.' },
+  { id: 'sanglier', betise: true, titre: 'Un sanglier visite le parc communal', effet: { satisfaction: 1 }, texte: 'Opération menée dans le calme : +1 de satisfaction.' },
+  { id: 'anniv', betise: true, titre: 'Gâteau surprise pour l’anniversaire du chef', effet: { moral: 3, budget: -0.3 }, texte: '+3 de moral, 0,3 k€ de bougies.' },
+  { id: 'radio', betise: true, titre: 'Un taxi capte la fréquence radio de la zone', effet: { moral: 1 }, texte: 'Il a signalé trois excès de vitesse très précis. +1 de moral.' },
+  { id: 'panne', betise: true, titre: 'Le portail du garage refuse de s’ouvrir', effet: { vehiculeHS: 1, moral: -1 }, texte: 'Un combi bloqué un tour, −1 de moral.' },
 ];
+
+// ───── Gazette : échos du district (petites nouvelles fictives, rangées par initiale) ─────
+export const ECHOS = {
+  A: ['Au marché du dimanche, un fromager jure avoir vu passer un paon.', 'Attention : le rond-point des Casernes change de sens de circulation lundi.', 'Après trois ans de travaux, la fontaine de la place coule enfin.'],
+  B: ['Brocante géante annoncée aux Aulnes : les riverains rangent déjà leurs caves.', 'Belle affluence au concours de pétanque des Charmilles.', 'Bientôt une nouvelle piste cyclable le long de la Delta.'],
+  C: ['Collecte de vêtements réussie à l’école de Val-Fleuri.', 'Ce week-end, la chorale communale donne son concert d’automne.', 'Coupure d’eau prévue mardi matin rue des Tanneurs.'],
+  D: ['Dernière ligne droite pour le jardin partagé du Béguinage.', 'Des lampadaires LED installés dans tout le quartier de la gare.', 'Deux chatons recueillis par le refuge cherchent une famille.'],
+  E: ['En avance sur l’hiver, le déneigeur communal a été testé hier.', 'Élections du comité de quartier : trois candidats déclarés.', 'Exposition de photos anciennes du Delta à la bibliothèque.'],
+  F: ['Fête des voisins record rue du Moulin : 140 convives.', 'Fermeture exceptionnelle de la piscine pour entretien.', 'Friterie des Hayettes : nouvelle sauce maison saluée par les habitués.'],
+  H: ['Hausse de fréquentation au musée des Moulins cet été.', 'Heureux événement au zoo de poche : une portée de lapins nains.', 'Horaires d’hiver pour les bus de la ligne 7 dès le mois prochain.'],
+  I: ['Inauguration du nouveau skatepark près du stade.', 'Il pleuvra encore demain, selon le club d’astronomie amateur.', 'Initiation gratuite au secourisme samedi à la maison de quartier.'],
+  J: ['Journée portes ouvertes à la caserne des pompiers.', 'Jolie récolte pour le verger communal : 300 kilos de pommes.', 'Jeudi, le marché nocturne s’installe sur la Grand-Place.'],
+  K: ['Kermesse de l’école Saint-Roch : la tombola a rapporté un vélo.', 'Kiosque à musique repeint par les élèves de l’académie.', 'Karaoké du café des Sports : le patron promet de ne pas chanter.'],
+  L: ['La bibliothèque prolonge ses horaires le mercredi.', 'Les travaux du pont de l’Écluse avancent plus vite que prévu.', 'Longue file devant la nouvelle boulangerie du Plateau.'],
+  M: ['Match au sommet samedi pour l’équipe de mini-foot des vétérans.', 'Mise en place de nouveaux bancs sur le quai des Brumes.', 'Moins de déchets sauvages signalés ce mois-ci, se réjouit la commune.'],
+  N: ['Nouvelle friterie annoncée à la sortie de l’autoroute.', 'Nettoyage des berges de la Delta dimanche : bénévoles bienvenus.', 'Nombreux curieux au passage du vieux tram restauré.'],
+  O: ['On recherche des bénévoles pour la course caritative.', 'Ouverture d’un repair café derrière la gare.', 'Orage bref mais spectaculaire hier soir sur les Terrils.'],
+  P: ['Parking gratuit en centre-ville les samedis de décembre.', 'Petit marché de producteurs chaque vendredi aux Viviers.', 'Première neige attendue plus tôt que d’habitude, disent les anciens.'],
+  R: ['Record de visiteurs au salon du vin de la Houillère.', 'Réouverture du cinéma de quartier après rénovation.', 'Rue du Béguinage : les pavés refaits à neuf.'],
+  S: ['Succès pour la journée sans voiture autour du parc.', 'Six nouveaux arbres plantés devant l’athénée.', 'Samedi, grande braderie des associations sur le champ de foire.'],
+  T: ['Tournoi d’échecs à la maison de quartier : un enfant de dix ans l’emporte.', 'Travaux de nuit sur la N56 toute la semaine.', 'Trois commerces ouvrent en même temps rue des Filatures.'],
+  U: ['Une boîte à livres installée devant la poste.', 'Un concert de fanfare improvisé a ravi la place des Martyrs.', 'Une nouvelle ligne de bus reliera bientôt la gare au campus.'],
+  V: ['Vide-grenier réussi malgré la pluie aux Glacis.', 'Visite guidée des anciennes mines samedi matin.', 'Vingt ans d’existence pour le club de basket du Delta.'],
+  Y: ['Yoga en plein air au parc communal tant que le temps le permet.', 'Yaourts et fromages fermiers au nouveau marché bio.', 'Yeux rivés au ciel : une éclipse partielle visible jeudi.'],
+};
+
+export const PEINES = ['condamné·e à deux ans de prison, dont un avec sursis', 'condamné·e à dix-huit mois de prison ferme', 'condamné·e à une peine de travail de 200 heures et à indemniser la victime', 'condamné·e à trois ans de prison, assortis d’une interdiction de séjour dans le district', 'condamné·e à un an de prison avec sursis probatoire'];
+
 
 export const TITRES_UNE_AFFAIRE = [
   (z) => `${z} démantèle le réseau`,

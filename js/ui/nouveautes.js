@@ -3,7 +3,7 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-29b',
+  id: '2026-09-29c',
   titre: 'Mise à jour du 29 septembre',
   points: [
     ['Nouvel onglet Terrain', 'tout ce qui se passe chez toi, chez les voisins et dans le district, avec de quoi agir. L’Enquête est au centre de la barre du bas.'],
@@ -15,6 +15,8 @@ export const NOTE_MAJ = {
     ['Énigmes', '11 types au lieu de 5 (plaque, photos, filature, écriture…) et tu peux en changer une par jour.'],
     ['Dossier noir', 'chaque jour, une 4e énigme facultative de niveau hardcore. Sans coup de pouce ni pénalité : une réussite rapporte +15 PS et compte pour le titre « Cerveau du district ».'],
     ['Entraînement', 'dans l’écran Énigmes, entraîne-toi sur le type et la difficulté de ton choix, correction immédiate. Rien ne compte.'],
+    ['Mon équipe', 'cinq figures de ta zone gagnent des surnoms avec l’expérience, et 11 trophées sont à décrocher (HP → Mon équipe et mes trophées).'],
+    ['La Gazette', 'nouvelle mise en page, rubriques « Au tribunal » (le procès après chaque arrestation), « Tableau d’honneur », « Échos du district » et « Le bêtisier ». Lis-la bien…'],
     ['Règles', 'recrues en 2 tours, formation et travaux en 1 tour ; à la fin de la saison, formations et bâtiments sont conservés (un niveau de moins).'],
   ],
 };

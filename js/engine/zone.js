@@ -1,4 +1,5 @@
 import { lireDemarche, ENQ } from './enquete.js';
+import { creerEquipe } from './equipe.js';
 import {
   SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS } from './constants.js';
 
@@ -50,6 +51,8 @@ export function migrateZone(z) {
   fillDefaults(z, newZone({ uid: z.uid, code: z.code, nom: z.nom, couleur: z.couleur }, z.joinedTurn ?? 1));
   // Zones d'avant la logistique : des bâtiments à la taille de leurs effectifs.
   if (neuf) ajusterBatiments(z);
+  if (!z.equipe) z.equipe = creerEquipe(z.uid);
+  if (!z.trophees) z.trophees = [];
   return z;
 }
 
