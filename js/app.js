@@ -525,6 +525,13 @@ async function onClick(e) {
       case 'quest-bonus': await saveQuestBonus(el.dataset.v); break;
       case 'gazette-nav': S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
       case 'admin-create': await b.adminCreateGame(); toast('Partie lancée !'); break;
+      case 'equipe-edit': S.equipeEdit = el.dataset.role || null; S.ouverts = { ...(S.ouverts || {}), equipe: true }; rerender(); break;
+      case 'equipe-origine': {
+        const noms = { ...((S.player && S.player.equipeNoms) || {}), [el.dataset.role]: null };
+        await b.savePlayer(S.user.uid, { ...(S.player || {}), equipeNoms: noms });
+        S.player = { ...(S.player || {}), equipeNoms: noms }; S.equipeEdit = null;
+        toast('Nom d’origine rétabli.'); rerender(); break;
+      }
       case 'admin-vus': S.players = await b.getPlayers(); toast('Connexions actualisées.'); rerender(); break;
       case 'admin-force': await b.adminForceResolution(); await tick(true); toast('Tour résolu.'); break;
       case 'admin-remove': if (await askConfirm('Retirer ce joueur de la partie ?', 'Retirer')) { await b.adminRemovePlayer(el.dataset.uid); toast('Joueur retiré.'); } break;
@@ -681,6 +688,14 @@ async function onSubmit(e) {
       S.editingName = false; S.profilColor = null;
       toast(kind === 'rename' ? 'Zone renommée.' : 'Profil enregistré.');
       rerender();
+    } else if (kind === 'equipe-nom') {
+      const role = form.dataset.role;
+      const prenom = form.prenom.value.replace(/[<>]/g, '').trim().slice(0, 20), nom = form.nom.value.replace(/[<>]/g, '').trim().slice(0, 20);
+      if (!prenom || !nom) { toast('Prénom et nom requis.'); return; }
+      const noms = { ...((S.player && S.player.equipeNoms) || {}), [role]: { prenom, nom, f: form.f.value === '1' ? 1 : 0 } };
+      await b.savePlayer(S.user.uid, { ...(S.player || {}), equipeNoms: noms });
+      S.player = { ...(S.player || {}), equipeNoms: noms }; S.equipeEdit = null;
+      toast(`${prenom} ${nom} rejoint ton équipe. La Gazette et les rapports suivront dès 20:00.`); rerender();
     } else if (kind === 'quest-text') {
       await submitQuest(form.reponse.value);
     } else if (kind === 'radio') {

@@ -20,6 +20,27 @@ export function creerEquipe(uid) {
   return ROLES_EQUIPE.map((r, i) => ({ role: r.id, prenom: p[i][0], f: p[i][1], nom: n[i], xp: 0, niveau: 0 }));
 }
 
+/**
+ * Noms choisis par le joueur (profil `equipeNoms` : { role: { prenom, nom, f } } ou null pour revenir au nom d'origine).
+ * Modifie l'équipe en place ; l'expérience et les surnoms ne bougent pas.
+ */
+export function appliquerNoms(equipe, uid, noms) {
+  if (!equipe || !noms || typeof noms !== 'object') return equipe;
+  const origine = creerEquipe(uid);
+  const propre = (v) => String(v || '').replace(/[<>]/g, '').trim().slice(0, 20);
+  for (const m of equipe) {
+    if (!(m.role in noms)) continue;
+    const n = noms[m.role];
+    const o = origine.find((x) => x.role === m.role);
+    if (!n) { if (o) { m.prenom = o.prenom; m.nom = o.nom; m.f = o.f; } continue; }
+    const prenom = propre(n.prenom), nom = propre(n.nom);
+    if (prenom) m.prenom = prenom;
+    if (nom) m.nom = nom;
+    if (n.f === 0 || n.f === 1) m.f = n.f;
+  }
+  return equipe;
+}
+
 export const roleDe = (m) => ROLES_EQUIPE.find((r) => r.id === m.role);
 export const intitule = (m) => (m.f ? roleDe(m).f : roleDe(m).m);
 export const surnomDe = (m) => (m.niveau > 0 ? roleDe(m).surnoms[Math.min(m.niveau, 3) - 1] : null);
