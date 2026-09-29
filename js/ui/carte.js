@@ -3,6 +3,7 @@ import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1 } from './commo
 import { moyenneIpz, operationActive } from '../engine/zone.js';
 import { planVille, iconeSite } from './plan.js';
 import { siteDe } from '../engine/sites.js';
+import { chefDe, postulerCtrl } from './affaires.js';
 import { hashString } from '../engine/rng.js';
 import { fiabilite } from '../engine/fipa.js';
 import { ongletsRadio } from './diplomatie.js';
@@ -40,10 +41,14 @@ export function renderCarte() {
     </section>` : ''}
     <section class="col" aria-label="Sur la carte"><h2 class="section">Sur la carte</h2>
       ${st.affaires.map((a, i) => {
-        const eg = S.savedOrders && S.savedOrders.engagements && S.savedOrders.engagements[a.id];
-        return `<a class="list-row" href="#ordres"><span class="badge-num">${i + 1}</span>
-        <span class="col grow" style="gap:2px"><span style="font-weight:600">${esc(a.titre)}</span><span class="small muted">Affaire disputée · ${a.recompense} pts · force conseillée ${a.forceConseillee}</span></span>
-        ${eg && eg.agents ? `<span class="tiny" style="font-weight:700;color:var(--blue-soft)">${eg.agents} engagés</span>` : `<span class="btn small">Engager</span>`}</a>`;
+        const chef = chefDe(a), moiChef = a.zone === me.uid;
+        const eg = S.draft && S.draft.engagements[a.id];
+        return `<div class="card tight" style="gap:8px">
+          <div class="row" style="gap:10px"><span class="badge-num">${i + 1}</span>
+            <span class="col grow" style="gap:2px"><span style="font-weight:600">${esc(a.titre)}</span>
+              <span class="small muted">${moiChef ? '<strong style="color:var(--amber)">Chez toi · tu diriges</strong>' : `Chez ${chef ? zoneName(chef) : '?'}`} · ${a.recompense} pts · force conseillée ${a.forceConseillee} · ${a.agentsMax} agents max</span></span></div>
+          ${moiChef ? `<a class="btn small block" href="#ordres">${eg && eg.agents ? `${eg.agents} agent${eg.agents > 1 ? 's' : ''} engagé${eg.agents > 1 ? 's' : ''} · gérer dans tes ordres` : 'Lancer l’affaire dans tes ordres'}</a>` : postulerCtrl(a)}
+        </div>`;
       }).join('')}
       ${ev ? `<a class="list-row" href="#ordres"><span style="width:26px;height:26px;border-radius:7px;background:var(--text);color:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">${icon('star', 14)}</span>
         <span class="col grow" style="gap:2px"><span style="font-weight:600">${esc(ev.titre)}</span><span class="small muted">Événement collectif ${ev.tour === st.turn ? 'ce soir' : `dans ${ev.tour - st.turn} tours`} · ~${3 * Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length} agents requis</span></span></a>` : ''}

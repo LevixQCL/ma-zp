@@ -3,6 +3,7 @@ import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
 import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
+import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel } from './affaires.js';
 import { forceEngagement, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
 
 function enqueteDraft() {
@@ -158,16 +159,30 @@ export function renderOrdres() {
   const nbDep = (dep.reserve ? 1 : 0) + ['prime', 'prevention', 'soustraitance'].filter((k) => dep[k]).length;
 
   const affairesHtml = st.affaires.map((a) => {
-    const eg = d.engagements[a.id] || { agents: 0, partenaire: null };
+    const eg = d.engagements[a.id] || { agents: 0, acceptes: [] };
     const force = eg.agents ? Math.round(forceEngagement(z, eg.agents) * 10) / 10 : 0;
+    const chef = chefDe(a);
+    const moiChef = a.zone === z.uid;
+    const cand = !moiChef && maCandidature(a);
+    const stepper = `<div class="between"><span class="small">${moiChef ? 'Tes agents' : 'Agents proposés'}</span>
+        <span class="stepper"><button type="button" data-action="eng" data-id="${a.id}" data-d="-1" aria-label="Retirer un agent">−</button><span class="n">${eg.agents}</span><button type="button" data-action="eng" data-id="${a.id}" data-d="1" aria-label="Ajouter un agent">+</button></span></div>`;
+    let corps;
+    if (moiChef) {
+      const recues = candidaturesRecues().filter((c) => c.aid === a.id);
+      const acc = recues.filter((c) => c.statut === 'acceptee');
+      const att = recues.filter((c) => c.statut === 'attente').length;
+      corps = `${stepper}
+        ${eg.agents ? '' : '<p class="tiny warn" style="margin:0">Sans agents de ta part, l’affaire n’est pas lancée ce soir.</p>'}
+        <p class="tiny muted" style="margin:0">Équipe : ${acc.length ? acc.map((c) => `${esc(S.state.zones[c.uid] ? S.state.zones[c.uid].nom : '?')} (${c.agents})`).join(', ') : 'toi seul pour l’instant'} · places restantes : ${placesRestantes(a)} sur ${a.agentsMax}${att ? ` · <a href="#prive">${att} candidature${att > 1 ? 's' : ''} à traiter</a>` : ''}</p>`;
+    } else if (cand) {
+      corps = `<p class="tiny" style="margin:0">Ta candidature auprès de ${esc(chef ? chef.nom : '?')} : ${statutLabel(cand.statut)}</p>${cand.statut !== 'refusee' ? stepper : ''}`;
+    } else {
+      corps = `<p class="tiny muted" style="margin:0">Dirigée par ${chef ? zoneName(chef) : '?'}. <a href="#carte">Postuler depuis la Carte</a></p>`;
+    }
     return `<div class="card tight">
       <div class="between"><span style="font-weight:600;font-size:14px">${esc(a.titre)}</span><span class="pill amber">${a.recompense} pts</span></div>
-      <p class="tiny muted" style="margin:0">Force minimale ${a.forceMin}, conseillée ${a.forceConseillee} · ta force : <strong style="color:${force >= a.forceConseillee ? 'var(--green-soft)' : 'var(--text)'}">${fmt1(force)}</strong> · ${a.tours > 1 ? 'nouvelle affaire' : 'dernier tour'}</p>
-      <div class="between"><span class="small">Agents engagés</span>
-        <span class="stepper"><button type="button" data-action="eng" data-id="${a.id}" data-d="-1" aria-label="Retirer un agent">−</button><span class="n">${eg.agents}</span><button type="button" data-action="eng" data-id="${a.id}" data-d="1" aria-label="Ajouter un agent">+</button></span></div>
-      ${eg.agents > 0 && others.length ? `<label class="field" style="font-weight:500">Opération conjointe avec (elle doit aussi te désigner)
-        <select class="text" data-change="partner" data-id="${a.id}" style="min-height:44px;font-size:14px"><option value="">Personne, seul</option>
-          ${others.map((o) => `<option value="${esc(o.uid)}" ${eg.partenaire === o.uid ? 'selected' : ''}>${zoneName(o)}</option>`).join('')}</select></label>` : ''}
+      <p class="tiny muted" style="margin:0">${moiChef ? '<strong style="color:var(--amber)">Chez toi · tu diriges</strong> · ' : ''}Force minimale ${a.forceMin}, conseillée ${a.forceConseillee}${eg.agents ? ` · ta force : <strong style="color:${force >= a.forceConseillee ? 'var(--green-soft)' : 'var(--text)'}">${fmt1(force)}</strong>` : ''} · ${a.tours > 1 ? 'nouvelle affaire' : 'dernier tour'}</p>
+      ${corps}
     </div>`;
   }).join('');
 

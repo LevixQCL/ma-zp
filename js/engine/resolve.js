@@ -4,7 +4,7 @@
 import {
   APP_VERSION, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
   MIN_TOURS_CLASSEMENT, START, DEPENSES, RENFORT } from './constants.js';
-import { makeRng } from './rng.js';
+import { makeRng, hashString } from './rng.js';
 import { attribuerSites, siteDe } from './sites.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, capacite,
@@ -12,7 +12,7 @@ import {
 } from './zone.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
-import { rivalitesPre, rivalitesPost, bonusPoste, themeActif, appliquerConsignes, absT, MAN } from './rivalites.js';
+import { rivalitesPre, rivalitesPost, postesContre, themeActif, appliquerConsignes, absT, MAN } from './rivalites.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, EVENEMENTS_COLLECTIFS, COUPS_DURS, ALEAS, OPERATIONS, PRESSIONS, PRESSION_WEEKEND } from './contenu.js';
 
 const fmt1 = (v) => String(round1(v)).replace('.', ',');
@@ -59,6 +59,12 @@ export function migrateState(state) {
   for (const [k, v] of Object.entries(defaults)) if (state[k] === undefined) state[k] = v;
   for (const z of Object.values(state.zones)) migrateZone(z);
   attribuerSites(state);
+  // Affaires d'avant la réforme : on leur donne une zone qui les dirige et un plafond d'agents.
+  const zu = Object.keys(state.zones).sort();
+  for (const a of state.affaires || []) {
+    if (!a.zone && zu.length) a.zone = zu[Math.abs(hashString(a.id)) % zu.length];
+    if (!a.agentsMax) a.agentsMax = (a.forceMin || 4) + 7;
+  }
   return state;
 }
 
@@ -84,13 +90,18 @@ function genererAffaires(state, rng) {
   const actives = Object.values(state.zones).filter(isActive).length;
   const cible = clamp(Math.ceil(Math.max(actives, 1) / 3), 1, 3);
   const deja = new Set(state.affaires.map((a) => a.titre));
+  const zonesActives = Object.values(state.zones).filter(isActive).map((z) => z.uid).sort();
   while (state.affaires.length < cible) {
     const titre = rng.pick(AFFAIRES_DISPUTEES.filter((t) => !deja.has(t)));
     deja.add(titre);
     const forceMin = rng.int(3, 7);
+    // L'affaire éclate dans une zone (celle qui en a le moins) : c'est elle qui la dirige.
+    const charge = (u) => state.affaires.filter((a) => a.zone === u).length;
+    const libres = zonesActives.length ? zonesActives.filter((u) => charge(u) === Math.min(...zonesActives.map(charge))) : [];
     state.affaires.push({
       id: `a${state.season}-${++state.affaireSeq}`,
       titre, recompense: rng.int(6, 14), forceMin, forceConseillee: forceMin + 2, tours: 2,
+      zone: libres.length ? rng.pick(libres) : null, agentsMax: forceMin + 7,
       pos: { x: rng.int(40, 320), y: rng.int(30, 300) },
     });
   }
@@ -159,48 +170,60 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   const pre = enquetePre(state, uids, ord, push, T);
   const fp = fipaPre(state, uids, ord, push, T);
 
-  // 3. Affaires disputées.
+  // 3. Affaires disputées : la zone où l'affaire éclate la dirige ; les autres postulent,
+  // et seules celles qu'elle accepte participent, dans la limite des places (agentsMax).
   for (const aff of state.affaires) {
-    const engages = uids.filter((u) => ord[u].engagements[aff.id]);
-    if (!engages.length) continue;
-    // Groupes : une opération conjointe exige une désignation réciproque.
-    const groupes = [];
-    const vus = new Set();
-    for (const u of engages) {
-      if (vus.has(u)) continue;
-      const p = ord[u].engagements[aff.id].partenaire;
-      if (p && ord[p] && ord[p].engagements[aff.id] && ord[p].engagements[aff.id].partenaire === u && !vus.has(p)) {
-        groupes.push([u, p]); vus.add(u); vus.add(p);
-      } else { groupes.push([u]); vus.add(u); }
-    }
-    const force = (g) => g.reduce((s, u) => s + forceEngagement(state.zones[u], ord[u].engagements[aff.id].agents) * bonusPoste(state, u, engages.filter((x) => !g.includes(x)), ord, T), 0);
-    const scored = groupes.map((g) => ({ g, f: force(g) })).sort((a, b) => b.f - a.f);
-    const best = scored[0];
-    if (best.f < aff.forceMin) {
-      for (const { g } of scored) for (const u of g) state.zones[u].rapport.push(`${aff.titre} : force insuffisante, l’affaire reste ouverte.`);
+    const chef = aff.zone && state.zones[aff.zone] ? aff.zone : null;
+    const candidats = uids.filter((u) => u !== chef && ord[u].engagements[aff.id]);
+    const rendre = (u, n, pourquoi) => {
+      if (n <= 0) return;
+      ord[u].alloc.intervention = (ord[u].alloc.intervention || 0) + n; // les agents restent au travail chez eux
+      state.zones[u].rapport.push(`${aff.titre} : ${pourquoi} Tes ${n} agent${n > 1 ? 's' : ''} sont resté${n > 1 ? 's' : ''} en Intervention.`);
+    };
+    const eChef = chef && ord[chef].engagements[aff.id];
+    if (!eChef || !eChef.agents) {
+      for (const u of candidats) rendre(u, ord[u].engagements[aff.id].agents, `${chef ? zoneLabel(state.zones[chef]) : 'La zone'} n’a pas lancé l’affaire ce tour.`);
       continue;
     }
-    const gagnants = scored.filter((s) => Math.abs(s.f - best.f) < 1e-9).flatMap((s) => s.g);
-    const part = aff.recompense / gagnants.length;
-    for (const u of gagnants) {
-      const z = state.zones[u];
-      z._points += part; z.stats.pointsAffaires += part; z.stats.affairesGagnees += 1;
-      z.satisfaction += part * 0.5; z.moral += 2;
-      if (gagnants.length > 1) z.reputation += 1;
-      z.rapport.push(`${aff.titre} : affaire remportée (+${fmt1(part)} pts).`);
+    let restant = aff.agentsMax || 99;
+    const equipe = [];
+    const nChef = Math.min(eChef.agents, restant);
+    equipe.push({ u: chef, n: nChef }); restant -= nChef;
+    if (eChef.agents > nChef) ord[chef].alloc.intervention += eChef.agents - nChef;
+    const acceptes = (eChef.acceptes || []).filter((u) => candidats.includes(u));
+    for (const u of acceptes) {
+      const voulu = ord[u].engagements[aff.id].agents;
+      const n = Math.min(voulu, restant);
+      if (n > 0) { equipe.push({ u, n }); restant -= n; }
+      if (voulu > n) rendre(u, voulu - n, n > 0 ? 'l’équipe était complète au-delà de ta part.' : 'l’équipe était déjà complète.');
     }
-    for (const { g } of scored) for (const u of g) {
-      if (gagnants.includes(u)) continue;
-      const z = state.zones[u];
-      const n = ord[u].engagements[aff.id].agents;
-      if (n > 5) { z.moral -= 3; z.rapport.push(`${aff.titre} : échec public avec ${n} agents engagés (−3 de moral).`); }
-      else z.rapport.push(`${aff.titre} : une autre zone l’a emporté.`);
+    for (const u of candidats) if (!acceptes.includes(u)) rendre(u, ord[u].engagements[aff.id].agents, 'candidature non retenue.');
+
+    const force = equipe.reduce((s, x) => s + forceEngagement(state.zones[x.u], x.n), 0);
+    if (force < aff.forceMin) {
+      for (const x of equipe) state.zones[x.u].rapport.push(`${aff.titre} : force insuffisante (${fmt1(force)} sur ${aff.forceMin}), l’affaire reste ouverte.`);
+      continue;
     }
-    const noms = gagnants.map((u) => zoneLabel(state.zones[u]));
-    const titre = noms.length > 1 ? `${noms.join(' et ')} remportent ensemble : ${aff.titre.toLowerCase()}` : `${noms[0]} remporte l’affaire : ${aff.titre.toLowerCase()}`;
-    const perdants = scored.filter((s) => !gagnants.includes(s.g[0])).flatMap((s) => s.g).map((u) => zoneLabel(state.zones[u]));
-    push(8 + aff.recompense / 4, 'Affaire disputée', titre,
-      `${aff.recompense} points en jeu${gagnants.length > 1 ? ', partagés' : ''}.${perdants.length ? ` ${perdants.join(', ')} repart${perdants.length > 1 ? 'ent' : ''} bredouille${perdants.length > 1 ? 's' : ''}.` : ''}`);
+    // Poste avancé : une zone rivale prélève 30 % des points.
+    const preleveurs = postesContre(state, chef, ord, T).filter((u) => !equipe.some((x) => x.u === u) && state.zones[u]);
+    let total = aff.recompense;
+    if (preleveurs.length) {
+      const pris = total * 0.3; total -= pris;
+      for (const u of preleveurs) { state.zones[u]._points += pris / preleveurs.length; state.zones[u].rapport.push(`Poste avancé : tu récupères ${fmt1(pris / preleveurs.length)} pts sur « ${aff.titre} ».`); }
+      state.zones[chef].rapport.push(`${aff.titre} : un poste avancé rival a prélevé ${fmt1(pris)} pts.`);
+    }
+    const sommeN = equipe.reduce((s, x) => s + x.n, 0);
+    for (const x of equipe) {
+      const z = state.zones[x.u];
+      const part = total * x.n / sommeN;
+      z._points += part; z.stats.pointsAffaires += part; z.stats.affairesGagnees += 1; z.moral += 2;
+      if (x.u === chef) { z.satisfaction += aff.recompense * 0.5; if (equipe.length > 1) z.reputation += 1; }
+      else z.reputation += 2;
+      z.rapport.push(`${aff.titre} : affaire résolue${x.u === chef ? ' sous ta direction' : ` avec ${zoneLabel(state.zones[chef])}`} (+${fmt1(part)} pts pour ${x.n} agent${x.n > 1 ? 's' : ''}).`);
+    }
+    const aides = equipe.filter((x) => x.u !== chef).map((x) => zoneLabel(state.zones[x.u]));
+    push(8 + aff.recompense / 4, 'Affaire résolue', `${zoneLabel(state.zones[chef])} boucle l’affaire : ${aff.titre.toLowerCase()}`,
+      `${aff.recompense} points en jeu.${aides.length ? ` Avec l’appui de ${aides.join(', ')}.` : ' Sans aide extérieure.'}`, chef);
     aff._resolue = true;
   }
 

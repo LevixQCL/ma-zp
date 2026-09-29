@@ -7,6 +7,7 @@ import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil } from './ui/hp.js';
 import { ouvrirAide } from './ui/aide.js';
 import { monAppel } from './ui/renfort.js';
+import { maCandidature } from './ui/affaires.js';
 import { operationActive } from './engine/zone.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations } from './ui/ordres.js';
@@ -218,6 +219,29 @@ async function onClick(e) {
       case 'admin-all-parties': S.allParties = await b.listAllParties(); rerender(); break;
       case 'diplo-open': { const k = el.dataset.k; const cur = S.diploOpen && k in S.diploOpen ? S.diploOpen[k] : !!document.querySelector(`section[data-k="${k}"]`); S.diploOpen = { ...(S.diploOpen || {}), [k]: !cur }; rerender(); break; }
       case 'aide': ouvrirAide(el.dataset.k); break;
+      case 'post-n': { const a = S.state.affaires.find((x) => x.id === el.dataset.id); const cur = (S.postuler && S.postuler[a.id]) || Math.min(3, a.agentsMax || 3); S.postuler = { ...(S.postuler || {}), [a.id]: Math.max(1, Math.min(a.agentsMax || 10, cur + Number(el.dataset.d))) }; rerender(); break; }
+      case 'postuler': {
+        const a = S.state.affaires.find((x) => x.id === el.dataset.id), n = Number(el.dataset.n), st = S.state;
+        if (!a || !a.zone || maCandidature(a)) break;
+        for (let k = 0; k < n; k++) if (!takeAgent()) break;
+        S.draft.engagements[a.id] = { agents: n, acceptes: [] };
+        S.ordersDirty = true;
+        el.disabled = true;
+        await b.sendPrive(S.user.uid, a.zone, `📋 Candidature sur « ${a.titre} » : je te propose ${n} agent${n > 1 ? 's' : ''}.`, { candidature: { aid: a.id, agents: n, season: st.season, turn: st.turn } });
+        toast('Candidature envoyée. Valide tes ordres pour réserver tes agents.'); rerender(); break;
+      }
+      case 'cand-ok': case 'cand-non': {
+        const a = S.state.affaires.find((x) => x.id === el.dataset.id), uid = el.dataset.uid, st = S.state, ok = el.dataset.action === 'cand-ok';
+        if (!a) break;
+        if (ok) {
+          const e = S.draft.engagements[a.id] || { agents: 0, acceptes: [] };
+          e.acceptes = [...new Set([...(e.acceptes || []), uid])];
+          S.draft.engagements[a.id] = e; S.ordersDirty = true;
+        }
+        el.disabled = true;
+        await b.sendPrive(S.user.uid, uid, ok ? `✅ Candidature acceptée sur « ${a.titre} ». Bienvenue dans l’équipe !` : `❌ Candidature refusée sur « ${a.titre} ».`, { reponse: { aid: a.id, accepte: ok, season: st.season, turn: st.turn } });
+        toast(ok ? 'Candidature acceptée. Valide tes ordres.' : 'Candidature refusée.'); rerender(); break;
+      }
       case 'carte-zoom': S.carteZoom = el.dataset.v === '1'; rerender(); break;
       case 'renfort-n': {
         const cible = el.dataset.uid, dd = Number(el.dataset.d);
@@ -284,7 +308,7 @@ async function onClick(e) {
       }
       case 'eng': {
         const id = el.dataset.id, d = Number(el.dataset.d);
-        const cur = S.draft.engagements[id] || { agents: 0, partenaire: null };
+        const cur = S.draft.engagements[id] || { agents: 0, acceptes: [] };
         if (d > 0 && !takeAgent()) break;
         cur.agents = Math.max(0, cur.agents + d);
         if (cur.agents === 0) delete S.draft.engagements[id]; else S.draft.engagements[id] = cur;
