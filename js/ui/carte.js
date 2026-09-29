@@ -11,8 +11,70 @@ import { marquerRadioLue } from './prive.js';
 import { appelsRenfort, renfortCtrl } from './renfort.js';
 import { GRADES, gradeFor } from '../engine/constants.js';
 import { blasonSvg, insigne } from './blasons.js';
+import { tensionsDe, quartiersFrontaliers, niveauTension, prevoirTensions, carteQuartiers, QUARTIERS } from '../engine/quartiers.js';
+import { capacite, effetsOperation } from '../engine/zone.js';
 const gradeIdx = (ps) => GRADES.indexOf(gradeFor(ps));
 const pseudoDe = (uid) => (S.players && S.players[uid] && S.players[uid].pseudo) || '';
+
+/** Mes quartiers : zones chaudes, point chaud du jour et patrouilles ciblées. */
+function quartiersHtml(st, me) {
+  const d = S.draft;
+  if (!d) return '';
+  const c = carteQuartiers(st);
+  const mesT = tensionsDe(st, me);
+  const cells = Object.keys(mesT);
+  if (!cells.length) return '';
+  const pat = d.patrouilles || {};
+  // Agents de Proximité vraiment disponibles : une opération d'envergure peut en réquisitionner.
+  const opx = effetsOperation(me, d.alloc || {}, d.operation, st.turn);
+  const prox = opx.eff.proximite || 0;
+  const pris = (opx.pris && opx.pris.proximite) || 0;
+  const cibles = Object.values(pat).reduce((s2, x) => s2 + x, 0);
+  const capProx = capacite(me, 'proximite', prox, { rythme: d.rythme, turn: st.turn });
+  const prev = prevoirTensions(st, me, { patrouilles: pat, agentsProx: prox, capProx });
+  const sel = S.quartierSel != null ? String(S.quartierSel) : null;
+  const pc = me.pointChaud && me.pointChaud.cell in mesT ? me.pointChaud : null;
+  const barre = (t, coul) => `<span class="qbar"><span style="width:${Math.round(t)}%;background:${coul}"></span></span>`;
+  const fleche = (a, b) => { const dlt = b - a; return dlt <= -4 ? `<span class="good">↓ ${Math.round(b)}</span>` : dlt >= 4 ? `<span class="bad">↑ ${Math.round(b)}</span>` : `<span class="muted">→ ${Math.round(b)}</span>`; };
+  const ligne = (k) => {
+    const t = mesT[k], n = niveauTension(t), a = pat[k] || 0;
+    const plein = cibles >= prox;
+    return `<div class="qrow ${sel === k ? 'sel' : ''}" id="q-${k}">
+      <button type="button" class="qnom" data-action="quartier" data-c="${k}" aria-label="Voir ${esc(c.nomDe(Number(k)))} sur la carte">
+        <span class="row" style="gap:6px"><span class="bullet" style="background:${n.couleur}"></span><span style="font-weight:600">${esc(c.nomDe(Number(k)))}</span>${pc && pc.cell === k ? '<span class="tag" style="background:var(--red-bg);color:var(--red-soft)">point chaud</span>' : ''}</span>
+        <span class="row tiny" style="gap:8px">${barre(t, n.couleur)}<span class="muted">${n.nom} ${Math.round(t)}</span><span>ce soir ${fleche(t, prev[k])}</span></span></button>
+      <span class="stepper"><button type="button" data-action="patrouille" data-c="${k}" data-d="-1" aria-label="Une patrouille de moins à ${esc(c.nomDe(Number(k)))}" ${a <= 0 ? 'disabled' : ''}>−</button><span class="n">${a}</span><button type="button" data-action="patrouille" data-c="${k}" data-d="1" aria-label="Une patrouille de plus à ${esc(c.nomDe(Number(k)))}" ${plein ? 'disabled' : ''}>+</button></span>
+    </div>`;
+  };
+  const ordre = cells.slice().sort((x, y) => mesT[y] - mesT[x]);
+  const deplace = cells.filter((k) => (pat[k] || 0) >= QUARTIERS.seuilDeplacement);
+  // Frontière : quartiers des voisins qui touchent les miens (lecture seule).
+  const front = quartiersFrontaliers(st, me.uid).map((i) => ({ i, uid: c.proprio(i) })).filter((x) => st.zones[x.uid]);
+  const frontHtml = front.length ? `<details class="card repli" data-k="frontiere" ${S.ouverts && S.ouverts.frontiere ? 'open' : ''}><summary><span class="col grow" style="gap:0"><span style="font-weight:600">À ta frontière</span><span class="tiny muted">${front.length} quartier${front.length > 1 ? 's' : ''} voisin${front.length > 1 ? 's' : ''} · en pointillés sur la carte</span></span>${icon('chevron', 16)}</summary><div class="col" style="gap:4px">
+    <p class="tiny muted" style="margin:0">La tension passe d’un quartier à l’autre, et trop de patrouilles au même endroit repoussent la délinquance chez le voisin. Mieux vaut se coordonner.</p>
+    ${front.sort((x, y) => tensionsDe(st, st.zones[y.uid])[y.i] - tensionsDe(st, st.zones[x.uid])[x.i]).map(({ i, uid }) => {
+      const t = tensionsDe(st, st.zones[uid])[i], n = niveauTension(t);
+      return `<div class="between" style="gap:8px;padding:4px 0"><button type="button" class="qnom" data-action="quartier" data-c="${i}" style="flex:1"><span class="row" style="gap:6px"><span class="bullet" style="background:${n.couleur}"></span><span style="font-weight:600">${esc(c.nomDe(i))}</span></span>
+        <span class="row tiny" style="gap:8px">${barre(t, n.couleur)}<span class="muted">${n.nom} ${Math.round(t)} · ${zoneName(st.zones[uid])}</span></span></button>
+        <button type="button" class="btn small ghost" data-action="ecrire-a" data-uid="${esc(uid)}" aria-label="Écrire à ${esc(st.zones[uid].nom)}">✉</button></div>`;
+    }).join('')}</div></details>` : '';
+  return `<section class="col" aria-label="Mes quartiers" style="gap:8px" id="mes-quartiers">
+    <div class="between"><h2 class="section">Mes quartiers</h2><span class="tiny muted">${cibles} / ${prox} agent${prox > 1 ? 's' : ''} de Proximité ciblé${cibles > 1 ? 's' : ''}</span></div>
+    ${pc ? `<section class="card red tight" style="gap:6px"><span class="kicker" style="color:var(--red-soft)">Point chaud ce soir · ${esc(c.nomDe(Number(pc.cell)))}</span>
+      <span style="font-weight:700">${esc(pc.titre)}</span><span class="small" style="color:var(--text2)">${esc(pc.texte)}</span>
+      ${(pat[pc.cell] || 0) >= QUARTIERS.agentsDesamorcer ? `<span class="small good" style="font-weight:600">${icon('check', 14)} ${pat[pc.cell]} agents sur place : il sera désamorcé à 20:00 (pense à valider).</span>`
+        : `<span class="tiny muted">Sans ${QUARTIERS.agentsDesamorcer} agents sur place, la tension y grimpera de ${pc.force} ce soir. Avec eux : +1 de satisfaction.</span>
+        <button type="button" class="btn small outline block" data-action="point-chaud" ${prox - cibles + (pat[pc.cell] || 0) < QUARTIERS.agentsDesamorcer ? 'disabled' : ''}>Envoyer ${QUARTIERS.agentsDesamorcer} agents à ${esc(c.nomDe(Number(pc.cell)))}</button>
+        ${prox - cibles + (pat[pc.cell] || 0) < QUARTIERS.agentsDesamorcer ? `<span class="tiny bad">Pas assez d’agents de Proximité libres : retire une patrouille ailleurs ou <a href="#ordres">renforce la Proximité</a>.</span>` : ''}`}
+    </section>` : ''}
+    <p class="tiny muted" style="margin:0">${prox ? `Touche un quartier sur la carte ou ici. Les agents non ciblés (${prox - cibles}) patrouillent partout. Plus tu concentres, plus la tension baisse à cet endroit ; au-delà de ${QUARTIERS.seuilDeplacement - 1} agents, la délinquance se déplace vers les voisins.` : 'Aucun agent en Proximité aujourd’hui : <a href="#ordres">règle-le dans tes ordres</a> pour envoyer des patrouilles.'}</p>
+    ${pris ? `<p class="tiny" style="margin:0;color:var(--amber)">L’opération en cours réquisitionne ${pris} agent${pris > 1 ? 's' : ''} de Proximité : il en reste ${prox} pour les patrouilles.</p>` : ''}
+    ${cibles > prox ? `<p class="tiny bad" style="margin:0">Plus assez d’agents pour toutes ces patrouilles : à 20:00, les moins utiles seront annulées (le point chaud reste prioritaire).</p>` : ''}
+    ${deplace.length ? `<p class="tiny bad" style="margin:0">⚠ ${deplace.map((k) => esc(c.nomDe(Number(k)))).join(', ')} : trop de monde, la délinquance ira chez les voisins.</p>` : ''}
+    <div class="card tight" style="gap:0;padding:4px 12px">${ordre.map(ligne).join('')}</div>
+    ${frontHtml}
+  </section>`;
+}
 
 export function renderCarte() {
   const st = S.state, me = myZone();
@@ -25,8 +87,10 @@ export function renderCarte() {
     <span class="row" style="gap:4px"><svg width="12" height="14" viewBox="-8 -12 16 22" aria-hidden="true"><path d="M0 9c-5-5.5-8-8.6-8-12.4a8 8 0 0 1 16 0C8 .4 5 3.5 0 9z" fill="#F2B544"/></svg>affaire disputée</span>
     ${ev ? '<span>☆ événement</span>' : ''}${op ? '<span class="bad">◎ opération en cours</span>' : ''}
     <span class="row" style="gap:4px"><svg width="14" height="14" viewBox="-9 -9 18 18" aria-hidden="true"><circle r="8.5" fill="#0B1119" stroke="#F2B544" stroke-width="1.5"/><path d="M0 -5l4.5 1.7v2.8c0 2.8-2 4.5-4.5 5.6-2.5-1.1-4.5-2.8-4.5-5.6v-2.8z" fill="#F2B544"/></svg>ton HP</span>
-    <span class="row" style="gap:4px"><span style="width:14px;height:0;border-top:2px solid var(--amber)"></span>ta zone</span></div>`;
-  const zoom = !!S.carteZoom;
+    <span class="row" style="gap:4px"><span style="width:14px;height:0;border-top:2px solid var(--amber)"></span>ta zone</span></div>
+    <div class="row tiny muted" style="flex-wrap:wrap;gap:10px">${['calme', 'à surveiller', 'tendu', 'chaud'].map((l, k) => `<span class="row" style="gap:4px"><span class="bullet" style="background:${['#4FBF8A', '#E2C04A', '#E8913A', '#E0625A'][k]}"></span>${l}</span>`).join('')}
+      <span class="row" style="gap:4px"><span class="bullet" style="background:#5AB0F0"></span>patrouille</span><span>pointillés : chez le voisin</span></div>`;
+  const zoom = S.carteZoom !== false;
   return `<main class="screen">
     <header class="between" style="align-items:flex-end"><h1 class="big">District Delta</h1><span class="small muted">${n} zone${n > 1 ? 's' : ''}</span></header>
     <div class="seg2" role="group" aria-label="Cadrage de la carte">
@@ -34,6 +98,7 @@ export function renderCarte() {
       <button type="button" data-action="carte-zoom" data-v="1" aria-selected="${zoom}">Ma zone</button></div>
     <div class="plan-cadre">${planVille(st, me, { zoom })}</div>
     ${legende}
+    ${quartiersHtml(st, me)}
 
     <section class="col" aria-label="Sur la carte"><div class="between"><h2 class="section">Sur la carte</h2><a class="small" href="#terrain">Agir sur le Terrain</a></div>
       ${st.affaires.map((a, i) => {

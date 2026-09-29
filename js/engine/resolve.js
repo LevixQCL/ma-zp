@@ -12,6 +12,7 @@ import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
   forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, fermerJournal,
 } from './zone.js';
+import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers } from './quartiers.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
 import { encheresResoudre, annoncerLot } from './encheres.js';
@@ -169,7 +170,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (orders[uid]) {
       ord[uid] = sanitizeOrders(z, orders[uid], state);
       z.toursSansOrdres = 0;
-      z.dernierOrdre = { alloc: ord[uid].alloc, rythme: ord[uid].rythme };
+      z.dernierOrdre = { alloc: ord[uid].alloc, rythme: ord[uid].rythme, patrouilles: ord[uid].patrouilles || {} };
       z._joue = true;
     } else {
       ord[uid] = autopilotOrders(z, state);
@@ -513,13 +514,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
     jalon(z, `Intervention : ${traites} incident${traites > 1 ? 's' : ''} traité${traites > 1 ? 's' : ''} sur ${incidents}${pr.bourgmestre ? ', visite du bourgmestre' : ''}`);
     // Proximité : prévention.
-    z.criminalite = clamp(z.criminalite + 2.4 + zr.float(-1, 1) - cap.proximite * 0.6, 10, 95);
+    // Quartier par quartier : patrouilles ciblées, point chaud, déplacement de la délinquance.
+    const patrouilles = lirePatrouilles(state, z, o.patrouilles, alloc.proximite || 0);
     z.satisfaction += cap.proximite * 0.12;
-    if (z.criminalite > 55) {
-      const malus = (z.criminalite - 55) * 0.12;
-      z.satisfaction -= malus;
-      if (z.criminalite > 70) z.rapport.push(`Criminalité élevée (${Math.round(z.criminalite)}) : le quartier s\u2019inquiète (−${Math.round(malus * 10) / 10} de satisfaction). Renforce la Proximité.`);
-    }
+    z.satisfaction += tourQuartiers(state, z, { patrouilles, agentsProx: alloc.proximite || 0, capProx: cap.proximite, rng: zr, zoneLabel });
 
     jalon(z, `Proximité (criminalité ${Math.round(z.criminalite)})`);
     // Recherche : dossiers locaux.
@@ -713,6 +711,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       pressions.unshift({ id: `site-${site.id}`, site: site.id, titre: `${site.nom} · ${ev.titre}`, texte: ev.texte, effet: ev.effet });
     }
     z.pressions = JSON.parse(JSON.stringify(pressions.slice(0, 3)));
+    annoncerPointChaud(state, z, makeRng(`${state.seed}:s${state.season}:t${T}:chaud:${z.uid}`));
   }
 
   // 6. Affaires : celles non résolues restent un tour de plus, moins bien dotées.

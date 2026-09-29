@@ -6,6 +6,7 @@ import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel } from './affaires.js';
 import { effectifPrevu, capaciteAgents, capaciteVehicules, coutRecrue, sousTutelle } from '../engine/zone.js';
+import { carteQuartiers } from '../engine/quartiers.js';
 import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
 
 function enqueteDraft() {
@@ -21,8 +22,11 @@ export function initDraft() {
   const z = myZone();
   const st = S.state;
   const dispo = agentsDisponibles(z, st.turn);
-  const base = S.savedOrders || (z.dernierOrdre ? { alloc: z.dernierOrdre.alloc, rythme: z.dernierOrdre.rythme } : { alloc: DEFAULT_ALLOC, rythme: 'normal' });
-  const d = JSON.parse(JSON.stringify({ alloc: { ...DEFAULT_ALLOC, ...(base.alloc || {}) }, rythme: base.rythme || 'normal', decision: base.decision || null, engagements: base.engagements || {}, evenement: base.evenement || 0, operation: base.operation || 'complet', sansDecision: !!(S.savedOrders && S.savedOrders.sansDecision), depenses: (S.savedOrders && S.savedOrders.depenses) || { reserve: 0, reserveService: 'intervention' }, ...enqueteDraft() }));
+  const base = S.savedOrders || (z.dernierOrdre ? { alloc: z.dernierOrdre.alloc, rythme: z.dernierOrdre.rythme, patrouilles: z.dernierOrdre.patrouilles } : { alloc: DEFAULT_ALLOC, rythme: 'normal' });
+  const d = JSON.parse(JSON.stringify({ alloc: { ...DEFAULT_ALLOC, ...(base.alloc || {}) }, rythme: base.rythme || 'normal', decision: base.decision || null, engagements: base.engagements || {}, evenement: base.evenement || 0, operation: base.operation || 'complet', patrouilles: base.patrouilles || {}, sansDecision: !!(S.savedOrders && S.savedOrders.sansDecision), depenses: (S.savedOrders && S.savedOrders.depenses) || { reserve: 0, reserveService: 'intervention' }, ...enqueteDraft() }));
+  // Patrouilles : seulement dans mes quartiers.
+  const mesQ = new Set((carteQuartiers(st).deZone[z.uid] || []).map(String));
+  for (const k of Object.keys(d.patrouilles)) if (!mesQ.has(k)) delete d.patrouilles[k];
   // On ne garde que les engagements sur des affaires encore ouvertes.
   const ids = new Set(st.affaires.map((a) => a.id));
   for (const k of Object.keys(d.engagements)) if (!ids.has(k)) delete d.engagements[k];
@@ -344,7 +348,7 @@ function aide(s, z) {
   const f = (v) => fmt1(v);
   switch (s) {
     case 'intervention': return `Traite les incidents du jour (environ 1 agent par incident, ${Math.max(1, Math.round(1.5 + z.criminalite / 14))} attendus). Incident traité : +0,5 de satisfaction ; raté : −1,8. Au-delà de 2,5 agents par véhicule, les agents en trop comptent pour moitié. Chaque intervention use les véhicules : état du parc ${Math.round(100 - z.usure)} %${malusEtat(100 - z.usure) < 1 ? ` (efficacité −${Math.round((1 - malusEtat(100 - z.usure)) * 100)} %)` : ''} ; sous 80 %, l’Intervention perd de l’efficacité. Une révision du parc (dépense du jour, 2 k€) rend +20 %.`;
-    case 'proximite': return `Prévention : fait baisser la criminalité (actuellement ${Math.round(z.criminalite)}). Environ 4 agents la stabilisent. Au-dessus de 55, la criminalité coûte de la satisfaction chaque jour et augmente les incidents. Effet lent, visible sur plusieurs jours.`;
+    case 'proximite': return `Prévention : fait baisser la criminalité (actuellement ${Math.round(z.criminalite)}). Environ 4 agents la stabilisent. Au-dessus de 55, un quartier coûte de la satisfaction chaque jour, et la criminalité augmente les incidents. Tu peux envoyer ces agents en patrouille dans des quartiers précis depuis la Carte.`;
     case 'recherche': return `Fait avancer tes dossiers locaux (${z.dossiers.length} en cours). Dossier élucidé : des points et +2 de satisfaction. Un dossier de plus de 6 tours coûte de la satisfaction chaque jour.`;
     case 'roulage': return `Rapporte environ 0,7 k€ par agent et par jour. Au-delà de ${ROULAGE.seuil} agents, chaque agent de plus compte pour moitié. Au-delà de ${Math.round(seuilChasse(z) * 100)} % de tes effectifs : « chasse aux PV », −2 de satisfaction par jour.`;
     case 'admin': return `Traite la paperasse (environ 1 dossier par agent ; ${f(z.paperasse)} en attente). Au-delà de 14 : −2 de moral par jour. Au-delà de 20 : Inspection générale, 5 k€ d’amende.`;

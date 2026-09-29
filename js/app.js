@@ -13,7 +13,7 @@ import { installerAntiTriche } from './ui/antitriche.js';
 import { lireInvitationUrl, oublierInvitation, partager, copier, afficherQr } from './ui/invitation.js';
 import { ouvrirBudget } from './ui/logistique.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
-import { operationActive } from './engine/zone.js';
+import { operationActive, effetsOperation } from './engine/zone.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations, agentsHorsServices } from './ui/ordres.js';
 import { renderQuete } from './ui/quete.js';
@@ -319,6 +319,25 @@ async function onClick(e) {
         S.ordersDirty = true; rerender(); break;
       }
       case 'offre-retirer': S.draft.offre = null; S.ordersDirty = true; rerender(); break;
+      case 'quartier': {
+        S.quartierSel = el.dataset.c;
+        const dansCarte = !!el.closest('svg');
+        rerender();
+        if (dansCarte) document.getElementById(`q-${el.dataset.c}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        break;
+      }
+      case 'patrouille': case 'point-chaud': {
+        const d = S.draft; if (!d) break;
+        const p = (d.patrouilles ||= {});
+        const prox = effetsOperation(myZone(), d.alloc || {}, d.operation, S.state.turn).eff.proximite || 0;
+        const total = Object.values(p).reduce((s2, x) => s2 + x, 0);
+        const k = el.dataset.action === 'point-chaud' ? myZone().pointChaud && myZone().pointChaud.cell : el.dataset.c;
+        if (k == null) break;
+        const cible = el.dataset.action === 'point-chaud' ? Math.max(2, p[k] || 0) : (p[k] || 0) + Number(el.dataset.d);
+        const n = Math.max(0, Math.min(cible, prox - (total - (p[k] || 0))));
+        if (n) p[k] = n; else delete p[k];
+        S.quartierSel = k; S.ordersDirty = true; rerender(); break;
+      }
       case 'carte-zoom': S.carteZoom = el.dataset.v === '1'; rerender(); break;
       case 'renfort-n': {
         const cible = el.dataset.uid, dd = Number(el.dataset.d);
