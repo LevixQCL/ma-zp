@@ -1,4 +1,5 @@
 import { nonLus, invitations } from './prive.js';
+import { terrainAFaire } from './terrain.js';
 // Outils partagés par tous les écrans.
 import { gradeFor, nextGrade } from '../engine/constants.js';
 import { moyenneIpz } from '../engine/zone.js';
@@ -55,6 +56,7 @@ const PATHS = {
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   send: '<path d="M4 12l16-8-6 16-2-6z"/>',
   enquete: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
+  terrain: '<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
   loupe: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
   star: '<path d="M12 2l3 6.3 6.9.9-5 4.8 1.2 6.8L12 17.6l-6.1 3.2 1.2-6.8-5-4.8 6.9-.9z"/>',
   trophy: '<path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0zM17 5h3a3 3 0 0 1-3 4M7 5H4a3 3 0 0 0 3 4"/>',
@@ -66,17 +68,18 @@ export function icon(name, size = 22, extra = '') {
 }
 
 export function tabbar(active, { questBadge = false, radioBadge = false } = {}) {
-  const tabs = [['hp', 'HP'], ['ordres', 'Ordres'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['carte', 'Carte'], ['radio', 'Radio']];
+  const tabs = [['hp', 'HP'], ['ordres', 'Ordres'], ['terrain', 'Terrain'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['carte', 'Carte'], ['radio', 'Radio']];
   const st = S.state, me = S.user && st && st.zones ? st.zones[S.user.uid] : null;
   const faites = (S.questResults || []).filter((r) => r && (r.statut === 'ok' || r.statut === 'rate')).length;
   const dots = {
     ordres: !S.savedOrders || S.ordersDirty,
     enquete: !!(st && (st.traques || []).length && !(S.draft && S.draft.traque)),
     quete: questBadge || faites < 3,
+    terrain: terrainAFaire() > 0,
     radio: radioBadge || (() => { const n = nonLus(); return n.radio + n.prive > 0 || invitations().some((i) => !i.fait); })(),
   };
   return `<nav class="tabs" aria-label="Navigation principale">${tabs.map(([id, label]) => `
-    <a href="#${id}" ${active === id ? 'aria-current="page"' : ''}>${icon(id)}<span>${id === 'radio' ? 'Radio' : label}</span>${dots[id] ? '<span class="dot" aria-label="à faire"></span>' : ''}</a>`).join('')}
+    <a href="#${id}" ${active === id ? 'aria-current="page"' : ''} ${id === 'enquete' ? 'class="centre"' : ''}>${id === 'enquete' ? `<span class="rond">${icon(id, 26)}</span>` : icon(id)}<span>${id === 'radio' ? 'Radio' : label}</span>${dots[id] ? '<span class="dot" aria-label="à faire"></span>' : ''}</a>`).join('')}
   </nav>`;
 }
 
