@@ -8,7 +8,7 @@ export function renderGazette() {
   const list = S.gazettes;
   const me = myZone();
   if (!list.length) {
-    return `<main class="screen"><a href="#hp" class="row small" style="text-decoration:none;color:var(--muted)">${icon('back', 16)} HP</a>
+    return `<main class="screen"><a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
       <div class="paper"><div class="mast"><h1>La Gazette du Delta</h1></div><p>Le premier numéro paraîtra ce soir à 20:00. Passe tes ordres d’ici là !</p></div></main>${tabbar('hp')}`;
   }
   const i = Math.min(S.gazetteIndex, list.length - 1);
@@ -16,7 +16,7 @@ export function renderGazette() {
   const sansFaillite = null;
   const rapport = g.rapports && g.rapports[me.uid];
   return `<main class="screen">
-    <div class="between"><a href="#hp" class="row small" style="text-decoration:none;color:var(--muted)">${icon('back', 16)} HP</a>
+    <div class="between"><a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
       <div class="row" style="gap:4px">
         <button class="iconbtn" data-action="gazette-nav" data-d="1" ${i >= list.length - 1 ? 'disabled' : ''} aria-label="Numéro précédent">${icon('back', 18)}</button>
         <span class="tiny muted mono">n° ${g.turn} · S${g.season}</span>
@@ -117,7 +117,7 @@ export function renderClassement() {
         ${p.titres.map((t) => { const z = S.state.zones[t.uid]; return `<span class="small muted">${esc(t.titre)} : ${z ? zoneName(z) : 'zone disparue'}</span>`; }).join('')}</div>`).join('')}</section>`;
   }
   return `<main class="screen">
-    <a href="#hp" class="row small" style="text-decoration:none;color:var(--muted)">${icon('back', 16)} HP</a>
+    <a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
     <header class="col" style="gap:3px"><span class="kicker">Saison ${S.state.season} · tour ${S.state.turn} sur 14</span><h1 class="big">Classements</h1></header>
     <div class="segn" role="tablist" aria-label="Classements" style="grid-template-columns:repeat(${onglets.length},minmax(0,1fr))">${onglets.map(([k, l]) => `<button type="button" role="tab" aria-selected="${tab === k}" data-action="class-tab" data-t="${k}">${l}</button>`).join('')}</div>
     ${corps}
@@ -128,7 +128,7 @@ export function renderAdmin() {
   const st = S.state;
   const zones = Object.values(st.zones);
   return `<main class="screen">
-    <a href="#hp" class="row small" style="text-decoration:none;color:var(--muted)">${icon('back', 16)} HP</a>
+    <a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
     <header class="col" style="gap:3px"><span class="kicker">Espace maître du jeu</span><h1 class="big">Administration</h1>
       <p class="sub">Mode ${S.backend.mode === 'demo' ? 'démo (sur cet appareil)' : 'en ligne (Firebase)'} · saison ${st.season}, tour ${st.turn} · prochaine résolution ${formatDateBe(st.nextDeadline)} à ${formatHeureBe(st.nextDeadline)}</p></header>
     ${S.partie ? `<section class="card amber"><h2 class="card-title">Inviter des collègues</h2>

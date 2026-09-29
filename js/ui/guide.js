@@ -316,7 +316,7 @@ export function renderGuide() {
   const list = q ? all.filter((s) => norm(s.titre + ' ' + strip(s.html)).includes(q)) : all;
   const ouvert = S.guideSection;
   return `<main class="screen guide">
-    <a href="#hp" class="row small" style="text-decoration:none;color:var(--muted)">${icon('back', 16)} HP</a>
+    <a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
     <header class="col" style="gap:3px"><span class="kicker">Guide du joueur</span><h1 class="big">Comment ça marche</h1>
       <p class="sub">Toutes les règles de Ma ZP. Les chiffres sont ceux du jeu actuel.</p></header>
     <form data-form="guide-search" role="search"><label class="sr" for="guide-q">Rechercher dans le guide</label>

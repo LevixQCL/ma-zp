@@ -335,3 +335,9 @@ h1.brand-xl { font-size: clamp(64px, 20vw, 96px); letter-spacing: 2px; line-heig
 .segn { display: grid; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 4px; }
 .segn button { min-height: 44px; min-width: 0; border: none; border-radius: 9px; background: transparent; color: var(--text2); font: 600 13px var(--body); padding: 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .segn button[aria-selected="true"] { background: var(--amber); color: var(--amber-ink); font-weight: 700; }
+
+/* Lien de retour vers l'HP : grand et facile à toucher */
+.backlink { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px 0 10px; margin-left: -4px;
+  border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font-weight: 600; font-size: 14px; text-decoration: none; }
+.backlink svg { color: var(--amber); }
+.backlink:hover { border-color: var(--amber-line); color: var(--text); }
