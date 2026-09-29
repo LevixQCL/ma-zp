@@ -61,7 +61,7 @@ export function postulerCtrl(a) {
     <div class="between"><span class="small" style="font-weight:600">Postuler auprès de ${esc(chef.nom)}</span>
       <span class="stepper"><button type="button" data-action="post-n" data-id="${a.id}" data-d="-1" aria-label="Un agent de moins" ${n <= 1 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="post-n" data-id="${a.id}" data-d="1" aria-label="Un agent de plus" ${n >= (a.agentsMax || 10) ? 'disabled' : ''}>+</button></span></div>
     <button type="button" class="btn small block" data-action="postuler" data-id="${a.id}" data-n="${n}">Proposer ${n} agent${n > 1 ? 's' : ''}</button>
-    <span class="tiny muted">${esc(chef.nom)} accepte ou refuse. Si ta candidature n’est pas retenue, tes agents restent chez toi.</span></div>`;
+    <span class="tiny muted">${esc(chef.nom)} accepte ou refuse. Si ta candidature n’est pas retenue, tes agents restent chez toi. Plus l’équipe est forte, plus l’affaire rapporte (jusqu’à 130 % des points), et ta part suit ton nombre d’agents.</span></div>`;
 }
 
 /** Ligne de candidature reçue, avec Accepter / Refuser (onglet Privé). */

@@ -175,6 +175,18 @@ export function bonusLots(zone, service) {
   return m;
 }
 
+/**
+ * Récompense d'une affaire disputée selon la force engagée (multiplicateur des points) :
+ * sous la force minimale, échec ; entre minimale et conseillée, de 60 % à 100 % ;
+ * au-delà, bonus jusqu'à +30 % pour un dispositif une fois et demie plus fort que conseillé.
+ */
+export function multAffaire(aff, force) {
+  if (force < aff.forceMin) return 0;
+  const c = aff.forceConseillee;
+  if (force < c) return 0.6 + 0.4 * (force - aff.forceMin) / Math.max(0.1, c - aff.forceMin);
+  return 1 + 0.3 * Math.min(1, (force - c) / (c * 0.5));
+}
+
 export function forceEngagement(zone, n) {
   return n * (0.8 + 0.2 * Math.max(zone.niveaux.recherche, zone.niveaux.intervention)) * moralMult(zone.moral);
 }

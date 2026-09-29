@@ -3,9 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-29h',
+  id: '2026-09-29i',
   titre: 'Mise à jour du 29 septembre (équilibrage)',
   points: [
+    ['Affaires disputées', 'la récompense dépend maintenant de la force de l’équipe : 60 % des points à la force minimale, 100 % à la force conseillée, jusqu’à 130 % au-delà. L’estimation s’affiche dans tes ordres.'],
+    ['Énigme « La plaque »', 'plus retorse : la bonne plaque n’est plus celle qui ressemble à toutes les autres, témoignages à calculer, et en difficulté 5 un témoin se trompe.'],
     ['Roulage', 'au-delà de 6 agents, chaque agent de plus compte pour moitié : les automobilistes sont prévenus. Le Roulage reste rentable, mais ne peut plus remplacer la dotation.'],
     ['Caméras de lecture de plaques', 'l’effet « chasse aux PV » n’est plus supprimé : il joue au-delà de 40 % des effectifs en Roulage (25 % sans caméras).'],
     ['Prime au personnel', '+4 de moral sous 70, +2 de 70 à 85, +1 au-delà : verser une prime chaque jour ne garde plus le moral bloqué à 100.'],
