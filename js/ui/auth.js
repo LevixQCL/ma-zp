@@ -10,6 +10,7 @@ export function renderLogin() {
       <h1 class="brand" style="font-size:46px">Ma ZP</h1>
       <p class="sub" style="font-size:14px">District Delta · jeu de gestion entre collègues</p>
     </div>
+    ${S.invitation ? `<div class="card amber"><p class="small" style="margin:0;color:var(--amber-soft)"><strong style="color:var(--text)">Tu as été invité dans une partie.</strong> Connecte-toi ou crée un compte : tu y entreras directement (code ${esc(S.invitation)}).</p></div>` : ''}
     ${demo ? `
       <div class="card amber"><p class="small" style="margin:0;color:var(--amber-soft)"><strong style="color:var(--text)">Mode démo.</strong> La partie tourne sur cet appareil avec 5 zones robots. Tu peux faire avancer les tours toi-même pour tester le jeu.</p></div>
       <button class="btn primary block" data-action="demo-start">Commencer la démo</button>` : `

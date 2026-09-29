@@ -10,6 +10,7 @@ import { monAppel } from './ui/renfort.js';
 import { maCandidature } from './ui/affaires.js';
 import { renderTerrain } from './ui/terrain.js';
 import { installerAntiTriche } from './ui/antitriche.js';
+import { lireInvitationUrl, oublierInvitation, partager, copier, afficherQr } from './ui/invitation.js';
 import { ouvrirBudget } from './ui/logistique.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { operationActive } from './engine/zone.js';
@@ -174,6 +175,17 @@ async function loadTurnData() {
 async function afterAuth() {
   if (!S.user) { if (unsubState) unsubState(); unsubState = null; S.state = undefined; lastTurnKey = null; render(); return; }
   try { S.parties = await S.backend.listMyParties(S.user.uid); } catch (e) { console.warn(e); S.lastError = e; S.parties = []; }
+  // Arrivée par un lien d'invitation : on rejoint la partie directement.
+  if (S.invitation && S.backend.joinByCode) {
+    const code = S.invitation; S.invitation = null; oublierInvitation();
+    try {
+      const gid = await S.backend.joinByCode(S.user.uid, code);
+      S.parties = await S.backend.listMyParties(S.user.uid);
+      await openParty(gid); location.hash = '#hp';
+      toast(`Bienvenue dans la partie « ${(S.partie && S.partie.nom) || code} » !`);
+      return;
+    } catch (e) { console.warn(e); toast(e.message || 'Lien d’invitation invalide.'); }
+  }
   let id = null;
   try { id = localStorage.getItem(`mazp-partie-${S.user.uid}`); } catch (e) { /* stockage indisponible */ }
   if (!S.parties.some((p) => p.id === id)) id = S.parties[0] ? S.parties[0].id : null;
@@ -254,6 +266,9 @@ async function onClick(e) {
         toast(ok ? 'Candidature acceptée. Valide tes ordres.' : 'Candidature refusée.'); rerender(); break;
       }
       case 'budget': ouvrirBudget(); break;
+      case 'invite-share': { const r = await partager(el.dataset.code, el.dataset.nom); if (r === 'copié') toast('Lien copié : colle-le dans un message.'); break; }
+      case 'invite-copy': await copier(el.dataset.code, el.dataset.nom); toast('Lien et message copiés.'); break;
+      case 'invite-qr': afficherQr(el.dataset.code); break;
       case 'maj-voir': ouvrirNouveautes(); break;
       case 'maj-envoyer': {
         const autres = Object.values(S.state.zones).filter((x) => x.uid !== S.user.uid && !(S.players[x.uid] && S.players[x.uid].bot));
@@ -736,6 +751,7 @@ function messageErreur(err) {
 async function boot() {
   loading();
   S.config = CONFIG;
+  S.invitation = lireInvitationUrl();
   S.route = route();
   try {
     S.backend = await createBackend(CONFIG);

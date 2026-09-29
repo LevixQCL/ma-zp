@@ -464,3 +464,7 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .troll p { margin: 0; max-width: 320px; font-size: 17px; font-weight: 600; color: var(--text); line-height: 1.4; }
 @keyframes trollRebond { 0% { transform: scale(.3) rotate(-20deg); } 70% { transform: scale(1.1) rotate(6deg); } 100% { transform: none; } }
 @media (prefers-reduced-motion: reduce) { .troll svg { animation: none; } }
+
+/* Invitation */
+.partage { display: flex; flex-direction: column; gap: 8px; }
+.lien-invit { font-size: 12px; padding: 8px 10px; border-radius: 8px; background: var(--bg); border: 1px solid var(--line); color: var(--text2); overflow-wrap: anywhere; }
