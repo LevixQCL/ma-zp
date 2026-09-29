@@ -444,7 +444,7 @@ export function dossierDe(state, z) {
 }
 
 /**
- * Zones qui ont déjà cette pièce grâce à `uid` (partagée par lui) ou qui la lui ont donnée.
+ * Zones qui ont déjà reçu cette pièce par partage (de `uid` ou d'une autre zone), ou qui l'ont donnée à `uid`.
  * Calculé à partir des dossiers : juste, même pour les partages faits avant cette fonction.
  */
 export function dejaPartagee(state, uid, f) {
@@ -455,7 +455,8 @@ export function dejaPartagee(state, uid, f) {
   for (const z of Object.values(state.zones)) {
     if (z.uid === uid) continue;
     const d = dossierDe(state, z);
-    if (d && d.pieces.some((p) => p.f === f && p.src === 'partage' && p.de === uid)) out.add(z.uid);
+    // Reçue par partage (de moi ou d'un collègue) : l'info circule déjà, inutile de la renvoyer.
+    if (d && d.pieces.some((p) => p.f === f && p.src === 'partage')) out.add(z.uid);
   }
   return out;
 }
@@ -555,7 +556,13 @@ export function enquetePre(state, uids, ord, push) {
       const recus = [];
       for (const d of dests) {
         const dz = state.zones[d];
-        if (faitsConnus(dz.enquete).includes(p.f)) { if (p.a !== '*') dejaConnues.push(`« ${titrePiece(aff, p.f)} » (${nomZone(dz)} l’avait déjà)`); continue; }
+        const deja = dz.enquete.pieces.find((x) => x.f === p.f);
+        if (deja) {
+          // Deux zones envoient la même pièce le même soir : les deux sont récompensées.
+          if (deja.src === 'partage' && deja.j === e.jour && deja.de !== u) { recus.push(nomZone(dz)); dz.rapport.push(`Enquête : ${nomZone(z)} t’envoie aussi « ${titrePiece(aff, p.f)} ».`); continue; }
+          if (p.a !== '*') dejaConnues.push(`« ${titrePiece(aff, p.f)} » (${nomZone(dz)} l’avait déjà)`);
+          continue;
+        }
         dz.enquete.pieces.push({ f: p.f, j: e.jour, src: 'partage', de: u });
         dz.rapport.push(`Enquête : ${nomZone(z)} te transmet une pièce (« ${titrePiece(aff, p.f)} »).`);
         recus.push(nomZone(dz));
