@@ -197,6 +197,7 @@ export function renderHP() {
       ${S.showRapport ? `<div class="card tight"><span class="kicker">Rapport du dernier tour</span>${(z.rapport && z.rapport.length ? z.rapport : ['Pas encore de rapport : le premier tour n’a pas été résolu.']).map((l) => `<p class="small" style="margin:0">• ${esc(l)}</p>`).join('')}</div>` : ''}
       <div class="row">
         <a class="btn ghost small grow" href="#guide">${icon('news', 16)} Guide du joueur</a>
+        <button type="button" class="btn ghost small grow" data-action="maj-voir">${icon('star', 16)} Nouveautés</button>
         <a class="btn ghost small grow" href="#profil">${icon('gear', 16)} Profil</a>
         ${S.backend.isMaster(S.user) ? `<a class="btn ghost small grow" href="#admin">Maître du jeu</a>` : ''}
       </div>

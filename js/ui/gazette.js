@@ -1,3 +1,4 @@
+import { noteCourte } from './nouveautes.js';
 // La Gazette du Delta, le classement, l'espace maître du jeu.
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1, classementLive } from './common.js';
 import { GRADES } from '../engine/constants.js';
@@ -125,6 +126,7 @@ export function renderClassement() {
 }
 
 export function renderAdmin() {
+  // (note de mise à jour : voir ui/nouveautes.js)
   const st = S.state;
   const zones = Object.values(st.zones);
   return `<main class="screen">
@@ -138,6 +140,11 @@ export function renderAdmin() {
       <p class="small muted" style="margin:0">Tu es super-administrateur : tu peux ouvrir n’importe quelle partie pour aider son maître du jeu.</p>
       <button class="btn small" data-action="admin-all-parties">Afficher la liste</button>
       ${(S.allParties || []).map((p) => `<div class="between"><span class="small">${esc(p.nom)} · <span class="mono">${esc(p.code)}</span> · ${esc(p.ownerEmail || '')}</span><button class="btn small" data-action="party-open" data-id="${esc(p.id)}">Ouvrir</button></div>`).join('')}</section>` : ''}
+    <section class="card"><h2 class="card-title">Note de mise à jour</h2>
+      <p class="small muted" style="margin:0">Chaque joueur verra la fenêtre « Nouveautés » à sa prochaine ouverture. Tu peux aussi l’envoyer en message privé à tous les joueurs :</p>
+      <p class="small" style="margin:0;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);line-height:1.45">${esc(noteCourte())}</p>
+      <div class="row"><button class="btn small grow" data-action="maj-voir">Voir la note complète</button>
+        <button class="btn small primary grow" data-action="maj-envoyer" ${S.majEnvoyee ? 'disabled' : ''}>${S.majEnvoyee ? `Envoyée à ${S.majEnvoyee} joueur${S.majEnvoyee > 1 ? 's' : ''}` : 'Envoyer à tous en privé'}</button></div></section>
     <section class="card"><h2 class="card-title">Résolution</h2>
       <p class="small muted" style="margin:0">Force la résolution du tour en cours maintenant (utile pour tester). Les joueurs ne pourront plus modifier leurs ordres de ce tour.</p>
       <button class="btn block" data-action="admin-force">Résoudre le tour maintenant</button></section>

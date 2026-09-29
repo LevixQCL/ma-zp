@@ -10,6 +10,7 @@ import { monAppel } from './ui/renfort.js';
 import { maCandidature } from './ui/affaires.js';
 import { renderTerrain } from './ui/terrain.js';
 import { ouvrirBudget } from './ui/logistique.js';
+import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { operationActive } from './engine/zone.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations } from './ui/ordres.js';
@@ -110,6 +111,7 @@ function render() {
   }
   const scroll = window.scrollY;
   app.innerHTML = banner + html;
+  if (S.route === 'hp' && S.state && myZone()) nouveautesAuBesoin();
   if (S.keepScroll) window.scrollTo(0, scroll);
   S.keepScroll = false;
   if (S.route === 'guide' && S.guideSection && !S.keepScrollGuide) { const g = document.getElementById(`g-${S.guideSection}`); if (g) g.scrollIntoView({ block: 'start' }); }
@@ -250,6 +252,17 @@ async function onClick(e) {
         toast(ok ? 'Candidature acceptée. Valide tes ordres.' : 'Candidature refusée.'); rerender(); break;
       }
       case 'budget': ouvrirBudget(); break;
+      case 'maj-voir': ouvrirNouveautes(); break;
+      case 'maj-envoyer': {
+        const autres = Object.values(S.state.zones).filter((x) => x.uid !== S.user.uid && !(S.players[x.uid] && S.players[x.uid].bot));
+        if (!autres.length) { toast('Aucun autre joueur dans la partie.'); break; }
+        if (!(await askConfirm(`Envoyer la note de mise à jour en message privé à ${autres.length} joueur${autres.length > 1 ? 's' : ''} ?`, 'Envoyer'))) break;
+        el.disabled = true;
+        let ok = 0;
+        for (const x of autres) { try { await b.sendPrive(S.user.uid, x.uid, noteCourte()); ok++; } catch (e) { console.warn(e); } }
+        S.majEnvoyee = ok;
+        toast(`Note envoyée à ${ok} joueur${ok > 1 ? 's' : ''}.`); rerender(); break;
+      }
       case 'agrandir': {
         const d0 = S.draft.decision;
         S.draft.decision = d0 && d0.type === 'agrandir' && d0.batiment === el.dataset.b ? null : { type: 'agrandir', batiment: el.dataset.b };
