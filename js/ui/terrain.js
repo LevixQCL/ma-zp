@@ -44,7 +44,7 @@ export function renderTerrain() {
   for (const a of st.affaires.filter((x) => x.zone === z.uid)) {
     const e = d.engagements[a.id] || { agents: 0 };
     const recues = candidaturesRecues().filter((c) => c.aid === a.id);
-    chezMoi.push(bloc(esc(a.titre), `<p class="tiny muted" style="margin:0">Tu diriges · ${a.recompense} pts · force conseillée ${a.forceConseillee} · places restantes ${placesRestantes(a)} sur ${a.agentsMax}</p>
+    chezMoi.push(bloc(esc(a.titre), `<p class="tiny muted" style="margin:0">Tu diriges · ${a.recompense} pts à 100 % · force minimale ${a.forceMin} (60 %), conseillée ${a.forceConseillee} (100 %), ${Math.round(a.forceConseillee * 15) / 10} et plus (130 %) · places restantes ${placesRestantes(a)} sur ${a.agentsMax}</p>
       <a class="btn small block" href="#ordres">${e.agents ? `${e.agents} agent${e.agents > 1 ? 's' : ''} engagé${e.agents > 1 ? 's' : ''} · ajuster` : 'Lancer l’affaire : engager tes agents'}</a>
       ${recues.map((c) => `<div class="col" style="gap:4px"><span class="small" style="font-weight:600">${nom(c.uid)} postule avec ${c.agents} agent${c.agents > 1 ? 's' : ''}</span>${candidatureCtrl(c)}</div>`).join('')}`,
       { kicker: 'Affaire disputée chez toi' }));
@@ -60,7 +60,7 @@ export function renderTerrain() {
   }
   for (const a of st.affaires.filter((x) => x.zone !== z.uid)) {
     const chef = chefDe(a);
-    voisins.push(bloc(esc(a.titre), `<p class="tiny muted" style="margin:0">Chez ${chef ? zoneName(chef) : '?'} · ${a.recompense} pts · force conseillée ${a.forceConseillee} · ${a.agentsMax} agents max</p>${postulerCtrl(a)}`,
+    voisins.push(bloc(esc(a.titre), `<p class="tiny muted" style="margin:0">Chez ${chef ? zoneName(chef) : '?'} · ${a.recompense} pts à 100 % (de 60 % à 130 % selon la force de l’équipe) · force conseillée ${a.forceConseillee} · ${a.agentsMax} agents max</p>${postulerCtrl(a)}`,
       { kicker: maCandidature(a) ? 'Ta candidature' : 'Affaire disputée · postuler' }));
   }
   const autresOps = Object.values(st.zones).filter((x) => x.uid !== z.uid && operationActive(x, T) && !appelsRenfort().some((a) => a.uid === x.uid));

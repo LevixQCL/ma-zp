@@ -10,7 +10,7 @@ import { genererEchos } from './gazette.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms } from './equipe.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
-  forceEngagement, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, fermerJournal,
+  forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, fermerJournal,
 } from './zone.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
@@ -237,9 +237,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       for (const x of equipe) state.zones[x.u].rapport.push(`${aff.titre} : force insuffisante (${fmt1(force)} sur ${aff.forceMin}), l’affaire reste ouverte.`);
       continue;
     }
+    // Plus l'équipe est forte, plus l'affaire rapporte (de 60 % à 130 % des points annoncés).
+    const mult = multAffaire(aff, force);
+    const qualite = mult < 1 ? `dispositif juste suffisant, ${Math.round(mult * 100)} % des points` : mult > 1.001 ? `dispositif solide, ${Math.round(mult * 100)} % des points` : 'dispositif conseillé, 100 % des points';
     // Poste avancé : une zone rivale prélève 30 % des points.
     const preleveurs = postesContre(state, chef, ord, T).filter((u) => !equipe.some((x) => x.u === u) && state.zones[u]);
-    let total = aff.recompense;
+    let total = aff.recompense * mult;
     if (preleveurs.length) {
       const pris = total * 0.3; total -= pris;
       for (const u of preleveurs) { state.zones[u]._points += pris / preleveurs.length; state.zones[u].rapport.push(`Poste avancé : tu récupères ${fmt1(pris / preleveurs.length)} pts sur « ${aff.titre} ».`); }
@@ -250,9 +253,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const z = state.zones[x.u];
       const part = total * x.n / sommeN;
       z._points += part; z.stats.pointsAffaires += part; z.stats.affairesGagnees += 1; z.moral += 2;
-      if (x.u === chef) { z.satisfaction += aff.recompense * 0.5; if (equipe.length > 1) z.reputation += 1; if (equipe.length >= 3) z.stats.affairesOrchestre = (z.stats.affairesOrchestre || 0) + 1; }
+      if (x.u === chef) { z.satisfaction += aff.recompense * 0.5 * mult; if (equipe.length > 1) z.reputation += 1; if (equipe.length >= 3) z.stats.affairesOrchestre = (z.stats.affairesOrchestre || 0) + 1; }
       else z.reputation += 2;
-      z.rapport.push(`${aff.titre} : affaire résolue${x.u === chef ? ' sous ta direction' : ` avec ${zoneLabel(state.zones[chef])}`} (+${fmt1(part)} pts pour ${x.n} agent${x.n > 1 ? 's' : ''}).`);
+      z.rapport.push(`${aff.titre} : affaire résolue${x.u === chef ? ' sous ta direction' : ` avec ${zoneLabel(state.zones[chef])}`} (+${fmt1(part)} pts pour ${x.n} agent${x.n > 1 ? 's' : ''} ; force de l’équipe ${fmt1(force)}, ${qualite}).`);
     }
     const aides = equipe.filter((x) => x.u !== chef).map((x) => zoneLabel(state.zones[x.u]));
     push(8 + aff.recompense / 4, 'Affaire résolue', `${zoneLabel(state.zones[chef])} boucle l’affaire : ${aff.titre.toLowerCase()}`,

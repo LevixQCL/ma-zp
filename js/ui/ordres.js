@@ -6,7 +6,7 @@ import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel } from './affaires.js';
 import { effectifPrevu, capaciteAgents, capaciteVehicules, coutRecrue, sousTutelle } from '../engine/zone.js';
-import { forceEngagement, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
+import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
 
 function enqueteDraft() {
   const o = S.savedOrders || {};
@@ -404,8 +404,11 @@ export function renderOrdres() {
       const recues = candidaturesRecues().filter((c) => c.aid === a.id);
       const acc = recues.filter((c) => c.statut === 'acceptee');
       const att = recues.filter((c) => c.statut === 'attente').length;
+      const fEquipe = force + acc.reduce((s2, c) => s2 + (S.state.zones[c.uid] ? forceEngagement(S.state.zones[c.uid], c.agents) : 0), 0);
+      const m = eg.agents ? multAffaire(a, fEquipe) : 0;
       corps = `${stepper}
         ${eg.agents ? '' : '<p class="tiny warn" style="margin:0">Sans agents de ta part, l’affaire n’est pas lancée ce soir.</p>'}
+        ${eg.agents ? `<p class="tiny ${m ? (m >= 1 ? 'ok' : '') : 'bad'}" style="margin:0">${m ? `Force de l’équipe ${fmt1(fEquipe)} : environ <strong>${fmt1(a.recompense * m)} pts</strong> (${Math.round(m * 100)} %) à partager selon les agents.${m < 1.3 ? ` Plus de force = plus de points, jusqu’à 130 % vers ${fmt1(a.forceConseillee * 1.5)}.` : ' Maximum atteint.'}` : `Force de l’équipe ${fmt1(fEquipe)} : sous le minimum (${a.forceMin}), l’affaire échouera.`}</p>` : ''}
         <p class="tiny muted" style="margin:0">Équipe : ${acc.length ? acc.map((c) => `${esc(S.state.zones[c.uid] ? S.state.zones[c.uid].nom : '?')} (${c.agents})`).join(', ') : 'toi seul pour l’instant'} · places restantes : ${placesRestantes(a)} sur ${a.agentsMax}${att ? ` · <a href="#prive">${att} candidature${att > 1 ? 's' : ''} à traiter</a>` : ''}</p>`;
     } else if (cand) {
       corps = `<p class="tiny" style="margin:0">Ta candidature auprès de ${esc(chef ? chef.nom : '?')} : ${statutLabel(cand.statut)}</p>${cand.statut !== 'refusee' ? stepper : eg.agents ? `<div class="between"><span class="tiny bad">${eg.agents} agent${eg.agents > 1 ? 's' : ''} encore réservé${eg.agents > 1 ? 's' : ''} ici</span><button type="button" class="btn small ghost" data-action="rapatrier" data-k="eng:${a.id}">Rapatrier</button></div>` : ''}`;
