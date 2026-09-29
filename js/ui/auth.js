@@ -8,7 +8,7 @@ export function renderLogin() {
     <div class="col" style="gap:6px;align-items:flex-start">
       <span style="color:var(--amber)">${icon('shield', 44)}</span>
       <h1 class="brand" style="font-size:46px">Ma ZP</h1>
-      <p class="sub" style="font-size:14px">District Delta · jeu de gestion entre collègues</p>
+      <p class="sub" style="font-size:14px">District Delta · gestion, stratégie et enquêtes à résoudre</p>
     </div>
     ${S.invitation ? `<div class="card amber"><p class="small" style="margin:0;color:var(--amber-soft)"><strong style="color:var(--text)">Tu as été invité dans une partie.</strong> Connecte-toi ou crée un compte : tu y entreras directement (code ${esc(S.invitation)}).</p></div>` : ''}
     ${demo ? `
