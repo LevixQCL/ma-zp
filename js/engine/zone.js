@@ -355,6 +355,34 @@ export function ipzFrom(comp) {
   return round1(v);
 }
 
+export const IPZ_LABELS = { satisfaction: 'Satisfaction', affaires: 'Résultats', moral: 'Moral', budget: 'Budget', reputation: 'Réputation' };
+
+/** Points apportés à l'IPZ par chaque composante (valeur × poids). */
+export function pointsIpz(comp) {
+  return Object.fromEntries(Object.entries(IPZ_POIDS).map(([k, w]) => [k, round1((comp[k] || 0) * w)]));
+}
+
+/** Ligne du rapport quotidien : l'IPZ et ce qui l'a fait bouger depuis la veille. */
+export function ligneIpz(comp, hier, ipz, ipzHier, det) {
+  const f = (v) => String(round1(v)).replace('.', ',');
+  const sgn = (v) => `${v >= 0 ? '+' : '−'}${f(Math.abs(v))}`;
+  const pts = pointsIpz(comp), ptsH = hier ? pointsIpz(hier) : null;
+  const d = ipzHier === null || ipzHier === undefined ? null : round1(ipz - ipzHier);
+  const parts = Object.keys(IPZ_POIDS).map((k) => {
+    const dv = ptsH ? round1(pts[k] - ptsH[k]) : null;
+    return { k, txt: `${IPZ_LABELS[k]} ${f(pts[k])}${dv !== null && Math.abs(dv) >= 0.1 ? ` (${sgn(dv)})` : ''}`, dv: dv || 0 };
+  });
+  let tete = `IPZ du jour : ${f(ipz)}${d !== null ? ` (${d === 0 ? 'stable' : `${sgn(d)} depuis hier`})` : ''}`;
+  if (ptsH) {
+    const plus = parts.filter((p) => p.dv >= 0.5).sort((a, b) => b.dv - a.dv)[0];
+    const moins = parts.filter((p) => p.dv <= -0.5).sort((a, b) => a.dv - b.dv)[0];
+    const pourquoi = [plus ? `surtout grâce à : ${IPZ_LABELS[plus.k].toLowerCase()}` : '', moins ? `plombé par : ${IPZ_LABELS[moins.k].toLowerCase()}` : ''].filter(Boolean).join(' ; ');
+    if (pourquoi) tete += `, ${pourquoi}`;
+  }
+  const res = det ? ` Résultats : ${det.traites}/${det.incidents} incidents traités, ${f(det.points)} pts d’affaires.` : '';
+  return `${tete}. Détail en points d’IPZ : ${parts.map((p) => p.txt).join(' · ')}.${res}`;
+}
+
 export function moyenneIpz(zone) {
   return zone.toursJoues ? round1(zone.ipzSomme / zone.toursJoues) : 0;
 }

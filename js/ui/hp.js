@@ -16,7 +16,8 @@ import { logistiqueHtml } from './logistique.js';
 import { encheresHtml } from './encheres.js';
 import { TUTELLE } from '../engine/constants.js';
 import { equipeHtml } from './equipe.js';
-import { fraisFixes } from '../engine/zone.js';
+import { fraisFixes, pointsIpz, IPZ_LABELS } from '../engine/zone.js';
+import { IPZ_POIDS } from '../engine/constants.js';
 const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations().amendes; } catch (e) { /* pas de brouillon */ } return fraisFixes(z, S.state, { amendes, rythme: (S.draft && S.draft.rythme) || 'normal' }).total; };
 import { demandeRenfortHtml, appelsRenfort, renfortPrevu } from './renfort.js';
 import { operationActive as opActive } from '../engine/zone.js';
@@ -27,6 +28,22 @@ function delta(v, avant) {
   const d = Math.round((v - avant) * 10) / 10;
   if (Math.abs(d) < 0.05) return '';
   return `<span class="delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${fmt1(Math.abs(d))}</span>`;
+}
+
+/** Tableau « Détail de l'IPZ » : ce que chaque composante rapporte, et son évolution depuis la veille. */
+function ipzDetailHtml(z) {
+  if (!z.ipzComp) return '';
+  const pts = pointsIpz(z.ipzComp), ptsH = z.ipzCompHier ? pointsIpz(z.ipzCompHier) : null;
+  const d = z.hier && z.hier.ipz !== undefined && z.ipzCompHier ? Math.round((z.ipz - z.hier.ipz) * 10) / 10 : null;
+  const ev = (v) => (Math.abs(v) < 0.1 ? '<span class="muted">=</span>' : `<span class="${v > 0 ? 'ok' : 'bad'}">${v > 0 ? '▲' : '▼'}${fmt1(Math.abs(v))}</span>`);
+  const ligne = (k) => `<tr><td>${IPZ_LABELS[k]}</td><td class="mono">${Math.round(z.ipzComp[k])}</td><td class="mono muted">×${Math.round(IPZ_POIDS[k] * 100)} %</td><td class="mono">${fmt1(pts[k])}</td><td class="mono">${ptsH ? ev(Math.round((pts[k] - ptsH[k]) * 10) / 10) : ''}</td></tr>`;
+  const det = z.ipzDetail;
+  return `<div class="col" style="gap:4px;margin:2px 0 6px">
+    <div class="between"><span style="font-weight:700">IPZ ${fmt1(z.ipz)}</span>${d !== null ? `<span class="small">${ev(d)} depuis hier</span>` : ''}</div>
+    <table class="ipz-table"><thead><tr><th>Composante</th><th>Valeur</th><th>Poids</th><th>Points</th><th>vs hier</th></tr></thead>
+      <tbody>${Object.keys(IPZ_POIDS).map(ligne).join('')}</tbody></table>
+    <span class="tiny muted">Résultats = 60 × part des incidents traités + 6 par point d’affaires (max 100)${det ? ` · hier soir : ${det.traites}/${det.incidents} incidents, ${fmt1(det.points)} pts` : ''}. Budget = 50 + 1,5 × budget en k€.</span>
+  </div>`;
 }
 
 function cleNuit(z) { return `mazp-nuit-${S.backend.gameId ? S.backend.gameId() : ''}-${S.state.season}-${S.state.turn}-${z.uid}`; }
@@ -203,7 +220,7 @@ export function renderHP() {
         <a class="btn" href="#gazette">${icon('news', 18)}<span>${last ? `Gazette <span class="mono tiny muted">T${last.turn}</span>` : 'Gazette'}</span></a>
         <a class="btn" href="#classement">${icon('trophy', 18)}<span>Classement</span></a>
       </div>
-      ${S.showRapport ? `<div class="card tight"><span class="kicker">Rapport du dernier tour</span>${(z.rapport && z.rapport.length ? z.rapport : ['Pas encore de rapport : le premier tour n’a pas été résolu.']).map((l) => `<p class="small" style="margin:0">• ${esc(l)}</p>`).join('')}</div>` : ''}
+      ${S.showRapport ? `<div class="card tight"><span class="kicker">Rapport du dernier tour</span>${ipzDetailHtml(z)}${(z.rapport && z.rapport.length ? z.rapport.filter((l) => !(z.ipzComp && l.startsWith('IPZ du jour'))) : ['Pas encore de rapport : le premier tour n’a pas été résolu.']).map((l) => `<p class="small" style="margin:0">• ${esc(l)}</p>`).join('')}</div>` : ''}
       <div class="row">
         <a class="btn ghost small grow" href="#guide">${icon('news', 16)} Guide du joueur</a>
         <button type="button" class="btn ghost small grow" data-action="maj-voir">${icon('star', 16)} Nouveautés</button>

@@ -10,7 +10,7 @@ import { genererEchos } from './gazette.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms } from './equipe.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
-  forceEngagement, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses,
+  forceEngagement, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz,
 } from './zone.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
@@ -613,8 +613,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
     // IPZ.
     const comp = ipzComposantes(z, { ratio: incidents ? traites / incidents : 1, points: z._points });
+    const ipzHier = z.ipz, compHier = z.ipzComp || null;
     z.ipz = ipzFrom(comp);
     z.ipzComp = comp;
+    z.ipzCompHier = compHier;
+    z.ipzDetail = { incidents, traites, points: round1(z._points) };
+    z.rapport.push(ligneIpz(comp, compHier, z.ipz, z.toursJoues > 0 || compHier ? ipzHier : null, z.ipzDetail));
     if (z._joue) {
       z.ipzSomme += z.ipz; z.toursJoues += 1;
       z._ps += PS.ordres;
