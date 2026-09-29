@@ -1,7 +1,6 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import {
-  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES,
-} from './constants.js';
+  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT } from './constants.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -114,7 +113,15 @@ export function sanitizeOrders(zone, raw, state) {
   const ev = state.evenement && state.evenement.tour === turn ? Math.max(0, Math.floor(Number(o.evenement) || 0)) : 0;
 
   // L'événement et les engagements passent d'abord ; les services se partagent le reste.
-  const evenement = Math.min(ev, dispo);
+  const evenement0 = Math.min(ev, dispo);
+  // Renfort envoyé à une zone qui mène une opération d'envergure aujourd'hui.
+  let renfort = null;
+  if (o.renfort && typeof o.renfort === 'object' && typeof o.renfort.cible === 'string' && o.renfort.cible !== zone.uid) {
+    const cz = state.zones && state.zones[o.renfort.cible];
+    const n = Math.min(clamp(Math.floor(Number(o.renfort.agents) || 0), 0, RENFORT.maxParZone), dispo - evenement0);
+    if (cz && operationActive(cz, turn) && n > 0) renfort = { cible: o.renfort.cible, agents: n };
+  }
+  const evenement = evenement0 + (renfort ? renfort.agents : 0); // agents réservés hors services
   const sumEng = () => Object.values(engagements).reduce((s, e) => s + e.agents, 0);
   if (sumEng() + evenement > dispo) {
     const place = dispo - evenement;
@@ -164,7 +171,7 @@ export function sanitizeOrders(zone, raw, state) {
   const votes = {};
   if (o.votes && typeof o.votes === 'object') for (const [k2, v] of Object.entries(o.votes)) if (['dotation', 'theme', 'blame', 'chef'].includes(k2) && Number.isInteger(v)) votes[k2] = clamp(v, 0, 5);
   const motionChef = ['prime', 'amnistie', 'subside'].includes(o.motionChef) ? o.motionChef : null;
-  return { alloc, rythme, engagements, evenement, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre, aide, duel, duelReponse, votes, motionChef };
+  return { alloc, rythme, engagements, evenement: evenement0, renfort, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre, aide, duel, duelReponse, votes, motionChef };
 }
 
 /** Coût total des dépenses du jour. */

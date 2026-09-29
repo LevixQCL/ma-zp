@@ -3,8 +3,7 @@
 import { S, esc, icon, tabbar } from './common.js';
 import {
   SERVICE_LABELS, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION,
-  INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX,
-} from '../engine/constants.js';
+  INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT } from '../engine/constants.js';
 import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
 import { ENQ, DEMARCHES, POINTS, pointsDecouverte } from '../engine/enquete.js';
 import { PARTAGE, FIPA } from '../engine/fipa.js';
@@ -80,7 +79,8 @@ export function sections() {
         <h3>Opérations d'envergure</h3>
         <p>Environ une fois tous les six jours, une grosse opération tombe dans ta zone. Les agents qu'elle mobilise quittent leur service. Tu choisis le dispositif : <strong>complet</strong> (tous les agents demandés), <strong>réduit</strong> (la moitié) ou <strong>aucun</strong>.</p>
         ${table(['Opération', 'Agents demandés', 'Durée', 'Points'], OPERATIONS.map((o) => [esc(o.titre), besoinsOp(o.besoins), `${o.duree} tour${o.duree > 1 ? 's' : ''}`, o.recompense]))}
-        <p>Couverture moyenne d'au moins 90 % : réussite (points, +6 de satisfaction). Entre 50 et 90 % : réussite partielle. En dessous : fiasco (−10 de satisfaction, −4 de moral).</p>`,
+        <p>Couverture moyenne d'au moins 90 % : réussite (points, +6 de satisfaction). Entre 50 et 90 % : réussite partielle. En dessous : fiasco (−10 de satisfaction, −4 de moral).</p>
+        <p><strong>Appel à renfort</strong> : pendant l'opération, lance un appel sur la radio (bouton sur l'HP ou dans tes ordres, un par tour). Les autres zones peuvent te prêter jusqu'à ${RENFORT.maxParZone} agents chacune pour la journée, en l'inscrivant dans leurs ordres : ces agents comptent dans la couverture de ton dispositif. Chaque zone qui aide gagne +${RENFORT.repParAgent} de réputation par agent prêté (maximum +${RENFORT.repMax}) et +${RENFORT.ps} PS.</p>`,
     },
     {
       id: 'decisions', titre: 'Grande décision, dépenses et infrastructures', html: `

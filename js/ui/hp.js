@@ -12,6 +12,8 @@ import { GRADES, gradeFor } from '../engine/constants.js';
 import { PERIL, DUEL_INDICATEURS } from '../engine/rivalites.js';
 import { genererAffaire, dossierDe, pointsDecouverte, ENQ } from '../engine/enquete.js';
 import { aideBtn } from './aide.js';
+import { demandeRenfortHtml, appelsRenfort, renfortPrevu } from './renfort.js';
+import { operationActive as opActive } from '../engine/zone.js';
 
 /** Petite flèche d'évolution depuis la veille. */
 function delta(v, avant) {
@@ -106,6 +108,7 @@ export function renderHP() {
   if (st.conseil && st.conseil.tour === T) alertes.unshift({ cls: 'amber', titre: 'Conseil de police : vote ce soir', texte: st.conseil.motions.map((m) => esc(m.titre)).join(' · '), href: '#diplomatie' });
   const invit = (st.duels || []).find((d) => d.b === z.uid && d.etape === 'propose' && d.tourReponse === T);
   if (invit) alertes.unshift({ cls: 'amber', titre: `${esc(st.zones[invit.a]?.nom || 'Une zone')} te défie en duel`, texte: `${esc(DUEL_INDICATEURS[invit.ind].nom.toLowerCase())} · réponds avant 20:00`, href: '#diplomatie' });
+  for (const a of appelsRenfort()) if (!renfortPrevu(a.uid)) alertes.unshift({ cls: 'amber', titre: `${esc(a.zone.nom)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » · prête des agents contre de la réputation`, href: '#prive' });
   const perils = Object.values(st.zones).filter((x) => x.peril && x.uid !== z.uid);
   if (perils.length) alertes.push({ cls: 'red', titre: `${perils.map((x) => esc(x.nom)).join(', ')} en péril`, texte: 'un coup de main rapporte +5 de réputation', href: '#diplomatie' });
   const op = operationActive(z, T);
@@ -165,6 +168,7 @@ export function renderHP() {
       <span class="small">Pour t’en sortir : budget au-dessus de ${PERIL.budget} k€, au moins ${PERIL.agents} agents disponibles, moral au-dessus de ${PERIL.moral}. Rythme allégé, prime, moins de dépenses ; tes collègues peuvent t’aider.</span>
       <a class="small" href="#guide-faillite">Ce qui se passe en cas de faillite</a></section>` : ''}
     ${situationHtml(z)}
+    ${opActive(z, T) ? `<section class="card red" aria-label="Renfort" style="gap:8px"><span class="kicker" style="color:var(--red-soft)">Opération d’envergure · ${esc(opActive(z, T).titre)}</span>${demandeRenfortHtml()}</section>` : ''}
     <div id="hp-fipa">${fipaCards()}</div>
     ${enqueteCarte(st, z)}
 

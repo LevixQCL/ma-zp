@@ -6,6 +6,8 @@ import { S, toast, myZone, esc } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil } from './ui/hp.js';
 import { ouvrirAide } from './ui/aide.js';
+import { monAppel } from './ui/renfort.js';
+import { operationActive } from './engine/zone.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations } from './ui/ordres.js';
 import { renderQuete } from './ui/quete.js';
@@ -18,7 +20,7 @@ import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { questsFor, checkAnswer } from './quests/quests.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
-import { SERVICES, COULEURS_ZONE, SERVICE_LABELS } from './engine/constants.js';
+import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT } from './engine/constants.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
 
 const app = document.getElementById('app');
@@ -216,6 +218,26 @@ async function onClick(e) {
       case 'admin-all-parties': S.allParties = await b.listAllParties(); rerender(); break;
       case 'diplo-open': { const k = el.dataset.k; const cur = S.diploOpen && k in S.diploOpen ? S.diploOpen[k] : !!document.querySelector(`section[data-k="${k}"]`); S.diploOpen = { ...(S.diploOpen || {}), [k]: !cur }; rerender(); break; }
       case 'aide': ouvrirAide(el.dataset.k); break;
+      case 'renfort-n': {
+        const cible = el.dataset.uid, dd = Number(el.dataset.d);
+        const ancien = S.draft.renfort && S.draft.renfort.cible !== cible ? S.draft.renfort.agents : 0;
+        const cur = S.draft.renfort && S.draft.renfort.cible === cible ? S.draft.renfort.agents : 0;
+        const n = Math.max(0, Math.min(RENFORT.maxParZone, cur + dd));
+        // Un seul renfort par tour : les agents d'un autre renfort prévu reviennent en Intervention.
+        if (ancien) { S.draft.renfort = null; S.draft.alloc.intervention += ancien; }
+        if (n > cur) { if (!takeAgent()) break; }
+        else if (n < cur) S.draft.alloc.intervention += cur - n; // l'agent rendu retourne en Intervention
+        S.draft.renfort = n ? { cible, agents: n } : null;
+        S.ordersDirty = true; rerender(); break;
+      }
+      case 'renfort-dem': { const n = Number(el.closest('.renfort-ctrl').querySelector('[data-action="renfort-appel"]').dataset.n); S.renfortDemande = Math.max(1, Math.min(RENFORT.maxDemande, n + Number(el.dataset.d))); rerender(); break; }
+      case 'renfort-appel': {
+        const z = myZone(), st = S.state, op = operationActive(z, st.turn), n = Number(el.dataset.n);
+        if (!op || monAppel()) break;
+        el.disabled = true;
+        await b.sendRadio(S.user.uid, `🚨 Appel à renfort : ${z.nom} (ZP ${z.code}) demande ${n} agent${n > 1 ? 's' : ''} pour « ${op.titre} » ce soir. Qui peut prêter du monde ?`, { renfort: { season: st.season, turn: st.turn, agents: n } });
+        toast('Appel lancé sur la radio.'); rerender(); break;
+      }
       case 'prive-ouvrir': S.priveAvec = el.dataset.uid; render(); window.scrollTo(0, document.body.scrollHeight); break;
       case 'prive-fermer': S.priveAvec = null; render(); window.scrollTo(0, 0); break;
       case 'nuit-ok': {

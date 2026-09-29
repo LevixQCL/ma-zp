@@ -3,12 +3,11 @@
 
 import {
   APP_VERSION, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES,
-} from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, RENFORT } from './constants.js';
 import { makeRng } from './rng.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, capacite,
-  forceEngagement, coutDecision, decisionImpossible, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses,
+  forceEngagement, coutDecision, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses,
 } from './zone.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
@@ -225,6 +224,25 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     state.evenement = null;
   }
 
+  // 4 bis. Renforts prêtés pour une opération d'envergure (pour la journée).
+  const renfortsRecus = {};
+  for (const u of uids) {
+    const r = ord[u].renfort;
+    if (!r || !state.zones[r.cible]) continue;
+    const z = state.zones[u], c = state.zones[r.cible];
+    const op = operationActive(c, T);
+    if (!op) continue;
+    (renfortsRecus[r.cible] ||= []).push({ de: u, n: r.agents });
+    const rep = Math.min(RENFORT.repMax, r.agents * RENFORT.repParAgent);
+    z.reputation += rep; z._ps += RENFORT.ps;
+    z.rapport.push(`Renfort : ${r.agents} de tes agents aident ${zoneLabel(c)} sur « ${op.titre} » (+${rep} de réputation).`);
+  }
+  for (const [cible, l] of Object.entries(renfortsRecus)) {
+    const n = l.reduce((a, b) => a + b.n, 0);
+    const noms = l.map((x) => zoneLabel(state.zones[x.de]));
+    push(7, 'Solidarité', `${noms.join(', ')} ${l.length > 1 ? 'volent' : 'vole'} au secours de ${zoneLabel(state.zones[cible])}`, `${n} agent${n > 1 ? 's' : ''} en renfort sur l’opération d’envergure.`, cible);
+  }
+
   // 5. Simulation locale de chaque zone.
   for (const uid of uids) {
     const z = state.zones[uid];
@@ -337,6 +355,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       for (const [s, n] of Object.entries(pr2)) alloc[s] = Math.max(0, (alloc[s] || 0) - n);
       const n = Object.values(pr2).reduce((a2, b2) => a2 + b2, 0);
       if (n && pr2 === fp.prises[uid]) z.rapport.push(`FIPA : ${n} agent${n > 1 ? 's' : ''} mobilisé${n > 1 ? 's' : ''} sur le dispositif commun.`);
+    }
+    if (opx.op && renfortsRecus[uid]) {
+      const besoin = Object.values(opx.op.besoins).reduce((a, b) => a + b, 0) || 1;
+      const recu = renfortsRecus[uid].reduce((a, b) => a + b.n, 0);
+      opx.couverture = Math.min(1, opx.couverture + recu / besoin);
+      z.rapport.push(`Renfort reçu : ${renfortsRecus[uid].map((x) => `${x.n} agent${x.n > 1 ? 's' : ''} de ${zoneLabel(state.zones[x.de])}`).join(', ')}.`);
     }
     if (opx.op) {
       const op = opx.op;

@@ -73,7 +73,7 @@ export function tabbar(active, { questBadge = false, radioBadge = false } = {}) 
     ordres: !S.savedOrders || S.ordersDirty,
     enquete: !!(st && (st.traques || []).length && !(S.draft && S.draft.traque)),
     quete: questBadge || faites < 3,
-    radio: radioBadge || (() => { const n = nonLus(); return n.radio + n.prive > 0 || invitations().length > 0; })(),
+    radio: radioBadge || (() => { const n = nonLus(); return n.radio + n.prive > 0 || invitations().some((i) => !i.fait); })(),
   };
   return `<nav class="tabs" aria-label="Navigation principale">${tabs.map(([id, label]) => `
     <a href="#${id}" ${active === id ? 'aria-current="page"' : ''}>${icon(id)}<span>${id === 'radio' ? 'Radio' : label}</span>${dots[id] ? '<span class="dot" aria-label="à faire"></span>' : ''}</a>`).join('')}

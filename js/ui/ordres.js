@@ -2,6 +2,7 @@
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
 import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
+import { demandeRenfortHtml } from './renfort.js';
 import { forceEngagement, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
 
 function enqueteDraft() {
@@ -9,7 +10,7 @@ function enqueteDraft() {
   return {
     demarches: o.demarches || [], accusation: o.accusation ?? null, traque: o.traque || null, partages: o.partages || [],
     fipa: o.fipa || null, fipaReponse: o.fipaReponse || null, fipaChoix: o.fipaChoix || null,
-    manoeuvre: o.manoeuvre || null, aide: o.aide || null, duel: o.duel || null, duelReponse: o.duelReponse || null, votes: o.votes || {}, motionChef: o.motionChef || null,
+    manoeuvre: o.manoeuvre || null, renfort: o.renfort || null, aide: o.aide || null, duel: o.duel || null, duelReponse: o.duelReponse || null, votes: o.votes || {}, motionChef: o.motionChef || null,
   };
 }
 
@@ -30,7 +31,7 @@ export function initDraft() {
 }
 
 function engages(d) {
-  return Object.values(d.engagements).reduce((s, e) => s + (e.agents || 0), 0) + (d.evenement || 0);
+  return Object.values(d.engagements).reduce((s, e) => s + (e.agents || 0), 0) + (d.evenement || 0) + (d.renfort && S.state.zones[d.renfort.cible] && operationActive(S.state.zones[d.renfort.cible], S.state.turn) ? d.renfort.agents || 0 : 0);
 }
 
 export function estimations() {
@@ -206,6 +207,7 @@ export function renderOrdres() {
       <div class="seg" role="group" aria-label="Niveau du dispositif">${[['complet', 'Complet', 'réussite : +pts, +6 satisf.'], ['reduit', 'Réduit', 'moitié des agents'], ['aucun', 'Aucun', 'échec : −10 satisf.']].map(([k, t, dsc]) => `
         <button type="button" data-action="op-niveau" data-v="${k}" aria-pressed="${d.operation === k}"><span class="t">${t}</span><span class="d">${dsc}</span></button>`).join('')}</div>
       <div class="col" id="op-couv" style="gap:2px">${opCouvHtml(e)}</div>
+      ${demandeRenfortHtml()}
     </section>`; })() : ''}
 
     <section class="card" aria-label="Affectation des agents" style="gap:6px">

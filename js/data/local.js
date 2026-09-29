@@ -117,6 +117,13 @@ export function createLocalBackend(config) {
         const o = botOrders(self.state.zones[uid], self.state, p.style);
         if (o) mine[uid] = o;
       }
+      // Les robots coopératifs répondent aux appels à renfort du jour.
+      const appels = self.radio.filter((m) => m.renfort && m.renfort.season === season && m.renfort.turn === turn && !String(m.uid).startsWith('bot'));
+      if (appels.length) {
+        const occupe = (z) => z.operation && z.operation.tourDebut <= turn && turn < z.operation.tourDebut + z.operation.duree;
+        const aidants = Object.entries(self.players).filter(([u, p]) => p.bot && p.style !== 'agressif' && mine[u] && self.state.zones[u] && !occupe(self.state.zones[u])).slice(0, 2);
+        for (const [u] of aidants) mine[u] = { ...mine[u], renfort: { cible: appels[appels.length - 1].uid, agents: 2 } };
+      }
       return mine;
     },
     async saveQuest(uid, season, turn, slot, data) {
@@ -173,8 +180,8 @@ export function createLocalBackend(config) {
       }
     },
     subscribeRadio(cb) { listeners.radio.add(cb); cb(self.radio.slice(-50)); return () => listeners.radio.delete(cb); },
-    async sendRadio(uid, texte) {
-      self.radio.push({ id: `r${Date.now()}`, uid, texte: String(texte).slice(0, 280), at: Date.now() });
+    async sendRadio(uid, texte, extra = {}) {
+      self.radio.push({ ...extra, id: `r${Date.now()}`, uid, texte: String(texte).slice(0, 280), at: Date.now() });
       persist(); emit('radio', self.radio.slice(-50));
     },
 
