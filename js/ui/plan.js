@@ -100,7 +100,7 @@ export function planVille(st, me, { zoom = false } = {}) {
     const mine = z && z.uid === me.uid;
     // Hors du district : campagne et communes voisines, plus sombres.
     if (!z) return `<polygon points="${pts(c.poly)}" fill="${C.campagne}"/><polygon points="${pts(c.poly)}" fill="url(#rues${c.i % angles.length})" opacity=".35"/>`;
-    return `<polygon points="${pts(c.poly)}" fill="${C.ilot}"/><polygon points="${pts(c.poly)}" fill="url(#rues${c.i % angles.length})"/><polygon points="${pts(c.poly)}" fill="${esc(z.couleur)}" fill-opacity="${mine ? 0.16 : 0.08}"/>`;
+    return `<polygon points="${pts(c.poly)}" fill="${C.ilot}"/><polygon points="${pts(c.poly)}" fill="url(#rues${c.i % angles.length})"/><polygon points="${pts(c.poly)}" fill="${esc(z.couleur)}" fill-opacity="${mine ? 0.3 : 0.24}"/>`;
   }).join('');
   const parcs = rng.shuffle(T.cells.map((c) => c.i)).slice(0, 40).map((i, k) => {
     const c = T.cells[i];
@@ -128,11 +128,21 @@ export function planVille(st, me, { zoom = false } = {}) {
     return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" ${mien ? 'class="lm"' : bord ? 'class="ld"' : ''}/>`;
   }).join('');
 
+  // Liseré de couleur à l'intérieur de chaque zone, le long de ses limites : on voit d'un coup d'œil où finit l'une et où commence l'autre.
+  const vers = (p, c, d) => { const dx = c[0] - p[0], dy = c[1] - p[1], l = Math.hypot(dx, dy) || 1; return [p[0] + dx / l * d, p[1] + dy / l * d]; };
+  const liseres = T.edges.filter(([i, j]) => T.owner[i] !== T.owner[j]).flatMap(([i, j, a, b]) => [i, j].map((k) => {
+    const z = zoneOf(T.owner[k]);
+    if (!z) return '';
+    const c = T.cells[k].c, d = 2.4 * echelle;
+    const a2 = vers(a, c, d), b2 = vers(b, c, d);
+    return `<line x1="${f1(a2[0])}" y1="${f1(a2[1])}" x2="${f1(b2[0])}" y2="${f1(b2[1])}" stroke="${esc(z.couleur)}"/>`;
+  })).join('');
+
   // Étiquettes.
   const zonesLabels = T.zones.map((tz) => {
     const z = st.zones[tz.uid];
     const [x, y] = tz.label;
-    return `<text x="${f1(x)}" y="${f1(y)}" text-anchor="middle" class="zl">${esc(z.nom.toUpperCase().slice(0, 16))}</text>
+    return `<text x="${f1(x)}" y="${f1(y)}" text-anchor="middle" class="zl" style="fill:${esc(z.couleur)}">${esc(z.nom.toUpperCase().slice(0, 16))}</text>
       <text x="${f1(x)}" y="${f1(y + 11)}" text-anchor="middle" class="zc">ZP ${esc(z.code)}${gradeIdx(z.ps) >= 3 ? ` ${'★'.repeat(gradeIdx(z.ps) - 2)}` : ''}${z.peril || z.tutelle ? ' ⚠' : ''}${pseudoDe(tz.uid) ? ` · ${esc(pseudoDe(tz.uid))}` : ''}</text>`;
   }).join('');
   const sitesPos = T.zones.map((tz) => { const z = st.zones[tz.uid]; const s = siteDe(z); return s ? { tz, z, s, c: celluleSite(T, tz, s) } : null; }).filter(Boolean);
@@ -176,6 +186,7 @@ export function planVille(st, me, { zoom = false } = {}) {
       .sh{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:7.5px;fill:#fff}
       .pn{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:8px;fill:#1A1204}
       .av line{vector-effect:non-scaling-stroke}
+      .lis line{vector-effect:non-scaling-stroke;stroke-width:2.6;stroke-opacity:.85;stroke-linecap:round}
       .lim line{vector-effect:non-scaling-stroke;stroke:#AFC0D2;stroke-opacity:.55;stroke-width:1.1;stroke-dasharray:3.5 2.5}
       .lim line.ld{stroke:#7C8DA6;stroke-opacity:.8;stroke-width:1.4;stroke-dasharray:none}
       .lim line.lm{stroke:#F2B544;stroke-opacity:.95;stroke-width:2;stroke-dasharray:none}
@@ -190,6 +201,7 @@ export function planVille(st, me, { zoom = false } = {}) {
       <text transform="translate(${f1(WW * 0.72)} ${f1(HH * 0.35)}) rotate(-20)" text-anchor="middle" class="ql" style="fill:#5D7FB0;font-style:italic;stroke:none;font-size:${f1(9 * echelle)}px">La Delta</text>
       ${ponts}
       ${axe(ring)}${axe(e42)}${axe(n56)}${cartouches}
+      <g class="lis">${liseres}</g>
       <g class="lim">${limites}</g>
       ${quartiersLabels}${sitesSvg}${zonesLabels}${hp}${star}${pinsAff}${opPin}
     </g>
