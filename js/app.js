@@ -39,6 +39,8 @@ function route() {
   if (h.startsWith('guide')) { S.guideSection = h.split('-')[1] || null; return 'guide'; }
   // Lien vers un bloc précis de l'HP (ex. #hp-fipa) : on ouvre l'HP et on y descend.
   if (h.startsWith('hp-')) { S.ancre = h; return 'hp'; }
+  // Lien vers un bloc des ordres (ex. #ordres-decision) : on ouvre ce bloc.
+  if (h.startsWith('ordres-')) { S.ordOpen = { ...(S.ordOpen || {}), [h.slice(7)]: true }; S.ordAncre = h.slice(7); return 'ordres'; }
   return ROUTES.includes(h) ? h : 'hp';
 }
 
@@ -118,6 +120,11 @@ function render() {
   const scroll = window.scrollY;
   app.innerHTML = banner + html;
   if (S.route === 'hp' && S.state && myZone()) nouveautesAuBesoin();
+  if (S.route === 'ordres' && S.ordAncre) {
+    const cible = document.querySelector(`[data-action="ord-open"][data-k="${S.ordAncre}"]`);
+    S.ordAncre = null;
+    if (cible) { cible.scrollIntoView({ block: 'start' }); S.keepScroll = false; }
+  }
   if (S.route === 'hp' && S.ancre) {
     const cible = document.getElementById(S.ancre);
     S.ancre = null;
@@ -513,7 +520,7 @@ async function onClick(e) {
       }
       case 'ord-open': S.ordOpen = { ...(S.ordOpen || {}), [el.dataset.k]: !(S.ordOpen && S.ordOpen[el.dataset.k]) }; rerender(); break;
       case 'toggle-decision': S.decisionOpen = !S.decisionOpen; rerender(); break;
-      case 'decision': S.draft.decision = JSON.parse(el.dataset.json); S.ordersDirty = true; rerender(); break;
+      case 'decision': S.draft.decision = JSON.parse(el.dataset.json); S.draft.sansDecision = el.dataset.aucune === '1'; S.ordersDirty = true; rerender(); break;
       case 'dec-cat': S.decCat = el.dataset.v; rerender(); break;
       case 'cancel-orders': {
         // Revient aux derniers choix validés (ou aux ordres par défaut si rien n'a encore été validé).
