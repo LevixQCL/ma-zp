@@ -537,3 +537,5 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .ipz-table th { text-align: left; font-size: 11px; font-weight: 600; color: var(--muted); padding: 2px 4px; }
 .ipz-table td { padding: 3px 4px; border-top: 1px solid var(--line); }
 .ipz-table th:not(:first-child), .ipz-table td:not(:first-child) { text-align: right; }
+
+.surligne-bloc { animation: surligne 1.8s ease-out; }

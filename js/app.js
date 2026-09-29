@@ -366,6 +366,13 @@ async function onClick(e) {
       case 'pick-color-profil': S.profilColor = el.dataset.color; rerender(); break;
       case 'rename': S.editingName = true; rerender(); setTimeout(() => document.getElementById('nom-zone')?.focus(), 0); break;
       case 'toggle-rapport': S.showRapport = !S.showRapport; rerender(); break;
+      case 'voir-rapport': {
+        // Depuis « Résultat de la nuit » : ouvre le rapport et descend jusqu'à lui.
+        S.showRapport = true; rerender();
+        const r = document.getElementById('rapport-complet');
+        if (r) { r.scrollIntoView({ block: 'start', behavior: 'smooth' }); r.classList.add('surligne-bloc'); setTimeout(() => r.classList.remove('surligne-bloc'), 1800); }
+        break;
+      }
       case 'demo-next': {
         el.disabled = true; el.textContent = 'Résolution en cours…';
         await b.adminForceResolution(); await tick(true); break;
