@@ -1,6 +1,6 @@
 // Service worker : permet d'installer Ma ZP sur l'écran d'accueil et d'ouvrir l'appli hors ligne.
 // Stratégie « réseau d'abord » : on récupère toujours la dernière version quand c'est possible.
-const CACHE = 'mazp-v26';
+const CACHE = 'mazp-v27';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css', './icons/icon.svg', './icons/icon-192.png',
   './js/app.js', './js/config.js', './js/data/backend.js', './js/data/local.js', './js/data/firebase.js', './js/data/resolver.js',

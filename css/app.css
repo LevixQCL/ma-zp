@@ -432,3 +432,16 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .syn-l.complet .syn-nom { color: var(--green-soft); }
 .onglets-enq button { display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1; padding: 2px; }
 .onglets-enq button small { font: 600 10px var(--mono); opacity: .75; }
+
+/* Grande décision : tuiles */
+.dchoix { padding: 10px 12px; border-radius: 12px; background: var(--amber-bg); border: 1px solid var(--amber-line); }
+.dgrille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.dgrille.trois { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.dtuile { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-height: 76px; padding: 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); text-align: left; font: inherit; position: relative; }
+.dtuile .t { font-weight: 700; font-size: 13.5px; line-height: 1.2; }
+.dtuile .d { font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+.dtuile .c { margin-top: auto; font: 700 12px var(--mono); color: var(--amber); }
+.dtuile[aria-pressed="true"] { border: 1.5px solid var(--amber); background: var(--amber-bg); }
+.dtuile[aria-pressed="true"]::after { content: '✓'; position: absolute; top: 8px; right: 10px; color: var(--amber); font-weight: 700; }
+.dtuile:disabled { opacity: .45; }
+.dtuile:disabled .c { color: var(--muted); }
