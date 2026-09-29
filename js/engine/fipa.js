@@ -109,7 +109,7 @@ export function fipaPre(state, uids, ord, push, T) {
         z.stats.fipaFaites += 1;
         if (c === 'partager' && env >= promis) z.stats.fipaHonorees += 1;
         z._ps += 10;
-        if (mult > 0) { z.budget += gain; z.satisfaction += mult === 1 ? 4 : 1; }
+        if (mult > 0) { z.budget += gain; (z._compta ||= []).push({ k: 'fipa', l: 'Récompense FIPA', v: gain }); z.satisfaction += mult === 1 ? 4 : 1; }
         else z.satisfaction -= 5;
         if (cA === 'partager' && cB === 'partager' && mult > 0) z.reputation += 2;
         if (cA === 'revendiquer' && cB === 'revendiquer') z.satisfaction -= 3;

@@ -1,6 +1,6 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import {
-  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT } from './constants.js';
+  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS } from './constants.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -19,7 +19,7 @@ export function newZone({ uid, code, nom, couleur }, turn, base = {}) {
     moral: base.moral ?? START.moral,
     satisfaction: base.satisfaction ?? START.satisfaction,
     reputation: base.reputation ?? START.reputation,
-    niveaux, equip, infra: {},
+    niveaux, equip, infra: {}, batiments: { bureaux: 1, garage: 1 }, travaux: null,
     criminalite: START.criminalite, paperasse: START.paperasse, paperassePic: START.paperasse,
     dossiers: [], dossierSeq: 0,
     operation: null, pressions: [],
@@ -46,8 +46,56 @@ export function fillDefaults(target, tpl) {
 
 /** Met une zone enregistrée par une ancienne version au format actuel. */
 export function migrateZone(z) {
-  return fillDefaults(z, newZone({ uid: z.uid, code: z.code, nom: z.nom, couleur: z.couleur }, z.joinedTurn ?? 1));
+  const neuf = !z.batiments;
+  fillDefaults(z, newZone({ uid: z.uid, code: z.code, nom: z.nom, couleur: z.couleur }, z.joinedTurn ?? 1));
+  // Zones d'avant la logistique : des bâtiments à la taille de leurs effectifs.
+  if (neuf) ajusterBatiments(z);
+  return z;
 }
+
+/** Monte les bâtiments au niveau minimum qui accueille les agents et véhicules actuels. */
+export function ajusterBatiments(z) {
+  const besoinAgents = z.agents + (z.academie || []).reduce((s, a) => s + a.n, 0);
+  while (z.batiments.bureaux < BATIMENT_MAX && BATIMENTS.bureaux.capacite(z.batiments.bureaux) < besoinAgents) z.batiments.bureaux++;
+  while (z.batiments.garage < BATIMENT_MAX && BATIMENTS.garage.capacite(z.batiments.garage) < z.vehicules) z.batiments.garage++;
+  return z;
+}
+
+export const capaciteAgents = (z) => BATIMENTS.bureaux.capacite(z.batiments.bureaux);
+export const capaciteVehicules = (z) => BATIMENTS.garage.capacite(z.batiments.garage);
+export const effectifPrevu = (z) => z.agents + (z.academie || []).reduce((s, a) => s + a.n, 0);
+export const niveauEquipement = (z) => z.batiments.bureaux + z.batiments.garage + Object.values(z.infra || {}).filter(Boolean).length;
+
+/** Péréquation : zone nettement moins équipée que la moyenne des zones actives. */
+export function perequation(z, state) {
+  const zs = Object.values((state && state.zones) || {}).filter((x) => x.toursSansOrdres < 3);
+  if (zs.length < 2) return 0;
+  const moy = zs.reduce((s, x) => s + niveauEquipement(x), 0) / zs.length;
+  return niveauEquipement(z) <= moy - PEREQUATION.ecart ? PEREQUATION.montant : 0;
+}
+
+/**
+ * Recettes et frais fixes d'une journée (hors dépenses choisies et événements).
+ * La même fonction sert à la résolution et à la prévision affichée au joueur.
+ */
+export function fraisFixes(z, state, { amendes = 0, rythme = 'normal' } = {}) {
+  const annexes = Object.values(z.infra || {}).filter(Boolean).length;
+  const b = z.batiments;
+  const lignes = [
+    { k: 'dotation', l: 'Dotation fédérale', v: ECONOMIE.dotation },
+    { k: 'subside', l: 'Subside communal (hôtel de police)', v: BATIMENTS.bureaux.subside(b.bureaux) + BATIMENTS.garage.subside(b.garage) },
+    { k: 'perequation', l: 'Péréquation (zone moins équipée)', v: perequation(z, state) },
+    { k: 'amendes', l: 'Amendes du Roulage', v: amendes },
+    { k: 'salaires', l: `Salaires (${z.agents} agents)`, v: -z.agents * ECONOMIE.salaire },
+    { k: 'vehicules', l: `Entretien des véhicules (${z.vehicules})`, v: -z.vehicules * ECONOMIE.entretienVehicule },
+    { k: 'batiments', l: `Entretien des bâtiments (niveaux ${b.bureaux} et ${b.garage})`, v: -(BATIMENTS.bureaux.entretien(b.bureaux) + BATIMENTS.garage.entretien(b.garage)) },
+    { k: 'annexes', l: `Entretien des annexes (${annexes})`, v: -annexes * ENTRETIEN_ANNEXE },
+    { k: 'rythme', l: 'Heures supplémentaires (rythme renforcé)', v: -(RYTHMES[rythme] ? RYTHMES[rythme].cout : 0) },
+  ].filter((x) => Math.abs(x.v) >= 0.05);
+  for (const x of lignes) x.v = round1(x.v);
+  return { lignes, total: round1(lignes.reduce((s, x) => s + x.v, 0)) };
+}
+
 
 export function blessesActifs(zone, turn) {
   return zone.blesses.filter((b) => b.retour > turn).reduce((s, b) => s + b.n, 0);
@@ -146,6 +194,7 @@ export function sanitizeOrders(zone, raw, state) {
     else if (d.type === 'former' && SERVICES.includes(d.service)) decision = { type: 'former', service: d.service };
     else if (d.type === 'equiper' && (d.cible === 'vehicule' || SERVICES.includes(d.cible))) decision = { type: 'equiper', cible: d.cible };
     else if (d.type === 'construire' && INFRAS[d.infra]) decision = { type: 'construire', infra: d.infra };
+    else if (d.type === 'agrandir' && BATIMENTS[d.batiment]) decision = { type: 'agrandir', batiment: d.batiment };
   }
   const operation = ['complet', 'reduit', 'aucun'].includes(o.operation) ? o.operation : 'reduit';
   const dp = o.depenses && typeof o.depenses === 'object' ? o.depenses : {};
@@ -222,6 +271,7 @@ export function coutDecision(zone, decision) {
     case 'former': return COUTS.formation;
     case 'equiper': return decision.cible === 'vehicule' ? COUTS.vehicule : COUTS.equipementBase * zone.equip[decision.cible];
     case 'construire': return INFRAS[decision.infra].cout;
+    case 'agrandir': return BATIMENTS[decision.batiment] ? BATIMENTS[decision.batiment].coutAgrandir(zone.batiments[decision.batiment]) : 0;
     default: return 0;
   }
 }
@@ -237,6 +287,12 @@ export function decisionImpossible(zone, decision, turn) {
   }
   if (decision.type === 'equiper' && decision.cible !== 'vehicule' && zone.equip[decision.cible] >= NIVEAU_MAX) return 'Équipement au maximum';
   if (decision.type === 'construire' && zone.infra[decision.infra]) return 'Déjà construit';
+  if (decision.type === 'agrandir') {
+    if (zone.travaux) return 'Des travaux sont déjà en cours';
+    if (zone.batiments[decision.batiment] >= BATIMENT_MAX) return 'Niveau maximum atteint';
+  }
+  if (decision.type === 'recruter' && effectifPrevu(zone) + decision.n > capaciteAgents(zone)) return `Hôtel de police plein (${capaciteAgents(zone)} agents) : agrandis-le d’abord`;
+  if (decision.type === 'equiper' && decision.cible === 'vehicule' && zone.vehicules + 1 > capaciteVehicules(zone)) return `Garage plein (${capaciteVehicules(zone)} véhicules) : agrandis-le d’abord`;
   return null;
 }
 

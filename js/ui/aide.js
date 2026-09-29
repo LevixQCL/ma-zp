@@ -61,10 +61,11 @@ export const AIDES = {
   },
   budget: {
     titre: 'Budget',
-    intro: `Tu reçois ${ECONOMIE.dotation} k€ par tour. Les salaires et l’entretien sont prélevés chaque nuit.`,
+    intro: 'Touche la tuile Budget de l’HP pour voir le détail : ce qui rentre, ce qui sort, et la prévision de ce soir.',
     lignes: [
-      `<strong>Salaires</strong> : ${String(ECONOMIE.salaire).replace('.', ',')} k€ par agent et par tour`,
-      `<strong>Entretien</strong> : ${String(ECONOMIE.entretienVehicule).replace('.', ',')} k€ par véhicule et par tour`,
+      `<strong>Recettes</strong> : dotation fédérale (${ECONOMIE.dotation} k€), subside communal si ton hôtel de police est agrandi, amendes du Roulage`,
+      `<strong>Frais fixes</strong> : salaires (${String(ECONOMIE.salaire).replace('.', ',')} k€ par agent), entretien des véhicules, des bâtiments et des annexes`,
+      '<strong>Choix du jour</strong> : dépenses, grande décision, démarches d’enquête',
       '<strong>Deux tours de suite en négatif</strong> : Inspection générale, 5 k€ d’amende et −5 de satisfaction',
       `<strong>Sous ${PERIL.budget} k€</strong> : ta zone passe en péril`,
     ],

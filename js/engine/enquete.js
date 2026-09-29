@@ -586,7 +586,7 @@ export function enquetePre(state, uids, ord, push) {
       for (const { u } of gagnants) {
         const z = state.zones[u];
         z.stats.limier += POINTS.arrestation; z.stats.arrestations += 1;
-        z._points += 6; z.budget += 4; z.satisfaction += 5; z.reputation += 3; z._ps += 10;
+        z._points += 6; z.budget += 4; (z._compta ||= []).push({ k: 'prime', l: 'Prime d’arrestation', v: 4 }); z.satisfaction += 5; z.reputation += 3; z._ps += 10;
         z.rapport.push(`Traque : ${s.nom} arrêté${s.f ? 'e' : ''} à ${a.planques[a.planque].nom} (+${POINTS.arrestation} pts d’enquête, prime de 4 k€).`);
       }
       const noms = gagnants.map((g) => nomZone(state.zones[g.u]));
@@ -619,6 +619,7 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
     const cout = coutDemarche(state, z.uid, x);
     if (z.budget < cout) { faites.push(`${dm.dm.nom} refusée (budget insuffisant)`); continue; }
     z.budget -= cout;
+    if (cout) (z._compta ||= []).push({ k: 'enquete', l: 'Démarches d’enquête', v: -cout });
     d.pieces.push({ f, j: e.jour, src: dm.k });
     faites.push(`« ${titrePiece(aff, f)} »`);
   }

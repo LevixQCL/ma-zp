@@ -65,7 +65,7 @@ export const INFRAS = {
   logiciel: { nom: 'Logiciel de gestion des dossiers', cout: 12, effet: 'Paperasse traitée 50 % plus vite' },
   anpr:     { nom: 'Caméras de lecture de plaques', cout: 15, effet: 'Roulage +30 %, sans effet « chasse aux PV »' },
   antenne:  { nom: 'Antenne de quartier', cout: 12, effet: 'Proximité +30 %' },
-  garage:   { nom: 'Garage de la zone', cout: 8, effet: 'Usure des véhicules divisée par deux' },
+  garage:   { nom: 'Atelier mécanique', cout: 8, effet: 'Usure des véhicules divisée par deux' },
   audition: { nom: "Salle d'audition moderne", cout: 14, effet: 'Recherche +20 %' },
 };
 
@@ -103,3 +103,28 @@ export function nextGrade(ps) {
 
 // Renfort pour une opération d'envergure : agents prêtés pour la journée, contre de la réputation.
 export const RENFORT = { maxParZone: 4, maxDemande: 6, repParAgent: 1, repMax: 4, ps: 5 };
+
+// ───── Logistique : les bâtiments de la zone ─────
+// Un niveau par bâtiment (1 à BATIMENT_MAX). Agrandir coûte cher, prend du temps (travaux),
+// et augmente l'entretien plus vite que les subsides : grandir n'est jamais gratuit.
+export const BATIMENT_MAX = 5;
+export const BATIMENTS = {
+  bureaux: {
+    nom: 'Hôtel de police', unite: 'agents', texte: 'Bureaux, vestiaires, salles de briefing : fixe le nombre d’agents que la zone peut accueillir.',
+    capacite: (n) => 14 + 8 * n,          // 22, 30, 38, 46, 54 agents
+    coutAgrandir: (n) => 10 + 8 * n,      // passer de n à n+1 : 18, 26, 34, 42 k€
+    entretien: (n) => 0.5 * n,            // k€ par tour
+    subside: (n) => 0.3 * (n - 1),        // subside communal pour un plus grand commissariat
+  },
+  garage: {
+    nom: 'Garage', unite: 'véhicules', texte: 'Places de parking et pont de levage : fixe le nombre de véhicules de la zone.',
+    capacite: (n) => 2 + 2 * n,           // 4, 6, 8, 10, 12 véhicules
+    coutAgrandir: (n) => 6 + 4 * n,       // 10, 14, 18, 22 k€
+    entretien: (n) => 0.25 * n,
+    subside: () => 0,
+  },
+};
+export const TRAVAUX_TOURS = 2;          // durée d'un agrandissement
+export const ENTRETIEN_ANNEXE = 0.3;     // k€ par tour et par annexe (salle de sport, logiciel…)
+// Péréquation : une zone nettement moins équipée que la moyenne du district reçoit un coup de pouce.
+export const PEREQUATION = { ecart: 2, montant: 1.5 };

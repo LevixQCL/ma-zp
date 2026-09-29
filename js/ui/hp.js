@@ -4,7 +4,7 @@ import { agentsDisponibles, blessesActifs, enFormation, vehiculesDisponibles } f
 import { formatCountdown } from '../engine/time.js';
 import { QUEST_LABELS } from '../quests/quests.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
-import { situationHtml } from './ordres.js';
+import { situationHtml, estimations } from './ordres.js';
 import { operationActive } from '../engine/zone.js';
 import { fipaCards } from './fipa.js';
 import { blasonSvg, BLASONS, insigne } from './blasons.js';
@@ -12,6 +12,9 @@ import { GRADES, gradeFor } from '../engine/constants.js';
 import { PERIL, DUEL_INDICATEURS } from '../engine/rivalites.js';
 import { genererAffaire, dossierDe, pointsDecouverte, ENQ } from '../engine/enquete.js';
 import { aideBtn } from './aide.js';
+import { logistiqueHtml } from './logistique.js';
+import { fraisFixes } from '../engine/zone.js';
+const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations().amendes; } catch (e) { /* pas de brouillon */ } return fraisFixes(z, S.state, { amendes, rythme: (S.draft && S.draft.rythme) || 'normal' }).total; };
 import { demandeRenfortHtml, appelsRenfort, renfortPrevu } from './renfort.js';
 import { operationActive as opActive } from '../engine/zone.js';
 
@@ -149,7 +152,7 @@ export function renderHP() {
       <div class="tiles">
         <div class="tile"><span class="l">Agents</span><span class="v">${dispo}<span class="muted" style="font-size:13px"> / ${z.agents}</span></span>
           <span class="s ${blesses ? 'bad' : ''}">${blesses ? `${blesses} absent${blesses > 1 ? 's' : ''}` : form ? `${form} en formation` : z.academie.length ? `${z.academie.reduce((s, a) => s + a.n, 0)} à l’académie` : 'tous disponibles'}</span></div>
-        <div class="tile"><span class="l row" style="gap:4px">Budget ${aideBtn('budget')}</span><span class="v ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s">dotation 8 k€/tour</span></div>
+        <button type="button" class="tile tile-btn" data-action="budget" aria-label="Détail du budget"><span class="l row" style="gap:4px">Budget ${icon('chevron', 12)}</span><span class="v ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s ${fraisFixesDuJour(z) < 0 ? 'bad' : ''}">${fraisFixesDuJour(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(fraisFixesDuJour(z)))} k€/jour · détail</span></button>
         <div class="tile"><span class="l">Véhicules</span><span class="v">${vDispo}<span class="muted" style="font-size:13px"> / ${z.vehicules}</span></span><span class="s">état ${Math.round(100 - z.usure)} %</span></div>
       </div>
       <div class="col" style="gap:9px">
@@ -158,6 +161,7 @@ export function renderHP() {
         ${gauge('Réputation', z.reputation, 'var(--green)', delta(z.reputation, z.hier && z.hier.reputation) + aideBtn('reputation'))}
       </div>
     </section>
+    ${logistiqueHtml()}
 
     ${nuitHtml(z)}
     ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit })}
