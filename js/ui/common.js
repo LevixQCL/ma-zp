@@ -80,10 +80,11 @@ export function tabbar(active, { questBadge = false, radioBadge = false } = {}) 
   </nav>`;
 }
 
-export function gauge(label, value, color) {
+/** Jauge 0-100. `label` est du texte brut ; `extra` (HTML) s'affiche à côté, hors des attributs. */
+export function gauge(label, value, color, extra = '') {
   const v = Math.round(value);
-  return `<div class="gauge"><div class="between small"><span>${label}</span><span class="mono muted">${v}</span></div>
-    <div class="bar" role="img" aria-label="${label} : ${v} sur 100"><div style="width:${Math.max(0, Math.min(100, v))}%;background:${color}"></div></div></div>`;
+  return `<div class="gauge"><div class="between small"><span class="row" style="gap:4px">${esc(label)}${extra}</span><span class="mono muted">${v}</span></div>
+    <div class="bar" role="img" aria-label="${esc(label)} : ${v} sur 100"><div style="width:${Math.max(0, Math.min(100, v))}%;background:${color}"></div></div></div>`;
 }
 
 let toastTimer = null;

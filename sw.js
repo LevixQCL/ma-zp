@@ -1,12 +1,12 @@
 // Service worker : permet d'installer Ma ZP sur l'écran d'accueil et d'ouvrir l'appli hors ligne.
 // Stratégie « réseau d'abord » : on récupère toujours la dernière version quand c'est possible.
-const CACHE = 'mazp-v12';
+const CACHE = 'mazp-v13';
 const SHELL = [
   './', './index.html', './manifest.webmanifest', './css/app.css', './icons/icon.svg', './icons/icon-192.png',
   './js/app.js', './js/config.js', './js/data/backend.js', './js/data/local.js', './js/data/firebase.js', './js/data/resolver.js',
   './js/engine/constants.js', './js/engine/contenu.js', './js/engine/resolve.js', './js/engine/rng.js', './js/engine/time.js', './js/engine/zone.js', './js/engine/bots.js',
   './js/quests/quests.js',
-  './js/ui/common.js', './js/ui/auth.js', './js/ui/hp.js', './js/ui/ordres.js', './js/ui/quete.js', './js/ui/carte.js', './js/ui/ville.js', './js/ui/enquete.js', './js/ui/fipa.js', './js/ui/guide.js', './js/ui/diplomatie.js', './js/ui/parties.js', './js/ui/blasons.js', './js/engine/rivalites.js', './js/engine/enquete.js', './js/engine/fipa.js', './js/ui/gazette.js',
+  './js/ui/common.js', './js/ui/auth.js', './js/ui/hp.js', './js/ui/ordres.js', './js/ui/quete.js', './js/ui/carte.js', './js/ui/ville.js', './js/ui/enquete.js', './js/ui/fipa.js', './js/ui/guide.js', './js/ui/diplomatie.js', './js/ui/parties.js', './js/ui/blasons.js', './js/engine/rivalites.js', './js/engine/enquete.js', './js/engine/fipa.js', './js/ui/gazette.js', './js/ui/aide.js',
 ];
 
 self.addEventListener('install', (e) => {
