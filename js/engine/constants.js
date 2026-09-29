@@ -100,3 +100,6 @@ export function gradeFor(ps) {
 export function nextGrade(ps) {
   return GRADES.find((g) => g.ps > ps) || null;
 }
+
+// Renfort pour une opération d'envergure : agents prêtés pour la journée, contre de la réputation.
+export const RENFORT = { maxParZone: 4, maxDemande: 6, repParAgent: 1, repMax: 4, ps: 5 };

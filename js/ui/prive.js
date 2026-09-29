@@ -1,6 +1,7 @@
 // Messages privés entre zones, et invitations en attente (FIPA, duels, Conseil).
 import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
 import { ongletsRadio } from './diplomatie.js';
+import { appelsRenfort, renfortPrevu, renfortCtrl } from './renfort.js';
 
 // ───────── « Déjà lu » : mémorisé sur l'appareil, par partie ─────────
 function cleVu() { return `mazp-vu-${S.backend && S.backend.gameId ? S.backend.gameId() : ''}-${S.user ? S.user.uid : ''}`; }
@@ -53,6 +54,7 @@ export function invitations() {
   for (const d of st.duels || []) {
     if (d.b === me && d.etape === 'propose' && d.tourReponse === T) out.push({ titre: `${nom(d.a)} te défie en duel`, texte: 'sans réponse, c’est un refus', href: '#diplomatie', action: 'Répondre' });
   }
+  for (const a of appelsRenfort()) out.push({ titre: `${nom(a.uid)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » ce soir`, ctrl: renfortCtrl(a), fait: renfortPrevu(a.uid) > 0 });
   if (st.conseil && st.conseil.tour === T && !(S.draft && Object.keys(S.draft.votes || {}).length)) out.push({ titre: 'Conseil de police : vote ce soir', texte: 'une voix par zone, résultat à 20:00', href: '#diplomatie', action: 'Voter' });
   return out;
 }
@@ -62,7 +64,7 @@ export function majPastilleRadio() {
   const a = document.querySelector('nav.tabs a[href="#radio"]');
   if (!a) return;
   const n = nonLus();
-  const doit = n.radio + n.prive > 0 || invitations().length > 0;
+  const doit = n.radio + n.prive > 0 || invitations().some((i) => !i.fait);
   const dot = a.querySelector('.dot');
   if (doit && !dot) a.insertAdjacentHTML('beforeend', '<span class="dot" aria-label="nouveau"></span>');
   else if (!doit && dot) dot.remove();
@@ -110,7 +112,7 @@ export function renderPrive() {
     ${ongletsRadio('prive')}
     <header class="col" style="gap:3px"><h1 class="big">Messages privés</h1><p class="sub">Discussions entre deux zones, et les invitations qui attendent ta réponse.</p></header>
     ${inv.length ? `<section class="col" aria-label="Invitations"><h2 class="section">Invitations et demandes</h2>
-      ${inv.map((i) => `<a class="list-row" href="${i.href}" style="border-color:var(--amber-line);background:var(--amber-bg)"><span class="bullet" style="background:var(--amber)"></span>
+      ${inv.map((i) => i.ctrl ? `<div class="card tight" style="border-color:var(--amber-line);background:var(--amber-bg);gap:8px"><div class="col" style="gap:1px"><span style="font-weight:600">${i.titre}</span><span class="small" style="color:var(--amber-soft)">${i.texte}</span></div>${i.ctrl}</div>` : `<a class="list-row" href="${i.href}" style="border-color:var(--amber-line);background:var(--amber-bg)"><span class="bullet" style="background:var(--amber)"></span>
         <span class="col grow" style="gap:1px"><span style="font-weight:600">${i.titre}</span><span class="small" style="color:var(--amber-soft)">${i.texte}</span></span>
         <span class="pill amber">${i.action}</span></a>`).join('')}</section>` : ''}
     <section class="col" aria-label="Conversations"><h2 class="section">Conversations</h2>

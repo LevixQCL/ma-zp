@@ -6,6 +6,7 @@ import { hashString } from '../engine/rng.js';
 import { fiabilite } from '../engine/fipa.js';
 import { ongletsRadio } from './diplomatie.js';
 import { marquerRadioLue } from './prive.js';
+import { appelsRenfort, renfortCtrl } from './renfort.js';
 import { GRADES, gradeFor } from '../engine/constants.js';
 import { blasonSvg, insigne } from './blasons.js';
 const gradeIdx = (ps) => GRADES.indexOf(gradeFor(ps));
@@ -115,13 +116,14 @@ export function renderRadio() {
   };
   const msgs = S.radio.slice(-50);
   marquerRadioLue();
+  const appels = appelsRenfort();
   return `<main class="screen">
     ${ongletsRadio('radio')}
     <header class="col" style="gap:3px"><h1 class="big">Radio Delta</h1><p class="sub">Canal public de tout le district. Négociez, chambrez, mais restez corrects.</p></header>
     <section class="col" aria-label="Messages" id="radio-list" style="gap:8px">
-      ${msgs.length ? msgs.map((m) => { const w = nameOf(m.uid); const moi = m.uid === me.uid; return `<div class="card tight" ${moi ? 'style="border-color:var(--amber-line)"' : ''}>
+      ${msgs.length ? msgs.map((m) => { const w = nameOf(m.uid); const moi = m.uid === me.uid; const appel = m.renfort && appels.find((x) => x.uid === m.uid && x.at === m.at); return `<div class="card tight" ${m.renfort ? 'style="border-color:var(--red-line);background:var(--red-bg)"' : moi ? 'style="border-color:var(--amber-line)"' : ''}>
         <div class="between"><span class="small" style="font-weight:700;color:${esc(w.couleur)}">ZP ${esc(w.code)} ${esc(w.nom)}${moi ? ' (toi)' : ''}</span><span class="tiny muted mono">${new Date(m.at).toLocaleString('fr-BE', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>
-        <p style="margin:0;font-size:14px;line-height:1.4;overflow-wrap:anywhere">${esc(m.texte)}</p></div>`; }).join('') : '<p class="small muted">Aucun message pour l’instant. Lance la conversation !</p>'}
+        <p style="margin:0;font-size:14px;line-height:1.4;overflow-wrap:anywhere">${esc(m.texte)}</p>${appel ? renfortCtrl(appel) : ''}</div>`; }).join('') : '<p class="small muted">Aucun message pour l’instant. Lance la conversation !</p>'}
     </section>
     <form data-form="radio" class="row" style="position:sticky;bottom:96px;background:var(--bg);padding-top:6px">
       <label class="sr" for="radio-msg">Message</label>

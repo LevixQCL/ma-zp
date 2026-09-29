@@ -190,8 +190,8 @@ export async function createFirebaseBackend(config) {
       const q = F.query(col('radio'), F.orderBy('at', 'desc'), F.limit(40));
       return F.onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })).reverse()), (e) => console.error(e));
     },
-    async sendRadio(uid, texte) {
-      await F.addDoc(col('radio'), { uid, texte: String(texte).slice(0, 280), at: Date.now() });
+    async sendRadio(uid, texte, extra = {}) {
+      await F.addDoc(col('radio'), { ...extra, uid, texte: String(texte).slice(0, 280), at: Date.now() });
     },
 
     // Messages privés : lisibles uniquement par les deux zones concernées.

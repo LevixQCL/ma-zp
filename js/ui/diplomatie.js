@@ -93,7 +93,7 @@ function manoeuvreHtml() {
 export function ongletsRadio(actif) {
   const n = nonLus();
   const diploAFaire = invitations().some((i) => i.href === '#diplomatie');
-  const priveAFaire = n.prive > 0 || invitations().length > 0;
+  const priveAFaire = n.prive > 0 || invitations().some((i) => !i.fait);
   const tab = (k, l, pastille) => `<a role="tab" href="#${k}" aria-selected="${actif === k}" class="segl">${l}${actif !== k && pastille ? '<span class="pastille" aria-label="nouveau"></span>' : ''}</a>`;
   return `<div class="onglets-flottants"><div class="seg3" role="tablist" aria-label="Radio, messages privés et diplomatie">
     ${tab('radio', 'Radio', n.radio > 0)}${tab('prive', 'Privé', priveAFaire)}${tab('diplomatie', 'Diplomatie', diploAFaire)}</div></div>`;
