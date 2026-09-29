@@ -395,29 +395,45 @@ const OUVERTURES = ['RDV', 'LIVRAISON', 'PLANQUE', 'ON SE VOIT'];
 const shiftChar = (c, k) => (c >= 'A' && c <= 'Z' ? String.fromCharCode(((c.charCodeAt(0) - 65 + (k % 26) + 26) % 26) + 65) : c);
 const miroir = (c) => (c >= 'A' && c <= 'Z' ? String.fromCharCode(90 - (c.charCodeAt(0) - 65)) : c);
 
+/** Message sans espaces, en groupes de 5 lettres : la longueur des mots ne trahit plus rien. */
+const enGroupes = (t) => (t.replace(/ /g, '').match(/.{1,5}/g) || []).join(' ');
+
+/**
+ * Niveaux :
+ *  1-2 : décalage simple, mots visibles (clé ou premier mot donnés).
+ *  3   : décalage simple ou miroir, en groupes de 5 lettres.
+ *  4-5 : mot-clé de 2 puis 3 lettres (chaque lettre décalée selon sa position), en groupes de 5.
+ *  6   : mot-clé de 4 lettres : le début connu ne suffit pas toujours à tout retrouver.
+ * Le début du message (« RDV », « LIVRAISON »…) sert d'attaque : il donne la clé si on raisonne.
+ */
 function code(rng, diff) {
   const m = rng.pick(MESSAGES);
   const ouverture = OUVERTURES.find((o) => m.phrase.startsWith(`${o} `));
-  const mots = m.phrase.split(' ');
   const listeOuv = `Dans cette bande, les messages commencent toujours par ${ou(OUVERTURES.map((o) => `« ${o} »`))}.`;
-  let chiffre, aide, explication;
-  const methode = diff >= 5 ? 'progressif' : diff === 4 && rng.chance(0.5) ? 'miroir' : 'decalage';
-  const k = diff <= 1 ? rng.int(1, 3) : rng.int(3, diff >= 5 ? 9 : 12);
+  const lenCle = diff >= 6 ? 4 : diff === 5 ? 3 : diff === 4 ? 2 : 1;
+  const methode = lenCle > 1 ? 'cle' : diff === 3 && rng.chance(0.3) ? 'miroir' : 'decalage';
+  const k = diff <= 1 ? rng.int(1, 3) : rng.int(3, 23);
+  let chiffre, aide, explication, cles = 1;
   if (methode === 'miroir') {
-    chiffre = m.phrase.split('').map(miroir).join('');
+    chiffre = enGroupes(m.phrase.split('').map(miroir).join(''));
     explication = `Alphabet miroir (A↔Z, B↔Y, C↔X…) : « ${m.phrase} ».`;
-  } else if (methode === 'progressif') {
-    chiffre = mots.map((w, i) => w.split('').map((c) => shiftChar(c, k + i)).join('')).join(' ');
-    explication = `Décalage de ${k} rang${k > 1 ? 's' : ''} pour le 1er mot, ${k + 1} pour le 2e, et ainsi de suite : « ${m.phrase} ».`;
+  } else if (methode === 'cle') {
+    let cle;
+    do { cle = Array.from({ length: lenCle }, () => rng.int(1, 25)); } while (new Set(cle).size < lenCle);
+    const nette = m.phrase.replace(/ /g, '');
+    chiffre = enGroupes(nette.split('').map((c, i) => shiftChar(c, cle[i % lenCle])).join(''));
+    const mot = cle.map((v) => String.fromCharCode(65 + v)).join('');
+    explication = `Mot-clé « ${mot} » (décalages ${cle.join(', ')}, puis on recommence). Le message commence par « ${ouverture} » : ses premières lettres donnent la clé. En clair : « ${m.phrase} ».`;
+    cles = lenCle;
   } else {
     chiffre = m.phrase.split('').map((c) => shiftChar(c, k)).join('');
+    if (diff >= 3) chiffre = enGroupes(chiffre);
     explication = `Décalage de ${k} rang${k > 1 ? 's' : ''} : « ${m.phrase} ».`;
   }
   if (diff <= 1) aide = `Chaque lettre a été remplacée par celle qui se trouve ${k} rang${k > 1 ? 's' : ''} plus loin dans l’alphabet (après Z, on repart à A). Recule de ${k} pour lire.`;
   else if (diff === 2) aide = `Chaque lettre a été décalée du même nombre de rangs dans l’alphabet (après Z, on repart à A). Un informateur assure que ce message commence par « ${ouverture} ».`;
-  else if (diff === 3) aide = `Chaque lettre a été décalée du même nombre de rangs dans l’alphabet (après Z, on repart à A). ${listeOuv}`;
-  else if (diff === 4) aide = `Deux méthodes sont connues dans ce milieu : le décalage (chaque lettre avance du même nombre de rangs) ou l’alphabet miroir (A↔Z, B↔Y…). ${listeOuv}`;
-  else aide = `Ce suspect est prudent : il décale chaque mot d’un rang de plus que le précédent (le 2e mot d’un rang de plus que le 1er, etc.). ${listeOuv}`;
+  else if (diff === 3) aide = `Les espaces ont été retirés et le texte découpé en groupes de 5 lettres. Deux méthodes sont connues dans ce milieu : le décalage (chaque lettre avance du même nombre de rangs) ou l’alphabet miroir (A↔Z, B↔Y…). ${listeOuv}`;
+  else aide = `Cette bande chiffre avec un mot-clé de ${lenCle} lettres : la 1re lettre du message est décalée selon la 1re lettre de la clé (A = 0, B = 1, C = 2…), la 2e selon la 2e${lenCle > 2 ? ', etc.' : ''}, puis on recommence. Espaces retirés, groupes de 5 lettres. ${listeOuv}${diff >= 6 ? ' Attention : le début du message ne suffit pas toujours à retrouver toute la clé.' : ''}`;
   return {
     titre: 'Message codé', mode: 'texte',
     contexte: rng.pick([
@@ -426,11 +442,13 @@ function code(rng, diff) {
       'Ce mot était glissé sous l’essuie-glace d’une voiture surveillée.',
       'Ce message a été intercepté sur la messagerie d’un jeu en ligne.',
     ]),
-    code: chiffre, aide, elements: [],
+    code: chiffre, aide, elements: [], cles,
     question: 'Quel lieu est désigné dans le message ? (un mot suffit)',
     answer: m.mots[0], mots: m.mots, phraseClaire: m.phrase,
     interdits: [...new Set(MESSAGES.filter((x) => x !== m).flatMap((x) => x.mots.flatMap((w) => w.split(' '))).filter((w) => w.length >= 3 && !['DES', 'EAU'].includes(w) && !/^\d+$/.test(w)))],
-    astuce: diff >= 2 ? 'Commence par le premier mot : si tu sais comment il se lit, tu connais la clé.' : null,
+    astuce: cles > 1 ? 'Essaie chaque début possible : si le message commence par « PLANQUE », de combien la 1re lettre codée est-elle éloignée du P ? Et la 2e du L ? Une seule hypothèse donne une clé qui rend la suite lisible.'
+      : diff >= 3 ? 'Sans espaces, la longueur des mots ne t’aide plus : essaie chaque début possible sur les premières lettres.'
+      : diff >= 2 ? 'Commence par le premier mot : si tu sais comment il se lit, tu connais la clé.' : null,
     explication,
   };
 }

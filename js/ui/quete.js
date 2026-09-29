@@ -28,16 +28,33 @@ function renderGrille(q) {
 
 // Roue de décodage : aligne l'alphabet clair et l'alphabet décalé.
 function renderRoue(q) {
-  const k = (((S.roue || {})[q.id] || 0) % 26 + 26) % 26;
   const AB = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  const bloc = (from) => `<div class="roue">${AB.slice(from, from + 13).map((l, i) => `<span><b>${AB[(from + i + k) % 26]}</b>${l}</span>`).join('')}</div>`;
-  return `<section class="card tight" aria-label="Roue de décodage">
-    <div class="between"><h2 class="section" style="margin:0">Roue de décodage</h2>
-      <div class="row" style="gap:6px;align-items:center"><button type="button" class="btn small outline" data-action="roue" data-d="-1" aria-label="Décalage moins un">−</button>
-      <span class="mono" style="min-width:34px;text-align:center">${k}</span>
-      <button type="button" class="btn small outline" data-action="roue" data-d="1" aria-label="Décalage plus un">+</button></div></div>
+  const n = q.cles || 1;
+  const kDe = (i) => ((((S.roue || {})[n > 1 ? `${q.id}:${i}` : q.id] || 0) % 26) + 26) % 26;
+  const stepper = (i) => `<div class="row" style="gap:6px;align-items:center">${n > 1 ? `<span class="tiny roue-c${i}" style="font-weight:700">Clé ${i + 1}</span>` : ''}
+      <button type="button" class="btn small outline" data-action="roue" data-i="${i}" data-d="-1" aria-label="Décalage ${n > 1 ? `${i + 1} ` : ''}moins un">−</button>
+      <span class="mono" style="min-width:34px;text-align:center">${kDe(i)}<span class="tiny muted"> ${AB[kDe(i)]}</span></span>
+      <button type="button" class="btn small outline" data-action="roue" data-i="${i}" data-d="1" aria-label="Décalage ${n > 1 ? `${i + 1} ` : ''}plus un">+</button></div>`;
+  if (n === 1) {
+    const k = kDe(0);
+    const bloc = (from) => `<div class="roue">${AB.slice(from, from + 13).map((l, i) => `<span><b>${AB[(from + i + k) % 26]}</b>${l}</span>`).join('')}</div>`;
+    return `<section class="card tight" aria-label="Roue de décodage">
+    <div class="between"><h2 class="section" style="margin:0">Roue de décodage</h2>${stepper(0)}</div>
     <p class="tiny muted" style="margin:0">En haut, la lettre du message codé ; en dessous, la lettre claire pour ce décalage.</p>
     ${bloc(0)}${bloc(13)}
+  </section>`;
+  }
+  // Mot-clé : un décalage par position, et la lecture du message avec les clés choisies.
+  let pos = 0;
+  const lecture = q.code.split(' ').map((g) => g.split('').map((c) => { const i = pos++ % n; const k = kDe(i); return `<span class="roue-c${i}">${AB[(c.charCodeAt(0) - 65 - k + 26) % 26]}</span>`; }).join('')).join(' ');
+  pos = 0;
+  const brut = q.code.split(' ').map((g) => g.split('').map((c) => `<span class="roue-c${pos++ % n}">${c}</span>`).join('')).join(' ');
+  return `<section class="card tight" aria-label="Roues de décodage">
+    <h2 class="section" style="margin:0">Roues de décodage</h2>
+    <p class="tiny muted" style="margin:0">Une roue par lettre de la clé. Chaque couleur montre les lettres décodées par cette roue (A = 0, B = 1…).</p>
+    <div class="col" style="gap:6px">${Array.from({ length: n }, (_, i) => stepper(i)).join('')}</div>
+    <span class="tiny muted">Message codé</span><div class="roue-lecture" aria-label="Message codé, lettres colorées par roue">${brut}</div>
+    <span class="tiny muted">Lecture avec ces clés</span><div class="roue-lecture" aria-label="Lecture avec ces clés">${lecture}</div>
   </section>`;
 }
 

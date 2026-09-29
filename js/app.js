@@ -487,7 +487,7 @@ async function onClick(e) {
       }
       case 'quest-pick': S.questPick = el.dataset.v; rerender(); break;
       case 'quest-tab': S.questIdx = Number(el.dataset.i); S.questMode = 'jour'; S.questPick = null; render(); break;
-      case 'roue': { const id = questCourante().id; S.roue = { ...(S.roue || {}), [id]: ((S.roue || {})[id] || 0) + Number(el.dataset.d) }; rerender(); break; }
+      case 'roue': { const q = questCourante(); const id = (q.cles || 1) > 1 ? `${q.id}:${el.dataset.i || 0}` : q.id; S.roue = { ...(S.roue || {}), [id]: ((S.roue || {})[id] || 0) + Number(el.dataset.d) }; rerender(); break; }
       case 'grille-mark': case 'grille-reset': {
         const q = questCourante();
         const m = { ...((S.grilleMarks || {})[q.id] || {}) };
