@@ -70,7 +70,9 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
     x0 = Math.max(0, Math.min(WW - vw, x0)); y0 = Math.max(0, Math.min(HH - vh, y0));
     return [x0, y0, vw, vh];
   };
-  const [vx, vy, vw, vh] = zoom && moi && moi.quartiers.length ? cadre(moi.quartiers, 14, 0) : poss.length ? cadre(poss, 18, W * 0.75) : [(WW - W) / 2, (HH - H) / 2, W, H];
+  // Beaucoup de zones : vue d'ensemble allégée (pas de noms de quartiers ni de sites) et plus de marge autour.
+  const dense = !zoom && T.zones.length > 8;
+  const [vx, vy, vw, vh] = zoom && moi && moi.quartiers.length ? cadre(moi.quartiers, 14, 0) : poss.length ? cadre(poss, dense ? 34 : 18, W * 0.75) : [(WW - W) / 2, (HH - H) / 2, W, H];
   const vb = `${f1(vx)} ${f1(vy)} ${f1(vw)} ${f1(vh)}`;
   const echelle = vw / W; // textes et repères gardent la même taille à l'écran quand la carte dézoome
   const sc = (x, y, inner) => `<g transform="translate(${f1(x)} ${f1(y)}) scale(${f1(echelle)})">${inner}</g>`;
@@ -167,18 +169,21 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
   // Étiquettes.
   const zonesLabels = T.zones.map((tz) => {
     const z = st.zones[tz.uid];
-    const [x, y] = tz.label;
+    const [x0, y] = tz.label;
+    // Nom gardé dans le cadre : une zone au bord de la carte n'a plus son nom coupé.
+    const demi = (Math.min(16, z.nom.length) * 13 * 0.62 * echelle) / 2 + 3 * echelle;
+    const x = Math.max(vx + demi, Math.min(vx + vw - demi, x0));
     return `<text x="${f1(x)}" y="${f1(y)}" text-anchor="middle" class="zl" style="fill:${esc(z.couleur)}">${esc(z.nom.toUpperCase().slice(0, 16))}</text>
-      <text x="${f1(x)}" y="${f1(y + 11)}" text-anchor="middle" class="zc">ZP ${esc(z.code)}${gradeIdx(z.ps) >= 3 ? ` ${'★'.repeat(gradeIdx(z.ps) - 2)}` : ''}${z.peril || z.tutelle ? ' ⚠' : ''}${pseudoDe(tz.uid) ? ` · ${esc(pseudoDe(tz.uid))}` : ''}</text>`;
+      <text x="${f1(x)}" y="${f1(y + 11)}" text-anchor="middle" class="zc">ZP ${esc(z.code)}${gradeIdx(z.ps) >= 3 ? ` ${'★'.repeat(gradeIdx(z.ps) - 2)}` : ''}${z.peril || z.tutelle ? ' ⚠' : ''}${pseudoDe(tz.uid) && !dense ? ` · ${esc(pseudoDe(tz.uid))}` : ''}</text>`;
   }).join('');
   const sitesPos = T.zones.map((tz) => { const z = st.zones[tz.uid]; const s = siteDe(z); return s ? { tz, z, s, c: celluleSite(T, tz, s) } : null; }).filter(Boolean);
   const occupe = [...T.zones.map((tz) => tz.label), ...sitesPos.map((p) => p.c.c), [WW * 0.3, HH * 0.78]];
-  const quartiersLabels = T.cells.filter((c) => T.owner[c.i] !== -1 && (zoom ? moi && moi.quartiers.includes(c.i) : c.i % 2 === 0 || (moi && moi.quartiers.includes(c.i))))
+  const quartiersLabels = dense ? '' : T.cells.filter((c) => T.owner[c.i] !== -1 && (zoom ? moi && moi.quartiers.includes(c.i) : c.i % 2 === 0 || (moi && moi.quartiers.includes(c.i))))
     .filter((c) => occupe.every((o) => (o[0] - c.c[0]) ** 2 + (o[1] - c.c[1]) ** 2 > (24 * echelle) ** 2))
     .map((c) => `<text x="${f1(c.c[0])}" y="${f1(c.c[1])}" text-anchor="middle" class="ql">${esc(c.nom.toUpperCase())}</text>`).join('');
   const sitesSvg = sitesPos.map(({ z, s, c }) => `<g transform="translate(${f1(c.c[0])} ${f1(c.c[1])}) scale(${f1(echelle)})"><title>${esc(s.nom)} (${esc(s.type)}) · ZP ${esc(z.code)} ${esc(z.nom)}</title>
       <circle r="11" fill="${s.couleur}" fill-opacity=".22"/><circle r="8" fill="${s.couleur}" stroke="#0B1119" stroke-width="1.2"/><g transform="scale(.8)">${ICONES[s.id] || ''}</g>
-      <text y="18" text-anchor="middle" class="sl" style="fill:${s.couleur}">${esc(s.nom)}</text></g>`).join('');
+      ${dense ? '' : `<text y="18" text-anchor="middle" class="sl" style="fill:${s.couleur}">${esc(s.nom)}</text>`}</g>`).join('');
 
   // Repères du jeu : HP, affaires, opération en cours, événement collectif.
   const pin = (c, inner) => `<g transform="translate(${f1(c.c[0] + 10 * echelle)} ${f1(c.c[1] - 14 * echelle)}) scale(${f1(echelle)})"><path d="M0 9c-5-5.5-8-8.6-8-12.4a8 8 0 0 1 16 0C8 .4 5 3.5 0 9z" fill="#F2B544" stroke="#0B1119" stroke-width="1.5"/><text y="-.6" text-anchor="middle" class="pn">${inner}</text></g>`;
