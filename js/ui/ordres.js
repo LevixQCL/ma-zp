@@ -469,9 +469,9 @@ export function renderOrdres() {
       ${S.ventilation ? ventilationHtml(z, e) : ''}
       ${SERVICES.map((s2) => `<div class="col" style="gap:0">
         <div class="between" style="min-height:48px">
-          <span class="row" style="gap:2px"><span style="font-weight:600;font-size:14px">${SERVICE_LABELS[s2]}</span>
+          <span class="row" style="gap:2px;min-width:0;flex:1"><span style="font-weight:600;font-size:14px;min-width:0">${s2 === 'admin' ? 'Accueil / admin.' : SERVICE_LABELS[s2]}</span>
             <button type="button" class="helpbtn" data-action="help" data-s="${s2}" aria-expanded="${!!(S.help && S.help[s2])}" aria-label="À quoi sert ${SERVICE_LABELS[s2]} ?">?</button>
-            <span class="tiny muted" style="margin-left:4px">niv. ${z.niveaux[s2]}</span></span>
+            <span class="tiny muted" style="margin-left:4px;white-space:nowrap">niv. ${z.niveaux[s2]}</span></span>
           <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button>
             <span class="n" style="min-width:34px">${d.alloc[s2]}</span>
             <button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>

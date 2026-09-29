@@ -34,7 +34,7 @@ export function renderGazette() {
       ${g.finSaison ? `<section class="box sombre"><span class="k" style="color:#F2B544">Fin de la saison ${g.finSaison.season}</span>
         ${g.finSaison.titres.map((t) => { const z = S.state.zones[t.uid]; return `<p style="color:#F4EFE3">${icon('trophy', 13)} <strong>${esc(t.titre)}</strong> : ${z ? zoneName(z) : ''}</p>`; }).join('')}
         <p style="color:#C9B68F">La saison ${g.finSaison.saisonSuivante} commence : budgets et effectifs repartent de zéro, bâtiments et formations sont conservés avec un niveau de moins.</p></section>` : ''}
-      <section class="une"><span class="k">${esc(g.une.kicker)}</span><h2>${esc(g.une.titre)}</h2>${g.une.texte ? `<p class="lettrine">${esc(g.une.texte)}</p>` : ''}</section>
+      <section class="une"><span class="k">${esc(g.une.kicker)}</span><h2>${esc(g.une.titre)}</h2>${g.une.texte ? `<p class="lettrine${/^[A-Za-zÀ-ÿ]/.test(g.une.texte) ? '' : ' sans'}">${esc(g.une.texte)}</p>` : ''}</section>
       ${g.breves && g.breves.length ? `<div class="rule double"></div>
         <div class="colonnes">${g.breves.slice(0, 6).map((b) => `<section class="breve"><span class="k">${esc(b.kicker)}</span><h3>${esc(b.titre)}</h3>${b.texte ? `<p>${esc(b.texte)}</p>` : ''}</section>`).join('')}</div>` : ''}
       ${(g.tribunal || []).length ? `<section class="tribunal"><span class="k">Au tribunal</span>${g.tribunal.map((p) => `<div class="proces"><h3>${esc(p.suspect)}</h3><p class="peine">${esc(p.peine)}</p>
