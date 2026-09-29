@@ -246,11 +246,12 @@ async function onClick(e) {
       case 'postuler': {
         const a = S.state.affaires.find((x) => x.id === el.dataset.id), n = Number(el.dataset.n), st = S.state;
         if (!a || !a.zone || maCandidature(a)) break;
+        el.disabled = true;
+        // D'abord la candidature (message privé) ; les agents ne sont réservés que si elle est bien partie.
+        await b.sendPrive(S.user.uid, a.zone, `📋 Candidature sur « ${a.titre} » : je te propose ${n} agent${n > 1 ? 's' : ''}.`, { candidature: { aid: a.id, agents: n, season: st.season, turn: st.turn } });
         for (let k = 0; k < n; k++) if (!takeAgent()) break;
         S.draft.engagements[a.id] = { agents: n, acceptes: [] };
         S.ordersDirty = true;
-        el.disabled = true;
-        await b.sendPrive(S.user.uid, a.zone, `📋 Candidature sur « ${a.titre} » : je te propose ${n} agent${n > 1 ? 's' : ''}.`, { candidature: { aid: a.id, agents: n, season: st.season, turn: st.turn } });
         toast('Candidature envoyée. Valide tes ordres pour réserver tes agents.'); rerender(); break;
       }
       case 'cand-ok': case 'cand-non': {
@@ -520,8 +521,8 @@ async function onClick(e) {
     }
   } catch (err) {
     console.error(err);
-    toast(messageErreur(err));
-    if (a === 'demo-next') rerender();
+    toast(['postuler', 'cand-ok', 'cand-non'].includes(a) ? messageErreur(err, 'prive') : messageErreur(err));
+    if (a === 'demo-next' || a === 'postuler') rerender();
   }
 }
 
@@ -685,7 +686,7 @@ async function onSubmit(e) {
     }
   } catch (err) {
     console.error(err);
-    toast(messageErreur(err));
+    toast(messageErreur(err, form && form.dataset.form === 'prive' ? 'prive' : ''));
   }
 }
 
@@ -759,7 +760,8 @@ async function onChange(e) {
   if (el.dataset.change === 'dep-service') { S.draft.depenses.reserveService = el.value; S.ordersDirty = true; rerender(); }
 }
 
-function messageErreur(err) {
+function messageErreur(err, contexte = '') {
+  if (contexte === 'prive' && String((err && (err.code || err.message)) || '').includes('permission')) return 'Message privé refusé par la base de données : les règles Firestore de la partie ne sont sans doute pas à jour (le maître du jeu doit les recopier dans la console Firebase).';
   const c = err && err.code ? String(err.code) : '';
   if (c.includes('invalid-credential') || c.includes('wrong-password') || c.includes('user-not-found')) return 'Adresse e-mail ou mot de passe incorrect.';
   if (c.includes('email-already-in-use')) return 'Un compte existe déjà avec cette adresse : connecte-toi.';
