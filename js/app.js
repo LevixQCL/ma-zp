@@ -424,7 +424,8 @@ async function onClick(e) {
       }
       case 'ord-open': S.ordOpen = { ...(S.ordOpen || {}), [el.dataset.k]: !(S.ordOpen && S.ordOpen[el.dataset.k]) }; rerender(); break;
       case 'toggle-decision': S.decisionOpen = !S.decisionOpen; rerender(); break;
-      case 'decision': S.draft.decision = JSON.parse(el.dataset.json); S.ordOpen = { ...(S.ordOpen || {}), decision: false }; S.ordersDirty = true; rerender(); break;
+      case 'decision': S.draft.decision = JSON.parse(el.dataset.json); S.ordersDirty = true; rerender(); break;
+      case 'dec-cat': S.decCat = el.dataset.v; rerender(); break;
       case 'save-orders': {
         const st = S.state;
         await b.saveOrders(S.user.uid, st.season, st.turn, S.draft);

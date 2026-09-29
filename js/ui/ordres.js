@@ -1,9 +1,10 @@
 // Écran des ordres du tour.
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
-import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE } from '../engine/constants.js';
+import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel } from './affaires.js';
+import { effectifPrevu, capaciteAgents, capaciteVehicules } from '../engine/zone.js';
 import { forceEngagement, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
 
 function enqueteDraft() {
@@ -109,6 +110,46 @@ function decisionOptions(z, T) {
   return opts.map((o) => ({ ...o, refus: decisionImpossible(z, o.d, T) }));
 }
 
+const DEC_CATS = [['recruter', 'Recruter'], ['former', 'Former'], ['equiper', 'Équiper'], ['batir', 'Bâtir']];
+const catDe = (dec) => (!dec ? null : dec.type === 'construire' || dec.type === 'agrandir' ? 'batir' : dec.type);
+const niv = (n, max = NIVEAU_MAX) => `<span class="niv" aria-label="niveau ${n} sur ${max}">${Array.from({ length: max }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
+
+/** Sélecteur de grande décision : quatre catégories, des tuiles compactes. */
+function decisionPicker(z, T, d) {
+  const cat = S.decCat || catDe(d.decision) || 'recruter';
+  const choisi = (dec) => JSON.stringify(d.decision) === JSON.stringify(dec);
+  const tuile = (dec, titre, detail, cout, extra = '') => {
+    const refus = decisionImpossible(z, dec, T);
+    return `<button type="button" class="dtuile" data-action="decision" data-json='${esc(JSON.stringify(dec))}' aria-pressed="${choisi(dec)}" ${refus && !choisi(dec) ? 'disabled' : ''}>
+      <span class="t">${titre}</span>${extra}<span class="d">${esc(refus || detail)}</span><span class="c">${cout} k€</span></button>`;
+  };
+  let corps = '';
+  if (cat === 'recruter') {
+    corps = `<p class="tiny muted" style="margin:0">Effectif : ${effectifPrevu(z)} sur ${capaciteAgents(z)} places à l’hôtel de police. Arrivée après ${3} tours d’académie, puis ${String(0.3).replace('.', ',')} k€ de salaire par tour et par agent.</p>
+      <div class="dgrille trois">${[1, 2, 3].map((n) => tuile({ type: 'recruter', n }, `+${n} agent${n > 1 ? 's' : ''}`, 'arrivée dans 3 tours', COUTS.recrue * n)).join('')}</div>`;
+  } else if (cat === 'former') {
+    corps = `<p class="tiny muted" style="margin:0">Un service gagne un niveau d’efficacité. 2 agents sont absents pendant 2 tours.</p>
+      <div class="dgrille">${SERVICES.map((sv) => tuile({ type: 'former', service: sv }, SERVICE_LABELS[sv], `niveau ${z.niveaux[sv]} → ${z.niveaux[sv] + 1}`, COUTS.formation, niv(z.niveaux[sv]))).join('')}</div>`;
+  } else if (cat === 'equiper') {
+    corps = `<p class="tiny muted" style="margin:0">Un véhicule de plus, ou du meilleur matériel pour un service (effet immédiat).</p>
+      <div class="dgrille">${tuile({ type: 'equiper', cible: 'vehicule' }, 'Véhicule', `${z.vehicules} sur ${capaciteVehicules(z)} places au garage`, COUTS.vehicule)}
+      ${SERVICES.map((sv) => tuile({ type: 'equiper', cible: sv }, SERVICE_LABELS[sv], `matériel ${z.equip[sv]} → ${z.equip[sv] + 1}`, COUTS.equipementBase * z.equip[sv], niv(z.equip[sv]))).join('')}</div>`;
+  } else {
+    const faites = Object.entries(INFRAS).filter(([id]) => z.infra[id]).map(([, i]) => i.nom);
+    corps = `<p class="tiny muted" style="margin:0">Agrandir : ${TRAVAUX_TOURS} tours de travaux, puis plus de places mais plus d’entretien. Annexe : effet permanent, ${String(ENTRETIEN_ANNEXE).replace('.', ',')} k€ d’entretien par tour.</p>
+      <div class="dgrille">${Object.entries(BATIMENTS).map(([id, B]) => (z.batiments[id] >= BATIMENT_MAX ? '' : tuile({ type: 'agrandir', batiment: id }, `Agrandir : ${B.nom}`, `${B.capacite(z.batiments[id] + 1)} ${B.unite}`, B.coutAgrandir(z.batiments[id]), niv(z.batiments[id], BATIMENT_MAX)))).join('')}
+      ${Object.entries(INFRAS).filter(([id]) => !z.infra[id]).map(([id, inf]) => tuile({ type: 'construire', infra: id }, inf.nom, inf.effet, inf.cout)).join('')}</div>
+      ${faites.length ? `<p class="tiny muted" style="margin:0">Déjà construit : ${esc(faites.join(', '))}.</p>` : ''}`;
+  }
+  return `<div class="col" style="gap:10px">
+    <div class="between dchoix"><span class="col" style="gap:1px"><span class="tiny muted">Ta grande décision de ce soir</span><strong>${esc(decisionLabel(z, d.decision))}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}</strong></span>
+      ${d.decision ? '<button type="button" class="btn small ghost" data-action="decision" data-json="null">Aucune</button>' : ''}</div>
+    <div class="segn" role="tablist" aria-label="Type de décision" style="grid-template-columns:repeat(4,minmax(0,1fr))">${DEC_CATS.map(([k, l]) => `<button type="button" role="tab" aria-selected="${cat === k}" data-action="dec-cat" data-v="${k}">${l}${catDe(d.decision) === k ? ' ●' : ''}</button>`).join('')}</div>
+    ${corps}
+    <p class="tiny muted" style="margin:0">Une seule grande décision par tour, payée à 20:00 si le budget le permet (${fmt1(z.budget)} k€ aujourd’hui).</p>
+  </div>`;
+}
+
 /** Aide courte de chaque service, avec la situation actuelle de la zone. */
 function aide(s, z) {
   const f = (v) => fmt1(v);
@@ -188,11 +229,7 @@ export function renderOrdres() {
     </div>`;
   }).join('');
 
-  const decisionHtml = `<div class="col" style="gap:6px">
-    <button type="button" class="choice" data-action="decision" data-json="null" aria-pressed="${!d.decision}" style="align-items:flex-start;text-align:left">Aucune décision</button>
-    ${decisionOptions(z, T).map((o) => `<button type="button" class="choice" data-action="decision" data-json='${esc(JSON.stringify(o.d))}' aria-pressed="${JSON.stringify(d.decision) === JSON.stringify(o.d)}" ${o.refus ? 'disabled' : ''} style="align-items:flex-start;text-align:left">
-      <span style="font-size:14px">${esc(decisionLabel(z, o.d))}</span><span class="s">${esc(o.refus || o.sub)}</span></button>`).join('')}
-  </div>`;
+  const decisionHtml = decisionPicker(z, T, d);
 
   const depensesHtml = `<div class="col" style="gap:6px">
       <div class="between"><span class="col" style="gap:1px"><span style="font-weight:600;font-size:14px">Agents de réserve</span><span class="tiny muted">${esc(DEPENSES.reserve.texte)}</span></span>
