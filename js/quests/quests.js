@@ -89,6 +89,7 @@ const PERSONNES = [
   ['Hugo', 'm'], ['Inès', 'f'], ['Lucas', 'm'], ['Chloé', 'f'], ['Mehdi', 'm'], ['Sarah', 'f'], ['Kevin', 'm'], ['Laura', 'f'],
   ['Yannick', 'm'], ['Fatima', 'f'], ['Olivier', 'm'], ['Manon', 'f'],
 ];
+const NOMBRES = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept'];
 const ou = (l) => (l.length <= 1 ? l.join('') : `${l.slice(0, -1).join(', ')} ou ${l[l.length - 1]}`);
 const voyelle = (n) => /^[aeiouyéèêh]/i.test(n);
 const de = (n) => (voyelle(n) ? `d’${n}` : `de ${n}`);
@@ -226,13 +227,13 @@ function quiment(rng, diff) {
   const qui = deux ? et(vraiH.map((i) => noms[i]).sort()) : noms[vraiH[0]];
   return {
     titre: 'Qui ment ?', mode: 'choix',
-    contexte: `${intro}. ${n} personnes ont été entendues. ${deux ? 'Deux d’entre elles mentent' : 'Une seule d’entre elles ment'} : ${deux ? 'les trois autres disent' : 'toutes les autres disent'} la vérité.`,
+    contexte: `${intro}. ${n} personnes ont été entendues. ${deux ? 'Deux d’entre elles mentent' : 'Une seule d’entre elles ment'} : ${deux ? `les ${NOMBRES[n - 2]} autres disent` : `les ${NOMBRES[n - 1]} autres disent`} la vérité. Règle : un menteur ne dit que des choses fausses. Si un menteur affirme « Untel ment », c’est donc qu’Untel dit la vérité ; s’il affirme « un seul des deux ment », c’est qu’en réalité aucun ou les deux mentent.`,
     elements: decl.map((d) => ({ label: d.nom, texte: d.texte })),
     question: deux ? 'Qui sont les deux menteurs ?' : 'Qui ment ?', _pas: pas,
     choix, answer,
-    astuce: deux ? 'Essaie chaque paire : si ces deux-là mentent, les trois autres déclarations sont-elles toutes vraies ?'
-      : 'Suppose qu’une personne ment, puis vérifie que toutes les autres déclarations deviennent vraies.',
-    explication: `Seule l’hypothèse « ${qui} ${deux ? 'mentent' : 'ment'} » rend toutes les autres déclarations vraies en même temps. Avec ${deux ? 'n’importe quelle autre paire' : 'n’importe quel autre menteur'}, au moins une déclaration deviendrait contradictoire.`,
+    astuce: deux ? `Essaie chaque paire : si ces deux-là mentent, leurs deux phrases doivent être fausses et les ${NOMBRES[n - 2]} autres toutes vraies. Est-ce le cas ?`
+      : 'Suppose qu’une personne ment : sa phrase doit être fausse, et toutes les autres vraies. Vérifie, puis passe à la suivante.',
+    explication: `Seule l’hypothèse « ${qui} ${deux ? 'mentent' : 'ment'} » rend ${deux ? 'leurs deux déclarations fausses' : 'sa déclaration fausse'} et toutes les autres vraies en même temps. Avec ${deux ? 'n’importe quelle autre paire' : 'n’importe quel autre menteur'}, au moins une déclaration deviendrait contradictoire.`,
   };
 }
 

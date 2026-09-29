@@ -11,10 +11,18 @@ export const AIDE = { budgetMax: 10, agentsMax: 3, dureePret: 3 };
 
 // ───── Manœuvres ─────
 export const MANOEUVRES = {
-  debauchage: { nom: 'Débauchage', texte: 'Attirer un agent de la zone visée chez toi. Plus son moral est bas, plus ça marche.', parade: 'Garder un bon moral, ou verser une prime au personnel ce jour-là.' },
-  dessaisissement: { nom: 'Dessaisissement', texte: 'Demander au parquet de te confier son plus vieux dossier (ouvert depuis plus de 3 tours). Il faut plus de Recherche qu’elle ce jour-là.', parade: 'Ne pas laisser vieillir ses dossiers.' },
-  signalement: { nom: 'Signalement à l’Inspection', texte: 'Signaler une zone dont la paperasse déborde (plus de 14 dossiers). Vrai : Inspection chez elle et +3 de réputation pour toi. Faux : −5 de réputation.', parade: 'Garder sa paperasse à jour.' },
-  poste: { nom: 'Poste avancé', texte: 'Pendant 5 tours, tu prélèves 30 % des points des affaires résolues par cette zone (sauf si tu y participes).', parade: '6 agents ou plus en Proximité annulent le bonus.' },
+  debauchage: { nom: 'Débauchage', texte: 'Attirer un agent de la zone visée chez toi. Plus son moral est bas, plus ça marche.', parade: 'Garder un bon moral, ou verser une prime au personnel ce jour-là.',
+    gain: 'un agent de plus chez toi, pour de bon (tu paies son salaire)', cible: 'un agent de moins et −2 de moral',
+    defense: 'moral au-dessus de 70 (chance ×0,6), prime au personnel le même jour (chance ×0,5) ; une zone de 10 agents ou moins est intouchable. Moral sous 50 : chance ×1,25.' },
+  dessaisissement: { nom: 'Dessaisissement', texte: 'Demander au parquet de te confier son plus vieux dossier (ouvert depuis plus de 3 tours). Il faut plus de Recherche qu’elle ce jour-là.', parade: 'Ne pas laisser vieillir ses dossiers.',
+    gain: 'son plus vieux dossier : si tu l’élucides, les points et la satisfaction sont pour toi', cible: 'perd le dossier et −2 de satisfaction',
+    defense: 'n’avoir aucun dossier de plus de 3 tours, ou mettre plus de force en Recherche que l’attaquant ce jour-là (agents × niveau).' },
+  signalement: { nom: 'Signalement à l’Inspection', texte: 'Signaler une zone dont la paperasse déborde (plus de 14 dossiers). Vrai : Inspection chez elle et +3 de réputation pour toi. Faux : −5 de réputation.', parade: 'Garder sa paperasse à jour.',
+    gain: '+3 de réputation si le signalement est fondé (pas de hasard) ; −5 s’il est faux', cible: 'amende de 5 k€ et −5 de satisfaction',
+    defense: 'garder sa paperasse à 14 dossiers ou moins (visible sur la Carte si tu regardes la zone).' },
+  poste: { nom: 'Poste avancé', texte: 'Pendant 5 tours, tu prélèves 30 % des points des affaires résolues par cette zone (sauf si tu y participes).', parade: '6 agents ou plus en Proximité annulent le bonus.',
+    gain: '30 % des points de ses affaires disputées pendant 5 tours', cible: 'perd 30 % de ses points d’affaires pendant 5 tours',
+    defense: 'mettre 6 agents ou plus en Proximité les jours où elle résout une affaire.' },
 };
 export const MAN = { base: 0.7, pas: 0.15, min: 0.1, fenetre: 7, coutReputation: 2, protectionTours: 5 };
 

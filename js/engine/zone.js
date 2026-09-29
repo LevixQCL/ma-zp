@@ -1,7 +1,7 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
 import {
-  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS } from './constants.js';
+  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, malusEtat, coutEquipement, multNiveau, multEquip } from './constants.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -128,10 +128,9 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
     const v = vehiculesDisponibles(zone, turn);
     const lim = v * 2.5;
     if (eff > lim) eff = lim + (eff - lim) * 0.5;
-    const etat = 100 - zone.usure;
-    if (etat < 60) eff *= 0.9;
+    eff *= malusEtat(100 - zone.usure);
   }
-  let c = eff * (0.8 + 0.2 * zone.niveaux[service]) * (0.9 + 0.1 * zone.equip[service]) * moralMult(zone.moral) * RYTHMES[rythme].mult * bonus;
+  let c = eff * multNiveau(zone.niveaux[service]) * multEquip(zone.equip[service]) * moralMult(zone.moral) * RYTHMES[rythme].mult * bonus;
   if (service === 'proximite' && zone.infra.antenne) c *= 1.3;
   if (service === 'roulage' && zone.infra.anpr) c *= 1.3;
   if (service === 'recherche' && zone.infra.audition) c *= 1.2;
@@ -204,7 +203,7 @@ export function sanitizeOrders(zone, raw, state) {
   const depenses = {
     reserve: clamp(Math.floor(Number(dp.reserve) || 0), 0, DEPENSES.reserve.max),
     reserveService: SERVICES.includes(dp.reserveService) ? dp.reserveService : 'intervention',
-    prime: !!dp.prime, prevention: !!dp.prevention, soustraitance: !!dp.soustraitance,
+    prime: !!dp.prime, prevention: !!dp.prevention, soustraitance: !!dp.soustraitance, revision: !!dp.revision,
   };
   // Enquête et FIPA : validés plus finement pendant la résolution.
   const int = (v, a, b) => clamp(Math.floor(Number(v) || 0), a, b);
@@ -230,7 +229,7 @@ export function sanitizeOrders(zone, raw, state) {
 /** Coût total des dépenses du jour. */
 export function coutDepenses(d) {
   if (!d) return 0;
-  return (d.reserve || 0) * DEPENSES.reserve.cout + (d.prime ? DEPENSES.prime.cout : 0) + (d.prevention ? DEPENSES.prevention.cout : 0) + (d.soustraitance ? DEPENSES.soustraitance.cout : 0);
+  return (d.reserve || 0) * DEPENSES.reserve.cout + (d.prime ? DEPENSES.prime.cout : 0) + (d.prevention ? DEPENSES.prevention.cout : 0) + (d.soustraitance ? DEPENSES.soustraitance.cout : 0) + (d.revision ? DEPENSES.revision.cout : 0);
 }
 
 export const NIVEAUX_OPERATION = { complet: 1, reduit: 0.5, aucun: 0 };
@@ -272,7 +271,7 @@ export function coutDecision(zone, decision) {
   switch (decision.type) {
     case 'recruter': return COUTS.recrue * decision.n;
     case 'former': return COUTS.formation;
-    case 'equiper': return decision.cible === 'vehicule' ? COUTS.vehicule : COUTS.equipementBase * zone.equip[decision.cible];
+    case 'equiper': return decision.cible === 'vehicule' ? COUTS.vehicule : coutEquipement(zone.equip[decision.cible]);
     case 'construire': return INFRAS[decision.infra].cout;
     case 'agrandir': return BATIMENTS[decision.batiment] ? BATIMENTS[decision.batiment].coutAgrandir(zone.batiments[decision.batiment]) : 0;
     default: return 0;

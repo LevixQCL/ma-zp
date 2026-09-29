@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 6;
+export const APP_VERSION = 7;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -33,7 +33,7 @@ export const START = {
 export const DEFAULT_ALLOC = { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 };
 
 export const ECONOMIE = {
-  dotation: 8,             // k€ par tour
+  dotation: 10,            // k€ par tour
   salaire: 0.3,            // k€ par agent et par tour
   entretienVehicule: 0.2,  // k€ par véhicule et par tour
   coutRenforce: 2,         // k€ par tour en rythme renforcé
@@ -44,8 +44,13 @@ export const COUTS = {
   recrue: 2,          // k€ par recrue
   formation: 4,       // k€
   vehicule: 6,        // k€
-  equipementBase: 5,  // k€ × niveau actuel
+  equipementBase: 5,  // k€ pour passer du niveau 1 au niveau 2, puis +2 k€ par niveau
 };
+/** Coût du matériel pour passer du niveau n au niveau n+1 : 5, 7, 9, 11 k€. */
+export const coutEquipement = (n) => COUTS.equipementBase + 2 * (n - 1);
+/** Multiplicateurs d'efficacité : formation (+20 % par niveau) et matériel (+15 % par niveau). */
+export const multNiveau = (n) => 0.8 + 0.2 * n;
+export const multEquip = (n) => 0.85 + 0.15 * n;
 
 // Dépenses du jour : cumulables avec la grande décision, payées sur le budget du tour.
 export const DEPENSES = {
@@ -53,7 +58,13 @@ export const DEPENSES = {
   prime:        { nom: 'Prime au personnel', cout: 3, texte: '+4 de moral' },
   prevention:   { nom: 'Campagne de prévention', cout: 4, texte: 'criminalité −6' },
   soustraitance: { nom: 'Sous-traitance administrative', cout: 3, texte: '−5 dossiers de paperasse' },
+  revision:     { nom: 'Révision du parc', cout: 2, texte: 'état des véhicules +20 %, effet le jour même' },
 };
+
+// Usure des véhicules (en % du parc) : chaque intervention use un peu les véhicules.
+export const USURE = { parTour: 1, parIntervention: 1.5, max: 70, revision: 20 };
+/** Efficacité de l'Intervention selon l'état du parc (100 − usure). */
+export function malusEtat(etat) { return etat >= 80 ? 1 : etat >= 60 ? 0.95 : etat >= 40 ? 0.9 : 0.8; }
 
 export const DELAI_ACADEMIE = 2;       // tours avant l'arrivée d'une recrue
 export const DUREE_FORMATION = 1;      // tours d'indisponibilité
@@ -62,11 +73,11 @@ export const NIVEAU_MAX = 5;
 
 export const INFRAS = {
   sport:    { nom: 'Salle de sport', cout: 10, effet: '+1 de moral par tour' },
-  logiciel: { nom: 'Logiciel de gestion des dossiers', cout: 12, effet: 'Paperasse traitée 50 % plus vite' },
+  logiciel: { nom: 'Logiciel de gestion des dossiers', cout: 10, effet: 'Paperasse traitée 50 % plus vite' },
   anpr:     { nom: 'Caméras de lecture de plaques', cout: 10, effet: 'Roulage +30 %, sans effet « chasse aux PV »' },
-  antenne:  { nom: 'Antenne de quartier', cout: 12, effet: 'Proximité +30 %' },
+  antenne:  { nom: 'Antenne de quartier', cout: 10, effet: 'Proximité +30 %' },
   garage:   { nom: 'Atelier mécanique', cout: 8, effet: 'Usure des véhicules divisée par deux' },
-  audition: { nom: "Salle d'audition moderne", cout: 14, effet: 'Recherche +20 %' },
+  audition: { nom: "Salle d'audition moderne", cout: 10, effet: 'Recherche +20 %' },
 };
 
 export const RYTHMES = {

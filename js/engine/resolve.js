@@ -3,7 +3,7 @@
 
 import {
   APP_VERSION, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
@@ -63,12 +63,29 @@ export function migrateState(state) {
   for (const z of Object.values(state.zones)) migrateZone(z);
   attribuerSites(state);
   // Affaires d'avant la réforme : on leur donne une zone qui les dirige et un plafond d'agents.
-  const zu = Object.keys(state.zones).sort();
   for (const a of state.affaires || []) {
-    if (!a.zone && zu.length) a.zone = zu[Math.abs(hashString(a.id)) % zu.length];
+    if (!a.zone || !state.zones[a.zone]) a.zone = zonePourAffaire(state, (x) => Math.abs(hashString(`${a.id}:${x.length}`)) % x.length);
     if (!a.agentsMax) a.agentsMax = (a.forceMin || 4) + 7;
   }
   return state;
+}
+
+/**
+ * Zone qui dirigera une nouvelle affaire : jamais deux affaires dans la même zone tant qu'il reste
+ * une zone libre ; on évite aussi les zones déjà prises par une opération d'envergure.
+ * `choisir(liste)` renvoie un indice (hasard du tour ou hachage stable).
+ */
+function zonePourAffaire(state, choisir) {
+  const toutes = Object.values(state.zones);
+  if (!toutes.length) return null;
+  const actives = toutes.filter(isActive);
+  const pool = (actives.length ? actives : toutes).map((z) => z.uid).sort();
+  const charge = (u) => state.affaires.filter((a) => a.zone === u).length;
+  const occupee = (u) => { const z = state.zones[u]; return z.operation && state.turn >= z.operation.tourDebut && state.turn < z.operation.tourDebut + z.operation.duree ? 1 : 0; };
+  const score = (u) => charge(u) * 2 + occupee(u);
+  const min = Math.min(...pool.map(score));
+  const libres = pool.filter((u) => score(u) === min);
+  return libres[choisir(libres)];
 }
 
 /** Vrai si cet appareil utilise une version du jeu plus ancienne que celle de la partie. */
@@ -93,18 +110,15 @@ function genererAffaires(state, rng) {
   const actives = Object.values(state.zones).filter(isActive).length;
   const cible = clamp(Math.ceil(Math.max(actives, 1) / 3), 1, 3);
   const deja = new Set(state.affaires.map((a) => a.titre));
-  const zonesActives = Object.values(state.zones).filter(isActive).map((z) => z.uid).sort();
   while (state.affaires.length < cible) {
     const titre = rng.pick(AFFAIRES_DISPUTEES.filter((t) => !deja.has(t)));
     deja.add(titre);
     const forceMin = rng.int(3, 7);
-    // L'affaire éclate dans une zone (celle qui en a le moins) : c'est elle qui la dirige.
-    const charge = (u) => state.affaires.filter((a) => a.zone === u).length;
-    const libres = zonesActives.length ? zonesActives.filter((u) => charge(u) === Math.min(...zonesActives.map(charge))) : [];
+    // L'affaire éclate dans une zone (une zone sans affaire ni opération) : c'est elle qui la dirige.
     state.affaires.push({
       id: `a${state.season}-${++state.affaireSeq}`,
       titre, recompense: rng.int(6, 14), forceMin, forceConseillee: forceMin + 2, tours: 2,
-      zone: libres.length ? rng.pick(libres) : null, agentsMax: forceMin + 7,
+      zone: zonePourAffaire(state, (l) => rng.int(0, l.length - 1)), agentsMax: forceMin + 7,
       pos: { x: rng.int(40, 320), y: rng.int(30, 300) },
     });
   }
@@ -357,6 +371,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         default: break;
       }
       z.rapport.push(`Coup dur, ${coupDur.titre.toLowerCase()} : ${texte}`);
+      z.dernierCoupDur = { titre: coupDur.titre, texte, tour: T };
       push(coupDur.id === 'rebellion' ? 9 : 5, 'Coup dur', `${coupDur.titre} à ${zoneLabel(z)}`, texte, uid);
     }
 
@@ -381,7 +396,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         else if (b.bonus === 'indice') { txt += indiceBonus(state, z, zr) ? ', bonus +1 indice d’enquête' : ', bonus indice (rien de nouveau à trouver)'; }
         else if (b.bonus === 'capacite' && SERVICES.includes(b.service)) { bonusService = b.service; txt += `, bonus +10 % en ${SERVICE_LABELS[b.service]}`; }
       }
-      if (ok === 3) { z._ps += 5; txt += ', sans faute (+5 PS)'; }
+      if (ok === 3) { z._ps += 5; z.budget += 3; z.moral += 2; z._compta.push({ k: 'bonus', l: 'Prime « sans faute » (énigmes)', v: 3 }); txt += ', sans faute : +3 k€, +2 de moral, +5 PS'; }
       z.rapport.push(`${txt}.`);
     }
 
@@ -442,6 +457,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (dep.prime) payer('prime au personnel (+4 de moral)', DEPENSES.prime.cout, () => { z.moral += 4; });
       if (dep.prevention) payer('campagne de prévention (criminalité −6)', DEPENSES.prevention.cout, () => { z.criminalite = clamp(z.criminalite - 6, 10, 95); });
       if (dep.soustraitance) payer('sous-traitance administrative (−5 dossiers)', DEPENSES.soustraitance.cout, () => { z.paperasse = Math.max(0, z.paperasse - 5); });
+      if (dep.revision) payer(`révision du parc (état ${Math.round(100 - z.usure)} % → ${Math.round(100 - Math.max(0, z.usure - USURE.revision))} %)`, DEPENSES.revision.cout, () => { z.usure = Math.max(0, z.usure - USURE.revision); });
       z.rapport.push(`Dépenses du jour : ${achats.join(', ')}.`);
       if (paye) z._compta.push({ k: 'depenses', l: 'Dépenses du jour', v: -paye });
     }
@@ -545,7 +561,11 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const ff = fraisFixes(z, state, { amendes: recettes, rythme: o.rythme });
     z.budget += ff.total;
     z._compta.push(...ff.lignes);
-    z.usure = clamp(z.usure + (z.infra.garage ? 1 : 2), 0, 60);
+    // Usure : un peu chaque jour, et surtout à chaque intervention (répartie sur le parc).
+    const avant = z.usure;
+    z.usure = clamp(z.usure + (USURE.parTour + traites * USURE.parIntervention / Math.max(1, z.vehicules)) * (z.infra.garage ? 0.5 : 1), 0, USURE.max);
+    const etat = Math.round(100 - z.usure), malus = Math.round((1 - malusEtat(etat)) * 100);
+    z.rapport.push(`Véhicules : ${traites} intervention${traites > 1 ? 's' : ''}, usure +${fmt1(z.usure - avant)} %, état du parc ${etat} %${malus ? ` (Intervention −${malus} %, pense à une révision)` : ''}.`);
 
     // Moral.
     z.moral += (60 - z.moral) * 0.08 + RYTHMES[o.rythme].moral + (z.infra.sport ? 1 : 0);

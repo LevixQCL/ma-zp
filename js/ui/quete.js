@@ -102,6 +102,7 @@ export function renderQuete() {
         </div>
         <label class="field">Ou +10 % de capacité pour un service
           <select class="text" data-change="quest-capacite"><option value="">Choisir un service…</option>${SERVICES.map((s) => `<option value="${s}">${SERVICE_LABELS[s]}</option>`).join('')}</select></label>`}
+      ${ok >= 3 ? '<p class="small ok" style="margin:0;font-weight:700">🏅 Sans faute ! Prime en plus de ton bonus : +3 k€, +2 de moral et +5 PS ce soir.</p>' : '<p class="tiny muted" style="margin:0">Réussis les 3 énigmes pour une prime « sans faute » : +3 k€, +2 de moral et +5 PS.</p>'}
     </section>` : '';
 
   const modes = `<div class="seg2" role="tablist" aria-label="Mode"><button type="button" role="tab" aria-selected="${!train}" data-action="quest-mode" data-v="jour">Énigmes du jour</button><button type="button" role="tab" aria-selected="${train}" data-action="quest-mode" data-v="train">Entraînement</button></div>`;
