@@ -517,3 +517,10 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .vent-l.ok .mono { color: var(--green-soft); }
 .vent-l.warn .mono { color: var(--amber); }
 .vent-l.bad .mono { color: var(--red-soft); }
+
+/* Roues de décodage à mot-clé : une couleur par roue */
+.roue-c0 { color: var(--amber); }
+.roue-c1 { color: #5AB0F0; }
+.roue-c2 { color: #7FD18B; }
+.roue-c3 { color: #F08BB4; }
+.roue-lecture { font-family: var(--mono); font-size: 16px; letter-spacing: 1px; line-height: 1.6; word-spacing: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-weight: 600; }
