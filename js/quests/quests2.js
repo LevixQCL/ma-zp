@@ -489,7 +489,7 @@ function ecritureSvg(texte, f, signature) {
   const skew = [-12, 0, 12][f.pente];
   return `<svg viewBox="0 0 340 70" width="100%" role="img" aria-label="Échantillon d’écriture" style="display:block;border-radius:6px;background:#F4EFE3">
     <path d="M0 52H340" stroke="#9EB7D6" stroke-width=".8"/><path d="M0 26H340" stroke="#9EB7D6" stroke-width=".5" stroke-opacity=".6"/>
-    <g transform="translate(14 48) skewX(${skew})"><text font-family="Caveat, 'Segoe Print', 'Comic Sans MS', cursive" font-size="${size}" letter-spacing="${f.espace ? 3.2 : 0}" fill="${ENCRES[f.encre][1]}">${texte}</text>
+    <g transform="translate(14 48) skewX(${skew})"><text font-family="Caveat, 'Segoe Print', 'Comic Sans MS', cursive" font-size="${size}" font-weight="${f.appui ? 700 : 400}" letter-spacing="${f.espace ? 3.2 : 0}" fill="${ENCRES[f.encre][1]}">${texte}</text>
     ${f.souligne ? `<path d="M0 6H${Math.min(305, texte.length * size * (f.espace ? 0.55 : 0.43))}" stroke="${ENCRES[f.encre][1]}" stroke-width="1.6" stroke-linecap="round"/>` : ''}</g>
     ${signature ? `<text x="332" y="14" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="8" fill="#6B6152">${signature}</text>` : ''}</svg>`;
 }
@@ -497,38 +497,40 @@ function ecritureSvg(texte, f, signature) {
 function ecriture(rng, diff) {
   const n = diff <= 1 ? 3 : diff <= 3 ? 4 : diff >= 6 ? 6 : 5;
   const stylo = diff >= 4; // l'auteur a changé de stylo : l'encre ne compte pas
-  const traits = ['pente', 'taille', 'espace', 'souligne', 'encre'];
-  const valeurs = { pente: 3, taille: 2, espace: 2, souligne: 2, encre: 2 };
+  const appui = diff >= 5;  // niveaux élevés : on compare aussi l'appui (trait épais ou fin)
+  const traits = ['pente', 'taille', 'espace', 'souligne', 'encre', ...(appui ? ['appui'] : [])];
+  const valeurs = { pente: 3, taille: 2, espace: 2, souligne: 2, encre: 2, appui: 2 };
   const alea = () => Object.fromEntries(traits.map((t) => [t, rng.int(0, valeurs[t] - 1)]));
   const lettre = alea();
   const gens = rng.shuffle(PERSONNES).slice(0, n);
   const coupable = rng.int(0, n - 1);
+  const utiles = traits.filter((t) => !(stylo && t === 'encre'));
+  // Aux niveaux élevés, les innocents diffèrent surtout par les traits discrets (espacement, appui, soulignement).
+  const poids = (t) => (diff >= 5 ? ({ pente: 1, taille: 1, espace: 3, appui: 3, souligne: 2 }[t] || 1) : 1);
   const ech = gens.map((_, k) => {
-    if (k === coupable) {
-      const f = { ...lettre };
-      if (stylo) f.encre = 1 - lettre.encre; // piège : l'encre diffère, mais elle ne compte pas
-      return f;
-    }
-    // Innocents : 1 différence (niveaux élevés) ou 2 (niveaux faibles) sur les traits qui comptent.
     const f = { ...lettre };
-    const utiles = traits.filter((t) => !(stylo && t === 'encre'));
+    // Autre stylo : l'encre de chacun est tirée au hasard, pour qu'elle ne désigne personne.
+    if (stylo) f.encre = rng.int(0, 1);
+    if (k === coupable) return f;
+    // Innocents : 2 différences (niveaux 1-2) ou 1 seule (au-delà) sur les traits qui comptent.
     const nDiff = diff <= 2 ? 2 : 1;
-    for (const t of rng.shuffle(utiles).slice(0, nDiff)) { let v; do v = rng.int(0, valeurs[t] - 1); while (v === lettre[t]); f[t] = v; }
-    if (stylo) f.encre = lettre.encre; // les innocents ont souvent la même encre : c'est le leurre
+    const choisis = [];
+    while (choisis.length < nDiff) { const t = rng.weighted(utiles.filter((x) => !choisis.includes(x)).map((x) => ({ w: poids(x), t: x }))).t; choisis.push(t); }
+    for (const t of choisis) { let v; do v = rng.int(0, valeurs[t] - 1); while (v === lettre[t]); f[t] = v; }
     return f;
   });
   const motsLettre = rng.pick(MOTS_LETTRE);
   const motsEch = rng.shuffle(MOTS_ECHANT);
   return {
     titre: 'Expertise d’écriture', mode: 'choix',
-    contexte: `Une lettre anonyme de menaces est arrivée chez un commerçant. ${n} suspects ont donné un échantillon de leur écriture. Compare l’inclinaison, la taille, l’espacement des lettres${stylo ? ' et le soulignement. Le labo précise que l’auteur a utilisé un autre stylo : la couleur de l’encre ne prouve rien.' : ', le soulignement et la couleur de l’encre.'}`,
+    contexte: `Une lettre anonyme de menaces est arrivée chez un commerçant. ${n} suspects ont donné un échantillon de leur écriture. Compare l’inclinaison, la taille, l’espacement des lettres${appui ? ', l’appui du trait (épais ou fin)' : ''}${stylo ? ' et le soulignement. Le labo précise que l’auteur a utilisé un autre stylo : la couleur de l’encre ne prouve rien.' : ', le soulignement et la couleur de l’encre.'}`,
     figures: [{ titre: 'La lettre anonyme', svg: ecritureSvg(motsLettre, lettre, 'pièce à conviction') },
       ...gens.map((g, k) => ({ titre: `Échantillon de ${g}`, svg: ecritureSvg(motsEch[k], ech[k], g) }))],
     question: 'Qui a écrit la lettre ?',
     choix: gens.map((g) => ({ id: g, label: g })),
     answer: gens[coupable],
     astuce: 'Vérifie un trait à la fois pour tous les échantillons : d’abord l’inclinaison, puis la taille, puis l’espacement…',
-    explication: `C’est ${gens[coupable]} : même inclinaison, même taille, même espacement et même soulignement que la lettre${stylo ? ' (seule l’encre change, et elle ne compte pas)' : ' et même encre'}. Chaque autre échantillon diffère sur au moins un trait.`,
+    explication: `C’est ${gens[coupable]} : même inclinaison, même taille, même espacement${appui ? ', même appui' : ''} et même soulignement que la lettre${stylo ? ' (l’encre, elle, ne compte pas)' : ' et même encre'}. Chaque autre échantillon diffère sur au moins un trait.`,
     _pas: 2,
   };
 }
