@@ -32,7 +32,9 @@ function route() {
 // Chargement avec garde-fou : si rien ne se passe en 20 secondes, on affiche la cause au lieu de tourner sans fin.
 let chargementDepuis = 0, garde = null;
 function loading(msg = 'Chargement…') {
-  app.innerHTML = `<main class="center-screen" aria-busy="true"><h1 class="brand">Ma ZP</h1><p class="sub">${esc(msg)}</p></main>`;
+  const cur = app.querySelector('.loader .loader-msg');
+  if (cur) { cur.textContent = msg; return; } // garde l'animation en cours, change seulement le texte
+  app.innerHTML = `<main class="center-screen loader" aria-busy="true"><div class="loader-halo" aria-hidden="true"></div><div class="lightbar" aria-hidden="true"><span class="lb-blue"></span><span class="lb-amber"></span></div><h1 class="brand brand-xl">Ma ZP</h1><p class="loader-tag">Zone de police · jeu entre collègues</p><div class="loader-bar" aria-hidden="true"><span></span></div><p class="loader-msg" role="status">${esc(msg)}</p></main>`;
   if (!chargementDepuis) chargementDepuis = Date.now();
   clearTimeout(garde);
   garde = setTimeout(() => { if (app.querySelector('[aria-busy="true"]')) bloque(); }, 20000);
