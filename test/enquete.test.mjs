@@ -57,6 +57,13 @@ const aPieces = state.zones.A.enquete.pieces.filter((p) => p.src !== 'ouverture'
 r = resolveTurn(state, { players, orders: { A: { ...base, partages: aPieces.map((f) => ({ f, a: 'C' })) }, B: base, C: base } });
 state = r.state;
 for (const f of aPieces) assert.ok(state.zones.C.enquete.pieces.some((p) => p.f === f && p.de === 'A'), 'indice reçu de A');
+// Chez A, on voit que C a déjà ces pièces ; chez C, que A les a (il les a données).
+{
+  const { dejaPartagee } = await import('../js/engine/enquete.js');
+  for (const f of aPieces) { assert.ok(dejaPartagee(state, 'A', f).has('C'), 'partage visible chez l’expéditeur'); assert.ok(dejaPartagee(state, 'C', f).has('A')); assert.ok(!dejaPartagee(state, 'A', f).has('B')); }
+  const lg = state.zones.A.rapport.find((l) => l.includes('transmise'));
+  assert.ok(lg && lg.includes(`+${5 * aPieces.length} PS`), 'récompense par pièce');
+}
 
 // C accuse juste (il « connaît » la solution) : découverte, contribution de A, nouvelle affaire, traque.
 const jour = state.enquete.jour;
