@@ -5,6 +5,7 @@ import {
   APP_VERSION, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
   MIN_TOURS_CLASSEMENT, START, DEPENSES, RENFORT } from './constants.js';
 import { makeRng } from './rng.js';
+import { attribuerSites, siteDe } from './sites.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, capacite,
   forceEngagement, coutDecision, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses,
@@ -40,6 +41,10 @@ export function buildJoinZone(state, uid, profile, turn = state.turn) {
     }
   }
   const z = newZone({ uid, code: profile.code, nom: profile.nom, couleur: profile.couleur }, turn, base);
+  // Site sensible : le même que celui que calculeraient tous les autres appareils.
+  const tmp = { seed: state.seed, zones: { ...clone(state.zones || {}), [uid]: clone(z) } };
+  attribuerSites(tmp);
+  z.site = tmp.zones[uid].site;
   z.protegeJusqua = absT(state, turn) + MAN.protectionTours;
   return z;
 }
@@ -53,6 +58,7 @@ export function migrateState(state) {
   const defaults = { version: 1, season: 1, turn: 1, zones: {}, affaires: [], evenement: null, affaireSeq: 0, palmares: [], minClientVersion: 0, enquete: null, enqueteSeq: 0, traques: [], fipas: [], fipaSeq: 0, fipaPaires: {}, duels: [], postes: [], conseil: null, theme: null, motionsChef: [], toursSansFaillite: 0, aReveler: [] };
   for (const [k, v] of Object.entries(defaults)) if (state[k] === undefined) state[k] = v;
   for (const z of Object.values(state.zones)) migrateZone(z);
+  attribuerSites(state);
   return state;
 }
 
@@ -561,6 +567,11 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   for (const z of Object.values(state.zones)) {
     const nr = makeRng(`${state.seed}:s${state.season}:t${T}:next:${z.uid}`);
     if (z.operation && T + 1 >= z.operation.tourDebut + z.operation.duree) z.operation = null;
+    const site = siteDe(z);
+    // Le site sensible peut déclencher sa propre opération d'envergure…
+    if (!z.operation && site && site.operation && T + 1 >= 3 && nr.chance(0.05)) {
+      z.operation = { id: `site-${site.id}`, ...JSON.parse(JSON.stringify(site.operation)), site: site.id, tourDebut: T + 1, couvertures: [] };
+    }
     if (!z.operation && T + 1 >= 3 && nr.chance(0.16)) {
       const op = nr.pick(OPERATIONS);
       z.operation = { ...JSON.parse(JSON.stringify(op)), tourDebut: T + 1, couvertures: [] };
@@ -568,7 +579,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const pressions = [];
     if (nextWeekday === 5 || nextWeekday === 6) pressions.push(PRESSION_WEEKEND);
     if (nr.chance(0.75)) pressions.push(nr.pick(PRESSIONS.filter((p) => !(p.id === 'nuit' && pressions.length))));
-    z.pressions = JSON.parse(JSON.stringify(pressions));
+    // … et, plus souvent, un imprévu du jour.
+    if (site && nr.chance(0.25)) {
+      const ev = nr.pick(site.evenements);
+      pressions.unshift({ id: `site-${site.id}`, site: site.id, titre: `${site.nom} · ${ev.titre}`, texte: ev.texte, effet: ev.effet });
+    }
+    z.pressions = JSON.parse(JSON.stringify(pressions.slice(0, 3)));
   }
 
   // 6. Affaires : celles non résolues restent un tour de plus, moins bien dotées.
