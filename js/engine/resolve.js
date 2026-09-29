@@ -3,12 +3,12 @@
 
 import {
   APP_VERSION, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, RENFORT } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { attribuerSites, siteDe } from './sites.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, capacite,
-  forceEngagement, coutDecision, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses,
+  forceEngagement, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses,
 } from './zone.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
@@ -45,6 +45,7 @@ export function buildJoinZone(state, uid, profile, turn = state.turn) {
   const tmp = { seed: state.seed, zones: { ...clone(state.zones || {}), [uid]: clone(z) } };
   attribuerSites(tmp);
   z.site = tmp.zones[uid].site;
+  ajusterBatiments(z);
   z.protegeJusqua = absT(state, turn) + MAN.protectionTours;
   return z;
 }
@@ -140,6 +141,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   }
 
   const uids = Object.keys(state.zones).filter((u) => state.zones[u].joinedTurn <= T).sort();
+  const budget0 = Object.fromEntries(uids.map((u) => [u, state.zones[u].budget]));
 
   // 2. Ordres de chaque zone (joués ou pilote automatique).
   const ord = {};
@@ -159,6 +161,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push('Pas d’ordres ce tour : le pilote automatique a repris la dernière répartition.');
     }
     z._points = 0;
+    z._compta = z._compta || [];
     z._ps = 0;
   }
 
@@ -283,6 +286,13 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.hier = { moral: z.moral, satisfaction: z.satisfaction, reputation: z.reputation, budget: z.budget, ipz: z.ipz, turn: T };
 
     // Fins de formation, arrivées de l'académie.
+    if (z.travaux && z.travaux.fin <= T) {
+      const bt = z.travaux.batiment;
+      z.batiments[bt] = Math.min(BATIMENT_MAX, z.batiments[bt] + 1);
+      z.rapport.push(`Travaux terminés : ${BATIMENTS[bt].nom} au niveau ${z.batiments[bt]} (${BATIMENTS[bt].capacite(z.batiments[bt])} ${BATIMENTS[bt].unite}).`);
+      push(3, 'Chantier', `${zoneLabel(z)} agrandit son ${BATIMENTS[bt].nom.toLowerCase()}`, `Niveau ${z.batiments[bt]} : jusqu’à ${BATIMENTS[bt].capacite(z.batiments[bt])} ${BATIMENTS[bt].unite}.`, uid);
+      z.travaux = null;
+    }
     for (const f of z.formations) if (f.fin === T) { z.niveaux[f.service] = Math.min(5, z.niveaux[f.service] + 1); z.rapport.push(`Formation terminée : ${SERVICE_LABELS[f.service]} passe au niveau ${z.niveaux[f.service]}.`); }
     const arrivees = z.academie.filter((a) => a.arrivee === T).reduce((s, a) => s + a.n, 0);
     if (arrivees) { z.agents += arrivees; z.rapport.push(`${arrivees} recrue${arrivees > 1 ? 's' : ''} sort${arrivees > 1 ? 'ent' : ''} de l’académie.`); }
@@ -294,7 +304,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const a = zr.pick(ALEAS);
       const e = a.effet;
       if (e.moral) z.moral += e.moral;
-      if (e.budget) z.budget += e.budget;
+      if (e.budget) { z.budget += e.budget; z._compta.push({ k: 'alea', l: `Imprévu : ${a.titre || 'aléa'}`, v: e.budget }); }
       if (e.satisfaction) z.satisfaction += e.satisfaction;
       if (e.paperasse) z.paperasse = Math.max(0, z.paperasse + e.paperasse);
       if (e.adminMult) adminMult *= e.adminMult;
@@ -361,7 +371,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       let txt = `Énigmes du jour : ${ok} bonne${ok > 1 ? 's' : ''} réponse${ok > 1 ? 's' : ''} sur ${qs.length}${faux ? ` (−${faux} de moral)` : ''}`;
       if (ok >= 2 && b) {
         if (b.bonus === 'moral') { z.moral += 3; txt += ', bonus +3 de moral'; }
-        else if (b.bonus === 'budget') { z.budget += 2; txt += ', bonus +2 k€'; }
+        else if (b.bonus === 'budget') { z.budget += 2; z._compta.push({ k: 'bonus', l: 'Bonus d’énigmes', v: 2 }); txt += ', bonus +2 k€'; }
         else if (b.bonus === 'indice') { txt += indiceBonus(state, z, zr) ? ', bonus +1 indice d’enquête' : ', bonus indice (rien de nouveau à trouver)'; }
         else if (b.bonus === 'capacite' && SERVICES.includes(b.service)) { bonusService = b.service; txt += `, bonus +10 % en ${SERVICE_LABELS[b.service]}`; }
       }
@@ -420,12 +430,14 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     let reserve = 0;
     if (dep && coutDepenses(dep) > 0) {
       const achats = [];
-      const payer = (k, cout, fn) => { if (z.budget >= cout) { z.budget -= cout; fn(); achats.push(k); } else achats.push(`${k} (refusé : budget insuffisant)`); };
+      let paye = 0;
+      const payer = (k, cout, fn) => { if (z.budget >= cout) { z.budget -= cout; paye += cout; fn(); achats.push(k); } else achats.push(`${k} (refusé : budget insuffisant)`); };
       if (dep.reserve) payer(`${dep.reserve} agent${dep.reserve > 1 ? 's' : ''} de réserve en ${SERVICE_LABELS[dep.reserveService]}`, dep.reserve * DEPENSES.reserve.cout, () => { reserve = dep.reserve; });
       if (dep.prime) payer('prime au personnel (+4 de moral)', DEPENSES.prime.cout, () => { z.moral += 4; });
       if (dep.prevention) payer('campagne de prévention (criminalité −6)', DEPENSES.prevention.cout, () => { z.criminalite = clamp(z.criminalite - 6, 10, 95); });
       if (dep.soustraitance) payer('sous-traitance administrative (−5 dossiers)', DEPENSES.soustraitance.cout, () => { z.paperasse = Math.max(0, z.paperasse - 5); });
       z.rapport.push(`Dépenses du jour : ${achats.join(', ')}.`);
+      if (paye) z._compta.push({ k: 'depenses', l: 'Dépenses du jour', v: -paye });
     }
 
     // Capacités des services (avec les agents restés à leur poste, plus la réserve).
@@ -509,7 +521,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const refus = decisionImpossible(z, dec, T);
       if (refus) z.rapport.push(`Décision refusée : ${refus}.`);
       else {
-        z.budget -= coutDecision(z, dec);
+        const cd = coutDecision(z, dec);
+        z.budget -= cd;
+        z._compta.push({ k: 'decision', l: 'Grande décision', v: -cd });
+        if (dec.type === 'agrandir') { z.travaux = { batiment: dec.batiment, fin: T + TRAVAUX_TOURS }; z.rapport.push(`Travaux lancés : ${BATIMENTS[dec.batiment].nom}, niveau ${z.batiments[dec.batiment] + 1} dans ${TRAVAUX_TOURS} tours.`); }
         if (dec.type === 'recruter') { z.academie.push({ n: dec.n, arrivee: T + DELAI_ACADEMIE }); z.rapport.push(`${dec.n} recrue${dec.n > 1 ? 's' : ''} à l’académie, arrivée dans ${DELAI_ACADEMIE} tours.`); }
         if (dec.type === 'former') { z.formations.push({ service: dec.service, fin: T + DUREE_FORMATION + 1 }); z.rapport.push(`Formation lancée : ${SERVICE_LABELS[dec.service]} (2 agents indisponibles ${DUREE_FORMATION} tours).`); }
         if (dec.type === 'equiper') {
@@ -521,9 +536,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
 
     // Budget du tour.
-    const salaires = z.agents * ECONOMIE.salaire;
-    const entretien = z.vehicules * ECONOMIE.entretienVehicule;
-    z.budget += ECONOMIE.dotation + recettes - salaires - entretien - RYTHMES[o.rythme].cout;
+    const ff = fraisFixes(z, state, { amendes: recettes, rythme: o.rythme });
+    z.budget += ff.total;
+    z._compta.push(...ff.lignes);
     z.usure = clamp(z.usure + (z.infra.garage ? 1 : 2), 0, 60);
 
     // Moral.
@@ -541,6 +556,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (z.inspectionCooldown > 0) z.inspectionCooldown -= 1;
     else if (z.budgetNegSuite >= 2 || z.paperasse > 20) {
       z.budget -= 5; z.satisfaction -= 5; z.inspectionCooldown = 4;
+      z._compta.push({ k: 'inspection', l: 'Amende de l’Inspection générale', v: -5 });
       const motif = z.paperasse > 20 ? 'paperasse débordante' : 'budget dans le rouge';
       z.rapport.push(`Inspection générale (${motif}) : amende de 5 k€ et −5 de satisfaction.`);
       push(7, 'Inspection générale', `L’Inspection débarque à ${zoneLabel(z)}`, `Motif : ${motif}. Amende de 5 k€.`, uid);
@@ -646,7 +662,15 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     rapports: Object.fromEntries(uids.map((u) => [u, state.zones[u].rapport])),
     finSaison: null,
   };
-  for (const u of uids) { delete state.zones[u]._joue; delete state.zones[u]._points; delete state.zones[u]._ps; }
+  for (const u of uids) {
+    const z = state.zones[u];
+    // Relevé du budget : lignes connues + le reste (aléas, enquête, FIPA, Conseil, entraide…).
+    const lignes = (z._compta || []).map((x) => ({ ...x, v: round1(x.v) }));
+    const autres = round1(z.budget - budget0[u] - lignes.reduce((s, x) => s + x.v, 0));
+    if (Math.abs(autres) >= 0.1) lignes.push({ k: 'autres', l: 'Autres mouvements', v: autres });
+    z.compta = { tour: T, debut: round1(budget0[u]), fin: z.budget, lignes };
+    delete z._joue; delete z._points; delete z._ps; delete z._compta;
+  }
 
   // 10. Fin de saison ou tour suivant.
   if (T >= SEASON_LENGTH) {

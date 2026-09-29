@@ -1,5 +1,5 @@
 // Zones robots : utilisées par le mode démo et par la simulation d'équilibrage.
-import { SERVICES, INFRAS, COUTS } from './constants.js';
+import { SERVICES, INFRAS, COUTS, BATIMENTS } from './constants.js';
 import { makeRng } from './rng.js';
 import { agentsDisponibles, coutDecision, decisionImpossible, operationActive, NIVEAUX_OPERATION } from './zone.js';
 import { genererAffaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ } from './enquete.js';
@@ -73,6 +73,7 @@ export function botOrders(zone, state, style = 'equilibre') {
     for (const [id, inf] of Object.entries(INFRAS)) if (!zone.infra[id] && zone.budget - inf.cout > 15) options.push({ type: 'construire', infra: id });
     options.push({ type: 'former', service: rng.pick(SERVICES) });
     if (zone.agents < 22) options.push({ type: 'recruter', n: 2 });
+    if (!zone.travaux && zone.batiments && zone.agents + 2 > BATIMENTS.bureaux.capacite(zone.batiments.bureaux) && zone.batiments.bureaux < 5) options.push({ type: 'agrandir', batiment: 'bureaux' });
   }
   if (zone.budget > COUTS.vehicule + 10 && zone.vehicules < 5) options.push({ type: 'equiper', cible: 'vehicule' });
   if (options.length && rng.chance(style === 'prudent' ? 0.25 : 0.45)) {

@@ -381,8 +381,22 @@ nav.tabs a.centre .dot { top: -22px; right: calc(50% - 26px); }
 details.repli { padding: 0; gap: 0; display: block; }
 details.repli > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; padding: 14px 16px; min-height: 56px; }
 details.repli > summary::-webkit-details-marker { display: none; }
-details.repli > summary svg:last-child { transition: transform .15s; color: var(--muted); }
-details.repli[open] > summary svg:last-child { transform: rotate(90deg); }
+details.repli > summary > svg:last-child { transition: transform .15s; color: var(--muted); }
+details.repli[open] > summary > svg:last-child { transform: rotate(90deg); }
 details.repli > :not(summary) { margin: 0 16px 14px; }
 details.repli > ul.aide-liste { margin-left: 34px; }
 details.repli > summary { font-size: 14px; }
+
+/* Tuile Budget cliquable */
+.tile-btn { font: inherit; color: inherit; text-align: left; cursor: pointer; border: 1px solid var(--amber-line); }
+.tile-btn:hover { border-color: var(--amber); }
+/* Détail du budget */
+.compta-t { margin: 6px 0 0; font-size: 11px; color: var(--amber); text-transform: uppercase; letter-spacing: .8px; }
+.compta .mono { white-space: nowrap; }
+.compta { font-size: 13px; padding: 3px 0; border-bottom: 1px dashed var(--line); gap: 12px; }
+.compta.total { border-bottom: none; border-top: 1px solid var(--line); font-weight: 700; padding-top: 6px; }
+/* Logistique */
+.bat { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+.niv { display: inline-flex; gap: 3px; }
+.niv i { width: 12px; height: 6px; border-radius: 2px; background: var(--line); }
+.niv i.on { background: var(--amber); }

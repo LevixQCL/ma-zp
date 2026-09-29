@@ -97,7 +97,7 @@ export function rivalitesPre(state, uids, ord, push, T) {
     const budget = clamp(a.budget || 0, 0, Math.min(AIDE.budgetMax, Math.max(0, z.budget)));
     const agents = clamp(a.agents || 0, 0, Math.min(AIDE.agentsMax, Math.max(0, agentsDisponibles(z, T) - 8)));
     if (!budget && !agents) continue;
-    if (budget) { z.budget -= budget; c.budget += budget; }
+    if (budget) { z.budget -= budget; c.budget += budget; (z._compta ||= []).push({ k: 'entraide', l: 'Entraide envoyée', v: -budget }); (c._compta ||= []).push({ k: 'entraide', l: 'Entraide reçue', v: budget }); }
     if (agents) {
       z.blesses.push({ n: agents, retour: T + 1 + AIDE.dureePret, motif: 'prêté' });
       c.renforts = [...(c.renforts || []), { n: agents, debut: T + 1, retour: T + 1 + AIDE.dureePret, de: u }];
@@ -144,7 +144,7 @@ export function rivalitesPre(state, uids, ord, push, T) {
       case 'signalement':
         if (c.paperasse > 14) {
           ok = true; detail = 'la paperasse débordait bien';
-          c.budget -= 5; c.satisfaction -= 5; c.inspectionCooldown = 4; z.reputation += 3;
+          c.budget -= 5; (c._compta ||= []).push({ k: 'inspection', l: 'Amende de l’Inspection (signalement)', v: -5 }); c.satisfaction -= 5; c.inspectionCooldown = 4; z.reputation += 3;
           c.rapport.push('Inspection générale sur signalement : amende de 5 k€ et −5 de satisfaction.');
         } else { z.reputation -= 5; detail = 'signalement infondé (−5 de réputation)'; }
         break;
@@ -226,11 +226,11 @@ function appliquerMotion(state, m, choix, votants, T) {
   const zs = votants.map((u) => state.zones[u]);
   if (m.id === 'dotation') {
     if (!zs.length) return;
-    if (choix === 0) for (const z of zs) { z.budget += round1(20 / zs.length); z.rapport.push(`Conseil : dotation fédérale partagée, +${String(round1(20 / zs.length)).replace('.', ',')} k€.`); }
+    if (choix === 0) for (const z of zs) { z.budget += round1(20 / zs.length); (z._compta ||= []).push({ k: 'conseil', l: 'Conseil : dotation partagée', v: round1(20 / zs.length) }); z.rapport.push(`Conseil : dotation fédérale partagée, +${String(round1(20 / zs.length)).replace('.', ',')} k€.`); }
     else {
       const poids = zs.map((z) => 1 + z.stats.fipaHonorees * 2 + z.stats.indicesPartages);
       const tot = poids.reduce((s, p) => s + p, 0);
-      zs.forEach((z, i) => { const g = round1(20 * poids[i] / tot); z.budget += g; z.rapport.push(`Conseil : prime à la coopération, +${String(g).replace('.', ',')} k€.`); });
+      zs.forEach((z, i) => { const g = round1(20 * poids[i] / tot); z.budget += g; (z._compta ||= []).push({ k: 'conseil', l: 'Conseil : prime à la coopération', v: g }); z.rapport.push(`Conseil : prime à la coopération, +${String(g).replace('.', ',')} k€.`); });
     }
   } else if (m.id === 'theme') {
     state.theme = choix === 1 ? { id: 'routiere', jusqua: absT(state, T) + 7 } : choix === 2 ? { id: 'proximite', jusqua: absT(state, T) + 7 } : null;
@@ -241,7 +241,7 @@ function appliquerMotion(state, m, choix, votants, T) {
     for (const z of Object.values(state.zones)) {
       if (m.type === 'prime') z.moral = clamp(z.moral + 3, 0, 100);
       if (m.type === 'amnistie') z.paperasse = Math.max(0, z.paperasse - 5);
-      if (m.type === 'subside') z.budget += 3;
+      if (m.type === 'subside') { z.budget += 3; (z._compta ||= []).push({ k: 'conseil', l: 'Conseil : subside exceptionnel', v: 3 }); }
     }
   }
 }

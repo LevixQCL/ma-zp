@@ -9,6 +9,7 @@ import { ouvrirAide } from './ui/aide.js';
 import { monAppel } from './ui/renfort.js';
 import { maCandidature } from './ui/affaires.js';
 import { renderTerrain } from './ui/terrain.js';
+import { ouvrirBudget } from './ui/logistique.js';
 import { operationActive } from './engine/zone.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations } from './ui/ordres.js';
@@ -243,6 +244,12 @@ async function onClick(e) {
         el.disabled = true;
         await b.sendPrive(S.user.uid, uid, ok ? `✅ Candidature acceptée sur « ${a.titre} ». Bienvenue dans l’équipe !` : `❌ Candidature refusée sur « ${a.titre} ».`, { reponse: { aid: a.id, accepte: ok, season: st.season, turn: st.turn } });
         toast(ok ? 'Candidature acceptée. Valide tes ordres.' : 'Candidature refusée.'); rerender(); break;
+      }
+      case 'budget': ouvrirBudget(); break;
+      case 'agrandir': {
+        const d0 = S.draft.decision;
+        S.draft.decision = d0 && d0.type === 'agrandir' && d0.batiment === el.dataset.b ? null : { type: 'agrandir', batiment: el.dataset.b };
+        S.ordersDirty = true; rerender(); break;
       }
       case 'carte-zoom': S.carteZoom = el.dataset.v === '1'; rerender(); break;
       case 'renfort-n': {
@@ -672,6 +679,8 @@ async function boot() {
     if (changed) afterAuth();
   });
   document.addEventListener('click', onClick);
+  // Sections repliables : on se souvient de celles qui sont ouvertes.
+  document.addEventListener('toggle', (e) => { const d = e.target; if (d && d.tagName === 'DETAILS' && d.dataset.k) S.ouverts = { ...(S.ouverts || {}), [d.dataset.k]: d.open }; }, true);
   document.addEventListener('submit', onSubmit);
   document.addEventListener('input', onInput);
   document.addEventListener('change', onChange);
