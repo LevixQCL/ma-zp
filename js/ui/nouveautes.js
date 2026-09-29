@@ -3,7 +3,7 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-29',
+  id: '2026-09-29b',
   titre: 'Mise à jour du 29 septembre',
   points: [
     ['Nouvel onglet Terrain', 'tout ce qui se passe chez toi, chez les voisins et dans le district, avec de quoi agir. L’Enquête est au centre de la barre du bas.'],
@@ -13,13 +13,15 @@ export const NOTE_MAJ = {
     ['Nouvelle carte', 'plan de nuit, zoom sur ta zone, et un site sensible par zone (stade, usine Seveso, gare…) qui provoque ses propres imprévus.'],
     ['Logistique et budget', 'hôtel de police et garage à niveaux sur l’HP ; touche la tuile Budget pour le détail de ce qui coûte et rapporte.'],
     ['Énigmes', '11 types au lieu de 5 (plaque, photos, filature, écriture…) et tu peux en changer une par jour.'],
+    ['Dossier noir', 'chaque jour, une 4e énigme facultative de niveau hardcore. Sans coup de pouce ni pénalité : une réussite rapporte +15 PS et compte pour le titre « Cerveau du district ».'],
+    ['Entraînement', 'dans l’écran Énigmes, entraîne-toi sur le type et la difficulté de ton choix, correction immédiate. Rien ne compte.'],
     ['Règles', 'recrues en 2 tours, formation et travaux en 1 tour ; à la fin de la saison, formations et bâtiments sont conservés (un niveau de moins).'],
   ],
 };
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP ! Nouvel onglet Terrain, affaires disputées dirigées par la zone concernée (les autres postulent), appels à renfort, messages privés, nouvelle carte avec un site sensible par zone, logistique et détail du budget, 11 types d’énigmes (une à changer par jour), délais raccourcis et héritage entre saisons. Tout le détail s’affiche à ta prochaine ouverture du jeu (ou HP → Nouveautés). Recharge la page si besoin !`;
+  return `📣 Mise à jour de Ma ZP ! Nouvel onglet Terrain, affaires disputées dirigées par la zone concernée (les autres postulent), appels à renfort, messages privés, nouvelle carte avec un site sensible par zone, logistique et détail du budget, 11 types d’énigmes (une à changer par jour), un dossier noir hardcore chaque jour, un mode entraînement, délais raccourcis et héritage entre saisons. Tout le détail s’affiche à ta prochaine ouverture du jeu (ou HP → Nouveautés). Recharge la page si besoin !`;
 }
 
 const cle = () => `mazp-maj-vue-${NOTE_MAJ.id}`;
