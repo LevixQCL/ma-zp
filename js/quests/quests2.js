@@ -357,6 +357,8 @@ function filature(rng, diff) {
 // Un receleur a lâché quelques informations sur la valeur des objets volés.
 // Des équations simples, mais il faut toutes les combiner.
 
+/** « vaut » ou « valent » selon l'objet (les boucles d'oreilles sont au pluriel). */
+const vaut = (o) => (o.startsWith('les ') ? 'valent' : 'vaut');
 const OBJETS = ['la montre', 'le collier', 'la bague', 'le tableau', 'l’ordinateur', 'la statuette', 'le vélo électrique', 'les boucles d’oreilles'];
 
 function butin(rng, diff) {
@@ -369,9 +371,9 @@ function butin(rng, diff) {
     const pool = [];
     for (let a = 0; a < n; a++) for (let b = 0; b < n; b++) {
       if (a === b) continue;
-      if (v[a] % v[b] === 0 && v[a] / v[b] >= 2 && v[a] / v[b] <= 4) pool.push({ eq: Object.assign(Array(n).fill(0), { [a]: 1, [b]: -v[a] / v[b] }), c: 0, t: `${cap(objs[a])} vaut ${['', '', 'deux', 'trois', 'quatre'][v[a] / v[b]]} fois ${objs[b]}.` });
+      if (v[a] % v[b] === 0 && v[a] / v[b] >= 2 && v[a] / v[b] <= 4) pool.push({ eq: Object.assign(Array(n).fill(0), { [a]: 1, [b]: -v[a] / v[b] }), c: 0, t: `${cap(objs[a])} ${vaut(objs[a])} ${['', '', 'deux', 'trois', 'quatre'][v[a] / v[b]]} fois ${objs[b]}.` });
       if (a < b) pool.push({ eq: Object.assign(Array(n).fill(0), { [a]: 1, [b]: 1 }), c: v[a] + v[b], t: `${cap(objs[a])} et ${objs[b]} valent ensemble ${euros(v[a] + v[b])}.` });
-      if (v[a] > v[b]) pool.push({ eq: Object.assign(Array(n).fill(0), { [a]: 1, [b]: -1 }), c: v[a] - v[b], t: `${cap(objs[a])} vaut ${euros(v[a] - v[b])} de plus que ${objs[b]}.` });
+      if (v[a] > v[b]) pool.push({ eq: Object.assign(Array(n).fill(0), { [a]: 1, [b]: -1 }), c: v[a] - v[b], t: `${cap(objs[a])} ${vaut(objs[a])} ${euros(v[a] - v[b])} de plus que ${objs[b]}.` });
     }
     pool.push({ eq: Array(n).fill(1), c: total, t: `Le receleur en proposait ${euros(total)} pour le lot complet.` });
     // On choisit n équations indépendantes (système à solution unique).
@@ -388,11 +390,11 @@ function butin(rng, diff) {
       titre: 'Le butin', mode: 'exact',
       contexte: `Un receleur vient d’être interpellé avec ${n} objets volés lors d’un cambriolage. L’assureur a besoin de la valeur de chacun. Voici ce que le receleur a lâché pendant son audition.`,
       indices: rng.shuffle(choisis).map((e) => e.t),
-      question: `Combien vaut ${objs[cible]}, en euros ?`,
+      question: `Combien ${vaut(objs[cible])} ${objs[cible]}, en euros ?`,
       placeholder: 'montant', inputmode: 'numeric',
       answer: String(v[cible]),
       astuce: 'Donne une lettre à chaque objet et écris chaque phrase comme une petite équation.',
-      explication: `${cap(objs[cible])} vaut ${euros(v[cible])}. Les valeurs : ${objs.map((o, k) => `${o} ${euros(v[k])}`).join(', ')}.`,
+      explication: `${cap(objs[cible])} ${vaut(objs[cible])} ${euros(v[cible])}. Les valeurs : ${objs.map((o, k) => `${o} ${euros(v[k])}`).join(', ')}.`,
       _pas: n,
     };
   }
