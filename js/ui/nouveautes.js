@@ -3,13 +3,14 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-29g',
+  id: '2026-09-29h',
   titre: 'Mise à jour du 29 septembre (équilibrage)',
   points: [
     ['Roulage', 'au-delà de 6 agents, chaque agent de plus compte pour moitié : les automobilistes sont prévenus. Le Roulage reste rentable, mais ne peut plus remplacer la dotation.'],
     ['Caméras de lecture de plaques', 'l’effet « chasse aux PV » n’est plus supprimé : il joue au-delà de 40 % des effectifs en Roulage (25 % sans caméras).'],
     ['Prime au personnel', '+4 de moral sous 70, +2 de 70 à 85, +1 au-delà : verser une prime chaque jour ne garde plus le moral bloqué à 100.'],
-    ['Rapport du jour', 'le détail de ton IPZ, composante par composante, avec ce qui a monté ou baissé depuis la veille.'],
+    ['Rapport du jour', 'le détail de ton IPZ, et surtout « pourquoi tes jauges ont bougé » : chaque cause de variation du moral, de la satisfaction et de la réputation, et d’où viennent tes points de résultats. Les flèches permettent de revoir les tours précédents.'],
+    ['Partage de pièces', '+5 PS et +1 de réputation par pièce transmise (et non plus pour l’ensemble). Le rapport dit à qui chaque pièce est partie, et lesquelles le destinataire avait déjà.'],
     ['Carte', 'chaque zone a un liseré de sa couleur et son nom en couleur : on les distingue d’un coup d’œil.'],
   ],
 };

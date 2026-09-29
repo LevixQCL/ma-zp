@@ -510,19 +510,27 @@ export function enquetePre(state, uids, ord, push) {
   for (const u of uids) {
     const z = state.zones[u];
     const mes = new Set(faitsConnus(z.enquete));
-    let donnes = 0;
+    const transmises = [], dejaConnues = [];
     for (const p of (ord[u].partages || []).slice(0, ENQ.maxPartages)) {
       if (!mes.has(p.f) || p.f === 'p:humidite') continue;
       const dests = p.a === '*' ? uids.filter((x) => x !== u) : (uids.includes(p.a) && p.a !== u ? [p.a] : []);
+      const recus = [];
       for (const d of dests) {
         const dz = state.zones[d];
-        if (faitsConnus(dz.enquete).includes(p.f)) continue;
+        if (faitsConnus(dz.enquete).includes(p.f)) { if (p.a !== '*') dejaConnues.push(`« ${titrePiece(aff, p.f)} » (${nomZone(dz)} l’avait déjà)`); continue; }
         dz.enquete.pieces.push({ f: p.f, j: e.jour, src: 'partage', de: u });
         dz.rapport.push(`Enquête : ${nomZone(z)} te transmet une pièce (« ${titrePiece(aff, p.f)} »).`);
-        donnes++;
+        recus.push(nomZone(dz));
       }
+      if (recus.length) transmises.push(`« ${titrePiece(aff, p.f)} » à ${p.a === '*' ? `${recus.length} zone${recus.length > 1 ? 's' : ''}` : recus[0]}`);
     }
-    if (donnes) { z._ps += 5; z.stats.indicesPartages += 1; z.reputation += 1; z.rapport.push(`Enquête : pièce${donnes > 1 ? 's' : ''} transmise${donnes > 1 ? 's' : ''} (+5 PS, +1 de réputation).`); }
+    // Récompense par pièce transmise (une pièce envoyée à tout le district compte une fois).
+    const n = transmises.length;
+    if (n) {
+      z._ps += 5 * n; z.stats.indicesPartages += n; z.reputation += n;
+      z.rapport.push(`Enquête : ${n} pièce${n > 1 ? 's' : ''} transmise${n > 1 ? 's' : ''} : ${transmises.join(' ; ')} (+${5 * n} PS, +${n} de réputation).`);
+    }
+    if (dejaConnues.length) z.rapport.push(`Enquête : pas transmise${dejaConnues.length > 1 ? 's' : ''}, déjà au dossier du destinataire : ${dejaConnues.join(' ; ')}.`);
   }
 
   // Audition de la victime : deux agents de Recherche pris pour la journée.

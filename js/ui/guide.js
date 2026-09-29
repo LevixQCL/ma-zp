@@ -149,7 +149,7 @@ export function sections() {
         ${ul([
           `Dès que plusieurs zones jouent, le parquet répartit les suspects entre ${ENQ.maxCellules} cellules de zones au plus. Vérifier un suspect de ta cellule coûte le prix normal, un autre coûte le double.`,
           'L’écran te dit quelles zones suivent chaque suspect : demande-leur leurs pièces à la radio, et propose les tiennes.',
-          `Tu peux partager jusqu’à ${ENQ.maxPartages} pièces par tour, à une zone ou à toutes. Elles arrivent le soir même, avec ton nom (+5 PS, +1 de réputation).`,
+          `Tu peux partager jusqu’à ${ENQ.maxPartages} pièces par tour, à une zone ou à toutes. Elles arrivent le soir même, avec ton nom : +5 PS et +1 de réputation par pièce transmise (une pièce envoyée à toutes les zones compte une fois). Une pièce que le destinataire a déjà n’est pas comptée.`,
           `Si une pièce que tu as donnée se trouve dans le dossier d’une zone qui identifie l’auteur, tu touches ${POINTS.contribution} points d’enquête.`,
           'Garder ses pièces peut faire gagner une découverte… ou laisser l’affaire se faire classer.',
         ])}
