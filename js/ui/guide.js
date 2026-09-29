@@ -82,7 +82,7 @@ export function sections() {
           ['Intervention', 'Traite les incidents du jour (environ 1,1 de capacité par incident). Chaque incident raté coûte 1,8 de satisfaction. Limité par les véhicules : au-delà de 2,5 agents par véhicule, les agents en plus ne comptent qu’à moitié.'],
           ['Proximité', 'Fait baisser la criminalité (0,6 par unité de capacité) et soigne la satisfaction.'],
           ['Recherche', 'Élucide les dossiers locaux, qui rapportent des points ; alimente l’enquête de voisinage.'],
-          ['Roulage', `Rapporte des amendes (${k(ECONOMIE.amendeParCapacite)} par unité de capacité). Au-delà de 25 % des effectifs : effet « chasse aux PV », −2 de satisfaction.`],
+          ['Roulage', `Rapporte des amendes (${k(ECONOMIE.amendeParCapacite)} par unité de capacité). Au-delà de 6 agents, chaque agent de plus compte pour moitié. Au-delà de 25 % des effectifs (40 % avec les caméras) : effet « chasse aux PV », −2 de satisfaction.`],
           ['Accueil et administration', 'Écluse la paperasse. Au-delà de 14 dossiers : −2 de moral par tour ; au-delà de 20 : l’Inspection.'],
         ])}
         <p>La capacité d'un service dépend du nombre d'agents, de son niveau (1 à ${NIVEAU_MAX}), de son équipement (1 à ${NIVEAU_MAX}), du moral et du rythme.</p>
