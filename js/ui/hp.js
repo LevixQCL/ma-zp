@@ -41,6 +41,12 @@ function nuitHtml(z) {
   </section>`;
 }
 
+/** Le joueur a-t-il déjà ouvert les « Premiers pas » du guide ? */
+function premiersPasVus() {
+  if (S.premiersPasVus) return true;
+  try { return !!localStorage.getItem('mazp-premiers-pas-vus'); } catch (e) { return false; }
+}
+
 /** Liste de ce qu'il reste à faire avant 20:00. */
 function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
   const d = S.draft || {};
@@ -188,7 +194,7 @@ export function renderHP() {
       </div>
       ${S.backend.mode === 'demo' ? '<button class="btn outline block" data-action="demo-next">Démo : passer au tour suivant</button>' : ''}
     </section>
-    ${z.toursJoues < 2 ? '<a class="list-row" href="#guide-debut" style="border-color:var(--amber-line)"><span class="bullet" style="background:var(--amber)"></span><span class="col grow" style="gap:1px"><span style="font-weight:600">Nouveau ? Lis les « Premiers pas »</span><span class="small muted">2 minutes pour comprendre ta journée de chef de zone</span></span></a>' : ''}
+    ${z.toursJoues < 2 && !premiersPasVus() ? '<a class="list-row" href="#guide-debut" style="border-color:var(--amber-line)"><span class="bullet" style="background:var(--amber)"></span><span class="col grow" style="gap:1px"><span style="font-weight:600">Nouveau ? Lis les « Premiers pas »</span><span class="small muted">2 minutes pour comprendre ta journée de chef de zone</span></span></a>' : ''}
   </main>${tabbar('hp', { questBadge: !questDone, radioBadge: S.radio.length > S.radioSeen })}`;
 }
 
