@@ -34,58 +34,103 @@ const VOYELLES = new Set(['A', 'E', 'Y']);
 const TEMOINS_PLAQUE = ['Le pompiste', 'Une passante', 'Le chauffeur de bus', 'La caméra du carrefour', 'Un cycliste', 'La commerçante d’en face', 'Le gardien du parking', 'Un livreur'];
 
 function plaque(rng, diff) {
-  const nCand = diff <= 1 ? 5 : diff <= 3 ? 7 : diff >= 6 ? 12 : 9;
-  const besoin = diff <= 1 ? 2 : diff <= 3 ? 2 : diff >= 6 ? 4 : 3;
-  for (let essai = 0; essai < 400; essai++) {
-    const fab = () => ({ d: rng.int(1, 2), l: [rng.pick(LETTRES), rng.pick(LETTRES), rng.pick(LETTRES)], c: [rng.int(0, 9), rng.int(0, 9), rng.int(0, 9)] });
-    const txt = (p) => `${p.d}-${p.l.join('')}-${p.c.join('')}`;
-    const secret = fab();
-    // Distracteurs proches : une ou deux différences avec la vraie plaque.
+  const nCand = diff <= 1 ? 6 : diff <= 3 ? 8 : diff >= 6 ? 12 : 10;
+  const besoin = diff <= 1 ? 2 : diff <= 3 ? 3 : diff >= 6 ? 4 : 3;
+  const maxDirects = diff <= 1 ? 2 : diff <= 3 ? 1 : 0;   // témoignages « position exacte » autorisés
+  const menteur = diff >= 5;                               // un des témoins se trompe
+  const txt = (p) => `${p.d}-${p.l.join('')}-${p.c.join('')}`;
+  const fab = () => ({ d: rng.int(1, 2), l: [rng.pick(LETTRES), rng.pick(LETTRES), rng.pick(LETTRES)], c: [rng.int(0, 9), rng.int(0, 9), rng.int(0, 9)] });
+  const muter = (src, n) => {
+    const p = JSON.parse(JSON.stringify(src));
+    for (let m = 0; m < n; m++) {
+      const k = rng.int(0, 6);
+      if (k === 0) p.d = p.d === 1 ? 2 : 1; else if (k <= 3) p.l[k - 1] = rng.pick(LETTRES); else p.c[k - 4] = rng.int(0, 9);
+    }
+    return p;
+  };
+  const pos = (p) => [p.d, ...p.l, ...p.c];
+  const proximite = (p, liste) => liste.reduce((t, q) => t + (q === p ? 0 : pos(p).filter((v, i) => v === pos(q)[i]).length), 0);
+  for (let essai = 0; essai < 800; essai++) {
+    // Les plaques forment une « famille » autour d'une plaque de base qui n'est PAS la bonne :
+    // la bonne réponse n'est pas celle qui ressemble le plus aux autres.
+    const base = fab();
+    const secret = muter(base, rng.int(2, 3));
     const cands = [secret];
     const vus = new Set([txt(secret)]);
-    for (let g = 0; cands.length < nCand && g < 200; g++) {
-      const p = JSON.parse(JSON.stringify(secret));
-      const nMut = rng.int(1, 2);
-      for (let m = 0; m < nMut; m++) {
-        const k = rng.int(0, 6);
-        if (k === 0) p.d = p.d === 1 ? 2 : 1;
-        else if (k <= 3) p.l[k - 1] = rng.pick(LETTRES);
-        else p.c[k - 4] = rng.int(0, 9);
-      }
+    for (let g = 0; cands.length < nCand && g < 300; g++) {
+      const p = muter(rng.chance(0.3) ? rng.pick(cands) : base, rng.int(1, 2));
       if (!vus.has(txt(p))) { vus.add(txt(p)); cands.push(p); }
     }
     if (cands.length < nCand) continue;
+    const scores = cands.map((p) => proximite(p, cands));
+    if (scores[0] >= Math.max(...scores.slice(1))) continue;
+    // Majorité position par position : ne doit pas redonner la bonne plaque.
+    const maj = pos(secret).map((_, i) => { const n = {}; for (const p of cands) n[pos(p)[i]] = (n[pos(p)[i]] || 0) + 1; return Object.entries(n).sort((a, b) => b[1] - a[1])[0][0]; });
+    if (maj.join('') === pos(secret).join('')) continue;
+
     const s = secret, somme = (p) => p.c[0] + p.c[1] + p.c[2];
+    const nVoy = (p) => p.l.filter((x) => VOYELLES.has(x)).length;
+    const alpha = (p) => p.l[0] < p.l[1] && p.l[1] < p.l[2];
     const pool = [
-      { t: `« Elle commençait par un ${s.d}. »`, f: (p) => p.d === s.d },
-      { t: `« Il y avait un ${s.l[1]} au milieu des lettres. »`, f: (p) => p.l[1] === s.l[1] },
-      { t: `« Les lettres commençaient par ${s.l[0]}. »`, f: (p) => p.l[0] === s.l[0] },
-      { t: `« Il y avait un ${s.l[2]} dans les lettres, j’en suis sûr. »`, f: (p) => p.l.includes(s.l[2]) },
+      // Témoignages directs (une position précise).
+      { t: `« Elle commençait par un ${s.d}. »`, f: (p) => p.d === s.d, direct: true },
+      { t: `« Il y avait un ${s.l[1]} au milieu des lettres. »`, f: (p) => p.l[1] === s.l[1], direct: true },
+      { t: `« Les lettres commençaient par ${s.l[0]}. »`, f: (p) => p.l[0] === s.l[0], direct: true },
+      { t: `« Le premier des trois chiffres était un ${s.c[0]}. »`, f: (p) => p.c[0] === s.c[0], direct: true },
+      // Témoignages indirects : il faut calculer ou comparer.
+      { t: `« Il y avait un ${s.l[2]} quelque part dans les lettres, j’en suis sûr. »`, f: (p) => p.l.includes(s.l[2]) },
       { t: `« Elle finissait par un chiffre ${s.c[2] % 2 ? 'impair' : 'pair'}. »`, f: (p) => p.c[2] % 2 === s.c[2] % 2 },
       { t: `« Les trois derniers chiffres faisaient ${somme(s)} en les additionnant. »`, f: (p) => somme(p) === somme(s) },
-      { t: `« Le premier des trois chiffres était un ${s.c[0]}. »`, f: (p) => p.c[0] === s.c[0] },
-      { t: `« Il n’y avait ${s.l.some((x) => VOYELLES.has(x)) ? 'qu’une' : 'aucune'} voyelle dans les lettres. »`, f: (p) => (s.l.filter((x) => VOYELLES.has(x)).length === 1 ? p.l.filter((x) => VOYELLES.has(x)).length === 1 : p.l.every((x) => !VOYELLES.has(x))), ok: s.l.filter((x) => VOYELLES.has(x)).length <= 1 },
-      { t: `« Les chiffres montaient : chacun plus grand que le précédent. »`, f: (p) => p.c[0] < p.c[1] && p.c[1] < p.c[2], ok: s.c[0] < s.c[1] && s.c[1] < s.c[2] },
-      { t: `« Un chiffre revenait deux fois. »`, f: (p) => new Set(p.c).size < 3, ok: new Set(s.c).size < 3 },
-      { t: `« Tous les chiffres étaient différents. »`, f: (p) => new Set(p.c).size === 3, ok: new Set(s.c).size === 3 },
+      { t: `« En additionnant les chiffres, ça faisait ${somme(s) >= 14 ? 'plus de 13' : 'moins de 14'}. »`, f: (p) => (somme(p) >= 14) === (somme(s) >= 14) },
+      { t: `« Il n’y avait ${nVoy(s) === 1 ? 'qu’une seule' : 'aucune'} voyelle dans les lettres. »`, f: (p) => nVoy(p) === nVoy(s), ok: nVoy(s) <= 1 },
+      { t: '« Les chiffres montaient : chacun plus grand que le précédent. »', f: (p) => p.c[0] < p.c[1] && p.c[1] < p.c[2], ok: s.c[0] < s.c[1] && s.c[1] < s.c[2] },
+      { t: '« Un chiffre revenait deux fois. »', f: (p) => new Set(p.c).size < 3, ok: new Set(s.c).size < 3 },
+      { t: '« Tous les chiffres étaient différents. »', f: (p) => new Set(p.c).size === 3, ok: new Set(s.c).size === 3 },
+      { t: '« Les lettres étaient dans l’ordre de l’alphabet. »', f: alpha, ok: alpha(s) },
+      { t: '« Les lettres n’étaient pas dans l’ordre de l’alphabet. »', f: (p) => !alpha(p), ok: !alpha(s) },
+      { t: `« Le chiffre du milieu était le plus ${s.c[1] >= Math.max(s.c[0], s.c[2]) ? 'grand' : 'petit'} des trois. »`, f: (p) => (s.c[1] >= Math.max(s.c[0], s.c[2]) ? p.c[1] >= Math.max(p.c[0], p.c[2]) : p.c[1] <= Math.min(p.c[0], p.c[2])), ok: s.c[1] >= Math.max(s.c[0], s.c[2]) || s.c[1] <= Math.min(s.c[0], s.c[2]) },
+      { t: `« Aucun chiffre au-dessus de ${Math.max(...s.c)}. »`, f: (p) => Math.max(...p.c) <= Math.max(...s.c), ok: Math.max(...s.c) <= 7 },
+      { t: `« Le premier chiffre de la plaque et le dernier faisaient ${s.d + s.c[2]} ensemble. »`, f: (p) => p.d + p.c[2] === s.d + s.c[2], ok: s.d + s.c[2] >= 3 },
     ].filter((c) => c.ok !== false);
-    // On ajoute des témoignages jusqu'à isoler la vraie plaque, puis on retire les superflus.
-    const choisis = [];
-    let restes = cands;
+    // Témoignage faux (difficulté 5 et plus) : il contredit la bonne plaque.
+    const faux = menteur ? rng.pick([
+      { t: `« Les lettres commençaient par ${LETTRES.split('').filter((x) => x !== s.l[0])[rng.int(0, LETTRES.length - 2)]}. »`, direct: true },
+      { t: `« Elle finissait par un chiffre ${s.c[2] % 2 ? 'pair' : 'impair'}. »`, f: (p) => p.c[2] % 2 !== s.c[2] % 2 },
+      { t: `« Elle commençait par un ${s.d === 1 ? 2 : 1}. »`, f: (p) => p.d !== s.d },
+    ]) : null;
+    if (faux && !faux.f) { const L = faux.t.match(/par (\w)\. »/)[1]; faux.f = (p) => p.l[0] === L; }
+    const valide = (liste) => (p) => {
+      const ko = liste.filter((c) => !c.f(p)).length;
+      return menteur ? ko === 1 : ko === 0;
+    };
+    // On ajoute des témoignages jusqu'à isoler la bonne plaque, puis on retire les superflus.
+    let choisis = faux ? [faux] : [];
+    let directs = 0;
     for (const c of rng.shuffle(pool)) {
-      const r2 = restes.filter(c.f);
-      if (r2.length < restes.length) { choisis.push(c); restes = r2; }
-      if (restes.length === 1) break;
+      if (c.direct && directs >= maxDirects) continue;
+      const avant = cands.filter(valide(choisis)).length;
+      const essaiListe = [...choisis, c];
+      const apres = cands.filter(valide(essaiListe));
+      if (apres.length < avant || (menteur && apres.length !== avant)) { choisis = essaiListe; if (c.direct) directs++; }
+      const r = cands.filter(valide(choisis));
+      if (r.length === 1 && r[0] === secret) break;
     }
-    if (restes.length !== 1) continue;
+    const restes = cands.filter(valide(choisis));
+    if (restes.length !== 1 || restes[0] !== secret) continue;
     for (const c of rng.shuffle(choisis.slice())) {
+      if (c === faux) continue;
       const sans = choisis.filter((x) => x !== c);
-      if (cands.filter((p) => sans.every((x) => x.f(p))).length === 1) choisis.splice(choisis.indexOf(c), 1);
+      const r = cands.filter(valide(sans));
+      if (r.length === 1 && r[0] === secret) choisis = sans;
     }
-    const pas = minIndices(choisis, cands, secret);
+    // Sans menteur : plusieurs témoignages doivent être croisés. Avec menteur : tout prendre au pied de la lettre ne mène à rien.
+    const pas = menteur ? choisis.length : minIndices(choisis, cands, secret);
     if (pas < besoin) continue;
-    // Chaque plaque candidate doit être éliminée par au moins un témoignage (sinon réponse ambiguë).
+    if (menteur && cands.some((p) => choisis.every((c) => c.f(p)))) continue;
+    // Chaque plaque doit être contredite par au moins deux témoignages en difficulté 3+, pour ne pas se lire d'un coup d'œil.
+    if (!menteur && diff >= 3 && cands.filter((p) => p !== secret && choisis.filter((c) => !c.f(p)).length === 1).length > nCand * 0.6) continue;
     const temoins = rng.shuffle(TEMOINS_PLAQUE).slice(0, choisis.length);
+    const ordreTemoignages = rng.shuffle(choisis.map((c, i) => ({ c, i })));
     const ordre = rng.shuffle(cands);
     return {
       titre: 'La plaque', mode: 'choix',
@@ -93,14 +138,16 @@ function plaque(rng, diff) {
         'Délit de fuite rue des Tanneurs : une voiture grise a percuté un scooter et a filé. La DIV sort les plaques des voitures grises de la région qui ressemblent aux souvenirs des témoins.',
         'Un vol à l’arraché a été commis depuis une voiture en marche. Les témoins n’ont retenu que des détails de la plaque ; la DIV propose une liste de plaques proches.',
         'Une camionnette a déposé des déchets en pleine rue. Plusieurs témoins ont aperçu la plaque, chacun un morceau. Voici les plaques compatibles avec le modèle.',
-      ]),
-      elements: choisis.map((c, i) => ({ label: temoins[i], texte: c.t })),
+      ]) + (menteur ? ' Attention : un des témoins se trompe, un seul. Tous les autres disent vrai.' : ''),
+      elements: ordreTemoignages.map(({ c }, k) => ({ label: temoins[k], texte: c.t })),
       question: 'Quelle est la bonne plaque ?',
       choix: ordre.map((p) => ({ id: txt(p), label: txt(p) })),
       mono: true,
       answer: txt(secret),
-      astuce: 'Prends les plaques une par une et raye celles qu’un témoignage contredit.',
-      explication: `C’est ${txt(secret)} : c’est la seule plaque qui respecte tous les témoignages.`,
+      astuce: menteur ? 'Suppose tour à tour que chaque témoin se trompe : une seule hypothèse laisse exactement une plaque.' : 'Prends les plaques une par une et raye celles qu’un témoignage contredit. Méfie-toi de la plaque qui ressemble à toutes les autres.',
+      explication: menteur
+        ? `C’est ${txt(secret)}. Le témoin qui se trompe dit : ${faux.t} Avec tous les autres témoignages, il ne reste que cette plaque.`
+        : `C’est ${txt(secret)} : c’est la seule plaque qui respecte tous les témoignages.`,
       _pas: pas,
     };
   }
