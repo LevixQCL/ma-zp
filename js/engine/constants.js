@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 4;
+export const APP_VERSION = 5;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -63,7 +63,7 @@ export const NIVEAU_MAX = 5;
 export const INFRAS = {
   sport:    { nom: 'Salle de sport', cout: 10, effet: '+1 de moral par tour' },
   logiciel: { nom: 'Logiciel de gestion des dossiers', cout: 12, effet: 'Paperasse traitée 50 % plus vite' },
-  anpr:     { nom: 'Caméras de lecture de plaques', cout: 15, effet: 'Roulage +30 %, sans effet « chasse aux PV »' },
+  anpr:     { nom: 'Caméras de lecture de plaques', cout: 10, effet: 'Roulage +30 %, sans effet « chasse aux PV »' },
   antenne:  { nom: 'Antenne de quartier', cout: 12, effet: 'Proximité +30 %' },
   garage:   { nom: 'Atelier mécanique', cout: 8, effet: 'Usure des véhicules divisée par deux' },
   audition: { nom: "Salle d'audition moderne", cout: 14, effet: 'Recherche +20 %' },
