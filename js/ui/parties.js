@@ -8,7 +8,7 @@ export function renderParties() {
   const creees = list.filter((p) => p.owner === S.user.uid && p.id !== 'demo').length;
   const max = b.maxParties || 3;
   return `<main class="screen">
-    ${S.state ? `<a href="#hp" class="row small" style="text-decoration:none;color:var(--muted)">${icon('back', 16)} HP</a>` : ''}
+    ${S.state ? `<a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>` : ''}
     <header class="col" style="gap:3px"><span class="kicker">Ma ZP</span><h1 class="big">Mes parties</h1>
       <p class="sub">Chaque partie est un district à part, avec ses joueurs, sa Gazette et son classement. Tu peux jouer dans plusieurs.</p></header>
 

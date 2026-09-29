@@ -243,7 +243,7 @@ export function renderProfil() {
   const { g } = gradeInfo(z.ps);
   const etendue = z.ps >= 200;
   return `<main class="screen">
-    <a href="#hp" class="row small" style="text-decoration:none;color:var(--muted)">${icon('back', 16)} HP</a>
+    <a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
     <div class="col" style="gap:3px"><span class="kicker">Profil</span><h1 class="big">ZP ${esc(z.code)} ${esc(z.nom)}</h1><p class="sub">${g.nom} · ${z.ps} points de service</p></div>
     <form class="card" data-form="profil">
       <label class="field">Ton prénom ou pseudo<input class="text" name="pseudo" maxlength="24" required value="${esc(p.pseudo || '')}"></label>
