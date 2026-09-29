@@ -89,6 +89,7 @@ export function fraisFixes(z, state, { amendes = 0, rythme = 'normal' } = {}) {
     { k: 'subside', l: 'Subside communal (hôtel de police)', v: BATIMENTS.bureaux.subside(b.bureaux) + BATIMENTS.garage.subside(b.garage) },
     { k: 'perequation', l: 'Péréquation (zone moins équipée)', v: perequation(z, state) },
     { k: 'amendes', l: 'Amendes du Roulage', v: amendes },
+    { k: 'radars', l: 'Radars automatiques (caméras)', v: z.infra && z.infra.anpr ? INFRAS.anpr.fixe : 0 },
     { k: 'salaires', l: `Salaires (${z.agents} agents)`, v: -z.agents * ECONOMIE.salaire },
     { k: 'vehicules', l: `Entretien des véhicules (${z.vehicules})`, v: -z.vehicules * ECONOMIE.entretienVehicule },
     { k: 'batiments', l: `Entretien des bâtiments (niveaux ${b.bureaux} et ${b.garage})`, v: -(BATIMENTS.bureaux.entretien(b.bureaux) + BATIMENTS.garage.entretien(b.garage)) },
@@ -132,7 +133,7 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
   }
   let c = eff * multNiveau(zone.niveaux[service]) * multEquip(zone.equip[service]) * moralMult(zone.moral) * RYTHMES[rythme].mult * bonus;
   if (service === 'proximite' && zone.infra.antenne) c *= 1.3;
-  if (service === 'roulage' && zone.infra.anpr) c *= 1.3;
+  if (service === 'roulage' && zone.infra.anpr) c *= 1.2;
   if (service === 'recherche' && zone.infra.audition) c *= 1.2;
   if (service === 'admin') c *= (zone.infra.logiciel ? 1.5 : 1) * adminMult;
   return c;

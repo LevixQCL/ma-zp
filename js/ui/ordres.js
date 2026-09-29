@@ -179,10 +179,12 @@ function detailDecision(z, dec, T) {
   const cout = coutDecision(z, dec);
   const l = [];
   const pct = (a, b) => (a > 0 ? `${b >= a ? '+' : '−'}${Math.round(Math.abs(b / a - 1) * 100)} %` : '—');
-  const argent = (s, g, entretien = 0) => {
+  const argent = (s, g, entretien = 0, fixe = 0) => {
     if (s !== 'roulage') return;
-    const gain = (g.apres - g.avant) * ECONOMIE.amendeParCapacite - entretien;
-    l.push(`Amendes : ${gain >= 0 ? '+' : '−'}${fmt1(Math.abs(gain))} k€ par tour${entretien ? ' (entretien déduit)' : ''} avec tes ${g.n} agents en Roulage${gain > 0 ? `, rentabilisé en ${Math.ceil(cout / gain)} tours environ` : ''}.`);
+    const var_ = (g.apres - g.avant) * ECONOMIE.amendeParCapacite;
+    const gain = var_ + fixe - entretien;
+    const parts = [fixe ? `+${fmt1(fixe)} fixe` : '', `+${fmt1(var_)} avec tes ${g.n} agents en Roulage`, entretien ? `−${fmt1(entretien)} d’entretien` : ''].filter(Boolean).join(' ');
+    l.push(`Gain : ${gain >= 0 ? '+' : '−'}${fmt1(Math.abs(gain))} k€ par tour (${parts})${gain > 0 ? `, rentabilisé en ${Math.ceil(cout / gain)} tours environ` : ''}.`);
   };
   const effet = (s, g) => {
     if (!g.n) { l.push(`Tu n’as aucun agent en ${SERVICE_LABELS[s]} aujourd’hui : le gain dépendra de ceux que tu y mettras.`); return; }
@@ -220,7 +222,7 @@ function detailDecision(z, dec, T) {
     const id = dec.infra, inf = INFRAS[id];
     l.push(`${inf.effet}. Permanent, conservé d’une saison à l’autre. Entretien ${fmt1(ENTRETIEN_ANNEXE)} k€ par tour.`);
     const svc = { anpr: 'roulage', antenne: 'proximite', audition: 'recherche', logiciel: 'admin' }[id];
-    if (svc) { const g = gainService(z, svc, (x) => { x.infra[id] = true; }); effet(svc, g); argent(svc, g, ENTRETIEN_ANNEXE); }
+    if (svc) { const g = gainService(z, svc, (x) => { x.infra[id] = true; }); effet(svc, g); argent(svc, g, ENTRETIEN_ANNEXE, inf.fixe || 0); }
     if (id === 'anpr') l.push('Surtout : plus d’effet « chasse aux PV », tu peux dépasser 25 % d’agents en Roulage.');
     if (id === 'garage') l.push(`Usure des véhicules divisée par deux (état du parc : ${Math.round(100 - z.usure)} %). Pannes et accidents plus rares.`);
     if (id === 'sport') l.push('+1 de moral chaque tour : le moral multiplie l’efficacité de tous les services.');

@@ -8,7 +8,7 @@ export const NOTE_MAJ = {
   points: [
     ['Où sont mes agents ?', 'dans tes ordres, sous « Affectation » : le détail de ton effectif, les agents bloqués, un bouton pour les rapatrier et un autre pour répartir les libres. Sous chaque service, tu vois aussi ceux qui partent en audition, en traque ou en FIPA.'],
     ['Grande décision', 'chaque option affiche ce qu’elle change pour ta zone, chiffré sur ta répartition du jour (incidents, amendes, rentabilité, entretien).'],
-    ['Économie', 'dotation fédérale 10 k€ par tour (au lieu de 8), matériel moins cher (5, 7, 9, 11 k€) et plus efficace (+15 % par niveau), annexes à 10 k€.'],
+    ['Économie', 'dotation fédérale 10 k€ par tour (au lieu de 8), matériel moins cher (5, 7, 9, 11 k€) et plus efficace (+15 % par niveau), annexes à 10 k€. Caméras de lecture de plaques : radars automatiques +1 k€ par tour en plus de Roulage +20 %.'],
     ['Véhicules', 'chaque intervention use le parc ; sous 80 % d’état, l’Intervention perd de l’efficacité. Nouvelle dépense du jour : révision du parc (2 k€, +20 %).'],
     ['Énigmes', '3 sur 3 : prime « sans faute » de +3 k€ et +2 de moral en plus du bonus. Message codé plus retors (groupes de 5 lettres, mots-clés). « Qui ment ? » : la règle du menteur est expliquée.'],
     ['Affaires disputées', 'toujours dirigées par une zone, et jamais deux dans la même zone.'],
