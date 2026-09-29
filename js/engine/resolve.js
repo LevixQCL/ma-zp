@@ -3,7 +3,7 @@
 
 import {
   APP_VERSION, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat, gainPrime, seuilChasse } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
@@ -461,7 +461,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       let paye = 0;
       const payer = (k, cout, fn) => { if (z.budget >= cout) { z.budget -= cout; paye += cout; fn(); achats.push(k); } else achats.push(`${k} (refusé : budget insuffisant)`); };
       if (dep.reserve) payer(`${dep.reserve} agent${dep.reserve > 1 ? 's' : ''} de réserve en ${SERVICE_LABELS[dep.reserveService]}`, dep.reserve * DEPENSES.reserve.cout, () => { reserve = dep.reserve; });
-      if (dep.prime) payer('prime au personnel (+4 de moral)', DEPENSES.prime.cout, () => { z.moral += 4; });
+      if (dep.prime) { const g = gainPrime(z.moral); payer(`prime au personnel (+${g} de moral)`, DEPENSES.prime.cout, () => { z.moral += g; }); }
       if (dep.prevention) payer('campagne de prévention (criminalité −6)', DEPENSES.prevention.cout, () => { z.criminalite = clamp(z.criminalite - 6, 10, 95); });
       if (dep.soustraitance) payer('sous-traitance administrative (−5 dossiers)', DEPENSES.soustraitance.cout, () => { z.paperasse = Math.max(0, z.paperasse - 5); });
       if (dep.revision) payer(`révision du parc (état ${Math.round(100 - z.usure)} % → ${Math.round(100 - Math.max(0, z.usure - USURE.revision))} %)`, DEPENSES.revision.cout, () => { z.usure = Math.max(0, z.usure - USURE.revision); });
@@ -535,8 +535,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (alloc.roulage >= pr.roulageMin) { z.satisfaction += 2; z.rapport.push('Contrôles de vitesse demandés par les riverains : assurés (+2 de satisfaction).'); }
       else { z.satisfaction -= 3; z.rapport.push('Contrôles de vitesse demandés par les riverains : pas assez d\u2019agents (−3 de satisfaction).'); }
     }
-    if (alloc.roulage / totalAlloc > 0.25 && !z.infra.anpr && !(theme && theme.id === 'routiere')) {
-      z.satisfaction -= 2; z.rapport.push('Roulage : plus de 25 % des effectifs, effet « chasse aux PV » (−2 de satisfaction).');
+    if (alloc.roulage / totalAlloc > seuilChasse(z) && !(theme && theme.id === 'routiere')) {
+      z.satisfaction -= 2; z.rapport.push(`Roulage : plus de ${Math.round(seuilChasse(z) * 100)} % des effectifs, effet « chasse aux PV » (−2 de satisfaction).`);
     } else z.satisfaction += cap.roulage * 0.1;
 
     // Administration : la pile de paperasse.

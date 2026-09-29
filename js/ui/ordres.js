@@ -1,7 +1,7 @@
 // Écran des ordres du tour.
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
-import { AIDE } from '../engine/rivalites.js';
-import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, tourEffet, malusEtat, coutEquipement, multNiveau, multEquip, ECONOMIE } from '../engine/constants.js';
+import { AIDE, themeActif } from '../engine/rivalites.js';
+import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, multNiveau, multEquip, ECONOMIE } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel } from './affaires.js';
@@ -118,7 +118,7 @@ export function estimations() {
   const pap = Math.round(couverts * 0.4 + 0.6 + 1.2 + (pr.paperasse || 0) - (dep.soustraitance ? 5 : 0) - cap.admin * 1.2);
   const amendes = cap.roulage * 0.7;
   const total = SERVICES.reduce((s, k) => s + eff[k], 0) || 1;
-  const chasse = eff.roulage / total > 0.25 && !z.infra.anpr;
+  const chasse = eff.roulage / total > seuilChasse(z) && !((themeActif(S.state, S.state.turn) || {}).id === 'routiere');
   const dispo = dispo0;
   // Les agents en mission d'enquête ou en FIPA sortent du total : ils ne sont plus à répartir.
   const reste = resteBase - enquete;
@@ -248,7 +248,7 @@ function detailDecision(z, dec, T) {
     l.push(`${inf.effet}. Permanent, conservé d’une saison à l’autre. Entretien ${fmt1(ENTRETIEN_ANNEXE)} k€ par tour.`);
     const svc = { anpr: 'roulage', antenne: 'proximite', audition: 'recherche', logiciel: 'admin' }[id];
     if (svc) { const g = gainService(z, svc, (x) => { x.infra[id] = true; }); effet(svc, g); argent(svc, g, ENTRETIEN_ANNEXE, inf.fixe || 0); }
-    if (id === 'anpr') l.push('Surtout : plus d’effet « chasse aux PV », tu peux dépasser 25 % d’agents en Roulage.');
+    if (id === 'anpr') l.push('Surtout : l’effet « chasse aux PV » ne joue plus qu’au-delà de 40 % d’agents en Roulage (au lieu de 25 %).');
     if (id === 'garage') l.push(`Usure des véhicules divisée par deux (état du parc : ${Math.round(100 - z.usure)} %). Pannes et accidents plus rares.`);
     if (id === 'sport') l.push('+1 de moral chaque tour : le moral multiplie l’efficacité de tous les services.');
   }
@@ -346,7 +346,7 @@ function aide(s, z) {
     case 'intervention': return `Traite les incidents du jour (environ 1 agent par incident, ${Math.max(1, Math.round(1.5 + z.criminalite / 14))} attendus). Incident traité : +0,5 de satisfaction ; raté : −1,8. Au-delà de 2,5 agents par véhicule, les agents en trop comptent pour moitié. Chaque intervention use les véhicules : état du parc ${Math.round(100 - z.usure)} %${malusEtat(100 - z.usure) < 1 ? ` (efficacité −${Math.round((1 - malusEtat(100 - z.usure)) * 100)} %)` : ''} ; sous 80 %, l’Intervention perd de l’efficacité. Une révision du parc (dépense du jour, 2 k€) rend +20 %.`;
     case 'proximite': return `Prévention : fait baisser la criminalité (actuellement ${Math.round(z.criminalite)}). Environ 4 agents la stabilisent. Au-dessus de 55, la criminalité coûte de la satisfaction chaque jour et augmente les incidents. Effet lent, visible sur plusieurs jours.`;
     case 'recherche': return `Fait avancer tes dossiers locaux (${z.dossiers.length} en cours). Dossier élucidé : des points et +2 de satisfaction. Un dossier de plus de 6 tours coûte de la satisfaction chaque jour.`;
-    case 'roulage': return `Rapporte environ 0,7 k€ par agent et par jour. Au-delà de 25 % de tes effectifs : « chasse aux PV », −2 de satisfaction par jour.`;
+    case 'roulage': return `Rapporte environ 0,7 k€ par agent et par jour. Au-delà de ${ROULAGE.seuil} agents, chaque agent de plus compte pour moitié. Au-delà de ${Math.round(seuilChasse(z) * 100)} % de tes effectifs : « chasse aux PV », −2 de satisfaction par jour.`;
     case 'admin': return `Traite la paperasse (environ 1 dossier par agent ; ${f(z.paperasse)} en attente). Au-delà de 14 : −2 de moral par jour. Au-delà de 20 : Inspection générale, 5 k€ d’amende.`;
     default: return '';
   }
@@ -477,7 +477,7 @@ export function renderOrdres() {
         <div class="tile" style="padding:8px"><span class="l">Paperasse ce soir</span><span class="mono" style="font-size:14px">${pap(e.pap)} dossiers</span></div>
         <div class="tile" style="padding:8px"><span class="l">Amendes</span><span class="mono" style="font-size:14px">+${fmt1(e.amendes)} k€</span></div>
       </div>
-      ${e.chasse ? '<p class="small bad" style="margin:0">Plus de 25 % en Roulage : effet « chasse aux PV », la satisfaction baisse.</p>' : ''}
+      ${e.chasse ? `<p class="small bad" style="margin:0">Plus de ${Math.round(seuilChasse(z) * 100)} % en Roulage : effet « chasse aux PV », la satisfaction baisse.</p>` : ''}
       <p class="tiny muted" style="margin:0">Estimations indicatives : le hasard du tour peut les faire varier.</p>
     </section>
 

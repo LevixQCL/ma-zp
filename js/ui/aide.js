@@ -40,7 +40,7 @@ export const AIDES = {
       `<strong>IPZ</strong> : compte pour ${pc(IPZ_POIDS.satisfaction)}, le poids le plus lourd`,
       '<strong>Chaque incident raté</strong> : −1,8',
       '<strong>Criminalité au-dessus de 55</strong> : elle baisse chaque jour',
-      '<strong>Roulage au-delà de 25 % des effectifs</strong> : « chasse aux PV », −2',
+      '<strong>Roulage au-delà de 25 % des effectifs</strong> (40 % avec les caméras) : « chasse aux PV », −2',
     ],
     monte: 'incidents traités, Proximité, dossiers élucidés, opérations et FIPA réussies, arrestations',
     baisse: 'incidents ratés, criminalité élevée, vieux dossiers, fiascos, FIPA ratées',

@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 10;
+export const APP_VERSION = 11;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -53,9 +53,17 @@ export const multNiveau = (n) => 0.8 + 0.2 * n;
 export const multEquip = (n) => 0.85 + 0.15 * n;
 
 // Dépenses du jour : cumulables avec la grande décision, payées sur le budget du tour.
+// Roulage : au-delà de `seuil` agents, chaque agent de plus compte pour moitié (les automobilistes sont prévenus).
+// « Chasse aux PV » : au-delà de 25 % des effectifs en Roulage (40 % avec les caméras).
+export const ROULAGE = { seuil: 6, auDela: 0.5, chasse: 0.25, chasseCameras: 0.4 };
+/** Moral gagné par une prime au personnel : de moins en moins quand le moral est déjà haut. */
+export const gainPrime = (moral) => (moral < 70 ? 4 : moral < 85 ? 2 : 1);
+/** Part des effectifs en Roulage au-delà de laquelle joue l'effet « chasse aux PV ». */
+export const seuilChasse = (z) => (z.infra && z.infra.anpr ? ROULAGE.chasseCameras : ROULAGE.chasse);
+
 export const DEPENSES = {
   reserve:      { nom: 'Agents de réserve', cout: 1.5, max: 4, texte: '1,5 k€ par agent, pour la journée, dans le service de ton choix (efficacité 80 %)' },
-  prime:        { nom: 'Prime au personnel', cout: 3, texte: '+4 de moral' },
+  prime:        { nom: 'Prime au personnel', cout: 3, texte: '+4 de moral (sous 70), +2 (de 70 à 85), +1 au-delà' },
   prevention:   { nom: 'Campagne de prévention', cout: 4, texte: 'criminalité −6' },
   soustraitance: { nom: 'Sous-traitance administrative', cout: 3, texte: '−5 dossiers de paperasse' },
   revision:     { nom: 'Révision du parc', cout: 2, texte: 'état des véhicules +20 %, effet le jour même' },
@@ -74,7 +82,7 @@ export const NIVEAU_MAX = 5;
 export const INFRAS = {
   sport:    { nom: 'Salle de sport', cout: 10, effet: '+1 de moral par tour' },
   logiciel: { nom: 'Logiciel de gestion des dossiers', cout: 10, effet: 'Paperasse traitée 50 % plus vite' },
-  anpr:     { nom: 'Caméras de lecture de plaques', cout: 10, effet: 'Radars automatiques +1 k€ par tour, Roulage +20 %, sans effet « chasse aux PV »', fixe: 1 },
+  anpr:     { nom: 'Caméras de lecture de plaques', cout: 10, effet: 'Radars automatiques +1 k€ par tour, Roulage +20 %, « chasse aux PV » seulement au-delà de 40 % des effectifs', fixe: 1 },
   antenne:  { nom: 'Antenne de quartier', cout: 10, effet: 'Proximité +30 %' },
   garage:   { nom: 'Atelier mécanique', cout: 8, effet: 'Usure des véhicules divisée par deux' },
   audition: { nom: "Salle d'audition moderne", cout: 10, effet: 'Recherche +20 %' },

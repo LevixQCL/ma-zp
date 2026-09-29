@@ -1,7 +1,7 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
 import {
-  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, malusEtat, coutEquipement, multNiveau, multEquip } from './constants.js';
+  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, malusEtat, coutEquipement, multNiveau, multEquip } from './constants.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -158,6 +158,7 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
     if (eff > lim) eff = lim + (eff - lim) * 0.5;
     eff *= malusEtat(100 - zone.usure);
   }
+  if (service === 'roulage' && eff > ROULAGE.seuil) eff = ROULAGE.seuil + (eff - ROULAGE.seuil) * ROULAGE.auDela;
   let c = eff * multNiveau(zone.niveaux[service]) * multEquip(zone.equip[service]) * moralMult(zone.moral) * RYTHMES[rythme].mult * bonus;
   if (service === 'proximite' && zone.infra.antenne) c *= 1.3;
   if (service === 'roulage' && zone.infra.anpr) c *= 1.2;

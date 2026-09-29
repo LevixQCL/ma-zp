@@ -3,19 +3,20 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-29f',
-  titre: 'Mise à jour du 29 septembre (nuit)',
+  id: '2026-09-29g',
+  titre: 'Mise à jour du 29 septembre (équilibrage)',
   points: [
-    ['Salle des ventes', 'chaque soir, un lot est mis en vente (chien pisteur, drone, véhicule banalisé, stage…). Offre secrète depuis la carte de l’HP : le plus offrant gagne et paie son offre, la réputation départage les égalités. Un lot gagné bloque les enchères 7 tours.'],
-    ['Subside communal', 'il ne dépend plus du niveau de l’hôtel de police : la commune verse 0,15 k€ par tour pour chaque agent au-delà de 20, soit la moitié de son salaire. Grandir coûte moins cher.'],
-    ['Réputation', 'elle rapporte enfin : bonus (ou malus) de la commune chaque tour, recrues moins chères à 65 et plus (plus chères sous 35), lots réservés à 60 et plus. Attention : une manœuvre ratée par une zone bien vue fait scandale (−3 en plus).'],
-    ['Tutelle', 'une zone encore en péril après 3 tours passe d’abord sous tutelle 5 tours (avance de 10 k€, +8 de moral, mais ni manœuvre, ni duel, ni enchère, ni heures sup, ni grande décision sauf recruter). Faillite seulement si ça ne suffit pas, ou si la tutelle a déjà servi dans la saison.'],
+    ['Roulage', 'au-delà de 6 agents, chaque agent de plus compte pour moitié : les automobilistes sont prévenus. Le Roulage reste rentable, mais ne peut plus remplacer la dotation.'],
+    ['Caméras de lecture de plaques', 'l’effet « chasse aux PV » n’est plus supprimé : il joue au-delà de 40 % des effectifs en Roulage (25 % sans caméras).'],
+    ['Prime au personnel', '+4 de moral sous 70, +2 de 70 à 85, +1 au-delà : verser une prime chaque jour ne garde plus le moral bloqué à 100.'],
+    ['Rapport du jour', 'le détail de ton IPZ, composante par composante, avec ce qui a monté ou baissé depuis la veille.'],
+    ['Carte', 'chaque zone a un liseré de sa couleur et son nom en couleur : on les distingue d’un coup d’œil.'],
   ],
 };
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP ! Nouvelle salle des ventes (un lot par jour, offres secrètes), subside communal par agent au-delà de 20, la réputation rapporte (commune, recrues, lots réservés), et une tutelle de 5 tours avant la faillite. Recharge la page si besoin !`;
+  return `📣 Mise à jour de Ma ZP ! Équilibrage : Roulage moins rentable au-delà de 6 agents, « chasse aux PV » à 40 % avec les caméras, prime au personnel dégressive quand le moral est haut. Nouveau : détail de l'IPZ dans le rapport, carte plus lisible. Recharge la page si besoin !`;
 }
 
 
