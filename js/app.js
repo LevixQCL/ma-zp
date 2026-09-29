@@ -37,6 +37,8 @@ let unsubState = null, unsubRadio = null, unsubPrive = null, lastTurnKey = null;
 function route() {
   const h = (location.hash || '#hp').slice(1);
   if (h.startsWith('guide')) { S.guideSection = h.split('-')[1] || null; return 'guide'; }
+  // Lien vers un bloc précis de l'HP (ex. #hp-fipa) : on ouvre l'HP et on y descend.
+  if (h.startsWith('hp-')) { S.ancre = h; return 'hp'; }
   return ROUTES.includes(h) ? h : 'hp';
 }
 
@@ -116,6 +118,11 @@ function render() {
   const scroll = window.scrollY;
   app.innerHTML = banner + html;
   if (S.route === 'hp' && S.state && myZone()) nouveautesAuBesoin();
+  if (S.route === 'hp' && S.ancre) {
+    const cible = document.getElementById(S.ancre);
+    S.ancre = null;
+    if (cible) { cible.scrollIntoView({ block: 'start' }); cible.classList.add('surligne'); setTimeout(() => cible.classList.remove('surligne'), 1800); S.keepScroll = false; }
+  }
   if (S.keepScroll) window.scrollTo(0, scroll);
   S.keepScroll = false;
   if (S.route === 'guide' && S.guideSection && !S.keepScrollGuide) { const g = document.getElementById(`g-${S.guideSection}`); if (g) g.scrollIntoView({ block: 'start' }); }
