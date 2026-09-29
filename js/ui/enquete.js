@@ -194,6 +194,32 @@ function aujourdhui(aff, dos) {
   </section>`;
 }
 
+/** Pièces que j'ai obtenues moi-même (démarches payées ou agents envoyés, voisinage, énigmes) et où elles en sont. */
+function mesPieces(aff, dos) {
+  const st = S.state, d = S.draft;
+  const miennes = dos.pieces.filter((p) => DEMARCHES[p.src] || p.src === 'voisinage' || p.src === 'quete').sort((a, b) => b.j - a.j);
+  if (!miennes.length) return '';
+  const ligne = (p) => {
+    const prevu = (d.partages || []).filter((x) => x.f === p.f);
+    const deja = [...dejaPartagee(st, S.user.uid, p.f)].filter((u) => st.zones[u]);
+    const etat = prevu.length ? `<span class="tag" style="background:rgba(90,176,240,.14);color:var(--blue-soft)">partage prévu ce soir</span>`
+      : deja.length ? `<span class="tiny muted">partagée avec ${esc(deja.map((u) => zoneName(st.zones[u])).join(', '))}</span>`
+      : '<span class="tag" style="background:var(--amber-bg);color:var(--amber)">gardée pour toi</span>';
+    const dm = DEMARCHES[p.src];
+    const moyen = dm ? (dm.cout ? 'payée' : `${dm.agents} agents envoyés`) : SOURCES[p.src];
+    return `<div class="between" style="gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)">
+      <span class="col" style="gap:1px;min-width:0"><span class="small" style="font-weight:600">${esc(titrePiece(aff, p.f))}</span><span class="tiny muted">J${p.j} · ${esc(SOURCES[p.src] || p.src)} · ${esc(moyen)}</span></span>
+      <span style="flex-shrink:0;text-align:right">${etat}</span></div>`;
+  };
+  const gardees = miennes.filter((p) => !(d.partages || []).some((x) => x.f === p.f) && !dejaPartagee(st, S.user.uid, p.f).size).length;
+  const ouvert = S.ouverts && 'mespieces' in S.ouverts ? S.ouverts.mespieces : false;
+  return `<details class="card tight" data-k="mespieces" ${ouvert ? 'open' : ''} style="gap:4px">
+    <summary class="between" style="cursor:pointer"><span style="font-weight:700">Mes démarches · ${miennes.length} pièce${miennes.length > 1 ? "s" : ""}</span><span class="tiny muted">${gardees} gardée${gardees > 1 ? 's' : ''} pour toi ${icon('chevron', 14)}</span></summary>
+    <p class="tiny muted" style="margin:4px 0 2px">Ce que tu as demandé toi-même, jour après jour. « Gardée pour toi » : tu ne l’as partagée avec personne.</p>
+    ${miennes.map(ligne).join('')}
+  </details>`;
+}
+
 /** Tableau de synthèse : suspects × mobile / moyen / occasion, à cocher d'un coup d'œil. */
 function synthese(aff, carnet, ordre) {
   const st = S.state;
@@ -294,6 +320,7 @@ export function renderEnquete() {
     ${rebonds.map((r) => `<section class="card amber tight"><span class="kicker">Jour ${r.j} · rebondissement</span><span style="font-weight:700">${esc(r.titre)}</span><span class="small" style="color:var(--amber-soft)">${esc(r.texte)}</span></section>`).join('')}
     ${(st.traques || []).map(traqueHtml).join('')}
     ${aujourdhui(aff, dos)}
+    ${mesPieces(aff, dos)}
     <div class="segn onglets-enq" role="tablist" aria-label="Parties du dossier" style="grid-template-columns:repeat(5,minmax(0,1fr))">${tabs.map(([k, l]) => `<button type="button" role="tab" aria-selected="${tab === k}" data-action="enq-tab" data-t="${k}">${l}</button>`).join('')}</div>
     <section class="col" style="gap:10px">${body}</section>
     <a class="small" href="#guide-enquete" style="text-align:center">Comment fonctionne l’enquête ?</a>

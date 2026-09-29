@@ -156,68 +156,121 @@ function plaque(rng, diff) {
 
 // ─────────────────────────────── Les deux photos ───────────────────────────────
 // Deux photos du même parking, prises à quelques minutes d'intervalle.
-// Une seule place a changé. Aux niveaux élevés, la 2e photo est prise depuis l'autre côté.
+// Progression :
+//  1 : 6 places, une voiture part ou arrive.
+//  2 : 8 places, départ, arrivée ou couleur franchement différente.
+//  3 : 12 places pleines, changement discret (teinte proche, modèle, barres de toit).
+//  4 : 16 places, 2e photo prise par la caméra d'en face (image retournée) ; une voiture peut être garée dans l'autre sens.
+//  5 : 16 places de nuit, à mémoriser : la photo 1 disparaît quand on ouvre la photo 2.
+//  6 (dossier noir) : 20 places, image retournée, de nuit, avec du va-et-vient normal ;
+//     il faut trouver la voiture restée « à la même place » qui a en réalité bougé.
 
-const COULEURS_AUTO = [['rouge', '#C8453B'], ['bleue', '#3F6FC4'], ['blanche', '#E8ECEF'], ['grise', '#8A949E'], ['noire', '#23272C'], ['verte', '#3E8A5B'], ['jaune', '#E2B53C']];
+// Chaque couleur a une teinte proche (indice + 7) : c'est ce qui rend les substitutions difficiles.
+const COULEURS_AUTO = [
+  ['rouge', '#C8453B'], ['bleue', '#3F6FC4'], ['blanche', '#E8ECEF'], ['grise', '#8A949E'], ['noire', '#23272C'], ['verte', '#3E8A5B'], ['jaune', '#E2B53C'],
+  ['bordeaux', '#8F2E2A'], ['bleu nuit', '#2B4B8A'], ['beige', '#D6C9AB'], ['gris clair', '#B3BBC3'], ['anthracite', '#474E57'], ['vert olive', '#6B7F3A'], ['orange', '#D9822B'],
+];
+const PROCHE = (c) => (c + 7) % 14;
 const TYPES_AUTO = { citadine: { w: 20, h: 34 }, berline: { w: 22, h: 42 }, suv: { w: 26, h: 44 }, camionnette: { w: 26, h: 52 } };
 
-function dessinerAuto(x, y, a) {
+/** `a.sens` : 0 = capot vers le haut de l'image, 1 = vers le bas. */
+function dessinerAuto(x, y, a, retourne) {
   if (!a) return '';
   const t = TYPES_AUTO[a.type];
   const c = COULEURS_AUTO[a.col][1];
   const ox = x - t.w / 2, oy = y - t.h / 2;
+  const bas = (a.sens ? 1 : 0) ^ (retourne ? 1 : 0);
   const toit = a.type === 'camionnette'
     ? `<rect x="${ox + 3}" y="${oy + 14}" width="${t.w - 6}" height="${t.h - 18}" rx="2" fill="#000" fill-opacity=".12"/>`
     : `<rect x="${ox + 3}" y="${oy + t.h * 0.38}" width="${t.w - 6}" height="${t.h * 0.34}" rx="3" fill="#000" fill-opacity=".14"/>`;
-  return `<g><rect x="${ox}" y="${oy}" width="${t.w}" height="${t.h}" rx="${a.type === 'camionnette' ? 3 : 6}" fill="${c}" stroke="#0B1119" stroke-width="1.2"/>
-    <rect x="${ox + 3}" y="${oy + 5}" width="${t.w - 6}" height="${a.type === 'camionnette' ? 7 : t.h * 0.2}" rx="2" fill="#1B2A3A"/>${toit}
+  // Lunette arrière (petite) : permet de voir dans quel sens la voiture est garée.
+  const lunette = a.type === 'camionnette' ? '' : `<rect x="${ox + 5}" y="${oy + t.h * 0.8}" width="${t.w - 10}" height="${t.h * 0.1}" rx="1.5" fill="#1B2A3A" fill-opacity=".85"/>`;
+  return `<g${bas ? ` transform="rotate(180 ${x} ${y})"` : ''}><rect x="${ox}" y="${oy}" width="${t.w}" height="${t.h}" rx="${a.type === 'camionnette' ? 3 : 6}" fill="${c}" stroke="#0B1119" stroke-width="1.2"/>
+    <rect x="${ox + 3}" y="${oy + 5}" width="${t.w - 6}" height="${a.type === 'camionnette' ? 7 : t.h * 0.2}" rx="2" fill="#1B2A3A"/>${toit}${lunette}
     ${a.barres ? `<path d="M${ox + 4} ${oy + t.h * 0.42}h${t.w - 8}M${ox + 4} ${oy + t.h * 0.6}h${t.w - 8}" stroke="#0B1119" stroke-width="1.4"/>` : ''}</g>`;
 }
 
-function photoSvg(places, cols, miroir, heure) {
+function photoSvg(places, cols, miroir, heure, nuit) {
   const cw = 44, rh = 70, W = cols * cw + 20, rows = Math.ceil(places.length / cols), H = rows * rh + 30;
   let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Photo du parking à ${heure}" style="display:block;border-radius:8px;background:#3B4148">`;
   s += `<rect width="${W}" height="${H}" fill="#3B4148"/>`;
+  let num = ''; // numéros peints au sol : toujours lisibles, même de nuit
   for (let i = 0; i < places.length; i++) {
     const r = Math.floor(i / cols), c0 = i % cols, c = miroir ? cols - 1 - c0 : c0;
     const rr = miroir ? rows - 1 - r : r;
     const x = 10 + c * cw + cw / 2, y = 10 + rr * rh + rh / 2;
     s += `<rect x="${x - cw / 2 + 1}" y="${y - rh / 2 + 2}" width="${cw - 2}" height="${rh - 6}" fill="none" stroke="#E8ECEF" stroke-opacity=".55" stroke-width="1"/>`;
-    s += `<text x="${x}" y="${y + rh / 2 - 7}" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="8" fill="#E8ECEF" fill-opacity=".8">P${i + 1}</text>`;
-    s += dessinerAuto(x, y - 5, places[i]);
+    num += `<text x="${x}" y="${y + rh / 2 - 7}" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="8" fill="#E8ECEF" fill-opacity=".8">P${i + 1}</text>`;
+    s += dessinerAuto(x, y - 5, places[i], miroir);
   }
+  // De nuit : éclairage orangé des lampadaires, les teintes se ressemblent davantage.
+  if (nuit) s += `<rect width="${W}" height="${H}" fill="#0B1426" fill-opacity=".42"/><rect width="${W}" height="${H}" fill="#F2A33A" fill-opacity=".10"/>`;
+  s += num;
   s += `<text x="${W - 6}" y="${H - 6}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="9" fill="#F2B544">${heure}</text></svg>`;
   return s;
 }
 
 function photos(rng, diff) {
-  const cols = diff <= 2 ? 3 : 4;
-  const n = diff <= 1 ? 6 : diff <= 3 ? 8 : diff >= 6 ? 16 : 12;
-  const miroir = diff >= 4;
+  const hc = diff >= 6;
+  const cols = diff <= 1 ? 3 : hc ? 5 : 4;
+  const n = diff <= 1 ? 6 : diff <= 2 ? 8 : diff <= 3 ? 12 : hc ? 20 : 16;
+  const miroir = diff === 4 || hc;
+  const nuit = diff >= 5;
+  const memo = diff === 5;
   const types = Object.keys(TYPES_AUTO);
-  const places = Array.from({ length: n }, () => (rng.chance(0.15) ? null : { type: rng.pick(types), col: rng.int(0, COULEURS_AUTO.length - 1), barres: rng.chance(0.25) }));
+  const vide = diff <= 2 ? 0.2 : 0.1;
+  const auto = () => ({ type: rng.pick(types), col: rng.int(0, COULEURS_AUTO.length - 1), barres: rng.chance(0.25), sens: rng.chance(0.25) ? 1 : 0 });
+  const places = Array.from({ length: n }, () => (rng.chance(vide) ? null : auto()));
   const apres = places.map((p) => (p ? { ...p } : null));
-  const i = rng.int(0, n - 1);
-  let quoi;
-  const modes = diff <= 1 ? ['part', 'arrive'] : diff <= 3 ? ['part', 'arrive', 'couleur'] : diff >= 6 ? ['type', 'barres'] : ['couleur', 'type', 'barres'];
+  // La place qui change : occupée sauf aux niveaux 1-2 (arrivée possible).
+  const occupees = places.map((p, k) => (p ? k : -1)).filter((k) => k >= 0);
+  let i = rng.int(0, n - 1);
+  const modes = diff <= 1 ? ['part', 'arrive'] : diff <= 2 ? ['part', 'arrive', 'couleur'] : diff <= 3 ? ['proche', 'type', 'barres'] : diff <= 4 ? ['proche', 'barres', 'sens'] : hc ? ['sens'] : ['proche', 'barres', 'sens', 'type'];
   let mode = rng.pick(modes);
-  if (!places[i] && mode !== 'arrive') mode = 'arrive';
-  if (places[i] && mode === 'arrive') mode = 'part';
+  if (!['part', 'arrive'].includes(mode) || places[i]) { if (!places[i]) i = rng.pick(occupees); if (mode === 'arrive') mode = 'part'; }
+  else mode = 'arrive';
+  const coul = (k) => COULEURS_AUTO[k][0];
+  let quoi;
   if (mode === 'part') { apres[i] = null; quoi = 'la voiture qui y était est partie'; }
-  else if (mode === 'arrive') { apres[i] = { type: rng.pick(types), col: rng.int(0, COULEURS_AUTO.length - 1), barres: false }; quoi = 'une voiture est arrivée'; }
-  else if (mode === 'couleur') { let c; do c = rng.int(0, COULEURS_AUTO.length - 1); while (c === places[i].col); apres[i].col = c; quoi = `la voiture ${COULEURS_AUTO[places[i].col][0]} a été remplacée par une ${COULEURS_AUTO[c][0]} du même modèle`; }
+  else if (mode === 'arrive') { apres[i] = { ...auto(), barres: false }; quoi = 'une voiture est arrivée'; }
+  else if (mode === 'couleur') {
+    let c; do c = rng.int(0, 6); while (c === places[i].col % 7);
+    apres[i].col = c; quoi = `la voiture ${coul(places[i].col)} a été remplacée par une ${coul(c)} du même modèle`;
+  } else if (mode === 'proche') { apres[i].col = PROCHE(places[i].col); quoi = `la voiture ${coul(places[i].col)} a été remplacée par une ${coul(apres[i].col)} du même modèle`; }
   else if (mode === 'type') { let t; do t = rng.pick(types); while (t === places[i].type); apres[i].type = t; quoi = 'le modèle a changé, pas la couleur'; }
-  else { apres[i].barres = !places[i].barres; quoi = apres[i].barres ? 'des barres de toit sont apparues' : 'les barres de toit ont disparu'; }
+  else if (mode === 'barres') { apres[i].barres = !places[i].barres; quoi = apres[i].barres ? 'des barres de toit sont apparues' : 'les barres de toit ont disparu'; }
+  else { apres[i].sens = places[i].sens ? 0 : 1; quoi = 'c’est la même voiture, mais elle est garée dans l’autre sens : elle est partie puis revenue'; }
+
+  // Dossier noir : va-et-vient normal ailleurs (voitures qui partent ou arrivent), pour brouiller les pistes.
+  const leurres = [];
+  if (hc) {
+    const autres = rng.shuffle([...Array(n).keys()].filter((k) => k !== i));
+    for (const k of autres.slice(0, 3)) {
+      if (places[k]) apres[k] = null; else apres[k] = auto();
+      leurres.push(`P${k + 1}`);
+    }
+  }
   const h0 = rng.int(20 * 60 + 30, 22 * 60), h1 = h0 + rng.int(12, 40);
+  const lieu = 'le parking du quai des Moulins';
+  let contexte;
+  if (hc) contexte = `Une caméra de surveillance a photographié ${lieu} à ${hm(h0)} puis, de l’autre côté, à ${hm(h1)} : la seconde image est retournée, les numéros des places sont peints au sol. Entre les deux, quelques voitures sont parties ou arrivées, c’est normal. Le suspect jure que sa voiture n’a pas quitté sa place de la soirée. Une seule voiture présente sur les deux photos a pourtant bougé.`;
+  else if (memo) contexte = `Une caméra de surveillance a photographié ${lieu} à ${hm(h0)} puis à ${hm(h1)}, de nuit. Le suspect prétend qu’il n’a pas bougé de la soirée. Une seule place a changé. Observe bien la première photo : quand tu ouvres la seconde, la première est rangée au dossier et tu ne pourras plus la revoir.`;
+  else contexte = `Une caméra de surveillance a photographié ${lieu} à ${hm(h0)} puis à ${hm(h1)}. Le suspect prétend qu’il n’a pas bougé de la soirée. Une seule place a changé entre les deux photos.${miroir ? ' Attention : la seconde photo est prise par la caméra d’en face, l’image est donc retournée ; les numéros des places sont peints au sol.' : ''}`;
   return {
     titre: 'Les deux photos', mode: 'choix',
-    contexte: `Une caméra de surveillance a photographié le parking du quai des Moulins à ${hm(h0)} puis à ${hm(h1)}. Le suspect prétend qu’il n’a pas bougé de la soirée. Une seule place a changé entre les deux photos.${miroir ? ' Attention : la seconde photo est prise par la caméra d’en face, l’image est donc retournée ; les numéros des places sont peints au sol.' : ''}`,
-    figures: [{ titre: `Photo 1 · ${hm(h0)}`, svg: photoSvg(places, cols, false, hm(h0)) }, { titre: `Photo 2 · ${hm(h1)}`, svg: photoSvg(apres, cols, miroir, hm(h1)) }],
-    question: 'Sur quelle place quelque chose a-t-il changé ?',
+    contexte,
+    figures: [{ titre: `Photo 1 · ${hm(h0)}`, svg: photoSvg(places, cols, false, hm(h0), false) }, { titre: `Photo 2 · ${hm(h1)}`, svg: photoSvg(apres, cols, miroir, hm(h1), nuit) }],
+    memo,
+    question: hc ? 'Quelle voiture a bougé alors qu’elle semble ne pas avoir quitté sa place ?' : 'Sur quelle place quelque chose a-t-il changé ?',
     choix: places.map((_, k) => ({ id: `P${k + 1}`, label: `P${k + 1}` })),
     answer: `P${i + 1}`,
-    astuce: miroir ? 'Repère-toi avec les numéros au sol, pas avec la position dans l’image.' : 'Compare les places une par une : couleur, forme, toit.',
-    explication: `C’est la place P${i + 1} : ${quoi}.`,
+    astuce: hc ? 'Ignore les places qui se sont vidées ou remplies. Sur l’image retournée, une voiture immobile apparaît elle aussi retournée.'
+      : memo ? 'Avant d’ouvrir la photo 2, note dans ton brouillon la couleur et le sens de chaque voiture.'
+      : miroir ? 'Repère-toi avec les numéros au sol. Une voiture qui n’a pas bougé apparaît elle aussi retournée sur la photo 2.'
+      : diff >= 3 ? 'Compare les places une par une : teinte exacte, forme, barres de toit, sens du pare-brise.' : 'Compare les places une par une : couleur, forme, toit.',
+    explication: hc
+      ? `C’est la place P${i + 1} : ${quoi}. Les places ${leurres.sort((x, y) => x.slice(1) - y.slice(1)).join(', ')} ont changé aussi, mais ce sont des voitures différentes qui partent ou arrivent.`
+      : `C’est la place P${i + 1} : ${quoi}.`,
     _pas: 2,
   };
 }

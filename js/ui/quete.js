@@ -8,6 +8,19 @@ function rerollUtilise() { return (S.quests || []).some((q) => q.variante); }
 
 const lire = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } };
 
+// Documents de l'énigme. Photos « à mémoriser » : la photo 1 disparaît dès qu'on ouvre la photo 2
+// (mémorisé sur l'appareil, pour qu'un rechargement ne la fasse pas revenir).
+function renderFigures(q, fini) {
+  const fig = (f) => `<figure class="fig"><figcaption>${esc(f.titre)}</figcaption>${f.svg}</figure>`;
+  const cls = `figs ${q.type === 'photos' ? 'deux' : ''}`;
+  if (!q.memo || fini) return `<section class="${cls}" aria-label="Documents">${q.figures.map(fig).join('')}</section>`;
+  const vu = (S.memoVu && S.memoVu[q.id]) || lire(`mazp-memo-${q.id}`);
+  const [f1, f2] = q.figures;
+  const range = (f, txt) => `<figure class="fig"><figcaption>${esc(f.titre)}</figcaption><div class="fig-range">${txt}</div></figure>`;
+  return `<section class="${cls}" aria-label="Documents">${vu ? range(f1, 'Rangée au dossier') + fig(f2) : fig(f1) + range(f2, 'Pas encore ouverte')}</section>
+    ${vu ? '' : '<button type="button" class="btn outline block" data-action="memo-voir">J’ai mémorisé : ouvrir la photo 2</button>'}`;
+}
+
 // Grille de déduction à cocher : ✗ impossible, ✓ certain (mémorisée sur cet appareil).
 function renderGrille(q) {
   const { gens, veh, lieux } = q.grille;
@@ -122,7 +135,7 @@ export function renderQuete() {
     ${!train && !noir && !fini && !rerollUtilise() ? `<button type="button" class="btn small ghost block" data-action="quest-reroll">${icon('refresh', 16)} Pas ton style ? Changer cette énigme (une fois par jour)</button>` : ''}
     ${q.variante ? '<p class="tiny muted" style="margin:0">Énigme changée : c’est ton changement du jour.</p>' : ''}
     <p style="margin:0;font-size:14px;line-height:1.45;color:var(--text2)">${esc(q.contexte)}</p>
-    ${q.figures ? `<section class="figs ${q.type === 'photos' ? 'deux' : ''}" aria-label="Documents">${q.figures.map((f) => `<figure class="fig"><figcaption>${esc(f.titre)}</figcaption>${f.svg}</figure>`).join('')}</section>` : ''}
+    ${q.figures ? renderFigures(q, fini) : ''}
     ${q.tableau ? `<section class="card tight" aria-label="Fiche horaire">${q.tableau}</section>` : ''}
 
     ${q.elements && q.elements.length ? `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who ${q.type === 'cadenas' ? 'mono' : ''}" ${q.type === 'cadenas' ? 'style="font-size:17px;letter-spacing:2px;color:var(--text)"' : ''}>${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>` : ''}
