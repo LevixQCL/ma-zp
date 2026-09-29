@@ -550,3 +550,13 @@ details.journal .j-l { padding: 3px 0 3px 10px; gap: 10px; }
 details.journal > summary > span:last-of-type { margin-left: auto; }
 details.journal { padding: 0 !important; margin: 0 !important; background: none !important; border-radius: 0 !important; box-shadow: none !important; }
 details.journal > summary { padding: 6px 2px !important; min-height: 38px; }
+
+/* Carte : mes quartiers */
+.qrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 0; border-top: 1px solid var(--line); }
+.qrow:first-child { border-top: 0; }
+.qrow.sel { background: rgba(255,255,255,.04); margin: 0 -12px; padding: 8px 12px; border-radius: 10px; box-shadow: inset 3px 0 0 var(--amber); }
+.qnom { all: unset; cursor: pointer; display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.qnom:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; border-radius: 6px; }
+.qbar { width: 54px; height: 6px; border-radius: 3px; background: var(--surface2); overflow: hidden; flex-shrink: 0; }
+.qbar span { display: block; height: 100%; border-radius: 3px; }
+.qrow .stepper button { width: 38px; height: 38px; }

@@ -6,6 +6,7 @@ import { territoires, W, H, WW, HH } from './ville.js';
 import { makeRng, hashString } from '../engine/rng.js';
 import { siteDe } from '../engine/sites.js';
 import { GRADES, gradeFor } from '../engine/constants.js';
+import { tensionsDe, quartiersFrontaliers, niveauTension } from '../engine/quartiers.js';
 
 const C = {
   terre: '#141C29', campagne: '#10161F', ilot: '#172131', rue: '#223049', avenue: '#2B3B57', eau: '#0A1328', rive: '#C9D6E6',
@@ -48,7 +49,7 @@ function celluleSite(T, tz, site) {
   return T.cells[choix[Math.abs(hashString(`${tz.uid}:${site.id}`)) % choix.length]];
 }
 
-export function planVille(st, me, { zoom = false } = {}) {
+export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
   const zonesArr = Object.values(st.zones);
   const T = territoires(S.config.seed, zonesArr);
   const zoneOf = (k) => st.zones[T.order[k]];
@@ -138,6 +139,31 @@ export function planVille(st, me, { zoom = false } = {}) {
     return `<line x1="${f1(a2[0])}" y1="${f1(a2[1])}" x2="${f1(b2[0])}" y2="${f1(b2[1])}" stroke="${esc(z.couleur)}"/>`;
   })).join('');
 
+  // Zones chaudes : mes quartiers et ceux de mes voisins le long de la frontière, à toucher.
+  let chaleurSvg = '', reperesQ = '';
+  if (chaleur && moi) {
+    const mesT = tensionsDe(st, me);
+    const front = quartiersFrontaliers(st, me.uid);
+    const tVoisin = (i) => { const z = zoneOf(T.owner[i]); return z ? tensionsDe(st, z)[i] : null; };
+    const sel = S.quartierSel != null ? Number(S.quartierSel) : null;
+    const pat = (S.draft && S.draft.patrouilles) || {};
+    const pc = me.pointChaud;
+    const cellule = (i, t, mien) => {
+      const n = niveauTension(t);
+      return `<polygon points="${pts(T.cells[i].poly)}" fill="${n.couleur}" fill-opacity="${mien ? (i === sel ? 0.5 : 0.36) : 0.22}" ${mien ? '' : 'stroke-dasharray="2 2"'} stroke="${i === sel ? '#FFFFFF' : n.couleur}" stroke-opacity="${i === sel ? 1 : mien ? 0.5 : 0.35}" stroke-width="${i === sel ? 2.4 : 1}" vector-effect="non-scaling-stroke" data-action="quartier" data-c="${i}" style="cursor:pointer"><title>${esc(T.cells[i].nom)} : ${n.nom} (${Math.round(t)})</title></polygon>`;
+    };
+    chaleurSvg = [...moi.quartiers.map((i) => cellule(i, mesT[i], true)), ...front.map((i) => { const t = tVoisin(i); return t == null ? '' : cellule(i, t, false); })].join('');
+    // Repères : point chaud annoncé (flamme) et patrouilles envoyées (écusson bleu avec le nombre d'agents).
+    const at = (i, dx, dy, inner) => { const c = T.cells[i].c; return `<g transform="translate(${f1(c[0] + dx * echelle)} ${f1(c[1] + dy * echelle)}) scale(${f1(echelle)})" style="pointer-events:none">${inner}</g>`; };
+    if (pc && moi.quartiers.includes(Number(pc.cell))) {
+      reperesQ += at(Number(pc.cell), -9, -9, `<circle r="8" fill="#E0625A" stroke="#0B1119" stroke-width="1.4"><animate attributeName="r" values="7;9;7" dur="1.6s" repeatCount="indefinite"/></circle><path d="M0 -5c2.6 2.4 3.6 4.2 3.6 6a3.6 3.6 0 0 1-7.2 0c0-1.2.6-2.4 1.6-3.3.2 1.2.8 1.8 1.4 1.8C-.6 -.6-.8 -3 0 -5z" fill="#fff"/>`);
+    }
+    for (const [k, a] of Object.entries(pat)) {
+      if (!a || !moi.quartiers.includes(Number(k))) continue;
+      reperesQ += at(Number(k), 9, 8, `<path d="M0 -8l7 2.6v4.4c0 4.4-3.1 7-7 8.8-3.9-1.8-7-4.4-7-8.8v-4.4z" fill="#5AB0F0" stroke="#0B1119" stroke-width="1.3"/><text y="3.4" text-anchor="middle" style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:9px;fill:#0B1119">${a}</text>`);
+    }
+  }
+
   // Étiquettes.
   const zonesLabels = T.zones.map((tz) => {
     const z = st.zones[tz.uid];
@@ -179,6 +205,7 @@ export function planVille(st, me, { zoom = false } = {}) {
       <clipPath id="cadre"><rect width="${WW}" height="${HH}"/></clipPath>
     </defs>
     <style>
+      text{pointer-events:none}
       .zl{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:${f1(13 * echelle)}px;fill:${C.texte};letter-spacing:1.2px;paint-order:stroke;stroke:#0B1119;stroke-width:3px}
       .zc{font-family:'IBM Plex Mono',monospace;font-size:${f1(7.5 * echelle)}px;fill:#AFC0D2;paint-order:stroke;stroke:#0B1119;stroke-width:2.5px}
       .ql{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:${f1(5.6 * echelle)}px;fill:${C.quartier};letter-spacing:.9px;paint-order:stroke;stroke:${C.terre};stroke-width:2px}
@@ -202,8 +229,9 @@ export function planVille(st, me, { zoom = false } = {}) {
       ${ponts}
       ${axe(ring)}${axe(e42)}${axe(n56)}${cartouches}
       <g class="lis">${liseres}</g>
+      ${chaleurSvg}
       <g class="lim">${limites}</g>
-      ${quartiersLabels}${sitesSvg}${zonesLabels}${hp}${star}${pinsAff}${opPin}
+      ${quartiersLabels}${sitesSvg}${zonesLabels}${hp}${star}${pinsAff}${opPin}${reperesQ}
     </g>
   </svg>`;
 }

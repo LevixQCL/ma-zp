@@ -3,9 +3,12 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-29l',
-  titre: 'Mise à jour du 29 septembre (équilibrage)',
+  id: '2026-09-30a',
+  titre: 'Mise à jour du 30 septembre : les quartiers',
   points: [
+    ['Carte : zones chaudes', 'tes six quartiers ont chacun leur tension, en couleur sur la carte (calme, à surveiller, tendu, chaud), avec les quartiers voisins à ta frontière en pointillés.'],
+    ['Patrouilles', 'touche un quartier pour y envoyer des agents de Proximité. Plus tu concentres, plus la tension baisse à cet endroit ; à partir de 4 agents, la délinquance se déplace vers les voisins, même chez la zone d’à côté.'],
+    ['Point chaud du jour', 'presque chaque jour, un quartier est signalé la veille. 2 agents sur place le désamorcent, sinon la tension y grimpe. Il apparaît dans les choses à faire de l’HP.'],
     ['Énigme « Les deux photos »', 'beaucoup plus exigeante dès le niveau 3 : teintes proches, barres de toit, voiture garée dans l’autre sens ; niveau 5 de nuit et à mémoriser ; dossier noir avec du va-et-vient pour brouiller les pistes.'],
     ['Enquête', 'nouvelle carte « Mes démarches » : les pièces que tu as obtenues toi-même, jour après jour, et celles que tu gardes encore pour toi.'],
     ['Choses à faire', 'la grande décision apparaît dans la liste de l’HP. Si tu n’en veux pas, choisis « Aucune ce soir » pour la cocher.'],

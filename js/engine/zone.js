@@ -276,7 +276,12 @@ export function sanitizeOrders(zone, raw, state) {
   const motionChef = ['prime', 'amnistie', 'subside'].includes(o.motionChef) ? o.motionChef : null;
   const montant = o.offre && typeof o.offre === 'object' ? int(o.offre.montant, 0, ENCHERE.max) : 0;
   const offre = montant > 0 && !tutelle ? { id: str(o.offre.id), montant } : null;
-  return { alloc, rythme, engagements, evenement: evenement0, renfort, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
+  // Patrouilles ciblées : { quartier: agents } (validées plus finement pendant la résolution).
+  const patrouilles = {};
+  if (o.patrouilles && typeof o.patrouilles === 'object') {
+    for (const [k2, v] of Object.entries(o.patrouilles).slice(0, 8)) { const n = int(v, 0, 12); if (/^\d{1,4}$/.test(k2) && n > 0) patrouilles[k2] = n; }
+  }
+  return { patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */
@@ -315,7 +320,7 @@ export function effetsOperation(zone, alloc, niveau, turn) {
 
 /** Ordres du pilote automatique : on reprend la dernière répartition, sans décision ni engagement. */
 export function autopilotOrders(zone, state) {
-  const base = zone.dernierOrdre ? { alloc: zone.dernierOrdre.alloc, rythme: 'normal', operation: 'reduit' } : { alloc: DEFAULT_ALLOC, rythme: 'normal', operation: 'reduit' };
+  const base = zone.dernierOrdre ? { alloc: zone.dernierOrdre.alloc, rythme: 'normal', operation: 'reduit', patrouilles: zone.dernierOrdre.patrouilles } : { alloc: DEFAULT_ALLOC, rythme: 'normal', operation: 'reduit' };
   return sanitizeOrders(zone, base, state);
 }
 

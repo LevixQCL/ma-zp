@@ -85,7 +85,10 @@ export function botOrders(zone, state, style = 'equilibre') {
   if (zone.budget > 45) { depenses.reserve = style === 'agressif' ? 3 : 2; depenses.reserveService = zone.paperasse > 14 ? 'admin' : 'intervention'; }
   if (zone.criminalite > 62 && zone.budget > 30) depenses.prevention = true;
   if (zone.moral < 50 && zone.budget > 25) depenses.prime = true;
-  return { alloc, rythme, engagements, evenement, decision, operation, depenses, ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
+  // Patrouilles : les robots attentifs envoient 2 agents sur le point chaud annoncé.
+  const patrouilles = {};
+  if (zone.pointChaud && style !== 'distrait' && alloc.proximite >= 2 && rng.chance(style === 'agressif' ? 0.5 : 0.8)) patrouilles[zone.pointChaud.cell] = 2;
+  return { patrouilles, alloc, rythme, engagements, evenement, decision, operation, depenses, ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
 }
 
 /** Enquête : constatations d'abord, puis vérifications ciblées ; accusation quand un seul suspect reste. */
