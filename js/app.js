@@ -8,6 +8,7 @@ import { renderHP, renderProfil } from './ui/hp.js';
 import { ouvrirAide } from './ui/aide.js';
 import { monAppel } from './ui/renfort.js';
 import { maCandidature } from './ui/affaires.js';
+import { renderTerrain } from './ui/terrain.js';
 import { operationActive } from './engine/zone.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations } from './ui/ordres.js';
@@ -25,7 +26,7 @@ import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT } from './engine/const
 import { migrateState, isOutdated } from './engine/resolve.js';
 
 const app = document.getElementById('app');
-const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'diplomatie', 'parties', 'quete', 'carte', 'radio', 'prive', 'gazette', 'classement', 'profil', 'admin'];
+const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'diplomatie', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin'];
 let unsubState = null, unsubRadio = null, unsubPrive = null, lastTurnKey = null;
 
 function route() {
@@ -86,6 +87,7 @@ function render() {
       case 'carte': html = renderCarte(); break;
       case 'radio': html = renderRadio(); break;
       case 'prive': html = renderPrive(); break;
+      case 'terrain': html = renderTerrain(); break;
       case 'gazette': html = renderGazette(); break;
       case 'classement':
         if (!S.questStatsAt || Date.now() - S.questStatsAt > 60000) {

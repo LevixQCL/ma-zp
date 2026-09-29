@@ -34,31 +34,28 @@ export function renderCarte() {
       <button type="button" data-action="carte-zoom" data-v="1" aria-selected="${zoom}">Ma zone</button></div>
     <div class="plan-cadre">${planVille(st, me, { zoom })}</div>
     ${legende}
-    ${monSite ? `<section class="card" aria-label="Ton site sensible" style="gap:8px">
-      <div class="row" style="gap:10px">${iconeSite(monSite.id, monSite.couleur, 34)}<div class="col grow" style="gap:1px"><span class="kicker" style="color:${monSite.couleur}">Ton site sensible · ${esc(monSite.type)}</span><h2 class="card-title" style="font-size:16px">${esc(monSite.nom)}</h2></div></div>
-      <p class="small muted" style="margin:0">Il peut provoquer des imprévus dans ta zone (environ un jour sur quatre), et plus rarement une opération d’envergure :</p>
-      <ul class="aide-liste">${monSite.evenements.map((e) => `<li>${esc(e.titre)} <span class="muted">· ${esc(e.texte)}</span></li>`).join('')}<li><strong>${esc(monSite.operation.titre)}</strong> <span class="muted">· opération d’envergure</span></li></ul>
-    </section>` : ''}
-    <section class="col" aria-label="Sur la carte"><h2 class="section">Sur la carte</h2>
+
+    <section class="col" aria-label="Sur la carte"><div class="between"><h2 class="section">Sur la carte</h2><a class="small" href="#terrain">Agir sur le Terrain</a></div>
       ${st.affaires.map((a, i) => {
         const chef = chefDe(a), moiChef = a.zone === me.uid;
-        const eg = S.draft && S.draft.engagements[a.id];
-        return `<div class="card tight" style="gap:8px">
-          <div class="row" style="gap:10px"><span class="badge-num">${i + 1}</span>
-            <span class="col grow" style="gap:2px"><span style="font-weight:600">${esc(a.titre)}</span>
-              <span class="small muted">${moiChef ? '<strong style="color:var(--amber)">Chez toi · tu diriges</strong>' : `Chez ${chef ? zoneName(chef) : '?'}`} · ${a.recompense} pts · force conseillée ${a.forceConseillee} · ${a.agentsMax} agents max</span></span></div>
-          ${moiChef ? `<a class="btn small block" href="#ordres">${eg && eg.agents ? `${eg.agents} agent${eg.agents > 1 ? 's' : ''} engagé${eg.agents > 1 ? 's' : ''} · gérer dans tes ordres` : 'Lancer l’affaire dans tes ordres'}</a>` : postulerCtrl(a)}
-        </div>`;
+        return `<a class="list-row" href="#terrain"><span class="badge-num">${i + 1}</span>
+          <span class="col grow" style="gap:2px"><span style="font-weight:600">${esc(a.titre)}</span>
+            <span class="small muted">${moiChef ? '<strong style="color:var(--amber)">Chez toi · tu diriges</strong>' : `Chez ${chef ? zoneName(chef) : '?'} · postuler`} · ${a.recompense} pts</span></span>${icon('chevron', 16)}</a>`;
       }).join('')}
-      ${ev ? `<a class="list-row" href="#ordres"><span style="width:26px;height:26px;border-radius:7px;background:var(--text);color:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">${icon('star', 14)}</span>
+      ${ev ? `<a class="list-row" href="#terrain"><span style="width:26px;height:26px;border-radius:7px;background:var(--text);color:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">${icon('star', 14)}</span>
         <span class="col grow" style="gap:2px"><span style="font-weight:600">${esc(ev.titre)}</span><span class="small muted">Événement collectif ${ev.tour === st.turn ? 'ce soir' : `dans ${ev.tour - st.turn} tours`} · ~${3 * Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length} agents requis</span></span></a>` : ''}
       ${!st.affaires.length && !ev ? '<p class="small muted" style="margin:0">Rien de particulier sur la carte ce tour.</p>' : ''}
     </section>
-    <section class="col" aria-label="Les zones"><h2 class="section">Les zones</h2>
+    <details class="card repli"><summary><span class="col grow" style="gap:0"><span style="font-weight:600">Les zones du district</span><span class="tiny muted">${n} zone${n > 1 ? 's' : ''} · grades, sites, IPZ moyen</span></span>${icon('chevron', 16)}</summary><div class="col" style="gap:8px">
       ${zones.map((z) => `<div class="list-row">${S.players[z.uid] && S.players[z.uid].blason && gradeIdx(z.ps) >= 4 ? blasonSvg(S.players[z.uid].blason, z.couleur, 20) : `<span class="bullet" style="background:${esc(z.couleur)}"></span>`}
         <span class="col grow" style="gap:1px"><span style="font-weight:600">${zoneName(z)}${z.uid === me.uid ? ' (toi)' : ''} ${insigne(z.ps)}${z.peril ? ' <span class="tag" style="background:var(--red-bg);color:var(--red-soft)">en péril</span>' : ''}</span><span class="tiny muted">${pseudoDe(z.uid) ? `${esc(pseudoDe(z.uid))} · ` : ''}${gradeInfo(z.ps).g.nom} · FIPA : ${fiabilite(z)}${z.toursSansOrdres >= 3 ? ' · en veille' : ''}</span>${siteDe(z) ? `<span class="tiny row" style="gap:4px;color:${siteDe(z).couleur}">${iconeSite(siteDe(z).id, siteDe(z).couleur, 14)}${esc(siteDe(z).nom)}</span>` : ''}</span>
         <span class="mono small">${fmt1(moyenneIpz(z))}</span></div>`).join('')}
-    </section>
+    </div></details>
+    ${monSite ? `<details class="card repli"><summary><span class="row grow" style="gap:8px">${iconeSite(monSite.id, monSite.couleur, 22)}<span class="col" style="gap:0"><span style="font-weight:600">Ton site sensible</span><span class="tiny muted">${esc(monSite.nom)} · ${esc(monSite.type)}</span></span></span>${icon('chevron', 16)}</summary>
+
+      <p class="small muted" style="margin:0">Il peut provoquer des imprévus dans ta zone (environ un jour sur quatre), et plus rarement une opération d’envergure :</p>
+      <ul class="aide-liste">${monSite.evenements.map((e) => `<li>${esc(e.titre)} <span class="muted">· ${esc(e.texte)}</span></li>`).join('')}<li><strong>${esc(monSite.operation.titre)}</strong> <span class="muted">· opération d’envergure</span></li></ul>
+    </details>` : ''}
   </main>${tabbar('carte')}`;
 }
 
