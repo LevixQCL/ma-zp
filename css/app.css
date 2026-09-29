@@ -527,3 +527,8 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .ddetail { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--amber-line, var(--line)); }
 .man-regles { font-size: 13px; line-height: 1.45; color: var(--text2); padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
 .pill.red { background: var(--red-bg); border-color: var(--red-line); color: var(--red-soft); }
+
+/* Bloc visé par un lien (ex. #hp-fipa) : bref surlignage. */
+.surligne > * { animation: surligne 1.8s ease-out; }
+@keyframes surligne { 0%, 40% { box-shadow: 0 0 0 3px var(--amber); } 100% { box-shadow: 0 0 0 0 transparent; } }
+#hp-fipa { scroll-margin-top: 16px; }
