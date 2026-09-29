@@ -45,15 +45,15 @@ export function nonLus() {
 export function invitations() {
   const st = S.state, z = myZone();
   if (!st || !z) return [];
-  const T = st.turn, me = z.uid, out = [];
+  const T = st.turn, me = z.uid, out = [], d = S.draft || {};
   const nom = (uid) => (st.zones[uid] ? zoneName(st.zones[uid]) : 'Une zone');
   for (const f of st.fipas || []) {
-    if (f.etape === 'invite' && f.partenaire === me && f.tourReponse === T) out.push({ titre: `${nom(f.demandeur)} t’invite à la FIPA « ${esc(f.titre)} »`, texte: `${f.lui} de tes agents demandés · ${f.recompense} k€ en jeu · réponds avant 20:00`, href: '#hp-fipa', action: 'Répondre' });
-    else if (f.etape === 'demande' && f.demandeur === me && f.tourDecision === T) out.push({ titre: `Le bourgmestre te confie « ${esc(f.titre)} »`, texte: 'choisis une zone partenaire à inviter', href: '#hp-fipa', action: 'Inviter' });
-    else if (f.etape === 'accepte' && f.tourJ === T && (f.demandeur === me || f.partenaire === me)) out.push({ titre: `FIPA « ${esc(f.titre)} » ce soir avec ${nom(f.demandeur === me ? f.partenaire : f.demandeur)}`, texte: 'partager ou revendiquer le mérite ?', href: '#hp-fipa', action: 'Choisir' });
+    if (f.etape === 'invite' && f.partenaire === me && f.tourReponse === T) out.push({ titre: `${nom(f.demandeur)} t’invite à la FIPA « ${esc(f.titre)} »`, texte: `${f.lui} de tes agents demandés · ${f.recompense} k€ en jeu · réponds avant 20:00`, href: '#hp-fipa', action: 'Répondre', fait: !!(d.fipaReponse && d.fipaReponse.id === f.id) });
+    else if (f.etape === 'demande' && f.demandeur === me && f.tourDecision === T) out.push({ titre: `Le bourgmestre te confie « ${esc(f.titre)} »`, texte: d.fipa && d.fipa.id === f.id && d.fipa.invite ? `invitation prévue ce soir : ${nom(d.fipa.invite)}` : 'choisis une zone partenaire à inviter', href: '#hp-fipa', action: 'Inviter', fait: !!(d.fipa && d.fipa.id === f.id && d.fipa.invite) });
+    else if (f.etape === 'accepte' && f.tourJ === T && (f.demandeur === me || f.partenaire === me)) out.push({ titre: `FIPA « ${esc(f.titre)} » ce soir avec ${nom(f.demandeur === me ? f.partenaire : f.demandeur)}`, texte: 'partager ou revendiquer le mérite ?', href: '#hp-fipa', action: 'Choisir', fait: !!(d.fipaChoix && d.fipaChoix.id === f.id) });
   }
-  for (const d of st.duels || []) {
-    if (d.b === me && d.etape === 'propose' && d.tourReponse === T) out.push({ titre: `${nom(d.a)} te défie en duel`, texte: 'sans réponse, c’est un refus', href: '#diplomatie', action: 'Répondre' });
+  for (const dl of st.duels || []) {
+    if (dl.b === me && dl.etape === 'propose' && dl.tourReponse === T) out.push({ titre: `${nom(dl.a)} te défie en duel`, texte: 'sans réponse, c’est un refus', href: '#diplomatie', action: 'Répondre', fait: !!(d.duelReponse && d.duelReponse.id === dl.id) });
   }
   for (const c of candidaturesRecues()) out.push({ titre: `${nom(c.uid)} postule sur « ${esc(c.affaire.titre)} »`, texte: `${c.agents} agent${c.agents > 1 ? 's' : ''} proposé${c.agents > 1 ? 's' : ''} · réponds avant 20:00`, ctrl: candidatureCtrl(c), fait: c.statut !== 'attente' });
   for (const a of st.affaires) { const c = a.zone !== me && maCandidature(a); if (c && c.statut !== 'attente') out.push({ titre: `Candidature ${c.statut === 'acceptee' ? 'acceptée' : 'refusée'} par ${nom(a.zone)}`, texte: `« ${esc(a.titre)} » · ${c.agents} agent${c.agents > 1 ? 's' : ''}${c.statut === 'acceptee' ? ' · valide tes ordres' : ''}`, href: c.statut === 'acceptee' ? '#ordres' : '#carte', action: c.statut === 'acceptee' ? 'Ordres' : 'Voir', fait: true }); }
@@ -115,9 +115,11 @@ export function renderPrive() {
     ${ongletsRadio('prive')}
     <header class="col" style="gap:3px"><h1 class="big">Messages privés</h1><p class="sub">Discussions entre deux zones, et les invitations qui attendent ta réponse.</p></header>
     ${inv.length ? `<section class="col" aria-label="Invitations"><h2 class="section">Invitations et demandes</h2>
-      ${inv.map((i) => i.ctrl ? `<div class="card tight" style="border-color:var(--amber-line);background:var(--amber-bg);gap:8px"><div class="col" style="gap:1px"><span style="font-weight:600">${i.titre}</span><span class="small" style="color:var(--amber-soft)">${i.texte}</span></div>${i.ctrl}</div>` : `<a class="list-row" href="${i.href}" style="border-color:var(--amber-line);background:var(--amber-bg)"><span class="bullet" style="background:var(--amber)"></span>
+      ${inv.map((i) => i.ctrl ? `<div class="card tight" style="border-color:var(--amber-line);background:var(--amber-bg);gap:8px"><div class="col" style="gap:1px"><span style="font-weight:600">${i.titre}</span><span class="small" style="color:var(--amber-soft)">${i.texte}</span></div>${i.ctrl}</div>` : (i.fait ? `<a class="list-row" href="${i.href}"><span class="bullet" style="background:var(--green)"></span>
+        <span class="col grow" style="gap:1px"><span style="font-weight:600">${i.titre}</span><span class="small muted">${i.texte}</span></span>
+        <span class="pill">✓ Modifier</span></a>` : `<a class="list-row" href="${i.href}" style="border-color:var(--amber-line);background:var(--amber-bg)"><span class="bullet" style="background:var(--amber)"></span>
         <span class="col grow" style="gap:1px"><span style="font-weight:600">${i.titre}</span><span class="small" style="color:var(--amber-soft)">${i.texte}</span></span>
-        <span class="pill amber">${i.action}</span></a>`).join('')}</section>` : ''}
+        <span class="pill amber">${i.action}</span></a>`)).join('')}</section>` : ''}
     <section class="col" aria-label="Conversations"><h2 class="section">Conversations</h2>
       ${tri.length ? tri.map((z) => { const m = dernier(z.uid); const k = n.parZone[z.uid] || 0; return `<button type="button" class="list-row" data-action="prive-ouvrir" data-uid="${esc(z.uid)}" style="width:100%;text-align:left">
         <span style="width:10px;height:32px;border-radius:3px;background:${esc(z.couleur)};flex-shrink:0"></span>
