@@ -6,6 +6,8 @@ import {
   MIN_TOURS_CLASSEMENT, START, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { attribuerSites, siteDe } from './sites.js';
+import { genererEchos } from './gazette.js';
+import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe } from './equipe.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, capacite,
   forceEngagement, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses,
@@ -220,7 +222,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const z = state.zones[x.u];
       const part = total * x.n / sommeN;
       z._points += part; z.stats.pointsAffaires += part; z.stats.affairesGagnees += 1; z.moral += 2;
-      if (x.u === chef) { z.satisfaction += aff.recompense * 0.5; if (equipe.length > 1) z.reputation += 1; }
+      if (x.u === chef) { z.satisfaction += aff.recompense * 0.5; if (equipe.length > 1) z.reputation += 1; if (equipe.length >= 3) z.stats.affairesOrchestre = (z.stats.affairesOrchestre || 0) + 1; }
       else z.reputation += 2;
       z.rapport.push(`${aff.titre} : affaire résolue${x.u === chef ? ' sous ta direction' : ` avec ${zoneLabel(state.zones[chef])}`} (+${fmt1(part)} pts pour ${x.n} agent${x.n > 1 ? 's' : ''}).`);
     }
@@ -266,7 +268,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (!op) continue;
     (renfortsRecus[r.cible] ||= []).push({ de: u, n: r.agents });
     const rep = Math.min(RENFORT.repMax, r.agents * RENFORT.repParAgent);
-    z.reputation += rep; z._ps += RENFORT.ps;
+    z.reputation += rep; z._ps += RENFORT.ps; z.stats.renfortsPretes = (z.stats.renfortsPretes || 0) + 1;
     z.rapport.push(`Renfort : ${r.agents} de tes agents aident ${zoneLabel(c)} sur « ${op.titre} » (+${rep} de réputation).`);
   }
   for (const [cible, l] of Object.entries(renfortsRecus)) {
@@ -591,6 +593,22 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z._ps += PS.ordres;
     }
     z.ipzHist.push({ t: T, v: z.ipz, joue: z._joue });
+    // Série sans incident raté, équipe et trophées.
+    z.stats.serieSansRate = rates === 0 ? (z.stats.serieSansRate || 0) + 1 : 0;
+    if (z._joue) z.stats.toursValides = (z.stats.toursValides || 0) + 1;
+    const prog = faireProgresser(z, {
+      inter: traites, rech: resolus * 3 + (o.demarches || []).length * 2 + (z._decouverteJour ? 8 : 0),
+      prox: cap.proximite / 2, roul: cap.roulage / 2, admin: Math.max(0, cap.admin * 1.2 - 1.2) / 1.5,
+    });
+    if (prog.ligne) z.rapport.push(prog.ligne);
+    for (const m of prog.montees) {
+      z.rapport.push(`Promotion d’honneur : ${m.prenom} ${m.nom} gagne un surnom, « ${surnomDe(m)} ».`);
+      push(4, 'Portrait', `${zoneLabel(z)} : ${m.prenom} ${m.nom} devient « ${surnomDe(m)} »`, `${intitule(m)} de la zone, ${m.f ? 'saluée' : 'salué'} par ses collègues.`, uid);
+    }
+    for (const id of verifierTrophees(z)) if (donnerTrophee(z, id, state.season, T)) {
+      z.rapport.push(`Trophée débloqué : « ${TROPHEE[id].nom} » (${TROPHEE[id].texte.toLowerCase()}).`);
+      push(5, 'Trophée', `${zoneLabel(z)} décroche le trophée « ${TROPHEE[id].nom} »`, TROPHEE[id].texte + '.', uid);
+    }
     if (z.ipzHist.length > 30) z.ipzHist.shift();
     z.ps += Math.min(PS.plafondJour, z._ps);
     z.budget = round1(z.budget);
@@ -652,10 +670,17 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
   // 9. Gazette.
   news.sort((a, b) => b.prio - a.prio);
+  // Rubriques : le bêtisier, le tableau d'honneur et le tribunal ont leur propre place.
+  const RUBRIQUES = ['Insolite', 'Portrait', 'Trophée', 'Au tribunal'];
+  const principales = news.filter((n) => !RUBRIQUES.includes(n.kicker));
   const gazette = {
     season: state.season, turn: T,
-    une: news[0] || { kicker: 'Calme plat', titre: 'Nuit tranquille sur le District Delta', texte: 'Aucun fait marquant à signaler.' },
-    breves: news.slice(1, 6),
+    une: principales[0] || news.find((n) => n.kicker === 'Au tribunal') || { kicker: 'Calme plat', titre: 'Nuit tranquille sur le District Delta', texte: 'Aucun fait marquant à signaler.' },
+    breves: principales.slice(1, 7),
+    betisier: news.filter((n) => n.kicker === 'Insolite').slice(0, 4),
+    honneur: news.filter((n) => n.kicker === 'Portrait' || n.kicker === 'Trophée').slice(0, 6),
+    tribunal: (pre.res && pre.res.proces) || [],
+    echos: genererEchos(state, T).lignes,
     evenement: evResultat,
     enquete: pre.res,
     conseil: riv.conseil,
@@ -673,7 +698,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const autres = round1(z.budget - budget0[u] - lignes.reduce((s, x) => s + x.v, 0));
     if (Math.abs(autres) >= 0.1) lignes.push({ k: 'autres', l: 'Autres mouvements', v: autres });
     z.compta = { tour: T, debut: round1(budget0[u]), fin: z.budget, lignes };
-    delete z._joue; delete z._points; delete z._ps; delete z._compta;
+    delete z._joue; delete z._points; delete z._ps; delete z._compta; delete z._decouverteJour;
   }
 
   // 10. Fin de saison ou tour suivant.
@@ -708,6 +733,11 @@ function finDeSaison(state, classement) {
   if (byNoir && (byNoir.stats.noirs || 0) > 0) give(byNoir.uid, 'Cerveau du district');
 
   for (const c of classes) state.zones[c.uid].ps += PS.finSaison;
+  for (const c of classes) {
+    const z = state.zones[c.uid];
+    if (!(z.stats.manoeuvresSaison > 0) && donnerTrophee(z, 'incorruptible', state.season, state.turn)) z.rapport.push('Trophée débloqué : « Incorruptible » (une saison classée sans aucune manœuvre).');
+  }
+  for (const z of zones) if ((z.stats.toursValides || 0) >= SEASON_LENGTH && donnerTrophee(z, 'increvable', state.season, state.turn)) z.rapport.push('Trophée débloqué : « Increvable » (ordres validés les 14 tours de la saison).');
   for (const c of classes.slice(0, 3)) {
     const z = state.zones[c.uid];
     if (z.failliteSaison && !z.badges.includes('Phénix')) { z.badges.push('Phénix'); titres.push({ uid: c.uid, titre: 'Phénix' }); }
@@ -730,6 +760,8 @@ function finDeSaison(state, classement) {
     const b = z.batiments || {};
     nz.batiments = { bureaux: baisse(b.bureaux), garage: baisse(b.garage) };
     nz.infra = { ...(z.infra || {}) };
+    nz.equipe = z.equipe || creerEquipe(uid);
+    nz.trophees = z.trophees || [];
     nz.rapport = [`Nouvelle saison : tu conserves tes formations et tes bâtiments, baissés d’un niveau (hôtel de police ${nz.batiments.bureaux}, garage ${nz.batiments.garage}), et tes annexes. Budget, effectifs et véhicules repartent des valeurs de départ.`];
     nz.heritage = { season: oldSeason, niveaux, batiments: { ...nz.batiments }, annexes: Object.keys(nz.infra).filter((k) => nz.infra[k]).length };
     state.zones[uid] = nz;

@@ -24,21 +24,31 @@ export function renderGazette() {
         <span class="tiny muted mono">n° ${g.turn} · S${g.season}</span>
         <button class="iconbtn" data-action="gazette-nav" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Numéro suivant">${icon('chevron', 18)}</button>
       </div></div>
-    <article class="paper">
-      <header class="mast"><h1>La Gazette du Delta</h1>
-        <div class="meta"><span>Tour ${g.turn} · ${g.date ? `${formatDateBe(g.date)} · ${formatHeureBe(g.date)}` : ''}</span><span>Saison ${g.season}</span></div>
+    <article class="paper journal">
+      <header class="mast">
+        <div class="meta"><span>Édition du soir · n° ${g.turn}</span><span>Saison ${g.season}</span></div>
+        <h1>La Gazette du Delta</h1>
+        <div class="devise">Le quotidien du district · ${g.date ? `${formatDateBe(g.date)}, ${formatHeureBe(g.date)}` : `tour ${g.turn}`}</div>
         ${g.toursSansFaillite !== undefined ? `<div class="chantier">District Delta : <strong>${g.toursSansFaillite}</strong> tour${g.toursSansFaillite > 1 ? 's' : ''} sans faillite</div>` : ''}</header>
-      ${g.finSaison ? `<section class="box" style="background:#1D1A15;color:#F4EFE3"><span class="k" style="color:#F2B544">Fin de la saison ${g.finSaison.season}</span>
+      ${g.finSaison ? `<section class="box sombre"><span class="k" style="color:#F2B544">Fin de la saison ${g.finSaison.season}</span>
         ${g.finSaison.titres.map((t) => { const z = S.state.zones[t.uid]; return `<p style="color:#F4EFE3">${icon('trophy', 13)} <strong>${esc(t.titre)}</strong> : ${z ? zoneName(z) : ''}</p>`; }).join('')}
-        <p style="color:#C9B68F">Toutes les zones repartent de zéro pour la saison ${g.finSaison.saisonSuivante}. Grades et titres sont conservés.</p></section>` : ''}
-      <section class="col" style="gap:4px"><span class="k">${esc(g.une.kicker)}</span><h2>${esc(g.une.titre)}</h2>${g.une.texte ? `<p>${esc(g.une.texte)}</p>` : ''}</section>
-      ${g.breves && g.breves.length ? `<div class="rule"></div>
-        <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px">${g.breves.slice(0, 4).map((b) => `<section class="col" style="gap:3px"><span class="k">${esc(b.kicker)}</span><h3>${esc(b.titre)}</h3>${b.texte ? `<p style="font-size:12px">${esc(b.texte)}</p>` : ''}</section>`).join('')}</div>` : ''}
+        <p style="color:#C9B68F">La saison ${g.finSaison.saisonSuivante} commence : budgets et effectifs repartent de zéro, bâtiments et formations sont conservés avec un niveau de moins.</p></section>` : ''}
+      <section class="une"><span class="k">${esc(g.une.kicker)}</span><h2>${esc(g.une.titre)}</h2>${g.une.texte ? `<p class="lettrine">${esc(g.une.texte)}</p>` : ''}</section>
+      ${g.breves && g.breves.length ? `<div class="rule double"></div>
+        <div class="colonnes">${g.breves.slice(0, 6).map((b) => `<section class="breve"><span class="k">${esc(b.kicker)}</span><h3>${esc(b.titre)}</h3>${b.texte ? `<p>${esc(b.texte)}</p>` : ''}</section>`).join('')}</div>` : ''}
+      ${(g.tribunal || []).length ? `<section class="tribunal"><span class="k">Au tribunal</span>${g.tribunal.map((p) => `<div class="proces"><h3>${esc(p.suspect)}</h3><p class="peine">${esc(p.peine)}</p>
+        <p>Affaire « ${esc(p.titre)} ».${p.temoins.length ? ` Cités à la barre : les enquêteurs de ${esc(p.temoins.join(', '))}.` : ''} Interpellation par ${esc(p.arrestation.join(' et '))}.</p></div>`).join('')}</section>` : ''}
       ${enqueteGazette(g)}
-      ${rapport && rapport.length ? `<div class="rule"></div><section class="col" style="gap:4px"><span class="k">Ton rapport</span>${rapport.map((l) => `<p style="font-size:12.5px">• ${esc(l)}</p>`).join('')}</section>` : ''}
+      ${(g.honneur || []).length ? `<div class="rule"></div><section class="col" style="gap:5px"><span class="k">Tableau d’honneur</span>${g.honneur.map((h) => `<p><span class="etoile">★</span> <strong>${esc(h.titre)}</strong>${h.texte ? `. ${esc(h.texte)}` : ''}</p>`).join('')}</section>` : ''}
+      ${(g.echos || []).length || (g.betisier || []).length ? `<div class="rule double"></div><div class="colonnes bas">
+        ${(g.echos || []).length ? `<section class="echos"><span class="k">Échos du district</span>${g.echos.map((l) => `<p>${esc(l)}</p>`).join('')}</section>` : ''}
+        ${(g.betisier || []).length ? `<section class="betisier"><span class="k">Le bêtisier</span>${g.betisier.map((b) => `<p><strong>${esc(b.titre)}</strong>${b.texte ? ` ${esc(b.texte)}` : ''}</p>`).join('')}</section>` : ''}
+      </div>` : ''}
+      ${rapport && rapport.length ? `<details class="rapport-g"><summary><span class="k">Ton rapport de la nuit</span></summary>${rapport.map((l) => `<p style="font-size:12.5px">• ${esc(l)}</p>`).join('')}</details>` : ''}
       <section class="box" aria-label="Classement"><div class="rank tiny" style="font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px"><span>Classement</span><span>Moyenne · jour</span></div>
         ${g.classement.slice(0, 8).map((c, k) => `<div class="rank" ${c.uid === me.uid ? 'style="font-weight:700"' : ''}><span>${c.classe ? `<strong>${k + 1}.</strong>` : '<span style="color:var(--ink3)">–</span>'} ZP ${esc(c.code)} ${esc(c.nom)} ${S.state.zones[c.uid] ? insigne(S.state.zones[c.uid].ps) : ''}</span><span class="mono">${fmt1(c.moyenne)} <span style="color:var(--ink3)">· ${fmt1(c.ipz)}</span></span></div>`).join('')}
         <p style="font-size:11px;color:var(--ink3)">Classé à partir de 5 tours joués.</p></section>
+      <p class="colophon">La rédaction salue ses lecteurs les plus attentifs.</p>
     </article>
   </main>${tabbar('hp')}`;
 }

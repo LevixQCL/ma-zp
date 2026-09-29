@@ -104,6 +104,7 @@ export function rivalitesPre(state, uids, ord, push, T) {
     }
     const bonus = c.peril ? 5 : (c.blesses || []).some((b) => b.retour > T && b.motif !== 'prêté') ? 3 : 1;
     z.reputation += bonus; z.stats.aides = (z.stats.aides || 0) + 1;
+    if (c.peril) z.stats.sauvetages = (z.stats.sauvetages || 0) + 1;
     const quoi = [budget ? `${String(budget).replace('.', ',')} k€` : '', agents ? `${agents} agent${agents > 1 ? 's' : ''} pour ${AIDE.dureePret} tours` : ''].filter(Boolean).join(' et ');
     z.rapport.push(`Entraide : tu envoies ${quoi} à ${nomZone(c)} (+${bonus} de réputation).`);
     c.rapport.push(`Entraide : ${nomZone(z)} t’envoie ${quoi}.`);
@@ -120,6 +121,7 @@ export function rivalitesPre(state, uids, ord, push, T) {
     if (refus) { z.rapport.push(`Manœuvre annulée : ${refus.toLowerCase()}.`); continue; }
     let chance = chanceBase(state, z, T);
     z.manoeuvres = [...(z.manoeuvres || []).filter((t) => A - t < MAN.fenetre), A];
+    z.stats.manoeuvresSaison = (z.stats.manoeuvresSaison || 0) + 1;
     z.reputation -= MAN.coutReputation;
     const oc = ord[m.cible] || {};
     let ok = false, detail = '';
