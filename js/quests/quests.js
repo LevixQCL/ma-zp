@@ -4,19 +4,23 @@
 // aucune ne se résout d'un coup d'œil (il faut croiser plusieurs indices).
 
 import { makeRng } from '../engine/rng.js';
+import { GENERATORS2, LABELS2 } from './quests2.js';
 
-export const QUEST_TYPES = ['quiment', 'grille', 'cadenas', 'chronologie', 'code'];
+export const QUEST_TYPES = ['quiment', 'grille', 'cadenas', 'chronologie', 'code', 'plaque', 'photos', 'filature', 'butin', 'horaires', 'ecriture'];
 export const QUEST_LABELS = {
   quiment: 'Qui ment ?', chronologie: 'Chronologie', code: 'Message codé',
-  cadenas: 'Le cadenas', grille: 'Enquête de voisinage',
+  cadenas: 'Le cadenas', grille: 'Enquête de voisinage', ...LABELS2,
 };
 export const QUESTS_PAR_JOUR = 3;
 
 // Difficulté selon le jour : lundi facile, dimanche corsé.
 const DIFF_PAR_JOUR = [2, 3, 3, 4, 4, 5, 5];
 
-/** Les 3 énigmes du jour d'un joueur : trois types différents, qui tournent sur toute la saison. */
-export function questsFor({ seed, uid, season, turn, weekday = 0 }) {
+/**
+ * Les 3 énigmes du jour d'un joueur : trois types différents, qui tournent sur toute la saison.
+ * `rerolls` : emplacements que le joueur a changés (une autre énigme, d'un type absent du jour).
+ */
+export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [] }) {
   const order = makeRng(`${seed}:qorder:${uid}:${season}`).shuffle(QUEST_TYPES);
   const base = DIFF_PAR_JOUR[weekday] || 3;
   const diffs = [Math.max(1, base - 1), base, Math.min(5, base + 1)];
@@ -26,6 +30,16 @@ export function questsFor({ seed, uid, season, turn, weekday = 0 }) {
     const rng = makeRng(`${seed}:quest:${uid}:${season}:${turn}:${slot}`);
     const q = GENERATORS[type](rng, diffs[slot]);
     out.push({ ...q, type, typeLabel: QUEST_LABELS[type], difficulte: diffs[slot], slot, id: `${season}-${turn}-${slot}` });
+  }
+  // Énigmes changées : même difficulté, type absent des énigmes du jour.
+  for (const slot of rerolls) {
+    if (!out[slot]) continue;
+    const pris = new Set(out.map((q) => q.type));
+    const autres = QUEST_TYPES.filter((t) => !pris.has(t));
+    const rng = makeRng(`${seed}:reroll:${uid}:${season}:${turn}:${slot}`);
+    const type = rng.pick(autres);
+    const q = GENERATORS[type](rng, diffs[slot]);
+    out[slot] = { ...q, type, typeLabel: QUEST_LABELS[type], difficulte: diffs[slot], slot, id: `${season}-${turn}-${slot}r`, variante: 1 };
   }
   return out;
 }
@@ -597,4 +611,4 @@ const court = (s) => COURTS[s] || s;
 
 function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
-const GENERATORS = { quiment, chronologie, code, cadenas, grille };
+const GENERATORS = { quiment, chronologie, code, cadenas, grille, ...GENERATORS2 };

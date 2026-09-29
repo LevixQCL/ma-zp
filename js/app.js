@@ -137,9 +137,13 @@ async function ensureZone() {
   finally { S.joining = false; }
 }
 
+const cleReroll = () => `mazp-reroll-${S.backend.gameId ? S.backend.gameId() : ''}-${S.user.uid}-${S.state.season}-${S.state.turn}`;
 function loadQuest() {
   const st = S.state;
-  S.quests = questsFor({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn, weekday: weekdayBe(st.nextDeadline) });
+  // Énigme changée : mémorisée sur l'appareil, et dans la réponse une fois donnée (pour les autres appareils).
+  const rerolls = new Set((S.questResults || []).map((r, k) => (r && r.variante ? k : -1)).filter((k) => k >= 0));
+  try { const v = localStorage.getItem(cleReroll()); if (v !== null && !(S.questResults || []).some((r) => r && r.variante)) rerolls.add(Number(v)); } catch (e) { /* pas de stockage */ }
+  S.quests = questsFor({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn, weekday: weekdayBe(st.nextDeadline), rerolls: [...rerolls].slice(0, 1) });
 }
 
 async function loadTurnData() {
@@ -438,6 +442,14 @@ async function onClick(e) {
         rerender(); break;
       }
       case 'quest-submit': await submitQuest(S.questPick); break;
+      case 'quest-reroll': {
+        const i = S.questIdx || 0;
+        const r = (S.questResults || [])[i];
+        if ((r && r.statut) || (S.quests || []).some((q) => q.variante)) break;
+        if (!(await askConfirm('Remplacer cette énigme par une énigme d’un autre type ? Tu ne pourras le faire qu’une fois aujourd’hui.', 'Changer'))) break;
+        try { localStorage.setItem(cleReroll(), String(i)); } catch (e) { /* pas de stockage */ }
+        loadQuest(); S.questPick = null; rerender(); break;
+      }
       case 'quest-bonus': await saveQuestBonus(el.dataset.v); break;
       case 'gazette-nav': S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
       case 'admin-create': await b.adminCreateGame(); toast('Partie lancée !'); break;
@@ -488,7 +500,7 @@ async function submitQuest(reponse) {
   // Une seule réponse possible : on demande confirmation, puis c'est définitif.
   if (!(await askConfirm('Valider cette réponse ? Tu n\u2019as qu\u2019une seule chance.', 'Valider'))) return;
   const ok = checkAnswer(q, reponse);
-  S.questResults[i] = { ...r, tentatives: 1, statut: ok ? 'ok' : 'rate', type: q.type, reponse: String(reponse).slice(0, 60) };
+  S.questResults[i] = { ...r, tentatives: 1, statut: ok ? 'ok' : 'rate', type: q.type, reponse: String(reponse).slice(0, 60), ...(q.variante ? { variante: 1 } : {}) };
   S.questPick = null;
   await S.backend.saveQuest(S.user.uid, st.season, st.turn, i, S.questResults[i]);
   toast(ok ? 'Bonne réponse !' : 'Mauvaise réponse.');
