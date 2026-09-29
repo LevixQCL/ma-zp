@@ -445,3 +445,5 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .dtuile[aria-pressed="true"]::after { content: '✓'; position: absolute; top: 8px; right: 10px; color: var(--amber); font-weight: 700; }
 .dtuile:disabled { opacity: .45; }
 .dtuile:disabled .c { color: var(--muted); }
+.dtuile.tard { border-style: dashed; border-color: var(--red-line); }
+.dtuile.tard .d { color: var(--red-soft); }

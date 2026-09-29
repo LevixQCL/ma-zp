@@ -99,7 +99,7 @@ export function logistiqueHtml() {
         : n >= BATIMENT_MAX ? '<span class="small ok" style="font-weight:600">Niveau maximum</span>'
         : `<button type="button" class="btn small block ${choisi ? 'primary' : ''}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''}>
             ${choisi ? '✓ Agrandissement prévu ce soir · annuler' : `Agrandir : niveau ${n + 1} · ${B.capacite(n + 1)} ${B.unite} · ${fmt1(B.coutAgrandir(n))} k€`}</button>
-          <span class="tiny muted">${refus && !choisi ? esc(refus) : `${TRAVAUX_TOURS} tours de travaux · entretien ensuite ${fmt1(B.entretien(n + 1))} k€/tour${B.subside(n + 1) ? `, subside +${fmt1(B.subside(n + 1))}` : ''} · c’est ta grande décision du jour`}</span>`}
+          <span class="tiny muted">${refus && !choisi ? esc(refus) : `${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux · entretien ensuite ${fmt1(B.entretien(n + 1))} k€/tour${B.subside(n + 1) ? `, subside +${fmt1(B.subside(n + 1))}` : ''} · c’est ta grande décision du jour`}</span>`}
     </div>`;
   }).join('');
   const peq = perequation(z, st);
@@ -111,6 +111,6 @@ export function logistiqueHtml() {
         <span class="small">${annexes.length ? annexes.map(([, i]) => esc(i.nom)).join(' · ') : 'Aucune pour l’instant.'}</span>
         <a class="tiny" href="#ordres">Construire une annexe (grande décision, dans tes ordres)</a></div>
       ${peq ? `<p class="tiny ok" style="margin:0">Péréquation : ta zone est moins équipée que la moyenne du district, elle reçoit +${fmt1(PEREQUATION.montant)} k€ par tour.</p>` : ''}
-      <p class="tiny muted" style="margin:0">Tout repart au niveau 1 à chaque nouvelle saison, comme les effectifs et le budget.</p>
+      <p class="tiny muted" style="margin:0">À la saison suivante, tes bâtiments sont conservés avec un niveau de moins, et tes annexes restent.</p>
     </div></details>`;
 }
