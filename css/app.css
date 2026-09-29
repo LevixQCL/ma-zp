@@ -455,3 +455,12 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .seg button.noir .t { color: #F59A92; }
 .seg button.noir[aria-pressed="true"] { border: 1.5px solid #E0625A; background: #2A1414; }
 .mode-noir .statement, .mode-noir .card.tight { border-color: #3A2222; }
+
+/* Anti-copie des énigmes (le brouillon et la saisie restent utilisables) */
+.sans-copie { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.sans-copie input, .sans-copie textarea { -webkit-user-select: text; user-select: text; }
+.troll { position: fixed; inset: 0; z-index: 60; background: rgba(5,8,12,.88); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; animation: aideFond .15s ease-out; }
+.troll svg { animation: trollRebond .6s ease-out; }
+.troll p { margin: 0; max-width: 320px; font-size: 17px; font-weight: 600; color: var(--text); line-height: 1.4; }
+@keyframes trollRebond { 0% { transform: scale(.3) rotate(-20deg); } 70% { transform: scale(1.1) rotate(6deg); } 100% { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .troll svg { animation: none; } }
