@@ -14,6 +14,7 @@ import { lireInvitationUrl, oublierInvitation, partager, copier, afficherQr } fr
 import { ouvrirBudget } from './ui/logistique.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { operationActive, effetsOperation } from './engine/zone.js';
+import { carteQuartiers } from './engine/quartiers.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations, agentsHorsServices } from './ui/ordres.js';
 import { renderQuete } from './ui/quete.js';
@@ -333,9 +334,19 @@ async function onClick(e) {
         const total = Object.values(p).reduce((s2, x) => s2 + x, 0);
         const k = el.dataset.action === 'point-chaud' ? myZone().pointChaud && myZone().pointChaud.cell : el.dataset.c;
         if (k == null) break;
-        const cible = el.dataset.action === 'point-chaud' ? Math.max(2, p[k] || 0) : (p[k] || 0) + Number(el.dataset.d);
-        const n = Math.max(0, Math.min(cible, prox - (total - (p[k] || 0))));
+        const cible = Math.max(0, Math.min(prox, el.dataset.action === 'point-chaud' ? Math.max(2, p[k] || 0) : (p[k] || 0) + Number(el.dataset.d)));
+        // Plus d'agent libre : on en reprend un sur une autre patrouille (la plus fournie, point chaud en dernier).
+        let manque = total - (p[k] || 0) + cible - prox;
+        const pcCell = myZone().pointChaud && String(myZone().pointChaud.cell);
+        const repris = [];
+        while (manque > 0) {
+          const autre = Object.keys(p).filter((x) => x !== String(k) && p[x] > 0).sort((a, b) => ((a === pcCell) - (b === pcCell)) || p[b] - p[a])[0];
+          if (!autre) break;
+          p[autre]--; if (!p[autre]) delete p[autre]; manque--; repris.push(autre);
+        }
+        const n = Math.max(0, cible - Math.max(0, manque));
         if (n) p[k] = n; else delete p[k];
+        if (repris.length) { const cq = carteQuartiers(S.state); toast(`Agent repris à ${[...new Set(repris)].map((x) => cq.nomDe(Number(x))).join(', ')}.`); }
         S.quartierSel = k; S.ordersDirty = true; rerender(); break;
       }
       case 'carte-zoom': S.carteZoom = el.dataset.v === '1'; rerender(); break;

@@ -38,12 +38,12 @@ function quartiersHtml(st, me) {
   const fleche = (a, b) => { const dlt = b - a; return dlt <= -4 ? `<span class="good">↓ ${Math.round(b)}</span>` : dlt >= 4 ? `<span class="bad">↑ ${Math.round(b)}</span>` : `<span class="muted">→ ${Math.round(b)}</span>`; };
   const ligne = (k) => {
     const t = mesT[k], n = niveauTension(t), a = pat[k] || 0;
-    const plein = cibles >= prox;
+    const nom = esc(c.nomDe(Number(k)));
     return `<div class="qrow ${sel === k ? 'sel' : ''}" id="q-${k}">
-      <button type="button" class="qnom" data-action="quartier" data-c="${k}" aria-label="Voir ${esc(c.nomDe(Number(k)))} sur la carte">
-        <span class="row" style="gap:6px"><span class="bullet" style="background:${n.couleur}"></span><span style="font-weight:600">${esc(c.nomDe(Number(k)))}</span>${pc && pc.cell === k ? '<span class="tag" style="background:var(--red-bg);color:var(--red-soft)">point chaud</span>' : ''}</span>
-        <span class="row tiny" style="gap:8px">${barre(t, n.couleur)}<span class="muted">${n.nom} ${Math.round(t)}</span><span>ce soir ${fleche(t, prev[k])}</span></span></button>
-      <span class="stepper"><button type="button" data-action="patrouille" data-c="${k}" data-d="-1" aria-label="Une patrouille de moins à ${esc(c.nomDe(Number(k)))}" ${a <= 0 ? 'disabled' : ''}>−</button><span class="n">${a}</span><button type="button" data-action="patrouille" data-c="${k}" data-d="1" aria-label="Une patrouille de plus à ${esc(c.nomDe(Number(k)))}" ${plein ? 'disabled' : ''}>+</button></span>
+      <button type="button" class="qnom" data-action="quartier" data-c="${k}" aria-label="Voir ${nom} sur la carte">
+        <span class="row" style="gap:6px;min-width:0"><span class="bullet" style="background:${n.couleur}"></span><span class="qtitre">${nom}</span>${pc && pc.cell === k ? '<span aria-label="point chaud">🔥</span>' : ''}</span>
+        <span class="qinfo">${barre(t, n.couleur)}<span>${Math.round(t)} <span class="muted">${n.nom}</span></span><span class="muted">·</span><span>ce soir ${fleche(t, prev[k])}</span></span></button>
+      <span class="stepper"><button type="button" data-action="patrouille" data-c="${k}" data-d="-1" aria-label="Une patrouille de moins à ${nom}" ${a <= 0 ? 'disabled' : ''}>−</button><span class="n">${a}</span><button type="button" data-action="patrouille" data-c="${k}" data-d="1" aria-label="Une patrouille de plus à ${nom}" ${prox <= a ? 'disabled' : ''}>+</button></span>
     </div>`;
   };
   const ordre = cells.slice().sort((x, y) => mesT[y] - mesT[x]);
@@ -64,10 +64,10 @@ function quartiersHtml(st, me) {
       <span style="font-weight:700">${esc(pc.titre)}</span><span class="small" style="color:var(--text2)">${esc(pc.texte)}</span>
       ${(pat[pc.cell] || 0) >= QUARTIERS.agentsDesamorcer ? `<span class="small good" style="font-weight:600">${icon('check', 14)} ${pat[pc.cell]} agents sur place : il sera désamorcé à 20:00 (pense à valider).</span>`
         : `<span class="tiny muted">Sans ${QUARTIERS.agentsDesamorcer} agents sur place, la tension y grimpera de ${pc.force} ce soir. Avec eux : +1 de satisfaction.</span>
-        <button type="button" class="btn small outline block" data-action="point-chaud" ${prox - cibles + (pat[pc.cell] || 0) < QUARTIERS.agentsDesamorcer ? 'disabled' : ''}>Envoyer ${QUARTIERS.agentsDesamorcer} agents à ${esc(c.nomDe(Number(pc.cell)))}</button>
-        ${prox - cibles + (pat[pc.cell] || 0) < QUARTIERS.agentsDesamorcer ? `<span class="tiny bad">Pas assez d’agents de Proximité libres : retire une patrouille ailleurs ou <a href="#ordres">renforce la Proximité</a>.</span>` : ''}`}
+        ${prox >= QUARTIERS.agentsDesamorcer ? `<button type="button" class="btn small outline block" data-action="point-chaud">Envoyer ${QUARTIERS.agentsDesamorcer} agents à ${esc(c.nomDe(Number(pc.cell)))}</button>` : ''}
+        ${prox < QUARTIERS.agentsDesamorcer ? `<span class="tiny bad">Il te faut au moins ${QUARTIERS.agentsDesamorcer} agents en Proximité (tu en as ${prox}) : <a href="#ordres">renforce la Proximité dans tes ordres</a>.</span>` : cibles - (pat[pc.cell] || 0) + QUARTIERS.agentsDesamorcer > prox ? '<span class="tiny muted">Les agents seront repris sur tes autres patrouilles.</span>' : ''}`}
     </section>` : ''}
-    <p class="tiny muted" style="margin:0">${prox ? `Touche un quartier sur la carte ou ici. Les agents non ciblés (${prox - cibles}) patrouillent partout. Plus tu concentres, plus la tension baisse à cet endroit ; au-delà de ${QUARTIERS.seuilDeplacement - 1} agents, la délinquance se déplace vers les voisins.` : 'Aucun agent en Proximité aujourd’hui : <a href="#ordres">règle-le dans tes ordres</a> pour envoyer des patrouilles.'}</p>
+    <p class="tiny muted" style="margin:0">${prox ? `Touche un quartier sur la carte ou ici. ${cibles >= prox ? 'Tous tes agents sont affectés : « + » en déplace un depuis un autre quartier.' : `Les agents non ciblés (${prox - cibles}) patrouillent partout.`} Plus tu concentres, plus la tension baisse à cet endroit ; au-delà de ${QUARTIERS.seuilDeplacement - 1} agents, la délinquance se déplace vers les voisins.` : 'Aucun agent en Proximité aujourd’hui : <a href="#ordres">règle-le dans tes ordres</a> pour envoyer des patrouilles.'}</p>
     ${pris ? `<p class="tiny" style="margin:0;color:var(--amber)">L’opération en cours réquisitionne ${pris} agent${pris > 1 ? 's' : ''} de Proximité : il en reste ${prox} pour les patrouilles.</p>` : ''}
     ${cibles > prox ? `<p class="tiny bad" style="margin:0">Plus assez d’agents pour toutes ces patrouilles : à 20:00, les moins utiles seront annulées (le point chaud reste prioritaire).</p>` : ''}
     ${deplace.length ? `<p class="tiny bad" style="margin:0">⚠ ${deplace.map((k) => esc(c.nomDe(Number(k)))).join(', ')} : trop de monde, la délinquance ira chez les voisins.</p>` : ''}
