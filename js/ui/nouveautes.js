@@ -3,9 +3,12 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-29j',
+  id: '2026-09-29k',
   titre: 'Mise à jour du 29 septembre (équilibrage)',
   points: [
+    ['Énigme « Les deux photos »', 'beaucoup plus exigeante dès le niveau 3 : teintes proches, barres de toit, voiture garée dans l’autre sens ; niveau 5 de nuit et à mémoriser ; dossier noir avec du va-et-vient pour brouiller les pistes.'],
+    ['Enquête', 'nouvelle carte « Mes démarches » : les pièces que tu as obtenues toi-même, jour après jour, et celles que tu gardes encore pour toi.'],
+    ['Modifications non validées', 'un bouton « Annuler » permet de revenir à tes derniers choix validés.'],
     ['Cellules d’enquête', 'plus personne n’est seul : une cellule jusqu’à 3 zones, deux de 4 à 6, trois à partir de 7. Chaque cellule suit au moins deux suspects (effet dès la prochaine affaire pour le nombre de cellules).'],
     ['Affaires disputées', 'la récompense dépend maintenant de la force de l’équipe : 60 % des points à la force minimale, 100 % à la force conseillée, jusqu’à 130 % au-delà. L’estimation s’affiche dans tes ordres.'],
     ['Énigme « La plaque »', 'plus retorse : la bonne plaque n’est plus celle qui ressemble à toutes les autres, témoignages à calculer, et en difficulté 5 un témoin se trompe.'],

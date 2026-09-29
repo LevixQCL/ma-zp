@@ -113,7 +113,7 @@ function render() {
   }
   // Barre de validation commune à tous les écrans quand des choix ne sont pas encore validés.
   if (S.ordersDirty && S.state && myZone() && !['parties', 'guide'].includes(S.route)) {
-    html += `<div class="savebar" role="status"><span class="small" style="font-weight:600">Modifications non validées</span><button class="btn primary small" data-action="save-orders">Valider</button></div>`;
+    html += `<div class="savebar" role="status"><span class="small" style="font-weight:600">Modifications non validées</span><span class="row" style="gap:6px"><button class="btn ghost small" data-action="cancel-orders">Annuler</button><button class="btn primary small" data-action="save-orders">Valider</button></span></div>`;
   }
   const scroll = window.scrollY;
   app.innerHTML = banner + html;
@@ -515,11 +515,23 @@ async function onClick(e) {
       case 'toggle-decision': S.decisionOpen = !S.decisionOpen; rerender(); break;
       case 'decision': S.draft.decision = JSON.parse(el.dataset.json); S.ordersDirty = true; rerender(); break;
       case 'dec-cat': S.decCat = el.dataset.v; rerender(); break;
+      case 'cancel-orders': {
+        // Revient aux derniers choix validés (ou aux ordres par défaut si rien n'a encore été validé).
+        if (!(await askConfirm('Effacer les modifications non validées et revenir à tes derniers choix validés ?', 'Oui, effacer', 'Non, garder'))) break;
+        S.draft = null; initDraft(); S.ordersDirty = false;
+        toast('Modifications annulées.'); rerender(); break;
+      }
       case 'save-orders': {
         const st = S.state;
         await b.saveOrders(S.user.uid, st.season, st.turn, S.draft);
         S.savedOrders = JSON.parse(JSON.stringify(S.draft)); S.ordersDirty = false;
         toast('C’est validé ! Tu peux encore modifier jusqu’à 20:00.'); rerender(); break;
+      }
+      case 'memo-voir': {
+        const q = questCourante();
+        S.memoVu = { ...(S.memoVu || {}), [q.id]: true };
+        if (!String(q.id).startsWith('train')) try { localStorage.setItem(`mazp-memo-${q.id}`, 'true'); } catch { /* stockage indisponible */ }
+        rerender(); break;
       }
       case 'quest-pick': S.questPick = el.dataset.v; rerender(); break;
       case 'quest-tab': S.questIdx = Number(el.dataset.i); S.questMode = 'jour'; S.questPick = null; render(); break;
@@ -570,14 +582,14 @@ async function onClick(e) {
 }
 
 /** Fenêtre de confirmation intégrée à la page (confirm() n'est pas disponible partout). */
-function askConfirm(message, okLabel = 'Confirmer') {
+function askConfirm(message, okLabel = 'Confirmer', koLabel = 'Annuler') {
   return new Promise((resolve) => {
     const wrap = document.createElement('div');
     wrap.setAttribute('role', 'dialog');
     wrap.setAttribute('aria-modal', 'true');
     wrap.style.cssText = 'position:fixed;inset:0;background:rgba(5,8,12,.7);display:flex;align-items:center;justify-content:center;padding:16px;z-index:30';
     wrap.innerHTML = `<div class="card" style="max-width:360px;width:100%"><p style="margin:0;font-size:15px;line-height:1.4">${esc(message)}</p>
-      <div class="row"><button class="btn grow" data-c="0">Annuler</button><button class="btn primary grow" data-c="1">${esc(okLabel)}</button></div></div>`;
+      <div class="row"><button class="btn grow" data-c="0">${esc(koLabel)}</button><button class="btn primary grow" data-c="1">${esc(okLabel)}</button></div></div>`;
     const done = (v) => { wrap.remove(); resolve(v); };
     wrap.addEventListener('click', (e) => { const b = e.target.closest('[data-c]'); if (b) { e.stopPropagation(); done(b.dataset.c === '1'); } else if (e.target === wrap) done(false); });
     document.body.appendChild(wrap);
