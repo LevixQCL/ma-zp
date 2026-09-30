@@ -13,3 +13,16 @@ assert.ok(decorDebloque({ ps: 200 }, DECOR.facade.options.brique));
 assert.ok(!decorDebloque({ ps: 199 }, DECOR.facade.options.brique));
 assert.deepEqual(decorCompte(debutant), { n: 3, total: 17 });
 console.log('decor : ok');
+
+// Skins Early birds.
+import { SKINS, TOUS_SKINS, skinsValides, earlyBirdEligible, tirerSkin, skinDe } from '../js/engine/decor.js';
+assert.equal(TOUS_SKINS.length, 12);
+const st0 = { zones: { a: { uid: 'a' }, b: { uid: 'b' } } };
+assert.ok(earlyBirdEligible(st0.zones.a, st0), 'avant la première résolution : toute zone existante');
+const st1 = { ...st0, zones: { ...st0.zones, c: { uid: 'c' } }, earlyBird: { uids: ['a', 'b'] } };
+assert.ok(!earlyBirdEligible(st1.zones.c, st1), 'une zone arrivée après n’a pas droit à la roulette');
+assert.deepEqual(skinsValides({ skins: ['batiment:friterie'] }, { batiment: 'friterie', garage: 'grange' }), { batiment: 'friterie' }, 'seuls les skins possédés');
+for (const a of [0, 0.5, 0.999]) assert.ok(skinDe(tirerSkin(a)));
+assert.equal(tirerSkin(0), 'batiment:friterie');
+assert.ok(SKINS.aile.options.serre);
+console.log('skins : ok');

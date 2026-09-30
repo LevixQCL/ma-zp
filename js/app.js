@@ -16,6 +16,7 @@ import { DECOR, decorDebloque, conditionDecor, decorValide } from './engine/deco
 import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { tutoAuBesoin, lancerTuto } from './ui/tutoriel.js';
+import { rouletteAuBesoin, lancerRoulette } from './ui/roulette.js';
 import { operationActive, effetsOperation } from './engine/zone.js';
 import { carteQuartiers } from './engine/quartiers.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
@@ -123,7 +124,7 @@ function render() {
   }
   const scroll = window.scrollY;
   app.innerHTML = banner + html;
-  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin()) nouveautesAuBesoin();
+  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin() && !rouletteAuBesoin()) nouveautesAuBesoin();
   if (S.route === 'ordres' && S.ordAncre) {
     const cible = document.querySelector(`[data-action="ord-open"][data-k="${S.ordAncre}"]`);
     S.ordAncre = null;
@@ -301,6 +302,15 @@ async function onClick(e) {
       case 'vehicule': ouvrirVehicule(el.dataset.slot); break;
       case 'logistique': ouvrirLogistique(); break;
       case 'decor': ouvrirDecor(); break;
+      case 'roulette-lancer': await lancerRoulette(b); rerender(); break;
+      case 'skin-choix': {
+        const z = S.state.zones[S.user.uid], cat = el.dataset.cat, id = el.dataset.id;
+        const actuel = { ...((S.player && S.player.skinsChoix) || z.skinsChoix || {}) };
+        if (actuel[cat] === id) delete actuel[cat]; else actuel[cat] = id;
+        S.player = { ...(S.player || {}), skinsChoix: actuel };
+        try { await b.savePlayer(S.user.uid, S.player); } catch (err) { console.warn(err); }
+        rerender(); ouvrirDecor(); break;
+      }
       case 'voir-hp': ouvrirHpVoisin(el.dataset.uid); break;
       case 'decor-choix': {
         const z = S.state.zones[S.user.uid], o = DECOR[el.dataset.cat] && DECOR[el.dataset.cat].options[el.dataset.id];

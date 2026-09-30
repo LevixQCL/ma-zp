@@ -673,3 +673,9 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 .vitrine-item:hover svg { border-color: var(--amber-line); }
 .vitrine-nom { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .vitrine-nom i { width: 8px; height: 8px; border-radius: 50%; }
+/* Roulette Early bird */
+.roue-wrap { position: relative; width: min(100%, 280px); margin: 0 auto; }
+.roue-svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 6px 16px rgba(0,0,0,.45)); }
+.roue-fleche { position: absolute; top: -6px; left: 50%; width: 28px; transform: translateX(-50%); }
+.roue-wrap.fini { width: min(60%, 160px); transition: width .4s; }
+.roulette .leg { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
