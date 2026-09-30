@@ -1,5 +1,6 @@
 // Carte du District Delta, Radio Delta.
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1 } from './common.js';
+import { vignetteZone } from './logistique.js';
 import { moyenneIpz, operationActive } from '../engine/zone.js';
 import { planVille, iconeSite } from './plan.js';
 import { siteDe } from '../engine/sites.js';
@@ -112,6 +113,8 @@ export function renderCarte() {
         <span class="col grow" style="gap:2px"><span style="font-weight:600">${esc(ev.titre)}</span><span class="small muted">Événement collectif ${ev.tour === st.turn ? 'ce soir' : `dans ${ev.tour - st.turn} tours`} · ~${3 * Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length} agents requis</span></span></a>` : ''}
       ${!st.affaires.length && !ev ? '<p class="small muted" style="margin:0">Rien de particulier sur la carte ce tour.</p>' : ''}
     </section>
+    <section class="col" aria-label="Commissariats du district" style="gap:8px"><div class="between"><h2 class="section" style="margin:0">Commissariats du district</h2><span class="tiny muted">touche pour visiter</span></div>
+      <div class="vitrine">${zones.map((z) => vignetteZone(z)).join('')}</div></section>
     <details class="card repli" data-k="zones" ${S.ouverts && S.ouverts.zones ? 'open' : ''}><summary><span class="col grow" style="gap:0"><span style="font-weight:600">Les zones du district</span><span class="tiny muted">${n} zone${n > 1 ? 's' : ''} · grades, sites, IPZ moyen</span></span>${icon('chevron', 16)}</summary><div class="col" style="gap:8px">
       ${zones.map((z) => `<div class="list-row">${S.players[z.uid] && S.players[z.uid].blason && gradeIdx(z.ps) >= 4 ? blasonSvg(S.players[z.uid].blason, z.couleur, 20) : `<span class="bullet" style="background:${esc(z.couleur)}"></span>`}
         <span class="col grow" style="gap:1px"><span style="font-weight:600">${zoneName(z)}${z.uid === me.uid ? ' (toi)' : ''} ${insigne(z.ps)}${z.peril ? ' <span class="tag" style="background:var(--red-bg);color:var(--red-soft)">en péril</span>' : z.tutelle ? ' <span class="tag" style="background:var(--red-bg);color:var(--red-soft)">sous tutelle</span>' : ''}</span><span class="tiny muted">${pseudoDe(z.uid) ? `${esc(pseudoDe(z.uid))} · ` : ''}${gradeInfo(z.ps).g.nom} · FIPA : ${fiabilite(z)}${z.toursSansOrdres >= 3 ? ' · en veille' : ''}</span>${(z.trophees || []).length ? `<span class="tiny row" style="gap:4px;color:var(--amber-soft)">${icon('trophy', 12)} ${(z.trophees || []).length} trophée${(z.trophees || []).length > 1 ? 's' : ''}</span>` : ''}${siteDe(z) ? `<span class="tiny row" style="gap:4px;color:${siteDe(z).couleur}">${iconeSite(siteDe(z).id, siteDe(z).couleur, 14)}${esc(siteDe(z).nom)}</span>` : ''}</span>
