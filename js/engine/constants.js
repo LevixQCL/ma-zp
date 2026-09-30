@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 15;
+export const APP_VERSION = 16;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -67,6 +67,7 @@ export const DEPENSES = {
   prevention:   { nom: 'Campagne de prévention', cout: 4, texte: 'criminalité −6' },
   soustraitance: { nom: 'Sous-traitance administrative', cout: 3, texte: '−5 dossiers de paperasse' },
   revision:     { nom: 'Révision du parc', cout: 2, texte: 'état des véhicules +20 %, effet le jour même' },
+  carrosserie:  { nom: 'Carrosserie', cout: 1.5, texte: 'répare les véhicules cabossés (1,5 k€ chacun, moitié prix avec l’atelier) ; immobilisés ce jour-là, sauf avec l’atelier' },
 };
 
 // Usure des véhicules (en % du parc) : chaque intervention use un peu les véhicules.

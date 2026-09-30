@@ -41,7 +41,6 @@ export const EVENEMENTS_COLLECTIFS = [
 export const COUPS_DURS = [
   { id: 'rebellion', titre: 'Rébellion lors d’une intervention', w: 3 },
   { id: 'grippe', titre: 'Vague de grippe', w: 2 },
-  { id: 'accident', titre: 'Accident de la circulation en service', w: 2 },
   { id: 'plainte', interne: true, titre: 'Plainte médiatisée contre la zone', w: 2 },
   { id: 'panne', interne: true, titre: 'Panne informatique générale', w: 1 },
 ];

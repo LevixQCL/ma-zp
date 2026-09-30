@@ -3,9 +3,10 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-30c',
+  id: '2026-09-30d',
   titre: 'Mise à jour du 30 septembre : chaque service compte double',
   points: [
+    ['Accidents de véhicules', 'tes véhicules peuvent avoir un accident, surtout s’ils sont usés, en rythme renforcé ou avec des équipages entassés. Accrochage : le véhicule roule cabossé et ternit ton image tant qu’il ne passe pas en carrosserie (nouvelle dépense). Sinistre : véhicule perdu, à racheter, avec une indemnité si le tiers est en tort. Détails dans le guide, rubrique Imprévus.'],
     ['Renforts : l’effort compte', 'grand événement du district, renfort sur une opération, affaire disputée, entraide : ce que tu gagnes (PS, réputation) suit désormais le nombre d’agents ou le budget que tu envoies. Un seul agent « pour la forme » rapporte peu ; l’entraide affiche la réputation prévue.'],
     ['Recherche et enquête', 'tes agents de Recherche rapportent bien plus de pièces pour l’enquête de la semaine. Nouveau : la piste prioritaire (fiche d’un suspect) concentre leurs recherches. Le pourcentage du soir est affiché dans l’Enquête.'],
     ['Intervention', 'les patrouilles restées libres après les incidents peuvent faire un flagrant délit : points, PS et un quartier apaisé.'],

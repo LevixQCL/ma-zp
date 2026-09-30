@@ -81,10 +81,14 @@ export function botOrders(zone, state, style = 'equilibre') {
     const d = rng.pick(options);
     if (!decisionImpossible(zone, d, T) && zone.budget - coutDecision(zone, d) > 5) decision = d;
   }
+  // Véhicule perdu dans un accident : les robots le remplacent en priorité quand ils en ont les moyens.
+  const rachat = { type: 'equiper', cible: 'vehicule' };
+  if (zone.vehicules < 4 && zone.budget > COUTS.vehicule + 5 && !decisionImpossible(zone, rachat, T) && rng.chance(style === 'distrait' ? 0.4 : 0.8)) decision = rachat;
   const depenses = {};
   if (zone.budget > 45) { depenses.reserve = style === 'agressif' ? 3 : 2; depenses.reserveService = zone.paperasse > 14 ? 'admin' : 'intervention'; }
   if (zone.criminalite > 62 && zone.budget > 30) depenses.prevention = true;
   if (zone.moral < 50 && zone.budget > 25) depenses.prime = true;
+  if ((zone.cabosses || []).length && zone.budget > 8 && rng.chance(style === 'distrait' ? 0.3 : style === 'agressif' ? 0.6 : 0.9)) depenses.carrosserie = true;
   // Patrouilles : les robots attentifs envoient 2 agents sur le point chaud annoncé.
   const patrouilles = {};
   if (zone.pointChaud && style !== 'distrait' && alloc.proximite >= 2 && rng.chance(style === 'agressif' ? 0.5 : 0.8)) patrouilles[zone.pointChaud.cell] = 2;

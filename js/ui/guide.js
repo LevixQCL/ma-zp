@@ -4,6 +4,7 @@ import { S, esc, icon, tabbar } from './common.js';
 import {
   SERVICE_LABELS, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION,
   INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE } from '../engine/constants.js';
+import { SINISTRE } from '../engine/sinistres.js';
 import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
 import { ENQ, DEMARCHES, POINTS, pointsDecouverte } from '../engine/enquete.js';
 import { PARTAGE, FIPA } from '../engine/fipa.js';
@@ -302,16 +303,26 @@ export function sections() {
         ${table(['Coup dur', 'Effet', 'Ce qui le rend plus rare'], COUPS_DURS.map((c) => [esc(c.titre), {
           rebellion: '1 ou 2 agents blessés, absents 2 à 4 tours, −4 de moral',
           grippe: '10 à 20 % des agents malades 2 tours',
-          accident: 'un véhicule hors service 3 tours, un agent absent',
           plainte: '−6 de satisfaction, un agent bloqué 2 tours',
           panne: 'administration à l’arrêt ce tour',
         }[c.id], {
           rebellion: 'niveau et équipement en Intervention',
           grippe: 'moral au-dessus de 70, salle de sport',
-          accident: 'garage de la zone',
           plainte: 'paperasse sous 8, réputation au-dessus de 60, Accueil fourni',
           panne: 'logiciel de gestion, Accueil fourni',
         }[c.id]]))}
+        <h3>Accidents de véhicules de service</h3>
+        <p>Chaque soir, tes véhicules peuvent avoir un accident. Le risque (environ ${Math.round(SINISTRE.base * 100)} % de base, ${Math.round(SINISTRE.max * 100)} % au maximum) dépend de ta façon de rouler :</p>
+        ${ul([
+          'il <strong>augmente</strong> avec le nombre d’interventions du jour, l’usure du parc (une révision le fait baisser), le rythme renforcé, un moral sous 40 et des équipages entassés (plus de 2,5 agents d’Intervention par véhicule disponible) ;',
+          `il <strong>baisse</strong> avec la formation en Intervention (−${Math.round(SINISTRE.formation * 100)} % par niveau) et l’atelier mécanique (−${Math.round((1 - SINISTRE.atelier) * 100)} %). Le risque de la veille est affiché avec la révision, dans tes dépenses.`,
+        ])}
+        ${table(['Gravité', 'Fréquence', 'Conséquences'], [
+          ['Accrochage', `${SINISTRE.poids.accrochage} %`, `Le véhicule reste en service mais il est <strong>cabossé</strong>. Tu as un tour pour le passer en carrosserie (${k(SINISTRE.carrosserie)}, moitié prix et sans immobilisation avec l’atelier). Ensuite, chaque tour : −${SINISTRE.imageSatisfaction} de satisfaction et −${SINISTRE.imageReputation} de réputation par véhicule cabossé ; au bout de ${SINISTRE.virale} tours, la photo fait le tour des réseaux (−${SINISTRE.viraleReputation} de réputation, dans la Gazette).`],
+          ['Véhicule sinistré', `${SINISTRE.poids.total} %`, `Perte totale : un véhicule de moins, à racheter (grande décision « Équiper », ${COUTS.vehicule} k€, ou un lot de la salle des ventes). Si le tiers est en tort, son assureur rembourse ${k(Math.round(COUTS.vehicule * SINISTRE.indemnite * 10) / 10)} ${SINISTRE.delaiIndemnite} tours plus tard. Si ta zone est en tort : rien, +2 dossiers de paperasse et −2 de réputation.`],
+          ['Accident grave', `${SINISTRE.poids.grave} %`, 'Perte totale comme ci-dessus, plus un agent blessé (2 ou 3 tours), −3 de moral et −4 de satisfaction ; −4 de réputation si ta zone est en tort.'],
+        ])}
+        ${note('Qui est en tort ? Environ une fois sur trois au départ, plus souvent en rythme renforcé ou avec un moral sous 40, moins souvent avec une Intervention bien formée. Une zone ne perd jamais son dernier véhicule : il part 3 tours en réparation lourde.')}
         <p><strong>Inspection générale</strong> : deux tours de budget négatif ou plus de 20 dossiers de paperasse. Amende de 5 k€, −5 de satisfaction, puis 4 tours de répit.</p>`,
     },
     {

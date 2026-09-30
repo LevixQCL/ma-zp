@@ -10,7 +10,7 @@ import { genererEchos } from './gazette.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms } from './equipe.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
-  forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, fermerJournal,
+  forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, fermerJournal, vehiculesDisponibles,
 } from './zone.js';
 import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
@@ -18,6 +18,7 @@ import { fipaPre, fipaGenerer } from './fipa.js';
 import { encheresResoudre, annoncerLot } from './encheres.js';
 import { rivalitesPre, rivalitesPost, postesContre, themeActif, appliquerConsignes, absT, MAN } from './rivalites.js';
 import { FLAGRANTS } from './contenu.js';
+import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, EVENEMENTS_COLLECTIFS, COUPS_DURS, ALEAS, OPERATIONS, PRESSIONS, PRESSION_WEEKEND } from './contenu.js';
 
 const fmt1 = (v) => String(round1(v)).replace('.', ',');
@@ -335,6 +336,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       push(3, 'Chantier', `${zoneLabel(z)} agrandit son ${BATIMENTS[bt].nom.toLowerCase()}`, `Niveau ${z.batiments[bt]} : jusqu’à ${BATIMENTS[bt].capacite(z.batiments[bt])} ${BATIMENTS[bt].unite}.`, uid);
       z.travaux = null;
     }
+    payerIndemnites(z, T);
     for (const f of z.formations) if (f.fin === T) { z.niveaux[f.service] = Math.min(5, z.niveaux[f.service] + 1); z.rapport.push(`Formation terminée : ${SERVICE_LABELS[f.service]} passe au niveau ${z.niveaux[f.service]}.`); }
     const arrivees = z.academie.filter((a) => a.arrivee === T).reduce((s, a) => s + a.n, 0);
     if (arrivees) { z.agents += arrivees; z.rapport.push(`${arrivees} recrue${arrivees > 1 ? 's' : ''} sort${arrivees > 1 ? 'ent' : ''} de l’académie.`); }
@@ -370,7 +372,6 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         let w = c.w;
         if (c.id === 'rebellion') { if (z.niveaux.intervention >= 3) w *= 0.5; if (z.equip.intervention >= 3) w *= 0.7; }
         if (c.id === 'grippe') { if (z.moral > 70) w *= 0.5; if (z.infra.sport) w *= 0.6; }
-        if (c.id === 'accident' && z.infra.garage) w *= 0.5;
         if (c.id === 'plainte') { if (z.paperasse < 8) w *= 0.5; if (z.reputation > 60) w *= 0.6; }
         if (c.id === 'panne' && z.infra.logiciel) w *= 0.4;
         return { ...c, w };
@@ -391,10 +392,6 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
           const n = Math.max(1, Math.round(z.agents * zr.float(0.1, 0.2)));
           z.blesses.push({ n, retour: T + 3, motif: 'malade' });
           texte = `${n} agents malades, absents 2 tours.`; break;
-        }
-        case 'accident': {
-          z.vehiculesHS.push({ retour: T + 4 }); z.blesses.push({ n: 1, retour: T + 2, motif: 'blessé' });
-          texte = 'Un véhicule hors service 3 tours, un agent absent 1 tour.'; break;
         }
         case 'plainte': {
           z.satisfaction -= 6; z.blesses.push({ n: 1, retour: T + 3, motif: 'enquête interne' });
@@ -490,7 +487,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Dépenses du jour (payées seulement si le budget le permet).
     const dep = o.depenses || {};
     let reserve = 0;
-    if (dep && coutDepenses(dep) > 0) {
+    if (dep && coutDepenses(dep, z) > 0) {
       const achats = [];
       let paye = 0;
       const payer = (k, cout, fn) => { if (z.budget >= cout) { z.budget -= cout; paye += cout; fn(); achats.push(k); } else achats.push(`${k} (refusé : budget insuffisant)`); };
@@ -499,10 +496,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (dep.prevention) payer('campagne de prévention (criminalité −6)', DEPENSES.prevention.cout, () => { z.criminalite = clamp(z.criminalite - 6, 10, 95); });
       if (dep.soustraitance) payer('sous-traitance administrative (−5 dossiers)', DEPENSES.soustraitance.cout, () => { z.paperasse = Math.max(0, z.paperasse - 5); });
       if (dep.revision) payer(`révision du parc (état ${Math.round(100 - z.usure)} % → ${Math.round(100 - Math.max(0, z.usure - USURE.revision))} %)`, DEPENSES.revision.cout, () => { z.usure = Math.max(0, z.usure - USURE.revision); });
+      if (dep.carrosserie && (z.cabosses || []).length) { const nc = z.cabosses.length; payer(`carrosserie (${nc} véhicule${nc > 1 ? 's' : ''} réparé${nc > 1 ? 's' : ''}${z.infra.garage ? ' à l’atelier' : ', immobilisé' + (nc > 1 ? 's' : '') + ' ce tour'})`, coutCarrosserie(z), () => { reparerCabosses(z, T); }); }
       z.rapport.push(`Dépenses du jour : ${achats.join(', ')}.`);
       if (paye) z._compta.push({ k: 'depenses', l: 'Dépenses du jour', v: -paye });
     }
 
+    imageCabosses(z, T, push, zoneLabel(z));
     jalon(z, 'Dépenses du jour (prime…)');
     // Capacités des services (avec les agents restés à leur poste, plus la réserve).
     const cap = {};
@@ -625,6 +624,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.usure = clamp(z.usure + (USURE.parTour + traites * USURE.parIntervention / Math.max(1, z.vehicules)) * (z.infra.garage ? 0.5 : 1), 0, USURE.max);
     const etat = Math.round(100 - z.usure), malus = Math.round((1 - malusEtat(etat)) * 100);
     z.rapport.push(`Véhicules : ${traites} intervention${traites > 1 ? 's' : ''}, usure +${fmt1(z.usure - avant)} %, état du parc ${etat} %${malus ? ` (Intervention −${malus} %, pense à une révision)` : ''}.`);
+    // Accident de véhicule de service : le risque suit la façon dont la zone roule.
+    const acc = accidentVehicule(z, T, makeRng(`${state.seed}:s${state.season}:t${T}:${uid}:veh`),
+      { traites, rythme: o.rythme, interventionAgents: alloc.intervention || 0, vehiculesDispo: vehiculesDisponibles(z, T) }, push, zoneLabel(z));
+    if (acc) jalon(z, acc.type === 'accrochage' ? 'Accrochage d’un véhicule' : 'Véhicule sinistré');
 
     // Moral.
     jalon(z, 'Grande décision');
