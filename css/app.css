@@ -611,3 +611,31 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 .tuto-nav .btn { min-height: 44px; }
 .tuto-x { background: none; border: 0; color: var(--muted); font-size: 13px; font-weight: 600; padding: 6px 2px; min-height: 32px; text-decoration: underline; }
 @media (prefers-reduced-motion: reduce) { .tuto-spot, .tuto-prog span { transition: none; } }
+
+/* HP : carte « Mon hôtel de police » (illustration, bâtiments, parc automobile) */
+.hp-logis .scene-hp { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
+.hp-logis .bats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.hp-logis .bat { gap: 6px; padding: 10px; }
+.hp-logis .niv i { width: 10px; height: 5px; }
+.hp-logis .btn.agr { color: var(--amber); background: var(--amber-bg); border-color: var(--amber-line); min-height: 38px; }
+.hp-logis .btn.small { min-height: 38px; font-size: 12.5px; white-space: nowrap; padding: 0 6px; }
+.linkbtn { background: none; border: 0; padding: 0; cursor: pointer; color: inherit; }
+.hp-logis .kicker { white-space: nowrap; }
+.parc-etat { height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.parc-etat span { display: block; height: 100%; }
+.parc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.veh { background: var(--surface2); border: 0; border-radius: 9px; padding: 8px 8px 7px; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; color: var(--text); font: inherit; text-align: left; cursor: pointer; text-decoration: none; }
+.veh:hover { box-shadow: inset 0 0 0 1px var(--line); }
+.veh .n { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.veh .s { font-size: 11px; color: var(--muted); display: flex; gap: 4px; align-items: center; white-space: nowrap; }
+.veh .s i { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.veh.cabosse { background: #211C12; box-shadow: inset 0 0 0 1px var(--amber-line); }
+.veh.cabosse.prevu { background: #13202E; box-shadow: inset 0 0 0 1px #2F6FB5; }
+.veh.atelier { background: var(--red-bg); box-shadow: inset 0 0 0 1px var(--red-line); }
+.veh.libre { background: transparent; border: 1px dashed var(--line); align-items: center; justify-content: center; color: var(--faint); }
+.hp-logis .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.hp-logis .chip { min-height: 0; padding: 4px 10px; font-weight: 500; font-size: 11.5px; background: var(--surface2); border: 0; display: inline-flex; align-items: center; text-decoration: none; }
+.hp-logis .chip.add { background: transparent; border: 1px dashed var(--line); color: var(--faint); }
+@keyframes hp-balise { 0%, 60% { opacity: 1; } 80% { opacity: .25; } }
+.hp-balise { animation: hp-balise 2.4s infinite; }
+@media (prefers-reduced-motion: reduce) { .hp-balise { animation: none; } }

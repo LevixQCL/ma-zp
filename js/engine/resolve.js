@@ -18,6 +18,7 @@ import { fipaPre, fipaGenerer } from './fipa.js';
 import { encheresResoudre, annoncerLot } from './encheres.js';
 import { rivalitesPre, rivalitesPost, postesContre, themeActif, appliquerConsignes, absT, MAN } from './rivalites.js';
 import { FLAGRANTS } from './contenu.js';
+import { cabossesChoisis, placeLibre } from './parc.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, EVENEMENTS_COLLECTIFS, COUPS_DURS, ALEAS, OPERATIONS, PRESSIONS, PRESSION_WEEKEND } from './contenu.js';
 
@@ -361,7 +362,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         if (e.satisfaction) z.satisfaction += e.satisfaction;
         if (e.paperasse) z.paperasse = Math.max(0, z.paperasse + e.paperasse);
         if (e.adminMult) adminMult *= e.adminMult;
-        if (e.vehiculeHS) z.vehiculesHS.push({ retour: T + 1 });
+        if (e.vehiculeHS) { const sl = placeLibre(z, T); z.vehiculesHS.push({ retour: T + 1, ...(sl >= 0 ? { slot: sl } : {}) }); }
         if (e.bloques) z.blesses.push({ n: e.bloques, retour: T + 2, motif: a.id === 'greve' ? 'grève' : 'malade' });
         if (e.retardEnquete) z._retardEnquete = true;
         z.rapport.push(`${a.titre} : ${a.texte}${a.interne && protection < 0.6 ? ' (un Accueil plus fourni réduit ce risque)' : ''}`);
@@ -501,7 +502,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (dep.prevention) payer('campagne de prévention (criminalité −6)', DEPENSES.prevention.cout, () => { z.criminalite = clamp(z.criminalite - 6, 10, 95); });
       if (dep.soustraitance) payer('sous-traitance administrative (−5 dossiers)', DEPENSES.soustraitance.cout, () => { z.paperasse = Math.max(0, z.paperasse - 5); });
       if (dep.revision) payer(`révision du parc (état ${Math.round(100 - z.usure)} % → ${Math.round(100 - Math.max(0, z.usure - USURE.revision))} %)`, DEPENSES.revision.cout, () => { z.usure = Math.max(0, z.usure - USURE.revision); });
-      if (dep.carrosserie && (z.cabosses || []).length) { const nc = z.cabosses.length; payer(`carrosserie (${nc} véhicule${nc > 1 ? 's' : ''} réparé${nc > 1 ? 's' : ''}${z.infra.garage ? ' à l’atelier' : ', immobilisé' + (nc > 1 ? 's' : '') + ' ce tour'})`, coutCarrosserie(z), () => { reparerCabosses(z, T); }); }
+      if (dep.carrosserie && (z.cabosses || []).length) { const nc = cabossesChoisis(z, dep.carrosserie).length; payer(`carrosserie (${nc} véhicule${nc > 1 ? 's' : ''} réparé${nc > 1 ? 's' : ''}${z.infra.garage ? ' à l’atelier' : ', immobilisé' + (nc > 1 ? 's' : '') + ' ce tour'})`, coutCarrosserie(z, dep.carrosserie), () => { reparerCabosses(z, T, dep.carrosserie); }); }
       z.rapport.push(`Dépenses du jour : ${achats.join(', ')}.`);
       if (paye) z._compta.push({ k: 'depenses', l: 'Dépenses du jour', v: -paye });
     }

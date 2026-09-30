@@ -8,6 +8,7 @@
 //    mais un rapport de sinistre et de la réputation en moins ;
 //  - accident grave : sinistre total et un agent blessé.
 import { COUTS } from './constants.js';
+import { placeLibre, cabossesChoisis } from './parc.js';
 
 export const SINISTRE = {
   base: 0.02,             // risque de base par tour
@@ -47,7 +48,8 @@ export function risqueAccident(z, { traites = 0, rythme = 'normal', intervention
   return { p: Math.min(SINISTRE.max, p), facteurs: f };
 }
 
-export const coutCarrosserie = (z) => Math.round((z.cabosses || []).length * SINISTRE.carrosserie * (z.infra && z.infra.garage ? 0.5 : 1) * 10) / 10;
+/** Coût de la carrosserie : tous les véhicules cabossés (`choix` = true) ou une sélection d'indices. */
+export const coutCarrosserie = (z, choix = true) => Math.round(cabossesChoisis(z, choix).length * SINISTRE.carrosserie * (z.infra && z.infra.garage ? 0.5 : 1) * 10) / 10;
 
 /** Probabilité que la zone soit en tort. */
 function chanceTort(z, rythme) {
@@ -73,12 +75,13 @@ export function payerIndemnites(z, T) {
 }
 
 /** Passage en carrosserie (dépense du jour) : les véhicules cabossés sont immobilisés ce tour, sauf avec l'atelier. */
-export function reparerCabosses(z, T) {
-  const n = (z.cabosses || []).length;
-  if (!n) return 0;
-  if (!(z.infra && z.infra.garage)) for (let i = 0; i < n; i++) z.vehiculesHS.push({ retour: T + 1 });
-  z.cabosses = [];
-  return n;
+export function reparerCabosses(z, T, choix = true) {
+  const idx = new Set(cabossesChoisis(z, choix));
+  if (!idx.size) return 0;
+  const repares = z.cabosses.filter((_, i) => idx.has(i));
+  if (!(z.infra && z.infra.garage)) for (const c of repares) z.vehiculesHS.push({ retour: T + 1, ...(c.slot != null ? { slot: c.slot } : {}) });
+  z.cabosses = z.cabosses.filter((_, i) => !idx.has(i));
+  return repares.length;
 }
 
 /** Effet sur l'image des véhicules qui roulent cabossés (après les dépenses du jour). */
@@ -116,7 +119,8 @@ export function accidentVehicule(z, T, rng, ctx, push, label) {
   z.stats.accidents = (z.stats.accidents || 0) + 1;
 
   if (type === 'accrochage') {
-    z.cabosses.push({ depuis: T });
+    const slot = placeLibre(z, T);
+    z.cabosses.push({ depuis: T, ...(slot >= 0 ? { slot } : {}) });
     const quoi = rng.pick(['un rétroviseur arraché contre un poteau', 'une portière enfoncée en manœuvrant', 'un pare-chocs plié contre une borne', 'une aile froissée dans un parking trop étroit', 'un feu arrière brisé en marche arrière']);
     z.rapport.push(`Accident de véhicule : accrochage, ${quoi}. Le véhicule roule encore mais il est cabossé : passe-le en carrosserie (${k(coutCarrosserie(z) / z.cabosses.length)}) avant qu’il ne ternisse l’image de la zone.`);
     return { type, tort };
@@ -127,7 +131,7 @@ export function accidentVehicule(z, T, rng, ctx, push, label) {
   const dernier = z.vehicules <= 1;
   if (dernier) {
     // On ne laisse jamais une zone sans aucun véhicule : le dernier part en réparation lourde.
-    z.vehiculesHS.push({ retour: T + 4 });
+    z.vehiculesHS.push({ retour: T + 4, slot: 0 });
   } else {
     z.vehicules -= 1;
     if (z.cabosses.length > z.vehicules) z.cabosses.pop();

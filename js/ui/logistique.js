@@ -1,6 +1,9 @@
 // Logistique (bâtiments de la zone) et détail du budget : ce qui coûte, ce qui rapporte.
 import { S, esc, icon, fmt1, myZone } from './common.js';
-import { BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE } from '../engine/constants.js';
+import { BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE, DEPENSES, USURE } from '../engine/constants.js';
+import { parcVehicules, cabossesChoisis } from '../engine/parc.js';
+import { coutCarrosserie } from '../engine/sinistres.js';
+import { sceneHp, vehiculeSvg } from './scene-hp.js';
 import { fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
 import { coutDemarche } from '../engine/enquete.js';
 import { PERIL } from '../engine/rivalites.js';
@@ -78,41 +81,83 @@ function ouvrirPanneau(html) {
   wrap.querySelector('[data-close]').focus();
 }
 
-/** Carte repliable « Logistique » de l'HP. */
+/** Carte « Mon hôtel de police » de l'HP : illustration, bâtiments, parc automobile, annexes. */
 export function logistiqueHtml() {
-  const z = myZone(), st = S.state, d = S.draft || {};
+  const z = myZone(), st = S.state, T = st.turn, d = S.draft || {};
   const b = z.batiments;
   const annexes = Object.entries(INFRAS).filter(([id]) => z.infra[id]);
   const entretienTotal = Object.entries(BATIMENTS).reduce((s, [id, B]) => s + B.entretien(b[id]), 0) + annexes.length * ENTRETIEN_ANNEXE;
-  const occupation = { bureaux: `${effectifPrevu(z)} / ${capaciteAgents(z)} agents`, garage: `${z.vehicules} / ${capaciteVehicules(z)} véhicules` };
-  const plein = { bureaux: effectifPrevu(z) >= capaciteAgents(z), garage: z.vehicules >= capaciteVehicules(z) };
+  const occupation = { bureaux: [effectifPrevu(z), capaciteAgents(z), 'agents'], garage: [z.vehicules, capaciteVehicules(z), 'véhicules'] };
+  const parc = parcVehicules(z, T);
+  const choixCarro = cabossesChoisis(z, d.depenses && d.depenses.carrosserie);
+  const pips = (n) => `<span class="niv" aria-label="Niveau ${n} sur ${BATIMENT_MAX}">${Array.from({ length: BATIMENT_MAX }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
+
   const bat = Object.entries(BATIMENTS).map(([id, B]) => {
     const n = b[id];
     const dec = { type: 'agrandir', batiment: id };
     const choisi = d.decision && d.decision.type === 'agrandir' && d.decision.batiment === id;
-    const refus = decisionImpossible(z, dec, st.turn);
+    const refus = decisionImpossible(z, dec, T);
     const enTravaux = z.travaux && z.travaux.batiment === id;
+    const [occ, cap, unite] = occupation[id];
     return `<div class="bat">
-      <div class="between"><span style="font-weight:700">${B.nom}</span><span class="niv" aria-label="Niveau ${n} sur ${BATIMENT_MAX}">${Array.from({ length: BATIMENT_MAX }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span></div>
-      <span class="tiny muted">${B.texte}</span>
-      <div class="between small"><span class="${plein[id] ? 'warn' : ''}">${occupation[id]}${plein[id] ? ' · plein' : ''}</span><span class="mono tiny muted">entretien ${fmt1(B.entretien(n))} k€</span></div>
-      ${enTravaux ? `<span class="small warn" style="font-weight:600">Travaux en cours : niveau ${n + 1} au tour ${z.travaux.fin}</span>`
-        : n >= BATIMENT_MAX ? '<span class="small ok" style="font-weight:600">Niveau maximum</span>'
-        : `<button type="button" class="btn small block ${choisi ? 'primary' : ''}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''}>
-            ${choisi ? '✓ Agrandissement prévu ce soir · annuler' : `Agrandir : niveau ${n + 1} · ${B.capacite(n + 1)} ${B.unite} · ${fmt1(B.coutAgrandir(n))} k€`}</button>
-          <span class="tiny muted">${refus && !choisi ? esc(refus) : `${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux · entretien ensuite ${fmt1(B.entretien(n + 1))} k€/tour · c’est ta grande décision du jour`}</span>`}
+      <div class="between"><span style="font-weight:700;font-size:13px">${id === 'bureaux' ? 'Bâtiment' : 'Garage'}</span>${pips(n)}</div>
+      <span class="small"><span class="mono ${occ >= cap ? 'warn' : ''}">${occ}</span><span class="muted"> / ${cap} ${unite}</span></span>
+      ${enTravaux ? `<span class="tiny warn" style="font-weight:600">Travaux : niveau ${n + 1} au tour ${z.travaux.fin}</span>`
+        : n >= BATIMENT_MAX ? '<span class="tiny ok" style="font-weight:600">Niveau maximum</span>'
+        : `<button type="button" class="btn small block ${choisi ? 'primary' : 'agr'}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''} title="${esc(refus && !choisi ? refus : `${B.capacite(n + 1)} ${B.unite} · ${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux · entretien ensuite ${fmt1(B.entretien(n + 1))} k€/tour`)}">
+            ${choisi ? '✓ Prévu ce soir' : `Agrandir · ${fmt1(B.coutAgrandir(n))} k€`}</button>`}
     </div>`;
   }).join('');
+
+  const etat = Math.round(100 - z.usure);
+  const libres = Math.max(0, capaciteVehicules(z) - z.vehicules);
+  const tuiles = parc.map((v) => {
+    const prevu = v.etat === 'cabosse' && choixCarro.includes(v.cab);
+    const [coul, txt] = v.etat === 'cabosse' ? (prevu ? ['var(--blue)', 'réparé ce soir'] : ['var(--amber)', 'cabossé'])
+      : v.etat === 'atelier' ? ['var(--red)', `atelier ${v.jours} j`] : ['var(--green)', 'en service'];
+    return `<button type="button" class="veh ${v.etat}${prevu ? ' prevu' : ''}" data-action="vehicule" data-slot="${v.slot}" aria-label="${esc(v.nom)} : ${txt}">
+      ${vehiculeSvg(v.type, 20)}<span class="n">${esc(v.nom)}</span><span class="s"><i style="background:${coul}"></i>${txt}</span></button>`;
+  }).join('') + (libres ? `<a class="veh libre" href="#ordres" aria-label="Acheter un véhicule (grande décision)"><span style="font-size:16px;line-height:1">+</span><span class="s">${libres} place${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''}</span></a>` : '');
+
   const peq = perequation(z, st);
-  return `<details class="card repli" aria-label="Logistique" data-k="logistique" ${S.ouverts && S.ouverts.logistique ? 'open' : ''}>
-    <summary><span style="color:var(--amber)">${icon('hp', 20)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Logistique</span>
-      <span class="tiny muted">Hôtel de police niv. ${b.bureaux} · Garage niv. ${b.garage}${annexes.length ? ` · ${annexes.length} annexe${annexes.length > 1 ? 's' : ''}` : ''} · ${fmt1(entretienTotal)} k€/tour${z.travaux ? ' · travaux en cours' : ''}</span></span>${icon('chevron', 16)}</summary>
-    <div class="col" style="gap:10px">${bat}
-      <div class="bat"><div class="between"><span style="font-weight:700">Annexes</span><span class="mono tiny muted">${fmt1(ENTRETIEN_ANNEXE)} k€/tour chacune</span></div>
-        <span class="small">${annexes.length ? annexes.map(([, i]) => esc(i.nom)).join(' · ') : 'Aucune pour l’instant.'}</span>
-        <a class="tiny" href="#ordres">Construire une annexe (grande décision, dans tes ordres)</a></div>
-      ${z.agents > SUBSIDE.seuil ? `<p class="tiny ok" style="margin:0">Subside communal : +${fmt1(subsideAgents(z))} k€ par tour pour tes ${z.agents - SUBSIDE.seuil} agents au-delà de ${SUBSIDE.seuil} (${fmt1(SUBSIDE.parAgent)} k€ chacun).</p>` : `<p class="tiny muted" style="margin:0">Subside communal : ${fmt1(SUBSIDE.parAgent)} k€ par tour pour chaque agent au-delà de ${SUBSIDE.seuil}.</p>`}
-      ${peq ? `<p class="tiny ok" style="margin:0">Péréquation : ta zone est moins équipée que la moyenne du district, elle reçoit +${fmt1(PEREQUATION.montant)} k€ par tour.</p>` : ''}
-      <p class="tiny muted" style="margin:0">À la saison suivante, tes bâtiments sont conservés avec un niveau de moins, et tes annexes restent.</p>
-    </div></details>`;
+  const devant = parc.filter((v) => v.etat === 'service').map((v) => v.type);
+  return `<section class="card hp-logis" aria-label="Mon hôtel de police">
+    <div class="between"><span class="kicker">Mon hôtel de police</span><button type="button" class="linkbtn" data-action="budget" style="white-space:nowrap"><span class="mono tiny muted">entretien ${fmt1(entretienTotal)} k€/tour</span></button></div>
+    ${sceneHp({ nom: z.nom, b: b.bureaux, g: b.garage, devant, travaux: z.travaux ? z.travaux.batiment : null, atelier: parc.some((v) => v.etat === 'atelier') })}
+    <div class="bats">${bat}</div>
+    <div class="col" style="gap:5px">
+      <div class="between"><span class="tiny muted">Parc automobile</span><span class="tiny muted">état du parc <span class="mono ${etat < 60 ? 'bad' : etat < 80 ? 'warn' : ''}" style="color:${etat >= 80 ? 'var(--text)' : ''}">${etat} %</span></span></div>
+      <div class="parc-etat"><span style="width:${etat}%;background:${etat >= 80 ? 'var(--green)' : etat >= 60 ? 'var(--amber)' : 'var(--red)'}"></span></div>
+    </div>
+    <div class="parc">${tuiles}</div>
+    <div class="chips">${annexes.map(([, i]) => `<span class="chip">${esc(i.nom)}</span>`).join('')}<a class="chip add" href="#ordres">+ Annexe</a></div>
+    ${z.agents > SUBSIDE.seuil ? `<p class="tiny ok" style="margin:0">Subside communal : +${fmt1(subsideAgents(z))} k€ par tour pour tes ${z.agents - SUBSIDE.seuil} agents au-delà de ${SUBSIDE.seuil}.</p>` : ''}
+    ${peq ? `<p class="tiny ok" style="margin:0">Péréquation : ta zone est moins équipée que la moyenne du district, elle reçoit +${fmt1(PEREQUATION.montant)} k€ par tour.</p>` : ''}
+  </section>`;
+}
+
+/** Fenêtre d'un véhicule (clic sur une tuile du parc) : état et réparations possibles. */
+export function ouvrirVehicule(slot) {
+  const z = myZone(), T = S.state.turn, d = S.draft || {};
+  const v = parcVehicules(z, T).find((x) => x.slot === Number(slot));
+  if (!v) return;
+  const dep = d.depenses || {};
+  const atelier = !!(z.infra && z.infra.garage);
+  const etat = Math.round(100 - z.usure);
+  const prevu = v.etat === 'cabosse' && cabossesChoisis(z, dep.carrosserie).includes(v.cab);
+  const prix = coutCarrosserie(z, [0]);
+  const statut = v.etat === 'cabosse'
+    ? `<span class="tiny" style="color:var(--amber)">Cabossé${T - v.depuis > 0 ? ` depuis ${T - v.depuis} tour${T - v.depuis > 1 ? 's' : ''}` : ' aujourd’hui'} · il abîme l’image de la zone tant qu’il roule ainsi</span>`
+    : v.etat === 'atelier' ? `<span class="tiny bad">À l’atelier : de retour dans ${v.jours} tour${v.jours > 1 ? 's' : ''}</span>`
+    : '<span class="tiny ok">En service</span>';
+  const html = `
+    <div class="between" style="align-items:flex-start"><div class="row" style="gap:12px">${vehiculeSvg(v.type, 26)}<div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">${esc(v.nom)}</h2>${statut}</div></div>
+      <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
+    ${v.etat === 'cabosse' ? `<div class="bat" style="gap:3px"><div class="between small"><span style="font-weight:600">Carrosserie ce soir</span><span class="mono">${fmt1(prix)} k€</span></div>
+      <span class="tiny muted">${atelier ? 'Réparé à ton atelier mécanique, sans immobilisation.' : 'Immobilisé le temps de la réparation. Avec l’atelier mécanique : moitié prix et sans immobilisation.'}</span></div>
+      <button type="button" class="btn ${prevu ? '' : 'primary'} block" data-action="carro-veh" data-i="${v.cab}">${prevu ? 'Annuler la réparation' : `Réparer ce soir · ${fmt1(prix)} k€`}</button>` : ''}
+    <div class="between small"><span class="muted">État du parc (tous les véhicules)</span><span class="mono">${etat} %</span></div>
+    <button type="button" class="btn block" data-action="dep-toggle" data-k="revision" data-fermer="1">${dep.revision ? '✓ Révision du parc prévue · annuler' : `Révision du parc · ${fmt1(DEPENSES.revision.cout)} k€ · +${USURE.revision} %`}</button>
+    <p class="tiny muted" style="margin:0">Payé à 20:00 avec tes dépenses du jour. Pense à valider tes ordres.</p>`;
+  ouvrirPanneau(html);
 }

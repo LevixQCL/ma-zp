@@ -3,19 +3,18 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-30e',
-  titre: 'Mise à jour du 30 septembre : des stats expliquées',
+  id: '2026-09-30f',
+  titre: 'Mise à jour du 30 septembre : ton hôtel de police en image',
   points: [
-    ['Chaque « ? » montre ton calcul', 'moral, satisfaction, réputation, IPZ, budget : le bouton « ? » affiche maintenant, en plus de la règle, le calcul réel de ton dernier tour, ligne par ligne (avant → chaque cause → après), et ce que ça rapporte à ton IPZ.'],
-    ['Confiance de la commune', 'nouvelle ligne sous la réputation : ce que la commune te verse (ou retient) chaque soir selon ta réputation, avec son « ? ».'],
-    ['Rapport du tour', 'dans le tableau de l’IPZ, « Résultats terrain » et « Budget » ont aussi leur « ? » : incidents traités, points de résultats, plafond, solde de fin de tour. Les causes des variations sont plus précises (incidents traités et ratés séparés, retour naturel vers 50 ou 60 chiffré, etc.).'],
-    ['Visite guidée', 'chaque action a son propre écran, et c’est toi qui touches les onglets pour changer d’écran.'],
+    ['Mon hôtel de police', 'la carte Logistique de l’HP devient une illustration : un étage de plus à chaque niveau du bâtiment, une porte de garage par niveau du garage, et le nom de ta zone en néon sur le toit.'],
+    ['Parc automobile', 'chaque combi et chaque voiture anonymisée a sa tuile : en service, cabossé ou à l’atelier. L’état du parc reste commun à tous les véhicules.'],
+    ['Réparation ciblée', 'touche un véhicule cabossé pour le passer seul en carrosserie ce soir, ou lance une révision du parc depuis sa fiche.'],
   ],
 };
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP ! Les « ? » à côté du moral, de la satisfaction, de la réputation et de l'IPZ montrent maintenant le calcul de TON dernier tour, cause par cause. Nouveau : la confiance de la commune sous la réputation, et des « ? » sur Résultats terrain et Budget dans le rapport. Recharge la page si besoin.`;
+  return `📣 Mise à jour de Ma ZP ! Sur l'HP, ton hôtel de police est maintenant illustré : il grandit avec ses niveaux, avec le nom de ta zone en néon sur le toit. Chaque combi et voiture anonymisée a sa tuile (en service, cabossé, à l'atelier) : touche un véhicule cabossé pour le réparer seul ce soir.`;
 }
 
 
