@@ -47,15 +47,16 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   const W = 360, H = 210, base = 172, x0 = 22, w = 160, gf = 30, fh = 24;
   const r = rnd(graine(nom));
   const top = base - gf - (b - 1) * fh;
-  let s = `<svg class="scene-hp" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hôtel de police niveau ${b} sur ${BATIMENT_MAX}, garage niveau ${g} sur ${BATIMENT_MAX}">
+  const vy = Math.max(0, Math.min(top - 48, 56));
+  let s = `<svg class="scene-hp" viewBox="0 ${vy} ${W} ${H - vy}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hôtel de police niveau ${b} sur ${BATIMENT_MAX}, garage niveau ${g} sur ${BATIMENT_MAX}">
   <defs><linearGradient id="hp-ciel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0A121C"/><stop offset="1" stop-color="#16222F"/></linearGradient>
   <radialGradient id="hp-bleu"><stop offset="0" stop-color="#5AB0F0" stop-opacity=".55"/><stop offset="1" stop-color="#5AB0F0" stop-opacity="0"/></radialGradient>
   <radialGradient id="hp-ambre"><stop offset="0" stop-color="#F2B544" stop-opacity=".22"/><stop offset="1" stop-color="#F2B544" stop-opacity="0"/></radialGradient>
   <filter id="hp-neon" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   <linearGradient id="hp-facade" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1E2B39"/><stop offset="1" stop-color="#18222E"/></linearGradient></defs>
   <rect width="${W}" height="${H}" fill="url(#hp-ciel)"/>`;
-  for (let i = 0; i < 22; i++) s += `<circle cx="${(r() * W).toFixed(1)}" cy="${(r() * 80).toFixed(1)}" r="${(r() * 0.9 + 0.3).toFixed(2)}" fill="#C8D3DD" opacity="${(r() * 0.4 + 0.15).toFixed(2)}"/>`;
-  s += '<circle cx="318" cy="28" r="11" fill="#E9EEF3" opacity=".9"/><circle cx="323" cy="24" r="10" fill="#0E1822"/>';
+  for (let i = 0; i < 22; i++) s += `<circle cx="${(r() * W).toFixed(1)}" cy="${(vy + r() * 70).toFixed(1)}" r="${(r() * 0.9 + 0.3).toFixed(2)}" fill="#C8D3DD" opacity="${(r() * 0.4 + 0.15).toFixed(2)}"/>`;
+  s += `<circle cx="318" cy="${vy + 26}" r="11" fill="#E9EEF3" opacity=".9"/><circle cx="323" cy="${vy + 22}" r="10" fill="#0E1822"/>`;
   // Ville en arrière-plan.
   const sk = rnd(3);
   for (let sx = 0; sx < W;) { const ww = 18 + sk() * 26, hh = 30 + sk() * 50; s += `<rect x="${sx.toFixed(1)}" y="${(base - hh).toFixed(1)}" width="${ww.toFixed(1)}" height="${hh.toFixed(1)}" fill="#121C27"/>`; sx += ww + 2; }

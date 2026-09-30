@@ -3,10 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-30f',
+  id: '2026-09-30g',
   titre: 'Mise à jour du 30 septembre : ton hôtel de police en image',
   points: [
-    ['Mon hôtel de police', 'la carte Logistique de l’HP devient une illustration : un étage de plus à chaque niveau du bâtiment, une porte de garage par niveau du garage, et le nom de ta zone en néon sur le toit.'],
+    ['Mon hôtel de police', 'ta zone s’affiche en image dans la carte « Ma zone » : un étage de plus à chaque niveau du bâtiment, une porte de garage par niveau du garage, et son nom en néon sur le toit. Touche l’image pour les bâtiments et les véhicules.'],
+    ['HP plus léger', 'guide, nouveautés et profil passent sous la roue dentée en haut ; l’enquête et les énigmes se retrouvent dans « Prochain tour » et dans la barre du bas.'],
     ['Parc automobile', 'chaque combi et chaque voiture anonymisée a sa tuile : en service, cabossé ou à l’atelier. L’état du parc reste commun à tous les véhicules.'],
     ['Réparation ciblée', 'touche un véhicule cabossé pour le passer seul en carrosserie ce soir, ou lance une révision du parc depuis sa fiche.'],
   ],
@@ -14,7 +15,7 @@ export const NOTE_MAJ = {
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP ! Sur l'HP, ton hôtel de police est maintenant illustré : il grandit avec ses niveaux, avec le nom de ta zone en néon sur le toit. Chaque combi et voiture anonymisée a sa tuile (en service, cabossé, à l'atelier) : touche un véhicule cabossé pour le réparer seul ce soir.`;
+  return `📣 Mise à jour de Ma ZP ! Sur l'HP, ton hôtel de police est maintenant illustré : il grandit avec ses niveaux, avec le nom de ta zone en néon sur le toit (touche l'image pour les détails). Guide et profil passent sous la roue dentée. Chaque combi et voiture anonymisée a sa tuile (en service, cabossé, à l'atelier) : touche un véhicule cabossé pour le réparer seul ce soir.`;
 }
 
 

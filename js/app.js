@@ -11,7 +11,7 @@ import { maCandidature } from './ui/affaires.js';
 import { renderTerrain } from './ui/terrain.js';
 import { installerAntiTriche } from './ui/antitriche.js';
 import { lireInvitationUrl, oublierInvitation, partager, copier, afficherQr } from './ui/invitation.js';
-import { ouvrirBudget, ouvrirVehicule } from './ui/logistique.js';
+import { ouvrirBudget, ouvrirVehicule, ouvrirLogistique, rafraichirLogistique } from './ui/logistique.js';
 import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { tutoAuBesoin, lancerTuto } from './ui/tutoriel.js';
@@ -298,6 +298,7 @@ async function onClick(e) {
       }
       case 'budget': ouvrirBudget(); break;
       case 'vehicule': ouvrirVehicule(el.dataset.slot); break;
+      case 'logistique': ouvrirLogistique(); break;
       case 'carro-veh': {
         const dd = (S.draft.depenses ||= { reserve: 0, reserveService: 'intervention' });
         const z = S.state.zones[S.user.uid], i = Number(el.dataset.i);
@@ -305,14 +306,14 @@ async function onClick(e) {
         const garde = choix.includes(i) ? choix.filter((x) => x !== i) : [...choix, i];
         dd.carrosserie = garde.length ? garde : false;
         S.ordersDirty = true;
-        document.querySelector('.aide-wrap')?.remove();
         toast(garde.includes(i) ? 'Réparation prévue ce soir. Valide tes ordres.' : 'Réparation annulée.');
-        rerender(); break;
+        rerender(); ouvrirLogistique(); break;
       }
       case 'invite-share': { const r = await partager(el.dataset.code, el.dataset.nom); if (r === 'copié') toast('Lien copié : colle-le dans un message.'); break; }
       case 'invite-copy': await copier(el.dataset.code, el.dataset.nom); toast('Lien et message copiés.'); break;
       case 'invite-qr': afficherQr(el.dataset.code); break;
-      case 'maj-voir': ouvrirNouveautes(); break;
+      case 'maj-voir': S.menuHp = false; ouvrirNouveautes(); rerender(); break;
+      case 'menu-hp': S.menuHp = !S.menuHp; rerender(); break;
       case 'maj-envoyer': {
         const autres = Object.values(S.state.zones).filter((x) => x.uid !== S.user.uid && !(S.players[x.uid] && S.players[x.uid].bot));
         if (!autres.length) { toast('Aucun autre joueur dans la partie.'); break; }
@@ -326,7 +327,7 @@ async function onClick(e) {
       case 'agrandir': {
         const d0 = S.draft.decision;
         S.draft.decision = d0 && d0.type === 'agrandir' && d0.batiment === el.dataset.b ? null : { type: 'agrandir', batiment: el.dataset.b };
-        S.ordersDirty = true; rerender(); break;
+        S.ordersDirty = true; rerender(); rafraichirLogistique(); break;
       }
       case 'offre': {
         if (!S.state.enchere) break;
@@ -458,8 +459,8 @@ async function onClick(e) {
         if (el.dataset.k === 'carrosserie' && Array.isArray(dd.carrosserie) && cabossesChoisis(zk, dd.carrosserie).length < (zk.cabosses || []).length) dd.carrosserie = true;
         else dd[el.dataset.k] = !dd[el.dataset.k];
         S.ordersDirty = true;
-        if (el.dataset.fermer) { document.querySelector('.aide-wrap')?.remove(); toast(dd[el.dataset.k] ? 'Révision prévue ce soir. Valide tes ordres.' : 'Révision annulée.'); }
-        rerender(); break;
+        if (el.dataset.fermer) toast(dd[el.dataset.k] ? 'Révision prévue ce soir. Valide tes ordres.' : 'Révision annulée.');
+        rerender(); if (el.dataset.fermer) ouvrirLogistique(); break;
       }
       case 'class-tab': S.classTab = el.dataset.t; rerender(); break;
       case 'enq-tab': S.enqTab = el.dataset.t; rerender(); break;
@@ -930,7 +931,7 @@ async function boot() {
   document.addEventListener('submit', onSubmit);
   document.addEventListener('input', onInput);
   document.addEventListener('change', onChange);
-  window.addEventListener('hashchange', () => { S.route = route(); if (S.route !== 'prive') S.priveAvec = null; window.scrollTo(0, 0); render(); });
+  window.addEventListener('hashchange', () => { S.menuHp = false; S.route = route(); if (S.route !== 'prive') S.priveAvec = null; window.scrollTo(0, 0); render(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(true); });
   setInterval(() => {
     const el = document.getElementById('countdown');

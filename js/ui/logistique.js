@@ -78,11 +78,33 @@ function ouvrirPanneau(html) {
   });
   document.addEventListener('keydown', echap);
   document.body.appendChild(wrap);
-  wrap.querySelector('[data-close]').focus();
+  (wrap.querySelector('[data-close]') || wrap.querySelector('button'))?.focus();
 }
 
-/** Carte « Mon hôtel de police » de l'HP : illustration, bâtiments, parc automobile, annexes. */
-export function logistiqueHtml() {
+/** Illustration cliquable de l'HP (dans la carte « Ma zone ») : ouvre la fiche logistique. */
+export function sceneCarteHtml() {
+  const z = myZone(), T = S.state.turn;
+  const parc = parcVehicules(z, T);
+  const cab = parc.filter((v) => v.etat === 'cabosse').length, hs = parc.filter((v) => v.etat === 'atelier').length;
+  const b = z.batiments;
+  return `<button type="button" class="scene-btn" data-action="logistique" aria-label="Mon hôtel de police : bâtiments et véhicules">
+    ${sceneHp({ nom: z.nom, b: b.bureaux, g: b.garage, devant: parc.filter((v) => v.etat === 'service').map((v) => v.type), travaux: z.travaux ? z.travaux.batiment : null, atelier: hs > 0 })}
+    <span class="scene-leg"><span>Bâtiment niv. ${b.bureaux} · Garage niv. ${b.garage}${z.travaux ? ' · travaux' : ''}</span>
+      ${cab ? `<span class="scene-pastille">${cab} cabossé${cab > 1 ? 's' : ''}</span>` : ''}${icon('chevron', 14)}</span>
+  </button>`;
+}
+
+/** Fiche « Mon hôtel de police » : bâtiments, parc automobile, annexes. */
+export function ouvrirLogistique() {
+  ouvrirPanneau(`<div data-logis>${logistiqueCorps()}</div>`);
+}
+/** Si la fiche logistique est ouverte, la redessine (après un agrandissement ou une réparation). */
+export function rafraichirLogistique() {
+  const el = document.querySelector('.aide-wrap [data-logis]');
+  if (el) el.innerHTML = logistiqueCorps();
+}
+
+function logistiqueCorps() {
   const z = myZone(), st = S.state, T = st.turn, d = S.draft || {};
   const b = z.batiments;
   const annexes = Object.entries(INFRAS).filter(([id]) => z.infra[id]);
@@ -104,8 +126,9 @@ export function logistiqueHtml() {
       <span class="small"><span class="mono ${occ >= cap ? 'warn' : ''}">${occ}</span><span class="muted"> / ${cap} ${unite}</span></span>
       ${enTravaux ? `<span class="tiny warn" style="font-weight:600">Travaux : niveau ${n + 1} au tour ${z.travaux.fin}</span>`
         : n >= BATIMENT_MAX ? '<span class="tiny ok" style="font-weight:600">Niveau maximum</span>'
-        : `<button type="button" class="btn small block ${choisi ? 'primary' : 'agr'}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''} title="${esc(refus && !choisi ? refus : `${B.capacite(n + 1)} ${B.unite} · ${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux · entretien ensuite ${fmt1(B.entretien(n + 1))} k€/tour`)}">
-            ${choisi ? '✓ Prévu ce soir' : `Agrandir · ${fmt1(B.coutAgrandir(n))} k€`}</button>`}
+        : `<button type="button" class="btn small block ${choisi ? 'primary' : 'agr'}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''}>
+            ${choisi ? '✓ Prévu ce soir' : `Agrandir · ${fmt1(B.coutAgrandir(n))} k€`}</button>
+          <span class="tiny muted">${refus && !choisi ? esc(refus) : `niv. ${n + 1} : ${B.capacite(n + 1)} ${B.unite} · entretien ${fmt1(B.entretien(n + 1))} k€/tour`}</span>`}
     </div>`;
   }).join('');
 
@@ -117,23 +140,24 @@ export function logistiqueHtml() {
       : v.etat === 'atelier' ? ['var(--red)', `atelier ${v.jours} j`] : ['var(--green)', 'en service'];
     return `<button type="button" class="veh ${v.etat}${prevu ? ' prevu' : ''}" data-action="vehicule" data-slot="${v.slot}" aria-label="${esc(v.nom)} : ${txt}">
       ${vehiculeSvg(v.type, 20)}<span class="n">${esc(v.nom)}</span><span class="s"><i style="background:${coul}"></i>${txt}</span></button>`;
-  }).join('') + (libres ? `<a class="veh libre" href="#ordres" aria-label="Acheter un véhicule (grande décision)"><span style="font-size:16px;line-height:1">+</span><span class="s">${libres} place${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''}</span></a>` : '');
+  }).join('') + (libres ? `<a class="veh libre" href="#ordres" data-close aria-label="Acheter un véhicule (grande décision)"><span style="font-size:16px;line-height:1">+</span><span class="s">${libres} place${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''}</span></a>` : '');
 
   const peq = perequation(z, st);
-  const devant = parc.filter((v) => v.etat === 'service').map((v) => v.type);
-  return `<section class="card hp-logis" aria-label="Mon hôtel de police">
-    <div class="between"><span class="kicker">Mon hôtel de police</span><button type="button" class="linkbtn" data-action="budget" style="white-space:nowrap"><span class="mono tiny muted">entretien ${fmt1(entretienTotal)} k€/tour</span></button></div>
-    ${sceneHp({ nom: z.nom, b: b.bureaux, g: b.garage, devant, travaux: z.travaux ? z.travaux.batiment : null, atelier: parc.some((v) => v.etat === 'atelier') })}
+  return `<div class="col hp-logis" style="gap:10px">
+    <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon hôtel de police</h2>
+      <span class="mono tiny muted">entretien ${fmt1(entretienTotal)} k€ par tour</span></div>
+      <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="bats">${bat}</div>
     <div class="col" style="gap:5px">
-      <div class="between"><span class="tiny muted">Parc automobile</span><span class="tiny muted">état du parc <span class="mono ${etat < 60 ? 'bad' : etat < 80 ? 'warn' : ''}" style="color:${etat >= 80 ? 'var(--text)' : ''}">${etat} %</span></span></div>
+      <div class="between"><span class="tiny muted">Parc automobile</span><span class="tiny muted">état du parc <span class="mono ${etat < 60 ? 'bad' : etat < 80 ? 'warn' : ''}">${etat} %</span></span></div>
       <div class="parc-etat"><span style="width:${etat}%;background:${etat >= 80 ? 'var(--green)' : etat >= 60 ? 'var(--amber)' : 'var(--red)'}"></span></div>
     </div>
     <div class="parc">${tuiles}</div>
-    <div class="chips">${annexes.map(([, i]) => `<span class="chip">${esc(i.nom)}</span>`).join('')}<a class="chip add" href="#ordres">+ Annexe</a></div>
+    <div class="chips">${annexes.map(([, i]) => `<span class="chip">${esc(i.nom)}</span>`).join('')}<a class="chip add" href="#ordres" data-close>+ Annexe</a></div>
     ${z.agents > SUBSIDE.seuil ? `<p class="tiny ok" style="margin:0">Subside communal : +${fmt1(subsideAgents(z))} k€ par tour pour tes ${z.agents - SUBSIDE.seuil} agents au-delà de ${SUBSIDE.seuil}.</p>` : ''}
     ${peq ? `<p class="tiny ok" style="margin:0">Péréquation : ta zone est moins équipée que la moyenne du district, elle reçoit +${fmt1(PEREQUATION.montant)} k€ par tour.</p>` : ''}
-  </section>`;
+    <p class="tiny muted" style="margin:0">Agrandir et réparer se paient à 20:00. Pense à valider tes ordres.</p>
+  </div>`;
 }
 
 /** Fenêtre d'un véhicule (clic sur une tuile du parc) : état et réparations possibles. */
@@ -152,7 +176,7 @@ export function ouvrirVehicule(slot) {
     : '<span class="tiny ok">En service</span>';
   const html = `
     <div class="between" style="align-items:flex-start"><div class="row" style="gap:12px">${vehiculeSvg(v.type, 26)}<div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">${esc(v.nom)}</h2>${statut}</div></div>
-      <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
+      <button class="iconbtn" data-action="logistique" aria-label="Retour au parc" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">‹</button></div>
     ${v.etat === 'cabosse' ? `<div class="bat" style="gap:3px"><div class="between small"><span style="font-weight:600">Carrosserie ce soir</span><span class="mono">${fmt1(prix)} k€</span></div>
       <span class="tiny muted">${atelier ? 'Réparé à ton atelier mécanique, sans immobilisation.' : 'Immobilisé le temps de la réparation. Avec l’atelier mécanique : moitié prix et sans immobilisation.'}</span></div>
       <button type="button" class="btn ${prevu ? '' : 'primary'} block" data-action="carro-veh" data-i="${v.cab}">${prevu ? 'Annuler la réparation' : `Réparer ce soir · ${fmt1(prix)} k€`}</button>` : ''}

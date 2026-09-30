@@ -639,3 +639,21 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 @keyframes hp-balise { 0%, 60% { opacity: 1; } 80% { opacity: .25; } }
 .hp-balise { animation: hp-balise 2.4s infinite; }
 @media (prefers-reduced-motion: reduce) { .hp-balise { animation: none; } }
+.scene-btn { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; font: inherit; }
+.scene-btn .scene-hp { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
+.scene-leg { display: flex; margin-top: 6px; align-items: center; gap: 6px; justify-content: flex-end; font-size: 11px; color: var(--text2); }
+.scene-leg > span:first-child { margin-right: auto; color: var(--muted); }
+.scene-leg > svg { color: var(--muted); }
+.scene-pastille { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-line); padding: 1px 7px; border-radius: 999px; font-weight: 600; }
+.scene-btn:hover .scene-hp { border-color: var(--amber-line); }
+/* HP : menu de la roue, et Salle des ventes / Mon équipe côte à côte */
+.roue { position: relative; width: 36px; height: 36px; color: var(--muted); }
+.roue[aria-expanded="true"] { color: var(--amber); }
+.roue-pastille { position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--amber); }
+.menu-hp { padding: 6px; gap: 4px; }
+.menu-hp .list-row { width: 100%; font: inherit; color: var(--text); text-align: left; cursor: pointer; display: flex; gap: 10px; align-items: center; }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
+.duo:has(details[open]) { grid-template-columns: 1fr; }
+.duo > details.repli > summary { padding: 12px; min-height: 0; gap: 8px; align-items: flex-start; }
+.duo:not(:has(details[open])) > details.repli > summary > svg:last-child { display: none; }
+.duo:not(:has(details[open])) > details.repli > summary .tiny { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
