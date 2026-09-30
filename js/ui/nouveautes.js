@@ -3,25 +3,16 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-30a',
-  titre: 'Mise à jour du 30 septembre : les quartiers',
+  id: '2026-09-30b',
+  titre: 'Mise à jour du 30 septembre : chaque service compte double',
   points: [
+    ['Recherche et enquête', 'tes agents de Recherche rapportent bien plus de pièces pour l’enquête de la semaine. Nouveau : la piste prioritaire (fiche d’un suspect) concentre leurs recherches. Le pourcentage du soir est affiché dans l’Enquête.'],
+    ['Intervention', 'les patrouilles restées libres après les incidents peuvent faire un flagrant délit : points, PS et un quartier apaisé.'],
+    ['Accueil = assurance', 'chaque agent d’Accueil au-delà de 2 évite 15 % des tracas internes (panne, dégât des eaux, grève, papiers égarés, plainte…).'],
+    ['Nouveaux imprévus', 'dégât des eaux (pièces d’enquête retardées d’un tour), grève sauvage, agent cloué au lit. Et sur les affaires disputées, une grosse équipe risque davantage un blessé.'],
     ['Carte : zones chaudes', 'tes six quartiers ont chacun leur tension, en couleur sur la carte (calme, à surveiller, tendu, chaud), avec les quartiers voisins à ta frontière en pointillés.'],
     ['Patrouilles', 'touche un quartier pour y envoyer des agents de Proximité. Plus tu concentres, plus la tension baisse à cet endroit ; à partir de 4 agents, la délinquance se déplace vers les voisins, même chez la zone d’à côté.'],
     ['Point chaud du jour', 'presque chaque jour, un quartier est signalé la veille. 2 agents sur place le désamorcent, sinon la tension y grimpe. Il apparaît dans les choses à faire de l’HP.'],
-    ['Énigme « Les deux photos »', 'beaucoup plus exigeante dès le niveau 3 : teintes proches, barres de toit, voiture garée dans l’autre sens ; niveau 5 de nuit et à mémoriser ; dossier noir avec du va-et-vient pour brouiller les pistes.'],
-    ['Enquête', 'nouvelle carte « Mes démarches » : les pièces que tu as obtenues toi-même, jour après jour, et celles que tu gardes encore pour toi.'],
-    ['Choses à faire', 'la grande décision apparaît dans la liste de l’HP. Si tu n’en veux pas, choisis « Aucune ce soir » pour la cocher.'],
-    ['Modifications non validées', 'un bouton « Annuler » permet de revenir à tes derniers choix validés.'],
-    ['Cellules d’enquête', 'plus personne n’est seul : une cellule jusqu’à 3 zones, deux de 4 à 6, trois à partir de 7. Chaque cellule suit au moins deux suspects (effet dès la prochaine affaire pour le nombre de cellules).'],
-    ['Affaires disputées', 'la récompense dépend maintenant de la force de l’équipe : 60 % des points à la force minimale, 100 % à la force conseillée, jusqu’à 130 % au-delà. L’estimation s’affiche dans tes ordres.'],
-    ['Énigme « La plaque »', 'plus retorse : la bonne plaque n’est plus celle qui ressemble à toutes les autres, témoignages à calculer, et en difficulté 5 un témoin se trompe.'],
-    ['Roulage', 'au-delà de 6 agents, chaque agent de plus compte pour moitié : les automobilistes sont prévenus. Le Roulage reste rentable, mais ne peut plus remplacer la dotation.'],
-    ['Caméras de lecture de plaques', 'l’effet « chasse aux PV » n’est plus supprimé : il joue au-delà de 40 % des effectifs en Roulage (25 % sans caméras).'],
-    ['Prime au personnel', '+4 de moral sous 70, +2 de 70 à 85, +1 au-delà : verser une prime chaque jour ne garde plus le moral bloqué à 100.'],
-    ['Rapport du jour', 'le détail de ton IPZ, et surtout « pourquoi tes jauges ont bougé » : chaque cause de variation du moral, de la satisfaction et de la réputation, et d’où viennent tes points de résultats. Les flèches permettent de revoir les tours précédents.'],
-    ['Partage de pièces', '+5 PS et +1 de réputation par pièce transmise (et non plus pour l’ensemble). Le rapport dit à qui chaque pièce est partie, et lesquelles le destinataire avait déjà.'],
-    ['Carte', 'chaque zone a un liseré de sa couleur et son nom en couleur : on les distingue d’un coup d’œil.'],
   ],
 };
 

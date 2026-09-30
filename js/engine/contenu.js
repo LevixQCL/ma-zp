@@ -42,31 +42,43 @@ export const COUPS_DURS = [
   { id: 'rebellion', titre: 'Rébellion lors d’une intervention', w: 3 },
   { id: 'grippe', titre: 'Vague de grippe', w: 2 },
   { id: 'accident', titre: 'Accident de la circulation en service', w: 2 },
-  { id: 'plainte', titre: 'Plainte médiatisée contre la zone', w: 2 },
-  { id: 'panne', titre: 'Panne informatique générale', w: 1 },
+  { id: 'plainte', interne: true, titre: 'Plainte médiatisée contre la zone', w: 2 },
+  { id: 'panne', interne: true, titre: 'Panne informatique générale', w: 1 },
+];
+
+// Flagrants délits : ce que les patrouilles disponibles surprennent.
+export const FLAGRANTS = [
+  'un cambrioleur surpris la pince à la main', 'deux voleurs de catalyseurs interpellés sous une voiture', 'un dealer arrêté pendant une transaction',
+  'un pickpocket pris sur le fait à l’arrêt de bus', 'un tagueur arrêté en pleine fresque', 'un voleur de vélos interpellé avec sa pince coupe-boulons',
+  'un conducteur recherché contrôlé par hasard', 'un individu signalé pour vols en série reconnu et arrêté',
 ];
 
 // Aléas légers, avec leur effet direct.
 export const ALEAS = [
   { id: 'carwash', titre: 'Le combi est resté coincé au car-wash', effet: { vehiculeHS: 1 }, texte: 'Un véhicule indisponible pour un tour.' },
   { id: 'croissants', titre: 'Un commerçant offre des croissants', effet: { moral: 3 }, texte: '+3 de moral.' },
-  { id: 'miseajour', titre: 'Mise à jour informatique surprise', effet: { adminMult: 0.5 }, texte: 'L’administration tourne à 50 %.' },
+  { id: 'miseajour', interne: true, titre: 'Mise à jour informatique surprise', effet: { adminMult: 0.5 }, texte: 'L’administration tourne à 50 %.' },
   { id: 'barbecue', titre: 'Barbecue du personnel', effet: { moral: 4, budget: -0.5 }, texte: '+4 de moral, 0,5 k€ de merguez.' },
   { id: 'article', titre: 'Article élogieux dans la presse locale', effet: { satisfaction: 3 }, texte: '+3 de satisfaction.' },
   { id: 'subside', titre: 'Petit subside communal', effet: { budget: 2 }, texte: '+2 k€.' },
-  { id: 'imprimante', titre: 'L’imprimante du rez-de-chaussée rend l’âme', effet: { paperasse: 3 }, texte: '+3 dossiers en attente.' },
+  { id: 'imprimante', interne: true, titre: 'L’imprimante du rez-de-chaussée rend l’âme', effet: { paperasse: 3 }, texte: '+3 dossiers en attente.' },
   { id: 'stagiaire', titre: 'Un stagiaire très motivé', effet: { paperasse: -3 }, texte: '3 dossiers traités en bonus.' },
-  { id: 'fuite', titre: 'Fuite d’eau dans les vestiaires', effet: { moral: -2, budget: -1 }, texte: '−2 de moral, 1 k€ de réparations.' },
+  { id: 'fuite', interne: true, titre: 'Fuite d’eau dans les vestiaires', effet: { moral: -2, budget: -1 }, texte: '−2 de moral, 1 k€ de réparations.' },
   { id: 'chien', titre: 'Un chien errant adopté par le service', effet: { moral: 2 }, texte: '+2 de moral. Il s’appelle Matricule.' },
   // Bêtisier : l'absurde du quotidien, qui fait les délices de la Gazette.
   { id: 'cheval', betise: true, titre: 'Un cheval en liberté trotte sur le ring', effet: { paperasse: 1, moral: 1 }, texte: 'Deux heures de poursuite au trot. +1 de moral, +1 dossier.' },
-  { id: 'cafe', betise: true, titre: 'La machine à café du dispatching est en panne', effet: { moral: -2 }, texte: '−2 de moral. Une cellule de crise a été envisagée.' },
-  { id: 'pigeon', betise: true, titre: 'Un pigeon s’est installé dans la salle radio', effet: { adminMult: 0.8 }, texte: 'L’administration tourne à 80 % le temps de l’évacuer.' },
-  { id: 'cles', betise: true, titre: 'Les clés du combi retrouvées dans la poubelle du réfectoire', effet: { vehiculeHS: 1 }, texte: 'Un véhicule indisponible pour un tour, le temps de trier.' },
+  { id: 'cafe', interne: true, betise: true, titre: 'La machine à café du dispatching est en panne', effet: { moral: -2 }, texte: '−2 de moral. Une cellule de crise a été envisagée.' },
+  { id: 'pigeon', interne: true, betise: true, titre: 'Un pigeon s’est installé dans la salle radio', effet: { adminMult: 0.8 }, texte: 'L’administration tourne à 80 % le temps de l’évacuer.' },
+  { id: 'cles', interne: true, betise: true, titre: 'Les clés du combi retrouvées dans la poubelle du réfectoire', effet: { vehiculeHS: 1 }, texte: 'Un véhicule indisponible pour un tour, le temps de trier.' },
   { id: 'sanglier', betise: true, titre: 'Un sanglier visite le parc communal', effet: { satisfaction: 1 }, texte: 'Opération menée dans le calme : +1 de satisfaction.' },
   { id: 'anniv', betise: true, titre: 'Gâteau surprise pour l’anniversaire du chef', effet: { moral: 3, budget: -0.3 }, texte: '+3 de moral, 0,3 k€ de bougies.' },
   { id: 'radio', betise: true, titre: 'Un taxi capte la fréquence radio de la zone', effet: { moral: 1 }, texte: 'Il a signalé trois excès de vitesse très précis. +1 de moral.' },
-  { id: 'panne', betise: true, titre: 'Le portail du garage refuse de s’ouvrir', effet: { vehiculeHS: 1, moral: -1 }, texte: 'Un combi bloqué un tour, −1 de moral.' },
+  // Tracas internes ajoutés : un Accueil bien fourni les évite plus souvent.
+  { id: 'degat', interne: true, titre: 'Dégât des eaux aux archives', effet: { retardEnquete: 1 }, texte: 'Les pièces d’enquête demandées aujourd’hui arriveront un tour plus tard.' },
+  { id: 'greve', interne: true, titre: 'Grève sauvage au dépôt communal', effet: { bloques: 2 }, texte: '2 agents mobilisés pour assurer le service minimum : absents au prochain tour.' },
+  { id: 'papiers', interne: true, titre: 'Des procès-verbaux égarés entre deux bureaux', effet: { paperasse: 4 }, texte: '+4 dossiers en attente, le temps de tout retrouver.' },
+  { id: 'rhume', titre: 'Un agent cloué au lit', effet: { bloques: 1 }, texte: 'Un agent absent au prochain tour.' },
+  { id: 'panne', interne: true, betise: true, titre: 'Le portail du garage refuse de s’ouvrir', effet: { vehiculeHS: 1, moral: -1 }, texte: 'Un combi bloqué un tour, −1 de moral.' },
 ];
 
 // ───── Gazette : échos du district (petites nouvelles fictives, rangées par initiale) ─────

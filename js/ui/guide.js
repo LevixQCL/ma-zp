@@ -79,11 +79,11 @@ export function sections() {
       id: 'ordres', titre: 'Les ordres et les cinq services', html: `
         <p>Tes agents disponibles (hors blessés, malades, formations) se répartissent entre cinq services. Répartition de départ : ${Object.entries(DEFAULT_ALLOC).map(([s, n]) => `${n} ${SERVICE_LABELS[s]}`).join(', ')}.</p>
         ${table(['Service', 'Son rôle'], [
-          ['Intervention', 'Traite les incidents du jour (environ 1,1 de capacité par incident). Chaque incident raté coûte 1,8 de satisfaction. Limité par les véhicules : au-delà de 2,5 agents par véhicule, les agents en plus ne comptent qu’à moitié.'],
+          ['Intervention', 'Traite les incidents du jour (environ 1,1 de capacité par incident). Chaque incident raté coûte 1,8 de satisfaction. Limité par les véhicules : au-delà de 2,5 agents par véhicule, les agents en plus ne comptent qu’à moitié. Les patrouilles restées libres après les incidents peuvent faire un flagrant délit (+3 pts, +3 PS, quartier apaisé) : jusqu’à 40 % de chance par jour selon la marge.'],
           ['Proximité', 'Fait baisser la criminalité (0,6 par unité de capacité) et soigne la satisfaction. Ses agents peuvent patrouiller dans des quartiers précis, depuis la Carte.'],
-          ['Recherche', 'Élucide les dossiers locaux, qui rapportent des points ; alimente l’enquête de voisinage.'],
+          ['Recherche', 'Élucide les dossiers locaux, qui rapportent des points ; mène l’enquête de voisinage, qui rapporte des pièces pour l’enquête de la semaine (surtout avec une piste prioritaire).'],
           ['Roulage', `Rapporte des amendes (${k(ECONOMIE.amendeParCapacite)} par unité de capacité). Au-delà de 6 agents, chaque agent de plus compte pour moitié. Au-delà de 25 % des effectifs (40 % avec les caméras) : effet « chasse aux PV », −2 de satisfaction.`],
-          ['Accueil et administration', 'Écluse la paperasse. Au-delà de 14 dossiers : −2 de moral par tour ; au-delà de 20 : l’Inspection.'],
+          ['Accueil et administration', 'Écluse la paperasse. Au-delà de 14 dossiers : −2 de moral par tour ; au-delà de 20 : l’Inspection. C’est aussi l’assurance de la zone : chaque agent au-delà de 2 évite 15 % des tracas internes (jusqu’à 60 %).'],
         ])}
         <p>La capacité d'un service dépend du nombre d'agents, de son niveau (1 à ${NIVEAU_MAX}), de son équipement (1 à ${NIVEAU_MAX}), du moral et du rythme.</p>
         <h3>Le rythme</h3>
@@ -152,7 +152,8 @@ export function sections() {
         <h3>Les démarches</h3>
         <p>Deux démarches au maximum par tour, toujours fructueuses. Le résultat arrive à 20:00 dans ton dossier. Une démarche qui n'a plus rien à t'apprendre est grisée.</p>
         ${table(['Démarche', 'Coût', 'Apprend'], Object.values(DEMARCHES).map((d) => [d.nom + (d.cible ? ' (sur un suspect)' : ' (constatation)'), d.cout ? k(d.cout) + (d.cible ? ', le double hors de ta cellule' : '') : `${d.agents} agents de Recherche pour la journée`, d.dit + (d.planque ? ', puis un indice sur la planque' : '')]))}
-        <p><strong>Enquête de voisinage</strong> : chaque soir, tes enquêteurs peuvent rapporter une pièce gratuite. La chance augmente avec ta capacité de Recherche (jusqu'à 50 %).</p>
+        <p><strong>Enquête de voisinage</strong> : chaque soir, tes agents de Recherche peuvent rapporter des pièces gratuites sur les suspects (jamais sur la scène ni les planques). Au-delà de 2 unités de capacité, chaque unité ajoute 7 % de chance (jusqu’à 50 %). Chaque pièce rapportée compte aussi dans tes résultats du jour.</p>
+        <p><strong>Piste prioritaire</strong> : depuis la fiche d’un suspect, mets tes enquêteurs sur sa piste. Le voisinage cherche alors d’abord de ce côté, avec un taux doublé (14 % par unité, jusqu’à plus d’une pièce par soir). Hors de ta cellule, c’est deux fois moins efficace. La piste est gratuite, mais une mauvaise piste fait perdre des jours.</p>
         <p><strong>Bonus d’énigme</strong> : avec deux bonnes réponses aux énigmes du jour, tu peux choisir « +1 indice ».</p>
         <h3>Les cellules et le partage</h3>
         ${ul([
@@ -294,7 +295,9 @@ export function sections() {
     },
     {
       id: 'imprevus', titre: 'Imprévus, coups durs et Inspection', html: `
-        <p><strong>Aléas légers</strong> : environ un tour sur cinq, une petite surprise (croissants offerts, imprimante en panne, subside communal…).</p>
+        <p><strong>Aléas légers</strong> : environ un tour sur trois, une petite surprise, bonne ou mauvaise (croissants offerts, subside, agent cloué au lit, imprimante en panne, dégât des eaux qui retarde d’un tour les pièces d’enquête demandées, grève sauvage qui immobilise 2 agents…).</p>
+        <p><strong>L’Accueil comme assurance</strong> : les tracas internes (informatique, locaux, papiers, grève, plainte, panne générale) sont évités dans 15 % des cas par agent d’Accueil au-delà de 2, jusqu’à 60 %. Le rapport le signale quand ton Accueil a paré le coup.</p>
+        <p><strong>Interventions musclées</strong> : sur une affaire disputée, chaque agent engagé au-delà de 3 ajoute 5 % de risque qu’un agent soit blessé (3 tours d’absence), jusqu’à 30 %.</p>
         <p><strong>Coups durs</strong> : environ un tour sur huit, un vrai coup dur. Ta gestion en réduit le risque :</p>
         ${table(['Coup dur', 'Effet', 'Ce qui le rend plus rare'], COUPS_DURS.map((c) => [esc(c.titre), {
           rebellion: '1 ou 2 agents blessés, absents 2 à 4 tours, −4 de moral',
@@ -306,8 +309,8 @@ export function sections() {
           rebellion: 'niveau et équipement en Intervention',
           grippe: 'moral au-dessus de 70, salle de sport',
           accident: 'garage de la zone',
-          plainte: 'paperasse sous 8, réputation au-dessus de 60',
-          panne: 'logiciel de gestion',
+          plainte: 'paperasse sous 8, réputation au-dessus de 60, Accueil fourni',
+          panne: 'logiciel de gestion, Accueil fourni',
         }[c.id]]))}
         <p><strong>Inspection générale</strong> : deux tours de budget négatif ou plus de 20 dossiers de paperasse. Amende de 5 k€, −5 de satisfaction, puis 4 tours de répit.</p>`,
     },

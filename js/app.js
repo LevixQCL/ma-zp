@@ -467,6 +467,7 @@ async function onClick(e) {
         }
         break;
       }
+      case 'piste': { const i = Number(el.dataset.i); S.draft.piste = S.draft.piste === i ? null : i; S.ordersDirty = true; rerender(); break; }
       case 'accuser-annuler': S.draft.accusation = null; S.ordersDirty = true; rerender(); break;
       case 'partage': {
         const p = (S.draft.partages ||= []);

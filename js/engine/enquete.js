@@ -25,6 +25,20 @@ export const ENQ = {
 export const pointsDecouverte = (j) => Math.max(40, 110 - 10 * j);
 export const POINTS = { contribution: 25, arrestation: 30 };
 
+// Enquête de voisinage (service Recherche) : pièces rapportées chaque soir sur les suspects.
+// Nombre attendu de pièces = (capacité de Recherche − 2) × taux, plafonné.
+// Sans piste : pièces au hasard. Avec une piste prioritaire : pièces sur ce suspect, taux plus fort,
+// Chaque pièce rapportée compte aussi dans les résultats du jour (IPZ).
+export const VOISINAGE = { seuil: 2, taux: 0.07, max: 0.5, tauxPiste: 0.14, maxPiste: 1.4, detaches: 0, pointsParPiece: 2, horsCellule: 0.5 };
+/** Nombre attendu de pièces de voisinage ce soir (0,4 = 40 % de chance d'une pièce ; 1,3 = une pièce sûre et 30 % d'une deuxième). */
+export function chanceVoisinage(state, uid, capRecherche, piste) {
+  const V = VOISINAGE;
+  const u = Math.max(0, capRecherche - V.seuil);
+  if (piste === null || piste === undefined) return Math.min(V.max, u * V.taux);
+  const c = Math.min(V.maxPiste, u * V.tauxPiste);
+  return dansMaCellule(state, uid, piste) ? c : c * V.horsCellule;
+}
+
 export const ELEMENTS = ['mob', 'moy', 'occ'];
 export const ELEMENT_NOM = { mob: 'Mobile', moy: 'Moyen', occ: 'Occasion' };
 
@@ -671,6 +685,13 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
   const e = state.enquete;
   const aff = genererAffaire(state.seed, e.n);
   const d = z.enquete;
+  // Pièces retardées par un dégât des eaux : elles arrivent ce soir (si l'affaire est la même).
+  if (z.enqueteDiffere && z.enqueteDiffere.length) {
+    const arrivees = z.enqueteDiffere.filter((x) => x.n === e.n && !faitsConnus(d).includes(x.f));
+    for (const x of arrivees) d.pieces.push({ f: x.f, j: e.jour, src: x.src });
+    if (arrivees.length) z.rapport.push(`Enquête : les pièces retardées par le dégât des eaux arrivent (${arrivees.map((x) => `« ${titrePiece(aff, x.f)} »`).join(', ')}).`);
+    z.enqueteDiffere = [];
+  }
   const faites = [];
   for (const x of (o.demarches || []).slice(0, ENQ.maxDemarches)) {
     const dm = lireDemarche(x);
@@ -680,16 +701,33 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
     if (z.budget < cout) { faites.push(`${dm.dm.nom} refusée (budget insuffisant)`); continue; }
     z.budget -= cout;
     if (cout) (z._compta ||= []).push({ k: 'enquete', l: 'Démarches d’enquête', v: -cout });
+    if (z._retardEnquete) { (z.enqueteDiffere ||= []).push({ f, n: e.n, src: dm.k }); faites.push(`« ${titrePiece(aff, f)} » (retardée d’un tour)`); continue; }
     d.pieces.push({ f, j: e.jour, src: dm.k });
     faites.push(`« ${titrePiece(aff, f)} »`);
   }
   if (faites.length) z.rapport.push(`Enquête : au dossier ce soir : ${faites.join(', ')}.`);
-  // Enquête de voisinage : plus on a de capacité de Recherche, plus elle rapporte.
-  const chance = Math.max(0, Math.min(0.5, (capa.recherche - 3) * 0.1));
-  if (zr.chance(chance)) {
-    const f = pieceHasard(state, z, aff, zr);
-    if (f) { d.pieces.push({ f, j: e.jour, src: 'voisinage' }); z.rapport.push(`Enquête de voisinage : tes enquêteurs rapportent une pièce (« ${titrePiece(aff, f)} »).`); }
+  // Enquête de voisinage : plus on a de capacité de Recherche, plus elle rapporte ; une piste prioritaire la concentre.
+  const piste = Number.isInteger(o.piste) && o.piste >= 0 && o.piste < aff.suspects.length ? o.piste : null;
+  const surPiste = piste !== null && aff.faits.some((f) => !faitsConnus(d).includes(f) && !f.startsWith('p:') && !f.startsWith('c:') && Number(f.split(':')[1]) === piste);
+  const attendu = chanceVoisinage(state, z.uid, capa.recherche, surPiste ? piste : null);
+  const nb = Math.floor(attendu) + (zr.chance(attendu % 1) ? 1 : 0);
+  const trouvees = [];
+  for (let k = 0; k < nb; k++) {
+    const f = (surPiste && pieceSur(aff, d, piste, zr)) || pieceHasard(state, z, aff, zr);
+    if (!f) break;
+    d.pieces.push({ f, j: e.jour, src: 'voisinage' }); trouvees.push(`« ${titrePiece(aff, f)} »`);
+    z._points += VOISINAGE.pointsParPiece;
   }
+  if (trouvees.length) z.rapport.push(`Enquête de voisinage${surPiste ? ` (piste ${aff.suspects[piste].prenom})` : ''} : tes enquêteurs rapportent ${trouvees.length > 1 ? `${trouvees.length} pièces` : 'une pièce'} (${trouvees.join(', ')}).`);
+  else if (surPiste) z.rapport.push(`Enquête de voisinage (piste ${aff.suspects[piste].prenom}) : rien de neuf ce soir.`);
+  return surPiste ? VOISINAGE.detaches : 0;
+}
+
+/** Une pièce inconnue sur un suspect donné. */
+function pieceSur(aff, d, i, rng) {
+  const connus = new Set(faitsConnus(d));
+  const pool = aff.faits.filter((f) => !connus.has(f) && !f.startsWith('p:') && !f.startsWith('c:') && Number(f.split(':')[1]) === i);
+  return pool.length ? rng.pick(pool) : null;
 }
 
 /** Une pièce inconnue, de préférence sur un suspect de sa cellule. */

@@ -1,7 +1,9 @@
 // Écran Enquête : le tableau Mobile · Moyen · Occasion, les pièces, les planques et les notes.
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
+import { capacite } from '../engine/zone.js';
 import {
   ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, genererAffaire, dossierDe, dossierAffaire, texteFait, titrePiece,
+  chanceVoisinage, VOISINAGE,
   ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee,
 } from '../engine/enquete.js';
 
@@ -147,6 +149,8 @@ function suspectCard(aff, dos, s, i, carnet) {
     ${open ? `<div class="col" style="gap:8px">
       <p class="small" style="margin:0;line-height:1.55">${esc(fiche.vehicule)}<br>${esc(fiche.declaration)}<br><span class="muted">${esc(fiche.rumeur)}</span></p>
       ${pieces.map((p) => pieceHtml(aff, p)).join('')}
+      ${(() => { const surPiste = d.piste === i; return `<button type="button" class="btn small ${surPiste ? 'primary' : 'outline'} block" data-action="piste" data-i="${i}" aria-pressed="${surPiste}">${surPiste ? `✓ Piste prioritaire des enquêteurs (retirer)` : `Mettre les enquêteurs de Recherche sur ${esc(s.prenom)}`}</button>
+        <span class="tiny muted" style="margin-top:-4px">${surPiste ? 'L’enquête de voisinage de ce soir cherche d’abord de ce côté.' : `Gratuit : l’enquête de voisinage cherchera ses pièces en priorité${mien ? '' : ' (hors de ta cellule : deux fois moins efficace)'}.`}</span>`; })()}
       <span class="tiny muted">Faire vérifier :</span>
       <div class="dem-row">${demBtn(aff, dos, `alibi:${i}`, 'Son alibi', { compact: true })}${demBtn(aff, dos, `moyens:${i}`, 'Ses moyens', { compact: true })}${demBtn(aff, dos, `banque:${i}`, 'Son mobile', { compact: true })}</div>
       ${mien ? '' : `<div class="col" style="gap:6px"><p class="tiny muted" style="margin:0">Suspect suivi par ${suivi.length ? esc(suivi.join(', ')) : 'une autre cellule'} : tes vérifications coûtent le double. Demande-leur leurs pièces :</p>
@@ -162,6 +166,18 @@ function etatSuspect(carnet, i) {
   if (v.includes(2)) return 'exclu';
   if (v.every((x) => x === 1)) return 'complet';
   return 'ouvert';
+}
+
+/** Enquête de voisinage de ce soir : ce que la Recherche peut rapporter, avec ou sans piste. */
+function voisinageInfo(aff) {
+  const st = S.state, d = S.draft, z = myZone();
+  const n = (d.alloc && d.alloc.recherche) || 0;
+  const cap = capacite(z, 'recherche', n, { rythme: d.rythme, turn: st.turn });
+  const piste = Number.isInteger(d.piste) ? d.piste : null;
+  const x = chanceVoisinage(st, S.user.uid, cap, piste);
+  const txt = x <= 0 ? 'aucune chance' : x < 1 ? `${Math.round(x * 100)} % de chance d’une pièce` : `1 pièce assurée${x % 1 > 0.05 ? ` + ${Math.round((x % 1) * 100)} % d’une 2e` : ''}`;
+  const sansPiste = chanceVoisinage(st, S.user.uid, cap, null);
+  return { n, piste, x, txt, sansPiste, nom: piste !== null ? aff.suspects[piste].prenom : null };
 }
 
 /** Carte « Aujourd'hui » : démarches choisies, prochaine étape conseillée, accusation. */
@@ -190,6 +206,8 @@ function aujourdhui(aff, dos) {
     <div class="between"><span style="font-weight:700">Aujourd’hui : ${dem.length} démarche${dem.length > 1 ? 's' : ''} sur ${ENQ.maxDemarches}</span><span class="small mono" style="white-space:nowrap">${fmt1(coutTotal(d))} k€</span></div>
     ${dem.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${dem.map((x) => `<button type="button" class="chip on" data-action="dem-toggle" data-k="${x}" aria-label="Annuler : ${esc(nomDem(x))}">${esc(nomDem(x))} ✕</button>`).join('')}</div>` : ''}
     <p class="small" style="margin:0;line-height:1.5">${etape}</p>
+    ${(() => { const v = voisinageInfo(aff); return `<div class="voisinage"><span class="small"><strong>Voisinage ce soir</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? ` sur la piste de <strong>${esc(v.nom)}</strong>` : ''} : <span class="${v.x >= 0.5 ? 'good' : v.x > 0 ? '' : 'bad'}">${v.txt}</span>.</span>
+      <span class="tiny muted">${v.nom ? 'Retire la piste depuis la fiche du suspect.' : `Donne une piste depuis la fiche d’un suspect pour concentrer les recherches (jusqu’à plus d’une pièce par soir). Plus d’agents en Recherche : plus de pièces.`}</span></div>`; })()}
     <span class="tiny muted">Résultats à 20:00 · budget restant ${fmt1(z.budget - coutTotal(d))} k€${st.enquete.nbCellules > 1 ? ` · ta cellule : ${esc(miens.join(', '))} (les autres suspects coûtent le double)` : ''}</span>
   </section>`;
 }
@@ -227,7 +245,7 @@ function synthese(aff, carnet, ordre) {
     <div class="syn-l syn-h" role="row"><span role="columnheader">Suspect</span>${ELEMENTS.map((e) => `<span role="columnheader">${ELEMENT_NOM[e]}</span>`).join('')}</div>
     ${ordre.map((i) => {
       const s2 = aff.suspects[i], etat = etatSuspect(carnet, i), mien = dansMaCellule(st, S.user.uid, i);
-      return `<div class="syn-l ${etat}" role="row"><span role="rowheader" class="syn-nom">${esc(s2.prenom)}${st.enquete.nbCellules > 1 && mien ? ' <i class="cel" title="ta cellule">●</i>' : ''}</span>${ELEMENTS.map((e) => {
+      return `<div class="syn-l ${etat}" role="row"><span role="rowheader" class="syn-nom">${S.draft && S.draft.piste === i ? '<i title="piste prioritaire" aria-label="piste prioritaire">🔎</i> ' : ''}${esc(s2.prenom)}${st.enquete.nbCellules > 1 && mien ? ' <i class="cel" title="ta cellule">●</i>' : ''}</span>${ELEMENTS.map((e) => {
         const m = CASES[carnet.g[`${i}:${e}`] || 0];
         return `<button type="button" role="cell" class="syn-c ${m.cls}" data-action="mmo-mark" data-i="${i}" data-e="${e}" aria-label="${ELEMENT_NOM[e]} de ${esc(s2.prenom)} : ${m.nom}. Changer">${m.sym}</button>`;
       }).join('')}</div>`;
