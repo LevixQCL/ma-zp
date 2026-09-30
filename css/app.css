@@ -321,6 +321,15 @@ h1.brand-xl { font-size: clamp(64px, 20vw, 96px); letter-spacing: 2px; line-heig
 .aide-sens .up, .aide-sens .down { font-family: var(--mono); font-size: 11px; font-weight: 700; white-space: nowrap; padding-top: 2px; }
 .aide-sens .up { color: var(--green-soft); }
 .aide-sens .down { color: var(--red-soft); }
+.aide-tour { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+.aide-tour .kicker { margin-bottom: 4px; }
+.aide-l { gap: 10px; padding: 3px 0; border-top: 1px solid var(--line); line-height: 1.35; }
+.aide-l:first-of-type { border-top: 0; }
+.aide-l > span:last-child { flex-shrink: 0; text-align: right; }
+.aide-sous { padding-left: 12px; margin: 0 0 2px; border-left: 2px solid var(--line); }
+.aide-sous .aide-l { font-size: 12px; color: var(--text2, var(--text)); }
+.aide-det summary { cursor: pointer; color: var(--blue-soft); padding: 4px 0; }
+.ipz-table .help { margin-left: 4px; vertical-align: middle; }
 .aide-conseil { margin: 0; font-size: 13px; color: var(--amber-soft); }
 @keyframes aideFond { from { opacity: 0; } }
 @keyframes aideDescend { from { opacity: 0; transform: translateY(-12px); } }

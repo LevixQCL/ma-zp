@@ -396,6 +396,14 @@ export function jalon(z, label) {
     z._pt[k] = v;
   }
 }
+/** Note une cause sans toucher à la jauge (déjà modifiée) : le jalon suivant n'en recompte pas la valeur. */
+export function noter(z, k, label, v) {
+  if (!z || !z._pt || Math.abs(v) < 0.05) return;
+  const l = (z._journal[k] ||= []);
+  const der = l[l.length - 1];
+  if (der && der.l === label) der.v += v; else l.push({ l: label, v });
+  z._pt[k] += v;
+}
 /** Ferme le journal : valeurs arrondies, lignes nulles retirées. */
 export function fermerJournal(z) {
   const out = {};

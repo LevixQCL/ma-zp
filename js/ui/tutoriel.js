@@ -16,7 +16,12 @@ const alloc = () => JSON.stringify((S.draft && S.draft.alloc) || {});
 /**
  * Étapes. `route` : onglet affiché ; `cible` : sélecteur de l'élément mis en lumière (sinon bulle centrée) ;
  * `geste` : ce que le joueur fait lui-même, avec `fait()` qui dit quand c'est réussi.
+ * `onglet` : première étape d'un onglet. On ne change pas d'écran à la place du joueur : on éclaire
+ * l'onglet dans la barre du bas et on lui demande de le toucher (le texte donné sert d'accroche).
  */
+const ONGLETS = { hp: 'HP', ordres: 'Ordres', terrain: 'Terrain', enquete: 'Enquête', quete: 'Énigmes', carte: 'Carte', radio: 'Radio' };
+/** Étape « onglet » dont l'écran n'est pas encore ouvert : le joueur doit toucher l'onglet. */
+const attendOnglet = (e) => !!(e.onglet && e.route && S.route !== e.route);
 export const ETAPES = [
   {
     id: 'bienvenue', route: 'hp',
@@ -43,17 +48,17 @@ export const ETAPES = [
       <p>C’est là que tu comprends ce qui a marché… ou pas. Le classement et le guide complet sont juste à côté.</p>`,
   },
   {
-    id: 'onglet-ordres', route: null, cible: 'nav.tabs a[href="#ordres"]',
-    titre: 'À toi : ouvre tes Ordres',
-    texte: '<p>L’onglet le plus important de la journée : c’est là que tu décides où travaillent tes agents.</p>',
-    geste: { consigne: 'Touche l’onglet <strong>Ordres</strong> en bas de l’écran.', fait: () => S.route === 'ordres' },
-  },
-  {
-    id: 'affectation', route: 'ordres', cible: 'section[aria-label="Affectation des agents"]',
+    id: 'affectation', route: 'ordres', onglet: 'L’onglet le plus important de la journée : c’est là que tu décides où travaillent tes agents.',
+    cible: 'section[aria-label="Affectation des agents"]',
     titre: 'Cinq services à équilibrer',
     texte: `<p><strong>Intervention</strong> traite les incidents du jour · <strong>Proximité</strong> calme les quartiers · <strong>Recherche</strong> élucide les dossiers et nourrit l’enquête · <strong>Roulage</strong> rapporte des amendes · <strong>Accueil</strong> vide la paperasse.</p>
       <p>Aucun service ne suffit seul : un incident raté ou une pile de dossiers se paie vite. Chaque <strong>?</strong> détaille un service.</p>`,
-    geste: { consigne: 'Ajoute un agent en <strong>Proximité</strong> avec le <strong>+</strong> (s’il n’y a plus d’agent libre, il est pris au service le plus fourni).', avant: () => { S.tutoAlloc = alloc(); }, fait: () => alloc() !== S.tutoAlloc },
+  },
+  {
+    id: 'proxi', route: 'ordres', cible: '[data-action="alloc"][data-s="proximite"][data-d="1"]', parent: '.between',
+    titre: 'À toi : ajoute un agent en Proximité',
+    texte: '<p>S’il n’y a plus d’agent libre, il est pris au service le plus fourni.</p>',
+    geste: { consigne: 'Touche le <strong>+</strong> de la ligne <strong>Proximité</strong>.', avant: () => { S.tutoAlloc = alloc(); }, fait: () => alloc() !== S.tutoAlloc },
   },
   {
     id: 'rythme', route: 'ordres', cible: 'section[aria-label="Rythme"]',
@@ -75,14 +80,14 @@ export const ETAPES = [
     geste: { consigne: 'Touche <strong>Valider</strong>.', fait: () => !!S.savedOrders && !S.ordersDirty },
   },
   {
-    id: 'terrain', route: 'terrain', cible: ['section[aria-label="Chez moi"]', 'section[aria-label="Chez les voisins"]'], union: true,
+    id: 'terrain', route: 'terrain', onglet: 'Ce qui se passe chez toi et chez tes voisins.', cible: ['section[aria-label="Chez moi"]', 'section[aria-label="Chez les voisins"]'], union: true,
     titre: 'Terrain : chez toi, chez les voisins',
     texte: `<p><strong>Chez moi</strong> : tes opérations d’envergure, tes affaires disputées, les pressions du jour.</p>
       <p><strong>Chez les voisins</strong> : les appels à renfort et les zones en difficulté. Prêter des agents ou du budget rapporte de la réputation, à la mesure de ce que tu envoies.</p>
       <p><strong>District</strong> : les grands événements où chaque zone doit envoyer du monde.</p>`,
   },
   {
-    id: 'enquete', route: 'enquete', cible: ['main.screen > header', 'main.screen .kicker'],
+    id: 'enquete', route: 'enquete', onglet: 'L’affaire de la semaine, commune à toutes les zones.', cible: ['main.screen > header', 'main.screen .kicker'],
     titre: 'L’enquête : le fil rouge de la semaine',
     texte: () => `<p>Une affaire à la fois, <strong>${ENQ.dureeMax} jours au maximum</strong>. Cinq suspects : le coupable est le <strong>seul</strong> à réunir un <strong>mobile</strong>, un <strong>moyen</strong> et l’<strong>occasion</strong>. Chaque innocent coince sur au moins un point.</p>
       <p>C’est la partie coopérative du jeu : toutes les zones enquêtent sur la même affaire.</p>`,
@@ -100,19 +105,19 @@ export const ETAPES = [
       <p>Quand tu es sûr : <strong>une seule accusation</strong> par affaire. Plus tu trouves tôt, plus ça rapporte ; une fausse accusation coûte de la réputation. Ensuite, toutes les zones ont ${ENQ.traqueTours} tours pour <strong>arrêter</strong> le coupable dans sa planque.</p>`,
   },
   {
-    id: 'enigmes', route: 'quete', cible: '[aria-label="Énigmes du jour"]',
+    id: 'enigmes', route: 'quete', onglet: 'Trois casse-tête par jour, cinq minutes de réflexion.', cible: '[aria-label="Énigmes du jour"]',
     titre: 'Trois énigmes par jour',
     texte: `<p>Trois petits casse-tête chaque jour, <strong>une seule réponse</strong> chacun. Dès deux bonnes réponses, tu choisis un bonus (un indice, du moral…).</p>
       <p>Le <strong>dossier noir</strong> est facultatif et vraiment difficile. Pour t’exercer sans enjeu : le mode <strong>Entraînement</strong>.</p>`,
   },
   {
-    id: 'carte', route: 'carte', cible: '#mes-quartiers',
+    id: 'carte', route: 'carte', onglet: 'Tes quartiers et tout le district.', cible: '#mes-quartiers',
     titre: 'La carte et tes quartiers',
     texte: `<p>Chacun de tes quartiers a sa <strong>tension</strong>. Envoie des patrouilles de <strong>Proximité</strong> là où ça chauffe, surtout sur le <strong>point chaud</strong> annoncé la veille.</p>
       <p>La carte montre aussi les affaires disputées et les autres zones du district.</p>`,
   },
   {
-    id: 'radio', route: 'radio', cible: '[aria-label="Radio, messages privés et diplomatie"]',
+    id: 'radio', route: 'radio', onglet: 'Pour parler avec les autres chefs de zone.', cible: '[aria-label="Radio, messages privés et diplomatie"]',
     titre: 'Radio, privé et diplomatie',
     texte: `<p><strong>Radio</strong> : le canal commun à tous les chefs de zone. Demande des pièces, propose les tiennes, négocie.</p>
       <p><strong>Privé</strong> : les messages en tête-à-tête. <strong>Diplomatie</strong> : entraide, duels, Conseil de police… et manœuvres contre les autres zones, à tes risques.</p>`,
@@ -191,9 +196,22 @@ function monter() {
 const valeur = (v) => (typeof v === 'function' ? v() : v);
 
 function etapeHtml(e, i) {
+  const n = ETAPES.length;
+  if (attendOnglet(e)) {
+    const nom = ONGLETS[e.route] || e.route;
+    return `<div class="between" style="gap:8px"><span class="kicker">Visite guidée · ${i + 1} / ${n}</span>
+      <button type="button" class="tuto-x" data-tuto="quitter" aria-label="Quitter la visite guidée">Quitter</button></div>
+    <div class="tuto-prog" aria-hidden="true"><span style="width:${Math.round((i + 1) / n * 100)}%"></span></div>
+    <h2 class="tuto-titre">À toi : ouvre l’onglet ${nom}</h2>
+    <div class="tuto-texte"><p>${e.onglet}</p></div>
+    <div class="tuto-geste"><span class="tuto-coche" aria-hidden="true">→</span><span>Touche l’onglet <strong>${nom}</strong>, éclairé en bas de l’écran.</span></div>
+    <div class="tuto-nav">
+      ${i > 0 ? '<button type="button" class="btn ghost small" data-tuto="prec">Précédent</button>' : '<span></span>'}
+      <button type="button" class="btn ghost small" data-tuto="retour">Passer</button>
+    </div>`;
+  }
   const g = e.geste, ok = g ? g.fait() : true;
   const surPlace = !e.route || S.route === e.route;
-  const n = ETAPES.length;
   return `<div class="between" style="gap:8px"><span class="kicker">Visite guidée · ${i + 1} / ${n}</span>
       <button type="button" class="tuto-x" data-tuto="quitter" aria-label="Quitter la visite guidée">Quitter</button></div>
     <div class="tuto-prog" aria-hidden="true"><span style="width:${Math.round((i + 1) / n * 100)}%"></span></div>
@@ -253,28 +271,29 @@ function boucle() {
   // Changement d'étape : on va sur le bon écran et on prépare le geste.
   if (i !== dernierIndex) {
     dernierIndex = i; derniereCible = null;
-    if (e.route && S.route !== e.route) location.hash = `#${e.route}`;
+    if (e.route && S.route !== e.route && !e.onglet) location.hash = `#${e.route}`;
     if (e.geste && e.geste.avant) e.geste.avant();
   }
+  const attente = attendOnglet(e);
   const surPlace = !e.route || S.route === e.route;
-  const cible = surPlace ? trouverCible(e) : null;
+  const cible = attente ? document.querySelector(`nav.tabs a[href="#${e.route}"]`) : surPlace ? trouverCible(e) : null;
   if (cible && cible !== derniereCible) {
     derniereCible = cible;
-    const r = rectCible(e, cible);
+    const r = attente ? cible.getBoundingClientRect() : rectCible(e, cible);
     const fixe = getComputedStyle(cible).position === 'fixed' || cible.closest('nav.tabs, .savebar');
     if (!fixe && (r.top < 70 || r.bottom > innerHeight * 0.55)) window.scrollTo({ top: Math.max(0, scrollY + r.top - 70), behavior: 'smooth' });
   }
   // Contenu de la bulle : redessiné seulement s'il change (geste réussi, écran quitté…).
   const g = e.geste;
-  const sig = `${i}|${g ? g.fait() : ''}|${surPlace}`;
+  const sig = `${i}|${g ? g.fait() : ''}|${surPlace}|${attente}`;
   const bulle = layer.querySelector('.tuto-bulle');
   if (sig !== signature) { signature = sig; bulle.innerHTML = etapeHtml(e, i); }
   // Projecteur et position de la bulle.
   const spot = layer.querySelector('.tuto-spot'), bloc = layer.querySelector('.tuto-bloc');
   // Pendant un geste, l'écran reste utilisable ; sinon on bloque les clics hors de la bulle.
-  bloc.style.pointerEvents = g && !g.fait() ? 'none' : 'auto';
+  bloc.style.pointerEvents = attente || (g && !g.fait()) ? 'none' : 'auto';
   if (cible) {
-    const r = rectCible(e, cible), m = 6;
+    const r = attente ? cible.getBoundingClientRect() : rectCible(e, cible), m = 6;
     const top = Math.max(4, r.top - m), bottom = Math.min(innerHeight - 4, r.bottom + m);
     Object.assign(spot.style, { display: 'block', top: `${top}px`, left: `${Math.max(4, r.left - m)}px`, width: `${Math.min(innerWidth - 8, r.width + 2 * m)}px`, height: `${Math.max(0, bottom - top)}px` });
     layer.classList.remove('centre');
