@@ -13,6 +13,7 @@ import { installerAntiTriche } from './ui/antitriche.js';
 import { lireInvitationUrl, oublierInvitation, partager, copier, afficherQr } from './ui/invitation.js';
 import { ouvrirBudget } from './ui/logistique.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
+import { tutoAuBesoin, lancerTuto } from './ui/tutoriel.js';
 import { operationActive, effetsOperation } from './engine/zone.js';
 import { carteQuartiers } from './engine/quartiers.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
@@ -120,7 +121,7 @@ function render() {
   }
   const scroll = window.scrollY;
   app.innerHTML = banner + html;
-  if (S.route === 'hp' && S.state && myZone()) nouveautesAuBesoin();
+  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin()) nouveautesAuBesoin();
   if (S.route === 'ordres' && S.ordAncre) {
     const cible = document.querySelector(`[data-action="ord-open"][data-k="${S.ordAncre}"]`);
     S.ordAncre = null;
@@ -269,6 +270,7 @@ async function onClick(e) {
       case 'admin-all-parties': S.allParties = await b.listAllParties(); rerender(); break;
       case 'diplo-open': { const k = el.dataset.k; const cur = S.diploOpen && k in S.diploOpen ? S.diploOpen[k] : !!document.querySelector(`section[data-k="${k}"]`); S.diploOpen = { ...(S.diploOpen || {}), [k]: !cur }; rerender(); break; }
       case 'aide': ouvrirAide(el.dataset.k); break;
+      case 'tuto': location.hash = '#hp'; setTimeout(() => lancerTuto(0), 50); break;
       case 'post-n': { const a = S.state.affaires.find((x) => x.id === el.dataset.id); const cur = (S.postuler && S.postuler[a.id]) || Math.min(3, a.agentsMax || 3); S.postuler = { ...(S.postuler || {}), [a.id]: Math.max(1, Math.min(a.agentsMax || 10, cur + Number(el.dataset.d))) }; rerender(); break; }
       case 'postuler': {
         const a = S.state.affaires.find((x) => x.id === el.dataset.id), n = Number(el.dataset.n), st = S.state;
