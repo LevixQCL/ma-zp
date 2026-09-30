@@ -684,3 +684,10 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 .vitrine-item:hover { border-color: var(--amber-line); }
 .vitrine-info { display: flex; flex-direction: column; gap: 3px; padding: 8px 6px 4px; min-width: 0; }
 .vitrine-info .vitrine-nom { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Animation de 20:00 : les combis sortent en patrouille, gyrophares allumés, puis reviennent */
+.hp-gyro { opacity: 0; }
+.anim-soir .hp-vehicules { animation: hp-sortie 6s ease-in-out .6s both; }
+.anim-soir .hp-gyro { animation: hp-gyro .4s linear .6s 14; }
+@keyframes hp-sortie { 0%, 12% { transform: translateX(0); } 38% { transform: translateX(-420px); } 38.1%, 55% { transform: translateX(420px); } 100% { transform: translateX(0); } }
+@keyframes hp-gyro { 0%, 49% { opacity: 1; } 50%, 100% { opacity: .15; } }
+@media (prefers-reduced-motion: reduce) { .anim-soir .hp-vehicules, .anim-soir .hp-gyro { animation: none; } }

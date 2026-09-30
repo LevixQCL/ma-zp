@@ -19,7 +19,7 @@ import { encheresResoudre, annoncerLot } from './encheres.js';
 import { rivalitesPre, rivalitesPost, postesContre, themeActif, appliquerConsignes, absT, MAN } from './rivalites.js';
 import { FLAGRANTS } from './contenu.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
-import { decorValide, earlyBirdEligible, skinDe, skinsValides } from './decor.js';
+import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, EVENEMENTS_COLLECTIFS, COUPS_DURS, ALEAS, OPERATIONS, PRESSIONS, PRESSION_WEEKEND } from './contenu.js';
 
@@ -163,7 +163,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   for (const [uid, z] of Object.entries(state.zones)) {
     const p = players[uid];
     if (p) { if (p.nom) z.nom = String(p.nom).slice(0, 24); if (p.code) z.code = String(p.code).slice(0, 4); if (p.couleur) z.couleur = p.couleur; if (p.equipeNoms) appliquerNoms(z.equipe, uid, p.equipeNoms); if (p.decor) z.decor = decorValide(z, p.decor);
-      if (p.earlyBird && earlyBirdEligible(z, state)) { const k = skinDe(p.earlyBird.skin); if (k) z.skins = [`${k.cat}:${k.id}`]; }
+      if (p.earlyBird && earlyBirdEligible(z, state) && !(z.skins || []).some((k) => SKINS[String(k).split(':')[0]] && String(k).split(':')[0] !== 'fete')) ajouterSkin(z, p.earlyBird.skin);
       if (p.skinsChoix) z.skinsChoix = skinsValides(z, p.skinsChoix); }
     if (p && p.retire) delete state.zones[uid];
   }
@@ -299,6 +299,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         z._ps += psEvenement(c);
         if (reussi) z.reputation += Math.max(1, Math.round(10 * c / total));
       } else if (actives.includes(u)) z.stats.evenementsManques += 1;
+      if (c > 0) z._contribEvenement = true;
       if (c > 0 && reussi) jalon(z, 'Événement du district : ta part des agents envoyés');
       if (reussi) { z.satisfaction += 8; z.rapport.push(`${ev.titre} : réussi (+8 de satisfaction).`); }
       else { z.satisfaction -= 10; z.rapport.push(`${ev.titre} : échec, ${total} agents sur ${requis} (−10 de satisfaction).`); }
@@ -714,6 +715,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.rapport.push(ligneIpz(comp, compHier, z.ipz, z.toursJoues > 0 || compHier ? ipzHier : null, z.ipzDetail));
     if (z._joue) {
       z.ipzSomme += z.ipz; z.toursJoues += 1;
+      z.ipzSemaine = { s: ((z.ipzSemaine && z.ipzSemaine.s) || 0) + z.ipz, n: ((z.ipzSemaine && z.ipzSemaine.n) || 0) + 1 };
       z._ps += PS.ordres;
     }
     z.ipzHist.push({ t: T, v: z.ipz, joue: z._joue });
@@ -833,7 +835,25 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.journal = { tour: T, avant: z.hier ? { moral: z.hier.moral, satisfaction: z.hier.satisfaction, reputation: z.hier.reputation } : null, apres: { moral: z.moral, satisfaction: z.satisfaction, reputation: z.reputation }, lignes: j };
       (gazette.journaux ||= {})[u] = { journal: z.journal, ipz: z.ipz, ipzComp: z.ipzComp, ipzCompHier: z.ipzCompHier, ipzDetail: z.ipzDetail, hierIpz: z.hier ? z.hier.ipz : null, compta: z.compta };
     }
-    delete z._joue; delete z._points; delete z._ps; delete z._compta; delete z._decouverteJour; delete z._retardEnquete;
+    // Décor d'événement : gagné en aidant au grand événement ou en faisant une découverte pendant la période.
+    const fete = periodeFete(new Date(state.nextDeadline || Date.now()));
+    if (fete && (z._contribEvenement || z._decouverteJour) && ajouterSkin(z, `fete:${fete.id}`)) {
+      z.skinsChoix = { ...(z.skinsChoix || {}), fete: fete.id };
+      z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
+      push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
+    }
+    delete z._joue; delete z._points; delete z._ps; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement;
+  }
+
+  // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).
+  if (T % 7 === 0) {
+    const cand = Object.values(state.zones).filter((z) => z.ipzSemaine && z.ipzSemaine.n >= 4).map((z) => ({ z, m: z.ipzSemaine.s / z.ipzSemaine.n })).sort((a, b) => b.m - a.m);
+    if (cand[0]) {
+      state.champion = { uid: cand[0].z.uid, tour: T, season: state.season, moyenne: round1(cand[0].m) };
+      cand[0].z.rapport.push(`Champion de la semaine : meilleur IPZ moyen du district (${fmt1(cand[0].m)}). Une étoile dorée brille sur ton toit pendant 7 jours.`);
+      push(8, 'Champion', `${zoneLabel(cand[0].z)}, champion de la semaine`, `Meilleur IPZ moyen du district sur 7 jours : ${fmt1(cand[0].m)}.`, cand[0].z.uid);
+    } else state.champion = null;
+    for (const z of Object.values(state.zones)) z.ipzSemaine = null;
   }
 
   // 10. Fin de saison ou tour suivant.
@@ -875,8 +895,9 @@ function finDeSaison(state, classement) {
     if (!(z.stats.manoeuvresSaison > 0) && donnerTrophee(z, 'incorruptible', state.season, state.turn)) z.rapport.push('Trophée débloqué : « Incorruptible » (une saison classée sans aucune manœuvre).');
   }
   for (const z of zones) if ((z.stats.toursValides || 0) >= SEASON_LENGTH && donnerTrophee(z, 'increvable', state.season, state.turn)) z.rapport.push('Trophée débloqué : « Increvable » (ordres validés les 14 tours de la saison).');
-  for (const c of classes.slice(0, 3)) {
+  for (const [rang, c] of classes.slice(0, 3).entries()) {
     const z = state.zones[c.uid];
+    z.plaques = [...(z.plaques || []), { season: state.season, rang: rang + 1 }];
     if (z.failliteSaison && !z.badges.includes('Phénix')) { z.badges.push('Phénix'); titres.push({ uid: c.uid, titre: 'Phénix' }); }
   }
   const resume = { season: state.season, classement: classes.slice(0, 10), titres };
@@ -899,6 +920,7 @@ function finDeSaison(state, classement) {
     nz.infra = { ...(z.infra || {}) };
     nz.equipe = z.equipe || creerEquipe(uid);
     nz.trophees = z.trophees || [];
+    if (z.plaques) nz.plaques = z.plaques;
     if (z.decor) nz.decor = z.decor;
     if (z.skins) nz.skins = z.skins;
     if (z.skinsChoix) nz.skinsChoix = z.skinsChoix;

@@ -98,6 +98,15 @@ export const SKINS = {
       lavage:  { nom: 'Car-wash à bulles', texte: 'Carrelage bleu et bulles de savon qui s’envolent.', jour: ['#8CC8F5', '#5AB0F0'] },
     },
   },
+  fete: {
+    titre: 'Décor d’événement',
+    options: {
+      halloween: { nom: 'Nuit des citrouilles', texte: 'Citrouilles, toiles d’araignée et chauves-souris. Édition limitée : fin octobre.', jour: ['#F28C28', '#6B3FA0'] },
+      stnicolas: { nom: 'Saint-Nicolas', texte: 'Cadeaux devant l’entrée, étoiles dorées et son âne. Édition limitée : début décembre.', jour: ['#D8453A', '#F2B544'] },
+      carnaval:  { nom: 'Carnaval', texte: 'Plumes géantes sur le toit, guirlandes et confettis. Édition limitée : avant le Mardi gras.', jour: ['#F2D02E', '#E1332B'] },
+      dragon:    { nom: 'Dragon de la Ducasse', texte: 'Un dragon vert bonhomme enroulé sur le garage. Édition limitée : à la Trinité.', jour: ['#4C9A5E', '#E1332B'] },
+    },
+  },
   aile: {
     titre: 'Aile des annexes',
     options: {
@@ -120,7 +129,7 @@ export function skinsValides(z, choix) {
 }
 
 /** Tous les skins, à plat : [{ cat, id, nom, texte }]. */
-export const TOUS_SKINS = Object.entries(SKINS).flatMap(([cat, C]) => Object.entries(C.options).map(([id, o]) => ({ cat, id, nom: o.nom, texte: o.texte, categorie: C.titre })));
+export const TOUS_SKINS = Object.entries(SKINS).filter(([cat]) => cat !== 'fete').flatMap(([cat, C]) => Object.entries(C.options).map(([id, o]) => ({ cat, id, nom: o.nom, texte: o.texte, categorie: C.titre })));
 
 /**
  * Early birds : les zones présentes au lancement des skins. La liste est figée à la première
@@ -141,4 +150,36 @@ export function skinDe(cle) {
 export function tirerSkin(alea = Math.random()) {
   const s = TOUS_SKINS[Math.min(TOUS_SKINS.length - 1, Math.floor(alea * TOUS_SKINS.length))];
   return `${s.cat}:${s.id}`;
+}
+
+// ───── Décors d'événement : se gagnent pendant une période, en aidant au grand événement du district
+// ou en faisant une découverte dans l'enquête de la semaine. ─────
+function paques(annee) {
+  const a = annee % 19, b = Math.floor(annee / 100), c = annee % 100, d = Math.floor(b / 4), e = b % 4;
+  const f = Math.floor((b + 8) / 25), g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4, l = (32 + 2 * e + 2 * i - h - k) % 7, m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const mois = Math.floor((h + l - 7 * m + 114) / 31), jour = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(annee, mois - 1, jour);
+}
+const jours = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+
+/** Période d'événement en cours à cette date : { id, fin } ou null. */
+export function periodeFete(date = new Date()) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate()), y = d.getFullYear();
+  const dans = (a, b) => d >= a && d <= b;
+  if (dans(new Date(y, 9, 24), new Date(y, 10, 2))) return { id: 'halloween', fin: new Date(y, 10, 2) };
+  if (dans(new Date(y, 10, 29), new Date(y, 11, 6))) return { id: 'stnicolas', fin: new Date(y, 11, 6) };
+  const p = paques(y), mardiGras = jours(p, -47), trinite = jours(p, 56);
+  if (dans(jours(mardiGras, -10), jours(mardiGras, 1))) return { id: 'carnaval', fin: jours(mardiGras, 1) };
+  if (dans(jours(trinite, -7), jours(trinite, 1))) return { id: 'dragon', fin: jours(trinite, 1) };
+  return null;
+}
+
+/** Ajoute un skin possédé (sans doublon). Renvoie true s'il est nouveau. */
+export function ajouterSkin(z, cle) {
+  if (!skinDe(cle)) return false;
+  z.skins = z.skins || [];
+  if (z.skins.includes(cle)) return false;
+  z.skins.push(cle);
+  return true;
 }
