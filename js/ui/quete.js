@@ -106,12 +106,12 @@ export function renderQuete() {
     </div>` : '';
 
   const bonusCard = !train && !noir && ok >= 2 ? `<section class="card green">
-      ${bonusPris ? `<p class="small" style="margin:0;font-weight:600">Bonus du jour : ${bonusPris.bonus === 'moral' ? '+3 de moral' : bonusPris.bonus === 'budget' ? '+2 k€' : bonusPris.bonus === 'indice' ? '+1 indice pour l’enquête' : `+10 % de capacité en ${SERVICE_LABELS[bonusPris.service]}`}. Il sera appliqué à 20:00.</p>`
-        : `<span class="ok" style="font-weight:700">${ok} bonnes réponses : choisis ton bonus du jour</span>
+      ${bonusPris && !S.bonusChanger ? `<div class="between" style="gap:8px"><p class="small" style="margin:0;font-weight:600">Bonus du jour : ${bonusPris.bonus === 'moral' ? '+3 de moral' : bonusPris.bonus === 'budget' ? '+2 k€' : bonusPris.bonus === 'indice' ? '+1 indice pour l’enquête' : `+10 % de capacité en ${SERVICE_LABELS[bonusPris.service]}`}. Il sera appliqué à 20:00.</p><button type="button" class="btn small ghost" data-action="bonus-changer">Changer</button></div><span class="tiny muted">Tu peux changer d’avis jusqu’à 20:00.</span>`
+        : `<span class="ok" style="font-weight:700">${bonusPris ? 'Change ton bonus du jour (jusqu’à 20:00)' : `${ok} bonnes réponses : choisis ton bonus du jour`}</span>
         <div class="choices" style="grid-template-columns:repeat(3,minmax(0,1fr))">
-          <button type="button" class="choice" data-action="quest-bonus" data-v="indice"><span>+1 indice</span><span class="s">enquête</span></button>
-          <button type="button" class="choice" data-action="quest-bonus" data-v="moral"><span>+3 moral</span></button>
-          <button type="button" class="choice" data-action="quest-bonus" data-v="budget"><span>+2 k€</span></button>
+          <button type="button" class="choice" data-action="quest-bonus" data-v="indice" aria-pressed="${!!bonusPris && bonusPris.bonus === 'indice'}"><span>+1 indice</span><span class="s">enquête</span></button>
+          <button type="button" class="choice" data-action="quest-bonus" data-v="moral" aria-pressed="${!!bonusPris && bonusPris.bonus === 'moral'}"><span>+3 moral</span></button>
+          <button type="button" class="choice" data-action="quest-bonus" data-v="budget" aria-pressed="${!!bonusPris && bonusPris.bonus === 'budget'}"><span>+2 k€</span></button>
         </div>
         <label class="field">Ou +10 % de capacité pour un service
           <select class="text" data-change="quest-capacite"><option value="">Choisir un service…</option>${SERVICES.map((s) => `<option value="${s}">${SERVICE_LABELS[s]}</option>`).join('')}</select></label>`}

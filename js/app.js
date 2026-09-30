@@ -599,6 +599,7 @@ async function onClick(e) {
         loadQuest(); S.questPick = null; rerender(); break;
       }
       case 'quest-bonus': await saveQuestBonus(el.dataset.v); break;
+      case 'bonus-changer': S.bonusChanger = true; rerender(); break;
       case 'gazette-nav': S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
       case 'admin-create': await b.adminCreateGame(); toast('Partie lancée !'); break;
       case 'equipe-edit': S.equipeEdit = el.dataset.role || null; S.ouverts = { ...(S.ouverts || {}), equipe: true }; rerender(); break;
@@ -707,9 +708,16 @@ async function saveQuestBonus(bonus, service) {
   // Le bonus est enregistré sur la dernière énigme réussie.
   const i = S.questResults.map((r, k) => (r && r.statut === 'ok' ? k : -1)).filter((k) => k >= 0).pop();
   if (i === undefined) return;
-  S.questResults[i] = { ...S.questResults[i], bonus, ...(service ? { service } : {}) };
-  await S.backend.saveQuest(S.user.uid, st.season, st.turn, i, S.questResults[i]);
-  toast('Bonus enregistré.');
+  // Un seul bonus par jour : on retire un éventuel choix précédent posé sur une autre énigme.
+  for (let k = 0; k < S.questResults.length; k++) {
+    const r = S.questResults[k];
+    if (k !== i && r && r.bonus) { const { bonus: _b, service: _s, ...reste } = r; S.questResults[k] = reste; await S.backend.saveQuest(S.user.uid, st.season, st.turn, k, { ...reste, bonus: null, service: null }); }
+  }
+  const { service: _ancien, ...base } = S.questResults[i];
+  S.questResults[i] = { ...base, bonus, ...(service ? { service } : {}) };
+  await S.backend.saveQuest(S.user.uid, st.season, st.turn, i, { ...S.questResults[i], ...(service ? {} : { service: null }) });
+  S.bonusChanger = false;
+  toast('Bonus enregistré. Tu peux encore le changer jusqu’à 20:00.');
   rerender();
 }
 

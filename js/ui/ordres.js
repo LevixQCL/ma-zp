@@ -4,7 +4,7 @@ import { AIDE, themeActif } from '../engine/rivalites.js';
 import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, multNiveau, multEquip, ECONOMIE } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
-import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel } from './affaires.js';
+import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
 import { effectifPrevu, capaciteAgents, capaciteVehicules, coutRecrue, sousTutelle } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { carteQuartiers } from '../engine/quartiers.js';
@@ -385,20 +385,10 @@ function pli(key, titre, resume, contenu, alerte = false) {
   </section>`;
 }
 
-export function renderOrdres() {
-  const z = myZone(), st = S.state, d = S.draft, T = st.turn;
-  const e = estimations();
-  const bl = blessesActifs(z, T), fo = enFormation(z, T);
-  const others = Object.values(st.zones).filter((x) => x.uid !== z.uid);
-  const saved = !!S.savedOrders && !S.ordersDirty;
-  const pap = (v) => (v < 0 ? `−${-v}` : v > 0 ? `+${v}` : '±0');
-  const nbEng = Object.values(d.engagements).filter((x) => x.agents > 0).length;
-  const dep = d.depenses || {};
-  const cab = (z.cabosses || []).length;
-  const depKeys = [...(cab ? ['carrosserie'] : []), 'prime', 'prevention', 'soustraitance', 'revision'];
-  const nbDep = (dep.reserve ? 1 : 0) + depKeys.filter((k) => dep[k]).length;
+/** Carte d'une affaire disputée, avec les agents engagés (écran Terrain). */
+export function carteAffaire(a) {
+  const z = myZone(), d = S.draft;
 
-  const affairesHtml = st.affaires.map((a) => {
     const eg = d.engagements[a.id] || { agents: 0, acceptes: [] };
     const force = eg.agents ? Math.round(forceEngagement(z, eg.agents) * 10) / 10 : 0;
     const chef = chefDe(a);
@@ -420,14 +410,34 @@ export function renderOrdres() {
     } else if (cand) {
       corps = `<p class="tiny" style="margin:0">Ta candidature auprès de ${esc(chef ? chef.nom : '?')} : ${statutLabel(cand.statut)}</p>${cand.statut !== 'refusee' ? stepper : eg.agents ? `<div class="between"><span class="tiny bad">${eg.agents} agent${eg.agents > 1 ? 's' : ''} encore réservé${eg.agents > 1 ? 's' : ''} ici</span><button type="button" class="btn small ghost" data-action="rapatrier" data-k="eng:${a.id}">Rapatrier</button></div>` : ''}`;
     } else {
-      corps = `<p class="tiny muted" style="margin:0">Dirigée par ${chef ? zoneName(chef) : '?'}. <a href="#carte">Postuler depuis la Carte</a></p>`;
+      corps = `<p class="tiny muted" style="margin:0">Dirigée par ${chef ? zoneName(chef) : '?'}.</p>${postulerCtrl(a)}`;
     }
+    const recuesCtl = moiChef ? candidaturesRecues().filter((c) => c.aid === a.id).map((c) => `<div class="col" style="gap:4px"><span class="small" style="font-weight:600">${esc(S.state.zones[c.uid] ? S.state.zones[c.uid].nom : '?')} postule avec ${c.agents} agent${c.agents > 1 ? 's' : ''}</span>${candidatureCtrl(c)}</div>`).join('') : '';
     return `<div class="card tight">
       <div class="between"><span style="font-weight:600;font-size:14px">${esc(a.titre)}</span><span class="pill amber">${a.recompense} pts</span></div>
       <p class="tiny muted" style="margin:0">${moiChef ? '<strong style="color:var(--amber)">Chez toi · tu diriges</strong> · ' : ''}Force minimale ${a.forceMin}, conseillée ${a.forceConseillee}${eg.agents ? ` · ta force : <strong style="color:${force >= a.forceConseillee ? 'var(--green-soft)' : 'var(--text)'}">${fmt1(force)}</strong>` : ''} · ${a.tours > 1 ? 'nouvelle affaire' : 'dernier tour'}</p>
       ${corps}
+      ${recuesCtl}
     </div>`;
-  }).join('');
+}
+
+export function renderOrdres() {
+  const z = myZone(), st = S.state, d = S.draft, T = st.turn;
+  const e = estimations();
+  const bl = blessesActifs(z, T), fo = enFormation(z, T);
+  const others = Object.values(st.zones).filter((x) => x.uid !== z.uid);
+  const saved = !!S.savedOrders && !S.ordersDirty;
+  const pap = (v) => (v < 0 ? `−${-v}` : v > 0 ? `+${v}` : '±0');
+  const nbEng = Object.values(d.engagements).filter((x) => x.agents > 0).length;
+  const dep = d.depenses || {};
+  const cab = (z.cabosses || []).length;
+  const depKeys = [...(cab ? ['carrosserie'] : []), 'prime', 'prevention', 'soustraitance', 'revision'];
+  const nbDep = (dep.reserve ? 1 : 0) + depKeys.filter((k) => dep[k]).length;
+
+  const nbAgentsAff = Object.values(d.engagements).reduce((s2, x) => s2 + (x.agents || 0), 0);
+  const affairesHtml = `<div class="col" style="gap:8px">${st.affaires.map((a) => { const eg = d.engagements[a.id]; return `<div class="between"><span class="small" style="font-weight:600">${esc(a.titre)}</span><span class="tiny ${eg && eg.agents ? 'ok' : 'muted'}" style="white-space:nowrap">${eg && eg.agents ? `${eg.agents} agent${eg.agents > 1 ? 's' : ''}` : a.zone === z.uid ? 'à lancer' : '—'}</span></div>`; }).join('')}
+      <p class="tiny muted" style="margin:0">Les affaires disputées se gèrent au même endroit : engager tes agents, postuler chez un voisin, accepter les candidatures.${nbAgentsAff ? ` ${nbAgentsAff} agent${nbAgentsAff > 1 ? 's' : ''} engagé${nbAgentsAff > 1 ? 's' : ''}, pris sur tes services.` : ''}</p>
+      <a class="btn small primary block" href="#terrain">Gérer les affaires sur le Terrain</a></div>`;
 
   const decisionHtml = decisionPicker(z, T, d);
 

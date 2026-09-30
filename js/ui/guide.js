@@ -129,7 +129,7 @@ export function sections() {
       id: 'affaires', titre: 'Affaires disputées', html: `
         <p>Chaque affaire éclate <strong>dans une zone</strong> (sa punaise est sur son territoire). Cette zone la dirige : elle seule décide de la lancer, en y engageant des agents dans ses ordres.</p>
         ${ul([
-          '<strong>Postuler</strong> : les autres zones proposent un nombre d’agents depuis la Carte. La candidature arrive dans l’onglet Privé de la zone qui dirige.',
+          '<strong>Postuler</strong> : les autres zones proposent un nombre d’agents depuis le Terrain, où se gèrent toutes les affaires disputées (engager tes agents, postuler, accepter). La candidature arrive dans l’onglet Privé de la zone qui dirige.',
           '<strong>Accepter ou refuser</strong> : la zone qui dirige répond depuis son onglet Privé. Les zones acceptées participent dans la limite des places (nombre maximum d’agents sur l’affaire, zone qui dirige comprise).',
           '<strong>Récompense selon la force</strong> : sous la force minimale, l’affaire échoue. À la force minimale, elle rapporte 60 % des points annoncés ; à la force conseillée, 100 % ; à une fois et demie la force conseillée, 130 % (maximum). Les points sont partagés selon le nombre d’agents de chaque zone.',
           'Candidature refusée, sans réponse, ou affaire non lancée : tes agents restent au travail chez toi, en Intervention.',
