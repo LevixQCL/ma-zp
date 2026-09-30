@@ -112,7 +112,7 @@ export function renderClassement() {
     corps = `<section class="card"><h2 class="card-title">Performance · IPZ moyen de la saison</h2>
       <p class="small muted" style="margin:0">Moyenne de l’IPZ par tour où tu as validé tes ordres. « – » : moins de 5 tours joués, pas encore classé.</p>
       <table class="rank"><thead><tr><th>#</th><th>Zone</th><th class="num">Tours</th><th class="num">IPZ moy.</th></tr></thead><tbody>
-      ${rows.map((r, i) => `<tr class="${r.z.uid === me.uid ? 'me' : ''}"><td>${r.classe ? i + 1 : '–'}</td><td><span class="bullet" style="display:inline-block;background:${esc(r.z.couleur)};margin-right:6px"></span>${zoneName(r.z)}${S.players && S.players[r.z.uid] && S.players[r.z.uid].pseudo ? `<br><span class="tiny muted">${esc(S.players[r.z.uid].pseudo)}</span>` : ''}</td><td class="num">${r.z.toursJoues}</td><td class="num">${fmt1(r.moyenne)}</td></tr>`).join('')}
+      ${rows.map((r, i) => `<tr class="${r.z.uid === me.uid ? 'me' : ''}"><td>${r.classe ? i + 1 : '–'}</td><td><span class="bullet" style="display:inline-block;background:${esc(r.z.couleur)};margin-right:6px"></span><button type="button" class="linkbtn voir-hp" data-action="voir-hp" data-uid="${esc(r.z.uid)}">${zoneName(r.z)}</button>${S.players && S.players[r.z.uid] && S.players[r.z.uid].pseudo ? `<br><span class="tiny muted">${esc(S.players[r.z.uid].pseudo)}</span>` : ''}</td><td class="num">${r.z.toursJoues}</td><td class="num">${fmt1(r.moyenne)}</td></tr>`).join('')}
       </tbody></table></section>`;
   } else if (tab === 'limier') {
     corps = `<section class="card"><h2 class="card-title">Fin limier · points d’enquête</h2>

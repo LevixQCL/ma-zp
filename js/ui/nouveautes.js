@@ -3,20 +3,19 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-30h',
-  titre: 'Mise à jour du 30 septembre : ton hôtel de police en image',
+  id: '2026-09-30i',
+  titre: 'Mise à jour du 30 septembre : ton commissariat prend vie',
   points: [
-    ['Mon hôtel de police', 'ta zone s’affiche en image dans la carte « Ma zone » : un étage de plus à chaque niveau du bâtiment, une porte de garage par niveau du garage, et son nom en néon sur le toit. Touche l’image pour les bâtiments et les véhicules.'],
-    ['Tes achats se voient', 'chaque annexe a sa travée vitrée à côté de l’hôtel de police (salle de sport, audition, logiciel, antenne de quartier). L’atelier mécanique montre son pont élévateur, les caméras de plaques leurs mâts, et les lots gagnés à la salle des ventes (chien pisteur, drone, radar-tronçon) apparaissent dans la scène. Le ciel suit l’heure : jour, crépuscule ou nuit.'],
-    ['HP plus léger', 'guide, nouveautés et profil passent sous la roue dentée en haut ; l’enquête et les énigmes se retrouvent dans « Prochain tour » et dans la barre du bas.'],
-    ['Parc automobile', 'chaque combi et chaque voiture anonymisée a sa tuile : en service, cabossé ou à l’atelier. L’état du parc reste commun à tous les véhicules.'],
-    ['Réparation ciblée', 'touche un véhicule cabossé pour le passer seul en carrosserie ce soir, ou lance une révision du parc depuis sa fiche.'],
+    ['Personnalise ton commissariat', 'façade (brique, pierre bleue, verre, art déco…), couleur du néon et abords (arbres, fresque, horloge, toit végétalisé…). Tout se débloque avec ton grade et tes trophées : ouvre la fiche « Mon hôtel de police » depuis l’image de l’HP.'],
+    ['Va voir chez les voisins', 'sur la Carte, l’œil à côté de chaque zone montre son commissariat ; dans le classement, touche le nom d’une zone.'],
+    ['La scène raconte ta journée', 'drapeau en berne si le moral chute, file de citoyens si la satisfaction baisse, imprévus de la veille (grève, fuite d’eau, cheval sur la route, équipe de télé…), barrières pendant une opération, combis cabossés.'],
+    ['Météo et fêtes', 'pluie ou neige certains jours (la même pour tout le monde), drapeaux belges le 21 juillet, guirlandes en fin d’année.'],
   ],
 };
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP ! Sur l'HP, ton hôtel de police est maintenant illustré : il grandit avec ses niveaux, avec le nom de ta zone en néon sur le toit (touche l'image pour les détails). Guide et profil passent sous la roue dentée. Chaque combi et voiture anonymisée a sa tuile (en service, cabossé, à l'atelier) : touche un véhicule cabossé pour le réparer seul ce soir.`;
+  return `📣 Mise à jour de Ma ZP ! Personnalise ton commissariat (façade, néon, abords) avec ce que ton grade et tes trophées débloquent, et va voir celui des autres depuis la Carte (l'œil) ou le classement. La scène montre aussi ta journée : moral, imprévus, météo et fêtes.`;
 }
 
 

@@ -614,7 +614,7 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 
 /* HP : carte « Mon hôtel de police » (illustration, bâtiments, parc automobile) */
 .hp-logis .scene-hp { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
-.hp-logis .bats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.hp-logis .bats, .bats.hp-logis { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .hp-logis .bat { gap: 6px; padding: 10px; }
 .hp-logis .niv i { width: 10px; height: 5px; }
 .hp-logis .btn.agr { color: var(--amber); background: var(--amber-bg); border-color: var(--amber-line); min-height: 38px; }
@@ -657,3 +657,13 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 .duo > details.repli > summary { padding: 12px; min-height: 0; gap: 8px; align-items: flex-start; }
 .duo:not(:has(details[open])) > details.repli > summary > svg:last-child { display: none; }
 .duo:not(:has(details[open])) > details.repli > summary .tiny { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+/* Personnalisation du commissariat et vue des voisins */
+.scene-voisin svg { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
+.decor-btn { min-height: 40px; gap: 8px; justify-content: center; }
+.decor-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.decor-opt { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding: 8px 10px; min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); font: 600 12.5px var(--body); cursor: pointer; text-align: left; }
+.decor-opt.on { border-color: var(--amber); background: var(--amber-bg); color: var(--amber); }
+.decor-opt.verrou { opacity: .55; }
+.decor-opt .cond { width: 100%; font-weight: 400; font-size: 11px; color: var(--muted); display: inline-flex; gap: 4px; align-items: center; }
+.decor-opt .pastille { width: 12px; height: 12px; border-radius: 4px; border: 1px solid rgba(255,255,255,.25); }
+.voir-hp { color: var(--text); text-decoration: underline dotted; text-underline-offset: 3px; font-weight: inherit; }
