@@ -200,6 +200,7 @@ export function tourQuartiers(state, z, { patrouilles, agentsProx, capProx, rng,
   const ciblesTxt = Object.entries(patrouilles).map(([k, a]) => `${c.nomDe(Number(k))} ${a}`).join(', ');
   if (ciblesTxt) rapport.push(`Patrouilles ciblées : ${ciblesTxt}.`);
   z.rapport.push(...rapport);
+  z._pcSatisf = satisf; // pour le journal des jauges (point chaud désamorcé)
   return satisf - malus;
 }
 

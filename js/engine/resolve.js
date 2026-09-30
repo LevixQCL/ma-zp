@@ -10,7 +10,7 @@ import { genererEchos } from './gazette.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms } from './equipe.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
-  forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, fermerJournal, vehiculesDisponibles,
+  forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles,
 } from './zone.js';
 import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
@@ -258,11 +258,13 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z._points += part; z.stats.pointsAffaires += part; z.stats.affairesGagnees += 1; z.moral += 2;
       if (x.u === chef) { z.satisfaction += aff.recompense * 0.5 * mult; if (equipe.length > 1) z.reputation += 1; if (equipe.length >= 3) z.stats.affairesOrchestre = (z.stats.affairesOrchestre || 0) + 1; }
       else z.reputation += repRenfortAffaire(x.n);
+      jalon(z, `Affaire « ${aff.titre} » résolue (+2 de moral${x.u === chef ? `, satisfaction +${fmt1(aff.recompense * 0.5 * mult)} = moitié des points annoncés` : ''}${x.u === chef && equipe.length > 1 ? ', +1 réputation en chef d’équipe' : x.u !== chef ? ', réputation pour ton renfort' : ''})`);
       z.rapport.push(`${aff.titre} : affaire résolue${x.u === chef ? ' sous ta direction' : ` avec ${zoneLabel(state.zones[chef])}`} (+${fmt1(part)} pts pour ${x.n} agent${x.n > 1 ? 's' : ''} ; force de l’équipe ${fmt1(force)}, ${qualite}).`);
       // Intervention musclée : plus on engage d'agents, plus le risque d'un blessé augmente.
       const risque = Math.min(0.3, Math.max(0, (x.n - 3) * 0.05));
       if (risque && makeRng(`${state.seed}:s${state.season}:t${T}:blesse:${aff.id}:${x.u}`).chance(risque)) {
         z.blesses.push({ n: 1, retour: T + 4, motif: 'blessé' }); z.moral -= 2;
+        jalon(z, `Agent blessé sur « ${aff.titre} »`);
         z.rapport.push(`${aff.titre} : un agent blessé pendant l’interpellation, absent 3 tours (−2 de moral). Plus l’équipe engagée est grande, plus le risque monte.`);
       }
     }
@@ -290,6 +292,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         z._ps += psEvenement(c);
         if (reussi) z.reputation += Math.max(1, Math.round(10 * c / total));
       } else if (actives.includes(u)) z.stats.evenementsManques += 1;
+      if (c > 0 && reussi) jalon(z, 'Événement du district : ta part des agents envoyés');
       if (reussi) { z.satisfaction += 8; z.rapport.push(`${ev.titre} : réussi (+8 de satisfaction).`); }
       else { z.satisfaction -= 10; z.rapport.push(`${ev.titre} : échec, ${total} agents sur ${requis} (−10 de satisfaction).`); }
     }
@@ -423,6 +426,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.stats.quetesOk += ok;
       z._ps += ok * PS.queteOk + faux * PS.queteTentee;
       if (faux) z.moral -= faux;
+      jalon(z, `Énigmes : ${faux} mauvaise${faux > 1 ? 's' : ''} réponse${faux > 1 ? 's' : ''} (−1 de moral chacune)`);
       const b = qs.find((x) => x.bonus);
       let txt = `Énigmes du jour : ${ok} bonne${ok > 1 ? 's' : ''} réponse${ok > 1 ? 's' : ''} sur ${qs.length}${faux ? ` (−${faux} de moral)` : ''}`;
       if (ok >= 2 && b) {
@@ -431,11 +435,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         else if (b.bonus === 'indice') { txt += indiceBonus(state, z, zr) ? ', bonus +1 indice d’enquête' : ', bonus indice (rien de nouveau à trouver)'; }
         else if (b.bonus === 'capacite' && SERVICES.includes(b.service)) { bonusService = b.service; txt += `, bonus +10 % en ${SERVICE_LABELS[b.service]}`; }
       }
+      jalon(z, 'Énigmes : bonus choisi');
       if (ok === 3) { z._ps += 5; z.budget += 3; z.moral += 2; z._compta.push({ k: 'bonus', l: 'Prime « sans faute » (énigmes)', v: 3 }); txt += ', sans faute : +3 k€, +2 de moral, +5 PS'; }
       z.rapport.push(`${txt}.`);
     }
 
-    jalon(z, 'Énigmes du jour');
+    jalon(z, 'Énigmes : sans faute (+2 de moral)');
     // Situation du jour (annoncée au début du tour).
     const pr = {};
     for (const p of z.pressions || []) Object.assign(pr, p.effet);
@@ -501,8 +506,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (paye) z._compta.push({ k: 'depenses', l: 'Dépenses du jour', v: -paye });
     }
 
+    jalon(z, 'Prime au personnel (+4 sous 70 de moral, +2 sous 85, +1 au-delà)');
     imageCabosses(z, T, push, zoneLabel(z));
-    jalon(z, 'Dépenses du jour (prime…)');
+    jalon(z, 'Véhicules cabossés non réparés (image)');
     // Capacités des services (avec les agents restés à leur poste, plus la réserve).
     const cap = {};
     for (const s of SERVICES) {
@@ -521,7 +527,11 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const rates = incidents - traites;
     z.stats.incidents += incidents; z.stats.traites += traites;
     z.satisfaction += traites * 0.5 - rates * 1.8;
+    noter(z, 'satisfaction', `Incidents traités : ${traites} × +0,5`, traites * 0.5);
+    noter(z, 'satisfaction', `Incidents ratés : ${rates} × −1,8`, -rates * 1.8);
+    jalon(z, 'Incidents');
     if (rates >= 3) z.moral -= 2;
+    jalon(z, '3 incidents ratés ou plus : −2 de moral');
     z.rapport.push(`Intervention : ${traites} incident${traites > 1 ? 's' : ''} traité${traites > 1 ? 's' : ''} sur ${incidents}.`);
     // Flagrant délit : les patrouilles qui ne sont pas prises par les incidents peuvent tomber sur un auteur.
     const surplus = Math.max(0, cap.intervention / 1.1 - incidents);
@@ -534,6 +544,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const fait = zr.pick(FLAGRANTS);
       z._points += FLAGRANT.points; z._ps += FLAGRANT.ps; z.satisfaction += 1; z.stats.flagrants = (z.stats.flagrants || 0) + 1;
       if (cell) { q[cell] = clamp(q[cell] - FLAGRANT.tension, 10, 95); z.criminalite = clamp(z.criminalite - FLAGRANT.tension / cells.length, 10, 95); }
+      jalon(z, 'Flagrant délit (patrouilles libres)');
       z.rapport.push(`Flagrant délit ${cell ? `à ${lieu}` : lieu} : ${fait}. +${FLAGRANT.points} pts, +${FLAGRANT.ps} PS${cell ? `, tension du quartier −${FLAGRANT.tension}` : ''}.`);
       push(3, 'Flagrant délit', `${zoneLabel(z)} : ${fait}`, `Interpellation ${cell ? `à ${lieu}` : 'dans la zone'}.`, uid);
     }
@@ -542,14 +553,15 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       else { z.satisfaction -= 4; z.rapport.push(`Visite du bourgmestre : ${rates} incident${rates > 1 ? 's' : ''} raté${rates > 1 ? 's' : ''}, −4 de satisfaction.`); }
     }
 
-    jalon(z, `Intervention : ${traites} incident${traites > 1 ? 's' : ''} traité${traites > 1 ? 's' : ''} sur ${incidents}${pr.bourgmestre ? ', visite du bourgmestre' : ''}`);
+    jalon(z, 'Visite du bourgmestre');
     // Proximité : prévention.
     // Quartier par quartier : patrouilles ciblées, point chaud, déplacement de la délinquance.
     const patrouilles = lirePatrouilles(state, z, o.patrouilles, alloc.proximite || 0);
     z.satisfaction += cap.proximite * 0.12;
+    jalon(z, `Présence de la Proximité : capacité ${fmt1(cap.proximite)} × 0,12`);
     z.satisfaction += tourQuartiers(state, z, { patrouilles, agentsProx: alloc.proximite || 0, capProx: cap.proximite, rng: zr, zoneLabel });
-
-    jalon(z, `Proximité (criminalité ${Math.round(z.criminalite)})`);
+    noter(z, 'satisfaction', 'Point chaud désamorcé', z._pcSatisf || 0); delete z._pcSatisf;
+    jalon(z, `Quartiers inquiets (criminalité moyenne ${Math.round(z.criminalite)})`);
     // Recherche : dossiers locaux.
     let nouveauDossier = 0;
     if (zr.chance(0.6)) {
@@ -565,17 +577,19 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       d.reste = round1(d.reste - t); travail -= t;
       if (d.reste <= 0.05) {
         resolus += 1; z._points += d.points; z.satisfaction += 2;
+        jalon(z, `Dossier « ${d.titre} » élucidé (+2 de satisfaction)`);
         z.rapport.push(`Recherche : dossier « ${d.titre} » élucidé (+${d.points} pts).`);
       }
     }
     z.dossiers = z.dossiers.filter((d) => d.reste > 0.05);
     for (const d of z.dossiers) { d.age += 1; if (d.age > 6) z.satisfaction -= 0.4; }
+    jalon(z, 'Dossiers de plus de 6 jours : −0,4 chacun');
     if (pr.parquet) {
       const vieux = z.dossiers.filter((d) => d.age > 4).length;
       if (vieux) { z.satisfaction -= vieux; z.rapport.push(`Le parquet réclame ${vieux} dossier${vieux > 1 ? 's' : ''} en retard (−${vieux} de satisfaction).`); }
     }
     z.stats.dossiersResolus += resolus;
-    jalon(z, 'Recherche : dossiers élucidés ou en retard');
+    jalon(z, 'Le parquet réclame les dossiers en retard');
 
     // Roulage : amendes et sécurité routière.
     const recettes = cap.roulage * ECONOMIE.amendeParCapacite;
@@ -584,17 +598,17 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (alloc.roulage >= pr.roulageMin) { z.satisfaction += 2; z.rapport.push('Contrôles de vitesse demandés par les riverains : assurés (+2 de satisfaction).'); }
       else { z.satisfaction -= 3; z.rapport.push('Contrôles de vitesse demandés par les riverains : pas assez d\u2019agents (−3 de satisfaction).'); }
     }
+    jalon(z, 'Contrôles de vitesse demandés par les riverains');
     if (alloc.roulage / totalAlloc > seuilChasse(z) && !(theme && theme.id === 'routiere')) {
       z.satisfaction -= 2; z.rapport.push(`Roulage : plus de ${Math.round(seuilChasse(z) * 100)} % des effectifs, effet « chasse aux PV » (−2 de satisfaction).`);
-    } else z.satisfaction += cap.roulage * 0.1;
-
-    jalon(z, 'Roulage');
+      jalon(z, 'Roulage : effet « chasse aux PV »');
+    } else { z.satisfaction += cap.roulage * 0.1; jalon(z, `Sécurité routière : capacité Roulage ${fmt1(cap.roulage)} × 0,1`); }
     // Administration : la pile de paperasse.
     z.paperasse = Math.max(0, z.paperasse + traites * 0.4 + nouveauDossier + 1.2 - cap.admin * 1.2);
     z.paperassePic = Math.max(z.paperassePic || 0, z.paperasse);
     if (z.paperasse > 14) { z.moral -= 2; z.satisfaction -= 1; z.rapport.push(`Paperasse : ${Math.round(z.paperasse)} dossiers en attente (−2 de moral).`); }
 
-    jalon(z, 'Paperasse');
+    jalon(z, 'Paperasse au-delà de 14 dossiers');
     // Grande décision.
     const dec = o.decision;
     if (dec) {
@@ -630,24 +644,27 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (acc) jalon(z, acc.type === 'accrochage' ? 'Accrochage d’un véhicule' : 'Véhicule sinistré');
 
     // Moral.
-    jalon(z, 'Grande décision');
+    jalon(z, 'Accident de véhicule');
+    const m0 = z.moral;
     z.moral += (60 - z.moral) * 0.08;
-    jalon(z, 'Retour naturel du moral vers 60');
+    jalon(z, `Retour naturel vers 60 : 8 % de l’écart (${fmt1(m0)} → 60)`);
     z.moral += RYTHMES[o.rythme].moral;
     jalon(z, `Rythme ${RYTHMES[o.rythme].label.toLowerCase()}`);
     if (z.infra.sport) z.moral += 1;
     jalon(z, 'Salle de sport');
     if (z.budget < 0) z.moral -= 3;
-    jalon(z, 'Budget négatif');
+    jalon(z, 'Budget négatif : −3');
     z.renforceSuite = o.rythme === 'renforce' ? z.renforceSuite + 1 : 0;
 
     // Dérives naturelles.
     z.satisfaction += (50 - z.satisfaction) * 0.04;
+    jalon(z, 'Retour naturel vers 50 : 4 % de l’écart');
     z.reputation += (50 - z.reputation) * 0.03;
-    jalon(z, 'Retour naturel vers 50');
+    jalon(z, 'Retour naturel vers 50 : 3 % de l’écart');
 
     // Malus : chef absent, inspection générale.
     if (z.toursSansOrdres >= 2) { z.satisfaction -= 2; z.moral -= 2; z.rapport.push('Chef absent depuis plusieurs tours : −2 de satisfaction et de moral.'); }
+    jalon(z, 'Chef absent (2 tours sans ordres ou plus)');
     z.budgetNegSuite = z.budget < 0 ? z.budgetNegSuite + 1 : 0;
     if (z.inspectionCooldown > 0) z.inspectionCooldown -= 1;
     else if (z.budgetNegSuite >= 2 || z.paperasse > 20) {
@@ -658,7 +675,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       push(7, 'Inspection générale', `L’Inspection débarque à ${zoneLabel(z)}`, `Motif : ${motif}. Amende de 5 k€.`, uid);
     }
 
-    jalon(z, 'Chef absent ou Inspection générale');
+    jalon(z, 'Inspection générale');
     // Bornes.
     z.moral = clamp(z.moral, 0, 100);
     z.satisfaction = clamp(z.satisfaction, 0, 100);
@@ -683,7 +700,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.ipz = ipzFrom(comp);
     z.ipzComp = comp;
     z.ipzCompHier = compHier;
-    z.ipzDetail = { incidents, traites, points: round1(z._points) };
+    z.ipzDetail = { incidents, traites, points: round1(z._points), budget: round1(z.budget) };
     z.rapport.push(ligneIpz(comp, compHier, z.ipz, z.toursJoues > 0 || compHier ? ipzHier : null, z.ipzDetail));
     if (z._joue) {
       z.ipzSomme += z.ipz; z.toursJoues += 1;

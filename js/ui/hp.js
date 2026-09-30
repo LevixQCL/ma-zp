@@ -17,7 +17,8 @@ import { logistiqueHtml } from './logistique.js';
 import { encheresHtml } from './encheres.js';
 import { TUTELLE } from '../engine/constants.js';
 import { equipeHtml } from './equipe.js';
-import { fraisFixes, pointsIpz, IPZ_LABELS } from '../engine/zone.js';
+import { fraisFixes, pointsIpz, IPZ_LABELS, confianceCommune } from '../engine/zone.js';
+const AIDE_COMP = { satisfaction: 'satisfaction', affaires: 'terrain', moral: 'moral', budget: 'budgetIpz', reputation: 'reputation' };
 import { IPZ_POIDS } from '../engine/constants.js';
 const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations().amendes; } catch (e) { /* pas de brouillon */ } return fraisFixes(z, S.state, { amendes, rythme: (S.draft && S.draft.rythme) || 'normal' }).total; };
 import { demandeRenfortHtml, appelsRenfort, renfortPrevu } from './renfort.js';
@@ -39,7 +40,7 @@ function ipzDetailHtml(d) {
   if (!d.ipzComp) return '';
   const pts = pointsIpz(d.ipzComp), ptsH = d.ipzCompHier ? pointsIpz(d.ipzCompHier) : null;
   const delta = d.hierIpz !== null && d.hierIpz !== undefined && d.ipzCompHier ? Math.round((d.ipz - d.hierIpz) * 10) / 10 : null;
-  const ligne = (k) => `<tr><td>${IPZ_LABELS[k]}</td><td class="mono">${Math.round(d.ipzComp[k])}</td><td class="mono muted">×${Math.round(IPZ_POIDS[k] * 100)} %</td><td class="mono">${fmt1(pts[k])}</td><td class="mono">${ptsH ? evol(Math.round((pts[k] - ptsH[k]) * 10) / 10) : ''}</td></tr>`;
+  const ligne = (k) => `<tr><td>${IPZ_LABELS[k]}${aideBtn(AIDE_COMP[k], `Comment est calculé : ${IPZ_LABELS[k]}`)}</td><td class="mono">${Math.round(d.ipzComp[k])}</td><td class="mono muted">×${Math.round(IPZ_POIDS[k] * 100)} %</td><td class="mono">${fmt1(pts[k])}</td><td class="mono">${ptsH ? evol(Math.round((pts[k] - ptsH[k]) * 10) / 10) : ''}</td></tr>`;
   const det = d.ipzDetail;
   return `<div class="col" style="gap:4px">
     <div class="between"><span style="font-weight:700">IPZ ${fmt1(d.ipz)}</span>${delta !== null ? `<span class="small">${evol(delta)} depuis la veille</span>` : ''}</div>
@@ -235,6 +236,7 @@ export function renderHP() {
         ${gauge('Moral', z.moral, 'var(--amber)', delta(z.moral, z.hier && z.hier.moral) + aideBtn('moral'))}
         ${gauge('Satisfaction citoyenne', z.satisfaction, 'var(--blue)', delta(z.satisfaction, z.hier && z.hier.satisfaction) + aideBtn('satisfaction'))}
         ${gauge('Réputation', z.reputation, 'var(--green)', delta(z.reputation, z.hier && z.hier.reputation) + aideBtn('reputation'))}
+        <div class="between small" style="margin-top:-4px"><span class="row muted" style="gap:4px">Confiance de la commune${aideBtn('confiance')}</span><span class="mono ${confianceCommune(z) > 0 ? 'ok' : confianceCommune(z) < 0 ? 'bad' : 'muted'}">${confianceCommune(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(confianceCommune(z)))} k€ / jour</span></div>
       </div>
     </section>
     ${logistiqueHtml()}

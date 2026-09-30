@@ -3,24 +3,19 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-30d',
-  titre: 'Mise à jour du 30 septembre : chaque service compte double',
+  id: '2026-09-30e',
+  titre: 'Mise à jour du 30 septembre : des stats expliquées',
   points: [
-    ['Accidents de véhicules', 'tes véhicules peuvent avoir un accident, surtout s’ils sont usés, en rythme renforcé ou avec des équipages entassés. Accrochage : le véhicule roule cabossé et ternit ton image tant qu’il ne passe pas en carrosserie (nouvelle dépense). Sinistre : véhicule perdu, à racheter, avec une indemnité si le tiers est en tort. Détails dans le guide, rubrique Imprévus.'],
-    ['Renforts : l’effort compte', 'grand événement du district, renfort sur une opération, affaire disputée, entraide : ce que tu gagnes (PS, réputation) suit désormais le nombre d’agents ou le budget que tu envoies. Un seul agent « pour la forme » rapporte peu ; l’entraide affiche la réputation prévue.'],
-    ['Recherche et enquête', 'tes agents de Recherche rapportent bien plus de pièces pour l’enquête de la semaine. Nouveau : la piste prioritaire (fiche d’un suspect) concentre leurs recherches. Le pourcentage du soir est affiché dans l’Enquête.'],
-    ['Intervention', 'les patrouilles restées libres après les incidents peuvent faire un flagrant délit : points, PS et un quartier apaisé.'],
-    ['Accueil = assurance', 'chaque agent d’Accueil au-delà de 2 évite 15 % des tracas internes (panne, dégât des eaux, grève, papiers égarés, plainte…).'],
-    ['Nouveaux imprévus', 'dégât des eaux (pièces d’enquête retardées d’un tour), grève sauvage, agent cloué au lit. Et sur les affaires disputées, une grosse équipe risque davantage un blessé.'],
-    ['Carte : zones chaudes', 'tes six quartiers ont chacun leur tension, en couleur sur la carte (calme, à surveiller, tendu, chaud), avec les quartiers voisins à ta frontière en pointillés.'],
-    ['Patrouilles', 'touche un quartier pour y envoyer des agents de Proximité. Plus tu concentres, plus la tension baisse à cet endroit ; à partir de 4 agents, la délinquance se déplace vers les voisins, même chez la zone d’à côté.'],
-    ['Point chaud du jour', 'presque chaque jour, un quartier est signalé la veille. 2 agents sur place le désamorcent, sinon la tension y grimpe. Il apparaît dans les choses à faire de l’HP.'],
+    ['Chaque « ? » montre ton calcul', 'moral, satisfaction, réputation, IPZ, budget : le bouton « ? » affiche maintenant, en plus de la règle, le calcul réel de ton dernier tour, ligne par ligne (avant → chaque cause → après), et ce que ça rapporte à ton IPZ.'],
+    ['Confiance de la commune', 'nouvelle ligne sous la réputation : ce que la commune te verse (ou retient) chaque soir selon ta réputation, avec son « ? ».'],
+    ['Rapport du tour', 'dans le tableau de l’IPZ, « Résultats terrain » et « Budget » ont aussi leur « ? » : incidents traités, points de résultats, plafond, solde de fin de tour. Les causes des variations sont plus précises (incidents traités et ratés séparés, retour naturel vers 50 ou 60 chiffré, etc.).'],
+    ['Visite guidée', 'chaque action a son propre écran, et c’est toi qui touches les onglets pour changer d’écran.'],
   ],
 };
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP ! Nouveau sur la Carte : tes 6 quartiers ont leur tension (zones chaudes), un point chaud est annoncé chaque jour (2 agents sur place le désamorcent) et tu peux envoyer des patrouilles de Proximité quartier par quartier. Attention, trop d'agents au même endroit repoussent la délinquance chez le voisin ! Recharge la page si besoin.`;
+  return `📣 Mise à jour de Ma ZP ! Les « ? » à côté du moral, de la satisfaction, de la réputation et de l'IPZ montrent maintenant le calcul de TON dernier tour, cause par cause. Nouveau : la confiance de la commune sous la réputation, et des « ? » sur Résultats terrain et Budget dans le rapport. Recharge la page si besoin.`;
 }
 
 
