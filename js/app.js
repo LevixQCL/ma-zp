@@ -11,7 +11,8 @@ import { maCandidature } from './ui/affaires.js';
 import { renderTerrain } from './ui/terrain.js';
 import { installerAntiTriche } from './ui/antitriche.js';
 import { lireInvitationUrl, oublierInvitation, partager, copier, afficherQr } from './ui/invitation.js';
-import { ouvrirBudget } from './ui/logistique.js';
+import { ouvrirBudget, ouvrirVehicule } from './ui/logistique.js';
+import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { tutoAuBesoin, lancerTuto } from './ui/tutoriel.js';
 import { operationActive, effetsOperation } from './engine/zone.js';
@@ -296,6 +297,18 @@ async function onClick(e) {
         toast(ok ? 'Candidature acceptée. Valide tes ordres.' : 'Candidature refusée.'); rerender(); break;
       }
       case 'budget': ouvrirBudget(); break;
+      case 'vehicule': ouvrirVehicule(el.dataset.slot); break;
+      case 'carro-veh': {
+        const dd = (S.draft.depenses ||= { reserve: 0, reserveService: 'intervention' });
+        const z = S.state.zones[S.user.uid], i = Number(el.dataset.i);
+        const choix = cabossesChoisis(z, dd.carrosserie);
+        const garde = choix.includes(i) ? choix.filter((x) => x !== i) : [...choix, i];
+        dd.carrosserie = garde.length ? garde : false;
+        S.ordersDirty = true;
+        document.querySelector('.aide-wrap')?.remove();
+        toast(garde.includes(i) ? 'Réparation prévue ce soir. Valide tes ordres.' : 'Réparation annulée.');
+        rerender(); break;
+      }
       case 'invite-share': { const r = await partager(el.dataset.code, el.dataset.nom); if (r === 'copié') toast('Lien copié : colle-le dans un message.'); break; }
       case 'invite-copy': await copier(el.dataset.code, el.dataset.nom); toast('Lien et message copiés.'); break;
       case 'invite-qr': afficherQr(el.dataset.code); break;
@@ -441,7 +454,12 @@ async function onClick(e) {
       }
       case 'dep-toggle': {
         const dd = (S.draft.depenses ||= { reserve: 0, reserveService: 'intervention' });
-        dd[el.dataset.k] = !dd[el.dataset.k]; S.ordersDirty = true; rerender(); break;
+        const zk = S.state.zones[S.user.uid];
+        if (el.dataset.k === 'carrosserie' && Array.isArray(dd.carrosserie) && cabossesChoisis(zk, dd.carrosserie).length < (zk.cabosses || []).length) dd.carrosserie = true;
+        else dd[el.dataset.k] = !dd[el.dataset.k];
+        S.ordersDirty = true;
+        if (el.dataset.fermer) { document.querySelector('.aide-wrap')?.remove(); toast(dd[el.dataset.k] ? 'Révision prévue ce soir. Valide tes ordres.' : 'Révision annulée.'); }
+        rerender(); break;
       }
       case 'class-tab': S.classTab = el.dataset.t; rerender(); break;
       case 'enq-tab': S.enqTab = el.dataset.t; rerender(); break;

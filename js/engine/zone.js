@@ -3,6 +3,7 @@ import { creerEquipe } from './equipe.js';
 import {
   SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, malusEtat, coutEquipement, multNiveau, multEquip } from './constants.js';
 import { coutCarrosserie } from './sinistres.js';
+import { cabossesChoisis } from './parc.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -255,7 +256,7 @@ export function sanitizeOrders(zone, raw, state) {
   const depenses = {
     reserve: tutelle ? 0 : clamp(Math.floor(Number(dp.reserve) || 0), 0, DEPENSES.reserve.max),
     reserveService: SERVICES.includes(dp.reserveService) ? dp.reserveService : 'intervention',
-    prime: !!dp.prime, prevention: !!dp.prevention, soustraitance: !!dp.soustraitance, revision: !!dp.revision, carrosserie: !!dp.carrosserie && (zone.cabosses || []).length > 0,
+    prime: !!dp.prime, prevention: !!dp.prevention, soustraitance: !!dp.soustraitance, revision: !!dp.revision, carrosserie: carrosserieOrdre(zone, dp.carrosserie),
   };
   // Enquête et FIPA : validés plus finement pendant la résolution.
   const int = (v, a, b) => clamp(Math.floor(Number(v) || 0), a, b);
@@ -287,9 +288,15 @@ export function sanitizeOrders(zone, raw, state) {
 }
 
 /** Coût total des dépenses du jour. */
+/** Carrosserie demandée dans les ordres : false, ou la liste des véhicules cabossés à réparer (indices). */
+export function carrosserieOrdre(zone, v) {
+  const idx = cabossesChoisis(zone, v);
+  return idx.length ? idx : false;
+}
+
 export function coutDepenses(d, z = null) {
   if (!d) return 0;
-  return (d.carrosserie && z ? coutCarrosserie(z) : 0) + (d.reserve || 0) * DEPENSES.reserve.cout + (d.prime ? DEPENSES.prime.cout : 0) + (d.prevention ? DEPENSES.prevention.cout : 0) + (d.soustraitance ? DEPENSES.soustraitance.cout : 0) + (d.revision ? DEPENSES.revision.cout : 0);
+  return (d.carrosserie && z ? coutCarrosserie(z, d.carrosserie) : 0) + (d.reserve || 0) * DEPENSES.reserve.cout + (d.prime ? DEPENSES.prime.cout : 0) + (d.prevention ? DEPENSES.prevention.cout : 0) + (d.soustraitance ? DEPENSES.soustraitance.cout : 0) + (d.revision ? DEPENSES.revision.cout : 0);
 }
 
 export const NIVEAUX_OPERATION = { complet: 1, reduit: 0.5, aucun: 0 };
