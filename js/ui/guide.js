@@ -23,6 +23,7 @@ export function sections() {
   return [
     {
       id: 'debut', titre: 'Premiers pas', html: `
+        <button type="button" class="btn primary block" data-action="tuto" style="margin-bottom:6px">Lancer la visite guidée (3 minutes)</button>
         <p>Tu diriges une zone de police fictive du District Delta. Chaque jour, tu donnes tes ordres ; <strong>tous les tours sont résolus en même temps à 20:00</strong> (heure belge). Personne n'est avantagé parce qu'il a joué plus tôt ou plus vite.</p>
         <h3>Chaque jour, en cinq minutes</h3>
         ${ol([

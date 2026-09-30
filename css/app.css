@@ -576,3 +576,29 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 
 /* Enquête : voisinage (Recherche) */
 .voisinage { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; background: rgba(90,176,240,.08); border: 1px solid rgba(90,176,240,.25); }
+
+/* ───── Visite guidée ───── */
+.tuto { position: fixed; inset: 0; z-index: 60; pointer-events: none; }
+.tuto-bloc { position: absolute; inset: 0; pointer-events: auto; }
+.tuto.centre .tuto-bloc { background: rgba(5,8,12,.72); }
+.tuto-spot { position: absolute; border-radius: 14px; border: 2px solid var(--amber); box-shadow: 0 0 0 9999px rgba(5,8,12,.7), 0 0 18px rgba(242,181,68,.45); pointer-events: none; transition: top .25s ease, left .25s ease, width .25s ease, height .25s ease; }
+.tuto-bulle { position: absolute; left: 50%; transform: translateX(-50%); width: calc(100% - 24px); max-width: 440px; pointer-events: auto; gap: 8px; border-color: var(--amber-line); box-shadow: 0 18px 40px rgba(0,0,0,.5); max-height: 62vh; overflow-y: auto; }
+.tuto-bulle.bas { bottom: calc(76px + env(safe-area-inset-bottom)); }
+.tuto-bulle.haut { top: calc(12px + env(safe-area-inset-top)); }
+.tuto.centre .tuto-bulle { top: 50%; transform: translate(-50%, -50%); }
+.tuto-titre { margin: 0; font-family: var(--display); font-size: 24px; line-height: 1.1; letter-spacing: .2px; }
+.tuto-texte p { margin: 0 0 6px; font-size: 14.5px; line-height: 1.45; color: var(--text2); }
+.tuto-texte p:last-child { margin-bottom: 0; }
+.tuto-texte strong { color: var(--text); }
+.tuto-note { font-size: 13px !important; color: var(--muted) !important; }
+.tuto-liste { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; font-size: 14.5px; line-height: 1.4; color: var(--text2); }
+.tuto-prog { height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.tuto-prog span { display: block; height: 100%; background: var(--amber); border-radius: 2px; transition: width .25s ease; }
+.tuto-geste { display: flex; gap: 10px; align-items: flex-start; background: var(--amber-bg); border: 1px solid var(--amber-line); border-radius: 12px; padding: 10px 12px; font-size: 14px; line-height: 1.4; }
+.tuto-geste.ok { background: rgba(76,195,138,.12); border-color: rgba(76,195,138,.45); }
+.tuto-coche { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; background: var(--amber); color: var(--amber-ink); }
+.tuto-geste.ok .tuto-coche { background: var(--green); color: #06170E; }
+.tuto-nav { display: flex; justify-content: space-between; gap: 8px; }
+.tuto-nav .btn { min-height: 44px; }
+.tuto-x { background: none; border: 0; color: var(--muted); font-size: 13px; font-weight: 600; padding: 6px 2px; min-height: 32px; text-decoration: underline; }
+@media (prefers-reduced-motion: reduce) { .tuto-spot, .tuto-prog span { transition: none; } }

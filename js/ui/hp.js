@@ -284,7 +284,7 @@ export function renderHP() {
       </div>
       ${S.backend.mode === 'demo' ? '<button class="btn outline block" data-action="demo-next">Démo : passer au tour suivant</button>' : ''}
     </section>
-    ${z.toursJoues < 2 && !premiersPasVus() ? '<a class="list-row" href="#guide-debut" style="border-color:var(--amber-line)"><span class="bullet" style="background:var(--amber)"></span><span class="col grow" style="gap:1px"><span style="font-weight:600">Nouveau ? Lis les « Premiers pas »</span><span class="small muted">2 minutes pour comprendre ta journée de chef de zone</span></span></a>' : ''}
+    ${z.toursJoues < 2 && !premiersPasVus() ? '<button type="button" class="list-row" data-action="tuto" style="border-color:var(--amber-line);width:100%;text-align:left"><span class="bullet" style="background:var(--amber)"></span><span class="col grow" style="gap:1px"><span style="font-weight:600">Nouveau ? Fais la visite guidée</span><span class="small muted">3 minutes pour découvrir les onglets et ta journée de chef de zone</span></span></button>' : ''}
   </main>${tabbar('hp', { questBadge: !questDone })}`;
 }
 

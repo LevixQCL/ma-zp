@@ -49,7 +49,7 @@ export function ouvrirNouveautes() {
 
 /** À appeler après l'affichage de l'HP : montre la note une fois par appareil. */
 export function nouveautesAuBesoin() {
-  if (S.majMontree || noteVue() || document.querySelector('.aide-wrap')) return;
+  if (S.majMontree || noteVue() || S.tuto != null || document.querySelector('.aide-wrap')) return;
   S.majMontree = true;
   // Nouveau joueur : les « nouveautés » ne le concernent pas, il découvre tout en même temps.
   const z = S.state && S.user && S.state.zones[S.user.uid];
