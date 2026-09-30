@@ -60,9 +60,9 @@ assert.ok(!f0.lignes.some((l) => l.k === 'subside' || l.k === 'confiance'), 'rie
 z.agents = SUBSIDE.seuil + 10; z.reputation = 80;
 const f1 = fraisFixes(z, s);
 assert.equal(f1.lignes.find((l) => l.k === 'subside').v, 1.5);
-assert.equal(f1.lignes.find((l) => l.k === 'confiance').v, 1.5);
+assert.equal(f1.lignes.find((l) => l.k === 'confiance').v, 6, 'réputation 80 : +6 k€');
 z.reputation = 20;
-assert.equal(fraisFixes(z, s).lignes.find((l) => l.k === 'confiance').v, -1.5);
+assert.equal(fraisFixes(z, s).lignes.find((l) => l.k === 'confiance').v, -3, 'réputation 20 : −3 k€ (malus deux fois plus doux)');
 
 // Recrues : moins chères pour une zone réputée, plus chères pour une zone mal vue.
 assert.equal(coutRecrue({ reputation: 50 }), COUTS.recrue);

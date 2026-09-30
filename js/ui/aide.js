@@ -87,8 +87,8 @@ export const AIDES = {
     titre: 'Confiance de la commune',
     intro: 'La commune verse (ou retient) un montant chaque soir selon ta réputation. C’est une ligne de ton budget, pas une jauge à part.',
     lignes: [
-      `<strong>Calcul</strong> : (réputation − 50) × ${k2(SUBSIDE.confiance)} k€`,
-      `<strong>Exemples</strong> : réputation 80 → +${k2(30 * SUBSIDE.confiance)} k€ · 50 → 0 · 30 → −${k2(20 * SUBSIDE.confiance)} k€ · 100 → +${k2(50 * SUBSIDE.confiance)} k€`,
+      `<strong>Calcul</strong> : au-dessus de 50, (réputation − 50) × ${k2(SUBSIDE.confiance)} k€ ; en dessous, × ${k2(SUBSIDE.confianceMalus)} k€ seulement`,
+      `<strong>Exemples</strong> : réputation 80 → +${k2(30 * SUBSIDE.confiance)} k€ · 50 → 0 · 30 → −${k2(20 * SUBSIDE.confianceMalus)} k€ · 100 → +${k2(50 * SUBSIDE.confiance)} k€`,
       '<strong>Réputation prise en compte</strong> : celle du moment où le budget est calculé à 20:00, après les affaires, l’entraide et l’enquête du soir, mais avant le retour naturel vers 50',
     ],
     conseil: 'Pour la faire monter : monter ta réputation (partages d’indices, entraide, renforts, affaires à plusieurs).',
@@ -175,7 +175,8 @@ function tourConfiance(z) {
   const c = z.compta;
   const l = c && c.lignes && c.lignes.find((x) => x.k === 'confiance');
   const prev = confianceCommune(z);
-  const passe = c ? (l ? `${calc(`Réputation au calcul du budget : ${fmt1(50 + l.v / SUBSIDE.confiance)} environ`, `(${fmt1(50 + l.v / SUBSIDE.confiance)} − 50) × ${k2(SUBSIDE.confiance)}`)}${ligne('Versé par la commune', l.v, ' k€')}`
+  const coefL = l && l.v < 0 ? SUBSIDE.confianceMalus : SUBSIDE.confiance;
+  const passe = c ? (l ? `${calc(`Réputation au calcul du budget : ${fmt1(50 + l.v / coefL)} environ`, `(${fmt1(50 + l.v / coefL)} − 50) × ${k2(coefL)}`)}${ligne('Versé par la commune', l.v, ' k€')}`
     : calc('Réputation proche de 50', '0 k€')) : '';
   return { tour: c ? c.tour : null, html: `${passe}
     <div class="aide-l between small" style="margin-top:4px"><span>Ce soir, avec ta réputation actuelle (${fmt1(z.reputation)})</span><span class="mono ${cls(prev)}">${sgn(prev)} k€</span></div>

@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 17;
+export const APP_VERSION = 18;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -153,7 +153,8 @@ export const BATIMENTS = {
 };
 // Subside communal : la commune finance une partie de chaque agent au-delà de l'effectif de départ,
 // et ajoute (ou retire) un montant selon la confiance qu'elle a dans la zone (sa réputation).
-export const SUBSIDE = { parAgent: 0.15, seuil: START.agents, confiance: 0.05 };
+// Bonus de 0,2 k€ par point au-dessus de 50 ; malus deux fois plus doux en dessous, pour ne pas enfoncer une zone déjà en difficulté.
+export const SUBSIDE = { parAgent: 0.15, seuil: START.agents, confiance: 0.2, confianceMalus: 0.1 };
 
 // Réputation : effets concrets.
 export const REPUTATION = {
