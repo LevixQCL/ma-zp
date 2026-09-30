@@ -42,7 +42,8 @@ function quartiersHtml(st, me) {
     return `<div class="qrow ${sel === k ? 'sel' : ''}" id="q-${k}">
       <button type="button" class="qnom" data-action="quartier" data-c="${k}" aria-label="Voir ${nom} sur la carte">
         <span class="row" style="gap:6px;min-width:0"><span class="bullet" style="background:${n.couleur}"></span><span class="qtitre">${nom}</span>${pc && pc.cell === k ? '<span aria-label="point chaud">🔥</span>' : ''}</span>
-        <span class="qinfo">${barre(t, n.couleur)}<span>${Math.round(t)} <span class="muted">${n.nom}</span></span><span class="muted">·</span><span>ce soir ${fleche(t, prev[k])}</span></span></button>
+        <span class="qinfo">${barre(t, n.couleur)}<span><strong>${Math.round(t)}</strong> <span class="muted">${n.nom}</span></span></span>
+        <span class="qsoir">ce soir ${fleche(t, prev[k])}</span></button>
       <span class="stepper"><button type="button" data-action="patrouille" data-c="${k}" data-d="-1" aria-label="Une patrouille de moins à ${nom}" ${a <= 0 ? 'disabled' : ''}>−</button><span class="n">${a}</span><button type="button" data-action="patrouille" data-c="${k}" data-d="1" aria-label="Une patrouille de plus à ${nom}" ${prox <= a ? 'disabled' : ''}>+</button></span>
     </div>`;
   };
