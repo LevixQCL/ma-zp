@@ -570,3 +570,6 @@ details.journal > summary { padding: 6px 2px !important; min-height: 38px; }
 .lien { position: relative; }
 .lien::after { content: ''; position: absolute; inset: -10px -4px; }
 main > a.small, main > a.tiny { padding: 12px 0; }
+
+/* Enquête : voisinage (Recherche) */
+.voisinage { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 10px; background: rgba(90,176,240,.08); border: 1px solid rgba(90,176,240,.25); }

@@ -12,7 +12,7 @@ import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enForma
 function enqueteDraft() {
   const o = S.savedOrders || {};
   return {
-    demarches: o.demarches || [], accusation: o.accusation ?? null, traque: o.traque || null, partages: o.partages || [],
+    demarches: o.demarches || [], piste: o.piste ?? null, accusation: o.accusation ?? null, traque: o.traque || null, partages: o.partages || [],
     fipa: o.fipa || null, fipaReponse: o.fipaReponse || null, fipaChoix: o.fipaChoix || null,
     manoeuvre: o.manoeuvre || null, renfort: o.renfort || null, aide: o.aide || null, duel: o.duel || null, duelReponse: o.duelReponse || null, votes: o.votes || {}, motionChef: o.motionChef || null, offre: o.offre || null,
   };
@@ -347,11 +347,11 @@ function ventilationHtml(z, e) {
 function aide(s, z) {
   const f = (v) => fmt1(v);
   switch (s) {
-    case 'intervention': return `Traite les incidents du jour (environ 1 agent par incident, ${Math.max(1, Math.round(1.5 + z.criminalite / 14))} attendus). Incident traité : +0,5 de satisfaction ; raté : −1,8. Au-delà de 2,5 agents par véhicule, les agents en trop comptent pour moitié. Chaque intervention use les véhicules : état du parc ${Math.round(100 - z.usure)} %${malusEtat(100 - z.usure) < 1 ? ` (efficacité −${Math.round((1 - malusEtat(100 - z.usure)) * 100)} %)` : ''} ; sous 80 %, l’Intervention perd de l’efficacité. Une révision du parc (dépense du jour, 2 k€) rend +20 %.`;
+    case 'intervention': return `Traite les incidents du jour (environ 1 agent par incident, ${Math.max(1, Math.round(1.5 + z.criminalite / 14))} attendus). Incident traité : +0,5 de satisfaction ; raté : −1,8. Au-delà de 2,5 agents par véhicule, les agents en trop comptent pour moitié. Chaque intervention use les véhicules : état du parc ${Math.round(100 - z.usure)} %${malusEtat(100 - z.usure) < 1 ? ` (efficacité −${Math.round((1 - malusEtat(100 - z.usure)) * 100)} %)` : ''} ; sous 80 %, l’Intervention perd de l’efficacité. Une révision du parc (dépense du jour, 2 k€) rend +20 %. Les patrouilles qui restent libres après les incidents peuvent surprendre un auteur en flagrant délit (points, PS et un quartier apaisé) : plus il y a de marge, plus la chance est grande.`;
     case 'proximite': return `Prévention : fait baisser la criminalité (actuellement ${Math.round(z.criminalite)}). Environ 4 agents la stabilisent. Au-dessus de 55, un quartier coûte de la satisfaction chaque jour, et la criminalité augmente les incidents. Tu peux envoyer ces agents en patrouille dans des quartiers précis depuis la Carte.`;
-    case 'recherche': return `Fait avancer tes dossiers locaux (${z.dossiers.length} en cours). Dossier élucidé : des points et +2 de satisfaction. Un dossier de plus de 6 tours coûte de la satisfaction chaque jour.`;
+    case 'recherche': return `Fait avancer tes dossiers locaux (${z.dossiers.length} en cours). Dossier élucidé : des points et +2 de satisfaction. Un dossier de plus de 6 tours coûte de la satisfaction chaque jour. Au-delà de 2 agents, tes enquêteurs font aussi l’enquête de voisinage : chaque soir, une chance de rapporter des pièces pour l’enquête de la semaine (bien plus avec une piste prioritaire, à choisir dans l’Enquête).`;
     case 'roulage': return `Rapporte environ 0,7 k€ par agent et par jour. Au-delà de ${ROULAGE.seuil} agents, chaque agent de plus compte pour moitié. Au-delà de ${Math.round(seuilChasse(z) * 100)} % de tes effectifs : « chasse aux PV », −2 de satisfaction par jour.`;
-    case 'admin': return `Traite la paperasse (environ 1 dossier par agent ; ${f(z.paperasse)} en attente). Au-delà de 14 : −2 de moral par jour. Au-delà de 20 : Inspection générale, 5 k€ d’amende.`;
+    case 'admin': return `Traite la paperasse (environ 1 dossier par agent ; ${f(z.paperasse)} en attente). Au-delà de 14 : −2 de moral par jour. Au-delà de 20 : Inspection générale, 5 k€ d’amende. C’est aussi ton assurance : chaque agent au-delà de 2 évite 15 % des tracas internes (panne, dégât des eaux, grève, papiers égarés, plainte…), jusqu’à 60 %. Aujourd’hui : ${Math.round(Math.min(0.6, Math.max(0, ((S.draft && S.draft.alloc.admin) || 0) - 2) * 0.15) * 100)} %.`;
     default: return '';
   }
 }

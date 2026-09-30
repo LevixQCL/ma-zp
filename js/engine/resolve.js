@@ -3,7 +3,7 @@
 
 import {
   APP_VERSION, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat, gainPrime, seuilChasse } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat, gainPrime, seuilChasse } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
@@ -12,11 +12,12 @@ import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
   forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, fermerJournal,
 } from './zone.js';
-import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers } from './quartiers.js';
+import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
 import { encheresResoudre, annoncerLot } from './encheres.js';
 import { rivalitesPre, rivalitesPost, postesContre, themeActif, appliquerConsignes, absT, MAN } from './rivalites.js';
+import { FLAGRANTS } from './contenu.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, EVENEMENTS_COLLECTIFS, COUPS_DURS, ALEAS, OPERATIONS, PRESSIONS, PRESSION_WEEKEND } from './contenu.js';
 
 const fmt1 = (v) => String(round1(v)).replace('.', ',');
@@ -257,6 +258,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (x.u === chef) { z.satisfaction += aff.recompense * 0.5 * mult; if (equipe.length > 1) z.reputation += 1; if (equipe.length >= 3) z.stats.affairesOrchestre = (z.stats.affairesOrchestre || 0) + 1; }
       else z.reputation += 2;
       z.rapport.push(`${aff.titre} : affaire résolue${x.u === chef ? ' sous ta direction' : ` avec ${zoneLabel(state.zones[chef])}`} (+${fmt1(part)} pts pour ${x.n} agent${x.n > 1 ? 's' : ''} ; force de l’équipe ${fmt1(force)}, ${qualite}).`);
+      // Intervention musclée : plus on engage d'agents, plus le risque d'un blessé augmente.
+      const risque = Math.min(0.3, Math.max(0, (x.n - 3) * 0.05));
+      if (risque && makeRng(`${state.seed}:s${state.season}:t${T}:blesse:${aff.id}:${x.u}`).chance(risque)) {
+        z.blesses.push({ n: 1, retour: T + 4, motif: 'blessé' }); z.moral -= 2;
+        z.rapport.push(`${aff.titre} : un agent blessé pendant l’interpellation, absent 3 tours (−2 de moral). Plus l’équipe engagée est grande, plus le risque monte.`);
+      }
     }
     const aides = equipe.filter((x) => x.u !== chef).map((x) => zoneLabel(state.zones[x.u]));
     push(8 + aff.recompense / 4, 'Affaire résolue', `${zoneLabel(state.zones[chef])} boucle l’affaire : ${aff.titre.toLowerCase()}`,
@@ -335,18 +342,27 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
     // Aléa léger et coup dur (effets immédiats sur ce tour ou les suivants).
     let adminMult = 1;
-    if (zr.chance(0.22)) {
+    // L'Accueil comme assurance : chaque agent au-delà de 2 évite 15 % des tracas internes (jusqu'à 60 %).
+    const nAdmin = (o.alloc && o.alloc.admin) || 0;
+    const protection = clamp((nAdmin - 2) * 0.15, 0, 0.6);
+    const evite = (titre) => { z.rapport.push(`Évité : ${titre.charAt(0).toLowerCase()}${titre.slice(1)}. Ton Accueil (${nAdmin} agents) a paré le coup.`); z.stats.evites = (z.stats.evites || 0) + 1; };
+    if (zr.chance(0.3)) {
       const a = zr.pick(ALEAS);
       const e = a.effet;
-      if (e.moral) z.moral += e.moral;
-      if (e.budget) { z.budget += e.budget; z._compta.push({ k: 'alea', l: `Imprévu : ${a.titre || 'aléa'}`, v: e.budget }); }
-      if (e.satisfaction) z.satisfaction += e.satisfaction;
-      if (e.paperasse) z.paperasse = Math.max(0, z.paperasse + e.paperasse);
-      if (e.adminMult) adminMult *= e.adminMult;
-      if (e.vehiculeHS) z.vehiculesHS.push({ retour: T + 1 });
-      z.rapport.push(`${a.titre} : ${a.texte}`);
-      jalon(z, `Imprévu : ${a.titre}`);
-      push(2, 'Insolite', `${zoneLabel(z)} : ${a.titre.charAt(0).toLowerCase()}${a.titre.slice(1)}`, a.texte, uid);
+      if (a.interne && zr.chance(protection)) evite(a.titre);
+      else {
+        if (e.moral) z.moral += e.moral;
+        if (e.budget) { z.budget += e.budget; z._compta.push({ k: 'alea', l: `Imprévu : ${a.titre || 'aléa'}`, v: e.budget }); }
+        if (e.satisfaction) z.satisfaction += e.satisfaction;
+        if (e.paperasse) z.paperasse = Math.max(0, z.paperasse + e.paperasse);
+        if (e.adminMult) adminMult *= e.adminMult;
+        if (e.vehiculeHS) z.vehiculesHS.push({ retour: T + 1 });
+        if (e.bloques) z.blesses.push({ n: e.bloques, retour: T + 2, motif: a.id === 'greve' ? 'grève' : 'malade' });
+        if (e.retardEnquete) z._retardEnquete = true;
+        z.rapport.push(`${a.titre} : ${a.texte}${a.interne && protection < 0.6 ? ' (un Accueil plus fourni réduit ce risque)' : ''}`);
+        jalon(z, `Imprévu : ${a.titre}`);
+        push(2, 'Insolite', `${zoneLabel(z)} : ${a.titre.charAt(0).toLowerCase()}${a.titre.slice(1)}`, a.texte, uid);
+      }
     }
     let coupDur = null;
     if (zr.chance(0.13)) {
@@ -360,6 +376,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         return { ...c, w };
       });
       coupDur = zr.weighted(pool);
+      if (coupDur.interne && zr.chance(protection)) { evite(coupDur.titre); coupDur = null; }
     }
     if (!coupDur && z.renforceSuite >= 3 && o.rythme === 'renforce' && zr.chance(0.5)) coupDur = { id: 'epuisement', titre: 'Épuisement' };
     if (coupDur) {
@@ -496,7 +513,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
 
     // Enquête : démarches et enquête de voisinage.
-    enqueteZone(state, z, o, makeRng(`${state.seed}:s${state.season}:t${T}:${uid}:enq`), cap, pre);
+    const detaches = enqueteZone(state, z, o, makeRng(`${state.seed}:s${state.season}:t${T}:${uid}:enq`), cap, pre) || 0;
 
     jalon(z, 'Enquête (démarches)');
     // Intervention : incidents du jour.
@@ -507,6 +524,20 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.satisfaction += traites * 0.5 - rates * 1.8;
     if (rates >= 3) z.moral -= 2;
     z.rapport.push(`Intervention : ${traites} incident${traites > 1 ? 's' : ''} traité${traites > 1 ? 's' : ''} sur ${incidents}.`);
+    // Flagrant délit : les patrouilles qui ne sont pas prises par les incidents peuvent tomber sur un auteur.
+    const surplus = Math.max(0, cap.intervention / 1.1 - incidents);
+    const chanceFlag = Math.min(FLAGRANT.max, surplus * FLAGRANT.parUnite);
+    if (chanceFlag > 0 && zr.chance(chanceFlag)) {
+      const q = assurerQuartiers(state, z);
+      const cells = Object.keys(q).sort((a, b) => q[b] - q[a]);
+      const cell = cells.length ? cells[zr.int(0, Math.min(2, cells.length - 1))] : null;
+      const lieu = cell ? carteQuartiers(state).nomDe(Number(cell)) : 'dans la zone';
+      const fait = zr.pick(FLAGRANTS);
+      z._points += FLAGRANT.points; z._ps += FLAGRANT.ps; z.satisfaction += 1; z.stats.flagrants = (z.stats.flagrants || 0) + 1;
+      if (cell) { q[cell] = clamp(q[cell] - FLAGRANT.tension, 10, 95); z.criminalite = clamp(z.criminalite - FLAGRANT.tension / cells.length, 10, 95); }
+      z.rapport.push(`Flagrant délit ${cell ? `à ${lieu}` : lieu} : ${fait}. +${FLAGRANT.points} pts, +${FLAGRANT.ps} PS${cell ? `, tension du quartier −${FLAGRANT.tension}` : ''}.`);
+      push(3, 'Flagrant délit', `${zoneLabel(z)} : ${fait}`, `Interpellation ${cell ? `à ${lieu}` : 'dans la zone'}.`, uid);
+    }
     if (pr.bourgmestre) {
       if (rates === 0) { z.satisfaction += 4; z.rapport.push('Visite du bourgmestre : aucun incident raté, +4 de satisfaction.'); }
       else { z.satisfaction -= 4; z.rapport.push(`Visite du bourgmestre : ${rates} incident${rates > 1 ? 's' : ''} raté${rates > 1 ? 's' : ''}, −4 de satisfaction.`); }
@@ -527,7 +558,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.dossiers.push({ id: ++z.dossierSeq, titre: zr.pick(DOSSIERS_LOCAUX), reste, total: reste, points: Math.round(reste / 2), age: 0 });
       nouveauDossier = 1;
     }
-    let travail = cap.recherche;
+    let travail = Math.max(0, cap.recherche - detaches);
     let resolus = 0;
     for (const d of z.dossiers) {
       if (travail <= 0) break;
@@ -772,7 +803,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.journal = { tour: T, avant: z.hier ? { moral: z.hier.moral, satisfaction: z.hier.satisfaction, reputation: z.hier.reputation } : null, apres: { moral: z.moral, satisfaction: z.satisfaction, reputation: z.reputation }, lignes: j };
       (gazette.journaux ||= {})[u] = { journal: z.journal, ipz: z.ipz, ipzComp: z.ipzComp, ipzCompHier: z.ipzCompHier, ipzDetail: z.ipzDetail, hierIpz: z.hier ? z.hier.ipz : null, compta: z.compta };
     }
-    delete z._joue; delete z._points; delete z._ps; delete z._compta; delete z._decouverteJour;
+    delete z._joue; delete z._points; delete z._ps; delete z._compta; delete z._decouverteJour; delete z._retardEnquete;
   }
 
   // 10. Fin de saison ou tour suivant.

@@ -2,7 +2,7 @@
 import { SERVICES, INFRAS, COUTS, BATIMENTS } from './constants.js';
 import { makeRng } from './rng.js';
 import { agentsDisponibles, coutDecision, decisionImpossible, operationActive, NIVEAUX_OPERATION } from './zone.js';
-import { genererAffaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ } from './enquete.js';
+import { genererAffaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ, dansMaCellule } from './enquete.js';
 import { fipaPour, invitationImpossible, FIPA } from './fipa.js';
 import { cibleImpossible, enDuel } from './rivalites.js';
 import { encherePossible } from './encheres.js';
@@ -93,7 +93,7 @@ export function botOrders(zone, state, style = 'equilibre') {
 
 /** Enquête : constatations d'abord, puis vérifications ciblées ; accusation quand un seul suspect reste. */
 function botEnquete(zone, state, style, rng, alloc) {
-  const out = { demarches: [], accusation: null, traque: null, partages: [] };
+  const out = { demarches: [], accusation: null, traque: null, partages: [], piste: null };
   if (!state.enquete) return out;
   const aff = genererAffaire(state.seed, state.enquete.n);
   const d = dossierDe(state, zone);
@@ -118,6 +118,11 @@ function botEnquete(zone, state, style, rng, alloc) {
     const prix = coutDemarche(state, zone.uid, x);
     if (prix > budget || !rng.chance(envie)) continue;
     out.demarches.push(x); budget -= prix;
+  }
+  // Piste prioritaire des enquêteurs : un suspect encore possible de sa cellule.
+  if (style !== 'distrait') {
+    const miens = c.suspects.filter((i) => dansMaCellule(state, zone.uid, i));
+    if (miens.length && rng.chance(style === 'prudent' ? 0.9 : 0.7)) out.piste = rng.pick(miens);
   }
   // Accusation : seulement quand un seul suspect reste (l'agressif tente parfois à deux).
   if (!d.exclu && d.accuse === null) {

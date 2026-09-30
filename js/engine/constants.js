@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 13;
+export const APP_VERSION = 14;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -73,6 +73,9 @@ export const DEPENSES = {
 export const USURE = { parTour: 1, parIntervention: 1.5, max: 70, revision: 20 };
 /** Efficacité de l'Intervention selon l'état du parc (100 − usure). */
 export function malusEtat(etat) { return etat >= 80 ? 1 : etat >= 60 ? 0.95 : etat >= 40 ? 0.9 : 0.8; }
+
+// Flagrant délit : chance par unité de capacité d'Intervention non prise par les incidents du jour.
+export const FLAGRANT = { parUnite: 0.1, max: 0.4, points: 3, ps: 3, tension: 5 };
 
 export const DELAI_ACADEMIE = 2;       // tours avant l'arrivée d'une recrue
 export const DUREE_FORMATION = 1;      // tours d'indisponibilité
