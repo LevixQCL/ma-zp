@@ -3,9 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-30i',
+  id: '2026-09-30j',
   titre: 'Mise à jour du 30 septembre : ton commissariat prend vie',
   points: [
+    ['Early bird', 'merci d’être là depuis le début : une roulette t’attend sur l’HP pour gagner un skin exclusif (friterie, fort, base orbitale, grange, hangar à dirigeable, roulotte de cirque…). Les nouveaux venus ne pourront plus l’obtenir.'],
+    ['Vitrine du district', 'sur la Carte, fais défiler les commissariats de toutes les zones et touche-en un pour le visiter.'],
     ['Personnalise ton commissariat', 'façade (brique, pierre bleue, verre, art déco…), couleur du néon et abords (arbres, fresque, horloge, toit végétalisé…). Tout se débloque avec ton grade et tes trophées : ouvre la fiche « Mon hôtel de police » depuis l’image de l’HP.'],
     ['Va voir chez les voisins', 'sur la Carte, l’œil à côté de chaque zone montre son commissariat ; dans le classement, touche le nom d’une zone.'],
     ['La scène raconte ta journée', 'drapeau en berne si le moral chute, file de citoyens si la satisfaction baisse, imprévus de la veille (grève, fuite d’eau, cheval sur la route, équipe de télé…), barrières pendant une opération, combis cabossés.'],

@@ -121,3 +121,24 @@ export function skinsValides(z, choix) {
 
 /** Tous les skins, à plat : [{ cat, id, nom, texte }]. */
 export const TOUS_SKINS = Object.entries(SKINS).flatMap(([cat, C]) => Object.entries(C.options).map(([id, o]) => ({ cat, id, nom: o.nom, texte: o.texte, categorie: C.titre })));
+
+/**
+ * Early birds : les zones présentes au lancement des skins. La liste est figée à la première
+ * résolution qui suit la mise à jour (`state.earlyBird.uids`) ; avant cela, toute zone existante compte.
+ */
+export function earlyBirdEligible(z, st) {
+  if (!z || !st) return false;
+  return st.earlyBird && Array.isArray(st.earlyBird.uids) ? st.earlyBird.uids.includes(z.uid) : !!(st.zones && st.zones[z.uid]);
+}
+
+/** « batiment:friterie » → { cat, id } si le skin existe. */
+export function skinDe(cle) {
+  const [cat, id] = String(cle || '').split(':');
+  return SKINS[cat] && SKINS[cat].options[id] ? { cat, id } : null;
+}
+
+/** Tirage de la roulette : un skin au hasard parmi les 12. */
+export function tirerSkin(alea = Math.random()) {
+  const s = TOUS_SKINS[Math.min(TOUS_SKINS.length - 1, Math.floor(alea * TOUS_SKINS.length))];
+  return `${s.cat}:${s.id}`;
+}

@@ -2,7 +2,7 @@
 import { S, esc, icon, fmt1, myZone } from './common.js';
 import { gradeFor, LOTS, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE, DEPENSES, USURE } from '../engine/constants.js';
 import { parcVehicules, cabossesChoisis } from '../engine/parc.js';
-import { DECOR, decorValide, decorDebloque, conditionDecor, decorCompte } from '../engine/decor.js';
+import { DECOR, SKINS, decorValide, decorDebloque, conditionDecor, decorCompte, skinsValides, skinDe, earlyBirdEligible } from '../engine/decor.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { sceneHp, vehiculeSvg } from './scene-hp.js';
 import { operationActive, fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
@@ -64,7 +64,7 @@ export function ouvrirBudget() {
 }
 
 /** Petit panneau en haut de l'écran (même présentation que les aides « ? »). */
-function ouvrirPanneau(html) {
+export function ouvrirPanneau(html) {
   document.querySelector('.aide-wrap')?.remove();
   const retour = document.activeElement;
   const wrap = document.createElement('div');
@@ -83,14 +83,14 @@ function ouvrirPanneau(html) {
 }
 
 /** Paramètres de l'illustration pour n'importe quelle zone (la sienne ou celle d'un voisin). */
-export function sceneZone(z, st, decor = z.decor) {
+export function sceneZone(z, st, decor = z.decor, skins = skinsValides(z, z.skinsChoix)) {
   const T = st.turn;
   const parc = parcVehicules(z, T);
   return sceneHp({
     nom: z.nom, b: z.batiments.bureaux, g: z.batiments.garage,
     devant: parc.filter((v) => v.etat !== 'atelier').sort((a, c) => (c.etat === 'cabosse') - (a.etat === 'cabosse')).map((v) => ({ type: v.type, cabosse: v.etat === 'cabosse' })),
     travaux: z.travaux ? z.travaux.batiment : null, atelier: parc.some((v) => v.etat === 'atelier'),
-    infra: z.infra || {}, lots: z.lots || [], decor,
+    infra: z.infra || {}, lots: z.lots || [], decor, skins,
     drapeau: { couleur: z.couleur, berne: z.moral < 35 },
     file: z.satisfaction < 35,
     renforce: !!(z.dernierOrdre && z.dernierOrdre.rythme === 'renforce'),
@@ -99,14 +99,22 @@ export function sceneZone(z, st, decor = z.decor) {
   });
 }
 
+/** Skins du joueur : ceux de sa zone, plus celui gagné à la roulette (visible tout de suite). */
+export function mesSkins(z) {
+  const own = new Set(z.skins || []);
+  if (S.player && S.player.earlyBird && earlyBirdEligible(z, S.state) && skinDe(S.player.earlyBird.skin)) own.add(S.player.earlyBird.skin);
+  return { possedes: [...own], choix: skinsValides({ skins: [...own] }, (S.player && S.player.skinsChoix) || z.skinsChoix) };
+}
+
 /** Personnalisation choisie par le joueur (tout de suite visible chez lui, recopiée dans la partie à 20:00). */
 function monDecor(z) { return decorValide(z, (S.player && S.player.decor) || z.decor); }
+export const monDecorPublic = monDecor;
 
 /** Vignette cliquable du commissariat d'une zone (vitrine de la Carte). */
 export function vignetteZone(z) {
   const moi = S.user && z.uid === S.user.uid;
   return `<button type="button" class="vitrine-item" data-action="voir-hp" data-uid="${esc(z.uid)}" aria-label="Voir le commissariat de ${esc(z.nom)}">
-    ${sceneZone(z, S.state, moi ? monDecor(z) : decorValide(z, z.decor))}<span class="vitrine-nom"><i style="background:${esc(z.couleur)}"></i>${esc(z.nom)}${moi ? ' <span class="muted">(toi)</span>' : ''}</span></button>`;
+    ${moi ? sceneZone(z, S.state, monDecor(z), mesSkins(z).choix) : sceneZone(z, S.state, decorValide(z, z.decor))}<span class="vitrine-nom"><i style="background:${esc(z.couleur)}"></i>${esc(z.nom)}${moi ? ' <span class="muted">(toi)</span>' : ''}</span></button>`;
 }
 
 /** Illustration cliquable de l'HP (dans la carte « Ma zone ») : ouvre la fiche logistique. */
@@ -116,7 +124,7 @@ export function sceneCarteHtml() {
   const cab = parc.filter((v) => v.etat === 'cabosse').length;
   const b = z.batiments;
   return `<button type="button" class="scene-btn" data-action="logistique" aria-label="Mon hôtel de police : bâtiments et véhicules">
-    ${sceneZone(z, S.state, monDecor(z))}
+    ${sceneZone(z, S.state, monDecor(z), mesSkins(z).choix)}
     <span class="scene-leg"><span>Bâtiment niv. ${b.bureaux} · Garage niv. ${b.garage}${z.travaux ? ' · travaux' : ''}</span>
       ${cab ? `<span class="scene-pastille">${cab} cabossé${cab > 1 ? 's' : ''}</span>` : ''}${icon('chevron', 14)}</span>
   </button>`;
@@ -134,7 +142,7 @@ export function ouvrirHpVoisin(uid) {
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><span class="mono tiny" style="color:var(--blue-soft)">ZP ${esc(z.code)}</span><h2 id="aide-titre" class="aide-titre" style="margin:0">${esc(z.nom)}</h2>
       <span class="tiny muted">${esc(gradeFor(z.ps || 0).nom)} · ${(z.trophees || []).length} trophée${(z.trophees || []).length > 1 ? 's' : ''}</span></div>
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
-    <div class="scene-voisin">${sceneZone(z, st, d)}</div>
+    <div class="scene-voisin">${moi ? sceneZone(z, st, d, mesSkins(z).choix) : sceneZone(z, st, d)}</div>
     <div class="bats hp-logis">
       <div class="bat"><span class="tiny muted">Bâtiment</span><span style="font-weight:700">Niveau ${z.batiments.bureaux}</span></div>
       <div class="bat"><span class="tiny muted">Garage</span><span style="font-weight:700">Niveau ${z.batiments.garage} · ${z.vehicules} véhicule${z.vehicules > 1 ? 's' : ''}</span></div>
@@ -157,7 +165,16 @@ export function ouvrirDecor() {
   ouvrirPanneau(`<div data-decor class="col" style="gap:10px">
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon commissariat</h2><span class="tiny muted">${n} élément${n > 1 ? 's' : ''} débloqué${n > 1 ? 's' : ''} sur ${total}</span></div>
       <button class="iconbtn" data-action="logistique" aria-label="Retour" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">‹</button></div>
-    <div class="scene-voisin">${sceneZone(z, S.state, d)}</div>
+    <div class="scene-voisin">${sceneZone(z, S.state, d, mesSkins(z).choix)}</div>
+    ${(() => {
+      const { possedes, choix } = mesSkins(z);
+      if (!possedes.length) return '';
+      return `<div class="col" style="gap:6px"><span class="tiny" style="color:var(--amber)">${icon('star', 12)} Early bird</span><div class="decor-opts">${possedes.map((k) => {
+        const sk = skinDe(k); if (!sk) return '';
+        const o = SKINS[sk.cat].options[sk.id], on = choix[sk.cat] === sk.id;
+        return `<button type="button" class="decor-opt${on ? ' on' : ''}" data-action="skin-choix" data-cat="${sk.cat}" data-id="${sk.id}" aria-pressed="${on}"><span>${esc(o.nom)}</span><span class="cond">${esc(SKINS[sk.cat].titre)} · ${on ? 'équipé, touche pour l’enlever' : 'touche pour l’équiper'}</span></button>`;
+      }).join('')}</div></div>`;
+    })()}
     ${groupes}
     <p class="tiny muted" style="margin:0">Les éléments se débloquent avec ton grade et tes trophées. Les autres chefs de zone voient ton commissariat depuis la Carte et le classement, à partir de 20:00.</p>
   </div>`);

@@ -19,7 +19,7 @@ import { encheresResoudre, annoncerLot } from './encheres.js';
 import { rivalitesPre, rivalitesPost, postesContre, themeActif, appliquerConsignes, absT, MAN } from './rivalites.js';
 import { FLAGRANTS } from './contenu.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
-import { decorValide } from './decor.js';
+import { decorValide, earlyBirdEligible, skinDe, skinsValides } from './decor.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, EVENEMENTS_COLLECTIFS, COUPS_DURS, ALEAS, OPERATIONS, PRESSIONS, PRESSION_WEEKEND } from './contenu.js';
 
@@ -145,6 +145,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   const news = [];            // brèves de la Gazette
   const push = (prio, kicker, titre, texte, uid) => news.push({ prio, kicker, titre, texte, uid });
 
+  // Early birds : les zones présentes à la première résolution après la mise à jour des skins.
+  if (!state.earlyBird) state.earlyBird = { uids: Object.keys(state.zones || {}) };
+
   // 1. Joueurs inscrits sans zone (filet de sécurité) : ils jouent au tour suivant.
   for (const [uid, p] of Object.entries(players)) {
     if (state.zones[uid] || !p || p.retire) continue;
@@ -159,7 +162,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // Mise à jour des noms, codes et couleurs (renommage) et retraits.
   for (const [uid, z] of Object.entries(state.zones)) {
     const p = players[uid];
-    if (p) { if (p.nom) z.nom = String(p.nom).slice(0, 24); if (p.code) z.code = String(p.code).slice(0, 4); if (p.couleur) z.couleur = p.couleur; if (p.equipeNoms) appliquerNoms(z.equipe, uid, p.equipeNoms); if (p.decor) z.decor = decorValide(z, p.decor); }
+    if (p) { if (p.nom) z.nom = String(p.nom).slice(0, 24); if (p.code) z.code = String(p.code).slice(0, 4); if (p.couleur) z.couleur = p.couleur; if (p.equipeNoms) appliquerNoms(z.equipe, uid, p.equipeNoms); if (p.decor) z.decor = decorValide(z, p.decor);
+      if (p.earlyBird && earlyBirdEligible(z, state)) { const k = skinDe(p.earlyBird.skin); if (k) z.skins = [`${k.cat}:${k.id}`]; }
+      if (p.skinsChoix) z.skinsChoix = skinsValides(z, p.skinsChoix); }
     if (p && p.retire) delete state.zones[uid];
   }
 
@@ -894,6 +899,9 @@ function finDeSaison(state, classement) {
     nz.infra = { ...(z.infra || {}) };
     nz.equipe = z.equipe || creerEquipe(uid);
     nz.trophees = z.trophees || [];
+    if (z.decor) nz.decor = z.decor;
+    if (z.skins) nz.skins = z.skins;
+    if (z.skinsChoix) nz.skinsChoix = z.skinsChoix;
     nz.rapport = [`Nouvelle saison : tu conserves tes formations et tes bâtiments, baissés d’un niveau (hôtel de police ${nz.batiments.bureaux}, garage ${nz.batiments.garage}), et tes annexes. Budget, effectifs et véhicules repartent des valeurs de départ.`];
     nz.heritage = { season: oldSeason, niveaux, batiments: { ...nz.batiments }, annexes: Object.keys(nz.infra).filter((k) => nz.infra[k]).length };
     state.zones[uid] = nz;
