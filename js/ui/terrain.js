@@ -8,6 +8,7 @@ import { demandeRenfortHtml, appelsRenfort, renfortCtrl, renfortPrevu } from './
 import { candidaturesRecues, candidatureCtrl, maCandidature, postulerCtrl, placesRestantes, chefDe } from './affaires.js';
 import { fipaPour } from '../engine/fipa.js';
 import { SERVICE_LABELS, psEvenement } from '../engine/constants.js';
+import { carteAffaire } from './ordres.js';
 
 /** Nombre de choses qui attendent une action sur le Terrain (pour la pastille). */
 export function terrainAFaire() {
@@ -42,12 +43,7 @@ export function renderTerrain() {
       <span class="col grow" style="gap:1px"><span style="font-weight:600">${esc(p.titre)}</span><span class="small muted">${esc(p.texte)}</span></span></div>`);
   }
   for (const a of st.affaires.filter((x) => x.zone === z.uid)) {
-    const e = d.engagements[a.id] || { agents: 0 };
-    const recues = candidaturesRecues().filter((c) => c.aid === a.id);
-    chezMoi.push(bloc(esc(a.titre), `<p class="tiny muted" style="margin:0">Tu diriges · ${a.recompense} pts à 100 % · force minimale ${a.forceMin} (60 %), conseillée ${a.forceConseillee} (100 %), ${Math.round(a.forceConseillee * 15) / 10} et plus (130 %) · places restantes ${placesRestantes(a)} sur ${a.agentsMax}</p>
-      <a class="btn small block" href="#ordres">${e.agents ? `${e.agents} agent${e.agents > 1 ? 's' : ''} engagé${e.agents > 1 ? 's' : ''} · ajuster` : 'Lancer l’affaire : engager tes agents'}</a>
-      ${recues.map((c) => `<div class="col" style="gap:4px"><span class="small" style="font-weight:600">${nom(c.uid)} postule avec ${c.agents} agent${c.agents > 1 ? 's' : ''}</span>${candidatureCtrl(c)}</div>`).join('')}`,
-      { kicker: 'Affaire disputée chez toi' }));
+    chezMoi.push(`<section class="col" style="gap:4px"><span class="kicker">Affaire disputée chez toi · tu diriges</span>${carteAffaire(a)}</section>`);
   }
   for (const f of fipaPour(st, z.uid)) {
     chezMoi.push(`<a class="list-row" href="#hp-fipa" style="border-color:var(--amber-line)"><span class="bullet" style="background:var(--amber)"></span>
@@ -59,9 +55,7 @@ export function renderTerrain() {
     voisins.push(bloc(`${nom(a.uid)} appelle du renfort`, `<p class="small muted" style="margin:0">« ${esc(a.op.titre)} » · ${a.agents} agents demandés ce soir</p>${renfortCtrl(a)}`, { kicker: 'Appel à renfort', cls: 'red', couleur: 'var(--red-soft)' }));
   }
   for (const a of st.affaires.filter((x) => x.zone !== z.uid)) {
-    const chef = chefDe(a);
-    voisins.push(bloc(esc(a.titre), `<p class="tiny muted" style="margin:0">Chez ${chef ? zoneName(chef) : '?'} · ${a.recompense} pts à 100 % (de 60 % à 130 % selon la force de l’équipe) · force conseillée ${a.forceConseillee} · ${a.agentsMax} agents max</p>${postulerCtrl(a)}`,
-      { kicker: maCandidature(a) ? 'Ta candidature' : 'Affaire disputée · postuler' }));
+    voisins.push(`<section class="col" style="gap:4px"><span class="kicker">${maCandidature(a) ? 'Ta candidature' : 'Affaire disputée · postuler'}</span>${carteAffaire(a)}</section>`);
   }
   const autresOps = Object.values(st.zones).filter((x) => x.uid !== z.uid && operationActive(x, T) && !appelsRenfort().some((a) => a.uid === x.uid));
   for (const x of autresOps) {
