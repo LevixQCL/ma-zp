@@ -57,7 +57,7 @@ export function sections() {
         ])}
         <h3>Ce que rapporte la réputation</h3>
         ${ul([
-          `<strong>Confiance de la commune</strong> : ${k(SUBSIDE.confiance)} par point au-dessus (ou en dessous) de 50, chaque tour. Réputation 80 : +${String(30 * SUBSIDE.confiance).replace('.', ',')} k€ ; réputation 20 : −${String(30 * SUBSIDE.confiance).replace('.', ',')} k€.`,
+          `<strong>Confiance de la commune</strong> : ${k(SUBSIDE.confiance)} par point au-dessus de 50, chaque tour ; en dessous, ${k(SUBSIDE.confianceMalus)} par point seulement. Réputation 60 : +${String(10 * SUBSIDE.confiance).replace('.', ',')} k€ ; réputation 80 : +${String(30 * SUBSIDE.confiance).replace('.', ',')} k€ ; réputation 30 : −${String(20 * SUBSIDE.confianceMalus).replace('.', ',')} k€.`,
           `<strong>Recrutement</strong> : à ${REPUTATION.recrueHaute} ou plus, une recrue coûte ${k(REPUTATION.coutRecrueHaute)} au lieu de ${k(COUTS.recrue)} ; sous ${REPUTATION.recrueBasse}, elle coûte ${k(REPUTATION.coutRecrueBasse)}.`,
           `<strong>Salle des ventes</strong> : certains lots sont réservés aux zones de réputation ${ENCHERE.repReserve} ou plus, et la réputation départage les offres égales.`,
           `<strong>Scandale</strong> : une manœuvre ratée par une zone de réputation supérieure à ${REPUTATION.scandale} coûte ${REPUTATION.scandaleMalus} points de plus.`,
