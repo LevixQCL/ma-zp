@@ -1,6 +1,6 @@
 // Carte du District Delta, Radio Delta.
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1 } from './common.js';
-import { sceneVignette } from './logistique.js';
+import { sceneVignette, estChampion } from './logistique.js';
 import { moyenneIpz, operationActive } from '../engine/zone.js';
 import { planVille, iconeSite } from './plan.js';
 import { siteDe } from '../engine/sites.js';
@@ -117,7 +117,7 @@ export function renderCarte() {
       <div class="vitrine">${[me, ...zones.filter((z) => z.uid !== me.uid)].map((z) => `<button type="button" class="vitrine-item" data-action="voir-hp" data-uid="${esc(z.uid)}" aria-label="Voir le commissariat de ${esc(z.nom)}">
         ${sceneVignette(z)}
         <span class="vitrine-info">
-          <span class="between" style="gap:6px"><span class="row" style="gap:6px;min-width:0">${S.players[z.uid] && S.players[z.uid].blason && gradeIdx(z.ps) >= 4 ? blasonSvg(S.players[z.uid].blason, z.couleur, 18) : `<span class="bullet" style="background:${esc(z.couleur)}"></span>`}<span class="vitrine-nom">${zoneName(z)} ${insigne(z.ps)}</span></span><span class="mono small">${fmt1(moyenneIpz(z))}</span></span>
+          <span class="between" style="gap:6px"><span class="row" style="gap:6px;min-width:0">${S.players[z.uid] && S.players[z.uid].blason && gradeIdx(z.ps) >= 4 ? blasonSvg(S.players[z.uid].blason, z.couleur, 18) : `<span class="bullet" style="background:${esc(z.couleur)}"></span>`}<span class="vitrine-nom">${estChampion(z, st) ? '<span style="color:var(--amber)">★</span> ' : ''}${zoneName(z)} ${insigne(z.ps)}</span></span><span class="mono small">${fmt1(moyenneIpz(z))}</span></span>
           <span class="tiny muted">${z.uid === me.uid ? 'toi · ' : pseudoDe(z.uid) ? `${esc(pseudoDe(z.uid))} · ` : ''}${gradeInfo(z.ps).g.nom}${(z.trophees || []).length ? ` · <span style="color:var(--amber-soft)">${(z.trophees || []).length} trophée${(z.trophees || []).length > 1 ? 's' : ''}</span>` : ''}${z.peril ? ' · <span class="bad">en péril</span>' : z.tutelle ? ' · <span class="bad">sous tutelle</span>' : z.toursSansOrdres >= 3 ? ' · en veille' : ''}</span>
           ${siteDe(z) ? `<span class="tiny row" style="gap:4px;color:${siteDe(z).couleur}">${iconeSite(siteDe(z).id, siteDe(z).couleur, 13)}${esc(siteDe(z).nom)}</span>` : ''}
         </span></button>`).join('')}</div></section>

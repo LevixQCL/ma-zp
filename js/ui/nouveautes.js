@@ -3,20 +3,21 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-30j',
-  titre: 'Mise à jour du 30 septembre : ton commissariat prend vie',
+  id: '2026-09-30k',
+  titre: 'Mise à jour du 30 septembre : le district prend vie',
   points: [
-    ['Early bird', 'merci d’être là depuis le début : une roulette t’attend sur l’HP pour gagner un skin exclusif (friterie, fort, base orbitale, grange, hangar à dirigeable, roulotte de cirque…). Les nouveaux venus ne pourront plus l’obtenir.'],
-    ['Personnalise ton commissariat', 'façade (brique, pierre bleue, verre, art déco…), couleur du néon et abords (arbres, fresque, horloge, toit végétalisé…). Tout se débloque avec ton grade et tes trophées : ouvre la fiche « Mon hôtel de police » depuis l’image de l’HP.'],
-    ['Va voir chez les voisins', 'sur la Carte, « Les zones du district » fait défiler les commissariats de toutes les zones : touche-en un pour le visiter. Dans le classement, touche le nom d’une zone.'],
-    ['La scène raconte ta journée', 'drapeau en berne si le moral chute, file de citoyens si la satisfaction baisse, imprévus de la veille (grève, fuite d’eau, cheval sur la route, équipe de télé…), barrières pendant une opération, combis cabossés.'],
-    ['Météo et fêtes', 'pluie ou neige certains jours (la même pour tout le monde), drapeaux belges le 21 juillet, guirlandes en fin d’année.'],
+    ['Early bird', 'merci d’être là depuis le début : une roulette t’attend sur l’HP pour gagner un skin exclusif (friterie, fort, base orbitale, grange, hangar à dirigeable, roulotte de cirque…).'],
+    ['Champion de la semaine', 'le meilleur IPZ moyen de la semaine porte une étoile dorée sur son toit pendant 7 jours. Le podium de fin de saison reçoit une plaque à côté de son entrée, pour toujours.'],
+    ['Décors d’événement', 'Halloween, Saint-Nicolas, Carnaval, Dragon de la Ducasse : pendant ces périodes, aide au grand événement ou fais une découverte dans l’enquête pour gagner un décor en édition limitée.'],
+    ['Les manœuvres laissent des traces', 'affiches de recrutement, cartons de dossiers emportés, voiture de l’Inspection ou tente d’un poste avancé : tout le monde voit qui a été visé.'],
+    ['20:00', 'à ta première visite après la résolution, tes combis sortent en patrouille, gyrophares allumés.'],
+    ['Les zones du district', 'sur la Carte, fais défiler les commissariats de toutes les zones et touche-en un pour le visiter.'],
   ],
 };
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP ! Personnalise ton commissariat (façade, néon, abords) avec ce que ton grade et tes trophées débloquent, et va voir celui des autres depuis la Carte ou le classement. La scène montre aussi ta journée : moral, imprévus, météo et fêtes.`;
+  return `📣 Mise à jour de Ma ZP ! Roulette Early bird pour gagner un skin exclusif, étoile du champion de la semaine, plaques du podium, décors d'événement en édition limitée (Halloween, Saint-Nicolas, Carnaval, Dragon de la Ducasse), traces des manœuvres, et tes combis qui partent en patrouille à 20:00.`;
 }
 
 

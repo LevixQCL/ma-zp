@@ -181,6 +181,7 @@ export function rivalitesPre(state, uids, ord, push, T) {
     if (!ok && z.reputation + MAN.coutReputation > REPUTATION.scandale) { z.reputation -= REPUTATION.scandaleMalus; scandale = `, scandale : −${REPUTATION.scandaleMalus} de plus, ta bonne réputation fait parler`; }
     z.rapport.push(`Manœuvre ${nom.toLowerCase()} contre ${nomZone(c)} : ${ok ? 'réussie' : 'échec'}${detail ? `, ${detail}` : ''} (−${MAN.coutReputation} de réputation${scandale}).`);
     c.rapport.push(`Une zone a tenté un ${nom.toLowerCase()} contre toi : ${ok ? 'réussi' : 'raté'}. La Gazette révélera son nom demain.`);
+    if (ok) c.trace = { type: m.type, tour: T, auteur: u }; // visible sur l'illustration de l'HP le lendemain
     push(ok ? 7 : 5, 'Manœuvre', `${nom} ${ok ? 'réussi' : 'raté'} contre ${nomZone(c)}`, 'L’auteur sera révélé demain.');
     state.aReveler.push({ titre: `C’était ${nomZone(z)}`, texte: `${nom} contre ${nomZone(c)}, ${ok ? 'réussi' : 'raté'}.` });
   }

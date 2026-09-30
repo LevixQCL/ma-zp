@@ -10,7 +10,7 @@ import { siteDe } from '../engine/sites.js';
 import { iconeSite } from './plan.js';
 import { moyenneIpz, operationActive, fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
 import { coutDemarche } from '../engine/enquete.js';
-import { PERIL } from '../engine/rivalites.js';
+import { PERIL, absT, MANOEUVRES } from '../engine/rivalites.js';
 import { estimations } from './ordres.js';
 
 const k = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt1(Math.abs(v))} k€`;
@@ -99,7 +99,18 @@ export function sceneZone(z, st, decor = z.decor, skins = skinsValides(z, z.skin
     renforce: !!(z.dernierOrdre && z.dernierOrdre.rythme === 'renforce'),
     imprevu: z.scene && z.scene.tour >= T - 1 ? z.scene : {},
     operation: !!operationActive(z, T),
+    champion: estChampion(z, st),
+    plaques: z.plaques || [],
+    trace: z.trace && z.trace.tour >= T - 1 && st.zones[z.trace.auteur] ? { type: z.trace.type, couleur: st.zones[z.trace.auteur].couleur } : null,
+    poste: (() => { const p = (st.postes || []).find((x) => x.cible === z.uid && x.jusqua >= absT(st)); return p && st.zones[p.auteur] ? { couleur: st.zones[p.auteur].couleur } : null; })(),
   });
+}
+
+/** La zone est-elle championne de la semaine (étoile pendant 7 jours) ? */
+export function estChampion(z, st) {
+  const c = st.champion;
+  if (!c || c.uid !== z.uid) return false;
+  return (c.season === st.season && st.turn <= c.tour + 7) || (c.season === st.season - 1 && st.turn <= 7);
 }
 
 /** Skins du joueur : ceux de sa zone, plus celui gagné à la roulette (visible tout de suite). */
@@ -125,7 +136,12 @@ export function sceneCarteHtml() {
   const parc = parcVehicules(z, T);
   const cab = parc.filter((v) => v.etat === 'cabosse').length;
   const b = z.batiments;
-  return `<button type="button" class="scene-btn" data-action="logistique" aria-label="Mon hôtel de police : bâtiments et véhicules">
+  // Animation de 20:00 : à la première ouverture après une résolution, les équipes sortent en patrouille.
+  const cle = `mazp-anim-${S.state.seed || ''}-${S.state.season}-${T}`;
+  let anim = false;
+  try { if (T > 1 && !localStorage.getItem(cle)) { localStorage.setItem(cle, '1'); S.animFin = Date.now() + 6500; } } catch (e) { /* pas de stockage */ }
+  if (S.animFin && Date.now() < S.animFin) anim = true;
+  return `<button type="button" class="scene-btn${anim ? ' anim-soir' : ''}" data-action="logistique" aria-label="Mon hôtel de police : bâtiments et véhicules">
     ${sceneZone(z, S.state, monDecor(z), mesSkins(z).choix)}
     <span class="scene-leg"><span>Bâtiment niv. ${b.bureaux} · Garage niv. ${b.garage}${z.travaux ? ' · travaux' : ''}</span>
       ${cab ? `<span class="scene-pastille">${cab} cabossé${cab > 1 ? 's' : ''}</span>` : ''}${icon('chevron', 14)}</span>
@@ -150,6 +166,9 @@ export function ouvrirHpVoisin(uid) {
       <div class="bat"><span class="tiny muted">Garage</span><span style="font-weight:700">Niveau ${z.batiments.garage} · ${z.vehicules} véhicule${z.vehicules > 1 ? 's' : ''}</span></div>
     </div>
     <p class="small" style="margin:0"><span class="muted">Annexes :</span> ${annexes.length ? esc(annexes.join(', ')) : 'aucune'}${lots.length ? `<br><span class="muted">Lots :</span> ${esc(lots.join(', '))}` : ''}</p>
+    ${estChampion(z, st) ? '<p class="small" style="margin:0;color:var(--amber)">★ Champion de la semaine</p>' : ''}
+    ${(z.plaques || []).length ? `<p class="small" style="margin:0"><span class="muted">Podium :</span> ${z.plaques.map((pl) => `${pl.rang === 1 ? '1re' : `${pl.rang}e`} place saison ${pl.season}`).join(', ')}</p>` : ''}
+    ${z.trace && z.trace.tour >= st.turn - 1 && st.zones[z.trace.auteur] ? `<p class="small" style="margin:0"><span class="muted">Hier :</span> ${esc(MANOEUVRES[z.trace.type] ? MANOEUVRES[z.trace.type].nom.toLowerCase() : 'manœuvre')} réussi par ${esc(st.zones[z.trace.auteur].nom)}</p>` : ''}
     <div class="between small"><span class="muted">IPZ moyen</span><span class="mono">${fmt1(moyenneIpz(z))}</span></div>
     <div class="between small"><span class="muted">FIPA</span><span>${esc(fiabilite(z))}</span></div>
     ${siteDe(z) ? `<div class="between small"><span class="muted">Site sensible</span><span class="row" style="gap:4px;color:${siteDe(z).couleur}">${iconeSite(siteDe(z).id, siteDe(z).couleur, 14)}${esc(siteDe(z).nom)}</span></div>` : ''}
@@ -176,7 +195,7 @@ export function ouvrirDecor() {
     ${(() => {
       const { possedes, choix } = mesSkins(z);
       if (!possedes.length) return '';
-      return `<div class="col" style="gap:6px"><span class="tiny" style="color:var(--amber)">${icon('star', 12)} Early bird</span><div class="decor-opts">${possedes.map((k) => {
+      return `<div class="col" style="gap:6px"><span class="tiny" style="color:var(--amber)">${icon('star', 12)} Mes skins</span><div class="decor-opts">${possedes.map((k) => {
         const sk = skinDe(k); if (!sk) return '';
         const o = SKINS[sk.cat].options[sk.id], on = choix[sk.cat] === sk.id;
         return `<button type="button" class="decor-opt${on ? ' on' : ''}" data-action="skin-choix" data-cat="${sk.cat}" data-id="${sk.id}" aria-pressed="${on}"><span>${esc(o.nom)}</span><span class="cond">${esc(SKINS[sk.cat].titre)} · ${on ? 'équipé, touche pour l’enlever' : 'touche pour l’équiper'}</span></button>`;

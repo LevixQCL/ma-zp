@@ -114,7 +114,7 @@ function passant(x, y, habit, peau = '#E8C39E') {
  * en service à garer devant (3 au plus) ; `travaux` : 'bureaux' | 'garage' | null ;
  * `moment` : 'jour' | 'aube' | 'crepuscule' | 'nuit' (par défaut, l'heure de l'appareil).
  */
-export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = false, infra = {}, lots = [], moment = momentDuJour(), decor = null, skins = {}, drapeau = null, file = false, renforce = false, imprevu = {}, operation = false, date = new Date() }) {
+export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = false, infra = {}, lots = [], moment = momentDuJour(), decor = null, skins = {}, drapeau = null, file = false, renforce = false, imprevu = {}, operation = false, date = new Date(), champion = false, plaques = [], trace = null, poste = null }) {
   const uid = `${moment}-${++numeroScene}`;
   const H = 210, base = 172, x0 = 22, w = 160, gf = 30, fh = 24;
   // Aile des annexes entre l'hôtel de police et le garage (une travée par annexe).
@@ -137,6 +137,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   const SB = SKINS.batiment.options[skins.batiment] ? skins.batiment : null;
   const SG = SKINS.garage.options[skins.garage] ? skins.garage : null;
   const SA = SKINS.aile.options[skins.aile] ? skins.aile : null;
+  const SF = SKINS.fete.options[skins.fete] ? skins.fete : null;
   const teinte = (x) => (moment === 'jour' ? x : moment === 'nuit' ? mix(x, '#0B1119', 0.76) : mix(x, '#1A2330', 0.6));
   if (SB) { const c = SKINS.batiment.options[SB].jour; P.facade = [teinte(c[0]), teinte(c[1])]; P.tour = teinte(c[2]); P.arete = teinte(mix(c[2], '#000000', 0.15)); }
   const texture = SB ? null : D.facade;
@@ -240,7 +241,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   s += `<rect x="${x0 - 3}" y="${top - 4}" width="${w + 6}" height="4" rx="1" fill="${P.arete}"/>`;
   if (SB === 'chalet') s += `<path d="M${x0 - 8} ${top - 2} L${x0 + w / 2} ${top - 34} L${x0 + w + 8} ${top - 2} Z" fill="${teinte('#5A3A22')}"/><path d="M${x0 - 8} ${top - 2} L${x0 + w / 2} ${top - 34} L${x0 + w + 8} ${top - 2}" stroke="${teinte('#3A2410')}" stroke-width="2" fill="none"/>${meteo.neige ? `<path d="M${x0 - 6} ${top - 4} L${x0 + w / 2} ${top - 32} L${x0 + w + 6} ${top - 4}" stroke="#F4F8FB" stroke-width="2.5" fill="none"/>` : ''}`;
   if (D.abords === 'toitvert') { s += `<rect x="${x0 - 3}" y="${top - 6}" width="${w + 6}" height="3" rx="1.5" fill="#3E7D4F"/>`; for (let i = 0; i < 9; i++) s += `<circle cx="${x0 + 4 + i * 11}" cy="${top - 6.5}" r="${2.2 + (i % 3) * 0.6}" fill="${i % 2 ? '#4E9A5E' : '#3E7D4F'}"/>`; }
-  if (b >= 2 && !['chalet', 'friterie', 'gateau'].includes(SB)) s += `<rect x="${x0 + w - 30}" y="${top - 11}" width="20" height="7" rx="1" fill="${P.toit}"/><rect x="${x0 + w - 27}" y="${top - 9}" width="14" height="1" fill="${P.toit2}"/>`;
+  if (b >= 2 && !['chalet', 'friterie', 'gateau'].includes(SB) && SF !== 'carnaval') s += `<rect x="${x0 + w - 30}" y="${top - 11}" width="20" height="7" rx="1" fill="${P.toit}"/><rect x="${x0 + w - 27}" y="${top - 9}" width="14" height="1" fill="${P.toit2}"/>`;
   if (b >= 3) s += `<line x1="${x0 + w - 6}" y1="${top - 4}" x2="${x0 + w - 6}" y2="${top - 30}" stroke="${P.mat}" stroke-width="1.4"/><line x1="${x0 + w - 10}" y1="${top - 20}" x2="${x0 + w - 2}" y2="${top - 20}" stroke="${P.mat}"/><circle cx="${x0 + w - 6}" cy="${top - 32}" r="4" fill="#F0736A" opacity=".22"/><circle class="hp-balise" cx="${x0 + w - 6}" cy="${top - 32}" r="1.7" fill="#F0736A"/>`;
   if (b >= 4) s += `<g transform="translate(${x0 + w - 22},${top - 11})"><path d="M0 0 L2 -6" stroke="${P.mat}" stroke-width="1.3"/><path d="M-5 -6 Q2 -14 9 -6 Z" fill="${P.toit2}"/></g>`;
   if (b >= 5 && SB !== 'chalet') s += `<rect x="${x0 + w - 44}" y="${top - 12}" width="12" height="8" rx="1" fill="${P.toit}"/>`;
@@ -388,14 +389,56 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   if (operation) for (let i = 0; i < 4; i++) { const bx = x0 + 18 + i * 34; s += `<g transform="translate(${bx},${base + 1})"><rect x="0" y="-7" width="22" height="1.2" fill="#C8D3DD"/><rect x="0" y="-4" width="22" height="1" fill="#C8D3DD"/>${[1, 7, 13, 19].map((vx) => `<rect x="${vx}" y="-7" width=".8" height="6" fill="#C8D3DD"/>`).join('')}<path d="M1 0 l-1.5 1.5 M21 0 l1.5 1.5" stroke="#9FB0C0"/></g>`; }
   // Véhicules en service garés devant.
   let vx = Math.min(gx - 2, W - 150);
+  s += '<g class="hp-vehicules">';
   for (const v of vehs.slice(0, 3)) {
     s += v.type === 'anonyme' ? anonyme(vx, base + 10, 0.9) : combi(vx, base + 8, 0.95);
+    if (v.type !== 'anonyme') s += `<g class="hp-gyro" opacity="0"><circle cx="${vx + 16}" cy="${base + 8}" r="8" fill="url(#hp-bleu-${uid})"/><circle cx="${vx + 16}" cy="${base + 8.2}" r="1.6" fill="#8CC8F5"/></g>`;
     if (v.cabosse) s += `<path d="M${vx + 30} ${base + 18} l3 -3 l2 2 l3 -3" stroke="#0B1119" stroke-width="1" fill="none" opacity=".7"/><path d="M${vx + 34} ${base + 12} l5 5 M${vx + 39} ${base + 12} l-5 5" stroke="#C8D3DD" stroke-width="1.4" opacity=".9"/>`;
     if (operation && v.type !== 'anonyme') s += `<circle cx="${vx + 16}" cy="${base + 8}" r="7" fill="url(#hp-bleu-${uid})"/>`;
     vx += 48;
   }
+  s += '</g>';
+  // Plaques du podium de fin de saison, à droite de l'entrée (les trois plus récentes).
+  (plaques || []).slice(-3).forEach((pl, i) => { const c = ['#F2B544', '#C8D3DD', '#C98A5A'][pl.rang - 1] || '#C8D3DD'; s += `<rect x="${x0 + w / 2 + 28 + i * 8}" y="${gy + 13}" width="6" height="8" rx="1" fill="${c}" stroke="${mix(c, '#000000', 0.35)}" stroke-width=".5"/><text x="${x0 + w / 2 + 31 + i * 8}" y="${gy + 19}" text-anchor="middle" font-size="4.5" font-weight="700" fill="#1D1A15" font-family="Barlow Condensed, Arial Narrow, sans-serif">${pl.rang}</text>`; });
+  // Champion de la semaine : étoile dorée au-dessus du toit.
+  if (champion) { const cx = x0 + w - 40, cy = Math.max(vy + 12, top - 28); const pts = Array.from({ length: 10 }, (_, i) => { const a = (Math.PI / 5) * i - Math.PI / 2, rr = i % 2 ? 3.6 : 8.5; return `${(cx + rr * Math.cos(a)).toFixed(1)},${(cy + rr * Math.sin(a)).toFixed(1)}`; }).join(' '); s += `<circle cx="${cx}" cy="${cy}" r="16" fill="url(#hp-ambre-${uid})"/><circle cx="${cx}" cy="${cy}" r="12" fill="url(#hp-ambre-${uid})"/><polygon points="${pts}" fill="#F2D27A" stroke="#C98F1E" stroke-width=".8"/><line x1="${cx}" y1="${cy + 8}" x2="${cx}" y2="${top - 4}" stroke="${P.mat}" stroke-width=".8"/>`; }
+  // Traces d'une manœuvre réussie contre la zone (la veille), et poste avancé d'un voisin.
+  if (trace) {
+    const tc = trace.couleur || '#F0736A';
+    if (trace.type === 'debauchage') for (const px of [x0 + 58, x0 + w - 70]) s += `<g transform="translate(${px},${gy + 12}) rotate(${px % 2 ? -6 : 5})"><rect width="11" height="14" fill="${tc}"/><rect x="1.5" y="2" width="8" height="1.2" fill="#FFFFFF"/><rect x="1.5" y="4.5" width="8" height="1.2" fill="#FFFFFF"/><text x="5.5" y="11.5" text-anchor="middle" font-size="5" font-weight="700" fill="#FFFFFF" font-family="Barlow Condensed, Arial Narrow, sans-serif">+1</text></g>`;
+    if (trace.type === 'dessaisissement') s += `<g transform="translate(${x0 + w / 2 - 44},${base})">${[[0, -7], [9, -7], [4, -14]].map(([bx, by]) => `<rect x="${bx}" y="${by}" width="9" height="7" fill="#B98A55" stroke="#8A6A3A" stroke-width=".5"/><rect x="${bx + 3}" y="${by + 1}" width="3" height="1.2" fill="#F4EFE3"/>`).join('')}<rect x="14" y="-22" width="6" height="7.5" fill="#F4EFE3" transform="rotate(18 17 -18)"/></g>`;
+    if (trace.type === 'signalement') s += `${anonyme(x0 + 4, base + 10, 0.9, '#2F3A4B')}<rect x="${x0 + 16}" y="${base + 7}" width="18" height="4" rx="1" fill="#F4EFE3"/><text x="${x0 + 25}" y="${base + 10.2}" text-anchor="middle" font-size="3.4" font-weight="700" fill="#1D1A15" font-family="Barlow Condensed, Arial Narrow, sans-serif">INSPECTION</text>`;
+  }
+  if (poste) s += `<g transform="translate(${x0 + 2},${base})"><path d="M0 0 L9 -14 L18 0 Z" fill="${poste.couleur}"/><path d="M9 -14 L9 0" stroke="#0B1119" stroke-width=".6"/><path d="M6 0 L9 -6 L12 0 Z" fill="#0B1119" opacity=".5"/><line x1="9" y1="-14" x2="9" y2="-22" stroke="${P.mat}" stroke-width=".7"/><path d="M9 -22 l6 2 l-6 2 Z" fill="${poste.couleur}"/></g>`;
+  // Décor d'événement (édition limitée).
+  if (SF === 'halloween') {
+    const citrouille = (x, y, k = 1) => `<g transform="translate(${x},${y}) scale(${k})"><ellipse cx="0" cy="-4" rx="5.5" ry="4.2" fill="#F28C28"/><path d="M-2 -8 q2 -3 3 0" stroke="#3E7D4F" stroke-width="1.2" fill="none"/><path d="M-3 -5 l1 -1.4 l1 1.4 Z M1 -5 l1 -1.4 l1 1.4 Z M-2.5 -2.6 q2.5 1.5 5 0" fill="${P.neon ? '#FFE7B0' : '#3A2410'}" stroke="${P.neon ? '#FFE7B0' : '#3A2410'}" stroke-width=".5"/></g>`;
+    s += citrouille(porte - 20, base) + citrouille(porte + 22, base, 0.8) + citrouille(x0 + 30, top - 4, 0.9) + citrouille(gx + gw - 10, gtop - 4, 0.8);
+    for (const [cx, cy, sx] of [[x0, top, 1], [x0 + w, top, -1]]) s += `<path d="M${cx} ${cy} q${sx * 8} 2 ${sx * 12} 12 M${cx} ${cy} q${sx * 4} 6 ${sx * 4} 13 M${cx} ${cy} l${sx * 11} 6 M${cx + sx * 3} ${cy + 1} q${sx * 3} 3 ${sx * 2} 6 M${cx + sx * 7} ${cy + 2} q${sx} 4 ${sx * 1.6} 7" stroke="#E9EEF3" stroke-width=".4" fill="none" opacity=".7"/>`;
+    const cs = rnd(graine(nom) + 31);
+    for (let i = 0; i < 4; i++) { const bx = 190 + cs() * (W - 220), by = vy + 14 + cs() * 40; s += `<path d="M${bx.toFixed(1)} ${by.toFixed(1)} q3 -3 6 0 q3 -3 6 0 q-3 1 -6 3 q-3 -2 -6 -3 Z" fill="#1D1A15"/>`; }
+  }
+  if (SF === 'stnicolas') {
+    [[porte - 34, '#D8453A', '#F2B544'], [porte - 24, '#3C7DB8', '#F4EFE3'], [porte - 29, '#4C9A5E', '#F2B544', 7]].forEach(([x, c, rub, h = 8]) => { s += `<rect x="${x}" y="${base - h - (h === 7 ? 8 : 0)}" width="9" height="${h}" fill="${c}"/><rect x="${x + 3.8}" y="${base - h - (h === 7 ? 8 : 0)}" width="1.4" height="${h}" fill="${rub}"/><path d="M${x + 4.5} ${base - h - (h === 7 ? 8 : 0)} l-2.5 -2 m2.5 2 l2.5 -2" stroke="${rub}" stroke-width=".8"/>`; });
+    s += `<g transform="translate(${porte + 50},${base})"><ellipse cx="0" cy="-6" rx="6" ry="3.2" fill="#8A8A8A"/><path d="M5 -7 l4 -5 l2 1 l-3 5 Z" fill="#8A8A8A"/><path d="M8.6 -12.4 l-.5 -3 M10 -12 l1 -3" stroke="#6B6B6B" stroke-width="1"/>${[-4, -2, 2, 4].map((lx) => `<rect x="${lx}" y="-3.4" width="1" height="3.4" fill="#6B6B6B"/>`).join('')}<path d="M-6 -6 q-2 1 -1.5 4" stroke="#6B6B6B" stroke-width=".8" fill="none"/></g>`;
+    for (let x = x0 + 4, i = 0; x < x0 + w; x += 16, i++) { const cy = gy - 6 + (i % 2) * 3; s += `<path d="M${x} ${cy - 3} l.9 2 l2.1 .2 l-1.6 1.4 l.5 2.1 l-1.9 -1.1 l-1.9 1.1 l.5 -2.1 l-1.6 -1.4 l2.1 -.2 Z" fill="#F2D27A"/>`; }
+  }
+  if (SF === 'carnaval') {
+    const px = x0 + w - 24, py = top - 4;
+    ['#F4EFE3', '#F2D02E', '#E1332B', '#F4EFE3', '#1D1A15', '#F4EFE3', '#F2D02E'].forEach((c, i) => { const a = -60 + i * 20; s += `<path d="M${px} ${py} q${(Math.sin((a * Math.PI) / 180) * 14).toFixed(1)} -14 ${(Math.sin((a * Math.PI) / 180) * 18).toFixed(1)} -30 q4 6 ${(-Math.sin((a * Math.PI) / 180) * 12).toFixed(1)} 28 Z" fill="${c}" stroke="${mix(c, '#000000', 0.25)}" stroke-width=".4"/>`; });
+    s += `<rect x="${px - 6}" y="${py - 5}" width="12" height="5" rx="1" fill="#F2D02E"/>`;
+    for (let x = x0, i = 0; x < gx + gw; x += 7, i++) s += `<path d="M${x} ${gy - 7} l3.5 5 l3.5 -5 Z" fill="${['#E1332B', '#F2D02E', '#3C7DB8', '#4CC38A', '#F08BB4'][i % 5]}"/>`;
+    const cf = rnd(graine(nom) + 41);
+    for (let i = 0; i < 45; i++) s += `<rect x="${(cf() * W).toFixed(1)}" y="${(vy + cf() * (H - vy)).toFixed(1)}" width="1.6" height="1.6" fill="${['#E1332B', '#F2D02E', '#3C7DB8', '#4CC38A', '#F08BB4'][i % 5]}" opacity=".85"/>`;
+  }
+  if (SF === 'dragon') {
+    const dx = gx + gw * 0.55, dy = gtop - 4;
+    s += `<g transform="translate(${dx},${dy})"><path d="M-30 0 q10 -16 24 -6 q12 8 22 -4 q6 -8 14 -4" stroke="#3E7D4F" stroke-width="7" fill="none" stroke-linecap="round"/><path d="M-30 0 q10 -16 24 -6 q12 8 22 -4 q6 -8 14 -4" stroke="#6FBF7F" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-dasharray="1 5"/>
+      <path d="M-18 -9 l2 -5 l2 4 M-6 -7 l2 -5 l2 5 M8 -6 l2 -5 l2 4" fill="#E1332B"/><circle cx="31" cy="-9" r="6" fill="#4C9A5E"/><circle cx="33" cy="-11" r="1.4" fill="#FFFFFF"/><circle cx="33.4" cy="-11" r=".7" fill="#1D1A15"/><path d="M35 -6 q3 1 5 -1" stroke="#1D1A15" stroke-width=".7" fill="none"/><path d="M28 -14 l-1 -4 l3 3 M32 -15 l1 -4 l1 4" fill="#F2B544" stroke="#C98F1E" stroke-width=".4"/><path d="M-32 1 l-6 -2 l2 4 Z" fill="#E1332B"/></g>`;
+    for (let x = x0, i = 0; x < x0 + w; x += 8, i++) s += `<path d="M${x} ${gy - 7} l4 5 l4 -5 Z" fill="${i % 2 ? '#F4EFE3' : '#E1332B'}"/>`;
+  }
   // Fêtes : drapeaux belges le 21 juillet, guirlandes lumineuses en décembre.
-  if (meteo.fete === 'nationale') for (let x = x0, i = 0; x < x0 + w; x += 8, i++) s += `<path d="M${x} ${gy - 2} l4 6 l4 -6 Z" fill="${['#1D1A15', '#F2D02E', '#E1332B'][i % 3]}"/>`;
+  if (meteo.fete === 'nationale') for (let x = x0, i = 0; x < x0 + w; x += 8, i++) s += `<path d="M${x} ${gy - 7} l4 5.5 l4 -5.5 Z" fill="${['#1D1A15', '#F2D02E', '#E1332B'][i % 3]}"/>`;
   if (meteo.fete === 'noel') {
     const lignes = [[x0 - 3, top - 4, x0 + w + 3], [gx - 2, gtop - 4, gx + gw + 2]];
     for (const [xa, ya, xb] of lignes) { s += `<path d="M${xa} ${ya} Q${(xa + xb) / 2} ${ya + 5} ${xb} ${ya}" stroke="${P.mat}" stroke-width=".5" fill="none"/>`; for (let x = xa + 4, i = 0; x < xb; x += 7, i++) s += `<circle cx="${x}" cy="${(ya + 5 * (1 - ((2 * (x - xa)) / (xb - xa) - 1) ** 2) * 0.5 + 0.8).toFixed(1)}" r="1.1" fill="${['#F0736A', '#F2B544', '#4CC38A', '#5AB0F0'][i % 4]}"${P.neon ? '' : ' opacity=".7"'}/>`; }
