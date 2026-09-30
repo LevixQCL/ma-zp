@@ -1,10 +1,11 @@
 // Logistique (bâtiments de la zone) et détail du budget : ce qui coûte, ce qui rapporte.
 import { S, esc, icon, fmt1, myZone } from './common.js';
-import { BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE, DEPENSES, USURE } from '../engine/constants.js';
+import { gradeFor, LOTS, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE, DEPENSES, USURE } from '../engine/constants.js';
 import { parcVehicules, cabossesChoisis } from '../engine/parc.js';
+import { DECOR, decorValide, decorDebloque, conditionDecor, decorCompte } from '../engine/decor.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { sceneHp, vehiculeSvg } from './scene-hp.js';
-import { fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
+import { operationActive, fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
 import { coutDemarche } from '../engine/enquete.js';
 import { PERIL } from '../engine/rivalites.js';
 import { estimations } from './ordres.js';
@@ -81,17 +82,78 @@ function ouvrirPanneau(html) {
   (wrap.querySelector('[data-close]') || wrap.querySelector('button'))?.focus();
 }
 
+/** Paramètres de l'illustration pour n'importe quelle zone (la sienne ou celle d'un voisin). */
+export function sceneZone(z, st, decor = z.decor) {
+  const T = st.turn;
+  const parc = parcVehicules(z, T);
+  return sceneHp({
+    nom: z.nom, b: z.batiments.bureaux, g: z.batiments.garage,
+    devant: parc.filter((v) => v.etat !== 'atelier').sort((a, c) => (c.etat === 'cabosse') - (a.etat === 'cabosse')).map((v) => ({ type: v.type, cabosse: v.etat === 'cabosse' })),
+    travaux: z.travaux ? z.travaux.batiment : null, atelier: parc.some((v) => v.etat === 'atelier'),
+    infra: z.infra || {}, lots: z.lots || [], decor,
+    drapeau: { couleur: z.couleur, berne: z.moral < 35 },
+    file: z.satisfaction < 35,
+    renforce: !!(z.dernierOrdre && z.dernierOrdre.rythme === 'renforce'),
+    imprevu: z.scene && z.scene.tour >= T - 1 ? z.scene : {},
+    operation: !!operationActive(z, T),
+  });
+}
+
+/** Personnalisation choisie par le joueur (tout de suite visible chez lui, recopiée dans la partie à 20:00). */
+function monDecor(z) { return decorValide(z, (S.player && S.player.decor) || z.decor); }
+
 /** Illustration cliquable de l'HP (dans la carte « Ma zone ») : ouvre la fiche logistique. */
 export function sceneCarteHtml() {
   const z = myZone(), T = S.state.turn;
   const parc = parcVehicules(z, T);
-  const cab = parc.filter((v) => v.etat === 'cabosse').length, hs = parc.filter((v) => v.etat === 'atelier').length;
+  const cab = parc.filter((v) => v.etat === 'cabosse').length;
   const b = z.batiments;
   return `<button type="button" class="scene-btn" data-action="logistique" aria-label="Mon hôtel de police : bâtiments et véhicules">
-    ${sceneHp({ nom: z.nom, b: b.bureaux, g: b.garage, devant: parc.filter((v) => v.etat === 'service').map((v) => v.type), travaux: z.travaux ? z.travaux.batiment : null, atelier: hs > 0, infra: z.infra || {}, lots: z.lots || [] })}
+    ${sceneZone(z, S.state, monDecor(z))}
     <span class="scene-leg"><span>Bâtiment niv. ${b.bureaux} · Garage niv. ${b.garage}${z.travaux ? ' · travaux' : ''}</span>
       ${cab ? `<span class="scene-pastille">${cab} cabossé${cab > 1 ? 's' : ''}</span>` : ''}${icon('chevron', 14)}</span>
   </button>`;
+}
+
+/** Hôtel de police d'une autre zone (depuis la Carte ou le classement). */
+export function ouvrirHpVoisin(uid) {
+  const st = S.state, z = st.zones[uid];
+  if (!z) return;
+  const moi = z.uid === (S.user && S.user.uid);
+  const d = moi ? monDecor(z) : decorValide(z, z.decor);
+  const annexes = Object.entries(INFRAS).filter(([id]) => z.infra && z.infra[id]).map(([, i]) => i.nom);
+  const lots = (z.lots || []).map((l) => LOTS[l.id] && LOTS[l.id].nom).filter(Boolean);
+  ouvrirPanneau(`
+    <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><span class="mono tiny" style="color:var(--blue-soft)">ZP ${esc(z.code)}</span><h2 id="aide-titre" class="aide-titre" style="margin:0">${esc(z.nom)}</h2>
+      <span class="tiny muted">${esc(gradeFor(z.ps || 0).nom)} · ${(z.trophees || []).length} trophée${(z.trophees || []).length > 1 ? 's' : ''}</span></div>
+      <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
+    <div class="scene-voisin">${sceneZone(z, st, d)}</div>
+    <div class="bats hp-logis">
+      <div class="bat"><span class="tiny muted">Bâtiment</span><span style="font-weight:700">Niveau ${z.batiments.bureaux}</span></div>
+      <div class="bat"><span class="tiny muted">Garage</span><span style="font-weight:700">Niveau ${z.batiments.garage} · ${z.vehicules} véhicule${z.vehicules > 1 ? 's' : ''}</span></div>
+    </div>
+    <p class="small" style="margin:0"><span class="muted">Annexes :</span> ${annexes.length ? esc(annexes.join(', ')) : 'aucune'}${lots.length ? `<br><span class="muted">Lots :</span> ${esc(lots.join(', '))}` : ''}</p>
+    <p class="tiny muted" style="margin:0">Façade ${esc(DECOR.facade.options[d.facade].nom.toLowerCase())} · néon ${esc(DECOR.neon.options[d.neon].nom.toLowerCase())}${d.abords !== 'aucun' ? ` · ${esc(DECOR.abords.options[d.abords].nom.toLowerCase())}` : ''}</p>`);
+}
+
+/** Fenêtre « Personnaliser mon commissariat ». */
+export function ouvrirDecor() {
+  const z = myZone();
+  const d = monDecor(z);
+  const { n, total } = decorCompte(z);
+  const groupes = Object.entries(DECOR).map(([cat, C]) => `<div class="col" style="gap:6px"><span class="tiny muted">${esc(C.titre)}</span><div class="decor-opts">
+    ${Object.entries(C.options).map(([id, o]) => {
+      const ok = decorDebloque(z, o), choisi = d[cat] === id;
+      return `<button type="button" class="decor-opt${choisi ? ' on' : ''}${ok ? '' : ' verrou'}" data-action="decor-choix" data-cat="${cat}" data-id="${id}" ${ok ? '' : 'aria-disabled="true"'} aria-pressed="${choisi}">
+        ${cat === 'neon' ? `<i class="pastille" style="background:${o.trait}"></i>` : cat === 'facade' ? `<i class="pastille" style="background:${o.jour[0]}"></i>` : ''}<span>${esc(o.nom)}</span>${ok ? '' : `<span class="cond">${icon('lock', 11)} ${esc(conditionDecor(o))}</span>`}</button>`;
+    }).join('')}</div></div>`).join('');
+  ouvrirPanneau(`<div data-decor class="col" style="gap:10px">
+    <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon commissariat</h2><span class="tiny muted">${n} élément${n > 1 ? 's' : ''} débloqué${n > 1 ? 's' : ''} sur ${total}</span></div>
+      <button class="iconbtn" data-action="logistique" aria-label="Retour" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">‹</button></div>
+    <div class="scene-voisin">${sceneZone(z, S.state, d)}</div>
+    ${groupes}
+    <p class="tiny muted" style="margin:0">Les éléments se débloquent avec ton grade et tes trophées. Les autres chefs de zone voient ton commissariat depuis la Carte et le classement, à partir de 20:00.</p>
+  </div>`);
 }
 
 /** Fiche « Mon hôtel de police » : bâtiments, parc automobile, annexes. */
@@ -147,6 +209,7 @@ function logistiqueCorps() {
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon hôtel de police</h2>
       <span class="mono tiny muted">entretien ${fmt1(entretienTotal)} k€ par tour</span></div>
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
+    <button type="button" class="btn small block decor-btn" data-action="decor">${icon('star', 16)} Personnaliser mon commissariat <span class="tiny muted">${decorCompte(z).n} / ${decorCompte(z).total}</span></button>
     <div class="bats">${bat}</div>
     <div class="col" style="gap:5px">
       <div class="between"><span class="tiny muted">Parc automobile</span><span class="tiny muted">état du parc <span class="mono ${etat < 60 ? 'bad' : etat < 80 ? 'warn' : ''}">${etat} %</span></span></div>

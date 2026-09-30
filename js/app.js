@@ -11,7 +11,8 @@ import { maCandidature } from './ui/affaires.js';
 import { renderTerrain } from './ui/terrain.js';
 import { installerAntiTriche } from './ui/antitriche.js';
 import { lireInvitationUrl, oublierInvitation, partager, copier, afficherQr } from './ui/invitation.js';
-import { ouvrirBudget, ouvrirVehicule, ouvrirLogistique, rafraichirLogistique } from './ui/logistique.js';
+import { ouvrirBudget, ouvrirVehicule, ouvrirLogistique, rafraichirLogistique, ouvrirDecor, ouvrirHpVoisin } from './ui/logistique.js';
+import { DECOR, decorDebloque, conditionDecor, decorValide } from './engine/decor.js';
 import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { tutoAuBesoin, lancerTuto } from './ui/tutoriel.js';
@@ -299,6 +300,17 @@ async function onClick(e) {
       case 'budget': ouvrirBudget(); break;
       case 'vehicule': ouvrirVehicule(el.dataset.slot); break;
       case 'logistique': ouvrirLogistique(); break;
+      case 'decor': ouvrirDecor(); break;
+      case 'voir-hp': ouvrirHpVoisin(el.dataset.uid); break;
+      case 'decor-choix': {
+        const z = S.state.zones[S.user.uid], o = DECOR[el.dataset.cat] && DECOR[el.dataset.cat].options[el.dataset.id];
+        if (!o) break;
+        if (!decorDebloque(z, o)) { toast(`À débloquer : ${conditionDecor(o)}.`); break; }
+        const decor = { ...decorValide(z, (S.player && S.player.decor) || z.decor), [el.dataset.cat]: el.dataset.id };
+        S.player = { ...(S.player || {}), decor };
+        try { await b.savePlayer(S.user.uid, S.player); } catch (err) { console.warn(err); }
+        rerender(); ouvrirDecor(); break;
+      }
       case 'carro-veh': {
         const dd = (S.draft.depenses ||= { reserve: 0, reserveService: 'intervention' });
         const z = S.state.zones[S.user.uid], i = Number(el.dataset.i);

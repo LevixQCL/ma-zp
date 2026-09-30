@@ -49,6 +49,8 @@ const PATHS = {
   carte: '<path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14"/>',
   radio: '<path d="M4 5h16v11H9l-5 4z"/>',
   check: '<path d="M5 12l5 5L20 7"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   chevron: '<path d="M9 6l6 6-6 6"/>',
   back: '<path d="M15 6l-6 6 6 6"/>',
   pencil: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',

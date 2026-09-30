@@ -19,6 +19,7 @@ import { encheresResoudre, annoncerLot } from './encheres.js';
 import { rivalitesPre, rivalitesPost, postesContre, themeActif, appliquerConsignes, absT, MAN } from './rivalites.js';
 import { FLAGRANTS } from './contenu.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
+import { decorValide } from './decor.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, EVENEMENTS_COLLECTIFS, COUPS_DURS, ALEAS, OPERATIONS, PRESSIONS, PRESSION_WEEKEND } from './contenu.js';
 
@@ -158,7 +159,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // Mise à jour des noms, codes et couleurs (renommage) et retraits.
   for (const [uid, z] of Object.entries(state.zones)) {
     const p = players[uid];
-    if (p) { if (p.nom) z.nom = String(p.nom).slice(0, 24); if (p.code) z.code = String(p.code).slice(0, 4); if (p.couleur) z.couleur = p.couleur; if (p.equipeNoms) appliquerNoms(z.equipe, uid, p.equipeNoms); }
+    if (p) { if (p.nom) z.nom = String(p.nom).slice(0, 24); if (p.code) z.code = String(p.code).slice(0, 4); if (p.couleur) z.couleur = p.couleur; if (p.equipeNoms) appliquerNoms(z.equipe, uid, p.equipeNoms); if (p.decor) z.decor = decorValide(z, p.decor); }
     if (p && p.retire) delete state.zones[uid];
   }
 
@@ -346,7 +347,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (arrivees) { z.agents += arrivees; z.rapport.push(`${arrivees} recrue${arrivees > 1 ? 's' : ''} sort${arrivees > 1 ? 'ent' : ''} de l’académie.`); }
     z.academie = z.academie.filter((a) => a.arrivee > T);
 
-    // Aléa léger et coup dur (effets immédiats sur ce tour ou les suivants).
+    // Aléa léger et coup dur (effets immédiats sur ce tour ou les suivants). `z.scene` les garde pour l'illustration de l'HP.
+    z.scene = { tour: T };
     let adminMult = 1;
     // L'Accueil comme assurance : chaque agent au-delà de 2 évite 15 % des tracas internes (jusqu'à 60 %).
     const nAdmin = (o.alloc && o.alloc.admin) || 0;
@@ -367,6 +369,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         if (e.retardEnquete) z._retardEnquete = true;
         z.rapport.push(`${a.titre} : ${a.texte}${a.interne && protection < 0.6 ? ' (un Accueil plus fourni réduit ce risque)' : ''}`);
         jalon(z, `Imprévu : ${a.titre}`);
+        z.scene.alea = a.id;
         push(2, 'Insolite', `${zoneLabel(z)} : ${a.titre.charAt(0).toLowerCase()}${a.titre.slice(1)}`, a.texte, uid);
       }
     }
@@ -385,6 +388,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
     if (!coupDur && z.renforceSuite >= 3 && o.rythme === 'renforce' && zr.chance(0.5)) coupDur = { id: 'epuisement', titre: 'Épuisement' };
     if (coupDur) {
+      z.scene.coup = coupDur.id;
       let texte = '';
       switch (coupDur.id) {
         case 'rebellion': {
