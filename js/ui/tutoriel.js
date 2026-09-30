@@ -132,7 +132,7 @@ export const ETAPES = [
         <li>Résous tes <strong>trois énigmes</strong>.</li>
         <li>Jette un œil au <strong>Terrain</strong> et à la <strong>Radio</strong>.</li>
       </ol>
-      <p class="tuto-note">Tout le détail est dans le <strong>Guide du joueur</strong> (en bas de l’HP), d’où tu peux aussi relancer cette visite. Bon service !</p>`,
+      <p class="tuto-note">Tout le détail est dans le <strong>Guide du joueur</strong> (roue dentée en haut de l’HP), d’où tu peux aussi relancer cette visite. Bon service !</p>`,
   },
 ];
 

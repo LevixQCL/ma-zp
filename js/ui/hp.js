@@ -1,3 +1,4 @@
+import { noteVue } from './nouveautes.js';
 // Écran HP (Hôtel de police) : l'accueil.
 import { cabossesChoisis } from '../engine/parc.js';
 import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone } from './common.js';
@@ -14,7 +15,7 @@ import { GRADES, gradeFor } from '../engine/constants.js';
 import { PERIL, DUEL_INDICATEURS } from '../engine/rivalites.js';
 import { genererAffaire, dossierDe, pointsDecouverte, ENQ } from '../engine/enquete.js';
 import { aideBtn } from './aide.js';
-import { logistiqueHtml } from './logistique.js';
+import { sceneCarteHtml } from './logistique.js';
 import { encheresHtml } from './encheres.js';
 import { TUTELLE } from '../engine/constants.js';
 import { equipeHtml } from './equipe.js';
@@ -193,6 +194,8 @@ export function renderHP() {
   if (perils.length) alertes.push({ cls: 'red', titre: `${perils.map((x) => esc(x.nom)).join(', ')} en difficulté`, texte: 'un coup de main rapporte jusqu’à +7 de réputation', href: '#diplomatie' });
   const op = operationActive(z, T);
   if (op) alertes.unshift({ cls: 'red', titre: `Opération d\u2019envergure : ${esc(op.titre)}`, texte: `dispositif à régler dans tes ordres${op.duree > 1 ? ` · jour ${T - op.tourDebut + 1} sur ${op.duree}` : ''}`, href: '#ordres' });
+  const tr = (st.traques || [])[0];
+  if (tr) { const ta = genererAffaire(st.seed, tr.n); alertes.unshift({ cls: 'red', titre: `Traque : ${esc(ta.suspects[ta.coupable].nom)} en fuite`, texte: `${tr.tours} tour${tr.tours > 1 ? 's' : ''} pour l’arrêter`, href: '#enquete' }); }
   const dotColor = { red: 'var(--red)', amber: 'var(--amber)', blue: 'var(--blue)' };
   const last = S.gazettes[0];
 
@@ -200,13 +203,20 @@ export function renderHP() {
     <header class="between" style="align-items:flex-start">
       <div class="col" style="gap:3px"><h1 class="brand">Ma ZP</h1><a class="sub" href="#parties" style="text-decoration:none">Hôtel de police · <span style="color:var(--amber-soft);text-decoration:underline">${esc((S.partie && S.partie.nom) || 'District Delta')}</span></a></div>
       <div class="col" style="gap:6px;align-items:flex-end">
-        <span class="pill">Tour ${T} · Saison ${st.season}</span>
+        <span class="row" style="gap:6px"><span class="pill">Tour ${T} · Saison ${st.season}</span>
+          <button type="button" class="iconbtn roue" data-action="menu-hp" aria-expanded="${!!S.menuHp}" aria-label="Guide, nouveautés et profil">${icon('gear', 20)}${noteVue() ? '' : '<i class="roue-pastille" aria-hidden="true"></i>'}</button></span>
         <a href="#classement" class="row" style="gap:6px;text-decoration:none;color:var(--text)">
           <span style="color:var(--amber)">${icon('shield', 14)}</span><span class="small" style="font-weight:600">${g.nom}</span>
           <span role="img" aria-label="${z.ps} points de service${n ? ` sur ${n.ps}` : ''}" style="width:56px;height:5px;background:var(--line);border-radius:3px;display:inline-block"><span style="display:block;width:${pct}%;height:5px;background:var(--amber);border-radius:3px"></span></span>
         </a>
       </div>
     </header>
+    ${S.menuHp ? `<nav class="card menu-hp" aria-label="Menu">
+      <a class="list-row" href="#guide">${icon('news', 18)}<span>Guide du joueur</span></a>
+      <button type="button" class="list-row" data-action="maj-voir">${icon('star', 18)}<span>Nouveautés${noteVue() ? '' : ' <span class="tiny" style="color:var(--amber)">· nouvelle version</span>'}</span></button>
+      <a class="list-row" href="#profil">${icon('gear', 18)}<span>Profil</span></a>
+      ${S.backend.isMaster(S.user) ? `<a class="list-row" href="#admin">${icon('shield', 18)}<span>Maître du jeu</span></a>` : ''}
+    </nav>` : ''}
 
     ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit })}
     <section class="card" aria-label="Ma zone">
@@ -227,11 +237,12 @@ export function renderHP() {
           <span class="tiny muted">${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total} zone${total > 1 ? 's' : ''}` : `non classé · ${z.toursJoues}/5 tours joués`}</span>
         </div>
       </div>
+      ${sceneCarteHtml()}
       <div class="tiles">
         <div class="tile"><span class="l">Agents</span><span class="v">${dispo}<span class="muted" style="font-size:13px"> / ${z.agents}</span></span>
           <span class="s ${blesses ? 'bad' : ''}">${blesses ? `${blesses} absent${blesses > 1 ? 's' : ''}` : form ? `${form} en formation` : z.academie.length ? `${z.academie.reduce((s, a) => s + a.n, 0)} à l’académie` : 'tous disponibles'}</span></div>
         <button type="button" class="tile tile-btn" data-action="budget" aria-label="Détail du budget"><span class="l row" style="gap:4px">Budget ${icon('chevron', 12)}</span><span class="v ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s ${fraisFixesDuJour(z) < 0 ? 'bad' : ''}">${fraisFixesDuJour(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(fraisFixesDuJour(z)))} k€/jour · détail</span></button>
-        <div class="tile"><span class="l">Véhicules</span><span class="v">${vDispo}<span class="muted" style="font-size:13px"> / ${z.vehicules}</span></span><span class="s ${cab || 100 - z.usure < 60 ? 'bad' : 100 - z.usure < 80 ? 'warn' : ''}">état ${Math.round(100 - z.usure)} %${cab ? ` · ${cab} cabossé${cab > 1 ? 's' : ''}` : 100 - z.usure < 80 ? ' · révision ?' : ''}</span></div>
+        <button type="button" class="tile tile-btn" data-action="logistique" aria-label="Bâtiments et véhicules"><span class="l row" style="gap:4px">Véhicules ${icon('chevron', 12)}</span><span class="v">${vDispo}<span class="muted" style="font-size:13px"> / ${z.vehicules}</span></span><span class="s ${cab || 100 - z.usure < 60 ? 'bad' : 100 - z.usure < 80 ? 'warn' : ''}">état ${Math.round(100 - z.usure)} %${cab ? ` · ${cab} cabossé${cab > 1 ? 's' : ''}` : 100 - z.usure < 80 ? ' · révision ?' : ''}</span></button>
       </div>
       <div class="col" style="gap:9px">
         ${gauge('Moral', z.moral, 'var(--amber)', delta(z.moral, z.hier && z.hier.moral) + aideBtn('moral'))}
@@ -240,9 +251,7 @@ export function renderHP() {
         <div class="between small" style="margin-top:-4px"><span class="row muted" style="gap:4px">Confiance de la commune${aideBtn('confiance')}</span><span class="mono ${confianceCommune(z) > 0 ? 'ok' : confianceCommune(z) < 0 ? 'bad' : 'muted'}">${confianceCommune(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(confianceCommune(z)))} k€ / jour</span></div>
       </div>
     </section>
-    ${logistiqueHtml()}
-    ${encheresHtml()}
-    ${equipeHtml()}
+    <div class="duo">${encheresHtml()}${equipeHtml()}</div>
 
     ${nuitHtml(z)}
 
@@ -258,15 +267,7 @@ export function renderHP() {
     ${situationHtml(z)}
     ${opActive(z, T) ? `<section class="card red" aria-label="Renfort" style="gap:8px"><span class="kicker" style="color:var(--red-soft)">Opération d’envergure · ${esc(opActive(z, T).titre)}</span>${demandeRenfortHtml()}</section>` : ''}
     <div id="hp-fipa">${fipaCards()}</div>
-    ${enqueteCarte(st, z)}
 
-    <a href="#quete" class="card amber" style="flex-direction:row;align-items:center;gap:12px">
-      <span style="width:42px;height:42px;flex-shrink:0;border-radius:12px;background:var(--amber);color:var(--amber-ink);display:flex;align-items:center;justify-content:center">${icon('quete', 22)}</span>
-      <span class="col grow" style="gap:2px"><span class="kicker">Énigmes du jour</span>
-        <span style="font-size:16px;font-weight:600">${S.quests ? S.quests.map((x) => esc(QUEST_LABELS[x.type])).join(' · ') : '3 énigmes'}</span>
-        <span class="small" style="color:var(--amber-soft)">${faites ? `${faites} sur 3 faite${faites > 1 ? 's' : ''} · ${reussies} réussie${reussies > 1 ? 's' : ''}${reussies < 2 && faites < 3 ? ` · encore ${2 - reussies} pour le bonus` : reussies >= 2 ? ' · bonus débloqué' : ''}` : '3 énigmes · bonus dès 2 bonnes réponses'}</span></span>
-      ${icon('chevron', 20)}
-    </a>
 
     ${alertes.length ? `<section class="col" aria-label="À traiter"><h2 class="section">À traiter</h2>
       ${alertes.map((a) => `<a class="list-row" href="${a.href}" ${a.cls === 'red' ? 'style="background:var(--red-bg);border-color:var(--red-line)"' : ''}><span class="bullet" style="background:${dotColor[a.cls]}"></span>
@@ -279,33 +280,12 @@ export function renderHP() {
         <a class="btn" href="#classement">${icon('trophy', 18)}<span>Classement</span></a>
       </div>
       ${S.showRapport ? rapportHtml(z) : ''}
-      <div class="row">
-        <a class="btn ghost small grow" href="#guide">${icon('news', 16)} Guide du joueur</a>
-        <button type="button" class="btn ghost small grow" data-action="maj-voir">${icon('star', 16)} Nouveautés</button>
-        <a class="btn ghost small grow" href="#profil">${icon('gear', 16)} Profil</a>
-        ${S.backend.isMaster(S.user) ? `<a class="btn ghost small grow" href="#admin">Maître du jeu</a>` : ''}
-      </div>
       ${S.backend.mode === 'demo' ? '<button class="btn outline block" data-action="demo-next">Démo : passer au tour suivant</button>' : ''}
     </section>
     ${z.toursJoues < 2 && !premiersPasVus() ? '<button type="button" class="list-row" data-action="tuto" style="border-color:var(--amber-line);width:100%;text-align:left"><span class="bullet" style="background:var(--amber)"></span><span class="col grow" style="gap:1px"><span style="font-weight:600">Nouveau ? Fais la visite guidée</span><span class="small muted">3 minutes pour découvrir les onglets et ta journée de chef de zone</span></span></button>' : ''}
   </main>${tabbar('hp', { questBadge: !questDone })}`;
 }
 
-function enqueteCarte(st, z) {
-  if (!st.enquete) return '';
-  const a = genererAffaire(st.seed, st.enquete.n);
-  const d = dossierDe(st, z);
-  const tr = (st.traques || [])[0];
-  const ta = tr ? genererAffaire(st.seed, tr.n) : null;
-  return `<a href="#enquete" class="card" style="flex-direction:row;align-items:center;gap:12px;${tr ? 'border-color:var(--red-line)' : ''}">
-    <span style="width:42px;height:42px;flex-shrink:0;border-radius:12px;background:var(--surface2);border:1px solid var(--line);color:var(--amber);display:flex;align-items:center;justify-content:center">${icon('enquete', 22)}</span>
-    <span class="col grow" style="gap:2px"><span class="kicker">Enquête · jour ${st.enquete.jour} sur ${ENQ.dureeMax}</span>
-      <span style="font-size:16px;font-weight:600">${esc(a.titre)}</span>
-      <span class="small muted">${d.pieces.length} pièce${d.pieces.length > 1 ? 's' : ''} au dossier · découverte ce soir : ${pointsDecouverte(st.enquete.jour)} pts</span>
-      ${tr ? `<span class="small bad">Traque : ${esc(ta.suspects[ta.coupable].nom)} en fuite, ${tr.tours} tour${tr.tours > 1 ? 's' : ''} pour l’arrêter</span>` : ''}</span>
-    ${icon('chevron', 20)}
-  </a>`;
-}
 
 function recompensesGrade(z) {
   const gi = GRADES.indexOf(gradeFor(z.ps));
