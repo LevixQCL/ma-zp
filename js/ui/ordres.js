@@ -5,7 +5,7 @@ import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENS
 import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
-import { effectifPrevu, capaciteAgents, capaciteVehicules, coutRecrue, sousTutelle } from '../engine/zone.js';
+import { effectifPrevu, capaciteAgents, capaciteVehicules, coutRecrue, sousTutelle, moralMult, bonusLots } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { carteQuartiers } from '../engine/quartiers.js';
 import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
@@ -121,7 +121,7 @@ export function estimations() {
   const attendus = Math.max(1, Math.round(1.5 + crim / 14) + (pr.incidents || 0));
   const couverts = Math.min(attendus, Math.floor(cap.intervention / 1.1));
   const pap = Math.round(couverts * 0.4 + 0.6 + 1.2 + (pr.paperasse || 0) - (dep.soustraitance ? 5 : 0) - cap.admin * 1.2);
-  const amendes = cap.roulage * 0.7;
+  const amendes = cap.roulage * ECONOMIE.amendeParCapacite;
   const total = SERVICES.reduce((s, k) => s + eff[k], 0) || 1;
   const chasse = eff.roulage / total > seuilChasse(z) && !((themeActif(S.state, S.state.turn) || {}).id === 'routiere');
   const dispo = dispo0;
@@ -344,6 +344,25 @@ function ventilationHtml(z, e) {
   </div>`;
 }
 
+/** Ce que rapporte vraiment un agent de Roulage aujourd'hui, facteur par facteur. */
+function amendeParAgentTxt(z) {
+  const T = S.state.turn, rythme = (S.draft && S.draft.rythme) || 'normal';
+  const n = (S.draft && S.draft.alloc && S.draft.alloc.roulage) || 0;
+  const x = (v) => `×${String(Math.round(v * 100) / 100).replace('.', ',')}`;
+  const facteurs = [
+    `niveau ${z.niveaux.roulage} ${x(multNiveau(z.niveaux.roulage))}`,
+    `matériel ${z.equip.roulage} ${x(multEquip(z.equip.roulage))}`,
+    `moral ${Math.round(z.moral)} ${x(moralMult(z.moral))}`,
+  ];
+  if (RYTHMES[rythme].mult !== 1) facteurs.push(`rythme ${RYTHMES[rythme].label.toLowerCase()} ${x(RYTHMES[rythme].mult)}`);
+  if (z.infra && z.infra.anpr) facteurs.push('caméras ×1,2');
+  const lots = bonusLots(z, 'roulage');
+  if (lots !== 1) facteurs.push(`lots ${x(lots)}`);
+  const un = capacite(z, 'roulage', 1, { rythme, turn: T }) * ECONOMIE.amendeParCapacite;
+  const tous = n ? capacite(z, 'roulage', n, { rythme, turn: T }) * ECONOMIE.amendeParCapacite : 0;
+  return `Rapporte ${fmt1(ECONOMIE.amendeParCapacite)} k€ par unité de capacité. Aujourd’hui, un agent vaut ${fmt1(ECONOMIE.amendeParCapacite)} × ${facteurs.join(' × ')} = ${String(Math.round(un * 100) / 100).replace('.', ',')} k€ par jour${n ? ` ; tes ${n} agents : ${fmt1(tous)} k€` : ''}. Le moral compte : à 60, il retire 4 % ; à 100, il ajoute 20 %.`;
+}
+
 /** Aide courte de chaque service, avec la situation actuelle de la zone. */
 function aide(s, z) {
   const f = (v) => fmt1(v);
@@ -351,7 +370,7 @@ function aide(s, z) {
     case 'intervention': return `Traite les incidents du jour (environ 1 agent par incident, ${Math.max(1, Math.round(1.5 + z.criminalite / 14))} attendus). Incident traité : +0,5 de satisfaction ; raté : −1,8. Au-delà de 2,5 agents par véhicule, les agents en trop comptent pour moitié. Chaque intervention use les véhicules : état du parc ${Math.round(100 - z.usure)} %${malusEtat(100 - z.usure) < 1 ? ` (efficacité −${Math.round((1 - malusEtat(100 - z.usure)) * 100)} %)` : ''} ; sous 80 %, l’Intervention perd de l’efficacité. Une révision du parc (dépense du jour, 2 k€) rend +20 %. Les patrouilles qui restent libres après les incidents peuvent surprendre un auteur en flagrant délit (points, PS et un quartier apaisé) : plus il y a de marge, plus la chance est grande.`;
     case 'proximite': return `Prévention : fait baisser la criminalité (actuellement ${Math.round(z.criminalite)}). Environ 4 agents la stabilisent. Au-dessus de 55, un quartier coûte de la satisfaction chaque jour, et la criminalité augmente les incidents. Tu peux envoyer ces agents en patrouille dans des quartiers précis depuis la Carte.`;
     case 'recherche': return `Fait avancer tes dossiers locaux (${z.dossiers.length} en cours). Dossier élucidé : des points et +2 de satisfaction. Un dossier de plus de 6 tours coûte de la satisfaction chaque jour. Au-delà de 2 agents, tes enquêteurs font aussi l’enquête de voisinage : chaque soir, une chance de rapporter des pièces pour l’enquête de la semaine (bien plus avec une piste prioritaire, à choisir dans l’Enquête).`;
-    case 'roulage': return `Rapporte environ 0,7 k€ par agent et par jour. Au-delà de ${ROULAGE.seuil} agents, chaque agent de plus compte pour moitié. Au-delà de ${Math.round(seuilChasse(z) * 100)} % de tes effectifs : « chasse aux PV », −2 de satisfaction par jour.`;
+    case 'roulage': return `${amendeParAgentTxt(z)} Au-delà de ${ROULAGE.seuil} agents, chaque agent de plus compte pour moitié. Au-delà de ${Math.round(seuilChasse(z) * 100)} % de tes effectifs : « chasse aux PV », −2 de satisfaction par jour.`;
     case 'admin': return `Traite la paperasse (environ 1 dossier par agent ; ${f(z.paperasse)} en attente). Au-delà de 14 : −2 de moral par jour. Au-delà de 20 : Inspection générale, 5 k€ d’amende. C’est aussi ton assurance : chaque agent au-delà de 2 évite 15 % des tracas internes (panne, dégât des eaux, grève, papiers égarés, plainte…), jusqu’à 60 %. Aujourd’hui : ${Math.round(Math.min(0.6, Math.max(0, ((S.draft && S.draft.alloc.admin) || 0) - 2) * 0.15) * 100)} %.`;
     default: return '';
   }
