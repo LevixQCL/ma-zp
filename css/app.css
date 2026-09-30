@@ -669,8 +669,8 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 .voir-hp { color: var(--text); text-decoration: underline dotted; text-underline-offset: 3px; font-weight: inherit; }
 .vitrine { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 6px; scroll-snap-type: x mandatory; }
 .vitrine-item { flex: 0 0 72%; max-width: 280px; scroll-snap-align: start; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; color: var(--text); font: inherit; display: flex; flex-direction: column; gap: 5px; }
-.vitrine-item svg { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
-.vitrine-item:hover svg { border-color: var(--amber-line); }
+.vitrine-item svg.scene-hp { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); }
+.vitrine-item:hover svg.scene-hp { border-color: var(--amber-line); }
 .vitrine-nom { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
 .vitrine-nom i { width: 8px; height: 8px; border-radius: 50%; }
 /* Roulette Early bird */
@@ -679,3 +679,8 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 .roue-fleche { position: absolute; top: -6px; left: 50%; width: 28px; transform: translateX(-50%); }
 .roue-wrap.fini { width: min(60%, 160px); transition: width .4s; }
 .roulette .leg { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; }
+.vitrine-item { flex-basis: 80%; max-width: 320px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 6px; gap: 0; }
+.vitrine-item svg.scene-hp { border: 0; border-radius: 10px; }
+.vitrine-item:hover { border-color: var(--amber-line); }
+.vitrine-info { display: flex; flex-direction: column; gap: 3px; padding: 8px 6px 4px; min-width: 0; }
+.vitrine-info .vitrine-nom { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
