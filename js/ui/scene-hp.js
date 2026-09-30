@@ -39,6 +39,15 @@ export function vehiculeSvg(type, h = 18) {
     : `<svg viewBox="0 0 48 22" style="height:${h}px;width:auto" aria-hidden="true">${combi(0, 0.5)}</svg>`;
 }
 
+// Annexes visibles dans l'aile vitrée, et leur pictogramme (dessiné autour de 0,0, environ 12 × 12).
+const ANNEXES_AILE = ['sport', 'audition', 'logiciel', 'antenne'];
+const PICTO = {
+  sport: '<path d="M-5 0 H5"/><path d="M-5 -3.5 V3.5 M-3 -2.5 V2.5 M5 -3.5 V3.5 M3 -2.5 V2.5"/>',
+  audition: '<path d="M-5 1 H5 M-3.5 1 V4.5 M3.5 1 V4.5"/><circle cx="-4" cy="-3" r="1.4"/><circle cx="4" cy="-3" r="1.4"/>',
+  logiciel: '<rect x="-5" y="-4.5" width="10" height="7" rx="1"/><path d="M-2 5 H2 M0 2.5 V5"/>',
+  antenne: '<path d="M-5 0 L0 -4.5 L5 0 M-3.5 -1 V4.5 H3.5 V-1"/><path d="M-1 4.5 V1.5 H1 V4.5"/>',
+};
+
 // Lever et coucher du soleil en Belgique, heure locale (approximatifs, heure d'été comprise), par mois.
 const SOLEIL = [[8.7, 16.9], [8.0, 17.8], [7.1, 18.6], [7.0, 20.4], [6.1, 21.2], [5.5, 21.9], [5.8, 21.8], [6.5, 21.1], [7.3, 19.9], [8.2, 18.8], [8.1, 17.0], [8.7, 16.7]];
 /** Moment de la journée sur l'appareil du joueur : 'jour', 'aube', 'crepuscule' ou 'nuit'. */
@@ -76,8 +85,14 @@ PALETTES.aube = PALETTES.crepuscule;
  * en service à garer devant (3 au plus) ; `travaux` : 'bureaux' | 'garage' | null ;
  * `moment` : 'jour' | 'aube' | 'crepuscule' | 'nuit' (par défaut, l'heure de l'appareil).
  */
-export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = false, moment = momentDuJour() }) {
-  const W = 360, H = 210, base = 172, x0 = 22, w = 160, gf = 30, fh = 24;
+export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = false, infra = {}, lots = [], moment = momentDuJour() }) {
+  const H = 210, base = 172, x0 = 22, w = 160, gf = 30, fh = 24;
+  // Aile des annexes entre l'hôtel de police et le garage (une travée par annexe).
+  const aile = ANNEXES_AILE.filter((id) => infra[id]);
+  const ax = x0 + w + 6, aw = aile.length ? 8 + aile.length * 24 : 0;
+  const gx = ax + aw + (aile.length ? 6 : 8), gw = 24 + g * 26;
+  const W = Math.max(360, gx + gw + 14);
+  const aLots = new Set((lots || []).map((l) => l.id || l));
   const P = PALETTES[moment] || NUIT;
   const r = rnd(graine(nom));
   const top = base - gf - (b - 1) * fh;
@@ -93,20 +108,20 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   // Ciel : étoiles et lune la nuit, soleil et nuages le jour, soleil bas à l'aube et au crépuscule.
   const nuages = (op) => { const n = rnd(graine(nom) + 11); let c = ''; for (let i = 0; i < 3; i++) { const cx = 40 + n() * 250, cy = vy + 16 + n() * 30, k = 0.7 + n() * 0.6; c += `<g fill="#FFFFFF" opacity="${op}"><ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${(20 * k).toFixed(1)}" ry="${(6 * k).toFixed(1)}"/><ellipse cx="${(cx + 8 * k).toFixed(1)}" cy="${(cy - 5 * k).toFixed(1)}" rx="${(11 * k).toFixed(1)}" ry="${(7 * k).toFixed(1)}"/></g>`; } return c; };
   if (moment === 'jour') {
-    s += `<circle cx="318" cy="${vy + 28}" r="30" fill="url(#hp-soleil-${moment})"/><circle cx="318" cy="${vy + 28}" r="10" fill="#FFF1C2"/>${nuages(0.75)}`;
+    s += `<circle cx="${W - 42}" cy="${vy + 28}" r="30" fill="url(#hp-soleil-${moment})"/><circle cx="${W - 42}" cy="${vy + 28}" r="10" fill="#FFF1C2"/>${nuages(0.75)}`;
   } else if (moment === 'aube' || moment === 'crepuscule') {
-    const sx = moment === 'aube' ? 40 : 318;
+    const sx = moment === 'aube' ? 40 : W - 42;
     s += `<circle cx="${sx}" cy="${base - 42}" r="36" fill="url(#hp-soleil-${moment})" opacity=".8"/><circle cx="${sx}" cy="${base - 42}" r="11" fill="#FFC98A"/>${nuages(0.25)}`;
     for (let i = 0; i < 8; i++) s += `<circle cx="${(r() * W).toFixed(1)}" cy="${(vy + r() * 30).toFixed(1)}" r=".6" fill="#C8D3DD" opacity=".35"/>`;
   } else {
     for (let i = 0; i < 22; i++) s += `<circle cx="${(r() * W).toFixed(1)}" cy="${(vy + r() * 70).toFixed(1)}" r="${(r() * 0.9 + 0.3).toFixed(2)}" fill="#C8D3DD" opacity="${(r() * 0.4 + 0.15).toFixed(2)}"/>`;
-    s += `<circle cx="318" cy="${vy + 26}" r="11" fill="#E9EEF3" opacity=".9"/><circle cx="323" cy="${vy + 22}" r="10" fill="#0E1822"/>`;
+    s += `<circle cx="${W - 42}" cy="${vy + 26}" r="11" fill="#E9EEF3" opacity=".9"/><circle cx="${W - 37}" cy="${vy + 22}" r="10" fill="#0E1822"/>`;
   }
   // Ville en arrière-plan.
   const sk = rnd(3);
   for (let sx = 0; sx < W;) { const ww = 18 + sk() * 26, hh = 30 + sk() * 50; s += `<rect x="${sx.toFixed(1)}" y="${(base - hh).toFixed(1)}" width="${ww.toFixed(1)}" height="${hh.toFixed(1)}" fill="${P.ville}"/>`; sx += ww + 2; }
   s += `<rect y="${base}" width="${W}" height="${H - base}" fill="${P.sol}"/><rect y="${base}" width="${W}" height="2" fill="${P.bord}"/>`;
-  for (let i = 0; i < 9; i++) s += `<rect x="${8 + i * 42}" y="${H - 10}" width="20" height="2" rx="1" fill="${P.marquage}"/>`;
+  for (let i = 0; i < Math.ceil(W / 42); i++) s += `<rect x="${8 + i * 42}" y="${H - 10}" width="20" height="2" rx="1" fill="${P.marquage}"/>`;
   if (P.lueur) s += `<ellipse cx="${x0 + w / 2}" cy="${base - 20}" rx="${w * 0.8}" ry="${(base - top) * 0.9}" fill="url(#hp-ambre-${moment})" opacity="${P.lueur}"/>`;
   // Étage en travaux (échafaudage).
   if (travaux === 'bureaux' && b < BATIMENT_MAX) {
@@ -149,24 +164,74 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   s += P.neon
     ? `<ellipse cx="${nx + nw / 2}" cy="${ny - 10}" rx="${nw * 0.62}" ry="13" fill="url(#hp-bleu-${moment})" opacity=".45"/><g filter="url(#hp-neon-${moment})">${lettres} fill="#DDF0FF" stroke="#7CC3F7" stroke-width=".35">${esc(texte)}</text></g>`
     : `${lettres} fill="#1B4C80" stroke="#E9EEF3" stroke-width=".5" paint-order="stroke">${esc(texte)}</text>`;
+  // Aile des annexes : une travée vitrée par annexe, avec son pictogramme.
+  if (aile.length) {
+    const ah = 38, atop = base - ah;
+    s += `<rect x="${ax}" y="${atop}" width="${aw}" height="${ah}" fill="${P.garage}"/><rect x="${ax - 2}" y="${atop - 3}" width="${aw + 4}" height="4" rx="1" fill="${P.arete}"/>
+    <rect x="${ax}" y="${base - 9}" width="${aw}" height="2" fill="#2F6FB5"/>`;
+    aile.forEach((id, i) => {
+      const mx = ax + 6 + i * 24, my = atop + 6;
+      const lum = P.allume ? LIT : P.vitre;
+      s += `<rect x="${mx}" y="${my}" width="20" height="20" rx="2" fill="${lum}" opacity="${P.allume ? 0.95 : 1}"/>`;
+      if (moment === 'jour') s += `<path d="M${mx + 3} ${my + 20} L${mx + 11} ${my} H${mx + 14} L${mx + 6} ${my + 20} Z" fill="#FFFFFF" opacity=".15"/>`;
+      s += `<g transform="translate(${mx + 10},${my + 10})" stroke="${P.allume ? '#3A2A08' : '#E9EEF3'}" fill="none" stroke-width="1.4" stroke-linecap="round">${PICTO[id]}</g>`;
+    });
+  }
   // Garage : une porte par niveau ; la première est ouverte si un véhicule est à l'atelier.
-  const gx = 196, gw = 24 + g * 26, gh = 46, gtop = base - gh;
+  const gh = 46, gtop = base - gh;
   s += `<rect x="${gx}" y="${gtop}" width="${gw}" height="${gh}" fill="${P.garage}"/><rect x="${gx - 2}" y="${gtop - 4}" width="${gw + 4}" height="5" rx="1" fill="${P.arete}"/>
   <text x="${gx + 8}" y="${gtop + 11}" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="9" letter-spacing="1.2" fill="${P.texteGarage}">GARAGE</text>`;
   if (travaux === 'garage' && g < BATIMENT_MAX) s += `<rect x="${gx + gw + 2}" y="${gtop + 4}" width="22" height="${gh - 4}" fill="#F2B544" fill-opacity=".05" stroke="#5A4418" stroke-dasharray="4 3"/>`;
   for (let d = 0; d < g; d++) {
-    const dx = gx + 12 + d * 26, ouverte = atelier && d === 0;
+    const dx = gx + 12 + d * 26, ouverte = (atelier || infra.garage) && d === 0;
     s += `<circle cx="${dx + 11}" cy="${gtop + 17}" r="1.3" fill="${P.lueur ? LIT : P.lamelle}"/>${P.lueur ? `<ellipse cx="${dx + 11}" cy="${gtop + 26}" rx="12" ry="8" fill="url(#hp-ambre-${moment})" opacity="${P.lueur}"/>` : ''}`;
     if (ouverte) {
-      s += `<rect x="${dx}" y="${gtop + 20}" width="22" height="${gh - 20}" fill="#0B1119"/><rect x="${dx}" y="${gtop + 20}" width="22" height="5" fill="${P.porte}"/>
-      <g transform="translate(${dx + 11},${base - 3})"><path d="M-6 0 L-3 -8 H3 L6 0" fill="#F0736A" opacity=".9"/><rect x="-7" y="-1" width="14" height="1.5" fill="#F0736A"/></g>`;
+      s += `<rect x="${dx}" y="${gtop + 20}" width="22" height="${gh - 20}" fill="#0B1119"/><rect x="${dx}" y="${gtop + 20}" width="22" height="5" fill="${P.porte}"/>`;
+      if (infra.garage) {
+        // Atelier mécanique : pont élévateur, avec le véhicule en réparation levé dessus.
+        s += `<rect x="${dx + 2}" y="${gtop + 26}" width="2" height="${gh - 26}" fill="#F2B544"/><rect x="${dx + 18}" y="${gtop + 26}" width="2" height="${gh - 26}" fill="#F2B544"/>
+        <rect x="${dx + 2}" y="${base - 12}" width="18" height="1.5" fill="#C9B68F"/>
+        ${atelier ? `<g transform="translate(${dx + 1.5},${base - 22}) scale(.42)">${combi(0, 0)}</g>` : `<path d="M${dx + 9} ${base - 6} l4 -4 m-1 -1 a2 2 0 1 1 2 2" stroke="#9FB0C0" stroke-width="1" fill="none"/>`}`;
+      } else {
+        s += `<g transform="translate(${dx + 11},${base - 3})"><path d="M-6 0 L-3 -8 H3 L6 0" fill="#F0736A" opacity=".9"/><rect x="-7" y="-1" width="14" height="1.5" fill="#F0736A"/></g>`;
+      }
     } else {
       s += `<rect x="${dx}" y="${gtop + 20}" width="22" height="${gh - 20}" fill="${P.porte}"/>`;
       for (let j = 1; j < 5; j++) s += `<rect x="${dx}" y="${(gtop + 20 + j * 5.2).toFixed(1)}" width="22" height=".8" fill="${P.lamelle}"/>`;
     }
   }
+  // Caméras de lecture de plaques : deux mâts au bord de la route.
+  if (infra.anpr) for (const px of [8, gx + gw + 6]) {
+    if (px > W - 4) continue;
+    s += `<line x1="${px}" y1="${base}" x2="${px}" y2="${base - 34}" stroke="${P.mat}" stroke-width="1.6"/><line x1="${px}" y1="${base - 32}" x2="${px + 6}" y2="${base - 32}" stroke="${P.mat}" stroke-width="1.2"/>
+    <rect x="${px + 4}" y="${base - 35}" width="8" height="5" rx="1" fill="#5B6B7D"/><circle class="hp-balise" cx="${px + 10.5}" cy="${base - 32.5}" r=".9" fill="#F0736A"/>`;
+  }
+  // Lots de la salle des ventes : chien pisteur, drone, radar-tronçon.
+  if (aLots.has('chien')) {
+    const cx = x0 + w / 2 + 30;
+    s += `<g transform="translate(${cx},${base}) scale(1.3)">
+      <circle cx="0" cy="-15" r="2.3" fill="#E8C39E"/><rect x="-2.6" y="-18.4" width="5.2" height="1.8" rx=".8" fill="#1B2A3F"/>
+      <rect x="-2.6" y="-12.6" width="5.2" height="7" rx="1.2" fill="#1B2A3F"/><rect x="-2.6" y="-10" width="5.2" height="1" fill="#E3E84A"/>
+      <rect x="-2.3" y="-5.8" width="1.8" height="5.8" fill="#12202F"/><rect x=".5" y="-5.8" width="1.8" height="5.8" fill="#12202F"/>
+      <path d="M2.6 -9 Q6 -8 8 -6.5" stroke="#9FB0C0" stroke-width=".6" fill="none"/>
+      <ellipse cx="11.5" cy="-4.2" rx="4.2" ry="1.9" fill="#8A5A2B"/><circle cx="16" cy="-6" r="1.6" fill="#6B4420"/><path d="M16.4 -7.2 l.6 -1.8 l.8 1.6 Z" fill="#3A2410"/>
+      <path d="M17.2 -5.6 l1.5 .5" stroke="#3A2410" stroke-width="1"/><path d="M7.4 -4.6 Q5.8 -7 6.4 -8" stroke="#6B4420" stroke-width="1" fill="none"/>
+      <rect x="8.6" y="-3" width=".9" height="3" fill="#6B4420"/><rect x="10.4" y="-3" width=".9" height="3" fill="#6B4420"/><rect x="13" y="-3" width=".9" height="3" fill="#6B4420"/><rect x="14.6" y="-3" width=".9" height="3" fill="#6B4420"/>
+    </g>`;
+  }
+  if (aLots.has('drone')) {
+    const dx = x0 + w + 16, dy = Math.max(vy + 12, top - 24);
+    s += `<g transform="translate(${dx},${dy}) scale(1.3)"><rect x="-4" y="-1.2" width="8" height="2.6" rx="1" fill="#C8D3DD"/>
+      <line x1="-9" y1="-2" x2="9" y2="-2" stroke="#9FB0C0" stroke-width=".8"/><ellipse cx="-9" cy="-2.6" rx="3.4" ry=".7" fill="#C8D3DD" opacity=".7"/><ellipse cx="9" cy="-2.6" rx="3.4" ry=".7" fill="#C8D3DD" opacity=".7"/>
+      <circle cx="0" cy="2.2" r="1.1" fill="#5B6B7D"/><circle class="hp-balise" cx="3.4" cy="0" r=".8" fill="#4CC38A"/></g>`;
+  }
+  if (aLots.has('radar')) {
+    const rx = x0 + 10;
+    s += `<g transform="translate(${rx},${base + 22})"><path d="M0 0 L3 -9 L6 0 M3 -9 V0" stroke="#6B7A8A" stroke-width=".9" fill="none"/>
+      <rect x="-1" y="-15" width="8" height="6" rx="1" fill="#E3E84A"/><rect x=".5" y="-13.6" width="3" height="3" rx=".5" fill="#0B1119"/><circle cx="5" cy="-12" r=".8" fill="#F0736A"/></g>`;
+  }
   // Véhicules en service garés devant.
-  let vx = gx - 2;
+  let vx = Math.min(gx - 2, W - 150);
   for (const t of devant.slice(0, 3)) { s += t === 'anonyme' ? anonyme(vx, base + 10, 0.9) : combi(vx, base + 8, 0.95); vx += 48; }
   return `${s}</svg>`;
 }

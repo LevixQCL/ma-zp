@@ -3,10 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-30g',
+  id: '2026-09-30h',
   titre: 'Mise à jour du 30 septembre : ton hôtel de police en image',
   points: [
     ['Mon hôtel de police', 'ta zone s’affiche en image dans la carte « Ma zone » : un étage de plus à chaque niveau du bâtiment, une porte de garage par niveau du garage, et son nom en néon sur le toit. Touche l’image pour les bâtiments et les véhicules.'],
+    ['Tes achats se voient', 'chaque annexe a sa travée vitrée à côté de l’hôtel de police (salle de sport, audition, logiciel, antenne de quartier). L’atelier mécanique montre son pont élévateur, les caméras de plaques leurs mâts, et les lots gagnés à la salle des ventes (chien pisteur, drone, radar-tronçon) apparaissent dans la scène. Le ciel suit l’heure : jour, crépuscule ou nuit.'],
     ['HP plus léger', 'guide, nouveautés et profil passent sous la roue dentée en haut ; l’enquête et les énigmes se retrouvent dans « Prochain tour » et dans la barre du bas.'],
     ['Parc automobile', 'chaque combi et chaque voiture anonymisée a sa tuile : en service, cabossé ou à l’atelier. L’état du parc reste commun à tous les véhicules.'],
     ['Réparation ciblée', 'touche un véhicule cabossé pour le passer seul en carrosserie ce soir, ou lance une révision du parc depuis sa fiche.'],
