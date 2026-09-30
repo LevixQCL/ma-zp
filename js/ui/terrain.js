@@ -7,7 +7,7 @@ import { iconeSite } from './plan.js';
 import { demandeRenfortHtml, appelsRenfort, renfortCtrl, renfortPrevu } from './renfort.js';
 import { candidaturesRecues, candidatureCtrl, maCandidature, postulerCtrl, placesRestantes, chefDe } from './affaires.js';
 import { fipaPour } from '../engine/fipa.js';
-import { SERVICE_LABELS } from '../engine/constants.js';
+import { SERVICE_LABELS, psEvenement } from '../engine/constants.js';
 
 /** Nombre de choses qui attendent une action sur le Terrain (pour la pastille). */
 export function terrainAFaire() {
@@ -70,7 +70,7 @@ export function renderTerrain() {
   }
   const perils = Object.values(st.zones).filter((x) => (x.peril || x.tutelle) && x.uid !== z.uid);
   if (perils.length) voisins.push(`<a class="list-row" href="#diplomatie" style="background:var(--red-bg);border-color:var(--red-line)"><span class="bullet" style="background:var(--red)"></span>
-    <span class="col grow" style="gap:1px"><span style="font-weight:600">${perils.map((x) => esc(x.nom)).join(', ')} en difficulté</span><span class="small muted">Entraide : budget ou agents, +5 de réputation</span></span>${icon('chevron', 16)}</a>`);
+    <span class="col grow" style="gap:1px"><span style="font-weight:600">${perils.map((x) => esc(x.nom)).join(', ')} en difficulté</span><span class="small muted">Entraide : budget ou agents, jusqu’à +7 de réputation selon ton aide</span></span>${icon('chevron', 16)}</a>`);
 
   // ───── District ─────
   const ev = st.evenement;
@@ -80,7 +80,7 @@ export function renderTerrain() {
     district.push(bloc(esc(ev.titre), `<p class="small muted" style="margin:0">${ceSoir ? 'Ce soir' : `Dans ${ev.tour - T} tour${ev.tour - T > 1 ? 's' : ''}`} · environ ${requis} agents pour tout le district. Réussite : +8 de satisfaction pour tous ; échec : −10 pour tous.</p>
       ${ceSoir ? `<div class="renfort-ctrl"><div class="between"><span class="small" style="font-weight:600">Tes agents sur l’événement</span>
         <span class="stepper"><button type="button" data-action="ev" data-d="-1" aria-label="Un agent de moins" ${(d.evenement || 0) <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.evenement || 0}</span><button type="button" data-action="ev" data-d="1" aria-label="Un agent de plus">+</button></span></div>
-        <span class="tiny muted">Environ 3 agents par zone. Ne rien envoyer compte comme « passager clandestin ». Pense à valider tes ordres.</span></div>` : '<span class="tiny muted">Tu pourras y envoyer des agents le jour même, depuis cet écran.</span>'}`,
+        <span class="tiny muted">Environ 3 agents par zone. Tes PS et ta réputation suivent le nombre d’agents envoyés (${psEvenement(d.evenement || 0)} PS pour ${d.evenement || 0} agent${(d.evenement || 0) > 1 ? 's' : ''}). Ne rien envoyer compte comme « passager clandestin ». Pense à valider tes ordres.</span></div>` : '<span class="tiny muted">Tu pourras y envoyer des agents le jour même, depuis cet écran.</span>'}`,
       { kicker: 'Grand événement du district' }));
   }
 

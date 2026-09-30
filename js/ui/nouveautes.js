@@ -3,9 +3,10 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-30b',
+  id: '2026-09-30c',
   titre: 'Mise à jour du 30 septembre : chaque service compte double',
   points: [
+    ['Renforts : l’effort compte', 'grand événement du district, renfort sur une opération, affaire disputée, entraide : ce que tu gagnes (PS, réputation) suit désormais le nombre d’agents ou le budget que tu envoies. Un seul agent « pour la forme » rapporte peu ; l’entraide affiche la réputation prévue.'],
     ['Recherche et enquête', 'tes agents de Recherche rapportent bien plus de pièces pour l’enquête de la semaine. Nouveau : la piste prioritaire (fiche d’un suspect) concentre leurs recherches. Le pourcentage du soir est affiché dans l’Enquête.'],
     ['Intervention', 'les patrouilles restées libres après les incidents peuvent faire un flagrant délit : points, PS et un quartier apaisé.'],
     ['Accueil = assurance', 'chaque agent d’Accueil au-delà de 2 évite 15 % des tracas internes (panne, dégât des eaux, grève, papiers égarés, plainte…).'],

@@ -3,7 +3,7 @@
 
 import {
   APP_VERSION, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat, gainPrime, seuilChasse } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat, gainPrime, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
@@ -256,7 +256,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const part = total * x.n / sommeN;
       z._points += part; z.stats.pointsAffaires += part; z.stats.affairesGagnees += 1; z.moral += 2;
       if (x.u === chef) { z.satisfaction += aff.recompense * 0.5 * mult; if (equipe.length > 1) z.reputation += 1; if (equipe.length >= 3) z.stats.affairesOrchestre = (z.stats.affairesOrchestre || 0) + 1; }
-      else z.reputation += 2;
+      else z.reputation += repRenfortAffaire(x.n);
       z.rapport.push(`${aff.titre} : affaire résolue${x.u === chef ? ' sous ta direction' : ` avec ${zoneLabel(state.zones[chef])}`} (+${fmt1(part)} pts pour ${x.n} agent${x.n > 1 ? 's' : ''} ; force de l’équipe ${fmt1(force)}, ${qualite}).`);
       // Intervention musclée : plus on engage d'agents, plus le risque d'un blessé augmente.
       const risque = Math.min(0.3, Math.max(0, (x.n - 3) * 0.05));
@@ -286,7 +286,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const c = ord[u].evenement;
       if (c > 0) {
         z.stats.contributions += 1;
-        z._ps += PS.evenement;
+        z._ps += psEvenement(c);
         if (reussi) z.reputation += Math.max(1, Math.round(10 * c / total));
       } else if (actives.includes(u)) z.stats.evenementsManques += 1;
       if (reussi) { z.satisfaction += 8; z.rapport.push(`${ev.titre} : réussi (+8 de satisfaction).`); }
@@ -308,9 +308,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const op = operationActive(c, T);
     if (!op) continue;
     (renfortsRecus[r.cible] ||= []).push({ de: u, n: r.agents });
-    const rep = Math.min(RENFORT.repMax, r.agents * RENFORT.repParAgent);
-    z.reputation += rep; z._ps += RENFORT.ps; z.stats.renfortsPretes = (z.stats.renfortsPretes || 0) + 1;
-    z.rapport.push(`Renfort : ${r.agents} de tes agents aident ${zoneLabel(c)} sur « ${op.titre} » (+${rep} de réputation).`);
+    const { rep, ps } = gainRenfort(r.agents);
+    z.reputation += rep; z._ps += ps; z.stats.renfortsPretes = (z.stats.renfortsPretes || 0) + 1;
+    z.rapport.push(`Renfort : ${r.agents} de tes agents aident ${zoneLabel(c)} sur « ${op.titre} » (+${rep} de réputation, +${ps} PS).`);
   }
   for (const [cible, l] of Object.entries(renfortsRecus)) {
     const n = l.reduce((a, b) => a + b.n, 0);

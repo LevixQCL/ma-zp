@@ -104,7 +104,7 @@ export function sections() {
         <p>Environ une fois tous les six jours, une grosse opération tombe dans ta zone. Les agents qu'elle mobilise quittent leur service. Tu choisis le dispositif : <strong>complet</strong> (tous les agents demandés), <strong>réduit</strong> (la moitié) ou <strong>aucun</strong>.</p>
         ${table(['Opération', 'Agents demandés', 'Durée', 'Points'], OPERATIONS.map((o) => [esc(o.titre), besoinsOp(o.besoins), `${o.duree} tour${o.duree > 1 ? 's' : ''}`, o.recompense]))}
         <p>Couverture moyenne d'au moins 90 % : réussite (points, +6 de satisfaction). Entre 50 et 90 % : réussite partielle. En dessous : fiasco (−10 de satisfaction, −4 de moral).</p>
-        <p><strong>Appel à renfort</strong> : pendant l'opération, lance un appel sur la radio (bouton sur l'HP ou dans tes ordres, un par tour). Les autres zones peuvent te prêter jusqu'à ${RENFORT.maxParZone} agents chacune pour la journée, en l'inscrivant dans leurs ordres : ces agents comptent dans la couverture de ton dispositif. Chaque zone qui aide gagne +${RENFORT.repParAgent} de réputation par agent prêté (maximum +${RENFORT.repMax}) et +${RENFORT.ps} PS.</p>`,
+        <p><strong>Appel à renfort</strong> : pendant l'opération, lance un appel sur la radio (bouton sur l'HP ou dans tes ordres, un par tour). Les autres zones peuvent te prêter jusqu'à ${RENFORT.maxParZone} agents chacune pour la journée, en l'inscrivant dans leurs ordres : ces agents comptent dans la couverture de ton dispositif. Chaque zone qui aide gagne, par agent prêté, +${RENFORT.repParAgent} de réputation (maximum +${RENFORT.repMax}) et +${RENFORT.psParAgent} PS : plus tu prêtes, plus ça rapporte.</p>`,
     },
     {
       id: 'decisions', titre: 'Grande décision, dépenses et infrastructures', html: `
@@ -132,7 +132,7 @@ export function sections() {
           '<strong>Récompense selon la force</strong> : sous la force minimale, l’affaire échoue. À la force minimale, elle rapporte 60 % des points annoncés ; à la force conseillée, 100 % ; à une fois et demie la force conseillée, 130 % (maximum). Les points sont partagés selon le nombre d’agents de chaque zone.',
           'Candidature refusée, sans réponse, ou affaire non lancée : tes agents restent au travail chez toi, en Intervention.',
           'L’équipe réussit si sa force totale atteint la force minimale. La force dépend du nombre d’agents, du niveau en Recherche ou Intervention et du moral.',
-          'Les points sont partagés selon le nombre d’agents fournis. La zone qui dirige gagne aussi de la satisfaction ; chaque zone venue en renfort gagne +2 de réputation.',
+          'Les points sont partagés selon le nombre d’agents fournis. La zone qui dirige gagne aussi de la satisfaction ; chaque zone venue en renfort gagne de la réputation selon ses agents : +1 pour 1 agent, +2 pour 2 ou 3, +3 à partir de 4.',
           'Une affaire non résolue reste un tour de plus, avec une récompense réduite.',
         ])}`,
     },
@@ -208,7 +208,7 @@ export function sections() {
         <h3>Entraide</h3>
         ${ul([
           `Envoie jusqu’à ${AIDE.budgetMax} k€ (reçus le soir même) et prête jusqu’à ${AIDE.agentsMax} agents pour ${AIDE.dureePret} tours. Tu gardes toujours au moins 8 agents.`,
-          'Aider une zone en péril ou sous tutelle : +5 de réputation. Une zone frappée par un coup dur : +3. Sinon : +1.',
+          'Aider une zone en péril ou sous tutelle : jusqu’à +5 de réputation. Une zone frappée par un coup dur : +3. Sinon : +1. Ces montants sont atteints avec 3 agents ou 7,5 k€ (1 agent vaut 2,5 k€) ; une aide plus petite rapporte moins, une aide plus large jusqu’à 40 % de plus (+7 pour une zone en péril).',
         ])}
         <h3>Duels</h3>
         ${ul([
@@ -239,7 +239,7 @@ export function sections() {
         ${ul([
           `Avance de trésorerie de ${k(TUTELLE.avance)} et +${TUTELLE.moral} de moral (la nouvelle direction rassure).`,
           'Interdit : rythme renforcé, agents de réserve, manœuvres, duels, enchères, et toute grande décision sauf recruter.',
-          'La zone reste intouchable (pas de manœuvre contre elle) et l’entraide rapporte toujours +5 de réputation.',
+          'La zone reste intouchable (pas de manœuvre contre elle) et l’entraide rapporte le plus de réputation (jusqu’à +7 selon l’aide envoyée).',
           `À la fin des ${TUTELLE.tours} tours : si la zone n'est plus en péril, elle retrouve son autonomie ; sinon, c'est la faillite.`,
           'Une zone qui a déjà connu la tutelle cette saison passe directement du péril à la faillite.',
         ])}
@@ -321,6 +321,7 @@ export function sections() {
         ${table(['Action', 'PS'], [
           ['Passer ses ordres', `+${PS.ordres}`], ['Bonne réponse à une énigme', `+${PS.queteOk} (tentative ratée : +${PS.queteTentee})`], ['Trois énigmes sur trois', '+5'],
           ['Découverte d’un auteur', '+15'], ['Arrestation', '+10'], ['Participer à une FIPA', '+10'], ['Partager un indice', '+5'], ['Indice qui aide une découverte', '+5'],
+          ['Agents envoyés sur un grand événement du district', `+${PS.evenement} pour 3 agents, proportionnel au nombre envoyé (max. +${PS.evenementMax})`], ['Renfort prêté sur une opération d’envergure', `+${RENFORT.psParAgent} par agent prêté`],
           ['Finir une saison classé', `+${PS.finSaison}`],
         ])}
         <h3>Grades</h3>
