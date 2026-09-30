@@ -67,6 +67,9 @@ export function ajusterBatiments(z) {
 }
 
 export const capaciteAgents = (z) => BATIMENTS.bureaux.capacite(z.batiments.bureaux);
+/** Places d'agents une fois les travaux en cours terminés : un agrandissement de l'hôtel de police
+ *  finit avant l'arrivée des recrues (académie), on peut donc recruter pour les futures places. */
+export const capaciteAgentsPrevue = (z) => BATIMENTS.bureaux.capacite(z.batiments.bureaux + (z.travaux && z.travaux.batiment === 'bureaux' ? 1 : 0));
 export const capaciteVehicules = (z) => BATIMENTS.garage.capacite(z.batiments.garage);
 export const effectifPrevu = (z) => z.agents + (z.academie || []).reduce((s, a) => s + a.n, 0);
 export const niveauEquipement = (z) => z.batiments.bureaux + z.batiments.garage + Object.values(z.infra || {}).filter(Boolean).length;
@@ -361,7 +364,7 @@ export function decisionImpossible(zone, decision, turn) {
     if (zone.travaux) return 'Des travaux sont déjà en cours';
     if (zone.batiments[decision.batiment] >= BATIMENT_MAX) return 'Niveau maximum atteint';
   }
-  if (decision.type === 'recruter' && effectifPrevu(zone) + decision.n > capaciteAgents(zone)) return `Hôtel de police plein (${capaciteAgents(zone)} agents) : agrandis-le d’abord`;
+  if (decision.type === 'recruter' && effectifPrevu(zone) + decision.n > capaciteAgentsPrevue(zone)) return `Hôtel de police plein (${capaciteAgentsPrevue(zone)} agents${zone.travaux && zone.travaux.batiment === 'bureaux' ? ', travaux compris' : ''}) : agrandis-le d’abord`;
   if (decision.type === 'equiper' && decision.cible === 'vehicule' && zone.vehicules + 1 > capaciteVehicules(zone)) return `Garage plein (${capaciteVehicules(zone)} véhicules) : agrandis-le d’abord`;
   return null;
 }
