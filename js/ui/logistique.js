@@ -102,6 +102,13 @@ export function sceneZone(z, st, decor = z.decor) {
 /** Personnalisation choisie par le joueur (tout de suite visible chez lui, recopiée dans la partie à 20:00). */
 function monDecor(z) { return decorValide(z, (S.player && S.player.decor) || z.decor); }
 
+/** Vignette cliquable du commissariat d'une zone (vitrine de la Carte). */
+export function vignetteZone(z) {
+  const moi = S.user && z.uid === S.user.uid;
+  return `<button type="button" class="vitrine-item" data-action="voir-hp" data-uid="${esc(z.uid)}" aria-label="Voir le commissariat de ${esc(z.nom)}">
+    ${sceneZone(z, S.state, moi ? monDecor(z) : decorValide(z, z.decor))}<span class="vitrine-nom"><i style="background:${esc(z.couleur)}"></i>${esc(z.nom)}${moi ? ' <span class="muted">(toi)</span>' : ''}</span></button>`;
+}
+
 /** Illustration cliquable de l'HP (dans la carte « Ma zone ») : ouvre la fiche logistique. */
 export function sceneCarteHtml() {
   const z = myZone(), T = S.state.turn;

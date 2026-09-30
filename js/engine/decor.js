@@ -76,3 +76,48 @@ export function decorCompte(z) {
   for (const cat of Object.values(DECOR)) for (const o of Object.values(cat.options)) { total++; if (decorDebloque(z, o)) n++; }
   return { n, total };
 }
+
+// ───── Skins « Early birds » : offerts aux premiers joueurs (roulette), un par bâtiment ─────
+export const SKINS = {
+  batiment: {
+    titre: 'Hôtel de police',
+    options: {
+      friterie: { nom: 'Friterie de garde', texte: 'Façade jaune frite, auvent rayé et cornet géant sur le toit.', jour: ['#F2D06B', '#E3BD55', '#D9A93A'] },
+      chateau:  { nom: 'Fort Delta', texte: 'Pierres, créneaux et deux tourelles à fanions.', jour: ['#A8A397', '#948F84', '#827D73'] },
+      orbitale: { nom: 'Base orbitale', texte: 'Coque blanche, hublots, dôme et satellite.', jour: ['#E4EBF2', '#CAD5DF', '#AEBCC9'] },
+      chalet:   { nom: 'Chalet des Fagnes', texte: 'Bois, toit à deux pans et jardinières fleuries.', jour: ['#9A6A40', '#86592F', '#6E4826'] },
+      gateau:   { nom: 'Gâteau d’anniversaire', texte: 'Glaçage rose qui coule et bougies allumées sur le toit.', jour: ['#F6D6E0', '#EDC2D2', '#E0A9BE'] },
+    },
+  },
+  garage: {
+    titre: 'Garage',
+    options: {
+      hangar:  { nom: 'Hangar à dirigeable', texte: 'Toit en voûte et petit dirigeable de la zone amarré au-dessus.', jour: ['#9AA8B6', '#7E8C9B'] },
+      grange:  { nom: 'Grange de ferme', texte: 'Planches rouges, portes à croix blanche et botte de foin.', jour: ['#A8432F', '#8A3424'] },
+      retro:   { nom: 'Garage rétro 80', texte: 'Violet nuit, néons rose et turquoise, damier chromé.', jour: ['#3A2A55', '#2A1F3D'] },
+      lavage:  { nom: 'Car-wash à bulles', texte: 'Carrelage bleu et bulles de savon qui s’envolent.', jour: ['#8CC8F5', '#5AB0F0'] },
+    },
+  },
+  aile: {
+    titre: 'Aile des annexes',
+    options: {
+      conteneurs: { nom: 'Conteneurs empilés', texte: 'Chaque annexe dans un conteneur de couleur.', jour: ['#E07A3A', '#3C7DB8'] },
+      roulotte:   { nom: 'Roulotte de cirque', texte: 'Rayures rouges et blanches, toit festonné, roues à rayons.', jour: ['#D8453A', '#F4EFE3'] },
+      serre:      { nom: 'Serre tropicale', texte: 'Verrière en arc et plantes qui débordent.', jour: ['#BFE3D0', '#7FC6A0'] },
+    },
+  },
+};
+
+/** Skins possédés par la zone (liste d'identifiants « categorie:id »). */
+export const skinsPossedes = (z) => new Set(z.skins || []);
+
+/** Skins choisis, limités à ceux que la zone possède. */
+export function skinsValides(z, choix) {
+  const own = skinsPossedes(z), d = {};
+  if (!choix || typeof choix !== 'object') return d;
+  for (const cat of Object.keys(SKINS)) if (choix[cat] && SKINS[cat].options[choix[cat]] && own.has(`${cat}:${choix[cat]}`)) d[cat] = choix[cat];
+  return d;
+}
+
+/** Tous les skins, à plat : [{ cat, id, nom, texte }]. */
+export const TOUS_SKINS = Object.entries(SKINS).flatMap(([cat, C]) => Object.entries(C.options).map(([id, o]) => ({ cat, id, nom: o.nom, texte: o.texte, categorie: C.titre })));
