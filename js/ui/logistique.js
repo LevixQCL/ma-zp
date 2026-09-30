@@ -88,7 +88,7 @@ export function sceneCarteHtml() {
   const cab = parc.filter((v) => v.etat === 'cabosse').length, hs = parc.filter((v) => v.etat === 'atelier').length;
   const b = z.batiments;
   return `<button type="button" class="scene-btn" data-action="logistique" aria-label="Mon hôtel de police : bâtiments et véhicules">
-    ${sceneHp({ nom: z.nom, b: b.bureaux, g: b.garage, devant: parc.filter((v) => v.etat === 'service').map((v) => v.type), travaux: z.travaux ? z.travaux.batiment : null, atelier: hs > 0 })}
+    ${sceneHp({ nom: z.nom, b: b.bureaux, g: b.garage, devant: parc.filter((v) => v.etat === 'service').map((v) => v.type), travaux: z.travaux ? z.travaux.batiment : null, atelier: hs > 0, infra: z.infra || {}, lots: z.lots || [] })}
     <span class="scene-leg"><span>Bâtiment niv. ${b.bureaux} · Garage niv. ${b.garage}${z.travaux ? ' · travaux' : ''}</span>
       ${cab ? `<span class="scene-pastille">${cab} cabossé${cab > 1 ? 's' : ''}</span>` : ''}${icon('chevron', 14)}</span>
   </button>`;
