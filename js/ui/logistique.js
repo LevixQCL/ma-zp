@@ -5,7 +5,10 @@ import { parcVehicules, cabossesChoisis } from '../engine/parc.js';
 import { DECOR, SKINS, decorValide, decorDebloque, conditionDecor, decorCompte, skinsValides, skinDe, earlyBirdEligible } from '../engine/decor.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { sceneHp, vehiculeSvg } from './scene-hp.js';
-import { operationActive, fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
+import { fiabilite } from '../engine/fipa.js';
+import { siteDe } from '../engine/sites.js';
+import { iconeSite } from './plan.js';
+import { moyenneIpz, operationActive, fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
 import { coutDemarche } from '../engine/enquete.js';
 import { PERIL } from '../engine/rivalites.js';
 import { estimations } from './ordres.js';
@@ -110,11 +113,10 @@ export function mesSkins(z) {
 function monDecor(z) { return decorValide(z, (S.player && S.player.decor) || z.decor); }
 export const monDecorPublic = monDecor;
 
-/** Vignette cliquable du commissariat d'une zone (vitrine de la Carte). */
-export function vignetteZone(z) {
+/** Illustration d'une zone pour la vitrine de la Carte (la sienne avec ses choix en cours). */
+export function sceneVignette(z) {
   const moi = S.user && z.uid === S.user.uid;
-  return `<button type="button" class="vitrine-item" data-action="voir-hp" data-uid="${esc(z.uid)}" aria-label="Voir le commissariat de ${esc(z.nom)}">
-    ${moi ? sceneZone(z, S.state, monDecor(z), mesSkins(z).choix) : sceneZone(z, S.state, decorValide(z, z.decor))}<span class="vitrine-nom"><i style="background:${esc(z.couleur)}"></i>${esc(z.nom)}${moi ? ' <span class="muted">(toi)</span>' : ''}</span></button>`;
+  return moi ? sceneZone(z, S.state, monDecor(z), mesSkins(z).choix) : sceneZone(z, S.state, decorValide(z, z.decor));
 }
 
 /** Illustration cliquable de l'HP (dans la carte « Ma zone ») : ouvre la fiche logistique. */
@@ -140,7 +142,7 @@ export function ouvrirHpVoisin(uid) {
   const lots = (z.lots || []).map((l) => LOTS[l.id] && LOTS[l.id].nom).filter(Boolean);
   ouvrirPanneau(`
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><span class="mono tiny" style="color:var(--blue-soft)">ZP ${esc(z.code)}</span><h2 id="aide-titre" class="aide-titre" style="margin:0">${esc(z.nom)}</h2>
-      <span class="tiny muted">${esc(gradeFor(z.ps || 0).nom)} · ${(z.trophees || []).length} trophée${(z.trophees || []).length > 1 ? 's' : ''}</span></div>
+      <span class="tiny muted">${moi ? 'Ta zone' : esc((S.players && S.players[uid] && S.players[uid].pseudo) || 'Chef de zone')} · ${esc(gradeFor(z.ps || 0).nom)} · ${(z.trophees || []).length} trophée${(z.trophees || []).length > 1 ? 's' : ''}</span></div>
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="scene-voisin">${moi ? sceneZone(z, st, d, mesSkins(z).choix) : sceneZone(z, st, d)}</div>
     <div class="bats hp-logis">
@@ -148,7 +150,12 @@ export function ouvrirHpVoisin(uid) {
       <div class="bat"><span class="tiny muted">Garage</span><span style="font-weight:700">Niveau ${z.batiments.garage} · ${z.vehicules} véhicule${z.vehicules > 1 ? 's' : ''}</span></div>
     </div>
     <p class="small" style="margin:0"><span class="muted">Annexes :</span> ${annexes.length ? esc(annexes.join(', ')) : 'aucune'}${lots.length ? `<br><span class="muted">Lots :</span> ${esc(lots.join(', '))}` : ''}</p>
-    <p class="tiny muted" style="margin:0">Façade ${esc(DECOR.facade.options[d.facade].nom.toLowerCase())} · néon ${esc(DECOR.neon.options[d.neon].nom.toLowerCase())}${d.abords !== 'aucun' ? ` · ${esc(DECOR.abords.options[d.abords].nom.toLowerCase())}` : ''}</p>`);
+    <div class="between small"><span class="muted">IPZ moyen</span><span class="mono">${fmt1(moyenneIpz(z))}</span></div>
+    <div class="between small"><span class="muted">FIPA</span><span>${esc(fiabilite(z))}</span></div>
+    ${siteDe(z) ? `<div class="between small"><span class="muted">Site sensible</span><span class="row" style="gap:4px;color:${siteDe(z).couleur}">${iconeSite(siteDe(z).id, siteDe(z).couleur, 14)}${esc(siteDe(z).nom)}</span></div>` : ''}
+    ${z.peril || z.tutelle ? `<p class="small bad" style="margin:0">${z.peril ? 'Zone en péril : un coup de main rapporte de la réputation.' : 'Zone sous tutelle.'}</p>` : ''}
+    <p class="tiny muted" style="margin:0">Façade ${esc(DECOR.facade.options[d.facade].nom.toLowerCase())} · néon ${esc(DECOR.neon.options[d.neon].nom.toLowerCase())}${d.abords !== 'aucun' ? ` · ${esc(DECOR.abords.options[d.abords].nom.toLowerCase())}` : ''}</p>
+    ${moi ? '' : `<button type="button" class="btn block" data-action="ecrire-a" data-uid="${esc(uid)}">✉ Écrire à ${esc(z.nom)}</button>`}`);
 }
 
 /** Fenêtre « Personnaliser mon commissariat ». */

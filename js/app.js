@@ -409,7 +409,7 @@ async function onClick(e) {
         toast('Appel lancé sur la radio.'); rerender(); break;
       }
       case 'prive-ouvrir': S.priveAvec = el.dataset.uid; render(); window.scrollTo(0, document.body.scrollHeight); break;
-      case 'ecrire-a': S.priveAvec = el.dataset.uid; if (location.hash !== '#prive') location.hash = '#prive'; else render(); break;
+      case 'ecrire-a': document.querySelector('.aide-wrap')?.remove(); S.priveAvec = el.dataset.uid; if (location.hash !== '#prive') location.hash = '#prive'; else render(); break;
       case 'prive-fermer': S.priveAvec = null; render(); window.scrollTo(0, 0); break;
       case 'nuit-ok': {
         const z = myZone();
