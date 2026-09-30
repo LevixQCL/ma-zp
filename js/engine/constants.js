@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 14;
+export const APP_VERSION = 15;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -106,7 +106,9 @@ export const GRADES = [
   { nom: 'Chef de corps', ps: 3000, debloque: 'Proposer une motion au Conseil, une fois par saison' },
 ];
 
-export const PS = { ordres: 10, queteOk: 5, queteTentee: 2, noir: 15, evenement: 10, finSaison: 50, plafondJour: 40 };
+export const PS = { ordres: 10, queteOk: 5, queteTentee: 2, noir: 15, evenement: 10, evenementMax: 15, finSaison: 50, plafondJour: 40 };
+// Événement du district : PS.evenement pour la part attendue (3 agents), proportionnel au nombre d'agents envoyés.
+export const psEvenement = (c) => (c > 0 ? Math.max(1, Math.min(PS.evenementMax, Math.round(PS.evenement * c / 3))) : 0);
 
 // Poids de l'IPZ en version 1 (l'enquête arrivera en version 2).
 export const IPZ_POIDS = { satisfaction: 0.35, affaires: 0.30, moral: 0.15, budget: 0.10, reputation: 0.10 };
@@ -124,7 +126,11 @@ export function nextGrade(ps) {
 }
 
 // Renfort pour une opération d'envergure : agents prêtés pour la journée, contre de la réputation.
-export const RENFORT = { maxParZone: 4, maxDemande: 6, repParAgent: 1, repMax: 4, ps: 5 };
+export const RENFORT = { maxParZone: 4, maxDemande: 6, repParAgent: 1, repMax: 4, psParAgent: 2 };
+// Récompense d'un renfort prêté sur une opération d'envergure : proportionnelle aux agents prêtés.
+export const gainRenfort = (n) => ({ rep: Math.min(RENFORT.repMax, n * RENFORT.repParAgent), ps: n * RENFORT.psParAgent });
+// Affaire disputée : réputation d'une zone venue en renfort selon ses agents (1 → +1, 2-3 → +2, 4 et plus → +3).
+export const repRenfortAffaire = (n) => Math.min(3, 1 + Math.floor(n / 2));
 
 // ───── Logistique : les bâtiments de la zone ─────
 // Un niveau par bâtiment (1 à BATIMENT_MAX). Agrandir coûte cher, prend du temps (travaux),

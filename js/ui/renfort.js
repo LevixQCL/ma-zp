@@ -2,7 +2,7 @@
 // les autres en prêtent quelques-uns pour la journée (inscrit dans leurs ordres), contre de la réputation.
 import { S, esc, myZone } from './common.js';
 import { operationActive } from '../engine/zone.js';
-import { RENFORT } from '../engine/constants.js';
+import { RENFORT, gainRenfort } from '../engine/constants.js';
 
 /** Appels à renfort lancés aujourd'hui par d'autres zones dont l'opération est en cours. */
 export function appelsRenfort() {
@@ -35,11 +35,11 @@ export function renfortPrevu(uid) {
 export function renfortCtrl(a) {
   const n = renfortPrevu(a.uid);
   const autre = S.draft && S.draft.renfort && S.draft.renfort.cible !== a.uid && S.draft.renfort.agents > 0 ? S.state.zones[S.draft.renfort.cible] : null;
-  const rep = Math.min(RENFORT.repMax, n * RENFORT.repParAgent);
+  const { rep, ps } = gainRenfort(n);
   return `<div class="renfort-ctrl">
     <div class="between"><span class="small" style="font-weight:600">Prêter des agents ce soir</span>
       <span class="stepper"><button type="button" data-action="renfort-n" data-uid="${esc(a.uid)}" data-d="-1" aria-label="Un agent de moins" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="renfort-n" data-uid="${esc(a.uid)}" data-d="1" aria-label="Un agent de plus" ${n >= RENFORT.maxParZone ? 'disabled' : ''}>+</button></span></div>
-    <span class="tiny ${n ? '' : 'muted'}">${n ? `${n} agent${n > 1 ? 's' : ''} quitte${n > 1 ? 'nt' : ''} tes services pour la journée · +${rep} de réputation, +${RENFORT.ps} PS. Pense à valider tes ordres.` : `Jusqu’à ${RENFORT.maxParZone} agents, pour la journée seulement · +${RENFORT.repParAgent} de réputation par agent.`}${autre ? ` Remplace ton renfort prévu pour ${esc(autre.nom)}.` : ''}</span>
+    <span class="tiny ${n ? '' : 'muted'}">${n ? `${n} agent${n > 1 ? 's' : ''} quitte${n > 1 ? 'nt' : ''} tes services pour la journée · +${rep} de réputation, +${ps} PS. Pense à valider tes ordres.` : `Jusqu’à ${RENFORT.maxParZone} agents, pour la journée seulement · +${RENFORT.repParAgent} de réputation et +${RENFORT.psParAgent} PS par agent prêté.`}${autre ? ` Remplace ton renfort prévu pour ${esc(autre.nom)}.` : ''}</span>
   </div>`;
 }
 

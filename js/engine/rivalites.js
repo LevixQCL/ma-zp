@@ -7,7 +7,16 @@ export const absT = (state, T = state.turn) => (state.season - 1) * 100 + T;
 const nomZone = (z) => `ZP ${z.code} ${z.nom}`;
 
 // ───── Entraide ─────
-export const AIDE = { budgetMax: 10, agentsMax: 3, dureePret: 3 };
+export const AIDE = { budgetMax: 10, agentsMax: 3, dureePret: 3, kParAgent: 2.5, effortPlein: 3, bonusMax: 1.4 };
+/**
+ * Réputation gagnée par une entraide : la base dépend de la situation de la zone aidée (5 / 3 / 1),
+ * pleine à partir de 3 « agents-équivalents » (1 agent = 2,5 k€), jusqu'à +40 % pour une aide très généreuse.
+ */
+export function gainEntraide(base, budget, agents) {
+  const effort = (agents || 0) + (budget || 0) / AIDE.kParAgent;
+  if (effort <= 0) return 0;
+  return Math.max(1, Math.round(base * Math.min(AIDE.bonusMax, effort / AIDE.effortPlein)));
+}
 
 // ───── Manœuvres ─────
 export const MANOEUVRES = {
@@ -111,13 +120,14 @@ export function rivalitesPre(state, uids, ord, push, T) {
       z.blesses.push({ n: agents, retour: T + 1 + AIDE.dureePret, motif: 'prêté' });
       c.renforts = [...(c.renforts || []), { n: agents, debut: T + 1, retour: T + 1 + AIDE.dureePret, de: u }];
     }
-    const bonus = enDifficulte(c) ? 5 : (c.blesses || []).some((b) => b.retour > T && b.motif !== 'prêté') ? 3 : 1;
+    const base = enDifficulte(c) ? 5 : (c.blesses || []).some((b) => b.retour > T && b.motif !== 'prêté') ? 3 : 1;
+    const bonus = gainEntraide(base, budget, agents);
     z.reputation += bonus; z.stats.aides = (z.stats.aides || 0) + 1;
     if (enDifficulte(c)) z.stats.sauvetages = (z.stats.sauvetages || 0) + 1;
     const quoi = [budget ? `${String(budget).replace('.', ',')} k€` : '', agents ? `${agents} agent${agents > 1 ? 's' : ''} pour ${AIDE.dureePret} tours` : ''].filter(Boolean).join(' et ');
     z.rapport.push(`Entraide : tu envoies ${quoi} à ${nomZone(c)} (+${bonus} de réputation).`);
     c.rapport.push(`Entraide : ${nomZone(z)} t’envoie ${quoi}.`);
-    if (enDifficulte(c) || bonus >= 3) push(6, 'Solidarité', `${nomZone(z)} vient en aide à ${nomZone(c)}`, `${quoi.charAt(0).toUpperCase()}${quoi.slice(1)}.`);
+    if (enDifficulte(c) || base >= 3) push(6, 'Solidarité', `${nomZone(z)} vient en aide à ${nomZone(c)}`, `${quoi.charAt(0).toUpperCase()}${quoi.slice(1)}.`);
   }
 
   // 2. Manœuvres.

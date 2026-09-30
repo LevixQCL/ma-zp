@@ -4,7 +4,7 @@ import { gradeFor, REPUTATION } from '../engine/constants.js';
 import { sousTutelle } from '../engine/zone.js';
 import { nonLus, invitations } from './prive.js';
 import {
-  MANOEUVRES, MAN, chanceBase, cibleImpossible, DUEL, DUEL_INDICATEURS, enDuel, AIDE, MOTIONS_CHEF, themeActif, THEMES,
+  MANOEUVRES, MAN, chanceBase, cibleImpossible, DUEL, DUEL_INDICATEURS, enDuel, AIDE, gainEntraide, MOTIONS_CHEF, themeActif, THEMES,
 } from '../engine/rivalites.js';
 
 function autres() {
@@ -80,15 +80,16 @@ function aideHtml() {
   };
   const enDiff = autres().map((z) => ({ z, s: statut(z) })).filter((x) => x.s);
   return `<section class="card" aria-label="Entraide"><h2 class="card-title" style="margin:0">Entraide</h2>
-    <p class="small muted" style="margin:0">Envoie du budget (immédiat) ou prête des agents pour ${AIDE.dureePret} tours. Réputation gagnée : +5 pour une zone en péril ou sous tutelle, +3 pour une zone qui a des blessés après un coup dur, +1 sinon.</p>
+    <p class="small muted" style="margin:0">Envoie du budget (immédiat) ou prête des agents pour ${AIDE.dureePret} tours. Réputation gagnée : jusqu’à +5 pour une zone en péril ou sous tutelle, +3 pour une zone qui a des blessés après un coup dur, +1 sinon. Le plein est atteint avec 3 agents ou 7,5 k€ (1 agent vaut 2,5 k€), et une aide plus large rapporte jusqu’à 40 % de plus ; une petite aide rapporte moins.</p>
     <div class="col" style="gap:4px"><span class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.6px">Zones en difficulté</span>
-      ${enDiff.length ? enDiff.map(({ z, s }) => `<div class="between small" style="gap:8px"><span>${zoneName(z)} <span class="${s.cls}" style="font-weight:700">· ${s.t}</span><br><span class="tiny muted">${esc(s.d)}</span></span><span class="pill ${s.cls === 'bad' ? 'red' : 'amber'}">+${s.bonus} rép.</span></div>`).join('') : '<span class="small muted">Aucune pour l’instant. Une zone passe « en péril » quand son budget tombe sous −15 k€, qu’il lui reste moins de 8 agents disponibles ou que son moral passe sous 10.</span>'}
+      ${enDiff.length ? enDiff.map(({ z, s }) => `<div class="between small" style="gap:8px"><span>${zoneName(z)} <span class="${s.cls}" style="font-weight:700">· ${s.t}</span><br><span class="tiny muted">${esc(s.d)}</span></span><span class="pill ${s.cls === 'bad' ? 'red' : 'amber'}">jusqu’à +${gainEntraide(s.bonus, AIDE.budgetMax, AIDE.agentsMax)} rép.</span></div>`).join('') : '<span class="small muted">Aucune pour l’instant. Une zone passe « en péril » quand son budget tombe sous −15 k€, qu’il lui reste moins de 8 agents disponibles ou que son moral passe sous 10.</span>'}
     </div>
     <label class="field">Zone aidée<select class="text" data-change="aide-cible" style="min-height:44px;font-size:14px"><option value="">Personne</option>
       ${autres().map((z) => `<option value="${esc(z.uid)}" ${a.cible === z.uid ? 'selected' : ''}>${zoneName(z)}${statut(z) ? ` · ${statut(z).t}` : ''}</option>`).join('')}</select></label>
     ${a.cible ? `<div class="between"><span class="small">Budget envoyé</span><span class="stepper"><button type="button" data-action="aide-n" data-k="budget" data-d="-1" aria-label="1 k€ de moins">−</button><span class="n">${a.budget} k€</span><button type="button" data-action="aide-n" data-k="budget" data-d="1" aria-label="1 k€ de plus">+</button></span></div>
       <div class="between"><span class="small">Agents prêtés</span><span class="stepper"><button type="button" data-action="aide-n" data-k="agents" data-d="-1" aria-label="Un agent de moins">−</button><span class="n">${a.agents}</span><button type="button" data-action="aide-n" data-k="agents" data-d="1" aria-label="Un agent de plus">+</button></span></div>
-      <p class="tiny muted" style="margin:0">Maximum ${AIDE.budgetMax} k€ et ${AIDE.agentsMax} agents ; tu gardes toujours au moins 8 agents.</p>` : ''}
+      <p class="tiny muted" style="margin:0">Maximum ${AIDE.budgetMax} k€ et ${AIDE.agentsMax} agents ; tu gardes toujours au moins 8 agents.</p>
+      <p class="small" style="margin:0">Réputation prévue : <strong>+${gainEntraide(statut(S.state.zones[a.cible])?.bonus || 1, a.budget, a.agents)}</strong></p>` : ''}
   </section>`;
 }
 
