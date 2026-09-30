@@ -1,6 +1,7 @@
 // Écran HP (Hôtel de police) : l'accueil.
 import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone } from './common.js';
 import { agentsDisponibles, blessesActifs, enFormation, vehiculesDisponibles } from '../engine/zone.js';
+import { coutCarrosserie } from '../engine/sinistres.js';
 import { formatCountdown } from '../engine/time.js';
 import { QUEST_LABELS } from '../quests/quests.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
@@ -170,6 +171,12 @@ export function renderHP() {
     const requis = 3 * Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length;
     alertes.push({ cls: 'amber', titre: dans === 0 ? `${esc(st.evenement.titre)} : ce soir !` : `${esc(st.evenement.titre)} dans ${dans} tour${dans > 1 ? 's' : ''}`, texte: `environ ${requis} agents requis pour tout le district`, href: dans === 0 ? '#ordres' : '#carte' });
   }
+  const cab = (z.cabosses || []).length;
+  if (cab) {
+    const prevu = S.draft && S.draft.depenses && S.draft.depenses.carrosserie;
+    alertes.push({ cls: prevu ? 'blue' : 'red', titre: `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''}`, texte: prevu ? `passage en carrosserie prévu ce soir (${fmt1(coutCarrosserie(z))} k€)` : `carrosserie dans tes dépenses (${fmt1(coutCarrosserie(z))} k€), sinon ton image en prend un coup chaque tour`, href: '#ordres' });
+  }
+  for (const x of z.indemnites || []) alertes.push({ cls: 'blue', titre: `Assurance : +${fmt1(x.montant)} k€ attendus`, texte: `remboursement du véhicule sinistré, ${x.tour - T <= 0 ? 'ce soir' : `dans ${x.tour - T} tour${x.tour - T > 1 ? 's' : ''}`}`, href: '#ordres' });
   if (z.paperasse > 14) alertes.push({ cls: 'red', titre: `Paperasse : ${Math.round(z.paperasse)} dossiers en attente`, texte: 'au-delà de 20, gare à l’Inspection', href: '#ordres' });
   if (z.budget < 0) alertes.push({ cls: 'red', titre: 'Budget dans le rouge', texte: 'deux tours de suite et c’est l’Inspection', href: '#ordres' });
   const vieux = z.dossiers.filter((d) => d.age > 6).length;
@@ -222,7 +229,7 @@ export function renderHP() {
         <div class="tile"><span class="l">Agents</span><span class="v">${dispo}<span class="muted" style="font-size:13px"> / ${z.agents}</span></span>
           <span class="s ${blesses ? 'bad' : ''}">${blesses ? `${blesses} absent${blesses > 1 ? 's' : ''}` : form ? `${form} en formation` : z.academie.length ? `${z.academie.reduce((s, a) => s + a.n, 0)} à l’académie` : 'tous disponibles'}</span></div>
         <button type="button" class="tile tile-btn" data-action="budget" aria-label="Détail du budget"><span class="l row" style="gap:4px">Budget ${icon('chevron', 12)}</span><span class="v ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s ${fraisFixesDuJour(z) < 0 ? 'bad' : ''}">${fraisFixesDuJour(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(fraisFixesDuJour(z)))} k€/jour · détail</span></button>
-        <div class="tile"><span class="l">Véhicules</span><span class="v">${vDispo}<span class="muted" style="font-size:13px"> / ${z.vehicules}</span></span><span class="s ${100 - z.usure < 60 ? 'bad' : 100 - z.usure < 80 ? 'warn' : ''}">état ${Math.round(100 - z.usure)} %${100 - z.usure < 80 ? ' · révision ?' : ''}</span></div>
+        <div class="tile"><span class="l">Véhicules</span><span class="v">${vDispo}<span class="muted" style="font-size:13px"> / ${z.vehicules}</span></span><span class="s ${cab || 100 - z.usure < 60 ? 'bad' : 100 - z.usure < 80 ? 'warn' : ''}">état ${Math.round(100 - z.usure)} %${cab ? ` · ${cab} cabossé${cab > 1 ? 's' : ''}` : 100 - z.usure < 80 ? ' · révision ?' : ''}</span></div>
       </div>
       <div class="col" style="gap:9px">
         ${gauge('Moral', z.moral, 'var(--amber)', delta(z.moral, z.hier && z.hier.moral) + aideBtn('moral'))}

@@ -6,6 +6,7 @@ import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel } from './affaires.js';
 import { effectifPrevu, capaciteAgents, capaciteVehicules, coutRecrue, sousTutelle } from '../engine/zone.js';
+import { coutCarrosserie } from '../engine/sinistres.js';
 import { carteQuartiers } from '../engine/quartiers.js';
 import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
 
@@ -126,7 +127,7 @@ export function estimations() {
   const dispo = dispo0;
   // Les agents en mission d'enquête ou en FIPA sortent du total : ils ne sont plus à répartir.
   const reste = resteBase - enquete;
-  const coutDep = coutDepenses(dep);
+  const coutDep = coutDepenses(dep, z);
   return { attendus, couverts, pap, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, prises };
 }
 
@@ -393,7 +394,9 @@ export function renderOrdres() {
   const pap = (v) => (v < 0 ? `−${-v}` : v > 0 ? `+${v}` : '±0');
   const nbEng = Object.values(d.engagements).filter((x) => x.agents > 0).length;
   const dep = d.depenses || {};
-  const nbDep = (dep.reserve ? 1 : 0) + ['prime', 'prevention', 'soustraitance', 'revision'].filter((k) => dep[k]).length;
+  const cab = (z.cabosses || []).length;
+  const depKeys = [...(cab ? ['carrosserie'] : []), 'prime', 'prevention', 'soustraitance', 'revision'];
+  const nbDep = (dep.reserve ? 1 : 0) + depKeys.filter((k) => dep[k]).length;
 
   const affairesHtml = st.affaires.map((a) => {
     const eg = d.engagements[a.id] || { agents: 0, acceptes: [] };
@@ -434,9 +437,9 @@ export function renderOrdres() {
       ${dep.reserve ? `<label class="field" style="font-weight:500">Service renforcé
         <select class="text" data-change="dep-service" style="min-height:44px;font-size:14px">${SERVICES.map((s2) => `<option value="${s2}" ${dep.reserveService === s2 ? 'selected' : ''}>${SERVICE_LABELS[s2]}</option>`).join('')}</select></label>` : ''}
     </div>
-    <div class="col" style="gap:6px">${['prime', 'prevention', 'soustraitance', 'revision'].map((k) => `
+    <div class="col" style="gap:6px">${depKeys.map((k) => `
       <button type="button" class="choice" data-action="dep-toggle" data-k="${k}" aria-pressed="${!!dep[k]}" style="flex-direction:row;justify-content:space-between;text-align:left">
-        <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(DEPENSES[k].nom)}</span><span class="s">${esc(DEPENSES[k].texte)}${k === 'revision' ? ` · état actuel ${Math.round(100 - z.usure)} %` : ''}</span></span><span class="mono small">${fmt1(DEPENSES[k].cout)} k€</span></button>`).join('')}
+        <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(DEPENSES[k].nom)}</span><span class="s">${esc(DEPENSES[k].texte)}${k === 'revision' ? ` · état actuel ${Math.round(100 - z.usure)} %${z.stats && z.stats.risqueAccident != null ? ` · risque d’accident hier ${fmt1(z.stats.risqueAccident)} %` : ''}` : ''}${k === 'carrosserie' ? ` · ${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} : sans réparation, −${Math.min(3, cab)} de satisfaction et de réputation par tour` : ''}</span></span><span class="mono small">${fmt1(k === 'carrosserie' ? coutCarrosserie(z) : DEPENSES[k].cout)} k€</span></button>`).join('')}
     </div>
     <p class="tiny muted" style="margin:0">Payées à 20:00 si le budget le permet (${fmt1(z.budget)} k€). Elles ne sont pas reconduites le lendemain.</p>`;
 
@@ -497,7 +500,7 @@ export function renderOrdres() {
     ${prisesHtml()}
     ${pli('affaires', 'Affaires disputées', st.affaires.length ? (nbEng ? `${nbEng} affaire${nbEng > 1 ? 's' : ''} engagée${nbEng > 1 ? 's' : ''} sur ${st.affaires.length}` : `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} ouverte${st.affaires.length > 1 ? 's' : ''} · aucun agent engagé`) : 'Aucune ce tour', st.affaires.length ? `<div class="col" style="gap:8px">${affairesHtml}</div>` : '<p class="small muted" style="margin:0">Aucune affaire disputée ce tour.</p>')}
     ${pli('decision', 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'Pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, decisionHtml)}
-    ${pli('depenses', 'Dépenses du jour', nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune', depensesHtml)}
+    ${pli('depenses', 'Dépenses du jour', cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune', depensesHtml, cab > 0 && !dep.carrosserie)}
 
     <a class="small" href="#guide-ordres" style="text-align:center;padding:10px">Comment fonctionnent les ordres ?</a>
   </main>${tabbar('ordres')}`;

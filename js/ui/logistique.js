@@ -15,7 +15,7 @@ export function previsionBudget() {
   try { amendes = estimations().amendes; } catch (e) { /* écran sans brouillon */ }
   const ff = fraisFixes(z, st, { amendes, rythme: d.rythme || 'normal' });
   const choix = [];
-  const dep = coutDepenses(d.depenses || {});
+  const dep = coutDepenses(d.depenses || {}, z);
   if (dep) choix.push({ l: 'Dépenses du jour', v: -dep });
   if (d.decision && !decisionImpossible(z, d.decision, st.turn)) choix.push({ l: 'Grande décision', v: -coutDecision(z, d.decision) });
   const dem = (d.demarches || []).reduce((s, x) => s + coutDemarche(st, z.uid, x), 0);
