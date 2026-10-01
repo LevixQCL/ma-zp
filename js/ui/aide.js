@@ -1,7 +1,7 @@
 // Aides rapides (bouton « ? ») : l'essentiel d'une jauge en quelques lignes, sans ouvrir le guide.
 import { esc, fmt1, myZone } from './common.js';
-import { IPZ_POIDS, START, ECONOMIE, SUBSIDE } from '../engine/constants.js';
-import { confianceCommune, pointsIpz, IPZ_LABELS } from '../engine/zone.js';
+import { IPZ_POIDS, START, ECONOMIE, SUBSIDE, TERRAIN, FLAGRANT, DOSSIER, ND } from '../engine/constants.js';
+import { confianceCommune, pointsIpz, IPZ_LABELS, moralMult } from '../engine/zone.js';
 import { PERIL } from '../engine/rivalites.js';
 
 const pc = (w) => `${Math.round(w * 100)} %`;
@@ -25,7 +25,10 @@ export const AIDES = {
     titre: 'Moral des troupes',
     intro: 'La jauge qui pèse sur tout : elle multiplie l’efficacité de tous tes agents.',
     lignes: [
-      '<strong>Efficacité</strong> : de 60 % (moral 0) à 120 % (moral 100)',
+      '<strong>Efficacité</strong> = 60 % + 0,6 × moral, pour <em>tous</em> tes agents et tous les services (incidents, Proximité, dossiers, amendes, paperasse, force engagée dans la zone de non-droit)',
+      `<strong>Repères</strong> : ${[30, 40, 50, 60, 67, 74, 80, 90, 100].map((m) => `${m} → ${Math.round(moralMult(m) * 100)} %`).join(' · ')}`,
+      '<strong>Point neutre</strong> : à 67 de moral, tes agents sont à 100 % ; en dessous ils travaillent moins, au-dessus ils font plus',
+      '<strong>Dans le rapport du soir</strong> : la ligne « Moral … au moment du travail : efficacité … % » donne le moral réellement appliqué (après les aléas, énigmes et primes du jour)',
       '<strong>Sous 40</strong> : 10 % des agents restent absents',
       '<strong>Sous 20</strong> : un agent démissionne à chaque tour',
       `<strong>Sous ${PERIL.moral}</strong> : ta zone passe en péril (risque de faillite)`,
@@ -96,14 +99,18 @@ export const AIDES = {
   },
   terrain: {
     titre: 'Résultats terrain',
-    intro: 'La composante « terrain » de l’IPZ (30 %). Ce ne sont pas les PS, qui servent aux grades.',
+    intro: `La composante « terrain » de l’IPZ (${pc(IPZ_POIDS.affaires)}). Ce ne sont pas les PS, qui servent aux grades.`,
     lignes: [
-      '<strong>Calcul</strong> : 60 × part des incidents traités + 6 × points de résultats du jour, plafonné à 100',
-      '<strong>Incidents</strong> : tout traiter donne déjà 60 ; en rater la moitié n’en donne que 30',
-      '<strong>Points de résultats</strong> : zone de non-droit, dossiers élucidés, opérations d’envergure, flagrants délits, enquête, poste avancé',
-      '<strong>Chaque jour repart de zéro</strong> : les points ne s’accumulent pas d’un tour à l’autre',
+      `<strong>Calcul</strong> : ${TERRAIN.incidents} × part des incidents traités + ${TERRAIN.parPoint} × bilan, plafonné à 100`,
+      `<strong>Incidents</strong> : tout traiter donne déjà ${TERRAIN.incidents} ; en rater la moitié n’en donne que ${TERRAIN.incidents / 2}`,
+      `<strong>Bilan</strong> = points du jour + ${pc(TERRAIN.report)} du bilan d’hier. Un gros coup compte encore les jours suivants ; en régime régulier, le bilan vaut environ 2 × tes points par jour`,
+      `<strong>Recherche</strong> : +${String(DOSSIER.ptsParUnite).replace('.', ',')} pt par unité de travail sur les dossiers, chaque jour (un nouveau dossier arrive chaque jour, il y a toujours du travail). Repère : 4 enquêteurs ≈ +2 pts par jour`,
+      `<strong>Flagrant délit</strong> : +${FLAGRANT.points} pts quand la jauge des patrouilles libres atteint 100 % (+${Math.round(FLAGRANT.parUnite * 100)} % par unité de marge après les incidents, ${Math.round(FLAGRANT.max * 100)} % au plus par jour) : plus de tirage au sort`,
+      `<strong>Zone de non-droit</strong> : reprise d’un secteur +${String(ND.prise.points).replace('.', ',')} pts + jusqu’à ${ND.prise.pointsPart} selon ta part ; chaque nuit où tu le tiens, +${String(ND.retombees.points).replace('.', ',')} à +${String(Math.round((ND.retombees.points + ND.retombees.pointsPart) * 100) / 100).replace('.', ',')} ; le Cœur compte ×${String(ND.coeurMult).replace('.', ',')}`,
+      '<strong>Opération d’envergure</strong> : ses points annoncés si le dispositif est complet (90 % ou plus), 40 % s’il est partiel',
+      '<strong>Enquête</strong> : pièce de voisinage +2, bonne accusation +8, arrestation +6',
     ],
-    conseil: 'Assez d’Intervention pour ne rater aucun incident, puis de la Recherche et des affaires pour les points.',
+    conseil: 'D’abord assez d’Intervention pour ne rater aucun incident (c’est 60 sur 100), puis de la Recherche pour des points réguliers, et la zone de non-droit à plusieurs pour les gros coups.',
     guide: 'guide-zone',
   },
   budgetIpz: {
@@ -141,6 +148,8 @@ function tourJauge(z, k) {
   return { tour: j.tour, html: `${av !== undefined ? calc('Avant le tour', fmt1(av)) : ''}
     ${l.length ? l.map((x) => ligne(esc(x.l), x.v)).join('') : '<p class="tiny muted" style="margin:0">Aucun changement ce tour-là.</p>'}
     ${ap !== undefined ? calc('<strong>Après le tour</strong>', `<strong>${fmt1(ap)}</strong>`) : ''}
+    ${k === 'moral' && z.efficaciteMoral ? calc(`Efficacité appliquée ce tour-là (moral ${fmt1(z.efficaciteMoral.moral)} au moment du travail)`, `<strong>${Math.round(z.efficaciteMoral.mult * 100)} %</strong>`) : ''}
+    ${k === 'moral' ? calc(`Efficacité pour demain (moral ${fmt1(z.moral)})`, `<strong>${Math.round(moralMult(z.moral) * 100)} %</strong>`) : ''}
     ${partIpz(z, k)}` };
 }
 
@@ -148,14 +157,19 @@ function tourTerrain(z) {
   const d = z.ipzDetail;
   if (!d || !z.ipzComp) return null;
   const ratio = d.incidents ? d.traites / d.incidents : 1;
-  const a = 60 * ratio, b = 6 * (d.points || 0), brut = a + b;
+  const bilan = d.bilan !== undefined ? d.bilan : (d.points || 0);
+  const a = TERRAIN.incidents * ratio, b = TERRAIN.parPoint * bilan, brut = a + b;
   const pts = (z.journal && z.journal.lignes && z.journal.lignes.points) || [];
   return { tour: z.journal ? z.journal.tour : null, html: `
-    ${calc(`Incidents traités : ${d.traites} sur ${d.incidents}`, `60 × ${Math.round(ratio * 100)} % = ${fmt1(a)}`)}
-    ${calc(`Points de résultats : ${fmt1(d.points || 0)}`, `6 × ${fmt1(d.points || 0)} = ${fmt1(b)}`)}
-    ${pts.length ? `<div class="aide-sous">${pts.map((x) => ligne(esc(x.l), x.v, ' pt')).join('')}</div>` : ''}
+    ${calc(`Incidents traités : ${d.traites} sur ${d.incidents}`, `${TERRAIN.incidents} × ${Math.round(ratio * 100)} % = ${fmt1(a)}`)}
+    ${calc(`Points gagnés ce jour-là`, `+${fmt1(d.points || 0)}`)}
+    ${pts.length ? `<div class="aide-sous">${pts.slice().sort((x, y) => y.v - x.v).map((x) => ligne(esc(x.l), x.v, ' pt')).join('')}</div>` : ''}
+    ${d.report !== undefined ? calc('Reporté du bilan de la veille (moitié)', `+${fmt1(d.report)}`) : ''}
+    ${calc(`Bilan : ${fmt1(bilan)}`, `${TERRAIN.parPoint} × ${fmt1(bilan)} = ${fmt1(b)}`)}
     ${calc('Total', `${fmt1(brut)}${brut > 100 ? ' → plafonné à 100' : ''}`)}
-    ${partIpz(z, 'terrain')}` };
+    ${partIpz(z, 'terrain')}
+    <div class="aide-l between small" style="margin-top:4px"><span>Jauge de flagrant délit</span><span class="mono">${Math.round((z.jaugeFlagrant || 0) * 100)} %</span></div>
+    <div class="aide-l between small"><span>Demain, sans nouveau point, ton bilan vaudra encore</span><span class="mono">${fmt1(bilan * TERRAIN.report)}</span></div>` };
 }
 
 function tourBudget(z, pourIpz) {
