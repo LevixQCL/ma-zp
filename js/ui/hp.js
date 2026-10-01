@@ -4,7 +4,7 @@ import { cabossesChoisis } from '../engine/parc.js';
 import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone, skyline, cielStyle } from './common.js';
 import { agentsDisponibles, blessesActifs, enFormation, vehiculesDisponibles } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
-import { formatCountdown } from '../engine/time.js';
+import { formatCountdown, formatDateBe } from '../engine/time.js';
 import { QUEST_LABELS } from '../quests/quests.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
 import { situationHtml, estimations } from './ordres.js';
@@ -19,7 +19,7 @@ import { sceneCarteHtml } from './logistique.js';
 import { encheresHtml } from './encheres.js';
 import { TUTELLE } from '../engine/constants.js';
 import { equipeHtml } from './equipe.js';
-import { fraisFixes, pointsIpz, IPZ_LABELS, confianceCommune, moralMult } from '../engine/zone.js';
+import { fraisFixes, pointsIpz, IPZ_LABELS, confianceCommune, moralMult, moyenneIpz } from '../engine/zone.js';
 const AIDE_COMP = { satisfaction: 'satisfaction', affaires: 'terrain', moral: 'moral', budget: 'budgetIpz', reputation: 'reputation' };
 import { IPZ_POIDS } from '../engine/constants.js';
 const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations().amendes; } catch (e) { /* pas de brouillon */ } return fraisFixes(z, S.state, { amendes, rythme: (S.draft && S.draft.rythme) || 'normal' }).total; };
@@ -76,18 +76,26 @@ function journalHtml(j) {
 
 /** Rapport d'un tour : le dernier (données de la zone) ou un plus ancien (archives de la Gazette). */
 function rapportHtml(z) {
-  const archives = (S.gazettes || []).filter((g) => g.rapports && g.rapports[z.uid]);
-  const idx = Math.max(0, Math.min(archives.length - 1, S.rapportIdx || 0));
-  const g = archives[idx];
-  const d = idx === 0 || !g
-    ? { tour: z.journal ? z.journal.tour : g && g.turn, lignes: z.rapport, journal: z.journal, ipz: z.ipz, ipzComp: z.ipzComp, ipzCompHier: z.ipzCompHier, ipzDetail: z.ipzDetail, hierIpz: z.hier ? z.hier.ipz : null }
-    : { tour: g.turn, lignes: g.rapports[z.uid], ...((g.journaux && g.journaux[z.uid]) || {}) };
+  // Le dernier rapport vient de la zone elle-même ; les plus anciens, des Gazettes archivées,
+  // triées par saison et tour (et jamais le tour du dernier rapport en double).
+  const st = S.state;
+  const tourLive = z.journal ? z.journal.tour : (st.turn > 1 ? st.turn - 1 : null);
+  const saisonLive = st.season;
+  const archives = (S.gazettes || [])
+    .filter((g) => g.rapports && g.rapports[z.uid] && !(g.season === saisonLive && g.turn === tourLive))
+    .sort((a, b) => (b.season - a.season) || (b.turn - a.turn));
+  const entrees = [null, ...archives];
+  const idx = Math.max(0, Math.min(entrees.length - 1, S.rapportIdx || 0));
+  const g = entrees[idx];
+  const d = !g
+    ? { tour: tourLive, date: st.lastResolvedAt, lignes: z.rapport, journal: z.journal, ipz: z.ipz, ipzComp: z.ipzComp, ipzCompHier: z.ipzCompHier, ipzDetail: z.ipzDetail, hierIpz: z.hier ? z.hier.ipz : null }
+    : { tour: g.turn, saison: g.season, date: g.date, lignes: g.rapports[z.uid], ...((g.journaux && g.journaux[z.uid]) || {}) };
   const lignes = (d.lignes && d.lignes.length ? d.lignes.filter((l) => !(d.ipzComp && l.startsWith('IPZ du jour'))) : ['Pas encore de rapport : le premier tour n’a pas été résolu.']);
-  const nav = archives.length > 1 ? `<span class="row" style="gap:4px">
-      <button type="button" class="iconbtn" data-action="rapport-nav" data-d="1" ${idx >= archives.length - 1 ? 'disabled' : ''} aria-label="Tour précédent" style="width:34px;height:34px">${icon('back', 16)}</button>
+  const nav = entrees.length > 1 ? `<span class="row" style="gap:4px">
+      <button type="button" class="iconbtn" data-action="rapport-nav" data-d="1" ${idx >= entrees.length - 1 ? 'disabled' : ''} aria-label="Tour précédent" style="width:34px;height:34px">${icon('back', 16)}</button>
       <button type="button" class="iconbtn" data-action="rapport-nav" data-d="-1" ${idx === 0 ? 'disabled' : ''} aria-label="Tour suivant" style="width:34px;height:34px">${icon('chevron', 16)}</button></span>` : '';
   return `<div class="card tight" id="rapport-complet" style="scroll-margin-top:16px">
-    <div class="between"><span class="kicker">Rapport du tour ${d.tour || ''}${idx === 0 ? ' · le dernier' : ''}</span>${nav}</div>
+    <div class="between"><span class="kicker">Rapport du tour ${d.tour || ''}${d.saison && d.saison !== saisonLive ? ` (saison ${d.saison})` : ''}${d.date ? ` · soir du ${formatDateBe(d.date)}` : ''}${idx === 0 ? ' · le dernier' : ''}</span>${nav}</div>
     ${ipzDetailHtml(d)}
     ${journalHtml(d.journal)}
     ${!d.journal && idx > 0 ? '<p class="tiny muted" style="margin:0">Détail des jauges indisponible pour les tours d’avant la mise à jour.</p>' : ''}
@@ -247,7 +255,7 @@ export function renderHP() {
         </div>
         <div class="col" style="gap:2px;align-items:flex-end;flex-shrink:1;text-align:right">
           <span class="row" style="gap:6px;flex-shrink:0;white-space:nowrap"><span class="mono" style="font-size:18px" aria-label="Indice de performance de zone : ${fmt1(z.ipz)}">IPZ ${fmt1(z.ipz)}</span>${delta(z.ipz, z.hier && z.hier.ipz)}${aideBtn('ipz', 'Qu’est-ce que l’IPZ ?')}</span>
-          <span class="tiny muted">${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total} zone${total > 1 ? 's' : ''}` : `non classé · ${z.toursJoues}/5 tours joués`}</span>
+          <span class="tiny muted">${z.toursJoues ? `moy. saison ${fmt1(moyenneIpz(z))} · ` : ""}${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total} zone${total > 1 ? 's' : ''}` : `non classé · ${z.toursJoues}/5 tours joués`}</span>
         </div>
       </div>
       ${sceneCarteHtml()}

@@ -193,7 +193,8 @@ async function loadTurnData() {
   S.savedOrders = orders; S.ordersDirty = false; S.draft = null; S.decisionOpen = false;
   S.questResults = (quest || [null, null, null]).slice(0, 3); S.noirResult = (quest && quest[3]) || null; S.quests = null; S.questPick = null;
   S.questIdx = Math.max(0, (S.questResults || []).findIndex((r) => !r || (r.statut !== 'ok' && r.statut !== 'rate')));
-  S.gazettes = gazettes; S.gazetteIndex = 0;
+  // Tri par saison et tour : l'ordre d'écriture dépend de l'horloge de l'appareil qui a calculé le tour.
+  S.gazettes = (gazettes || []).slice().sort((x, y) => (y.season - x.season) || (y.turn - x.turn)); S.gazetteIndex = 0; S.rapportIdx = 0;
   if (isNew) toast(`Tour ${st.turn} : la Gazette est parue !`);
   render();
 }
