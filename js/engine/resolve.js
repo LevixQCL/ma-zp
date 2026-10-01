@@ -21,6 +21,7 @@ import { rivalitesPre, rivalitesPost, postesContre, themeActif, appliquerConsign
 import { FLAGRANTS } from './contenu.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
+import { incidentsDuTour, appliquerIncidents, resultatsIncidents } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, EVENEMENTS_COLLECTIFS, COUPS_DURS, ALEAS, OPERATIONS, PRESSIONS, PRESSION_WEEKEND } from './contenu.js';
 
@@ -143,6 +144,8 @@ function genererAffaires(state, rng) {
  * @returns {{ state: object, gazette: object }}
  */
 export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, nextWeekday = null } = {}) {
+  // Incidents du jour : tirés sur l'état d'avant la résolution, comme les joueurs les ont vus.
+  const incidentsAvant = Object.fromEntries(Object.keys((stateIn && stateIn.zones) || {}).map((u) => [u, incidentsDuTour(stateIn, u)]));
   const state = migrateState(clone(stateIn));
   state.minClientVersion = Math.max(state.minClientVersion || 0, APP_VERSION);
   const T = state.turn;
@@ -463,6 +466,13 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
 
     jalon(z, 'Énigmes : sans faute (+2 de moral)');
+    // Incidents du jour (mini-jeux) : réussite, échec, ou équipe livrée à elle-même.
+    if ((incidentsAvant[uid] || []).length) {
+      const inc = appliquerIncidents(z, { incidents: incidentsAvant[uid], resultats: resultatsIncidents(players[uid], incidentsAvant[uid]), alloc: o.alloc || {}, T, rng: makeRng(`${state.seed}:s${state.season}:t${T}:incidents-res:${uid}`) });
+      z.rapport.push(...inc.lignes);
+      if (inc.skin) push(3, 'Décor', `${zoneLabel(z)} décroche le skin « ${inc.skin.nom} »`, 'Jauge des incidents remplie à force d’interventions réussies.', uid);
+    }
+    jalon(z, 'Incidents du jour');
     // Situation du jour (annoncée au début du tour).
     const pr = {};
     for (const p of z.pressions || []) Object.assign(pr, p.effet);
@@ -937,6 +947,7 @@ function finDeSaison(state, classement) {
     if (z.decor) nz.decor = z.decor;
     if (z.skins) nz.skins = z.skins;
     if (z.skinsChoix) nz.skinsChoix = z.skinsChoix;
+    if (z.jaugeIncidents) nz.jaugeIncidents = z.jaugeIncidents;
     nz.rapport = [`Nouvelle saison : tu conserves tes formations et tes bâtiments, baissés d’un niveau (hôtel de police ${nz.batiments.bureaux}, garage ${nz.batiments.garage}), et tes annexes. Budget, effectifs et véhicules repartent des valeurs de départ.`];
     nz.heritage = { season: oldSeason, niveaux, batiments: { ...nz.batiments }, annexes: Object.keys(nz.infra).filter((k) => nz.infra[k]).length };
     state.zones[uid] = nz;

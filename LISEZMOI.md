@@ -13,6 +13,7 @@ Jeu de gestion de zone de police fictive, entre collègues. Un tour par jour, r�
 | `js/quests/` | Générateurs des énigmes du jour |
 | `js/data/` | Stockage : mode démo (sur l'appareil) ou Firebase (en ligne) |
 | `js/ui/` | Écrans |
+| `minijeux/` | Mini-jeux des incidents du jour (pages ouvertes en plein écran) ; sources et script de construction dans `minijeux/src/` |
 | `css/`, `icons/`, `manifest.webmanifest`, `sw.js` | Apparence, icônes et installation sur téléphone |
 
 ## Mode démo

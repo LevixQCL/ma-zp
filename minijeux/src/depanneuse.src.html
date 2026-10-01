@@ -1,0 +1,227 @@
+<!--title:Dépanneuse-->
+<!--eyebrow:Roulage · démo-->
+<!--h1:Dépanneuse-->
+<!--svc:rou-->
+<!--icon:car-->
+<style>
+.field{flex:1;min-height:0;display:grid;place-items:center}
+/* parking vu du ciel : asphalte, marquages peints, sortie balisée */
+.lot{position:relative;border-radius:20px;background:
+  radial-gradient(circle at 20% 30%,rgba(255,255,255,.035) 0 1px,transparent 1.5px) 0 0/7px 7px,
+  radial-gradient(circle at 70% 60%,rgba(0,0,0,.18) 0 1px,transparent 1.5px) 0 0/5px 5px,
+  linear-gradient(160deg,#343943,#262a31);
+  box-shadow:0 0 0 6px #1a1e25,0 0 0 7px rgba(255,255,255,.08),0 24px 50px rgba(0,0,0,.5)}
+.lot .grid{position:absolute;inset:0;border-radius:20px;opacity:.55}
+.exit{position:absolute;bottom:-10px;height:14px;background:linear-gradient(160deg,#343943,#262a31);display:grid;place-items:center;color:var(--accent)}
+.exit svg{width:60%;height:14px}
+.tow{position:absolute;pointer-events:none;border-radius:0 0 12px 12px;background:linear-gradient(160deg,#343943,#262a31);box-shadow:0 0 0 6px #1a1e25}
+.tow svg{position:absolute;left:50%;top:calc(50% + 6px);width:var(--tl);height:var(--ts);transform:translate(-50%,-50%) rotate(90deg);filter:drop-shadow(0 4px 5px rgba(0,0,0,.45))}
+.veh{position:absolute;touch-action:none;cursor:grab;filter:drop-shadow(0 3px 3px rgba(0,0,0,.45));transition:filter .15s}
+.veh .body{position:absolute;left:50%;top:50%;width:var(--L);height:var(--S);transform:translate(-50%,-50%) rotate(var(--rot,0deg))}
+.veh svg{display:block;width:100%;height:100%}
+.veh.drag{cursor:grabbing;z-index:3;filter:drop-shadow(0 10px 12px rgba(0,0,0,.55)) brightness(1.08)}
+.veh.focus::after{content:"";position:absolute;inset:-5px;border-radius:14px;border:2.5px solid var(--accent);animation:pulse 1.1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.haz{animation:blink .8s steps(1) infinite} @keyframes blink{50%{opacity:.15}}
+.beacon{animation:blink 1s steps(1) infinite}
+.bar2{display:flex;gap:10px;align-items:center;justify-content:space-between;padding-bottom:env(safe-area-inset-bottom,0px)}
+.goal{font-size:13px;color:var(--mute);line-height:1.4}
+@media (prefers-reduced-motion:reduce){.haz,.beacon,.veh.focus::after{animation:none}}
+</style>
+<body>
+  <div class="field" id="field"><div class="lot" id="lot"><div class="grid"></div></div></div>
+  <div class="status"><span id="movesTxt">Coups 0</span><span id="goalTxt">Minimum possible : --</span></div>
+  <div class="bar2"><span class="goal">Fais glisser les véhicules pour libérer la voiture accidentée.</span><button class="btn small" id="reset">Replacer</button></div>
+</body>
+<script>
+const PUZ = /*INCLUDE:rush.json*/null;
+const CIV = ['#6f8296','#a3303f','#2f7a62','#d2c08e','#3f5ea8','#b5b9bf','#7a55a3','#e6e8ea'];
+const R = {veh:[], init:[], cell:50, moves:0, min:0, over:true, cfg:null, tuto:0, els:[]};
+
+let UID=0;
+function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=n>>16,g=n>>8&255,b=n&255; const t=f<0?0:255,p=Math.abs(f); r=Math.round((t-r)*p+r); g=Math.round((t-g)*p+g); b=Math.round((t-b)*p+b); return `rgb(${r},${g},${b})`; }
+const GLASS='#17202c';
+function grad(col){ const id='g'+(UID++); return [id,`<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shade(col,.28)}"/><stop offset=".45" stop-color="${col}"/><stop offset="1" stop-color="${shade(col,-.32)}"/></linearGradient>`]; }
+function lamps(W){ return `<rect x="${W-15}" y="17" width="8" height="15" rx="4" fill="#fff4cf"/><rect x="${W-15}" y="68" width="8" height="15" rx="4" fill="#fff4cf"/><rect x="8" y="19" width="6" height="13" rx="3" fill="#ff4343"/><rect x="8" y="68" width="6" height="13" rx="3" fill="#ff4343"/>`; }
+function carSVG(W,col,target){
+  const [id,g]=grad(col), d=shade(col,-.4);
+  let x=`<defs>${g}</defs><rect x="5" y="9" width="${W-10}" height="82" rx="28" fill="url(#${id})"/>
+  <rect x="${W*.58}" y="2" width="11" height="9" rx="3" fill="${d}"/><rect x="${W*.58}" y="89" width="11" height="9" rx="3" fill="${d}"/>
+  <path d="M${W*.18} 24 Q ${W*.14} 50 ${W*.18} 76 L ${W*.28} 72 L ${W*.28} 28 Z" fill="${GLASS}"/>
+  <rect x="${W*.3}" y="25" width="${W*.32}" height="50" rx="12" fill="${shade(col,.1)}"/>
+  <path d="M${W*.64} 25 L ${W*.77} 16 Q ${W*.82} 50 ${W*.77} 84 L ${W*.64} 75 Z" fill="${GLASS}"/>
+  <path d="M${W*.67} 30 L ${W*.75} 23" stroke="rgba(255,255,255,.35)" stroke-width="3" stroke-linecap="round"/>${lamps(W)}`;
+  if(target){
+    x+=`<path d="M${W-5} 9 L ${W-38} 9 L ${W-30} 22 L ${W-44} 34 L ${W-5} 44 Z" fill="#2b2f36"/>
+    <path d="M${W*.7} 40 l8 6 l-5 8 l9 7 M${W*.7} 46 l-6 7" stroke="#cfe0f5" stroke-width="1.6" fill="none" opacity=".8"/>
+    <rect class="haz" x="${W-15}" y="68" width="8" height="15" rx="4" fill="#ffb21f"/><rect class="haz" x="8" y="19" width="6" height="13" rx="3" fill="#ffb21f"/><rect class="haz" x="8" y="68" width="6" height="13" rx="3" fill="#ffb21f"/>`;
+  }
+  return x;
+}
+function policeSVG(W){
+  const [id,g]=grad('#eef1f5');
+  let band=''; for(let x=14;x<W-14;x+=16){ const c=(x/16|0)%2?'#1d4ea3':'#d7ee3a'; band+=`<rect x="${x}" y="11" width="16" height="9" fill="${c}"/><rect x="${x}" y="80" width="16" height="9" fill="${c}"/>`; }
+  return `<defs>${g}<clipPath id="c${id}"><rect x="5" y="9" width="${W-10}" height="82" rx="18"/></clipPath></defs>
+  <rect x="5" y="9" width="${W-10}" height="82" rx="18" fill="url(#${id})"/><g clip-path="url(#c${id})">${band}</g>
+  <path d="M${W*.8} 24 L ${W*.87} 18 Q ${W*.9} 50 ${W*.87} 82 L ${W*.8} 76 Z" fill="${GLASS}"/>
+  <rect x="${W*.62}" y="36" width="${W*.13}" height="28" rx="6" fill="#20324f"/><rect class="beacon" x="${W*.63}" y="38" width="${W*.055}" height="24" rx="4" fill="#3d8bff"/><rect class="beacon" style="animation-delay:.5s" x="${W*.69}" y="38" width="${W*.055}" height="24" rx="4" fill="#3d8bff"/>
+  <text x="${W*.33}" y="57" text-anchor="middle" font-family="Manrope,system-ui,sans-serif" font-weight="800" font-size="19" letter-spacing="3" fill="#1d4ea3">POLICE</text>${lamps(W)}`;
+}
+function vanSVG(W,col,truck){
+  const [id,g]=grad(col);
+  if(truck){ const [id2,g2]=grad('#e9ebee');
+    return `<defs>${g}${g2}</defs><rect x="5" y="8" width="${W*.66}" height="84" rx="8" fill="url(#${id2})"/><path d="M${W*.2} 12v76M${W*.4} 12v76" stroke="rgba(0,0,0,.08)" stroke-width="2"/>
+    <rect x="${W*.7}" y="12" width="${W*.28}" height="76" rx="18" fill="url(#${id})"/><path d="M${W*.84} 22 L ${W*.92} 18 Q ${W*.95} 50 ${W*.92} 82 L ${W*.84} 78 Z" fill="${GLASS}"/>${lamps(W)}`; }
+  return `<defs>${g}</defs><rect x="5" y="9" width="${W-10}" height="82" rx="20" fill="url(#${id})"/><rect x="${W*.08}" y="20" width="${W*.62}" height="60" rx="8" fill="${shade(col,.12)}"/>
+  <path d="M${W*.77} 22 L ${W*.86} 16 Q ${W*.9} 50 ${W*.86} 84 L ${W*.77} 78 Z" fill="${GLASS}"/>${lamps(W)}`;
+}
+function vehSVG(v){
+  const W=v.len*100;
+  const inner = v.kind==='target'?carSVG(W,'#ff6a33',true) : v.kind==='police'?policeSVG(W) : v.kind==='van'?vanSVG(W,v.color,false) : v.kind==='truck'?vanSVG(W,v.color,true) : carSVG(W,v.color,false);
+  return `<svg viewBox="0 0 ${W} 100" preserveAspectRatio="none" aria-hidden="true">${inner}</svg>`;
+}
+const TOW=`<svg viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true">
+<defs><linearGradient id="cabg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc24a"/><stop offset=".5" stop-color="#f39a12"/><stop offset="1" stop-color="#b86a05"/></linearGradient>
+<pattern id="hz" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="12" fill="#ffd23a"/><rect x="6" width="6" height="12" fill="#1c1f24"/></pattern></defs>
+<rect x="2" y="10" width="132" height="80" rx="6" fill="#59616d"/>
+<path d="M28 18v64M52 18v64M76 18v64M100 18v64" stroke="#6b7480" stroke-width="2"/>
+<rect x="2" y="10" width="18" height="80" rx="4" fill="url(#hz)"/>
+<text x="74" y="56" text-anchor="middle" font-family="Manrope,system-ui,sans-serif" font-weight="800" font-size="11.5" letter-spacing=".8" fill="#eef1f5">DÉPANNAGE</text>
+<rect x="112" y="40" width="16" height="20" rx="3" fill="#2b3038"/>
+<rect x="134" y="6" width="64" height="88" rx="16" fill="url(#cabg)"/>
+<rect x="132" y="0" width="12" height="9" rx="3" fill="#b86a05"/><rect x="132" y="91" width="12" height="9" rx="3" fill="#b86a05"/>
+<path d="M176 18 L 188 13 Q 194 50 188 87 L 176 82 Z" fill="#17202c"/>
+<rect x="148" y="24" width="14" height="52" rx="4" fill="#2b3038"/>
+<rect class="beacon" x="150" y="27" width="10" height="20" rx="3" fill="#ffcf4a"/><rect class="beacon" style="animation-delay:.5s" x="150" y="53" width="10" height="20" rx="3" fill="#ffcf4a"/>
+<rect x="190" y="14" width="6" height="14" rx="3" fill="#fff4cf"/><rect x="190" y="72" width="6" height="14" rx="3" fill="#fff4cf"/></svg>`;
+const CHEV=`<svg viewBox="0 0 40 14" aria-hidden="true"><path d="M4 3l6 7 6-7M24 3l6 7 6-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+function layout(){
+  const f=$('field'), w=f.clientWidth, h=f.clientHeight;
+  R.cell=Math.max(28,Math.floor(Math.min((w-16)/6, (h-16)/8.15)));
+  const c=R.cell, lot=$('lot');
+  lot.style.width=c*6+'px'; lot.style.height=c*6+'px'; lot.style.marginBottom=c*2.1+'px';
+  const gr=lot.querySelector('.grid');
+  gr.style.backgroundImage='linear-gradient(0deg,rgba(255,255,255,.2) 2px,transparent 2px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px)';
+  gr.style.backgroundSize=`${c}px ${c}px`; gr.style.backgroundPosition=`0 ${c-1}px, ${c}px 0`;
+  let ex=lot.querySelector('.exit'); if(!ex){ex=document.createElement('div');ex.className='exit';ex.innerHTML=CHEV;lot.appendChild(ex);}
+  ex.style.left=(2*c+3)+'px'; ex.style.width=(c-6)+'px';
+  let tow=lot.querySelector('.tow'); if(!tow){tow=document.createElement('div');tow.className='tow';tow.innerHTML=TOW;lot.appendChild(tow);}
+  tow.style.top=(6*c+6)+'px'; tow.style.left=(2*c-4)+'px'; tow.style.width=(c+8)+'px'; tow.style.height=(c*2)+'px';
+  tow.style.setProperty('--tl',(c*2-22)+'px'); tow.style.setProperty('--ts',(c-6)+'px');
+  R.els.forEach((el,i)=>place(i));
+}
+function place(i,pos){
+  const v=R.veh[i], el=R.els[i], c=R.cell, g=4;
+  const p = pos ?? (v.h?v.c:v.r);
+  const x=(v.h?p:v.c)*c+g, y=(v.h?v.r:p)*c+g;
+  const L=v.len*c-2*g, S=c-2*g;
+  el.style.width=(v.h?L:S)+'px'; el.style.height=(v.h?S:L)+'px';
+  el.style.setProperty('--L',L+'px'); el.style.setProperty('--S',S+'px');
+  el.style.transform=`translate(${x}px,${y}px)`;
+}
+function load(list){
+  const lot=$('lot'); R.els.forEach(e=>e.remove()); R.els=[];
+  let policeDone=false;
+  R.veh=list.map(([c,r,len,h0],i)=>{ const h=1-h0;
+    let kind = i===0?'target' : len===3 ? (!policeDone?(policeDone=true,'police'):pick(['van','truck'])) : 'car';
+    const rot = i===0 ? 90 : h ? pick([0,180]) : pick([90,-90]);
+    return {r,c,len,h:!!h,kind,color:pick(CIV),rot};
+  });
+  R.init=R.veh.map(v=>({r:v.r,c:v.c}));
+  R.veh.forEach((v,i)=>{
+    const el=document.createElement('div'); el.className=`veh ${v.kind}`;
+    el.innerHTML=`<div class="body" style="--rot:${v.rot}deg">${vehSVG(v)}</div>`;
+    el.dataset.i=i; el.setAttribute('aria-label', v.kind==='target'?'Voiture accidentée':v.kind==='police'?'Combi de police':'Véhicule');
+    lot.appendChild(el); R.els.push(el);
+    el.addEventListener('pointerdown',down);
+  });
+  R.moves=0; status(); layout();
+}
+function occupied(skip){
+  const o=new Set();
+  R.veh.forEach((v,i)=>{ if(i===skip) return; for(let k=0;k<v.len;k++) o.add(v.h? v.r*6+(v.c+k) : (v.r+k)*6+v.c); });
+  return o;
+}
+function range(i){
+  const v=R.veh[i], o=occupied(i); let lo=v.h?v.c:v.r, hi=lo;
+  const at=p=>v.h? v.r*6+p : p*6+v.c;
+  while(lo-1>=0 && !o.has(at(lo-1))) lo--;
+  while(hi+v.len<6 && !o.has(at(hi+v.len))) hi++;
+  return [lo,hi];
+}
+let drag=null;
+function down(e){
+  if(R.over) return;
+  const i=+e.currentTarget.dataset.i; e.preventDefault();
+  try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}
+  const v=R.veh[i], [lo,hi]=range(i);
+  drag={i,id:e.pointerId,sx:e.clientX,sy:e.clientY,start:v.h?v.c:v.r,lo,hi,pos:v.h?v.c:v.r};
+  e.currentTarget.classList.add('drag');
+  e.currentTarget.addEventListener('pointermove',move); e.currentTarget.addEventListener('pointerup',up); e.currentTarget.addEventListener('pointercancel',up);
+}
+function move(e){
+  if(!drag||e.pointerId!==drag.id) return;
+  const v=R.veh[drag.i], d=(v.h?e.clientX-drag.sx:e.clientY-drag.sy)/R.cell;
+  drag.pos=Math.min(drag.hi,Math.max(drag.lo,drag.start+d)); place(drag.i,drag.pos);
+}
+function up(e){
+  if(!drag||e.pointerId!==drag.id) return;
+  const el=R.els[drag.i], v=R.veh[drag.i]; el.classList.remove('drag');
+  ['pointermove','pointerup','pointercancel'].forEach((t,k)=>el.removeEventListener(t,[move,up,up][k]));
+  const p=Math.round(drag.pos);
+  if(p!==drag.start){ if(v.h) v.c=p; else v.r=p; R.moves++; Shell.blip(500+Math.random()*80,.04,'triangle',.05); status(); }
+  place(drag.i); const i=drag.i; drag=null;
+  afterMove(i);
+}
+function afterMove(i){
+  const t=R.veh[0];
+  if(Shell.st.mode==='tuto') tutoCheck();
+  if(t.r===4 && !R.over){
+    R.over=true; Shell.stopTimer(); Shell.win();
+    const el=R.els[0]; el.style.transition='transform .8s cubic-bezier(.5,0,.8,.4)'; place(0,6.4);
+    setTimeout(()=>{ el.style.transition=''; }, 800);
+    if(Shell.st.mode==='tuto'){ setTimeout(Shell.endTuto,900); return; }
+    const used=R.cfg.time-Shell.st.timeLeft, par=R.min+3, faults=R.moves>par?1:0;
+    setTimeout(()=>Shell.result({ok:true,faults,stats:[['Temps',Math.round(used)+' s'],['Coups',R.moves+' / '+R.min]],
+      note: faults===0?`Résolu en ${R.moves} coups, dans la marge (minimum ${R.min} + 3) : double point.`:`Résolu en ${R.moves} coups. Fais ${par} coups ou moins (minimum ${R.min} + 3) pour gagner +2.`}),900);
+  }
+}
+function status(){ $('movesTxt').innerHTML='Coups <b>'+R.moves+'</b>'; $('goalTxt').innerHTML= R.min? 'Minimum possible <b>'+R.min+'</b>' : ''; }
+$('reset').onclick=()=>{ if(R.over) return; R.veh.forEach((v,i)=>{v.r=R.init[i].r; v.c=R.init[i].c; place(i);}); Shell.toast('Véhicules replacés','info'); if(Shell.st.mode==='tuto') tutoGo(1); };
+new ResizeObserver(layout).observe($('field'));
+
+/* ---------- tutoriel ---------- */
+// 0 accidentée, 1 = A (vertical, bloque la sortie), 2 = B (bloque A par le haut)
+const TUTO_BOARD=[[2,0,2,1],[1,3,2,0],[0,2,2,1],[4,3,2,0],[5,0,2,1],[3,5,3,0],[3,0,2,0]];
+const TSTEPS=[null,
+  'La <b>voiture accidentée</b> (orange) doit descendre jusqu\'à la dépanneuse, en bas. La voiture couchée en travers lui barre la route, et elle-même est bloquée à gauche. Commence par glisser la <b>voiture de gauche</b> vers le haut ou le bas.',
+  'Le passage est libre : glisse la <b>voiture couchée vers la gauche</b>. Un véhicule ne bouge que dans le sens de sa longueur.',
+  'Maintenant, fais <b>descendre la voiture accidentée</b> jusqu\'à la dépanneuse.'];
+function tutoGo(n){
+  R.tuto=n; R.els.forEach(e=>e.classList.remove('focus'));
+  const f={1:2,2:1,3:0}[n]; if(f!==undefined) R.els[f].classList.add('focus');
+  Shell.coach(n,3,TSTEPS[n]);
+}
+function tutoCheck(){
+  const A=R.veh[1], B=R.veh[2];
+  if(R.tuto===1 && (B.r>3||B.r+2<=3)) { Shell.good(); tutoGo(2); }
+  else if(R.tuto===2 && A.c===0){ Shell.good(); tutoGo(3); }
+}
+
+Shell.init({
+  key:'depanneuse', service:'Incident Roulage', serviceShort:'Roulage',
+  headline:'Carrefour bloqué',
+  story:`<p>Accrochage sur le parking du centre commercial à l'heure de pointe. La voiture accidentée est coincée entre les véhicules et la dépanneuse attend à la sortie.</p><p>Ton équipe Roulage doit faire déplacer les véhicules un par un pour la dégager avant que tout le quartier soit bloqué.</p>`,
+  diffs:{difficile:{agents:2,label:'Difficile',time:150,set:'difficile'},normal:{agents:4,label:'Normal',time:150,set:'normal'},facile:{agents:6,label:'Facile',time:150,set:'facile'}},
+  diffHint:"Plus d'agents : un parking moins encombré, donc moins de coups à jouer.",
+  desktopHint:'Sur ordinateur : fais glisser les véhicules à la souris.',
+  rules:['Glisse les véhicules <b>dans le sens de leur longueur</b>, jamais en travers.','Fais descendre la <b>voiture accidentée</b> (orange) jusqu\'à la <b>dépanneuse</b>, en bas.','Le <b>minimum possible</b> est affiché. Termine en minimum + 3 coups ou moins : <b>+2</b> sur la jauge. Sinon : <b>+1</b>.','Replacer remet le parking à zéro, mais les coups déjà joués restent comptés.'],
+  winTitle:'Voie dégagée', loseTitle:'Le carrefour reste bloqué', skin:'Dépanneuse ZP',
+  malus:"le dépannage est facturé en urgence au budget de la zone, et 1 agent Roulage reste immobilisé sur place jusqu'à demain.",
+  onMenu(){ R.over=true; },
+  onInit(){ R.min=0; load(pick(PUZ.normal.filter(q=>q.v.some(x=>x[2]===3))).v); },
+  onPlay(cfg){ R.cfg=cfg; const p=pick(PUZ[cfg.set].filter(q=>q.v.some(x=>x[2]===3))); R.min=p.m; load(p.v); R.over=false; Shell.startTimer(cfg.time,()=>{ if(!R.over){ R.over=true; Shell.bad(); Shell.result({ok:false,faults:1,stats:[['Coups',R.moves],['Minimum',R.min]]}); } }); },
+  onTuto(){ R.min=3; load(TUTO_BOARD); R.over=false; tutoGo(1); }
+});
+</script>

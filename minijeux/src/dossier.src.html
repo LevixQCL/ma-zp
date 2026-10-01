@@ -1,0 +1,199 @@
+<!--title:Dossier à relire-->
+<!--eyebrow:Proximité · démo-->
+<!--h1:Dossier-->
+<!--svc:pro-->
+<!--icon:doc-->
+<style>
+.docview{flex:1;min-height:0;overflow:auto;border-radius:12px;-webkit-overflow-scrolling:touch}
+.doc{background:var(--paper);color:var(--paper-ink);border-radius:12px;padding:18px 16px 22px;font-family:var(--f-doc);font-size:15px;line-height:1.55;position:relative}
+.doc .hd{display:flex;justify-content:space-between;gap:10px;font-family:var(--f-body);font-size:11px;color:var(--paper-mute);text-transform:uppercase;letter-spacing:.08em;border-bottom:2px solid var(--paper-ink);padding-bottom:6px}
+.doc h2{font-family:var(--f-disp);font-size:22px;letter-spacing:.03em;margin:10px 0 2px;text-transform:uppercase}
+.doc .ref{font-family:var(--f-mono);font-size:12px;color:var(--paper-mute)}
+.doc dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:12px 0;font-size:14px}
+.doc dt{font-family:var(--f-body);color:var(--paper-mute);font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding-top:3px}
+.doc dd{margin:0;min-width:0}
+.doc h3{font-family:var(--f-body);font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--paper-mute);margin:14px 0 4px}
+.doc p{margin:0}
+.tk{cursor:pointer;border-radius:3px;padding:0 2px;margin:0 -2px;background:rgba(35,38,43,.06);border-bottom:1px dotted rgba(35,38,43,.35);transition:background .15s}
+.tk:hover{background:rgba(207,159,69,.18)}
+.tk.found{background:rgba(88,192,126,.28);border-bottom:2px solid #2f8a52}
+.tk.wrong{background:rgba(227,86,76,.3)}
+.sig{display:flex;justify-content:flex-end;margin-top:18px}
+.sig .box{min-width:170px;text-align:center;font-size:13px;font-family:var(--f-body);color:var(--paper-mute)}
+.sig svg{display:block;margin:0 auto;height:42px;width:150px}
+.stamp{position:absolute;right:14px;top:56px;transform:rotate(-12deg);border:2px solid #2f8a52;color:#2f8a52;font:700 16px var(--f-disp);letter-spacing:.12em;padding:4px 10px;border-radius:4px;opacity:0;transition:opacity .3s}
+.stamp.on{opacity:.85}
+.found-list{display:flex;gap:6px;flex-wrap:wrap;min-height:26px}
+.chip{font-size:12px;border-radius:999px;padding:3px 10px;border:1px solid var(--line);color:var(--mute)}
+.chip.ok{border-color:var(--ok);color:var(--ok)}
+.hintline{font-size:13px;color:var(--mute);padding-bottom:env(safe-area-inset-bottom,0px)}
+</style>
+<body>
+  <div class="docview" id="docview"><div class="doc" id="doc"></div></div>
+  <div class="found-list" id="chips"></div>
+  <div class="status"><span id="foundTxt">Erreurs trouvées 0/3</span><span id="faultTxt">Faux signalements 0</span></div>
+  <div class="hintline">Tape directement sur l'élément erroné dans le rapport.</div>
+</body>
+<script>
+const NOMS=['Dubois','Lambert','Martin','Peeters','Janssens','Leroy','Renard','Mertens','Lejeune','Dupont','Hermans','Claes','Wauters','Laurent','Michaux','Dumont','Lemaire','Delhaye','Collard','Gilson'];
+const PRE_M=['Julien','Thomas','Kevin','Mehdi','Nicolas','Arnaud','Sébastien','Youssef','Maxime','Olivier','Loïc','Damien'];
+const PRE_F=['Laura','Sarah','Julie','Amandine','Inès','Céline','Manon','Nadia','Aurélie','Sophie','Emma','Chloé'];
+const RUES=['rue des Glycines','rue du Moulin','avenue des Tilleuls','rue de la Station','rue des Écoles','chemin des Prés','rue Haute','rue du Marché','rue des Fusillés','place du Jeu de Balle'];
+const AGENTS=['INP Delvaux','INP Carlier','INP Hanot','INP Vandamme','INPP Moreau','INP Lecocq'];
+const JOURS=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
+const MOIS=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+const p2=n=>String(n).padStart(2,'0');
+const dshort=d=>`${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()}`;
+const dlong=d=>`${d.getDate()===1?'1er':d.getDate()} ${MOIS[d.getMonth()]} ${d.getFullYear()}`;
+const addD=(d,n)=>{const x=new Date(d); x.setDate(x.getDate()+n); return x;};
+const ageAt=(b,d)=>d.getFullYear()-b.getFullYear()-((d.getMonth()<b.getMonth()||(d.getMonth()===b.getMonth()&&d.getDate()<b.getDate()))?1:0);
+function alter(name){ // faute de frappe plausible
+  const i=randi(1,name.length-2), a=name.split('');
+  if(Math.random()<.5){ [a[i],a[i+1]]=[a[i+1],a[i]]; if(a.join('')===name) a.splice(i,1); } else a.splice(i,1);
+  return a.join('');
+}
+
+/* Catalogue d'erreurs : chaque erreur liste les éléments qui la trahissent (taper l'un d'eux suffit). */
+const ERR = {
+  age:   {label:'Âge incohérent', keys:['age','birth']},
+  visit: {label:'Visite avant la demande', keys:['visitDate','reqDate','cDate']},
+  house: {label:'N° de maison différent', keys:['cHouse','house']},
+  name:  {label:'Nom mal orthographié', keys:['cName','name']},
+  wday:  {label:'Mauvais jour de semaine', keys:['cWday']},
+  bad31: {label:'Date impossible', keys:['arrival']},
+  arrLate:{label:'Arrivée après la demande', keys:['arrival','reqDate']},
+  box:   {label:'N° de boîte différent', keys:['cBox','box']},
+  concl: {label:'Avis contraire au constat', keys:['concl']},
+  sign:  {label:'Rapport non signé', keys:['sign']},
+  hour:  {label:'Heure différente', keys:['cHour','visitHour']}
+};
+const CLASH=[['bad31','arrLate'],['concl','name'],['concl','box'],['visit','arrLate'],['visit','wday']];
+
+function makeCase(errs, fixed={}){
+  const f=Math.random()<.5;
+  const d1=fixed.d1||addD(new Date(2026,8,14),randi(0,30));
+  const d2=fixed.d2||addD(d1,randi(3,12));
+  const birth=fixed.birth||addD(new Date(randi(1950,2005),0,1),randi(0,364));
+  const c={
+    fem:fixed.fem??f, nom:fixed.nom||pick(NOMS), pre:fixed.pre||pick(f?PRE_F:PRE_M), rue:fixed.rue||pick(RUES),
+    house:fixed.house||randi(2,148), box:fixed.box||randi(1,6), d1, d2, birth,
+    arrival:fixed.arrival||addD(d1,-randi(5,40)), hh:fixed.hh??randi(8,19), mm:fixed.mm??pick([0,5,10,15,20,25,30,35,40,45,50,55]),
+    agent:fixed.agent||pick(AGENTS), entourage:fixed.entourage||pick(['seul','avec son compagnon','avec ses deux enfants','avec sa compagne','en colocation avec un ami'])
+  };
+  if(c.fem && c.entourage==='seul') c.entourage='seule';
+  c.age=ageAt(c.birth,c.d2);
+  // valeurs affichées (mutées ensuite)
+  const v={ reqDate:dshort(d1), name:c.nom.toUpperCase(), pre:c.pre, birth:dshort(birth), age:c.age+' ans',
+    house:c.house, box:c.box, rue:c.rue, arrival:dshort(c.arrival), visitDate:dshort(d2), visitHour:`${p2(c.hh)}:${p2(c.mm)}`,
+    cWday:JOURS[d2.getDay()], cDate:dlong(d2), cHour:`${c.hh}h${p2(c.mm)}`, cHouse:c.house, cName:c.nom.toUpperCase(), cBox:c.box,
+    concl:'favorable', sign:c.agent, negative:false };
+  for(const e of errs){
+    if(e==='age') v.age=(c.age+pick([-3,-2,2,3,4]))+' ans';
+    if(e==='visit'){ const bad=addD(d1,-randi(2,9)); v.visitDate=dshort(bad); v.cDate=dlong(bad); v.cWday=JOURS[bad.getDay()]; }
+    if(e==='house') v.cHouse=c.house+pick([-2,2,10,1]);
+    if(e==='name') v.cName=alter(c.nom).toUpperCase();
+    if(e==='wday') v.cWday=JOURS[(d2.getDay()+pick([1,2,5,6]))%7];
+    if(e==='bad31'){ // 31 d'un mois de 30 jours, avant la demande
+      const m=[8,5,3,10].find(m=>new Date(2026,m,30)<d1) ?? 5; v.arrival=`31/${p2(m+1)}/2026`; }
+    if(e==='arrLate') v.arrival=dshort(addD(d1,randi(3,15)));
+    if(e==='box') v.cBox=c.box+pick([1,2,-1].filter(x=>c.box+x>0));
+    if(e==='concl') v.negative=true;
+    if(e==='sign') v.sign=null;
+    if(e==='hour') v.cHour=`${(c.hh+pick([1,2,-1,-2])+24)%24}h${p2(c.mm)}`;
+  }
+  return {c,v,errs};
+}
+function pickErrs(n){
+  for(;;){ const e=shuffle(Object.keys(ERR)).slice(0,n); if(!CLASH.some(([a,b])=>e.includes(a)&&e.includes(b))) return e; }
+}
+const tk=(k,txt)=>`<span class="tk" data-k="${k}" role="button" tabindex="0">${txt}</span>`;
+function render({c,v}){
+  const civ=c.fem?'Madame':'Monsieur', il=c.fem?'Elle':'Il';
+  const constat = v.negative
+    ? `Le ${tk('cWday',v.cWday)} ${tk('cDate',v.cDate)} à ${tk('cHour',v.cHour)}, nous nous présentons ${c.rue} n° ${tk('cHouse',v.cHouse)}. Personne ne répond malgré plusieurs coups de sonnette. Les voisins interrogés déclarent ne pas connaître l'intéressé${c.fem?'e':''}. Aucun nom ne figure sur les boîtes aux lettres.`
+    : `Le ${tk('cWday',v.cWday)} ${tk('cDate',v.cDate)} à ${tk('cHour',v.cHour)}, nous nous présentons ${c.rue} n° ${tk('cHouse',v.cHouse)}. ${civ} ${tk('cName',v.cName)} nous ouvre et présente sa carte d'identité. Son nom figure sur la boîte aux lettres n° ${tk('cBox',v.cBox)}. ${il} déclare vivre ${c.entourage}. Nous constatons la présence d'effets personnels : vêtements, courrier à son nom, articles de toilette.`;
+  $('doc').innerHTML=`
+    <div class="hd"><span>Zone de police · Service Proximité</span><span>Pour le service Population</span></div>
+    <h2>Rapport d'enquête de domiciliation</h2>
+    <div class="ref">Réf. DOM/2026/${String(randi(120,980)).padStart(4,'0')}</div>
+    <div class="stamp" id="stamp">VÉRIFIÉ</div>
+    <dl>
+      <dt>Demande reçue</dt><dd>${tk('reqDate',v.reqDate)}</dd>
+      <dt>Personne</dt><dd>${tk('name',v.name)} ${tk('pre',v.pre)}</dd>
+      <dt>Né${c.fem?'e':''} le</dt><dd>${tk('birth',v.birth)} · âge ${tk('age',v.age)}</dd>
+      <dt>Adresse</dt><dd>${tk('rue',v.rue)} n° ${tk('house',v.house)}, boîte ${tk('box',v.box)}</dd>
+      <dt>Arrivée déclarée</dt><dd>${tk('arrival',v.arrival)}</dd>
+      <dt>Visite</dt><dd>${tk('visitDate',v.visitDate)} à ${tk('visitHour',v.visitHour)}</dd>
+    </dl>
+    <h3>Constat</h3>
+    <p>${constat}</p>
+    <h3>Conclusion</h3>
+    <p>Avis ${tk('concl',v.concl)} : la personne réside effectivement à l'adresse déclarée.</p>
+    <div class="sig"><div class="box">${v.sign
+      ? `${tk('sign',`<svg viewBox="0 0 150 42" aria-hidden="true"><path d="M8 30 C 20 6, 30 40, 42 20 S 60 8, 70 26 S 96 34, 104 14 S 130 30, 144 18" fill="none" stroke="#23314f" stroke-width="2"/></svg>`)}${v.sign}, agent de quartier`
+      : `${tk('sign','<svg viewBox="0 0 150 42" aria-hidden="true"><line x1="10" y1="34" x2="140" y2="34" stroke="#999" stroke-dasharray="4 4"/></svg>')}Signature de l'agent`}</div></div>`;
+  $('docview').scrollTop=0;
+}
+
+const D={cs:null, found:new Set(), faults:0, over:true, cfg:null, tutoStep:0};
+function setChips(){
+  $('chips').innerHTML=D.cs.errs.map(e=>D.found.has(e)?`<span class="chip ok">${ERR[e].label}</span>`:'<span class="chip">? ? ?</span>').join('');
+  $('foundTxt').textContent=`Erreurs trouvées ${D.found.size}/${D.cs.errs.length}`;
+  $('faultTxt').textContent=`Faux signalements ${D.faults}`;
+}
+function start(cs){ D.cs=cs; D.found=new Set(); D.faults=0; D.over=false; render(cs); setChips(); }
+function onTap(el){
+  if(D.over || el.classList.contains('found')) return;
+  const k=el.dataset.k;
+  const err=D.cs.errs.find(e=>!D.found.has(e) && ERR[e].keys.includes(k));
+  if(err){
+    D.found.add(err);
+    ERR[err].keys.forEach(kk=>document.querySelectorAll(`.tk[data-k="${kk}"]`).forEach(x=>x.classList.add('found')));
+    Shell.good(); Shell.toast(ERR[err].label,'ok'); setChips();
+    if(Shell.st.mode==='tuto'){ tutoNext(); return; }
+    if(D.found.size===D.cs.errs.length){
+      D.over=true; Shell.stopTimer(); Shell.win(); $('stamp').classList.add('on');
+      const used=D.cfg.time-Shell.st.timeLeft;
+      setTimeout(()=>Shell.result({ok:true,faults:D.faults,stats:[['Temps',Math.round(used)+' s'],['Faux signal.',D.faults]],
+        note:D.faults===0?'Aucun faux signalement : double point.':'Sans faux signalement, tu gagnes +2.'}),900);
+    }
+  } else {
+    el.classList.add('wrong'); setTimeout(()=>el.classList.remove('wrong'),500);
+    if(Shell.st.mode==='tuto'){ Shell.toast('Pas ici','bad'); Shell.bad(); return; }
+    D.faults++; Shell.st.timeLeft=Math.max(0,Shell.st.timeLeft-8); Shell.bad(); Shell.toast('−8 s','bad'); setChips();
+  }
+}
+$('doc').addEventListener('click',e=>{ const t=e.target.closest('.tk'); if(t) onTap(t); });
+$('doc').addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ')&&e.target.classList.contains('tk')){ e.preventDefault(); onTap(e.target); } });
+
+/* ---------- tutoriel ---------- */
+const TSTEPS=[null,
+  'Compare la <b>date de naissance</b> et l\'<b>âge</b> en haut du rapport : né le 14/03/1990, il a 36 ans, pas 34. <b>Tape sur l\'âge.</b>',
+  'Bien. Compare maintenant le <b>tableau du haut</b> avec le <b>constat</b> : une adresse ne colle pas. Tape sur l\'élément qui cloche.',
+  'Dernière erreur : un rapport doit être complet avant de partir à la commune. Fais défiler jusqu\'au <b>bas du document</b>.'];
+function tutoNext(){
+  D.tutoStep++;
+  if(D.tutoStep>=TSTEPS.length){ D.over=true; $('stamp').classList.add('on'); setTimeout(Shell.endTuto,800); return; }
+  Shell.coach(D.tutoStep,3,TSTEPS[D.tutoStep]);
+}
+
+Shell.init({
+  key:'dossier', service:'Incident Proximité', serviceShort:'Proximité',
+  headline:'Dossier à relire',
+  story:`<p>Le service Population de la commune attend ton rapport d'enquête de domiciliation avant midi. L'agent de quartier l'a rédigé en vitesse entre deux visites.</p><p>Relis-le avant l'envoi : <b>3 erreurs</b> s'y sont glissées. Un faux signalement te coûte 8 secondes.</p>`,
+  diffs:{difficile:{agents:2,label:'Difficile',time:75},normal:{agents:4,label:'Normal',time:105},facile:{agents:6,label:'Facile',time:140}},
+  diffHint:"Plus d'agents : plus de temps pour relire le dossier.",
+  rules:['<b>3 erreurs</b> par rapport : dates, âge, adresse, nom, heure, avis ou signature.','Compare le <b>tableau du haut</b> avec le <b>constat</b>, et vérifie que tout se tient.','Tape directement sur l\'élément erroné. Un <b>faux signalement</b> coûte 8 secondes.','Sans faux signalement : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
+  winTitle:'Dossier envoyé', loseTitle:'Dossier renvoyé', skin:'Vélo de quartier',
+  malus:"la commune renvoie le dossier. 1 agent de quartier est mobilisé demain pour refaire l'enquête, et la satisfaction du quartier baisse.",
+  onMenu(){ D.over=true; },
+  onInit(){ start(makeCase(pickErrs(3))); D.over=true; },
+  onPlay(cfg){ D.cfg=cfg; start(makeCase(pickErrs(3))); Shell.startTimer(cfg.time,()=>{ if(!D.over){ D.over=true; Shell.bad(); Shell.result({ok:false,faults:1,stats:[['Trouvées',D.found.size+'/3'],['Faux signal.',D.faults]]}); } }); },
+  onTuto(){
+    start(makeCase(['age','house','sign'],{fem:false,nom:'Lambert',pre:'Julien',rue:'rue du Moulin',house:27,box:2,birth:new Date(1990,2,14),d1:new Date(2026,8,21),d2:new Date(2026,8,29),arrival:new Date(2026,7,30),hh:17,mm:40,entourage:'avec sa compagne',agent:'INP Delvaux'}));
+    // âge affiché fixé à 34 ans pour coller au texte du tuto
+    document.querySelector('.tk[data-k="age"]').textContent='34 ans';
+    D.tutoStep=0; tutoNext();
+  }
+});
+</script>
