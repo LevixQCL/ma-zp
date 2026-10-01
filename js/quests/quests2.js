@@ -195,6 +195,7 @@ function photoSvg(places, cols, miroir, heure, nuit) {
   let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Photo du parking à ${heure}" style="display:block;border-radius:8px;background:#3B4148">`;
   s += `<rect width="${W}" height="${H}" fill="#3B4148"/>`;
   let num = ''; // numéros peints au sol : toujours lisibles, même de nuit
+  let hits = ''; // zones à toucher pour désigner une place
   for (let i = 0; i < places.length; i++) {
     const r = Math.floor(i / cols), c0 = i % cols, c = miroir ? cols - 1 - c0 : c0;
     const rr = miroir ? rows - 1 - r : r;
@@ -202,10 +203,11 @@ function photoSvg(places, cols, miroir, heure, nuit) {
     s += `<rect x="${x - cw / 2 + 1}" y="${y - rh / 2 + 2}" width="${cw - 2}" height="${rh - 6}" fill="none" stroke="#E8ECEF" stroke-opacity=".55" stroke-width="1"/>`;
     num += `<text x="${x}" y="${y + rh / 2 - 7}" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="8" fill="#E8ECEF" fill-opacity=".8">P${i + 1}</text>`;
     s += dessinerAuto(x, y - 5, places[i], miroir);
+    hits += `<rect class="ph-hit" data-action="quest-pick" data-v="P${i + 1}" x="${x - cw / 2 + 1}" y="${y - rh / 2 + 2}" width="${cw - 2}" height="${rh - 6}" rx="3"/>`;
   }
   // De nuit : éclairage orangé des lampadaires, les teintes se ressemblent davantage.
   if (nuit) s += `<rect width="${W}" height="${H}" fill="#0B1426" fill-opacity=".42"/><rect width="${W}" height="${H}" fill="#F2A33A" fill-opacity=".10"/>`;
-  s += num;
+  s += num + hits;
   s += `<text x="${W - 6}" y="${H - 6}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="9" fill="#FFB23F">${heure}</text></svg>`;
   return s;
 }
@@ -325,9 +327,11 @@ function filature(rng, diff) {
     lieux.forEach((l, k) => { l.nom = noms[k]; });
     const S = 46, M = 26, W = (N - 1) * S + 2 * M;
     const cx = (v) => M + v * S;
-    let svg = `<svg viewBox="0 0 ${W} ${W}" width="100%" role="img" aria-label="Plan du quartier" style="display:block;border-radius:8px;background:#172131">`;
+    let svg = `<svg class="fi-plan" viewBox="0 0 ${W} ${W}" width="100%" role="img" aria-label="Plan du quartier" data-depart="${cx(start.x)},${cx(start.y)}" style="display:block;border-radius:8px;background:#172131">`;
     for (let k = 0; k < N; k++) svg += `<line x1="${cx(0)}" y1="${cx(k)}" x2="${cx(N - 1)}" y2="${cx(k)}" stroke="#3B4E6E" stroke-width="7" stroke-linecap="round"/><line x1="${cx(k)}" y1="${cx(0)}" x2="${cx(k)}" y2="${cx(N - 1)}" stroke="#3B4E6E" stroke-width="7" stroke-linecap="round"/>`;
-    for (const l of rng.shuffle(lieux)) svg += `<circle cx="${cx(l.x)}" cy="${cx(l.y)}" r="6" fill="#FFB23F" stroke="#0C1124" stroke-width="1.5"/><text x="${cx(l.x)}" y="${cx(l.y) - 10}" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600" font-size="9.5" fill="#EEF3F8" paint-order="stroke" stroke="#172131" stroke-width="3">${l.nom.replace(/^l’|^la |^le /, '').replace(/^./, (c) => c.toUpperCase())}</text>`;
+    svg += '<polyline class="fi-trace" points="" fill="none"/>';
+    for (let a = 0; a < N; a++) for (let b2 = 0; b2 < N; b2++) svg += `<circle class="fi-x" cx="${cx(a)}" cy="${cx(b2)}" r="15"/>`;
+    for (const l of rng.shuffle(lieux)) svg += `<circle class="fi-lieu" data-action="quest-pick" data-v="${l.nom}" cx="${cx(l.x)}" cy="${cx(l.y)}" r="6" fill="#FFB23F" stroke="#0C1124" stroke-width="1.5"/><text x="${cx(l.x)}" y="${cx(l.y) - 10}" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600" font-size="9.5" fill="#EEF3F8" paint-order="stroke" stroke="#172131" stroke-width="3">${l.nom.replace(/^l’|^la |^le /, '').replace(/^./, (c) => c.toUpperCase())}</text>`;
     const ang = [0, 90, 180, 270][start.d];
     svg += `<g transform="translate(${cx(start.x)} ${cx(start.y)}) rotate(${ang})"><circle r="9" fill="#63B0FF" stroke="#0C1124" stroke-width="1.5"/><path d="M0 -6L4.5 3H-4.5Z" fill="#0C1124"/></g>`;
     svg += `<text x="${W - 8}" y="14" text-anchor="end" font-family="Instrument Sans,sans-serif" font-size="9" fill="#9FB0C0">N ↑</text></svg>`;
@@ -392,6 +396,7 @@ function butin(rng, diff) {
       indices: rng.shuffle(choisis).map((e) => e.t),
       question: `Combien ${vaut(objs[cible])} ${objs[cible]}, en euros ?`,
       placeholder: 'montant', inputmode: 'numeric',
+      objets: objs, cible,
       answer: String(v[cible]),
       astuce: 'Donne une lettre à chaque objet et écris chaque phrase comme une petite équation.',
       explication: `${cap(objs[cible])} ${vaut(objs[cible])} ${euros(v[cible])}. Les valeurs : ${objs.map((o, k) => `${o} ${euros(v[k])}`).join(', ')}.`,
@@ -456,7 +461,7 @@ function horaires(rng, diff) {
           raison = `le bus de ${hm(monte)} n’arrive à ${arrets[b]} qu’à ${hm(descend)}${marche ? `, plus ${marche} minutes à pied : au plus tôt ${hm(descend + marche)}` : ''}, pas à ${hm(arrivee)}`;
         }
       }
-      decl.push({ nom: gens[g], texte: `« J’ai pris le bus de ${texteMonte} à l’arrêt ${arrets[a]}, je suis descendu${['Léa', 'Sofia', 'Nadia', 'Emma', 'Inès', 'Chloé', 'Sarah', 'Laura', 'Fatima', 'Manon'].includes(gens[g]) ? 'e' : ''} à ${arrets[b]}${marche ? `, puis ${marche} minutes à pied jusqu’au bar` : ''}. J’y étais à ${hm(arrivee)}. »` });
+      decl.push({ nom: gens[g], a, b, monte: texteMonte, arrivee: hm(arrivee), marche, texte: `« J’ai pris le bus de ${texteMonte} à l’arrêt ${arrets[a]}, je suis descendu${['Léa', 'Sofia', 'Nadia', 'Emma', 'Inès', 'Chloé', 'Sarah', 'Laura', 'Fatima', 'Manon'].includes(gens[g]) ? 'e' : ''} à ${arrets[b]}${marche ? `, puis ${marche} minutes à pied jusqu’au bar` : ''}. J’y étais à ${hm(arrivee)}. »` });
     }
     if (!bon) continue;
     const fiche = `<table class="horaire"><tr><th>Arrêt</th><th>Temps depuis ${arrets[0]}</th></tr>${arrets.map((s, k) => `<tr><td>${s}</td><td class="mono">+${cumul[k]} min</td></tr>`).join('')}</table>`;
@@ -465,6 +470,8 @@ function horaires(rng, diff) {
       contexte: `Une bagarre a éclaté devant le bar « Le Relais » dans la soirée. Pour situer chacun, ${nGens} habitués racontent comment ils sont venus en bus, par la ligne 7. La fiche horaire permet de vérifier leurs dires : un seul raconte quelque chose d’impossible.`,
       tableau: `<p class="small" style="margin:0 0 6px">Départs de ${arrets[0]} : ${departs.map(hm).join(' · ')}</p>${fiche}<p class="tiny muted" style="margin:6px 0 0">Les bus sont à l’heure ce soir-là. Personne ne court, mais on peut arriver en retard ou traîner en route.</p>`,
       elements: decl.map((d) => ({ label: d.nom, texte: d.texte })),
+      ligne: { arrets, cumul, departs: departs.map(hm) },
+      trajets: decl.map((d) => ({ nom: d.nom, a: d.a, b: d.b, monte: d.monte, arrivee: d.arrivee, marche: d.marche })),
       question: 'Qui ment ?',
       choix: gens.map((n) => ({ id: n, label: n })),
       answer: gens[menteur],

@@ -866,3 +866,154 @@ body.mj-ouvert { overflow: hidden; }
 .cad-past i.b { background: var(--green); box-shadow: 0 0 6px rgba(61, 211, 154, .5); }
 .cad-past i.m { background: var(--amber); }
 .cad-past i.z { border: 1.5px solid var(--faint); }
+
+/* ───── Énigmes visuelles ───── */
+.av { display: inline-grid; place-items: center; flex-shrink: 0; border-radius: 50%; background: color-mix(in srgb, var(--av) 22%, var(--surface2)); color: var(--av); font-family: var(--display); font-weight: 800; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--av) 55%, transparent); }
+
+/* Chronologie : ligne du temps */
+.chr { display: flex; flex-direction: column; gap: 8px; }
+.chr-bout { font-size: 12px; font-weight: 700; color: var(--amber-soft); padding-left: 44px; }
+.chr-bout.fin { color: var(--muted); }
+.chr-liste { position: relative; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.chr-liste::before { content: ''; position: absolute; left: 15px; top: 10px; bottom: 10px; width: 2px; border-radius: 2px; background: linear-gradient(180deg, var(--amber), var(--line)); }
+.chr-carte { position: relative; display: grid; grid-template-columns: 32px auto 1fr auto auto; align-items: center; gap: 10px; padding: 0; touch-action: auto; }
+.chr-carte > :not(.chr-n) { position: relative; }
+.chr-n { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--bg); border: 2px solid var(--amber-line); color: var(--amber); font: 800 14px var(--display); z-index: 1; }
+.chr-carte::after { content: ''; position: absolute; z-index: 0; left: 42px; right: 0; top: 0; bottom: 0; border-radius: 14px; background: var(--surface2); border: 1px solid var(--hair); box-shadow: var(--lift); }
+.chr-lettre, .chr-txt, .chr-fl, .chr-poignee { z-index: 1; }
+.chr-lettre { margin-left: 10px; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--amber-bg); color: var(--amber); font: 800 14px var(--display); }
+.chr-txt { padding: 12px 0; font-size: 14px; line-height: 1.35; }
+.chr-fl { display: flex; flex-direction: column; }
+.chr-fl button { width: 32px; height: 22px; border: 0; background: none; color: var(--muted); padding: 0; display: grid; place-items: center; }
+.chr-fl button:hover { color: var(--amber); }
+.chr-fl svg, .pl-x svg { width: 12px; height: 8px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.chr-poignee { width: 30px; align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: grab; touch-action: none; margin-right: 6px; }
+.chr-poignee i { width: 14px; height: 2px; border-radius: 1px; background: var(--faint); }
+.chr-carte.drag { z-index: 5; }
+.chr-carte.drag::after { background: var(--surface3); border-color: var(--amber-line); box-shadow: var(--float); }
+.chr-carte.drag .chr-poignee { cursor: grabbing; }
+.chr-carte.bouge::after { animation: chrFlash .5s ease-out; }
+@keyframes chrFlash { 0% { border-color: var(--amber); } }
+
+/* Disque de décodage */
+.dq-wrap { display: grid; place-items: center; }
+.dq { width: min(100%, 300px); height: auto; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.dq:active { cursor: grabbing; }
+.dq-ext { fill: #E9DFC6; stroke: #9C8A5F; stroke-width: 2; }
+.dq-traits line { stroke: #B9A87E; stroke-width: 1; }
+.dq-code { font: 800 15px var(--display); fill: #2A2214; }
+.dq-int { transition: transform .25s cubic-bezier(.3, 1.3, .5, 1); }
+.dq-int-fond { fill: #1C2442; stroke: currentColor; stroke-width: 2; }
+.dq-clair { font: 700 14px var(--display); fill: currentColor; }
+.dq-moyeu { fill: var(--bg); stroke: var(--hair); }
+.dq-repere { fill: currentColor; }
+.dq-k { font: 800 34px var(--display); fill: var(--text); }
+.dq-ks { font: 600 11px var(--body); fill: var(--muted); }
+.dq-carte { color: var(--amber); }
+.dq-carte .tiny, .dq-carte h2, .dq-carte .roue-lecture { color: var(--text); }
+.dq-carte .tiny.muted { color: var(--muted); }
+.dq-carte [role="tab"] { font-size: 12.5px; }
+@media (prefers-reduced-motion: reduce) { .dq-int { transition: none; } }
+
+/* La plaque : plaques belges */
+.pl-grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 8px; }
+.pl-item { position: relative; }
+.pl { width: 100%; display: flex; align-items: stretch; padding: 0; border-radius: 7px; overflow: hidden; background: #FBFBF7; border: 2px solid #B4141E; box-shadow: 0 2px 0 rgba(0, 0, 0, .25), 0 6px 14px -6px rgba(0, 0, 0, .6); min-height: 46px; transition: transform .12s, box-shadow .12s; }
+.pl:hover { transform: translateY(-1px); }
+.pl-eu { flex: 0 0 22px; background: #0A3A9E; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; font: 700 11px var(--body); }
+.pl-eu svg { width: 14px; height: 14px; fill: #F7D117; }
+.pl-txt { flex: 1; display: grid; place-items: center; font: 700 clamp(17px, 5.2vw, 21px) 'Barlow Condensed', var(--display); letter-spacing: .5px; color: #B4141E; white-space: nowrap; padding: 0 4px; }
+.pl[aria-pressed="true"] { outline: 3px solid var(--amber); outline-offset: 3px; }
+.pl:disabled { opacity: 1; cursor: default; }
+.pl-x { position: absolute; top: -8px; right: -6px; width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface3); color: var(--muted); display: grid; place-items: center; padding: 0; box-shadow: 0 2px 6px rgba(0, 0, 0, .4); }
+.pl-x::after { content: ''; position: absolute; inset: -8px; }
+.pl-x svg { width: 10px; height: 10px; }
+.pl-item.raye .pl { opacity: .35; filter: grayscale(.8); }
+.pl-item.raye .pl-txt { text-decoration: line-through 2.5px #1D1A15; }
+.pl-item.raye .pl-x { background: var(--red); color: #fff; border-color: transparent; }
+
+/* Témoignages */
+.tem-liste { gap: 8px; }
+.tem { display: flex; gap: 10px; align-items: flex-start; }
+.tem-corps { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.tem-nom { font-size: 12px; font-weight: 700; color: var(--muted); }
+.tem-bulle { margin: 0; padding: 10px 12px; border-radius: 4px 16px 16px 16px; background: var(--surface2); border: 1px solid var(--hair); font-size: 14.5px; line-height: 1.45; }
+.tem-marque { align-self: center; flex-shrink: 0; min-width: 76px; min-height: 34px; padding: 0 10px; border-radius: 999px; border: 1px dashed var(--line); background: transparent; color: var(--muted); font: 600 12px var(--body); }
+.tem-v .tem-marque { border: 1px solid rgba(61, 211, 154, .5); background: rgba(61, 211, 154, .12); color: var(--green-soft); }
+.tem-m .tem-marque { border: 1px solid var(--red-line); background: var(--red-bg); color: var(--red-soft); }
+.tem-m .tem-bulle { border-color: var(--red-line); }
+.tem-v .tem-bulle { border-color: rgba(61, 211, 154, .4); }
+
+/* Photos et plan : on touche directement l'image */
+.fig.tactile svg { cursor: pointer; }
+.ph-hit { fill: transparent; stroke: transparent; stroke-width: 2.5; cursor: pointer; }
+.ph-hit:hover { fill: rgba(255, 178, 63, .12); }
+.ph-hit[data-sel] { fill: rgba(255, 178, 63, .2); stroke: #FFB23F; }
+.fi-x { fill: transparent; cursor: pointer; }
+.fi-x:hover { fill: rgba(99, 176, 255, .15); }
+.fi-trace { stroke: #63B0FF; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 7; pointer-events: none; }
+.fi-lieu { cursor: pointer; }
+.fi-lieu[data-sel] { stroke: #fff; stroke-width: 3; r: 9; }
+.fi-outils { gap: 6px; align-items: center; }
+.fi-outils .btn { min-height: 38px; }
+
+/* Le butin : étiquettes de scellés */
+.bt { display: flex; flex-direction: column; gap: 10px; }
+.bt-grille { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.bt-tag { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 14px 12px 12px; border-radius: 6px 6px 16px 16px; background: #EFE6CF; color: #2A2214; box-shadow: 0 2px 0 rgba(0, 0, 0, .25), 0 10px 18px -10px rgba(0, 0, 0, .7); clip-path: polygon(14px 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%, 0 14px); }
+.bt-trou { position: absolute; top: 7px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--bg); box-shadow: inset 0 1px 2px rgba(0, 0, 0, .6); }
+.bt-ico svg { width: 34px; height: 34px; fill: none; stroke: #5A4A2A; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.bt-nom { font: 800 16px var(--display); line-height: 1.1; }
+.bt-num { font-size: 11px; color: #7A6A48; font-weight: 600; }
+.bt-val { margin-top: 4px; display: flex; align-items: center; gap: 4px; width: 100%; border-top: 1px dashed #B8A57C; padding-top: 6px; font: 700 15px var(--display); }
+.bt-val input { width: 100%; min-width: 0; height: 36px; border: 0; border-radius: 8px; background: rgba(255, 255, 255, .6); padding: 0 8px; font: 700 18px 'Caveat', var(--display); color: #1F3C8A; text-align: right; }
+.bt-val input:focus { outline: 2px solid #B4141E; }
+.bt-tag.cible { background: #FFE3A3; box-shadow: 0 0 0 3px var(--amber), 0 10px 22px -8px rgba(255, 178, 63, .6); }
+.bt-tag.cible .bt-num { color: #A3290F; }
+.bt-tag.cible .bt-val input { background: #fff; }
+
+/* Les horaires : ligne de bus */
+.hb-num { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: #E2001A; color: #fff; font: 800 22px var(--display); box-shadow: 0 4px 12px -4px rgba(226, 0, 26, .6); }
+.hb-departs { display: flex; flex-wrap: wrap; gap: 6px; }
+.hb-departs span { padding: 4px 9px; border-radius: 8px; background: var(--bg); border: 1px solid var(--hair); font-weight: 700; font-size: 13px; }
+.hb-arrets { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; position: relative; }
+.hb-arrets::before { content: ''; position: absolute; left: 7px; top: 12px; bottom: 12px; width: 4px; border-radius: 2px; background: #E2001A; }
+.hb-arrets li { display: flex; align-items: center; gap: 12px; min-height: 34px; font-size: 14px; }
+.hb-pt { position: relative; width: 18px; height: 18px; border-radius: 50%; background: var(--surface); border: 4px solid #E2001A; flex-shrink: 0; }
+.hb-min { font-weight: 700; color: var(--text2); font-size: 13px; }
+.hb-trajets { gap: 8px; }
+.hb-trajet { display: flex; flex-direction: column; gap: 8px; width: 100%; text-align: left; padding: 12px; border-radius: 16px; border: 1px solid var(--hair); background: var(--surface2); color: var(--text); box-shadow: var(--lift); }
+.hb-trajet[aria-pressed="true"] { border-color: var(--amber); background: var(--amber-bg); box-shadow: inset 0 0 0 1px var(--amber); }
+.hb-trajet:disabled { opacity: 1; cursor: default; }
+.hb-quote { font-size: 13.5px; line-height: 1.4; color: var(--text2); }
+.hb-mini { display: flex; align-items: center; padding: 0 2px; }
+.hb-mini i { flex: 1; height: 4px; background: var(--line); position: relative; }
+.hb-mini i::after { content: ''; position: absolute; left: 50%; top: 50%; width: 8px; height: 8px; margin: -4px 0 0 -4px; border-radius: 50%; background: var(--surface3); }
+.hb-mini i.in, .hb-mini i.ds { background: #E2001A; }
+.hb-mini i.mt { background: linear-gradient(90deg, var(--line) 50%, #E2001A 50%); }
+.hb-mini i.ds { background: linear-gradient(90deg, #E2001A 50%, var(--line) 50%); }
+.hb-mini i.mt::after, .hb-mini i.ds::after { width: 12px; height: 12px; margin: -6px 0 0 -6px; background: #fff; border: 3px solid #E2001A; }
+.hb-resume { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); }
+
+/* Enquête de voisinage : icônes de la grille */
+.gico { width: 20px; height: 20px; fill: none; stroke: var(--amber-soft); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; display: block; margin: 0 auto 2px; }
+.gtab th[scope="row"] .gico { margin: 0; }
+.gtab th[scope="col"] > span { display: block; }
+
+/* Expertise d'écriture */
+.ec-lettre { position: relative; padding: 10px; border-radius: 16px; background: var(--red-bg); border: 1px solid var(--red-line); }
+.ec-lettre figcaption { color: var(--red-soft); }
+.ec-liste { gap: 10px; }
+.ec-ech { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 16px; background: var(--surface2); border: 1px solid var(--hair); }
+.ec-ech.sel { border-color: var(--amber); background: var(--amber-bg); }
+.ec-pick { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 0; border: 0; background: none; color: var(--text); text-align: left; }
+.ec-pick:disabled { cursor: default; }
+.ec-traits { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.ec-t { display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 44px; padding: 4px 2px; border-radius: 10px; border: 1px solid var(--hair); background: var(--bg); color: var(--muted); font: 600 10px var(--body); }
+.ec-t span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.ec-t b { font: 800 16px var(--display); color: var(--faint); }
+.ec-t.eq { border-color: rgba(61, 211, 154, .5); background: rgba(61, 211, 154, .1); }
+.ec-t.eq b { color: var(--green); }
+.ec-t.ne { border-color: var(--red-line); background: var(--red-bg); }
+.ec-t.ne b { color: var(--red); }
+.figs.deux { display: flex; flex-direction: column; }

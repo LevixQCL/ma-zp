@@ -218,14 +218,16 @@ for (let i = 0; i < 7; i++) {
     if ((await page.locator('.gcell').first().innerText()) !== '✗') errors.push('Grille : la case ne se coche pas');
     await shot('14b-grille-cochee');
   }
-  if (await page.locator('[data-action="roue"]').count()) {
-    await page.locator('[data-action="roue"][data-d="1"]').click(); await page.waitForTimeout(100);
-    { const r = await page.locator('.roue b').first().innerText(); if (r !== 'B') errors.push(`Roue : le décalage ne change pas (${JSON.stringify(r)})`); }
+  if (await page.locator('.dq-carte [data-action="roue"]').count()) {
+    await page.locator('.dq-carte [data-action="roue"][data-d="1"]').click(); await page.waitForTimeout(150);
+    { const r = await page.locator('.dq-ks').textContent(); if (r !== 'décalage 1') errors.push(`Disque : le décalage ne change pas (${JSON.stringify(r)})`); }
   }
   if (await page.locator('[data-qnote]').count()) await page.fill('[data-qnote]', 'essai');
   // Répond au hasard pour vérifier le flux
   const choice = page.locator('[data-action="quest-pick"]').first();
   if (await choice.count()) { await choice.click(); await page.click('[data-action="quest-submit"]'); }
+  else if (await page.locator('.chr button[type="submit"]').count()) { await page.locator('.chr-carte').nth(1).locator('[data-chr="-1"]').click(); await page.click('.chr button[type="submit"]'); }
+  else if (await page.locator('.bt button[type="submit"]').count()) { await page.fill('.bt input[name="reponse"]', '100'); await page.click('.bt button[type="submit"]'); }
   else if (await page.locator('.cad-form button[type="submit"]').count()) { await page.locator('[data-cad-pas="1"]').first().click(); await page.click('.cad-form button[type="submit"]'); }
   else if (await page.locator('#qtext').count()) { await page.fill('#qtext', (await page.getAttribute('#qtext', 'placeholder')) || 'PONT'); await page.click('[data-form="quest-text"] button'); }
   await page.waitForSelector('[data-c="1"]');

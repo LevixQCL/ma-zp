@@ -4,6 +4,7 @@ import { QUEST_TYPES, QUEST_LABELS } from '../quests/quests.js';
 import { SERVICES, SERVICE_LABELS } from '../engine/constants.js';
 import { entrainementMiniJeuxHtml } from './incidents.js';
 import { cadenasHtml, cadenasResultat, essaisHtml } from './cadenas.js';
+import { chronoHtml, disqueHtml, plaquesHtml, temoignagesHtml, figureInteractive, filatureOutils, butinHtml, ligneHtml, trajetsHtml, icoGrille, ecritureHtml, avatar } from './enigmes.js';
 
 /** Le joueur a-t-il déjà changé une énigme aujourd'hui ? */
 function rerollUtilise() { return (S.quests || []).some((q) => q.variante); }
@@ -13,8 +14,10 @@ const lire = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null')
 // Documents de l'énigme. Photos « à mémoriser » : la photo 1 disparaît dès qu'on ouvre la photo 2
 // (mémorisé sur l'appareil, pour qu'un rechargement ne la fasse pas revenir).
 function renderFigures(q, fini) {
-  const fig = (f) => `<figure class="fig"><figcaption>${esc(f.titre)}</figcaption>${f.svg}</figure>`;
-  const cls = `figs ${q.type === 'photos' ? 'deux' : ''}`;
+  if (q.type === 'ecriture') return ecritureHtml(q, S.questPick, fini);
+  const tactile = (q.type === 'photos' || q.type === 'filature') && !fini;
+  const fig = (f) => `<figure class="fig ${tactile ? 'tactile' : ''}"><figcaption>${esc(f.titre)}</figcaption>${tactile ? figureInteractive(q, f.svg, S.questPick) : f.svg}</figure>`;
+  const cls = 'figs';
   if (!q.memo || fini) return `<section class="${cls}" aria-label="Documents">${q.figures.map(fig).join('')}</section>`;
   const vu = (S.memoVu && S.memoVu[q.id]) || lire(`mazp-memo-${q.id}`);
   const [f1, f2] = q.figures;
@@ -29,8 +32,8 @@ function renderGrille(q) {
   const m = (S.grilleMarks && S.grilleMarks[q.id]) || lire(`mazp-grille-${q.id}`) || {};
   S.grilleMarks = { ...(S.grilleMarks || {}), [q.id]: m };
   const table = (titre, lignes, cols, pre) => `<div class="gtab"><table><caption>${titre}</caption>
-    <tr><th></th>${cols.map((c) => `<th scope="col">${esc(c)}</th>`).join('')}</tr>
-    ${lignes.map((l, i) => `<tr><th scope="row">${esc(l)}</th>${cols.map((c, j) => {
+    <tr><th></th>${cols.map((c) => `<th scope="col">${icoGrille(c)}<span>${esc(c)}</span></th>`).join('')}</tr>
+    ${lignes.map((l, i) => `<tr><th scope="row"><span class="row" style="gap:6px">${icoGrille(l) || avatar(l, 22)}${esc(l)}</span></th>${cols.map((c, j) => {
       const k = `${pre}:${i}:${j}`; const v = m[k] || '';
       return `<td><button type="button" class="gcell ${v === '✓' ? 'yes' : v ? 'no' : ''}" data-action="grille-mark" data-k="${k}" aria-label="${esc(l)} / ${esc(c)} : ${v === '✓' ? 'certain' : v ? 'impossible' : 'inconnu'}">${v}</button></td>`;
     }).join('')}</tr>`).join('')}</table></div>`;
@@ -38,38 +41,6 @@ function renderGrille(q) {
     <div class="between"><h2 class="section" style="margin:0">Ta grille</h2><button type="button" class="btn small ghost" data-action="grille-reset">Effacer</button></div>
     <p class="tiny muted" style="margin:0">Touche une case : ✗ impossible, puis ✓ certain, puis vide.</p>
     ${table('Qui · véhicule', gens, veh, 'v')}${table('Qui · endroit', gens, lieux, 'l')}${table('Véhicule · endroit', veh, lieux, 'x')}
-  </section>`;
-}
-
-// Roue de décodage : aligne l'alphabet clair et l'alphabet décalé.
-function renderRoue(q) {
-  const AB = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  const n = q.cles || 1;
-  const kDe = (i) => ((((S.roue || {})[n > 1 ? `${q.id}:${i}` : q.id] || 0) % 26) + 26) % 26;
-  const stepper = (i) => `<div class="row" style="gap:6px;align-items:center">${n > 1 ? `<span class="tiny roue-c${i}" style="font-weight:700">Clé ${i + 1}</span>` : ''}
-      <button type="button" class="btn small outline" data-action="roue" data-i="${i}" data-d="-1" aria-label="Décalage ${n > 1 ? `${i + 1} ` : ''}moins un">−</button>
-      <span class="mono" style="min-width:34px;text-align:center">${kDe(i)}<span class="tiny muted"> ${AB[kDe(i)]}</span></span>
-      <button type="button" class="btn small outline" data-action="roue" data-i="${i}" data-d="1" aria-label="Décalage ${n > 1 ? `${i + 1} ` : ''}plus un">+</button></div>`;
-  if (n === 1) {
-    const k = kDe(0);
-    const bloc = (from) => `<div class="roue">${AB.slice(from, from + 13).map((l, i) => `<span><b>${AB[(from + i + k) % 26]}</b>${l}</span>`).join('')}</div>`;
-    return `<section class="card tight" aria-label="Roue de décodage">
-    <div class="between"><h2 class="section" style="margin:0">Roue de décodage</h2>${stepper(0)}</div>
-    <p class="tiny muted" style="margin:0">En haut, la lettre du message codé ; en dessous, la lettre claire pour ce décalage.</p>
-    ${bloc(0)}${bloc(13)}
-  </section>`;
-  }
-  // Mot-clé : un décalage par position, et la lecture du message avec les clés choisies.
-  let pos = 0;
-  const lecture = q.code.split(' ').map((g) => g.split('').map((c) => { const i = pos++ % n; const k = kDe(i); return `<span class="roue-c${i}">${AB[(c.charCodeAt(0) - 65 - k + 26) % 26]}</span>`; }).join('')).join(' ');
-  pos = 0;
-  const brut = q.code.split(' ').map((g) => g.split('').map((c) => `<span class="roue-c${pos++ % n}">${c}</span>`).join('')).join(' ');
-  return `<section class="card tight" aria-label="Roues de décodage">
-    <h2 class="section" style="margin:0">Roues de décodage</h2>
-    <p class="tiny muted" style="margin:0">Une roue par lettre de la clé. Chaque couleur montre les lettres décodées par cette roue (A = 0, B = 1…).</p>
-    <div class="col" style="gap:6px">${Array.from({ length: n }, (_, i) => stepper(i)).join('')}</div>
-    <span class="tiny muted">Message codé</span><div class="roue-lecture" aria-label="Message codé, lettres colorées par roue">${brut}</div>
-    <span class="tiny muted">Lecture avec ces clés</span><div class="roue-lecture" aria-label="Lecture avec ces clés">${lecture}</div>
   </section>`;
 }
 
@@ -103,9 +74,14 @@ export function renderQuete() {
   const bonusPris = results.find((x) => x && x.bonus);
   const icone = (x) => (!x || !x.statut ? '' : x.statut === 'ok' ? ' ✓' : ' ✗');
 
-  const choixHtml = q.mode === 'choix' ? `<div class="choices ${q.choix.length > 4 || q.choix.some((c) => c.label.length > 12) ? 'one' : ''}" role="group" aria-label="Réponses">
+  const choixHtml = q.mode !== 'choix' ? ''
+    : q.type === 'plaque' ? plaquesHtml(q, picked, fini)
+    : q.type === 'horaires' && q.trajets ? trajetsHtml(q, picked, fini)
+    : q.type === 'ecriture' ? (picked ? `<p class="small" style="margin:0">Ton choix : <strong>${esc(picked)}</strong></p>` : '<p class="small muted" style="margin:0">Touche l’échantillon de l’auteur, plus haut.</p>')
+    : q.type === 'photos' && q.figures[1].svg.includes('ph-hit') ? `<p class="small ${picked ? '' : 'muted'}" style="margin:0">${picked ? `Place choisie : <strong>${esc(picked)}</strong>` : 'Touche la place sur une des photos.'}</p>`
+    : q.mode === 'choix' ? `<div class="choices ${q.choix.length > 4 || q.choix.some((c) => c.label.length > 12) ? 'one' : ''}" role="group" aria-label="Réponses">
       ${q.choix.map((c) => `<button type="button" class="choice" data-action="quest-pick" data-v="${esc(c.id)}" aria-pressed="${picked === c.id}" ${fini ? 'disabled' : ''}>
-        <span ${q.mono ? 'class="code" style="letter-spacing:1px"' : ''}>${esc(c.label)}</span>${c.sub ? `<span class="s">${esc(c.sub)}</span>` : ''}</button>`).join('')}
+        <span ${q.mono ? 'class="code" style="letter-spacing:1px"' : q.type === 'quiment' || q.type === 'grille' ? 'class="row" style="gap:8px;justify-content:center"' : ''}>${q.type === 'quiment' ? c.label.split(' et ').map((x) => avatar(x, 24)).join('') : q.type === 'grille' ? icoGrille(c.label) : ''}${esc(c.label)}</span>${c.sub ? `<span class="s">${esc(c.sub)}</span>` : ''}</button>`).join('')}
     </div>` : '';
 
   const bonusCard = !train && !noir && ok >= 2 ? `<section class="card green">
@@ -139,27 +115,29 @@ export function renderQuete() {
     ${q.variante ? '<p class="tiny muted" style="margin:0">Énigme changée : c’est ton changement du jour.</p>' : ''}
     <p style="margin:0;font-size:14px;line-height:1.45;color:var(--text2)">${esc(q.contexte)}</p>
     ${q.figures ? renderFigures(q, fini) : ''}
-    ${q.tableau ? `<section class="card tight" aria-label="Fiche horaire">${q.tableau}</section>` : ''}
+    ${q.ligne ? ligneHtml(q) : q.tableau ? `<section class="card tight" aria-label="Fiche horaire">${q.tableau}</section>` : ''}
+    ${q.type === 'filature' && !fini ? filatureOutils(q) : ''}
 
-    ${q.elements && q.elements.length ? (q.type === 'cadenas' ? essaisHtml(q) : `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who">${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>`) : ''}
+    ${q.elements && q.elements.length && !((q.type === 'chronologie' && !fini) || (q.type === 'horaires' && q.trajets)) ? (q.type === 'cadenas' ? essaisHtml(q) : q.type === 'quiment' ? temoignagesHtml(q, { marques: !fini }) : q.type === 'plaque' ? temoignagesHtml(q) : `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who">${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>`) : ''}
     ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${q.type === 'grille' ? 'Auditions' : 'Indices'}</h2>${q.indices.map((t) => `<p class="small" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
     ${q.mode === 'texte' ? `<div class="codebox" aria-label="Message codé">${esc(q.code)}</div>
       <p class="small muted" style="margin:0">${esc(q.aide)}</p>` : ''}
     ${q.grille && !fini ? renderGrille(q) : ''}
-    ${q.mode === 'texte' && !fini ? renderRoue(q) : ''}
+    ${q.mode === 'texte' && !fini ? disqueHtml(q) : ''}
     ${q.astuce && !fini ? `<details class="astuce"><summary>Un coup de pouce ?</summary><p class="small" style="margin:6px 0 0">${esc(q.astuce)}</p></details>` : ''}
     ${!fini ? `<label class="field">Brouillon <span class="tiny muted">(pour toi seul, gardé sur cet appareil)</span>
       <textarea class="text notes" rows="2" data-qnote="${esc(q.id || '')}" placeholder="Tes hypothèses, tes calculs…">${esc(lire(`mazp-qnote-${q.id}`) || '')}</textarea></label>` : ''}
 
     ${!fini ? `<section class="col" aria-label="Ta réponse"><h2 class="section">${esc(q.question)}</h2>
-      ${q.consigne ? `<p class="small muted" style="margin:0">${esc(q.consigne)}</p>` : ''}
+      ${q.consigne && q.type !== 'chronologie' ? `<p class="small muted" style="margin:0">${esc(q.consigne)}</p>` : ''}
       ${choixHtml}
-      ${q.type === 'cadenas' ? cadenasHtml(q) : q.mode === 'texte' || q.mode === 'exact' ? `<form data-form="quest-text" class="row"><label class="sr" for="qtext">Ta réponse</label><input id="qtext" class="text grow ${q.mode === 'exact' ? 'mono' : ''}" name="reponse" autocomplete="off" ${q.inputmode ? `inputmode="${q.inputmode}"` : 'autocapitalize="characters"'} placeholder="${esc(q.placeholder || 'Ta réponse')}"><button class="btn primary" type="submit">Valider</button></form>` : ''}
+      ${q.type === 'cadenas' ? cadenasHtml(q) : q.type === 'chronologie' ? chronoHtml(q) : q.type === 'butin' && q.objets ? butinHtml(q, false) : q.mode === 'texte' || q.mode === 'exact' ? `<form data-form="quest-text" class="row"><label class="sr" for="qtext">Ta réponse</label><input id="qtext" class="text grow ${q.mode === 'exact' ? 'mono' : ''}" name="reponse" autocomplete="off" ${q.inputmode ? `inputmode="${q.inputmode}"` : 'autocapitalize="characters"'} placeholder="${esc(q.placeholder || 'Ta réponse')}"><button class="btn primary" type="submit">Valider</button></form>` : ''}
       <p class="tiny muted" style="margin:0">${train ? 'Entraînement : la réponse est corrigée tout de suite, sans effet sur ta zone.' : noir ? 'Une seule réponse, sans pénalité en cas d’erreur.' : 'Une seule réponse possible : une erreur est définitive (−1 de moral).'}</p>
       ${q.mode !== 'texte' && q.mode !== 'exact' ? `<button class="btn primary block" data-action="quest-submit" ${picked == null ? 'disabled' : ''}>Valider ma réponse</button>` : ''}
     </section>` : ''}
 
     ${q.type === 'cadenas' && fini ? cadenasResultat(q, r) : ''}
+    ${q.type === 'butin' && q.objets && fini ? butinHtml(q, true, r) : ''}
     ${r.statut === 'ok' ? `<section class="card green"><span class="ok" style="font-size:15px;font-weight:700">Bien vu !</span>
       <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p></section>` : ''}
     ${r.statut === 'rate' ? `<section class="card"><span style="font-size:15px;font-weight:700">Mauvaise réponse${r.reponse ? ` : ${esc(r.reponse)}` : ''}</span>

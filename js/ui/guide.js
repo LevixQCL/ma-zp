@@ -303,11 +303,11 @@ export function sections() {
         ])}
         <h3>Les types d'énigmes</h3>
         ${table(['Type', 'Principe'], [
-          [QUEST_LABELS.quiment, 'Des témoins parlent de la sincérité des autres. Un seul ment (deux le dimanche) : trouve qui.'],
+          [QUEST_LABELS.quiment, 'Des témoins parlent de la sincérité des autres. Un seul ment (deux le dimanche) : trouve qui. Tu peux marquer chaque déclaration « dit vrai » ou « ment » pour tester tes hypothèses.'],
           [QUEST_LABELS.grille, 'Des auditions à recouper : qui conduisait quoi, et où. Une grille à cocher est fournie.'],
           [QUEST_LABELS.cadenas, 'Trouver le code à partir des essais annotés du suspect, puis le composer en faisant rouler les molettes du cadenas.'],
-          [QUEST_LABELS.chronologie, 'Le journal du 101 ne garde que les écarts entre les faits : remets-les dans l’ordre en tapant les lettres.'],
-          [QUEST_LABELS.code, 'Déchiffrer un message saisi. Une roue de décodage est fournie ; les méthodes se corsent en fin de semaine.'],
+          [QUEST_LABELS.chronologie, 'Le journal du 101 ne garde que les écarts entre les faits : remets les cartes dans l’ordre sur la ligne du temps (glisser ou flèches).'],
+          [QUEST_LABELS.code, 'Déchiffrer un message saisi en faisant tourner le disque de décodage ; les méthodes se corsent en fin de semaine.'],
         ])}`,
     },
     {
