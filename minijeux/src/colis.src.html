@@ -186,7 +186,7 @@ function drawWires(){
       h+=`<circle cx="${cx-9}" cy="${y+11}" r="2.6" fill="#d9924e"/><circle cx="${cx+9}" cy="${y+11}" r="2.6" fill="#d9924e"/>`;
     }
     for(const x of [11,289]) h+=`<rect x="${x-8}" y="${y-8}" width="16" height="16" rx="4" fill="#3a4250"/><circle cx="${x}" cy="${y}" r="4.2" fill="#a7b0bd"/><path d="M${x-2.6} ${y}h5.2" stroke="#4d5562" stroke-width="1.4"/>`;
-    h+=`<text x="11" y="${y-11}" font-size="8.5" font-weight="600" text-anchor="middle" fill="#6d7788" font-family="Manrope,system-ui,sans-serif">${i+1}</text>`;
+    h+=`<text x="11" y="${y-11}" font-size="8.5" font-weight="600" text-anchor="middle" fill="#6d7788" font-family="Instrument Sans,system-ui,sans-serif">${i+1}</text>`;
   });
   svg.innerHTML=h;
 }

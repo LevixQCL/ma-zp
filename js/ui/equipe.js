@@ -4,7 +4,7 @@ import { ROLES_EQUIPE, SEUILS_EQUIPE, TROPHEES, roleDe, intitule, surnomDe, cree
 import { SERVICE_LABELS } from '../engine/constants.js';
 
 const initiales = (m) => `${m.prenom[0]}${m.nom[0]}`.toUpperCase();
-const COULEUR_ROLE = { inter: '#F0736A', rech: '#5AB0F0', prox: '#4CC38A', roul: '#F2B544', admin: '#C084FC' };
+const COULEUR_ROLE = { inter: '#FF6E6A', rech: '#63B0FF', prox: '#3DD39A', roul: '#FFB23F', admin: '#C084FC' };
 
 export function equipeHtml() {
   const z = myZone();

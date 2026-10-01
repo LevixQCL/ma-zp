@@ -109,3 +109,32 @@ export function toast(msg) {
 export function header(kicker, title, right = '') {
   return `<header class="between" style="align-items:flex-start"><div class="col" style="gap:3px">${kicker ? `<span class="kicker">${kicker}</span>` : ''}<h1 class="big">${title}</h1></div>${right}</header>`;
 }
+
+/** Silhouette de la ville (bandeau du ciel de l'HP et de l'accueil). Calculée une fois. */
+let SKY = '';
+export function skyline() {
+  if (SKY) return SKY;
+  let x = 0, seed = 7, d = '';
+  const r = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+  while (x < 400) {
+    const w = 14 + Math.round(r() * 26), h = 14 + Math.round(r() * 38);
+    const top = 64 - h;
+    d += `M${x} 64V${top}h${w}V64z`;
+    if (r() > 0.72) d += `M${x + Math.round(w / 2) - 1} ${top}v-${6 + Math.round(r() * 8)}h2V${top}z`; // antenne
+    x += w + (r() > 0.6 ? 2 : 0);
+  }
+  SKY = `<svg class="skyline" viewBox="0 0 400 64" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs><pattern id="sk-win" width="29" height="23" patternUnits="userSpaceOnUse" fill="#FFC970"><rect x="3" y="4" width="2.6" height="3.4"/><rect x="17" y="4" width="2.6" height="3.4" opacity=".4"/><rect x="24" y="15" width="2.6" height="3.4"/><rect x="10" y="15" width="2.6" height="3.4" fill="#BFD6FF" opacity=".55"/></pattern></defs>
+    <path d="${d}" fill="#0A0E22"/><path class="sk-win" d="${d}" fill="url(#sk-win)"/></svg>`;
+  return SKY;
+}
+
+/** Moment du ciel selon l'heure réelle : renvoie les opacités du crépuscule et de la nuit (0 à 1). */
+export function cielDuMoment(date = new Date()) {
+  const h = date.getHours() + date.getMinutes() / 60;
+  const lin = (a, b) => Math.max(0, Math.min(1, (h - a) / (b - a)));
+  const nuit = h < 12 ? 1 - lin(5.5, 7.5) : lin(19.5, 21.5);
+  const crep = h < 12 ? 1 - lin(7, 9) : lin(16.5, 19);
+  return { crep: Math.round(crep * 100) / 100, nuit: Math.round(nuit * 100) / 100 };
+}
+export function cielStyle() { const c = cielDuMoment(); return `--crep:${c.crep};--nuit:${c.nuit}`; }

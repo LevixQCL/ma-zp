@@ -87,12 +87,12 @@ export function renderCarte() {
   const monSite = siteDe(me);
   const legende = `<div class="row small muted" style="flex-wrap:wrap;gap:10px">
     <span class="row" style="gap:4px"><svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true"><defs><pattern id="lg-nd" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="4" fill="#3A1416"/><path d="M0 0V4" stroke="#B3363A" stroke-width="1.6"/></pattern></defs><rect width="14" height="12" rx="2" fill="url(#lg-nd)" stroke="#E0625A"/></svg>zone de non-droit</span>
-    ${st.affaires.length ? '<span class="row" style="gap:4px"><svg width="12" height="14" viewBox="-8 -12 16 22" aria-hidden="true"><path d="M0 9c-5-5.5-8-8.6-8-12.4a8 8 0 0 1 16 0C8 .4 5 3.5 0 9z" fill="#F2B544"/></svg>affaire disputée</span>' : ''}
+    ${st.affaires.length ? '<span class="row" style="gap:4px"><svg width="12" height="14" viewBox="-8 -12 16 22" aria-hidden="true"><path d="M0 9c-5-5.5-8-8.6-8-12.4a8 8 0 0 1 16 0C8 .4 5 3.5 0 9z" fill="#FFB23F"/></svg>affaire disputée</span>' : ''}
     ${ev ? '<span>☆ événement</span>' : ''}${op ? '<span class="bad">◎ opération en cours</span>' : ''}
-    <span class="row" style="gap:4px"><svg width="14" height="14" viewBox="-9 -9 18 18" aria-hidden="true"><circle r="8.5" fill="#0B1119" stroke="#F2B544" stroke-width="1.5"/><path d="M0 -5l4.5 1.7v2.8c0 2.8-2 4.5-4.5 5.6-2.5-1.1-4.5-2.8-4.5-5.6v-2.8z" fill="#F2B544"/></svg>ton HP</span>
+    <span class="row" style="gap:4px"><svg width="14" height="14" viewBox="-9 -9 18 18" aria-hidden="true"><circle r="8.5" fill="#0C1124" stroke="#FFB23F" stroke-width="1.5"/><path d="M0 -5l4.5 1.7v2.8c0 2.8-2 4.5-4.5 5.6-2.5-1.1-4.5-2.8-4.5-5.6v-2.8z" fill="#FFB23F"/></svg>ton HP</span>
     <span class="row" style="gap:4px"><span style="width:14px;height:0;border-top:2px solid var(--amber)"></span>ta zone</span></div>
     <div class="row tiny muted" style="flex-wrap:wrap;gap:10px">${['calme', 'à surveiller', 'tendu', 'chaud'].map((l, k) => `<span class="row" style="gap:4px"><span class="bullet" style="background:${['#4FBF8A', '#E2C04A', '#E8913A', '#E0625A'][k]}"></span>${l}</span>`).join('')}
-      <span class="row" style="gap:4px"><span class="bullet" style="background:#5AB0F0"></span>patrouille</span><span>pointillés : chez le voisin</span></div>`;
+      <span class="row" style="gap:4px"><span class="bullet" style="background:#63B0FF"></span>patrouille</span><span>pointillés : chez le voisin</span></div>`;
   const zoom = S.carteZoom !== false;
   return `<main class="screen">
     <header class="between" style="align-items:flex-end"><h1 class="big">District Delta</h1><span class="small muted">${n} zone${n > 1 ? 's' : ''}</span></header>

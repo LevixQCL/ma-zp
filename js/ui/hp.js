@@ -1,7 +1,7 @@
 import { noteVue } from './nouveautes.js';
 // Écran HP (Hôtel de police) : l'accueil.
 import { cabossesChoisis } from '../engine/parc.js';
-import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone } from './common.js';
+import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone, skyline, cielStyle } from './common.js';
 import { agentsDisponibles, blessesActifs, enFormation, vehiculesDisponibles } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { formatCountdown } from '../engine/time.js';
@@ -142,11 +142,16 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
   if (st.conseil && st.conseil.tour === st.turn) items.push({ ok: Object.keys(d.votes || {}).length > 0, href: '#diplomatie', t: 'Conseil de police : voter', s: 'une voix par zone, résultat à 20:00' });
   if (invit) items.push({ ok: !!d.duelReponse, href: '#diplomatie', t: 'Répondre au défi en duel', s: 'sans réponse, c’est un refus' });
   const reste = items.filter((i) => !i.ok).length;
-  return `<section class="card" aria-label="Prochain tour" style="gap:8px">
-    <div class="between" style="align-items:flex-end"><div class="col" style="gap:2px"><span class="small muted">Prochain tour dans</span>
-      <span class="mono" id="countdown" style="font-size:28px;letter-spacing:1px">${formatCountdown(st.nextDeadline - Date.now())}</span></div>
-      <span class="pill ${reste ? 'amber' : 'green'}">${reste ? `${reste} chose${reste > 1 ? 's' : ''} à faire` : 'Tout est prêt'}</span></div>
-    ${reste ? `<div class="col" style="gap:6px">${items.map((i) => `<a class="todo ${i.ok ? 'done' : ''}" href="${i.href}"><span class="box" aria-hidden="true">${i.ok ? icon('check', 14) : ''}</span>
+  const fait = items.length - reste;
+  return `<section class="card soir" aria-label="Prochain tour" style="${cielStyle()}">
+    <div class="soir-ciel" aria-hidden="true"><i class="soir-astre"></i>${skyline()}</div>
+    <div class="soir-tete">
+      <span class="soir-l">Résolution du tour à 20:00 dans</span>
+      <span id="countdown" class="soir-cd">${formatCountdown(st.nextDeadline - Date.now())}</span>
+      <span class="soir-prog" role="img" aria-label="${fait} sur ${items.length} fait">${items.map((i) => `<i class="${i.ok ? 'on' : ''}"></i>`).join('')}</span>
+    </div>
+    <p class="soir-etat ${reste ? '' : 'ok'}">${reste ? `${reste} chose${reste > 1 ? 's' : ''} à faire avant ce soir` : 'Tout est prêt pour ce soir'}</p>
+    ${reste ? `<div class="col soir-todo" style="gap:6px">${items.map((i) => `<a class="todo ${i.ok ? 'done' : ''}" href="${i.href}"><span class="box" aria-hidden="true">${i.ok ? icon('check', 14) : ''}</span>
       <span class="col grow" style="gap:0"><span style="font-weight:600">${i.t}</span><span class="tiny muted">${i.s}</span></span>${icon('chevron', 16)}</a>`).join('')}</div>` : ''}
   </section>`;
 }

@@ -347,7 +347,7 @@ function ventilationHtml(z, e) {
   const aide = d.aide && d.aide.cible && d.aide.agents ? d.aide.agents : 0;
   const bloques = hors.filter((h) => h.bloque);
   return `<div class="vent col">
-    <span class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.6px">Effectif</span>
+    <span class="tiny muted" style="font-weight:700">Effectif</span>
     ${ligne('Agents de la zone', z.agents)}
     ${recus ? ligne('Renforts reçus d’autres zones', signe(recus), 'ok') : ''}
     ${blesses ? ligne('Blessés', signe(-blesses), 'bad') : ''}
@@ -355,7 +355,7 @@ function ventilationHtml(z, e) {
     ${fo ? ligne('En formation', signe(-fo), 'warn') : ''}
     ${z.absents ? ligne('En congé maladie (moral bas)', signe(-z.absents), 'bad') : ''}
     ${ligne('<strong>Disponibles ce soir</strong>', `<strong>${e.dispo}</strong>`, 'tot')}
-    <span class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-top:6px">Où ils sont</span>
+    <span class="tiny muted" style="font-weight:700;margin-top:6px">Où ils sont</span>
     ${ligne('Dans les cinq services', services)}
     ${missionsEnquete(d).map((m) => ligne(esc(m.t), m.n, 'warn')).join('')}
     ${hors.map((h) => ligne(`${h.t}${h.bloque ? ` <span class="tiny bad">· ${esc(h.bloque)}</span>` : ''}`, h.compte === false ? `(${h.n})` : h.n, h.bloque ? 'bad' : '', btnRap(h.k))).join('')}
@@ -425,7 +425,7 @@ function pli(key, titre, resume, contenu, alerte = false) {
   const ouvert = !!(S.ordOpen && S.ordOpen[key]);
   return `<section class="card ${alerte ? 'amber' : ''}" aria-label="${esc(titre)}" style="gap:8px">
     <button type="button" class="pli" data-action="ord-open" data-k="${key}" aria-expanded="${ouvert}">
-      <span class="col" style="gap:1px;align-items:flex-start;text-align:left"><span class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.6px">${esc(titre)}</span>
+      <span class="col" style="gap:1px;align-items:flex-start;text-align:left"><span class="tiny muted" style="font-weight:700">${esc(titre)}</span>
       <span style="font-size:14px;font-weight:600">${resume}</span></span>${icon('chevron', 18, ouvert ? 'style="transform:rotate(90deg)"' : '')}</button>
     ${ouvert ? contenu : ''}
   </section>`;
