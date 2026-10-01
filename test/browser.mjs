@@ -35,7 +35,7 @@ await page.waitForSelector('[data-action="alloc"][data-s="intervention"][data-d=
 await page.click('[data-action="alloc"][data-s="intervention"][data-d="1"]');
 await page.click('[data-action="alloc"][data-s="intervention"][data-d="1"]');
 await page.click('[data-action="rythme"][data-v="renforce"]');
-await page.click('[data-action="ord-open"][data-k="affaires"]');
+await page.click('[data-action="ord-open"][data-k="nondroit"]');
 const engBtn = page.locator('[data-action="eng"][data-d="1"]').first();
 if (await engBtn.count()) { await engBtn.click(); await engBtn.click(); await engBtn.click(); }
 await page.click('[data-action="ord-open"][data-k="decision"]');

@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 18;
+export const APP_VERSION = 19;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -134,6 +134,59 @@ export const RENFORT = { maxParZone: 4, maxDemande: 6, repParAgent: 1, repMax: 4
 export const gainRenfort = (n) => ({ rep: Math.min(RENFORT.repMax, n * RENFORT.repParAgent), ps: n * RENFORT.psParAgent });
 // Affaire disputée : réputation d'une zone venue en renfort selon ses agents (1 → +1, 2-3 → +2, 4 et plus → +3).
 export const repRenfortAffaire = (n) => Math.min(3, 1 + Math.floor(n / 2));
+
+// ───── Zone de non-droit (le centre de la ville) ─────
+// Chaque secteur a une « emprise » du milieu (0 à 100). Les zones y envoient des agents :
+// leurs forces s'additionnent, avec un bonus quand plusieurs zones agissent le même soir.
+// À 0, le secteur est repris ; il faut ensuite y laisser un peu de monde pour qu'il ne retombe pas.
+export const ND = {
+  maxParSecteur: 6,       // agents d'une zone sur un même secteur
+  maxTotal: 8,            // agents d'une zone dans toute la zone de non-droit
+  efficacite: 3,          // emprise retirée par point de force
+  coop: 0.2,              // +20 % de force par zone en plus sur le même secteur (jusqu'à 4 zones)
+  coopMax: 4,
+  // Emprise regagnée chaque nuit par un secteur pas encore repris : elle suit le nombre de zones actives,
+  // pour qu'il faille toujours s'y mettre à plusieurs, qu'on soit 3 ou 30 dans la partie.
+  regenBase: 3,
+  regenParZone: 1.6,
+  regenMax: 40,
+  empriseAnneau: [55, 80],
+  empriseCoeur: 100,
+  regenCoeur: 1.5,        // multiplicateur pour le Cœur
+  coeurSeuil: 3,          // secteurs de l'anneau tenus en même temps pour pouvoir attaquer le Cœur
+  apresPrise: 15,         // emprise d'un secteur juste repris
+  remontee: 8,            // ce que le milieu regagne chaque nuit sur un secteur tenu
+  seuilRechute: 60,       // au-delà, le secteur retombe aux mains du milieu
+  rechute: 65,
+  usure: 0.85,            // l'influence sur un secteur tenu s'efface de 15 % par nuit
+  partMin: 0.1,           // part d'influence minimale pour toucher les retombées
+  // Récompenses : une part fixe pour CHAQUE zone qui a au moins 10 % d'influence (s'y mettre à plusieurs
+  // ne divise pas les gains), plus une part selon l'influence.
+  prise: { points: 3, pointsPart: 6, prime: 5, satisfaction: 3, rep: 3, moral: 2 },     // à la reprise, partagés selon l'influence (rep et moral : pour chacun)
+  coeurMult: 2.5,
+  retombees: { points: 0.3, pointsPart: 0.8, budget: 1, satisfaction: 0.3, ps: 3, satisfactionMax: 1 },       // chaque nuit, par secteur tenu, partagés selon l'influence
+  contagion: 1.2,         // tension ajoutée chaque nuit aux quartiers qui touchent un secteur du milieu
+  apaisement: 0.8,        // tension retirée chaque nuit aux quartiers qui touchent un secteur repris
+  riposte: 0.25,          // chance, chaque nuit, que le milieu riposte sur un secteur tenu
+  riposteForce: [10, 18],
+  risqueParAgent: 0.04,   // assaut : risque de blessé par agent engagé au-delà de 3 (plafonné)
+  risqueMax: 0.2,
+};
+/** Zones actives (qui ont joué hier ou avant-hier) : elles fixent la résistance du milieu. */
+export const zonesActivesND = (state) => Object.values((state && state.zones) || {}).filter((z) => (z.toursSansOrdres || 0) < 2).length;
+/** Emprise que le milieu regagne cette nuit sur un secteur. */
+export function regenSecteur(state, s) {
+  if (s.statut === 'repris') return ND.remontee;
+  const r = Math.min(ND.regenMax, ND.regenBase + ND.regenParZone * zonesActivesND(state));
+  return Math.round(r * (s.coeur ? ND.regenCoeur : 1) * 10) / 10;
+}
+/** Le secteur `k` peut-il recevoir des agents ? (le Cœur s'ouvre quand assez de secteurs de l'anneau sont tenus) */
+export function secteurOuvert(nd, k) {
+  const s = nd && nd.secteurs && nd.secteurs[k];
+  if (!s) return false;
+  if (!s.coeur) return true;
+  return Object.values(nd.secteurs).filter((x) => !x.coeur && x.statut === 'repris').length >= ND.coeurSeuil;
+}
 
 // ───── Logistique : les bâtiments de la zone ─────
 // Un niveau par bâtiment (1 à BATIMENT_MAX). Agrandir coûte cher, prend du temps (travaux),

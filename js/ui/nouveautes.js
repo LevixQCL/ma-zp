@@ -3,22 +3,20 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-01a',
-  titre: 'Mise à jour du 30 septembre : le district prend vie',
+  id: '2026-10-01b',
+  titre: 'Mise à jour du 1er octobre : la zone de non-droit',
   points: [
-    ['Affaires disputées mieux payées', 'une affaire résolue rapporte maintenant une prime en argent (environ 0,6 k€ par point annoncé, partagée selon les agents), en plus du moral, de la réputation et de la satisfaction. Le montant s’affiche sur chaque affaire.'],
-    ['Early bird', 'merci d’être là depuis le début : une roulette t’attend sur l’HP pour gagner un skin exclusif (friterie, fort, base orbitale, grange, hangar à dirigeable, roulotte de cirque…).'],
-    ['Champion de la semaine', 'le meilleur IPZ moyen de la semaine porte une étoile dorée sur son toit pendant 7 jours. Le podium de fin de saison reçoit une plaque à côté de son entrée, pour toujours.'],
-    ['Décors d’événement', 'Halloween, Saint-Nicolas, Carnaval, Dragon de la Ducasse : pendant ces périodes, aide au grand événement ou fais une découverte dans l’enquête pour gagner un décor en édition limitée.'],
-    ['Les manœuvres laissent des traces', 'affiches de recrutement, cartons de dossiers emportés, voiture de l’Inspection ou tente d’un poste avancé : tout le monde voit qui a été visé.'],
-    ['20:00', 'à ta première visite après la résolution, tes combis sortent en patrouille, gyrophares allumés.'],
-    ['Les zones du district', 'sur la Carte, fais défiler les commissariats de toutes les zones et touche-en un pour le visiter.'],
+    ['Le centre de la ville est aux mains du milieu', 'huit secteurs hachurés de rouge et un QG au milieu. Les zones ont été redessinées une fois pour toutes autour de lui : tes quartiers ont changé de place sur la carte.'],
+    ['Sans candidature', 'chacun envoie ses agents où il veut depuis le Terrain. Les forces du soir s’additionnent, +20 % par zone en plus : seul on n’y arrive pas, à trois ça tombe en quelques soirs. Une zone qui ne joue pas ne bloque plus personne.'],
+    ['Ce que ça rapporte', 'à la reprise, chaque zone présente reçoit la même part fixe (points, satisfaction, réputation, moral) ; ensuite, chaque nuit tant que le secteur tient. Il faut y laisser 2 ou 3 agents de garde, sinon le milieu le reprend.'],
+    ['Le QG', 'il s’ouvre quand trois secteurs sont tenus en même temps, rapporte deux fois et demie plus et donne le trophée « Libérateur ».'],
+    ['Fin des affaires disputées', 'plus besoin d’attendre qu’une zone accepte ta candidature : la zone de non-droit les remplace. Le Terrain montre qui y était hier soir, et un bouton prévient la radio.'],
   ],
 };
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP ! Roulette Early bird pour gagner un skin exclusif, étoile du champion de la semaine, plaques du podium, décors d'événement en édition limitée (Halloween, Saint-Nicolas, Carnaval, Dragon de la Ducasse), traces des manœuvres, et tes combis qui partent en patrouille à 20:00.`;
+  return `📣 Mise à jour de Ma ZP : la zone de non-droit ! Le centre de la ville est aux mains du milieu. Envoie tes agents depuis le Terrain, sans candidature : les forces s'additionnent, +20 % par zone en plus. Chaque zone présente touche la même part à la reprise, puis chaque nuit tant que le secteur tient. Les affaires disputées disparaissent. Les zones ont été redessinées autour du centre.`;
 }
 
 

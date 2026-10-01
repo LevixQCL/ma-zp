@@ -82,7 +82,7 @@ export const ETAPES = [
   {
     id: 'terrain', route: 'terrain', onglet: 'Ce qui se passe chez toi et chez tes voisins.', cible: ['section[aria-label="Chez moi"]', 'section[aria-label="Chez les voisins"]'], union: true,
     titre: 'Terrain : chez toi, chez les voisins',
-    texte: `<p><strong>Chez moi</strong> : tes opérations d’envergure, tes affaires disputées, les pressions du jour.</p>
+    texte: `<p><strong>Chez moi</strong> : tes opérations d’envergure et les pressions du jour.</p><p><strong>Zone de non-droit</strong> : le centre de la ville, à reprendre au milieu avec les autres zones. Envoie des agents sur un secteur, sans rien demander à personne : plus on est nombreux le même soir, plus ça tombe vite.</p>
       <p><strong>Chez les voisins</strong> : les appels à renfort et les zones en difficulté. Prêter des agents ou du budget rapporte de la réputation, à la mesure de ce que tu envoies.</p>
       <p><strong>District</strong> : les grands événements où chaque zone doit envoyer du monde.</p>`,
   },
@@ -114,7 +114,7 @@ export const ETAPES = [
     id: 'carte', route: 'carte', onglet: 'Tes quartiers et tout le district.', cible: '#mes-quartiers',
     titre: 'La carte et tes quartiers',
     texte: `<p>Chacun de tes quartiers a sa <strong>tension</strong>. Envoie des patrouilles de <strong>Proximité</strong> là où ça chauffe, surtout sur le <strong>point chaud</strong> annoncé la veille.</p>
-      <p>La carte montre aussi les affaires disputées et les autres zones du district.</p>`,
+      <p>La carte montre aussi la zone de non-droit (au centre, hachurée de rouge) et les autres zones du district.</p>`,
   },
   {
     id: 'radio', route: 'radio', onglet: 'Pour parler avec les autres chefs de zone.', cible: '[aria-label="Radio, messages privés et diplomatie"]',

@@ -15,6 +15,7 @@ import {
 import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
+import { creerNonDroit, nonDroitResoudre } from './nondroit.js';
 import { encheresResoudre, annoncerLot } from './encheres.js';
 import { rivalitesPre, rivalitesPost, postesContre, themeActif, appliquerConsignes, absT, MAN } from './rivalites.js';
 import { FLAGRANTS } from './contenu.js';
@@ -68,6 +69,8 @@ export function migrateState(state) {
   for (const [k, v] of Object.entries(defaults)) if (state[k] === undefined) state[k] = v;
   for (const z of Object.values(state.zones)) migrateZone(z);
   attribuerSites(state);
+  // Zone de non-droit (ajoutée en cours de partie : elle part de zéro).
+  if (!state.nonDroit || state.nonDroit.season !== state.season) state.nonDroit = creerNonDroit(state.seed, state.season);
   // Affaires d'avant la réforme : on leur donne une zone qui les dirige et un plafond d'agents.
   for (const a of state.affaires || []) {
     if (!a.zone || !state.zones[a.zone]) a.zone = zonePourAffaire(state, (x) => Math.abs(hashString(`${a.id}:${x.length}`)) % x.length);
@@ -107,15 +110,17 @@ export function createGame({ seed = 'delta', turnDeadline = 0 } = {}) {
     version: 1, minClientVersion: APP_VERSION, seed, season: 1, turn: 1, nextDeadline: turnDeadline,
     zones: {}, affaires: [], evenement: null, affaireSeq: 0, palmares: [], createdAt: turnDeadline,
   };
-  genererAffaires(state, makeRng(`${seed}:s1:t0:affaires`));
+  state.nonDroit = creerNonDroit(seed, 1);
   nouvelleAffaire(state);
   annoncerLot(state);
   return state;
 }
 
+// Les affaires disputées (dirigées par une zone qui acceptait ou non les candidatures) sont remplacées
+// par la zone de non-droit, où personne n'a besoin d'être accepté. Plus aucune n'est créée ;
+// celles encore ouvertes au moment de la mise à jour vont au bout de leurs tours.
 function genererAffaires(state, rng) {
-  const actives = Object.values(state.zones).filter(isActive).length;
-  const cible = clamp(Math.ceil(Math.max(actives, 1) / 3), 1, 3);
+  const cible = 0;
   const deja = new Set(state.affaires.map((a) => a.titre));
   while (state.affaires.length < cible) {
     const titre = rng.pick(AFFAIRES_DISPUTEES.filter((t) => !deja.has(t)));
@@ -179,7 +184,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (orders[uid]) {
       ord[uid] = sanitizeOrders(z, orders[uid], state);
       z.toursSansOrdres = 0;
-      z.dernierOrdre = { alloc: ord[uid].alloc, rythme: ord[uid].rythme, patrouilles: ord[uid].patrouilles || {} };
+      z.dernierOrdre = { alloc: ord[uid].alloc, rythme: ord[uid].rythme, patrouilles: ord[uid].patrouilles || {}, secteurs: ord[uid].secteurs || {} };
       z._joue = true;
     } else {
       ord[uid] = autopilotOrders(z, state);
@@ -285,6 +290,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   }
 
   jalonTous('Affaires disputées');
+  // 3 bis. Zone de non-droit : assauts, gardes, reprises, rechutes, débordement sur les quartiers voisins.
+  const ndRes = nonDroitResoudre(state, uids, ord, push, T, zoneLabel);
+  jalonTous('Zone de non-droit');
   // 4. Événement collectif.
   let evResultat = null;
   if (state.evenement && state.evenement.tour === T) {
@@ -820,6 +828,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     toursSansFaillite: state.toursSansFaillite,
     enchere: ench,
     fipa: fp.res,
+    nonDroit: ndRes,
     classement,
     rapports: Object.fromEntries(uids.map((u) => [u, state.zones[u].rapport])),
     finSaison: null,
@@ -912,6 +921,7 @@ function finDeSaison(state, classement) {
   state.turn = 1;
   state.affaires = [];
   state.evenement = null;
+  state.nonDroit = creerNonDroit(state.seed, state.season);
   state.fipas = []; state.traques = []; state.fipaPaires = {}; state.duels = []; state.postes = []; state.conseil = null; state.theme = null; state.motionsChef = [];
   for (const [uid, z] of Object.entries(state.zones)) {
     // Héritage : formations et bâtiments baissent d'un niveau, les annexes restent.

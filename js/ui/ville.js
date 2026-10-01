@@ -95,6 +95,16 @@ export function ville(seed = 'delta') {
   return cacheVille;
 }
 
+/**
+ * Zone de non-droit : le quartier le plus central (le Cœur) et l'anneau de ses voisins.
+ * Personne ne les possède ; toutes les zones peuvent y envoyer des agents pour les reprendre.
+ */
+export function nonDroit(seed = 'delta') {
+  const v = ville(seed);
+  const coeur = v.centre[0];
+  return { coeur, anneau: v.adj[coeur].slice().sort((a, b) => a - b), cells: [coeur, ...v.adj[coeur].slice().sort((a, b) => a - b)] };
+}
+
 /** Ordre d'arrivée des zones : il fixe leur place sur la carte, une fois pour toutes. */
 export function ordreArrivee(zones) {
   return zones.slice().sort((a, b) => ((a.arrivee || 0) - (b.arrivee || 0)) || (hashString(a.uid) - hashString(b.uid))).map((z) => z.uid);
@@ -102,11 +112,14 @@ export function ordreArrivee(zones) {
 
 /**
  * Territoires : chaque zone, dans l'ordre d'arrivée, prend un bloc de quartiers libres
- * au plus près du centre. Une nouvelle zone s'ajoute en bordure sans rien déplacer.
+ * au plus près du centre (autour de la zone de non-droit, qui occupe le cœur de la ville). Une nouvelle zone s'ajoute en bordure sans rien déplacer.
  */
 export function territoires(seed, zones) {
   const v = ville(seed);
   const owner = new Array(v.cells.length).fill(-1);
+  // Le centre est réservé à la zone de non-droit (−2) : les zones s'installent autour.
+  const nd = nonDroit(seed);
+  for (const i of nd.cells) owner[i] = -2;
   const order = ordreArrivee(zones);
   const libres = (i) => owner[i] === -1;
   const assez = (start) => { // au moins TAILLE quartiers libres d'un seul tenant autour de `start`
@@ -136,5 +149,5 @@ export function territoires(seed, zones) {
     const cy = mine.reduce((s, i) => s + v.cells[i].c[1], 0) / mine.length;
     out.push({ uid, k, quartiers: mine, capitale: cap, label: [cx, cy] });
   });
-  return { ...v, owner, zones: out, order };
+  return { ...v, owner, zones: out, order, nd };
 }

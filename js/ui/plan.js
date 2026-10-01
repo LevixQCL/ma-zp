@@ -7,6 +7,8 @@ import { makeRng, hashString } from '../engine/rng.js';
 import { siteDe } from '../engine/sites.js';
 import { GRADES, gradeFor } from '../engine/constants.js';
 import { tensionsDe, quartiersFrontaliers, niveauTension } from '../engine/quartiers.js';
+import { secteurOuvert } from '../engine/constants.js';
+import { milieuDe } from '../engine/nondroit.js';
 
 const C = {
   terre: '#141C29', campagne: '#10161F', ilot: '#172131', rue: '#223049', avenue: '#2B3B57', eau: '#0A1328', rive: '#C9D6E6',
@@ -49,6 +51,86 @@ function celluleSite(T, tz, site) {
   return T.cells[choix[Math.abs(hashString(`${tz.uid}:${site.id}`)) % choix.length]];
 }
 
+const ND_DEFS = `<pattern id="nd-hach" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#3A1416"/><path d="M0 0V6" stroke="#B3363A" stroke-width="2.2" stroke-opacity=".55"/></pattern>`;
+const ICONE_QG = '<path d="M-5 3.5h10l1-7-3.4 2.6L0 -5.5l-2.6 4.6L-6 -3.5z" fill="#fff"/>';
+const ICONE_CADENAS = '<rect x="-4" y="-1" width="8" height="6" rx="1.2" fill="#fff"/><path d="M-2.4 -1v-2a2.4 2.4 0 0 1 4.8 0v2" fill="none" stroke="#fff" stroke-width="1.4"/>';
+
+/**
+ * Couche « zone de non-droit » : secteurs du milieu hachurés de rouge (emprise en chiffre),
+ * secteurs repris aux couleurs de la zone de référence, Cœur avec sa couronne (ou son cadenas).
+ */
+function coucheNonDroit(T, st, echelle, { sel = null, chiffres = true } = {}) {
+  const nd = st.nonDroit;
+  if (!nd) return '';
+  const out = [];
+  for (const [k, s] of Object.entries(nd.secteurs)) {
+    const c = T.cells[Number(k)];
+    if (!c) continue;
+    const chef = s.chef && st.zones[s.chef];
+    const repris = s.statut === 'repris';
+    const fill = repris ? (chef ? esc(chef.couleur) : '#4FBF8A') : 'url(#nd-hach)';
+    out.push(`<polygon points="${pts(c.poly)}" fill="${fill}" fill-opacity="${repris ? 0.42 : 0.92}" stroke="${String(sel) === k ? '#FFFFFF' : repris ? '#4FBF8A' : '#E0625A'}" stroke-width="${String(sel) === k ? 2.6 : 1.3}" stroke-opacity="${String(sel) === k ? 1 : 0.8}" vector-effect="non-scaling-stroke" data-action="secteur" data-c="${k}" style="cursor:pointer"><title>${esc(c.nom)} · ${esc(milieuDe(s).titre)} · ${repris ? `repris${chef ? ` (${esc(chef.nom)})` : ''}` : 'aux mains du milieu'} · emprise ${Math.round(s.emprise)}</title></polygon>`);
+  }
+  for (const [k, s] of Object.entries(nd.secteurs)) {
+    const c = T.cells[Number(k)];
+    if (!c) continue;
+    const repris = s.statut === 'repris';
+    let inner;
+    if (s.coeur) {
+      const ouvert = secteurOuvert(nd, k);
+      inner = `<circle r="9.5" fill="${repris ? '#2E8F5E' : '#8E1F24'}" stroke="#0B1119" stroke-width="1.4"/>${ouvert || repris ? ICONE_QG : ICONE_CADENAS}`;
+    } else if (repris) {
+      inner = '<circle r="6.5" fill="#2E8F5E" stroke="#0B1119" stroke-width="1.2"/><path d="M-3 0l2 2.2L3.2 -2.4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
+    } else inner = '';
+    const chiffre = chiffres ? `<text y="${s.coeur ? 19 : inner ? 15 : 3}" text-anchor="middle" class="ndn">${Math.round(s.emprise)}</text>` : '';
+    out.push(`<g transform="translate(${f1(c.c[0])} ${f1(c.c[1])}) scale(${f1(echelle)})" style="pointer-events:none">${inner}${chiffre}</g>`);
+  }
+  return out.join('');
+}
+
+/** Gros plan sur la zone de non-droit et les zones qui la bordent (écran Terrain). */
+export function planNonDroit(st, me, sel = null) {
+  const T = territoires(S.config.seed, Object.values(st.zones));
+  const nd = T.nd.cells;
+  const autour = [...new Set(nd.flatMap((i) => T.adj[i]))].filter((i) => !nd.includes(i));
+  const pp = [...nd, ...autour].flatMap((i) => T.cells[i].poly);
+  let x0 = Math.min(...pp.map((p) => p[0])), x1 = Math.max(...pp.map((p) => p[0])), y0 = Math.min(...pp.map((p) => p[1])), y1 = Math.max(...pp.map((p) => p[1]));
+  const ndp = nd.flatMap((i) => T.cells[i].poly);
+  // Cadre centré sur la zone de non-droit, rapport 4/3, avec un peu de ses voisins autour.
+  const cx = (Math.min(...ndp.map((p) => p[0])) + Math.max(...ndp.map((p) => p[0]))) / 2, cy = (Math.min(...ndp.map((p) => p[1])) + Math.max(...ndp.map((p) => p[1]))) / 2;
+  let w = Math.max(Math.max(...ndp.map((p) => p[0])) - Math.min(...ndp.map((p) => p[0])), (Math.max(...ndp.map((p) => p[1])) - Math.min(...ndp.map((p) => p[1]))) * 4 / 3) * 1.25;
+  w = Math.min(w, x1 - x0); const h = w * 3 / 4;
+  x0 = cx - w / 2; y0 = cy - h / 2;
+  const echelle = w / W;
+  const zoneOf = (i) => (T.owner[i] >= 0 ? st.zones[T.order[T.owner[i]]] : null);
+  const moi = T.zones.find((x) => x.uid === me.uid);
+  const fond = [...autour].map((i) => {
+    const z = zoneOf(i);
+    const mine = moi && moi.quartiers.includes(i);
+    return `<polygon points="${pts(T.cells[i].poly)}" fill="${z ? C.ilot : C.campagne}"/>${z ? `<polygon points="${pts(T.cells[i].poly)}" fill="${esc(z.couleur)}" fill-opacity="${mine ? 0.45 : 0.22}" stroke="${mine ? '#F2B544' : esc(z.couleur)}" stroke-opacity="${mine ? 0.95 : 0.4}" stroke-width="${mine ? 2 : 0.8}" vector-effect="non-scaling-stroke"/>` : ''}`;
+  }).join('');
+  // Noms des zones qui bordent : une étiquette par zone, sur son quartier le plus proche du centre.
+  const vus = new Set();
+  const noms = autour.slice().sort((a, b) => T.d0[a] - T.d0[b]).map((i) => {
+    const z = zoneOf(i);
+    if (!z || vus.has(z.uid)) return '';
+    vus.add(z.uid);
+    const c = T.cells[i].c;
+    return `<text x="${f1(c[0])}" y="${f1(c[1])}" text-anchor="middle" class="ndz" style="fill:${esc(z.couleur)}">${esc(z.nom.toUpperCase().slice(0, 12))}${z.uid === me.uid ? ' ·  TOI' : ''}</text>`;
+  }).join('');
+  const nomsND = nd.map((i) => `<text x="${f1(T.cells[i].c[0])}" y="${f1(T.cells[i].c[1] - 9 * echelle)}" text-anchor="middle" class="ndq">${esc(T.cells[i].nom.toUpperCase())}</text>`).join('');
+  return `<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(w)} ${f1(h)}" width="100%" role="img" aria-label="Zone de non-droit : secteurs du centre et zones qui la bordent" style="display:block;border-radius:12px;aspect-ratio:4/3;background:${C.campagne}">
+    <defs>${ND_DEFS}</defs>
+    <style>
+      text{pointer-events:none}
+      .ndn{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:9px;fill:#fff;paint-order:stroke;stroke:#0B1119;stroke-width:2.6px}
+      .ndq{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:${f1(5.4 * echelle)}px;fill:#F3D9D9;letter-spacing:.6px;paint-order:stroke;stroke:#0B1119;stroke-width:2px}
+      .ndz{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:${f1(8 * echelle)}px;letter-spacing:.8px;paint-order:stroke;stroke:#0B1119;stroke-width:2.6px}
+    </style>
+    ${fond}${coucheNonDroit(T, st, echelle, { sel })}${nomsND}${noms}
+  </svg>`;
+}
+
 export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
   const zonesArr = Object.values(st.zones);
   const T = territoires(S.config.seed, zonesArr);
@@ -57,7 +139,7 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
   const rng = makeRng(`${S.config.seed}:plan`);
 
   // Cadrage : tout le district (qui s'agrandit avec les zones), ou ma zone.
-  const poss = T.zones.flatMap((tz) => tz.quartiers);
+  const poss = [...T.zones.flatMap((tz) => tz.quartiers), ...T.nd.cells];
   const cadre = (cellsIdx, marge, minW) => {
     const pp = cellsIdx.flatMap((i) => T.cells[i].poly);
     let x0 = Math.min(...pp.map((p) => p[0])) - marge, x1 = Math.max(...pp.map((p) => p[0])) + marge;
@@ -101,6 +183,7 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
   const ilots = T.cells.map((c) => {
     const z = zoneOf(T.owner[c.i]);
     const mine = z && z.uid === me.uid;
+    if (T.owner[c.i] === -2) return `<polygon points="${pts(c.poly)}" fill="${C.ilot}"/><polygon points="${pts(c.poly)}" fill="url(#rues${c.i % angles.length})"/>`;
     // Hors du district : campagne et communes voisines, plus sombres.
     if (!z) return `<polygon points="${pts(c.poly)}" fill="${C.campagne}"/><polygon points="${pts(c.poly)}" fill="url(#rues${c.i % angles.length})" opacity=".35"/>`;
     return `<polygon points="${pts(c.poly)}" fill="${C.ilot}"/><polygon points="${pts(c.poly)}" fill="url(#rues${c.i % angles.length})"/><polygon points="${pts(c.poly)}" fill="${esc(z.couleur)}" fill-opacity="${mine ? 0.3 : 0.24}"/>`;
@@ -127,7 +210,7 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
   // Limites de zones (pointillés) et contour de ma zone.
   const limites = T.edges.filter(([i, j]) => T.owner[i] !== T.owner[j]).map(([i, j, a, b]) => {
     const mien = moi && (moi.quartiers.includes(i) !== moi.quartiers.includes(j));
-    const bord = T.owner[i] === -1 || T.owner[j] === -1; // limite du district
+    const bord = T.owner[i] < 0 || T.owner[j] < 0; // limite du district ou de la zone de non-droit
     return `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" ${mien ? 'class="lm"' : bord ? 'class="ld"' : ''}/>`;
   }).join('');
 
@@ -178,7 +261,7 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
   }).join('');
   const sitesPos = T.zones.map((tz) => { const z = st.zones[tz.uid]; const s = siteDe(z); return s ? { tz, z, s, c: celluleSite(T, tz, s) } : null; }).filter(Boolean);
   const occupe = [...T.zones.map((tz) => tz.label), ...sitesPos.map((p) => p.c.c), [WW * 0.3, HH * 0.78]];
-  const quartiersLabels = dense ? '' : T.cells.filter((c) => T.owner[c.i] !== -1 && (zoom ? moi && moi.quartiers.includes(c.i) : c.i % 2 === 0 || (moi && moi.quartiers.includes(c.i))))
+  const quartiersLabels = dense ? '' : T.cells.filter((c) => T.owner[c.i] >= 0 && (zoom ? moi && moi.quartiers.includes(c.i) : c.i % 2 === 0 || (moi && moi.quartiers.includes(c.i))))
     .filter((c) => occupe.every((o) => (o[0] - c.c[0]) ** 2 + (o[1] - c.c[1]) ** 2 > (24 * echelle) ** 2))
     .map((c) => `<text x="${f1(c.c[0])}" y="${f1(c.c[1])}" text-anchor="middle" class="ql">${esc(c.nom.toUpperCase())}</text>`).join('');
   const sitesSvg = sitesPos.map(({ z, s, c }) => `<g transform="translate(${f1(c.c[0])} ${f1(c.c[1])}) scale(${f1(echelle)})"><title>${esc(s.nom)} (${esc(s.type)}) · ZP ${esc(z.code)} ${esc(z.nom)}</title>
@@ -208,6 +291,7 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
     <defs>
       ${angles.map((a, k) => `<pattern id="rues${k}" width="11" height="11" patternUnits="userSpaceOnUse" patternTransform="rotate(${a})"><path d="M0 0H11M0 0V11" stroke="${C.rue}" stroke-width=".7"/></pattern>`).join('')}
       <clipPath id="cadre"><rect width="${WW}" height="${HH}"/></clipPath>
+      ${ND_DEFS}
     </defs>
     <style>
       text{pointer-events:none}
@@ -216,6 +300,8 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
       .ql{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:${f1(5.6 * echelle)}px;fill:${C.quartier};letter-spacing:.9px;paint-order:stroke;stroke:${C.terre};stroke-width:2px}
       .sl{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:${f1(6.4 * echelle)}px;paint-order:stroke;stroke:#0B1119;stroke-width:2.4px}
       .sh{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:7.5px;fill:#fff}
+      .ndn{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:8px;fill:#fff;paint-order:stroke;stroke:#0B1119;stroke-width:2.4px}
+      .ndt{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:${f1(8.5 * echelle)}px;fill:#F08A8A;letter-spacing:1.4px;paint-order:stroke;stroke:#0B1119;stroke-width:2.6px}
       .pn{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:8px;fill:#1A1204}
       .av line{vector-effect:non-scaling-stroke}
       .lis line{vector-effect:non-scaling-stroke;stroke-width:2.6;stroke-opacity:.85;stroke-linecap:round}
@@ -235,7 +321,9 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
       ${axe(ring)}${axe(e42)}${axe(n56)}${cartouches}
       <g class="lis">${liseres}</g>
       ${chaleurSvg}
+      ${coucheNonDroit(T, st, echelle, { chiffres: !zoom })}
       <g class="lim">${limites}</g>
+      ${(() => { const c = T.cells[T.nd.coeur]; return `<text x="${f1(c.c[0])}" y="${f1(c.c[1] - 16 * echelle)}" text-anchor="middle" class="ndt">ZONE DE NON-DROIT</text>`; })()}
       ${quartiersLabels}${sitesSvg}${zonesLabels}${hp}${star}${pinsAff}${opPin}${reperesQ}
     </g>
   </svg>`;
