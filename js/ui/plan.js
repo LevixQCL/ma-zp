@@ -96,10 +96,10 @@ export function planNonDroit(st, me, sel = null) {
   const pp = [...nd, ...autour].flatMap((i) => T.cells[i].poly);
   let x0 = Math.min(...pp.map((p) => p[0])), x1 = Math.max(...pp.map((p) => p[0])), y0 = Math.min(...pp.map((p) => p[1])), y1 = Math.max(...pp.map((p) => p[1]));
   const ndp = nd.flatMap((i) => T.cells[i].poly);
-  // Cadre centré sur la zone de non-droit, rapport 4/3, avec un peu de ses voisins autour.
+  // Cadre centré sur la zone de non-droit, rapport 16/10, avec un peu de ses voisins autour.
   const cx = (Math.min(...ndp.map((p) => p[0])) + Math.max(...ndp.map((p) => p[0]))) / 2, cy = (Math.min(...ndp.map((p) => p[1])) + Math.max(...ndp.map((p) => p[1]))) / 2;
-  let w = Math.max(Math.max(...ndp.map((p) => p[0])) - Math.min(...ndp.map((p) => p[0])), (Math.max(...ndp.map((p) => p[1])) - Math.min(...ndp.map((p) => p[1]))) * 4 / 3) * 1.25;
-  w = Math.min(w, x1 - x0); const h = w * 3 / 4;
+  let w = Math.max(Math.max(...ndp.map((p) => p[0])) - Math.min(...ndp.map((p) => p[0])), (Math.max(...ndp.map((p) => p[1])) - Math.min(...ndp.map((p) => p[1]))) * 16 / 10) * 1.2;
+  w = Math.min(w, x1 - x0); const h = w * 10 / 16;
   x0 = cx - w / 2; y0 = cy - h / 2;
   const echelle = w / W;
   const zoneOf = (i) => (T.owner[i] >= 0 ? st.zones[T.order[T.owner[i]]] : null);
@@ -119,7 +119,7 @@ export function planNonDroit(st, me, sel = null) {
     return `<text x="${f1(c[0])}" y="${f1(c[1])}" text-anchor="middle" class="ndz" style="fill:${esc(z.couleur)}">${esc(z.nom.toUpperCase().slice(0, 12))}${z.uid === me.uid ? ' ·  TOI' : ''}</text>`;
   }).join('');
   const nomsND = nd.map((i) => `<text x="${f1(T.cells[i].c[0])}" y="${f1(T.cells[i].c[1] - 9 * echelle)}" text-anchor="middle" class="ndq">${esc(T.cells[i].nom.toUpperCase())}</text>`).join('');
-  return `<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(w)} ${f1(h)}" width="100%" role="img" aria-label="Zone de non-droit : secteurs du centre et zones qui la bordent" style="display:block;border-radius:12px;aspect-ratio:4/3;background:${C.campagne}">
+  return `<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(w)} ${f1(h)}" width="100%" role="img" aria-label="Zone de non-droit : secteurs du centre et zones qui la bordent" style="display:block;border-radius:12px;aspect-ratio:16/10;background:${C.campagne}">
     <defs>${ND_DEFS}</defs>
     <style>
       text{pointer-events:none}

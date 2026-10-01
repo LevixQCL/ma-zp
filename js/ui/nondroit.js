@@ -55,16 +55,36 @@ function carteSecteur(k, s, me, d) {
       prevision = `<p class="tiny" style="margin:0">${s.emprise >= ND.seuilRechute - 20 ? '<strong class="bad">Il faut de la garde.</strong> ' : ''}${n ? `Ta garde (force ${fmt1(maForce)}) : ${fleche(s.emprise, seul.emprise)}.` : `Le milieu revient de ${ND.remontee} par nuit ; à ${ND.seuilRechute}, il reprend le secteur. 2 ou 3 agents de garde suffisent.`}</p>`;
     }
   }
-  return `<div class="card tight nd-sect ${S.secteurSel === k ? 'sel' : ''}" id="nd-${k}" style="gap:6px">
-    <div class="between" style="gap:8px;align-items:flex-start"><span class="col" style="gap:0;min-width:0" title="${esc(m.texte)}"><span style="font-weight:700;font-size:14px">${s.coeur ? '★ ' : ''}${esc(nomSecteur(k))}</span><span class="tiny muted">${esc(m.titre)}</span></span>${statut}</div>
-    <div class="row" style="gap:8px">${barre(s.emprise, coul)}<span class="mono tiny" style="white-space:nowrap">emprise ${Math.round(s.emprise)}</span></div>
-    ${!ouvert ? `<p class="tiny muted" style="margin:0">${esc(m.texte)} Il faut tenir ${ND.coeurSeuil} secteurs de l’anneau en même temps (${Object.values(nd().secteurs).filter((x) => !x.coeur && x.statut === 'repris').length} aujourd’hui). Il rapporte ${String(ND.coeurMult).replace('.', ',')} fois plus.</p>` : ''}
+  const seuilAgents = Math.ceil(regen / ND.efficacite / Math.max(0.5, forceEngagement(me, 1)));
+  return `<div class="nd-detail" style="gap:6px">
+    <p class="tiny muted" style="margin:0">${esc(m.texte)}</p>
+    ${!ouvert ? `<p class="tiny muted" style="margin:0">Il faut tenir ${ND.coeurSeuil} secteurs de l’anneau en même temps (${Object.values(nd().secteurs).filter((x) => !x.coeur && x.statut === 'repris').length} aujourd’hui). Il rapporte ${String(ND.coeurMult).replace('.', ',')} fois plus.</p>` : ''}
     <p class="tiny muted" style="margin:0">Hier soir : ${hier.length ? hier.map((x) => `${x.u === me.uid ? '<strong>toi</strong>' : nomZ(x.u)} (${x.n})`).join(', ') : 'personne'}${parts.length ? ` · influence : ${parts.slice(0, 4).map((p) => `${p.uid === me.uid ? '<strong>toi</strong>' : nomZ(p.uid)} ${Math.round(p.part * 100)} %`).join(', ')}${parts.length > 4 ? '…' : ''}` : ''}</p>
     ${moi && repris ? `<p class="tiny ${moi.part >= ND.partMin ? 'ok' : 'muted'}" style="margin:0">${moi.part >= ND.partMin ? `Tu touches les retombées chaque nuit (${Math.round(moi.part * 100)} % d’influence).` : `Ton influence (${Math.round(moi.part * 100)} %) est sous ${Math.round(ND.partMin * 100)} % : monte la garde pour toucher les retombées.`}</p>` : ''}
+    ${ouvert && !repris && !n ? `<p class="tiny muted" style="margin:0">Pour faire reculer le milieu ce soir : plus de ${fmt1(regen / ND.efficacite)} de force, soit ${seuilAgents} agents environ, de préférence à plusieurs zones.</p>` : ''}
     ${prevision}
     ${ouvert ? `<div class="between"><span class="small">${repris ? 'Agents de garde ce soir' : 'Agents à l’assaut ce soir'}</span>
       <span class="stepper"><button type="button" data-action="nd" data-c="${k}" data-d="-1" aria-label="Un agent de moins à ${esc(nomSecteur(k))}" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="nd" data-c="${k}" data-d="1" aria-label="Un agent de plus à ${esc(nomSecteur(k))}" ${n >= ND.maxParSecteur || agentsND(d) >= ND.maxTotal ? 'disabled' : ''}>+</button></span></div>
       ${n ? `<button type="button" class="btn small ghost block" data-action="nd-appel" data-c="${k}">📻 Prévenir la radio : « j’y vais ce soir avec ${n} »</button>` : ''}` : ''}
+  </div>`;
+}
+
+/** Ligne compacte d'un secteur ; le secteur choisi s'ouvre en dessous. */
+function ligneSecteur(k, s, me, d) {
+  const m = milieuDe(s);
+  const ouvert = secteurOuvert(nd(), k);
+  const repris = s.statut === 'repris';
+  const n = (d.secteurs || {})[k] || 0;
+  const sel = S.secteurSel === k;
+  const moi = partsDe(s).some((p) => p.uid === me.uid && p.part >= ND.partMin);
+  const etat = repris ? ` · <span class="ok">✓ repris${s.chef && S.state.zones[s.chef] ? ` (${nomZ(s.chef)})` : ''}</span>` : ouvert ? '' : ' · 🔒 verrouillé';
+  return `<div class="nd-sect ${sel ? 'sel' : ''}" id="nd-${k}">
+    <button type="button" class="nd-row" data-action="secteur" data-c="${k}" aria-expanded="${sel}">
+      <span class="col" style="gap:0;min-width:0;flex:1;text-align:left"><span class="nd-nom">${s.coeur ? '★ ' : ''}${esc(nomSecteur(k))}${moi ? ' <span class="nd-moi">toi</span>' : ''}</span><span class="tiny muted nd-titre">${esc(m.titre)}${etat}</span></span>
+      ${barre(s.emprise, repris ? '#E8913A' : '#E0625A')}<span class="mono tiny nd-chiffre">${Math.round(s.emprise)}</span>
+      <span class="nd-agents ${n ? '' : 'vide'}">${n || ''}</span>
+    </button>
+    ${sel ? carteSecteur(k, s, me, d) : ''}
   </div>`;
 }
 
@@ -81,14 +101,17 @@ export function nonDroitHtml() {
   const mesAgents = agentsND(d);
   const danger = secteursEnDanger();
   const bordent = [...voisins].filter((k) => n.secteurs[k].statut === 'milieu').length;
+  // Secteur ouvert par défaut : là où j'ai des agents, sinon là où il y avait du monde hier, sinon le plus entamé.
+  if (S.secteurSel === undefined) {
+    const ouverts = tries.filter((k) => secteurOuvert(n, k));
+    S.secteurSel = ouverts.find((k) => (d.secteurs || {})[k]) || ouverts.filter((k) => n.secteurs[k].statut === 'milieu').sort((a, b) => ((n.secteurs[b].hier || []).length - (n.secteurs[a].hier || []).length) || n.secteurs[a].emprise - n.secteurs[b].emprise)[0] || null;
+  }
   return `<section class="col" aria-label="Zone de non-droit" style="gap:8px" id="non-droit">
-    <div class="between"><h2 class="section" style="margin:0">Zone de non-droit</h2><span class="tiny muted">${repris} secteur${repris > 1 ? 's' : ''} repris sur ${cles.length}</span></div>
+    <div class="between"><h2 class="section" style="margin:0">Zone de non-droit</h2><span class="tiny muted">${repris} repris sur ${cles.length} · tes agents ${mesAgents}/${ND.maxTotal}</span></div>
     <div class="plan-cadre">${planNonDroit(S.state, me, S.secteurSel)}</div>
-    <p class="small" style="margin:0;color:var(--text2)">Envoie des agents où tu veux, sans rien demander à personne. Les forces du soir s’additionnent, <strong>+${Math.round(ND.coop * 100)} % par zone en plus</strong> sur le même secteur. Seul ou trop faible, l’assaut est repoussé et tes agents peuvent revenir blessés. Le milieu se refait de ${fmt1(regenSecteur(S.state, { statut: 'milieu' }))} par nuit, il faut donc plus de ${fmt1(regenSecteur(S.state, { statut: 'milieu' }) / ND.efficacite)} de force (${Math.ceil(regenSecteur(S.state, { statut: 'milieu' }) / ND.efficacite / Math.max(0.5, forceEngagement(me, 1)))} agents environ) pour le faire reculer.</p>
-    <p class="tiny muted" style="margin:0">Reprise : chaque zone à ${Math.round(ND.partMin * 100)} % d’influence ou plus reçoit la même part fixe, puis des retombées chaque nuit tant que le secteur tient.${bordent ? ` ${bordent} secteur${bordent > 1 ? 's' : ''} du milieu touche${bordent > 1 ? 'nt' : ''} ta zone et y fai${bordent > 1 ? 'nt' : 't'} monter la tension.` : ''} <a href="#guide-affaires">Toutes les règles</a></p>
-    ${danger.length ? `<p class="small bad" style="margin:0">⚠ ${danger.map((k) => esc(nomSecteur(k))).join(', ')} : le milieu remonte et tu n’as mis personne de garde.</p>` : ''}
-    <p class="tiny" style="margin:0">Tes agents ce soir : <strong>${mesAgents}</strong> sur ${ND.maxTotal} (${ND.maxParSecteur} par secteur), pris sur tes services.</p>
-    ${tries.map((k) => carteSecteur(k, n.secteurs[k], me, d)).join('')}
+    <p class="tiny muted" style="margin:0">Sans candidature : les forces du soir s’additionnent, <strong>+${Math.round(ND.coop * 100)} % par zone en plus</strong>. Seul ou trop faible, l’assaut est repoussé et tes agents peuvent revenir blessés.${bordent ? ` ${bordent} secteur${bordent > 1 ? 's' : ''} du milieu touche${bordent > 1 ? 'nt' : ''} ta zone.` : ''} <a href="#guide-affaires">Règles</a></p>
+    ${danger.length ? `<p class="small bad" style="margin:0">⚠ ${danger.map((k) => esc(nomSecteur(k))).join(', ')} : le milieu remonte et personne de garde de ta part.</p>` : ''}
+    <div class="card tight nd-liste">${tries.map((k) => ligneSecteur(k, n.secteurs[k], me, d)).join('')}</div>
   </section>`;
 }
 
