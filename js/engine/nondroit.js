@@ -109,6 +109,28 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
     const avant = s.emprise;
     const nomS = nomSecteur(k);
     if (s.statut === 'milieu') {
+      // Assaut repoussé : pas assez de force pour faire reculer le milieu, ou une zone seule qui tombe dans un piège.
+      const seuil = regen[k] / ND.efficacite;
+      const tropFaible = engages.length > 0 && F <= seuil;
+      const piege = engages.length === 1 && !tropFaible && makeRng(`${state.seed}:s${state.season}:t${T}:ndpiege:${k}`).chance(ND.seulEchec);
+      if (tropFaible || piege) {
+        s.emprise = round1(clamp(Math.min(s.emprise + regen[k], Math.max(s.emprise, s.max || 100)), 0, 100));
+        res.repousses = res.repousses || [];
+        res.repousses.push({ cell: Number(k), zones: engages.map((e) => e.u) });
+        let blessesTot = 0;
+        for (const e of engages) {
+          const z = state.zones[e.u];
+          const br = makeRng(`${state.seed}:s${state.season}:t${T}:ndrepousse:${k}:${e.u}`);
+          let b = 0;
+          for (let i = 0; i < e.n; i++) if (br.chance(ND.blesseRepousse)) b += 1;
+          blessesTot += b;
+          if (b) { z.blesses.push({ n: b, retour: T + 1 + ND.absenceRepousse, motif: 'blessé' }); z.moral -= 2; jalon(z, `Assaut repoussé à ${nomS} (blessés)`); }
+          const autres = engages.filter((x) => x.u !== e.u);
+          z.rapport.push(`Zone de non-droit · ${nomS} : assaut repoussé ! ${tropFaible ? `Pas assez de force (${fmt1(F)} pour plus de ${fmt1(seuil)} nécessaires${autres.length ? '' : ', et tu étais seul'})` : 'Seul sur le secteur, ton équipe est tombée dans un piège'} : l’emprise ne baisse pas.${b ? ` ${b} agent${b > 1 ? 's' : ''} blessé${b > 1 ? 's' : ''}, absent${b > 1 ? 's' : ''} ${ND.absenceRepousse} tours (−2 de moral).` : ' Ton équipe rentre sans blessé, cette fois.'} Plus on y va nombreux, moins le milieu résiste.`);
+        }
+        push(blessesTot ? 6 : 3, 'Zone de non-droit', `Assaut repoussé à ${nomS}`, `${engages.map((e) => nom(e.u)).join(', ')} ${engages.length > 1 ? 'ont' : 'a'} dû battre en retraite${blessesTot ? ` : ${blessesTot} policier${blessesTot > 1 ? 's' : ''} blessé${blessesTot > 1 ? 's' : ''}` : ''}.`);
+        continue;
+      }
       // Assaut : l'emprise baisse avec la force engagée, le milieu se refait la nuit.
       // Le milieu se refait, mais pas au-delà de sa force de départ : un assaut abandonné laisse des traces un moment.
       s.emprise = round1(clamp(Math.min(s.emprise + regen[k], Math.max(s.emprise, s.max || 100)) - F * ND.efficacite, 0, 100));

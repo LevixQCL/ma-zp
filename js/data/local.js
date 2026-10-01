@@ -5,6 +5,7 @@ import { BOT_PROFILES, botOrders } from '../engine/bots.js';
 import { newZone } from '../engine/zone.js';
 import { nextResolutionAfter } from '../engine/time.js';
 import { makeRng } from '../engine/rng.js';
+import { MAX_ZONES, partieComplete } from '../engine/constants.js';
 
 const KEY = 'mazp-demo-v2';
 const ME = 'moi';
@@ -104,6 +105,7 @@ export function createLocalBackend(config) {
     },
     async joinGame(uid, profile) {
       if (self.state.zones[uid]) return;
+      if (partieComplete(self.state, uid)) throw new Error(`Cette partie est complète (${MAX_ZONES} zones).`);
       self.state.zones[uid] = buildJoinZone(self.state, uid, profile, self.state.turn);
       persist(); emit('state', JSON.parse(JSON.stringify(self.state)));
     },

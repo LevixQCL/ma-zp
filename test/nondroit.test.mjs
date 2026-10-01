@@ -44,7 +44,9 @@ assert.equal(agentsLibres(state.zones.a, o, 1), 0);
 const alloc = { intervention: 6, proximite: 4, recherche: 4, roulage: 1, admin: 3 };
 let r;
 for (let t = 0; t < 5; t++) { r = resolveTurn(state, { orders: { a: { alloc, secteurs: { [s1]: 2 } }, b: { alloc }, c: { alloc } } }); state = r.state; }
-assert.ok(state.nonDroit.secteurs[s1].statut === 'milieu' && state.nonDroit.secteurs[s1].emprise > nd.secteurs[s1].emprise - 12, 'seul, ça plafonne');
+assert.equal(state.nonDroit.secteurs[s1].emprise, nd.secteurs[s1].emprise, 'seul et trop faible : l’assaut est repoussé, l’emprise ne bouge pas');
+assert.ok(r.gazette.nonDroit.repousses.some((x) => x.cell === Number(s1)));
+assert.ok(r.gazette.rapports.a.some((l) => l.includes('assaut repoussé')));
 let pris = null;
 for (let t = 0; t < 6 && !pris; t++) {
   r = resolveTurn(state, { orders: Object.fromEntries(['a', 'b', 'c'].map((u) => [u, { alloc, secteurs: { [s1]: 3 } }])) });
@@ -68,5 +70,12 @@ assert.ok(rechute, 'sans garde, le secteur retombe');
 // Une partie sauvegardée avant la mise à jour reçoit sa zone de non-droit.
 const vieux = base(); delete vieux.nonDroit;
 assert.ok(migrateState(vieux).nonDroit.secteurs[coeur]);
+
+// Partie complète : plus d'inscription au-delà de MAX_ZONES.
+import('../js/engine/constants.js').then(({ MAX_ZONES, partieComplete }) => {
+  const plein = { zones: Object.fromEntries(Array.from({ length: MAX_ZONES }, (_, k) => [`p${k}`, {}])) };
+  assert.ok(partieComplete(plein, 'nouveau'));
+  assert.ok(!partieComplete(plein, 'p3'), 'un joueur déjà inscrit garde sa place');
+});
 
 console.log('OK : zone de non-droit (carte, ordres, reprise à plusieurs, rechute, migration).');

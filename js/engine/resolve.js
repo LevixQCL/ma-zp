@@ -3,7 +3,7 @@
 
 import {
   APP_VERSION, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat, gainPrime, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat, gainPrime, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
@@ -155,7 +155,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
   // 1. Joueurs inscrits sans zone (filet de sécurité) : ils jouent au tour suivant.
   for (const [uid, p] of Object.entries(players)) {
-    if (state.zones[uid] || !p || p.retire) continue;
+    if (state.zones[uid] || !p || p.retire || partieComplete(state, uid)) continue;
     state.zones[uid] = buildJoinZone(state, uid, p, T + 1);
     push(3, 'Bienvenue', `${zoneLabel(state.zones[uid])} rejoint le District Delta`, 'Nouvelle zone en service dès demain.', uid);
   }
