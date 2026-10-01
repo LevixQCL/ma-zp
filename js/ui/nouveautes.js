@@ -16,7 +16,7 @@ export const NOTE_MAJ = {
     ['Un seul essai', 'réussi : +5 PS et un bonus du service (Intervention +3 de moral, Recherche +1 indice d’enquête, Roulage +2 k€, Proximité +2 de satisfaction). Raté ou abandonné : −1 de moral, comme une énigme ratée. Pas joué : ton équipe se débrouille seule, mieux si le service est bien fourni.'],
     ['La jauge des skins', '+2 sans faute, +1 sinon. À 50 points, un nouveau skin pour ton commissariat.'],
     ['Tuto et entraînement', 'chaque mini-jeu a son tuto. Pour t’exercer sans enjeu : écran Énigmes, onglet Entraînement.'],
-    ['Le cadenas', 'l’énigme du cadenas se joue maintenant sur un vrai cadenas à molettes : fais rouler les chiffres du doigt, puis tire l’anse.'],
+    ['Des énigmes à manipuler', 'cadenas à molettes, cartes à remettre sur une ligne du temps, disque de décodage à tourner, vraies plaques belges à rayer, places et lieux à toucher sur la photo ou le plan, étiquettes de scellés, ligne de bus, échantillons d’écriture à comparer trait par trait.'],
     ['Nouveau look', 'toute l’interface a été redessinée : en haut de l’HP, le ciel du district suit l’heure réelle jusqu’à la résolution de 20:00, la barre d’onglets flotte en bas d’écran et les titres sont plus lisibles.'],
   ],
 };
