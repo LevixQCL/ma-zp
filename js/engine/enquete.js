@@ -609,7 +609,7 @@ export function enquetePre(state, uids, ord, push) {
     const transmises = pieces.map((f) => { const ds = mien.filter((x) => x.f === f).map((x) => x.d); return `« ${titrePiece(aff, f)} » à ${ds.length > 1 ? `${ds.length} zones` : nomZone(state.zones[ds[0]])}`; });
     const n = transmises.length;
     if (n) {
-      z._ps += 5 * n; z.stats.indicesPartages += n; z.reputation += n;
+      z._psEntraide = (z._psEntraide || 0) + 5 * n; z.stats.indicesPartages += n; z.reputation += n;
       z.rapport.push(`Enquête : ${n} pièce${n > 1 ? 's' : ''} transmise${n > 1 ? 's' : ''} : ${transmises.join(' ; ')} (+${5 * n} PS, +${n} de réputation).`);
     }
     if (nonEnvoyees[u] && nonEnvoyees[u].length) z.rapport.push(`Enquête : pas transmise${nonEnvoyees[u].length > 1 ? 's' : ''} : ${nonEnvoyees[u].join(' ; ')}.`);
@@ -646,7 +646,7 @@ export function enquetePre(state, uids, ord, push) {
     for (const c of contributeurs) {
       const z = state.zones[c];
       if (!z) continue;
-      z.stats.limier += POINTS.contribution; z._ps += 8;
+      z.stats.limier += POINTS.contribution; z._psEntraide = (z._psEntraide || 0) + 8;
       z.rapport.push(`Enquête : tes pièces ont aidé à identifier l’auteur (+${POINTS.contribution} pts d’enquête).`);
     }
     res.recit = recitFinal(aff);

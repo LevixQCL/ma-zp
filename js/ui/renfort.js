@@ -39,7 +39,7 @@ export function renfortCtrl(a) {
   return `<div class="renfort-ctrl">
     <div class="between"><span class="small" style="font-weight:600">Prêter des agents ce soir</span>
       <span class="stepper"><button type="button" data-action="renfort-n" data-uid="${esc(a.uid)}" data-d="-1" aria-label="Un agent de moins" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="renfort-n" data-uid="${esc(a.uid)}" data-d="1" aria-label="Un agent de plus" ${n >= RENFORT.maxParZone ? 'disabled' : ''}>+</button></span></div>
-    <span class="tiny ${n ? '' : 'muted'}">${n ? `${n} agent${n > 1 ? 's' : ''} quitte${n > 1 ? 'nt' : ''} tes services pour la journée · +${rep} de réputation, +${ps} PS. Pense à valider tes ordres.` : `Jusqu’à ${RENFORT.maxParZone} agents, pour la journée seulement · +${RENFORT.repParAgent} de réputation et +${RENFORT.psParAgent} PS par agent prêté.`}${autre ? ` Remplace ton renfort prévu pour ${esc(autre.nom)}.` : ''}</span>
+    <span class="tiny ${n ? '' : 'muted'}">${n ? `${n} agent${n > 1 ? 's' : ''} quitte${n > 1 ? 'nt' : ''} tes services pour la journée · +${rep} de réputation, +${ps} PS d’entraide, +${n * RENFORT.pointsParAgent} pt${n * RENFORT.pointsParAgent > 1 ? 's' : ''} de résultats, indemnité fédérale +${String(Math.round(n * RENFORT.indemnite * 10) / 10).replace('.', ',')} k€. Pense à valider tes ordres.` : `Jusqu’à ${RENFORT.maxParZone} agents, pour la journée seulement · par agent prêté : +${RENFORT.repParAgent} de réputation, +${RENFORT.psParAgent} PS d’entraide, +${RENFORT.pointsParAgent} pt de résultats et ${String(RENFORT.indemnite).replace('.', ',')} k€ d’indemnité fédérale.`}${autre ? ` Remplace ton renfort prévu pour ${esc(autre.nom)}.` : ''}</span>
   </div>`;
 }
 

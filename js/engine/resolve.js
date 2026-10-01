@@ -199,6 +199,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z._points = 0;
     z._compta = z._compta || [];
     z._ps = 0;
+    z._psEntraide = 0;
     // Photo d'avant le tour (pour les évolutions affichées au joueur) et journal des jauges.
     z.hier = { moral: z.moral, satisfaction: z.satisfaction, reputation: z.reputation, budget: z.budget, ipz: z.ipz, turn: T };
     ouvrirJournal(z);
@@ -310,7 +311,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const c = ord[u].evenement;
       if (c > 0) {
         z.stats.contributions += 1;
-        z._ps += psEvenement(c);
+        z._psEntraide += psEvenement(c);
         if (reussi) z.reputation += Math.max(1, Math.round(10 * c / total));
       } else if (actives.includes(u)) z.stats.evenementsManques += 1;
       if (c > 0) z._contribEvenement = true;
@@ -335,8 +336,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (!op) continue;
     (renfortsRecus[r.cible] ||= []).push({ de: u, n: r.agents });
     const { rep, ps } = gainRenfort(r.agents);
-    z.reputation += rep; z._ps += ps; z.stats.renfortsPretes = (z.stats.renfortsPretes || 0) + 1;
-    z.rapport.push(`Renfort : ${r.agents} de tes agents aident ${zoneLabel(c)} sur « ${op.titre} » (+${rep} de réputation, +${ps} PS).`);
+    z.reputation += rep; z._psEntraide += ps; z.stats.renfortsPretes = (z.stats.renfortsPretes || 0) + 1;
+    const ptsR = round1(r.agents * RENFORT.pointsParAgent);
+    if (ptsR > 0) { z._points += ptsR; jalon(z, `Renfort prêté à ${zoneLabel(c)}`); }
+    const indem = round1(r.agents * RENFORT.indemnite);
+    if (indem > 0) { z.budget += indem; z._compta.push({ k: 'renfort', l: `Indemnité fédérale de renfort (${r.agents} agent${r.agents > 1 ? 's' : ''})`, v: indem }); }
+    z.rapport.push(`Renfort : ${r.agents} de tes agents aident ${zoneLabel(c)} sur « ${op.titre} » (+${rep} de réputation, +${ps} PS d’entraide, indemnité fédérale +${fmt1(indem)} k€).`);
   }
   for (const [cible, l] of Object.entries(renfortsRecus)) {
     const n = l.reduce((a, b) => a + b.n, 0);
@@ -776,7 +781,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       push(5, 'Trophée', `${zoneLabel(z)} décroche le trophée « ${TROPHEE[id].nom} »`, TROPHEE[id].texte + '.', uid);
     }
     if (z.ipzHist.length > 30) z.ipzHist.shift();
-    z.ps += Math.min(PS.plafondJour, z._ps);
+    const psSolo = Math.min(PS.plafondJour, z._ps), psEntr = Math.min(PS.plafondEntraide, z._psEntraide || 0);
+    z.ps += psSolo + psEntr;
+    z.psJour = { solo: psSolo, entraide: psEntr, tour: T };
     z.budget = round1(z.budget);
     z.criminalite = round1(z.criminalite);
     z.paperasse = round1(z.paperasse);
@@ -883,7 +890,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
-    delete z._joue; delete z._points; delete z._ps; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement;
+    delete z._joue; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement;
   }
 
   // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).

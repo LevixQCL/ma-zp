@@ -161,7 +161,9 @@ await page.goto(`${BASE}#hp`); await page.reload();
 await page.waitForSelector('[data-action="demo-next"]');
 await page.click('[data-action="demo-next"]');
 await page.waitForTimeout(600);
-if (!(await page.locator('[aria-label="Zone en péril"]').count())) errors.push('Bandeau de péril absent');
+// Si ce tour était le dernier de la saison, tout repart à zéro (budget compris) : pas de péril à vérifier.
+const nouvelleSaison = await page.evaluate(() => { const db = JSON.parse(localStorage.getItem('mazp-demo-v2')); return db.parties[db.current].state.turn === 1; });
+if (!nouvelleSaison && !(await page.locator('[aria-label="Zone en péril"]').count())) errors.push('Bandeau de péril absent');
 await shot('27-hp-peril');
 await page.goto(`${BASE}#gazette`);
 await page.waitForSelector('.chantier');
