@@ -226,6 +226,7 @@ for (let i = 0; i < 7; i++) {
   // Répond au hasard pour vérifier le flux
   const choice = page.locator('[data-action="quest-pick"]').first();
   if (await choice.count()) { await choice.click(); await page.click('[data-action="quest-submit"]'); }
+  else if (await page.locator('.cad-form button[type="submit"]').count()) { await page.locator('[data-cad-pas="1"]').first().click(); await page.click('.cad-form button[type="submit"]'); }
   else if (await page.locator('#qtext').count()) { await page.fill('#qtext', (await page.getAttribute('#qtext', 'placeholder')) || 'PONT'); await page.click('[data-form="quest-text"] button'); }
   await page.waitForSelector('[data-c="1"]');
   if (i === 0) await shot('15a-confirmation');

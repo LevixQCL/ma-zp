@@ -1,5 +1,6 @@
 // Point d'entrée de l'application « Ma ZP ».
 import { CONFIG } from './config.js';
+import { installerCadenas } from './ui/cadenas.js';
 import { createBackend } from './data/backend.js';
 import { resolvePending } from './data/resolver.js';
 import { S, toast, myZone, esc, cielDuMoment } from './ui/common.js';
@@ -989,6 +990,7 @@ async function boot() {
   });
   document.addEventListener('click', onClick);
   installerAntiTriche();
+  installerCadenas();
   // Sections repliables : on se souvient de celles qui sont ouvertes.
   // (seulement quand le joueur clique : un <details> affiché ouvert déclenche aussi « toggle »)
   let clicResume = 0;

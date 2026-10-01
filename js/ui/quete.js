@@ -3,6 +3,7 @@ import { S, esc, icon, tabbar } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS } from '../quests/quests.js';
 import { SERVICES, SERVICE_LABELS } from '../engine/constants.js';
 import { entrainementMiniJeuxHtml } from './incidents.js';
+import { cadenasHtml, cadenasResultat, essaisHtml } from './cadenas.js';
 
 /** Le joueur a-t-il déjà changé une énigme aujourd'hui ? */
 function rerollUtilise() { return (S.quests || []).some((q) => q.variante); }
@@ -140,7 +141,7 @@ export function renderQuete() {
     ${q.figures ? renderFigures(q, fini) : ''}
     ${q.tableau ? `<section class="card tight" aria-label="Fiche horaire">${q.tableau}</section>` : ''}
 
-    ${q.elements && q.elements.length ? `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who ${q.type === 'cadenas' ? 'code' : ''}" ${q.type === 'cadenas' ? 'style="font-size:17px;letter-spacing:2px;color:var(--text)"' : ''}>${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>` : ''}
+    ${q.elements && q.elements.length ? (q.type === 'cadenas' ? essaisHtml(q) : `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who">${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>`) : ''}
     ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${q.type === 'grille' ? 'Auditions' : 'Indices'}</h2>${q.indices.map((t) => `<p class="small" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
     ${q.mode === 'texte' ? `<div class="codebox" aria-label="Message codé">${esc(q.code)}</div>
       <p class="small muted" style="margin:0">${esc(q.aide)}</p>` : ''}
@@ -153,11 +154,12 @@ export function renderQuete() {
     ${!fini ? `<section class="col" aria-label="Ta réponse"><h2 class="section">${esc(q.question)}</h2>
       ${q.consigne ? `<p class="small muted" style="margin:0">${esc(q.consigne)}</p>` : ''}
       ${choixHtml}
-      ${q.mode === 'texte' || q.mode === 'exact' ? `<form data-form="quest-text" class="row"><label class="sr" for="qtext">Ta réponse</label><input id="qtext" class="text grow ${q.mode === 'exact' ? 'mono' : ''}" name="reponse" autocomplete="off" ${q.inputmode ? `inputmode="${q.inputmode}"` : 'autocapitalize="characters"'} placeholder="${esc(q.placeholder || 'Ta réponse')}"><button class="btn primary" type="submit">Valider</button></form>` : ''}
+      ${q.type === 'cadenas' ? cadenasHtml(q) : q.mode === 'texte' || q.mode === 'exact' ? `<form data-form="quest-text" class="row"><label class="sr" for="qtext">Ta réponse</label><input id="qtext" class="text grow ${q.mode === 'exact' ? 'mono' : ''}" name="reponse" autocomplete="off" ${q.inputmode ? `inputmode="${q.inputmode}"` : 'autocapitalize="characters"'} placeholder="${esc(q.placeholder || 'Ta réponse')}"><button class="btn primary" type="submit">Valider</button></form>` : ''}
       <p class="tiny muted" style="margin:0">${train ? 'Entraînement : la réponse est corrigée tout de suite, sans effet sur ta zone.' : noir ? 'Une seule réponse, sans pénalité en cas d’erreur.' : 'Une seule réponse possible : une erreur est définitive (−1 de moral).'}</p>
       ${q.mode !== 'texte' && q.mode !== 'exact' ? `<button class="btn primary block" data-action="quest-submit" ${picked == null ? 'disabled' : ''}>Valider ma réponse</button>` : ''}
     </section>` : ''}
 
+    ${q.type === 'cadenas' && fini ? cadenasResultat(q, r) : ''}
     ${r.statut === 'ok' ? `<section class="card green"><span class="ok" style="font-size:15px;font-weight:700">Bien vu !</span>
       <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p></section>` : ''}
     ${r.statut === 'rate' ? `<section class="card"><span style="font-size:15px;font-weight:700">Mauvaise réponse${r.reponse ? ` : ${esc(r.reponse)}` : ''}</span>
