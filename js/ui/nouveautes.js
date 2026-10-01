@@ -11,6 +11,7 @@ export const NOTE_MAJ = {
     ['Un seul essai', 'réussi : +1 de moral et des points sur la jauge des skins. Raté ou abandonné : un malus à 20:00 (agents absents, budget, satisfaction…). Pas joué : ton équipe se débrouille seule, mieux si le service est bien fourni.'],
     ['La jauge des skins', '+2 sans faute, +1 sinon. À 50 points, un nouveau skin pour ton commissariat.'],
     ['Tuto et entraînement', 'chaque mini-jeu a son tuto. Pour t’exercer sans enjeu : écran Énigmes, onglet Entraînement.'],
+    ['Nouveau look', 'toute l’interface a été redessinée : en haut de l’HP, le ciel du district suit l’heure réelle jusqu’à la résolution de 20:00, la barre d’onglets flotte en bas d’écran et les titres sont plus lisibles.'],
   ],
 };
 

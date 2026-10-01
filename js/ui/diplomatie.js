@@ -81,7 +81,7 @@ function aideHtml() {
   const enDiff = autres().map((z) => ({ z, s: statut(z) })).filter((x) => x.s);
   return `<section class="card" aria-label="Entraide"><h2 class="card-title" style="margin:0">Entraide</h2>
     <p class="small muted" style="margin:0">Envoie du budget (immédiat) ou prête des agents pour ${AIDE.dureePret} tours. Réputation gagnée : jusqu’à +5 pour une zone en péril ou sous tutelle, +3 pour une zone qui a des blessés après un coup dur, +1 sinon. Le plein est atteint avec 3 agents ou 7,5 k€ (1 agent vaut 2,5 k€), et une aide plus large rapporte jusqu’à 40 % de plus ; une petite aide rapporte moins.</p>
-    <div class="col" style="gap:4px"><span class="tiny muted" style="font-weight:700;text-transform:uppercase;letter-spacing:.6px">Zones en difficulté</span>
+    <div class="col" style="gap:4px"><span class="tiny muted" style="font-weight:700">Zones en difficulté</span>
       ${enDiff.length ? enDiff.map(({ z, s }) => `<div class="between small" style="gap:8px"><span>${zoneName(z)} <span class="${s.cls}" style="font-weight:700">· ${s.t}</span><br><span class="tiny muted">${esc(s.d)}</span></span><span class="pill ${s.cls === 'bad' ? 'red' : 'amber'}">jusqu’à +${gainEntraide(s.bonus, AIDE.budgetMax, AIDE.agentsMax)} rép.</span></div>`).join('') : '<span class="small muted">Aucune pour l’instant. Une zone passe « en péril » quand son budget tombe sous −15 k€, qu’il lui reste moins de 8 agents disponibles ou que son moral passe sous 10.</span>'}
     </div>
     <label class="field">Zone aidée<select class="text" data-change="aide-cible" style="min-height:44px;font-size:14px"><option value="">Personne</option>

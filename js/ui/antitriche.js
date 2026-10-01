@@ -7,7 +7,7 @@ const enEnigme = () => S.route === 'quete' && S.questMode !== 'train';
 
 // Visage moqueur original (dessiné ici, pas un mème existant).
 const VISAGE = `<svg viewBox="0 0 120 120" width="140" height="140" aria-hidden="true">
-  <circle cx="60" cy="60" r="54" fill="#F2B544" stroke="#1A1204" stroke-width="4"/>
+  <circle cx="60" cy="60" r="54" fill="#FFB23F" stroke="#1A1204" stroke-width="4"/>
   <path d="M30 44q10-10 22 0" fill="none" stroke="#1A1204" stroke-width="5" stroke-linecap="round"/>
   <path d="M68 40q12-6 22 4" fill="none" stroke="#1A1204" stroke-width="5" stroke-linecap="round"/>
   <circle cx="42" cy="54" r="5" fill="#1A1204"/><circle cx="80" cy="52" r="5" fill="#1A1204"/>

@@ -11,8 +11,8 @@ import { secteurOuvert } from '../engine/constants.js';
 import { milieuDe } from '../engine/nondroit.js';
 
 const C = {
-  terre: '#141C29', campagne: '#10161F', ilot: '#172131', rue: '#223049', avenue: '#2B3B57', eau: '#0A1328', rive: '#C9D6E6',
-  parc: '#163C3D', parcFonce: '#123233', axe: '#5874A0', axeBord: '#0C1320', texte: '#EEF3F8', quartier: '#7C8DA6',
+  terre: '#11172C', campagne: '#0D1224', ilot: '#182039', rue: '#252F52', avenue: '#2F3C66', eau: '#0A1030', rive: '#C9D3EE',
+  parc: '#15393F', parcFonce: '#11302F', axe: '#6276B0', axeBord: '#0B1022', texte: '#EEF1FA', quartier: '#8290B4',
 };
 const gradeIdx = (ps) => GRADES.indexOf(gradeFor(ps));
 const pseudoDe = (uid) => (S.players && S.players[uid] && S.players[uid].pseudo) || '';
@@ -78,9 +78,9 @@ function coucheNonDroit(T, st, echelle, { sel = null, chiffres = true } = {}) {
     let inner;
     if (s.coeur) {
       const ouvert = secteurOuvert(nd, k);
-      inner = `<circle r="9.5" fill="${repris ? '#2E8F5E' : '#8E1F24'}" stroke="#0B1119" stroke-width="1.4"/>${ouvert || repris ? ICONE_QG : ICONE_CADENAS}`;
+      inner = `<circle r="9.5" fill="${repris ? '#2E8F5E' : '#8E1F24'}" stroke="#0C1124" stroke-width="1.4"/>${ouvert || repris ? ICONE_QG : ICONE_CADENAS}`;
     } else if (repris) {
-      inner = '<circle r="6.5" fill="#2E8F5E" stroke="#0B1119" stroke-width="1.2"/><path d="M-3 0l2 2.2L3.2 -2.4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
+      inner = '<circle r="6.5" fill="#2E8F5E" stroke="#0C1124" stroke-width="1.2"/><path d="M-3 0l2 2.2L3.2 -2.4" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>';
     } else inner = '';
     const chiffre = chiffres ? `<text y="${s.coeur ? 19 : inner ? 15 : 3}" text-anchor="middle" class="ndn">${Math.round(s.emprise)}</text>` : '';
     out.push(`<g transform="translate(${f1(c.c[0])} ${f1(c.c[1])}) scale(${f1(echelle)})" style="pointer-events:none">${inner}${chiffre}</g>`);
@@ -107,7 +107,7 @@ export function planNonDroit(st, me, sel = null) {
   const fond = [...autour].map((i) => {
     const z = zoneOf(i);
     const mine = moi && moi.quartiers.includes(i);
-    return `<polygon points="${pts(T.cells[i].poly)}" fill="${z ? C.ilot : C.campagne}"/>${z ? `<polygon points="${pts(T.cells[i].poly)}" fill="${esc(z.couleur)}" fill-opacity="${mine ? 0.45 : 0.22}" stroke="${mine ? '#F2B544' : esc(z.couleur)}" stroke-opacity="${mine ? 0.95 : 0.4}" stroke-width="${mine ? 2 : 0.8}" vector-effect="non-scaling-stroke"/>` : ''}`;
+    return `<polygon points="${pts(T.cells[i].poly)}" fill="${z ? C.ilot : C.campagne}"/>${z ? `<polygon points="${pts(T.cells[i].poly)}" fill="${esc(z.couleur)}" fill-opacity="${mine ? 0.45 : 0.22}" stroke="${mine ? '#FFB23F' : esc(z.couleur)}" stroke-opacity="${mine ? 0.95 : 0.4}" stroke-width="${mine ? 2 : 0.8}" vector-effect="non-scaling-stroke"/>` : ''}`;
   }).join('');
   // Noms des zones qui bordent : une étiquette par zone, sur son quartier le plus proche du centre.
   const vus = new Set();
@@ -123,9 +123,9 @@ export function planNonDroit(st, me, sel = null) {
     <defs>${ND_DEFS}</defs>
     <style>
       text{pointer-events:none}
-      .ndn{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:9px;fill:#fff;paint-order:stroke;stroke:#0B1119;stroke-width:2.6px}
-      .ndq{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:${f1(5.4 * echelle)}px;fill:#F3D9D9;letter-spacing:.6px;paint-order:stroke;stroke:#0B1119;stroke-width:2px}
-      .ndz{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:${f1(8 * echelle)}px;letter-spacing:.8px;paint-order:stroke;stroke:#0B1119;stroke-width:2.6px}
+      .ndn{font-family:'Instrument Sans',monospace;font-weight:700;font-size:9px;fill:#fff;paint-order:stroke;stroke:#0C1124;stroke-width:2.6px}
+      .ndq{font-family:'Instrument Sans',sans-serif;font-weight:700;font-size:${f1(5.4 * echelle)}px;fill:#F3D9D9;letter-spacing:.6px;paint-order:stroke;stroke:#0C1124;stroke-width:2px}
+      .ndz{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:${f1(8 * echelle)}px;letter-spacing:.8px;paint-order:stroke;stroke:#0C1124;stroke-width:2.6px}
     </style>
     ${fond}${coucheNonDroit(T, st, echelle, { sel })}${nomsND}${noms}
   </svg>`;
@@ -247,11 +247,11 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
     // Repères : point chaud annoncé (flamme) et patrouilles envoyées (écusson bleu avec le nombre d'agents).
     const at = (i, dx, dy, inner) => { const c = T.cells[i].c; return `<g transform="translate(${f1(c[0] + dx * echelle)} ${f1(c[1] + dy * echelle)}) scale(${f1(echelle)})" style="pointer-events:none">${inner}</g>`; };
     if (pc && moi.quartiers.includes(Number(pc.cell))) {
-      reperesQ += at(Number(pc.cell), -9, -9, `<circle r="8" fill="#E0625A" stroke="#0B1119" stroke-width="1.4"><animate attributeName="r" values="7;9;7" dur="1.6s" repeatCount="indefinite"/></circle><path d="M0 -5c2.6 2.4 3.6 4.2 3.6 6a3.6 3.6 0 0 1-7.2 0c0-1.2.6-2.4 1.6-3.3.2 1.2.8 1.8 1.4 1.8C-.6 -.6-.8 -3 0 -5z" fill="#fff"/>`);
+      reperesQ += at(Number(pc.cell), -9, -9, `<circle r="8" fill="#E0625A" stroke="#0C1124" stroke-width="1.4"><animate attributeName="r" values="7;9;7" dur="1.6s" repeatCount="indefinite"/></circle><path d="M0 -5c2.6 2.4 3.6 4.2 3.6 6a3.6 3.6 0 0 1-7.2 0c0-1.2.6-2.4 1.6-3.3.2 1.2.8 1.8 1.4 1.8C-.6 -.6-.8 -3 0 -5z" fill="#fff"/>`);
     }
     for (const [k, a] of Object.entries(pat)) {
       if (!a || !moi.quartiers.includes(Number(k))) continue;
-      reperesQ += at(Number(k), 9, 8, `<path d="M0 -8l7 2.6v4.4c0 4.4-3.1 7-7 8.8-3.9-1.8-7-4.4-7-8.8v-4.4z" fill="#5AB0F0" stroke="#0B1119" stroke-width="1.3"/><text y="3.4" text-anchor="middle" style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:9px;fill:#0B1119">${a}</text>`);
+      reperesQ += at(Number(k), 9, 8, `<path d="M0 -8l7 2.6v4.4c0 4.4-3.1 7-7 8.8-3.9-1.8-7-4.4-7-8.8v-4.4z" fill="#63B0FF" stroke="#0C1124" stroke-width="1.3"/><text y="3.4" text-anchor="middle" style="font-family:'Instrument Sans',monospace;font-weight:700;font-size:9px;fill:#0C1124">${a}</text>`);
     }
   }
 
@@ -271,11 +271,11 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
     .filter((c) => occupe.every((o) => (o[0] - c.c[0]) ** 2 + (o[1] - c.c[1]) ** 2 > (24 * echelle) ** 2))
     .map((c) => `<text x="${f1(c.c[0])}" y="${f1(c.c[1])}" text-anchor="middle" class="ql">${esc(c.nom.toUpperCase())}</text>`).join('');
   const sitesSvg = sitesPos.map(({ z, s, c }) => `<g transform="translate(${f1(c.c[0])} ${f1(c.c[1])}) scale(${f1(echelle)})"><title>${esc(s.nom)} (${esc(s.type)}) · ZP ${esc(z.code)} ${esc(z.nom)}</title>
-      <circle r="11" fill="${s.couleur}" fill-opacity=".22"/><circle r="8" fill="${s.couleur}" stroke="#0B1119" stroke-width="1.2"/><g transform="scale(.8)">${ICONES[s.id] || ''}</g>
+      <circle r="11" fill="${s.couleur}" fill-opacity=".22"/><circle r="8" fill="${s.couleur}" stroke="#0C1124" stroke-width="1.2"/><g transform="scale(.8)">${ICONES[s.id] || ''}</g>
       ${dense ? '' : `<text y="18" text-anchor="middle" class="sl" style="fill:${s.couleur}">${esc(s.nom)}</text>`}</g>`).join('');
 
   // Repères du jeu : HP, affaires, opération en cours, événement collectif.
-  const pin = (c, inner) => `<g transform="translate(${f1(c.c[0] + 10 * echelle)} ${f1(c.c[1] - 14 * echelle)}) scale(${f1(echelle)})"><path d="M0 9c-5-5.5-8-8.6-8-12.4a8 8 0 0 1 16 0C8 .4 5 3.5 0 9z" fill="#F2B544" stroke="#0B1119" stroke-width="1.5"/><text y="-.6" text-anchor="middle" class="pn">${inner}</text></g>`;
+  const pin = (c, inner) => `<g transform="translate(${f1(c.c[0] + 10 * echelle)} ${f1(c.c[1] - 14 * echelle)}) scale(${f1(echelle)})"><path d="M0 9c-5-5.5-8-8.6-8-12.4a8 8 0 0 1 16 0C8 .4 5 3.5 0 9z" fill="#FFB23F" stroke="#0C1124" stroke-width="1.5"/><text y="-.6" text-anchor="middle" class="pn">${inner}</text></g>`;
   const pinsAff = st.affaires.map((a, k) => {
     const tz = T.zones.find((x) => x.uid === a.zone);
     const i = tz ? tz.quartiers[Math.abs(hashString(a.id)) % tz.quartiers.length] : Math.abs(hashString(a.id)) % T.cells.length;
@@ -285,12 +285,12 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
   const opPin = op && moi ? (() => {
     const s = op.site ? sitesPos.find((p) => p.z.uid === me.uid) : null;
     const c = s ? s.c : T.cells[moi.quartiers[Math.abs(hashString(op.id || op.titre)) % moi.quartiers.length]];
-    return `<g transform="translate(${f1(c.c[0])} ${f1(c.c[1])}) scale(${f1(echelle)})"><circle r="14" fill="none" stroke="#F0736A" stroke-width="2"><animate attributeName="r" values="9;22;9" dur="2s" repeatCount="indefinite"/><animate attributeName="stroke-opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/></circle><title>${esc(op.titre)}</title></g>`;
+    return `<g transform="translate(${f1(c.c[0])} ${f1(c.c[1])}) scale(${f1(echelle)})"><circle r="14" fill="none" stroke="#FF6E6A" stroke-width="2"><animate attributeName="r" values="9;22;9" dur="2s" repeatCount="indefinite"/><animate attributeName="stroke-opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/></circle><title>${esc(op.titre)}</title></g>`;
   })() : '';
-  const hp = moi ? (() => { const c = T.cells[moi.capitale]; return `<g transform="translate(${f1(c.c[0] - 16 * echelle)} ${f1(c.c[1] + 16 * echelle)}) scale(${f1(echelle)})"><title>Ton hôtel de police</title><circle r="8.5" fill="#0B1119" stroke="#F2B544" stroke-width="1.5"/><path d="M0 -5l4.5 1.7v2.8c0 2.8-2 4.5-4.5 5.6-2.5-1.1-4.5-2.8-4.5-5.6v-2.8z" fill="#F2B544"/></g>`; })() : '';
+  const hp = moi ? (() => { const c = T.cells[moi.capitale]; return `<g transform="translate(${f1(c.c[0] - 16 * echelle)} ${f1(c.c[1] + 16 * echelle)}) scale(${f1(echelle)})"><title>Ton hôtel de police</title><circle r="8.5" fill="#0C1124" stroke="#FFB23F" stroke-width="1.5"/><path d="M0 -5l4.5 1.7v2.8c0 2.8-2 4.5-4.5 5.6-2.5-1.1-4.5-2.8-4.5-5.6v-2.8z" fill="#FFB23F"/></g>`; })() : '';
   const mx = vx + vw / 2, my = vy + vh / 2;
   const place = (poss.length ? poss.map((i) => T.cells[i]) : T.cells).reduce((b, c) => ((c.c[0] - mx) ** 2 + (c.c[1] - my) ** 2 < (b.c[0] - mx) ** 2 + (b.c[1] - my) ** 2 ? c : b));
-  const star = st.evenement ? `<g transform="translate(${f1(place.c[0])} ${f1(place.c[1] + 20 * echelle)}) scale(${f1(echelle)})"><title>${esc(st.evenement.titre)}</title><circle r="9" fill="#E9EEF3" stroke="#0B1119" stroke-width="1.5"/><path d="M0 -5.5l1.6 3.4 3.7.5-2.7 2.6.7 3.7L0 3 -3.3 4.7l.7-3.7-2.7-2.6 3.7-.5z" fill="#0B1119"/></g>` : '';
+  const star = st.evenement ? `<g transform="translate(${f1(place.c[0])} ${f1(place.c[1] + 20 * echelle)}) scale(${f1(echelle)})"><title>${esc(st.evenement.titre)}</title><circle r="9" fill="#EDF0FA" stroke="#0C1124" stroke-width="1.5"/><path d="M0 -5.5l1.6 3.4 3.7.5-2.7 2.6.7 3.7L0 3 -3.3 4.7l.7-3.7-2.7-2.6 3.7-.5z" fill="#0C1124"/></g>` : '';
 
 
   return `<svg viewBox="${vb}" width="100%" role="img" aria-label="Plan du district : ${poss.length} quartiers, ${T.zones.length} zones" style="display:block;border-radius:12px;aspect-ratio:${W}/${H};background:${C.terre}">
@@ -301,19 +301,19 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
     </defs>
     <style>
       text{pointer-events:none}
-      .zl{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:${f1(13 * echelle)}px;fill:${C.texte};letter-spacing:1.2px;paint-order:stroke;stroke:#0B1119;stroke-width:3px}
-      .zc{font-family:'IBM Plex Mono',monospace;font-size:${f1(7.5 * echelle)}px;fill:#AFC0D2;paint-order:stroke;stroke:#0B1119;stroke-width:2.5px}
-      .ql{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:${f1(5.6 * echelle)}px;fill:${C.quartier};letter-spacing:.9px;paint-order:stroke;stroke:${C.terre};stroke-width:2px}
-      .sl{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:${f1(6.4 * echelle)}px;paint-order:stroke;stroke:#0B1119;stroke-width:2.4px}
-      .sh{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:7.5px;fill:#fff}
-      .ndn{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:8px;fill:#fff;paint-order:stroke;stroke:#0B1119;stroke-width:2.4px}
-      .ndt{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:${f1(8.5 * echelle)}px;fill:#F08A8A;letter-spacing:1.4px;paint-order:stroke;stroke:#0B1119;stroke-width:2.6px}
-      .pn{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:8px;fill:#1A1204}
+      .zl{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:${f1(13 * echelle)}px;fill:${C.texte};letter-spacing:1.2px;paint-order:stroke;stroke:#0C1124;stroke-width:3px}
+      .zc{font-family:'Instrument Sans',monospace;font-size:${f1(7.5 * echelle)}px;fill:#AFC0D2;paint-order:stroke;stroke:#0C1124;stroke-width:2.5px}
+      .ql{font-family:'Instrument Sans',sans-serif;font-weight:600;font-size:${f1(5.6 * echelle)}px;fill:${C.quartier};letter-spacing:.9px;paint-order:stroke;stroke:${C.terre};stroke-width:2px}
+      .sl{font-family:'Instrument Sans',sans-serif;font-weight:700;font-size:${f1(6.4 * echelle)}px;paint-order:stroke;stroke:#0C1124;stroke-width:2.4px}
+      .sh{font-family:'Instrument Sans',sans-serif;font-weight:700;font-size:7.5px;fill:#fff}
+      .ndn{font-family:'Instrument Sans',monospace;font-weight:700;font-size:8px;fill:#fff;paint-order:stroke;stroke:#0C1124;stroke-width:2.4px}
+      .ndt{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:${f1(8.5 * echelle)}px;fill:#F08A8A;letter-spacing:1.4px;paint-order:stroke;stroke:#0C1124;stroke-width:2.6px}
+      .pn{font-family:'Instrument Sans',monospace;font-weight:700;font-size:8px;fill:#1A1204}
       .av line{vector-effect:non-scaling-stroke}
       .lis line{vector-effect:non-scaling-stroke;stroke-width:2.6;stroke-opacity:.85;stroke-linecap:round}
       .lim line{vector-effect:non-scaling-stroke;stroke:#AFC0D2;stroke-opacity:.55;stroke-width:1.1;stroke-dasharray:3.5 2.5}
       .lim line.ld{stroke:#7C8DA6;stroke-opacity:.8;stroke-width:1.4;stroke-dasharray:none}
-      .lim line.lm{stroke:#F2B544;stroke-opacity:.95;stroke-width:2;stroke-dasharray:none}
+      .lim line.lm{stroke:#FFB23F;stroke-opacity:.95;stroke-width:2;stroke-dasharray:none}
     </style>
     <g clip-path="url(#cadre)">
       <rect x="${T.box[0]}" y="${T.box[1]}" width="${T.box[2] - T.box[0]}" height="${T.box[3] - T.box[1]}" fill="${C.campagne}"/>

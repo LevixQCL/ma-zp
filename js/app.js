@@ -2,7 +2,7 @@
 import { CONFIG } from './config.js';
 import { createBackend } from './data/backend.js';
 import { resolvePending } from './data/resolver.js';
-import { S, toast, myZone, esc } from './ui/common.js';
+import { S, toast, myZone, esc, cielDuMoment } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil } from './ui/hp.js';
 import { ouvrirAide } from './ui/aide.js';
@@ -1002,6 +1002,8 @@ async function boot() {
   setInterval(() => {
     const el = document.getElementById('countdown');
     if (el && S.state) el.textContent = formatCountdown(S.state.nextDeadline - Date.now());
+    const ciel = el && el.closest('.soir');
+    if (ciel && new Date().getSeconds() === 0) { const c = cielDuMoment(); ciel.style.setProperty('--crep', c.crep); ciel.style.setProperty('--nuit', c.nuit); }
     // Incidents du jour : comptes à rebours, et HP redessinée quand un incident tombe ou se ferme.
     if (S.state && S.user && myZone()) {
       majComptesIncidents();

@@ -76,7 +76,7 @@ export async function afficherQr(code) {
   try {
     const QR = await chargerQr();
     const zone = wrap.querySelector('#qr-zone'); zone.innerHTML = '';
-    new QR(zone, { text: lienInvitation(code), width: 200, height: 200, colorDark: '#0B1119', colorLight: '#ffffff' });
+    new QR(zone, { text: lienInvitation(code), width: 200, height: 200, colorDark: '#0C1124', colorLight: '#ffffff' });
   } catch (e) {
     wrap.querySelector('#qr-zone').innerHTML = '<span class="small" style="color:#333">QR code indisponible hors connexion. Utilise « Partager le lien ».</span>';
   }

@@ -10,11 +10,11 @@ export const BLASONS = {
   ancre: { nom: 'Ancre', motif: '<circle cx="0" cy="-5" r="1.8" fill="none" stroke="#fff" stroke-width="1.6"/><path d="M0-3v10M-3-.5h6M-6 2c1 3.5 3.2 5 6 5s5-1.5 6-5" stroke="#fff" stroke-width="1.8" fill="none" stroke-linecap="round"/>' },
 };
 
-export function blasonSvg(id, couleur = '#5AB0F0', size = 28, label = '') {
+export function blasonSvg(id, couleur = '#63B0FF', size = 28, label = '') {
   const b = BLASONS[id];
   if (!b) return '';
   return `<svg width="${size}" height="${Math.round(size * 1.15)}" viewBox="-10 -11 20 23" role="img" aria-label="${label || `Blason ${b.nom}`}" style="flex-shrink:0">
-    <path d="M0 -10l9 3v6c0 6-4 10-9 12-5-2-9-6-9-12v-6z" fill="${couleur}" stroke="#0B1119" stroke-width="1"/>
+    <path d="M0 -10l9 3v6c0 6-4 10-9 12-5-2-9-6-9-12v-6z" fill="${couleur}" stroke="#0C1124" stroke-width="1"/>
     <g fill="#fff">${b.motif}</g></svg>`;
 }
 

@@ -185,9 +185,9 @@ function dessinerAuto(x, y, a, retourne) {
     : `<rect x="${ox + 3}" y="${oy + t.h * 0.38}" width="${t.w - 6}" height="${t.h * 0.34}" rx="3" fill="#000" fill-opacity=".14"/>`;
   // Lunette arrière (petite) : permet de voir dans quel sens la voiture est garée.
   const lunette = a.type === 'camionnette' ? '' : `<rect x="${ox + 5}" y="${oy + t.h * 0.8}" width="${t.w - 10}" height="${t.h * 0.1}" rx="1.5" fill="#1B2A3A" fill-opacity=".85"/>`;
-  return `<g${bas ? ` transform="rotate(180 ${x} ${y})"` : ''}><rect x="${ox}" y="${oy}" width="${t.w}" height="${t.h}" rx="${a.type === 'camionnette' ? 3 : 6}" fill="${c}" stroke="#0B1119" stroke-width="1.2"/>
+  return `<g${bas ? ` transform="rotate(180 ${x} ${y})"` : ''}><rect x="${ox}" y="${oy}" width="${t.w}" height="${t.h}" rx="${a.type === 'camionnette' ? 3 : 6}" fill="${c}" stroke="#0C1124" stroke-width="1.2"/>
     <rect x="${ox + 3}" y="${oy + 5}" width="${t.w - 6}" height="${a.type === 'camionnette' ? 7 : t.h * 0.2}" rx="2" fill="#1B2A3A"/>${toit}${lunette}
-    ${a.barres ? `<path d="M${ox + 4} ${oy + t.h * 0.42}h${t.w - 8}M${ox + 4} ${oy + t.h * 0.6}h${t.w - 8}" stroke="#0B1119" stroke-width="1.4"/>` : ''}</g>`;
+    ${a.barres ? `<path d="M${ox + 4} ${oy + t.h * 0.42}h${t.w - 8}M${ox + 4} ${oy + t.h * 0.6}h${t.w - 8}" stroke="#0C1124" stroke-width="1.4"/>` : ''}</g>`;
 }
 
 function photoSvg(places, cols, miroir, heure, nuit) {
@@ -206,7 +206,7 @@ function photoSvg(places, cols, miroir, heure, nuit) {
   // De nuit : éclairage orangé des lampadaires, les teintes se ressemblent davantage.
   if (nuit) s += `<rect width="${W}" height="${H}" fill="#0B1426" fill-opacity=".42"/><rect width="${W}" height="${H}" fill="#F2A33A" fill-opacity=".10"/>`;
   s += num;
-  s += `<text x="${W - 6}" y="${H - 6}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="9" fill="#F2B544">${heure}</text></svg>`;
+  s += `<text x="${W - 6}" y="${H - 6}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="9" fill="#FFB23F">${heure}</text></svg>`;
   return s;
 }
 
@@ -327,10 +327,10 @@ function filature(rng, diff) {
     const cx = (v) => M + v * S;
     let svg = `<svg viewBox="0 0 ${W} ${W}" width="100%" role="img" aria-label="Plan du quartier" style="display:block;border-radius:8px;background:#172131">`;
     for (let k = 0; k < N; k++) svg += `<line x1="${cx(0)}" y1="${cx(k)}" x2="${cx(N - 1)}" y2="${cx(k)}" stroke="#3B4E6E" stroke-width="7" stroke-linecap="round"/><line x1="${cx(k)}" y1="${cx(0)}" x2="${cx(k)}" y2="${cx(N - 1)}" stroke="#3B4E6E" stroke-width="7" stroke-linecap="round"/>`;
-    for (const l of rng.shuffle(lieux)) svg += `<circle cx="${cx(l.x)}" cy="${cx(l.y)}" r="6" fill="#F2B544" stroke="#0B1119" stroke-width="1.5"/><text x="${cx(l.x)}" y="${cx(l.y) - 10}" text-anchor="middle" font-family="IBM Plex Sans,sans-serif" font-weight="600" font-size="9.5" fill="#EEF3F8" paint-order="stroke" stroke="#172131" stroke-width="3">${l.nom.replace(/^l’|^la |^le /, '').replace(/^./, (c) => c.toUpperCase())}</text>`;
+    for (const l of rng.shuffle(lieux)) svg += `<circle cx="${cx(l.x)}" cy="${cx(l.y)}" r="6" fill="#FFB23F" stroke="#0C1124" stroke-width="1.5"/><text x="${cx(l.x)}" y="${cx(l.y) - 10}" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="600" font-size="9.5" fill="#EEF3F8" paint-order="stroke" stroke="#172131" stroke-width="3">${l.nom.replace(/^l’|^la |^le /, '').replace(/^./, (c) => c.toUpperCase())}</text>`;
     const ang = [0, 90, 180, 270][start.d];
-    svg += `<g transform="translate(${cx(start.x)} ${cx(start.y)}) rotate(${ang})"><circle r="9" fill="#5AB0F0" stroke="#0B1119" stroke-width="1.5"/><path d="M0 -6L4.5 3H-4.5Z" fill="#0B1119"/></g>`;
-    svg += `<text x="${W - 8}" y="14" text-anchor="end" font-family="IBM Plex Sans,sans-serif" font-size="9" fill="#9FB0C0">N ↑</text></svg>`;
+    svg += `<g transform="translate(${cx(start.x)} ${cx(start.y)}) rotate(${ang})"><circle r="9" fill="#63B0FF" stroke="#0C1124" stroke-width="1.5"/><path d="M0 -6L4.5 3H-4.5Z" fill="#0C1124"/></g>`;
+    svg += `<text x="${W - 8}" y="14" text-anchor="end" font-family="Instrument Sans,sans-serif" font-size="9" fill="#9FB0C0">N ↑</text></svg>`;
     const phrase = (e, k) => {
       const n = e.pas === 1 ? 'jusqu’au carrefour suivant' : 'deux carrefours plus loin';
       if (k === 0) return `Il part tout droit, ${n}.`;

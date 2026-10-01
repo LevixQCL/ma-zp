@@ -1,14 +1,15 @@
 // Écrans de connexion et d'inscription.
-import { S, esc, icon } from './common.js';
+import { S, esc, icon, skyline, cielStyle } from './common.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
 
 export function renderLogin() {
   const demo = S.backend.mode === 'demo';
-  return `<main class="center-screen">
-    <div class="col" style="gap:6px;align-items:flex-start">
-      <span style="color:var(--amber)">${icon('shield', 44)}</span>
-      <h1 class="brand" style="font-size:46px">Ma ZP</h1>
-      <p class="sub" style="font-size:14px">District Delta · gestion, stratégie et enquêtes à résoudre</p>
+  return `<main class="center-screen accueil">
+    <div class="accueil-ciel soir-ciel" aria-hidden="true" style="${cielStyle()}"><i class="soir-astre"></i>${skyline()}</div>
+    <div class="col accueil-titre">
+      <h1 class="brand">Ma ZP</h1>
+      <p class="accueil-devise">Gère ta zone. Coopère avec tes voisins. Démasque le coupable.</p>
+      <p class="sub">District Delta, un jeu de gestion et d’enquête entre collègues.</p>
     </div>
     ${S.invitation ? `<div class="card amber"><p class="small" style="margin:0;color:var(--amber-soft)"><strong style="color:var(--text)">Tu as été invité dans une partie.</strong> Connecte-toi ou crée un compte : tu y entreras directement (code ${esc(S.invitation)}).</p></div>` : ''}
     ${demo ? `

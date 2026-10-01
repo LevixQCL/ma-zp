@@ -65,7 +65,7 @@ function policeSVG(W){
   <rect x="5" y="9" width="${W-10}" height="82" rx="18" fill="url(#${id})"/><g clip-path="url(#c${id})">${band}</g>
   <path d="M${W*.8} 24 L ${W*.87} 18 Q ${W*.9} 50 ${W*.87} 82 L ${W*.8} 76 Z" fill="${GLASS}"/>
   <rect x="${W*.62}" y="36" width="${W*.13}" height="28" rx="6" fill="#20324f"/><rect class="beacon" x="${W*.63}" y="38" width="${W*.055}" height="24" rx="4" fill="#3d8bff"/><rect class="beacon" style="animation-delay:.5s" x="${W*.69}" y="38" width="${W*.055}" height="24" rx="4" fill="#3d8bff"/>
-  <text x="${W*.33}" y="57" text-anchor="middle" font-family="Manrope,system-ui,sans-serif" font-weight="800" font-size="19" letter-spacing="3" fill="#1d4ea3">POLICE</text>${lamps(W)}`;
+  <text x="${W*.33}" y="57" text-anchor="middle" font-family="Instrument Sans,system-ui,sans-serif" font-weight="800" font-size="19" letter-spacing="3" fill="#1d4ea3">POLICE</text>${lamps(W)}`;
 }
 function vanSVG(W,col,truck){
   const [id,g]=grad(col);
@@ -86,7 +86,7 @@ const TOW=`<svg viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="tr
 <rect x="2" y="10" width="132" height="80" rx="6" fill="#59616d"/>
 <path d="M28 18v64M52 18v64M76 18v64M100 18v64" stroke="#6b7480" stroke-width="2"/>
 <rect x="2" y="10" width="18" height="80" rx="4" fill="url(#hz)"/>
-<text x="74" y="56" text-anchor="middle" font-family="Manrope,system-ui,sans-serif" font-weight="800" font-size="11.5" letter-spacing=".8" fill="#eef1f5">DÉPANNAGE</text>
+<text x="74" y="56" text-anchor="middle" font-family="Instrument Sans,system-ui,sans-serif" font-weight="800" font-size="11.5" letter-spacing=".8" fill="#eef1f5">DÉPANNAGE</text>
 <rect x="112" y="40" width="16" height="20" rx="3" fill="#2b3038"/>
 <rect x="134" y="6" width="64" height="88" rx="16" fill="url(#cabg)"/>
 <rect x="132" y="0" width="12" height="9" rx="3" fill="#b86a05"/><rect x="132" y="91" width="12" height="9" rx="3" fill="#b86a05"/>

@@ -8,28 +8,28 @@
 <title>Dossier à relire</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400..700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
 <style>
 /* Layout: one-screen thumb game. Compact header (service badge, title, timer ring), game stage, floating glass cards.
    Identity: night shift. Deep blue-ink ground lit from above by the service colour; glass surfaces; one accent per service. */
 :root{
-  --bg:#0b0f17; --bg-2:#111827; --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.08);
+  --bg:#0c1124; --bg-2:#141b33; --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.08);
   --stroke:rgba(255,255,255,.09); --stroke-2:rgba(255,255,255,.16);
   --ink:#eef2f8; --mute:#8f9bb1; --faint:#5d6880;
-  --accent:#f2b544; --accent-ink:#1d1405; --accent-soft:rgba(242,181,68,.16);
+  --accent:#ffb23f; --accent-ink:#241400; --accent-soft:rgba(255,178,63,.16);
   --ok:#46d98a; --ok-soft:rgba(70,217,138,.16); --bad:#ff5d5d; --bad-soft:rgba(255,93,93,.16);
-  --scrim:rgba(5,8,13,.72);
+  --scrim:rgba(6,9,22,.74);
   --paper:#f4f1e8; --paper-ink:#22252b; --paper-mute:#6b6f77;
   /* compat (anciens noms) */
-  --panel:#141b28; --panel-2:#1b2333; --line:var(--stroke); --gold:var(--accent); --brass:var(--accent); --steel:#b7c1d1;
+  --panel:#141b33; --panel-2:#1c2442; --line:var(--stroke); --gold:var(--accent); --brass:var(--accent); --steel:#b7c1d1;
   --f-disp:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
-  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-doc:"IBM Plex Serif",Georgia,"Times New Roman",serif;
   --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
   --r-lg:22px; --r-md:14px; --r-sm:10px;
   color-scheme:dark;
 }
-body.svc-ser{--accent:#f2b544;--accent-ink:#1d1405;--accent-soft:rgba(242,181,68,.16)}
+body.svc-ser{--accent:#ffb23f;--accent-ink:#241400;--accent-soft:rgba(255,178,63,.16)}
 body.svc-int{--accent:#ff7a59;--accent-ink:#260b03;--accent-soft:rgba(255,122,89,.16)}
 body.svc-rou{--accent:#c9ec4f;--accent-ink:#161d02;--accent-soft:rgba(201,236,79,.15)}
 body.svc-pro{--accent:#62b0ff;--accent-ink:#04182c;--accent-soft:rgba(98,176,255,.16)}
@@ -69,7 +69,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .stage{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
 
 /* coach */
-.coach{display:flex;gap:10px;align-items:flex-start;background:rgba(17,24,39,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:var(--r-md);padding:11px 12px;font-size:14px;line-height:1.45}
+.coach{display:flex;gap:10px;align-items:flex-start;background:rgba(20,27,51,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:var(--r-md);padding:11px 12px;font-size:14px;line-height:1.45}
 .coach .av{flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font:800 12px var(--f-disp)}
 .coach .body{flex:1;min-width:0}
 .coach b{color:var(--accent);font-weight:700}
@@ -78,7 +78,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .coach .skip{cursor:pointer;color:var(--mute);background:none;border:0;font:600 12px var(--f-body);padding:2px 0}
 
 /* toast */
-.toast{position:fixed;left:50%;top:84px;transform:translate(-50%,-6px);display:flex;align-items:center;gap:8px;font:700 15px var(--f-body);padding:9px 16px;border-radius:999px;background:rgba(17,24,39,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--stroke-2);box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;transition:opacity .15s,transform .15s;pointer-events:none;white-space:nowrap;z-index:4}
+.toast{position:fixed;left:50%;top:84px;transform:translate(-50%,-6px);display:flex;align-items:center;gap:8px;font:700 15px var(--f-body);padding:9px 16px;border-radius:999px;background:rgba(20,27,51,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--stroke-2);box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;transition:opacity .15s,transform .15s;pointer-events:none;white-space:nowrap;z-index:4}
 .toast::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .toast.ok{color:var(--ok)} .toast.bad{color:var(--bad)} .toast.info{color:var(--accent)}

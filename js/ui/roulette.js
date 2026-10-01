@@ -5,7 +5,7 @@ import { TOUS_SKINS, SKINS, tirerSkin, skinDe, earlyBirdEligible } from '../engi
 import { ouvrirPanneau, sceneZone, monDecorPublic } from './logistique.js';
 
 const COURT = { friterie: 'Friterie', chateau: 'Fort Delta', orbitale: 'Orbitale', chalet: 'Chalet', gateau: 'Gâteau', hangar: 'Dirigeable', grange: 'Grange', retro: 'Rétro 80', lavage: 'Car-wash', conteneurs: 'Conteneurs', roulotte: 'Roulotte', serre: 'Serre' };
-const TEINTE = { batiment: ['#F2B544', '#C98F1E'], garage: ['#5AB0F0', '#2F6FB5'], aile: ['#4CC38A', '#2F8F5E'] };
+const TEINTE = { batiment: ['#FFB23F', '#C98F1E'], garage: ['#63B0FF', '#2F6FB5'], aile: ['#3DD39A', '#2F8F5E'] };
 const N = TOUS_SKINS.length, SEG = 360 / N;
 
 /** La roulette doit-elle s'afficher ? (appelée après l'affichage de l'HP) */
@@ -25,11 +25,11 @@ function roueSvg() {
     const a0 = i * SEG, a1 = a0 + SEG, [x0, y0] = pt(a0, R), [x1, y1] = pt(a1, R), mid = a0 + SEG / 2;
     const col = TEINTE[sk.cat][i % 2];
     const [tx, ty] = pt(mid, R * 0.62);
-    return `<path d="M${c} ${c} L${x0.toFixed(1)} ${y0.toFixed(1)} A${R} ${R} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)} Z" fill="${col}" stroke="#0B1119" stroke-width="1.5"/>
-      <text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" transform="rotate(${(mid - 90).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)})" text-anchor="middle" dominant-baseline="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="13" fill="#0B1119">${esc(COURT[sk.id] || sk.nom)}</text>`;
+    return `<path d="M${c} ${c} L${x0.toFixed(1)} ${y0.toFixed(1)} A${R} ${R} 0 0 1 ${x1.toFixed(1)} ${y1.toFixed(1)} Z" fill="${col}" stroke="#0C1124" stroke-width="1.5"/>
+      <text x="${tx.toFixed(1)}" y="${ty.toFixed(1)}" transform="rotate(${(mid - 90).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)})" text-anchor="middle" dominant-baseline="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="13" fill="#0C1124">${esc(COURT[sk.id] || sk.nom)}</text>`;
   }).join('');
-  return `<div class="roue-wrap"><svg viewBox="0 0 260 260" class="roue-svg" aria-hidden="true"><g id="roue-g">${parts}<circle cx="${c}" cy="${c}" r="16" fill="#141D28" stroke="#F2B544" stroke-width="2"/></g></svg>
-    <svg viewBox="0 0 30 26" class="roue-fleche" aria-hidden="true"><path d="M15 26 L2 2 H28 Z" fill="#E9EEF3" stroke="#0B1119" stroke-width="2"/></svg></div>`;
+  return `<div class="roue-wrap"><svg viewBox="0 0 260 260" class="roue-svg" aria-hidden="true"><g id="roue-g">${parts}<circle cx="${c}" cy="${c}" r="16" fill="#141D28" stroke="#FFB23F" stroke-width="2"/></g></svg>
+    <svg viewBox="0 0 30 26" class="roue-fleche" aria-hidden="true"><path d="M15 26 L2 2 H28 Z" fill="#EDF0FA" stroke="#0C1124" stroke-width="2"/></svg></div>`;
 }
 
 export function ouvrirRoulette() {
@@ -40,7 +40,7 @@ export function ouvrirRoulette() {
     ${roueSvg()}
     <div id="roulette-res" aria-live="polite"></div>
     <button type="button" class="btn primary block" data-action="roulette-lancer">Lancer la roulette</button>
-    <div class="row tiny muted" style="gap:10px;justify-content:center"><span><i class="leg" style="background:#F2B544"></i>Hôtel de police</span><span><i class="leg" style="background:#5AB0F0"></i>Garage</span><span><i class="leg" style="background:#4CC38A"></i>Aile des annexes</span></div>
+    <div class="row tiny muted" style="gap:10px;justify-content:center"><span><i class="leg" style="background:#FFB23F"></i>Hôtel de police</span><span><i class="leg" style="background:#63B0FF"></i>Garage</span><span><i class="leg" style="background:#3DD39A"></i>Aile des annexes</span></div>
   </div>`);
 }
 
