@@ -122,7 +122,7 @@ export function estimations() {
   for (const p of z.pressions || []) Object.assign(pr, p.effet);
   const dep = d.depenses || {};
   const cap = {};
-  for (const s of SERVICES) cap[s] = capacite(z, s, eff[s] + (dep.reserve && dep.reserveService === s ? dep.reserve * 0.8 : 0), opts);
+  for (const s of SERVICES) cap[s] = capacite(z, s, eff[s] + (dep.reserve && dep.reserveService === s ? dep.reserve * DEPENSES.reserve.efficacite : 0), opts);
   const crim = Math.max(10, Math.min(95, z.criminalite + (pr.criminalite || 0) - (dep.prevention ? 6 : 0)));
   const attendus = Math.max(1, Math.round(1.5 + crim / 14) + (pr.incidents || 0));
   const couverts = Math.min(attendus, Math.floor(cap.intervention / 1.1));
@@ -152,6 +152,27 @@ function opCouvHtml(e) {
   const pct = Math.round(couverture * 100);
   const cls = couverture >= 0.9 ? 'ok' : couverture >= 0.5 ? 'warn' : 'bad';
   return `<span class="small ${cls}" style="font-weight:700">Dispositif couvert à ${pct} %</span>${manques.length ? `<span class="tiny muted">Il manque : ${manques.map(([s, m]) => `${m} en ${SERVICE_LABELS[s]}`).join(', ')}. Augmente ces services dans l\u2019affectation.</span>` : ''}`;
+}
+
+/**
+ * Agents de réserve, dans l'Affectation : ils renforcent un service pour la journée. On peut alors retirer
+ * autant de ses propres agents de ce service pour les envoyer ailleurs (zone de non-droit, autre service…).
+ */
+function reserveHtml(z, d, e) {
+  const dep = d.depenses || {};
+  const n = dep.reserve || 0;
+  if (sousTutelle(z, S.state.turn)) return '';
+  const s = dep.reserveService || 'intervention';
+  const libres = Math.max(0, e.reste);
+  return `<div class="card tight" style="gap:6px;margin-top:4px;background:var(--surface2)">
+    <div class="between"><span class="col" style="gap:1px"><span style="font-weight:600;font-size:14px">Agents de réserve</span><span class="tiny muted">${fmt1(DEPENSES.reserve.cout)} k€ par agent, pour la journée, efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} % · ${DEPENSES.reserve.max} au plus</span></span>
+      <span class="stepper"><button type="button" data-action="dep-reserve" data-d="-1" aria-label="Un agent de réserve en moins" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="dep-reserve" data-d="1" aria-label="Un agent de réserve en plus" ${n >= DEPENSES.reserve.max ? 'disabled' : ''}>+</button></span></div>
+    ${n ? `<label class="field" style="font-weight:500">Ils prennent la place de tes agents en
+      <select class="text" data-change="dep-service" style="min-height:44px;font-size:14px">${SERVICES.map((s2) => `<option value="${s2}" ${s === s2 ? 'selected' : ''}>${SERVICE_LABELS[s2]}</option>`).join('')}</select></label>
+      ${(d.alloc[s] || 0) > 0 && libres < n ? `<button type="button" class="btn small outline block" data-action="reserve-libere">Libérer ${Math.min(n, d.alloc[s])} de mes agents de ${SERVICE_LABELS[s]}</button>` : ''}
+      <span class="tiny muted">La réserve couvre le service pendant que tes propres agents partent ailleurs : zone de non-droit, renfort, autre service. Payée à 20:00 si le budget le permet.</span>` : ''}
+    ${libres ? `<div class="between" style="gap:8px"><span class="small warn" style="font-weight:600">${libres} agent${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''} à placer</span><span class="row" style="gap:6px"><a class="btn small primary" href="#terrain">Zone de non-droit</a><button type="button" class="btn small ghost" data-action="repartir">Dans les services</button></span></div>` : ''}
+  </div>`;
 }
 
 function statusHtml(e) {
@@ -468,10 +489,7 @@ export function renderOrdres() {
   const decisionHtml = decisionPicker(z, T, d);
 
   const depensesHtml = `<div class="col" style="gap:6px">
-      <div class="between"><span class="col" style="gap:1px"><span style="font-weight:600;font-size:14px">Agents de réserve</span><span class="tiny muted">${esc(DEPENSES.reserve.texte)}</span></span>
-        <span class="stepper"><button type="button" data-action="dep-reserve" data-d="-1" aria-label="Un agent de réserve en moins">−</button><span class="n">${dep.reserve || 0}</span><button type="button" data-action="dep-reserve" data-d="1" aria-label="Un agent de réserve en plus">+</button></span></div>
-      ${dep.reserve ? `<label class="field" style="font-weight:500">Service renforcé
-        <select class="text" data-change="dep-service" style="min-height:44px;font-size:14px">${SERVICES.map((s2) => `<option value="${s2}" ${dep.reserveService === s2 ? 'selected' : ''}>${SERVICE_LABELS[s2]}</option>`).join('')}</select></label>` : ''}
+      <p class="tiny muted" style="margin:0">Agents de réserve : ${dep.reserve ? `<strong>${dep.reserve}</strong> en ${SERVICE_LABELS[dep.reserveService]} (${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€)` : 'aucun'} · ils se règlent dans l’Affectation, plus haut.</p>
     </div>
     <div class="col" style="gap:6px">${depKeys.map((k) => `
       <button type="button" class="choice" data-action="dep-toggle" data-k="${k}" aria-pressed="${!!dep[k]}" style="flex-direction:row;justify-content:space-between;text-align:left">
@@ -515,9 +533,11 @@ export function renderOrdres() {
             <span class="n" style="min-width:34px">${d.alloc[s2]}</span>
             <button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
         <span id="pris-${s2}">${prisHtml(e, s2)}</span>
+        ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny" style="color:var(--amber-soft)">+ ${dep.reserve} agent${dep.reserve > 1 ? 's' : ''} de réserve en renfort (efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} %)</span>` : ''}
         ${S.help && S.help[s2] ? `<p class="tiny" style="margin:2px 0 6px;color:var(--text2);line-height:1.45">${esc(aide(s2, z))}</p>` : ''}
       </div>`).join('')}
       <p class="tiny muted" style="margin:0">Touche + : si aucun agent n’est libre, il est pris dans ton service le plus fourni.</p>
+      ${reserveHtml(z, d, e)}
       <div class="tiles" style="margin-top:2px">
         <div class="tile" style="padding:8px"><span class="l">Incidents couverts</span><span class="mono" style="font-size:14px">${e.couverts} sur ${e.attendus}</span></div>
         <div class="tile" style="padding:8px"><span class="l">Paperasse ce soir</span><span class="mono" style="font-size:14px">${pap(e.pap)} dossiers</span></div>

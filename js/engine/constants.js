@@ -64,7 +64,7 @@ export const gainPrime = (moral) => (moral < 70 ? 4 : moral < 85 ? 2 : 1);
 export const seuilChasse = (z) => (z.infra && z.infra.anpr ? ROULAGE.chasseCameras : ROULAGE.chasse);
 
 export const DEPENSES = {
-  reserve:      { nom: 'Agents de réserve', cout: 1.5, max: 4, texte: '1,5 k€ par agent, pour la journée, dans le service de ton choix (efficacité 80 %)' },
+  reserve:      { nom: 'Agents de réserve', cout: 1.5, max: 4, efficacite: 0.8, texte: '1,5 k€ par agent, pour la journée, dans le service de ton choix (efficacité 80 %)' },
   prime:        { nom: 'Prime au personnel', cout: 3, texte: '+4 de moral (sous 70), +2 (de 70 à 85), +1 au-delà' },
   prevention:   { nom: 'Campagne de prévention', cout: 4, texte: 'criminalité −6' },
   soustraitance: { nom: 'Sous-traitance administrative', cout: 3, texte: '−5 dossiers de paperasse' },

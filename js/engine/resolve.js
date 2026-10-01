@@ -534,7 +534,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Capacités des services (avec les agents restés à leur poste, plus la réserve).
     const cap = {};
     for (const s of SERVICES) {
-      const renfort = reserve && dep.reserveService === s ? reserve * 0.8 : 0;
+      const renfort = reserve && dep.reserveService === s ? reserve * DEPENSES.reserve.efficacite : 0;
       const bTheme = theme && ((theme.id === 'routiere' && s === 'roulage') ? 1.5 : (theme.id === 'proximite' && s === 'proximite') ? 1.3 : 1) || 1;
       cap[s] = capacite(z, s, alloc[s] + renfort, { rythme: o.rythme, turn: T, bonus: (bonusService === s ? 1.1 : 1) * bTheme, adminMult });
     }
