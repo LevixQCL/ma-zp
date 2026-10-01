@@ -3,7 +3,7 @@
 import { DECOR, conditionDecor } from '../engine/decor.js';
 import { S, esc, icon, tabbar } from './common.js';
 import {
-  SERVICE_LABELS, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION,
+  AFFAIRE, SERVICE_LABELS, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION,
   INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE } from '../engine/constants.js';
 import { SINISTRE } from '../engine/sinistres.js';
 import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
@@ -144,7 +144,7 @@ export function sections() {
           '<strong>Récompense selon la force</strong> : sous la force minimale, l’affaire échoue. À la force minimale, elle rapporte 60 % des points annoncés ; à la force conseillée, 100 % ; à une fois et demie la force conseillée, 130 % (maximum). Les points sont partagés selon le nombre d’agents de chaque zone.',
           'Candidature refusée, sans réponse, ou affaire non lancée : tes agents restent au travail chez toi, en Intervention.',
           'L’équipe réussit si sa force totale atteint la force minimale. La force dépend du nombre d’agents, du niveau en Recherche ou Intervention et du moral.',
-          'Les points sont partagés selon le nombre d’agents fournis. La zone qui dirige gagne aussi de la satisfaction ; chaque zone venue en renfort gagne de la réputation selon ses agents : +1 pour 1 agent, +2 pour 2 ou 3, +3 à partir de 4.',
+          `<strong>Ce que rapporte une affaire résolue</strong> : une prime de ${String(AFFAIRE.prime).replace('.', ',')} k€ par point annoncé (selon la force, de 60 % à 130 %), partagée selon les agents fournis ; +2 de moral pour chaque zone ; pour la zone qui dirige, de la satisfaction et +${AFFAIRE.repChef} de réputation (+1 de plus si elle est épaulée) ; pour chaque zone venue en renfort, de la réputation selon ses agents : +1 pour 1 agent, +2 pour 2 ou 3, +3 à partir de 4. Les points comptent en plus dans l’IPZ.`,
           'Une affaire non résolue reste un tour de plus, avec une récompense réduite.',
         ])}`,
     },

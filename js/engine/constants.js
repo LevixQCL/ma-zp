@@ -55,6 +55,8 @@ export const multEquip = (n) => 0.85 + 0.15 * n;
 // Dépenses du jour : cumulables avec la grande décision, payées sur le budget du tour.
 // Roulage : au-delà de `seuil` agents, chaque agent de plus compte pour moitié (les automobilistes sont prévenus).
 // « Chasse aux PV » : au-delà de 25 % des effectifs en Roulage (40 % avec les caméras).
+// Affaires disputées : prime versée en plus des points (k€ par point annoncé, multipliée par la qualité du dispositif).
+export const AFFAIRE = { prime: 0.6, repChef: 1 };
 export const ROULAGE = { seuil: 6, auDela: 0.5, chasse: 0.25, chasseCameras: 0.4 };
 /** Moral gagné par une prime au personnel : de moins en moins quand le moral est déjà haut. */
 export const gainPrime = (moral) => (moral < 70 ? 4 : moral < 85 ? 2 : 1);

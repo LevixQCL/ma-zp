@@ -3,9 +3,10 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-09-30k',
+  id: '2026-10-01a',
   titre: 'Mise à jour du 30 septembre : le district prend vie',
   points: [
+    ['Affaires disputées mieux payées', 'une affaire résolue rapporte maintenant une prime en argent (environ 0,6 k€ par point annoncé, partagée selon les agents), en plus du moral, de la réputation et de la satisfaction. Le montant s’affiche sur chaque affaire.'],
     ['Early bird', 'merci d’être là depuis le début : une roulette t’attend sur l’HP pour gagner un skin exclusif (friterie, fort, base orbitale, grange, hangar à dirigeable, roulotte de cirque…).'],
     ['Champion de la semaine', 'le meilleur IPZ moyen de la semaine porte une étoile dorée sur son toit pendant 7 jours. Le podium de fin de saison reçoit une plaque à côté de son entrée, pour toujours.'],
     ['Décors d’événement', 'Halloween, Saint-Nicolas, Carnaval, Dragon de la Ducasse : pendant ces périodes, aide au grand événement ou fais une découverte dans l’enquête pour gagner un décor en édition limitée.'],
