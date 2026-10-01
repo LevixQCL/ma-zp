@@ -507,6 +507,14 @@ async function onClick(e) {
         dd.reserve = Math.max(0, Math.min(4, (dd.reserve || 0) + Number(el.dataset.d)));
         S.ordersDirty = true; rerender(); break;
       }
+      case 'reserve-libere': {
+        // La réserve prend la place de mes agents dans le service : ils deviennent libres, à placer où je veux.
+        const dd = S.draft.depenses || {}, s2 = dd.reserveService || 'intervention';
+        const n = Math.min(dd.reserve || 0, S.draft.alloc[s2] || 0);
+        if (!n) break;
+        S.draft.alloc[s2] -= n;
+        S.ordersDirty = true; toast(`${n} agent${n > 1 ? 's' : ''} libéré${n > 1 ? 's' : ''} : place-les dans la zone de non-droit (Terrain) ou dans un autre service.`); rerender(); break;
+      }
       case 'dep-toggle': {
         const dd = (S.draft.depenses ||= { reserve: 0, reserveService: 'intervention' });
         const zk = S.state.zones[S.user.uid];
