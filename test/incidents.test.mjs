@@ -45,11 +45,19 @@ const incs = [{ id: 'x0', service: 'intervention', titre: 'Colis suspect' }, { i
 const moral0 = z.moral, budget0 = z.budget;
 z.jaugeIncidents = 49;
 const r = appliquerIncidents(z, { incidents: incs, resultats: { x0: { statut: 'ok', fautes: 0 }, x1: { statut: 'rate', fautes: 2 } }, alloc: { intervention: 7, roulage: 2 }, T: 5, rng: makeRng('t') });
-assert.equal(z.moral, moral0 + 1);
-assert.equal(z.budget, budget0 + MALUS.roulage.plein.budget);
+assert.equal(z.moral, moral0 + 3 - 1, 'Intervention réussie +3, Roulage raté −1');
+assert.equal(z.budget, budget0, 'un échec ne coûte pas de budget');
 assert.equal(z.jaugeIncidents, 1, 'jauge 49 + 2 = 51 → skin et reste 1');
 assert.ok(r.skin && (z.skins || []).length === 1, 'skin gagné');
-assert.ok(z.blesses.some((b) => b.motif === 'immobilisé' && b.retour === 7));
+assert.equal(z._ps, 5 + 2, '+5 PS réussi, +2 PS tenté');
+assert.ok(!z.blesses.length, 'plus d’agents absents');
+// Recherche réussie : indice, ou +2 k€ s'il n'y a rien à trouver.
+const z2 = structuredClone(st.zones.b); const b2 = z2.budget;
+appliquerIncidents(z2, { incidents: [{ id: 'y', service: 'recherche', titre: 'Porte' }], resultats: { y: { statut: 'ok', fautes: 1 } }, alloc: {}, T: 2, rng: makeRng('u'), indice: () => false });
+assert.equal(z2.budget, b2 + 2);
+let donne = 0;
+appliquerIncidents(structuredClone(st.zones.c), { incidents: [{ id: 'y', service: 'recherche', titre: 'Porte' }], resultats: { y: { statut: 'ok', fautes: 0 } }, alloc: {}, T: 2, rng: makeRng('u'), indice: () => { donne++; return true; } });
+assert.equal(donne, 1);
 
 // 4. Résolution complète : les résultats du profil sont lus, l'incident non joué est géré seul.
 const s3 = structuredClone(st);

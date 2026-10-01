@@ -468,7 +468,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     jalon(z, 'Énigmes : sans faute (+2 de moral)');
     // Incidents du jour (mini-jeux) : réussite, échec, ou équipe livrée à elle-même.
     if ((incidentsAvant[uid] || []).length) {
-      const inc = appliquerIncidents(z, { incidents: incidentsAvant[uid], resultats: resultatsIncidents(players[uid], incidentsAvant[uid]), alloc: o.alloc || {}, T, rng: makeRng(`${state.seed}:s${state.season}:t${T}:incidents-res:${uid}`) });
+      const inc = appliquerIncidents(z, { incidents: incidentsAvant[uid], resultats: resultatsIncidents(players[uid], incidentsAvant[uid]), alloc: o.alloc || {}, T, rng: makeRng(`${state.seed}:s${state.season}:t${T}:incidents-res:${uid}`), indice: () => indiceBonus(state, z, zr) });
       z.rapport.push(...inc.lignes);
       if (inc.skin) push(3, 'Décor', `${zoneLabel(z)} décroche le skin « ${inc.skin.nom} »`, 'Jauge des incidents remplie à force d’interventions réussies.', uid);
     }

@@ -10,7 +10,7 @@ import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
 import { ENQ, DEMARCHES, POINTS, pointsDecouverte } from '../engine/enquete.js';
 import { PARTAGE, FIPA } from '../engine/fipa.js';
 import { QUEST_LABELS } from '../quests/quests.js';
-import { INCIDENTS, INC, MALUS, texteMalus } from '../engine/incidents.js';
+import { INCIDENTS, INC, MALUS, GAIN, texteMalus, texteGain } from '../engine/incidents.js';
 import { MANOEUVRES, MAN, DUEL, DUEL_INDICATEURS, AIDE, THEMES, MOTIONS_CHEF, PERIL } from '../engine/rivalites.js';
 
 const k = (v) => `${String(v).replace('.', ',')} k€`;
@@ -316,12 +316,12 @@ export function sections() {
         ${ul([
           '<strong>Un seul essai</strong> par incident. Quitter en cours de partie compte comme un échec.',
           'La difficulté suit l’effectif du service : plus d’agents que la répartition de base, c’est plus facile ; moins, c’est plus dur.',
-          `<strong>Réussi</strong> : +1 de moral et des points sur la <strong>jauge des skins</strong> (+2 sans faute, +1 sinon). À ${INC.jauge} points, un nouveau skin pour ton commissariat (ou +5 k€ si tu les as tous).`,
-          '<strong>Raté ou abandonné</strong> : un malus appliqué à 20:00 (voir le tableau).',
-          '<strong>Pas joué</strong> : ton équipe se débrouille seule. Elle réussit d’autant plus souvent que le service est fourni ; sinon, un malus plus léger.',
+          `<strong>Réussi</strong> : +${PS.queteOk} PS, un bonus propre au service (voir le tableau) et des points sur la <strong>jauge des skins</strong> (+2 sans faute, +1 sinon). À ${INC.jauge} points, un nouveau skin pour ton commissariat (ou +5 k€ si tu les as tous).`,
+          `<strong>Raté ou abandonné</strong> : −1 de moral, comme une énigme ratée (+${PS.queteTentee} PS pour avoir essayé).`,
+          '<strong>Pas joué</strong> : ton équipe se débrouille seule. Elle réussit d’autant plus souvent que le service est fourni ; sinon, un petit malus. Rien à gagner sans jouer.',
           'Chaque mini-jeu a son tuto. Pour t’exercer sans enjeu : écran Énigmes, onglet « Entraînement ».',
         ])}
-        ${table(['Service', 'Incident', 'Si c’est raté', 'Si personne ne vient et que ça rate'], Object.entries(INCIDENTS).map(([k, x]) => [SERVICE_LABELS[k], esc(x.titre), esc(texteMalus(MALUS[k].plein)), esc(texteMalus(MALUS[k].leger))]))}`,
+        ${table(['Service', 'Incident', 'Réussi', 'Raté', 'Pas joué et raté'], Object.entries(INCIDENTS).map(([k, x]) => [SERVICE_LABELS[k], esc(x.titre), esc(texteGain(GAIN[k])), esc(texteMalus(MALUS[k].plein)), esc(texteMalus(MALUS[k].leger))]))}`,
     },
     {
       id: 'imprevus', titre: 'Imprévus, coups durs et Inspection', html: `

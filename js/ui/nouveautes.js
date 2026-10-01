@@ -3,7 +3,7 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-02b',
+  id: '2026-10-02c',
   titre: 'Mise à jour du 2 octobre : incidents du jour et résultats terrain',
   points: [
     ['Résultats terrain, moins de hasard', 'la Recherche rapporte des points chaque jour (+0,5 par unité de travail sur les dossiers) au lieu d’un gros paquet le jour où un dossier tombe, et le flagrant délit suit une jauge qui se remplit avec tes patrouilles libres au lieu d’un tirage au sort.'],
@@ -11,7 +11,7 @@ export const NOTE_MAJ = {
     ['Nouvelle jauge sur l’HP', 'Résultats terrain s’affiche sous tes jauges ; son bouton « ? » détaille d’où viennent tes points. Sous le moral, l’efficacité de tes agents (par exemple 104 % à 74 de moral), aussi rappelée dans le rapport du soir.'],
     ['Des incidents en journée', 'une ou deux fois par jour, à une heure imprévue, un incident tombe sur un de tes services. L’HP affiche un compte à rebours, puis tu as 6 heures pour intervenir.'],
     ['Quatre mini-jeux', 'Intervention : un colis suspect à neutraliser avec la fiche SEDEE. Recherche : une porte à crocheter du bout des doigts. Roulage : un parking à débloquer pour la dépanneuse. Proximité : un rapport de domiciliation où trois erreurs se cachent.'],
-    ['Un seul essai', 'réussi : +1 de moral et des points sur la jauge des skins. Raté ou abandonné : un malus à 20:00 (agents absents, budget, satisfaction…). Pas joué : ton équipe se débrouille seule, mieux si le service est bien fourni.'],
+    ['Un seul essai', 'réussi : +5 PS et un bonus du service (Intervention +3 de moral, Recherche +1 indice d’enquête, Roulage +2 k€, Proximité +2 de satisfaction). Raté ou abandonné : −1 de moral, comme une énigme ratée. Pas joué : ton équipe se débrouille seule, mieux si le service est bien fourni.'],
     ['La jauge des skins', '+2 sans faute, +1 sinon. À 50 points, un nouveau skin pour ton commissariat.'],
     ['Tuto et entraînement', 'chaque mini-jeu a son tuto. Pour t’exercer sans enjeu : écran Énigmes, onglet Entraînement.'],
     ['Le cadenas', 'l’énigme du cadenas se joue maintenant sur un vrai cadenas à molettes : fais rouler les chiffres du doigt, puis tire l’anse.'],
@@ -21,7 +21,7 @@ export const NOTE_MAJ = {
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP : les incidents du jour ! Une ou deux fois par jour, à une heure imprévue, un incident tombe sur un de tes services : colis suspect, porte à crocheter, parking à débloquer, dossier à relire. Tu as 6 h pour jouer le mini-jeu, un seul essai. Réussi : jauge des skins. Raté : malus à 20:00. Entraînement dans l'écran Énigmes.`;
+  return `📣 Mise à jour de Ma ZP : les incidents du jour ! Une ou deux fois par jour, à une heure imprévue, un incident tombe sur un de tes services : colis suspect, porte à crocheter, parking à débloquer, dossier à relire. Tu as 6 h pour jouer le mini-jeu, un seul essai. Réussi : PS, bonus et jauge des skins. Raté : −1 de moral. Entraînement dans l'écran Énigmes.`;
 }
 
 
