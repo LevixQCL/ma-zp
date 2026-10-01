@@ -2,7 +2,8 @@
 // Les mini-jeux sont des pages à part (dossier minijeux/), ouvertes en plein écran dans un cadre :
 // elles renvoient leur résultat par message (start, result, close).
 import { S, esc, icon, myZone } from './common.js';
-import { incidentsDuTour, resultatsIncidents, INCIDENTS, MALUS, texteMalus, difficulte, pointsJauge, INC } from '../engine/incidents.js';
+import { incidentsDuTour, resultatsIncidents, INCIDENTS, MALUS, GAIN, texteMalus, texteGain, difficulte, pointsJauge, INC } from '../engine/incidents.js';
+import { PS } from '../engine/constants.js';
 import { SERVICE_LABELS, DEFAULT_ALLOC } from '../engine/constants.js';
 
 /** Les mini-jeux, pour l'entraînement. */
@@ -116,7 +117,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, onFin = () => {
   if (mode === 'incident' && inc) {
     const n = agentsService(inc.service), { base, plus } = jaugeDuJour();
     p.set('id', inc.id); p.set('agents', String(n)); p.set('diff', difficulte(inc.service, n));
-    p.set('jauge', String(base + plus)); p.set('malus', texteMalus(MALUS[inc.service].plein));
+    p.set('jauge', String(base + plus)); p.set('malus', texteMalus(MALUS[inc.service].plein)); p.set('gain', `${texteGain(GAIN[inc.service])}, +${PS.queteOk} PS`);
   }
   const wrap = document.createElement('div');
   wrap.className = 'mj-wrap';

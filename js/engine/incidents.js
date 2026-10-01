@@ -2,7 +2,7 @@
 // à une heure imprévue. Il reste ouvert 6 heures. Joué : réussite (jauge des skins) ou échec (malus
 // à 20:00). Pas joué : l'équipe se débrouille seule, avec une chance qui dépend de ses effectifs.
 import { makeRng } from './rng.js';
-import { DEFAULT_ALLOC, SERVICE_LABELS } from './constants.js';
+import { DEFAULT_ALLOC, SERVICE_LABELS, PS } from './constants.js';
 import { TOUS_SKINS, ajouterSkin } from './decor.js';
 
 const H = 3600 * 1000;
@@ -23,14 +23,22 @@ export const INC = {
 };
 
 /**
- * Conséquences à 20:00. `plein` : échec en jouant (ou abandon). `leger` : échec de l'équipe seule.
- * agents : nombre d'agents absents ; tours : durée de l'absence.
+ * Équilibrage aligné sur les énigmes du jour (une énigme : +5 PS si réussie, −1 de moral si ratée ;
+ * le bonus d'énigmes vaut +3 de moral, +2 k€ ou +1 indice).
+ * GAIN : réussite en jouant, en plus de +5 PS et de la jauge des skins. Chaque service rapporte
+ * ce qu'il sait faire. `plein` : échec en jouant ou abandon. `leger` : l'équipe seule n'y arrive pas.
  */
+export const GAIN = {
+  intervention: { moral: 3 },
+  recherche: { indice: 1 },
+  roulage: { budget: 2 },
+  proximite: { satisfaction: 2 },
+};
 export const MALUS = {
-  intervention: { plein: { agents: 2, tours: 1, motif: 'blessé', moral: -2 }, leger: { agents: 1, tours: 1, motif: 'blessé' } },
-  recherche: { plein: { agents: 1, tours: 1, motif: 'mobilisé', reputation: -1 }, leger: { reputation: -1 } },
-  roulage: { plein: { agents: 1, tours: 1, motif: 'immobilisé', budget: -2 }, leger: { budget: -1 } },
-  proximite: { plein: { agents: 1, tours: 1, motif: 'mobilisé', satisfaction: -3 }, leger: { satisfaction: -1 } },
+  intervention: { plein: { moral: -1 }, leger: { moral: -1 } },
+  recherche: { plein: { moral: -1 }, leger: { reputation: -1 } },
+  roulage: { plein: { moral: -1 }, leger: { budget: -1 } },
+  proximite: { plein: { moral: -1 }, leger: { satisfaction: -1 } },
 };
 
 /** Phrase lisible d'un malus, pour le mini-jeu et le rapport. */
@@ -42,6 +50,16 @@ export function texteMalus(m) {
   if (m.satisfaction) t.push(`${m.satisfaction} de satisfaction`);
   if (m.reputation) t.push(`${m.reputation} de réputation`);
   return t.join(', ').replace(/-/g, '−');
+}
+
+/** Phrase lisible d'un gain (sans les PS ni la jauge, communs à tous). */
+export function texteGain(g) {
+  const t = [];
+  if (g.moral) t.push(`+${g.moral} de moral`);
+  if (g.budget) t.push(`+${g.budget} k€`);
+  if (g.satisfaction) t.push(`+${g.satisfaction} de satisfaction`);
+  if (g.indice) t.push(`+${g.indice} indice d’enquête`);
+  return t.join(', ');
 }
 
 /** Difficulté du mini-jeu selon les agents du service, rapportés à la répartition de base. */
@@ -109,8 +127,9 @@ function appliquerMalus(z, m, T) {
  * @param {object[]} incidents  incidents du tour (incidentsDuTour, calculés sur l'état d'avant la résolution)
  * @param {object} resultats    { id: { statut: 'ok'|'rate'|'abandon', fautes } }
  * @param {object} alloc        répartition des agents ce soir
+ * @param {function} indice     donne un indice d'enquête ; renvoie false s'il n'y a rien à trouver
  */
-export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng }) {
+export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng, indice = () => false }) {
   const lignes = [];
   let skin = null;
   for (const inc of incidents) {
@@ -120,13 +139,22 @@ export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng }) {
     if (res && res.statut === 'ok') {
       const pts = pointsJauge(res);
       z.jaugeIncidents = (z.jaugeIncidents || 0) + pts;
-      z.moral += 1;
+      z._ps = (z._ps || 0) + PS.queteOk;
       z.stats.incidentsOk = (z.stats.incidentsOk || 0) + 1;
-      lignes.push(`Incident · ${nom} : réussi${res.fautes ? '' : ' sans faute'} (+${pts} sur la jauge des skins, +1 de moral).`);
+      const g = GAIN[inc.service], gains = [];
+      if (g.moral) { z.moral += g.moral; gains.push(`+${g.moral} de moral`); }
+      if (g.satisfaction) { z.satisfaction += g.satisfaction; gains.push(`+${g.satisfaction} de satisfaction`); }
+      if (g.budget) { z.budget += g.budget; (z._compta ||= []).push({ k: 'incident', l: 'Incident réussi', v: g.budget }); gains.push(`+${g.budget} k€`); }
+      if (g.indice) {
+        if (indice()) gains.push('+1 indice d’enquête');
+        else { z.budget += 2; (z._compta ||= []).push({ k: 'incident', l: 'Incident réussi', v: 2 }); gains.push('+2 k€ (rien de neuf à trouver pour l’enquête)'); }
+      }
+      lignes.push(`Incident · ${nom} : réussi${res.fautes ? '' : ' sans faute'}. ${gains.join(', ')}, +${PS.queteOk} PS, +${pts} sur la jauge des skins.`);
     } else if (res) {
       const m = MALUS[inc.service].plein;
       appliquerMalus(z, m, T);
-      lignes.push(`Incident · ${nom} : ${res.statut === 'abandon' ? 'abandonné' : 'raté'}. ${texteMalus(m)}.`);
+      z._ps = (z._ps || 0) + PS.queteTentee;
+      lignes.push(`Incident · ${nom} : ${res.statut === 'abandon' ? 'abandonné' : 'raté'}. ${texteMalus(m)} (+${PS.queteTentee} PS pour avoir essayé).`);
     } else if (rng.chance(chanceSeule(inc.service, alloc[inc.service]))) {
       lignes.push(`Incident · ${nom} : personne n’est venu, ton équipe l’a réglé seule.`);
     } else {

@@ -279,7 +279,7 @@ const Shell = (() => {
         ${G.story}
         <div class="lbl2">Effectif ${G.serviceShort} sur place</div>
         <div class="seg seg1"><button aria-pressed="true" tabindex="-1"><span class="ppl">${'<i></i>'.repeat(Math.max(1,Math.min(12,Number(Q.get('agents'))||d.agents)))}</span><b>${effectif()}</b>${d.label}</button></div>
-        <p class="small">Un seul essai. Réussi : jauge des skins et +1 de moral. Raté ou abandonné : ${escH(Q.get('malus')||G.malus)} (à 20:00).</p>
+        <p class="small">Un seul essai. Réussi : ${escH(Q.get('gain')||'un bonus')} et des points de jauge des skins. Raté ou abandonné : ${escH(Q.get('malus')||G.malus)}. Tout s’applique à 20:00.</p>
         <div class="row">${tutoBtns('Intervenir')}</div>
         <button class="btn small" id="later" style="align-self:center">Plus tard</button>
         ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}`);
@@ -327,7 +327,7 @@ const Shell = (() => {
     const statHtml=stats.map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')+(MODE==='train'?'':`<div class="stat pts"><span>Jauge skins</span><b>${ok?'+'+pts:'+0'}</b></div>`);
     const boutons = INC ? `<button class="btn primary" id="back">Retour au commissariat</button>`
       : `<button class="btn primary" id="again">${ok?'Rejouer':'Réessayer'}</button><button class="btn" id="tomenu">Menu</button>`;
-    const noteInc = INC ? (ok ? `Résultat enregistré : +${pts} sur la jauge des skins et +1 de moral à 20:00.${st.gauge>=50?' Ta jauge sera pleine ce soir : un nouveau skin t’attend.':''}` : '') : '';
+    const noteInc = INC ? (ok ? `Résultat enregistré : ${escH(Q.get('gain')||'ton bonus')} et +${pts} sur la jauge des skins, à 20:00.${st.gauge>=50?' Ta jauge sera pleine ce soir : un nouveau skin t’attend.':''}` : '') : '';
     showCard(ok?`
       <div class="verdict ok">${ICONS.check}</div>
       <h2>${G.winTitle}</h2>
