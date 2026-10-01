@@ -7,6 +7,9 @@ import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
 import { effectifPrevu, capaciteAgents, capaciteAgentsPrevue, capaciteVehicules, coutRecrue, sousTutelle, moralMult, bonusLots } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
+import { agentsND } from './nondroit.js';
+import { nomSecteur } from '../engine/nondroit.js';
+import { secteurOuvert } from '../engine/constants.js';
 import { carteQuartiers } from '../engine/quartiers.js';
 import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
 
@@ -24,10 +27,12 @@ export function initDraft() {
   const st = S.state;
   const dispo = agentsDisponibles(z, st.turn);
   const base = S.savedOrders || (z.dernierOrdre ? { alloc: z.dernierOrdre.alloc, rythme: z.dernierOrdre.rythme, patrouilles: z.dernierOrdre.patrouilles } : { alloc: DEFAULT_ALLOC, rythme: 'normal' });
-  const d = JSON.parse(JSON.stringify({ alloc: { ...DEFAULT_ALLOC, ...(base.alloc || {}) }, rythme: base.rythme || 'normal', decision: base.decision || null, engagements: base.engagements || {}, evenement: base.evenement || 0, operation: base.operation || 'complet', patrouilles: base.patrouilles || {}, sansDecision: !!(S.savedOrders && S.savedOrders.sansDecision), depenses: (S.savedOrders && S.savedOrders.depenses) || { reserve: 0, reserveService: 'intervention' }, ...enqueteDraft() }));
+  const d = JSON.parse(JSON.stringify({ secteurs: base.secteurs || (!S.savedOrders && z.dernierOrdre && z.dernierOrdre.secteurs) || {}, alloc: { ...DEFAULT_ALLOC, ...(base.alloc || {}) }, rythme: base.rythme || 'normal', decision: base.decision || null, engagements: base.engagements || {}, evenement: base.evenement || 0, operation: base.operation || 'complet', patrouilles: base.patrouilles || {}, sansDecision: !!(S.savedOrders && S.savedOrders.sansDecision), depenses: (S.savedOrders && S.savedOrders.depenses) || { reserve: 0, reserveService: 'intervention' }, ...enqueteDraft() }));
   // Patrouilles : seulement dans mes quartiers.
   const mesQ = new Set((carteQuartiers(st).deZone[z.uid] || []).map(String));
   for (const k of Object.keys(d.patrouilles)) if (!mesQ.has(k)) delete d.patrouilles[k];
+  // Zone de non-droit : seulement les secteurs ouverts ce soir.
+  for (const k of Object.keys(d.secteurs)) if (!secteurOuvert(st.nonDroit, k) || !(d.secteurs[k] > 0)) delete d.secteurs[k];
   // On ne garde que les engagements sur des affaires encore ouvertes.
   const ids = new Set(st.affaires.map((a) => a.id));
   for (const k of Object.keys(d.engagements)) if (!ids.has(k)) delete d.engagements[k];
@@ -42,7 +47,7 @@ export function initDraft() {
 const evenementDuJour = () => !!(S.state.evenement && S.state.evenement.tour === S.state.turn);
 
 function engages(d) {
-  return Object.values(d.engagements).reduce((s, e) => s + (e.agents || 0), 0) + (evenementDuJour() ? d.evenement || 0 : 0) + (d.renfort && S.state.zones[d.renfort.cible] && operationActive(S.state.zones[d.renfort.cible], S.state.turn) ? d.renfort.agents || 0 : 0);
+  return agentsND(d) + Object.values(d.engagements).reduce((s, e) => s + (e.agents || 0), 0) + (evenementDuJour() ? d.evenement || 0 : 0) + (d.renfort && S.state.zones[d.renfort.cible] && operationActive(S.state.zones[d.renfort.cible], S.state.turn) ? d.renfort.agents || 0 : 0);
 }
 
 /**
@@ -59,6 +64,7 @@ export function agentsHorsServices() {
     const bloque = !a ? 'affaire terminée' : moiChef ? null : !cand ? 'aucune candidature envoyée' : cand.statut === 'refusee' ? 'candidature refusée' : null;
     l.push({ k: `eng:${id}`, t: `Affaire « ${a ? a.titre : '?'} »`, n: e.agents, bloque });
   }
+  for (const [k, n] of Object.entries(d.secteurs || {})) if (n) l.push({ k: `nd:${k}`, t: `Zone de non-droit · ${esc(nomSecteur(k))}`, n, bloque: secteurOuvert(st.nonDroit, k) ? null : 'secteur fermé' });
   if (d.evenement) l.push({ k: 'ev', t: 'Grand événement du district', n: d.evenement, bloque: evenementDuJour() ? null : 'pas d’événement aujourd’hui', compte: evenementDuJour() });
   if (d.renfort && d.renfort.agents) {
     const cz = st.zones[d.renfort.cible];
@@ -528,7 +534,10 @@ export function renderOrdres() {
     </section>
 
     ${prisesHtml()}
-    ${pli('affaires', 'Affaires disputées', st.affaires.length ? (nbEng ? `${nbEng} affaire${nbEng > 1 ? 's' : ''} engagée${nbEng > 1 ? 's' : ''} sur ${st.affaires.length}` : `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} ouverte${st.affaires.length > 1 ? 's' : ''} · aucun agent engagé`) : 'Aucune ce tour', st.affaires.length ? `<div class="col" style="gap:8px">${affairesHtml}</div>` : '<p class="small muted" style="margin:0">Aucune affaire disputée ce tour.</p>')}
+    ${pli('nondroit', 'Zone de non-droit', (() => { const n = agentsND(d); const sects = Object.keys(d.secteurs || {}).filter((k) => d.secteurs[k]); return n ? `${n} agent${n > 1 ? 's' : ''} sur ${sects.map((k) => esc(nomSecteur(k))).join(', ')}` : 'Aucun agent ce soir'; })(), `<div class="col" style="gap:6px">${Object.entries(d.secteurs || {}).filter(([, n]) => n).map(([k, n]) => `<div class="between"><span class="small" style="font-weight:600">${esc(nomSecteur(k))}</span><span class="tiny ok">${n} agent${n > 1 ? 's' : ''}</span></div>`).join('')}
+      <p class="tiny muted" style="margin:0">Le centre de la ville, à reprendre au milieu avec les autres zones. Les agents envoyés sont pris sur tes services pour la journée.</p>
+      <a class="btn small primary block" href="#terrain">Choisir les secteurs sur le Terrain</a></div>`)}
+    ${st.affaires.length ? pli('affaires', 'Affaires disputées', nbEng ? `${nbEng} affaire${nbEng > 1 ? 's' : ''} engagée${nbEng > 1 ? 's' : ''} sur ${st.affaires.length}` : `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} ouverte${st.affaires.length > 1 ? 's' : ''} · aucun agent engagé`, `<div class="col" style="gap:8px">${affairesHtml}</div>`) : ''}
     ${pli('decision', 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'Pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, decisionHtml)}
     ${pli('depenses', 'Dépenses du jour', cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune', depensesHtml, cab > 0 && !dep.carrosserie)}
 

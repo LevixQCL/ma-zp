@@ -86,7 +86,8 @@ export function renderCarte() {
   const op = operationActive(me, st.turn);
   const monSite = siteDe(me);
   const legende = `<div class="row small muted" style="flex-wrap:wrap;gap:10px">
-    <span class="row" style="gap:4px"><svg width="12" height="14" viewBox="-8 -12 16 22" aria-hidden="true"><path d="M0 9c-5-5.5-8-8.6-8-12.4a8 8 0 0 1 16 0C8 .4 5 3.5 0 9z" fill="#F2B544"/></svg>affaire disputée</span>
+    <span class="row" style="gap:4px"><svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true"><defs><pattern id="lg-nd" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="4" height="4" fill="#3A1416"/><path d="M0 0V4" stroke="#B3363A" stroke-width="1.6"/></pattern></defs><rect width="14" height="12" rx="2" fill="url(#lg-nd)" stroke="#E0625A"/></svg>zone de non-droit</span>
+    ${st.affaires.length ? '<span class="row" style="gap:4px"><svg width="12" height="14" viewBox="-8 -12 16 22" aria-hidden="true"><path d="M0 9c-5-5.5-8-8.6-8-12.4a8 8 0 0 1 16 0C8 .4 5 3.5 0 9z" fill="#F2B544"/></svg>affaire disputée</span>' : ''}
     ${ev ? '<span>☆ événement</span>' : ''}${op ? '<span class="bad">◎ opération en cours</span>' : ''}
     <span class="row" style="gap:4px"><svg width="14" height="14" viewBox="-9 -9 18 18" aria-hidden="true"><circle r="8.5" fill="#0B1119" stroke="#F2B544" stroke-width="1.5"/><path d="M0 -5l4.5 1.7v2.8c0 2.8-2 4.5-4.5 5.6-2.5-1.1-4.5-2.8-4.5-5.6v-2.8z" fill="#F2B544"/></svg>ton HP</span>
     <span class="row" style="gap:4px"><span style="width:14px;height:0;border-top:2px solid var(--amber)"></span>ta zone</span></div>
@@ -103,6 +104,8 @@ export function renderCarte() {
     ${quartiersHtml(st, me)}
 
     <section class="col" aria-label="Sur la carte"><div class="between"><h2 class="section">Sur la carte</h2><a class="small" href="#terrain">Agir sur le Terrain</a></div>
+      ${st.nonDroit ? (() => { const sc = Object.values(st.nonDroit.secteurs); const r = sc.filter((x) => x.statut === 'repris').length; return `<a class="list-row" href="#terrain" style="border-color:var(--red-line)"><span style="width:26px;height:26px;border-radius:7px;background:#3A1416;border:1px solid #E0625A;flex-shrink:0"></span>
+        <span class="col grow" style="gap:2px"><span style="font-weight:600">Zone de non-droit</span><span class="small muted">${r} secteur${r > 1 ? 's' : ''} repris sur ${sc.length} · à reprendre ensemble, sans candidature</span></span>${icon('chevron', 16)}</a>`; })() : ''}
       ${st.affaires.map((a, i) => {
         const chef = chefDe(a), moiChef = a.zone === me.uid;
         return `<a class="list-row" href="#terrain"><span class="badge-num">${i + 1}</span>
@@ -111,7 +114,7 @@ export function renderCarte() {
       }).join('')}
       ${ev ? `<a class="list-row" href="#terrain"><span style="width:26px;height:26px;border-radius:7px;background:var(--text);color:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">${icon('star', 14)}</span>
         <span class="col grow" style="gap:2px"><span style="font-weight:600">${esc(ev.titre)}</span><span class="small muted">Événement collectif ${ev.tour === st.turn ? 'ce soir' : `dans ${ev.tour - st.turn} tours`} · ~${3 * Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length} agents requis</span></span></a>` : ''}
-      ${!st.affaires.length && !ev ? '<p class="small muted" style="margin:0">Rien de particulier sur la carte ce tour.</p>' : ''}
+
     </section>
     <section class="col" aria-label="Les zones du district" style="gap:8px"><div class="between"><h2 class="section" style="margin:0">Les zones du district</h2><span class="tiny muted">${n} · touche pour visiter</span></div>
       <div class="vitrine">${[me, ...zones.filter((z) => z.uid !== me.uid)].map((z) => `<button type="button" class="vitrine-item" data-action="voir-hp" data-uid="${esc(z.uid)}" aria-label="Voir le commissariat de ${esc(z.nom)}">

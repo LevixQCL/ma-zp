@@ -1,7 +1,7 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
 import {
-  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, malusEtat, coutEquipement, multNiveau, multEquip } from './constants.js';
+  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, secteurOuvert, malusEtat, coutEquipement, multNiveau, multEquip } from './constants.js';
 import { coutCarrosserie } from './sinistres.js';
 import { cabossesChoisis } from './parc.js';
 
@@ -144,7 +144,8 @@ export function agentsLibres(zone, o, turn) {
   if (!o) return 0;
   const services = Object.values(o.alloc || {}).reduce((s, n) => s + (n || 0), 0);
   const eng = Object.values(o.engagements || {}).reduce((s, e) => s + ((e && e.agents) || 0), 0);
-  return Math.max(0, agentsDisponibles(zone, turn) - services - eng - (o.evenement || 0) - ((o.renfort && o.renfort.agents) || 0));
+  const nd = Object.values(o.secteurs || {}).reduce((s, n) => s + (n || 0), 0);
+  return Math.max(0, agentsDisponibles(zone, turn) - services - eng - nd - (o.evenement || 0) - ((o.renfort && o.renfort.agents) || 0));
 }
 
 export function vehiculesDisponibles(zone, turn) {
@@ -227,7 +228,19 @@ export function sanitizeOrders(zone, raw, state) {
     const n = Math.min(clamp(Math.floor(Number(o.renfort.agents) || 0), 0, RENFORT.maxParZone), dispo - evenement0);
     if (cz && operationActive(cz, turn) && n > 0) renfort = { cible: o.renfort.cible, agents: n };
   }
-  const evenement = evenement0 + (renfort ? renfort.agents : 0); // agents réservés hors services
+  // Zone de non-droit : { secteur: agents }, plafonnés par secteur et au total.
+  const secteurs = {};
+  if (o.secteurs && typeof o.secteurs === 'object' && state.nonDroit) {
+    for (const [k, v] of Object.entries(o.secteurs)) {
+      if (!secteurOuvert(state.nonDroit, k)) continue;
+      const n = clamp(Math.floor(Number(v) || 0), 0, ND.maxParSecteur);
+      if (n > 0) secteurs[k] = n;
+    }
+  }
+  const sumSect = () => Object.values(secteurs).reduce((s, n) => s + n, 0);
+  const maxSect = Math.min(ND.maxTotal, Math.max(0, dispo - evenement0 - (renfort ? renfort.agents : 0)));
+  while (sumSect() > maxSect) { const k = Object.keys(secteurs).sort((a, b) => secteurs[b] - secteurs[a])[0]; secteurs[k]--; if (!secteurs[k]) delete secteurs[k]; }
+  const evenement = evenement0 + (renfort ? renfort.agents : 0) + sumSect(); // agents réservés hors services
   const sumEng = () => Object.values(engagements).reduce((s, e) => s + e.agents, 0);
   if (sumEng() + evenement > dispo) {
     const place = dispo - evenement;
@@ -287,7 +300,7 @@ export function sanitizeOrders(zone, raw, state) {
   if (o.patrouilles && typeof o.patrouilles === 'object') {
     for (const [k2, v] of Object.entries(o.patrouilles).slice(0, 8)) { const n = int(v, 0, 12); if (/^\d{1,4}$/.test(k2) && n > 0) patrouilles[k2] = n; }
   }
-  return { piste, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
+  return { piste, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */
@@ -333,6 +346,8 @@ export function effetsOperation(zone, alloc, niveau, turn) {
 /** Ordres du pilote automatique : on reprend la dernière répartition, sans décision ni engagement. */
 export function autopilotOrders(zone, state) {
   const base = zone.dernierOrdre ? { alloc: zone.dernierOrdre.alloc, rythme: 'normal', operation: 'reduit', patrouilles: zone.dernierOrdre.patrouilles } : { alloc: DEFAULT_ALLOC, rythme: 'normal', operation: 'reduit' };
+  // Un oubli d'un jour : les agents restent sur place dans la zone de non-droit. Au-delà, ils rentrent.
+  if (zone.dernierOrdre && zone.dernierOrdre.secteurs && (zone.toursSansOrdres || 0) === 0) base.secteurs = zone.dernierOrdre.secteurs;
   return sanitizeOrders(zone, base, state);
 }
 

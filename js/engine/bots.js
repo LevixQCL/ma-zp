@@ -6,6 +6,8 @@ import { genererAffaire, dossierDe, dossierAffaire, faitsConnus, candidats, cout
 import { fipaPour, invitationImpossible, FIPA } from './fipa.js';
 import { cibleImpossible, enDuel } from './rivalites.js';
 import { encherePossible } from './encheres.js';
+import { ND, secteurOuvert } from './constants.js';
+import { partsDe, secteursVoisins } from './nondroit.js';
 
 export const BOT_PROFILES = [
   { uid: 'bot-canal', code: '5301', nom: 'Canal', pseudo: 'Sam', couleur: '#3CC6B8', style: 'equilibre' },
@@ -39,6 +41,8 @@ export function botOrders(zone, state, style = 'equilibre') {
       if (n > 0) { engagements[a.id] = { agents: n, acceptes: [] }; reste -= n; }
     }
   }
+  const secteurs = botNonDroit(zone, state, style, rng, reste);
+  reste -= Object.values(secteurs).reduce((a, b) => a + b, 0);
   const poids = { intervention: 0.36, proximite: 0.18, recherche: 0.18, roulage: 0.12, admin: 0.16 };
   if (zone.paperasse > 12) poids.admin += 0.08;
   if (zone.dossiers.length > 3) poids.recherche += 0.06;
@@ -92,7 +96,37 @@ export function botOrders(zone, state, style = 'equilibre') {
   // Patrouilles : les robots attentifs envoient 2 agents sur le point chaud annoncé.
   const patrouilles = {};
   if (zone.pointChaud && style !== 'distrait' && alloc.proximite >= 2 && rng.chance(style === 'agressif' ? 0.5 : 0.8)) patrouilles[zone.pointChaud.cell] = 2;
-  return { patrouilles, alloc, rythme, engagements, evenement, decision, operation, depenses, ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
+  return { patrouilles, alloc, rythme, engagements, secteurs, evenement, decision, operation, depenses, ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
+}
+
+/**
+ * Zone de non-droit : les robots gardent les secteurs où ils ont de l'influence, et attaquent ensemble
+ * le secteur le plus avancé (le même pour tous : c'est leur façon de se coordonner sans se parler).
+ */
+function botNonDroit(zone, state, style, rng, reste) {
+  const out = {};
+  const nd = state.nonDroit;
+  if (!nd) return out;
+  let dispo = Math.min(ND.maxTotal, Math.max(0, reste - 13));
+  if (dispo <= 0 || (style === 'distrait' && rng.chance(0.6))) return out;
+  const cles = Object.keys(nd.secteurs).filter((k) => secteurOuvert(nd, k));
+  // Garde.
+  for (const k of cles) {
+    const s = nd.secteurs[k];
+    if (s.statut !== 'repris' || dispo <= 0) continue;
+    const p = partsDe(s).find((x) => x.uid === zone.uid);
+    if (!p || p.part < ND.partMin) continue;
+    if (s.emprise >= 20 && rng.chance(style === 'prudent' ? 0.9 : 0.75)) { const n = Math.min(dispo, s.emprise >= 40 ? 3 : 2); out[k] = n; dispo -= n; }
+  }
+  // Assaut : le secteur du milieu le plus entamé (le Cœur d'abord s'il est ouvert), de préférence voisin.
+  const voisins = new Set(secteursVoisins(state, zone.uid));
+  const cibles = cles.filter((k) => nd.secteurs[k].statut === 'milieu').sort((a, b) => (nd.secteurs[b].coeur - nd.secteurs[a].coeur) || (nd.secteurs[a].emprise - nd.secteurs[b].emprise) || (voisins.has(b) - voisins.has(a)) || Number(a) - Number(b));
+  const envie = { agressif: 0.8, equilibre: 0.7, prudent: 0.5, distrait: 0.6 }[style] || 0.6;
+  if (cibles.length && dispo > 0 && rng.chance(envie)) {
+    const n = Math.min(dispo, { agressif: 4, equilibre: 3, prudent: 2, distrait: 3 }[style] || 3);
+    out[cibles[0]] = (out[cibles[0]] || 0) + n;
+  }
+  return out;
 }
 
 /** Enquête : constatations d'abord, puis vérifications ciblées ; accusation quand un seul suspect reste. */

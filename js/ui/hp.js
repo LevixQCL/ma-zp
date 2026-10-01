@@ -24,6 +24,8 @@ const AIDE_COMP = { satisfaction: 'satisfaction', affaires: 'terrain', moral: 'm
 import { IPZ_POIDS } from '../engine/constants.js';
 const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations().amendes; } catch (e) { /* pas de brouillon */ } return fraisFixes(z, S.state, { amendes, rythme: (S.draft && S.draft.rythme) || 'normal' }).total; };
 import { demandeRenfortHtml, appelsRenfort, renfortPrevu } from './renfort.js';
+import { secteursEnDanger, agentsND } from './nondroit.js';
+import { nomSecteur } from '../engine/nondroit.js';
 import { operationActive as opActive } from '../engine/zone.js';
 
 /** Petite flèche d'évolution depuis la veille. */
@@ -184,6 +186,8 @@ export function renderHP() {
   if (z.budget < 0) alertes.push({ cls: 'red', titre: 'Budget dans le rouge', texte: 'deux tours de suite et c’est l’Inspection', href: '#ordres' });
   const vieux = z.dossiers.filter((d) => d.age > 6).length;
   if (vieux) alertes.push({ cls: 'amber', titre: `${vieux} dossier${vieux > 1 ? 's' : ''} qui traîne${vieux > 1 ? 'nt' : ''}`, texte: 'renforce la Recherche', href: '#ordres' });
+  { const dg = S.draft ? secteursEnDanger() : []; if (dg.length) alertes.unshift({ cls: 'red', titre: `Zone de non-droit : ${dg.map((k) => esc(nomSecteur(k))).join(', ')} menacé${dg.length > 1 ? 's' : ''}`, texte: 'le milieu remonte : mets 2 ou 3 agents de garde ce soir', href: '#terrain' }); }
+  if (st.nonDroit && S.draft && !agentsND()) { const sc = Object.values(st.nonDroit.secteurs); const hier = sc.reduce((n, x) => n + ((x.hier || []).length ? 1 : 0), 0); alertes.push({ cls: 'blue', titre: `Zone de non-droit : ${sc.filter((x) => x.statut === 'repris').length} secteur${sc.filter((x) => x.statut === 'repris').length > 1 ? 's' : ''} repris sur ${sc.length}`, texte: hier ? `des zones y étaient hier sur ${hier} secteur${hier > 1 ? 's' : ''} : rejoins-les, à plusieurs ça tombe plus vite` : 'personne n’y était hier : lance le mouvement sur la radio', href: '#terrain' }); }
   if (st.affaires.length) alertes.push({ cls: 'blue', titre: `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} disputée${st.affaires.length > 1 ? 's' : ''} sur la carte`, texte: st.affaires.map((a) => esc(a.titre)).join(' · '), href: '#carte' });
 
   if (st.conseil && st.conseil.tour === T) alertes.unshift({ cls: 'amber', titre: 'Conseil de police : vote ce soir', texte: st.conseil.motions.map((m) => esc(m.titre)).join(' · '), href: '#diplomatie' });

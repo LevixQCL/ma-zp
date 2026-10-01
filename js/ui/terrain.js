@@ -9,6 +9,7 @@ import { candidaturesRecues, candidatureCtrl, maCandidature, postulerCtrl, place
 import { fipaPour } from '../engine/fipa.js';
 import { SERVICE_LABELS, psEvenement } from '../engine/constants.js';
 import { carteAffaire } from './ordres.js';
+import { nonDroitHtml, secteursEnDanger } from './nondroit.js';
 
 /** Nombre de choses qui attendent une action sur le Terrain (pour la pastille). */
 export function terrainAFaire() {
@@ -19,6 +20,7 @@ export function terrainAFaire() {
   n += candidaturesRecues().filter((c) => c.statut === 'attente').length;
   n += appelsRenfort().filter((a) => !renfortPrevu(a.uid)).length;
   if (st.evenement && st.evenement.tour === st.turn && !S.draft.evenement) n += 1;
+  n += secteursEnDanger().length;
   return n;
 }
 
@@ -80,8 +82,9 @@ export function renderTerrain() {
 
   const section = (titre, items, vide) => `<section class="col" aria-label="${titre}" style="gap:8px"><h2 class="section">${titre}</h2>${items.length ? items.join('') : `<p class="small muted" style="margin:0">${vide}</p>`}</section>`;
   return `<main class="screen">
-    <header class="col" style="gap:3px"><h1 class="big">Terrain</h1><p class="sub">Ce qui se passe chez toi, là où tu peux aider, et les grands rendez-vous du district. Tout se joue à 20:00.</p></header>
+    <header class="col" style="gap:3px"><h1 class="big">Terrain</h1><p class="sub">Ce qui se passe chez toi, la zone de non-droit à reprendre ensemble, et là où tu peux aider. Tout se joue à 20:00.</p></header>
     ${section('Chez moi', chezMoi, 'Calme plat dans ta zone aujourd’hui.')}
+    ${nonDroitHtml()}
     ${section('Chez les voisins', voisins, 'Aucune demande d’aide pour l’instant.')}
     ${district.length ? section('District', district, '') : ''}
   </main>${tabbar('terrain')}`;

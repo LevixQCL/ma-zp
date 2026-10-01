@@ -4,7 +4,7 @@ import { DECOR, conditionDecor } from '../engine/decor.js';
 import { S, esc, icon, tabbar } from './common.js';
 import {
   AFFAIRE, SERVICE_LABELS, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION,
-  INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE } from '../engine/constants.js';
+  INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE, ND } from '../engine/constants.js';
 import { SINISTRE } from '../engine/sinistres.js';
 import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
 import { ENQ, DEMARCHES, POINTS, pointsDecouverte } from '../engine/enquete.js';
@@ -38,10 +38,10 @@ export function sections() {
         <h3>Les écrans</h3>
         ${table(['Onglet', 'À quoi il sert'], [
           ['HP', 'Hôtel de police : compte à rebours, état de ta zone, situation du jour, FIPA, enquête, alertes, rapport.'],
-          ['Ordres', 'Répartition des agents, rythme, opérations, affaires disputées, grande décision, dépenses du jour.'],
+          ['Ordres', 'Répartition des agents, rythme, opérations, zone de non-droit, grande décision, dépenses du jour.'],
           ['Enquête', 'L’affaire en cours : démarches, pièces, carnet, accusation, traque.'],
           ['Énigmes', 'Les trois énigmes du jour.'],
-          ['Carte', 'Le plan de la ville, tes quartiers (zones chaudes, point chaud, patrouilles), les affaires disputées, la liste des zones.'],
+          ['Carte', 'Le plan de la ville, tes quartiers (zones chaudes, point chaud, patrouilles), la zone de non-droit, la liste des zones.'],
           ['Radio', 'Messagerie commune entre tous les chefs de zone.'],
         ])}`,
     },
@@ -51,7 +51,7 @@ export function sections() {
         ${table(['Jauge', 'Ce qui la fait monter', 'Ce qui la fait baisser'], [
           ['<strong>Moral</strong> (0 à 100)', 'rythme allégé, prime, salle de sport, succès, bonnes nouvelles', 'rythme renforcé, incidents ratés en série, budget négatif, erreurs aux énigmes, coups durs'],
           ['<strong>Satisfaction</strong> citoyenne', 'incidents traités, Proximité, dossiers élucidés, opérations et FIPA réussies', 'incidents ratés, criminalité au-dessus de 55, vieux dossiers, « chasse aux PV », fiascos'],
-          ['<strong>Réputation</strong> (collègues et autorités)', 'partager des indices, aider une zone en difficulté, affaires gagnées à deux, FIPA partagées, renforts, arrestations', 'fausses accusations, manœuvres (et scandale), blâme du Conseil, fiascos'],
+          ['<strong>Réputation</strong> (collègues et autorités)', 'partager des indices, aider une zone en difficulté, secteurs repris à plusieurs, FIPA partagées, renforts, arrestations', 'fausses accusations, manœuvres (et scandale), blâme du Conseil, fiascos'],
           ['<strong>Budget</strong>', `dotation ${k(ECONOMIE.dotation)} par tour, subside communal (${k(SUBSIDE.parAgent)} par agent au-delà de ${SUBSIDE.seuil}), confiance de la commune, amendes du Roulage, primes`, `salaires (${k(ECONOMIE.salaire)} par agent), entretien (${k(ECONOMIE.entretienVehicule)} par véhicule), décisions, dépenses, démarches`],
           ['<strong>Criminalité</strong>', 'elle monte d’elle-même chaque jour', 'Proximité, campagne de prévention'],
           ['<strong>Paperasse</strong>', 'chaque incident traité et chaque nouveau dossier', 'Accueil et administration, sous-traitance, logiciel'],
@@ -85,7 +85,7 @@ export function sections() {
         <h3>L'IPZ, ton score du jour</h3>
         <p>L'Indice de performance de zone est calculé à chaque tour :</p>
         ${table(['Composante', 'Poids'], Object.entries(IPZ_POIDS).map(([c, w]) => [{ satisfaction: 'Satisfaction', affaires: 'Résultats (incidents traités et points gagnés)', moral: 'Moral', budget: 'Budget', reputation: 'Réputation' }[c], pc(w)]))}
-        <p>La composante « Résultats » vaut 60 × la part d'incidents traités, plus 6 par point gagné dans la journée (dossiers, affaires disputées, opérations, découverte ou arrestation), plafonnée à 100.</p>`,
+        <p>La composante « Résultats » vaut 60 × la part d'incidents traités, plus 6 par point gagné dans la journée (dossiers, zone de non-droit, opérations, découverte ou arrestation), plafonnée à 100.</p>`,
     },
     {
       id: 'ordres', titre: 'Les ordres et les cinq services', html: `
@@ -136,16 +136,18 @@ export function sections() {
         ${note('Deux tours de suite avec un budget négatif déclenchent l’Inspection générale : 5 k€ d’amende et −5 de satisfaction.')}`,
     },
     {
-      id: 'affaires', titre: 'Affaires disputées', html: `
-        <p>Chaque affaire éclate <strong>dans une zone</strong> (sa punaise est sur son territoire). Cette zone la dirige : elle seule décide de la lancer, en y engageant des agents dans ses ordres.</p>
+      id: 'affaires', titre: 'Zone de non-droit', html: `
+        <p>Le centre de la ville est aux mains du milieu : ${Object.keys((S.state && S.state.nonDroit && S.state.nonDroit.secteurs) || {}).length || 8} secteurs hachurés de rouge sur la carte, avec au milieu le QG. Les zones s'installent tout autour. <strong>Toutes peuvent y envoyer des agents, sans candidature ni accord de personne</strong> : il suffit de les placer depuis le Terrain et de valider ses ordres.</p>
         ${ul([
-          '<strong>Postuler</strong> : les autres zones proposent un nombre d’agents depuis le Terrain, où se gèrent toutes les affaires disputées (engager tes agents, postuler, accepter). La candidature arrive dans l’onglet Privé de la zone qui dirige.',
-          '<strong>Accepter ou refuser</strong> : la zone qui dirige répond depuis son onglet Privé. Les zones acceptées participent dans la limite des places (nombre maximum d’agents sur l’affaire, zone qui dirige comprise).',
-          '<strong>Récompense selon la force</strong> : sous la force minimale, l’affaire échoue. À la force minimale, elle rapporte 60 % des points annoncés ; à la force conseillée, 100 % ; à une fois et demie la force conseillée, 130 % (maximum). Les points sont partagés selon le nombre d’agents de chaque zone.',
-          'Candidature refusée, sans réponse, ou affaire non lancée : tes agents restent au travail chez toi, en Intervention.',
-          'L’équipe réussit si sa force totale atteint la force minimale. La force dépend du nombre d’agents, du niveau en Recherche ou Intervention et du moral.',
-          `<strong>Ce que rapporte une affaire résolue</strong> : une prime de ${String(AFFAIRE.prime).replace('.', ',')} k€ par point annoncé (selon la force, de 60 % à 130 %), partagée selon les agents fournis ; +2 de moral pour chaque zone ; pour la zone qui dirige, de la satisfaction et +${AFFAIRE.repChef} de réputation (+1 de plus si elle est épaulée) ; pour chaque zone venue en renfort, de la réputation selon ses agents : +1 pour 1 agent, +2 pour 2 ou 3, +3 à partir de 4. Les points comptent en plus dans l’IPZ.`,
-          'Une affaire non résolue reste un tour de plus, avec une récompense réduite.',
+          `<strong>L'emprise</strong> : chaque secteur a une emprise du milieu (0 à 100). Chaque soir, la force de toutes les zones présentes la fait baisser ; la nuit, le milieu se refait. Plus il y a de zones actives dans la partie, plus il se refait vite : seul, on n'y arrive presque jamais.`,
+          `<strong>À plusieurs</strong> : les forces du soir s'additionnent, avec +${Math.round(ND.coop * 100)} % par zone en plus sur le même secteur (jusqu'à ${ND.coopMax} zones). Le Terrain montre qui y était hier soir : c'est le meilleur endroit pour se retrouver. Le bouton radio prévient tout le monde.`,
+          `<strong>La reprise</strong> (emprise à 0) : chaque zone qui a au moins ${Math.round(ND.partMin * 100)} % de l'influence reçoit la même part fixe (+${ND.prise.points} pts, +${ND.prise.satisfaction} de satisfaction, +${ND.prise.rep} de réputation, +1 si on était plusieurs, +${ND.prise.moral} de moral), plus des points et une prime selon son influence. S'y mettre à plusieurs ne divise donc pas la part fixe.`,
+          `<strong>Tenir le secteur</strong> : chaque nuit, il rapporte à chaque zone qui a de l'influence (des points, un peu de satisfaction, ${ND.retombees.ps} PS). Mais le milieu revient de ${ND.remontee} par nuit, et riposte parfois : il faut laisser 2 ou 3 agents de garde (à plusieurs, c'est plus léger). À ${ND.seuilRechute}, le secteur retombe et tout est à refaire.`,
+          `<strong>L'influence</strong> : elle vient de la force engagée et s'efface de ${Math.round((1 - ND.usure) * 100)} % par nuit sur un secteur tenu. Qui monte la garde garde son influence ; qui ne vient plus la perd peu à peu. La zone qui en a le plus est la « zone de référence » : le secteur prend sa couleur sur la carte.`,
+          `<strong>Le QG</strong> : il ne s'attaque qu'une fois ${ND.coeurSeuil} secteurs de l'anneau tenus en même temps. Plus coriace, il rapporte ${String(ND.coeurMult).replace('.', ',')} fois plus, et le trophée « Libérateur ».`,
+          `<strong>Les voisins du centre</strong> : un quartier qui touche un secteur du milieu prend +${String(ND.contagion).replace('.', ',')} de tension chaque nuit ; s'il touche un secteur repris, il perd ${String(ND.apaisement).replace('.', ',')}.`,
+          `<strong>Limites</strong> : ${ND.maxParSecteur} agents par secteur et ${ND.maxTotal} en tout, pris sur tes services pour la journée. Au-delà de 3 agents au même endroit, risque d'un blessé pendant l'assaut. Si tu oublies tes ordres un jour, tes agents restent sur place ; au-delà, ils rentrent.`,
+          'Une zone qui ne joue plus ne bloque personne : les autres continuent sans elle. La zone de non-droit repart de zéro à chaque saison.',
         ])}`,
     },
     {
@@ -309,7 +311,7 @@ export function sections() {
       id: 'imprevus', titre: 'Imprévus, coups durs et Inspection', html: `
         <p><strong>Aléas légers</strong> : environ un tour sur trois, une petite surprise, bonne ou mauvaise (croissants offerts, subside, agent cloué au lit, imprimante en panne, dégât des eaux qui retarde d’un tour les pièces d’enquête demandées, grève sauvage qui immobilise 2 agents…).</p>
         <p><strong>L’Accueil comme assurance</strong> : les tracas internes (informatique, locaux, papiers, grève, plainte, panne générale) sont évités dans 15 % des cas par agent d’Accueil au-delà de 2, jusqu’à 60 %. Le rapport le signale quand ton Accueil a paré le coup.</p>
-        <p><strong>Interventions musclées</strong> : sur une affaire disputée, chaque agent engagé au-delà de 3 ajoute 5 % de risque qu’un agent soit blessé (3 tours d’absence), jusqu’à 30 %.</p>
+        <p><strong>Interventions musclées</strong> : dans la zone de non-droit, chaque agent engagé au-delà de 3 sur un même secteur ajoute ${Math.round(ND.risqueParAgent * 100)} % de risque qu’un agent soit blessé pendant l’assaut (3 tours d’absence), jusqu’à ${Math.round(ND.risqueMax * 100)} %.</p>
         <p><strong>Coups durs</strong> : environ un tour sur huit, un vrai coup dur. Ta gestion en réduit le risque :</p>
         ${table(['Coup dur', 'Effet', 'Ce qui le rend plus rare'], COUPS_DURS.map((c) => [esc(c.titre), {
           rebellion: '1 ou 2 agents blessés, absents 2 à 4 tours, −4 de moral',

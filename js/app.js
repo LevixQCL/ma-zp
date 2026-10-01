@@ -32,7 +32,9 @@ import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES } from './quests/quests.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
-import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC } from './engine/constants.js';
+import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND } from './engine/constants.js';
+import { nomSecteur } from './engine/nondroit.js';
+import { agentsND } from './ui/nondroit.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
 
 const app = document.getElementById('app');
@@ -358,6 +360,35 @@ async function onClick(e) {
         S.ordersDirty = true; rerender(); break;
       }
       case 'offre-retirer': S.draft.offre = null; S.ordersDirty = true; rerender(); break;
+      case 'secteur': {
+        // Secteur de la zone de non-droit touché sur une carte : on l'ouvre sur le Terrain.
+        S.secteurSel = el.dataset.c;
+        if (location.hash !== '#terrain') { location.hash = '#terrain'; await new Promise((ok) => setTimeout(ok, 60)); } else rerender();
+        const cible = document.getElementById(`nd-${el.dataset.c}`);
+        if (cible) { cible.scrollIntoView({ block: 'center', behavior: 'smooth' }); cible.classList.add('surligne-bloc'); setTimeout(() => cible.classList.remove('surligne-bloc'), 1600); }
+        break;
+      }
+      case 'nd': {
+        const k = el.dataset.c, dd = Number(el.dataset.d);
+        const sect = (S.draft.secteurs ||= {});
+        const cur = sect[k] || 0;
+        if (dd > 0) {
+          if (cur >= ND.maxParSecteur || agentsND() >= ND.maxTotal) { toast(`Au plus ${ND.maxParSecteur} agents par secteur et ${ND.maxTotal} en tout.`); break; }
+          if (!takeAgent()) break;
+          sect[k] = cur + 1;
+        } else if (cur > 0) {
+          if (cur - 1 > 0) sect[k] = cur - 1; else delete sect[k];
+          S.draft.alloc.intervention += 1; // l'agent rendu retourne en Intervention
+        }
+        S.secteurSel = k; S.ordersDirty = true; rerender(); break;
+      }
+      case 'nd-appel': {
+        const k = el.dataset.c, n = (S.draft.secteurs || {})[k] || 0, z = myZone();
+        if (!n) break;
+        el.disabled = true;
+        await b.sendRadio(S.user.uid, `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) envoie ${n} agent${n > 1 ? 's' : ''} à ${nomSecteur(k)} ce soir. Plus on est nombreux, plus ça tombe vite : qui vient ?`);
+        toast('Message envoyé sur la radio.'); rerender(); break;
+      }
       case 'quartier': {
         S.quartierSel = el.dataset.c;
         const dansCarte = !!el.closest('svg');
@@ -576,7 +607,8 @@ async function onClick(e) {
           if (key.startsWith('eng:')) {
             const id = key.slice(4), eg = d.engagements[id];
             if (eg && eg.acceptes && eg.acceptes.length) eg.agents = 0; else delete d.engagements[id];
-          } else if (key === 'ev') d.evenement = 0;
+          } else if (key.startsWith('nd:')) { if (d.secteurs) delete d.secteurs[key.slice(3)]; }
+          else if (key === 'ev') d.evenement = 0;
           else if (key === 'renfort') d.renfort = null;
         };
         if (k === 'tout') agentsHorsServices().forEach((h) => lib(h.k)); else lib(k);

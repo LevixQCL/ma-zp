@@ -67,7 +67,7 @@ export const AIDES = {
       '<strong>Manœuvres</strong> : chacune coûte de la réputation, réussie ou non',
       '<strong>Chaque soir</strong> : elle revient de 3 % vers 50',
     ],
-    monte: 'partager des indices, aider une zone en difficulté, FIPA partagées, affaires gagnées à deux, arrestations',
+    monte: 'partager des indices, aider une zone en difficulté, FIPA partagées, secteurs repris à plusieurs, arrestations',
     baisse: 'fausses accusations, manœuvres, blâme du Conseil, fiascos',
     guide: 'guide-zone',
   },
@@ -91,7 +91,7 @@ export const AIDES = {
       `<strong>Exemples</strong> : réputation 80 → +${k2(30 * SUBSIDE.confiance)} k€ · 50 → 0 · 30 → −${k2(20 * SUBSIDE.confianceMalus)} k€ · 100 → +${k2(50 * SUBSIDE.confiance)} k€`,
       '<strong>Réputation prise en compte</strong> : celle du moment où le budget est calculé à 20:00, après les affaires, l’entraide et l’enquête du soir, mais avant le retour naturel vers 50',
     ],
-    conseil: 'Pour la faire monter : monter ta réputation (partages d’indices, entraide, renforts, affaires à plusieurs).',
+    conseil: 'Pour la faire monter : monter ta réputation (partages d’indices, entraide, renforts, zone de non-droit à plusieurs).',
     guide: 'guide-zone',
   },
   terrain: {
@@ -100,7 +100,7 @@ export const AIDES = {
     lignes: [
       '<strong>Calcul</strong> : 60 × part des incidents traités + 6 × points de résultats du jour, plafonné à 100',
       '<strong>Incidents</strong> : tout traiter donne déjà 60 ; en rater la moitié n’en donne que 30',
-      '<strong>Points de résultats</strong> : affaires disputées, dossiers élucidés, opérations d’envergure, flagrants délits, enquête, poste avancé',
+      '<strong>Points de résultats</strong> : zone de non-droit, dossiers élucidés, opérations d’envergure, flagrants délits, enquête, poste avancé',
       '<strong>Chaque jour repart de zéro</strong> : les points ne s’accumulent pas d’un tour à l’autre',
     ],
     conseil: 'Assez d’Intervention pour ne rater aucun incident, puis de la Recherche et des affaires pour les points.',
