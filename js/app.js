@@ -361,7 +361,8 @@ async function onClick(e) {
       }
       case 'offre-retirer': S.draft.offre = null; S.ordersDirty = true; rerender(); break;
       case 'secteur': {
-        // Secteur de la zone de non-droit touché sur une carte : on l'ouvre sur le Terrain.
+        // Secteur de la zone de non-droit : une ligne de la liste s'ouvre ou se referme ; un secteur touché sur une carte s'ouvre sur le Terrain.
+        if (el.classList.contains('nd-row')) { S.secteurSel = S.secteurSel === el.dataset.c ? null : el.dataset.c; rerender(); break; }
         S.secteurSel = el.dataset.c;
         if (location.hash !== '#terrain') { location.hash = '#terrain'; await new Promise((ok) => setTimeout(ok, 60)); } else rerender();
         const cible = document.getElementById(`nd-${el.dataset.c}`);
