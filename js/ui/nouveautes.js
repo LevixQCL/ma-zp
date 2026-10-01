@@ -3,9 +3,12 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-02',
-  titre: 'Mise à jour du 2 octobre : les incidents du jour',
+  id: '2026-10-02b',
+  titre: 'Mise à jour du 2 octobre : incidents du jour et résultats terrain',
   points: [
+    ['Résultats terrain, moins de hasard', 'la Recherche rapporte des points chaque jour (+0,5 par unité de travail sur les dossiers) au lieu d’un gros paquet le jour où un dossier tombe, et le flagrant délit suit une jauge qui se remplit avec tes patrouilles libres au lieu d’un tirage au sort.'],
+    ['Les gros coups comptent plus longtemps', 'les points vont dans un bilan qui garde la moitié de celui de la veille : une reprise dans la zone de non-droit pèse encore les jours suivants, et un jour creux ne fait plus tout chuter.'],
+    ['Nouvelle jauge sur l’HP', 'Résultats terrain s’affiche sous tes jauges ; son bouton « ? » détaille d’où viennent tes points. Sous le moral, l’efficacité de tes agents (par exemple 104 % à 74 de moral), aussi rappelée dans le rapport du soir.'],
     ['Des incidents en journée', 'une ou deux fois par jour, à une heure imprévue, un incident tombe sur un de tes services. L’HP affiche un compte à rebours, puis tu as 6 heures pour intervenir.'],
     ['Quatre mini-jeux', 'Intervention : un colis suspect à neutraliser avec la fiche SEDEE. Recherche : une porte à crocheter du bout des doigts. Roulage : un parking à débloquer pour la dépanneuse. Proximité : un rapport de domiciliation où trois erreurs se cachent.'],
     ['Un seul essai', 'réussi : +1 de moral et des points sur la jauge des skins. Raté ou abandonné : un malus à 20:00 (agents absents, budget, satisfaction…). Pas joué : ton équipe se débrouille seule, mieux si le service est bien fourni.'],

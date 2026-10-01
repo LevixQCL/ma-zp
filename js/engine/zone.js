@@ -1,7 +1,7 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
 import {
-  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, secteurOuvert, malusEtat, coutEquipement, multNiveau, multEquip } from './constants.js';
+  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, coutEquipement, multNiveau, multEquip } from './constants.js';
 import { coutCarrosserie } from './sinistres.js';
 import { cabossesChoisis } from './parc.js';
 
@@ -384,10 +384,13 @@ export function decisionImpossible(zone, decision, turn) {
   return null;
 }
 
-export function ipzComposantes(zone, { ratio = 1, points = 0 } = {}) {
+/** Résultats terrain : incidents traités (sur 60) + bilan des points de résultats, plafonné à 100. */
+export function terrainBrut(ratio, bilan) { return TERRAIN.incidents * ratio + TERRAIN.parPoint * bilan; }
+
+export function ipzComposantes(zone, { ratio = 1, bilan = 0 } = {}) {
   return {
     satisfaction: clamp(zone.satisfaction, 0, 100),
-    affaires: clamp(60 * ratio + 6 * points, 0, 100),
+    affaires: clamp(terrainBrut(ratio, bilan), 0, 100),
     moral: clamp(zone.moral, 0, 100),
     budget: clamp(50 + zone.budget * 1.5, 0, 100),
     reputation: clamp(zone.reputation, 0, 100),
@@ -464,7 +467,7 @@ export function ligneIpz(comp, hier, ipz, ipzHier, det) {
     const pourquoi = [plus ? `surtout grâce à : ${IPZ_LABELS[plus.k].toLowerCase()}` : '', moins ? `plombé par : ${IPZ_LABELS[moins.k].toLowerCase()}` : ''].filter(Boolean).join(' ; ');
     if (pourquoi) tete += `, ${pourquoi}`;
   }
-  const res = det ? ` Résultats : ${det.traites}/${det.incidents} incidents traités, ${f(det.points)} pts d’affaires.` : '';
+  const res = det ? ` Résultats terrain : ${det.traites}/${det.incidents} incidents traités, ${f(det.points)} pts de résultats aujourd’hui${det.bilan !== undefined ? ` (bilan ${f(det.bilan)} avec la moitié d’hier)` : ''}.` : '';
   return `${tete}. Détail en points d’IPZ : ${parts.map((p) => p.txt).join(' · ')}.${res}`;
 }
 

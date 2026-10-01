@@ -65,7 +65,7 @@ export function sections() {
           `<strong>Scandale</strong> : une manœuvre ratée par une zone de réputation supérieure à ${REPUTATION.scandale} coûte ${REPUTATION.scandaleMalus} points de plus.`,
           'Au-dessus de 60, moins de plaintes contre ta zone ; en fin de saison, la meilleure réputation reçoit le titre « Collègue en or ».',
         ])}
-        <p>Le moral multiplie l'efficacité de tous tes agents : de 60 % (moral 0) à 120 % (moral 100). Sous 40, 10 % des agents restent absents ; sous 20, un agent démissionne.</p>
+        <p>Le moral multiplie l'efficacité de tous tes agents : efficacité = 60 % + 0,6 × moral. Moral 40 → 84 % · 50 → 90 % · 60 → 96 % · 67 → 100 % · 74 → 104 % · 80 → 108 % · 100 → 120 %. Le rapport du soir indique l'efficacité appliquée. Sous 40, 10 % des agents restent absents ; sous 20, un agent démissionne.</p>
         <h3>Logistique : les bâtiments</h3>
         <p>Chaque zone a un <strong>hôtel de police</strong> et un <strong>garage</strong>, du niveau 1 au niveau ${BATIMENT_MAX}. L’hôtel de police fixe le nombre d’agents que tu peux avoir (recrues à l’académie comprises), le garage le nombre de véhicules. Agrandir est une grande décision : ${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux, puis un entretien plus élevé. En contrepartie, la commune verse un <strong>subside de ${k(SUBSIDE.parAgent)} par tour pour chaque agent au-delà de ${SUBSIDE.seuil}</strong> (la moitié de son salaire) : grandir coûte moins cher, sans être gratuit.</p>
         ${table(['Bâtiment', 'Capacité par niveau', 'Agrandir', 'Entretien par tour'], Object.values(BATIMENTS).map((B) => [B.nom, [1, 2, 3, 4, 5].map((n) => B.capacite(n)).join(' / ') + ' ' + B.unite, [1, 2, 3, 4].map((n) => B.coutAgrandir(n)).join(' / ') + ' k€', [1, 2, 3, 4, 5].map((n) => String(B.entretien(n)).replace('.', ',')).join(' / ') + ' k€']))}
@@ -86,13 +86,13 @@ export function sections() {
         <h3>L'IPZ, ton score du jour</h3>
         <p>L'Indice de performance de zone est calculé à chaque tour :</p>
         ${table(['Composante', 'Poids'], Object.entries(IPZ_POIDS).map(([c, w]) => [{ satisfaction: 'Satisfaction', affaires: 'Résultats (incidents traités et points gagnés)', moral: 'Moral', budget: 'Budget', reputation: 'Réputation' }[c], pc(w)]))}
-        <p>La composante « Résultats » vaut 60 × la part d'incidents traités, plus 6 par point gagné dans la journée (dossiers, zone de non-droit, opérations, découverte ou arrestation), plafonnée à 100.</p>`,
+        <p>La composante « Résultats terrain » vaut 60 × la part d'incidents traités, plus 3 × ton <strong>bilan</strong> de points, plafonnée à 100. Le bilan = les points du jour + la moitié du bilan de la veille : un gros coup compte encore les jours suivants, et un jour creux ne fait pas tout tomber. Les points viennent de la Recherche (+0,5 par unité de travail sur les dossiers, chaque jour), des flagrants délits (+3), de la zone de non-droit, des opérations d'envergure, des pièces de voisinage (+2), d'une découverte (+8) ou d'une arrestation (+6).</p>`,
     },
     {
       id: 'ordres', titre: 'Les ordres et les cinq services', html: `
         <p>Tes agents disponibles (hors blessés, malades, formations) se répartissent entre cinq services. Répartition de départ : ${Object.entries(DEFAULT_ALLOC).map(([s, n]) => `${n} ${SERVICE_LABELS[s]}`).join(', ')}.</p>
         ${table(['Service', 'Son rôle'], [
-          ['Intervention', 'Traite les incidents du jour (environ 1,1 de capacité par incident). Chaque incident raté coûte 1,8 de satisfaction. Limité par les véhicules : au-delà de 2,5 agents par véhicule, les agents en plus ne comptent qu’à moitié. Les patrouilles restées libres après les incidents peuvent faire un flagrant délit (+3 pts, +3 PS, quartier apaisé) : jusqu’à 40 % de chance par jour selon la marge.'],
+          ['Intervention', 'Traite les incidents du jour (environ 1,1 de capacité par incident). Chaque incident raté coûte 1,8 de satisfaction. Limité par les véhicules : au-delà de 2,5 agents par véhicule, les agents en plus ne comptent qu’à moitié. Les patrouilles restées libres après les incidents remplissent une jauge de flagrant délit (+10 % par unité de marge, 40 % au plus par jour) : à 100 %, flagrant délit sûr (+3 pts, +3 PS, quartier apaisé).'],
           ['Proximité', 'Fait baisser la criminalité (0,6 par unité de capacité) et soigne la satisfaction. Ses agents peuvent patrouiller dans des quartiers précis, depuis la Carte.'],
           ['Recherche', 'Élucide les dossiers locaux, qui rapportent des points ; mène l’enquête de voisinage, qui rapporte des pièces pour l’enquête de la semaine (surtout avec une piste prioritaire).'],
           ['Roulage', `Rapporte des amendes (${k(ECONOMIE.amendeParCapacite)} par unité de capacité). Au-delà de 6 agents, chaque agent de plus compte pour moitié. Au-delà de 25 % des effectifs (40 % avec les caméras) : effet « chasse aux PV », −2 de satisfaction.`],

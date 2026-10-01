@@ -3,14 +3,14 @@
 
 import {
   APP_VERSION, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat, gainPrime, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat, gainPrime, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms } from './equipe.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
-  forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles,
+  forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, moralMult, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles,
 } from './zone.js';
 import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus } from './enquete.js';
@@ -549,6 +549,11 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       cap[s] = capacite(z, s, alloc[s] + renfort, { rythme: o.rythme, turn: T, bonus: (bonusService === s ? 1.1 : 1) * bTheme, adminMult });
     }
 
+    // Efficacité due au moral (celui du moment du calcul, après aléas, énigmes et primes du jour).
+    const mm = moralMult(z.moral);
+    z.efficaciteMoral = { moral: round1(z.moral), mult: Math.round(mm * 100) / 100 };
+    const ecart = Math.round((mm - 1) * 100);
+    z.rapport.push(`Moral ${Math.round(z.moral)} au moment du travail : efficacité de tous tes agents ${Math.round(mm * 100)} % (${ecart === 0 ? 'neutre' : `${ecart > 0 ? '+' : '−'}${Math.abs(ecart)} %`} ; 100 % à 67 de moral).`);
     // Enquête : démarches et enquête de voisinage.
     const detaches = enqueteZone(state, z, o, makeRng(`${state.seed}:s${state.season}:t${T}:${uid}:enq`), cap, pre) || 0;
 
@@ -567,8 +572,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.rapport.push(`Intervention : ${traites} incident${traites > 1 ? 's' : ''} traité${traites > 1 ? 's' : ''} sur ${incidents}.`);
     // Flagrant délit : les patrouilles qui ne sont pas prises par les incidents peuvent tomber sur un auteur.
     const surplus = Math.max(0, cap.intervention / 1.1 - incidents);
-    const chanceFlag = Math.min(FLAGRANT.max, surplus * FLAGRANT.parUnite);
-    if (chanceFlag > 0 && zr.chance(chanceFlag)) {
+    // Jauge de flagrant délit : la marge des patrouilles s'accumule jour après jour (plus de tirage au sort).
+    const gainFlag = Math.min(FLAGRANT.max, surplus * FLAGRANT.parUnite);
+    z.jaugeFlagrant = round1(Math.min(1.5, (z.jaugeFlagrant || 0) + gainFlag) * 100) / 100;
+    if (z.jaugeFlagrant < 0.995 && gainFlag > 0) z.rapport.push(`Patrouilles libres : jauge de flagrant délit ${Math.round(z.jaugeFlagrant * 100)} % (+${Math.round(gainFlag * 100)} % aujourd’hui ; à 100 %, flagrant délit).`);
+    if (z.jaugeFlagrant >= 0.995) {
+      z.jaugeFlagrant = Math.max(0, round1((z.jaugeFlagrant - 1) * 100) / 100);
       const q = assurerQuartiers(state, z);
       const cells = Object.keys(q).sort((a, b) => q[b] - q[a]);
       const cell = cells.length ? cells[zr.int(0, Math.min(2, cells.length - 1))] : null;
@@ -595,23 +604,30 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     noter(z, 'satisfaction', 'Point chaud désamorcé', z._pcSatisf || 0); delete z._pcSatisf;
     jalon(z, `Quartiers inquiets (criminalité moyenne ${Math.round(z.criminalite)})`);
     // Recherche : dossiers locaux.
-    let nouveauDossier = 0;
-    if (zr.chance(0.6)) {
-      const reste = zr.int(6, 14);
-      z.dossiers.push({ id: ++z.dossierSeq, titre: zr.pick(DOSSIERS_LOCAUX), reste, total: reste, points: Math.round(reste / 2), age: 0 });
-      nouveauDossier = 1;
+    // Un nouveau dossier chaque jour, de taille régulière : la Recherche a toujours du travail.
+    const nouveauDossier = 1;
+    {
+      const reste = zr.int(DOSSIER.tailleMin, DOSSIER.tailleMax);
+      z.dossiers.push({ id: ++z.dossierSeq, titre: zr.pick(DOSSIERS_LOCAUX), reste, total: reste, points: round1(reste * DOSSIER.ptsParUnite), age: 0 });
     }
     let travail = Math.max(0, cap.recherche - detaches);
-    let resolus = 0;
+    let resolus = 0, ptsRech = 0;
     for (const d of z.dossiers) {
       if (travail <= 0) break;
       const t = Math.min(travail, d.reste);
       d.reste = round1(d.reste - t); travail -= t;
+      // Les points tombent au fil du travail (et non d'un coup à l'élucidation).
+      const p = (d.points || 0) * t / (d.total || t || 1);
+      z._points += p; ptsRech += p;
       if (d.reste <= 0.05) {
-        resolus += 1; z._points += d.points; z.satisfaction += 2;
-        jalon(z, `Dossier « ${d.titre} » élucidé (+2 de satisfaction)`);
-        z.rapport.push(`Recherche : dossier « ${d.titre} » élucidé (+${d.points} pts).`);
+        resolus += 1; z.satisfaction += 2;
+        noter(z, 'satisfaction', 'Dossiers élucidés : +2 chacun', 2);
+        z.rapport.push(`Recherche : dossier « ${d.titre} » élucidé (+2 de satisfaction).`);
       }
+    }
+    if (ptsRech > 0) {
+      jalon(z, 'Recherche : travail sur les dossiers');
+      z.rapport.push(`Recherche : ${fmt1(cap.recherche - detaches - Math.max(0, travail))} unités de travail sur les dossiers, +${fmt1(ptsRech)} pts de résultats.`);
     }
     z.dossiers = z.dossiers.filter((d) => d.reste > 0.05);
     for (const d of z.dossiers) { d.age += 1; if (d.age > 6) z.satisfaction -= 0.4; }
@@ -636,7 +652,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       jalon(z, 'Roulage : effet « chasse aux PV »');
     } else { z.satisfaction += cap.roulage * 0.1; jalon(z, `Sécurité routière : capacité Roulage ${fmt1(cap.roulage)} × 0,1`); }
     // Administration : la pile de paperasse.
-    z.paperasse = Math.max(0, z.paperasse + traites * 0.4 + nouveauDossier + 1.2 - cap.admin * 1.2);
+    z.paperasse = Math.max(0, z.paperasse + traites * 0.4 + nouveauDossier * 0.6 + 1.2 - cap.admin * 1.2);
     z.paperassePic = Math.max(z.paperassePic || 0, z.paperasse);
     if (z.paperasse > 14) { z.moral -= 2; z.satisfaction -= 1; z.rapport.push(`Paperasse : ${Math.round(z.paperasse)} dossiers en attente (−2 de moral).`); }
 
@@ -727,12 +743,15 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
     // IPZ.
     jalon(z, 'Divers');
-    const comp = ipzComposantes(z, { ratio: incidents ? traites / incidents : 1, points: z._points });
+    // Bilan des résultats : les points du jour + la moitié du bilan d'hier.
+    const bilanHier = z.bilanTerrain || 0;
+    z.bilanTerrain = round1(bilanHier * TERRAIN.report + z._points);
+    const comp = ipzComposantes(z, { ratio: incidents ? traites / incidents : 1, bilan: z.bilanTerrain });
     const ipzHier = z.ipz, compHier = z.ipzComp || null;
     z.ipz = ipzFrom(comp);
     z.ipzComp = comp;
     z.ipzCompHier = compHier;
-    z.ipzDetail = { incidents, traites, points: round1(z._points), budget: round1(z.budget) };
+    z.ipzDetail = { incidents, traites, points: round1(z._points), report: round1(bilanHier * TERRAIN.report), bilan: z.bilanTerrain, budget: round1(z.budget) };
     z.rapport.push(ligneIpz(comp, compHier, z.ipz, z.toursJoues > 0 || compHier ? ipzHier : null, z.ipzDetail));
     if (z._joue) {
       z.ipzSomme += z.ipz; z.toursJoues += 1;

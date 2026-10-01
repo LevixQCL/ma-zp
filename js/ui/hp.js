@@ -19,7 +19,7 @@ import { sceneCarteHtml } from './logistique.js';
 import { encheresHtml } from './encheres.js';
 import { TUTELLE } from '../engine/constants.js';
 import { equipeHtml } from './equipe.js';
-import { fraisFixes, pointsIpz, IPZ_LABELS, confianceCommune } from '../engine/zone.js';
+import { fraisFixes, pointsIpz, IPZ_LABELS, confianceCommune, moralMult } from '../engine/zone.js';
 const AIDE_COMP = { satisfaction: 'satisfaction', affaires: 'terrain', moral: 'moral', budget: 'budgetIpz', reputation: 'reputation' };
 import { IPZ_POIDS } from '../engine/constants.js';
 const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations().amendes; } catch (e) { /* pas de brouillon */ } return fraisFixes(z, S.state, { amendes, rythme: (S.draft && S.draft.rythme) || 'normal' }).total; };
@@ -51,7 +51,7 @@ function ipzDetailHtml(d) {
     <div class="between"><span style="font-weight:700">IPZ ${fmt1(d.ipz)}</span>${delta !== null ? `<span class="small">${evol(delta)} depuis la veille</span>` : ''}</div>
     <table class="ipz-table"><thead><tr><th>Composante</th><th>Valeur</th><th>Poids</th><th>Points</th><th>vs veille</th></tr></thead>
       <tbody>${Object.keys(IPZ_POIDS).map(ligne).join('')}</tbody></table>
-    <span class="tiny muted"><strong>Résultats terrain</strong> (ce ne sont pas les PS, qui servent aux grades) = 60 × part des incidents traités + 6 par point de résultat (affaires, dossiers élucidés, opérations, enquête), plafonné à 100${det ? ` · ce tour : ${det.traites}/${det.incidents} incidents, ${fmt1(det.points)} points` : ''}. <strong>Budget</strong> = 50 + 1,5 × budget en k€ (100 dès 34 k€).</span>
+    <span class="tiny muted"><strong>Résultats terrain</strong> (ce ne sont pas les PS, qui servent aux grades) = 60 × part des incidents traités + 3 × bilan des points (points du jour + moitié du bilan d’hier), plafonné à 100${det ? ` · ce tour : ${det.traites}/${det.incidents} incidents, ${fmt1(det.points)} points, bilan ${fmt1(det.bilan !== undefined ? det.bilan : det.points)}` : ''}. <strong>Budget</strong> = 50 + 1,5 × budget en k€ (100 dès 34 k€).</span>
   </div>`;
 }
 
@@ -259,6 +259,8 @@ export function renderHP() {
       </div>
       <div class="col" style="gap:9px">
         ${gauge('Moral', z.moral, 'var(--amber)', delta(z.moral, z.hier && z.hier.moral) + aideBtn('moral'))}
+        <div class="between small" style="margin-top:-4px"><span class="muted">Efficacité de tes agents</span><span class="mono ${moralMult(z.moral) >= 1 ? 'ok' : 'bad'}">${Math.round(moralMult(z.moral) * 100)} %</span></div>
+        ${z.ipzComp ? gauge('Résultats terrain', z.ipzComp.affaires, 'var(--blue-soft)', delta(z.ipzComp.affaires, z.ipzCompHier && z.ipzCompHier.affaires) + aideBtn('terrain', 'Comment gagner des résultats terrain')) : ''}
         ${gauge('Satisfaction citoyenne', z.satisfaction, 'var(--blue)', delta(z.satisfaction, z.hier && z.hier.satisfaction) + aideBtn('satisfaction'))}
         ${gauge('Réputation', z.reputation, 'var(--green)', delta(z.reputation, z.hier && z.hier.reputation) + aideBtn('reputation'))}
         <div class="between small" style="margin-top:-4px"><span class="row muted" style="gap:4px">Confiance de la commune${aideBtn('confiance')}</span><span class="mono ${confianceCommune(z) > 0 ? 'ok' : confianceCommune(z) < 0 ? 'bad' : 'muted'}">${confianceCommune(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(confianceCommune(z)))} k€ / jour</span></div>
