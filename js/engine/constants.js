@@ -173,7 +173,7 @@ export const ND = {
   // ne divise pas les gains), plus une part selon l'influence.
   prise: { points: 4.5, pointsPart: 9, prime: 7.5, satisfaction: 3, rep: 3, moral: 2 },     // à la reprise, partagés selon l'influence (rep et moral : pour chacun)
   coeurMult: 2.5,
-  retombees: { points: 0.45, pointsPart: 1.2, budget: 1.5, satisfaction: 0.3, ps: 3, satisfactionMax: 1 },       // chaque nuit, par secteur tenu, partagés selon l'influence
+  retombees: { points: 0.45, pointsPart: 1.2, budget: 3, satisfaction: 0.3, ps: 3, satisfactionMax: 1 },       // chaque nuit, par secteur tenu, partagés selon l'influence
   contagion: 1.2,         // tension ajoutée chaque nuit aux quartiers qui touchent un secteur du milieu
   apaisement: 0.8,        // tension retirée chaque nuit aux quartiers qui touchent un secteur repris
   riposte: 0.25,          // chance, chaque nuit, que le milieu riposte sur un secteur tenu
