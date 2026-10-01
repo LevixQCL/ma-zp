@@ -2,6 +2,7 @@
 import { S, esc, icon, tabbar } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS } from '../quests/quests.js';
 import { SERVICES, SERVICE_LABELS } from '../engine/constants.js';
+import { entrainementMiniJeuxHtml } from './incidents.js';
 
 /** Le joueur a-t-il déjà changé une énigme aujourd'hui ? */
 function rerollUtilise() { return (S.quests || []).some((q) => q.variante); }
@@ -83,7 +84,8 @@ function entrainementBarre() {
     <div class="col" style="gap:4px"><span class="small" style="font-weight:600">Difficulté</span>
       <div class="segn" style="grid-template-columns:repeat(6,minmax(0,1fr))">${[1, 2, 3, 4, 5, 6].map((n) => `<button type="button" aria-selected="${n === d}" data-action="train-diff" data-v="${n}">${n === 6 ? 'HC' : n}</button>`).join('')}</div></div>
     <span class="tiny muted">${x ? `Ton entraînement en ${esc(QUEST_LABELS[t])} : ${x.ok} réussie${x.ok > 1 ? 's' : ''} sur ${x.n}.` : 'Rien ne compte ici : ni classement, ni moral, ni PS.'} « HC » = niveau hardcore, celui du dossier noir.</span>
-  </section>`;
+  </section>
+  ${entrainementMiniJeuxHtml()}`;
 }
 
 export function renderQuete() {

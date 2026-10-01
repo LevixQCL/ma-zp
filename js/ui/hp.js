@@ -27,6 +27,7 @@ import { demandeRenfortHtml, appelsRenfort, renfortPrevu } from './renfort.js';
 import { secteursEnDanger, agentsND } from './nondroit.js';
 import { nomSecteur } from '../engine/nondroit.js';
 import { operationActive as opActive } from '../engine/zone.js';
+import { incidentsHtml, incidentEnCours, duree } from './incidents.js';
 
 /** Petite flèche d'évolution depuis la veille. */
 function delta(v, avant) {
@@ -133,6 +134,8 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
     items.push({ ok: a >= 2, href: '#carte', t: a >= 2 ? `Point chaud : ${a} agents envoyés` : `Point chaud : ${pc.titre.toLowerCase()}`, s: a >= 2 ? 'désamorcé à 20:00 si tes ordres sont validés' : 'envoie 2 patrouilles depuis la Carte' });
   }
   if (st.enquete) items.push({ ok: nbDem >= 1 || (d.accusation !== null && d.accusation !== undefined), href: '#enquete', t: `Enquête : ${nbDem} démarche${nbDem > 1 ? 's' : ''} sur 2`, s: (st.traques || []).length ? 'une traque est en cours !' : 'constatations, vérifications, partage, accusation' });
+  const inc = incidentEnCours();
+  if (inc) items.unshift({ ok: false, href: '#hp-incidents', t: `Incident en cours : ${esc(inc.titre)}`, s: `encore ${duree(inc.ferme - Date.now())} pour intervenir, sinon ton équipe se débrouille seule` });
   items.push({ ok: faites >= 3, href: '#quete', t: `Énigmes : ${faites} sur 3`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
   const fipa = (st.fipas || []).filter((f) => (f.demandeur === z.uid && f.etape === 'demande' && f.tourDecision === st.turn) || (f.partenaire === z.uid && f.etape === 'invite' && f.tourReponse === st.turn) || (f.etape === 'accepte' && f.tourJ === st.turn && (f.demandeur === z.uid || f.partenaire === z.uid)));
   if (fipa.length) items.push({ ok: !!(d.fipa || d.fipaReponse || d.fipaChoix), href: '#hp-fipa', t: 'FIPA : une décision t’attend', s: 'voir la carte FIPA ci-dessous' });
@@ -223,6 +226,7 @@ export function renderHP() {
     </nav>` : ''}
 
     ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit })}
+    ${incidentsHtml()}
     <section class="card" aria-label="Ma zone">
       <div class="between">
         <div class="row" style="gap:10px;min-width:0">

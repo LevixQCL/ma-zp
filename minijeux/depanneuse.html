@@ -1,0 +1,568 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f17">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Dépanneuse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: one-screen thumb game. Compact header (service badge, title, timer ring), game stage, floating glass cards.
+   Identity: night shift. Deep blue-ink ground lit from above by the service colour; glass surfaces; one accent per service. */
+:root{
+  --bg:#0b0f17; --bg-2:#111827; --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.08);
+  --stroke:rgba(255,255,255,.09); --stroke-2:rgba(255,255,255,.16);
+  --ink:#eef2f8; --mute:#8f9bb1; --faint:#5d6880;
+  --accent:#f2b544; --accent-ink:#1d1405; --accent-soft:rgba(242,181,68,.16);
+  --ok:#46d98a; --ok-soft:rgba(70,217,138,.16); --bad:#ff5d5d; --bad-soft:rgba(255,93,93,.16);
+  --scrim:rgba(5,8,13,.72);
+  --paper:#f4f1e8; --paper-ink:#22252b; --paper-mute:#6b6f77;
+  /* compat (anciens noms) */
+  --panel:#141b28; --panel-2:#1b2333; --line:var(--stroke); --gold:var(--accent); --brass:var(--accent); --steel:#b7c1d1;
+  --f-disp:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-doc:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r-lg:22px; --r-md:14px; --r-sm:10px;
+  color-scheme:dark;
+}
+body.svc-ser{--accent:#f2b544;--accent-ink:#1d1405;--accent-soft:rgba(242,181,68,.16)}
+body.svc-int{--accent:#ff7a59;--accent-ink:#260b03;--accent-soft:rgba(255,122,89,.16)}
+body.svc-rou{--accent:#c9ec4f;--accent-ink:#161d02;--accent-soft:rgba(201,236,79,.15)}
+body.svc-pro{--accent:#62b0ff;--accent-ink:#04182c;--accent-soft:rgba(98,176,255,.16)}
+html,body{height:100%}
+body{background:radial-gradient(120% 60% at 50% -10%,var(--accent-soft),transparent 60%),linear-gradient(180deg,var(--bg-2),var(--bg) 55%);background-color:var(--bg);
+  color:var(--ink);font-family:var(--f-body);overflow:hidden;-webkit-font-smoothing:antialiased;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.app{height:100%;max-width:560px;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;padding-inline:16px;padding-block:12px}
+
+/* header */
+.top{display:flex;align-items:center;gap:12px}
+.badge{flex:0 0 auto;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent)}
+.badge svg{width:22px;height:22px}
+.ttl{flex:1;min-width:0}
+.eyebrow{font-size:12px;font-weight:600;color:var(--mute);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+h1{font-family:var(--f-disp);font-weight:700;font-size:clamp(21px,6.2vw,26px);line-height:1.05;margin:1px 0 0;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud{display:flex;align-items:center;gap:6px}
+.iconbtn{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--stroke);color:var(--mute);cursor:pointer;padding:0}
+.iconbtn svg{width:18px;height:18px}
+.iconbtn.off{opacity:.45}
+.ring{position:relative;width:50px;height:50px;flex:0 0 auto}
+.ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.ring .trk{stroke:var(--surface-2)} .ring .val{stroke:var(--accent);transition:stroke .3s}
+.ring.warn .val{stroke:var(--bad)}
+.timer{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-disp);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.ring.warn .timer{color:var(--bad)}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.gauge{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+.gauge svg{width:15px;height:15px;color:var(--accent)}
+.gbar{flex:1;height:5px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.gbar i{display:block;height:100%;border-radius:3px;background:var(--accent);width:0;transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.gauge b{color:var(--ink);font-weight:700}
+
+.status{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums;gap:8px}
+.status b{color:var(--ink);font-weight:700}
+.stage{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+
+/* coach */
+.coach{display:flex;gap:10px;align-items:flex-start;background:rgba(17,24,39,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:var(--r-md);padding:11px 12px;font-size:14px;line-height:1.45}
+.coach .av{flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font:800 12px var(--f-disp)}
+.coach .body{flex:1;min-width:0}
+.coach b{color:var(--accent);font-weight:700}
+.coach .step{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mute);margin-bottom:3px}
+.coach .dots{display:flex;gap:4px} .coach .dots i{width:14px;height:4px;border-radius:2px;background:var(--surface-2)} .coach .dots i.on{background:var(--accent)}
+.coach .skip{cursor:pointer;color:var(--mute);background:none;border:0;font:600 12px var(--f-body);padding:2px 0}
+
+/* toast */
+.toast{position:fixed;left:50%;top:84px;transform:translate(-50%,-6px);display:flex;align-items:center;gap:8px;font:700 15px var(--f-body);padding:9px 16px;border-radius:999px;background:rgba(17,24,39,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--stroke-2);box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;transition:opacity .15s,transform .15s;pointer-events:none;white-space:nowrap;z-index:4}
+.toast::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast.ok{color:var(--ok)} .toast.bad{color:var(--bad)} .toast.info{color:var(--accent)}
+
+/* overlay cards */
+.overlay{position:fixed;inset:0;background:var(--scrim);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px;z-index:5}
+.card{width:100%;max-width:420px;max-height:100%;overflow:auto;box-sizing:border-box;background:linear-gradient(180deg,#182133,#121a28);border:1px solid var(--stroke-2);border-radius:var(--r-lg);padding:22px 20px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 30px 80px rgba(0,0,0,.5);-webkit-user-select:text;user-select:text;animation:pop .28s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}}
+.card .hero{display:flex;align-items:center;gap:12px}
+.card .hero .badge{width:52px;height:52px;border-radius:16px}
+.card .hero .badge svg{width:26px;height:26px}
+.card .hero .eyebrow{font-size:13px}
+.card h2{font-family:var(--f-disp);font-weight:700;font-size:28px;line-height:1.05;letter-spacing:-.015em;margin:0;text-wrap:balance}
+.card h2.ok{color:var(--ok)} .card h2.bad{color:var(--bad)}
+.card p{margin:0;line-height:1.55;font-size:15px;color:#d5dce8}
+.card p b{color:var(--ink)}
+.card .small{font-size:13px;color:var(--mute)}
+.card ul{margin:0;padding:0;list-style:none;display:grid;gap:8px;font-size:14px;line-height:1.45;color:#d5dce8}
+.card ul li{display:flex;gap:10px}
+.card ul li::before{content:"";flex:0 0 auto;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:8px}
+.lbl2{font-size:13px;font-weight:700;color:var(--ink)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--surface);border:1px solid var(--stroke);border-radius:16px;padding:5px}
+.seg button{background:transparent;border:0;color:var(--mute);border-radius:12px;padding:9px 4px 8px;font:600 12px var(--f-body);cursor:pointer;line-height:1.2;display:grid;justify-items:center;gap:4px;transition:background .15s,color .15s}
+.seg button b{display:block;font-family:var(--f-disp);font-size:17px;color:var(--ink)}
+.seg button .ppl{display:flex;gap:2px} .seg button .ppl i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.8}
+.seg button[aria-pressed="true"]{background:var(--surface-2);color:var(--accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent)}
+.seg.seg1{grid-template-columns:1fr}.seg.seg1 button{cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.embed .top{position:relative;z-index:6}
+.btn{flex:1;min-width:120px;border-radius:14px;padding:14px 12px;font:700 15px var(--f-body);cursor:pointer;border:1px solid var(--stroke-2);background:var(--surface);color:var(--ink);transition:transform .08s,filter .15s}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink);box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 30%,transparent)}
+.btn.small{flex:0 0 auto;min-width:0;padding:9px 14px;font-size:13px;border-radius:12px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--stroke);border-radius:var(--r-md);padding:10px 12px;min-width:0}
+.stat span{display:block;font-size:12px;color:var(--mute)}
+.stat b{font-family:var(--f-disp);font-size:22px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat.pts b{color:var(--accent)}
+.verdict{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;animation:pop .4s cubic-bezier(.2,.9,.3,1.4)}
+.verdict svg{width:28px;height:28px}
+.verdict.ok{background:var(--ok-soft);color:var(--ok)} .verdict.bad{background:var(--bad-soft);color:var(--bad)}
+.malus{background:var(--bad-soft);border-radius:var(--r-md);padding:12px 14px;font-size:14px;line-height:1.45;color:#ffd9d9}
+.malus b{color:var(--bad)}
+.skin{background:var(--accent-soft);border-radius:var(--r-md);padding:12px 14px;font-size:14px;color:var(--accent);font-weight:600}
+.demo{font-size:12px;color:var(--faint);text-align:center}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.shake{animation:shake .3s}
+@media (prefers-reduced-motion:reduce){.gbar i,.toast,.btn{transition:none}.shake,.card,.verdict{animation:none}}
+
+
+.field{flex:1;min-height:0;display:grid;place-items:center}
+/* parking vu du ciel : asphalte, marquages peints, sortie balisée */
+.lot{position:relative;border-radius:20px;background:
+  radial-gradient(circle at 20% 30%,rgba(255,255,255,.035) 0 1px,transparent 1.5px) 0 0/7px 7px,
+  radial-gradient(circle at 70% 60%,rgba(0,0,0,.18) 0 1px,transparent 1.5px) 0 0/5px 5px,
+  linear-gradient(160deg,#343943,#262a31);
+  box-shadow:0 0 0 6px #1a1e25,0 0 0 7px rgba(255,255,255,.08),0 24px 50px rgba(0,0,0,.5)}
+.lot .grid{position:absolute;inset:0;border-radius:20px;opacity:.55}
+.exit{position:absolute;bottom:-10px;height:14px;background:linear-gradient(160deg,#343943,#262a31);display:grid;place-items:center;color:var(--accent)}
+.exit svg{width:60%;height:14px}
+.tow{position:absolute;pointer-events:none;border-radius:0 0 12px 12px;background:linear-gradient(160deg,#343943,#262a31);box-shadow:0 0 0 6px #1a1e25}
+.tow svg{position:absolute;left:50%;top:calc(50% + 6px);width:var(--tl);height:var(--ts);transform:translate(-50%,-50%) rotate(90deg);filter:drop-shadow(0 4px 5px rgba(0,0,0,.45))}
+.veh{position:absolute;touch-action:none;cursor:grab;filter:drop-shadow(0 3px 3px rgba(0,0,0,.45));transition:filter .15s}
+.veh .body{position:absolute;left:50%;top:50%;width:var(--L);height:var(--S);transform:translate(-50%,-50%) rotate(var(--rot,0deg))}
+.veh svg{display:block;width:100%;height:100%}
+.veh.drag{cursor:grabbing;z-index:3;filter:drop-shadow(0 10px 12px rgba(0,0,0,.55)) brightness(1.08)}
+.veh.focus::after{content:"";position:absolute;inset:-5px;border-radius:14px;border:2.5px solid var(--accent);animation:pulse 1.1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.haz{animation:blink .8s steps(1) infinite} @keyframes blink{50%{opacity:.15}}
+.beacon{animation:blink 1s steps(1) infinite}
+.bar2{display:flex;gap:10px;align-items:center;justify-content:space-between;padding-bottom:env(safe-area-inset-bottom,0px)}
+.goal{font-size:13px;color:var(--mute);line-height:1.4}
+@media (prefers-reduced-motion:reduce){.haz,.beacon,.veh.focus::after{animation:none}}
+
+</style>
+</head>
+<body>
+<script>document.body.classList.add('svc-rou')</script>
+<div class="app" id="app">
+  <div class="top">
+    <div class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16.5h14v-4l-2-5H7l-2 5z"/><path d="M5 12.5h14"/><circle cx="8" cy="16.5" r="1.8"/><circle cx="16" cy="16.5" r="1.8"/></svg></div>
+    <div class="ttl"><div class="eyebrow">Roulage · démo</div><h1>Dépanneuse</h1></div>
+    <div class="hud">
+      <button class="iconbtn" id="sound" aria-label="Couper le son"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
+      <button class="iconbtn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
+      <div class="ring" id="ring"><svg viewBox="0 0 50 50"><circle class="trk" cx="25" cy="25" r="21" fill="none" stroke-width="4"/><circle class="val" id="ringval" cx="25" cy="25" r="21" fill="none" stroke-width="4" stroke-linecap="round"/></svg><div class="timer" id="timer">–</div></div>
+    </div>
+  </div>
+  <div class="gauge" id="gaugeRow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/></svg><span>Jauge skins</span><div class="gbar"><i id="gfill"></i></div><span><b id="gtext">46</b> / 50</span></div>
+  <div class="coach" id="coach" hidden></div>
+  <div class="stage" id="stage">
+
+  <div class="field" id="field"><div class="lot" id="lot"><div class="grid"></div></div></div>
+  <div class="status"><span id="movesTxt">Coups 0</span><span id="goalTxt">Minimum possible : --</span></div>
+  <div class="bar2"><span class="goal">Fais glisser les véhicules pour libérer la voiture accidentée.</span><button class="btn small" id="reset">Replacer</button></div>
+
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="overlay" id="overlay"><div class="card" id="card"></div></div>
+<script>
+/* Socle commun des mini-jeux Ma ZP (démo) : menu, tuto, résultat, jauge skins, sons, toasts. */
+const $ = id => document.getElementById(id);
+const rand = (a,b) => a + Math.random()*(b-a);
+const randi = (a,b) => Math.floor(rand(a,b+1));
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+const shuffle = arr => { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+const ICONS = {
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.4" fill="currentColor"/></svg>',
+  alert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="8" width="17" height="12" rx="2.5"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3.5 13h17"/><circle cx="17" cy="16.5" r="1" fill="currentColor"/></svg>',
+  car:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16.5h14v-4l-2-5H7l-2 5z"/><path d="M5 12.5h14"/><circle cx="8" cy="16.5" r="1.8"/><circle cx="16" cy="16.5" r="1.8"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10.5a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5V8h4"/><path d="M9 12.5h6M9 16h4"/></svg>',
+  sound:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
+  menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h9"/></svg>',
+  star:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  cross:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>'
+};
+
+const Shell = (() => {
+  let G = null;
+  const st = {diff:'normal', tuto:false, gauge:46, sound:true, mode:'menu', timeLeft:0, timeTotal:1, timerOn:false, timerRate:1, onTimeout:null};
+  const store = {
+    get(k,d){try{const v=localStorage.getItem(G.key+'.'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+    set(k,v){try{localStorage.setItem(G.key+'.'+k,JSON.stringify(v))}catch(e){}}
+  };
+  let ac=null;
+  function blip(freq,dur,type='square',vol=.06){
+    if(!st.sound) return;
+    try{
+      ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.type=type; o.frequency.value=freq; g.gain.value=vol;
+      g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime+dur);
+      o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime+dur);
+    }catch(e){}
+  }
+  const good = () => { blip(1200,.06,'square',.05); buzz(15); };
+  const bad  = () => { blip(130,.18,'sawtooth',.06); buzz([30,40,30]); };
+  const win  = () => { blip(660,.12,'triangle',.08); setTimeout(()=>blip(990,.25,'triangle',.08),120); buzz(60); };
+  function buzz(p){ try{ navigator.vibrate && navigator.vibrate(p) }catch(e){} }
+  let tt=0;
+  function toast(txt,kind='info'){ const t=$('toast'); t.textContent=txt; t.className='toast show '+kind; clearTimeout(tt); tt=setTimeout(()=>t.className='toast '+kind,850); }
+  function shake(el){ el=el||$('stage'); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+
+  function showCard(html){ $('card').innerHTML=html; $('overlay').hidden=false; $('card').scrollTop=0; const c=$('card'); c.style.animation='none'; void c.offsetWidth; c.style.animation=''; }
+  function hide(){ $('overlay').hidden=true; }
+  function renderGauge(){ $('gfill').style.width=(st.gauge/50*100)+'%'; $('gtext').textContent=st.gauge; }
+
+  function coach(step,total,html){
+    const c=$('coach'); c.hidden=false;
+    const dots=Array.from({length:total},(_,i)=>`<i class="${i<step?'on':''}"></i>`).join('');
+    c.innerHTML=`<div class="av">CP</div><div class="body"><div class="step"><span class="dots" aria-label="Étape ${step} sur ${total}">${dots}</span><button class="skip" id="skipTuto">Passer le tuto</button></div><div>${html}</div></div>`;
+    $('skipTuto').onclick=endTuto;
+  }
+  function hideCoach(){ $('coach').hidden=true; }
+  const hero = sub => `<div class="hero"><div class="badge">${document.querySelector('.top .badge').innerHTML}</div><div><div class="eyebrow">${sub}</div></div></div>`;
+
+  // Intégration dans Ma ZP : ?mode=incident (incident du jour, un seul essai) ou ?mode=train (entraînement).
+  const Q = new URLSearchParams(location.search);
+  const MODE = ['incident','train'].includes(Q.get('mode')) ? Q.get('mode') : null;
+  const INC = MODE==='incident';
+  const escH = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function post(type, data={}){ try{ if(window.parent!==window) window.parent.postMessage({source:'mazp-mj', jeu:G.key, id:Q.get('id'), type, ...data}, location.origin); }catch(e){} }
+  let joue=false, fini=false;
+  const effectif = () => { const d=G.diffs[st.diff]; const n=Number(Q.get('agents')); return `${Number.isFinite(n)&&Q.get('agents')!==null?n:d.agents} agent${(Number.isFinite(n)&&Q.get('agents')!==null?n:d.agents)>1?'s':''}`; };
+
+  function menu(){
+    if(INC && fini){ post('close'); return; }
+    st.mode='menu'; st.timerOn=false; hideCoach(); G.onMenu && G.onMenu();
+    const touch=matchMedia('(pointer:coarse)').matches;
+    const tutoBtns = (goLbl) => st.tuto
+      ? `<button class="btn primary" id="go">${goLbl}</button><button class="btn" id="tuto">Revoir le tuto</button>`
+      : `<button class="btn primary" id="tuto">Commencer le tuto</button><button class="btn" id="go">${INC?'Intervenir sans tuto':'Jouer directement'}</button>`;
+    if(INC){
+      const d=G.diffs[st.diff];
+      showCard(`
+        ${hero('Incident du jour · '+G.serviceShort)}
+        <h2>${G.headline}</h2>
+        ${G.story}
+        <div class="lbl2">Effectif ${G.serviceShort} sur place</div>
+        <div class="seg seg1"><button aria-pressed="true" tabindex="-1"><span class="ppl">${'<i></i>'.repeat(Math.max(1,Math.min(12,Number(Q.get('agents'))||d.agents)))}</span><b>${effectif()}</b>${d.label}</button></div>
+        <p class="small">Un seul essai. Réussi : jauge des skins et +1 de moral. Raté ou abandonné : ${escH(Q.get('malus')||G.malus)} (à 20:00).</p>
+        <div class="row">${tutoBtns('Intervenir')}</div>
+        <button class="btn small" id="later" style="align-self:center">Plus tard</button>
+        ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}`);
+    } else {
+      const seg=Object.entries(G.diffs).map(([k,d])=>`<button data-k="${k}" aria-pressed="${k===st.diff}"><span class="ppl">${'<i></i>'.repeat(d.agents)}</span><b>${d.agents} agents</b>${d.label}</button>`).join('');
+      showCard(`
+        ${hero((MODE==='train'?'Entraînement · ':'Ma ZP · ')+G.service)}
+        <h2>${G.headline}</h2>
+        ${G.story}
+        <div class="lbl2">Effectif ${G.serviceShort} sur place</div>
+        <div class="seg" id="seg">${seg}</div>
+        <p class="small">${G.diffHint}</p>
+        <div class="row">${tutoBtns('Jouer')}</div>
+        ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
+        <p class="demo">${MODE==='train'?'Entraînement : rien ne compte pour ta zone.':'Démo jouable, rien n\'est enregistré dans ta partie Ma ZP.'}</p>`);
+      $('seg').onclick=e=>{const b=e.target.closest('button'); if(!b) return; st.diff=b.dataset.k; store.set('diff',st.diff);
+        [...$('seg').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===st.diff));};
+    }
+    $('go').onclick=play; $('tuto').onclick=startTuto;
+    if($('later')) $('later').onclick=()=>post('close');
+  }
+  function play(){
+    if(INC){ if(fini) return; if(!joue){ joue=true; post('start'); } }
+    hide(); hideCoach(); st.mode='play'; G.onPlay(G.diffs[st.diff]);
+  }
+  function startTuto(){ hide(); st.mode='tuto'; st.timerOn=false; G.onTuto(); }
+  function endTuto(){
+    st.tuto=true; store.set('tuto',true); hideCoach(); st.mode='menu'; st.timerOn=false; G.onMenu && G.onMenu();
+    showCard(`${hero('Tutoriel terminé')}<h2>Les règles en bref</h2><ul>${G.rules.map(r=>`<li><span>${r}</span></li>`).join('')}</ul>
+      <div class="row"><button class="btn primary" id="go">${INC?'Intervenir':'Lancer une partie'}</button><button class="btn" id="tomenu">${INC?'Plus tard':'Menu'}</button></div>`);
+    $('go').onclick=play; $('tomenu').onclick=INC?()=>post('close'):menu;
+  }
+  function startTimer(sec,onTimeout){ st.timeLeft=sec; st.timeTotal=sec; st.timerOn=true; st.timerRate=1; st.onTimeout=onTimeout; }
+  function stopTimer(){ st.timerOn=false; }
+  function fmt(s){ s=Math.max(0,Math.ceil(s)); return s>=60? Math.floor(s/60)+':'+String(s%60).padStart(2,'0') : String(s); }
+
+  function result({ok, stats, faults, malus, note}){
+    st.timerOn=false; st.mode='result';
+    let pts=0, skin=false;
+    if(ok) pts=faults===0?2:1;
+    if(INC){
+      fini=true; post('result',{ok, fautes:faults, pts});
+      if(ok){ st.gauge+=pts; renderGauge(); }
+    } else if(MODE!=='train' && ok){ st.gauge+=pts; if(st.gauge>=50){st.gauge-=50; skin=true;} store.set('gauge',st.gauge); renderGauge(); }
+    const statHtml=stats.map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')+(MODE==='train'?'':`<div class="stat pts"><span>Jauge skins</span><b>${ok?'+'+pts:'+0'}</b></div>`);
+    const boutons = INC ? `<button class="btn primary" id="back">Retour au commissariat</button>`
+      : `<button class="btn primary" id="again">${ok?'Rejouer':'Réessayer'}</button><button class="btn" id="tomenu">Menu</button>`;
+    const noteInc = INC ? (ok ? `Résultat enregistré : +${pts} sur la jauge des skins et +1 de moral à 20:00.${st.gauge>=50?' Ta jauge sera pleine ce soir : un nouveau skin t’attend.':''}` : '') : '';
+    showCard(ok?`
+      <div class="verdict ok">${ICONS.check}</div>
+      <h2>${G.winTitle}</h2>
+      <div class="stats">${statHtml}</div>
+      ${skin?`<div class="skin">Jauge pleine : le skin « ${G.skin} » est débloqué pour ton commissariat.</div>`:''}
+      <p class="small">${INC?noteInc:MODE==='train'?'Entraînement : rien ne compte pour ta zone.':(note || (faults===0?'Sans faute : double point.':'Termine sans erreur pour gagner +2.'))}</p>
+      <div class="row">${boutons}</div>`
+    :`
+      <div class="verdict bad">${ICONS.cross}</div>
+      <h2>${G.loseTitle}</h2>
+      <div class="stats">${statHtml}</div>
+      ${MODE==='train'?'<p class="small">Entraînement : aucune conséquence.</p>':`<div class="malus"><b>Malus</b> · ${escH(INC&&Q.get('malus')?Q.get('malus')+' (appliqué à 20:00)':(malus||G.malus))}</div>`}
+      <div class="row">${boutons}</div>`);
+    if(INC) $('back').onclick=()=>post('close'); else { $('again').onclick=play; $('tomenu').onclick=menu; }
+  }
+
+  const CIRC = 2*Math.PI*21;
+  let last=performance.now();
+  function frame(ts){
+    const dt=Math.min(.05,(ts-last)/1000); last=ts;
+    if(st.timerOn){ st.timeLeft-=dt*st.timerRate; if(st.timeLeft<=0){ st.timeLeft=0; st.timerOn=false; st.onTimeout && st.onTimeout(); } }
+    const playing = st.mode==='play';
+    $('timer').textContent = playing ? fmt(st.timeLeft) : '–';
+    const frac = playing ? Math.max(0,st.timeLeft/st.timeTotal) : 1;
+    $('ringval').style.strokeDashoffset = CIRC*(1-frac);
+    $('ring').classList.toggle('warn', playing && st.timeLeft<10);
+    if(!st.pause) G.onFrame && G.onFrame(dt, ts/1000);
+    requestAnimationFrame(frame);
+  }
+
+  function init(cfg){
+    G=cfg;
+    st.diff=store.get('diff','normal'); st.tuto=store.get('tuto',false); st.gauge=store.get('gauge',46);
+    if(INC){ if(G.diffs[Q.get('diff')]) st.diff=Q.get('diff'); st.gauge=Math.max(0,Number(Q.get('jauge'))||0); }
+    if(MODE==='train') $('gaugeRow').hidden=true;
+    $('ringval').style.strokeDasharray=CIRC;
+    renderGauge();
+    $('sound').onclick=()=>{ st.sound=!st.sound; $('sound').classList.toggle('off',!st.sound); $('sound').setAttribute('aria-label',st.sound?'Couper le son':'Activer le son'); };
+    if(MODE){
+      document.body.classList.add('embed');
+      const eb=document.querySelector('.top .eyebrow'); if(eb) eb.textContent=(INC?'Incident du jour · ':'Entraînement · ')+G.serviceShort;
+      // Dans Ma ZP : le bouton du haut ferme le mini-jeu.
+      const b=$('menuBtn'); b.innerHTML=ICONS.cross; b.setAttribute('aria-label','Fermer');
+      b.onclick=()=>{ if(INC && joue && !fini && st.mode==='play'){ askQuit(); return; } if(MODE==='train' && st.mode!=='menu'){ menu(); return; } post('close'); };
+    } else $('menuBtn').onclick=menu;
+    document.addEventListener('contextmenu',e=>e.preventDefault());
+    G.onInit && G.onInit();
+    menu();
+    requestAnimationFrame(frame);
+  }
+  function askQuit(){
+    const was=st.timerOn; st.timerOn=false; st.pause=true;
+    showCard(`<h2>Abandonner l’incident ?</h2><p>Tu n’as qu’un essai : si tu quittes maintenant, l’incident compte comme raté et le malus tombera à 20:00.</p>
+      <div class="row"><button class="btn primary" id="stay">Continuer</button><button class="btn" id="quit">Abandonner</button></div>`);
+    $('stay').onclick=()=>{ hide(); st.timerOn=was; st.pause=false; };
+    $('quit').onclick=()=>{ fini=true; post('result',{ok:false, fautes:1, pts:0, abandon:true}); post('close'); };
+  }
+  return {init, st, blip, good, bad, win, buzz, toast, shake, coach, hideCoach, endTuto, startTimer, stopTimer, result, menu, fmt};
+})();
+
+
+const PUZ = {"facile":[{"m":8,"v":[[2,2,2,1],[5,0,2,1],[0,2,2,1],[5,2,2,1],[4,1,3,1],[1,3,2,1],[2,4,2,0],[3,0,2,1],[4,4,2,0],[0,0,3,0],[0,4,2,1],[2,5,2,0]]},{"m":5,"v":[[2,0,2,1],[2,2,2,0],[1,5,2,0],[5,4,2,1],[0,4,2,1],[1,2,2,1],[3,3,3,1],[4,1,2,1],[0,0,2,0],[5,0,3,1]]},{"m":6,"v":[[2,1,2,1],[5,4,2,1],[4,1,2,1],[2,5,3,0],[2,0,2,0],[4,0,2,0],[0,3,2,1],[1,3,3,0],[3,1,2,1],[1,4,2,0],[3,4,2,0]]},{"m":7,"v":[[2,0,2,1],[1,4,2,1],[4,1,3,1],[2,5,2,0],[3,2,2,1],[0,2,2,1],[3,0,2,1],[1,1,2,1],[4,4,2,1],[5,3,3,1],[0,4,2,1],[2,4,2,0],[4,0,2,0]]},{"m":8,"v":[[2,2,2,1],[4,0,2,0],[2,1,2,0],[0,4,2,1],[2,4,3,0],[4,2,2,0],[3,2,2,1],[1,0,2,0],[4,5,2,0],[2,5,2,0],[0,3,2,0]]},{"m":6,"v":[[2,3,2,1],[4,1,2,0],[2,1,2,0],[2,2,2,0],[2,5,3,0],[0,0,2,1],[0,2,2,0],[5,2,2,1],[1,3,2,1],[4,3,2,1],[0,5,2,0],[0,3,2,1],[5,4,2,1]]},{"m":5,"v":[[2,1,2,1],[3,1,2,0],[1,3,2,1],[0,3,2,1],[3,2,2,0],[2,3,2,0],[5,4,2,1],[1,1,2,1],[0,5,3,0],[3,0,3,0],[1,0,2,0],[5,2,2,1]]},{"m":7,"v":[[2,0,2,1],[2,3,2,0],[5,0,3,1],[3,0,2,0],[0,0,3,1],[1,4,2,1],[1,2,2,0],[4,1,3,1],[3,1,2,1],[4,4,2,1]]},{"m":6,"v":[[2,1,2,1],[0,4,2,1],[3,1,2,1],[1,2,2,1],[2,3,2,0],[5,2,2,1],[2,0,2,0],[0,2,2,1],[1,0,2,1],[4,4,2,0],[1,4,2,0],[4,5,2,0],[5,0,2,1],[1,5,2,0]]},{"m":6,"v":[[2,1,2,1],[3,0,2,0],[5,0,3,1],[4,1,2,1],[1,3,2,1],[4,3,2,1],[0,4,2,1],[2,4,2,0],[5,3,2,1],[0,2,2,1],[2,5,2,0]]},{"m":5,"v":[[2,0,2,1],[0,1,2,0],[3,4,2,1],[1,5,2,0],[5,2,2,1],[4,1,2,1],[1,3,2,0],[3,0,2,0],[0,0,2,0],[4,4,2,0],[3,2,2,1],[0,4,2,1],[5,0,2,1]]},{"m":5,"v":[[2,0,2,1],[3,0,2,1],[3,4,2,0],[2,5,3,0],[0,2,3,1],[4,3,2,0],[0,5,2,0],[1,2,2,0],[3,2,2,1],[0,0,2,0],[4,0,2,1]]},{"m":6,"v":[[2,0,2,1],[0,0,2,0],[0,2,3,0],[0,4,2,0],[5,4,2,1],[5,1,2,1],[2,3,3,0],[3,5,2,0],[4,0,2,1],[2,4,2,0],[3,1,2,1],[0,3,2,0],[0,5,2,0]]},{"m":5,"v":[[2,1,2,1],[2,4,2,0],[2,3,3,0],[0,0,2,1],[1,4,2,1],[3,1,2,1],[4,5,2,0],[5,0,2,1],[2,0,3,0],[0,2,3,1],[1,0,2,1],[4,2,2,0],[5,3,2,1],[1,2,2,1]]},{"m":6,"v":[[2,2,2,1],[3,2,2,0],[0,3,3,1],[1,1,3,1],[0,1,2,1],[1,4,2,1],[2,1,2,0],[2,5,2,0],[5,3,2,1],[3,3,2,0],[4,4,2,1],[4,1,2,0]]},{"m":8,"v":[[2,0,2,1],[3,1,3,0],[0,0,2,0],[3,3,2,1],[1,4,2,0],[0,3,2,0],[0,4,2,1],[5,2,2,1],[0,2,3,0],[3,0,2,0],[1,5,2,0]]},{"m":8,"v":[[2,0,2,1],[3,2,3,1],[0,5,2,0],[0,1,2,0],[5,4,2,1],[3,0,2,1],[4,4,2,1],[1,2,2,0],[0,3,2,1],[1,4,2,0],[4,1,2,0],[2,5,2,0]]},{"m":6,"v":[[2,3,2,1],[2,5,2,0],[0,3,2,0],[4,0,2,0],[4,5,2,0],[0,0,2,0],[1,4,2,1],[3,2,2,0],[5,2,2,1],[0,4,2,1]]},{"m":8,"v":[[2,2,2,1],[2,5,2,0],[2,0,2,0],[1,2,2,1],[5,0,2,1],[3,1,2,1],[3,3,2,1],[4,2,3,1],[0,1,2,1],[4,5,2,0],[0,0,2,0],[1,4,2,1],[5,3,2,1],[0,3,3,1]]},{"m":5,"v":[[2,3,2,1],[3,2,2,1],[2,0,2,0],[0,2,2,1],[3,4,2,0],[5,1,3,1],[1,2,2,1],[0,1,2,0],[3,5,2,0],[5,4,2,1],[4,0,2,0],[3,1,2,0],[0,4,2,1],[1,5,2,0]]},{"m":5,"v":[[2,0,2,1],[5,0,2,1],[2,5,2,0],[4,1,3,1],[0,0,2,1],[1,0,3,1],[0,5,2,0],[2,4,2,0],[3,1,2,1],[4,4,2,1]]},{"m":7,"v":[[2,2,2,1],[5,1,2,1],[4,5,2,0],[5,3,2,1],[3,0,2,1],[3,3,2,0],[0,4,3,0],[0,2,2,0],[0,0,2,0],[4,0,2,0],[0,1,3,0],[1,5,2,0]]},{"m":6,"v":[[2,0,2,1],[0,3,2,1],[4,2,2,1],[1,4,2,0],[2,3,2,0],[3,4,2,1],[4,0,2,0],[0,0,2,0],[2,2,2,0],[3,1,2,0],[1,1,2,1]]},{"m":5,"v":[[2,1,2,1],[1,0,2,1],[5,1,2,1],[5,4,2,1],[1,2,3,1],[2,4,2,0],[2,3,2,0],[3,0,2,1],[0,1,2,1],[1,5,2,0],[0,3,2,1],[4,2,3,1]]},{"m":5,"v":[[2,2,2,1],[5,3,3,1],[3,2,2,1],[0,4,2,0],[0,1,3,0],[4,1,2,0],[2,0,3,0],[4,3,2,1],[0,5,2,0],[2,4,2,0],[2,5,3,0],[1,2,2,1]]},{"m":8,"v":[[2,1,2,1],[1,3,2,1],[4,0,2,0],[2,3,2,0],[2,4,2,0],[5,1,3,1],[3,1,2,0],[0,0,2,0],[4,4,2,0],[1,5,3,0],[0,4,2,1],[0,2,2,0],[0,1,2,0]]},{"m":7,"v":[[2,2,2,1],[0,1,2,0],[1,2,3,1],[3,5,3,0],[5,2,2,1],[0,2,2,1],[4,0,2,0],[0,4,2,1],[2,4,2,0],[4,3,2,1],[2,0,2,0],[1,5,2,0]]},{"m":5,"v":[[2,0,2,1],[0,1,2,1],[0,0,2,0],[2,4,3,0],[3,0,2,1],[1,2,2,0],[1,4,2,1],[0,3,2,0],[3,2,3,0],[4,1,2,0]]},{"m":5,"v":[[2,1,2,1],[1,3,3,1],[2,0,2,0],[2,5,3,0],[3,2,2,1],[4,2,2,1],[0,0,2,0],[4,0,2,0],[5,1,3,1],[0,3,3,1],[4,4,2,0],[2,4,2,0]]},{"m":7,"v":[[2,1,2,1],[0,4,2,1],[1,1,2,1],[4,4,2,0],[2,3,3,0],[1,4,2,0],[0,3,2,0],[4,2,2,0],[4,1,2,0],[3,0,2,0],[0,0,2,0],[2,5,2,0]]}],"normal":[{"m":9,"v":[[2,1,2,1],[5,2,2,1],[4,2,2,1],[0,5,3,0],[1,0,2,0],[3,0,2,0],[0,3,2,1],[1,3,3,0],[3,4,2,1],[1,4,2,0],[4,4,2,0]]},{"m":10,"v":[[2,0,2,1],[0,3,2,0],[5,1,3,1],[3,0,2,0],[0,0,3,1],[1,1,2,1],[2,2,2,0],[4,1,3,1],[3,3,2,1],[4,4,2,1]]},{"m":9,"v":[[2,2,2,1],[0,4,2,1],[3,0,2,1],[1,3,2,1],[3,3,2,0],[5,2,2,1],[1,0,2,0],[0,1,2,1],[1,1,2,1],[4,4,2,0],[2,4,2,0],[4,5,2,0],[5,0,2,1],[2,5,2,0]]},{"m":10,"v":[[2,0,2,1],[3,0,2,1],[1,4,2,0],[2,5,3,0],[0,1,3,1],[4,3,2,0],[0,5,2,0],[1,2,2,0],[3,2,2,1],[4,0,2,0],[4,1,2,1]]},{"m":9,"v":[[2,0,2,1],[0,0,2,0],[0,2,3,0],[1,4,2,0],[5,2,2,1],[5,0,2,1],[2,3,3,0],[3,5,2,0],[4,1,2,1],[4,4,2,0],[3,1,2,1],[0,3,2,0],[1,5,2,0]]},{"m":13,"v":[[2,0,2,1],[3,1,3,0],[0,0,2,0],[3,4,2,1],[4,4,2,0],[0,3,2,0],[0,1,2,1],[5,2,2,1],[2,2,3,0],[4,0,2,0],[1,5,2,0]]},{"m":11,"v":[[2,2,2,1],[3,2,3,1],[1,5,2,0],[1,1,2,0],[5,4,2,1],[3,0,2,1],[4,2,2,1],[0,2,2,0],[0,4,2,1],[1,4,2,0],[4,1,2,0],[3,5,2,0]]},{"m":9,"v":[[2,2,2,1],[2,5,2,0],[2,0,2,0],[1,2,2,1],[5,0,2,1],[3,1,2,1],[3,3,2,1],[4,0,3,1],[0,1,2,1],[4,5,2,0],[0,0,2,0],[1,4,2,1],[5,3,2,1],[0,3,3,1]]},{"m":11,"v":[[2,1,2,1],[5,2,2,1],[3,5,2,0],[5,4,2,1],[3,3,2,1],[0,3,2,0],[0,4,3,0],[3,2,2,0],[0,0,2,0],[4,0,2,0],[3,1,3,0],[1,5,2,0]]},{"m":9,"v":[[2,2,2,1],[0,4,2,1],[4,3,2,1],[2,4,2,0],[0,3,2,0],[3,2,2,1],[3,0,2,0],[1,0,2,0],[4,2,2,0],[1,1,2,0],[1,4,2,1]]},{"m":10,"v":[[2,2,2,1],[1,4,2,1],[2,0,2,0],[0,3,2,0],[2,4,2,0],[5,1,3,1],[3,1,2,0],[0,0,2,0],[4,4,2,0],[2,5,3,0],[0,4,2,1],[0,2,2,0],[1,1,2,0]]},{"m":13,"v":[[2,1,2,1],[5,1,2,1],[0,4,2,0],[3,0,3,1],[1,3,3,0],[4,2,3,1],[0,2,2,1],[4,5,2,0],[3,4,2,1],[1,0,2,1],[4,0,2,0],[5,3,2,1]]},{"m":9,"v":[[2,0,2,1],[1,5,2,0],[3,4,2,1],[4,1,2,1],[5,1,2,1],[1,2,2,1],[0,0,2,0],[3,0,2,1],[1,4,2,0],[0,3,2,1],[2,2,2,0],[4,0,2,0],[0,1,2,1],[5,3,2,1]]},{"m":9,"v":[[2,1,2,1],[0,4,2,1],[2,3,2,0],[4,4,2,0],[4,0,2,1],[2,5,2,0],[0,2,2,1],[0,1,2,0],[0,0,2,0],[5,1,2,1],[2,4,2,0]]},{"m":13,"v":[[2,0,2,1],[1,4,2,1],[2,5,2,0],[0,1,2,1],[4,1,2,0],[0,0,2,0],[1,1,2,1],[2,2,2,0],[2,3,3,0],[2,4,2,0],[0,3,2,1],[5,2,2,1],[4,4,2,0]]},{"m":10,"v":[[2,3,2,1],[2,2,2,0],[0,4,2,1],[5,0,2,1],[4,4,2,0],[1,4,2,1],[1,1,2,0],[3,0,2,1],[2,5,2,0],[4,5,2,0],[5,2,2,1],[1,2,2,1]]},{"m":9,"v":[[2,0,2,1],[3,1,2,0],[1,5,2,0],[5,0,2,1],[3,2,2,0],[1,0,2,1],[1,4,3,0],[5,3,2,1],[1,2,2,1],[4,4,2,1],[3,0,2,0],[0,3,2,1],[0,1,2,1]]},{"m":10,"v":[[2,1,2,1],[5,0,3,1],[3,2,3,1],[4,4,2,1],[2,0,2,0],[0,2,2,1],[4,3,2,0],[1,5,3,0],[1,3,2,0],[0,4,3,0]]},{"m":9,"v":[[2,1,2,1],[0,3,3,1],[4,5,2,0],[5,0,2,1],[1,2,2,1],[2,4,3,0],[4,0,2,1],[1,4,2,1],[2,0,2,0],[2,5,2,0],[0,1,2,0],[2,3,2,0]]},{"m":9,"v":[[2,0,2,1],[0,0,2,0],[2,5,2,0],[4,4,2,0],[2,3,3,0],[1,2,3,0],[4,0,2,0],[4,5,2,0],[5,2,2,1],[0,1,2,0],[4,1,2,0],[0,4,2,1],[1,3,3,1]]},{"m":10,"v":[[2,0,2,1],[4,2,2,0],[2,4,3,0],[5,4,2,1],[0,2,2,1],[4,3,2,0],[2,3,2,0],[0,1,2,0],[4,0,2,0],[2,2,2,0],[1,3,2,1],[0,0,2,0],[2,5,2,0],[3,1,2,0]]},{"m":9,"v":[[2,0,2,1],[2,4,2,0],[4,4,2,0],[2,2,2,0],[5,2,2,1],[0,3,2,0],[0,0,2,0],[0,4,2,1],[4,0,2,0],[2,3,3,0],[1,5,2,0],[3,5,2,0],[1,1,2,1]]},{"m":10,"v":[[2,2,2,1],[3,2,3,1],[0,3,2,0],[5,2,2,1],[0,4,2,1],[5,0,2,1],[1,5,2,0],[2,0,2,0],[3,5,2,0],[4,1,2,1],[0,2,2,0],[1,4,2,0],[1,0,2,1],[4,3,2,1]]},{"m":10,"v":[[2,1,2,1],[0,0,2,0],[4,0,2,0],[0,2,3,1],[1,3,2,0],[2,0,2,0],[4,3,2,1],[4,1,2,0],[2,5,2,0],[0,5,2,0]]},{"m":10,"v":[[2,1,2,1],[2,3,2,0],[3,1,2,1],[0,0,3,0],[4,0,2,1],[4,4,2,0],[4,2,2,1],[0,3,2,0],[4,5,2,0],[1,1,2,1],[0,4,2,1]]},{"m":10,"v":[[2,2,2,1],[0,0,3,0],[0,1,2,0],[4,4,2,1],[0,2,2,0],[2,4,2,0],[3,1,3,1],[0,4,2,0],[4,3,2,0],[3,0,2,0],[0,3,2,0],[5,0,2,1],[2,5,2,0]]},{"m":11,"v":[[2,0,2,1],[3,4,2,1],[4,5,2,0],[2,2,2,0],[1,1,3,1],[0,4,2,1],[3,3,3,0],[4,0,2,0],[4,1,2,1],[1,4,2,0]]},{"m":9,"v":[[2,1,2,1],[0,5,3,0],[1,4,2,0],[5,1,3,1],[3,1,2,1],[3,4,2,1],[1,3,2,0],[3,0,3,0],[5,4,2,1],[4,4,2,1]]},{"m":12,"v":[[2,0,2,1],[2,3,2,0],[0,4,2,1],[4,0,2,0],[1,1,2,1],[0,2,2,1],[5,4,2,1],[0,0,2,0],[4,1,2,0],[2,2,2,0],[1,3,2,1],[2,4,2,0],[1,5,2,0],[4,3,2,1]]},{"m":10,"v":[[2,2,2,1],[4,5,2,0],[4,2,3,1],[1,2,2,1],[2,4,2,0],[0,4,2,1],[2,5,2,0],[5,2,2,1],[3,2,2,1],[5,0,2,1],[1,4,2,1],[0,0,3,0],[0,1,3,1],[3,1,2,0]]}],"difficile":[{"m":18,"v":[[2,2,2,1],[5,0,2,1],[4,5,2,0],[5,3,2,1],[3,2,2,1],[0,3,2,0],[1,4,3,0],[4,2,2,0],[1,0,2,0],[3,0,2,0],[1,1,3,0],[1,5,2,0]]},{"m":15,"v":[[2,0,2,1],[5,1,2,1],[1,4,2,0],[3,0,3,1],[0,3,3,0],[4,1,3,1],[0,4,2,1],[4,5,2,0],[3,4,2,1],[1,0,2,1],[4,0,2,0],[5,3,2,1]]},{"m":18,"v":[[2,3,2,1],[3,3,3,1],[0,3,2,0],[5,2,2,1],[0,4,2,1],[5,0,2,1],[1,5,2,0],[0,0,2,0],[4,5,2,0],[4,0,2,1],[2,2,2,0],[4,4,2,0],[1,1,2,1],[4,2,2,1]]},{"m":18,"v":[[2,0,2,1],[3,3,2,0],[0,4,2,1],[3,0,2,0],[1,2,2,1],[0,2,2,1],[5,0,2,1],[0,0,2,0],[0,1,2,0],[2,2,2,0],[1,4,2,1],[4,4,2,0],[3,5,2,0],[4,1,2,1]]},{"m":17,"v":[[2,0,2,1],[5,3,3,1],[0,5,3,0],[4,0,2,0],[0,1,2,0],[4,1,2,1],[3,3,2,0],[5,1,2,1],[1,4,2,0],[0,2,2,1],[1,2,2,1],[0,0,2,0],[2,2,2,0],[4,4,2,1]]},{"m":15,"v":[[2,1,2,1],[1,1,2,1],[4,4,2,1],[1,5,3,0],[3,3,2,1],[3,1,2,1],[1,0,2,0],[5,4,2,1],[0,4,2,1],[5,2,2,1],[4,1,2,0],[4,2,2,1]]},{"m":15,"v":[[2,1,2,1],[1,4,2,0],[0,1,2,1],[1,1,3,1],[0,4,2,1],[0,0,3,0],[4,5,2,0],[3,4,2,1],[5,0,2,1],[4,0,2,1],[3,0,2,1],[2,3,2,0],[4,2,2,1]]},{"m":15,"v":[[2,2,2,1],[2,1,2,0],[0,2,2,0],[5,0,3,1],[3,2,2,0],[4,3,2,0],[2,5,2,0],[2,0,3,0],[1,4,2,0],[0,4,2,1],[0,3,2,0],[3,3,2,1],[1,0,2,1],[4,5,2,0]]},{"m":15,"v":[[2,2,2,1],[0,0,2,1],[3,2,2,0],[0,2,2,1],[5,2,2,1],[1,0,3,0],[0,4,3,0],[1,1,3,1],[2,1,2,0],[2,5,2,0],[4,1,2,0],[3,3,2,1],[4,0,2,0]]},{"m":21,"v":[[2,1,2,1],[0,1,2,0],[0,2,2,1],[0,4,2,1],[4,4,2,1],[1,5,3,0],[2,4,2,0],[4,0,2,0],[4,3,2,0],[1,3,2,1],[3,2,2,1],[3,0,2,1]]},{"m":26,"v":[[2,1,2,1],[0,4,2,1],[1,3,3,0],[5,0,2,1],[1,4,2,1],[4,4,2,0],[4,2,2,1],[3,0,2,0],[0,2,2,1],[3,1,2,0],[4,5,2,0],[0,0,3,0],[3,4,2,1],[5,2,2,1]]},{"m":17,"v":[[2,2,2,1],[3,2,2,1],[4,3,2,0],[1,1,2,1],[0,4,2,1],[4,2,2,0],[4,4,2,1],[1,5,3,0],[2,4,2,0],[3,0,2,1],[0,2,2,1],[5,4,2,1],[1,3,2,1]]},{"m":20,"v":[[2,1,2,1],[5,2,2,1],[1,1,2,1],[5,4,2,1],[3,0,2,1],[1,0,2,0],[3,2,2,0],[1,3,3,0],[4,1,2,0],[3,5,2,0]]},{"m":15,"v":[[2,1,2,1],[3,2,2,0],[4,5,2,0],[1,4,2,1],[0,3,3,1],[4,3,2,1],[5,0,2,1],[1,3,3,0],[1,0,2,1],[5,2,2,1],[0,2,2,0],[3,4,2,1]]},{"m":19,"v":[[2,2,2,1],[2,5,2,0],[0,4,3,0],[0,2,2,0],[3,2,2,0],[1,0,2,0],[4,3,2,1],[0,0,2,1],[5,2,2,1],[3,0,2,1]]},{"m":21,"v":[[2,2,2,1],[2,1,3,0],[5,1,2,1],[3,3,3,1],[4,0,2,0],[0,4,3,0],[1,0,2,0],[3,2,2,0],[5,3,2,1],[4,5,2,0],[4,3,2,1]]},{"m":17,"v":[[2,2,2,1],[0,1,3,0],[4,4,2,0],[5,1,2,1],[2,5,2,0],[0,4,2,1],[4,5,2,0],[2,4,2,0],[0,3,2,0],[4,0,2,0],[3,0,2,1],[0,0,3,0],[3,2,2,0],[4,3,2,0]]},{"m":17,"v":[[2,2,2,1],[4,0,2,0],[3,3,3,1],[3,1,2,0],[0,2,3,1],[0,5,3,0],[4,3,2,0],[1,4,2,0],[5,4,2,1],[1,2,2,1],[2,0,2,0],[4,4,2,1],[1,0,2,1]]},{"m":18,"v":[[2,2,2,1],[1,5,3,0],[3,3,2,1],[4,3,2,0],[4,2,2,0],[2,0,2,0],[0,3,2,0],[5,4,2,1],[3,1,2,1],[0,1,2,1],[1,4,2,0],[0,4,2,1],[4,0,2,1]]},{"m":21,"v":[[2,0,2,1],[1,3,2,1],[4,2,2,1],[3,1,3,0],[0,0,2,0],[2,4,3,0],[1,2,2,0],[0,5,3,0],[0,1,2,1],[0,3,2,1],[5,3,3,1],[2,3,2,0]]},{"m":15,"v":[[2,0,2,1],[5,2,2,1],[3,1,2,0],[2,3,3,0],[2,2,2,0],[4,5,2,0],[1,1,2,1],[4,4,2,0],[1,3,3,1],[2,5,2,0],[0,4,2,1],[0,0,2,0],[5,0,2,1],[3,0,2,0]]},{"m":30,"v":[[2,0,2,1],[1,5,2,0],[4,3,2,1],[2,3,2,0],[0,3,2,0],[1,2,3,0],[1,4,2,0],[4,5,2,0],[0,1,2,0],[4,0,2,0],[5,1,3,1],[3,4,2,1]]},{"m":17,"v":[[2,0,2,1],[0,1,2,1],[3,5,2,0],[1,3,3,0],[2,4,2,0],[3,0,3,1],[4,1,2,0],[0,3,2,1],[1,1,2,1],[4,3,2,1],[1,4,2,1],[5,3,2,1],[4,2,2,0],[0,0,2,0]]},{"m":15,"v":[[2,2,2,1],[0,4,3,0],[4,1,2,0],[3,3,2,1],[2,5,2,0],[4,4,2,1],[3,1,2,1],[1,1,2,0],[4,3,2,0],[0,1,2,1],[3,0,2,0]]},{"m":20,"v":[[2,2,2,1],[0,5,2,0],[3,0,3,0],[3,1,2,1],[0,2,2,0],[5,3,2,1],[3,3,2,0],[1,0,2,0],[5,1,2,1],[4,4,2,1],[2,5,2,0],[0,0,2,1],[1,1,2,0],[1,4,2,0]]},{"m":17,"v":[[2,1,2,1],[1,5,2,0],[2,3,2,0],[4,2,2,0],[3,1,2,0],[1,1,2,1],[0,1,2,1],[0,0,3,0],[1,3,2,1],[4,3,3,1],[5,0,2,1],[0,3,2,1],[2,4,2,0]]},{"m":16,"v":[[2,0,2,1],[4,1,2,0],[1,1,2,1],[0,1,2,1],[3,2,2,1],[5,3,3,1],[4,3,2,1],[3,0,2,1],[3,5,2,0],[1,4,3,0],[0,0,2,0],[0,3,2,1]]},{"m":17,"v":[[2,0,2,1],[4,5,2,0],[2,4,3,0],[2,5,2,0],[0,2,3,1],[5,2,3,1],[1,3,2,0],[3,0,3,0],[3,1,3,1],[1,4,2,1],[1,0,2,1],[4,2,2,1],[0,0,2,1]]},{"m":15,"v":[[2,1,2,1],[1,3,2,0],[3,1,2,0],[2,5,2,0],[3,2,2,0],[4,4,2,0],[0,0,3,0],[4,5,2,0],[3,3,2,1],[5,0,3,1],[0,4,2,1],[0,1,2,1],[1,4,2,1]]},{"m":17,"v":[[2,2,2,1],[2,0,3,0],[2,1,3,0],[5,3,2,1],[0,2,2,1],[0,0,2,1],[0,4,2,0],[4,4,2,1],[3,3,2,0],[5,1,2,1],[0,5,3,0],[1,2,2,1]]}]};
+const CIV = ['#6f8296','#a3303f','#2f7a62','#d2c08e','#3f5ea8','#b5b9bf','#7a55a3','#e6e8ea'];
+const R = {veh:[], init:[], cell:50, moves:0, min:0, over:true, cfg:null, tuto:0, els:[]};
+
+let UID=0;
+function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=n>>16,g=n>>8&255,b=n&255; const t=f<0?0:255,p=Math.abs(f); r=Math.round((t-r)*p+r); g=Math.round((t-g)*p+g); b=Math.round((t-b)*p+b); return `rgb(${r},${g},${b})`; }
+const GLASS='#17202c';
+function grad(col){ const id='g'+(UID++); return [id,`<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shade(col,.28)}"/><stop offset=".45" stop-color="${col}"/><stop offset="1" stop-color="${shade(col,-.32)}"/></linearGradient>`]; }
+function lamps(W){ return `<rect x="${W-15}" y="17" width="8" height="15" rx="4" fill="#fff4cf"/><rect x="${W-15}" y="68" width="8" height="15" rx="4" fill="#fff4cf"/><rect x="8" y="19" width="6" height="13" rx="3" fill="#ff4343"/><rect x="8" y="68" width="6" height="13" rx="3" fill="#ff4343"/>`; }
+function carSVG(W,col,target){
+  const [id,g]=grad(col), d=shade(col,-.4);
+  let x=`<defs>${g}</defs><rect x="5" y="9" width="${W-10}" height="82" rx="28" fill="url(#${id})"/>
+  <rect x="${W*.58}" y="2" width="11" height="9" rx="3" fill="${d}"/><rect x="${W*.58}" y="89" width="11" height="9" rx="3" fill="${d}"/>
+  <path d="M${W*.18} 24 Q ${W*.14} 50 ${W*.18} 76 L ${W*.28} 72 L ${W*.28} 28 Z" fill="${GLASS}"/>
+  <rect x="${W*.3}" y="25" width="${W*.32}" height="50" rx="12" fill="${shade(col,.1)}"/>
+  <path d="M${W*.64} 25 L ${W*.77} 16 Q ${W*.82} 50 ${W*.77} 84 L ${W*.64} 75 Z" fill="${GLASS}"/>
+  <path d="M${W*.67} 30 L ${W*.75} 23" stroke="rgba(255,255,255,.35)" stroke-width="3" stroke-linecap="round"/>${lamps(W)}`;
+  if(target){
+    x+=`<path d="M${W-5} 9 L ${W-38} 9 L ${W-30} 22 L ${W-44} 34 L ${W-5} 44 Z" fill="#2b2f36"/>
+    <path d="M${W*.7} 40 l8 6 l-5 8 l9 7 M${W*.7} 46 l-6 7" stroke="#cfe0f5" stroke-width="1.6" fill="none" opacity=".8"/>
+    <rect class="haz" x="${W-15}" y="68" width="8" height="15" rx="4" fill="#ffb21f"/><rect class="haz" x="8" y="19" width="6" height="13" rx="3" fill="#ffb21f"/><rect class="haz" x="8" y="68" width="6" height="13" rx="3" fill="#ffb21f"/>`;
+  }
+  return x;
+}
+function policeSVG(W){
+  const [id,g]=grad('#eef1f5');
+  let band=''; for(let x=14;x<W-14;x+=16){ const c=(x/16|0)%2?'#1d4ea3':'#d7ee3a'; band+=`<rect x="${x}" y="11" width="16" height="9" fill="${c}"/><rect x="${x}" y="80" width="16" height="9" fill="${c}"/>`; }
+  return `<defs>${g}<clipPath id="c${id}"><rect x="5" y="9" width="${W-10}" height="82" rx="18"/></clipPath></defs>
+  <rect x="5" y="9" width="${W-10}" height="82" rx="18" fill="url(#${id})"/><g clip-path="url(#c${id})">${band}</g>
+  <path d="M${W*.8} 24 L ${W*.87} 18 Q ${W*.9} 50 ${W*.87} 82 L ${W*.8} 76 Z" fill="${GLASS}"/>
+  <rect x="${W*.62}" y="36" width="${W*.13}" height="28" rx="6" fill="#20324f"/><rect class="beacon" x="${W*.63}" y="38" width="${W*.055}" height="24" rx="4" fill="#3d8bff"/><rect class="beacon" style="animation-delay:.5s" x="${W*.69}" y="38" width="${W*.055}" height="24" rx="4" fill="#3d8bff"/>
+  <text x="${W*.33}" y="57" text-anchor="middle" font-family="Manrope,system-ui,sans-serif" font-weight="800" font-size="19" letter-spacing="3" fill="#1d4ea3">POLICE</text>${lamps(W)}`;
+}
+function vanSVG(W,col,truck){
+  const [id,g]=grad(col);
+  if(truck){ const [id2,g2]=grad('#e9ebee');
+    return `<defs>${g}${g2}</defs><rect x="5" y="8" width="${W*.66}" height="84" rx="8" fill="url(#${id2})"/><path d="M${W*.2} 12v76M${W*.4} 12v76" stroke="rgba(0,0,0,.08)" stroke-width="2"/>
+    <rect x="${W*.7}" y="12" width="${W*.28}" height="76" rx="18" fill="url(#${id})"/><path d="M${W*.84} 22 L ${W*.92} 18 Q ${W*.95} 50 ${W*.92} 82 L ${W*.84} 78 Z" fill="${GLASS}"/>${lamps(W)}`; }
+  return `<defs>${g}</defs><rect x="5" y="9" width="${W-10}" height="82" rx="20" fill="url(#${id})"/><rect x="${W*.08}" y="20" width="${W*.62}" height="60" rx="8" fill="${shade(col,.12)}"/>
+  <path d="M${W*.77} 22 L ${W*.86} 16 Q ${W*.9} 50 ${W*.86} 84 L ${W*.77} 78 Z" fill="${GLASS}"/>${lamps(W)}`;
+}
+function vehSVG(v){
+  const W=v.len*100;
+  const inner = v.kind==='target'?carSVG(W,'#ff6a33',true) : v.kind==='police'?policeSVG(W) : v.kind==='van'?vanSVG(W,v.color,false) : v.kind==='truck'?vanSVG(W,v.color,true) : carSVG(W,v.color,false);
+  return `<svg viewBox="0 0 ${W} 100" preserveAspectRatio="none" aria-hidden="true">${inner}</svg>`;
+}
+const TOW=`<svg viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true">
+<defs><linearGradient id="cabg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc24a"/><stop offset=".5" stop-color="#f39a12"/><stop offset="1" stop-color="#b86a05"/></linearGradient>
+<pattern id="hz" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="12" fill="#ffd23a"/><rect x="6" width="6" height="12" fill="#1c1f24"/></pattern></defs>
+<rect x="2" y="10" width="132" height="80" rx="6" fill="#59616d"/>
+<path d="M28 18v64M52 18v64M76 18v64M100 18v64" stroke="#6b7480" stroke-width="2"/>
+<rect x="2" y="10" width="18" height="80" rx="4" fill="url(#hz)"/>
+<text x="74" y="56" text-anchor="middle" font-family="Manrope,system-ui,sans-serif" font-weight="800" font-size="11.5" letter-spacing=".8" fill="#eef1f5">DÉPANNAGE</text>
+<rect x="112" y="40" width="16" height="20" rx="3" fill="#2b3038"/>
+<rect x="134" y="6" width="64" height="88" rx="16" fill="url(#cabg)"/>
+<rect x="132" y="0" width="12" height="9" rx="3" fill="#b86a05"/><rect x="132" y="91" width="12" height="9" rx="3" fill="#b86a05"/>
+<path d="M176 18 L 188 13 Q 194 50 188 87 L 176 82 Z" fill="#17202c"/>
+<rect x="148" y="24" width="14" height="52" rx="4" fill="#2b3038"/>
+<rect class="beacon" x="150" y="27" width="10" height="20" rx="3" fill="#ffcf4a"/><rect class="beacon" style="animation-delay:.5s" x="150" y="53" width="10" height="20" rx="3" fill="#ffcf4a"/>
+<rect x="190" y="14" width="6" height="14" rx="3" fill="#fff4cf"/><rect x="190" y="72" width="6" height="14" rx="3" fill="#fff4cf"/></svg>`;
+const CHEV=`<svg viewBox="0 0 40 14" aria-hidden="true"><path d="M4 3l6 7 6-7M24 3l6 7 6-7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+function layout(){
+  const f=$('field'), w=f.clientWidth, h=f.clientHeight;
+  R.cell=Math.max(28,Math.floor(Math.min((w-16)/6, (h-16)/8.15)));
+  const c=R.cell, lot=$('lot');
+  lot.style.width=c*6+'px'; lot.style.height=c*6+'px'; lot.style.marginBottom=c*2.1+'px';
+  const gr=lot.querySelector('.grid');
+  gr.style.backgroundImage='linear-gradient(0deg,rgba(255,255,255,.2) 2px,transparent 2px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px)';
+  gr.style.backgroundSize=`${c}px ${c}px`; gr.style.backgroundPosition=`0 ${c-1}px, ${c}px 0`;
+  let ex=lot.querySelector('.exit'); if(!ex){ex=document.createElement('div');ex.className='exit';ex.innerHTML=CHEV;lot.appendChild(ex);}
+  ex.style.left=(2*c+3)+'px'; ex.style.width=(c-6)+'px';
+  let tow=lot.querySelector('.tow'); if(!tow){tow=document.createElement('div');tow.className='tow';tow.innerHTML=TOW;lot.appendChild(tow);}
+  tow.style.top=(6*c+6)+'px'; tow.style.left=(2*c-4)+'px'; tow.style.width=(c+8)+'px'; tow.style.height=(c*2)+'px';
+  tow.style.setProperty('--tl',(c*2-22)+'px'); tow.style.setProperty('--ts',(c-6)+'px');
+  R.els.forEach((el,i)=>place(i));
+}
+function place(i,pos){
+  const v=R.veh[i], el=R.els[i], c=R.cell, g=4;
+  const p = pos ?? (v.h?v.c:v.r);
+  const x=(v.h?p:v.c)*c+g, y=(v.h?v.r:p)*c+g;
+  const L=v.len*c-2*g, S=c-2*g;
+  el.style.width=(v.h?L:S)+'px'; el.style.height=(v.h?S:L)+'px';
+  el.style.setProperty('--L',L+'px'); el.style.setProperty('--S',S+'px');
+  el.style.transform=`translate(${x}px,${y}px)`;
+}
+function load(list){
+  const lot=$('lot'); R.els.forEach(e=>e.remove()); R.els=[];
+  let policeDone=false;
+  R.veh=list.map(([c,r,len,h0],i)=>{ const h=1-h0;
+    let kind = i===0?'target' : len===3 ? (!policeDone?(policeDone=true,'police'):pick(['van','truck'])) : 'car';
+    const rot = i===0 ? 90 : h ? pick([0,180]) : pick([90,-90]);
+    return {r,c,len,h:!!h,kind,color:pick(CIV),rot};
+  });
+  R.init=R.veh.map(v=>({r:v.r,c:v.c}));
+  R.veh.forEach((v,i)=>{
+    const el=document.createElement('div'); el.className=`veh ${v.kind}`;
+    el.innerHTML=`<div class="body" style="--rot:${v.rot}deg">${vehSVG(v)}</div>`;
+    el.dataset.i=i; el.setAttribute('aria-label', v.kind==='target'?'Voiture accidentée':v.kind==='police'?'Combi de police':'Véhicule');
+    lot.appendChild(el); R.els.push(el);
+    el.addEventListener('pointerdown',down);
+  });
+  R.moves=0; status(); layout();
+}
+function occupied(skip){
+  const o=new Set();
+  R.veh.forEach((v,i)=>{ if(i===skip) return; for(let k=0;k<v.len;k++) o.add(v.h? v.r*6+(v.c+k) : (v.r+k)*6+v.c); });
+  return o;
+}
+function range(i){
+  const v=R.veh[i], o=occupied(i); let lo=v.h?v.c:v.r, hi=lo;
+  const at=p=>v.h? v.r*6+p : p*6+v.c;
+  while(lo-1>=0 && !o.has(at(lo-1))) lo--;
+  while(hi+v.len<6 && !o.has(at(hi+v.len))) hi++;
+  return [lo,hi];
+}
+let drag=null;
+function down(e){
+  if(R.over) return;
+  const i=+e.currentTarget.dataset.i; e.preventDefault();
+  try{e.currentTarget.setPointerCapture(e.pointerId)}catch(_){}
+  const v=R.veh[i], [lo,hi]=range(i);
+  drag={i,id:e.pointerId,sx:e.clientX,sy:e.clientY,start:v.h?v.c:v.r,lo,hi,pos:v.h?v.c:v.r};
+  e.currentTarget.classList.add('drag');
+  e.currentTarget.addEventListener('pointermove',move); e.currentTarget.addEventListener('pointerup',up); e.currentTarget.addEventListener('pointercancel',up);
+}
+function move(e){
+  if(!drag||e.pointerId!==drag.id) return;
+  const v=R.veh[drag.i], d=(v.h?e.clientX-drag.sx:e.clientY-drag.sy)/R.cell;
+  drag.pos=Math.min(drag.hi,Math.max(drag.lo,drag.start+d)); place(drag.i,drag.pos);
+}
+function up(e){
+  if(!drag||e.pointerId!==drag.id) return;
+  const el=R.els[drag.i], v=R.veh[drag.i]; el.classList.remove('drag');
+  ['pointermove','pointerup','pointercancel'].forEach((t,k)=>el.removeEventListener(t,[move,up,up][k]));
+  const p=Math.round(drag.pos);
+  if(p!==drag.start){ if(v.h) v.c=p; else v.r=p; R.moves++; Shell.blip(500+Math.random()*80,.04,'triangle',.05); status(); }
+  place(drag.i); const i=drag.i; drag=null;
+  afterMove(i);
+}
+function afterMove(i){
+  const t=R.veh[0];
+  if(Shell.st.mode==='tuto') tutoCheck();
+  if(t.r===4 && !R.over){
+    R.over=true; Shell.stopTimer(); Shell.win();
+    const el=R.els[0]; el.style.transition='transform .8s cubic-bezier(.5,0,.8,.4)'; place(0,6.4);
+    setTimeout(()=>{ el.style.transition=''; }, 800);
+    if(Shell.st.mode==='tuto'){ setTimeout(Shell.endTuto,900); return; }
+    const used=R.cfg.time-Shell.st.timeLeft, par=R.min+3, faults=R.moves>par?1:0;
+    setTimeout(()=>Shell.result({ok:true,faults,stats:[['Temps',Math.round(used)+' s'],['Coups',R.moves+' / '+R.min]],
+      note: faults===0?`Résolu en ${R.moves} coups, dans la marge (minimum ${R.min} + 3) : double point.`:`Résolu en ${R.moves} coups. Fais ${par} coups ou moins (minimum ${R.min} + 3) pour gagner +2.`}),900);
+  }
+}
+function status(){ $('movesTxt').innerHTML='Coups <b>'+R.moves+'</b>'; $('goalTxt').innerHTML= R.min? 'Minimum possible <b>'+R.min+'</b>' : ''; }
+$('reset').onclick=()=>{ if(R.over) return; R.veh.forEach((v,i)=>{v.r=R.init[i].r; v.c=R.init[i].c; place(i);}); Shell.toast('Véhicules replacés','info'); if(Shell.st.mode==='tuto') tutoGo(1); };
+new ResizeObserver(layout).observe($('field'));
+
+/* ---------- tutoriel ---------- */
+// 0 accidentée, 1 = A (vertical, bloque la sortie), 2 = B (bloque A par le haut)
+const TUTO_BOARD=[[2,0,2,1],[1,3,2,0],[0,2,2,1],[4,3,2,0],[5,0,2,1],[3,5,3,0],[3,0,2,0]];
+const TSTEPS=[null,
+  'La <b>voiture accidentée</b> (orange) doit descendre jusqu\'à la dépanneuse, en bas. La voiture couchée en travers lui barre la route, et elle-même est bloquée à gauche. Commence par glisser la <b>voiture de gauche</b> vers le haut ou le bas.',
+  'Le passage est libre : glisse la <b>voiture couchée vers la gauche</b>. Un véhicule ne bouge que dans le sens de sa longueur.',
+  'Maintenant, fais <b>descendre la voiture accidentée</b> jusqu\'à la dépanneuse.'];
+function tutoGo(n){
+  R.tuto=n; R.els.forEach(e=>e.classList.remove('focus'));
+  const f={1:2,2:1,3:0}[n]; if(f!==undefined) R.els[f].classList.add('focus');
+  Shell.coach(n,3,TSTEPS[n]);
+}
+function tutoCheck(){
+  const A=R.veh[1], B=R.veh[2];
+  if(R.tuto===1 && (B.r>3||B.r+2<=3)) { Shell.good(); tutoGo(2); }
+  else if(R.tuto===2 && A.c===0){ Shell.good(); tutoGo(3); }
+}
+
+Shell.init({
+  key:'depanneuse', service:'Incident Roulage', serviceShort:'Roulage',
+  headline:'Carrefour bloqué',
+  story:`<p>Accrochage sur le parking du centre commercial à l'heure de pointe. La voiture accidentée est coincée entre les véhicules et la dépanneuse attend à la sortie.</p><p>Ton équipe Roulage doit faire déplacer les véhicules un par un pour la dégager avant que tout le quartier soit bloqué.</p>`,
+  diffs:{difficile:{agents:2,label:'Difficile',time:150,set:'difficile'},normal:{agents:4,label:'Normal',time:150,set:'normal'},facile:{agents:6,label:'Facile',time:150,set:'facile'}},
+  diffHint:"Plus d'agents : un parking moins encombré, donc moins de coups à jouer.",
+  desktopHint:'Sur ordinateur : fais glisser les véhicules à la souris.',
+  rules:['Glisse les véhicules <b>dans le sens de leur longueur</b>, jamais en travers.','Fais descendre la <b>voiture accidentée</b> (orange) jusqu\'à la <b>dépanneuse</b>, en bas.','Le <b>minimum possible</b> est affiché. Termine en minimum + 3 coups ou moins : <b>+2</b> sur la jauge. Sinon : <b>+1</b>.','Replacer remet le parking à zéro, mais les coups déjà joués restent comptés.'],
+  winTitle:'Voie dégagée', loseTitle:'Le carrefour reste bloqué', skin:'Dépanneuse ZP',
+  malus:"le dépannage est facturé en urgence au budget de la zone, et 1 agent Roulage reste immobilisé sur place jusqu'à demain.",
+  onMenu(){ R.over=true; },
+  onInit(){ R.min=0; load(pick(PUZ.normal.filter(q=>q.v.some(x=>x[2]===3))).v); },
+  onPlay(cfg){ R.cfg=cfg; const p=pick(PUZ[cfg.set].filter(q=>q.v.some(x=>x[2]===3))); R.min=p.m; load(p.v); R.over=false; Shell.startTimer(cfg.time,()=>{ if(!R.over){ R.over=true; Shell.bad(); Shell.result({ok:false,faults:1,stats:[['Coups',R.moves],['Minimum',R.min]]}); } }); },
+  onTuto(){ R.min=3; load(TUTO_BOARD); R.over=false; tutoGo(1); }
+});
+
+</script>
+</body>
+</html>

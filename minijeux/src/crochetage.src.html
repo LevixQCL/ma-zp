@@ -1,0 +1,287 @@
+<!--title:Crochetage SER-->
+<!--eyebrow:SER · démo-->
+<!--h1:Crochetage-->
+<!--svc:ser-->
+<!--icon:lock-->
+<style>
+.lockview{position:relative;flex:1;min-height:190px;border-radius:24px;overflow:hidden;
+  background:radial-gradient(90% 70% at 50% 35%,rgba(242,181,68,.07),transparent 70%),linear-gradient(180deg,#151c28,#0f141d);
+  box-shadow:inset 0 0 0 1px var(--stroke),inset 0 1px 0 rgba(255,255,255,.05)}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.pins{position:absolute;left:14px;top:12px;display:flex;gap:5px}
+.pins i{width:18px;height:5px;border-radius:3px;background:rgba(255,255,255,.1);transition:background .2s}
+.pins i.on{background:var(--ok);box-shadow:0 0 8px rgba(70,217,138,.6)}
+.pads{display:grid;grid-template-columns:1fr 1fr;gap:10px;height:clamp(160px,30vh,236px);margin-bottom:env(safe-area-inset-bottom,0px)}
+.pad{position:relative;border-radius:22px;background:var(--surface);border:1px solid var(--stroke);touch-action:none;overflow:hidden;transition:opacity .2s,border-color .2s,background .2s}
+.pad.dim{opacity:.28}
+.pad.focus{border-color:color-mix(in srgb,var(--accent) 70%,transparent);box-shadow:0 0 0 3px var(--accent-soft)}
+.pad .ttl{position:absolute;left:14px;top:12px;font:800 15px var(--f-disp);pointer-events:none}
+.pad .lbl{position:absolute;left:14px;bottom:12px;font-size:12px;color:var(--mute);line-height:1.35;pointer-events:none}
+.tension .lbl{right:66px}
+.tension.held{background:var(--surface-2);border-color:var(--stroke-2)}
+.meter{position:absolute;right:18px;top:14px;bottom:14px;width:34px;border-radius:17px;background:rgba(0,0,0,.35);box-shadow:inset 0 2px 6px rgba(0,0,0,.6);pointer-events:none}
+.meter .zone{position:absolute;left:4px;right:4px;border-radius:12px;background:linear-gradient(180deg,rgba(70,217,138,.15),rgba(70,217,138,.35),rgba(70,217,138,.15));box-shadow:inset 0 0 0 1px rgba(70,217,138,.7)}
+.meter .needle{position:absolute;left:-7px;right:-7px;height:8px;margin-top:-4px;border-radius:4px;background:#fff;box-shadow:0 0 12px rgba(255,255,255,.55);transition:background .15s,box-shadow .15s}
+.meter .needle.out{background:var(--bad);box-shadow:0 0 12px var(--bad)}
+.meter .finger{position:absolute;left:3px;right:3px;height:22px;margin-top:-11px;border-radius:11px;border:2px solid rgba(255,255,255,.5);opacity:0;transition:opacity .15s}
+.tension.held .finger{opacity:1}
+.pick{display:grid;place-items:center;cursor:pointer}
+.pick .ring{position:relative;width:clamp(86px,30vw,118px);height:clamp(86px,30vw,118px);margin-top:-14px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 35%,color-mix(in srgb,var(--accent) 95%,#fff),var(--accent) 60%,color-mix(in srgb,var(--accent) 70%,#000));
+  color:var(--accent-ink);font:800 14px var(--f-body);box-shadow:0 10px 30px color-mix(in srgb,var(--accent) 35%,transparent),inset 0 -6px 12px rgba(0,0,0,.2);transition:transform .07s}
+.pick .ring::before{content:"";position:absolute;inset:-10px;border-radius:50%;border:2px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+
+.pick.hit .ring{transform:scale(.9)}
+.coach .prog{height:4px;border-radius:2px;background:var(--surface-2);margin-top:8px;overflow:hidden}
+.coach .prog i{display:block;height:100%;width:0;background:var(--ok);transition:width .1s}
+</style>
+<body>
+  <div class="lockview" id="lockview"><canvas id="cv"></canvas><div class="pins" id="pinsBar"></div></div>
+  <div class="status"><span id="pinsTxt">Goupilles <b>0</b> / 5</span><span id="faultTxt">Erreurs <b>0</b></span></div>
+  <div class="pads">
+    <div class="pad tension" id="tpad" aria-label="Tension : maintiens et glisse">
+      <div class="ttl">Tension</div>
+      <div class="meter" id="meter"><div class="zone" id="zone"></div><div class="finger" id="finger"></div><div class="needle" id="needle"></div></div>
+      <div class="lbl">Maintiens ton pouce et glisse pour garder l'aiguille dans le vert.</div>
+    </div>
+    <div class="pad pick" id="ppad" aria-label="Crocheter">
+      <div class="ring">Crocheter</div>
+      <div class="lbl">Tape quand la goupille atteint son cran.</div>
+    </div>
+  </div>
+</body>
+<script>
+const cv=$('cv'), ctx=cv.getContext('2d');
+const N=5;
+const BAND=.78;
+const TUTO_CFG={time:0,band:.075,zone:.14,drift:.12,speed:.7};
+const S={cfg:{band:.06,zone:.11,drift:.2,speed:1}, pins:[], active:0, tension:0, finger:.5, holding:false,
+  t:0,p1:0,p2:0,jolt:0,outT:0,faults:0,shake:0,over:true,openT:-1,canPick:false,assist:false,checkTension:false,freeze:false,
+  tutoStep:-1,tutoProg:0,tutoSets:0};
+const mode=()=>Shell.st.mode;
+
+function resetPins(){
+  const tg=[]; for(let i=0;i<N;i++){ let t,k=0; do{ t=.4+Math.random()*.5; k++; }while(i>0 && Math.abs(t-tg[i-1])<.15 && k<50); tg.push(t); }
+  S.pins=Array.from({length:N},(_,i)=>({h:.15,phi:Math.random()*6.28,w:2+i*.5,set:false,flash:0,target:tg[i]}));
+  S.active=0;
+}
+const pinH=(p,i)=>.5+.42*Math.sin(p.phi)+.06*Math.sin(2.7*p.phi+i);
+function startRound(cfg,o={}){
+  S.cfg=cfg; resetPins();
+  Object.assign(S,{t:0,p1:Math.random()*6,p2:Math.random()*6,jolt:0,outT:0,faults:0,shake:0,over:false,openT:-1,tension:0,holding:false,
+    canPick:o.canPick??true, assist:!!o.assist, checkTension:o.checkTension??true, freeze:!!o.freeze});
+  const z=cfg.zone; $('zone').style.top=((.5-z)*100)+'%'; $('zone').style.height=(z*200)+'%';
+}
+function finish(win){
+  S.over=true; S.canPick=false; S.holding=false; Shell.stopTimer();
+  const used=S.cfg.time-Shell.st.timeLeft;
+  setTimeout(()=>Shell.result(win
+    ?{ok:true,faults:S.faults,stats:[['Temps',used.toFixed(1)+' s'],['Erreurs',S.faults]]}
+    :{ok:false,faults:S.faults,stats:[['Goupilles',S.active+'/5'],['Erreurs',S.faults]]}), win?1100:400);
+}
+
+/* ---------- tutoriel ---------- */
+const STEPS=[
+  {id:'tension',html:'<b>Pouce gauche sur Tension.</b> Garde l\'aiguille blanche dans le vert pendant 3 secondes. Elle dérive toute seule : corrige en glissant ton pouce.'},
+  {id:'pick',html:'<b>Pouce droit.</b> La goupille active monte et descend. Chaque goupille a son propre cran, comme une vraie clé. Tape quand la jonction laiton-acier passe dans le cran lumineux. Tension assistée pour cet exercice.'},
+  {id:'both',html:'<b>Les deux pouces ensemble.</b> Garde la tension dans le vert et cale 2 goupilles. Si la tension sort trop longtemps, la dernière goupille retombe.'}
+];
+function tutoGo(i){
+  S.tutoStep=i; S.tutoProg=0; S.tutoSets=0;
+  const id=STEPS[i].id;
+  if(id==='tension'){ startRound(TUTO_CFG,{canPick:false,checkTension:false,freeze:true}); setPads('t'); }
+  if(id==='pick'){ startRound(TUTO_CFG,{assist:true,checkTension:false}); setPads('p'); }
+  if(id==='both'){ startRound(TUTO_CFG,{}); setPads('both'); }
+  Shell.coach(i+1,3,STEPS[i].html+'<div class="prog"><i id="tprog"></i></div>');
+}
+function prog(f){ const e=$('tprog'); if(e) e.style.width=Math.min(100,f*100)+'%'; }
+function tutoAdvance(){
+  Shell.win(); Shell.toast('Bien joué','ok');
+  S.canPick=false; S.checkTension=false;
+  if(S.tutoStep<STEPS.length-1){ const nx=S.tutoStep+1; S.tutoStep+=.5; setTimeout(()=>{ if(mode()==='tuto') tutoGo(nx); },700); }
+  else setTimeout(Shell.endTuto,700);
+}
+function setPads(w){
+  const t=$('tpad'),p=$('ppad');
+  t.classList.toggle('dim',w==='p'); p.classList.toggle('dim',w==='t');
+  t.classList.toggle('focus',w==='t'||w==='both'); p.classList.toggle('focus',w==='p'||w==='both');
+}
+
+/* ---------- actions ---------- */
+const inZone=()=>S.assist||Math.abs(S.tension-.5)<=S.cfg.zone;
+function tap(){
+  const pp=$('ppad'); pp.classList.add('hit'); setTimeout(()=>pp.classList.remove('hit'),90);
+  if(!S.canPick||S.over||S.active>=N) return;
+  const p=S.pins[S.active];
+  if(!inZone()){ miss(S.holding?'Tension hors zone':'Pas de tension'); return; }
+  const d=p.h-p.target;
+  if(Math.abs(d)<=S.cfg.band){
+    p.set=true; p.flash=1; S.active++;
+    Shell.blip(1400,.05,'square',.05); Shell.buzz(15); Shell.toast('Goupille calée','ok');
+    if(mode()==='tuto'){ S.tutoSets++; const need=STEPS[S.tutoStep].id==='pick'?1:2; prog(S.tutoSets/need); if(S.tutoSets>=need) tutoAdvance(); }
+    else if(S.active>=N){ S.openT=0; Shell.win(); finish(true); }
+  } else miss(d<0?'Trop bas':'Trop haut');
+}
+function miss(msg){
+  if(mode()!=='tuto'||STEPS[S.tutoStep].id!=='pick') S.faults++;
+  if(!S.assist) S.jolt+=(Math.random()<.5?-1:1)*.13;
+  S.shake=.25; Shell.bad(); Shell.toast(msg,'bad');
+}
+function dropLast(){
+  if(S.active===0) return;
+  S.active--; const p=S.pins[S.active]; p.set=false; p.phi=Math.random()*6.28;
+  if(mode()==='play') S.faults++;
+  S.shake=.35; Shell.blip(90,.25,'sawtooth',.06); Shell.buzz(80); Shell.toast('Goupille retombée','bad');
+  if(mode()==='tuto'){ S.tutoSets=Math.max(0,S.tutoSets-1); prog(S.tutoSets/2); }
+}
+
+/* ---------- entrées ---------- */
+const tpad=$('tpad'); let tId=null;
+const fingerFrom=e=>{ const r=$('meter').getBoundingClientRect(); return Math.min(1,Math.max(0,1-(e.clientY-r.top)/r.height)); };
+tpad.addEventListener('pointerdown',e=>{ e.preventDefault(); tId=e.pointerId; try{tpad.setPointerCapture(e.pointerId)}catch(_){} S.holding=true; S.finger=fingerFrom(e); tpad.classList.add('held'); Shell.blip(300,.04,'triangle',.03); });
+tpad.addEventListener('pointermove',e=>{ if(e.pointerId===tId) S.finger=fingerFrom(e); });
+const tRelease=e=>{ if(e.pointerId===tId){ tId=null; S.holding=false; tpad.classList.remove('held'); } };
+tpad.addEventListener('pointerup',tRelease); tpad.addEventListener('pointercancel',tRelease);
+$('ppad').addEventListener('pointerdown',e=>{ e.preventDefault(); tap(); });
+const keys={};
+addEventListener('keydown',e=>{
+  if(!$('overlay').hidden) return;
+  if(e.code==='Space'){ e.preventDefault(); if(!keys.space){ keys.space=true; S.holding=true; tpad.classList.add('held'); } }
+  if(e.code==='ArrowUp'){ keys.up=true; e.preventDefault(); }
+  if(e.code==='ArrowDown'){ keys.down=true; e.preventDefault(); }
+  if((e.code==='KeyK'||e.code==='Enter')&&!e.repeat){ e.preventDefault(); tap(); }
+});
+addEventListener('keyup',e=>{
+  if(e.code==='Space'){ keys.space=false; if(tId===null){ S.holding=false; tpad.classList.remove('held'); } }
+  if(e.code==='ArrowUp') keys.up=false;
+  if(e.code==='ArrowDown') keys.down=false;
+});
+
+/* ---------- boucle ---------- */
+function update(dt){
+  const live=mode()==='play'||mode()==='tuto';
+  S.t+=dt;
+  if(keys.space) S.finger=Math.min(1,Math.max(0,S.finger+((keys.up?1:0)-(keys.down?1:0))*dt*.7));
+  const d=S.cfg.drift*(.6*Math.sin(S.t*.8+S.p1)+.4*Math.sin(S.t*1.9+S.p2));
+  S.jolt*=Math.exp(-1.6*dt);
+  if(S.assist) S.tension+=(.5-S.tension)*Math.min(1,dt*10);
+  else if(S.holding&&!S.over){ const tg=Math.min(1,Math.max(0,S.finger+d+S.jolt)); S.tension+=(tg-S.tension)*Math.min(1,dt*14); }
+  else S.tension+=(0-S.tension)*Math.min(1,dt*5);
+  const ok=inZone();
+  if(live&&!S.over){
+    if(S.checkTension){ if(!ok){ S.outT+=dt; if(S.outT>.85){ dropLast(); S.outT=0; } } else S.outT=Math.max(0,S.outT-dt*2); }
+    if(mode()==='tuto'&&Number.isInteger(S.tutoStep)&&STEPS[S.tutoStep].id==='tension'){
+      if(S.holding&&ok) S.tutoProg+=dt; else S.tutoProg=Math.max(0,S.tutoProg-dt*1.5);
+      prog(S.tutoProg/3);
+      if(S.tutoProg>=3){ S.tutoProg=-99; tutoAdvance(); }
+    }
+  }
+  S.pins.forEach((p,i)=>{
+    p.flash=Math.max(0,p.flash-dt*2);
+    if(p.set) p.h+=(p.target-p.h)*Math.min(1,dt*20);
+    else if(i===S.active&&!S.freeze&&live&&!S.over){ p.phi+=p.w*S.cfg.speed*dt; p.h=pinH(p,i); }
+    else p.h+=(.15+.015*Math.sin(S.t*3+i)-p.h)*Math.min(1,dt*8);
+  });
+  S.shake=Math.max(0,S.shake-dt);
+  if(S.openT>=0) S.openT+=dt;
+  $('pinsTxt').innerHTML=`Goupilles <b>${S.active}</b> / ${N}`;
+  $('faultTxt').innerHTML=`Erreurs <b>${S.faults}</b>`;
+  $('pinsBar').innerHTML=S.pins.map(p=>`<i class="${p.set?'on':''}"></i>`).join('');
+  $('needle').style.top=((1-S.tension)*100)+'%';
+  $('needle').classList.toggle('out',!ok&&!S.assist&&live);
+  $('finger').style.top=((1-S.finger)*100)+'%';
+}
+
+/* ---------- dessin ---------- */
+let W=0,H=0,dpr=1;
+function resize(){ const r=cv.getBoundingClientRect(); dpr=Math.min(2,devicePixelRatio||1); W=r.width; H=r.height; cv.width=W*dpr; cv.height=H*dpr; }
+new ResizeObserver(resize).observe(cv);
+function rr(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect?ctx.roundRect(x,y,w,h,r):ctx.rect(x,y,w,h); }
+function lg(x0,y0,x1,y1,stops){ const g=ctx.createLinearGradient(x0,y0,x1,y1); stops.forEach(([o,c])=>g.addColorStop(o,c)); return g; }
+const ACC='#f2b544', OK='#46d98a', BAD='#ff5d5d';
+function draw(){
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  if(S.shake>0){ const a=S.shake*10; ctx.translate((Math.random()-.5)*a,(Math.random()-.5)*a); }
+  const live=mode()==='play'||mode()==='tuto';
+  const top=30, bot=H-28, Hl=Math.max(90,bot-top), x0=14, w=W-28;
+  const ys=top+Hl*.5, K=Hl*.42, Lk=Hl*.16, Ld=Hl*.17;
+  const xs=i=>x0+w*(.3+i*.155), cw=Math.min(30,w*.08);
+  const open=S.openT>=0?Math.min(1,S.openT/.6):0;
+
+  // corps : coque métal brossé
+  ctx.save(); ctx.shadowColor='rgba(0,0,0,.5)'; ctx.shadowBlur=24; ctx.shadowOffsetY=10;
+  rr(x0,top,w,Hl,22); ctx.fillStyle=lg(0,top,0,top+Hl,[[0,'#3b4554'],[1,'#222a36']]); ctx.fill(); ctx.restore();
+  rr(x0+.5,top+.5,w-1,Hl-1,22); ctx.strokeStyle='rgba(255,255,255,.08)'; ctx.lineWidth=1; ctx.stroke();
+  // rotor
+  const plugX=x0+w*.15, plugY=ys+open*5;
+  rr(plugX,plugY,w*.83,top+Hl-plugY-10,14); ctx.fillStyle=lg(0,ys,0,top+Hl,[[0,'#4a3f2b'],[1,'#2c261b']]); ctx.fill();
+  ctx.strokeStyle='rgba(242,181,68,.18)'; ctx.stroke();
+  // canal de clé
+  rr(plugX+6,top+Hl*.86,w*.83-12,Hl*.07,6); ctx.fillStyle='#0c1016'; ctx.fill();
+  const bw=S.cfg.band*K;
+
+  S.pins.forEach((p,i)=>{
+    const cx=xs(i), x=cx-cw/2, yTop=ys+(BAND-p.h)*K, isAct=i===S.active&&live&&!S.over;
+    // logement
+    rr(x-4,top+10,cw+8,Hl*.83,10); ctx.fillStyle='#0b0f15'; ctx.fill();
+    // ressort
+    const sTop=top+14, sBot=yTop-Ld; ctx.strokeStyle='#8893a3'; ctx.lineWidth=1.6; ctx.beginPath();
+    const turns=8; for(let k=0;k<=64;k++){ const f=k/64, yy=sTop+(sBot-sTop)*f; ctx.lineTo(cx+Math.sin(f*turns*Math.PI*2)*cw*.36, yy); } ctx.stroke();
+    // goupille acier
+    rr(x,yTop-Ld,cw,Ld-2,cw*.3); ctx.fillStyle=lg(x,0,x+cw,0,[[0,'#7b8697'],[.45,'#eef2f7'],[1,'#7b8697']]); ctx.fill();
+    // goupille laiton
+    ctx.beginPath(); ctx.moveTo(x,yTop+2); ctx.lineTo(x+cw,yTop+2); ctx.lineTo(x+cw,yTop+Lk*.74); ctx.quadraticCurveTo(cx+cw*.2,yTop+Lk,cx,yTop+Lk); ctx.quadraticCurveTo(cx-cw*.2,yTop+Lk,x,yTop+Lk*.74); ctx.closePath();
+    ctx.fillStyle=lg(x,0,x+cw,0,[[0,'#9a7124'],[.45,'#ffd77a'],[1,'#9a7124']]); ctx.fill();
+    // cran cible
+    const yT=ys+(BAND-p.target)*K, col=(p.set||open)?OK:ACC;
+    ctx.save();
+    if(isAct||p.set){ ctx.shadowColor=col; ctx.shadowBlur=isAct?14:8; }
+    rr(x-8,yT-bw,cw+16,bw*2,bw); ctx.fillStyle=(p.set||open)?'rgba(70,217,138,.22)':(isAct?'rgba(242,181,68,.28)':'rgba(242,181,68,.08)'); ctx.fill();
+    ctx.strokeStyle=(p.set||open)?OK:(isAct?ACC:'rgba(242,181,68,.35)'); ctx.lineWidth=isAct?2:1.2; ctx.stroke();
+    ctx.restore();
+    if(p.set&&p.flash>0){ ctx.save(); ctx.globalAlpha=p.flash; ctx.strokeStyle=OK; ctx.lineWidth=3; rr(x-6,yTop-Ld-4,cw+12,Ld+Lk*.8+8,10); ctx.stroke(); ctx.restore(); }
+    if(isAct){ ctx.strokeStyle='rgba(242,181,68,.55)'; ctx.lineWidth=1.5; rr(x-4,top+10,cw+8,Hl*.83,10); ctx.stroke(); }
+  });
+
+  // clé qui se dessine
+  if(S.active>0){
+    const kb=top+Hl*.93, tip=i=>ys+(BAND-S.pins[i].h)*K+Lk;
+    ctx.beginPath(); ctx.moveTo(plugX+8,kb); ctx.lineTo(plugX+8,tip(0)+10);
+    for(let i=0;i<S.active;i++){ const cx=xs(i); ctx.lineTo(cx-cw*.8,tip(i)+9); ctx.lineTo(cx,tip(i)+2); ctx.lineTo(cx+cw*.8,tip(i)+9); }
+    ctx.lineTo(xs(S.active-1)+cw*1.2,kb); ctx.closePath();
+    ctx.fillStyle=lg(0,top+Hl*.5,0,kb,[[0,'rgba(255,215,122,.85)'],[1,'rgba(176,129,40,.85)']]); ctx.fill();
+  }
+  // crochet
+  if(live&&S.active<N&&!S.over){
+    const p=S.pins[S.active], cx=xs(S.active), tipY=ys+(BAND-p.h)*K+Lk+2, base=top+Hl*.895;
+    ctx.lineCap='round';
+    ctx.strokeStyle='#5d6878'; ctx.lineWidth=6; ctx.beginPath(); ctx.moveTo(-4,base+1); ctx.lineTo(cx-16,base+1); ctx.stroke();
+    ctx.strokeStyle='#dfe5ec'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(-4,base); ctx.lineTo(cx-16,base); ctx.quadraticCurveTo(cx-4,base,cx,Math.min(tipY,base-2)); ctx.stroke();
+  }
+  // clé de tension
+  const ok=inZone();
+  ctx.save(); ctx.translate(x0+w*.09,top+Hl*.895); ctx.rotate(-S.tension*.35+open*.5);
+  ctx.strokeStyle=!live?'#6b7588':(ok?OK:BAD); ctx.lineWidth=6; ctx.lineCap='round'; ctx.lineJoin='round';
+  if(live){ ctx.shadowColor=ctx.strokeStyle; ctx.shadowBlur=10; }
+  ctx.beginPath(); ctx.moveTo(-w*.02,-Hl*.18); ctx.lineTo(0,0); ctx.lineTo(w*.07,0); ctx.stroke(); ctx.restore();
+
+  if(open>0){ ctx.save(); ctx.globalAlpha=open; ctx.fillStyle=OK; ctx.font='800 26px "Bricolage Grotesque", system-ui, sans-serif'; ctx.textAlign='right'; ctx.fillText('Ouvert', W-18, 22); ctx.restore(); }
+}
+
+Shell.init({
+  key:'crochetage', service:'Incident SER', serviceShort:'SER',
+  headline:'Porte verrouillée',
+  story:`<p>Le juge d'instruction a délivré un mandat de perquisition pour le 14, rue des Tanneurs, dans un dossier de recel. Sur place, personne n'ouvre et le serrurier ne répond pas.</p><p>Ton équipe SER doit ouvrir la porte avant que le suspect ne fasse disparaître les preuves.</p>`,
+  diffs:{difficile:{agents:2,label:'Difficile',time:45,band:.047,zone:.09,drift:.25,speed:1.18},normal:{agents:4,label:'Normal',time:60,band:.06,zone:.11,drift:.2,speed:1},facile:{agents:6,label:'Facile',time:75,band:.075,zone:.14,drift:.15,speed:.85}},
+  diffHint:"Plus d'agents : crans plus larges, tension plus stable, plus de temps.",
+  desktopHint:'Sur ordinateur : maintiens Espace pour la tension (flèches haut et bas pour doser) et appuie sur K pour crocheter.',
+  rules:['Cale les <b>5 goupilles</b>, de gauche à droite, avant la fin du chrono.','Chaque goupille a <b>son propre cran</b>. Ta clé se dessine au fil des goupilles calées.','Un tap raté fait <b>tressauter la tension</b>.','Tension hors du vert près d\'une seconde : <b>la dernière goupille retombe</b>.','Sans erreur : <b>+2</b> sur la jauge skins. Avec erreurs : <b>+1</b>.'],
+  winTitle:'Porte ouverte', loseTitle:'La porte a tenu', skin:'Porte blindée',
+  malus:"perquisition reportée. 1 agent SER est mobilisé sur la planque et reste indisponible demain.",
+  onMenu(){ S.over=true; S.canPick=false; setPads(null); },
+  onInit(){ resize(); startRound(S.cfg,{canPick:false}); S.over=true; },
+  onPlay(cfg){ S.tutoStep=-1; setPads(null); startRound(cfg); Shell.startTimer(cfg.time,()=>{ if(!S.over) finish(false); }); },
+  onTuto(){ tutoGo(0); },
+  onFrame(dt){ update(dt); draw(); }
+});
+</script>

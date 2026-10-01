@@ -36,6 +36,12 @@ export const ETAPES = [
       <p>Cette liste te dit ce qu’il reste à faire aujourd’hui : <strong>ordres, grande décision, enquête, énigmes</strong>. Cinq minutes par jour suffisent. Un point rouge sur un onglet signale aussi qu’il t’attend.</p>`,
   },
   {
+    id: 'incidents', route: 'hp', cible: 'section[aria-label="Incidents du jour"]',
+    titre: 'Les incidents du jour',
+    texte: `<p>Une ou deux fois par jour, à une heure imprévue, un <strong>incident</strong> tombe sur un de tes services : colis suspect, porte à crocheter, voiture à dégager, dossier à relire. Un compte à rebours t’annonce le prochain.</p>
+      <p>Tu as <strong>6 heures</strong> pour jouer le mini-jeu, avec <strong>un seul essai</strong>. Réussi : ta jauge de skins monte. Raté : un malus à 20:00. Pas joué : ton équipe se débrouille seule. Chaque mini-jeu a son tuto, et tu peux t’entraîner dans l’écran Énigmes.</p>`,
+  },
+  {
     id: 'zone', route: 'hp', cible: 'section[aria-label="Ma zone"]',
     titre: 'Ta zone en un coup d’œil',
     texte: `<p>L’<strong>IPZ</strong> est ta note du jour, sur 100. La moyenne de tes IPZ fait ton classement de la saison.</p>
@@ -108,7 +114,7 @@ export const ETAPES = [
     id: 'enigmes', route: 'quete', onglet: 'Trois casse-tête par jour, cinq minutes de réflexion.', cible: '[aria-label="Énigmes du jour"]',
     titre: 'Trois énigmes par jour',
     texte: `<p>Trois petits casse-tête chaque jour, <strong>une seule réponse</strong> chacun. Dès deux bonnes réponses, tu choisis un bonus (un indice, du moral…).</p>
-      <p>Le <strong>dossier noir</strong> est facultatif et vraiment difficile. Pour t’exercer sans enjeu : le mode <strong>Entraînement</strong>.</p>`,
+      <p>Le <strong>dossier noir</strong> est facultatif et vraiment difficile. Pour t’exercer sans enjeu : le mode <strong>Entraînement</strong>, qui contient aussi les quatre <strong>mini-jeux d’incident</strong>.</p>`,
   },
   {
     id: 'carte', route: 'carte', onglet: 'Tes quartiers et tout le district.', cible: '#mes-quartiers',
@@ -130,6 +136,7 @@ export const ETAPES = [
         <li>Règle et <strong>valide tes ordres</strong>.</li>
         <li>Avance l’<strong>enquête</strong> : deux démarches, un partage.</li>
         <li>Résous tes <strong>trois énigmes</strong>.</li>
+        <li>Quand un <strong>incident</strong> tombe, interviens dans les 6 heures.</li>
         <li>Jette un œil au <strong>Terrain</strong> et à la <strong>Radio</strong>.</li>
       </ol>
       <p class="tuto-note">Tout le détail est dans le <strong>Guide du joueur</strong> (roue dentée en haut de l’HP), d’où tu peux aussi relancer cette visite. Bon service !</p>`,

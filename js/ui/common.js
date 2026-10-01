@@ -50,6 +50,8 @@ const PATHS = {
   radio: '<path d="M4 5h16v11H9l-5 4z"/>',
   check: '<path d="M5 12l5 5L20 7"/>',
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  alert: '<path d="M12 3.5L2.8 19.5h18.4z"/><path d="M12 10v4.2"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>',
+  clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
   eye: '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   chevron: '<path d="M9 6l6 6-6 6"/>',
   back: '<path d="M15 6l-6 6 6 6"/>',

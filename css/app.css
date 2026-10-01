@@ -713,3 +713,17 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 .nd-moi { font-size: 10px; font-weight: 700; color: var(--amber); border: 1px solid var(--amber-line); border-radius: 6px; padding: 0 4px; vertical-align: 1px; }
 .nd-detail { display: flex; flex-direction: column; padding: 0 0 10px; }
 .nd-agents.vide { background: transparent; }
+
+/* Incidents du jour et mini-jeux */
+.inc-row { display: flex; gap: 10px; align-items: center; background: var(--surface2); border: 1px solid var(--line); border-radius: 12px; padding: 9px 10px; font-size: 13px; }
+.inc-row.inc-ouvert { background: var(--amber-bg); border-color: var(--amber-line); }
+.inc-row.inc-attente { background: transparent; border-style: dashed; }
+.inc-ico { flex-shrink: 0; width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--surface); color: var(--muted, #8E9AAF); }
+.inc-ouvert .inc-ico { color: var(--amber); background: rgba(242,181,68,.14); animation: inc-pulse 1.6s ease-in-out infinite; }
+.inc-ico.ok { color: var(--green); background: rgba(76,195,138,.14); }
+.inc-ico.bad { color: var(--red); background: var(--red-bg); }
+@keyframes inc-pulse { 50% { box-shadow: 0 0 0 6px rgba(242,181,68,.12); } }
+.mj-wrap { position: fixed; inset: 0; z-index: 60; background: #0b0f17; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
+.mj-wrap iframe { display: block; width: 100%; height: 100%; border: 0; }
+body.mj-ouvert { overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .inc-ouvert .inc-ico { animation: none; } }
