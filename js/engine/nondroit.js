@@ -236,7 +236,7 @@ function retombees(state, s, k, parts, engages, avant, nom) {
     z._points += pts; z.stats.pointsAffaires = (z.stats.pointsAffaires || 0) + pts;
     if (b > 0) { z.budget += b; z._compta.push({ k: 'nondroit', l: `Retombées de ${nomS}`, v: b }); }
     if (sat > 0) { z.satisfaction += sat; noter(z, 'satisfaction', `${nomS} tenu`, sat); }
-    z._ps += ps;
+    z._psEntraide = (z._psEntraide || 0) + ps;
     const e = engages.find((x) => x.u === p.uid);
     z.rapport.push(`Zone de non-droit · ${nomS} tenu (${Math.round(p.part * 100)} % d’influence${s.chef === p.uid ? ', zone de référence' : ''}) : +${fmt1(pts)} pts, +${fmt1(b)} k€${sat ? `, +${fmt1(sat)} de satisfaction` : ''}, +${ps} PS.${e ? ` ${e.n} agent${e.n > 1 ? 's' : ''} de garde.` : ''} Emprise ${Math.round(avant)} → ${Math.round(s.emprise)}${s.emprise >= ND.seuilRechute - 15 ? ` : attention, à ${ND.seuilRechute} il retombe` : ''}.`);
   }

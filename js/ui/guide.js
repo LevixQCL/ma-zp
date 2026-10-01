@@ -117,7 +117,7 @@ export function sections() {
         <p>Environ une fois tous les six jours, une grosse opération tombe dans ta zone. Les agents qu'elle mobilise quittent leur service. Tu choisis le dispositif : <strong>complet</strong> (tous les agents demandés), <strong>réduit</strong> (la moitié) ou <strong>aucun</strong>.</p>
         ${table(['Opération', 'Agents demandés', 'Durée', 'Points'], OPERATIONS.map((o) => [esc(o.titre), besoinsOp(o.besoins), `${o.duree} tour${o.duree > 1 ? 's' : ''}`, o.recompense]))}
         <p>Couverture moyenne d'au moins 90 % : réussite (points, +6 de satisfaction). Entre 50 et 90 % : réussite partielle. En dessous : fiasco (−10 de satisfaction, −4 de moral).</p>
-        <p><strong>Appel à renfort</strong> : pendant l'opération, lance un appel sur la radio (bouton sur l'HP ou dans tes ordres, un par tour). Les autres zones peuvent te prêter jusqu'à ${RENFORT.maxParZone} agents chacune pour la journée, en l'inscrivant dans leurs ordres : ces agents comptent dans la couverture de ton dispositif. Chaque zone qui aide gagne, par agent prêté, +${RENFORT.repParAgent} de réputation (maximum +${RENFORT.repMax}) et +${RENFORT.psParAgent} PS : plus tu prêtes, plus ça rapporte.</p>`,
+        <p><strong>Appel à renfort</strong> : pendant l'opération, lance un appel sur la radio (bouton sur l'HP ou dans tes ordres, un par tour). Les autres zones peuvent te prêter jusqu'à ${RENFORT.maxParZone} agents chacune pour la journée, en l'inscrivant dans leurs ordres : ces agents comptent dans la couverture de ton dispositif. Chaque zone qui aide gagne, par agent prêté, +${RENFORT.repParAgent} de réputation (maximum +${RENFORT.repMax}) +${RENFORT.psParAgent} PS d'entraide, +${RENFORT.pointsParAgent} point de résultats terrain et une indemnité fédérale de ${String(RENFORT.indemnite).replace('.', ',')} k€ (qui couvre son salaire) : prêter ne te coûte presque rien, et plus tu prêtes, plus ça rapporte.</p>`,
     },
     {
       id: 'decisions', titre: 'Grande décision, dépenses et infrastructures', html: `
@@ -357,7 +357,7 @@ export function sections() {
     {
       id: 'progression', titre: 'Points de service, grades et saisons', html: `
         <h3>Points de service (PS)</h3>
-        <p>Ils récompensent l'assiduité et ne se perdent jamais, même d'une saison à l'autre. Maximum ${PS.plafondJour} PS par jour.</p>
+        <p>Ils récompensent l'assiduité et ne se perdent jamais, même d'une saison à l'autre. Maximum ${PS.plafondJour} PS par jour pour ton propre jeu, plus ${PS.plafondEntraide} PS d’entraide (renfort, indices partagés, contribution à l’enquête, FIPA, grand événement, secteurs tenus dans la zone de non-droit) : aider les autres n’est jamais perdu.</p>
         ${table(['Action', 'PS'], [
           ['Passer ses ordres', `+${PS.ordres}`], ['Bonne réponse à une énigme', `+${PS.queteOk} (tentative ratée : +${PS.queteTentee})`], ['Trois énigmes sur trois', '+5'],
           ['Découverte d’un auteur', '+15'], ['Arrestation', '+10'], ['Participer à une FIPA', '+10'], ['Partager un indice', '+5'], ['Indice qui aide une découverte', '+5'],

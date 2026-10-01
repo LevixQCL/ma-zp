@@ -2,7 +2,7 @@ import { noteCourte } from './nouveautes.js';
 import { partageHtml } from './invitation.js';
 // La Gazette du Delta, le classement, l'espace maître du jeu.
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1, classementLive } from './common.js';
-import { GRADES, LOTS, ENCHERE } from '../engine/constants.js';
+import { GRADES, LOTS, ENCHERE, PS } from '../engine/constants.js';
 import { insigne } from './blasons.js';
 import { formatDateBe, formatHeureBe } from '../engine/time.js';
 
@@ -123,7 +123,7 @@ export function renderClassement() {
   } else if (tab === 'grade') {
     corps = `<section class="card"><div class="between"><h2 class="card-title">Ton grade : ${g.nom}</h2><span class="mono small">${me.ps} PS</span></div>
       <div class="gauge"><div class="bar" role="img" aria-label="Progression ${pct} %"><div style="width:${pct}%;background:var(--amber)"></div></div></div>
-      <p class="small muted" style="margin:0">${n ? `Encore ${n.ps - me.ps} PS pour devenir ${n.nom}.` : 'Grade maximum atteint.'} Ordres +10, énigme réussie +5, découverte +15, arrestation +10, FIPA +10, indice partagé +5. Maximum 40 PS par jour.</p>
+      <p class="small muted" style="margin:0">${n ? `Encore ${n.ps - me.ps} PS pour devenir ${n.nom}.` : 'Grade maximum atteint.'} Ordres +10, énigme réussie +5, découverte +15, arrestation +10, FIPA +10, indice partagé +5. Maximum ${PS.plafondJour} PS par jour, plus ${PS.plafondEntraide} PS d’entraide (renfort, indices partagés, FIPA, zone de non-droit…).</p>
       <table class="rank"><tbody>${GRADES.map((gr) => `<tr class="${gr.nom === g.nom ? 'me' : ''}"><td>${gr.nom}</td><td class="num">${gr.ps}</td><td class="small muted">${gr.debloque}</td></tr>`).join('')}</tbody></table>
     </section>`;
   } else {
