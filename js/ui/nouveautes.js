@@ -8,6 +8,7 @@ export const NOTE_MAJ = {
   points: [
     ['Résultats terrain, moins de hasard', 'la Recherche rapporte des points chaque jour (+0,5 par unité de travail sur les dossiers) au lieu d’un gros paquet le jour où un dossier tombe, et le flagrant délit suit une jauge qui se remplit avec tes patrouilles libres au lieu d’un tirage au sort.'],
     ['Les gros coups comptent plus longtemps', 'les points vont dans un bilan qui garde la moitié de celui de la veille : une reprise dans la zone de non-droit pèse encore les jours suivants, et un jour creux ne fait plus tout chuter.'],
+    ['Zone de non-droit mieux payée', 'chaque nuit où tu tiens un secteur, il te rapporte jusqu’à 3 k€ selon ta part d’influence (le double d’avant) : de quoi remplacer l’argent des anciennes affaires partagées.'],
     ['IPZ du jour et moyenne', 'sur l’HP comme sur la carte, tu vois maintenant l’IPZ du jour et la moyenne de la saison (c’est la moyenne qui compte pour le classement). Le rapport de chaque tour affiche aussi sa date.'],
     ['Nouvelle jauge sur l’HP', 'Résultats terrain s’affiche sous tes jauges ; son bouton « ? » détaille d’où viennent tes points. Sous le moral, l’efficacité de tes agents (par exemple 104 % à 74 de moral), aussi rappelée dans le rapport du soir.'],
     ['Des incidents en journée', 'une ou deux fois par jour, à une heure imprévue, un incident tombe sur un de tes services. L’HP affiche un compte à rebours, puis tu as 6 heures pour intervenir.'],
