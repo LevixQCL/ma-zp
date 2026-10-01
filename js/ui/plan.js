@@ -148,8 +148,9 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
     if (x1 - x0 < minW) { const m = (x0 + x1) / 2; x0 = m - minW / 2; x1 = m + minW / 2; }
     const w = x1 - x0, h = y1 - y0;
     if (w / h > r) { const nh = w / r; y0 -= (nh - h) / 2; y1 = y0 + nh; } else { const nw = h * r; x0 -= (nw - w) / 2; x1 = x0 + nw; }
-    const vw = Math.min(WW, x1 - x0), vh = Math.min(HH, y1 - y0);
-    x0 = Math.max(0, Math.min(WW - vw, x0)); y0 = Math.max(0, Math.min(HH - vh, y0));
+    const [bx0, by0, bx1, by1] = T.box;
+    const vw = Math.min(bx1 - bx0, x1 - x0), vh = Math.min(by1 - by0, y1 - y0);
+    x0 = Math.max(bx0, Math.min(bx1 - vw, x0)); y0 = Math.max(by0, Math.min(by1 - vh, y0));
     return [x0, y0, vw, vh];
   };
   // Beaucoup de zones : vue d'ensemble allégée (pas de noms de quartiers ni de sites) et plus de marge autour.
@@ -169,6 +170,10 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
     bordA.push([c[0] - Math.sin(ang) * w, c[1] + Math.cos(ang) * w]);
     bordB.push([c[0] + Math.sin(ang) * w, c[1] - Math.cos(ang) * w]);
   }
+  // Monde agrandi : le fleuve continue tout droit jusqu'aux bords.
+  const [bx0, , bx1] = T.box;
+  if (bx0 < -10) { bordA.unshift([bx0, bordA[0][1]]); bordB.unshift([bx0, bordB[0][1]]); }
+  if (bx1 > WW + 10) { bordA.push([bx1, bordA[bordA.length - 1][1]]); bordB.push([bx1, bordB[bordB.length - 1][1]]); }
   const fleuve = [...bordA, ...bordB.reverse()];
   const lac = Array.from({ length: 18 }, (_, k) => { const a = (k / 18) * Math.PI * 2; const r = 1 + 0.18 * Math.sin(a * 3 + 1); return [WW * 0.3 + Math.cos(a) * 34 * r, HH * 0.78 + Math.sin(a) * 22 * r]; });
   const ponts = [0.12, 0.3, 0.46, 0.6, 0.74, 0.88].map((t) => {
@@ -195,8 +200,9 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
   const avenues = T.edges.map(([, , a, b]) => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}"/>`).join('');
 
   // Grands axes : l'E42 traverse le district, le ring R5 en fait le tour, la N56 descend vers le sud.
-  const e42 = `M-5 ${HH * 0.2} C${WW * 0.38} ${HH * 0.3} ${WW * 0.55} ${HH * 0.6} ${WW + 5} ${HH * 0.8}`;
-  const n56 = `M${WW * 0.58} -5 C${WW * 0.56} ${HH * 0.35} ${WW * 0.44} ${HH * 0.62} ${WW * 0.4} ${HH + 5}`;
+  const prolonge = T.box[0] < -10;
+  const e42 = `M${prolonge ? `${T.box[0]} ${HH * 0.2} L` : ''}-5 ${HH * 0.2} C${WW * 0.38} ${HH * 0.3} ${WW * 0.55} ${HH * 0.6} ${WW + 5} ${HH * 0.8}${prolonge ? ` L${T.box[2]} ${HH * 0.8}` : ''}`;
+  const n56 = `M${prolonge ? `${WW * 0.58} ${T.box[1]} L` : ''}${WW * 0.58} -5 C${WW * 0.56} ${HH * 0.35} ${WW * 0.44} ${HH * 0.62} ${WW * 0.4} ${HH + 5}${prolonge ? ` L${WW * 0.4} ${T.box[3]}` : ''}`;
   const ring = `M${WW / 2 - W * 0.42} ${HH / 2} a${W * 0.42} ${H * 0.36} 0 1 0 ${W * 0.84} 0 a${W * 0.42} ${H * 0.36} 0 1 0 ${-W * 0.84} 0`;
   const axe = (d) => `<path d="${d}" fill="none" stroke="${C.axeBord}" stroke-width="5" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path d="${d}" fill="none" stroke="${C.axe}" stroke-width="2.4" stroke-linecap="round" vector-effect="non-scaling-stroke"/>`;
   const cartouche = (x, y, txt, fond) => `<g transform="translate(${f1(x)} ${f1(y)}) scale(${f1(echelle)})"><rect x="-11" y="-6.5" width="22" height="13" rx="3" fill="${fond}" stroke="#fff" stroke-width="1"/><text y="3.3" text-anchor="middle" class="sh">${txt}</text></g>`;
@@ -290,7 +296,7 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
   return `<svg viewBox="${vb}" width="100%" role="img" aria-label="Plan du district : ${poss.length} quartiers, ${T.zones.length} zones" style="display:block;border-radius:12px;aspect-ratio:${W}/${H};background:${C.terre}">
     <defs>
       ${angles.map((a, k) => `<pattern id="rues${k}" width="11" height="11" patternUnits="userSpaceOnUse" patternTransform="rotate(${a})"><path d="M0 0H11M0 0V11" stroke="${C.rue}" stroke-width=".7"/></pattern>`).join('')}
-      <clipPath id="cadre"><rect width="${WW}" height="${HH}"/></clipPath>
+      <clipPath id="cadre"><rect x="${T.box[0]}" y="${T.box[1]}" width="${T.box[2] - T.box[0]}" height="${T.box[3] - T.box[1]}"/></clipPath>
       ${ND_DEFS}
     </defs>
     <style>
@@ -310,7 +316,7 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
       .lim line.lm{stroke:#F2B544;stroke-opacity:.95;stroke-width:2;stroke-dasharray:none}
     </style>
     <g clip-path="url(#cadre)">
-      <rect width="${WW}" height="${HH}" fill="${C.campagne}"/>
+      <rect x="${T.box[0]}" y="${T.box[1]}" width="${T.box[2] - T.box[0]}" height="${T.box[3] - T.box[1]}" fill="${C.campagne}"/>
       ${ilots}${parcs}
       <g class="av" stroke="${C.avenue}" stroke-width="1.5">${avenues}</g>
       <path d="${rail}" fill="none" stroke="#6E7F97" stroke-width="1.2" stroke-dasharray="4 2.5"/>

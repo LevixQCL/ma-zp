@@ -46,24 +46,44 @@ export const WW = W * 2;
 export const HH = H * 2;
 const TAILLE = 6; // quartiers par zone
 
-let cacheVille = null;
+const cacheVille = new Map();
+const COLS = 12, ROWS = 14;
+const MAX_ANNEAUX = 12;
 
-/** Quartiers du monde (indépendants du nombre de zones). */
-export function ville(seed = 'delta') {
-  if (cacheVille && cacheVille.seed === seed) return cacheVille;
+/**
+ * Quartiers du monde. `anneaux` : couronnes de quartiers ajoutées autour du monde de base
+ * quand les zones sont trop nombreuses pour y tenir (au-delà d'environ 25 zones). Le monde de base
+ * ne change pas : mêmes quartiers, mêmes numéros, mêmes noms ; les nouveaux quartiers viennent après.
+ */
+export function ville(seed = 'delta', anneaux = 0) {
+  const cle = `${seed}:${anneaux}`;
+  if (cacheVille.has(cle)) return cacheVille.get(cle);
   const rng = makeRng(`${seed}:monde`);
   const sites = [];
-  const cols = 12, rows = 14;
+  const cols = COLS, rows = ROWS;
+  const cw = WW / cols, ch = HH / rows;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const x = (c + 0.5 + rng.float(-0.35, 0.35)) * (WW / cols);
-      const y = (r + 0.5 + rng.float(-0.35, 0.35)) * (HH / rows);
+      const x = (c + 0.5 + rng.float(-0.35, 0.35)) * cw;
+      const y = (r + 0.5 + rng.float(-0.35, 0.35)) * ch;
       sites.push([x, y]);
     }
   }
   const noms = rng.shuffle(NOMS_QUARTIERS);
+  const nBase = sites.length;
+  // Couronnes supplémentaires, l'une après l'autre (chaque quartier a son propre tirage : stable d'une taille à l'autre).
+  for (let a = 1; a <= anneaux; a++) {
+    for (let r = -a; r < rows + a; r++) {
+      for (let c = -a; c < cols + a; c++) {
+        if (Math.max(-r, -c, r - (rows - 1), c - (cols - 1)) !== a) continue;
+        const rr = makeRng(`${seed}:monde:${r}:${c}`);
+        sites.push([(c + 0.5 + rr.float(-0.35, 0.35)) * cw, (r + 0.5 + rr.float(-0.35, 0.35)) * ch]);
+      }
+    }
+  }
+  const box = [-anneaux * cw, -anneaux * ch, WW + anneaux * cw, HH + anneaux * ch];
   const cells = sites.map((p, i) => {
-    let poly = [[0, 0], [WW, 0], [WW, HH], [0, HH]];
+    let poly = [[box[0], box[1]], [box[2], box[1]], [box[2], box[3]], [box[0], box[3]]];
     for (let j = 0; j < sites.length; j++) {
       if (i === j) continue;
       const q = sites[j];
@@ -84,15 +104,28 @@ export function ville(seed = 'delta') {
       if (shared.length >= 2) { adj[i].push(j); adj[j].push(i); edges.push([i, j, shared[0], shared[1]]); }
     }
   }
-  // Ordre d'urbanisation : du centre vers la périphérie, avec un peu d'irrégularité.
-  const bruit = makeRng(`${seed}:urbanisation`);
-  const d0 = cells.map((c) => Math.hypot(c.c[0] - WW / 2, c.c[1] - HH / 2) * (1 + bruit.float(-0.12, 0.12)));
-  const centre = cells.map((c) => c.i).sort((a, b) => d0[a] - d0[b]);
-  // Noms : les plus connus au centre, puis « Nord », « Sud »… en périphérie.
   const suff = ['Nord', 'Sud', 'Est', 'Ouest', 'Haut'];
-  centre.forEach((i, r) => { cells[i].nom = r < noms.length ? noms[r] : `${noms[r % noms.length]} ${suff[Math.floor(r / noms.length) - 1] || ''}`.trim(); });
-  cacheVille = { seed, cells, adj, edges, centre, d0 };
-  return cacheVille;
+  const nommer = (r) => (r < noms.length ? noms[r] : `${noms[r % noms.length]} ${suff[Math.floor(r / noms.length) - 1] || 'Bas'}`.trim());
+  let d0, centre;
+  if (!anneaux) {
+    // Ordre d'urbanisation : du centre vers la périphérie, avec un peu d'irrégularité.
+    const bruit = makeRng(`${seed}:urbanisation`);
+    d0 = cells.map((c) => Math.hypot(c.c[0] - WW / 2, c.c[1] - HH / 2) * (1 + bruit.float(-0.12, 0.12)));
+    centre = cells.map((c) => c.i).sort((a, b) => d0[a] - d0[b]);
+    // Noms : les plus connus au centre, puis « Nord », « Sud »… en périphérie.
+    centre.forEach((i, r) => { cells[i].nom = nommer(r); });
+  } else {
+    // Monde agrandi : le monde de base garde son ordre et ses noms ; les couronnes viennent ensuite.
+    const base = ville(seed, 0);
+    d0 = cells.map((c, i) => (i < nBase ? base.d0[i] : Math.hypot(c.c[0] - WW / 2, c.c[1] - HH / 2)));
+    for (let i = 0; i < nBase; i++) cells[i].nom = base.cells[i].nom;
+    const extras = cells.slice(nBase).map((c) => c.i).sort((a, b) => d0[a] - d0[b]);
+    extras.forEach((i, r) => { cells[i].nom = nommer(nBase + r); });
+    centre = [...base.centre, ...extras];
+  }
+  const v = { seed, anneaux, cells, adj, edges, centre, d0, box, nBase };
+  cacheVille.set(cle, v);
+  return v;
 }
 
 /**
@@ -114,13 +147,15 @@ export function ordreArrivee(zones) {
  * Territoires : chaque zone, dans l'ordre d'arrivée, prend un bloc de quartiers libres
  * au plus près du centre (autour de la zone de non-droit, qui occupe le cœur de la ville). Une nouvelle zone s'ajoute en bordure sans rien déplacer.
  */
-export function territoires(seed, zones) {
-  const v = ville(seed);
+function territoiresDans(seed, zones, anneaux, fixes = {}) {
+  const v = ville(seed, anneaux);
   const owner = new Array(v.cells.length).fill(-1);
   // Le centre est réservé à la zone de non-droit (−2) : les zones s'installent autour.
   const nd = nonDroit(seed);
   for (const i of nd.cells) owner[i] = -2;
   const order = ordreArrivee(zones);
+  // Zones déjà installées dans le monde de base : elles gardent exactement leurs quartiers.
+  order.forEach((uid, k) => { for (const i of (fixes[uid] && fixes[uid].quartiers) || []) owner[i] = k; });
   const libres = (i) => owner[i] === -1;
   const assez = (start) => { // au moins TAILLE quartiers libres d'un seul tenant autour de `start`
     const vu = new Set([start]), file = [start];
@@ -129,6 +164,11 @@ export function territoires(seed, zones) {
   };
   const out = [];
   order.forEach((uid, k) => {
+    if (fixes[uid]) {
+      const mine = fixes[uid].quartiers;
+      out.push({ uid, k, quartiers: mine, capitale: fixes[uid].capitale, label: [mine.reduce((s, i) => s + v.cells[i].c[0], 0) / mine.length, mine.reduce((s, i) => s + v.cells[i].c[1], 0) / mine.length] });
+      return;
+    }
     const cap = v.centre.find((i) => libres(i) && assez(i)) ?? v.centre.find(libres);
     if (cap === undefined) { out.push({ uid, k, quartiers: [], capitale: 0, label: [WW / 2, HH / 2] }); return; }
     owner[cap] = k;
@@ -150,4 +190,27 @@ export function territoires(seed, zones) {
     out.push({ uid, k, quartiers: mine, capitale: cap, label: [cx, cy] });
   });
   return { ...v, owner, zones: out, order, nd };
+}
+
+const cacheTerr = new Map();
+/**
+ * Territoires de toutes les zones. Tant que tout le monde tient dans le monde de base, rien ne change ;
+ * au-delà, le monde s'agrandit d'une couronne à la fois, juste assez pour que chaque zone ait ses quartiers.
+ */
+export function territoires(seed, zones) {
+  const cle = `${seed}|${ordreArrivee(zones).join(',')}`;
+  if (cacheTerr.has(cle)) return cacheTerr.get(cle);
+  let t = territoiresDans(seed, zones, 0);
+  if (!t.zones.every((tz) => tz.quartiers.length >= TAILLE)) {
+    // Les zones qui tiennent dans le monde de base n'en bougent pas ; les suivantes s'installent sur les couronnes.
+    const fixes = {};
+    for (const tz of t.zones) if (tz.quartiers.length >= TAILLE) fixes[tz.uid] = { quartiers: tz.quartiers, capitale: tz.capitale };
+    for (let a = 1; a <= MAX_ANNEAUX; a++) {
+      t = territoiresDans(seed, zones, a, fixes);
+      if (t.zones.every((tz) => tz.quartiers.length >= TAILLE)) break;
+    }
+  }
+  if (cacheTerr.size > 20) cacheTerr.clear();
+  cacheTerr.set(cle, t);
+  return t;
 }

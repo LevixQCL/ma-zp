@@ -44,7 +44,7 @@ function partageCtl(piece) {
   const dejaTxt = deja.size ? `<span class="tiny muted" style="text-align:right">Déjà chez : ${[...deja].filter((u) => S.state.zones[u]).map((u) => zoneName(S.state.zones[u])).join(', ')}</span>` : '';
   const restantes = autresZones().filter((z) => !deja.has(z.uid));
   if (!restantes.length) return `<span class="col" style="gap:2px;align-items:flex-end"><span class="tag" style="background:rgba(60,198,184,.14);color:var(--green)">Partagée avec toutes les zones</span>${dejaTxt}</span>`;
-  if ((d.partages || []).length >= ENQ.maxPartages) return `<span class="col" style="gap:2px;align-items:flex-end"><span class="tiny muted">${ENQ.maxPartages} partages maximum par tour</span>${dejaTxt}</span>`;
+  if ((d.partages || []).length >= ENQ.maxPartages) return `<span class="col" style="gap:2px;align-items:flex-end"><span class="tiny muted">${ENQ.maxPartages} partages maximum par tour · chaque zone en reçoit ${ENQ.maxRecus} par soir au plus</span>${dejaTxt}</span>`;
   const id = `pz-${piece.f.replace(':', '-')}`;
   return `<span class="col" style="gap:4px;align-items:flex-end"><span class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">
     <label class="sr" for="${id}">Partager à une zone</label>

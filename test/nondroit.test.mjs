@@ -13,6 +13,12 @@ const T = territoires(CONFIG.seed, zs);
 for (const tz of T.zones) for (const i of tz.quartiers) assert.ok(!g.cells.includes(i), 'aucune zone dans la zone de non-droit');
 assert.ok(T.zones.every((tz) => tz.quartiers.length === 6), 'chaque zone garde 6 quartiers');
 
+// Au-delà du monde de base, la carte s'agrandit sans déplacer les zones déjà installées.
+const T26 = territoires(CONFIG.seed, Array.from({ length: 26 }, (_, k) => ({ uid: `z${k}`, arrivee: k })));
+const T60 = territoires(CONFIG.seed, Array.from({ length: 60 }, (_, k) => ({ uid: `z${k}`, arrivee: k })));
+assert.ok(T60.anneaux > 0 && T60.zones.every((tz) => tz.quartiers.length === 6), '60 zones ont toutes leurs quartiers');
+T26.zones.forEach((tz, k) => assert.deepEqual(T60.zones[k].quartiers, tz.quartiers, 'les premières zones ne bougent pas'));
+
 const base = () => {
   const state = createGame({ seed: 'nd-test' });
   for (const u of ['a', 'b', 'c']) state.zones[u] = newZone({ uid: u, code: '5300', nom: u }, 1);
