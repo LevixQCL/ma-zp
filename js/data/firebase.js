@@ -2,6 +2,7 @@
 // Le SDK Firebase est chargé depuis le CDN officiel de Google, sans étape de compilation.
 import { buildJoinZone, createGame } from '../engine/resolve.js';
 import { nextResolutionAfter } from '../engine/time.js';
+import { MAX_ZONES, partieComplete } from '../engine/constants.js';
 
 const V = '10.12.2';
 const CDN = `https://www.gstatic.com/firebasejs/${V}`;
@@ -99,6 +100,11 @@ export async function createFirebaseBackend(config) {
       const c = await F.getDoc(F.doc(fs, 'codes', String(code).toUpperCase().trim()));
       if (!c.exists()) throw new Error('Aucune partie ne correspond à ce code.');
       const id = c.data().gid;
+      // Partie complète : on refuse avant même de l'ajouter à la liste du joueur.
+      try {
+        const st = await F.getDoc(F.doc(fs, 'parties', id, 'state', 'current'));
+        if (st.exists() && partieComplete(st.data(), uid)) throw new Error(`Cette partie est complète (${MAX_ZONES} zones). Demande au maître du jeu d’en créer une autre.`);
+      } catch (e) { if (/complète/.test(e.message)) throw e; }
       await F.setDoc(F.doc(fs, 'users', uid), { parties: F.arrayUnion(id) }, { merge: true });
       return id;
     },
@@ -130,6 +136,7 @@ export async function createFirebaseBackend(config) {
         if (!s.exists()) throw new Error('La partie n’a pas encore été lancée par le maître du jeu.');
         const state = s.data();
         if (state.zones && state.zones[uid]) return;
+        if (partieComplete(state, uid)) throw new Error(`Cette partie est complète (${MAX_ZONES} zones). Demande au maître du jeu d’en créer une autre.`);
         const zone = buildJoinZone(state, uid, profile, state.turn);
         tx.update(stateRef(), new F.FieldPath('zones', uid), plain(zone));
       });

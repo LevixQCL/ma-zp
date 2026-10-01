@@ -57,8 +57,9 @@ service cloud.firestore {
           || (member(gid) && afterDeadline(gid)
               && request.resource.data.nextDeadline > resource.data.nextDeadline
               && (request.resource.data.turn != resource.data.turn || request.resource.data.season != resource.data.season))
-          // Inscription : un joueur ne peut ajouter que sa propre zone.
+          // Inscription : un joueur ne peut ajouter que sa propre zone, tant que la partie n'est pas complète (100 zones).
           || (member(gid)
+              && request.resource.data.zones.size() <= 100
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['zones'])
               && request.resource.data.zones.diff(resource.data.zones).affectedKeys().hasOnly([request.auth.uid])
               && !(request.auth.uid in resource.data.zones));

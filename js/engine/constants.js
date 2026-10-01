@@ -169,9 +169,19 @@ export const ND = {
   apaisement: 0.8,        // tension retirée chaque nuit aux quartiers qui touchent un secteur repris
   riposte: 0.25,          // chance, chaque nuit, que le milieu riposte sur un secteur tenu
   riposteForce: [10, 18],
-  risqueParAgent: 0.04,   // assaut : risque de blessé par agent engagé au-delà de 3 (plafonné)
+  // Assaut repoussé : force trop faible pour faire reculer le milieu (échec certain), ou zone seule sur le secteur
+  // (le milieu la voit venir : échec possible). L'assaut ne sert à rien et chaque agent engagé risque d'être blessé.
+  seulEchec: 0.35,
+  blesseRepousse: 0.15,   // par agent engagé dans un assaut repoussé
+  absenceRepousse: 2,     // tours d'absence des blessés
+  risqueParAgent: 0.04,   // assaut réussi : risque de blessé par agent engagé au-delà de 3 (plafonné)
   risqueMax: 0.2,
 };
+/** Nombre maximum de zones par partie (le document d'état de Firestore est limité à 1 Mo, environ 8 Ko par zone). */
+export const MAX_ZONES = 100;
+/** Vrai si la partie n'accepte plus de nouvelle zone. */
+export const partieComplete = (state, uid = null) => !!state && !(uid && state.zones && state.zones[uid]) && Object.keys((state && state.zones) || {}).length >= MAX_ZONES;
+
 /** Zones actives (qui ont joué hier ou avant-hier) : elles fixent la résistance du milieu. */
 export const zonesActivesND = (state) => Object.values((state && state.zones) || {}).filter((z) => (z.toursSansOrdres || 0) < 2).length;
 /** Emprise que le milieu regagne cette nuit sur un secteur. */

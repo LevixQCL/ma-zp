@@ -9,6 +9,7 @@ export const NOTE_MAJ = {
     ['Le centre de la ville est aux mains du milieu', 'huit secteurs hachurés de rouge et un QG au milieu. Les zones ont été redessinées une fois pour toutes autour de lui : tes quartiers ont changé de place sur la carte.'],
     ['Sans candidature', 'chacun envoie ses agents où il veut depuis le Terrain. Les forces du soir s’additionnent, +20 % par zone en plus : seul on n’y arrive pas, à trois ça tombe en quelques soirs. Une zone qui ne joue pas ne bloque plus personne.'],
     ['Ce que ça rapporte', 'à la reprise, chaque zone présente reçoit la même part fixe (points, satisfaction, réputation, moral) ; ensuite, chaque nuit tant que le secteur tient. Il faut y laisser 2 ou 3 agents de garde, sinon le milieu le reprend.'],
+    ['Attention aux assauts en solo', 'si la force du soir ne suffit pas, ou si tu es seul sur un secteur et que le milieu t’attend, l’assaut est repoussé : l’emprise ne baisse pas et tes agents peuvent revenir blessés. Plus tu en envoies seul, plus tu en perds.'],
     ['Le QG', 'il s’ouvre quand trois secteurs sont tenus en même temps, rapporte deux fois et demie plus et donne le trophée « Libérateur ».'],
     ['Fin des affaires disputées', 'plus besoin d’attendre qu’une zone accepte ta candidature : la zone de non-droit les remplace. Le Terrain montre qui y était hier soir, et un bouton prévient la radio.'],
   ],
