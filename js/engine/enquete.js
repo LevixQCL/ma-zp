@@ -16,6 +16,7 @@ export const ENQ = {
   agentsTraque: 4,      // agents d'Intervention minimum pour une interpellation
   maxDemarches: 2,      // démarches par tour
   maxPartages: 3,       // pièces partagées par tour
+  maxRecus: 2,          // pièces partagées qu'une zone peut recevoir par soir (les grandes parties restent équitables)
   nbSuspects: 5,
   maxCellules: 3,
   surcoutHorsCellule: 2, // multiplicateur de coût pour un suspect d'une autre cellule
@@ -559,37 +560,59 @@ export function enquetePre(state, uids, ord, push) {
   for (const u of uids) state.zones[u].enquete = dossierDe(state, state.zones[u]);
   const res = { actifs: uids.length, n: e.n, titre: aff.titre, jour: e.jour, decouverte: null, arrestations: [], fuites: [], classee: false };
 
-  // Partages : reçus le soir même.
+  // Partages : reçus le soir même. Chaque zone ne peut traiter que ENQ.maxRecus pièces partagées par soir :
+  // dans une grande partie, celle qui collecte tout n'a pas d'avantage, et chaque envoi compte.
+  // Priorité aux envois qui lui sont adressés personnellement, puis aux envois « à tous », dans un ordre tiré au sort.
+  const envois = [];
+  const nonEnvoyees = {};
   for (const u of uids) {
     const z = state.zones[u];
     const mes = new Set(faitsConnus(z.enquete));
-    const transmises = [], dejaConnues = [];
     for (const p of (ord[u].partages || []).slice(0, ENQ.maxPartages)) {
       if (!mes.has(p.f) || p.f === 'p:humidite') continue;
       const dests = p.a === '*' ? uids.filter((x) => x !== u) : (uids.includes(p.a) && p.a !== u ? [p.a] : []);
-      const recus = [];
-      for (const d of dests) {
-        const dz = state.zones[d];
-        const deja = dz.enquete.pieces.find((x) => x.f === p.f);
-        if (deja) {
-          // Deux zones envoient la même pièce le même soir : les deux sont récompensées.
-          if (deja.src === 'partage' && deja.j === e.jour && deja.de !== u) { recus.push(nomZone(dz)); dz.rapport.push(`Enquête : ${nomZone(z)} t’envoie aussi « ${titrePiece(aff, p.f)} ».`); continue; }
-          if (p.a !== '*') dejaConnues.push(`« ${titrePiece(aff, p.f)} » (${nomZone(dz)} l’avait déjà)`);
-          continue;
-        }
-        dz.enquete.pieces.push({ f: p.f, j: e.jour, src: 'partage', de: u });
-        dz.rapport.push(`Enquête : ${nomZone(z)} te transmet une pièce (« ${titrePiece(aff, p.f)} »).`);
-        recus.push(nomZone(dz));
-      }
-      if (recus.length) transmises.push(`« ${titrePiece(aff, p.f)} » à ${p.a === '*' ? `${recus.length} zone${recus.length > 1 ? 's' : ''}` : recus[0]}`);
+      for (const d of dests) envois.push({ u, d, f: p.f, direct: p.a !== '*' });
     }
-    // Récompense par pièce transmise (une pièce envoyée à tout le district compte une fois).
+  }
+  const ordreTirage = makeRng(`${state.seed}:s${state.season}:t${state.turn}:partages`);
+  const aleaPos = Object.fromEntries(ordreTirage.shuffle(uids.slice()).map((x, k) => [x, k]));
+  const livrees = []; // { u, d, f }
+  for (const d of uids) {
+    const dz = state.zones[d];
+    const pour = envois.filter((x) => x.d === d);
+    if (!pour.length) continue;
+    // Ordre de traitement : envois personnels d'abord, puis une pièce par expéditeur à tour de rôle (ordre tiré au sort).
+    const pos = Object.fromEntries(makeRng(`${state.seed}:s${state.season}:t${state.turn}:partages:${d}`).shuffle(uids.slice()).map((x, k2) => [x, k2]));
+    const rangEnvoi = {};
+    const tries = pour.slice().sort((a, b) => aleaPos[a.u] - aleaPos[b.u]).map((x) => ({ ...x, r: (rangEnvoi[x.u] = (rangEnvoi[x.u] || 0) + 1) }));
+    const parPiece = new Map();
+    for (const x of tries.sort((a, b) => (b.direct - a.direct) || a.r - b.r || pos[a.u] - pos[b.u])) {
+      if (dz.enquete.pieces.some((y) => y.f === x.f)) { if (x.direct) (nonEnvoyees[x.u] ||= []).push(`« ${titrePiece(aff, x.f)} » (${nomZone(dz)} l’avait déjà)`); continue; }
+      if (!parPiece.has(x.f)) parPiece.set(x.f, []);
+      parPiece.get(x.f).push(x);
+    }
+    let k = 0, debord = 0;
+    for (const [f, l] of parPiece) {
+      if (k >= ENQ.maxRecus) { debord += 1; for (const x of l) if (x.direct) (nonEnvoyees[x.u] ||= []).push(`« ${titrePiece(aff, f)} » (${nomZone(dz)} a déjà reçu ${ENQ.maxRecus} pièces ce soir)`); continue; }
+      k += 1;
+      dz.enquete.pieces.push({ f, j: e.jour, src: 'partage', de: l[0].u });
+      dz.rapport.push(`Enquête : ${l.map((x) => nomZone(state.zones[x.u])).join(' et ')} ${l.length > 1 ? 'te transmettent' : 'te transmet'} une pièce (« ${titrePiece(aff, f)} »).`);
+      for (const x of l) livrees.push({ u: x.u, d, f });
+    }
+    if (debord) dz.rapport.push(`Enquête : ${debord} autre${debord > 1 ? 's' : ''} pièce${debord > 1 ? 's' : ''} partagée${debord > 1 ? 's' : ''} t’attendai${debord > 1 ? 'en' : ''}t ; tes enquêteurs n’en traitent que ${ENQ.maxRecus} par soir. ${debord > 1 ? 'Elles pourront' : 'Elle pourra'} être renvoyée${debord > 1 ? 's' : ''} demain.`);
+  }
+  // Récompense par pièce transmise (une pièce envoyée à tout le district compte une fois).
+  for (const u of uids) {
+    const z = state.zones[u];
+    const mien = livrees.filter((x) => x.u === u);
+    const pieces = [...new Set(mien.map((x) => x.f))];
+    const transmises = pieces.map((f) => { const ds = mien.filter((x) => x.f === f).map((x) => x.d); return `« ${titrePiece(aff, f)} » à ${ds.length > 1 ? `${ds.length} zones` : nomZone(state.zones[ds[0]])}`; });
     const n = transmises.length;
     if (n) {
       z._ps += 5 * n; z.stats.indicesPartages += n; z.reputation += n;
       z.rapport.push(`Enquête : ${n} pièce${n > 1 ? 's' : ''} transmise${n > 1 ? 's' : ''} : ${transmises.join(' ; ')} (+${5 * n} PS, +${n} de réputation).`);
     }
-    if (dejaConnues.length) z.rapport.push(`Enquête : pas transmise${dejaConnues.length > 1 ? 's' : ''}, déjà au dossier du destinataire : ${dejaConnues.join(' ; ')}.`);
+    if (nonEnvoyees[u] && nonEnvoyees[u].length) z.rapport.push(`Enquête : pas transmise${nonEnvoyees[u].length > 1 ? 's' : ''} : ${nonEnvoyees[u].join(' ; ')}.`);
   }
 
   // Audition de la victime : deux agents de Recherche pris pour la journée.

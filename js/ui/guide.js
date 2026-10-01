@@ -174,6 +174,7 @@ export function sections() {
           `Le parquet répartit les zones en cellules : une seule jusqu’à 3 zones, deux de 4 à 6 zones, trois à partir de 7. Chaque cellule compte au moins deux zones et suit au moins deux suspects (avec trois cellules, un suspect est suivi par deux cellules à la fois). Vérifier un suspect de ta cellule coûte le prix normal, un autre coûte le double.`,
           'L’écran te dit quelles zones suivent chaque suspect : demande-leur leurs pièces à la radio, et propose les tiennes.',
           `Tu peux partager jusqu’à ${ENQ.maxPartages} pièces par tour, à une zone ou à toutes. Elles arrivent le soir même, avec ton nom : +5 PS et +1 de réputation par pièce transmise (une pièce envoyée à toutes les zones compte une fois). Une pièce que le destinataire a déjà n’est pas comptée.`,
+          `Chaque zone ne traite que <strong>${ENQ.maxRecus} pièces partagées par soir</strong> : d’abord celles qu’on lui adresse personnellement, puis une par expéditeur à tour de rôle. Dans une grande partie, celui qui attend que tout le monde lui envoie tout n’a donc pas d’avantage : mieux vaut choisir à qui l’on envoie quoi.`,
           `Si une pièce que tu as donnée se trouve dans le dossier d’une zone qui identifie l’auteur, tu touches ${POINTS.contribution} points d’enquête.`,
           'Garder ses pièces peut faire gagner une découverte… ou laisser l’affaire se faire classer.',
         ])}

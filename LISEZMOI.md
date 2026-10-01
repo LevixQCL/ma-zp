@@ -28,3 +28,9 @@ Suivez le guide « Ma ZP — Guide de mise en ligne ».
 
 Toutes les valeurs chiffrées (budget, coûts, effets) sont dans `js/engine/constants.js` et `js/engine/resolve.js`.
 Les textes (affaires, événements, aléas) sont dans `js/engine/contenu.js`.
+
+## Nombre de joueurs
+
+Il n'y a pas de limite fixe. Le monde de base accueille environ 25 zones autour de la zone de non-droit ; au-delà, la carte s'agrandit d'une couronne de quartiers à la fois, sans déplacer les zones déjà installées. La vraie limite est la taille du document « état » dans Firestore (1 Mo) : environ 8 Ko par zone, soit une centaine de zones par partie.
+
+Pour que les grandes parties restent équitables à l'enquête, chaque zone ne traite que 2 pièces partagées par soir (`ENQ.maxRecus` dans `js/engine/enquete.js`), et la résistance du milieu dans la zone de non-droit suit le nombre de zones actives (`ND` dans `js/engine/constants.js`).
