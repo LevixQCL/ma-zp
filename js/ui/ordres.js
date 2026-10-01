@@ -1,7 +1,7 @@
 // Écran des ordres du tour.
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
-import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, multNiveau, multEquip, ECONOMIE } from '../engine/constants.js';
+import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, multNiveau, multEquip, ECONOMIE } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
@@ -424,7 +424,7 @@ export function carteAffaire(a) {
       const m = eg.agents ? multAffaire(a, fEquipe) : 0;
       corps = `${stepper}
         ${eg.agents ? '' : '<p class="tiny warn" style="margin:0">Sans agents de ta part, l’affaire n’est pas lancée ce soir.</p>'}
-        ${eg.agents ? `<p class="tiny ${m ? (m >= 1 ? 'ok' : '') : 'bad'}" style="margin:0">${m ? `Force de l’équipe ${fmt1(fEquipe)} : environ <strong>${fmt1(a.recompense * m)} pts</strong> (${Math.round(m * 100)} %) à partager selon les agents.${m < 1.3 ? ` Plus de force = plus de points, jusqu’à 130 % vers ${fmt1(a.forceConseillee * 1.5)}.` : ' Maximum atteint.'}` : `Force de l’équipe ${fmt1(fEquipe)} : sous le minimum (${a.forceMin}), l’affaire échouera.`}</p>` : ''}
+        ${eg.agents ? `<p class="tiny ${m ? (m >= 1 ? 'ok' : '') : 'bad'}" style="margin:0">${m ? `Force de l’équipe ${fmt1(fEquipe)} : environ <strong>${fmt1(a.recompense * m * AFFAIRE.prime)} k€</strong> de prime et ${fmt1(a.recompense * m)} pts (${Math.round(m * 100)} %), à partager selon les agents.${m < 1.3 ? ` Plus de force = plus de gains, jusqu’à 130 % vers ${fmt1(a.forceConseillee * 1.5)}.` : ' Maximum atteint.'}` : `Force de l’équipe ${fmt1(fEquipe)} : sous le minimum (${a.forceMin}), l’affaire échouera.`}</p>` : ''}
         <p class="tiny muted" style="margin:0">Équipe : ${acc.length ? acc.map((c) => `${esc(S.state.zones[c.uid] ? S.state.zones[c.uid].nom : '?')} (${c.agents})`).join(', ') : 'toi seul pour l’instant'} · places restantes : ${placesRestantes(a)} sur ${a.agentsMax}${att ? ` · <a href="#prive">${att} candidature${att > 1 ? 's' : ''} à traiter</a>` : ''}</p>`;
     } else if (cand) {
       corps = `<p class="tiny" style="margin:0">Ta candidature auprès de ${esc(chef ? chef.nom : '?')} : ${statutLabel(cand.statut)}</p>${cand.statut !== 'refusee' ? stepper : eg.agents ? `<div class="between"><span class="tiny bad">${eg.agents} agent${eg.agents > 1 ? 's' : ''} encore réservé${eg.agents > 1 ? 's' : ''} ici</span><button type="button" class="btn small ghost" data-action="rapatrier" data-k="eng:${a.id}">Rapatrier</button></div>` : ''}`;
@@ -433,7 +433,8 @@ export function carteAffaire(a) {
     }
     const recuesCtl = moiChef ? candidaturesRecues().filter((c) => c.aid === a.id).map((c) => `<div class="col" style="gap:4px"><span class="small" style="font-weight:600">${esc(S.state.zones[c.uid] ? S.state.zones[c.uid].nom : '?')} postule avec ${c.agents} agent${c.agents > 1 ? 's' : ''}</span>${candidatureCtrl(c)}</div>`).join('') : '';
     return `<div class="card tight">
-      <div class="between"><span style="font-weight:600;font-size:14px">${esc(a.titre)}</span><span class="pill amber">${a.recompense} pts</span></div>
+      <div class="between"><span style="font-weight:600;font-size:14px">${esc(a.titre)}</span><span class="pill amber">≈ ${fmt1(a.recompense * AFFAIRE.prime)} k€</span></div>
+      <p class="tiny" style="margin:0;color:var(--amber-soft)">Si l’affaire est résolue : prime d’environ ${fmt1(a.recompense * AFFAIRE.prime)} k€ partagée selon les agents engagés, +2 de moral pour chaque zone, de la réputation (+${AFFAIRE.repChef} pour qui dirige, plus pour les renforts), de la satisfaction pour la zone qui dirige, et des points d’IPZ.</p>
       <p class="tiny muted" style="margin:0">${moiChef ? '<strong style="color:var(--amber)">Chez toi · tu diriges</strong> · ' : ''}Force minimale ${a.forceMin}, conseillée ${a.forceConseillee}${eg.agents ? ` · ta force : <strong style="color:${force >= a.forceConseillee ? 'var(--green-soft)' : 'var(--text)'}">${fmt1(force)}</strong>` : ''} · ${a.tours > 1 ? 'nouvelle affaire' : 'dernier tour'}</p>
       ${corps}
       ${recuesCtl}

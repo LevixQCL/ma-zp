@@ -2,7 +2,7 @@
 // mêmes données en entrée → même résultat, quel que soit l'ordinateur qui calcule.
 
 import {
-  APP_VERSION, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
+  APP_VERSION, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
   MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat, gainPrime, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { attribuerSites, siteDe } from './sites.js';
@@ -263,10 +263,13 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const z = state.zones[x.u];
       const part = total * x.n / sommeN;
       z._points += part; z.stats.pointsAffaires += part; z.stats.affairesGagnees += 1; z.moral += 2;
-      if (x.u === chef) { z.satisfaction += aff.recompense * 0.5 * mult; if (equipe.length > 1) z.reputation += 1; if (equipe.length >= 3) z.stats.affairesOrchestre = (z.stats.affairesOrchestre || 0) + 1; }
+      // Prime : de l'argent concret, partagé selon les agents engagés.
+      const prime = round1(aff.recompense * mult * AFFAIRE.prime * x.n / sommeN);
+      if (prime > 0) { z.budget += prime; z._compta.push({ k: 'affaire', l: `Prime d’affaire : ${aff.titre}`, v: prime }); }
+      if (x.u === chef) { z.satisfaction += aff.recompense * 0.5 * mult; z.reputation += AFFAIRE.repChef + (equipe.length > 1 ? 1 : 0); if (equipe.length >= 3) z.stats.affairesOrchestre = (z.stats.affairesOrchestre || 0) + 1; }
       else z.reputation += repRenfortAffaire(x.n);
       jalon(z, `Affaire « ${aff.titre} » résolue (+2 de moral${x.u === chef ? `, satisfaction +${fmt1(aff.recompense * 0.5 * mult)} = moitié des points annoncés` : ''}${x.u === chef && equipe.length > 1 ? ', +1 réputation en chef d’équipe' : x.u !== chef ? ', réputation pour ton renfort' : ''})`);
-      z.rapport.push(`${aff.titre} : affaire résolue${x.u === chef ? ' sous ta direction' : ` avec ${zoneLabel(state.zones[chef])}`} (+${fmt1(part)} pts pour ${x.n} agent${x.n > 1 ? 's' : ''} ; force de l’équipe ${fmt1(force)}, ${qualite}).`);
+      z.rapport.push(`${aff.titre} : affaire résolue${x.u === chef ? ' sous ta direction' : ` avec ${zoneLabel(state.zones[chef])}`} (prime +${fmt1(round1(aff.recompense * mult * AFFAIRE.prime * x.n / sommeN))} k€, +2 de moral, +${fmt1(part)} pts pour ${x.n} agent${x.n > 1 ? 's' : ''} ; force de l’équipe ${fmt1(force)}, ${qualite}).`);
       // Intervention musclée : plus on engage d'agents, plus le risque d'un blessé augmente.
       const risque = Math.min(0.3, Math.max(0, (x.n - 3) * 0.05));
       if (risque && makeRng(`${state.seed}:s${state.season}:t${T}:blesse:${aff.id}:${x.u}`).chance(risque)) {

@@ -10,7 +10,7 @@ import { fiabilite } from '../engine/fipa.js';
 import { ongletsRadio } from './diplomatie.js';
 import { marquerRadioLue } from './prive.js';
 import { appelsRenfort, renfortCtrl } from './renfort.js';
-import { GRADES, gradeFor } from '../engine/constants.js';
+import { GRADES, gradeFor, AFFAIRE } from '../engine/constants.js';
 import { blasonSvg, insigne } from './blasons.js';
 import { tensionsDe, quartiersFrontaliers, niveauTension, prevoirTensions, carteQuartiers, QUARTIERS } from '../engine/quartiers.js';
 import { capacite, effetsOperation } from '../engine/zone.js';
@@ -107,7 +107,7 @@ export function renderCarte() {
         const chef = chefDe(a), moiChef = a.zone === me.uid;
         return `<a class="list-row" href="#terrain"><span class="badge-num">${i + 1}</span>
           <span class="col grow" style="gap:2px"><span style="font-weight:600">${esc(a.titre)}</span>
-            <span class="small muted">${moiChef ? '<strong style="color:var(--amber)">Chez toi · tu diriges</strong>' : `Chez ${chef ? zoneName(chef) : '?'} · postuler`} · ${a.recompense} pts</span></span>${icon('chevron', 16)}</a>`;
+            <span class="small muted">${moiChef ? '<strong style="color:var(--amber)">Chez toi · tu diriges</strong>' : `Chez ${chef ? zoneName(chef) : '?'} · postuler`} · prime ≈ ${fmt1(a.recompense * AFFAIRE.prime)} k€</span></span>${icon('chevron', 16)}</a>`;
       }).join('')}
       ${ev ? `<a class="list-row" href="#terrain"><span style="width:26px;height:26px;border-radius:7px;background:var(--text);color:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">${icon('star', 14)}</span>
         <span class="col grow" style="gap:2px"><span style="font-weight:600">${esc(ev.titre)}</span><span class="small muted">Événement collectif ${ev.tour === st.turn ? 'ce soir' : `dans ${ev.tour - st.turn} tours`} · ~${3 * Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length} agents requis</span></span></a>` : ''}
