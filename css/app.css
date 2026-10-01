@@ -179,7 +179,7 @@ a.list-row:hover { background: var(--surface2); color: var(--text); }
 .alphabet span { background: var(--surface2); border-radius: 5px; padding: 3px 0; }
 
 
-.toast { position: fixed; left: 50%; top: calc(12px + env(safe-area-inset-top)); transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 11px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; z-index: 70; max-width: 90vw; box-shadow: var(--float); animation: toastIn .25s cubic-bezier(.2,.9,.3,1.2); }
+.toast { position: fixed; left: 50%; top: calc(12px + env(safe-area-inset-top)); transform: translateX(-50%); background: var(--text); color: var(--bg); padding: 11px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; z-index: 70; max-width: 90vw; box-shadow: var(--float); pointer-events: none; animation: toastIn .25s cubic-bezier(.2,.9,.3,1.2); }
 @keyframes toastIn { from { opacity: 0; transform: translate(-50%, -10px); } }
 
 /* Gazette */
@@ -805,3 +805,64 @@ body.mj-ouvert { overflow: hidden; }
 .accueil-titre { gap: 8px; margin-top: -28px; position: relative; z-index: 2; }
 .accueil h1.brand { font-size: clamp(60px, 19vw, 84px); letter-spacing: -3px; }
 .accueil-devise { margin: 0; font-family: var(--display); font-weight: 700; font-size: 21px; line-height: 1.15; letter-spacing: -.3px; color: var(--text); max-width: 22ch; }
+
+/* ───── Énigme « Le cadenas » : cadenas à molettes ───── */
+.cad-form { display: flex; flex-direction: column; align-items: center; gap: 12px; padding-top: 6px; }
+.cad-form .btn { align-self: stretch; }
+.cad-aide { margin: 0; text-align: center; }
+.cad { --cad-h: 46px; position: relative; display: flex; flex-direction: column; align-items: center; padding-top: 0; }
+.cad-anse { position: relative; z-index: 0; width: 46%; min-width: 120px; max-width: 170px; height: auto; margin-bottom: -26px; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .45)); transform-origin: 82% 100%; }
+.cad-corps { position: relative; z-index: 1; padding: 20px 16px 12px; border-radius: 26px 26px 36px 36px;
+  background: linear-gradient(165deg, #F8DC95 0%, #E2AE4B 28%, #B9842A 62%, #D8A447 84%, #F1CB78 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 246, 214, .8), inset 0 -4px 10px rgba(96, 58, 6, .55), inset 0 0 0 1px rgba(120, 76, 10, .5), 0 18px 34px -12px rgba(0, 0, 0, .7), 0 3px 8px rgba(0, 0, 0, .35);
+  display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.cad-corps::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: .25;
+  background: repeating-linear-gradient(100deg, rgba(255, 255, 255, .0) 0 3px, rgba(255, 255, 255, .5) 3px 4px, rgba(90, 55, 5, .0) 4px 7px); mix-blend-mode: overlay; }
+.cad-vis { position: absolute; top: 9px; left: 12px; width: 9px; height: 9px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #FFF1C9, #A8771F 70%); box-shadow: inset 0 0 0 1px rgba(90, 55, 5, .6); }
+.cad-vis::after { content: ''; position: absolute; left: 1.5px; right: 1.5px; top: 4px; height: 1px; background: rgba(90, 55, 5, .8); transform: rotate(35deg); }
+.cad-vis.d { left: auto; right: 12px; }
+.cad-fenetre { position: relative; display: flex; gap: 6px; padding: 2px 8px; border-radius: 16px; background: #12141C;
+  box-shadow: inset 0 3px 8px rgba(0, 0, 0, .8), inset 0 0 0 1px rgba(0, 0, 0, .6), 0 1px 0 rgba(255, 240, 200, .6); }
+.cad-col { display: flex; flex-direction: column; align-items: center; }
+.cad-pas { width: 50px; height: 30px; padding: 0; border: 0; background: none; color: #8E95AE; display: grid; place-items: center; border-radius: 8px; touch-action: manipulation; }
+.cad-pas:hover { color: var(--amber-hi); }
+.cad-pas svg { width: 14px; height: 9px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cad-roue { position: relative; width: 50px; height: calc(var(--cad-h) * 3); overflow: hidden; border-radius: 10px; cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none;
+  background: linear-gradient(90deg, #15171F 0%, #343A4D 22%, #4E566F 50%, #343A4D 78%, #15171F 100%); }
+.cad-roue:active { cursor: grabbing; }
+.cad-roue::before { content: ''; position: absolute; z-index: 2; left: 0; right: 0; top: var(--cad-h); height: var(--cad-h); pointer-events: none;
+  border-top: 1.5px solid rgba(255, 178, 63, .55); border-bottom: 1.5px solid rgba(255, 178, 63, .55); background: rgba(255, 220, 150, .06); }
+.cad-roue::after { content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg, rgba(5, 6, 10, .92) 0%, rgba(5, 6, 10, .25) 30%, transparent 40%, transparent 60%, rgba(5, 6, 10, .25) 70%, rgba(5, 6, 10, .92) 100%); }
+.cad-roue:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.cad-bande { transition: transform .24s cubic-bezier(.3, 1.35, .5, 1); will-change: transform; }
+.cad-bande span { display: block; height: var(--cad-h); line-height: var(--cad-h); text-align: center; font-family: var(--display); font-weight: 800; font-size: 31px; color: #F4F1E8;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, .8), 0 1px 0 rgba(255, 255, 255, .15); font-variant-numeric: tabular-nums; }
+.cad-marque { position: relative; font: 700 9.5px var(--body); letter-spacing: 2.5px; color: rgba(84, 52, 4, .75); text-shadow: 0 1px 0 rgba(255, 238, 190, .7); }
+/* Après la réponse */
+.cad-form.fini .cad-roue { height: var(--cad-h); cursor: default; }
+.cad-form.fini .cad-roue::before { top: 0; border: 0; }
+.cad-form.fini .cad-roue::after { background: linear-gradient(180deg, rgba(5, 6, 10, .55), transparent 30%, transparent 70%, rgba(5, 6, 10, .55)); }
+.cad-form.fini .cad-fenetre { padding: 8px; }
+.cad.ouvert .cad-anse { animation: cadOuvre .7s cubic-bezier(.3, 1.5, .5, 1) .15s both; }
+.cad.ouvert .cad-roue::before { background: rgba(61, 211, 154, .14); }
+.cad.bloque .cad-corps { animation: cadSecoue .5s ease-in-out .15s; }
+.cad.bloque .cad-roue::before { background: rgba(255, 110, 106, .16); }
+@keyframes cadOuvre { 0% { transform: none; } 55% { transform: translateY(-30px); } 100% { transform: translateY(-24px) rotate(-14deg); } }
+@keyframes cadSecoue { 20%, 60% { transform: translateX(-7px); } 40%, 80% { transform: translateX(7px); } }
+@media (prefers-reduced-motion: reduce) {
+  .cad-bande { transition: none; }
+  .cad.ouvert .cad-anse { animation: none; transform: translateY(-24px) rotate(-14deg); }
+  .cad.bloque .cad-corps { animation: none; }
+}
+/* Les essais du carnet */
+.cad-essais { gap: 6px; }
+.cad-essai { display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 14px; background: var(--bg); border: 1px solid var(--hair); }
+.cad-mini { display: flex; gap: 3px; flex-shrink: 0; }
+.cad-mini b { width: 25px; height: 32px; border-radius: 6px; display: grid; place-items: center; font: 800 18px var(--display); color: #F4F1E8;
+  background: linear-gradient(90deg, #15171F, #3E455B 50%, #15171F); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .6); }
+.cad-past { display: flex; gap: 4px; }
+.cad-past i { width: 10px; height: 10px; border-radius: 50%; }
+.cad-past i.b { background: var(--green); box-shadow: 0 0 6px rgba(61, 211, 154, .5); }
+.cad-past i.m { background: var(--amber); }
+.cad-past i.z { border: 1.5px solid var(--faint); }
