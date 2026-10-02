@@ -1,0 +1,172 @@
+<!--title:Réseau à reconnecter-->
+<!--eyebrow:RCCU · démo-->
+<!--h1:Réseau-->
+<!--svc:cyb-->
+<!--icon:net-->
+<style>
+.boardwrap{position:relative;flex:1;min-height:0;display:grid;place-items:center}
+.board{display:grid;gap:3px;padding:8px;border-radius:18px;background:radial-gradient(90% 80% at 50% 40%,rgba(180,155,255,.10),transparent 70%),#0a0f1f;box-shadow:inset 0 0 0 1px rgba(180,155,255,.18),0 20px 40px rgba(0,0,0,.3);touch-action:manipulation}
+.cell{position:relative;padding:0;border:0;border-radius:9px;background:rgba(255,255,255,.035);cursor:pointer;overflow:hidden;-webkit-tap-highlight-color:transparent}
+.cell:active{background:rgba(255,255,255,.07)}
+.cell.lock{background:rgba(180,155,255,.13);box-shadow:inset 0 0 0 1.5px rgba(180,155,255,.45)}
+.cell.lock::after{content:"";position:absolute;right:4px;top:4px;width:6px;height:6px;border-radius:2px;background:rgba(180,155,255,.85)}
+.cell.hint{animation:hint 1s ease-in-out infinite}
+@keyframes hint{50%{box-shadow:inset 0 0 0 2px var(--accent),0 0 16px rgba(180,155,255,.5)}}
+.cell svg{position:absolute;inset:0;width:100%;height:100%}
+.cell .t{transition:transform .16s cubic-bezier(.3,.8,.4,1.25)}
+.cell .t path{stroke:#323b57;stroke-width:15;stroke-linecap:round;fill:none;transition:stroke .2s}
+.cell .t circle{fill:#323b57;transition:fill .2s}
+.cell.on .t path{stroke:#b49bff;filter:drop-shadow(0 0 4px rgba(180,155,255,.8))}
+.cell.on .t circle{fill:#b49bff}
+.cell .ic .scr{fill:#151b2e;stroke:#4a5577;stroke-width:4;transition:fill .25s,stroke .25s}
+.cell .ic .ft{fill:#4a5577}
+.cell.on .ic .scr{fill:#3df59a;stroke:#c9ffe3;filter:drop-shadow(0 0 6px rgba(61,245,154,.9))}
+.cell.on .ic .ft{fill:#c9ffe3}
+.cell .srv rect{fill:#2a2150;stroke:#b49bff;stroke-width:4}
+.cell .srv circle{fill:#3df59a;animation:blink 1.2s steps(2) infinite}
+@keyframes blink{50%{fill:#b49bff}}
+.board.won .cell .t path{stroke:#3df59a;filter:drop-shadow(0 0 5px rgba(61,245,154,.9))}
+.board.won .cell .t circle{fill:#3df59a}
+.hintline{font-size:12.5px;color:var(--mute);text-align:center;flex:0 0 auto}
+.status{flex:0 0 auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+</style>
+<body>
+  <div class="boardwrap" id="wrap"><div class="board" id="board" role="grid" aria-label="Réseau à reconnecter"></div></div>
+  <div class="hintline">Toucher : tourner · Appui long (clic droit) : verrouiller une case sûre</div>
+  <div class="status"><span id="pcTxt">PC reliés 0/0</span><span id="rotTxt">Rotations 0</span></div>
+</body>
+<script>
+/* Réseau : un arbre de câbles relie le serveur (au centre) à tous les PC. Les cases ont été tournées au hasard.
+   Il faut tout reconnecter : chaque PC relié au serveur, aucun bout de câble dans le vide. */
+const N=1,E=2,S=4,W=8, DIRS=[[N,0,-1,S],[E,1,0,W],[S,0,1,N],[W,-1,0,E]];
+const rot=(m,k)=>{ k=((k%4)+4)%4; return ((m<<k)|(m>>(4-k)))&15; };
+const deg=m=>((m&1)+(m>>1&1)+(m>>2&1)+(m>>3&1));
+const R={cols:0,rows:0,cells:[],srv:0,over:true,rots:0,won:false,tuto:0};
+
+function generate(cols,rows){
+  const n=cols*rows, base=new Array(n).fill(0), seen=new Array(n).fill(false);
+  const srv=Math.floor(rows/2)*cols+Math.floor(cols/2);
+  seen[srv]=true; const front=[]; const push=i=>DIRS.forEach(([b,dx,dy],k)=>front.push([i,k]));
+  push(srv); let cnt=1;
+  while(cnt<n && front.length){
+    const j=randi(0,front.length-1), [i,k]=front.splice(j,1)[0], [b,dx,dy,o]=DIRS[k];
+    const x=i%cols+dx, y=Math.floor(i/cols)+dy; if(x<0||y<0||x>=cols||y>=rows) continue;
+    const t=y*cols+x; if(seen[t]) continue;
+    if(i!==srv && deg(base[i])>=3) continue;               // pas de croisement à 4 branches
+    base[i]|=b; base[t]|=o; seen[t]=true; cnt++; push(t);
+  }
+  if(cnt<n) return generate(cols,rows);
+  return {base,srv};
+}
+function cur(i){ const c=R.cells[i]; return rot(c.base,c.turns); }
+function powered(){
+  const on=new Set([R.srv]), q=[R.srv];
+  while(q.length){ const i=q.pop(), m=cur(i), x=i%R.cols, y=Math.floor(i/R.cols);
+    for(const [b,dx,dy,o] of DIRS){ if(!(m&b)) continue; const nx=x+dx, ny=y+dy; if(nx<0||ny<0||nx>=R.cols||ny>=R.rows) continue;
+      const t=ny*R.cols+nx; if(!on.has(t) && (cur(t)&o)){ on.add(t); q.push(t); } } }
+  return on;
+}
+function solved(on){
+  if(on.size!==R.cells.length) return false;
+  for(let i=0;i<R.cells.length;i++){ const m=cur(i), x=i%R.cols, y=Math.floor(i/R.cols);
+    for(const [b,dx,dy,o] of DIRS){ if(!(m&b)) continue; const nx=x+dx, ny=y+dy;
+      if(nx<0||ny<0||nx>=R.cols||ny>=R.rows) return false; if(!(cur(ny*R.cols+nx)&o)) return false; } }
+  return true;
+}
+
+/* ---------- rendu ---------- */
+const ARM={1:'M50 50V-2',2:'M50 50H102',4:'M50 50V102',8:'M50 50H-2'};
+const PC='<svg class="ic" viewBox="0 0 100 100"><rect class="scr" x="29" y="30" width="42" height="31" rx="5"/><rect class="ft" x="44" y="61" width="12" height="6"/><rect class="ft" x="36" y="66" width="28" height="5" rx="2"/></svg>';
+const SRV='<svg class="srv" viewBox="0 0 100 100"><rect x="27" y="22" width="46" height="56" rx="7"/><path d="M34 40h32M34 52h32M34 64h20" stroke="#b49bff" stroke-width="4" stroke-linecap="round"/><circle cx="63" cy="64" r="4.5"/></svg>';
+function build(){
+  const b=$('board'); b.classList.remove('won');
+  b.style.gridTemplateColumns=`repeat(${R.cols},var(--cs))`; b.style.gridTemplateRows=`repeat(${R.rows},var(--cs))`;
+  b.innerHTML=R.cells.map((c,i)=>{
+    const arms=[1,2,4,8].filter(k=>c.base&k).map(k=>`<path d="${ARM[k]}"/>`).join('');
+    const leaf=i!==R.srv && deg(c.base)===1, hub=!leaf&&i!==R.srv;
+    return `<button class="cell" data-i="${i}" aria-label="Case ${i+1}"><svg class="t" viewBox="0 0 100 100" style="transform:rotate(${c.turns*90}deg)">${arms}${hub?'<circle cx="50" cy="50" r="8.5"/>':''}</svg>${leaf?PC:''}${i===R.srv?SRV:''}</button>`;
+  }).join('');
+  fit(); refresh();
+}
+function fit(){
+  if(!R.cols) return; const w=$('wrap').getBoundingClientRect();
+  const cs=Math.floor(Math.min((w.width-16-3*(R.cols-1))/R.cols,(w.height-16-3*(R.rows-1))/R.rows,72));
+  $('board').style.setProperty('--cs',Math.max(28,cs)+'px');
+}
+new ResizeObserver(fit).observe($('wrap'));
+function refresh(){
+  const on=powered(), els=$('board').children;
+  for(let i=0;i<els.length;i++){ els[i].classList.toggle('on',on.has(i)); els[i].classList.toggle('lock',!!R.cells[i].lock); }
+  const pcs=R.cells.map((c,i)=>i!==R.srv&&deg(c.base)===1?i:-1).filter(i=>i>=0);
+  $('pcTxt').textContent=`PC reliés ${pcs.filter(i=>on.has(i)).length}/${pcs.length}`; $('rotTxt').textContent=`Rotations ${R.rots}`;
+  return on;
+}
+
+/* ---------- interactions ---------- */
+let press=null;
+$('board').addEventListener('pointerdown',e=>{ const el=e.target.closest('.cell'); if(!el||R.over&&Shell.st.mode!=='tuto') return;
+  if(e.button===2){ toggleLock(+el.dataset.i); return; }
+  press={i:+el.dataset.i, t:setTimeout(()=>{ toggleLock(press.i); press.done=true; },430), done:false}; });
+const endPress=e=>{ if(!press) return; clearTimeout(press.t); const p=press; press=null;
+  if(!p.done && e.type==='pointerup'){ const el=e.target.closest('.cell'); if(el&&+el.dataset.i===p.i) turn(p.i); } };
+$('board').addEventListener('pointerup',endPress); $('board').addEventListener('pointercancel',endPress);
+$('board').addEventListener('pointerleave',()=>{ if(press){ clearTimeout(press.t); press=null; } });
+function toggleLock(i){ if(R.won) return; R.cells[i].lock=!R.cells[i].lock; Shell.blip(R.cells[i].lock?520:380,.05,'triangle',.05); Shell.buzz(20); refresh(); }
+function turn(i){
+  if(R.won||R.over&&Shell.st.mode!=='tuto') return;
+  const c=R.cells[i]; if(c.lock){ Shell.toast('Case verrouillée','info'); return; }
+  if(deg(c.base)===4) return;
+  c.turns++; R.rots++; $('board').children[i].querySelector('.t').style.transform=`rotate(${c.turns*90}deg)`;
+  Shell.blip(900+randi(0,200),.03,'square',.03);
+  const on=refresh();
+  if(Shell.st.mode==='tuto' && R.tuto===1 && on.has(R.tutoPc)) tutoNext();
+  if(solved(on)) win();
+}
+function win(){
+  R.won=true; $('board').classList.add('won'); Shell.win();
+  if(Shell.st.mode==='tuto'){ setTimeout(Shell.endTuto,900); return; }
+  R.over=true; Shell.stopTimer();
+  const used=Math.round(R.cfg.time-Shell.st.timeLeft), fast=used<=R.cfg.time*.6;
+  setTimeout(()=>Shell.result({ok:true,faults:fast?0:1,stats:[['Temps',used+' s'],['Rotations',R.rots],['Cases',R.cells.length]],
+    note:fast?'Rebranché en un temps record : double point.':`Termine en moins de ${Math.round(R.cfg.time*.6)} s pour gagner +2.`}),1000);
+}
+function newBoard(cols,rows,scr=1){
+  const {base,srv}=generate(cols,rows);
+  Object.assign(R,{cols,rows,srv,rots:0,won:false,cells:base.map(b=>({base:b,turns:0,lock:false}))});
+  R.cells.forEach(c=>{ if(Math.random()<scr) c.turns=randi(0,3); });
+  if(scr>0 && solved(powered())) return newBoard(cols,rows,scr);
+  // les orientations « de départ » ne doivent pas déjà donner la solution pour une case droite (2 positions possibles)
+  build();
+}
+
+/* ---------- tutoriel ---------- */
+const TSTEPS=[null,
+  'Le <b>serveur</b> du suspect (au centre) doit être relié à <b>tous les PC</b>. Touche la case qui clignote pour la <b>tourner</b>, jusqu’à ce que son PC s’allume.',
+  'Bien ! Termine le réseau : <b>tous les PC allumés</b> et <b>aucun câble dans le vide</b>. Astuce : un appui long verrouille une case dont tu es sûr.'];
+function tutoNext(){ R.tuto++; document.querySelectorAll('.cell.hint').forEach(x=>x.classList.remove('hint')); if(R.tuto<TSTEPS.length) Shell.coach(R.tuto,2,TSTEPS[R.tuto]); }
+
+Shell.init({
+  key:'reseau', service:'Renfort fédéral · RCCU', serviceShort:'RCCU',
+  unit:['enquêteur','enquêteurs'], effLabel:'Enquêteurs de la RCCU sur le dossier',
+  headline:'Réseau à reconnecter',
+  story:`<p>Le suspect a débranché son réseau en catastrophe avant la perquisition : les câbles sont tous dans le mauvais sens.</p><p><b>Tourne les cases</b> pour relier chaque PC au serveur, sans aucun câble dans le vide, avant la fin du chrono.</p>`,
+  diffs:{difficile:{agents:1,label:'Difficile',time:150,cols:7,rows:8},normal:{agents:2,label:'Normal',time:150,cols:6,rows:7},facile:{agents:3,label:'Facile',time:150,cols:5,rows:5}},
+  diffHint:'Plus d’enquêteurs : un réseau plus petit à reconnecter.',
+  desktopHint:'Sur ordinateur : clic pour tourner, clic droit pour verrouiller une case.',
+  rules:['Toucher une case la <b>tourne</b> d’un quart de tour.','Gagné quand <b>tous les PC</b> sont reliés au serveur et qu’<b>aucun câble</b> ne pend dans le vide.','Un câble au bord du plateau est forcément faux : commence par les bords et les coins.','<b>Appui long</b> (ou clic droit) : verrouiller une case sûre.','Terminé dans les 60 % du temps : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
+  winTitle:'Réseau reconnecté', loseTitle:'Réseau toujours coupé', skin:'Baie de serveurs',
+  malus:'la RCCU n’a pas pu accéder au réseau : pas d’indice supplémentaire aujourd’hui.',
+  onMenu(){ R.over=true; },
+  onInit(){ newBoard(5,5); R.over=true; },
+  onPlay(cfg){ R.cfg=cfg; newBoard(cfg.cols,cfg.rows); R.over=false;
+    Shell.startTimer(cfg.time,()=>{ if(!R.over&&!R.won){ R.over=true; Shell.bad(); const t=$('pcTxt').textContent.replace('PC reliés ','');
+      Shell.result({ok:false,faults:1,stats:[['PC reliés',t],['Rotations',R.rots],['Temps','écoulé']]}); } }); },
+  onTuto(){
+    newBoard(3,3,0); R.over=false; R.tuto=0;
+    // on ne mélange que deux PC : un à tourner d'abord (clignotant), un autre ensuite
+    const pcs=shuffle(R.cells.map((c,i)=>i!==R.srv&&deg(c.base)===1?i:-1).filter(i=>i>=0));
+    R.tutoPc=pcs[0]; R.cells[pcs[0]].turns=2; if(pcs[1]!==undefined) R.cells[pcs[1]].turns=1;
+    build(); $('board').children[R.tutoPc].classList.add('hint'); tutoNext();
+  }
+});
+</script>

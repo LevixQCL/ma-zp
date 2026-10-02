@@ -1,0 +1,216 @@
+<!--title:Traçage d’IP-->
+<!--eyebrow:RCCU · démo-->
+<!--h1:Traçage-->
+<!--svc:cyb-->
+<!--icon:trace-->
+<style>
+.map{position:relative;flex:1;min-height:240px;border-radius:18px;overflow:hidden;
+  background:linear-gradient(rgba(180,155,255,.05) 1px,transparent 1px) 0 0/22px 22px,linear-gradient(90deg,rgba(180,155,255,.05) 1px,transparent 1px) 0 0/22px 22px,radial-gradient(90% 70% at 50% 50%,#141236,#070914 75%);
+  box-shadow:inset 0 0 0 1px rgba(180,155,255,.18)}
+.map svg{position:absolute;inset:0;width:100%;height:100%}
+.edge{stroke:rgba(180,155,255,.18);stroke-width:2;fill:none}
+.edge.next{stroke:rgba(180,155,255,.5);stroke-dasharray:4 5}
+.edge.done{stroke:#b49bff;stroke-width:3;stroke-dasharray:6 6;animation:flow .6s linear infinite;filter:drop-shadow(0 0 4px rgba(180,155,255,.9))}
+@keyframes flow{to{stroke-dashoffset:-12}}
+.node{cursor:default}
+.node .halo{fill:none;stroke:transparent;stroke-width:2}
+.node .disc{fill:#141a33;stroke:#3b4566;stroke-width:2}
+.node text{font:700 10px "IBM Plex Mono",monospace;fill:#8f9bb1;text-anchor:middle}
+.node .lbl{font:700 9.5px "Instrument Sans",sans-serif;letter-spacing:.04em;text-transform:uppercase}
+.node .ico{fill:none;stroke:#8f9bb1;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.node.next{cursor:pointer}
+.node.next .disc{stroke:#b49bff;fill:#1f1a45}
+.node.next .halo{stroke:rgba(180,155,255,.6);animation:pulse 1.2s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(1.55)}}
+.node.next .ico{stroke:#e2d9ff}
+.node.done .disc{fill:#b49bff;stroke:#e2d9ff}
+.node.done .ico{stroke:#170a33}
+.node.here .disc{fill:#3df59a;stroke:#c9ffe3}
+.node.here .ico{stroke:#06281a}
+.node.t-fw .disc{stroke:#ff7a59}.node.t-fw.next .disc{stroke:#ff9b80}
+.node.t-srv .disc{stroke:#3df59a}
+.node.dead{opacity:.35}
+.lock{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(7,9,20,.86);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);touch-action:manipulation}
+.lock h3{margin:0;font:700 20px var(--f-disp);text-align:center}
+.lock .sub{font:600 12px var(--f-mono);color:var(--mute)}
+.pips{display:flex;gap:6px}.pips i{width:22px;height:6px;border-radius:3px;background:var(--surface-2)}.pips i.on{background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.dial{position:relative;width:min(62vw,240px);aspect-ratio:1;cursor:pointer}
+.dial svg{width:100%;height:100%}
+.lockbtns{display:flex;gap:8px;width:min(86vw,320px)}
+.status{flex:0 0 auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+.legend{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-size:11px;color:var(--mute);flex:0 0 auto}
+.legend b{color:var(--ink);font-weight:700}
+</style>
+<body>
+  <div class="map" id="map"><svg id="svg"></svg>
+    <div class="lock" id="lock" hidden>
+      <div class="sub" id="lkSub">185.12.4.7 · PARE-FEU</div>
+      <h3 id="lkTtl">Synchronise la connexion</h3>
+      <div class="pips" id="pips"></div>
+      <div class="dial" id="dial"><svg viewBox="0 0 220 220" id="rsvg"></svg></div>
+      <div class="lockbtns"><button class="btn primary" id="hit">Verrouiller</button><button class="btn small" id="back">Autre route</button></div>
+    </div>
+  </div>
+  <div class="legend"><span><b>Proxy</b> 1 verrou</span><span><b>Routeur chiffré</b> 2 verrous rapides</span><span><b style="color:#ff9b80">Pare-feu</b> 3 verrous</span><span><b>?</b> inconnu</span></div>
+  <div class="status"><span id="hopTxt">Relais 0/0</span><span id="faultTxt">Rejets 0</span></div>
+</body>
+<script>
+/* Traçage : remonter la connexion du suspect, relais après relais, jusqu'à son serveur, avant qu'il ne coupe.
+   Choisir sa route (types de relais visibles), puis franchir chaque relais : toucher quand le curseur
+   passe dans la fenêtre verte (plusieurs verrous selon le type). Un rejet coûte du temps. */
+const TAU=Math.PI*2, PEN=6;
+const TYPES={
+  proxy:{lbl:'Proxy',locks:1,w:1,sp:1},
+  chif:{lbl:'Chiffré',locks:2,w:.85,sp:1.45},
+  fw:{lbl:'Pare-feu',locks:3,w:.8,sp:1.1},
+  srv:{lbl:'Suspect',locks:3,w:.75,sp:1.25}
+};
+const ICO={
+  rccu:'<path d="M-7 4h14M-5 4v-8h10v8M-2 -1h4"/>',
+  proxy:'<path d="M-8 0h16M3 -5l5 5-5 5M-3 -5l-5 5 5 5"/>',
+  chif:'<rect x="-6" y="-2" width="12" height="9" rx="2"/><path d="M-3.5 -2v-3a3.5 3.5 0 0 1 7 0v3"/>',
+  fw:'<path d="M-8 -6h16v12h-16zM-8 0h16M-2 -6v6M3 0v6"/>',
+  srv:'<rect x="-6" y="-8" width="12" height="16" rx="2"/><path d="M-3 -3h6M-3 1h6"/>',
+  unk:'<path d="M-3 -4a3.2 3.2 0 1 1 3.5 3.2c-.6.2-.6 1.2-.6 2"/><circle cx="0" cy="6" r=".8"/>'
+};
+const ip=()=>`${randi(23,213)}.${randi(1,254)}.${randi(1,254)}.${randi(2,254)}`;
+const T={nodes:[],edges:[],at:0,path:[0],over:true,faults:0,lock:null,cfg:null,tuto:0};
+
+function makeMap(cfg){
+  const cols=cfg.cols, nodes=[{c:0,y:.5,type:'rccu',ip:'RCCU · Bruxelles'}], edges=[], layers=[[0]];
+  for(let c=1;c<cols-1;c++){
+    const k=randi(cfg.per[0],cfg.per[1]), L=[];
+    for(let j=0;j<k;j++){ const r=Math.random(); let type=r<cfg.mix[0]?'proxy':r<cfg.mix[0]+cfg.mix[1]?'chif':'fw';
+      const hidden=Math.random()<cfg.unk; nodes.push({c,y:(j+.5)/k+rand(-.06,.06)/k*2,type,hidden,ip:ip()}); L.push(nodes.length-1); }
+    layers.push(L);
+  }
+  nodes.push({c:cols-1,y:.5,type:'srv',ip:ip()}); layers.push([nodes.length-1]);
+  for(let c=0;c<layers.length-1;c++){
+    const A=layers[c], B=layers[c+1];
+    // chaque nœud vers 1 ou 2 voisins proches de la couche suivante ; chaque nœud suivant a au moins une entrée
+    A.forEach((a,ia)=>{ const pos=ia/(Math.max(1,A.length-1))*(B.length-1); const near=[Math.floor(pos),Math.ceil(pos)];
+      const tg=uniq(near.concat(Math.random()<.45?[Math.min(B.length-1,Math.max(0,Math.round(pos)+pick([-1,1])))]:[]));
+      tg.forEach(j=>edges.push([a,B[j]])); });
+    B.forEach(b=>{ if(!edges.some(e=>e[1]===b)) edges.push([pick(A),b]); });
+  }
+  // au moins une route ne doit pas être « que des proxys » : sinon le choix est trop simple
+  return {nodes,edges};
+}
+const uniq=a=>[...new Set(a)];
+
+/* ---------- carte ---------- */
+function geom(){ const r=$('map').getBoundingClientRect(); return {w:r.width,h:r.height}; }
+function pos(n){ const {w,h}=geom(), cols=T.cfg.cols; return [34+n.c*(w-68)/(cols-1), 38+n.y*(h-76)]; }
+const nexts=()=>T.edges.filter(e=>e[0]===T.at).map(e=>e[1]);
+function drawMap(){
+  const {w,h}=geom(), svg=$('svg'); svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+  const nx=nexts(), done=new Set(T.path);
+  const isDone=e=>T.path.some((p,i)=>T.path[i+1]===e[1]&&p===e[0]);
+  let s='';
+  for(const e of T.edges){ const [x1,y1]=pos(T.nodes[e[0]]), [x2,y2]=pos(T.nodes[e[1]]), mx=(x1+x2)/2;
+    const cls=isDone(e)?'done':(e[0]===T.at&&!T.over?'next':''); s+=`<path class="edge ${cls}" d="M${x1} ${y1}C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}"/>`; }
+  T.nodes.forEach((n,i)=>{ const [x,y]=pos(n), ty=n.hidden&&!done.has(i)?'unk':n.type;
+    const reach=new Set(); // nœuds encore atteignables depuis la position actuelle
+    const cls=[ 'node', 't-'+(ty==='unk'?'unk':n.type), done.has(i)?(i===T.at?'here':'done'):'', nx.includes(i)&&!T.over?'next':'', (!done.has(i)&&n.c<=T.nodes[T.at].c)?'dead':'' ].join(' ');
+    const lbl=n.type==='rccu'?'RCCU':ty==='unk'?'???':TYPES[n.type].lbl;
+    s+=`<g class="${cls}" data-i="${i}" transform="translate(${x} ${y})"><circle class="halo" r="17"/><circle class="disc" r="17"/><g class="ico">${ICO[ty]}</g>
+      <text class="lbl" y="31">${lbl}</text>${(nx.includes(i)&&!T.over)||(done.has(i)&&n.type!=='rccu')||n.type==='srv'?`<text y="-23" style="font-size:8.5px;opacity:.8">${ty==='unk'?'?.?.?.?':n.ip}</text>`:''}</g>`; });
+  svg.innerHTML=s;
+  $('hopTxt').textContent=`Relais ${T.path.length-1}/${T.cfg.cols-1}`; $('faultTxt').textContent=`Rejets ${T.faults}`;
+}
+new ResizeObserver(()=>{ if(T.cfg) drawMap(); }).observe($('map'));
+$('svg').addEventListener('click',e=>{ const g=e.target.closest('.node'); if(!g||T.lock||T.over&&Shell.st.mode!=='tuto') return;
+  const i=+g.dataset.i; if(!nexts().includes(i)) return; openLock(i); });
+
+/* ---------- verrou : fenêtre de synchronisation ---------- */
+function openLock(i){
+  const n=T.nodes[i]; if(n.hidden){ n.hidden=false; Shell.toast(`Relais révélé : ${TYPES[n.type].lbl}`,'info'); }
+  const ty=TYPES[n.type], c=T.cfg;
+  T.lock={i, step:0, steps:ty.locks, ang:rand(0,TAU), dir:1, sp:c.speed*ty.sp, w:c.win*ty.w, at:rand(0,TAU), cool:0};
+  T.lock.at=newWindow(T.lock.ang);
+  $('lkSub').textContent=`${n.ip} · ${ty.lbl.toUpperCase()}`; $('lkTtl').textContent=n.type==='srv'?'Serveur du suspect':'Synchronise la connexion';
+  $('lock').hidden=false; drawLock();
+  if(Shell.st.mode==='tuto'&&T.tuto===1) tutoNext();
+}
+function newWindow(from){ return (from+rand(Math.PI*.55,Math.PI*1.45))%TAU; }
+function arc(a0,a1,r){ const p=a=>[110+r*Math.cos(a-Math.PI/2),110+r*Math.sin(a-Math.PI/2)]; const [x0,y0]=p(a0),[x1,y1]=p(a1); return `M${x0} ${y0}A${r} ${r} 0 ${((a1-a0+TAU)%TAU)>Math.PI?1:0} 1 ${x1} ${y1}`; }
+function drawLock(flash){
+  const L=T.lock; if(!L) return;
+  $('pips').innerHTML=Array.from({length:L.steps},(_,k)=>`<i class="${k<L.step?'on':''}"></i>`).join('');
+  const cx=110+86*Math.cos(L.ang-Math.PI/2), cy=110+86*Math.sin(L.ang-Math.PI/2);
+  const ticks=Array.from({length:48},(_,k)=>{ const a=k/48*TAU, r1=k%4?100:96; return `<line x1="${110+r1*Math.cos(a)}" y1="${110+r1*Math.sin(a)}" x2="${110+104*Math.cos(a)}" y2="${110+104*Math.sin(a)}" stroke="rgba(180,155,255,.35)" stroke-width="1.5"/>`; }).join('');
+  $('rsvg').innerHTML=`${ticks}
+    <circle cx="110" cy="110" r="86" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="16"/>
+    <path d="${arc(L.at-L.w/2,L.at+L.w/2,86)}" fill="none" stroke="${flash==='bad'?'#ff5d5d':'#3df59a'}" stroke-width="16" stroke-linecap="butt" style="filter:drop-shadow(0 0 8px rgba(61,245,154,.8))"/>
+    <circle cx="${cx}" cy="${cy}" r="11" fill="#fff" style="filter:drop-shadow(0 0 10px #b49bff)"/>
+    <circle cx="110" cy="110" r="54" fill="#120f2a" stroke="rgba(180,155,255,.4)" stroke-width="2"/>
+    <text x="110" y="106" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-weight="700" font-size="22" fill="${flash==='ok'?'#3df59a':flash==='bad'?'#ff5d5d':'#e2d9ff'}">${flash==='ok'?'OK':flash==='bad'?'REJET':(L.step+1)+'/'+L.steps}</text>
+    <text x="110" y="128" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-size="11" fill="#8f9bb1">${flash?'':'verrou'}</text>`;
+}
+function hit(){
+  const L=T.lock; if(!L||L.cool>0) return;
+  let d=Math.abs(((L.ang-L.at)%TAU+TAU+Math.PI)%TAU-Math.PI);
+  if(d<=L.w/2+.04){
+    L.step++; Shell.good(); L.cool=.32; drawLock('ok');
+    if(L.step>=L.steps){ setTimeout(()=>capture(L.i),280); return; }
+    L.at=newWindow(L.ang); L.sp*=1.12; if(T.cfg.flip&&Math.random()<.5) L.dir*=-1;
+  } else {
+    L.cool=.5; drawLock('bad'); Shell.shake($('dial'));
+    if(Shell.st.mode==='tuto'){ Shell.bad(); Shell.toast('Raté : vise la zone verte','bad'); L.step=0; return; }
+    T.faults++; Shell.st.timeLeft=Math.max(0,Shell.st.timeLeft-PEN); Shell.bad(); Shell.toast(`Connexion rejetée · −${PEN} s`,'bad');
+    L.step=0; L.at=newWindow(L.ang); L.sp=T.cfg.speed*TYPES[T.nodes[L.i].type].sp; drawMap();
+  }
+}
+function capture(i){
+  $('lock').hidden=true; T.lock=null; T.at=i; T.path.push(i); Shell.win(); drawMap();
+  if(T.nodes[i].type==='srv'){
+    if(Shell.st.mode==='tuto'){ setTimeout(Shell.endTuto,700); return; }
+    T.over=true; Shell.stopTimer(); const used=Math.round(T.cfg.time-Shell.st.timeLeft);
+    setTimeout(()=>Shell.result({ok:true,faults:T.faults,stats:[['Temps',used+' s'],['Rejets',T.faults],['Relais',T.path.length-2]],
+      note:T.faults===0?'Aucun rejet : double point.':'Sans rejet, tu gagnes +2.'}),800); return;
+  }
+  Shell.toast(`Relais ${T.path.length-1} franchi`,'ok');
+  if(Shell.st.mode==='tuto'&&T.tuto===2) tutoNext();
+}
+$('hit').onclick=hit;
+$('dial').addEventListener('pointerdown',e=>{ e.preventDefault(); hit(); });
+$('back').onclick=()=>{ if(!T.lock) return; T.lock=null; $('lock').hidden=true; drawMap(); };
+document.addEventListener('keydown',e=>{ if((e.key===' '||e.key==='Enter')&&T.lock){ e.preventDefault(); hit(); } });
+
+/* ---------- tutoriel ---------- */
+const TSTEPS=[null,
+  'Remonte la connexion du suspect jusqu’à son <b>serveur</b> (à droite). Touche un <b>relais</b> qui clignote pour t’y attaquer.',
+  'Touche <b>Verrouiller</b> (ou l’anneau) quand le <b>curseur blanc</b> passe dans la <b>zone verte</b>. Un proxy n’a qu’un verrou.',
+  'Bien joué. Choisis ta route : un <b>pare-feu</b> a 3 verrous, un <b>proxy</b> un seul. Atteins le serveur du suspect.'];
+function tutoNext(){ T.tuto++; if(T.tuto<TSTEPS.length) Shell.coach(T.tuto,3,TSTEPS[T.tuto]); }
+
+function start(cfg,map){ Object.assign(T,{cfg,...map,at:0,path:[0],faults:0,lock:null,over:false}); $('lock').hidden=true; drawMap(); }
+Shell.init({
+  key:'tracage', service:'Renfort fédéral · RCCU', serviceShort:'RCCU',
+  unit:['enquêteur','enquêteurs'], effLabel:'Enquêteurs de la RCCU sur le dossier',
+  headline:'Traçage d’IP',
+  story:`<p>Le suspect est connecté en ce moment, caché derrière une chaîne de relais. Remonte la connexion jusqu’à son serveur <b>avant qu’il ne coupe</b>.</p><p>Choisis ta route, puis franchis chaque relais en touchant au bon moment. Chaque rejet coûte ${PEN} secondes.</p>`,
+  diffs:{
+    difficile:{agents:1,label:'Difficile',time:75,cols:7,per:[2,3],mix:[.35,.35],unk:.3,speed:3.1,win:.62,flip:true},
+    normal:{agents:2,label:'Normal',time:80,cols:6,per:[2,3],mix:[.45,.3],unk:.2,speed:2.6,win:.75,flip:false},
+    facile:{agents:3,label:'Facile',time:90,cols:5,per:[2,3],mix:[.55,.25],unk:0,speed:2.1,win:.9,flip:false}},
+  diffHint:'Plus d’enquêteurs : moins de relais, des fenêtres plus larges et un curseur plus lent.',
+  desktopHint:'Sur ordinateur : barre d’espace ou Entrée pour verrouiller.',
+  rules:['Touche un relais relié à ta position pour l’attaquer. Tu ne peux qu’avancer : <b>choisis bien ta route</b>.','Pour franchir un relais : touche quand le <b>curseur</b> est dans la <b>zone verte</b>. Proxy : 1 verrou, routeur chiffré : 2 rapides, pare-feu : 3.','Un relais <b>?</b> ne révèle son type qu’au moment où tu l’attaques. « Autre route » te ramène à la carte sans pénalité.','Rejet : −6 s et le relais repart de zéro. Atteins le serveur avant la fin du chrono.','Sans rejet : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
+  winTitle:'Suspect localisé', loseTitle:'Connexion coupée', skin:'Salle des écrans',
+  malus:'le suspect a coupé la connexion : pas d’indice supplémentaire aujourd’hui.',
+  onMenu(){ T.over=true; T.lock=null; $('lock').hidden=true; },
+  onInit(){ const c={cols:5,per:[2,3],mix:[.55,.25],unk:0,speed:2.1,win:.9}; start(c,makeMap(c)); T.over=true; drawMap(); },
+  onFrame(dt){
+    const L=T.lock; if(!L) return;
+    if(L.cool>0){ L.cool-=dt; if(L.cool<=0) drawLock(); else return; }
+    L.ang=(L.ang+L.dir*L.sp*dt+TAU)%TAU; drawLock();
+  },
+  onPlay(cfg){ start(cfg,makeMap(cfg));
+    Shell.startTimer(cfg.time,()=>{ if(!T.over){ T.over=true; T.lock=null; $('lock').hidden=true; Shell.bad(); Shell.result({ok:false,faults:1,stats:[['Relais',(T.path.length-1)+'/'+(cfg.cols-1)],['Rejets',T.faults],['Temps','écoulé']]}); } }); },
+  onTuto(){
+    const c={cols:4,per:[2,2],mix:[.5,0],unk:0,speed:1.7,win:1.05,time:999};
+    const m=makeMap(c); m.nodes.forEach(n=>{ if(n.c===1) n.type='proxy'; }); start(c,m); T.tuto=0; tutoNext();
+  }
+});
+</script>
