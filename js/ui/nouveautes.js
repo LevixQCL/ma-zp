@@ -3,10 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-02g',
+  id: '2026-10-02h',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
+    ['🔬', 'Appui de la PJF à l’enquête', 'demande le labo ou la RCCU : si une équipe est libre, joue son mini-jeu (empreintes, ADN, réseau, traçage d’IP) pour décrocher une pièce.'],
     ['🎯', 'Nouveau : le stand de tir', 'une annexe pour des agents d’intervention mieux formés et moins souvent blessés. Et toutes les annexes ont été redessinées.'],
     ['🚨', 'Des incidents en journée', 'colis suspect, porte à crocheter, parking à débloquer… un mini-jeu tombe sur ta zone à une heure imprévue, et tu as 12 heures pour intervenir.'],
     ['🔐', 'Des énigmes à manipuler', 'cadenas à molettes, disque de décodage, plaques à rayer : on touche les objets.'],
@@ -16,6 +17,7 @@ export const NOTE_MAJ = {
   // Liste complète, dans le menu Nouveautés.
   sections: [
     ['À découvrir', [
+      ['Appui fédéral à l’enquête', 'une fois par jour, demande le labo de la PJF (traces, empreintes, ADN) ou la RCCU (téléphones, ordinateurs, comptes en ligne) depuis la carte « Aujourd’hui » de l’enquête. Les équipes sont rares et partagées entre toutes les zones : réponse à 20:00, et un refus te rend prioritaire la fois suivante. Si l’équipe passe, tu joues son mini-jeu le lendemain (un seul essai) : réussi, une pièce sur un suspect arrive à 20:00.'],
       ['Stand de tir', 'nouvelle annexe à construire (10 k€, grande décision « Construire », entretien habituel des annexes) : Intervention +15 %, formation Intervention à moitié prix (2 k€) et sans agent absent, et des agents deux fois moins souvent blessés quand tu engages une grosse équipe sur une affaire ou à l’assaut de la zone de non-droit ; une rébellion ne blesse plus qu’un agent. Il apparaît dans l’aile des annexes de ton commissariat : béton insonorisé, porte blindée et voyant « tir en cours ».'],
       ['Annexes redessinées', 'chaque annexe a maintenant sa propre façade et on voit la pièce derrière la vitre : sac de frappe et haltères à la salle de sport, cible au fond du pas de tir, table et miroir sans tain en salle d’audition, baies de serveurs qui clignotent, comptoir d’accueil de l’antenne. Les lumières s’allument le soir. Les skins conteneurs, roulotte et serre ont été refaits dans le même esprit.'],
       ['Incidents du jour', 'une ou deux fois par jour, à une heure imprévue (entre 7 h et 19 h), un incident tombe sur un de tes services. L’HP affiche un compte à rebours, puis tu as 12 heures pour intervenir, avec un seul essai.'],

@@ -4,6 +4,7 @@
 import { S, esc, icon, myZone } from './common.js';
 import { incidentsVisibles, resultatsIncidents, INCIDENTS, MALUS, GAIN, texteMalus, texteGain, difficulte, pointsJauge, INC } from '../engine/incidents.js';
 import { PS } from '../engine/constants.js';
+import { APPUI, appuiDuJour } from '../engine/appui.js';
 import { SERVICE_LABELS, DEFAULT_ALLOC } from '../engine/constants.js';
 
 /** Les mini-jeux, pour l'entraînement. */
@@ -12,11 +13,11 @@ export const MINI_JEUX = [
   { jeu: 'crochetage', service: 'recherche', nom: 'Crochetage' },
   { jeu: 'depanneuse', service: 'roulage', nom: 'Dépanneuse' },
   { jeu: 'dossier', service: 'proximite', nom: 'Dossier à relire' },
-  // Renfort fédéral (labo) : en test, seulement à l'entraînement pour l'instant.
-  { jeu: 'empreintes', service: 'labo', nom: 'Empreintes', label: 'Labo · en test' },
-  { jeu: 'adn', service: 'labo', nom: 'Fragment d’ADN', label: 'Labo · en test' },
-  { jeu: 'reseau', service: 'rccu', nom: 'Réseau à reconnecter', label: 'RCCU · en test' },
-  { jeu: 'tracage', service: 'rccu', nom: 'Traçage d’IP', label: 'RCCU · en test' },
+  // Appui fédéral à l'enquête (labo, RCCU) : joués quand une équipe PJF est accordée (voir engine/appui.js), et à l'entraînement.
+  { jeu: 'empreintes', service: 'labo', nom: 'Empreintes', label: 'Appui PJF · Labo' },
+  { jeu: 'adn', service: 'labo', nom: 'Fragment d’ADN', label: 'Appui PJF · Labo' },
+  { jeu: 'reseau', service: 'rccu', nom: 'Réseau à reconnecter', label: 'Appui PJF · RCCU' },
+  { jeu: 'tracage', service: 'rccu', nom: 'Traçage d’IP', label: 'Appui PJF · RCCU' },
 ];
 
 export function mesIncidents() {
@@ -64,7 +65,8 @@ export const signatureIncidents = () => { const res = mesResultats(); return mes
 
 export function incidentsHtml() {
   const liste = mesIncidents();
-  if (!liste.length) return '';
+  const appuiRow = ligneAppuiHp();
+  if (!liste.length && !appuiRow) return '';
   const res = mesResultats(liste), now = Date.now();
   const { base, plus } = jaugeDuJour();
   const prochain = liste.find((i) => etat(i, res[i.id], now) === 'avenir');
@@ -85,7 +87,7 @@ export function incidentsHtml() {
   });
   return `<section class="card" id="hp-incidents" aria-label="Incidents du jour" style="gap:8px;scroll-margin-top:16px">
     <div class="between"><span class="kicker">Incidents du jour</span><a class="tiny" href="#guide-incidents">Comment ça marche ?</a></div>
-    ${lignes.join('')}
+    ${appuiRow}${lignes.join('')}
     ${prochain ? `<div class="inc-row inc-attente"><span class="inc-ico" aria-hidden="true">${icon('clock', 16)}</span><span class="col grow" style="gap:1px"><span style="font-weight:600">${lignes.length ? 'Un autre incident va tomber' : 'Un incident va tomber aujourd’hui'}</span><span class="tiny muted">sur un de tes services, dans <strong class="mono" data-inc-cd="${prochain.ouvre}">${duree(prochain.ouvre - now)}</strong> · il restera ouvert ${INC.ouverture / 3600000} heures</span></span></div>`
       : !lignes.some((l) => l.includes('inc-ouvert')) ? '<p class="tiny muted" style="margin:0">Plus d’incident aujourd’hui. Les prochains tombent demain, entre 7 h et 19 h.</p>' : ''}
     <div class="between small"><span class="row muted" style="gap:6px">${icon('star', 14)} Jauge des skins</span>
@@ -119,13 +121,19 @@ async function enregistrer(id, res) {
  * @param {string} jeu        colis | crochetage | depanneuse | dossier
  * @param {object} o          { mode: 'incident'|'train', inc, onFin }
  */
-export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, onFin = () => {}, onEntrainement = () => {} } = {}) {
+export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, onFin = () => {}, onEntrainement = () => {} } = {}) {
   document.querySelector('.mj-wrap')?.remove();
   const p = new URLSearchParams({ mode });
   if (mode === 'incident' && inc) {
     const n = agentsService(inc.service), { base, plus } = jaugeDuJour();
     p.set('id', inc.id); p.set('agents', String(n)); p.set('diff', difficulte(inc.service, n));
     p.set('jauge', String(base + plus)); p.set('malus', texteMalus(MALUS[inc.service].plein)); p.set('gain', `${texteGain(GAIN[inc.service])}, +${PS.queteOk} PS`);
+  }
+  if (mode === 'renfort' && appui) {
+    const u = APPUI.unites[appui.unite];
+    p.set('id', appui.id); p.set('diff', APPUI.diff);
+    p.set('gain', `une pièce ${appui.unite === 'labo' ? 'sur les moyens' : 'sur le mobile ou l’occasion'} d’un suspect, au dossier à 20:00`);
+    p.set('malus', `pas de pièce, l’équipe ${u.court} repart`);
   }
   const wrap = document.createElement('div');
   wrap.className = 'mj-wrap';
@@ -141,12 +149,51 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, onFin = () => {
         if (d.type === 'result') await enregistrer(inc.id, { statut: d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Number(d.fautes) || 0 });
       }
       if (mode === 'train' && d.type === 'result' && !d.abandon) onEntrainement({ minijeux: 1 });
+      if (mode === 'renfort' && appui && d.id === appui.id) {
+        if (d.type === 'start') await enregistrerAppui(appui.id, 'abandon');
+        if (d.type === 'result') await enregistrerAppui(appui.id, d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate');
+      }
     } catch (err) { console.warn('Résultat de l’incident non enregistré', err); }
     if (d.type === 'close') fermer();
   }
   window.addEventListener('message', recevoir);
   document.body.appendChild(wrap);
   document.body.classList.add('mj-ouvert');
+}
+
+/** Résultat du mini-jeu d'appui fédéral (profil du joueur), lu à la résolution de 20:00. */
+async function enregistrerAppui(id, statut) {
+  const cur = S.player && S.player.appui;
+  if (cur && cur.id === id && cur.statut !== 'abandon') return; // une réponse donnée ne change plus
+  S.player = { ...(S.player || {}), appui: { id, statut, at: Date.now() } };
+  await S.backend.savePlayer(S.user.uid, S.player);
+}
+
+/** Appui obtenu pour aujourd'hui et son résultat éventuel. */
+export function monAppui() {
+  const a = S.state && S.user ? appuiDuJour(S.state, S.state.zones[S.user.uid]) : null;
+  if (!a) return null;
+  const r = S.player && S.player.appui && S.player.appui.id === a.id ? S.player.appui : null;
+  return { ...a, res: r, nomJeu: (MINI_JEUX.find((m) => m.jeu === a.jeu) || {}).nom || a.jeu };
+}
+
+/** Lance le mini-jeu de l'appui du jour (un seul essai). */
+export function lancerAppui(onFin) {
+  const a = monAppui();
+  if (!a) return 'Pas d’équipe PJF pour toi aujourd’hui.';
+  if (a.res) return 'Analyse déjà faite.';
+  ouvrirMiniJeu(a.jeu, { mode: 'renfort', appui: a, onFin });
+  return null;
+}
+
+/** Ligne de l'HP : une équipe PJF attend son analyse. */
+function ligneAppuiHp() {
+  const a = monAppui();
+  if (!a || a.res) return '';
+  const u = APPUI.unites[a.unite];
+  return `<div class="inc-row inc-ouvert"><span class="inc-ico" aria-hidden="true">${icon('loupe', 18)}</span>
+      <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:700">Appui ${esc(u.court)} : ${esc(a.nomJeu)}</span><span class="tiny muted">Enquête · l’équipe attend ton analyse jusqu’à 20:00</span></span>
+      <button class="btn primary small" data-action="appui-jouer">Analyser</button></div>`;
 }
 
 /** Lance l'incident demandé, s'il est bien ouvert et pas encore joué. */
