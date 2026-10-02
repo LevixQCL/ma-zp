@@ -244,6 +244,7 @@ export function ecritureHtml(q, picked, fini) {
   const [lettre, ...ech] = q.figures;
   const notes = etat('ecr', q.id, () => ({}));
   const sym = { '': '?', eq: '=', ne: '≠' };
+  const traits = q.traits ? TRAITS.filter(([k]) => q.traits.includes(k)) : TRAITS;
   return `<figure class="fig ec-lettre"><figcaption>${esc(lettre.titre)}</figcaption>${lettre.svg}</figure>
     <div class="col ec-liste" role="group" aria-label="Échantillons" data-q="${esc(q.id)}">${ech.map((f) => {
       const nom = f.titre.replace(/^Échantillon de /, '');
@@ -251,7 +252,7 @@ export function ecritureHtml(q, picked, fini) {
       return `<div class="ec-ech ${picked === nom ? 'sel' : ''}">
         <button type="button" class="ec-pick" data-action="quest-pick" data-v="${esc(nom)}" aria-pressed="${picked === nom}" ${fini ? 'disabled' : ''}>
           <span class="row" style="gap:8px">${avatar(nom, 26)}<strong>${esc(nom)}</strong><span class="tiny muted grow" style="text-align:right">${picked === nom ? 'ton choix' : 'choisir'}</span></span>${f.svg}</button>
-        ${fini ? '' : `<div class="ec-traits">${TRAITS.map(([k, l]) => `<button type="button" class="ec-t ${n[k] || ''}" data-ec="${esc(nom)}" data-t="${k}" aria-label="${l} comparée à la lettre : ${sym[n[k] || '']}"><span>${l}</span><b>${sym[n[k] || '']}</b></button>`).join('')}</div>`}
+        ${fini ? '' : `<div class="ec-traits" style="grid-template-columns:repeat(${traits.length},minmax(0,1fr))">${traits.map(([k, l]) => `<button type="button" class="ec-t ${n[k] || ''}" data-ec="${esc(nom)}" data-t="${k}" aria-label="${l} comparée à la lettre : ${sym[n[k] || '']}"><span>${l}</span><b>${sym[n[k] || '']}</b></button>`).join('')}</div>`}
       </div>`;
     }).join('')}</div>`;
 }
