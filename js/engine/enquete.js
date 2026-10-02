@@ -53,7 +53,7 @@ export const DEMARCHES = {
   banque: { nom: 'Comptes et entourage', motif: 'Extraits de compte via le parquet, téléphonie, entourage.', cout: 3, cible: 'mob', dit: 'dettes, rancunes, fréquentations' },
 };
 export const SOURCES = {
-  ouverture: 'Ouverture du dossier', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', partage: 'Partagé', rebond: 'Rebondissement',
+  ouverture: 'Ouverture du dossier', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', pjf: 'Appui PJF', partage: 'Partagé', rebond: 'Rebondissement',
   ...Object.fromEntries(Object.entries(DEMARCHES).map(([k, d]) => [k, d.nom])),
 };
 

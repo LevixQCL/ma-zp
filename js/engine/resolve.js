@@ -1,6 +1,7 @@
 // Résolution d'un tour. Fonction pure et déterministe :
 // mêmes données en entrée → même résultat, quel que soit l'ordinateur qui calcule.
 
+import { appuiResolution } from './appui.js';
 import {
   APP_VERSION, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
   MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation } from './constants.js';
@@ -225,6 +226,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // Les agents laissés sans affectation partent en premier (audition, traque, FIPA).
   for (const u of uids) ord[u]._libres = agentsLibres(state.zones[u], ord[u], T);
   const pre = enquetePre(state, uids, ord, push, T);
+  // Appui fédéral (labo, RCCU) : pièces des analyses réussies aujourd'hui, équipes pour demain.
+  appuiResolution(state, uids, ord, players, T, push);
   jalonTous('Enquête (partages, accusation, traque)');
   const fp = fipaPre(state, uids, ord, push, T);
   jalonTous('FIPA');

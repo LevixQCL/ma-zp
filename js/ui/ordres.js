@@ -16,7 +16,7 @@ import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enForma
 function enqueteDraft() {
   const o = S.savedOrders || {};
   return {
-    demarches: o.demarches || [], piste: o.piste ?? null, accusation: o.accusation ?? null, traque: o.traque || null, partages: o.partages || [],
+    demarches: o.demarches || [], appui: o.appui || null, piste: o.piste ?? null, accusation: o.accusation ?? null, traque: o.traque || null, partages: o.partages || [],
     fipa: o.fipa || null, fipaReponse: o.fipaReponse || null, fipaChoix: o.fipaChoix || null,
     manoeuvre: o.manoeuvre || null, renfort: o.renfort || null, aide: o.aide || null, duel: o.duel || null, duelReponse: o.duelReponse || null, votes: o.votes || {}, motionChef: o.motionChef || null, offre: o.offre || null,
   };

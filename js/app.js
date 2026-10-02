@@ -37,7 +37,7 @@ import { formatCountdown, weekdayBe } from './engine/time.js';
 import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND } from './engine/constants.js';
 import { nomSecteur } from './engine/nondroit.js';
 import { agentsND } from './ui/nondroit.js';
-import { lancerIncident, ouvrirMiniJeu, majComptesIncidents, signatureIncidents } from './ui/incidents.js';
+import { lancerIncident, lancerAppui, ouvrirMiniJeu, majComptesIncidents, signatureIncidents } from './ui/incidents.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
 
 const app = document.getElementById('app');
@@ -298,6 +298,8 @@ async function onClick(e) {
       case 'diplo-open': { const k = el.dataset.k; const cur = S.diploOpen && k in S.diploOpen ? S.diploOpen[k] : !!document.querySelector(`section[data-k="${k}"]`); S.diploOpen = { ...(S.diploOpen || {}), [k]: !cur }; rerender(); break; }
       case 'aide': ouvrirAide(el.dataset.k); break;
       case 'incident': { const err = lancerIncident(el.dataset.id, () => rerender()); if (err) { toast(err); rerender(); } break; }
+      case 'appui-jouer': { const err = lancerAppui(() => rerender()); if (err) { toast(err); rerender(); } break; }
+      case 'appui-demande': { const k = el.dataset.k; S.draft.appui = S.draft.appui === k ? null : k; S.ordersDirty = true; rerender(); break; }
       case 'mj-train': ouvrirMiniJeu(el.dataset.j, { mode: 'train', onEntrainement: noterEntrainement }); break;
       case 'tuto': location.hash = '#hp'; setTimeout(() => lancerTuto(0), 50); break;
       case 'post-n': { const a = S.state.affaires.find((x) => x.id === el.dataset.id); const cur = (S.postuler && S.postuler[a.id]) || Math.min(3, a.agentsMax || 3); S.postuler = { ...(S.postuler || {}), [a.id]: Math.max(1, Math.min(a.agentsMax || 10, cur + Number(el.dataset.d))) }; rerender(); break; }

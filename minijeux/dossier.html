@@ -247,10 +247,12 @@ const Shell = (() => {
   function hideCoach(){ $('coach').hidden=true; }
   const hero = sub => `<div class="hero"><div class="badge">${document.querySelector('.top .badge').innerHTML}</div><div><div class="eyebrow">${sub}</div></div></div>`;
 
-  // Intégration dans Ma ZP : ?mode=incident (incident du jour, un seul essai) ou ?mode=train (entraînement).
+  // Intégration dans Ma ZP : ?mode=incident (incident du jour, un seul essai), ?mode=renfort (renfort PJF pour
+  // l'enquête, un seul essai, sans jauge) ou ?mode=train (entraînement).
   const Q = new URLSearchParams(location.search);
-  const MODE = ['incident','train'].includes(Q.get('mode')) ? Q.get('mode') : null;
-  const INC = MODE==='incident';
+  const MODE = ['incident','train','renfort'].includes(Q.get('mode')) ? Q.get('mode') : null;
+  const RENF = MODE==='renfort';
+  const INC = MODE==='incident' || RENF;
   const escH = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function post(type, data={}){ try{ if(window.parent!==window) window.parent.postMessage({source:'mazp-mj', jeu:G.key, id:Q.get('id'), type, ...data}, location.origin); }catch(e){} }
   let joue=false, fini=false;
@@ -264,17 +266,17 @@ const Shell = (() => {
     const touch=matchMedia('(pointer:coarse)').matches;
     const tutoBtns = (goLbl) => st.tuto
       ? `<button class="btn primary" id="go">${goLbl}</button><button class="btn" id="tuto">Revoir le tuto</button>`
-      : `<button class="btn primary" id="tuto">Commencer le tuto</button><button class="btn" id="go">${INC?'Intervenir sans tuto':'Jouer directement'}</button>`;
+      : `<button class="btn primary" id="tuto">Commencer le tuto</button><button class="btn" id="go">${RENF?'Commencer sans tuto':INC?'Intervenir sans tuto':'Jouer directement'}</button>`;
     if(INC){
       const d=G.diffs[st.diff];
       showCard(`
-        ${hero('Incident du jour · '+G.serviceShort)}
+        ${hero((RENF?'Appui PJF · ':'Incident du jour · ')+G.serviceShort)}
         <h2>${G.headline}</h2>
         ${G.story}
         <div class="lbl2">${effLabel()}</div>
         <div class="seg seg1"><button aria-pressed="true" tabindex="-1"><span class="ppl">${'<i></i>'.repeat(Math.max(1,Math.min(12,Number(Q.get('agents'))||d.agents)))}</span><b>${effectif()}</b>${d.label}</button></div>
-        <p class="small">Un seul essai. Réussi : ${escH(Q.get('gain')||'un bonus')} et des points de jauge des skins. Raté ou abandonné : ${escH(Q.get('malus')||G.malus)}. Tout s’applique à 20:00.</p>
-        <div class="row">${tutoBtns('Intervenir')}</div>
+        <p class="small">${RENF?`Un seul essai. Réussi : ${escH(Q.get('gain')||'une pièce pour ton enquête')}. Raté ou abandonné : ${escH(Q.get('malus')||'pas de pièce')}.`:`Un seul essai. Réussi : ${escH(Q.get('gain')||'un bonus')} et des points de jauge des skins. Raté ou abandonné : ${escH(Q.get('malus')||G.malus)}. Tout s’applique à 20:00.`}</p>
+        <div class="row">${tutoBtns(RENF?'Commencer':'Intervenir')}</div>
         <button class="btn small" id="later" style="align-self:center">Plus tard</button>
         ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}`);
     } else {
@@ -316,12 +318,12 @@ const Shell = (() => {
     if(ok) pts=faults===0?2:1;
     if(INC){
       fini=true; post('result',{ok, fautes:faults, pts});
-      if(ok){ st.gauge+=pts; renderGauge(); }
+      if(ok && !RENF){ st.gauge+=pts; renderGauge(); }
     } else if(MODE!=='train' && ok){ st.gauge+=pts; if(st.gauge>=50){st.gauge-=50; skin=true;} store.set('gauge',st.gauge); renderGauge(); }
-    const statHtml=stats.map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')+(MODE==='train'?'':`<div class="stat pts"><span>Jauge skins</span><b>${ok?'+'+pts:'+0'}</b></div>`);
-    const boutons = INC ? `<button class="btn primary" id="back">Retour au commissariat</button>`
+    const statHtml=stats.map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')+(MODE==='train'||RENF?'':`<div class="stat pts"><span>Jauge skins</span><b>${ok?'+'+pts:'+0'}</b></div>`);
+    const boutons = INC ? `<button class="btn primary" id="back">${RENF?'Retour à l’enquête':'Retour au commissariat'}</button>`
       : `<button class="btn primary" id="again">${ok?'Rejouer':'Réessayer'}</button><button class="btn" id="tomenu">Menu</button>`;
-    const noteInc = INC ? (ok ? `Résultat enregistré : ${escH(Q.get('gain')||'ton bonus')} et +${pts} sur la jauge des skins, à 20:00.${st.gauge>=50?' Ta jauge sera pleine ce soir : un nouveau skin t’attend.':''}` : '') : '';
+    const noteInc = RENF ? (ok ? 'Analyse réussie : la pièce arrivera dans ton dossier d’enquête à 20:00.' : '') : INC ? (ok ? `Résultat enregistré : ${escH(Q.get('gain')||'ton bonus')} et +${pts} sur la jauge des skins, à 20:00.${st.gauge>=50?' Ta jauge sera pleine ce soir : un nouveau skin t’attend.':''}` : '') : '';
     showCard(ok?`
       <div class="verdict ok">${ICONS.check}</div>
       <h2>${G.winTitle}</h2>
@@ -333,7 +335,7 @@ const Shell = (() => {
       <div class="verdict bad">${ICONS.cross}</div>
       <h2>${G.loseTitle}</h2>
       <div class="stats">${statHtml}</div>
-      ${MODE==='train'?'<p class="small">Entraînement : aucune conséquence.</p>':`<div class="malus"><b>Malus</b> · ${escH(INC&&Q.get('malus')?Q.get('malus')+' (appliqué à 20:00)':(malus||G.malus))}</div>`}
+      ${MODE==='train'?'<p class="small">Entraînement : aucune conséquence.</p>':RENF?'<div class="malus"><b>Pas de pièce</b> · L’analyse n’a rien donné : l’équipe repart. Tu peux redemander un appui pour demain.</div>':`<div class="malus"><b>Malus</b> · ${escH(INC&&Q.get('malus')?Q.get('malus')+' (appliqué à 20:00)':(malus||G.malus))}</div>`}
       <div class="row">${boutons}</div>`);
     if(INC) $('back').onclick=()=>post('close'); else { $('again').onclick=play; $('tomenu').onclick=menu; }
   }
@@ -356,13 +358,13 @@ const Shell = (() => {
     G=cfg;
     st.diff=store.get('diff','normal'); st.tuto=store.get('tuto',false); st.gauge=store.get('gauge',46);
     if(INC){ if(G.diffs[Q.get('diff')]) st.diff=Q.get('diff'); st.gauge=Math.max(0,Number(Q.get('jauge'))||0); }
-    if(MODE==='train') $('gaugeRow').hidden=true;
+    if(MODE==='train' || RENF) $('gaugeRow').hidden=true;
     $('ringval').style.strokeDasharray=CIRC;
     renderGauge();
     $('sound').onclick=()=>{ st.sound=!st.sound; $('sound').classList.toggle('off',!st.sound); $('sound').setAttribute('aria-label',st.sound?'Couper le son':'Activer le son'); };
     if(MODE){
       document.body.classList.add('embed');
-      const eb=document.querySelector('.top .eyebrow'); if(eb) eb.textContent=(INC?'Incident du jour · ':'Entraînement · ')+G.serviceShort;
+      const eb=document.querySelector('.top .eyebrow'); if(eb) eb.textContent=(RENF?'Appui PJF · ':INC?'Incident du jour · ':'Entraînement · ')+G.serviceShort;
       // Dans Ma ZP : le bouton du haut ferme le mini-jeu.
       const b=$('menuBtn'); b.innerHTML=ICONS.cross; b.setAttribute('aria-label','Fermer');
       b.onclick=()=>{ if(INC && joue && !fini && st.mode==='play'){ askQuit(); return; } if(MODE==='train' && st.mode!=='menu'){ menu(); return; } post('close'); };
@@ -374,7 +376,8 @@ const Shell = (() => {
   }
   function askQuit(){
     const was=st.timerOn; st.timerOn=false; st.pause=true;
-    showCard(`<h2>Abandonner l’incident ?</h2><p>Tu n’as qu’un essai : si tu quittes maintenant, l’incident compte comme raté et le malus tombera à 20:00.</p>
+    showCard(RENF?`<h2>Renvoyer l’équipe ?</h2><p>Tu n’as qu’un essai : si tu quittes maintenant, pas de pièce, et l’équipe repart.</p>
+      <div class="row"><button class="btn primary" id="stay">Continuer</button><button class="btn" id="quit">Abandonner</button></div>`:`<h2>Abandonner l’incident ?</h2><p>Tu n’as qu’un essai : si tu quittes maintenant, l’incident compte comme raté et le malus tombera à 20:00.</p>
       <div class="row"><button class="btn primary" id="stay">Continuer</button><button class="btn" id="quit">Abandonner</button></div>`);
     $('stay').onclick=()=>{ hide(); st.timerOn=was; st.pause=false; };
     $('quit').onclick=()=>{ fini=true; post('result',{ok:false, fautes:1, pts:0, abandon:true}); post('close'); };

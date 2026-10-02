@@ -286,6 +286,7 @@ export function sanitizeOrders(zone, raw, state) {
   const demarches = Array.isArray(o.demarches) ? [...new Set(o.demarches.filter((x) => typeof x === 'string' && lireDemarche(x)))].slice(0, 2) : [];
   const accusation = Number.isInteger(o.accusation) && o.accusation >= 0 && o.accusation < ENQ.nbSuspects ? o.accusation : null;
   const piste = Number.isInteger(o.piste) && o.piste >= 0 && o.piste < ENQ.nbSuspects ? o.piste : null;
+  const appui = ['labo', 'rccu'].includes(o.appui) ? o.appui : null;
   const traque = o.traque && typeof o.traque === 'object' ? { n: int(o.traque.n, 0, 1e6), planque: int(o.traque.planque, 0, 5), agents: int(o.traque.agents, 0, 30) } : null;
   const partages = Array.isArray(o.partages) ? o.partages.slice(0, 3).filter((p) => p && typeof p === 'object').map((p) => ({ f: str(p.f), a: str(p.a) })) : [];
   const fipa = o.fipa && typeof o.fipa === 'object' ? { id: str(o.fipa.id), invite: cible(o.fipa.invite), moi: int(o.fipa.moi, 0, 8), lui: int(o.fipa.lui, 0, 8) } : null;
@@ -306,7 +307,7 @@ export function sanitizeOrders(zone, raw, state) {
   if (o.patrouilles && typeof o.patrouilles === 'object') {
     for (const [k2, v] of Object.entries(o.patrouilles).slice(0, 8)) { const n = int(v, 0, 12); if (/^\d{1,4}$/.test(k2) && n > 0) patrouilles[k2] = n; }
   }
-  return { piste, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
+  return { piste, appui, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */

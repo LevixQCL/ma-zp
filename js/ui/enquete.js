@@ -1,6 +1,8 @@
 // Écran Enquête : le tableau Mobile · Moyen · Occasion, les pièces, les planques et les notes.
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
 import { capacite } from '../engine/zone.js';
+import { APPUI } from '../engine/appui.js';
+import { monAppui } from './incidents.js';
 import {
   ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, genererAffaire, dossierDe, dossierAffaire, texteFait, titrePiece,
   chanceVoisinage, VOISINAGE,
@@ -180,6 +182,27 @@ function voisinageInfo(aff) {
   return { n, piste, x, txt, sansPiste, nom: piste !== null ? aff.suspects[piste].prenom : null };
 }
 
+/** Appui fédéral : équipe du jour à faire travailler, et demande pour demain (labo ou RCCU). */
+function appuiHtml() {
+  const d = S.draft, z = myZone(), a = monAppui();
+  let jour = '';
+  if (a) {
+    const u = APPUI.unites[a.unite];
+    const quoi = a.unite === 'labo' ? 'sur les moyens d’un suspect' : 'sur le mobile ou l’occasion d’un suspect';
+    jour = !a.res ? `<div class="between" style="gap:10px"><span class="small"><strong>${esc(u.nom)} sur place aujourd’hui.</strong><br><span class="tiny muted">${esc(a.nomJeu)} · un seul essai. Réussi : une pièce ${quoi}, au dossier à 20:00.</span></span>
+        <button type="button" class="btn primary small" data-action="appui-jouer">Analyser</button></div>`
+      : a.res.statut === 'ok' ? `<p class="small ok" style="margin:0">${icon('check', 14)} ${esc(u.court)} : analyse réussie, la pièce arrive dans ton dossier à 20:00.</p>`
+      : `<p class="small muted" style="margin:0">${esc(u.court)} : l’analyse n’a rien donné aujourd’hui.</p>`;
+  }
+  const btn = (k) => { const u = APPUI.unites[k]; return `<button type="button" class="dem compact" data-action="appui-demande" data-k="${k}" aria-pressed="${d.appui === k}"><span class="l">${esc(u.nom)}</span><span class="p">${d.appui === k ? 'demandé ✓' : esc(u.quoi)}</span></button>`; };
+  return `<div class="voisinage" style="gap:6px">
+      ${jour}
+      <span class="small"><strong>Appui fédéral</strong> · une demande par jour, pour demain</span>
+      <div class="choices" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">${btn('labo')}${btn('rccu')}</div>
+      <span class="tiny muted">Les équipes sont partagées entre toutes les zones et leur nombre change chaque jour : réponse à 20:00.${z.appuiPrio ? ' <strong>Refusé la dernière fois : tu es prioritaire.</strong>' : ' Refusé ? Tu passes en priorité la fois suivante.'} Le labo trouve plutôt les moyens, la RCCU plutôt le mobile et l’occasion.</span>
+    </div>`;
+}
+
 /** Carte « Aujourd'hui » : démarches choisies, prochaine étape conseillée, accusation. */
 function aujourdhui(aff, dos) {
   const d = S.draft, z = myZone(), st = S.state;
@@ -208,6 +231,7 @@ function aujourdhui(aff, dos) {
     <p class="small" style="margin:0;line-height:1.5">${etape}</p>
     ${(() => { const v = voisinageInfo(aff); return `<div class="voisinage"><span class="small"><strong>Voisinage ce soir</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? ` sur la piste de <strong>${esc(v.nom)}</strong>` : ''} : <span class="${v.x >= 0.5 ? 'good' : v.x > 0 ? '' : 'bad'}">${v.txt}</span>.</span>
       <span class="tiny muted">${v.nom ? 'Retire la piste depuis la fiche du suspect.' : `Donne une piste depuis la fiche d’un suspect pour concentrer les recherches (jusqu’à plus d’une pièce par soir). Plus d’agents en Recherche : plus de pièces.`}</span></div>`; })()}
+    ${appuiHtml()}
     <span class="tiny muted">Résultats à 20:00 · budget restant ${fmt1(z.budget - coutTotal(d))} k€${st.enquete.nbCellules > 1 ? ` · ta cellule : ${esc(miens.join(', '))} (les autres suspects coûtent le double)` : ''}</span>
   </section>`;
 }
@@ -215,7 +239,7 @@ function aujourdhui(aff, dos) {
 /** Pièces que j'ai obtenues moi-même (démarches payées ou agents envoyés, voisinage, énigmes) et où elles en sont. */
 function mesPieces(aff, dos) {
   const st = S.state, d = S.draft;
-  const miennes = dos.pieces.filter((p) => DEMARCHES[p.src] || p.src === 'voisinage' || p.src === 'quete').sort((a, b) => b.j - a.j);
+  const miennes = dos.pieces.filter((p) => DEMARCHES[p.src] || p.src === 'voisinage' || p.src === 'quete' || p.src === 'pjf').sort((a, b) => b.j - a.j);
   if (!miennes.length) return '';
   const ligne = (p) => {
     const prevu = (d.partages || []).filter((x) => x.f === p.f);
