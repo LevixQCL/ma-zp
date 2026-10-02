@@ -38,8 +38,8 @@ export const ETAPES = [
   {
     id: 'incidents', route: 'hp', cible: 'section[aria-label="Incidents du jour"]',
     titre: 'Les incidents du jour',
-    texte: `<p>Une ou deux fois par jour, à une heure imprévue, un <strong>incident</strong> tombe sur un de tes services : colis suspect, porte à crocheter, voiture à dégager, dossier à relire. Un compte à rebours t’annonce le prochain.</p>
-      <p>Tu as <strong>6 heures</strong> pour jouer le mini-jeu, avec <strong>un seul essai</strong>. Réussi : des PS, un bonus pour ta zone et ta jauge de skins monte. Raté : −1 de moral, pas plus. Pas joué : ton équipe se débrouille seule. Chaque mini-jeu a son tuto, et tu peux t’entraîner dans l’écran Énigmes.</p>`,
+    texte: `<p>Une ou deux fois par jour, tôt le matin, un <strong>incident</strong> tombe sur un de tes services : colis suspect, porte à crocheter, voiture à dégager, dossier à relire. Un compte à rebours t’annonce le prochain.</p>
+      <p>Tu as <strong>12 heures</strong> pour jouer le mini-jeu, avec <strong>un seul essai</strong>. Réussi : des PS, un bonus pour ta zone et ta jauge de skins monte. Raté : −1 de moral, pas plus. Pas joué : ton équipe se débrouille seule. Chaque mini-jeu a son tuto, et tu peux t’entraîner dans l’écran Énigmes.</p>`,
   },
   {
     id: 'zone', route: 'hp', cible: 'section[aria-label="Ma zone"]',
@@ -136,7 +136,7 @@ export const ETAPES = [
         <li>Règle et <strong>valide tes ordres</strong>.</li>
         <li>Avance l’<strong>enquête</strong> : deux démarches, un partage.</li>
         <li>Résous tes <strong>trois énigmes</strong>.</li>
-        <li>Quand un <strong>incident</strong> tombe, interviens dans les 6 heures.</li>
+        <li>Quand un <strong>incident</strong> tombe, interviens dans les 12 heures.</li>
         <li>Jette un œil au <strong>Terrain</strong> et à la <strong>Radio</strong>.</li>
       </ol>
       <p class="tuto-note">Tout le détail est dans le <strong>Guide du joueur</strong> (roue dentée en haut de l’HP), d’où tu peux aussi relancer cette visite. Bon service !</p>`,

@@ -1,5 +1,5 @@
 // Incidents de la journée : un mini-jeu qui tombe sur un service, une ou deux fois par jour,
-// à une heure imprévue. Il reste ouvert 6 heures. Joué : réussite (jauge des skins) ou échec (malus
+// tôt le matin. Il reste ouvert 12 heures (jusqu'en fin d'après-midi). Joué : réussite (jauge des skins) ou échec (malus
 // à 20:00). Pas joué : l'équipe se débrouille seule, avec une chance qui dépend de ses effectifs.
 import { makeRng } from './rng.js';
 import { DEFAULT_ALLOC, SERVICE_LABELS, PS, gainMoral } from './constants.js';
@@ -17,7 +17,7 @@ export const INCIDENTS = {
 export const SERVICES_INCIDENTS = Object.keys(INCIDENTS);
 
 export const INC = {
-  ouverture: 6 * H,       // durée pendant laquelle l'incident peut être joué
+  ouverture: 12 * H,      // durée pendant laquelle l'incident peut être joué
   jauge: 50,              // points de jauge pour un skin
   deuxiemeChance: 0.5,    // probabilité d'un second incident dans la journée
 };
@@ -94,10 +94,11 @@ export function incidentsDuTour(state, uid) {
     for (let k = 0; k < pool.length; k++) { x -= poids[k]; if (x <= 0) return pool[k]; }
     return pool[pool.length - 1];
   };
-  // Premier incident entre 8 h et 12 h, le second 3 à 6 heures plus tard (au plus tard vers 15 h).
-  const ouvre1 = debut + 12 * H + Math.floor(r.next() * 4 * H);
+  // 12 heures pour jouer, bouclées avant la résolution de 20:00 : le premier incident tombe entre 6 h et 7 h,
+  // le second 30 à 60 minutes plus tard (au plus tard vers 8 h). On a donc toute la journée pour intervenir.
+  const ouvre1 = debut + 10 * H + Math.floor(r.next() * H);
   const liste = [{ service: tirer([]), ouvre: ouvre1 }];
-  if (r.next() < INC.deuxiemeChance) liste.push({ service: tirer([liste[0].service]), ouvre: Math.min(debut + 19 * H, ouvre1 + 3 * H + Math.floor(r.next() * 3 * H)) });
+  if (r.next() < INC.deuxiemeChance) liste.push({ service: tirer([liste[0].service]), ouvre: ouvre1 + H / 2 + Math.floor(r.next() * H / 2) });
   return liste.map((x, k) => ({
     id: `s${state.season}t${state.turn}-${k}`,
     service: x.service, jeu: INCIDENTS[x.service].jeu, titre: INCIDENTS[x.service].titre,
