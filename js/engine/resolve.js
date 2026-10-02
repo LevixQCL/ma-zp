@@ -701,6 +701,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.budget += ff.total;
     z._compta.push(...ff.lignes);
     // Sortie d'académie : les recrues arrivent ce soir, après la paie, pour être dans les ordres de demain.
+    // Filet de sécurité : un groupe à la date de sortie invalide ou plus lointaine que le délai normal
+    // (resté coincé lors d'un changement de règles) sort ce soir.
+    z.academie = (z.academie || []).map((a) => {
+      const n = Math.max(0, Math.floor(Number(a && a.n) || 0)), arr = Number(a && a.arrivee);
+      return { n, arrivee: Number.isFinite(arr) && arr <= T + DELAI_ACADEMIE ? arr : T + 1 };
+    }).filter((a) => a.n > 0);
     const arrivees = z.academie.filter((a) => a.arrivee <= T + 1).reduce((s2, a) => s2 + a.n, 0);
     if (arrivees) { z.agents += arrivees; z.rapport.push(`${arrivees} recrue${arrivees > 1 ? 's' : ''} sort${arrivees > 1 ? 'ent' : ''} de l’académie : dans tes ordres dès demain.`); }
     z.academie = z.academie.filter((a) => a.arrivee > T + 1);
