@@ -747,6 +747,7 @@ function compterEntrainement(type, ok) {
 }
 function nouvelEntrainement() {
   const type = S.trainType || 'quiment', diff = S.trainDiff || 3;
+  if (type.startsWith('mj:')) { S.train = null; S.trainRes = null; S.questPick = null; return; }
   S.train = { ...generateQuest(type, `train:${S.user.uid}:${Date.now()}:${Math.random()}`, diff), id: `train-${Date.now()}` };
   S.trainRes = null; S.questPick = null;
 }

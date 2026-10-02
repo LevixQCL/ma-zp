@@ -151,12 +151,4 @@ export function lancerIncident(id, onFin) {
   return null;
 }
 
-/** Boutons d'entraînement aux mini-jeux (écran des énigmes). */
-export function entrainementMiniJeuxHtml() {
-  return `<section class="card tight" aria-label="Mini-jeux d’incident" style="gap:8px">
-    <div class="col" style="gap:2px"><span style="font-weight:700">Mini-jeux d’incident</span><span class="tiny muted">Les incidents du jour, sans enjeu : choisis l’effectif, refais le tuto, recommence autant que tu veux.</span></div>
-    <div class="choices" style="grid-template-columns:repeat(2,minmax(0,1fr))">${MINI_JEUX.map((m) => `<button type="button" class="choice" data-action="mj-train" data-j="${m.jeu}"><span>${esc(m.nom)}</span><span class="s">${SERVICE_LABELS[m.service]}</span></button>`).join('')}</div>
-  </section>`;
-}
-
 export { INCIDENTS };
