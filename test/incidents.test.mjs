@@ -17,10 +17,11 @@ for (let t = 1; t <= 300; t++) {
     const l = incidentsDuTour(s2, u);
     assert.deepEqual(l, incidentsDuTour(s2, u), 'tirage stable');
     assert.ok(l.length === 1 || l.length === 2);
-    total++; if (l.length === 2) { deux++; assert.notEqual(l[0].service, l[1].service); assert.ok(l[1].ouvre - l[0].ouvre >= 3 * H - 1 || l[1].ouvre === s2.nextDeadline - 5 * H); }
+    total++; if (l.length === 2) { deux++; assert.notEqual(l[0].service, l[1].service); assert.ok(l[1].ouvre - l[0].ouvre >= H / 2 - 1 && l[1].ouvre - l[0].ouvre <= H); }
     for (const i of l) {
       const debut = s2.nextDeadline - 24 * H;
-      assert.ok(i.ouvre >= debut + 12 * H && i.ouvre <= debut + 19 * H, 'ouvre entre 8 h et 15 h');
+      assert.ok(i.ouvre >= debut + 10 * H && i.ouvre <= debut + 12 * H, 'ouvre entre 6 h et 8 h');
+      assert.ok(i.ferme - i.ouvre >= 12 * H - 3 * 60 * 1000, '12 heures pour jouer');
       assert.ok(i.ferme <= s2.nextDeadline && i.ferme > i.ouvre);
       assert.ok(['colis', 'crochetage', 'depanneuse', 'dossier'].includes(i.jeu));
     }

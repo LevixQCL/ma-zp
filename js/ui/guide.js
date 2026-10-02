@@ -312,7 +312,7 @@ export function sections() {
     },
     {
       id: 'incidents', titre: 'Les incidents du jour (mini-jeux)', html: `
-        <p>Une ou deux fois par jour, à une heure imprévue (entre 8 h et 15 h environ), un incident tombe sur un de tes services. L’HP affiche un compte à rebours jusqu’au prochain, puis l’incident reste ouvert <strong>${INC.ouverture / 3600000} heures</strong>. Plus un service compte d’agents, plus il a de chances d’être touché.</p>
+        <p>Une ou deux fois par jour, tôt le matin (entre 6 h et 8 h), un incident tombe sur un de tes services. L’HP affiche un compte à rebours jusqu’au prochain, puis l’incident reste ouvert <strong>${INC.ouverture / 3600000} heures</strong>. Plus un service compte d’agents, plus il a de chances d’être touché.</p>
         ${ul([
           '<strong>Un seul essai</strong> par incident. Quitter en cours de partie compte comme un échec.',
           'La difficulté suit l’effectif du service : plus d’agents que la répartition de base, c’est plus facile ; moins, c’est plus dur.',
