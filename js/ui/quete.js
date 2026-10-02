@@ -17,7 +17,9 @@ function renderFigures(q, fini) {
   if (q.type === 'ecriture') return ecritureHtml(q, S.questPick, fini);
   const tactile = (q.type === 'photos' || q.type === 'filature') && !fini;
   const fig = (f) => `<figure class="fig ${tactile ? 'tactile' : ''}"><figcaption>${esc(f.titre)}</figcaption>${tactile ? figureInteractive(q, f.svg, S.questPick) : f.svg}</figure>`;
-  const cls = 'figs';
+  // Photos à comparer : côte à côte pour les voir sur le même écran (sauf pendant la mémorisation, une seule à la fois).
+  const cote = q.type === 'photos' && q.figures.length === 2 && (!q.memo || fini);
+  const cls = cote ? 'figs cote' : 'figs';
   if (!q.memo || fini) return `<section class="${cls}" aria-label="Documents">${q.figures.map(fig).join('')}</section>`;
   const vu = (S.memoVu && S.memoVu[q.id]) || lire(`mazp-memo-${q.id}`);
   const [f1, f2] = q.figures;
