@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f17">
 <style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
-<title>Colis suspect</title>
+<title>Réseau à reconnecter</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400..700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
@@ -133,72 +133,40 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 @media (prefers-reduced-motion:reduce){.gbar i,.toast,.btn{transition:none}.shake,.card,.verdict{animation:none}}
 
 
-.view{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:2px;scrollbar-width:none}
-/* boîtier : coque graphite durcie, vis aux coins */
-.box{position:relative;background:linear-gradient(180deg,#2a313d 0%,#1d232d 100%);border-radius:24px;padding:14px;display:flex;flex-direction:column;gap:12px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -2px 0 rgba(0,0,0,.4),0 18px 40px rgba(0,0,0,.45)}
-.box::before,.box::after{content:"";position:absolute;width:9px;height:9px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#9aa4b3,#3e4552);top:9px;left:9px}
-.box::after{left:auto;right:9px}
-.plate{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-inline:6px}
-.serial{font-family:var(--f-mono);font-weight:600;font-size:15px;background:linear-gradient(180deg,#e8e5da,#cfcabb);color:#1f2126;padding:4px 10px 5px;border-radius:7px;letter-spacing:.06em;box-shadow:inset 0 -1px 0 rgba(0,0,0,.2),0 1px 0 rgba(255,255,255,.08)}
-.serial small{font:600 9px var(--f-body);display:block;letter-spacing:.08em;color:#6b6a62}
-.sticker{font:800 13px var(--f-body);letter-spacing:.14em;color:#2a1400;background:#ffcf3d;padding:5px 9px;border-radius:4px;transform:rotate(-4deg);box-shadow:0 2px 6px rgba(0,0,0,.35)}
-.sticker.none{background:transparent;color:var(--faint);transform:none;box-shadow:none;letter-spacing:0;font-weight:600;font-size:12px;padding:0}
-.lcd{margin-left:auto;position:relative;font-family:var(--f-mono);font-weight:600;font-size:24px;letter-spacing:.06em;background:#120a09;padding:3px 10px;border-radius:9px;box-shadow:inset 0 2px 6px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.06);font-variant-numeric:tabular-nums}
-.lcd .ghost{color:rgba(255,90,70,.09)}
-.lcd .clock{position:absolute;left:10px;top:3px;color:#ff5a46;text-shadow:0 0 10px rgba(255,90,70,.7)}
-.strikes{display:flex;gap:5px}
-.strikes i{width:10px;height:10px;border-radius:50%;background:#2c1414;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)}
-.strikes i.on{background:#ff4b4b;box-shadow:0 0 10px #ff4b4b}
-.mod{position:relative;background:linear-gradient(180deg,#151a22,#1a2029);border-radius:16px;padding:10px 12px 12px;box-shadow:inset 0 2px 8px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.04);transition:box-shadow .2s}
-.mod h3{margin:0 0 4px;font:700 13px var(--f-body);color:#aeb7c6}
-.lamp{position:absolute;right:12px;top:12px;width:10px;height:10px;border-radius:50%;background:#26303c;box-shadow:inset 0 1px 2px rgba(0,0,0,.6)}
-.mod.done .lamp{background:var(--ok);box-shadow:0 0 12px var(--ok)}
-.mod.done h3{color:var(--ok)}
-.mod.focus{box-shadow:inset 0 2px 8px rgba(0,0,0,.55),0 0 0 2px var(--accent),0 0 24px var(--accent-soft)}
-#wires{width:100%;height:auto;aspect-ratio:300/170;display:block;touch-action:none;cursor:crosshair}
-.lower{display:grid;grid-template-columns:1fr 1.3fr;gap:12px}
-.btnwrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding-top:6px}
-.bezel{padding:7px;border-radius:50%;background:linear-gradient(180deg,#3a4250,#20262f);box-shadow:inset 0 1px 0 rgba(255,255,255,.15),0 4px 10px rgba(0,0,0,.5)}
-#bigbtn{width:88px;height:88px;border-radius:50%;border:0;font:800 13px var(--f-body);letter-spacing:.08em;cursor:pointer;touch-action:none;
-  box-shadow:inset 0 -8px 14px rgba(0,0,0,.35),inset 0 6px 10px rgba(255,255,255,.35),0 6px 0 rgba(0,0,0,.45);transition:transform .06s,box-shadow .06s}
-#bigbtn.down{transform:translateY(4px);box-shadow:inset 0 -4px 10px rgba(0,0,0,.4),inset 0 4px 8px rgba(255,255,255,.25),0 2px 0 rgba(0,0,0,.45)}
-.strip{width:84px;height:8px;border-radius:4px;background:#0f1318;box-shadow:inset 0 1px 3px rgba(0,0,0,.8);transition:background .15s,box-shadow .15s}
-.sw{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;justify-items:center}
-.led{width:11px;height:11px;border-radius:50%;background:#2b2a1c;box-shadow:inset 0 1px 2px rgba(0,0,0,.7)}
-.led.on{background:#ffd34d;box-shadow:0 0 12px #ffc93a,inset 0 -1px 2px rgba(0,0,0,.2)}
-.tog{width:32px;height:58px;border-radius:10px;background:linear-gradient(180deg,#0e1217,#1a2028);box-shadow:inset 0 2px 5px rgba(0,0,0,.8),0 1px 0 rgba(255,255,255,.06);border:0;position:relative;cursor:pointer;touch-action:none;padding:0}
-.tog::after{content:"";position:absolute;left:5px;right:5px;height:24px;border-radius:7px;background:linear-gradient(180deg,#f1f4f8,#a3acb8 60%,#7d8794);box-shadow:0 3px 5px rgba(0,0,0,.5);transition:top .1s cubic-bezier(.3,1.4,.5,1);top:29px}
-.tog.up::after{top:5px}
-.swnum{font:600 11px var(--f-mono);color:var(--faint)}
-.validate{margin-top:10px;width:100%;border-radius:11px;border:0;background:linear-gradient(180deg,#323a47,#262d38);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 2px 0 rgba(0,0,0,.4);color:var(--ink);font:700 13px var(--f-body);padding:9px;cursor:pointer}
-.validate:active{transform:translateY(1px)}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:16px;background:var(--surface);border:1px solid var(--stroke);margin-bottom:env(safe-area-inset-bottom,0px)}
-.tabs button{border-radius:12px;padding:11px;font:700 14px var(--f-body);cursor:pointer;border:0;background:transparent;color:var(--mute);transition:background .15s,color .15s}
-.tabs button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink)}
-.tabs button.focus{color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
-/* fiche : feuille sur porte-bloc */
-.clip{position:relative;padding-top:12px}
-.clip::before{content:"";position:absolute;left:50%;top:0;transform:translateX(-50%);width:110px;height:24px;border-radius:8px 8px 6px 6px;background:linear-gradient(180deg,#c6ccd5,#8a939f);box-shadow:0 3px 6px rgba(0,0,0,.4);z-index:1}
-.fiche{position:relative;background:var(--paper);color:var(--paper-ink);border-radius:16px;padding:26px 18px 18px;font-family:var(--f-doc);font-size:15px;line-height:1.5;-webkit-user-select:text;user-select:text;box-shadow:0 14px 30px rgba(0,0,0,.35)}
-.fiche h2{font:800 22px var(--f-disp);margin:0 0 2px;letter-spacing:-.01em}
-.fiche .sub{font:500 12.5px var(--f-body);color:var(--paper-mute);margin-bottom:12px}
-.fiche h3{display:flex;align-items:center;gap:8px;font:800 16px var(--f-body);margin:16px 0 6px}
-.fiche h3 span{display:grid;place-items:center;width:22px;height:22px;border-radius:7px;background:var(--paper-ink);color:var(--paper);font-size:12px}
-.fiche ol{margin:4px 0;padding-left:22px}
-.fiche li{margin:4px 0}
-.fiche li::marker{font-family:var(--f-body);font-weight:700;color:var(--paper-mute)}
-.fiche .note{font-style:italic;color:var(--paper-mute);font-size:14px}
-.fiche .pill{display:inline-block;font:700 12px var(--f-body);padding:1px 7px;border-radius:999px;color:#fff}
+.boardwrap{position:relative;flex:1;min-height:0;display:grid;place-items:center}
+.board{display:grid;gap:3px;padding:8px;border-radius:18px;background:radial-gradient(90% 80% at 50% 40%,rgba(180,155,255,.10),transparent 70%),#0a0f1f;box-shadow:inset 0 0 0 1px rgba(180,155,255,.18),0 20px 40px rgba(0,0,0,.3);touch-action:manipulation}
+.cell{position:relative;padding:0;border:0;border-radius:9px;background:rgba(255,255,255,.035);cursor:pointer;overflow:hidden;-webkit-tap-highlight-color:transparent}
+.cell:active{background:rgba(255,255,255,.07)}
+.cell.lock{background:rgba(180,155,255,.13);box-shadow:inset 0 0 0 1.5px rgba(180,155,255,.45)}
+.cell.lock::after{content:"";position:absolute;right:4px;top:4px;width:6px;height:6px;border-radius:2px;background:rgba(180,155,255,.85)}
+.cell.hint{animation:hint 1s ease-in-out infinite}
+@keyframes hint{50%{box-shadow:inset 0 0 0 2px var(--accent),0 0 16px rgba(180,155,255,.5)}}
+.cell svg{position:absolute;inset:0;width:100%;height:100%}
+.cell .t{transition:transform .16s cubic-bezier(.3,.8,.4,1.25)}
+.cell .t path{stroke:#323b57;stroke-width:15;stroke-linecap:round;fill:none;transition:stroke .2s}
+.cell .t circle{fill:#323b57;transition:fill .2s}
+.cell.on .t path{stroke:#b49bff;filter:drop-shadow(0 0 4px rgba(180,155,255,.8))}
+.cell.on .t circle{fill:#b49bff}
+.cell .ic .scr{fill:#151b2e;stroke:#4a5577;stroke-width:4;transition:fill .25s,stroke .25s}
+.cell .ic .ft{fill:#4a5577}
+.cell.on .ic .scr{fill:#3df59a;stroke:#c9ffe3;filter:drop-shadow(0 0 6px rgba(61,245,154,.9))}
+.cell.on .ic .ft{fill:#c9ffe3}
+.cell .srv rect{fill:#2a2150;stroke:#b49bff;stroke-width:4}
+.cell .srv circle{fill:#3df59a;animation:blink 1.2s steps(2) infinite}
+@keyframes blink{50%{fill:#b49bff}}
+.board.won .cell .t path{stroke:#3df59a;filter:drop-shadow(0 0 5px rgba(61,245,154,.9))}
+.board.won .cell .t circle{fill:#3df59a}
+.hintline{font-size:12.5px;color:var(--mute);text-align:center;flex:0 0 auto}
+.status{flex:0 0 auto;padding-bottom:env(safe-area-inset-bottom,0px)}
 
 </style>
 </head>
 <body>
-<script>document.body.classList.add('svc-int')</script>
+<script>document.body.classList.add('svc-cyb')</script>
 <div class="app" id="app">
   <div class="top">
-    <div class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="8" width="17" height="12" rx="2.5"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3.5 13h17"/><circle cx="17" cy="16.5" r="1" fill="currentColor"/></svg></div>
-    <div class="ttl"><div class="eyebrow">Intervention · démo</div><h1>Colis suspect</h1></div>
+    <div class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg></div>
+    <div class="ttl"><div class="eyebrow">RCCU · démo</div><h1>Réseau</h1></div>
     <div class="hud">
       <button class="iconbtn" id="sound" aria-label="Couper le son"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
       <button class="iconbtn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
@@ -209,61 +177,9 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
   <div class="coach" id="coach" hidden></div>
   <div class="stage" id="stage">
 
-  <div class="view" id="vDevice">
-    <div class="box" id="box">
-      <div class="plate">
-        <div class="serial"><small>N° DE SÉRIE</small><span id="serial">--</span></div>
-        <div class="sticker" id="sticker">FRAGILE</div>
-        <div class="strikes" id="strikes"></div>
-        <div class="lcd"><span class="ghost">88:88</span><span class="clock" id="clock">00:00</span></div>
-      </div>
-      <div class="mod" id="mWires"><h3>Fils</h3><span class="lamp"></span><svg id="wires" viewBox="0 0 300 170" aria-label="Fils : glisse le doigt à travers un fil pour le couper"></svg></div>
-      <div class="lower">
-        <div class="mod" id="mBtn"><h3>Bouton</h3><span class="lamp"></span>
-          <div class="btnwrap"><div class="bezel"><button id="bigbtn">STOP</button></div><div class="strip" id="strip"></div></div>
-        </div>
-        <div class="mod" id="mSw"><h3>Interrupteurs</h3><span class="lamp"></span>
-          <div class="sw" id="leds"></div>
-          <div class="sw" id="togs" style="margin-top:6px"></div>
-          <button class="validate" id="validate">Valider</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="view" id="vFiche" hidden>
-    <div class="clip"><div class="fiche">
-      <h2>Fiche réflexe SEDEE</h2>
-      <div class="sub">À n'utiliser que si le service de déminage ne peut pas intervenir à temps.</div>
-      <p class="note">Avant tout, repère le n° de série et l'étiquette éventuelle du colis. Pour chaque module, applique la première règle qui correspond.</p>
-      <h3><span>1</span>Fils</h3>
-      <p class="note">Coupe un seul fil : glisse le doigt à travers.</p>
-      <ol>
-        <li>Aucun fil rouge : coupe le <b>2e fil</b>.</li>
-        <li>Le dernier fil est blanc : coupe le <b>dernier fil</b>.</li>
-        <li>Plus d'un fil bleu : coupe le <b>dernier fil bleu</b>.</li>
-        <li>Le n° de série finit par un chiffre impair : coupe le <b>premier fil rouge</b>.</li>
-        <li>Sinon : coupe le <b>premier fil</b>.</li>
-      </ol>
-      <p class="note">Les fils se comptent de haut en bas.</p>
-      <h3><span>2</span>Bouton</h3>
-      <ol>
-        <li>Bouton rouge marqué STOP : <b>appui bref</b>.</li>
-        <li>Étiquette FRAGILE et bouton jaune : <b>appui bref</b>.</li>
-        <li>Sinon : <b>maintiens</b> le bouton. Une bande s'allume. Relâche quand l'horloge de l'appareil affiche :
-          <br><span class="pill" style="background:#3d7fd9">bleue</span> un <b>4</b> &nbsp; <span class="pill" style="background:#d6a915">jaune</span> un <b>5</b> &nbsp; <span class="pill" style="background:#7a7f88">autre</span> un <b>1</b>
-          <br><span class="note">(n'importe où dans l'horloge)</span></li>
-      </ol>
-      <h3><span>3</span>Interrupteurs</h3>
-      <ol>
-        <li>LED allumée : interrupteur <b>en haut</b>. LED éteinte : <b>en bas</b>.</li>
-        <li>Étiquette FRAGILE : <b>inverse</b> tous les interrupteurs.</li>
-        <li>Lettre K dans le n° de série : l'interrupteur 4 reste <b>toujours en bas</b>.</li>
-      </ol>
-      <p class="note">Appuie ensuite sur Valider.</p>
-    </div></div>
-  </div>
-  <div class="status"><span id="modsTxt">Modules 0/3</span><span id="faultTxt">Erreurs 0</span></div>
-  <div class="tabs"><button id="tDev" aria-pressed="true">Appareil</button><button id="tFiche" aria-pressed="false">Fiche SEDEE</button></div>
+  <div class="boardwrap" id="wrap"><div class="board" id="board" role="grid" aria-label="Réseau à reconnecter"></div></div>
+  <div class="hintline">Toucher : tourner · Appui long (clic droit) : verrouiller une case sûre</div>
+  <div class="status"><span id="pcTxt">PC reliés 0/0</span><span id="rotTxt">Rotations 0</span></div>
 
   </div>
 </div>
@@ -468,189 +384,137 @@ const Shell = (() => {
 })();
 
 
-const COL = {rouge:'#d9443a', bleu:'#3d7fd9', jaune:'#e8c23a', blanc:'#ecebe4', noir:'#1b1d21'};
-const BTNTXT = {rouge:'#fff', bleu:'#fff', jaune:'#2a1d00', blanc:'#1a1d21'};
-const C = {cfg:null, serial:'', fragile:false, wires:[], cut:[], btn:{}, leds:[], togs:[], done:{w:false,b:false,s:false}, strikes:0, faults:0, tutoStep:0, over:false, ficheSeen:false};
+/* Réseau : un arbre de câbles relie le serveur (au centre) à tous les PC. Les cases ont été tournées au hasard.
+   Il faut tout reconnecter : chaque PC relié au serveur, aucun bout de câble dans le vide. */
+const N=1,E=2,S=4,W=8, DIRS=[[N,0,-1,S],[E,1,0,W],[S,0,1,N],[W,-1,0,E]];
+const rot=(m,k)=>{ k=((k%4)+4)%4; return ((m<<k)|(m>>(4-k)))&15; };
+const deg=m=>((m&1)+(m>>1&1)+(m>>2&1)+(m>>3&1));
+const R={cols:0,rows:0,cells:[],srv:0,over:true,rots:0,won:false,tuto:0};
 
-function genSerial(){
-  const L='ABCDEFGHJKLMNPRSTUVWXYZ';
-  let s; do{ s = pick(L)+pick(L)+'-'+randi(1,9)+pick(L)+randi(0,9)+randi(0,9); }while(false);
-  if(Math.random()<.3 && !s.includes('K')) s = s.slice(0,4)+'K'+s.slice(5);
-  return s;
-}
-function wireAnswer(){
-  const w=C.wires, n=w.length, odd=+C.serial.slice(-1)%2===1;
-  if(!w.includes('rouge')) return 1;
-  if(w[n-1]==='blanc') return n-1;
-  if(w.filter(c=>c==='bleu').length>1) return w.lastIndexOf('bleu');
-  if(odd) return w.indexOf('rouge');
-  return 0;
-}
-function btnMode(){
-  const b=C.btn;
-  if(b.color==='rouge' && b.label==='STOP') return 'tap';
-  if(C.fragile && b.color==='jaune') return 'tap';
-  return 'hold';
-}
-function holdDigit(){ return C.btn.strip==='bleu'?'4':C.btn.strip==='jaune'?'5':'1'; }
-function swTarget(){
-  return C.leds.map((l,i)=>{ let up=!!l; if(C.fragile) up=!up; if(i===3 && C.serial.includes('K')) up=false; return up; });
-}
-
-function setup(p){
-  Object.assign(C,{serial:p.serial,fragile:p.fragile,wires:p.wires,cut:p.wires.map(()=>false),btn:p.btn,leds:p.leds,togs:p.togs.slice(),done:{w:false,b:false,s:false},strikes:0,faults:0,over:false});
-  $('serial').textContent=C.serial;
-  const stk=$('sticker'); stk.textContent=C.fragile?'FRAGILE':'pas d\'étiquette'; stk.className='sticker'+(C.fragile?'':' none');
-  $('strikes').innerHTML = Array.from({length:C.cfg.lives>5?0:Math.max(0,C.cfg.lives-1)},()=>'<i></i>').join('');
-  const bb=$('bigbtn'); bb.textContent=C.btn.label; bb.style.background=`radial-gradient(circle at 50% 30%, ${shade(COL[C.btn.color],.35)}, ${COL[C.btn.color]} 55%, ${shade(COL[C.btn.color],-.3)})`; bb.style.color=BTNTXT[C.btn.color];
-  $('strip').style.background=''; $('strip').style.boxShadow='';
-  $('leds').innerHTML=C.leds.map(l=>`<span class="led ${l?'on':''}"></span>`).join('');
-  $('togs').innerHTML=C.togs.map((t,i)=>`<div style="display:grid;justify-items:center;gap:2px"><button class="tog ${t?'up':''}" data-i="${i}" aria-label="Interrupteur ${i+1}"></button><span class="swnum">${i+1}</span></div>`).join('');
-  ['mWires','mBtn','mSw'].forEach(id=>$(id).classList.remove('done','focus'));
-  drawWires(); status(); view('dev');
-}
-function randomPuzzle(){
-  const n=randi(4,6), cols=Object.keys(COL);
-  const wires=Array.from({length:n},()=>pick(cols));
-  const btn={color:pick(cols.filter(c=>c!=='noir')), label:pick(['STOP','ARMER','MAINTENIR','ANNULER']), strip:pick(['bleu','jaune','blanc','rouge'])};
-  if(Math.random()<.25){ btn.color='rouge'; btn.label='STOP'; }
-  let leds, togs; do{ leds=[0,1,2,3].map(()=>Math.random()<.5?1:0); togs=[0,1,2,3].map(()=>Math.random()<.5?1:0); }while(leds.join()===togs.join());
-  return {serial:genSerial(), fragile:Math.random()<.4, wires, btn, leds, togs};
-}
-
-/* ---------- fils ---------- */
-const WY = n => Array.from({length:n},(_,i)=>22+i*(128/(n-1)));
-function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=n>>16,g=n>>8&255,b=n&255; const t=f<0?0:255,p=Math.abs(f); r=Math.round((t-r)*p+r); g=Math.round((t-g)*p+g); b=Math.round((t-b)*p+b); return `rgb(${r},${g},${b})`; }
-function drawWires(){
-  const svg=$('wires'), n=C.wires.length, ys=WY(n);
-  let h='';
-  ys.forEach((y,i)=>{
-    const c=COL[C.wires[i]], wig=(i%2?1:-1)*8, dark=shade(c,-.45), hi=shade(c,.55);
-    const tube=(d)=>`<path d="${d}" stroke="#000" stroke-opacity=".45" stroke-width="11" fill="none" stroke-linecap="round" transform="translate(0 3)"/><path d="${d}" stroke="${dark}" stroke-width="9" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${c}" stroke-width="6.5" fill="none" stroke-linecap="round"/><path d="${d}" stroke="${hi}" stroke-opacity=".7" stroke-width="1.8" fill="none" stroke-linecap="round" transform="translate(0 -1.6)"/>`;
-    if(!C.cut[i]) h+=tube(`M18 ${y} C 90 ${y+wig}, 210 ${y-wig}, 282 ${y}`);
-    else {
-      const cx=C.cut[i];
-      h+=tube(`M18 ${y} C 60 ${y+wig}, ${cx-34} ${y+4}, ${cx-9} ${y+11}`)+tube(`M${cx+9} ${y+11} C ${cx+34} ${y+4}, 240 ${y-wig}, 282 ${y}`);
-      h+=`<circle cx="${cx-9}" cy="${y+11}" r="2.6" fill="#d9924e"/><circle cx="${cx+9}" cy="${y+11}" r="2.6" fill="#d9924e"/>`;
-    }
-    for(const x of [11,289]) h+=`<rect x="${x-8}" y="${y-8}" width="16" height="16" rx="4" fill="#3a4250"/><circle cx="${x}" cy="${y}" r="4.2" fill="#a7b0bd"/><path d="M${x-2.6} ${y}h5.2" stroke="#4d5562" stroke-width="1.4"/>`;
-    h+=`<text x="11" y="${y-11}" font-size="8.5" font-weight="600" text-anchor="middle" fill="#6d7788" font-family="Instrument Sans,system-ui,sans-serif">${i+1}</text>`;
-  });
-  svg.innerHTML=h;
-}
-let gest=null;
-function svgPt(e){ const r=$('wires').getBoundingClientRect(); return {x:(e.clientX-r.left)/r.width*300, y:(e.clientY-r.top)/r.height*170}; }
-$('wires').addEventListener('pointerdown',e=>{ if(C.over||!canAct('w')) return; e.preventDefault(); try{$('wires').setPointerCapture(e.pointerId)}catch(_){} gest={id:e.pointerId,...svgPt(e),done:false}; });
-$('wires').addEventListener('pointermove',e=>{
-  if(!gest||gest.id!==e.pointerId||gest.done) return;
-  const p=svgPt(e), ys=WY(C.wires.length);
-  for(let i=0;i<ys.length;i++){
-    if(C.cut[i]) continue;
-    if((gest.y-ys[i])*(p.y-ys[i])<=0 && p.x>24 && p.x<276){ gest.done=true; cutWire(i, Math.round(p.x)); break; }
+function generate(cols,rows){
+  const n=cols*rows, base=new Array(n).fill(0), seen=new Array(n).fill(false);
+  const srv=Math.floor(rows/2)*cols+Math.floor(cols/2);
+  seen[srv]=true; const front=[]; const push=i=>DIRS.forEach(([b,dx,dy],k)=>front.push([i,k]));
+  push(srv); let cnt=1;
+  while(cnt<n && front.length){
+    const j=randi(0,front.length-1), [i,k]=front.splice(j,1)[0], [b,dx,dy,o]=DIRS[k];
+    const x=i%cols+dx, y=Math.floor(i/cols)+dy; if(x<0||y<0||x>=cols||y>=rows) continue;
+    const t=y*cols+x; if(seen[t]) continue;
+    if(i!==srv && deg(base[i])>=3) continue;               // pas de croisement à 4 branches
+    base[i]|=b; base[t]|=o; seen[t]=true; cnt++; push(t);
   }
-  gest.x=p.x; gest.y=p.y;
-});
-['pointerup','pointercancel'].forEach(ev=>$('wires').addEventListener(ev,()=>gest=null));
-function cutWire(i,x){
-  C.cut[i]=x; drawWires(); Shell.blip(2200,.04,'square',.04);
-  if(i===wireAnswer()){ solve('w','Fil coupé'); }
-  else if(Shell.st.mode==='tuto'){ Shell.toast('Pas ce fil','bad'); Shell.bad(); setTimeout(()=>{C.cut[i]=false; drawWires();},500); }
-  else strike('Mauvais fil');
+  if(cnt<n) return generate(cols,rows);
+  return {base,srv};
+}
+function cur(i){ const c=R.cells[i]; return rot(c.base,c.turns); }
+function powered(){
+  const on=new Set([R.srv]), q=[R.srv];
+  while(q.length){ const i=q.pop(), m=cur(i), x=i%R.cols, y=Math.floor(i/R.cols);
+    for(const [b,dx,dy,o] of DIRS){ if(!(m&b)) continue; const nx=x+dx, ny=y+dy; if(nx<0||ny<0||nx>=R.cols||ny>=R.rows) continue;
+      const t=ny*R.cols+nx; if(!on.has(t) && (cur(t)&o)){ on.add(t); q.push(t); } } }
+  return on;
+}
+function solved(on){
+  if(on.size!==R.cells.length) return false;
+  for(let i=0;i<R.cells.length;i++){ const m=cur(i), x=i%R.cols, y=Math.floor(i/R.cols);
+    for(const [b,dx,dy,o] of DIRS){ if(!(m&b)) continue; const nx=x+dx, ny=y+dy;
+      if(nx<0||ny<0||nx>=R.cols||ny>=R.rows) return false; if(!(cur(ny*R.cols+nx)&o)) return false; } }
+  return true;
 }
 
-/* ---------- bouton ---------- */
+/* ---------- rendu ---------- */
+const ARM={1:'M50 50V-2',2:'M50 50H102',4:'M50 50V102',8:'M50 50H-2'};
+const PC='<svg class="ic" viewBox="0 0 100 100"><rect class="scr" x="29" y="30" width="42" height="31" rx="5"/><rect class="ft" x="44" y="61" width="12" height="6"/><rect class="ft" x="36" y="66" width="28" height="5" rx="2"/></svg>';
+const SRV='<svg class="srv" viewBox="0 0 100 100"><rect x="27" y="22" width="46" height="56" rx="7"/><path d="M34 40h32M34 52h32M34 64h20" stroke="#b49bff" stroke-width="4" stroke-linecap="round"/><circle cx="63" cy="64" r="4.5"/></svg>';
+function build(){
+  const b=$('board'); b.classList.remove('won');
+  b.style.gridTemplateColumns=`repeat(${R.cols},var(--cs))`; b.style.gridTemplateRows=`repeat(${R.rows},var(--cs))`;
+  b.innerHTML=R.cells.map((c,i)=>{
+    const arms=[1,2,4,8].filter(k=>c.base&k).map(k=>`<path d="${ARM[k]}"/>`).join('');
+    const leaf=i!==R.srv && deg(c.base)===1, hub=!leaf&&i!==R.srv;
+    return `<button class="cell" data-i="${i}" aria-label="Case ${i+1}"><svg class="t" viewBox="0 0 100 100" style="transform:rotate(${c.turns*90}deg)">${arms}${hub?'<circle cx="50" cy="50" r="8.5"/>':''}</svg>${leaf?PC:''}${i===R.srv?SRV:''}</button>`;
+  }).join('');
+  fit(); refresh();
+}
+function fit(){
+  if(!R.cols) return; const w=$('wrap').getBoundingClientRect();
+  const cs=Math.floor(Math.min((w.width-16-3*(R.cols-1))/R.cols,(w.height-16-3*(R.rows-1))/R.rows,72));
+  $('board').style.setProperty('--cs',Math.max(28,cs)+'px');
+}
+new ResizeObserver(fit).observe($('wrap'));
+function refresh(){
+  const on=powered(), els=$('board').children;
+  for(let i=0;i<els.length;i++){ els[i].classList.toggle('on',on.has(i)); els[i].classList.toggle('lock',!!R.cells[i].lock); }
+  const pcs=R.cells.map((c,i)=>i!==R.srv&&deg(c.base)===1?i:-1).filter(i=>i>=0);
+  $('pcTxt').textContent=`PC reliés ${pcs.filter(i=>on.has(i)).length}/${pcs.length}`; $('rotTxt').textContent=`Rotations ${R.rots}`;
+  return on;
+}
+
+/* ---------- interactions ---------- */
 let press=null;
-const bb=$('bigbtn');
-bb.addEventListener('pointerdown',e=>{ if(C.over||!canAct('b')) return; e.preventDefault(); try{bb.setPointerCapture(e.pointerId)}catch(_){} bb.classList.add('down'); press={t:performance.now(),lit:false}; Shell.blip(300,.04,'triangle',.04); });
-function release(){
-  if(!press) return; bb.classList.remove('down');
-  const held=(performance.now()-press.t)/1000, mode=btnMode(); press=null;
-  $('strip').style.background=''; $('strip').style.boxShadow='';
-  if(mode==='tap'){ if(held<.45) solve('b','Bouton neutralisé'); else miss('b','Il fallait un appui bref'); return; }
-  if(held<.45){ miss('b','Il fallait maintenir'); return; }
-  const clock=$('clock').textContent, dg=holdDigit();
-  if(clock.includes(dg)) solve('b','Bouton neutralisé'); else miss('b',`Pas de ${dg} sur l'horloge`);
+$('board').addEventListener('pointerdown',e=>{ const el=e.target.closest('.cell'); if(!el||R.over&&Shell.st.mode!=='tuto') return;
+  if(e.button===2){ toggleLock(+el.dataset.i); return; }
+  press={i:+el.dataset.i, t:setTimeout(()=>{ toggleLock(press.i); press.done=true; },430), done:false}; });
+const endPress=e=>{ if(!press) return; clearTimeout(press.t); const p=press; press=null;
+  if(!p.done && e.type==='pointerup'){ const el=e.target.closest('.cell'); if(el&&+el.dataset.i===p.i) turn(p.i); } };
+$('board').addEventListener('pointerup',endPress); $('board').addEventListener('pointercancel',endPress);
+$('board').addEventListener('pointerleave',()=>{ if(press){ clearTimeout(press.t); press=null; } });
+function toggleLock(i){ if(R.won) return; R.cells[i].lock=!R.cells[i].lock; Shell.blip(R.cells[i].lock?520:380,.05,'triangle',.05); Shell.buzz(20); refresh(); }
+function turn(i){
+  if(R.won||R.over&&Shell.st.mode!=='tuto') return;
+  const c=R.cells[i]; if(c.lock){ Shell.toast('Case verrouillée','info'); return; }
+  if(deg(c.base)===4) return;
+  c.turns++; R.rots++; $('board').children[i].querySelector('.t').style.transform=`rotate(${c.turns*90}deg)`;
+  Shell.blip(900+randi(0,200),.03,'square',.03);
+  const on=refresh();
+  if(Shell.st.mode==='tuto' && R.tuto===1 && on.has(R.tutoPc)) tutoNext();
+  if(solved(on)) win();
 }
-bb.addEventListener('pointerup',release); bb.addEventListener('pointercancel',release);
-bb.addEventListener('keydown',e=>{ if((e.key===' '||e.key==='Enter')&&!e.repeat&&!press&&canAct('b')&&!C.over){ e.preventDefault(); bb.classList.add('down'); press={t:performance.now(),lit:false}; } });
-bb.addEventListener('keyup',e=>{ if(e.key===' '||e.key==='Enter'){ e.preventDefault(); release(); } });
-
-/* ---------- interrupteurs ---------- */
-$('togs').addEventListener('click',e=>{ const t=e.target.closest('.tog'); if(!t||C.over||!canAct('s')) return; const i=+t.dataset.i; C.togs[i]=C.togs[i]?0:1; t.classList.toggle('up',!!C.togs[i]); Shell.blip(900,.03,'square',.04); });
-$('validate').onclick=()=>{
-  if(C.over||!canAct('s')) return;
-  const tg=swTarget();
-  if(tg.every((u,i)=>!!C.togs[i]===u)) solve('s','Circuit coupé'); else miss('s','Mauvaise position');
-};
-
-/* ---------- logique ---------- */
-function canAct(m){ if(C.done[m]) return false; if(Shell.st.mode==='tuto'){ const need=[null,null,'w','b','s'][C.tutoStep]; return need===m; } return Shell.st.mode==='play'; }
-function solve(m,msg){
-  C.done[m]=true; $({w:'mWires',b:'mBtn',s:'mSw'}[m]).classList.add('done'); Shell.good(); Shell.toast(msg,'ok'); status();
-  if(Shell.st.mode==='tuto'){ tutoNext(); return; }
-  if(C.done.w&&C.done.b&&C.done.s){ C.over=true; Shell.win(); const used=C.cfg.time-Shell.st.timeLeft; setTimeout(()=>Shell.result({ok:true,faults:C.faults,stats:[['Temps',Math.round(used)+' s'],['Erreurs',C.faults]]}),700); }
+function win(){
+  R.won=true; $('board').classList.add('won'); Shell.win();
+  if(Shell.st.mode==='tuto'){ setTimeout(Shell.endTuto,900); return; }
+  R.over=true; Shell.stopTimer();
+  const used=Math.round(R.cfg.time-Shell.st.timeLeft), fast=used<=R.cfg.time*.6;
+  setTimeout(()=>Shell.result({ok:true,faults:fast?0:1,stats:[['Temps',used+' s'],['Rotations',R.rots],['Cases',R.cells.length]],
+    note:fast?'Rebranché en un temps record : double point.':`Termine en moins de ${Math.round(R.cfg.time*.6)} s pour gagner +2.`}),1000);
 }
-function miss(m,msg){
-  if(Shell.st.mode==='tuto'){ Shell.toast(msg,'bad'); Shell.bad(); return; }
-  strike(msg);
+function newBoard(cols,rows,scr=1){
+  const {base,srv}=generate(cols,rows);
+  Object.assign(R,{cols,rows,srv,rots:0,won:false,cells:base.map(b=>({base:b,turns:0,lock:false}))});
+  R.cells.forEach(c=>{ if(Math.random()<scr) c.turns=randi(0,3); });
+  if(scr>0 && solved(powered())) return newBoard(cols,rows,scr);
+  // les orientations « de départ » ne doivent pas déjà donner la solution pour une case droite (2 positions possibles)
+  build();
 }
-function strike(msg){
-  C.strikes++; C.faults++; Shell.bad(); Shell.shake($('box')); Shell.toast(msg,'bad');
-  [...$('strikes').children].forEach((x,i)=>x.classList.toggle('on',i<C.strikes));
-  Shell.st.timerRate = 1 + .25*C.strikes;
-  status();
-  if(C.strikes>=C.cfg.lives) boom();
-}
-function boom(){
-  C.over=true; Shell.stopTimer(); Shell.blip(60,.8,'sawtooth',.12); Shell.buzz([200,80,300]);
-  $('box').style.filter='brightness(2.4) saturate(.2)'; setTimeout(()=>$('box').style.filter='',350);
-  setTimeout(()=>Shell.result({ok:false,faults:C.faults,stats:[['Modules',Object.values(C.done).filter(Boolean).length+'/3'],['Erreurs',C.faults]]}),650);
-}
-function status(){ $('modsTxt').textContent=`Modules ${Object.values(C.done).filter(Boolean).length}/3`; $('faultTxt').textContent=`Erreurs ${C.faults}`+(C.cfg&&C.cfg.lives&&Shell.st.mode==='play'?` · tolérées ${C.cfg.lives-1}`:''); }
-function view(v){ $('vDevice').hidden=v!=='dev'; $('vFiche').hidden=v!=='fiche'; $('tDev').setAttribute('aria-pressed',v==='dev'); $('tFiche').setAttribute('aria-pressed',v==='fiche');
-  if(v==='fiche'){ C.ficheSeen=true; if(Shell.st.mode==='tuto'&&C.tutoStep===1) tutoNext(); } }
-$('tDev').onclick=()=>view('dev'); $('tFiche').onclick=()=>view('fiche');
 
 /* ---------- tutoriel ---------- */
-const TUTO = [
-  null,
-  'Repère le <b>n° de série</b> et l\'<b>étiquette</b> : les règles en dépendent. Ouvre la <b>Fiche SEDEE</b> avec l\'onglet du bas.',
-  'Section Fils : ici il n\'y a <b>aucun fil rouge</b>, donc tu coupes le <b>2e fil</b> (le jaune). Reviens sur l\'<b>Appareil</b> et glisse le doigt de haut en bas à travers ce fil.',
-  'Bouton bleu « MAINTENIR » : ce n\'est ni un STOP rouge, ni un bouton jaune avec FRAGILE. Donc tu <b>maintiens</b>. La bande devient bleue : relâche quand l\'horloge contient un <b>4</b>.',
-  'Interrupteurs : <b>LED allumée = en haut</b>. Pas d\'étiquette FRAGILE, pas de K dans le n° de série. Règle les 4 interrupteurs puis appuie sur <b>VALIDER</b>.'
-];
-function tutoNext(){
-  C.tutoStep++;
-  ['mWires','mBtn','mSw'].forEach(id=>$(id).classList.remove('focus'));
-  $('tFiche').classList.toggle('focus', C.tutoStep===1);
-  if(C.tutoStep>=TUTO.length){ setTimeout(Shell.endTuto,600); return; }
-  const f={2:'mWires',3:'mBtn',4:'mSw'}[C.tutoStep]; if(f) $(f).classList.add('focus');
-  Shell.coach(C.tutoStep,TUTO.length-1,TUTO[C.tutoStep]);
-}
+const TSTEPS=[null,
+  'Le <b>serveur</b> du suspect (au centre) doit être relié à <b>tous les PC</b>. Touche la case qui clignote pour la <b>tourner</b>, jusqu’à ce que son PC s’allume.',
+  'Bien ! Termine le réseau : <b>tous les PC allumés</b> et <b>aucun câble dans le vide</b>. Astuce : un appui long verrouille une case dont tu es sûr.'];
+function tutoNext(){ R.tuto++; document.querySelectorAll('.cell.hint').forEach(x=>x.classList.remove('hint')); if(R.tuto<TSTEPS.length) Shell.coach(R.tuto,2,TSTEPS[R.tuto]); }
 
 Shell.init({
-  key:'colis', service:'Incident Intervention', serviceShort:'Intervention',
-  headline:'Colis suspect',
-  story:`<p>Un sac à dos abandonné devant l'entrée de la gare émet un bip régulier. Ton équipe d'intervention a établi le périmètre, mais le SEDEE est retenu sur une autre mission à deux heures de route.</p><p>Neutralise l'engin avec la fiche réflexe avant la fin du compte à rebours.</p>`,
-  diffs:{difficile:{agents:2,label:'Difficile',time:90,lives:1},normal:{agents:4,label:'Normal',time:120,lives:2},facile:{agents:6,label:'Facile',time:150,lives:3}},
-  diffHint:"Plus d'agents : plus de temps et plus d'erreurs tolérées avant l'explosion.",
-  desktopHint:'Sur ordinateur : coupe un fil en glissant la souris à travers, bouton gauche enfoncé.',
-  rules:['Trois modules à neutraliser : <b>fils</b>, <b>bouton</b>, <b>interrupteurs</b>, dans l\'ordre que tu veux.','La <b>fiche SEDEE</b> (onglet du bas) donne les règles. Elles dépendent du n° de série et de l\'étiquette.','Chaque erreur <b>accélère le compte à rebours</b>. Trop d\'erreurs : explosion.','Sans erreur : <b>+2</b> sur la jauge skins. Avec erreurs : <b>+1</b>.'],
-  winTitle:'Engin neutralisé', loseTitle:"L'engin a explosé", skin:'Robot démineur',
-  malus:"explosion dans le périmètre de sécurité. 2 agents de l'Intervention, légèrement blessés, sont indisponibles 2 jours.",
-  onMenu(){ C.over=true; ['mWires','mBtn','mSw'].forEach(id=>$(id).classList.remove('focus')); $('tFiche').classList.remove('focus'); },
-  onInit(){ C.cfg={lives:2,time:120}; setup(randomPuzzle()); },
-  onPlay(cfg){ C.cfg=cfg; setup(randomPuzzle()); Shell.startTimer(cfg.time,()=>{ if(!C.over) boom(); }); },
+  key:'reseau', service:'Renfort fédéral · RCCU', serviceShort:'RCCU',
+  unit:['enquêteur','enquêteurs'], effLabel:'Enquêteurs de la RCCU sur le dossier',
+  headline:'Réseau à reconnecter',
+  story:`<p>Le suspect a débranché son réseau en catastrophe avant la perquisition : les câbles sont tous dans le mauvais sens.</p><p><b>Tourne les cases</b> pour relier chaque PC au serveur, sans aucun câble dans le vide, avant la fin du chrono.</p>`,
+  diffs:{difficile:{agents:1,label:'Difficile',time:150,cols:7,rows:8},normal:{agents:2,label:'Normal',time:150,cols:6,rows:7},facile:{agents:3,label:'Facile',time:150,cols:5,rows:5}},
+  diffHint:'Plus d’enquêteurs : un réseau plus petit à reconnecter.',
+  desktopHint:'Sur ordinateur : clic pour tourner, clic droit pour verrouiller une case.',
+  rules:['Toucher une case la <b>tourne</b> d’un quart de tour.','Gagné quand <b>tous les PC</b> sont reliés au serveur et qu’<b>aucun câble</b> ne pend dans le vide.','Un câble au bord du plateau est forcément faux : commence par les bords et les coins.','<b>Appui long</b> (ou clic droit) : verrouiller une case sûre.','Terminé dans les 60 % du temps : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
+  winTitle:'Réseau reconnecté', loseTitle:'Réseau toujours coupé', skin:'Baie de serveurs',
+  malus:'la RCCU n’a pas pu accéder au réseau : pas d’indice supplémentaire aujourd’hui.',
+  onMenu(){ R.over=true; },
+  onInit(){ newBoard(5,5); R.over=true; },
+  onPlay(cfg){ R.cfg=cfg; newBoard(cfg.cols,cfg.rows); R.over=false;
+    Shell.startTimer(cfg.time,()=>{ if(!R.over&&!R.won){ R.over=true; Shell.bad(); const t=$('pcTxt').textContent.replace('PC reliés ','');
+      Shell.result({ok:false,faults:1,stats:[['PC reliés',t],['Rotations',R.rots],['Temps','écoulé']]}); } }); },
   onTuto(){
-    C.cfg={lives:99,time:0};
-    setup({serial:'TR-5B2',fragile:false,wires:['bleu','jaune','blanc','noir'],btn:{color:'bleu',label:'MAINTENIR',strip:'bleu'},leds:[1,0,1,1],togs:[0,0,0,1]});
-    const loop=()=>Shell.startTimer(119.9,()=>{ if(Shell.st.mode==='tuto') loop(); }); loop();
-    C.tutoStep=0; tutoNext();
-  },
-  onFrame(){
-    const s=Math.max(0,Math.ceil(Shell.st.timeLeft));
-    $('clock').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
-    if(press && !press.lit && (performance.now()-press.t)>450 && btnMode()==='hold'){ press.lit=true; const c=COL[C.btn.strip]; $('strip').style.background=c; $('strip').style.boxShadow=`0 0 10px ${c}`; }
+    newBoard(3,3,0); R.over=false; R.tuto=0;
+    // on ne mélange que deux PC : un à tourner d'abord (clignotant), un autre ensuite
+    const pcs=shuffle(R.cells.map((c,i)=>i!==R.srv&&deg(c.base)===1?i:-1).filter(i=>i>=0));
+    R.tutoPc=pcs[0]; R.cells[pcs[0]].turns=2; if(pcs[1]!==undefined) R.cells[pcs[1]].turns=1;
+    build(); $('board').children[R.tutoPc].classList.add('hint'); tutoNext();
   }
 });
 

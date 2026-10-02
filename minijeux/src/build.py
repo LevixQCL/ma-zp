@@ -1,11 +1,11 @@
 # Construit les pages des mini-jeux (minijeux/*.html) à partir des sources de ce dossier.
-# Usage : python3 minijeux/src/build.py crochetage colis depanneuse dossier empreintes adn
+# Usage : python3 minijeux/src/build.py crochetage colis depanneuse dossier empreintes adn reseau tracage
 import sys, re, pathlib
 here = pathlib.Path(__file__).parent
 base_css = (here/'base.css').read_text()
 base_js = (here/'base.js').read_text()
 FONTS = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400..700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap'
-ICON = {k: re.search(k+r":'(<svg.*?</svg>)'", base_js).group(1) for k in ['lock','alert','car','doc','print','dna','sound','menu','star']}
+ICON = {k: re.search(k+r":'(<svg.*?</svg>)'", base_js).group(1) for k in ['lock','alert','car','doc','print','dna','net','trace','sound','menu','star']}
 
 def build(name):
     src = (here/f'{name}.src.html').read_text()
