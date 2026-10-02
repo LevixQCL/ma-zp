@@ -38,7 +38,7 @@ export const ETAPES = [
   {
     id: 'incidents', route: 'hp', cible: 'section[aria-label="Incidents du jour"]',
     titre: 'Les incidents du jour',
-    texte: `<p>Une ou deux fois par jour, tôt le matin, un <strong>incident</strong> tombe sur un de tes services : colis suspect, porte à crocheter, voiture à dégager, dossier à relire. Un compte à rebours t’annonce le prochain.</p>
+    texte: `<p>Une ou deux fois par jour, à une heure imprévue, un <strong>incident</strong> tombe sur un de tes services : colis suspect, porte à crocheter, voiture à dégager, dossier à relire. Un compte à rebours t’annonce le prochain.</p>
       <p>Tu as <strong>12 heures</strong> pour jouer le mini-jeu, avec <strong>un seul essai</strong>. Réussi : des PS, un bonus pour ta zone et ta jauge de skins monte. Raté : −1 de moral, pas plus. Pas joué : ton équipe se débrouille seule. Chaque mini-jeu a son tuto, et tu peux t’entraîner dans l’écran Énigmes.</p>`,
   },
   {

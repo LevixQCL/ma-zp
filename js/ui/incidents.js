@@ -2,7 +2,7 @@
 // Les mini-jeux sont des pages à part (dossier minijeux/), ouvertes en plein écran dans un cadre :
 // elles renvoient leur résultat par message (start, result, close).
 import { S, esc, icon, myZone } from './common.js';
-import { incidentsDuTour, resultatsIncidents, INCIDENTS, MALUS, GAIN, texteMalus, texteGain, difficulte, pointsJauge, INC } from '../engine/incidents.js';
+import { incidentsVisibles, resultatsIncidents, INCIDENTS, MALUS, GAIN, texteMalus, texteGain, difficulte, pointsJauge, INC } from '../engine/incidents.js';
 import { PS } from '../engine/constants.js';
 import { SERVICE_LABELS, DEFAULT_ALLOC } from '../engine/constants.js';
 
@@ -16,7 +16,7 @@ export const MINI_JEUX = [
 
 export function mesIncidents() {
   if (!S.state || !S.user) return [];
-  return incidentsDuTour(S.state, S.user.uid);
+  return incidentsVisibles(S.state, S.user.uid);
 }
 export const mesResultats = (liste = mesIncidents()) => resultatsIncidents(S.player, liste);
 
@@ -82,7 +82,7 @@ export function incidentsHtml() {
     <div class="between"><span class="kicker">Incidents du jour</span><a class="tiny" href="#guide-incidents">Comment ça marche ?</a></div>
     ${lignes.join('')}
     ${prochain ? `<div class="inc-row inc-attente"><span class="inc-ico" aria-hidden="true">${icon('clock', 16)}</span><span class="col grow" style="gap:1px"><span style="font-weight:600">${lignes.length ? 'Un autre incident va tomber' : 'Un incident va tomber aujourd’hui'}</span><span class="tiny muted">sur un de tes services, dans <strong class="mono" data-inc-cd="${prochain.ouvre}">${duree(prochain.ouvre - now)}</strong> · il restera ouvert ${INC.ouverture / 3600000} heures</span></span></div>`
-      : !lignes.some((l) => l.includes('inc-ouvert')) ? '<p class="tiny muted" style="margin:0">Plus d’incident aujourd’hui. Les prochains tombent demain matin.</p>' : ''}
+      : !lignes.some((l) => l.includes('inc-ouvert')) ? '<p class="tiny muted" style="margin:0">Plus d’incident aujourd’hui. Les prochains tombent demain, entre 7 h et 19 h.</p>' : ''}
     <div class="between small"><span class="row muted" style="gap:6px">${icon('star', 14)} Jauge des skins</span>
       <span class="row" style="gap:8px"><span role="img" aria-label="${base} sur ${INC.jauge}" style="width:90px;height:5px;background:var(--line);border-radius:3px;display:inline-block;overflow:hidden"><span style="display:block;width:${Math.min(100, (base / INC.jauge) * 100)}%;height:5px;background:var(--amber)"></span></span>
       <span class="mono">${base}/${INC.jauge}${plus ? ` <span class="ok">+${plus}</span>` : ''}</span></span></div>
@@ -101,7 +101,10 @@ async function enregistrer(id, res) {
   const cur = (S.player && S.player.incidents && S.player.incidents.r) || {};
   // Une réponse donnée ne change plus (sauf l'abandon provisoire posé au lancement).
   if (cur[id] && cur[id].statut !== 'abandon') return;
-  const incidents = { cle: `s${st.season}t${st.turn}`, r: { ...cur, [id]: { ...res, at: Date.now() } } };
+  // On ne garde que les résultats des incidents encore visibles (ceux du jour et les reportés d'hier).
+  const garder = new Set(mesIncidents().map((i) => i.id));
+  const r = Object.fromEntries(Object.entries(cur).filter(([k]) => garder.has(k)));
+  const incidents = { cle: `s${st.season}t${st.turn}`, r: { ...r, [id]: { ...res, at: Date.now() } } };
   S.player = { ...(S.player || {}), incidents };
   await S.backend.savePlayer(S.user.uid, S.player);
 }

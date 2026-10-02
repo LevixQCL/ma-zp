@@ -8,7 +8,7 @@ export const NOTE_MAJ = {
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
     ['🎯', 'Nouveau : le stand de tir', 'une annexe à construire pour des agents d’intervention plus efficaces et moins souvent blessés.'],
-    ['🚨', 'Des incidents en journée', 'colis suspect, porte à crocheter, parking à débloquer… un mini-jeu tombe sur ta zone chaque matin, et tu as toute la journée pour intervenir.'],
+    ['🚨', 'Des incidents en journée', 'colis suspect, porte à crocheter, parking à débloquer… un mini-jeu tombe sur ta zone à une heure imprévue, et tu as 12 heures pour intervenir.'],
     ['🔐', 'Des énigmes à manipuler', 'cadenas à molettes, disque de décodage, plaques à rayer : on touche les objets.'],
     ['🎨', 'Des skins pour ton commissariat', 'réussis les incidents pour remplir ta jauge et débloquer un nouveau décor.'],
     ['🖥️', 'Sur ordinateur', 'l’HP s’affiche sur deux colonnes et les écrans s’élargissent.'],
@@ -17,7 +17,7 @@ export const NOTE_MAJ = {
   sections: [
     ['À découvrir', [
       ['Stand de tir', 'nouvelle annexe à construire (10 k€, grande décision « Construire », entretien habituel des annexes) : Intervention +15 %, et des agents deux fois moins souvent blessés quand tu engages une grosse équipe sur une affaire ou à l’assaut de la zone de non-droit ; une rébellion ne blesse plus qu’un agent. Il apparaît, avec sa cible, dans l’aile des annexes de ton commissariat.'],
-      ['Incidents du jour', 'une ou deux fois par jour, tôt le matin, un incident tombe sur un de tes services. L’HP affiche un compte à rebours, puis tu as 12 heures pour intervenir, avec un seul essai.'],
+      ['Incidents du jour', 'une ou deux fois par jour, à une heure imprévue (entre 7 h et 19 h), un incident tombe sur un de tes services. L’HP affiche un compte à rebours, puis tu as 12 heures pour intervenir, avec un seul essai.'],
       ['Quatre mini-jeux', 'Intervention : un colis suspect à neutraliser avec la fiche SEDEE. Recherche : une porte à crocheter du bout des doigts. Roulage : un parking à débloquer pour la dépanneuse. Proximité : un rapport de domiciliation où trois erreurs se cachent.'],
       ['Récompenses des incidents', 'réussi : +5 PS et un bonus du service (Intervention du moral, Recherche un indice d’enquête, Roulage +2 k€, Proximité +2 de satisfaction). Raté ou abandonné : −1 de moral. Pas joué : ton équipe se débrouille seule, mieux si le service est bien fourni.'],
       ['La jauge des skins', '+2 par incident réussi sans faute, +1 sinon. À 50 points, un nouveau skin pour ton commissariat.'],
