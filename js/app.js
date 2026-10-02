@@ -694,6 +694,7 @@ async function onClick(e) {
       }
       case 'quest-submit': await submitQuest(S.questPick); break;
       case 'quest-mode': S.questMode = el.dataset.v; if (S.questMode === 'train' && !S.train) nouvelEntrainement(); S.questPick = null; rerender(); break;
+      case 'train-vue': S.trainVue = el.dataset.v; if (S.trainVue === 'enigmes' && !S.train) nouvelEntrainement(); rerender(); window.scrollTo(0, 0); break;
       case 'train-type': S.trainType = el.dataset.v; nouvelEntrainement(); rerender(); break;
       case 'train-diff': S.trainDiff = Number(el.dataset.v); nouvelEntrainement(); rerender(); break;
       case 'train-new': nouvelEntrainement(); rerender(); window.scrollTo(0, 0); break;
