@@ -50,7 +50,7 @@ function renderGrille(q) {
 function entrainementMiniJeux() {
   return `<section class="card tight" aria-label="Mini-jeux d’incident" style="gap:8px">
     <span class="tiny muted">Les incidents du jour, sans enjeu : choisis l’effectif, refais le tuto, recommence autant que tu veux.</span>
-    <div class="choices" style="grid-template-columns:repeat(2,minmax(0,1fr))">${MINI_JEUX.map((m) => `<button type="button" class="choice" data-action="mj-train" data-j="${m.jeu}" style="min-height:76px"><span>${esc(m.nom)}</span><span class="s">${SERVICE_LABELS[m.service]}</span></button>`).join('')}</div>
+    <div class="choices" style="grid-template-columns:repeat(2,minmax(0,1fr))">${MINI_JEUX.map((m) => `<button type="button" class="choice" data-action="mj-train" data-j="${m.jeu}" style="min-height:76px"><span>${esc(m.nom)}</span><span class="s">${esc(m.label || SERVICE_LABELS[m.service])}</span></button>`).join('')}</div>
   </section>`;
 }
 

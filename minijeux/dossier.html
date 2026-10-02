@@ -32,6 +32,7 @@
 body.svc-ser{--accent:#ffb23f;--accent-ink:#241400;--accent-soft:rgba(255,178,63,.16)}
 body.svc-int{--accent:#ff7a59;--accent-ink:#260b03;--accent-soft:rgba(255,122,89,.16)}
 body.svc-rou{--accent:#c9ec4f;--accent-ink:#161d02;--accent-soft:rgba(201,236,79,.15)}
+body.svc-lab{--accent:#3fe0c8;--accent-ink:#022019;--accent-soft:rgba(63,224,200,.15)}
 body.svc-pro{--accent:#62b0ff;--accent-ink:#04182c;--accent-soft:rgba(98,176,255,.16)}
 html,body{height:100%}
 body{background:radial-gradient(120% 60% at 50% -10%,var(--accent-soft),transparent 60%),linear-gradient(180deg,var(--bg-2),var(--bg) 55%);background-color:var(--bg);
@@ -197,6 +198,8 @@ const ICONS = {
   doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10.5a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5V8h4"/><path d="M9 12.5h6M9 16h4"/></svg>',
   sound:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
   menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h9"/></svg>',
+  print:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 8.5a6.5 6.5 0 0 1 11 0"/><path d="M5.5 13c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5c0 1.6-.2 3.1-.6 4.5"/><path d="M8.5 19.5c-.6-1.9-1-4-1-6.5a4.5 4.5 0 0 1 9 0c0 2.2-.4 4.3-1.1 6"/><path d="M12 12.5c0 3 .5 5.7 1.4 8"/><path d="M10.6 21c-.7-1.7-1.1-3.6-1.1-5.5"/></svg>',
+  dna:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M7 3c0 6 10 6 10 12s-10 3-10 6"/><path d="M17 3c0 6-10 6-10 12s10 3 10 6"/><path d="M8.5 6.5h7M9 17.5h6M8 11.5h3M13 11.5h3"/></svg>',
   star:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/></svg>',
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   cross:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>'
@@ -248,7 +251,9 @@ const Shell = (() => {
   const escH = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   function post(type, data={}){ try{ if(window.parent!==window) window.parent.postMessage({source:'mazp-mj', jeu:G.key, id:Q.get('id'), type, ...data}, location.origin); }catch(e){} }
   let joue=false, fini=false;
-  const effectif = () => { const d=G.diffs[st.diff]; const n=Number(Q.get('agents')); return `${Number.isFinite(n)&&Q.get('agents')!==null?n:d.agents} agent${(Number.isFinite(n)&&Q.get('agents')!==null?n:d.agents)>1?'s':''}`; };
+  const unite = n => `${n} ${G.unit ? G.unit[n>1?1:0] : (n>1?'agents':'agent')}`;
+  const effectif = () => { const d=G.diffs[st.diff]; const n=Number(Q.get('agents')); return unite(Number.isFinite(n)&&Q.get('agents')!==null?n:d.agents); };
+  const effLabel = () => G.effLabel || `Effectif ${G.serviceShort} sur place`;
 
   function menu(){
     if(INC && fini){ post('close'); return; }
@@ -263,19 +268,19 @@ const Shell = (() => {
         ${hero('Incident du jour · '+G.serviceShort)}
         <h2>${G.headline}</h2>
         ${G.story}
-        <div class="lbl2">Effectif ${G.serviceShort} sur place</div>
+        <div class="lbl2">${effLabel()}</div>
         <div class="seg seg1"><button aria-pressed="true" tabindex="-1"><span class="ppl">${'<i></i>'.repeat(Math.max(1,Math.min(12,Number(Q.get('agents'))||d.agents)))}</span><b>${effectif()}</b>${d.label}</button></div>
         <p class="small">Un seul essai. Réussi : ${escH(Q.get('gain')||'un bonus')} et des points de jauge des skins. Raté ou abandonné : ${escH(Q.get('malus')||G.malus)}. Tout s’applique à 20:00.</p>
         <div class="row">${tutoBtns('Intervenir')}</div>
         <button class="btn small" id="later" style="align-self:center">Plus tard</button>
         ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}`);
     } else {
-      const seg=Object.entries(G.diffs).map(([k,d])=>`<button data-k="${k}" aria-pressed="${k===st.diff}"><span class="ppl">${'<i></i>'.repeat(d.agents)}</span><b>${d.agents} agents</b>${d.label}</button>`).join('');
+      const seg=Object.entries(G.diffs).map(([k,d])=>`<button data-k="${k}" aria-pressed="${k===st.diff}"><span class="ppl">${'<i></i>'.repeat(d.agents)}</span><b>${unite(d.agents)}</b>${d.label}</button>`).join('');
       showCard(`
         ${hero((MODE==='train'?'Entraînement · ':'Ma ZP · ')+G.service)}
         <h2>${G.headline}</h2>
         ${G.story}
-        <div class="lbl2">Effectif ${G.serviceShort} sur place</div>
+        <div class="lbl2">${effLabel()}</div>
         <div class="seg" id="seg">${seg}</div>
         <p class="small">${G.diffHint}</p>
         <div class="row">${tutoBtns('Jouer')}</div>
