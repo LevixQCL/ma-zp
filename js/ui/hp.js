@@ -220,7 +220,7 @@ export function renderHP() {
   const dotColor = { red: 'var(--red)', amber: 'var(--amber)', blue: 'var(--blue)' };
   const last = S.gazettes[0];
 
-  return `<main class="screen">
+  return `<main class="screen hp">
     <header class="between" style="align-items:flex-start">
       <div class="col" style="gap:3px"><h1 class="brand">Ma ZP</h1><a class="sub" href="#parties" style="text-decoration:none">Hôtel de police · <span style="color:var(--amber-soft);text-decoration:underline">${esc((S.partie && S.partie.nom) || 'District Delta')}</span></a></div>
       <div class="col" style="gap:6px;align-items:flex-end">
