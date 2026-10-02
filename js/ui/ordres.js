@@ -278,11 +278,12 @@ function detailDecision(z, dec, T) {
   } else if (dec.type === 'construire') {
     const id = dec.infra, inf = INFRAS[id];
     l.push(`${inf.effet}. Permanent, conservé d’une saison à l’autre. Entretien ${fmt1(ENTRETIEN_ANNEXE)} k€ par tour.`);
-    const svc = { anpr: 'roulage', antenne: 'proximite', audition: 'recherche', logiciel: 'admin' }[id];
+    const svc = { anpr: 'roulage', antenne: 'proximite', audition: 'recherche', logiciel: 'admin', tir: 'intervention' }[id];
     if (svc) { const g = gainService(z, svc, (x) => { x.infra[id] = true; }); effet(svc, g); argent(svc, g, ENTRETIEN_ANNEXE, inf.fixe || 0); }
     if (id === 'anpr') l.push('Surtout : l’effet « chasse aux PV » ne joue plus qu’au-delà de 40 % d’agents en Roulage (au lieu de 25 %).');
     if (id === 'garage') l.push(`Usure des véhicules divisée par deux (état du parc : ${Math.round(100 - z.usure)} %). Pannes et accidents plus rares.`);
     if (id === 'sport') l.push('+1 de moral chaque tour : le moral multiplie l’efficacité de tous les services.');
+    if (id === 'tir') l.push('Agents mieux entraînés : risque de blessure divisé par deux quand tu engages une grosse équipe sur une affaire ou à l’assaut de la zone de non-droit, et une rébellion ne blesse plus qu’un agent.');
   }
   return `<span class="tiny" style="font-weight:700;color:var(--amber)">Ce que ça change · ${cout} k€</span>${l.map((x) => `<p class="small" style="margin:0">${esc(x)}</p>`).join('')}`;
 }

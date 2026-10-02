@@ -169,6 +169,7 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
   if (service === 'proximite' && zone.infra.antenne) c *= 1.3;
   if (service === 'roulage' && zone.infra.anpr) c *= 1.2;
   if (service === 'recherche' && zone.infra.audition) c *= 1.2;
+  if (service === 'intervention' && zone.infra.tir) c *= INFRAS.tir.bonus;
   if (service === 'admin') c *= (zone.infra.logiciel ? 1.5 : 1) * adminMult;
   c *= bonusLots(zone, service);
   return c;
