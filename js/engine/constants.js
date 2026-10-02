@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 26;
+export const APP_VERSION = 27;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -132,7 +132,7 @@ export const psEvenement = (c) => (c > 0 ? Math.max(1, Math.min(PS.evenementMax,
 
 // Composante Budget de l'IPZ : 50 + 1,5 × budget (100 dès 34 k€). Au-delà de `dormant` k€, l'argent qui dort
 // coûte `pente` point par k€ (jusqu'à `plancher`) : la commune juge qu'une zone qui ne dépense pas est trop dotée.
-export const BUDGET_IPZ = { base: 50, parK: 1.5, dormant: 60, pente: 1, plancher: 50 };
+export const BUDGET_IPZ = { base: 50, parK: 1.5, dormant: 75, pente: 1, plancher: 50 };
 export function scoreBudget(b) {
   if (b > BUDGET_IPZ.dormant) return Math.max(BUDGET_IPZ.plancher, 100 - BUDGET_IPZ.pente * (b - BUDGET_IPZ.dormant));
   return Math.max(0, Math.min(100, BUDGET_IPZ.base + BUDGET_IPZ.parK * b));

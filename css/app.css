@@ -1019,3 +1019,29 @@ body.mj-ouvert { overflow: hidden; }
 .figs.deux { display: flex; flex-direction: column; }
 .figs.cote { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
 .figs.cote figcaption { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ───── Ordinateur : écran large, souris ─────
+   Sur téléphone et tablette rien ne change. Sur PC, l'HP passe sur deux colonnes
+   et les autres écrans s'élargissent (texte un peu plus grand, plus d'air). */
+@media (min-width: 1000px) and (hover: hover) and (pointer: fine) {
+  #app { max-width: 1120px; border: 0; }
+  main.screen { width: 100%; max-width: 780px; margin: 0 auto; box-sizing: border-box; padding: 28px 28px 120px; gap: 16px; font-size: 15px; }
+  /* HP : deux colonnes qui se lisent de haut en bas (la colonne de gauche d'abord). */
+  main.screen.hp { max-width: 1120px; display: block; columns: 2; column-gap: 22px; }
+  main.screen.hp > * { break-inside: avoid; margin: 0 0 16px; }
+  main.screen.hp > header, main.screen.hp > nav.menu-hp { column-span: all; }
+  main.screen.hp > header { margin-bottom: 20px; }
+  /* Énigmes et plan : on garde des proportions de téléphone confortables, sans tout agrandir. */
+  main.screen.quete { max-width: 680px; }
+  .plan-cadre { width: 100%; max-width: min(100%, calc(100vh - 230px)); margin: 0 auto; }
+  .small { font-size: 14px; }
+  .tiny { font-size: 12.5px; }
+  nav.tabs { max-width: 620px; bottom: 14px; }
+  nav.tabs a { font-size: 12px; }
+  .savebar { max-width: 600px; bottom: 98px; }
+  .aide { max-width: 560px; }
+  .tuto-bulle { max-width: 480px; }
+  /* Mini-jeux : au format téléphone, centrés, plutôt qu'étirés sur tout l'écran. */
+  .mj-wrap { display: flex; align-items: center; justify-content: center; background: rgba(5, 8, 20, .82); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .mj-wrap iframe { width: min(480px, 100%); height: min(940px, 100%); border-radius: 22px; box-shadow: var(--float); background: var(--bg-deep); }
+}

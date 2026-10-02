@@ -76,7 +76,7 @@ export function renderQuete() {
   const modes = `<div class="seg2" role="tablist" aria-label="Mode"><button type="button" role="tab" aria-selected="${!train}" data-action="quest-mode" data-v="jour">Énigmes du jour</button><button type="button" role="tab" aria-selected="${train}" data-action="quest-mode" data-v="train">Entraînement</button></div>`;
   const mj = train && miniJeuChoisi();
   if (mj) {
-    return `<main class="screen">
+    return `<main class="screen quete">
     ${modes}
     ${entrainementBarre()}
     <header class="col" style="gap:3px"><span class="kicker">Entraînement · ne compte pas</span><h1 class="big">${esc(mj.nom)}</h1><span class="tiny muted">Mini-jeu d’incident · ${SERVICE_LABELS[mj.service]}</span></header>
@@ -125,7 +125,7 @@ export function renderQuete() {
   const onglets = train ? entrainementBarre() : `<div class="seg quatre" role="tablist" aria-label="Énigmes du jour">${S.quests.map((x, k) => `
       <button type="button" role="tab" data-action="quest-tab" data-i="${k}" aria-pressed="${k === i}" aria-selected="${k === i}"><span class="t">Énigme ${k + 1}${icone(results[k])}</span><span class="d">${esc(x.typeLabel)}</span></button>`).join('')}
       <button type="button" role="tab" class="noir" data-action="quest-tab" data-i="3" aria-pressed="${noir}" aria-selected="${noir}"><span class="t">Dossier noir${icone(S.noirResult)}</span><span class="d">facultatif</span></button></div>`;
-  return `<main class="screen ${noir ? 'mode-noir' : ''} ${train ? '' : 'sans-copie'}">
+  return `<main class="screen quete ${noir ? 'mode-noir' : ''} ${train ? '' : 'sans-copie'}">
     ${modes}
     ${onglets}
     ${bonusCard}

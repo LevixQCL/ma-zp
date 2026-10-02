@@ -11,6 +11,7 @@ export const NOTE_MAJ = {
     ['🔐', 'Des énigmes à manipuler', 'cadenas à molettes, disque de décodage, plaques à rayer : on touche les objets.'],
     ['🎨', 'Des skins pour ton commissariat', 'réussis les incidents pour remplir ta jauge et débloquer un nouveau décor.'],
     ['🌆', 'Un nouveau look', 'le ciel du district suit l’heure réelle jusqu’au soir.'],
+    ['🖥️', 'Sur ordinateur', 'l’HP s’affiche sur deux colonnes et les écrans s’élargissent.'],
   ],
   // Liste complète, dans le menu Nouveautés.
   sections: [
@@ -32,13 +33,14 @@ export const NOTE_MAJ = {
     ['Règles et équilibrage', [
       ['Résultats terrain', 'nouveau calcul : 45 × part des incidents traités + 2,5 × bilan. Tes points (Recherche, flagrants, zone de non-droit, opérations) font davantage la différence. Tous les IPZ baissent un peu, de la même façon pour tout le monde.'],
       ['Moins de hasard', 'la Recherche rapporte des points chaque jour, au fil du travail sur les dossiers ; le flagrant délit suit une jauge qui se remplit avec tes patrouilles libres ; le bilan garde la moitié de celui de la veille.'],
-      ['L’argent qui dort', 'au-delà de 60 k€ en caisse, la composante Budget de l’IPZ perd 1 point par k€ en plus (jusqu’à 50). Garde une réserve de 35 à 60 k€ et investis le reste. L’HP te prévient.'],
+      ['L’argent qui dort', 'au-delà de 75 k€ en caisse, la composante Budget de l’IPZ perd 1 point par k€ en plus (jusqu’à 50). Garde une réserve de 35 à 75 k€ et investis le reste. L’HP te prévient.'],
       ['Bonus de moral', 'énigmes, incident réussi, prime au personnel : plein effet sous 70 de moral, moitié de 70 à 85, +1 au-delà.'],
       ['Recrues', 'elles sortent de l’académie le soir et sont dans tes ordres dès le lendemain.'],
       ['Délinquance déplacée', 'quand tu concentres beaucoup d’agents sur un quartier, la délinquance qui part chez tes voisins compte vraiment chez eux.'],
     ]],
     ['Confort', [
       ['Jauges expliquées', 'Résultats terrain s’affiche sous tes jauges, et chaque bouton « ? » détaille le calcul avec tes chiffres. Sous le moral, l’efficacité de tes agents.'],
+      ['Affichage sur ordinateur', 'sur un écran de PC, l’HP passe sur deux colonnes, les autres écrans s’élargissent, le texte est un peu plus grand et les mini-jeux s’ouvrent au centre, au format téléphone. Rien ne change sur téléphone et tablette.'],
       ['Mises à jour sans accroc', 'après une mise à jour, ton téléphone charge directement la nouvelle version. Sans réseau, l’appli s’ouvre avec la dernière version connue.'],
       ['Plus solide', 'un ordre mal formé ne peut plus bloquer le calcul de 20:00, et l’appli télécharge beaucoup moins de données en arrière-plan.'],
     ]],
