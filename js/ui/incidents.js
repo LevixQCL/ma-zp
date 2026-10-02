@@ -111,7 +111,7 @@ async function enregistrer(id, res) {
  * @param {string} jeu        colis | crochetage | depanneuse | dossier
  * @param {object} o          { mode: 'incident'|'train', inc, onFin }
  */
-export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, onFin = () => {} } = {}) {
+export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, onFin = () => {}, onEntrainement = () => {} } = {}) {
   document.querySelector('.mj-wrap')?.remove();
   const p = new URLSearchParams({ mode });
   if (mode === 'incident' && inc) {
@@ -132,6 +132,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, onFin = () => {
         if (d.type === 'start') await enregistrer(inc.id, { statut: 'abandon', fautes: 1 });
         if (d.type === 'result') await enregistrer(inc.id, { statut: d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Number(d.fautes) || 0 });
       }
+      if (mode === 'train' && d.type === 'result' && !d.abandon) onEntrainement({ minijeux: 1 });
     } catch (err) { console.warn('Résultat de l’incident non enregistré', err); }
     if (d.type === 'close') fermer();
   }

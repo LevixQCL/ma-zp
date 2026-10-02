@@ -127,6 +127,12 @@ export async function createFirebaseBackend(config) {
     async touchPlayer(uid) {
       await F.updateDoc(docIn('players', uid), { vuLe: Date.now() });
     },
+    /** Compteurs d'entraînement (classement du maître du jeu) : { enigmes: 1, reussies: 1, minijeux: 0 }. */
+    async compterEntrainement(uid, plus) {
+      const maj = { 'entrainement.dernier': Date.now() };
+      for (const [k, v] of Object.entries(plus)) if (v) maj[`entrainement.${k}`] = F.increment(v);
+      await F.updateDoc(docIn('players', uid), maj);
+    },
     async savePlayer(uid, profile) {
       await F.setDoc(docIn('players', uid), plain({ ...profile, updatedAt: Date.now() }), { merge: true });
     },

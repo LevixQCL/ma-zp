@@ -150,6 +150,25 @@ function vuTexte(t) {
 }
 const vuClasse = (t) => (!t ? 'muted' : Date.now() - t < 6 * 60000 ? 'ok' : Date.now() - t > 48 * 3600000 ? 'bad' : 'muted');
 
+/** Classement « Roi de l'entraînement » (visible du seul maître du jeu). */
+function roiEntrainementHtml(zones) {
+  const lignes = zones.map((z) => {
+    const p = (S.players || {})[z.uid] || {}, e = p.entrainement || {};
+    const enigmes = e.enigmes || 0, reussies = e.reussies || 0, minijeux = e.minijeux || 0;
+    return { z, p, enigmes, reussies, minijeux, total: enigmes + minijeux, dernier: e.dernier || 0 };
+  }).sort((a, b) => b.total - a.total || b.reussies - a.reussies || b.dernier - a.dernier);
+  const actifs = lignes.filter((l) => l.total > 0);
+  const ligne = (l, k) => `<div class="between" style="gap:8px">
+      <span class="small"><strong style="display:inline-block;min-width:22px">${k === 0 ? '👑' : `${k + 1}.`}</strong>${zoneName(l.z)}${l.p.pseudo ? ` <span class="muted">(${esc(l.p.pseudo)})</span>` : ''}<br>
+        <span class="tiny muted">${l.enigmes} énigme${l.enigmes > 1 ? 's' : ''}${l.enigmes ? ` (${l.reussies} réussie${l.reussies > 1 ? 's' : ''})` : ''} · ${l.minijeux} mini-jeu${l.minijeux > 1 ? 'x' : ''}${l.dernier ? ` · dernier le ${formatDateBe(l.dernier)}` : ''}</span></span>
+      <span class="pill">${l.total}</span></div>`;
+  return `<section class="card"><div class="between"><h2 class="card-title">Roi de l’entraînement</h2><button class="btn small ghost" data-action="admin-vus">Actualiser</button></div>
+      <p class="tiny muted" style="margin:0">Énigmes d’entraînement terminées + mini-jeux joués jusqu’au bout en entraînement. Visible par toi seul.</p>
+      ${actifs.length ? actifs.map(ligne).join('') : '<p class="small muted" style="margin:0">Personne ne s’est encore entraîné.</p>'}
+      ${actifs.length && actifs.length < lignes.length ? `<p class="tiny muted" style="margin:0">Pas encore d’entraînement : ${lignes.filter((l) => !l.total).map((l) => esc(l.p.pseudo || l.z.nom || '')).join(', ')}.</p>` : ''}
+    </section>`;
+}
+
 export function renderAdmin() {
   // (note de mise à jour : voir ui/nouveautes.js)
   const st = S.state;
@@ -179,6 +198,7 @@ export function renderAdmin() {
         ${z.uid !== S.user.uid ? `<button class="btn small danger" data-action="admin-remove" data-uid="${esc(z.uid)}">Retirer</button>` : ''}</div>`; }).join('')}
       <p class="tiny muted" style="margin:0">Dernière connexion : mise à jour quand le joueur a le jeu ouvert (au plus toutes les 5 minutes). « Jamais vu » : pas revenu depuis cette mise à jour.</p>
     </section>
+    ${roiEntrainementHtml(zones)}
     <section class="card"><h2 class="card-title">Sauvegarde</h2>
       <p class="small muted" style="margin:0">Télécharge une copie de la partie (zones, profils) avant une mise à jour importante. Tu pourras la restaurer si besoin.</p>
       <div class="row"><button class="btn grow" data-action="admin-export">Télécharger</button>
