@@ -504,9 +504,10 @@ function ecritureSvg(texte, f, signature) {
 function ecriture(rng, diff) {
   const n = diff <= 1 ? 3 : diff <= 3 ? 4 : diff >= 6 ? 6 : 5;
   const stylo = diff >= 4; // l'auteur a changé de stylo : l'encre ne compte pas
-  const traits = ['pente', 'taille', 'espace', 'souligne', 'encre'];
+  const souligne = diff <= 2; // dès le niveau 3, plus de soulignement : l'indice sautait trop aux yeux
+  const traits = ['pente', 'taille', 'espace', ...(souligne ? ['souligne'] : []), 'encre'];
   const valeurs = { pente: 3, taille: 2, espace: 2, souligne: 2, encre: 2 };
-  const alea = () => Object.fromEntries(traits.map((t) => [t, rng.int(0, valeurs[t] - 1)]));
+  const alea = () => ({ souligne: 0, ...Object.fromEntries(traits.map((t) => [t, rng.int(0, valeurs[t] - 1)])) });
   const lettre = alea();
   const gens = rng.shuffle(PERSONNES).slice(0, n);
   const coupable = rng.int(0, n - 1);
@@ -528,14 +529,15 @@ function ecriture(rng, diff) {
   const motsEch = rng.shuffle(MOTS_ECHANT);
   return {
     titre: 'Expertise d’écriture', mode: 'choix',
-    contexte: `Une lettre anonyme de menaces est arrivée chez un commerçant. ${n} suspects ont donné un échantillon de leur écriture. Compare l’inclinaison, la taille, l’espacement des lettres${stylo ? ' et le soulignement. Le labo précise que l’auteur a utilisé un autre stylo : la couleur de l’encre ne prouve rien.' : ', le soulignement et la couleur de l’encre.'}`,
+    contexte: `Une lettre anonyme de menaces est arrivée chez un commerçant. ${n} suspects ont donné un échantillon de leur écriture. Compare l’inclinaison, la taille, l’espacement des lettres${souligne ? ', le soulignement' : ''}${stylo ? '. Le labo précise que l’auteur a utilisé un autre stylo : la couleur de l’encre ne prouve rien.' : ' et la couleur de l’encre.'}`,
     figures: [{ titre: 'La lettre anonyme', svg: ecritureSvg(motsLettre, lettre, 'pièce à conviction') },
       ...gens.map((g, k) => ({ titre: `Échantillon de ${g}`, svg: ecritureSvg(motsEch[k], ech[k], g) }))],
     question: 'Qui a écrit la lettre ?',
     choix: gens.map((g) => ({ id: g, label: g })),
     answer: gens[coupable],
     astuce: 'Vérifie un trait à la fois pour tous les échantillons : d’abord l’inclinaison, puis la taille, puis l’espacement…',
-    explication: `C’est ${gens[coupable]} : même inclinaison, même taille, même espacement et même soulignement que la lettre${stylo ? ' (seule l’encre change, et elle ne compte pas)' : ' et même encre'}. Chaque autre échantillon diffère sur au moins un trait.`,
+    explication: `C’est ${gens[coupable]} : même inclinaison, même taille${souligne ? ', même espacement et même soulignement' : ' et même espacement'} que la lettre${stylo ? ' (seule l’encre change, et elle ne compte pas)' : ' et même encre'}. Chaque autre échantillon diffère sur au moins un trait.`,
+    traits,
     _pas: 2,
   };
 }
