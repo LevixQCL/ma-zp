@@ -96,6 +96,8 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .seg.seg1{grid-template-columns:1fr}.seg.seg1 button{cursor:default}
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .embed .top{position:relative;z-index:6}
+/* en jeu intégré, l’en-tête reste au-dessus des cartes : elles commencent donc sous lui */
+.embed .overlay{padding-top:76px}
 .btn{flex:1;min-width:120px;border-radius:14px;padding:14px 12px;font:700 15px var(--f-body);cursor:pointer;border:1px solid var(--stroke-2);background:var(--surface);color:var(--ink);transition:transform .08s,filter .15s}
 .btn:active{transform:scale(.97)}
 .btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink);box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 30%,transparent)}
