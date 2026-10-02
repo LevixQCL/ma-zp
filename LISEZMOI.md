@@ -14,7 +14,8 @@ Jeu de gestion de zone de police fictive, entre collègues. Un tour par jour, r�
 | `js/data/` | Stockage : mode démo (sur l'appareil) ou Firebase (en ligne) |
 | `js/ui/` | Écrans |
 | `minijeux/` | Mini-jeux des incidents du jour (pages ouvertes en plein écran) ; sources et script de construction dans `minijeux/src/` |
-| `css/`, `icons/`, `manifest.webmanifest`, `sw.js` | Apparence, icônes et installation sur téléphone |
+| `css/`, `icons/`, `manifest.webmanifest` | Apparence, icônes et installation sur téléphone |
+| `sw.js` | Service worker : revérifie chaque fichier auprès du serveur (pas de mélange d'anciens et de nouveaux fichiers après une mise à jour) et sert la dernière copie hors connexion |
 
 ## Mode démo
 
@@ -32,6 +33,6 @@ Les textes (affaires, événements, aléas) sont dans `js/engine/contenu.js`.
 
 ## Nombre de joueurs
 
-Il n'y a pas de limite fixe. Le monde de base accueille environ 25 zones autour de la zone de non-droit ; au-delà, la carte s'agrandit d'une couronne de quartiers à la fois, sans déplacer les zones déjà installées. La vraie limite est la taille du document « état » dans Firestore (1 Mo) : environ 8 Ko par zone, soit une centaine de zones par partie. Les inscriptions sont donc fermées à 100 zones (`MAX_ZONES` dans `js/engine/constants.js`, et la même valeur dans `firestore.rules`).
+Il n'y a pas de limite fixe. Le monde de base accueille environ 25 zones autour de la zone de non-droit ; au-delà, la carte s'agrandit d'une couronne de quartiers à la fois, sans déplacer les zones déjà installées. La vraie limite est la taille du document « état » dans Firestore (1 Mo) : environ 5,5 Ko par zone (le rapport du soir, le journal des jauges et le relevé du budget sont rangés dans la Gazette du tour, pas dans l'état), soit environ 570 Ko à 100 zones. Les inscriptions sont donc fermées à 100 zones (`MAX_ZONES` dans `js/engine/constants.js`, et la même valeur dans `firestore.rules`).
 
 Pour que les grandes parties restent équitables à l'enquête, chaque zone ne traite que 2 pièces partagées par soir (`ENQ.maxRecus` dans `js/engine/enquete.js`), et la résistance du milieu dans la zone de non-droit suit le nombre de zones actives (`ND` dans `js/engine/constants.js`).

@@ -3,7 +3,7 @@ import { CONFIG } from './config.js';
 import { installerCadenas } from './ui/cadenas.js';
 import { installerEnigmes } from './ui/enigmes.js';
 import { createBackend } from './data/backend.js';
-import { resolvePending } from './data/resolver.js';
+import { resolvePending, completerDepuisGazette } from './data/resolver.js';
 import { S, toast, myZone, esc, cielDuMoment } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil } from './ui/hp.js';
@@ -198,6 +198,7 @@ async function loadTurnData() {
   S.questIdx = Math.max(0, (S.questResults || []).findIndex((r) => !r || (r.statut !== 'ok' && r.statut !== 'rate')));
   // Tri par saison et tour : l'ordre d'écriture dépend de l'horloge de l'appareil qui a calculé le tour.
   S.gazettes = (gazettes || []).slice().sort((x, y) => (y.season - x.season) || (y.turn - x.turn)); S.gazetteIndex = 0; S.rapportIdx = 0;
+  completerDepuisGazette(S.state, S.gazettes);
   if (isNew) toast(`Tour ${st.turn} : la Gazette est parue !`);
   render();
 }
@@ -246,6 +247,7 @@ async function openParty(id) {
     unsubState = S.backend.subscribeState(async (state) => {
       S.state = migrateState(state);
       if (state && S.user && state.zones[S.user.uid]) { try { await loadTurnData(); } catch (e) { console.error(e); S.lastError = e; } }
+      if (S.state) completerDepuisGazette(S.state, S.gazettes);
       render();
     }, (e) => { S.lastError = e; if (S.state === undefined) bloque(e); });
   }
