@@ -1,0 +1,378 @@
+<!--title:Empreinte digitale-->
+<!--eyebrow:Labo · démo-->
+<!--h1:Empreintes-->
+<!--svc:lab-->
+<!--icon:print-->
+<style>
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:0 0 auto}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1 0 auto;min-width:64px;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:7px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--stroke);color:var(--mute);font:600 11px var(--f-body);cursor:pointer;text-align:left;position:relative}
+.tab b{font:700 15px var(--f-disp);color:var(--ink);letter-spacing:.01em}
+.tab[aria-selected="true"]{background:var(--surface-2);border-color:color-mix(in srgb,var(--accent) 55%,transparent);color:var(--accent)}
+.tab .cnt{position:absolute;right:7px;top:6px;font:700 11px var(--f-mono);color:var(--mute)}
+.tab .cnt.ok{color:var(--ok)}
+.table{position:relative;flex:1;min-height:180px;border-radius:18px;overflow:hidden;touch-action:none;
+  background:radial-gradient(90% 70% at 50% 45%,#dfe9ef,#aebcc8 75%,#93a2b0);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),inset 0 -30px 60px rgba(0,0,0,.18)}
+.table canvas#tbl{position:absolute;inset:0;width:100%;height:100%;cursor:grab}
+.table.pin canvas#tbl{cursor:crosshair}
+.loupe{position:absolute;width:136px;height:136px;border-radius:50%;pointer-events:none;border:3px solid var(--accent);box-shadow:0 12px 30px rgba(0,0,0,.45);background:#fff}
+.dev{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:600 13px var(--f-body);color:#33404f;background:rgba(255,255,255,.75);padding:8px 14px;border-radius:999px}
+.ctrls{display:grid;grid-template-columns:auto 1fr;gap:8px;flex:0 0 auto}
+.modes{display:flex;gap:4px;background:var(--surface);border:1px solid var(--stroke);border-radius:14px;padding:4px}
+.modes button{border:0;background:transparent;color:var(--mute);font:700 13px var(--f-body);padding:8px 11px;border-radius:10px;cursor:pointer;display:flex;align-items:center;gap:6px}
+.modes button svg{width:16px;height:16px}
+.modes button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.wheel{position:relative;border-radius:14px;border:1px solid var(--stroke);touch-action:none;cursor:ew-resize;overflow:hidden;min-height:44px;
+  background-color:rgba(255,255,255,.035);
+  background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.28) 0 1px,transparent 1px 9px),repeating-linear-gradient(90deg,rgba(255,255,255,.5) 0 2px,transparent 2px 45px);
+  background-size:auto 34%,auto 60%;background-repeat:repeat-x;background-position:0 100%,0 100%}
+.wheel::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+.wheel::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--bg-2),transparent 22%,transparent 78%,var(--bg-2));pointer-events:none}
+.wheel span{position:absolute;left:50%;top:5px;transform:translateX(-50%);font:600 12px var(--f-mono);color:var(--ink);background:var(--bg-2);padding:0 6px;border-radius:6px;z-index:1}
+.wheel .lbl{left:10px;transform:none;color:var(--mute);font:600 11px var(--f-body);background:none;padding:0}
+.fade{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mute);flex:0 0 auto}
+.fade input{flex:1;accent-color:var(--accent);height:22px}
+.status{flex:0 0 auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+.cbar{display:flex;gap:3px;align-items:center}
+.cbar i{width:9px;height:9px;border-radius:50%;background:var(--surface-2)}
+.cbar i.on{background:var(--ok);box-shadow:0 0 6px var(--ok)}
+</style>
+<body>
+  <div class="tabs" id="tabs" role="tablist" aria-label="Fiches des suspects"></div>
+  <div class="table" id="table"><canvas id="tbl" aria-label="Table lumineuse : la trace en rose sur la fiche du suspect"></canvas><canvas class="loupe" id="loupe" width="272" height="272" hidden></canvas><div class="dev" id="dev" hidden>Révélation de la fiche…</div></div>
+  <div class="ctrls">
+    <div class="modes" id="modes">
+      <button data-m="move" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>Déplacer</button>
+      <button data-m="pin" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/></svg>Pointer</button>
+    </div>
+    <div class="wheel" id="wheel" tabindex="0" role="slider" aria-label="Rotation de la trace" aria-valuemin="-180" aria-valuemax="180" aria-valuenow="0"><span id="angTxt">0,0°</span></div>
+  </div>
+  <div class="fade"><span>Fiche</span><input type="range" id="fade" min="0" max="100" value="55" aria-label="Fondu entre la fiche et la trace"><span>Trace</span></div>
+  <div class="status"><span class="cbar" id="cbar" aria-label="Concordances"></span><span id="concTxt">0/8 concordances</span><span id="faultTxt">Erreurs 0</span></div>
+</body>
+<script>
+/* ---------- génération procédurale d'empreintes ----------
+   Une empreinte = un champ de crêtes (phase continue : boucle, verticille ou arc, légèrement déformé)
+   + des singularités de phase (chacune crée une fin de crête ou une bifurcation : une minutie).
+   cos(2π·phase + Σ s·angle) se calcule sans atan2 : produit complexe des (dx + i·s·dy), normalisé. */
+const P=8.4, TAU=Math.PI*2, NEED=8, RES=2;
+const PX=120, PY=150; // demi-dimensions de la fiche (unités « empreinte »)
+const NOMS=['DUBOIS','LAMBERT','PEETERS','JANSSENS','LEROY','RENARD','MERTENS','LEJEUNE','HERMANS','CLAES','WAUTERS','MICHAUX','DUMONT','LEMAIRE','COLLARD','GILSON'];
+const PRE=['Kevin','Mehdi','Julien','Arnaud','Loïc','Damien','Nadia','Céline','Sarah','Youssef','Maxime','Inès'];
+const sm=(e0,e1,x)=>{let t=(x-e0)/(e1-e0); t=t<0?0:t>1?1:t; return t*t*(3-2*t);};
+function makeNoise(){
+  const perm=new Uint8Array(256).map((_, i)=>i), g=new Float32Array(256).map(()=>Math.random());
+  for(let i=255;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [perm[i],perm[j]]=[perm[j],perm[i]];}
+  const h=(i,j)=>g[perm[(perm[i&255]+j)&255]];
+  return (x,y)=>{const xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi, u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf);
+    const a=h(xi,yi)+(h(xi+1,yi)-h(xi,yi))*u, b=h(xi,yi+1)+(h(xi+1,yi+1)-h(xi,yi+1))*u; return a+(b-a)*v;};
+}
+function mask(x,y){ const yy=y+6, r=(x*x)/(104*104)+(yy*yy)/(141*141); return sm(1,.88,r)*sm(141,117,y); }
+function makeBase(type){
+  const B={type, cx:rand(-12,12), cy:rand(-48,-18), ex:rand(.74,.86), len:rand(170,230), amp:rand(32,48), sw:rand(55,78),
+    ang: Math.random()<.5 ? rand(1.95,2.3) : rand(.84,1.2),
+    warp:[0,1,2].map(()=>({a:rand(2,6),b:rand(2,6),kx:rand(-.03,.03),ky:rand(-.03,.03),kx2:rand(-.03,.03),ky2:rand(-.03,.03),p:rand(0,TAU),p2:rand(0,TAU)}))};
+  B.spin = type==='whorl' && Math.random()<.65 ? (Math.random()<.5?1:-1) : 0;
+  return B;
+}
+function vary(B){ // même dessin général (même « classe »), détails différents
+  const C=JSON.parse(JSON.stringify(B));
+  C.cx+=rand(-6,6); C.cy+=rand(-6,6); C.ang+=rand(-.09,.09); C.ex=Math.min(.9,Math.max(.7,C.ex+rand(-.05,.05)));
+  C.warp=C.warp.map(w=>({...w,a:w.a*rand(.5,1.5),b:w.b*rand(.5,1.5),p:w.p+rand(-1,1),p2:w.p2+rand(-1,1)}));
+  return C;
+}
+function phase(B,x,y){
+  let X=x, Y=y;
+  for(const w of B.warp){ X+=w.a*Math.sin(w.kx*x+w.ky*y+w.p); Y+=w.b*Math.sin(w.kx2*x+w.ky2*y+w.p2); }
+  const dx=X-B.cx, dy=Y-B.cy;
+  if(B.type==='whorl') return Math.hypot(dx,dy*B.ex)/P;
+  if(B.type==='loop'){ const ux=Math.cos(B.ang), uy=Math.sin(B.ang); let t=dx*ux+dy*uy; t=t<0?0:t>B.len?B.len:t; return Math.hypot(dx-t*ux,dy-t*uy)/P; }
+  const A=B.amp*Math.exp(-(((Y-B.cy+10)/95)**2));
+  return (Y-A*Math.exp(-((X-B.cx)**2)/(B.sw*B.sw)))/P;
+}
+function field(F,x,y){
+  let pr=1, pi=0;
+  for(const m of F.M){ const dx=x-m.x, dy=(y-m.y)*m.s, nr=pr*dx-pi*dy; pi=pr*dy+pi*dx; pr=nr; }
+  const n=Math.hypot(pr,pi)||1, ph=TAU*phase(F.B,x,y);
+  return (Math.cos(ph)*pr-Math.sin(ph)*pi)/n;
+}
+function genMinutiae(n,B,avoid=[]){
+  const M=[]; let tries=0;
+  while(M.length<n && tries++<6000){
+    const x=rand(-100,100), y=rand(-132,124);
+    if(mask(x,y)<.75 || Math.hypot(x-B.cx,y-B.cy)<2.4*P) continue;
+    if(M.some(m=>Math.hypot(m.x-x,m.y-y)<2.5*P) || avoid.some(m=>Math.hypot(m.x-x,m.y-y)<2.5*P)) continue;
+    M.push({x,y,s:Math.random()<.5?1:-1});
+  }
+  return M;
+}
+const core = B => B.spin ? [{x:B.cx,y:B.cy,s:B.spin,core:true}] : [];
+
+/* ---------- rendu (par tranches, pour ne pas figer l'écran) ---------- */
+const queue=[]; let busy=false;
+function renderPrint(F, prio){
+  if(F.ready || F.job) { if(prio && F.job){ queue.splice(queue.indexOf(F.job),1); queue.unshift(F.job); } return; }
+  const W=PX*2*RES, H=PY*2*RES, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d'), img=ctx.createImageData(W,H), d=img.data, nz=makeNoise(), nz2=makeNoise();
+  F.canvas=cv;
+  const job={row:0, step(){
+    const end=Math.min(H,this.row+48);
+    for(let j=this.row;j<end;j++){ const y=-PY+(j+.5)/RES;
+      for(let i=0;i<W;i++){ const x=-PX+(i+.5)/RES, m=mask(x,y); if(m<.01) continue;
+        const v=field(F,x,y), ridge=sm(-.2,.42,v), pore=nz2(x*.6,y*.6)>.87?.45:1;
+        const a=ridge*m*(.72+.28*nz(x*.07,y*.07))*pore; const k=(j*W+i)*4;
+        d[k]=24; d[k+1]=28; d[k+2]=40; d[k+3]=a*255; } }
+    this.row=end; if(end>=H){ ctx.putImageData(img,0,0); F.ready=true; F.job=null; return true; } return false; }};
+  F.job=job; prio?queue.unshift(job):queue.push(job); pump();
+}
+function pump(){
+  if(busy) return; busy=true;
+  const tick=()=>{ const t0=performance.now();
+    while(queue.length && performance.now()-t0<14){ if(queue[0].step()){ queue.shift(); redraw(); } }
+    if(queue.length) setTimeout(tick,0); else busy=false; redraw(); };
+  setTimeout(tick,0);
+}
+function renderTrace(T){
+  const L=Math.ceil(2*(T.R+10)), W=L*RES, cv=document.createElement('canvas'); cv.width=W; cv.height=W;
+  const ctx=cv.getContext('2d'), img=ctx.createImageData(W,W), d=img.data, nz=makeNoise(), nz2=makeNoise();
+  const c=Math.cos(T.th), s=Math.sin(T.th), F=T.src;
+  for(let j=0;j<W;j++) for(let i=0;i<W;i++){
+    const ux=-L/2+(i+.5)/RES, uy=-L/2+(j+.5)/RES, e=T.edge(ux,uy); if(e<.01) continue;
+    const x=T.c0.x+c*ux-s*uy, y=T.c0.y+s*ux+c*uy, m=mask(x,y)*e; if(m<.01) continue;
+    const v=field(F,x,y), sm_=T.smudge(ux,uy);
+    let a=sm(-.12,.5,v)*(.5+.5*nz(x*.09,y*.09))*(nz2(x*.5,y*.5)>.78?.2:1);
+    a=a*(1-sm_)+sm_*(.18+.12*nz(x*.04,y*.04));
+    const k=(j*W+i)*4; d[k]=214; d[k+1]=38; d[k+2]=108; d[k+3]=Math.min(1,a*m*1.15)*255;
+  }
+  ctx.putImageData(img,0,0); T.canvas=cv; T.L=L;
+}
+
+/* ---------- une partie ---------- */
+const G={};
+function newCase(cfg, tuto=false){
+  const type=pick(['whorl','loop','loop','arch']);
+  const B=makeBase(type==='arch'&&tuto?'loop':type);
+  const src={B, M:[...genMinutiae(46,B), ...core(B)]};
+  // la trace : zone de la fiche source, avec au moins 11 minuties lisibles
+  let T=null;
+  for(let k=0;k<300;k++){
+    const c0={x:rand(-55,55), y:rand(-80,85)}; if(mask(c0.x,c0.y)<.95) continue;
+    const th=(tuto?.2:rand(cfg.rot[0],cfg.rot[1])*Math.PI/180)*(Math.random()<.5?-1:1);
+    const R=cfg.R, ha=rand(0,TAU), hb=rand(0,TAU), smu={x:rand(-.5,.5)*R, y:rand(-.5,.5)*R, rx:R*rand(.22,.32)*cfg.smudge, ry:R*rand(.14,.22)*cfg.smudge, a:rand(0,Math.PI)};
+    const edge=(ux,uy)=>{ const r=Math.hypot(ux,uy), an=Math.atan2(uy,ux), e=R*(1+.13*Math.sin(3*an+ha)+.08*Math.sin(5*an+hb)); return sm(e,e-8,r); };
+    const smudge=(ux,uy)=>{ if(!cfg.smudge) return 0; const ca=Math.cos(smu.a), sa=Math.sin(smu.a), dx=ux-smu.x, dy=uy-smu.y, X=(dx*ca+dy*sa)/smu.rx, Y=(-dx*sa+dy*ca)/smu.ry; return sm(1.2,.55,X*X+Y*Y); };
+    const c=Math.cos(-th), s=Math.sin(-th);
+    const pts=src.M.filter(m=>!m.core).map((m,id)=>({id, s:m.s, x:m.x, y:m.y, ux:c*(m.x-c0.x)-s*(m.y-c0.y), uy:s*(m.x-c0.x)+c*(m.y-c0.y)}))
+      .filter(m=>edge(m.ux,m.uy)>.97 && Math.hypot(m.ux,m.uy)<R*.86 && smudge(m.ux,m.uy)<.3 && mask(m.x,m.y)>.9);
+    if(pts.length>=11){ T={src, c0, th, R, edge, smudge, pts}; break; }
+  }
+  if(!T) return newCase(cfg,tuto);
+  // fiches : la bonne + des fiches de même dessin général, qui partagent quelques minuties avec la trace
+  const n=cfg.fiches, srcIdx=tuto?0:randi(0,n-1), fiches=[];
+  const noms=shuffle(NOMS).slice(0,n);
+  for(let i=0;i<n;i++){
+    if(i===srcIdx){ fiches.push({...src, nom:noms[i], pre:pick(PRE), src:true}); continue; }
+    const B2=vary(B), shared=shuffle(T.pts).slice(0,cfg.shared).map(m=>({x:m.x,y:m.y,s:m.s}));
+    fiches.push({B:B2, M:[...shared, ...genMinutiae(46-shared.length,B2,[...T.pts,...shared]), ...core(B2)], nom:noms[i], pre:pick(PRE)});
+  }
+  renderTrace(T);
+  Object.assign(G,{T, fiches, srcIdx, cur:0, pins:fiches.map(()=>new Map()), faults:0, over:false, cfg,
+    tr: tuto ? {x:T.c0.x+26, y:T.c0.y+20, a:0} : {x:rand(-30,30), y:rand(40,80), a:0}});
+  fiches.forEach((f,i)=>renderPrint(f, i===G.cur));
+  renderTabs(); setStatus(); redraw();
+}
+
+/* ---------- affichage ---------- */
+const cv=$('tbl'), tctx=cv.getContext('2d'), table=$('table');
+let geo={s:1,ox:0,oy:0,w:0,h:0}, fade=.55, mode='move';
+function resize(){
+  const r=table.getBoundingClientRect(), dpr=Math.min(2.5,devicePixelRatio||1);
+  cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr);
+  geo={w:r.width, h:r.height, dpr, s:Math.min(r.width/258, r.height/316), ox:r.width/2, oy:r.height/2};
+  redraw();
+}
+new ResizeObserver(resize).observe(table);
+let raf=0; function redraw(){ if(!raf) raf=requestAnimationFrame(draw); }
+const toScreen=(x,y)=>[geo.ox+x*geo.s, geo.oy+y*geo.s];
+function trToPrint(ux,uy){ const c=Math.cos(G.tr.a), s=Math.sin(G.tr.a); return [G.tr.x+c*ux-s*uy, G.tr.y+s*ux+c*uy]; }
+function printToTr(x,y){ const c=Math.cos(-G.tr.a), s=Math.sin(-G.tr.a), dx=x-G.tr.x, dy=y-G.tr.y; return [c*dx-s*dy, s*dx+c*dy]; }
+function draw(){
+  raf=0; if(!G.fiches) return;
+  const {s,ox,oy,dpr}=geo, ctx=tctx, F=G.fiches[G.cur];
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,geo.w,geo.h);
+  // la fiche : carton, cadre et empreinte encrée
+  ctx.save(); ctx.shadowColor='rgba(20,30,45,.35)'; ctx.shadowBlur=18; ctx.shadowOffsetY=6;
+  ctx.fillStyle='#fbfaf5'; ctx.beginPath(); ctx.roundRect(ox-126*s, oy-155*s, 252*s, 310*s, 8*s); ctx.fill(); ctx.restore();
+  ctx.strokeStyle='rgba(40,50,70,.18)'; ctx.lineWidth=1; ctx.strokeRect(ox-121*s, oy-150*s, 242*s, 300*s);
+  ctx.fillStyle='rgba(40,50,70,.55)'; ctx.font=`600 ${Math.max(9,9*s)}px "IBM Plex Mono",monospace`;
+  ctx.fillText(`${'ABCDE'[G.cur]} · ${F.nom} ${F.pre} · INDEX D.`, ox-118*s, oy-140*s);
+  $('dev').hidden=!!F.ready;
+  if(F.ready){ ctx.globalAlpha=1-.72*fade; ctx.drawImage(F.canvas, ox-PX*s, oy-PY*s, 2*PX*s, 2*PY*s); ctx.globalAlpha=1; }
+  // la trace, en surimpression (multiplication : alignée, elle « disparaît » dans l'encre)
+  const T=G.T, [tx,ty]=toScreen(G.tr.x,G.tr.y);
+  ctx.save(); ctx.translate(tx,ty); ctx.rotate(G.tr.a);
+  ctx.globalCompositeOperation='multiply'; ctx.globalAlpha=.28+.72*fade;
+  ctx.drawImage(T.canvas, -T.L/2*s, -T.L/2*s, T.L*s, T.L*s);
+  ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1;
+  ctx.setLineDash([4,5]); ctx.strokeStyle='rgba(214,38,108,.55)'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.arc(0,0,(T.R+12)*s,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+  ctx.restore();
+  // repères posés sur cette fiche
+  for(const [id,p] of G.pins[G.cur]){
+    const m=T.pts.find(q=>q.id===id), [x,y]=trToPrint(m.ux,m.uy), [sx,sy]=toScreen(x,y), r=Math.max(7,P*.75*s);
+    ctx.lineWidth=2.2;
+    if(p.ok){ ctx.strokeStyle='#15a35b'; ctx.fillStyle='rgba(21,163,91,.16)'; ctx.beginPath(); ctx.arc(sx,sy,r,0,TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#0f7a43'; ctx.font=`700 ${Math.max(10,9*s)}px "IBM Plex Mono",monospace`; ctx.fillText(p.n, sx+r+2, sy-r+4); }
+    else { ctx.strokeStyle='#d8343a'; ctx.beginPath(); ctx.moveTo(sx-r*.7,sy-r*.7); ctx.lineTo(sx+r*.7,sy+r*.7); ctx.moveTo(sx+r*.7,sy-r*.7); ctx.lineTo(sx-r*.7,sy+r*.7); ctx.stroke(); }
+  }
+  if(loupe.on) drawLoupe();
+}
+
+/* ---------- onglets et état ---------- */
+function renderTabs(){
+  $('tabs').innerHTML=G.fiches.map((f,i)=>{ const n=[...G.pins[i].values()].filter(p=>p.ok).length;
+    return `<button class="tab" role="tab" data-i="${i}" aria-selected="${i===G.cur}"><b>${'ABCDE'[i]}</b>${f.nom}<span class="cnt ${n?'ok':''}">${n||''}</span></button>`; }).join('');
+}
+$('tabs').onclick=e=>{ const b=e.target.closest('.tab'); if(!b||!G.fiches) return; G.cur=+b.dataset.i; renderPrint(G.fiches[G.cur],true); renderTabs(); setStatus(); redraw(); };
+function setStatus(){
+  const n=[...G.pins[G.cur].values()].filter(p=>p.ok).length;
+  $('cbar').innerHTML=Array.from({length:NEED},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('');
+  $('concTxt').textContent=`${n}/${NEED} concordances`;
+  $('faultTxt').textContent=`Erreurs ${G.faults}`;
+}
+function setAngle(a){
+  G.tr.a=a; const deg=((a*180/Math.PI)%360+540)%360-180;
+  $('angTxt').textContent=deg.toFixed(1).replace('.',',')+'°'; $('wheel').setAttribute('aria-valuenow',deg.toFixed(1));
+  $('wheel').style.backgroundPosition=`${deg*4.5}px 100%, ${deg*4.5}px 100%`;
+  afterMove();
+}
+function afterMove(){
+  G.tr.x=Math.max(-PX-20,Math.min(PX+20,G.tr.x)); G.tr.y=Math.max(-PY-20,Math.min(PY+20,G.tr.y));
+  redraw();
+  if(Shell.st.mode==='tuto' && G.tutoStep===1 && aligned()) tutoNext();
+}
+function aligned(){
+  let da=Math.abs(((G.tr.a-G.T.th)%TAU+TAU+Math.PI)%TAU-Math.PI);
+  return da<5*Math.PI/180 && Math.hypot(G.tr.x-G.T.c0.x, G.tr.y-G.T.c0.y)<P*1.1;
+}
+
+/* ---------- pointer une minutie ---------- */
+function tryPin(sx,sy){
+  if(G.over) return;
+  const x=(sx-geo.ox)/geo.s, y=(sy-geo.oy)/geo.s, [ux,uy]=printToTr(x,y);
+  let best=null, bd=P*1.05;
+  for(const m of G.T.pts){ const d=Math.hypot(m.ux-ux,m.uy-uy); if(d<bd){bd=d;best=m;} }
+  const tuto=Shell.st.mode==='tuto';
+  if(!best){ penalty(6,'Pas de minutie ici'); return; }
+  const pins=G.pins[G.cur], prev=pins.get(best.id);
+  if(prev && prev.ok){ Shell.toast('Déjà pointée','info'); return; }
+  const [qx,qy]=trToPrint(best.ux,best.uy), F=G.fiches[G.cur];
+  const ok=F.M.some(m=>!m.core && m.s===best.s && Math.hypot(m.x-qx,m.y-qy)<P*.78);
+  const n=[...pins.values()].filter(p=>p.ok).length+(ok?1:0);
+  pins.set(best.id,{ok, n});
+  if(ok){ Shell.good(); Shell.toast(`Concordance ${n}/${NEED}`,'ok'); }
+  else { penalty(4,'Discordance'); }
+  renderTabs(); setStatus(); redraw();
+  if(tuto){ if(ok && G.tutoStep>=2) tutoNext(); return; }
+  if(n>=NEED){
+    G.over=true; Shell.stopTimer();
+    const used=Math.round(G.cfg.time-Shell.st.timeLeft), good=G.cur===G.srcIdx;
+    if(good){ Shell.win(); setTimeout(()=>Shell.result({ok:true, faults:G.faults, stats:[['Temps',used+' s'],['Erreurs',G.faults],['Fiche','ABCDE'[G.cur]]],
+      note:G.faults===0?'Identification sans erreur : double point.':'Sans erreur de pointage, tu gagnes +2.'}),700); }
+    else { Shell.bad(); setTimeout(()=>Shell.result({ok:false, faults:G.faults+1, stats:[['Temps',used+' s'],['Erreurs',G.faults],['Fiche','ABCDE'[G.cur]]],
+      malus:`erreur d’identification : la trace venait de ${G.fiches[G.srcIdx].nom}.`}),700); }
+  }
+}
+function penalty(sec,txt){
+  if(Shell.st.mode==='tuto'){ Shell.bad(); Shell.toast(txt,'bad'); return; }
+  G.faults++; Shell.st.timeLeft=Math.max(0,Shell.st.timeLeft-sec); Shell.bad(); Shell.toast(`${txt} · −${sec} s`,'bad'); Shell.shake(table); setStatus();
+}
+
+/* ---------- loupe ---------- */
+const loupe={on:false,x:0,y:0}, lcv=$('loupe'), lctx=lcv.getContext('2d');
+function drawLoupe(){
+  const Z=2.6, D=136, src=D/Z, {dpr}=geo;
+  lctx.clearRect(0,0,272,272); lctx.save(); lctx.beginPath(); lctx.arc(136,136,136,0,TAU); lctx.clip();
+  lctx.fillStyle='#fff'; lctx.fillRect(0,0,272,272);
+  lctx.drawImage(cv,(loupe.x-src/2)*dpr,(loupe.y-src/2)*dpr,src*dpr,src*dpr,0,0,272,272);
+  lctx.strokeStyle='rgba(20,30,45,.7)'; lctx.lineWidth=2; lctx.beginPath(); lctx.moveTo(136,112); lctx.lineTo(136,128); lctx.moveTo(136,144); lctx.lineTo(136,160); lctx.moveTo(112,136); lctx.lineTo(128,136); lctx.moveTo(144,136); lctx.lineTo(160,136); lctx.stroke();
+  lctx.restore();
+  let lx=loupe.x-68, ly=loupe.y-68-96; if(ly<4) ly=loupe.y+40; lx=Math.max(4,Math.min(geo.w-140,lx));
+  lcv.style.left=lx+'px'; lcv.style.top=ly+'px';
+}
+
+/* ---------- gestes ---------- */
+const ptrs=new Map(); let g2=null, moved=0;
+const rel=e=>{ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; };
+cv.addEventListener('pointerdown',e=>{
+  if(G.over && Shell.st.mode!=='tuto') return;
+  cv.setPointerCapture(e.pointerId); const [x,y]=rel(e); ptrs.set(e.pointerId,{x,y}); moved=0;
+  if(mode==='pin' && ptrs.size===1){ loupe.on=true; loupe.x=x; loupe.y=y; lcv.hidden=false; redraw(); }
+  if(ptrs.size===2){ loupe.on=false; lcv.hidden=true; g2=two(); }
+});
+function two(){ const [a,b]=[...ptrs.values()]; return {ang:Math.atan2(b.y-a.y,b.x-a.x), mx:(a.x+b.x)/2, my:(a.y+b.y)/2}; }
+cv.addEventListener('pointermove',e=>{
+  if(!ptrs.has(e.pointerId)) return;
+  const [x,y]=rel(e), p=ptrs.get(e.pointerId), dx=x-p.x, dy=y-p.y; p.x=x; p.y=y; moved+=Math.abs(dx)+Math.abs(dy);
+  if(ptrs.size===2){ const n=two(), da=n.ang-g2.ang, s=geo.s;
+    // rotation autour du milieu des deux doigts + translation du milieu
+    const mx=(g2.mx-geo.ox)/s, my=(g2.my-geo.oy)/s, rx=G.tr.x-mx, ry=G.tr.y-my, c=Math.cos(da), si=Math.sin(da);
+    G.tr.x=(n.mx-geo.ox)/s+c*rx-si*ry; G.tr.y=(n.my-geo.oy)/s+si*rx+c*ry; g2=n; setAngle(G.tr.a+da); return; }
+  if(mode==='move'){ G.tr.x+=dx/geo.s; G.tr.y+=dy/geo.s; afterMove(); }
+  else if(loupe.on){ loupe.x=x; loupe.y=y; redraw(); }
+});
+function up(e){
+  if(!ptrs.has(e.pointerId)) return;
+  const [x,y]=rel(e), was=ptrs.size; ptrs.delete(e.pointerId);
+  if(ptrs.size<2) g2=null;
+  if(mode==='pin' && loupe.on && was===1 && e.type==='pointerup'){ loupe.on=false; lcv.hidden=true; tryPin(x,y); }
+  if(!ptrs.size){ loupe.on=false; lcv.hidden=true; redraw(); }
+}
+cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
+cv.addEventListener('wheel',e=>{ e.preventDefault(); if(!G.fiches) return; setAngle(G.tr.a+Math.sign(e.deltaY)*(e.shiftKey?.25:1)*Math.PI/180); },{passive:false});
+// molette de rotation
+let wx=null; const wh=$('wheel');
+wh.addEventListener('pointerdown',e=>{ wh.setPointerCapture(e.pointerId); wx=e.clientX; });
+wh.addEventListener('pointermove',e=>{ if(wx===null||!G.fiches) return; const d=e.clientX-wx; wx=e.clientX; setAngle(G.tr.a+d*.22*Math.PI/180); });
+wh.addEventListener('pointerup',()=>wx=null); wh.addEventListener('pointercancel',()=>wx=null);
+wh.addEventListener('keydown',e=>{ if(!G.fiches) return; const k={ArrowLeft:-1,ArrowRight:1}[e.key]; if(k){ e.preventDefault(); setAngle(G.tr.a+k*(e.shiftKey?2:.5)*Math.PI/180); } });
+$('modes').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; setMode(b.dataset.m); };
+function setMode(m){ mode=m; [...$('modes').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m)); table.classList.toggle('pin',m==='pin');}
+$('fade').oninput=e=>{ fade=e.target.value/100; redraw(); };
+document.addEventListener('keydown',e=>{ if(e.key==='p'||e.key==='P') setMode('pin'); if(e.key==='d'||e.key==='D') setMode('move'); });
+
+/* ---------- tutoriel ---------- */
+const TSTEPS=[null,
+  'La trace relevée sur la scène est en <b>rose</b>. Fais-la glisser sur l’empreinte de la fiche A et tourne-la avec la <b>molette</b> (ou deux doigts) jusqu’à ce que les crêtes se superposent : le rose « disparaît » dans l’encre.',
+  'Aligné ! Passe en mode <b>Pointer</b> et vise une <b>minutie</b> : une crête qui s’arrête ou se divise. Garde le doigt appuyé : une loupe apparaît, relâche dessus.',
+  'Concordance : la même minutie existe au même endroit sur la fiche. Il en faut <b>8</b> pour identifier. Pointe-en encore 2.'];
+const okCount=i=>[...G.pins[i].values()].filter(p=>p.ok).length;
+function tutoNext(){
+  if(G.tutoStep===3){ if(okCount(G.cur)<G.tutoGoal) return; G.tutoStep=4; G.over=true; Shell.win(); setTimeout(Shell.endTuto,700); return; }
+  G.tutoStep++;
+  if(G.tutoStep===3) G.tutoGoal=okCount(G.cur)+2;
+  Shell.coach(G.tutoStep,3,TSTEPS[G.tutoStep]);
+}
+
+Shell.init({
+  key:'empreintes', service:'Renfort fédéral · Labo', serviceShort:'Labo',
+  unit:['expert','experts'], effLabel:'Experts du labo sur le dossier',
+  headline:'Trace papillaire',
+  story:`<p>Le labo a relevé une trace sur le châssis forcé. Compare-la aux fiches décadactylaires des suspects.</p><p>Sur la table lumineuse, <b>aligne</b> la trace sur la bonne fiche, puis <b>pointe 8 minuties concordantes</b> pour conclure à l’identification. Les autres fiches ont le même dessin général : méfie-toi.</p>`,
+  diffs:{
+    difficile:{agents:1,label:'Difficile',time:150,fiches:5,R:64,rot:[40,150],shared:5,smudge:1.25},
+    normal:{agents:2,label:'Normal',time:180,fiches:4,R:72,rot:[25,90],shared:4,smudge:1},
+    facile:{agents:3,label:'Facile',time:240,fiches:3,R:82,rot:[12,40],shared:2,smudge:.7}},
+  diffHint:'Plus d’experts : plus de temps, une trace plus grande et moins de fiches à comparer.',
+  desktopHint:'Sur ordinateur : molette de la souris pour tourner (Maj = rotation fine), touches D et P pour changer de mode.',
+  rules:['Aligne la trace (rose) : glisser pour déplacer, molette ou deux doigts pour tourner.','Mode <b>Pointer</b> : appuie, vise avec la loupe, relâche sur une minutie (fin de crête ou bifurcation).','<b>8 concordances</b> sur une même fiche = identification. Une mauvaise fiche à 8 = erreur d’identification.','Pointer à côté d’une minutie : −6 s. Discordance : −4 s.','Sans erreur : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
+  winTitle:'Identification établie', loseTitle:'Trace non exploitée', skin:'Mallette du labo',
+  malus:'le labo classe la trace « non exploitable » : pas d’indice supplémentaire aujourd’hui.',
+  onMenu(){ if(G.fiches) G.over=true; },
+  onInit(){ newCase({fiches:3,R:82,rot:[20,40],shared:2,smudge:.7}); G.over=true; },
+  onPlay(cfg){ setMode('move'); newCase(cfg); G.cfg=cfg; G.over=false;
+    Shell.startTimer(cfg.time,()=>{ if(!G.over){ G.over=true; Shell.bad(); const n=Math.max(...G.pins.map(p=>[...p.values()].filter(q=>q.ok).length));
+      Shell.result({ok:false,faults:1,stats:[['Concord.',n+'/'+NEED],['Erreurs',G.faults],['Temps','écoulé']]}); } }); },
+  onTuto(){ setMode('move'); newCase({fiches:3,R:84,rot:[10,15],shared:2,smudge:.5},true); G.over=false; G.tutoStep=0; tutoNext(); }
+});
+</script>
