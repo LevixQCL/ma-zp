@@ -201,7 +201,7 @@ function photoSvg(places, cols, miroir, heure, nuit) {
     const rr = miroir ? rows - 1 - r : r;
     const x = 10 + c * cw + cw / 2, y = 10 + rr * rh + rh / 2;
     s += `<rect x="${x - cw / 2 + 1}" y="${y - rh / 2 + 2}" width="${cw - 2}" height="${rh - 6}" fill="none" stroke="#E8ECEF" stroke-opacity=".55" stroke-width="1"/>`;
-    num += `<text x="${x}" y="${y + rh / 2 - 7}" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="8" fill="#E8ECEF" fill-opacity=".8">P${i + 1}</text>`;
+    num += `<text x="${x}" y="${y + rh / 2 - 7}" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10.5" font-weight="600" fill="#E8ECEF" fill-opacity=".9">P${i + 1}</text>`;
     s += dessinerAuto(x, y - 5, places[i], miroir);
     hits += `<rect class="ph-hit" data-action="quest-pick" data-v="P${i + 1}" x="${x - cw / 2 + 1}" y="${y - rh / 2 + 2}" width="${cw - 2}" height="${rh - 6}" rx="3"/>`;
   }

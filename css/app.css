@@ -1017,3 +1017,5 @@ body.mj-ouvert { overflow: hidden; }
 .ec-t.ne { border-color: var(--red-line); background: var(--red-bg); }
 .ec-t.ne b { color: var(--red); }
 .figs.deux { display: flex; flex-direction: column; }
+.figs.cote { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
+.figs.cote figcaption { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
