@@ -14,7 +14,7 @@ export const MINI_JEUX = [
   { jeu: 'dossier', service: 'proximite', nom: 'Dossier à relire' },
   // Renfort fédéral (labo) : en test, seulement à l'entraînement pour l'instant.
   { jeu: 'empreintes', service: 'labo', nom: 'Empreintes', label: 'Labo · en test' },
-  { jeu: 'adn', service: 'labo', nom: 'Profil ADN', label: 'Labo · en test' },
+  { jeu: 'adn', service: 'labo', nom: 'Fragment d’ADN', label: 'Labo · en test' },
 ];
 
 export function mesIncidents() {
