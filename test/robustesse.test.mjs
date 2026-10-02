@@ -65,3 +65,26 @@ for (const v of variantes) {
 }
 
 console.log(`OK : robustesse (${variantes.length} ordres malformés, profils, entraide en boucle, déterminisme).`);
+
+// Document d'état allégé : rapports, journaux et relevés partent dans la Gazette, et l'appareil les y relit.
+{
+  const { allegerEtat, completerDepuisGazette } = await import('../js/data/resolver.js');
+  const st = partie();
+  const r = resolveTurn(st, { orders: ordresBots(st), nextWeekday: 2 });
+  const lignes = r.state.zones.moi.rapport.slice(), compta = r.state.zones.moi.compta;
+  const avant = JSON.stringify(r.state).length;
+  const leger = JSON.parse(JSON.stringify(allegerEtat(r.state, r.gazette)));
+  const gaz = JSON.parse(JSON.stringify({ ...r.gazette, date: 123 }));
+  leger.lastResolvedAt = 123;
+  assert.ok(JSON.stringify(leger).length < avant * 0.75, 'au moins un quart de place gagnée');
+  assert.equal(leger.zones.moi.rapport, undefined);
+  completerDepuisGazette(leger, [gaz]);
+  completerDepuisGazette(leger, [gaz]); // deux fois : pas de doublon
+  assert.deepEqual(leger.zones.moi.rapport, lignes);
+  assert.deepEqual(leger.zones.moi.compta, JSON.parse(JSON.stringify(compta)));
+  assert.ok(leger.zones.moi.journal && leger.zones.moi.journal.lignes);
+  // Le tour suivant se résout normalement à partir de l'état allégé.
+  const r2 = resolveTurn(leger, { orders: ordresBots(leger), nextWeekday: 3 });
+  assert.ok(r2.gazette.rapports.moi.length > 3);
+}
+console.log('OK : état allégé (rapports relus depuis la Gazette).');
