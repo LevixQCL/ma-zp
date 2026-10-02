@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 27;
+export const APP_VERSION = 28;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -108,7 +108,13 @@ export const INFRAS = {
   antenne:  { nom: 'Antenne de quartier', cout: 10, effet: 'Proximité +30 %' },
   garage:   { nom: 'Atelier mécanique', cout: 8, effet: 'Usure des véhicules divisée par deux' },
   audition: { nom: "Salle d'audition moderne", cout: 10, effet: 'Recherche +20 %' },
+  // Stand de tir : entraînement régulier au tir et aux techniques d'intervention.
+  // `bonus` : multiplicateur de l'Intervention ; `blessure` : multiplicateur du risque de blessure
+  // (interpellations des affaires, assauts en zone de non-droit) ; une rébellion ne blesse plus qu'un agent.
+  tir:      { nom: 'Stand de tir', cout: 10, effet: 'Intervention +15 %, agents deux fois moins souvent blessés (interpellations, assauts, rébellions)', bonus: 1.15, blessure: 0.5 },
 };
+/** Multiplicateur du risque de blessure d'une zone (stand de tir). */
+export const risqueBlessure = (z) => (z && z.infra && z.infra.tir ? INFRAS.tir.blessure : 1);
 
 export const RYTHMES = {
   normal:   { label: 'Normal', mult: 1, moral: 0, cout: 0, sub: 'aucun effet' },

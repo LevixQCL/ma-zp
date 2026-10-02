@@ -3,7 +3,7 @@
 
 import {
   APP_VERSION, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
@@ -286,7 +286,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       jalon(z, `Affaire « ${aff.titre} » résolue (+2 de moral${x.u === chef ? `, satisfaction +${fmt1(aff.recompense * 0.5 * mult)} = moitié des points annoncés` : ''}${x.u === chef && equipe.length > 1 ? ', +1 réputation en chef d’équipe' : x.u !== chef ? ', réputation pour ton renfort' : ''})`);
       z.rapport.push(`${aff.titre} : affaire résolue${x.u === chef ? ' sous ta direction' : ` avec ${zoneLabel(state.zones[chef])}`} (prime +${fmt1(round1(aff.recompense * mult * AFFAIRE.prime * x.n / sommeN))} k€, +2 de moral, +${fmt1(part)} pts pour ${x.n} agent${x.n > 1 ? 's' : ''} ; force de l’équipe ${fmt1(force)}, ${qualite}).`);
       // Intervention musclée : plus on engage d'agents, plus le risque d'un blessé augmente.
-      const risque = Math.min(0.3, Math.max(0, (x.n - 3) * 0.05));
+      const risque = Math.min(0.3, Math.max(0, (x.n - 3) * 0.05)) * risqueBlessure(z);
       if (risque && makeRng(`${state.seed}:s${state.season}:t${T}:blesse:${aff.id}:${x.u}`).chance(risque)) {
         z.blesses.push({ n: 1, retour: T + 4, motif: 'blessé' }); z.moral -= 2;
         jalon(z, `Agent blessé sur « ${aff.titre} »`);
@@ -420,9 +420,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       let texte = '';
       switch (coupDur.id) {
         case 'rebellion': {
-          const n = zr.int(1, 2), duree = zr.int(2, 4);
+          // Avec le stand de tir, les agents maîtrisent mieux la situation : un seul blessé au plus.
+          const n = z.infra.tir ? Math.min(1, zr.int(1, 2)) : zr.int(1, 2), duree = zr.int(2, 4);
           z.blesses.push({ n, retour: T + 1 + duree, motif: 'blessé' }); z.moral -= 4;
-          texte = `${n} agent${n > 1 ? 's' : ''} blessé${n > 1 ? 's' : ''}, absent${n > 1 ? 's' : ''} ${duree} tours. −4 de moral.`; break;
+          texte = `${n} agent${n > 1 ? 's' : ''} blessé${n > 1 ? 's' : ''}, absent${n > 1 ? 's' : ''} ${duree} tours. −4 de moral.${z.infra.tir ? ' L’entraînement au stand de tir a limité les dégâts.' : ''}`; break;
         }
         case 'grippe': {
           const n = Math.max(1, Math.round(z.agents * zr.float(0.1, 0.2)));

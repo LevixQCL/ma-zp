@@ -41,12 +41,14 @@ export function vehiculeSvg(type, h = 18) {
 }
 
 // Annexes visibles dans l'aile vitrée, et leur pictogramme (dessiné autour de 0,0, environ 12 × 12).
-const ANNEXES_AILE = ['sport', 'audition', 'logiciel', 'antenne'];
+const ANNEXES_AILE = ['sport', 'tir', 'audition', 'logiciel', 'antenne'];
 const PICTO = {
   sport: '<path d="M-5 0 H5"/><path d="M-5 -3.5 V3.5 M-3 -2.5 V2.5 M5 -3.5 V3.5 M3 -2.5 V2.5"/>',
   audition: '<path d="M-5 1 H5 M-3.5 1 V4.5 M3.5 1 V4.5"/><circle cx="-4" cy="-3" r="1.4"/><circle cx="4" cy="-3" r="1.4"/>',
   logiciel: '<rect x="-5" y="-4.5" width="10" height="7" rx="1"/><path d="M-2 5 H2 M0 2.5 V5"/>',
   antenne: '<path d="M-5 0 L0 -4.5 L5 0 M-3.5 -1 V4.5 H3.5 V-1"/><path d="M-1 4.5 V1.5 H1 V4.5"/>',
+  // Stand de tir : une cible (cercles concentriques et réticule).
+  tir: '<circle cx="0" cy="0" r="5"/><circle cx="0" cy="0" r="2.2"/><path d="M0 -6.5 V-3.5 M0 3.5 V6.5 M-6.5 0 H-3.5 M3.5 0 H6.5"/>',
 };
 
 // Lever et coucher du soleil en Belgique, heure locale (approximatifs, heure d'été comprise), par mois.

@@ -64,7 +64,7 @@ export async function lancerRoulette(backend) {
 
 function afficherGain(sk) {
   const z = myZone(), o = SKINS[sk.cat].options[sk.id];
-  const sansAile = sk.cat === 'aile' && !['sport', 'audition', 'logiciel', 'antenne'].some((k) => z && z.infra && z.infra[k]);
+  const sansAile = sk.cat === 'aile' && !['sport', 'tir', 'audition', 'logiciel', 'antenne'].some((k) => z && z.infra && z.infra[k]);
   const res = document.getElementById('roulette-res');
   const bouton = document.querySelector('[data-action="roulette-lancer"]');
   if (bouton) bouton.remove();
@@ -74,7 +74,7 @@ function afficherGain(sk) {
     <span style="font:700 24px var(--display)">${esc(o.nom)}</span>
     <span class="small" style="color:var(--amber-soft)">${esc(o.texte)}</span>
     <div class="scene-voisin">${sceneZone(sansAile ? { ...z, infra: { ...(z.infra || {}), sport: true } } : z, S.state, monDecorPublic(z), { [sk.cat]: sk.id })}</div>
-    ${sansAile ? '<span class="tiny" style="color:var(--amber-soft)">L’aile des annexes apparaît avec ta première annexe (salle de sport, salle d’audition, logiciel ou antenne de quartier). Aperçu ci-dessus avec une salle de sport.</span>' : ''}
+    ${sansAile ? '<span class="tiny" style="color:var(--amber-soft)">L’aile des annexes apparaît avec ta première annexe (salle de sport, stand de tir, salle d’audition, logiciel ou antenne de quartier). Aperçu ci-dessus avec une salle de sport.</span>' : ''}
     <span class="tiny muted">Déjà équipé. Tu peux l’enlever ou le remettre quand tu veux dans « Personnaliser mon commissariat ». Les autres le verront à partir de 20:00.</span>
     <button type="button" class="btn primary block" data-close>Voir mon commissariat</button></div>`;
   document.querySelector('.roue-wrap')?.classList.add('fini');

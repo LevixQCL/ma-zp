@@ -6,7 +6,7 @@
 // Une zone qui ne joue plus ne bloque personne : son influence s'efface, les autres continuent.
 import { CONFIG } from '../config.js';
 import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
-import { ND, secteurOuvert, regenSecteur } from './constants.js';
+import { ND, secteurOuvert, regenSecteur, risqueBlessure } from './constants.js';
 import { makeRng } from './rng.js';
 import { clamp, round1, forceEngagement, jalon, noter } from './zone.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
@@ -122,7 +122,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
           const z = state.zones[e.u];
           const br = makeRng(`${state.seed}:s${state.season}:t${T}:ndrepousse:${k}:${e.u}`);
           let b = 0;
-          for (let i = 0; i < e.n; i++) if (br.chance(ND.blesseRepousse)) b += 1;
+          for (let i = 0; i < e.n; i++) if (br.chance(ND.blesseRepousse * risqueBlessure(z))) b += 1;
           blessesTot += b;
           if (b) { z.blesses.push({ n: b, retour: T + 1 + ND.absenceRepousse, motif: 'blessé' }); z.moral -= 2; jalon(z, `Assaut repoussé à ${nomS} (blessés)`); }
           const autres = engages.filter((x) => x.u !== e.u);
@@ -148,7 +148,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
       }
       // Assaut musclé : risque d'un blessé pour qui engage beaucoup d'agents.
       for (const e of engages) {
-        const risque = Math.min(ND.risqueMax, Math.max(0, (e.n - 3) * ND.risqueParAgent));
+        const risque = Math.min(ND.risqueMax, Math.max(0, (e.n - 3) * ND.risqueParAgent)) * risqueBlessure(state.zones[e.u]);
         if (risque && makeRng(`${state.seed}:s${state.season}:t${T}:ndblesse:${k}:${e.u}`).chance(risque)) {
           const z = state.zones[e.u];
           z.blesses.push({ n: 1, retour: T + 4, motif: 'blessé' }); z.moral -= 2;
