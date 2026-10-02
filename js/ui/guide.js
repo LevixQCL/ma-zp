@@ -124,7 +124,7 @@ export function sections() {
         <h3>La grande décision (une par tour)</h3>
         ${table(['Décision', 'Coût', 'Effet'], [
           ['Recruter (1 à 3)', `${k(COUTS.recrue)} par recrue`, `arrivée après ${DELAI_ACADEMIE} tours d’académie`],
-          ['Former un service', k(COUTS.formation), `+1 niveau ; 2 agents indisponibles ${DUREE_FORMATION} tours`],
+          ['Former un service', k(COUTS.formation), `+1 niveau ; 2 agents indisponibles ${DUREE_FORMATION} tours (Intervention avec un stand de tir : ${k(INFRAS.tir.formation.cout)} et personne d’absent)`],
           ['Équiper un service', `${k(COUTS.equipementBase)}, puis +2 k€ par niveau`, '+15 % d’efficacité par niveau'],
           ['Acheter un véhicule', k(COUTS.vehicule), 'plus d’agents utiles en Intervention'],
           ['Construire', 'selon l’infrastructure', 'effet permanent (tableau ci-dessous)'],

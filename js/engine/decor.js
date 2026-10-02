@@ -110,9 +110,9 @@ export const SKINS = {
   aile: {
     titre: 'Aile des annexes',
     options: {
-      conteneurs: { nom: 'Conteneurs empilés', texte: 'Chaque annexe dans un conteneur de couleur.', jour: ['#E07A3A', '#3C7DB8'] },
-      roulotte:   { nom: 'Roulotte de cirque', texte: 'Rayures rouges et blanches, toit festonné, roues à rayons.', jour: ['#D8453A', '#F4EFE3'] },
-      serre:      { nom: 'Serre tropicale', texte: 'Verrière en arc et plantes qui débordent.', jour: ['#BFE3D0', '#7FC6A0'] },
+      conteneurs: { nom: 'Conteneurs empilés', texte: 'Chaque annexe dans un conteneur maritime de couleur, porte vitrée et barres de verrouillage, un conteneur couché par-dessus.', jour: ['#E07A3A', '#3C7DB8'] },
+      roulotte:   { nom: 'Roulotte de cirque', texte: 'Caisse rayée rouge et crème, fenêtres en arc dorées, lampions, toit bombé festonné et roues à rayons.', jour: ['#D8453A', '#F4EFE3'] },
+      serre:      { nom: 'Serre tropicale', texte: 'Verrière à l’ancienne et sa crête ouvragée, muret de briques et plantes au pied des vitres.', jour: ['#BFE3D0', '#7FC6A0'] },
     },
   },
 };

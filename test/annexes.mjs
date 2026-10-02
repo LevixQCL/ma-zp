@@ -2,7 +2,7 @@
 // avec les mêmes tirages au hasard : sert à vérifier qu'une nouvelle annexe ne déséquilibre pas le jeu.
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { BOT_PROFILES, botOrders } from '../js/engine/bots.js';
-import { newZone, moyenneIpz, operationActive, agentsDisponibles } from '../js/engine/zone.js';
+import { newZone, moyenneIpz, operationActive, agentsDisponibles, decisionImpossible } from '../js/engine/zone.js';
 import { SERVICES, INFRAS } from '../js/engine/constants.js';
 
 // Joueur attentif : part d'une base équilibrée et l'adapte à la situation du jour.
@@ -42,6 +42,8 @@ function adaptatif(z, state) {
 
 const VARIANTES = [null, ...Object.keys(INFRAS)];
 const SEEDS = Number(process.argv[2]) || 24;
+// `node test/annexes.mjs 24 former` : le joueur forme aussi l'Intervention dès qu'il le peut (grande décision).
+const FORMER = process.argv[3] === 'former';
 const rows = [];
 for (const id of VARIANTES) {
   const acc = { ipz: 0, satis: 0, moral: 0, crim: 0, rates: 0, blesses: 0, budget: 0 };
@@ -52,6 +54,8 @@ for (const id of VARIANTES) {
     if (id) { state.zones.moi.infra[id] = true; state.zones.moi.budget -= INFRAS[id].cout; }
     for (let t = 1; t <= 14; t++) {
       const orders = { moi: adaptatif(state.zones.moi, state) };
+      const f = { type: 'former', service: 'intervention' };
+      if (FORMER && !decisionImpossible(state.zones.moi, f, state.turn)) orders.moi.decision = f;
       for (const b of BOT_PROFILES) { const o = botOrders(state.zones[b.uid], state, b.style); if (o) orders[b.uid] = o; }
       const avant = new Set(state.zones.moi.blesses);
       const r = resolveTurn(state, { orders, nextWeekday: (t + 1) % 7 });

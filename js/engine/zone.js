@@ -1,7 +1,7 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
 import {
-  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, coutEquipement, multNiveau, multEquip } from './constants.js';
+  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, coutEquipement, multNiveau, multEquip, coutFormation } from './constants.js';
 import { coutCarrosserie } from './sinistres.js';
 import { cabossesChoisis } from './parc.js';
 
@@ -127,7 +127,7 @@ export function blessesActifs(zone, turn) {
 }
 
 export function enFormation(zone, turn) {
-  return zone.formations.filter((f) => f.fin > turn).length * AGENTS_EN_FORMATION;
+  return zone.formations.filter((f) => f.fin > turn).reduce((s, f) => s + (typeof f.agents === 'number' ? f.agents : AGENTS_EN_FORMATION), 0);
 }
 
 /** Agents réellement disponibles pour le tour `turn`. */
@@ -361,7 +361,7 @@ export function coutDecision(zone, decision) {
   if (!decision) return 0;
   switch (decision.type) {
     case 'recruter': return coutRecrue(zone) * decision.n;
-    case 'former': return COUTS.formation;
+    case 'former': return coutFormation(zone, decision.service);
     case 'equiper': return decision.cible === 'vehicule' ? COUTS.vehicule : coutEquipement(zone.equip[decision.cible]);
     case 'construire': return INFRAS[decision.infra].cout;
     case 'agrandir': return BATIMENTS[decision.batiment] ? BATIMENTS[decision.batiment].coutAgrandir(zone.batiments[decision.batiment]) : 0;

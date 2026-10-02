@@ -3,11 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-02f',
+  id: '2026-10-02g',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🎯', 'Nouveau : le stand de tir', 'une annexe à construire pour des agents d’intervention plus efficaces et moins souvent blessés.'],
+    ['🎯', 'Nouveau : le stand de tir', 'une annexe pour des agents d’intervention mieux formés et moins souvent blessés. Et toutes les annexes ont été redessinées.'],
     ['🚨', 'Des incidents en journée', 'colis suspect, porte à crocheter, parking à débloquer… un mini-jeu tombe sur ta zone à une heure imprévue, et tu as 12 heures pour intervenir.'],
     ['🔐', 'Des énigmes à manipuler', 'cadenas à molettes, disque de décodage, plaques à rayer : on touche les objets.'],
     ['🎨', 'Des skins pour ton commissariat', 'réussis les incidents pour remplir ta jauge et débloquer un nouveau décor.'],
@@ -16,7 +16,8 @@ export const NOTE_MAJ = {
   // Liste complète, dans le menu Nouveautés.
   sections: [
     ['À découvrir', [
-      ['Stand de tir', 'nouvelle annexe à construire (10 k€, grande décision « Construire », entretien habituel des annexes) : Intervention +15 %, et des agents deux fois moins souvent blessés quand tu engages une grosse équipe sur une affaire ou à l’assaut de la zone de non-droit ; une rébellion ne blesse plus qu’un agent. Il apparaît, avec sa cible, dans l’aile des annexes de ton commissariat.'],
+      ['Stand de tir', 'nouvelle annexe à construire (10 k€, grande décision « Construire », entretien habituel des annexes) : Intervention +15 %, formation Intervention à moitié prix (2 k€) et sans agent absent, et des agents deux fois moins souvent blessés quand tu engages une grosse équipe sur une affaire ou à l’assaut de la zone de non-droit ; une rébellion ne blesse plus qu’un agent. Il apparaît dans l’aile des annexes de ton commissariat : béton insonorisé, porte blindée et voyant « tir en cours ».'],
+      ['Annexes redessinées', 'chaque annexe a maintenant sa propre façade et on voit la pièce derrière la vitre : sac de frappe et haltères à la salle de sport, cible au fond du pas de tir, table et miroir sans tain en salle d’audition, baies de serveurs qui clignotent, comptoir d’accueil de l’antenne. Les lumières s’allument le soir. Les skins conteneurs, roulotte et serre ont été refaits dans le même esprit.'],
       ['Incidents du jour', 'une ou deux fois par jour, à une heure imprévue (entre 7 h et 19 h), un incident tombe sur un de tes services. L’HP affiche un compte à rebours, puis tu as 12 heures pour intervenir, avec un seul essai.'],
       ['Quatre mini-jeux', 'Intervention : un colis suspect à neutraliser avec la fiche SEDEE. Recherche : une porte à crocheter du bout des doigts. Roulage : un parking à débloquer pour la dépanneuse. Proximité : un rapport de domiciliation où trois erreurs se cachent.'],
       ['Récompenses des incidents', 'réussi : +5 PS et un bonus du service (Intervention du moral, Recherche un indice d’enquête, Roulage +2 k€, Proximité +2 de satisfaction). Raté ou abandonné : −1 de moral. Pas joué : ton équipe se débrouille seule, mieux si le service est bien fourni.'],
