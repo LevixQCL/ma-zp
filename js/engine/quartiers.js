@@ -178,7 +178,9 @@ export function tourQuartiers(state, z, { patrouilles, agentsProx, capProx, rng,
       qq[nb] = clamp((qq[nb] ?? 50) + part, 10, 95);
       if (p !== z.uid) {
         chezAutres.add(p);
-        if (Array.isArray(zz.rapport)) zz.rapport.push(`${c.nomDe(nb)} : la délinquance chassée de ${c.nomDe(Number(k))} (${zoneLabel(z)}) déborde chez toi (+${round1(part)} de tension).`);
+        // La criminalité du voisin suit ses quartiers (sinon son propre tour effacerait la poussée).
+        zz.criminalite = round1(moyenne(qq));
+        if (Array.isArray(zz.rapport)) zz.rapport.push(`${c.nomDe(nb)} : la délinquance chassée de ${c.nomDe(Number(k))} (${zoneLabel(z)}) déborde chez toi (+${String(round1(part)).replace('.', ',')} de tension).`);
       }
     }
     rapport.push(`${a} agents à ${c.nomDe(Number(k))} : une partie de la délinquance se déplace vers les quartiers voisins${chezAutres.size ? ', jusque chez tes voisins' : ''}.`);

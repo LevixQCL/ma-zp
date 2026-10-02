@@ -1,7 +1,7 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
 import {
-  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, coutEquipement, multNiveau, multEquip } from './constants.js';
+  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, coutEquipement, multNiveau, multEquip } from './constants.js';
 import { coutCarrosserie } from './sinistres.js';
 import { cabossesChoisis } from './parc.js';
 
@@ -203,29 +203,33 @@ export function sanitizeOrders(zone, raw, state) {
   const dispo = agentsDisponibles(zone, turn);
   const o = raw && typeof raw === 'object' ? raw : {};
   const alloc = {};
-  for (const s of SERVICES) alloc[s] = Math.max(0, Math.floor(Number(o.alloc && o.alloc[s]) || 0));
+  // Nombres finis seulement (Infinity ou NaN envoyés par un appareil défaillant valent 0).
+  const fini = (v) => { const x = Number(v); return Number.isFinite(x) ? x : 0; };
+  // Identifiants : seulement des clés propres (jamais « constructor », « __proto__ »…).
+  const zoneExiste = (u) => typeof u === 'string' && !!state.zones && Object.hasOwn(state.zones, u);
+  for (const s of SERVICES) alloc[s] = Math.min(999, Math.max(0, Math.floor(fini(o.alloc && o.alloc[s]))));
   const tutelle = sousTutelle(zone, turn);
-  const rythme = RYTHMES[o.rythme] && !(tutelle && o.rythme === 'renforce') ? o.rythme : 'normal';
+  const rythme = typeof o.rythme === 'string' && Object.hasOwn(RYTHMES, o.rythme) && !(tutelle && o.rythme === 'renforce') ? o.rythme : 'normal';
 
   const affIds = new Set((state.affaires || []).map((a) => a.id));
   const engagements = {};
   if (o.engagements && typeof o.engagements === 'object') {
     for (const [id, e] of Object.entries(o.engagements)) {
       if (!affIds.has(id) || !e) continue;
-      const n = Math.max(0, Math.floor(Number(e.agents) || 0));
+      const n = Math.min(999, Math.max(0, Math.floor(fini(e.agents))));
       const acceptes = Array.isArray(e.acceptes) ? [...new Set(e.acceptes.filter((u) => typeof u === 'string' && u !== zone.uid))].slice(0, 8) : [];
       if (n > 0) engagements[id] = { agents: n, acceptes };
     }
   }
-  const ev = state.evenement && state.evenement.tour === turn ? Math.max(0, Math.floor(Number(o.evenement) || 0)) : 0;
+  const ev = state.evenement && state.evenement.tour === turn ? Math.min(999, Math.max(0, Math.floor(fini(o.evenement)))) : 0;
 
   // L'événement et les engagements passent d'abord ; les services se partagent le reste.
   const evenement0 = Math.min(ev, dispo);
   // Renfort envoyé à une zone qui mène une opération d'envergure aujourd'hui.
   let renfort = null;
-  if (o.renfort && typeof o.renfort === 'object' && typeof o.renfort.cible === 'string' && o.renfort.cible !== zone.uid) {
+  if (o.renfort && typeof o.renfort === 'object' && zoneExiste(o.renfort.cible) && o.renfort.cible !== zone.uid) {
     const cz = state.zones && state.zones[o.renfort.cible];
-    const n = Math.min(clamp(Math.floor(Number(o.renfort.agents) || 0), 0, RENFORT.maxParZone), dispo - evenement0);
+    const n = Math.min(clamp(Math.floor(fini(o.renfort.agents)), 0, RENFORT.maxParZone), dispo - evenement0);
     if (cz && operationActive(cz, turn) && n > 0) renfort = { cible: o.renfort.cible, agents: n };
   }
   // Zone de non-droit : { secteur: agents }, plafonnés par secteur et au total.
@@ -233,7 +237,7 @@ export function sanitizeOrders(zone, raw, state) {
   if (o.secteurs && typeof o.secteurs === 'object' && state.nonDroit) {
     for (const [k, v] of Object.entries(o.secteurs)) {
       if (!secteurOuvert(state.nonDroit, k)) continue;
-      const n = clamp(Math.floor(Number(v) || 0), 0, ND.maxParSecteur);
+      const n = clamp(Math.floor(fini(v)), 0, ND.maxParSecteur);
       if (n > 0) secteurs[k] = n;
     }
   }
@@ -260,35 +264,36 @@ export function sanitizeOrders(zone, raw, state) {
   let decision = null;
   const d = o.decision;
   if (d && typeof d === 'object') {
-    if (d.type === 'recruter') decision = { type: 'recruter', n: clamp(Math.floor(Number(d.n) || 1), 1, 3) };
+    if (d.type === 'recruter') decision = { type: 'recruter', n: clamp(Math.floor(fini(d.n) || 1), 1, 3) };
     else if (d.type === 'former' && SERVICES.includes(d.service)) decision = { type: 'former', service: d.service };
     else if (d.type === 'equiper' && (d.cible === 'vehicule' || SERVICES.includes(d.cible))) decision = { type: 'equiper', cible: d.cible };
-    else if (d.type === 'construire' && INFRAS[d.infra]) decision = { type: 'construire', infra: d.infra };
-    else if (d.type === 'agrandir' && BATIMENTS[d.batiment]) decision = { type: 'agrandir', batiment: d.batiment };
+    else if (d.type === 'construire' && typeof d.infra === 'string' && Object.hasOwn(INFRAS, d.infra)) decision = { type: 'construire', infra: d.infra };
+    else if (d.type === 'agrandir' && typeof d.batiment === 'string' && Object.hasOwn(BATIMENTS, d.batiment)) decision = { type: 'agrandir', batiment: d.batiment };
     if (tutelle && decision && decision.type !== 'recruter') decision = null;
   }
   const operation = ['complet', 'reduit', 'aucun'].includes(o.operation) ? o.operation : 'reduit';
   const dp = o.depenses && typeof o.depenses === 'object' ? o.depenses : {};
   const depenses = {
-    reserve: tutelle ? 0 : clamp(Math.floor(Number(dp.reserve) || 0), 0, DEPENSES.reserve.max),
+    reserve: tutelle ? 0 : clamp(Math.floor(fini(dp.reserve)), 0, DEPENSES.reserve.max),
     reserveService: SERVICES.includes(dp.reserveService) ? dp.reserveService : 'intervention',
     prime: !!dp.prime, prevention: !!dp.prevention, soustraitance: !!dp.soustraitance, revision: !!dp.revision, carrosserie: carrosserieOrdre(zone, dp.carrosserie),
   };
   // Enquête et FIPA : validés plus finement pendant la résolution.
-  const int = (v, a, b) => clamp(Math.floor(Number(v) || 0), a, b);
+  const int = (v, a, b) => clamp(Math.floor(fini(v)), a, b);
   const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
+  const cible = (v) => (zoneExiste(v) ? v : '');
   const demarches = Array.isArray(o.demarches) ? [...new Set(o.demarches.filter((x) => typeof x === 'string' && lireDemarche(x)))].slice(0, 2) : [];
   const accusation = Number.isInteger(o.accusation) && o.accusation >= 0 && o.accusation < ENQ.nbSuspects ? o.accusation : null;
   const piste = Number.isInteger(o.piste) && o.piste >= 0 && o.piste < ENQ.nbSuspects ? o.piste : null;
   const traque = o.traque && typeof o.traque === 'object' ? { n: int(o.traque.n, 0, 1e6), planque: int(o.traque.planque, 0, 5), agents: int(o.traque.agents, 0, 30) } : null;
   const partages = Array.isArray(o.partages) ? o.partages.slice(0, 3).filter((p) => p && typeof p === 'object').map((p) => ({ f: str(p.f), a: str(p.a) })) : [];
-  const fipa = o.fipa && typeof o.fipa === 'object' ? { id: str(o.fipa.id), invite: str(o.fipa.invite), moi: int(o.fipa.moi, 0, 8), lui: int(o.fipa.lui, 0, 8) } : null;
+  const fipa = o.fipa && typeof o.fipa === 'object' ? { id: str(o.fipa.id), invite: cible(o.fipa.invite), moi: int(o.fipa.moi, 0, 8), lui: int(o.fipa.lui, 0, 8) } : null;
   const fipaReponse = o.fipaReponse && typeof o.fipaReponse === 'object' ? { id: str(o.fipaReponse.id), accepte: !!o.fipaReponse.accepte } : null;
   const fipaChoix = o.fipaChoix && typeof o.fipaChoix === 'object' ? { id: str(o.fipaChoix.id), choix: o.fipaChoix.choix === 'revendiquer' ? 'revendiquer' : 'partager' } : null;
   const MAN = ['debauchage', 'dessaisissement', 'signalement', 'poste'];
-  const manoeuvre = o.manoeuvre && MAN.includes(o.manoeuvre.type) ? { type: o.manoeuvre.type, cible: str(o.manoeuvre.cible) } : null;
-  const aide = o.aide && typeof o.aide === 'object' ? { cible: str(o.aide.cible), budget: clamp(Math.round((Number(o.aide.budget) || 0) * 10) / 10, 0, 10), agents: int(o.aide.agents, 0, 3) } : null;
-  const duel = o.duel && ['satisfaction', 'affaires', 'incidents'].includes(o.duel.ind) ? { cible: str(o.duel.cible), ind: o.duel.ind } : null;
+  const manoeuvre = o.manoeuvre && MAN.includes(o.manoeuvre.type) ? { type: o.manoeuvre.type, cible: cible(o.manoeuvre.cible) } : null;
+  const aide = o.aide && typeof o.aide === 'object' ? { cible: cible(o.aide.cible), budget: clamp(Math.round(fini(o.aide.budget) * 10) / 10, 0, 10), agents: int(o.aide.agents, 0, 3) } : null;
+  const duel = o.duel && ['satisfaction', 'affaires', 'incidents'].includes(o.duel.ind) ? { cible: cible(o.duel.cible), ind: o.duel.ind } : null;
   const duelReponse = o.duelReponse && typeof o.duelReponse === 'object' ? { id: str(o.duelReponse.id), accepte: !!o.duelReponse.accepte } : null;
   const votes = {};
   if (o.votes && typeof o.votes === 'object') for (const [k2, v] of Object.entries(o.votes)) if (['dotation', 'theme', 'blame', 'chef'].includes(k2) && Number.isInteger(v)) votes[k2] = clamp(v, 0, 5);
@@ -392,7 +397,7 @@ export function ipzComposantes(zone, { ratio = 1, bilan = 0 } = {}) {
     satisfaction: clamp(zone.satisfaction, 0, 100),
     affaires: clamp(terrainBrut(ratio, bilan), 0, 100),
     moral: clamp(zone.moral, 0, 100),
-    budget: clamp(50 + zone.budget * 1.5, 0, 100),
+    budget: scoreBudget(zone.budget),
     reputation: clamp(zone.reputation, 0, 100),
   };
 }

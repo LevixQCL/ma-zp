@@ -17,10 +17,10 @@ export async function createFirebaseBackend(config) {
   ]);
   const app = initializeApp(config.firebase);
   const auth = A.getAuth(app);
-  // Connexion en « long polling » : plus lente de quelques millisecondes, mais elle passe
-  // à travers les réseaux d'entreprise et les proxys qui bloquent les flux Firestore.
+  // Détection automatique : flux rapide quand le réseau le permet, « long polling » derrière
+  // les réseaux d'entreprise et les proxys qui bloquent les flux Firestore.
   let fs;
-  try { fs = F.initializeFirestore(app, { experimentalForceLongPolling: true }); } catch (e) { fs = F.getFirestore(app); }
+  try { fs = F.initializeFirestore(app, { experimentalAutoDetectLongPolling: true }); } catch (e) { fs = F.getFirestore(app); }
   // Chaque partie a ses propres données : parties/{id}/state, players, orders, quests, gazettes, radio, prives.
   let gid = null, meta = null;
   const stateRef = () => F.doc(fs, 'parties', gid, 'state', 'current');
@@ -118,9 +118,9 @@ export async function createFirebaseBackend(config) {
     subscribeState(cb, onErr) { return F.onSnapshot(stateRef(), (s) => cb(s.exists() ? s.data() : null), (e) => { console.error(e); if (onErr) onErr(e); }); },
 
     async getPlayer(uid) { try { const s = await F.getDoc(docIn('players', uid)); return s.exists() ? s.data() : null; } catch (e) { return null; } },
-    async getPlayers() {
+    async getPlayers({ strict = false } = {}) {
       let snap;
-      try { snap = await F.getDocs(col('players')); } catch (e) { return {}; }
+      try { snap = await F.getDocs(col('players')); } catch (e) { if (strict) throw e; return {}; }
       const out = {}; snap.forEach((d) => { out[d.id] = d.data(); }); return out;
     },
     /** Dernière connexion du joueur (pour la page du maître du jeu). */
@@ -170,8 +170,8 @@ export async function createFirebaseBackend(config) {
     },
 
     /** Toutes les réponses aux énigmes de la partie (pour le classement des énigmes). */
-    async listQuestResults() {
-      const snap = await F.getDocs(col('quests'));
+    async listQuestResults(season = null) {
+      const snap = await F.getDocs(season ? F.query(col('quests'), F.where('season', '==', season)) : col('quests'));
       return snap.docs.map((d) => { const v = d.data(); return { uid: v.uid, season: v.season, turn: v.turn, statut: v.statut, type: v.type, slot: v.slot ?? 0 }; });
     },
 
@@ -219,7 +219,19 @@ export async function createFirebaseBackend(config) {
       const state = createGame({ seed: `${config.seed}-${gid}-${Date.now()}`, turnDeadline: nextResolutionAfter(Date.now(), hour) });
       await F.setDoc(stateRef(), plain(state));
     },
-    async adminReset() { return this.adminCreateGame(); },
+    async adminReset() {
+      // Les ordres, énigmes et gazettes de l'ancienne partie portent les mêmes identifiants (saison_tour_joueur)
+      // que ceux de la nouvelle : on les efface d'abord, sinon ils se mélangeraient.
+      for (const name of ['orders', 'quests', 'gazettes']) {
+        const snap = await F.getDocs(col(name));
+        for (let i = 0; i < snap.docs.length; i += 400) {
+          const b = F.writeBatch(fs);
+          for (const d of snap.docs.slice(i, i + 400)) b.delete(d.ref);
+          await b.commit();
+        }
+      }
+      return this.adminCreateGame();
+    },
     async adminForceResolution() { await F.updateDoc(stateRef(), { nextDeadline: Date.now() - 1000 }); },
     async adminExport() {
       const [state, players] = await Promise.all([this.getState(), this.getPlayers()]);

@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 24;
+export const APP_VERSION = 25;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -58,8 +58,15 @@ export const multEquip = (n) => 0.85 + 0.15 * n;
 // Affaires disputées : prime versée en plus des points (k€ par point annoncé, multipliée par la qualité du dispositif).
 export const AFFAIRE = { prime: 0.6, repChef: 1 };
 export const ROULAGE = { seuil: 6, auDela: 0.5, chasse: 0.25, chasseCameras: 0.4 };
-/** Moral gagné par une prime au personnel : de moins en moins quand le moral est déjà haut. */
-export const gainPrime = (moral) => (moral < 70 ? 4 : moral < 85 ? 2 : 1);
+/**
+ * Moral gagné par un bonus (prime, énigmes, incident réussi) : de moins en moins quand le moral est déjà haut.
+ * Plein effet sous 70, moitié (arrondie au-dessus) de 70 à 85, +1 au-delà.
+ */
+export const MORAL_PALIERS = [70, 85];
+export const gainMoral = (base, moral) => (base <= 0 ? base : moral < MORAL_PALIERS[0] ? base : moral < MORAL_PALIERS[1] ? Math.ceil(base / 2) : 1);
+export const gainPrime = (moral) => gainMoral(4, moral);
+// Énigmes du jour : bonus au choix dès 2 bonnes réponses, prime « sans faute » à 3 sur 3.
+export const ENIGMES = { rateeMoral: 1, bonusMoral: 3, bonusBudget: 2, bonusCapacite: 1.1, sansFaute: { budget: 3, moral: 2, ps: 5 } };
 /** Part des effectifs en Roulage au-delà de laquelle joue l'effet « chasse aux PV ». */
 export const seuilChasse = (z) => (z.infra && z.infra.anpr ? ROULAGE.chasseCameras : ROULAGE.chasse);
 
@@ -85,7 +92,7 @@ export const FLAGRANT = { parUnite: 0.1, max: 0.4, points: 3, ps: 3, tension: 5 
  * Le bilan garde la moitié de celui de la veille (`report`) : un gros coup compte plusieurs jours,
  * un jour creux ne fait pas tout tomber. Bilan stable ≈ 2 × points moyens par jour.
  */
-export const TERRAIN = { incidents: 60, parPoint: 3, report: 0.5 };
+export const TERRAIN = { incidents: 45, parPoint: 2.5, report: 0.5 };
 /** Recherche : chaque unité de travail sur un dossier rapporte des points tout de suite (≈ 0,5). */
 export const DOSSIER = { tailleMin: 4, tailleMax: 8, ptsParUnite: 0.5 };
 
@@ -122,6 +129,14 @@ export const PS = { ordres: 10, queteOk: 5, queteTentee: 2, noir: 15, evenement:
 // Les PS d'entraide (renfort, pièces partagées, contribution à l'enquête, FIPA, mission collective, secteurs tenus) ont leur propre plafond, en plus des 40.
 // Événement du district : PS.evenement pour la part attendue (3 agents), proportionnel au nombre d'agents envoyés.
 export const psEvenement = (c) => (c > 0 ? Math.max(1, Math.min(PS.evenementMax, Math.round(PS.evenement * c / 3))) : 0);
+
+// Composante Budget de l'IPZ : 50 + 1,5 × budget (100 dès 34 k€). Au-delà de `dormant` k€, l'argent qui dort
+// coûte `pente` point par k€ (jusqu'à `plancher`) : la commune juge qu'une zone qui ne dépense pas est trop dotée.
+export const BUDGET_IPZ = { base: 50, parK: 1.5, dormant: 60, pente: 1, plancher: 50 };
+export function scoreBudget(b) {
+  if (b > BUDGET_IPZ.dormant) return Math.max(BUDGET_IPZ.plancher, 100 - BUDGET_IPZ.pente * (b - BUDGET_IPZ.dormant));
+  return Math.max(0, Math.min(100, BUDGET_IPZ.base + BUDGET_IPZ.parK * b));
+}
 
 // Poids de l'IPZ en version 1 (l'enquête arrivera en version 2).
 export const IPZ_POIDS = { satisfaction: 0.35, affaires: 0.30, moral: 0.15, budget: 0.10, reputation: 0.10 };
@@ -202,7 +217,7 @@ export function regenSecteur(state, s) {
 }
 /** Le secteur `k` peut-il recevoir des agents ? (le Cœur s'ouvre quand assez de secteurs de l'anneau sont tenus) */
 export function secteurOuvert(nd, k) {
-  const s = nd && nd.secteurs && nd.secteurs[k];
+  const s = nd && nd.secteurs && Object.hasOwn(nd.secteurs, k) ? nd.secteurs[k] : null;
   if (!s) return false;
   if (!s.coeur) return true;
   return Object.values(nd.secteurs).filter((x) => !x.coeur && x.statut === 'repris').length >= ND.coeurSeuil;

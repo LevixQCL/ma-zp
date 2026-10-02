@@ -3,9 +3,16 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-02c',
-  titre: 'Mise à jour du 2 octobre : incidents du jour et résultats terrain',
+  id: '2026-10-02d',
+  titre: 'Mise à jour du 2 octobre : équilibrage et incidents du jour',
   points: [
+    ['Résultats terrain rééquilibrés', 'nouveau calcul : 45 × part des incidents traités + 2,5 × bilan. Les bonnes zones butaient trop vite sur le plafond de 100 ; maintenant, ce sont surtout tes points (Recherche, flagrants, zone de non-droit, opérations) qui font la différence. Tous les IPZ baissent un peu, de la même façon pour tout le monde.'],
+    ['L’argent qui dort', 'au-delà de 60 k€ en caisse, la composante Budget de l’IPZ perd 1 point par k€ en plus (jusqu’à 50). Garde une réserve de 35 à 60 k€ et investis le reste : agents de réserve, prévention, formation, matériel, bâtiments. L’HP te prévient.'],
+    ['Moral : chaque bonus compte moins quand l’équipe est déjà gonflée à bloc', 'énigmes, incident réussi, prime au personnel : plein effet sous 70 de moral, moitié de 70 à 85, +1 au-delà.'],
+    ['Recrues', 'elles sortent de l’académie le soir et sont dans tes ordres dès le lendemain (avant, elles étaient payées un jour sans pouvoir travailler).'],
+    ['Entraide', 'entre deux zones qui vont bien, l’entraide rapporte de la réputation une fois par semaine pour la même paire (s’envoyer le même argent chaque soir ne rapporte plus rien). Aider une zone en difficulté rapporte toujours, à chaque fois.'],
+    ['Délinquance déplacée', 'quand tu concentres beaucoup d’agents sur un quartier, la délinquance qui part chez tes voisins compte maintenant vraiment chez eux.'],
+    ['Plus solide', 'un ordre mal formé ne peut plus bloquer le calcul de 20:00 pour toute la partie, et l’appli télécharge beaucoup moins de données en arrière-plan.'],
     ['Résultats terrain, moins de hasard', 'la Recherche rapporte des points chaque jour (+0,5 par unité de travail sur les dossiers) au lieu d’un gros paquet le jour où un dossier tombe, et le flagrant délit suit une jauge qui se remplit avec tes patrouilles libres au lieu d’un tirage au sort.'],
     ['Les gros coups comptent plus longtemps', 'les points vont dans un bilan qui garde la moitié de celui de la veille : une reprise dans la zone de non-droit pèse encore les jours suivants, et un jour creux ne fait plus tout chuter.'],
     ['Aider rapporte vraiment', `les PS d’entraide (renfort, indices partagés, FIPA, zone de non-droit…) ne comptent plus dans le plafond de 40 : ils ont leur propre plafond de 30 par jour. Un renfort rapporte maintenant, par agent prêté, 5 PS, 1 point de résultats terrain et 0,5 k€ d’indemnité fédérale, en plus de la réputation.`],
@@ -24,7 +31,7 @@ export const NOTE_MAJ = {
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Mise à jour de Ma ZP : les incidents du jour ! Une ou deux fois par jour, à une heure imprévue, un incident tombe sur un de tes services : colis suspect, porte à crocheter, parking à débloquer, dossier à relire. Tu as 6 h pour jouer le mini-jeu, un seul essai. Réussi : PS, bonus et jauge des skins. Raté : −1 de moral. Entraînement dans l'écran Énigmes.`;
+  return `📣 Mise à jour de Ma ZP : résultats terrain recalculés (tes points comptent plus, tous les IPZ baissent un peu), au-delà de 60 k€ l'argent qui dort fait baisser ton IPZ budget, les bonus de moral rapportent moins quand le moral est déjà haut, et les recrues sont dans tes ordres dès le lendemain. Détails : bouton Nouveautés sur l'HP.`;
 }
 
 

@@ -93,8 +93,9 @@ function render() {
   else if (!S.state) html = renderInscription({ gameExists: false, isAdmin: S.backend.isMaster(S.user) });
   else if (S.player && S.player.retire) html = `<main class="center-screen"><h1 class="brand">Ma ZP</h1><div class="card"><h2 class="card-title">Tu as été retiré de la partie</h2><p class="small muted" style="margin:0">Contacte le maître du jeu si c’est une erreur.</p></div><button class="btn ghost" data-action="logout">Se déconnecter</button></main>`;
   else if (!myZone()) {
-    if (S.player) { loading('Création de ta zone…'); ensureZone(); return; }
-    html = renderInscription({ gameExists: true });
+    if (S.player && S.joinErreur) html = `<main class="center-screen"><h1 class="brand">Ma ZP</h1><div class="card"><h2 class="card-title">Ta zone n’a pas pu être créée</h2><p class="small muted" style="margin:0">${esc(S.joinErreur)}</p></div><button class="btn primary" data-action="join-retry">Réessayer</button><a class="btn ghost" href="#parties">Retour aux parties</a></main>`;
+    else if (S.player) { loading('Création de ta zone…'); ensureZone(); return; }
+    else html = renderInscription({ gameExists: true });
   } else {
     if (!S.draft) initDraft();
     if (!S.quests) loadQuest();
@@ -110,7 +111,8 @@ function render() {
       case 'terrain': html = renderTerrain(); break;
       case 'gazette': html = renderGazette(); break;
       case 'classement':
-        if (!S.questStatsAt || Date.now() - S.questStatsAt > 60000) {
+        // Lecture de toutes les réponses aux énigmes : seulement sur l'onglet Énigmes, au plus toutes les 5 minutes.
+        if (S.classTab === 'enigmes' && (!S.questStatsAt || Date.now() - S.questStatsAt > 300000)) {
           S.questStatsAt = Date.now();
           Promise.resolve(S.backend.listQuestResults ? S.backend.listQuestResults() : [])
             .then((r) => { S.questStats = r; S.questStatsErreur = false; })
@@ -160,10 +162,10 @@ const champActif = (id) => document.activeElement && document.activeElement.id =
 const rerender = () => { S.keepScroll = true; render(); };
 
 async function ensureZone() {
-  if (S.joining) return;
+  if (S.joining || S.joinErreur) return;
   S.joining = true;
   try { await S.backend.joinGame(S.user.uid, S.player); }
-  catch (e) { toast(e.message || 'Impossible de créer la zone.'); }
+  catch (e) { S.joinErreur = e.message || 'Impossible de créer la zone.'; toast(S.joinErreur); render(); }
   finally { S.joining = false; }
 }
 
@@ -221,18 +223,25 @@ async function afterAuth() {
 }
 
 /** Ouvre une partie : on se désabonne de l'ancienne et on recharge tout. */
+let ouvertures = 0;
 async function openParty(id) {
   if (unsubState) unsubState();
   if (unsubRadio) unsubRadio();
   if (unsubPrive) unsubPrive();
   unsubState = null; unsubRadio = null; unsubPrive = null;
-  Object.assign(S, { noParty: false, state: undefined, draft: null, quests: null, savedOrders: null, ordersDirty: false, gazettes: [], radio: [], prives: [], priveAvec: null, vu: null, signup: null, questResults: [null, null, null] });
+  Object.assign(S, { noParty: false, state: undefined, draft: null, quests: null, savedOrders: null, ordersDirty: false, gazettes: [], radio: [], prives: [], priveAvec: null, vu: null, signup: null, joinErreur: null, questResults: [null, null, null] });
   lastTurnKey = null;
+  const jeton = ++ouvertures; // si le joueur change de partie pendant le chargement, on abandonne celle-ci
   render();
-  S.partie = await S.backend.useGame(id);
+  const partie = await S.backend.useGame(id);
+  if (jeton !== ouvertures) return;
+  S.partie = partie;
   try { localStorage.setItem(`mazp-partie-${S.user.uid}`, id); } catch (e) { /* stockage indisponible */ }
-  try { S.player = await S.backend.getPlayer(S.user.uid); } catch (e) { S.player = null; }
-  try { S.players = await S.backend.getPlayers(); } catch (e) { S.players = {}; }
+  let player = null, players = {};
+  try { player = await S.backend.getPlayer(S.user.uid); } catch (e) { player = null; }
+  try { players = await S.backend.getPlayers(); } catch (e) { players = {}; }
+  if (jeton !== ouvertures) return;
+  S.player = player; S.players = players;
   if (!unsubState) {
     unsubState = S.backend.subscribeState(async (state) => {
       S.state = migrateState(state);
@@ -256,15 +265,21 @@ function signalerPresence() {
 }
 document.addEventListener('visibilitychange', () => { if (!document.hidden) signalerPresence(); });
 
+// Après l'échéance, on retente la résolution avec un délai qui s'allonge si elle échoue (15 s → 4 min).
+let attenteTick = 15000;
 async function tick(force = false) {
   signalerPresence();
   if (!S.user || !S.state) return;
-  if (!force && Date.now() - lastTick < 15000) return;
+  // Avant 20:00, ou sur une version dépassée, rien à calculer : pas de lecture inutile du document d'état.
+  // (force : après « forcer la résolution », l'état local n'est pas encore à jour, on relit le serveur.)
+  if (!force && (Date.now() < S.state.nextDeadline || isOutdated(S.state))) { attenteTick = 15000; return; }
+  if (!force && Date.now() - lastTick < attenteTick) return;
   lastTick = Date.now();
   try {
-    const n = await resolvePending(S.backend, { hour: CONFIG.resolutionHour });
-    if (n > 0) S.players = await S.backend.getPlayers();
-  } catch (e) { console.warn(e); }
+    const n = await resolvePending(S.backend, { hour: CONFIG.resolutionHour, state: force ? null : S.state });
+    if (n > 0) { attenteTick = 15000; S.players = await S.backend.getPlayers(); }
+    else attenteTick = Math.min(240000, attenteTick * 2);
+  } catch (e) { console.warn(e); attenteTick = Math.min(240000, attenteTick * 2); }
 }
 
 // ───────── Actions ─────────
@@ -457,6 +472,7 @@ async function onClick(e) {
       }
       case 'party-open': await openParty(el.dataset.id); location.hash = '#hp'; break;
       case 'reload': location.reload(); break;
+      case 'join-retry': S.joinErreur = null; render(); break;
       case 'admin-export': {
         const data = await b.adminExport();
         const blob = new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' });
@@ -890,13 +906,19 @@ async function onSubmit(e) {
   }
 }
 
+let rechercheGuide = null;
 function onInput(e) {
   if (e.target.id === 'guide-q') {
-    S.guideQuery = e.target.value; S.keepScrollGuide = true; S.guideSection = null;
-    render();
-    const i = document.getElementById('guide-q');
-    if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
-    S.keepScrollGuide = false;
+    // Recherche dans le guide : on attend une courte pause de frappe avant de tout redessiner.
+    S.guideQuery = e.target.value;
+    clearTimeout(rechercheGuide);
+    rechercheGuide = setTimeout(() => {
+      S.keepScrollGuide = true; S.guideSection = null;
+      render();
+      const i = document.getElementById('guide-q');
+      if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); }
+      S.keepScrollGuide = false;
+    }, 150);
     return;
   }
   if (e.target.dataset && e.target.dataset.qnote !== undefined) {
@@ -974,6 +996,7 @@ function messageErreur(err, contexte = '') {
 
 // ───────── Démarrage ─────────
 async function boot() {
+  window.__mazpBoot = true; // les modules sont chargés : le filet de sécurité de index.html se retire
   loading();
   S.config = CONFIG;
   S.invitation = lireInvitationUrl();
@@ -1005,7 +1028,7 @@ async function boot() {
   document.addEventListener('input', onInput);
   document.addEventListener('change', onChange);
   window.addEventListener('hashchange', () => { S.menuHp = false; S.route = route(); if (S.route !== 'prive') S.priveAvec = null; window.scrollTo(0, 0); render(); });
-  document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(true); });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { lastTick = 0; tick(); } });
   setInterval(() => {
     const el = document.getElementById('countdown');
     if (el && S.state) el.textContent = formatCountdown(S.state.nextDeadline - Date.now());
