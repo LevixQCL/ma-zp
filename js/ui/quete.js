@@ -46,10 +46,12 @@ function renderGrille(q) {
   </section>`;
 }
 
-/** Mini-jeu choisi dans le menu de l'entraînement (valeur « mj:<jeu> »), sinon null. */
-function miniJeuChoisi() {
-  const t = S.trainType || '';
-  return t.startsWith('mj:') ? MINI_JEUX.find((m) => m.jeu === t.slice(3)) || null : null;
+/** Entraînement aux mini-jeux d'incident : un bouton par mini-jeu, lancé directement. */
+function entrainementMiniJeux() {
+  return `<section class="card tight" aria-label="Mini-jeux d’incident" style="gap:8px">
+    <span class="tiny muted">Les incidents du jour, sans enjeu : choisis l’effectif, refais le tuto, recommence autant que tu veux.</span>
+    <div class="choices" style="grid-template-columns:repeat(2,minmax(0,1fr))">${MINI_JEUX.map((m) => `<button type="button" class="choice" data-action="mj-train" data-j="${m.jeu}" style="min-height:76px"><span>${esc(m.nom)}</span><span class="s">${SERVICE_LABELS[m.service]}</span></button>`).join('')}</div>
+  </section>`;
 }
 
 /** Barre de l'entraînement : type, difficulté, statistiques personnelles. */
@@ -58,30 +60,25 @@ function entrainementBarre() {
   try { st = JSON.parse(localStorage.getItem('mazp-entrainement') || '{}'); } catch (e) { /* rien */ }
   const t = S.trainType || 'quiment', d = S.trainDiff || 3;
   const x = st[t];
-  const mj = miniJeuChoisi();
   return `<section class="card tight" aria-label="Réglages de l’entraînement" style="gap:8px">
-    <label class="field" style="margin:0">Énigme ou mini-jeu
-      <select class="text" data-change="train-type" style="min-height:44px;font-size:14px">
-        <optgroup label="Énigmes">${QUEST_TYPES.map((k) => `<option value="${k}" ${k === t ? 'selected' : ''}>${esc(QUEST_LABELS[k])}</option>`).join('')}</optgroup>
-        <optgroup label="Mini-jeux d’incident">${MINI_JEUX.map((m) => `<option value="mj:${m.jeu}" ${`mj:${m.jeu}` === t ? 'selected' : ''}>${esc(m.nom)} (${SERVICE_LABELS[m.service]})</option>`).join('')}</optgroup>
-      </select></label>
-    ${mj ? '<span class="tiny muted">Rien ne compte ici : choisis l’effectif, refais le tuto, recommence autant que tu veux.</span>' : `<div class="col" style="gap:4px"><span class="small" style="font-weight:600">Difficulté</span>
+    <label class="field" style="margin:0">Type d’énigme
+      <select class="text" data-change="train-type" style="min-height:44px;font-size:14px">${QUEST_TYPES.map((k) => `<option value="${k}" ${k === t ? 'selected' : ''}>${esc(QUEST_LABELS[k])}</option>`).join('')}</select></label>
+    <div class="col" style="gap:4px"><span class="small" style="font-weight:600">Difficulté</span>
       <div class="segn" style="grid-template-columns:repeat(6,minmax(0,1fr))">${[1, 2, 3, 4, 5, 6].map((n) => `<button type="button" aria-selected="${n === d}" data-action="train-diff" data-v="${n}">${n === 6 ? 'HC' : n}</button>`).join('')}</div></div>
-    <span class="tiny muted">${x ? `Ton entraînement en ${esc(QUEST_LABELS[t])} : ${x.ok} réussie${x.ok > 1 ? 's' : ''} sur ${x.n}.` : 'Rien ne compte ici : ni classement, ni moral, ni PS.'} « HC » = niveau hardcore, celui du dossier noir.</span>`}
+    <span class="tiny muted">${x ? `Ton entraînement en ${esc(QUEST_LABELS[t])} : ${x.ok} réussie${x.ok > 1 ? 's' : ''} sur ${x.n}.` : 'Rien ne compte ici : ni classement, ni moral, ni PS.'} « HC » = niveau hardcore, celui du dossier noir.</span>
   </section>`;
 }
 
 export function renderQuete() {
   const train = S.questMode === 'train';
   const modes = `<div class="seg2" role="tablist" aria-label="Mode"><button type="button" role="tab" aria-selected="${!train}" data-action="quest-mode" data-v="jour">Énigmes du jour</button><button type="button" role="tab" aria-selected="${train}" data-action="quest-mode" data-v="train">Entraînement</button></div>`;
-  const mj = train && miniJeuChoisi();
-  if (mj) {
+  const vueMj = train && S.trainVue === 'minijeux';
+  const sousOnglets = train ? `<div class="seg2" role="tablist" aria-label="Entraînement"><button type="button" role="tab" aria-selected="${!vueMj}" data-action="train-vue" data-v="enigmes">Énigmes</button><button type="button" role="tab" aria-selected="${vueMj}" data-action="train-vue" data-v="minijeux">Mini-jeux</button></div>` : '';
+  if (vueMj) {
     return `<main class="screen quete">
     ${modes}
-    ${entrainementBarre()}
-    <header class="col" style="gap:3px"><span class="kicker">Entraînement · ne compte pas</span><h1 class="big">${esc(mj.nom)}</h1><span class="tiny muted">Mini-jeu d’incident · ${SERVICE_LABELS[mj.service]}</span></header>
-    <button type="button" class="btn primary block" data-action="mj-train" data-j="${mj.jeu}">Lancer le mini-jeu</button>
-    <a class="small" href="#guide-quetes" style="text-align:center">Règles des énigmes</a>
+    ${sousOnglets}
+    ${entrainementMiniJeux()}
   </main>${tabbar('quete', { questBadge: false })}`;
   }
   const i = Math.min(S.questIdx || 0, 3);
@@ -127,6 +124,7 @@ export function renderQuete() {
       <button type="button" role="tab" class="noir" data-action="quest-tab" data-i="3" aria-pressed="${noir}" aria-selected="${noir}"><span class="t">Dossier noir${icone(S.noirResult)}</span><span class="d">facultatif</span></button></div>`;
   return `<main class="screen quete ${noir ? 'mode-noir' : ''} ${train ? '' : 'sans-copie'}">
     ${modes}
+    ${sousOnglets}
     ${onglets}
     ${bonusCard}
     <header class="between" style="align-items:flex-start">
