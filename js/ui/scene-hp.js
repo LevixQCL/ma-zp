@@ -4,6 +4,7 @@
 import { esc } from './common.js';
 import { BATIMENT_MAX } from '../engine/constants.js';
 import { DECOR, DECOR_DEFAUT, SKINS } from '../engine/decor.js';
+import { ANNEXES_AILE, aileSvg, largeurAile, HAUT_AILE } from './scene-aile.js';
 
 const LIT = '#FFB23F', DIM = '#223041', EDGE = '#2C3D51';
 
@@ -39,17 +40,6 @@ export function vehiculeSvg(type, h = 18) {
     ? `<svg viewBox="0 0 48 20" style="height:${h}px;width:auto" aria-hidden="true">${anonyme(0, 0, 1, '#5B6B7D')}</svg>`
     : `<svg viewBox="0 0 48 22" style="height:${h}px;width:auto" aria-hidden="true">${combi(0, 0.5)}</svg>`;
 }
-
-// Annexes visibles dans l'aile vitrée, et leur pictogramme (dessiné autour de 0,0, environ 12 × 12).
-const ANNEXES_AILE = ['sport', 'tir', 'audition', 'logiciel', 'antenne'];
-const PICTO = {
-  sport: '<path d="M-5 0 H5"/><path d="M-5 -3.5 V3.5 M-3 -2.5 V2.5 M5 -3.5 V3.5 M3 -2.5 V2.5"/>',
-  audition: '<path d="M-5 1 H5 M-3.5 1 V4.5 M3.5 1 V4.5"/><circle cx="-4" cy="-3" r="1.4"/><circle cx="4" cy="-3" r="1.4"/>',
-  logiciel: '<rect x="-5" y="-4.5" width="10" height="7" rx="1"/><path d="M-2 5 H2 M0 2.5 V5"/>',
-  antenne: '<path d="M-5 0 L0 -4.5 L5 0 M-3.5 -1 V4.5 H3.5 V-1"/><path d="M-1 4.5 V1.5 H1 V4.5"/>',
-  // Stand de tir : une cible (cercles concentriques et réticule).
-  tir: '<circle cx="0" cy="0" r="5"/><circle cx="0" cy="0" r="2.2"/><path d="M0 -6.5 V-3.5 M0 3.5 V6.5 M-6.5 0 H-3.5 M3.5 0 H6.5"/>',
-};
 
 // Lever et coucher du soleil en Belgique, heure locale (approximatifs, heure d'été comprise), par mois.
 const SOLEIL = [[8.7, 16.9], [8.0, 17.8], [7.1, 18.6], [7.0, 20.4], [6.1, 21.2], [5.5, 21.9], [5.8, 21.8], [6.5, 21.1], [7.3, 19.9], [8.2, 18.8], [8.1, 17.0], [8.7, 16.7]];
@@ -121,7 +111,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   const H = 210, base = 172, x0 = 22, w = 160, gf = 30, fh = 24;
   // Aile des annexes entre l'hôtel de police et le garage (une travée par annexe).
   const aile = ANNEXES_AILE.filter((id) => infra[id]);
-  const ax = x0 + w + 6, aw = aile.length ? 8 + aile.length * 24 : 0;
+  const ax = x0 + w + 6, aw = largeurAile(aile.length);
   const gx = ax + aw + (aile.length ? 6 : 8), gw = 24 + g * 26;
   const W = Math.max(360, gx + gw + 14);
   const aLots = new Set((lots || []).map((l) => l.id || l));
@@ -275,33 +265,8 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   s += P.neon
     ? `<ellipse cx="${nx + nw / 2}" cy="${ny - 10}" rx="${nw * 0.62}" ry="13" fill="url(#hp-halo-${uid})" opacity=".45"/><g filter="url(#hp-neon-${uid})">${lettres} fill="${N.lettre}" stroke="${N.trait}" stroke-width=".35">${esc(texte)}</text></g>`
     : `${lettres} fill="${N.jour}" stroke="#EDF0FA" stroke-width=".5" paint-order="stroke">${esc(texte)}</text>`;
-  // Aile des annexes : une travée vitrée par annexe, avec son pictogramme.
-  if (aile.length) {
-    const ah = 38, atop = base - ah;
-    if (SA === 'serre') {
-      s += `<path d="M${ax} ${base} V${atop + 8} Q${ax + aw / 2} ${atop - 12} ${ax + aw} ${atop + 8} V${base} Z" fill="${teinte('#BFE3D0')}" opacity=".85" stroke="${teinte('#EDF0FA')}" stroke-width="1"/>`;
-      for (let x = ax + 6; x < ax + aw; x += 8) s += `<line x1="${x}" y1="${base}" x2="${x}" y2="${atop + 2}" stroke="${teinte('#EDF0FA')}" stroke-width=".6" opacity=".7"/>`;
-      for (let x = ax + 4; x < ax + aw - 2; x += 7) s += `<path d="M${x} ${base} q-3 -8 1 -12 q2 6 3 12" fill="${teinte('#3E7D4F')}"/><circle cx="${x + 1}" cy="${base - 12}" r="1.4" fill="#FF6E6A"/>`;
-    } else if (SA === 'roulotte') {
-      s += `<rect x="${ax}" y="${atop + 2}" width="${aw}" height="${ah - 8}" fill="${teinte('#F4EFE3')}"/>`;
-      for (let x = ax, i = 0; x < ax + aw; x += 6, i++) if (i % 2) s += `<rect x="${x}" y="${atop + 2}" width="6" height="${ah - 8}" fill="${teinte('#D8453A')}"/>`;
-      for (let x = ax - 2, i = 0; x < ax + aw + 2; x += 8, i++) s += `<path d="M${x} ${atop} h8 v3 q-4 4 -8 0 Z" fill="${i % 2 ? teinte('#FFB23F') : teinte('#3C7DB8')}"/>`;
-      for (const wx of [ax + 8, ax + aw - 8]) s += `<circle cx="${wx}" cy="${base - 4}" r="5" fill="none" stroke="${teinte('#FFB23F')}" stroke-width="1.4"/><path d="M${wx - 5} ${base - 4} h10 M${wx} ${base - 9} v10" stroke="${teinte('#FFB23F')}" stroke-width=".7"/>`;
-    } else if (SA === 'conteneurs') {
-      s += `<rect x="${ax}" y="${atop}" width="${aw}" height="${ah}" fill="${teinte('#2A3547')}"/>`;
-    } else {
-      s += `<rect x="${ax}" y="${atop}" width="${aw}" height="${ah}" fill="${P.garage}"/><rect x="${ax - 2}" y="${atop - 3}" width="${aw + 4}" height="4" rx="1" fill="${P.arete}"/>
-    <rect x="${ax}" y="${base - 9}" width="${aw}" height="2" fill="#2F6FB5"/>`;
-    }
-    aile.forEach((id, i) => {
-      const mx = ax + 6 + i * 24, my = atop + 6;
-      const lum = P.allume ? LIT : P.vitre;
-      if (SA === 'conteneurs') { const c = teinte(['#E07A3A', '#3C7DB8', '#4C9A5E', '#C9A13B'][i % 4]); s += `<rect x="${mx - 3}" y="${atop}" width="24" height="${ah}" fill="${c}" stroke="${mix(c, '#000000', 0.3)}" stroke-width=".8"/>`; for (let k = 1; k < 8; k++) s += `<rect x="${mx - 3 + k * 3}" y="${atop}" width=".5" height="${ah}" fill="${mix(c, '#000000', 0.3)}" opacity=".6"/>`; }
-      s += `<rect x="${mx}" y="${my}" width="20" height="20" rx="${SA === 'roulotte' ? 10 : 2}" fill="${lum}" opacity="${P.allume ? 0.95 : 1}"${SA === 'roulotte' ? ` stroke="${teinte('#FFB23F')}" stroke-width="1.2"` : ''}/>`;
-      if (moment === 'jour') s += `<path d="M${mx + 3} ${my + 20} L${mx + 11} ${my} H${mx + 14} L${mx + 6} ${my + 20} Z" fill="#FFFFFF" opacity=".15"/>`;
-      s += `<g transform="translate(${mx + 10},${my + 10})" stroke="${P.allume ? '#3A2A08' : '#EDF0FA'}" fill="none" stroke-width="1.4" stroke-linecap="round">${PICTO[id]}</g>`;
-    });
-  }
+  // Aile des annexes : un module par annexe, avec la pièce visible derrière la vitre (scene-aile.js).
+  s += aileSvg({ ids: aile, ax, base, P, moment, SA, teinte, mix, uid });
   // Garage : une porte par niveau ; la première est ouverte si un véhicule est à l'atelier.
   const gh = 46, gtop = base - gh;
   const GC = SG ? SKINS.garage.options[SG].jour.map(teinte) : null;
@@ -448,7 +413,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   // Météo : neige sur les toits et flocons, ou pluie.
   if (meteo.neige) {
     s += `<rect x="${x0 - 3}" y="${top - 6}" width="${w + 6}" height="3" rx="1.5" fill="#F4F8FB"/><rect x="${gx - 2}" y="${gtop - 6}" width="${gw + 4}" height="3" rx="1.5" fill="#F4F8FB"/><rect y="${base}" width="${W}" height="2.5" fill="#E4EAF0" opacity=".85"/>`;
-    if (aile.length) s += `<rect x="${ax - 2}" y="${base - 38 - 5}" width="${aw + 4}" height="3" rx="1.5" fill="#F4F8FB"/>`;
+    if (aile.length && !SA) s += `<rect x="${ax - 2}" y="${base - HAUT_AILE - 5}" width="${aw + 4}" height="3" rx="1.5" fill="#F4F8FB"/>`;
     const fl = rnd(graine(nom) + 5);
     for (let i = 0; i < 40; i++) s += `<circle cx="${(fl() * W).toFixed(1)}" cy="${(vy + fl() * (H - vy)).toFixed(1)}" r="${(0.5 + fl() * 0.9).toFixed(2)}" fill="#FFFFFF" opacity="${(0.5 + fl() * 0.4).toFixed(2)}"/>`;
   }

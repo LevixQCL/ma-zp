@@ -3,6 +3,7 @@
 import { S, esc, myZone } from './common.js';
 import { TOUS_SKINS, SKINS, tirerSkin, skinDe, earlyBirdEligible } from '../engine/decor.js';
 import { ouvrirPanneau, sceneZone, monDecorPublic } from './logistique.js';
+import { ANNEXES_AILE } from './scene-aile.js';
 
 const COURT = { friterie: 'Friterie', chateau: 'Fort Delta', orbitale: 'Orbitale', chalet: 'Chalet', gateau: 'Gâteau', hangar: 'Dirigeable', grange: 'Grange', retro: 'Rétro 80', lavage: 'Car-wash', conteneurs: 'Conteneurs', roulotte: 'Roulotte', serre: 'Serre' };
 const TEINTE = { batiment: ['#FFB23F', '#C98F1E'], garage: ['#63B0FF', '#2F6FB5'], aile: ['#3DD39A', '#2F8F5E'] };
@@ -64,7 +65,7 @@ export async function lancerRoulette(backend) {
 
 function afficherGain(sk) {
   const z = myZone(), o = SKINS[sk.cat].options[sk.id];
-  const sansAile = sk.cat === 'aile' && !['sport', 'tir', 'audition', 'logiciel', 'antenne'].some((k) => z && z.infra && z.infra[k]);
+  const sansAile = sk.cat === 'aile' && !ANNEXES_AILE.some((k) => z && z.infra && z.infra[k]);
   const res = document.getElementById('roulette-res');
   const bouton = document.querySelector('[data-action="roulette-lancer"]');
   if (bouton) bouton.remove();

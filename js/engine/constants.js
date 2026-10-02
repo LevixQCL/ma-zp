@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 29;
+export const APP_VERSION = 30;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -111,8 +111,15 @@ export const INFRAS = {
   // Stand de tir : entraînement régulier au tir et aux techniques d'intervention.
   // `bonus` : multiplicateur de l'Intervention ; `blessure` : multiplicateur du risque de blessure
   // (interpellations des affaires, assauts en zone de non-droit) ; une rébellion ne blesse plus qu'un agent.
-  tir:      { nom: 'Stand de tir', cout: 10, effet: 'Intervention +15 %, agents deux fois moins souvent blessés (interpellations, assauts, rébellions)', bonus: 1.15, blessure: 0.5 },
+  // `formation` : la formation Intervention se fait au stand, moins chère et sans agents absents.
+  tir:      { nom: 'Stand de tir', cout: 10, effet: 'Intervention +15 %, formation Intervention à moitié prix et sans agents absents, agents deux fois moins souvent blessés', bonus: 1.15, blessure: 0.5, formation: { cout: 2, agents: 0 } },
 };
+/** Formation au stand de tir : seulement pour l'Intervention, et si le stand est construit. */
+const auStand = (z, service) => service === 'intervention' && !!(z && z.infra && z.infra.tir);
+/** Coût d'une formation (k€) pour ce service. */
+export const coutFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.cout : COUTS.formation);
+/** Agents absents pendant une formation de ce service. */
+export const agentsFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.agents : AGENTS_EN_FORMATION);
 /** Multiplicateur du risque de blessure d'une zone (stand de tir). */
 export const risqueBlessure = (z) => (z && z.infra && z.infra.tir ? INFRAS.tir.blessure : 1);
 
