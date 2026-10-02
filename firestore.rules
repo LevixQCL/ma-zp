@@ -54,9 +54,14 @@ service cloud.firestore {
         allow create, delete: if master(gid);
         allow update: if master(gid)
           // Résolution d'un tour : uniquement après l'heure limite, et le tour doit avancer.
+          // Le tour avance d'exactement un cran (ou la saison change), l'échéance suivante reste proche,
+          // et la version minimale du jeu ne recule jamais.
           || (member(gid) && afterDeadline(gid)
               && request.resource.data.nextDeadline > resource.data.nextDeadline
-              && (request.resource.data.turn != resource.data.turn || request.resource.data.season != resource.data.season))
+              && request.resource.data.nextDeadline <= request.time.toMillis() + 3 * 86400000
+              && request.resource.data.get('minClientVersion', 0) >= resource.data.get('minClientVersion', 0)
+              && ((request.resource.data.season == resource.data.season && request.resource.data.turn == resource.data.turn + 1)
+                  || (request.resource.data.season == resource.data.season + 1 && request.resource.data.turn == 1)))
           // Inscription : un joueur ne peut ajouter que sa propre zone, tant que la partie n'est pas complète (100 zones).
           || (member(gid)
               && request.resource.data.zones.size() <= 100
@@ -68,10 +73,13 @@ service cloud.firestore {
       // Profils des joueurs de cette partie (code, nom et couleur de zone).
       match /players/{uid} {
         allow read: if member(gid) || master(gid);
+        // Un joueur ne peut pas annuler son retrait par le maître du jeu, et sa couleur est une vraie couleur (#RRGGBB).
         allow create, update: if master(gid) || (signedIn() && request.auth.uid == uid
           && request.resource.data.nom is string && request.resource.data.nom.size() > 0 && request.resource.data.nom.size() <= 24
           && request.resource.data.code is string && request.resource.data.code.matches('^[0-9]{4}$')
-          && (!('pseudo' in request.resource.data) || (request.resource.data.pseudo is string && request.resource.data.pseudo.size() <= 24)));
+          && (!('pseudo' in request.resource.data) || (request.resource.data.pseudo is string && request.resource.data.pseudo.size() <= 24))
+          && (!('couleur' in request.resource.data) || (request.resource.data.couleur is string && request.resource.data.couleur.matches('^#[0-9A-Fa-f]{6}$')))
+          && request.resource.data.get('retire', false) == (resource == null ? false : resource.data.get('retire', false)));
         allow delete: if master(gid);
       }
 
@@ -111,8 +119,12 @@ service cloud.firestore {
       // Gazettes : écrites une seule fois, au moment de la résolution.
       match /gazettes/{id} {
         allow read: if member(gid) || master(gid);
-        allow create: if member(gid) && afterDeadline(gid);
-        allow update, delete: if master(gid);
+        // Seulement celle du tour qu'on résout, et dans la même transaction que l'état (qui doit avancer) :
+        // personne ne peut la créer à l'avance pour bloquer la résolution.
+        allow create, update: if master(gid) || (member(gid) && afterDeadline(gid)
+          && id == string(st(gid).season) + '_' + string(st(gid).turn)
+          && getAfter(/databases/$(database)/documents/parties/$(gid)/state/current).data.turn != st(gid).turn);
+        allow delete: if master(gid);
       }
 
       // Radio : messages de la partie.

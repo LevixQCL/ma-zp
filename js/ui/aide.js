@@ -1,6 +1,6 @@
 // Aides rapides (bouton « ? ») : l'essentiel d'une jauge en quelques lignes, sans ouvrir le guide.
 import { esc, fmt1, myZone } from './common.js';
-import { IPZ_POIDS, START, ECONOMIE, SUBSIDE, TERRAIN, FLAGRANT, DOSSIER, ND } from '../engine/constants.js';
+import { IPZ_POIDS, START, ECONOMIE, SUBSIDE, TERRAIN, FLAGRANT, DOSSIER, ND, BUDGET_IPZ, scoreBudget, MORAL_PALIERS } from '../engine/constants.js';
 import { confianceCommune, pointsIpz, IPZ_LABELS, moralMult } from '../engine/zone.js';
 import { PERIL } from '../engine/rivalites.js';
 
@@ -34,6 +34,7 @@ export const AIDES = {
       `<strong>Sous ${PERIL.moral}</strong> : ta zone passe en péril (risque de faillite)`,
       `<strong>IPZ</strong> : compte pour ${pc(IPZ_POIDS.moral)} · au-dessus de 70, moins de grippes et de débauchages`,
       '<strong>Chaque soir</strong> : il revient de 8 % vers 60 (au-dessus de 60, ça le freine ; en dessous, ça l’aide)',
+      `<strong>Bonus de moral</strong> (prime, énigmes, incident réussi) : plein effet sous ${MORAL_PALIERS[0]}, moitié de ${MORAL_PALIERS[0]} à ${MORAL_PALIERS[1]}, +1 au-delà. Une équipe déjà gonflée à bloc se motive moins facilement`,
       '<strong>Rythme</strong> : renforcé −6, allégé +5 · <strong>budget négatif</strong> : −3 · <strong>3 incidents ratés ou plus</strong> : −2',
     ],
     monte: 'rythme allégé, prime, salle de sport, succès',
@@ -110,16 +111,17 @@ export const AIDES = {
       '<strong>Opération d’envergure</strong> : ses points annoncés si le dispositif est complet (90 % ou plus), 40 % s’il est partiel',
       '<strong>Enquête</strong> : pièce de voisinage +2, bonne accusation +8, arrestation +6',
     ],
-    conseil: 'D’abord assez d’Intervention pour ne rater aucun incident (c’est 60 sur 100), puis de la Recherche pour des points réguliers, et la zone de non-droit à plusieurs pour les gros coups.',
+    conseil: `D’abord assez d’Intervention pour ne rater aucun incident (c’est ${TERRAIN.incidents} sur 100), puis de la Recherche pour des points réguliers, et la zone de non-droit à plusieurs pour les gros coups.`,
     guide: 'guide-zone',
   },
   budgetIpz: {
     titre: 'Budget dans l’IPZ',
     intro: 'La composante « budget » de l’IPZ (10 %) : elle regarde ton solde à la fin du tour, pas tes dépenses du jour.',
     lignes: [
-      '<strong>Calcul</strong> : 50 + 1,5 × budget en k€, entre 0 et 100',
-      '<strong>Exemples</strong> : 0 k€ → 50 · 10 k€ → 65 · 20 k€ → 80 · 34 k€ et plus → 100 · −10 k€ → 35',
-      '<strong>Au-delà de 34 k€</strong> : garder plus d’argent ne rapporte plus rien à l’IPZ, autant l’investir',
+      `<strong>Calcul</strong> : 50 + 1,5 × budget en k€, entre 0 et 100 (100 dès 34 k€)`,
+      `<strong>Argent qui dort</strong> : au-delà de ${BUDGET_IPZ.dormant} k€, −${BUDGET_IPZ.pente} point par k€ en plus (jusqu’à ${BUDGET_IPZ.plancher} au minimum). La commune juge qu’une zone qui ne dépense pas son argent est trop dotée`,
+      `<strong>Exemples</strong> : −10 k€ → 35 · 0 k€ → 50 · 20 k€ → 80 · de 34 à ${BUDGET_IPZ.dormant} k€ → 100 · ${BUDGET_IPZ.dormant + 20} k€ → ${scoreBudget(BUDGET_IPZ.dormant + 20)} · ${BUDGET_IPZ.dormant + 50} k€ et plus → ${BUDGET_IPZ.plancher}`,
+      `<strong>Le bon réflexe</strong> : garder une réserve de 35 à ${BUDGET_IPZ.dormant} k€ et investir le reste (agents de réserve, prévention, formation, matériel, bâtiments)`,
     ],
     guide: 'guide-zone',
   },
@@ -176,12 +178,14 @@ function tourBudget(z, pourIpz) {
   const c = z.compta;
   const d = z.ipzDetail;
   if (!c && !d) return null;
-  const b = d && d.budget !== undefined ? d.budget : z.ipzComp ? (z.ipzComp.budget - 50) / 1.5 : z.budget;
+  const b = d && d.budget !== undefined ? d.budget : z.budget;
   const rel = c && c.lignes ? `${calc('Début du tour', `${fmt1(c.debut)} k€`)}
     ${c.lignes.slice().sort((x, y) => y.v - x.v).map((x) => ligne(esc(x.l), x.v, ' k€')).join('')}
     ${calc('<strong>Fin du tour</strong>', `<strong>${fmt1(c.fin)} k€</strong>`)}` : '';
-  const brut = 50 + 1.5 * b;
-  const ipz = pourIpz && z.ipzComp ? `${calc(`50 + 1,5 × ${fmt1(b)} k€`, `${fmt1(brut)}${brut > 100 ? ' → 100' : brut < 0 ? ' → 0' : ''}`)}${partIpz(z, 'budgetIpz')}` : '';
+  const brut = 50 + 1.5 * b, dort = b > BUDGET_IPZ.dormant;
+  const ipz = pourIpz && z.ipzComp ? `${dort
+    ? calc(`Argent qui dort : ${fmt1(b)} k€, soit ${fmt1(b - BUDGET_IPZ.dormant)} au-delà de ${BUDGET_IPZ.dormant}`, `100 − ${fmt1(BUDGET_IPZ.pente * (b - BUDGET_IPZ.dormant))} = ${fmt1(scoreBudget(b))}`)
+    : calc(`50 + 1,5 × ${fmt1(b)} k€`, `${fmt1(brut)}${brut > 100 ? ' → 100' : brut < 0 ? ' → 0' : ''}`)}${partIpz(z, 'budgetIpz')}` : '';
   return { tour: c ? c.tour : z.journal && z.journal.tour, html: pourIpz ? `${ipz}${rel ? `<details class="aide-det"><summary class="small">D’où vient ce solde</summary>${rel}</details>` : ''}` : rel };
 }
 

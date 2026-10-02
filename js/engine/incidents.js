@@ -2,7 +2,7 @@
 // à une heure imprévue. Il reste ouvert 6 heures. Joué : réussite (jauge des skins) ou échec (malus
 // à 20:00). Pas joué : l'équipe se débrouille seule, avec une chance qui dépend de ses effectifs.
 import { makeRng } from './rng.js';
-import { DEFAULT_ALLOC, SERVICE_LABELS, PS } from './constants.js';
+import { DEFAULT_ALLOC, SERVICE_LABELS, PS, gainMoral } from './constants.js';
 import { TOUS_SKINS, ajouterSkin } from './decor.js';
 
 const H = 3600 * 1000;
@@ -142,7 +142,7 @@ export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng, ind
       z._ps = (z._ps || 0) + PS.queteOk;
       z.stats.incidentsOk = (z.stats.incidentsOk || 0) + 1;
       const g = GAIN[inc.service], gains = [];
-      if (g.moral) { z.moral += g.moral; gains.push(`+${g.moral} de moral`); }
+      if (g.moral) { const gm = gainMoral(g.moral, z.moral); z.moral += gm; gains.push(`+${gm} de moral`); }
       if (g.satisfaction) { z.satisfaction += g.satisfaction; gains.push(`+${g.satisfaction} de satisfaction`); }
       if (g.budget) { z.budget += g.budget; (z._compta ||= []).push({ k: 'incident', l: 'Incident réussi', v: g.budget }); gains.push(`+${g.budget} k€`); }
       if (g.indice) {

@@ -13,6 +13,9 @@ function partsInTz(ms, tz) {
   return { y: +p.year, m: +p.month, d: +p.day, h: +p.hour, mi: +p.minute, s: +p.second };
 }
 
+/** Date du calendrier à Bruxelles (même résultat quel que soit le fuseau de l'appareil). */
+export function jourBe(ms) { const p = partsInTz(ms, TZ); return new Date(p.y, p.m - 1, p.d); }
+
 /** Décalage (en ms) entre l'heure locale du fuseau et l'UTC, à l'instant donné. */
 function tzOffset(ms, tz) {
   const p = partsInTz(ms, tz);

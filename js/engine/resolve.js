@@ -3,8 +3,9 @@
 
 import {
   APP_VERSION, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, malusEtat, gainPrime, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete } from './constants.js';
 import { makeRng, hashString } from './rng.js';
+import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms } from './equipe.js';
@@ -35,8 +36,11 @@ const median = (arr) => {
 
 export function zoneLabel(z) { return `ZP ${z.code} ${z.nom}`; }
 
+/** Couleur de zone : « #RRGGBB » seulement (sinon undefined, et la zone garde la sienne). */
+export const couleurValide = (c) => (typeof c === 'string' && /^#[0-9A-Fa-f]{6}$/.test(c) ? c : undefined);
+
 /** Zone d'un nouveau joueur : ressources médianes des zones actives, sans infrastructure. */
-export function buildJoinZone(state, uid, profile, turn = state.turn) {
+export function buildJoinZone(state, uid, profile, turn = state.turn, arrivee = Date.now()) {
   const existants = Object.values(state.zones).filter((z) => isActive(z) && z.uid !== uid);
   const base = {};
   if (existants.length) {
@@ -50,7 +54,7 @@ export function buildJoinZone(state, uid, profile, turn = state.turn) {
       base.equip[s] = Math.round(median(existants.map((z) => z.equip[s])));
     }
   }
-  const z = newZone({ uid, code: profile.code, nom: profile.nom, couleur: profile.couleur }, turn, { ...base, arrivee: Date.now() });
+  const z = newZone({ uid, code: profile.code, nom: profile.nom, couleur: couleurValide(profile.couleur) }, turn, { ...base, arrivee });
   // Site sensible : le même que celui que calculeraient tous les autres appareils.
   const tmp = { seed: state.seed, zones: { ...clone(state.zones || {}), [uid]: clone(z) } };
   attribuerSites(tmp);
@@ -159,18 +163,20 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // 1. Joueurs inscrits sans zone (filet de sécurité) : ils jouent au tour suivant.
   for (const [uid, p] of Object.entries(players)) {
     if (state.zones[uid] || !p || p.retire || partieComplete(state, uid)) continue;
-    state.zones[uid] = buildJoinZone(state, uid, p, T + 1);
+    state.zones[uid] = buildJoinZone(state, uid, p, T + 1, state.nextDeadline || 0);
+    state.zones[uid]._annoncee = true;
     push(3, 'Bienvenue', `${zoneLabel(state.zones[uid])} rejoint le District Delta`, 'Nouvelle zone en service dès demain.', uid);
   }
   for (const z of Object.values(state.zones)) {
-    if (z.joinedTurn === T && z.toursJoues === 0 && !z._annoncee) {
+    if (z.joinedTurn === T && z.toursJoues === 0) {
+      if (z._annoncee) { delete z._annoncee; continue; } // déjà annoncée par le filet de sécurité
       push(3, 'Bienvenue', `${zoneLabel(z)} rejoint le District Delta`, 'Une nouvelle zone entre en service.', z.uid);
     }
   }
   // Mise à jour des noms, codes et couleurs (renommage) et retraits.
   for (const [uid, z] of Object.entries(state.zones)) {
     const p = players[uid];
-    if (p) { if (p.nom) z.nom = String(p.nom).slice(0, 24); if (p.code) z.code = String(p.code).slice(0, 4); if (p.couleur) z.couleur = p.couleur; if (p.equipeNoms) appliquerNoms(z.equipe, uid, p.equipeNoms); if (p.decor) z.decor = decorValide(z, p.decor);
+    if (p) { if (p.nom) z.nom = String(p.nom).slice(0, 24); if (p.code) z.code = String(p.code).slice(0, 4); if (couleurValide(p.couleur)) z.couleur = p.couleur; if (p.equipeNoms) appliquerNoms(z.equipe, uid, p.equipeNoms); if (p.decor) z.decor = decorValide(z, p.decor);
       if (p.earlyBird && earlyBirdEligible(z, state) && !(z.skins || []).some((k) => SKINS[String(k).split(':')[0]] && String(k).split(':')[0] !== 'fete')) ajouterSkin(z, p.earlyBird.skin);
       if (p.skinsChoix) z.skinsChoix = skinsValides(z, p.skinsChoix); }
     if (p && p.retire) delete state.zones[uid];
@@ -368,9 +374,6 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
     payerIndemnites(z, T);
     for (const f of z.formations) if (f.fin === T) { z.niveaux[f.service] = Math.min(5, z.niveaux[f.service] + 1); z.rapport.push(`Formation terminée : ${SERVICE_LABELS[f.service]} passe au niveau ${z.niveaux[f.service]}.`); }
-    const arrivees = z.academie.filter((a) => a.arrivee === T).reduce((s, a) => s + a.n, 0);
-    if (arrivees) { z.agents += arrivees; z.rapport.push(`${arrivees} recrue${arrivees > 1 ? 's' : ''} sort${arrivees > 1 ? 'ent' : ''} de l’académie.`); }
-    z.academie = z.academie.filter((a) => a.arrivee > T);
 
     // Aléa léger et coup dur (effets immédiats sur ce tour ou les suivants). `z.scene` les garde pour l'illustration de l'HP.
     z.scene = { tour: T };
@@ -455,18 +458,18 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (qs.length) {
       z.stats.quetesOk += ok;
       z._ps += ok * PS.queteOk + faux * PS.queteTentee;
-      if (faux) z.moral -= faux;
-      jalon(z, `Énigmes : ${faux} mauvaise${faux > 1 ? 's' : ''} réponse${faux > 1 ? 's' : ''} (−1 de moral chacune)`);
+      if (faux) z.moral -= faux * ENIGMES.rateeMoral;
+      jalon(z, `Énigmes : ${faux} mauvaise${faux > 1 ? 's' : ''} réponse${faux > 1 ? 's' : ''} (−${ENIGMES.rateeMoral} de moral chacune)`);
       const b = qs.find((x) => x.bonus);
       let txt = `Énigmes du jour : ${ok} bonne${ok > 1 ? 's' : ''} réponse${ok > 1 ? 's' : ''} sur ${qs.length}${faux ? ` (−${faux} de moral)` : ''}`;
       if (ok >= 2 && b) {
-        if (b.bonus === 'moral') { z.moral += 3; txt += ', bonus +3 de moral'; }
-        else if (b.bonus === 'budget') { z.budget += 2; z._compta.push({ k: 'bonus', l: 'Bonus d’énigmes', v: 2 }); txt += ', bonus +2 k€'; }
+        if (b.bonus === 'moral') { const g = gainMoral(ENIGMES.bonusMoral, z.moral); z.moral += g; txt += `, bonus +${g} de moral`; }
+        else if (b.bonus === 'budget') { z.budget += ENIGMES.bonusBudget; z._compta.push({ k: 'bonus', l: 'Bonus d’énigmes', v: ENIGMES.bonusBudget }); txt += `, bonus +${ENIGMES.bonusBudget} k€`; }
         else if (b.bonus === 'indice') { txt += indiceBonus(state, z, zr) ? ', bonus +1 indice d’enquête' : ', bonus indice (rien de nouveau à trouver)'; }
-        else if (b.bonus === 'capacite' && SERVICES.includes(b.service)) { bonusService = b.service; txt += `, bonus +10 % en ${SERVICE_LABELS[b.service]}`; }
+        else if (b.bonus === 'capacite' && SERVICES.includes(b.service)) { bonusService = b.service; txt += `, bonus +${Math.round((ENIGMES.bonusCapacite - 1) * 100)} % en ${SERVICE_LABELS[b.service]}`; }
       }
       jalon(z, 'Énigmes : bonus choisi');
-      if (ok === 3) { z._ps += 5; z.budget += 3; z.moral += 2; z._compta.push({ k: 'bonus', l: 'Prime « sans faute » (énigmes)', v: 3 }); txt += ', sans faute : +3 k€, +2 de moral, +5 PS'; }
+      if (ok === 3) { const sf = ENIGMES.sansFaute, g = gainMoral(sf.moral, z.moral); z._ps += sf.ps; z.budget += sf.budget; z.moral += g; z._compta.push({ k: 'bonus', l: 'Prime « sans faute » (énigmes)', v: sf.budget }); txt += `, sans faute : +${sf.budget} k€, +${g} de moral, +${sf.ps} PS`; }
       z.rapport.push(`${txt}.`);
     }
 
@@ -551,7 +554,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     for (const s of SERVICES) {
       const renfort = reserve && dep.reserveService === s ? reserve * DEPENSES.reserve.efficacite : 0;
       const bTheme = theme && ((theme.id === 'routiere' && s === 'roulage') ? 1.5 : (theme.id === 'proximite' && s === 'proximite') ? 1.3 : 1) || 1;
-      cap[s] = capacite(z, s, alloc[s] + renfort, { rythme: o.rythme, turn: T, bonus: (bonusService === s ? 1.1 : 1) * bTheme, adminMult });
+      cap[s] = capacite(z, s, alloc[s] + renfort, { rythme: o.rythme, turn: T, bonus: (bonusService === s ? ENIGMES.bonusCapacite : 1) * bTheme, adminMult });
     }
 
     // Efficacité due au moral (celui du moment du calcul, après aléas, énigmes et primes du jour).
@@ -686,6 +689,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const ff = fraisFixes(z, state, { amendes: recettes, rythme: o.rythme });
     z.budget += ff.total;
     z._compta.push(...ff.lignes);
+    // Sortie d'académie : les recrues arrivent ce soir, après la paie, pour être dans les ordres de demain.
+    const arrivees = z.academie.filter((a) => a.arrivee <= T + 1).reduce((s2, a) => s2 + a.n, 0);
+    if (arrivees) { z.agents += arrivees; z.rapport.push(`${arrivees} recrue${arrivees > 1 ? 's' : ''} sort${arrivees > 1 ? 'ent' : ''} de l’académie : dans tes ordres dès demain.`); }
+    z.academie = z.academie.filter((a) => a.arrivee > T + 1);
     // Usure : un peu chaque jour, et surtout à chaque intervention (répartie sur le parc).
     const avant = z.usure;
     z.usure = clamp(z.usure + (USURE.parTour + traites * USURE.parIntervention / Math.max(1, z.vehicules)) * (z.infra.garage ? 0.5 : 1), 0, USURE.max);
@@ -741,7 +748,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.agents -= 1; z.rapport.push('Moral au plus bas : un agent démissionne.');
       push(6, 'Ressources humaines', `Démission à ${zoneLabel(z)}`, 'Le moral est au plus bas.', uid);
     }
-    z.blesses = z.blesses.filter((b) => b.retour > T + 1 || b.retour > T);
+    z.blesses = z.blesses.filter((b) => b.retour > T);
     z.vehiculesHS = z.vehiculesHS.filter((v) => v.retour > T + 1);
     z.formations = z.formations.filter((f) => f.fin > T);
     z.renforts = (z.renforts || []).filter((x) => x.retour > T + 1);
@@ -884,7 +891,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       (gazette.journaux ||= {})[u] = { journal: z.journal, ipz: z.ipz, ipzComp: z.ipzComp, ipzCompHier: z.ipzCompHier, ipzDetail: z.ipzDetail, hierIpz: z.hier ? z.hier.ipz : null, compta: z.compta };
     }
     // Décor d'événement : gagné en aidant au grand événement ou en faisant une découverte pendant la période.
-    const fete = periodeFete(new Date(state.nextDeadline || Date.now()));
+    const fete = state.nextDeadline ? periodeFete(jourBe(state.nextDeadline)) : null;
     if (fete && (z._contribEvenement || z._decouverteJour) && ajouterSkin(z, `fete:${fete.id}`)) {
       z.skinsChoix = { ...(z.skinsChoix || {}), fete: fete.id };
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
@@ -950,6 +957,8 @@ function finDeSaison(state, classement) {
   }
   const resume = { season: state.season, classement: classes.slice(0, 10), titres };
   state.palmares.push(resume);
+  // Le document d'état est limité à 1 Mo : on garde les 12 dernières saisons au palmarès.
+  if (state.palmares.length > 12) state.palmares = state.palmares.slice(-12);
 
   // Remise à zéro des zones, on garde l'identité, les PS, badges et titres.
   const oldSeason = state.season;

@@ -64,7 +64,7 @@ export function decorValide(z, choix) {
   const d = { ...DECOR_DEFAUT };
   if (!choix || typeof choix !== 'object') return d;
   for (const cat of Object.keys(DECOR)) {
-    const o = DECOR[cat].options[choix[cat]];
+    const o = typeof choix[cat] === 'string' && Object.hasOwn(DECOR[cat].options, choix[cat]) ? DECOR[cat].options[choix[cat]] : null;
     if (o && decorDebloque(z, o)) d[cat] = choix[cat];
   }
   return d;
@@ -143,7 +143,7 @@ export function earlyBirdEligible(z, st) {
 /** « batiment:friterie » → { cat, id } si le skin existe. */
 export function skinDe(cle) {
   const [cat, id] = String(cle || '').split(':');
-  return SKINS[cat] && SKINS[cat].options[id] ? { cat, id } : null;
+  return Object.hasOwn(SKINS, cat) && Object.hasOwn(SKINS[cat].options, id || '') ? { cat, id } : null;
 }
 
 /** Tirage de la roulette : un skin au hasard parmi les 12. */

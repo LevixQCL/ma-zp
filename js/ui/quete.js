@@ -1,7 +1,7 @@
 // Écran de l’énigme du jour.
-import { S, esc, icon, tabbar } from './common.js';
+import { S, esc, icon, tabbar, myZone } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS } from '../quests/quests.js';
-import { SERVICES, SERVICE_LABELS } from '../engine/constants.js';
+import { SERVICES, SERVICE_LABELS, ENIGMES, gainMoral } from '../engine/constants.js';
 import { MINI_JEUX } from './incidents.js';
 import { cadenasHtml, cadenasResultat, essaisHtml } from './cadenas.js';
 import { chronoHtml, disqueHtml, plaquesHtml, temoignagesHtml, figureInteractive, filatureOutils, butinHtml, ligneHtml, trajetsHtml, icoGrille, ecritureHtml, avatar } from './enigmes.js';
@@ -106,17 +106,20 @@ export function renderQuete() {
         <span ${q.mono ? 'class="code" style="letter-spacing:1px"' : q.type === 'quiment' || q.type === 'grille' ? 'class="row" style="gap:8px;justify-content:center"' : ''}>${q.type === 'quiment' ? c.label.split(' et ').map((x) => avatar(x, 24)).join('') : q.type === 'grille' ? icoGrille(c.label) : ''}${esc(c.label)}</span>${c.sub ? `<span class="s">${esc(c.sub)}</span>` : ''}</button>`).join('')}
     </div>` : '';
 
+  const mz = myZone(), moralZ = mz ? mz.moral : 50;
+  const gBonus = gainMoral(ENIGMES.bonusMoral, moralZ), sf = ENIGMES.sansFaute, gSf = gainMoral(sf.moral, moralZ);
+  const primeSf = `+${sf.budget} k€, +${gSf} de moral${gSf < sf.moral ? ' (moral déjà haut)' : ''} et +${sf.ps} PS`;
   const bonusCard = !train && !noir && ok >= 2 ? `<section class="card green">
-      ${bonusPris && !S.bonusChanger ? `<div class="between" style="gap:8px"><p class="small" style="margin:0;font-weight:600">Bonus du jour : ${bonusPris.bonus === 'moral' ? '+3 de moral' : bonusPris.bonus === 'budget' ? '+2 k€' : bonusPris.bonus === 'indice' ? '+1 indice pour l’enquête' : `+10 % de capacité en ${SERVICE_LABELS[bonusPris.service]}`}. Il sera appliqué à 20:00.</p><button type="button" class="btn small ghost" data-action="bonus-changer">Changer</button></div><span class="tiny muted">Tu peux changer d’avis jusqu’à 20:00.</span>`
+      ${bonusPris && !S.bonusChanger ? `<div class="between" style="gap:8px"><p class="small" style="margin:0;font-weight:600">Bonus du jour : ${bonusPris.bonus === 'moral' ? `+${gBonus} de moral` : bonusPris.bonus === 'budget' ? `+${ENIGMES.bonusBudget} k€` : bonusPris.bonus === 'indice' ? '+1 indice pour l’enquête' : `+${Math.round((ENIGMES.bonusCapacite - 1) * 100)} % de capacité en ${SERVICE_LABELS[bonusPris.service]}`}. Il sera appliqué à 20:00.</p><button type="button" class="btn small ghost" data-action="bonus-changer">Changer</button></div><span class="tiny muted">Tu peux changer d’avis jusqu’à 20:00.</span>`
         : `<span class="ok" style="font-weight:700">${bonusPris ? 'Change ton bonus du jour (jusqu’à 20:00)' : `${ok} bonnes réponses : choisis ton bonus du jour`}</span>
         <div class="choices" style="grid-template-columns:repeat(3,minmax(0,1fr))">
           <button type="button" class="choice" data-action="quest-bonus" data-v="indice" aria-pressed="${!!bonusPris && bonusPris.bonus === 'indice'}"><span>+1 indice</span><span class="s">enquête</span></button>
-          <button type="button" class="choice" data-action="quest-bonus" data-v="moral" aria-pressed="${!!bonusPris && bonusPris.bonus === 'moral'}"><span>+3 moral</span></button>
-          <button type="button" class="choice" data-action="quest-bonus" data-v="budget" aria-pressed="${!!bonusPris && bonusPris.bonus === 'budget'}"><span>+2 k€</span></button>
+          <button type="button" class="choice" data-action="quest-bonus" data-v="moral" aria-pressed="${!!bonusPris && bonusPris.bonus === 'moral'}"><span>+${gBonus} moral</span>${gBonus < ENIGMES.bonusMoral ? '<span class="s">moral déjà haut</span>' : ''}</button>
+          <button type="button" class="choice" data-action="quest-bonus" data-v="budget" aria-pressed="${!!bonusPris && bonusPris.bonus === 'budget'}"><span>+${ENIGMES.bonusBudget} k€</span></button>
         </div>
-        <label class="field">Ou +10 % de capacité pour un service
+        <label class="field">Ou +${Math.round((ENIGMES.bonusCapacite - 1) * 100)} % de capacité pour un service
           <select class="text" data-change="quest-capacite"><option value="">Choisir un service…</option>${SERVICES.map((s) => `<option value="${s}">${SERVICE_LABELS[s]}</option>`).join('')}</select></label>`}
-      ${ok >= 3 ? '<p class="small ok" style="margin:0;font-weight:700">🏅 Sans faute ! Prime en plus de ton bonus : +3 k€, +2 de moral et +5 PS ce soir.</p>' : '<p class="tiny muted" style="margin:0">Réussis les 3 énigmes pour une prime « sans faute » : +3 k€, +2 de moral et +5 PS.</p>'}
+      ${ok >= 3 ? `<p class="small ok" style="margin:0;font-weight:700">🏅 Sans faute ! Prime en plus de ton bonus : ${primeSf} ce soir.</p>` : `<p class="tiny muted" style="margin:0">Réussis les 3 énigmes pour une prime « sans faute » : ${primeSf}.</p>`}
     </section>` : '';
 
   const onglets = train ? entrainementBarre() : `<div class="seg quatre" role="tablist" aria-label="Énigmes du jour">${S.quests.map((x, k) => `

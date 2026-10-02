@@ -11,8 +11,10 @@ export const BLASONS = {
 };
 
 export function blasonSvg(id, couleur = '#63B0FF', size = 28, label = '') {
-  const b = BLASONS[id];
+  const b = typeof id === 'string' && Object.hasOwn(BLASONS, id) ? BLASONS[id] : null;
   if (!b) return '';
+  if (!/^#[0-9A-Fa-f]{3,8}$/.test(String(couleur))) couleur = '#63B0FF';
+  label = String(label).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   return `<svg width="${size}" height="${Math.round(size * 1.15)}" viewBox="-10 -11 20 23" role="img" aria-label="${label || `Blason ${b.nom}`}" style="flex-shrink:0">
     <path d="M0 -10l9 3v6c0 6-4 10-9 12-5-2-9-6-9-12v-6z" fill="${couleur}" stroke="#0C1124" stroke-width="1"/>
     <g fill="#fff">${b.motif}</g></svg>`;
