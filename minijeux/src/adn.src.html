@@ -1,297 +1,236 @@
-<!--title:Profil ADN-->
+<!--title:Fragment d’ADN-->
 <!--eyebrow:Labo · démo-->
-<!--h1:Profil ADN-->
+<!--h1:ADN-->
 <!--svc:lab-->
 <!--icon:dna-->
 <style>
-.gel{position:relative;flex:1;min-height:200px;border-radius:18px;overflow:hidden;touch-action:none;
-  background:radial-gradient(120% 80% at 50% 0%,#14233a,#0a111d 70%);box-shadow:inset 0 0 0 1px rgba(120,170,255,.14),inset 0 0 50px rgba(40,90,180,.12)}
-.gel canvas{position:absolute;inset:0;width:100%;height:100%}
-.sel{flex:0 0 auto;display:flex;align-items:center;gap:8px;min-height:22px;font-size:13px;color:var(--mute)}
-.sel b{color:var(--ink)}
-.sel .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
-.legend{flex:0 0 auto;display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--mute)}
-.legend i{display:inline-block;width:14px;height:6px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex:0 0 auto}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:1 0 auto;min-width:58px;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:7px 10px;border-radius:12px;background:var(--surface);border:1px solid var(--stroke);color:var(--mute);font:600 11px var(--f-body);cursor:pointer;text-align:left}
+.tab b{font:700 15px var(--f-disp);color:var(--ink)}
+.tab[aria-selected="true"]{background:var(--surface-2);border-color:color-mix(in srgb,var(--accent) 55%,transparent);color:var(--accent)}
+.lab{position:relative;flex:1;min-height:240px;border-radius:18px;overflow:hidden;touch-action:none;
+  background:radial-gradient(70% 55% at 62% 50%,rgba(63,224,200,.10),transparent 70%),radial-gradient(120% 90% at 50% 0%,#0f2233,#060d16 75%);
+  box-shadow:inset 0 0 0 1px rgba(63,224,200,.16)}
+.lab canvas{position:absolute;inset:0;width:100%;height:100%;cursor:grab}
+.lab canvas:active{cursor:grabbing}
+.tag{position:absolute;top:9px;font:700 10.5px var(--f-body);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);pointer-events:none}
+.pairs{display:flex;gap:8px;justify-content:center;flex:0 0 auto}
+.pair{display:flex;align-items:center;gap:6px;font:700 12px var(--f-mono);color:var(--mute);background:var(--surface);border:1px solid var(--stroke);border-radius:999px;padding:4px 11px}
+.pair i{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font:800 11px var(--f-mono);font-style:normal;color:#0a0f18}
+.pair span{opacity:.6}
+.ctrls{display:flex;gap:8px;flex:0 0 auto}
+.ctrls .btn.small{min-width:52px;font-size:18px;line-height:1;padding:10px 0}
+.ctrls #cmp{flex:1}
+.ctrls #cmp:disabled{opacity:.5}
 .status{flex:0 0 auto;padding-bottom:env(safe-area-inset-bottom,0px)}
 </style>
 <body>
-  <div class="gel" id="gel"><canvas id="cv" aria-label="Gel d’électrophorèse : échelle, trace, victime et suspects"></canvas></div>
-  <div class="sel" id="sel">Glisse la piste <b>Vict.</b> ou un suspect sur la <b>Trace</b> pour comparer.</div>
-  <div class="legend"><span><i style="border:1.5px dashed #8fb4ff"></i>Victime superposée</span><span><i style="border:1.5px solid var(--accent)"></i>Suspect superposé</span></div>
-  <div class="status"><span id="exTxt">Exclus 0/3</span><span id="faultTxt">Erreurs 0</span></div>
+  <div class="tabs" id="tabs" role="tablist" aria-label="ADN des suspects"></div>
+  <div class="lab" id="lab"><canvas id="cv" aria-label="Le fragment de la scène à gauche, l’ADN du suspect à droite"></canvas><span class="tag" id="tagF">Scène</span><span class="tag" id="tagS">Suspect</span></div>
+  <div class="pairs"><span class="pair"><i style="background:#ff5d6c">A</i><span>avec</span><i style="background:#ffc94a">T</i></span><span class="pair"><i style="background:#4fa3ff">C</i><span>avec</span><i style="background:#46d98a">G</i></span></div>
+  <div class="ctrls"><button class="btn small" id="up" aria-label="Remonter d’un barreau">▲</button><button class="btn small" id="dn" aria-label="Descendre d’un barreau">▼</button><button class="btn primary" id="cmp">Comparer</button></div>
+  <div class="status"><span id="posTxt">Barreaux 1 à 10</span><span id="faultTxt">Erreurs 0</span></div>
 </body>
 <script>
-/* Profil ADN mixte : la trace = ADN de la victime + ADN de l'auteur.
-   Pour exclure un suspect, il faut montrer la preuve :
-   A) un de ses allèles est absent de la trace, ou
-   B) une bande de la trace n'est expliquée ni par la victime ni par lui. */
-const LOCI=[
-  {n:'TH01',min:5,max:11},{n:'TPOX',min:6,max:12},{n:'D3S1358',min:12,max:19},{n:'vWA',min:13,max:20},
-  {n:'D8S1179',min:9,max:16},{n:'FGA',min:19,max:26},{n:'D5S818',min:8,max:14},{n:'D13S317',min:8,max:14}];
+/* Fragment d'ADN : la scène n'a livré qu'un morceau d'ADN (une suite de barreaux).
+   Il faut le retrouver, à l'identique, quelque part dans l'ADN d'un des suspects.
+   Chaque barreau = une paire de bases : A avec T, C avec G. « ? » = barreau illisible (compte comme bon). */
+const TAU=Math.PI*2, TW=TAU/10, PEN=6;
+const BASES='ATCG', COMP={A:'T',T:'A',C:'G',G:'C','?':'?'};
+const COL={A:[255,93,108],T:[255,201,74],C:[79,163,255],G:[70,217,138],'?':[110,120,138]};
 const NOMS=['DUBOIS','LAMBERT','PEETERS','JANSSENS','LEROY','RENARD','MERTENS','LEJEUNE','HERMANS','CLAES','WAUTERS','MICHAUX','DUMONT','GILSON'];
-const PRE=['Kevin','Mehdi','Julien','Arnaud','Loïc','Damien','Youssef','Maxime','Dylan','Thomas'];
-const PEN=8;
-function allele(L){ const c=(L.min+1+L.max)/2, r=(L.max-L.min)/4; let a; do{ a=Math.round(c+(Math.random()+Math.random()+Math.random()-1.5)*r*1.4); }while(a<L.min+1||a>L.max); return a; }
-const geno=L=>{ const a=allele(L), b=Math.random()<.14?a:allele(L); return [a,b].sort((x,y)=>x-y); };
-const uniq=a=>[...new Set(a)];
+const rseq=n=>Array.from({length:n},()=>BASES[randi(0,3)]);
 
-function makeCase(cfg, forced){
-  for(let tries=0;tries<200;tries++){
-    const loci=forced?forced.loci.map(n=>LOCI.find(l=>l.n===n)):shuffle(LOCI).slice(0,cfg.loci);
-    const vic=loci.map(geno), perp=loci.map(geno);
-    const nS=cfg.suspects, srcIdx=forced?forced.src:randi(0,nS-1);
-    const types=forced?forced.types:shuffle(cfg.types).slice(0,nS-1);
-    const trace=loci.map((L,i)=>uniq([...vic[i],...perp[i]]));
-    const sus=[]; let ok=true; const usedLoci=new Set();
-    for(let k=0,d=0;k<nS;k++){
-      if(k===srcIdx){ sus.push({g:perp.map(x=>x.slice()), perp:true}); continue; }
-      const t=types[d++], g=perp.map(x=>x.slice());
-      // variantes compatibles (camouflage) : un allèle partagé avec la victime remplacé par l'autre allèle de la victime
-      loci.forEach((L,i)=>{ if(Math.random()<.35){ const j=g[i].findIndex(a=>vic[i].includes(a)); if(j>=0){ const alt=vic[i].find(a=>a!==g[i][j]); if(alt!==undefined) g[i][j]=alt; } } });
-      // la différence qui l'exclut
-      const cand=shuffle(loci.map((_,i)=>i)).filter(i=>!usedLoci.has(i)||usedLoci.size>=loci.length);
-      let done=false;
-      for(const i of (forced?[forced.at[d-1]]:cand)){
-        const L=loci[i];
-        if(t==='A'){ const free=[]; for(let a=L.min+1;a<=L.max;a++) if(!trace[i].includes(a)) free.push(a); if(!free.length) continue;
-          g[i]=perp[i].slice(); g[i][randi(0,1)]=pick(free); }
-        else { const own=perp[i].filter(a=>!vic[i].includes(a)); if(!own.length || perp[i][0]===perp[i][1]) continue;
-          const x=pick(own); g[i]=perp[i].slice(); g[i][g[i].indexOf(x)]=pick(vic[i]); if(g[i].includes(x)) continue; }
-        g[i].sort((a,b)=>a-b); usedLoci.add(i); done=true; break;
-      }
-      if(!done){ ok=false; break; }
-      sus.push({g, type:t});
+function matchAt(seq,p,frag,wild){ for(let k=0;k<frag.length;k++) if(!wild.has(k)&&seq[p+k]!==frag[k]) return false; return true; }
+function diffs(seq,p,frag,wild){ let d=0; for(let k=0;k<frag.length;k++) if(!wild.has(k)&&seq[p+k]!==frag[k]) d++; return d; }
+function makeCase(cfg,tuto){
+  for(let t=0;t<500;t++){
+    const N=cfg.n, frag=rseq(N), wild=new Set(shuffle([...Array(N).keys()]).slice(0,cfg.wild));
+    const sus=Array.from({length:cfg.suspects},()=>({seq:rseq(cfg.len), used:[]}));
+    const src=tuto?0:randi(0,cfg.suspects-1);
+    const place=(s,seg,at)=>{ const free=[]; for(let p=0;p<=cfg.len-N;p++) if(!s.used.some(([a,b])=>p<b+2&&p+N>a-2)) free.push(p);
+      if(!free.length) return false; const p=at??pick(free); seg.forEach((b,k)=>s.seq[p+k]=b); s.used.push([p,p+N]); return true; };
+    if(!place(sus[src],frag.slice(),tuto?6:null)) continue;
+    // faux amis : le même fragment à 1 ou 2 barreaux près (toujours sur un barreau lisible)
+    const lisibles=[...Array(N).keys()].filter(k=>!wild.has(k)); let ok=true;
+    for(let m=0;m<cfg.near;m++){
+      const seg=frag.slice(); for(const k of shuffle(lisibles).slice(0,cfg.miss)) seg[k]=pick([...BASES].filter(b=>b!==frag[k]));
+      if(!place(tuto?sus[1]:pick(sus),seg)){ ok=false; break; }
     }
     if(!ok) continue;
-    // vérifications : l'auteur est compatible, chaque autre suspect a au moins une preuve d'exclusion, pas de doublon
-    const proofs=s=>loci.reduce((n,L,i)=>n+s.g[i].filter(a=>!trace[i].includes(a)).length+trace[i].filter(b=>!vic[i].includes(b)&&!s.g[i].includes(b)).length,0);
-    if(sus.some(s=>s.perp?proofs(s)!==0:proofs(s)===0)) continue;
-    const keys=sus.map(s=>JSON.stringify(s.g)); if(new Set(keys).size!==keys.length) continue;
-    const noms=shuffle(NOMS);
-    sus.forEach((s,k)=>{ s.nom=noms[k]; s.pre=pick(PRE); s.ex=false; });
-    // intensités de la trace (doses × part de chaque contributeur) et stutters (une répétition plus bas)
-    const bands=loci.map((L,i)=>{
-      const m=new Map(); const add=(a,w)=>m.set(a,(m.get(a)||0)+w);
-      vic[i].forEach(a=>add(a,cfg.wv)); perp[i].forEach(a=>add(a,cfg.wp));
-      const out=[...m].map(([a,w])=>({a, al:Math.min(1,.42*w*(.9+Math.random()*.2)), main:true}));
-      if(cfg.stutter) for(const b of out.slice()){ if(!m.has(b.a-1) && b.a-1>=L.min) { const e=out.find(o=>o.a===b.a-1); const al=b.al*cfg.stutter*(.8+Math.random()*.4); if(e) e.al+=al; else out.push({a:b.a-1, al, main:false}); } }
-      return out;
-    });
-    return {loci, vic, perp, sus, trace, bands, srcIdx};
+    let n=0; sus.forEach(s=>{ for(let p=0;p<=cfg.len-N;p++) if(matchAt(s.seq,p,frag,wild)) n++; });
+    if(n!==1) continue;
+    const noms=shuffle(NOMS); sus.forEach((s,k)=>{ s.nom=noms[k]; s.scroll=0; s.target=0; });
+    return {N, frag, wild, sus, src};
   }
   throw new Error('cas introuvable');
 }
 
-/* ---------- état et géométrie ---------- */
-const cv=$('cv'), ctx=cv.getContext('2d'), gel=$('gel');
-const D={C:null, cfg:null, over:true, faults:0, sel:-1, ovV:false, ovS:-1, exp:0, ap:[], drag:null, flash:null, tuto:0, dirty:true};
+/* ---------- état ---------- */
+const cv=$('cv'), ctx=cv.getContext('2d'), lab=$('lab');
+const D={C:null,cfg:null,cur:0,rot:0,over:true,faults:0,drag:null,cmp:null,mark:null,won:false,tuto:0,moved:0};
 let geo={w:0,h:0,dpr:1};
-function resize(){ const r=gel.getBoundingClientRect(), dpr=Math.min(2.5,devicePixelRatio||1); cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr); geo={w:r.width,h:r.height,dpr}; D.dirty=true; }
-new ResizeObserver(resize).observe(gel);
-const HEAD=46, AX=52;
-const lanesN=()=>3+D.C.sus.length;
-const laneW=()=>(geo.w-AX-6)/lanesN();
-const laneX=i=>AX+i*laneW();
-const range=L=>L.max-L.min+1;
-function targetAp(){
-  const C=D.C, pads=C.loci.length*22, avail=geo.h-HEAD-10-pads;
-  const re=range(C.loci[D.exp]), rc=C.loci.reduce((n,L,i)=>n+(i===D.exp?0:range(L)),0);
-  let apc=4.6, ape=(avail-rc*apc)/re; if(ape<15){ apc=3.4; ape=(avail-rc*apc)/re; }
-  if(ape>26){ ape=26; apc=Math.min(8,(avail-re*ape)/rc); }
-  return C.loci.map((_,i)=>Math.max(2,i===D.exp?Math.min(28,ape):apc));
+function resize(){ const r=lab.getBoundingClientRect(), dpr=Math.min(2.5,devicePixelRatio||1); cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr); geo={w:r.width,h:r.height,dpr};
+  $('tagF').style.left=Math.max(8,r.width*.2-24)+'px'; $('tagS').style.left=(r.width*.62-30)+'px'; }
+new ResizeObserver(resize).observe(lab);
+const S=()=>D.C.sus[D.cur];
+function dims(){ const N=D.C.N, dy=Math.max(16,Math.min(32,(geo.h-30)*.74/N)), top=(geo.h-N*dy)/2;
+  return {dy, top, xF:geo.w*.2, xS:geo.w*.62, R:Math.min(geo.w*.15,64)}; }
+const maxScroll=()=>D.C.sus[D.cur].seq.length-D.C.N;
+
+/* ---------- rendu pseudo-3D d'une double hélice ----------
+   Chaque barreau i : angle θ = i·36° + rotation. Brin 1 en (cx + R cos θ, profondeur sin θ), brin 2 à l'opposé.
+   Tous les éléments (demi-barreaux, nœuds, tronçons de squelette) sont triés par profondeur. */
+const rgba=(c,a,k=1)=>`rgba(${Math.round(c[0]*k)},${Math.round(c[1]*k)},${Math.round(c[2]*k)},${a})`;
+function helix(items, cx, R, rungs, fade){
+  // rungs: [{y, th, b, a}] dans l'ordre
+  for(let j=0;j<rungs.length;j++){
+    const r=rungs[j], c=Math.cos(r.th), s=Math.sin(r.th), al=r.a;
+    const x1=cx+R*c, x2=cx-R*c, z1=s, z2=-s;
+    items.push({z:z1*.5-.02, f:()=>bar(x1,cx,r.y,r.b,z1,al,r.mark)});
+    items.push({z:z2*.5-.02, f:()=>bar(x2,cx,r.y,COMP[r.b],z2,al,r.mark)});
+    items.push({z:z1, f:()=>node(x1,r.y,z1,al)}); items.push({z:z2, f:()=>node(x2,r.y,z2,al)});
+    const n=rungs[j+1]; if(!n) continue;
+    // squelette : 4 sous-tronçons entre deux barreaux, pour une courbe lisse
+    for(const sgn of [1,-1]) for(let q=0;q<4;q++){
+      const t0=q/4, t1=(q+1)/4, a0=r.th+(n.th-r.th)*t0, a1=r.th+(n.th-r.th)*t1, y0=r.y+(n.y-r.y)*t0, y1=r.y+(n.y-r.y)*t1;
+      const za=sgn*Math.sin(a0), zb=sgn*Math.sin(a1), alp=al+(n.a-al)*t0;
+      items.push({z:(za+zb)/2, f:()=>bone(cx+sgn*R*Math.cos(a0),y0,cx+sgn*R*Math.cos(a1),y1,(za+zb)/2,alp)});
+    }
+  }
 }
-function layout(){
-  let y=HEAD+8; return D.C.loci.map((L,i)=>{ const top=y, ap=D.ap[i], h=18+range(L)*ap+4; y+=h; return {top, ap, h, ya:a=>top+18+(L.max-a+.5)*ap}; });
+const depthK=z=>.42+.58*(z+1)/2;
+function bar(x,cx,y,b,z,al,mark){
+  const k=depthK(z), col=COL[b], w=Math.max(4,D.dims.dy*.34)*(.85+.25*(z+1)/2);
+  ctx.lineCap='round'; ctx.lineWidth=w; ctx.strokeStyle=rgba(col,al,k);
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(cx+(x-cx)*.06,y); ctx.stroke();
+  if(z>-.2 && Math.abs(x-cx)>D.dims.R*.42 && D.dims.dy>=17){
+    ctx.fillStyle=`rgba(8,12,20,${al*.85})`; ctx.font=`800 ${Math.round(w*.92)}px "IBM Plex Mono",monospace`; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(b,(x+cx)/2+(x-cx)*.18,y+.5);
+  }
 }
-// pistes : 0 échelle, 1 trace, 2 victime, 3+ suspects
-function laneBands(li, i){
-  const C=D.C, L=C.loci[i];
-  if(li===0){ const r=[]; for(let a=L.min;a<=L.max;a++) r.push({a, al:.42, main:true}); return r; }
-  if(li===1) return C.bands[i];
-  const g=li===2?C.vic[i]:C.sus[li-3].g[i];
-  return g[0]===g[1]?[{a:g[0], al:.95, main:true}]:g.map(a=>({a, al:.62, main:true}));
+function node(x,y,z,al){
+  const k=depthK(z), r=Math.max(3.4,D.dims.dy*.2)*(.8+.35*(z+1)/2);
+  const g=ctx.createRadialGradient(x-r*.35,y-r*.35,r*.1,x,y,r); g.addColorStop(0,`rgba(255,255,255,${al*k})`); g.addColorStop(1,`rgba(${Math.round(110*k)},${Math.round(200*k)},${Math.round(210*k)},${al})`);
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,TAU); ctx.fill();
+}
+function bone(x0,y0,x1,y1,z,al){
+  const k=depthK(z); ctx.lineCap='round'; ctx.lineWidth=Math.max(3,D.dims.dy*.2)*(.75+.35*(z+1)/2);
+  ctx.strokeStyle=`rgba(${Math.round(150*k)},${Math.round(215*k)},${Math.round(225*k)},${al})`; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
 }
 
-/* ---------- dessin ---------- */
-function band(x,y,w,h,al,col='255,206,102'){
-  ctx.fillStyle=`rgba(${col},${Math.min(1,al)})`; ctx.shadowColor=`rgba(${col},${Math.min(.9,al)})`; ctx.shadowBlur=al>.25?8:3;
-  h=Math.max(1,h); ctx.beginPath(); ctx.roundRect(x,y-h/2,w,h,h/2); ctx.fill(); ctx.shadowBlur=0;
-}
 function draw(){
-  if(!D.C) return;
-  const C=D.C, {dpr,w,h}=geo, lw=laneW(), lay=layout(), n=lanesN();
+  if(!D.C||!geo.w) return;
+  const {w,h,dpr}=geo, d=D.dims=dims(), C=D.C, s=S(), N=C.N;
   ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
-  // puits et couloirs
-  for(let li=0;li<n;li++){ const x=laneX(li)+lw*.12, ww=lw*.76;
-    const sel=li>=3&&D.sel===li-3, ex=li>=3&&C.sus[li-3].ex;
-    ctx.fillStyle=sel?'rgba(63,224,200,.10)':li===1?'rgba(255,206,102,.05)':'rgba(255,255,255,.025)';
-    ctx.fillRect(x,HEAD,ww,h-HEAD);
-    ctx.fillStyle='rgba(0,0,0,.45)'; ctx.fillRect(x+2,HEAD+1,ww-4,4);
-    // en-têtes
-    const lbl=li===0?'Éch.':li===1?'Trace':li===2?'Vict.':'S'+(li-2);
-    const drag=D.drag&&D.drag.li===li&&D.drag.moved;
-    ctx.globalAlpha=drag?.35:1;
-    ctx.fillStyle=sel?'#3fe0c8':li===1?'rgba(255,206,102,.18)':(li>=2?'rgba(255,255,255,.09)':'rgba(255,255,255,.04)');
-    ctx.beginPath(); ctx.roundRect(laneX(li)+3,6,lw-6,32,9); ctx.fill();
-    if(li===1 && D.drag && D.drag.moved){ ctx.strokeStyle='#ffce66'; ctx.lineWidth=2; ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]); }
-    ctx.fillStyle=sel?'#022019':li===1?'#ffce66':li===0?'#8f9bb1':'#eef2f8';
-    ctx.font=`700 ${lw<40?11:13}px "Instrument Sans",system-ui,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.fillText(lbl, laneX(li)+lw/2, 22); ctx.globalAlpha=1;
-  }
-  // loci
-  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
-  C.loci.forEach((L,i)=>{
-    const g=lay[i], expd=i===D.exp;
-    ctx.fillStyle=expd?'rgba(63,224,200,.07)':'rgba(255,255,255,.0)'; ctx.fillRect(2,g.top,w-4,g.h);
-    ctx.strokeStyle='rgba(143,180,255,.12)'; ctx.beginPath(); ctx.moveTo(2,g.top+g.h); ctx.lineTo(w-2,g.top+g.h); ctx.stroke();
-    ctx.fillStyle=expd?'#3fe0c8':'#8f9bb1'; ctx.font=`700 ${expd?12:10.5}px "IBM Plex Mono",monospace`; ctx.fillText(L.n,6,g.top+13);
-    if(!expd){ ctx.fillStyle='#5d6880'; ctx.font='600 10px "Instrument Sans",sans-serif'; ctx.textAlign='right'; ctx.fillText('ouvrir ▾',w-8,g.top+13); ctx.textAlign='left'; }
-    if(expd){ ctx.font='500 10.5px "IBM Plex Mono",monospace'; ctx.fillStyle='#8f9bb1'; ctx.textAlign='right';
-      for(let a=L.min;a<=L.max;a++) ctx.fillText(a, AX-8, g.ya(a)+3.5); ctx.textAlign='left'; }
-    const bh=expd?Math.min(6,g.ap*.3):2.2;
-    for(let li=0;li<n;li++){
-      if(D.drag&&D.drag.moved&&D.drag.li===li) continue;
-      const ex=li>=3&&C.sus[li-3].ex, x=laneX(li)+lw*.19, bw=lw*.62;
-      for(const b of laneBands(li,i)){ band(x,g.ya(b.a),bw,bh,b.al*(ex?.35:1), li===0?'200,215,240':undefined); }
-    }
-    // superpositions sur la trace
-    const tx=laneX(1)+lw*.13, tw=lw*.74, oh=Math.max(bh+5,expd?11:5);
-    if(D.ovV){ ctx.setLineDash([3,3]); ctx.strokeStyle='#8fb4ff'; ctx.lineWidth=1.4; for(const a of uniq(C.vic[i])){ ctx.strokeRect(tx,g.ya(a)-oh/2,tw,oh); } ctx.setLineDash([]); }
-    if(D.ovS>=0){ ctx.strokeStyle='#3fe0c8'; ctx.lineWidth=1.6; for(const a of uniq(C.sus[D.ovS].g[i])){ ctx.strokeRect(tx-2,g.ya(a)-oh/2-2,tw+4,oh+4); } }
-    // repère de preuve
-    if(D.flash && D.flash.i===i){ const f=D.flash; ctx.strokeStyle=f.ok?'#46d98a':'#ff5d5d'; ctx.lineWidth=2.5; ctx.beginPath(); ctx.arc(laneX(f.li)+lw/2,g.ya(f.a),Math.max(9,g.ap*.6),0,TAU); ctx.stroke(); }
-  });
-  // exclus
-  C.sus.forEach((s,k)=>{ if(!s.ex && !(D.won && s.perp)) return; const x=laneX(k+3)+lw/2, y=HEAD+(h-HEAD)/2;
-    ctx.save(); ctx.translate(x,y); ctx.rotate(-Math.PI/2); ctx.font='800 15px "Bricolage Grotesque",sans-serif'; ctx.textAlign='center';
-    ctx.fillStyle=s.ex?'rgba(255,93,93,.9)':'rgba(70,217,138,.95)'; ctx.fillText(s.ex?'EXCLU':'CONCORDANT',0,5); ctx.restore(); });
-  // piste glissée
-  if(D.drag&&D.drag.moved){ const li=D.drag.li, dx=D.drag.x-lw/2, over=overTrace(D.drag.x);
-    ctx.fillStyle=over?'rgba(255,206,102,.12)':'rgba(255,255,255,.06)'; ctx.fillRect(dx+lw*.1,HEAD,lw*.8,h-HEAD);
-    ctx.fillStyle='#3fe0c8'; ctx.beginPath(); ctx.roundRect(dx+3,6,lw-6,32,9); ctx.fill();
-    ctx.fillStyle='#022019'; ctx.font='700 13px "Instrument Sans",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(li===2?'Vict.':'S'+(li-2),dx+lw/2,22);
-    C.loci.forEach((L,i)=>{ const g=lay[i], bh=i===D.exp?Math.min(6,g.ap*.3):2.2; for(const b of laneBands(li,i)) band(dx+lw*.19,g.ya(b.a),lw*.62,bh,b.al*.9,'63,224,200'); });
-    ctx.textAlign='left'; ctx.textBaseline='alphabetic'; }
+  // cadre de comparaison
+  const fy=d.top-4, fh=N*d.dy+8;
+  ctx.fillStyle='rgba(63,224,200,.055)'; ctx.strokeStyle='rgba(63,224,200,.45)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.roundRect(8,fy,w-30,fh,14); ctx.fill(); ctx.stroke();
+  // liens de comparaison (fermeture éclair)
+  const mk=D.mark; for(let k=0;k<N;k++){ const y=d.top+(k+.5)*d.dy, m=mk&&mk[k];
+    ctx.strokeStyle=m==='ok'?'rgba(70,217,138,.9)':m==='bad'?'rgba(255,93,93,.95)':'rgba(255,255,255,.07)';
+    ctx.lineWidth=m?2:1; ctx.setLineDash(m?[]:[3,5]); ctx.beginPath(); ctx.moveTo(d.xF+d.R+8,y); ctx.lineTo(d.xS-d.R-8,y); ctx.stroke(); ctx.setLineDash([]);
+    if(m){ ctx.fillStyle=m==='ok'?'#46d98a':'#ff5d5d'; ctx.beginPath(); ctx.arc((d.xF+d.xS)/2,y,4,0,TAU); ctx.fill(); } }
+  const items=[];
+  // fragment de la scène : tourne en même temps que le segment du suspect dans le cadre
+  helix(items,d.xF,d.R*.85,C.frag.map((b,k)=>({y:d.top+(k+.5)*d.dy, th:(s.scroll+k)*TW+D.rot, b:C.wild.has(k)?'?':b, a:1})));
+  // ADN du suspect : défile comme une vis
+  const rungs=[]; for(let i=0;i<s.seq.length;i++){ const y=d.top+(i-s.scroll+.5)*d.dy; if(y<-d.dy*2||y>h+d.dy*2) continue;
+    const inF=y>d.top&&y<d.top+N*d.dy; rungs.push({y, th:i*TW+D.rot, b:s.seq[i], a:inF?1:.32}); }
+  helix(items,d.xS,d.R,rungs);
+  items.sort((a,b)=>a.z-b.z).forEach(it=>it.f());
+  // fondu haut et bas
+  const gt=ctx.createLinearGradient(0,0,0,40); gt.addColorStop(0,'rgba(6,13,22,1)'); gt.addColorStop(1,'rgba(6,13,22,0)'); ctx.fillStyle=gt; ctx.fillRect(0,0,w,40);
+  const gb=ctx.createLinearGradient(0,h-40,0,h); gb.addColorStop(0,'rgba(6,13,22,0)'); gb.addColorStop(1,'rgba(6,13,22,1)'); ctx.fillStyle=gb; ctx.fillRect(0,h-40,w,40);
+  // mini-carte : position dans l'ADN du suspect
+  const L=s.seq.length, mx=w-12, my=26, mh=h-52;
+  ctx.fillStyle='rgba(255,255,255,.08)'; ctx.beginPath(); ctx.roundRect(mx-2.5,my,5,mh,3); ctx.fill();
+  ctx.fillStyle='#3fe0c8'; ctx.beginPath(); ctx.roundRect(mx-3.5,my+mh*s.scroll/L,7,Math.max(10,mh*N/L),4); ctx.fill();
+  // tampon final
+  if(D.won){ ctx.save(); ctx.translate(d.xS,h/2); ctx.rotate(-.18); ctx.font='800 24px "Bricolage Grotesque",sans-serif'; ctx.textAlign='center'; ctx.lineWidth=3;
+    ctx.strokeStyle='rgba(70,217,138,.95)'; ctx.fillStyle='rgba(70,217,138,.95)'; ctx.strokeRect(-92,-20,184,40); ctx.fillText('CONCORDANT',0,9); ctx.restore(); }
 }
-const TAU=Math.PI*2;
-const overTrace=x=>x>=laneX(1)-6 && x<=laneX(2)+6;
 
 /* ---------- interactions ---------- */
-const rel=e=>{ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; };
-const laneAt=x=>Math.floor((x-AX)/laneW());
-cv.addEventListener('pointerdown',e=>{
-  if(!D.C || (D.over && Shell.st.mode!=='tuto')) return;
-  cv.setPointerCapture(e.pointerId); const [x,y]=rel(e), li=laneAt(x);
-  D.down={x,y,li,id:e.pointerId};
-  if(y<HEAD && li>=2) D.drag={li,x,moved:false};
-});
+const busy=()=>!D.C||D.cmp||(D.over&&Shell.st.mode!=='tuto');
+function setStatus(){
+  const s=S(), p=Math.round(s.target); $('posTxt').textContent=`${s.nom} · barreaux ${p+1} à ${p+D.C.N} sur ${s.seq.length}`;
+  $('faultTxt').textContent=`Erreurs ${D.faults}`;
+}
+function go(t){ const s=S(); s.target=Math.max(0,Math.min(maxScroll(),t)); D.mark=null; setStatus(); }
+cv.addEventListener('pointerdown',e=>{ if(busy()) return; cv.setPointerCapture(e.pointerId); D.drag={x:e.clientX,y:e.clientY,id:e.pointerId,axis:null}; });
 cv.addEventListener('pointermove',e=>{
-  if(!D.drag||!D.down||D.down.id!==e.pointerId) return; const [x]=rel(e);
-  if(Math.abs(x-D.down.x)>8) D.drag.moved=true; D.drag.x=x; D.dirty=true;
+  const g=D.drag; if(!g||g.id!==e.pointerId) return; const dx=e.clientX-g.x, dy=e.clientY-g.y; g.x=e.clientX; g.y=e.clientY;
+  if(!g.axis && Math.abs(dx)+Math.abs(dy)>4) g.axis=Math.abs(dy)>=Math.abs(dx)?'y':'x';
+  const s=S();
+  if(g.axis==='y'){ s.scroll=Math.max(-.4,Math.min(maxScroll()+.4,s.scroll-dy/D.dims.dy)); s.target=s.scroll; D.mark=null; D.moved+=Math.abs(dy/D.dims.dy); }
+  if(g.axis==='x') D.rot+=dx*.012;
 });
-cv.addEventListener('pointerup',e=>{
-  if(!D.down||D.down.id!==e.pointerId) return; const [x,y]=rel(e), dn=D.down; D.down=null;
-  if(D.drag&&D.drag.moved){ const li=D.drag.li; D.drag=null; D.dirty=true; if(overTrace(x)) drop(li); return; }
-  D.drag=null;
-  if(Math.hypot(x-dn.x,y-dn.y)>12) return;
-  tap(x,y,dn.li);
-});
-cv.addEventListener('pointercancel',()=>{ D.down=null; D.drag=null; D.dirty=true; });
-
-function drop(li){
-  if(li===2){ D.ovV=true; Shell.good(); Shell.toast('Victime superposée','info'); if(Shell.st.mode==='tuto'&&D.tuto===1) tutoNext(); }
-  else { const k=li-3; D.ovS=k; select(k); Shell.good(); Shell.toast(`S${k+1} superposé`,'info'); }
-  D.dirty=true;
+function release(){ if(!D.drag) return; D.drag=null; go(Math.round(S().scroll));
+  if(Shell.st.mode==='tuto'&&D.tuto===1&&D.moved>=2) tutoNext(); }
+cv.addEventListener('pointerup',release); cv.addEventListener('pointercancel',release);
+cv.addEventListener('wheel',e=>{ e.preventDefault(); if(busy()) return; go(Math.round(S().target)+Math.sign(e.deltaY)); D.moved+=1; if(Shell.st.mode==='tuto'&&D.tuto===1&&D.moved>=2) tutoNext(); },{passive:false});
+$('up').onclick=()=>{ if(!busy()){ go(Math.round(S().target)-1); D.moved+=1; } };
+$('dn').onclick=()=>{ if(!busy()){ go(Math.round(S().target)+1); D.moved+=1; if(Shell.st.mode==='tuto'&&D.tuto===1&&D.moved>=2) tutoNext(); } };
+document.addEventListener('keydown',e=>{ if(busy()) return; if(e.key==='ArrowUp'){ e.preventDefault(); go(Math.round(S().target)-1); } if(e.key==='ArrowDown'){ e.preventDefault(); go(Math.round(S().target)+1); } if(e.key==='Enter') compare(); });
+$('tabs').onclick=e=>{ const b=e.target.closest('.tab'); if(!b||busy()) return; D.cur=+b.dataset.i; D.mark=null; renderTabs(); setStatus(); };
+function renderTabs(){ $('tabs').innerHTML=D.C.sus.map((s,i)=>`<button class="tab" role="tab" data-i="${i}" aria-selected="${i===D.cur}"><b>S${i+1}</b>${s.nom}</button>`).join(''); }
+$('cmp').onclick=()=>compare();
+function compare(){
+  if(busy()) return; const s=S(); s.scroll=s.target=Math.round(s.target);
+  D.cmp={k:0,t:0,res:[]}; D.mark=[]; $('cmp').disabled=true;
 }
-function select(k){
-  if(k<0||!D.C.sus[k]) return; D.sel=k; const s=D.C.sus[k];
-  $('sel').innerHTML=`<span class="dot"></span><span>Sélection : <b>S${k+1} · ${s.nom} ${s.pre}</b>${s.ex?' · exclu':''}</span>`; D.dirty=true;
+function cmpStep(dt){
+  const c=D.cmp; c.t+=dt; if(c.t<.075) return; c.t=0;
+  const C=D.C, s=S(), k=c.k, ok=C.wild.has(k)||s.seq[s.target+k]===C.frag[k];
+  D.mark[k]=ok?'ok':'bad'; ok?Shell.blip(700+k*60,.05,'triangle',.04):Shell.blip(160,.08,'sawtooth',.05);
+  c.k++; if(c.k<C.N) return;
+  D.cmp=null; $('cmp').disabled=false;
+  const nd=D.mark.filter(m=>m==='bad').length;
+  if(!nd){ D.won=true; D.over=true; Shell.stopTimer(); Shell.win(); Shell.toast('Correspondance !','ok');
+    if(Shell.st.mode==='tuto'){ setTimeout(Shell.endTuto,1100); return; }
+    const used=Math.round(D.cfg.time-Shell.st.timeLeft);
+    setTimeout(()=>Shell.result({ok:true,faults:D.faults,stats:[['Temps',used+' s'],['Erreurs',D.faults],['Auteur','S'+(D.cur+1)]],
+      note:D.faults===0?'Trouvé du premier coup : double point.':'Sans comparaison ratée, tu gagnes +2.'}),1200); return; }
+  const txt=`${nd} barreau${nd>1?'x':''} différent${nd>1?'s':''}`;
+  if(Shell.st.mode==='tuto'){ Shell.bad(); Shell.toast(txt,'bad'); return; }
+  D.faults++; Shell.st.timeLeft=Math.max(0,Shell.st.timeLeft-PEN); Shell.bad(); Shell.toast(`${txt} · −${PEN} s`,'bad'); Shell.shake(lab); setStatus();
 }
-function tap(x,y,li){
-  const C=D.C;
-  if(y<HEAD){ if(li>=3) select(li-3); else if(li===2) Shell.toast('Glisse Vict. sur la Trace','info'); else if(li===1) Shell.toast('La trace mixte','info'); return; }
-  const lay=layout(), i=lay.findIndex(g=>y>=g.top&&y<g.top+g.h);
-  if(i<0) return;
-  if(i!==D.exp){ D.exp=i; D.dirty=true; return; }
-  if(li<1||li>=lanesN()) return;
-  const g=lay[i]; let best=null, bd=Math.max(9,g.ap*.62);
-  for(const b of laneBands(li,i)){ const d=Math.abs(g.ya(b.a)-y); if(d<bd){bd=d;best=b;} }
-  if(li===2||li===0) return;
-  if(li>=3){ const k=li-3; if(D.sel!==k){ select(k); return; } if(!best) return; proof(k,i,best.a,li,!C.trace[i].includes(best.a),'Allèle absent de la trace','Cet allèle est dans la trace'); return; }
-  // piste trace
-  if(D.sel<0){ Shell.toast('Choisis d’abord un suspect','info'); return; }
-  if(!best) return;
-  if(!best.main){ proof(D.sel,i,best.a,1,false,'','Stutter : artefact, pas un allèle'); return; }
-  const s=C.sus[D.sel], ok=!C.vic[i].includes(best.a)&&!s.g[i].includes(best.a);
-  proof(D.sel,i,best.a,1,ok,'Bande inexpliquée',`Bande expliquée par ${C.vic[i].includes(best.a)?'la victime':'S'+(D.sel+1)}`);
-}
-function proof(k,i,a,li,ok,okTxt,badTxt){
-  const C=D.C, s=C.sus[k];
-  if(s.ex){ Shell.toast('Déjà exclu','info'); return; }
-  D.flash={i,a,li,ok,t:.9}; D.dirty=true;
-  if(ok){ s.ex=true; Shell.good(); Shell.toast(`S${k+1} exclu · ${okTxt}`,'ok'); select(k); status();
-    if(Shell.st.mode==='tuto'){ tutoNext(); return; }
-    if(C.sus.every(x=>x.perp||x.ex)) finish(); return; }
-  if(Shell.st.mode==='tuto'){ Shell.bad(); Shell.toast(badTxt,'bad'); return; }
-  D.faults++; Shell.st.timeLeft=Math.max(0,Shell.st.timeLeft-PEN); Shell.bad(); Shell.toast(`${badTxt} · −${PEN} s`,'bad'); Shell.shake(gel); status();
-}
-function status(){ const C=D.C, n=C.sus.filter(s=>s.ex).length; $('exTxt').textContent=`Exclus ${n}/${C.sus.length-1}`; $('faultTxt').textContent=`Erreurs ${D.faults}`; }
-function finish(){
-  const C=D.C, k=C.sus.findIndex(s=>s.perp); D.over=true; D.won=true; D.dirty=true; Shell.stopTimer(); Shell.win();
-  const used=Math.round(D.cfg.time-Shell.st.timeLeft);
-  setTimeout(()=>Shell.result({ok:true, faults:D.faults, stats:[['Temps',used+' s'],['Erreurs',D.faults],['Auteur','S'+(k+1)]],
-    note:D.faults===0?'Toutes les exclusions sans erreur : double point.':'Sans erreur de preuve, tu gagnes +2.'}),1100);
-}
-function start(C,cfg){
-  Object.assign(D,{C,cfg,over:false,won:false,faults:0,sel:-1,ovV:false,ovS:-1,exp:0,drag:null,flash:null,dirty:true});
-  D.ap=targetAp(); status();
-  $('sel').innerHTML='Glisse la piste <b>Vict.</b> ou un suspect sur la <b>Trace</b> pour comparer.';
-}
+function start(C,cfg){ Object.assign(D,{C,cfg,cur:0,over:false,won:false,faults:0,drag:null,cmp:null,mark:null,moved:0}); $('cmp').disabled=false; renderTabs(); setStatus(); }
 
 /* ---------- tutoriel ---------- */
-let TSTEPS=[];
-function tutoNext(){
-  D.tuto++;
-  if(D.tuto>TSTEPS.length-1){ D.over=true; D.won=true; D.dirty=true; Shell.win(); setTimeout(Shell.endTuto,900); return; }
-  if(D.tuto===2) D.exp=0;
-  Shell.coach(D.tuto,3,TSTEPS[D.tuto]); D.dirty=true;
-}
+const TSTEPS=[null,
+  'Voici l’ADN du suspect <b>S1</b>, en double hélice. Fais-le <b>glisser vers le haut ou le bas</b> : il défile en tournant comme une vis. Glisse sur le côté pour le faire pivoter.',
+  'À gauche, le <b>fragment trouvé sur la scène</b>. Fais défiler S1 jusqu’à ce que le <b>cadre</b> contienne exactement la même suite de barreaux (mêmes couleurs, même ordre), puis touche <b>Comparer</b>.'];
+function tutoNext(){ D.tuto++; if(D.tuto<TSTEPS.length) Shell.coach(D.tuto,2,TSTEPS[D.tuto]); }
 
 Shell.init({
   key:'adn', service:'Renfort fédéral · Labo', serviceShort:'Labo',
   unit:['expert','experts'], effLabel:'Experts du labo sur le dossier',
-  headline:'Profil ADN mixte',
-  story:`<p>Le prélèvement sous les ongles de la victime contient un <b>mélange</b> : son ADN et celui de l’auteur. Le labo a typé les suspects.</p><p>Exclus chaque innocent <b>en montrant la preuve</b> sur le gel. Le dernier suspect restant est l’auteur.</p>`,
+  headline:'Fragment d’ADN',
+  story:`<p>Sur la scène, le labo n’a pu lire qu’un <b>fragment</b> de l’ADN de l’auteur.</p><p>Retrouve ce fragment, barreau par barreau, dans l’ADN d’un des suspects. Attention : plusieurs passages se ressemblent à un barreau près. Chaque comparaison ratée coûte ${PEN} secondes.</p>`,
   diffs:{
-    difficile:{agents:1,label:'Difficile',time:150,suspects:4,loci:6,types:['B','B','A','B'],wv:1,wp:.62,stutter:.2},
-    normal:{agents:2,label:'Normal',time:180,suspects:4,loci:5,types:['A','B','B','A'],wv:1,wp:.85,stutter:.15},
-    facile:{agents:3,label:'Facile',time:210,suspects:3,loci:4,types:['A','A','B'],wv:1,wp:1,stutter:0}},
-  diffHint:'Plus d’experts : plus de temps, moins de loci et de suspects, et une trace plus nette.',
-  desktopHint:'Glisse les en-têtes de piste avec la souris ; clique sur un locus pour l’ouvrir.',
-  rules:['La <b>trace</b> mélange l’ADN de la <b>victime</b> et de l’<b>auteur</b> (1 ou 2 allèles par personne et par locus).','Glisse <b>Vict.</b> ou un suspect sur la Trace pour superposer ses allèles. Tape un locus pour l’ouvrir.','Exclure : sélectionne un suspect puis tape la preuve, soit <b>un de ses allèles absent de la trace</b>, soit <b>une bande de la trace</b> que ni la victime ni lui n’expliquent.','Les bandes pâles juste sous une vraie bande sont des <b>stutters</b> (artefacts) : elles ne comptent pas.','Mauvaise preuve : −8 s. Sans erreur : <b>+2</b> sur la jauge skins.'],
-  winTitle:'Auteur identifié', loseTitle:'Profil non concluant', skin:'Paillasse du labo',
-  malus:'le labo conclut « profil non interprétable » : pas d’indice supplémentaire aujourd’hui.',
+    difficile:{agents:1,label:'Difficile',time:150,suspects:5,len:48,n:10,wild:3,near:9,miss:1},
+    normal:{agents:2,label:'Normal',time:150,suspects:4,len:40,n:10,wild:2,near:6,miss:1},
+    facile:{agents:3,label:'Facile',time:180,suspects:3,len:32,n:8,wild:0,near:3,miss:2}},
+  diffHint:'Plus d’experts : plus de temps, moins de suspects, des ADN plus courts et moins de faux amis.',
+  desktopHint:'Sur ordinateur : molette ou flèches pour faire défiler, Entrée pour comparer, glisser sur le côté pour faire pivoter.',
+  rules:['Retrouve le <b>fragment de la scène</b> (à gauche) dans l’ADN d’un suspect (à droite).','Glisser haut/bas : faire défiler l’hélice. Glisser sur le côté : la faire pivoter. Onglets : changer de suspect.','Chaque barreau est une paire : <b>A avec T</b>, <b>C avec G</b>. Un barreau gris <b>?</b> est illisible : il compte comme bon.','Place la bonne suite dans le cadre puis <b>Comparer</b>. Comparaison ratée : −6 s.','Trouvé sans erreur : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
+  winTitle:'Auteur identifié', loseTitle:'Fragment non retrouvé', skin:'Paillasse du labo',
+  malus:'le labo conclut « profil non exploitable » : pas d’indice supplémentaire aujourd’hui.',
   onMenu(){ D.over=true; },
-  onInit(){ const c={suspects:3,loci:4,types:['A','A','B'],wv:1,wp:1,stutter:.15}; start(makeCase(c),c); D.over=true; },
+  onInit(){ const c={suspects:3,len:32,n:8,wild:0,near:3,miss:2}; start(makeCase(c),c); D.over=true; },
   onFrame(dt){
     if(!D.C) return;
-    const t=targetAp(); let moving=false;
-    D.ap=D.ap.map((a,i)=>{ const d=t[i]-a; if(Math.abs(d)>.05){ moving=true; return a+d*Math.min(1,dt*14); } return t[i]; });
-    if(D.flash){ D.flash.t-=dt; if(D.flash.t<=0) D.flash=null; D.dirty=true; }
-    if(moving||D.dirty){ D.dirty=false; draw(); }
+    if(!D.drag&&!D.cmp) D.rot+=dt*.32;
+    const s=S(); if(!D.drag){ const dd=s.target-s.scroll; s.scroll+=Math.abs(dd)<.002?dd:dd*Math.min(1,dt*12); }
+    if(D.cmp) cmpStep(dt);
+    draw();
   },
   onPlay(cfg){ start(makeCase(cfg),cfg);
-    Shell.startTimer(cfg.time,()=>{ if(!D.over){ D.over=true; Shell.bad(); Shell.result({ok:false,faults:1,stats:[['Exclus',D.C.sus.filter(s=>s.ex).length+'/'+(D.C.sus.length-1)],['Erreurs',D.faults],['Temps','écoulé']]}); } }); },
-  onTuto(){
-    const c={suspects:3,loci:4,wv:1,wp:1,stutter:.15,time:999};
-    const C=makeCase(c,{loci:['TH01','vWA','D8S1179','FGA'],src:2,types:['A','B'],at:[0,1]});
-    start(C,c); D.over=false; D.tuto=0;
-    const a=C.sus[0].g[0].find(x=>!C.trace[0].includes(x));
-    TSTEPS=[null,
-      'La piste <b>Trace</b> mélange l’ADN de la victime et de l’auteur. Glisse l’en-tête <b>Vict.</b> jusque sur <b>Trace</b> : ses allèles s’y dessinent en pointillés.',
-      `Tape <b>S1</b> pour le sélectionner. Au locus <b>TH01</b>, son allèle <b>${a}</b> n’existe pas dans la trace : tape cette bande dans la piste S1.`,
-      'Tous les allèles de <b>S2</b> sont dans la trace… Glisse <b>S2</b> sur la Trace, puis ouvre <b>vWA</b> : une bande de la trace n’est encadrée ni par la victime ni par S2. Tape-la dans la piste <b>Trace</b>.'];
-    tutoNext();
-  }
+    Shell.startTimer(cfg.time,()=>{ if(!D.over){ D.over=true; Shell.bad(); Shell.result({ok:false,faults:1,stats:[['Erreurs',D.faults],['Suspects',D.C.sus.length],['Temps','écoulé']]}); } }); },
+  onTuto(){ const c={suspects:2,len:28,n:8,wild:0,near:1,miss:2,time:999}; start(makeCase(c,true),c); D.tuto=0; tutoNext(); }
 });
 </script>
