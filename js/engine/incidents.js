@@ -1,5 +1,6 @@
 // Incidents de la journée : un mini-jeu qui tombe sur un service, une ou deux fois par jour,
-// tôt le matin. Il reste ouvert 12 heures (jusqu'en fin d'après-midi). Joué : réussite (jauge des skins) ou échec (malus
+// entre 7 h et 19 h. Il reste ouvert 12 heures : s'il tombe tard,
+// il déborde sur le lendemain matin et compte alors à la résolution suivante (incidents « reportés »). Joué : réussite (jauge des skins) ou échec (malus
 // à 20:00). Pas joué : l'équipe se débrouille seule, avec une chance qui dépend de ses effectifs.
 import { makeRng } from './rng.js';
 import { DEFAULT_ALLOC, SERVICE_LABELS, PS, gainMoral } from './constants.js';
@@ -18,6 +19,8 @@ export const SERVICES_INCIDENTS = Object.keys(INCIDENTS);
 
 export const INC = {
   ouverture: 12 * H,      // durée pendant laquelle l'incident peut être joué
+  premier: 11 * H,        // au plus tôt 7 h (la journée de jeu commence à 20:00 la veille)
+  dernier: 23 * H,        // au plus tard 19 h
   jauge: 50,              // points de jauge pour un skin
   deuxiemeChance: 0.5,    // probabilité d'un second incident dans la journée
 };
@@ -94,16 +97,40 @@ export function incidentsDuTour(state, uid) {
     for (let k = 0; k < pool.length; k++) { x -= poids[k]; if (x <= 0) return pool[k]; }
     return pool[pool.length - 1];
   };
-  // 12 heures pour jouer, bouclées avant la résolution de 20:00 : le premier incident tombe entre 6 h et 7 h,
-  // le second 30 à 60 minutes plus tard (au plus tard vers 8 h). On a donc toute la journée pour intervenir.
-  const ouvre1 = debut + 10 * H + Math.floor(r.next() * H);
+  // Heure imprévue entre 7 h et 19 h, puis 12 heures pour jouer. Un incident tombé après 8 h déborde
+  // sur la résolution de 20:00 : il est alors réglé à la résolution suivante (voir separerIncidents).
+  const fenetre = INC.dernier - INC.premier;
+  const ouvre1 = debut + INC.premier + Math.floor(r.next() * fenetre);
   const liste = [{ service: tirer([]), ouvre: ouvre1 }];
-  if (r.next() < INC.deuxiemeChance) liste.push({ service: tirer([liste[0].service]), ouvre: ouvre1 + H / 2 + Math.floor(r.next() * H / 2) });
+  if (r.next() < INC.deuxiemeChance) {
+    // Le second, au moins 2 heures avant ou après le premier, toujours entre 7 h et 19 h.
+    let o2 = ouvre1 + 2 * H + Math.floor(r.next() * (fenetre - 4 * H));
+    if (o2 > debut + INC.dernier) o2 -= fenetre;
+    liste.push({ service: tirer([liste[0].service]), ouvre: o2 });
+    liste.sort((a, b) => a.ouvre - b.ouvre);
+  }
   return liste.map((x, k) => ({
     id: `s${state.season}t${state.turn}-${k}`,
     service: x.service, jeu: INCIDENTS[x.service].jeu, titre: INCIDENTS[x.service].titre,
-    ouvre: x.ouvre, ferme: Math.min(x.ouvre + INC.ouverture, fin - 2 * 60 * 1000),
+    ouvre: x.ouvre, ferme: x.ouvre + INC.ouverture,
   }));
+}
+
+/** Incidents visibles par le joueur : ceux du jour, plus ceux d'hier encore ouverts ce matin (reportés). */
+export function incidentsVisibles(state, uid) {
+  const z = state && state.zones && state.zones[uid];
+  return [...((z && z.incidentsReportes) || []), ...incidentsDuTour(state, uid)];
+}
+
+/**
+ * À la résolution : ce qui se règle ce soir (reportés d'hier + incidents du jour joués ou déjà clos)
+ * et ce qui est reporté à demain (incidents du jour encore ouverts et pas encore joués).
+ */
+export function separerIncidents(state, uid, resultats, fin = state.nextDeadline) {
+  const z = state && state.zones && state.zones[uid];
+  const maintenant = [...((z && z.incidentsReportes) || [])], reportes = [];
+  for (const inc of incidentsDuTour(state, uid)) (inc.ferme > fin && !resultats[inc.id] ? reportes : maintenant).push(inc);
+  return { maintenant, reportes };
 }
 
 /** Résultats enregistrés par le joueur (profil), pour les incidents de ce tour seulement. */

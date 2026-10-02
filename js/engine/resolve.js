@@ -22,7 +22,7 @@ import { rivalitesPre, rivalitesPost, postesContre, themeActif, appliquerConsign
 import { FLAGRANTS } from './contenu.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
-import { incidentsDuTour, appliquerIncidents, resultatsIncidents } from './incidents.js';
+import { separerIncidents, appliquerIncidents, resultatsIncidents, incidentsVisibles } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, EVENEMENTS_COLLECTIFS, COUPS_DURS, ALEAS, OPERATIONS, PRESSIONS, PRESSION_WEEKEND } from './contenu.js';
 
@@ -149,7 +149,8 @@ function genererAffaires(state, rng) {
  */
 export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, nextWeekday = null } = {}) {
   // Incidents du jour : tirés sur l'état d'avant la résolution, comme les joueurs les ont vus.
-  const incidentsAvant = Object.fromEntries(Object.keys((stateIn && stateIn.zones) || {}).map((u) => [u, incidentsDuTour(stateIn, u)]));
+  // Ceux encore ouverts après 20:00 et pas encore joués sont reportés à la résolution de demain.
+  const incidentsAvant = Object.fromEntries(Object.keys((stateIn && stateIn.zones) || {}).map((u) => [u, separerIncidents(stateIn, u, resultatsIncidents(players[u], incidentsVisibles(stateIn, u)))]));
   const state = migrateState(clone(stateIn));
   state.minClientVersion = Math.max(state.minClientVersion || 0, APP_VERSION);
   const T = state.turn;
@@ -476,8 +477,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
     jalon(z, 'Énigmes : sans faute (+2 de moral)');
     // Incidents du jour (mini-jeux) : réussite, échec, ou équipe livrée à elle-même.
-    if ((incidentsAvant[uid] || []).length) {
-      const inc = appliquerIncidents(z, { incidents: incidentsAvant[uid], resultats: resultatsIncidents(players[uid], incidentsAvant[uid]), alloc: o.alloc || {}, T, rng: makeRng(`${state.seed}:s${state.season}:t${T}:incidents-res:${uid}`), indice: () => indiceBonus(state, z, zr) });
+    const incs = incidentsAvant[uid] || { maintenant: [], reportes: [] };
+    if (incs.reportes.length) z.incidentsReportes = incs.reportes; else delete z.incidentsReportes;
+    if (incs.maintenant.length) {
+      const inc = appliquerIncidents(z, { incidents: incs.maintenant, resultats: resultatsIncidents(players[uid], incs.maintenant), alloc: o.alloc || {}, T, rng: makeRng(`${state.seed}:s${state.season}:t${T}:incidents-res:${uid}`), indice: () => indiceBonus(state, z, zr) });
       z.rapport.push(...inc.lignes);
       if (inc.skin) push(3, 'Décor', `${zoneLabel(z)} décroche le skin « ${inc.skin.nom} »`, 'Jauge des incidents remplie à force d’interventions réussies.', uid);
     }
