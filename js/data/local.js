@@ -97,6 +97,12 @@ export function createLocalBackend(config) {
 
     async getPlayer(uid) { return self.players[uid] || null; },
     async getPlayers() { return JSON.parse(JSON.stringify(self.players)); },
+    async compterEntrainement(uid, plus) {
+      const p = self.players[uid]; if (!p) return;
+      const e = (p.entrainement ||= {});
+      for (const [k, v] of Object.entries(plus)) if (v) e[k] = (e[k] || 0) + v;
+      e.dernier = Date.now(); persist();
+    },
     async touchPlayer(uid) { if (self.players[uid]) { self.players[uid].vuLe = Date.now(); persist(); } },
     async savePlayer(uid, profile) {
       self.players[uid] = { ...(self.players[uid] || {}), ...profile };

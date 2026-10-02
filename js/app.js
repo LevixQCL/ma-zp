@@ -243,6 +243,7 @@ async function openParty(id) {
   try { players = await S.backend.getPlayers(); } catch (e) { players = {}; }
   if (jeton !== ouvertures) return;
   S.player = player; S.players = players;
+  reprendreEntrainementLocal();
   if (!unsubState) {
     unsubState = S.backend.subscribeState(async (state) => {
       S.state = migrateState(state);
@@ -297,7 +298,7 @@ async function onClick(e) {
       case 'diplo-open': { const k = el.dataset.k; const cur = S.diploOpen && k in S.diploOpen ? S.diploOpen[k] : !!document.querySelector(`section[data-k="${k}"]`); S.diploOpen = { ...(S.diploOpen || {}), [k]: !cur }; rerender(); break; }
       case 'aide': ouvrirAide(el.dataset.k); break;
       case 'incident': { const err = lancerIncident(el.dataset.id, () => rerender()); if (err) { toast(err); rerender(); } break; }
-      case 'mj-train': ouvrirMiniJeu(el.dataset.j, { mode: 'train' }); break;
+      case 'mj-train': ouvrirMiniJeu(el.dataset.j, { mode: 'train', onEntrainement: noterEntrainement }); break;
       case 'tuto': location.hash = '#hp'; setTimeout(() => lancerTuto(0), 50); break;
       case 'post-n': { const a = S.state.affaires.find((x) => x.id === el.dataset.id); const cur = (S.postuler && S.postuler[a.id]) || Math.min(3, a.agentsMax || 3); S.postuler = { ...(S.postuler || {}), [a.id]: Math.max(1, Math.min(a.agentsMax || 10, cur + Number(el.dataset.d))) }; rerender(); break; }
       case 'postuler': {
@@ -762,7 +763,38 @@ function compterEntrainement(type, ok) {
   try { st = JSON.parse(localStorage.getItem('mazp-entrainement') || '{}'); } catch (e) { /* rien */ }
   const x = (st[type] ||= { ok: 0, n: 0 }); x.n++; if (ok) x.ok++;
   try { localStorage.setItem('mazp-entrainement', JSON.stringify(st)); } catch (e) { /* rien */ }
+  noterEntrainement({ enigmes: 1, reussies: ok ? 1 : 0 });
 }
+
+/** Compteurs d'entraînement envoyés au serveur, pour le classement du maître du jeu. */
+function noterEntrainement(plus) {
+  if (!S.user || !S.backend || !S.backend.compterEntrainement) return;
+  // Une seule fois par appareil : on y ajoute les énigmes comptées sur cet appareil avant le classement.
+  const att = `mazp-entr-attente-${S.user.uid}`;
+  let avant = null;
+  try { avant = JSON.parse(localStorage.getItem(att) || 'null'); } catch (e) { /* rien */ }
+  const total = { ...plus };
+  if (avant) for (const [k, v] of Object.entries(avant)) total[k] = (total[k] || 0) + v;
+  S.backend.compterEntrainement(S.user.uid, total)
+    .then(() => { if (avant) try { localStorage.removeItem(att); } catch (e) { /* rien */ } })
+    .catch((e) => console.warn('Entraînement non compté', e));
+}
+
+/** Au chargement : met de côté (une fois) les énigmes déjà comptées sur cet appareil, puis les envoie si le profil existe. */
+function reprendreEntrainementLocal() {
+  if (!S.user) return;
+  try {
+    const cle = `mazp-entr-repris-${S.user.uid}`;
+    if (!localStorage.getItem(cle)) {
+      const st = JSON.parse(localStorage.getItem('mazp-entrainement') || '{}');
+      const enigmes = Object.values(st).reduce((a, x) => a + (x.n || 0), 0), reussies = Object.values(st).reduce((a, x) => a + (x.ok || 0), 0);
+      localStorage.setItem(cle, '1');
+      if (enigmes) localStorage.setItem(`mazp-entr-attente-${S.user.uid}`, JSON.stringify({ enigmes, reussies }));
+    }
+    if (S.player && localStorage.getItem(`mazp-entr-attente-${S.user.uid}`)) noterEntrainement({});
+  } catch (e) { /* stockage indisponible */ }
+}
+
 function nouvelEntrainement() {
   const type = S.trainType || 'quiment', diff = S.trainDiff || 3;
   if (type.startsWith('mj:')) { S.train = null; S.trainRes = null; S.questPick = null; return; }
