@@ -99,6 +99,7 @@ function declarationJe(s) {
  * `aff` vient de genererAffaire(…, prof = true).
  */
 export function dossierAffaire3(seed, aff) {
+  if (aff.recit3) return { ...aff.recit3, travaux: null }; // affaire écrite à la main
   const rc = recitAffaire(seed, aff);
   const rng = makeRng(`${seed}:dossier3:${aff.n}`);
   const vF = /^la /.test(aff.vic), e = vF ? 'e' : '';

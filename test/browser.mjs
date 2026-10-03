@@ -134,10 +134,23 @@ await page.locator('[data-action="mmo-mark"]').nth(1).click();
 await page.locator('[data-action="mmo-mark"]').nth(1).click();
 if ((await page.locator('.mmo.m-x').count()) !== 1 || (await page.locator('.mmo.m-ok').count()) < 1) errors.push('Enquête : les cases du tableau ne se cochent pas');
 await shot('17-enquete-suspect-ouvert');
-await page.locator('[data-action="accuser"]').first().click();
-await page.waitForSelector('[data-c="1"]');
-await page.click('[data-c="1"]');
-await page.waitForSelector('[data-action="accuser-annuler"]');
+if (await page.locator('[data-action="tab-confront"]').count()) {
+  // Affaire de meurtre : la confrontation se prépare au tableau (trois éléments).
+  await page.locator('[data-action="tab-confront"]').first().click();
+  await page.waitForSelector('.tb-volet [data-action="confront-piece"]');
+  for (let k = 0; k < 3; k++) await page.locator('.tb-volet [data-action="confront-piece"]:not([aria-pressed="true"])').first().click();
+  await page.click('[data-action="confront-valider"]');
+  await page.waitForSelector('[data-c="1"]');
+  await page.click('[data-c="1"]');
+  await shot('18-confrontation-prete');
+  await page.click('[data-action="tab-vue"][data-v="liste"]');
+  await page.waitForSelector('[data-action="accuser-annuler"]');
+} else {
+  await page.locator('[data-action="accuser"]').first().click();
+  await page.waitForSelector('[data-c="1"]');
+  await page.click('[data-c="1"]');
+  await page.waitForSelector('[data-action="accuser-annuler"]');
+}
 await shot('18-accusation-prete');
 await page.click('[data-action="enq-tab"][data-t="notes"]');
 await page.fill('#carnet-notes', 'Comparer les heures des alibis.');
@@ -145,8 +158,10 @@ await page.click('[data-action="enq-tab"][data-t="pieces"]');
 const partage = page.locator('[data-action="partage"]').first();
 if (await partage.count()) await partage.click();
 await shot('19-enquete-pieces');
-await page.click('[data-action="enq-tab"][data-t="planques"]');
-await page.waitForSelector('[data-action="carnet-mark"][data-t="p"]');
+if (await page.locator('[data-action="enq-tab"][data-t="planques"]').count()) {
+  await page.click('[data-action="enq-tab"][data-t="planques"]');
+  await page.waitForSelector('[data-action="carnet-mark"][data-t="p"]');
+}
 await page.click('[data-action="enq-tab"][data-t="notes"]');
 if ((await page.inputValue('#carnet-notes')) !== 'Comparer les heures des alibis.') errors.push('Notes du carnet perdues');
 await page.click('[data-action="enq-tab"][data-t="suspects"]');
@@ -189,13 +204,13 @@ await shot('26-diplomatie');
 await page.click('.savebar [data-action="save-orders"]');
 await page.waitForTimeout(300);
 // Péril : on force un budget très négatif dans la partie démo, puis on passe un tour.
-await page.evaluate(() => { const db = JSON.parse(localStorage.getItem('mazp-demo-v2')); db.parties[db.current].state.zones.moi.budget = -60; localStorage.setItem('mazp-demo-v2', JSON.stringify(db)); });
+await page.evaluate(() => { const db = JSON.parse(localStorage.getItem('mazp-demo-v3')); db.parties[db.current].state.zones.moi.budget = -60; localStorage.setItem('mazp-demo-v3', JSON.stringify(db)); });
 await page.goto(`${BASE}#hp`); await page.reload();
 await page.waitForSelector('[data-action="demo-next"]');
 await page.click('[data-action="demo-next"]');
 await page.waitForTimeout(600);
 // Si ce tour était le dernier de la saison, tout repart à zéro (budget compris) : pas de péril à vérifier.
-const nouvelleSaison = await page.evaluate(() => { const db = JSON.parse(localStorage.getItem('mazp-demo-v2')); return db.parties[db.current].state.turn === 1; });
+const nouvelleSaison = await page.evaluate(() => { const db = JSON.parse(localStorage.getItem('mazp-demo-v3')); return db.parties[db.current].state.turn === 1; });
 if (!nouvelleSaison && !(await page.locator('[aria-label="Zone en péril"]').count())) errors.push('Bandeau de péril absent');
 await shot('27-hp-peril');
 await page.goto(`${BASE}#gazette`);

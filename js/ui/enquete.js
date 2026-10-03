@@ -13,7 +13,9 @@ import {
   ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece,
   chanceVoisinage, VOISINAGE,
   ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee,
+  demarcheDe, mandatOk, lireDemarche,
 } from '../engine/enquete.js';
+import { lienItineraire } from '../engine/meurtre-mons.js';
 
 // ───── Carnet : marques et notes, gardées sur l'appareil ─────
 const MARQUES = [
@@ -89,6 +91,7 @@ export function partageCtl(piece) {
 
 export function sourceDe(p) {
   if (p.src === 'partage' && p.de && S.state.zones[p.de]) return `Partagée par ${zoneName(S.state.zones[p.de])}`;
+  if (DEMARCHES[p.src] && S.state.enquete) { const aff = affaire(S.state, S.state.enquete.n); if (aff.dem) return esc(demarcheDe(aff, p.src).nom); }
   return esc(SOURCES[p.src] || p.src);
 }
 
@@ -101,15 +104,18 @@ function pieceHtml(aff, p, { share = true } = {}) {
 }
 
 // Bouton de démarche (constatation ou vérification) : demandé, possible ou impossible, avec son prix.
+const faitsDe = (dos) => new Set(dos.pieces.map((p) => p.f));
 export function demBtn(aff, dos, x, label, { compact = false } = {}) {
   const d = S.draft, z = myZone();
   const dem = d.demarches || [];
   const on = dem.includes(x);
   const prix = coutDemarche(S.state, S.user.uid, x);
-  const dm = DEMARCHES[x.split(':')[0]];
+  const dm = demarcheDe(aff, x.split(':')[0]);
+  const ld = lireDemarche(x);
   let raison = '';
   if (!on) {
-    if (!pieceDemarche(aff, dos, x)) raison = 'au dossier';
+    if (aff.meurtre && ld && ld.k === 'moyens' && !mandatOk(aff, dos, ld.i) && !faitsDe(dos).has(x.replace('moyens', 'moy'))) raison = 'pas de mandat';
+    else if (!pieceDemarche(aff, dos, x)) raison = 'au dossier';
     else if (dem.length >= ENQ.maxDemarches) raison = `${ENQ.maxDemarches} par jour`;
     else if (prix > z.budget - coutTotal(d)) raison = 'budget';
   }
@@ -145,6 +151,12 @@ export function traqueHtml(tr) {
 
 // ───── Tableau : constatations puis suspects ─────
 function constatations(aff, dos) {
+  if (aff.meurtre) {
+    const connus = faitsDe(dos);
+    return `<section class="col" style="gap:8px" aria-label="Scène"><h2 class="section">La scène</h2>
+      ${['occ', 'moy', 'mob'].map((e) => { const fi = aff.fiches[e], dm = demarcheDe(aff, fi.dem), seq = aff.sceneSeq[fi.dem]; const kn = seq.filter((f) => connus.has(f));
+        return `<div class="constat ${kn.length ? 'fait' : ''}"><span class="kicker">${esc(fi.titre)} · ${esc(dm.nom)}</span>${kn.map((f) => `<p><strong>${esc(titrePiece(aff, f))}</strong> : ${esc(texteFait(aff, f))}</p>`).join('') || '<p class="muted">Rien encore.</p>'}${kn.length < seq.length ? demBtn(aff, dos, fi.dem, dm.nom) : ''}</div>`; }).join('')}</section>`;
+  }
   const lignes = [['occ', 'cam'], ['moy', 'labo'], ['mob', 'temoin']].map(([e, k]) => {
     const f = `c:${e}`, dm = DEMARCHES[k];
     const piece = dos.pieces.find((p) => p.f === f);
@@ -182,16 +194,17 @@ function suspectCard(aff, dos, s, i, carnet) {
     ${open ? `<div class="mmo-row">${cases}</div>` : ''}
     ${open ? `<div class="col" style="gap:8px">
       <p class="small" style="margin:0;line-height:1.55">${esc(fiche.vehicule)}<br>${esc(fiche.declaration)}<br>${fiche.trajet ? `${esc(fiche.trajet)}<br>` : ''}<span class="muted">${esc(fiche.rumeur)}</span></p>
-      ${aff.prof && s.alibi.type !== 'seul' ? `<p class="tiny muted" style="margin:0">Par la route, du lieu déclaré jusqu’${esc(/^le /.test(aff.lieu) ? `au ${aff.lieu.slice(3)}` : `à ${aff.lieu}`)} : ${Object.entries(MODES).map(([m, md]) => `${md.icone} ${minutes(s.alibi.pos, aff.pos, m, aff.travaux)} min`).join(' · ')}${aff.travaux ? ' (avec les travaux)' : ''}.</p>` : ''}
+      ${aff.ville === 'mons' ? `<a class="small" href="${lienItineraire(s.alibi.pos, aff.pos)}" target="_blank" rel="noopener">🚶 Itinéraire à pied jusqu’à la scène (Google Maps)</a>` : ''}
+      ${aff.prof && !aff.ville && s.alibi.type !== 'seul' ? `<p class="tiny muted" style="margin:0">Par la route, du lieu déclaré jusqu’${esc(/^le /.test(aff.lieu) ? `au ${aff.lieu.slice(3)}` : `à ${aff.lieu}`)} : ${Object.entries(MODES).map(([m, md]) => `${md.icone} ${minutes(s.alibi.pos, aff.pos, m, aff.travaux)} min`).join(' · ')}${aff.travaux ? ' (avec les travaux)' : ''}.</p>` : ''}
       ${aff.prof ? (() => { const a = dossierAffaire3(st.seed, aff).auditions[i]; return `<details class="piece"><summary class="kicker" style="cursor:pointer">PV d’audition · ${esc(a.heure)}</summary>${a.qr.map(([q, r]) => `<p class="small" style="margin:6px 0 0"><strong>Q :</strong> ${esc(q)}<br><strong>R :</strong> ${esc(r)}</p>`).join('')}</details>`; })() : ''}
       ${pieces.map((p) => pieceHtml(aff, p)).join('')}
       ${(() => { const surPiste = d.piste === i; return `<button type="button" class="btn small ${surPiste ? 'primary' : 'outline'} block" data-action="piste" data-i="${i}" aria-pressed="${surPiste}">${surPiste ? `✓ Piste prioritaire des enquêteurs (retirer)` : `Mettre les enquêteurs de Recherche sur ${esc(s.prenom)}`}</button>
         <span class="tiny muted" style="margin-top:-4px">${surPiste ? 'L’enquête de voisinage de ce soir cherche d’abord de ce côté.' : `Gratuit : l’enquête de voisinage cherchera ses pièces en priorité${mien ? '' : ' (hors de ta cellule : deux fois moins efficace)'}.`}</span>`; })()}
       <span class="tiny muted">Faire vérifier :</span>
-      <div class="dem-row">${demBtn(aff, dos, `alibi:${i}`, 'Son alibi', { compact: true })}${demBtn(aff, dos, `moyens:${i}`, 'Ses moyens', { compact: true })}${demBtn(aff, dos, `banque:${i}`, 'Son mobile', { compact: true })}</div>
+      <div class="dem-row">${demBtn(aff, dos, `alibi:${i}`, 'Son alibi', { compact: true })}${demBtn(aff, dos, `moyens:${i}`, aff.meurtre ? 'Perquisition' : 'Ses moyens', { compact: true })}${demBtn(aff, dos, `banque:${i}`, aff.meurtre ? 'Téléphone, comptes' : 'Son mobile', { compact: true })}</div>
       ${mien ? '' : `<div class="col" style="gap:6px"><p class="tiny muted" style="margin:0">Suspect suivi par ${suivi.length ? esc(suivi.join(', ')) : 'une autre cellule'} : tes vérifications coûtent le double. Demande-leur leurs pièces :</p>
         <div class="row" style="gap:6px;flex-wrap:wrap">${zonesDuSuspect(st, i).filter((u) => u !== S.user.uid && st.zones[u]).map((u) => `<button type="button" class="btn small" data-action="ecrire-a" data-uid="${esc(u)}">✉ ${esc(st.zones[u].nom)}</button>`).join('')}<a class="btn small ghost" href="#radio">Radio</a></div></div>`}
-      ${!dos.exclu && dos.accuse === null ? (accuse ? '<button class="btn small ghost" data-action="accuser-annuler">Retirer l’accusation</button>' : `<button class="btn small outline" data-action="accuser" data-i="${i}">Accuser ${esc(s.prenom)}</button>`) : ''}
+      ${!dos.exclu && dos.accuse === null ? (accuse ? '<button class="btn small ghost" data-action="accuser-annuler">Retirer l’accusation</button>' : aff.meurtre ? `<button class="btn small outline" data-action="tab-confront" data-i="${i}">Confronter ${esc(s.prenom)}</button>` : `<button class="btn small outline" data-action="accuser" data-i="${i}">Accuser ${esc(s.prenom)}</button>`) : ''}
     </div>` : ''}
   </article>`;
 }
@@ -242,12 +255,12 @@ function aujourdhui(aff, dos) {
   const d = S.draft, z = myZone(), st = S.state;
   const carnet = lireCarnet(aff.n);
   const dem = d.demarches || [];
-  const constatsFaites = ['occ', 'moy', 'mob'].filter((e) => dos.pieces.some((p) => p.f === `c:${e}`)).length;
+  const constatsFaites = aff.meurtre ? ['labo', 'cam', 'temoin'].filter((k) => aff.sceneSeq[k].some((f) => dos.pieces.some((p) => p.f === f))).length : ['occ', 'moy', 'mob'].filter((e) => dos.pieces.some((p) => p.f === `c:${e}`)).length;
   const constatsPrevues = dem.filter((x) => ['cam', 'labo', 'temoin'].includes(x)).length;
   const enLice = aff.suspects.map((_, i) => i).filter((i) => etatSuspect(carnet, i) !== 'exclu');
   const nomDem = (x) => {
     const [k, i] = x.split(':');
-    const dm = DEMARCHES[k];
+    const dm = demarcheDe(aff, k);
     return i !== undefined ? `${dm.nom} · ${aff.suspects[Number(i)].prenom}` : dm.nom;
   };
   let etape;
@@ -382,8 +395,9 @@ export function renderEnquete() {
   const tab = ['suspects', 'scene', 'pieces', 'planques', 'notes'].includes(S.enqTab) ? S.enqTab : 'suspects';
   const j = st.enquete.jour;
   const rebonds = rebondsPublies(st);
-  const constats = ['occ', 'moy', 'mob'].filter((e) => dos.pieces.some((p) => p.f === `c:${e}`)).length;
-  const tabs = [['suspects', 'Suspects'], ['scene', `Scène<small>${constats}/3</small>`], ['pieces', `Pièces<small>${dos.pieces.length}</small>`], ['planques', 'Planques'], ['notes', 'Notes']];
+  const constats = aff.meurtre ? ['labo', 'cam', 'temoin'].filter((k) => aff.sceneSeq[k].some((f) => dos.pieces.some((p) => p.f === f))).length : ['occ', 'moy', 'mob'].filter((e) => dos.pieces.some((p) => p.f === `c:${e}`)).length;
+  const tabs0 = [['suspects', 'Suspects'], ['scene', `Scène<small>${constats}/3</small>`], ['pieces', `Pièces<small>${dos.pieces.length}</small>`], ['planques', 'Planques'], ['notes', 'Notes']];
+  const tabs = aff.meurtre ? tabs0.filter(([k]) => k !== 'planques') : tabs0;
   let body;
   if (tab === 'pieces') body = vuePieces(aff, dos);
   else if (tab === 'planques') body = vuePlanques(aff, dos);
@@ -410,7 +424,7 @@ export function renderEnquete() {
     ${(st.traques || []).map(traqueHtml).join('')}
     ${aujourdhui(aff, dos)}
     ${mesPieces(aff, dos)}
-    <div class="segn onglets-enq" role="tablist" aria-label="Parties du dossier" style="grid-template-columns:repeat(5,minmax(0,1fr))">${tabs.map(([k, l]) => `<button type="button" role="tab" aria-selected="${tab === k}" data-action="enq-tab" data-t="${k}">${l}</button>`).join('')}</div>
+    <div class="segn onglets-enq" role="tablist" aria-label="Parties du dossier" style="grid-template-columns:repeat(${tabs.length},minmax(0,1fr))">${tabs.map(([k, l]) => `<button type="button" role="tab" aria-selected="${tab === k}" data-action="enq-tab" data-t="${k}">${l}</button>`).join('')}</div>
     <section class="col" style="gap:10px">${body}</section>
     <a class="small" href="#guide-enquete" style="text-align:center">Comment fonctionne l’enquête ?</a>
     ${S.savedOrders && !S.ordersDirty ? `<p class="tiny muted" style="margin:0;text-align:center">${icon('check', 14)} Choix enregistrés avec tes ordres du tour.</p>` : ''}

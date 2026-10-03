@@ -5,6 +5,8 @@ import { dossierAffaire3 } from '../engine/dossier.js';
 import { photoUne } from './scene-crime.js';
 import { planSvg3 } from './plan3.js';
 import { LIEUX } from '../engine/carte3.js';
+import { planMons } from './planmons.js';
+import { LIEUX_MONS } from '../engine/meurtre-mons.js';
 
 const cle = (aff) => `mazp-journal-${S.state.seed}-${aff.n}`;
 export function journalVu(aff) { try { return localStorage.getItem(cle(aff)) === '1' || !!(S.journalVus && S.journalVus[aff.n]); } catch (e) { return !!(S.journalVus && S.journalVus[aff.n]); } }
@@ -19,7 +21,7 @@ export function journalHtml(aff) {
   if (!aff.prof || S.journalOuvert !== aff.n) return '';
   const d = dossierAffaire3(S.state.seed, aff);
   const j = d.journal;
-  const sc = LIEUX[aff.pos];
+  const sc = (aff.ville === 'mons' ? LIEUX_MONS : LIEUX)[aff.pos];
   const crop = [Math.max(0, Math.min(880 - 300, sc.x - 150)), Math.max(0, Math.min(900 - 220, sc.y - 110)), 300, 220];
   const premier = !journalVu(aff);
   return `<div class="jr-wrap ${premier ? 'jr-tourne' : ''}" role="dialog" aria-modal="true" aria-label="La Gazette du Delta">
@@ -42,7 +44,7 @@ export function journalHtml(aff) {
         <aside class="jr-cote">
           <div class="jr-encadre"><span class="jr-encadre-t">Ce que l’on sait</span>
             <dl>${j.encadre.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl></div>
-          <figure class="jr-plan">${planSvg3(aff, { crop, id: 'jrp' })}<figcaption>Le quartier ${esc(aff.pres)}. Plan complet au tableau d’enquête.</figcaption></figure>
+          <figure class="jr-plan">${aff.ville === 'mons' ? planMons(aff, { crop, id: 'jrp' }) : planSvg3(aff, { crop, id: 'jrp' })}<figcaption>Le quartier ${esc(aff.pres)}. Plan complet au tableau d’enquête.</figcaption></figure>
           <div class="jr-second"><h3>${esc(j.second.titre)}</h3><p>${esc(j.second.texte)}</p></div>
           <div class="jr-breve ${j.breve[0] === 'Circulation' ? 'jr-alerte' : ''}"><span>${esc(j.breve[0])}</span><p>${esc(j.breve[1])}</p></div>
           <div class="jr-breve"><span>${esc(j.breve2[0])}</span><p>${esc(j.breve2[1])}</p></div>
