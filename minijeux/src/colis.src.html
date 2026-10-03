@@ -57,6 +57,13 @@
 .validate{margin-top:10px;width:100%;border-radius:11px;border:0;background:linear-gradient(180deg,#323a47,#262d38);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 2px 0 rgba(0,0,0,.4);color:var(--ink);font:700 13px var(--f-body);padding:9px;cursor:pointer}
 .validate:active{transform:translateY(1px)}
 .tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:16px;background:var(--surface);border:1px solid var(--stroke);margin-bottom:env(safe-area-inset-bottom,0px)}
+.holdring{padding:4px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--p,0)*360deg),rgba(255,255,255,.07) 0)}
+.btnhint{font:600 12px var(--f-body);color:var(--mute);text-align:center;min-height:34px;line-height:1.35;max-width:100%}
+.btnhint b{color:var(--ink)}
+.btnhint .dg{display:inline-block;min-width:1.3em;padding:0 4px;border-radius:5px;background:#120a09;color:#ff5a46;font-family:var(--f-mono);font-size:14px}
+.debrief{background:rgba(255,93,93,.1);border:1px solid rgba(255,93,93,.45);border-radius:14px;padding:10px 12px;font-size:13.5px;line-height:1.45;color:#ffe2e2}
+.debrief b{color:var(--bad)}
+.debrief.tuto{background:rgba(255,255,255,.04);border-color:var(--stroke-2);color:var(--ink)}
 .tabs button{border-radius:12px;padding:11px;font:700 14px var(--f-body);cursor:pointer;border:0;background:transparent;color:var(--mute);transition:background .15s,color .15s}
 .tabs button[aria-pressed="true"]{background:var(--surface-2);color:var(--ink)}
 .tabs button.focus{color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
@@ -89,7 +96,7 @@
       <div class="mod" id="mWires"><h3>Fils</h3><span class="lamp"></span><svg id="wires" viewBox="0 0 300 170" aria-label="Fils : glisse le doigt à travers un fil pour le couper"></svg></div>
       <div class="lower">
         <div class="mod" id="mBtn"><h3>Bouton</h3><span class="lamp"></span>
-          <div class="btnwrap"><div class="bezel"><button id="bigbtn">STOP</button></div><div class="strip" id="strip"></div></div>
+          <div class="btnwrap"><div class="holdring" id="holdring"><div class="bezel"><button id="bigbtn">STOP</button></div></div><div class="strip" id="strip"></div><div class="btnhint" id="btnhint"></div></div>
         </div>
         <div class="mod" id="mSw"><h3>Interrupteurs</h3><span class="lamp"></span>
           <div class="sw" id="leds"></div>
@@ -98,6 +105,7 @@
         </div>
       </div>
     </div>
+    <div class="debrief" id="debrief" role="status" hidden></div>
   </div>
   <div class="view" id="vFiche" hidden>
     <div class="clip"><div class="fiche">
@@ -116,12 +124,12 @@
       <p class="note">Les fils se comptent de haut en bas.</p>
       <h3><span>2</span>Bouton</h3>
       <ol>
-        <li>Bouton rouge marqué STOP : <b>appui bref</b>.</li>
+        <li>Bouton rouge marqué STOP : <b>appui bref</b> (touche et lâche tout de suite).</li>
         <li>Étiquette FRAGILE et bouton jaune : <b>appui bref</b>.</li>
-        <li>Sinon : <b>maintiens</b> le bouton. Une bande s'allume. Relâche quand l'horloge de l'appareil affiche :
-          <br><span class="pill" style="background:#3d7fd9">bleue</span> un <b>4</b> &nbsp; <span class="pill" style="background:#d6a915">jaune</span> un <b>5</b> &nbsp; <span class="pill" style="background:#7a7f88">autre</span> un <b>1</b>
-          <br><span class="note">(n'importe où dans l'horloge)</span></li>
+        <li>Sinon : <b>garde le doigt sur le bouton</b>. Après un instant, une bande de couleur s'allume dessous. Ne lâche pas : relâche seulement quand le <b>dernier chiffre de l'horloge</b> est :
+          <br><span class="pill" style="background:#3d7fd9">bande bleue</span> <b>4</b> &nbsp; <span class="pill" style="background:#d6a915">bande jaune</span> <b>5</b> &nbsp; <span class="pill" style="background:#7a7f88">autre couleur</span> <b>1</b></li>
       </ol>
+      <p class="note">Exemple, bande bleue : relâche à 01:24 ou 00:54, pas à 00:41. Pendant que tu maintiens, l'horloge est recopiée sous le bouton.</p>
       <h3><span>3</span>Interrupteurs</h3>
       <ol>
         <li>LED allumée : interrupteur <b>en haut</b>. LED éteinte : <b>en bas</b>.</li>
@@ -145,13 +153,28 @@ function genSerial(){
   if(Math.random()<.3 && !s.includes('K')) s = s.slice(0,4)+'K'+s.slice(5);
   return s;
 }
-function wireAnswer(){
-  const w=C.wires, n=w.length, odd=+C.serial.slice(-1)%2===1;
-  if(!w.includes('rouge')) return 1;
-  if(w[n-1]==='blanc') return n-1;
-  if(w.filter(c=>c==='bleu').length>1) return w.lastIndexOf('bleu');
-  if(odd) return w.indexOf('rouge');
-  return 0;
+function wireRule(){
+  const w=C.wires, n=w.length, last=C.serial.slice(-1), odd=+last%2===1;
+  if(!w.includes('rouge')) return {i:1, raison:'aucun fil rouge : on coupe le 2e fil'};
+  if(w[n-1]==='blanc') return {i:n-1, raison:'le dernier fil est blanc : on coupe le dernier fil'};
+  if(w.filter(c=>c==='bleu').length>1) return {i:w.lastIndexOf('bleu'), raison:'il y a plus d’un fil bleu : on coupe le dernier fil bleu'};
+  if(odd) return {i:w.indexOf('rouge'), raison:`le n° de série finit par ${last}, un chiffre impair : on coupe le premier fil rouge`};
+  return {i:0, raison:`aucune règle ne s’applique (n° de série pair, ${last}) : on coupe le premier fil`};
+}
+const wireAnswer = () => wireRule().i;
+const NOMC = {rouge:'rouge', bleu:'bleue', jaune:'jaune', blanc:'blanche', noir:'noire'};
+function btnRaison(){
+  const b=C.btn;
+  if(b.color==='rouge' && b.label==='STOP') return 'c’est un bouton rouge marqué STOP';
+  if(C.fragile && b.color==='jaune') return 'le colis porte l’étiquette FRAGILE et le bouton est jaune';
+  return `ce n’est ni un bouton rouge marqué STOP, ni un bouton jaune avec l’étiquette FRAGILE`;
+}
+/** Explique une erreur : sous l'appareil pendant la partie, puis dans le bilan. */
+function expliquer(txt){
+  C.details.push(txt);
+  const d=$('debrief'); d.hidden=false; d.className='debrief'+(Shell.st.mode==='tuto'?' tuto':'');
+  d.innerHTML=`<b>${Shell.st.mode==='tuto'?'Pas tout à fait':'Erreur'}</b> · ${txt}`;
+  setTimeout(()=>d.scrollIntoView({block:'nearest',behavior:'smooth'}),60);
 }
 function btnMode(){
   const b=C.btn;
@@ -165,7 +188,7 @@ function swTarget(){
 }
 
 function setup(p){
-  Object.assign(C,{serial:p.serial,fragile:p.fragile,wires:p.wires,cut:p.wires.map(()=>false),btn:p.btn,leds:p.leds,togs:p.togs.slice(),done:{w:false,b:false,s:false},strikes:0,faults:0,over:false});
+  Object.assign(C,{details:[],serial:p.serial,fragile:p.fragile,wires:p.wires,cut:p.wires.map(()=>false),btn:p.btn,leds:p.leds,togs:p.togs.slice(),done:{w:false,b:false,s:false},strikes:0,faults:0,over:false});
   $('serial').textContent=C.serial;
   const stk=$('sticker'); stk.textContent=C.fragile?'FRAGILE':'pas d\'étiquette'; stk.className='sticker'+(C.fragile?'':' none');
   $('strikes').innerHTML = Array.from({length:C.cfg.lives>5?0:Math.max(0,C.cfg.lives-1)},()=>'<i></i>').join('');
@@ -174,12 +197,13 @@ function setup(p){
   $('leds').innerHTML=C.leds.map(l=>`<span class="led ${l?'on':''}"></span>`).join('');
   $('togs').innerHTML=C.togs.map((t,i)=>`<div style="display:grid;justify-items:center;gap:2px"><button class="tog ${t?'up':''}" data-i="${i}" aria-label="Interrupteur ${i+1}"></button><span class="swnum">${i+1}</span></div>`).join('');
   ['mWires','mBtn','mSw'].forEach(id=>$(id).classList.remove('done','focus'));
+  $('debrief').hidden=true; $('holdring').style.setProperty('--p',0);
   drawWires(); status(); view('dev');
 }
 function randomPuzzle(){
   const n=randi(4,6), cols=Object.keys(COL);
   const wires=Array.from({length:n},()=>pick(cols));
-  const btn={color:pick(cols.filter(c=>c!=='noir')), label:pick(['STOP','ARMER','MAINTENIR','ANNULER']), strip:pick(['bleu','jaune','blanc','rouge'])};
+  const btn={color:pick(cols.filter(c=>c!=='noir')), label:pick(['STOP','ARMER','ANNULER','TESTER']), strip:pick(['bleu','jaune','blanc','rouge'])};
   if(Math.random()<.25){ btn.color='rouge'; btn.label='STOP'; }
   let leds, togs; do{ leds=[0,1,2,3].map(()=>Math.random()<.5?1:0); togs=[0,1,2,3].map(()=>Math.random()<.5?1:0); }while(leds.join()===togs.join());
   return {serial:genSerial(), fragile:Math.random()<.4, wires, btn, leds, togs};
@@ -220,23 +244,31 @@ $('wires').addEventListener('pointermove',e=>{
 ['pointerup','pointercancel'].forEach(ev=>$('wires').addEventListener(ev,()=>gest=null));
 function cutWire(i,x){
   C.cut[i]=x; drawWires(); Shell.blip(2200,.04,'square',.04);
-  if(i===wireAnswer()){ solve('w','Fil coupé'); }
-  else if(Shell.st.mode==='tuto'){ Shell.toast('Pas ce fil','bad'); Shell.bad(); setTimeout(()=>{C.cut[i]=false; drawWires();},500); }
+  const r=wireRule();
+  if(i===r.i){ solve('w','Fil coupé'); return; }
+  expliquer(`Fils : tu as coupé le fil ${i+1} (${C.wires[i]}). Il fallait couper le fil ${r.i+1} (${C.wires[r.i]}) : ${r.raison}.`);
+  if(Shell.st.mode==='tuto'){ Shell.toast('Pas ce fil','bad'); Shell.bad(); setTimeout(()=>{C.cut[i]=false; drawWires();},500); }
   else strike('Mauvais fil');
 }
 
 /* ---------- bouton ---------- */
 let press=null;
+const HOLD=.4; // secondes : au-delà, c'est un maintien
 const bb=$('bigbtn');
 bb.addEventListener('pointerdown',e=>{ if(C.over||!canAct('b')) return; e.preventDefault(); try{bb.setPointerCapture(e.pointerId)}catch(_){} bb.classList.add('down'); press={t:performance.now(),lit:false}; Shell.blip(300,.04,'triangle',.04); });
 function release(){
   if(!press) return; bb.classList.remove('down');
   const held=(performance.now()-press.t)/1000, mode=btnMode(); press=null;
-  $('strip').style.background=''; $('strip').style.boxShadow='';
-  if(mode==='tap'){ if(held<.45) solve('b','Bouton neutralisé'); else miss('b','Il fallait un appui bref'); return; }
-  if(held<.45){ miss('b','Il fallait maintenir'); return; }
-  const clock=$('clock').textContent, dg=holdDigit();
-  if(clock.includes(dg)) solve('b','Bouton neutralisé'); else miss('b',`Pas de ${dg} sur l'horloge`);
+  $('strip').style.background=''; $('strip').style.boxShadow=''; $('holdring').style.setProperty('--p',0);
+  const clock=$('clock').textContent, dg=holdDigit(), bande=NOMC[C.btn.strip];
+  if(mode==='tap'){
+    if(held<HOLD) solve('b','Bouton neutralisé');
+    else { expliquer(`Bouton : tu l’as maintenu, il fallait un appui bref (toucher et lâcher tout de suite), car ${btnRaison()}.`); miss('b','Il fallait un appui bref'); }
+    return;
+  }
+  if(held<HOLD){ expliquer(`Bouton : tu l’as lâché tout de suite. Il fallait garder le doigt dessus, car ${btnRaison()}. La bande ${bande} se serait allumée : il fallait relâcher quand le dernier chiffre de l’horloge était un ${dg}.`); miss('b','Il fallait maintenir'); return; }
+  if(clock.slice(-1)===dg) solve('b','Bouton neutralisé');
+  else { expliquer(`Bouton : tu as relâché à ${clock}, dernier chiffre ${clock.slice(-1)}. Avec la bande ${bande}, il fallait relâcher quand le dernier chiffre était un ${dg} (par exemple à ${clock.slice(0,-1)}${dg}).`); miss('b',`Il fallait un ${dg}`); }
 }
 bb.addEventListener('pointerup',release); bb.addEventListener('pointercancel',release);
 bb.addEventListener('keydown',e=>{ if((e.key===' '||e.key==='Enter')&&!e.repeat&&!press&&canAct('b')&&!C.over){ e.preventDefault(); bb.classList.add('down'); press={t:performance.now(),lit:false}; } });
@@ -247,15 +279,21 @@ $('togs').addEventListener('click',e=>{ const t=e.target.closest('.tog'); if(!t|
 $('validate').onclick=()=>{
   if(C.over||!canAct('s')) return;
   const tg=swTarget();
-  if(tg.every((u,i)=>!!C.togs[i]===u)) solve('s','Circuit coupé'); else miss('s','Mauvaise position');
+  if(tg.every((u,i)=>!!C.togs[i]===u)){ solve('s','Circuit coupé'); return; }
+  const faux=tg.map((u,i)=>!!C.togs[i]===u?null:`le n° ${i+1} devait être ${u?'en haut':'en bas'}`).filter(Boolean);
+  const regle=['LED allumée = en haut, éteinte = en bas'];
+  if(C.fragile) regle.push('puis tout inverser (étiquette FRAGILE)');
+  if(C.serial.includes('K')) regle.push(`et le n° 4 toujours en bas (lettre K dans ${C.serial})`);
+  expliquer(`Interrupteurs : ${faux.join(', ')}. Règle : ${regle.join(', ')}.`);
+  miss('s','Mauvaise position');
 };
 
 /* ---------- logique ---------- */
 function canAct(m){ if(C.done[m]) return false; if(Shell.st.mode==='tuto'){ const need=[null,null,'w','b','s'][C.tutoStep]; return need===m; } return Shell.st.mode==='play'; }
 function solve(m,msg){
-  C.done[m]=true; $({w:'mWires',b:'mBtn',s:'mSw'}[m]).classList.add('done'); Shell.good(); Shell.toast(msg,'ok'); status();
+  C.done[m]=true; $('debrief').hidden=true; $({w:'mWires',b:'mBtn',s:'mSw'}[m]).classList.add('done'); Shell.good(); Shell.toast(msg,'ok'); status();
   if(Shell.st.mode==='tuto'){ tutoNext(); return; }
-  if(C.done.w&&C.done.b&&C.done.s){ C.over=true; Shell.win(); const used=C.cfg.time-Shell.st.timeLeft; setTimeout(()=>Shell.result({ok:true,faults:C.faults,stats:[['Temps',Math.round(used)+' s'],['Erreurs',C.faults]]}),700); }
+  if(C.done.w&&C.done.b&&C.done.s){ C.over=true; Shell.win(); const used=C.cfg.time-Shell.st.timeLeft; setTimeout(()=>Shell.result({ok:true,faults:C.faults,details:C.details,stats:[['Temps',Math.round(used)+' s'],['Erreurs',C.faults]]}),700); }
 }
 function miss(m,msg){
   if(Shell.st.mode==='tuto'){ Shell.toast(msg,'bad'); Shell.bad(); return; }
@@ -268,10 +306,11 @@ function strike(msg){
   status();
   if(C.strikes>=C.cfg.lives) boom();
 }
-function boom(){
+function boom(temps){
+  if(temps) C.details.push(`Temps écoulé : il restait ${3-Object.values(C.done).filter(Boolean).length} module${3-Object.values(C.done).filter(Boolean).length>1?'s':''} à neutraliser.`);
   C.over=true; Shell.stopTimer(); Shell.blip(60,.8,'sawtooth',.12); Shell.buzz([200,80,300]);
   $('box').style.filter='brightness(2.4) saturate(.2)'; setTimeout(()=>$('box').style.filter='',350);
-  setTimeout(()=>Shell.result({ok:false,faults:C.faults,stats:[['Modules',Object.values(C.done).filter(Boolean).length+'/3'],['Erreurs',C.faults]]}),650);
+  setTimeout(()=>Shell.result({ok:false,faults:C.faults,details:C.details,stats:[['Modules',Object.values(C.done).filter(Boolean).length+'/3'],['Erreurs',C.faults]]}),650);
 }
 function status(){ $('modsTxt').textContent=`Modules ${Object.values(C.done).filter(Boolean).length}/3`; $('faultTxt').textContent=`Erreurs ${C.faults}`+(C.cfg&&C.cfg.lives&&Shell.st.mode==='play'?` · tolérées ${C.cfg.lives-1}`:''); }
 function view(v){ $('vDevice').hidden=v!=='dev'; $('vFiche').hidden=v!=='fiche'; $('tDev').setAttribute('aria-pressed',v==='dev'); $('tFiche').setAttribute('aria-pressed',v==='fiche');
@@ -283,7 +322,7 @@ const TUTO = [
   null,
   'Repère le <b>n° de série</b> et l\'<b>étiquette</b> : les règles en dépendent. Ouvre la <b>Fiche SEDEE</b> avec l\'onglet du bas.',
   'Section Fils : ici il n\'y a <b>aucun fil rouge</b>, donc tu coupes le <b>2e fil</b> (le jaune). Reviens sur l\'<b>Appareil</b> et glisse le doigt de haut en bas à travers ce fil.',
-  'Bouton bleu « MAINTENIR » : ce n\'est ni un STOP rouge, ni un bouton jaune avec FRAGILE. Donc tu <b>maintiens</b>. La bande devient bleue : relâche quand l\'horloge contient un <b>4</b>.',
+  'Bouton bleu « ARMER » : ce n\'est ni un STOP rouge, ni un bouton jaune avec FRAGILE. Donc <b>garde le doigt dessus</b> : l\'anneau se remplit, puis la bande s\'allume en bleu. Regarde l\'horloge recopiée sous le bouton et <b>relâche quand le dernier chiffre est un 4</b>.',
   'Interrupteurs : <b>LED allumée = en haut</b>. Pas d\'étiquette FRAGILE, pas de K dans le n° de série. Règle les 4 interrupteurs puis appuie sur <b>VALIDER</b>.'
 ];
 function tutoNext(){
@@ -307,10 +346,10 @@ Shell.init({
   malus:"explosion dans le périmètre de sécurité. 2 agents de l'Intervention, légèrement blessés, sont indisponibles 2 jours.",
   onMenu(){ C.over=true; ['mWires','mBtn','mSw'].forEach(id=>$(id).classList.remove('focus')); $('tFiche').classList.remove('focus'); },
   onInit(){ C.cfg={lives:2,time:120}; setup(randomPuzzle()); },
-  onPlay(cfg){ C.cfg=cfg; setup(randomPuzzle()); Shell.startTimer(cfg.time,()=>{ if(!C.over) boom(); }); },
+  onPlay(cfg){ C.cfg=cfg; setup(randomPuzzle()); Shell.startTimer(cfg.time,()=>{ if(!C.over) boom(true); }); },
   onTuto(){
     C.cfg={lives:99,time:0};
-    setup({serial:'TR-5B2',fragile:false,wires:['bleu','jaune','blanc','noir'],btn:{color:'bleu',label:'MAINTENIR',strip:'bleu'},leds:[1,0,1,1],togs:[0,0,0,1]});
+    setup({serial:'TR-5B2',fragile:false,wires:['bleu','jaune','blanc','noir'],btn:{color:'bleu',label:'ARMER',strip:'bleu'},leds:[1,0,1,1],togs:[0,0,0,1]});
     const loop=()=>Shell.startTimer(119.9,()=>{ if(Shell.st.mode==='tuto') loop(); }); loop();
     C.tutoStep=0; tutoNext();
   },
@@ -321,7 +360,16 @@ Shell.init({
     $('tbfill').style.width=(jeu&&st.timeTotal?Math.max(0,Math.min(1,st.timeLeft/st.timeTotal))*100:100)+'%';
     const r=st.timerRate||1; $('tbrate').hidden=!(jeu&&r>1.001); $('tbrate').textContent='accéléré ×'+String(Math.round(r*100)/100).replace('.',',');
     $('timerbar').classList.toggle('warn',jeu&&st.timeLeft<10);
-    if(press && !press.lit && (performance.now()-press.t)>450 && btnMode()==='hold'){ press.lit=true; const c=COL[C.btn.strip]; $('strip').style.background=c; $('strip').style.boxShadow=`0 0 10px ${c}`; }
+    // Bouton : anneau de maintien, bande allumée, horloge recopiée sous le bouton.
+    const hint=$('btnhint');
+    if(press){
+      const p=Math.min(1,(performance.now()-press.t)/(HOLD*1000));
+      $('holdring').style.setProperty('--p',p);
+      if(p>=1 && !press.lit){ press.lit=true; const c=COL[C.btn.strip]; $('strip').style.background=c; $('strip').style.boxShadow=`0 0 10px ${c}`; Shell.blip(520,.05,'triangle',.04); }
+      const ck=$('clock').textContent;
+      hint.innerHTML = press.lit ? `Bande <b>${NOMC[C.btn.strip]}</b><br>${ck.slice(0,-1)}<span class="dg">${ck.slice(-1)}</span>` : 'Appui…';
+    } else if(C.done.b) hint.innerHTML='<b>Neutralisé</b>';
+    else hint.innerHTML='Appui bref ou maintien :<br>regarde la fiche';
   }
 });
 </script>
