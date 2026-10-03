@@ -7,6 +7,7 @@ import { monAppui } from './incidents.js';
 import { renderTableau } from './tableau.js';
 import { aideBtn } from './aide.js';
 import { journalHtml, journalAuto } from './journal.js';
+import { tutoActif } from './tutoriel.js';
 import { dossierAffaire3 } from '../engine/dossier.js';
 import { minutes, MODES } from '../engine/carte3.js';
 import { planifierEnvoi, synchroniser, synchroniserMaintenant, contenuChange, carnetVide } from './carnet-sync.js';
@@ -417,7 +418,7 @@ export function renderEnquete() {
   }
   if (vueEnquete() === 'tableau') return renderTableau();
   const aff = affaire(st, st.enquete.n);
-  journalAuto(aff);
+  if (!tutoActif()) journalAuto(aff);
   const dos = dossierDe(st, z);
   const tab = ['suspects', 'scene', 'pieces', 'planques', 'notes'].includes(S.enqTab) ? S.enqTab : 'suspects';
   const j = st.enquete.jour;

@@ -16,6 +16,7 @@ import { LIEUX as LIEUX3, MODES, itineraire, fmtDist, nomTroncon } from '../engi
 import { dossierAffaire3, numeroPv } from '../engine/dossier.js';
 import { planSvg3, posLieu3, PLANQUE_POS3 } from './plan3.js';
 import { journalHtml, journalAuto } from './journal.js';
+import { tutoActif } from './tutoriel.js';
 import { planMons } from './planmons.js';
 import { photoIndice, aPhoto } from './indices-photo.js';
 import { sceneFouilleHtml } from './scene-fouille.js';
@@ -687,8 +688,9 @@ export function renderTableau() {
   const nbBoite = et.boite.length + et.fichesAFaire.length;
   const neuf = et.fichesAFaire.length || et.boite.some((p) => p.j >= st.enquete.jour - 1);
   const fil = S.tabMode === 'fil';
-  journalAuto(aff);
-  if (S.tabTuto === undefined && !tutoTableauVu()) S.tabTuto = 0;
+  // Pendant la visite guidée : ni le journal plein écran ni le tuto du tableau par-dessus.
+  if (!tutoActif()) journalAuto(aff);
+  if (S.tabTuto === undefined && !tutoTableauVu() && !tutoActif()) S.tabTuto = 0;
   const spot = S.tabTuto !== null && S.tabTuto !== undefined ? TUTO[S.tabTuto].spot : null;
   const sp = (k) => (spot === k ? 'tb-spot' : '');
   const traque = (st.traques || []).length;

@@ -3,7 +3,8 @@
 // gestes à faire soi-même (ouvrir les Ordres, déplacer un agent, valider). On peut la quitter
 // à tout moment et la relancer depuis le Guide ; les anciens joueurs peuvent la zapper.
 import { S, esc, myZone } from './common.js';
-import { ENQ, delaiTraque } from '../engine/enquete.js';
+import { ENQ, delaiTraque, affaire } from '../engine/enquete.js';
+import { marquerTutoVu } from './tableau.js';
 
 const CLE = 'mazp-tuto';            // 'fait' ou 'zappe' une fois terminée ou refusée
 const CLE_ETAPE = 'mazp-tuto-etape'; // étape en cours (reprise après un rechargement)
@@ -22,43 +23,46 @@ const alloc = () => JSON.stringify((S.draft && S.draft.alloc) || {});
 const ONGLETS = { hp: 'HP', ordres: 'Ordres', terrain: 'Terrain', enquete: 'Enquête', quete: 'Énigmes', carte: 'Carte', radio: 'Radio' };
 /** Étape « onglet » dont l'écran n'est pas encore ouvert : le joueur doit toucher l'onglet. */
 const attendOnglet = (e) => !!(e.onglet && e.route && S.route !== e.route);
+/** L'affaire en cours se conclut-elle par une confrontation (meurtre) plutôt qu'une accusation ? */
+const meurtre = () => { try { const n = S.state && S.state.enquete && S.state.enquete.n; return !!(n && affaire(S.state, n).meurtre); } catch (e) { return false; } };
+
 export const ETAPES = [
   {
     id: 'bienvenue', route: 'hp',
     titre: () => `Bienvenue, chef de la ${zoneNom()} !`,
-    texte: () => `<p>Tu diriges une zone de police du District Delta, face à d’autres chefs de zone. En trois minutes, on fait le tour des <strong>sept onglets</strong> et du <strong>fil rouge</strong> de ta journée.</p>
+    texte: () => `<p>Tu diriges une zone de police du District Delta, aux côtés d’autres chefs de zone. En trois minutes : les <strong>sept onglets</strong> et ce qu’il y a à faire chaque jour.</p>
       <p class="tuto-note">Tu peux quitter à tout moment : la visite se relance depuis le Guide du joueur.</p>`,
   },
   {
     id: 'fil-rouge', route: 'hp', cible: 'section[aria-label="Prochain tour"]',
     titre: 'Le fil rouge de ta journée',
-    texte: `<p><strong>Tout se joue à 20:00</strong>, pour toutes les zones en même temps : personne n’est avantagé parce qu’il a joué plus tôt.</p>
-      <p>Cette liste te dit ce qu’il reste à faire aujourd’hui : <strong>ordres, grande décision, enquête, énigmes</strong>. Cinq minutes par jour suffisent. Un point rouge sur un onglet signale aussi qu’il t’attend.</p>`,
+    texte: `<p><strong>Tout se joue à 20:00</strong>, pour toutes les zones en même temps : jouer tôt ne donne aucun avantage. Cette liste dit ce qu’il te reste à faire avant ce soir.</p>
+      <p>Le <strong>ciel</strong> annonce ta journée : clair, chargé, orage ou éclaircie. Touche sa pastille pour comprendre. Certains jours, un <strong>dilemme</strong> apparaît juste en dessous : deux choix, à trancher avant 20:00.</p>`,
   },
   {
     id: 'incidents', route: 'hp', cible: 'section[aria-label="Incidents du jour"]',
     titre: 'Les incidents du jour',
-    texte: `<p>Une ou deux fois par jour, à une heure imprévue, un <strong>incident</strong> tombe sur un de tes services : colis suspect, porte à crocheter, voiture à dégager, dossier à relire. Un compte à rebours t’annonce le prochain.</p>
-      <p>Tu as <strong>12 heures</strong> pour jouer le mini-jeu, avec <strong>un seul essai</strong>. Réussi : des PS, un bonus pour ta zone et ta jauge de skins monte. Raté : −1 de moral, pas plus. Pas joué : ton équipe se débrouille seule. Chaque mini-jeu a son tuto, et tu peux t’entraîner dans l’écran Énigmes.</p>`,
+    texte: `<p>Une ou deux fois par jour, à une heure imprévue, un <strong>incident</strong> tombe sur un de tes services : colis suspect, porte à crocheter, parking à débloquer, rapport à corriger.</p>
+      <p>Tu as <strong>12 heures</strong> pour jouer le mini-jeu, avec <strong>un seul essai</strong>. Si tu réussis : des PS, un bonus, et ta jauge de skins monte. Si tu rates : −1 de moral, c’est tout. Chaque mini-jeu a son propre tuto.</p>`,
   },
   {
     id: 'zone', route: 'hp', cible: 'section[aria-label="Ma zone"]',
     titre: 'Ta zone en un coup d’œil',
-    texte: `<p>L’<strong>IPZ</strong> est ta note du jour, sur 100. La moyenne de tes IPZ fait ton classement de la saison.</p>
-      <p>Surveille surtout la <strong>satisfaction</strong> des citoyens (le plus gros poids), le <strong>moral</strong> (il multiplie l’efficacité de tous tes agents), le budget et la réputation. Chaque <strong>?</strong> explique une jauge en quelques lignes.</p>`,
+    texte: `<p>L’<strong>IPZ</strong> est ta note du jour, sur 100 ; c’est la moyenne de la saison qui compte au classement.</p>
+      <p>Surveille la <strong>satisfaction</strong> (le plus gros poids) et le <strong>moral</strong>, qui règle l’efficacité de tous tes agents. Chaque <strong>?</strong> détaille le calcul avec tes chiffres. Touche ton commissariat pour voir ce que te rapportent tes bâtiments.</p>`,
   },
   {
-    id: 'rapport', route: 'hp', cible: '[data-action="toggle-rapport"]', parent: 'section',
+    id: 'rapport', route: 'hp', cible: '[data-action="toggle-rapport"]', parent: '.trio',
     titre: 'Chaque soir : rapport et Gazette',
-    texte: `<p>Après 20:00, ton <strong>rapport</strong> détaille ce qui s’est passé chez toi, et la <strong>Gazette</strong> raconte la soirée du district.</p>
-      <p>C’est là que tu comprends ce qui a marché… ou pas. Le classement et le guide complet sont juste à côté.</p>`,
+    texte: `<p>Après 20:00, ton <strong>rapport</strong> dit ce qui s’est passé chez toi et pourquoi. La <strong>Gazette</strong> raconte la soirée du district.</p>
+      <p>Plus bas sur l’HP : <strong>Mon équipe</strong>, cinq figures qui encadrent chacune un service et gagnent des surnoms (et du bonus) avec l’expérience.</p>`,
   },
   {
     id: 'affectation', route: 'ordres', onglet: 'L’onglet le plus important de la journée : c’est là que tu décides où travaillent tes agents.',
     cible: 'section[aria-label="Affectation des agents"]',
     titre: 'Cinq services à équilibrer',
-    texte: `<p><strong>Intervention</strong> traite les incidents du jour · <strong>Proximité</strong> calme les quartiers · <strong>Recherche</strong> élucide les dossiers et nourrit l’enquête · <strong>Roulage</strong> rapporte des amendes · <strong>Accueil</strong> vide la paperasse.</p>
-      <p>Aucun service ne suffit seul : un incident raté ou une pile de dossiers se paie vite. Chaque <strong>?</strong> détaille un service.</p>`,
+    texte: `<p><strong>Intervention</strong> traite les incidents · <strong>Proximité</strong> calme les quartiers · <strong>Recherche</strong> élucide les dossiers et nourrit l’enquête · <strong>Roulage</strong> rapporte des amendes · <strong>Accueil</strong> vide la paperasse.</p>
+      <p>Sous chaque service, son résultat estimé pour ce soir. Aucun ne suffit seul : un incident raté ou une pile de dossiers se paie vite.</p>`,
   },
   {
     id: 'proxi', route: 'ordres', cible: '[data-action="alloc"][data-s="proximite"][data-d="1"]', parent: '.between',
@@ -69,77 +73,80 @@ export const ETAPES = [
   {
     id: 'rythme', route: 'ordres', cible: 'section[aria-label="Rythme"]',
     titre: 'Le rythme de travail',
-    texte: `<p><strong>Renforcé</strong> : +20 % d’efficacité, mais le moral baisse et les heures sup’ coûtent. Plusieurs jours de suite, gare à l’épuisement… et aux accidents de véhicules.</p>
+    texte: `<p><strong>Renforcé</strong> : +20 % d’efficacité, mais le moral baisse et les heures sup’ coûtent. Plusieurs jours de suite, attention à l’épuisement.</p>
       <p><strong>Allégé</strong> : l’inverse, pour remonter le moral. Dans le doute, reste en <strong>Normal</strong>.</p>`,
   },
   {
-    id: 'decision', route: 'ordres', cible: 'section[aria-label="Grande décision"]',
-    titre: 'Une grande décision par jour',
-    texte: `<p>Recruter, former un service, acheter du matériel ou un véhicule, construire une annexe, agrandir un bâtiment : <strong>une seule par tour</strong>, alors choisis bien.</p>
-      <p>Juste en dessous, les <strong>dépenses du jour</strong> (réserve, prime, prévention, révision des véhicules…) se cumulent avec elle.</p>`,
+    id: 'decision', route: 'ordres', cible: ['section[aria-label="Ce soir aussi"]', '[data-action="ord-open"][data-k="decision"]'],
+    titre: 'Ce soir aussi',
+    texte: `<p>La <strong>grande décision</strong> : recruter, former, équiper, acheter un véhicule, construire ou agrandir. <strong>Une seule par tour</strong>, alors choisis bien.</p>
+      <p>Dans la même carte : les <strong>dépenses du jour</strong>, les agents envoyés dans la <strong>zone de non-droit</strong> et la figure de <strong>ton équipe</strong> que tu envoies en mission. Touche une ligne pour l’ouvrir.</p>`,
   },
   {
     id: 'valider', route: 'ordres', cible: ['.savebar [data-action="save-orders"]', 'main .card.green', 'main [data-action="save-orders"]'],
     titre: 'À toi : valide tes ordres',
-    texte: `<p>Tant que ce n’est pas validé, rien n’est enregistré. Tu peux encore changer d’avis <strong>jusqu’à 20:00</strong>.</p>
+    texte: `<p>Tant que tu n’as pas validé, rien n’est enregistré. Tu peux encore changer d’avis <strong>jusqu’à 20:00</strong>.</p>
       <p>Un jour sans ordres ? Le <strong>pilote automatique</strong> reprend ta dernière répartition, mais ce tour ne compte pas pour ton classement.</p>`,
     geste: { consigne: 'Touche <strong>Valider</strong>.', fait: () => !!S.savedOrders && !S.ordersDirty },
   },
   {
     id: 'terrain', route: 'terrain', onglet: 'Ce qui se joue avec les autres zones.', cible: ['section[aria-label="Zone de non-droit"]', 'section[aria-label="Chez les voisins"]'], union: true,
-    titre: 'Terrain : avec les autres zones',
-    texte: `<p>Ta situation du jour et tes opérations d’envergure se règlent dans les <strong>Ordres</strong> ; le Terrain montre ce qui se joue avec les autres zones.</p><p><strong>Zone de non-droit</strong> : le centre de la ville, à reprendre au milieu avec les autres zones. Envoie des agents sur un secteur, sans rien demander à personne : plus on est nombreux le même soir, plus ça tombe vite.</p>
-      <p><strong>Chez les voisins</strong> : les appels à renfort et les zones en difficulté. Prêter des agents ou du budget rapporte de la réputation, à la mesure de ce que tu envoies.</p>
-      <p><strong>District</strong> : les grands événements où chaque zone doit envoyer du monde.</p>`,
+    titre: 'Terrain : à plusieurs',
+    texte: `<p><strong>Zone de non-droit</strong> : le centre de la ville, à reprendre avec les autres zones. Plus on est nombreux sur un secteur le même soir, plus il tombe vite, et il rapporte chaque nuit où on le tient. Un assaut trop léger peut échouer et coûter des blessés.</p>
+      <p><strong>Chez les voisins</strong> : appels à renfort et zones en difficulté. Prêter des agents rapporte des PS et de la réputation.</p>`,
   },
   {
-    id: 'enquete', route: 'enquete', onglet: 'L’affaire de la semaine, commune à toutes les zones.', cible: ['main.screen > header', 'main.screen .kicker'],
-    titre: 'L’enquête : le fil rouge de la semaine',
-    texte: () => `<p>Une affaire à la fois, <strong>${ENQ.dureeMax} jours au maximum</strong>. Cinq suspects : le coupable est le <strong>seul</strong> à réunir un <strong>mobile</strong>, un <strong>moyen</strong> et l’<strong>occasion</strong>. Chaque innocent coince sur au moins un point.</p>
-      <p>C’est la partie coopérative du jeu : toutes les zones enquêtent sur la même affaire.</p>`,
+    id: 'enquete', route: 'enquete', onglet: 'L’affaire de la semaine, commune à toutes les zones.',
+    avant: () => { S.tabTuto = null; marquerTutoVu(); },
+    titre: 'Ton tableau d’enquête',
+    texte: () => `<p>Une affaire par semaine (<strong>${ENQ.dureeMax} jours</strong> au plus), la même pour toutes les zones. Tout ce que tu apprends est punaisé sur ce grand liège : suspects, plan de la ville, pièces, et le journal qui ouvre l’affaire.</p>
+      <p>Glisse pour te déplacer, pince (ou molette) pour zoomer. Pour relier deux éléments, tire une <strong>ficelle</strong> d’une punaise à l’autre.</p>`,
   },
   {
-    id: 'demarches', route: 'enquete', cible: 'section[aria-label="Aujourd’hui"]',
-    titre: 'Deux démarches par jour',
-    texte: `<p>Chaque jour, lance jusqu’à <strong>deux démarches</strong> : d’abord les constatations sur la scène, puis des vérifications sur les suspects. Les résultats arrivent à 20:00.</p>
-      <p>Tes agents de <strong>Recherche</strong> rapportent aussi des pièces gratuites le soir. Et tu peux <strong>partager</strong> tes pièces avec les autres zones : ça rapporte des PS et de la réputation.</p>`,
+    id: 'demarches', route: 'enquete', cible: ['.tb-haut [data-action="tab-volet"][data-k="boite"]', '.tb-haut [data-action="tab-volet"][data-k="soir"]', 'section[aria-label="Aujourd’hui"]'], union: true,
+    titre: 'La boîte et «\u00a0Ce soir\u00a0»',
+    texte: `<p>Les pièces arrivent chaque soir dans la <strong>boîte</strong>. C’est toi qui les sors et les punaises où tu veux : le jeu ne trie rien pour toi.</p>
+      <p>Touche un suspect ou une pièce pour lancer une <strong>démarche</strong> (deux par jour), demander l’<strong>appui fédéral</strong> (labo ou RCCU, une fois par jour) ou <strong>partager</strong> une pièce avec une autre zone. «\u00a0Ce soir\u00a0» récapitule tout ce qui part à 20:00.</p>`,
   },
   {
-    id: 'synthese', route: 'enquete', cible: '.synthese',
-    titre: 'Ton tableau, ton raisonnement',
-    texte: () => `<p>Pour chaque suspect, touche <strong>Mobile · Moyen · Occasion</strong> pour noter ✓ établi ou ✕ exclu. Le jeu ne coche rien à ta place.</p>
-      <p>Quand tu es sûr : <strong>une seule accusation</strong> par affaire. Plus tu trouves tôt, plus ça rapporte ; une fausse accusation coûte de la réputation. Ensuite, toutes les zones ont ${delaiTraque(ENQ.traqueTours).replace(/,$/, '')} pour <strong>arrêter</strong> le coupable dans sa planque.</p>`,
+    id: 'conclure', route: 'enquete', cible: ['.tb-outils [data-action="tab-tuto"]', '.synthese'], parent: '.tb-outils',
+    titre: 'Démasquer le coupable',
+    texte: () => (meurtre()
+      ? `<p>Un seul suspect a tué ; les autres mentent pour d’autres raisons. Quand tu es sûr de toi, <strong>confronte-le</strong> avec trois éléments de ton dossier. Si tu as visé juste, il avoue. Sinon, il nie et repart, et tu perds de la réputation. Si tu t’es trompé de personne, le parquet te retire l’affaire.</p>
+         <p>Le bouton <strong>?</strong> remontre les gestes du tableau.</p>`
+      : `<p>Le coupable est le <strong>seul</strong> à réunir mobile, moyen et occasion. Note tes ✓ et ✕ sur chaque fiche, puis porte <strong>une seule accusation</strong>. Plus elle tombe tôt, plus elle rapporte.</p>
+         <p>Ensuite, toutes les zones ont ${delaiTraque(ENQ.traqueTours).replace(/,$/, '')} pour <strong>l’arrêter</strong> dans sa planque. Le bouton <strong>?</strong> remontre les gestes du tableau.</p>`),
   },
   {
-    id: 'enigmes', route: 'quete', onglet: 'Trois casse-tête par jour, cinq minutes de réflexion.', cible: '[aria-label="Énigmes du jour"]',
+    id: 'enigmes', route: 'quete', onglet: 'Trois casse-tête par jour, cinq minutes de réflexion.', cible: ['[aria-label="Énigmes du jour"]', '[data-action="alt-vue"]'], union: true,
     titre: 'Trois énigmes par jour',
-    texte: `<p>Trois petits casse-tête chaque jour, <strong>une seule réponse</strong> chacun. Dès deux bonnes réponses, tu choisis un bonus (un indice, du moral…).</p>
-      <p>Le <strong>dossier noir</strong> est facultatif et vraiment difficile. Pour t’exercer sans enjeu : le mode <strong>Entraînement</strong>, qui contient aussi les quatre <strong>mini-jeux d’incident</strong>.</p>`,
+    texte: `<p>Trois casse-tête à manipuler chaque jour, <strong>une seule réponse</strong> chacun. Dès deux bonnes réponses, tu choisis un bonus (un indice, du moral, du budget…). Le <strong>dossier noir</strong> est facultatif et vraiment difficile.</p>
+      <p>Pas le temps ou pas l’envie ? Un <strong>quiz express</strong> ou un <strong>agent</strong> qui planche à ta place peuvent aussi décrocher le bonus. L’<strong>Entraînement</strong> permet de s’exercer sans enjeu, mini-jeux d’incident compris.</p>`,
   },
   {
     id: 'carte', route: 'carte', onglet: 'Tes quartiers et tout le district.', cible: '#mes-quartiers',
     titre: 'La carte et tes quartiers',
-    texte: `<p>Chacun de tes quartiers a sa <strong>tension</strong>. Envoie des patrouilles de <strong>Proximité</strong> là où ça chauffe, surtout sur le <strong>point chaud</strong> annoncé la veille.</p>
-      <p>La carte montre aussi la zone de non-droit (au centre, hachurée de rouge) et les autres zones du district.</p>`,
+    texte: `<p>Chaque quartier a sa <strong>tension</strong>. Envoie des patrouilles de <strong>Proximité</strong> là où ça chauffe, surtout sur le <strong>point chaud</strong> annoncé la veille.</p>
+      <p>Au centre, hachurée de rouge : la zone de non-droit.</p>`,
   },
   {
     id: 'radio', route: 'radio', onglet: 'Pour parler avec les autres chefs de zone.', cible: '[aria-label="Radio, messages privés et diplomatie"]',
     titre: 'Radio, privé et diplomatie',
-    texte: `<p><strong>Radio</strong> : le canal commun à tous les chefs de zone. Demande des pièces, propose les tiennes, négocie.</p>
-      <p><strong>Privé</strong> : les messages en tête-à-tête. <strong>Diplomatie</strong> : entraide, duels, Conseil de police… et manœuvres contre les autres zones, à tes risques.</p>`,
+    texte: `<p><strong>Radio</strong> : le canal commun. On s’y organise pour la zone de non-droit (bouton « Rejoindre » sous une annonce), on échange des pièces, on négocie.</p>
+      <p><strong>Privé</strong> : en tête-à-tête. <strong>Diplomatie</strong> : entraide, duels, Conseil de police… et manœuvres contre les autres zones, à tes risques.</p>`,
   },
   {
     id: 'fin', route: 'hp',
     titre: 'Ta journée type',
     texte: `<ol class="tuto-liste">
-        <li>Lis ton <strong>rapport</strong> et la <strong>Gazette</strong> d’hier soir.</li>
-        <li>Règle et <strong>valide tes ordres</strong>.</li>
-        <li>Avance l’<strong>enquête</strong> : deux démarches, un partage.</li>
-        <li>Résous tes <strong>trois énigmes</strong>.</li>
-        <li>Quand un <strong>incident</strong> tombe, interviens dans les 12 heures.</li>
-        <li>Jette un œil au <strong>Terrain</strong> et à la <strong>Radio</strong>.</li>
+        <li>Lis ton <strong>rapport</strong> et la <strong>Gazette</strong>.</li>
+        <li>Règle et <strong>valide tes ordres</strong> (et tranche le dilemme s’il y en a un).</li>
+        <li>Avance l’<strong>enquête</strong> : pièces au tableau, deux démarches.</li>
+        <li>Fais tes <strong>énigmes</strong>, ou le quiz express.</li>
+        <li>Quand un <strong>incident</strong> tombe, tu as 12 heures.</li>
+        <li>Coup d’œil au <strong>Terrain</strong> et à la <strong>Radio</strong> : on avance mieux à plusieurs.</li>
       </ol>
-      <p class="tuto-note">Tout le détail est dans le <strong>Guide du joueur</strong> (roue dentée en haut de l’HP), d’où tu peux aussi relancer cette visite. Bon service !</p>`,
+      <p class="tuto-note">Le détail est dans le <strong>Guide du joueur</strong> (roue dentée en haut de l’HP), d’où tu peux aussi relancer cette visite. Bon service !</p>`,
   },
 ];
 
@@ -279,6 +286,7 @@ function boucle() {
   if (i !== dernierIndex) {
     dernierIndex = i; derniereCible = null;
     if (e.route && S.route !== e.route && !e.onglet) location.hash = `#${e.route}`;
+    if (e.avant) e.avant();
     if (e.geste && e.geste.avant) e.geste.avant();
   }
   const attente = attendOnglet(e);
@@ -326,7 +334,7 @@ function inviter() {
   wrap.innerHTML = `<div class="aide card tuto-invite" role="dialog" aria-modal="true" aria-labelledby="tuto-inv-titre">
     <span class="kicker">${ancien ? 'Nouveau' : 'Prise de fonction'}</span>
     <h2 id="tuto-inv-titre" class="aide-titre">${ancien ? 'Une visite guidée du jeu' : `Bienvenue à la ${zoneNom()} !`}</h2>
-    <p class="aide-intro">${ancien ? 'Les sept onglets et le fil rouge de la journée, en trois minutes. Utile pour revoir les bases… ou pour la montrer à un collègue.' : 'Avant de prendre ton service : une visite guidée de trois minutes pour découvrir les onglets et ce qu’il faut faire chaque jour.'}</p>
+    <p class="aide-intro">${ancien ? 'Les sept onglets et ce qu’il y a à faire chaque jour, en trois minutes. Utile pour revoir les bases… ou pour la montrer à un collègue.' : 'Avant de prendre ton service : une visite guidée de trois minutes pour découvrir les onglets et ce qu’il faut faire chaque jour.'}</p>
     <div class="col" style="gap:8px">
       <button type="button" class="btn primary block" data-inv="go">${ancien ? 'Faire la visite' : 'Commencer la visite'}</button>
       ${ancien ? '' : '<button type="button" class="btn ghost block" data-inv="plus-tard">Plus tard</button>'}
