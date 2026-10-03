@@ -553,6 +553,7 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .journal .colophon { text-align: center; font-family: var(--serif); font-style: italic; font-size: 10.5px; color: var(--ink3); margin: 0; }
 
 /* Équipe et trophées */
+.membre > * { min-width: 0; }
 .membre { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: 16px; background: var(--bg); border: 1px solid var(--hair); }
 .avatar { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font: 700 14px var(--body); color: var(--bg); }
 .surnom { font-family: var(--serif); font-style: italic; font-weight: 600; color: var(--amber); }
@@ -793,14 +794,15 @@ body.mj-ouvert { overflow: hidden; }
 .card.soir { padding: 0; gap: 0; overflow: hidden; border-color: rgba(190, 205, 255, .12); }
 .card.soir .soir-ciel { height: 148px; }
 .card.soir .skyline { height: 44px; }
-.soir-tete { position: relative; z-index: 3; margin-top: -148px; height: 104px; padding: 13px 16px 0; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr; align-items: end; color: #fff; }
+.soir-tete { position: relative; z-index: 3; margin-top: -148px; height: 104px; padding: 13px 16px 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto 1fr; align-items: end; color: #fff; }
 .soir-situ { position: relative; z-index: 3; margin: 44px 0 0; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 0; }
 .soir-situ + .soir-etat { margin-top: 0; }
 .soir-situ .pill { text-decoration: none; font-size: 12.5px; }
 .soir-l { grid-column: 1 / -1; align-self: start; font-size: 12.5px; font-weight: 600; color: rgba(255, 255, 255, .85); text-shadow: 0 1px 3px rgba(0, 0, 0, .5); }
-.soir-cd { grid-column: 1; font-family: var(--display); font-weight: 800; font-size: 54px; line-height: .86; letter-spacing: -1.5px; font-variant-numeric: tabular-nums; font-variation-settings: 'opsz' 96; text-shadow: 0 2px 18px rgba(5, 8, 25, .6); }
+.soir-cd { grid-column: 1; font-family: var(--display); font-weight: 800; font-size: clamp(44px, 14.5vw, 54px); line-height: .86; letter-spacing: -1.5px; white-space: nowrap; font-variant-numeric: tabular-nums; font-variation-settings: 'opsz' 96; text-shadow: 0 2px 18px rgba(5, 8, 25, .6); }
 .soir-prog { grid-column: 2; align-self: end; display: flex; gap: 4px; padding: 0 0 8px; }
 .soir-prog i { width: 14px; height: 6px; border-radius: 3px; background: rgba(8, 11, 30, .35); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .45); }
+@media (max-width: 380px) { .soir-prog { gap: 3px; } .soir-prog i { width: 9px; } }
 .soir-prog i.on { background: var(--green); box-shadow: 0 0 10px rgba(61, 211, 154, .6); }
 .soir-etat { position: relative; z-index: 3; margin: 44px 0 0; display: flex; align-items: center; gap: 8px; padding: 10px 16px 0; font-size: 13.5px; font-weight: 700; color: var(--amber-hi); }
 .soir-etat::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; box-shadow: 0 0 10px currentColor; }
