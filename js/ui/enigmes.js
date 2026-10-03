@@ -239,20 +239,19 @@ export function icoGrille(nom) {
 
 // ───────────────────────────── Expertise d'écriture ─────────────────────────────
 
-const TRAITS = [['pente', 'Inclinaison'], ['taille', 'Taille'], ['espace', 'Espacement'], ['souligne', 'Soulignement'], ['encre', 'Encre']];
+// La lettre reste épinglée en haut de l'écran pendant qu'on fait défiler les échantillons :
+// on compare toujours l'original et un échantillon côte à côte, sans remonter.
 export function ecritureHtml(q, picked, fini) {
   const [lettre, ...ech] = q.figures;
-  const notes = etat('ecr', q.id, () => ({}));
-  const sym = { '': '?', eq: '=', ne: '≠' };
-  const traits = q.traits ? TRAITS.filter(([k]) => q.traits.includes(k)) : TRAITS;
-  return `<figure class="fig ec-lettre"><figcaption>${esc(lettre.titre)}</figcaption>${lettre.svg}</figure>
+  const ecartes = etat('ecr-x', q.id, () => ({}));
+  return `<figure class="fig ec-lettre"><figcaption>${esc(lettre.titre)} <span class="tiny">· reste affichée pendant que tu compares</span></figcaption>${lettre.svg}</figure>
     <div class="col ec-liste" role="group" aria-label="Échantillons" data-q="${esc(q.id)}">${ech.map((f) => {
       const nom = f.titre.replace(/^Échantillon de /, '');
-      const n = notes[nom] || {};
-      return `<div class="ec-ech ${picked === nom ? 'sel' : ''}">
+      const x = !!ecartes[nom];
+      return `<div class="ec-ech ${picked === nom ? 'sel' : ''} ${x ? 'ecarte' : ''}">
         <button type="button" class="ec-pick" data-action="quest-pick" data-v="${esc(nom)}" aria-pressed="${picked === nom}" ${fini ? 'disabled' : ''}>
-          <span class="row" style="gap:8px">${avatar(nom, 26)}<strong>${esc(nom)}</strong><span class="tiny muted grow" style="text-align:right">${picked === nom ? 'ton choix' : 'choisir'}</span></span>${f.svg}</button>
-        ${fini ? '' : `<div class="ec-traits" style="grid-template-columns:repeat(${traits.length},minmax(0,1fr))">${traits.map(([k, l]) => `<button type="button" class="ec-t ${n[k] || ''}" data-ec="${esc(nom)}" data-t="${k}" aria-label="${l} comparée à la lettre : ${sym[n[k] || '']}"><span>${l}</span><b>${sym[n[k] || '']}</b></button>`).join('')}</div>`}
+          <span class="row" style="gap:8px">${avatar(nom, 26)}<strong>${esc(nom)}</strong><span class="tiny muted grow" style="text-align:right;padding-right:${fini ? 0 : 84}px">${picked === nom ? 'ton choix' : x ? 'écarté' : 'choisir'}</span></span>${f.svg}</button>
+        ${fini ? '' : `<button type="button" class="ec-x" data-ecx="${esc(nom)}" aria-pressed="${x}">${x ? 'Remettre' : 'Écarter'}</button>`}
       </div>`;
     }).join('')}</div>`;
 }
@@ -296,13 +295,14 @@ export function installerEnigmes() {
       qm.textContent = { '': 'À vérifier', v: 'Dit vrai', m: 'Ment' }[m[nom]];
       return;
     }
-    // Écriture : comparaison trait par trait
-    const ec = t.closest('[data-ec]');
-    if (ec) {
-      const id = ec.closest('[data-q]').dataset.q;
-      const m = etat('ecr', id, () => ({})); const n = m[ec.dataset.ec] = m[ec.dataset.ec] || {};
-      n[ec.dataset.t] = { '': 'eq', eq: 'ne', ne: '' }[n[ec.dataset.t] || ''];
-      ec.className = `ec-t ${n[ec.dataset.t]}`; ec.querySelector('b').textContent = { '': '?', eq: '=', ne: '≠' }[n[ec.dataset.t]];
+    // Écriture : écarter un suspect (barré, gardé sur l'appareil pendant la partie)
+    const ecx = t.closest('[data-ecx]');
+    if (ecx) {
+      const id = ecx.closest('[data-q]').dataset.q, nom = ecx.dataset.ecx;
+      const m = etat('ecr-x', id, () => ({})); m[nom] = !m[nom];
+      const carte = ecx.closest('.ec-ech'); carte.classList.toggle('ecarte', m[nom]);
+      ecx.setAttribute('aria-pressed', m[nom]); ecx.textContent = m[nom] ? 'Remettre' : 'Écarter';
+      const lib = carte.querySelector('.ec-pick .grow'); if (lib && !carte.classList.contains('sel')) lib.textContent = m[nom] ? 'écarté' : 'choisir';
       return;
     }
     // Filature : tracé
