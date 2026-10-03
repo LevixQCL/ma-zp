@@ -233,11 +233,20 @@ const cache = new Map();
 
 /** Affaire n° `n` de la partie. */
 const indexBrut = (seed, n) => (n - 1 + makeRng(`${seed}:enquete2:${n}`).int(0, AFFAIRES.length - 1)) % AFFAIRES.length;
-/** Décor réellement utilisé par l'affaire n : à partir de l'affaire `dd`, jamais le même que la précédente. */
+/**
+ * Décor réellement utilisé par l'affaire n : à partir de l'affaire `dd`, jamais le même que les deux précédentes
+ * (la précédente peut encore être en traque quand la suivante s'ouvre).
+ */
+const memoModele = new Map();
 function indexModele(seed, n, dd) {
-  const brut = indexBrut(seed, n);
-  if (dd == null || n < dd || n <= 1) return brut;
-  return brut === indexModele(seed, n - 1, dd) ? (brut + 1) % AFFAIRES.length : brut;
+  if (dd == null || n < dd || n <= 1) return indexBrut(seed, n);
+  const k = `${seed}#${n}#${dd}`;
+  if (memoModele.has(k)) return memoModele.get(k);
+  const avant = [n - 1, n - 2].filter((x) => x >= 1).map((x) => indexModele(seed, x, dd));
+  let im = indexBrut(seed, n);
+  while (avant.includes(im)) im = (im + 1) % AFFAIRES.length;
+  memoModele.set(k, im);
+  return im;
 }
 
 /**
@@ -738,9 +747,10 @@ export function nouvelleAffaire(state) {
   state.enquete = { n, jour: 1, nbCellules: 1, cellules: {}, rebonds: [], figee: false };
   repartirCellules(state);
   for (const z of Object.values(state.zones)) {
-    if (z.enquete && z.enquete.n === n - 1) z.enquetePrecedente = z.enquete; // gardée pour la traque
+    if (z.enquete && z.enquete.n === n - 1 && !state.enquetePause) z.enquetePrecedente = z.enquete; // gardée pour la traque
     z.enquete = dossierDe(state, z);
   }
+  delete state.enquetePause;
   return affaire(state, n);
 }
 
@@ -762,6 +772,16 @@ export function enquetePre(state, uids, ord, push) {
     state.traques = [];
     for (const z of Object.values(state.zones)) { delete z.enquete; delete z.enquetePrecedente; }
     state.enquete = null;
+  }
+  if (state.enquetePause) {
+    // Enquête en pause (affaire retirée par le maître du jeu) : seules les traques continuent.
+    const prises = {};
+    const prendre = (u, s, n) => { prises[u] = prises[u] || {}; prises[u][s] = (prises[u][s] || 0) + n; };
+    const p = state.enquetePause;
+    const res = { actifs: uids.length, n: p.n, titre: p.titre, jour: 0, pause: true, decouverte: null, arrestations: [], fuites: [], classee: false };
+    for (const u of uids) if ((ord[u].demarches || []).length || ord[u].accusation != null) state.zones[u].rapport.push('Enquête : pas d’affaire en cours ce soir, tes démarches sont annulées. La nouvelle affaire s’ouvre ce soir.');
+    traquesDuSoir(state, uids, ord, push, prendre, res);
+    return { prises, res };
   }
   if (!state.enquete) nouvelleAffaire(state);
   const e = state.enquete;
@@ -890,7 +910,12 @@ export function enquetePre(state, uids, ord, push) {
       `Mandat d’arrêt délivré. ${cs.f ? 'Elle' : 'Il'} se cache : la traque commence, 2 tours pour l’arrêter.${res.decouverte.contributeurs.length ? ` Avec les pièces de ${res.decouverte.contributeurs.join(', ')}.` : ''}`);
   }
 
-  // Traques en cours : interpellations.
+  traquesDuSoir(state, uids, ord, push, prendre, res);
+  return { prises, res };
+}
+
+/** Traques en cours : interpellations (aussi pendant une pause de l'enquête). */
+function traquesDuSoir(state, uids, ord, push, prendre, res) {
   for (const tr of state.traques || []) {
     const a = affaire(state, tr.n);
     const gagnants = [];
@@ -931,7 +956,6 @@ export function enquetePre(state, uids, ord, push) {
       tr.fini = true;
     }
   }
-  return { prises, res };
 }
 
 /** Pendant la simulation d'une zone : démarches payées et résultats, enquête de voisinage. */
@@ -1031,6 +1055,13 @@ export function indiceBonus(state, z, rng) {
 
 /** Après la simulation : fin de l'affaire, rebondissements, nouvelle affaire, traques. */
 export function enquetePost(state, pre, push) {
+  if (state.enquetePause) {
+    state.traques = (state.traques || []).filter((t) => !t.fini).map((t) => ({ ...t, tours: t.tours - 1 }));
+    const a = nouvelleAffaire(state);
+    pre.res.nouvelle = a.titre;
+    push(5, 'Nouvelle affaire', a.titre, `${a.texte} ${a.accroche || 'Cinq suspects : une seule personne réunit le mobile, le moyen et l’occasion.'}`);
+    return;
+  }
   const e = state.enquete;
   if (!e.figee) repartirCellules(state);
   if (!pre.res.actifs) return; // personne ne joue encore : l'affaire n'avance pas

@@ -1,6 +1,7 @@
 // Déclenche la résolution des tours échus. Appelé par l'application à l'ouverture
 // et chaque minute : le premier joueur connecté après 20:00 calcule le tour pour tous.
 import { resolveTurn, isOutdated } from '../engine/resolve.js';
+import { APP_VERSION } from '../engine/constants.js';
 import { nextResolutionAfter, weekdayBe } from '../engine/time.js';
 
 let running = false;
@@ -37,6 +38,27 @@ export function completerDepuisGazette(state, gazettes) {
   return state;
 }
 
+/**
+ * Juste avant de calculer le tour : une version plus récente du jeu est-elle en ligne ?
+ * Un appareil qui a gardé l'ancien code en mémoire (appli restée ouverte, cache) ne doit pas calculer le tour
+ * avec les anciennes règles : il se recharge, et un appareil à jour s'en charge.
+ * Sans réseau ou hors navigateur, on laisse faire (le calcul ne pourrait de toute façon pas être enregistré).
+ */
+async function versionEnLigneOk() {
+  if (typeof location === 'undefined' || typeof fetch !== 'function' || location.search.includes('demo')) return true;
+  try {
+    const r = await fetch(`test/version-moteur.json?t=${Date.now()}`, { cache: 'no-store' });
+    if (!r.ok) return true;
+    const v = (await r.json()).version || 0;
+    if (v <= APP_VERSION) return true;
+    console.warn(`Version ${v} en ligne, cet appareil a la ${APP_VERSION} : rechargement avant de calculer le tour.`);
+    try {
+      if (sessionStorage.getItem('mazp-recharge-version') !== String(v)) { sessionStorage.setItem('mazp-recharge-version', String(v)); location.reload(); }
+    } catch (e) { /* pas de stockage : on ne recharge pas en boucle */ }
+    return false;
+  } catch (e) { return true; }
+}
+
 export async function resolvePending(backend, { hour = 20, now = () => Date.now(), maxTurns = 10, state: connu = null } = {}) {
   if (running) return 0;
   running = true;
@@ -48,6 +70,7 @@ export async function resolvePending(backend, { hour = 20, now = () => Date.now(
       const state = await backend.getState();
       if (!state || now() < state.nextDeadline) break;
       if (isOutdated(state)) break; // ancienne version : on laisse les appareils à jour calculer
+      if (!(await versionEnLigneOk())) break; // une version plus récente est en ligne : on recharge d'abord
       let orders, quests, players;
       try {
         [orders, quests, players] = await Promise.all([

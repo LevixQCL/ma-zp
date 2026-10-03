@@ -20,6 +20,7 @@ import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { tutoAuBesoin, lancerTuto } from './ui/tutoriel.js';
 import { rouletteAuBesoin, lancerRoulette } from './ui/roulette.js';
+import { editionHtml, marquerEditionVue } from './ui/edition.js';
 import { operationActive, effetsOperation } from './engine/zone.js';
 import { carteQuartiers } from './engine/quartiers.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
@@ -137,6 +138,8 @@ function render() {
         <button class="btn primary block" data-action="ecran-reset">Réessayer</button><a class="btn block" href="#hp">Revenir à l’HP</a></section></main>${tabbar(S.route)}`;
     }
   }
+  // Édition spéciale de la Gazette (enquête en pause) : une fois sur chaque appareil, puis relisible depuis l'Enquête.
+  if (S.state && myZone() && S.route !== 'parties') { try { html += editionHtml(); } catch (err) { console.error(err); } }
   // Barre de validation commune à tous les écrans quand des choix ne sont pas encore validés.
   if (S.ordersDirty && S.state && myZone() && !['parties', 'guide'].includes(S.route)) {
     html += `<div class="savebar" role="status"><span class="small" style="font-weight:600">Modifications non validées</span><span class="row" style="gap:6px"><button class="btn ghost small" data-action="cancel-orders">Annuler</button><button class="btn primary small" data-action="save-orders">Valider</button></span></div>`;
@@ -580,6 +583,18 @@ async function onClick(e) {
       }
       case 'class-tab': S.classTab = el.dataset.t; rerender(); break;
       case 'enq-tab': S.enqTab = el.dataset.t; rerender(); break;
+      case 'edition-fermer': marquerEditionVue(); render(); break;
+      case 'edition-ouvrir': S.editionOuverte = true; render(); break;
+      case 'admin-pause-enquete': {
+        const st = S.state;
+        if (!st.enquete || st.enquetePause) break;
+        if (!(await askConfirm('Retirer l’affaire en cours ? Les pièces déjà reçues sur cette affaire sont perdues. Les traques continuent. Une édition spéciale de la Gazette s’affiche chez tout le monde, et la nouvelle affaire s’ouvre au prochain 20:00.', 'Retirer l’affaire'))) break;
+        const { affaire } = await import('./engine/enquete.js');
+        const { APP_VERSION } = await import('./engine/constants.js');
+        await b.adminPauseEnquete({ id: `${st.season}-${st.turn}-${st.enquete.n}`, n: st.enquete.n, titre: affaire(st, st.enquete.n).titre, tour: st.turn, reprise: st.nextDeadline }, Math.max(st.minClientVersion || 0, APP_VERSION));
+        toast('Affaire retirée : l’édition spéciale s’affiche chez tout le monde.');
+        break;
+      }
       case 'tb-ban-fermer': S.banTraqueVue = S.state.turn; render(); break;
       case 'traque-voir': S.enqVue = 'liste'; S.tabSheet = null; try { localStorage.setItem('mazp-enq-vue', 'liste'); } catch (err) { /* pas de stockage */ } render(); requestAnimationFrame(() => { const t = document.getElementById('traque'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); break;
       case 'tab-vue': S.enqVue = el.dataset.v; S.tabSheet = null; try { localStorage.setItem('mazp-enq-vue', S.enqVue); } catch (err) { /* pas de stockage */ } window.scrollTo(0, 0); render(); break;

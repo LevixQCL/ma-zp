@@ -65,7 +65,7 @@ function enqueteGazette(g) {
     for (const a of e.arrestations || []) l.push(a.planque ? `<p><strong>Arrestation</strong> : ${esc(a.suspect)}, à ${esc(a.planque)}, par ${esc(a.zones.join(' et '))}.</p>` : `<p><strong>Aveux</strong> : ${esc(a.suspect)}, confronté·e par ${esc(a.zones.join(' et '))}.</p>`);
     for (const a of e.fuites || []) l.push(`<p><strong>Fuite</strong> : ${esc(a.suspect)} se cachait à ${esc(a.planque)}.</p>`);
     if (e.classee && e.solution) l.push(`<p><strong>${esc(e.titre)}</strong> classée sans suite. La solution : ${esc(e.solution.suspect)}${e.solution.planque ? `, planque « ${esc(e.solution.planque)} »` : ''}.</p>`);
-    if (!e.decouverte && !e.classee) l.push(`<p><strong>${esc(e.titre)}</strong> : jour ${e.jour}, toujours pas d’auteur identifié.</p>`);
+    if (!e.decouverte && !e.classee && !e.pause) l.push(`<p><strong>${esc(e.titre)}</strong> : jour ${e.jour}, toujours pas d’auteur identifié.</p>`);
     if (e.rebond) l.push(`<p><strong>${esc(e.rebond.titre)}</strong>. ${esc(e.rebond.texte)}</p>`);
     // Tant que la traque court, la planque ne figure pas dans le fin mot (anciens numéros compris).
     const traqueEnCours = (S.state.traques || []).some((t) => t.n === e.n && !t.fini);
@@ -221,6 +221,10 @@ export function renderAdmin() {
       <p class="small" style="margin:0;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);line-height:1.45">${esc(noteCourte())}</p>
       <div class="row"><button class="btn small grow" data-action="maj-voir">Voir la note complète</button>
         <button class="btn small primary grow" data-action="maj-envoyer" ${S.majEnvoyee ? 'disabled' : ''}>${S.majEnvoyee ? `Envoyée à ${S.majEnvoyee} joueur${S.majEnvoyee > 1 ? 's' : ''}` : 'Envoyer à tous en privé'}</button></div></section>
+    <section class="card"><h2 class="card-title">Enquête</h2>
+      ${st.enquetePause ? `<p class="small" style="margin:0">Enquête en pause : l’affaire « ${esc(st.enquetePause.titre)} » a été retirée. La nouvelle affaire s’ouvrira à la prochaine résolution (${esc(formatDateBe(st.nextDeadline))} à 20:00). Les traques continuent.</p>`
+        : st.enquete ? `<p class="small muted" style="margin:0">Retire l’affaire en cours (par exemple si elle s’est ouverte en même temps qu’une traque). Les traques continuent, une édition spéciale de la Gazette s’affiche chez tout le monde, et la nouvelle affaire s’ouvre au prochain 20:00.</p>
+      <button class="btn block danger" data-action="admin-pause-enquete">Retirer l’affaire n° ${st.enquete.n} jusqu’à demain 20:00</button>` : '<p class="small muted" style="margin:0">Pas d’affaire en cours.</p>'}</section>
     ${directeurAdminHtml(st)}
     <section class="card"><h2 class="card-title">Résolution</h2>
       <p class="small muted" style="margin:0">Force la résolution du tour en cours maintenant (utile pour tester). Les joueurs ne pourront plus modifier leurs ordres de ce tour.</p>
