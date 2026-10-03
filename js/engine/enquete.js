@@ -721,7 +721,8 @@ export function enquetePre(state, uids, ord, push) {
     else {
       d.exclu = true; z.reputation -= 3;
       z.rapport.push(`Enquête : accusation ${deN(aff.suspects[a].nom)} rejetée par le parquet. Plus d’accusation possible sur cette affaire (−3 de réputation). Tu peux encore aider les autres en partageant tes pièces.`);
-      push(6, 'Enquête', `Fausse piste pour ${nomZone(z)}`, `${aff.suspects[a].nom} est mis${aff.suspects[a].f ? 'e' : ''} hors de cause dans « ${aff.titre} ».`, u);
+      // La Gazette ne dit pas qui a été accusé : le nom d'un innocent serait un indice gratuit pour toutes les zones.
+      push(6, 'Enquête', `Fausse piste pour ${nomZone(z)}`, `Son accusation dans « ${aff.titre} » est rejetée par le parquet. L’enquête continue pour les autres zones.`, u);
     }
   }
   if (justes.length) {
