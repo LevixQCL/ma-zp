@@ -127,7 +127,7 @@ export const AIDES = {
     intro: `La composante « terrain » de l’IPZ (${pc(IPZ_POIDS.affaires)}). Ce ne sont pas les PS, qui servent aux grades.`,
     lignes: [
       `<strong>Calcul</strong> : ${TERRAIN.incidents} × part des incidents traités + ${TERRAIN.parPoint} × bilan, plafonné à 100`,
-      `<strong>Incidents</strong> : tout traiter donne déjà ${TERRAIN.incidents} ; en rater la moitié n’en donne que ${TERRAIN.incidents / 2}`,
+      `<strong>Incidents</strong> : tout traiter donne déjà ${TERRAIN.incidents} ; en rater la moitié n’en donne que ${fmt1(TERRAIN.incidents / 2)}`,
       `<strong>Bilan</strong> = points du jour + ${pc(TERRAIN.report)} du bilan d’hier. Un gros coup compte encore les jours suivants ; en régime régulier, le bilan vaut environ 2 × tes points par jour`,
       `<strong>Recherche</strong> : +${String(DOSSIER.ptsParUnite).replace('.', ',')} pt par unité de travail sur les dossiers, chaque jour (un nouveau dossier arrive chaque jour, il y a toujours du travail). Repère : 4 enquêteurs ≈ +2 pts par jour`,
       `<strong>Flagrant délit</strong> : +${FLAGRANT.points} pts quand la jauge des patrouilles libres atteint 100 % (+${Math.round(FLAGRANT.parUnite * 100)} % par unité de marge après les incidents, ${Math.round(FLAGRANT.max * 100)} % au plus par jour) : plus de tirage au sort`,
@@ -184,14 +184,18 @@ function tourTerrain(z) {
   if (!d || !z.ipzComp) return null;
   const ratio = d.incidents ? d.traites / d.incidents : 1;
   const bilan = d.bilan !== undefined ? d.bilan : (d.points || 0);
-  const a = TERRAIN.incidents * ratio, b = TERRAIN.parPoint * bilan, brut = a + b;
+  // Coefficients du tour calculé (un tour calculé par une ancienne version garde sa règle d'alors).
+  const ancien = d.bilan === undefined;
+  const ci = d.coefInc || (ancien ? 60 : TERRAIN.incidents), cp = d.coefPt || (ancien ? 6 : TERRAIN.parPoint);
+  const a = ci * ratio, b = cp * bilan, brut = a + b;
   const pts = (z.journal && z.journal.lignes && z.journal.lignes.points) || [];
   return { tour: z.journal ? z.journal.tour : null, html: `
-    ${calc(`Incidents traités : ${d.traites} sur ${d.incidents}`, `${TERRAIN.incidents} × ${Math.round(ratio * 100)} % = ${fmt1(a)}`)}
+    ${ancien || ci !== TERRAIN.incidents || cp !== TERRAIN.parPoint ? `<p class="tiny muted" style="margin:0">Ce tour-là a été calculé avec l’ancienne règle (${ci} × incidents + ${String(cp).replace('.', ',')} × bilan). La règle actuelle est expliquée plus bas.</p>` : ''}
+    ${calc(`Incidents traités : ${d.traites} sur ${d.incidents}`, `${ci} × ${Math.round(ratio * 100)} % = ${fmt1(a)}`)}
     ${calc(`Points gagnés ce jour-là`, `+${fmt1(d.points || 0)}`)}
     ${pts.length ? `<div class="aide-sous">${pts.slice().sort((x, y) => y.v - x.v).map((x) => ligne(esc(x.l), x.v, ' pt')).join('')}</div>` : ''}
     ${d.report !== undefined ? calc('Reporté du bilan de la veille (moitié)', `+${fmt1(d.report)}`) : ''}
-    ${calc(`Bilan : ${fmt1(bilan)}`, `${TERRAIN.parPoint} × ${fmt1(bilan)} = ${fmt1(b)}`)}
+    ${calc(`Bilan : ${fmt1(bilan)}`, `${String(cp).replace('.', ',')} × ${fmt1(bilan)} = ${fmt1(b)}`)}
     ${calc('Total', `${fmt1(brut)}${brut > 100 ? ' → plafonné à 100' : ''}`)}
     ${partIpz(z, 'terrain')}
     <div class="aide-l between small" style="margin-top:4px"><span>Jauge de flagrant délit</span><span class="mono">${Math.round((z.jaugeFlagrant || 0) * 100)} %</span></div>

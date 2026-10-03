@@ -1,7 +1,7 @@
 // Écran des ordres du tour.
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
-import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation } from '../engine/constants.js';
+import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
@@ -309,9 +309,11 @@ function decisionPicker(z, T, d) {
   if (cat === 'recruter') {
     corps = `<div class="dgrille trois">${[1, 2, 3].map((n) => tuile({ type: 'recruter', n }, `+${n} agent${n > 1 ? 's' : ''}`, `au tour ${T + DELAI_ACADEMIE} · +${fmt1(n * ECONOMIE.salaire)} k€/tour de salaire`, fmt1(coutRecrue(z) * n))).join('')}</div>${coutRecrue(z) !== COUTS.recrue ? `<p class="tiny ${coutRecrue(z) < COUTS.recrue ? 'ok' : 'bad'}" style="margin:0">Réputation ${Math.round(z.reputation)} : une recrue te coûte ${fmt1(coutRecrue(z))} k€ au lieu de ${COUTS.recrue} k€.</p>` : ''}`;
   } else if (cat === 'former') {
-    corps = `<div class="dgrille">${SERVICES.map((sv) => tuile({ type: 'former', service: sv }, SERVICE_LABELS[sv], `niveau ${z.niveaux[sv]} → ${z.niveaux[sv] + 1} · efficacité ${pc(multNiveau(z.niveaux[sv] + 1) / multNiveau(z.niveaux[sv]) - 1)}${agentsFormation(z, sv) ? '' : ' · au stand de tir'}`, coutFormation(z, sv), niv(z.niveaux[sv]))).join('')}</div>`;
+    corps = `<p class="tiny muted" style="margin:0"><strong>Former</strong> = le long terme : +20 % d’efficacité par niveau, <strong>gardé d’une saison à l’autre</strong> (un niveau de moins). Coûte peu, mais 2 agents sont absents pendant la formation. <strong>Équiper</strong>, à côté, c’est le coup de pouce immédiat, perdu en fin de saison.</p>
+      <div class="dgrille">${SERVICES.map((sv) => tuile({ type: 'former', service: sv }, SERVICE_LABELS[sv], `niveau ${z.niveaux[sv]} → ${z.niveaux[sv] + 1} · efficacité ${pc(multNiveau(z.niveaux[sv] + 1) / multNiveau(z.niveaux[sv]) - 1)}${agentsFormation(z, sv) ? '' : ' · au stand de tir'}`, coutFormation(z, sv), niv(z.niveaux[sv]))).join('')}</div>`;
   } else if (cat === 'equiper') {
-    corps = `<div class="dgrille">${tuile({ type: 'equiper', cible: 'vehicule' }, 'Véhicule', `${z.vehicules} → ${z.vehicules + 1} véhicules (garage : ${capaciteVehicules(z)} places) · +${fmt1(ECONOMIE.entretienVehicule)} k€/tour`, COUTS.vehicule)}
+    corps = `<p class="tiny muted" style="margin:0"><strong>Équiper</strong> = le coup de pouce immédiat : +${Math.round(EQUIP.efficacite * 100)} % d’efficacité et un effet propre au service, sans agent absent, mais <strong>perdu en fin de saison</strong>. <strong>Former</strong> (+20 %) est plus fort et se garde d’une saison à l’autre.</p>
+      <div class="dgrille">${tuile({ type: 'equiper', cible: 'vehicule' }, 'Véhicule', `${z.vehicules} → ${z.vehicules + 1} véhicules (garage : ${capaciteVehicules(z)} places) · +${fmt1(ECONOMIE.entretienVehicule)} k€/tour`, COUTS.vehicule)}
       ${SERVICES.map((sv) => tuile({ type: 'equiper', cible: sv }, SERVICE_LABELS[sv], `matériel ${z.equip[sv]} → ${z.equip[sv] + 1} · ${effetEquip(sv, 1)} · efficacité ${pc(multEquip(z.equip[sv] + 1) / multEquip(z.equip[sv]) - 1)}`, coutEquipement(z.equip[sv]), niv(z.equip[sv]))).join('')}</div>`;
   } else {
     const faites = Object.entries(INFRAS).filter(([id]) => z.infra[id]).map(([, i]) => i);
@@ -393,13 +395,28 @@ function amendeParAgentTxt(z) {
   return `Rapporte ${fmt1(ECONOMIE.amendeParCapacite)} k€ par unité de capacité. Aujourd’hui, un agent vaut ${fmt1(ECONOMIE.amendeParCapacite)} × ${facteurs.join(' × ')} = ${String(Math.round(un * 100) / 100).replace('.', ',')} k€ par jour${n ? ` ; tes ${n} agents : ${fmt1(tous)} k€` : ''}. Le moral compte : à 60, il retire 4 % ; à 100, il ajoute 20 %.`;
 }
 
+/**
+ * Dossiers locaux sous la ligne Recherche : les plus vieux sont traités en premier ;
+ * dès 5 jours on prévient (au-delà de 6, chaque dossier coûte de la satisfaction chaque soir).
+ */
+function dossiersHtml(z) {
+  const ds = (z.dossiers || []).slice().sort((a, b) => b.age - a.age);
+  if (!ds.length) return '';
+  const vieux = ds.filter((d) => d.age >= 5);
+  const retard = ds.filter((d) => d.age > 6).length;
+  const ouvert = S.help && S.help.recherche;
+  const pastille = (d) => (d.age > 6 ? 'bad' : d.age >= 5 ? 'warn' : 'muted');
+  return `<span class="tiny ${retard ? 'bad' : vieux.length ? 'warn' : 'muted'}">${ds.length} dossier${ds.length > 1 ? 's' : ''} en cours${vieux.length ? ` · ${retard ? `${retard} en retard (−0,4 de satisfaction chacun par jour)` : ''}${retard && vieux.length > retard ? ' · ' : ''}${vieux.length > retard ? `${vieux.length - retard} de 5 jours ou plus : à boucler vite` : ''}` : ''}</span>
+    ${ouvert || vieux.length ? `<div class="dossiers">${(ouvert ? ds : vieux).map((d) => `<span class="dossier ${pastille(d)}"><span class="mono">J${d.age}</span> ${esc(d.titre)} <span class="muted">· reste ${fmt1(d.reste)}</span></span>`).join('')}</div>` : ''}`;
+}
+
 /** Aide courte de chaque service, avec la situation actuelle de la zone. */
 function aide(s, z) {
   const f = (v) => fmt1(v);
   switch (s) {
     case 'intervention': return `Traite les incidents du jour (environ 1 agent par incident, ${Math.max(1, Math.round(1.5 + z.criminalite / 14))} attendus). Incident traité : +0,5 de satisfaction ; raté : −1,8. Au-delà de 2,5 agents par véhicule, les agents en trop comptent pour moitié. Chaque intervention use les véhicules : état du parc ${Math.round(100 - z.usure)} %${malusEtat(100 - z.usure) < 1 ? ` (efficacité −${Math.round((1 - malusEtat(100 - z.usure)) * 100)} %)` : ''} ; sous 80 %, l’Intervention perd de l’efficacité. Une révision du parc (dépense du jour, 2 k€) rend +20 %. Les patrouilles qui restent libres après les incidents remplissent la jauge de flagrant délit (${Math.round((z.jaugeFlagrant || 0) * 100)} % aujourd’hui ; +10 % par unité de marge, 40 % au plus par jour) : à 100 %, flagrant délit (+3 pts de résultats, PS et un quartier apaisé).`;
     case 'proximite': return `Prévention : fait baisser la criminalité (actuellement ${Math.round(z.criminalite)}). Environ 4 agents la stabilisent. Au-dessus de 55, un quartier coûte de la satisfaction chaque jour, et la criminalité augmente les incidents. Tu peux envoyer ces agents en patrouille dans des quartiers précis depuis la Carte.`;
-    case 'recherche': return `Fait avancer tes dossiers locaux (${z.dossiers.length} en cours). Chaque unité de travail sur un dossier rapporte +0,5 pt de résultats le jour même ; dossier élucidé : +2 de satisfaction. Un nouveau dossier arrive chaque jour. Un dossier de plus de 6 tours coûte de la satisfaction chaque jour. Au-delà de 2 agents, tes enquêteurs font aussi l’enquête de voisinage : chaque soir, une chance de rapporter des pièces pour l’enquête de la semaine (bien plus avec une piste prioritaire, à choisir dans l’Enquête).`;
+    case 'recherche': return `Fait avancer tes dossiers locaux (${z.dossiers.length} en cours). Chaque unité de travail sur un dossier rapporte +0,5 pt de résultats le jour même ; dossier élucidé : +2 de satisfaction. Un nouveau dossier arrive chaque jour. Tes enquêteurs traitent toujours les dossiers les plus vieux en premier ; un dossier de plus de 6 jours coûte de la satisfaction chaque jour (signalé dès 5 jours). Au-delà de 2 agents, tes enquêteurs font aussi l’enquête de voisinage : chaque soir, une chance de rapporter des pièces pour l’enquête de la semaine (bien plus avec une piste prioritaire, à choisir dans l’Enquête).`;
     case 'roulage': return `${amendeParAgentTxt(z)} Au-delà de ${ROULAGE.seuil} agents, chaque agent de plus compte pour moitié. Au-delà de ${Math.round(seuilChasse(z) * 100)} % de tes effectifs : « chasse aux PV », −2 de satisfaction par jour.`;
     case 'admin': return `Traite la paperasse (environ 1 dossier par agent ; ${f(z.paperasse)} en attente). Au-delà de 14 : −2 de moral par jour. Au-delà de 20 : Inspection générale, 5 k€ d’amende. C’est aussi ton assurance : chaque agent au-delà de 2 évite 15 % des tracas internes (panne, dégât des eaux, grève, papiers égarés, plainte…), jusqu’à 60 %. Aujourd’hui : ${Math.round(Math.min(0.6, Math.max(0, ((S.draft && S.draft.alloc.admin) || 0) - 2) * 0.15) * 100)} %.`;
     default: return '';
@@ -537,6 +554,7 @@ export function renderOrdres() {
             <button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
         <span id="pris-${s2}">${prisHtml(e, s2)}</span>
         ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny" style="color:var(--amber-soft)">+ ${dep.reserve} agent${dep.reserve > 1 ? 's' : ''} de réserve en renfort (efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} %)</span>` : ''}
+        ${s2 === 'recherche' ? dossiersHtml(z) : ''}
         ${S.help && S.help[s2] ? `<p class="tiny" style="margin:2px 0 6px;color:var(--text2);line-height:1.45">${esc(aide(s2, z))}</p>` : ''}
       </div>`).join('')}
       <p class="tiny muted" style="margin:0">Touche + : si aucun agent n’est libre, il est pris dans ton service le plus fourni.</p>
