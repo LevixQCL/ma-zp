@@ -4,6 +4,16 @@ import { ROLES_EQUIPE, SEUILS_EQUIPE, TROPHEES, roleDe, intitule, surnomDe, cree
 import { SERVICE_LABELS, ROLE_SERVICE, bonusChef } from '../engine/constants.js';
 
 export const initiales = (m) => `${m.prenom[0]}${m.nom[0]}`.toUpperCase();
+/**
+ * Échelle du bonus d'une figure selon ses surnoms (sans surnom, 1er, 2e, 3e), le palier actuel en évidence,
+ * avec l'expérience qui manque pour le suivant.
+ */
+export function echelleBonus(m, { xp = true } = {}) {
+  const suiv = SEUILS_EQUIPE[m.niveau + 1];
+  const paliers = [0, 1, 2, 3].map((n) => `<span class="ech-p${n === m.niveau ? ' on' : n < m.niveau ? ' passe' : ''}" title="${n ? `${n}${n === 1 ? 'er' : 'e'} surnom` : 'sans surnom'}">+${Math.round(bonusChef(n) * 100)} %</span>`).join('<span class="ech-f" aria-hidden="true">›</span>');
+  return `<span class="echelle" aria-label="Bonus de service : +${Math.round(bonusChef(m.niveau) * 100)} % maintenant${suiv ? `, +${Math.round(bonusChef(m.niveau + 1) * 100)} % au prochain surnom (encore ${suiv - m.xp} points d’expérience)` : ', bonus maximum'}">${paliers}</span>${!xp ? '' : suiv ? `<span class="tiny muted">prochain palier dans ${suiv - m.xp} pts d’expérience (${m.xp} / ${suiv})</span>` : '<span class="tiny ok">bonus maximum atteint</span>'}`;
+}
+
 export const COULEUR_ROLE = { inter: '#FF6E6A', rech: '#63B0FF', prox: '#3DD39A', roul: '#FFB23F', admin: '#C084FC' };
 
 export function equipeHtml() {
@@ -25,14 +35,19 @@ export function equipeHtml() {
           <button type="submit" class="btn small primary grow">Enregistrer</button></div>
       </form>`;
     }
-    return `<div class="membre">
-      <span class="avatar" style="background:${COULEUR_ROLE[m.role]}" aria-hidden="true">${esc(initiales(m))}</span>
-      <span class="col grow" style="gap:2px;min-width:0">
-        <span style="font-weight:700">${esc(m.prenom)} ${esc(m.nom)}${surnomDe(m) ? ` <span class="surnom">« ${esc(surnomDe(m))} »</span>` : ''}</span>
-        <span class="tiny muted">${esc(intitule(m))} · ${esc(SERVICE_LABELS[r.service])} · <span class="ok">+${Math.round(bonusChef(m.niveau) * 100)} %</span>${m.niveau < 3 ? ` <span class="muted">(+${Math.round(bonusChef(m.niveau + 1) * 100)} % au prochain surnom)</span>` : ''}</span>
-        <span class="xp" role="img" aria-label="${suiv ? `${m.xp} points d’expérience sur ${suiv} pour le prochain surnom` : 'dernier surnom atteint'}"><i style="width:${Math.max(3, Math.min(100, pct))}%;background:${COULEUR_ROLE[m.role]}"></i></span>
-        <span class="tiny muted">${suiv ? `prochain surnom : « ${esc(r.surnoms[m.niveau])} »` : 'légende de la zone'}</span>
-      </span><button type="button" class="btn small ghost" data-action="equipe-edit" data-role="${m.role}" aria-label="Renommer ${esc(m.prenom)} ${esc(m.nom)}">Renommer</button></div>`;
+    return `<div class="membre membre-v">
+      <div class="membre-h">
+        <span class="avatar" style="background:${COULEUR_ROLE[m.role]}" aria-hidden="true">${esc(initiales(m))}</span>
+        <span class="col grow" style="gap:1px;min-width:0">
+          <span style="font-weight:700">${esc(m.prenom)} ${esc(m.nom)}${surnomDe(m) ? ` <span class="surnom">« ${esc(surnomDe(m))} »</span>` : ''}</span>
+          <span class="tiny muted">${esc(intitule(m))} · ${esc(SERVICE_LABELS[r.service])}</span>
+        </span>
+        <button type="button" class="iconbtn" data-action="equipe-edit" data-role="${m.role}" aria-label="Renommer ${esc(m.prenom)} ${esc(m.nom)}" style="width:36px;height:36px;color:var(--faint)">${icon('pencil', 15)}</button>
+      </div>
+      <span class="xp" role="img" aria-label="${suiv ? `${m.xp} points d’expérience sur ${suiv} pour le prochain surnom` : 'dernier surnom atteint'}"><i style="width:${Math.max(3, Math.min(100, pct))}%;background:${COULEUR_ROLE[m.role]}"></i></span>
+      <span class="tiny muted">${suiv ? `prochain surnom « ${esc(r.surnoms[m.niveau])} » dans ${suiv - m.xp} pts d’expérience (${m.xp} / ${suiv})` : 'légende de la zone : tous les surnoms gagnés'}</span>
+      <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:2px"><span class="tiny muted">Bonus ${esc(SERVICE_LABELS[r.service])}</span>${echelleBonus(m, { xp: false })}</div>
+    </div>`;
   }).join('');
   const nbSurnoms = equipe.filter((m) => m.niveau > 0).length;
   return `<details class="card repli" aria-label="Mon équipe" data-k="equipe" ${S.ouverts && S.ouverts.equipe ? 'open' : ''}>

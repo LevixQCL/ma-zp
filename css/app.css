@@ -1176,3 +1176,13 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .cad-s b { font-weight: 700; }
 .dos-f.ok { color: var(--green); }
 .dos-f.bad { color: var(--red-soft); }
+/* Échelle du bonus des figures selon leurs surnoms. */
+.echelle { display: flex; align-items: center; gap: 3px; flex-wrap: wrap; margin: 2px 0; }
+.ech-p { font-size: 11.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: var(--surface2); color: var(--faint); font-variant-numeric: tabular-nums; }
+.ech-p.passe { color: var(--muted); }
+.ech-p.on { background: rgba(61, 211, 154, .16); color: var(--green); box-shadow: inset 0 0 0 1px rgba(61, 211, 154, .45); }
+.ech-f { color: var(--faint); font-size: 12px; }
+.membre-ech { display: flex; flex-direction: column; gap: 2px; padding-left: 40px; }
+.membre.membre-v { flex-direction: column; align-items: stretch; gap: 6px; }
+.membre-v .membre-h { display: flex; align-items: center; gap: 12px; }
+.membre-v .xp { width: 100%; }

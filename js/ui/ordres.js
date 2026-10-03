@@ -8,7 +8,7 @@ import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel
 import { effectifPrevu, capaciteAgents, capaciteAgentsPrevue, capaciteVehicules, coutRecrue, sousTutelle, moralMult, bonusLots } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { agentsND } from './nondroit.js';
-import { COULEUR_ROLE, initiales } from './equipe.js';
+import { COULEUR_ROLE, initiales, echelleBonus } from './equipe.js';
 import { creerEquipe, appliquerNoms, missionValide, surnomDe } from '../engine/equipe.js';
 import { nomSecteur } from '../engine/nondroit.js';
 import { secteurOuvert, ROLE_SERVICE, bonusChef, CHEFS } from '../engine/constants.js';
@@ -515,9 +515,9 @@ function equipeOrdres(z, d) {
     return `<div class="col" style="gap:4px"><div class="membre-o">
       <span class="avatar" style="background:${COULEUR_ROLE[m.role]};width:30px;height:30px;font-size:12px" aria-hidden="true">${esc(initiales(m))}</span>
       <span class="col grow" style="gap:1px;min-width:0"><span class="small" style="font-weight:600">${esc(nom(m))}</span>
-        <span class="tiny ${enMission ? 'warn' : 'muted'}">${enMission ? (mis.type === 'nondroit' ? `en mission · zone de non-droit, ${esc(nomSecteur(mis.secteur))}` : `en mission · renfort chez ${esc(cible ? cible.nom : 'un collègue')}`) + ` (${esc(SERVICE_LABELS[sv])} sans son bonus ce soir)` : `${esc(SERVICE_LABELS[sv])} <span class="ok">+${b} %</span>`}</span></span>
+        <span class="tiny ${enMission ? 'warn' : 'muted'}">${enMission ? (mis.type === 'nondroit' ? `en mission · zone de non-droit, ${esc(nomSecteur(mis.secteur))}` : `en mission · renfort chez ${esc(cible ? cible.nom : 'un collègue')}`) + ` (${esc(SERVICE_LABELS[sv])} sans son bonus ce soir)` : `encadre ${esc(SERVICE_LABELS[sv])}`}</span></span>
       ${enMission ? `<button type="button" class="btn small ghost" data-action="mission-annuler">Rappeler</button>` : `<button type="button" class="btn small ${choix ? 'primary' : 'ghost'}" data-action="mission-qui" data-role="${m.role}" aria-expanded="${choix}">Mission</button>`}
-    </div>${dest}</div>`;
+    </div>${enMission ? '' : `<div class="membre-ech">${echelleBonus(m)}</div>`}${dest}</div>`;
   }).join('');
   const perdue = voulu && !mis ? '<p class="tiny bad" style="margin:0">Mission annulée : plus d’agents à l’endroit prévu. La figure reste à son service.</p>' : '';
   return `<div class="col" style="gap:8px">${perdue}${lignes}
