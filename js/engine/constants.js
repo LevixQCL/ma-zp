@@ -88,6 +88,25 @@ export const ROULAGE = { seuil: 6, auDela: 0.5, chasse: 0.25, chasseCameras: 0.4
  * Plein effet sous 70, moitié (arrondie au-dessus) de 70 à 85, +1 au-delà.
  */
 export const MORAL_PALIERS = [70, 85];
+/**
+ * Effet du moral sur l'efficacité des agents, et retour naturel chaque soir.
+ * Efficacité : 100 % à `neutre` ; +`haut` par point au-dessus, −`bas` par point en dessous.
+ * Retour vers `cible` : taux de l'écart selon la tranche où se trouve le moral (`retour` : [à partir de, taux]).
+ */
+export const MORAL = {
+  // Au-dessus du point neutre, chaque point compte 2,5 fois plus qu'en dessous : 120 % à 80, 150 % à 100.
+  neutre: 200 / 3, haut: 0.015, bas: 0.006, cible: 60,
+  // Plus le moral est haut, plus il redescend vite : le garder vers 75-80 demande de l'entretien.
+  retourBas: 0.08,
+  retour: [[60, 0.05], [70, 0.10], [80, 0.15], [90, 0.20]],
+};
+/** Part de l'écart à la cible rattrapée ce soir. */
+export function tauxRetourMoral(m) {
+  if (m < MORAL.cible) return MORAL.retourBas;
+  let t = MORAL.retour[0][1];
+  for (const [min, taux] of MORAL.retour) if (m >= min) t = taux;
+  return t;
+}
 export const gainMoral = (base, moral) => (base <= 0 ? base : moral < MORAL_PALIERS[0] ? base : moral < MORAL_PALIERS[1] ? Math.ceil(base / 2) : 1);
 export const gainPrime = (moral) => gainMoral(4, moral);
 // Énigmes du jour : bonus au choix dès 2 bonnes réponses, prime « sans faute » à 3 sur 3.

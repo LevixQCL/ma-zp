@@ -1,6 +1,6 @@
 // Aides rapides (bouton « ? ») : l'essentiel d'une jauge en quelques lignes, sans ouvrir le guide.
 import { esc, fmt1, myZone } from './common.js';
-import { IPZ_POIDS, START, ECONOMIE, SUBSIDE, TERRAIN, FLAGRANT, DOSSIER, ND, BUDGET_IPZ, scoreBudget, MORAL_PALIERS } from '../engine/constants.js';
+import { IPZ_POIDS, START, ECONOMIE, SUBSIDE, TERRAIN, FLAGRANT, DOSSIER, ND, BUDGET_IPZ, scoreBudget, MORAL_PALIERS, MORAL } from '../engine/constants.js';
 import { confianceCommune, pointsIpz, IPZ_LABELS, moralMult } from '../engine/zone.js';
 import { PERIL } from '../engine/rivalites.js';
 
@@ -49,15 +49,15 @@ export const AIDES = {
     titre: 'Moral des troupes',
     intro: 'La jauge qui pèse sur tout : elle multiplie l’efficacité de tous tes agents.',
     lignes: [
-      '<strong>Efficacité</strong> = 60 % + 0,6 × moral, pour <em>tous</em> tes agents et tous les services (incidents, Proximité, dossiers, amendes, paperasse, force engagée dans la zone de non-droit)',
+      '<strong>Efficacité</strong> : 100 % à 67 de moral ; chaque point au-dessus ajoute 1,5 %, chaque point en dessous retire 0,6 %. Elle vaut pour <em>tous</em> tes agents et tous les services (incidents, Proximité, dossiers, amendes, paperasse, force engagée dans la zone de non-droit)',
       `<strong>Repères</strong> : ${[30, 40, 50, 60, 67, 74, 80, 90, 100].map((m) => `${m} → ${Math.round(moralMult(m) * 100)} %`).join(' · ')}`,
-      '<strong>Point neutre</strong> : à 67 de moral, tes agents sont à 100 % ; en dessous ils travaillent moins, au-dessus ils font plus',
+      '<strong>Point neutre</strong> : à 67 de moral, tes agents sont à 100 %. Un moral haut paie vraiment (120 % à 80), mais il se mérite',
       '<strong>Dans le rapport du soir</strong> : la ligne « Moral … au moment du travail : efficacité … % » donne le moral réellement appliqué (après les aléas, énigmes et primes du jour)',
       '<strong>Sous 40</strong> : 10 % des agents restent absents',
       '<strong>Sous 20</strong> : un agent démissionne à chaque tour',
       `<strong>Sous ${PERIL.moral}</strong> : ta zone passe en péril (risque de faillite)`,
       `<strong>IPZ</strong> : compte pour ${pc(IPZ_POIDS.moral)} · au-dessus de 70, moins de grippes et de débauchages`,
-      '<strong>Chaque soir</strong> : il revient de 8 % vers 60 (au-dessus de 60, ça le freine ; en dessous, ça l’aide)',
+      `<strong>Chaque soir</strong> : il revient vers ${MORAL.cible}, d’autant plus vite qu’il est haut : ${MORAL.retour.map(([m, t], i) => `${m}-${(MORAL.retour[i + 1] || [100])[0]} → ${Math.round(t * 100)} % de l’écart`).join(' · ')} ; sous ${MORAL.cible}, il remonte de ${Math.round(MORAL.retourBas * 100)} % de l’écart`,
       `<strong>Bonus de moral</strong> (prime, énigmes, incident réussi) : plein effet sous ${MORAL_PALIERS[0]}, moitié de ${MORAL_PALIERS[0]} à ${MORAL_PALIERS[1]}, +1 au-delà. Une équipe déjà gonflée à bloc se motive moins facilement`,
       '<strong>Rythme</strong> : renforcé −6, allégé +5 · <strong>budget négatif</strong> : −3 · <strong>3 incidents ratés ou plus</strong> : −2',
     ],

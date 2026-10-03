@@ -5,7 +5,7 @@ import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
 import {
   APP_VERSION, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, MORAL, tauxRetourMoral, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
@@ -725,8 +725,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Moral.
     jalon(z, 'Accident de véhicule');
     const m0 = z.moral;
-    z.moral += (60 - z.moral) * 0.08;
-    jalon(z, `Retour naturel vers 60 : 8 % de l’écart (${fmt1(m0)} → 60)`);
+    const tr = tauxRetourMoral(z.moral);
+    z.moral += (MORAL.cible - z.moral) * tr;
+    jalon(z, `Retour naturel vers ${MORAL.cible} : ${Math.round(tr * 100)} % de l’écart (${fmt1(m0)} → ${MORAL.cible})`);
     z.moral += RYTHMES[o.rythme].moral;
     jalon(z, `Rythme ${RYTHMES[o.rythme].label.toLowerCase()}`);
     if (z.infra.sport) z.moral += 1;

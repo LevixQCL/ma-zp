@@ -1,7 +1,7 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
 import {
-  SERVICES, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, coutEquipement, multNiveau, multEquip, coutFormation } from './constants.js';
+  SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, coutEquipement, multNiveau, multEquip, coutFormation } from './constants.js';
 import { coutCarrosserie } from './sinistres.js';
 import { cabossesChoisis } from './parc.js';
 
@@ -152,7 +152,10 @@ export function vehiculesDisponibles(zone, turn) {
   return Math.max(0, zone.vehicules - zone.vehiculesHS.filter((v) => v.retour > turn).length);
 }
 
-export function moralMult(moral) { return 0.6 + 0.6 * clamp(moral, 0, 100) / 100; }
+export function moralMult(moral) {
+  const m = clamp(moral, 0, 100);
+  return m >= MORAL.neutre ? 1 + (m - MORAL.neutre) * MORAL.haut : 1 - (MORAL.neutre - m) * MORAL.bas;
+}
 
 /** Capacité d'un service pour un nombre d'agents donné. */
 export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn = 0, adminMult = 1 } = {}) {
