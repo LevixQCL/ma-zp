@@ -161,7 +161,8 @@ function plaque(rng, diff) {
 //  2 : 8 places, départ, arrivée ou couleur franchement différente.
 //  3 : 12 places pleines, changement discret (teinte proche, modèle, barres de toit).
 //  4 : 16 places, 2e photo prise par la caméra d'en face (image retournée) ; une voiture peut être garée dans l'autre sens.
-//  5 : 16 places de nuit, à mémoriser : la photo 1 disparaît quand on ouvre la photo 2.
+//  5 : 12 places de nuit, à mémoriser : la photo 1 disparaît quand on ouvre la photo 2. Changement franc
+//      (voiture partie, arrivée, ou d'une tout autre couleur) : la difficulté est dans la mémoire, pas dans le détail.
 //  6 (dossier noir) : 20 places, image retournée, de nuit, avec du va-et-vient normal ;
 //     il faut trouver la voiture restée « à la même place » qui a en réalité bougé.
 
@@ -215,19 +216,19 @@ function photoSvg(places, cols, miroir, heure, nuit) {
 function photos(rng, diff) {
   const hc = diff >= 6;
   const cols = diff <= 1 ? 3 : hc ? 5 : 4;
-  const n = diff <= 1 ? 6 : diff <= 2 ? 8 : diff <= 3 ? 12 : hc ? 20 : 16;
+  const memo = diff === 5;
+  const n = diff <= 1 ? 6 : diff <= 2 ? 8 : diff <= 3 || memo ? 12 : hc ? 20 : 16;
   const miroir = diff === 4 || hc;
   const nuit = diff >= 5;
-  const memo = diff === 5;
   const types = Object.keys(TYPES_AUTO);
-  const vide = diff <= 2 ? 0.2 : 0.1;
+  const vide = diff <= 2 || memo ? 0.2 : 0.1;
   const auto = () => ({ type: rng.pick(types), col: rng.int(0, COULEURS_AUTO.length - 1), barres: rng.chance(0.25), sens: rng.chance(0.25) ? 1 : 0 });
   const places = Array.from({ length: n }, () => (rng.chance(vide) ? null : auto()));
   const apres = places.map((p) => (p ? { ...p } : null));
   // La place qui change : occupée sauf aux niveaux 1-2 (arrivée possible).
   const occupees = places.map((p, k) => (p ? k : -1)).filter((k) => k >= 0);
   let i = rng.int(0, n - 1);
-  const modes = diff <= 1 ? ['part', 'arrive'] : diff <= 2 ? ['part', 'arrive', 'couleur'] : diff <= 3 ? ['proche', 'type', 'barres'] : diff <= 4 ? ['proche', 'barres', 'sens'] : hc ? ['sens'] : ['proche', 'barres', 'sens', 'type'];
+  const modes = diff <= 1 ? ['part', 'arrive'] : diff <= 2 ? ['part', 'arrive', 'couleur'] : diff <= 3 ? ['proche', 'type', 'barres'] : diff <= 4 ? ['proche', 'barres', 'sens'] : hc ? ['sens'] : ['part', 'arrive', 'couleur'];
   let mode = rng.pick(modes);
   if (!['part', 'arrive'].includes(mode) || places[i]) { if (!places[i]) i = rng.pick(occupees); if (mode === 'arrive') mode = 'part'; }
   else mode = 'arrive';
@@ -267,7 +268,7 @@ function photos(rng, diff) {
     choix: places.map((_, k) => ({ id: `P${k + 1}`, label: `P${k + 1}` })),
     answer: `P${i + 1}`,
     astuce: hc ? 'Ignore les places qui se sont vidées ou remplies. Sur l’image retournée, une voiture immobile apparaît elle aussi retournée.'
-      : memo ? 'Avant d’ouvrir la photo 2, note dans ton brouillon la couleur et le sens de chaque voiture.'
+      : memo ? 'Avant d’ouvrir la photo 2, note dans ton brouillon les places vides et la couleur de chaque voiture.'
       : miroir ? 'Repère-toi avec les numéros au sol. Une voiture qui n’a pas bougé apparaît elle aussi retournée sur la photo 2.'
       : diff >= 3 ? 'Compare les places une par une : teinte exacte, forme, barres de toit, sens du pare-brise.' : 'Compare les places une par une : couleur, forme, toit.',
     explication: hc
