@@ -18,7 +18,7 @@ import { ouvrirBudget, ouvrirVehicule, ouvrirLogistique, ouvrirParc, rafraichirL
 import { DECOR, decorDebloque, conditionDecor, decorValide } from './engine/decor.js';
 import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
-import { tutoAuBesoin, lancerTuto } from './ui/tutoriel.js';
+import { tutoAuBesoin, lancerTuto, tutoFait } from './ui/tutoriel.js';
 import { rouletteAuBesoin, lancerRoulette } from './ui/roulette.js';
 import { editionHtml, marquerEditionVue } from './ui/edition.js';
 import { operationActive, effetsOperation } from './engine/zone.js';
@@ -152,7 +152,8 @@ function render() {
   }
   const scroll = window.scrollY;
   app.innerHTML = banner + html;
-  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin() && !rouletteAuBesoin()) nouveautesAuBesoin();
+  // La roulette attend la fin (ou le refus) de la visite guidée : sinon elle chasse l'invitation.
+  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin() && !(tutoFait() && rouletteAuBesoin())) nouveautesAuBesoin();
   if (S.route === 'ordres' && S.ordAncre) {
     const cible = document.querySelector(`[data-action="ord-open"][data-k="${S.ordAncre}"]`);
     S.ordAncre = null;
