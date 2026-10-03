@@ -8,13 +8,21 @@ import { S } from './common.js';
 const ATTENTE = 8000, ECART_MIN = 20000, RELIRE_APRES = 60000;
 let ecrireRef = null, minuterie = null, dernierEnvoi = 0, dernierEnvoye = '', derniereLecture = 0, rafraichir = null, branche = false;
 
+/** Un tableau sans rien de posé (seulement une vue ou des listes vides) compte comme pas de tableau. */
+const tableauVide = (t) => !t || (!(t.places || []).length && !(t.liens || []).length && !(t.fiches || []).length && !Object.keys(t.pos || {}).length);
 const sansVue = (c) => {
   if (!c) return c;
   const { tab, maj, ...reste } = c;
-  if (!tab) return reste;
+  if (tableauVide(tab)) return reste;
   const { vue, ...t } = tab;
   return { ...reste, tab: t };
 };
+/**
+ * Carnet sans contenu : ni ✓ / ✕, ni marque, ni note, ni tableau. Un appareil qui ouvre le tableau pour la première
+ * fois (ou qui déplace seulement la vue) ne doit jamais écraser le carnet d'un autre appareil.
+ */
+export const carnetVide = (c) => !c || (!String(c.notes || '').trim() && tableauVide(c.tab)
+  && !Object.entries(c).some(([k, v]) => !['maj', 'tab', 'notes'].includes(k) && v && typeof v === 'object' && Object.values(v).some(Boolean)));
 /** Le contenu a-t-il changé (hors vue et date) ? */
 export const contenuChange = (avant, apres) => JSON.stringify(sansVue(avant || {})) !== JSON.stringify(sansVue(apres || {}));
 
@@ -27,7 +35,7 @@ function charge(lire) {
   for (const k of [n, n - 1]) {
     if (k < 1) continue;
     const c = lire(k);
-    if (c && (c.maj || Object.keys(c.g || {}).length || c.notes || (c.tab && (c.tab.places || []).length))) affaires[k] = { ...sansVue(c), maj: c.maj || 0 };
+    if (c && !carnetVide(c)) affaires[k] = { ...sansVue(c), maj: c.maj || 0 };
   }
   return affaires;
 }
@@ -67,13 +75,14 @@ export async function synchroniser(lire, ecrireLocal, rerender, { force = false 
   const n = S.state.enquete.n;
   for (const k of [n, n - 1]) {
     if (k < 1) continue;
-    const local = lire(k), loin = aff[k];
-    if (loin && (loin.maj || 0) > (local.maj || 0)) {
+    const local = lire(k), loin = aff[k] && !carnetVide(aff[k]) ? aff[k] : null;
+    // Un carnet local vide (tableau jamais rempli sur cet appareil) prend toujours la version en ligne.
+    if (loin && ((loin.maj || 0) > (local.maj || 0) || carnetVide(local))) {
       // Plus récent en ligne : on le prend, en gardant la vue de cet appareil.
       const vue = local.tab && local.tab.vue;
       const neuf = { ...loin, tab: loin.tab ? { ...loin.tab, vue: vue || null } : local.tab };
       if (contenuChange(local, neuf)) { ecrireLocal(k, neuf); change = true; }
-    } else if ((local.maj || 0) > ((loin && loin.maj) || 0) || (!loin && contenuChange({}, local))) aEnvoyer = true;
+    } else if (!carnetVide(local) && ((local.maj || 0) > ((loin && loin.maj) || 0) || !loin)) aEnvoyer = true;
   }
   dernierEnvoye = JSON.stringify(charge(lire));
   if (aEnvoyer) { dernierEnvoye = ''; planifierEnvoi(lire); }
