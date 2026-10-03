@@ -118,8 +118,19 @@ export async function createFirebaseBackend(config) {
     subscribeState(cb, onErr) { return F.onSnapshot(stateRef(), (s) => cb(s.exists() ? s.data() : null), (e) => { console.error(e); if (onErr) onErr(e); }); },
 
     // Carnet d'enquête (tableau, marques, notes) : une fiche par joueur, lisible et modifiable par lui seul.
-    async getCarnet(uid) { const d = await F.getDoc(docIn('carnets', uid)); return d.exists() ? d.data() : null; },
-    async saveCarnet(uid, data) { await F.setDoc(docIn('carnets', uid), data); },
+    // Chaque affaire est rangée en texte JSON : Firestore refuse les listes de listes (les ficelles [a, b])
+    // et les valeurs « undefined ». On relit aussi l'ancien format (objet).
+    async getCarnet(uid) {
+      const d = await F.getDoc(docIn('carnets', uid));
+      if (!d.exists()) return null;
+      const data = d.data(), affaires = {};
+      for (const [k, v] of Object.entries(data.affaires || {})) { try { affaires[k] = typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { /* fiche illisible : ignorée */ } }
+      return { ...data, affaires };
+    },
+    async saveCarnet(uid, data) {
+      const affaires = Object.fromEntries(Object.entries(data.affaires || {}).map(([k, v]) => [k, JSON.stringify(v)]));
+      await F.setDoc(docIn('carnets', uid), { affaires, maj: data.maj || Date.now() });
+    },
     async getPlayer(uid) { try { const s = await F.getDoc(docIn('players', uid)); return s.exists() ? s.data() : null; } catch (e) { return null; } },
     async getPlayers({ strict = false } = {}) {
       let snap;
