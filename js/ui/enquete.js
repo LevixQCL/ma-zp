@@ -5,7 +5,7 @@ import { APPUI } from '../engine/appui.js';
 import { monAppui } from './incidents.js';
 import { renderTableau } from './tableau.js';
 import { aideBtn } from './aide.js';
-import { planifierEnvoi, synchroniser, synchroniserMaintenant, contenuChange } from './carnet-sync.js';
+import { planifierEnvoi, synchroniser, synchroniserMaintenant, contenuChange, carnetVide } from './carnet-sync.js';
 import {
   ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece,
   chanceVoisinage, VOISINAGE,
@@ -38,8 +38,24 @@ export function ecrireCarnet(n, c) {
   planifierEnvoi(lireCarnet);
 }
 /** Récupère le carnet enregistré en ligne (tableau, marques, notes) s'il est plus récent. */
-export function synchroCarnet(rerender, opts) { return synchroniser(lireCarnet, ecrireLocal, rerender, opts); }
-export function synchroCarnetMaintenant(rerender) { return synchroniserMaintenant(lireCarnet, ecrireLocal, rerender); }
+/** Écriture venue de la synchro : garde d'abord une copie du tableau de cet appareil (bouton « Restaurer »). */
+function ecrireDepuisLigne(n, c) {
+  const avant = lireCarnet(n);
+  if (!carnetVide(avant)) try { localStorage.setItem(`${carnetKey(n)}-avant-synchro`, JSON.stringify(avant)); } catch (e) { /* stockage indisponible */ }
+  ecrireLocal(n, c);
+}
+/** Copie du tableau de cet appareil prise avant la dernière synchro, s'il y en a une. */
+export function sauvegardeCarnet(n) { try { return JSON.parse(localStorage.getItem(`${carnetKey(n)}-avant-synchro`)); } catch (e) { return null; } }
+/** Remet cette copie (et la renvoie en ligne, fusionnée avec ce qui y est). */
+export function restaurerCarnet(n) {
+  const c = sauvegardeCarnet(n);
+  if (!c) return false;
+  const actuel = lireCarnet(n);
+  ecrireCarnet(n, { ...c, tab: c.tab ? { ...c.tab, vue: (actuel.tab && actuel.tab.vue) || c.tab.vue || null } : c.tab });
+  return true;
+}
+export function synchroCarnet(rerender, opts) { return synchroniser(lireCarnet, ecrireDepuisLigne, rerender, opts); }
+export function synchroCarnetMaintenant(rerender) { return synchroniserMaintenant(lireCarnet, ecrireDepuisLigne, rerender); }
 
 function autresZones() {
   return Object.values(S.state.zones).filter((z) => z.uid !== S.user.uid && z.toursSansOrdres < 3).sort((a, b) => a.code.localeCompare(b.code));
