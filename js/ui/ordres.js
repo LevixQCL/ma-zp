@@ -1,7 +1,7 @@
 // Écran des ordres du tour.
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
-import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP } from '../engine/constants.js';
+import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
@@ -140,7 +140,7 @@ export function estimations() {
   const reste = resteBase - enquete;
   const coutDep = coutDepenses(dep, z);
   const coutTotal = coutDep + (d.decision && !decisionImpossible(z, d.decision, st.turn) ? coutDecision(z, d.decision) : 0);
-  return { attendus, couverts, pap, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, coutTotal, prises, crim };
+  return { attendus, couverts, pap, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, coutTotal, prises, crim, cap };
 }
 
 /** « dont 2 en audition » sous un service : ces agents ne travaillent pas dans le service aujourd'hui. */
@@ -193,8 +193,9 @@ function resultatService(e, s) {
     case 'intervention': return `<span class="${e.couverts >= e.attendus ? 'ok' : 'warn'}">${e.couverts} incident${e.couverts > 1 ? 's' : ''} sur ${e.attendus} couvert${e.couverts > 1 ? 's' : ''}</span>`;
     case 'proximite': return `<span class="muted">criminalité ${Math.round(e.crim)}</span>`;
     case 'recherche': {
-      const ds = z.dossiers || [], v = ds.filter((x) => x.age >= 5).length, r = ds.filter((x) => x.age > 6).length;
-      return r ? `<span class="bad">${r} dossier${r > 1 ? 's' : ''} en retard</span>` : v ? `<span class="warn">${v} dossier${v > 1 ? 's' : ''} de 5 jours ou plus</span>` : `<span class="muted">${ds.length} dossier${ds.length > 1 ? 's' : ''} en cours</span>`;
+      const p = projeterDossiers(z, e.cap && e.cap.recherche);
+      const retard = p.lignes.filter((l) => !l.boucle && l.d.age + 1 > 6).length;
+      return `<span class="${retard ? 'bad' : p.boucles ? 'ok' : 'muted'}">${p.boucles ? `${p.boucles} bouclé${p.boucles > 1 ? 's' : ''} ce soir · ` : ''}${p.restants} restant${p.restants > 1 ? 's' : ''} après 20:00</span>`;
     }
     case 'roulage': return e.chasse ? '<span class="bad">« chasse aux PV » : satisfaction en baisse</span>' : `<span class="ok">+${fmt1(e.amendes)} k€ d’amendes</span>`;
     case 'admin': return `<span class="${e.pap > 0 ? 'warn' : 'muted'}">paperasse ${pap(e.pap)} ce soir</span>`;
@@ -217,6 +218,7 @@ export function updateOrdresLive() {
   if (e.opx.op) set('op-couv', opCouvHtml(e));
   set('alloc-status', statusHtml(e));
   for (const s of SERVICES) set(`res-${s}`, resultatService(e, s));
+  set('dos-recherche', dossiersHtml(myZone(), e));
   const ch = document.getElementById('est-chasse'); if (ch) ch.hidden = !e.chasse;
   const btn = document.getElementById('btn-valider'); if (btn) btn.disabled = e.resteBase < 0;
   const dirty = document.getElementById('dirty'); if (dirty) dirty.hidden = !S.ordersDirty;
@@ -424,15 +426,44 @@ function amendeParAgentTxt(z) {
  * Dossiers locaux sous la ligne Recherche : les plus vieux sont traités en premier ;
  * dès 5 jours on prévient (au-delà de 6, chaque dossier coûte de la satisfaction chaque soir).
  */
-function dossiersHtml(z) {
-  const ds = (z.dossiers || []).slice().sort((a, b) => b.age - a.age);
-  if (!ds.length) return '';
-  const vieux = ds.filter((d) => d.age >= 5);
-  const retard = ds.filter((d) => d.age > 6).length;
-  const ouvert = S.help && S.help.recherche;
-  const pastille = (d) => (d.age > 6 ? 'bad' : d.age >= 5 ? 'warn' : 'muted');
-  return `<span class="tiny ${retard ? 'bad' : vieux.length ? 'warn' : 'muted'}">${ds.length} dossier${ds.length > 1 ? 's' : ''} en cours${vieux.length ? ` · ${retard ? `${retard} en retard (−0,4 de satisfaction chacun par jour)` : ''}${retard && vieux.length > retard ? ' · ' : ''}${vieux.length > retard ? `${vieux.length - retard} de 5 jours ou plus : à boucler vite` : ''}` : ''}</span>
-    ${ouvert || vieux.length ? `<div class="dossiers">${(ouvert ? ds : vieux).map((d) => `<span class="dossier ${pastille(d)}"><span class="mono">J${d.age}</span> ${esc(d.titre)} <span class="muted">· reste ${fmt1(d.reste)}</span></span>`).join('')}</div>` : ''}`;
+/**
+ * Ce que deviendront les dossiers ce soir, avec la capacité Recherche estimée : les plus vieux sont traités
+ * d'abord (comme au calcul de 20:00). Le dossier qui arrive ce soir (taille inconnue, environ 6) passe en dernier.
+ */
+function projeterDossiers(z, capRech) {
+  let travail = Math.max(0, capRech || 0);
+  const lignes = (z.dossiers || []).slice().sort((a, b) => b.age - a.age).map((d) => {
+    const fait = Math.min(travail, d.reste); travail -= fait;
+    const reste = Math.round((d.reste - fait) * 10) / 10;
+    return { d, fait, reste, boucle: reste <= 0.05 };
+  });
+  const moyNouveau = (DOSSIER.tailleMin + DOSSIER.tailleMax) / 2;
+  const nouveauBoucle = travail >= moyNouveau;
+  const restants = lignes.filter((l) => !l.boucle).length + (nouveauBoucle ? 0 : 1);
+  return { lignes, boucles: lignes.filter((l) => l.boucle).length, restants, surplus: travail };
+}
+
+/**
+ * Dossiers locaux sous la ligne Recherche : pour chacun, son âge, ce qui est déjà fait, ce que tes enquêteurs
+ * feront ce soir, et s'il sera bouclé ; puis le nombre de dossiers qu'il restera après 20:00.
+ */
+function dossiersHtml(z, e) {
+  const p = projeterDossiers(z, e.cap && e.cap.recherche);
+  if (!p.lignes.length) return '<span class="tiny muted">Aucun dossier en cours : le dossier du soir sera entamé à 20:00.</span>';
+  const n = S.draft.alloc.recherche || 0;
+  const ligne = (l) => {
+    const d = l.d, tot = d.total || d.reste;
+    const deja = Math.max(0, (tot - d.reste) / tot) * 100, soir = (l.fait / tot) * 100;
+    const ageSoir = d.age + 1, retard = !l.boucle && ageSoir > 6, bientot = !l.boucle && ageSoir >= 5;
+    return `<div class="dos ${retard ? 'bad' : bientot ? 'warn' : ''}">
+      <div class="between" style="gap:8px"><span class="dos-t"><span class="dos-age">J${d.age}</span>${esc(d.titre)}</span>
+        <span class="dos-f ${l.boucle ? 'ok' : retard ? 'bad' : ''}">${l.boucle ? '✓ bouclé ce soir' : `reste ${Math.round((l.reste / tot) * 100)} %`}</span></div>
+      <div class="dos-bar" aria-hidden="true"><i class="deja" style="width:${deja}%"></i><i class="soir" style="width:${soir}%"></i></div>
+      ${retard ? '<span class="tiny bad">pas bouclé : il coûtera de la satisfaction chaque soir</span>' : bientot ? `<span class="tiny warn">pas bouclé ce soir : J${ageSoir} demain, en retard après J6</span>` : ''}
+    </div>`;
+  };
+  return `<div class="dossiers">${p.lignes.map(ligne).join('')}</div>
+    <span class="tiny muted">${n ? 'Gris : déjà fait · bleu : ce que tes enquêteurs feront ce soir, les plus vieux d’abord. ' : 'Personne en Recherche : aucun dossier n’avancera ce soir. '}Un nouveau dossier arrive chaque soir, compté dans les dossiers restants.</span>`;
 }
 
 /** Aide courte de chaque service, avec la situation actuelle de la zone. */
@@ -619,7 +650,7 @@ export function renderOrdres() {
           <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
         <span id="pris-${s2}" class="svc-plus">${prisHtml(e, s2)}</span>
         ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} agent${dep.reserve > 1 ? 's' : ''} de réserve en renfort (efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} %)</span>` : ''}
-        ${s2 === 'recherche' ? `<div class="svc-plus">${dossiersHtml(z)}</div>` : ''}
+        ${s2 === 'recherche' ? `<div class="svc-plus" id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}
         ${S.help && S.help[s2] ? `<p class="tiny svc-plus" style="margin:2px 0 6px;color:var(--text2);line-height:1.45">${esc(aide(s2, z))}</p>` : ''}
       </div>`).join('')}
       ${reserveHtml(z, d, e)}

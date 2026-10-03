@@ -1093,11 +1093,18 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .duo > :nth-child(3):last-child { grid-column: 1 / -1; }
 @media (min-width: 720px) { .duo:has(> :nth-child(3)):not(:has(details[open])) { grid-template-columns: 1fr 1fr 1fr; } .duo:not(:has(details[open])) > :nth-child(3):last-child { grid-column: auto; } }
 /* Ordres : dossiers locaux sous la ligne Recherche. */
-.dossiers { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 2px; }
-.dossier { font-size: 11.5px; padding: 3px 8px; border-radius: 999px; background: var(--surface2); border: 1px solid var(--hair); }
-.dossier.warn { border-color: var(--amber-line); color: var(--amber-soft); }
-.dossier.bad { border-color: var(--red-line); color: var(--red-soft); }
-.dossier .mono { font-weight: 700; }
+.dos-tete { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 13px; margin: 2px 0 6px; flex-wrap: wrap; }
+.dossiers { display: flex; flex-direction: column; gap: 8px; margin: 0 0 6px; padding: 10px 12px; border-radius: 14px; background: var(--bg); border: 1px solid var(--hair); }
+.dos { display: flex; flex-direction: column; gap: 4px; }
+.dos-t { font-size: 13px; font-weight: 600; min-width: 0; display: flex; gap: 6px; align-items: baseline; }
+.dos-age { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--surface2); border-radius: 6px; padding: 1px 5px; flex-shrink: 0; }
+.dos.warn .dos-age { color: var(--amber); background: var(--amber-bg); }
+.dos.bad .dos-age { color: var(--red-soft); background: var(--red-bg); }
+.dos-f { font-size: 12px; font-weight: 700; white-space: nowrap; color: var(--muted); }
+.dos-bar { position: relative; height: 6px; border-radius: 999px; background: var(--surface2); overflow: hidden; display: flex; }
+.dos-bar i { display: block; height: 100%; }
+.dos-bar .deja { background: var(--faint); }
+.dos-bar .soir { background: var(--blue); }
 /* Ordres : mon équipe et la mission du jour. */
 .membre-o { display: flex; align-items: center; gap: 10px; }
 .membre-o .avatar { flex-shrink: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #0B1220; font-weight: 700; }
@@ -1167,3 +1174,5 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .cad-s { font-size: 11.5px; color: var(--muted); line-height: 1.25; }
 .cad-d .pdelta { font-size: 11px; }
 .cad-s b { font-weight: 700; }
+.dos-f.ok { color: var(--green); }
+.dos-f.bad { color: var(--red-soft); }
