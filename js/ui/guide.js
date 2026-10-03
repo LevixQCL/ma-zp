@@ -185,7 +185,7 @@ export function sections() {
         <h3>Le tableau d’enquête</h3>
         ${ul([
           'L’écran Enquête s’ouvre sur un grand <strong>tableau en liège</strong> : glisse pour te déplacer, pince à deux doigts (ou la molette) pour zoomer. Le bouton liste en haut ramène l’affichage classique, et « ? » relance le petit tuto.',
-          'Au centre, le <strong>plan du district</strong> : la croix rouge marque les lieux des faits, les cercles bleus les endroits où les suspects disent avoir été, avec le <strong>temps de trajet</strong> en pointillés.',
+          'Au centre, le <strong>plan du district</strong> : la croix rouge marque les lieux des faits, les cercles bleus les endroits où les suspects disent avoir été, avec le <strong>temps de trajet</strong> en pointillés, et les petites maisons violettes les <strong>six planques possibles</strong>, chacune sur sa rive du canal. Touche une planque pour voir sa fiche, les indices réunis et la marquer (écartée, douteuse, retenue).',
           'Les trajets comptent : un alibi qui s’arrête 10 minutes avant les faits n’innocente personne si le trajet prend 5 minutes, mais il innocente si la route en prend 20. Même chose pour un alibi qui reprend peu après la sortie. (Les affaires ouvertes avant l’arrivée du plan ne tiennent pas compte des trajets.)',
           'Les pièces arrivent dans la <strong>boîte à pièces</strong>, chaque soir à 20:00. Sors-les une à une et punaise-les où tu veux. Rien n’est rangé d’avance.',
           'Touche une photo, une fiche de constatation, une pièce ou un lieu du plan pour ouvrir son volet : ce qu’on sait, tes ✓ / ✕, les démarches, la piste prioritaire, l’accusation et le partage.',
