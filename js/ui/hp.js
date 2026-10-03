@@ -24,10 +24,9 @@ import { fraisFixes, pointsIpz, IPZ_LABELS, confianceCommune, moralMult, moyenne
 const AIDE_COMP = { satisfaction: 'satisfaction', affaires: 'terrain', moral: 'moral', budget: 'budgetIpz', reputation: 'reputation' };
 import { IPZ_POIDS, TERRAIN, BUDGET_IPZ } from '../engine/constants.js';
 const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations().amendes; } catch (e) { /* pas de brouillon */ } return fraisFixes(z, S.state, { amendes, rythme: (S.draft && S.draft.rythme) || 'normal' }).total; };
-import { demandeRenfortHtml, appelsRenfort, renfortPrevu } from './renfort.js';
+import { appelsRenfort, renfortPrevu } from './renfort.js';
 import { secteursEnDanger, agentsND } from './nondroit.js';
 import { nomSecteur } from '../engine/nondroit.js';
-import { operationActive as opActive } from '../engine/zone.js';
 import { incidentsHtml, incidentEnCours, duree } from './incidents.js';
 
 /** Petite flèche d'évolution depuis la veille. */
@@ -362,7 +361,6 @@ export function renderHP() {
       <span style="font-weight:700">${esc((z.peril.raisons || []).join(', '))}</span>
       <span class="small">Pour t’en sortir : budget au-dessus de ${PERIL.budget} k€, au moins ${PERIL.agents} agents disponibles, moral au-dessus de ${PERIL.moral}. Rythme allégé, prime, moins de dépenses ; tes collègues peuvent t’aider.</span>
       <a class="small" href="#guide-faillite">${z.tutelleSaison ? 'Ce qui se passe en cas de faillite' : `Tutelle (${TUTELLE.tours} tours sous contrôle) puis faillite`}</a></section>` : ''}
-    ${opActive(z, T) ? `<section class="card red" aria-label="Renfort" style="gap:8px"><span class="kicker" style="color:var(--red-soft)">Opération d’envergure · ${esc(opActive(z, T).titre)}</span>${demandeRenfortHtml()}</section>` : ''}
     <div id="hp-fipa">${fipaCards()}</div>
 
 
