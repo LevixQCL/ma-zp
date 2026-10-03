@@ -27,7 +27,7 @@ const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations()
 import { appelsRenfort, renfortPrevu } from './renfort.js';
 import { secteursEnDanger, agentsND } from './nondroit.js';
 import { nomSecteur } from '../engine/nondroit.js';
-import { incidentsHtml, incidentEnCours, duree } from './incidents.js';
+import { incidentsHtml, duree } from './incidents.js';
 
 /** Petite flèche d'évolution depuis la veille. */
 function delta(v, avant) {
@@ -136,7 +136,8 @@ function cleNuit(z) { return `mazp-nuit-${S.backend.gameId ? S.backend.gameId() 
 
 /** Carte « Résultat de la nuit », affichée jusqu'à ce que le joueur la ferme. */
 function nuitHtml(z) {
-  if (!z.hier || !z.rapport || !z.rapport.length || S.nuitVue === cleNuit(z)) return '';
+  // Inutile quand le rapport complet est ouvert juste en dessous : il dit la même chose, en entier.
+  if (!z.hier || !z.rapport || !z.rapport.length || S.nuitVue === cleNuit(z) || S.showRapport) return '';
   try { if (localStorage.getItem(cleNuit(z))) return ''; } catch (e) { /* pas de stockage : on l'affiche */ }
   const lignes = [
     ['IPZ', z.ipz, z.hier.ipz], ['Satisfaction', z.satisfaction, z.hier.satisfaction], ['Moral', z.moral, z.hier.moral],
@@ -212,8 +213,7 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit, delegue }) {
     const ok = sg.quartier != null ? ((d.patrouilles || {})[sg.quartier] || 0) >= (sg.patrouilles || 2) : (al[sg.service] || 0) >= sg.min;
     items.unshift({ ok, href: sg.quartier != null ? '#carte' : '#ordres', t: esc(sg.titre), s: esc(sg.texte) });
   }
-  const inc = incidentEnCours();
-  if (inc) items.unshift({ ok: false, href: '#hp-incidents', t: `Incident en cours : ${esc(inc.titre)}`, s: `encore ${duree(inc.ferme - Date.now())} pour intervenir, sinon ton équipe se débrouille seule` });
+  // Un incident ouvert a déjà sa carte (avec son compte à rebours) juste sous la liste : pas de ligne en double ici.
   items.push(delegue ? { ok: true, href: '#quete', t: delegue.statut === 'quiz' ? `Quiz express : ${Number(delegue.tentatives) || 0} sur 5` : 'Énigmes confiées à un agent', s: delegue.statut === 'quiz' ? ((Number(delegue.tentatives) || 0) >= 3 ? (delegue.bonus ? 'bonus choisi' : 'choisis ton bonus') : 'pas de bonus') : 'résultat ce soir' } : { ok: faites >= 3, href: '#quete', t: `Énigmes : ${faites} sur 3`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
   const fipa = (st.fipas || []).filter((f) => (f.demandeur === z.uid && f.etape === 'demande' && f.tourDecision === st.turn) || (f.partenaire === z.uid && f.etape === 'invite' && f.tourReponse === st.turn) || (f.etape === 'accepte' && f.tourJ === st.turn && (f.demandeur === z.uid || f.partenaire === z.uid)));
   if (fipa.length) items.push({ ok: !!(d.fipa || d.fipaReponse || d.fipaChoix), href: '#hp-fipa', t: 'FIPA : une décision t’attend', s: 'voir la carte FIPA ci-dessous' });
