@@ -27,7 +27,7 @@ import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFet
 import { separerIncidents, appliquerIncidents, resultatsIncidents, incidentsVisibles } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND } from './contenu.js';
-import { imprevusDuJour, directeurNuit, directeurSoir, districtNuit, districtBilan, duoBilan, coopResoudre, enqueteDirecteur, memoirePlainte, formes, rangsEnigmes, adapterEnigmes, adapterIncidents, dirHeritage, DIR } from './directeur.js';
+import { imprevusDuJour, directeurNuit, directeurSoir, districtNuit, districtBilan, duoBilan, coopResoudre, enqueteDirecteur, memoirePlainte, formes, rangsEnigmes, adapterEnigmes, adapterIncidents, dirHeritage, parquetSoir, parquetDecouverte, DIR } from './directeur.js';
 
 const fmt1 = (v) => String(round1(v)).replace('.', ',');
 const median = (arr) => {
@@ -231,6 +231,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // Les agents laissés sans affectation partent en premier (audition, traque, FIPA).
   for (const u of uids) ord[u]._libres = agentsLibres(state.zones[u], ord[u], T);
   const pre = enquetePre(state, uids, ord, push, T);
+  parquetDecouverte(state, pre); // identification au stade du malus : mérite partagé
   // Appui fédéral (labo, RCCU) : pièces des analyses réussies aujourd'hui, équipes pour demain.
   appuiResolution(state, uids, ord, players, T, push);
   jalonTous('Enquête (partages, accusation, traque)');
@@ -858,6 +859,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.reputation = round1(z.reputation);
   }
 
+  // Le parquet surveille les dossiers trop dépendants des pièces des autres (avant la fin d'affaire).
+  parquetSoir(state, uids, push);
   // Enquête : fin d'affaire, nouvelle affaire ; nouvelles demandes de FIPA.
   enquetePost(state, pre, push);
   // Le Directeur : témoin tardif si le district piétine sur l'enquête.
