@@ -4,7 +4,7 @@ import { buildJoinZone, createGame } from '../engine/resolve.js';
 import { nextResolutionAfter } from '../engine/time.js';
 import { MAX_ZONES, partieComplete } from '../engine/constants.js';
 
-const V = '10.12.2';
+const V = '10.12.2'; // si tu changes de version : mets aussi à jour les « modulepreload » de index.html
 const CDN = `https://www.gstatic.com/firebasejs/${V}`;
 
 const plain = (o) => JSON.parse(JSON.stringify(o));

@@ -15,6 +15,7 @@ Jeu de gestion de zone de police fictive, entre collègues. Un tour par jour, r�
 | `js/ui/` | Écrans |
 | `minijeux/` | Mini-jeux des incidents du jour (pages ouvertes en plein écran) ; sources et script de construction dans `minijeux/src/` |
 | `css/`, `icons/`, `manifest.webmanifest` | Apparence, icônes et installation sur téléphone |
+| `js/app.min.js` | **Fichier construit** : tout le code de `js/` en un seul fichier compacté (c'est lui que charge `index.html`). À reconstruire après chaque modification de `js/` : `node outils/construire.mjs` (le test `test/construit.test.mjs` signale s'il est en retard) |
 | `sw.js` | Service worker : revérifie chaque fichier auprès du serveur (pas de mélange d'anciens et de nouveaux fichiers après une mise à jour) et sert la dernière copie hors connexion |
 
 ## Mode démo
