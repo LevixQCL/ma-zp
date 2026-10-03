@@ -42,26 +42,26 @@ function carteSecteur(k, s, me, d) {
     ? `<span class="pill green">Repris${s.chef && S.state.zones[s.chef] ? ` · ${nomZ(s.chef)}` : ''}</span>`
     : ouvert ? '<span class="pill" style="color:var(--red-soft);border-color:var(--red-line)">Aux mains du milieu</span>' : '<span class="pill">Verrouillé</span>';
   const fleche = (a, b) => (b < a - 0.5 ? `<span class="good">${Math.round(a)} → ${Math.round(b)}</span>` : b > a + 0.5 ? `<span class="bad">${Math.round(a)} → ${Math.round(b)}</span>` : `<span class="muted">${Math.round(a)} → ${Math.round(b)}</span>`);
+  const seuilAgents = Math.ceil(regen / ND.efficacite / Math.max(0.5, forceEngagement(me, 1)));
   let prevision = '';
   if (ouvert) {
     if (!repris) {
       const nuits = (e) => (e.emprise <= 0 ? 'repris ce soir' : e.emprise < s.emprise ? `encore ~${Math.ceil(e.emprise / Math.max(0.1, s.emprise - e.emprise))} soirs à ce rythme` : 'le milieu tient bon');
       const seuilF = regen / ND.efficacite;
       prevision = `${n ? (maForce <= seuilF
-        ? `<p class="tiny bad" style="margin:0">Toi seul (force ${fmt1(maForce)}, il faut plus de ${fmt1(seuilF)}) : sans autre zone avec toi, l’assaut sera repoussé et chaque agent risque d’être blessé (${Math.round(ND.blesseRepousse * 100)} %).</p>`
-        : `<p class="tiny" style="margin:0">Toi seul ce soir (force ${fmt1(maForce)}) : emprise ${fleche(s.emprise, seul.emprise)} · ${nuits(seul)}. <span class="warn">Seul sur le secteur, ${Math.round(ND.seulEchec * 100)} % de risque de tomber dans un piège (blessés possibles).</span></p>`) : ''}
-        ${ensemble ? `<p class="tiny" style="margin:0">Si les zones d’hier reviennent${n ? ' avec toi' : ''} (force ${fmt1(ensemble.force)}, +${Math.round((ensemble.coop - 1) * 100)} % à plusieurs) : ${fleche(s.emprise, ensemble.emprise)} · ${nuits(ensemble)}.</p>` : ''}`;
+        ? `<p class="tiny bad" style="margin:0">Toi seul : trop faible (≈ ${seuilAgents} agents). Sans autre zone, assaut repoussé, ${Math.round(ND.blesseRepousse * 100)} % de risque de blessure par agent.</p>`
+        : `<p class="tiny" style="margin:0">Toi seul : ${fleche(s.emprise, seul.emprise)} · ${nuits(seul)}. <span class="warn">Seul, ${Math.round(ND.seulEchec * 100)} % de risque de piège.</span></p>`) : ''}
+        ${ensemble ? `<p class="tiny" style="margin:0">Avec les zones d’hier${n ? ' et toi' : ''} (+${Math.round((ensemble.coop - 1) * 100)} %) : ${fleche(s.emprise, ensemble.emprise)} · ${nuits(ensemble)}.</p>` : ''}`;
     } else {
       prevision = `<p class="tiny" style="margin:0">${s.emprise >= ND.seuilRechute - 20 ? '<strong class="bad">Il faut de la garde.</strong> ' : ''}${n ? `Ta garde (force ${fmt1(maForce)}) : ${fleche(s.emprise, seul.emprise)}.` : `Le milieu revient de ${ND.remontee} par nuit ; à ${ND.seuilRechute}, il reprend le secteur. 2 ou 3 agents de garde suffisent.`}</p>`;
     }
   }
-  const seuilAgents = Math.ceil(regen / ND.efficacite / Math.max(0.5, forceEngagement(me, 1)));
   return `<div class="nd-detail" style="gap:6px">
     <p class="tiny muted" style="margin:0">${esc(m.texte)}</p>
     ${!ouvert ? `<p class="tiny muted" style="margin:0">Il faut tenir ${ND.coeurSeuil} secteurs de l’anneau en même temps (${Object.values(nd().secteurs).filter((x) => !x.coeur && x.statut === 'repris').length} aujourd’hui). Il rapporte ${String(ND.coeurMult).replace('.', ',')} fois plus.</p>` : ''}
     <p class="tiny muted" style="margin:0">Hier soir : ${hier.length ? hier.map((x) => `${x.u === me.uid ? '<strong>toi</strong>' : nomZ(x.u)} (${x.n})`).join(', ') : 'personne'}${parts.length ? ` · influence : ${parts.slice(0, 4).map((p) => `${p.uid === me.uid ? '<strong>toi</strong>' : nomZ(p.uid)} ${Math.round(p.part * 100)} %`).join(', ')}${parts.length > 4 ? '…' : ''}` : ''}</p>
     ${moi && repris ? `<p class="tiny ${moi.part >= ND.partMin ? 'ok' : 'muted'}" style="margin:0">${moi.part >= ND.partMin ? `Tu touches les retombées chaque nuit (${Math.round(moi.part * 100)} % d’influence).` : `Ton influence (${Math.round(moi.part * 100)} %) est sous ${Math.round(ND.partMin * 100)} % : monte la garde pour toucher les retombées.`}</p>` : ''}
-    ${ouvert && !repris && !n ? `<p class="tiny muted" style="margin:0">Pour faire reculer le milieu ce soir : plus de ${fmt1(regen / ND.efficacite)} de force, soit ${seuilAgents} agents environ, de préférence à plusieurs zones.</p>` : ''}
+    ${ouvert && !repris && !n ? `<p class="tiny muted" style="margin:0">Pour le faire reculer ce soir : ≈ ${seuilAgents} agents, plutôt à plusieurs zones.</p>` : ''}
     ${prevision}
     ${ouvert ? `<div class="between"><span class="small">${repris ? 'Agents de garde ce soir' : 'Agents à l’assaut ce soir'}</span>
       <span class="stepper"><button type="button" data-action="nd" data-c="${k}" data-d="-1" aria-label="Un agent de moins à ${esc(nomSecteur(k))}" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="nd" data-c="${k}" data-d="1" aria-label="Un agent de plus à ${esc(nomSecteur(k))}" ${n >= ND.maxParSecteur || agentsND(d) >= ND.maxTotal ? 'disabled' : ''}>+</button></span></div>
@@ -109,7 +109,7 @@ export function nonDroitHtml() {
   return `<section class="col" aria-label="Zone de non-droit" style="gap:8px" id="non-droit">
     <div class="between"><h2 class="section" style="margin:0">Zone de non-droit</h2><span class="tiny muted">${repris} repris sur ${cles.length} · tes agents ${mesAgents}/${ND.maxTotal}</span></div>
     <div class="plan-cadre">${planNonDroit(S.state, me, S.secteurSel)}</div>
-    <p class="tiny muted" style="margin:0">Sans candidature : les forces du soir s’additionnent, <strong>+${Math.round(ND.coop * 100)} % par zone en plus</strong>. Seul ou trop faible, l’assaut est repoussé et tes agents peuvent revenir blessés.${bordent ? ` ${bordent} secteur${bordent > 1 ? 's' : ''} du milieu touche${bordent > 1 ? 'nt' : ''} ta zone.` : ''} <a href="#guide-affaires">Règles</a></p>
+    <p class="tiny muted" style="margin:0">À plusieurs, <strong>+${Math.round(ND.coop * 100)} % par zone</strong> ; seul ou trop faible, blessés possibles.${bordent ? ` ${bordent} secteur${bordent > 1 ? 's' : ''} du milieu touche${bordent > 1 ? 'nt' : ''} ta zone.` : ''} <a href="#guide-affaires">Règles</a></p>
     ${danger.length ? `<p class="small bad" style="margin:0">⚠ ${danger.map((k) => esc(nomSecteur(k))).join(', ')} : le milieu remonte et personne de garde de ta part.</p>` : ''}
     <div class="card tight nd-liste">${tries.map((k) => ligneSecteur(k, n.secteurs[k], me, d)).join('')}</div>
   </section>`;

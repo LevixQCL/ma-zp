@@ -8,6 +8,30 @@ const pc = (w) => `${Math.round(w * 100)} %`;
 const k2 = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
 
 export const AIDES = {
+  voisinage: {
+    titre: 'Enquête de voisinage',
+    intro: 'Chaque soir, tes agents de Recherche font du porte-à-porte autour de l’affaire. Ils peuvent ramener une pièce de plus au dossier.',
+    lignes: [
+      '<strong>Plus d’agents en Recherche</strong> (dans tes ordres) : plus de chances de ramener une pièce',
+      '<strong>La piste</strong> : donne-la depuis la fiche d’un suspect pour concentrer les recherches sur lui, jusqu’à plus d’une pièce par soir. Tu la retires au même endroit',
+      'Résultat à 20:00, avec le reste du tour',
+    ],
+    guide: 'guide-enquete',
+    sansTour: true,
+  },
+  appui: {
+    titre: 'Appui fédéral (PJF)',
+    intro: 'Une fois par jour, tu peux demander une équipe fédérale pour le lendemain.',
+    lignes: [
+      '<strong>Labo</strong> (traces, empreintes, ADN) : trouve plutôt les moyens d’un suspect',
+      '<strong>RCCU</strong> (téléphones, ordinateurs, comptes en ligne) : trouve plutôt le mobile et l’occasion',
+      '<strong>Places limitées</strong> : les équipes sont partagées entre toutes les zones et leur nombre change chaque jour. Réponse à 20:00',
+      '<strong>Refusé ?</strong> Tu passes en priorité la fois suivante',
+      '<strong>Accordé</strong> : l’équipe est sur place le lendemain, avec un mini-jeu à réussir en un seul essai pour obtenir la pièce',
+    ],
+    guide: 'guide-enquete',
+    sansTour: true,
+  },
   ipz: {
     titre: 'IPZ · Indice de performance de zone',
     intro: 'Ton score du jour, sur 100, recalculé à chaque tour à 20:00. La moyenne de tes IPZ fait ton classement de la saison (dès 5 tours joués).',
@@ -236,7 +260,7 @@ export function ouvrirAide(k) {
     <div class="between" style="align-items:flex-start"><h2 id="aide-titre" class="aide-titre">${a.titre}</h2>
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <p class="aide-intro">${a.intro}</p>
-    ${dernierTourHtml(k)}
+    ${a.sansTour ? '' : dernierTourHtml(k)}
     <span class="kicker" style="margin-top:2px">La règle</span>
     <ul class="aide-liste">${a.lignes.map((l) => `<li>${l}</li>`).join('')}</ul>
     ${a.monte ? `<div class="aide-sens"><span class="up">▲ Monte</span><span>${a.monte}</span><span class="down">▼ Baisse</span><span>${a.baisse}</span></div>` : ''}
