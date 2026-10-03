@@ -3,11 +3,12 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-05b',
+  id: '2026-10-05b-photos',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
     ['⛈️', 'Le Directeur', 'un maître du jeu veille sur ta zone : regarde le ciel de l’HP, il annonce la journée.'],
+    ['🔎', 'Fouiller la scène', 'photos des pièces, scène à fouiller, réauditions et chronologie à reconstituer.'],
     ['🕯️', 'Un meurtre à Mons', 'la prochaine affaire se joue dans le vrai centre de Mons : cinq proches, cinq mensonges, un seul assassin.'],
     ['🕵️', 'L’ennemi de la saison', 'serre-le de près à chaque apparition, puis tout le district le coince le dernier soir.'],
     ['🤝', 'À deux, c’est mieux', 'fugitif à la frontière, défi en duo, dilemmes qui reviennent : le Directeur se souvient de tout.'],
@@ -46,6 +47,11 @@ export const NOTE_MAJ = {
       ['Pour le maître du jeu', 'l’écran « Maître du jeu » montre le ciel de chaque zone et ce que le Directeur prépare, règle son intensité et le nombre de feuilletons, et lance un événement du district.'],
     ]],
     ['Un meurtre à Mons (la prochaine affaire)', [
+      ['Des pièces en photo', 'image de caméra horodatée, ticket de caisse, billet de train, agenda, machine à café, scellés : l’indice se lit dans l’image.'],
+      ['La scène à fouiller', 'touche la photo de la scène au tableau : dix plots numérotés dans l’arrière-boutique, à examiner un par un. Rien n’est souligné.'],
+      ['Réentendre un suspect', 'une fois par soir (1 k€), mets-lui une pièce sous les yeux : le journal, un PV, une vérification, même sa propre audition. Certaines le font changer de version.'],
+      ['La chronologie', 'une frise de 20:00 à minuit, une ligne par suspect : place toi-même les événements que ton dossier t’a appris et vois où les versions ne tiennent pas.'],
+      ['Des visages plus vrais', 'les portraits des suspects ressemblent désormais à des photos d’identité : modelé, regard, rides selon l’âge, grain photo.'],
       ['Une affaire écrite à la main', 'un antiquaire tué dans sa boutique, rue de la Clef. Cinq proches, et chacun ment sur quelque chose : un seul pour cacher le meurtre. Découvrir le secret d’un innocent explique son mensonge et le blanchit.'],
       ['Rien n’est signalé', 'certains indices sont sous les yeux de tous (dans le journal, dans un PV, dans une audition), d’autres sont des leurres. Lis tout, croise tout.'],
       ['La vraie ville', 'le plan est celui du centre de Mons. Touche un lieu : l’itinéraire à pied s’ouvre dans Google Maps. Une estimation suffit toujours. La boutique, la brasserie, le café et toutes les personnes sont inventés.'],

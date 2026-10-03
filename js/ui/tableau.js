@@ -17,6 +17,10 @@ import { dossierAffaire3, numeroPv } from '../engine/dossier.js';
 import { planSvg3, posLieu3, PLANQUE_POS3 } from './plan3.js';
 import { journalHtml, journalAuto } from './journal.js';
 import { planMons } from './planmons.js';
+import { photoIndice, aPhoto } from './indices-photo.js';
+import { sceneFouilleHtml } from './scene-fouille.js';
+import { friseSvg, friseVolet } from './frise.js';
+import { opposables, pieceReaudition, REAUD } from '../engine/enquete.js';
 import { LIEUX_MONS, lienItineraire } from '../engine/meurtre-mons.js';
 import { demarcheDe, mandatOk } from '../engine/enquete.js';
 
@@ -42,7 +46,7 @@ const DEF_POS = {
   s0: [760, 1460], s1: [1080, 1450], s2: [1400, 1460], s3: [1720, 1450], s4: [2040, 1460],
 };
 // Dossier complet : le PV de premières constatations et le journal sont plus longs, on les écarte.
-const DEF_POS3 = { recit: [250, 170], une: [665, 170], plainte: [250, 1010], scene: [665, 1090] };
+const DEF_POS3 = { recit: [250, 170], une: [665, 170], plainte: [250, 1010], scene: [665, 1090], frise: [2330, 1000] };
 let PROF = false; // affaire affichée en dossier complet (mis à jour à chaque affichage du tableau)
 const TUTO_KEY = 'mazp-tuto-tableau';
 
@@ -56,7 +60,7 @@ function dispo(n) {
     pos = Object.fromEntries(Object.entries(pos).map(([k, [x, y]]) => [k, [x + (t.v === 2 ? 0 : DECALAGE_V2), y > 1080 ? y + 220 : y]]));
     vue = null;
   }
-  return { v: 3, pos, liens: t.liens || [], places: t.places || [], fiches: t.fiches || [], neuf: t.neuf || [], fixes: t.fixes || [], vue };
+  return { v: 3, pos, liens: t.liens || [], places: t.places || [], fiches: t.fiches || [], neuf: t.neuf || [], fixes: t.fixes || [], frise: t.frise || [], vue };
 }
 function ecrireDispo(n, t) { const c = lireCarnet(n); c.tab = t; ecrireCarnet(n, c); }
 
@@ -72,7 +76,7 @@ function docsOuverture(aff) { return aff.prof ? aff.suspects.map((_, i) => ({ f:
 const aLieu = (l) => (/^le /.test(l) ? `au ${l.slice(3)}` : /^les /.test(l) ? `aux ${l.slice(4)}` : `à ${l}`);
 const cap1 = (x) => x.charAt(0).toUpperCase() + x.slice(1);
 const COL_MODE = { moteur: '#D9480F', velo: '#1B7F4B', pied: '#5B3FA8' };
-const pieceSuspect = (f) => (/^(occ|moy|mob|A):\d$/.test(f) ? Number(f.split(':')[1]) : null);
+const pieceSuspect = (f) => (/^(occ|moy|mob|A|R[a-z]):\d$/.test(f) ? Number(f.split(':')[1]) : null);
 
 /** Point d'accroche (la punaise) d'un élément du tableau. */
 function ancre(aff, t, id) {
@@ -167,13 +171,14 @@ function objetPiece(aff, p, rebonds) {
   if (ty === 'jn') {
     const r = rebonds.find((x) => x.f === p.f);
     const si = pieceSuspect(p.f);
-    const photo = p.f.startsWith('p:') ? photoButin(`bt${aff.n}`) : si !== null ? portraitSuspect(aff.suspects[si], si, 'tb-face tb-gris') : '';
+    const photo = aPhoto(aff, p.f) ? photoIndice(aff, p.f, `j${aff.n}`) : p.f.startsWith('p:') ? photoButin(`bt${aff.n}`) : si !== null ? portraitSuspect(aff.suspects[si], si, 'tb-face tb-gris') : '';
     return `<div class="tb-obj tb-jn"><span class="tb-k">${ENTETE.jn} · J${p.j}</span><strong>${esc(r ? r.titre : titrePiece(aff, p.f))}</strong>${photo ? `<div class="tb-photo">${photo}</div>` : ''}${r && r.texte ? `<p class="tb-chapo">${esc(r.texte)}</p>` : ''}<div class="tb-txt">${lignes}</div></div>`;
   }
   if (ty === 'pv') {
     const k = p.f.split(':')[0];
-    const objet = aff.meurtre && k === 'moy' ? 'Perquisition' : aff.meurtre && k === 'c' ? esc(titrePiece(aff, p.f)) : PV_OBJET[k] || 'Pièce';
-    return `<div class="tb-obj tb-pvp" style="--c:${PV_COL[k] || '#6B4FB8'}"><span class="tb-pv-bande">PV n° ${numPv(aff, p.f)}</span><span class="tb-k">Objet : ${objet}${qui ? ` · ${esc(qui)}` : ''}</span><div class="tb-txt">${lignes}</div><span class="tb-pv-sign">${esc(redacteur(p))} · J${p.j}</span>${tampon}</div>`;
+    const objet = aff.meurtre && k === 'moy' ? 'Perquisition' : aff.meurtre && /^R[a-z]$/.test(k) ? 'Nouvelle audition' : aff.meurtre && (k === 'c' || k === 'r') ? esc(titrePiece(aff, p.f)) : PV_OBJET[k] || 'Pièce';
+    const ph = aPhoto(aff, p.f) ? `<div class="tb-pv-photo">${photoIndice(aff, p.f, `b${aff.n}`)}</div>` : '';
+    return `<div class="tb-obj tb-pvp" style="--c:${PV_COL[k] || (/^R/.test(k) ? '#9A2B1F' : '#6B4FB8')}"><span class="tb-pv-bande">PV n° ${numPv(aff, p.f)}</span><span class="tb-k">Objet : ${objet}${qui ? ` · ${esc(qui)}` : ''}</span>${ph}<div class="tb-txt">${lignes}</div><span class="tb-pv-sign">${esc(redacteur(p))} · J${p.j}</span>${tampon}</div>`;
   }
   if (ty === 'sc') return `<div class="tb-obj tb-sc"><span class="tb-bande"></span><span class="tb-k">${ENTETE.sc}${qui ? ` · ${esc(qui)}` : ''}</span><div class="tb-txt">${lignes}</div>${tampon}</div>`;
   return `<div class="tb-obj tb-${ty}"><span class="tb-k">${ENTETE[ty]}${qui ? ` · ${esc(qui)}` : ''} · J${p.j}</span><div class="tb-txt">${lignes}</div>${tampon}</div>`;
@@ -278,7 +283,8 @@ function elementsHtml(aff, dos, et) {
   if (d3) {
     const j = d3.journal;
     out.push(wrap('une', 230, 1.6, `<div class="tb-obj tb-une"><span class="tb-une-titre">La Gazette du Delta</span><span class="tb-une-date">N° ${j.numero} · ${esc(j.date)}</span><span class="tb-k">${esc(j.surtitre)}</span><strong>${esc(j.titre)}</strong><div class="tb-photo">${photoUne(d3.scene, `un${aff.n}`)}</div><span class="tb-legende">${esc(j.legende)}</span><p class="tb-chapo">${esc(j.chapo)}</p><div class="tb-txt">${j.corps.slice(0, 2).map((x) => `<p>${esc(x)}</p>`).join('')}</div><span class="tb-lire">Lire le journal ›</span></div>`, 'w', 'tb-p-jn'));
-    out.push(wrap('scene', 130, 1.7, `<div class="tb-obj tb-polo tb-scene"><div class="tb-photo">${photoScene(d3.scene, `sc${aff.n}`)}</div><span class="tb-prenom" style="font-size:13px">Scène · J1</span><span class="tb-role">photo du labo, plots 1 à 3</span></div>`, 'r'));
+    out.push(wrap('scene', 130, 1.7, `<div class="tb-obj tb-polo tb-scene"><div class="tb-photo">${photoScene(d3.scene, `sc${aff.n}`)}</div><span class="tb-prenom" style="font-size:13px">Scène · J1</span><span class="tb-role">${aff.meurtre ? 'touche pour fouiller · 10 plots' : 'photo du labo, plots 1 à 3'}</span></div>`, 'r'));
+    if (aff.meurtre) out.push(wrap('frise', 300, 1.6, `<div class="tb-obj tb-frise"><span class="tb-k">Chronologie · mardi soir · ${t.frise.length} événement${t.frise.length > 1 ? 's' : ''}</span>${friseSvg(aff, t.frise, { mini: true })}<span class="tb-lire">Reconstituer ›</span></div>`, 'y'));
     if (d3.plainte) out.push(wrap('plainte', 190, 1.6, `<div class="tb-obj tb-pv"><span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">PV n° ${esc(numPv(aff, 'plainte'))} · ${esc(d3.plainte.titre)}</span><strong class="tb-pv-qui">${esc(d3.plainte.qui)}</strong><div class="tb-txt">${d3.plainte.lignes.map((x) => `<p>${esc(x)}</p>`).join('')}</div><span class="tb-signature">${esc(d3.victime)}</span></div>`, 'w'));
   } else if (aff.carte) {
     const rc = recitAffaire(S.state.seed, aff);
@@ -368,6 +374,7 @@ function voletSuspect(aff, dos, i, et) {
       <div class="col" style="gap:2px;min-width:0"><span class="tb-titre">${esc(s.nom)}</span><span class="tiny muted">${esc(fiche.lien)}</span>
       ${multi ? `<span class="tiny ${mien ? 'good' : 'muted'}">${mien ? 'ta cellule' : 'autre cellule : vérifications au double'}</span>` : ''}</div></div>
     <p class="small tb-fiche-pub">${esc(fiche.declaration)}<br>${fiche.trajet ? `<strong>${esc(fiche.trajet)}</strong><br>` : ''}${aff.prof ? `<strong>${esc(fiche.vehicule)}</strong>` : esc(fiche.vehicule)}<br><span class="muted">${esc(fiche.rumeur)}</span></p>
+    ${aff.meurtre && !dos.exclu ? `<button type="button" class="btn small ${d.reaud && d.reaud.i === i ? 'primary' : 'outline'}" data-action="tab-ouvrir" data-tid="Q:${i}">${d.reaud && d.reaud.i === i ? `✓ Réaudition prévue ce soir (face à « ${esc(nomElement(aff, d.reaud.f))} »)` : `🗣️ Le réentendre en lui opposant une pièce (${REAUD.cout} k€)`}</button>` : ''}
     ${aff.prof ? `<div class="tb-duo"><button type="button" class="btn small" data-action="tab-ouvrir" data-tid="A:${i}">📄 Lire son audition</button>${s.alibi.type !== 'seul' ? `<button type="button" class="btn small" data-action="tab-ouvrir" data-tid="L:${esc(s.alibi.pos)}">🗺️ Son trajet</button>` : ''}</div>` : ''}
     ${lignes}
     <div class="tb-duo">
@@ -382,7 +389,7 @@ function voletConstat(aff, dos, e, et) {
     const fi = aff.fiches[e], dm = demarcheDe(aff, fi.dem), seq = aff.sceneSeq[fi.dem];
     const connues = seq.filter((f) => et.connus.has(f));
     return `<span class="tb-ligne-k" style="color:${COL[e]}">Scène · ${esc(dm.nom)}</span><span class="tb-titre">${esc(fi.titre)}</span>
-      ${connues.map((f) => `<div class="pv-qr"><p class="pv-q">${esc(titrePiece(aff, f))}</p><p class="pv-r">${esc(texteFait(aff, f))}</p></div>`).join('') || '<p class="small muted" style="margin:0">Rien encore.</p>'}
+      ${connues.map((f) => `<div class="pv-qr"><p class="pv-q">${esc(titrePiece(aff, f))}</p>${aPhoto(aff, f) ? `<div class="tb-photo-grande">${photoIndice(aff, f, 'vc')}</div>` : ''}<p class="pv-r">${esc(texteFait(aff, f))}</p></div>`).join('') || '<p class="small muted" style="margin:0">Rien encore.</p>'}
       ${connues.length < seq.length ? `<p class="tiny muted" style="margin:0">${esc(dm.motif || '')} Encore ${seq.length - connues.length} résultat${seq.length - connues.length > 1 ? 's' : ''} à obtenir, un par démarche.</p>${demBtn(aff, dos, fi.dem, dm.nom)}` : '<p class="tiny muted" style="margin:0">Tout est au dossier.</p>'}`;
   }
   const f = `c:${e}`, connu = et.connus.has(f), faite = et.t.fiches.includes(e);
@@ -416,6 +423,7 @@ function voletPiece(aff, dos, f) {
     </div>`;
   return `${S.tabSheet && S.tabSheet.partage ? partageBloc : ''}<span class="tb-ligne-k" style="color:var(--amber)">${esc(titrePiece(aff, f))}</span>
     <span class="tiny muted">J${p.j} · ${sourceDe(p)}</span>
+    ${aPhoto(aff, f) ? `<div class="tb-photo-grande">${photoIndice(aff, f, 'vp')}</div>` : ''}
     <p class="small tb-fait">${esc(texteFait(aff, f)).replace(/\n/g, '<br>')}</p>
     ${S.tabSheet && S.tabSheet.partage ? '' : partageBloc}
     <div class="tb-duo">${i !== null ? `<button type="button" class="btn small" data-action="tab-ouvrir" data-tid="s${i}">Voir ${esc(aff.suspects[i].prenom)}</button>` : ''}
@@ -537,6 +545,22 @@ export function nomElement(aff, f) {
   return titrePiece(aff, f);
 }
 /** Meurtre : la confrontation. On choisit trois éléments du dossier à opposer au suspect. */
+/** Meurtre : réentendre un suspect en lui opposant un élément du dossier (une réaudition par soir). */
+function voletReaud(aff, dos, i) {
+  const d = S.draft, s = aff.suspects[i];
+  const choix = d.reaud && d.reaud.i === i ? d.reaud.f : null;
+  const tous = [...opposables(aff, dos)].filter((f) => f !== `A:${i}` || true);
+  const ligne = (f) => {
+    const on = choix === f;
+    const fait = aff.reactions && aff.reactions[i] && aff.reactions[i][f] && !pieceReaudition(aff, dos, i, f);
+    return `<button type="button" class="tb-trajet-l ${on ? 'on' : ''}" style="--c:var(--amber)" data-action="reaud-piece" data-i="${i}" data-f="${esc(f)}" aria-pressed="${on}" ${fait ? 'disabled' : ''}><span>${esc(nomElement(aff, f))}</span><strong>${on ? '✓' : fait ? 'déjà fait' : ''}</strong></button>`;
+  };
+  return `<span class="tb-ligne-k" style="color:var(--amber)">Réaudition · ${REAUD.cout} k€ · une par soir</span><span class="tb-titre">${esc(s.nom)}</span>
+    <p class="small muted" style="margin:0">Choisis l’élément à lui mettre sous les yeux. Certains le feront parler, d’autres non : « rien à ajouter » ne prouve rien. Résultat ce soir à 20:00.</p>
+    ${tous.map(ligne).join('')}
+    ${d.reaud ? '<button type="button" class="btn small ghost" data-action="reaud-annuler">Annuler la réaudition</button>' : ''}`;
+}
+
 function voletConfront(aff, dos, i, et) {
   const d = S.draft, s = aff.suspects[i];
   const choix = d.confront || [];
@@ -578,6 +602,7 @@ function voletSoir(aff, dos) {
     ${dem.map((x) => `<div class="tb-boite-l"><span class="small grow" style="font-weight:600">${esc(nomDem(x))}</span><button type="button" class="btn small ghost" data-action="dem-toggle" data-k="${esc(x)}" aria-label="Retirer ${esc(nomDem(x))}">✕</button></div>`).join('') || '<p class="tiny muted" style="margin:0">Touche une photo ou une fiche du tableau pour choisir une démarche.</p>'}
     <div class="voisinage"><span class="small"><strong>Voisinage</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? ` · piste : <strong>${esc(v.nom)}</strong>` : ''} : ${esc(v.txt)}</span></div>
     ${appuiHtml()}
+    ${aff.meurtre && d.reaud ? `<div class="tb-boite-l"><span class="small grow" style="font-weight:600">Réaudition · ${esc(aff.suspects[d.reaud.i].prenom)}, face à « ${esc(nomElement(aff, d.reaud.f))} »</span><button type="button" class="btn small ghost" data-action="reaud-annuler" aria-label="Annuler la réaudition">✕</button></div>` : ''}
     ${d.accusation !== null && d.accusation !== undefined ? `<p class="small" style="margin:0;color:var(--red-soft)">${aff.meurtre ? `Confrontation prête : ${esc(aff.suspects[d.accusation].nom)}, avec ${(d.confront || []).map((f) => `« ${esc(nomElement(aff, f))} »`).join(', ')}.` : `Accusation prête contre ${esc(aff.suspects[d.accusation].nom)}.`}</p>` : ''}
     <span class="tb-ligne-k">Partages · ${(d.partages || []).length} / ${ENQ.maxPartages}</span>
     ${(d.partages || []).map((x) => `<div class="tb-boite-l"><div class="col grow" style="gap:2px;min-width:0"><button type="button" class="tb-lien" data-action="tab-ouvrir" data-tid="${esc(x.f)}">${esc(titrePiece(aff, x.f))}</button><span class="tiny muted">vers ${x.a === '*' ? 'toutes les zones' : esc(S.state.zones[x.a] ? zoneName(S.state.zones[x.a]) : '?')}</span></div><button type="button" class="btn small ghost" data-action="partage-annuler" data-f="${esc(x.f)}" aria-label="Annuler ce partage">✕</button></div>`).join('') || '<p class="tiny muted" style="margin:0">Aucun partage prévu. Touche une pièce (sur le tableau ou dans la boîte) pour la partager.</p>'}
@@ -599,6 +624,8 @@ function volet(aff, dos, et) {
   else if (sh.k === 'boite') corps = voletBoite(aff, et);
   else if (sh.k === 'soir') corps = voletSoir(aff, dos);
   else if (sh.k === 'confront') corps = voletConfront(aff, dos, Number(sh.id.slice(2)), et);
+  else if (sh.k === 'reaud') corps = voletReaud(aff, dos, Number(sh.id.slice(2)));
+  else if (sh.k === 'frise') corps = friseVolet(aff, opposables(aff, dos), dispo(aff.n).frise);
   return `<section class="tb-volet tb-ui" aria-label="Détail">
     <div class="tb-poignee"></div>
     <button type="button" class="tb-fermer" data-action="tab-fermer" aria-label="Fermer">${icon('x', 18)}</button>
@@ -701,6 +728,7 @@ export function renderTableau() {
     ${volet(aff, dos, et)}
     ${S.journalOuvert === aff.n ? '' : tutoHtml()}
     ${journalHtml(aff)}
+    ${sceneFouilleHtml(aff)}
   </main>${tabbar('enquete')}`;
 }
 
@@ -753,7 +781,7 @@ function cadrer(id) {
   let v;
   if (id === 'plan' || (aff.prof && id.startsWith('L:'))) { const s = Math.min(1, (w - 20) / MAP.w); v = { s, tx: (w - MAP.w * s) / 2 - MAP.x * s, ty: 64 - MAP.y * s }; }
   else if (id === 'titre') return;
-  else { if (!/^(s\d|c:|L:|P:|recit|chrono|une|scene|plainte)/.test(id) && !t.places.includes(id)) return; const p = ancre(aff, t, id); if (!p) return; const s = Math.max(S.tabV.s, 0.85); v = { s, tx: w / 2 - p[0] * s, ty: 80 - p[1] * s }; }
+  else { if (!/^(s\d|c:|L:|P:|recit|chrono|une|scene|plainte|frise)/.test(id) && !t.places.includes(id)) return; const p = ancre(aff, t, id); if (!p) return; const s = Math.max(S.tabV.s, 0.85); v = { s, tx: w / 2 - p[0] * s, ty: 80 - p[1] * s }; }
   S.tabV = borner(v);
   appliquer(S.tabV, true);
   sauverVue();
@@ -763,7 +791,8 @@ export function ouvrirVolet(id, rerender, { partage = false } = {}) {
   const aff = affaire(S.state, S.state.enquete.n);
   if (aff.prof && id === 'une') { S.journalOuvert = aff.n; S.tabSheet = null; rerender(); return; }
   if (aff.prof && id.startsWith('L:')) S.tabRoute = { n: aff.n, a: id.slice(2), b: aff.pos, mode: (S.tabRoute && S.tabRoute.mode) || 'moteur' };
-  const k = id.startsWith('X:') ? 'confront' : aff.prof && id === 'recit' ? 'doc' : id === 'titre' || id === 'recit' || id === 'chrono' ? 'faits' : id === 'une' || id === 'scene' || id === 'plainte' ? 'doc' : id === 'plan' ? 'plan' : id.startsWith('L:') ? 'lieu' : id.startsWith('P:') ? 'planque' : id.startsWith('c:') ? 'c' : /^s\d$/.test(id) ? 's' : 'p';
+  if (aff.meurtre && id === 'scene') { S.sceneOuverte = aff.n; S.tabSheet = null; rerender(); return; }
+  const k = id === 'frise' ? 'frise' : id.startsWith('Q:') ? 'reaud' : id.startsWith('X:') ? 'confront' : aff.prof && id === 'recit' ? 'doc' : id === 'titre' || id === 'recit' || id === 'chrono' ? 'faits' : id === 'une' || id === 'scene' || id === 'plainte' ? 'doc' : id === 'plan' ? 'plan' : id.startsWith('L:') ? 'lieu' : id.startsWith('P:') ? 'planque' : id.startsWith('c:') ? 'c' : /^s\d$/.test(id) ? 's' : 'p';
   cadrer(id);
   S.tabSheet = { k, id, partage };
   setTimeout(rerender, id === 'titre' ? 0 : 280);
@@ -795,7 +824,7 @@ function caser(aff, t, ids, garder, { grands = new Set(), zone = zoneSortie, lig
   const MARGE = 22;
   const boite = (id, [x, y]) => { const [w, h] = tailleDe(id, grands.has(id)); return [x - w / 2 - MARGE, y - 26, x + w / 2 + MARGE, y + h + MARGE]; };
   const pris = [[MAP.x - 20, MAP.y - 20, MAP.x + MAP.w + 20, MAP.y + MAP.h + 20], [BW / 2 - 260, 0, BW / 2 + 260, 120]];
-  const fixes = ['recit', 'chrono', ...aff.suspects.map((_, i) => `s${i}`), 'c:occ', 'c:moy', 'c:mob', ...(aff.carte ? ['une', 'scene', 'plainte'] : []), ...garder].filter((id) => !ids.includes(id));
+  const fixes = ['recit', 'chrono', ...aff.suspects.map((_, i) => `s${i}`), 'c:occ', 'c:moy', 'c:mob', ...(aff.carte ? ['une', 'scene', 'plainte'] : []), ...(aff.meurtre ? ['frise'] : []), ...garder].filter((id) => !ids.includes(id));
   for (const id of fixes) pris.push(boite(id, posDe(t, id)));
   const libre = (r) => r[0] >= 0 && r[2] <= BW && r[3] <= BH + 900 && !pris.some((q) => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1]);
   const a = [];
@@ -889,6 +918,12 @@ export function basculerFil(a, b) {
   const n = S.state.enquete.n, t = dispo(n);
   const k = t.liens.findIndex(([x, y]) => (x === a && y === b) || (x === b && y === a));
   t.liens = k >= 0 ? t.liens.filter((_, q) => q !== k) : [...t.liens, [a, b]];
+  ecrireDispo(n, t);
+}
+/** Chronologie : place ou retire un événement sur la frise. */
+export function basculerFrise(id) {
+  const n = S.state.enquete.n, t = dispo(n);
+  t.frise = t.frise.includes(id) ? t.frise.filter((x) => x !== id) : [...t.frise, id];
   ecrireDispo(n, t);
 }
 export function marquerTutoVu() { S.tutoTabVu = true; try { localStorage.setItem(TUTO_KEY, '1'); } catch (e) { /* pas de stockage */ } }

@@ -303,7 +303,7 @@ function aujourdhui(aff, dos) {
 /** Pièces que j'ai obtenues moi-même (démarches payées ou agents envoyés, voisinage, énigmes) et où elles en sont. */
 function mesPieces(aff, dos) {
   const st = S.state, d = S.draft;
-  const miennes = dos.pieces.filter((p) => DEMARCHES[p.src] || p.src === 'voisinage' || p.src === 'quete' || p.src === 'pjf').sort((a, b) => b.j - a.j);
+  const miennes = dos.pieces.filter((p) => DEMARCHES[p.src] || p.src === 'voisinage' || p.src === 'quete' || p.src === 'pjf' || p.src === 'reaud').sort((a, b) => b.j - a.j);
   if (!miennes.length) return '';
   const ligne = (p) => {
     const prevu = (d.partages || []).filter((x) => x.f === p.f);

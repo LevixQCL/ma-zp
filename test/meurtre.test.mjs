@@ -14,7 +14,7 @@ for (const s of a.suspects) assert.ok(LIEUX_MONS[s.alibi.pos], s.nom);
 for (const l of Object.values(LIEUX_MONS)) assert.ok(l.adresse);
 // Avec tout le dossier, un seul suspect reste : l'assassin. Sans les pièces qui blanchissent, tout le monde.
 assert.deepEqual(candidats(a, a.faits).suspects, [a.coupable]);
-assert.equal(candidats(a, a.faits.filter((f) => !f.startsWith('moy:') && f !== 'occ:4' && f !== 'mob:3')).suspects.length, 5);
+assert.equal(candidats(a, a.faits.filter((f) => !f.startsWith('moy:') && !f.startsWith('R') && f !== 'occ:4' && f !== 'mob:3')).suspects.length, 5);
 // Chaque innocent ment (ou se tait) : son secret est quelque part dans le dossier.
 for (const [i, fs] of Object.entries(a.innocente)) for (const f of fs) assert.ok(a.faits.includes(f), `${i} ${f}`);
 // Mandat : refusé sans pièce sérieuse, accordé avec.
@@ -69,4 +69,21 @@ st = r.state;
 assert.ok(st.zones.A.stats.limier > avant, 'aveux : points');
 assert.ok(!st.traques.some((t) => t.n === m.n), 'pas de traque');
 assert.notEqual(affaire(st, st.enquete.n).meurtre, true, 'nouvelle affaire : un vol');
+// Réaudition : Claire face à son bornage avoue sa liaison (et se blanchit) ; face à rien d'utile, rien.
+{
+  const { pieceReaudition, opposables } = await import('../js/engine/enquete.js');
+  const m2 = affaire(st, st.enquete.n - 1);
+  assert.equal(pieceReaudition(m2, { pieces: [{ f: 'mob:0' }] }, 0, 'mob:0'), 'Rb:0');
+  assert.equal(pieceReaudition(m2, { pieces: [{ f: 'Rb:0' }] }, 0, 'mob:0'), null);
+  assert.equal(pieceReaudition(m2, { pieces: [] }, 1, 'doc:journal'), null);
+  assert.ok(opposables(m2, { pieces: [] }).has('A:2'));
+  assert.ok(confrontationOk(m2, 2, ['Rg:2', 'doc:journal', 'c:cam']), 'la statuette dont personne ne parlait');
+  // Partie : une zone réentend Julien face à sa propre audition.
+  let s2 = createGame({ seed: 'reaud' }); s2.meurtreDes = 1;
+  s2 = resolveTurn(s2, { players }).state;
+  s2.zones.A.budget = 20;
+  s2 = resolveTurn(s2, { players, orders: { A: { ...base, reaud: { i: 2, f: 'A:2' } }, B: base, C: base } }).state;
+  assert.ok(s2.zones.A.enquete.pieces.some((p) => p.f === 'Rg:2'), 'réaudition au dossier');
+  assert.ok(s2.zones.A.rapport.some((x) => /change de version/.test(x)));
+}
 console.log('OK : affaire de meurtre vérifiée.');

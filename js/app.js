@@ -33,7 +33,7 @@ import { renderParties } from './ui/parties.js';
 import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet, synchroCarnetMaintenant, restaurerCarnet } from './ui/enquete.js';
 import { affaire } from './engine/enquete.js';
 import { marquerJournalVu } from './ui/journal.js';
-import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
+import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, basculerFrise, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES } from './quests/quests.js';
@@ -603,6 +603,11 @@ async function onClick(e) {
       case 'tab-fermer': S.tabSheet = null; rerender(); break;
       case 'tab-route': S.tabRoute = { n: S.state.enquete.n, a: el.dataset.a, b: el.dataset.b, mode: el.dataset.m }; rerender(); break;
       case 'tab-route-effacer': S.tabRoute = null; rerender(); break;
+      case 'scene-pt': S.scenePt = el.dataset.k; S.scenePtsVus = [...new Set([...(S.scenePtsVus || []), el.dataset.k])]; rerender(); break;
+      case 'scene-fermer': S.sceneOuverte = null; rerender(); break;
+      case 'frise-ev': basculerFrise(el.dataset.id); rerender(); break;
+      case 'reaud-piece': S.draft.reaud = { i: Number(el.dataset.i), f: el.dataset.f }; S.ordersDirty = true; rerender(); break;
+      case 'reaud-annuler': S.draft.reaud = null; S.ordersDirty = true; rerender(); break;
       case 'confront-piece': { const c = S.draft.confront || []; const f = el.dataset.f; S.draft.confront = c.includes(f) ? c.filter((x) => x !== f) : [...c, f].slice(0, 3); S.ordersDirty = true; rerender(); break; }
       case 'confront-valider': {
         const s = affaire(S.state, S.state.enquete.n).suspects[Number(el.dataset.i)];
