@@ -8,9 +8,9 @@ export const NOTE_MAJ = {
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
     ['⛈️', 'Le Directeur', 'un maître du jeu veille sur ta zone : regarde le ciel de l’HP, il annonce la journée.'],
-    ['📻', 'Des feuilletons', 'cambrioleur des toits, rodéos, évasion, audit… prépare-toi et boucle l’histoire.'],
-    ['⚖️', 'Des dilemmes', 'deux choix, de vraies conséquences : l’indic, la journaliste, le délégué syndical…'],
     ['🕯️', 'Un meurtre à Mons', 'la prochaine affaire se joue dans le vrai centre de Mons : cinq proches, cinq mensonges, un seul assassin.'],
+    ['🕵️', 'L’ennemi de la saison', 'serre-le de près à chaque apparition, puis tout le district le coince le dernier soir.'],
+    ['🤝', 'À deux, c’est mieux', 'fugitif à la frontière, défi en duo, dilemmes qui reviennent : le Directeur se souvient de tout.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
@@ -25,6 +25,16 @@ export const NOTE_MAJ = {
       ['Héros du jour', 'pendant une éclaircie, une figure de ton équipe peut faire la une de la Gazette.'],
       ['Équitable', 'les zones en tête du classement sont surtout testées par des défis qui rapportent ; celles en difficulté ont des éclaircies plus longues et plus d’occasions (sponsor, indic).'],
       ['Énigmes à ta mesure', 'le niveau des énigmes du jour se décale d’un cran au plus par nuit selon tes réussites récentes et ton rang aux énigmes : jusqu’à 2 niveaux plus facile si ça coince, 1 plus difficile si tu enchaînes. Le dossier noir garde son niveau.'],
+      ['Mini-jeux à ta mesure', 'les mini-jeux des incidents passent d’un cran plus facile si tu en rates souvent, d’un cran plus difficile si tu les réussis tous.'],
+      ['L’ennemi de la saison', 'un malfaiteur insaisissable (le Fantôme du Delta, la Fouine…) apparaît dans une zone tous les deux ou trois jours : 3 patrouilles là où il est aperçu, et son dossier s’épaissit. Le dernier soir, l’« Opération Filet » réunit tout le district (Terrain) : plus le dossier est épais, moins il faut d’agents.'],
+      ['Fugitif à la frontière', 'il se cache entre deux zones voisines : 2 patrouilles de chaque côté, le même soir. Sinon, une dernière chance le lendemain. Parlez-vous sur la radio !'],
+      ['Défi en duo', 'deux zones proches au classement reçoivent le même feuilleton : réussi des deux côtés, +2 de réputation et +6 PS chacun.'],
+      ['Appel du district', 'une zone en difficulté prise dans un orage appelle à l’aide automatiquement : le renfort y est payé ×1,5 (réputation, PS, points et indemnité).'],
+      ['Il se souvient', 'l’indic payé revient avec un plus gros tuyau, la journaliste prend ta défense (ou en rajoute) lors d’une plainte, le sponsor du combi finit par faire parler de lui.'],
+      ['Il lit ta façon de jouer', 'la même répartition plusieurs jours de suite finit par se voir ; l’argent qui dort attire du matériel fédéral à prix cassé ; une Proximité délaissée, des pétitions.'],
+      ['Témoin tardif', 'si le district piétine sur l’enquête en fin de semaine, les zones à la traîne reçoivent une déposition qui permet d’écarter quelqu’un.'],
+      ['Bon retour', 'après quelques jours d’absence, ton retour est salué et suivi de deux jours d’éclaircie.'],
+      ['Pour le maître du jeu', 'l’écran « Maître du jeu » montre le ciel de chaque zone et ce que le Directeur prépare, règle son intensité et le nombre de feuilletons, et lance un événement du district.'],
     ]],
     ['Un meurtre à Mons (la prochaine affaire)', [
       ['Une affaire écrite à la main', 'un antiquaire tué dans sa boutique, rue de la Clef. Cinq proches, et chacun ment sur quelque chose : un seul pour cacher le meurtre. Découvrir le secret d’un innocent explique son mensonge et le blanchit.'],

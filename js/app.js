@@ -773,6 +773,8 @@ async function onClick(e) {
         S.player = { ...(S.player || {}), equipeNoms: noms }; S.equipeEdit = null;
         toast('Nom d’origine rétabli.'); rerender(); break;
       }
+      case 'dir-reglage': { const r = { ...((S.state.dir && S.state.dir.reglages) || {}), [el.dataset.k]: el.dataset.v }; await b.adminDirecteur({ reglages: r }); toast('Réglage du Directeur enregistré : il s’applique dès la prochaine nuit.'); break; }
+      case 'dir-forcer': await b.adminDirecteur({ forcer: el.dataset.id }); toast('Demandé : annoncé à la prochaine nuit, le district le vivra le surlendemain.'); break;
       case 'admin-vus': S.players = await b.getPlayers(); toast('Connexions actualisées.'); rerender(); break;
       case 'admin-force': await b.adminForceResolution(); await tick(true); toast('Tour résolu.'); break;
       case 'admin-remove': if (await askConfirm('Retirer ce joueur de la partie ?', 'Retirer')) { await b.adminRemovePlayer(el.dataset.uid); toast('Joueur retiré.'); } break;

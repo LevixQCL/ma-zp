@@ -83,7 +83,7 @@ assert.ok(dil > 0 && fe > dil, 'des feuilletons et des dilemmes');
 // Chaque feuilleton a ses étapes complètes.
 for (const [id, f] of Object.entries(FEUILLETONS)) {
   assert.ok(f.titre && f.etapes.debut, id);
-  for (const et of Object.values(f.etapes)) { assert.equal(typeof et.signe, 'function'); assert.equal(typeof et.resoudre, 'function'); if (et.choix) assert.ok(et.choix[et.defaut], `${id} : choix par défaut`); }
+  for (const et of Object.values(f.etapes)) { assert.equal(typeof et.signe, 'function'); assert.equal(typeof et.resoudre, 'function'); if (et.choix) assert.ok(typeof et.choix === 'function' || et.choix[et.defaut], `${id} : choix par défaut`); }
 }
 
 // 4. Niveau des énigmes : suit la forme, un cran par nuit, borné.

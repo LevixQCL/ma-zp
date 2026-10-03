@@ -2,9 +2,10 @@ import { noteCourte } from './nouveautes.js';
 import { partageHtml } from './invitation.js';
 // La Gazette du Delta, le classement, l'espace maître du jeu.
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1, classementLive } from './common.js';
-import { GRADES, LOTS, ENCHERE, PS } from '../engine/constants.js';
+import { GRADES, LOTS, ENCHERE, PS, SEASON_LENGTH } from '../engine/constants.js';
 import { insigne } from './blasons.js';
 import { regrouperHonneur } from '../engine/honneur.js';
+import { apercuDirecteur, REGLAGES, DISTRICT } from '../engine/directeur.js';
 import { formatDateBe, formatHeureBe } from '../engine/time.js';
 
 export function renderGazette() {
@@ -170,6 +171,32 @@ function roiEntrainementHtml(zones) {
     </section>`;
 }
 
+/** Le Directeur vu par le maître du jeu : réglages, district, et ce qu'il prépare à chaque zone. */
+function directeurAdminHtml(st) {
+  const ap = apercuDirecteur(st);
+  const choix = (k, liste) => `<div class="row" style="gap:6px;flex-wrap:wrap">${Object.entries(liste).map(([v, x]) => `<button type="button" class="btn small ${ap.reglages[k] === v ? 'primary' : ''}" data-action="dir-reglage" data-k="${k}" data-v="${v}" aria-pressed="${ap.reglages[k] === v}">${esc(x.nom)}</button>`).join('')}</div>`;
+  const f = ap.fantome;
+  const ev = st.evenement && st.evenement.fantome ? st.evenement : null;
+  const actives = Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length;
+  return `<section class="card" style="gap:10px"><h2 class="card-title">Le Directeur</h2>
+    <p class="small muted" style="margin:0">Le maître du jeu invisible : ciel de chaque zone, feuilletons, dilemmes, événements du district. Tes réglages s’appliquent dès la prochaine nuit, pour tout le monde.</p>
+    <span class="small" style="font-weight:600">Intensité (coups durs et mauvaises nouvelles)</span>${choix('intensite', REGLAGES.intensite)}
+    <span class="small" style="font-weight:600">Feuilletons et dilemmes</span>${choix('feuilletons', REGLAGES.feuilletons)}
+    <span class="small" style="font-weight:600">Événement du district</span>
+    <p class="small muted" style="margin:0">${ap.district ? `Prévu : ${esc(ap.district.titre)} au tour ${ap.district.tour}.` : (ap.prochain && ap.prochain <= SEASON_LENGTH ? `Prochain vers le tour ${ap.prochain}.` : 'Plus d’autre événement prévu cette saison.')}${st.dir && st.dir.forcer ? ` Demandé : ${esc(DISTRICT[st.dir.forcer].titre)} (annoncé à la prochaine nuit, le surlendemain).` : ''}</p>
+    <div class="row" style="gap:6px;flex-wrap:wrap">${Object.entries(DISTRICT).map(([id, e]) => `<button type="button" class="btn small" data-action="dir-forcer" data-id="${id}">${esc(e.titre)}</button>`).join('')}</div>
+    ${f ? `<p class="small" style="margin:0"><strong>Ennemi de la saison</strong> : ${esc(f.nom)} · dossier ${f.dossier || 0} pièce${(f.dossier || 0) > 1 ? 's' : ''}${ev ? ` · opération finale au tour ${ev.tour} : environ ${Math.max(3, Math.round(ev.parZone * actives))} agents requis` : ''}${f.fini ? (f.arrete ? ' · arrêté' : ' · en fuite') : ''}</p>` : ''}
+    ${ap.coop.length ? `<p class="small" style="margin:0"><strong>Fugitif à la frontière</strong> : ${ap.coop.map((x) => `${esc(x.la)} et ${esc(x.lb)} (tour ${x.tour}${x.e === 'cavale' ? ', dernière chance' : ''})`).join(' · ')}</p>` : ''}
+    ${ap.duo ? `<p class="small" style="margin:0"><strong>Défi en duo</strong> : ${esc(zoneName(st.zones[ap.duo.a]))} et ${esc(zoneName(st.zones[ap.duo.b]))} (tour ${ap.duo.tour})</p>` : ''}
+    <div class="col" style="gap:6px">${ap.zones.map((x) => `<div class="col" style="gap:2px;padding:8px 10px;border:1px solid var(--line);border-radius:10px">
+      <div class="between"><span class="small" style="font-weight:600">${esc(x.label)}</span><span class="pill ciel-pill ciel-p-${x.ciel.id}">${esc(x.ciel.nom)} ${x.jour}/${x.sur}</span></div>
+      <span class="tiny muted">${x.absent ? 'absente (épargnée) · ' : ''}forme ${x.forme > 0 ? '+' : ''}${String(x.forme).replace('.', ',')} · énigmes ${x.enigmes > 0 ? '+' : ''}${x.enigmes} · mini-jeux ${x.incidents > 0 ? '+' : ''}${x.incidents}${x.routine >= 2 ? ` · même répartition depuis ${x.routine + 1} j` : ''}</span>
+      ${x.feuilleton || x.operation ? `<span class="tiny">${[x.feuilleton, x.operation].filter(Boolean).map(esc).join(' · ')}</span>` : ''}
+      ${x.faiblesses.length ? `<span class="tiny" style="color:var(--amber-soft)">Délaissé : ${x.faiblesses.map(esc).join(', ')}</span>` : ''}
+    </div>`).join('')}</div>
+  </section>`;
+}
+
 export function renderAdmin() {
   // (note de mise à jour : voir ui/nouveautes.js)
   const st = S.state;
@@ -191,6 +218,7 @@ export function renderAdmin() {
       <p class="small" style="margin:0;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);line-height:1.45">${esc(noteCourte())}</p>
       <div class="row"><button class="btn small grow" data-action="maj-voir">Voir la note complète</button>
         <button class="btn small primary grow" data-action="maj-envoyer" ${S.majEnvoyee ? 'disabled' : ''}>${S.majEnvoyee ? `Envoyée à ${S.majEnvoyee} joueur${S.majEnvoyee > 1 ? 's' : ''}` : 'Envoyer à tous en privé'}</button></div></section>
+    ${directeurAdminHtml(st)}
     <section class="card"><h2 class="card-title">Résolution</h2>
       <p class="small muted" style="margin:0">Force la résolution du tour en cours maintenant (utile pour tester). Les joueurs ne pourront plus modifier leurs ordres de ce tour.</p>
       <button class="btn block" data-action="admin-force">Résoudre le tour maintenant</button></section>

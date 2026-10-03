@@ -57,7 +57,7 @@ export function invitations() {
   }
   for (const c of candidaturesRecues()) out.push({ titre: `${nom(c.uid)} postule sur « ${esc(c.affaire.titre)} »`, texte: `${c.agents} agent${c.agents > 1 ? 's' : ''} proposé${c.agents > 1 ? 's' : ''} · réponds avant 20:00`, ctrl: candidatureCtrl(c), fait: c.statut !== 'attente' });
   for (const a of st.affaires) { const c = a.zone !== me && maCandidature(a); if (c && c.statut !== 'attente') out.push({ titre: `Candidature ${c.statut === 'acceptee' ? 'acceptée' : 'refusée'} par ${nom(a.zone)}`, texte: `« ${esc(a.titre)} » · ${c.agents} agent${c.agents > 1 ? 's' : ''}${c.statut === 'acceptee' ? ' · valide tes ordres' : ''}`, href: c.statut === 'acceptee' ? '#ordres' : '#carte', action: c.statut === 'acceptee' ? 'Ordres' : 'Voir', fait: true }); }
-  for (const a of appelsRenfort()) out.push({ titre: `${nom(a.uid)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » ce soir`, ctrl: renfortCtrl(a), fait: renfortPrevu(a.uid) > 0 });
+  for (const a of appelsRenfort()) out.push({ titre: `${nom(a.uid)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » ce soir${a.op.appel ? ' · appel du district : renfort payé ×1,5' : ''}`, ctrl: renfortCtrl(a), fait: renfortPrevu(a.uid) > 0 });
   if (st.conseil && st.conseil.tour === T && !(S.draft && Object.keys(S.draft.votes || {}).length)) out.push({ titre: 'Conseil de police : vote ce soir', texte: 'une voix par zone, résultat à 20:00', href: '#diplomatie', action: 'Voter' });
   return out;
 }
