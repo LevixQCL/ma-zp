@@ -15,7 +15,7 @@ import { affaireMeurtre } from './meurtre-mons.js';
 export const ENQ_VERSION = 2;
 export const ENQ = {
   dureeMax: 7,          // jours pour désigner le suspect
-  traqueTours: 2,       // tours pour l'arrêter ensuite
+  traqueTours: 1,       // tours pour l'arrêter ensuite (une seule nuit : les indices sur la planque s'accumulent pendant l'enquête)
   agentsTraque: 4,      // agents d'Intervention minimum pour une interpellation
   maxDemarches: 2,      // démarches par tour
   maxPartages: 3,       // pièces partagées par tour
@@ -907,15 +907,21 @@ export function enquetePre(state, uids, ord, push) {
       res.arrestations.push({ titre: aff.titre, suspect: cs.nom, planque: '', zones: res.decouverte.zones });
       push(15, 'Aveux', `${aff.titre} : ${cs.nom} passe aux aveux`, `Confronté${cs.f ? 'e' : ''} à ses contradictions par ${res.decouverte.zones.join(' et ')}.${res.decouverte.contributeurs.length ? ` Avec les pièces de ${res.decouverte.contributeurs.join(', ')}.` : ''}`);
     } else push(14, 'Enquête', `${aff.titre} : ${cs.nom} identifié${cs.f ? 'e' : ''} par ${res.decouverte.zones.join(' et ')}`,
-      `Mandat d’arrêt délivré. ${cs.f ? 'Elle' : 'Il'} se cache : la traque commence, 2 tours pour l’arrêter.${res.decouverte.contributeurs.length ? ` Avec les pièces de ${res.decouverte.contributeurs.join(', ')}.` : ''}`);
+      `Mandat d’arrêt délivré. ${cs.f ? 'Elle' : 'Il'} se cache : la traque commence : une seule nuit pour l’arrêter, jusqu’à demain 20:00.${res.decouverte.contributeurs.length ? ` Avec les pièces de ${res.decouverte.contributeurs.join(', ')}.` : ''}`);
   }
 
   traquesDuSoir(state, uids, ord, push, prendre, res);
   return { prises, res };
 }
 
+/** Tours qui restent à une traque (celles ouvertes avant le passage à une nuit comptent comme les nouvelles). */
+export const toursTraque = (tr) => Math.min(tr.tours, ENQ.traqueTours);
+export const delaiTraque = (n) => (n <= 1 ? 'une seule nuit, jusqu’au prochain 20:00,' : `${n} tours`);
+
 /** Traques en cours : interpellations (aussi pendant une pause de l'enquête). */
 function traquesDuSoir(state, uids, ord, push, prendre, res) {
+  // Les traques ouvertes quand elles duraient plus longtemps sont ramenées à la durée actuelle.
+  for (const tr of state.traques || []) tr.tours = Math.min(tr.tours, ENQ.traqueTours);
   for (const tr of state.traques || []) {
     const a = affaire(state, tr.n);
     const gagnants = [];

@@ -7,7 +7,7 @@ import {
   INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE, ND } from '../engine/constants.js';
 import { SINISTRE } from '../engine/sinistres.js';
 import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
-import { ENQ, DEMARCHES, POINTS, pointsDecouverte } from '../engine/enquete.js';
+import { ENQ, DEMARCHES, POINTS, pointsDecouverte, delaiTraque } from '../engine/enquete.js';
 import { PARTAGE, FIPA } from '../engine/fipa.js';
 import { QUEST_LABELS } from '../quests/quests.js';
 import { INCIDENTS, INC, MALUS, GAIN, texteMalus, texteGain } from '../engine/incidents.js';
@@ -155,7 +155,7 @@ export function sections() {
     },
     {
       id: 'enquete', titre: 'L’enquête', html: `
-        <p>Le cœur coopératif du jeu. Les affaires s'enchaînent : <strong>${ENQ.dureeMax} jours maximum</strong> pour désigner l'auteur, puis <strong>${ENQ.traqueTours} tours</strong> pour l'arrêter, pendant que l'affaire suivante commence.</p>
+        <p>Le cœur coopératif du jeu. Les affaires s'enchaînent : <strong>${ENQ.dureeMax} jours maximum</strong> pour désigner l'auteur, puis <strong>${delaiTraque(ENQ.traqueTours).replace(/,$/, '')}</strong> pour l'arrêter, pendant que l'affaire suivante commence.</p>
         <h3>L'affaire</h3>
         ${ul([
           'Cinq suspects gravitent autour des lieux. Chacun a une fiche : son lien avec la victime, son véhicule, ce qu’il déclare avoir fait ce soir-là, et une rumeur (vraie ou fausse).',
@@ -209,7 +209,7 @@ export function sections() {
         ])}
         <h3>La traque</h3>
         ${ul([
-          `Après la découverte, le suspect se cache dans l’une des six planques. <strong>Toutes les zones</strong> ont ${ENQ.traqueTours} tours pour l’arrêter.`,
+          `Après la découverte, le suspect se cache dans l’une des six planques. <strong>Toutes les zones</strong> ont ${delaiTraque(ENQ.traqueTours).replace(/,$/, '')} pour l’arrêter : mettez-vous d’accord sur la radio pour fouiller des planques différentes.`,
           `Pour intervenir : choisis une planque et envoie au moins ${ENQ.agentsTraque} agents d’Intervention. Ils sont pris sur ton service du jour.`,
           `Arrestation : ${POINTS.arrestation} points d’enquête, prime de 4 k€, +5 de satisfaction, +3 de réputation. Plusieurs zones à la bonne planque le même soir se partagent l’arrestation.`,
           'Mauvaise planque : tes agents ont perdu leur journée. Sans arrestation après deux tours, le suspect s’enfuit.',

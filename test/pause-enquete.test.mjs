@@ -29,10 +29,7 @@ assert.equal(state.enquete.n, n2 + 1, 'nouvelle affaire ouverte');
 assert.equal(state.enquete.jour, 1);
 assert.equal(r1.gazette.enquete.pause, true);
 assert.ok(r1.gazette.enquete.nouvelle);
-assert.equal(state.traques.length, 1);
-assert.equal(state.traques[0].tours, 1);
+assert.equal(r1.gazette.enquete.fuites.length, 1, 'une seule nuit : fuite dès la première nuit ratée');
+assert.equal(state.traques.length, 0);
 assert.equal(state.zones[uids[0]].enquetePrecedente.n, n1, 'le dossier de la traque est gardé');
-// Nuit 2 : arrestation à la bonne planque.
-const r2 = resolveTurn(state, { orders: ordres(state, { [uids[1]]: { traque: { n: n1, planque: a1.planque, agents: 6 }, alloc: { ...botOrders(state.zones[uids[1]], state, players[uids[1]].style).alloc, intervention: 8 } } }), players });
-assert.equal(r2.gazette.enquete.arrestations.length, 1, 'arrestation pendant la traque');
 console.log('pause-enquete : OK');

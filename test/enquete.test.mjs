@@ -153,20 +153,26 @@ assert.equal(state.enquete.jour, 1);
 assert.equal(state.traques.length, 1);
 assert.equal(state.zones.B.enquete.exclu, false, 'B peut de nouveau accuser sur la nouvelle affaire');
 
-// Traque : A fouille la mauvaise planque, B la bonne avec 3 agents (trop peu), puis C la bonne avec 5.
+// Traque (une seule nuit) : A fouille la mauvaise planque, B la bonne avec 3 agents (trop peu), C la bonne avec 5.
 const tr = state.traques[0];
 const autre = (aff.planque + 1) % 6;
+const avantTraque = state;
 r = resolveTurn(state, { players, orders: {
   A: { ...base, traque: { n: tr.n, planque: autre, agents: 4 } },
-  B: { ...base, traque: { n: tr.n, planque: aff.planque, agents: 3 } }, C: base } });
-state = r.state;
-assert.equal(r.gazette.enquete.arrestations.length, 0);
-assert.equal(state.traques.length, 1, 'traque encore ouverte (2e tour)');
-r = resolveTurn(state, { players, orders: { A: base, B: base, C: { ...base, traque: { n: tr.n, planque: aff.planque, agents: 5 } } } });
+  B: { ...base, traque: { n: tr.n, planque: aff.planque, agents: 3 } },
+  C: { ...base, traque: { n: tr.n, planque: aff.planque, agents: 5 } } } });
 state = r.state;
 assert.equal(r.gazette.enquete.arrestations.length, 1, 'arrestation');
 assert.equal(state.zones.C.stats.arrestations, 1);
+assert.equal(state.zones.B.stats.arrestations, 0, 'trop peu d’agents');
 assert.equal(state.traques.length, 0);
+// Sans la bonne planque cette nuit-là, l'auteur s'enfuit : pas de deuxième tour.
+const fuite = resolveTurn(avantTraque, { players, orders: { A: { ...base, traque: { n: tr.n, planque: autre, agents: 4 } }, B: base, C: base } });
+assert.equal(fuite.gazette.enquete.fuites.length, 1, 'fuite après une nuit');
+assert.equal(fuite.state.traques.length, 0);
+// Une traque ouverte quand elle durait deux tours se termine aussi en une nuit.
+const ancienne = JSON.parse(JSON.stringify(avantTraque)); ancienne.traques[0].tours = 2;
+assert.equal(resolveTurn(ancienne, { players, orders: { A: base, B: base, C: base } }).gazette.enquete.fuites.length, 1, 'ancienne traque ramenée à une nuit');
 
 // 3. Affaire classée au bout de 7 jours sans découverte.
 let s2 = createGame({ seed: 'classee' });

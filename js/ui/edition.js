@@ -2,7 +2,7 @@
 // chaque joueur voit une fois, en plein écran, la une qui salue l'identification du suspect,
 // annonce la traque et la réouverture de l'enquête au prochain 20:00.
 import { S, esc } from './common.js';
-import { affaire } from '../engine/enquete.js';
+import { affaire, toursTraque, delaiTraque } from '../engine/enquete.js';
 import { formatDateBe } from '../engine/time.js';
 import { portraitSuspect } from './portrait.js';
 
@@ -32,7 +32,7 @@ export function contenuEdition(st) {
     corps: [
       `Les enquêteurs ont réuni le mobile, le moyen et l’occasion : ${s.nom}, ${s.role}, ${a.butin ? `est l’auteur${e} du vol (${a.butin}).` : 'est l’auteur des faits.'}`,
       con.length ? `Le parquet salue aussi ${liste(con)}, dont les pièces ont fait avancer le dossier.` : 'Toutes les zones qui ont partagé leurs pièces ont leur part dans ce succès.',
-      `La traque est ouverte à toutes les zones : choisis une planque d’après les indices de ton dossier et envoie au moins quatre agents d’Intervention pour ${le} cueillir. Il reste ${tr.tours} tour${tr.tours > 1 ? 's' : ''}.`,
+      `La traque est ouverte à toutes les zones : choisis une planque d’après les indices de ton dossier et envoie au moins quatre agents d’Intervention pour ${le} cueillir. Il reste ${delaiTraque(toursTraque(tr)).replace(/,$/, '')}.`,
     ],
     suspect: s, i: a.coupable,
     annonce: `L’affaire annoncée hier soir est retirée. La nouvelle enquête s’ouvrira ${reprise} à 20:00 : place à la traque d’ici là.`,
