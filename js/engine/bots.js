@@ -1,4 +1,5 @@
 // Zones robots : utilisées par le mode démo et par la simulation d'équilibrage.
+import { feuilletonEnCours } from './directeur.js';
 import { SERVICES, INFRAS, COUTS, BATIMENTS } from './constants.js';
 import { makeRng } from './rng.js';
 import { agentsDisponibles, coutDecision, decisionImpossible, operationActive, NIVEAUX_OPERATION } from './zone.js';
@@ -96,7 +97,21 @@ export function botOrders(zone, state, style = 'equilibre') {
   // Patrouilles : les robots attentifs envoient 2 agents sur le point chaud annoncé.
   const patrouilles = {};
   if (zone.pointChaud && style !== 'distrait' && alloc.proximite >= 2 && rng.chance(style === 'agressif' ? 0.5 : 0.8)) patrouilles[zone.pointChaud.cell] = 2;
-  return { patrouilles, alloc, rythme, engagements, secteurs, evenement, decision, operation, depenses, ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
+  // Feuilleton du Directeur : les robots attentifs répondent souvent à ce qui est annoncé.
+  let dilemme = null;
+  const fe = feuilletonEnCours(state, zone);
+  if (fe && fe.tour === T && style !== 'distrait' && rng.chance(style === 'agressif' ? 0.5 : 0.75)) {
+    const sg = fe.signe || {};
+    if (sg.quartier != null && alloc.proximite >= (sg.patrouilles || 2)) patrouilles[sg.quartier] = sg.patrouilles || 2;
+    if (sg.service && alloc[sg.service] < sg.min) {
+      const manque = sg.min - alloc[sg.service];
+      const donneur = Object.keys(alloc).filter((k) => k !== sg.service).sort((a, b) => alloc[b] - alloc[a])[0];
+      const n = Math.min(manque, Math.max(0, alloc[donneur] - 2));
+      alloc[donneur] -= n; alloc[sg.service] += n;
+    }
+    if (fe.dilemme) dilemme = rng.int(0, 1);
+  }
+  return { dilemme, patrouilles, alloc, rythme, engagements, secteurs, evenement, decision, operation, depenses, ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
 }
 
 /**

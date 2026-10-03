@@ -9,6 +9,7 @@ import { QUEST_LABELS } from '../quests/quests.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
 import { estimations } from './ordres.js';
 import { operationActive } from '../engine/zone.js';
+import { cielDe, dilemmeDuJour, feuilletonEnCours } from '../engine/directeur.js';
 import { fipaCards } from './fipa.js';
 import { blasonSvg, BLASONS, insigne } from './blasons.js';
 import { GRADES, gradeFor } from '../engine/constants.js';
@@ -160,14 +161,37 @@ function premiersPasVus() {
 
 /** Liste de ce qu'il reste à faire avant 20:00. */
 /** Situation du jour en pastilles sous le compte à rebours ; le détail complet reste dans les Ordres. */
-function situationPastilles(z) {
+function situationPastilles(z, ciel) {
   const l = z.pressions || [];
-  if (!l.length) return '';
-  return `<div class="soir-situ" aria-label="Situation du jour">${l.map((p) => `<a class="pill amber" href="#ordres" title="${esc(p.texte)}">${esc(p.titre)}${String(p.texte || '').length <= 32 ? ` · ${esc(p.texte.replace(/\.$/, ''))}` : ' ›'}</a>`).join('')}</div>`;
+  const cielP = `<button type="button" class="pill ciel-pill ciel-p-${ciel.id}" data-action="aide" data-k="ciel" title="${esc(ciel.texte)}">${esc(ciel.nom)} ›</button>`;
+  return `<div class="soir-situ" aria-label="Situation du jour">${cielP}${l.map((p) => `<a class="pill ${p.feuilleton ? 'violet' : p.district ? 'blue' : 'amber'}" href="${p.feuilleton && p.quartier != null ? '#carte' : '#ordres'}" title="${esc(p.texte)}">${esc(p.titre)}${String(p.texte || '').length <= 32 ? ` · ${esc(p.texte.replace(/\.$/, ''))}` : ' ›'}</a>`).join('')}</div>`;
+}
+
+function meteoHtml(c) {
+  if (c.id === 'calme') return '';
+  const nuages = c.id === 'eclaircie' ? 2 : c.id === 'montee' ? 3 : 4;
+  return `<span class="meteo meteo-${c.id}" aria-hidden="true">${c.id === 'eclaircie' ? '<i class="m-arc"></i>' : ''}${Array.from({ length: nuages }, (_, i) => `<i class="m-nuage n${i}"></i>`).join('')}${c.id === 'orage' ? '<i class="m-pluie"></i><i class="m-eclair"></i>' : ''}</span>`;
+}
+
+/** Dilemme du Directeur : une carte, deux choix, envoyés avec les ordres. */
+function dilemmeHtml(st, z) {
+  const dl = dilemmeDuJour(st, z);
+  if (!dl) return '';
+  const d = S.draft || {};
+  const pris = Number.isInteger(d.dilemme) ? d.dilemme : null;
+  const enregistre = pris !== null && S.savedOrders && S.savedOrders.dilemme === pris && !S.ordersDirty;
+  return `<section class="card dilemme" id="hp-dilemme" aria-label="Dilemme du jour">
+    <span class="kicker">Dilemme du jour · ${esc(dl.titre)}</span>
+    <p class="dil-q">${esc(dl.question)}</p>
+    <div class="dil-choix">${dl.choix.map((c, i) => `<button type="button" class="dil-btn" data-action="dilemme" data-i="${i}" aria-pressed="${pris === i}"><span class="t">${esc(c.l)}</span><span class="s">${esc(c.s)}</span></button>`).join('')}</div>
+    <p class="tiny muted" style="margin:0">${pris === null ? `Sans réponse à 20:00, ton adjoint choisira « ${esc(dl.choix[dl.defaut].l)} ».` : enregistre ? 'Choix enregistré avec tes ordres. Tu peux encore changer d’avis.' : 'Valide tes ordres pour l’envoyer.'}</p>
+    ${pris !== null && !enregistre ? '<button type="button" class="btn primary small" data-action="save-orders">Valider mes ordres</button>' : ''}
+  </section>`;
 }
 
 function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
   const d = S.draft || {};
+  const ciel = cielDe(z);
   const nbDem = (d.demarches || []).length;
   const items = [];
   items.push({ ok: ordresOk, href: '#ordres', t: ordresOk ? 'Ordres validés' : S.ordersDirty ? 'Ordres modifiés : à valider' : 'Passer et valider tes ordres', s: ordresOk ? 'modifiables jusqu’à 20:00' : 'sans ordres validés, ce tour ne compte pas pour le classement' });
@@ -178,6 +202,16 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
     items.push({ ok: a >= 2, href: '#carte', t: a >= 2 ? `Point chaud : ${a} agents envoyés` : `Point chaud : ${pc.titre.toLowerCase()}`, s: a >= 2 ? 'désamorcé à 20:00 si tes ordres sont validés' : 'envoie 2 patrouilles depuis la Carte' });
   }
   if (st.enquete) items.push({ ok: nbDem >= 1 || (d.accusation !== null && d.accusation !== undefined), href: '#enquete', t: `Enquête : ${nbDem} démarche${nbDem > 1 ? 's' : ''} sur 2`, s: (st.traques || []).length ? 'une traque est en cours !' : 'constatations, vérifications, partage, accusation' });
+  // Le Directeur : dilemme à trancher, feuilleton à préparer pour ce soir.
+  const dl = dilemmeDuJour(st, z);
+  if (dl) items.unshift({ ok: Number.isInteger(d.dilemme), href: '#hp-dilemme', t: `Dilemme : ${esc(dl.titre.toLowerCase())}`, s: Number.isInteger(d.dilemme) ? `« ${esc(dl.choix[d.dilemme].l)} »` : 'deux choix, à trancher avant 20:00' });
+  const fe = feuilletonEnCours(st, z);
+  if (fe && !fe.dilemme && fe.tour === st.turn) {
+    const sg = fe.signe || {};
+    const al = d.alloc || {};
+    const ok = sg.quartier != null ? ((d.patrouilles || {})[sg.quartier] || 0) >= (sg.patrouilles || 2) : sg.service ? (al[sg.service] || 0) >= sg.min : null;
+    items.unshift({ ok: ok === true, href: sg.quartier != null ? '#carte' : '#ordres', t: esc(sg.titre), s: esc(sg.texte) });
+  }
   const inc = incidentEnCours();
   if (inc) items.unshift({ ok: false, href: '#hp-incidents', t: `Incident en cours : ${esc(inc.titre)}`, s: `encore ${duree(inc.ferme - Date.now())} pour intervenir, sinon ton équipe se débrouille seule` });
   items.push({ ok: faites >= 3, href: '#quete', t: `Énigmes : ${faites} sur 3`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
@@ -188,13 +222,13 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
   const reste = items.filter((i) => !i.ok).length;
   const fait = items.length - reste;
   return `<section class="card soir" aria-label="Prochain tour" style="${cielStyle()}">
-    <div class="soir-ciel" aria-hidden="true"><i class="soir-astre"></i>${skyline()}</div>
+    <div class="soir-ciel ciel-${ciel.id}" aria-hidden="true"><i class="soir-astre"></i>${meteoHtml(ciel)}${skyline()}</div>
     <div class="soir-tete">
       <span class="soir-l">Résolution du tour à 20:00 dans</span>
       <span id="countdown" class="soir-cd">${formatCountdown(st.nextDeadline - Date.now())}</span>
       <span class="soir-prog" role="img" aria-label="${fait} sur ${items.length} fait">${items.map((i) => `<i class="${i.ok ? 'on' : ''}"></i>`).join('')}</span>
     </div>
-    ${situationPastilles(z)}
+    ${situationPastilles(z, ciel)}
     <p class="soir-etat ${reste ? '' : 'ok'}">${reste ? `${reste} chose${reste > 1 ? 's' : ''} à faire avant ce soir` : 'Tout est prêt pour ce soir'}</p>
     ${reste ? `<div class="col soir-todo" style="gap:6px">${items.map((i) => `<a class="todo ${i.ok ? 'done' : ''}" href="${i.href}"><span class="box" aria-hidden="true">${i.ok ? icon('check', 14) : ''}</span>
       <span class="col grow" style="gap:0"><span style="font-weight:600">${i.t}</span><span class="tiny muted">${i.s}</span></span>${icon('chevron', 16)}</a>`).join('')}</div>` : ''}
@@ -279,6 +313,7 @@ export function renderHP() {
     </nav>` : ''}
 
     ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit })}
+    ${dilemmeHtml(st, z)}
     ${incidentsHtml()}
     <section class="card mazone" aria-label="Ma zone">
       <div class="mz-tete">

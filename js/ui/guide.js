@@ -340,11 +340,18 @@ export function sections() {
         ${table(['Service', 'Incident', 'Réussi', 'Raté', 'Pas joué et raté'], Object.entries(INCIDENTS).map(([k, x]) => [SERVICE_LABELS[k], esc(x.titre), esc(texteGain(GAIN[k])), esc(texteMalus(MALUS[k].plein)), esc(texteMalus(MALUS[k].leger))]))}`,
     },
     {
-      id: 'imprevus', titre: 'Imprévus, coups durs et Inspection', html: `
-        <p><strong>Aléas légers</strong> : environ un tour sur trois, une petite surprise, bonne ou mauvaise (croissants offerts, subside, agent cloué au lit, imprimante en panne, dégât des eaux qui retarde d’un tour les pièces d’enquête demandées, grève sauvage qui immobilise 2 agents…).</p>
+      id: 'imprevus', titre: 'Le Directeur, imprévus et coups durs', html: `
+        <p><strong>Le Directeur</strong> : un maître du jeu invisible décide de ce qui arrive à chaque zone. Pas de dés à heure fixe : il suit un rythme, lit tes points faibles et ton classement, et s’adapte.</p>
+        <p><strong>Le ciel du jour</strong> (en haut de l’HP) : <strong>ciel clair</strong> (calme, le moment d’investir), <strong>ciel chargé</strong> (ça se couvre : signes à surveiller, tracas possibles), <strong>orage</strong> (grosse journée : opération d’envergure, coup dur ou feuilleton décisif), puis <strong>éclaircie</strong> (rien de grave, de bonnes nouvelles possibles). Après un orage vient toujours une éclaircie.</p>
+        <p><strong>Feuilletons</strong> : des histoires sur un ou plusieurs jours (cambrioleur des toits, rodéos urbains, audit de l’Inspection, contrôle technique, évasion, fête de quartier…). Le signe apparaît dans la situation du jour avec ce qu’il faut faire ce soir : réussis et l’histoire s’arrête avec des points et de la satisfaction, rate et elle peut empirer.</p>
+        <p><strong>Dilemmes</strong> : une carte avec deux choix sur l’HP (grogne syndicale, indic, journaliste, sponsor…). Ton choix part avec tes ordres validés ; sans réponse, ton adjoint tranche.</p>
+        <p><strong>Événements du district</strong> : tempête, canicule, Fêtes du Delta, marathon. Annoncés la veille, vécus par toutes les zones le même soir ; la Gazette cite celles qui ont tenu bon.</p>
+        <p><strong>Équitable</strong> : une zone en tête du classement est surtout testée par des défis qui rapportent ; une zone en difficulté a des éclaircies plus longues et plus d’occasions. Une zone absente est laissée tranquille (ni coup dur ni opération).</p>
+        <p><strong>Énigmes à ta mesure</strong> : le niveau du jour (lundi facile, dimanche corsé) se décale d’un cran au plus par nuit selon tes réussites récentes et ton rang aux énigmes, de 2 niveaux plus facile à 1 plus difficile. Le dossier noir garde son niveau.</p>
+        <p><strong>Aléas légers</strong> : de petites surprises, bonnes ou mauvaises (croissants offerts, subside, agent cloué au lit, imprimante en panne, dégât des eaux qui retarde d’un tour les pièces d’enquête demandées…). Plus fréquentes par ciel chargé ; un Accueil laissé vide plusieurs jours attire les tracas internes.</p>
         <p><strong>L’Accueil comme assurance</strong> : les tracas internes (informatique, locaux, papiers, grève, plainte, panne générale) sont évités dans 15 % des cas par agent d’Accueil au-delà de 2, jusqu’à 60 %. Le rapport le signale quand ton Accueil a paré le coup.</p>
         <p><strong>Interventions musclées</strong> : dans la zone de non-droit, chaque agent engagé au-delà de 3 sur un même secteur ajoute ${Math.round(ND.risqueParAgent * 100)} % de risque qu’un agent soit blessé pendant l’assaut (3 tours d’absence), jusqu’à ${Math.round(ND.risqueMax * 100)} %. Le <strong>stand de tir</strong> divise ces risques par deux, comme celui des grosses équipes engagées sur une affaire.</p>
-        <p><strong>Coups durs</strong> : environ un tour sur huit, un vrai coup dur. Ta gestion en réduit le risque :</p>
+        <p><strong>Coups durs</strong> : ils tombent surtout les jours d’orage, et visent ta plus grande faiblesse ; le rapport dit pourquoi. Ta gestion en réduit le risque :</p>
         ${table(['Coup dur', 'Effet', 'Ce qui le rend plus rare'], COUPS_DURS.map((c) => [esc(c.titre), {
           rebellion: '1 ou 2 agents blessés (1 seul avec un stand de tir), absents 2 à 4 tours, −4 de moral',
           grippe: '10 à 20 % des agents malades 2 tours',
