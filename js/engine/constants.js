@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 32;
+export const APP_VERSION = 33;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -62,6 +62,18 @@ export const EQUIP = {
   protection: 0.1,      // Accueil : +10 % de tracas internes évités par niveau
 };
 export const multEquip = (n) => (EQUIP.actif ? 1 - EQUIP.efficacite + EQUIP.efficacite * n : 0.85 + 0.15 * n);
+/** Effet propre du matériel, en clair, pour `k` niveaux au-delà du premier. */
+export const effetEquip = (service, k) => {
+  const pc = (v) => `${Math.round(v * 100)} %`;
+  switch (service) {
+    case 'intervention': return `risque de blessure −${pc(Math.min(0.8, k * EQUIP.blessure))}`;
+    case 'roulage': return `amendes +${pc(k * EQUIP.amendes)}`;
+    case 'recherche': return `chances de pièce d’enquête +${pc(k * EQUIP.enquete)}`;
+    case 'proximite': return `+${String(Math.round(k * EQUIP.satisfaction * 10) / 10).replace('.', ',')} de satisfaction par jour`;
+    case 'admin': return `tracas internes évités +${pc(k * EQUIP.protection)}`;
+    default: return '';
+  }
+};
 /** Bonus propre au matériel d'un service : k × valeur (0 si l'effet n'est pas actif). */
 export const bonusEquip = (z, service, cle) => (EQUIP.actif && z && z.equip ? Math.max(0, (z.equip[service] || 1) - 1) * EQUIP[cle] : 0);
 

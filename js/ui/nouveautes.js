@@ -35,6 +35,7 @@ export const NOTE_MAJ = {
       ['Entraide entre zones', 'entre deux zones qui vont bien, l’entraide rapporte de la réputation une fois par semaine pour la même paire. Aider une zone en difficulté rapporte à chaque fois.'],
     ]],
     ['Règles et équilibrage', [
+      ['Matériel utile', 'chaque matériel a maintenant son propre effet, par niveau : Intervention −15 % de risque de blessure, Roulage +12 % d’amendes, Recherche +15 % de chances de pièce d’enquête, Proximité +0,5 de satisfaction par jour, Accueil +10 % de tracas internes évités. Le gain d’efficacité passe de 15 % à 8 % par niveau. La formation (+20 %, conservée d’une saison à l’autre) reste l’investissement de long terme, le matériel le coup de pouce immédiat et ciblé.'],
       ['Résultats terrain', 'nouveau calcul : 45 × part des incidents traités + 2,5 × bilan. Tes points (Recherche, flagrants, zone de non-droit, opérations) font davantage la différence. Tous les IPZ baissent un peu, de la même façon pour tout le monde.'],
       ['Moins de hasard', 'la Recherche rapporte des points chaque jour, au fil du travail sur les dossiers ; le flagrant délit suit une jauge qui se remplit avec tes patrouilles libres ; le bilan garde la moitié de celui de la veille.'],
       ['L’argent qui dort', 'au-delà de 75 k€ en caisse, la composante Budget de l’IPZ perd 1 point par k€ en plus (jusqu’à 50). Garde une réserve de 35 à 75 k€ et investis le reste. L’HP te prévient.'],
