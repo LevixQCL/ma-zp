@@ -3,6 +3,8 @@ import { S, esc, icon, tabbar, myZone } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS } from '../quests/quests.js';
 import { SERVICES, SERVICE_LABELS, ENIGMES, gainMoral, chanceDelegue } from '../engine/constants.js';
 import { MINI_JEUX } from './incidents.js';
+import { quizLocal, quizEnregistre, quizQuestionHtml, bonnesReponses } from './quiz.js';
+import { QUIZ, QUIZ_THEMES } from '../quests/quiz.js';
 import { cadenasHtml, cadenasResultat, essaisHtml } from './cadenas.js';
 import { chronoHtml, disqueHtml, plaquesHtml, temoignagesHtml, figureInteractive, filatureOutils, butinHtml, ligneHtml, trajetsHtml, icoGrille, ecritureHtml, avatar, codeHtml } from './enigmes.js';
 
@@ -100,13 +102,46 @@ function delegueHtml(delegue, moral, gBonus, enqueteOuverte) {
         : '<button type="button" class="btn small ghost" data-action="delegue-changer">Changer le bonus visé</button>'}
     </section>`;
   }
-  if (!S.delegueOuvert) return `<button type="button" class="btn small ghost block" data-action="delegue-ouvrir">${icon('send', 16)} Pas le temps ou pas l’envie ? Confier les énigmes à un agent</button>`;
+  if (!S.altVue) return `<button type="button" class="btn small ghost block" data-action="alt-vue" data-v="choix">${icon('send', 16)} Pas le temps ou pas l’envie ? Deux autres façons de gagner ton bonus</button>`;
+  const fermer = '<button type="button" class="btn small ghost" data-action="alt-vue" data-v="" aria-label="Fermer">✕</button>';
+  if (S.altVue === 'choix') {
+    return `<section class="card" aria-label="Autres façons de gagner le bonus" style="gap:10px">
+      <div class="between"><span style="font-weight:700">Pas le temps ou pas l’envie ?</span>${fermer}</div>
+      <div class="choices one">
+        <button type="button" class="choice alt-c" data-action="alt-vue" data-v="quiz"><span>⏱ Quiz express</span><span class="s">${QUIZ.questions} questions de culture générale, ${QUIZ.secondes} s chacune. ${QUIZ.seuil} bonnes réponses : bonus complet.</span></button>
+        <button type="button" class="choice alt-c" data-action="alt-vue" data-v="agent"><span>🧑‍💼 Confier à un agent</span><span class="s">Rien à faire : il a ${pct} % de chances de décrocher le bonus.</span></button>
+      </div>
+      <p class="tiny muted" style="margin:0">Dans les deux cas : pas de PS ni de prime « sans faute », et les 3 énigmes du jour se ferment (le dossier noir reste ouvert).</p>
+    </section>`;
+  }
+  if (S.altVue === 'quiz') {
+    return `<section class="card" aria-label="Quiz express" style="gap:10px">
+      <div class="between"><span style="font-weight:700">⏱ Quiz express</span>${fermer}</div>
+      <p class="small" style="margin:0">${QUIZ.questions} questions, ${QUIZ.secondes} secondes chacune, 4 réponses possibles. Thèmes : ${Object.values(QUIZ_THEMES).map((t) => `${t.ico} ${esc(t.nom)}`).join(', ')}.</p>
+      <p class="small" style="margin:0"><strong>${QUIZ.seuil} bonnes réponses sur ${QUIZ.questions}</strong> : tu choisis ton bonus, comme avec les énigmes. Moins : pas de bonus, sans autre conséquence.</p>
+      <p class="tiny" style="margin:0;color:var(--red-soft)">Un seul essai. Le chrono tourne même si tu quittes l’écran. Les 3 énigmes du jour se ferment dès la première question.</p>
+      <button type="button" class="btn primary block" data-action="quiz-start">Lancer le quiz</button>
+    </section>`;
+  }
   return `<section class="card" aria-label="Confier les énigmes à un agent" style="gap:10px">
-      <div class="between"><span style="font-weight:700">Confier les énigmes du jour à un agent</span><button type="button" class="btn small ghost" data-action="delegue-ouvrir" aria-label="Fermer">✕</button></div>
+      <div class="between"><span style="font-weight:700">🧑‍💼 Confier les énigmes à un agent</span>${fermer}</div>
       <p class="small" style="margin:0">Un agent planche dessus à ta place. ${regles}</p>
       <p class="tiny" style="margin:0;color:var(--red-soft)">Définitif pour aujourd’hui : tu ne pourras plus répondre aux 3 énigmes (le dossier noir reste ouvert).</p>
       <span class="small" style="font-weight:600">Quel bonus doit-il viser ?</span>
       ${choixBonus(null, gBonus, enqueteOuverte, { action: 'quest-delegue', change: 'quest-delegue-capacite' })}
+    </section>`;
+}
+
+/** Résultat du quiz express (enregistré), avec le choix du bonus s'il est gagné. */
+function quizResultatHtml(r, gBonus, enqueteOuverte) {
+  const bons = Number(r.tentatives) || 0, gagne = bons >= QUIZ.seuil;
+  return `<section class="card ${gagne ? 'green' : ''}" aria-label="Quiz express" style="gap:10px">
+      <span class="kicker">Énigmes du jour · quiz express</span>
+      <h1 class="big" style="margin:0">${bons} sur ${QUIZ.questions}</h1>
+      ${gagne ? (r.bonus && !S.bonusChanger
+        ? `<div class="between" style="gap:8px"><p class="small" style="margin:0;font-weight:600">Bonus du jour : ${esc(bonusLabel(r, gBonus, enqueteOuverte))}. Il sera appliqué à 20:00.</p><button type="button" class="btn small ghost" data-action="bonus-changer">Changer</button></div>`
+        : `<span class="ok" style="font-weight:700">Gagné ! Choisis ton bonus du jour</span>${choixBonus(r.bonus ? r : null, gBonus, enqueteOuverte, { action: 'quiz-bonus', change: 'quiz-capacite' })}<span class="tiny muted">Sans choix, ce sera +${ENIGMES.bonusBudget} k€.</span>`)
+        : `<p class="small" style="margin:0">Il fallait ${QUIZ.seuil} bonnes réponses : pas de bonus aujourd’hui, sans autre conséquence. Nouvelles énigmes demain après 20:00.</p>`}
     </section>`;
 }
 
@@ -132,7 +167,7 @@ export function renderQuete() {
   const picked = S.questPick;
   const ok = results.filter((x) => x && x.statut === 'ok').length;
   const bonusPris = results.find((x) => x && x.bonus);
-  const icone = (x) => (!x || !x.statut ? '' : x.statut === 'ok' ? ' ✓' : x.statut === 'delegue' ? ' ⇢' : ' ✗');
+  const icone = (x) => (!x || !x.statut ? '' : x.statut === 'ok' ? ' ✓' : x.statut === 'delegue' ? ' ⇢' : x.statut === 'quiz' ? ' ⏱' : ' ✗');
 
   const choixHtml = q.mode !== 'choix' ? ''
     : q.type === 'plaque' ? plaquesHtml(q, picked, fini)
@@ -160,6 +195,15 @@ export function renderQuete() {
       <button type="button" role="tab" class="noir" data-action="quest-tab" data-i="3" aria-pressed="${noir}" aria-selected="${noir}"><span class="t">Dossier noir${icone(S.noirResult)}</span><span class="d">facultatif</span></button></div>`;
   const delegue = !train ? results.find((x) => x && x.statut === 'delegue') : null;
   const aucuneReponse = !results.some((x) => x && (x.statut === 'ok' || x.statut === 'rate'));
+  const qzLocal = !train ? quizLocal() : null, qzFait = !train ? quizEnregistre() : null;
+  if (!noir && (qzFait || qzLocal)) {
+    return `<main class="screen quete sans-copie">
+    ${modes}
+    ${onglets}
+    ${qzFait ? quizResultatHtml(qzFait, gBonus, enqueteOuverte) : qzLocal.i >= QUIZ.questions ? `<section class="card"><p class="small" style="margin:0">Quiz terminé : ${bonnesReponses(qzLocal)} sur ${QUIZ.questions}. Le résultat n’a pas pu être enregistré.</p><button type="button" class="btn primary block" data-action="quiz-enregistrer">Réessayer</button></section>` : quizQuestionHtml()}
+    <a class="small" href="#guide-quetes" style="text-align:center">Règles des énigmes</a>
+  </main>${tabbar('quete', { questBadge: false })}`;
+  }
   if (delegue && !noir) {
     return `<main class="screen quete">
     ${modes}

@@ -7,6 +7,7 @@ import {
   APP_VERSION, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
   MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue } from './constants.js';
 import { makeRng, hashString } from './rng.js';
+import { QUIZ } from '../quests/quiz.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
@@ -476,7 +477,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Énigmes du jour (jusqu'à 3) : bonus au choix dès 2 bonnes réponses.
     let bonusService = null;
     const tous = (Array.isArray(q) ? q : q ? [q] : []);
-    const qs = tous.filter((x, k) => x && (x.slot ?? k) !== 3 && x.statut !== 'delegue');
+    const ALT = ['delegue', 'quiz'];
+    const qs = tous.filter((x, k) => x && (x.slot ?? k) !== 3 && !ALT.includes(x.statut));
     const noir = tous.find((x, k) => x && (x.slot ?? k) === 3);
     if (noir && noir.statut === 'ok') { z.stats.noirs = (z.stats.noirs || 0) + 1; z._ps += PS.noir; z.rapport.push(`Dossier noir résolu : chapeau (+${PS.noir} PS).`); }
     else if (noir && noir.statut === 'rate') z.rapport.push('Dossier noir : raté cette fois, sans conséquence.');
@@ -502,6 +504,15 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(reussi && t
         ? `Énigmes confiées à un agent : il a trouvé ! ${t.charAt(0).toUpperCase()}${t.slice(1)}.`
         : `Énigmes confiées à un agent : il a séché (${Math.round(chance * 100)} % de chances avec ce moral). Pas de bonus aujourd’hui, sans autre conséquence.`);
+    }
+    // Quiz express (alternative aux énigmes) : le nombre de bonnes réponses est gardé dans « tentatives ».
+    const quiz = !qs.length ? tous.find((x, k) => x && (x.slot ?? k) !== 3 && x.statut === 'quiz') : null;
+    if (quiz) {
+      const bons = Math.max(0, Math.min(QUIZ.questions, Math.floor(Number(quiz.tentatives) || 0)));
+      if (bons >= QUIZ.seuil) {
+        const t = appliquerBonus(quiz.bonus ? quiz : { bonus: 'budget' });
+        z.rapport.push(`Quiz express : ${bons} bonnes réponses sur ${QUIZ.questions}${t ? `, ${t}` : ''}${quiz.bonus ? '' : ' (bonus non choisi : k€ par défaut)'}.`);
+      } else z.rapport.push(`Quiz express : ${bons} bonne${bons > 1 ? 's' : ''} réponse${bons > 1 ? 's' : ''} sur ${QUIZ.questions}, il en fallait ${QUIZ.seuil}. Pas de bonus, sans autre conséquence.`);
     }
     if (qs.length) {
       z.stats.quetesOk += ok;
