@@ -6,7 +6,7 @@
 // 4. Réussi : une pièce sur un suspect arrive au dossier à la résolution suivante (le labo trouve plutôt
 //    les moyens, la RCCU plutôt le mobile ou l'occasion). Raté, abandonné ou pas joué : rien.
 import { makeRng } from './rng.js';
-import { genererAffaire, faitsConnus, titrePiece, dansMaCellule } from './enquete.js';
+import { affaire, faitsConnus, titrePiece, dansMaCellule } from './enquete.js';
 
 export const APPUI = {
   unites: {
@@ -65,7 +65,7 @@ export function appuiResolution(state, uids, ord, players, T, push) {
     if (!res) { z.rapport.push(`Appui ${u.court} : l’équipe est repartie sans que tu aies fait l’analyse. Pas de pièce.`); continue; }
     if (res.statut !== 'ok') { z.rapport.push(`Appui ${u.court} : l’analyse n’a rien donné. Pas de pièce.`); continue; }
     if (!e || e.n !== a.n || !z.enquete) { z.rapport.push(`Appui ${u.court} : analyse réussie, mais l’affaire est close entre-temps.`); continue; }
-    const aff = genererAffaire(state.seed, e.n);
+    const aff = affaire(state, e.n);
     const f = pieceAppui(state, z, aff, makeRng(`${state.seed}:s${state.season}:t${T}:appui-piece:${uid}`), u.elements);
     if (!f) { z.rapport.push(`Appui ${u.court} : analyse réussie, mais il n’y a plus rien à trouver dans ce dossier.`); continue; }
     z.enquete.pieces.push({ f, j: e.jour, src: 'pjf' });

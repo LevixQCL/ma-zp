@@ -1,7 +1,7 @@
 // Contenu propre à la Gazette : échos du district (avec, parfois, un indice caché).
 import { makeRng } from './rng.js';
 import { ECHOS } from './contenu.js';
-import { genererAffaire } from './enquete.js';
+import { affaire } from './enquete.js';
 
 const sansAccent = (s) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
 
@@ -14,7 +14,7 @@ export function genererEchos(state, T) {
   const e = state.enquete;
   let mot = null;
   if (e && (e.jour === 3 || e.jour === 5)) {
-    const aff = genererAffaire(state.seed, e.n);
+    const aff = affaire(state, e.n);
     const innocents = aff.suspects.map((s, i) => ({ s, i })).filter((x) => x.i !== aff.coupable);
     const choix = innocents[(e.jour === 3 ? 0 : 1 + (e.n % 2)) % innocents.length];
     const p = sansAccent(choix.s.prenom).replace(/[^A-Z]/g, '');

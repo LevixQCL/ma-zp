@@ -70,16 +70,16 @@ export function lireDemarche(x) {
 // ─────────────────────────────── Contenu ───────────────────────────────
 
 const AFFAIRES = [
-  { titre: 'Le casse du dépôt des Tanneurs', lieu: 'le dépôt des Tanneurs', pres: 'du dépôt des Tanneurs', texte: 'Un dépôt de matériel électronique a été vidé pendant la nuit.', butin: 'ordinateurs portables', gros: true, vic: ['le gérant', 'au gérant', 'du gérant'] },
-  { titre: 'La bijouterie de la Grand-Place', lieu: 'la bijouterie', pres: 'de la bijouterie', texte: 'Une bijouterie a été visitée après la fermeture.', butin: 'montres et bijoux', gros: false, vic: ['la bijoutière', 'à la bijoutière', 'de la bijoutière'] },
-  { titre: 'Le fourgon de la Porte Sud', lieu: 'l’entrepôt de la Porte Sud', pres: 'de l’entrepôt de la Porte Sud', texte: 'L’entrepôt d’un grossiste en parfums a été vidé.', butin: 'cartons de parfums', gros: true, vic: ['le grossiste', 'au grossiste', 'du grossiste'] },
-  { titre: 'Les caves du Béguinage', lieu: 'le restaurant du Béguinage', pres: 'du restaurant du Béguinage', texte: 'La cave d’un restaurant réputé a été pillée.', butin: 'caisses de grands vins', gros: true, vic: ['le restaurateur', 'au restaurateur', 'du restaurateur'] },
-  { titre: 'L’atelier des Filatures', lieu: 'l’atelier des Filatures', pres: 'de l’atelier des Filatures', texte: 'Un atelier de vélos électriques a perdu une partie de son stock.', butin: 'vélos électriques', gros: true, vic: ['la gérante', 'à la gérante', 'de la gérante'] },
-  { titre: 'Le musée des Moulins', lieu: 'le musée des Moulins', pres: 'du musée des Moulins', texte: 'Des pièces d’une exposition temporaire ont disparu.', butin: 'objets de collection', gros: false, vic: ['la conservatrice', 'à la conservatrice', 'de la conservatrice'] },
-  { titre: 'La pharmacie du Petit-Pont', lieu: 'la pharmacie du Petit-Pont', pres: 'de la pharmacie du Petit-Pont', texte: 'La réserve d’une pharmacie a été visitée.', butin: 'matériel médical', gros: false, vic: ['le pharmacien', 'au pharmacien', 'du pharmacien'] },
-  { titre: 'Le chantier des Hauts-Prés', lieu: 'le chantier des Hauts-Prés', pres: 'du chantier des Hauts-Prés', texte: 'Le conteneur d’un chantier a été vidé pendant la nuit.', butin: 'outillage professionnel', gros: true, vic: ['le chef de chantier', 'au chef de chantier', 'du chef de chantier'] },
-  { titre: 'La salle des ventes', lieu: 'la salle des ventes', pres: 'de la salle des ventes', texte: 'Des lots ont disparu la veille d’une vente aux enchères.', butin: 'tableaux et bibelots', gros: false, vic: ['la commissaire-priseuse', 'à la commissaire-priseuse', 'de la commissaire-priseuse'] },
-  { titre: 'Le magasin de la gare', lieu: 'la boutique de la gare', pres: 'de la boutique de la gare', texte: 'Une boutique de téléphonie a été vidée en quelques minutes.', butin: 'smartphones neufs', gros: false, vic: ['le patron', 'au patron', 'du patron'] },
+  { titre: 'Le casse du dépôt des Tanneurs', pos: 'tanneurs', lieu: 'le dépôt des Tanneurs', pres: 'du dépôt des Tanneurs', texte: 'Un dépôt de matériel électronique a été vidé pendant la nuit.', butin: 'ordinateurs portables', gros: true, vic: ['le gérant', 'au gérant', 'du gérant'] },
+  { titre: 'La bijouterie de la Grand-Place', pos: 'bijouterie', lieu: 'la bijouterie', pres: 'de la bijouterie', texte: 'Une bijouterie a été visitée après la fermeture.', butin: 'montres et bijoux', gros: false, vic: ['la bijoutière', 'à la bijoutière', 'de la bijoutière'] },
+  { titre: 'Le fourgon de la Porte Sud', pos: 'portesud', lieu: 'l’entrepôt de la Porte Sud', pres: 'de l’entrepôt de la Porte Sud', texte: 'L’entrepôt d’un grossiste en parfums a été vidé.', butin: 'cartons de parfums', gros: true, vic: ['le grossiste', 'au grossiste', 'du grossiste'] },
+  { titre: 'Les caves du Béguinage', pos: 'beguinage', lieu: 'le restaurant du Béguinage', pres: 'du restaurant du Béguinage', texte: 'La cave d’un restaurant réputé a été pillée.', butin: 'caisses de grands vins', gros: true, vic: ['le restaurateur', 'au restaurateur', 'du restaurateur'] },
+  { titre: 'L’atelier des Filatures', pos: 'filatures', lieu: 'l’atelier des Filatures', pres: 'de l’atelier des Filatures', texte: 'Un atelier de vélos électriques a perdu une partie de son stock.', butin: 'vélos électriques', gros: true, vic: ['la gérante', 'à la gérante', 'de la gérante'] },
+  { titre: 'Le musée des Moulins', pos: 'moulins', lieu: 'le musée des Moulins', pres: 'du musée des Moulins', texte: 'Des pièces d’une exposition temporaire ont disparu.', butin: 'objets de collection', gros: false, vic: ['la conservatrice', 'à la conservatrice', 'de la conservatrice'] },
+  { titre: 'La pharmacie du Petit-Pont', pos: 'petitpont', lieu: 'la pharmacie du Petit-Pont', pres: 'de la pharmacie du Petit-Pont', texte: 'La réserve d’une pharmacie a été visitée.', butin: 'matériel médical', gros: false, vic: ['le pharmacien', 'au pharmacien', 'du pharmacien'] },
+  { titre: 'Le chantier des Hauts-Prés', pos: 'hautspres', lieu: 'le chantier des Hauts-Prés', pres: 'du chantier des Hauts-Prés', texte: 'Le conteneur d’un chantier a été vidé pendant la nuit.', butin: 'outillage professionnel', gros: true, vic: ['le chef de chantier', 'au chef de chantier', 'du chef de chantier'] },
+  { titre: 'La salle des ventes', pos: 'ventes', lieu: 'la salle des ventes', pres: 'de la salle des ventes', texte: 'Des lots ont disparu la veille d’une vente aux enchères.', butin: 'tableaux et bibelots', gros: false, vic: ['la commissaire-priseuse', 'à la commissaire-priseuse', 'de la commissaire-priseuse'] },
+  { titre: 'Le magasin de la gare', pos: 'gare', lieu: 'la boutique de la gare', pres: 'de la boutique de la gare', texte: 'Une boutique de téléphonie a été vidée en quelques minutes.', butin: 'smartphones neufs', gros: false, vic: ['le patron', 'au patron', 'du patron'] },
 ];
 const PRENOMS = [['Kevin', 0], ['Julie', 1], ['Marc', 0], ['Sarah', 1], ['Thomas', 0], ['Nadia', 1], ['Olivier', 0], ['Laura', 1], ['Mehdi', 0], ['Céline', 1], ['Yannick', 0], ['Sophie', 1], ['Bruno', 0], ['Inès', 1], ['Cédric', 0], ['Aurélie', 1], ['Ludovic', 0], ['Fatima', 1]];
 const NOMS = ['Dubois', 'Moreau', 'Lambert', 'Petit', 'Renard', 'Janssens', 'Leclercq', 'Dupont', 'Maes', 'Willems', 'Lemaire', 'Hermans', 'Claes', 'Mertens', 'Delvaux', 'Collard', 'Gilson', 'Hanquet'];
@@ -101,7 +101,7 @@ const VEHICULES = [
 ];
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
-const hm = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(((m % 60) + 60) % 60).padStart(2, '0')}`;
+export const hm = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(((m % 60) + 60) % 60).padStart(2, '0')}`;
 const voy = (s) => /^[aeiouéèêh]/i.test(s);
 const queN = (n) => (voy(n) ? `qu’${n}` : `que ${n}`);
 const deN = (n) => (voy(n) ? `d’${n}` : `de ${n}`);
@@ -109,13 +109,13 @@ const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 // Lieux d'alibi « sociaux » : une preuve peut les confirmer, en tout ou en partie.
 const ALIBIS = [
-  { lieu: 'au cinéma Le Palace', preuve: 'les caméras du cinéma', trace: 'Ticket de sortie du parking du cinéma' },
-  { lieu: 'au restaurant Le Relais', preuve: 'le paiement par carte et le serveur', trace: 'Paiement de l’addition par carte' },
-  { lieu: 'à l’entraînement de mini-foot', preuve: 'le badge de la salle de sport', trace: 'Badge scanné à la salle de sport' },
-  { lieu: 'au travail, à l’usine', preuve: 'le registre de pointage', trace: 'Pointage à l’usine' },
-  { lieu: 'chez ses parents, à l’autre bout de la ville', preuve: 'le bornage de son GSM et un voisin', trace: 'Dernier bornage de son GSM chez ses parents' },
-  { lieu: 'au bowling du Zoning', preuve: 'les caméras du bowling', trace: 'Fin de la réservation de piste au bowling' },
-  { lieu: 'à l’anniversaire d’un collègue', preuve: 'les photos de la soirée et trois invités', trace: 'Photo horodatée de l’anniversaire' },
+  { pos: 'palace', lieu: 'au cinéma Le Palace', preuve: 'les caméras du cinéma', trace: 'Ticket de sortie du parking du cinéma' },
+  { pos: 'relais', lieu: 'au restaurant Le Relais', preuve: 'le paiement par carte et le serveur', trace: 'Paiement de l’addition par carte' },
+  { pos: 'minifoot', lieu: 'à l’entraînement de mini-foot', preuve: 'le badge de la salle de sport', trace: 'Badge scanné à la salle de sport' },
+  { pos: 'usine', lieu: 'au travail, à l’usine', preuve: 'le registre de pointage', trace: 'Pointage à l’usine' },
+  { pos: 'parents', lieu: 'chez ses parents, à l’autre bout de la ville', preuve: 'le bornage de son GSM et un voisin', trace: 'Dernier bornage de son GSM chez ses parents' },
+  { pos: 'bowling', lieu: 'au bowling du Zoning', preuve: 'les caméras du bowling', trace: 'Fin de la réservation de piste au bowling' },
+  { pos: 'anniversaire', lieu: 'à l’anniversaire d’un collègue', preuve: 'les photos de la soirée et trois invités', trace: 'Photo horodatée de l’anniversaire' },
 ];
 // Alibis solitaires : personne pour les confirmer. `voiture` : seulement pour qui en a une.
 const SOLITAIRES = [
@@ -124,6 +124,37 @@ const SOLITAIRES = [
   { t: (f) => `${f ? 'couchée' : 'couché'} tôt, avec un mal de tête` },
   { t: () => 'en voiture, à rouler pour se changer les idées', voiture: true },
 ];
+
+// Plan du district (880 × 680) : lieux des affaires et lieux des alibis.
+// Le temps de trajet (en voiture ou à vélo, le plus court) entre deux lieux se lit sur la carte du tableau d'enquête.
+export const CARTE = {
+  lieux: {
+    tanneurs: { nom: 'Dépôt des Tanneurs', x: 700, y: 150 },
+    bijouterie: { nom: 'Bijouterie, Grand-Place', x: 430, y: 330 },
+    portesud: { nom: 'Entrepôt de la Porte Sud', x: 580, y: 640 },
+    beguinage: { nom: 'Restaurant du Béguinage', x: 150, y: 330 },
+    filatures: { nom: 'Atelier des Filatures', x: 810, y: 400 },
+    moulins: { nom: 'Musée des Moulins', x: 470, y: 170 },
+    petitpont: { nom: 'Pharmacie du Petit-Pont', x: 300, y: 480 },
+    hautspres: { nom: 'Chantier des Hauts-Prés', x: 230, y: 60 },
+    ventes: { nom: 'Salle des ventes', x: 610, y: 320 },
+    gare: { nom: 'Boutique de la gare', x: 310, y: 210 },
+    palace: { nom: 'Cinéma Le Palace', x: 150, y: 170 },
+    relais: { nom: 'Restaurant Le Relais', x: 700, y: 480 },
+    minifoot: { nom: 'Salle de mini-foot', x: 90, y: 510 },
+    usine: { nom: 'Usine du Zoning Nord', x: 820, y: 60 },
+    parents: { nom: 'Chez ses parents (autre bout de la ville)', x: 860, y: 660, loin: true },
+    bowling: { nom: 'Bowling du Zoning', x: 770, y: 635 },
+    anniversaire: { nom: 'Anniversaire chez un collègue', x: 430, y: 520 },
+  },
+};
+/** Temps de trajet en minutes entre deux lieux du plan (au plus court, en voiture ou à vélo). */
+export function trajet(a, b) {
+  const A = CARTE.lieux[a], B = CARTE.lieux[b];
+  if (!A || !B) return null;
+  if (A.loin || B.loin) return 30;
+  return Math.max(3, Math.min(25, Math.round(Math.hypot(A.x - B.x, A.y - B.y) / 22)));
+}
 
 // Planques (pour la traque).
 const PLANQUES = [
@@ -161,8 +192,8 @@ function bonneDifficulte(items, cible, attrs, strict = true) {
 const cache = new Map();
 
 /** Affaire n° `n` de la partie. */
-export function genererAffaire(seed, n) {
-  const key = `${seed}#${n}`;
+export function genererAffaire(seed, n, carte = false) {
+  const key = `${seed}#${n}${carte ? '#c' : ''}`;
   if (cache.has(key)) return cache.get(key);
   const rng = makeRng(`${seed}:enquete2:${n}`);
   const modele = AFFAIRES[(n - 1 + rng.int(0, AFFAIRES.length - 1)) % AFFAIRES.length];
@@ -208,7 +239,18 @@ export function genererAffaire(seed, n) {
     a.ditDe = heure - 5 * rng.int(10, 20); a.ditA = fin + 5 * rng.int(8, 18);
     // La vérification ne confirme jamais toute la soirée : seule l'heure exacte des faits
     // (les caméras) dit si le trou tombe pendant les faits ou non.
-    if (a.type === 'couvre') {
+    if (carte && (a.type === 'couvre' || a.type === 'partiel')) {
+      // Avec le plan : un trou dans l'alibi ne suffit pas, il faut aussi avoir eu le temps de faire le trajet.
+      // Alibi qui couvre : soit toute la durée des faits, soit un trou trop court pour l'aller (ou le retour).
+      // Alibi troué : un trou au moins aussi long que le trajet.
+      const t = trajet(modele.pos, a.pos);
+      const avant = rng.chance(0.5);
+      let g = null;
+      if (a.type === 'partiel') g = 5 * Math.ceil(t / 5) + 5 * rng.int(0, 2);
+      else if (t > 5 && rng.chance(0.6)) g = 5 * rng.int(1, Math.ceil(t / 5) - 1);
+      if (g === null) { if (avant) { a.de = a.ditDe; a.a = fin + 5 * rng.int(1, 5); } else { a.de = heure - 5 * rng.int(1, 5); a.a = a.ditA; } }
+      else if (avant) { a.de = a.ditDe; a.a = heure - g; } else { a.de = fin + g; a.a = a.ditA; }
+    } else if (a.type === 'couvre') {
       // Toujours ancrée sur une heure déclarée, comme un alibi troué : impossible de les distinguer sans les caméras.
       if (rng.chance(0.5)) { a.de = a.ditDe; a.a = fin + 5 * rng.int(1, 5); } else { a.de = heure - 5 * rng.int(1, 5); a.a = a.ditA; }
     } else if (a.type === 'partiel') {
@@ -230,7 +272,7 @@ export function genererAffaire(seed, n) {
   planques = rng.shuffle(planques);
 
   const aff = {
-    n, id: `aff${n}`, titre: modele.titre, texte: modele.texte, butin: modele.butin, lieu: modele.lieu, pres: modele.pres,
+    n, id: `aff${n}`, carte: !!carte, pos: modele.pos, titre: modele.titre, texte: modele.texte, butin: modele.butin, lieu: modele.lieu, pres: modele.pres,
     vic, aVic, deVic, req, heure, fin, annonce, jourSemaine: rng.pick(JOURS),
     suspects, coupable, planques, planque: planques.findIndex((p) => p.nom === planqueNom),
   };
@@ -368,7 +410,9 @@ export function ficheSuspect(aff, s) {
     vengeance: `on dit qu’${s.f ? 'elle' : 'il'} s’est disputé${s.f ? 'e' : ''} avec ${aff.vic}`,
     commande: s.f ? 'on l’a vue traîner avec un revendeur' : 'on l’a vu traîner avec un revendeur',
   }[s.rumeur];
-  return { lien: `${cap(s.role)}, ${s.age} ans · ${s.roleDetail}`, vehicule: `Véhicule : ${s.vehicule.t}`, declaration: `${cap(declaration(s))}.`, rumeur: `Rumeur : ${rum}.` };
+  const t = aff.carte && s.alibi.type !== 'seul' ? trajet(aff.pos, s.alibi.pos) : null;
+  return { lien: `${cap(s.role)}, ${s.age} ans · ${s.roleDetail}`, vehicule: `Véhicule : ${s.vehicule.t}`, declaration: `${cap(declaration(s))}.`, rumeur: `Rumeur : ${rum}.`,
+    trajet: t ? `Trajet : ${t} min entre le lieu déclaré et ${aff.lieu}.` : '' };
 }
 export function fichePlanque(p) {
   return `${p.lieu} · rive ${p.rive} · lieu ${p.humidite} et ${p.temperature} · accès ${p.acces === 'véhicule' ? 'en véhicule' : 'à pied seulement'}`;
@@ -529,13 +573,19 @@ export function nouvelleAffaire(state) {
   const n = (state.enqueteSeq || 0) + 1;
   state.enqueteSeq = n;
   state.enqueteV = ENQ_VERSION;
+  if (state.carteDes == null) state.carteDes = n; // les affaires ouvertes depuis cette version se jouent avec le plan
   state.enquete = { n, jour: 1, nbCellules: 1, cellules: {}, rebonds: [], figee: false };
   repartirCellules(state);
   for (const z of Object.values(state.zones)) {
     if (z.enquete && z.enquete.n === n - 1) z.enquetePrecedente = z.enquete; // gardée pour la traque
     z.enquete = dossierDe(state, z);
   }
-  return genererAffaire(state.seed, n);
+  return affaire(state, n);
+}
+
+/** Affaire n° n de cette partie (avec le plan des trajets si elle a été ouverte depuis son arrivée). */
+export function affaire(state, n) {
+  return genererAffaire(state.seed, n, state.carteDes != null && n >= state.carteDes);
 }
 
 const nomZone = (z) => `ZP ${z.code} ${z.nom}`;
@@ -555,7 +605,7 @@ export function enquetePre(state, uids, ord, push) {
   const e = state.enquete;
   // Tant que personne n'a encore joué sur cette affaire, la répartition suit les arrivées.
   if (!e.figee) { repartirCellules(state); if (uids.length) e.figee = true; }
-  const aff = genererAffaire(state.seed, e.n);
+  const aff = affaire(state, e.n);
   const prises = {};
   const prendre = (u, s, n) => { prises[u] = prises[u] || {}; prises[u][s] = (prises[u][s] || 0) + n; };
   for (const u of uids) state.zones[u].enquete = dossierDe(state, state.zones[u]);
@@ -658,7 +708,7 @@ export function enquetePre(state, uids, ord, push) {
 
   // Traques en cours : interpellations.
   for (const tr of state.traques || []) {
-    const a = genererAffaire(state.seed, tr.n);
+    const a = affaire(state, tr.n);
     const gagnants = [];
     for (const u of uids) {
       const t = ord[u].traque;
@@ -707,7 +757,7 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
     return;
   }
   const e = state.enquete;
-  const aff = genererAffaire(state.seed, e.n);
+  const aff = affaire(state, e.n);
   const d = z.enquete;
   // Pièces retardées par un dégât des eaux : elles arrivent ce soir (si l'affaire est la même).
   if (z.enqueteDiffere && z.enqueteDiffere.length) {
@@ -766,7 +816,7 @@ function pieceHasard(state, z, aff, rng) {
 /** Bonus d’énigme : une pièce de l'affaire en cours. */
 export function indiceBonus(state, z, rng) {
   if (!state.enquete || !z.enquete) return false;
-  const aff = genererAffaire(state.seed, state.enquete.n);
+  const aff = affaire(state, state.enquete.n);
   const f = pieceHasard(state, z, aff, rng);
   if (!f) return false;
   z.enquete.pieces.push({ f, j: state.enquete.jour, src: 'quete' });
@@ -786,7 +836,7 @@ export function enquetePost(state, pre, push) {
     pre.res.nouvelle = a.titre;
     push(5, 'Nouvelle affaire', a.titre, `${a.texte} ${accroche}`);
   } else if (e.jour >= ENQ.dureeMax) {
-    const a = genererAffaire(state.seed, e.n);
+    const a = affaire(state, e.n);
     const s = a.suspects[a.coupable];
     pre.res.classee = true;
     pre.res.recit = recitFinal(a);
@@ -798,7 +848,7 @@ export function enquetePost(state, pre, push) {
   } else {
     e.jour += 1;
     // Rebondissement du jour : publié à toutes les zones.
-    const aff = genererAffaire(state.seed, e.n);
+    const aff = affaire(state, e.n);
     const r = aff.rebonds[e.jour];
     if (r) {
       e.rebonds = [...(e.rebonds || []), { j: e.jour, f: r.f }];
@@ -816,6 +866,6 @@ export function enquetePost(state, pre, push) {
 export function rebondsPublies(state) {
   const e = state.enquete;
   if (!e) return [];
-  const aff = genererAffaire(state.seed, e.n);
+  const aff = affaire(state, e.n);
   return (e.rebonds || []).map((r) => ({ ...aff.rebonds[r.j], j: r.j }));
 }

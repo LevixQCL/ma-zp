@@ -2,7 +2,7 @@
 import { SERVICES, INFRAS, COUTS, BATIMENTS } from './constants.js';
 import { makeRng } from './rng.js';
 import { agentsDisponibles, coutDecision, decisionImpossible, operationActive, NIVEAUX_OPERATION } from './zone.js';
-import { genererAffaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ, dansMaCellule } from './enquete.js';
+import { affaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ, dansMaCellule } from './enquete.js';
 import { fipaPour, invitationImpossible, FIPA } from './fipa.js';
 import { cibleImpossible, enDuel } from './rivalites.js';
 import { encherePossible } from './encheres.js';
@@ -133,7 +133,7 @@ function botNonDroit(zone, state, style, rng, reste) {
 function botEnquete(zone, state, style, rng, alloc) {
   const out = { demarches: [], accusation: null, traque: null, partages: [], piste: null };
   if (!state.enquete) return out;
-  const aff = genererAffaire(state.seed, state.enquete.n);
+  const aff = affaire(state, state.enquete.n);
   const d = dossierDe(state, zone);
   const connus = new Set(faitsConnus(d));
   const c = candidats(aff, faitsConnus(d));
@@ -175,7 +175,7 @@ function botEnquete(zone, state, style, rng, alloc) {
   }
   // Traque : fouille la planque la plus probable si les indices sont assez précis.
   for (const tr of state.traques || []) {
-    const a2 = genererAffaire(state.seed, tr.n);
+    const a2 = affaire(state, tr.n);
     const cp = candidats(a2, faitsConnus(dossierAffaire(state, zone, tr.n)));
     const agents = Math.min(alloc.intervention - 2, ENQ.agentsTraque + (style === 'agressif' ? 1 : 0));
     if (agents >= ENQ.agentsTraque && cp.planques.length <= 2 && rng.chance(0.8)) { out.traque = { n: tr.n, planque: rng.pick(cp.planques), agents }; break; }

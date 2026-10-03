@@ -182,7 +182,17 @@ export function sections() {
           `Si une pièce que tu as donnée se trouve dans le dossier d’une zone qui identifie l’auteur, tu touches ${POINTS.contribution} points d’enquête.`,
           'Garder ses pièces peut faire gagner une découverte… ou laisser l’affaire se faire classer.',
         ])}
-        <h3>Le tableau</h3>
+        <h3>Le tableau d’enquête</h3>
+        ${ul([
+          'L’écran Enquête s’ouvre sur un grand <strong>tableau en liège</strong> : glisse pour te déplacer, pince à deux doigts (ou la molette) pour zoomer. Le bouton liste en haut ramène l’affichage classique, et « ? » relance le petit tuto.',
+          'Au centre, le <strong>plan du district</strong> : la croix rouge marque les lieux des faits, les cercles bleus les endroits où les suspects disent avoir été, avec le <strong>temps de trajet</strong> en pointillés.',
+          'Les trajets comptent : un alibi qui s’arrête 10 minutes avant les faits n’innocente personne si le trajet prend 5 minutes, mais il innocente si la route en prend 20. Même chose pour un alibi qui reprend peu après la sortie. (Les affaires ouvertes avant l’arrivée du plan ne tiennent pas compte des trajets.)',
+          'Les pièces arrivent dans la <strong>boîte à pièces</strong>, chaque soir à 20:00. Sors-les une à une et punaise-les où tu veux. Rien n’est rangé d’avance.',
+          'Touche une photo, une fiche de constatation, une pièce ou un lieu du plan pour ouvrir son volet : ce qu’on sait, tes ✓ / ✕, les démarches, la piste prioritaire, l’accusation et le partage.',
+          'Le mode <strong>ficelle</strong> relie deux éléments d’une ficelle rouge (une deuxième fois : coupée). Ta disposition, tes ficelles et tes marques restent sur ton appareil.',
+          'Le bouton <strong>Ce soir</strong> résume ce qui partira avec tes ordres : démarches, voisinage, appui fédéral, partages, accusation.',
+        ])}
+        <h3>La vue liste</h3>
         <p>L'onglet Tableau regroupe les constatations et les cinq suspects. Sous chaque nom, trois cases <strong>Mobile · Moyen · Occasion</strong> : touche-les pour noter ✓ établi ou ✕ exclu. Le jeu ne coche rien à ta place : c'est toi qui raisonnes. Les onglets Pièces, Planques et Notes complètent le dossier ; tes marques et notes sont gardées sur ton appareil.</p>
         <h3>L'accusation</h3>
         ${ul([
