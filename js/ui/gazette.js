@@ -4,6 +4,7 @@ import { partageHtml } from './invitation.js';
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1, classementLive } from './common.js';
 import { GRADES, LOTS, ENCHERE, PS } from '../engine/constants.js';
 import { insigne } from './blasons.js';
+import { regrouperHonneur } from '../engine/honneur.js';
 import { formatDateBe, formatHeureBe } from '../engine/time.js';
 
 export function renderGazette() {
@@ -40,7 +41,7 @@ export function renderGazette() {
       ${(g.tribunal || []).length ? `<section class="tribunal"><span class="k">Au tribunal</span>${g.tribunal.map((p) => `<div class="proces"><h3>${esc(p.suspect)}</h3><p class="peine">${esc(p.peine)}</p>
         <p>Affaire « ${esc(p.titre)} ».${p.temoins.length ? ` Cités à la barre : les enquêteurs de ${esc(p.temoins.join(', '))}.` : ''} Interpellation par ${esc(p.arrestation.join(' et '))}.</p></div>`).join('')}</section>` : ''}
       ${enqueteGazette(g)}
-      ${(g.honneur || []).length ? `<div class="rule"></div><section class="col" style="gap:5px"><span class="k">Tableau d’honneur</span>${g.honneur.map((h) => `<p><span class="etoile">★</span> <strong>${esc(h.titre)}</strong>${h.texte ? `. ${esc(h.texte)}` : ''}</p>`).join('')}</section>` : ''}
+      ${(g.honneur || []).length ? `<div class="rule"></div><section class="col" style="gap:5px"><span class="k">Tableau d’honneur</span>${regrouperHonneur(g.honneur).map((h) => `<p><span class="etoile">★</span> <strong>${esc(h.titre)}</strong>${h.texte ? `. ${esc(h.texte)}` : ''}</p>`).join('')}</section>` : ''}
       ${(g.echos || []).length || (g.betisier || []).length ? `<div class="rule double"></div><div class="colonnes bas">
         ${(g.echos || []).length ? `<section class="echos"><span class="k">Échos du district</span>${g.echos.map((l) => `<p>${esc(l)}</p>`).join('')}</section>` : ''}
         ${(g.betisier || []).length ? `<section class="betisier"><span class="k">Le bêtisier</span>${g.betisier.map((b) => `<p><strong>${esc(b.titre)}</strong>${b.texte ? ` ${esc(b.texte)}` : ''}</p>`).join('')}</section>` : ''}

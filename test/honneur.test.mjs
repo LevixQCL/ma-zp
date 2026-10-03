@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { regrouperHonneur } from '../js/engine/honneur.js';
+const t = (z, n) => ({ prio: 5, kicker: 'Trophée', titre: `ZP ${z} décroche le trophée « ${n} »`, texte: 'Reprendre un secteur.' });
+const p = { prio: 4, kicker: 'Portrait', titre: 'ZP 5324 Horizon : Carine Jacobs devient « La Boussole »', texte: '' };
+const r = regrouperHonneur([t('5301 Canal', 'Chef d’orchestre'), p, t('5267 Gare', 'Chef d’orchestre'), t('5412 Vallée', 'Chef d’orchestre'), t('5324 Horizon', 'Sans faute')]);
+assert.equal(r.length, 3);
+assert.equal(r[0].titre, '3 zones décrochent le trophée « Chef d’orchestre » : ZP 5301 Canal, ZP 5267 Gare et ZP 5412 Vallée');
+assert.equal(r[0].texte, 'Reprendre un secteur.');
+assert.equal(r[1], p);
+assert.equal(r[2].titre, 'ZP 5324 Horizon décroche le trophée « Sans faute »');
+assert.equal(regrouperHonneur([t('5301 Canal', 'X'), t('5267 Gare', 'X')])[0].titre, '2 zones décrochent le trophée « X » : ZP 5301 Canal et ZP 5267 Gare');
+assert.deepEqual(regrouperHonneur(undefined), []);
+console.log('honneur OK');

@@ -1,6 +1,7 @@
 // Résolution d'un tour. Fonction pure et déterministe :
 // mêmes données en entrée → même résultat, quel que soit l'ordinateur qui calcule.
 
+import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
 import {
   APP_VERSION, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
@@ -879,7 +880,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     une: principales[0] || news.find((n) => n.kicker === 'Au tribunal') || { kicker: 'Calme plat', titre: 'Nuit tranquille sur le District Delta', texte: 'Aucun fait marquant à signaler.' },
     breves: principales.slice(1, 7),
     betisier: news.filter((n) => n.kicker === 'Insolite').slice(0, 4),
-    honneur: news.filter((n) => n.kicker === 'Portrait' || n.kicker === 'Trophée').slice(0, 6),
+    honneur: regrouperHonneur(news.filter((n) => n.kicker === 'Portrait' || n.kicker === 'Trophée')).slice(0, 6),
     tribunal: (pre.res && pre.res.proces) || [],
     echos: genererEchos(state, T).lignes,
     evenement: evResultat,
