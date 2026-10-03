@@ -424,7 +424,7 @@ function resetPins(){
 }
 const pinH=(p,i)=>.5+.42*Math.sin(p.phi)+.06*Math.sin(2.7*p.phi+i);
 function startRound(cfg,o={}){
-  S.cfg=cfg; resetPins();
+  S.cfg=cfg; resetPins(); keys.kbd=false; keys.up=keys.down=false; S.finger=.5; tpad.classList.remove('held');
   Object.assign(S,{t:0,p1:Math.random()*6,p2:Math.random()*6,jolt:0,outT:0,faults:0,shake:0,over:false,openT:-1,tension:0,holding:false,
     canPick:o.canPick??true, assist:!!o.assist, checkTension:o.checkTension??true, freeze:!!o.freeze});
   const z=cfg.zone; $('zone').style.top=((.5-z)*100)+'%'; $('zone').style.height=(z*200)+'%';
@@ -481,7 +481,7 @@ function tap(){
 }
 function miss(msg){
   if(mode()!=='tuto'||STEPS[S.tutoStep].id!=='pick') S.faults++;
-  if(!S.assist) S.jolt+=(Math.random()<.5?-1:1)*.13;
+  if(!S.assist) S.jolt+=(Math.random()<.5?-1:1)*(S.cfg.jolt??.13);
   S.shake=.25; Shell.bad(); Shell.toast(msg,'bad');
 }
 function dropLast(){
@@ -497,28 +497,40 @@ const tpad=$('tpad'); let tId=null;
 const fingerFrom=e=>{ const r=$('meter').getBoundingClientRect(); return Math.min(1,Math.max(0,1-(e.clientY-r.top)/r.height)); };
 tpad.addEventListener('pointerdown',e=>{ e.preventDefault(); tId=e.pointerId; try{tpad.setPointerCapture(e.pointerId)}catch(_){} S.holding=true; S.finger=fingerFrom(e); tpad.classList.add('held'); Shell.blip(300,.04,'triangle',.03); });
 tpad.addEventListener('pointermove',e=>{ if(e.pointerId===tId) S.finger=fingerFrom(e); });
-const tRelease=e=>{ if(e.pointerId===tId){ tId=null; S.holding=false; tpad.classList.remove('held'); } };
+const tRelease=e=>{ if(e.pointerId===tId){ tId=null; if(!keys.kbd){ S.holding=false; tpad.classList.remove('held'); } } };
 tpad.addEventListener('pointerup',tRelease); tpad.addEventListener('pointercancel',tRelease);
 $('ppad').addEventListener('pointerdown',e=>{ e.preventDefault(); tap(); });
 const keys={};
+/* Ordinateur : la tension se règle à la souris (clic maintenu sur Tension) OU au clavier (flèches / Z-S / W-S :
+   elle reste alors engagée toute seule, pas besoin de tenir une touche) ; on crochète avec Espace, K ou Entrée,
+   ou d'un clic sur « Crocheter » quand la tension est au clavier. Jamais plus de deux mains occupées. */
+const HAUT=['ArrowUp','KeyW','KeyZ'], BAS=['ArrowDown','KeyS'];
 addEventListener('keydown',e=>{
   if(!$('overlay').hidden) return;
-  if(e.code==='Space'){ e.preventDefault(); if(!keys.space){ keys.space=true; S.holding=true; tpad.classList.add('held'); } }
-  if(e.code==='ArrowUp'){ keys.up=true; e.preventDefault(); }
-  if(e.code==='ArrowDown'){ keys.down=true; e.preventDefault(); }
-  if((e.code==='KeyK'||e.code==='Enter')&&!e.repeat){ e.preventDefault(); tap(); }
+  if(HAUT.includes(e.code)||BAS.includes(e.code)){
+    e.preventDefault();
+    if(HAUT.includes(e.code)) keys.up=true; else keys.down=true;
+    if(!keys.kbd&&!e.repeat){ keys.kbd=true; keys.hold=0; S.holding=true; tpad.classList.add('held'); }
+  }
+  if((e.code==='Space'||e.code==='KeyK'||e.code==='Enter')&&!e.repeat){ e.preventDefault(); tap(); }
 });
 addEventListener('keyup',e=>{
-  if(e.code==='Space'){ keys.space=false; if(tId===null){ S.holding=false; tpad.classList.remove('held'); } }
-  if(e.code==='ArrowUp') keys.up=false;
-  if(e.code==='ArrowDown') keys.down=false;
+  if(HAUT.includes(e.code)) keys.up=false;
+  if(BAS.includes(e.code)) keys.down=false;
+  if(!keys.up&&!keys.down) keys.hold=0;
 });
+// Reprendre la souris sur Tension rend la main à la souris.
+tpad.addEventListener('pointerdown',()=>{ keys.kbd=false; });
 
 /* ---------- boucle ---------- */
 function update(dt){
   const live=mode()==='play'||mode()==='tuto';
   S.t+=dt;
-  if(keys.space) S.finger=Math.min(1,Math.max(0,S.finger+((keys.up?1:0)-(keys.down?1:0))*dt*.7));
+  if(keys.kbd){
+    S.holding=!S.over;
+    const dir=(keys.up?1:0)-(keys.down?1:0);
+    if(dir){ keys.hold=(keys.hold||0)+dt; S.finger=Math.min(1,Math.max(0,S.finger+dir*dt*(keys.hold<.25?.32:.75))); }
+  }
   const d=S.cfg.drift*(.6*Math.sin(S.t*.8+S.p1)+.4*Math.sin(S.t*1.9+S.p2));
   S.jolt*=Math.exp(-1.6*dt);
   if(S.assist) S.tension+=(.5-S.tension)*Math.min(1,dt*10);
@@ -526,7 +538,7 @@ function update(dt){
   else S.tension+=(0-S.tension)*Math.min(1,dt*5);
   const ok=inZone();
   if(live&&!S.over){
-    if(S.checkTension){ if(!ok){ S.outT+=dt; if(S.outT>.85){ dropLast(); S.outT=0; } } else S.outT=Math.max(0,S.outT-dt*2); }
+    if(S.checkTension){ if(!ok){ S.outT+=dt; if(S.outT>(S.cfg.grace??.85)){ dropLast(); S.outT=0; } } else S.outT=Math.max(0,S.outT-dt*2); }
     if(mode()==='tuto'&&Number.isInteger(S.tutoStep)&&STEPS[S.tutoStep].id==='tension'){
       if(S.holding&&ok) S.tutoProg+=dt; else S.tutoProg=Math.max(0,S.tutoProg-dt*1.5);
       prog(S.tutoProg/3);
@@ -629,9 +641,9 @@ Shell.init({
   key:'crochetage', service:'Incident SER', serviceShort:'SER',
   headline:'Porte verrouillée',
   story:`<p>Le juge d'instruction a délivré un mandat de perquisition pour le 14, rue des Tanneurs, dans un dossier de recel. Sur place, personne n'ouvre et le serrurier ne répond pas.</p><p>Ton équipe SER doit ouvrir la porte avant que le suspect ne fasse disparaître les preuves.</p>`,
-  diffs:{difficile:{agents:2,label:'Difficile',time:45,band:.047,zone:.09,drift:.25,speed:1.18},normal:{agents:4,label:'Normal',time:60,band:.06,zone:.11,drift:.2,speed:1},facile:{agents:6,label:'Facile',time:75,band:.075,zone:.14,drift:.15,speed:.85}},
+  diffs:{difficile:{agents:2,label:'Difficile',time:50,band:.05,zone:.095,drift:.22,speed:1.12,jolt:.09,grace:1},normal:{agents:4,label:'Normal',time:60,band:.06,zone:.11,drift:.2,speed:1},facile:{agents:6,label:'Facile',time:75,band:.075,zone:.14,drift:.15,speed:.85}},
   diffHint:"Plus d'agents : crans plus larges, tension plus stable, plus de temps.",
-  desktopHint:'Sur ordinateur : maintiens Espace pour la tension (flèches haut et bas pour doser) et appuie sur K pour crocheter.',
+  desktopHint:'Sur ordinateur, au choix : <b>souris</b> (clic maintenu sur Tension, glisse haut/bas) et <b>Espace</b> pour crocheter ; ou <b>clavier seul</b> : flèches ↑ ↓ pour doser la tension (elle reste engagée toute seule) et Espace pour crocheter.',
   rules:['Cale les <b>5 goupilles</b>, de gauche à droite, avant la fin du chrono.','Chaque goupille a <b>son propre cran</b>. Ta clé se dessine au fil des goupilles calées.','Un tap raté fait <b>tressauter la tension</b>.','Tension hors du vert près d\'une seconde : <b>la dernière goupille retombe</b>.','Sans erreur : <b>+2</b> sur la jauge skins. Avec erreurs : <b>+1</b>.'],
   winTitle:'Porte ouverte', loseTitle:'La porte a tenu', skin:'Porte blindée',
   malus:"perquisition reportée. 1 agent SER est mobilisé sur la planque et reste indisponible demain.",

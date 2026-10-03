@@ -64,6 +64,7 @@ export const NOTE_MAJ = {
       ['Délinquance déplacée', 'quand tu concentres beaucoup d’agents sur un quartier, la délinquance qui part chez tes voisins compte vraiment chez eux.'],
     ]],
     ['Confort', [
+      ['Crochetage sur ordinateur', 'à la souris, on ne pouvait pas tenir la tension et crocheter en même temps. Maintenant : souris sur Tension et Espace pour crocheter, ou clavier seul (flèches pour doser la tension, qui reste engagée toute seule, et Espace). En difficile, crans un peu plus larges, tension un peu plus stable, un tap raté secoue moins et 50 s au lieu de 45 : ça reste le niveau le plus exigeant.'],
       ['Ordres plus lisibles', 'chaque service affiche son résultat estimé sous son nom (incidents couverts, amendes, paperasse, dossiers), la réserve est une ligne de l’affectation, le rythme tient sur une ligne, et zone de non-droit, équipe, décision et dépenses sont regroupées dans une seule carte. Le bouton Valider reste visible tant que les ordres ne sont pas validés.'],
       ['Jauges expliquées', 'Résultats terrain s’affiche sous tes jauges, et chaque bouton « ? » détaille le calcul avec tes chiffres. Sous le moral, l’efficacité de tes agents.'],
       ['Affichage sur ordinateur', 'sur un écran de PC, l’HP passe sur deux colonnes, les autres écrans s’élargissent, le texte est un peu plus grand et les mini-jeux s’ouvrent au centre, au format téléphone. Rien ne change sur téléphone et tablette.'],
