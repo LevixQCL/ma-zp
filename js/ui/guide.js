@@ -184,6 +184,7 @@ export function sections() {
         ])}
         <h3>Le tableau d’enquête</h3>
         ${ul([
+          'Le récit de l’affaire reste au tableau : le <strong>procès-verbal d’ouverture</strong> (les faits, la victime, le butin) et la <strong>main courante</strong>, qui note jour après jour ce qui est arrivé (rebondissements, constatations, pièces reçues, accusation). Les rebondissements arrivent aussi en coupures de la Gazette, avec leur article. Touche l’un ou l’autre pour tout relire.',
           'L’écran Enquête s’ouvre sur un grand <strong>tableau en liège</strong> : glisse pour te déplacer, pince à deux doigts (ou la molette) pour zoomer. Le bouton liste en haut ramène l’affichage classique, et « ? » relance le petit tuto.',
           'Au centre, le <strong>plan du district</strong> : la croix rouge marque les lieux des faits, les cercles bleus les endroits où les suspects disent avoir été, avec le <strong>temps de trajet</strong> en pointillés, et les petites maisons violettes les <strong>six planques possibles</strong>, chacune sur sa rive du canal. Touche une planque pour voir sa fiche, les indices réunis et la marquer (écartée, douteuse, retenue).',
           'Les trajets comptent : un alibi qui s’arrête 10 minutes avant les faits n’innocente personne si le trajet prend 5 minutes, mais il innocente si la route en prend 20. Même chose pour un alibi qui reprend peu après la sortie. (Les affaires ouvertes avant l’arrivée du plan ne tiennent pas compte des trajets.)',
