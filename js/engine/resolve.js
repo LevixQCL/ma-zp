@@ -5,12 +5,12 @@ import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
 import {
   APP_VERSION, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, MORAL, tauxRetourMoral, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
-import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms } from './equipe.js';
+import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionValide, figure, nomComplet } from './equipe.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
   forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, moralMult, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles,
@@ -205,6 +205,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z._joue = false;
       z.rapport.push('Pas d’ordres ce tour : le pilote automatique a repris la dernière répartition.');
     }
+    ord[uid].mission = missionValide(ord[uid]);
+    z._mission = null; // rôle réellement parti en mission (renseigné par la zone de non-droit ou le renfort)
     z._points = 0;
     z._compta = z._compta || [];
     z._ps = 0;
@@ -345,7 +347,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const z = state.zones[u], c = state.zones[r.cible];
     const op = operationActive(c, T);
     if (!op) continue;
-    (renfortsRecus[r.cible] ||= []).push({ de: u, n: r.agents });
+    const mis = ord[u].mission && ord[u].mission.type === 'renfort' ? figure(z, ord[u].mission.role) : null;
+    const nChef = mis ? CHEFS.renfort.agents : 0;
+    if (mis) { z._mission = mis.role; z.rapport.push(`Mission : ${nomComplet(mis)} encadre ton renfort chez ${zoneLabel(c)} (compte pour ${nChef} agent de plus dans son dispositif).`); }
+    (renfortsRecus[r.cible] ||= []).push({ de: u, n: r.agents + nChef, chef: mis ? nomComplet(mis) : null });
     const { rep, ps } = gainRenfort(r.agents);
     z.reputation += rep; z._psEntraide += ps; z.stats.renfortsPretes = (z.stats.renfortsPretes || 0) + 1;
     const ptsR = round1(r.agents * RENFORT.pointsParAgent);
@@ -563,6 +568,14 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const renfort = reserve && dep.reserveService === s ? reserve * DEPENSES.reserve.efficacite : 0;
       const bTheme = theme && ((theme.id === 'routiere' && s === 'roulage') ? 1.5 : (theme.id === 'proximite' && s === 'proximite') ? 1.3 : 1) || 1;
       cap[s] = capacite(z, s, alloc[s] + renfort, { rythme: o.rythme, turn: T, bonus: (bonusService === s ? ENIGMES.bonusCapacite : 1) * bTheme, adminMult });
+    }
+    // Figures de l'équipe : bonus dans leur service (si quelqu'un y travaille), sauf celle partie en mission.
+    z.bonusChefs = {};
+    for (const m of z.equipe || []) {
+      const s = ROLE_SERVICE[m.role];
+      if (!s || !cap[s] || z._mission === m.role) continue;
+      const b = bonusChef(m.niveau);
+      cap[s] *= 1 + b; z.bonusChefs[s] = b;
     }
 
     // Efficacité due au moral (celui du moment du calcul, après aléas, énigmes et primes du jour).
@@ -799,7 +812,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const prog = faireProgresser(z, {
       inter: traites, rech: resolus * 3 + (o.demarches || []).length * 2 + (z._decouverteJour ? 8 : 0),
       prox: cap.proximite / 2, roul: cap.roulage / 2, admin: Math.max(0, cap.admin * 1.2 - 1.2) / 1.5,
-    });
+    }, z._mission ? { [z._mission]: CHEFS.xpMission } : null);
     if (prog.ligne) z.rapport.push(prog.ligne);
     for (const m of prog.montees) {
       z.rapport.push(`Promotion d’honneur : ${m.prenom} ${m.nom} gagne un surnom, « ${surnomDe(m)} ».`);

@@ -333,6 +333,9 @@ async function onClick(e) {
       case 'budget': ouvrirBudget(); break;
       case 'vehicule': ouvrirVehicule(el.dataset.slot); break;
       case 'logistique': ouvrirLogistique(); break;
+      case 'mission-qui': S.missionQui = S.missionQui === el.dataset.role ? null : el.dataset.role; rerender(); break;
+      case 'mission-ou': S.draft.mission = { role: el.dataset.role, type: el.dataset.type, secteur: el.dataset.secteur || '' }; S.missionQui = null; S.ordersDirty = true; rerender(); break;
+      case 'mission-annuler': S.draft.mission = null; S.ordersDirty = true; rerender(); break;
       case 'parc': ouvrirParc(); break;
       case 'decor': ouvrirDecor(); break;
       case 'roulette-lancer': await lancerRoulette(b); rerender(); break;

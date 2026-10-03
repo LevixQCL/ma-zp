@@ -310,7 +310,10 @@ export function sanitizeOrders(zone, raw, state) {
   if (o.patrouilles && typeof o.patrouilles === 'object') {
     for (const [k2, v] of Object.entries(o.patrouilles).slice(0, 8)) { const n = int(v, 0, 12); if (/^\d{1,4}$/.test(k2) && n > 0) patrouilles[k2] = n; }
   }
-  return { piste, appui, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
+  const ROLES_M = ['inter', 'rech', 'prox', 'roul', 'admin'];
+  const mission = o.mission && typeof o.mission === 'object' && ROLES_M.includes(o.mission.role) && ['nondroit', 'renfort'].includes(o.mission.type)
+    ? { role: o.mission.role, type: o.mission.type, secteur: /^\d{1,4}$/.test(String(o.mission.secteur || '')) ? String(o.mission.secteur) : '' } : null;
+  return { mission, piste, appui, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */

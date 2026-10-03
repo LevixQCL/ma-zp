@@ -1098,3 +1098,8 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .dossier.warn { border-color: var(--amber-line); color: var(--amber-soft); }
 .dossier.bad { border-color: var(--red-line); color: var(--red-soft); }
 .dossier .mono { font-weight: 700; }
+/* Ordres : mon équipe et la mission du jour. */
+.membre-o { display: flex; align-items: center; gap: 10px; }
+.membre-o .avatar { flex-shrink: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #0B1220; font-weight: 700; }
+.mission-dest { display: flex; flex-direction: column; gap: 6px; padding-left: 40px; }
+.mission-dest .choice { text-align: left; align-items: flex-start; min-height: 0; padding: 8px 10px; }

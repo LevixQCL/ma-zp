@@ -6,11 +6,11 @@
 // Une zone qui ne joue plus ne bloque personne : son influence s'efface, les autres continuent.
 import { CONFIG } from '../config.js';
 import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
-import { ND, secteurOuvert, regenSecteur, risqueBlessure } from './constants.js';
+import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure } from './constants.js';
 import { makeRng } from './rng.js';
 import { clamp, round1, forceEngagement, jalon, noter } from './zone.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
-import { donnerTrophee, TROPHEE } from './equipe.js';
+import { donnerTrophee, TROPHEE, figure, nomComplet } from './equipe.js';
 
 export const MILIEUX = [
   { id: 'deal', titre: 'Point de deal', texte: 'Des guetteurs à chaque coin de rue, un trafic jour et nuit.' },
@@ -101,8 +101,13 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
     const ouvert = secteurOuvert(nd, k);
     const engages = ouvert ? uids.filter((u) => ord[u] && ord[u].secteurs && ord[u].secteurs[k] > 0).map((u) => {
       const n = ord[u].secteurs[k];
-      return { u, n, f: forceEngagement(state.zones[u], n) };
+      // Une figure de l'équipe en mission sur ce secteur : plus de force, moins de blessés.
+      const mi = ord[u].mission && ord[u].mission.type === 'nondroit' && ord[u].mission.secteur === k ? figure(state.zones[u], ord[u].mission.role) : null;
+      if (mi) state.zones[u]._mission = mi.role;
+      const bonus = mi ? bonusChef(mi.niveau) : 0;
+      return { u, n, f: forceEngagement(state.zones[u], n) * (1 + bonus), chef: mi, risque: mi ? CHEFS.nd.blessure : 1 };
     }) : [];
+    for (const e of engages) if (e.chef) state.zones[e.u].rapport.push(`Mission : ${nomComplet(e.chef)} mène tes agents à ${nomSecteur(k)} (force +${Math.round(bonusChef(e.chef.niveau) * 100)} %, deux fois moins de risque de blessure).`);
     s.hier = engages.map((e) => ({ u: e.u, n: e.n })); // public après 20:00 : qui y était hier soir
     const coop = multCoop(engages.length);
     const F = engages.reduce((a, e) => a + e.f, 0) * coop;
@@ -122,7 +127,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
           const z = state.zones[e.u];
           const br = makeRng(`${state.seed}:s${state.season}:t${T}:ndrepousse:${k}:${e.u}`);
           let b = 0;
-          for (let i = 0; i < e.n; i++) if (br.chance(ND.blesseRepousse * risqueBlessure(z))) b += 1;
+          for (let i = 0; i < e.n; i++) if (br.chance(ND.blesseRepousse * risqueBlessure(z) * e.risque)) b += 1;
           blessesTot += b;
           if (b) { z.blesses.push({ n: b, retour: T + 1 + ND.absenceRepousse, motif: 'blessé' }); z.moral -= 2; jalon(z, `Assaut repoussé à ${nomS} (blessés)`); }
           const autres = engages.filter((x) => x.u !== e.u);
@@ -148,7 +153,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
       }
       // Assaut musclé : risque d'un blessé pour qui engage beaucoup d'agents.
       for (const e of engages) {
-        const risque = Math.min(ND.risqueMax, Math.max(0, (e.n - 3) * ND.risqueParAgent)) * risqueBlessure(state.zones[e.u]);
+        const risque = Math.min(ND.risqueMax, Math.max(0, (e.n - 3) * ND.risqueParAgent)) * risqueBlessure(state.zones[e.u]) * e.risque;
         if (risque && makeRng(`${state.seed}:s${state.season}:t${T}:ndblesse:${k}:${e.u}`).chance(risque)) {
           const z = state.zones[e.u];
           z.blesses.push({ n: 1, retour: T + 4, motif: 'blessé' }); z.moral -= 2;

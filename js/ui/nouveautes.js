@@ -3,14 +3,15 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-03',
+  id: '2026-10-03b',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['📌', 'Le tableau d’enquête', 'l’enquête s’affiche sur un grand tableau en liège : photos des suspects, fiches, pièces à punaiser où tu veux. Un petit tuto te le présente.'],
-    ['🗺️', 'Le plan du district', 'les lieux des alibis et les temps de trajet : un trou dans un alibi ne suffit plus si la route est trop longue.'],
-    ['🧵', 'Tire tes ficelles', 'relie les pièces, les suspects et les lieux d’une ficelle rouge, comme dans les films.'],
+    ['🎖️', 'Ton équipe sur le terrain', 'tes cinq figures rendent leur service plus efficace (jusqu’à +20 % avec les surnoms). Envoie-en une en mission : mener l’assaut en zone de non-droit ou encadrer un renfort.'],
+    ['🏢', 'Ton commissariat en clair', 'touche son image : ce que te donne chaque bâtiment, et ce qu’apporte le niveau suivant.'],
+    ['🔏', 'Messages codés abîmés', 'des taches d’encre effacent des lettres : à toi de reconstituer les mots.'],
   ],
+
   // Liste complète, dans le menu Nouveautés.
   sections: [
     ['Le tableau d’enquête', [
@@ -26,6 +27,9 @@ export const NOTE_MAJ = {
       ['Ficelles et mini tuto', 'glisse d’une punaise à un autre élément pour tirer une ficelle rouge ; attrape-la et tire-la hors de sa ligne pour la décrocher. Un tuto de six écrans présente le tableau (bouton « ? » pour le revoir). L’ancien affichage reste disponible avec le bouton liste.'],
     ]],
     ['À découvrir', [
+      ['Ton équipe sur le terrain', 'chaque figure de « Mon équipe » encadre son service : +3 % sans surnom, +8 %, +14 %, puis +20 % au 3e surnom. Dans tes ordres (section « Mon équipe »), envoie-en une en mission chaque jour : mener l’assaut sur un secteur de la zone de non-droit (force +bonus, blessures divisées par deux) ou encadrer ton renfort chez un collègue (un agent de plus dans son dispositif). Son service perd son bonus ce jour-là.'],
+      ['Équipe et trophées séparés', 'deux cartes sur l’HP : « Mon équipe » et « Mes trophées ».'],
+      ['Dossiers en retard', 'sous la ligne Recherche des ordres, tes dossiers avec leur âge ; dès 5 jours, ils sont signalés (et sur l’HP). Tes enquêteurs traitent toujours les plus vieux d’abord.'],
       ['Messages codés abîmés', 'dès le niveau 2, des lettres du message sont effacées par des taches d’encre : il ne suffit plus de tourner le disque, il faut reconstituer les mots. Plus il y a de taches, plus le niveau est élevé.'],
       ['Ce que te donnent tes bâtiments', 'touche l’image de ton commissariat : chaque bâtiment montre ce qu’il te donne aujourd’hui et ce que t’apporterait le niveau suivant, et les annexes construites rappellent leur effet. La tuile Véhicules ouvre directement ton parc automobile.'],
       ['Écrans allégés', 'l’HP affiche la situation du jour en pastilles sous le compte à rebours (le détail reste dans les Ordres). À l’enquête, seul le rebondissement du jour s’affiche en grand, les précédents se rouvrent d’un geste, et les explications du voisinage et de l’appui fédéral sont derrière leur « ? ». Zone de non-droit : une ligne par secteur au lieu des calculs de force, tout le détail reste dans les Règles.'],

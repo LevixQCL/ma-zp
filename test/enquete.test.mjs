@@ -91,7 +91,8 @@ assert.equal(state.enquete.nbCellules, 1);
 assert.ok(state.zones.A.budget < state.zones.C.budget, 'les démarches sont payées');
 
 // A partage tout ce qu'il a avec C ; C doit le recevoir le soir même.
-const aPieces = state.zones.A.enquete.pieces.filter((p) => p.src !== 'ouverture').map((p) => p.f);
+// Pièces que C n'a pas encore, dans la limite de ce qu'on peut recevoir en un soir.
+const aPieces = state.zones.A.enquete.pieces.filter((p) => p.src !== 'ouverture' && !state.zones.C.enquete.pieces.some((q) => q.f === p.f)).map((p) => p.f).slice(0, Math.min(ENQ.maxPartages, ENQ.maxRecus));
 r = resolveTurn(state, { players, orders: { A: { ...base, partages: aPieces.map((f) => ({ f, a: 'C' })) }, B: base, C: base } });
 state = r.state;
 for (const f of aPieces) assert.ok(state.zones.C.enquete.pieces.some((p) => p.f === f && p.de === 'A'), 'indice reçu de A');

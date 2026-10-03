@@ -41,6 +41,25 @@ export function appliquerNoms(equipe, uid, noms) {
   return equipe;
 }
 
+/**
+ * Mission du jour d'une figure (ordres déjà nettoyés) : zone de non-droit (sur un secteur où la zone envoie des agents,
+ * par défaut celui où elle en envoie le plus) ou renfort (si des agents sont prêtés). null si impossible.
+ */
+export function missionValide(o) {
+  const m = o && o.mission;
+  if (!m) return null;
+  if (m.type === 'nondroit') {
+    const sects = Object.entries(o.secteurs || {}).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]);
+    if (!sects.length) return null;
+    const k = sects.some(([x]) => x === m.secteur) ? m.secteur : sects[0][0];
+    return { role: m.role, type: 'nondroit', secteur: k };
+  }
+  if (m.type === 'renfort') return o.renfort && o.renfort.cible && o.renfort.agents > 0 ? { role: m.role, type: 'renfort' } : null;
+  return null;
+}
+/** La figure d'un rôle dans l'équipe d'une zone. */
+export const figure = (z, role) => (z.equipe || []).find((m) => m.role === role) || null;
+
 export const roleDe = (m) => ROLES_EQUIPE.find((r) => r.id === m.role);
 export const intitule = (m) => (m.f ? roleDe(m).f : roleDe(m).m);
 export const surnomDe = (m) => (m.niveau > 0 ? roleDe(m).surnoms[Math.min(m.niveau, 3) - 1] : null);
@@ -51,11 +70,11 @@ export const nomComplet = (m) => `${m.prenom} ${m.nom}${surnomDe(m) ? ` « ${sur
  * gains : { inter, rech, prox, roul, admin } (nombres entiers).
  * Renvoie les montées de niveau (pour le rapport et la Gazette).
  */
-export function faireProgresser(z, gains) {
+export function faireProgresser(z, gains, extra = null) {
   if (!z.equipe) z.equipe = creerEquipe(z.uid);
   const montees = [];
   for (const m of z.equipe) {
-    const g = Math.max(0, Math.round(gains[m.role] || 0));
+    const g = Math.max(0, Math.round((gains[m.role] || 0) + ((extra && extra[m.role]) || 0)));
     m.xp += g; m._g = g;
     let niv = 0;
     for (let k = 0; k < SEUILS_EQUIPE.length; k++) if (m.xp >= SEUILS_EQUIPE[k]) niv = k;
