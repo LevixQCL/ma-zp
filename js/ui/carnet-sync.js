@@ -57,8 +57,8 @@ async function envoyer(lire) {
   if (json === dernierEnvoye || !Object.keys(affaires).length) return;
   try {
     await S.backend.saveCarnet(S.user.uid, { affaires, maj: Date.now() });
-    dernierEnvoye = json; dernierEnvoi = Date.now();
-  } catch (e) { console.warn('Carnet non enregistré en ligne', e); }
+    dernierEnvoye = json; dernierEnvoi = Date.now(); S.carnetSync = 'ok';
+  } catch (e) { console.warn('Carnet non enregistré en ligne', e); S.carnetSync = (e && e.code) || 'erreur'; }
 }
 
 /** Lit la fiche en ligne et garde, affaire par affaire, la version la plus récente. */
@@ -69,7 +69,11 @@ export async function synchroniser(lire, ecrireLocal, rerender, { force = false 
   if (!force && Date.now() - derniereLecture < RELIRE_APRES) return;
   derniereLecture = Date.now();
   let distant = null;
-  try { distant = await S.backend.getCarnet(S.user.uid); } catch (e) { return; }
+  try { distant = await S.backend.getCarnet(S.user.uid); S.carnetSync = S.carnetSync === 'erreur' ? S.carnetSync : 'ok'; } catch (e) {
+    console.warn('Carnet non lu en ligne', e); S.carnetSync = (e && e.code) || 'erreur';
+    if (rafraichir && S.route === 'enquete') rafraichir();
+    return;
+  }
   const aff = (distant && distant.affaires) || {};
   let change = false, aEnvoyer = false;
   const n = S.state.enquete.n;
