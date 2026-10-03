@@ -6,6 +6,7 @@ import { GRADES, LOTS, ENCHERE, PS, SEASON_LENGTH } from '../engine/constants.js
 import { insigne } from './blasons.js';
 import { regrouperHonneur } from '../engine/honneur.js';
 import { apercuDirecteur, REGLAGES, DISTRICT } from '../engine/directeur.js';
+import { affaire } from '../engine/enquete.js';
 import { formatDateBe, formatHeureBe } from '../engine/time.js';
 
 export function renderGazette() {
@@ -69,8 +70,14 @@ function enqueteGazette(g) {
     if (e.rebond) l.push(`<p><strong>${esc(e.rebond.titre)}</strong>. ${esc(e.rebond.texte)}</p>`);
     // Tant que la traque court, la planque ne figure pas dans le fin mot (anciens numéros compris).
     const traqueEnCours = (S.state.traques || []).some((t) => t.n === e.n && !t.fini);
-    const recit = e.recit && traqueEnCours ? e.recit.replace(/ [^.]*a caché le butin dans la planque « [^»]*» \([^)]*\)\./, ' Où il ou elle se cache reste à trouver : c’est l’enjeu de la traque.') : e.recit;
-    if (recit) l.push(`<p><em>Le fin mot de l’affaire : ${esc(recit)}</em></p>`);
+    let fem = false;
+    try { const af = affaire(S.state, e.n); fem = !!(af && af.suspects[af.coupable] && af.suspects[af.coupable].f); } catch (x) { /* affaire introuvable : masculin par défaut */ }
+    const recit = e.recit && traqueEnCours ? e.recit.replace(/ [^.]*a caché le butin dans la planque « [^»]*» \([^)]*\)\./, ` Où ${fem ? 'elle' : 'il'} se cache reste à trouver : c’est l’enjeu de la traque.`).replace(/ Où il ou elle se cache/, ` Où ${fem ? 'elle' : 'il'} se cache`) : e.recit;
+    if (recit) {
+      // Anciens récits : les innocents sur une ligne ; nouveaux : un paragraphe par personne.
+      const [tete, ...autres] = String(recit).split('\n');
+      l.push(`<p><em>Le fin mot de l’affaire : ${esc(tete)}</em></p>${autres.length ? `<p class="k" style="margin-top:4px">Les autres suspects</p>${autres.map((x) => `<p><em>${esc(x)}</em></p>`).join('')}` : ''}`);
+    }
     if (e.nouvelle) l.push(`<p>Nouvelle affaire ouverte : <strong>${esc(e.nouvelle)}</strong>.</p>`);
   }
   for (const x of f) {

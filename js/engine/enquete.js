@@ -710,6 +710,73 @@ export function demarcheUtile(dossier, x, aff) { return !!pieceDemarche(aff, dos
  * Le fin mot de l'affaire, publié dans la Gazette à la clôture.
  * À la découverte, la traque commence : la planque reste secrète (`avecPlanque` = false).
  */
+// ───── Le fin mot de l'affaire : un vrai récit, pour le coupable comme pour chaque innocent ─────
+// Ce que cachaient les innocents qui ont menti sur leur soirée (jamais un crime, toujours une gêne).
+const SECRETS = [
+  (s) => `passait un entretien d’embauche chez un concurrent, et ne voulait surtout pas que ça se sache`,
+  () => `jouait au poker dans l’arrière-salle d’un café, une habitude que sa famille croit abandonnée`,
+  (s) => `aidait en cachette un frère endetté à déménager de nuit`,
+  (s) => `répétait une pièce de théâtre amateur qu’${s.f ? 'elle' : 'il'} n’osait avouer à personne`,
+  () => `dînait avec un ancien associé brouillé avec toute la famille, un rendez-vous qu’il valait mieux taire`,
+  () => `rendait visite à une vieille tante en maison de repos, en cachette d’un frère avec qui c’est la guerre`,
+  (s) => `faisait des heures au noir dans un restaurant pour boucler la fin du mois`,
+];
+// Ce qui rendait l'innocent suspect (le mobile qu'il avait vraiment, même s'il ne collait pas).
+const MOBILE_RECIT = {
+  argent: [(s) => `les dettes ${deN(s.prenom)} étaient bien réelles`, (s) => `${s.f ? 'elle' : 'il'} avait un huissier aux trousses`, (s) => `son compte était à sec depuis des mois`],
+  vengeance: [(s, aff) => `${s.f ? 'elle' : 'il'} en voulait réellement ${aff.aVic}`, (s, aff) => `la brouille avec ${aff.vic} était connue de tous`, () => `les menaces lancées en public avaient marqué les esprits`],
+  commande: [(s) => `${s.f ? 'elle' : 'il'} fréquentait bel et bien un receleur`, () => `son téléphone était plein d’appels vers le milieu`, () => `un receleur fiché figurait dans ses contacts`],
+};
+const MOYEN_RECIT = {
+  cle: [(s, aff) => `${s.f ? 'elle' : 'il'} avait un jeu de clés ${aff.pres}`, () => `un double des clés traînait dans son tiroir`, (s) => `${s.f ? 'elle' : 'il'} n’avait jamais rendu ses clés`],
+  code: [(s) => `${s.f ? 'elle' : 'il'} connaissait un code de l’alarme`, () => `son code d’alarme était toujours actif`, (s) => `${s.f ? 'elle' : 'il'} savait couper l’alarme`],
+  volume: [(s) => `${s.f ? 'elle' : 'il'} avait une camionnette à disposition`, () => `un utilitaire dormait devant sa porte`, () => `un contrat de location de camionnette portait son nom`],
+};
+
+function recitInnocent(aff, x, k) {
+  const il = x.f ? 'elle' : 'il', Il = cap(il), e = x.f ? 'e' : '';
+  const r = makeRng(`${aff.titre}:${aff.n || ''}:${x.nom}:recit`);
+  const manque = ELEMENTS.find((el) => !x.statut[el]);
+  const a = x.alibi;
+  // Pourquoi on a pu la ou le soupçonner.
+  const soupcons = [];
+  const mobVrai = MOB.filter((m) => x.mob[m]);
+  const moyVrai = MOY.filter((m) => x.moy[m]);
+  if (mobVrai.length) soupcons.push(MOBILE_RECIT[mobVrai.includes(aff.req.mob) ? aff.req.mob : r.pick(mobVrai)][(k + 1) % 3](x, aff));
+  if (moyVrai.length) soupcons.push(MOYEN_RECIT[moyVrai.includes(aff.req.moy) ? aff.req.moy : r.pick(moyVrai)][k % 3](x, aff));
+  if (a.type === 'mensonge') soupcons.push(`${il} avait menti sur sa soirée`);
+  else if (a.type === 'seul') soupcons.push(`personne ne pouvait confirmer sa soirée`);
+  const ouverture = [
+    `${x.nom}, ${x.role}, avait tout ${x.f ? 'de la suspecte idéale' : 'du suspect idéal'}`,
+    `Le dossier ${deN(x.nom)}, ${x.role}, a longtemps pesé lourd`,
+    `On a beaucoup regardé du côté ${deN(x.nom)}, ${x.role}`,
+  ][k % 3];
+  let t = `${ouverture}${soupcons.length ? ` : ${soupcons.slice(0, 2).join(', et ')}` : ''}.`;
+  // Ce qui l'innocente.
+  if (manque === 'occ') {
+    const plein = a.de <= aff.heure && a.a >= aff.fin;
+    t += plein
+      ? ` Mais à ${hm(aff.heure)}, ${il} était ${a.lieu} : ${a.preuve} l’attestent, de ${hm(a.de)} à ${hm(a.a)}.`
+      : ` Mais ${il} était ${a.lieu} jusqu’à peu avant les faits (${a.preuve}) : le trou dans son alibi était bien trop court pour faire la route et revenir à temps.`;
+  } else if (manque === 'moy') {
+    t += {
+      cle: ` Mais ${il} n’avait aucune clé ${aff.pres}, et la serrure avait été ouverte avec une vraie clé.`,
+      code: ` Mais ${il} n’avait aucun code d’alarme valide, et l’alarme avait été coupée du premier coup.`,
+      volume: ` Mais sans utilitaire, impossible d’emporter ${aff.butin} en un seul voyage.`,
+    }[aff.req.moy];
+  } else {
+    t += {
+      argent: ` Mais l’auteur voulait de l’argent vite, et ${il} n’en manquait pas.`,
+      vengeance: ` Mais le saccage visait ${aff.vic} personnellement, et ${il} n’avait aucune raison de lui en vouloir.`,
+      commande: ` Mais le vol avait été fait sur commande, et ${il} n’avait aucun lien avec le milieu du recel.`,
+    }[aff.req.mob];
+  }
+  if (a.type === 'mensonge') t += ` Son mensonge ? ${Il} ${r.pick(SECRETS)(x)}.`;
+  else if (a.type === 'seul' && manque !== 'occ') t += ` Ce soir-là, ${il} était vraiment ${a.solitaire}, et c’est tout.`;
+  else if (manque !== 'occ' && r.chance(0.5)) t += ` ${Il} est sorti${e} de l’enquête soulagé${e}, mais pas indemne : tout le quartier en parle.`;
+  return t;
+}
+
 export function recitFinal(aff, avecPlanque = true) {
   if (aff.recitFinal) return aff.recitFinal;
   const s = aff.suspects[aff.coupable], p = aff.planques[aff.planque];
@@ -717,12 +784,9 @@ export function recitFinal(aff, avecPlanque = true) {
   const mobile = { argent: `criblé${e} de dettes`, vengeance: `rongé${e} de rancune envers ${aff.vic}`, commande: `payé${e} par un receleur` }[aff.req.mob];
   const moyen = { cle: `est entré${e} avec une clé qu’${il} n’aurait jamais dû avoir`, code: `a coupé l’alarme avec le code qu’${il} connaissait`, volume: 'a tout emporté en un voyage grâce à un utilitaire' }[aff.req.moy];
   const occ = { partiel: 'son alibi avait un trou pile au moment des faits', seul: 'personne ne pouvait confirmer son alibi', mensonge: 'son alibi était un mensonge' }[s.alibi.type] || '';
-  const innocents = aff.suspects.filter((x) => !x.coupable).map((x) => {
-    const manque = ELEMENTS.find((el) => !x.statut[el]);
-    return `${x.nom} (${{ mob: 'pas le bon mobile', moy: 'aucun moyen d’agir ainsi', occ: 'un alibi solide pendant les faits' }[manque]})`;
-  });
   const cache = avecPlanque ? ` ${cap(il)} a caché le butin dans la planque « ${p.nom} » (${p.lieu}).` : ` Où ${il} se cache avec le butin reste à trouver : c’est l’enjeu de la traque.`;
-  return `À ${hm(aff.heure)}, ${s.nom}, ${s.role} ${mobile}, ${moyen} ; ${occ}.${cache} Les autres étaient innocents : ${innocents.join(', ')}.`;
+  const innocents = aff.suspects.filter((x) => !x.coupable).map((x, k) => recitInnocent(aff, x, k));
+  return `À ${hm(aff.heure)}, ${s.nom}, ${s.role} ${mobile}, ${moyen} ; ${occ}. ${cap(il)} ${s.roleDetail} : personne ne se méfiait.${cache}\n${innocents.join('\n')}`;
 }
 
 /** Cellules : les zones actives sont réparties en 1 à 3 groupes (au moins deux zones chacun), chacun chargé de certains suspects. */
