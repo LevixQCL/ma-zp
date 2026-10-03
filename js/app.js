@@ -26,6 +26,7 @@ import { carteQuartiers } from './engine/quartiers.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations, agentsHorsServices } from './ui/ordres.js';
 import { renderQuete } from './ui/quete.js';
+import { demarrerQuiz, repondreQuiz, suivanteQuiz, quizLocal, bonnesReponses, arreterMinuteur } from './ui/quiz.js';
 import { renderGuide } from './ui/guide.js';
 import { offreApres } from './ui/encheres.js';
 import { renderDiplomatie, ongletsRadio } from './ui/diplomatie.js';
@@ -810,7 +811,16 @@ async function onClick(e) {
       }
       case 'quest-bonus': await saveQuestBonus(el.dataset.v); break;
       case 'bonus-changer': S.bonusChanger = true; rerender(); break;
-      case 'delegue-ouvrir': S.delegueOuvert = !S.delegueOuvert; rerender(); break;
+      case 'alt-vue': S.altVue = el.dataset.v || null; rerender(); break;
+      case 'quiz-start': {
+        if ((S.questResults || []).some((r) => r && r.statut)) break;
+        if (!(await askConfirm('Lancer le quiz express ? Un seul essai, et les 3 énigmes du jour se ferment.', 'C\u2019est parti'))) break;
+        demarrerQuiz(); S.altVue = null; rerender(); window.scrollTo(0, 0); break;
+      }
+      case 'quiz-rep': repondreQuiz(Number(el.dataset.v)); rerender(); break;
+      case 'quiz-suivante': if (suivanteQuiz()) await enregistrerQuiz(); rerender(); break;
+      case 'quiz-enregistrer': await enregistrerQuiz(); rerender(); break;
+      case 'quiz-bonus': await saveQuizBonus(el.dataset.v); break;
       case 'delegue-changer': S.delegueChanger = true; rerender(); break;
       case 'quest-delegue': await saveDelegue(el.dataset.v); break;
       case 'gazette-nav': S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
@@ -960,8 +970,25 @@ async function saveDelegue(bonus, service) {
   const data = { statut: 'delegue', tentatives: 0, bonus, service: service || null };
   try { await S.backend.saveQuest(S.user.uid, st.season, st.turn, 0, data); }
   catch (e) { console.warn(e); toast('Enregistrement impossible. Réessaie.'); return; }
-  S.questResults[0] = data; S.questIdx = 0; S.delegueOuvert = false; S.delegueChanger = false;
+  S.questResults[0] = data; S.questIdx = 0; S.altVue = null; S.delegueChanger = false;
   toast(dejaDelegue ? 'Bonus visé modifié.' : 'Énigmes confiées. Verdict ce soir à 20:00.');
+  rerender();
+}
+
+/** Résultat du quiz express : sur l'énigme 1, bonnes réponses dans « tentatives » (non modifiable ensuite). */
+async function enregistrerQuiz() {
+  const st = S.state, p = quizLocal();
+  if (!p || (S.questResults[0] && S.questResults[0].statut)) return;
+  const data = { statut: 'quiz', tentatives: bonnesReponses(p), bonus: null, service: null };
+  try { await S.backend.saveQuest(S.user.uid, st.season, st.turn, 0, data); S.questResults[0] = data; arreterMinuteur(); }
+  catch (e) { console.warn(e); toast('Résultat non enregistré. Réessaie.'); }
+}
+async function saveQuizBonus(bonus, service) {
+  const st = S.state, r = S.questResults[0];
+  if (!r || r.statut !== 'quiz') return;
+  const data = { ...r, bonus, service: service || null };
+  try { await S.backend.saveQuest(S.user.uid, st.season, st.turn, 0, data); S.questResults[0] = data; S.bonusChanger = false; toast('Bonus enregistré. Tu peux encore le changer jusqu’à 20:00.'); }
+  catch (e) { console.warn(e); toast('Enregistrement impossible. Réessaie.'); }
   rerender();
 }
 
@@ -1122,6 +1149,7 @@ async function onChange(e) {
   if (el.dataset.change === 'train-type') { S.trainType = el.value; nouvelEntrainement(); rerender(); }
   if (el.dataset.change === 'quest-capacite' && el.value) await saveQuestBonus('capacite', el.value);
   if (el.dataset.change === 'quest-delegue-capacite' && el.value) await saveDelegue('capacite', el.value);
+  if (el.dataset.change === 'quiz-capacite' && el.value) await saveQuizBonus('capacite', el.value);
   if ((el.dataset.change === 'tab-route-a' || el.dataset.change === 'tab-route-b') && S.state && S.state.enquete) {
     const r = S.tabRoute && S.tabRoute.n === S.state.enquete.n ? S.tabRoute : { n: S.state.enquete.n, a: null, b: null, mode: 'moteur' };
     S.tabRoute = { ...r, [el.dataset.change.slice(-1)]: el.value || null };
@@ -1192,6 +1220,7 @@ async function boot() {
   document.addEventListener('submit', onSubmit);
   document.addEventListener('input', onInput);
   document.addEventListener('change', onChange);
+  window.addEventListener('mazp-quiz-temps', () => { if (S.route === 'quete') { repondreQuiz(-1); rerender(); } });
   window.addEventListener('hashchange', () => { S.menuHp = false; S.route = route(); if (S.route !== 'prive') S.priveAvec = null; window.scrollTo(0, 0); render(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { lastTick = 0; tick(); } });
   setInterval(() => {

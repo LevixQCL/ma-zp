@@ -3,12 +3,12 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-06-nd-rejoindre',
+  id: '2026-10-06b-quiz',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
     ['📻', 'Zone de non-droit : qui y va ?', 'le Terrain montre les zones annoncées ce soir sur chaque secteur, et la radio a un bouton « Rejoindre ».'],
-    ['🧑‍💼', 'Pas le temps pour les énigmes ?', 'confie-les à un agent : il tente de décrocher ton bonus pendant que tu fais autre chose.'],
+    ['⏱', 'Pas le temps pour les énigmes ?', 'un quiz express de 5 questions (15 s chacune) ou un agent qui planche à ta place : ton bonus reste à portée.'],
     ['⛈️', 'Le Directeur', 'un maître du jeu veille sur ta zone : regarde le ciel de l’HP, il annonce la journée.'],
     ['🔎', 'Fouiller la scène', 'photos des pièces, scène à fouiller, réauditions et chronologie à reconstituer.'],
     ['🕯️', 'Un meurtre à Mons', 'la prochaine affaire se joue dans le vrai centre de Mons : cinq proches, cinq mensonges, un seul assassin.'],
@@ -25,6 +25,7 @@ export const NOTE_MAJ = {
       ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
     ]],
     ['Énigmes', [
+      ['Quiz express', 'tant que tu n’as répondu à aucune énigme du jour, 5 questions de culture générale (Monde, Sciences, Belgique), 15 secondes chacune : 3 bonnes réponses débloquent le bonus du jour au choix. Pas de PS ni de prime « sans faute », pas de pénalité si tu rates. Chacun sa série, sans question répétée dans la saison.'],
       ['Confier les énigmes à un agent', 'pas le temps ou pas l’envie ? Tant que tu n’as répondu à aucune énigme du jour, un agent peut plancher dessus à ta place et viser le bonus de ton choix. Il le décroche le plus souvent (de 40 à 80 % selon le moral), sans PS ni prime « sans faute », sans moral perdu s’il sèche, mais avec +1 dossier de paperasse. Jouer toi-même reste plus payant.'],
     ]],
     ['Traque', [

@@ -1251,3 +1251,26 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .nd-qui.moi { --c: var(--amber); color: var(--amber); font-weight: 700; }
 .nd-rej { color: var(--amber); font-weight: 700; }
 .nd-radio { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; padding-top: 8px; border-top: 1px solid var(--amber-line); }
+
+/* Quiz express (alternative aux énigmes du jour) */
+.alt-c { align-items: flex-start; text-align: left; padding: 10px 14px; min-height: 64px; }
+.alt-c > span:first-child { font-size: 15.5px; }
+.alt-c .s { font-size: 12.5px; line-height: 1.35; }
+.qz { gap: 12px; }
+.qz-q { margin: 0; font-size: 19px; line-height: 1.3; font-family: var(--display, inherit); }
+.qz-pts { display: flex; gap: 5px; }
+.qz-pt { width: 10px; height: 10px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--hair); }
+.qz-pt.cur { border-color: var(--amber); background: var(--amber-bg); }
+.qz-pt.ok { background: var(--green); border-color: var(--green); }
+.qz-pt.ko { background: var(--red); border-color: var(--red); }
+.qz-temps { height: 8px; border-radius: 99px; background: var(--surface2); overflow: hidden; }
+.qz-temps i { display: block; height: 100%; background: linear-gradient(90deg, var(--red), var(--amber) 35%, var(--green)); transform-origin: left center; animation-name: qz-vide; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes qz-vide { to { transform: scaleX(0); } }
+.qz-choix { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.qz-c { min-height: 64px; border-radius: var(--r-md); border: 1px solid var(--hair); background: var(--surface2); color: inherit; font: inherit; font-weight: 600; font-size: 14.5px; line-height: 1.25; padding: 8px 10px; box-shadow: var(--lift); cursor: pointer; transition: transform .08s; }
+.qz-c:active:not([disabled]) { transform: scale(.97); }
+.qz-c.bon { background: rgba(61, 211, 154, .16); border-color: var(--green); color: var(--green-soft); }
+.qz-c.faux { background: rgba(255, 110, 106, .15); border-color: var(--red); color: var(--red-soft); }
+.qz-c.eteint { opacity: .45; }
+.qz-c[disabled] { cursor: default; }
+@media (prefers-reduced-motion: reduce) { .qz-temps i { animation-name: none; } }
