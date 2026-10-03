@@ -1077,3 +1077,15 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
   background: radial-gradient(ellipse at 40% 45%, rgba(40,32,24,.85) 0 38%, rgba(40,32,24,.45) 55%, transparent 72%),
     radial-gradient(circle at 70% 70%, rgba(40,32,24,.5) 0 22%, transparent 40%); }
 .roue-lecture .trou { background: radial-gradient(ellipse at 40% 45%, currentColor 0 36%, transparent 70%); opacity: .55; }
+
+/* Hôtel de police : niveau actuel / niveau suivant, annexes avec leur effet. */
+.hp-logis .bat-niv { display: flex; flex-direction: column; gap: 1px; padding: 6px 8px; border-radius: 10px; background: var(--surface2); }
+.hp-logis .bat-niv.suiv { background: transparent; border: 1px dashed var(--line); }
+.hp-logis .annexes { display: grid; grid-template-columns: 1fr; gap: 6px; }
+@media (min-width: 560px) { .hp-logis .annexes { grid-template-columns: 1fr 1fr; } }
+.hp-logis .annexe { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 12px; border: 1px dashed var(--line); }
+.hp-logis .annexe.faite { border: 1px solid var(--green-line, var(--hair)); background: var(--bg); }
+.hp-logis .annexes-plus { display: flex; flex-direction: column; gap: 6px; }
+.hp-logis .annexes-plus > summary { cursor: pointer; color: var(--text2); font-weight: 600; padding: 4px 0; }
+.hp-logis .annexes-plus[open] > summary { margin-bottom: 6px; }
+.hp-logis .annexes-plus > a { display: block; margin-top: 6px; }
