@@ -4,7 +4,7 @@ import { installerCadenas } from './ui/cadenas.js';
 import { installerEnigmes } from './ui/enigmes.js';
 import { createBackend } from './data/backend.js';
 import { resolvePending, completerDepuisGazette } from './data/resolver.js';
-import { S, toast, myZone, esc, cielDuMoment } from './ui/common.js';
+import { S, toast, myZone, esc, cielDuMoment, tabbar } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil } from './ui/hp.js';
 import { ouvrirAide } from './ui/aide.js';
@@ -99,6 +99,7 @@ function render() {
     else if (S.player) { loading('Création de ta zone…'); ensureZone(); return; }
     else html = renderInscription({ gameExists: true });
   } else {
+    try {
     if (!S.draft) initDraft();
     if (!S.quests) loadQuest();
     switch (S.route) {
@@ -125,6 +126,13 @@ function render() {
       case 'profil': html = renderProfil(); break;
       case 'admin': html = S.backend.isMaster(S.user) ? renderAdmin() : renderHP(); break;
       default: html = renderHP();
+    }
+    } catch (err) {
+      // Un écran qui plante ne doit pas bloquer le jeu : on affiche l'erreur (à transmettre) et une sortie.
+      console.error(err);
+      html = `<main class="screen"><section class="card red" role="alert"><span class="kicker" style="color:var(--red-soft)">Cet écran a rencontré un problème</span>
+        <p class="small" style="margin:0">Fais une capture de ce message et envoie-la au maître du jeu : <code style="word-break:break-word">${esc(S.route)} · ${esc((err && err.message) || String(err))}</code></p>
+        <button class="btn primary block" data-action="ecran-reset">Réessayer</button><a class="btn block" href="#hp">Revenir à l’HP</a></section></main>${tabbar(S.route)}`;
     }
   }
   // Barre de validation commune à tous les écrans quand des choix ne sont pas encore validés.
@@ -338,6 +346,7 @@ async function onClick(e) {
       case 'budget': ouvrirBudget(); break;
       case 'vehicule': ouvrirVehicule(el.dataset.slot); break;
       case 'logistique': ouvrirLogistique(); break;
+      case 'ecran-reset': S.draft = null; S.help = {}; S.ordOpen = {}; S.ventilation = false; render(); break;
       case 'mission-qui': S.missionQui = S.missionQui === el.dataset.role ? null : el.dataset.role; rerender(); break;
       case 'mission-ou': S.draft.mission = { role: el.dataset.role, type: el.dataset.type, secteur: el.dataset.secteur || '' }; S.missionQui = null; S.ordersDirty = true; rerender(); break;
       case 'mission-annuler': S.draft.mission = null; S.ordersDirty = true; rerender(); break;
