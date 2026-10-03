@@ -29,7 +29,7 @@ import { renderGuide } from './ui/guide.js';
 import { offreApres } from './ui/encheres.js';
 import { renderDiplomatie, ongletsRadio } from './ui/diplomatie.js';
 import { renderParties } from './ui/parties.js';
-import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet } from './ui/enquete.js';
+import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet, synchroCarnetMaintenant } from './ui/enquete.js';
 import { affaire } from './engine/enquete.js';
 import { monterTableau, ouvrirVolet, sortirPiece, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
@@ -346,6 +346,7 @@ async function onClick(e) {
       case 'budget': ouvrirBudget(); break;
       case 'vehicule': ouvrirVehicule(el.dataset.slot); break;
       case 'logistique': ouvrirLogistique(); break;
+      case 'tab-sync': S.carnetSync = 'encours'; rerender(); await synchroCarnetMaintenant(rerender); if (S.carnetSync === 'encours') S.carnetSync = 'ok'; rerender(); toast(S.carnetSync === 'ok' ? 'Tableau synchronisé avec tes autres appareils.' : 'Synchronisation impossible pour le moment.'); break;
       case 'ecran-reset': S.draft = null; S.help = {}; S.ordOpen = {}; S.ventilation = false; render(); break;
       case 'mission-qui': S.missionQui = S.missionQui === el.dataset.role ? null : el.dataset.role; rerender(); break;
       case 'mission-ou': S.draft.mission = { role: el.dataset.role, type: el.dataset.type, secteur: el.dataset.secteur || '' }; S.missionQui = null; S.ordersDirty = true; rerender(); break;

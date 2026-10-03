@@ -11,3 +11,19 @@ assert.ok(!carnetVide({ tab: { places: [{ f: 'occ:1' }] } }), 'une pièce posée
 // Ouvrir le tableau (vue enregistrée, listes vides) n'est pas un changement de contenu.
 assert.ok(!contenuChange({ g: {}, notes: '' }, { g: {}, notes: '', tab: { v: 3, pos: {}, liens: [], places: [], fiches: [], neuf: [], vue: { s: 1 } } }));
 console.log('OK : synchro du carnet protégée contre les tableaux vides.');
+// Fusion : le GSM a posé des pièces, le PC en a posé d'autres plus tard : tout se retrouve des deux côtés.
+{
+  const { fusionner } = await import('../js/ui/carnet-sync.js');
+  const gsm = { maj: 100, g: { '1:mob': 1 }, notes: 'piste A', tab: { v: 3, places: ['occ:1', 'moy:2'], liens: [['occ:1', 'S:1']], fiches: [], pos: { 'occ:1': [10, 10] }, neuf: [] } };
+  const pc = { maj: 200, g: { '2:occ': 2 }, notes: '', tab: { v: 3, places: ['mob:3'], liens: [], fiches: [], pos: { 'mob:3': [50, 50] }, neuf: [], vue: { s: 0.5 } } };
+  const f = fusionner(pc, gsm);
+  assert.deepEqual([...f.tab.places].sort(), ['mob:3', 'moy:2', 'occ:1']);
+  assert.equal(f.tab.liens.length, 1);
+  assert.deepEqual(f.g, { '1:mob': 1, '2:occ': 2 });
+  assert.equal(f.notes, 'piste A', 'note non vide gardée');
+  assert.deepEqual(f.tab.vue, { s: 0.5 }, 'vue de cet appareil');
+  // PC vierge : il prend tout le GSM.
+  const vierge = fusionner({ g: {}, notes: '', maj: 999, tab: { v: 3, places: [], liens: [], fiches: [], pos: {}, neuf: [], vue: { s: 1 } } }, gsm);
+  assert.deepEqual(vierge.tab.places, gsm.tab.places);
+}
+console.log('OK : fusion des carnets.');
