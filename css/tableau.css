@@ -229,3 +229,6 @@ span.tb-t-gardee { color: var(--faint); } span.tb-t-prevu { color: var(--amber);
 .tb-signature { align-self: flex-end; font-family: 'Caveat', cursive; font-size: 16px; color: #1F4FA0; transform: rotate(-4deg); }
 .tb-photo-grande { line-height: 0; border-radius: 10px; overflow: hidden; flex-shrink: 0; }
 .tb-photo-grande .tb-photo-svg { filter: none; }
+
+/* Restaurer / synchroniser : seulement sur PC (sur téléphone, la synchro reste automatique ; l'alerte d'échec reste visible) */
+@media not ((hover: hover) and (pointer: fine)) { .tb-chip.tb-pc { display: none; } }
