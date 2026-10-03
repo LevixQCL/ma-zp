@@ -37,6 +37,23 @@ function delta(v, avant) {
   return `<span class="delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${fmt1(Math.abs(d))}</span>`;
 }
 
+/** Variation depuis la veille, en petite pastille colorée. */
+function pastilleDelta(v, avant) {
+  if (avant === undefined || avant === null) return '';
+  const d = Math.round((v - avant) * 10) / 10;
+  if (Math.abs(d) < 0.05) return '';
+  return `<span class="pdelta ${d > 0 ? 'up' : 'down'}" aria-label="${d > 0 ? 'en hausse' : 'en baisse'} de ${fmt1(Math.abs(d))} depuis hier">${d > 0 ? '▲' : '▼'} ${fmt1(Math.abs(d))}</span>`;
+}
+/** Une jauge de « Ma zone » : nom, aide, variation, valeur, barre, et une ligne de détail facultative. */
+function jauge(label, value, color, aide, dl, sous = null) {
+  const v = Math.round(value), w = Math.max(0, Math.min(100, v));
+  return `<div class="jg">
+    <div class="jg-h"><span class="jg-l">${esc(label)}</span>${aide}<span class="grow"></span>${dl}<span class="jg-v">${v}</span></div>
+    <div class="jg-bar" role="img" aria-label="${esc(label)} : ${v} sur 100"><div style="width:${w}%;background:${color}"></div></div>
+    ${sous ? `<div class="jg-s"><span>${sous[0]}</span><span class="mono" style="font-weight:700">${sous[1]}</span></div>` : ''}
+  </div>`;
+}
+
 const evol = (v) => (Math.abs(v) < 0.1 ? '<span class="muted">=</span>' : `<span class="${v > 0 ? 'ok' : 'bad'}">${v > 0 ? '▲' : '▼'}${fmt1(Math.abs(v))}</span>`);
 const sgn1 = (v) => `${v > 0 ? '+' : '−'}${fmt1(Math.abs(v))}`;
 
@@ -251,38 +268,34 @@ export function renderHP() {
 
     ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit })}
     ${incidentsHtml()}
-    <section class="card" aria-label="Ma zone">
-      <div class="between">
-        <div class="row" style="gap:10px;min-width:0">
-          ${S.player && S.player.blason && GRADES.indexOf(gradeFor(z.ps)) >= 4 ? blasonSvg(S.player.blason, z.couleur, 32) : `<span style="width:12px;height:36px;border-radius:4px;background:${esc(z.couleur)};flex-shrink:0"></span>`}
-          <div class="col" style="gap:1px;min-width:0">
-            <span class="mono small" style="color:var(--blue-soft)">ZP ${esc(z.code)} ${insigne(z.ps)}</span>
-            ${S.editingName ? `<form class="row" data-form="rename" style="gap:6px"><label class="sr" for="nom-zone">Nom de la zone</label>
-              <input id="nom-zone" class="text" name="nom" maxlength="24" value="${esc(z.nom)}" style="min-height:36px;width:150px;font:700 18px var(--display)">
-              <button class="btn primary small" type="submit">OK</button></form>`
-              : `<div class="row" style="gap:2px"><h2 style="margin:0;font-family:var(--display);font-size:25px;font-weight:700;line-height:1.05;overflow-wrap:break-word">${esc(z.nom)}</h2>
-              <button class="iconbtn" data-action="rename" aria-label="Renommer la zone">${icon('pencil', 16)}</button></div>`}
-          </div>
+    <section class="card mazone" aria-label="Ma zone">
+      <div class="mz-tete">
+        ${S.player && S.player.blason && GRADES.indexOf(gradeFor(z.ps)) >= 4 ? blasonSvg(S.player.blason, z.couleur, 34) : `<span class="mz-coul" style="background:${esc(z.couleur)}"></span>`}
+        <div class="mz-id">
+          <span class="mono small" style="color:var(--blue-soft)">ZP ${esc(z.code)} ${insigne(z.ps)}</span>
+          ${S.editingName ? `<form class="row" data-form="rename" style="gap:6px"><label class="sr" for="nom-zone">Nom de la zone</label>
+            <input id="nom-zone" class="text" name="nom" maxlength="24" value="${esc(z.nom)}" style="min-height:36px;width:150px;font:700 18px var(--display)">
+            <button class="btn primary small" type="submit">OK</button></form>`
+            : `<div class="mz-nomrow"><h2 class="mz-nom">${esc(z.nom)}</h2><button class="iconbtn mz-crayon" data-action="rename" aria-label="Renommer la zone">${icon('pencil', 14)}</button></div>`}
         </div>
-        <div class="col" style="gap:2px;align-items:flex-end;flex-shrink:1;text-align:right">
-          <span class="row" style="gap:6px;flex-shrink:0;white-space:nowrap"><span class="mono" style="font-size:18px" aria-label="Indice de performance de zone : ${fmt1(z.ipz)}">IPZ ${fmt1(z.ipz)}</span>${delta(z.ipz, z.hier && z.hier.ipz)}${aideBtn('ipz', 'Qu’est-ce que l’IPZ ?')}</span>
-          <span class="tiny muted">${z.toursJoues ? `moy. saison ${fmt1(moyenneIpz(z))} · ` : ""}${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total} zone${total > 1 ? 's' : ''}` : `non classé · ${z.toursJoues}/5 tours joués`}</span>
+        <div class="mz-ipz">
+          <span class="row" style="gap:4px;justify-content:flex-end"><span class="tiny muted" style="font-weight:700">IPZ</span>${aideBtn('ipz', 'Qu’est-ce que l’IPZ ?')}</span>
+          <span class="row" style="gap:6px;justify-content:flex-end;align-items:baseline"><span class="mz-ipz-v" aria-label="Indice de performance de zone : ${fmt1(z.ipz)}">${fmt1(z.ipz)}</span>${pastilleDelta(z.ipz, z.hier && z.hier.ipz)}</span>
+          <span class="tiny muted">${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} / ${total}` : `non classé · ${z.toursJoues}/5 tours`}${z.toursJoues ? ` · moy. ${fmt1(moyenneIpz(z))}` : ''}</span>
         </div>
       </div>
       ${sceneCarteHtml()}
       <div class="tiles">
         <div class="tile"><span class="l">Agents</span><span class="v">${dispo}<span class="muted" style="font-size:13px"> / ${z.agents}</span></span>
-          <span class="s ${blesses ? 'bad' : ''}">${blesses ? `${blesses} absent${blesses > 1 ? 's' : ''}` : form ? `${form} en formation` : z.academie.length ? `${z.academie.reduce((s, a) => s + a.n, 0)} à l’académie` : 'tous disponibles'}</span></div>
-        <button type="button" class="tile tile-btn" data-action="budget" aria-label="Détail du budget"><span class="l row" style="gap:4px">Budget ${icon('chevron', 12)}</span><span class="v ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s ${fraisFixesDuJour(z) < 0 ? 'bad' : ''}">${fraisFixesDuJour(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(fraisFixesDuJour(z)))} k€/jour · détail</span></button>
-        <button type="button" class="tile tile-btn" data-action="parc" aria-label="Parc automobile"><span class="l row" style="gap:4px">Véhicules ${icon('chevron', 12)}</span><span class="v">${vDispo}<span class="muted" style="font-size:13px"> / ${z.vehicules}</span></span><span class="s ${cab || 100 - z.usure < 60 ? 'bad' : 100 - z.usure < 80 ? 'warn' : ''}">état ${Math.round(100 - z.usure)} %${cab ? ` · ${cab} cabossé${cab > 1 ? 's' : ''}` : 100 - z.usure < 80 ? ' · révision ?' : ''}</span></button>
+          <span class="s ${blesses ? 'bad' : ''}">${blesses ? `${blesses} absent${blesses > 1 ? 's' : ''}` : form ? `${form} en formation` : z.academie.length ? `+${z.academie.reduce((s, a) => s + a.n, 0)} à l’académie` : 'tous dispo.'}</span></div>
+        <button type="button" class="tile tile-btn" data-action="budget" aria-label="Détail du budget"><span class="l row" style="gap:4px">Budget ${icon('chevron', 12)}</span><span class="v ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s ${fraisFixesDuJour(z) < 0 ? 'bad' : 'ok'}">${fraisFixesDuJour(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(fraisFixesDuJour(z)))} k€ / jour</span></button>
+        <button type="button" class="tile tile-btn" data-action="parc" aria-label="Parc automobile"><span class="l row" style="gap:4px">Véhicules ${icon('chevron', 12)}</span><span class="v">${vDispo}<span class="muted" style="font-size:13px"> / ${z.vehicules}</span></span><span class="s ${cab || 100 - z.usure < 60 ? 'bad' : 100 - z.usure < 80 ? 'warn' : ''}">${cab ? `${cab} cabossé${cab > 1 ? 's' : ''}` : `état ${Math.round(100 - z.usure)} %`}</span></button>
       </div>
-      <div class="col" style="gap:9px">
-        ${gauge('Moral', z.moral, 'var(--amber)', delta(z.moral, z.hier && z.hier.moral) + aideBtn('moral'))}
-        <div class="between small" style="margin-top:-4px"><span class="muted">Efficacité de tes agents</span><span class="mono ${moralMult(z.moral) >= 1 ? 'ok' : 'bad'}">${Math.round(moralMult(z.moral) * 100)} %</span></div>
-        ${z.ipzComp ? gauge('Résultats terrain', z.ipzComp.affaires, 'var(--blue-soft)', delta(z.ipzComp.affaires, z.ipzCompHier && z.ipzCompHier.affaires) + aideBtn('terrain', 'Comment gagner des résultats terrain')) : ''}
-        ${gauge('Satisfaction citoyenne', z.satisfaction, 'var(--blue)', delta(z.satisfaction, z.hier && z.hier.satisfaction) + aideBtn('satisfaction'))}
-        ${gauge('Réputation', z.reputation, 'var(--green)', delta(z.reputation, z.hier && z.hier.reputation) + aideBtn('reputation'))}
-        <div class="between small" style="margin-top:-4px"><span class="row muted" style="gap:4px">Confiance de la commune${aideBtn('confiance')}</span><span class="mono ${confianceCommune(z) > 0 ? 'ok' : confianceCommune(z) < 0 ? 'bad' : 'muted'}">${confianceCommune(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(confianceCommune(z)))} k€ / jour</span></div>
+      <div class="jauges">
+        ${jauge('Moral', z.moral, 'var(--amber)', aideBtn('moral'), pastilleDelta(z.moral, z.hier && z.hier.moral), ['Efficacité de tes agents', `<span class="${moralMult(z.moral) >= 1 ? 'ok' : 'bad'}">${Math.round(moralMult(z.moral) * 100)} %</span>`])}
+        ${z.ipzComp ? jauge('Résultats terrain', z.ipzComp.affaires, 'var(--blue-soft)', aideBtn('terrain', 'Comment gagner des résultats terrain'), pastilleDelta(z.ipzComp.affaires, z.ipzCompHier && z.ipzCompHier.affaires)) : ''}
+        ${jauge('Satisfaction citoyenne', z.satisfaction, 'var(--blue)', aideBtn('satisfaction'), pastilleDelta(z.satisfaction, z.hier && z.hier.satisfaction))}
+        ${jauge('Réputation', z.reputation, 'var(--green)', aideBtn('reputation'), pastilleDelta(z.reputation, z.hier && z.hier.reputation), [`<span class="row" style="gap:4px">Confiance de la commune${aideBtn('confiance')}</span>`, `<span class="${confianceCommune(z) > 0 ? 'ok' : confianceCommune(z) < 0 ? 'bad' : 'muted'}">${confianceCommune(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(confianceCommune(z)))} k€ / jour</span>`])}
       </div>
     </section>
     <div class="duo">${encheresHtml()}${equipeHtml()}${tropheesHtml()}</div>

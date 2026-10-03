@@ -1135,3 +1135,27 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .savebar.calme { background: rgba(28, 36, 66, .94); border-color: var(--line); }
 .seg.creux button { height: auto; padding: 8px 4px; }
 .seg.creux button .d { white-space: normal; line-height: 1.25; text-align: center; overflow: visible; }
+
+/* ───── HP : carte « Ma zone » retravaillée ───── */
+.card.mazone { gap: 14px; }
+.mz-tete { display: flex; align-items: center; gap: 12px; }
+.mz-coul { width: 10px; align-self: stretch; min-height: 44px; border-radius: 5px; flex-shrink: 0; }
+.mz-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.mz-nomrow { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.mz-nom { margin: 0; font-family: var(--display); font-size: 25px; font-weight: 800; line-height: 1.05; letter-spacing: -.5px; overflow-wrap: anywhere; }
+.mz-crayon { width: 30px; height: 30px; flex-shrink: 0; color: var(--faint); }
+.mz-ipz { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0; padding-left: 12px; border-left: 1px solid var(--hair); }
+.mz-ipz-v { font-family: var(--display); font-size: 28px; font-weight: 800; line-height: 1; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.pdelta { font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 2px 7px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.pdelta.up { color: var(--green-soft); background: rgba(61, 211, 154, .12); }
+.pdelta.down { color: var(--red-soft); background: var(--red-bg); }
+.mazone .tile .s { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jauges { display: flex; flex-direction: column; gap: 12px; background: var(--bg); border: 1px solid var(--hair); border-radius: 18px; padding: 14px; }
+.jg { display: flex; flex-direction: column; gap: 6px; }
+.jg-h { display: flex; align-items: center; gap: 6px; }
+.jg-l { font-size: 14px; font-weight: 600; }
+.jg-v { font-family: var(--display); font-size: 18px; font-weight: 700; min-width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
+.jg-bar { height: 7px; border-radius: 999px; background: var(--surface2); overflow: hidden; }
+.jg-bar > div { height: 100%; border-radius: 999px; background-image: linear-gradient(90deg, rgba(0, 0, 0, .15), rgba(255, 255, 255, .14)); }
+.jg-s { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.jg + .jg { padding-top: 12px; border-top: 1px solid var(--hair); }
