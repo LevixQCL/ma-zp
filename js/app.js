@@ -42,7 +42,7 @@ import { niveauEnigmes } from './engine/directeur.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
 import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND } from './engine/constants.js';
 import { nomSecteur } from './engine/nondroit.js';
-import { agentsND, monAnnonceND } from './ui/nondroit.js';
+import { agentsND, monAnnonceND, suggestionND, placeND } from './ui/nondroit.js';
 import { lancerIncident, lancerAppui, ouvrirMiniJeu, majComptesIncidents, signatureIncidents } from './ui/incidents.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
 
@@ -450,6 +450,11 @@ async function onClick(e) {
           : `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) envoie ${n} agent${n > 1 ? 's' : ''} à ${nomSecteur(k)} ce soir. Plus on est nombreux, plus ça tombe vite : qui vient ?`,
         { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n } });
         toast('Annoncé sur la radio : les autres zones peuvent te rejoindre.'); rerender(); break;
+      }
+      case 'nd-rej-n': {
+        const k = el.dataset.c, cur = (S.ndRejoindre && S.ndRejoindre[k]) || suggestionND(k);
+        (S.ndRejoindre ||= {})[k] = Math.max(1, Math.min(placeND(k), cur + Number(el.dataset.d)));
+        rerender(); break;
       }
       case 'nd-rejoindre': {
         // Depuis une annonce radio : j'envoie des agents sur le même secteur et je préviens la radio à mon tour.

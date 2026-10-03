@@ -39,13 +39,27 @@ export function monAnnonceND(k) {
   return der ? der.nd.agents : 0;
 }
 
-/** Agents conseillés pour rejoindre un secteur depuis la radio. */
+/** Place qu'il me reste sur un secteur (plafonds par secteur et pour toute la zone de non-droit). */
+export function placeND(k, d = S.draft) {
+  if (!d) return 0;
+  return Math.max(0, Math.min(ND.maxParSecteur - ((d.secteurs || {})[k] || 0), ND.maxTotal - agentsND(d)));
+}
+
+/** Prévision d'un secteur si je rejoins avec n agents, en plus des zones annoncées ce soir. */
+export function prevoirRejoindre(k, n) {
+  const s = nd().secteurs[k], me = myZone();
+  const autres = (annoncesND()[k] || []).filter((x) => !x.moi).map((x) => forceEngagement(S.state.zones[x.uid], x.n));
+  return prevoirSecteur(S.state, s, [...autres, n ? forceEngagement(me, n) : 0]);
+}
+
+/** Agents proposés pour rejoindre : le minimum qui fait tomber le secteur ce soir avec les zones annoncées ;
+ *  sinon 2 (assez pour compter dans l'influence). Pour une garde, 2. */
 export function suggestionND(k, d = S.draft) {
   const n = nd(); const s = n && n.secteurs[k];
-  if (!s || !d) return 0;
-  const deja = (d.secteurs || {})[k] || 0;
-  const place = Math.min(ND.maxParSecteur - deja, ND.maxTotal - agentsND(d));
-  return Math.max(0, Math.min(place, s.statut === 'repris' ? 2 : 3));
+  const place = placeND(k, d);
+  if (!s || !place) return 0;
+  if (s.statut !== 'repris') for (let i = 1; i <= place; i++) if (prevoirRejoindre(k, i).emprise <= 0) return i;
+  return Math.min(place, 2);
 }
 
 /** Pastilles « qui y va ce soir » d'un secteur. */

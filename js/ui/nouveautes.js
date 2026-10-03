@@ -20,8 +20,9 @@ export const NOTE_MAJ = {
   sections: [
     ['Zone de non-droit', [
       ['Qui y va ce soir', 'en haut de la zone de non-droit (Terrain), un encadré liste les secteurs où des zones se sont annoncées à la radio, avec leurs agents et ce que ça donnerait ensemble. Touche une ligne pour ouvrir le secteur.'],
-      ['Rejoindre d’un bouton', 'sous une annonce de la radio, « Rejoindre » envoie tes agents sur le même secteur et prévient la radio à ton tour. Il reste à valider tes ordres.'],
+      ['Rejoindre d’un bouton', 'sous une annonce de la radio, choisis combien d’agents (le jeu propose le minimum pour faire tomber le secteur ce soir et montre l’effet), puis « Rejoindre » les envoie sur le même secteur et prévient la radio à ton tour. Il reste à valider tes ordres.'],
       ['Moins de doublons', 'la situation du jour et l’opération d’envergure (avec l’appel à renfort) ne se règlent plus que dans les Ordres ; l’HP les signale et y renvoie, le Terrain ne montre plus que ce qui se joue avec les autres zones.'],
+      ['HP plus léger', 'l’incident en cours n’est plus répété dans la liste « à faire » (sa carte est juste en dessous), et le résumé de la nuit s’efface quand tu ouvres le rapport complet.'],
       ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
     ]],
     ['Énigmes', [

@@ -10,7 +10,7 @@ import { fiabilite } from '../engine/fipa.js';
 import { ongletsRadio } from './diplomatie.js';
 import { marquerRadioLue } from './prive.js';
 import { appelsRenfort, renfortCtrl } from './renfort.js';
-import { annoncesND, suggestionND } from './nondroit.js';
+import { annoncesND, suggestionND, placeND, prevoirRejoindre } from './nondroit.js';
 import { nomSecteur } from '../engine/nondroit.js';
 import { secteurOuvert } from '../engine/constants.js';
 import { GRADES, gradeFor, AFFAIRE, ND } from '../engine/constants.js';
@@ -153,13 +153,24 @@ export function renderRadio() {
     if (!s || derniere[k] !== m.at || !secteurOuvert(st.nonDroit, k)) return '';
     const l = ann[k] || [];
     const mien = (S.draft && S.draft.secteurs && S.draft.secteurs[k]) || 0;
-    const sug = suggestionND(k);
+    const sug = suggestionND(k), place = placeND(k);
+    const choisi = Math.max(1, Math.min(place, (S.ndRejoindre && S.ndRejoindre[k]) || sug));
     const qui = l.map((x) => `${x.moi ? '<strong>toi</strong>' : esc(st.zones[x.uid].nom)} (${x.n})`).join(', ');
+    let effet = '';
+    if (place) {
+      const p = prevoirRejoindre(k, choisi);
+      effet = s.statut === 'repris' ? `ta garde : emprise ${Math.round(s.emprise)} → ${Math.round(p.emprise)}`
+        : p.emprise <= 0 ? '<span class="good">repris ce soir avec toi</span>'
+        : `avec toi : ${Math.round(s.emprise)} → <strong>${Math.round(p.emprise)}</strong>${choisi < place && prevoirRejoindre(k, place).emprise <= 0 ? ' · encore un peu et il tombe' : ''}`;
+    }
     return `<div class="nd-radio">
       <span class="tiny"><strong>${esc(nomSecteur(k))}</strong> · ${s.statut === 'repris' ? 'à garder' : `emprise du milieu ${Math.round(s.emprise)}`} · ce soir : ${qui}</span>
       ${mien ? `<div class="between" style="gap:8px"><span class="small ok" style="font-weight:700">✓ Tu y vas avec ${mien} agent${mien > 1 ? 's' : ''}</span><button type="button" class="btn small ghost" data-action="secteur" data-c="${k}">Ajuster</button></div>`
-        : sug ? `<div class="row" style="gap:8px"><button type="button" class="btn small primary grow" data-action="nd-rejoindre" data-c="${k}" data-n="${sug}">🤝 Rejoindre avec ${sug} agent${sug > 1 ? 's' : ''}</button><button type="button" class="btn small ghost" data-action="secteur" data-c="${k}">Voir</button></div>
-          <span class="tiny muted">Tes agents partent ce soir à 20:00 (repris en priorité sur ceux libres), et la radio est prévenue. Pense à valider tes ordres.</span>`
+        : place ? `<div class="between" style="gap:8px"><span class="small">Combien d’agents ?</span>
+            <span class="stepper"><button type="button" data-action="nd-rej-n" data-c="${k}" data-d="-1" aria-label="Un agent de moins" ${choisi <= 1 ? 'disabled' : ''}>−</button><span class="n">${choisi}</span><button type="button" data-action="nd-rej-n" data-c="${k}" data-d="1" aria-label="Un agent de plus" ${choisi >= place ? 'disabled' : ''}>+</button></span></div>
+          <span class="tiny muted">${effet}${choisi === sug ? ' · nombre conseillé' : ''}</span>
+          <div class="row" style="gap:8px"><button type="button" class="btn small primary grow" data-action="nd-rejoindre" data-c="${k}" data-n="${choisi}">🤝 Rejoindre avec ${choisi}</button><button type="button" class="btn small ghost" data-action="secteur" data-c="${k}">Voir</button></div>
+          <span class="tiny muted">Pris d’abord parmi tes agents libres ; la radio est prévenue. Pense à valider tes ordres.</span>`
         : `<span class="tiny muted">Tu as déjà engagé tes ${ND.maxTotal} agents possibles dans la zone de non-droit.</span>`}
     </div>`;
   };
