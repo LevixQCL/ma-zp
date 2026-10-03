@@ -189,7 +189,7 @@ function dilemmeHtml(st, z) {
   </section>`;
 }
 
-function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
+function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit, delegue }) {
   const d = S.draft || {};
   const ciel = cielDe(z);
   const nbDem = (d.demarches || []).length;
@@ -215,7 +215,7 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
   }
   const inc = incidentEnCours();
   if (inc) items.unshift({ ok: false, href: '#hp-incidents', t: `Incident en cours : ${esc(inc.titre)}`, s: `encore ${duree(inc.ferme - Date.now())} pour intervenir, sinon ton équipe se débrouille seule` });
-  items.push({ ok: faites >= 3, href: '#quete', t: `Énigmes : ${faites} sur 3`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
+  items.push(delegue ? { ok: true, href: '#quete', t: 'Énigmes confiées à un agent', s: 'résultat ce soir' } : { ok: faites >= 3, href: '#quete', t: `Énigmes : ${faites} sur 3`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
   const fipa = (st.fipas || []).filter((f) => (f.demandeur === z.uid && f.etape === 'demande' && f.tourDecision === st.turn) || (f.partenaire === z.uid && f.etape === 'invite' && f.tourReponse === st.turn) || (f.etape === 'accepte' && f.tourJ === st.turn && (f.demandeur === z.uid || f.partenaire === z.uid)));
   if (fipa.length) items.push({ ok: !!(d.fipa || d.fipaReponse || d.fipaChoix), href: '#hp-fipa', t: 'FIPA : une décision t’attend', s: 'voir la carte FIPA ci-dessous' });
   if (st.conseil && st.conseil.tour === st.turn) items.push({ ok: Object.keys(d.votes || {}).length > 0, href: '#diplomatie', t: 'Conseil de police : voter', s: 'une voix par zone, résultat à 20:00' });
@@ -249,7 +249,8 @@ export function renderHP() {
   const qr = S.questResults || [];
   const faites = qr.filter((r) => r && (r.statut === 'ok' || r.statut === 'rate')).length;
   const reussies = qr.filter((r) => r && r.statut === 'ok').length;
-  const questDone = faites >= 3;
+  const delegue = qr.find((r) => r && r.statut === 'delegue');
+  const questDone = faites >= 3 || !!delegue;
 
   const alertes = [];
   const bless = z.blesses.filter((b) => b.retour > T);
@@ -314,7 +315,7 @@ export function renderHP() {
       ${S.backend.isMaster(S.user) ? `<a class="list-row" href="#admin">${icon('shield', 18)}<span>Maître du jeu</span></a>` : ''}
     </nav>` : ''}
 
-    ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit })}
+    ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit, delegue })}
     ${dilemmeHtml(st, z)}
     ${incidentsHtml()}
     <section class="card mazone" aria-label="Ma zone">

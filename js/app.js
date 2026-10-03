@@ -786,6 +786,9 @@ async function onClick(e) {
       }
       case 'quest-bonus': await saveQuestBonus(el.dataset.v); break;
       case 'bonus-changer': S.bonusChanger = true; rerender(); break;
+      case 'delegue-ouvrir': S.delegueOuvert = !S.delegueOuvert; rerender(); break;
+      case 'delegue-changer': S.delegueChanger = true; rerender(); break;
+      case 'quest-delegue': await saveDelegue(el.dataset.v); break;
       case 'gazette-nav': S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
       case 'admin-create': await b.adminCreateGame(); toast('Partie lancée !'); break;
       case 'equipe-edit': S.equipeEdit = el.dataset.role || null; S.ouverts = { ...(S.ouverts || {}), equipe: true }; rerender(); break;
@@ -920,6 +923,21 @@ async function submitQuest(reponse) {
   toast(ok ? 'Bonne réponse !' : 'Mauvaise réponse.');
   const suivante = S.questResults.findIndex((x) => !x || (x.statut !== 'ok' && x.statut !== 'rate'));
   S.questNext = suivante;
+  rerender();
+}
+
+/** Énigmes du jour confiées à un agent (aucune réponse donnée) : enregistré sur l'énigme 1, définitif pour la journée. */
+async function saveDelegue(bonus, service) {
+  const st = S.state;
+  if ((S.questResults || []).some((r) => r && (r.statut === 'ok' || r.statut === 'rate'))) return;
+  const deja = (S.questResults || [])[0];
+  const dejaDelegue = !!(deja && deja.statut === 'delegue');
+  if (!dejaDelegue && !(await askConfirm('Confier les énigmes du jour à un agent ? Tu ne pourras plus y répondre aujourd\u2019hui.', 'Confier'))) return;
+  const data = { statut: 'delegue', tentatives: 0, bonus, service: service || null };
+  try { await S.backend.saveQuest(S.user.uid, st.season, st.turn, 0, data); }
+  catch (e) { console.warn(e); toast('Enregistrement impossible. Réessaie.'); return; }
+  S.questResults[0] = data; S.questIdx = 0; S.delegueOuvert = false; S.delegueChanger = false;
+  toast(dejaDelegue ? 'Bonus visé modifié.' : 'Énigmes confiées. Verdict ce soir à 20:00.');
   rerender();
 }
 
@@ -1079,6 +1097,7 @@ async function onChange(e) {
   }
   if (el.dataset.change === 'train-type') { S.trainType = el.value; nouvelEntrainement(); rerender(); }
   if (el.dataset.change === 'quest-capacite' && el.value) await saveQuestBonus('capacite', el.value);
+  if (el.dataset.change === 'quest-delegue-capacite' && el.value) await saveDelegue('capacite', el.value);
   if ((el.dataset.change === 'tab-route-a' || el.dataset.change === 'tab-route-b') && S.state && S.state.enquete) {
     const r = S.tabRoute && S.tabRoute.n === S.state.enquete.n ? S.tabRoute : { n: S.state.enquete.n, a: null, b: null, mode: 'moteur' };
     S.tabRoute = { ...r, [el.dataset.change.slice(-1)]: el.value || null };

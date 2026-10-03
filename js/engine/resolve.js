@@ -5,7 +5,7 @@ import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
 import {
   APP_VERSION, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
@@ -476,12 +476,33 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Énigmes du jour (jusqu'à 3) : bonus au choix dès 2 bonnes réponses.
     let bonusService = null;
     const tous = (Array.isArray(q) ? q : q ? [q] : []);
-    const qs = tous.filter((x, k) => x && (x.slot ?? k) !== 3);
+    const qs = tous.filter((x, k) => x && (x.slot ?? k) !== 3 && x.statut !== 'delegue');
     const noir = tous.find((x, k) => x && (x.slot ?? k) === 3);
     if (noir && noir.statut === 'ok') { z.stats.noirs = (z.stats.noirs || 0) + 1; z._ps += PS.noir; z.rapport.push(`Dossier noir résolu : chapeau (+${PS.noir} PS).`); }
     else if (noir && noir.statut === 'rate') z.rapport.push('Dossier noir : raté cette fois, sans conséquence.');
     const ok = qs.filter((x) => x.statut === 'ok').length;
     const faux = qs.filter((x) => x.statut === 'rate').length;
+    const appliquerBonus = (b) => {
+      if (b.bonus === 'moral') { const g = gainMoral(ENIGMES.bonusMoral, z.moral); z.moral += g; return `bonus +${g} de moral`; }
+      if (b.bonus === 'budget' || (b.bonus === 'indice' && (!state.enquete || state.enquetePause))) {
+        z.budget += ENIGMES.bonusBudget; z._compta.push({ k: 'bonus', l: 'Bonus d’énigmes', v: ENIGMES.bonusBudget });
+        return b.bonus === 'budget' ? `bonus +${ENIGMES.bonusBudget} k€` : `pas d’enquête en cours : bonus converti en +${ENIGMES.bonusBudget} k€`;
+      }
+      if (b.bonus === 'indice') return indiceBonus(state, z, zr) ? 'bonus +1 indice d’enquête' : 'bonus indice (rien de nouveau à trouver)';
+      if (b.bonus === 'capacite' && SERVICES.includes(b.service)) { bonusService = b.service; return `bonus +${Math.round((ENIGMES.bonusCapacite - 1) * 100)} % en ${SERVICE_LABELS[b.service]}`; }
+      return null;
+    };
+    // Énigmes confiées à un agent : seulement si le joueur n'a répondu à aucune énigme du jour.
+    const delegue = !qs.length ? tous.find((x, k) => x && (x.slot ?? k) !== 3 && x.statut === 'delegue') : null;
+    if (delegue) {
+      z._delegue = true;
+      const chance = chanceDelegue(z.moral);
+      const reussi = makeRng(`${state.seed}:s${state.season}:t${T}:delegue:${uid}`).chance(chance);
+      const t = reussi ? appliquerBonus(delegue) : null;
+      z.rapport.push(reussi && t
+        ? `Énigmes confiées à un agent : il a trouvé ! ${t.charAt(0).toUpperCase()}${t.slice(1)}.`
+        : `Énigmes confiées à un agent : il a séché (${Math.round(chance * 100)} % de chances avec ce moral). Pas de bonus aujourd’hui, sans autre conséquence.`);
+    }
     if (qs.length) {
       z.stats.quetesOk += ok;
       z._ps += ok * PS.queteOk + faux * PS.queteTentee;
@@ -489,13 +510,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       jalon(z, `Énigmes : ${faux} mauvaise${faux > 1 ? 's' : ''} réponse${faux > 1 ? 's' : ''} (−${ENIGMES.rateeMoral} de moral chacune)`);
       const b = qs.find((x) => x.bonus);
       let txt = `Énigmes du jour : ${ok} bonne${ok > 1 ? 's' : ''} réponse${ok > 1 ? 's' : ''} sur ${qs.length}${faux ? ` (−${faux} de moral)` : ''}`;
-      if (ok >= 2 && b) {
-        if (b.bonus === 'moral') { const g = gainMoral(ENIGMES.bonusMoral, z.moral); z.moral += g; txt += `, bonus +${g} de moral`; }
-        else if (b.bonus === 'budget') { z.budget += ENIGMES.bonusBudget; z._compta.push({ k: 'bonus', l: 'Bonus d’énigmes', v: ENIGMES.bonusBudget }); txt += `, bonus +${ENIGMES.bonusBudget} k€`; }
-        else if (b.bonus === 'indice' && (!state.enquete || state.enquetePause)) { z.budget += ENIGMES.bonusBudget; z._compta.push({ k: 'bonus', l: 'Bonus d’énigmes', v: ENIGMES.bonusBudget }); txt += `, pas d’enquête en cours : bonus converti en +${ENIGMES.bonusBudget} k€`; }
-        else if (b.bonus === 'indice') { txt += indiceBonus(state, z, zr) ? ', bonus +1 indice d’enquête' : ', bonus indice (rien de nouveau à trouver)'; }
-        else if (b.bonus === 'capacite' && SERVICES.includes(b.service)) { bonusService = b.service; txt += `, bonus +${Math.round((ENIGMES.bonusCapacite - 1) * 100)} % en ${SERVICE_LABELS[b.service]}`; }
-      }
+      if (ok >= 2 && b) { const t = appliquerBonus(b); if (t) txt += `, ${t}`; }
       jalon(z, 'Énigmes : bonus choisi');
       if (ok === 3) { const sf = ENIGMES.sansFaute, g = gainMoral(sf.moral, z.moral); z._ps += sf.ps; z.budget += sf.budget; z.moral += g; z._compta.push({ k: 'bonus', l: 'Prime « sans faute » (énigmes)', v: sf.budget }); txt += `, sans faute : +${sf.budget} k€, +${g} de moral, +${sf.ps} PS`; }
       z.rapport.push(`${txt}.`);
@@ -532,6 +547,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const n = Object.values(pr2).reduce((a2, b2) => a2 + b2, 0);
       if (n && pr2 === fp.prises[uid]) z.rapport.push(`FIPA : ${n} agent${n > 1 ? 's' : ''} mobilisé${n > 1 ? 's' : ''} sur le dispositif commun.`);
     }
+    // Agent chargé des énigmes du jour : pendant qu'il planche, sa paperasse prend du retard.
+    if (z._delegue) { delete z._delegue; z.paperasse += ENIGMES.delegue.paperasse; }
     if (opx.op && renfortsRecus[uid]) {
       const besoin = Object.values(opx.op.besoins).reduce((a, b) => a + b, 0) || 1;
       const recu = renfortsRecus[uid].reduce((a, b) => a + b.n, 0);
@@ -952,7 +969,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
-    delete z._joue; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement;
+    delete z._joue; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue;
   }
 
   // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).

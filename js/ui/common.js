@@ -79,7 +79,7 @@ export function icon(name, size = 22, extra = '') {
 export function tabbar(active, { questBadge = false, radioBadge = false } = {}) {
   const tabs = [['hp', 'HP'], ['ordres', 'Ordres'], ['terrain', 'Terrain'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['carte', 'Carte'], ['radio', 'Radio']];
   const st = S.state, me = S.user && st && st.zones ? st.zones[S.user.uid] : null;
-  const faites = (S.questResults || []).filter((r) => r && (r.statut === 'ok' || r.statut === 'rate')).length;
+  const faites = (S.questResults || []).some((r) => r && r.statut === 'delegue') ? 3 : (S.questResults || []).filter((r) => r && (r.statut === 'ok' || r.statut === 'rate')).length;
   const dots = {
     ordres: !S.savedOrders || S.ordersDirty,
     enquete: !!(st && (st.traques || []).length && !(S.draft && S.draft.traque)),

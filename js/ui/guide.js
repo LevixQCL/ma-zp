@@ -312,6 +312,8 @@ export function sections() {
         <p>Dans l’écran Énigmes, l’onglet « Entraînement » permet de choisir un type et une difficulté (jusqu’au niveau hardcore) et de s’exercer autant qu’on veut. La correction est immédiate et rien ne compte : ni classement, ni moral, ni PS.</p>`,
           'Deux bonnes réponses débloquent un bonus au choix : +1 indice d’enquête, +3 de moral, +2 k€ ou +10 % de capacité pour un service. Trois sur trois : prime « sans faute » en plus (+3 k€, +2 de moral, +5 PS). Comme pour la prime au personnel, les bonus de moral rapportent moins quand le moral est déjà haut : moitié de 70 à 85, +1 au-delà.',
         ])}
+        <h3>Pas le temps ou pas l’envie ?</h3>
+        <p>Tant que tu n’as répondu à aucune énigme du jour, tu peux les <strong>confier à un agent</strong> (bouton en haut de l’écran Énigmes) et choisir le bonus qu’il doit viser. À 20:00, il le décroche avec 60 % de chances à 50 de moral (de 40 à 80 % selon le moral : 5 points de chance par 10 points de moral). Pas de PS, pas de prime « sans faute », pas de moral perdu s’il sèche ; pendant qu’il planche, +1 dossier de paperasse. C’est définitif pour la journée (le dossier noir reste ouvert), mais tu peux changer le bonus visé jusqu’à 20:00.</p>
         <h3>Les outils</h3>
         ${ul([
           '<strong>Un coup de pouce ?</strong> : une piste de méthode, sans la réponse.',
