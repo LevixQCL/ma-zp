@@ -11,7 +11,7 @@ import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, SOURCES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
   ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect,
 } from '../engine/enquete.js';
-import { lireCarnet, ecrireCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal } from './enquete.js';
+import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal } from './enquete.js';
 
 // ───── Dimensions du tableau ─────
 // Version 2 : tableau élargi (2 800 de large) ; les dispositions de la version 1 sont décalées de 600 vers la droite.
@@ -486,6 +486,7 @@ export function renderTableau() {
     </div>
     <div class="tb-haut tb-ui">
       <button type="button" class="tb-chip" data-action="tab-ouvrir" data-tid="titre">J${st.enquete.jour} / ${ENQ.dureeMax} · ${et.t.liens.length} ficelle${et.t.liens.length > 1 ? 's' : ''}</button>
+      ${sauvegardeCarnet(st.enquete.n) ? '<button type="button" class="tb-chip" data-action="tab-restaurer" title="Remettre le tableau tel qu’il était sur cet appareil avant la dernière synchro">⟲ restaurer</button>' : ''}
       <button type="button" class="tb-chip" data-action="tab-sync" aria-label="Synchroniser le tableau avec mes autres appareils" title="Synchroniser avec mes autres appareils" ${S.carnetSync && S.carnetSync !== 'ok' ? 'style="color:var(--red-soft)"' : ''}>${S.carnetSync === 'encours' ? '↻ …' : S.carnetSync && S.carnetSync !== 'ok' ? `⚠ non synchronisé${S.carnetSync === 'permission-denied' ? ' (règles Firebase)' : ''} · réessayer` : '↻'}</button>
       ${traque ? '<button type="button" class="tb-chip rouge" data-action="tab-vue" data-v="liste">Traque en cours</button>' : ''}
       <span class="grow"></span>
