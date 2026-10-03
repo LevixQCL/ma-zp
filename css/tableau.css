@@ -232,3 +232,8 @@ span.tb-t-gardee { color: var(--faint); } span.tb-t-prevu { color: var(--amber);
 
 /* Restaurer / synchroniser : seulement sur PC (sur téléphone, la synchro reste automatique ; l'alerte d'échec reste visible) */
 @media not ((hover: hover) and (pointer: fine)) { .tb-chip.tb-pc { display: none; } }
+/* Élément épinglé : deux punaises dorées en bas, il ne bouge plus quand on glisse dessus */
+.tb-pin2 { position: absolute; bottom: -4px; width: 13px; height: 13px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #FFF4C8, #D9A520 45%, #6E4E06); box-shadow: 2px 3px 3px rgba(30,15,0,.5); z-index: 3; pointer-events: none; }
+.tb-pin2.g { left: 6px; } .tb-pin2.d { right: 6px; }
+.tb-fixer { align-self: flex-start; border: 1px solid var(--hair); background: var(--surface2); color: var(--text2); font: inherit; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.tb-fixer.on { border-color: var(--amber-line); color: var(--amber); }

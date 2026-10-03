@@ -46,7 +46,7 @@ function dispo(n) {
     pos = Object.fromEntries(Object.entries(pos).map(([k, [x, y]]) => [k, [x + (t.v === 2 ? 0 : DECALAGE_V2), y > 1080 ? y + 220 : y]]));
     vue = null;
   }
-  return { v: 3, pos, liens: t.liens || [], places: t.places || [], fiches: t.fiches || [], neuf: t.neuf || [], vue };
+  return { v: 3, pos, liens: t.liens || [], places: t.places || [], fiches: t.fiches || [], neuf: t.neuf || [], fixes: t.fixes || [], vue };
 }
 function ecrireDispo(n, t) { const c = lireCarnet(n); c.tab = t; ecrireCarnet(n, c); }
 
@@ -205,7 +205,7 @@ function elementsHtml(aff, dos, et) {
   const out = [];
   const wrap = (id, w, sc, inner, pin, cls = '') => {
     const [x, y] = posDe(t, id);
-    return `<div class="tb-it ${cls} ${sel === id ? 'tb-sel' : ''} ${S.tabFrom === id ? 'tb-from' : ''}" data-tid="${esc(id)}" style="left:${x - w / 2}px;top:${y + 7}px;width:${w}px;--r:${rotDe(id)}deg;--sc:${sc}">${inner}${pinHtml(pin)}${t.neuf.includes(id) ? '<span class="tb-neuf">NOUVEAU</span>' : ''}</div>`;
+    return `<div class="tb-it ${cls} ${t.fixes.includes(id) ? 'tb-fixe' : ''} ${sel === id ? 'tb-sel' : ''} ${S.tabFrom === id ? 'tb-from' : ''}" data-tid="${esc(id)}" style="left:${x - w / 2}px;top:${y + 7}px;width:${w}px;--r:${rotDe(id)}deg;--sc:${sc}">${inner}${pinHtml(pin)}${t.fixes.includes(id) ? '<span class="tb-pin2 g"></span><span class="tb-pin2 d"></span>' : ''}${t.neuf.includes(id) ? '<span class="tb-neuf">NOUVEAU</span>' : ''}</div>`;
   };
   // Fiches de constatation.
   for (const e of ELEMENTS) {
@@ -434,7 +434,20 @@ function volet(aff, dos, et) {
   return `<section class="tb-volet tb-ui" aria-label="Détail">
     <div class="tb-poignee"></div>
     <button type="button" class="tb-fermer" data-action="tab-fermer" aria-label="Fermer">${icon('x', 18)}</button>
-    <div class="tb-volet-corps">${corps}</div></section>`;
+    <div class="tb-volet-corps">${fixable(sh.id) ? boutonFixer(sh.id) : ''}${corps}</div></section>`;
+}
+
+const fixable = (id) => /^(s\d|c:|recit$|chrono$|une$|scene$|plainte$)/.test(id) || dispo(S.state.enquete.n).places.includes(id);
+function boutonFixer(id) {
+  const f = dispo(S.state.enquete.n).fixes.includes(id);
+  return `<button type="button" class="tb-fixer ${f ? 'on' : ''}" data-action="tab-fixer" data-tid="${esc(id)}" aria-pressed="${f}">${f ? '📌 Épinglée : ne bouge plus · libérer' : '📌 Épingler ici (ne bouge plus en glissant)'}</button>`;
+}
+/** Épingle ou libère un élément : épinglé, il ne se déplace plus (glisser dessus fait défiler le tableau) ; les ficelles marchent toujours. */
+export function basculerFixe(id) {
+  const n = S.state.enquete.n, t = dispo(n);
+  t.fixes = t.fixes.includes(id) ? t.fixes.filter((x) => x !== id) : [...t.fixes, id];
+  ecrireDispo(n, t);
+  return t.fixes.includes(id);
 }
 
 // ───── Mini tuto ─────
@@ -442,7 +455,7 @@ const TUTO = [
   { titre: 'Ton tableau d’enquête', texte: 'Tout ce que tu sais de l’affaire, punaisé au mur. C’est toi qui le ranges : rien n’est trié d’avance.', ou: 'centre' },
   { titre: 'Promène-toi dessus', texte: 'Glisse le liège pour te déplacer. Pince à deux doigts (ou la molette sur ordinateur) pour zoomer. Ce bouton montre tout le tableau.', ou: 'bas', spot: 'fit' },
   { titre: 'La boîte à pièces', texte: 'Chaque soir à 20:00, les nouvelles pièces arrivent ici. Sors-les une à une et punaise-les où tu veux : près d’un suspect, sur le plan…', ou: 'haut', spot: 'boite' },
-  { titre: 'Touche pour agir', texte: 'Touche une photo, une fiche ou un lieu du plan : tu vois ce qu’on sait, tu coches ✓ ou ✕, et tu lances tes démarches. Le plan donne les temps de trajet : un trou dans un alibi ne suffit pas si la route est trop longue.', ou: 'centre' },
+  { titre: 'Touche pour agir', texte: 'Touche une photo, une fiche ou un lieu du plan : tu vois ce qu’on sait, tu coches ✓ ou ✕, et tu lances tes démarches. Le plan donne les temps de trajet : un trou dans un alibi ne suffit pas si la route est trop longue. Tu peux aussi l’épingler 📌 : il ne bougera plus quand tu fais défiler.', ou: 'centre' },
   { titre: 'Tire tes ficelles', texte: 'Pose le doigt sur une punaise et glisse jusqu’à un autre élément : la ficelle s’accroche toute seule à la punaise la plus proche. Pour en retirer une, attrape-la et tire-la hors de sa ligne : elle se décroche.', ou: 'bas', spot: 'fil' },
   { titre: 'Ce soir', texte: 'Démarches, piste, appui fédéral : tout part avec tes ordres à 20:00. Tu préfères l’affichage en liste ? Il est derrière ce bouton.', ou: 'haut', spot: 'soir' },
 ];
@@ -462,7 +475,7 @@ function tutoHtml() {
 
 /** Hauteur du tableau : la taille de base, ou plus si des éléments ont été rangés plus bas. */
 function hauteurTableau(aff, t) {
-  const ids = [...t.places, ...aff.suspects.map((_, i) => `s${i}`), ...(aff.carte ? ['plainte'] : [])];
+  const ids = [...t.places, ...aff.suspects.map((_, i) => `s${i}`), 'recit', 'chrono', ...(aff.carte ? ['une', 'scene', 'plainte'] : [])];
   return Math.max(BH_MIN, ...ids.map((id) => posDe(t, id)[1] + tailleDe(id)[1] + 80));
 }
 
@@ -601,26 +614,28 @@ function tailleDe(id, grand = false) {
   return /^(recit|chrono|une|plainte)$/.test(id) ? [420, 600] : grand ? [280, 520] : [250, 330];
 }
 
-/** Punaise les pièces `ids` dans les coins libres (hors plan, documents, suspects et `garder`), en colonnes bien alignées. */
-function caser(aff, t, ids, garder, grands = new Set()) {
+/** Punaise les éléments `ids` dans les coins libres (hors plan, documents, suspects et `garder`).
+ *  `zone` classe les emplacements (le plus petit d'abord) ; à égalité : ligne par ligne si `lignes`, sinon colonne par colonne. */
+function caser(aff, t, ids, garder, { grands = new Set(), zone = zoneSortie, lignes = false } = {}) {
   const MARGE = 22;
   const boite = (id, [x, y]) => { const [w, h] = tailleDe(id, grands.has(id)); return [x - w / 2 - MARGE, y - 26, x + w / 2 + MARGE, y + h + MARGE]; };
-  const pris = [[MAP.x - 20, MAP.y - 20, MAP.x + MAP.w + 20, MAP.y + MAP.h + 20]];
-  const fixes = ['recit', 'chrono', 's0', 's1', 's2', 's3', 's4', 'c:occ', 'c:moy', 'c:mob', ...(aff.carte ? ['une', 'scene', 'plainte'] : []), ...garder];
+  const pris = [[MAP.x - 20, MAP.y - 20, MAP.x + MAP.w + 20, MAP.y + MAP.h + 20], [BW / 2 - 260, 0, BW / 2 + 260, 120]];
+  const fixes = ['recit', 'chrono', ...aff.suspects.map((_, i) => `s${i}`), 'c:occ', 'c:moy', 'c:mob', ...(aff.carte ? ['une', 'scene', 'plainte'] : []), ...garder].filter((id) => !ids.includes(id));
   for (const id of fixes) pris.push(boite(id, posDe(t, id)));
-  const libre = (r) => r[0] >= 0 && r[2] <= BW && r[3] <= BH && !pris.some((q) => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1]);
+  const libre = (r) => r[0] >= 0 && r[2] <= BW && r[3] <= BH + 900 && !pris.some((q) => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1]);
   const a = [];
-  for (let y = 50; y <= BH - 200; y += 20) for (let x = 150; x <= BW - 150; x += 270) a.push([x, y]);
-  // D'abord à droite du plan, puis sous les suspects, puis à gauche, enfin ce qui reste en haut ; colonne par colonne.
-  const zone = ([x, y]) => (x > MAP.x + MAP.w && y >= MAP.y - 100 ? 0 : y >= 1700 ? 1 : x < MAP.x && y >= MAP.y ? 2 : 3);
-  a.sort((p, q) => zone(p) - zone(q) || (zone(p) === 1 ? p[1] - q[1] || p[0] - q[0] : p[0] - q[0] || p[1] - q[1]));
+  for (let y = 50; y <= BH + 600; y += 20) for (let x = 150; x <= BW - 150; x += 290) a.push([x, y]);
+  a.sort((p, q) => zone(p) - zone(q) || (lignes || zone(p) === 1 ? p[1] - q[1] || p[0] - q[0] : p[0] - q[0] || p[1] - q[1]));
   ids.forEach((f, i) => {
     const slot = a.find((c) => libre(boite(f, c)));
-    if (slot) { t.pos[f] = slot; pris.push(boite(f, slot)); }
-    else t.pos[f] = [BW / 2 + ((i % 5) - 2) * 40, BH - 400];
-    if (!t.places.includes(f)) t.places.push(f);
+    t.pos[f] = slot || [BW / 2 + ((i % 5) - 2) * 40, BH - 400];
+    if (slot) pris.push(boite(f, slot));
+    if (!DOCS.includes(f) && !t.places.includes(f)) t.places.push(f);
   });
 }
+const DOCS = ['recit', 'chrono', 'une', 'scene', 'plainte'];
+// Sortie de la boîte : d'abord à droite du plan, puis en bas, puis à gauche, enfin ce qui reste (et jamais sous le bord du tableau actuel).
+const zoneSortie = ([x, y]) => (y > BH - 300 ? 9 : x > MAP.x + MAP.w && y >= MAP.y - 100 ? 0 : y >= 1700 ? 1 : x < MAP.x && y >= MAP.y ? 2 : 3);
 
 /** « Tout sortir » : chaque pièce de la boîte et chaque fiche à compléter est punaisée dans un coin libre du tableau. */
 export function toutSortir() {
@@ -629,7 +644,7 @@ export function toutSortir() {
   const t = et.t;
   for (const e of et.fichesAFaire) { if (!t.fiches.includes(e)) t.fiches.push(e); if (!t.neuf.includes(`c:${e}`)) t.neuf.push(`c:${e}`); }
   const ids = et.boite.map((p) => p.f);
-  caser(aff, t, ids, t.places, new Set(et.boite.filter((p) => typePiece(p) === 'jn').map((p) => p.f)));
+  caser(aff, t, ids, t.places, { grands: new Set(et.boite.filter((p) => typePiece(p) === 'jn').map((p) => p.f)) });
   for (const f of ids) if (!t.neuf.includes(f)) t.neuf.push(f);
   ecrireDispo(aff.n, t);
   return ids.length + et.fichesAFaire.length;
@@ -640,24 +655,42 @@ export function toutSortir() {
 export function rangerTableau() {
   const st = S.state, aff = affaire(st, st.enquete.n);
   const et = etatTab(aff, dossierDe(st, myZone()));
-  const t = et.t;
-  // Une colonne par suspect : sa photo, puis ses pièces en lignes alignées (occasion, moyen, mobile).
-  const col = (i) => 784 + 448 * i, Y0 = 1480;
-  if (aff.carte) t.pos.plainte = DEF_POS.plainte.slice();
-  aff.suspects.forEach((_, i) => { t.pos[`s${i}`] = [col(i), Y0]; });
-  let y = Y0 + Math.max(...aff.suspects.map((_, i) => tailleDe(`s${i}`)[1])) + 70;
-  const aSuspect = [];
-  for (const el of ['occ', 'moy', 'mob']) {
-    const ligne = et.placees.filter((p) => p.f.startsWith(`${el}:`) && pieceSuspect(p.f) !== null);
-    if (!ligne.length) continue;
-    let h = 0;
-    for (const p of ligne) { t.pos[p.f] = [col(pieceSuspect(p.f)), y]; h = Math.max(h, tailleDe(p.f, typePiece(p) === 'jn')[1]); aSuspect.push(p.f); }
-    y += h + 60;
-  }
-  // Le reste (planques, butin…) près du plan, dans les coins libres.
-  const autres = et.placees.filter((p) => !aSuspect.includes(p.f));
-  BH = Math.max(BH_MIN, y + 80);
-  caser(aff, t, autres.map((p) => p.f), aSuspect, new Set(autres.filter((p) => typePiece(p) === 'jn').map((p) => p.f)));
+  const t = et.t, fx = new Set(t.fixes);
+  const bouge = (id) => !fx.has(id);
+  const MARGE = 14;
+  const jn = new Set(et.placees.filter((p) => typePiece(p) === 'jn').map((p) => p.f));
+  const boite = (id, [x, y]) => { const [w, h] = tailleDe(id, jn.has(id)); return [x - w / 2 - MARGE, y - 26, x + w / 2 + MARGE, y + h + MARGE]; };
+  // 1. Le cadre : le récit en haut à gauche, la main courante en haut à droite, les fiches au-dessus du plan.
+  if (bouge('recit')) t.pos.recit = [250, 60];
+  if (bouge('chrono')) t.pos.chrono = [BW - 150, 60];
+  for (const e of ELEMENTS) if (bouge(`c:${e}`)) t.pos[`c:${e}`] = DEF_POS[`c:${e}`].slice();
+  const pris = [[MAP.x - 20, MAP.y - 20, MAP.x + MAP.w + 20, MAP.y + MAP.h + 20], [BW / 2 - 260, 0, BW / 2 + 260, 120]];
+  const ajoute = (id) => pris.push(boite(id, posDe(t, id)));
+  ['recit', 'chrono', 'c:occ', 'c:moy', 'c:mob', ...t.fixes].forEach(ajoute);
+  const libre = (r) => r[0] >= 0 && r[2] <= BW && !pris.some((q) => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1]);
+  // 2. Les suspects en colonnes de part et d'autre du plan (3 à gauche, 2 à droite), leurs pièces empilées sous la photo.
+  const COLS = [175, 475, 775, MAP.x + MAP.w + 180, MAP.x + MAP.w + 480];
+  const ORDRE = { occ: 0, moy: 1, mob: 2 };
+  const aSuspect = new Set();
+  let bas = 0;
+  aff.suspects.forEach((_, i) => {
+    const x = COLS[i] ?? MAP.x + 150 + (i - COLS.length) * 290;
+    const pile = [`s${i}`, ...et.placees.filter((p) => pieceSuspect(p.f) === i).sort((p, q) => ORDRE[p.f.split(':')[0]] - ORDRE[q.f.split(':')[0]] || p.j - q.j).map((p) => p.f)];
+    let y = MAP.y;
+    for (const id of pile) {
+      if (id !== `s${i}`) aSuspect.add(id);
+      if (!bouge(id)) continue;
+      while (!libre(boite(id, [x, y])) && y < 5000) y += 20;
+      t.pos[id] = [x, y]; ajoute(id);
+      y += tailleDe(id, jn.has(id))[1] + 34;
+      bas = Math.max(bas, y);
+    }
+  });
+  // 3. Sous le plan : la une, la scène, la plainte, puis les planques et le reste, en lignes.
+  const reste = [...(aff.carte ? ['une', 'scene', 'plainte'] : []), ...et.placees.filter((p) => !aSuspect.has(p.f)).map((p) => p.f)].filter(bouge);
+  BH = Math.max(BH_MIN, bas + 60);
+  const sousPlan = ([x, y]) => (y < MAP.y + MAP.h ? 5 : x >= MAP.x - 40 && x <= MAP.x + MAP.w + 40 ? 0 : 1);
+  caser(aff, t, reste, [...aff.suspects.map((_, i) => `s${i}`), ...aSuspect, ...t.fixes], { grands: jn, zone: sousPlan, lignes: true });
   ecrireDispo(aff.n, t);
   return et.placees.length;
 }
@@ -673,6 +706,7 @@ export function remettrePiece(f) {
   t.places = t.places.filter((x) => x !== f);
   t.liens = t.liens.filter(([a, b]) => a !== f && b !== f);
   t.neuf = t.neuf.filter((x) => x !== f);
+  t.fixes = t.fixes.filter((x) => x !== f);
   ecrireDispo(n, t);
 }
 /** Tire ou coupe une ficelle entre a et b. */
@@ -824,7 +858,7 @@ export function monterTableau(rerender) {
       g = { t: 'fil', from: tid, fromEl: el, tid, sx: x, sy: y, x, y, p1: ancre(affaire(st, n), dispo(n), tid), tmp, cible: null, cibleEl: null, moved: false };
       return;
     }
-    if (mobile && S.tabMode !== 'fil') {
+    if (mobile && S.tabMode !== 'fil' && !dispo(n).fixes.includes(tid)) {
       const p = dispo(n).pos[tid] || DEF_POS[tid] || [0, 0];
       g = { t: 'item', id: tid, tid, el, share: !!e.target.closest('.tb-share'), sx: x, sy: y, ox: p[0], oy: p[1], pos: p, moved: false };
     } else {
