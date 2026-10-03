@@ -50,7 +50,20 @@ export const COUTS = {
 export const coutEquipement = (n) => COUTS.equipementBase + 2 * (n - 1);
 /** Multiplicateurs d'efficacité : formation (+20 % par niveau) et matériel (+15 % par niveau). */
 export const multNiveau = (n) => 0.8 + 0.2 * n;
-export const multEquip = (n) => 0.85 + 0.15 * n;
+/** Matériel : un petit gain d'efficacité et surtout un effet propre à chaque service (k = niveau − 1).
+ *  `actif: false` rend l'ancien comportement (+15 % d'efficacité, rien d'autre). */
+export const EQUIP = {
+  actif: true,
+  efficacite: 0.08,     // +5 % par niveau
+  blessure: 0.15,       // Intervention : −15 % de risque de blessure par niveau
+  amendes: 0.12,        // Roulage : +12 % d'amendes par niveau
+  enquete: 0.15,        // Recherche : +15 % de chances de pièce d'enquête par niveau
+  satisfaction: 0.5,    // Proximité : +0,5 de satisfaction par tour et par niveau
+  protection: 0.1,      // Accueil : +10 % de tracas internes évités par niveau
+};
+export const multEquip = (n) => (EQUIP.actif ? 1 - EQUIP.efficacite + EQUIP.efficacite * n : 0.85 + 0.15 * n);
+/** Bonus propre au matériel d'un service : k × valeur (0 si l'effet n'est pas actif). */
+export const bonusEquip = (z, service, cle) => (EQUIP.actif && z && z.equip ? Math.max(0, (z.equip[service] || 1) - 1) * EQUIP[cle] : 0);
 
 // Dépenses du jour : cumulables avec la grande décision, payées sur le budget du tour.
 // Roulage : au-delà de `seuil` agents, chaque agent de plus compte pour moitié (les automobilistes sont prévenus).
@@ -121,7 +134,7 @@ export const coutFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.f
 /** Agents absents pendant une formation de ce service. */
 export const agentsFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.agents : AGENTS_EN_FORMATION);
 /** Multiplicateur du risque de blessure d'une zone (stand de tir). */
-export const risqueBlessure = (z) => (z && z.infra && z.infra.tir ? INFRAS.tir.blessure : 1);
+export const risqueBlessure = (z) => (z && z.infra && z.infra.tir ? INFRAS.tir.blessure : 1) * Math.max(0.2, 1 - bonusEquip(z, 'intervention', 'blessure'));
 
 export const RYTHMES = {
   normal:   { label: 'Normal', mult: 1, moral: 0, cout: 0, sub: 'aucun effet' },

@@ -4,7 +4,7 @@
 import { appuiResolution } from './appui.js';
 import {
   APP_VERSION, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
@@ -384,7 +384,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     let adminMult = 1;
     // L'Accueil comme assurance : chaque agent au-delà de 2 évite 15 % des tracas internes (jusqu'à 60 %).
     const nAdmin = (o.alloc && o.alloc.admin) || 0;
-    const protection = clamp((nAdmin - 2) * 0.15, 0, 0.6);
+    const protection = clamp(clamp((nAdmin - 2) * 0.15, 0, 0.6) + (nAdmin > 0 ? bonusEquip(z, 'admin', 'protection') : 0), 0, 0.85);
     const evite = (titre) => { z.rapport.push(`Évité : ${titre.charAt(0).toLowerCase()}${titre.slice(1)}. Ton Accueil (${nAdmin} agents) a paré le coup.`); z.stats.evites = (z.stats.evites || 0) + 1; };
     if (zr.chance(0.3)) {
       const a = zr.pick(ALEAS);
@@ -614,6 +614,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Quartier par quartier : patrouilles ciblées, point chaud, déplacement de la délinquance.
     const patrouilles = lirePatrouilles(state, z, o.patrouilles, alloc.proximite || 0);
     z.satisfaction += cap.proximite * 0.12;
+    if (alloc.proximite > 0) z.satisfaction += bonusEquip(z, 'proximite', 'satisfaction');
     jalon(z, `Présence de la Proximité : capacité ${fmt1(cap.proximite)} × 0,12`);
     z.satisfaction += tourQuartiers(state, z, { patrouilles, agentsProx: alloc.proximite || 0, capProx: cap.proximite, rng: zr, zoneLabel });
     noter(z, 'satisfaction', 'Point chaud désamorcé', z._pcSatisf || 0); delete z._pcSatisf;
@@ -655,7 +656,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     jalon(z, 'Le parquet réclame les dossiers en retard');
 
     // Roulage : amendes et sécurité routière.
-    const recettes = cap.roulage * ECONOMIE.amendeParCapacite;
+    const recettes = cap.roulage * ECONOMIE.amendeParCapacite * (1 + bonusEquip(z, 'roulage', 'amendes'));
     const totalAlloc = SERVICES.reduce((s, k) => s + alloc[k], 0) || 1;
     if (pr.roulageMin) {
       if (alloc.roulage >= pr.roulageMin) { z.satisfaction += 2; z.rapport.push('Contrôles de vitesse demandés par les riverains : assurés (+2 de satisfaction).'); }
