@@ -480,7 +480,7 @@ function aide(s, z) {
 }
 
 function prisesHtml() {
-  const d = S.draft, l = [];
+  const d = S.draft, z = myZone(), l = [];
   if (d.traque && d.traque.agents) l.push(`${d.traque.agents} agent${d.traque.agents > 1 ? 's' : ''} d’Intervention partent en traque`);
   if ((d.demarches || []).includes('temoin')) l.push('2 agents de Recherche passent la journée sur une audition');
   const f = agentsFipaCeSoir();
