@@ -399,6 +399,56 @@ const miroir = (c) => (c >= 'A' && c <= 'Z' ? String.fromCharCode(90 - (c.charCo
 /** Message sans espaces, en groupes de 5 lettres : la longueur des mots ne trahit plus rien. */
 const enGroupes = (t) => (t.replace(/ /g, '').match(/.{1,5}/g) || []).join(' ');
 
+/** Lettre effacée (tache, déchirure) dans un message codé. */
+export const TROU = '_';
+const TAUX_TROUS = [0, 0, 0.12, 0.17, 0.22, 0.27, 0.32];
+
+/**
+ * Efface des lettres du message codé (papier taché, SMS abîmé) : on ne peut plus tout
+ * décoder mécaniquement, il faut reconstituer les mots. Garde-fous pour rester soluble :
+ *  - jamais deux lettres effacées côte à côte ;
+ *  - le lieu garde sa 1re lettre et au plus 1 trou par tranche de 4 lettres ;
+ *  - début du message (l'« attaque ») intact jusqu'au niveau 4 ; au niveau 5, chaque roue
+ *    reste trouvable par le début ; en hardcore, au plus une roue à deviner à l'œil.
+ * Tirage sur une graine tirée du message lui-même : n'affecte pas les autres tirages.
+ */
+function trouer(chiffre, m, ouverture, diff, lenCle) {
+  const taux = TAUX_TROUS[Math.min(diff, 6)] || 0;
+  if (!taux) return chiffre;
+  const rng = makeRng(`trous:${chiffre}:${diff}`);
+  const nette = m.phrase.replace(/ /g, '');
+  const lenOuv = ouverture.replace(/ /g, '').length;
+  // Position (en lettres) du lieu dans le message.
+  const avant = ` ${m.phrase} `.indexOf(` ${m.mots[0]} `);
+  const debLieu = avant >= 0 ? m.phrase.slice(0, avant).replace(/ /g, '').length : -1;
+  const lenLieu = m.mots[0].replace(/ /g, '').length;
+  const maxLieu = Math.floor(lenLieu / 4);
+  const roueVue = (trous) => Array.from({ length: lenCle }, (_, r) => {
+    for (let i = r; i < lenOuv; i += lenCle) if (!trous.has(i)) return true;
+    return false;
+  });
+  const roueManque = (trous) => roueVue(trous).filter((v) => !v).length;
+  const manqueBase = roueManque(new Set());
+  const trous = new Set();
+  let lieu = 0;
+  for (let i = 0; i < nette.length; i++) {
+    if (trous.has(i - 1) || !rng.chance(taux)) continue;
+    const dansLieu = i >= debLieu && i < debLieu + lenLieu;
+    if (dansLieu && (i === debLieu || lieu >= maxLieu)) continue;
+    if (i < lenOuv) {
+      if (diff <= 4) continue;
+      trous.add(i);
+      const tolere = diff >= 6 ? Math.max(1, manqueBase) : manqueBase;
+      if (lenCle > 1 ? roueManque(trous) > tolere : i < 2) { trous.delete(i); continue; }
+      continue;
+    }
+    trous.add(i);
+    if (dansLieu) lieu++;
+  }
+  let li = 0;
+  return chiffre.split('').map((c) => (c === ' ' ? c : trous.has(li++) ? TROU : c)).join('');
+}
+
 /**
  * Niveaux :
  *  1-2 : décalage simple, mots visibles (clé ou premier mot donnés).
@@ -431,10 +481,13 @@ function code(rng, diff) {
     if (diff >= 3) chiffre = enGroupes(chiffre);
     explication = `Décalage de ${k} rang${k > 1 ? 's' : ''} : « ${m.phrase} ».`;
   }
+  chiffre = trouer(chiffre, m, ouverture, diff, lenCle);
+  const nbTrous = chiffre.split(TROU).length - 1;
   if (diff <= 1) aide = `Chaque lettre a été remplacée par celle qui se trouve ${k} rang${k > 1 ? 's' : ''} plus loin dans l’alphabet (après Z, on repart à A). Recule de ${k} pour lire.`;
   else if (diff === 2) aide = `Chaque lettre a été décalée du même nombre de rangs dans l’alphabet (après Z, on repart à A). Un informateur assure que ce message commence par « ${ouverture} ».`;
   else if (diff === 3) aide = `Les espaces ont été retirés et le texte découpé en groupes de 5 lettres. Deux méthodes sont connues dans ce milieu : le décalage (chaque lettre avance du même nombre de rangs) ou l’alphabet miroir (A↔Z, B↔Y…). ${listeOuv}`;
   else aide = `Cette bande chiffre avec un mot-clé de ${lenCle} lettres : la 1re lettre du message est décalée selon la 1re lettre de la clé (A = 0, B = 1, C = 2…), la 2e selon la 2e${lenCle > 2 ? ', etc.' : ''}, puis on recommence. Espaces retirés, groupes de 5 lettres. ${listeOuv}${diff >= 6 ? ' Attention : le début du message ne suffit pas toujours à retrouver toute la clé.' : ''}`;
+  if (nbTrous) aide += ` Le papier est abîmé : ${nbTrous} lettre${nbTrous > 1 ? 's sont illisibles' : ' est illisible'} (taches d’encre). À toi de reconstituer les mots.`;
   return {
     titre: 'Message codé', mode: 'texte',
     contexte: rng.pick([

@@ -64,6 +64,11 @@ function anneau(r, lettres, cls) {
   }).join('');
 }
 
+/** Lettre illisible d'un message codé (tache d'encre). */
+export const TROU_HTML = '<span class="trou" role="img" aria-label="lettre illisible"></span>';
+/** Message codé prêt à afficher : les lettres effacées deviennent des taches. */
+export const codeHtml = (code) => esc(code).replace(/_/g, TROU_HTML);
+
 export function disqueHtml(q) {
   const n = q.cles || 1;
   const sel = Math.min(etat('disqueSel', q.id, () => 0), n - 1);
@@ -79,7 +84,7 @@ export function disqueHtml(q) {
   let lecture = '';
   if (n > 1) {
     let pos = 0;
-    const brut = q.code.split(' ').map((g) => g.split('').map((c) => `<span class="roue-c${pos++ % n}">${c}</span>`).join('')).join(' ');
+    const brut = q.code.split(' ').map((g) => g.split('').map((c) => (c === '_' ? (pos++, TROU_HTML) : `<span class="roue-c${pos++ % n}">${c}</span>`)).join('')).join(' ');
     lecture = `<span class="tiny muted">Message codé</span><div class="roue-lecture">${brut}</div>
       <span class="tiny muted">Lecture avec ces clés</span><div class="roue-lecture dq-lecture" data-code="${esc(q.code)}" data-n="${n}" data-cles="${Array.from({ length: n }, (_, i) => decalage(q, i)).join(',')}">${lireAvec(q.code, Array.from({ length: n }, (_, i) => decalage(q, i)))}</div>`;
   }
@@ -96,7 +101,7 @@ export function disqueHtml(q) {
 function lireAvec(code, cles) {
   let pos = 0;
   const n = cles.length;
-  return code.split(' ').map((g) => g.split('').map((c) => { const i = pos++ % n; return `<span class="roue-c${i}">${AB[mod(c.charCodeAt(0) - 65 - cles[i], 26)]}</span>`; }).join('')).join(' ');
+  return code.split(' ').map((g) => g.split('').map((c) => { const i = pos++ % n; if (c === '_') return TROU_HTML; return `<span class="roue-c${i}">${AB[mod(c.charCodeAt(0) - 65 - cles[i], 26)]}</span>`; }).join('')).join(' ');
 }
 
 function disqueRegler(carte, crans) {

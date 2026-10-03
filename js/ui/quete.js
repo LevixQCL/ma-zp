@@ -4,7 +4,7 @@ import { QUEST_TYPES, QUEST_LABELS } from '../quests/quests.js';
 import { SERVICES, SERVICE_LABELS, ENIGMES, gainMoral } from '../engine/constants.js';
 import { MINI_JEUX } from './incidents.js';
 import { cadenasHtml, cadenasResultat, essaisHtml } from './cadenas.js';
-import { chronoHtml, disqueHtml, plaquesHtml, temoignagesHtml, figureInteractive, filatureOutils, butinHtml, ligneHtml, trajetsHtml, icoGrille, ecritureHtml, avatar } from './enigmes.js';
+import { chronoHtml, disqueHtml, plaquesHtml, temoignagesHtml, figureInteractive, filatureOutils, butinHtml, ligneHtml, trajetsHtml, icoGrille, ecritureHtml, avatar, codeHtml } from './enigmes.js';
 
 /** Le joueur a-t-il déjà changé une énigme aujourd'hui ? */
 function rerollUtilise() { return (S.quests || []).some((q) => q.variante); }
@@ -142,7 +142,7 @@ export function renderQuete() {
 
     ${q.elements && q.elements.length && !((q.type === 'chronologie' && !fini) || (q.type === 'horaires' && q.trajets)) ? (q.type === 'cadenas' ? essaisHtml(q) : q.type === 'quiment' ? temoignagesHtml(q, { marques: !fini }) : q.type === 'plaque' ? temoignagesHtml(q) : `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who">${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>`) : ''}
     ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${q.type === 'grille' ? 'Auditions' : 'Indices'}</h2>${q.indices.map((t) => `<p class="small" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
-    ${q.mode === 'texte' ? `<div class="codebox" aria-label="Message codé">${esc(q.code)}</div>
+    ${q.mode === 'texte' ? `<div class="codebox" aria-label="Message codé">${codeHtml(q.code)}</div>
       <p class="small muted" style="margin:0">${esc(q.aide)}</p>` : ''}
     ${q.grille && !fini ? renderGrille(q) : ''}
     ${q.mode === 'texte' && !fini ? disqueHtml(q) : ''}
