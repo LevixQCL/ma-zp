@@ -125,7 +125,7 @@ const Shell = (() => {
   function stopTimer(){ st.timerOn=false; }
   function fmt(s){ s=Math.max(0,Math.ceil(s)); return s>=60? Math.floor(s/60)+':'+String(s%60).padStart(2,'0') : String(s); }
 
-  function result({ok, stats, faults, malus, note}){
+  function result({ok, stats, faults, malus, note, details}){
     st.timerOn=false; st.mode='result';
     let pts=0, skin=false;
     if(ok) pts=faults===0?2:1;
@@ -136,18 +136,21 @@ const Shell = (() => {
     const statHtml=stats.map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')+(MODE==='train'||RENF?'':`<div class="stat pts"><span>Jauge skins</span><b>${ok?'+'+pts:'+0'}</b></div>`);
     const boutons = INC ? `<button class="btn primary" id="back">${RENF?'Retour à l’enquête':'Retour au commissariat'}</button>`
       : `<button class="btn primary" id="again">${ok?'Rejouer':'Réessayer'}</button><button class="btn" id="tomenu">Menu</button>`;
+    const detailHtml = details && details.length ? `<div class="debrief-list"><b>${ok?'Tes erreurs':'Ce qui s’est mal passé'}</b><ul>${details.map(d=>`<li><span>${d}</span></li>`).join('')}</ul></div>` : '';
     const noteInc = RENF ? (ok ? 'Analyse réussie : la pièce arrivera dans ton dossier d’enquête à 20:00.' : '') : INC ? (ok ? `Résultat enregistré : ${escH(Q.get('gain')||'ton bonus')} et +${pts} sur la jauge des skins, à 20:00.${st.gauge>=50?' Ta jauge sera pleine ce soir : un nouveau skin t’attend.':''}` : '') : '';
     showCard(ok?`
       <div class="verdict ok">${ICONS.check}</div>
       <h2>${G.winTitle}</h2>
       <div class="stats">${statHtml}</div>
       ${skin?`<div class="skin">Jauge pleine : le skin « ${G.skin} » est débloqué pour ton commissariat.</div>`:''}
+      ${detailHtml}
       <p class="small">${INC?noteInc:MODE==='train'?'Entraînement : rien ne compte pour ta zone.':(note || (faults===0?'Sans faute : double point.':'Termine sans erreur pour gagner +2.'))}</p>
       <div class="row">${boutons}</div>`
     :`
       <div class="verdict bad">${ICONS.cross}</div>
       <h2>${G.loseTitle}</h2>
       <div class="stats">${statHtml}</div>
+      ${detailHtml}
       ${MODE==='train'?'<p class="small">Entraînement : aucune conséquence.</p>':RENF?'<div class="malus"><b>Pas de pièce</b> · L’analyse n’a rien donné : l’équipe repart. Tu peux redemander un appui pour demain.</div>':`<div class="malus"><b>Malus</b> · ${escH(INC&&Q.get('malus')?Q.get('malus')+' (appliqué à 20:00)':(malus||G.malus))}</div>`}
       <div class="row">${boutons}</div>`);
     if(INC) $('back').onclick=()=>post('close'); else { $('again').onclick=play; $('tomenu').onclick=menu; }
