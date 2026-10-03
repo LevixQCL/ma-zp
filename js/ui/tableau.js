@@ -486,6 +486,7 @@ export function renderTableau() {
     </div>
     <div class="tb-haut tb-ui">
       <button type="button" class="tb-chip" data-action="tab-ouvrir" data-tid="titre">J${st.enquete.jour} / ${ENQ.dureeMax} · ${et.t.liens.length} ficelle${et.t.liens.length > 1 ? 's' : ''}</button>
+      ${S.carnetSync && S.carnetSync !== 'ok' ? `<span class="tb-chip" role="status" style="color:var(--red-soft)" title="${esc(S.carnetSync)}">⚠ tableau non synchronisé${S.carnetSync === 'permission-denied' ? ' (règles Firebase)' : ''}</span>` : ''}
       ${traque ? '<button type="button" class="tb-chip rouge" data-action="tab-vue" data-v="liste">Traque en cours</button>' : ''}
       <span class="grow"></span>
       <button type="button" class="tb-rond" data-action="tab-vue" data-v="liste" aria-label="Affichage en liste">${icon('liste', 18)}</button>
