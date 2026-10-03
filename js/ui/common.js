@@ -1,7 +1,13 @@
 import { nonLus, invitations } from './prive.js';
 import { terrainAFaire } from './terrain.js';
 // Outils partagés par tous les écrans.
-import { gradeFor, nextGrade } from '../engine/constants.js';
+import { gradeFor, nextGrade, ENIGMES } from '../engine/constants.js';
+
+/** Bonus d'énigme « +10 % de capacité » choisi aujourd'hui pour ce service (1 sinon) : appliqué à 20:00, montré dès maintenant dans les estimations. */
+export function bonusEnigme(service) {
+  const b = (S.questResults || []).find((r) => r && r.bonus === 'capacite');
+  return b && b.service === service ? ENIGMES.bonusCapacite : 1;
+}
 import { moyenneIpz } from '../engine/zone.js';
 
 /** État de l'application (côté interface). */
