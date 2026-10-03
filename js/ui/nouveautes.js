@@ -41,6 +41,7 @@ export const NOTE_MAJ = {
       ['Il se souvient', 'l’indic payé revient avec un plus gros tuyau, la journaliste prend ta défense (ou en rajoute) lors d’une plainte, le sponsor du combi finit par faire parler de lui.'],
       ['Il lit ta façon de jouer', 'la même répartition plusieurs jours de suite finit par se voir ; l’argent qui dort attire du matériel fédéral à prix cassé ; une Proximité délaissée, des pétitions.'],
       ['Témoin tardif', 'si le district piétine sur l’enquête en fin de semaine, les zones à la traîne reçoivent une déposition qui permet d’écarter quelqu’un.'],
+      ['Le parquet surveille', 'un dossier fait surtout des pièces des autres zones (au moins 6 reçues et 70 % du dossier) coûte 2 k€ et 1 de réputation par soir, et la moitié du mérite si tu identifies l’auteur. Avertissement dès 60 %. Ceux qui partagent ne sont jamais visés.'],
       ['Bon retour', 'après quelques jours d’absence, ton retour est salué et suivi de deux jours d’éclaircie.'],
       ['Pour le maître du jeu', 'l’écran « Maître du jeu » montre le ciel de chaque zone et ce que le Directeur prépare, règle son intensité et le nombre de feuilletons, et lance un événement du district.'],
     ]],

@@ -993,7 +993,7 @@ export function enqueteDirecteur(state, push, rng) {
   for (const x of nb.filter((y) => y.n >= Math.max(4, med))) {
     const f = pieceCoupDePouce(state, x.z, aff, rng);
     if (!f) continue;
-    x.z.enquete.pieces.push({ f, j: e.jour, src: 'temoin' });
+    x.z.enquete.pieces.push({ f, j: e.jour, src: 'tardif' });
     x.z.rapport.push('Enquête : un témoin tardif s’est présenté à ton accueil. Sa déposition est au dossier.');
     aides.push(x.z.uid);
   }
@@ -1087,4 +1087,62 @@ export function apercuDirecteur(state) {
     district: dd.g ? { ...dd.g, titre: DISTRICT[dd.g.id] && DISTRICT[dd.g.id].titre } : null, prochain: dd.prochain || null,
     fantome: dd.fantome || null, coop: (dd.coop || []).map((x) => ({ ...x, la: label(state.zones[x.a]), lb: label(state.zones[x.b]) })), duo: dd.duo || null,
   };
+}
+
+// ───── Le parquet surveille : un dossier fait surtout des pièces des autres coûte des subsides ─────
+// Le parquet finance les zones pour leur propre travail d'enquête. Une zone dont le dossier de l'affaire en cours
+// repose surtout sur des pièces reçues par partage est d'abord avertie, puis voit son subside judiciaire réduit
+// chaque soir (et le mérite d'une identification partagé). Partager reste utile et récompensé : seule la
+// dépendance excessive est visée (celui qui reçoit, pas celui qui donne).
+export const PARQUET = {
+  avertissement: { recues: 4, part: 0.6 },   // au moins 4 pièces reçues et 60 % du travail d'enquête venu des autres
+  malus: { recues: 6, part: 0.7 },           // au moins 6 pièces reçues et 70 %
+  budget: -2,                                 // k€ par soir au stade du malus
+  reputation: -1,                             // par soir au stade du malus
+  merite: 0.5,                                // part des points d'enquête gardée en cas d'identification au stade du malus
+};
+
+/** Travail d'enquête de la zone sur l'affaire en cours : pièces obtenues elle-même et pièces reçues. */
+export function travailEnquete(z) {
+  const p = (z && z.enquete && z.enquete.pieces) || [];
+  const recues = p.filter((x) => x.src === 'partage').length;
+  const propres = p.filter((x) => x.src !== 'partage' && x.src !== 'ouverture' && x.src !== 'rebond' && x.src !== 'rattrapage' && x.src !== 'audition' && x.src !== 'tardif').length;
+  const part = recues + propres ? recues / (recues + propres) : 0;
+  const stade = recues >= PARQUET.malus.recues && part >= PARQUET.malus.part ? 2 : recues >= PARQUET.avertissement.recues && part >= PARQUET.avertissement.part ? 1 : 0;
+  return { recues, propres, part, stade };
+}
+
+/** Identification le soir même par une zone au stade du malus : le parquet ne lui laisse qu'une part du mérite. */
+export function parquetDecouverte(state, pre) {
+  const dec = pre && pre.res && pre.res.decouverte;
+  if (!dec) return;
+  for (const u of dec.uids || []) {
+    const z = state.zones[u];
+    if (!z || !z.dir || !z.dir.parquet || z.dir.parquet.stade < 2) continue;
+    const retire = Math.round(dec.pts * (1 - PARQUET.merite));
+    z.stats.limier = Math.max(0, (z.stats.limier || 0) - retire);
+    z.rapport.push(`Parquet : ton dossier reposait surtout sur les pièces des autres zones ; le mérite de l’identification est partagé (−${retire} pts d’enquête).`);
+  }
+}
+
+/** Chaque soir, après le travail des zones : avertissement ou malus selon la dépendance du dossier. */
+export function parquetSoir(state, uids, push) {
+  if (!state.enquete) return;
+  for (const u of uids) {
+    const z = state.zones[u];
+    if (!z || !z.enquete || z.enquete.n !== state.enquete.n || z.enquete.exclu) continue;
+    const d = assurerDir(z);
+    const t = travailEnquete(z);
+    const avant = (d.parquet && d.parquet.n === state.enquete.n && d.parquet.stade) || 0;
+    d.parquet = { n: state.enquete.n, stade: t.stade, part: round1(t.part * 100) / 100, recues: t.recues, propres: t.propres };
+    const pc = Math.round(t.part * 100);
+    if (t.stade === 1 && avant < 1) z.rapport.push(`Parquet : ${pc} % de ton dossier vient des pièces des autres zones (${t.recues} reçues, ${t.propres} obtenues par toi). Le parquet finance les zones pour leur propre travail : au-delà de ${Math.round(PARQUET.malus.part * 100)} %, ton subside judiciaire sera réduit. Fais tes propres démarches.`);
+    if (t.stade === 2) {
+      z.budget += PARQUET.budget; (z._compta ||= []).push({ k: 'parquet', l: 'Subside judiciaire réduit (dossier trop dépendant)', v: PARQUET.budget });
+      z.reputation += PARQUET.reputation;
+      z.rapport.push(`Parquet : ${pc} % de ton dossier vient des autres zones. Subside judiciaire réduit (${PARQUET.budget} k€, ${PARQUET.reputation} de réputation) tant que tu ne fais pas davantage tes propres démarches.`);
+      if (avant < 2) push(4, 'Parquet', `Le parquet rappelle ${label(z)} à l’ordre`, 'Un dossier fait surtout des pièces des autres : son subside judiciaire est réduit.', u);
+    }
+    if (t.stade < avant) z.rapport.push('Parquet : tes démarches ont rééquilibré ton dossier, le parquet lève sa réserve.');
+  }
 }

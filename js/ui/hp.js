@@ -264,6 +264,7 @@ export function renderHP() {
     const requis = Math.max(3, Math.round((st.evenement.parZone || 3) * Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length));
     alertes.push({ cls: 'amber', titre: dans === 0 ? `${esc(st.evenement.titre)} : ce soir !` : `${esc(st.evenement.titre)} dans ${dans} tour${dans > 1 ? 's' : ''}`, texte: `environ ${requis} agents requis pour tout le district`, href: dans === 0 ? '#ordres' : '#carte' });
   }
+  { const pq = z.dir && z.dir.parquet; if (pq && pq.stade && st.enquete && pq.n === st.enquete.n) alertes.push({ cls: pq.stade >= 2 ? 'red' : 'amber', titre: pq.stade >= 2 ? 'Parquet : subside judiciaire réduit' : 'Parquet : dossier trop dépendant', texte: `${Math.round(pq.part * 100)} % de ton dossier vient des autres zones (${pq.recues} reçues, ${pq.propres} à toi) · fais tes propres démarches`, href: '#enquete' }); }
   const cab = (z.cabosses || []).length;
   if (cab) {
     const choix = cabossesChoisis(z, S.draft && S.draft.depenses && S.draft.depenses.carrosserie), prevu = choix.length;

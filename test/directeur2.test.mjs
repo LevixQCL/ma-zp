@@ -100,7 +100,7 @@ const base = () => resolveTurn(createGame({ seed: 'd2' }), { players: deux }).st
   assert.ok(r && r.aides.length >= 1, 'les zones qui piétinent sont aidées');
   for (const z of Object.values(st.zones)) {
     if (!r.aides.includes(z.uid)) { assert.equal(z.enquete.pieces.length, avant[z.uid], 'rien pour celles qui avancent'); continue; }
-    assert.equal(z.enquete.pieces.length, avant[z.uid] + 1); assert.equal(z.enquete.pieces.at(-1).src, 'temoin'); assert.ok(!z.enquete.pieces.at(-1).f.startsWith('p:'));
+    assert.equal(z.enquete.pieces.length, avant[z.uid] + 1); assert.equal(z.enquete.pieces.at(-1).src, 'tardif'); assert.ok(!z.enquete.pieces.at(-1).f.startsWith('p:'));
   }
   assert.equal(enqueteDirecteur(st, () => {}, makeRng('e')), null, 'une fois par étape');
 }
@@ -135,3 +135,21 @@ const base = () => resolveTurn(createGame({ seed: 'd2' }), { players: deux }).st
   assert.equal(ap.zones.length, 3);
 }
 console.log('OK : Directeur, suite (fugitif, duo, appel, mémoire, retour, routine, mini-jeux, enquête, Fantôme, réglages).');
+
+// 10. Le parquet : dépendance aux pièces des autres.
+{
+  const { travailEnquete, parquetSoir } = await import('../js/engine/directeur.js');
+  const pz = (src) => ({ f: 'x', src });
+  assert.equal(travailEnquete({ enquete: { pieces: [pz('partage'), pz('partage'), pz('cam'), pz('voisinage')] } }).stade, 0);
+  assert.equal(travailEnquete({ enquete: { pieces: [...Array(4)].map(() => pz('partage')).concat([pz('cam'), pz('ouverture'), pz('rebond')]) } }).stade, 1);
+  assert.equal(travailEnquete({ enquete: { pieces: [...Array(6)].map(() => pz('partage')).concat([pz('alibi'), pz('tardif')]) } }).stade, 2, 'le témoin tardif ne compte pas comme son travail');
+  const st = base();
+  for (const zz of Object.values(st.zones)) { zz.enquete = dossierDe(st, zz); zz.rapport = []; }
+  const z = st.zones.a; z.budget = 20;
+  z.enquete.pieces.push(...[...Array(7)].map((_, i) => ({ f: `occ:${i}`, src: 'partage', de: 'b' })));
+  parquetSoir(st, ['a', 'b', 'c'], () => {});
+  assert.equal(z.dir.parquet.stade, 2); assert.equal(z.budget, 18);
+  assert.ok(z.rapport.some((l) => l.startsWith('Parquet :')));
+  assert.equal(st.zones.b.dir ? (st.zones.b.dir.parquet || {}).stade || 0 : 0, 0, 'celui qui donne n’est pas visé');
+  console.log('OK : parquet.');
+}
