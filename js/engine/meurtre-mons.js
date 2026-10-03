@@ -296,7 +296,8 @@ export function affaireMeurtre(n) {
     innocente: { 0: ['moy:0', 'occ:4', 'moy:4', 'Rb:0', 'Rb:4'], 1: ['moy:1'], 3: ['mob:3'], 4: ['moy:4', 'moy:0', 'occ:4', 'Rb:0', 'Rb:4'] },
     // Confrontation : trois pièces accablantes, dont au moins deux qui contredisent vraiment sa version.
     confront: {
-      decisives: ['doc:journal', 'doc:pvc', 'occ:2', 'moy:2', 'Rg:2'],
+      // Décisives : seulement des preuves obtenues par l'enquête (le journal et les PV publics ne font qu'accabler).
+      decisives: ['occ:2', 'moy:2', 'Rg:2'],
       accablantes: ['doc:journal', 'doc:pvc', 'occ:2', 'moy:2', 'mob:2', 'Ra:2', 'Rb:2', 'Re:2', 'Rg:2', 'Rc:3', 'c:cam', 'c:cafe', 'c:courriel', 'c:agenda', 'c:legiste2', 'r:statue', 'r:temoin'],
     },
     rebonds: {

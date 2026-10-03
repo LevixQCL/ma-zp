@@ -27,11 +27,12 @@ assert.equal(pieceDemarche(a, { pieces: [{ f: 'c:agenda' }] }, 'moyens:2'), 'moy
 assert.equal(pieceDemarche(a, vide, 'labo'), 'c:legiste1');
 assert.equal(pieceDemarche(a, { pieces: [{ f: 'c:legiste1' }] }, 'labo'), 'c:legiste2');
 // Confrontation.
-assert.ok(confrontationOk(a, 2, ['doc:journal', 'doc:pvc', 'occ:2']));
+assert.ok(!confrontationOk(a, 2, ['doc:journal', 'doc:pvc', 'occ:2']), 'les documents publics ne suffisent pas');
+assert.ok(confrontationOk(a, 2, ['doc:journal', 'moy:2', 'occ:2']));
 assert.ok(confrontationOk(a, 2, ['moy:2', 'occ:2', 'c:cafe']));
 assert.ok(!confrontationOk(a, 2, ['c:cafe', 'c:cam', 'occ:2']), 'une seule décisive');
 assert.ok(!confrontationOk(a, 2, ['doc:journal', 'occ:2', 'c:dette']), 'un leurre');
-assert.ok(!confrontationOk(a, 1, ['doc:journal', 'doc:pvc', 'occ:2']), 'mauvais suspect');
+assert.ok(!confrontationOk(a, 1, ['doc:journal', 'moy:2', 'occ:2']), 'mauvais suspect');
 // Le récit : aucun texte mal formé, et seul l'assassin parle de la statuette dans les auditions.
 const d = dossierAffaire3('m', a);
 assert.ok(!/undefined|NaN/.test(JSON.stringify(d)));
@@ -77,11 +78,15 @@ assert.notEqual(affaire(st, st.enquete.n).meurtre, true, 'nouvelle affaire : un 
   assert.equal(pieceReaudition(m2, { pieces: [{ f: 'Rb:0' }] }, 0, 'mob:0'), null);
   assert.equal(pieceReaudition(m2, { pieces: [] }, 1, 'doc:journal'), null);
   assert.ok(opposables(m2, { pieces: [] }).has('A:2'));
-  assert.ok(confrontationOk(m2, 2, ['Rg:2', 'doc:journal', 'c:cam']), 'la statuette dont personne ne parlait');
+  assert.ok(confrontationOk(m2, 2, ['Rg:2', 'occ:2', 'c:cam']), 'la statuette dont personne ne parlait');
+  assert.ok(!confrontationOk(m2, 2, ['Rg:2', 'doc:journal', 'c:cam']), 'une seule preuve d’enquête');
   // Partie : une zone réentend Julien face à sa propre audition.
   let s2 = createGame({ seed: 'reaud' }); s2.meurtreDes = 1;
   s2 = resolveTurn(s2, { players }).state;
   s2.zones.A.budget = 20;
+  s2 = resolveTurn(s2, { players, orders: { A: { ...base, reaud: { i: 2, f: 'A:2' } }, B: base, C: base } }).state;
+  assert.ok(s2.zones.A.rapport.some((x) => /refusée par le magistrat/.test(x)), 'pas de réaudition sans pièce à charge');
+  s2 = resolveTurn(s2, { players, orders: { A: { ...base, demarches: ['temoin'] }, B: base, C: base } }).state;
   s2 = resolveTurn(s2, { players, orders: { A: { ...base, reaud: { i: 2, f: 'A:2' } }, B: base, C: base } }).state;
   assert.ok(s2.zones.A.enquete.pieces.some((p) => p.f === 'Rg:2'), 'réaudition au dossier');
   assert.ok(s2.zones.A.rapport.some((x) => /change de version/.test(x)));

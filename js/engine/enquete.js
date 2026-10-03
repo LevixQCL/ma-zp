@@ -1094,6 +1094,7 @@ export function pieceReaudition(aff, dossier, i, f) {
 function reentendre(aff, z, d, r, jour) {
   const i = r.i, s = aff.suspects[i];
   if (!s || !opposables(aff, d).has(r.f)) return;
+  if (!mandatOk(aff, d, i)) { z.rapport.push(`Enquête : réaudition de ${s.nom} refusée par le magistrat (aucune pièce sérieuse contre ${s.f ? 'elle' : 'lui'} au dossier).`); return; }
   if (z.budget < REAUD.cout) { z.rapport.push(`Enquête : réaudition de ${s.nom} annulée (budget insuffisant).`); return; }
   z.budget -= REAUD.cout; (z._compta ||= []).push({ k: 'enquete', l: 'Démarches d’enquête', v: -REAUD.cout });
   const p = pieceReaudition(aff, d, i, r.f);
