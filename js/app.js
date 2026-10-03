@@ -130,6 +130,11 @@ function render() {
   // Barre de validation commune à tous les écrans quand des choix ne sont pas encore validés.
   if (S.ordersDirty && S.state && myZone() && !['parties', 'guide'].includes(S.route)) {
     html += `<div class="savebar" role="status"><span class="small" style="font-weight:600">Modifications non validées</span><span class="row" style="gap:6px"><button class="btn ghost small" data-action="cancel-orders">Annuler</button><button class="btn primary small" data-action="save-orders">Valider</button></span></div>`;
+  } else if (S.route === 'ordres' && S.state && myZone() && S.draft && !S.savedOrders) {
+    // Écran Ordres pas encore validés : le bouton reste à portée de main, avec le coût de la soirée.
+    let cout = 0;
+    try { cout = estimations().coutTotal; } catch (e) { /* brouillon incomplet */ }
+    html += `<div class="savebar calme" role="status"><span class="col" style="gap:1px"><span class="small" style="font-weight:700">Ordres pas encore validés</span><span class="tiny muted">coût ce soir : ${String(Math.round(cout * 10) / 10).replace('.', ',')} k€</span></span><button class="btn primary small" data-action="save-orders">Valider</button></div>`;
   }
   const scroll = window.scrollY;
   app.innerHTML = banner + html;

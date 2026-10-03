@@ -64,6 +64,7 @@ export const NOTE_MAJ = {
       ['Délinquance déplacée', 'quand tu concentres beaucoup d’agents sur un quartier, la délinquance qui part chez tes voisins compte vraiment chez eux.'],
     ]],
     ['Confort', [
+      ['Ordres plus lisibles', 'chaque service affiche son résultat estimé sous son nom (incidents couverts, amendes, paperasse, dossiers), la réserve est une ligne de l’affectation, le rythme tient sur une ligne, et zone de non-droit, équipe, décision et dépenses sont regroupées dans une seule carte. Le bouton Valider reste visible tant que les ordres ne sont pas validés.'],
       ['Jauges expliquées', 'Résultats terrain s’affiche sous tes jauges, et chaque bouton « ? » détaille le calcul avec tes chiffres. Sous le moral, l’efficacité de tes agents.'],
       ['Affichage sur ordinateur', 'sur un écran de PC, l’HP passe sur deux colonnes, les autres écrans s’élargissent, le texte est un peu plus grand et les mini-jeux s’ouvrent au centre, au format téléphone. Rien ne change sur téléphone et tablette.'],
       ['Mises à jour sans accroc', 'après une mise à jour, ton téléphone charge directement la nouvelle version. Sans réseau, l’appli s’ouvre avec la dernière version connue.'],

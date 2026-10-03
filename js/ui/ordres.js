@@ -125,6 +125,9 @@ export function estimations() {
   const dep = d.depenses || {};
   const cap = {};
   for (const s of SERVICES) cap[s] = capacite(z, s, eff[s] + (dep.reserve && dep.reserveService === s ? dep.reserve * DEPENSES.reserve.efficacite : 0), opts);
+  // Figures de l'équipe : bonus dans leur service, sauf celle prévue en mission.
+  const mi = missionValide(d);
+  for (const m of z.equipe || []) { const sv = ROLE_SERVICE[m.role]; if (sv && cap[sv] && !(mi && mi.role === m.role)) cap[sv] *= 1 + bonusChef(m.niveau); }
   const crim = Math.max(10, Math.min(95, z.criminalite + (pr.criminalite || 0) - (dep.prevention ? 6 : 0)));
   const attendus = Math.max(1, Math.round(1.5 + crim / 14) + (pr.incidents || 0));
   const couverts = Math.min(attendus, Math.floor(cap.intervention / 1.1));
@@ -136,7 +139,8 @@ export function estimations() {
   // Les agents en mission d'enquête ou en FIPA sortent du total : ils ne sont plus à répartir.
   const reste = resteBase - enquete;
   const coutDep = coutDepenses(dep, z);
-  return { attendus, couverts, pap, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, prises };
+  const coutTotal = coutDep + (d.decision && !decisionImpossible(z, d.decision, st.turn) ? coutDecision(z, d.decision) : 0);
+  return { attendus, couverts, pap, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, coutTotal, prises, crim };
 }
 
 /** « dont 2 en audition » sous un service : ces agents ne travaillent pas dans le service aujourd'hui. */
@@ -166,15 +170,36 @@ function reserveHtml(z, d, e) {
   if (sousTutelle(z, S.state.turn)) return '';
   const s = dep.reserveService || 'intervention';
   const libres = Math.max(0, e.reste);
-  return `<div class="card tight" style="gap:6px;margin-top:4px;background:var(--surface2)">
-    <div class="between"><span class="col" style="gap:1px"><span style="font-weight:600;font-size:14px">Agents de réserve</span><span class="tiny muted">${fmt1(DEPENSES.reserve.cout)} k€ par agent, pour la journée, efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} % · ${DEPENSES.reserve.max} au plus</span></span>
+  return `<div class="svc svc-res">
+    <div class="svc-l"><i class="svc-c" style="background:var(--faint)"></i>
+      <span class="svc-t"><span class="svc-n">Agents de réserve</span><span class="svc-r muted">${fmt1(DEPENSES.reserve.cout)} k€ pièce · efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} % · ${DEPENSES.reserve.max} max.</span></span>
       <span class="stepper"><button type="button" data-action="dep-reserve" data-d="-1" aria-label="Un agent de réserve en moins" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="dep-reserve" data-d="1" aria-label="Un agent de réserve en plus" ${n >= DEPENSES.reserve.max ? 'disabled' : ''}>+</button></span></div>
-    ${n ? `<label class="field" style="font-weight:500">Ils prennent la place de tes agents en
+    ${n ? `<div class="svc-plus"><label class="field" style="font-weight:500">Ils prennent la place de tes agents en
       <select class="text" data-change="dep-service" style="min-height:44px;font-size:14px">${SERVICES.map((s2) => `<option value="${s2}" ${s === s2 ? 'selected' : ''}>${SERVICE_LABELS[s2]}</option>`).join('')}</select></label>
       ${(d.alloc[s] || 0) > 0 && libres < n ? `<button type="button" class="btn small outline block" data-action="reserve-libere">Libérer ${Math.min(n, d.alloc[s])} de mes agents de ${SERVICE_LABELS[s]}</button>` : ''}
-      <span class="tiny muted">La réserve couvre le service pendant que tes propres agents partent ailleurs : zone de non-droit, renfort, autre service. Payée à 20:00 si le budget le permet.</span>` : ''}
-    ${libres ? `<div class="between" style="gap:8px"><span class="small warn" style="font-weight:600">${libres} agent${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''} à placer</span><span class="row" style="gap:6px"><a class="btn small primary" href="#terrain">Zone de non-droit</a><button type="button" class="btn small ghost" data-action="repartir">Dans les services</button></span></div>` : ''}
-  </div>`;
+      <span class="tiny muted">La réserve couvre le service pendant que tes propres agents partent ailleurs : zone de non-droit, renfort, autre service. Payée à 20:00 si le budget le permet.</span></div>` : ''}
+  </div>
+  ${libres ? `<div class="between" style="gap:8px;padding-top:6px"><span class="small warn" style="font-weight:600">${libres} agent${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''} à placer</span><span class="row" style="gap:6px"><a class="btn small primary" href="#terrain">Zone de non-droit</a><button type="button" class="btn small ghost" data-action="repartir">Dans les services</button></span></div>` : ''}`;
+}
+
+/** Couleur de chaque service (la même que sa figure dans « Mon équipe »). */
+const COUL_SVC = { intervention: '#FF6E6A', proximite: '#3DD39A', recherche: '#63B0FF', roulage: '#FFB23F', admin: '#C084FC' };
+
+/** Ce que le service donnera ce soir, sous son nom (estimation). */
+function resultatService(e, s) {
+  const z = myZone();
+  const pap = (v) => (v < 0 ? `−${-v}` : v > 0 ? `+${v}` : '±0');
+  switch (s) {
+    case 'intervention': return `<span class="${e.couverts >= e.attendus ? 'ok' : 'warn'}">${e.couverts} incident${e.couverts > 1 ? 's' : ''} sur ${e.attendus} couvert${e.couverts > 1 ? 's' : ''}</span>`;
+    case 'proximite': return `<span class="muted">criminalité ${Math.round(e.crim)}</span>`;
+    case 'recherche': {
+      const ds = z.dossiers || [], v = ds.filter((x) => x.age >= 5).length, r = ds.filter((x) => x.age > 6).length;
+      return r ? `<span class="bad">${r} dossier${r > 1 ? 's' : ''} en retard</span>` : v ? `<span class="warn">${v} dossier${v > 1 ? 's' : ''} de 5 jours ou plus</span>` : `<span class="muted">${ds.length} dossier${ds.length > 1 ? 's' : ''} en cours</span>`;
+    }
+    case 'roulage': return e.chasse ? '<span class="bad">« chasse aux PV » : satisfaction en baisse</span>' : `<span class="ok">+${fmt1(e.amendes)} k€ d’amendes</span>`;
+    case 'admin': return `<span class="${e.pap > 0 ? 'warn' : 'muted'}">paperasse ${pap(e.pap)} ce soir</span>`;
+    default: return '';
+  }
 }
 
 function statusHtml(e) {
@@ -191,9 +216,7 @@ export function updateOrdresLive() {
   for (const s of SERVICES) set(`pris-${s}`, prisHtml(e, s));
   if (e.opx.op) set('op-couv', opCouvHtml(e));
   set('alloc-status', statusHtml(e));
-  set('est-inc', `${e.couverts} sur ${e.attendus}`);
-  set('est-pap', e.pap <= 0 ? `−${-e.pap} dossiers` : `+${e.pap} dossiers`);
-  set('est-am', `+${fmt1(e.amendes)} k€`);
+  for (const s of SERVICES) set(`res-${s}`, resultatService(e, s));
   const ch = document.getElementById('est-chasse'); if (ch) ch.hidden = !e.chasse;
   const btn = document.getElementById('btn-valider'); if (btn) btn.disabled = e.resteBase < 0;
   const dirty = document.getElementById('dirty'); if (dirty) dirty.hidden = !S.ordersDirty;
@@ -470,6 +493,21 @@ function equipeOrdres(z, d) {
     <p class="tiny muted" style="margin:0">Une figure au plus en mission par jour. Son service perd alors son bonus pour la journée ; elle gagne un peu d’expérience en plus.</p></div>`;
 }
 
+/** Une ligne repliable de la carte « Ce soir aussi » (même arguments que `pli`, plus une pastille). */
+function pliItem(key, titre, resume, contenu, alerte = false, pastille = null) { return { key, titre, resume, contenu, alerte, pastille }; }
+/** Les sections repliables regroupées dans une seule carte, une ligne chacune. */
+function pliGroupe(items) {
+  return `<section class="card plis" aria-label="Ce soir aussi">${items.filter(Boolean).map((x) => {
+    const ouvert = !!(S.ordOpen && S.ordOpen[x.key]);
+    const chip = x.pastille || (x.alerte ? 'à voir' : '');
+    return `<div class="pli-l${ouvert ? ' ouvert' : ''}">
+      <button type="button" class="pli" data-action="ord-open" data-k="${x.key}" aria-expanded="${ouvert}">
+        <span class="col grow" style="gap:1px;align-items:flex-start;text-align:left;min-width:0"><span class="tiny muted" style="font-weight:700">${esc(x.titre)}</span>
+        <span style="font-size:14.5px;font-weight:600">${x.resume}</span></span>${chip ? `<span class="pli-chip">${esc(chip)}</span>` : ''}${icon('chevron', 18, ouvert ? 'style="transform:rotate(90deg)"' : '')}</button>
+      ${ouvert ? `<div class="pli-c">${x.contenu}</div>` : ''}</div>`;
+  }).join('')}</section>`;
+}
+
 /** Une section repliable : une ligne résumé, ouverte à la demande. */
 function pli(key, titre, resume, contenu, alerte = false) {
   const ouvert = !!(S.ordOpen && S.ordOpen[key]);
@@ -548,11 +586,11 @@ export function renderOrdres() {
     <p class="tiny muted" style="margin:0">Payées à 20:00 si le budget le permet (${fmt1(z.budget)} k€). Elles ne sont pas reconduites le lendemain.</p>`;
 
   return `<main class="screen">
-    <header class="col" style="gap:3px"><h1 class="big">Ordres du tour ${T}</h1>
-      <p class="sub">${e.dispo} agents disponibles${e.enquete ? `, dont ${e.enquete} en mission (enquête ou FIPA) : ${e.dispo - e.enquete} à répartir` : ''}${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p></header>
+    <header class="between" style="align-items:flex-start;gap:10px"><div class="col" style="gap:3px;min-width:0"><h1 class="big">Ordres du tour ${T}</h1>
+      <p class="sub">${e.dispo} agents disponibles${e.enquete ? `, dont ${e.enquete} en mission (enquête ou FIPA) : ${e.dispo - e.enquete} à répartir` : ''}${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p></div>
+      <span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} Validés` : S.savedOrders ? 'Modifiés' : 'Pas validés'}</span></header>
 
-    ${saved ? `<div class="card green" style="flex-direction:row;align-items:center;justify-content:space-between;padding:10px 10px 10px 14px">
-        <span class="ok" style="font-weight:700">${icon('check', 16)} Ordres validés</span><span class="tiny muted">modifiables jusqu’à 20:00</span></div>`
+    ${saved ? '<p class="tiny muted" style="margin:-6px 0 0">Tes ordres sont validés ; tu peux encore les modifier jusqu’à 20:00.</p>'
       : !S.savedOrders && !S.ordersDirty && z.dernierOrdre ? `<button class="btn primary block" data-action="save-orders">Reprendre les ordres d’hier et valider</button>
         <p class="tiny muted" style="margin:-4px 0 0;text-align:center">Ou ajuste ci-dessous, puis valide.</p>` : ''}
 
@@ -570,48 +608,38 @@ export function renderOrdres() {
       ${demandeRenfortHtml()}
     </section>`; })() : ''}
 
-    <section class="card" aria-label="Affectation des agents" style="gap:6px">
-      <div class="between"><h2 class="card-title">Affectation</h2><span id="alloc-status">${statusHtml(e)}</span></div>
-      <button type="button" class="btn small ghost block" data-action="ventilation" aria-expanded="${!!S.ventilation}">${S.ventilation ? 'Masquer le détail' : 'Où sont mes agents ?'}${agentsHorsServices().some((h) => h.bloque) ? ' <span class="bad">· agents bloqués</span>' : ''}</button>
+    <section class="card affect" aria-label="Affectation des agents">
+      <div class="between" style="align-items:baseline;margin-bottom:2px"><h2 class="card-title">Affectation</h2>
+        <button type="button" class="lien-statut" data-action="ventilation" aria-expanded="${!!S.ventilation}"><span id="alloc-status">${statusHtml(e)}</span><span class="tiny muted"> · ${S.ventilation ? 'masquer' : 'détail'}</span>${agentsHorsServices().some((h) => h.bloque) ? ' <span class="small bad">· agents bloqués</span>' : ''}</button></div>
       ${S.ventilation ? ventilationHtml(z, e) : ''}
-      ${SERVICES.map((s2) => `<div class="col" style="gap:0">
-        <div class="between" style="min-height:48px">
-          <span class="row" style="gap:2px;min-width:0;flex:1"><span style="font-weight:600;font-size:14px;min-width:0">${s2 === 'admin' ? 'Accueil / admin.' : SERVICE_LABELS[s2]}</span>
-            <button type="button" class="helpbtn" data-action="help" data-s="${s2}" aria-expanded="${!!(S.help && S.help[s2])}" aria-label="À quoi sert ${SERVICE_LABELS[s2]} ?">?</button>
-            <span class="tiny muted" style="margin-left:4px;white-space:nowrap">niv. ${z.niveaux[s2]}</span></span>
-          <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button>
-            <span class="n" style="min-width:34px">${d.alloc[s2]}</span>
-            <button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
-        <span id="pris-${s2}">${prisHtml(e, s2)}</span>
-        ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny" style="color:var(--amber-soft)">+ ${dep.reserve} agent${dep.reserve > 1 ? 's' : ''} de réserve en renfort (efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} %)</span>` : ''}
-        ${s2 === 'recherche' ? dossiersHtml(z) : ''}
-        ${S.help && S.help[s2] ? `<p class="tiny" style="margin:2px 0 6px;color:var(--text2);line-height:1.45">${esc(aide(s2, z))}</p>` : ''}
+      ${SERVICES.map((s2) => `<div class="svc">
+        <div class="svc-l"><i class="svc-c" style="background:${COUL_SVC[s2]}"></i>
+          <span class="svc-t"><span class="svc-n">${s2 === 'admin' ? 'Accueil / admin.' : SERVICE_LABELS[s2]} <span class="svc-niv">niv. ${z.niveaux[s2]}</span></span><span class="svc-r" id="res-${s2}">${resultatService(e, s2)}</span></span>
+          <button type="button" class="helpbtn" data-action="help" data-s="${s2}" aria-expanded="${!!(S.help && S.help[s2])}" aria-label="À quoi sert ${SERVICE_LABELS[s2]} ?">?</button>
+          <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
+        <span id="pris-${s2}" class="svc-plus">${prisHtml(e, s2)}</span>
+        ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} agent${dep.reserve > 1 ? 's' : ''} de réserve en renfort (efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} %)</span>` : ''}
+        ${s2 === 'recherche' ? `<div class="svc-plus">${dossiersHtml(z)}</div>` : ''}
+        ${S.help && S.help[s2] ? `<p class="tiny svc-plus" style="margin:2px 0 6px;color:var(--text2);line-height:1.45">${esc(aide(s2, z))}</p>` : ''}
       </div>`).join('')}
-      <p class="tiny muted" style="margin:0">Touche + : si aucun agent n’est libre, il est pris dans ton service le plus fourni.</p>
       ${reserveHtml(z, d, e)}
-      <div class="tiles" style="margin-top:2px">
-        <div class="tile" style="padding:8px"><span class="l">Incidents couverts</span><span class="mono" style="font-size:14px">${e.couverts} sur ${e.attendus}</span></div>
-        <div class="tile" style="padding:8px"><span class="l">Paperasse ce soir</span><span class="mono" style="font-size:14px">${pap(e.pap)} dossiers</span></div>
-        <div class="tile" style="padding:8px"><span class="l">Amendes</span><span class="mono" style="font-size:14px">+${fmt1(e.amendes)} k€</span></div>
-      </div>
-      ${e.chasse ? `<p class="small bad" style="margin:0">Plus de ${Math.round(seuilChasse(z) * 100)} % en Roulage : effet « chasse aux PV », la satisfaction baisse.</p>` : ''}
-      <p class="tiny muted" style="margin:0">Estimations indicatives : le hasard du tour peut les faire varier.</p>
+      <p class="tiny muted" style="margin:6px 0 0">Touche + : si aucun agent n’est libre, il est pris dans ton service le plus fourni. Résultats estimés : le hasard du tour peut les faire varier.</p>
     </section>
 
-    <section class="col" aria-label="Rythme"><h2 class="section">Rythme de travail</h2>
-      <div class="seg" role="group" aria-label="Rythme de travail">${Object.entries(RYTHMES).map(([k, r]) => `
+    <section class="col" aria-label="Rythme" style="gap:8px"><h2 class="section" style="margin:0">Rythme de travail</h2>
+      <div class="seg creux" role="group" aria-label="Rythme de travail">${Object.entries(RYTHMES).map(([k, r]) => `
         <button type="button" data-action="rythme" data-v="${k}" aria-pressed="${d.rythme === k}" ${k === 'renforce' && sousTutelle(z, T) ? 'disabled' : ''}><span class="t">${r.label}</span><span class="d">${k === 'renforce' && sousTutelle(z, T) ? 'interdit sous tutelle' : r.sub}</span></button>`).join('')}</div>
       ${z.renforceSuite >= 2 && d.rythme === 'renforce' ? '<p class="small bad" style="margin:0">Attention : plus de 3 tours renforcés d’affilée exposent à l’épuisement.</p>' : ''}
     </section>
 
     ${prisesHtml()}
-    ${pli('nondroit', 'Zone de non-droit', (() => { const n = agentsND(d); const sects = Object.keys(d.secteurs || {}).filter((k) => d.secteurs[k]); return n ? `${n} agent${n > 1 ? 's' : ''} sur ${sects.map((k) => esc(nomSecteur(k))).join(', ')}` : 'Aucun agent ce soir'; })(), `<div class="col" style="gap:6px">${Object.entries(d.secteurs || {}).filter(([, n]) => n).map(([k, n]) => `<div class="between"><span class="small" style="font-weight:600">${esc(nomSecteur(k))}</span><span class="tiny ok">${n} agent${n > 1 ? 's' : ''}</span></div>`).join('')}
+    ${pliGroupe([pliItem('nondroit', 'Zone de non-droit', (() => { const n = agentsND(d); const sects = Object.keys(d.secteurs || {}).filter((k) => d.secteurs[k]); return n ? `${n} agent${n > 1 ? 's' : ''} sur ${sects.map((k) => esc(nomSecteur(k))).join(', ')}` : 'Aucun agent ce soir'; })(), `<div class="col" style="gap:6px">${Object.entries(d.secteurs || {}).filter(([, n]) => n).map(([k, n]) => `<div class="between"><span class="small" style="font-weight:600">${esc(nomSecteur(k))}</span><span class="tiny ok">${n} agent${n > 1 ? 's' : ''}</span></div>`).join('')}
       <p class="tiny muted" style="margin:0">Le centre de la ville, à reprendre au milieu avec les autres zones. Les agents envoyés sont pris sur tes services pour la journée. Une figure de ton équipe peut mener l’assaut : plus de force, deux fois moins de blessés (section « Mon équipe »).</p>
-      <a class="btn small primary block" href="#terrain">Choisir les secteurs sur le Terrain</a></div>`)}
-    ${pli('equipe', 'Mon équipe', (() => { const mi = missionValide(d); const m = mi && (z.equipe || []).find((x) => x.role === mi.role); return m ? `${esc(m.prenom)} en mission ${mi.type === 'nondroit' ? 'en zone de non-droit' : 'en renfort'}` : 'Chacun encadre son service'; })(), equipeOrdres(z, d))}
-    ${st.affaires.length ? pli('affaires', 'Affaires disputées', nbEng ? `${nbEng} affaire${nbEng > 1 ? 's' : ''} engagée${nbEng > 1 ? 's' : ''} sur ${st.affaires.length}` : `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} ouverte${st.affaires.length > 1 ? 's' : ''} · aucun agent engagé`, `<div class="col" style="gap:8px">${affairesHtml}</div>`) : ''}
-    ${pli('decision', 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'Pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, decisionHtml)}
-    ${pli('depenses', 'Dépenses du jour', cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune', depensesHtml, cab > 0 && !dep.carrosserie)}
+      <a class="btn small primary block" href="#terrain">Choisir les secteurs sur le Terrain</a></div>`),
+    pliItem('equipe', 'Mon équipe', (() => { const mi = missionValide(d); const m = mi && (z.equipe || []).find((x) => x.role === mi.role); return m ? `${esc(m.prenom)} en mission ${mi.type === 'nondroit' ? 'en zone de non-droit' : 'en renfort'}` : 'Chacun encadre son service'; })(), equipeOrdres(z, d)),
+    st.affaires.length ? pliItem('affaires', 'Affaires disputées', nbEng ? `${nbEng} affaire${nbEng > 1 ? 's' : ''} engagée${nbEng > 1 ? 's' : ''} sur ${st.affaires.length}` : `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} ouverte${st.affaires.length > 1 ? 's' : ''} · aucun agent engagé`, `<div class="col" style="gap:8px">${affairesHtml}</div>`) : null,
+    pliItem('decision', 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'Pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, decisionHtml, !d.decision && !d.sansDecision, !d.decision && !d.sansDecision ? 'à choisir' : null),
+    pliItem('depenses', 'Dépenses du jour', cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune', depensesHtml, cab > 0 && !dep.carrosserie, cab > 0 && !dep.carrosserie ? 'à réparer' : null)])}
 
     <a class="small" href="#guide-ordres" style="text-align:center;padding:10px">Comment fonctionnent les ordres ?</a>
   </main>${tabbar('ordres')}`;
