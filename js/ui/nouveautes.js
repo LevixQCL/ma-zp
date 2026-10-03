@@ -16,10 +16,11 @@ export const NOTE_MAJ = {
     ['Le tableau d’enquête', [
       ['Un vrai tableau', 'l’écran Enquête s’ouvre sur un grand liège encadré de bois. Glisse pour te déplacer, pince ou utilise la molette pour zoomer, et le bouton « vue d’ensemble » montre tout le tableau.'],
       ['Rien n’est rangé pour toi', 'les pièces arrivent dans la boîte à pièces, chaque soir à 20:00. Sors-les une à une et punaise-les où tu veux : près d’un suspect, sur le plan, dans un coin.'],
+      ['Des visages qui collent à la fiche', 'chaque suspect a son portrait d’après sa fiche : âge, cheveux gris, tenue de son métier (gilet fluo de l’intérimaire, polo du technicien, tablier du commerçant…).'],
       ['Chaque pièce a son objet', 'alibi sur un ticket, moyens dans un sachet à scellé, mobile sur un extrait de compte, indices de planque sur un rapport du labo, rebondissements en coupure de journal.'],
       ['Le plan et les trajets', 'au centre, le plan du district : la scène, les lieux où les suspects disent avoir été et le temps de trajet. Dans les nouvelles affaires, il faut avoir eu le temps de faire la route pour profiter d’un trou dans son alibi.'],
       ['Tout depuis le tableau', 'touche une photo, une fiche, une pièce ou un lieu : ce qu’on sait, tes ✓ / ✕, les démarches, la piste, l’accusation et le partage. Le bouton « Ce soir » résume ce qui part avec tes ordres.'],
-      ['Ficelles et mini tuto', 'le mode ficelle relie deux éléments d’une ficelle rouge. Un tuto de six écrans présente le tableau (bouton « ? » pour le revoir). L’ancien affichage reste disponible avec le bouton liste.'],
+      ['Ficelles et mini tuto', 'glisse d’une punaise à un autre élément pour tirer une ficelle rouge ; attrape-la et tire-la hors de sa ligne pour la décrocher. Un tuto de six écrans présente le tableau (bouton « ? » pour le revoir). L’ancien affichage reste disponible avec le bouton liste.'],
     ]],
     ['À découvrir', [
       ['Appui fédéral à l’enquête', 'une fois par jour, demande le labo de la PJF (traces, empreintes, ADN) ou la RCCU (téléphones, ordinateurs, comptes en ligne) depuis la carte « Aujourd’hui » de l’enquête. Les équipes sont rares et partagées entre toutes les zones : réponse à 20:00, et un refus te rend prioritaire la fois suivante. Si l’équipe passe, tu joues son mini-jeu le lendemain (un seul essai) : réussi, une pièce sur un suspect arrive à 20:00.'],
