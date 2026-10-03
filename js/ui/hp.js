@@ -7,7 +7,7 @@ import { coutCarrosserie } from '../engine/sinistres.js';
 import { formatCountdown, formatDateBe } from '../engine/time.js';
 import { QUEST_LABELS } from '../quests/quests.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
-import { situationHtml, estimations } from './ordres.js';
+import { estimations } from './ordres.js';
 import { operationActive } from '../engine/zone.js';
 import { fipaCards } from './fipa.js';
 import { blasonSvg, BLASONS, insigne } from './blasons.js';
@@ -130,6 +130,13 @@ function premiersPasVus() {
 }
 
 /** Liste de ce qu'il reste à faire avant 20:00. */
+/** Situation du jour en pastilles sous le compte à rebours ; le détail complet reste dans les Ordres. */
+function situationPastilles(z) {
+  const l = z.pressions || [];
+  if (!l.length) return '';
+  return `<div class="soir-situ" aria-label="Situation du jour">${l.map((p) => `<a class="pill amber" href="#ordres" title="${esc(p.texte)}">${esc(p.titre)}${String(p.texte || '').length <= 32 ? ` · ${esc(p.texte.replace(/\.$/, ''))}` : ' ›'}</a>`).join('')}</div>`;
+}
+
 function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
   const d = S.draft || {};
   const nbDem = (d.demarches || []).length;
@@ -158,6 +165,7 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
       <span id="countdown" class="soir-cd">${formatCountdown(st.nextDeadline - Date.now())}</span>
       <span class="soir-prog" role="img" aria-label="${fait} sur ${items.length} fait">${items.map((i) => `<i class="${i.ok ? 'on' : ''}"></i>`).join('')}</span>
     </div>
+    ${situationPastilles(z)}
     <p class="soir-etat ${reste ? '' : 'ok'}">${reste ? `${reste} chose${reste > 1 ? 's' : ''} à faire avant ce soir` : 'Tout est prêt pour ce soir'}</p>
     ${reste ? `<div class="col soir-todo" style="gap:6px">${items.map((i) => `<a class="todo ${i.ok ? 'done' : ''}" href="${i.href}"><span class="box" aria-hidden="true">${i.ok ? icon('check', 14) : ''}</span>
       <span class="col grow" style="gap:0"><span style="font-weight:600">${i.t}</span><span class="tiny muted">${i.s}</span></span>${icon('chevron', 16)}</a>`).join('')}</div>` : ''}
@@ -288,7 +296,6 @@ export function renderHP() {
       <span style="font-weight:700">${esc((z.peril.raisons || []).join(', '))}</span>
       <span class="small">Pour t’en sortir : budget au-dessus de ${PERIL.budget} k€, au moins ${PERIL.agents} agents disponibles, moral au-dessus de ${PERIL.moral}. Rythme allégé, prime, moins de dépenses ; tes collègues peuvent t’aider.</span>
       <a class="small" href="#guide-faillite">${z.tutelleSaison ? 'Ce qui se passe en cas de faillite' : `Tutelle (${TUTELLE.tours} tours sous contrôle) puis faillite`}</a></section>` : ''}
-    ${situationHtml(z)}
     ${opActive(z, T) ? `<section class="card red" aria-label="Renfort" style="gap:8px"><span class="kicker" style="color:var(--red-soft)">Opération d’envergure · ${esc(opActive(z, T).titre)}</span>${demandeRenfortHtml()}</section>` : ''}
     <div id="hp-fipa">${fipaCards()}</div>
 

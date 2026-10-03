@@ -464,6 +464,10 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .recit > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; color: var(--amber-soft); font-weight: 600; }
 .recit > summary::-webkit-details-marker { display: none; }
 .recit[open] > summary svg { transform: rotate(90deg); }
+.rebonds-anciens > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 10px 14px; border: 1px solid var(--amber-line, rgba(255,178,63,.35)); border-radius: 14px; color: var(--amber-soft); font-weight: 600; }
+.rebonds-anciens > summary::-webkit-details-marker { display: none; }
+.rebonds-anciens > summary svg { margin-left: auto; transition: transform .15s; }
+.rebonds-anciens[open] > summary svg { transform: rotate(90deg); }
 .aujourdhui { border-color: var(--amber-line); }
 .lien { background: none; border: none; padding: 0; color: var(--amber); text-decoration: underline; font: inherit; cursor: pointer; }
 .chip { min-height: 34px; padding: 0 13px; border-radius: 999px; border: 1px solid var(--hair); background: var(--surface2); color: var(--text2); font: 600 12.5px var(--body); }
@@ -790,6 +794,9 @@ body.mj-ouvert { overflow: hidden; }
 .card.soir .soir-ciel { height: 148px; }
 .card.soir .skyline { height: 44px; }
 .soir-tete { position: relative; z-index: 3; margin-top: -148px; height: 104px; padding: 13px 16px 0; display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto 1fr; align-items: end; color: #fff; }
+.soir-situ { position: relative; z-index: 3; margin: 44px 0 0; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 16px 0; }
+.soir-situ + .soir-etat { margin-top: 0; }
+.soir-situ .pill { text-decoration: none; font-size: 12.5px; }
 .soir-l { grid-column: 1 / -1; align-self: start; font-size: 12.5px; font-weight: 600; color: rgba(255, 255, 255, .85); text-shadow: 0 1px 3px rgba(0, 0, 0, .5); }
 .soir-cd { grid-column: 1; font-family: var(--display); font-weight: 800; font-size: 54px; line-height: .86; letter-spacing: -1.5px; font-variant-numeric: tabular-nums; font-variation-settings: 'opsz' 96; text-shadow: 0 2px 18px rgba(5, 8, 25, .6); }
 .soir-prog { grid-column: 2; align-self: end; display: flex; gap: 4px; padding: 0 0 8px; }

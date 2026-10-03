@@ -4,6 +4,7 @@ import { capacite } from '../engine/zone.js';
 import { APPUI } from '../engine/appui.js';
 import { monAppui } from './incidents.js';
 import { renderTableau } from './tableau.js';
+import { aideBtn } from './aide.js';
 import { planifierEnvoi, synchroniser, contenuChange } from './carnet-sync.js';
 import {
   ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece,
@@ -208,9 +209,9 @@ export function appuiHtml() {
   const btn = (k) => { const u = APPUI.unites[k]; return `<button type="button" class="dem compact" data-action="appui-demande" data-k="${k}" aria-pressed="${d.appui === k}"><span class="l">${esc(u.nom)}</span><span class="p">${d.appui === k ? 'demandé ✓' : esc(u.quoi)}</span></button>`; };
   return `<div class="voisinage" style="gap:6px">
       ${jour}
-      <span class="small"><strong>Appui fédéral</strong> · une demande par jour, pour demain</span>
+      <div class="between" style="gap:8px"><span class="small"><strong>Appui fédéral</strong> · une demande par jour, pour demain</span>${aideBtn('appui')}</div>
       <div class="choices" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">${btn('labo')}${btn('rccu')}</div>
-      <span class="tiny muted">Les équipes sont partagées entre toutes les zones et leur nombre change chaque jour : réponse à 20:00.${z.appuiPrio ? ' <strong>Refusé la dernière fois : tu es prioritaire.</strong>' : ' Refusé ? Tu passes en priorité la fois suivante.'} Le labo trouve plutôt les moyens, la RCCU plutôt le mobile et l’occasion.</span>
+      ${z.appuiPrio ? '<span class="tiny"><strong>Refusé la dernière fois : tu es prioritaire.</strong></span>' : ''}
     </div>`;
 }
 
@@ -240,8 +241,7 @@ function aujourdhui(aff, dos) {
     <div class="between"><span style="font-weight:700">Aujourd’hui : ${dem.length} démarche${dem.length > 1 ? 's' : ''} sur ${ENQ.maxDemarches}</span><span class="small mono" style="white-space:nowrap">${fmt1(coutTotal(d))} k€</span></div>
     ${dem.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${dem.map((x) => `<button type="button" class="chip on" data-action="dem-toggle" data-k="${x}" aria-label="Annuler : ${esc(nomDem(x))}">${esc(nomDem(x))} ✕</button>`).join('')}</div>` : ''}
     <p class="small" style="margin:0;line-height:1.5">${etape}</p>
-    ${(() => { const v = voisinageInfo(aff); return `<div class="voisinage"><span class="small"><strong>Voisinage ce soir</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? ` sur la piste de <strong>${esc(v.nom)}</strong>` : ''} : <span class="${v.x >= 0.5 ? 'good' : v.x > 0 ? '' : 'bad'}">${v.txt}</span>.</span>
-      <span class="tiny muted">${v.nom ? 'Retire la piste depuis la fiche du suspect.' : `Donne une piste depuis la fiche d’un suspect pour concentrer les recherches (jusqu’à plus d’une pièce par soir). Plus d’agents en Recherche : plus de pièces.`}</span></div>`; })()}
+    ${(() => { const v = voisinageInfo(aff); return `<div class="voisinage"><div class="between" style="gap:8px;align-items:flex-start"><span class="small"><strong>Voisinage ce soir</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? ` sur la piste de <strong>${esc(v.nom)}</strong>` : ''} : <span class="${v.x >= 0.5 ? 'good' : v.x > 0 ? '' : 'bad'}">${v.txt}</span>.</span>${aideBtn('voisinage')}</div></div>`; })()}
     ${appuiHtml()}
     <span class="tiny muted">Résultats à 20:00 · budget restant ${fmt1(z.budget - coutTotal(d))} k€${st.enquete.nbCellules > 1 ? ` · ta cellule : ${esc(miens.join(', '))} (les autres suspects coûtent le double)` : ''}</span>
   </section>`;
@@ -378,7 +378,12 @@ export function renderEnquete() {
         <span class="pill amber">Découverte ce soir : ${pointsDecouverte(j)} pts</span>
       </div>
     </header>
-    ${rebonds.map((r) => `<section class="card amber tight"><span class="kicker">Jour ${r.j} · rebondissement</span><span style="font-weight:700">${esc(r.titre)}</span><span class="small" style="color:var(--amber-soft)">${esc(r.texte)}</span></section>`).join('')}
+    ${(() => {
+      // Le rebondissement du jour s'affiche en grand ; les précédents se replient sur une ligne.
+      const carte = (r) => `<section class="card amber tight"><span class="kicker">Jour ${r.j} · rebondissement</span><span style="font-weight:700">${esc(r.titre)}</span><span class="small" style="color:var(--amber-soft)">${esc(r.texte)}</span></section>`;
+      const neufs = rebonds.filter((r) => r.j === j), anciens = rebonds.filter((r) => r.j !== j);
+      return `${neufs.map(carte).join('')}${anciens.length ? `<details class="rebonds-anciens" data-k="rebonds" ${S.ouverts && S.ouverts.rebonds ? 'open' : ''}><summary class="small">${anciens.length} rebondissement${anciens.length > 1 ? 's' : ''} précédent${anciens.length > 1 ? 's' : ''} ${icon('chevron', 14)}</summary><div class="col" style="gap:8px;margin-top:8px">${anciens.map(carte).join('')}</div></details>` : ''}`;
+    })()}
     ${(st.traques || []).map(traqueHtml).join('')}
     ${aujourdhui(aff, dos)}
     ${mesPieces(aff, dos)}
