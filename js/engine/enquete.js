@@ -54,7 +54,7 @@ export const DEMARCHES = {
   banque: { nom: 'Comptes et entourage', motif: 'Extraits de compte via le parquet, téléphonie, entourage.', cout: 3, cible: 'mob', dit: 'dettes, rancunes, fréquentations' },
 };
 export const SOURCES = {
-  ouverture: 'Ouverture du dossier', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', pjf: 'Appui PJF', partage: 'Partagé', rebond: 'Rebondissement',
+  ouverture: 'Ouverture du dossier', rattrapage: 'Dossier de rattrapage', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', pjf: 'Appui PJF', partage: 'Partagé', rebond: 'Rebondissement',
   ...Object.fromEntries(Object.entries(DEMARCHES).map(([k, d]) => [k, d.nom])),
 };
 
@@ -492,14 +492,46 @@ export function zonesDuSuspect(state, i) {
 
 const pieceOuverture = () => ({ f: 'p:humidite', j: 1, src: 'ouverture' });
 
+/**
+ * Dossier de rattrapage d'une zone qui arrive en cours d'affaire (jour 2 et plus) : autant de pièces que la moyenne
+ * des zones déjà dans l'affaire, moins RATTRAPAGE.retrait (à défaut de zones de référence, RATTRAPAGE.parJour
+ * pièce par jour écoulé). D'abord les constatations de la scène (heure, moyens, mobile : les premières démarches de
+ * tout le monde), puis des pièces au hasard sur les suspects de sa cellule. Jamais d'indice de planque.
+ * Tirage fixe pour une zone et une affaire.
+ */
+export const RATTRAPAGE = { retrait: 1, parJour: 1.2, max: 12 };
+function piecesRattrapage(state, z, base) {
+  const e = state.enquete;
+  if (!e || (e.jour || 1) < 2) return [];
+  const aff = affaire(state, e.n);
+  if (!aff) return [];
+  // Moyenne des zones déjà dans l'affaire (leur dossier enregistré, sans recalcul), pièces communes comprises.
+  const autres = Object.values(state.zones || {}).filter((x) => x.uid !== z.uid && x.enquete && x.enquete.n === e.n && Array.isArray(x.enquete.pieces));
+  const cible = autres.length
+    ? Math.round(autres.reduce((t, x) => t + x.enquete.pieces.length, 0) / autres.length) - RATTRAPAGE.retrait
+    : base.pieces.length + Math.round(((e.jour || 1) - 1) * RATTRAPAGE.parJour);
+  const nb = Math.max(0, Math.min(RATTRAPAGE.max, cible - base.pieces.length));
+  const connus = new Set(base.pieces.map((p) => p.f));
+  const out = [];
+  for (const f of ['c:occ', 'c:moy', 'c:mob']) if (out.length < nb && aff.faits.includes(f) && !connus.has(f)) out.push(f);
+  const rng = makeRng(`${state.seed}:rattrapage:${e.n}:${z.uid}`);
+  const inconnues = aff.faits.filter((f) => !connus.has(f) && !out.includes(f) && !f.startsWith('p:') && !f.startsWith('c:'));
+  const miennes = inconnues.filter((f) => dansMaCellule(state, z.uid, Number(f.split(':')[1])));
+  const pool = rng.shuffle(miennes.length >= nb - out.length ? miennes : inconnues);
+  while (out.length < nb && pool.length) out.push(pool.shift());
+  return out;
+}
+
 /** Dossier d'enquête d'une zone pour l'affaire en cours (sans modifier la zone). */
 export function dossierDe(state, z) {
   const e = state.enquete;
   if (!e) return null;
   if (z.enquete && z.enquete.n === e.n && z.enquete.v === ENQ_VERSION) return z.enquete;
   const base = { n: e.n, v: ENQ_VERSION, pieces: [pieceOuverture()], accuse: null, exclu: false };
-  // Une zone qui arrive en cours d'affaire reçoit aussi les rebondissements déjà publiés.
+  // Une zone qui arrive en cours d'affaire reçoit aussi les rebondissements déjà publiés…
   for (const r of e.rebonds || []) if (!base.pieces.some((p) => p.f === r.f)) base.pieces.push({ f: r.f, j: r.j, src: 'rebond' });
+  // … et un dossier de rattrapage, au prorata des jours écoulés.
+  for (const f of piecesRattrapage(state, z, base)) base.pieces.push({ f, j: e.jour, src: 'rattrapage' });
   return base;
 }
 
