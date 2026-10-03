@@ -1,0 +1,32 @@
+# Reconstruit js/app.min.js automatiquement dès qu'un fichier de js/ change sur main
+# (y compris une modification faite directement sur le site GitHub).
+name: Construire app.min.js
+on:
+  push:
+    branches: [main]
+    paths: ['js/**', 'outils/**', '!js/app.min.js']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: construire
+  cancel-in-progress: false
+jobs:
+  construire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i -g esbuild@0.24.2
+      - run: node outils/construire.mjs
+      - run: node test/construit.test.mjs
+      - name: Publier le fichier reconstruit
+        run: |
+          if git diff --quiet -- js/app.min.js; then echo "Déjà à jour"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898783+github-actions[bot]@users.noreply.github.com"
+          git add js/app.min.js
+          git commit -m "Reconstruction automatique de js/app.min.js"
+          git pull --rebase origin main
+          git push origin HEAD:main
