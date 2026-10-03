@@ -189,7 +189,7 @@ export function sections() {
           'Les trajets comptent : un alibi qui s’arrête 10 minutes avant les faits n’innocente personne si le trajet prend 5 minutes, mais il innocente si la route en prend 20. Même chose pour un alibi qui reprend peu après la sortie. (Les affaires ouvertes avant l’arrivée du plan ne tiennent pas compte des trajets.)',
           'Les pièces arrivent dans la <strong>boîte à pièces</strong>, chaque soir à 20:00. Sors-les une à une et punaise-les où tu veux. Rien n’est rangé d’avance.',
           'Touche une photo, une fiche de constatation, une pièce ou un lieu du plan pour ouvrir son volet : ce qu’on sait, tes ✓ / ✕, les démarches, la piste prioritaire, l’accusation et le partage.',
-          'Le mode <strong>ficelle</strong> relie deux éléments d’une ficelle rouge (une deuxième fois : coupée). Ta disposition, tes ficelles et tes marques restent sur ton appareil.',
+          'Pour tirer une <strong>ficelle</strong>, pose le doigt sur une punaise et glisse jusqu’à un autre élément ou un lieu du plan : elle s’accroche à la punaise la plus proche, et le tableau défile quand tu approches du bord. Le mode ficelle permet de partir de n’importe où sur un élément ; toucher une ficelle la coupe. Ta disposition, tes ficelles et tes marques restent sur ton appareil.',
           'Le bouton <strong>Ce soir</strong> résume ce qui partira avec tes ordres : démarches, voisinage, appui fédéral, partages, accusation.',
         ])}
         <h3>La vue liste</h3>
