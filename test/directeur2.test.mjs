@@ -153,3 +153,19 @@ console.log('OK : Directeur, suite (fugitif, duo, appel, mémoire, retour, routi
   assert.equal(st.zones.b.dir ? (st.zones.b.dir.parquet || {}).stade || 0 : 0, 0, 'celui qui donne n’est pas visé');
   console.log('OK : parquet.');
 }
+
+// 11. Enquête en pause : plus d'indice promis (bonus d'énigme converti, indic annulé sans frais).
+{
+  const { dilemmeDuJour, pressionsVisibles } = await import('../js/engine/directeur.js');
+  const st = base();
+  st.enquetePause = { n: st.enquete.n, titre: st.enquete.titre || 'x', id: 'p' }; st.enquete = null;
+  const d = assurerDir(st.zones.a); d.fe = { id: 'indic', e: 'debut', tour: st.turn, d: {} };
+  st.zones.a.pressions = [{ id: 'fe-indic', feuilleton: 'indic', titre: 'Un indic veut parler', texte: '', effet: {} }];
+  assert.equal(dilemmeDuJour(st, st.zones.a), null);
+  assert.equal(pressionsVisibles(st, st.zones.a).length, 0);
+  const b0 = st.zones.a.budget;
+  const r = resolveTurn(st, { orders: { a: { alloc, dilemme: 0 }, b: { alloc }, c: { alloc } }, quests: { a: [{ statut: 'ok', bonus: 'indice' }, { statut: 'ok' }, null] }, players: deux }).state.zones.a;
+  assert.ok(r.rapport.some((l) => l.includes('l’indic n’a rien à vendre')));
+  assert.ok(r.rapport.some((l) => l.includes('bonus converti en +')));
+  console.log('OK : pause de l’enquête.');
+}

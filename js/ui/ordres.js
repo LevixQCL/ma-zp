@@ -13,6 +13,7 @@ import { creerEquipe, appliquerNoms, missionValide, surnomDe } from '../engine/e
 import { nomSecteur } from '../engine/nondroit.js';
 import { secteurOuvert, ROLE_SERVICE, bonusChef, CHEFS } from '../engine/constants.js';
 import { carteQuartiers } from '../engine/quartiers.js';
+import { pressionsVisibles } from '../engine/directeur.js';
 import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
 
 function enqueteDraft() {
@@ -490,9 +491,10 @@ function prisesHtml() {
 }
 
 export function situationHtml(z) {
-  if (!z.pressions || !z.pressions.length) return '';
+  const pressions = pressionsVisibles(S.state, z);
+  if (!pressions.length) return '';
   return `<section class="card amber" aria-label="Situation du jour" style="gap:6px"><span class="kicker">Situation du jour</span>
-    ${z.pressions.map((p) => `<div class="col" style="gap:1px"><span style="font-weight:600;font-size:14px">${esc(p.titre)}</span><span class="small" style="color:var(--amber-soft)">${esc(p.texte)}</span></div>`).join('')}
+    ${pressions.map((p) => `<div class="col" style="gap:1px"><span style="font-weight:600;font-size:14px">${esc(p.titre)}</span><span class="small" style="color:var(--amber-soft)">${esc(p.texte)}</span></div>`).join('')}
   </section>`;
 }
 

@@ -492,6 +492,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (ok >= 2 && b) {
         if (b.bonus === 'moral') { const g = gainMoral(ENIGMES.bonusMoral, z.moral); z.moral += g; txt += `, bonus +${g} de moral`; }
         else if (b.bonus === 'budget') { z.budget += ENIGMES.bonusBudget; z._compta.push({ k: 'bonus', l: 'Bonus d’énigmes', v: ENIGMES.bonusBudget }); txt += `, bonus +${ENIGMES.bonusBudget} k€`; }
+        else if (b.bonus === 'indice' && (!state.enquete || state.enquetePause)) { z.budget += ENIGMES.bonusBudget; z._compta.push({ k: 'bonus', l: 'Bonus d’énigmes', v: ENIGMES.bonusBudget }); txt += `, pas d’enquête en cours : bonus converti en +${ENIGMES.bonusBudget} k€`; }
         else if (b.bonus === 'indice') { txt += indiceBonus(state, z, zr) ? ', bonus +1 indice d’enquête' : ', bonus indice (rien de nouveau à trouver)'; }
         else if (b.bonus === 'capacite' && SERVICES.includes(b.service)) { bonusService = b.service; txt += `, bonus +${Math.round((ENIGMES.bonusCapacite - 1) * 100)} % en ${SERVICE_LABELS[b.service]}`; }
       }
