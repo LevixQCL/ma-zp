@@ -3,7 +3,7 @@
 import { DECOR, conditionDecor } from '../engine/decor.js';
 import { S, esc, icon, tabbar } from './common.js';
 import {
-  AFFAIRE, SERVICE_LABELS, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION,
+  AFFAIRE, SERVICES, SERVICE_LABELS, EQUIP, effetEquip, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION,
   INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE, ND } from '../engine/constants.js';
 import { SINISTRE } from '../engine/sinistres.js';
 import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
@@ -125,7 +125,7 @@ export function sections() {
         ${table(['Décision', 'Coût', 'Effet'], [
           ['Recruter (1 à 3)', `${k(COUTS.recrue)} par recrue`, `arrivée après ${DELAI_ACADEMIE} tours d’académie`],
           ['Former un service', k(COUTS.formation), `+1 niveau ; 2 agents indisponibles ${DUREE_FORMATION} tours (Intervention avec un stand de tir : ${k(INFRAS.tir.formation.cout)} et personne d’absent)`],
-          ['Équiper un service', `${k(COUTS.equipementBase)}, puis +2 k€ par niveau`, '+15 % d’efficacité par niveau'],
+          ['Équiper un service', `${k(COUTS.equipementBase)}, puis +2 k€ par niveau`, `+${Math.round(EQUIP.efficacite * 100)} % d’efficacité par niveau et un effet propre au service : ${SERVICES.map((sv) => `${SERVICE_LABELS[sv]} ${effetEquip(sv, 1)}`).join(' ; ')}. Immédiat, mais perdu en fin de saison`],
           ['Acheter un véhicule', k(COUTS.vehicule), 'plus d’agents utiles en Intervention'],
           ['Construire', 'selon l’infrastructure', 'effet permanent (tableau ci-dessous)'],
         ])}

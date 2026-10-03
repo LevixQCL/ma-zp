@@ -1,7 +1,7 @@
 // Écran des ordres du tour.
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
-import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation } from '../engine/constants.js';
+import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
@@ -227,7 +227,8 @@ function gainService(z, s, modif) {
   const z2 = JSON.parse(JSON.stringify(z));
   modif(z2);
   const n = S.draft.alloc[s] || 0, o = { rythme: S.draft.rythme, turn: S.state.turn };
-  return { avant: capacite(z, s, n, o), apres: capacite(z2, s, n, o), n };
+  const am = (x) => 1 + bonusEquip(x, 'roulage', 'amendes');
+  return { avant: capacite(z, s, n, o), apres: capacite(z2, s, n, o), n, amAvant: am(z), amApres: am(z2) };
 }
 
 /** Ce que change concrètement une grande décision, chiffré sur la répartition du jour. */
@@ -237,7 +238,7 @@ function detailDecision(z, dec, T) {
   const pct = (a, b) => (a > 0 ? `${b >= a ? '+' : '−'}${Math.round(Math.abs(b / a - 1) * 100)} %` : '—');
   const argent = (s, g, entretien = 0, fixe = 0) => {
     if (s !== 'roulage') return;
-    const var_ = (g.apres - g.avant) * ECONOMIE.amendeParCapacite;
+    const var_ = (g.apres * (g.amApres || 1) - g.avant * (g.amAvant || 1)) * ECONOMIE.amendeParCapacite;
     const gain = var_ + fixe - entretien;
     const parts = [fixe ? `+${fmt1(fixe)} fixe` : '', `+${fmt1(var_)} avec tes ${g.n} agents en Roulage`, entretien ? `−${fmt1(entretien)} d’entretien` : ''].filter(Boolean).join(' ');
     l.push(`Gain : ${gain >= 0 ? '+' : '−'}${fmt1(Math.abs(gain))} k€ par tour (${parts})${gain > 0 ? `, rentabilisé en ${Math.ceil(cout / gain)} tours environ` : ''}.`);
@@ -269,7 +270,7 @@ function detailDecision(z, dec, T) {
   } else if (dec.type === 'equiper') {
     const s = dec.cible, n = z.equip[s];
     const g = gainService(z, s, (x) => { x.equip[s] = n + 1; });
-    l.push(`Matériel ${SERVICE_LABELS[s]} ${n} → ${n + 1} : efficacité ${pct(multEquip(n), multEquip(n + 1))}, dès le tour ${T + 1}. Pas d’entretien. Remis à zéro en fin de saison.`);
+    l.push(`Matériel ${SERVICE_LABELS[s]} ${n} → ${n + 1} : efficacité ${pct(multEquip(n), multEquip(n + 1))} et ${effetEquip(s, n)} au total, dès le tour ${T + 1}. Pas d’entretien. Remis à zéro en fin de saison.`);
     effet(s, g); argent(s, g);
   } else if (dec.type === 'agrandir') {
     const B = BATIMENTS[dec.batiment], n = z.batiments[dec.batiment];
@@ -311,7 +312,7 @@ function decisionPicker(z, T, d) {
     corps = `<div class="dgrille">${SERVICES.map((sv) => tuile({ type: 'former', service: sv }, SERVICE_LABELS[sv], `niveau ${z.niveaux[sv]} → ${z.niveaux[sv] + 1} · efficacité ${pc(multNiveau(z.niveaux[sv] + 1) / multNiveau(z.niveaux[sv]) - 1)}${agentsFormation(z, sv) ? '' : ' · au stand de tir'}`, coutFormation(z, sv), niv(z.niveaux[sv]))).join('')}</div>`;
   } else if (cat === 'equiper') {
     corps = `<div class="dgrille">${tuile({ type: 'equiper', cible: 'vehicule' }, 'Véhicule', `${z.vehicules} → ${z.vehicules + 1} véhicules (garage : ${capaciteVehicules(z)} places) · +${fmt1(ECONOMIE.entretienVehicule)} k€/tour`, COUTS.vehicule)}
-      ${SERVICES.map((sv) => tuile({ type: 'equiper', cible: sv }, SERVICE_LABELS[sv], `matériel ${z.equip[sv]} → ${z.equip[sv] + 1} · efficacité ${pc(multEquip(z.equip[sv] + 1) / multEquip(z.equip[sv]) - 1)}`, coutEquipement(z.equip[sv]), niv(z.equip[sv]))).join('')}</div>`;
+      ${SERVICES.map((sv) => tuile({ type: 'equiper', cible: sv }, SERVICE_LABELS[sv], `matériel ${z.equip[sv]} → ${z.equip[sv] + 1} · ${effetEquip(sv, 1)} · efficacité ${pc(multEquip(z.equip[sv] + 1) / multEquip(z.equip[sv]) - 1)}`, coutEquipement(z.equip[sv]), niv(z.equip[sv]))).join('')}</div>`;
   } else {
     const faites = Object.entries(INFRAS).filter(([id]) => z.infra[id]).map(([, i]) => i.nom);
     corps = `<div class="dgrille">${Object.entries(BATIMENTS).map(([id, B]) => { const n = z.batiments[id]; return n >= BATIMENT_MAX ? '' : tuile({ type: 'agrandir', batiment: id }, `Agrandir : ${B.nom}`, `${B.capacite(n)} → ${B.capacite(n + 1)} ${B.unite} · entretien ${ent(B.entretien(n))} → ${ent(B.entretien(n + 1))}/tour`, B.coutAgrandir(n), niv(n, BATIMENT_MAX)); }).join('')}
