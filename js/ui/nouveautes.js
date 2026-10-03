@@ -3,10 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-05b-photos',
+  id: '2026-10-05c-agent',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
+    ['🧑‍💼', 'Pas le temps pour les énigmes ?', 'confie-les à un agent : il tente de décrocher ton bonus pendant que tu fais autre chose.'],
     ['⛈️', 'Le Directeur', 'un maître du jeu veille sur ta zone : regarde le ciel de l’HP, il annonce la journée.'],
     ['🔎', 'Fouiller la scène', 'photos des pièces, scène à fouiller, réauditions et chronologie à reconstituer.'],
     ['🕯️', 'Un meurtre à Mons', 'la prochaine affaire se joue dans le vrai centre de Mons : cinq proches, cinq mensonges, un seul assassin.'],
@@ -16,6 +17,9 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Énigmes', [
+      ['Confier les énigmes à un agent', 'pas le temps ou pas l’envie ? Tant que tu n’as répondu à aucune énigme du jour, un agent peut plancher dessus à ta place et viser le bonus de ton choix. Il le décroche le plus souvent (de 40 à 80 % selon le moral), sans PS ni prime « sans faute », sans moral perdu s’il sèche, mais avec +1 dossier de paperasse. Jouer toi-même reste plus payant.'],
+    ]],
     ['Traque', [
       ['Suspect identifié', 'quand une zone démasque l’auteur, un bandeau le dit en haut de l’enquête (et sur le tableau) : qui l’a trouvé, et combien de tours il reste pour l’arrêter.'],
       ['Une seule nuit', 'la traque dure désormais une nuit : l’auteur identifié doit être arrêté avant le 20:00 suivant. Mettez-vous d’accord sur la radio pour fouiller des planques différentes.'],

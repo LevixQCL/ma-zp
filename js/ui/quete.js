@@ -1,7 +1,7 @@
 // Écran de l’énigme du jour.
 import { S, esc, icon, tabbar, myZone } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS } from '../quests/quests.js';
-import { SERVICES, SERVICE_LABELS, ENIGMES, gainMoral } from '../engine/constants.js';
+import { SERVICES, SERVICE_LABELS, ENIGMES, gainMoral, chanceDelegue } from '../engine/constants.js';
 import { MINI_JEUX } from './incidents.js';
 import { cadenasHtml, cadenasResultat, essaisHtml } from './cadenas.js';
 import { chronoHtml, disqueHtml, plaquesHtml, temoignagesHtml, figureInteractive, filatureOutils, butinHtml, ligneHtml, trajetsHtml, icoGrille, ecritureHtml, avatar, codeHtml } from './enigmes.js';
@@ -69,6 +69,47 @@ function entrainementBarre() {
   </section>`;
 }
 
+
+/** Libellé d'un bonus d'énigmes. */
+function bonusLabel(b, gBonus, enqueteOuverte) {
+  return b.bonus === 'moral' ? `+${gBonus} de moral` : b.bonus === 'budget' ? `+${ENIGMES.bonusBudget} k€` : b.bonus === 'indice' ? (enqueteOuverte ? '+1 indice pour l’enquête' : `+${ENIGMES.bonusBudget} k€ (pas d’enquête en cours)`) : `+${Math.round((ENIGMES.bonusCapacite - 1) * 100)} % de capacité en ${SERVICE_LABELS[b.service] || '?'}`;
+}
+
+/** Boutons de choix du bonus (énigmes réussies ou confiées à un agent). */
+function choixBonus(pris, gBonus, enqueteOuverte, { action = 'quest-bonus', change = 'quest-capacite' } = {}) {
+  return `<div class="choices" style="grid-template-columns:repeat(${enqueteOuverte ? 3 : 2},minmax(0,1fr))">
+      ${enqueteOuverte ? `<button type="button" class="choice" data-action="${action}" data-v="indice" aria-pressed="${!!pris && pris.bonus === 'indice'}"><span>+1 indice</span><span class="s">enquête</span></button>` : ''}
+      <button type="button" class="choice" data-action="${action}" data-v="moral" aria-pressed="${!!pris && pris.bonus === 'moral'}"><span>+${gBonus} moral</span>${gBonus < ENIGMES.bonusMoral ? '<span class="s">moral déjà haut</span>' : ''}</button>
+      <button type="button" class="choice" data-action="${action}" data-v="budget" aria-pressed="${!!pris && pris.bonus === 'budget'}"><span>+${ENIGMES.bonusBudget} k€</span></button>
+    </div>
+    <label class="field">Ou +${Math.round((ENIGMES.bonusCapacite - 1) * 100)} % de capacité pour un service
+      <select class="text" data-change="${change}"><option value="">Choisir un service…</option>${SERVICES.map((s) => `<option value="${s}" ${pris && pris.bonus === 'capacite' && pris.service === s ? 'selected' : ''}>${SERVICE_LABELS[s]}</option>`).join('')}</select></label>`;
+}
+
+/** Énigmes confiées à un agent : proposition (aucune réponse donnée) ou suivi (déjà confiées). */
+function delegueHtml(delegue, moral, gBonus, enqueteOuverte) {
+  const pct = Math.round(chanceDelegue(moral) * 100);
+  const regles = `Il a <strong>${pct} %</strong> de chances de décrocher le bonus (selon le moral de tes troupes). Pas de PS ni de prime « sans faute », pas de moral perdu s’il sèche. Pendant qu’il planche, +${ENIGMES.delegue.paperasse} dossier de paperasse.`;
+  if (delegue) {
+    return `<section class="card" aria-label="Énigmes confiées à un agent" style="gap:10px">
+      <span class="kicker">Énigmes du jour</span>
+      <h1 class="big" style="margin:0">Confiées à un agent</h1>
+      <p class="small" style="margin:0">Bonus visé : <strong>${esc(bonusLabel(delegue, gBonus, enqueteOuverte))}</strong>. Verdict dans ton rapport, à 20:00.</p>
+      <p class="tiny muted" style="margin:0">${regles}</p>
+      ${S.delegueChanger ? `<span class="small" style="font-weight:600">Changer le bonus visé</span>${choixBonus(delegue, gBonus, enqueteOuverte, { action: 'quest-delegue', change: 'quest-delegue-capacite' })}`
+        : '<button type="button" class="btn small ghost" data-action="delegue-changer">Changer le bonus visé</button>'}
+    </section>`;
+  }
+  if (!S.delegueOuvert) return `<button type="button" class="btn small ghost block" data-action="delegue-ouvrir">${icon('send', 16)} Pas le temps ou pas l’envie ? Confier les énigmes à un agent</button>`;
+  return `<section class="card" aria-label="Confier les énigmes à un agent" style="gap:10px">
+      <div class="between"><span style="font-weight:700">Confier les énigmes du jour à un agent</span><button type="button" class="btn small ghost" data-action="delegue-ouvrir" aria-label="Fermer">✕</button></div>
+      <p class="small" style="margin:0">Un agent planche dessus à ta place. ${regles}</p>
+      <p class="tiny" style="margin:0;color:var(--red-soft)">Définitif pour aujourd’hui : tu ne pourras plus répondre aux 3 énigmes (le dossier noir reste ouvert).</p>
+      <span class="small" style="font-weight:600">Quel bonus doit-il viser ?</span>
+      ${choixBonus(null, gBonus, enqueteOuverte, { action: 'quest-delegue', change: 'quest-delegue-capacite' })}
+    </section>`;
+}
+
 export function renderQuete() {
   const train = S.questMode === 'train';
   const modes = `<div class="seg2" role="tablist" aria-label="Mode"><button type="button" role="tab" aria-selected="${!train}" data-action="quest-mode" data-v="jour">Énigmes du jour</button><button type="button" role="tab" aria-selected="${train}" data-action="quest-mode" data-v="train">Entraînement</button></div>`;
@@ -91,7 +132,7 @@ export function renderQuete() {
   const picked = S.questPick;
   const ok = results.filter((x) => x && x.statut === 'ok').length;
   const bonusPris = results.find((x) => x && x.bonus);
-  const icone = (x) => (!x || !x.statut ? '' : x.statut === 'ok' ? ' ✓' : ' ✗');
+  const icone = (x) => (!x || !x.statut ? '' : x.statut === 'ok' ? ' ✓' : x.statut === 'delegue' ? ' ⇢' : ' ✗');
 
   const choixHtml = q.mode !== 'choix' ? ''
     : q.type === 'plaque' ? plaquesHtml(q, picked, fini)
@@ -108,26 +149,32 @@ export function renderQuete() {
   const gBonus = gainMoral(ENIGMES.bonusMoral, moralZ), sf = ENIGMES.sansFaute, gSf = gainMoral(sf.moral, moralZ);
   const primeSf = `+${sf.budget} k€, +${gSf} de moral${gSf < sf.moral ? ' (moral déjà haut)' : ''} et +${sf.ps} PS`;
   const bonusCard = !train && !noir && ok >= 2 ? `<section class="card green">
-      ${bonusPris && !S.bonusChanger ? `<div class="between" style="gap:8px"><p class="small" style="margin:0;font-weight:600">Bonus du jour : ${bonusPris.bonus === 'moral' ? `+${gBonus} de moral` : bonusPris.bonus === 'budget' ? `+${ENIGMES.bonusBudget} k€` : bonusPris.bonus === 'indice' ? (enqueteOuverte ? '+1 indice pour l’enquête' : `+${ENIGMES.bonusBudget} k€ (pas d’enquête en cours : l’indice est converti)`) : `+${Math.round((ENIGMES.bonusCapacite - 1) * 100)} % de capacité en ${SERVICE_LABELS[bonusPris.service]}`}. Il sera appliqué à 20:00.</p><button type="button" class="btn small ghost" data-action="bonus-changer">Changer</button></div><span class="tiny muted">Tu peux changer d’avis jusqu’à 20:00.</span>`
+      ${bonusPris && !S.bonusChanger ? `<div class="between" style="gap:8px"><p class="small" style="margin:0;font-weight:600">Bonus du jour : ${esc(bonusLabel(bonusPris, gBonus, enqueteOuverte))}. Il sera appliqué à 20:00.</p><button type="button" class="btn small ghost" data-action="bonus-changer">Changer</button></div><span class="tiny muted">Tu peux changer d’avis jusqu’à 20:00.</span>`
         : `<span class="ok" style="font-weight:700">${bonusPris ? 'Change ton bonus du jour (jusqu’à 20:00)' : `${ok} bonnes réponses : choisis ton bonus du jour`}</span>
-        <div class="choices" style="grid-template-columns:repeat(${enqueteOuverte ? 3 : 2},minmax(0,1fr))">
-          ${enqueteOuverte ? `<button type="button" class="choice" data-action="quest-bonus" data-v="indice" aria-pressed="${!!bonusPris && bonusPris.bonus === 'indice'}"><span>+1 indice</span><span class="s">enquête</span></button>` : ''}
-          <button type="button" class="choice" data-action="quest-bonus" data-v="moral" aria-pressed="${!!bonusPris && bonusPris.bonus === 'moral'}"><span>+${gBonus} moral</span>${gBonus < ENIGMES.bonusMoral ? '<span class="s">moral déjà haut</span>' : ''}</button>
-          <button type="button" class="choice" data-action="quest-bonus" data-v="budget" aria-pressed="${!!bonusPris && bonusPris.bonus === 'budget'}"><span>+${ENIGMES.bonusBudget} k€</span></button>
-        </div>
-        <label class="field">Ou +${Math.round((ENIGMES.bonusCapacite - 1) * 100)} % de capacité pour un service
-          <select class="text" data-change="quest-capacite"><option value="">Choisir un service…</option>${SERVICES.map((s) => `<option value="${s}">${SERVICE_LABELS[s]}</option>`).join('')}</select></label>`}
+        ${choixBonus(bonusPris, gBonus, enqueteOuverte)}`}
       ${ok >= 3 ? `<p class="small ok" style="margin:0;font-weight:700">🏅 Sans faute ! Prime en plus de ton bonus : ${primeSf} ce soir.</p>` : `<p class="tiny muted" style="margin:0">Réussis les 3 énigmes pour une prime « sans faute » : ${primeSf}.</p>`}
     </section>` : '';
 
   const onglets = train ? entrainementBarre() : `<div class="seg quatre" role="tablist" aria-label="Énigmes du jour">${S.quests.map((x, k) => `
       <button type="button" role="tab" data-action="quest-tab" data-i="${k}" aria-pressed="${k === i}" aria-selected="${k === i}"><span class="t">Énigme ${k + 1}${icone(results[k])}</span><span class="d">${esc(x.typeLabel)}</span></button>`).join('')}
       <button type="button" role="tab" class="noir" data-action="quest-tab" data-i="3" aria-pressed="${noir}" aria-selected="${noir}"><span class="t">Dossier noir${icone(S.noirResult)}</span><span class="d">facultatif</span></button></div>`;
+  const delegue = !train ? results.find((x) => x && x.statut === 'delegue') : null;
+  const aucuneReponse = !results.some((x) => x && (x.statut === 'ok' || x.statut === 'rate'));
+  if (delegue && !noir) {
+    return `<main class="screen quete">
+    ${modes}
+    ${onglets}
+    ${delegueHtml(delegue, moralZ, gBonus, enqueteOuverte)}
+    <a class="small" href="#guide-quetes" style="text-align:center">Règles des énigmes</a>
+  </main>${tabbar('quete', { questBadge: false })}`;
+  }
+  const propositionDelegue = !train && !noir && aucuneReponse ? delegueHtml(null, moralZ, gBonus, enqueteOuverte) : '';
   return `<main class="screen quete ${noir ? 'mode-noir' : ''} ${train ? '' : 'sans-copie'}">
     ${modes}
     ${sousOnglets}
     ${onglets}
     ${bonusCard}
+    ${propositionDelegue}
     <header class="between" style="align-items:flex-start">
       <div class="col" style="gap:3px"><span class="kicker" ${noir ? 'style="color:#E0625A"' : ''}>${train ? 'Entraînement · ne compte pas' : noir ? 'Dossier noir · niveau hardcore' : `Énigme ${i + 1} sur 3`}</span><h1 class="big">${esc(q.typeLabel)}</h1></div>
       <div class="col" style="gap:4px;align-items:flex-end"><span class="pill" ${q.difficulte >= 6 ? 'style="background:#2A1414;border-color:#6B2E2A;color:#F59A92"' : ''}>${q.difficulte >= 6 ? 'Hardcore' : `Difficulté ${q.difficulte}/5`}</span>

@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 53;
+export const APP_VERSION = 54;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -121,7 +121,13 @@ export const ROLE_SERVICE = { inter: 'intervention', rech: 'recherche', prox: 'p
 /** Bonus d'une figure de niveau `niveau`. */
 export const bonusChef = (niveau) => CHEFS.bonus[Math.max(0, Math.min(3, niveau || 0))];
 // Énigmes du jour : bonus au choix dès 2 bonnes réponses, prime « sans faute » à 3 sur 3.
-export const ENIGMES = { rateeMoral: 1, bonusMoral: 3, bonusBudget: 2, bonusCapacite: 1.1, sansFaute: { budget: 3, moral: 2, ps: 5 } };
+export const ENIGMES = { rateeMoral: 1, bonusMoral: 3, bonusBudget: 2, bonusCapacite: 1.1, sansFaute: { budget: 3, moral: 2, ps: 5 },
+  // Énigmes confiées à un agent (pas le temps, pas l'envie) : un agent planche dessus toute la journée
+  // (sa paperasse prend du retard : +`paperasse` dossiers) et décroche le bonus choisi avec une chance qui dépend du moral.
+  // Jamais de PS, jamais de prime « sans faute », jamais de moral perdu.
+  delegue: { base: 0.6, parMoral: 0.005, min: 0.4, max: 0.8, paperasse: 1 } };
+/** Chance qu'un agent chargé des énigmes décroche le bonus, selon le moral de la zone. */
+export const chanceDelegue = (moral) => { const d = ENIGMES.delegue; return Math.min(d.max, Math.max(d.min, d.base + ((Number(moral) || 50) - 50) * d.parMoral)); };
 /** Part des effectifs en Roulage au-delà de laquelle joue l'effet « chasse aux PV ». */
 export const seuilChasse = (z) => (z.infra && z.infra.anpr ? ROULAGE.chasseCameras : ROULAGE.chasse) + bonusEquip(z, 'roulage', 'chasse');
 
