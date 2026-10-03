@@ -6,7 +6,7 @@ import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
 import { hashString } from '../engine/rng.js';
 import { portraitSuspect } from './portrait.js';
 import {
-  ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
+  ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, SOURCES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
   ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect,
 } from '../engine/enquete.js';
 import { lireCarnet, ecrireCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal } from './enquete.js';
@@ -27,6 +27,7 @@ const COL = { occ: '#2F6FD3', moy: '#C88A12', mob: '#C2302B' };
 const PINS = { r: ['#FF9A93', '#D32F2F', '#7A1010'], b: ['#9CC8FF', '#2F6FD3', '#123B7A'], y: ['#FFE59A', '#E8A800', '#7A5600'], g: ['#A8F0C6', '#2E9E62', '#11502E'], w: ['#FFFFFF', '#D8D2C4', '#7D7566'] };
 const PIN_EL = { occ: 'b', moy: 'y', mob: 'r' };
 const DEF_POS = {
+  recit: [600, 230], chrono: [2220, 220],
   'c:occ': [1080, 190], 'c:moy': [1400, 170], 'c:mob': [1720, 190],
   s0: [760, 1460], s1: [1080, 1450], s2: [1400, 1460], s3: [1720, 1450], s4: [2040, 1460],
 };
@@ -89,6 +90,20 @@ function statutPartage(p) {
   return { k: 'gardee', txt: 'Gardée pour toi' };
 }
 
+/** Main courante de l'affaire : ce qui s'est passé, jour après jour. */
+function chronologie(aff, dos) {
+  const rebonds = rebondsPublies(S.state);
+  const lignes = [{ j: 1, t: `Ouverture du dossier : ${aff.titre}`, k: 'ouv' }];
+  for (const r of rebonds) lignes.push({ j: r.j, t: r.titre, k: 'rebond' });
+  for (const p of dos.pieces) {
+    if (p.src === 'ouverture' || p.src === 'rebond') continue;
+    const qui = p.src === 'partage' && p.de && S.state.zones[p.de] ? ` (de ${zoneName(S.state.zones[p.de])})` : '';
+    lignes.push({ j: p.j, t: `${SOURCES[p.src] || p.src}${qui} : ${titrePiece(aff, p.f)}`, k: p.f.startsWith('c:') ? 'constat' : 'piece' });
+  }
+  if (dos.accuse !== null && dos.accuse !== undefined) lignes.push({ j: S.state.enquete.jour, t: `Accusation transmise : ${aff.suspects[dos.accuse].nom}`, k: 'acc' });
+  return lignes.sort((a, b) => a.j - b.j);
+}
+
 function objetPiece(aff, p, rebonds) {
   const ty = typePiece(p);
   const i = pieceSuspect(p.f);
@@ -99,7 +114,7 @@ function objetPiece(aff, p, rebonds) {
   const tampon = sp.k === 'tous' ? '' : `<span class="tb-share tb-t-${sp.k}" title="${esc(sp.txt)}" aria-label="Partage : ${esc(sp.txt)}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>${sp.k === 'prevu' ? '<i>ce soir</i>' : ''}</span>`;
   if (ty === 'jn') {
     const r = rebonds.find((x) => x.f === p.f);
-    return `<div class="tb-obj tb-jn"><span class="tb-k">${ENTETE.jn} · J${p.j}</span><strong>${esc(r ? r.titre : titrePiece(aff, p.f))}</strong><div class="tb-txt">${lignes}</div></div>`;
+    return `<div class="tb-obj tb-jn"><span class="tb-k">${ENTETE.jn} · J${p.j}</span><strong>${esc(r ? r.titre : titrePiece(aff, p.f))}</strong>${r && r.texte ? `<p class="tb-chapo">${esc(r.texte)}</p>` : ''}<div class="tb-txt">${lignes}</div></div>`;
   }
   if (ty === 'sc') return `<div class="tb-obj tb-sc"><span class="tb-bande"></span><span class="tb-k">${ENTETE.sc}${qui ? ` · ${esc(qui)}` : ''}</span><div class="tb-txt">${lignes}</div>${tampon}</div>`;
   return `<div class="tb-obj tb-${ty}"><span class="tb-k">${ENTETE[ty]}${qui ? ` · ${esc(qui)}` : ''} · J${p.j}</span><div class="tb-txt">${lignes}</div>${tampon}</div>`;
@@ -193,6 +208,11 @@ function elementsHtml(aff, dos, et) {
     const attente = connus.has(`c:${e}`) && !faite;
     out.push(wrap(`c:${e}`, 124, 1.7, `<div class="tb-obj tb-fiche" style="--c:${COL[e]}"><span class="tb-k">${ELEMENT_NOM[e]} · ${CONSTAT_TITRE[e]}</span><span class="tb-main">${faite ? esc(resumeConstat(aff, e)) : attente ? 'Résultat dans ta boîte' : '???'}</span></div>`, PIN_EL[e]));
   }
+  // Procès-verbal d'ouverture : le récit de l'affaire, toujours au tableau.
+  out.push(wrap('recit', 210, 1.6, `<div class="tb-obj tb-pv"><span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">Procès-verbal d’ouverture · affaire n° ${aff.n}</span><strong>${esc(aff.titre)}</strong><div class="tb-txt"><p>${esc(aff.recit)}</p></div><span class="tb-k">Plaignant${/^la /.test(aff.vic) ? 'e' : ''} : ${esc(aff.vic)} · butin : ${esc(aff.butin)}</span></div>`, 'w'));
+  // Main courante : l'enquête jour après jour.
+  const chrono = chronologie(aff, dos);
+  out.push(wrap('chrono', 190, 1.6, `<div class="tb-obj tb-chrono"><span class="tb-spirale"></span><span class="tb-k">Main courante · jour ${j} sur ${ENQ.dureeMax}</span>${chrono.slice(-14).map((l) => `<p class="tb-mc tb-mc-${l.k}"><b>J${l.j}</b> ${esc(l.t)}</p>`).join('')}${j < ENQ.dureeMax ? `<p class="tb-mc tb-mc-attente"><b>J${j}</b> … résultats ce soir à 20:00</p>` : ''}</div>`, 'r'));
   // Photos des suspects.
   aff.suspects.forEach((s, i) => {
     const marks = ELEMENTS.map((e) => carnet.g[`${i}:${e}`] || 0);
@@ -343,6 +363,8 @@ function voletFaits(aff) {
     <p class="small" style="margin:0;color:var(--text2);line-height:1.5">${esc(aff.recit)}</p>
     <span class="pill amber" style="align-self:flex-start">Découverte ce soir : ${pointsDecouverte(j)} pts</span>
     ${rebondsPublies(S.state).map((r) => `<div class="card amber tight"><span class="kicker">Jour ${r.j} · rebondissement</span><span style="font-weight:700">${esc(r.titre)}</span><span class="small" style="color:var(--amber-soft)">${esc(r.texte)}</span></div>`).join('')}
+    <span class="tb-ligne-k">Main courante</span>
+    ${chronologie(aff, dossierDe(S.state, myZone())).map((l) => `<p class="small" style="margin:0"><strong style="color:var(--amber)">J${l.j}</strong> · ${esc(l.t)}</p>`).join('')}
     <a class="small" href="#guide-enquete">Comment fonctionne l’enquête ?</a>`;
 }
 
@@ -516,14 +538,14 @@ function cadrer(id) {
   let v;
   if (id === 'plan') { const s = Math.min(1, (w - 20) / MAP.w); v = { s, tx: (w - MAP.w * s) / 2 - MAP.x * s, ty: 64 - MAP.y * s }; }
   else if (id === 'titre') return;
-  else { if (!/^(s\d|c:|L:|P:)/.test(id) && !t.places.includes(id)) return; const p = ancre(aff, t, id); if (!p) return; const s = Math.max(S.tabV.s, 0.85); v = { s, tx: w / 2 - p[0] * s, ty: 80 - p[1] * s }; }
+  else { if (!/^(s\d|c:|L:|P:|recit|chrono)/.test(id) && !t.places.includes(id)) return; const p = ancre(aff, t, id); if (!p) return; const s = Math.max(S.tabV.s, 0.85); v = { s, tx: w / 2 - p[0] * s, ty: 80 - p[1] * s }; }
   S.tabV = borner(v);
   appliquer(S.tabV, true);
   sauverVue();
 }
 
 export function ouvrirVolet(id, rerender, { partage = false } = {}) {
-  const k = id === 'titre' ? 'faits' : id === 'plan' ? 'plan' : id.startsWith('L:') ? 'lieu' : id.startsWith('P:') ? 'planque' : id.startsWith('c:') ? 'c' : /^s\d$/.test(id) ? 's' : 'p';
+  const k = id === 'titre' || id === 'recit' || id === 'chrono' ? 'faits' : id === 'plan' ? 'plan' : id.startsWith('L:') ? 'lieu' : id.startsWith('P:') ? 'planque' : id.startsWith('c:') ? 'c' : /^s\d$/.test(id) ? 's' : 'p';
   cadrer(id);
   S.tabSheet = { k, id, partage };
   setTimeout(rerender, id === 'titre' ? 0 : 280);
