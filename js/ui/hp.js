@@ -44,13 +44,25 @@ function pastilleDelta(v, avant) {
   if (Math.abs(d) < 0.05) return '';
   return `<span class="pdelta ${d > 0 ? 'up' : 'down'}" aria-label="${d > 0 ? 'en hausse' : 'en baisse'} de ${fmt1(Math.abs(d))} depuis hier">${d > 0 ? '▲' : '▼'} ${fmt1(Math.abs(d))}</span>`;
 }
-/** Une jauge de « Ma zone » : nom, aide, variation, valeur, barre, et une ligne de détail facultative. */
-function jauge(label, value, color, aide, dl, sous = null) {
-  const v = Math.round(value), w = Math.max(0, Math.min(100, v));
-  return `<div class="jg">
-    <div class="jg-h"><span class="jg-l">${esc(label)}</span>${aide}<span class="grow"></span>${dl}<span class="jg-v">${v}</span></div>
-    <div class="jg-bar" role="img" aria-label="${esc(label)} : ${v} sur 100"><div style="width:${w}%;background:${color}"></div></div>
-    ${sous ? `<div class="jg-s"><span>${sous[0]}</span><span class="mono" style="font-weight:700">${sous[1]}</span></div>` : ''}
+/**
+ * Un cadran de « Ma zone » : arc de 0 à 100, valeur au centre, variation en pastille, nom (touche pour l'aide)
+ * et une ligne de détail.
+ */
+function cadran(label, value, color, aide, dl, detail) {
+  const v = Math.round(value), f = Math.max(0, Math.min(100, value)) / 100;
+  // Arc de 240° : longueur relative 2/3 du cercle (r = 30, circonférence ≈ 188,5).
+  const L = 2 * Math.PI * 30, arc = L * 2 / 3;
+  return `<div class="cadran">
+    <svg viewBox="0 3 80 68" class="cad-svg" role="img" aria-label="${esc(label)} : ${v} sur 100">
+      <circle cx="40" cy="40" r="30" fill="none" stroke="var(--surface2)" stroke-width="7" stroke-linecap="round" stroke-dasharray="${arc.toFixed(1)} ${L.toFixed(1)}" transform="rotate(150 40 40)"/>
+      <circle cx="40" cy="40" r="30" fill="none" stroke="${color}" stroke-width="7" stroke-linecap="round" stroke-dasharray="${(arc * f).toFixed(1)} ${L.toFixed(1)}" transform="rotate(150 40 40)"/>
+      <text x="40" y="47" text-anchor="middle" class="cad-v">${v}</text>
+    </svg>
+    <div class="cad-txt">
+      <button type="button" class="cad-l" data-action="aide" data-k="${aide}" aria-label="Aide : ${esc(label)}">${esc(label)} <span class="cad-q" aria-hidden="true">?</span></button>
+      <span class="cad-d">${dl || '<span class="tiny muted">stable</span>'}</span>
+      <span class="cad-s">${detail}</span>
+    </div>
   </div>`;
 }
 
@@ -272,30 +284,31 @@ export function renderHP() {
       <div class="mz-tete">
         ${S.player && S.player.blason && GRADES.indexOf(gradeFor(z.ps)) >= 4 ? blasonSvg(S.player.blason, z.couleur, 34) : `<span class="mz-coul" style="background:${esc(z.couleur)}"></span>`}
         <div class="mz-id">
-          <span class="mono small" style="color:var(--blue-soft)">ZP ${esc(z.code)} ${insigne(z.ps)}</span>
+          <span class="mz-sur"><span style="color:var(--blue-soft)">ZP ${esc(z.code)} ${insigne(z.ps)}</span>${z.toursJoues >= 5 ? ` · ${rang}${rang === 1 ? 'er' : 'e'} sur ${total}` : ` · non classé (${z.toursJoues}/5 tours)`}${z.toursJoues ? ` · moy. ${fmt1(moyenneIpz(z))}` : ''}</span>
           ${S.editingName ? `<form class="row" data-form="rename" style="gap:6px"><label class="sr" for="nom-zone">Nom de la zone</label>
-            <input id="nom-zone" class="text" name="nom" maxlength="24" value="${esc(z.nom)}" style="min-height:36px;width:150px;font:700 18px var(--display)">
+            <input id="nom-zone" class="text" name="nom" maxlength="24" value="${esc(z.nom)}" style="min-height:36px;width:170px;font:700 18px var(--display)">
             <button class="btn primary small" type="submit">OK</button></form>`
             : `<div class="mz-nomrow"><h2 class="mz-nom">${esc(z.nom)}</h2><button class="iconbtn mz-crayon" data-action="rename" aria-label="Renommer la zone">${icon('pencil', 14)}</button></div>`}
         </div>
-        <div class="mz-ipz">
-          <span class="row" style="gap:4px;justify-content:flex-end"><span class="tiny muted" style="font-weight:700">IPZ</span>${aideBtn('ipz', 'Qu’est-ce que l’IPZ ?')}</span>
-          <span class="row" style="gap:6px;justify-content:flex-end;align-items:baseline"><span class="mz-ipz-v" aria-label="Indice de performance de zone : ${fmt1(z.ipz)}">${fmt1(z.ipz)}</span>${pastilleDelta(z.ipz, z.hier && z.hier.ipz)}</span>
-          <span class="tiny muted">${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} / ${total}` : `non classé · ${z.toursJoues}/5 tours`}${z.toursJoues ? ` · moy. ${fmt1(moyenneIpz(z))}` : ''}</span>
-        </div>
       </div>
-      ${sceneCarteHtml()}
-      <div class="tiles">
-        <div class="tile"><span class="l">Agents</span><span class="v">${dispo}<span class="muted" style="font-size:13px"> / ${z.agents}</span></span>
-          <span class="s ${blesses ? 'bad' : ''}">${blesses ? `${blesses} absent${blesses > 1 ? 's' : ''}` : form ? `${form} en formation` : z.academie.length ? `+${z.academie.reduce((s, a) => s + a.n, 0)} à l’académie` : 'tous dispo.'}</span></div>
-        <button type="button" class="tile tile-btn" data-action="budget" aria-label="Détail du budget"><span class="l row" style="gap:4px">Budget ${icon('chevron', 12)}</span><span class="v ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s ${fraisFixesDuJour(z) < 0 ? 'bad' : 'ok'}">${fraisFixesDuJour(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(fraisFixesDuJour(z)))} k€ / jour</span></button>
-        <button type="button" class="tile tile-btn" data-action="parc" aria-label="Parc automobile"><span class="l row" style="gap:4px">Véhicules ${icon('chevron', 12)}</span><span class="v">${vDispo}<span class="muted" style="font-size:13px"> / ${z.vehicules}</span></span><span class="s ${cab || 100 - z.usure < 60 ? 'bad' : 100 - z.usure < 80 ? 'warn' : ''}">${cab ? `${cab} cabossé${cab > 1 ? 's' : ''}` : `état ${Math.round(100 - z.usure)} %`}</span></button>
+      <div class="mz-scene">
+        ${sceneCarteHtml()}
+        <button type="button" class="mz-ipz" data-action="aide" data-k="ipz" aria-label="IPZ ${fmt1(z.ipz)} : qu’est-ce que l’IPZ ?">
+          <span class="mz-ipz-l">IPZ</span><span class="mz-ipz-v">${fmt1(z.ipz)}</span>${pastilleDelta(z.ipz, z.hier && z.hier.ipz)}
+          ${z.toursJoues ? `<span class="mz-ipz-m">moy. ${fmt1(moyenneIpz(z))}</span>` : ''}
+        </button>
       </div>
-      <div class="jauges">
-        ${jauge('Moral', z.moral, 'var(--amber)', aideBtn('moral'), pastilleDelta(z.moral, z.hier && z.hier.moral), ['Efficacité de tes agents', `<span class="${moralMult(z.moral) >= 1 ? 'ok' : 'bad'}">${Math.round(moralMult(z.moral) * 100)} %</span>`])}
-        ${z.ipzComp ? jauge('Résultats terrain', z.ipzComp.affaires, 'var(--blue-soft)', aideBtn('terrain', 'Comment gagner des résultats terrain'), pastilleDelta(z.ipzComp.affaires, z.ipzCompHier && z.ipzCompHier.affaires)) : ''}
-        ${jauge('Satisfaction citoyenne', z.satisfaction, 'var(--blue)', aideBtn('satisfaction'), pastilleDelta(z.satisfaction, z.hier && z.hier.satisfaction))}
-        ${jauge('Réputation', z.reputation, 'var(--green)', aideBtn('reputation'), pastilleDelta(z.reputation, z.hier && z.hier.reputation), [`<span class="row" style="gap:4px">Confiance de la commune${aideBtn('confiance')}</span>`, `<span class="${confianceCommune(z) > 0 ? 'ok' : confianceCommune(z) < 0 ? 'bad' : 'muted'}">${confianceCommune(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(confianceCommune(z)))} k€ / jour</span>`])}
+      <div class="tiles mz-tiles">
+        <div class="tile"><span class="l">Agents</span><span class="v">${dispo}<span class="muted" style="font-size:13px">/${z.agents}</span></span>
+          <span class="s ${blesses ? 'bad' : ''}">${blesses ? `${blesses} absent${blesses > 1 ? 's' : ''}` : form ? `${form} en form.` : z.academie.length ? `+${z.academie.reduce((s, a) => s + a.n, 0)} recrue${z.academie.reduce((s, a) => s + a.n, 0) > 1 ? 's' : ''}` : 'au complet'}</span></div>
+        <button type="button" class="tile tile-btn" data-action="budget" aria-label="Détail du budget"><span class="l row" style="gap:4px">Budget ${icon('chevron', 12)}</span><span class="v ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s ${fraisFixesDuJour(z) < 0 ? 'bad' : 'ok'}">${fraisFixesDuJour(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(fraisFixesDuJour(z)))}/jour</span></button>
+        <button type="button" class="tile tile-btn" data-action="parc" aria-label="Parc automobile"><span class="l row" style="gap:4px">Véhicules ${icon('chevron', 12)}</span><span class="v">${vDispo}<span class="muted" style="font-size:13px">/${z.vehicules}</span></span><span class="s ${cab || 100 - z.usure < 60 ? 'bad' : 100 - z.usure < 80 ? 'warn' : ''}">${cab ? `${cab} cabossé${cab > 1 ? 's' : ''}` : `état ${Math.round(100 - z.usure)} %`}</span></button>
+      </div>
+      <div class="cadrans">
+        ${cadran('Moral', z.moral, '#FFB23F', 'moral', pastilleDelta(z.moral, z.hier && z.hier.moral), `efficacité <b class="${moralMult(z.moral) >= 1 ? 'ok' : 'bad'}">${Math.round(moralMult(z.moral) * 100)} %</b>`)}
+        ${z.ipzComp ? cadran('Terrain', z.ipzComp.affaires, '#9DCBFF', 'terrain', pastilleDelta(z.ipzComp.affaires, z.ipzCompHier && z.ipzCompHier.affaires), `${Math.round(IPZ_POIDS.affaires * 100)} % de l’IPZ`) : ''}
+        ${cadran('Satisfaction', z.satisfaction, '#63B0FF', 'satisfaction', pastilleDelta(z.satisfaction, z.hier && z.hier.satisfaction), `${Math.round(IPZ_POIDS.satisfaction * 100)} % de l’IPZ`)}
+        ${cadran('Réputation', z.reputation, '#3DD39A', 'reputation', pastilleDelta(z.reputation, z.hier && z.hier.reputation), `commune <b class="${confianceCommune(z) > 0 ? 'ok' : confianceCommune(z) < 0 ? 'bad' : ''}">${confianceCommune(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(confianceCommune(z)))} k€/j</b>`)}
       </div>
     </section>
     <div class="duo">${encheresHtml()}${equipeHtml()}${tropheesHtml()}</div>

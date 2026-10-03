@@ -1136,26 +1136,34 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .seg.creux button { height: auto; padding: 8px 4px; }
 .seg.creux button .d { white-space: normal; line-height: 1.25; text-align: center; overflow: visible; }
 
-/* ───── HP : carte « Ma zone » retravaillée ───── */
+/* ───── HP : carte « Ma zone » ───── */
 .card.mazone { gap: 14px; }
-.mz-tete { display: flex; align-items: center; gap: 12px; }
-.mz-coul { width: 10px; align-self: stretch; min-height: 44px; border-radius: 5px; flex-shrink: 0; }
-.mz-id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.mz-nomrow { display: flex; align-items: center; gap: 2px; min-width: 0; }
-.mz-nom { margin: 0; font-family: var(--display); font-size: 25px; font-weight: 800; line-height: 1.05; letter-spacing: -.5px; overflow-wrap: anywhere; }
-.mz-crayon { width: 30px; height: 30px; flex-shrink: 0; color: var(--faint); }
-.mz-ipz { display: flex; flex-direction: column; align-items: flex-end; gap: 1px; flex-shrink: 0; padding-left: 12px; border-left: 1px solid var(--hair); }
-.mz-ipz-v { font-family: var(--display); font-size: 28px; font-weight: 800; line-height: 1; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.mz-tete { display: flex; align-items: stretch; gap: 12px; }
+.mz-coul { width: 8px; min-height: 46px; border-radius: 4px; flex-shrink: 0; }
+.mz-id { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+.mz-sur { font-size: 12.5px; font-weight: 600; color: var(--muted); font-family: var(--body); }
+.mz-nomrow { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.mz-nom { margin: 0; font-family: var(--display); font-size: clamp(24px, 7.4vw, 30px); font-weight: 800; line-height: 1.05; letter-spacing: -.6px; min-width: 0; overflow-wrap: break-word; hyphens: manual; }
+.mz-crayon { width: 32px; height: 32px; flex-shrink: 0; color: var(--faint); }
+.mz-scene { position: relative; }
+.mz-ipz { position: absolute; top: 8px; right: 8px; display: flex; align-items: center; gap: 6px; padding: 5px 8px 5px 10px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(10, 14, 30, .72); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: var(--text); cursor: pointer; font: inherit; text-align: left; box-shadow: 0 8px 22px rgba(0, 0, 0, .35); }
+.mz-ipz-l { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; color: var(--amber-soft); }
+.mz-ipz-v { font-family: var(--display); font-size: 20px; font-weight: 800; line-height: 1; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.mz-ipz-m { display: none; }
 .pdelta { font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 2px 7px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.pdelta.up { color: var(--green-soft); background: rgba(61, 211, 154, .12); }
+.pdelta.up { color: var(--green-soft); background: rgba(61, 211, 154, .14); }
 .pdelta.down { color: var(--red-soft); background: var(--red-bg); }
-.mazone .tile .s { font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.jauges { display: flex; flex-direction: column; gap: 12px; background: var(--bg); border: 1px solid var(--hair); border-radius: 18px; padding: 14px; }
-.jg { display: flex; flex-direction: column; gap: 6px; }
-.jg-h { display: flex; align-items: center; gap: 6px; }
-.jg-l { font-size: 14px; font-weight: 600; }
-.jg-v { font-family: var(--display); font-size: 18px; font-weight: 700; min-width: 30px; text-align: right; font-variant-numeric: tabular-nums; }
-.jg-bar { height: 7px; border-radius: 999px; background: var(--surface2); overflow: hidden; }
-.jg-bar > div { height: 100%; border-radius: 999px; background-image: linear-gradient(90deg, rgba(0, 0, 0, .15), rgba(255, 255, 255, .14)); }
-.jg-s { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
-.jg + .jg { padding-top: 12px; border-top: 1px solid var(--hair); }
+.mz-tiles .tile { padding: 10px; }
+.mz-tiles .tile .v { font-size: clamp(19px, 5.6vw, 22px); }
+.mz-tiles .tile .s { font-size: 11.5px; white-space: nowrap; }
+.cadrans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.cadran { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--bg); border: 1px solid var(--hair); border-radius: 18px; padding: 10px 8px 12px; min-width: 0; text-align: center; }
+.cad-svg { width: 78px; height: 66px; flex-shrink: 0; overflow: visible; }
+.cad-v { font-family: var(--display); font-size: 22px; font-weight: 800; fill: var(--text); }
+.cad-txt { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; width: 100%; }
+.cad-l { background: none; border: 0; padding: 0; color: var(--text); font: 700 13.5px var(--body); text-align: center; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; line-height: 1.15; }
+.cad-q { width: 15px; height: 15px; border-radius: 50%; border: 1px solid var(--line); color: var(--muted); font-size: 9.5px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cad-d { min-height: 18px; display: flex; align-items: center; }
+.cad-s { font-size: 11.5px; color: var(--muted); line-height: 1.25; }
+.cad-d .pdelta { font-size: 11px; }
+.cad-s b { font-weight: 700; }
