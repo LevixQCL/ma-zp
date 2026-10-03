@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 34;
+export const APP_VERSION = 35;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -56,7 +56,8 @@ export const EQUIP = {
   actif: true,
   efficacite: 0.08,     // +5 % par niveau
   blessure: 0.15,       // Intervention : −15 % de risque de blessure par niveau
-  amendes: 0.12,        // Roulage : +12 % d'amendes par niveau
+  amendes: 0,           // (ancien effet Roulage, retiré : l'efficacité donne déjà les amendes)
+  chasse: 0.05,         // Roulage : « chasse aux PV » repoussée de 5 points d'effectifs par niveau
   enquete: 0.15,        // Recherche : +15 % de chances de pièce d'enquête par niveau
   satisfaction: 0.5,    // Proximité : +0,5 de satisfaction par tour et par niveau
   protection: 0.1,      // Accueil : +10 % de tracas internes évités par niveau
@@ -67,7 +68,7 @@ export const effetEquip = (service, k) => {
   const pc = (v) => `${Math.round(v * 100)} %`;
   switch (service) {
     case 'intervention': return `risque de blessure −${pc(Math.min(0.8, k * EQUIP.blessure))}`;
-    case 'roulage': return `amendes +${pc(k * EQUIP.amendes)}`;
+    case 'roulage': return `seuil de la « chasse aux PV » +${Math.round(k * EQUIP.chasse * 100)} % des effectifs`;
     case 'recherche': return `chances de pièce d’enquête +${pc(k * EQUIP.enquete)}`;
     case 'proximite': return `+${String(Math.round(k * EQUIP.satisfaction * 10) / 10).replace('.', ',')} de satisfaction par jour`;
     case 'admin': return `tracas internes évités +${pc(k * EQUIP.protection)}`;
@@ -112,7 +113,7 @@ export const gainPrime = (moral) => gainMoral(4, moral);
 // Énigmes du jour : bonus au choix dès 2 bonnes réponses, prime « sans faute » à 3 sur 3.
 export const ENIGMES = { rateeMoral: 1, bonusMoral: 3, bonusBudget: 2, bonusCapacite: 1.1, sansFaute: { budget: 3, moral: 2, ps: 5 } };
 /** Part des effectifs en Roulage au-delà de laquelle joue l'effet « chasse aux PV ». */
-export const seuilChasse = (z) => (z.infra && z.infra.anpr ? ROULAGE.chasseCameras : ROULAGE.chasse);
+export const seuilChasse = (z) => (z.infra && z.infra.anpr ? ROULAGE.chasseCameras : ROULAGE.chasse) + bonusEquip(z, 'roulage', 'chasse');
 
 export const DEPENSES = {
   reserve:      { nom: 'Agents de réserve', cout: 1.5, max: 4, efficacite: 0.8, texte: '1,5 k€ par agent, pour la journée, dans le service de ton choix (efficacité 80 %)' },
@@ -136,7 +137,7 @@ export const FLAGRANT = { parUnite: 0.1, max: 0.4, points: 3, ps: 3, tension: 5 
  * Le bilan garde la moitié de celui de la veille (`report`) : un gros coup compte plusieurs jours,
  * un jour creux ne fait pas tout tomber. Bilan stable ≈ 2 × points moyens par jour.
  */
-export const TERRAIN = { incidents: 45, parPoint: 2.5, report: 0.5 };
+export const TERRAIN = { incidents: 45, parPoint: 2, report: 0.5 };
 /** Recherche : chaque unité de travail sur un dossier rapporte des points tout de suite (≈ 0,5). */
 export const DOSSIER = { tailleMin: 4, tailleMax: 8, ptsParUnite: 0.5 };
 
@@ -196,7 +197,7 @@ export function scoreBudget(b) {
 }
 
 // Poids de l'IPZ en version 1 (l'enquête arrivera en version 2).
-export const IPZ_POIDS = { satisfaction: 0.35, affaires: 0.30, moral: 0.15, budget: 0.10, reputation: 0.10 };
+export const IPZ_POIDS = { satisfaction: 0.35, affaires: 0.25, moral: 0.20, budget: 0.10, reputation: 0.10 };
 
 export const COULEURS_ZONE = ['#5AB0F0', '#3CC6B8', '#A78BFA', '#F59E5B', '#F08BB4', '#E6C36A', '#7FD18B', '#F2766B', '#8FA8FF', '#D9A5F5'];
 

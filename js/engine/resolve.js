@@ -629,6 +629,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
     let travail = Math.max(0, cap.recherche - detaches);
     let resolus = 0, ptsRech = 0;
+    // Les plus vieux d'abord (avant qu'ils ne coûtent de la satisfaction).
+    z.dossiers.sort((a, b) => b.age - a.age);
     for (const d of z.dossiers) {
       if (travail <= 0) break;
       const t = Math.min(travail, d.reste);
@@ -783,7 +785,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.ipz = ipzFrom(comp);
     z.ipzComp = comp;
     z.ipzCompHier = compHier;
-    z.ipzDetail = { incidents, traites, points: round1(z._points), report: round1(bilanHier * TERRAIN.report), bilan: z.bilanTerrain, budget: round1(z.budget) };
+    z.ipzDetail = { incidents, traites, points: round1(z._points), report: round1(bilanHier * TERRAIN.report), bilan: z.bilanTerrain, budget: round1(z.budget), coefInc: TERRAIN.incidents, coefPt: TERRAIN.parPoint };
     z.rapport.push(ligneIpz(comp, compHier, z.ipz, z.toursJoues > 0 || compHier ? ipzHier : null, z.ipzDetail));
     if (z._joue) {
       z.ipzSomme += z.ipz; z.toursJoues += 1;

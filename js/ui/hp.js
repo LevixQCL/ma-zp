@@ -18,7 +18,7 @@ import { aideBtn } from './aide.js';
 import { sceneCarteHtml } from './logistique.js';
 import { encheresHtml } from './encheres.js';
 import { TUTELLE } from '../engine/constants.js';
-import { equipeHtml } from './equipe.js';
+import { equipeHtml, tropheesHtml } from './equipe.js';
 import { fraisFixes, pointsIpz, IPZ_LABELS, confianceCommune, moralMult, moyenneIpz } from '../engine/zone.js';
 const AIDE_COMP = { satisfaction: 'satisfaction', affaires: 'terrain', moral: 'moral', budget: 'budgetIpz', reputation: 'reputation' };
 import { IPZ_POIDS, TERRAIN, BUDGET_IPZ } from '../engine/constants.js';
@@ -206,6 +206,8 @@ export function renderHP() {
     alertes.push({ cls: prevu ? 'blue' : 'red', titre: `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''}`, texte: prevu ? `${prevu < cab ? `${prevu} sur ${cab} ` : ''}en carrosserie ce soir (${fmt1(coutCarrosserie(z, choix))} k€)` : `carrosserie dans tes dépenses (${fmt1(coutCarrosserie(z))} k€), sinon ton image en prend un coup chaque tour`, href: '#ordres' });
   }
   for (const x of z.indemnites || []) alertes.push({ cls: 'blue', titre: `Assurance : +${fmt1(x.montant)} k€ attendus`, texte: `remboursement du véhicule sinistré, ${x.tour - T <= 0 ? 'ce soir' : `dans ${x.tour - T} tour${x.tour - T > 1 ? 's' : ''}`}`, href: '#ordres' });
+  { const ds = z.dossiers || [], retard = ds.filter((d) => d.age > 6).length, vieux = ds.filter((d) => d.age >= 5).length;
+    if (vieux) alertes.push({ cls: retard ? 'red' : 'amber', titre: retard ? `${retard} dossier${retard > 1 ? 's' : ''} en retard` : `${vieux} dossier${vieux > 1 ? 's' : ''} de 5 jours ou plus`, texte: retard ? '−0,4 de satisfaction chacun par jour : renforce la Recherche' : 'renforce la Recherche avant qu’ils coûtent de la satisfaction', href: '#ordres' }); }
   if (z.paperasse > 14) alertes.push({ cls: 'red', titre: `Paperasse : ${Math.round(z.paperasse)} dossiers en attente`, texte: 'au-delà de 20, gare à l’Inspection', href: '#ordres' });
   if (z.budget < 0) alertes.push({ cls: 'red', titre: 'Budget dans le rouge', texte: 'deux tours de suite et c’est l’Inspection', href: '#ordres' });
   else if (z.budget > BUDGET_IPZ.dormant) alertes.push({ cls: 'amber', titre: `${fmtK(z.budget)} qui dorment`, texte: `au-delà de ${BUDGET_IPZ.dormant} k€, ton IPZ budget baisse : investis (réserve, prévention, formation, matériel…)`, href: '#ordres' });
@@ -283,7 +285,7 @@ export function renderHP() {
         <div class="between small" style="margin-top:-4px"><span class="row muted" style="gap:4px">Confiance de la commune${aideBtn('confiance')}</span><span class="mono ${confianceCommune(z) > 0 ? 'ok' : confianceCommune(z) < 0 ? 'bad' : 'muted'}">${confianceCommune(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(confianceCommune(z)))} k€ / jour</span></div>
       </div>
     </section>
-    <div class="duo">${encheresHtml()}${equipeHtml()}</div>
+    <div class="duo">${encheresHtml()}${equipeHtml()}${tropheesHtml()}</div>
 
     ${nuitHtml(z)}
 

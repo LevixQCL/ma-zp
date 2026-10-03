@@ -1,4 +1,4 @@
-// Carte « Mon équipe » de l'HP : le trombinoscope et les trophées.
+// Cartes « Mon équipe » (le trombinoscope) et « Mes trophées » de l'HP.
 import { S, esc, icon, myZone } from './common.js';
 import { ROLES_EQUIPE, SEUILS_EQUIPE, TROPHEES, roleDe, intitule, surnomDe, creerEquipe, appliquerNoms } from '../engine/equipe.js';
 import { SERVICE_LABELS } from '../engine/constants.js';
@@ -10,7 +10,6 @@ export function equipeHtml() {
   const z = myZone();
   // Les noms choisis s'affichent tout de suite (ils sont recopiés dans la partie à 20:00).
   const equipe = appliquerNoms(JSON.parse(JSON.stringify(z.equipe || creerEquipe(z.uid))), z.uid, (S.player && S.player.equipeNoms) || null);
-  const acquis = new Map((z.trophees || []).map((t) => [t.id, t]));
   const membres = equipe.map((m) => {
     const r = roleDe(m);
     const suiv = SEUILS_EQUIPE[m.niveau + 1];
@@ -35,20 +34,29 @@ export function equipeHtml() {
         <span class="tiny muted">${suiv ? `prochain surnom : « ${esc(r.surnoms[m.niveau])} »` : 'légende de la zone'}</span>
       </span><button type="button" class="btn small ghost" data-action="equipe-edit" data-role="${m.role}" aria-label="Renommer ${esc(m.prenom)} ${esc(m.nom)}">Renommer</button></div>`;
   }).join('');
+  const nbSurnoms = equipe.filter((m) => m.niveau > 0).length;
+  return `<details class="card repli" aria-label="Mon équipe" data-k="equipe" ${S.ouverts && S.ouverts.equipe ? 'open' : ''}>
+    <summary><span style="color:var(--amber)">${icon('shield', 20)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Mon équipe</span>
+      <span class="tiny muted">${equipe.length} figures · ${nbSurnoms} surnom${nbSurnoms > 1 ? 's' : ''} gagné${nbSurnoms > 1 ? 's' : ''}</span></span>${icon('chevron', 16)}</summary>
+    <div class="col" style="gap:8px">
+      <p class="tiny muted" style="margin:0">Les figures de ta zone gagnent de l’expérience avec le travail de leur service, et des surnoms au fil des tours. Elles restent d’une saison à l’autre. Tu peux les renommer (des collègues, par exemple) : leur expérience et leurs surnoms sont conservés.</p>
+      ${membres}
+    </div></details>`;
+}
+
+/** Carte « Mes trophées » de l'HP. */
+export function tropheesHtml() {
+  const z = myZone();
+  const acquis = new Map((z.trophees || []).map((t) => [t.id, t]));
   const trophees = TROPHEES.map((t) => {
     const a = acquis.get(t.id);
     return `<div class="trophee ${a ? 'on' : ''}" title="${esc(t.texte)}">${icon('trophy', 18)}<span class="n">${esc(t.nom)}</span><span class="d">${esc(t.texte)}</span>${a ? `<span class="d gagne">${icon('check', 12)} gagné · saison ${a.s}, tour ${a.t}</span>` : ''}</div>`;
   }).join('');
   const nb = acquis.size;
-  return `<details class="card repli" aria-label="Mon équipe" data-k="equipe" ${S.ouverts && S.ouverts.equipe ? 'open' : ''}>
-    <summary><span style="color:var(--amber)">${icon('shield', 20)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Mon équipe et mes trophées</span>
-      <span class="tiny muted">${equipe.filter((m) => m.niveau > 0).length} surnom${equipe.filter((m) => m.niveau > 0).length > 1 ? 's' : ''} gagné${equipe.filter((m) => m.niveau > 0).length > 1 ? 's' : ''} · ${nb} trophée${nb > 1 ? 's' : ''} sur ${TROPHEES.length}</span></span>${icon('chevron', 16)}</summary>
-    <div class="col" style="gap:8px">
-      <p class="tiny muted" style="margin:0">Les figures de ta zone gagnent de l’expérience avec le travail de leur service, et des surnoms au fil des tours. Elles restent d’une saison à l’autre. Tu peux les renommer (des collègues, par exemple) : leur expérience et leurs surnoms sont conservés.</p>
-      ${membres}
-      <h3 class="compta-t">Trophées</h3>
-      <div class="trophees">${trophees}</div>
-    </div></details>`;
+  return `<details class="card repli" aria-label="Mes trophées" data-k="trophees" ${S.ouverts && S.ouverts.trophees ? 'open' : ''}>
+    <summary><span style="color:var(--amber)">${icon('trophy', 20)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Mes trophées</span>
+      <span class="tiny muted">${nb} sur ${TROPHEES.length}</span></span>${icon('chevron', 16)}</summary>
+    <div class="trophees">${trophees}</div></details>`;
 }
 
 export { ROLES_EQUIPE };
