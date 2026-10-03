@@ -83,6 +83,15 @@ service cloud.firestore {
         allow delete: if master(gid);
       }
 
+      // Carnet d'enquête (tableau, marques, notes) : chaque joueur lit et écrit seulement le sien.
+      match /carnets/{uid} {
+        allow read: if member(gid) && request.auth.uid == uid;
+        allow create, update: if member(gid) && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['affaires', 'maj'])
+          && request.resource.data.affaires is map && request.resource.data.affaires.size() <= 2;
+        allow delete: if master(gid);
+      }
+
 	// Ordres : secrets jusqu'à l'heure limite, modifiables uniquement pendant le tour en cours.
     	  match /orders/{id} {
         // Lire un ordre précis : le sien (même pas encore créé), ou celui des autres après l'heure limite.

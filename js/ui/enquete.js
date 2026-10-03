@@ -4,6 +4,7 @@ import { capacite } from '../engine/zone.js';
 import { APPUI } from '../engine/appui.js';
 import { monAppui } from './incidents.js';
 import { renderTableau } from './tableau.js';
+import { planifierEnvoi, synchroniser, contenuChange } from './carnet-sync.js';
 import {
   ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece,
   chanceVoisinage, VOISINAGE,
@@ -24,10 +25,19 @@ export function lireCarnet(n) {
   const vide = { g: {}, p: {}, notes: '' };
   try { return { ...vide, ...(JSON.parse(localStorage.getItem(carnetKey(n))) || S.carnetMem?.[n] || {}) }; } catch (e) { return { ...vide, ...(S.carnetMem?.[n] || {}) }; }
 }
-export function ecrireCarnet(n, c) {
+function ecrireLocal(n, c) {
   S.carnetMem = { ...(S.carnetMem || {}), [n]: c };
   try { localStorage.setItem(carnetKey(n), JSON.stringify(c)); } catch (e) { /* stockage indisponible : on garde en mémoire */ }
 }
+/** Écrit le carnet sur l'appareil et, s'il a vraiment changé (pas seulement la vue), le prépare pour l'envoi en ligne. */
+export function ecrireCarnet(n, c) {
+  const avant = lireCarnet(n);
+  if (contenuChange(avant, c)) c.maj = Date.now(); else c.maj = avant.maj || c.maj || 0;
+  ecrireLocal(n, c);
+  planifierEnvoi(lireCarnet);
+}
+/** Récupère le carnet enregistré en ligne (tableau, marques, notes) s'il est plus récent. */
+export function synchroCarnet(rerender, opts) { return synchroniser(lireCarnet, ecrireLocal, rerender, opts); }
 
 function autresZones() {
   return Object.values(S.state.zones).filter((z) => z.uid !== S.user.uid && z.toursSansOrdres < 3).sort((a, b) => a.code.localeCompare(b.code));

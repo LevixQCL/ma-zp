@@ -117,6 +117,9 @@ export async function createFirebaseBackend(config) {
     async getState() { const s = await F.getDoc(stateRef()); return s.exists() ? s.data() : null; },
     subscribeState(cb, onErr) { return F.onSnapshot(stateRef(), (s) => cb(s.exists() ? s.data() : null), (e) => { console.error(e); if (onErr) onErr(e); }); },
 
+    // Carnet d'enquête (tableau, marques, notes) : une fiche par joueur, lisible et modifiable par lui seul.
+    async getCarnet(uid) { const d = await F.getDoc(docIn('carnets', uid)); return d.exists() ? d.data() : null; },
+    async saveCarnet(uid, data) { await F.setDoc(docIn('carnets', uid), data); },
     async getPlayer(uid) { try { const s = await F.getDoc(docIn('players', uid)); return s.exists() ? s.data() : null; } catch (e) { return null; } },
     async getPlayers({ strict = false } = {}) {
       let snap;
