@@ -1,7 +1,7 @@
 // Enquête et FIPA : génération, accusation, traque, partage, FIPA de bout en bout.
 import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
-import { genererAffaire, candidats, texteFait, pointsDecouverte, ENQ, coutDemarche, celluleDe, celluleSuspect } from '../js/engine/enquete.js';
+import { genererAffaire, affaire, trajet, candidats, texteFait, pointsDecouverte, ENQ, coutDemarche, celluleDe, celluleSuspect } from '../js/engine/enquete.js';
 import { PARTAGE } from '../js/engine/fipa.js';
 
 // 1. Chaque affaire a une solution unique (mobile + moyen + occasion), et il faut croiser les pièces.
@@ -32,13 +32,36 @@ for (let n = 1; n <= 600; n++) {
   assert.ok(!/borné près/.test(Object.values(a.textes).join(' ')));
 }
 
+// 1 bis. Avec le plan : un alibi troué laisse le temps de faire le trajet, un alibi qui couvre jamais.
+for (let n = 1; n <= 600; n++) {
+  const a = genererAffaire(`c${n % 13}`, n, true);
+  assert.ok(a.carte);
+  assert.deepEqual(candidats(a, a.faits).suspects, [a.coupable]);
+  for (const s of a.suspects) {
+    const al = s.alibi;
+    if (al.type !== 'couvre' && al.type !== 'partiel') continue;
+    const t = trajet(a.pos, al.pos);
+    assert.ok(t >= 3 && t <= 30);
+    const possible = al.a + t <= a.heure || a.fin + t <= al.de;
+    assert.equal(possible, al.type === 'partiel', `alibi ${al.type} incohérent avec le trajet (${t} min)`);
+    assert.ok(al.de !== al.ditDe || al.a !== al.ditA);
+  }
+}
+// Les affaires ouvertes avant l'arrivée du plan ne changent pas.
+{
+  const vieux = { seed: 'v', carteDes: 5 };
+  assert.equal(affaire(vieux, 4).carte, false);
+  assert.equal(affaire(vieux, 5).carte, true);
+  assert.equal(affaire({ seed: 'v' }, 3).carte, false);
+}
+
 // 2. Partie à trois joueurs humains simulés.
 const players = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' }, C: { code: '3333', nom: 'Charlie' } };
 let state = createGame({ seed: 'test-enquete' });
 let r = resolveTurn(state, { players }); state = r.state;
 assert.ok(state.enquete && state.enquete.jour === 1);
 const base = { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal' };
-let aff = genererAffaire(state.seed, state.enquete.n);
+let aff = affaire(state, state.enquete.n);
 
 // Jour 1 : B se trompe, A lance deux démarches et partage l'indice d'ouverture (ignoré), C ne fait rien.
 const faux = (aff.coupable + 1) % ENQ.nbSuspects;

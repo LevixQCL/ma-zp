@@ -3,8 +3,9 @@ import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
 import { capacite } from '../engine/zone.js';
 import { APPUI } from '../engine/appui.js';
 import { monAppui } from './incidents.js';
+import { renderTableau } from './tableau.js';
 import {
-  ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, genererAffaire, dossierDe, dossierAffaire, texteFait, titrePiece,
+  ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece,
   chanceVoisinage, VOISINAGE,
   ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee,
 } from '../engine/enquete.js';
@@ -31,9 +32,9 @@ export function ecrireCarnet(n, c) {
 function autresZones() {
   return Object.values(S.state.zones).filter((z) => z.uid !== S.user.uid && z.toursSansOrdres < 3).sort((a, b) => a.code.localeCompare(b.code));
 }
-const coutTotal = (d) => (d.demarches || []).reduce((s, x) => s + coutDemarche(S.state, S.user.uid, x), 0);
+export const coutTotal = (d) => (d.demarches || []).reduce((s, x) => s + coutDemarche(S.state, S.user.uid, x), 0);
 
-function partageCtl(piece) {
+export function partageCtl(piece) {
   const d = S.draft;
   if (piece.src === 'ouverture' || piece.src === 'rebond') return '<span class="tiny muted">connue de tous</span>';
   const prevu = (d.partages || []).filter((p) => p.f === piece.f);
@@ -55,7 +56,7 @@ function partageCtl(piece) {
     <button class="btn small" data-action="partage" data-f="${piece.f}" data-a="*">${deja.size ? 'Aux autres' : 'À tous'}</button></span>${dejaTxt}</span>`;
 }
 
-function sourceDe(p) {
+export function sourceDe(p) {
   if (p.src === 'partage' && p.de && S.state.zones[p.de]) return `Partagée par ${zoneName(S.state.zones[p.de])}`;
   return esc(SOURCES[p.src] || p.src);
 }
@@ -69,7 +70,7 @@ function pieceHtml(aff, p, { share = true } = {}) {
 }
 
 // Bouton de démarche (constatation ou vérification) : demandé, possible ou impossible, avec son prix.
-function demBtn(aff, dos, x, label, { compact = false } = {}) {
+export function demBtn(aff, dos, x, label, { compact = false } = {}) {
   const d = S.draft, z = myZone();
   const dem = d.demarches || [];
   const on = dem.includes(x);
@@ -86,9 +87,9 @@ function demBtn(aff, dos, x, label, { compact = false } = {}) {
     <span class="l">${esc(label)}</span><span class="p">${on ? 'demandé ✓' : raison || prixTxt}</span></button>`;
 }
 
-function traqueHtml(tr) {
+export function traqueHtml(tr) {
   const st = S.state, z = myZone(), d = S.draft;
-  const a = genererAffaire(st.seed, tr.n);
+  const a = affaire(st, tr.n);
   const dos = dossierAffaire(st, z, tr.n);
   const t = d.traque && d.traque.n === tr.n ? d.traque : null;
   const carnet = lireCarnet(tr.n);
@@ -149,7 +150,7 @@ function suspectCard(aff, dos, s, i, carnet) {
     </button>
     ${open ? `<div class="mmo-row">${cases}</div>` : ''}
     ${open ? `<div class="col" style="gap:8px">
-      <p class="small" style="margin:0;line-height:1.55">${esc(fiche.vehicule)}<br>${esc(fiche.declaration)}<br><span class="muted">${esc(fiche.rumeur)}</span></p>
+      <p class="small" style="margin:0;line-height:1.55">${esc(fiche.vehicule)}<br>${esc(fiche.declaration)}<br>${fiche.trajet ? `${esc(fiche.trajet)}<br>` : ''}<span class="muted">${esc(fiche.rumeur)}</span></p>
       ${pieces.map((p) => pieceHtml(aff, p)).join('')}
       ${(() => { const surPiste = d.piste === i; return `<button type="button" class="btn small ${surPiste ? 'primary' : 'outline'} block" data-action="piste" data-i="${i}" aria-pressed="${surPiste}">${surPiste ? `✓ Piste prioritaire des enquêteurs (retirer)` : `Mettre les enquêteurs de Recherche sur ${esc(s.prenom)}`}</button>
         <span class="tiny muted" style="margin-top:-4px">${surPiste ? 'L’enquête de voisinage de ce soir cherche d’abord de ce côté.' : `Gratuit : l’enquête de voisinage cherchera ses pièces en priorité${mien ? '' : ' (hors de ta cellule : deux fois moins efficace)'}.`}</span>`; })()}
@@ -163,7 +164,7 @@ function suspectCard(aff, dos, s, i, carnet) {
 }
 
 /** État d'un suspect d'après ton carnet : 'exclu' (au moins un ✕), 'complet' (3 ✓) ou 'ouvert'. */
-function etatSuspect(carnet, i) {
+export function etatSuspect(carnet, i) {
   const v = ELEMENTS.map((e) => carnet.g[`${i}:${e}`] || 0);
   if (v.includes(2)) return 'exclu';
   if (v.every((x) => x === 1)) return 'complet';
@@ -171,7 +172,7 @@ function etatSuspect(carnet, i) {
 }
 
 /** Enquête de voisinage de ce soir : ce que la Recherche peut rapporter, avec ou sans piste. */
-function voisinageInfo(aff) {
+export function voisinageInfo(aff) {
   const st = S.state, d = S.draft, z = myZone();
   const n = (d.alloc && d.alloc.recherche) || 0;
   const cap = capacite(z, 'recherche', n, { rythme: d.rythme, turn: st.turn });
@@ -183,7 +184,7 @@ function voisinageInfo(aff) {
 }
 
 /** Appui fédéral : équipe du jour à faire travailler, et demande pour demain (labo ou RCCU). */
-function appuiHtml() {
+export function appuiHtml() {
   const d = S.draft, z = myZone(), a = monAppui();
   let jour = '';
   if (a) {
@@ -329,13 +330,21 @@ function vueNotes(aff) {
     <textarea id="carnet-notes" data-notes="${aff.n}" rows="14" class="notes" placeholder="Hypothèses, heures à comparer, qui a menti…">${esc(c.notes || '')}</textarea>`;
 }
 
+/** Affichage de l'enquête : le tableau (par défaut) ou la liste. */
+export function vueEnquete() {
+  if (S.enqVue) return S.enqVue;
+  try { S.enqVue = localStorage.getItem('mazp-enq-vue') || 'tableau'; } catch (e) { S.enqVue = 'tableau'; }
+  return S.enqVue;
+}
+
 export function renderEnquete() {
   const st = S.state, z = myZone();
   if (!st.enquete) {
     return `<main class="screen"><header class="col" style="gap:3px"><span class="kicker">Enquête</span><h1 class="big">Pas d’affaire en cours</h1></header>
       <p class="small muted">La première affaire s’ouvrira au prochain tour.</p></main>${tabbar('enquete')}`;
   }
-  const aff = genererAffaire(st.seed, st.enquete.n);
+  if (vueEnquete() === 'tableau') return renderTableau();
+  const aff = affaire(st, st.enquete.n);
   const dos = dossierDe(st, z);
   const tab = ['suspects', 'scene', 'pieces', 'planques', 'notes'].includes(S.enqTab) ? S.enqTab : 'suspects';
   const j = st.enquete.jour;
@@ -350,7 +359,7 @@ export function renderEnquete() {
   else body = vueSuspects(aff, dos);
   return `<main class="screen">
     <header class="col" style="gap:6px">
-      <span class="kicker">Enquête · affaire n° ${aff.n}</span>
+      <div class="between"><span class="kicker">Enquête · affaire n° ${aff.n}</span><button type="button" class="btn small" data-action="tab-vue" data-v="tableau">${icon('tableau', 16)} Tableau</button></div>
       <h1 class="big" style="line-height:1.05">${esc(aff.titre)}</h1>
       <details class="recit" data-k="recit" ${(S.ouverts && 'recit' in S.ouverts ? S.ouverts.recit : j <= 1) ? 'open' : ''}><summary class="small">Les faits ${icon('chevron', 14)}</summary>
         <p class="small" style="margin:6px 0 0;color:var(--text2);line-height:1.5">${esc(aff.recit)}</p></details>

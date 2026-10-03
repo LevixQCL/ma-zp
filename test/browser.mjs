@@ -83,8 +83,36 @@ await shot('12-profil');
 await page.goto(`${BASE}#admin`);
 await shot('13-admin');
 
-// Enquête : constatation, vérification ciblée, tableau MMO, accusation, notes.
+// Tableau d'enquête : tuto, boîte à pièces, volets, ficelle, puis la vue liste.
 await page.goto(`${BASE}#enquete`);
+await page.waitForSelector('#tb-vp');
+await page.waitForSelector('.tb-tuto');
+await shot('15a-tableau-tuto');
+while (await page.locator('[data-action="tab-tuto-suite"]').count()) await page.click('[data-action="tab-tuto-suite"]');
+await page.click('[data-action="tab-tuto-fin"]');
+await page.click('[data-action="tab-volet"][data-k="boite"]');
+await page.waitForSelector('.tb-volet');
+const sortir = page.locator('[data-action="tab-sortir"]').first();
+if (await sortir.count()) { await sortir.click(); await page.waitForTimeout(300); if (!(await page.locator('.tb-it.tb-p-lb, .tb-it.tb-p-jn, .tb-it.tb-p-tk, .tb-it.tb-p-sc, .tb-it.tb-p-rv').count())) errors.push('Tableau : la pièce sortie n’est pas punaisée'); }
+await page.evaluate(() => document.querySelector('[data-action="tab-ouvrir"][data-tid="titre"]').click());
+await page.waitForSelector('.tb-volet');
+await page.click('[data-action="tab-fermer"]');
+await page.evaluate(() => { const b = document.createElement('button'); b.dataset.action = 'tab-ouvrir'; b.dataset.tid = 's4'; document.body.append(b); b.click(); b.remove(); });
+await page.waitForSelector('.tb-volet .tb-mark');
+await page.click('.tb-volet .tb-mark >> nth=0');
+if ((await page.locator('.tb-volet .tb-mark[data-v="1"]').count()) !== 1) errors.push('Tableau : la case ne se coche pas depuis le volet');
+await shot('15b-tableau-suspect');
+await page.click('[data-action="tab-fermer"]');
+await page.click('[data-action="tab-volet"][data-k="soir"]');
+await page.waitForSelector('.tb-volet');
+await shot('15c-tableau-ce-soir');
+await page.click('[data-action="tab-fermer"]');
+await page.click('[data-action="tab-fit"]');
+await page.waitForTimeout(400);
+await shot('15d-tableau');
+await page.click('.tb-haut [data-action="tab-vue"][data-v="liste"]');
+
+// Enquête (vue liste) : constatation, vérification ciblée, tableau MMO, accusation, notes.
 await page.waitForSelector('h1.big');
 await shot('16-enquete-suspects');
 await page.click('[data-action="enq-tab"][data-t="scene"]');
@@ -99,7 +127,7 @@ if ((await page.locator('[data-action="dem-toggle"][aria-pressed="true"]').count
 await page.locator('[data-action="mmo-mark"]').first().click();
 await page.locator('[data-action="mmo-mark"]').nth(1).click();
 await page.locator('[data-action="mmo-mark"]').nth(1).click();
-if ((await page.locator('.mmo.m-x').count()) !== 1 || (await page.locator('.mmo.m-ok').count()) !== 1) errors.push('Enquête : les cases du tableau ne se cochent pas');
+if ((await page.locator('.mmo.m-x').count()) !== 1 || (await page.locator('.mmo.m-ok').count()) < 1) errors.push('Enquête : les cases du tableau ne se cochent pas');
 await shot('17-enquete-suspect-ouvert');
 await page.locator('[data-action="accuser"]').first().click();
 await page.waitForSelector('[data-c="1"]');

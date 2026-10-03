@@ -3,19 +3,24 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-02h',
+  id: '2026-10-03',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🔬', 'Appui de la PJF à l’enquête', 'demande le labo ou la RCCU : si une équipe est libre, joue son mini-jeu (empreintes, ADN, réseau, traçage d’IP) pour décrocher une pièce.'],
-    ['🎯', 'Nouveau : le stand de tir', 'une annexe pour des agents d’intervention mieux formés et moins souvent blessés. Et toutes les annexes ont été redessinées.'],
-    ['🚨', 'Des incidents en journée', 'colis suspect, porte à crocheter, parking à débloquer… un mini-jeu tombe sur ta zone à une heure imprévue, et tu as 12 heures pour intervenir.'],
-    ['🔐', 'Des énigmes à manipuler', 'cadenas à molettes, disque de décodage, plaques à rayer : on touche les objets.'],
-    ['🎨', 'Des skins pour ton commissariat', 'réussis les incidents pour remplir ta jauge et débloquer un nouveau décor.'],
-    ['🖥️', 'Sur ordinateur', 'l’HP s’affiche sur deux colonnes et les écrans s’élargissent.'],
+    ['📌', 'Le tableau d’enquête', 'l’enquête s’affiche sur un grand tableau en liège : photos des suspects, fiches, pièces à punaiser où tu veux. Un petit tuto te le présente.'],
+    ['🗺️', 'Le plan du district', 'les lieux des alibis et les temps de trajet : un trou dans un alibi ne suffit plus si la route est trop longue.'],
+    ['🧵', 'Tire tes ficelles', 'relie les pièces, les suspects et les lieux d’une ficelle rouge, comme dans les films.'],
   ],
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Le tableau d’enquête', [
+      ['Un vrai tableau', 'l’écran Enquête s’ouvre sur un grand liège encadré de bois. Glisse pour te déplacer, pince ou utilise la molette pour zoomer, et le bouton « vue d’ensemble » montre tout le tableau.'],
+      ['Rien n’est rangé pour toi', 'les pièces arrivent dans la boîte à pièces, chaque soir à 20:00. Sors-les une à une et punaise-les où tu veux : près d’un suspect, sur le plan, dans un coin.'],
+      ['Chaque pièce a son objet', 'alibi sur un ticket, moyens dans un sachet à scellé, mobile sur un extrait de compte, indices de planque sur un rapport du labo, rebondissements en coupure de journal.'],
+      ['Le plan et les trajets', 'au centre, le plan du district : la scène, les lieux où les suspects disent avoir été et le temps de trajet. Dans les nouvelles affaires, il faut avoir eu le temps de faire la route pour profiter d’un trou dans son alibi.'],
+      ['Tout depuis le tableau', 'touche une photo, une fiche, une pièce ou un lieu : ce qu’on sait, tes ✓ / ✕, les démarches, la piste, l’accusation et le partage. Le bouton « Ce soir » résume ce qui part avec tes ordres.'],
+      ['Ficelles et mini tuto', 'le mode ficelle relie deux éléments d’une ficelle rouge. Un tuto de six écrans présente le tableau (bouton « ? » pour le revoir). L’ancien affichage reste disponible avec le bouton liste.'],
+    ]],
     ['À découvrir', [
       ['Appui fédéral à l’enquête', 'une fois par jour, demande le labo de la PJF (traces, empreintes, ADN) ou la RCCU (téléphones, ordinateurs, comptes en ligne) depuis la carte « Aujourd’hui » de l’enquête. Les équipes sont rares et partagées entre toutes les zones : réponse à 20:00, et un refus te rend prioritaire la fois suivante. Si l’équipe passe, tu joues son mini-jeu le lendemain (un seul essai) : réussi, une pièce sur un suspect arrive à 20:00.'],
       ['Stand de tir', 'nouvelle annexe à construire (10 k€, grande décision « Construire », entretien habituel des annexes) : Intervention +15 %, formation Intervention à moitié prix (2 k€) et sans agent absent, et des agents deux fois moins souvent blessés quand tu engages une grosse équipe sur une affaire ou à l’assaut de la zone de non-droit ; une rébellion ne blesse plus qu’un agent. Il apparaît dans l’aile des annexes de ton commissariat : béton insonorisé, porte blindée et voyant « tir en cours ».'],
@@ -54,7 +59,7 @@ export const NOTE_MAJ = {
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Du neuf à la ZP ! Des incidents tombent en journée sur ta zone (colis suspect, porte à crocheter, parking à débloquer…) : un mini-jeu, un seul essai. Les énigmes se jouent avec de vrais objets (cadenas, disque, plaques) et tu peux gagner des skins pour ton commissariat. Tout le détail, équilibrage compris : menu ⚙ de l'HP → Nouveautés.`;
+  return `📣 Du neuf à la ZP ! L’enquête se joue maintenant sur un grand tableau en liège : photos des suspects, pièces à punaiser toi-même, ficelles rouges et plan du district avec les temps de trajet. Un petit tuto te le présente à l’ouverture de l’écran Enquête.`;
 }
 
 

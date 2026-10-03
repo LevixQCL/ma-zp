@@ -43,6 +43,9 @@ export function gradeInfo(ps) {
 }
 
 const PATHS = {
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  liste: '<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
+  tableau: '<rect x="3" y="4" width="18" height="14" rx="1.5"/><path d="M8 21l2-3M16 21l-2-3M7 8l5 3 5-2"/><circle cx="7" cy="8" r="1"/><circle cx="12" cy="11" r="1"/><circle cx="17" cy="9" r="1"/>',
   hp: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>',
   ordres: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/>',
   quete: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',

@@ -29,7 +29,8 @@ import { offreApres } from './ui/encheres.js';
 import { renderDiplomatie, ongletsRadio } from './ui/diplomatie.js';
 import { renderParties } from './ui/parties.js';
 import { renderEnquete, lireCarnet, ecrireCarnet } from './ui/enquete.js';
-import { genererAffaire } from './engine/enquete.js';
+import { affaire } from './engine/enquete.js';
+import { monterTableau, ouvrirVolet, sortirPiece, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES } from './quests/quests.js';
@@ -147,6 +148,8 @@ function render() {
   if (S.route === 'guide' && S.guideSection && !S.keepScrollGuide) { const g = document.getElementById(`g-${S.guideSection}`); if (g) g.scrollIntoView({ block: 'start' }); }
   if (S.route === 'prive') { const l = document.getElementById('prive-list'); if (l && l.lastElementChild) l.lastElementChild.scrollIntoView({ block: 'nearest' }); }
   if (S.route === 'radio') { const l = document.getElementById('radio-list'); if (l && l.lastElementChild) l.lastElementChild.scrollIntoView({ block: 'nearest' }); }
+  document.body.classList.toggle('sans-defil', !!document.getElementById('tb-vp'));
+  if (S.route === 'enquete') monterTableau(rerender);
 }
 
 /** Pastilles « nouveau » sans redessiner l'écran (une saisie en cours n'est pas perdue). */
@@ -553,6 +556,19 @@ async function onClick(e) {
       }
       case 'class-tab': S.classTab = el.dataset.t; rerender(); break;
       case 'enq-tab': S.enqTab = el.dataset.t; rerender(); break;
+      case 'tab-vue': S.enqVue = el.dataset.v; S.tabSheet = null; try { localStorage.setItem('mazp-enq-vue', S.enqVue); } catch (err) { /* pas de stockage */ } window.scrollTo(0, 0); render(); break;
+      case 'tab-volet': S.tabSheet = S.tabSheet && S.tabSheet.k === el.dataset.k ? null : { k: el.dataset.k, id: el.dataset.k }; S.tabMode = 'main'; S.tabFrom = null; rerender(); break;
+      case 'tab-ouvrir': S.tabMode = 'main'; S.tabFrom = null; ouvrirVolet(el.dataset.tid, rerender); break;
+      case 'tab-fermer': S.tabSheet = null; rerender(); break;
+      case 'tab-sortir': sortirPiece(el.dataset.f); S.tabSheet = null; rerender(); toast('Glisse la pièce où tu veux sur le tableau.'); break;
+      case 'tab-fiche': completerFiche(el.dataset.e); S.tabSheet = null; ouvrirVolet(`c:${el.dataset.e}`, rerender); break;
+      case 'tab-remettre': remettrePiece(el.dataset.f); S.tabSheet = null; rerender(); break;
+      case 'tab-mode': S.tabMode = el.dataset.v; S.tabFrom = null; if (S.tabMode === 'fil') S.tabSheet = null; rerender(); break;
+      case 'tab-zoom': tableauZoom(Number(el.dataset.d)); break;
+      case 'tab-fit': tableauEnsemble(); break;
+      case 'tab-tuto': S.tabTuto = 0; S.tabSheet = null; rerender(); break;
+      case 'tab-tuto-suite': S.tabTuto += 1; rerender(); break;
+      case 'tab-tuto-fin': S.tabTuto = null; marquerTutoVu(); rerender(); break;
       case 'enq-filtre': S.enqFiltre = el.dataset.v; rerender(); break;
       case 'pieces-filtre': S.piecesFiltre = el.dataset.v; rerender(); break;
       case 'enq-open': S.enqOpen = { ...(S.enqOpen || {}), [el.dataset.i]: !(S.enqOpen || {})[el.dataset.i] }; rerender(); break;
@@ -570,7 +586,7 @@ async function onClick(e) {
         S.ordersDirty = true; rerender(); break;
       }
       case 'accuser': {
-        const aff = genererAffaire(S.state.seed, S.state.enquete.n);
+        const aff = affaire(S.state, S.state.enquete.n);
         const s = aff.suspects[Number(el.dataset.i)];
         if (await askConfirm(`Accuser ${s.nom} ? L’accusation part au parquet à 20:00. Une seule accusation par affaire : si tu te trompes, tu es écarté de l’affaire.`, 'Accuser')) {
           S.draft.accusation = Number(el.dataset.i); S.ordersDirty = true; rerender();
