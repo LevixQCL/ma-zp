@@ -20,7 +20,7 @@ le GSM, « en nonante-neuf »), jamais de gore.
 
 ## 3. La victime
 
-**Me Paul-Henri Dusart, 66 ans**, notaire honoraire, veuf. Habite seul la maison de l'ancienne étude,
+**Me Paul-Henri Dusart, 74 ans** (né en 1952, notaire de 1979 à 2012), notaire honoraire, veuf. Habite seul la maison de l'ancienne étude,
 à mi-pente de la Rampe Sainte-Waudru (l'étude au rez-de-chaussée, l'appartement à l'étage).
 
 - **En public** : pilier du notariat et du folklore montois, président d'honneur du Cercle Saint-Georges
@@ -43,11 +43,11 @@ le GSM, « en nonante-neuf »), jamais de gore.
 
 | # | Personne | Ce qu'on voit | Ce qu'elle cache | Ce qui la blanchit |
 |---|---|---|---|---|
-| 0 | **Nathalie Dusart**, 41, pharmacienne à Jemappes, fille | Hérite ; pharmacie endettée ; ment sur sa soirée ; son verre au salon ; a reçu « Reviens » à 22:41 et l'a effacé | Elle est venue à 21:04 demander 40 000 € ; dispute ; son père lui a appris l'existence de Lucie ; repartie à 21:31 | Plaque lue en sortie à 21:36 + message vocal de 21:47 (« le voilà » : un homme) |
-| 1 | **Olivier Brasseur**, 47, promoteur (Brasseur Développement, bd Dolez), filleul | Alibi en béton : au bureau avec Jérôme jusqu'à 22:10, puis dîner du Cercle à 22:20, huit témoins | **L'assassin.** Le « n° 7 » de 1999 | — |
+| 0 | **Nathalie Dusart**, 41, pharmacienne à Jemappes, fille | Hérite ; pharmacie endettée ; ment sur sa soirée ; son verre au salon ; a reçu « Reviens » à 22:41 et l'a effacé | Elle est venue à 21:04 demander 40 000 € ; dispute ; son père lui a appris l'existence de Lucie ; repartie à 21:31 | Plaque lue en sortie à 21:36, plus le message vocal de 21:47 (« le voilà » : un homme) ou l'autopsie (mort après 21:45) |
+| 1 | **Olivier Brasseur**, 49, promoteur (Brasseur Développement, bd Dolez), filleul | Alibi en béton : au bureau avec Jérôme jusqu'à 22:10, puis dîner du Cercle à 22:20, huit témoins | **L'assassin.** Le « n° 7 » de 1999 | — |
 | 2 | **Bruno Lheureux**, 58, patron du café « Le Ropieur », rue de la Chaussée, locataire de la victime | Bail non renouvelé ; a effacé un message de la victime ; lettres anonymes | **Le corbeau.** A menti en 1999 contre de l'argent ; veut réparer sans se dénoncer | Paiements au café de 20:58 à 23:41 |
-| 3 | **Margaux Lefrancq**, 36, aide-ménagère (titres-services), Cuesmes | « Découvre » le corps vendredi 8:30 ; la montre de gousset volée ; agenda « Montre de Père ?? — M. » | A mis la montre au clou, l'a récupérée jeudi, est revenue à 22:36 la remettre, a trouvé le corps, a fui | Sa lettre jamais envoyée (perquisition) ou ses aveux ; ou bus + caméra corrigée + légiste |
-| 4 | **Jérôme Cambier**, 52, agent immobilier, ancien clerc de l'étude | Commission de 5 % sur la vente de la maison ; « dossier J.C. 2004 » ; ment pour Olivier | A couvert Olivier en croyant à une histoire de femme ; a détourné de l'argent en 2004 (remboursé) | Badges et caméra du bureau : seul de 18:40 à 22:25 |
+| 3 | **Margaux Lefrancq**, 36, aide-ménagère (titres-services), Cuesmes | « Découvre » le corps vendredi 8:30 ; la montre de gousset volée ; agenda « Montre de Père ?? — M. » | A mis la montre au clou, l'a récupérée jeudi, est revenue à 22:36 la remettre, a trouvé le corps, a fui | Bus validé à Cuesmes à 22:14 + autopsie (mort avant 22:20). Ses aveux et sa lettre expliquent son mensonge sans la blanchir seuls |
+| 4 | **Jérôme Cambier**, 52, agent immobilier, ancien clerc de l'étude | Commission de 5 % sur la vente de la maison ; « dossier J.C. 2004 » ; ment pour Olivier | A couvert Olivier en croyant à une histoire de femme ; a détourné de l'argent en 2004 (remboursé) | Badges et caméra du bureau : seul de 20:55 à 22:25 |
 
 ### Le cercle élargi (personnages non confrontables)
 
@@ -81,8 +81,8 @@ est resté à l'heure d'été : **il affiche une heure de plus que l'heure réel
 | 21:04 | Nathalie arrive chez son père | Caméra « 22:04 » |
 | 21:04-21:31 | Porto au salon, dispute (40 000 €). Il refuse, lui parle de Lucie et du rendez-vous de lundi | Deux verres au salon, rouge à lèvres |
 | 21:31 | Nathalie repart en hâte | Caméra « 22:31 » ; plaque lue en sortie 21:36 ; GSM chez elle à 21:55 |
-| 21:46 | Olivier monte la Rampe, capuche | Caméra « 22:46 » |
-| 21:47 | Dusart laisse un message à Bruno : « J'ai la liste du Cercle. Tu avais raison pour le n° 7… » Sonnette. « Ah, le voilà. Je te rappelle. » | Message vocal de 41 s |
+| 21:47 | Olivier monte la Rampe, capuche, et sonne | Caméra « 22:47 » |
+| 21:47 | Dusart laisse un message à Bruno : « J'ai la liste du Cercle. Tu avais raison pour le n° 7… » Sonnette (21:47, pendant l'appel). « Ah, le voilà. Je te rappelle. » | Message vocal de 41 s |
 | 21:48-21:58 | Dusart pose le dossier sur le bureau, annonce qu'il ira chez le juge vendredi. Olivier le frappe avec le sceau de l'étude (laiton) | Plaie ronde marquée « …SART », comme un cachet |
 | 21:58-22:09 | Mise en scène d'une chute : corps au pied de l'escalier, lunettes posées sur une marche. Il lave son verre, prend les papiers du dossier (la chemise vide reste dans le tiroir), le sceau et le GSM de la victime | Troisième verre lavé ; chemise « L. M. — 1999 » vide ; pas de GSM dans la maison |
 | 22:09 | Olivier repart, un dossier sous le manteau | Caméra « 23:09 » ; le GSM quitte le wifi de la maison à 22:09 |
@@ -122,7 +122,7 @@ elle glisse et tombe. Il ne saute pas, n'appelle personne, rentre chez lui. On l
 « noyade accidentelle, alcool ».
 
 Jacques Brasseur achète le silence de Bruno : celui-ci déclare que les garçons sont restés au café jusqu'à
-deux heures. Le 2 juillet 1999, Me Dusart rédige l'acte de prêt (600 000 francs, sans intérêts) sans savoir.
+deux heures. Le 2 juillet 1999, cinq semaines plus tard, Me Dusart rédige l'acte de prêt (600 000 francs, sans intérêts) sans savoir.
 En 2019, Jacques meurt. En 2026, menacé d'expulsion par Dusart et rongé par le remords, Bruno écrit trois
 lettres anonymes au notaire, à la machine à écrire. Il ne veut pas se dénoncer : il veut que Dusart le fasse.
 
@@ -181,7 +181,8 @@ Leurres et leur explication :
 
 La confrontation demande trois éléments, dont au moins deux décisifs : le GSM qui parle, la perquisition chez
 Olivier (cendres, fragment « …euilles · n° 7 : O. Bras… », ticket de pressing), les aveux de Jérôme sur le faux
-alibi, la liste du Cercle, la réaudition d'Olivier face au SMS. Bonus si l'on nomme le vrai mobile :
+alibi, la réaudition d'Olivier face au SMS de Nathalie (il en parlait avant que quiconque le sache). La liste du
+Cercle, ses nouvelles versions (« une maîtresse », « mon avocat ») et le journal accablent sans prouver. Bonus si l'on nomme le vrai mobile :
 faire taire ce qui s'est passé en 1999.
 
 ## 10. Incohérences relevées et choix faits
@@ -197,5 +198,7 @@ faire taire ce qui s'est passé en 1999.
   pas de date précise pour rester valables toute l'année.
 - **La grille du Jardin du Mayeur** : jeté par-dessus de nuit, le GSM tombe dans le bassin ; un jardinier le
   trouve le surlendemain matin.
+- **Âges** : la victime a 74 ans (notaire de 1979 à 2012, père de Lucie à 27 ans) ; Olivier avait 22 ans en 1999 et en a 49.
+- **La lettre du corbeau au commissariat** n'arrive qu'avec les lettres, le relevé et le message vocal, et ne nomme pas le n° 7 : sinon la solution tombait dès le jour 3.
 - **Pourquoi Olivier envoie le SMS** : faire croire la victime vivante pendant qu'il est à table, et ramener
   Nathalie sur les lieux. C'est sa seconde erreur (le wifi), après le brouillon d'alibi demandé à Jérôme.

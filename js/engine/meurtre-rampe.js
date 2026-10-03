@@ -39,7 +39,7 @@ const SUSPECTS = [
     fiche: { declaration: 'Dit avoir passé la soirée chez elle, à Jemappes, seule.', rumeur: 'Rumeur : elle hérite de la maison, et sa pharmacie va mal.' },
   },
   {
-    nom: 'Olivier Brasseur', prenom: 'Olivier', f: false, age: 47, role: 'filleul de la victime, promoteur immobilier', roleDetail: 'dirige Brasseur Développement, boulevard Dolez', proche: true,
+    nom: 'Olivier Brasseur', prenom: 'Olivier', f: false, age: 49, role: 'filleul de la victime, promoteur immobilier', roleDetail: 'dirige Brasseur Développement, boulevard Dolez', proche: true,
     vehicule: { t: 'une berline noire', mode: 'moteur' },
     alibi: { type: 'couvre', pos: 'dolez', lieu: 'au bureau avec Jérôme Cambier jusqu’à 22:10, puis au dîner du Cercle Saint-Georges', ditDe: hm(19, 0), ditA: hm(24, 30) },
     rumeur: 'argent',
@@ -78,7 +78,7 @@ const AUDITIONS = [
     ['Il voyait Me Petit lundi, pour son testament.', 'Je l’ai appris. Je ne sais pas ce qu’il voulait changer. Vous croyez que je le saurais ?'],
   ],
   [
-    ['Quel est votre lien avec la victime ?', 'C’est mon parrain. Il était le notaire de mon père, et son ami. Je suis candidat à sa succession à la tête du Cercle Saint-Georges.'],
+    ['Quel est votre lien avec la victime ?', 'C’est mon parrain. Il était le notaire de mon père, et son ami. Je suis candidat à la présidence du Cercle Saint-Georges.'],
     ['Où étiez-vous jeudi soir ?', 'Au bureau, boulevard Dolez, avec Jérôme Cambier, jusqu’à 22:10. Puis j’ai rejoint le dîner du comité du Cercle à la Brasserie des Échevins, sur la Grand-Place, jusqu’à minuit et demi.'],
     ['Quand avez-vous eu des nouvelles de lui pour la dernière fois ?', 'Jeudi midi, au téléphone. Il allait bien. Et il était encore en vie à onze heures moins vingt : il paraît qu’il a écrit à Nathalie. Alors ne cherchez pas du côté de ceux qui étaient à table avec moi.'],
     ['Vous vouliez racheter sa maison.', 'Pour en faire des logements, oui. Il refusait. On en parlait sans se fâcher : on ne se fâchait pas avec Paul-Henri, on attendait.'],
@@ -109,20 +109,20 @@ const AUDITIONS = [
 
 const TEXTES = {
   // Scène : légiste et labo.
-  'c:legiste1': 'Décès entre 21:00 et 23:30. Deux plaies à la tête. À l’arrière du crâne, une plaie contre l’arête d’une marche, qui a très peu saigné. À la tempe gauche, une plaie ronde, nette, d’environ 4 cm, portée par un objet lourd. La chute dans l’escalier n’explique pas la tempe.',
+  'c:legiste1': 'Décès entre 21:00 et 23:30. Deux plaies à la tête. À l’arrière du crâne, une plaie due à l’arête d’une marche, qui a très peu saigné. À la tempe gauche, une plaie ronde, nette, d’environ 4 cm, portée par un objet lourd. La chute dans l’escalier n’explique pas la tempe.',
   'c:legiste2': 'Autopsie : un repas léger (soupe, vol-au-vent) pris deux heures et demie à trois heures avant la mort. Le ticket du traiteur trouvé dans la cuisine indique une livraison à 19:08. Décès entre 21:45 et 22:20. Dans la plaie de la tempe, une empreinte nette, comme un cachet dans la cire : des lettres, « …SART », et une petite étoile.',
   'c:labo': 'Au salon, deux verres de porto : l’un porte les empreintes de Nathalie Dusart et du rouge à lèvres, l’autre celles de la victime. Dans la cuisine, un troisième verre à porto, lavé, encore humide, sans aucune empreinte. Sur la troisième marche, les lunettes de la victime, intactes, posées verres vers le haut.',
   // Scène : caméras et téléphonie.
-  'c:cam': 'Caméra de porte du cabinet de kinésithérapie d’en face (Mme Annick Leroy), heures de l’enregistreur. Brouillard : visages jamais visibles.\n22:04 · une femme, manteau sombre, cheveux longs, entre chez la victime.\n22:31 · la même femme ressort en hâte et descend la Rampe.\n22:46 · un homme grand, capuche, monte la Rampe et sonne.\n23:09 · le même homme ressort, un dossier serré sous le manteau.\n23:36 · une femme en ciré clair entre avec une clé.\n23:39 · elle ressort en courant.',
+  'c:cam': 'Caméra de porte du cabinet de kinésithérapie d’en face (Mme Annick Leroy), heures de l’enregistreur. Brouillard : visages jamais visibles.\n22:04 · une femme, manteau sombre, cheveux longs, entre chez la victime.\n22:31 · la même femme ressort en hâte et descend la Rampe.\n22:47 · un homme grand, capuche, monte la Rampe et sonne.\n23:09 · le même homme ressort, un dossier serré sous le manteau.\n23:36 · une femme en ciré clair entre avec une clé.\n23:39 · elle ressort en courant.',
   'c:tel1': 'Relevé de l’opérateur, GSM de la victime, jeudi :\n21:47 · appel sortant vers Bruno Lheureux, messagerie, 41 s.\n22:33 · appel entrant de Bruno Lheureux, non décroché.\n22:41 · SMS sortant vers Nathalie Dusart.\n22:42 · appel entrant de Nathalie Dusart, rejeté.\n22:44 · GSM éteint. Depuis, plus aucun signal. L’appareil n’a pas été retrouvé dans la maison.',
-  'c:tel2': 'Box internet de la maison : le GSM de la victime est connecté au wifi tout l’après-midi et toute la soirée… jusqu’à 22:09, heure à laquelle il quitte le réseau. Il ne s’y reconnecte plus.',
+  'c:tel2': 'Box internet de la maison : le GSM de la victime était connecté au wifi tout l’après-midi et toute la soirée… jusqu’à 22:09, heure à laquelle il quitte le réseau. Il ne s’y reconnecte plus.',
   // Scène : bureau de la victime.
   'c:agenda': 'Agenda de la victime. Jeudi : « 9 h Margaux · 15 h banque · 21 h 45 — le n° 7. Enfin. » Mardi, dans la marge : « Montre de Père ?? — M. » Lundi suivant : « 10 h Me Petit — testament (L.) ». Vendredi : « Échevins, Cercle ». Plus haut dans la semaine, rayé : « Jérôme — non, non et non. »',
   'c:lettres': 'Dans le tiroir de gauche, ouvert : une chemise cartonnée vide, étiquetée à la main « L. M. — 1999 ». Dessous, trois lettres anonymes tapées à la machine, reçues en septembre et octobre :\n« Le soir du Doudou 1999, Lucie n’est pas tombée toute seule dans le canal. »\n« Demandez-vous pourquoi Jacques Brasseur m’a prêté de l’argent en juillet 99. Vous étiez là, Maître. »\n« Le n° 7 n’a jamais été inquiété. Moi, je dors mal depuis vingt-sept ans. »',
   'c:acte': 'Classeur des vieux actes, sorti sur le bureau. Un acte de prêt du 2 juillet 1999, passé devant Me P.-H. Dusart : Jacques Brasseur prête 600 000 francs, sans intérêts, à Bruno Lheureux. Une chemise « J.C. — 2004 » : un relevé de 31 000 € de frais détournés, remboursés, « affaire close, sans plainte ». Et le double d’une lettre à Bruno Lheureux : le bail du café ne sera pas renouvelé.',
   // Nathalie (0).
   'occ:0': 'Caméra de lecture de plaques du boulevard : la Peugeot grise de Nathalie Dusart entre dans le centre à 20:58 et en ressort à 21:36, direction Jemappes. Son GSM borne chez elle, à Jemappes, à partir de 21:55. Elle n’était pas chez elle toute la soirée.',
-  'mob:0': 'Comptes de Nathalie Dusart : la pharmacie doit 38 000 € ; la banque a refusé un crédit le 2 octobre. Elle hérite de la maison de la Rampe. GSM : à 22:42, un SMS reçu du numéro de son père, « Reviens. Il faut qu’on parle. Papa. », effacé à 22:50. À 22:42, elle a rappelé ce numéro : rejeté.',
+  'mob:0': 'Comptes de Nathalie Dusart : la pharmacie doit 38 000 € ; la banque lui a refusé un crédit au début du mois. Elle hérite de la maison de la Rampe. GSM : à 22:41, un SMS reçu du numéro de son père, « Reviens. Il faut qu’on parle. Papa. », effacé à 22:50. À 22:42, elle a rappelé ce numéro : rejeté.',
   'moy:0': 'Perquisition chez Nathalie Dusart : le refus de crédit de la banque ; une note de sa main, « Papa — 40 000 — dernière chance » ; et, dans son sac, un faire-part de décès jauni : « Lucie Mahieu, 1980-1999 ». Elle dit que son père le lui a mis dans les mains jeudi soir.',
   // Olivier (1).
   'occ:1': 'Brasserie des Échevins : Olivier Brasseur arrive au dîner du comité à 22:20, « retenu par un client ». Il reste jusqu’à 00:30. Le serveur : il s’est absenté aux toilettes de 22:38 à 22:47 environ. Un convive : « Vers 22:35, un GSM a vibré longtemps dans sa poche ; il ne l’a pas sorti. » Jérôme Cambier confirme qu’ils étaient ensemble au bureau jusqu’à 22:10.',
@@ -134,23 +134,23 @@ const TEXTES = {
   'moy:2': 'Perquisition chez Bruno Lheureux, au-dessus du café : une machine à écrire Olivetti dont les caractères correspondent à ceux des lettres anonymes. Dans une boîte à cigares, des négatifs du Doudou 1999 et un tirage : pendant le Lumeçon, une jeune fille rit, un crin du dragon à la main ; à côté d’elle, un homme de feuilles, le visage caché sous le lierre, brassard n° 7.',
   // Margaux (3).
   'occ:3': 'Carte de bus de Margaux Lefrancq : validée jeudi à 22:14 à Cuesmes, vers Mons, puis à 22:52 au départ du centre de Mons, vers Cuesmes. Elle n’est pas restée chez elle. Sa voisine garde ses enfants « certains soirs ».',
-  'mob:3': 'Comptes de Margaux Lefrancq : le 13 octobre, 700 € reçus d’un comptoir de prêt sur gages ; jeudi 16:10, 735 € payés au même comptoir. GSM : à 22:40, un appel de 3 minutes à sa sœur. La sœur : « Elle pleurait, elle ne voulait pas dire pourquoi. »',
-  'moy:3': 'Perquisition chez Margaux Lefrancq : un ciré clair à capuche ; le reçu n° 4471 du prêt sur gages (« montre de gousset, or ») ; et une lettre jamais envoyée : « Monsieur Dusart, je vous ai rapporté votre montre jeudi soir. Je suis entrée avec ma clé à 10 h 35 passées. Vous étiez déjà en bas de l’escalier. J’ai eu peur. Pardon. »',
+  'mob:3': 'Comptes de Margaux Lefrancq : il y a deux semaines, 700 € reçus d’un comptoir de prêt sur gages ; jeudi 16:10, 735 € payés au même comptoir. GSM : à 22:40, un appel de 3 minutes à sa sœur. La sœur : « Elle pleurait, elle ne voulait pas dire pourquoi. »',
+  'moy:3': 'Perquisition chez Margaux Lefrancq : un ciré clair à capuche ; le reçu n° 4471 du prêt sur gages (« montre de gousset, or ») ; et une lettre jamais envoyée : « Monsieur Dusart, je vous ai rapporté votre montre jeudi soir. Il était 10 h 35 passées quand je suis entrée avec ma clé. Vous étiez déjà en bas de l’escalier. J’ai eu peur. Pardon. »',
   // Jérôme (4).
   'occ:4': 'Badges de l’immeuble du boulevard Dolez : Jérôme Cambier entre à 18:40 et sort à 22:25 ; Olivier Brasseur sort à 20:55 et ne revient pas. La caméra du couloir montre Jérôme seul à son bureau de 21:00 à 22:25. Olivier Brasseur n’était pas avec lui.',
-  'mob:4': 'Comptes de Jérôme Cambier : un mandat de vente, signé avec Brasseur Développement, lui promet 5 % du prix de la maison de la Rampe (environ 40 000 €). GSM : vendredi à 10:14, un appel d’Olivier Brasseur, 6 minutes, cinq heures avant que la police ne l’entende.',
-  'moy:4': 'Perquisition chez Jérôme Cambier : le mandat de vente de la maison de la Rampe, et une lettre de la victime, datée du 20 septembre : « Je n’ai rien oublié de 2004, Jérôme. Ne revenez plus me parler de vendre. P.-H. »',
+  'mob:4': 'Comptes de Jérôme Cambier : un mandat de vente, signé avec Brasseur Développement, lui promet 5 % du prix de la maison de la Rampe (environ 40 000 €). GSM : vendredi à 10:14, un appel d’Olivier Brasseur, 6 minutes, la veille de son audition.',
+  'moy:4': 'Perquisition chez Jérôme Cambier : le mandat de vente de la maison de la Rampe, et une lettre de la victime, datée de septembre : « Je n’ai rien oublié de 2004, Jérôme. Ne revenez plus me parler de vendre. P.-H. »',
   // Rebondissements.
   'r:tel': 'Samedi matin, un jardinier communal a retrouvé un GSM dans le bassin de la fontaine du Jardin du Mayeur, derrière l’hôtel de ville : celui de la victime, éteint, la puce intacte. Quelqu’un l’a jeté par-dessus la grille. Le labo peut l’exploiter.',
   'r:mireille': 'Mireille Mahieu, 72 ans, ancienne secrétaire de l’étude, s’est présentée au commissariat : « Paul-Henri est venu me voir dimanche, à la résidence. Il m’a dit : “Ce n’était pas un accident, Mireille. J’ai le numéro. Je vais réparer.” Lucie était sa fille. Il ne l’a jamais reconnue. Elle sortait avec un garçon de bonne famille, cette année-là ; elle l’appelait “mon homme de lierre”. »',
   // Recoupements : deux pièces opposées l'une à l'autre.
-  'x:heure': 'Recoupement : la caméra d’en face retarde-t-elle ou avance-t-elle ? Mme Leroy n’a jamais remis son enregistreur à l’heure d’hiver, dimanche dernier : il affiche une heure de plus que l’heure réelle. Heures réelles : 21:04 · 21:31 · 21:46 · 22:09 · 22:36 · 22:39.',
-  'x:wifi': 'Recoupement : le labo exploite le GSM retrouvé. Le SMS « Reviens. Il faut qu’on parle. Papa. » a été tapé et envoyé à 22:41 alors que le téléphone était connecté au wifi « Echevins-Clients », celui de la Brasserie des Échevins : un réseau qu’il connaissait, la victime y dînant souvent. Connexion de 22:39 à 22:44. Tous les autres SMS de la victime sont signés « P.-H. ».',
+  'x:heure': 'Recoupement : la caméra d’en face retarde-t-elle ou avance-t-elle ? Mme Leroy n’a jamais remis son enregistreur à l’heure d’hiver, dimanche dernier : il affiche une heure de plus que l’heure réelle. Heures réelles : 21:04 · 21:31 · 21:47 · 22:09 · 22:36 · 22:39.',
+  'x:wifi': 'Recoupement : le labo exploite le GSM retrouvé. Le SMS « Reviens. Il faut qu’on parle. Papa. » a été tapé et envoyé à 22:41 alors que le téléphone était connecté au wifi « Echevins-Clients », celui de la Brasserie des Échevins : un réseau que l’appareil connaissait déjà : la victime y dînait souvent. Connexion de 22:39 à 22:44. Tous les autres SMS de la victime sont signés « P.-H. ».',
   'x:liste': 'Recoupement : le Cercle Saint-Georges garde la liste de ses acteurs. Combat de 1999, hommes de feuilles : douze noms. Brassard n° 7 : Olivier Brasseur, 22 ans. (Jérôme Cambier portait le n° 11.)',
-  'x:pv1999': 'Recoupement : le dossier de 1999 est ressorti des archives du parquet. Lucie Mahieu, 19 ans, retrouvée dans le canal à Nimy le lendemain du Doudou ; « noyade accidentelle, forte alcoolémie », classé sans suite. Un seul témoin : Bruno Lheureux, qui déclarait alors qu’Olivier Brasseur et ses amis étaient restés à son café « jusqu’à deux heures du matin ». Son prêt est signé trois semaines plus tard.',
+  'x:pv1999': 'Recoupement : le dossier de 1999 est ressorti des archives du parquet. Lucie Mahieu, 19 ans, retrouvée dans le canal à Nimy le lendemain du Doudou ; « noyade accidentelle, forte alcoolémie », classé sans suite. Un seul témoin : Bruno Lheureux, qui déclarait alors qu’Olivier Brasseur et ses amis étaient restés à son café « jusqu’à deux heures du matin ». Son prêt est signé cinq semaines plus tard.',
   'x:petit': 'Recoupement : Me Sandrine Petit, qui a repris l’étude, explique le rendez-vous de lundi. La victime voulait reconnaître Lucie Mahieu à titre posthume et créer une bourse à son nom. La part de Nathalie ne changeait pas. Il avait laissé chez Me Petit une lettre « pour Nathalie, s’il m’arrivait quelque chose » : « Tu avais une sœur. Je n’ai pas su l’aimer à voix haute. Quelqu’un m’a menti pendant vingt-sept ans, et je l’ai aidé sans le savoir. »',
   // Déclic : une lettre anonyme arrive au commissariat de la zone quand son dossier s'approche du corbeau.
-  'd:corbeau': 'Lettre anonyme reçue au commissariat, tapée à la machine : « Vous cherchez qui il attendait jeudi ? Demandez au Cercle Saint-Georges qui portait le brassard n° 7 en 1999. Et demandez à celui qui a pris la photo ce qu’il a vu ce soir-là. »',
+  'd:corbeau': 'Lettre anonyme reçue au commissariat, tapée à la machine : « Vous cherchez qui il attendait jeudi ? Regardez du côté du Doudou 1999. Et demandez à celui qui a pris la photo ce qu’il a vu ce soir-là. »',
 };
 
 // Réauditions : on oppose une pièce (ou le journal, un PV) à un suspect ; certaines le font parler.
@@ -159,7 +159,7 @@ export const REACTIONS = {
   0: {
     'occ:0': ['Ra', 'D’accord. J’y suis allée. J’ai sonné vers neuf heures, on a bu un porto, je lui ai demandé quarante mille euros pour la pharmacie. Il a refusé. Il m’a parlé d’une sœur que je n’ai jamais eue, et je suis partie en claquant la porte, vers neuf heures et demie. Il était vivant. Il était vivant !'],
     'mob:0': ['Rb', 'Oui, il m’a écrit « Reviens ». Je n’y suis pas allée, j’étais trop en colère. Et puis… Papa ne signait jamais « Papa ». Jamais. Même à moi, il écrivait « P.-H. ». J’ai trouvé ça bizarre, puis j’ai eu peur, et je l’ai effacé.'],
-    'c:legiste2': ['Rc', 'Des lettres à l’envers, une étoile… C’est le sceau de l’étude. Le gros sceau en laiton, qui était toujours sur son socle, sur le bureau. Il n’y est plus ?'],
+    'c:legiste2': ['Rc', 'Des lettres, une étoile… C’est le sceau de l’étude. Le gros sceau en laiton, qui était toujours sur son socle, sur le bureau. Il n’y est plus ?'],
     'c:agenda': ['Rd', '« Testament (L.) »… Lucie. Il m’a dit jeudi que j’avais eu une sœur, Lucie, morte en 1999. Je ne savais rien. Je croyais qu’il voulait tout lui laisser, à elle, à une morte.'],
     'c:labo': ['Re', 'Mon verre, oui. Le troisième ? Il ne lavait jamais rien, papa. Quelqu’un est venu après moi et a bu avec lui.'],
   },
@@ -175,7 +175,7 @@ export const REACTIONS = {
     'mob:2': ['Ra', 'Oui, il m’a laissé un message. Je l’ai effacé. Parce que c’est moi qui lui écrivais les lettres, voilà. Je voulais qu’il fasse ce que je n’ai jamais eu le courage de faire. Je ne voulais pas qu’on me mêle à ça.'],
     'c:acte': ['Rb', 'Jacques Brasseur m’a prêté six cent mille francs en juillet nonante-neuf, pour que je dise à la police que son fils et ses copains étaient au café jusqu’à deux heures, la nuit où la petite Mahieu s’est noyée. C’est faux. Olivier est parti avec elle vers onze heures. Je ne l’ai jamais revu de la nuit.'],
     'moy:2': ['Rc', 'C’est moi qui ai pris cette photo, au Lumeçon. Lucie, avec le crin que le n° 7 venait de lui glisser. Tout le monde savait qu’ils sortaient ensemble. Personne ne l’a dit aux gendarmes.'],
-    'c:lettres': ['Ra', 'Oui, il m’a laissé un message. Je l’ai effacé. Parce que c’est moi qui lui écrivais les lettres, voilà. Je voulais qu’il fasse ce que je n’ai jamais eu le courage de faire. Je ne voulais pas qu’on me mêle à ça.'],
+    'c:lettres': ['Rd', 'Oui, c’est moi qui les ai tapées. Je voulais qu’il fasse ce que je n’ai jamais eu le courage de faire. Je ne signais pas : j’ai un café, une famille, et un faux témoignage sur la conscience.'],
   },
   3: {
     'occ:3': ['Ra', 'Oui, je suis venue. J’avais mis la montre de son père au clou, pour le loyer. Il s’en était rendu compte. Je l’ai récupérée jeudi et je suis venue la remettre, le soir, avec ma clé. Il était en bas de l’escalier. Il ne bougeait pas. Il y avait de la lumière dans le bureau, un tiroir ouvert, et son GSM n’était plus sur le sous-main, où il le pose toujours. J’ai lâché la montre et je suis partie. Le matin, j’ai fait comme si…'],
@@ -200,10 +200,16 @@ const TITRES0 = {
   'x:heure': 'L’heure de l’enregistreur', 'x:wifi': 'Le GSM parle', 'x:liste': 'La liste du Cercle', 'x:pv1999': 'Le dossier de 1999', 'x:petit': 'Le rendez-vous de lundi',
   'd:corbeau': 'Une lettre au commissariat',
 };
-const quoiOppose = (f) => (/^R[a-z]:\d$/.test(f) ? `la nouvelle version de ${NOMS_R[Number(f.split(':')[1])].split(' ')[0]}` : f === 'doc:journal' ? 'le journal' : f === 'doc:pvc' ? 'le PV de constatations' : f.startsWith('A:') ? 'sa propre audition'
-  : TITRES0[f] ? TITRES0[f].replace(/^[^·]*· /, '').toLowerCase() : { occ: 'la vérification d’alibi', mob: 'la téléphonie', moy: 'la perquisition' }[f.split(':')[0]] + (Number(f.split(':')[1]) >= 0 ? ` de ${NOMS_R[Number(f.split(':')[1])].split(' ')[0]}` : ''));
+const OPPOSE = {
+  'c:legiste1': 'le premier examen du légiste', 'c:legiste2': 'l’autopsie', 'c:labo': 'les verres du salon', 'c:cam': 'la caméra d’en face',
+  'c:tel1': 'le relevé de l’opérateur', 'c:tel2': 'la box de la maison', 'c:agenda': 'l’agenda', 'c:lettres': 'les lettres anonymes', 'c:acte': 'les vieux actes',
+  'x:liste': 'la liste du Cercle', 'x:wifi': 'le GSM retrouvé', 'x:heure': 'l’heure de l’enregistreur', 'r:tel': 'le GSM retrouvé', 'moy:2': 'la photo de 1999',
+};
+const quoiOppose = (f, i) => (OPPOSE[f] || (/^R[a-z]:\d$/.test(f) ? `la nouvelle version de ${NOMS_R[Number(f.split(':')[1])].split(' ')[0]}` : f === 'doc:journal' ? 'le journal' : f === 'doc:pvc' ? 'le PV de constatations' : f.startsWith('A:') ? 'sa propre audition'
+  : Number(f.split(':')[1]) === Number(i) ? { occ: 'son alibi vérifié', mob: 'sa téléphonie', moy: 'sa perquisition' }[f.split(':')[0]]
+  : `${{ occ: 'la vérification d’alibi', mob: 'la téléphonie', moy: 'la perquisition' }[f.split(':')[0]]} de ${NOMS_R[Number(f.split(':')[1])].split(' ')[0]}`));
 const TITRES = { ...TITRES0 };
-for (const [i, t] of Object.entries(REACTIONS)) for (const [f, [code]] of Object.entries(t)) if (!TITRES[`${code}:${i}`]) TITRES[`${code}:${i}`] = `Réaudition · ${NOMS_R[i]} · face à ${quoiOppose(f)}`.replace('face à le ', 'face au ');
+for (const [i, t] of Object.entries(REACTIONS)) for (const [f, [code]] of Object.entries(t)) if (!TITRES[`${code}:${i}`]) TITRES[`${code}:${i}`] = `Réaudition · ${NOMS_R[i]} · face à ${quoiOppose(f, i)}`.replace('face à le ', 'face au ').replace('face à les ', 'face aux ').replace('face à son ', 'face à son ').replace('face à sa ', 'face à sa ');
 // Résumé court sur les fiches de la scène (la dernière pièce connue de chaque série).
 const RESUMES = {
   'c:legiste1': 'Pas une simple chute', 'c:legiste2': 'Entre 21:45 et 22:20', 'c:labo': 'Trois verres, l’un lavé',
@@ -222,15 +228,15 @@ export const RECOUPEMENTS = [
 ];
 // Déclics : quand le dossier d'une zone contient toutes les pièces `si`, la pièce `f` arrive le soir même.
 export const DECLICS = [
-  { si: ['c:lettres', 'c:tel1'], f: 'd:corbeau', rapport: 'une lettre anonyme arrive à ton commissariat' },
+  { si: ['c:lettres', 'c:tel1', 'mob:2'], f: 'd:corbeau', rapport: 'une lettre anonyme arrive à ton commissariat' },
 ];
 // Relectures : une pièce prend un autre sens quand une autre est connue (affiché sous la pièce, sans conclure).
 export const RELECTURES = {
-  'c:cam': [{ si: 'x:heure', t: 'Heures réelles : 21:04 · 21:31 · 21:46 · 22:09 · 22:36 · 22:39.' }],
+  'c:cam': [{ si: 'x:heure', t: 'Heures réelles : 21:04 · 21:31 · 21:47 · 22:09 · 22:36 · 22:39.' }],
   'moy:2': [{ si: 'x:liste', t: 'Brassard n° 7 : Olivier Brasseur, d’après la liste du Cercle.' }],
   'c:tel1': [{ si: 'x:wifi', t: 'Le SMS de 22:41 a été tapé sur le wifi de la Brasserie des Échevins.' }, { si: 'c:tel2', t: 'À 22:41, le GSM avait quitté la maison depuis 32 minutes.' }],
   'mob:0': [{ si: 'x:wifi', t: 'Ce SMS a été tapé à la Brasserie des Échevins.' }],
-  'c:acte': [{ si: 'x:pv1999', t: 'Le prêt est signé trois semaines après le faux témoignage de Bruno Lheureux.' }],
+  'c:acte': [{ si: 'x:pv1999', t: 'Le prêt est signé cinq semaines après le faux témoignage de Bruno Lheureux.' }],
   'c:labo': [{ si: 'Rc:0', t: 'Le sceau de l’étude a disparu de son socle.' }],
 };
 
@@ -307,7 +313,7 @@ export const MOBILE_VRAI = 2;
 const JOURNAL = {
   numero: 4227, date: 'Samedi matin', surtitre: 'Faits divers · Mons',
   titre: 'Un notaire retrouvé mort au pied de son escalier, Rampe Sainte-Waudru',
-  chapo: 'Me Paul-Henri Dusart, 66 ans, figure du notariat montois et du folklore local, a été découvert sans vie vendredi matin. Le parquet a saisi un juge d’instruction.',
+  chapo: 'Me Paul-Henri Dusart, 74 ans, figure du notariat montois et du folklore local, a été découvert sans vie vendredi matin. Le parquet a saisi un juge d’instruction.',
   legende: 'La maison de l’ancienne étude, à mi-pente de la Rampe, vendredi midi.',
   corps: [
     'C’est son aide-ménagère qui l’a découvert, vendredi vers 8:30, au pied de l’escalier qui mène à l’étage. Les secours n’ont pu que constater le décès. La porte n’avait pas été forcée.',
@@ -316,7 +322,7 @@ const JOURNAL = {
     'Jeudi soir, un brouillard épais était tombé sur le centre. « On ne voyait pas le Beffroi depuis la Grand-Place », raconte un riverain.',
     'Ses proches seront entendus. « Nous ne négligeons aucune piste », indique le commissaire divisionnaire Paul Verbeke.',
   ],
-  encadre: [['Où', 'Rampe Sainte-Waudru, sous la Collégiale'], ['Quand', 'Découvert vendredi vers 8:30'], ['Victime', 'Paul-Henri Dusart, 66 ans, notaire honoraire'], ['Cause', 'À l’autopsie'], ['Effraction', 'Aucune']],
+  encadre: [['Où', 'Rampe Sainte-Waudru, sous la Collégiale'], ['Quand', 'Découvert vendredi vers 8:30'], ['Victime', 'Paul-Henri Dusart, 74 ans, notaire honoraire'], ['Cause', 'À l’autopsie'], ['Effraction', 'Aucune']],
   second: { titre: 'Le Cercle Saint-Georges cherche un président', texte: 'Le comité dînait jeudi soir à la Brasserie des Échevins pour préparer l’élection. Favori : le promoteur Olivier Brasseur, filleul du défunt et ancien homme de feuilles du Lumeçon. Les autres proches entendus : sa fille Nathalie, son aide-ménagère, son ancien clerc Jérôme Cambier et son locataire, le cafetier Bruno Lheureux.' },
   breve: ['Heure d’hiver', 'Lundi, au service population de l’hôtel de ville, une bonne dizaine de Montois se sont présentés avec une heure d’avance à leur rendez-vous. « Comme chaque année, on a gagné une heure de sommeil et perdu une heure de file », sourit-on au guichet. Pensez à vos fours, vos voitures et vos caméras.'],
   breve2: ['Météo', 'Brouillard givrant jeudi soir sur le Hainaut : visibilité réduite à cinquante mètres à Mons entre 20:00 et minuit. Les bus du TEC ont roulé au pas. Retour d’une petite drache dimanche.'],
@@ -325,8 +331,8 @@ const PVC = {
   titre: 'Premières constatations',
   lignes: [
     'Le vendredi, à 08:41, nous, INP Delmotte et INP Carlier, sommes requis par le dispatching : Mme Margaux Lefrancq, aide-ménagère, signale avoir découvert son employeur inanimé à son domicile, Rampe Sainte-Waudru.',
-    'Arrivés à 08:52. La porte d’entrée, fermée, a été ouverte par Mme Lefrancq avec sa clé. Aucune trace d’effraction. M. Paul-Henri Dusart, 66 ans, gît au pied de l’escalier qui mène à l’étage. Le médecin constate le décès : deux plaies à la tête.',
-    'Dans l’étude, au rez-de-chaussée, la lampe du bureau est allumée et un tiroir est ouvert. Le portefeuille et les clés de la victime sont dans la poche de son pardessus. Son GSM est introuvable.',
+    'Arrivés à 08:52. La porte d’entrée était fermée à l’arrivée de Mme Lefrancq, qui l’a ouverte avec sa clé. Aucune trace d’effraction. M. Paul-Henri Dusart, 74 ans, gît au pied de l’escalier qui mène à l’étage. Le médecin constate le décès : deux plaies à la tête.',
+    'Dans l’étude, au rez-de-chaussée, la lampe du bureau est allumée et un tiroir est ouvert. Le portefeuille et les clés de la victime sont dans la poche de son pardessus, au portemanteau. Son GSM est introuvable.',
     'Sur la console de l’entrée : une montre de gousset en or, une petite étiquette cartonnée attachée à la chaîne (« 4471 »). Mme Lefrancq dit ne l’avoir jamais vue là.',
     'En face, au-dessus de la porte d’un cabinet de kinésithérapie, une caméra donne sur la Rampe.',
     'Le laboratoire et le médecin légiste sont requis. Le magistrat de garde est avisé. Dont procès-verbal.',
@@ -342,19 +348,19 @@ export const EVENEMENTS = [
   { id: 'deces2', f: 'c:legiste2', de: hm(21, 45), a: hm(22, 20), qui: null, t: 'Décès (autopsie)' },
   { id: 'camA', f: 'c:cam', de: hm(22, 4), qui: null, t: 'Caméra : une femme entre (heure de l’enregistreur)' },
   { id: 'camB', f: 'c:cam', de: hm(22, 31), qui: null, t: 'Caméra : la femme ressort en hâte (heure de l’enregistreur)' },
-  { id: 'camC', f: 'c:cam', de: hm(22, 46), qui: null, t: 'Caméra : un homme à capuche sonne (heure de l’enregistreur)' },
+  { id: 'camC', f: 'c:cam', de: hm(22, 47), qui: null, t: 'Caméra : un homme à capuche sonne (heure de l’enregistreur)' },
   { id: 'camD', f: 'c:cam', de: hm(23, 9), qui: null, t: 'Caméra : l’homme ressort avec un dossier (heure de l’enregistreur)' },
   { id: 'camE', f: 'c:cam', de: hm(23, 36), qui: null, t: 'Caméra : une femme en ciré clair entre avec une clé (heure de l’enregistreur)' },
   { id: 'camF', f: 'c:cam', de: hm(23, 39), qui: null, t: 'Caméra : elle ressort en courant (heure de l’enregistreur)' },
   { id: 'reelA', f: 'x:heure', de: hm(21, 4), a: hm(21, 31), qui: null, t: 'Caméra, heure réelle : la femme en manteau sombre' },
-  { id: 'reelC', f: 'x:heure', de: hm(21, 46), a: hm(22, 9), qui: null, t: 'Caméra, heure réelle : l’homme à capuche' },
+  { id: 'reelC', f: 'x:heure', de: hm(21, 47), a: hm(22, 9), qui: null, t: 'Caméra, heure réelle : l’homme à capuche' },
   { id: 'reelE', f: 'x:heure', de: hm(22, 36), a: hm(22, 39), qui: null, t: 'Caméra, heure réelle : la femme en ciré clair' },
   { id: 'appel', f: 'c:tel1', de: hm(21, 47), qui: null, t: 'La victime appelle Bruno (messagerie, 41 s)' },
   { id: 'rappelB', f: 'c:tel1', de: hm(22, 33), qui: 2, t: 'Bruno rappelle la victime : pas de réponse' },
   { id: 'sms', f: 'c:tel1', de: hm(22, 41), qui: null, t: 'SMS du GSM de la victime à Nathalie' },
   { id: 'off', f: 'c:tel1', de: hm(22, 44), qui: null, t: 'Le GSM de la victime s’éteint' },
   { id: 'box', f: 'c:tel2', de: hm(22, 9), qui: null, t: 'Le GSM de la victime quitte le wifi de la maison' },
-  { id: 'echevinsWifi', f: 'x:wifi', de: hm(22, 39), a: hm(22, 44), qui: 1, t: 'Le GSM de la victime sur le wifi des Échevins' },
+  { id: 'echevinsWifi', f: 'x:wifi', de: hm(22, 39), a: hm(22, 44), qui: null, t: 'Le GSM de la victime sur le wifi des Échevins' },
   { id: 'plaque', f: 'occ:0', de: hm(20, 58), a: hm(21, 36), qui: 0, t: 'La voiture de Nathalie dans le centre (plaque lue)' },
   { id: 'smsN', f: 'mob:0', de: hm(22, 42), a: hm(22, 50), qui: 0, t: 'Nathalie reçoit « Reviens », rappelle, efface' },
   { id: 'visiteN', f: 'Ra:0', de: hm(21, 0), a: hm(21, 30), qui: 0, t: 'Nathalie chez son père (ses aveux)' },
@@ -367,7 +373,7 @@ export const EVENEMENTS = [
   { id: 'messagerie', f: 'mob:2', de: hm(22, 30), a: hm(22, 31), qui: 2, t: 'Bruno écoute le message, puis l’efface' },
   { id: 'bus', f: 'occ:3', de: hm(22, 14), a: hm(22, 52), qui: 3, t: 'Margaux en bus vers Mons, puis retour' },
   { id: 'soeur', f: 'mob:3', de: hm(22, 40), qui: 3, t: 'Margaux appelle sa sœur en pleurant' },
-  { id: 'badgeJ', f: 'occ:4', de: hm(20, 0), a: hm(22, 25), qui: 4, t: 'Jérôme seul au bureau (badges, caméra du couloir)' },
+  { id: 'badgeJ', f: 'occ:4', de: hm(21, 0), a: hm(22, 25), qui: 4, t: 'Jérôme seul au bureau (badges, caméra du couloir)' },
 ];
 
 /** L'affaire, au format des affaires générées (champs supplémentaires : meurtre, sceneSeq, charges, confront…). */
@@ -395,7 +401,7 @@ export function affaireMeurtreRampe(n) {
     lieux: LIEUX_RAMPE, ruesPlan: RUES_RAMPE, evenements: EVENEMENTS,
     recoupements: RECOUPEMENTS, declics: DECLICS, relectures: RELECTURES, coupsDePouce: COUPS_DE_POUCE,
     hypothese: true, creneaux: CRENEAUX, mobiles: MOBILES, mobileVrai: MOBILE_VRAI,
-    recit: 'Vendredi matin, Me Paul-Henri Dusart, 66 ans, a été retrouvé mort au pied de l’escalier de sa maison, Rampe Sainte-Waudru. Une chute, peut-être. Cinq proches seront entendus. Chacun ment sur quelque chose : un seul pour cacher un meurtre.',
+    recit: 'Vendredi matin, Me Paul-Henri Dusart, 74 ans, a été retrouvé mort au pied de l’escalier de sa maison, Rampe Sainte-Waudru. Une chute, peut-être. Cinq proches seront entendus. Chacun ment sur quelque chose : un seul pour cacher un meurtre.',
     // Démarches de la scène : chacune livre ses pièces dans l'ordre, une par démarche.
     sceneSeq: { labo: ['c:legiste1', 'c:legiste2', 'c:labo'], cam: ['c:cam', 'c:tel1', 'c:tel2'], temoin: ['c:agenda', 'c:lettres', 'c:acte'] },
     fiches: {
@@ -426,15 +432,16 @@ export function affaireMeurtreRampe(n) {
     innocente: {
       // Nathalie : sortie du centre à 21:36 (plaque) et chez elle à 21:55 ; or la victime vit encore à 21:47 (« le voilà »),
       // le légiste la dit morte après 21:45 et son GSM quitte la maison à 22:09.
-      0: [['occ:0', 'mob:2'], ['Ra:0', 'mob:2'], ['occ:0', 'c:legiste2'], ['occ:0', 'c:tel2']],
+      0: [['occ:0', 'mob:2'], ['occ:0', 'c:legiste2']],
       2: ['occ:2'],
-      3: ['Ra:3', 'moy:3', ['occ:3', 'x:heure', 'c:legiste2']],
+      // Margaux : bus validé à Cuesmes à 22:14, à 3 km ; or la victime est morte avant 22:20.
+      3: [['occ:3', 'c:legiste2']],
       4: ['occ:4'],
     },
     // Confrontation : trois pièces accablantes, dont au moins deux décisives (obtenues par l'enquête).
     confront: {
-      decisives: ['x:wifi', 'moy:1', 'Rb:4', 'x:liste', 'Ra:1', 'Rb:1', 'Rd:1'],
-      accablantes: ['doc:journal', 'A:1', 'x:wifi', 'moy:1', 'Rb:4', 'x:liste', 'Ra:1', 'Rd:1', 'Rb:1', 'Rc:1', 'Re:1', 'Rf:1',
+      decisives: ['x:wifi', 'moy:1', 'Rb:4', 'Ra:1'],
+      accablantes: ['A:1', 'x:wifi', 'moy:1', 'Rb:4', 'x:liste', 'Ra:1', 'Rd:1', 'Rb:1', 'Rc:1', 'Re:1', 'Rf:1',
         'occ:4', 'mob:4', 'occ:1', 'mob:1', 'c:cam', 'x:heure', 'mob:2', 'Ra:2', 'Rb:2', 'Rc:2', 'mob:0', 'Rb:0', 'c:agenda', 'c:lettres',
         'moy:2', 'x:pv1999', 'c:tel1', 'c:tel2', 'r:tel', 'c:legiste2', 'Rc:0', 'Ra:3', 'r:mireille', 'd:corbeau', 'c:labo', 'Re:0'],
     },
@@ -449,7 +456,7 @@ export function affaireMeurtreRampe(n) {
     },
     recitFinal: [
       'Olivier Brasseur, le filleul, avait tué Paul-Henri Dusart jeudi vers 21:58, d’un coup du sceau de l’étude. Il avait éteint son GSM et demandé à Jérôme Cambier de le couvrir avant même de partir. Il a maquillé une chute au pied de l’escalier, lavé son verre, emporté le dossier « L. M. — 1999 », le sceau et le GSM de la victime. À 22:41, depuis les toilettes de la Brasserie des Échevins, il a envoyé à Nathalie « Reviens. Il faut qu’on parle. Papa. » pour faire vivre le mort pendant qu’il était à table. Le GSM, lui, s’était connecté au wifi de la brasserie. Dans son audition, il parlait d’un SMS que personne ne connaissait.',
-      'Pourquoi ? Le soir du Doudou 1999, Olivier, 22 ans, homme de feuilles n° 7, était parti au bord du canal avec Lucie Mahieu, 19 ans. Elle était tombée à l’eau pendant une dispute ; il était rentré chez lui sans appeler personne. Son père, Jacques Brasseur, avait acheté le témoignage de Bruno Lheureux. Vingt-sept ans plus tard, Paul-Henri Dusart avait tout compris, et lui donnait jusqu’à jeudi soir.',
+      'Pourquoi ? Le soir du Doudou 1999, Olivier, 22 ans, homme de feuilles n° 7, était parti au bord du canal avec Lucie Mahieu, 19 ans. Elle était tombée à l’eau pendant une dispute ; il était rentré chez lui sans appeler personne. Son père, Jacques Brasseur, avait acheté le témoignage de Bruno Lheureux. Vingt-sept ans plus tard, Paul-Henri Dusart avait tout compris, et l’avait convoqué jeudi soir, avant d’aller chez le juge.',
       'Ce que personne n’avait compris : Lucie était la fille cachée du notaire. Le vieil homme aux « petits dossiers » n’enquêtait pas pour tenir quelqu’un : il voulait, lundi, la reconnaître enfin. Et l’acte de prêt de juillet 1999, celui qui avait payé le silence, c’est lui qui l’avait rédigé et signé. « Vous étiez là, Maître », écrivait le corbeau.',
       'Nathalie Dusart avait menti sur sa soirée : elle était venue à 21:04 demander 40 000 € pour sa pharmacie, et repartie à 21:31, furieuse, en apprenant qu’elle avait eu une sœur. Son verre au salon, le SMS effacé, une caméra qui la montrait ressortir « à 22:31 » : la coupable idéale. Mais la caméra d’en face était restée à l’heure d’été, et à 21:47 son père était vivant, au téléphone, et ouvrait la porte à un homme.',
       'Bruno Lheureux avait effacé le dernier message de la victime parce qu’il était le corbeau : celui qui avait menti pour les Brasseur en 1999 et qui, menacé d’expulsion, voulait que le notaire fasse ce qu’il n’avait jamais osé faire. Il n’a pas quitté son comptoir de la soirée.',

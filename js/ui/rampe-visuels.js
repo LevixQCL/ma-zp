@@ -60,7 +60,7 @@ export const PHOTOS_RAMPE = {
   'c:cam': (id) => svg(id, 640, 540, [
     vignetteCam(`${id}1`, 0, 0, '22:04:12', personne(84, 150, 1.1, 'femme')),
     vignetteCam(`${id}2`, 320, 0, '22:31:40', personne(150, 160, 1.15, 'femme', { dos: true })),
-    vignetteCam(`${id}3`, 0, 180, '22:46:05', personne(104, 146, 1.25, 'capuche')),
+    vignetteCam(`${id}3`, 0, 180, '22:47:20', personne(104, 146, 1.25, 'capuche')),
     vignetteCam(`${id}4`, 320, 180, '23:09:31', personne(140, 158, 1.25, 'capuche', { dossier: true, dos: true })),
     vignetteCam(`${id}5`, 0, 360, '23:36:18', personne(90, 148, 1.08, 'cire')),
     vignetteCam(`${id}6`, 320, 360, '23:39:02', personne(170, 162, 1.1, 'cire', { dos: true })),
@@ -204,7 +204,7 @@ export const PHOTOS_RAMPE = {
   'moy:3': (id) => svg(id, 300, 220, `${defsPhoto(id, 300, 220)}<rect width="300" height="220" fill="#5A4A3E"/>
     <g transform="rotate(-4 90 110)"><rect x="24" y="30" width="130" height="160" fill="#F3E9C8"/>
       <text x="89" y="52" text-anchor="middle" ${TAPE} font-size="8" fill="#222">PRÊT SUR GAGES</text><text x="89" y="80" text-anchor="middle" ${MONO} font-size="20" font-weight="700" fill="#B3261E">4471</text>
-      ${ligne(36, 104, 'Montre de gousset', { taille: 7.4 })}${ligne(36, 116, 'or 18 ct · gravée « A.D. »', { taille: 7.4 })}${ligne(36, 136, 'Prêté : 700 € · 13/10', { taille: 7.4 })}${ligne(36, 150, 'Dégagé : 735 € · jeu. 16:10', { taille: 7.4, gras: true })}</g>
+      ${ligne(36, 104, 'Montre de gousset', { taille: 7.4 })}${ligne(36, 116, 'or 18 ct · gravée « A.D. »', { taille: 7.4 })}${ligne(36, 136, 'Prêté : 700 €', { taille: 7.4 })}${ligne(36, 150, 'Dégagé : 735 € · jeu. 16:10', { taille: 7.4, gras: true })}</g>
     <g transform="rotate(5 220 120)"><rect x="160" y="40" width="124" height="150" fill="#FCFBF6"/>
       <text x="168" y="62" ${MAIN} font-size="13" fill="#22305A">Monsieur Dusart,</text><text x="168" y="82" ${MAIN} font-size="12" fill="#22305A" textLength="108" lengthAdjust="spacingAndGlyphs">je vous ai rapporté</text><text x="168" y="98" ${MAIN} font-size="12" fill="#22305A" textLength="108" lengthAdjust="spacingAndGlyphs">votre montre jeudi soir.</text>
       <text x="168" y="118" ${MAIN} font-size="12" fill="#22305A" textLength="108" lengthAdjust="spacingAndGlyphs">Vous étiez déjà en bas</text><text x="168" y="134" ${MAIN} font-size="12" fill="#22305A" textLength="96" lengthAdjust="spacingAndGlyphs">de l’escalier. Pardon.</text><text x="230" y="170" ${MAIN} font-size="14" fill="#22305A">M.</text></g>

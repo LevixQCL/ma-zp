@@ -38,7 +38,8 @@ assert.equal(candidats(a, ['c:legiste1', 'c:cam', 'c:agenda', 'mob:0', 'moy:2'])
 assert.ok(candidats(a, ['occ:0']).suspects.includes(0), 'la plaque seule ne blanchit pas Nathalie');
 assert.ok(!candidats(a, ['occ:0', 'mob:2']).suspects.includes(0), 'plaque + message vocal : blanchie');
 assert.ok(candidats(a, ['occ:3', 'x:heure']).suspects.includes(3));
-assert.ok(!candidats(a, ['occ:3', 'x:heure', 'c:legiste2']).suspects.includes(3));
+assert.ok(!candidats(a, ['occ:3', 'c:legiste2']).suspects.includes(3));
+assert.ok(candidats(a, ['moy:3', 'Ra:3']).suspects.includes(3), 'ses aveux seuls ne la blanchissent pas');
 
 // Le récit : aucun texte mal formé ; seul l'assassin évoque le SMS de 22:41 dans son audition.
 const d3 = dossierAffaire3('r', a);
@@ -65,11 +66,13 @@ assert.equal(pieceRecoupement(a, vide, 'r:tel', 'mob:0'), 'x:wifi');
 assert.equal(pieceReaudition(a, { pieces: [{ f: 'mob:0' }] }, 1, 'mob:0'), 'Ra:1');
 
 // Confrontation : deux décisives au moins, sur l'assassin.
-assert.ok(!confrontationOk(a, 1, ['doc:journal', 'A:1', 'x:wifi']), 'une seule décisive');
-assert.ok(confrontationOk(a, 1, ['x:wifi', 'moy:1', 'doc:journal']));
-assert.ok(confrontationOk(a, 1, ['Rb:4', 'x:liste', 'c:cam']));
+assert.ok(!confrontationOk(a, 1, ['x:liste', 'A:1', 'x:wifi']), 'une seule décisive');
+assert.ok(confrontationOk(a, 1, ['x:wifi', 'moy:1', 'A:1']));
+assert.ok(!confrontationOk(a, 1, ['x:wifi', 'moy:1', 'doc:journal']), 'le journal ne met personne en face de rien');
+assert.ok(confrontationOk(a, 1, ['Rb:4', 'Ra:1', 'c:cam']));
+assert.ok(!confrontationOk(a, 1, ['Rb:4', 'x:liste', 'c:cam']), 'la liste du Cercle accable sans prouver');
 assert.ok(!confrontationOk(a, 1, ['x:wifi', 'moy:1', 'occ:2']), 'un leurre');
-assert.ok(!confrontationOk(a, 0, ['x:wifi', 'moy:1', 'doc:journal']), 'mauvaise personne');
+assert.ok(!confrontationOk(a, 0, ['x:wifi', 'moy:1', 'A:1']), 'mauvaise personne');
 
 // Hypothèse au juge : avec tout le dossier, la vérité n'est contredite par rien ; chaque innocent l'est.
 const K = new Set(tout);
@@ -125,7 +128,7 @@ assert.ok(!st.traques.some((t) => t.n === 4), 'pas de traque');
 assert.notEqual(affaire(st, st.enquete.n).meurtre, true, 'nouvelle affaire : un vol');
 assert.equal(st.meurtre2Des, 4, 'une seule fois par partie');
 
-// Déclic : avec les lettres et le relevé, une lettre anonyme arrive.
+// Déclic : avec les lettres, le relevé et le message vocal, une lettre anonyme arrive.
 {
   let s2 = createGame({ seed: 'declic' });
   s2.meurtre2Des = 1; s2.meurtreDes = 0;
@@ -133,6 +136,8 @@ assert.equal(st.meurtre2Des, 4, 'une seule fois par partie');
   assert.equal(affaire(s2, s2.enquete.n).cas, 'rampe');
   for (const u of 'ABC') s2.zones[u].budget = 80;
   for (let k = 0; k < 2; k++) s2 = resolveTurn(s2, { players, orders: { A: { ...base, demarches: ['temoin', 'cam'] }, B: base, C: base } }).state;
+  assert.ok(!s2.zones.A.enquete.pieces.some((p) => p.f === 'd:corbeau'), 'pas encore : il faut aussi le message vocal');
+  s2 = resolveTurn(s2, { players, orders: { A: { ...base, demarches: ['banque:2'] }, B: base, C: base } }).state;
   assert.ok(s2.zones.A.enquete.pieces.some((p) => p.f === 'd:corbeau' && p.src === 'declic'));
   assert.ok(opposables(affaire(s2, s2.enquete.n), s2.zones.A.enquete).has('d:corbeau'));
 }
