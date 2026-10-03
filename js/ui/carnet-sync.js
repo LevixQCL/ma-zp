@@ -40,6 +40,14 @@ function charge(lire) {
   return affaires;
 }
 
+/** Synchroniser tout de suite (bouton du tableau) : relit en ligne, fusionne, puis envoie. */
+export async function synchroniserMaintenant(lire, ecrireLocal, rerender) {
+  await synchroniser(lire, ecrireLocal, rerender, { force: true });
+  clearTimeout(minuterie); dernierEnvoye = '';
+  await envoyer(lire);
+  if (rerender && S.route === 'enquete') rerender();
+}
+
 /** À appeler après chaque écriture du carnet : planifie l'envoi. */
 export function planifierEnvoi(lire) {
   if (!disponible()) return;
@@ -61,7 +69,34 @@ async function envoyer(lire) {
   } catch (e) { console.warn('Carnet non enregistré en ligne', e); S.carnetSync = (e && e.code) || 'erreur'; }
 }
 
-/** Lit la fiche en ligne et garde, affaire par affaire, la version la plus récente. */
+/**
+ * Fusion de deux carnets d'une même affaire (cet appareil et la version en ligne) :
+ * pièces posées, fiches et ficelles réunies ; positions, coches et marques : la version la plus récente l'emporte
+ * pour une même clé ; notes : la plus récente non vide. La vue (zoom, déplacement) reste celle de cet appareil.
+ */
+export function fusionner(local, loin) {
+  if (carnetVide(local)) return { ...loin, tab: loin.tab ? { ...loin.tab, vue: (local.tab && local.tab.vue) || null } : loin.tab };
+  const [vieux, recent] = (loin.maj || 0) > (local.maj || 0) ? [local, loin] : [loin, local];
+  const out = { maj: Math.max(local.maj || 0, loin.maj || 0) };
+  for (const k of new Set([...Object.keys(vieux), ...Object.keys(recent)])) {
+    if (['maj', 'tab', 'notes'].includes(k)) continue;
+    const a = vieux[k], b = recent[k];
+    out[k] = a && typeof a === 'object' && b && typeof b === 'object' ? { ...a, ...b } : (b !== undefined ? b : a);
+  }
+  out.notes = String(recent.notes || '').trim() ? recent.notes : (vieux.notes || '');
+  const ta = vieux.tab || {}, tb = recent.tab || {};
+  if (!tableauVide(ta) || !tableauVide(tb)) {
+    const union = (x, y) => [...new Set([...(x || []), ...(y || [])])];
+    const cle = (l) => [...l].sort().join('|');
+    const liens = [];
+    for (const l of [...(tb.liens || []), ...(ta.liens || [])]) if (Array.isArray(l) && !liens.some((m) => cle(m) === cle(l))) liens.push(l);
+    out.tab = { ...ta, ...tb, v: tb.v || ta.v, pos: { ...(ta.pos || {}), ...(tb.pos || {}) }, places: union(tb.places, ta.places), fiches: union(tb.fiches, ta.fiches),
+      liens, neuf: union(tb.neuf, ta.neuf), vue: (local.tab && local.tab.vue) || null };
+  } else if (local.tab) out.tab = local.tab;
+  return out;
+}
+
+/** Lit la fiche en ligne et la fusionne, affaire par affaire, avec ce que cet appareil a. */
 export async function synchroniser(lire, ecrireLocal, rerender, { force = false } = {}) {
   if (!disponible() || !S.backend.getCarnet) return;
   brancher(lire);
@@ -80,13 +115,11 @@ export async function synchroniser(lire, ecrireLocal, rerender, { force = false 
   for (const k of [n, n - 1]) {
     if (k < 1) continue;
     const local = lire(k), loin = aff[k] && !carnetVide(aff[k]) ? aff[k] : null;
-    // Un carnet local vide (tableau jamais rempli sur cet appareil) prend toujours la version en ligne.
-    if (loin && ((loin.maj || 0) > (local.maj || 0) || carnetVide(local))) {
-      // Plus récent en ligne : on le prend, en gardant la vue de cet appareil.
-      const vue = local.tab && local.tab.vue;
-      const neuf = { ...loin, tab: loin.tab ? { ...loin.tab, vue: vue || null } : local.tab };
-      if (contenuChange(local, neuf)) { ecrireLocal(k, neuf); change = true; }
-    } else if (!carnetVide(local) && ((local.maj || 0) > ((loin && loin.maj) || 0) || !loin)) aEnvoyer = true;
+    if (!loin) { if (!carnetVide(local)) aEnvoyer = true; continue; }
+    // Fusion : rien de ce qui a été posé sur un appareil ne se perd sur l'autre.
+    const neuf = fusionner(local, loin);
+    if (contenuChange(local, neuf)) { ecrireLocal(k, neuf); change = true; }
+    if (contenuChange(loin, neuf)) aEnvoyer = true;
   }
   dernierEnvoye = JSON.stringify(charge(lire));
   if (aEnvoyer) { dernierEnvoye = ''; planifierEnvoi(lire); }

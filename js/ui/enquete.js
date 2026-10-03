@@ -5,7 +5,7 @@ import { APPUI } from '../engine/appui.js';
 import { monAppui } from './incidents.js';
 import { renderTableau } from './tableau.js';
 import { aideBtn } from './aide.js';
-import { planifierEnvoi, synchroniser, contenuChange } from './carnet-sync.js';
+import { planifierEnvoi, synchroniser, synchroniserMaintenant, contenuChange } from './carnet-sync.js';
 import {
   ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece,
   chanceVoisinage, VOISINAGE,
@@ -39,6 +39,7 @@ export function ecrireCarnet(n, c) {
 }
 /** Récupère le carnet enregistré en ligne (tableau, marques, notes) s'il est plus récent. */
 export function synchroCarnet(rerender, opts) { return synchroniser(lireCarnet, ecrireLocal, rerender, opts); }
+export function synchroCarnetMaintenant(rerender) { return synchroniserMaintenant(lireCarnet, ecrireLocal, rerender); }
 
 function autresZones() {
   return Object.values(S.state.zones).filter((z) => z.uid !== S.user.uid && z.toursSansOrdres < 3).sort((a, b) => a.code.localeCompare(b.code));
