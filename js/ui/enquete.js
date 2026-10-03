@@ -1,6 +1,6 @@
 // Écran Enquête : le tableau Mobile · Moyen · Occasion, les pièces, les planques et les notes.
 import { formatDateBe } from '../engine/time.js';
-import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
+import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './common.js';
 import { capacite } from '../engine/zone.js';
 import { APPUI } from '../engine/appui.js';
 import { monAppui } from './incidents.js';
@@ -239,7 +239,7 @@ export function etatSuspect(carnet, i) {
 export function voisinageInfo(aff) {
   const st = S.state, d = S.draft, z = myZone();
   const n = (d.alloc && d.alloc.recherche) || 0;
-  const cap = capacite(z, 'recherche', n, { rythme: d.rythme, turn: st.turn });
+  const cap = capacite(z, 'recherche', n, { rythme: d.rythme, turn: st.turn, bonus: bonusEnigme('recherche') });
   const piste = Number.isInteger(d.piste) ? d.piste : null;
   const x = chanceVoisinage(st, S.user.uid, cap, piste);
   const txt = x <= 0 ? 'aucune chance' : x < 1 ? `${Math.round(x * 100)} % de chance d’une pièce` : `1 pièce assurée${x % 1 > 0.05 ? ` + ${Math.round((x % 1) * 100)} % d’une 2e` : ''}`;

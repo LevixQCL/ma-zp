@@ -1,5 +1,5 @@
 // Écran des ordres du tour.
-import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
+import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
 import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
@@ -125,7 +125,7 @@ export function estimations() {
   for (const p of z.pressions || []) Object.assign(pr, p.effet);
   const dep = d.depenses || {};
   const cap = {};
-  for (const s of SERVICES) cap[s] = capacite(z, s, eff[s] + (dep.reserve && dep.reserveService === s ? dep.reserve * DEPENSES.reserve.efficacite : 0), opts);
+  for (const s of SERVICES) cap[s] = capacite(z, s, eff[s] + (dep.reserve && dep.reserveService === s ? dep.reserve * DEPENSES.reserve.efficacite : 0), { ...opts, bonus: bonusEnigme(s) });
   // Figures de l'équipe : bonus dans leur service, sauf celle prévue en mission.
   const mi = missionValide(d);
   for (const m of z.equipe || []) { const sv = ROLE_SERVICE[m.role]; if (sv && cap[sv] && !(mi && mi.role === m.role)) cap[sv] *= 1 + bonusChef(m.niveau); }
@@ -648,7 +648,7 @@ export function renderOrdres() {
       ${SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); return `<div class="svc${ouvert ? ' ouvert' : ''}">
         <div class="svc-l"><i class="svc-c" style="background:${COUL_SVC[s2]}"></i>
           <button type="button" class="svc-t svc-tog" data-action="help" data-s="${s2}" aria-expanded="${ouvert}" aria-label="${ouvert ? 'Masquer' : 'Afficher'} le détail : ${SERVICE_LABELS[s2]}">
-            <span class="svc-n">${s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2]}<span class="svc-niv">niv. ${z.niveaux[s2]}</span>${icon('chevron', 13, `class="svc-chev"${ouvert ? ' style="transform:rotate(90deg)"' : ''}`)}</span>
+            <span class="svc-n">${s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2]}<span class="svc-niv">niv. ${z.niveaux[s2]}</span>${bonusEnigme(s2) > 1 ? `<span class="svc-niv" style="color:var(--green, #3fbf7f)" title="Bonus d’énigme du jour">+${Math.round((bonusEnigme(s2) - 1) * 100)} % énigme</span>` : ''}${icon('chevron', 13, `class="svc-chev"${ouvert ? ' style="transform:rotate(90deg)"' : ''}`)}</span>
             <span class="svc-r" id="res-${s2}">${resultatService(e, s2)}</span></button>
           <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
         <span id="pris-${s2}" class="svc-plus">${prisHtml(e, s2)}</span>
