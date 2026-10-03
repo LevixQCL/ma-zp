@@ -1071,3 +1071,9 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .inst-x { flex: none; width: 36px; height: 36px; border: none; background: none; color: var(--faint); font-size: 16px; border-radius: 10px; cursor: pointer; align-self: flex-start; }
 .inst-x:hover { color: var(--text); background: var(--surface2); }
 @keyframes instIn { from { opacity: 0; transform: translate(-50%, 14px); } }
+
+/* Message codé : lettre illisible (tache d'encre). Même largeur qu'une lettre. */
+.trou { display: inline-block; width: 0.62em; height: 1.05em; vertical-align: -0.2em; margin: 0 0.5px; border-radius: 45% 55% 50% 40%;
+  background: radial-gradient(ellipse at 40% 45%, rgba(40,32,24,.85) 0 38%, rgba(40,32,24,.45) 55%, transparent 72%),
+    radial-gradient(circle at 70% 70%, rgba(40,32,24,.5) 0 22%, transparent 40%); }
+.roue-lecture .trou { background: radial-gradient(ellipse at 40% 45%, currentColor 0 36%, transparent 70%); opacity: .55; }
