@@ -42,7 +42,7 @@ await page.click('[data-action="ord-open"][data-k="decision"]');
 await shot('04-ordres-decision');
 await page.locator('.dtuile[data-action="decision"]:not([disabled])').first().click();
 await page.click('.savebar [data-action="save-orders"]');
-await page.waitForSelector('.card.green');
+await page.waitForSelector('.statut-ordres.ok');
 await shot('05-ordres-valides');
 
 await page.goto(`${BASE}#quete`);

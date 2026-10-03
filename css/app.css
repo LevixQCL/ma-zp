@@ -1103,3 +1103,35 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .membre-o .avatar { flex-shrink: 0; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: #0B1220; font-weight: 700; }
 .mission-dest { display: flex; flex-direction: column; gap: 6px; padding-left: 40px; }
 .mission-dest .choice { text-align: left; align-items: flex-start; min-height: 0; padding: 8px 10px; }
+
+/* ───── Ordres (affichage retravaillé) ───── */
+.statut-ordres { flex-shrink: 0; margin-top: 6px; font-size: 12px; font-weight: 700; color: var(--amber); background: var(--amber-bg); border: 1px solid var(--amber-line); border-radius: 999px; padding: 5px 10px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+.statut-ordres.ok { color: var(--green); background: rgba(61, 211, 154, .10); border-color: rgba(61, 211, 154, .40); }
+.card.affect { gap: 0; padding-bottom: 12px; }
+.lien-statut { background: none; border: 0; padding: 4px 0; color: inherit; font: inherit; cursor: pointer; text-align: right; }
+.affect .svc { display: flex; flex-direction: column; border-bottom: 1px solid var(--hair); }
+.affect .svc-l { display: flex; align-items: center; gap: 10px; min-height: 58px; }
+.affect .svc-c { width: 4px; align-self: stretch; margin: 11px 0; border-radius: 2px; flex-shrink: 0; }
+.affect .svc-t { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.affect .svc-n { font-size: 15px; font-weight: 700; }
+.affect .svc-niv { font-size: 12px; font-weight: 500; color: var(--faint); white-space: nowrap; }
+.affect .svc-r { font-size: 12px; }
+.affect .svc-plus { padding-left: 14px; display: block; }
+.affect .svc-plus:empty { display: none; }
+.affect .svc-plus .dossiers { margin-bottom: 6px; }
+.affect .helpbtn { width: 28px; height: 28px; margin: 0; background: transparent; border-color: var(--line); }
+.affect .stepper button { width: 38px; height: 38px; font-size: 18px; }
+.affect .stepper .n { min-width: 30px; text-align: center; font-size: 17px; font-weight: 700; }
+.affect .svc.svc-res { border-bottom: 0; }
+.seg.creux { gap: 4px; background: var(--bg-deep); border-radius: 14px; padding: 4px; }
+.seg.creux button { min-height: 52px; border: 0; background: transparent; border-radius: 11px; }
+.seg.creux button[aria-pressed="true"] { background: var(--amber-bg); box-shadow: inset 0 0 0 1.5px var(--amber); }
+.seg.creux button[aria-pressed="true"] .d { color: var(--amber-soft); }
+.card.plis { gap: 0; padding: 2px 16px; }
+.plis .pli-l + .pli-l { border-top: 1px solid var(--hair); }
+.plis .pli { min-height: 62px; width: 100%; gap: 10px; }
+.plis .pli-chip { flex-shrink: 0; font-size: 12px; font-weight: 700; color: var(--amber); background: var(--amber-bg); border-radius: 999px; padding: 4px 9px; }
+.plis .pli-c { padding: 2px 0 14px; display: flex; flex-direction: column; gap: 8px; }
+.savebar.calme { background: rgba(28, 36, 66, .94); border-color: var(--line); }
+.seg.creux button { height: auto; padding: 8px 4px; }
+.seg.creux button .d { white-space: normal; line-height: 1.25; text-align: center; overflow: visible; }
