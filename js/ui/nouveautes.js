@@ -3,17 +3,28 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-04',
+  id: '2026-10-05',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['📰', 'Le journal du lendemain', 'dès la prochaine affaire, La Gazette du Delta s’ouvre en grand et raconte la nuit du vol.'],
-    ['📄', 'Des PV', 'premières constatations, auditions des cinq suspects, vérifications : un vrai dossier à éplucher.'],
-    ['🗺️', 'Une vraie carte', 'rues, ponts, passerelles et travaux : mesure les trajets en voiture, à vélo ou à pied.'],
+    ['⛈️', 'Le Directeur', 'un maître du jeu veille sur ta zone : regarde le ciel de l’HP, il annonce la journée.'],
+    ['📻', 'Des feuilletons', 'cambrioleur des toits, rodéos, évasion, audit… prépare-toi et boucle l’histoire.'],
+    ['⚖️', 'Des dilemmes', 'deux choix, de vraies conséquences : l’indic, la journaliste, le délégué syndical…'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Le Directeur, maître du jeu', [
+      ['Le ciel du jour', 'en haut de l’HP : ciel clair (calme, le moment d’investir), ciel chargé (des signes, des tracas possibles), orage (grosse journée), puis éclaircie (rien de grave, de bonnes nouvelles). Touche-le pour l’explication.'],
+      ['Fini les dés', 'les imprévus ne tombent plus au hasard chaque jour : ils suivent ce rythme, et une zone absente est laissée tranquille.'],
+      ['Des coups durs mérités', 'ils visent ta plus grande faiblesse (Intervention pas formée, moral bas, paperasse, pas de logiciel), et le rapport dit pourquoi. Corrige-la et ils se font rares.'],
+      ['Feuilletons', 'des histoires sur un ou plusieurs jours, annoncées dans la situation du jour avec ce qu’il faut faire ce soir : cambrioleur des toits (patrouilles dans un quartier), rodéos urbains, audit de l’Inspection, contrôle technique, évasion, fête de quartier. Réussi : points et satisfaction. Raté : l’histoire peut empirer.'],
+      ['Dilemmes', 'une carte sur l’HP, deux choix : grogne au vestiaire, indic qui veut parler, journaliste, sponsor pour le combi. Le choix part avec tes ordres validés ; sans réponse, ton adjoint tranche.'],
+      ['Événements du district', 'tempête, canicule, Fêtes du Delta, marathon : annoncés la veille, vécus par toutes les zones le même soir. La Gazette cite celles qui ont tenu bon.'],
+      ['Héros du jour', 'pendant une éclaircie, une figure de ton équipe peut faire la une de la Gazette.'],
+      ['Équitable', 'les zones en tête du classement sont surtout testées par des défis qui rapportent ; celles en difficulté ont des éclaircies plus longues et plus d’occasions (sponsor, indic).'],
+      ['Énigmes à ta mesure', 'le niveau des énigmes du jour se décale d’un cran au plus par nuit selon tes réussites récentes et ton rang aux énigmes : jusqu’à 2 niveaux plus facile si ça coince, 1 plus difficile si tu enchaînes. Le dossier noir garde son niveau.'],
+    ]],
     ['Le dossier complet (dès la prochaine affaire)', [
       ['Le journal du lendemain', 'à l’ouverture, La Gazette du Delta s’ouvre en plein écran : la nuit du vol, l’histoire des lieux, la victime, ce que l’on sait, le quartier sur un extrait du plan et les brèves du jour (lis-les : un pont fermé pour travaux change les trajets). Le journal reste punaisé au tableau, touche-le pour le relire.'],
       ['Des PV dans le dossier', 'le PV de premières constatations remplace le récit, et la boîte contient le PV d’audition de chaque suspect : son lien avec la victime, où il dit avoir été, comment il se déplace, ce qu’il répond aux rumeurs. Les vérifications arrivent en petits PV numérotés, signés par la zone qui les a obtenus.'],

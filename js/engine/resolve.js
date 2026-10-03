@@ -26,7 +26,8 @@ import { cabossesChoisis, placeLibre } from './parc.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
 import { separerIncidents, appliquerIncidents, resultatsIncidents, incidentsVisibles } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
-import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, EVENEMENTS_COLLECTIFS, COUPS_DURS, ALEAS, OPERATIONS, PRESSIONS, PRESSION_WEEKEND } from './contenu.js';
+import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND } from './contenu.js';
+import { imprevusDuJour, directeurNuit, directeurSoir, districtNuit, districtBilan, formes, rangsEnigmes, adapterEnigmes } from './directeur.js';
 
 const fmt1 = (v) => String(round1(v)).replace('.', ',');
 const median = (arr) => {
@@ -366,6 +367,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   }
 
   jalonTous('Renforts prêtés');
+  // Le Directeur : rang aux énigmes, bilan de l'événement de district.
+  const rangEnig = rangsEnigmes(state), districtRes = [];
   // 5. Simulation locale de chaque zone.
   for (const uid of uids) {
     const z = state.zones[uid];
@@ -392,8 +395,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const nAdmin = (o.alloc && o.alloc.admin) || 0;
     const protection = clamp(clamp((nAdmin - 2) * 0.15, 0, 0.6) + (nAdmin > 0 ? bonusEquip(z, 'admin', 'protection') : 0), 0, 0.85);
     const evite = (titre) => { z.rapport.push(`Évité : ${titre.charAt(0).toLowerCase()}${titre.slice(1)}. Ton Accueil (${nAdmin} agents) a paré le coup.`); z.stats.evites = (z.stats.evites || 0) + 1; };
-    if (zr.chance(0.3)) {
-      const a = zr.pick(ALEAS);
+    // Le Directeur choisit les imprévus du jour selon le ciel de la zone et ses faiblesses (plus de tirage fixe).
+    const imp = imprevusDuJour(state, z, makeRng(`${state.seed}:s${state.season}:t${T}:dir-jour:${uid}`));
+    if (imp.alea) {
+      const a = imp.alea;
       const e = a.effet;
       if (a.interne && zr.chance(protection)) evite(a.titre);
       else {
@@ -405,23 +410,22 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         if (e.vehiculeHS) { const sl = placeLibre(z, T); z.vehiculesHS.push({ retour: T + 1, ...(sl >= 0 ? { slot: sl } : {}) }); }
         if (e.bloques) z.blesses.push({ n: e.bloques, retour: T + 2, motif: a.id === 'greve' ? 'grève' : 'malade' });
         if (e.retardEnquete) z._retardEnquete = true;
-        z.rapport.push(`${a.titre} : ${a.texte}${a.interne && protection < 0.6 ? ' (un Accueil plus fourni réduit ce risque)' : ''}`);
+        z.rapport.push(`${a.titre} : ${a.texte}${imp.pourquoiAlea ? ` Pourquoi ? ${imp.pourquoiAlea}.` : a.interne && protection < 0.6 ? ' (un Accueil plus fourni réduit ce risque)' : ''}`);
         jalon(z, `Imprévu : ${a.titre}`);
         z.scene.alea = a.id;
         push(2, 'Insolite', `${zoneLabel(z)} : ${a.titre.charAt(0).toLowerCase()}${a.titre.slice(1)}`, a.texte, uid);
       }
     }
+    if (imp.heros) {
+      const m = imp.heros.membre, gm = gainMoral(3, z.moral);
+      z.moral += gm; z.satisfaction += 2;
+      z.rapport.push(`Héros du jour : ${nomComplet(m)} ${imp.heros.exploit} (+${gm} de moral, +2 de satisfaction).`);
+      jalon(z, 'Héros du jour');
+      push(4, 'Héros du jour', `${zoneLabel(z)} : ${m.prenom} ${m.nom} ${imp.heros.exploit}`, 'Toute l’équipe est fière.', uid);
+    }
     let coupDur = null;
-    if (zr.chance(0.13)) {
-      const pool = COUPS_DURS.map((c) => {
-        let w = c.w;
-        if (c.id === 'rebellion') { if (z.niveaux.intervention >= 3) w *= 0.5; if (z.equip.intervention >= 3) w *= 0.7; }
-        if (c.id === 'grippe') { if (z.moral > 70) w *= 0.5; if (z.infra.sport) w *= 0.6; }
-        if (c.id === 'plainte') { if (z.paperasse < 8) w *= 0.5; if (z.reputation > 60) w *= 0.6; }
-        if (c.id === 'panne' && z.infra.logiciel) w *= 0.4;
-        return { ...c, w };
-      });
-      coupDur = zr.weighted(pool);
+    if (imp.coupDur) {
+      coupDur = imp.coupDur;
       if (coupDur.interne && zr.chance(protection)) { evite(coupDur.titre); coupDur = null; }
     }
     if (!coupDur && z.renforceSuite >= 3 && o.rythme === 'renforce' && zr.chance(0.5)) coupDur = { id: 'epuisement', titre: 'Épuisement' };
@@ -451,7 +455,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         }
         default: break;
       }
-      z.rapport.push(`Coup dur, ${coupDur.titre.toLowerCase()} : ${texte}`);
+      z.rapport.push(`Coup dur, ${coupDur.titre.toLowerCase()} : ${texte}${imp.pourquoi && coupDur.id !== 'epuisement' ? ` Pourquoi ? ${imp.pourquoi.charAt(0).toUpperCase()}${imp.pourquoi.slice(1)}.` : ''}`);
       z.dernierCoupDur = { titre: coupDur.titre, texte, tour: T };
       jalon(z, `Coup dur : ${coupDur.titre.toLowerCase()}`);
       push(coupDur.id === 'rebellion' ? 9 : 5, 'Coup dur', `${coupDur.titre} à ${zoneLabel(z)}`, texte, uid);
@@ -483,6 +487,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (ok === 3) { const sf = ENIGMES.sansFaute, g = gainMoral(sf.moral, z.moral); z._ps += sf.ps; z.budget += sf.budget; z.moral += g; z._compta.push({ k: 'bonus', l: 'Prime « sans faute » (énigmes)', v: sf.budget }); txt += `, sans faute : +${sf.budget} k€, +${g} de moral, +${sf.ps} PS`; }
       z.rapport.push(`${txt}.`);
     }
+    // Le Directeur ajuste le niveau des énigmes de demain (réussites récentes et classement aux énigmes).
+    adapterEnigmes(z, ok, ok + faux, rangEnig[uid]);
 
     jalon(z, 'Énigmes : sans faute (+2 de moral)');
     // Incidents du jour (mini-jeux) : réussite, échec, ou équipe livrée à elle-même.
@@ -544,16 +550,17 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     jalon(z, 'Opération d’envergure');
     // Dépenses du jour (payées seulement si le budget le permet).
     const dep = o.depenses || {};
+    const achete = new Set();
     let reserve = 0;
     if (dep && coutDepenses(dep, z) > 0) {
       const achats = [];
       let paye = 0;
-      const payer = (k, cout, fn) => { if (z.budget >= cout) { z.budget -= cout; paye += cout; fn(); achats.push(k); } else achats.push(`${k} (refusé : budget insuffisant)`); };
+      const payer = (k, cout, fn) => { if (z.budget >= cout) { z.budget -= cout; paye += cout; fn(); achats.push(k); return true; } achats.push(`${k} (refusé : budget insuffisant)`); return false; };
       if (dep.reserve) payer(`${dep.reserve} agent${dep.reserve > 1 ? 's' : ''} de réserve en ${SERVICE_LABELS[dep.reserveService]}`, dep.reserve * DEPENSES.reserve.cout, () => { reserve = dep.reserve; });
-      if (dep.prime) { const g = gainPrime(z.moral); payer(`prime au personnel (+${g} de moral)`, DEPENSES.prime.cout, () => { z.moral += g; }); }
-      if (dep.prevention) payer('campagne de prévention (criminalité −6)', DEPENSES.prevention.cout, () => { z.criminalite = clamp(z.criminalite - 6, 10, 95); });
-      if (dep.soustraitance) payer('sous-traitance administrative (−5 dossiers)', DEPENSES.soustraitance.cout, () => { z.paperasse = Math.max(0, z.paperasse - 5); });
-      if (dep.revision) payer(`révision du parc (état ${Math.round(100 - z.usure)} % → ${Math.round(100 - Math.max(0, z.usure - USURE.revision))} %)`, DEPENSES.revision.cout, () => { z.usure = Math.max(0, z.usure - USURE.revision); });
+      if (dep.prime) { const g = gainPrime(z.moral); if (payer(`prime au personnel (+${g} de moral)`, DEPENSES.prime.cout, () => { z.moral += g; })) achete.add('prime'); }
+      if (dep.prevention) { if (payer('campagne de prévention (criminalité −6)', DEPENSES.prevention.cout, () => { z.criminalite = clamp(z.criminalite - 6, 10, 95); })) achete.add('prevention'); }
+      if (dep.soustraitance) { if (payer('sous-traitance administrative (−5 dossiers)', DEPENSES.soustraitance.cout, () => { z.paperasse = Math.max(0, z.paperasse - 5); })) achete.add('soustraitance'); }
+      if (dep.revision) { if (payer(`révision du parc (état ${Math.round(100 - z.usure)} % → ${Math.round(100 - Math.max(0, z.usure - USURE.revision))} %)`, DEPENSES.revision.cout, () => { z.usure = Math.max(0, z.usure - USURE.revision); })) achete.add('revision'); }
       if (dep.carrosserie && (z.cabosses || []).length) { const nc = cabossesChoisis(z, dep.carrosserie).length; payer(`carrosserie (${nc} véhicule${nc > 1 ? 's' : ''} réparé${nc > 1 ? 's' : ''}${z.infra.garage ? ' à l’atelier' : ', immobilisé' + (nc > 1 ? 's' : '') + ' ce tour'})`, coutCarrosserie(z, dep.carrosserie), () => { reparerCabosses(z, T, dep.carrosserie); }); }
       z.rapport.push(`Dépenses du jour : ${achats.join(', ')}.`);
       if (paye) z._compta.push({ k: 'depenses', l: 'Dépenses du jour', v: -paye });
@@ -713,6 +720,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       }
     }
 
+    // Le Directeur : feuilleton ou dilemme du jour, événement de district.
+    const dirL = directeurSoir(state, z, { state, T, o, alloc, patrouilles, rates, traites, achete, label: zoneLabel(z), push, district: districtRes, indice: () => indiceBonus(state, z, zr) });
+    if (dirL.length) { z.rapport.push(...dirL); jalon(z, 'Feuilletons et événements du Directeur'); }
+
     // Budget du tour.
     const ff = fraisFixes(z, state, { amendes: recettes, rythme: o.rythme });
     z.budget += ff.total;
@@ -841,28 +852,15 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   jalonTous('Duels, péril, tutelle');
   fipaGenerer(state, T, T >= SEASON_LENGTH - 3);
 
-  // 5 bis. Situation du jour et opérations d'envergure pour le tour suivant.
+  // Bilan de l'événement de district.
+  const districtG = districtBilan(state, T, districtRes, push, zoneLabel);
+
+  // 5 bis. Le Directeur prépare demain : ciel, opérations d'envergure, feuilletons, dilemmes, situation du jour.
+  districtNuit(state, T, makeRng(`${state.seed}:s${state.season}:t${T}:district`));
+  const formeNuit = formes(state);
   for (const z of Object.values(state.zones)) {
     const nr = makeRng(`${state.seed}:s${state.season}:t${T}:next:${z.uid}`);
-    if (z.operation && T + 1 >= z.operation.tourDebut + z.operation.duree) z.operation = null;
-    const site = siteDe(z);
-    // Le site sensible peut déclencher sa propre opération d'envergure…
-    if (!z.operation && site && site.operation && T + 1 >= 3 && nr.chance(0.05)) {
-      z.operation = { id: `site-${site.id}`, ...JSON.parse(JSON.stringify(site.operation)), site: site.id, tourDebut: T + 1, couvertures: [] };
-    }
-    if (!z.operation && T + 1 >= 3 && nr.chance(0.16)) {
-      const op = nr.pick(OPERATIONS);
-      z.operation = { ...JSON.parse(JSON.stringify(op)), tourDebut: T + 1, couvertures: [] };
-    }
-    const pressions = [];
-    if (nextWeekday === 5 || nextWeekday === 6) pressions.push(PRESSION_WEEKEND);
-    if (nr.chance(0.75)) pressions.push(nr.pick(PRESSIONS.filter((p) => !(p.id === 'nuit' && pressions.length))));
-    // … et, plus souvent, un imprévu du jour.
-    if (site && nr.chance(0.25)) {
-      const ev = nr.pick(site.evenements);
-      pressions.unshift({ id: `site-${site.id}`, site: site.id, titre: `${site.nom} · ${ev.titre}`, texte: ev.texte, effet: ev.effet });
-    }
-    z.pressions = JSON.parse(JSON.stringify(pressions.slice(0, 3)));
+    directeurNuit(state, z, nr, { T, nextWeekday, forme: formeNuit[z.uid] || 0, PRESSION_WEEKEND });
     annoncerPointChaud(state, z, makeRng(`${state.seed}:s${state.season}:t${T}:chaud:${z.uid}`));
   }
 
@@ -907,6 +905,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     enchere: ench,
     fipa: fp.res,
     nonDroit: ndRes,
+    district: districtG,
     classement,
     rapports: Object.fromEntries(uids.map((u) => [u, state.zones[u].rapport])),
     finSaison: null,

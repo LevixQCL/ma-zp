@@ -1198,3 +1198,44 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .affect .svc-det .dossiers { padding: 0; border: 0; background: none; margin: 0; }
 .affect .svc.ouvert .svc-chev { color: var(--amber); }
 .affect .svc-res .svc-r { white-space: normal; }
+
+/* ───── Le Directeur : ciel du jour, signes et dilemmes ───── */
+.pill.blue { background: rgba(90, 160, 240, .12); border-color: rgba(90, 160, 240, .42); color: var(--blue-soft); }
+.pill.violet { background: rgba(168, 130, 255, .13); border-color: rgba(168, 130, 255, .45); color: #C9B5FF; }
+.ciel-pill { cursor: pointer; font-family: var(--mono); }
+.ciel-p-calme { background: rgba(255, 210, 122, .14); border-color: rgba(255, 210, 122, .45); color: #FFD27A; }
+.ciel-p-montee { background: rgba(170, 182, 200, .16); border-color: rgba(170, 182, 200, .45); color: #D3DCE8; }
+.ciel-p-orage { background: rgba(240, 90, 90, .16); border-color: rgba(240, 90, 90, .5); color: #FF9C9C; }
+.ciel-p-eclaircie { background: rgba(61, 211, 154, .12); border-color: rgba(61, 211, 154, .42); color: var(--green-soft); }
+
+.meteo { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+.ciel-montee .soir-astre { opacity: calc((1 - var(--nuit, 1)) * .45); }
+.ciel-orage .soir-astre { opacity: 0; }
+.ciel-orage::before, .ciel-orage::after { filter: saturate(.35) brightness(.7); }
+.ciel-orage { background: linear-gradient(180deg, #2B3446 0%, #4A5568 62%, #6B7689 100%); }
+.m-nuage { position: absolute; height: 22px; border-radius: 999px; background: rgba(220, 228, 240, .82); box-shadow: 14px -8px 0 2px rgba(220, 228, 240, .82), 30px 0 0 0 rgba(220, 228, 240, .82); animation: m-derive 38s linear infinite; }
+.ciel-orage .m-nuage { background: rgba(70, 78, 98, .92); box-shadow: 14px -8px 0 2px rgba(70, 78, 98, .92), 30px 0 0 0 rgba(70, 78, 98, .92); }
+.ciel-eclaircie .m-nuage { background: rgba(240, 244, 250, .7); box-shadow: 14px -8px 0 2px rgba(240, 244, 250, .7), 30px 0 0 0 rgba(240, 244, 250, .7); }
+.m-nuage.n0 { top: 16px; left: 8%; width: 48px; animation-duration: 46s; }
+.m-nuage.n1 { top: 34px; left: 46%; width: 62px; animation-duration: 58s; animation-delay: -20s; }
+.m-nuage.n2 { top: 10px; left: 70%; width: 40px; animation-duration: 40s; animation-delay: -8s; }
+.m-nuage.n3 { top: 46px; left: 22%; width: 56px; animation-duration: 52s; animation-delay: -30s; }
+@keyframes m-derive { from { transform: translateX(-30px); } 50% { transform: translateX(30px); } to { transform: translateX(-30px); } }
+.m-pluie { position: absolute; inset: 40px 0 0; background: repeating-linear-gradient(105deg, transparent 0 9px, rgba(190, 210, 240, .35) 9px 10px); background-size: 40px 40px; animation: m-pluie .5s linear infinite; }
+@keyframes m-pluie { from { background-position: 0 0; } to { background-position: -10px 40px; } }
+.m-eclair { position: absolute; top: 30px; left: 62%; width: 14px; height: 44px; background: #FFF3B0; clip-path: polygon(40% 0, 100% 0, 60% 42%, 95% 42%, 15% 100%, 38% 52%, 0 52%); opacity: 0; filter: drop-shadow(0 0 8px #FFE680); animation: m-eclair 5.5s infinite; }
+@keyframes m-eclair { 0%, 88%, 100% { opacity: 0; } 89%, 92% { opacity: 1; } 90% { opacity: .2; } }
+.m-arc { position: absolute; left: 50%; top: 30px; width: 190px; height: 190px; margin-left: -40px; border-radius: 50%; opacity: .5;
+  background: radial-gradient(circle, transparent 58%, rgba(255, 80, 80, .7) 59%, rgba(255, 180, 60, .7) 62%, rgba(255, 240, 90, .7) 65%, rgba(90, 210, 120, .7) 68%, rgba(80, 150, 255, .7) 71%, rgba(150, 100, 240, .7) 74%, transparent 75%); }
+@media (prefers-reduced-motion: reduce) { .m-nuage, .m-pluie, .m-eclair { animation: none; } .m-eclair { opacity: .8; } }
+
+.card.dilemme { gap: 10px; border-color: rgba(168, 130, 255, .45); background: linear-gradient(180deg, rgba(168, 130, 255, .1), transparent 70%), var(--surface); }
+.card.dilemme .kicker { color: #C9B5FF; }
+.dil-q { margin: 0; font-size: 15px; font-weight: 600; line-height: 1.35; }
+.dil-choix { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 360px) { .dil-choix { grid-template-columns: 1fr; } }
+.dil-btn { display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--hair); background: var(--surface2); color: var(--text); cursor: pointer; font: inherit; }
+.dil-btn .t { font-weight: 700; font-size: 14px; }
+.dil-btn .s { font-size: 12px; color: var(--text2); line-height: 1.3; }
+.dil-btn[aria-pressed="true"] { border-color: #A882FF; background: rgba(168, 130, 255, .16); box-shadow: 0 0 0 3px rgba(168, 130, 255, .2); }
+.soir-situ .pill { white-space: normal; max-width: 100%; }

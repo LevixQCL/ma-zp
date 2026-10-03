@@ -18,11 +18,14 @@ const DIFF_PAR_JOUR = [2, 3, 3, 4, 4, 5, 5];
 
 /**
  * Les 3 énigmes du jour d'un joueur : trois types différents, qui tournent sur toute la saison.
+ * `ajust` : décalage de niveau décidé par le Directeur (forme du joueur aux énigmes).
  * `rerolls` : emplacements que le joueur a changés (une autre énigme, d'un type absent du jour).
  */
-export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [] }) {
+export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], ajust = 0 }) {
   const order = makeRng(`${seed}:qorder:${uid}:${season}`).shuffle(QUEST_TYPES);
-  const base = DIFF_PAR_JOUR[weekday] || 3;
+  // `ajust` : décalage du Directeur selon la forme du joueur (−2 à +1).
+  const a = Number.isFinite(ajust) ? Math.max(-2, Math.min(1, Math.round(ajust))) : 0;
+  const base = Math.max(1, Math.min(5, (DIFF_PAR_JOUR[weekday] || 3) + a));
   const diffs = [Math.max(1, base - 1), base, Math.min(5, base + 1)];
   const out = [];
   for (let slot = 0; slot < QUESTS_PAR_JOUR; slot++) {

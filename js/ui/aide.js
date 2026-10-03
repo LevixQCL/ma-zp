@@ -8,6 +8,20 @@ const pc = (w) => `${Math.round(w * 100)} %`;
 const k2 = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
 
 export const AIDES = {
+  ciel: {
+    titre: 'Le ciel du jour',
+    intro: 'Le Directeur, maître du jeu invisible, rythme ce qui arrive à ta zone. Le ciel te dit à quoi t’attendre aujourd’hui.',
+    lignes: [
+      '<strong>Ciel clair</strong> : journée calme, le bon moment pour investir, former ou rattraper le retard',
+      '<strong>Ciel chargé</strong> : surveille les signes dans la situation du jour ; des tracas sont possibles (un Accueil fourni en évite)',
+      '<strong>Orage</strong> : grosse journée (opération d’envergure, coup dur ou feuilleton décisif). Évite le rythme renforcé, soigne ton Accueil',
+      '<strong>Éclaircie</strong> : après l’orage, rien de grave, de bonnes nouvelles possibles',
+      '<strong>Les coups durs visent tes faiblesses</strong> (Intervention pas formée, moral bas, paperasse, pas de logiciel) : le rapport dit pourquoi',
+      '<strong>Équitable</strong> : les zones en tête sont testées par des défis qui rapportent, celles en difficulté ont plus d’éclaircies',
+    ],
+    guide: 'guide-imprevus',
+    sansTour: true,
+  },
   voisinage: {
     titre: 'Enquête de voisinage',
     intro: 'Chaque soir, tes agents de Recherche font du porte-à-porte autour de l’affaire. Ils peuvent ramener une pièce de plus au dossier.',
