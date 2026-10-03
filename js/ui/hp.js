@@ -290,7 +290,7 @@ export function renderHP() {
   const op = operationActive(z, T);
   if (op) alertes.unshift({ cls: 'red', titre: `Opération d\u2019envergure : ${esc(op.titre)}`, texte: `dispositif à régler dans tes ordres${op.duree > 1 ? ` · jour ${T - op.tourDebut + 1} sur ${op.duree}` : ''}`, href: '#ordres' });
   const tr = (st.traques || [])[0];
-  if (tr) { const ta = affaire(st, tr.n); alertes.unshift({ cls: 'red', titre: `Traque : ${esc(ta.suspects[ta.coupable].nom)} en fuite`, texte: `${tr.tours} tour${tr.tours > 1 ? 's' : ''} pour l’arrêter`, href: '#enquete' }); }
+  if (tr) { const ta = affaire(st, tr.n); alertes.unshift({ cls: 'red', titre: `Suspect identifié : ${esc(ta.suspects[ta.coupable].nom)} en fuite`, texte: `affaire « ${esc(ta.titre)} » résolue · ${tr.tours} tour${tr.tours > 1 ? 's' : ''} pour trouver sa planque et l’arrêter`, href: '#enquete' }); }
   const dotColor = { red: 'var(--red)', amber: 'var(--amber)', blue: 'var(--blue)' };
   const last = S.gazettes[0];
 

@@ -67,7 +67,10 @@ function enqueteGazette(g) {
     if (e.classee && e.solution) l.push(`<p><strong>${esc(e.titre)}</strong> classée sans suite. La solution : ${esc(e.solution.suspect)}${e.solution.planque ? `, planque « ${esc(e.solution.planque)} »` : ''}.</p>`);
     if (!e.decouverte && !e.classee) l.push(`<p><strong>${esc(e.titre)}</strong> : jour ${e.jour}, toujours pas d’auteur identifié.</p>`);
     if (e.rebond) l.push(`<p><strong>${esc(e.rebond.titre)}</strong>. ${esc(e.rebond.texte)}</p>`);
-    if (e.recit) l.push(`<p><em>Le fin mot de l’affaire : ${esc(e.recit)}</em></p>`);
+    // Tant que la traque court, la planque ne figure pas dans le fin mot (anciens numéros compris).
+    const traqueEnCours = (S.state.traques || []).some((t) => t.n === e.n && !t.fini);
+    const recit = e.recit && traqueEnCours ? e.recit.replace(/ [^.]*a caché le butin dans la planque « [^»]*» \([^)]*\)\./, ' Où il ou elle se cache reste à trouver : c’est l’enjeu de la traque.') : e.recit;
+    if (recit) l.push(`<p><em>Le fin mot de l’affaire : ${esc(recit)}</em></p>`);
     if (e.nouvelle) l.push(`<p>Nouvelle affaire ouverte : <strong>${esc(e.nouvelle)}</strong>.</p>`);
   }
   for (const x of f) {

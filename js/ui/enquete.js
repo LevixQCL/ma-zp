@@ -124,6 +124,21 @@ export function demBtn(aff, dos, x, label, { compact = false } = {}) {
     <span class="l">${esc(label)}</span><span class="p">${on ? 'demandé ✓' : raison || prixTxt}</span></button>`;
 }
 
+/** Bandeau : l'affaire précédente est résolue, son auteur identifié est en fuite. */
+export function banniereTraque(st, { tableau = false } = {}) {
+  const tr = (st.traques || []).find((t) => !t.fini);
+  if (!tr) return '';
+  const a = affaire(st, tr.n), s = a.suspects[a.coupable];
+  const zones = (tr.decouvreurs || []).map((u) => st.zones[u]).filter(Boolean).map((z) => `ZP ${z.code} ${z.nom}`);
+  const e = s.f ? 'e' : '';
+  return `<section class="card red banniere-traque ${tableau ? 'tb-ui' : ''}" role="status">
+    <span class="kicker" style="color:var(--red-soft)">Affaire n° ${a.n} résolue · « ${esc(a.titre)} »</span>
+    <span style="font-weight:700;font-size:16px">Suspect identifié : ${esc(s.nom)}</span>
+    <span class="small">${zones.length ? `Démasqué${e} par ${esc(zones.join(' et '))}. ` : ''}Mandat d’arrêt délivré, mais ${s.f ? 'elle' : 'il'} se cache. Toutes les zones peuvent l’arrêter : il reste <strong>${tr.tours} tour${tr.tours > 1 ? 's' : ''}</strong> pour trouver sa planque.</span>
+    <button type="button" class="btn small" data-action="traque-voir" style="align-self:flex-start">${tableau ? 'Lancer la traque' : 'Voir la traque ↓'}</button>
+  </section>`;
+}
+
 export function traqueHtml(tr) {
   const st = S.state, z = myZone(), d = S.draft;
   const a = affaire(st, tr.n);
@@ -132,11 +147,12 @@ export function traqueHtml(tr) {
   const carnet = lireCarnet(tr.n);
   const maxAg = d.alloc.intervention || 0;
   const s = a.suspects[a.coupable];
-  const indices = dos.pieces.filter((p) => p.f.startsWith('p:')).map((p) => `« ${esc(texteFait(a, p.f).split(' : ').pop())} »`);
-  return `<section class="card red" aria-label="Traque en cours">
+  const indices = dos.pieces.filter((p) => p.f.startsWith('p:')).map((p) => esc(texteFait(a, p.f)));
+  return `<section id="traque" class="card red" aria-label="Traque en cours">
     <div class="between"><span class="kicker" style="color:var(--red-soft)">Traque · ${tr.tours} tour${tr.tours > 1 ? 's' : ''} restant${tr.tours > 1 ? 's' : ''}</span><span class="tiny muted">${esc(a.titre)}</span></div>
     <h2 class="card-title" style="margin:0">${esc(s.nom)} est en fuite</h2>
-    <p class="small" style="margin:0">Choisis une planque et envoie au moins ${ENQ.agentsTraque} agents d’Intervention. Ce que tu sais de la planque : ${indices.join(' ') || 'rien'}.</p>
+    <p class="small" style="margin:0">Choisis une planque et envoie au moins ${ENQ.agentsTraque} agents d’Intervention. Ce que tu sais de la planque${indices.length ? '' : ' : rien. Les indices sur la planque viennent de ton dossier sur cette affaire (constatations, butin retrouvé)'}.</p>
+    ${indices.length ? `<ul class="small" style="margin:0;padding-left:18px">${indices.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''}
     <div class="col" style="gap:6px">${a.planques.map((p, i) => {
       const m = MARQUES[carnet.p[i] || 0];
       return `<button type="button" class="choice" data-action="traque-planque" data-n="${tr.n}" data-i="${i}" aria-pressed="${!!t && t.planque === i}" style="flex-direction:row;justify-content:space-between;text-align:left;align-items:center;gap:10px">
@@ -405,6 +421,7 @@ export function renderEnquete() {
   else if (tab === 'scene') body = constatations(aff, dos);
   else body = vueSuspects(aff, dos);
   return `<main class="screen">
+    ${banniereTraque(st)}
     <header class="col" style="gap:6px">
       <div class="between"><span class="kicker">Enquête · affaire n° ${aff.n}</span><span class="row" style="gap:6px">${aff.prof ? '<button type="button" class="btn small" data-action="journal-ouvrir">📰 Journal</button>' : ''}<button type="button" class="btn small" data-action="tab-vue" data-v="tableau">${icon('tableau', 16)} Tableau</button></span></div>
       <h1 class="big" style="line-height:1.05">${esc(aff.titre)}</h1>
