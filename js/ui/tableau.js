@@ -2,8 +2,9 @@
 // Le plan du district au centre, les fiches de constatation en haut, les photos des suspects,
 // une boîte d'où l'on sort les pièces une à une, et des ficelles que l'on tire soi-même.
 // Rien n'est rangé d'avance : la disposition, les ficelles et la vue sont gardées sur l'appareil.
-import { S, esc, icon, tabbar, myZone, zoneName, toast } from './common.js';
+import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
 import { hashString } from '../engine/rng.js';
+import { portraitSuspect } from './portrait.js';
 import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
   ficheSuspect, rebondsPublies, pointsDecouverte, dansMaCellule, zonesDuSuspect,
@@ -11,14 +12,15 @@ import {
 import { lireCarnet, ecrireCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal } from './enquete.js';
 
 // ───── Dimensions du tableau ─────
-const BW = 1600, BH = 2200;
-const MAP = { x: 360, y: 400, w: 880, h: 680 };
+// Version 2 : tableau élargi (2 800 de large) ; les dispositions de la version 1 sont décalées de 600 vers la droite.
+const BW = 2800, BH = 2200, DECALAGE_V2 = 600;
+const MAP = { x: 960, y: 400, w: 880, h: 680 };
 const COL = { occ: '#2F6FD3', moy: '#C88A12', mob: '#C2302B' };
 const PINS = { r: ['#FF9A93', '#D32F2F', '#7A1010'], b: ['#9CC8FF', '#2F6FD3', '#123B7A'], y: ['#FFE59A', '#E8A800', '#7A5600'], g: ['#A8F0C6', '#2E9E62', '#11502E'], w: ['#FFFFFF', '#D8D2C4', '#7D7566'] };
 const PIN_EL = { occ: 'b', moy: 'y', mob: 'r' };
 const DEF_POS = {
-  'c:occ': [480, 190], 'c:moy': [800, 170], 'c:mob': [1120, 190],
-  s0: [260, 1240], s1: [530, 1230], s2: [800, 1240], s3: [1070, 1230], s4: [1340, 1240],
+  'c:occ': [1080, 190], 'c:moy': [1400, 170], 'c:mob': [1720, 190],
+  s0: [760, 1240], s1: [1080, 1230], s2: [1400, 1240], s3: [1720, 1230], s4: [2040, 1240],
 };
 const TUTO_KEY = 'mazp-tuto-tableau';
 
@@ -26,7 +28,12 @@ const TUTO_KEY = 'mazp-tuto-tableau';
 function dispo(n) {
   const c = lireCarnet(n);
   const t = c.tab || {};
-  return { pos: t.pos || {}, liens: t.liens || [], places: t.places || [], fiches: t.fiches || [], neuf: t.neuf || [], vue: t.vue || null };
+  let pos = t.pos || {}, vue = t.vue || null;
+  if (c.tab && t.v !== 2) {
+    pos = Object.fromEntries(Object.entries(pos).map(([k, [x, y]]) => [k, [x + DECALAGE_V2, y]]));
+    vue = null;
+  }
+  return { v: 2, pos, liens: t.liens || [], places: t.places || [], fiches: t.fiches || [], neuf: t.neuf || [], vue };
 }
 function ecrireDispo(n, t) { const c = lireCarnet(n); c.tab = t; ecrireCarnet(n, c); }
 
@@ -39,42 +46,6 @@ const pieceSuspect = (f) => (/^(occ|moy|mob):\d$/.test(f) ? Number(f.split(':')[
 function ancre(aff, t, id) {
   if (id.startsWith('L:')) { const k = id.slice(2); return CARTE.lieux[k] ? lieuPos(k) : null; }
   return posDe(t, id);
-}
-
-// ───── Portraits : dessinés à partir du nom, pour que chaque suspect ait son visage ─────
-const PEAUX = ['#F2D3B8', '#E8C4A0', '#D6A57E', '#B9855E', '#8D5A3B', '#EBC9A8'];
-const CHEVEUX = ['#2A1D14', '#3B2A1E', '#6B4A2B', '#A0642E', '#8A8A8A', '#1F1612', '#C9A25E'];
-const HAUTS = ['#4A6FA5', '#8C4B6B', '#3E5A45', '#6B5B95', '#A0522D', '#2F4858', '#7A6A55', '#9C3D3D'];
-const FONDS = ['#B9C9D9', '#D8BFB8', '#C3D0BA', '#D9CFB5', '#CBBFD6'];
-const COIFFES = [
-  'M27 28c0-14 9-20 16-20s16 6 16 20c-4-6-9-9-16-9s-12 3-16 9z',
-  'M28 24c2-10 8-13 15-13s13 3 15 13c-5-3-10-4-15-4s-10 1-15 4z',
-  'M27 26c0-12 8-17 16-17s16 5 16 17c-2-2-4-4-6-4-3 2-6 2-10 1s-7-1-10 0c-3 0-4 1-6 3z',
-  'M25 40c-2-22 6-32 18-32s20 10 18 32c-3-10-6-16-18-17-12 1-15 7-18 17z',
-  'M24 36c-1-20 7-28 19-28s20 8 19 28c-2-8-5-13-19-14-14 1-17 6-19 14z',
-  'M26 30c-1-15 8-22 17-22s18 7 17 22c-1 4-2 8-3 10 0-12-4-18-14-19-10 1-14 7-14 19-1-2-2-6-3-10z',
-];
-function portrait(s, i) {
-  const h = hashString(`${s.nom}#${i}`);
-  const p = (arr, k) => arr[Math.floor(h / k) % arr.length];
-  const coiffe = s.f ? COIFFES[3 + (Math.floor(h / 7) % 3)] : COIFFES[Math.floor(h / 7) % 3];
-  const lunettes = (h % 10) < 3 ? 1 : 0;
-  const gid = `tbp${i}`;
-  return `<svg class="tb-face" viewBox="0 0 86 82" aria-hidden="true">
-    <defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${p(FONDS, 3)}"/><stop offset="1" stop-color="#5D5A55"/></linearGradient></defs>
-    <rect width="86" height="82" fill="url(#${gid})"/>
-    <path d="M6 82c2-19 17-27 37-27s35 8 37 27z" fill="${p(HAUTS, 11)}"/>
-    <path d="M33 55l10 10 10-10" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="2"/>
-    <rect x="36" y="44" width="14" height="13" fill="${p(PEAUX, 5)}"/>
-    <ellipse cx="43" cy="32" rx="16" ry="19" fill="${p(PEAUX, 5)}"/>
-    <ellipse cx="43" cy="40" rx="14" ry="10" fill="rgba(0,0,0,.06)"/>
-    <path d="${coiffe}" fill="${p(CHEVEUX, 13)}"/>
-    ${lunettes ? '<g fill="none" stroke="#1D1A15" stroke-width="1.6"><circle cx="36" cy="33" r="5"/><circle cx="50" cy="33" r="5"/><path d="M41 33h4"/></g>' : ''}
-    <path d="M32 27.5l7 .8M47 28.3l7-.8" stroke="#2A1D14" stroke-width="1.4" stroke-linecap="round"/>
-    <circle cx="37" cy="33" r="1.5" fill="#1D1A15"/><circle cx="49" cy="33" r="1.5" fill="#1D1A15"/>
-    <path d="M43 34v5l-2 1" stroke="rgba(0,0,0,.3)" stroke-width="1.2" fill="none" stroke-linecap="round"/>
-    <path d="M39 44c2.5 1.2 5.5 1.2 8 0" stroke="#6B3A2E" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-  </svg>`;
 }
 
 // ───── Résumés des constatations (titres des fiches) ─────
@@ -197,7 +168,7 @@ function elementsHtml(aff, dos, et) {
     const accuse = d.accusation === i || dos.accuse === i;
     const soir = (d.demarches || []).some((x) => x.endsWith(`:${i}`)) || d.piste === i;
     const past = ELEMENTS.map((e, k) => `<span class="tb-past" style="--c:${COL[e]}" data-v="${marks[k]}">${['', '✓', '✕'][marks[k]]}</span>`).join('');
-    out.push(wrap(`s${i}`, 90, 1.9, `<div class="tb-obj tb-polo">${portrait(s, i)}<span class="tb-prenom">${esc(s.prenom)}</span><span class="tb-role">${esc(s.role)}</span><span class="tb-pasts">${past}</span>
+    out.push(wrap(`s${i}`, 90, 1.9, `<div class="tb-obj tb-polo">${portraitSuspect(s, i)}<span class="tb-prenom">${esc(s.prenom)}</span><span class="tb-role">${esc(s.role)} · ${s.age} ans</span><span class="tb-pasts">${past}</span>
       ${exclu ? '<span class="tb-exclu">EXCLU</span>' : ''}${accuse ? '<span class="tb-accuse"></span>' : ''}${soir ? '<span class="tb-cesoir">ce soir</span>' : ''}</div>`, 'r'));
   });
   // Pièces punaisées.
@@ -257,7 +228,7 @@ function voletSuspect(aff, dos, i, et) {
   else if (dos.accuse !== null && dos.accuse !== undefined) acc = '<span class="tiny muted">Accusation transmise au parquet.</span>';
   else acc = accuse ? '<button type="button" class="btn ghost small" data-action="accuser-annuler">Retirer l’accusation</button>' : `<button type="button" class="btn outline small" data-action="accuser" data-i="${i}" style="border-color:var(--red-line);color:var(--red-soft)">Accuser ${esc(s.prenom)}</button>`;
   const suivi = zonesDuSuspect(st, i).filter((u) => u !== S.user.uid && st.zones[u]);
-  return `<div class="tb-tete">${portrait(s, i).replace('class="tb-face"', 'class="tb-face tb-mini"')}
+  return `<div class="tb-tete">${portraitSuspect(s, i, 'tb-face tb-mini')}
       <div class="col" style="gap:2px;min-width:0"><span class="tb-titre">${esc(s.nom)}</span><span class="tiny muted">${esc(fiche.lien)}</span>
       ${multi ? `<span class="tiny ${mien ? 'good' : 'muted'}">${mien ? 'ta cellule' : 'autre cellule : vérifications au double'}</span>` : ''}</div></div>
     <p class="small tb-fiche-pub">${esc(fiche.declaration)}<br>${fiche.trajet ? `<strong>${esc(fiche.trajet)}</strong><br>` : ''}${esc(fiche.vehicule)}<br><span class="muted">${esc(fiche.rumeur)}</span></p>
@@ -372,7 +343,7 @@ const TUTO = [
   { titre: 'Promène-toi dessus', texte: 'Glisse le liège pour te déplacer. Pince à deux doigts (ou la molette sur ordinateur) pour zoomer. Ce bouton montre tout le tableau.', ou: 'bas', spot: 'fit' },
   { titre: 'La boîte à pièces', texte: 'Chaque soir à 20:00, les nouvelles pièces arrivent ici. Sors-les une à une et punaise-les où tu veux : près d’un suspect, sur le plan…', ou: 'haut', spot: 'boite' },
   { titre: 'Touche pour agir', texte: 'Touche une photo, une fiche ou un lieu du plan : tu vois ce qu’on sait, tu coches ✓ ou ✕, et tu lances tes démarches. Le plan donne les temps de trajet : un trou dans un alibi ne suffit pas si la route est trop longue.', ou: 'centre' },
-  { titre: 'Tire tes ficelles', texte: 'Pose le doigt sur une punaise et glisse jusqu’à un autre élément : la ficelle s’accroche toute seule à la punaise la plus proche. En mode ficelle, ça marche depuis n’importe où sur l’élément, et toucher une ficelle la coupe.', ou: 'bas', spot: 'fil' },
+  { titre: 'Tire tes ficelles', texte: 'Pose le doigt sur une punaise et glisse jusqu’à un autre élément : la ficelle s’accroche toute seule à la punaise la plus proche. Pour en retirer une, attrape-la et tire-la hors de sa ligne : elle se décroche.', ou: 'bas', spot: 'fil' },
   { titre: 'Ce soir', texte: 'Démarches, piste, appui fédéral : tout part avec tes ordres à 20:00. Tu préfères l’affichage en liste ? Il est derrière ce bouton.', ou: 'haut', spot: 'soir' },
 ];
 export function tutoTableauVu() { try { return localStorage.getItem(TUTO_KEY) === '1'; } catch (e) { return !!S.tutoTabVu; } }
@@ -407,7 +378,7 @@ export function renderTableau() {
     <div id="tb-vp" class="tb-vp ${fil ? 'mode-fil' : ''}">
       <div id="tb-board" class="tb-board" style="width:${BW}px;height:${BH}px">
         <div class="tb-cadre"></div><div class="tb-liege"></div>
-        <div class="tb-etiquette" data-tid="titre"><span class="tb-scotch g"></span><span class="tb-scotch d"></span>
+        <div class="tb-etiquette" data-tid="titre" style="left:${BW / 2 - 240}px"><span class="tb-scotch g"></span><span class="tb-scotch d"></span>
           <span class="tb-n">DOSSIER N° ${aff.n} · JOUR ${st.enquete.jour} / ${ENQ.dureeMax}</span><span class="tb-dossier">${esc(aff.titre.toUpperCase())}</span></div>
         <div class="tb-map" data-tid="plan" style="left:${MAP.x}px;top:${MAP.y}px;width:${MAP.w}px;height:${MAP.h}px">${planSvg(aff, et.t.fiches.includes('occ'))}
           ${['tl', 'tr', 'bl', 'br'].map((c) => `<span class="tb-mpin ${c}"></span>`).join('')}</div>
@@ -445,6 +416,12 @@ function vueEnsemble() {
   const [w, h] = vpTaille();
   const s = Math.min(w / (BW + 80), (h - 140) / (BH + 80));
   return { s, tx: (w - BW * s) / 2, ty: 70 + (h - 140 - BH * s) / 2 };
+}
+/** Vue d'arrivée : le plan et les suspects, à une taille lisible. */
+function vueDepart() {
+  const [w] = vpTaille();
+  const s = Math.min(0.55, w / 1150);
+  return { s, tx: w / 2 - (BW / 2) * s, ty: 70 - 30 * s };
 }
 function appliquer(v, anim = false) {
   const b = document.getElementById('tb-board');
@@ -498,7 +475,7 @@ export function ouvrirVolet(id, rerender) {
 export function sortirPiece(f) {
   const n = S.state.enquete.n, t = dispo(n);
   const [w, h] = vpTaille();
-  const v = S.tabV || vueEnsemble();
+  const v = S.tabV || vueDepart();
   const k = t.places.length % 5;
   const x = Math.max(100, Math.min(BW - 100, (w / 2 - v.tx) / v.s + (k - 2) * 30));
   const y = Math.max(60, Math.min(BH - 260, (h * 0.32 - v.ty) / v.s + (k % 2) * 24));
@@ -521,6 +498,13 @@ export function remettrePiece(f) {
   t.neuf = t.neuf.filter((x) => x !== f);
   ecrireDispo(n, t);
 }
+/** Tire ou coupe une ficelle entre a et b. */
+export function basculerFil(a, b) {
+  const n = S.state.enquete.n, t = dispo(n);
+  const k = t.liens.findIndex(([x, y]) => (x === a && y === b) || (x === b && y === a));
+  t.liens = k >= 0 ? t.liens.filter((_, q) => q !== k) : [...t.liens, [a, b]];
+  ecrireDispo(n, t);
+}
 export function marquerTutoVu() { S.tutoTabVu = true; try { localStorage.setItem(TUTO_KEY, '1'); } catch (e) { /* pas de stockage */ } }
 
 /** À appeler après chaque affichage de l'écran : branche les gestes sur le tableau. */
@@ -528,7 +512,7 @@ export function monterTableau(rerender) {
   const vp = document.getElementById('tb-vp');
   if (!vp) { ctl = null; return; }
   const st = S.state, n = st.enquete.n;
-  if (!S.tabV || S.tabVn !== n) { S.tabV = dispo(n).vue || vueEnsemble(); S.tabVn = n; }
+  if (!S.tabV || S.tabVn !== n) { S.tabV = dispo(n).vue || vueDepart(); S.tabVn = n; }
   S.tabV = borner(S.tabV);
   appliquer(S.tabV);
   const pts = {};
@@ -548,14 +532,7 @@ export function monterTableau(rerender) {
     if (nd && g && g.pos) { nd.style.left = `${g.pos[0]}px`; nd.style.top = `${g.pos[1]}px`; }
   };
   const reliable = (id) => !!id && id !== 'titre' && id !== 'plan';
-  const basculerLien = (a, b) => {
-    const t = dispo(n);
-    const k = t.liens.findIndex(([x, y]) => (x === a && y === b) || (x === b && y === a));
-    t.liens = k >= 0 ? t.liens.filter((_, q) => q !== k) : [...t.liens, [a, b]];
-    ecrireDispo(n, t); S.tabFrom = null;
-    toast(k >= 0 ? 'Ficelle coupée.' : 'Ficelle tirée.');
-    rerender();
-  };
+  const basculerLien = (a, b) => { basculerFil(a, b); S.tabFrom = null; rerender(); };
   // Cible d'une ficelle : l'élément sous le doigt, sinon la punaise la plus proche (aimantée à 70 px).
   const cibleSous = (cx, cy, from) => {
     const sous = document.elementFromPoint(cx, cy);
@@ -613,10 +590,12 @@ export function monterTableau(rerender) {
         return;
       }
     }
-    if (gg.t === 'cut' && !gg.moved) {
-      const t = dispo(n);
-      t.liens = t.liens.filter(([x, y]) => !((x === gg.a && y === gg.b) || (x === gg.b && y === gg.a)));
-      ecrireDispo(n, t); S.tabFrom = null; toast('Ficelle coupée.'); rerender();
+    if (gg.t === 'arrache') {
+      gg.segs.forEach((x) => x.remove());
+      gg.el.style.visibility = '';
+      // Ficelle tirée loin de sa ligne : elle se décroche. Un simple toucher la coupe en mode ficelle.
+      if (gg.casse || (!gg.moved && S.tabMode === 'fil')) basculerLien(gg.a, gg.b);
+      else if (gg.moved) sauverVue();
       return;
     }
     if (gg.moved) { sauverVue(); return; }
@@ -641,16 +620,24 @@ export function monterTableau(rerender) {
     if (ids.length >= 2) {
       const [a, b] = ids, v = S.tabV;
       if (g && g.el) g.el.classList.remove('tb-drag');
+      if (g && g.t === 'arrache') { g.segs.forEach((x) => x.remove()); g.el.style.visibility = ''; }
       if (g && g.t === 'fil') { cancelAnimationFrame(g.raf); if (g.tmp) g.tmp.remove(); if (g.fromEl) g.fromEl.classList.remove('tb-cible'); if (g.cibleEl) g.cibleEl.classList.remove('tb-cible'); }
       g = { t: 'pinch', moved: true, d0: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, s0: v.s, bx: ((a[0] + b[0]) / 2 - v.tx) / v.s, by: ((a[1] + b[1]) / 2 - v.ty) / v.s };
       return;
     }
-    const fil = e.target.closest('.tb-fil');
-    if (fil && S.tabMode === 'fil') { g = { t: 'cut', a: fil.dataset.a, b: fil.dataset.b, sx: x, sy: y, moved: false }; return; }
-    const el = e.target.closest('[data-tid]');
+    // Une punaise passe avant une ficelle qui la recouvre.
+    const sous = document.elementsFromPoint ? document.elementsFromPoint(e.clientX, e.clientY) : [e.target];
+    const punaise = sous.find((x) => x.matches && x.matches('.tb-pin, .tb-lieu-pt'));
+    const fil = punaise ? null : e.target.closest('.tb-fil:not(.tb-fil-tmp)');
+    if (fil) {
+      const aff = affaire(st, n), t = dispo(n);
+      g = { t: 'arrache', a: fil.dataset.a, b: fil.dataset.b, el: fil, p1: ancre(aff, t, fil.dataset.a), p2: ancre(aff, t, fil.dataset.b), sx: x, sy: y, segs: [], casse: false, moved: false };
+      return;
+    }
+    const el = (punaise || (e.target.closest('.tb-fil') ? sous.find((x) => x.closest && x.closest('[data-tid]') && !x.closest('.tb-fil')) : e.target) || e.target).closest('[data-tid]');
     const tid = el ? el.dataset.tid : null;
     const mobile = el && el.classList.contains('tb-it');
-    const surPunaise = !!e.target.closest('.tb-pin, .tb-lieu-pt');
+    const surPunaise = !!punaise;
     if (reliable(tid) && (S.tabMode === 'fil' || surPunaise)) {
       // Tirer une ficelle : en mode ficelle depuis n'importe quel élément, ou depuis une punaise en mode main.
       const tmp = document.createElement('span');
@@ -683,6 +670,23 @@ export function monterTableau(rerender) {
     } else if (g.t === 'pan') {
       S.tabV = borner({ s: S.tabV.s, tx: g.tx0 + x - g.sx, ty: g.ty0 + y - g.sy });
       appliquer(S.tabV);
+    } else if (g.t === 'arrache') {
+      // La ficelle suit le doigt, accrochée à ses deux punaises ; au-delà de 45 px de sa ligne, elle lâche.
+      const v = S.tabV, f = [(x - v.tx) / v.s, (y - v.ty) / v.s];
+      if (!g.segs.length) {
+        g.el.style.visibility = 'hidden';
+        for (let k = 0; k < 2; k++) { const sg = document.createElement('span'); sg.className = 'tb-fil tb-fil-tire'; board.appendChild(sg); g.segs.push(sg); }
+      }
+      const [a, b] = [g.p1, g.p2];
+      const lx = b[0] - a[0], ly = b[1] - a[1], l2 = lx * lx + ly * ly || 1;
+      const u = Math.max(0, Math.min(1, ((f[0] - a[0]) * lx + (f[1] - a[1]) * ly) / l2));
+      const dist = Math.hypot(f[0] - (a[0] + u * lx), f[1] - (a[1] + u * ly)) * v.s;
+      g.casse = dist > 45;
+      [[a, f], [f, b]].forEach(([p, q], k) => {
+        const dx = q[0] - p[0], dy = q[1] - p[1];
+        Object.assign(g.segs[k].style, { left: `${p[0]}px`, top: `${p[1]}px`, width: `${Math.hypot(dx, dy)}px`, transform: `rotate(${Math.atan2(dy, dx)}rad)` });
+        g.segs[k].classList.toggle('casse', g.casse);
+      });
     } else if (g.t === 'fil') {
       g.x = x; g.y = y;
       const c = cibleSous(e.clientX, e.clientY, g.from);

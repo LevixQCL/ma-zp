@@ -155,3 +155,10 @@ body:has(.demo-banner) .tb-ecran { top: 44px; }
 .mode-fil .tb-lieu-pt { width: 34px; height: 34px; border-width: 4px; }
 .mode-fil .tb-fil { pointer-events: auto; cursor: pointer; }
 .mode-fil .tb-fil::before { content: ''; position: absolute; left: 0; right: 0; top: -12px; bottom: -12px; }
+
+
+/* Ficelles : on les attrape et on les arrache d'un geste */
+.tb-fil { pointer-events: auto; cursor: grab; }
+.tb-fil::before { content: ''; position: absolute; left: 14px; right: 14px; top: -13px; bottom: -13px; }
+.tb-fil-tire { pointer-events: none; z-index: 60; }
+.tb-fil-tire.casse { background: repeating-linear-gradient(90deg, rgba(224,70,64,.55) 0 6px, transparent 6px 10px); box-shadow: none; }
