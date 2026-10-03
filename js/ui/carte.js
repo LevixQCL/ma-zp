@@ -10,7 +10,10 @@ import { fiabilite } from '../engine/fipa.js';
 import { ongletsRadio } from './diplomatie.js';
 import { marquerRadioLue } from './prive.js';
 import { appelsRenfort, renfortCtrl } from './renfort.js';
-import { GRADES, gradeFor, AFFAIRE } from '../engine/constants.js';
+import { annoncesND, suggestionND } from './nondroit.js';
+import { nomSecteur } from '../engine/nondroit.js';
+import { secteurOuvert } from '../engine/constants.js';
+import { GRADES, gradeFor, AFFAIRE, ND } from '../engine/constants.js';
 import { blasonSvg, insigne } from './blasons.js';
 import { tensionsDe, quartiersFrontaliers, niveauTension, prevoirTensions, carteQuartiers, QUARTIERS } from '../engine/quartiers.js';
 import { capacite, effetsOperation } from '../engine/zone.js';
@@ -141,13 +144,32 @@ export function renderRadio() {
   const msgs = S.radio.slice(-50);
   marquerRadioLue();
   const appels = appelsRenfort();
+  // Annonces « zone de non-droit » de ce soir : seule la dernière de chaque secteur porte le bouton Rejoindre.
+  const ann = annoncesND();
+  const derniere = {};
+  for (const m of msgs) if (m.nd && m.nd.season === st.season && m.nd.turn === st.turn && m.uid !== me.uid) { const c = String(m.nd.secteur); if (!derniere[c] || derniere[c] < m.at) derniere[c] = m.at; }
+  const ndCtrl = (m) => {
+    const k = String(m.nd.secteur), s = st.nonDroit && st.nonDroit.secteurs[k];
+    if (!s || derniere[k] !== m.at || !secteurOuvert(st.nonDroit, k)) return '';
+    const l = ann[k] || [];
+    const mien = (S.draft && S.draft.secteurs && S.draft.secteurs[k]) || 0;
+    const sug = suggestionND(k);
+    const qui = l.map((x) => `${x.moi ? '<strong>toi</strong>' : esc(st.zones[x.uid].nom)} (${x.n})`).join(', ');
+    return `<div class="nd-radio">
+      <span class="tiny"><strong>${esc(nomSecteur(k))}</strong> · ${s.statut === 'repris' ? 'à garder' : `emprise du milieu ${Math.round(s.emprise)}`} · ce soir : ${qui}</span>
+      ${mien ? `<div class="between" style="gap:8px"><span class="small ok" style="font-weight:700">✓ Tu y vas avec ${mien} agent${mien > 1 ? 's' : ''}</span><button type="button" class="btn small ghost" data-action="secteur" data-c="${k}">Ajuster</button></div>`
+        : sug ? `<div class="row" style="gap:8px"><button type="button" class="btn small primary grow" data-action="nd-rejoindre" data-c="${k}" data-n="${sug}">🤝 Rejoindre avec ${sug} agent${sug > 1 ? 's' : ''}</button><button type="button" class="btn small ghost" data-action="secteur" data-c="${k}">Voir</button></div>
+          <span class="tiny muted">Tes agents partent ce soir à 20:00 (repris en priorité sur ceux libres), et la radio est prévenue. Pense à valider tes ordres.</span>`
+        : `<span class="tiny muted">Tu as déjà engagé tes ${ND.maxTotal} agents possibles dans la zone de non-droit.</span>`}
+    </div>`;
+  };
   return `<main class="screen">
     ${ongletsRadio('radio')}
     <header class="col" style="gap:3px"><h1 class="big">Radio Delta</h1><p class="sub">Canal public de tout le district. Négociez, chambrez, mais restez corrects.</p></header>
     <section class="col" aria-label="Messages" id="radio-list" style="gap:8px">
-      ${msgs.length ? msgs.map((m) => { const w = nameOf(m.uid); const moi = m.uid === me.uid; const appel = m.renfort && appels.find((x) => x.uid === m.uid && x.at === m.at); return `<div class="card tight" ${m.renfort ? 'style="border-color:var(--red-line);background:var(--red-bg)"' : moi ? 'style="border-color:var(--amber-line)"' : ''}>
+      ${msgs.length ? msgs.map((m) => { const w = nameOf(m.uid); const moi = m.uid === me.uid; const appel = m.renfort && appels.find((x) => x.uid === m.uid && x.at === m.at); const nd = m.nd && !moi ? ndCtrl(m) : ''; return `<div class="card tight" ${m.renfort ? 'style="border-color:var(--red-line);background:var(--red-bg)"' : nd ? 'style="border-color:var(--amber-line);background:var(--amber-bg, transparent)"' : moi ? 'style="border-color:var(--amber-line)"' : ''}>
         <div class="between"><span class="small" style="font-weight:700;color:${esc(w.couleur)}">ZP ${esc(w.code)} ${esc(w.nom)}${moi ? ' (toi)' : ''}</span><span class="tiny muted mono">${new Date(m.at).toLocaleString('fr-BE', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>
-        <p style="margin:0;font-size:14px;line-height:1.4;overflow-wrap:anywhere">${esc(m.texte)}</p>${appel ? renfortCtrl(appel) : ''}</div>`; }).join('') : '<p class="small muted">Aucun message pour l’instant. Lance la conversation !</p>'}
+        <p style="margin:0;font-size:14px;line-height:1.4;overflow-wrap:anywhere">${esc(m.texte)}</p>${appel ? renfortCtrl(appel) : ''}${nd}</div>`; }).join('') : '<p class="small muted">Aucun message pour l’instant. Lance la conversation !</p>'}
     </section>
     <form data-form="radio" class="row" style="position:sticky;bottom:96px;background:var(--bg);padding-top:6px">
       <label class="sr" for="radio-msg">Message</label>
