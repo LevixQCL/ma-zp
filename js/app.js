@@ -583,7 +583,7 @@ async function onClick(e) {
       case 'tab-fermer': S.tabSheet = null; rerender(); break;
       case 'tab-sortir': sortirPiece(el.dataset.f); S.tabSheet = null; rerender(); toast('Glisse la pièce où tu veux sur le tableau.'); break;
       case 'tab-tout-sortir': { const k = toutSortir(); S.tabSheet = null; rerender(); tableauEnsemble(); toast(`${k} élément${k > 1 ? 's' : ''} punaisé${k > 1 ? 's' : ''} dans les coins libres : range-les comme tu veux.`); break; }
-      case 'tab-ranger': { if (!confirm('Ranger le tableau ? Les pièces punaisées sont replacées en lignes, groupées par suspect puis par jour. Les ficelles restent.')) break; const k = rangerTableau(); S.tabSheet = null; rerender(); tableauEnsemble(); toast(k ? 'Tableau rangé.' : 'Aucune pièce punaisée à ranger.'); break; }
+      case 'tab-ranger': { if (!confirm('Ranger le tableau ? Chaque suspect reçoit sa colonne avec ses pièces en dessous (occasion, moyen, mobile) ; les planques et le reste vont près du plan. Les ficelles suivent.')) break; const k = rangerTableau(); S.tabSheet = null; rerender(); tableauEnsemble(); toast(k ? 'Rangé : chaque suspect a sa colonne (occasion, moyen, mobile), le reste près du plan.' : 'Aucune pièce punaisée à ranger.'); break; }
       case 'tab-fiche': completerFiche(el.dataset.e); S.tabSheet = null; ouvrirVolet(`c:${el.dataset.e}`, rerender); break;
       case 'tab-remettre': remettrePiece(el.dataset.f); S.tabSheet = null; rerender(); break;
       case 'tab-mode': S.tabMode = el.dataset.v; S.tabFrom = null; if (S.tabMode === 'fil') S.tabSheet = null; rerender(); break;

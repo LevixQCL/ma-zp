@@ -15,7 +15,8 @@ import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceD
 
 // ───── Dimensions du tableau ─────
 // Version 2 : tableau élargi (2 800 de large) ; les dispositions de la version 1 sont décalées de 600 vers la droite.
-const BW = 2800, BH = 2200, DECALAGE_V2 = 600;
+const BW = 2800, BH_MIN = 2200, DECALAGE_V2 = 600;
+let BH = BH_MIN; // le tableau s'allonge vers le bas quand on y range beaucoup de pièces
 const MAP = { x: 960, y: 400, w: 880, h: 900 };
 // Planques : placées sur la bonne rive du canal (nord au-dessus, sud en dessous), d'après leur fiche.
 const PLANQUE_POS = {
@@ -459,12 +460,19 @@ function tutoHtml() {
     </div></div>`;
 }
 
+/** Hauteur du tableau : la taille de base, ou plus si des éléments ont été rangés plus bas. */
+function hauteurTableau(aff, t) {
+  const ids = [...t.places, ...aff.suspects.map((_, i) => `s${i}`), ...(aff.carte ? ['plainte'] : [])];
+  return Math.max(BH_MIN, ...ids.map((id) => posDe(t, id)[1] + tailleDe(id)[1] + 80));
+}
+
 // ───── Écran ─────
 export function renderTableau() {
   const st = S.state, z = myZone();
   const aff = affaire(st, st.enquete.n);
   const dos = dossierDe(st, z);
   const et = etatTab(aff, dos);
+  BH = hauteurTableau(aff, et.t);
   const d = S.draft;
   const nbBoite = et.boite.length + et.fichesAFaire.length;
   const neuf = et.fichesAFaire.length || et.boite.some((p) => p.j >= st.enquete.jour - 1);
@@ -633,10 +641,25 @@ export function rangerTableau() {
   const st = S.state, aff = affaire(st, st.enquete.n);
   const et = etatTab(aff, dossierDe(st, myZone()));
   const t = et.t;
-  const ordre = et.placees.slice().sort((p, q) => ((pieceSuspect(p.f) ?? 9) - (pieceSuspect(q.f) ?? 9)) || (p.j - q.j) || (p.f < q.f ? -1 : 1));
-  caser(aff, t, ordre.map((p) => p.f), []);
+  // Une colonne par suspect : sa photo, puis ses pièces en lignes alignées (occasion, moyen, mobile).
+  const col = (i) => 784 + 448 * i, Y0 = 1480;
+  if (aff.carte) t.pos.plainte = DEF_POS.plainte.slice();
+  aff.suspects.forEach((_, i) => { t.pos[`s${i}`] = [col(i), Y0]; });
+  let y = Y0 + Math.max(...aff.suspects.map((_, i) => tailleDe(`s${i}`)[1])) + 70;
+  const aSuspect = [];
+  for (const el of ['occ', 'moy', 'mob']) {
+    const ligne = et.placees.filter((p) => p.f.startsWith(`${el}:`) && pieceSuspect(p.f) !== null);
+    if (!ligne.length) continue;
+    let h = 0;
+    for (const p of ligne) { t.pos[p.f] = [col(pieceSuspect(p.f)), y]; h = Math.max(h, tailleDe(p.f, typePiece(p) === 'jn')[1]); aSuspect.push(p.f); }
+    y += h + 60;
+  }
+  // Le reste (planques, butin…) près du plan, dans les coins libres.
+  const autres = et.placees.filter((p) => !aSuspect.includes(p.f));
+  BH = Math.max(BH_MIN, y + 80);
+  caser(aff, t, autres.map((p) => p.f), aSuspect, new Set(autres.filter((p) => typePiece(p) === 'jn').map((p) => p.f)));
   ecrireDispo(aff.n, t);
-  return ordre.length;
+  return et.placees.length;
 }
 export function completerFiche(e) {
   const n = S.state.enquete.n, t = dispo(n);
@@ -855,7 +878,7 @@ export function monterTableau(rerender) {
     } else if (g.t === 'item') {
       const s = S.tabV.s;
       const nx = Math.max(40, Math.min(BW - 40, g.ox + (x - g.sx) / s));
-      const ny = Math.max(20, Math.min(BH - 120, g.oy + (y - g.sy) / s));
+      const ny = Math.max(20, Math.min(BH - 300, g.oy + (y - g.sy) / s));
       g.pos = [nx, ny];
       const w = parseFloat(g.el.style.width);
       g.el.style.left = `${nx - w / 2}px`; g.el.style.top = `${ny + 7}px`;
