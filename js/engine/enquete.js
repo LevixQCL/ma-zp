@@ -56,7 +56,7 @@ export const DEMARCHES = {
   banque: { nom: 'Comptes et entourage', motif: 'Extraits de compte via le parquet, téléphonie, entourage.', cout: 3, cible: 'mob', dit: 'dettes, rancunes, fréquentations' },
 };
 export const SOURCES = {
-  ouverture: 'Ouverture du dossier', tardif: 'Témoin tardif', audition: 'PV d’audition', rattrapage: 'Dossier de rattrapage', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', pjf: 'Appui PJF', partage: 'Partagé', rebond: 'Rebondissement',
+  ouverture: 'Ouverture du dossier', tardif: 'Témoin tardif', audition: 'PV d’audition', reaud: 'Réaudition', rattrapage: 'Dossier de rattrapage', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', pjf: 'Appui PJF', partage: 'Partagé', rebond: 'Rebondissement',
   ...Object.fromEntries(Object.entries(DEMARCHES).map(([k, d]) => [k, d.nom])),
 };
 
@@ -536,6 +536,8 @@ export function fichePlanque(p) {
 /** Titre court d'une pièce. */
 export function titrePiece(aff, f) {
   if (aff.titres && aff.titres[f]) return aff.titres[f];
+  if (f === 'doc:journal') return 'Le journal du lendemain';
+  if (f === 'doc:pvc') return 'PV de premières constatations';
   const [k, x] = f.split(':');
   if (k === 'c') return { occ: 'Constatations · l’heure exacte', moy: 'Constatations · comment on est entré', mob: 'Constatations · pourquoi on a volé' }[x];
   if (k === 'p') return 'Planque · indice sur le butin';
@@ -1058,6 +1060,7 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
     faites.push(`« ${titrePiece(aff, f)} »`);
   }
   if (faites.length) z.rapport.push(`Enquête : au dossier ce soir : ${faites.join(', ')}.`);
+  if (aff.meurtre && o.reaud) reentendre(aff, z, d, o.reaud, e.jour);
   // Enquête de voisinage : plus on a de capacité de Recherche, plus elle rapporte ; une piste prioritaire la concentre.
   const piste = Number.isInteger(o.piste) && o.piste >= 0 && o.piste < aff.suspects.length ? o.piste : null;
   const surPiste = piste !== null && piecesLibres(aff).some((f) => !faitsConnus(d).includes(f) && Number(f.split(':')[1]) === piste);
@@ -1073,6 +1076,30 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
   if (trouvees.length) z.rapport.push(`Enquête de voisinage${surPiste ? ` (piste ${aff.suspects[piste].prenom})` : ''} : tes enquêteurs rapportent ${trouvees.length > 1 ? `${trouvees.length} pièces` : 'une pièce'} (${trouvees.join(', ')}).`);
   else if (surPiste) z.rapport.push(`Enquête de voisinage (piste ${aff.suspects[piste].prenom}) : rien de neuf ce soir.`);
   return surPiste ? VOISINAGE.detaches : 0;
+}
+
+export const REAUD = { cout: 1 };
+/** Ce qu'une zone peut opposer à un suspect : ses pièces, le journal, le PV de constatations et les auditions. */
+export function opposables(aff, dossier) {
+  return new Set([...faitsConnus(dossier), 'doc:journal', 'doc:pvc', ...aff.suspects.map((_, k) => `A:${k}`)]);
+}
+/** Pièce qu'apporterait la réaudition du suspect i face à f (null si rien de neuf). */
+export function pieceReaudition(aff, dossier, i, f) {
+  const r = aff.reactions && aff.reactions[i] && aff.reactions[i][f];
+  if (!r) return null;
+  const p = `${r[0]}:${i}`;
+  return faitsConnus(dossier).includes(p) ? null : p;
+}
+/** Réaudition (affaire de meurtre) : on oppose une pièce à un suspect ; certaines le font parler. */
+function reentendre(aff, z, d, r, jour) {
+  const i = r.i, s = aff.suspects[i];
+  if (!s || !opposables(aff, d).has(r.f)) return;
+  if (z.budget < REAUD.cout) { z.rapport.push(`Enquête : réaudition de ${s.nom} annulée (budget insuffisant).`); return; }
+  z.budget -= REAUD.cout; (z._compta ||= []).push({ k: 'enquete', l: 'Démarches d’enquête', v: -REAUD.cout });
+  const p = pieceReaudition(aff, d, i, r.f);
+  if (!p) { z.rapport.push(`Enquête : réentendu${s.f ? 'e' : ''} face à « ${titrePiece(aff, r.f)} », ${s.nom} n’a rien à ajouter.`); return; }
+  d.pieces.push({ f: p, j: jour, src: 'reaud' });
+  z.rapport.push(`Enquête : réentendu${s.f ? 'e' : ''} face à « ${titrePiece(aff, r.f)} », ${s.nom} change de version (« ${titrePiece(aff, p)} »).`);
 }
 
 /** Une pièce inconnue sur un suspect donné. */

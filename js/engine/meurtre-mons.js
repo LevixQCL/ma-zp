@@ -138,12 +138,54 @@ const TEXTES = {
   'r:statue': 'La statuette en bronze « Saint Georges terrassant le dragon » a été retrouvée mercredi matin dans une poubelle de la place Léopold, face à la gare, enveloppée dans un sac de toile. Essuyée : aucune empreinte. Du sang de la victime au creux du socle.',
   'r:temoin': 'Une étudiante qui loge rue de la Clef se manifeste : vers 22:25, de sa fenêtre, elle a vu un homme sans parapluie remonter la rue vers la Grand-Place sous l’averse, « en serrant un sac contre lui ». Grand, manteau long. Elle ne l’a pas vu de face.',
 };
-const TITRES = {
+// Réauditions : on oppose une pièce (ou le journal, un PV) à un suspect ; certaines le font parler.
+// clé = suspect, puis pièce opposée → [code de la nouvelle pièce, sa réponse]. Ailleurs : « rien à ajouter ».
+export const REACTIONS = {
+  0: {
+    'occ:0': ['Ra', 'Bon. Je n’étais pas au concert. J’étais ailleurs, avec quelqu’un. Ça n’a rien à voir avec mon père, et je ne vous dirai pas avec qui.'],
+    'mob:0': ['Rb', 'Rue des Capucins… Oui. J’étais chez Thierry Gobert. On est ensemble depuis un an ; sa femme ne sait rien. Je suis arrivée vers 21:00, repartie après minuit. J’ai demandé à Sophie de me couvrir.'],
+    'occ:4': ['Rb', 'Rue des Capucins… Oui. J’étais chez Thierry Gobert. On est ensemble depuis un an ; sa femme ne sait rien. Je suis arrivée vers 21:00, repartie après minuit. J’ai demandé à Sophie de me couvrir.'],
+    'doc:pvc': ['Rc', 'Ce parapluie n’est pas à papa. Il détestait les parapluies publicitaires : il avait un vieux parapluie anglais à manche de bois, toujours accroché derrière la porte de chez lui.'],
+    'c:agenda': ['Rd', '« J.M. » ? Jean-Marc, je suppose, le voisin. Ils se disputaient sans arrêt pour ce mur.'],
+  },
+  1: {
+    'occ:1': ['Ra', 'Quinze minutes ? J’allais et venais entre la caisse et la cuisine, pas chez Henri. Regardez la caméra de la cuisine… Bon. Elle marche. Mais vous allez y voir quelqu’un que je n’ai pas déclaré.'],
+    'mob:1': ['Rb', 'Cette lettre, je l’ai écrite un soir de colère. Je le regrette. Je n’aurais jamais levé la main sur Henri.'],
+    'c:agenda': ['Rc', '« J.M. », moi ? Henri ne m’a jamais appelé comme ça : sur ses papiers, j’étais « le voisin ». Et ses certificats, je n’y connais rien.'],
+  },
+  2: {
+    'doc:journal': ['Ra', 'Supprimé ? … Oui, c’est vrai, maintenant que vous le dites. J’ai attendu le suivant au buffet de la gare, au chaud, avec un journal.'],
+    'occ:2': ['Rb', 'Trempé ? J’étais sorti fumer devant la gare. Avec cet orage, deux minutes suffisaient.'],
+    'doc:pvc': ['Rc', 'Des parapluies du Salon de Namur ? On en a distribué des centaines. Thierry Gobert en a un, il y tient un stand chaque année.'],
+    'c:courriel': ['Rd', 'Henri voyait des faux partout ces derniers temps. Ce brouillon n’a pas de destinataire : il ne parle pas de moi.'],
+    'moy:2': ['Re', 'Mon manteau ? L’averse, en allant à la gare. Et ces certificats sont des doubles de mon travail : un expert garde ses doubles.'],
+    'c:cafe': ['Rf', 'Deux cafés à 22:07 ? Il recevait souvent le soir. Demandez à ses clients.'],
+    'A:2': ['Rg', 'La statuette ? Je… Claire a dû m’en parler. Ou c’était dans la presse.'],
+  },
+  3: {
+    'occ:3': ['Ra', 'Oui, j’ai menti, pour Claire : elle m’a demandé de dire qu’on était ensemble au concert. Moi, j’étais chez moi, à Jemappes, en appel vidéo avec ma sœur.'],
+    'c:labo': ['Rb', 'Évidemment qu’il y a mes empreintes sur le socle : lundi après-midi, Monsieur Delattre m’a fait nettoyer le Saint Georges, à l’atelier.'],
+    'c:agenda': ['Rc', '« S. : 6 pièces de côté », c’est moi. Lundi, il m’a fait mettre six objets de côté. Tous achetés avec des certificats de Monsieur Mertens, je les avais rangés moi-même.'],
+  },
+  4: {
+    'c:dette': ['Ra', 'Il m’avait accordé un délai jusqu’à fin octobre, on s’était serré la main. Ce post-it date d’avant.'],
+    'occ:4': ['Rb', 'La femme en imperméable jaune… C’était Claire. On est ensemble. Je voulais la protéger, et protéger mon mariage.'],
+    'doc:pvc': ['Rc', 'Le parapluie du Salon de Namur ? J’ai le même. Il est dans ma camionnette, venez le voir : il est sec, je ne suis pas sorti.'],
+  },
+};
+for (const [i, t] of Object.entries(REACTIONS)) for (const [code, r] of Object.values(t)) TEXTES[`${code}:${i}`] = r;
+const NOMS_R = ['Claire Delattre', 'Jean-Marc Lemaître', 'Julien Mertens', 'Sophie Willaert', 'Thierry Gobert'];
+
+const TITRES0 = {
   'c:legiste1': 'Légiste · premier examen', 'c:legiste2': 'Légiste · autopsie', 'c:labo': 'Labo · tasses et empreintes',
   'c:cafe': 'La machine à café', 'c:cam': 'Caméra de la rue de la Clef',
   'c:agenda': 'L’agenda de la victime', 'c:courriel': 'Un brouillon de courriel', 'c:dette': 'Une reconnaissance de dette',
   'r:statue': 'La statuette retrouvée', 'r:temoin': 'Un témoin à sa fenêtre',
 };
+const quoiOppose = (f) => (f === 'doc:journal' ? 'le journal' : f === 'doc:pvc' ? 'le PV de constatations' : f.startsWith('A:') ? 'sa propre audition'
+  : TITRES0[f] ? TITRES0[f].replace(/^[^·]*· /, '').toLowerCase() : { occ: 'la vérification d’alibi', mob: 'la téléphonie', moy: 'la perquisition' }[f.split(':')[0]] + (Number(f.split(':')[1]) >= 0 ? ` de ${NOMS_R[Number(f.split(':')[1])].split(' ')[0]}` : ''));
+const TITRES = { ...TITRES0 };
+for (const [i, t] of Object.entries(REACTIONS)) for (const [f, [code]] of Object.entries(t)) if (!TITRES[`${code}:${i}`]) TITRES[`${code}:${i}`] = `Réaudition · ${NOMS_R[i]} · face à ${quoiOppose(f)}`.replace('face à le ', 'face au ').replace('tasses et empreintes', 'ses empreintes');
 // Résumé court sur les fiches de la scène (la dernière pièce connue de chaque série).
 const RESUMES = {
   'c:legiste1': 'Entre 21:30 et 23:30, un seul coup', 'c:legiste2': 'Entre 22:10 et 22:40', 'c:labo': 'Tasse rincée, socle essuyé',
@@ -180,6 +222,35 @@ const PVC = {
   ],
 };
 
+// Chronologie : les événements que l'on peut placer sur la frise, chacun débloqué par une pièce (ou public).
+// qui : index du suspect concerné (sa ligne sur la frise), null = la scène. a : fin, pour une durée.
+export const EVENEMENTS = [
+  { id: 'diner', f: 'doc:pvc', de: hm(20, 15), qui: null, t: 'La victime dîne au Carillon et regagne sa boutique' },
+  { id: 'decouverte', f: 'doc:pvc', de: hm(23, 35), qui: null, t: 'Jean-Marc découvre le corps' },
+  { id: 'orage', f: 'doc:journal', de: hm(21, 50), a: hm(22, 40), qui: null, t: 'Orage : trombes d’eau sur Mons' },
+  { id: 'train13', f: 'doc:journal', de: hm(22, 13), qui: null, t: 'Train de 22:13 pour Bruxelles supprimé' },
+  { id: 'train43', f: 'doc:journal', de: hm(22, 43), qui: null, t: 'Train suivant pour Bruxelles' },
+  { id: 'bise', f: 'A:1', de: hm(20, 30), qui: 0, t: 'Claire passe faire la bise à son père, au Carillon' },
+  ...[0, 1, 2, 3, 4].map((i) => ({ id: `dit${i}`, f: `A:${i}`, de: SUSPECTS[i].alibi.ditDe, a: Math.min(SUSPECTS[i].alibi.ditA, hm(24, 30)), qui: i, dit: true, t: `${SUSPECTS[i].prenom} dit : ${SUSPECTS[i].alibi.lieu}` })),
+  { id: 'deces1', f: 'c:legiste1', de: hm(21, 30), a: hm(23, 30), qui: null, t: 'Décès (premier examen du légiste)' },
+  { id: 'ticket', f: 'c:legiste2', de: hm(20, 16), qui: null, t: 'Ticket du Carillon : carbonnade, frites, café' },
+  { id: 'deces2', f: 'c:legiste2', de: hm(22, 10), a: hm(22, 40), qui: null, t: 'Décès (autopsie)' },
+  { id: 'cafes', f: 'c:cafe', de: hm(22, 7), qui: null, t: 'Deux cafés coulés dans la boutique' },
+  { id: 'camIn', f: 'c:cam', de: hm(22, 4), qui: null, t: 'Silhouette avec parapluie entre rue de la Clef' },
+  { id: 'camOut', f: 'c:cam', de: hm(22, 24), qui: null, t: 'Silhouette sans parapluie repart, un sac contre elle' },
+  { id: 'rdv', f: 'c:agenda', de: hm(22, 0), qui: null, t: 'Agenda : « 22 h J.M. (certificats !) »' },
+  { id: 'caisse', f: 'occ:1', de: hm(22, 4), a: hm(22, 51), qui: 1, t: 'Tiroir-caisse ouvert à 22:04, 22:19, 22:33, 22:51' },
+  { id: 'cuisine', f: 'moy:1', de: hm(21, 30), a: hm(23, 20), qui: 1, t: 'Caméra de cuisine : Jean-Marc aux fourneaux' },
+  { id: 'billet', f: 'occ:2', de: hm(21, 48), qui: 2, t: 'Julien achète son billet à l’automate' },
+  { id: 'quai', f: 'occ:2', de: hm(22, 39), qui: 2, t: 'Julien arrive trempé sur le quai, monte dans le 22:43' },
+  { id: 'telJ', f: 'mob:2', de: hm(21, 51), a: hm(22, 46), qui: 2, t: 'Téléphone de Julien éteint' },
+  { id: 'bornC', f: 'mob:0', de: hm(20, 52), a: hm(24, 30), qui: 0, t: 'Téléphone de Claire : borne rue des Capucins' },
+  { id: 'jaune', f: 'occ:4', de: hm(21, 0), a: hm(24, 15), qui: 4, t: 'Une femme en imperméable jaune chez Thierry' },
+  { id: 'telT', f: 'mob:4', de: hm(21, 5), a: hm(24, 20), qui: 4, t: 'Téléphone de Thierry éteint' },
+  { id: 'video', f: 'mob:3', de: hm(21, 58), a: hm(22, 52), qui: 3, t: 'Sophie en appel vidéo avec Montréal, depuis Jemappes' },
+  { id: 'temoin', f: 'r:temoin', de: hm(22, 25), qui: null, t: 'Un homme sans parapluie remonte vers la Grand-Place' },
+];
+
 /** L'affaire, au format des affaires générées (champs supplémentaires : meurtre, sceneSeq, charges, confront…). */
 export function affaireMeurtre(n) {
   const suspects = SUSPECTS.map((s, i) => ({
@@ -190,6 +261,7 @@ export function affaireMeurtre(n) {
   const faits = [
     'c:legiste1', 'c:legiste2', 'c:labo', 'c:cafe', 'c:cam', 'c:agenda', 'c:courriel', 'c:dette',
     ...suspects.flatMap((_, i) => [`occ:${i}`, `mob:${i}`, `moy:${i}`]),
+    ...[...new Set(Object.entries(REACTIONS).flatMap(([i, t]) => Object.values(t).map(([code]) => `${code}:${i}`)))],
   ];
   return {
     n, id: `aff${n}`, meurtre: true, ville: 'mons', carte: true, prof: true, travaux: null,
@@ -198,7 +270,7 @@ export function affaireMeurtre(n) {
     vic: 'Henri Delattre', aVic: 'à Henri Delattre', deVic: 'd’Henri Delattre',
     req: {}, heure: hm(22, 10), fin: hm(22, 40), annonce: hm(22, 0), jourSemaine: 'mardi',
     suspects, coupable: COUPABLE, planques: [], planque: -1,
-    faits, textes: { ...TEXTES }, titres: { ...TITRES }, resumes: { ...RESUMES },
+    faits, textes: { ...TEXTES }, titres: { ...TITRES }, resumes: { ...RESUMES }, reactions: REACTIONS,
     recit: 'Mardi soir, l’antiquaire Henri Delattre a été tué d’un coup à la tête dans l’arrière-boutique de son magasin, rue de la Clef. Aucune effraction. Cinq proches seront entendus. Chacun ment sur quelque chose : un seul pour cacher le meurtre.',
     // Démarches de la scène : chacune livre ses pièces dans l'ordre, une par démarche.
     sceneSeq: { labo: ['c:legiste1', 'c:legiste2', 'c:labo'], cam: ['c:cafe', 'c:cam'], temoin: ['c:agenda', 'c:courriel', 'c:dette'] },
@@ -221,11 +293,11 @@ export function affaireMeurtre(n) {
     // Mandat de perquisition : au moins une de ces pièces au dossier.
     charges: { 0: ['occ:0', 'mob:0'], 1: ['c:agenda', 'occ:1', 'mob:1'], 2: ['c:agenda', 'occ:2', 'mob:2'], 3: ['occ:3', 'c:labo'], 4: ['c:dette', 'occ:4', 'mob:4'] },
     // Pièces qui expliquent le mensonge d'un innocent (et le blanchissent).
-    innocente: { 0: ['moy:0', 'occ:4', 'moy:4'], 1: ['moy:1'], 3: ['mob:3'], 4: ['moy:4', 'moy:0', 'occ:4'] },
+    innocente: { 0: ['moy:0', 'occ:4', 'moy:4', 'Rb:0', 'Rb:4'], 1: ['moy:1'], 3: ['mob:3'], 4: ['moy:4', 'moy:0', 'occ:4', 'Rb:0', 'Rb:4'] },
     // Confrontation : trois pièces accablantes, dont au moins deux qui contredisent vraiment sa version.
     confront: {
-      decisives: ['doc:journal', 'doc:pvc', 'occ:2', 'moy:2'],
-      accablantes: ['doc:journal', 'doc:pvc', 'occ:2', 'moy:2', 'mob:2', 'c:cam', 'c:cafe', 'c:courriel', 'c:agenda', 'c:legiste2', 'r:statue', 'r:temoin'],
+      decisives: ['doc:journal', 'doc:pvc', 'occ:2', 'moy:2', 'Rg:2'],
+      accablantes: ['doc:journal', 'doc:pvc', 'occ:2', 'moy:2', 'mob:2', 'Ra:2', 'Rb:2', 'Re:2', 'Rg:2', 'Rc:3', 'c:cam', 'c:cafe', 'c:courriel', 'c:agenda', 'c:legiste2', 'r:statue', 'r:temoin'],
     },
     rebonds: {
       3: { f: 'r:statue', titre: 'La statuette retrouvée près de la gare', texte: 'Le « Saint Georges » de l’antiquaire, qui avait disparu de son socle, a été retrouvé dans une poubelle de la place Léopold.' },

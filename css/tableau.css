@@ -250,7 +250,7 @@ span.tb-t-gardee { color: var(--faint); } span.tb-t-prevu { color: var(--amber);
 .tb-pv-sign { align-self: flex-end; font-family: 'Caveat', cursive; font-size: 13px; color: #1F4FA0; transform: rotate(-3deg); }
 .tb-lire { align-self: flex-end; font-family: 'Fraunces', serif; font-size: 9px; font-weight: 800; color: #9A2B1F; }
 .tb-vign-pv { background: #FFFEFA; border-left: 4px solid #2F6FD3; } .tb-vign-au { background: #FDFCF8; border-top: 6px solid #1F2F4F; }
-.pv-qr { border-left: 3px solid var(--line); padding-left: 10px; }
+.pv-qr { flex-shrink: 0; border-left: 3px solid var(--line); padding-left: 10px; }
 .pv-q { margin: 0; font-size: 12.5px; color: var(--muted); }
 .pv-r { margin: 2px 0 0; font-size: 14px; line-height: 1.45; color: var(--amber-soft); }
 .tb-trajet-l.on { border-color: var(--c); box-shadow: inset 4px 0 0 var(--c); }
@@ -328,3 +328,28 @@ body:has(.demo-banner) .jr-wrap { top: 44px; }
 /* Édition spéciale : avis de recherche */
 .ed-avis .ed-portrait { display: flex; justify-content: center; margin: 6px 0 8px; }
 .ed-avis .ed-face { display: block; width: 140px; height: 132px; filter: grayscale(.85) contrast(1.1); border: 3px solid #2B2118; background: #EDE3CC; }
+
+/* ───── Affaire de Mons : photos des pièces, scène à fouiller, chronologie ───── */
+.ip-photo { display: block; width: 100%; height: auto; }
+.ip-duo { display: flex; gap: 4px; align-items: flex-start; }
+.ip-duo .ip-photo { flex: 1 1 0; min-width: 0; }
+.tb-pv-photo { margin: 2px 0 3px; line-height: 0; border: 1px solid rgba(0,0,0,.25); box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.tb-photo-grande .ip-photo, .tb-photo-grande .ip-duo { border-radius: 8px; overflow: hidden; }
+.tb-frise { background: #FFFDF6; padding: 7px 8px 8px; border-top: 4px solid #C88A12; gap: 4px; }
+.tb-frise .tb-k { color: #8A6210; }
+.fr-svg { display: block; width: 100%; height: auto; }
+.fr-cadre { flex-shrink: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--line); background: #FFFDF6; }
+.fr-leg { flex-shrink: 0; margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 3px; font-size: 13px; line-height: 1.35; color: var(--text2); }
+.sf-wrap { align-items: flex-start; }
+.sf { width: 100%; max-width: 980px; display: flex; flex-direction: column; gap: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 20px; padding: 14px; box-shadow: 0 30px 70px rgba(0,0,0,.65); color: var(--text); }
+.sf-titre { margin: 0; font-family: var(--display); font-weight: 800; font-size: 22px; }
+.sf-photo { line-height: 0; border-radius: 12px; overflow: hidden; border: 1px solid #000; }
+.sf-photo svg { width: 100%; height: auto; display: block; }
+.sf-plot { cursor: pointer; }
+.sf-plot path { transition: transform .15s; }
+.sf-plot.vu path { fill: #D8C9A0; }
+.sf-plot.on path { fill: #FF9F2E; stroke: #FFF; stroke-width: 2; }
+.sf-plot:hover path, .sf-plot:focus path { transform: scale(1.18); }
+.sf-detail { min-height: 86px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.sf-detail strong { font-size: 16px; }
+.sf-detail p { margin: 0; line-height: 1.5; color: var(--amber-soft); }
