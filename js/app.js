@@ -28,7 +28,7 @@ import { renderGuide } from './ui/guide.js';
 import { offreApres } from './ui/encheres.js';
 import { renderDiplomatie, ongletsRadio } from './ui/diplomatie.js';
 import { renderParties } from './ui/parties.js';
-import { renderEnquete, lireCarnet, ecrireCarnet } from './ui/enquete.js';
+import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet } from './ui/enquete.js';
 import { affaire } from './engine/enquete.js';
 import { monterTableau, ouvrirVolet, sortirPiece, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
@@ -149,7 +149,7 @@ function render() {
   if (S.route === 'prive') { const l = document.getElementById('prive-list'); if (l && l.lastElementChild) l.lastElementChild.scrollIntoView({ block: 'nearest' }); }
   if (S.route === 'radio') { const l = document.getElementById('radio-list'); if (l && l.lastElementChild) l.lastElementChild.scrollIntoView({ block: 'nearest' }); }
   document.body.classList.toggle('sans-defil', !!document.getElementById('tb-vp'));
-  if (S.route === 'enquete') monterTableau(rerender);
+  if (S.route === 'enquete') { monterTableau(rerender); if (S.state && S.state.enquete && myZone()) synchroCarnet(rerender); }
 }
 
 /** Pastilles « nouveau » sans redessiner l'écran (une saisie en cours n'est pas perdue). */

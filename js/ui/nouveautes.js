@@ -17,6 +17,7 @@ export const NOTE_MAJ = {
       ['Un vrai tableau', 'l’écran Enquête s’ouvre sur un grand liège encadré de bois. Glisse pour te déplacer, pince ou utilise la molette pour zoomer, et le bouton « vue d’ensemble » montre tout le tableau.'],
       ['Rien n’est rangé pour toi', 'les pièces arrivent dans la boîte à pièces, chaque soir à 20:00. Sors-les une à une et punaise-les où tu veux : près d’un suspect, sur le plan, dans un coin.'],
       ['Des visages qui collent à la fiche', 'chaque suspect a son portrait d’après sa fiche : âge, cheveux gris, tenue de son métier (gilet fluo de l’intérimaire, polo du technicien, tablier du commerçant…).'],
+      ['Ton tableau te suit', 'disposition, ficelles, ✓ / ✕ et notes sont enregistrés en ligne : range ton tableau sur ordinateur, retrouve-le sur ton téléphone.'],
       ['Chaque pièce a son objet', 'alibi sur un ticket, moyens dans un sachet à scellé, mobile sur un extrait de compte, indices de planque sur un rapport du labo, rebondissements en coupure de journal.'],
       ['Le plan et les trajets', 'au centre, le plan du district : la scène, les lieux où les suspects disent avoir été et le temps de trajet. Dans les nouvelles affaires, il faut avoir eu le temps de faire la route pour profiter d’un trou dans son alibi.'],
       ['Tout depuis le tableau', 'touche une photo, une fiche, une pièce ou un lieu : ce qu’on sait, tes ✓ / ✕, les démarches, la piste, l’accusation et le partage. Le bouton « Ce soir » résume ce qui part avec tes ordres.'],

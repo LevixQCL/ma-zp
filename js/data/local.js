@@ -95,6 +95,9 @@ export function createLocalBackend(config) {
     async getState() { return JSON.parse(JSON.stringify(self.state)); },
     subscribeState(cb) { listeners.state.add(cb); cb(JSON.parse(JSON.stringify(self.state))); return () => listeners.state.delete(cb); },
 
+    // Carnet d'enquête « en ligne » : en démo, une copie à part sur l'appareil (même chemin que Firebase).
+    async getCarnet(uid) { try { return JSON.parse(localStorage.getItem(`mazp-demo-carnet-${uid}`)); } catch (e) { return null; } },
+    async saveCarnet(uid, data) { try { localStorage.setItem(`mazp-demo-carnet-${uid}`, JSON.stringify(data)); } catch (e) { /* rien */ } },
     async getPlayer(uid) { return self.players[uid] || null; },
     async getPlayers() { return JSON.parse(JSON.stringify(self.players)); },
     async compterEntrainement(uid, plus) {
