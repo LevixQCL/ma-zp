@@ -395,7 +395,7 @@ function voletBoite(aff, et) {
       return `<div class="tb-boite-l ${nv ? 'nouveau' : ''}"><span class="tb-vign tb-vign-${typePiece(p)}"></span><div class="col grow" style="gap:2px;min-width:0"><span class="tb-ligne-k" style="color:${nv ? 'var(--red-soft)' : 'var(--amber)'}">${nv ? 'Nouveau · ' : ''}J${p.j} · ${sourceDe(p)}</span><button type="button" class="tb-lien" data-action="tab-ouvrir" data-tid="${esc(p.f)}">${esc(titrePiece(aff, p.f))}</button><span class="tiny tb-t-${statutPartage(p).k}">${esc(statutPartage(p).txt)}</span></div><button type="button" class="btn primary small" data-action="tab-sortir" data-f="${esc(p.f)}">Sortir</button></div>`;
     }),
   ];
-  return `<span class="tb-titre">Boîte à pièces</span>
+  return `<div class="between" style="gap:8px;padding-right:44px"><span class="tb-titre" style="padding-right:0">Boîte à pièces</span>${lignes.length > 1 ? '<button type="button" class="btn small ghost" data-action="tab-tout-sortir">Tout sortir</button>' : ''}</div>
     <p class="tiny muted" style="margin:0">${lignes.length ? 'Sors une pièce : elle est punaisée au milieu de ton écran, glisse-la où tu veux.' : 'La boîte est vide : tout est sur ton tableau.'} Les nouvelles pièces arrivent ici chaque soir à 20:00.</p>
     ${lignes.join('')}`;
 }
@@ -499,6 +499,7 @@ export function renderTableau() {
     <div class="tb-outils tb-ui">
       <button type="button" class="tb-o ${fil ? '' : 'on'}" data-action="tab-mode" data-v="main" aria-label="Main : déplacer et ouvrir" aria-pressed="${!fil}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v5M12 10V4a1.5 1.5 0 0 1 3 0v6M15 10V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2.5-4a1.5 1.5 0 0 1 2.5-1.6L9 13"/></svg></button>
       <button type="button" class="tb-o rouge ${fil ? 'on' : ''} ${sp('fil')}" data-action="tab-mode" data-v="fil" aria-label="Tirer une ficelle" aria-pressed="${fil}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M7 7.5c4 2 6 7 10 9"/></svg></button>
+      <button type="button" class="tb-o" data-action="tab-ranger" aria-label="Ranger le tableau (tri automatique)" title="Ranger le tableau"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1"/><rect x="13.5" y="3.5" width="7" height="7" rx="1"/><rect x="3.5" y="13.5" width="7" height="7" rx="1"/><rect x="13.5" y="13.5" width="7" height="7" rx="1"/></svg></button>
       <span class="tb-sep"></span>
       <button type="button" class="tb-o" data-action="tab-zoom" data-d="-1" aria-label="Dézoomer"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
       <button type="button" class="tb-o ${sp('fit')}" data-action="tab-fit" aria-label="Vue d’ensemble"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
@@ -584,6 +585,58 @@ export function sortirPiece(f) {
   if (!t.places.includes(f)) t.places.push(f);
   if (!t.neuf.includes(f)) t.neuf.push(f);
   ecrireDispo(n, t);
+}
+/** Taille réelle d'un élément du tableau (mesurée à l'écran), ou estimée s'il n'y est pas encore. */
+function tailleDe(id, grand = false) {
+  const el = document.querySelector(`.tb-it[data-tid="${CSS.escape(id)}"]`);
+  if (el && el.offsetHeight) { const sc = parseFloat(el.style.getPropertyValue('--sc')) || 1; return [el.offsetWidth * sc, el.offsetHeight * sc]; }
+  return /^(recit|chrono|une|plainte)$/.test(id) ? [420, 600] : grand ? [280, 520] : [250, 330];
+}
+
+/** Punaise les pièces `ids` dans les coins libres (hors plan, documents, suspects et `garder`), en colonnes bien alignées. */
+function caser(aff, t, ids, garder, grands = new Set()) {
+  const MARGE = 22;
+  const boite = (id, [x, y]) => { const [w, h] = tailleDe(id, grands.has(id)); return [x - w / 2 - MARGE, y - 26, x + w / 2 + MARGE, y + h + MARGE]; };
+  const pris = [[MAP.x - 20, MAP.y - 20, MAP.x + MAP.w + 20, MAP.y + MAP.h + 20]];
+  const fixes = ['recit', 'chrono', 's0', 's1', 's2', 's3', 's4', 'c:occ', 'c:moy', 'c:mob', ...(aff.carte ? ['une', 'scene', 'plainte'] : []), ...garder];
+  for (const id of fixes) pris.push(boite(id, posDe(t, id)));
+  const libre = (r) => r[0] >= 0 && r[2] <= BW && r[3] <= BH && !pris.some((q) => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1]);
+  const a = [];
+  for (let y = 50; y <= BH - 200; y += 20) for (let x = 150; x <= BW - 150; x += 270) a.push([x, y]);
+  // D'abord à droite du plan, puis sous les suspects, puis à gauche, enfin ce qui reste en haut ; colonne par colonne.
+  const zone = ([x, y]) => (x > MAP.x + MAP.w && y >= MAP.y - 100 ? 0 : y >= 1700 ? 1 : x < MAP.x && y >= MAP.y ? 2 : 3);
+  a.sort((p, q) => zone(p) - zone(q) || (zone(p) === 1 ? p[1] - q[1] || p[0] - q[0] : p[0] - q[0] || p[1] - q[1]));
+  ids.forEach((f, i) => {
+    const slot = a.find((c) => libre(boite(f, c)));
+    if (slot) { t.pos[f] = slot; pris.push(boite(f, slot)); }
+    else t.pos[f] = [BW / 2 + ((i % 5) - 2) * 40, BH - 400];
+    if (!t.places.includes(f)) t.places.push(f);
+  });
+}
+
+/** « Tout sortir » : chaque pièce de la boîte et chaque fiche à compléter est punaisée dans un coin libre du tableau. */
+export function toutSortir() {
+  const st = S.state, aff = affaire(st, st.enquete.n);
+  const et = etatTab(aff, dossierDe(st, myZone()));
+  const t = et.t;
+  for (const e of et.fichesAFaire) { if (!t.fiches.includes(e)) t.fiches.push(e); if (!t.neuf.includes(`c:${e}`)) t.neuf.push(`c:${e}`); }
+  const ids = et.boite.map((p) => p.f);
+  caser(aff, t, ids, t.places, new Set(et.boite.filter((p) => typePiece(p) === 'jn').map((p) => p.f)));
+  for (const f of ids) if (!t.neuf.includes(f)) t.neuf.push(f);
+  ecrireDispo(aff.n, t);
+  return ids.length + et.fichesAFaire.length;
+}
+
+/** « Ranger » : toutes les pièces punaisées sont replacées proprement, groupées par suspect puis par jour.
+ *  Les ficelles suivent (elles relient des éléments, pas des positions) ; aucune n'est ajoutée ni retirée. */
+export function rangerTableau() {
+  const st = S.state, aff = affaire(st, st.enquete.n);
+  const et = etatTab(aff, dossierDe(st, myZone()));
+  const t = et.t;
+  const ordre = et.placees.slice().sort((p, q) => ((pieceSuspect(p.f) ?? 9) - (pieceSuspect(q.f) ?? 9)) || (p.j - q.j) || (p.f < q.f ? -1 : 1));
+  caser(aff, t, ordre.map((p) => p.f), []);
+  ecrireDispo(aff.n, t);
+  return ordre.length;
 }
 export function completerFiche(e) {
   const n = S.state.enquete.n, t = dispo(n);
