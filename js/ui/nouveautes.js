@@ -19,7 +19,7 @@ export const NOTE_MAJ = {
       ['Des visages qui collent à la fiche', 'chaque suspect a son portrait d’après sa fiche : âge, cheveux gris, tenue de son métier (gilet fluo de l’intérimaire, polo du technicien, tablier du commerçant…).'],
       ['Ton tableau te suit', 'disposition, ficelles, ✓ / ✕ et notes sont enregistrés en ligne : range ton tableau sur ordinateur, retrouve-le sur ton téléphone.'],
       ['Les planques sur le plan', 'les six planques possibles sont punaisées sur leur rive du canal : touche-en une pour voir sa fiche et les indices, et marque-la (écartée, douteuse, retenue).'],
-      ['Le récit au tableau', 'le procès-verbal d’ouverture et la main courante de l’enquête sont punaisés au tableau : les faits, puis chaque jour ce qui est arrivé.'],
+      ['Le récit au tableau', 'le procès-verbal d’ouverture et la main courante de l’enquête sont punaisés au tableau. Dès la prochaine affaire : la une de la Gazette, la photo de la scène et le dépôt de plainte de la victime, et des photos dans les coupures des rebondissements.'],
       ['Chaque pièce a son objet', 'alibi sur un ticket, moyens dans un sachet à scellé, mobile sur un extrait de compte, indices de planque sur un rapport du labo, rebondissements en coupure de journal.'],
       ['Le plan et les trajets', 'au centre, le plan du district : la scène, les lieux où les suspects disent avoir été et le temps de trajet. Dans les nouvelles affaires, il faut avoir eu le temps de faire la route pour profiter d’un trou dans son alibi.'],
       ['Tout depuis le tableau', 'touche une photo, une fiche, une pièce ou un lieu : ce qu’on sait, tes ✓ / ✕, les démarches, la piste, l’accusation et le partage. Le bouton « Ce soir » résume ce qui part avec tes ordres.'],
