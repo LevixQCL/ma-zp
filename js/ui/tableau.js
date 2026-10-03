@@ -2,7 +2,7 @@
 // Le plan du district au centre, les fiches de constatation en haut, les photos des suspects,
 // une boîte d'où l'on sort les pièces une à une, et des ficelles que l'on tire soi-même.
 // Rien n'est rangé d'avance : la disposition, les ficelles et la vue sont gardées sur l'appareil.
-import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
+import { S, esc, icon, tabbar, myZone, zoneName, toast } from './common.js';
 import { hashString } from '../engine/rng.js';
 import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
@@ -372,7 +372,7 @@ const TUTO = [
   { titre: 'Promène-toi dessus', texte: 'Glisse le liège pour te déplacer. Pince à deux doigts (ou la molette sur ordinateur) pour zoomer. Ce bouton montre tout le tableau.', ou: 'bas', spot: 'fit' },
   { titre: 'La boîte à pièces', texte: 'Chaque soir à 20:00, les nouvelles pièces arrivent ici. Sors-les une à une et punaise-les où tu veux : près d’un suspect, sur le plan…', ou: 'haut', spot: 'boite' },
   { titre: 'Touche pour agir', texte: 'Touche une photo, une fiche ou un lieu du plan : tu vois ce qu’on sait, tu coches ✓ ou ✕, et tu lances tes démarches. Le plan donne les temps de trajet : un trou dans un alibi ne suffit pas si la route est trop longue.', ou: 'centre' },
-  { titre: 'Tire tes ficelles', texte: 'Mode ficelle : touche deux éléments pour les relier. Une deuxième fois, la ficelle est coupée. Personne ne les tire à ta place.', ou: 'bas', spot: 'fil' },
+  { titre: 'Tire tes ficelles', texte: 'Pose le doigt sur une punaise et glisse jusqu’à un autre élément : la ficelle s’accroche toute seule à la punaise la plus proche. En mode ficelle, ça marche depuis n’importe où sur l’élément, et toucher une ficelle la coupe.', ou: 'bas', spot: 'fil' },
   { titre: 'Ce soir', texte: 'Démarches, piste, appui fédéral : tout part avec tes ordres à 20:00. Tu préfères l’affichage en liste ? Il est derrière ce bouton.', ou: 'haut', spot: 'soir' },
 ];
 export function tutoTableauVu() { try { return localStorage.getItem(TUTO_KEY) === '1'; } catch (e) { return !!S.tutoTabVu; } }
@@ -423,7 +423,7 @@ export function renderTableau() {
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l2-5h14l2 5"/><rect x="3" y="9" width="18" height="11" rx="1.5"/><path d="M9 13h6"/></svg>${nbBoite}${neuf ? '<span class="tb-dot"></span>' : ''}</button>
       <button type="button" class="tb-chip ambre ${sp('soir')}" data-action="tab-volet" data-k="soir">Ce soir <span class="tb-compte">${(d.demarches || []).length}/${ENQ.maxDemarches}</span></button>
     </div>
-    <div id="tb-aide" class="tb-aide" ${fil ? '' : 'hidden'}>${S.tabFrom ? 'Touche l’élément à relier' : 'Touche un premier élément'}</div>
+    <div id="tb-aide" class="tb-aide" ${fil ? '' : 'hidden'}>${S.tabFrom ? 'Touche l’élément à relier' : 'Glisse d’un élément à l’autre · touche une ficelle pour la couper'}</div>
     <div class="tb-outils tb-ui">
       <button type="button" class="tb-o ${fil ? '' : 'on'}" data-action="tab-mode" data-v="main" aria-label="Main : déplacer et ouvrir" aria-pressed="${!fil}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v5M12 10V4a1.5 1.5 0 0 1 3 0v6M15 10V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2.5-4a1.5 1.5 0 0 1 2.5-1.6L9 13"/></svg></button>
       <button type="button" class="tb-o rouge ${fil ? 'on' : ''} ${sp('fil')}" data-action="tab-mode" data-v="fil" aria-label="Tirer une ficelle" aria-pressed="${fil}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="5" cy="6" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M7 7.5c4 2 6 7 10 9"/></svg></button>
@@ -547,6 +547,50 @@ export function monterTableau(rerender) {
     const nd = board.querySelector(`.tb-noeud[data-n="${CSS.escape(id)}"]`);
     if (nd && g && g.pos) { nd.style.left = `${g.pos[0]}px`; nd.style.top = `${g.pos[1]}px`; }
   };
+  const reliable = (id) => !!id && id !== 'titre' && id !== 'plan';
+  const basculerLien = (a, b) => {
+    const t = dispo(n);
+    const k = t.liens.findIndex(([x, y]) => (x === a && y === b) || (x === b && y === a));
+    t.liens = k >= 0 ? t.liens.filter((_, q) => q !== k) : [...t.liens, [a, b]];
+    ecrireDispo(n, t); S.tabFrom = null;
+    toast(k >= 0 ? 'Ficelle coupée.' : 'Ficelle tirée.');
+    rerender();
+  };
+  // Cible d'une ficelle : l'élément sous le doigt, sinon la punaise la plus proche (aimantée à 70 px).
+  const cibleSous = (cx, cy, from) => {
+    const sous = document.elementFromPoint(cx, cy);
+    const el = sous && sous.closest && sous.closest('[data-tid]');
+    if (el && reliable(el.dataset.tid) && el.dataset.tid !== from && board.contains(el)) return el;
+    const r = vp.getBoundingClientRect(), v = S.tabV;
+    let best = null, dmin = 70;
+    board.querySelectorAll('.tb-it[data-tid], .tb-lieu[data-tid]').forEach((x) => {
+      const id = x.dataset.tid;
+      if (!reliable(id) || id === from) return;
+      const p = ancre(affaire(st, n), dispo(n), id);
+      if (!p) return;
+      const d = Math.hypot(r.left + v.tx + p[0] * v.s - cx, r.top + v.ty + p[1] * v.s - cy);
+      if (d < dmin) { dmin = d; best = x; }
+    });
+    return best;
+  };
+  const majFilTmp = (gg) => {
+    const v = S.tabV;
+    const p1 = gg.p1, bx = (gg.x - v.tx) / v.s, by = (gg.y - v.ty) / v.s;
+    let p2 = [bx, by];
+    if (gg.cible) { const q = ancre(affaire(st, n), dispo(n), gg.cible); if (q) p2 = q; }
+    const dx = p2[0] - p1[0], dy = p2[1] - p1[1];
+    Object.assign(gg.tmp.style, { left: `${p1[0]}px`, top: `${p1[1]}px`, width: `${Math.hypot(dx, dy)}px`, transform: `rotate(${Math.atan2(dy, dx)}rad)` });
+  };
+  // Pendant qu'on tire une ficelle, le tableau défile tout seul quand le doigt approche du bord.
+  const defileBord = () => {
+    if (!g || g.t !== 'fil') return;
+    const [w, h] = vpTaille(), m = 56;
+    let dx = 0, dy = 0;
+    if (g.x < m) dx = (m - g.x) / 4; else if (g.x > w - m) dx = -(g.x - (w - m)) / 4;
+    if (g.y < m + 50) dy = (m + 50 - g.y) / 4; else if (g.y > h - m - 90) dy = -(g.y - (h - m - 90)) / 4;
+    if (dx || dy) { S.tabV = borner({ s: S.tabV.s, tx: S.tabV.tx + dx, ty: S.tabV.ty + dy }); appliquer(S.tabV); majFilTmp(g); }
+    g.raf = requestAnimationFrame(defileBord);
+  };
   const fin = () => {
     const gg = g; g = null;
     if (!gg) return;
@@ -558,6 +602,23 @@ export function monterTableau(rerender) {
       const tag = gg.el.querySelector('.tb-neuf'); if (tag) tag.remove();
       return;
     }
+    if (gg.t === 'fil') {
+      cancelAnimationFrame(gg.raf);
+      if (gg.tmp) gg.tmp.remove();
+      if (gg.cibleEl) gg.cibleEl.classList.remove('tb-cible');
+      if (gg.fromEl) gg.fromEl.classList.remove('tb-cible');
+      if (gg.moved) {
+        if (gg.cible) basculerLien(gg.from, gg.cible);
+        else sauverVue();
+        return;
+      }
+    }
+    if (gg.t === 'cut' && !gg.moved) {
+      const t = dispo(n);
+      t.liens = t.liens.filter(([x, y]) => !((x === gg.a && y === gg.b) || (x === gg.b && y === gg.a)));
+      ecrireDispo(n, t); S.tabFrom = null; toast('Ficelle coupée.'); rerender();
+      return;
+    }
     if (gg.moved) { sauverVue(); return; }
     // Un simple toucher.
     const id = gg.tid;
@@ -565,10 +626,7 @@ export function monterTableau(rerender) {
       if (!id || id === 'titre' || id === 'plan') return;
       if (!S.tabFrom) { S.tabFrom = id; rerender(); return; }
       if (S.tabFrom === id) { S.tabFrom = null; rerender(); return; }
-      const t = dispo(n), a = S.tabFrom;
-      const k = t.liens.findIndex(([x, y]) => (x === a && y === id) || (x === id && y === a));
-      t.liens = k >= 0 ? t.liens.filter((_, q) => q !== k) : [...t.liens, [a, id]];
-      ecrireDispo(n, t); S.tabFrom = null; rerender();
+      basculerLien(S.tabFrom, id);
       return;
     }
     if (id) { ouvrirVolet(id, rerender); return; }
@@ -583,12 +641,25 @@ export function monterTableau(rerender) {
     if (ids.length >= 2) {
       const [a, b] = ids, v = S.tabV;
       if (g && g.el) g.el.classList.remove('tb-drag');
+      if (g && g.t === 'fil') { cancelAnimationFrame(g.raf); if (g.tmp) g.tmp.remove(); if (g.fromEl) g.fromEl.classList.remove('tb-cible'); if (g.cibleEl) g.cibleEl.classList.remove('tb-cible'); }
       g = { t: 'pinch', moved: true, d0: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, s0: v.s, bx: ((a[0] + b[0]) / 2 - v.tx) / v.s, by: ((a[1] + b[1]) / 2 - v.ty) / v.s };
       return;
     }
+    const fil = e.target.closest('.tb-fil');
+    if (fil && S.tabMode === 'fil') { g = { t: 'cut', a: fil.dataset.a, b: fil.dataset.b, sx: x, sy: y, moved: false }; return; }
     const el = e.target.closest('[data-tid]');
     const tid = el ? el.dataset.tid : null;
     const mobile = el && el.classList.contains('tb-it');
+    const surPunaise = !!e.target.closest('.tb-pin, .tb-lieu-pt');
+    if (reliable(tid) && (S.tabMode === 'fil' || surPunaise)) {
+      // Tirer une ficelle : en mode ficelle depuis n'importe quel élément, ou depuis une punaise en mode main.
+      const tmp = document.createElement('span');
+      tmp.className = 'tb-fil tb-fil-tmp';
+      board.appendChild(tmp);
+      el.classList.add('tb-cible');
+      g = { t: 'fil', from: tid, fromEl: el, tid, sx: x, sy: y, x, y, p1: ancre(affaire(st, n), dispo(n), tid), tmp, cible: null, cibleEl: null, moved: false };
+      return;
+    }
     if (mobile && S.tabMode !== 'fil') {
       const p = dispo(n).pos[tid] || DEF_POS[tid] || [0, 0];
       g = { t: 'item', id: tid, tid, el, sx: x, sy: y, ox: p[0], oy: p[1], pos: p, moved: false };
@@ -612,6 +683,17 @@ export function monterTableau(rerender) {
     } else if (g.t === 'pan') {
       S.tabV = borner({ s: S.tabV.s, tx: g.tx0 + x - g.sx, ty: g.ty0 + y - g.sy });
       appliquer(S.tabV);
+    } else if (g.t === 'fil') {
+      g.x = x; g.y = y;
+      const c = cibleSous(e.clientX, e.clientY, g.from);
+      const cid = c ? c.dataset.tid : null;
+      if (cid !== g.cible) {
+        if (g.cibleEl) g.cibleEl.classList.remove('tb-cible');
+        g.cible = cid; g.cibleEl = c;
+        if (c) { c.classList.add('tb-cible'); if (navigator.vibrate) try { navigator.vibrate(8); } catch (err) { /* rien */ } }
+      }
+      majFilTmp(g);
+      if (!g.raf) g.raf = requestAnimationFrame(defileBord);
     } else if (g.t === 'item') {
       const s = S.tabV.s;
       const nx = Math.max(40, Math.min(BW - 40, g.ox + (x - g.sx) / s));

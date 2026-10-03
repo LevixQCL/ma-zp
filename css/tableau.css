@@ -142,3 +142,16 @@ body.sans-defil { overflow: hidden; overscroll-behavior: none; }
 }
 @media (prefers-reduced-motion: reduce) { .tb-volet, .tb-tuto-bulle { animation: none; } }
 body:has(.demo-banner) .tb-ecran { top: 44px; }
+
+/* Ficelles : on les tire au doigt, avec aimantation */
+.tb-pin::after { content: ''; position: absolute; inset: -16px; border-radius: 50%; }
+.tb-lieu-pt { position: relative; }
+.tb-lieu-pt::after { content: ''; position: absolute; inset: -14px; border-radius: 50%; }
+.tb-fil-tmp { z-index: 60; opacity: .9; box-shadow: 0 0 0 1px rgba(255,255,255,.35), 2px 6px 4px rgba(30,10,0,.4); }
+.tb-it.tb-cible { filter: drop-shadow(0 0 12px rgba(255,90,80,.95)) drop-shadow(0 0 4px rgba(255,255,255,.8)); z-index: 35; }
+.tb-it.tb-cible .tb-pin { box-shadow: 0 0 0 6px rgba(255,90,80,.9), 2px 4px 4px rgba(30,15,0,.55); }
+.tb-lieu.tb-cible .tb-lieu-pt { box-shadow: 0 0 0 7px rgba(255,90,80,.9); background: #fff; }
+.mode-fil .tb-it, .mode-fil .tb-lieu { cursor: crosshair; }
+.mode-fil .tb-lieu-pt { width: 34px; height: 34px; border-width: 4px; }
+.mode-fil .tb-fil { pointer-events: auto; cursor: pointer; }
+.mode-fil .tb-fil::before { content: ''; position: absolute; left: 0; right: 0; top: -12px; bottom: -12px; }
