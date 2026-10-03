@@ -31,7 +31,7 @@ import { renderDiplomatie, ongletsRadio } from './ui/diplomatie.js';
 import { renderParties } from './ui/parties.js';
 import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet, synchroCarnetMaintenant, restaurerCarnet } from './ui/enquete.js';
 import { affaire } from './engine/enquete.js';
-import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
+import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES } from './quests/quests.js';
@@ -583,7 +583,8 @@ async function onClick(e) {
       case 'tab-fermer': S.tabSheet = null; rerender(); break;
       case 'tab-sortir': sortirPiece(el.dataset.f); S.tabSheet = null; rerender(); toast('Glisse la pièce où tu veux sur le tableau.'); break;
       case 'tab-tout-sortir': { const k = toutSortir(); S.tabSheet = null; rerender(); tableauEnsemble(); toast(`${k} élément${k > 1 ? 's' : ''} punaisé${k > 1 ? 's' : ''} dans les coins libres : range-les comme tu veux.`); break; }
-      case 'tab-ranger': { if (!confirm('Ranger le tableau ? Chaque suspect reçoit sa colonne avec ses pièces en dessous (occasion, moyen, mobile) ; les planques et le reste vont près du plan. Les ficelles suivent.')) break; const k = rangerTableau(); S.tabSheet = null; rerender(); tableauEnsemble(); toast(k ? 'Rangé : chaque suspect a sa colonne (occasion, moyen, mobile), le reste près du plan.' : 'Aucune pièce punaisée à ranger.'); break; }
+      case 'tab-ranger': { if (!confirm('Ranger le tableau ? Chaque suspect reçoit sa colonne autour du plan, ses pièces en dessous ; les documents et les planques vont sous le plan. Les éléments épinglés ne bougent pas, les ficelles suivent.')) break; const k = rangerTableau(); S.tabSheet = null; rerender(); tableauEnsemble(); toast(k ? 'Tableau rangé autour du plan.' : 'Aucune pièce punaisée à ranger.'); break; }
+      case 'tab-fixer': { const f = basculerFixe(el.dataset.tid); rerender(); toast(f ? 'Épinglée : elle ne bougera plus quand tu fais défiler. Les ficelles marchent toujours.' : 'Libérée : tu peux de nouveau la déplacer.'); break; }
       case 'tab-fiche': completerFiche(el.dataset.e); S.tabSheet = null; ouvrirVolet(`c:${el.dataset.e}`, rerender); break;
       case 'tab-remettre': remettrePiece(el.dataset.f); S.tabSheet = null; rerender(); break;
       case 'tab-mode': S.tabMode = el.dataset.v; S.tabFrom = null; if (S.tabMode === 'fil') S.tabSheet = null; rerender(); break;
