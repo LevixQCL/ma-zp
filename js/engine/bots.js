@@ -3,7 +3,7 @@ import { feuilletonEnCours } from './directeur.js';
 import { SERVICES, INFRAS, COUTS, BATIMENTS } from './constants.js';
 import { makeRng } from './rng.js';
 import { agentsDisponibles, coutDecision, decisionImpossible, operationActive, NIVEAUX_OPERATION } from './zone.js';
-import { affaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ, dansMaCellule } from './enquete.js';
+import { affaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ, dansMaCellule, pieceDemarche, confrontationOk } from './enquete.js';
 import { fipaPour, invitationImpossible, FIPA } from './fipa.js';
 import { cibleImpossible, enDuel } from './rivalites.js';
 import { encherePossible } from './encheres.js';
@@ -155,11 +155,11 @@ function botEnquete(zone, state, style, rng, alloc) {
   const nb = zone.budget > 35 ? 2 : zone.budget > 15 ? 1 : 0;
   const envie = style === 'distrait' ? 0.4 : style === 'prudent' ? 0.7 : 0.9;
   // Les constatations (surtout l'audition, gratuite), puis les suspects encore possibles.
-  const scenes = ['temoin', 'cam', 'labo'].filter((k) => !connus.has(`c:${DEMARCHES[k].scene}`));
+  const scenes = ['temoin', 'cam', 'labo'].filter((k) => (aff.meurtre ? !!pieceDemarche(aff, d, k) : !connus.has(`c:${DEMARCHES[k].scene}`)));
   const cibles = [];
   for (const i of c.suspects) {
     for (const [k, dm] of Object.entries(DEMARCHES)) {
-      if (!dm.cible || connus.has(`${dm.cible}:${i}`) || !connus.has(`c:${dm.cible}`)) continue;
+      if (!dm.cible || connus.has(`${dm.cible}:${i}`) || (aff.meurtre ? !pieceDemarche(aff, d, `${k}:${i}`) : !connus.has(`c:${dm.cible}`))) continue;
       cibles.push({ x: `${k}:${i}`, prix: coutDemarche(state, zone.uid, `${k}:${i}`) });
     }
   }
@@ -178,7 +178,14 @@ function botEnquete(zone, state, style, rng, alloc) {
     if (miens.length && rng.chance(style === 'prudent' ? 0.9 : 0.7)) out.piste = rng.pick(miens);
   }
   // Accusation : seulement quand un seul suspect reste (l'agressif tente parfois à deux).
-  if (!d.exclu && d.accuse === null) {
+  if (aff.meurtre) {
+    // Confrontation : seulement avec trois pièces qui tiennent (le robot sait les reconnaître).
+    if (!d.exclu && d.accuse === null && c.suspects.length === 1 && rng.chance(0.8)) {
+      const dispo2 = [...aff.confront.decisives, ...aff.confront.accablantes].filter((f, k, a) => a.indexOf(f) === k && (f.startsWith('doc:') || connus.has(f)));
+      const choix = dispo2.slice(0, 3);
+      if (confrontationOk(aff, c.suspects[0], choix)) { out.accusation = c.suspects[0]; out.confront = choix; }
+    }
+  } else if (!d.exclu && d.accuse === null) {
     if (c.suspects.length === 1 && rng.chance(style === 'distrait' ? 0.5 : 0.85)) out.accusation = c.suspects[0];
     else if (style === 'agressif' && c.suspects.length === 2 && rng.chance(0.25)) out.accusation = rng.pick(c.suspects);
   }

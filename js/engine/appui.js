@@ -6,7 +6,7 @@
 // 4. Réussi : une pièce sur un suspect arrive au dossier à la résolution suivante (le labo trouve plutôt
 //    les moyens, la RCCU plutôt le mobile ou l'occasion). Raté, abandonné ou pas joué : rien.
 import { makeRng } from './rng.js';
-import { affaire, faitsConnus, titrePiece, dansMaCellule } from './enquete.js';
+import { affaire, faitsConnus, titrePiece, dansMaCellule, piecesLibres } from './enquete.js';
 
 export const APPUI = {
   unites: {
@@ -39,7 +39,7 @@ export function appuiDuJour(state, z) {
 /** Une pièce inconnue sur un suspect, du type que le service sait trouver (sinon n'importe laquelle). */
 function pieceAppui(state, z, aff, rng, elements) {
   const connus = new Set(faitsConnus(z.enquete));
-  const inconnues = aff.faits.filter((f) => !connus.has(f) && !f.startsWith('p:') && !f.startsWith('c:'));
+  const inconnues = piecesLibres(aff).filter((f) => !connus.has(f));
   const duService = inconnues.filter((f) => elements.includes(f.split(':')[0]));
   const pool0 = duService.length ? duService : inconnues;
   const miennes = pool0.filter((f) => dansMaCellule(state, z.uid, Number(f.split(':')[1])));

@@ -586,6 +586,13 @@ async function onClick(e) {
       case 'tab-fermer': S.tabSheet = null; rerender(); break;
       case 'tab-route': S.tabRoute = { n: S.state.enquete.n, a: el.dataset.a, b: el.dataset.b, mode: el.dataset.m }; rerender(); break;
       case 'tab-route-effacer': S.tabRoute = null; rerender(); break;
+      case 'confront-piece': { const c = S.draft.confront || []; const f = el.dataset.f; S.draft.confront = c.includes(f) ? c.filter((x) => x !== f) : [...c, f].slice(0, 3); S.ordersDirty = true; rerender(); break; }
+      case 'confront-valider': {
+        const s = affaire(S.state, S.state.enquete.n).suspects[Number(el.dataset.i)];
+        if (await askConfirm(`Confronter ${s.nom} à 20:00 avec ces trois éléments ? Si c’est la mauvaise personne, le parquet te retire l’affaire.`, 'Confronter')) { S.draft.accusation = Number(el.dataset.i); S.ordersDirty = true; S.tabSheet = null; rerender(); }
+        break;
+      }
+      case 'tab-confront': S.enqVue = 'tableau'; S.tabSheet = { k: 'confront', id: `X:${el.dataset.i}` }; render(); break;
       case 'journal-ouvrir': S.journalOuvert = S.state.enquete.n; S.tabSheet = null; rerender(); break;
       case 'journal-fermer': marquerJournalVu(affaire(S.state, S.state.enquete.n)); S.journalOuvert = null; rerender(); break;
       case 'tab-sortir': sortirPiece(el.dataset.f); S.tabSheet = null; rerender(); toast('Glisse la pièce où tu veux sur le tableau.'); break;
@@ -625,7 +632,7 @@ async function onClick(e) {
         break;
       }
       case 'piste': { const i = Number(el.dataset.i); S.draft.piste = S.draft.piste === i ? null : i; S.ordersDirty = true; rerender(); break; }
-      case 'accuser-annuler': S.draft.accusation = null; S.ordersDirty = true; rerender(); break;
+      case 'accuser-annuler': S.draft.accusation = null; S.draft.confront = []; S.ordersDirty = true; rerender(); break;
       case 'partage': {
         const p = (S.draft.partages ||= []);
         if (p.length < 3) p.push({ f: el.dataset.f, a: el.dataset.a });

@@ -318,3 +318,4 @@ body:has(.demo-banner) .jr-wrap { top: 44px; }
 @media (prefers-reduced-motion: reduce) { .jr-tourne .jr { animation: none; } }
 .p3l .tb-lieu-nom { font-size: 15px; }
 .p3l .tb-lieu-pt { width: 22px; height: 22px; }
+.pm .pm-reperes text { font-family: 'Special Elite', monospace; font-size: 12px; fill: #4E4430; paint-order: stroke; stroke: #F1E9D2; stroke-width: 3px; }

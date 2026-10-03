@@ -7,7 +7,7 @@ import { nextResolutionAfter } from '../engine/time.js';
 import { makeRng } from '../engine/rng.js';
 import { MAX_ZONES, partieComplete } from '../engine/constants.js';
 
-const KEY = 'mazp-demo-v2';
+const KEY = 'mazp-demo-v3';
 const ME = 'moi';
 
 const RADIO_BOTS = [
@@ -36,6 +36,8 @@ export function createLocalBackend(config) {
   function freshPartie(id, nom, code) {
     const now = Date.now();
     const state = createGame({ seed: `${config.seed}-demo-${id}`, turnDeadline: nextResolutionAfter(now, hour) });
+    // La démo ouvre directement sur l'affaire de meurtre écrite à la main, pour pouvoir la tester.
+    if (id === 'demo') state.meurtreDes = 1;
     const players = {};
     for (const b of BOT_PROFILES) {
       players[b.uid] = { code: b.code, nom: b.nom, couleur: b.couleur, pseudo: b.pseudo, bot: true, style: b.style };

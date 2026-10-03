@@ -288,6 +288,8 @@ export function sanitizeOrders(zone, raw, state) {
   const cible = (v) => (zoneExiste(v) ? v : '');
   const demarches = Array.isArray(o.demarches) ? [...new Set(o.demarches.filter((x) => typeof x === 'string' && lireDemarche(x)))].slice(0, 2) : [];
   const accusation = Number.isInteger(o.accusation) && o.accusation >= 0 && o.accusation < ENQ.nbSuspects ? o.accusation : null;
+  // Confrontation (affaire de meurtre) : trois pièces opposées au suspect accusé.
+  const confront = Array.isArray(o.confront) ? [...new Set(o.confront.filter((x) => typeof x === 'string' && /^[a-zA-Z]{1,8}:[a-z0-9]{1,12}$/.test(x)))].slice(0, 3) : [];
   const piste = Number.isInteger(o.piste) && o.piste >= 0 && o.piste < ENQ.nbSuspects ? o.piste : null;
   const appui = ['labo', 'rccu'].includes(o.appui) ? o.appui : null;
   const traque = o.traque && typeof o.traque === 'object' ? { n: int(o.traque.n, 0, 1e6), planque: int(o.traque.planque, 0, 5), agents: int(o.traque.agents, 0, 30) } : null;
@@ -315,7 +317,7 @@ export function sanitizeOrders(zone, raw, state) {
     ? { role: o.mission.role, type: o.mission.type, secteur: /^\d{1,4}$/.test(String(o.mission.secteur || '')) ? String(o.mission.secteur) : '' } : null;
   // Dilemme du Directeur : indice du choix (vérifié à la résolution).
   const dilemme = Number.isInteger(o.dilemme) && o.dilemme >= 0 && o.dilemme <= 3 ? o.dilemme : null;
-  return { dilemme, mission, piste, appui, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
+  return { dilemme, mission, piste, appui, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */

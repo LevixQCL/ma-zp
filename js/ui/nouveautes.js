@@ -3,13 +3,14 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-05',
+  id: '2026-10-05b',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
     ['⛈️', 'Le Directeur', 'un maître du jeu veille sur ta zone : regarde le ciel de l’HP, il annonce la journée.'],
     ['📻', 'Des feuilletons', 'cambrioleur des toits, rodéos, évasion, audit… prépare-toi et boucle l’histoire.'],
     ['⚖️', 'Des dilemmes', 'deux choix, de vraies conséquences : l’indic, la journaliste, le délégué syndical…'],
+    ['🕯️', 'Un meurtre à Mons', 'la prochaine affaire se joue dans le vrai centre de Mons : cinq proches, cinq mensonges, un seul assassin.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
@@ -25,7 +26,14 @@ export const NOTE_MAJ = {
       ['Équitable', 'les zones en tête du classement sont surtout testées par des défis qui rapportent ; celles en difficulté ont des éclaircies plus longues et plus d’occasions (sponsor, indic).'],
       ['Énigmes à ta mesure', 'le niveau des énigmes du jour se décale d’un cran au plus par nuit selon tes réussites récentes et ton rang aux énigmes : jusqu’à 2 niveaux plus facile si ça coince, 1 plus difficile si tu enchaînes. Le dossier noir garde son niveau.'],
     ]],
-    ['Le dossier complet (dès la prochaine affaire)', [
+    ['Un meurtre à Mons (la prochaine affaire)', [
+      ['Une affaire écrite à la main', 'un antiquaire tué dans sa boutique, rue de la Clef. Cinq proches, et chacun ment sur quelque chose : un seul pour cacher le meurtre. Découvrir le secret d’un innocent explique son mensonge et le blanchit.'],
+      ['Rien n’est signalé', 'certains indices sont sous les yeux de tous (dans le journal, dans un PV, dans une audition), d’autres sont des leurres. Lis tout, croise tout.'],
+      ['La vraie ville', 'le plan est celui du centre de Mons. Touche un lieu : l’itinéraire à pied s’ouvre dans Google Maps. Une estimation suffit toujours. La boutique, la brasserie, le café et toutes les personnes sont inventés.'],
+      ['Les démarches', 'légiste et labo, caméras et machines, bureau de la victime : chacune livre ses résultats un par un. Sur les suspects : vérifier l’alibi, téléphone et comptes, et la perquisition, que le juge n’autorise qu’avec une pièce sérieuse contre la personne au dossier.'],
+      ['La confrontation', 'à la place de l’accusation : choisis un suspect et trois éléments à lui opposer (pièces de ton dossier, journal, PV). Bons éléments : aveux, l’affaire est résolue (pas de traque). Mauvais éléments : il nie et repart libre, tu recommences un autre jour (−1 de réputation). Mauvaise personne : le parquet te retire l’affaire.'],
+    ]],
+    ['Le dossier complet (affaires suivantes)', [
       ['Le journal du lendemain', 'à l’ouverture, La Gazette du Delta s’ouvre en plein écran : la nuit du vol, l’histoire des lieux, la victime, ce que l’on sait, le quartier sur un extrait du plan et les brèves du jour (lis-les : un pont fermé pour travaux change les trajets). Le journal reste punaisé au tableau, touche-le pour le relire.'],
       ['Des PV dans le dossier', 'le PV de premières constatations remplace le récit, et la boîte contient le PV d’audition de chaque suspect : son lien avec la victime, où il dit avoir été, comment il se déplace, ce qu’il répond aux rumeurs. Les vérifications arrivent en petits PV numérotés, signés par la zone qui les a obtenus.'],
       ['Un vrai plan routier', 'des rues nommées, trois ponts routiers, deux passerelles et la zone piétonne de la Grand-Place réservées aux vélos et aux piétons, une échelle. Les temps de trajet ne sont plus écrits : touche un lieu pour tracer l’itinéraire le plus court jusqu’à la scène, en voiture ou deux-roues, à vélo ou à pied, ou mesure n’importe quel trajet depuis le plan.'],
