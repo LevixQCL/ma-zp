@@ -16,9 +16,9 @@ import {
   chanceVoisinage, VOISINAGE,
   ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee,
   demarcheDe, mandatOk, lireDemarche,
-  toursTraque, delaiTraque,
+  toursTraque, delaiTraque, REAUD, RECOUP,
 } from '../engine/enquete.js';
-import { lienItineraire } from '../engine/meurtre-mons.js';
+import { lienItineraire, lieuxMons } from '../engine/meurtre-mons.js';
 
 // ───── Carnet : marques et notes, gardées sur l'appareil ─────
 const MARQUES = [
@@ -68,7 +68,7 @@ export function synchroCarnetMaintenant(rerender) { return synchroniserMaintenan
 function autresZones() {
   return Object.values(S.state.zones).filter((z) => z.uid !== S.user.uid && z.toursSansOrdres < 3).sort((a, b) => a.code.localeCompare(b.code));
 }
-export const coutTotal = (d) => (d.demarches || []).reduce((s, x) => s + coutDemarche(S.state, S.user.uid, x), 0);
+export const coutTotal = (d) => (d.demarches || []).reduce((s, x) => s + coutDemarche(S.state, S.user.uid, x), 0) + (d.reaud ? REAUD.cout : 0) + (d.recoup ? RECOUP.cout : 0);
 
 export function partageCtl(piece) {
   const d = S.draft;
@@ -213,7 +213,7 @@ function suspectCard(aff, dos, s, i, carnet) {
     ${open ? `<div class="mmo-row">${cases}</div>` : ''}
     ${open ? `<div class="col" style="gap:8px">
       <p class="small" style="margin:0;line-height:1.55">${esc(fiche.vehicule)}<br>${esc(fiche.declaration)}<br>${fiche.trajet ? `${esc(fiche.trajet)}<br>` : ''}<span class="muted">${esc(fiche.rumeur)}</span></p>
-      ${aff.ville === 'mons' ? `<a class="small" href="${lienItineraire(s.alibi.pos, aff.pos)}" target="_blank" rel="noopener">🚶 Itinéraire à pied jusqu’à la scène (Google Maps)</a>` : ''}
+      ${aff.ville === 'mons' ? `<a class="small" href="${lienItineraire(s.alibi.pos, aff.pos, lieuxMons(aff))}" target="_blank" rel="noopener">🚶 Itinéraire à pied jusqu’à la scène (Google Maps)</a>` : ''}
       ${aff.prof && !aff.ville && s.alibi.type !== 'seul' ? `<p class="tiny muted" style="margin:0">Par la route, du lieu déclaré jusqu’${esc(/^le /.test(aff.lieu) ? `au ${aff.lieu.slice(3)}` : `à ${aff.lieu}`)} : ${Object.entries(MODES).map(([m, md]) => `${md.icone} ${minutes(s.alibi.pos, aff.pos, m, aff.travaux)} min`).join(' · ')}${aff.travaux ? ' (avec les travaux)' : ''}.</p>` : ''}
       ${aff.prof ? (() => { const a = dossierAffaire3(st.seed, aff).auditions[i]; return `<details class="piece"><summary class="kicker" style="cursor:pointer">PV d’audition · ${esc(a.heure)}</summary>${a.qr.map(([q, r]) => `<p class="small" style="margin:6px 0 0"><strong>Q :</strong> ${esc(q)}<br><strong>R :</strong> ${esc(r)}</p>`).join('')}</details>`; })() : ''}
       ${pieces.map((p) => pieceHtml(aff, p)).join('')}

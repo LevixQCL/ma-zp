@@ -353,3 +353,11 @@ body:has(.demo-banner) .jr-wrap { top: 44px; }
 .sf-detail { min-height: 86px; display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
 .sf-detail strong { font-size: 16px; }
 .sf-detail p { margin: 0; line-height: 1.5; color: var(--amber-soft); }
+
+/* Affaire de la Rampe : relectures, recoupement, coups de pouce. */
+.tb-relu { margin: 3px 0 0; padding: 3px 5px; font-size: 9.5px; line-height: 1.35; color: #1F4E66; background: rgba(90,176,240,.14); border-left: 2px solid #2F6FD3; }
+.tb-relu-g { margin: 0; padding: 8px 10px; line-height: 1.5; background: rgba(90,176,240,.10); border: 1px solid rgba(90,176,240,.35); border-radius: 10px; color: var(--text); }
+.tb-recoup { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.tb-recoup .tb-lien { display: inline; }
+.tb-pouce { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 12px; }
+.tb-pouce .btn { align-self: flex-start; }

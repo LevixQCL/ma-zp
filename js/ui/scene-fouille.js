@@ -1,6 +1,7 @@
 // Scène à fouiller (affaire de Mons) : la photo de l'arrière-boutique en grand, avec des plots numérotés à toucher.
 // Chaque plot décrit ce que l'on voit, sans dire ce qu'il faut en penser : à chacun de faire le lien.
 import { S, esc } from './common.js';
+import { POINTS_SCENE_RAMPE, decorSceneRampe } from './rampe-visuels.js';
 
 export const POINTS_SCENE = [
   { k: 'tasses', n: 1, x: 300, y: 262, titre: 'Deux tasses à expresso', texte: 'Sur le bureau, une tasse sale. Sur l’égouttoir, près du petit évier, une seconde tasse rincée, posée à l’envers. Une goutte d’eau perle encore sous l’anse.' },
@@ -65,18 +66,20 @@ function decorScene(id) {
 /** La scène en grand, avec ses plots (overlay plein écran, comme le journal). */
 export function sceneFouilleHtml(aff) {
   if (!aff || !aff.meurtre || S.sceneOuverte !== aff.n) return '';
-  const sel = POINTS_SCENE.find((p) => p.k === S.scenePt) || null;
+  const rampe = aff.cas === 'rampe';
+  const PTS = rampe ? POINTS_SCENE_RAMPE : POINTS_SCENE;
+  const sel = PTS.find((p) => p.k === S.scenePt) || null;
   const vus = new Set(S.scenePtsVus || []);
   return `<div class="jr-wrap sf-wrap" role="dialog" aria-modal="true" aria-label="La scène">
     <article class="sf">
-      <div class="between" style="gap:10px"><div class="col" style="gap:2px"><span class="kicker" style="color:var(--amber)">Photo du labo · arrière-boutique · mercredi 00:30</span><h2 class="sf-titre">La scène, rue de la Clef</h2></div>
+      <div class="between" style="gap:10px"><div class="col" style="gap:2px"><span class="kicker" style="color:var(--amber)">${rampe ? 'Photo du labo · rez-de-chaussée · vendredi 10:10' : 'Photo du labo · arrière-boutique · mercredi 00:30'}</span><h2 class="sf-titre">${rampe ? 'La scène, Rampe Sainte-Waudru' : 'La scène, rue de la Clef'}</h2></div>
         <button type="button" class="tb-fermer" style="position:static" data-action="scene-fermer" aria-label="Fermer">✕</button></div>
-      <div class="sf-photo"><svg viewBox="0 0 680 380" aria-hidden="false" role="img" aria-label="Arrière-boutique, avec dix plots numérotés">${decorScene('sf')}
-        ${POINTS_SCENE.map((p) => `<g class="sf-plot ${sel && sel.k === p.k ? 'on' : ''} ${vus.has(p.k) ? 'vu' : ''}" data-action="scene-pt" data-k="${p.k}" transform="translate(${p.x} ${p.y})" tabindex="0" role="button" aria-label="Plot ${p.n} : ${esc(p.titre)}">
+      <div class="sf-photo"><svg viewBox="0 0 680 380" aria-hidden="false" role="img" aria-label="${rampe ? 'Rez-de-chaussée de l’étude' : 'Arrière-boutique'}, avec dix plots numérotés">${rampe ? decorSceneRampe('sf') : decorScene('sf')}
+        ${PTS.map((p) => `<g class="sf-plot ${sel && sel.k === p.k ? 'on' : ''} ${vus.has(p.k) ? 'vu' : ''}" data-action="scene-pt" data-k="${p.k}" transform="translate(${p.x} ${p.y})" tabindex="0" role="button" aria-label="Plot ${p.n} : ${esc(p.titre)}">
           <circle r="22" fill="transparent"/><path d="M-11 0L0 -20L11 0Z" fill="#F2C230" stroke="#3A2E0A" stroke-width="1.2"/><text y="-5" text-anchor="middle" font-family="'Special Elite', monospace" font-size="11" fill="#1D1A15">${p.n}</text></g>`).join('')}
       </svg></div>
       <div class="sf-detail">${sel ? `<span class="tb-ligne-k" style="color:var(--amber)">Plot ${sel.n}</span><strong>${esc(sel.titre)}</strong><p>${esc(sel.texte)}</p>` : '<p class="muted">Touche un plot jaune pour voir ce que le labo a relevé. Tout est sous tes yeux ; rien n’est souligné.</p>'}</div>
-      <p class="tiny muted" style="margin:0">${vus.size} plot${vus.size > 1 ? 's' : ''} examiné${vus.size > 1 ? 's' : ''} sur ${POINTS_SCENE.length} · ce que montre la photo est connu de toutes les zones.</p>
+      <p class="tiny muted" style="margin:0">${vus.size} plot${vus.size > 1 ? 's' : ''} examiné${vus.size > 1 ? 's' : ''} sur ${PTS.length} · ce que montre la photo est connu de toutes les zones.</p>
     </article>
   </div>`;
 }

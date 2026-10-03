@@ -11,6 +11,11 @@ import { makeRng, hashString } from './rng.js';
 import { bonusEquip } from './constants.js';
 import { LIEUX as LIEUX3, minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
 import { affaireMeurtre } from './meurtre-mons.js';
+import { affaireMeurtreRampe, evaluerHypothese } from './meurtre-rampe.js';
+
+/** Deuxième affaire de meurtre écrite à la main (« Le notaire de la Rampe ») : ouverte une fois par partie,
+ * au plus tôt deux affaires après la première (une affaire de vol entre les deux). */
+export const MEURTRE2 = { actif: true, ecart: 2 };
 
 export const ENQ_VERSION = 2;
 export const ENQ = {
@@ -27,7 +32,7 @@ export const ENQ = {
 
 /** Points d'enquête pour une découverte au jour `j`. */
 export const pointsDecouverte = (j) => Math.max(40, 110 - 10 * j);
-export const POINTS = { contribution: 25, arrestation: 30 };
+export const POINTS = { contribution: 25, arrestation: 30, mobile: 20 };
 
 // Enquête de voisinage (service Recherche) : pièces rapportées chaque soir sur les suspects.
 // Nombre attendu de pièces = (capacité de Recherche − 2) × taux, plafonné.
@@ -56,7 +61,7 @@ export const DEMARCHES = {
   banque: { nom: 'Comptes et entourage', motif: 'Extraits de compte via le parquet, téléphonie, entourage.', cout: 3, cible: 'mob', dit: 'dettes, rancunes, fréquentations' },
 };
 export const SOURCES = {
-  ouverture: 'Ouverture du dossier', tardif: 'Témoin tardif', audition: 'PV d’audition', reaud: 'Réaudition', rattrapage: 'Dossier de rattrapage', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', pjf: 'Appui PJF', partage: 'Partagé', rebond: 'Rebondissement',
+  ouverture: 'Ouverture du dossier', tardif: 'Témoin tardif', recoup: 'Recoupement', declic: 'Reçue au commissariat', audition: 'PV d’audition', reaud: 'Réaudition', rattrapage: 'Dossier de rattrapage', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', pjf: 'Appui PJF', partage: 'Partagé', rebond: 'Rebondissement',
   ...Object.fromEntries(Object.entries(DEMARCHES).map(([k, d]) => [k, d.nom])),
 };
 
@@ -555,7 +560,7 @@ export function texteFait(aff, f) { return (aff.textes && aff.textes[f]) || ''; 
  */
 export function candidats(aff, faits) {
   const connus = new Set(faits);
-  if (aff.meurtre) return { suspects: aff.suspects.map((s, i) => i).filter((i) => !(aff.innocente[i] || []).some((f) => connus.has(f))), planques: [] };
+  if (aff.meurtre) return { suspects: aff.suspects.map((s, i) => i).filter((i) => !(aff.innocente[i] || []).some((f) => (Array.isArray(f) ? f.every((g) => connus.has(g)) : connus.has(f)))), planques: [] };
   const p0 = aff.planques[aff.planque];
   const aP = ATTRS_P.filter((a) => connus.has(`p:${a}`));
   return {
@@ -810,6 +815,7 @@ export function nouvelleAffaire(state) {
   if (state.profDes == null) state.profDes = n; // … et en dossier complet (plan routier, journal, PV) depuis la suivante
   if (state.distinctDes == null) state.distinctDes = n; // deux affaires de suite n'ont plus le même décor
   if (state.meurtreDes == null && n >= 2) state.meurtreDes = n; // une affaire de meurtre écrite à la main, une fois par partie
+  else if (MEURTRE2.actif && state.meurtre2Des == null && state.meurtreDes != null && n >= state.meurtreDes + MEURTRE2.ecart) state.meurtre2Des = n; // … puis la seconde
   state.enquete = { n, jour: 1, nbCellules: 1, cellules: {}, rebonds: [], figee: false };
   repartirCellules(state);
   for (const z of Object.values(state.zones)) {
@@ -823,6 +829,7 @@ export function nouvelleAffaire(state) {
 /** Affaire n° n de cette partie (avec le plan des trajets si elle a été ouverte depuis son arrivée). */
 export function affaire(state, n) {
   if (state.meurtreDes != null && n === state.meurtreDes) return affaireMeurtre(n);
+  if (state.meurtre2Des != null && n === state.meurtre2Des) return affaireMeurtreRampe(n);
   return genererAffaire(state.seed, n, state.carteDes != null && n >= state.carteDes, state.profDes != null && n >= state.profDes, state.distinctDes);
 }
 
@@ -970,6 +977,16 @@ export function enquetePre(state, uids, ord, push) {
     if (aff.meurtre) {
       // Pas de traque : les aveux valent arrestation.
       for (const u of justes) { const z = state.zones[u]; z.stats.limier += POINTS.arrestation; z.stats.arrestations += 1; z.reputation += 3; z.rapport.push(`Enquête : ${cs.nom} passe aux aveux (+${POINTS.arrestation} pts d’enquête).`); }
+      // Le vrai mobile, nommé pendant la confrontation : un bonus pour qui a compris toute l'histoire.
+      if (aff.mobiles) {
+        const bons = justes.filter((u) => ord[u].mobile === aff.mobileVrai);
+        for (const u of justes) {
+          const z = state.zones[u];
+          if (bons.includes(u)) { z.stats.limier += POINTS.mobile; z.reputation += 2; z.rapport.push(`Enquête : tu avais aussi compris pourquoi : « ${aff.mobiles[aff.mobileVrai]} » (+${POINTS.mobile} pts d’enquête, +2 de réputation).`); }
+          else if (Number.isInteger(ord[u].mobile)) z.rapport.push(`Enquête : le mobile que tu avançais (« ${aff.mobiles[ord[u].mobile] || '?'} ») n’était pas le bon. Les aveux disent tout dans la Gazette.`);
+        }
+        res.mobileTrouve = bons.map((u) => nomZone(state.zones[u]));
+      }
       res.arrestations.push({ titre: aff.titre, suspect: cs.nom, planque: '', zones: res.decouverte.zones });
       push(15, 'Aveux', `${aff.titre} : ${cs.nom} passe aux aveux`, `Confronté${cs.f ? 'e' : ''} à ses contradictions par ${res.decouverte.zones.join(' et ')}.${res.decouverte.contributeurs.length ? ` Avec les pièces de ${res.decouverte.contributeurs.join(', ')}.` : ''}`);
     } else push(14, 'Enquête', `${aff.titre} : ${cs.nom} identifié${cs.f ? 'e' : ''} par ${res.decouverte.zones.join(' et ')}`,
@@ -1061,6 +1078,9 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
   }
   if (faites.length) z.rapport.push(`Enquête : au dossier ce soir : ${faites.join(', ')}.`);
   if (aff.meurtre && o.reaud) reentendre(aff, z, d, o.reaud, e.jour);
+  if (aff.recoupements && Array.isArray(o.recoup) && o.recoup.length === 2) recouper(aff, z, d, o.recoup, e.jour);
+  if (aff.declics) declics(aff, z, d, e.jour);
+  if (aff.hypothese && o.hypo) hypotheseAuJuge(aff, z, d, o.hypo);
   // Enquête de voisinage : plus on a de capacité de Recherche, plus elle rapporte ; une piste prioritaire la concentre.
   const piste = Number.isInteger(o.piste) && o.piste >= 0 && o.piste < aff.suspects.length ? o.piste : null;
   const surPiste = piste !== null && piecesLibres(aff).some((f) => !faitsConnus(d).includes(f) && Number(f.split(':')[1]) === piste);
@@ -1101,6 +1121,49 @@ function reentendre(aff, z, d, r, jour) {
   if (!p) { z.rapport.push(`Enquête : réentendu${s.f ? 'e' : ''} face à « ${titrePiece(aff, r.f)} », ${s.nom} n’a rien à ajouter.`); return; }
   d.pieces.push({ f: p, j: jour, src: 'reaud' });
   z.rapport.push(`Enquête : réentendu${s.f ? 'e' : ''} face à « ${titrePiece(aff, r.f)} », ${s.nom} change de version (« ${titrePiece(aff, p)} »).`);
+}
+
+export const RECOUP = { cout: 1 };
+/** Recoupement prévu par l'affaire pour ces deux pièces (dans un sens ou dans l'autre), ou null. */
+export function recoupementDe(aff, a, b) {
+  if (!aff.recoupements || !a || !b || a === b) return null;
+  return aff.recoupements.find((r) => r.paires.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) || null;
+}
+/** Pièce qu'apporterait le recoupement de a et b (null si rien de neuf ou rien à en tirer). */
+export function pieceRecoupement(aff, dossier, a, b) {
+  const r = recoupementDe(aff, a, b);
+  return r && !faitsConnus(dossier).includes(r.f) ? r.f : null;
+}
+/** Recoupement (affaire de meurtre) : deux pièces opposées l'une à l'autre ; certaines paires apprennent du neuf. */
+function recouper(aff, z, d, [a, b], jour) {
+  const op = opposables(aff, d);
+  if (!op.has(a) || !op.has(b) || a === b) return;
+  if (z.budget < RECOUP.cout) { z.rapport.push('Enquête : recoupement annulé (budget insuffisant).'); return; }
+  z.budget -= RECOUP.cout; (z._compta ||= []).push({ k: 'enquete', l: 'Démarches d’enquête', v: -RECOUP.cout });
+  d.recoups = [...(d.recoups || []).slice(-30), [a, b].sort()];
+  const p = pieceRecoupement(aff, d, a, b);
+  if (!p) { z.rapport.push(`Enquête : recoupement de « ${titrePiece(aff, a)} » et « ${titrePiece(aff, b)} » : rien de neuf.`); return; }
+  d.pieces.push({ f: p, j: jour, src: 'recoup' });
+  z.rapport.push(`Enquête : en recoupant « ${titrePiece(aff, a)} » et « ${titrePiece(aff, b)} », tes enquêteurs trouvent du neuf (« ${titrePiece(aff, p)} »).`);
+}
+/** Déclics : une pièce qui arrive d'elle-même quand le dossier contient certaines pièces. */
+function declics(aff, z, d, jour) {
+  const connus = new Set(faitsConnus(d));
+  for (const x of aff.declics) {
+    if (connus.has(x.f) || !x.si.every((f) => connus.has(f))) continue;
+    d.pieces.push({ f: x.f, j: jour, src: 'declic' });
+    z.rapport.push(`Enquête : ${x.rapport} (« ${titrePiece(aff, x.f)} »).`);
+  }
+}
+/** Hypothèse soumise au juge : il la confronte au dossier de la zone, sans dire si elle est juste. */
+function hypotheseAuJuge(aff, z, d, h) {
+  const s = aff.suspects[h.i], c = aff.creneaux[h.s];
+  if (!s || !c) return;
+  const { pour, contre } = evaluerHypothese(new Set(opposables(aff, d)), h.i, h.s);
+  const liste = (l) => l.slice(0, 4).map((f) => `« ${titrePiece(aff, f)} »`).join(', ') + (l.length > 4 ? ` et ${l.length - 4} autre${l.length > 5 ? 's' : ''}` : '');
+  const t = `Le juge d’instruction a lu ton hypothèse (${s.nom}, ${c}). ${pour.length ? `${pour.length} pièce${pour.length > 1 ? 's' : ''} de ton dossier l’appui${pour.length > 1 ? 'ent' : 'e'}` : 'Aucune pièce de ton dossier ne l’appuie'}${contre.length ? ` ; ${contre.length} la contredi${contre.length > 1 ? 'sent' : 't'} : ${liste(contre)}. Explique-les avant de confronter.` : '. Rien dans ton dossier ne la contredit.'}`;
+  z.rapport.push(`Enquête : ${t}`);
+  d.hypos = [...(d.hypos || []).slice(-6), { i: h.i, s: h.s, pour: pour.length, contre }];
 }
 
 /** Une pièce inconnue sur un suspect donné. */

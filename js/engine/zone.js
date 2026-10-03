@@ -291,6 +291,11 @@ export function sanitizeOrders(zone, raw, state) {
   // Confrontation (affaire de meurtre) : trois pièces opposées au suspect accusé.
   const reaud = o.reaud && typeof o.reaud === 'object' && Number.isInteger(o.reaud.i) && o.reaud.i >= 0 && o.reaud.i < 8 && typeof o.reaud.f === 'string' && /^[a-zA-Z]{1,8}:[a-z0-9]{1,12}$/.test(o.reaud.f) ? { i: o.reaud.i, f: o.reaud.f } : null;
   const confront = Array.isArray(o.confront) ? [...new Set(o.confront.filter((x) => typeof x === 'string' && /^[a-zA-Z]{1,8}:[a-z0-9]{1,12}$/.test(x)))].slice(0, 3) : [];
+  // Recoupement (deux pièces), hypothèse au juge (suspect, créneau), mobile nommé à la confrontation : affaires qui les prévoient.
+  const codeOk = (x) => typeof x === 'string' && /^[a-zA-Z]{1,8}:[a-z0-9]{1,12}$/.test(x);
+  const recoup = Array.isArray(o.recoup) && o.recoup.length === 2 && o.recoup.every(codeOk) && o.recoup[0] !== o.recoup[1] ? [o.recoup[0], o.recoup[1]] : null;
+  const hypo = o.hypo && typeof o.hypo === 'object' && Number.isInteger(o.hypo.i) && o.hypo.i >= 0 && o.hypo.i < 8 && Number.isInteger(o.hypo.s) && o.hypo.s >= 0 && o.hypo.s < 8 ? { i: o.hypo.i, s: o.hypo.s } : null;
+  const mobile = Number.isInteger(o.mobile) && o.mobile >= 0 && o.mobile < 8 ? o.mobile : null;
   const piste = Number.isInteger(o.piste) && o.piste >= 0 && o.piste < ENQ.nbSuspects ? o.piste : null;
   const appui = ['labo', 'rccu'].includes(o.appui) ? o.appui : null;
   const traque = o.traque && typeof o.traque === 'object' ? { n: int(o.traque.n, 0, 1e6), planque: int(o.traque.planque, 0, 5), agents: int(o.traque.agents, 0, 30) } : null;
@@ -318,7 +323,7 @@ export function sanitizeOrders(zone, raw, state) {
     ? { role: o.mission.role, type: o.mission.type, secteur: /^\d{1,4}$/.test(String(o.mission.secteur || '')) ? String(o.mission.secteur) : '' } : null;
   // Dilemme du Directeur : indice du choix (vérifié à la résolution).
   const dilemme = Number.isInteger(o.dilemme) && o.dilemme >= 0 && o.dilemme <= 3 ? o.dilemme : null;
-  return { dilemme, mission, piste, appui, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
+  return { dilemme, mission, piste, appui, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */

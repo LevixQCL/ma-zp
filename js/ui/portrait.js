@@ -21,11 +21,11 @@ function teinteCheveux(base, age, h) {
 /** Tenue d'après le lien avec la victime. */
 function tenue(role) {
   const r = role.toLowerCase();
-  if (/entretien/.test(r)) return 'blouse';
+  if (/entretien|ménag/.test(r)) return 'blouse';
   if (/technicien/.test(r)) return 'polo';
   if (/livreu/.test(r)) return 'livreur';
-  if (/associ|expert|commissaire/.test(r)) return 'costume';
-  if (/brasserie|restaura|patron/.test(r)) return 'tablier';
+  if (/associ|expert|commissaire|promoteur|immobilier|notaire/.test(r)) return 'costume';
+  if (/brasserie|restaura|patron|café/.test(r)) return 'tablier';
   if (/restauratrice|apprenti/.test(r)) return 'atelier';
   if (/brocant|voisin/.test(r)) return 'pull';
   if (/client/.test(r)) return 'sweat';
