@@ -104,13 +104,14 @@ export function renderQuete() {
     </div>` : '';
 
   const mz = myZone(), moralZ = mz ? mz.moral : 50;
+  const enqueteOuverte = !!(S.state && S.state.enquete && !S.state.enquetePause);
   const gBonus = gainMoral(ENIGMES.bonusMoral, moralZ), sf = ENIGMES.sansFaute, gSf = gainMoral(sf.moral, moralZ);
   const primeSf = `+${sf.budget} k€, +${gSf} de moral${gSf < sf.moral ? ' (moral déjà haut)' : ''} et +${sf.ps} PS`;
   const bonusCard = !train && !noir && ok >= 2 ? `<section class="card green">
-      ${bonusPris && !S.bonusChanger ? `<div class="between" style="gap:8px"><p class="small" style="margin:0;font-weight:600">Bonus du jour : ${bonusPris.bonus === 'moral' ? `+${gBonus} de moral` : bonusPris.bonus === 'budget' ? `+${ENIGMES.bonusBudget} k€` : bonusPris.bonus === 'indice' ? '+1 indice pour l’enquête' : `+${Math.round((ENIGMES.bonusCapacite - 1) * 100)} % de capacité en ${SERVICE_LABELS[bonusPris.service]}`}. Il sera appliqué à 20:00.</p><button type="button" class="btn small ghost" data-action="bonus-changer">Changer</button></div><span class="tiny muted">Tu peux changer d’avis jusqu’à 20:00.</span>`
+      ${bonusPris && !S.bonusChanger ? `<div class="between" style="gap:8px"><p class="small" style="margin:0;font-weight:600">Bonus du jour : ${bonusPris.bonus === 'moral' ? `+${gBonus} de moral` : bonusPris.bonus === 'budget' ? `+${ENIGMES.bonusBudget} k€` : bonusPris.bonus === 'indice' ? (enqueteOuverte ? '+1 indice pour l’enquête' : `+${ENIGMES.bonusBudget} k€ (pas d’enquête en cours : l’indice est converti)`) : `+${Math.round((ENIGMES.bonusCapacite - 1) * 100)} % de capacité en ${SERVICE_LABELS[bonusPris.service]}`}. Il sera appliqué à 20:00.</p><button type="button" class="btn small ghost" data-action="bonus-changer">Changer</button></div><span class="tiny muted">Tu peux changer d’avis jusqu’à 20:00.</span>`
         : `<span class="ok" style="font-weight:700">${bonusPris ? 'Change ton bonus du jour (jusqu’à 20:00)' : `${ok} bonnes réponses : choisis ton bonus du jour`}</span>
-        <div class="choices" style="grid-template-columns:repeat(3,minmax(0,1fr))">
-          <button type="button" class="choice" data-action="quest-bonus" data-v="indice" aria-pressed="${!!bonusPris && bonusPris.bonus === 'indice'}"><span>+1 indice</span><span class="s">enquête</span></button>
+        <div class="choices" style="grid-template-columns:repeat(${enqueteOuverte ? 3 : 2},minmax(0,1fr))">
+          ${enqueteOuverte ? `<button type="button" class="choice" data-action="quest-bonus" data-v="indice" aria-pressed="${!!bonusPris && bonusPris.bonus === 'indice'}"><span>+1 indice</span><span class="s">enquête</span></button>` : ''}
           <button type="button" class="choice" data-action="quest-bonus" data-v="moral" aria-pressed="${!!bonusPris && bonusPris.bonus === 'moral'}"><span>+${gBonus} moral</span>${gBonus < ENIGMES.bonusMoral ? '<span class="s">moral déjà haut</span>' : ''}</button>
           <button type="button" class="choice" data-action="quest-bonus" data-v="budget" aria-pressed="${!!bonusPris && bonusPris.bonus === 'budget'}"><span>+${ENIGMES.bonusBudget} k€</span></button>
         </div>

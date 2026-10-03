@@ -507,6 +507,12 @@ export const FEUILLETONS = {
   },
 };
 
+/** Dilemme lié à l'enquête (l'indic) alors qu'aucune affaire n'est en cours : il n'a plus de sens. */
+const sansEnquete = (state, id) => (id === 'indic' || id === 'indic2') && (!state.enquete || !!state.enquetePause);
+
+/** Situation du jour à afficher : sans affaire en cours, l'indic ne se présente pas. */
+export const pressionsVisibles = (state, z) => ((z && z.pressions) || []).filter((p) => !(p.feuilleton && sansEnquete(state, p.feuilleton)));
+
 const choixDe = (et, z, d) => (typeof et.choix === 'function' ? et.choix(z, d || {}) : et.choix);
 
 /** Dilemme posé aujourd'hui à cette zone (pour l'affichage), ou null. */
@@ -515,7 +521,7 @@ export function dilemmeDuJour(state, z) {
   if (!fe || fe.tour !== state.turn) return null;
   const def = FEUILLETONS[fe.id];
   const et = def && def.etapes[fe.e];
-  if (!et || !et.choix) return null;
+  if (!et || !et.choix || sansEnquete(state, fe.id)) return null;
   return { id: fe.id, titre: def.titre, question: typeof et.question === 'function' ? et.question(z, fe.d || {}) : et.question, choix: choixDe(et, z, fe.d), defaut: et.defaut };
 }
 
@@ -804,7 +810,7 @@ export function directeurNuit(state, z, rng, { T, nextWeekday, forme = 0, PRESSI
   // 3. Feuilleton ou dilemme (ciel clair ou chargé, zone présente hier). Une zone qui ne change jamais rien
   //    à sa répartition est bousculée : plus de feuilletons, sur les services qu'elle laisse de côté.
   const x = {
-    forme, T1, enquete: !!(state.enquete && z.enquete),
+    forme, T1, enquete: !!(state.enquete && z.enquete && !state.enquetePause),
     quartiers: Object.keys(assurerQuartiers(state, z)).length > 0,
     tensionMax: Math.max(0, ...Object.values(z.quartiers || {})),
   };
@@ -910,7 +916,11 @@ export function directeurSoir(state, z, c) {
   }
 
   // Feuilleton ou dilemme du jour.
-  const fe = d.fe;
+  let fe = d.fe;
+  if (fe && fe.tour === c.T && sansEnquete(state, fe.id)) {
+    lignes.push(`${FEUILLETONS[fe.id].titre} : plus d’affaire en cours, l’indic n’a rien à vendre et repart. Rien n’est payé.`);
+    d.fe = null; fe = null;
+  }
   if (fe && fe.tour === c.T && FEUILLETONS[fe.id]) {
     const def = FEUILLETONS[fe.id], et = def.etapes[fe.e];
     let ch = null;

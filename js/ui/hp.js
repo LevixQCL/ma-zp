@@ -9,7 +9,7 @@ import { QUEST_LABELS } from '../quests/quests.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
 import { estimations } from './ordres.js';
 import { operationActive } from '../engine/zone.js';
-import { cielDe, dilemmeDuJour, feuilletonEnCours } from '../engine/directeur.js';
+import { cielDe, dilemmeDuJour, feuilletonEnCours, pressionsVisibles } from '../engine/directeur.js';
 import { fipaCards } from './fipa.js';
 import { blasonSvg, BLASONS, insigne } from './blasons.js';
 import { GRADES, gradeFor } from '../engine/constants.js';
@@ -162,7 +162,7 @@ function premiersPasVus() {
 /** Liste de ce qu'il reste à faire avant 20:00. */
 /** Situation du jour en pastilles sous le compte à rebours ; le détail complet reste dans les Ordres. */
 function situationPastilles(z, ciel) {
-  const l = z.pressions || [];
+  const l = pressionsVisibles(S.state, z);
   const cielP = `<button type="button" class="pill ciel-pill ciel-p-${ciel.id}" data-action="aide" data-k="ciel" title="${esc(ciel.texte)}">${esc(ciel.nom)} ›</button>`;
   return `<div class="soir-situ" aria-label="Situation du jour">${cielP}${l.map((p) => `<a class="pill ${p.feuilleton ? 'violet' : p.district ? 'blue' : 'amber'}" href="${p.feuilleton && p.quartier != null ? '#carte' : '#ordres'}" title="${esc(p.texte)}">${esc(p.titre)}${String(p.texte || '').length <= 32 ? ` · ${esc(p.texte.replace(/\.$/, ''))}` : ' ›'}</a>`).join('')}</div>`;
 }

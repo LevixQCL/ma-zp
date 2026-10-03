@@ -122,13 +122,20 @@ async function enregistrer(id, res) {
  * @param {string} jeu        colis | crochetage | depanneuse | dossier
  * @param {object} o          { mode: 'incident'|'train', inc, onFin }
  */
+/** Gain affiché d'un incident : sans affaire en cours, l'indice de la Recherche devient +2 k€ (comme à la résolution). */
+function gainAffiche(service) {
+  const g = GAIN[service];
+  if (g && g.indice && !(S.state && S.state.enquete && !S.state.enquetePause)) return '+2 k€ (pas d’enquête en cours)';
+  return texteGain(g);
+}
+
 export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, onFin = () => {}, onEntrainement = () => {} } = {}) {
   document.querySelector('.mj-wrap')?.remove();
   const p = new URLSearchParams({ mode });
   if (mode === 'incident' && inc) {
     const n = agentsService(inc.service), { base, plus } = jaugeDuJour();
     p.set('id', inc.id); p.set('agents', String(n)); p.set('diff', difficulte(inc.service, n, niveauIncidents(myZone())));
-    p.set('jauge', String(base + plus)); p.set('malus', texteMalus(MALUS[inc.service].plein)); p.set('gain', `${texteGain(GAIN[inc.service])}, +${PS.queteOk} PS`);
+    p.set('jauge', String(base + plus)); p.set('malus', texteMalus(MALUS[inc.service].plein)); p.set('gain', `${gainAffiche(inc.service)}, +${PS.queteOk} PS`);
   }
   if (mode === 'renfort' && appui) {
     const u = APPUI.unites[appui.unite];
