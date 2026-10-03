@@ -7,7 +7,7 @@ import { hashString } from '../engine/rng.js';
 import { portraitSuspect } from './portrait.js';
 import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
-  ficheSuspect, fichePlanque, rebondsPublies, pointsDecouverte, dansMaCellule, zonesDuSuspect,
+  ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect,
 } from '../engine/enquete.js';
 import { lireCarnet, ecrireCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal } from './enquete.js';
 
@@ -76,12 +76,26 @@ function typePiece(p) {
 const LARG = { tk: 150, sc: 150, rv: 160, lb: 150, jn: 170 };
 const ENTETE = { tk: 'Vérification d’alibi', sc: 'Scellé · moyens', rv: 'Comptes et entourage', lb: 'Rapport · planque', jn: 'La Gazette du Delta' };
 
+/** Où en est le partage d'une pièce : reçue, connue de tous, prévue ce soir, déjà partagée ou gardée pour soi. */
+function statutPartage(p) {
+  const st = S.state, d = S.draft || {};
+  const nom = (u) => (st.zones[u] ? zoneName(st.zones[u]) : 'une zone');
+  if (p.src === 'partage') return { k: 'recue', txt: `Reçue de ${p.de ? nom(p.de) : 'une zone'}` };
+  if (p.src === 'ouverture' || p.src === 'rebond') return { k: 'tous', txt: 'Connue de toutes les zones' };
+  const prevu = (d.partages || []).filter((x) => x.f === p.f);
+  if (prevu.length) return { k: 'prevu', txt: `Partage ce soir : ${prevu.map((x) => (x.a === '*' ? 'toutes les zones' : nom(x.a))).join(', ')}` };
+  const deja = [...dejaPartagee(st, S.user.uid, p.f)].filter((u) => st.zones[u]);
+  if (deja.length) return { k: 'faite', txt: `Partagée avec ${deja.map(nom).join(', ')}` };
+  return { k: 'gardee', txt: 'Gardée pour toi' };
+}
+
 function objetPiece(aff, p, rebonds) {
   const ty = typePiece(p);
   const i = pieceSuspect(p.f);
   const qui = i !== null ? aff.suspects[i].nom.toUpperCase() : '';
   const lignes = texteFait(aff, p.f).split('\n').map((l) => `<p>${esc(l)}</p>`).join('');
-  const tampon = p.src === 'partage' && p.de && S.state.zones[p.de] ? `<span class="tb-tampon">Partagée · ${esc(zoneName(S.state.zones[p.de]))}</span>` : '';
+  const sp = statutPartage(p);
+  const tampon = sp.k === 'tous' ? '' : `<span class="tb-tampon tb-t-${sp.k}">${esc(sp.txt)}</span>`;
   if (ty === 'jn') {
     const r = rebonds.find((x) => x.f === p.f);
     return `<div class="tb-obj tb-jn"><span class="tb-k">${ENTETE.jn} · J${p.j}</span><strong>${esc(r ? r.titre : titrePiece(aff, p.f))}</strong><div class="tb-txt">${lignes}</div></div>`;
@@ -281,9 +295,14 @@ function voletPiece(aff, dos, f) {
   return `<span class="tb-ligne-k" style="color:var(--amber)">${esc(titrePiece(aff, f))}</span>
     <span class="tiny muted">J${p.j} · ${sourceDe(p)}</span>
     <p class="small tb-fait">${esc(texteFait(aff, f)).replace(/\n/g, '<br>')}</p>
-    <div class="row" style="justify-content:flex-end">${partageCtl(p)}</div>
+    <div class="tb-partage tb-t-${statutPartage(p).k}">
+      <span class="tb-ligne-k">Partage</span>
+      <span class="small" style="font-weight:600">${esc(statutPartage(p).txt)}</span>
+      ${statutPartage(p).k === 'tous' ? '' : `${partageCtl(p)}
+      <span class="tiny muted">Partager rapporte des PS et de la réputation, et des points d’enquête si ta pièce aide une zone à trouver l’auteur. ${ENQ.maxPartages} partages par soir au plus.</span>`}
+    </div>
     <div class="tb-duo">${i !== null ? `<button type="button" class="btn small" data-action="tab-ouvrir" data-tid="s${i}">Voir ${esc(aff.suspects[i].prenom)}</button>` : ''}
-    <button type="button" class="btn small ghost" data-action="tab-remettre" data-f="${esc(f)}">Remettre dans la boîte</button></div>`;
+    ${dispo(aff.n).places.includes(f) ? `<button type="button" class="btn small ghost" data-action="tab-remettre" data-f="${esc(f)}">Remettre dans la boîte</button>` : `<button type="button" class="btn small primary" data-action="tab-sortir" data-f="${esc(f)}">Sortir de la boîte</button>`}</div>`;
 }
 
 function voletLieu(aff, k, et) {
@@ -331,7 +350,7 @@ function voletBoite(aff, et) {
     ...et.fichesAFaire.map((e) => `<div class="tb-boite-l nouveau"><span class="tb-vign tb-vign-fiche" style="--c:${COL[e]}"></span><div class="col grow" style="gap:2px;min-width:0"><span class="tb-ligne-k" style="color:var(--red-soft)">Constatation · ${ELEMENT_NOM[e]}</span><span class="small" style="font-weight:600">${CONSTAT_TITRE[e]} : le résultat est là</span></div><button type="button" class="btn primary small" data-action="tab-fiche" data-e="${e}">Compléter la fiche</button></div>`),
     ...et.boite.map((p) => {
       const nv = p.j >= j - 1;
-      return `<div class="tb-boite-l ${nv ? 'nouveau' : ''}"><span class="tb-vign tb-vign-${typePiece(p)}"></span><div class="col grow" style="gap:2px;min-width:0"><span class="tb-ligne-k" style="color:${nv ? 'var(--red-soft)' : 'var(--amber)'}">${nv ? 'Nouveau · ' : ''}J${p.j} · ${sourceDe(p)}</span><span class="small" style="font-weight:600">${esc(titrePiece(aff, p.f))}</span></div><button type="button" class="btn primary small" data-action="tab-sortir" data-f="${esc(p.f)}">Sortir</button></div>`;
+      return `<div class="tb-boite-l ${nv ? 'nouveau' : ''}"><span class="tb-vign tb-vign-${typePiece(p)}"></span><div class="col grow" style="gap:2px;min-width:0"><span class="tb-ligne-k" style="color:${nv ? 'var(--red-soft)' : 'var(--amber)'}">${nv ? 'Nouveau · ' : ''}J${p.j} · ${sourceDe(p)}</span><button type="button" class="tb-lien" data-action="tab-ouvrir" data-tid="${esc(p.f)}">${esc(titrePiece(aff, p.f))}</button><span class="tiny tb-t-${statutPartage(p).k}">${esc(statutPartage(p).txt)}</span></div><button type="button" class="btn primary small" data-action="tab-sortir" data-f="${esc(p.f)}">Sortir</button></div>`;
     }),
   ];
   return `<span class="tb-titre">Boîte à pièces</span>
@@ -350,7 +369,8 @@ function voletSoir(aff, dos) {
     <div class="voisinage"><span class="small"><strong>Voisinage</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? ` · piste : <strong>${esc(v.nom)}</strong>` : ''} : ${esc(v.txt)}</span></div>
     ${appuiHtml()}
     ${d.accusation !== null && d.accusation !== undefined ? `<p class="small" style="margin:0;color:var(--red-soft)">Accusation prête contre ${esc(aff.suspects[d.accusation].nom)}.</p>` : ''}
-    ${(d.partages || []).length ? `<p class="tiny muted" style="margin:0">${d.partages.length} partage${d.partages.length > 1 ? 's' : ''} prévu${d.partages.length > 1 ? 's' : ''}.</p>` : ''}
+    <span class="tb-ligne-k">Partages · ${(d.partages || []).length} / ${ENQ.maxPartages}</span>
+    ${(d.partages || []).map((x) => `<div class="tb-boite-l"><div class="col grow" style="gap:2px;min-width:0"><button type="button" class="tb-lien" data-action="tab-ouvrir" data-tid="${esc(x.f)}">${esc(titrePiece(aff, x.f))}</button><span class="tiny muted">vers ${x.a === '*' ? 'toutes les zones' : esc(S.state.zones[x.a] ? zoneName(S.state.zones[x.a]) : '?')}</span></div><button type="button" class="btn small ghost" data-action="partage-annuler" data-f="${esc(x.f)}" aria-label="Annuler ce partage">✕</button></div>`).join('') || '<p class="tiny muted" style="margin:0">Aucun partage prévu. Touche une pièce (sur le tableau ou dans la boîte) pour la partager.</p>'}
     <p class="tiny muted" style="margin:0">Tout part avec tes ordres : pense à valider. Résultats à 20:00, dans ta boîte à pièces.</p>`;
 }
 
@@ -494,7 +514,7 @@ function cadrer(id) {
   let v;
   if (id === 'plan') { const s = Math.min(1, (w - 20) / MAP.w); v = { s, tx: (w - MAP.w * s) / 2 - MAP.x * s, ty: 64 - MAP.y * s }; }
   else if (id === 'titre') return;
-  else { const p = ancre(aff, t, id); if (!p) return; const s = Math.max(S.tabV.s, 0.85); v = { s, tx: w / 2 - p[0] * s, ty: 80 - p[1] * s }; }
+  else { if (!/^(s\d|c:|L:|P:)/.test(id) && !t.places.includes(id)) return; const p = ancre(aff, t, id); if (!p) return; const s = Math.max(S.tabV.s, 0.85); v = { s, tx: w / 2 - p[0] * s, ty: 80 - p[1] * s }; }
   S.tabV = borner(v);
   appliquer(S.tabV, true);
   sauverVue();

@@ -177,3 +177,15 @@ body:has(.demo-banner) .tb-ecran { top: 44px; }
 .tb-planque.m3 .tb-lieu-pt { box-shadow: 0 0 0 5px rgba(46,158,98,.55); }
 .tb-planque.tb-sel .tb-lieu-pt, .tb-planque.tb-from .tb-lieu-pt, .tb-planque.tb-cible .tb-lieu-pt { box-shadow: 0 0 0 6px rgba(255,178,63,.9); }
 .mode-fil .tb-planque .tb-lieu-pt { width: 34px; height: 34px; }
+
+/* Partage des pièces */
+.tb-tampon { max-width: 100%; white-space: normal; text-align: right; }
+.tb-tampon.tb-t-gardee { border-color: #8A8070; color: #6B6355; }
+.tb-tampon.tb-t-prevu { border-color: #C88A12; color: #A8650E; }
+.tb-tampon.tb-t-faite { border-color: #2E7D5B; color: #2E7D5B; }
+.tb-tampon.tb-t-recue { border-color: #1F4FA0; color: #1F4FA0; }
+.tb-partage { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--faint); }
+.tb-partage.tb-t-prevu { border-left-color: var(--amber); } .tb-partage.tb-t-faite { border-left-color: var(--green); } .tb-partage.tb-t-recue { border-left-color: var(--blue); }
+.tb-partage > span:nth-child(3), .tb-partage .col { align-items: flex-start !important; }
+.tb-lien { all: unset; cursor: pointer; font-size: 14px; font-weight: 600; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
+span.tb-t-gardee { color: var(--faint); } span.tb-t-prevu { color: var(--amber); } span.tb-t-faite { color: var(--green); } span.tb-t-recue { color: var(--blue-soft); }
