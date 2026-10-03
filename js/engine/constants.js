@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 35;
+export const APP_VERSION = 36;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -110,6 +110,16 @@ export function tauxRetourMoral(m) {
 }
 export const gainMoral = (base, moral) => (base <= 0 ? base : moral < MORAL_PALIERS[0] ? base : moral < MORAL_PALIERS[1] ? Math.ceil(base / 2) : 1);
 export const gainPrime = (moral) => gainMoral(4, moral);
+/**
+ * Les figures de l'équipe (une par service) : bonus d'efficacité dans leur service, selon leurs surnoms
+ * (`bonus[niveau]`, niveau 0 à 3). Une seule peut partir en mission par jour, son service perd alors son bonus :
+ *  - zone de non-droit : force de la zone sur le secteur × (1 + bonus) et risque de blessure × `nd.blessure` ;
+ *  - renfort chez un collègue : compte comme `renfort.agents` agent de plus dans son dispositif.
+ */
+export const CHEFS = { bonus: [0.03, 0.08, 0.14, 0.2], nd: { blessure: 0.5 }, renfort: { agents: 1 }, xpMission: 3 };
+export const ROLE_SERVICE = { inter: 'intervention', rech: 'recherche', prox: 'proximite', roul: 'roulage', admin: 'admin' };
+/** Bonus d'une figure de niveau `niveau`. */
+export const bonusChef = (niveau) => CHEFS.bonus[Math.max(0, Math.min(3, niveau || 0))];
 // Énigmes du jour : bonus au choix dès 2 bonnes réponses, prime « sans faute » à 3 sur 3.
 export const ENIGMES = { rateeMoral: 1, bonusMoral: 3, bonusBudget: 2, bonusCapacite: 1.1, sansFaute: { budget: 3, moral: 2, ps: 5 } };
 /** Part des effectifs en Roulage au-delà de laquelle joue l'effet « chasse aux PV ». */

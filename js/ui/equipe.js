@@ -1,10 +1,10 @@
 // Cartes « Mon équipe » (le trombinoscope) et « Mes trophées » de l'HP.
 import { S, esc, icon, myZone } from './common.js';
 import { ROLES_EQUIPE, SEUILS_EQUIPE, TROPHEES, roleDe, intitule, surnomDe, creerEquipe, appliquerNoms } from '../engine/equipe.js';
-import { SERVICE_LABELS } from '../engine/constants.js';
+import { SERVICE_LABELS, ROLE_SERVICE, bonusChef } from '../engine/constants.js';
 
-const initiales = (m) => `${m.prenom[0]}${m.nom[0]}`.toUpperCase();
-const COULEUR_ROLE = { inter: '#FF6E6A', rech: '#63B0FF', prox: '#3DD39A', roul: '#FFB23F', admin: '#C084FC' };
+export const initiales = (m) => `${m.prenom[0]}${m.nom[0]}`.toUpperCase();
+export const COULEUR_ROLE = { inter: '#FF6E6A', rech: '#63B0FF', prox: '#3DD39A', roul: '#FFB23F', admin: '#C084FC' };
 
 export function equipeHtml() {
   const z = myZone();
@@ -29,7 +29,7 @@ export function equipeHtml() {
       <span class="avatar" style="background:${COULEUR_ROLE[m.role]}" aria-hidden="true">${esc(initiales(m))}</span>
       <span class="col grow" style="gap:2px;min-width:0">
         <span style="font-weight:700">${esc(m.prenom)} ${esc(m.nom)}${surnomDe(m) ? ` <span class="surnom">« ${esc(surnomDe(m))} »</span>` : ''}</span>
-        <span class="tiny muted">${esc(intitule(m))} · ${esc(SERVICE_LABELS[r.service])}</span>
+        <span class="tiny muted">${esc(intitule(m))} · ${esc(SERVICE_LABELS[r.service])} · <span class="ok">+${Math.round(bonusChef(m.niveau) * 100)} %</span>${m.niveau < 3 ? ` <span class="muted">(+${Math.round(bonusChef(m.niveau + 1) * 100)} % au prochain surnom)</span>` : ''}</span>
         <span class="xp" role="img" aria-label="${suiv ? `${m.xp} points d’expérience sur ${suiv} pour le prochain surnom` : 'dernier surnom atteint'}"><i style="width:${Math.max(3, Math.min(100, pct))}%;background:${COULEUR_ROLE[m.role]}"></i></span>
         <span class="tiny muted">${suiv ? `prochain surnom : « ${esc(r.surnoms[m.niveau])} »` : 'légende de la zone'}</span>
       </span><button type="button" class="btn small ghost" data-action="equipe-edit" data-role="${m.role}" aria-label="Renommer ${esc(m.prenom)} ${esc(m.nom)}">Renommer</button></div>`;
@@ -39,7 +39,7 @@ export function equipeHtml() {
     <summary><span style="color:var(--amber)">${icon('shield', 20)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Mon équipe</span>
       <span class="tiny muted">${equipe.length} figures · ${nbSurnoms} surnom${nbSurnoms > 1 ? 's' : ''} gagné${nbSurnoms > 1 ? 's' : ''}</span></span>${icon('chevron', 16)}</summary>
     <div class="col" style="gap:8px">
-      <p class="tiny muted" style="margin:0">Les figures de ta zone gagnent de l’expérience avec le travail de leur service, et des surnoms au fil des tours. Elles restent d’une saison à l’autre. Tu peux les renommer (des collègues, par exemple) : leur expérience et leurs surnoms sont conservés.</p>
+      <p class="tiny muted" style="margin:0">Chaque figure encadre son service et le rend plus efficace (de +3 % à +20 %, selon ses surnoms). Dans tes ordres, tu peux en envoyer une en mission chaque jour : mener l’assaut en zone de non-droit (plus de force, deux fois moins de blessés) ou encadrer ton renfort chez un collègue. Elles gagnent de l’expérience avec le travail de leur service et restent d’une saison à l’autre. Tu peux les renommer (des collègues, par exemple).</p>
       ${membres}
     </div></details>`;
 }

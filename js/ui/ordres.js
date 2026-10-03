@@ -8,8 +8,10 @@ import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel
 import { effectifPrevu, capaciteAgents, capaciteAgentsPrevue, capaciteVehicules, coutRecrue, sousTutelle, moralMult, bonusLots } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { agentsND } from './nondroit.js';
+import { COULEUR_ROLE, initiales } from './equipe.js';
+import { creerEquipe, appliquerNoms, missionValide, surnomDe } from '../engine/equipe.js';
 import { nomSecteur } from '../engine/nondroit.js';
-import { secteurOuvert } from '../engine/constants.js';
+import { secteurOuvert, ROLE_SERVICE, bonusChef, CHEFS } from '../engine/constants.js';
 import { carteQuartiers } from '../engine/quartiers.js';
 import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
 
@@ -440,6 +442,34 @@ export function situationHtml(z) {
   </section>`;
 }
 
+/** Mon équipe dans les ordres : bonus de chaque figure, et la mission du jour (une figure au plus). */
+function equipeOrdres(z, d) {
+  const equipe = appliquerNoms(JSON.parse(JSON.stringify(z.equipe || creerEquipe(z.uid))), z.uid, (S.player && S.player.equipeNoms) || null);
+  const mis = missionValide(d);
+  const voulu = d.mission || null;
+  const qui = S.missionQui || null;
+  const nom = (m) => `${m.prenom} ${m.nom}${surnomDe(m) ? ` « ${surnomDe(m)} »` : ''}`;
+  const secteurs = Object.entries(d.secteurs || {}).filter(([, n]) => n > 0);
+  const cible = d.renfort && d.renfort.agents > 0 && S.state.zones[d.renfort.cible] ? S.state.zones[d.renfort.cible] : null;
+  const lignes = equipe.map((m) => {
+    const sv = ROLE_SERVICE[m.role], b = Math.round(bonusChef(m.niveau) * 100);
+    const enMission = mis && mis.role === m.role;
+    const choix = qui === m.role && !enMission;
+    const dest = choix ? `<div class="mission-dest">${secteurs.map(([k, n]) => `<button type="button" class="choice" data-action="mission-ou" data-role="${m.role}" data-type="nondroit" data-secteur="${esc(k)}"><span>Zone de non-droit · ${esc(nomSecteur(k))}</span><span class="s">avec tes ${n} agent${n > 1 ? 's' : ''} · force +${b} %, blessures ÷2</span></button>`).join('')}
+        ${cible ? `<button type="button" class="choice" data-action="mission-ou" data-role="${m.role}" data-type="renfort"><span>Renfort chez ${esc(cible.nom)}</span><span class="s">compte pour ${CHEFS.renfort.agents} agent de plus dans son dispositif</span></button>` : ''}
+        ${secteurs.length || cible ? '' : '<p class="tiny muted" style="margin:0">Aucune mission possible ce soir : envoie d’abord des agents en zone de non-droit (Terrain) ou prête des agents en renfort à un collègue.</p>'}</div>` : '';
+    return `<div class="col" style="gap:4px"><div class="membre-o">
+      <span class="avatar" style="background:${COULEUR_ROLE[m.role]};width:30px;height:30px;font-size:12px" aria-hidden="true">${esc(initiales(m))}</span>
+      <span class="col grow" style="gap:1px;min-width:0"><span class="small" style="font-weight:600">${esc(nom(m))}</span>
+        <span class="tiny ${enMission ? 'warn' : 'muted'}">${enMission ? (mis.type === 'nondroit' ? `en mission · zone de non-droit, ${esc(nomSecteur(mis.secteur))}` : `en mission · renfort chez ${esc(cible ? cible.nom : 'un collègue')}`) + ` (${esc(SERVICE_LABELS[sv])} sans son bonus ce soir)` : `${esc(SERVICE_LABELS[sv])} <span class="ok">+${b} %</span>`}</span></span>
+      ${enMission ? `<button type="button" class="btn small ghost" data-action="mission-annuler">Rappeler</button>` : `<button type="button" class="btn small ${choix ? 'primary' : 'ghost'}" data-action="mission-qui" data-role="${m.role}" aria-expanded="${choix}">Mission</button>`}
+    </div>${dest}</div>`;
+  }).join('');
+  const perdue = voulu && !mis ? '<p class="tiny bad" style="margin:0">Mission annulée : plus d’agents à l’endroit prévu. La figure reste à son service.</p>' : '';
+  return `<div class="col" style="gap:8px">${perdue}${lignes}
+    <p class="tiny muted" style="margin:0">Une figure au plus en mission par jour. Son service perd alors son bonus pour la journée ; elle gagne un peu d’expérience en plus.</p></div>`;
+}
+
 /** Une section repliable : une ligne résumé, ouverte à la demande. */
 function pli(key, titre, resume, contenu, alerte = false) {
   const ouvert = !!(S.ordOpen && S.ordOpen[key]);
@@ -576,8 +606,9 @@ export function renderOrdres() {
 
     ${prisesHtml()}
     ${pli('nondroit', 'Zone de non-droit', (() => { const n = agentsND(d); const sects = Object.keys(d.secteurs || {}).filter((k) => d.secteurs[k]); return n ? `${n} agent${n > 1 ? 's' : ''} sur ${sects.map((k) => esc(nomSecteur(k))).join(', ')}` : 'Aucun agent ce soir'; })(), `<div class="col" style="gap:6px">${Object.entries(d.secteurs || {}).filter(([, n]) => n).map(([k, n]) => `<div class="between"><span class="small" style="font-weight:600">${esc(nomSecteur(k))}</span><span class="tiny ok">${n} agent${n > 1 ? 's' : ''}</span></div>`).join('')}
-      <p class="tiny muted" style="margin:0">Le centre de la ville, à reprendre au milieu avec les autres zones. Les agents envoyés sont pris sur tes services pour la journée.</p>
+      <p class="tiny muted" style="margin:0">Le centre de la ville, à reprendre au milieu avec les autres zones. Les agents envoyés sont pris sur tes services pour la journée. Une figure de ton équipe peut mener l’assaut : plus de force, deux fois moins de blessés (section « Mon équipe »).</p>
       <a class="btn small primary block" href="#terrain">Choisir les secteurs sur le Terrain</a></div>`)}
+    ${pli('equipe', 'Mon équipe', (() => { const mi = missionValide(d); const m = mi && (z.equipe || []).find((x) => x.role === mi.role); return m ? `${esc(m.prenom)} en mission ${mi.type === 'nondroit' ? 'en zone de non-droit' : 'en renfort'}` : 'Chacun encadre son service'; })(), equipeOrdres(z, d))}
     ${st.affaires.length ? pli('affaires', 'Affaires disputées', nbEng ? `${nbEng} affaire${nbEng > 1 ? 's' : ''} engagée${nbEng > 1 ? 's' : ''} sur ${st.affaires.length}` : `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} ouverte${st.affaires.length > 1 ? 's' : ''} · aucun agent engagé`, `<div class="col" style="gap:8px">${affairesHtml}</div>`) : ''}
     ${pli('decision', 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'Pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, decisionHtml)}
     ${pli('depenses', 'Dépenses du jour', cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune', depensesHtml, cab > 0 && !dep.carrosserie)}

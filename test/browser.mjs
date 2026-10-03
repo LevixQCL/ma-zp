@@ -1,7 +1,7 @@
 // Parcours complet du mode démo dans un vrai navigateur, avec captures d'écran.
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const { chromium } = require(require('node:fs').existsSync('/opt/node22/lib/node_modules/playwright') ? '/opt/node22/lib/node_modules/playwright' : '/opt/npm-tools/node_modules/playwright');
 
 const OUT = process.argv[2] || '/tmp/shots';
 const BASE = process.argv[3] || 'http://127.0.0.1:8765/';
