@@ -95,7 +95,8 @@ function objetPiece(aff, p, rebonds) {
   const qui = i !== null ? aff.suspects[i].nom.toUpperCase() : '';
   const lignes = texteFait(aff, p.f).split('\n').map((l) => `<p>${esc(l)}</p>`).join('');
   const sp = statutPartage(p);
-  const tampon = sp.k === 'tous' ? '' : `<span class="tb-tampon tb-t-${sp.k}">${esc(sp.txt)}</span>`;
+  // Petit bouton de partage dans le coin : sa couleur dit où en est la pièce, un toucher ouvre les options.
+  const tampon = sp.k === 'tous' ? '' : `<span class="tb-share tb-t-${sp.k}" title="${esc(sp.txt)}" aria-label="Partage : ${esc(sp.txt)}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>${sp.k === 'prevu' ? '<i>ce soir</i>' : ''}</span>`;
   if (ty === 'jn') {
     const r = rebonds.find((x) => x.f === p.f);
     return `<div class="tb-obj tb-jn"><span class="tb-k">${ENTETE.jn} · J${p.j}</span><strong>${esc(r ? r.titre : titrePiece(aff, p.f))}</strong><div class="tb-txt">${lignes}</div></div>`;
@@ -292,15 +293,16 @@ function voletPiece(aff, dos, f) {
   const p = dos.pieces.find((x) => x.f === f);
   if (!p) return '<p class="small muted">Cette pièce n’est plus au dossier.</p>';
   const i = pieceSuspect(f);
-  return `<span class="tb-ligne-k" style="color:var(--amber)">${esc(titrePiece(aff, f))}</span>
-    <span class="tiny muted">J${p.j} · ${sourceDe(p)}</span>
-    <p class="small tb-fait">${esc(texteFait(aff, f)).replace(/\n/g, '<br>')}</p>
-    <div class="tb-partage tb-t-${statutPartage(p).k}">
+  const partageBloc = `    <div class="tb-partage tb-t-${statutPartage(p).k}">
       <span class="tb-ligne-k">Partage</span>
       <span class="small" style="font-weight:600">${esc(statutPartage(p).txt)}</span>
       ${statutPartage(p).k === 'tous' ? '' : `${partageCtl(p)}
       <span class="tiny muted">Partager rapporte des PS et de la réputation, et des points d’enquête si ta pièce aide une zone à trouver l’auteur. ${ENQ.maxPartages} partages par soir au plus.</span>`}
-    </div>
+    </div>`;
+  return `${S.tabSheet && S.tabSheet.partage ? partageBloc : ''}<span class="tb-ligne-k" style="color:var(--amber)">${esc(titrePiece(aff, f))}</span>
+    <span class="tiny muted">J${p.j} · ${sourceDe(p)}</span>
+    <p class="small tb-fait">${esc(texteFait(aff, f)).replace(/\n/g, '<br>')}</p>
+    ${S.tabSheet && S.tabSheet.partage ? '' : partageBloc}
     <div class="tb-duo">${i !== null ? `<button type="button" class="btn small" data-action="tab-ouvrir" data-tid="s${i}">Voir ${esc(aff.suspects[i].prenom)}</button>` : ''}
     ${dispo(aff.n).places.includes(f) ? `<button type="button" class="btn small ghost" data-action="tab-remettre" data-f="${esc(f)}">Remettre dans la boîte</button>` : `<button type="button" class="btn small primary" data-action="tab-sortir" data-f="${esc(f)}">Sortir de la boîte</button>`}</div>`;
 }
@@ -520,10 +522,10 @@ function cadrer(id) {
   sauverVue();
 }
 
-export function ouvrirVolet(id, rerender) {
+export function ouvrirVolet(id, rerender, { partage = false } = {}) {
   const k = id === 'titre' ? 'faits' : id === 'plan' ? 'plan' : id.startsWith('L:') ? 'lieu' : id.startsWith('P:') ? 'planque' : id.startsWith('c:') ? 'c' : /^s\d$/.test(id) ? 's' : 'p';
   cadrer(id);
-  S.tabSheet = { k, id };
+  S.tabSheet = { k, id, partage };
   setTimeout(rerender, id === 'titre' ? 0 : 280);
 }
 
@@ -664,7 +666,7 @@ export function monterTableau(rerender) {
       basculerLien(S.tabFrom, id);
       return;
     }
-    if (id) { ouvrirVolet(id, rerender); return; }
+    if (id) { ouvrirVolet(id, rerender, { partage: !!gg.share }); return; }
     if (S.tabSheet) { S.tabSheet = null; rerender(); }
   };
   vp.addEventListener('pointerdown', (e) => {
@@ -705,7 +707,7 @@ export function monterTableau(rerender) {
     }
     if (mobile && S.tabMode !== 'fil') {
       const p = dispo(n).pos[tid] || DEF_POS[tid] || [0, 0];
-      g = { t: 'item', id: tid, tid, el, sx: x, sy: y, ox: p[0], oy: p[1], pos: p, moved: false };
+      g = { t: 'item', id: tid, tid, el, share: !!e.target.closest('.tb-share'), sx: x, sy: y, ox: p[0], oy: p[1], pos: p, moved: false };
     } else {
       g = { t: 'pan', tid, sx: x, sy: y, tx0: S.tabV.tx, ty0: S.tabV.ty, moved: false };
     }
