@@ -37,7 +37,7 @@ export function equipeHtml() {
   }).join('');
   const trophees = TROPHEES.map((t) => {
     const a = acquis.get(t.id);
-    return `<div class="trophee ${a ? 'on' : ''}" title="${esc(t.texte)}">${icon('trophy', 18)}<span class="n">${esc(t.nom)}</span><span class="d">${a ? `saison ${a.s}, tour ${a.t}` : esc(t.texte)}</span></div>`;
+    return `<div class="trophee ${a ? 'on' : ''}" title="${esc(t.texte)}">${icon('trophy', 18)}<span class="n">${esc(t.nom)}</span><span class="d">${esc(t.texte)}</span>${a ? `<span class="d gagne">${icon('check', 12)} gagné · saison ${a.s}, tour ${a.t}</span>` : ''}</div>`;
   }).join('');
   const nb = acquis.size;
   return `<details class="card repli" aria-label="Mon équipe" data-k="equipe" ${S.ouverts && S.ouverts.equipe ? 'open' : ''}>

@@ -560,6 +560,8 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .trophee .d { font-size: 11px; line-height: 1.3; }
 .trophee.on { border: 1px solid var(--amber-line); background: var(--amber-bg); color: var(--amber); }
 .trophee.on .n { color: var(--text); }
+.trophee.on .d { color: var(--text2); }
+.trophee .d.gagne { display: inline-flex; align-items: center; gap: 4px; margin-top: 2px; color: var(--amber); font-weight: 600; }
 
 /* Où sont mes agents ? */
 .vent { gap: 2px; padding: 10px 12px; border-radius: 14px; background: var(--bg); border: 1px solid var(--hair); }

@@ -7,20 +7,28 @@ import { hashString } from '../engine/rng.js';
 import { portraitSuspect } from './portrait.js';
 import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
-  ficheSuspect, rebondsPublies, pointsDecouverte, dansMaCellule, zonesDuSuspect,
+  ficheSuspect, fichePlanque, rebondsPublies, pointsDecouverte, dansMaCellule, zonesDuSuspect,
 } from '../engine/enquete.js';
 import { lireCarnet, ecrireCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal } from './enquete.js';
 
 // ───── Dimensions du tableau ─────
 // Version 2 : tableau élargi (2 800 de large) ; les dispositions de la version 1 sont décalées de 600 vers la droite.
 const BW = 2800, BH = 2200, DECALAGE_V2 = 600;
-const MAP = { x: 960, y: 400, w: 880, h: 680 };
+const MAP = { x: 960, y: 400, w: 880, h: 900 };
+// Planques : placées sur la bonne rive du canal (nord au-dessus, sud en dessous), d'après leur fiche.
+const PLANQUE_POS = {
+  'Cave du bistrot': [600, 505], 'Entrepôt frigorifique': [780, 110], 'Grenier d’une ferme': [115, 70], 'Parking souterrain': [335, 420],
+  'Atelier désaffecté': [630, 205], 'Galerie de l’ancienne mine': [120, 255], 'Chambre sous les toits': [225, 365],
+  'Péniche amarrée': [495, 665], 'Box de garage n° 12': [300, 705], 'Lavoir couvert': [450, 785], 'Ancien cinéma': [740, 725],
+  'Serre abandonnée': [135, 815], 'Local de chaufferie': [620, 840], 'Cabanon de jardin': [300, 860], 'Laverie fermée': [790, 850],
+};
+const planquePos = (p) => PLANQUE_POS[p.nom] || (p.rive === 'sud' ? [440, 760] : [440, 470]);
 const COL = { occ: '#2F6FD3', moy: '#C88A12', mob: '#C2302B' };
 const PINS = { r: ['#FF9A93', '#D32F2F', '#7A1010'], b: ['#9CC8FF', '#2F6FD3', '#123B7A'], y: ['#FFE59A', '#E8A800', '#7A5600'], g: ['#A8F0C6', '#2E9E62', '#11502E'], w: ['#FFFFFF', '#D8D2C4', '#7D7566'] };
 const PIN_EL = { occ: 'b', moy: 'y', mob: 'r' };
 const DEF_POS = {
   'c:occ': [1080, 190], 'c:moy': [1400, 170], 'c:mob': [1720, 190],
-  s0: [760, 1240], s1: [1080, 1230], s2: [1400, 1240], s3: [1720, 1230], s4: [2040, 1240],
+  s0: [760, 1460], s1: [1080, 1450], s2: [1400, 1460], s3: [1720, 1450], s4: [2040, 1460],
 };
 const TUTO_KEY = 'mazp-tuto-tableau';
 
@@ -29,11 +37,12 @@ function dispo(n) {
   const c = lireCarnet(n);
   const t = c.tab || {};
   let pos = t.pos || {}, vue = t.vue || null;
-  if (c.tab && t.v !== 2) {
-    pos = Object.fromEntries(Object.entries(pos).map(([k, [x, y]]) => [k, [x + DECALAGE_V2, y]]));
+  if (c.tab && t.v !== 3) {
+    // v1 → v2 : tableau élargi (décalage à droite) ; v2 → v3 : plan agrandi vers le bas (on descend ce qui était dessous).
+    pos = Object.fromEntries(Object.entries(pos).map(([k, [x, y]]) => [k, [x + (t.v === 2 ? 0 : DECALAGE_V2), y > 1080 ? y + 220 : y]]));
     vue = null;
   }
-  return { v: 2, pos, liens: t.liens || [], places: t.places || [], fiches: t.fiches || [], neuf: t.neuf || [], vue };
+  return { v: 3, pos, liens: t.liens || [], places: t.places || [], fiches: t.fiches || [], neuf: t.neuf || [], vue };
 }
 function ecrireDispo(n, t) { const c = lireCarnet(n); c.tab = t; ecrireCarnet(n, c); }
 
@@ -45,6 +54,7 @@ const pieceSuspect = (f) => (/^(occ|moy|mob):\d$/.test(f) ? Number(f.split(':')[
 /** Point d'accroche (la punaise) d'un élément du tableau. */
 function ancre(aff, t, id) {
   if (id.startsWith('L:')) { const k = id.slice(2); return CARTE.lieux[k] ? lieuPos(k) : null; }
+  if (id.startsWith('P:')) { const p = aff.planques[Number(id.slice(2))]; if (!p) return null; const [x, y] = planquePos(p); return [MAP.x + x, MAP.y + y]; }
   return posDe(t, id);
 }
 
@@ -97,38 +107,45 @@ function planSvg(aff, connusOcc) {
     return `<path d="M${fx} ${fy} Q${mx} ${my} ${tx} ${ty}" class="tb-trajet"/>
       <g transform="translate(${(fx + 2 * mx + tx) / 4} ${(fy + 2 * my + ty) / 4}) rotate(${((hashString(k) % 7) - 3) * 2})"><rect x="-30" y="-15" width="60" height="28" rx="4" class="tb-min-bg"/><text x="0" y="6" text-anchor="middle" class="tb-min">${t} min</text></g>`;
   }).join('') : '';
-  return `<svg class="tb-plan" viewBox="0 0 880 680" width="880" height="680" aria-hidden="true">
+  return `<svg class="tb-plan" viewBox="0 0 880 900" width="880" height="900" aria-hidden="true">
     <defs>
       <pattern id="tbgrille" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="rgba(120,100,60,.10)"/></pattern>
       <linearGradient id="tbpapier" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EFE7D0"/><stop offset="1" stop-color="#E2D7B8"/></linearGradient>
       <radialGradient id="tbtache"><stop offset=".78" stop-color="rgba(120,80,30,0)"/><stop offset=".9" stop-color="rgba(120,80,30,.26)"/><stop offset="1" stop-color="rgba(120,80,30,0)"/></radialGradient>
     </defs>
-    <rect width="880" height="680" fill="url(#tbpapier)"/><rect width="880" height="680" fill="url(#tbgrille)"/>
-    <path d="M0 230h880M0 455h880M440 0v680" stroke="rgba(90,70,40,.16)" stroke-width="1.5"/>
+    <rect width="880" height="900" fill="url(#tbpapier)"/><rect width="880" height="900" fill="url(#tbgrille)"/>
+    <path d="M0 230h880M0 455h880M0 760h880M440 0v900" stroke="rgba(90,70,40,.16)" stroke-width="1.5"/>
     <g fill="#D9CCAA" stroke="#C4B48C">
       <rect x="20" y="20" width="120" height="70"/><rect x="290" y="20" width="80" height="70"/><rect x="410" y="20" width="110" height="70"/><rect x="560" y="20" width="90" height="70"/>
       <rect x="20" y="215" width="100" height="70"/><rect x="190" y="215" width="80" height="70"/><rect x="410" y="215" width="110" height="70"/><rect x="560" y="215" width="90" height="70"/><rect x="700" y="215" width="160" height="70"/>
       <rect x="20" y="420" width="120" height="60"/><rect x="190" y="340" width="80" height="140"/><rect x="560" y="340" width="90" height="70"/><rect x="560" y="420" width="90" height="60"/><rect x="740" y="420" width="120" height="40"/>
-      <rect x="190" y="620" width="120" height="50"/><rect x="410" y="625" width="110" height="45"/><rect x="660" y="660" width="80" height="20"/>
+      <rect x="190" y="645" width="80" height="40"/><rect x="410" y="690" width="110" height="60"/><rect x="560" y="690" width="100" height="60"/><rect x="700" y="760" width="160" height="50"/>
+      <rect x="20" y="660" width="120" height="70"/><rect x="190" y="760" width="80" height="60"/><rect x="560" y="790" width="100" height="90"/><rect x="410" y="820" width="110" height="60"/><rect x="20" y="850" width="60" height="40"/>
     </g>
+    <rect x="80" y="760" width="110" height="110" rx="6" fill="#C7D6AE"/>
+    <g fill="#7FA36A"><circle cx="105" cy="790" r="8"/><circle cx="160" cy="800" r="10"/><circle cx="120" cy="845" r="9"/></g>
     <rect x="290" y="330" width="230" height="150" rx="6" fill="#C7D6AE"/>
     <g fill="#7FA36A"><circle cx="320" cy="370" r="9"/><circle cx="360" cy="430" r="11"/><circle cx="480" cy="360" r="8"/><circle cx="500" cy="450" r="10"/><circle cx="420" cy="460" r="7"/></g>
     <path d="M0 585 C150 555 280 610 440 590 S700 540 880 565 L880 610 C720 590 560 640 440 632 S160 600 0 628 Z" fill="#9EC1D8"/>
     <path d="M0 585 C150 555 280 610 440 590 S700 540 880 565" fill="none" stroke="#7FA6C0" stroke-width="2"/>
-    <g stroke="#FFFFFF" stroke-width="20" fill="none"><path d="M0 105h880M0 200h880M0 315h880M0 400h880M170 0v680M280 0v585M400 0v680M540 0v680M680 0v600M20 680L170 500"/></g>
-    <g stroke="#CDBFA0" fill="none"><path d="M0 95h880M0 115h880M0 190h880M0 210h880M0 305h880M0 325h880M0 390h880M0 410h880M160 0v680M180 0v680M390 0v680M410 0v680M530 0v680M550 0v680"/></g>
+    <g stroke="#FFFFFF" stroke-width="20" fill="none"><path d="M0 105h880M0 200h880M0 315h880M0 400h880M0 670h880M0 760h880M170 0v900M280 0v585M280 640v260M400 0v900M540 0v900M680 0v600M680 650v250"/></g>
+    <g stroke="#CDBFA0" fill="none"><path d="M0 95h880M0 115h880M0 190h880M0 210h880M0 305h880M0 325h880M0 390h880M0 410h880M0 660h880M0 680h880M0 750h880M0 770h880M160 0v900M180 0v900M390 0v900M410 0v900M530 0v900M550 0v900"/></g>
+    <g fill="#8A7A5A"><rect x="160" y="575" width="20" height="70"/><rect x="390" y="575" width="20" height="70"/><rect x="530" y="560" width="20" height="80"/></g>
+    <g stroke="#FFFFFF" stroke-width="16"><path d="M170 578v64M400 578v64M540 563v74"/></g>
     <g class="tb-quartiers">
-      <text x="30" y="160">HAUTS-PRÉS</text><text x="430" y="150">LES MOULINS</text><text x="700" y="160">LES TANNEURS</text><text x="30" y="380">BÉGUINAGE</text>
-      <text x="300" y="300">GARE</text><text x="300" y="320" class="tb-q2">PARC CENTRAL</text><text x="700" y="380">FILATURES</text><text x="560" y="510">GRAND-PLACE</text>
-      <text x="40" y="660">RIVE SUD</text><text x="560" y="670">PORTE SUD</text><text x="720" y="40">ZONING NORD</text>
+      <text x="30" y="160">HAUTS-PRÉS</text><text x="700" y="160">LES TANNEURS</text><text x="30" y="380">BÉGUINAGE</text><text x="20" y="300">TERRILS</text>
+      <text x="300" y="320" class="tb-q2">PARC CENTRAL</text><text x="560" y="535">GRAND-PLACE</text><text x="300" y="470">PL. DES MARTYRS</text><text x="720" y="40">ZONING NORD</text>
+      <text x="20" y="560" class="tb-rive">RIVE NORD ↑</text><text x="20" y="655" class="tb-rive">RIVE SUD ↓</text>
+      <text x="430" y="660">QUAI DU CANAL</text><text x="200" y="740">QUARTIER GARE</text><text x="420" y="740">LES MOULINS</text><text x="700" y="700">FILATURES</text>
+      <text x="85" y="755">CITÉ JARDIN</text><text x="560" y="785">CITÉ NOUVELLE</text><text x="200" y="890">VAL-FLEURI</text><text x="700" y="890">PORTE SUD</text>
     </g>
     <text x="760" y="590" class="tb-canal" transform="rotate(-3 760 590)">canal</text>
     ${traits}
     <circle cx="${fx}" cy="${fy}" r="46" fill="none" stroke="#B3261E" stroke-width="3" stroke-dasharray="250 40" transform="rotate(-10 ${fx} ${fy})"/>
     <text x="${fx}" y="${fy + 13}" text-anchor="middle" class="tb-croix">✕</text>
-    <rect x="640" y="560" width="120" height="120" fill="url(#tbtache)"/>
+    <rect x="640" y="760" width="120" height="120" fill="url(#tbtache)"/>
     <g transform="translate(830 120)"><circle r="24" fill="#EFE7D0" stroke="#6B5B3A" stroke-width="1.5"/><path d="M0 -18L5 0L0 18L-5 0Z" fill="#6B5B3A"/><path d="M0 -18L5 0L-5 0Z" fill="#B3261E"/><text x="-4" y="-27" class="tb-n">N</text></g>
-    <g transform="translate(24 650)"><path d="M0 0h100M0 -5v10M50 -3v6M100 -5v10" stroke="#3A352C" stroke-width="2"/><text x="0" y="-10" class="tb-n">0</text><text x="76" y="-10" class="tb-n">500 m</text></g>
+    <g transform="translate(24 880)"><path d="M0 0h100M0 -5v10M50 -3v6M100 -5v10" stroke="#3A352C" stroke-width="2"/><text x="0" y="-10" class="tb-n">0</text><text x="76" y="-10" class="tb-n">500 m</text></g>
     <text x="20" y="18" class="tb-n" style="letter-spacing:1px">DISTRICT DELTA — PLAN DU CENTRE</text>
     ${connusOcc ? `<text x="${fx}" y="${fy - 54}" text-anchor="middle" class="tb-heures">${hm(aff.heure)} → ${hm(aff.fin)}</text>` : ''}
   </svg>`;
@@ -184,6 +201,12 @@ function elementsHtml(aff, dos, et) {
     const id = `L:${k}`;
     out.push(`<div class="tb-lieu ${sel === id ? 'tb-sel' : ''} ${S.tabFrom === id ? 'tb-from' : ''} ${l.loin ? 'loin' : ''}" data-tid="${id}" style="left:${x}px;top:${y}px"><span class="tb-lieu-pt"></span><span class="tb-lieu-nom">${esc(l.nom)}</span></div>`);
   }
+  // Planques possibles, punaisées sur leur rive, avec la marque du joueur.
+  aff.planques.forEach((p, i) => {
+    const [px, py] = planquePos(p);
+    const id = `P:${i}`, m = carnet.p[i] || 0;
+    out.push(`<div class="tb-planque m${m} ${sel === id ? 'tb-sel' : ''} ${S.tabFrom === id ? 'tb-from' : ''}" data-tid="${id}" style="left:${MAP.x + px}px;top:${MAP.y + py}px"><span class="tb-lieu-pt"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 11l8-6 8 6v8H4z" fill="currentColor"/></svg></span><span class="tb-lieu-nom">${esc(p.nom)}</span><span class="tb-pmark">${['', '✕', '?', '●'][m]}</span></div>`);
+  });
   // Ficelles et nœuds.
   const fils = t.liens.map(([a, b]) => filHtml(aff, t, a, b)).join('');
   const ids = [...new Set(t.liens.flat())];
@@ -273,6 +296,18 @@ function voletLieu(aff, k, et) {
     ${et.connus.has('c:occ') ? `<p class="tiny muted" style="margin:0">Les caméras : entrée à ${hm(aff.heure)}, sortie à ${hm(aff.fin)}.</p>` : ''}`;
 }
 
+function voletPlanque(aff, dos, i) {
+  const p = aff.planques[i], m = lireCarnet(aff.n).p[i] || 0;
+  const indices = dos.pieces.filter((x) => x.f.startsWith('p:'));
+  const MQ = [['·', 'sans marque'], ['✕', 'écartée'], ['?', 'douteuse'], ['●', 'retenue']];
+  return `<span class="tb-ligne-k" style="color:#B79BFF">Planque possible · rive ${esc(p.rive)}</span><span class="tb-titre">${esc(p.nom)}</span>
+    <p class="small" style="margin:0;color:var(--text2)">${esc(fichePlanque(p))}</p>
+    <div class="between"><span class="small">Ta marque : <strong>${MQ[m][1]}</strong></span><button type="button" class="tb-mark" data-v="${m === 1 ? 2 : m === 3 ? 1 : 0}" data-action="carnet-mark" data-t="p" data-i="${i}" aria-label="${esc(p.nom)} : ${MQ[m][1]}. Changer la marque">${MQ[m][0]}</button></div>
+    <span class="tb-ligne-k">Indices sur la planque · ${indices.length}</span>
+    ${indices.map((x) => `<p class="small tb-fait">${esc(texteFait(aff, x.f))}</p>`).join('') || '<p class="tiny muted" style="margin:0">Aucun pour l’instant : les constatations relancées et le butin retrouvé en donnent.</p>'}
+    <p class="tiny muted" style="margin:0">Une seule planque correspond à tous les indices. Elle servira pour l’arrestation, une fois l’auteur trouvé.</p>`;
+}
+
 function voletPlan(aff, et) {
   const declares = [...new Set(aff.suspects.filter((s) => s.alibi.type !== 'seul').map((s) => s.alibi.pos))];
   return `<span class="tb-titre">Plan du district</span>
@@ -327,6 +362,7 @@ function volet(aff, dos, et) {
   else if (sh.k === 'c') corps = voletConstat(aff, dos, sh.id.slice(2), et);
   else if (sh.k === 'p') corps = voletPiece(aff, dos, sh.id);
   else if (sh.k === 'lieu') corps = voletLieu(aff, sh.id.slice(2), et);
+  else if (sh.k === 'planque') corps = voletPlanque(aff, dos, Number(sh.id.slice(2)));
   else if (sh.k === 'plan') corps = voletPlan(aff, et);
   else if (sh.k === 'faits') corps = voletFaits(aff);
   else if (sh.k === 'boite') corps = voletBoite(aff, et);
@@ -465,7 +501,7 @@ function cadrer(id) {
 }
 
 export function ouvrirVolet(id, rerender) {
-  const k = id === 'titre' ? 'faits' : id === 'plan' ? 'plan' : id.startsWith('L:') ? 'lieu' : id.startsWith('c:') ? 'c' : /^s\d$/.test(id) ? 's' : 'p';
+  const k = id === 'titre' ? 'faits' : id === 'plan' ? 'plan' : id.startsWith('L:') ? 'lieu' : id.startsWith('P:') ? 'planque' : id.startsWith('c:') ? 'c' : /^s\d$/.test(id) ? 's' : 'p';
   cadrer(id);
   S.tabSheet = { k, id };
   setTimeout(rerender, id === 'titre' ? 0 : 280);
@@ -540,7 +576,7 @@ export function monterTableau(rerender) {
     if (el && reliable(el.dataset.tid) && el.dataset.tid !== from && board.contains(el)) return el;
     const r = vp.getBoundingClientRect(), v = S.tabV;
     let best = null, dmin = 70;
-    board.querySelectorAll('.tb-it[data-tid], .tb-lieu[data-tid]').forEach((x) => {
+    board.querySelectorAll('.tb-it[data-tid], .tb-lieu[data-tid], .tb-planque[data-tid]').forEach((x) => {
       const id = x.dataset.tid;
       if (!reliable(id) || id === from) return;
       const p = ancre(affaire(st, n), dispo(n), id);
