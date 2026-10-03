@@ -12,6 +12,10 @@ import {
   ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect,
 } from '../engine/enquete.js';
 import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal } from './enquete.js';
+import { LIEUX as LIEUX3, MODES, itineraire, fmtDist, nomTroncon } from '../engine/carte3.js';
+import { dossierAffaire3, numeroPv } from '../engine/dossier.js';
+import { planSvg3, posLieu3, PLANQUE_POS3 } from './plan3.js';
+import { journalHtml, journalAuto } from './journal.js';
 
 // ───── Dimensions du tableau ─────
 // Version 2 : tableau élargi (2 800 de large) ; les dispositions de la version 1 sont décalées de 600 vers la droite.
@@ -25,7 +29,7 @@ const PLANQUE_POS = {
   'Péniche amarrée': [495, 665], 'Box de garage n° 12': [300, 705], 'Lavoir couvert': [450, 785], 'Ancien cinéma': [740, 725],
   'Serre abandonnée': [135, 815], 'Local de chaufferie': [620, 840], 'Cabanon de jardin': [300, 860], 'Laverie fermée': [790, 850],
 };
-const planquePos = (p) => PLANQUE_POS[p.nom] || (p.rive === 'sud' ? [440, 760] : [440, 470]);
+const planquePos = (p, aff) => (aff && aff.prof ? PLANQUE_POS3[p.nom] : PLANQUE_POS[p.nom]) || (p.rive === 'sud' ? [440, 760] : [440, 470]);
 const COL = { occ: '#2F6FD3', moy: '#C88A12', mob: '#C2302B' };
 const PINS = { r: ['#FF9A93', '#D32F2F', '#7A1010'], b: ['#9CC8FF', '#2F6FD3', '#123B7A'], y: ['#FFE59A', '#E8A800', '#7A5600'], g: ['#A8F0C6', '#2E9E62', '#11502E'], w: ['#FFFFFF', '#D8D2C4', '#7D7566'] };
 const PIN_EL = { occ: 'b', moy: 'y', mob: 'r' };
@@ -34,6 +38,9 @@ const DEF_POS = {
   'c:occ': [1080, 190], 'c:moy': [1400, 170], 'c:mob': [1720, 190],
   s0: [760, 1460], s1: [1080, 1450], s2: [1400, 1460], s3: [1720, 1450], s4: [2040, 1460],
 };
+// Dossier complet : le PV de premières constatations et le journal sont plus longs, on les écarte.
+const DEF_POS3 = { recit: [250, 170], une: [665, 170], plainte: [250, 1010], scene: [665, 1090] };
+let PROF = false; // affaire affichée en dossier complet (mis à jour à chaque affichage du tableau)
 const TUTO_KEY = 'mazp-tuto-tableau';
 
 // ───── Disposition gardée sur l'appareil (dans le carnet de l'affaire) ─────
@@ -50,15 +57,24 @@ function dispo(n) {
 }
 function ecrireDispo(n, t) { const c = lireCarnet(n); c.tab = t; ecrireCarnet(n, c); }
 
-const posDe = (t, id) => t.pos[id] || DEF_POS[id] || [BW / 2, BH / 2];
+const posDe = (t, id) => t.pos[id] || (PROF && DEF_POS3[id]) || DEF_POS[id] || [BW / 2, BH / 2];
 const rotDe = (id) => ((hashString(id) % 9) - 4) * 0.8;
-const lieuPos = (k) => { const l = CARTE.lieux[k]; return [MAP.x + l.x, MAP.y + l.y]; };
-const pieceSuspect = (f) => (/^(occ|moy|mob):\d$/.test(f) ? Number(f.split(':')[1]) : null);
+// Dossier complet : le plan routier (lieux à d'autres endroits, Haut-Delta au bord est).
+const lieuxDe = (aff) => (aff.prof ? LIEUX3 : CARTE.lieux);
+const lieuPos = (aff, k) => { if (aff.prof) { const q = posLieu3(k); return q ? [MAP.x + q[0], MAP.y + q[1]] : null; } const l = CARTE.lieux[k]; return [MAP.x + l.x, MAP.y + l.y]; };
+/** Documents du dossier d'ouverture (dossier complet) : un PV d'audition par suspect, rangés d'abord dans la boîte. */
+function docsOuverture(aff) { return aff.prof ? aff.suspects.map((_, i) => ({ f: `A:${i}`, j: 1, src: 'audition', doc: true })) : []; }
+/** Couleur d'un mode de transport (tracé sur le plan). */
+/** « à le musée » → « au musée ». */
+const aLieu = (l) => (/^le /.test(l) ? `au ${l.slice(3)}` : /^les /.test(l) ? `aux ${l.slice(4)}` : `à ${l}`);
+const cap1 = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+const COL_MODE = { moteur: '#D9480F', velo: '#1B7F4B', pied: '#5B3FA8' };
+const pieceSuspect = (f) => (/^(occ|moy|mob|A):\d$/.test(f) ? Number(f.split(':')[1]) : null);
 
 /** Point d'accroche (la punaise) d'un élément du tableau. */
 function ancre(aff, t, id) {
-  if (id.startsWith('L:')) { const k = id.slice(2); return CARTE.lieux[k] ? lieuPos(k) : null; }
-  if (id.startsWith('P:')) { const p = aff.planques[Number(id.slice(2))]; if (!p) return null; const [x, y] = planquePos(p); return [MAP.x + x, MAP.y + y]; }
+  if (id.startsWith('L:')) { const k = id.slice(2); return lieuxDe(aff)[k] ? lieuPos(aff, k) : null; }
+  if (id.startsWith('P:')) { const p = aff.planques[Number(id.slice(2))]; if (!p) return null; const [x, y] = planquePos(p, aff); return [MAP.x + x, MAP.y + y]; }
   return posDe(t, id);
 }
 
@@ -72,20 +88,35 @@ const CONSTAT_DEM = { occ: 'cam', moy: 'labo', mob: 'temoin' };
 const CONSTAT_TITRE = { occ: 'L’heure exacte', moy: 'Comment on est entré', mob: 'Pourquoi on a volé' };
 
 // ───── Objets : chaque pièce a son support ─────
-function typePiece(p) {
+function typePiece(p, aff) {
+  if (p.doc) return 'au';
   if (p.src === 'rebond') return 'jn';
+  if (aff && aff.prof) return 'pv';
   const k = p.f.split(':')[0];
   return { occ: 'tk', moy: 'sc', mob: 'rv', p: 'lb' }[k] || 'lb';
 }
-const LARG = { tk: 150, sc: 150, rv: 160, lb: 150, jn: 170 };
+const LARG = { tk: 150, sc: 150, rv: 160, lb: 150, jn: 170, pv: 168, au: 196 };
 const ENTETE = { tk: 'Vérification d’alibi', sc: 'Scellé · moyens', rv: 'Comptes et entourage', lb: 'Rapport · planque', jn: 'La Gazette du Delta' };
+// Petits PV (dossier complet) : objet et couleur selon ce qu'ils vérifient.
+const PV_OBJET = { occ: 'Vérification d’alibi', moy: 'Vérification des moyens', mob: 'Comptes, téléphonie, entourage', p: 'Rapport du labo · planque' };
+const PV_COL = { occ: '#2F6FD3', moy: '#C88A12', mob: '#C2302B', p: '#6B4FB8' };
+/** Numéro de PV d'une pièce (stable). */
+const numPv = (aff, f) => numeroPv(S.state.seed, aff.n, f);
+/** Qui a rédigé la pièce : ta zone, la zone qui l'a partagée, le labo… */
+function redacteur(p) {
+  const st = S.state, z = myZone();
+  if (p.src === 'partage' && p.de && st.zones[p.de]) return zoneName(st.zones[p.de]);
+  if (p.src === 'pjf') return 'Appui PJF';
+  if (p.src === 'rattrapage') return 'Dossier de rattrapage';
+  return z ? zoneName(z) : 'ta zone';
+}
 
 /** Où en est le partage d'une pièce : reçue, connue de tous, prévue ce soir, déjà partagée ou gardée pour soi. */
 function statutPartage(p) {
   const st = S.state, d = S.draft || {};
   const nom = (u) => (st.zones[u] ? zoneName(st.zones[u]) : 'une zone');
   if (p.src === 'partage') return { k: 'recue', txt: `Reçue de ${p.de ? nom(p.de) : 'une zone'}` };
-  if (p.src === 'ouverture' || p.src === 'rebond') return { k: 'tous', txt: 'Connue de toutes les zones' };
+  if (p.src === 'ouverture' || p.src === 'rebond' || p.doc) return { k: 'tous', txt: 'Connue de toutes les zones' };
   const prevu = (d.partages || []).filter((x) => x.f === p.f);
   if (prevu.length) return { k: 'prevu', txt: `Partage ce soir : ${prevu.map((x) => (x.a === '*' ? 'toutes les zones' : nom(x.a))).join(', ')}` };
   const deja = [...dejaPartagee(st, S.user.uid, p.f)].filter((u) => st.zones[u]);
@@ -107,8 +138,18 @@ function chronologie(aff, dos) {
   return lignes.sort((a, b) => a.j - b.j);
 }
 
+/** Les questions-réponses d'une audition, en petit (au tableau) ou en grand (volet). */
+function auditionHtml(aff, i, grand = false) {
+  const a = dossierAffaire3(S.state.seed, aff).auditions[i];
+  if (!a) return '';
+  if (grand) return `<p class="tiny muted" style="margin:0">PV n° ${esc(a.numero)} · entendu${aff.suspects[i].f ? 'e' : ''} le ${esc(a.heure.toLowerCase())}</p>${a.qr.map(([q, r]) => `<div class="pv-qr"><p class="pv-q">Q : ${esc(q)}</p><p class="pv-r">R : ${esc(r)}</p></div>`).join('')}<p class="tiny muted" style="margin:0">Lecture faite, persiste et signe.</p>`;
+  return `<span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">PV n° ${esc(a.numero)} · audition</span><strong class="tb-pv-qui">${esc(a.qui)}</strong><span class="tb-k">${esc(a.role)} · ${esc(a.heure)}</span>
+    <div class="tb-txt tb-qr">${a.qr.map(([q, r]) => `<p><b>Q</b> ${esc(q)}</p><p><b>R</b> ${esc(r)}</p>`).join('')}</div><span class="tb-k" style="text-align:right">Lecture faite, persiste et signe.</span><span class="tb-signature">${esc(aff.suspects[i].nom)}</span>`;
+}
+
 function objetPiece(aff, p, rebonds) {
-  const ty = typePiece(p);
+  const ty = typePiece(p, aff);
+  if (ty === 'au') return `<div class="tb-obj tb-pvd">${auditionHtml(aff, pieceSuspect(p.f))}</div>`;
   const i = pieceSuspect(p.f);
   const qui = i !== null ? aff.suspects[i].nom.toUpperCase() : '';
   const lignes = texteFait(aff, p.f).split('\n').map((l) => `<p>${esc(l)}</p>`).join('');
@@ -121,6 +162,10 @@ function objetPiece(aff, p, rebonds) {
     const photo = p.f.startsWith('p:') ? photoButin(`bt${aff.n}`) : si !== null ? portraitSuspect(aff.suspects[si], si, 'tb-face tb-gris') : '';
     return `<div class="tb-obj tb-jn"><span class="tb-k">${ENTETE.jn} · J${p.j}</span><strong>${esc(r ? r.titre : titrePiece(aff, p.f))}</strong>${photo ? `<div class="tb-photo">${photo}</div>` : ''}${r && r.texte ? `<p class="tb-chapo">${esc(r.texte)}</p>` : ''}<div class="tb-txt">${lignes}</div></div>`;
   }
+  if (ty === 'pv') {
+    const k = p.f.split(':')[0];
+    return `<div class="tb-obj tb-pvp" style="--c:${PV_COL[k] || '#6B4FB8'}"><span class="tb-pv-bande">PV n° ${numPv(aff, p.f)}</span><span class="tb-k">Objet : ${PV_OBJET[k] || 'Pièce'}${qui ? ` · ${esc(qui)}` : ''}</span><div class="tb-txt">${lignes}</div><span class="tb-pv-sign">${esc(redacteur(p))} · J${p.j}</span>${tampon}</div>`;
+  }
   if (ty === 'sc') return `<div class="tb-obj tb-sc"><span class="tb-bande"></span><span class="tb-k">${ENTETE.sc}${qui ? ` · ${esc(qui)}` : ''}</span><div class="tb-txt">${lignes}</div>${tampon}</div>`;
   return `<div class="tb-obj tb-${ty}"><span class="tb-k">${ENTETE[ty]}${qui ? ` · ${esc(qui)}` : ''} · J${p.j}</span><div class="tb-txt">${lignes}</div>${tampon}</div>`;
 }
@@ -132,6 +177,7 @@ function pinHtml(c) {
 
 // ───── Plan du district ─────
 function planSvg(aff, connusOcc) {
+  if (aff.prof) return planSvg3(aff, { route: S.tabRoute && S.tabRoute.n === aff.n ? S.tabRoute : null, heures: connusOcc });
   const [fx, fy] = [CARTE.lieux[aff.pos].x, CARTE.lieux[aff.pos].y];
   const declares = [...new Set(aff.suspects.filter((s) => s.alibi.type !== 'seul').map((s) => s.alibi.pos))];
   const traits = aff.carte ? declares.map((k) => {
@@ -189,7 +235,7 @@ function planSvg(aff, connusOcc) {
 // ───── Le tableau ─────
 function etatTab(aff, dos) {
   const t = dispo(aff.n);
-  const pieces = dos.pieces.filter((p) => !p.f.startsWith('c:'));
+  const pieces = [...dos.pieces.filter((p) => !p.f.startsWith('c:')), ...docsOuverture(aff)];
   const connus = new Set(dos.pieces.map((p) => p.f));
   const placees = pieces.filter((p) => t.places.includes(p.f));
   const boite = pieces.filter((p) => !t.places.includes(p.f));
@@ -214,9 +260,16 @@ function elementsHtml(aff, dos, et) {
     out.push(wrap(`c:${e}`, 124, 1.7, `<div class="tb-obj tb-fiche" style="--c:${COL[e]}"><span class="tb-k">${ELEMENT_NOM[e]} · ${CONSTAT_TITRE[e]}</span><span class="tb-main">${faite ? esc(resumeConstat(aff, e)) : attente ? 'Résultat dans ta boîte' : '???'}</span></div>`, PIN_EL[e]));
   }
   // Procès-verbal d'ouverture : le récit de l'affaire, toujours au tableau.
-  out.push(wrap('recit', 210, 1.6, `<div class="tb-obj tb-pv"><span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">Procès-verbal d’ouverture · affaire n° ${aff.n}</span><strong>${esc(aff.titre)}</strong><div class="tb-txt"><p>${esc(aff.recit)}</p></div><span class="tb-k">Plaignant${/^la /.test(aff.vic) ? 'e' : ''} : ${esc(aff.vic)} · butin : ${esc(aff.butin)}</span></div>`, 'w'));
+  const d3 = aff.prof ? dossierAffaire3(S.state.seed, aff) : null;
+  if (d3) out.push(wrap('recit', 220, 1.6, `<div class="tb-obj tb-pv"><span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">PV n° ${esc(d3.pvc.numero)} · ${esc(d3.pvc.titre)}</span><strong>${esc(aff.titre)}</strong><div class="tb-txt">${d3.pvc.lignes.map((x) => `<p>${esc(x)}</p>`).join('')}</div><span class="tb-k">Affaire n° ${aff.n} · plaignant${/^la /.test(aff.vic) ? 'e' : ''} : ${esc(d3.victime)}</span></div>`, 'w'));
+  else out.push(wrap('recit', 210, 1.6, `<div class="tb-obj tb-pv"><span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">Procès-verbal d’ouverture · affaire n° ${aff.n}</span><strong>${esc(aff.titre)}</strong><div class="tb-txt"><p>${esc(aff.recit)}</p></div><span class="tb-k">Plaignant${/^la /.test(aff.vic) ? 'e' : ''} : ${esc(aff.vic)} · butin : ${esc(aff.butin)}</span></div>`, 'w'));
   // Affaires ouvertes depuis le plan : la une de la Gazette, la photo de la scène et le dépôt de plainte.
-  if (aff.carte) {
+  if (d3) {
+    const j = d3.journal;
+    out.push(wrap('une', 230, 1.6, `<div class="tb-obj tb-une"><span class="tb-une-titre">La Gazette du Delta</span><span class="tb-une-date">N° ${j.numero} · ${esc(j.date)}</span><span class="tb-k">${esc(j.surtitre)}</span><strong>${esc(j.titre)}</strong><div class="tb-photo">${photoUne(d3.scene, `un${aff.n}`)}</div><span class="tb-legende">${esc(j.legende)}</span><p class="tb-chapo">${esc(j.chapo)}</p><div class="tb-txt">${j.corps.slice(0, 2).map((x) => `<p>${esc(x)}</p>`).join('')}</div><span class="tb-lire">Lire le journal ›</span></div>`, 'w', 'tb-p-jn'));
+    out.push(wrap('scene', 130, 1.7, `<div class="tb-obj tb-polo tb-scene"><div class="tb-photo">${photoScene(d3.scene, `sc${aff.n}`)}</div><span class="tb-prenom" style="font-size:13px">Scène · J1</span><span class="tb-role">photo du labo, plots 1 à 3</span></div>`, 'r'));
+    out.push(wrap('plainte', 190, 1.6, `<div class="tb-obj tb-pv"><span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">PV n° ${esc(numPv(aff, 'plainte'))} · ${esc(d3.plainte.titre)}</span><strong class="tb-pv-qui">${esc(d3.plainte.qui)}</strong><div class="tb-txt">${d3.plainte.lignes.map((x) => `<p>${esc(x)}</p>`).join('')}</div><span class="tb-signature">${esc(d3.victime)}</span></div>`, 'w'));
+  } else if (aff.carte) {
     const rc = recitAffaire(S.state.seed, aff);
     out.push(wrap('une', 230, 1.6, `<div class="tb-obj tb-une"><span class="tb-une-titre">La Gazette du Delta</span><span class="tb-une-date">Édition du matin · jour 1</span><span class="tb-k">${esc(rc.une.surtitre)}</span><strong>${esc(rc.une.titre)}</strong><div class="tb-photo">${photoUne(rc.scene, `un${aff.n}`)}</div><span class="tb-legende">${esc(rc.une.legende)}</span><p class="tb-chapo">${esc(rc.une.chapo)}</p><div class="tb-txt">${rc.une.corps.map((x) => `<p>${esc(x)}</p>`).join('')}</div></div>`, 'w', 'tb-p-jn'));
     out.push(wrap('scene', 130, 1.7, `<div class="tb-obj tb-polo tb-scene"><div class="tb-photo">${photoScene(rc.scene, `sc${aff.n}`)}</div><span class="tb-prenom" style="font-size:13px">Scène · J1</span><span class="tb-role">photo du labo, plots 1 à 3</span></div>`, 'r'));
@@ -237,22 +290,22 @@ function elementsHtml(aff, dos, et) {
   });
   // Pièces punaisées.
   for (const p of et.placees) {
-    const ty = typePiece(p);
+    const ty = typePiece(p, aff);
     out.push(wrap(p.f, LARG[ty], 1.6, objetPiece(aff, p, rebonds), ty === 'jn' ? 'w' : PIN_EL[p.f.split(':')[0]] || 'g', `tb-p-${ty}`));
   }
   // Lieux déclarés, punaisés sur le plan.
   const declares = [...new Set(aff.suspects.filter((s) => s.alibi.type !== 'seul').map((s) => s.alibi.pos))];
   for (const k of declares) {
-    const l = CARTE.lieux[k];
-    const [x, y] = lieuPos(k);
+    const l = lieuxDe(aff)[k];
+    const [x, y] = lieuPos(aff, k);
     const id = `L:${k}`;
-    out.push(`<div class="tb-lieu ${sel === id ? 'tb-sel' : ''} ${S.tabFrom === id ? 'tb-from' : ''} ${l.loin ? 'loin' : ''}" data-tid="${id}" style="left:${x}px;top:${y}px"><span class="tb-lieu-pt"></span><span class="tb-lieu-nom">${esc(l.nom)}</span></div>`);
+    out.push(`<div class="tb-lieu ${aff.prof ? 'p3l' : ''} ${sel === id ? 'tb-sel' : ''} ${S.tabFrom === id ? 'tb-from' : ''} ${l.loin ? 'loin' : ''}" data-tid="${id}" style="left:${x}px;top:${y}px"><span class="tb-lieu-pt"></span><span class="tb-lieu-nom">${esc(l.nom)}</span></div>`);
   }
   // Planques possibles, punaisées sur leur rive, avec la marque du joueur.
   aff.planques.forEach((p, i) => {
-    const [px, py] = planquePos(p);
+    const [px, py] = planquePos(p, aff);
     const id = `P:${i}`, m = carnet.p[i] || 0;
-    out.push(`<div class="tb-planque m${m} ${sel === id ? 'tb-sel' : ''} ${S.tabFrom === id ? 'tb-from' : ''}" data-tid="${id}" style="left:${MAP.x + px}px;top:${MAP.y + py}px"><span class="tb-lieu-pt"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 11l8-6 8 6v8H4z" fill="currentColor"/></svg></span><span class="tb-lieu-nom">${esc(p.nom)}</span><span class="tb-pmark">${['', '✕', '?', '●'][m]}</span></div>`);
+    out.push(`<div class="tb-planque ${aff.prof ? 'p3l' : ''} m${m} ${sel === id ? 'tb-sel' : ''} ${S.tabFrom === id ? 'tb-from' : ''}" data-tid="${id}" style="left:${MAP.x + px}px;top:${MAP.y + py}px"><span class="tb-lieu-pt"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 11l8-6 8 6v8H4z" fill="currentColor"/></svg></span><span class="tb-lieu-nom">${esc(p.nom)}</span><span class="tb-pmark">${['', '✕', '?', '●'][m]}</span></div>`);
   });
   // Ficelles et nœuds.
   const fils = t.liens.map(([a, b]) => filHtml(aff, t, a, b)).join('');
@@ -301,7 +354,8 @@ function voletSuspect(aff, dos, i, et) {
   return `<div class="tb-tete">${portraitSuspect(s, i, 'tb-face tb-mini')}
       <div class="col" style="gap:2px;min-width:0"><span class="tb-titre">${esc(s.nom)}</span><span class="tiny muted">${esc(fiche.lien)}</span>
       ${multi ? `<span class="tiny ${mien ? 'good' : 'muted'}">${mien ? 'ta cellule' : 'autre cellule : vérifications au double'}</span>` : ''}</div></div>
-    <p class="small tb-fiche-pub">${esc(fiche.declaration)}<br>${fiche.trajet ? `<strong>${esc(fiche.trajet)}</strong><br>` : ''}${esc(fiche.vehicule)}<br><span class="muted">${esc(fiche.rumeur)}</span></p>
+    <p class="small tb-fiche-pub">${esc(fiche.declaration)}<br>${fiche.trajet ? `<strong>${esc(fiche.trajet)}</strong><br>` : ''}${aff.prof ? `<strong>${esc(fiche.vehicule)}</strong>` : esc(fiche.vehicule)}<br><span class="muted">${esc(fiche.rumeur)}</span></p>
+    ${aff.prof ? `<div class="tb-duo"><button type="button" class="btn small" data-action="tab-ouvrir" data-tid="A:${i}">📄 Lire son audition</button>${s.alibi.type !== 'seul' ? `<button type="button" class="btn small" data-action="tab-ouvrir" data-tid="L:${esc(s.alibi.pos)}">🗺️ Son trajet</button>` : ''}</div>` : ''}
     ${lignes}
     <div class="tb-duo">
       <button type="button" class="btn small ${surPiste ? 'primary' : 'outline'}" data-action="piste" data-i="${i}" aria-pressed="${surPiste}">${surPiste ? '✓ Piste prioritaire' : 'Piste prioritaire (gratuit)'}</button>
@@ -322,6 +376,15 @@ function voletConstat(aff, dos, e, et) {
 }
 
 function voletPiece(aff, dos, f) {
+  const doc = docsOuverture(aff).find((x) => x.f === f);
+  if (doc) {
+    const i = pieceSuspect(f), s = aff.suspects[i];
+    return `<span class="tb-ligne-k" style="color:var(--amber)">Procès-verbal d’audition</span><span class="tb-titre">${esc(s.nom)}</span>
+      <span class="tiny muted">${esc(cap1(s.role))}, ${s.age} ans · connu de toutes les zones</span>
+      ${auditionHtml(aff, i, true)}
+      <div class="tb-duo"><button type="button" class="btn small" data-action="tab-ouvrir" data-tid="s${i}">Voir ${esc(s.prenom)}</button>
+      ${dispo(aff.n).places.includes(f) ? `<button type="button" class="btn small ghost" data-action="tab-remettre" data-f="${esc(f)}">Remettre dans la boîte</button>` : `<button type="button" class="btn small primary" data-action="tab-sortir" data-f="${esc(f)}">Sortir de la boîte</button>`}</div>`;
+  }
   const p = dos.pieces.find((x) => x.f === f);
   if (!p) return '<p class="small muted">Cette pièce n’est plus au dossier.</p>';
   const i = pieceSuspect(f);
@@ -339,7 +402,29 @@ function voletPiece(aff, dos, f) {
     ${dispo(aff.n).places.includes(f) ? `<button type="button" class="btn small ghost" data-action="tab-remettre" data-f="${esc(f)}">Remettre dans la boîte</button>` : `<button type="button" class="btn small primary" data-action="tab-sortir" data-f="${esc(f)}">Sortir de la boîte</button>`}</div>`;
 }
 
+/** Dossier complet : trajet par la route entre deux lieux, pour les trois moyens de transport. */
+function trajetsHtml(aff, a, b) {
+  const r = S.tabRoute && S.tabRoute.n === aff.n ? S.tabRoute : null;
+  const lignes = Object.entries(MODES).map(([m, md]) => {
+    const it = itineraire(a, b, m, aff.travaux);
+    if (!it) return '';
+    const on = r && r.a === a && r.b === b && r.mode === m;
+    return `<button type="button" class="tb-trajet-l ${on ? 'on' : ''}" style="--c:${COL_MODE[m]}" data-action="tab-route" data-a="${esc(a)}" data-b="${esc(b)}" data-m="${m}" aria-pressed="${on}"><span>${md.icone} ${md.nom}</span><span class="tiny muted">${fmtDist(it.m)}</span><strong>${it.min} min</strong></button>`;
+  }).join('');
+  const trav = aff.travaux ? `<p class="tiny" style="margin:0;color:var(--red-soft)">🚧 Travaux : ${esc(nomTroncon(aff.travaux))} fermé aux voitures et deux-roues (vélos et piétons passent).</p>` : '';
+  return `${lignes}${trav}<p class="tiny muted" style="margin:0">Touche un moyen de transport : l’itinéraire le plus court est tracé sur le plan. Voitures : pas de passerelle ni de zone piétonne.</p>`;
+}
+
 function voletLieu(aff, k, et) {
+  if (aff.prof) {
+    const l = LIEUX3[k];
+    const qui = aff.suspects.filter((s) => s.alibi.type !== 'seul' && s.alibi.pos === k);
+    return `<span class="tb-ligne-k" style="color:var(--blue-soft)">Lieu déclaré${l.rue ? ` · ${esc(l.rue)}` : ''}</span><span class="tb-titre">${esc(l.nom)}</span>
+      ${qui.map((s) => `<p class="small" style="margin:0"><strong>${esc(s.prenom)}</strong> ${esc(ficheSuspect(aff, s).declaration.replace(/^Dit/, 'dit').replace(/\.$/, ''))} · <span class="muted">${esc(ficheSuspect(aff, s).vehicule.replace(/^Véhicule : /, ''))}</span></p>`).join('')}
+      <span class="tb-ligne-k">Trajet jusqu’${esc(aLieu(aff.lieu))}</span>
+      ${trajetsHtml(aff, k, aff.pos)}
+      ${et.connus.has('c:occ') ? `<p class="tiny muted" style="margin:0">Les caméras : entrée à ${hm(aff.heure)}, sortie à ${hm(aff.fin)}.</p>` : '<p class="tiny muted" style="margin:0">L’heure exacte des faits viendra des caméras.</p>'}`;
+  }
   const l = CARTE.lieux[k];
   const t = aff.carte ? trajet(aff.pos, k) : null;
   const qui = aff.suspects.filter((s) => s.alibi.type !== 'seul' && s.alibi.pos === k);
@@ -362,6 +447,21 @@ function voletPlanque(aff, dos, i) {
 }
 
 function voletPlan(aff, et) {
+  if (aff.prof) {
+    const r = S.tabRoute && S.tabRoute.n === aff.n ? S.tabRoute : { a: aff.pos, b: null };
+    const opts = [aff.pos, ...[...new Set(aff.suspects.filter((s) => s.alibi.type !== 'seul').map((s) => s.alibi.pos))], ...Object.keys(LIEUX3).filter((k) => k !== aff.pos)];
+    const uniq = [...new Set(opts)];
+    const sel = (cle2, v) => `<select class="text" data-change="tab-route-${cle2}" style="min-height:40px;font-size:13px">${cle2 === 'b' && !v ? '<option value="">Choisir…</option>' : ''}${uniq.map((k) => `<option value="${k}" ${k === v ? 'selected' : ''}>${k === aff.pos ? '✕ ' : ''}${esc(LIEUX3[k].nom)}</option>`).join('')}</select>`;
+    const declares = [...new Set(aff.suspects.filter((s) => s.alibi.type !== 'seul').map((s) => s.alibi.pos))];
+    return `<span class="tb-titre">Plan routier du district</span>
+      <p class="small muted" style="margin:0">Croix rouge : ${esc(aff.lieu)}. Les temps suivent la route (1 km = 2 min en voiture ou deux-roues, 4 min à vélo, 12 min à pied). Les passerelles et la zone piétonne de la Grand-Place sont réservées aux vélos et aux piétons.</p>
+      <span class="tb-ligne-k">Mesurer un trajet</span>
+      <label class="tiny muted">Départ ${sel('a', r.a)}</label><label class="tiny muted">Arrivée ${sel('b', r.b)}</label>
+      ${r.a && r.b && r.a !== r.b ? trajetsHtml(aff, r.a, r.b) : ''}
+      <span class="tb-ligne-k">Lieux déclarés par les suspects</span>
+      ${declares.map((k) => `<button type="button" class="tb-trajet-l" data-action="tab-ouvrir" data-tid="L:${k}"><span>${esc(LIEUX3[k].nom)}</span><span class="tiny muted">${aff.suspects.filter((s) => s.alibi.type !== 'seul' && s.alibi.pos === k).map((s) => esc(s.prenom)).join(', ')}</span><strong>›</strong></button>`).join('')}
+      ${S.tabRoute ? '<button type="button" class="btn small ghost" data-action="tab-route-effacer">Effacer le tracé</button>' : ''}`;
+  }
   const declares = [...new Set(aff.suspects.filter((s) => s.alibi.type !== 'seul').map((s) => s.alibi.pos))];
   return `<span class="tb-titre">Plan du district</span>
     <p class="small muted" style="margin:0">Croix rouge : ${esc(aff.lieu)}.${aff.carte ? ' Les pointillés donnent le temps de trajet jusqu’aux lieux où les suspects disent avoir été.' : ''}</p>
@@ -370,6 +470,13 @@ function voletPlan(aff, et) {
 }
 
 function voletDoc(aff, id) {
+  if (aff.prof && id === 'recit') {
+    const d3 = dossierAffaire3(S.state.seed, aff);
+    return `<span class="tb-ligne-k" style="color:var(--amber)">PV n° ${esc(d3.pvc.numero)}</span><span class="tb-titre">${esc(d3.pvc.titre)}</span>${d3.pvc.lignes.map((x) => `<p class="small" style="margin:0;line-height:1.5">${esc(x)}</p>`).join('')}
+      <span class="pill amber" style="align-self:flex-start">Jour ${S.state.enquete.jour} sur ${ENQ.dureeMax} · découverte ce soir : ${pointsDecouverte(S.state.enquete.jour)} pts</span>
+      <button type="button" class="btn small" data-action="journal-ouvrir">📰 Relire le journal</button>
+      <a class="small" href="#guide-enquete">Comment fonctionne l’enquête ?</a>`;
+  }
   const rc = recitAffaire(S.state.seed, aff);
   if (id === 'une') return `<span class="tb-ligne-k" style="color:var(--amber)">La Gazette du Delta · jour 1</span><span class="tb-titre">${esc(rc.une.titre)}</span><div class="tb-photo-grande">${photoUne(rc.scene, 'unv')}</div><p class="small" style="margin:0;font-weight:600">${esc(rc.une.chapo)}</p>${rc.une.corps.map((x) => `<p class="small" style="margin:0;line-height:1.5">${esc(x)}</p>`).join('')}`;
   if (id === 'scene') return `<span class="tb-ligne-k" style="color:var(--amber)">Photo de la scène · labo, jour 1</span><span class="tb-titre">${esc(aff.lieu.charAt(0).toUpperCase() + aff.lieu.slice(1))}</span><div class="tb-photo-grande">${photoScene(rc.scene, 'scv')}</div><p class="small muted" style="margin:0">Les plots 1 à 3 marquent les endroits relevés par le labo. La façon d’entrer, l’heure exacte et le mobile restent à établir : ce sont les constatations.</p>`;
@@ -393,7 +500,7 @@ function voletBoite(aff, et) {
     ...et.fichesAFaire.map((e) => `<div class="tb-boite-l nouveau"><span class="tb-vign tb-vign-fiche" style="--c:${COL[e]}"></span><div class="col grow" style="gap:2px;min-width:0"><span class="tb-ligne-k" style="color:var(--red-soft)">Constatation · ${ELEMENT_NOM[e]}</span><span class="small" style="font-weight:600">${CONSTAT_TITRE[e]} : le résultat est là</span></div><button type="button" class="btn primary small" data-action="tab-fiche" data-e="${e}">Compléter la fiche</button></div>`),
     ...et.boite.map((p) => {
       const nv = p.j >= j - 1;
-      return `<div class="tb-boite-l ${nv ? 'nouveau' : ''}"><span class="tb-vign tb-vign-${typePiece(p)}"></span><div class="col grow" style="gap:2px;min-width:0"><span class="tb-ligne-k" style="color:${nv ? 'var(--red-soft)' : 'var(--amber)'}">${nv ? 'Nouveau · ' : ''}J${p.j} · ${sourceDe(p)}</span><button type="button" class="tb-lien" data-action="tab-ouvrir" data-tid="${esc(p.f)}">${esc(titrePiece(aff, p.f))}</button><span class="tiny tb-t-${statutPartage(p).k}">${esc(statutPartage(p).txt)}</span></div><button type="button" class="btn primary small" data-action="tab-sortir" data-f="${esc(p.f)}">Sortir</button></div>`;
+      return `<div class="tb-boite-l ${nv ? 'nouveau' : ''}"><span class="tb-vign tb-vign-${typePiece(p, aff)}"></span><div class="col grow" style="gap:2px;min-width:0"><span class="tb-ligne-k" style="color:${nv ? 'var(--red-soft)' : 'var(--amber)'}">${nv ? 'Nouveau · ' : ''}J${p.j} · ${sourceDe(p)}</span><button type="button" class="tb-lien" data-action="tab-ouvrir" data-tid="${esc(p.f)}">${esc(titrePiece(aff, p.f))}</button><span class="tiny tb-t-${statutPartage(p).k}">${esc(statutPartage(p).txt)}</span></div><button type="button" class="btn primary small" data-action="tab-sortir" data-f="${esc(p.f)}">Sortir</button></div>`;
     }),
   ];
   return `<div class="between" style="gap:8px;padding-right:44px"><span class="tb-titre" style="padding-right:0">Boîte à pièces</span>${lignes.length > 1 ? '<button type="button" class="btn small ghost" data-action="tab-tout-sortir">Tout sortir</button>' : ''}</div>
@@ -484,12 +591,14 @@ export function renderTableau() {
   const st = S.state, z = myZone();
   const aff = affaire(st, st.enquete.n);
   const dos = dossierDe(st, z);
+  PROF = !!aff.prof;
   const et = etatTab(aff, dos);
   BH = hauteurTableau(aff, et.t);
   const d = S.draft;
   const nbBoite = et.boite.length + et.fichesAFaire.length;
   const neuf = et.fichesAFaire.length || et.boite.some((p) => p.j >= st.enquete.jour - 1);
   const fil = S.tabMode === 'fil';
+  journalAuto(aff);
   if (S.tabTuto === undefined && !tutoTableauVu()) S.tabTuto = 0;
   const spot = S.tabTuto !== null && S.tabTuto !== undefined ? TUTO[S.tabTuto].spot : null;
   const sp = (k) => (spot === k ? 'tb-spot' : '');
@@ -528,7 +637,8 @@ export function renderTableau() {
       <button type="button" class="tb-o" data-action="tab-tuto" aria-label="Revoir le tuto du tableau">?</button>
     </div>
     ${volet(aff, dos, et)}
-    ${tutoHtml()}
+    ${S.journalOuvert === aff.n ? '' : tutoHtml()}
+    ${journalHtml(aff)}
   </main>${tabbar('enquete')}`;
 }
 
@@ -579,7 +689,7 @@ function cadrer(id) {
   // Sur ordinateur, le volet s'ouvre à droite : on cadre dans la partie gauche.
   const w = window.matchMedia && window.matchMedia('(min-width: 1000px) and (hover: hover) and (pointer: fine)').matches ? w0 - 440 : w0;
   let v;
-  if (id === 'plan') { const s = Math.min(1, (w - 20) / MAP.w); v = { s, tx: (w - MAP.w * s) / 2 - MAP.x * s, ty: 64 - MAP.y * s }; }
+  if (id === 'plan' || (aff.prof && id.startsWith('L:'))) { const s = Math.min(1, (w - 20) / MAP.w); v = { s, tx: (w - MAP.w * s) / 2 - MAP.x * s, ty: 64 - MAP.y * s }; }
   else if (id === 'titre') return;
   else { if (!/^(s\d|c:|L:|P:|recit|chrono|une|scene|plainte)/.test(id) && !t.places.includes(id)) return; const p = ancre(aff, t, id); if (!p) return; const s = Math.max(S.tabV.s, 0.85); v = { s, tx: w / 2 - p[0] * s, ty: 80 - p[1] * s }; }
   S.tabV = borner(v);
@@ -588,7 +698,10 @@ function cadrer(id) {
 }
 
 export function ouvrirVolet(id, rerender, { partage = false } = {}) {
-  const k = id === 'titre' || id === 'recit' || id === 'chrono' ? 'faits' : id === 'une' || id === 'scene' || id === 'plainte' ? 'doc' : id === 'plan' ? 'plan' : id.startsWith('L:') ? 'lieu' : id.startsWith('P:') ? 'planque' : id.startsWith('c:') ? 'c' : /^s\d$/.test(id) ? 's' : 'p';
+  const aff = affaire(S.state, S.state.enquete.n);
+  if (aff.prof && id === 'une') { S.journalOuvert = aff.n; S.tabSheet = null; rerender(); return; }
+  if (aff.prof && id.startsWith('L:')) S.tabRoute = { n: aff.n, a: id.slice(2), b: aff.pos, mode: (S.tabRoute && S.tabRoute.mode) || 'moteur' };
+  const k = aff.prof && id === 'recit' ? 'doc' : id === 'titre' || id === 'recit' || id === 'chrono' ? 'faits' : id === 'une' || id === 'scene' || id === 'plainte' ? 'doc' : id === 'plan' ? 'plan' : id.startsWith('L:') ? 'lieu' : id.startsWith('P:') ? 'planque' : id.startsWith('c:') ? 'c' : /^s\d$/.test(id) ? 's' : 'p';
   cadrer(id);
   S.tabSheet = { k, id, partage };
   setTimeout(rerender, id === 'titre' ? 0 : 280);
@@ -644,7 +757,7 @@ export function toutSortir() {
   const t = et.t;
   for (const e of et.fichesAFaire) { if (!t.fiches.includes(e)) t.fiches.push(e); if (!t.neuf.includes(`c:${e}`)) t.neuf.push(`c:${e}`); }
   const ids = et.boite.map((p) => p.f);
-  caser(aff, t, ids, t.places, { grands: new Set(et.boite.filter((p) => typePiece(p) === 'jn').map((p) => p.f)) });
+  caser(aff, t, ids, t.places, { grands: new Set(et.boite.filter((p) => ['jn', 'au'].includes(typePiece(p, aff))).map((p) => p.f)) });
   for (const f of ids) if (!t.neuf.includes(f)) t.neuf.push(f);
   ecrireDispo(aff.n, t);
   return ids.length + et.fichesAFaire.length;
@@ -658,7 +771,7 @@ export function rangerTableau() {
   const t = et.t, fx = new Set(t.fixes);
   const bouge = (id) => !fx.has(id);
   const MARGE = 14;
-  const jn = new Set(et.placees.filter((p) => typePiece(p) === 'jn').map((p) => p.f));
+  const jn = new Set(et.placees.filter((p) => ['jn', 'au'].includes(typePiece(p, aff))).map((p) => p.f));
   const boite = (id, [x, y]) => { const [w, h] = tailleDe(id, jn.has(id)); return [x - w / 2 - MARGE, y - 26, x + w / 2 + MARGE, y + h + MARGE]; };
   // 1. Le cadre : le récit en haut à gauche, la main courante en haut à droite, les fiches au-dessus du plan.
   if (bouge('recit')) t.pos.recit = [250, 60];
@@ -670,7 +783,7 @@ export function rangerTableau() {
   const libre = (r) => r[0] >= 0 && r[2] <= BW && !pris.some((q) => r[0] < q[2] && r[2] > q[0] && r[1] < q[3] && r[3] > q[1]);
   // 2. Les suspects en colonnes de part et d'autre du plan (3 à gauche, 2 à droite), leurs pièces empilées sous la photo.
   const COLS = [175, 475, 775, MAP.x + MAP.w + 180, MAP.x + MAP.w + 480];
-  const ORDRE = { occ: 0, moy: 1, mob: 2 };
+  const ORDRE = { A: -1, occ: 0, moy: 1, mob: 2 };
   const aSuspect = new Set();
   let bas = 0;
   aff.suspects.forEach((_, i) => {
@@ -859,7 +972,7 @@ export function monterTableau(rerender) {
       return;
     }
     if (mobile && S.tabMode !== 'fil' && !dispo(n).fixes.includes(tid)) {
-      const p = dispo(n).pos[tid] || DEF_POS[tid] || [0, 0];
+      const p = posDe(dispo(n), tid);
       g = { t: 'item', id: tid, tid, el, share: !!e.target.closest('.tb-share'), sx: x, sy: y, ox: p[0], oy: p[1], pos: p, moved: false };
     } else {
       g = { t: 'pan', tid, sx: x, sy: y, tx0: S.tabV.tx, ty0: S.tabV.ty, moved: false };

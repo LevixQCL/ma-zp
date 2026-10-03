@@ -47,6 +47,42 @@ for (let n = 1; n <= 600; n++) {
     assert.ok(al.de !== al.ditDe || al.a !== al.ditA);
   }
 }
+// 1 ter. Dossier complet : la vraie route et le véhicule de chaque suspect décident de l'occasion.
+{
+  const { minutes, itineraire, LIEUX } = await import('../js/engine/carte3.js');
+  const { modesPossibles } = await import('../js/engine/enquete.js');
+  const { dossierAffaire3 } = await import('../js/engine/dossier.js');
+  let pieges = 0;
+  for (let n = 1; n <= 800; n++) {
+    const a = genererAffaire(`d${n % 19}`, n, false, true);
+    assert.ok(a.prof && a.carte);
+    assert.deepEqual(candidats(a, a.faits).suspects, [a.coupable]);
+    for (const s of a.suspects) {
+      const al = s.alibi;
+      if (al.type !== 'couvre' && al.type !== 'partiel') continue;
+      assert.ok(al.ditDe <= al.de && al.de < al.a && al.a <= al.ditA, 'fenêtre d’alibi cohérente');
+      const ok = (m) => { const t = minutes(a.pos, al.pos, m, a.travaux); return al.a + t <= a.heure || a.fin + t <= al.de; };
+      if (al.type === 'partiel') assert.ok(ok(s.vehicule.mode), 'alibi troué : son véhicule passe');
+      else { assert.ok(!modesPossibles(s).some(ok), 'alibi qui couvre : aucun moyen possible ne passe'); if (ok('moteur')) pieges++; }
+    }
+    // Le récit ne parle que de ce qui est public.
+    const d = dossierAffaire3(`d${n % 19}`, a);
+    const tout = JSON.stringify([d.journal, d.pvc, d.auditions]);
+    assert.ok(!/undefined|\{e\}|NaN/.test(tout), `texte mal formé (${n})`);
+    assert.ok(!tout.includes(a.textes['c:moy']) && !tout.includes(a.textes['c:mob']));
+    assert.equal(d.auditions.length, 5);
+  }
+  assert.ok(pieges > 50, 'des pièges « en voiture oui, à vélo non »');
+  // Passerelles : à vélo, on passe là où la voiture fait le tour.
+  assert.ok(itineraire('petitpont', 'anniversaire', 'velo').m < itineraire('petitpont', 'anniversaire', 'moteur').m);
+  // Travaux : un pont fermé allonge la route en voiture, pas à vélo.
+  assert.ok(minutes('relais', 'moulins', 'moteur', 'n44-n54') > minutes('relais', 'moulins', 'moteur', null));
+  assert.equal(minutes('relais', 'moulins', 'velo', 'n44-n54'), minutes('relais', 'moulins', 'velo', null));
+  for (const k of Object.keys(LIEUX)) assert.ok(itineraire('tanneurs', k, 'moteur'), `lieu ${k} accessible en voiture`);
+  // L'affaire en cours ne change pas : le dossier complet commence à la suivante.
+  assert.equal(affaire({ seed: 'v', carteDes: 1, profDes: 6 }, 5).prof, false);
+  assert.equal(affaire({ seed: 'v', carteDes: 1, profDes: 6 }, 6).prof, true);
+}
 // Les affaires ouvertes avant l'arrivée du plan ne changent pas.
 {
   const vieux = { seed: 'v', carteDes: 5 };

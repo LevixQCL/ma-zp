@@ -31,6 +31,7 @@ import { renderDiplomatie, ongletsRadio } from './ui/diplomatie.js';
 import { renderParties } from './ui/parties.js';
 import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet, synchroCarnetMaintenant, restaurerCarnet } from './ui/enquete.js';
 import { affaire } from './engine/enquete.js';
+import { marquerJournalVu } from './ui/journal.js';
 import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
@@ -581,6 +582,10 @@ async function onClick(e) {
       case 'tab-volet': S.tabSheet = S.tabSheet && S.tabSheet.k === el.dataset.k ? null : { k: el.dataset.k, id: el.dataset.k }; S.tabMode = 'main'; S.tabFrom = null; rerender(); break;
       case 'tab-ouvrir': S.tabMode = 'main'; S.tabFrom = null; ouvrirVolet(el.dataset.tid, rerender); break;
       case 'tab-fermer': S.tabSheet = null; rerender(); break;
+      case 'tab-route': S.tabRoute = { n: S.state.enquete.n, a: el.dataset.a, b: el.dataset.b, mode: el.dataset.m }; rerender(); break;
+      case 'tab-route-effacer': S.tabRoute = null; rerender(); break;
+      case 'journal-ouvrir': S.journalOuvert = S.state.enquete.n; S.tabSheet = null; rerender(); break;
+      case 'journal-fermer': marquerJournalVu(affaire(S.state, S.state.enquete.n)); S.journalOuvert = null; rerender(); break;
       case 'tab-sortir': sortirPiece(el.dataset.f); S.tabSheet = null; rerender(); toast('Glisse la pièce où tu veux sur le tableau.'); break;
       case 'tab-tout-sortir': { const k = toutSortir(); S.tabSheet = null; rerender(); tableauEnsemble(); toast(`${k} élément${k > 1 ? 's' : ''} punaisé${k > 1 ? 's' : ''} dans les coins libres : range-les comme tu veux.`); break; }
       case 'tab-ranger': { if (!confirm('Ranger le tableau ? Chaque suspect reçoit sa colonne autour du plan, ses pièces en dessous ; les documents et les planques vont sous le plan. Les éléments épinglés ne bougent pas, les ficelles suivent.')) break; const k = rangerTableau(); S.tabSheet = null; rerender(); tableauEnsemble(); toast(k ? 'Tableau rangé autour du plan.' : 'Aucune pièce punaisée à ranger.'); break; }
@@ -1041,6 +1046,12 @@ async function onChange(e) {
   }
   if (el.dataset.change === 'train-type') { S.trainType = el.value; nouvelEntrainement(); rerender(); }
   if (el.dataset.change === 'quest-capacite' && el.value) await saveQuestBonus('capacite', el.value);
+  if ((el.dataset.change === 'tab-route-a' || el.dataset.change === 'tab-route-b') && S.state && S.state.enquete) {
+    const r = S.tabRoute && S.tabRoute.n === S.state.enquete.n ? S.tabRoute : { n: S.state.enquete.n, a: null, b: null, mode: 'moteur' };
+    S.tabRoute = { ...r, [el.dataset.change.slice(-1)]: el.value || null };
+    if (!S.tabRoute.a || !S.tabRoute.b) S.tabRoute = { ...S.tabRoute };
+    rerender();
+  }
   if (el.dataset.change === 'partage-zone' && el.value) {
     const p = (S.draft.partages ||= []);
     if (p.length < 3) p.push({ f: el.dataset.f, a: el.value });
