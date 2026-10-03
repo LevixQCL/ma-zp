@@ -3,17 +3,23 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-03b',
+  id: '2026-10-04',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🎖️', 'Ton équipe sur le terrain', 'tes cinq figures rendent leur service plus efficace (jusqu’à +20 % avec les surnoms). Envoie-en une en mission : mener l’assaut en zone de non-droit ou encadrer un renfort.'],
-    ['🏢', 'Ton commissariat en clair', 'touche son image : ce que te donne chaque bâtiment, et ce qu’apporte le niveau suivant.'],
-    ['🔏', 'Messages codés abîmés', 'des taches d’encre effacent des lettres : à toi de reconstituer les mots.'],
+    ['📰', 'Le journal du lendemain', 'dès la prochaine affaire, La Gazette du Delta s’ouvre en grand et raconte la nuit du vol.'],
+    ['📄', 'Des PV', 'premières constatations, auditions des cinq suspects, vérifications : un vrai dossier à éplucher.'],
+    ['🗺️', 'Une vraie carte', 'rues, ponts, passerelles et travaux : mesure les trajets en voiture, à vélo ou à pied.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Le dossier complet (dès la prochaine affaire)', [
+      ['Le journal du lendemain', 'à l’ouverture, La Gazette du Delta s’ouvre en plein écran : la nuit du vol, l’histoire des lieux, la victime, ce que l’on sait, le quartier sur un extrait du plan et les brèves du jour (lis-les : un pont fermé pour travaux change les trajets). Le journal reste punaisé au tableau, touche-le pour le relire.'],
+      ['Des PV dans le dossier', 'le PV de premières constatations remplace le récit, et la boîte contient le PV d’audition de chaque suspect : son lien avec la victime, où il dit avoir été, comment il se déplace, ce qu’il répond aux rumeurs. Les vérifications arrivent en petits PV numérotés, signés par la zone qui les a obtenus.'],
+      ['Un vrai plan routier', 'des rues nommées, trois ponts routiers, deux passerelles et la zone piétonne de la Grand-Place réservées aux vélos et aux piétons, une échelle. Les temps de trajet ne sont plus écrits : touche un lieu pour tracer l’itinéraire le plus court jusqu’à la scène, en voiture ou deux-roues, à vélo ou à pied, ou mesure n’importe quel trajet depuis le plan.'],
+      ['Le véhicule compte', 'plus de suspects sans voiture : un trou de 15 minutes dans un alibi suffit en voiture, pas forcément à vélo ni à pied. Une camionnette louée (vérification des moyens) compte pour la soirée.'],
+    ]],
     ['Le tableau d’enquête', [
       ['Un vrai tableau', 'l’écran Enquête s’ouvre sur un grand liège encadré de bois. Glisse pour te déplacer, pince ou utilise la molette pour zoomer, et le bouton « vue d’ensemble » montre tout le tableau.'],
       ['Rien n’est rangé pour toi', 'les pièces arrivent dans la boîte à pièces, chaque soir à 20:00. Sors-les une à une et punaise-les où tu veux : près d’un suspect, sur le plan, dans un coin.'],

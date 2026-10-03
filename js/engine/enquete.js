@@ -9,6 +9,7 @@ import { PEINES } from './contenu.js';
 // Tout est déterministe : une affaire se recalcule à partir de la graine et de son numéro.
 import { makeRng, hashString } from './rng.js';
 import { bonusEquip } from './constants.js';
+import { LIEUX as LIEUX3, minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
 
 export const ENQ_VERSION = 2;
 export const ENQ = {
@@ -54,7 +55,7 @@ export const DEMARCHES = {
   banque: { nom: 'Comptes et entourage', motif: 'Extraits de compte via le parquet, téléphonie, entourage.', cout: 3, cible: 'mob', dit: 'dettes, rancunes, fréquentations' },
 };
 export const SOURCES = {
-  ouverture: 'Ouverture du dossier', rattrapage: 'Dossier de rattrapage', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', pjf: 'Appui PJF', partage: 'Partagé', rebond: 'Rebondissement',
+  ouverture: 'Ouverture du dossier', audition: 'PV d’audition', rattrapage: 'Dossier de rattrapage', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', pjf: 'Appui PJF', partage: 'Partagé', rebond: 'Rebondissement',
   ...Object.fromEntries(Object.entries(DEMARCHES).map(([k, d]) => [k, d.nom])),
 };
 
@@ -99,6 +100,21 @@ const VEHICULES = [
   { t: 'une petite citadine', gros: false }, { t: 'un scooter', gros: false }, { t: 'un break', gros: false },
   { t: 'la camionnette de son employeur', gros: true }, { t: 'une moto', gros: false }, { t: 'pas de voiture (vélo et bus)', gros: false, rien: true },
 ];
+// Affaires « dossier complet » : plus de suspects sans voiture, la route compte vraiment.
+const VEHICULES3 = [
+  { t: 'une petite citadine', gros: false, mode: 'moteur', je: 'Avec ma petite citadine.' },
+  { t: 'un scooter', gros: false, mode: 'moteur', je: 'Avec mon scooter.' },
+  { t: 'un break', gros: false, mode: 'moteur', je: 'Avec mon break.' },
+  { t: 'la camionnette de son employeur', gros: true, mode: 'moteur', je: 'Avec la camionnette de mon employeur, je la ramène chez moi le soir.' },
+  { t: 'une moto', gros: false, mode: 'moteur', je: 'Avec ma moto.' },
+  { t: 'un vélo (pas de voiture)', v: 'un vélo', gros: false, rien: true, mode: 'velo', je: 'À vélo, comme toujours. Je n’ai pas de voiture.' },
+  { t: 'un vélo électrique (pas de permis)', v: 'un vélo électrique', gros: false, rien: true, mode: 'velo', je: 'Avec mon vélo électrique. Je n’ai pas le permis.' },
+  { t: 'aucun : se déplace à pied', gros: false, rien: true, mode: 'pied', je: 'À pied. Je n’ai ni voiture ni vélo, je prends le bus en journée.' },
+];
+// Lieux des alibis tels qu'on les dit sur le plan routier.
+const ALIBI3 = { parents: { lieu: 'chez ses parents, à Haut-Delta', je: 'chez mes parents, à Haut-Delta' } };
+const JE_ALIBI = { palace: 'au cinéma Le Palace', relais: 'au restaurant Le Relais', minifoot: 'à l’entraînement de mini-foot', usine: 'au travail, à l’usine', parents: 'chez mes parents', bowling: 'au bowling du Zoning', anniversaire: 'à l’anniversaire d’un collègue' };
+export { JE_ALIBI };
 const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 
 export const hm = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(((m % 60) + 60) % 60).padStart(2, '0')}`;
@@ -192,8 +208,9 @@ function bonneDifficulte(items, cible, attrs, strict = true) {
 const cache = new Map();
 
 /** Affaire n° `n` de la partie. */
-export function genererAffaire(seed, n, carte = false) {
-  const key = `${seed}#${n}${carte ? '#c' : ''}`;
+export function genererAffaire(seed, n, carte = false, prof = false) {
+  if (prof) carte = true;
+  const key = `${seed}#${n}${carte ? '#c' : ''}${prof ? '#p' : ''}`;
   if (cache.has(key)) return cache.get(key);
   const rng = makeRng(`${seed}:enquete2:${n}`);
   const modele = AFFAIRES[(n - 1 + rng.int(0, AFFAIRES.length - 1)) % AFFAIRES.length];
@@ -207,6 +224,9 @@ export function genererAffaire(seed, n, carte = false) {
   const heure = 21 * 60 + 40 + 5 * rng.int(0, 8);           // entrée
   const fin = heure + 5 * rng.int(3, 6);                    // sortie
   const annonce = Math.round(heure / 30) * 30;              // « vers 22:00 » à l'ouverture
+  // Dossier complet : un pont routier est parfois fermé aux voitures pour travaux (tirage à part).
+  const rt = makeRng(`${seed}:enquete3:${n}:route`);
+  const travaux = prof && rt.chance(0.45) ? rt.pick(TRAVAUX_POSSIBLES) : null;
 
   // Suspects : le coupable a les trois ; chaque innocent en rate un, et un seul.
   const prenoms = rng.shuffle(PRENOMS), noms = rng.shuffle(NOMS), roles = rng.shuffle(ROLES);
@@ -226,9 +246,11 @@ export function genererAffaire(seed, n, carte = false) {
     if (!statut.moy) moy[rng.pick(MOY.filter((a) => a !== req.moy))] = true;
     if (!statut.mob) mob[rng.pick(MOB.filter((a) => a !== req.mob))] = true;
     const role = roles[i];
-    const vehicule = rng.pick(VEHICULES);
+    // Dossier complet : la camionnette de l'employeur est toujours disponible (sinon on ne saurait plus comment il roulait).
+    const vehicule = rng.pick(prof ? VEHICULES3.filter((v) => !v.gros || moy.volume) : VEHICULES);
     // Occasion : même loi pour tous ceux qui n'ont pas d'alibi pendant les faits.
     const alibi = { type: statut.occ ? rng.pick(['partiel', 'partiel', 'seul', 'mensonge']) : 'couvre', ...rng.pick(ALIBIS) };
+    if (prof && ALIBI3[alibi.pos]) alibi.lieu = ALIBI3[alibi.pos].lieu;
     const voiture = /citadine|break|camionnette/.test(vehicule.t);
     if (alibi.type === 'seul') alibi.solitaire = rng.pick(SOLITAIRES.filter((x) => voiture || !x.voiture)).t(f);
     suspects.push({ nom: `${prenom} ${noms[i]}`, prenom, f, coupable, statut, moy, mob, role: f ? role.f : role.m, roleDetail: role.detail(f), proche: !!role.proche, tech: !!role.tech, vehicule, alibi, rumeur: rng.pick(MOB), age: rng.int(24, 58) });
@@ -239,7 +261,9 @@ export function genererAffaire(seed, n, carte = false) {
     a.ditDe = heure - 5 * rng.int(10, 20); a.ditA = fin + 5 * rng.int(8, 18);
     // La vérification ne confirme jamais toute la soirée : seule l'heure exacte des faits
     // (les caméras) dit si le trou tombe pendant les faits ou non.
-    if (carte && (a.type === 'couvre' || a.type === 'partiel')) {
+    if (prof && (a.type === 'couvre' || a.type === 'partiel')) {
+      alibiRoute(a, s, modele.pos, heure, fin, travaux, rng);
+    } else if (carte && (a.type === 'couvre' || a.type === 'partiel')) {
       // Avec le plan : un trou dans l'alibi ne suffit pas, il faut aussi avoir eu le temps de faire le trajet.
       // Alibi qui couvre : soit toute la durée des faits, soit un trou trop court pour l'aller (ou le retour).
       // Alibi troué : un trou au moins aussi long que le trajet.
@@ -272,7 +296,7 @@ export function genererAffaire(seed, n, carte = false) {
   planques = rng.shuffle(planques);
 
   const aff = {
-    n, id: `aff${n}`, carte: !!carte, pos: modele.pos, titre: modele.titre, texte: modele.texte, butin: modele.butin, lieu: modele.lieu, pres: modele.pres,
+    n, id: `aff${n}`, carte: !!carte, prof: !!prof, travaux, pos: modele.pos, titre: modele.titre, texte: modele.texte, butin: modele.butin, lieu: modele.lieu, pres: modele.pres,
     vic, aVic, deVic, req, heure, fin, annonce, jourSemaine: rng.pick(JOURS),
     suspects, coupable, planques, planque: planques.findIndex((p) => p.nom === planqueNom),
   };
@@ -292,6 +316,45 @@ export function genererAffaire(seed, n, carte = false) {
   };
   cache.set(key, aff);
   return aff;
+}
+
+/**
+ * Moyens de transport qu'un suspect avait ce soir-là : le sien, une camionnette louée (vérification des moyens),
+ * un vélo pour qui a un véhicule à moteur (on peut toujours en emprunter un), et ses pieds.
+ */
+export function modesPossibles(s) {
+  const own = s.vehicule.mode || (s.vehicule.rien ? 'velo' : 'moteur');
+  const m = new Set([own, 'pied']);
+  if (own === 'moteur') m.add('velo');
+  if (s.vehicule.rien && s.moy.volume) m.add('moteur');
+  return [...m];
+}
+
+/**
+ * Dossier complet : heures vérifiées d'un alibi d'après la vraie route entre le lieu déclaré et la scène.
+ * Alibi troué : le trou laisse le temps de faire la route avec son propre véhicule.
+ * Alibi qui couvre : s'il y a un trou, il est trop court pour la route, quel que soit le moyen de transport possible.
+ * Piège : un suspect sans voiture a parfois un trou où une voiture serait passée, mais pas son vélo ni ses pieds.
+ */
+function alibiRoute(a, s, scene, heure, fin, ferme, rng) {
+  const t = (mode) => minutes3(scene, a.pos, mode, ferme);
+  const own = s.vehicule.mode;
+  const possibles = modesPossibles(s);
+  const tFast = Math.min(...possibles.map(t));
+  const avant = rng.chance(0.5);
+  let g = null;
+  if (a.type === 'partiel') g = 5 * Math.ceil(t(own) / 5) + 5 * rng.int(0, 2);
+  else {
+    const max = Math.floor((tFast - 2) / 5); // trou le plus long (multiple de 5), avec 2 min de marge
+    if (max >= 1) {
+      const piege = !possibles.includes('moteur') ? Math.max(1, Math.ceil(t('moteur') / 5)) : null;
+      if (piege !== null && piege <= max && rng.chance(0.75)) g = 5 * rng.int(piege, max);
+      else if (rng.chance(0.6)) g = 5 * rng.int(1, max);
+    }
+  }
+  if (g !== null) { a.ditDe = Math.min(a.ditDe, heure - g - 30); a.ditA = Math.max(a.ditA, fin + g + 30); }
+  if (g === null) { if (avant) { a.de = a.ditDe; a.a = fin + 5 * rng.int(1, 5); } else { a.de = heure - 5 * rng.int(1, 5); a.a = a.ditA; } }
+  else if (avant) { a.de = a.ditDe; a.a = heure - g; } else { a.de = fin + g; a.a = a.ditA; }
 }
 
 /** Texte d'une pièce (écrit une fois pour toutes à la génération). */
@@ -367,7 +430,8 @@ function verifAlibi(aff, s) {
 // concernent que le suspect lui-même (jamais un changement qui vaudrait pour tout le monde).
 function phraseMoyen(aff, s, a, v, rng) {
   const il = s.f ? 'elle' : 'il', e = s.f ? 'e' : '';
-  const gros = s.vehicule.gros, veh = s.vehicule.rien ? 'un vélo' : s.vehicule.t;
+  const gros = s.vehicule.gros, veh = s.vehicule.rien ? (s.vehicule.mode === 'pied' ? null : s.vehicule.v || 'un vélo') : s.vehicule.t;
+  const nAQue = veh ? `n’a qu’${veh}` : 'n’a aucun véhicule';
   if (a === 'cle') {
     if (v) return rng.pick([s.proche ? `Clés : ${s.nom} possède un jeu de clés ${aff.pres} et ne l’a jamais rendu.` : `Clés : un double des clés ${aff.pres} a été retrouvé chez ${s.nom}, qui ne sait pas l’expliquer.`, `Clés : un double des clés ${aff.pres} pendait au tableau de l’entrée, chez ${s.nom}.`, ...(s.proche ? [`Clés : ${aff.vic} avait confié un jeu de clés à ${s.nom}, « pour dépanner ».`] : [])]);
     return s.proche ? `Clés : ${s.nom} a rendu son jeu de clés contre signature ; le registre des clés le confirme, aucun double n’a été fait.` : `Clés : ${s.nom} n’a jamais eu de clés ${aff.pres}, ni accès au trousseau.`;
@@ -376,8 +440,8 @@ function phraseMoyen(aff, s, a, v, rng) {
     if (v) return s.tech ? `Alarme : ${s.nom} a gardé un code de maintenance depuis l’installation, toujours actif.` : rng.pick([`Alarme : ${s.nom} dispose d’un code personnel, toujours actif selon le journal du boîtier.`, `Alarme : un code d’accès valide est noté dans un carnet retrouvé chez ${s.nom}.`]);
     return s.tech ? `Alarme : ${s.nom} a installé le système, mais son code de maintenance a été supprimé à la réception du chantier ; ${il} n’en a plus aucun.` : `Alarme : ${s.nom} n’a aucun code ; son nom n’apparaît nulle part dans le journal du boîtier.`;
   }
-  if (v) return gros ? `Véhicule : la camionnette qu’utilise ${s.nom} était à sa disposition ce soir-là, garée devant chez ${s.f ? 'elle' : 'lui'}.` : `Véhicule : ${s.nom} a loué une camionnette le jour des faits (contrat de location à l’appui), alors qu’${il} n’a qu’${veh}.`;
-  return gros ? `Véhicule : la camionnette qu’utilise ${s.nom} était au garage toute la semaine (facture du garagiste), et aucun loueur ne ${s.f ? 'la' : 'le'} connaît.` : `Véhicule : ${s.nom} n’a qu’${veh} et n’a loué aucun véhicule (vérification faite auprès des loueurs de la région).`;
+  if (v) return gros ? `Véhicule : la camionnette qu’utilise ${s.nom} était à sa disposition ce soir-là, garée devant chez ${s.f ? 'elle' : 'lui'}.` : `Véhicule : ${s.nom} a loué une camionnette le jour des faits (contrat de location à l’appui), alors qu’${il} ${nAQue}.`;
+  return gros ? `Véhicule : la camionnette qu’utilise ${s.nom} était au garage toute la semaine (facture du garagiste), et aucun loueur ne ${s.f ? 'la' : 'le'} connaît.` : `Véhicule : ${s.nom} ${nAQue} et n’a loué aucun véhicule (vérification faite auprès des loueurs de la région).`;
 }
 
 // Mobiles : chaque vérification parle d'argent, de rancune et de recel.
@@ -410,7 +474,7 @@ export function ficheSuspect(aff, s) {
     vengeance: `on dit qu’${s.f ? 'elle' : 'il'} s’est disputé${s.f ? 'e' : ''} avec ${aff.vic}`,
     commande: s.f ? 'on l’a vue traîner avec un revendeur' : 'on l’a vu traîner avec un revendeur',
   }[s.rumeur];
-  const t = aff.carte && s.alibi.type !== 'seul' ? trajet(aff.pos, s.alibi.pos) : null;
+  const t = aff.carte && !aff.prof && s.alibi.type !== 'seul' ? trajet(aff.pos, s.alibi.pos) : null;
   return { lien: `${cap(s.role)}, ${s.age} ans · ${s.roleDetail}`, vehicule: `Véhicule : ${s.vehicule.t}`, declaration: `${cap(declaration(s))}.`, rumeur: `Rumeur : ${rum}.`,
     trajet: t ? `Trajet : ${t} min entre le lieu déclaré et ${aff.lieu}.` : '' };
 }
@@ -424,6 +488,7 @@ export function titrePiece(aff, f) {
   if (k === 'c') return { occ: 'Constatations · l’heure exacte', moy: 'Constatations · comment on est entré', mob: 'Constatations · pourquoi on a volé' }[x];
   if (k === 'p') return 'Planque · indice sur le butin';
   const s = aff.suspects[Number(x)];
+  if (k === 'A') return `PV d’audition · ${s ? s.nom : '?'}`;
   return `${{ occ: 'Alibi', moy: 'Moyens', mob: 'Mobile' }[k]} · ${s ? s.nom : '?'}`;
 }
 export function texteFait(aff, f) { return (aff.textes && aff.textes[f]) || ''; }
@@ -614,6 +679,7 @@ export function nouvelleAffaire(state) {
   state.enqueteSeq = n;
   state.enqueteV = ENQ_VERSION;
   if (state.carteDes == null) state.carteDes = n; // les affaires ouvertes depuis cette version se jouent avec le plan
+  if (state.profDes == null) state.profDes = n; // … et en dossier complet (plan routier, journal, PV) depuis la suivante
   state.enquete = { n, jour: 1, nbCellules: 1, cellules: {}, rebonds: [], figee: false };
   repartirCellules(state);
   for (const z of Object.values(state.zones)) {
@@ -625,7 +691,7 @@ export function nouvelleAffaire(state) {
 
 /** Affaire n° n de cette partie (avec le plan des trajets si elle a été ouverte depuis son arrivée). */
 export function affaire(state, n) {
-  return genererAffaire(state.seed, n, state.carteDes != null && n >= state.carteDes);
+  return genererAffaire(state.seed, n, state.carteDes != null && n >= state.carteDes, state.profDes != null && n >= state.profDes);
 }
 
 const nomZone = (z) => `ZP ${z.code} ${z.nom}`;

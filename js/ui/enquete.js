@@ -5,6 +5,9 @@ import { APPUI } from '../engine/appui.js';
 import { monAppui } from './incidents.js';
 import { renderTableau } from './tableau.js';
 import { aideBtn } from './aide.js';
+import { journalHtml, journalAuto } from './journal.js';
+import { dossierAffaire3 } from '../engine/dossier.js';
+import { minutes, MODES } from '../engine/carte3.js';
 import { planifierEnvoi, synchroniser, synchroniserMaintenant, contenuChange, carnetVide } from './carnet-sync.js';
 import {
   ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece,
@@ -179,6 +182,8 @@ function suspectCard(aff, dos, s, i, carnet) {
     ${open ? `<div class="mmo-row">${cases}</div>` : ''}
     ${open ? `<div class="col" style="gap:8px">
       <p class="small" style="margin:0;line-height:1.55">${esc(fiche.vehicule)}<br>${esc(fiche.declaration)}<br>${fiche.trajet ? `${esc(fiche.trajet)}<br>` : ''}<span class="muted">${esc(fiche.rumeur)}</span></p>
+      ${aff.prof && s.alibi.type !== 'seul' ? `<p class="tiny muted" style="margin:0">Par la route, du lieu déclaré jusqu’${esc(/^le /.test(aff.lieu) ? `au ${aff.lieu.slice(3)}` : `à ${aff.lieu}`)} : ${Object.entries(MODES).map(([m, md]) => `${md.icone} ${minutes(s.alibi.pos, aff.pos, m, aff.travaux)} min`).join(' · ')}${aff.travaux ? ' (avec les travaux)' : ''}.</p>` : ''}
+      ${aff.prof ? (() => { const a = dossierAffaire3(st.seed, aff).auditions[i]; return `<details class="piece"><summary class="kicker" style="cursor:pointer">PV d’audition · ${esc(a.heure)}</summary>${a.qr.map(([q, r]) => `<p class="small" style="margin:6px 0 0"><strong>Q :</strong> ${esc(q)}<br><strong>R :</strong> ${esc(r)}</p>`).join('')}</details>`; })() : ''}
       ${pieces.map((p) => pieceHtml(aff, p)).join('')}
       ${(() => { const surPiste = d.piste === i; return `<button type="button" class="btn small ${surPiste ? 'primary' : 'outline'} block" data-action="piste" data-i="${i}" aria-pressed="${surPiste}">${surPiste ? `✓ Piste prioritaire des enquêteurs (retirer)` : `Mettre les enquêteurs de Recherche sur ${esc(s.prenom)}`}</button>
         <span class="tiny muted" style="margin-top:-4px">${surPiste ? 'L’enquête de voisinage de ce soir cherche d’abord de ce côté.' : `Gratuit : l’enquête de voisinage cherchera ses pièces en priorité${mien ? '' : ' (hors de ta cellule : deux fois moins efficace)'}.`}</span>`; })()}
@@ -372,6 +377,7 @@ export function renderEnquete() {
   }
   if (vueEnquete() === 'tableau') return renderTableau();
   const aff = affaire(st, st.enquete.n);
+  journalAuto(aff);
   const dos = dossierDe(st, z);
   const tab = ['suspects', 'scene', 'pieces', 'planques', 'notes'].includes(S.enqTab) ? S.enqTab : 'suspects';
   const j = st.enquete.jour;
@@ -386,7 +392,7 @@ export function renderEnquete() {
   else body = vueSuspects(aff, dos);
   return `<main class="screen">
     <header class="col" style="gap:6px">
-      <div class="between"><span class="kicker">Enquête · affaire n° ${aff.n}</span><button type="button" class="btn small" data-action="tab-vue" data-v="tableau">${icon('tableau', 16)} Tableau</button></div>
+      <div class="between"><span class="kicker">Enquête · affaire n° ${aff.n}</span><span class="row" style="gap:6px">${aff.prof ? '<button type="button" class="btn small" data-action="journal-ouvrir">📰 Journal</button>' : ''}<button type="button" class="btn small" data-action="tab-vue" data-v="tableau">${icon('tableau', 16)} Tableau</button></span></div>
       <h1 class="big" style="line-height:1.05">${esc(aff.titre)}</h1>
       <details class="recit" data-k="recit" ${(S.ouverts && 'recit' in S.ouverts ? S.ouverts.recit : j <= 1) ? 'open' : ''}><summary class="small">Les faits ${icon('chevron', 14)}</summary>
         <p class="small" style="margin:6px 0 0;color:var(--text2);line-height:1.5">${esc(aff.recit)}</p></details>
@@ -408,5 +414,5 @@ export function renderEnquete() {
     <section class="col" style="gap:10px">${body}</section>
     <a class="small" href="#guide-enquete" style="text-align:center">Comment fonctionne l’enquête ?</a>
     ${S.savedOrders && !S.ordersDirty ? `<p class="tiny muted" style="margin:0;text-align:center">${icon('check', 14)} Choix enregistrés avec tes ordres du tour.</p>` : ''}
-  </main>${tabbar('enquete')}`;
+  </main>${journalHtml(aff)}${tabbar('enquete')}`;
 }

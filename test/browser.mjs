@@ -86,6 +86,11 @@ await shot('13-admin');
 // Tableau d'enquête : tuto, boîte à pièces, volets, ficelle, puis la vue liste.
 await page.goto(`${BASE}#enquete`);
 await page.waitForSelector('#tb-vp');
+// Dossier complet : le journal du lendemain s'ouvre d'abord.
+await page.waitForSelector('.jr-wrap');
+await page.waitForTimeout(1300);
+await shot('14z-journal');
+await page.click('[data-action="journal-fermer"]');
 await page.waitForSelector('.tb-tuto');
 await shot('15a-tableau-tuto');
 while (await page.locator('[data-action="tab-tuto-suite"]').count()) await page.click('[data-action="tab-tuto-suite"]');
