@@ -16,6 +16,12 @@ export function appelsRenfort() {
     const op = c && operationActive(c, st.turn);
     if (op) par[m.uid] = { uid: m.uid, zone: c, op, agents: r.agents, at: m.at };
   }
+  // Appel du district (lancé par le Directeur) : visible même si la zone n'a rien demandé sur la radio.
+  for (const c of Object.values(st.zones)) {
+    if (c.uid === z.uid || par[c.uid]) continue;
+    const op = operationActive(c, st.turn);
+    if (op && op.appel) par[c.uid] = { uid: c.uid, zone: c, op, agents: Math.max(3, Math.round(Object.values(op.besoins || {}).reduce((a, b) => a + b, 0) / 2)), at: 0, district: true };
+  }
   return Object.values(par);
 }
 

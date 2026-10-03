@@ -54,7 +54,7 @@ export function renderTerrain() {
 
   // ───── Chez les voisins ─────
   for (const a of appelsRenfort()) {
-    voisins.push(bloc(`${nom(a.uid)} appelle du renfort`, `<p class="small muted" style="margin:0">« ${esc(a.op.titre)} » · ${a.agents} agents demandés ce soir</p>${renfortCtrl(a)}`, { kicker: 'Appel à renfort', cls: 'red', couleur: 'var(--red-soft)' }));
+    voisins.push(bloc(`${nom(a.uid)} appelle du renfort`, `<p class="small muted" style="margin:0">« ${esc(a.op.titre)} » · ${a.agents} agents demandés ce soir</p>${renfortCtrl(a)}`, { kicker: a.op.appel ? 'Appel du district · renfort payé ×1,5' : 'Appel à renfort', cls: 'red', couleur: 'var(--red-soft)' }));
   }
   for (const a of st.affaires.filter((x) => x.zone !== z.uid)) {
     voisins.push(`<section class="col" style="gap:4px"><span class="kicker">${maCandidature(a) ? 'Ta candidature' : 'Affaire disputée · postuler'}</span>${carteAffaire(a)}</section>`);
@@ -71,9 +71,11 @@ export function renderTerrain() {
   // ───── District ─────
   const ev = st.evenement;
   if (ev) {
-    const requis = 3 * Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length;
+    const requis = Math.max(3, Math.round((ev.parZone || 3) * Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length));
     const ceSoir = ev.tour === T;
-    district.push(bloc(esc(ev.titre), `<p class="small muted" style="margin:0">${ceSoir ? 'Ce soir' : `Dans ${ev.tour - T} tour${ev.tour - T > 1 ? 's' : ''}`} · environ ${requis} agents pour tout le district. Réussite : +8 de satisfaction pour tous ; échec : −10 pour tous.</p>
+    const fan = ev.fantome && st.dir && st.dir.fantome;
+    district.push(bloc(esc(ev.titre), `<p class="small muted" style="margin:0">${ceSoir ? 'Ce soir' : `Dernier soir de la saison, dans ${ev.tour - T} tour${ev.tour - T > 1 ? 's' : ''}`} · environ ${requis} agents pour tout le district. Réussite : +${ev.gain ?? 8} de satisfaction pour tous${ev.pts ? ` et +${ev.pts} pts pour ceux qui envoient des agents` : ''} ; échec : −${ev.perte ?? 10} pour tous.</p>
+      ${fan ? `<p class="small" style="margin:0">Dossier sur ${esc(fan.nom)} : <strong>${fan.dossier || 0} pièce${(fan.dossier || 0) > 1 ? 's' : ''}</strong>. Chaque fois qu’une zone le serre de près (3 patrouilles là où il est aperçu), il faut moins d’agents le soir de l’opération.</p>` : ''}
       ${ceSoir ? `<div class="renfort-ctrl"><div class="between"><span class="small" style="font-weight:600">Tes agents sur l’événement</span>
         <span class="stepper"><button type="button" data-action="ev" data-d="-1" aria-label="Un agent de moins" ${(d.evenement || 0) <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.evenement || 0}</span><button type="button" data-action="ev" data-d="1" aria-label="Un agent de plus">+</button></span></div>
         <span class="tiny muted">Environ 3 agents par zone. Tes PS et ta réputation suivent le nombre d’agents envoyés (${psEvenement(d.evenement || 0)} PS pour ${d.evenement || 0} agent${(d.evenement || 0) > 1 ? 's' : ''}). Ne rien envoyer compte comme « passager clandestin ». Pense à valider tes ordres.</span></div>` : '<span class="tiny muted">Tu pourras y envoyer des agents le jour même, depuis cet écran.</span>'}`,

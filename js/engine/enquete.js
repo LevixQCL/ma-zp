@@ -56,7 +56,7 @@ export const DEMARCHES = {
   banque: { nom: 'Comptes et entourage', motif: 'Extraits de compte via le parquet, téléphonie, entourage.', cout: 3, cible: 'mob', dit: 'dettes, rancunes, fréquentations' },
 };
 export const SOURCES = {
-  ouverture: 'Ouverture du dossier', audition: 'PV d’audition', rattrapage: 'Dossier de rattrapage', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', pjf: 'Appui PJF', partage: 'Partagé', rebond: 'Rebondissement',
+  ouverture: 'Ouverture du dossier', temoin: 'Témoin tardif', audition: 'PV d’audition', rattrapage: 'Dossier de rattrapage', voisinage: 'Enquête de voisinage', quete: 'Bonus d’énigme', pjf: 'Appui PJF', partage: 'Partagé', rebond: 'Rebondissement',
   ...Object.fromEntries(Object.entries(DEMARCHES).map(([k, d]) => [k, d.nom])),
 };
 
@@ -973,6 +973,28 @@ function pieceHasard(state, z, aff, rng) {
   const miennes = inconnues.filter((f) => dansMaCellule(state, z.uid, Number(f.split(':')[1])));
   const pool = miennes.length ? miennes : inconnues;
   return pool.length ? rng.pick(pool) : null;
+}
+
+/**
+ * Coup de pouce du Directeur : une pièce qui fait vraiment avancer (elle permet d'écarter un innocent),
+ * sinon une pièce au hasard. Jamais d'indice de planque.
+ */
+export function pieceCoupDePouce(state, z, aff, rng) {
+  const connus = new Set(faitsConnus(z.enquete));
+  const restants = candidats(aff, [...connus]).suspects.filter((i) => i !== aff.coupable);
+  if (aff.meurtre) {
+    // Affaire de meurtre : une des pièces qui blanchissent un proche encore suspect.
+    for (const i of rng.shuffle(restants)) { const pool = (aff.innocente && aff.innocente[i] || []).filter((f) => !connus.has(f)); if (pool.length) return rng.pick(pool); }
+    return null;
+  }
+  for (const e of rng.shuffle(ELEMENTS)) {
+    for (const i of rng.shuffle(restants)) {
+      if (aff.suspects[i].statut[e]) continue;
+      if (connus.has(`c:${e}`)) { if (!connus.has(`${e}:${i}`)) return `${e}:${i}`; }
+      else return `c:${e}`;
+    }
+  }
+  return pieceHasard(state, z, aff, rng);
 }
 
 /** Bonus d’énigme : une pièce de l'affaire en cours. */

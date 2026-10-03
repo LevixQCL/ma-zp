@@ -66,9 +66,13 @@ export function texteGain(g) {
 }
 
 /** Difficulté du mini-jeu selon les agents du service, rapportés à la répartition de base. */
-export function difficulte(service, agents) {
+export function difficulte(service, agents, ajust = 0) {
   const r = (agents || 0) / (DEFAULT_ALLOC[service] || 1);
-  return r < 0.7 ? 'difficile' : r >= 1.5 ? 'facile' : 'normal';
+  const niveaux = ['facile', 'normal', 'difficile'];
+  const base = r < 0.7 ? 2 : r >= 1.5 ? 0 : 1;
+  // `ajust` : cran du Directeur selon les mini-jeux réussis ou ratés ces derniers jours (−1 plus facile, +1 plus difficile).
+  const a = Number.isFinite(ajust) ? Math.max(-1, Math.min(1, Math.round(ajust))) : 0;
+  return niveaux[Math.max(0, Math.min(2, base + a))];
 }
 
 /** Chance que l'équipe règle l'incident seule (incident non joué). */

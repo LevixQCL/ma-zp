@@ -27,7 +27,7 @@ import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFet
 import { separerIncidents, appliquerIncidents, resultatsIncidents, incidentsVisibles } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND } from './contenu.js';
-import { imprevusDuJour, directeurNuit, directeurSoir, districtNuit, districtBilan, formes, rangsEnigmes, adapterEnigmes } from './directeur.js';
+import { imprevusDuJour, directeurNuit, directeurSoir, districtNuit, districtBilan, duoBilan, coopResoudre, enqueteDirecteur, memoirePlainte, formes, rangsEnigmes, adapterEnigmes, adapterIncidents, dirHeritage, DIR } from './directeur.js';
 
 const fmt1 = (v) => String(round1(v)).replace('.', ',');
 const median = (arr) => {
@@ -196,6 +196,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.rapport = [];
     if (orders[uid]) {
       ord[uid] = sanitizeOrders(z, orders[uid], state);
+      if (z.toursSansOrdres >= 3) z._retour = z.toursSansOrdres; // retour d'absence (accueilli par le Directeur)
       z.toursSansOrdres = 0;
       z.dernierOrdre = { alloc: ord[uid].alloc, rythme: ord[uid].rythme, patrouilles: ord[uid].patrouilles || {}, secteurs: ord[uid].secteurs || {} };
       z._joue = true;
@@ -316,7 +317,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   if (state.evenement && state.evenement.tour === T) {
     const ev = state.evenement;
     const actives = uids.filter((u) => state.zones[u].toursSansOrdres < 3 || ord[u].evenement > 0);
-    const requis = Math.max(3, 3 * actives.length);
+    const requis = Math.max(3, Math.round((ev.parZone || 3) * actives.length));
+    const gainEv = ev.gain ?? 8, perteEv = ev.perte ?? 10;
     const total = uids.reduce((s, u) => s + ord[u].evenement, 0);
     const reussi = total >= requis;
     const absents = actives.filter((u) => ord[u].evenement === 0);
@@ -329,13 +331,16 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         if (reussi) z.reputation += Math.max(1, Math.round(10 * c / total));
       } else if (actives.includes(u)) z.stats.evenementsManques += 1;
       if (c > 0) z._contribEvenement = true;
+      if (c > 0 && reussi && ev.pts) z._points += ev.pts;
       if (c > 0 && reussi) jalon(z, 'Événement du district : ta part des agents envoyés');
-      if (reussi) { z.satisfaction += 8; z.rapport.push(`${ev.titre} : réussi (+8 de satisfaction).`); }
-      else { z.satisfaction -= 10; z.rapport.push(`${ev.titre} : échec, ${total} agents sur ${requis} (−10 de satisfaction).`); }
+      if (reussi) { z.satisfaction += gainEv; z.rapport.push(`${ev.titre} : réussi (+${gainEv} de satisfaction${c > 0 && ev.pts ? `, +${ev.pts} pts pour tes agents` : ''}).`); }
+      else { z.satisfaction -= perteEv; z.rapport.push(`${ev.titre} : échec, ${total} agents sur ${requis} (−${perteEv} de satisfaction).`); }
     }
     evResultat = { titre: ev.titre, reussi, total, requis, absents: absents.map((u) => zoneLabel(state.zones[u])) };
-    push(12, ev.titre, reussi ? `Mission accomplie : ${total} agents pour ${requis} requis` : `Raté : ${total} agents pour ${requis} requis`,
-      reussi ? 'Tout le district gagne 8 points de satisfaction.' : `Tout le district perd 10 points de satisfaction.${absents.length ? ` Aucun agent envoyé par : ${evResultat.absents.join(', ')}.` : ''}`);
+    const fan = ev.fantome && state.dir && state.dir.fantome;
+    if (fan) { fan.fini = true; fan.arrete = reussi; }
+    push(12, ev.titre, fan ? (reussi ? `Fin de cavale : ${fan.nom} sous les verrous` : `${fan.nom.charAt(0).toUpperCase()}${fan.nom.slice(1)} file entre les doigts du district`) : reussi ? `Mission accomplie : ${total} agents pour ${requis} requis` : `Raté : ${total} agents pour ${requis} requis`,
+      `${total} agents pour ${requis} requis. ${reussi ? `Tout le district gagne ${gainEv} points de satisfaction.` : `Tout le district perd ${perteEv} points de satisfaction.`}${!reussi && absents.length ? ` Aucun agent envoyé par : ${evResultat.absents.join(', ')}.` : ''}`);
     state.evenement = null;
   }
 
@@ -352,13 +357,15 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const nChef = mis ? CHEFS.renfort.agents : 0;
     if (mis) { z._mission = mis.role; z.rapport.push(`Mission : ${nomComplet(mis)} encadre ton renfort chez ${zoneLabel(c)} (compte pour ${nChef} agent de plus dans son dispositif).`); }
     (renfortsRecus[r.cible] ||= []).push({ de: u, n: r.agents + nChef, chef: mis ? nomComplet(mis) : null });
-    const { rep, ps } = gainRenfort(r.agents);
+    let { rep, ps } = gainRenfort(r.agents);
+    const appel = op.appel ? DIR.appel : 1;
+    if (op.appel) { rep += 1; ps = Math.round(ps * appel); }
     z.reputation += rep; z._psEntraide += ps; z.stats.renfortsPretes = (z.stats.renfortsPretes || 0) + 1;
-    const ptsR = round1(r.agents * RENFORT.pointsParAgent);
+    const ptsR = round1(r.agents * RENFORT.pointsParAgent * appel);
     if (ptsR > 0) { z._points += ptsR; jalon(z, `Renfort prêté à ${zoneLabel(c)}`); }
-    const indem = round1(r.agents * RENFORT.indemnite);
+    const indem = round1(r.agents * RENFORT.indemnite * appel);
     if (indem > 0) { z.budget += indem; z._compta.push({ k: 'renfort', l: `Indemnité fédérale de renfort (${r.agents} agent${r.agents > 1 ? 's' : ''})`, v: indem }); }
-    z.rapport.push(`Renfort : ${r.agents} de tes agents aident ${zoneLabel(c)} sur « ${op.titre} » (+${rep} de réputation, +${ps} PS d’entraide, indemnité fédérale +${fmt1(indem)} k€).`);
+    z.rapport.push(`Renfort : ${r.agents} de tes agents aident ${zoneLabel(c)} sur « ${op.titre} » (+${rep} de réputation, +${ps} PS d’entraide, indemnité fédérale +${fmt1(indem)} k€${op.appel ? ' ; appel du district : renfort payé ×1,5' : ''}).`);
   }
   for (const [cible, l] of Object.entries(renfortsRecus)) {
     const n = l.reduce((a, b) => a + b.n, 0);
@@ -367,6 +374,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   }
 
   jalonTous('Renforts prêtés');
+  // Le Directeur : fugitif à la frontière de deux zones (il faut les patrouilles des deux côtés).
+  coopResoudre(state, uids, ord, push, T);
+  jalonTous('Coopération (fugitif à la frontière)');
   // Le Directeur : rang aux énigmes, bilan de l'événement de district.
   const rangEnig = rangsEnigmes(state), districtRes = [];
   // 5. Simulation locale de chaque zone.
@@ -445,8 +455,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
           texte = `${n} agents malades, absents 2 tours.`; break;
         }
         case 'plainte': {
-          z.satisfaction -= 6; z.blesses.push({ n: 1, retour: T + 3, motif: 'enquête interne' });
-          texte = '−6 de satisfaction, un agent bloqué en administration 2 tours.'; break;
+          const presse = memoirePlainte(z);
+          z.satisfaction -= 6 - presse.sat; z.blesses.push({ n: 1, retour: T + 3, motif: 'enquête interne' });
+          texte = `−${6 - presse.sat} de satisfaction, un agent bloqué en administration 2 tours.${presse.texte}`; break;
         }
         case 'panne': { adminMult = 0; texte = 'Administration à l’arrêt ce tour.'; break; }
         case 'epuisement': {
@@ -495,6 +506,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const incs = incidentsAvant[uid] || { maintenant: [], reportes: [] };
     if (incs.reportes.length) z.incidentsReportes = incs.reportes; else delete z.incidentsReportes;
     if (incs.maintenant.length) {
+      const resInc = Object.values(resultatsIncidents(players[uid], incs.maintenant));
+      adapterIncidents(z, resInc.filter((x) => x.statut === 'ok').length, resInc.length);
       const inc = appliquerIncidents(z, { incidents: incs.maintenant, resultats: resultatsIncidents(players[uid], incs.maintenant), alloc: o.alloc || {}, T, rng: makeRng(`${state.seed}:s${state.season}:t${T}:incidents-res:${uid}`), indice: () => indiceBonus(state, z, zr) });
       z.rapport.push(...inc.lignes);
       if (inc.skin) push(3, 'Décor', `${zoneLabel(z)} décroche le skin « ${inc.skin.nom} »`, 'Jauge des incidents remplie à force d’interventions réussies.', uid);
@@ -721,7 +734,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
 
     // Le Directeur : feuilleton ou dilemme du jour, événement de district.
-    const dirL = directeurSoir(state, z, { state, T, o, alloc, patrouilles, rates, traites, achete, label: zoneLabel(z), push, district: districtRes, indice: () => indiceBonus(state, z, zr) });
+    const dirL = directeurSoir(state, z, { state, T, o, alloc, patrouilles, rates, traites, achete, label: zoneLabel(z), push, district: districtRes, indice: () => indiceBonus(state, z, zr), rng: makeRng(`${state.seed}:s${state.season}:t${T}:dir-soir:${uid}`) });
     if (dirL.length) { z.rapport.push(...dirL); jalon(z, 'Feuilletons et événements du Directeur'); }
 
     // Budget du tour.
@@ -847,6 +860,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
   // Enquête : fin d'affaire, nouvelle affaire ; nouvelles demandes de FIPA.
   enquetePost(state, pre, push);
+  // Le Directeur : témoin tardif si le district piétine sur l'enquête.
+  enqueteDirecteur(state, push, makeRng(`${state.seed}:s${state.season}:t${T}:dir-enquete`));
   jalonTous('Enquête (fin d’affaire)');
   const rivPost = rivalitesPost(state, uids, push, T, nextWeekday, players);
   jalonTous('Duels, péril, tutelle');
@@ -854,6 +869,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
   // Bilan de l'événement de district.
   const districtG = districtBilan(state, T, districtRes, push, zoneLabel);
+  const duoG = duoBilan(state, T, push, zoneLabel);
 
   // 5 bis. Le Directeur prépare demain : ciel, opérations d'envergure, feuilletons, dilemmes, situation du jour.
   districtNuit(state, T, makeRng(`${state.seed}:s${state.season}:t${T}:district`));
@@ -906,6 +922,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     fipa: fp.res,
     nonDroit: ndRes,
     district: districtG,
+    duo: duoG,
     classement,
     rapports: Object.fromEntries(uids.map((u) => [u, state.zones[u].rapport])),
     finSaison: null,
@@ -1017,6 +1034,7 @@ function finDeSaison(state, classement) {
     if (z.skins) nz.skins = z.skins;
     if (z.skinsChoix) nz.skinsChoix = z.skinsChoix;
     if (z.jaugeIncidents) nz.jaugeIncidents = z.jaugeIncidents;
+    if (z.dir) nz.dir = dirHeritage(z); // niveau des énigmes et des mini-jeux, souvenirs du Directeur
     nz.rapport = [`Nouvelle saison : tu conserves tes formations et tes bâtiments, baissés d’un niveau (hôtel de police ${nz.batiments.bureaux}, garage ${nz.batiments.garage}), et tes annexes. Budget, effectifs et véhicules repartent des valeurs de départ.`];
     nz.heritage = { season: oldSeason, niveaux, batiments: { ...nz.batiments }, annexes: Object.keys(nz.infra).filter((k) => nz.infra[k]).length };
     state.zones[uid] = nz;

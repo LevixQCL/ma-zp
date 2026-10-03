@@ -4,6 +4,7 @@
 import { S, esc, icon, myZone } from './common.js';
 import { incidentsVisibles, resultatsIncidents, INCIDENTS, MALUS, GAIN, texteMalus, texteGain, difficulte, pointsJauge, INC } from '../engine/incidents.js';
 import { PS } from '../engine/constants.js';
+import { niveauIncidents } from '../engine/directeur.js';
 import { APPUI, appuiDuJour } from '../engine/appui.js';
 import { SERVICE_LABELS, DEFAULT_ALLOC } from '../engine/constants.js';
 
@@ -126,7 +127,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
   const p = new URLSearchParams({ mode });
   if (mode === 'incident' && inc) {
     const n = agentsService(inc.service), { base, plus } = jaugeDuJour();
-    p.set('id', inc.id); p.set('agents', String(n)); p.set('diff', difficulte(inc.service, n));
+    p.set('id', inc.id); p.set('agents', String(n)); p.set('diff', difficulte(inc.service, n, niveauIncidents(myZone())));
     p.set('jauge', String(base + plus)); p.set('malus', texteMalus(MALUS[inc.service].plein)); p.set('gain', `${texteGain(GAIN[inc.service])}, +${PS.queteOk} PS`);
   }
   if (mode === 'renfort' && appui) {

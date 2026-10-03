@@ -205,12 +205,13 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit }) {
   // Le Directeur : dilemme à trancher, feuilleton à préparer pour ce soir.
   const dl = dilemmeDuJour(st, z);
   if (dl) items.unshift({ ok: Number.isInteger(d.dilemme), href: '#hp-dilemme', t: `Dilemme : ${esc(dl.titre.toLowerCase())}`, s: Number.isInteger(d.dilemme) ? `« ${esc(dl.choix[d.dilemme].l)} »` : 'deux choix, à trancher avant 20:00' });
+  // Feuilletons, fugitif à la frontière, Fantôme : ce qu'il faut ce soir (patrouilles dans un quartier ou agents dans un service).
   const fe = feuilletonEnCours(st, z);
-  if (fe && !fe.dilemme && fe.tour === st.turn) {
-    const sg = fe.signe || {};
+  for (const sg of (z.pressions || []).filter((p) => (p.feuilleton || p.coop) && (p.quartier != null || p.service))) {
+    if (sg.feuilleton && !(fe && fe.tour === st.turn)) continue; // audit annoncé plusieurs jours à l'avance : pas encore ce soir
     const al = d.alloc || {};
-    const ok = sg.quartier != null ? ((d.patrouilles || {})[sg.quartier] || 0) >= (sg.patrouilles || 2) : sg.service ? (al[sg.service] || 0) >= sg.min : null;
-    items.unshift({ ok: ok === true, href: sg.quartier != null ? '#carte' : '#ordres', t: esc(sg.titre), s: esc(sg.texte) });
+    const ok = sg.quartier != null ? ((d.patrouilles || {})[sg.quartier] || 0) >= (sg.patrouilles || 2) : (al[sg.service] || 0) >= sg.min;
+    items.unshift({ ok, href: sg.quartier != null ? '#carte' : '#ordres', t: esc(sg.titre), s: esc(sg.texte) });
   }
   const inc = incidentEnCours();
   if (inc) items.unshift({ ok: false, href: '#hp-incidents', t: `Incident en cours : ${esc(inc.titre)}`, s: `encore ${duree(inc.ferme - Date.now())} pour intervenir, sinon ton équipe se débrouille seule` });
@@ -258,9 +259,9 @@ export function renderHP() {
     const motif = { 'blessé': pl ? 'blessés' : 'blessé', malade: pl ? 'malades' : 'malade', 'épuisé': pl ? 'épuisés' : 'épuisé', 'enquête interne': 'en enquête interne' }[b.motif] || b.motif;
     alertes.push({ cls: 'red', titre: `${b.n} agent${pl ? 's' : ''} ${motif}`, texte: `de retour dans ${tours} tour${tours > 1 ? 's' : ''}`, href: '#ordres' });
   }
-  if (st.evenement) {
+  if (st.evenement && (!st.evenement.fantome || st.evenement.tour - T <= 3)) {
     const dans = st.evenement.tour - T;
-    const requis = 3 * Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length;
+    const requis = Math.max(3, Math.round((st.evenement.parZone || 3) * Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length));
     alertes.push({ cls: 'amber', titre: dans === 0 ? `${esc(st.evenement.titre)} : ce soir !` : `${esc(st.evenement.titre)} dans ${dans} tour${dans > 1 ? 's' : ''}`, texte: `environ ${requis} agents requis pour tout le district`, href: dans === 0 ? '#ordres' : '#carte' });
   }
   const cab = (z.cabosses || []).length;
@@ -283,7 +284,7 @@ export function renderHP() {
   if (st.conseil && st.conseil.tour === T) alertes.unshift({ cls: 'amber', titre: 'Conseil de police : vote ce soir', texte: st.conseil.motions.map((m) => esc(m.titre)).join(' · '), href: '#diplomatie' });
   const invit = (st.duels || []).find((d) => d.b === z.uid && d.etape === 'propose' && d.tourReponse === T);
   if (invit) alertes.unshift({ cls: 'amber', titre: `${esc(st.zones[invit.a]?.nom || 'Une zone')} te défie en duel`, texte: `${esc(DUEL_INDICATEURS[invit.ind].nom.toLowerCase())} · réponds avant 20:00`, href: '#diplomatie' });
-  for (const a of appelsRenfort()) if (!renfortPrevu(a.uid)) alertes.unshift({ cls: 'amber', titre: `${esc(a.zone.nom)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » · prête des agents contre de la réputation`, href: '#prive' });
+  for (const a of appelsRenfort()) if (!renfortPrevu(a.uid)) alertes.unshift({ cls: 'amber', titre: `${esc(a.zone.nom)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » · ${a.op.appel ? 'appel du district : renfort payé ×1,5' : 'prête des agents contre de la réputation'}`, href: '#prive' });
   const perils = Object.values(st.zones).filter((x) => (x.peril || x.tutelle) && x.uid !== z.uid);
   if (perils.length) alertes.push({ cls: 'red', titre: `${perils.map((x) => esc(x.nom)).join(', ')} en difficulté`, texte: 'un coup de main rapporte jusqu’à +7 de réputation', href: '#diplomatie' });
   const op = operationActive(z, T);
