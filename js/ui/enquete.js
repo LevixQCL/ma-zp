@@ -15,6 +15,7 @@ import {
   chanceVoisinage, VOISINAGE,
   ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee,
   demarcheDe, mandatOk, lireDemarche,
+  toursTraque, delaiTraque,
 } from '../engine/enquete.js';
 import { lienItineraire } from '../engine/meurtre-mons.js';
 
@@ -135,7 +136,7 @@ export function banniereTraque(st, { tableau = false } = {}) {
   return `<section class="card red banniere-traque ${tableau ? 'tb-ui' : ''}" role="status">
     <span class="kicker" style="color:var(--red-soft)">Affaire n° ${a.n} résolue · « ${esc(a.titre)} »</span>
     <span style="font-weight:700;font-size:16px">Suspect identifié : ${esc(s.nom)}</span>
-    <span class="small">${zones.length ? `Démasqué${e} par ${esc(zones.join(' et '))}. ` : ''}Mandat d’arrêt délivré, mais ${s.f ? 'elle' : 'il'} se cache. Toutes les zones peuvent l’arrêter : il reste <strong>${tr.tours} tour${tr.tours > 1 ? 's' : ''}</strong> pour trouver sa planque.</span>
+    <span class="small">${zones.length ? `Démasqué${e} par ${esc(zones.join(' et '))}. ` : ''}Mandat d’arrêt délivré, mais ${s.f ? 'elle' : 'il'} se cache. Toutes les zones peuvent l’arrêter : il reste <strong>${delaiTraque(toursTraque(tr))}</strong> pour trouver sa planque.</span>
     <button type="button" class="btn small" data-action="traque-voir" style="align-self:flex-start">${tableau ? 'Lancer la traque' : 'Voir la traque ↓'}</button>
   </section>`;
 }
@@ -150,7 +151,7 @@ export function traqueHtml(tr) {
   const s = a.suspects[a.coupable];
   const indices = dos.pieces.filter((p) => p.f.startsWith('p:')).map((p) => esc(texteFait(a, p.f)));
   return `<section id="traque" class="card red" aria-label="Traque en cours">
-    <div class="between"><span class="kicker" style="color:var(--red-soft)">Traque · ${tr.tours} tour${tr.tours > 1 ? 's' : ''} restant${tr.tours > 1 ? 's' : ''}</span><span class="tiny muted">${esc(a.titre)}</span></div>
+    <div class="between"><span class="kicker" style="color:var(--red-soft)">Traque · ${toursTraque(tr) > 1 ? `${toursTraque(tr)} tours restants` : 'jusqu’au prochain 20:00'}</span><span class="tiny muted">${esc(a.titre)}</span></div>
     <h2 class="card-title" style="margin:0">${esc(s.nom)} est en fuite</h2>
     <p class="small" style="margin:0">Choisis une planque et envoie au moins ${ENQ.agentsTraque} agents d’Intervention. Ce que tu sais de la planque${indices.length ? '' : ' : rien. Les indices sur la planque viennent de ton dossier sur cette affaire (constatations, butin retrouvé)'}.</p>
     ${indices.length ? `<ul class="small" style="margin:0;padding-left:18px">${indices.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''}
@@ -375,7 +376,7 @@ function vuePlanques(aff, dos) {
   const c = lireCarnet(aff.n);
   const indices = dos.pieces.filter((p) => p.f.startsWith('p:'));
   const relances = ['cam', 'labo', 'temoin'].filter((k) => dos.pieces.some((p) => p.f === `c:${DEMARCHES[k].scene}`) && pieceDemarche(aff, dos, k));
-  return `<p class="tiny muted" style="margin:0">Une fois l’auteur identifié, il faudra le cueillir dans sa planque en ${ENQ.traqueTours} tours. Prépare-toi dès maintenant.</p>
+  return `<p class="tiny muted" style="margin:0">Une fois l’auteur identifié, il faudra le cueillir dans sa planque en ${delaiTraque(ENQ.traqueTours).replace(/,$/, '')}. Prépare-toi dès maintenant.</p>
     ${indices.map((p) => pieceHtml(aff, p)).join('')}
     ${relances.length ? `<div class="card tight"><span class="small" style="font-weight:600">Relancer une constatation : un indice de plus sur la planque</span><div class="dem-row">${relances.map((k) => demBtn(aff, dos, k, DEMARCHES[k].nom, { compact: true })).join('')}</div></div>` : ''}
     ${aff.planques.map((p, i) => {

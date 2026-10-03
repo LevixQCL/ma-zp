@@ -3,7 +3,7 @@
 // gestes à faire soi-même (ouvrir les Ordres, déplacer un agent, valider). On peut la quitter
 // à tout moment et la relancer depuis le Guide ; les anciens joueurs peuvent la zapper.
 import { S, esc, myZone } from './common.js';
-import { ENQ } from '../engine/enquete.js';
+import { ENQ, delaiTraque } from '../engine/enquete.js';
 
 const CLE = 'mazp-tuto';            // 'fait' ou 'zappe' une fois terminée ou refusée
 const CLE_ETAPE = 'mazp-tuto-etape'; // étape en cours (reprise après un rechargement)
@@ -108,7 +108,7 @@ export const ETAPES = [
     id: 'synthese', route: 'enquete', cible: '.synthese',
     titre: 'Ton tableau, ton raisonnement',
     texte: () => `<p>Pour chaque suspect, touche <strong>Mobile · Moyen · Occasion</strong> pour noter ✓ établi ou ✕ exclu. Le jeu ne coche rien à ta place.</p>
-      <p>Quand tu es sûr : <strong>une seule accusation</strong> par affaire. Plus tu trouves tôt, plus ça rapporte ; une fausse accusation coûte de la réputation. Ensuite, toutes les zones ont ${ENQ.traqueTours} tours pour <strong>arrêter</strong> le coupable dans sa planque.</p>`,
+      <p>Quand tu es sûr : <strong>une seule accusation</strong> par affaire. Plus tu trouves tôt, plus ça rapporte ; une fausse accusation coûte de la réputation. Ensuite, toutes les zones ont ${delaiTraque(ENQ.traqueTours).replace(/,$/, '')} pour <strong>arrêter</strong> le coupable dans sa planque.</p>`,
   },
   {
     id: 'enigmes', route: 'quete', onglet: 'Trois casse-tête par jour, cinq minutes de réflexion.', cible: '[aria-label="Énigmes du jour"]',
