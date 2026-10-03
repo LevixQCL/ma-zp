@@ -14,22 +14,29 @@
   <link rel="apple-touch-icon" href="icons/icon-180.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Caveat:wght@500;700&family=Fraunces:opsz,wght@9..144,600;9..144,800&family=IBM+Plex+Mono:wght@500&family=Special+Elite&family=Instrument+Sans:wght@400..700&display=swap">
+  <!-- Polices chargées sans bloquer le démarrage du jeu (texte affiché tout de suite, police appliquée dès qu'elle arrive). -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Caveat:wght@500;700&family=Fraunces:opsz,wght@9..144,600;9..144,800&family=IBM+Plex+Mono:wght@500&family=Special+Elite&family=Instrument+Sans:wght@400..700&display=swap" media="print" onload="this.media='all'">
+  <!-- Le SDK Firebase est téléchargé en même temps que le jeu, et non après. -->
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js" crossorigin>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js" crossorigin>
+  <link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js" crossorigin>
   <link rel="stylesheet" href="css/app.css">
   <link rel="stylesheet" href="css/tableau.css">
 </head>
 <body>
   <div id="app"><main class="center-screen loader" aria-busy="true"><div class="loader-halo" aria-hidden="true"></div><div class="lightbar" aria-hidden="true"><span class="lb-blue"></span><span class="lb-amber"></span></div><h1 class="brand brand-xl">Ma ZP</h1><p class="loader-tag">Gère ta zone · Démasque le coupable</p><div class="loader-bar" aria-hidden="true"><span></span></div><p class="loader-msg" role="status">Chargement…</p></main></div>
   <noscript><p style="padding:16px">Ma ZP a besoin de JavaScript pour fonctionner.</p></noscript>
-  <script type="module" src="js/app.js"></script>
+  <!-- Tout le code en un seul fichier (construit depuis js/ par outils/construire.mjs). -->
+  <script type="module" src="js/app.min.js"></script>
   <script>
-    // Filet de sécurité : si le jeu n'a pas démarré après 25 s (fichier mal chargé, réseau capricieux,
-    // mise à jour en cours), on propose de recharger plutôt que de laisser tourner l'écran sans fin.
+    // Filet de sécurité : si le code du jeu n'est toujours pas arrivé après 25 s (réseau très lent ou coupé),
+    // on propose de recharger plutôt que de laisser tourner l'écran sans fin.
     setTimeout(function () {
       if (window.__mazpBoot) return;
       var m = document.querySelector('.loader-msg');
       if (!m) return;
-      m.innerHTML = 'Le chargement bloque (réseau ou mise à jour en cours). <button type="button" class="btn small primary" onclick="location.reload()">Recharger</button>';
+      m.innerHTML = 'Le chargement est anormalement long (connexion lente ?). <button type="button" class="btn small primary" onclick="location.reload()">Recharger</button>';
     }, 25000);
   </script>
 </body>
