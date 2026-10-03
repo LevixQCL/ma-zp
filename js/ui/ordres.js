@@ -314,10 +314,10 @@ function decisionPicker(z, T, d) {
     corps = `<div class="dgrille">${tuile({ type: 'equiper', cible: 'vehicule' }, 'Véhicule', `${z.vehicules} → ${z.vehicules + 1} véhicules (garage : ${capaciteVehicules(z)} places) · +${fmt1(ECONOMIE.entretienVehicule)} k€/tour`, COUTS.vehicule)}
       ${SERVICES.map((sv) => tuile({ type: 'equiper', cible: sv }, SERVICE_LABELS[sv], `matériel ${z.equip[sv]} → ${z.equip[sv] + 1} · ${effetEquip(sv, 1)} · efficacité ${pc(multEquip(z.equip[sv] + 1) / multEquip(z.equip[sv]) - 1)}`, coutEquipement(z.equip[sv]), niv(z.equip[sv]))).join('')}</div>`;
   } else {
-    const faites = Object.entries(INFRAS).filter(([id]) => z.infra[id]).map(([, i]) => i.nom);
+    const faites = Object.entries(INFRAS).filter(([id]) => z.infra[id]).map(([, i]) => i);
     corps = `<div class="dgrille">${Object.entries(BATIMENTS).map(([id, B]) => { const n = z.batiments[id]; return n >= BATIMENT_MAX ? '' : tuile({ type: 'agrandir', batiment: id }, `Agrandir : ${B.nom}`, `${B.capacite(n)} → ${B.capacite(n + 1)} ${B.unite} · entretien ${ent(B.entretien(n))} → ${ent(B.entretien(n + 1))}/tour`, B.coutAgrandir(n), niv(n, BATIMENT_MAX)); }).join('')}
       ${Object.entries(INFRAS).filter(([id]) => !z.infra[id]).map(([id, inf]) => tuile({ type: 'construire', infra: id }, inf.nom, `${inf.effet} · entretien ${ent(ENTRETIEN_ANNEXE)}/tour`, inf.cout)).join('')}</div>
-      ${faites.length ? `<p class="tiny muted" style="margin:0">Déjà construit : ${esc(faites.join(', '))}.</p>` : ''}`;
+      ${faites.length ? `<div class="col" style="gap:3px"><span class="tiny muted">Déjà construit :</span>${faites.map((i) => `<span class="tiny"><strong>${esc(i.nom)}</strong> <span class="muted">· ${esc(i.effet)}</span></span>`).join('')}</div>` : ''}`;
   }
   const det = d.decision && catDe(d.decision) === cat ? detailDecision(z, d.decision, T) : '';
   corps += det ? `<div class="ddetail">${det}</div>` : '<p class="tiny muted" style="margin:0">Touche une option : le détail de ce qu’elle change pour ta zone s’affiche ici.</p>';

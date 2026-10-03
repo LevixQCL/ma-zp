@@ -206,15 +206,23 @@ export function ouvrirDecor() {
   </div>`);
 }
 
-/** Fiche « Mon hôtel de police » : bâtiments, parc automobile, annexes. */
+/** Fiche « Mon hôtel de police » : bâtiments et annexes, avec ce qu'ils donnent aujourd'hui et au niveau suivant. */
 export function ouvrirLogistique() {
   ouvrirPanneau(`<div data-logis>${logistiqueCorps()}</div>`);
 }
-/** Si la fiche logistique est ouverte, la redessine (après un agrandissement ou une réparation). */
+/** Fiche « Parc automobile » (tuile Véhicules de l'HP) : les véhicules un par un, état et révision. */
+export function ouvrirParc() {
+  ouvrirPanneau(`<div data-parc>${parcCorps()}</div>`);
+}
+/** Si une fiche logistique est ouverte, la redessine (après un agrandissement ou une réparation). */
 export function rafraichirLogistique() {
   const el = document.querySelector('.aide-wrap [data-logis]');
   if (el) el.innerHTML = logistiqueCorps();
+  const p = document.querySelector('.aide-wrap [data-parc]');
+  if (p) p.innerHTML = parcCorps();
 }
+
+const pips = (n) => `<span class="niv" aria-label="Niveau ${n} sur ${BATIMENT_MAX}">${Array.from({ length: BATIMENT_MAX }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
 
 function logistiqueCorps() {
   const z = myZone(), st = S.state, T = st.turn, d = S.draft || {};
@@ -222,9 +230,6 @@ function logistiqueCorps() {
   const annexes = Object.entries(INFRAS).filter(([id]) => z.infra[id]);
   const entretienTotal = Object.entries(BATIMENTS).reduce((s, [id, B]) => s + B.entretien(b[id]), 0) + annexes.length * ENTRETIEN_ANNEXE;
   const occupation = { bureaux: [effectifPrevu(z), capaciteAgents(z), 'agents'], garage: [z.vehicules, capaciteVehicules(z), 'véhicules'] };
-  const parc = parcVehicules(z, T);
-  const choixCarro = cabossesChoisis(z, d.depenses && d.depenses.carrosserie);
-  const pips = (n) => `<span class="niv" aria-label="Niveau ${n} sur ${BATIMENT_MAX}">${Array.from({ length: BATIMENT_MAX }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
 
   const bat = Object.entries(BATIMENTS).map(([id, B]) => {
     const n = b[id];
@@ -233,27 +238,41 @@ function logistiqueCorps() {
     const refus = decisionImpossible(z, dec, T);
     const enTravaux = z.travaux && z.travaux.batiment === id;
     const [occ, cap, unite] = occupation[id];
+    const bonusNiv = (m) => (id === 'bureaux' && m === 4 && !(z.trophees || []).some((t) => t.id === 'batisseur') ? ' · trophée Bâtisseur' : '');
+    const suivant = n >= BATIMENT_MAX ? '' : `<div class="bat-niv suiv"><span class="tiny muted">Niveau ${n + 1}</span>
+        <span class="small">${B.capacite(n + 1)} ${B.unite} <span class="ok">(+${B.capacite(n + 1) - B.capacite(n)})</span></span>
+        <span class="tiny muted">entretien ${fmt1(B.entretien(n + 1))} k€/tour${bonusNiv(n + 1)}</span></div>`;
     return `<div class="bat">
       <div class="between"><span style="font-weight:700;font-size:13px">${id === 'bureaux' ? 'Bâtiment' : 'Garage'}</span>${pips(n)}</div>
-      <span class="small"><span class="mono ${occ >= cap ? 'warn' : ''}">${occ}</span><span class="muted"> / ${cap} ${unite}</span></span>
-      ${enTravaux ? `<span class="tiny warn" style="font-weight:600">Travaux : niveau ${n + 1} au tour ${z.travaux.fin}</span>`
+      <div class="bat-niv"><span class="tiny muted">Actuellement · niv. ${n}</span>
+        <span class="small"><span class="mono ${occ >= cap ? 'warn' : ''}">${occ}</span><span class="muted"> / </span>${cap} ${unite}</span>
+        <span class="tiny muted">entretien ${fmt1(B.entretien(n))} k€/tour</span></div>
+      ${enTravaux ? `${suivant}<span class="tiny warn" style="font-weight:600">Travaux : niveau ${n + 1} au tour ${z.travaux.fin}</span>`
         : n >= BATIMENT_MAX ? '<span class="tiny ok" style="font-weight:600">Niveau maximum</span>'
-        : `<button type="button" class="btn small block ${choisi ? 'primary' : 'agr'}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''}>
+        : `${suivant}<button type="button" class="btn small block ${choisi ? 'primary' : 'agr'}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''}>
             ${choisi ? '✓ Prévu ce soir' : `Agrandir · ${fmt1(B.coutAgrandir(n))} k€`}</button>
-          <span class="tiny muted">${refus && !choisi ? esc(refus) : `niv. ${n + 1} : ${B.capacite(n + 1)} ${B.unite} · entretien ${fmt1(B.entretien(n + 1))} k€/tour`}</span>`}
+          ${refus && !choisi ? `<span class="tiny muted">${esc(refus)}</span>` : ''}`}
     </div>`;
   }).join('');
 
-  const etat = Math.round(100 - z.usure);
-  const libres = Math.max(0, capaciteVehicules(z) - z.vehicules);
-  const tuiles = parc.map((v) => {
-    const prevu = v.etat === 'cabosse' && choixCarro.includes(v.cab);
-    const [coul, txt] = v.etat === 'cabosse' ? (prevu ? ['var(--blue)', 'réparé ce soir'] : ['var(--amber)', 'cabossé'])
-      : v.etat === 'atelier' ? ['var(--red)', `atelier ${v.jours} j`] : ['var(--green)', 'en service'];
-    return `<button type="button" class="veh ${v.etat}${prevu ? ' prevu' : ''}" data-action="vehicule" data-slot="${v.slot}" aria-label="${esc(v.nom)} : ${txt}">
-      ${vehiculeSvg(v.type, 20)}<span class="n">${esc(v.nom)}</span><span class="s"><i style="background:${coul}"></i>${txt}</span></button>`;
-  }).join('') + (libres ? `<a class="veh libre" href="#ordres" data-close aria-label="Acheter un véhicule (grande décision)"><span style="font-size:16px;line-height:1">+</span><span class="s">${libres} place${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''}</span></a>` : '');
+  const choixDec = d.decision && d.decision.type === 'construire' ? d.decision.infra : null;
+  const carteAnnexe = ([id, i]) => {
+    const fait = !!z.infra[id], prevu = choixDec === id;
+    return `<div class="annexe${fait ? ' faite' : ''}">
+      <div class="between" style="gap:8px"><span style="font-weight:600;font-size:13px">${esc(i.nom)}</span>
+        <span class="tiny ${fait ? 'ok' : prevu ? '' : 'muted'}" style="white-space:nowrap;${prevu ? 'color:var(--amber)' : ''}">${fait ? '✓ construite' : prevu ? 'prévue ce soir' : `${i.cout} k€`}</span></div>
+      <span class="tiny ${fait ? '' : 'muted'}">${fait ? 'Te donne : ' : 'Donnerait : '}${esc(i.effet)}</span></div>`;
+  };
+  const aFaire = Object.entries(INFRAS).filter(([id]) => !z.infra[id]);
+  const ann = `${annexes.length ? `<div class="annexes">${annexes.map(carteAnnexe).join('')}</div>` : '<p class="tiny muted" style="margin:0">Aucune annexe construite pour l’instant.</p>'}
+    ${aFaire.length ? `<details class="annexes-plus"${choixDec ? ' open' : ''}><summary class="small">Annexes à construire (${aFaire.length})</summary>
+      <div class="annexes">${aFaire.map(carteAnnexe).join('')}</div>
+      <a class="small" href="#ordres" data-close>Construire : grande décision dans tes ordres</a></details>` : ''}`;
 
+  const parc = parcVehicules(z, T);
+  const enService = parc.filter((v) => v.etat === 'service').length;
+  const etat = Math.round(100 - z.usure);
+  const cab = parc.filter((v) => v.etat === 'cabosse').length;
   const peq = perequation(z, st);
   return `<div class="col hp-logis" style="gap:10px">
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon hôtel de police</h2>
@@ -261,15 +280,45 @@ function logistiqueCorps() {
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <button type="button" class="btn small block decor-btn" data-action="decor">${icon('star', 16)} Personnaliser mon commissariat <span class="tiny muted">${decorCompte(z).n} / ${decorCompte(z).total}</span></button>
     <div class="bats">${bat}</div>
+    <div class="col" style="gap:6px">
+      <div class="between"><span class="tiny muted">Annexes · ${annexes.length} sur ${Object.keys(INFRAS).length}</span><span class="tiny muted">entretien ${fmt1(ENTRETIEN_ANNEXE)} k€/tour chacune</span></div>
+      ${ann}
+    </div>
+    <button type="button" class="list-row" data-action="parc" style="width:100%;text-align:left"><span class="col grow" style="gap:1px"><span style="font-weight:600">Parc automobile</span>
+      <span class="tiny muted">${enService} sur ${z.vehicules} en service · état ${etat} %${cab ? ` · ${cab} cabossé${cab > 1 ? 's' : ''}` : ''}</span></span>${icon('chevron', 16)}</button>
+    ${z.agents > SUBSIDE.seuil ? `<p class="tiny ok" style="margin:0">Subside communal : +${fmt1(subsideAgents(z))} k€ par tour pour tes ${z.agents - SUBSIDE.seuil} agents au-delà de ${SUBSIDE.seuil}.</p>` : ''}
+    ${peq ? `<p class="tiny ok" style="margin:0">Péréquation : ta zone est moins équipée que la moyenne du district, elle reçoit +${fmt1(PEREQUATION.montant)} k€ par tour.</p>` : ''}
+    <p class="tiny muted" style="margin:0">Agrandir et construire se paient à 20:00. Pense à valider tes ordres.</p>
+  </div>`;
+}
+
+function parcCorps() {
+  const z = myZone(), T = S.state.turn, d = S.draft || {};
+  const parc = parcVehicules(z, T);
+  const choixCarro = cabossesChoisis(z, d.depenses && d.depenses.carrosserie);
+  const etat = Math.round(100 - z.usure);
+  const libres = Math.max(0, capaciteVehicules(z) - z.vehicules);
+  const dep = d.depenses || {};
+  const tuiles = parc.map((v) => {
+    const prevu = v.etat === 'cabosse' && choixCarro.includes(v.cab);
+    const [coul, txt] = v.etat === 'cabosse' ? (prevu ? ['var(--blue)', 'réparé ce soir'] : ['var(--amber)', 'cabossé'])
+      : v.etat === 'atelier' ? ['var(--red)', `atelier ${v.jours} j`] : ['var(--green)', 'en service'];
+    return `<button type="button" class="veh ${v.etat}${prevu ? ' prevu' : ''}" data-action="vehicule" data-slot="${v.slot}" aria-label="${esc(v.nom)} : ${txt}">
+      ${vehiculeSvg(v.type, 20)}<span class="n">${esc(v.nom)}</span><span class="s"><i style="background:${coul}"></i>${txt}</span></button>`;
+  }).join('') + (libres ? `<a class="veh libre" href="#ordres" data-close aria-label="Acheter un véhicule (grande décision)"><span style="font-size:16px;line-height:1">+</span><span class="s">${libres} place${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''}</span></a>` : '');
+  return `<div class="col hp-logis" style="gap:10px">
+    <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Parc automobile</h2>
+      <span class="tiny muted">${z.vehicules} véhicule${z.vehicules > 1 ? 's' : ''} · garage niv. ${z.batiments.garage} (${capaciteVehicules(z)} places)</span></div>
+      <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="col" style="gap:5px">
-      <div class="between"><span class="tiny muted">Parc automobile</span><span class="tiny muted">état du parc <span class="mono ${etat < 60 ? 'bad' : etat < 80 ? 'warn' : ''}">${etat} %</span></span></div>
+      <div class="between"><span class="tiny muted">État du parc</span><span class="mono tiny ${etat < 60 ? 'bad' : etat < 80 ? 'warn' : ''}">${etat} %</span></div>
       <div class="parc-etat"><span style="width:${etat}%;background:${etat >= 80 ? 'var(--green)' : etat >= 60 ? 'var(--amber)' : 'var(--red)'}"></span></div>
     </div>
     <div class="parc">${tuiles}</div>
-    <div class="chips">${annexes.map(([, i]) => `<span class="chip">${esc(i.nom)}</span>`).join('')}<a class="chip add" href="#ordres" data-close>+ Annexe</a></div>
-    ${z.agents > SUBSIDE.seuil ? `<p class="tiny ok" style="margin:0">Subside communal : +${fmt1(subsideAgents(z))} k€ par tour pour tes ${z.agents - SUBSIDE.seuil} agents au-delà de ${SUBSIDE.seuil}.</p>` : ''}
-    ${peq ? `<p class="tiny ok" style="margin:0">Péréquation : ta zone est moins équipée que la moyenne du district, elle reçoit +${fmt1(PEREQUATION.montant)} k€ par tour.</p>` : ''}
-    <p class="tiny muted" style="margin:0">Agrandir et réparer se paient à 20:00. Pense à valider tes ordres.</p>
+    <p class="tiny muted" style="margin:0">Touche un véhicule cabossé pour le faire réparer.</p>
+    <button type="button" class="btn block" data-action="dep-toggle" data-k="revision" data-fermer="1">${dep.revision ? '✓ Révision du parc prévue · annuler' : `Révision du parc · ${fmt1(DEPENSES.revision.cout)} k€ · +${USURE.revision} %`}</button>
+    <button type="button" class="btn small ghost block" data-action="logistique">Voir mon hôtel de police</button>
+    <p class="tiny muted" style="margin:0">Réparations et révision se paient à 20:00. Pense à valider tes ordres.</p>
   </div>`;
 }
 
@@ -289,7 +338,7 @@ export function ouvrirVehicule(slot) {
     : '<span class="tiny ok">En service</span>';
   const html = `
     <div class="between" style="align-items:flex-start"><div class="row" style="gap:12px">${vehiculeSvg(v.type, 26)}<div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">${esc(v.nom)}</h2>${statut}</div></div>
-      <button class="iconbtn" data-action="logistique" aria-label="Retour au parc" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">‹</button></div>
+      <button class="iconbtn" data-action="parc" aria-label="Retour au parc" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">‹</button></div>
     ${v.etat === 'cabosse' ? `<div class="bat" style="gap:3px"><div class="between small"><span style="font-weight:600">Carrosserie ce soir</span><span class="mono">${fmt1(prix)} k€</span></div>
       <span class="tiny muted">${atelier ? 'Réparé à ton atelier mécanique, sans immobilisation.' : 'Immobilisé le temps de la réparation. Avec l’atelier mécanique : moitié prix et sans immobilisation.'}</span></div>
       <button type="button" class="btn ${prevu ? '' : 'primary'} block" data-action="carro-veh" data-i="${v.cab}">${prevu ? 'Annuler la réparation' : `Réparer ce soir · ${fmt1(prix)} k€`}</button>` : ''}

@@ -14,7 +14,7 @@ import { renderTerrain } from './ui/terrain.js';
 import { installerAntiTriche } from './ui/antitriche.js';
 import { installerInvitationAppli } from './ui/installer.js';
 import { lireInvitationUrl, oublierInvitation, partager, copier, afficherQr } from './ui/invitation.js';
-import { ouvrirBudget, ouvrirVehicule, ouvrirLogistique, rafraichirLogistique, ouvrirDecor, ouvrirHpVoisin } from './ui/logistique.js';
+import { ouvrirBudget, ouvrirVehicule, ouvrirLogistique, ouvrirParc, rafraichirLogistique, ouvrirDecor, ouvrirHpVoisin } from './ui/logistique.js';
 import { DECOR, decorDebloque, conditionDecor, decorValide } from './engine/decor.js';
 import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
@@ -333,6 +333,7 @@ async function onClick(e) {
       case 'budget': ouvrirBudget(); break;
       case 'vehicule': ouvrirVehicule(el.dataset.slot); break;
       case 'logistique': ouvrirLogistique(); break;
+      case 'parc': ouvrirParc(); break;
       case 'decor': ouvrirDecor(); break;
       case 'roulette-lancer': await lancerRoulette(b); rerender(); break;
       case 'skin-choix': {
@@ -361,7 +362,7 @@ async function onClick(e) {
         dd.carrosserie = garde.length ? garde : false;
         S.ordersDirty = true;
         toast(garde.includes(i) ? 'Réparation prévue ce soir. Valide tes ordres.' : 'Réparation annulée.');
-        rerender(); ouvrirLogistique(); break;
+        rerender(); ouvrirParc(); break;
       }
       case 'invite-share': { const r = await partager(el.dataset.code, el.dataset.nom); if (r === 'copié') toast('Lien copié : colle-le dans un message.'); break; }
       case 'invite-copy': await copier(el.dataset.code, el.dataset.nom); toast('Lien et message copiés.'); break;
@@ -553,7 +554,7 @@ async function onClick(e) {
         else dd[el.dataset.k] = !dd[el.dataset.k];
         S.ordersDirty = true;
         if (el.dataset.fermer) toast(dd[el.dataset.k] ? 'Révision prévue ce soir. Valide tes ordres.' : 'Révision annulée.');
-        rerender(); if (el.dataset.fermer) ouvrirLogistique(); break;
+        rerender(); if (el.dataset.fermer) ouvrirParc(); break;
       }
       case 'class-tab': S.classTab = el.dataset.t; rerender(); break;
       case 'enq-tab': S.enqTab = el.dataset.t; rerender(); break;
