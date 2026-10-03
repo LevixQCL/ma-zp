@@ -232,12 +232,29 @@ function bonneDifficulte(items, cible, attrs, strict = true) {
 const cache = new Map();
 
 /** Affaire n° `n` de la partie. */
-export function genererAffaire(seed, n, carte = false, prof = false) {
+const indexBrut = (seed, n) => (n - 1 + makeRng(`${seed}:enquete2:${n}`).int(0, AFFAIRES.length - 1)) % AFFAIRES.length;
+/** Décor réellement utilisé par l'affaire n : à partir de l'affaire `dd`, jamais le même que la précédente. */
+function indexModele(seed, n, dd) {
+  const brut = indexBrut(seed, n);
+  if (dd == null || n < dd || n <= 1) return brut;
+  return brut === indexModele(seed, n - 1, dd) ? (brut + 1) % AFFAIRES.length : brut;
+}
+
+/**
+ * Affaire n° `n` de la partie.
+ * `dd` : à partir de cette affaire, une affaire ne reprend pas le décor de la précédente
+ * (avant, pour les affaires déjà ouvertes, seul le titre change).
+ */
+export function genererAffaire(seed, n, carte = false, prof = false, dd = null) {
   if (prof) carte = true;
-  const key = `${seed}#${n}${carte ? '#c' : ''}${prof ? '#p' : ''}`;
+  const distinct = dd != null && n >= dd;
+  const key = `${seed}#${n}${carte ? '#c' : ''}${prof ? '#p' : ''}${distinct ? `#d${dd}` : ''}`;
   if (cache.has(key)) return cache.get(key);
   const rng = makeRng(`${seed}:enquete2:${n}`);
-  const modele = AFFAIRES[(n - 1 + rng.int(0, AFFAIRES.length - 1)) % AFFAIRES.length];
+  rng.int(0, AFFAIRES.length - 1); // tirage du décor (le même que dans indexBrut)
+  const im = indexModele(seed, n, distinct ? dd : null);
+  const memeQuAvant = !distinct && n > 1 && im === indexBrut(seed, n - 1);
+  const modele = memeQuAvant && !distinct ? { ...AFFAIRES[im], titre: `${AFFAIRES[im].titre}, le retour` } : AFFAIRES[im];
   const [vic, aVic, deVic] = modele.vic;
 
   // Ce qu'il fallait pour commettre les faits.
@@ -422,7 +439,7 @@ function piecePlanque(aff, a) {
       if (p.temperature === 'froid') return 'Le labo relève de la condensation sur les emballages : la planque est un lieu froid.';
       if (p.temperature === 'chaud') return 'Les emballages sont déformés par la chaleur : la planque est un lieu chaud.';
       return 'Ni chaleur ni froid sur les emballages : la planque est un lieu tempéré.';
-    case 'rive': return `Après les faits, un véhicule chargé est filmé en train de passer un pont vers la rive ${p.rive} : la planque s’y trouve.`;
+    case 'rive': return `Après les faits, un véhicule chargé est filmé en train de passer un pont vers la rive ${p.rive} : la planque est sur la rive ${p.rive}.`;
     case 'acces': return p.acces === 'véhicule' ? 'Un voisin a entendu un véhicule manœuvrer jusqu’à la porte de la planque : elle est accessible en véhicule.' : 'L’auteur a fini le trajet à pied, par une ruelle trop étroite pour un véhicule : la planque n’est accessible qu’à pied.';
     default: return '';
   }
@@ -680,8 +697,11 @@ export function pieceDemarche(aff, dossier, x) {
 }
 export function demarcheUtile(dossier, x, aff) { return !!pieceDemarche(aff, dossier, x); }
 
-/** Le fin mot de l'affaire, publié dans la Gazette à la clôture. */
-export function recitFinal(aff) {
+/**
+ * Le fin mot de l'affaire, publié dans la Gazette à la clôture.
+ * À la découverte, la traque commence : la planque reste secrète (`avecPlanque` = false).
+ */
+export function recitFinal(aff, avecPlanque = true) {
   if (aff.recitFinal) return aff.recitFinal;
   const s = aff.suspects[aff.coupable], p = aff.planques[aff.planque];
   const il = s.f ? 'elle' : 'il', e = s.f ? 'e' : '';
@@ -692,7 +712,8 @@ export function recitFinal(aff) {
     const manque = ELEMENTS.find((el) => !x.statut[el]);
     return `${x.nom} (${{ mob: 'pas le bon mobile', moy: 'aucun moyen d’agir ainsi', occ: 'un alibi solide pendant les faits' }[manque]})`;
   });
-  return `À ${hm(aff.heure)}, ${s.nom}, ${s.role} ${mobile}, ${moyen} ; ${occ}. ${cap(il)} a caché le butin dans la planque « ${p.nom} » (${p.lieu}). Les autres étaient innocents : ${innocents.join(', ')}.`;
+  const cache = avecPlanque ? ` ${cap(il)} a caché le butin dans la planque « ${p.nom} » (${p.lieu}).` : ` Où ${il} se cache avec le butin reste à trouver : c’est l’enjeu de la traque.`;
+  return `À ${hm(aff.heure)}, ${s.nom}, ${s.role} ${mobile}, ${moyen} ; ${occ}.${cache} Les autres étaient innocents : ${innocents.join(', ')}.`;
 }
 
 /** Cellules : les zones actives sont réparties en 1 à 3 groupes (au moins deux zones chacun), chacun chargé de certains suspects. */
@@ -712,6 +733,7 @@ export function nouvelleAffaire(state) {
   state.enqueteV = ENQ_VERSION;
   if (state.carteDes == null) state.carteDes = n; // les affaires ouvertes depuis cette version se jouent avec le plan
   if (state.profDes == null) state.profDes = n; // … et en dossier complet (plan routier, journal, PV) depuis la suivante
+  if (state.distinctDes == null) state.distinctDes = n; // deux affaires de suite n'ont plus le même décor
   if (state.meurtreDes == null && n >= 2) state.meurtreDes = n; // une affaire de meurtre écrite à la main, une fois par partie
   state.enquete = { n, jour: 1, nbCellules: 1, cellules: {}, rebonds: [], figee: false };
   repartirCellules(state);
@@ -725,7 +747,7 @@ export function nouvelleAffaire(state) {
 /** Affaire n° n de cette partie (avec le plan des trajets si elle a été ouverte depuis son arrivée). */
 export function affaire(state, n) {
   if (state.meurtreDes != null && n === state.meurtreDes) return affaireMeurtre(n);
-  return genererAffaire(state.seed, n, state.carteDes != null && n >= state.carteDes, state.profDes != null && n >= state.profDes);
+  return genererAffaire(state.seed, n, state.carteDes != null && n >= state.carteDes, state.profDes != null && n >= state.profDes, state.distinctDes);
 }
 
 const nomZone = (z) => `ZP ${z.code} ${z.nom}`;
@@ -857,7 +879,7 @@ export function enquetePre(state, uids, ord, push) {
       z.stats.limier += POINTS.contribution; z._psEntraide = (z._psEntraide || 0) + 8;
       z.rapport.push(`Enquête : tes pièces ont aidé à identifier l’auteur (+${POINTS.contribution} pts d’enquête).`);
     }
-    res.recit = recitFinal(aff);
+    res.recit = recitFinal(aff, !!aff.meurtre);
     res.decouverte = { suspect: cs.nom, zones: justes.map((u) => nomZone(state.zones[u])), uids: justes, pts, contributeurs: [...contributeurs].map((u) => nomZone(state.zones[u])), contribUids: [...contributeurs] };
     if (aff.meurtre) {
       // Pas de traque : les aveux valent arrestation.

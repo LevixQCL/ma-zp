@@ -11,7 +11,7 @@ import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, SOURCES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
   ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect,
 } from '../engine/enquete.js';
-import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal } from './enquete.js';
+import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal, banniereTraque } from './enquete.js';
 import { LIEUX as LIEUX3, MODES, itineraire, fmtDist, nomTroncon } from '../engine/carte3.js';
 import { dossierAffaire3, numeroPv } from '../engine/dossier.js';
 import { planSvg3, posLieu3, PLANQUE_POS3 } from './plan3.js';
@@ -679,13 +679,14 @@ export function renderTableau() {
       <button type="button" class="tb-chip" data-action="tab-ouvrir" data-tid="titre">J${st.enquete.jour} / ${ENQ.dureeMax} · ${et.t.liens.length} ficelle${et.t.liens.length > 1 ? 's' : ''}</button>
       ${sauvegardeCarnet(st.enquete.n) ? '<button type="button" class="tb-chip tb-pc" data-action="tab-restaurer" title="Remettre le tableau tel qu’il était sur cet appareil avant la dernière synchro">⟲ restaurer</button>' : ''}
       <button type="button" class="tb-chip ${S.carnetSync && S.carnetSync !== 'ok' && S.carnetSync !== 'encours' ? '' : 'tb-pc'}" data-action="tab-sync" aria-label="Synchroniser le tableau avec mes autres appareils" title="Synchroniser avec mes autres appareils" ${S.carnetSync && S.carnetSync !== 'ok' ? 'style="color:var(--red-soft)"' : ''}>${S.carnetSync === 'encours' ? '↻ …' : S.carnetSync && S.carnetSync !== 'ok' ? `⚠ non synchronisé${S.carnetSync === 'permission-denied' ? ' (règles Firebase)' : ''} · réessayer` : '↻'}</button>
-      ${traque ? '<button type="button" class="tb-chip rouge" data-action="tab-vue" data-v="liste">Traque en cours</button>' : ''}
+      ${traque ? '<button type="button" class="tb-chip rouge" data-action="traque-voir">Traque en cours</button>' : ''}
       <span class="grow"></span>
       <button type="button" class="tb-rond" data-action="tab-vue" data-v="liste" aria-label="Affichage en liste">${icon('liste', 18)}</button>
       <button type="button" class="tb-chip ${sp('boite')}" data-action="tab-volet" data-k="boite" aria-label="Boîte à pièces, ${nbBoite} à ranger">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l2-5h14l2 5"/><rect x="3" y="9" width="18" height="11" rx="1.5"/><path d="M9 13h6"/></svg>${nbBoite}${neuf ? '<span class="tb-dot"></span>' : ''}</button>
       <button type="button" class="tb-chip ambre ${sp('soir')}" data-action="tab-volet" data-k="soir">Ce soir <span class="tb-compte">${(d.demarches || []).length}/${ENQ.maxDemarches}</span></button>
     </div>
+    ${traque && S.banTraqueVue !== st.turn ? `<div class="tb-banniere">${banniereTraque(st, { tableau: true })}<button type="button" class="tb-rond tb-ban-x" data-action="tb-ban-fermer" aria-label="Fermer">✕</button></div>` : ''}
     <div id="tb-aide" class="tb-aide" ${fil ? '' : 'hidden'}>${S.tabFrom ? 'Touche l’élément à relier' : 'Glisse d’un élément à l’autre · touche une ficelle pour la couper'}</div>
     <div class="tb-outils tb-ui">
       <button type="button" class="tb-o ${fil ? '' : 'on'}" data-action="tab-mode" data-v="main" aria-label="Main : déplacer et ouvrir" aria-pressed="${!fil}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11V5a1.5 1.5 0 0 1 3 0v5M12 10V4a1.5 1.5 0 0 1 3 0v6M15 10V6a1.5 1.5 0 0 1 3 0v8a6 6 0 0 1-6 6h-1a6 6 0 0 1-5-3l-2.5-4a1.5 1.5 0 0 1 2.5-1.6L9 13"/></svg></button>

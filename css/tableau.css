@@ -319,3 +319,8 @@ body:has(.demo-banner) .jr-wrap { top: 44px; }
 .p3l .tb-lieu-nom { font-size: 15px; }
 .p3l .tb-lieu-pt { width: 22px; height: 22px; }
 .pm .pm-reperes text { font-family: 'Special Elite', monospace; font-size: 12px; fill: #4E4430; paint-order: stroke; stroke: #F1E9D2; stroke-width: 3px; }
+
+/* Bandeau « suspect identifié » sur le tableau */
+.tb-banniere { position: fixed; left: 12px; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 62px); z-index: 30; max-width: 520px; margin: 0 auto; }
+.tb-banniere .banniere-traque { box-shadow: 0 8px 24px rgba(0,0,0,.45); padding-right: 44px; }
+.tb-banniere .tb-ban-x { position: absolute; top: 8px; right: 8px; }
