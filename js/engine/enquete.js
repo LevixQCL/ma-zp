@@ -526,8 +526,16 @@ function piecesRattrapage(state, z, base) {
 export function dossierDe(state, z) {
   const e = state.enquete;
   if (!e) return null;
-  if (z.enquete && z.enquete.n === e.n && z.enquete.v === ENQ_VERSION) return z.enquete;
-  const base = { n: e.n, v: ENQ_VERSION, pieces: [pieceOuverture()], accuse: null, exclu: false };
+  if (z.enquete && z.enquete.n === e.n && z.enquete.v === ENQ_VERSION) {
+    // Zone arrivée après le début de l'affaire, avant que le rattrapage existe : on le lui donne une fois.
+    const debut = state.turn - ((e.jour || 1) - 1);
+    if (!z.enquete.ratt && (z.joinedTurn || 0) > debut) {
+      const extra = piecesRattrapage(state, z, z.enquete);
+      return { ...z.enquete, ratt: true, pieces: [...z.enquete.pieces, ...extra.map((f) => ({ f, j: e.jour, src: 'rattrapage' }))] };
+    }
+    return z.enquete;
+  }
+  const base = { n: e.n, v: ENQ_VERSION, pieces: [pieceOuverture()], accuse: null, exclu: false, ratt: true };
   // Une zone qui arrive en cours d'affaire reçoit aussi les rebondissements déjà publiés…
   for (const r of e.rebonds || []) if (!base.pieces.some((p) => p.f === r.f)) base.pieces.push({ f: r.f, j: r.j, src: 'rebond' });
   // … et un dossier de rattrapage, au prorata des jours écoulés.
