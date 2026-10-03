@@ -148,7 +148,7 @@ function prisHtml(e, s) {
   const l = (e.prises || {})[s];
   if (!l || !l.length) return '';
   const n = l.reduce((t, [k]) => t + k, 0);
-  return `<span class="tiny warn">dont ${l.map(([k, m]) => `${k} ${m === 'l’opération' ? 'sur l’opération' : `en ${m}`}`).join(', ')} : ${Math.max(0, S.draft.alloc[s] - n)} au travail dans le service</span>`;
+  return `<span class="tiny warn">${l.map(([k, m]) => `${k} ${m === 'l’opération' ? 'sur l’opération' : `en ${m}`}`).join(', ')} → ${Math.max(0, S.draft.alloc[s] - n)} au service</span>`;
 }
 
 function opCouvHtml(e) {
@@ -172,7 +172,7 @@ function reserveHtml(z, d, e) {
   const libres = Math.max(0, e.reste);
   return `<div class="svc svc-res">
     <div class="svc-l"><i class="svc-c" style="background:var(--faint)"></i>
-      <span class="svc-t"><span class="svc-n">Agents de réserve</span><span class="svc-r muted">${fmt1(DEPENSES.reserve.cout)} k€ pièce · efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} % · ${DEPENSES.reserve.max} max.</span></span>
+      <span class="svc-t"><span class="svc-n">Agents de réserve</span><span class="svc-r muted">${fmt1(DEPENSES.reserve.cout)} k€ pièce · efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} %</span></span>
       <span class="stepper"><button type="button" data-action="dep-reserve" data-d="-1" aria-label="Un agent de réserve en moins" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="dep-reserve" data-d="1" aria-label="Un agent de réserve en plus" ${n >= DEPENSES.reserve.max ? 'disabled' : ''}>+</button></span></div>
     ${n ? `<div class="svc-plus"><label class="field" style="font-weight:500">Ils prennent la place de tes agents en
       <select class="text" data-change="dep-service" style="min-height:44px;font-size:14px">${SERVICES.map((s2) => `<option value="${s2}" ${s === s2 ? 'selected' : ''}>${SERVICE_LABELS[s2]}</option>`).join('')}</select></label>
@@ -190,14 +190,14 @@ function resultatService(e, s) {
   const z = myZone();
   const pap = (v) => (v < 0 ? `−${-v}` : v > 0 ? `+${v}` : '±0');
   switch (s) {
-    case 'intervention': return `<span class="${e.couverts >= e.attendus ? 'ok' : 'warn'}">${e.couverts} incident${e.couverts > 1 ? 's' : ''} sur ${e.attendus} couvert${e.couverts > 1 ? 's' : ''}</span>`;
+    case 'intervention': return `<span class="${e.couverts >= e.attendus ? 'ok' : 'warn'}">${e.couverts}/${e.attendus} incidents couverts</span>`;
     case 'proximite': return `<span class="muted">criminalité ${Math.round(e.crim)}</span>`;
     case 'recherche': {
       const p = projeterDossiers(z, e.cap && e.cap.recherche);
       const retard = p.lignes.filter((l) => !l.boucle && l.d.age + 1 > 6).length;
-      return `<span class="${retard ? 'bad' : p.boucles ? 'ok' : 'muted'}">${p.boucles ? `${p.boucles} bouclé${p.boucles > 1 ? 's' : ''} ce soir · ` : ''}${p.restants} restant${p.restants > 1 ? 's' : ''} après 20:00</span>`;
+      return `<span class="${retard ? 'bad' : p.boucles ? 'ok' : 'muted'}">${retard ? `${retard} en retard · ` : p.boucles ? `${p.boucles} bouclé${p.boucles > 1 ? 's' : ''} · ` : ''}${p.restants} restant${p.restants > 1 ? 's' : ''}</span>`;
     }
-    case 'roulage': return e.chasse ? '<span class="bad">« chasse aux PV » : satisfaction en baisse</span>' : `<span class="ok">+${fmt1(e.amendes)} k€ d’amendes</span>`;
+    case 'roulage': return e.chasse ? '<span class="bad">« chasse aux PV » : satisfaction −2</span>' : `<span class="ok">+${fmt1(e.amendes)} k€ d’amendes</span>`;
     case 'admin': return `<span class="${e.pap > 0 ? 'warn' : 'muted'}">paperasse ${pap(e.pap)} ce soir</span>`;
     default: return '';
   }
@@ -463,7 +463,7 @@ function dossiersHtml(z, e) {
     </div>`;
   };
   return `<div class="dossiers">${p.lignes.map(ligne).join('')}</div>
-    <span class="tiny muted">${n ? 'Gris : déjà fait · bleu : ce que tes enquêteurs feront ce soir, les plus vieux d’abord. ' : 'Personne en Recherche : aucun dossier n’avancera ce soir. '}Un nouveau dossier arrive chaque soir, compté dans les dossiers restants.</span>`;
+    <span class="tiny muted">${n ? 'Gris : déjà fait · bleu : ce soir, les plus vieux d’abord.' : 'Personne en Recherche : aucun dossier n’avancera ce soir.'} Le dossier du soir est compté.</span>`;
 }
 
 /** Aide courte de chaque service, avec la situation actuelle de la zone. */
@@ -643,16 +643,16 @@ export function renderOrdres() {
       <div class="between" style="align-items:baseline;margin-bottom:2px"><h2 class="card-title">Affectation</h2>
         <button type="button" class="lien-statut" data-action="ventilation" aria-expanded="${!!S.ventilation}"><span id="alloc-status">${statusHtml(e)}</span><span class="tiny muted"> · ${S.ventilation ? 'masquer' : 'détail'}</span>${agentsHorsServices().some((h) => h.bloque) ? ' <span class="small bad">· agents bloqués</span>' : ''}</button></div>
       ${S.ventilation ? ventilationHtml(z, e) : ''}
-      ${SERVICES.map((s2) => `<div class="svc">
+      ${SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); return `<div class="svc${ouvert ? ' ouvert' : ''}">
         <div class="svc-l"><i class="svc-c" style="background:${COUL_SVC[s2]}"></i>
-          <span class="svc-t"><span class="svc-n">${s2 === 'admin' ? 'Accueil / admin.' : SERVICE_LABELS[s2]} <span class="svc-niv">niv. ${z.niveaux[s2]}</span></span><span class="svc-r" id="res-${s2}">${resultatService(e, s2)}</span></span>
-          <button type="button" class="helpbtn" data-action="help" data-s="${s2}" aria-expanded="${!!(S.help && S.help[s2])}" aria-label="À quoi sert ${SERVICE_LABELS[s2]} ?">?</button>
+          <button type="button" class="svc-t svc-tog" data-action="help" data-s="${s2}" aria-expanded="${ouvert}" aria-label="${ouvert ? 'Masquer' : 'Afficher'} le détail : ${SERVICE_LABELS[s2]}">
+            <span class="svc-n">${s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2]}<span class="svc-niv">niv. ${z.niveaux[s2]}</span>${icon('chevron', 13, `class="svc-chev"${ouvert ? ' style="transform:rotate(90deg)"' : ''}`)}</span>
+            <span class="svc-r" id="res-${s2}">${resultatService(e, s2)}</span></button>
           <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
         <span id="pris-${s2}" class="svc-plus">${prisHtml(e, s2)}</span>
-        ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} agent${dep.reserve > 1 ? 's' : ''} de réserve en renfort (efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} %)</span>` : ''}
-        ${s2 === 'recherche' ? `<div class="svc-plus" id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}
-        ${S.help && S.help[s2] ? `<p class="tiny svc-plus" style="margin:2px 0 6px;color:var(--text2);line-height:1.45">${esc(aide(s2, z))}</p>` : ''}
-      </div>`).join('')}
+        ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} de réserve en renfort (efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} %)</span>` : ''}
+        ${ouvert ? `<div class="svc-det">${s2 === 'recherche' ? `<div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}<p class="tiny" style="margin:0;color:var(--text2);line-height:1.45">${esc(aide(s2, z))}</p></div>` : ''}
+      </div>`; }).join('')}
       ${reserveHtml(z, d, e)}
       <p class="tiny muted" style="margin:6px 0 0">Touche + : si aucun agent n’est libre, il est pris dans ton service le plus fourni. Résultats estimés : le hasard du tour peut les faire varier.</p>
     </section>
