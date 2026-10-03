@@ -2,12 +2,9 @@
 // avec de quoi agir directement.
 import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
 import { operationActive } from '../engine/zone.js';
-import { siteDe } from '../engine/sites.js';
-import { iconeSite } from './plan.js';
-import { demandeRenfortHtml, appelsRenfort, renfortCtrl, renfortPrevu } from './renfort.js';
+import { appelsRenfort, renfortCtrl, renfortPrevu } from './renfort.js';
 import { candidaturesRecues, candidatureCtrl, maCandidature, postulerCtrl, placesRestantes, chefDe } from './affaires.js';
-import { fipaPour } from '../engine/fipa.js';
-import { SERVICE_LABELS, psEvenement } from '../engine/constants.js';
+import { psEvenement } from '../engine/constants.js';
 import { carteAffaire } from './ordres.js';
 import { nonDroitHtml, secteursEnDanger } from './nondroit.js';
 
@@ -31,25 +28,13 @@ function bloc(titre, contenu, { kicker = '', cls = '', couleur = '' } = {}) {
 export function renderTerrain() {
   const st = S.state, z = myZone(), T = st.turn, d = S.draft;
   const nom = (uid) => (st.zones[uid] ? zoneName(st.zones[uid]) : 'Une zone');
-  const site = siteDe(z);
   const chezMoi = [], voisins = [], district = [];
 
   // ───── Chez moi ─────
-  const op = operationActive(z, T);
-  if (op) chezMoi.push(bloc(esc(op.titre), `<p class="small" style="margin:0;color:var(--text2)">${esc(op.texte)}</p>
-    <p class="small" style="margin:0"><strong>Dispositif :</strong> ${Object.entries(op.besoins).map(([s2, n]) => `${n} en ${SERVICE_LABELS[s2]}`).join(' · ')} · <a href="#ordres">régler dans tes ordres</a></p>${demandeRenfortHtml()}`,
-    { kicker: `Opération d’envergure${op.duree > 1 ? ` · jour ${T - op.tourDebut + 1} sur ${op.duree}` : ''}${op.site && site ? ` · ${esc(site.nom)}` : ''}`, cls: 'red', couleur: 'var(--red-soft)' }));
-  for (const p of z.pressions || []) {
-    const s = p.site ? siteDe({ site: p.site }) : null;
-    chezMoi.push(`<div class="list-row" style="${s ? `border-color:${s.couleur}55` : ''}">${s ? iconeSite(s.id, s.couleur, 26) : `<span class="bullet" style="background:var(--amber)"></span>`}
-      <span class="col grow" style="gap:1px"><span style="font-weight:600">${esc(p.titre)}</span><span class="small muted">${esc(p.texte)}</span></span></div>`);
-  }
+  // La situation du jour, l'opération d'envergure (et l'appel à renfort) se règlent dans les Ordres, la FIPA sur l'HP :
+  // ici, seulement ce qui se joue avec les autres zones.
   for (const a of st.affaires.filter((x) => x.zone === z.uid)) {
     chezMoi.push(`<section class="col" style="gap:4px"><span class="kicker">Affaire disputée chez toi · tu diriges</span>${carteAffaire(a)}</section>`);
-  }
-  for (const f of fipaPour(st, z.uid)) {
-    chezMoi.push(`<a class="list-row" href="#hp-fipa" style="border-color:var(--amber-line)"><span class="bullet" style="background:var(--amber)"></span>
-      <span class="col grow" style="gap:1px"><span style="font-weight:600">FIPA · ${esc(f.titre)}</span><span class="small muted">${f.etape === 'demande' ? 'choisis une zone partenaire' : f.etape === 'invite' ? (f.partenaire === z.uid ? `${nom(f.demandeur)} t’invite · réponds` : 'invitation envoyée') : 'le jour J approche'} · sur l’HP</span></span>${icon('chevron', 16)}</a>`);
   }
 
   // ───── Chez les voisins ─────
@@ -84,8 +69,8 @@ export function renderTerrain() {
 
   const section = (titre, items, vide) => `<section class="col" aria-label="${titre}" style="gap:8px"><h2 class="section">${titre}</h2>${items.length ? items.join('') : `<p class="small muted" style="margin:0">${vide}</p>`}</section>`;
   return `<main class="screen">
-    <header class="col" style="gap:3px"><h1 class="big">Terrain</h1><p class="sub">Ce qui se passe chez toi, la zone de non-droit à reprendre ensemble, et là où tu peux aider. Tout se joue à 20:00.</p></header>
-    ${section('Chez moi', chezMoi, 'Calme plat dans ta zone aujourd’hui.')}
+    <header class="col" style="gap:3px"><h1 class="big">Terrain</h1><p class="sub">La zone de non-droit à reprendre ensemble, les affaires disputées et là où tu peux aider. Ta situation du jour et ton opération se règlent dans les <a href="#ordres">Ordres</a>. Tout se joue à 20:00.</p></header>
+    ${chezMoi.length ? section('Chez moi', chezMoi, '') : ''}
     ${nonDroitHtml()}
     ${section('Chez les voisins', voisins, 'Aucune demande d’aide pour l’instant.')}
     ${district.length ? section('District', district, '') : ''}
