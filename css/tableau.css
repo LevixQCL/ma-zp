@@ -210,3 +210,22 @@ span.tb-t-gardee { color: var(--faint); } span.tb-t-prevu { color: var(--amber);
 .tb-mc b { font-family: 'Special Elite', monospace; font-weight: 400; font-size: 8px; color: #B3261E; margin-right: 2px; }
 .tb-mc-rebond { color: #9A2B1F; } .tb-mc-constat { color: #1F4FA0; } .tb-mc-acc { color: #B3261E; font-weight: 700; } .tb-mc-attente { color: #8A8070; }
 .tb-chapo { margin: 0; font-family: 'Fraunces', serif; font-size: 8.5px; font-style: italic; line-height: 1.35; color: #3A352C; }
+
+/* Une de la Gazette, photos, dépôt de plainte */
+.tb-une { background: #EFE9DA; padding: 8px 10px 10px; gap: 3px; clip-path: polygon(0 1%, 8% 0, 22% 1%, 40% 0, 60% 1%, 78% 0, 100% 1%, 99% 50%, 100% 99%, 85% 100%, 65% 99%, 45% 100%, 25% 99%, 8% 100%, 0 99%, 1% 50%); }
+.tb-une-titre { font-family: 'Fraunces', serif; font-weight: 800; font-size: 17px; text-align: center; color: #1D1A15; border-bottom: 2px solid #1D1A15; padding-bottom: 2px; }
+.tb-une-date { font-family: 'Fraunces', serif; font-size: 7px; text-align: center; color: #5E574A; border-bottom: 1px solid #1D1A15; padding-bottom: 2px; margin-bottom: 2px; }
+.tb-une .tb-k { font-family: 'Fraunces', serif; color: #9A2B1F; }
+.tb-une strong { font-family: 'Fraunces', serif; font-weight: 800; font-size: 15px; line-height: 1.05; color: #1D1A15; }
+.tb-une .tb-txt p { font-family: 'Fraunces', serif; font-size: 8px; line-height: 1.35; columns: 1; }
+.tb-photo { position: relative; line-height: 0; border: 1px solid rgba(0,0,0,.25); flex-shrink: 0; }
+.tb-photo-svg { display: block; width: 100%; height: auto; filter: sepia(.25) contrast(1.05); }
+.tb-jn .tb-photo { width: 56%; float: none; margin: 2px 0; }
+.tb-jn .tb-photo .tb-face { width: 100%; height: auto; }
+.tb-face.tb-gris { filter: grayscale(1) contrast(1.15); }
+.tb-legende { font-family: 'Fraunces', serif; font-style: italic; font-size: 6.5px; color: #5E574A; }
+.tb-scene .tb-photo { border: 0; }
+.tb-scene .tb-photo-svg { filter: grayscale(.35) contrast(1.1); }
+.tb-signature { align-self: flex-end; font-family: 'Caveat', cursive; font-size: 16px; color: #1F4FA0; transform: rotate(-4deg); }
+.tb-photo-grande { line-height: 0; border-radius: 10px; overflow: hidden; flex-shrink: 0; }
+.tb-photo-grande .tb-photo-svg { filter: none; }

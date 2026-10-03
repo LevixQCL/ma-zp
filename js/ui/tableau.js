@@ -5,6 +5,8 @@
 import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
 import { hashString } from '../engine/rng.js';
 import { portraitSuspect } from './portrait.js';
+import { recitAffaire } from '../engine/recit.js';
+import { photoScene, photoUne, photoButin } from './scene-crime.js';
 import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, SOURCES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
   ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect,
@@ -27,7 +29,7 @@ const COL = { occ: '#2F6FD3', moy: '#C88A12', mob: '#C2302B' };
 const PINS = { r: ['#FF9A93', '#D32F2F', '#7A1010'], b: ['#9CC8FF', '#2F6FD3', '#123B7A'], y: ['#FFE59A', '#E8A800', '#7A5600'], g: ['#A8F0C6', '#2E9E62', '#11502E'], w: ['#FFFFFF', '#D8D2C4', '#7D7566'] };
 const PIN_EL = { occ: 'b', moy: 'y', mob: 'r' };
 const DEF_POS = {
-  recit: [600, 230], chrono: [2220, 220],
+  recit: [600, 230], chrono: [2220, 220], une: [430, 800], scene: [800, 840], plainte: [250, 1480],
   'c:occ': [1080, 190], 'c:moy': [1400, 170], 'c:mob': [1720, 190],
   s0: [760, 1460], s1: [1080, 1450], s2: [1400, 1460], s3: [1720, 1450], s4: [2040, 1460],
 };
@@ -114,7 +116,9 @@ function objetPiece(aff, p, rebonds) {
   const tampon = sp.k === 'tous' ? '' : `<span class="tb-share tb-t-${sp.k}" title="${esc(sp.txt)}" aria-label="Partage : ${esc(sp.txt)}"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8l7.6-4.4M8.2 13.2l7.6 4.4"/></svg>${sp.k === 'prevu' ? '<i>ce soir</i>' : ''}</span>`;
   if (ty === 'jn') {
     const r = rebonds.find((x) => x.f === p.f);
-    return `<div class="tb-obj tb-jn"><span class="tb-k">${ENTETE.jn} · J${p.j}</span><strong>${esc(r ? r.titre : titrePiece(aff, p.f))}</strong>${r && r.texte ? `<p class="tb-chapo">${esc(r.texte)}</p>` : ''}<div class="tb-txt">${lignes}</div></div>`;
+    const si = pieceSuspect(p.f);
+    const photo = p.f.startsWith('p:') ? photoButin(`bt${aff.n}`) : si !== null ? portraitSuspect(aff.suspects[si], si, 'tb-face tb-gris') : '';
+    return `<div class="tb-obj tb-jn"><span class="tb-k">${ENTETE.jn} · J${p.j}</span><strong>${esc(r ? r.titre : titrePiece(aff, p.f))}</strong>${photo ? `<div class="tb-photo">${photo}</div>` : ''}${r && r.texte ? `<p class="tb-chapo">${esc(r.texte)}</p>` : ''}<div class="tb-txt">${lignes}</div></div>`;
   }
   if (ty === 'sc') return `<div class="tb-obj tb-sc"><span class="tb-bande"></span><span class="tb-k">${ENTETE.sc}${qui ? ` · ${esc(qui)}` : ''}</span><div class="tb-txt">${lignes}</div>${tampon}</div>`;
   return `<div class="tb-obj tb-${ty}"><span class="tb-k">${ENTETE[ty]}${qui ? ` · ${esc(qui)}` : ''} · J${p.j}</span><div class="tb-txt">${lignes}</div>${tampon}</div>`;
@@ -210,6 +214,13 @@ function elementsHtml(aff, dos, et) {
   }
   // Procès-verbal d'ouverture : le récit de l'affaire, toujours au tableau.
   out.push(wrap('recit', 210, 1.6, `<div class="tb-obj tb-pv"><span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">Procès-verbal d’ouverture · affaire n° ${aff.n}</span><strong>${esc(aff.titre)}</strong><div class="tb-txt"><p>${esc(aff.recit)}</p></div><span class="tb-k">Plaignant${/^la /.test(aff.vic) ? 'e' : ''} : ${esc(aff.vic)} · butin : ${esc(aff.butin)}</span></div>`, 'w'));
+  // Affaires ouvertes depuis le plan : la une de la Gazette, la photo de la scène et le dépôt de plainte.
+  if (aff.carte) {
+    const rc = recitAffaire(S.state.seed, aff);
+    out.push(wrap('une', 230, 1.6, `<div class="tb-obj tb-une"><span class="tb-une-titre">La Gazette du Delta</span><span class="tb-une-date">Édition du matin · jour 1</span><span class="tb-k">${esc(rc.une.surtitre)}</span><strong>${esc(rc.une.titre)}</strong><div class="tb-photo">${photoUne(rc.scene, `un${aff.n}`)}</div><span class="tb-legende">${esc(rc.une.legende)}</span><p class="tb-chapo">${esc(rc.une.chapo)}</p><div class="tb-txt">${rc.une.corps.map((x) => `<p>${esc(x)}</p>`).join('')}</div></div>`, 'w', 'tb-p-jn'));
+    out.push(wrap('scene', 130, 1.7, `<div class="tb-obj tb-polo tb-scene"><div class="tb-photo">${photoScene(rc.scene, `sc${aff.n}`)}</div><span class="tb-prenom" style="font-size:13px">Scène · J1</span><span class="tb-role">photo du labo, plots 1 à 3</span></div>`, 'r'));
+    out.push(wrap('plainte', 180, 1.6, `<div class="tb-obj tb-pv"><span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">${esc(rc.plainte.titre)} · ${esc(rc.plainte.qui)}</span><div class="tb-txt">${rc.plainte.lignes.map((x) => `<p>${esc(x)}</p>`).join('')}</div><span class="tb-signature">${esc(rc.victime)}</span></div>`, 'w'));
+  }
   // Main courante : l'enquête jour après jour.
   const chrono = chronologie(aff, dos);
   out.push(wrap('chrono', 190, 1.6, `<div class="tb-obj tb-chrono"><span class="tb-spirale"></span><span class="tb-k">Main courante · jour ${j} sur ${ENQ.dureeMax}</span>${chrono.slice(-14).map((l) => `<p class="tb-mc tb-mc-${l.k}"><b>J${l.j}</b> ${esc(l.t)}</p>`).join('')}${j < ENQ.dureeMax ? `<p class="tb-mc tb-mc-attente"><b>J${j}</b> … résultats ce soir à 20:00</p>` : ''}</div>`, 'r'));
@@ -357,6 +368,13 @@ function voletPlan(aff, et) {
     ${et.connus.has('c:occ') ? `<p class="tiny muted" style="margin:0">Rappel des caméras : entrée à ${hm(aff.heure)}, sortie à ${hm(aff.fin)}.</p>` : '<p class="tiny muted" style="margin:0">L’heure exacte des faits viendra des caméras.</p>'}`;
 }
 
+function voletDoc(aff, id) {
+  const rc = recitAffaire(S.state.seed, aff);
+  if (id === 'une') return `<span class="tb-ligne-k" style="color:var(--amber)">La Gazette du Delta · jour 1</span><span class="tb-titre">${esc(rc.une.titre)}</span><div class="tb-photo-grande">${photoUne(rc.scene, 'unv')}</div><p class="small" style="margin:0;font-weight:600">${esc(rc.une.chapo)}</p>${rc.une.corps.map((x) => `<p class="small" style="margin:0;line-height:1.5">${esc(x)}</p>`).join('')}`;
+  if (id === 'scene') return `<span class="tb-ligne-k" style="color:var(--amber)">Photo de la scène · labo, jour 1</span><span class="tb-titre">${esc(aff.lieu.charAt(0).toUpperCase() + aff.lieu.slice(1))}</span><div class="tb-photo-grande">${photoScene(rc.scene, 'scv')}</div><p class="small muted" style="margin:0">Les plots 1 à 3 marquent les endroits relevés par le labo. La façon d’entrer, l’heure exacte et le mobile restent à établir : ce sont les constatations.</p>`;
+  return `<span class="tb-ligne-k" style="color:var(--amber)">${esc(rc.plainte.titre)}</span><span class="tb-titre">${esc(rc.plainte.qui)}</span>${rc.plainte.lignes.map((x) => `<p class="small" style="margin:0;line-height:1.5">${esc(x)}</p>`).join('')}`;
+}
+
 function voletFaits(aff) {
   const j = S.state.enquete.jour;
   return `<span class="tb-ligne-k" style="color:var(--amber)">Affaire n° ${aff.n} · jour ${j} sur ${ENQ.dureeMax}</span><span class="tb-titre">${esc(aff.titre)}</span>
@@ -409,6 +427,7 @@ function volet(aff, dos, et) {
   else if (sh.k === 'planque') corps = voletPlanque(aff, dos, Number(sh.id.slice(2)));
   else if (sh.k === 'plan') corps = voletPlan(aff, et);
   else if (sh.k === 'faits') corps = voletFaits(aff);
+  else if (sh.k === 'doc') corps = voletDoc(aff, sh.id);
   else if (sh.k === 'boite') corps = voletBoite(aff, et);
   else if (sh.k === 'soir') corps = voletSoir(aff, dos);
   return `<section class="tb-volet tb-ui" aria-label="Détail">
@@ -538,14 +557,14 @@ function cadrer(id) {
   let v;
   if (id === 'plan') { const s = Math.min(1, (w - 20) / MAP.w); v = { s, tx: (w - MAP.w * s) / 2 - MAP.x * s, ty: 64 - MAP.y * s }; }
   else if (id === 'titre') return;
-  else { if (!/^(s\d|c:|L:|P:|recit|chrono)/.test(id) && !t.places.includes(id)) return; const p = ancre(aff, t, id); if (!p) return; const s = Math.max(S.tabV.s, 0.85); v = { s, tx: w / 2 - p[0] * s, ty: 80 - p[1] * s }; }
+  else { if (!/^(s\d|c:|L:|P:|recit|chrono|une|scene|plainte)/.test(id) && !t.places.includes(id)) return; const p = ancre(aff, t, id); if (!p) return; const s = Math.max(S.tabV.s, 0.85); v = { s, tx: w / 2 - p[0] * s, ty: 80 - p[1] * s }; }
   S.tabV = borner(v);
   appliquer(S.tabV, true);
   sauverVue();
 }
 
 export function ouvrirVolet(id, rerender, { partage = false } = {}) {
-  const k = id === 'titre' || id === 'recit' || id === 'chrono' ? 'faits' : id === 'plan' ? 'plan' : id.startsWith('L:') ? 'lieu' : id.startsWith('P:') ? 'planque' : id.startsWith('c:') ? 'c' : /^s\d$/.test(id) ? 's' : 'p';
+  const k = id === 'titre' || id === 'recit' || id === 'chrono' ? 'faits' : id === 'une' || id === 'scene' || id === 'plainte' ? 'doc' : id === 'plan' ? 'plan' : id.startsWith('L:') ? 'lieu' : id.startsWith('P:') ? 'planque' : id.startsWith('c:') ? 'c' : /^s\d$/.test(id) ? 's' : 'p';
   cadrer(id);
   S.tabSheet = { k, id, partage };
   setTimeout(rerender, id === 'titre' ? 0 : 280);
