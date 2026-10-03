@@ -1,4 +1,5 @@
 // Écran Enquête : le tableau Mobile · Moyen · Occasion, les pièces, les planques et les notes.
+import { formatDateBe } from '../engine/time.js';
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName } from './common.js';
 import { capacite } from '../engine/zone.js';
 import { APPUI } from '../engine/appui.js';
@@ -400,6 +401,15 @@ export function vueEnquete() {
 
 export function renderEnquete() {
   const st = S.state, z = myZone();
+  if (!st.enquete && st.enquetePause) {
+    return `<main class="screen">
+      ${banniereTraque(st)}
+      <header class="col" style="gap:3px"><span class="kicker">Enquête</span><h1 class="big">Nouvelle affaire ${esc(formatDateBe(st.nextDeadline))} à 20:00</h1>
+        <p class="small muted" style="margin:0">Pas d’enquête ce soir : place à la traque. La prochaine affaire s’ouvre à la Gazette de demain.</p></header>
+      <button type="button" class="btn" data-action="edition-ouvrir">📰 Relire l’édition spéciale</button>
+      ${(st.traques || []).map(traqueHtml).join('')}
+    </main>${tabbar('enquete')}`;
+  }
   if (!st.enquete) {
     return `<main class="screen"><header class="col" style="gap:3px"><span class="kicker">Enquête</span><h1 class="big">Pas d’affaire en cours</h1></header>
       <p class="small muted">La première affaire s’ouvrira au prochain tour.</p></main>${tabbar('enquete')}`;

@@ -19,6 +19,7 @@ export const NOTE_MAJ = {
       ['Suspect identifié', 'quand une zone démasque l’auteur, un bandeau le dit en haut de l’enquête (et sur le tableau) : qui l’a trouvé, et combien de tours il reste pour l’arrêter.'],
       ['La planque reste secrète', 'le fin mot de l’affaire dans la Gazette ne dit plus où l’auteur se cache tant que la traque n’est pas finie.'],
       ['Indices lisibles', 'dans la carte de traque, les indices sur la planque sont affichés en entier (la rive était illisible).'],
+      ['Édition spéciale', 'quand le maître du jeu met l’enquête en pause pendant une traque, la Gazette sort une édition spéciale chez tout le monde.'],
       ['Deux affaires différentes', 'une nouvelle affaire ne reprend plus le décor de celle qui vient d’être résolue.'],
     ]],
     ['Le Directeur, maître du jeu', [

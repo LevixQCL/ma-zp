@@ -254,6 +254,7 @@ export async function createFirebaseBackend(config) {
     },
     /** Réglages du Directeur (intensité, feuilletons) et événement de district demandé : rangés dans l'état. */
     async adminDirecteur(champs) { await F.updateDoc(stateRef(), Object.fromEntries(Object.entries(champs).map(([k, v]) => [`dir.${k}`, v]))); },
+    async adminPauseEnquete(pause, minClientVersion) { await F.updateDoc(stateRef(), { enquete: null, enquetePause: pause, minClientVersion }); },
     async adminForceResolution() { await F.updateDoc(stateRef(), { nextDeadline: Date.now() - 1000 }); },
     async adminExport() {
       const [state, players] = await Promise.all([this.getState(), this.getPlayers()]);
