@@ -1186,3 +1186,15 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .membre.membre-v { flex-direction: column; align-items: stretch; gap: 6px; }
 .membre-v .membre-h { display: flex; align-items: center; gap: 12px; }
 .membre-v .xp { width: 100%; }
+/* Ordres : ligne de service compacte, détail repliable identique pour chaque service. */
+.affect .svc-tog { background: none; border: 0; padding: 6px 0; margin: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.affect .svc-n { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.affect .svc-niv { font-size: 11.5px; }
+.affect .svc-chev { color: var(--faint); align-self: center; transition: transform .15s; flex-shrink: 0; }
+.affect .svc-r { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.affect .stepper button { width: 36px; height: 36px; }
+.affect .stepper .n { min-width: 28px; }
+.affect .svc-det { margin: 0 0 10px 14px; padding: 10px 12px; border-radius: 14px; background: var(--bg); border: 1px solid var(--hair); display: flex; flex-direction: column; gap: 8px; }
+.affect .svc-det .dossiers { padding: 0; border: 0; background: none; margin: 0; }
+.affect .svc.ouvert .svc-chev { color: var(--amber); }
+.affect .svc-res .svc-r { white-space: normal; }
