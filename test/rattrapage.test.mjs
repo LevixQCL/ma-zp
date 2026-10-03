@@ -27,3 +27,17 @@ assert.deepEqual(dossierDe(state, nouveau).pieces.map((p) => p.f), d.pieces.map(
 const s1 = createGame({ seed: 'r2' }); s1.enquete = { ...state.enquete, jour: 1 }; s1.zones = { x: newZone({ uid: 'x', code: '1', nom: 'X' }, 1) };
 assert.equal(dossierDe(s1, s1.zones.x).pieces.filter((p) => p.src === 'rattrapage').length, 0);
 console.log(`OK : rattrapage (${d.pieces.length} pièces pour une moyenne de ${moy}, jour ${state.enquete.jour}).`);
+// Zone déjà inscrite pendant l'affaire, avant le rattrapage (dossier sans pièces de rattrapage) : elle le reçoit une fois.
+{
+  const ancien = newZone({ uid: 'ancien', code: '8888', nom: 'Ancien' }, state.turn);
+  ancien.enquete = { n: state.enquete.n, v: dossierDe(state, nouveau).v, pieces: dossierDe(state, nouveau).pieces.filter((p) => p.src !== 'rattrapage'), accuse: null, exclu: false };
+  state.zones.ancien = ancien;
+  const d2 = dossierDe(state, ancien);
+  assert.ok(d2.ratt && d2.pieces.some((p) => p.src === 'rattrapage'), 'rattrapage donné après coup');
+  ancien.enquete = d2;
+  assert.equal(dossierDe(state, ancien).pieces.length, d2.pieces.length, 'une seule fois');
+  // Une zone présente depuis le début de l'affaire ne reçoit rien.
+  const b0 = state.zones[BOT_PROFILES[0].uid];
+  assert.equal(dossierDe(state, b0).pieces.filter((p) => p.src === 'rattrapage').length, 0);
+}
+console.log('OK : rattrapage après coup pour les zones déjà arrivées.');
