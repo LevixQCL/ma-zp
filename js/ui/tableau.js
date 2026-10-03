@@ -553,9 +553,10 @@ function voletReaud(aff, dos, i) {
   const ligne = (f) => {
     const on = choix === f;
     const fait = aff.reactions && aff.reactions[i] && aff.reactions[i][f] && !pieceReaudition(aff, dos, i, f);
-    return `<button type="button" class="tb-trajet-l ${on ? 'on' : ''}" style="--c:var(--amber)" data-action="reaud-piece" data-i="${i}" data-f="${esc(f)}" aria-pressed="${on}" ${fait ? 'disabled' : ''}><span>${esc(nomElement(aff, f))}</span><strong>${on ? '✓' : fait ? 'déjà fait' : ''}</strong></button>`;
+    return `<button type="button" class="tb-trajet-l ${on ? 'on' : ''}" style="--c:var(--amber)" data-action="reaud-piece" data-i="${i}" data-f="${esc(f)}" aria-pressed="${on}" ${fait || !mandatOk(aff, dos, i) ? 'disabled' : ''}><span>${esc(nomElement(aff, f))}</span><strong>${on ? '✓' : fait ? 'déjà fait' : ''}</strong></button>`;
   };
   return `<span class="tb-ligne-k" style="color:var(--amber)">Réaudition · ${REAUD.cout} k€ · une par soir</span><span class="tb-titre">${esc(s.nom)}</span>
+    ${mandatOk(aff, dos, i) ? '' : '<p class="small" style="margin:0;color:var(--red-soft)">Le magistrat n’autorisera la réaudition qu’avec une pièce sérieuse contre cette personne au dossier (comme pour la perquisition).</p>'}
     <p class="small muted" style="margin:0">Choisis l’élément à lui mettre sous les yeux. Certains le feront parler, d’autres non : « rien à ajouter » ne prouve rien. Résultat ce soir à 20:00.</p>
     ${tous.map(ligne).join('')}
     ${d.reaud ? '<button type="button" class="btn small ghost" data-action="reaud-annuler">Annuler la réaudition</button>' : ''}`;

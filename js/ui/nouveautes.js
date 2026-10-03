@@ -49,14 +49,14 @@ export const NOTE_MAJ = {
     ['Un meurtre à Mons (la prochaine affaire)', [
       ['Des pièces en photo', 'image de caméra horodatée, ticket de caisse, billet de train, agenda, machine à café, scellés : l’indice se lit dans l’image.'],
       ['La scène à fouiller', 'touche la photo de la scène au tableau : dix plots numérotés dans l’arrière-boutique, à examiner un par un. Rien n’est souligné.'],
-      ['Réentendre un suspect', 'une fois par soir (1 k€), mets-lui une pièce sous les yeux : le journal, un PV, une vérification, même sa propre audition. Certaines le font changer de version.'],
+      ['Réentendre un suspect', 'une fois par soir (1 k€), mets-lui une pièce sous les yeux : le journal, un PV, une vérification, même sa propre audition. Certaines le font changer de version. Comme pour la perquisition, il faut une pièce sérieuse contre lui.'],
       ['La chronologie', 'une frise de 20:00 à minuit, une ligne par suspect : place toi-même les événements que ton dossier t’a appris et vois où les versions ne tiennent pas.'],
       ['Des visages plus vrais', 'les portraits des suspects ressemblent désormais à des photos d’identité : modelé, regard, rides selon l’âge, grain photo.'],
       ['Une affaire écrite à la main', 'un antiquaire tué dans sa boutique, rue de la Clef. Cinq proches, et chacun ment sur quelque chose : un seul pour cacher le meurtre. Découvrir le secret d’un innocent explique son mensonge et le blanchit.'],
       ['Rien n’est signalé', 'certains indices sont sous les yeux de tous (dans le journal, dans un PV, dans une audition), d’autres sont des leurres. Lis tout, croise tout.'],
       ['La vraie ville', 'le plan est celui du centre de Mons. Touche un lieu : l’itinéraire à pied s’ouvre dans Google Maps. Une estimation suffit toujours. La boutique, la brasserie, le café et toutes les personnes sont inventés.'],
       ['Les démarches', 'légiste et labo, caméras et machines, bureau de la victime : chacune livre ses résultats un par un. Sur les suspects : vérifier l’alibi, téléphone et comptes, et la perquisition, que le juge n’autorise qu’avec une pièce sérieuse contre la personne au dossier.'],
-      ['La confrontation', 'à la place de l’accusation : choisis un suspect et trois éléments à lui opposer (pièces de ton dossier, journal, PV). Bons éléments : aveux, l’affaire est résolue (pas de traque). Mauvais éléments : il nie et repart libre, tu recommences un autre jour (−1 de réputation). Mauvaise personne : le parquet te retire l’affaire.'],
+      ['La confrontation', 'à la place de l’accusation : choisis un suspect et trois éléments à lui opposer (pièces de ton dossier, journal, PV). Bons éléments : aveux, l’affaire est résolue (pas de traque). Mauvais éléments : il nie et repart libre, tu recommences un autre jour (−1 de réputation). Mauvaise personne : le parquet te retire l’affaire. Le journal et les PV publics accablent, mais il faut au moins deux preuves trouvées par ton enquête.'],
     ]],
     ['Le dossier complet (affaires suivantes)', [
       ['Le journal du lendemain', 'à l’ouverture, La Gazette du Delta s’ouvre en plein écran : la nuit du vol, l’histoire des lieux, la victime, ce que l’on sait, le quartier sur un extrait du plan et les brèves du jour (lis-les : un pont fermé pour travaux change les trajets). Le journal reste punaisé au tableau, touche-le pour le relire.'],
