@@ -238,18 +238,18 @@ function logistiqueCorps() {
     const refus = decisionImpossible(z, dec, T);
     const enTravaux = z.travaux && z.travaux.batiment === id;
     const [occ, cap, unite] = occupation[id];
-    const bonusNiv = (m) => (id === 'bureaux' && m === 4 && !(z.trophees || []).some((t) => t.id === 'batisseur') ? ' · trophée Bâtisseur' : '');
-    const suivant = n >= BATIMENT_MAX ? '' : `<div class="bat-niv suiv"><span class="tiny muted">Niveau ${n + 1}</span>
-        <span class="small">${B.capacite(n + 1)} ${B.unite} <span class="ok">(+${B.capacite(n + 1) - B.capacite(n)})</span></span>
-        <span class="tiny muted">entretien ${fmt1(B.entretien(n + 1))} k€/tour${bonusNiv(n + 1)}</span></div>`;
+    const max = n >= BATIMENT_MAX;
+    const plus = (txt, cls = 'ok') => (max ? '' : ` <span class="${cls}" style="font-weight:600">${txt}</span>`);
+    const trophee = !max && id === 'bureaux' && n + 1 === 4 && !(z.trophees || []).some((t) => t.id === 'batisseur');
     return `<div class="bat">
       <div class="between"><span style="font-weight:700;font-size:13px">${id === 'bureaux' ? 'Bâtiment' : 'Garage'}</span>${pips(n)}</div>
-      <div class="bat-niv"><span class="tiny muted">Actuellement · niv. ${n}</span>
-        <span class="small"><span class="mono ${occ >= cap ? 'warn' : ''}">${occ}</span><span class="muted"> / </span>${cap} ${unite}</span>
-        <span class="tiny muted">entretien ${fmt1(B.entretien(n))} k€/tour</span></div>
-      ${enTravaux ? `${suivant}<span class="tiny warn" style="font-weight:600">Travaux : niveau ${n + 1} au tour ${z.travaux.fin}</span>`
+      <div class="bat-niv"><span class="tiny muted">Niveau ${n}${plus('+1')}</span>
+        <span class="small"><span class="mono ${occ >= cap ? 'warn' : ''}">${occ}</span><span class="muted"> / </span>${cap} ${unite}${plus(`+${B.capacite(n + 1) - cap}`)}</span>
+        <span class="tiny muted">entretien ${fmt1(B.entretien(n))} k€${plus(`+${fmt1(B.entretien(n + 1) - B.entretien(n))}`, 'muted')}</span>
+        ${trophee ? '<span class="tiny ok" style="font-weight:600">+ trophée Bâtisseur</span>' : ''}</div>
+      ${enTravaux ? `<span class="tiny warn" style="font-weight:600">Travaux : niveau ${n + 1} au tour ${z.travaux.fin}</span>`
         : n >= BATIMENT_MAX ? '<span class="tiny ok" style="font-weight:600">Niveau maximum</span>'
-        : `${suivant}<button type="button" class="btn small block ${choisi ? 'primary' : 'agr'}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''}>
+        : `<button type="button" class="btn small block ${choisi ? 'primary' : 'agr'}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''}>
             ${choisi ? '✓ Prévu ce soir' : `Agrandir · ${fmt1(B.coutAgrandir(n))} k€`}</button>
           ${refus && !choisi ? `<span class="tiny muted">${esc(refus)}</span>` : ''}`}
     </div>`;
@@ -280,6 +280,7 @@ function logistiqueCorps() {
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <button type="button" class="btn small block decor-btn" data-action="decor">${icon('star', 16)} Personnaliser mon commissariat <span class="tiny muted">${decorCompte(z).n} / ${decorCompte(z).total}</span></button>
     <div class="bats">${bat}</div>
+    ${Object.keys(BATIMENTS).some((id) => b[id] < BATIMENT_MAX) ? '<p class="tiny muted" style="margin:-4px 0 0">En vert : ce que t’apporte le niveau suivant.</p>' : ''}
     <div class="col" style="gap:6px">
       <div class="between"><span class="tiny muted">Annexes · ${annexes.length} sur ${Object.keys(INFRAS).length}</span><span class="tiny muted">entretien ${fmt1(ENTRETIEN_ANNEXE)} k€/tour chacune</span></div>
       ${ann}
