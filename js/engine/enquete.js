@@ -1028,25 +1028,17 @@ function pieceHasard(state, z, aff, rng) {
 }
 
 /**
- * Coup de pouce du Directeur : une pièce qui fait vraiment avancer (elle permet d'écarter un innocent),
- * sinon une pièce au hasard. Jamais d'indice de planque.
+ * Coup de pouce du Directeur (témoin tardif) : une pièce qui écarte exactement UN suspect de plus,
+ * jamais deux d'un coup, jamais d'indice de planque. Aucune pièce de ce genre : rien (null).
+ * Le dossier d'une zone à la traîne avance d'un pas, sans la faire passer devant celles qui ont travaillé.
  */
 export function pieceCoupDePouce(state, z, aff, rng) {
-  const connus = new Set(faitsConnus(z.enquete));
-  const restants = candidats(aff, [...connus]).suspects.filter((i) => i !== aff.coupable);
-  if (aff.meurtre) {
-    // Affaire de meurtre : une des pièces qui blanchissent un proche encore suspect.
-    for (const i of rng.shuffle(restants)) { const pool = (aff.innocente && aff.innocente[i] || []).filter((f) => !connus.has(f)); if (pool.length) return rng.pick(pool); }
-    return null;
-  }
-  for (const e of rng.shuffle(ELEMENTS)) {
-    for (const i of rng.shuffle(restants)) {
-      if (aff.suspects[i].statut[e]) continue;
-      if (connus.has(`c:${e}`)) { if (!connus.has(`${e}:${i}`)) return `${e}:${i}`; }
-      else return `c:${e}`;
-    }
-  }
-  return pieceHasard(state, z, aff, rng);
+  const connus = [...new Set(faitsConnus(z.enquete))];
+  const avant = candidats(aff, connus).suspects.length;
+  if (avant <= 2) return null;
+  const pool = (aff.faits || []).filter((f) => !connus.includes(f) && !f.startsWith('p:'))
+    .filter((f) => avant - candidats(aff, [...connus, f]).suspects.length === 1);
+  return pool.length ? rng.pick(pool) : null;
 }
 
 /** Bonus d’énigme : une pièce de l'affaire en cours. */
