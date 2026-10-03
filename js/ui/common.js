@@ -5,7 +5,7 @@ import { gradeFor, nextGrade, ENIGMES } from '../engine/constants.js';
 
 /** Bonus d'énigme « +10 % de capacité » choisi aujourd'hui pour ce service (1 sinon) : appliqué à 20:00, montré dès maintenant dans les estimations. */
 export function bonusEnigme(service) {
-  const b = (S.questResults || []).find((r) => r && r.bonus === 'capacite' && r.statut === 'ok'); // confié à un agent : pas sûr, on ne l'affiche pas
+  const b = (S.questResults || []).find((r) => r && r.bonus === 'capacite' && (r.statut === 'ok' || (r.statut === 'quiz' && Number(r.tentatives) >= 3))); // confié à un agent : pas sûr, on ne l'affiche pas
   return b && b.service === service ? ENIGMES.bonusCapacite : 1;
 }
 import { moyenneIpz } from '../engine/zone.js';
