@@ -3,10 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-05c-agent',
+  id: '2026-10-06-nd-rejoindre',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
+    ['📻', 'Zone de non-droit : qui y va ?', 'le Terrain montre les zones annoncées ce soir sur chaque secteur, et la radio a un bouton « Rejoindre ».'],
     ['🧑‍💼', 'Pas le temps pour les énigmes ?', 'confie-les à un agent : il tente de décrocher ton bonus pendant que tu fais autre chose.'],
     ['⛈️', 'Le Directeur', 'un maître du jeu veille sur ta zone : regarde le ciel de l’HP, il annonce la journée.'],
     ['🔎', 'Fouiller la scène', 'photos des pièces, scène à fouiller, réauditions et chronologie à reconstituer.'],
@@ -17,6 +18,11 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Zone de non-droit', [
+      ['Qui y va ce soir', 'en haut de la zone de non-droit (Terrain), un encadré liste les secteurs où des zones se sont annoncées à la radio, avec leurs agents et ce que ça donnerait ensemble. Touche une ligne pour ouvrir le secteur.'],
+      ['Rejoindre d’un bouton', 'sous une annonce de la radio, « Rejoindre » envoie tes agents sur le même secteur et prévient la radio à ton tour. Il reste à valider tes ordres.'],
+      ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
+    ]],
     ['Énigmes', [
       ['Confier les énigmes à un agent', 'pas le temps ou pas l’envie ? Tant que tu n’as répondu à aucune énigme du jour, un agent peut plancher dessus à ta place et viser le bonus de ton choix. Il le décroche le plus souvent (de 40 à 80 % selon le moral), sans PS ni prime « sans faute », sans moral perdu s’il sèche, mais avec +1 dossier de paperasse. Jouer toi-même reste plus payant.'],
     ]],

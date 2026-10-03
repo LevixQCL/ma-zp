@@ -41,7 +41,7 @@ import { niveauEnigmes } from './engine/directeur.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
 import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND } from './engine/constants.js';
 import { nomSecteur } from './engine/nondroit.js';
-import { agentsND } from './ui/nondroit.js';
+import { agentsND, monAnnonceND } from './ui/nondroit.js';
 import { lancerIncident, lancerAppui, ouvrirMiniJeu, majComptesIncidents, signatureIncidents } from './ui/incidents.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
 
@@ -443,8 +443,32 @@ async function onClick(e) {
         const k = el.dataset.c, n = (S.draft.secteurs || {})[k] || 0, z = myZone();
         if (!n) break;
         el.disabled = true;
-        await b.sendRadio(S.user.uid, `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) envoie ${n} agent${n > 1 ? 's' : ''} à ${nomSecteur(k)} ce soir. Plus on est nombreux, plus ça tombe vite : qui vient ?`);
-        toast('Message envoyé sur la radio.'); rerender(); break;
+        const deja = monAnnonceND(k);
+        await b.sendRadio(S.user.uid, deja
+          ? `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) sera finalement à ${nomSecteur(k)} avec ${n} agent${n > 1 ? 's' : ''} ce soir.`
+          : `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) envoie ${n} agent${n > 1 ? 's' : ''} à ${nomSecteur(k)} ce soir. Plus on est nombreux, plus ça tombe vite : qui vient ?`,
+        { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n } });
+        toast('Annoncé sur la radio : les autres zones peuvent te rejoindre.'); rerender(); break;
+      }
+      case 'nd-rejoindre': {
+        // Depuis une annonce radio : j'envoie des agents sur le même secteur et je préviens la radio à mon tour.
+        const k = el.dataset.c, voulu = Number(el.dataset.n) || 0, z = myZone();
+        const sect = (S.draft.secteurs ||= {});
+        let ajoutes = 0;
+        for (let i = 0; i < voulu; i++) {
+          if ((sect[k] || 0) >= ND.maxParSecteur || agentsND() >= ND.maxTotal || !takeAgent()) break;
+          sect[k] = (sect[k] || 0) + 1; ajoutes++;
+        }
+        if (!ajoutes) break;
+        S.ordersDirty = true;
+        el.disabled = true;
+        const n = sect[k];
+        try {
+          await b.sendRadio(S.user.uid, `🤝 ${z.nom} (ZP ${z.code}) rejoint ${nomSecteur(k)} avec ${n} agent${n > 1 ? 's' : ''} ce soir.`,
+            { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n } });
+        } catch (e2) { console.warn(e2); }
+        toast(`${ajoutes} agent${ajoutes > 1 ? 's' : ''} pour ${nomSecteur(k)} ce soir. Valide tes ordres.`);
+        rerender(); break;
       }
       case 'quartier': {
         S.quartierSel = el.dataset.c;
