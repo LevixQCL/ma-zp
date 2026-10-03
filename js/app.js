@@ -12,6 +12,7 @@ import { monAppel } from './ui/renfort.js';
 import { maCandidature } from './ui/affaires.js';
 import { renderTerrain } from './ui/terrain.js';
 import { installerAntiTriche } from './ui/antitriche.js';
+import { installerInvitationAppli } from './ui/installer.js';
 import { lireInvitationUrl, oublierInvitation, partager, copier, afficherQr } from './ui/invitation.js';
 import { ouvrirBudget, ouvrirVehicule, ouvrirLogistique, rafraichirLogistique, ouvrirDecor, ouvrirHpVoisin } from './ui/logistique.js';
 import { DECOR, decorDebloque, conditionDecor, decorValide } from './engine/decor.js';
@@ -1050,6 +1051,7 @@ function messageErreur(err, contexte = '') {
 // ───────── Démarrage ─────────
 async function boot() {
   window.__mazpBoot = true; // les modules sont chargés : le filet de sécurité de index.html se retire
+  installerInvitationAppli(); // bandeau « installe Ma ZP » (iPhone et Android), seulement hors appli installée
   loading();
   S.config = CONFIG;
   S.invitation = lireInvitationUrl();
