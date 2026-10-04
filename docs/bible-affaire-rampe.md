@@ -202,3 +202,15 @@ faire taire ce qui s'est passé en 1999.
 - **La lettre du corbeau au commissariat** n'arrive qu'avec les lettres, le relevé et le message vocal, et ne nomme pas le n° 7 : sinon la solution tombait dès le jour 3.
 - **Pourquoi Grégoire envoie le SMS** : faire croire la victime vivante pendant qu'il est à table, et ramener
   Élodie sur les lieux. C'est sa seconde erreur (le wifi), après le brouillon d'alibi demandé à Thibault.
+
+## Soupçons visibles dès le jour 1 (ajout du 4 octobre)
+
+Chaque suspect a désormais un élément concret au dossier dès l'ouverture, pas seulement un mobile :
+
+- **Élodie** : la Gazette rapporte qu'une voisine a entendu « une voix de femme surtout » chez le notaire, « après le journal télévisé » (vrai : sa visite, 21:04–21:31, heure vague exprès pour ne pas trahir le décalage de la caméra). Rumeur : le testament devait être modifié lundi.
+- **Rudy** : dans la corbeille à courrier (PV), sa lettre recommandée du 28 septembre, « Vous ne l'emporterez pas au paradis ». Rumeur d'une phrase au comptoir. Son audition y répond.
+- **Samira** : le PV la décrit en ciré clair (comme la femme de 23:36 sur la caméra) et hésitant sur son heure d'arrivée (8:15, puis 8:30).
+- **Thibault** : post-it de la victime sur le fixe, « Lempereur a encore appelé (3e fois). NE PAS RAPPELER. » Rumeur : départ de l'étude en 2005 sur une histoire d'argent. Son audition y répond.
+- **Grégoire** reste volontairement le moins suspect au jour 1 (alibi doublement confirmé).
+
+Texte seulement : aucune règle, aucune pièce ni aucun indice décisif modifié.
