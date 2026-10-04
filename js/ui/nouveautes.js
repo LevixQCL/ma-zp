@@ -35,6 +35,12 @@ export const NOTE_MAJ = {
       ['Tableau des arrestations', 'chaque malfrat arrêté laisse son avis de recherche tamponné « ARRÊTÉ » au commissariat : sur le panneau devant l’entrée, et en grand dans la fiche de l’hôtel de police (la tienne et celle des autres zones). Les 12 derniers sont gardés d’une saison à l’autre.'],
       ['Parts de la prime', 'démasquer l’auteur sans l’arrêter rapporte 6 k€, aider avec ses pièces partagées 2 k€.'],
     ]],
+    ['Affichage', [
+      ['Incidents du jour', 'ils tombent entre 6 h et 12 h et restent ouverts jusqu’à 20:00 : plus d’incident qui ferme avant la fin de la journée.'],
+      ['Jauge des skins', 'touche-la sur l’HP : comment elle se remplit, et tous les skins à gagner, avec un aperçu sur ton commissariat.'],
+      ['Zone de non-droit', 'chaque secteur dit ce qu’il rapporte : à la reprise, chaque nuit où il est tenu, et ta part si tu y as déjà de l’influence.'],
+      ['Budget dans l’IPZ', 'le détail du budget (tuile Budget de l’HP) montre ton score budget de l’IPZ et son calcul.'],
+    ]],
     ['Équilibrage', [
       ['Satisfaction et réputation', 'elles redescendent d’autant plus vite qu’elles sont hautes (comme le moral) : 90 et plus se mérite chaque jour. Détail dans les « ? ».'],
       ['IPZ', 'la satisfaction compte pour 30 % (au lieu de 35 %) et la réputation pour 15 % (au lieu de 10 %) : l’entraide pèse plus.'],

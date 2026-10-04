@@ -11,7 +11,8 @@ import { iconeSite } from './plan.js';
 import { moyenneIpz, operationActive, fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
 import { coutDemarche, PRIME_LABELS } from '../engine/enquete.js';
 import { portraitSuspect } from './portrait.js';
-import { SERVICE_LABELS } from '../engine/constants.js';
+import { SERVICE_LABELS, scoreBudget, BUDGET_IPZ, IPZ_POIDS } from '../engine/constants.js';
+import { aideBtn } from './aide.js';
 import { PERIL, absT, MANOEUVRES } from '../engine/rivalites.js';
 import { estimations } from './ordres.js';
 
@@ -43,7 +44,7 @@ function lignes(l) {
 export function ouvrirBudget() {
   const z = myZone();
   const p = previsionBudget();
-  const recettes = p.fixes.lignes.filter((x) => x.v > 0), frais = p.fixes.lignes.filter((x) => x.v < 0);
+  const recettes = p.fixes.lignes.filter((x) => x.v > 0 || x.k === 'confiance'), frais = p.fixes.lignes.filter((x) => x.v < 0 && x.k !== 'confiance');
   // Tendance : sur la base des seuls frais fixes (sans amendes exceptionnelles ni dépenses).
   const net = p.fixes.total;
   const tours = net < 0 ? Math.max(0, Math.ceil((z.budget - PERIL.budget) / -net)) : null;
@@ -52,6 +53,12 @@ export function ouvrirBudget() {
     <div class="between" style="align-items:flex-start"><h2 id="aide-titre" class="aide-titre">Budget de la zone</h2>
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="between"><span class="small muted">Aujourd’hui</span><span class="mono" style="font-size:20px;font-weight:700">${fmt1(z.budget)} k€</span></div>
+    ${(() => {
+      const b = z.budget, sc = Math.round(scoreBudget(b) * 10) / 10, dort = b > BUDGET_IPZ.dormant, brut = BUDGET_IPZ.base + BUDGET_IPZ.parK * b;
+      const calc = dort ? `100 − ${fmt1(BUDGET_IPZ.pente * (b - BUDGET_IPZ.dormant))} (argent qui dort au-delà de ${BUDGET_IPZ.dormant} k€)` : `${BUDGET_IPZ.base} + ${fmt1(BUDGET_IPZ.parK)} × ${fmt1(b)}${brut > 100 ? ', plafonné à 100' : brut < 0 ? ', plancher 0' : ''}`;
+      return `<div class="card tight" style="gap:4px;padding:8px 10px"><div class="between"><span class="small"><strong>Dans l’IPZ</strong> · ${Math.round(IPZ_POIDS.budget * 100)} %</span><span class="row" style="gap:6px"><span class="mono" style="font-weight:700">${fmt1(sc)}/100</span>${aideBtn('budgetIpz', 'Comment est calculé le score du budget')}</span></div>
+        <span class="tiny muted">Score = ${calc}. Idéal : garder entre 34 et ${BUDGET_IPZ.dormant} k€ (100/100), investir le reste. Le score compte le solde après 20:00.</span></div>`;
+    })()}
     <h3 class="compta-t">Chaque jour, quoi qu’il arrive</h3>
     ${lignes(recettes)}${lignes(frais)}
     <div class="between compta total"><span>Solde fixe par jour</span><span class="mono ${net >= 0 ? 'ok' : 'bad'}">${k(net)}</span></div>

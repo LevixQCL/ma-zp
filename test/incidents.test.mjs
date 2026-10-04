@@ -20,8 +20,9 @@ for (let t = 1; t <= 300; t++) {
     total++; if (l.length === 2) { deux++; assert.notEqual(l[0].service, l[1].service); assert.ok(l[1].ouvre - l[0].ouvre >= 2 * H - 1, 'au moins 2 h d’écart'); }
     for (const i of l) {
       const debut = s2.nextDeadline - 24 * H;
-      assert.ok(i.ouvre >= debut + 11 * H && i.ouvre <= debut + 23 * H, 'ouvre entre 7 h et 19 h');
-      assert.equal(i.ferme - i.ouvre, 12 * H, '12 heures pour jouer');
+      assert.ok(i.ouvre >= debut + 10 * H && i.ouvre <= debut + 16 * H, 'ouvre entre 6 h et 12 h');
+      assert.equal(i.ferme, s2.nextDeadline, 'ouvert jusqu’à 20:00');
+      assert.ok(i.ferme - i.ouvre >= 8 * H, 'au moins 8 heures pour jouer');
       assert.ok(['colis', 'crochetage', 'depanneuse', 'dossier'].includes(i.jeu));
     }
   }
@@ -74,28 +75,11 @@ for (const u of ['b', 'c']) {
   assert.equal(seul, maintenant.length, `incidents clos non joués gérés seuls (${u})`);
   assert.deepEqual(apres.zones[u].incidentsReportes || [], reportes, `incidents encore ouverts reportés (${u})`);
 }
-// 5. Report : un incident encore ouvert à 20:00 est réglé à la résolution suivante, joué ou non.
-let vu = 0;
-for (let t = 1; t <= 60 && vu < 3; t++) {
+// 5. Plus de report : tout incident ferme à 20:00 et se règle ce soir-là (les reportés d'une ancienne version restent gérés).
+for (let t = 1; t <= 60; t++) {
   const s4 = { ...structuredClone(st), turn: t, nextDeadline: deadline + (t - 1) * 24 * H };
-  const rep = separerIncidents(s4, 'a', {}).reportes;
-  if (!rep.length) continue;
-  vu++;
-  for (const i of rep) assert.ok(i.ferme > s4.nextDeadline && i.ferme <= s4.nextDeadline + 11 * H, 'reporté jusqu’au lendemain matin, au plus tard 7 h');
-  const pl = { a: { nom: 'A', code: '1111' }, b: { nom: 'B', code: '2222' }, c: { nom: 'C', code: '3333' } };
-  const { state: s5 } = resolveTurn(s4, { players: pl });
-  assert.deepEqual(s5.zones.a.incidentsReportes, rep);
-  assert.ok(!s5.zones.a.rapport.some((l) => rep.some((i) => l.includes(i.titre)) && l.startsWith('Incident ·') && !separerIncidents(s4, 'a', {}).maintenant.some((m) => m.titre === rep[0].titre)), 'pas réglé ce soir');
-  // Visible le lendemain, joué le matin, puis réglé à la résolution suivante.
-  assert.ok(incidentsVisibles(s5, 'a').some((i) => i.id === rep[0].id));
-  const pl2 = { ...pl, a: { ...pl.a, incidents: { cle: 'x', r: { [rep[0].id]: { statut: 'ok', fautes: 0 } } } } };
-  const j0 = s5.zones.a.jaugeIncidents || 0;
-  const { state: s6 } = resolveTurn(s5, { players: pl2 });
-  assert.ok((s6.zones.a.jaugeIncidents || 0) >= j0 + 2 || s6.zones.a.skins, 'incident reporté compté le lendemain');
-  assert.ok(s6.zones.a.rapport.some((l) => l.includes(rep[0].titre) && l.includes('réussi')));
-  assert.ok(!(s6.zones.a.incidentsReportes || []).some((i) => i.id === rep[0].id), 'réglé une seule fois');
+  assert.equal(separerIncidents(s4, 'a', {}).reportes.length, 0, 'aucun incident reporté au lendemain');
 }
-assert.ok(vu >= 1, 'au moins un incident reporté dans l’échantillon');
 // Un résultat d'un autre tour n'est pas compté.
 const players2 = { ...players, a: { ...players.a, incidents: { cle: 's1t0', r: { 's1t0-0': { statut: 'ok', fautes: 0 } } } } };
 const { state: apres2 } = resolveTurn(structuredClone(st), { players: players2 });

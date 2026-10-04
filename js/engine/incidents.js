@@ -18,9 +18,9 @@ export const INCIDENTS = {
 export const SERVICES_INCIDENTS = Object.keys(INCIDENTS);
 
 export const INC = {
-  ouverture: 12 * H,      // durée pendant laquelle l'incident peut être joué
-  premier: 11 * H,        // au plus tôt 7 h (la journée de jeu commence à 20:00 la veille)
-  dernier: 23 * H,        // au plus tard 19 h
+  // Retour de Luc : il tombe entre 6 h et 12 h et reste ouvert jusqu'à la résolution de 20:00 (8 à 14 heures pour jouer).
+  premier: 10 * H,        // au plus tôt 6 h (la journée de jeu commence à 20:00 la veille)
+  dernier: 16 * H,        // au plus tard 12 h
   jauge: 50,              // points de jauge pour un skin
   deuxiemeChance: 0.5,    // probabilité d'un second incident dans la journée
 };
@@ -121,7 +121,7 @@ export function incidentsDuTour(state, uid) {
   return liste.map((x, k) => ({
     id: `s${state.season}t${state.turn}-${k}`,
     service: x.service, jeu: INCIDENTS[x.service].jeu, titre: INCIDENTS[x.service].titre,
-    ouvre: x.ouvre, ferme: x.ouvre + INC.ouverture,
+    ouvre: x.ouvre, ferme: fin,
     agents: al[x.service] || 0, ajust: niv,
   }));
 }
