@@ -103,14 +103,9 @@ export const PHOTOS_RAMPE = {
       <text x="0" y="56" text-anchor="middle" ${MONO} font-size="6.5" fill="#333">moulage · plaie tempe G · ×1</text></g>
     ${finPhoto(id, 300, 220, 0.12)}`),
 
-  'c:labo': (id) => svg(id, 300, 200, `${defsPhoto(id, 300, 200)}<rect width="300" height="200" fill="#5B4636"/>
-    <rect x="0" y="0" width="300" height="70" fill="#7A6250"/>
-    ${[[60, 'rouge'], [110, ''], [230, 'lave']].map(([x, t]) => `<g transform="translate(${x} 128)"><path d="M-9 -30h18l-2 18q-7 6 -14 0z" fill="rgba(240,240,248,.75)" stroke="#CCC"/>${t === 'lave' ? '' : '<path d="M-6 -22h12l-1 8q-5 4 -10 0z" fill="#6A1E2A" opacity=".75"/>'}${t === 'rouge' ? '<path d="M-8 -30q3 -2 6 0" stroke="#C2302B" stroke-width="2.2"/>' : ''}<path d="M0 -12v22M-8 10h16" stroke="#DDD" stroke-width="2"/>${t === 'lave' ? '<circle cx="4" cy="-20" r="1.4" fill="#BFD7E6"/><circle cx="-3" cy="-14" r="1.1" fill="#BFD7E6"/>' : ''}</g>`).join('')}
-    <path d="M190 160h80" stroke="#AAA" stroke-width="2"/><text x="230" y="176" text-anchor="middle" ${MONO} font-size="7" fill="#EEE">cuisine · égouttoir</text>
-    <text x="85" y="176" text-anchor="middle" ${MONO} font-size="7" fill="#EEE">salon · table basse</text>
-    ${plot(60, 160, 9)}${plot(110, 160, 9)}${plot(230, 150, 10)}${echelle(16, 186)}
-    ${finPhoto(id, 300, 200, 0.14)}`),
-
+  'c:labo': (id) => svg(id, 1024, 572, `<image href="img/rampe/verres.webp" width="1024" height="572"/>
+    <g transform="rotate(-2 170 170)"><rect x="96" y="136" width="176" height="64" fill="#F4F2EC" stroke="#CFCBC0"/><text x="108" y="161" ${MONO} font-size="14" fill="#333">SCELLÉS L-09/10</text><text x="108" y="184" ${MONO} font-size="12" fill="#666">salon · table basse</text></g>
+    <g transform="rotate(3 940 400)"><rect x="852" y="350" width="168" height="96" fill="#F4F2EC" stroke="#CFCBC0"/><text x="864" y="376" ${MONO} font-size="14" fill="#333">SCELLÉ L-11</text><text x="864" y="399" ${MONO} font-size="12" fill="#666">cuisine · égouttoir</text><text x="864" y="420" ${MONO} font-size="12" fill="#666">lunettes : marche 3</text></g>`),
   'c:agenda': (id) => svg(id, 300, 220, `${defsPhoto(id, 300, 220)}<rect width="300" height="220" fill="#3E2E22"/>
     <g transform="rotate(-2 150 110)"><rect x="24" y="16" width="252" height="192" fill="#F4EDD6"/><path d="M150 16V208" stroke="#C8B98F" stroke-width="2"/>
     <g stroke="#D7CCAE">${Array.from({ length: 10 }, (_, k) => `<path d="M160 ${50 + k * 15}H268"/><path d="M32 ${50 + k * 15}H142"/>`).join('')}</g>
@@ -225,16 +220,16 @@ export const PHOTOS_RAMPE = {
 
 // ───── La scène à fouiller ─────
 export const POINTS_SCENE_RAMPE = [
-  { k: 'corps', n: 1, x: 124, y: 334, px: 170, py: 505, titre: 'Au pied de l’escalier', texte: 'L’endroit où la victime a été retrouvée, la tête contre la première marche. Peu de sang sur la marche. Le tapis du couloir est plissé en accordéon, du côté du bureau.' },
-  { k: 'lunettes', n: 2, x: 186, y: 252, px: 222, py: 360, titre: 'La troisième marche', texte: 'Les lunettes de lecture de la victime, intactes, posées bien à plat, verres vers le haut.' },
-  { k: 'socle', n: 3, x: 318, y: 232, px: 508, py: 356, titre: 'Le socle vide', texte: 'Sur le bureau, un petit socle en bois verni, vide : une trace ronde, propre, dans la poussière. Une plaque de cuivre : « Étude Hennebert · 1979 ».' },
-  { k: 'tiroir', n: 4, x: 404, y: 270, px: 528, py: 452, titre: 'Le tiroir de gauche', texte: 'Ouvert. Une chemise cartonnée vide, étiquetée à la main : « L. M. — 1999 ». Le reste du bureau est en ordre.' },
-  { k: 'sousmain', n: 5, x: 356, y: 254, px: 640, py: 372, titre: 'Le sous-main', texte: 'Le cuir est plus clair à un endroit, un petit rectangle de la taille d’un GSM. Il n’y a de GSM ni sur le bureau, ni ailleurs dans la maison.' },
-  { k: 'calendrier', n: 6, photo: 'img/rampe/fenetre.webp', x: 470, y: 96, px: 702, py: 160, titre: 'Le calendrier', texte: 'Un vieux calendrier, resté ouvert sur juin 1999. Vingt-sept ans que personne ne l’a tourné.' },
-  { k: 'fenetre', n: 7, photo: 'img/rampe/fenetre.webp', x: 372, y: 104, px: 563, py: 96, titre: 'La fenêtre de l’étude', texte: 'Elle donne sur les pavés de la Rampe et, en face, sur le haut mur de la Collégiale. Plus bas dans la rue, au-dessus de la porte d’un cabinet de kinésithérapie, on devine une petite caméra tournée vers la montée.' },
-  { k: 'console', n: 8, x: 576, y: 236, px: 835, py: 276, titre: 'La console de l’entrée', texte: 'Une montre de gousset en or, gravée « A.H. ». À la chaîne, une étiquette en carton : « 4471 ». Pas un grain de poussière dessus, contrairement au reste du meuble.' },
-  { k: 'salon', n: 9, x: 620, y: 336, px: 905, py: 468, titre: 'Le salon, par l’arche', texte: 'Sur la table basse, deux verres de porto ; l’un porte une trace de rouge à lèvres. La bouteille est presque pleine. Deux fauteuils tirés l’un vers l’autre.' },
-  { k: 'cuisine', n: 10, x: 506, y: 196, px: 793, py: 218, titre: 'La porte de la cuisine', texte: 'Sur l’égouttoir, un troisième verre à porto, lavé, encore perlé d’eau. L’évier est sec, sauf sous ce verre.' },
+  { k: 'corps', n: 1, x: 124, y: 334, px: 232, py: 488, titre: 'Au pied de l’escalier', texte: 'L’endroit où la victime a été retrouvée, la tête vers la première marche. Peu de sang sur la marche. Le tapis du couloir est de travers, replié sur lui-même, comme si on l’avait tiré vers le bureau.' },
+  { k: 'lunettes', n: 2, x: 186, y: 252, px: 186, py: 300, titre: 'La troisième marche', texte: 'Les lunettes de lecture de la victime, intactes, posées bien à plat, verres vers le haut.' },
+  { k: 'socle', n: 3, x: 318, y: 232, px: 614, py: 388, titre: 'Le socle vide', texte: 'Sur le bureau, un petit socle en bois verni, vide : une trace ronde, propre, dans la poussière. Une plaque de cuivre : « Étude Hennebert · 1979 ».' },
+  { k: 'tiroir', n: 4, x: 404, y: 270, px: 428, py: 462, titre: 'Le tiroir de gauche', texte: 'Ouvert. Une chemise cartonnée vide, étiquetée à la main : « L. M. — 1999 ». Le reste du bureau est en ordre.' },
+  { k: 'sousmain', n: 5, x: 356, y: 254, px: 540, py: 410, titre: 'Le sous-main', texte: 'Le cuir est plus clair à un endroit, un petit rectangle de la taille d’un GSM. Il n’y a de GSM ni sur le bureau, ni ailleurs dans la maison.' },
+  { k: 'calendrier', n: 6, photo: 'img/rampe/fenetre.webp', x: 470, y: 96, px: 676, py: 178, titre: 'Le calendrier', texte: 'Un vieux calendrier, resté ouvert sur juin 1999. Vingt-sept ans que personne ne l’a tourné.' },
+  { k: 'fenetre', n: 7, photo: 'img/rampe/fenetre.webp', x: 372, y: 104, px: 548, py: 150, titre: 'La fenêtre de l’étude', texte: 'Elle donne sur les pavés de la Rampe et, en face, sur le haut mur de la Collégiale. Plus bas dans la rue, au-dessus de la porte d’un cabinet de kinésithérapie, on devine une petite caméra tournée vers la montée.' },
+  { k: 'console', n: 8, x: 576, y: 236, px: 796, py: 292, titre: 'La console de l’entrée', texte: 'Une montre de gousset en or, gravée « A.H. ». À la chaîne, une étiquette en carton : « 4471 ». Pas un grain de poussière dessus, contrairement au reste du meuble.' },
+  { k: 'salon', n: 9, x: 620, y: 336, px: 925, py: 468, titre: 'Le salon, par l’arche', texte: 'Sur la table basse, deux verres de porto ; l’un porte une trace de rouge à lèvres. La bouteille est presque pleine. Deux fauteuils tirés l’un vers l’autre.' },
+  { k: 'cuisine', n: 10, x: 506, y: 196, px: 752, py: 246, titre: 'La porte de la cuisine', texte: 'Sur l’égouttoir, un troisième verre à porto, lavé, encore perlé d’eau. L’évier est sec, sauf sous ce verre.' },
 ];
 
 /** Photo de la scène (image générée, sans texte) : les plots et ce qui se lit sont posés par le jeu par-dessus. */
