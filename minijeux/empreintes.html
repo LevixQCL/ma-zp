@@ -146,7 +146,12 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .table{position:relative;flex:1;min-height:180px;border-radius:18px;overflow:hidden;touch-action:none;
   background:radial-gradient(90% 70% at 50% 45%,#dfe9ef,#aebcc8 75%,#93a2b0);box-shadow:inset 0 0 0 1px rgba(255,255,255,.25),inset 0 -30px 60px rgba(0,0,0,.18)}
 .table canvas#tbl{position:absolute;inset:0;width:100%;height:100%;cursor:grab}
-.table.pin canvas#tbl{cursor:crosshair}
+.table.pin canvas#tbl{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='34' height='34'%3E%3Ccircle cx='17' cy='17' r='13' fill='none' stroke='%23fff' stroke-width='4'/%3E%3Ccircle cx='17' cy='17' r='13' fill='none' stroke='%23d6266c' stroke-width='2'/%3E%3C/svg%3E") 17 17,pointer}
+.mq{border:1px solid var(--stroke);background:var(--surface);color:var(--ink);width:26px;height:26px;border-radius:50%;font:800 13px var(--f-body);cursor:pointer;flex:0 0 auto}
+.mhelp{position:absolute;inset:8px;z-index:5;background:var(--bg-2);border:1px solid var(--stroke);border-radius:16px;padding:14px 16px;overflow:auto;box-shadow:0 14px 40px rgba(0,0,0,.5)}
+.mhelp h3{margin:0 0 6px;font:800 17px var(--f-head)}.mhelp p{margin:6px 0;font-size:14px;line-height:1.45}
+.mhelp .ex{display:flex;gap:12px;margin:10px 0}.mhelp .ex figure{flex:1;margin:0;background:#fbfaf5;border-radius:10px;padding:6px;text-align:center}.mhelp figcaption{color:#334;font:700 12px var(--f-body);margin-top:2px}
+.mhelp button{margin-top:8px}
 .loupe{position:absolute;width:136px;height:136px;border-radius:50%;pointer-events:none;border:3px solid var(--accent);box-shadow:0 12px 30px rgba(0,0,0,.45);background:#fff}
 .dev{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:600 13px var(--f-body);color:#33404f;background:rgba(255,255,255,.75);padding:8px 14px;border-radius:999px}
 .ctrls{display:grid;grid-template-columns:auto 1fr;gap:8px;flex:0 0 auto}
@@ -188,16 +193,26 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
   <div class="stage" id="stage">
 
   <div class="tabs" id="tabs" role="tablist" aria-label="Fiches des suspects"></div>
-  <div class="table" id="table"><canvas id="tbl" aria-label="Table lumineuse : la trace en rose sur la fiche du suspect"></canvas><canvas class="loupe" id="loupe" width="272" height="272" hidden></canvas><div class="dev" id="dev" hidden>Révélation de la fiche…</div></div>
+  <div class="table" id="table"><canvas id="tbl" aria-label="Table lumineuse : la trace en rose sur la fiche du suspect"></canvas><canvas class="loupe" id="loupe" width="272" height="272" hidden></canvas><div class="dev" id="dev" hidden>Révélation de la fiche…</div><div class="mhelp" id="mhelp" hidden role="dialog" aria-label="Qu’est-ce qu’une minutie ?">
+    <h3>Une minutie, c’est quoi ?</h3>
+    <p>Les crêtes d’une empreinte (les lignes noires) forment des courbes continues. Une <b>minutie</b> est un endroit où une crête <b>s’arrête</b> ou <b>se divise en deux</b>. Leur position est propre à chaque doigt : c’est ce que le labo compare.</p>
+    <div class="ex">
+      <figure><svg viewBox="0 0 64 40" width="100%" height="56"><path d="M4 8c14-4 40-4 56 0" stroke="#223" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M4 20c10-3 18-3 26-2" stroke="#223" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M4 32c14-4 40-4 56 0" stroke="#223" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="31" cy="18" r="7" fill="none" stroke="#d6266c" stroke-width="2"/></svg><figcaption>Fin de crête</figcaption></figure>
+      <figure><svg viewBox="0 0 64 40" width="100%" height="56"><path d="M4 8c14-4 40-4 56 0" stroke="#223" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M4 22c10-1 18-1 24-1c10-1 20-5 32-7M28 21c10 1 20 4 32 6" stroke="#223" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M4 36c14-3 40-3 56 0" stroke="#223" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="29" cy="21" r="7" fill="none" stroke="#d6266c" stroke-width="2"/></svg><figcaption>Bifurcation</figcaption></figure>
+    </div>
+    <p><b>Comment pointer :</b> en mode Pointer, vise avec la loupe et relâche : un rond orange marque ta visée, sans pénalité. Tu peux viser ailleurs autant que tu veux. <b>Double-clic</b> (ou double tape) sur le rond pour valider la minutie.</p>
+    <p>Une concordance, c’est la même minutie au même endroit sur la trace (rose) et sur la fiche. Il en faut 8 sur la même fiche.</p>
+    <button type="button" class="btn primary small" id="mhelpOk">Compris</button>
+  </div></div>
   <div class="ctrls">
     <div class="modes" id="modes">
       <button data-m="move" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3"/></svg>Déplacer</button>
-      <button data-m="pin" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/></svg>Pointer</button>
+      <button data-m="pin" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>Pointer</button>
     </div>
     <div class="wheel" id="wheel" tabindex="0" role="slider" aria-label="Rotation de la trace" aria-valuemin="-180" aria-valuemax="180" aria-valuenow="0"><span id="angTxt">0,0°</span></div>
   </div>
   <div class="fade"><span>Fiche</span><input type="range" id="fade" min="0" max="100" value="55" aria-label="Fondu entre la fiche et la trace"><span>Trace</span></div>
-  <div class="status"><span class="cbar" id="cbar" aria-label="Concordances"></span><span id="concTxt">0/8 concordances</span><span id="faultTxt">Erreurs 0</span></div>
+  <div class="status"><button type="button" class="mq" id="mq" aria-label="Qu’est-ce qu’une minutie ?">?</button><span class="cbar" id="cbar" aria-label="Concordances"></span><span id="concTxt">0/8 concordances</span><span id="faultTxt">Erreurs 0</span></div>
 
   </div>
 </div>
@@ -583,6 +598,9 @@ function draw(){
       ctx.fillStyle='#0f7a43'; ctx.font=`700 ${Math.max(10,9*s)}px "IBM Plex Mono",monospace`; ctx.fillText(p.n, sx+r+2, sy-r+4); }
     else { ctx.strokeStyle='#d8343a'; ctx.beginPath(); ctx.moveTo(sx-r*.7,sy-r*.7); ctx.lineTo(sx+r*.7,sy+r*.7); ctx.moveTo(sx+r*.7,sy-r*.7); ctx.lineTo(sx-r*.7,sy+r*.7); ctx.stroke(); }
   }
+  if(G.aim && mode==='pin'){ const [ax,ay]=toScreen(G.aim.x,G.aim.y), r=Math.max(12,P*1.05*s);
+    ctx.lineWidth=2.5; ctx.strokeStyle='#ff9f1a'; ctx.setLineDash([5,4]); ctx.beginPath(); ctx.arc(ax,ay,r,0,TAU); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(255,159,26,.12)'; ctx.fill(); }
   if(loupe.on) drawLoupe();
 }
 
@@ -612,6 +630,18 @@ function afterMove(){
 function aligned(){
   let da=Math.abs(((G.tr.a-G.T.th)%TAU+TAU+Math.PI)%TAU-Math.PI);
   return da<5*Math.PI/180 && Math.hypot(G.tr.x-G.T.c0.x, G.tr.y-G.T.c0.y)<P*1.1;
+}
+
+/* ---------- viser puis valider (double-clic) ---------- */
+let lastUp=null, aimHint=false;
+function viser(sx,sy){
+  if(G.over && Shell.st.mode!=='tuto') return;
+  const now=performance.now(), x=(sx-geo.ox)/geo.s, y=(sy-geo.oy)/geo.s;
+  if(lastUp && now-lastUp.t<450 && Math.hypot(sx-lastUp.sx,sy-lastUp.sy)<30 && G.aim){
+    lastUp=null; const [ax,ay]=toScreen(G.aim.x,G.aim.y); G.aim=null; tryPin(ax,ay); redraw(); return;
+  }
+  lastUp={t:now,sx,sy}; G.aim={x,y}; redraw();
+  if(!aimHint){ aimHint=true; Shell.toast('Visée posée : double-clic pour valider','info'); }
 }
 
 /* ---------- pointer une minutie ---------- */
@@ -653,7 +683,7 @@ function drawLoupe(){
   lctx.clearRect(0,0,272,272); lctx.save(); lctx.beginPath(); lctx.arc(136,136,136,0,TAU); lctx.clip();
   lctx.fillStyle='#fff'; lctx.fillRect(0,0,272,272);
   lctx.drawImage(cv,(loupe.x-src/2)*dpr,(loupe.y-src/2)*dpr,src*dpr,src*dpr,0,0,272,272);
-  lctx.strokeStyle='rgba(20,30,45,.7)'; lctx.lineWidth=2; lctx.beginPath(); lctx.moveTo(136,112); lctx.lineTo(136,128); lctx.moveTo(136,144); lctx.lineTo(136,160); lctx.moveTo(112,136); lctx.lineTo(128,136); lctx.moveTo(144,136); lctx.lineTo(160,136); lctx.stroke();
+  lctx.strokeStyle='rgba(214,38,108,.9)'; lctx.lineWidth=3; lctx.beginPath(); lctx.arc(136,136,Math.max(16,P*1.05*geo.s*Z),0,TAU); lctx.stroke();
   lctx.restore();
   let lx=loupe.x-68, ly=loupe.y-68-96; if(ly<4) ly=loupe.y+40; lx=Math.max(4,Math.min(geo.w-140,lx));
   lcv.style.left=lx+'px'; lcv.style.top=ly+'px';
@@ -683,7 +713,7 @@ function up(e){
   if(!ptrs.has(e.pointerId)) return;
   const [x,y]=rel(e), was=ptrs.size; ptrs.delete(e.pointerId);
   if(ptrs.size<2) g2=null;
-  if(mode==='pin' && loupe.on && was===1 && e.type==='pointerup'){ loupe.on=false; lcv.hidden=true; tryPin(x,y); }
+  if(mode==='pin' && loupe.on && was===1 && e.type==='pointerup'){ loupe.on=false; lcv.hidden=true; viser(x,y); }
   if(!ptrs.size){ loupe.on=false; lcv.hidden=true; redraw(); }
 }
 cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
@@ -695,14 +725,16 @@ wh.addEventListener('pointermove',e=>{ if(wx===null||!G.fiches) return; const d=
 wh.addEventListener('pointerup',()=>wx=null); wh.addEventListener('pointercancel',()=>wx=null);
 wh.addEventListener('keydown',e=>{ if(!G.fiches) return; const k={ArrowLeft:-1,ArrowRight:1}[e.key]; if(k){ e.preventDefault(); setAngle(G.tr.a+k*(e.shiftKey?2:.5)*Math.PI/180); } });
 $('modes').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; setMode(b.dataset.m); };
-function setMode(m){ mode=m; [...$('modes').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m)); table.classList.toggle('pin',m==='pin');}
+function setMode(m){ mode=m; if(G) G.aim=null; [...$('modes').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m)); table.classList.toggle('pin',m==='pin');}
 $('fade').oninput=e=>{ fade=e.target.value/100; redraw(); };
-document.addEventListener('keydown',e=>{ if(e.key==='p'||e.key==='P') setMode('pin'); if(e.key==='d'||e.key==='D') setMode('move'); });
+$('mq').onclick=()=>{ $('mhelp').hidden=false; };
+$('mhelpOk').onclick=()=>{ $('mhelp').hidden=true; };
+document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ') && mode==='pin' && G.aim && !G.over){ e.preventDefault(); const [ax,ay]=toScreen(G.aim.x,G.aim.y); G.aim=null; tryPin(ax,ay); redraw(); return; } if(e.key==='p'||e.key==='P') setMode('pin'); if(e.key==='d'||e.key==='D') setMode('move'); });
 
 /* ---------- tutoriel ---------- */
 const TSTEPS=[null,
   'La trace relevée sur la scène est en <b>rose</b>. Fais-la glisser sur l’empreinte de la fiche A et tourne-la avec la <b>molette</b> (ou deux doigts) jusqu’à ce que les crêtes se superposent : le rose « disparaît » dans l’encre.',
-  'Aligné ! Passe en mode <b>Pointer</b> et vise une <b>minutie</b> : une crête qui s’arrête ou se divise. Garde le doigt appuyé : une loupe apparaît, relâche dessus.',
+  'Aligné ! Passe en mode <b>Pointer</b> et vise une <b>minutie</b> : une crête qui s’arrête ou se divise. Appuie : une loupe apparaît. Relâche pour poser ta visée (rond orange, sans pénalité), puis <b>double-clic</b> (double tape) dessus pour valider. Le bouton <b>?</b> explique les minuties.',
   'Concordance : la même minutie existe au même endroit sur la fiche. Il en faut <b>8</b> pour identifier. Pointe-en encore 2.'];
 const okCount=i=>[...G.pins[i].values()].filter(p=>p.ok).length;
 function tutoNext(){
@@ -722,8 +754,8 @@ Shell.init({
     normal:{agents:2,label:'Normal',time:180,fiches:4,R:72,rot:[25,90],shared:4,smudge:1},
     facile:{agents:3,label:'Facile',time:240,fiches:3,R:82,rot:[12,40],shared:2,smudge:.7}},
   diffHint:'Plus d’experts : plus de temps, une trace plus grande et moins de fiches à comparer.',
-  desktopHint:'Sur ordinateur : molette de la souris pour tourner (Maj = rotation fine), touches D et P pour changer de mode.',
-  rules:['Aligne la trace (rose) : glisser pour déplacer, molette ou deux doigts pour tourner.','Mode <b>Pointer</b> : appuie, vise avec la loupe, relâche sur une minutie (fin de crête ou bifurcation).','<b>8 concordances</b> sur une même fiche = identification. Une mauvaise fiche à 8 = erreur d’identification.','Pointer à côté d’une minutie : −6 s. Discordance : −4 s.','Sans erreur : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
+  desktopHint:'Sur ordinateur : molette de la souris pour tourner (Maj = rotation fine), touches D et P pour changer de mode, Entrée pour valider la visée.',
+  rules:['Aligne la trace (rose) : glisser pour déplacer, molette ou deux doigts pour tourner.','Mode <b>Pointer</b> : vise avec la loupe et relâche (sans pénalité), puis <b>double-clic</b> sur la visée pour valider une minutie (fin de crête ou bifurcation). Bouton <b>?</b> : c’est quoi une minutie.','<b>8 concordances</b> sur une même fiche = identification. Une mauvaise fiche à 8 = erreur d’identification.','Valider à côté d’une minutie : −6 s. Discordance : −4 s. Viser ne coûte rien.','Sans erreur : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
   winTitle:'Identification établie', loseTitle:'Trace non exploitée', skin:'Mallette du labo',
   malus:'le labo classe la trace « non exploitable » : pas d’indice supplémentaire aujourd’hui.',
   onMenu(){ if(G.fiches) G.over=true; },

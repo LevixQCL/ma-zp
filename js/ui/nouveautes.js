@@ -25,6 +25,11 @@ export const NOTE_MAJ = {
       ['HP plus léger', 'l’incident en cours n’est plus répété dans la liste « à faire » (sa carte est juste en dessous), et le résumé de la nuit s’efface quand tu ouvres le rapport complet.'],
       ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
     ]],
+    ['Mini-jeux', [
+      ['Empreintes', 'curseur rond au lieu du viseur, bouton « ? » qui explique ce qu’est une minutie (fin de crête, bifurcation). Relâcher pose seulement une visée, sans pénalité : double-clic (ou double tape) dessus pour valider.'],
+      ['Dossier à relire', 'rapport plus long et plus fouillé (ancienne adresse, ménage, carte d’identité, bail, témoin du voisin), avec de nouvelles erreurs possibles et un peu plus de temps.'],
+      ['Colis suspect', 'la fiche SEDEE change à chaque engin : couleurs, chiffres de l’horloge et interrupteurs différents, il faut la relire à chaque fois. Le bouton accepte une petite marge quand on relâche pile au changement de chiffre.'],
+    ]],
     ['Énigmes', [
       ['Experts de l’appui PJF', 'le nombre d’experts (labo) ou d’enquêteurs (RCCU) compte vraiment : 2 de base, +1 si une autre équipe est restée libre ce soir-là, +1 si ta Recherche est renforcée, −1 si elle est en sous-effectif. 1 : mini-jeu difficile, 2 : normal, 3 : facile. Le rapport du soir et l’écran du mini-jeu disent pourquoi.'],
       ['Agents des incidents expliqués', 'l’écran d’un incident du jour montre les seuils de ton service (ex. Intervention, base 7 : moins de 5 agents difficile, 11 ou plus facile) et le cran du Directeur s’il s’applique.'],
