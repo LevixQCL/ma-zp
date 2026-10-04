@@ -10,11 +10,22 @@
 // Profils : parfait (soupçonne Olivier dès son audition), moyen (suit d'abord les leurres), parieur (confronte au hasard le 1er jour),
 // prudent (ne confronte que quand un seul suspect reste ET qu'il a deux décisives).
 import { affaireMeurtreRampe } from '../js/engine/meurtre-rampe.js';
-import { pieceDemarche, confrontationOk, mandatOk, pieceReaudition, candidats, pieceRecoupement } from '../js/engine/enquete.js';
+import { pieceDemarche, confrontationOk, mandatOk, pieceReaudition, candidats, pieceRecoupement, ENQ } from '../js/engine/enquete.js';
 import { makeRng } from '../js/engine/rng.js';
 
-const aff = affaireMeurtreRampe(1);
-const PUBLICS = ['doc:journal', 'doc:pvc', 'A:0', 'A:1', 'A:2', 'A:3', 'A:4'];
+let aff = affaireMeurtreRampe(1);
+let PUBLICS = ['doc:journal', 'doc:pvc', 'A:0', 'A:1', 'A:2', 'A:3', 'A:4'];
+// Variante à six suspects (« --six ») : un sixième innocent, écarté par son alibi seul (« simple »)
+// ou seulement par son alibi ET l'heure de la mort (« paire », comme Nathalie).
+function avecSixieme(mode) {
+  const a = affaireMeurtreRampe(1);
+  a.suspects = [...a.suspects, { ...a.suspects[2], nom: 'Sixième', prenom: 'Sixième', coupable: false }];
+  a.faits = [...a.faits, 'occ:5', 'mob:5', 'moy:5'];
+  a.libres = [...a.libres, 'occ:5', 'mob:5'];
+  a.charges = { ...a.charges, 5: ['mob:5', 'c:agenda'] };
+  a.innocente = { ...a.innocente, 5: mode === 'paire' ? [['occ:5', 'c:legiste2']] : ['occ:5'] };
+  return a;
+}
 const opp = (d) => new Set([...d.pieces.map((p) => p.f), ...PUBLICS]);
 const ORDRE_FORT = ['x:wifi', 'moy:1', 'Rb:4', 'x:liste', 'Ra:1', 'Rd:1', 'occ:4', 'x:heure', 'mob:1', 'doc:journal'];
 
@@ -27,7 +38,7 @@ function choixConfront(d, rng, fort) {
 /** Un collègue qui enquête sans plan : deux démarches utiles au hasard par soir, plus ses propres bonus. */
 function collegue(rng) {
   const d = { pieces: [] };
-  const toutes = ['labo', 'cam', 'temoin', ...[0, 1, 2, 3, 4].flatMap((i) => ['alibi', 'banque', 'moyens'].map((k) => `${k}:${i}`))];
+  const toutes = ['labo', 'cam', 'temoin', ...aff.suspects.map((_, i) => i).flatMap((i) => ['alibi', 'banque', 'moyens'].map((k) => `${k}:${i}`))];
   return {
     d,
     soir(j, bonus) {
@@ -44,7 +55,8 @@ function jouer(profil, graine, { bonus = false, equipe = 0 } = {}) {
   const collegues = Array.from({ length: equipe }, (_, k) => collegue(makeRng(`col:${graine}:${k}`)));
   const d = { pieces: [] };
   const a = (f, j) => { if (!d.pieces.some((p) => p.f === f)) d.pieces.push({ f, j }); };
-  const ordre = profil === 'parfait' ? [1, 4, 0, 2, 3] : profil === 'moyen' ? rng.shuffle([0, 2, 3]).concat(rng.shuffle([1, 4])) : rng.shuffle([0, 1, 2, 3, 4]);
+  const six = aff.suspects.length > 5;
+  const ordre = profil === 'parfait' ? [1, 4, 0, 2, 3, ...(six ? [5] : [])] : profil === 'moyen' ? rng.shuffle([0, 2, 3, ...(six ? [5] : [])]).concat(rng.shuffle([1, 4])) : rng.shuffle(aff.suspects.map((_, i) => i));
   let rep = 0;
   for (let j = 1; j <= 7; j++) {
     if (j === 3) a('r:tel', j);
@@ -74,7 +86,7 @@ function jouer(profil, graine, { bonus = false, equipe = 0 } = {}) {
     // Réaudition : la pièce la plus parlante sur un suspect visé (le parfait la trouve, les autres une fois sur deux).
     let r = null;
     // Une réaudition qui fait tomber un mensonge décisif (même d'un suspect déjà blanchi, comme Jérôme) d'abord.
-    const decisive = [0, 1, 2, 3, 4].flatMap((i) => (mandatOk(aff, d, i) ? [...opp(d)].map((f) => pieceReaudition(aff, d, i, f)).filter((p) => p && aff.confront.decisives.includes(p)) : []));
+    const decisive = aff.suspects.map((_, i) => i).flatMap((i) => (mandatOk(aff, d, i) ? [...opp(d)].map((f) => pieceReaudition(aff, d, i, f)).filter((p) => p && aff.confront.decisives.includes(p)) : []));
     if (decisive.length && (profil === 'parfait' || profil === 'prudent' || rng.chance(0.5))) r = decisive[0];
     if (!r) for (const i of vise) {
       if (!mandatOk(aff, d, i)) continue;
@@ -108,6 +120,8 @@ function jouer(profil, graine, { bonus = false, equipe = 0 } = {}) {
   return { jour: null, echec: 'affaire classée' };
 }
 
+const SIX = process.argv.includes('--six') ? (process.argv.includes('paire') ? 'paire' : 'simple') : null;
+if (SIX) { ENQ.nbSuspects = 6; aff = avecSixieme(SIX); PUBLICS = [...PUBLICS, 'A:5']; console.log(`Six suspects (sixième écarté ${SIX === 'paire' ? 'par son alibi + l’heure de la mort' : 'par son alibi seul'})`); }
 for (const [nom, opts] of [['seule', {}], ['+ bonus', { bonus: true }], ['équipe de 4', { bonus: true, equipe: 3 }]]) {
   console.log(`— ${nom}`);
   for (const profil of ['parfait', 'moyen', 'parieur', 'prudent']) {
