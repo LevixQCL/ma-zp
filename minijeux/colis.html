@@ -410,7 +410,7 @@ const Shell = (() => {
       if(ok && !RENF){ st.gauge+=pts; renderGauge(); }
     } else if(MODE!=='train' && ok){ st.gauge+=pts; if(st.gauge>=50){st.gauge-=50; skin=true;} store.set('gauge',st.gauge); renderGauge(); }
     const statHtml=stats.map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')+(MODE==='train'||RENF?'':`<div class="stat pts"><span>Jauge skins</span><b>${ok?'+'+pts:'+0'}</b></div>`);
-    const boutons = INC ? `<button class="btn primary" id="back">${RENF?'Retour à l’enquête':'Retour au commissariat'}</button>`
+    const boutons = INC ? `<button class="btn primary" id="mjBack">${RENF?'Retour à l’enquête':'Retour au commissariat'}</button>`
       : `<button class="btn primary" id="again">${ok?'Rejouer':'Réessayer'}</button><button class="btn" id="tomenu">Menu</button>`;
     const detailHtml = details && details.length ? `<div class="debrief-list"><b>${ok?'Tes erreurs':'Ce qui s’est mal passé'}</b><ul>${details.map(d=>`<li><span>${d}</span></li>`).join('')}</ul></div>` : '';
     const noteInc = RENF ? (ok ? 'Analyse réussie : la pièce arrivera dans ton dossier d’enquête à 20:00.' : '') : INC ? (ok ? `Résultat enregistré : ${escH(Q.get('gain')||'ton bonus')} et +${pts} sur la jauge des skins, à 20:00.${st.gauge>=50?' Ta jauge sera pleine ce soir : un nouveau skin t’attend.':''}` : '') : '';
@@ -429,7 +429,7 @@ const Shell = (() => {
       ${detailHtml}
       ${MODE==='train'?'<p class="small">Entraînement : aucune conséquence.</p>':RENF?'<div class="malus"><b>Pas de pièce</b> · L’analyse n’a rien donné : l’équipe repart. Tu peux redemander un appui pour demain.</div>':`<div class="malus"><b>Malus</b> · ${escH(INC&&Q.get('malus')?Q.get('malus')+' (appliqué à 20:00)':(malus||G.malus))}</div>`}
       <div class="row">${boutons}</div>`);
-    if(INC) $('back').onclick=()=>post('close'); else { $('again').onclick=play; $('tomenu').onclick=menu; }
+    if(INC) $("mjBack").onclick=()=>post("close"); else { $('again').onclick=play; $('tomenu').onclick=menu; }
   }
 
   const CIRC = 2*Math.PI*21;
