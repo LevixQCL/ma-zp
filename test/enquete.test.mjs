@@ -159,7 +159,7 @@ const autre = (aff.planque + 1) % 6;
 const avantTraque = state;
 r = resolveTurn(state, { players, orders: {
   A: { ...base, traque: { n: tr.n, planque: autre, agents: 4 } },
-  B: { ...base, traque: { n: tr.n, planque: aff.planque, agents: 3 } },
+  B: { ...base, traque: { n: tr.n, planque: aff.planque, agents: 1 } },
   C: { ...base, traque: { n: tr.n, planque: aff.planque, agents: 5 } } } });
 state = r.state;
 assert.equal(r.gazette.enquete.arrestations.length, 1, 'arrestation');

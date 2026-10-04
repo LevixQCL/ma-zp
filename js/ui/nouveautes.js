@@ -25,6 +25,10 @@ export const NOTE_MAJ = {
       ['HP plus léger', 'l’incident en cours n’est plus répété dans la liste « à faire » (sa carte est juste en dessous), et le résumé de la nuit s’efface quand tu ouvres le rapport complet.'],
       ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
     ]],
+    ['Équilibrage', [
+      ['Matériel du Roulage', 'équiper le Roulage donne maintenant aussi +15 % d’amendes par niveau, en plus de l’efficacité : l’achat est rentabilisé dans la saison.'],
+      ['Traque', 'il suffit de 2 agents d’Intervention (au lieu de 4) pour tenter une interpellation.'],
+    ]],
     ['Budget', [
       ['Nouveaux agents', 'les agents gagnés à la salle des ventes ou par débauchage ne sont plus payés (ni subsidiés) le soir de leur arrivée : leur premier salaire tombe après leur premier jour de travail.'],
       ['Confiance de la commune', 'la ligne est toujours affichée dans le détail du budget, avec son calcul (réputation − 50 × coefficient), même quand elle vaut 0.'],
