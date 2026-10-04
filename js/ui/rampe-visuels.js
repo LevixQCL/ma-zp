@@ -138,7 +138,7 @@ export const PHOTOS_RAMPE = {
     ${ligne(46, 148, 'Aucun autre passage jusqu’à 06:00.', { taille: 7.2, coul: '#555' })}`),
 
   'mob:0': (id) => ecranGsm(id, 'Papa', `
-    <text x="110" y="70" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="7" fill="#888">Jeu. 22:42</text>
+    <text x="110" y="70" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="7" fill="#888">Jeu. 22:41</text>
     <rect x="54" y="80" width="100" height="44" rx="10" fill="#E2E5EA"/><text x="62" y="98" font-family="Instrument Sans, sans-serif" font-size="9" fill="#111">Reviens. Il faut</text><text x="62" y="112" font-family="Instrument Sans, sans-serif" font-size="9" fill="#111">qu’on parle. Papa.</text>
     <text x="110" y="148" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="7" fill="#888">Dim. 19:12</text>
     <rect x="54" y="156" width="104" height="30" rx="10" fill="#E2E5EA" opacity=".7"/><text x="62" y="174" font-family="Instrument Sans, sans-serif" font-size="8.5" fill="#333">Merci pour le dîner. J.-B.</text>
