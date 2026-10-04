@@ -26,6 +26,8 @@ export const NOTE_MAJ = {
       ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
     ]],
     ['Énigmes', [
+      ['Qui ment ? corrigé', 'à un seul menteur, plus de phrase « X dit la vérité » : elle innocentait d’office celui qui la prononçait. La règle précise aussi que « un seul des deux ment », dit par le menteur, signifie qu’aucun des deux ne ment. Merci Luc !'],
+      ['Horaires plus variés', 'les faits ne se passent plus toujours vers 20 h devant le même bar : matin, midi, après-midi, fin de journée ou nuit, avec des lignes différentes. Dès le niveau 3, les bus ne passent plus à intervalles réguliers.'],
       ['Quiz express', 'tant que tu n’as répondu à aucune énigme du jour, 5 questions de culture générale (Monde, Sciences, Belgique), 15 secondes chacune : 3 bonnes réponses débloquent le bonus du jour au choix. Pas de PS ni de prime « sans faute », pas de pénalité si tu rates. Chacun sa série, sans question répétée dans la saison.'],
       ['Confier les énigmes à un agent', 'pas le temps ou pas l’envie ? Tant que tu n’as répondu à aucune énigme du jour, un agent peut plancher dessus à ta place et viser le bonus de ton choix. Il le décroche le plus souvent (de 40 à 80 % selon le moral), sans PS ni prime « sans faute », sans moral perdu s’il sèche, mais avec +1 dossier de paperasse. Jouer toi-même reste plus payant.'],
     ]],
