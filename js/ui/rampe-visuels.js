@@ -90,19 +90,15 @@ export const PHOTOS_RAMPE = {
       <path d="M10 46q8 8 20 2" stroke="#B3261E" stroke-width="2" fill="none"/><text x="18" y="66" ${MONO} font-size="7" fill="#B3261E">occiput</text></g>
     ${ligne(36, 214, '1 · ronde, nette, 4 cm', { taille: 7.5 })}${ligne(36, 228, '2 · arête de marche, peu de sang', { taille: 7.5 })}${ligne(36, 246, 'Décès : 21:00 → 23:30', { taille: 8, gras: true })}`),
 
-  'c:legiste2': (id) => svg(id, 300, 220, `${defsPhoto(id, 300, 220)}<rect width="300" height="220" fill="#4F5C55"/>
-    <g transform="rotate(-3 80 110)"><rect x="18" y="24" width="120" height="176" fill="#FBF9F2"/>
-      ${ligne(28, 46, 'TRAITEUR', { taille: 10, gras: true })}${ligne(28, 58, 'livraison à domicile', { taille: 6.5, coul: '#555' })}
-      <path d="M28 66H128" stroke="#999" stroke-dasharray="2 2"/>
-      ${ligne(28, 82, 'JEU.     19:08', { taille: 8 })}${ligne(28, 96, 'RAMPE STE-WAUDRU', { taille: 7.4 })}
-      ${ligne(28, 116, '1 SOUPE      4,50', { taille: 7.6 })}${ligne(28, 130, '1 VOL-AU-VENT 14,00', { taille: 7.6 })}
-      <path d="M28 140H128" stroke="#999" stroke-dasharray="2 2"/>${ligne(28, 158, 'TOTAL   18,50 €', { taille: 9, gras: true })}</g>
-    <g transform="translate(222 108)"><circle r="62" fill="#E9E4DA"/><circle r="40" fill="none" stroke="#7A3A30" stroke-width="2"/><circle r="34" fill="none" stroke="#7A3A30" stroke-width=".8" stroke-dasharray="2 2"/>
-      <g><text x="0" y="5" text-anchor="middle" font-family="'Special Elite', monospace" font-size="15" fill="#7A3A30" letter-spacing="1">…BERT</text>
-      <path d="M0 -24l2.4 5 5.4.6-4 3.6 1.2 5.3L0 -12l-5 2.5 1.2-5.3-4-3.6 5.4-.6z" fill="#7A3A30"/></g>
-      <text x="0" y="56" text-anchor="middle" ${MONO} font-size="6.5" fill="#333">moulage · plaie tempe G · ×1</text></g>
-    ${finPhoto(id, 300, 220, 0.12)}`),
-
+  'c:legiste2': (id) => svg(id, 1024, 572, `<image href="img/rampe/moulage.webp" width="1024" height="572"/>
+    <g transform="translate(511 270) scale(1 .82)" style="mix-blend-mode:multiply" opacity=".78">
+      <text x="0" y="8" text-anchor="middle" font-family="'Special Elite', monospace" font-size="27" fill="#5A5A5A" letter-spacing="2">…BERT</text>
+      <path d="M0 -38l3.6 7.4 8.1.9-6 5.4 1.8 8L0 -20.4l-7.5 3.7 1.8-8-6-5.4 8.1-.9z" fill="#5A5A5A"/></g>
+    <g transform="translate(-24 0) rotate(4 920 140)"><path d="M846 26H996V246L986 252 976 246 966 252 956 246 946 252 936 246 926 252 916 246 906 252 896 246 886 252 876 246 866 252 856 246 846 252Z" fill="#FBF9F2" stroke="#DDD"/>
+      <text x="858" y="54" ${MONO} font-size="15" font-weight="600" fill="#222">TRAITEUR</text><text x="858" y="72" ${MONO} font-size="11" fill="#555">livraison à domicile</text>
+      <text x="858" y="100" ${MONO} font-size="13" fill="#222">JEU.     19:08</text><text x="858" y="120" ${MONO} font-size="11" fill="#222">RAMPE STE-WAUDRU</text>
+      <text x="858" y="150" ${MONO} font-size="12" fill="#222">1 SOUPE     4,50</text><text x="858" y="170" ${MONO} font-size="11" fill="#222">1 VOL-AU-VENT 14,00</text>
+      <text x="858" y="204" ${MONO} font-size="14" font-weight="600" fill="#222">TOTAL  18,50 €</text></g>`),
   'c:labo': (id) => svg(id, 1024, 572, `<image href="img/rampe/verres.webp" width="1024" height="572"/>
     <g transform="rotate(-2 170 170)"><rect x="96" y="136" width="176" height="64" fill="#F4F2EC" stroke="#CFCBC0"/><text x="108" y="161" ${MONO} font-size="14" fill="#333">SCELLÉS L-09/10</text><text x="108" y="184" ${MONO} font-size="12" fill="#666">salon · table basse</text></g>
     <g transform="rotate(3 940 400)"><rect x="852" y="350" width="168" height="96" fill="#F4F2EC" stroke="#CFCBC0"/><text x="864" y="376" ${MONO} font-size="14" fill="#333">SCELLÉ L-11</text><text x="864" y="399" ${MONO} font-size="12" fill="#666">cuisine · égouttoir</text><text x="864" y="420" ${MONO} font-size="12" fill="#666">lunettes : marche 3</text></g>`),
@@ -181,15 +177,14 @@ export const PHOTOS_RAMPE = {
       ${ligne(184, 58, 'VALIDATIONS', { taille: 7.6, gras: true })}${ligne(184, 80, 'JEU 22:14', { taille: 8 })}${ligne(184, 92, 'Cuesmes → Mons', { taille: 7 })}${ligne(184, 114, 'JEU 22:52', { taille: 8 })}${ligne(184, 126, 'Mons → Cuesmes', { taille: 7 })}</g>
     ${finPhoto(id, 300, 190, 0.12)}`),
 
-  'moy:3': (id) => svg(id, 300, 220, `${defsPhoto(id, 300, 220)}<rect width="300" height="220" fill="#5A4A3E"/>
-    <g transform="rotate(-4 90 110)"><rect x="24" y="30" width="130" height="160" fill="#F3E9C8"/>
-      <text x="89" y="52" text-anchor="middle" ${TAPE} font-size="8" fill="#222">PRÊT SUR GAGES</text><text x="89" y="80" text-anchor="middle" ${MONO} font-size="20" font-weight="700" fill="#B3261E">4471</text>
-      ${ligne(36, 104, 'Montre de gousset', { taille: 7.4 })}${ligne(36, 116, 'or 18 ct · gravée « A.H. »', { taille: 7.4 })}${ligne(36, 136, 'Prêté : 700 €', { taille: 7.4 })}${ligne(36, 150, 'Dégagé : 735 € · jeu. 16:10', { taille: 7.4, gras: true })}</g>
-    <g transform="rotate(5 220 120)"><rect x="160" y="40" width="124" height="150" fill="#FCFBF6"/>
-      <text x="168" y="62" ${MAIN} font-size="13" fill="#22305A">Monsieur Hennebert,</text><text x="168" y="82" ${MAIN} font-size="12" fill="#22305A" textLength="108" lengthAdjust="spacingAndGlyphs">je vous ai rapporté</text><text x="168" y="98" ${MAIN} font-size="12" fill="#22305A" textLength="108" lengthAdjust="spacingAndGlyphs">votre montre jeudi soir.</text>
-      <text x="168" y="118" ${MAIN} font-size="12" fill="#22305A" textLength="108" lengthAdjust="spacingAndGlyphs">Vous étiez déjà en bas</text><text x="168" y="134" ${MAIN} font-size="12" fill="#22305A" textLength="96" lengthAdjust="spacingAndGlyphs">de l’escalier. Pardon.</text><text x="230" y="170" ${MAIN} font-size="14" fill="#22305A">S.</text></g>
-    ${finPhoto(id, 300, 220, 0.12)}`),
-
+  'moy:3': (id) => svg(id, 1024, 572, `<image href="img/rampe/montre.webp" width="1024" height="572"/>
+    <g transform="translate(500 432) rotate(16)" style="mix-blend-mode:multiply"><text x="0" y="8" text-anchor="middle" ${MONO} font-size="26" font-weight="700" fill="#B3261E">4471</text></g>
+    <g transform="translate(746 360) rotate(-4)" style="mix-blend-mode:multiply" opacity=".9">
+      <text x="0" y="-52" text-anchor="middle" ${TAPE} font-size="15" fill="#2A2420">PRÊT SUR GAGES</text>
+      <text x="0" y="-26" text-anchor="middle" ${MONO} font-size="20" font-weight="700" fill="#B3261E">N° 4471</text>
+      <text x="0" y="4" text-anchor="middle" ${MONO} font-size="12" fill="#2A2420">montre de gousset · or 18 ct</text>
+      <text x="0" y="24" text-anchor="middle" ${MONO} font-size="12" fill="#2A2420">prêté : 700 €</text>
+      <text x="0" y="46" text-anchor="middle" ${MONO} font-size="12.5" font-weight="700" fill="#2A2420">dégagé jeu. 16:10 · 735 €</text></g>`),
   'x:heure': (id) => svg(id, 300, 190, `${defsPhoto(id, 300, 190)}<rect width="300" height="190" fill="#1E2024"/>
     <rect x="24" y="20" width="252" height="150" rx="6" fill="#0D1A2A"/>
     <text x="38" y="44" ${MONO} font-size="9" fill="#7FC3FF">ENREGISTREUR · RÉGLAGES · SYSTÈME</text>
