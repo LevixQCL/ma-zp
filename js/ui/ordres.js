@@ -434,7 +434,7 @@ function projeterDossiers(z, capRech) {
   let travail = Math.max(0, capRech || 0);
   // Dossiers à l'ancienne taille : ramenés aux deux tiers au calcul de 20:00 (même règle qu'au moteur).
   const ancien = (z.dossiersV || 1) < DOSSIER.version;
-  const dossiers = (z.dossiers || []).map((d) => (ancien && (d.total || d.reste) > DOSSIER.tailleMax ? { ...d, reste: Math.round(d.reste * 20 / 3) / 10, total: Math.round((d.total || d.reste) * 20 / 3) / 10 } : d));
+  const dossiers = (z.dossiers || []).map((d) => { const tot = d.total || d.reste; return ancien && tot > DOSSIER.tailleMax ? { ...d, reste: Math.round(d.reste * DOSSIER.tailleMax / tot * 10) / 10, total: DOSSIER.tailleMax } : d; });
   const lignes = dossiers.slice().sort((a, b) => b.age - a.age).map((d) => {
     const fait = Math.min(travail, d.reste); travail -= fait;
     const reste = Math.round((d.reste - fait) * 10) / 10;
