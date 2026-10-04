@@ -42,6 +42,7 @@ export const AIDES = {
       '<strong>Places limitées</strong> : les équipes sont partagées entre toutes les zones et leur nombre change chaque jour. Réponse à 20:00',
       '<strong>Refusé ?</strong> Tu passes en priorité la fois suivante',
       '<strong>Accordé</strong> : l’équipe est sur place le lendemain, avec un mini-jeu à réussir en un seul essai pour obtenir la pièce',
+      '<strong>Nombre d’experts</strong> : 2 de base, +1 si une autre équipe est restée libre ce soir-là (peu de demandes), +1 si ta Recherche est renforcée (150 % de la base ou plus), −1 si elle est en sous-effectif (moins de 70 %). 1 expert : mini-jeu difficile · 2 : normal · 3 : facile',
     ],
     guide: 'guide-enquete',
     sansTour: true,

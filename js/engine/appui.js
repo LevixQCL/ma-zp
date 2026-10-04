@@ -7,6 +7,7 @@
 //    les moyens, la RCCU plutôt le mobile ou l'occasion). Raté, abandonné ou pas joué : rien.
 import { makeRng } from './rng.js';
 import { affaire, faitsConnus, titrePiece, dansMaCellule, piecesLibres } from './enquete.js';
+import { DEFAULT_ALLOC } from './constants.js';
 
 export const APPUI = {
   unites: {
@@ -15,8 +16,30 @@ export const APPUI = {
   },
   zonesParEquipe: 6,       // une équipe par service pour 6 zones actives (au moins une) : voir test/appui-sim.mjs
   ecart: [[-1, 0.2], [0, 0.5], [1, 0.3]], // disponibilité du jour autour de la base
-  diff: 'normal',          // niveau du mini-jeu (assez difficile)
+  diff: 'normal',          // niveau du mini-jeu par défaut (2 experts)
+  // Experts envoyés : 2 de base, +1 si une équipe du service reste libre ce soir (elle vient en renfort),
+  // ±1 selon la Recherche de la zone dans ses ordres (un dossier bien préparé fait gagner du temps).
+  experts: { base: 2, min: 1, max: 3 },
+  rechercheFaible: 0.7,    // Recherche sous 70 % de la base : −1 expert
+  rechercheForte: 1.5,     // Recherche à 150 % de la base ou plus : +1 expert
 };
+export const DIFF_EXPERTS = { 1: 'difficile', 2: 'normal', 3: 'facile' };
+
+/**
+ * Experts envoyés à une zone, avec leurs raisons (affichées au joueur).
+ * @param {boolean} renfort  une équipe du service est restée libre ce soir
+ * @param {number} recherche agents de la Recherche dans les ordres validés de la zone
+ */
+export function expertsAppui(renfort, recherche) {
+  const r = (recherche || 0) / DEFAULT_ALLOC.recherche;
+  const raisons = [];
+  let n = APPUI.experts.base;
+  if (renfort) { n++; raisons.push('+1 : une équipe restée libre ce soir vient en renfort'); }
+  if (r >= APPUI.rechercheForte) { n++; raisons.push(`+1 : ta Recherche (${recherche} agents) a bien préparé le dossier`); }
+  else if (r < APPUI.rechercheFaible) { n--; raisons.push(`−1 : ta Recherche (${recherche || 0} agent${recherche > 1 ? 's' : ''}) n’a pas pu préparer le dossier`); }
+  n = Math.max(APPUI.experts.min, Math.min(APPUI.experts.max, n));
+  return { n, diff: DIFF_EXPERTS[n], raisons };
+}
 export const UNITES_APPUI = Object.keys(APPUI.unites);
 
 /** Équipes disponibles ce soir pour un service (dépend du nombre de zones actives et d'un tirage du jour). */
@@ -85,9 +108,11 @@ export function appuiResolution(state, uids, ord, players, T, push) {
     file.forEach((uid, k) => {
       const z = state.zones[uid];
       if (k < dispo) {
-        z.appui = { unite, jeu: rng.pick(u.jeux), tour: T + 1, n: e.n, id: idAppui(state, T + 1) };
+        const alloc = (ord[uid] && ord[uid].alloc) || (z.dernierOrdre && z.dernierOrdre.alloc) || DEFAULT_ALLOC;
+        const ex = expertsAppui(demandes.length < dispo, alloc.recherche);
+        z.appui = { unite, jeu: rng.pick(u.jeux), tour: T + 1, n: e.n, id: idAppui(state, T + 1), experts: ex.n, pourquoi: ex.raisons };
         delete z.appuiPrio;
-        z.rapport.push(`Appui ${u.court} : demande acceptée. Une équipe passe demain : fais l’analyse (mini-jeu) avant 20:00 depuis l’écran Enquête.`);
+        z.rapport.push(`Appui ${u.court} : demande acceptée. ${ex.n} ${unite === 'rccu' ? 'enquêteur' : 'expert'}${ex.n > 1 ? 's' : ''} passe${ex.n > 1 ? 'nt' : ''} demain (analyse ${ex.diff}) : fais l’analyse (mini-jeu) avant 20:00 depuis l’écran Enquête.`);
       } else {
         z.appuiPrio = true;
         z.rapport.push(`Appui ${u.court} : ${dispo ? `${dispo} équipe${dispo > 1 ? 's' : ''} pour ${demandes.length} demandes ce soir` : 'aucune équipe disponible ce soir'}, la tienne est refusée. Tu seras prioritaire la prochaine fois.`);

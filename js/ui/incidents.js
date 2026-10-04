@@ -5,7 +5,7 @@ import { S, esc, icon, myZone } from './common.js';
 import { incidentsVisibles, resultatsIncidents, INCIDENTS, MALUS, GAIN, texteMalus, texteGain, difficulte, pointsJauge, INC } from '../engine/incidents.js';
 import { PS } from '../engine/constants.js';
 import { niveauIncidents } from '../engine/directeur.js';
-import { APPUI, appuiDuJour } from '../engine/appui.js';
+import { APPUI, appuiDuJour, DIFF_EXPERTS } from '../engine/appui.js';
 import { SERVICE_LABELS, DEFAULT_ALLOC } from '../engine/constants.js';
 
 /** Les mini-jeux, pour l'entraînement. */
@@ -28,6 +28,16 @@ export function mesIncidents() {
 export const mesResultats = (liste = mesIncidents()) => resultatsIncidents(S.player, liste);
 
 /** Agents du service : ordres validés, sinon ceux d'hier, sinon la répartition de base. */
+/** Explication du niveau d'un incident : seuils du service et cran du Directeur. */
+export function pourquoiIncident(service, n, aj = 0) {
+  const base = DEFAULT_ALLOC[service] || 1;
+  const minNormal = Math.ceil(base * 0.7 - 1e-9), minFacile = Math.ceil(base * 1.5 - 1e-9);
+  const svc = SERVICE_LABELS[service] || service;
+  const d = Math.max(-1, Math.min(1, Math.round(Number(aj) || 0)));
+  return `${n} agent${n > 1 ? 's' : ''} au service ${svc} dans tes ordres (base : ${base}). Moins de ${minNormal} : difficile · de ${minNormal} à ${minFacile - 1} : normal · ${minFacile} ou plus : facile.`
+    + (d ? ` Le Directeur rend l’incident d’un cran plus ${d < 0 ? 'facile' : 'difficile'}, vu tes derniers mini-jeux.` : '');
+}
+
 function agentsService(service) {
   const z = myZone();
   const a = (S.savedOrders && S.savedOrders.alloc) || (z && z.dernierOrdre && z.dernierOrdre.alloc) || DEFAULT_ALLOC;
@@ -134,12 +144,17 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
   const p = new URLSearchParams({ mode });
   if (mode === 'incident' && inc) {
     const n = agentsService(inc.service), { base, plus } = jaugeDuJour();
-    p.set('id', inc.id); p.set('agents', String(n)); p.set('diff', difficulte(inc.service, n, niveauIncidents(myZone())));
+    const aj = niveauIncidents(myZone());
+    p.set('id', inc.id); p.set('agents', String(n)); p.set('diff', difficulte(inc.service, n, aj));
+    p.set('pourquoi', pourquoiIncident(inc.service, n, aj));
     p.set('jauge', String(base + plus)); p.set('malus', texteMalus(MALUS[inc.service].plein)); p.set('gain', `${gainAffiche(inc.service)}, +${PS.queteOk} PS`);
   }
   if (mode === 'renfort' && appui) {
     const u = APPUI.unites[appui.unite];
-    p.set('id', appui.id); p.set('diff', APPUI.diff);
+    const ex = Math.max(1, Math.min(3, appui.experts || 2));
+    p.set('id', appui.id); p.set('agents', String(ex)); p.set('diff', DIFF_EXPERTS[ex]);
+    const [un, des] = appui.unite === 'rccu' ? ['enquêteur', 'enquêteurs'] : ['expert', 'experts'];
+    p.set('pourquoi', `2 ${des} de base${(appui.pourquoi || []).map((r) => ` · ${r}`).join('')}. 1 ${un} : difficile, 2 : normal, 3 : facile.`);
     p.set('gain', `une pièce ${appui.unite === 'labo' ? 'sur les moyens' : 'sur le mobile ou l’occasion'} d’un suspect, au dossier à 20:00`);
     p.set('malus', `pas de pièce, l’équipe ${u.court} repart`);
   }

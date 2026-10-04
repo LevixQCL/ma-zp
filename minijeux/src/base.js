@@ -88,19 +88,20 @@ const Shell = (() => {
         ${G.story}
         <div class="lbl2">${effLabel()}</div>
         <div class="seg seg1"><button aria-pressed="true" tabindex="-1"><span class="ppl">${'<i></i>'.repeat(Math.max(1,Math.min(12,Number(Q.get('agents'))||d.agents)))}</span><b>${effectif()}</b>${d.label}</button></div>
+        ${Q.get('pourquoi')?`<p class="small" style="opacity:.8">${escH(Q.get('pourquoi'))}</p>`:''}
         <p class="small">${RENF?`Un seul essai. Réussi : ${escH(Q.get('gain')||'une pièce pour ton enquête')}. Raté ou abandonné : ${escH(Q.get('malus')||'pas de pièce')}.`:`Un seul essai. Réussi : ${escH(Q.get('gain')||'un bonus')} et des points de jauge des skins. Raté ou abandonné : ${escH(Q.get('malus')||G.malus)}. Tout s’applique à 20:00.`}</p>
         <div class="row">${tutoBtns(RENF?'Commencer':'Intervenir')}</div>
         <button class="btn small" id="later" style="align-self:center">Plus tard</button>
         ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}`);
     } else {
-      const seg=Object.entries(G.diffs).map(([k,d])=>`<button data-k="${k}" aria-pressed="${k===st.diff}"><span class="ppl">${'<i></i>'.repeat(d.agents)}</span><b>${unite(d.agents)}</b>${d.label}</button>`).join('');
+      const seg=Object.entries(G.diffs).map(([k,d])=>`<button data-k="${k}" aria-pressed="${k===st.diff}"><span class="ppl">${'<i></i>'.repeat(d.agents)}</span><b>${G.unit ? unite(d.agents) : ({difficile:'Sous-effectif',normal:'Effectif de base',facile:'Renforcé'})[k]}</b>${d.label}</button>`).join('');
       showCard(`
         ${hero((MODE==='train'?'Entraînement · ':'Ma ZP · ')+G.service)}
         <h2>${G.headline}</h2>
         ${G.story}
         <div class="lbl2">${effLabel()}</div>
         <div class="seg" id="seg">${seg}</div>
-        <p class="small">${G.diffHint}</p>
+        <p class="small">${G.diffHint} ${G.unit ? `En vrai, l’équipe PJF compte 2 ${G.unit[1]}, +1 si une autre équipe est restée libre ce soir-là, +1 si ta Recherche est renforcée (−1 si elle est en sous-effectif).` : 'En vrai, le niveau dépend des agents du service dans tes ordres, comparés à la répartition de base.'}</p>
         <div class="row">${tutoBtns('Jouer')}</div>
         ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
         <p class="demo">${MODE==='train'?'Entraînement : rien ne compte pour ta zone.':'Démo jouable, rien n\'est enregistré dans ta partie Ma ZP.'}</p>`);

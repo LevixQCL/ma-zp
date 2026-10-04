@@ -26,6 +26,8 @@ export const NOTE_MAJ = {
       ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
     ]],
     ['Énigmes', [
+      ['Experts de l’appui PJF', 'le nombre d’experts (labo) ou d’enquêteurs (RCCU) compte vraiment : 2 de base, +1 si une autre équipe est restée libre ce soir-là, +1 si ta Recherche est renforcée, −1 si elle est en sous-effectif. 1 : mini-jeu difficile, 2 : normal, 3 : facile. Le rapport du soir et l’écran du mini-jeu disent pourquoi.'],
+      ['Agents des incidents expliqués', 'l’écran d’un incident du jour montre les seuils de ton service (ex. Intervention, base 7 : moins de 5 agents difficile, 11 ou plus facile) et le cran du Directeur s’il s’applique.'],
       ['Qui ment ? corrigé', 'à un seul menteur, plus de phrase « X dit la vérité » : elle innocentait d’office celui qui la prononçait. La règle précise aussi que « un seul des deux ment », dit par le menteur, signifie qu’aucun des deux ne ment. Merci Luc !'],
       ['Horaires plus variés', 'les faits ne se passent plus toujours vers 20 h devant le même bar : matin, midi, après-midi, fin de journée ou nuit, avec des lignes différentes. Dès le niveau 3, les bus ne passent plus à intervalles réguliers.'],
       ['Quiz express', 'tant que tu n’as répondu à aucune énigme du jour, 5 questions de culture générale (Monde, Sciences, Belgique), 15 secondes chacune : 3 bonnes réponses débloquent le bonus du jour au choix. Pas de PS ni de prime « sans faute », pas de pénalité si tu rates. Chacun sa série, sans question répétée dans la saison.'],
