@@ -16,8 +16,9 @@ import {
   chanceVoisinage, VOISINAGE,
   ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee,
   demarcheDe, mandatOk, lireDemarche,
-  toursTraque, delaiTraque, REAUD, RECOUP,
+  toursTraque, delaiTraque, REAUD, RECOUP, PRIME, PRIME_LABELS, texteMisePrix,
 } from '../engine/enquete.js';
+import { SERVICES, SERVICE_LABELS, NIVEAU_MAX } from '../engine/constants.js';
 import { lienItineraire, lieuxMons } from '../engine/meurtre-mons.js';
 
 // ───── Carnet : marques et notes, gardées sur l'appareil ─────
@@ -128,6 +129,28 @@ export function demBtn(aff, dos, x, label, { compact = false } = {}) {
 }
 
 /** Bandeau : l'affaire précédente est résolue, son auteur identifié est en fuite. */
+/** Carte « Mise à prix » : la zone a arrêté l'auteur et choisit sa récompense (avec ses ordres du jour). */
+export function primeHtml({ tableau = false } = {}) {
+  const z = myZone(), p = z && z.primeAChoisir;
+  if (!p) return '';
+  const d = S.draft || {}, choix = d.prime || '';
+  const btn = (k, v, sous) => `<button type="button" class="dem compact" data-action="prime-choix" data-v="${v}" aria-pressed="${choix === v}"><span class="l">${PRIME_LABELS[k].ico} ${esc(PRIME_LABELS[k].nom)}</span><span class="p">${esc(sous || PRIME_LABELS[k].effet)}</span></button>`;
+  const formation = SERVICES.map((s) => {
+    const max = (z.niveaux[s] || 1) >= NIVEAU_MAX;
+    return `<button type="button" class="chip ${choix === `formation:${s}` ? 'on' : ''}" data-action="prime-choix" data-v="formation:${s}" ${max ? 'disabled' : ''} aria-pressed="${choix === `formation:${s}`}">${esc(SERVICE_LABELS[s])} ${z.niveaux[s] || 1} → ${max ? 'max' : (z.niveaux[s] || 1) + 1}</button>`;
+  }).join('');
+  return `<section class="card amber tight ${tableau ? 'tb-ui' : ''}" style="gap:8px" aria-label="Mise à prix">
+    <span class="kicker" style="color:var(--amber-soft)">Mise à prix · affaire « ${esc(p.titre)} »</span>
+    <span style="font-weight:700">${esc(p.suspect)} est sous les verrous : choisis ta récompense</span>
+    <div class="choices" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:6px">${btn('confiscation', 'confiscation')}${btn('renfort', 'renfort')}</div>
+    <div class="col" style="gap:4px"><span class="small"><strong>${PRIME_LABELS.formation.ico} ${esc(PRIME_LABELS.formation.nom)}</strong> · +1 niveau, sans agent absent :</span>
+      <div class="row" style="gap:6px;flex-wrap:wrap">${formation}</div></div>
+    <span class="tiny muted">${choix ? `${icon('check', 12)} Choix enregistré avec tes ordres : appliqué à 20:00.` : `À choisir avant 20:00, avec tes ordres. Sans choix : confiscation (+${PRIME.confiscation} k€).`}</span>
+  </section>`;
+}
+/** Ligne de l'avis de recherche, en tête de l'enquête. */
+export const avisMisePrix = () => `<details class="recit" data-k="prime"><summary class="small">💰 Mise à prix ${icon('chevron', 14)}</summary><p class="small" style="margin:6px 0 0;color:var(--text2);line-height:1.5">${esc(texteMisePrix())}</p></details>`;
+
 export function banniereTraque(st, { tableau = false } = {}) {
   const tr = (st.traques || []).find((t) => !t.fini);
   if (!tr) return '';
@@ -405,7 +428,7 @@ export function renderEnquete() {
   const st = S.state, z = myZone();
   if (!st.enquete && st.enquetePause) {
     return `<main class="screen">
-      ${banniereTraque(st)}
+      ${primeHtml()}${banniereTraque(st)}
       <header class="col" style="gap:3px"><span class="kicker">Enquête</span><h1 class="big">Nouvelle affaire ${esc(formatDateBe(st.nextDeadline))} à 20:00</h1>
         <p class="small muted" style="margin:0">Pas d’enquête ce soir : place à la traque. La prochaine affaire s’ouvre à la Gazette de demain.</p></header>
       <button type="button" class="btn" data-action="edition-ouvrir">📰 Relire l’édition spéciale</button>
@@ -433,12 +456,13 @@ export function renderEnquete() {
   else if (tab === 'scene') body = constatations(aff, dos);
   else body = vueSuspects(aff, dos);
   return `<main class="screen">
-    ${banniereTraque(st)}
+    ${primeHtml()}${banniereTraque(st)}
     <header class="col" style="gap:6px">
       <div class="between"><span class="kicker">Enquête · affaire n° ${aff.n}</span><span class="row" style="gap:6px">${aff.prof ? '<button type="button" class="btn small" data-action="journal-ouvrir">📰 Journal</button>' : ''}<button type="button" class="btn small" data-action="tab-vue" data-v="tableau">${icon('tableau', 16)} Tableau</button></span></div>
       <h1 class="big" style="line-height:1.05">${esc(aff.titre)}</h1>
       <details class="recit" data-k="recit" ${(S.ouverts && 'recit' in S.ouverts ? S.ouverts.recit : j <= 1) ? 'open' : ''}><summary class="small">Les faits ${icon('chevron', 14)}</summary>
         <p class="small" style="margin:6px 0 0;color:var(--text2);line-height:1.5">${esc(aff.recit)}</p></details>
+      ${avisMisePrix()}
       <div class="row" style="gap:6px;flex-wrap:wrap">
         <span class="pill">Jour ${j} sur ${ENQ.dureeMax}</span>
         <span class="pill amber">Découverte ce soir : ${pointsDecouverte(j)} pts</span>

@@ -3,18 +3,14 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-07-rampe',
+  id: '2026-10-07-rampe-prime',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
     ['🌫️', 'Un nouveau meurtre à Mons, ce soir', 'un notaire retrouvé au pied de son escalier, Rampe Sainte-Waudru. Des heures qui mentent, un GSM qui parle, et une vieille histoire de Doudou.'],
-    ['📻', 'Zone de non-droit : qui y va ?', 'le Terrain montre les zones annoncées ce soir sur chaque secteur, et la radio a un bouton « Rejoindre ».'],
-    ['⏱', 'Pas le temps pour les énigmes ?', 'un quiz express de 5 questions (15 s chacune) ou un agent qui planche à ta place : ton bonus reste à portée.'],
-    ['⛈️', 'Le Directeur', 'un maître du jeu veille sur ta zone : regarde le ciel de l’HP, il annonce la journée.'],
-    ['🔎', 'Fouiller la scène', 'photos des pièces, scène à fouiller, réauditions et chronologie à reconstituer.'],
-    ['🕯️', 'Un meurtre à Mons', 'la prochaine affaire se joue dans le vrai centre de Mons : cinq proches, cinq mensonges, un seul assassin.'],
-    ['🕵️', 'L’ennemi de la saison', 'serre-le de près à chaque apparition, puis tout le district le coince le dernier soir.'],
-    ['🤝', 'À deux, c’est mieux', 'fugitif à la frontière, défi en duo, dilemmes qui reviennent : le Directeur se souvient de tout.'],
+    ['💰', 'Mise à prix', 'arrête l’auteur d’une affaire et choisis ta récompense : 12 k€, 2 agents fédéraux pendant 5 jours ou une formation offerte.'],
+    ['💣', 'Colis suspect', 'la fiche SEDEE change à chaque engin : relis-la bien !'],
+    ['🔍', 'Empreintes', 'curseur rond, aide « ? » sur les minuties, et tu vises avant de valider (double-clic).'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
@@ -33,6 +29,10 @@ export const NOTE_MAJ = {
       ['Moins de doublons', 'la situation du jour et l’opération d’envergure (avec l’appel à renfort) ne se règlent plus que dans les Ordres ; l’HP les signale et y renvoie, le Terrain ne montre plus que ce qui se joue avec les autres zones.'],
       ['HP plus léger', 'l’incident en cours n’est plus répété dans la liste « à faire » (sa carte est juste en dessous), et le résumé de la nuit s’efface quand tu ouvres le rapport complet.'],
       ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
+    ]],
+    ['Enquête', [
+      ['Mise à prix', 'annoncée dès l’ouverture de l’affaire. Chaque zone qui arrête l’auteur (ou obtient ses aveux) choisit sa récompense le lendemain, avec ses ordres : confiscation des avoirs (+12 k€), renfort fédéral (+2 agents pendant 5 jours, salaires payés par le fédéral) ou formation offerte (+1 niveau, sans agent absent). Sans choix : confiscation. Elle remplace l’ancienne prime de 4 k€.'],
+      ['Parts de la prime', 'démasquer l’auteur sans l’arrêter rapporte 6 k€, aider avec ses pièces partagées 2 k€.'],
     ]],
     ['Équilibrage', [
       ['Matériel du Roulage', 'équiper le Roulage donne maintenant aussi +15 % d’amendes par niveau, en plus de l’efficacité : l’achat est rentabilisé dans la saison.'],
