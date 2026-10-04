@@ -3,7 +3,7 @@ import { CONFIG } from './config.js';
 import { installerCadenas } from './ui/cadenas.js';
 import { installerEnigmes } from './ui/enigmes.js';
 import { createBackend } from './data/backend.js';
-import { resolvePending, completerDepuisGazette } from './data/resolver.js';
+import { resolvePending, completerDepuisGazette, etatResolution } from './data/resolver.js';
 import { S, toast, myZone, esc, cielDuMoment, tabbar } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil } from './ui/hp.js';
@@ -92,6 +92,7 @@ function render() {
   chargementDepuis = 0; clearTimeout(garde);
   const demo = S.backend && S.backend.mode === 'demo';
   let banner = demo ? '<div class="demo-banner">Mode démo · la partie tourne sur cet appareil avec des zones robots</div>' : '';
+  if (S.state && etatResolution.erreur && Date.now() > S.state.nextDeadline) banner += `<div class="demo-banner" role="alert" style="background:#7a2230;color:#fff;text-align:left;word-break:break-word">Le tour n’a pas pu être calculé sur cet appareil. Fais une capture de ce message pour le maître du jeu.<br><span class="tiny mono">${esc(etatResolution.erreur.slice(0, 400))}</span></div>`;
   if (S.state && isOutdated(S.state)) banner += '<div class="demo-banner" role="alert" style="display:flex;gap:10px;align-items:center;justify-content:center">Une nouvelle version du jeu est disponible. <button class="btn small primary" data-action="reload">Mettre à jour</button></div>';
   let html;
   if (!S.user) html = renderLogin();
@@ -304,10 +305,12 @@ async function tick(force = false) {
   if (!force && Date.now() - lastTick < attenteTick) return;
   lastTick = Date.now();
   try {
+    const avant = etatResolution.erreur;
     const n = await resolvePending(S.backend, { hour: CONFIG.resolutionHour, state: force ? null : S.state });
     if (n > 0) { attenteTick = 15000; S.players = await S.backend.getPlayers(); }
     else attenteTick = Math.min(240000, attenteTick * 2);
-  } catch (e) { console.warn(e); attenteTick = Math.min(240000, attenteTick * 2); }
+    if (etatResolution.erreur !== avant) rerender();
+  } catch (e) { console.warn(e); etatResolution.erreur = `Résolution : ${e && e.message ? e.message : e}`; rerender(); attenteTick = Math.min(240000, attenteTick * 2); }
 }
 
 // ───────── Actions ─────────
@@ -858,7 +861,7 @@ async function onClick(e) {
       case 'dir-reglage': { const r = { ...((S.state.dir && S.state.dir.reglages) || {}), [el.dataset.k]: el.dataset.v }; await b.adminDirecteur({ reglages: r }); toast('Réglage du Directeur enregistré : il s’applique dès la prochaine nuit.'); break; }
       case 'dir-forcer': await b.adminDirecteur({ forcer: el.dataset.id }); toast('Demandé : annoncé à la prochaine nuit, le district le vivra le surlendemain.'); break;
       case 'admin-vus': S.players = await b.getPlayers(); toast('Connexions actualisées.'); rerender(); break;
-      case 'admin-force': await b.adminForceResolution(); await tick(true); toast('Tour résolu.'); break;
+      case 'admin-force': await b.adminForceResolution(); await tick(true); toast(etatResolution.erreur ? 'Le tour n’a pas pu être résolu (détail en haut de l’écran).' : 'Tour résolu.'); break;
       case 'admin-remove': if (await askConfirm('Retirer ce joueur de la partie ?', 'Retirer')) { await b.adminRemovePlayer(el.dataset.uid); toast('Joueur retiré.'); } break;
       case 'admin-reset': if (await askConfirm('Recommencer la partie ? Toutes les zones repartent de zéro.', 'Recommencer')) { await b.adminReset(); lastTurnKey = null; toast('Nouvelle partie lancée.'); location.hash = '#hp'; } break;
       default: break;
