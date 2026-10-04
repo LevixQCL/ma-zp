@@ -43,7 +43,7 @@ function livrer(z, id, T) {
     case 'paperasse': z.paperasse = Math.max(0, z.paperasse - 6); break;
     case 'vehicule': z.usure = z.usure * z.vehicules / (z.vehicules + 1); z.vehicules += 1; break;
     case 'prevention': z.criminalite = Math.max(10, z.criminalite - 10); z.satisfaction += 4; break;
-    case 'agents': z.agents += 2; break;
+    case 'agents': z.agents += 2; z._nouveaux = (z._nouveaux || 0) + 2; break;
     case 'stage': {
       const s = SERVICES.filter((x) => z.niveaux[x] < NIVEAU_MAX).sort((a, b) => z.niveaux[a] - z.niveaux[b])[0];
       if (!s) return 'toutes tes formations sont déjà au maximum, le stage ne sert à rien';

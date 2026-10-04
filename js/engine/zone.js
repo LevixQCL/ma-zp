@@ -75,7 +75,7 @@ export const effectifPrevu = (z) => z.agents + (z.academie || []).reduce((s, a) 
 export const niveauEquipement = (z) => z.batiments.bureaux + z.batiments.garage + Object.values(z.infra || {}).filter(Boolean).length;
 
 /** Subside communal : une part du salaire de chaque agent au-delà de l'effectif de départ. */
-export const subsideAgents = (z) => SUBSIDE.parAgent * Math.max(0, z.agents - SUBSIDE.seuil);
+export const subsideAgents = (z, nouveaux = 0) => SUBSIDE.parAgent * Math.max(0, z.agents - nouveaux - SUBSIDE.seuil);
 /** Bonus (ou malus) communal selon la réputation : 0 à 50, jusqu'à ±2,5 k€ par tour aux extrêmes. */
 export const confianceCommune = (z) => { const e = clamp(z.reputation, 0, 100) - 50; return round1(e * (e >= 0 ? SUBSIDE.confiance : SUBSIDE.confianceMalus)); };
 /** Prix d'une recrue selon la réputation de la zone. */
@@ -104,20 +104,26 @@ export function perequation(z, state) {
 export function fraisFixes(z, state, { amendes = 0, rythme = 'normal' } = {}) {
   const annexes = Object.values(z.infra || {}).filter(Boolean).length;
   const b = z.batiments;
+  // Agents arrivés pendant la résolution (salle des ventes, débauchage) : ni payés ni subsidiés avant leur premier jour de travail.
+  const nouveaux = Math.max(0, Math.min(z.agents, Math.floor(z._nouveaux || 0)));
+  const payes = z.agents - nouveaux;
+  const nv = nouveaux ? `, sans les ${nouveaux} arrivé${nouveaux > 1 ? 's' : ''} ce soir` : '';
+  const conf = confianceCommune(z), rep = Math.round(clamp(z.reputation, 0, 100) * 10) / 10;
+  const confCalc = `réputation ${String(rep).replace('.', ',')} : (${String(rep).replace('.', ',')} − 50) × ${String(conf < 0 ? SUBSIDE.confianceMalus : SUBSIDE.confiance).replace('.', ',')}`;
   const lignes = [
     { k: 'dotation', l: 'Dotation fédérale', v: ECONOMIE.dotation },
-    { k: 'subside', l: `Subside communal (${Math.max(0, z.agents - SUBSIDE.seuil)} agents au-delà de ${SUBSIDE.seuil})`, v: subsideAgents(z) },
-    { k: 'confiance', l: 'Confiance de la commune (réputation)', v: confianceCommune(z) },
+    { k: 'subside', l: `Subside communal (${Math.max(0, payes - SUBSIDE.seuil)} agents au-delà de ${SUBSIDE.seuil}${nv})`, v: subsideAgents(z, nouveaux) },
+    { k: 'confiance', l: `Confiance de la commune (${confCalc})`, v: conf, garder: true },
     { k: 'perequation', l: 'Péréquation (zone moins équipée)', v: perequation(z, state) },
     { k: 'amendes', l: 'Amendes du Roulage', v: amendes },
     { k: 'radars', l: 'Radars automatiques (caméras)', v: z.infra && z.infra.anpr ? INFRAS.anpr.fixe : 0 },
-    { k: 'salaires', l: `Salaires (${z.agents} agents)`, v: -z.agents * ECONOMIE.salaire },
+    { k: 'salaires', l: `Salaires (${payes} agents${nv})`, v: -payes * ECONOMIE.salaire },
     { k: 'vehicules', l: `Entretien des véhicules (${z.vehicules})`, v: -z.vehicules * ECONOMIE.entretienVehicule },
     { k: 'batiments', l: `Entretien des bâtiments (niveaux ${b.bureaux} et ${b.garage})`, v: -(BATIMENTS.bureaux.entretien(b.bureaux) + BATIMENTS.garage.entretien(b.garage)) },
     { k: 'annexes', l: `Entretien des annexes (${annexes})`, v: -annexes * ENTRETIEN_ANNEXE },
     { k: 'rythme', l: 'Heures supplémentaires (rythme renforcé)', v: -(RYTHMES[rythme] ? RYTHMES[rythme].cout : 0) },
-  ].filter((x) => Math.abs(x.v) >= 0.05);
-  for (const x of lignes) x.v = round1(x.v);
+  ].filter((x) => x.garder || Math.abs(x.v) >= 0.05);
+  for (const x of lignes) { x.v = round1(x.v); delete x.garder; }
   return { lignes, total: round1(lignes.reduce((s, x) => s + x.v, 0)) };
 }
 

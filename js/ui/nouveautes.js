@@ -25,6 +25,10 @@ export const NOTE_MAJ = {
       ['HP plus léger', 'l’incident en cours n’est plus répété dans la liste « à faire » (sa carte est juste en dessous), et le résumé de la nuit s’efface quand tu ouvres le rapport complet.'],
       ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
     ]],
+    ['Budget', [
+      ['Nouveaux agents', 'les agents gagnés à la salle des ventes ou par débauchage ne sont plus payés (ni subsidiés) le soir de leur arrivée : leur premier salaire tombe après leur premier jour de travail.'],
+      ['Confiance de la commune', 'la ligne est toujours affichée dans le détail du budget, avec son calcul (réputation − 50 × coefficient), même quand elle vaut 0.'],
+    ]],
     ['Mini-jeux', [
       ['Empreintes', 'curseur rond au lieu du viseur, bouton « ? » qui explique ce qu’est une minutie (fin de crête, bifurcation). Relâcher pose seulement une visée, sans pénalité : double-clic (ou double tape) dessus pour valider.'],
       ['Dossier à relire', 'rapport plus long et plus fouillé (ancienne adresse, ménage, carte d’identité, bail, témoin du voisin), avec de nouvelles erreurs possibles et un peu plus de temps.'],

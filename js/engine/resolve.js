@@ -771,6 +771,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const ff = fraisFixes(z, state, { amendes: recettes, rythme: o.rythme });
     z.budget += ff.total;
     z._compta.push(...ff.lignes);
+    delete z._nouveaux;
     // Sortie d'académie : les recrues arrivent ce soir, après la paie, pour être dans les ordres de demain.
     // Filet de sécurité : un groupe à la date de sortie invalide ou plus lointaine que le délai normal
     // (resté coincé lors d'un changement de règles) sort ce soir.
@@ -980,7 +981,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
-    delete z._joue; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue;
+    delete z._joue; delete z._nouveaux; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue;
   }
 
   // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).

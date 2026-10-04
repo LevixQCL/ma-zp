@@ -155,7 +155,7 @@ export function rivalitesPre(state, uids, ord, push, T) {
         if (oc.depenses && oc.depenses.prime) chance *= 0.5;
         if (c.agents <= 10) { chance = 0; detail = 'effectif déjà trop réduit'; }
         ok = rng.chance(chance);
-        if (ok) { c.agents -= 1; z.agents += 1; c.moral -= 2; detail = 'un agent change de zone'; }
+        if (ok) { c.agents -= 1; z.agents += 1; z._nouveaux = (z._nouveaux || 0) + 1; c.moral -= 2; detail = 'un agent change de zone'; }
         break;
       case 'dessaisissement': {
         const vieux = c.dossiers.filter((d) => d.age > 3).sort((x, y) => y.age - x.age)[0];
