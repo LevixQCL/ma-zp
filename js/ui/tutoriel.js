@@ -73,7 +73,7 @@ export const ETAPES = [
   {
     id: 'rythme', route: 'ordres', cible: 'section[aria-label="Rythme"]',
     titre: 'Le rythme de travail',
-    texte: `<p><strong>Renforcé</strong> : +20 % d’efficacité, mais le moral baisse et les heures sup’ coûtent. Plusieurs jours de suite, attention à l’épuisement.</p>
+    texte: `<p><strong>Renforcé</strong> : +35 % d’efficacité, mais le moral baisse et les heures sup’ coûtent. Plusieurs jours de suite, attention à l’épuisement.</p>
       <p><strong>Allégé</strong> : l’inverse, pour remonter le moral. Dans le doute, reste en <strong>Normal</strong>.</p>`,
   },
   {

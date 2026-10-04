@@ -5,7 +5,7 @@ import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
 import {
   APP_VERSION, NIVEAU_MAX, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
 import { jourBe } from './time.js';
@@ -809,10 +809,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.renforceSuite = o.rythme === 'renforce' ? z.renforceSuite + 1 : 0;
 
     // Dérives naturelles.
-    z.satisfaction += (50 - z.satisfaction) * 0.04;
-    jalon(z, 'Retour naturel vers 50 : 4 % de l’écart');
-    z.reputation += (50 - z.reputation) * 0.03;
-    jalon(z, 'Retour naturel vers 50 : 3 % de l’écart');
+    { const ts = tauxDerive('satisfaction', z.satisfaction); z.satisfaction += (DERIVE.satisfaction.cible - z.satisfaction) * ts;
+      jalon(z, `Retour naturel vers ${DERIVE.satisfaction.cible} : ${Math.round(ts * 100)} % de l’écart`); }
+    { const tp = tauxDerive('reputation', z.reputation); z.reputation += (DERIVE.reputation.cible - z.reputation) * tp;
+      jalon(z, `Retour naturel vers ${DERIVE.reputation.cible} : ${Math.round(tp * 100)} % de l’écart`); }
 
     // Malus : chef absent, inspection générale.
     if (z.toursSansOrdres >= 2) { z.satisfaction -= 2; z.moral -= 2; z.rapport.push('Chef absent depuis plusieurs tours : −2 de satisfaction et de moral.'); }
