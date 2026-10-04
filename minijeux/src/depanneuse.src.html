@@ -26,6 +26,28 @@
 .beacon{animation:blink 1s steps(1) infinite}
 .bar2{display:flex;gap:10px;align-items:center;justify-content:space-between;padding-bottom:env(safe-area-inset-bottom,0px)}
 .goal{font-size:13px;color:var(--mute);line-height:1.4}
+/* ===== habillage « plateau de maquettiste » ===== */
+.field{isolation:isolate}
+.lot{background:
+  radial-gradient(circle,rgba(0,0,0,.6) 0 .9px,transparent 1.5px) 0 0/6px 6px,
+  radial-gradient(circle,rgba(255,255,255,.05) 0 .9px,transparent 1.5px) 1px 1px/6px 6px,
+  linear-gradient(160deg,#2c3036,#1d2024);
+  border-radius:12px;box-shadow:inset 0 2px 8px rgba(0,0,0,.8),inset 0 0 0 1px rgba(0,0,0,.7)}
+.lot::before{content:"";position:absolute;inset:-16px;z-index:-1;border-radius:20px;
+  background:
+    radial-gradient(circle at 9px 9px,#e3e7ec 0 1.6px,#6c727b 2.6px,#2a2d32 3.8px,transparent 4.6px),
+    radial-gradient(circle at calc(100% - 9px) 9px,#e3e7ec 0 1.6px,#6c727b 2.6px,#2a2d32 3.8px,transparent 4.6px),
+    radial-gradient(circle at 9px calc(100% - 9px),#e3e7ec 0 1.6px,#6c727b 2.6px,#2a2d32 3.8px,transparent 4.6px),
+    radial-gradient(circle at calc(100% - 9px) calc(100% - 9px),#e3e7ec 0 1.6px,#6c727b 2.6px,#2a2d32 3.8px,transparent 4.6px),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.04) 0 1px,rgba(0,0,0,.05) 1px 3px),
+    linear-gradient(160deg,#7d838b,#4e535a 45%,#6a7078 70%,#3f444a);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(0,0,0,.4),0 26px 50px rgba(0,0,0,.6)}
+.lot::after{content:"SERIAL 5324-RL";position:absolute;right:4px;top:-13px;font:600 8px var(--f-mono);letter-spacing:.12em;color:rgba(255,255,255,.45);text-shadow:0 1px 0 rgba(0,0,0,.5)}
+.lot .grid{opacity:1}
+.exit{z-index:2;bottom:-12px;height:12px;background:repeating-linear-gradient(-45deg,#ffd23a 0 6px,#1c1f24 6px 12px);border-radius:2px;color:transparent;box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.tow{border-radius:0 0 14px 14px;background:linear-gradient(180deg,#15171a,#22252a);box-shadow:0 0 0 7px #5b6168,0 0 0 8px rgba(0,0,0,.5),inset 0 3px 8px rgba(0,0,0,.8),0 18px 30px rgba(0,0,0,.5)}
+.veh{filter:drop-shadow(0 4px 3px rgba(0,0,0,.6))}
+.veh.drag{filter:drop-shadow(0 14px 12px rgba(0,0,0,.6)) brightness(1.08)}
 @media (prefers-reduced-motion:reduce){.haz,.beacon,.veh.focus::after{animation:none}}
 </style>
 <body>
@@ -35,25 +57,29 @@
 </body>
 <script>
 const PUZ = /*INCLUDE:rush.json*/null;
-const CIV = ['#6f8296','#a3303f','#2f7a62','#d2c08e','#3f5ea8','#b5b9bf','#7a55a3','#e6e8ea'];
+const CIV = ['#eef0f2','#d23a33','#2f9e57','#e6e8eb','#3f6fc0','#c3c8ce','#1f2731','#b21f2a','#2a8a4c','#f2f3f5'];
 const R = {veh:[], init:[], cell:50, moves:0, min:0, over:true, cfg:null, tuto:0, els:[]};
 
 let UID=0;
 function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=n>>16,g=n>>8&255,b=n&255; const t=f<0?0:255,p=Math.abs(f); r=Math.round((t-r)*p+r); g=Math.round((t-g)*p+g); b=Math.round((t-b)*p+b); return `rgb(${r},${g},${b})`; }
 const GLASS='#17202c';
 function grad(col){ const id='g'+(UID++); return [id,`<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shade(col,.28)}"/><stop offset=".45" stop-color="${col}"/><stop offset="1" stop-color="${shade(col,-.32)}"/></linearGradient>`]; }
+function wheels(W){ const w=(x)=>`<rect x="${x}" y="0" width="20" height="15" rx="4" fill="#121417"/><rect x="${x+4}" y="2" width="10" height="4" rx="2" fill="#9aa1aa"/><rect x="${x}" y="85" width="20" height="15" rx="4" fill="#121417"/><rect x="${x+4}" y="94" width="10" height="4" rx="2" fill="#9aa1aa"/>`; return w(W*.17)+w(W*.72); }
 function lamps(W){ return `<rect x="${W-15}" y="17" width="8" height="15" rx="4" fill="#fff4cf"/><rect x="${W-15}" y="68" width="8" height="15" rx="4" fill="#fff4cf"/><rect x="8" y="19" width="6" height="13" rx="3" fill="#ff4343"/><rect x="8" y="68" width="6" height="13" rx="3" fill="#ff4343"/>`; }
 function carSVG(W,col,target){
   const [id,g]=grad(col), d=shade(col,-.4);
-  let x=`<defs>${g}</defs><rect x="5" y="9" width="${W-10}" height="82" rx="28" fill="url(#${id})"/>
+  let x=`<defs>${g}</defs>${wheels(W)}<rect x="5" y="9" width="${W-10}" height="82" rx="28" fill="url(#${id})"/>
+  <path d="M${W*.12} 15 Q ${W*.5} 9 ${W*.88} 15" stroke="rgba(255,255,255,.55)" stroke-width="3" fill="none" stroke-linecap="round"/>
   <rect x="${W*.58}" y="2" width="11" height="9" rx="3" fill="${d}"/><rect x="${W*.58}" y="89" width="11" height="9" rx="3" fill="${d}"/>
   <path d="M${W*.18} 24 Q ${W*.14} 50 ${W*.18} 76 L ${W*.28} 72 L ${W*.28} 28 Z" fill="${GLASS}"/>
   <rect x="${W*.3}" y="25" width="${W*.32}" height="50" rx="12" fill="${shade(col,.1)}"/>
   <path d="M${W*.64} 25 L ${W*.77} 16 Q ${W*.82} 50 ${W*.77} 84 L ${W*.64} 75 Z" fill="${GLASS}"/>
-  <path d="M${W*.67} 30 L ${W*.75} 23" stroke="rgba(255,255,255,.35)" stroke-width="3" stroke-linecap="round"/>${lamps(W)}`;
+  <path d="M${W*.67} 30 L ${W*.75} 23" stroke="rgba(255,255,255,.35)" stroke-width="3" stroke-linecap="round"/>
+  <rect x="${W*.33}" y="30" width="${W*.26}" height="10" rx="5" fill="rgba(255,255,255,.28)"/>${lamps(W)}`;
   if(target){
     x+=`<path d="M${W-5} 9 L ${W-38} 9 L ${W-30} 22 L ${W-44} 34 L ${W-5} 44 Z" fill="#2b2f36"/>
     <path d="M${W*.7} 40 l8 6 l-5 8 l9 7 M${W*.7} 46 l-6 7" stroke="#cfe0f5" stroke-width="1.6" fill="none" opacity=".8"/>
+    <rect x="${W*.63}" y="22" width="9" height="58" rx="2" fill="#e9dcb4" opacity=".92" transform="rotate(-18 ${W*.68} 50)"/><rect x="${W*.47}" y="30" width="${W*.3}" height="8" rx="2" fill="#e9dcb4" opacity=".9" transform="rotate(12 ${W*.6} 34)"/>
     <rect class="haz" x="${W-15}" y="68" width="8" height="15" rx="4" fill="#ffb21f"/><rect class="haz" x="8" y="19" width="6" height="13" rx="3" fill="#ffb21f"/><rect class="haz" x="8" y="68" width="6" height="13" rx="3" fill="#ffb21f"/>`;
   }
   return x;
@@ -61,7 +87,7 @@ function carSVG(W,col,target){
 function policeSVG(W){
   const [id,g]=grad('#eef1f5');
   let band=''; for(let x=14;x<W-14;x+=16){ const c=(x/16|0)%2?'#1d4ea3':'#d7ee3a'; band+=`<rect x="${x}" y="11" width="16" height="9" fill="${c}"/><rect x="${x}" y="80" width="16" height="9" fill="${c}"/>`; }
-  return `<defs>${g}<clipPath id="c${id}"><rect x="5" y="9" width="${W-10}" height="82" rx="18"/></clipPath></defs>
+  return `${wheels(W)}<defs>${g}<clipPath id="c${id}"><rect x="5" y="9" width="${W-10}" height="82" rx="18"/></clipPath></defs>
   <rect x="5" y="9" width="${W-10}" height="82" rx="18" fill="url(#${id})"/><g clip-path="url(#c${id})">${band}</g>
   <path d="M${W*.8} 24 L ${W*.87} 18 Q ${W*.9} 50 ${W*.87} 82 L ${W*.8} 76 Z" fill="${GLASS}"/>
   <rect x="${W*.62}" y="36" width="${W*.13}" height="28" rx="6" fill="#20324f"/><rect class="beacon" x="${W*.63}" y="38" width="${W*.055}" height="24" rx="4" fill="#3d8bff"/><rect class="beacon" style="animation-delay:.5s" x="${W*.69}" y="38" width="${W*.055}" height="24" rx="4" fill="#3d8bff"/>
@@ -70,9 +96,9 @@ function policeSVG(W){
 function vanSVG(W,col,truck){
   const [id,g]=grad(col);
   if(truck){ const [id2,g2]=grad('#e9ebee');
-    return `<defs>${g}${g2}</defs><rect x="5" y="8" width="${W*.66}" height="84" rx="8" fill="url(#${id2})"/><path d="M${W*.2} 12v76M${W*.4} 12v76" stroke="rgba(0,0,0,.08)" stroke-width="2"/>
+    return `${wheels(W)}<defs>${g}${g2}</defs><rect x="5" y="8" width="${W*.66}" height="84" rx="8" fill="url(#${id2})"/><path d="M${W*.2} 12v76M${W*.4} 12v76" stroke="rgba(0,0,0,.08)" stroke-width="2"/>
     <rect x="${W*.7}" y="12" width="${W*.28}" height="76" rx="18" fill="url(#${id})"/><path d="M${W*.84} 22 L ${W*.92} 18 Q ${W*.95} 50 ${W*.92} 82 L ${W*.84} 78 Z" fill="${GLASS}"/>${lamps(W)}`; }
-  return `<defs>${g}</defs><rect x="5" y="9" width="${W-10}" height="82" rx="20" fill="url(#${id})"/><rect x="${W*.08}" y="20" width="${W*.62}" height="60" rx="8" fill="${shade(col,.12)}"/>
+  return `${wheels(W)}<defs>${g}</defs><rect x="5" y="9" width="${W-10}" height="82" rx="20" fill="url(#${id})"/><rect x="${W*.08}" y="20" width="${W*.62}" height="60" rx="8" fill="${shade(col,.12)}"/>
   <path d="M${W*.77} 22 L ${W*.86} 16 Q ${W*.9} 50 ${W*.86} 84 L ${W*.77} 78 Z" fill="${GLASS}"/>${lamps(W)}`;
 }
 function vehSVG(v){
@@ -81,15 +107,15 @@ function vehSVG(v){
   return `<svg viewBox="0 0 ${W} 100" preserveAspectRatio="none" aria-hidden="true">${inner}</svg>`;
 }
 const TOW=`<svg viewBox="0 0 200 100" preserveAspectRatio="none" aria-hidden="true">
-<defs><linearGradient id="cabg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffc24a"/><stop offset=".5" stop-color="#f39a12"/><stop offset="1" stop-color="#b86a05"/></linearGradient>
+<defs><linearGradient id="cabg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff07a"/><stop offset=".5" stop-color="#f5cf16"/><stop offset="1" stop-color="#b89505"/></linearGradient>
 <pattern id="hz" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="12" fill="#ffd23a"/><rect x="6" width="6" height="12" fill="#1c1f24"/></pattern></defs>
-<rect x="2" y="10" width="132" height="80" rx="6" fill="#59616d"/>
+<rect x="2" y="10" width="132" height="80" rx="6" fill="#7b838e"/><rect x="2" y="10" width="132" height="4" fill="#c9ced5"/><rect x="2" y="86" width="132" height="4" fill="#c9ced5"/>
 <path d="M28 18v64M52 18v64M76 18v64M100 18v64" stroke="#6b7480" stroke-width="2"/>
 <rect x="2" y="10" width="18" height="80" rx="4" fill="url(#hz)"/>
 <text x="74" y="56" text-anchor="middle" font-family="Instrument Sans,system-ui,sans-serif" font-weight="800" font-size="11.5" letter-spacing=".8" fill="#eef1f5">DÉPANNAGE</text>
 <rect x="112" y="40" width="16" height="20" rx="3" fill="#2b3038"/>
 <rect x="134" y="6" width="64" height="88" rx="16" fill="url(#cabg)"/>
-<rect x="132" y="0" width="12" height="9" rx="3" fill="#b86a05"/><rect x="132" y="91" width="12" height="9" rx="3" fill="#b86a05"/>
+<rect x="150" y="0" width="18" height="10" rx="3" fill="#121417"/><rect x="150" y="90" width="18" height="10" rx="3" fill="#121417"/><rect x="40" y="0" width="18" height="10" rx="3" fill="#121417"/><rect x="40" y="90" width="18" height="10" rx="3" fill="#121417"/><rect x="66" y="0" width="18" height="10" rx="3" fill="#121417"/><rect x="66" y="90" width="18" height="10" rx="3" fill="#121417"/>
 <path d="M176 18 L 188 13 Q 194 50 188 87 L 176 82 Z" fill="#17202c"/>
 <rect x="148" y="24" width="14" height="52" rx="4" fill="#2b3038"/>
 <rect class="beacon" x="150" y="27" width="10" height="20" rx="3" fill="#ffcf4a"/><rect class="beacon" style="animation-delay:.5s" x="150" y="53" width="10" height="20" rx="3" fill="#ffcf4a"/>
@@ -102,8 +128,8 @@ function layout(){
   const c=R.cell, lot=$('lot');
   lot.style.width=c*6+'px'; lot.style.height=c*6+'px'; lot.style.marginBottom=c*2.1+'px';
   const gr=lot.querySelector('.grid');
-  gr.style.backgroundImage='linear-gradient(0deg,rgba(255,255,255,.2) 2px,transparent 2px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px)';
-  gr.style.backgroundSize=`${c}px ${c}px`; gr.style.backgroundPosition=`0 ${c-1}px, ${c}px 0`;
+  gr.style.backgroundImage='linear-gradient(0deg,rgba(255,255,255,.07) 1px,rgba(0,0,0,.6) 1px 3px,transparent 3px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,rgba(0,0,0,.6) 1px 3px,transparent 3px)';
+  gr.style.backgroundSize=`${c}px ${c}px`; gr.style.backgroundPosition=`0 -1px, -1px 0`;
   let ex=lot.querySelector('.exit'); if(!ex){ex=document.createElement('div');ex.className='exit';ex.innerHTML=CHEV;lot.appendChild(ex);}
   ex.style.left=(2*c+3)+'px'; ex.style.width=(c-6)+'px';
   let tow=lot.querySelector('.tow'); if(!tow){tow=document.createElement('div');tow.className='tow';tow.innerHTML=TOW;lot.appendChild(tow);}

@@ -58,6 +58,7 @@ export const NOTE_MAJ = {
       ['Confiance de la commune', 'la ligne est toujours affichée dans le détail du budget, avec son calcul (réputation − 50 × coefficient), même quand elle vaut 0.'],
     ]],
     ['Mini-jeux', [
+      ['Dépanneuse', 'nouvel habillage : plateau en acier vissé avec tapis perforé, voitures façon miniatures (roues, reflets), épave rafistolée au ruban adhésif, couloir de sortie balisé et dépanneuse jaune. Les règles ne changent pas.'],
       ['Difficulté des incidents figée', 'le niveau d’un incident est fixé au moment où il tombe, d’après les agents du service en service ce jour-là (tes ordres validés la veille à 20:00). Gonfler un service dans tes ordres juste avant de jouer ne le rend plus facile. Un incident reporté au lendemain garde son niveau.'],
       ['Empreintes : validation réparée', 'sur certains téléphones, le double tap pour valider une minutie n’était jamais reconnu. Désormais, il suffit de toucher le rond orange de ta visée pour valider (le double tap et la touche Entrée marchent toujours).'],
       ['Colis suspect', 'nouvel habillage : boîtier en inox vissé, plaque de série rivetée, fils tressés avec embouts et écrous, bouton lumineux à collerette chromée, interrupteurs à bascule. Les règles et la fiche SEDEE ne changent pas.'],
