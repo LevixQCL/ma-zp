@@ -110,7 +110,7 @@ export function planMons(aff, { crop = null, heures = false, id = 'pm' } = {}) {
     ${crop ? '' : `<g transform="translate(842 828)"><circle r="24" fill="#F1E9D2" stroke="#6B5B3A" stroke-width="1.5"/><path d="M0 -18L5 0L0 18L-5 0Z" fill="#6B5B3A"/><path d="M0 -18L5 0L-5 0Z" fill="#B3261E"/><text x="-4" y="-27" class="p3-n">N</text></g>
     <g transform="translate(16 874)"><rect x="-6" y="-26" width="${W - 84}" height="40" rx="4" fill="#FFFAEC" stroke="#C4B48C" opacity=".95"/>
       <text x="0" y="-8" class="p3-leg">Mons, centre · plan simplifié, pas à l’échelle exacte</text>
-      <text x="0" y="7" class="p3-leg2">Les temps de trajet se mesurent à pied sur Google Maps : touche un lieu. Commerces et personnes de l’affaire : fictifs.</text></g>
+      <text x="0" y="7" class="p3-leg2">Touche un point bleu : trajet jusqu’à la scène sur Google Maps (à pied, en voiture ou en bus). Commerces et personnes de l’affaire : fictifs.</text></g>
     <text x="16" y="20" class="p3-n" style="letter-spacing:1px">MONS — LE CENTRE</text>`}
   </svg>`;
 }
