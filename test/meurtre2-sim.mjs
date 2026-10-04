@@ -7,7 +7,7 @@
 //    incidents et Directeur (1 jour sur 8) ;
 //  · équipe : + bonus, et trois collègues de cellule qui enquêtent au hasard et partagent chaque soir
 //    (au plus 2 pièces reçues par soir, comme dans le jeu).
-// Profils : parfait (soupçonne Olivier dès son audition), moyen (suit d'abord les leurres), parieur (confronte au hasard le 1er jour),
+// Profils : parfait (soupçonne Grégoire dès son audition), moyen (suit d'abord les leurres), parieur (confronte au hasard le 1er jour),
 // prudent (ne confronte que quand un seul suspect reste ET qu'il a deux décisives).
 import { affaireMeurtreRampe } from '../js/engine/meurtre-rampe.js';
 import { pieceDemarche, confrontationOk, mandatOk, pieceReaudition, candidats, pieceRecoupement, ENQ } from '../js/engine/enquete.js';
@@ -16,7 +16,7 @@ import { makeRng } from '../js/engine/rng.js';
 let aff = affaireMeurtreRampe(1);
 let PUBLICS = ['doc:journal', 'doc:pvc', 'A:0', 'A:1', 'A:2', 'A:3', 'A:4'];
 // Variante à six suspects (« --six ») : un sixième innocent, écarté par son alibi seul (« simple »)
-// ou seulement par son alibi ET l'heure de la mort (« paire », comme Nathalie).
+// ou seulement par son alibi ET l'heure de la mort (« paire », comme Élodie).
 function avecSixieme(mode) {
   const a = affaireMeurtreRampe(1);
   a.suspects = [...a.suspects, { ...a.suspects[2], nom: 'Sixième', prenom: 'Sixième', coupable: false }];
@@ -85,7 +85,7 @@ function jouer(profil, graine, { bonus = false, equipe = 0 } = {}) {
     for (const x of envies) { if (faites.length >= 2) break; const f = pieceDemarche(aff, d, x); if (f && !faites.includes(f)) faites.push(f); }
     // Réaudition : la pièce la plus parlante sur un suspect visé (le parfait la trouve, les autres une fois sur deux).
     let r = null;
-    // Une réaudition qui fait tomber un mensonge décisif (même d'un suspect déjà blanchi, comme Jérôme) d'abord.
+    // Une réaudition qui fait tomber un mensonge décisif (même d'un suspect déjà blanchi, comme Thibault) d'abord.
     const decisive = aff.suspects.map((_, i) => i).flatMap((i) => (mandatOk(aff, d, i) ? [...opp(d)].map((f) => pieceReaudition(aff, d, i, f)).filter((p) => p && aff.confront.decisives.includes(p)) : []));
     if (decisive.length && (profil === 'parfait' || profil === 'prudent' || rng.chance(0.5))) r = decisive[0];
     if (!r) for (const i of vise) {

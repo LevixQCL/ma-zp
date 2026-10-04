@@ -361,3 +361,15 @@ body:has(.demo-banner) .jr-wrap { top: 44px; }
 .tb-recoup .tb-lien { display: inline; }
 .tb-pouce { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 12px; }
 .tb-pouce .btn { align-self: flex-start; }
+
+/* Scène : la photo s'agrandit au toucher (plein écran, à faire glisser). */
+.sf-photo { position: relative; cursor: zoom-in; }
+.sf-loupe { position: absolute; right: 8px; bottom: 8px; padding: 4px 9px; border-radius: 999px; background: rgba(10,12,20,.72); color: #fff; font-size: 12px; font-weight: 600; line-height: 1.4; pointer-events: none; }
+.sf-zoom { position: fixed; inset: 0; z-index: 1000; background: #05060a; display: flex; flex-direction: column; }
+.sf-zoom-haut { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: calc(10px + env(safe-area-inset-top)) 14px 8px; }
+.sf-zoom-defil { flex: 1; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; display: flex; align-items: center; }
+.sf-zoom-img { height: 100%; aspect-ratio: 1024 / 572; flex: 0 0 auto; margin: 0 auto; max-width: none; }
+.sf-zoom-img svg { width: 100%; height: 100%; display: block; }
+@media (min-aspect-ratio: 16/9) { .sf-zoom-img { height: auto; width: 100%; } }
+.sf-zoom-bas { padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--line); max-height: 34vh; overflow: auto; }
+.sf-zoom-bas p { margin: 4px 0 0; line-height: 1.45; color: var(--amber-soft); }

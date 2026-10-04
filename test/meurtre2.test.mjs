@@ -35,7 +35,7 @@ const tout = [...a.faits, 'r:tel', 'r:mireille'];
 assert.deepEqual(candidats(a, tout).suspects, [a.coupable]);
 assert.equal(candidats(a, ['c:legiste1', 'c:cam', 'c:agenda', 'mob:0', 'moy:2']).suspects.length, 5);
 // Les groupes de pièces ne blanchissent qu'ensemble.
-assert.ok(candidats(a, ['occ:0']).suspects.includes(0), 'la plaque seule ne blanchit pas Nathalie');
+assert.ok(candidats(a, ['occ:0']).suspects.includes(0), 'la plaque seule ne blanchit pas Élodie');
 assert.ok(!candidats(a, ['occ:0', 'mob:2']).suspects.includes(0), 'plaque + message vocal : blanchie');
 assert.ok(candidats(a, ['occ:3', 'x:heure']).suspects.includes(3));
 assert.ok(!candidats(a, ['occ:3', 'c:legiste2']).suspects.includes(3));
@@ -44,7 +44,7 @@ assert.ok(candidats(a, ['moy:3', 'Ra:3']).suspects.includes(3), 'ses aveux seuls
 // Le récit : aucun texte mal formé ; seul l'assassin évoque le SMS de 22:41 dans son audition.
 const d3 = dossierAffaire3('r', a);
 assert.ok(!/undefined|NaN/.test(JSON.stringify(d3)));
-d3.auditions.forEach((au, i) => assert.equal(/écrit à Nathalie|onze heures moins vingt/.test(JSON.stringify(au.qr)), i === a.coupable, au.qui));
+d3.auditions.forEach((au, i) => assert.equal(/écrit à Élodie|onze heures moins vingt/.test(JSON.stringify(au.qr)), i === a.coupable, au.qui));
 assert.ok(/heure/i.test(d3.journal.breve[0]) && /caméras/.test(d3.journal.breve[1]), 'la brève sur l’heure d’hiver');
 
 // Mandat : refusé sans pièce sérieuse, accordé avec.
@@ -62,7 +62,7 @@ assert.equal(pieceRecoupement(a, vide, 'doc:journal', 'c:cam'), 'x:heure');
 assert.equal(pieceRecoupement(a, { pieces: [{ f: 'x:heure' }] }, 'c:cam', 'doc:journal'), null);
 assert.equal(recoupementDe(a, 'c:cam', 'occ:2'), null);
 assert.equal(pieceRecoupement(a, vide, 'r:tel', 'mob:0'), 'x:wifi');
-// Réaudition : Olivier face au SMS de Nathalie.
+// Réaudition : Grégoire face au SMS d’Élodie.
 assert.equal(pieceReaudition(a, { pieces: [{ f: 'mob:0' }] }, 1, 'mob:0'), 'Ra:1');
 
 // Confrontation : deux décisives au moins, sur l'assassin.
@@ -96,7 +96,7 @@ assert.equal(st.meurtreDes, 2); assert.equal(st.meurtre2Des, 4); assert.equal(st
 let m = affaire(st, 4);
 assert.equal(m.cas, 'rampe');
 for (const u of 'ABC') st.zones[u].budget = 80;
-// Jour 1 : A fouille le bureau et vérifie l'alibi de Jérôme ; A recoupe le journal et rien (rien) ; B soumet une hypothèse.
+// Jour 1 : A fouille le bureau et vérifie l'alibi de Thibault ; A recoupe le journal et rien (rien) ; B soumet une hypothèse.
 let r = resolveTurn(st, { players, orders: {
   A: { ...base, demarches: ['temoin', 'alibi:4'], recoup: ['doc:journal', 'doc:pvc'] },
   B: { ...base, demarches: ['cam'], hypo: { i: 0, s: 2 } },
@@ -107,8 +107,8 @@ assert.ok(st.zones.A.enquete.pieces.some((p) => p.f === 'c:agenda'));
 assert.ok(st.zones.A.enquete.pieces.some((p) => p.f === 'occ:4'));
 assert.ok(st.zones.A.rapport.some((x) => /recoupement .* rien de neuf/.test(x)), 'recoupement stérile');
 assert.ok(st.zones.B.rapport.some((x) => /juge d’instruction a lu ton hypothèse/.test(x)));
-assert.equal(st.zones.C.enquete.exclu, true, 'Nathalie : mauvaise personne');
-// Jour 2 : A perquisitionne chez Olivier (mandat grâce aux badges) et réentend Jérôme face aux badges ; B recoupe la caméra et le journal.
+assert.equal(st.zones.C.enquete.exclu, true, 'Élodie : mauvaise personne');
+// Jour 2 : A perquisitionne chez Grégoire (mandat grâce aux badges) et réentend Thibault face aux badges ; B recoupe la caméra et le journal.
 r = resolveTurn(st, { players, orders: {
   A: { ...base, demarches: ['moyens:1'], reaud: { i: 4, f: 'occ:4' } },
   B: { ...base, recoup: ['c:cam', 'doc:journal'] },
@@ -118,7 +118,7 @@ st = r.state;
 assert.ok(st.zones.A.enquete.pieces.some((p) => p.f === 'moy:1'));
 assert.ok(st.zones.A.enquete.pieces.some((p) => p.f === 'Rb:4'));
 assert.ok(st.zones.B.enquete.pieces.some((p) => p.f === 'x:heure' && p.src === 'recoup'));
-// Jour 3 : A confronte Olivier avec la perquisition, les aveux de Jérôme, et nomme le vrai mobile.
+// Jour 3 : A confronte Grégoire avec la perquisition, les aveux de Thibault, et nomme le vrai mobile.
 const avant = st.zones.A.stats.limier;
 r = resolveTurn(st, { players, orders: { A: { ...base, accusation: 1, confront: ['moy:1', 'Rb:4', 'occ:4'], mobile: 2 }, B: base, C: base } });
 st = r.state;

@@ -635,8 +635,15 @@ async function onClick(e) {
       case 'tab-fermer': S.tabSheet = null; rerender(); break;
       case 'tab-route': S.tabRoute = { n: S.state.enquete.n, a: el.dataset.a, b: el.dataset.b, mode: el.dataset.m }; rerender(); break;
       case 'tab-route-effacer': S.tabRoute = null; rerender(); break;
-      case 'scene-pt': S.scenePt = el.dataset.k; S.scenePtsVus = [...new Set([...(S.scenePtsVus || []), el.dataset.k])]; rerender(); break;
-      case 'scene-fermer': S.sceneOuverte = null; rerender(); break;
+      case 'scene-pt': {
+        const d0 = document.querySelector('.sf-zoom-defil'), x0 = d0 ? d0.scrollLeft : null;
+        S.scenePt = el.dataset.k; S.scenePtsVus = [...new Set([...(S.scenePtsVus || []), el.dataset.k])]; rerender();
+        if (x0 !== null) requestAnimationFrame(() => { const d1 = document.querySelector('.sf-zoom-defil'); if (d1) d1.scrollLeft = x0; });
+        break;
+      }
+      case 'scene-zoom': S.sceneZoom = true; rerender(); requestAnimationFrame(() => { const d1 = document.querySelector('.sf-zoom-defil'); if (d1) d1.scrollLeft = (d1.scrollWidth - d1.clientWidth) / 2; }); break;
+      case 'scene-dezoom': S.sceneZoom = false; rerender(); break;
+      case 'scene-fermer': S.sceneOuverte = null; S.sceneZoom = false; rerender(); break;
       case 'frise-ev': basculerFrise(el.dataset.id); rerender(); break;
       case 'reaud-piece': S.draft.reaud = { i: Number(el.dataset.i), f: el.dataset.f }; S.ordersDirty = true; rerender(); break;
       case 'reaud-annuler': S.draft.reaud = null; S.ordersDirty = true; rerender(); break;

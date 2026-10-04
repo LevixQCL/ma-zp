@@ -19,7 +19,7 @@ import { journalHtml, journalAuto } from './journal.js';
 import { tutoActif } from './tutoriel.js';
 import { planMons } from './planmons.js';
 import { photoIndice, aPhoto } from './indices-photo.js';
-import { sceneFouilleHtml } from './scene-fouille.js';
+import { sceneFouilleHtml, sceneZoomHtml } from './scene-fouille.js';
 import { friseSvg, friseVolet } from './frise.js';
 import { opposables, pieceReaudition, REAUD } from '../engine/enquete.js';
 import { lienItineraire, lieuxMons } from '../engine/meurtre-mons.js';
@@ -748,7 +748,7 @@ export function renderTableau() {
     ${S.journalOuvert === aff.n ? '' : tutoHtml()}
     ${journalHtml(aff)}
     ${sceneFouilleHtml(aff)}
-  </main>${tabbar('enquete')}`;
+  </main>${tabbar('enquete')}${sceneZoomHtml(aff)}`;
 }
 
 // ───── Contrôleur : déplacement, zoom, glisser, toucher ─────

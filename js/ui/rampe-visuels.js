@@ -3,7 +3,7 @@
 import { MONO, MAIN, TAPE, defsPhoto, finPhoto, svg, plot, echelle } from './photo-base.js';
 
 // ───── Briques ─────
-/** La Rampe Sainte-Waudru dans le brouillard, vue de la caméra du cabinet d'en face. */
+/** La Rampe Sainte-Waudru dans le brouillard, vue de la caméra du cabinet voisin, trois maisons plus bas. */
 function rampeCam(id, inner = '') {
   return `<rect width="320" height="180" fill="#3A3C3E"/>
     <path d="M0 0H320V40L0 90Z" fill="#55585A"/>
@@ -68,9 +68,9 @@ export const PHOTOS_RAMPE = {
 
   'c:tel1': (id) => feuille(id, 300, 230, '#3E4A54', -2, `
     ${ligne(40, 34, 'PROXIMUS · RELEVÉ DÉTAILLÉ · RÉQUISITION', { taille: 7.5, gras: true })}
-    ${ligne(40, 46, 'Ligne 0475 ** ** 18 · titulaire DUSART P.-H.', { taille: 7 })}
+    ${ligne(40, 46, 'Ligne 0475 ** ** 18 · titulaire HENNEBERT J.-B.', { taille: 7 })}
     <path d="M40 52H262" stroke="#999" stroke-dasharray="2 2"/>
-    ${[['21:47:02', 'APPEL SORT.', 'LHEUREUX B.', '41 s'], ['22:33:15', 'APPEL ENTR.', 'LHEUREUX B.', 'non déc.'], ['22:41:38', 'SMS SORT.', 'DUSART N.', '1'], ['22:42:20', 'APPEL ENTR.', 'DUSART N.', 'rejeté'], ['22:44:51', 'DÉTACHEMENT', '—', 'éteint']].map(([h, t, q, d], k) => ligne(40, 72 + k * 18, `${h}  ${t.padEnd(12, ' ')} ${q.padEnd(12, ' ')} ${d}`, { taille: 7.4 })).join('')}
+    ${[['21:47:02', 'APPEL SORT.', 'STIÉVENART R.', '41 s'], ['22:33:15', 'APPEL ENTR.', 'STIÉVENART R.', 'non déc.'], ['22:41:38', 'SMS SORT.', 'HENNEBERT É.', '1'], ['22:42:20', 'APPEL ENTR.', 'HENNEBERT É.', 'rejeté'], ['22:44:51', 'DÉTACHEMENT', '—', 'éteint']].map(([h, t, q, d], k) => ligne(40, 72 + k * 18, `${h}  ${t.padEnd(12, ' ')} ${q.padEnd(12, ' ')} ${d}`, { taille: 7.4 })).join('')}
     <path d="M40 166H262" stroke="#999" stroke-dasharray="2 2"/>
     ${ligne(40, 182, 'Plus aucun événement après 22:44:51.', { taille: 7, coul: '#555' })}
     ${ligne(196, 206, 'p. 1/1', { taille: 7, coul: '#555' })}`, { papier: '#F2F6F0' }),
@@ -78,7 +78,7 @@ export const PHOTOS_RAMPE = {
   'c:tel2': (id) => svg(id, 300, 200, `${defsPhoto(id, 300, 200)}<rect width="300" height="200" fill="#222"/>
     <rect x="20" y="16" width="260" height="168" rx="6" fill="#F6F7F9"/><rect x="20" y="16" width="260" height="22" rx="6" fill="#2F6FD3"/>
     <text x="30" y="31" font-family="Instrument Sans, sans-serif" font-size="9" font-weight="700" fill="#FFF">Box internet · appareils connus · journal</text>
-    ${[['GSM-PH-DUSART', '14:02', '22:09', '#C2302B'], ['Tablette-salon', '08:15', '—', '#2E9E62'], ['Imprimante-étude', '09:00', '—', '#2E9E62']].map(([n, a, b, c], k) => `
+    ${[['GSM-JB-HENNEBERT', '14:02', '22:09', '#C2302B'], ['Tablette-salon', '08:15', '—', '#2E9E62'], ['Imprimante-étude', '09:00', '—', '#2E9E62']].map(([n, a, b, c], k) => `
       <circle cx="38" cy="${62 + k * 34}" r="5" fill="${c}"/>${ligne(50, 66 + k * 34, n, { taille: 9, gras: true })}${ligne(50, 79 + k * 34, `connecté depuis ${a} · ${b === '—' ? 'toujours connecté' : `déconnecté à ${b}`}`, { taille: 7.4, coul: '#555' })}`).join('')}
     ${ligne(32, 172, 'Jeudi · heure de la box (synchronisée sur Internet)', { taille: 7, coul: '#777' })}
     ${finPhoto(id, 300, 200, 0.08)}`),
@@ -98,7 +98,7 @@ export const PHOTOS_RAMPE = {
       ${ligne(28, 116, '1 SOUPE      4,50', { taille: 7.6 })}${ligne(28, 130, '1 VOL-AU-VENT 14,00', { taille: 7.6 })}
       <path d="M28 140H128" stroke="#999" stroke-dasharray="2 2"/>${ligne(28, 158, 'TOTAL   18,50 €', { taille: 9, gras: true })}</g>
     <g transform="translate(222 108)"><circle r="62" fill="#E9E4DA"/><circle r="40" fill="none" stroke="#7A3A30" stroke-width="2"/><circle r="34" fill="none" stroke="#7A3A30" stroke-width=".8" stroke-dasharray="2 2"/>
-      <g><text x="0" y="5" text-anchor="middle" font-family="'Special Elite', monospace" font-size="15" fill="#7A3A30" letter-spacing="1">…SART</text>
+      <g><text x="0" y="5" text-anchor="middle" font-family="'Special Elite', monospace" font-size="15" fill="#7A3A30" letter-spacing="1">…BERT</text>
       <path d="M0 -24l2.4 5 5.4.6-4 3.6 1.2 5.3L0 -12l-5 2.5 1.2-5.3-4-3.6 5.4-.6z" fill="#7A3A30"/></g>
       <text x="0" y="56" text-anchor="middle" ${MONO} font-size="6.5" fill="#333">moulage · plaie tempe G · ×1</text></g>
     ${finPhoto(id, 300, 220, 0.12)}`),
@@ -116,26 +116,26 @@ export const PHOTOS_RAMPE = {
     <g stroke="#D7CCAE">${Array.from({ length: 10 }, (_, k) => `<path d="M160 ${50 + k * 15}H268"/><path d="M32 ${50 + k * 15}H142"/>`).join('')}</g>
     <text x="34" y="38" ${TAPE} font-size="10" fill="#7A2E26">MARDI</text><text x="160" y="38" ${TAPE} font-size="10" fill="#7A2E26">JEUDI</text>
     <text x="40" y="76" ${MAIN} font-size="15" fill="#23335A" textLength="92" lengthAdjust="spacingAndGlyphs">Montre de Père ??</text><text x="104" y="94" ${MAIN} font-size="17" fill="#23335A">— M.</text>
-    <text x="40" y="140" ${MAIN} font-size="15" fill="#23335A" opacity=".85" textLength="96" lengthAdjust="spacingAndGlyphs">Jérôme — non, non</text><path d="M38 136h100" stroke="#23335A" stroke-width="1.2"/>
-    <text x="166" y="62" ${MAIN} font-size="15" fill="#23335A">9 h Margaux</text><text x="166" y="88" ${MAIN} font-size="15" fill="#23335A">15 h banque</text>
+    <text x="40" y="140" ${MAIN} font-size="15" fill="#23335A" opacity=".85" textLength="96" lengthAdjust="spacingAndGlyphs">Thibault — non, non</text><path d="M38 136h100" stroke="#23335A" stroke-width="1.2"/>
+    <text x="166" y="62" ${MAIN} font-size="15" fill="#23335A">9 h Samira</text><text x="166" y="88" ${MAIN} font-size="15" fill="#23335A">15 h banque</text>
     <text x="166" y="136" ${MAIN} font-size="21" fill="#1B2747">21 h 45</text><text x="166" y="160" ${MAIN} font-size="19" fill="#1B2747" textLength="96" lengthAdjust="spacingAndGlyphs">le n° 7. Enfin.</text>
     <path d="M168 164q30 3 92 -1" stroke="#1B2747" stroke-width="1.2" fill="none"/></g>
-    <g transform="rotate(5 238 196)"><rect x="196" y="182" width="88" height="30" fill="#F7E36A"/><text x="202" y="200" ${MAIN} font-size="12" fill="#3A2E10" textLength="76" lengthAdjust="spacingAndGlyphs">lun. 10 h Me Petit (L.)</text></g>
+    <g transform="rotate(5 238 196)"><rect x="196" y="182" width="88" height="30" fill="#F7E36A"/><text x="202" y="200" ${MAIN} font-size="12" fill="#3A2E10" textLength="76" lengthAdjust="spacingAndGlyphs">lun. 10 h Me Dutrieux (L.)</text></g>
     ${finPhoto(id, 300, 220, 0.14)}`),
 
   'c:lettres': (id) => svg(id, 300, 230, `${defsPhoto(id, 300, 230)}<rect width="300" height="230" fill="#4A3B2E"/>
     <g transform="rotate(-6 80 120)"><rect x="18" y="26" width="120" height="170" fill="#C9A86A"/><rect x="30" y="20" width="60" height="12" rx="2" fill="#C9A86A"/><text x="34" y="54" ${MAIN} font-size="16" fill="#3A2A12">L. M. — 1999</text><text x="40" y="120" ${MONO} font-size="8" fill="#5A4422" opacity=".7">(vide)</text></g>
-    ${[['Le soir du Doudou 1999,', 'Lucie n’est pas tombée', 'toute seule dans le canal.'], ['Demandez-vous pourquoi', 'Jacques Brasseur m’a prêté', 'de l’argent en juillet 99.'], ['Le n° 7 n’a jamais été', 'inquiété. Moi, je dors', 'mal depuis 27 ans.']].map((l, k) => `<g transform="translate(${140 + k * 18} ${24 + k * 58}) rotate(${[3, -2, 4][k]})"><rect width="130" height="74" fill="#FCFBF6" stroke="#DDD"/>${l.map((t, j) => `<text x="8" y="${18 + j * 14}" ${TAPE} font-size="8" fill="#222">${t}</text>`).join('')}</g>`).join('')}
+    ${[['Le soir du Doudou 1999,', 'Lise n’est pas tombée', 'toute seule dans le canal.'], ['Demandez-vous pourquoi', 'Étienne Wautelet m’a prêté', 'de l’argent en juillet 99.'], ['Le n° 7 n’a jamais été', 'inquiété. Moi, je dors', 'mal depuis 27 ans.']].map((l, k) => `<g transform="translate(${140 + k * 18} ${24 + k * 58}) rotate(${[3, -2, 4][k]})"><rect width="130" height="74" fill="#FCFBF6" stroke="#DDD"/>${l.map((t, j) => `<text x="8" y="${18 + j * 14}" ${TAPE} font-size="8" fill="#222">${t}</text>`).join('')}</g>`).join('')}
     ${finPhoto(id, 300, 230, 0.12)}`),
 
   'c:acte': (id) => feuille(id, 240, 300, '#3A2E26', 1.5, `
     <text x="120" y="44" text-anchor="middle" ${TAPE} font-size="9" fill="#222">ACTE DE PRÊT</text>
     <text x="120" y="58" text-anchor="middle" ${MONO} font-size="6.5" fill="#444">L’an mil neuf cent nonante-neuf, le deux juillet,</text>
-    <text x="120" y="68" text-anchor="middle" ${MONO} font-size="6.5" fill="#444">par-devant Maître Paul-Henri DUSART, notaire à Mons,</text>
-    ${['ONT COMPARU : M. Jacques BRASSEUR, industriel,', 'prêteur, et M. Bruno LHEUREUX, cafetier,', 'emprunteur. Le prêteur remet ce jour', 'la somme de SIX CENT MILLE FRANCS', '(600.000 BEF), sans intérêts, remboursable', 'au gré de l’emprunteur.'].map((t, k) => `<text x="34" y="${92 + k * 12}" ${MONO} font-size="6.6" fill="#222">${t}</text>`).join('')}
-    <text x="40" y="196" ${MAIN} font-size="16" fill="#22305A">J. Brasseur</text><text x="132" y="196" ${MAIN} font-size="16" fill="#22305A">B. Lheureux</text>
-    <text x="96" y="238" ${MAIN} font-size="19" fill="#22305A">P.-H. Dusart</text>
-    <circle cx="180" cy="250" r="20" fill="none" stroke="#7A3A30" stroke-width="1.4" opacity=".75"/><text x="180" y="253" text-anchor="middle" ${TAPE} font-size="6" fill="#7A3A30" opacity=".75">DUSART</text>`, { papier: '#F2EAD3' }),
+    <text x="120" y="68" text-anchor="middle" ${MONO} font-size="6.5" fill="#444">par-devant Maître Jean-Baptiste HENNEBERT, notaire à Mons,</text>
+    ${['ONT COMPARU : M. Étienne WAUTELET, industriel,', 'prêteur, et M. Rudy STIÉVENART, cafetier,', 'emprunteur. Le prêteur remet ce jour', 'la somme de SIX CENT MILLE FRANCS', '(600.000 BEF), sans intérêts, remboursable', 'au gré de l’emprunteur.'].map((t, k) => `<text x="34" y="${92 + k * 12}" ${MONO} font-size="6.6" fill="#222">${t}</text>`).join('')}
+    <text x="40" y="196" ${MAIN} font-size="16" fill="#22305A">J. Wautelet</text><text x="132" y="196" ${MAIN} font-size="16" fill="#22305A">R. Stiévenart</text>
+    <text x="96" y="238" ${MAIN} font-size="19" fill="#22305A">J.-B. Hennebert</text>
+    <circle cx="180" cy="250" r="20" fill="none" stroke="#7A3A30" stroke-width="1.4" opacity=".75"/><text x="180" y="253" text-anchor="middle" ${TAPE} font-size="6" fill="#7A3A30" opacity=".75">HENNEBERT</text>`, { papier: '#F2EAD3' }),
 
   'occ:0': (id) => feuille(id, 300, 200, '#2E3A44', -1.5, `
     ${ligne(36, 34, 'ANPR · BOULEVARD DE CEINTURE · JEUDI', { taille: 7.6, gras: true })}
@@ -148,17 +148,17 @@ export const PHOTOS_RAMPE = {
     <text x="110" y="70" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="7" fill="#888">Jeu. 22:42</text>
     <rect x="54" y="80" width="100" height="44" rx="10" fill="#E2E5EA"/><text x="62" y="98" font-family="Instrument Sans, sans-serif" font-size="9" fill="#111">Reviens. Il faut</text><text x="62" y="112" font-family="Instrument Sans, sans-serif" font-size="9" fill="#111">qu’on parle. Papa.</text>
     <text x="110" y="148" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="7" fill="#888">Dim. 19:12</text>
-    <rect x="54" y="156" width="104" height="30" rx="10" fill="#E2E5EA" opacity=".7"/><text x="62" y="174" font-family="Instrument Sans, sans-serif" font-size="8.5" fill="#333">Merci pour le dîner. P.-H.</text>
+    <rect x="54" y="156" width="104" height="30" rx="10" fill="#E2E5EA" opacity=".7"/><text x="62" y="174" font-family="Instrument Sans, sans-serif" font-size="8.5" fill="#333">Merci pour le dîner. J.-B.</text>
     <rect x="50" y="250" width="120" height="16" rx="3" fill="#B3261E"/><text x="110" y="261" text-anchor="middle" ${MONO} font-size="7" fill="#FFF">RÉCUPÉRÉ · effacé 22:50</text>`),
 
   'mob:2': (id) => svg(id, 320, 200, `${defsPhoto(id, 320, 200)}<rect width="320" height="200" fill="#1B1D22"/>
     <text x="16" y="24" ${MONO} font-size="8.5" fill="#9BE7B5">LABO · MESSAGERIE RÉCUPÉRÉE · 21:47 · 41 s</text>
     <g transform="translate(16 70)">${Array.from({ length: 96 }, (_, k) => { const t = k / 96; const son = k > 62 && k < 70; const a = son ? 26 : 6 + 18 * Math.abs(Math.sin(k * 1.7) * Math.cos(k * 0.31)) * (t > 0.86 ? 0.4 : 1); return `<rect x="${k * 3}" y="${-a}" width="2" height="${a * 2}" fill="${son ? '#F2C230' : '#59C98A'}"/>`; }).join('')}</g>
     <text x="${16 + 66 * 3}" y="108" text-anchor="middle" ${MONO} font-size="7" fill="#F2C230">♪ sonnette ×2</text>
-    <text x="16" y="132" ${MONO} font-size="7.6" fill="#DDD">« Bruno, c’est Paul-Henri Dusart. J’ai la liste du Cercle.</text>
+    <text x="16" y="132" ${MONO} font-size="7.6" fill="#DDD">« Rudy, c’est Jean-Baptiste Hennebert. J’ai la liste du Cercle.</text>
     <text x="16" y="146" ${MONO} font-size="7.6" fill="#DDD">Tu avais raison pour le n° 7… [sonnette] Ah, le voilà.</text>
     <text x="16" y="160" ${MONO} font-size="7.6" fill="#DDD">Je te rappelle. »</text>
-    <text x="16" y="186" ${MONO} font-size="7" fill="#888">écouté 22:30 · effacé 22:31 · GSM de Bruno Lheureux</text>
+    <text x="16" y="186" ${MONO} font-size="7" fill="#888">écouté 22:30 · effacé 22:31 · GSM de Rudy Stiévenart</text>
     ${finPhoto(id, 320, 200, 0.06)}`),
 
   'moy:2': (id) => svg(id, 260, 300, `${defsPhoto(id, 260, 300)}<rect width="260" height="300" fill="#3A2C22"/>
@@ -182,7 +182,7 @@ export const PHOTOS_RAMPE = {
     <g transform="rotate(-8 140 110)"><path d="M70 70L210 62L222 92Q200 120 214 150L130 160Q100 140 80 156L64 120Q78 98 70 70Z" fill="#EDE4CF"/>
       <path d="M70 70L210 62L222 92Q200 120 214 150L130 160Q100 140 80 156L64 120Q78 98 70 70Z" fill="none" stroke="#2A1A10" stroke-width="5" opacity=".8"/>
       <text x="86" y="90" ${TAPE} font-size="7" fill="#7A2E26">CERCLE SAINT-GEORGES · ACTEURS DU COMBAT</text>
-      <text x="86" y="112" ${MONO} font-size="9" fill="#222">…euilles · n° 7 : O. Bras…</text>
+      <text x="86" y="112" ${MONO} font-size="9" fill="#222">…euilles · n° 7 : G. Wau…</text>
       <text x="86" y="128" ${MONO} font-size="9" fill="#222" opacity=".45">…euilles · n° 8 : …</text></g>
     <g transform="translate(226 170) rotate(14)"><rect x="-26" y="-18" width="52" height="36" fill="#B89C74"/><path d="M-26 -18h52v36h-52z" fill="none" stroke="#1A1008" stroke-width="4"/>${Array.from({ length: 8 }, (_, k) => `<ellipse cx="${-16 + k * 5}" cy="${-4 + (k % 2) * 6}" rx="4" ry="2.6" fill="#3E5A2A"/>`).join('')}</g>
     ${plot(40, 206, 1)}${finPhoto(id, 300, 220, 0.16)}`),
@@ -190,13 +190,13 @@ export const PHOTOS_RAMPE = {
   'occ:4': (id) => feuille(id, 300, 220, '#33404A', 1, `
     ${ligne(40, 32, 'IMMEUBLE DOLEZ · CONTRÔLE D’ACCÈS · JEUDI', { taille: 7.4, gras: true })}
     <path d="M40 38H262" stroke="#999" stroke-dasharray="2 2"/>
-    ${[['18:05', 'SORTIE', 'BRASSEUR O.'], ['18:12', 'ENTRÉE', 'BRASSEUR O.'], ['18:40', 'ENTRÉE', 'CAMBIER J.'], ['20:55', 'SORTIE', 'BRASSEUR O.'], ['22:25', 'SORTIE', 'CAMBIER J.']].map(([h, t, q], k) => ligne(40, 58 + k * 18, `${h}   ${t.padEnd(8, ' ')} ${q}`, { taille: 8 })).join('')}
+    ${[['18:05', 'SORTIE', 'WAUTELET G.'], ['18:12', 'ENTRÉE', 'WAUTELET G.'], ['18:40', 'ENTRÉE', 'LEMPEREUR T.'], ['20:55', 'SORTIE', 'WAUTELET G.'], ['22:25', 'SORTIE', 'LEMPEREUR T.']].map(([h, t, q], k) => ligne(40, 58 + k * 18, `${h}   ${t.padEnd(8, ' ')} ${q}`, { taille: 8 })).join('')}
     <path d="M40 152H262" stroke="#999" stroke-dasharray="2 2"/>
-    ${ligne(40, 170, 'Caméra couloir 2e étage : 1 personne', { taille: 7.2 })}${ligne(40, 184, 'de 21:00 à 22:25 (CAMBIER J.).', { taille: 7.2 })}`),
+    ${ligne(40, 170, 'Caméra couloir 2e étage : 1 personne', { taille: 7.2 })}${ligne(40, 184, 'de 21:00 à 22:25 (LEMPEREUR T.).', { taille: 7.2 })}`),
 
   'occ:3': (id) => svg(id, 300, 190, `${defsPhoto(id, 300, 190)}<rect width="300" height="190" fill="#3C3430"/>
     <g transform="rotate(-5 110 90)"><rect x="30" y="34" width="150" height="96" rx="10" fill="#E8EEF4"/><rect x="30" y="34" width="150" height="26" rx="10" fill="#E2001A"/><rect x="30" y="50" width="150" height="10" fill="#E2001A"/>
-      <text x="44" y="53" font-family="Instrument Sans, sans-serif" font-size="12" font-weight="800" fill="#FFF">MOBIB</text><text x="44" y="90" ${MONO} font-size="8" fill="#333">LEFRANCQ M.</text><circle cx="156" cy="104" r="12" fill="#C9D3DC"/></g>
+      <text x="44" y="53" font-family="Instrument Sans, sans-serif" font-size="12" font-weight="800" fill="#FFF">MOBIB</text><text x="44" y="90" ${MONO} font-size="8" fill="#333">DEBOUCK S.</text><circle cx="156" cy="104" r="12" fill="#C9D3DC"/></g>
     <g transform="rotate(3 230 100)"><rect x="176" y="40" width="108" height="112" fill="#FBF9F2"/>
       ${ligne(184, 58, 'VALIDATIONS', { taille: 7.6, gras: true })}${ligne(184, 80, 'JEU 22:14', { taille: 8 })}${ligne(184, 92, 'Cuesmes → Mons', { taille: 7 })}${ligne(184, 114, 'JEU 22:52', { taille: 8 })}${ligne(184, 126, 'Mons → Cuesmes', { taille: 7 })}</g>
     ${finPhoto(id, 300, 190, 0.12)}`),
@@ -204,10 +204,10 @@ export const PHOTOS_RAMPE = {
   'moy:3': (id) => svg(id, 300, 220, `${defsPhoto(id, 300, 220)}<rect width="300" height="220" fill="#5A4A3E"/>
     <g transform="rotate(-4 90 110)"><rect x="24" y="30" width="130" height="160" fill="#F3E9C8"/>
       <text x="89" y="52" text-anchor="middle" ${TAPE} font-size="8" fill="#222">PRÊT SUR GAGES</text><text x="89" y="80" text-anchor="middle" ${MONO} font-size="20" font-weight="700" fill="#B3261E">4471</text>
-      ${ligne(36, 104, 'Montre de gousset', { taille: 7.4 })}${ligne(36, 116, 'or 18 ct · gravée « A.D. »', { taille: 7.4 })}${ligne(36, 136, 'Prêté : 700 €', { taille: 7.4 })}${ligne(36, 150, 'Dégagé : 735 € · jeu. 16:10', { taille: 7.4, gras: true })}</g>
+      ${ligne(36, 104, 'Montre de gousset', { taille: 7.4 })}${ligne(36, 116, 'or 18 ct · gravée « A.H. »', { taille: 7.4 })}${ligne(36, 136, 'Prêté : 700 €', { taille: 7.4 })}${ligne(36, 150, 'Dégagé : 735 € · jeu. 16:10', { taille: 7.4, gras: true })}</g>
     <g transform="rotate(5 220 120)"><rect x="160" y="40" width="124" height="150" fill="#FCFBF6"/>
-      <text x="168" y="62" ${MAIN} font-size="13" fill="#22305A">Monsieur Dusart,</text><text x="168" y="82" ${MAIN} font-size="12" fill="#22305A" textLength="108" lengthAdjust="spacingAndGlyphs">je vous ai rapporté</text><text x="168" y="98" ${MAIN} font-size="12" fill="#22305A" textLength="108" lengthAdjust="spacingAndGlyphs">votre montre jeudi soir.</text>
-      <text x="168" y="118" ${MAIN} font-size="12" fill="#22305A" textLength="108" lengthAdjust="spacingAndGlyphs">Vous étiez déjà en bas</text><text x="168" y="134" ${MAIN} font-size="12" fill="#22305A" textLength="96" lengthAdjust="spacingAndGlyphs">de l’escalier. Pardon.</text><text x="230" y="170" ${MAIN} font-size="14" fill="#22305A">M.</text></g>
+      <text x="168" y="62" ${MAIN} font-size="13" fill="#22305A">Monsieur Hennebert,</text><text x="168" y="82" ${MAIN} font-size="12" fill="#22305A" textLength="108" lengthAdjust="spacingAndGlyphs">je vous ai rapporté</text><text x="168" y="98" ${MAIN} font-size="12" fill="#22305A" textLength="108" lengthAdjust="spacingAndGlyphs">votre montre jeudi soir.</text>
+      <text x="168" y="118" ${MAIN} font-size="12" fill="#22305A" textLength="108" lengthAdjust="spacingAndGlyphs">Vous étiez déjà en bas</text><text x="168" y="134" ${MAIN} font-size="12" fill="#22305A" textLength="96" lengthAdjust="spacingAndGlyphs">de l’escalier. Pardon.</text><text x="230" y="170" ${MAIN} font-size="14" fill="#22305A">S.</text></g>
     ${finPhoto(id, 300, 220, 0.12)}`),
 
   'x:heure': (id) => svg(id, 300, 190, `${defsPhoto(id, 300, 190)}<rect width="300" height="190" fill="#1E2024"/>
@@ -221,15 +221,15 @@ export const PHOTOS_RAMPE = {
 
   'x:wifi': (id) => ecranGsm(id, 'Extraction · GSM victime', `
     <text x="56" y="70" ${MONO} font-size="7" fill="#555">RÉSEAUX WIFI · JEUDI</text>
-    ${[['Maison-Dusart', '14:02 → 22:09'], ['Echevins-Clients', '22:39 → 22:44'], ['(éteint)', '22:44']].map(([n, h], k) => `<rect x="52" y="${80 + k * 30}" width="116" height="24" rx="4" fill="${k === 1 ? '#FFF3C4' : '#FFF'}" stroke="#DDD"/><text x="58" y="${91 + k * 30}" ${MONO} font-size="7.5" font-weight="600" fill="#222">${n}</text><text x="58" y="${100 + k * 30}" ${MONO} font-size="6.5" fill="#666">${h}</text>`).join('')}
+    ${[['Maison-Hennebert', '14:02 → 22:09'], ['Echevins-Clients', '22:39 → 22:44'], ['(éteint)', '22:44']].map(([n, h], k) => `<rect x="52" y="${80 + k * 30}" width="116" height="24" rx="4" fill="${k === 1 ? '#FFF3C4' : '#FFF'}" stroke="#DDD"/><text x="58" y="${91 + k * 30}" ${MONO} font-size="7.5" font-weight="600" fill="#222">${n}</text><text x="58" y="${100 + k * 30}" ${MONO} font-size="6.5" fill="#666">${h}</text>`).join('')}
     <text x="56" y="190" ${MONO} font-size="7" fill="#555">SMS ENVOYÉS</text>
-    <rect x="52" y="198" width="116" height="34" rx="4" fill="#FFF" stroke="#DDD"/><text x="58" y="211" ${MONO} font-size="6.6" fill="#222">22:41 → Nathalie</text><text x="58" y="223" ${MONO} font-size="6.6" fill="#B3261E">wifi : Echevins-Clients</text>
-    <text x="56" y="252" ${MONO} font-size="6.4" fill="#666">47 autres SMS signés « P.-H. »</text>`),
+    <rect x="52" y="198" width="116" height="34" rx="4" fill="#FFF" stroke="#DDD"/><text x="58" y="211" ${MONO} font-size="6.6" fill="#222">22:41 → Élodie</text><text x="58" y="223" ${MONO} font-size="6.6" fill="#B3261E">wifi : Echevins-Clients</text>
+    <text x="56" y="252" ${MONO} font-size="6.4" fill="#666">47 autres SMS signés « J.-B. »</text>`),
 
   'x:liste': (id) => feuille(id, 240, 290, '#3A2E26', -1, `
     <text x="120" y="42" text-anchor="middle" ${TAPE} font-size="8.5" fill="#7A2E26">CERCLE SAINT-GEORGES</text>
     <text x="120" y="56" text-anchor="middle" ${TAPE} font-size="7.4" fill="#222">Combat 1999 · hommes de feuilles</text>
-    ${['BAUDOUR P.', 'COLLARD M.', 'DEMOUSTIER F.', 'HANQUET L.', 'LECLERCQ T.', 'MAES J.-F.', 'BRASSEUR O.', 'VERHAEGEN D.', 'DUBOIS A.', 'GILSON R.', 'CAMBIER J.', 'NOËL S.'].map((n, k) => `<text x="44" y="${76 + k * 15}" ${TAPE} font-size="7.6" fill="#222">n° ${String(k + 1).padStart(2, ' ')}  ${n}</text>`).join('')}`, { papier: '#F4EEDC' }),
+    ${['DEPRETER P.', 'HOUZIAUX M.', 'FOSTIER F.', 'QUINTART L.', 'BURNIAUX T.', 'ROSSIGNON J.-F.', 'WAUTELET G.', 'VERVAET D.', 'HOYAS A.', 'LANDRAIN R.', 'LEMPEREUR T.', 'NIZET S.'].map((n, k) => `<text x="44" y="${76 + k * 15}" ${TAPE} font-size="7.6" fill="#222">n° ${String(k + 1).padStart(2, ' ')}  ${n}</text>`).join('')}`, { papier: '#F4EEDC' }),
 
   'r:tel': (id) => svg(id, 300, 220, `${defsPhoto(id, 300, 220)}<rect width="300" height="220" fill="#D6D3CB"/>
     <rect x="66" y="14" width="168" height="194" rx="6" fill="rgba(235,240,245,.55)" stroke="#9AA3AA"/><rect x="66" y="14" width="168" height="22" fill="#2F6FD3" opacity=".85"/>
@@ -247,12 +247,12 @@ export const PHOTOS_RAMPE = {
 export const POINTS_SCENE_RAMPE = [
   { k: 'corps', n: 1, x: 124, y: 334, px: 170, py: 505, titre: 'Au pied de l’escalier', texte: 'L’endroit où la victime a été retrouvée, la tête contre la première marche. Peu de sang sur la marche. Le tapis du couloir est plissé en accordéon, du côté du bureau.' },
   { k: 'lunettes', n: 2, x: 186, y: 252, px: 222, py: 360, titre: 'La troisième marche', texte: 'Les lunettes de lecture de la victime, intactes, posées bien à plat, verres vers le haut.' },
-  { k: 'socle', n: 3, x: 318, y: 232, px: 508, py: 356, titre: 'Le socle vide', texte: 'Sur le bureau, un petit socle en bois verni, vide : une trace ronde, propre, dans la poussière. Une plaque de cuivre : « Étude Dusart · 1979 ».' },
+  { k: 'socle', n: 3, x: 318, y: 232, px: 508, py: 356, titre: 'Le socle vide', texte: 'Sur le bureau, un petit socle en bois verni, vide : une trace ronde, propre, dans la poussière. Une plaque de cuivre : « Étude Hennebert · 1979 ».' },
   { k: 'tiroir', n: 4, x: 404, y: 270, px: 528, py: 452, titre: 'Le tiroir de gauche', texte: 'Ouvert. Une chemise cartonnée vide, étiquetée à la main : « L. M. — 1999 ». Le reste du bureau est en ordre.' },
   { k: 'sousmain', n: 5, x: 356, y: 254, px: 640, py: 372, titre: 'Le sous-main', texte: 'Le cuir est plus clair à un endroit, un petit rectangle de la taille d’un GSM. Il n’y a de GSM ni sur le bureau, ni ailleurs dans la maison.' },
   { k: 'calendrier', n: 6, x: 470, y: 96, px: 702, py: 160, titre: 'Le calendrier', texte: 'Un vieux calendrier du Doudou, année 1999, jamais décroché. Un dimanche de la fin mai est entouré au stylo.' },
-  { k: 'fenetre', n: 7, x: 372, y: 104, px: 563, py: 96, titre: 'La fenêtre de l’étude', texte: 'Elle donne sur la Rampe. En face, au-dessus de la porte d’un cabinet de kinésithérapie, une petite caméra pointe vers la maison.' },
-  { k: 'console', n: 8, x: 576, y: 236, px: 835, py: 276, titre: 'La console de l’entrée', texte: 'Une montre de gousset en or, gravée « A.D. ». À la chaîne, une étiquette en carton : « 4471 ». Pas un grain de poussière dessus, contrairement au reste du meuble.' },
+  { k: 'fenetre', n: 7, x: 372, y: 104, px: 563, py: 96, titre: 'La fenêtre de l’étude', texte: 'Elle donne sur les pavés de la Rampe et, en face, sur le haut mur de la Collégiale. Plus bas dans la rue, au-dessus de la porte d’un cabinet de kinésithérapie, on devine une petite caméra tournée vers la montée.' },
+  { k: 'console', n: 8, x: 576, y: 236, px: 835, py: 276, titre: 'La console de l’entrée', texte: 'Une montre de gousset en or, gravée « A.H. ». À la chaîne, une étiquette en carton : « 4471 ». Pas un grain de poussière dessus, contrairement au reste du meuble.' },
   { k: 'salon', n: 9, x: 620, y: 336, px: 905, py: 468, titre: 'Le salon, par l’arche', texte: 'Sur la table basse, deux verres de porto ; l’un porte une trace de rouge à lèvres. La bouteille est presque pleine. Deux fauteuils tirés l’un vers l’autre.' },
   { k: 'cuisine', n: 10, x: 506, y: 196, px: 793, py: 218, titre: 'La porte de la cuisine', texte: 'Sur l’égouttoir, un troisième verre à porto, lavé, encore perlé d’eau. L’évier est sec, sauf sous ce verre.' },
 ];

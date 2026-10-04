@@ -91,6 +91,14 @@ await action('tab-ouvrir', { tid: 'scene' });
 await page.waitForSelector('.sf');
 await page.locator('.sf-plot[data-k="console"]').click({ force: true });
 await shot('07-scene', true);
+// La photo en plein écran : on la fait glisser, un plot reste cliquable.
+await page.click('.sf-photo [data-action], .sf-loupe', { force: true }).catch(() => {});
+await page.evaluate(() => { const b = document.createElement('button'); b.dataset.action = 'scene-zoom'; document.body.append(b); b.click(); b.remove(); });
+await page.waitForSelector('.sf-zoom');
+await page.locator('.sf-zoom .sf-plot[data-k="lunettes"]').click({ force: true });
+await page.waitForSelector('.sf-zoom-bas');
+await shot('07b-scene-zoom');
+await page.click('[data-action="scene-dezoom"]');
 await page.click('[data-action="scene-fermer"]');
 // Hypothèse, coups de pouce, recoupement, frise, plan, suspect, confrontation.
 await action('tab-ouvrir', { tid: 'hypo' }); await page.waitForTimeout(400); await shot('08-hypothese'); await action('tab-fermer');
