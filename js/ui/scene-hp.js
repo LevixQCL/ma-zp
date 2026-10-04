@@ -106,7 +106,7 @@ function passant(x, y, habit, peau = '#E8C39E') {
  * en service à garer devant (3 au plus) ; `travaux` : 'bureaux' | 'garage' | null ;
  * `moment` : 'jour' | 'aube' | 'crepuscule' | 'nuit' (par défaut, l'heure de l'appareil).
  */
-export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = false, infra = {}, lots = [], moment = momentDuJour(), decor = null, skins = {}, drapeau = null, file = false, renforce = false, imprevu = {}, operation = false, date = new Date(), champion = false, plaques = [], trace = null, poste = null }) {
+export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = false, infra = {}, lots = [], moment = momentDuJour(), decor = null, skins = {}, drapeau = null, file = false, renforce = false, imprevu = {}, operation = false, date = new Date(), champion = false, plaques = [], affiches = [], trace = null, poste = null }) {
   const uid = `${moment}-${++numeroScene}`;
   const H = 210, base = 172, x0 = 22, w = 160, gf = 30, fh = 24;
   // Aile des annexes entre l'hôtel de police et le garage (une travée par annexe).
@@ -367,6 +367,19 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   s += '</g>';
   // Plaques du podium de fin de saison, à droite de l'entrée (les trois plus récentes).
   (plaques || []).slice(-3).forEach((pl, i) => { const c = ['#FFB23F', '#C8D3DD', '#C98A5A'][pl.rang - 1] || '#C8D3DD'; s += `<rect x="${x0 + w / 2 + 28 + i * 8}" y="${gy + 13}" width="6" height="8" rx="1" fill="${c}" stroke="${mix(c, '#000000', 0.35)}" stroke-width=".5"/><text x="${x0 + w / 2 + 31 + i * 8}" y="${gy + 19}" text-anchor="middle" font-size="4.5" font-weight="700" fill="#1D1A15" font-family="Barlow Condensed, Arial Narrow, sans-serif">${pl.rang}</text>`; });
+  // Avis de recherche des malfrats arrêtés (mise à prix) : panneau d'affichage devant l'entrée, trois au plus.
+  if ((affiches || []).length) {
+    const lst = affiches.slice(-3), bx = x0 + 20, by = base - 19, bw = 8 + lst.length * 11;
+    s += `<g class="hp-affiches"><rect x="${bx + 2}" y="${by + 12}" width="1.6" height="${base - by - 12}" fill="${P.mat || '#5A6678'}"/><rect x="${bx + bw - 3.6}" y="${by + 12}" width="1.6" height="${base - by - 12}" fill="${P.mat || '#5A6678'}"/>
+      <rect x="${bx}" y="${by}" width="${bw}" height="14" rx="1" fill="#7A5A3A" stroke="#4A3524" stroke-width=".7"/><rect x="${bx + 1}" y="${by + 1}" width="${bw - 2}" height="12" fill="#B98A55"/>`;
+    lst.forEach((a, k) => {
+      const px = bx + 4 + k * 11, rot = [-4, 3, -2][k % 3];
+      s += `<g transform="translate(${px},${by + 1.5}) rotate(${rot} 4.5 5.5)"><rect width="9" height="11" fill="#F4EFE3"/><rect x="1" y=".8" width="7" height="1.4" fill="#1D1A15" opacity=".75"/>
+        <circle cx="4.5" cy="5" r="2" fill="#8A7A66"/><rect x="2.4" y="6.6" width="4.2" height="2.6" rx="1" fill="#8A7A66"/>
+        <rect x="-.5" y="4.6" width="10" height="2.4" fill="none" stroke="#D8343A" stroke-width=".8" transform="rotate(-18 4.5 5.5)"/><circle cx="4.5" cy=".3" r=".7" fill="#D8343A"/></g>`;
+    });
+    s += '</g>';
+  }
   // Champion de la semaine : étoile dorée au-dessus du toit.
   if (champion) { const cx = x0 + w - 40, cy = Math.max(vy + 12, top - 28); const pts = Array.from({ length: 10 }, (_, i) => { const a = (Math.PI / 5) * i - Math.PI / 2, rr = i % 2 ? 3.6 : 8.5; return `${(cx + rr * Math.cos(a)).toFixed(1)},${(cy + rr * Math.sin(a)).toFixed(1)}`; }).join(' '); s += `<circle cx="${cx}" cy="${cy}" r="16" fill="url(#hp-ambre-${uid})"/><circle cx="${cx}" cy="${cy}" r="12" fill="url(#hp-ambre-${uid})"/><polygon points="${pts}" fill="#F2D27A" stroke="#C98F1E" stroke-width=".8"/><line x1="${cx}" y1="${cy + 8}" x2="${cx}" y2="${top - 4}" stroke="${P.mat}" stroke-width=".8"/>`; }
   // Traces d'une manœuvre réussie contre la zone (la veille), et poste avancé d'un voisin.

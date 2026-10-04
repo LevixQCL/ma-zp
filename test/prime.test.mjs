@@ -18,4 +18,7 @@ z = zone(); z.niveaux.roulage = NIVEAU_MAX; appliquerPrime(z, 'formation:roulage
 assert.equal(z.budget, 10 + PRIME.confiscation, 'formation impossible : confiscation');
 z = zone(); appliquerPrime(z, 'formation:pirate', 6, opts);
 assert.equal(z.budget, 10 + PRIME.confiscation, 'service inconnu : confiscation');
+// L'affiche garde la prime choisie.
+z = zone(); z.affiches = [{ n: 3, season: 1, prime: null }]; appliquerPrime(z, 'renfort', 6, opts);
+assert.equal(z.affiches[0].prime, 'renfort', 'prime notée sur l’avis de recherche');
 console.log('OK : mise à prix (défaut, renfort, formation, garde-fous).');
