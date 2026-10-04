@@ -131,7 +131,10 @@ export function estimations() {
   const crim = Math.max(10, Math.min(95, z.criminalite + (pr.criminalite || 0) - (dep.prevention ? 6 : 0)));
   const attendus = Math.max(1, Math.round(1.5 + crim / 14) + (pr.incidents || 0));
   const couverts = Math.min(attendus, Math.floor(cap.intervention / 1.1));
-  const pap = Math.round(couverts * 0.4 + 0.6 + 1.2 + (pr.paperasse || 0) - (dep.soustraitance ? 5 : 0) - cap.admin * 1.2);
+  const papV = couverts * 0.4 + 0.6 + 1.2 + (pr.paperasse || 0) - (dep.soustraitance ? 5 : 0) - cap.admin * 1.2;
+  const pap = Math.round(papV);
+  // Ce qu'un agent de plus à l'Accueil retire de la pile ce soir (pour dire combien il en faudrait).
+  const capAdmin1 = Math.max(0.3, (capacite(z, 'admin', eff.admin + 1, { ...opts, bonus: bonusEnigme('admin') }) - capacite(z, 'admin', eff.admin, { ...opts, bonus: bonusEnigme('admin') })) * 1.2);
   const amendes = cap.roulage * ECONOMIE.amendeParCapacite;
   const total = SERVICES.reduce((s, k) => s + eff[k], 0) || 1;
   const chasse = eff.roulage / total > seuilChasse(z) && !((themeActif(S.state, S.state.turn) || {}).id === 'routiere');
@@ -140,7 +143,7 @@ export function estimations() {
   const reste = resteBase - enquete;
   const coutDep = coutDepenses(dep, z);
   const coutTotal = coutDep + (d.decision && !decisionImpossible(z, d.decision, st.turn) ? coutDecision(z, d.decision) : 0);
-  return { attendus, couverts, pap, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, coutTotal, prises, crim, cap };
+  return { attendus, couverts, pap, papV, capAdmin1, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, coutTotal, prises, crim, cap };
 }
 
 /** « dont 2 en audition » sous un service : ces agents ne travaillent pas dans le service aujourd'hui. */
@@ -198,7 +201,13 @@ function resultatService(e, s) {
       return `<span class="${retard ? 'bad' : p.boucles ? 'ok' : 'muted'}">${retard ? `${retard} en retard · ` : p.boucles ? `${p.boucles} bouclé${p.boucles > 1 ? 's' : ''} · ` : ''}${p.restants} restant${p.restants > 1 ? 's' : ''}</span>`;
     }
     case 'roulage': return e.chasse ? '<span class="bad">« chasse aux PV » : satisfaction −2</span>' : `<span class="ok">+${fmt1(e.amendes)} k€ d’amendes</span>`;
-    case 'admin': return `<span class="${e.pap > 0 ? 'warn' : 'muted'}">paperasse ${pap(e.pap)} ce soir</span>`;
+    case 'admin': {
+      const v = e.papV;
+      const txt = Math.abs(v) < 1 && Math.abs(v) >= 0.15 ? `${v > 0 ? '+' : '−'}${fmt1(Math.abs(Math.round(v * 10) / 10))}` : pap(e.pap);
+      // Pile au-dessus de 14 (−2 de moral par soir) qui ne baisse pas : combien d'agents il faudrait en plus.
+      const manque = z.paperasse > 14 && v > -1 ? Math.ceil((v + 1) / e.capAdmin1) : 0;
+      return `<span class="${v > 0.15 || manque ? 'warn' : 'muted'}">paperasse ${txt} ce soir${manque ? ` · ≈ ${manque} agent${manque > 1 ? 's' : ''} de plus pour la faire baisser` : ''}</span>`;
+    }
     default: return '';
   }
 }
