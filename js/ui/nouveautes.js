@@ -44,6 +44,7 @@ export const NOTE_MAJ = {
       ['Confiance de la commune', 'la ligne est toujours affichée dans le détail du budget, avec son calcul (réputation − 50 × coefficient), même quand elle vaut 0.'],
     ]],
     ['Mini-jeux', [
+      ['ADN', 'nouvel habillage : hélices en tubes de verre, barreaux en capsules colorées, vitre de comparaison et fond de labo. Les règles et la difficulté ne changent pas.'],
       ['Crochetage', 'nouvel habillage : serrure en coupe avec ressorts, goupilles usinées et rotor en laiton, clé de tension à voyants (vert = bonne tension) et lecture « Zone verte / Trop forte / Trop faible » sous Tension. Les règles et la difficulté ne changent pas.'],
       ['Empreintes', 'curseur rond au lieu du viseur, bouton « ? » qui explique ce qu’est une minutie (fin de crête, bifurcation). Relâcher pose seulement une visée, sans pénalité : double-clic (ou double tape) dessus pour valider.'],
       ['Dossier à relire', 'rapport plus long et plus fouillé (ancienne adresse, ménage, carte d’identité, bail, témoin du voisin), avec de nouvelles erreurs possibles et un peu plus de temps.'],
