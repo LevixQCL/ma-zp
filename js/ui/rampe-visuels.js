@@ -95,13 +95,13 @@ export const PHOTOS_RAMPE = {
       <text x="0" y="8" text-anchor="middle" font-family="'Special Elite', monospace" font-size="27" fill="#5A5A5A" letter-spacing="2">…BERT</text>
       <path d="M0 -38l3.6 7.4 8.1.9-6 5.4 1.8 8L0 -20.4l-7.5 3.7 1.8-8-6-5.4 8.1-.9z" fill="#5A5A5A"/></g>
     <g transform="translate(-24 0) rotate(4 920 140)"><path d="M846 26H996V246L986 252 976 246 966 252 956 246 946 252 936 246 926 252 916 246 906 252 896 246 886 252 876 246 866 252 856 246 846 252Z" fill="#FBF9F2" stroke="#DDD"/>
-      <text x="858" y="54" ${MONO} font-size="15" font-weight="600" fill="#222">TRAITEUR</text><text x="858" y="72" ${MONO} font-size="11" fill="#555">livraison à domicile</text>
-      <text x="858" y="100" ${MONO} font-size="13" fill="#222">JEU.     19:08</text><text x="858" y="120" ${MONO} font-size="11" fill="#222">RAMPE STE-WAUDRU</text>
-      <text x="858" y="150" ${MONO} font-size="12" fill="#222">1 SOUPE     4,50</text><text x="858" y="170" ${MONO} font-size="11" fill="#222">1 VOL-AU-VENT 14,00</text>
-      <text x="858" y="204" ${MONO} font-size="14" font-weight="600" fill="#222">TOTAL  18,50 €</text></g>`),
+      <text x="858" y="54" ${MONO} font-size="15" font-weight="600" fill="#222">TRAITEUR</text><text x="858" y="72" ${MONO} font-size="11" fill="#555" textLength="126" lengthAdjust="spacingAndGlyphs">livraison à domicile</text>
+      <text x="858" y="100" ${MONO} font-size="13" fill="#222">JEU.     19:08</text><text x="858" y="120" ${MONO} font-size="11" fill="#222" textLength="120" lengthAdjust="spacingAndGlyphs">RAMPE STE-WAUDRU</text>
+      <text x="858" y="150" ${MONO} font-size="12" fill="#222" textLength="126" lengthAdjust="spacingAndGlyphs">1 SOUPE      4,50</text><text x="858" y="170" ${MONO} font-size="11" fill="#222" textLength="126" lengthAdjust="spacingAndGlyphs">1 VOL-AU-VENT 14,00</text>
+      <text x="858" y="204" ${MONO} font-size="14" font-weight="600" fill="#222" textLength="126" lengthAdjust="spacingAndGlyphs">TOTAL  18,50 €</text></g>`),
   'c:labo': (id) => svg(id, 1024, 572, `<image href="img/rampe/verres.webp" width="1024" height="572"/>
-    <g transform="rotate(-2 170 170)"><rect x="96" y="136" width="176" height="64" fill="#F4F2EC" stroke="#CFCBC0"/><text x="108" y="161" ${MONO} font-size="14" fill="#333">SCELLÉS L-09/10</text><text x="108" y="184" ${MONO} font-size="12" fill="#666">salon · table basse</text></g>
-    <g transform="rotate(3 940 400)"><rect x="852" y="350" width="168" height="96" fill="#F4F2EC" stroke="#CFCBC0"/><text x="864" y="376" ${MONO} font-size="14" fill="#333">SCELLÉ L-11</text><text x="864" y="399" ${MONO} font-size="12" fill="#666">cuisine · égouttoir</text><text x="864" y="420" ${MONO} font-size="12" fill="#666">lunettes : marche 3</text></g>`),
+    <g transform="rotate(-2 170 170)"><rect x="96" y="136" width="196" height="64" fill="#F4F2EC" stroke="#CFCBC0"/><text x="108" y="161" ${MONO} font-size="14" fill="#333" textLength="150" lengthAdjust="spacingAndGlyphs">SCELLÉS L-09/10</text><text x="108" y="184" ${MONO} font-size="12" fill="#666" textLength="172" lengthAdjust="spacingAndGlyphs">salon · table basse</text></g>
+    <g transform="rotate(3 940 400)"><rect x="852" y="350" width="168" height="96" fill="#F4F2EC" stroke="#CFCBC0"/><text x="864" y="376" ${MONO} font-size="14" fill="#333" textLength="110" lengthAdjust="spacingAndGlyphs">SCELLÉ L-11</text><text x="864" y="399" ${MONO} font-size="12" fill="#666" textLength="144" lengthAdjust="spacingAndGlyphs">cuisine · égouttoir</text><text x="864" y="420" ${MONO} font-size="12" fill="#666" textLength="144" lengthAdjust="spacingAndGlyphs">lunettes : marche 3</text></g>`),
   'c:agenda': (id) => svg(id, 300, 220, `${defsPhoto(id, 300, 220)}<rect width="300" height="220" fill="#3E2E22"/>
     <g transform="rotate(-2 150 110)"><rect x="24" y="16" width="252" height="192" fill="#F4EDD6"/><path d="M150 16V208" stroke="#C8B98F" stroke-width="2"/>
     <g stroke="#D7CCAE">${Array.from({ length: 10 }, (_, k) => `<path d="M160 ${50 + k * 15}H268"/><path d="M32 ${50 + k * 15}H142"/>`).join('')}</g>
@@ -161,8 +161,8 @@ export const PHOTOS_RAMPE = {
       <text x="0" y="-62" text-anchor="middle" ${TAPE} font-size="13" fill="#7A2E26">CERCLE SAINT-GEORGES</text>
       <text x="0" y="-44" text-anchor="middle" ${TAPE} font-size="11" fill="#7A2E26">Acteurs du Combat · 1999</text>
       <path d="M-96 -32H96" stroke="#7A2E26" stroke-width="1" opacity=".6"/>
-      <text x="-102" y="2" ${MONO} font-size="13.5" fill="#2A2420">…euilles · n° 7 : G. Wau…</text>
-      <text x="-102" y="26" ${MONO} font-size="13.5" fill="#2A2420" opacity=".35">…euilles · n° 8 : …</text></g>`),
+      <text x="-102" y="2" ${MONO} font-size="13.5" fill="#2A2420" textLength="204" lengthAdjust="spacingAndGlyphs">…euilles · n° 7 : G. Wau…</text>
+      <text x="-102" y="26" ${MONO} font-size="13.5" fill="#2A2420" opacity=".35" textLength="150" lengthAdjust="spacingAndGlyphs">…euilles · n° 8 : …</text></g>`),
   'occ:4': (id) => feuille(id, 300, 220, '#33404A', 1, `
     ${ligne(40, 32, 'IMMEUBLE DOLEZ · CONTRÔLE D’ACCÈS · JEUDI', { taille: 7.4, gras: true })}
     <path d="M40 38H262" stroke="#999" stroke-dasharray="2 2"/>
@@ -182,9 +182,9 @@ export const PHOTOS_RAMPE = {
     <g transform="translate(746 360) rotate(-4)" style="mix-blend-mode:multiply" opacity=".9">
       <text x="0" y="-52" text-anchor="middle" ${TAPE} font-size="15" fill="#2A2420">PRÊT SUR GAGES</text>
       <text x="0" y="-26" text-anchor="middle" ${MONO} font-size="20" font-weight="700" fill="#B3261E">N° 4471</text>
-      <text x="0" y="4" text-anchor="middle" ${MONO} font-size="12" fill="#2A2420">montre de gousset · or 18 ct</text>
+      <text x="0" y="4" text-anchor="middle" ${MONO} font-size="12" fill="#2A2420" textLength="200" lengthAdjust="spacingAndGlyphs">montre de gousset · or 18 ct</text>
       <text x="0" y="24" text-anchor="middle" ${MONO} font-size="12" fill="#2A2420">prêté : 700 €</text>
-      <text x="0" y="46" text-anchor="middle" ${MONO} font-size="12.5" font-weight="700" fill="#2A2420">dégagé jeu. 16:10 · 735 €</text></g>`),
+      <text x="0" y="46" text-anchor="middle" ${MONO} font-size="12.5" font-weight="700" fill="#2A2420" textLength="196" lengthAdjust="spacingAndGlyphs">dégagé jeu. 16:10 · 735 €</text></g>`),
   'x:heure': (id) => svg(id, 300, 190, `${defsPhoto(id, 300, 190)}<rect width="300" height="190" fill="#1E2024"/>
     <rect x="24" y="20" width="252" height="150" rx="6" fill="#0D1A2A"/>
     <text x="38" y="44" ${MONO} font-size="9" fill="#7FC3FF">ENREGISTREUR · RÉGLAGES · SYSTÈME</text>
