@@ -23,7 +23,9 @@ export const LIEUX_MONS = {
   jemappes: { nom: '← Jemappes', sous: 'chez Sophie Willaert, à 5 km', x: 48, y: 300, adresse: 'Jemappes, 7012 Mons', horsPlan: true },
 };
 /** Lien d'itinéraire à pied dans Google Maps. */
-export const lienItineraire = (a, b) => `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(LIEUX_MONS[a].adresse)}&destination=${encodeURIComponent(LIEUX_MONS[b].adresse)}&travelmode=walking`;
+export const lienItineraire = (a, b, lieux = LIEUX_MONS) => `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(lieux[a].adresse)}&destination=${encodeURIComponent(lieux[b].adresse)}&travelmode=walking`;
+/** Lieux du plan de Mons pour une affaire (chaque affaire écrite à la main a les siens). */
+export const lieuxMons = (aff) => (aff && aff.lieux) || LIEUX_MONS;
 
 const SUSPECTS = [
   {

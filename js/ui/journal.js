@@ -6,7 +6,7 @@ import { photoUne } from './scene-crime.js';
 import { planSvg3 } from './plan3.js';
 import { LIEUX } from '../engine/carte3.js';
 import { planMons } from './planmons.js';
-import { LIEUX_MONS } from '../engine/meurtre-mons.js';
+import { lieuxMons } from '../engine/meurtre-mons.js';
 
 const cle = (aff) => `mazp-journal-${S.state.seed}-${aff.n}`;
 export function journalVu(aff) { try { return localStorage.getItem(cle(aff)) === '1' || !!(S.journalVus && S.journalVus[aff.n]); } catch (e) { return !!(S.journalVus && S.journalVus[aff.n]); } }
@@ -21,7 +21,7 @@ export function journalHtml(aff) {
   if (!aff.prof || S.journalOuvert !== aff.n) return '';
   const d = dossierAffaire3(S.state.seed, aff);
   const j = d.journal;
-  const sc = (aff.ville === 'mons' ? LIEUX_MONS : LIEUX)[aff.pos];
+  const sc = (aff.ville === 'mons' ? lieuxMons(aff) : LIEUX)[aff.pos];
   const crop = [Math.max(0, Math.min(880 - 300, sc.x - 150)), Math.max(0, Math.min(900 - 220, sc.y - 110)), 300, 220];
   const premier = !journalVu(aff);
   return `<div class="jr-wrap ${premier ? 'jr-tourne' : ''}" role="dialog" aria-modal="true" aria-label="La Gazette du Delta">

@@ -1,20 +1,22 @@
 // Chronologie à reconstituer (affaire de Mons) : une frise de 20:00 à 00:30, une ligne pour la scène et une par suspect.
 // Le joueur y place lui-même les événements que ses pièces lui ont appris ; rien n'y est mis d'office.
 import { esc } from './common.js';
-import { EVENEMENTS } from '../engine/meurtre-mons.js';
+import { EVENEMENTS as EVENEMENTS1 } from '../engine/meurtre-mons.js';
+
+const evenementsDe = (aff) => (aff && aff.evenements) || EVENEMENTS1;
 
 const T0 = 20 * 60, T1 = 24 * 60 + 30;
 const hm = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const COUL = ['#C2302B', '#C88A12', '#2F6FD3', '#2E9E62', '#6B4FB8'];
 
 /** Événements que ce dossier permet de placer (pièce connue, ou document public). */
-export function evenementsDispo(connus) { return EVENEMENTS.filter((e) => connus.has(e.f)); }
+export function evenementsDispo(connus, aff) { return evenementsDe(aff).filter((e) => connus.has(e.f)); }
 
 /**
  * La frise en SVG. `ids` : événements placés. `mini` : version punaisée au tableau (sans légendes).
  */
 export function friseSvg(aff, ids, { mini = false } = {}) {
-  const evs = EVENEMENTS.filter((e) => ids.includes(e.id));
+  const evs = evenementsDe(aff).filter((e) => ids.includes(e.id));
   const W = 640, G = 96, L = 30, top = 26;
   const lignes = [{ nom: 'Scène', c: '#5E574A' }, ...aff.suspects.map((s, i) => ({ nom: s.prenom, c: COUL[i] }))];
   const H = top + lignes.length * L + 10;
@@ -35,14 +37,14 @@ export function friseSvg(aff, ids, { mini = false } = {}) {
 
 /** Volet de la frise : la frise, sa légende, et les événements disponibles à placer ou retirer. */
 export function friseVolet(aff, connus, ids) {
-  const dispo = evenementsDispo(connus);
-  const places = EVENEMENTS.filter((e) => ids.includes(e.id));
+  const dispo = evenementsDispo(connus, aff);
+  const places = evenementsDe(aff).filter((e) => ids.includes(e.id));
   const ligne = (e) => {
     const on = ids.includes(e.id);
     return `<button type="button" class="tb-trajet-l ${on ? 'on' : ''}" style="--c:${e.qui === null || e.qui === undefined ? 'var(--amber)' : COUL[e.qui]}" data-action="frise-ev" data-id="${e.id}" aria-pressed="${on}"><span>${esc(e.t)}</span><strong>${hm(e.de)}${e.a ? `–${hm(e.a)}` : ''}</strong></button>`;
   };
   return `<span class="tb-ligne-k" style="color:var(--amber)">Chronologie · ${places.length} événement${places.length > 1 ? 's' : ''} placé${places.length > 1 ? 's' : ''}</span>
-    <span class="tb-titre">La soirée de mardi</span>
+    <span class="tb-titre">${esc(aff.soiree || 'La soirée de mardi')}</span>
     <div class="fr-cadre">${friseSvg(aff, ids)}</div>
     ${places.length ? `<ol class="fr-leg">${places.map((e) => `<li>${esc(e.t)} <span class="muted">${hm(e.de)}${e.a ? `–${hm(e.a)}` : ''}</span></li>`).join('')}</ol>` : ''}
     <p class="tiny muted" style="margin:0">Touche un événement pour le placer sur la frise ou l’en retirer. Les barres en pointillés : ce que chacun dit de sa soirée. Ta frise est rangée avec ton tableau.</p>

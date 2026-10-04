@@ -1,7 +1,7 @@
 // Plan du centre de Mons (affaire de meurtre) : un dessin simplifié des grands axes et des rues du centre,
 // fait à la main pour le jeu. Les temps de trajet ne sont pas calculés ici : chaque lieu ouvre l'itinéraire
 // à pied dans Google Maps. Les commerces et les personnes de l'affaire sont fictifs.
-import { LIEUX_MONS } from '../engine/meurtre-mons.js';
+import { lieuxMons } from '../engine/meurtre-mons.js';
 import { hm } from '../engine/enquete.js';
 
 const W = 880, H = 900;
@@ -83,7 +83,9 @@ function etiquettes(liste) {
 
 /** Le plan du centre de Mons. `crop` : extrait [x, y, w, h] (pour le journal). */
 export function planMons(aff, { crop = null, heures = false, id = 'pm' } = {}) {
+  const LIEUX_MONS = lieuxMons(aff);
   const sc = LIEUX_MONS[aff.pos];
+  const rues = [...RUES, ...(aff.ruesPlan || [])];
   const vb = crop ? crop.join(' ') : `0 0 ${W} ${H}`;
   const [, , cw, ch] = crop || [0, 0, W, H];
   const reperes = Object.values(LIEUX_MONS).filter((l) => l.repere);
@@ -96,10 +98,10 @@ export function planMons(aff, { crop = null, heures = false, id = 'pm' } = {}) {
     <path d="${chemin([[0, 245], [60, 200], [130, 150]])}" stroke="#A7C7DA" stroke-width="9" fill="none" stroke-linecap="round"/><text x="22" y="172" class="p3-canal" transform="rotate(-36 22 172)">la Haine</text>
     <g stroke="#7C6E58" stroke-width="2" fill="none">${[0, 9, 18, 27].map((o) => `<path d="${chemin([[-10 + o, 560], [60 + o, 380], [160 + o, 120], [205 + o, 0]])}"/>`).join('')}</g>
     <polygon points="${pts(PIETON)}" fill="#EBD9B4" stroke="#D2B886"/>
-    <g stroke="#B9A782" fill="none" stroke-linecap="round" stroke-linejoin="round">${BOULEVARDS.map(([, l]) => `<path d="${chemin(l)}" stroke-width="20"/>`).join('')}${AXES.map(([, l]) => `<path d="${chemin(l)}" stroke-width="15"/>`).join('')}${RUES.map(([, l]) => `<path d="${chemin(l)}" stroke-width="11"/>`).join('')}</g>
+    <g stroke="#B9A782" fill="none" stroke-linecap="round" stroke-linejoin="round">${BOULEVARDS.map(([, l]) => `<path d="${chemin(l)}" stroke-width="20"/>`).join('')}${AXES.map(([, l]) => `<path d="${chemin(l)}" stroke-width="15"/>`).join('')}${rues.map(([, l]) => `<path d="${chemin(l)}" stroke-width="11"/>`).join('')}</g>
     <g stroke="#FFF6D9" fill="none" stroke-linecap="round" stroke-linejoin="round">${BOULEVARDS.map(([, l]) => `<path d="${chemin(l)}" stroke-width="15"/>`).join('')}${AXES.map(([, l]) => `<path d="${chemin(l)}" stroke-width="11"/>`).join('')}</g>
-    <g stroke="#FFFCF3" fill="none" stroke-linecap="round" stroke-linejoin="round">${RUES.map(([, l]) => `<path d="${chemin(l)}" stroke-width="8"/>`).join('')}</g>
-    <g class="p3-noms">${etiquettes([...BOULEVARDS, ...RUES])}</g>
+    <g stroke="#FFFCF3" fill="none" stroke-linecap="round" stroke-linejoin="round">${rues.map(([, l]) => `<path d="${chemin(l)}" stroke-width="8"/>`).join('')}</g>
+    <g class="p3-noms">${etiquettes([...BOULEVARDS, ...rues])}</g>
     <g class="pm-reperes">${reperes.map((l) => `<g transform="translate(${l.x} ${l.y})"><rect x="-5" y="-5" width="10" height="10" transform="rotate(45)" fill="#6B5B3A"/><text x="0" y="-11" text-anchor="middle">${l.nom}</text></g>`).join('')}</g>
     <g class="p3-quartiers"><text x="${T([180, 520])[0]}" y="${T([180, 520])[1]}">GARE</text><text x="${T([600, 300])[0]}" y="${T([600, 300])[1] - 20}">NIMY</text></g>
     <circle cx="${sc.x}" cy="${sc.y}" r="30" fill="none" stroke="#B3261E" stroke-width="3" stroke-dasharray="170 26" transform="rotate(-10 ${sc.x} ${sc.y})"/>

@@ -32,7 +32,8 @@ import { offreApres } from './ui/encheres.js';
 import { renderDiplomatie, ongletsRadio } from './ui/diplomatie.js';
 import { renderParties } from './ui/parties.js';
 import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet, synchroCarnetMaintenant, restaurerCarnet } from './ui/enquete.js';
-import { affaire } from './engine/enquete.js';
+import { affaire, dossierDe } from './engine/enquete.js';
+import { choisirRecoup, retournerPouce } from './ui/enquete-plus.js';
 import { marquerJournalVu } from './ui/journal.js';
 import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, basculerFrise, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
@@ -634,11 +635,24 @@ async function onClick(e) {
       case 'tab-fermer': S.tabSheet = null; rerender(); break;
       case 'tab-route': S.tabRoute = { n: S.state.enquete.n, a: el.dataset.a, b: el.dataset.b, mode: el.dataset.m }; rerender(); break;
       case 'tab-route-effacer': S.tabRoute = null; rerender(); break;
-      case 'scene-pt': S.scenePt = el.dataset.k; S.scenePtsVus = [...new Set([...(S.scenePtsVus || []), el.dataset.k])]; rerender(); break;
-      case 'scene-fermer': S.sceneOuverte = null; rerender(); break;
+      case 'scene-pt': {
+        const d0 = document.querySelector('.sf-zoom-defil'), x0 = d0 ? d0.scrollLeft : null;
+        S.scenePt = el.dataset.k; S.scenePtsVus = [...new Set([...(S.scenePtsVus || []), el.dataset.k])]; rerender();
+        if (x0 !== null) requestAnimationFrame(() => { const d1 = document.querySelector('.sf-zoom-defil'); if (d1) d1.scrollLeft = x0; });
+        break;
+      }
+      case 'scene-zoom': S.sceneZoom = true; rerender(); requestAnimationFrame(() => { const d1 = document.querySelector('.sf-zoom-defil'); if (d1) d1.scrollLeft = (d1.scrollWidth - d1.clientWidth) / 2; }); break;
+      case 'scene-dezoom': S.sceneZoom = false; rerender(); break;
+      case 'scene-fermer': S.sceneOuverte = null; S.sceneZoom = false; rerender(); break;
       case 'frise-ev': basculerFrise(el.dataset.id); rerender(); break;
       case 'reaud-piece': S.draft.reaud = { i: Number(el.dataset.i), f: el.dataset.f }; S.ordersDirty = true; rerender(); break;
       case 'reaud-annuler': S.draft.reaud = null; S.ordersDirty = true; rerender(); break;
+      case 'recoup-piece': { const aff = affaire(S.state, S.state.enquete.n); if (choisirRecoup(aff, dossierDe(S.state, myZone()), el.dataset.a, el.dataset.b)) { S.ordersDirty = true; toast('Recoupement prévu ce soir. Pense à valider tes ordres.'); } rerender(); break; }
+      case 'recoup-annuler': S.draft.recoup = null; S.ordersDirty = true; rerender(); break;
+      case 'hypo-choix': { const h = { ...(S.draft.hypo || {}) }; if (el.dataset.i !== undefined) h.i = Number(el.dataset.i); if (el.dataset.s !== undefined) h.s = Number(el.dataset.s); S.draft.hypo = h; S.ordersDirty = true; rerender(); break; }
+      case 'hypo-annuler': S.draft.hypo = null; S.ordersDirty = true; rerender(); break;
+      case 'mobile-choix': { const m = Number(el.dataset.m); S.draft.mobile = S.draft.mobile === m ? null : m; S.ordersDirty = true; rerender(); break; }
+      case 'pouce-voir': retournerPouce(affaire(S.state, S.state.enquete.n), el.dataset.k); rerender(); break;
       case 'confront-piece': { const c = S.draft.confront || []; const f = el.dataset.f; S.draft.confront = c.includes(f) ? c.filter((x) => x !== f) : [...c, f].slice(0, 3); S.ordersDirty = true; rerender(); break; }
       case 'confront-valider': {
         const s = affaire(S.state, S.state.enquete.n).suspects[Number(el.dataset.i)];
@@ -685,7 +699,7 @@ async function onClick(e) {
         break;
       }
       case 'piste': { const i = Number(el.dataset.i); S.draft.piste = S.draft.piste === i ? null : i; S.ordersDirty = true; rerender(); break; }
-      case 'accuser-annuler': S.draft.accusation = null; S.draft.confront = []; S.ordersDirty = true; rerender(); break;
+      case 'accuser-annuler': S.draft.accusation = null; S.draft.confront = []; S.draft.mobile = null; S.ordersDirty = true; rerender(); break;
       case 'partage': {
         const p = (S.draft.partages ||= []);
         if (p.length < 3) p.push({ f: el.dataset.f, a: el.dataset.a });

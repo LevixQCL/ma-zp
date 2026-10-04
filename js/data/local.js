@@ -37,7 +37,11 @@ export function createLocalBackend(config) {
     const now = Date.now();
     const state = createGame({ seed: `${config.seed}-demo-${id}`, turnDeadline: nextResolutionAfter(now, hour) });
     // La démo ouvre directement sur l'affaire de meurtre écrite à la main, pour pouvoir la tester.
-    if (id === 'demo') state.meurtreDes = 1;
+    // Avec « ?demo=rampe », elle ouvre sur la seconde (« Le notaire de la Rampe »).
+    if (id === 'demo') {
+      const rampe = typeof location !== 'undefined' && /(^|[?&])demo=rampe\b/.test(location.search || '');
+      if (rampe) { state.meurtreDes = 0; state.meurtre2Des = 1; } else state.meurtreDes = 1;
+    }
     const players = {};
     for (const b of BOT_PROFILES) {
       players[b.uid] = { code: b.code, nom: b.nom, couleur: b.couleur, pseudo: b.pseudo, bot: true, style: b.style };
