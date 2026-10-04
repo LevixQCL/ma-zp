@@ -90,7 +90,7 @@ export function assurerDir(z) {
   return d;
 }
 /** Ce que le Directeur garde d'une saison à l'autre (niveau des énigmes et des mini-jeux, souvenirs). */
-export const dirHeritage = (z) => JSON.parse(JSON.stringify({ enig: (z.dir && z.dir.enig) || null, inc: (z.dir && z.dir.inc) || null, mem: (z.dir && z.dir.mem) || {} }));
+export const dirHeritage = (z) => JSON.parse(JSON.stringify({ enig: (z.dir && z.dir.enig) ? { ...z.dir.enig, h: enObjets(z.dir.enig.h) } : null, inc: (z.dir && z.dir.inc) ? { ...z.dir.inc, h: enObjets(z.dir.inc.h) } : null, mem: (z.dir && z.dir.mem) || {} }));
 
 /** Ciel du jour d'une zone (pour l'affichage). */
 export function cielDe(z) {
@@ -1027,9 +1027,15 @@ export function rangsEnigmes(state) {
   return out;
 }
 
-/** Cible de décalage d'après l'historique [[bonnes, tentées], …] et le rang (0 à 1, ou undefined). */
+// Historiques rangés en objets { ok, t } : Firestore refuse un tableau dans un tableau (l'ancien format [ok, t]
+// bloquait l'enregistrement du tour dès qu'une zone avait joué). Les deux formats sont lus.
+const okDe = (x) => (Array.isArray(x) ? x[0] : (x && x.ok) || 0);
+const totDe = (x) => (Array.isArray(x) ? x[1] : (x && x.t) || 0);
+const enObjets = (h) => (Array.isArray(h) ? h.map((x) => ({ ok: okDe(x), t: totDe(x) })) : []);
+
+/** Cible de décalage d'après l'historique [{ ok: bonnes, t: tentées }, …] et le rang (0 à 1, ou undefined). */
 export function cibleEnigmes(hist, rang) {
-  const ok = hist.reduce((s, x) => s + x[0], 0), tot = hist.reduce((s, x) => s + x[1], 0);
+  const ok = hist.reduce((s, x) => s + okDe(x), 0), tot = hist.reduce((s, x) => s + totDe(x), 0);
   if (tot < 3) return rang !== undefined && rang > 0.75 ? -1 : 0;
   const taux = ok / tot - (rang !== undefined ? 0.15 * (rang - 0.5) : 0);
   if (taux < 0.4) return -2;
@@ -1042,7 +1048,8 @@ export function cibleEnigmes(hist, rang) {
 export function adapterEnigmes(z, ok, tentees, rang) {
   const d = assurerDir(z);
   const e = d.enig && Array.isArray(d.enig.h) ? d.enig : { h: [], niv: 0 };
-  if (tentees > 0) e.h = [...e.h, [ok, tentees]].slice(-ENIG.jours);
+  e.h = enObjets(e.h);
+  if (tentees > 0) e.h = [...e.h, { ok, t: tentees }].slice(-ENIG.jours);
   const cible = cibleEnigmes(e.h, rang);
   const niv = Number.isFinite(e.niv) ? e.niv : 0;
   e.niv = clamp(niv + Math.sign(cible - niv), ENIG.min, ENIG.max);
@@ -1057,7 +1064,7 @@ export const niveauEnigmes = (z) => (z && z.dir && z.dir.enig && Number.isFinite
 export const INCA = { jours: 8 };
 
 export function cibleIncidents(hist) {
-  const ok = hist.reduce((s, x) => s + x[0], 0), tot = hist.reduce((s, x) => s + x[1], 0);
+  const ok = hist.reduce((s, x) => s + okDe(x), 0), tot = hist.reduce((s, x) => s + totDe(x), 0);
   if (tot < 2) return 0;
   if (ok / tot < 0.5) return -1;
   if (ok / tot > 0.85 && tot >= 4) return 1;
@@ -1068,7 +1075,8 @@ export function cibleIncidents(hist) {
 export function adapterIncidents(z, ok, joues) {
   const d = assurerDir(z);
   const e = d.inc && Array.isArray(d.inc.h) ? d.inc : { h: [], niv: 0 };
-  if (joues > 0) e.h = [...e.h, [ok, joues]].slice(-INCA.jours);
+  e.h = enObjets(e.h);
+  if (joues > 0) e.h = [...e.h, { ok, t: joues }].slice(-INCA.jours);
   const cible = cibleIncidents(e.h);
   const niv = Number.isFinite(e.niv) ? e.niv : 0;
   e.niv = clamp(niv + Math.sign(cible - niv), -1, 1);

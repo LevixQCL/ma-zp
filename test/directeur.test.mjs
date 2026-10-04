@@ -122,3 +122,14 @@ assert.equal(cibleEnigmes([[2, 3], [2, 3]], 1), -1, 'le classement pèse un peu'
   assert.equal(z.dir.ph, 'calme'); assert.equal(z.dir.fe, null); assert.ok(!z.operation);
 }
 console.log('OK : Directeur (rythme, zones absentes, coups durs ciblés, feuilletons, dilemmes, niveau des énigmes).');
+
+// Firestore refuse les tableaux dans un tableau : les historiques du Directeur sont rangés en objets.
+{
+  const { adapterIncidents } = await import('../js/engine/directeur.js');
+  const { tableauxImbriques } = await import('../js/data/resolver.js');
+  const z = { uid: 'x', dir: { enig: { h: [[1, 3]], niv: 0 } } }; // ancien format resté en mémoire
+  adapterEnigmes(z, 2, 3, 0.5); adapterEnigmes(z, 3, 3, 0.5); adapterIncidents(z, 1, 1); adapterIncidents(z, 0, 1);
+  assert.deepEqual(tableauxImbriques(JSON.parse(JSON.stringify(z))), [], 'pas de tableau imbriqué');
+  assert.deepEqual(z.dir.enig.h[0], { ok: 1, t: 3 }, 'ancien format converti');
+  console.log('OK : historiques du Directeur compatibles Firestore.');
+}
