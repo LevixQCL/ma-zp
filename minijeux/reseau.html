@@ -136,29 +136,50 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 @media (prefers-reduced-motion:reduce){.gbar i,.toast,.btn{transition:none}.shake,.card,.verdict{animation:none}}
 
 
-.boardwrap{position:relative;flex:1;min-height:0;display:grid;place-items:center}
-.board{display:grid;gap:3px;padding:8px;border-radius:18px;background:radial-gradient(90% 80% at 50% 40%,rgba(180,155,255,.10),transparent 70%),#0a0f1f;box-shadow:inset 0 0 0 1px rgba(180,155,255,.18),0 20px 40px rgba(0,0,0,.3);touch-action:manipulation}
-.cell{position:relative;padding:0;border:0;border-radius:9px;background:rgba(255,255,255,.035);cursor:pointer;overflow:hidden;-webkit-tap-highlight-color:transparent}
-.cell:active{background:rgba(255,255,255,.07)}
-.cell.lock{background:rgba(180,155,255,.13);box-shadow:inset 0 0 0 1.5px rgba(180,155,255,.45)}
-.cell.lock::after{content:"";position:absolute;right:4px;top:4px;width:6px;height:6px;border-radius:2px;background:rgba(180,155,255,.85)}
+.boardwrap{position:relative;flex:1;min-height:0;display:grid;place-items:center;border-radius:22px;overflow:hidden;
+  background:radial-gradient(70% 55% at 50% 50%,rgba(90,200,255,.12),transparent 70%),linear-gradient(180deg,#131a2a,#0a0f1a);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.traces{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.traces path{fill:none;stroke:rgba(150,190,230,.16);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.traces circle{fill:rgba(150,190,230,.22)}
+.board{position:relative;display:grid;gap:4px;padding:10px;border-radius:16px;touch-action:manipulation;
+  background:linear-gradient(180deg,rgba(30,40,60,.92),rgba(14,20,32,.95));
+  box-shadow:0 0 0 1px rgba(0,0,0,.6),0 0 0 3px #9aa6ba,0 0 0 4px #e3e9f2,0 0 0 6px #5b6577,0 0 0 7px rgba(0,0,0,.5),0 24px 50px rgba(0,0,0,.55),inset 0 2px 10px rgba(0,0,0,.7)}
+.cell{position:relative;padding:0;border:0;border-radius:9px;cursor:pointer;overflow:hidden;-webkit-tap-highlight-color:transparent;
+  background:linear-gradient(155deg,rgba(215,232,255,.2),rgba(150,180,225,.07) 55%,rgba(120,150,200,.1));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 0 0 1px rgba(200,222,255,.2),inset 0 -2px 4px rgba(0,0,0,.25),0 2px 4px rgba(0,0,0,.45);transition:background .2s}
+.cell::before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.14),transparent 42%);pointer-events:none}
+.cell:active{filter:brightness(1.2)}
+.cell.pc{background:linear-gradient(160deg,#232c44,#121827);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 0 0 1px rgba(170,150,255,.3),0 2px 4px rgba(0,0,0,.5)}
+.cell.srvc{background:radial-gradient(circle at 50% 50%,rgba(120,230,255,.4),rgba(40,90,140,.35) 70%);box-shadow:inset 0 0 0 1.5px rgba(150,235,255,.8),0 0 18px rgba(90,210,255,.55)}
+.cell.lock{box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 0 0 1.5px rgba(150,235,255,.55),0 2px 4px rgba(0,0,0,.45)}
+.cell.lock::after{content:"";position:absolute;right:4px;top:4px;width:7px;height:7px;border-radius:2px;background:#9fefff;box-shadow:0 0 6px #5fd8ff}
 .cell.hint{animation:hint 1s ease-in-out infinite}
-@keyframes hint{50%{box-shadow:inset 0 0 0 2px var(--accent),0 0 16px rgba(180,155,255,.5)}}
+@keyframes hint{50%{box-shadow:inset 0 0 0 2px #7fe6ff,0 0 16px rgba(90,210,255,.6)}}
 .cell svg{position:absolute;inset:0;width:100%;height:100%}
 .cell .t{transition:transform .16s cubic-bezier(.3,.8,.4,1.25)}
-.cell .t path{stroke:#323b57;stroke-width:15;stroke-linecap:round;fill:none;transition:stroke .2s}
-.cell .t circle{fill:#323b57;transition:fill .2s}
-.cell.on .t path{stroke:#b49bff;filter:drop-shadow(0 0 4px rgba(180,155,255,.8))}
-.cell.on .t circle{fill:#b49bff}
-.cell .ic .scr{fill:#151b2e;stroke:#4a5577;stroke-width:4;transition:fill .25s,stroke .25s}
-.cell .ic .ft{fill:#4a5577}
+.cell .t path{fill:none;stroke-linecap:round}
+.cell .t .rim path{stroke:rgba(225,240,255,.55);stroke-width:17}
+.cell .t .core path{stroke:rgba(30,45,70,.75);stroke-width:9;transition:stroke .2s}
+.cell .t .flow path{stroke:transparent;stroke-width:6;stroke-dasharray:3 17}
+.cell .t .rim circle{fill:rgba(225,240,255,.55)} .cell .t .core circle{fill:rgba(30,45,70,.75);transition:fill .2s}
+.cell.on .t .rim path{stroke:#63dcff;filter:drop-shadow(0 0 5px rgba(80,215,255,.95))}
+.cell.on .t .rim circle{fill:#63dcff}
+.cell.on .t .core path{stroke:#dff9ff} .cell.on .t .core circle{fill:#dff9ff}
+.cell.on .t .flow path{stroke:rgba(110,225,255,.55);animation:flow .9s linear infinite}
+@keyframes flow{to{stroke-dashoffset:-20}}
+@media (prefers-reduced-motion:reduce){.cell.on .t .flow path{animation:none}}
+.cell .ic .scr{fill:#0f1424;stroke:#8f86c9;stroke-width:4;transition:fill .25s,stroke .25s}
+.cell .ic .ft{fill:#8f86c9}
 .cell.on .ic .scr{fill:#3df59a;stroke:#c9ffe3;filter:drop-shadow(0 0 6px rgba(61,245,154,.9))}
 .cell.on .ic .ft{fill:#c9ffe3}
-.cell .srv rect{fill:#2a2150;stroke:#b49bff;stroke-width:4}
+.cell .srv rect{fill:rgba(10,40,60,.6);stroke:#bff4ff;stroke-width:4}
+.cell .srv path{stroke:#bff4ff}
 .cell .srv circle{fill:#3df59a;animation:blink 1.2s steps(2) infinite}
-@keyframes blink{50%{fill:#b49bff}}
-.board.won .cell .t path{stroke:#3df59a;filter:drop-shadow(0 0 5px rgba(61,245,154,.9))}
-.board.won .cell .t circle{fill:#3df59a}
+@keyframes blink{50%{fill:#63dcff}}
+.board.won .cell .t .rim path{stroke:#3df59a;filter:drop-shadow(0 0 5px rgba(61,245,154,.9))}
+.board.won .cell .t .rim circle{fill:#3df59a}
+.board.won .cell .t .flow path{stroke:rgba(30,200,120,.9)}
 .hintline{font-size:12.5px;color:var(--mute);text-align:center;flex:0 0 auto}
 .status{flex:0 0 auto;padding-bottom:env(safe-area-inset-bottom,0px)}
 
@@ -180,7 +201,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
   <div class="coach" id="coach" hidden></div>
   <div class="stage" id="stage">
 
-  <div class="boardwrap" id="wrap"><div class="board" id="board" role="grid" aria-label="Réseau à reconnecter"></div></div>
+  <div class="boardwrap" id="wrap"><svg class="traces" id="traces" aria-hidden="true"></svg><div class="board" id="board" role="grid" aria-label="Réseau à reconnecter"></div></div>
   <div class="hintline">Toucher : tourner · Appui long (clic droit) : verrouiller une case sûre</div>
   <div class="status"><span id="pcTxt">PC reliés 0/0</span><span id="rotTxt">Rotations 0</span></div>
 
@@ -442,16 +463,28 @@ function build(){
   b.innerHTML=R.cells.map((c,i)=>{
     const arms=[1,2,4,8].filter(k=>c.base&k).map(k=>`<path d="${ARM[k]}"/>`).join('');
     const leaf=i!==R.srv && deg(c.base)===1, hub=!leaf&&i!==R.srv;
-    return `<button class="cell" data-i="${i}" aria-label="Case ${i+1}"><svg class="t" viewBox="0 0 100 100" style="transform:rotate(${c.turns*90}deg)">${arms}${hub?'<circle cx="50" cy="50" r="8.5"/>':''}</svg>${leaf?PC:''}${i===R.srv?SRV:''}</button>`;
+    const hubC=r=>hub?`<circle cx="50" cy="50" r="${r}"/>`:'';
+    return `<button class="cell${leaf?' pc':''}${i===R.srv?' srvc':''}" data-i="${i}" aria-label="Case ${i+1}"><svg class="t" viewBox="0 0 100 100" style="transform:rotate(${c.turns*90}deg)"><g class="rim">${arms}${hubC(12)}</g><g class="core">${arms}${hubC(7)}</g><g class="flow">${arms}</g></svg>${leaf?PC:''}${i===R.srv?SRV:''}</button>`;
   }).join('');
   fit(); refresh();
 }
 function fit(){
   if(!R.cols) return; const w=$('wrap').getBoundingClientRect();
-  const cs=Math.floor(Math.min((w.width-16-3*(R.cols-1))/R.cols,(w.height-16-3*(R.rows-1))/R.rows,72));
+  const pad=20+16+12, cs=Math.floor(Math.min((w.width-pad-4*(R.cols-1))/R.cols,(w.height-pad-4*(R.rows-1))/R.rows,72));
   $('board').style.setProperty('--cs',Math.max(28,cs)+'px');
 }
-new ResizeObserver(fit).observe($('wrap'));
+/* Pistes de circuit décoratives autour du plateau (fixes, régénérées à la taille). */
+function traces(){
+  const r=$('wrap').getBoundingClientRect(), w=Math.round(r.width), h=Math.round(r.height); if(!w) return;
+  let seed=11; const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647); let out='';
+  for(let n=0;n<Math.round(w*h/4500);n++){
+    let x=Math.round(rnd()*w/10)*10, y=Math.round(rnd()*h/10)*10, d=`M${x} ${y}`;
+    for(let q=0;q<3;q++){ const L=20+rnd()*70, k=Math.floor(rnd()*4); if(k===0)x+=L; else if(k===1)y+=L; else if(k===2){x+=L*.7;y+=L*.7;} else {x-=L*.7;y+=L*.7;} d+=`L${x|0} ${y|0}`; }
+    out+=`<path d="${d}"/><circle cx="${x|0}" cy="${y|0}" r="2.4"/>`;
+  }
+  const t=$('traces'); t.setAttribute('viewBox',`0 0 ${w} ${h}`); t.innerHTML=out;
+}
+new ResizeObserver(()=>{ fit(); traces(); }).observe($('wrap'));
 function refresh(){
   const on=powered(), els=$('board').children;
   for(let i=0;i<els.length;i++){ els[i].classList.toggle('on',on.has(i)); els[i].classList.toggle('lock',!!R.cells[i].lock); }
