@@ -51,7 +51,7 @@
       <figure><svg viewBox="0 0 64 40" width="100%" height="56"><path d="M4 8c14-4 40-4 56 0" stroke="#223" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M4 20c10-3 18-3 26-2" stroke="#223" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M4 32c14-4 40-4 56 0" stroke="#223" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="31" cy="18" r="7" fill="none" stroke="#d6266c" stroke-width="2"/></svg><figcaption>Fin de crête</figcaption></figure>
       <figure><svg viewBox="0 0 64 40" width="100%" height="56"><path d="M4 8c14-4 40-4 56 0" stroke="#223" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M4 22c10-1 18-1 24-1c10-1 20-5 32-7M28 21c10 1 20 4 32 6" stroke="#223" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M4 36c14-3 40-3 56 0" stroke="#223" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="29" cy="21" r="7" fill="none" stroke="#d6266c" stroke-width="2"/></svg><figcaption>Bifurcation</figcaption></figure>
     </div>
-    <p><b>Comment pointer :</b> en mode Pointer, vise avec la loupe et relâche : un rond orange marque ta visée, sans pénalité. Tu peux viser ailleurs autant que tu veux. <b>Double-clic</b> (ou double tape) sur le rond pour valider la minutie.</p>
+    <p><b>Comment pointer :</b> en mode Pointer, vise avec la loupe et relâche : un rond orange marque ta visée, sans pénalité. Tu peux viser ailleurs autant que tu veux. <b>Touche le rond</b> (ou double-clic) pour valider la minutie.</p>
     <p>Une concordance, c’est la même minutie au même endroit sur la trace (rose) et sur la fiche. Il en faut 8 sur la même fiche.</p>
     <button type="button" class="btn primary small" id="mhelpOk">Compris</button>
   </div></div>
@@ -276,14 +276,17 @@ function aligned(){
 
 /* ---------- viser puis valider (double-clic) ---------- */
 let lastUp=null, aimHint=false;
-function viser(sx,sy){
+/* Valider = toucher brièvement le rond orange (ou double tape / double-clic).
+   L'heure du geste vient de l'événement lui-même : sur un téléphone lent, le dessin de la loupe
+   retardait le traitement et le double tap n'était jamais reconnu (bug signalé). */
+function valider(){ const [ax,ay]=toScreen(G.aim.x,G.aim.y); G.aim=null; lastUp=null; tryPin(ax,ay); redraw(); }
+function viser(sx,sy,t,quick){
   if(G.over && Shell.st.mode!=='tuto') return;
-  const now=performance.now(), x=(sx-geo.ox)/geo.s, y=(sy-geo.oy)/geo.s;
-  if(lastUp && now-lastUp.t<450 && Math.hypot(sx-lastUp.sx,sy-lastUp.sy)<30 && G.aim){
-    lastUp=null; const [ax,ay]=toScreen(G.aim.x,G.aim.y); G.aim=null; tryPin(ax,ay); redraw(); return;
-  }
-  lastUp={t:now,sx,sy}; G.aim={x,y}; redraw();
-  if(!aimHint){ aimHint=true; Shell.toast('Visée posée : double-clic pour valider','info'); }
+  const x=(sx-geo.ox)/geo.s, y=(sy-geo.oy)/geo.s;
+  if(G.aim && quick){ const [ax,ay]=toScreen(G.aim.x,G.aim.y); if(Math.hypot(sx-ax,sy-ay)<=Math.max(22,P*1.05*geo.s*1.3)){ valider(); return; } }
+  if(G.aim && lastUp && t-lastUp.t<600 && Math.hypot(sx-lastUp.sx,sy-lastUp.sy)<40){ valider(); return; }
+  lastUp={t,sx,sy}; G.aim={x,y}; redraw();
+  if(!aimHint){ aimHint=true; Shell.toast('Visée posée : touche le rond pour valider','info'); }
 }
 
 /* ---------- pointer une minutie ---------- */
@@ -332,11 +335,11 @@ function drawLoupe(){
 }
 
 /* ---------- gestes ---------- */
-const ptrs=new Map(); let g2=null, moved=0;
+const ptrs=new Map(); let g2=null, moved=0, downT=0;
 const rel=e=>{ const r=cv.getBoundingClientRect(); return [e.clientX-r.left, e.clientY-r.top]; };
 cv.addEventListener('pointerdown',e=>{
   if(G.over && Shell.st.mode!=='tuto') return;
-  cv.setPointerCapture(e.pointerId); const [x,y]=rel(e); ptrs.set(e.pointerId,{x,y}); moved=0;
+  cv.setPointerCapture(e.pointerId); const [x,y]=rel(e); ptrs.set(e.pointerId,{x,y}); moved=0; downT=e.timeStamp;
   if(mode==='pin' && ptrs.size===1){ loupe.on=true; loupe.x=x; loupe.y=y; lcv.hidden=false; redraw(); }
   if(ptrs.size===2){ loupe.on=false; lcv.hidden=true; g2=two(); }
 });
@@ -355,7 +358,7 @@ function up(e){
   if(!ptrs.has(e.pointerId)) return;
   const [x,y]=rel(e), was=ptrs.size; ptrs.delete(e.pointerId);
   if(ptrs.size<2) g2=null;
-  if(mode==='pin' && loupe.on && was===1 && e.type==='pointerup'){ loupe.on=false; lcv.hidden=true; viser(x,y); }
+  if(mode==='pin' && loupe.on && was===1 && e.type==='pointerup'){ loupe.on=false; lcv.hidden=true; viser(x,y,e.timeStamp,e.timeStamp-downT<350&&moved<14); }
   if(!ptrs.size){ loupe.on=false; lcv.hidden=true; redraw(); }
 }
 cv.addEventListener('pointerup',up); cv.addEventListener('pointercancel',up);
@@ -371,12 +374,12 @@ function setMode(m){ mode=m; if(G) G.aim=null; [...$('modes').children].forEach(
 $('fade').oninput=e=>{ fade=e.target.value/100; redraw(); };
 $('mq').onclick=()=>{ $('mhelp').hidden=false; };
 $('mhelpOk').onclick=()=>{ $('mhelp').hidden=true; };
-document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ') && mode==='pin' && G.aim && !G.over){ e.preventDefault(); const [ax,ay]=toScreen(G.aim.x,G.aim.y); G.aim=null; tryPin(ax,ay); redraw(); return; } if(e.key==='p'||e.key==='P') setMode('pin'); if(e.key==='d'||e.key==='D') setMode('move'); });
+document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ') && mode==='pin' && G.aim && !G.over){ e.preventDefault(); valider(); return; } if(e.key==='p'||e.key==='P') setMode('pin'); if(e.key==='d'||e.key==='D') setMode('move'); });
 
 /* ---------- tutoriel ---------- */
 const TSTEPS=[null,
   'La trace relevée sur la scène est en <b>rose</b>. Fais-la glisser sur l’empreinte de la fiche A et tourne-la avec la <b>molette</b> (ou deux doigts) jusqu’à ce que les crêtes se superposent : le rose « disparaît » dans l’encre.',
-  'Aligné ! Passe en mode <b>Pointer</b> et vise une <b>minutie</b> : une crête qui s’arrête ou se divise. Appuie : une loupe apparaît. Relâche pour poser ta visée (rond orange, sans pénalité), puis <b>double-clic</b> (double tape) dessus pour valider. Le bouton <b>?</b> explique les minuties.',
+  'Aligné ! Passe en mode <b>Pointer</b> et vise une <b>minutie</b> : une crête qui s’arrête ou se divise. Appuie : une loupe apparaît. Relâche pour poser ta visée (rond orange, sans pénalité), puis <b>touche le rond</b> pour valider. Le bouton <b>?</b> explique les minuties.',
   'Concordance : la même minutie existe au même endroit sur la fiche. Il en faut <b>8</b> pour identifier. Pointe-en encore 2.'];
 const okCount=i=>[...G.pins[i].values()].filter(p=>p.ok).length;
 function tutoNext(){
@@ -397,7 +400,7 @@ Shell.init({
     facile:{agents:3,label:'Facile',time:240,fiches:3,R:82,rot:[12,40],shared:2,smudge:.7}},
   diffHint:'Plus d’experts : plus de temps, une trace plus grande et moins de fiches à comparer.',
   desktopHint:'Sur ordinateur : molette de la souris pour tourner (Maj = rotation fine), touches D et P pour changer de mode, Entrée pour valider la visée.',
-  rules:['Aligne la trace (rose) : glisser pour déplacer, molette ou deux doigts pour tourner.','Mode <b>Pointer</b> : vise avec la loupe et relâche (sans pénalité), puis <b>double-clic</b> sur la visée pour valider une minutie (fin de crête ou bifurcation). Bouton <b>?</b> : c’est quoi une minutie.','<b>8 concordances</b> sur une même fiche = identification. Une mauvaise fiche à 8 = erreur d’identification.','Valider à côté d’une minutie : −6 s. Discordance : −4 s. Viser ne coûte rien.','Sans erreur : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
+  rules:['Aligne la trace (rose) : glisser pour déplacer, molette ou deux doigts pour tourner.','Mode <b>Pointer</b> : vise avec la loupe et relâche (sans pénalité), puis <b>touche le rond</b> de la visée pour valider une minutie (fin de crête ou bifurcation). Bouton <b>?</b> : c’est quoi une minutie.','<b>8 concordances</b> sur une même fiche = identification. Une mauvaise fiche à 8 = erreur d’identification.','Valider à côté d’une minutie : −6 s. Discordance : −4 s. Viser ne coûte rien.','Sans erreur : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
   winTitle:'Identification établie', loseTitle:'Trace non exploitée', skin:'Mallette du labo',
   malus:'le labo classe la trace « non exploitable » : pas d’indice supplémentaire aujourd’hui.',
   onMenu(){ if(G.fiches) G.over=true; },
