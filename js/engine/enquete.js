@@ -22,10 +22,18 @@ export const MEURTRE2 = { actif: true, ecart: 2, lancement: Date.parse('2026-10-
  * Exception : un meurtre de la rue de la Clef en cours va jusqu'au bout ; la Rampe suit alors directement.
  */
 function lancementRampe(state, push) {
-  if (!MEURTRE2.actif || state.meurtre2Des != null || state.enquetePause || !state.enquete) return;
+  if (!MEURTRE2.actif || state.meurtre2Des != null) return;
   if (!(state.nextDeadline >= MEURTRE2.lancement)) return;
+  // Affaire déjà retirée à la main par le maître du jeu : la nouvelle affaire qui s'ouvre ce soir est la Rampe
+  // (avant, la pause manuelle court-circuitait le lancement et ouvrait un vol ou la rue de la Clef à la place).
+  if (state.enquetePause) { if (!state.enquetePause.suivante) state.enquetePause.suivante = 'rampe'; return; }
+  if (!state.enquete) return;
   const e = state.enquete;
-  if (state.meurtreDes != null && e.n === state.meurtreDes) { state.meurtre2Suivante = true; return; }
+  // La rue de la Clef ouverte le soir même du lancement (à cause de cette pause) n'a pas encore été jouée :
+  // on la retire aussi, elle reviendra plus tard (après un vol).
+  const clefDuLancement = state.meurtreDes != null && e.n === state.meurtreDes && (e.jour || 1) <= 1 && (state.lastResolvedAt || 0) >= MEURTRE2.lancement;
+  if (clefDuLancement) delete state.meurtreDes;
+  else if (state.meurtreDes != null && e.n === state.meurtreDes) { state.meurtre2Suivante = true; return; }
   const aff = affaire(state, e.n);
   state.enquetePause = { id: `rampe-${state.season}-${state.turn}-${e.n}`, n: e.n, titre: aff.titre, tour: state.turn, reprise: state.nextDeadline, suivante: 'rampe' };
   state.enquete = null;
