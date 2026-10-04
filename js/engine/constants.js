@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 71;
+export const APP_VERSION = 72;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -173,7 +173,9 @@ export const FLAGRANT = { parUnite: 0.1, max: 0.4, points: 3, ps: 3, tension: 5 
  */
 export const TERRAIN = { incidents: 45, parPoint: 2, report: 0.5 };
 /** Recherche : chaque unité de travail sur un dossier rapporte des points tout de suite (≈ 0,5). */
-export const DOSSIER = { tailleMin: 4, tailleMax: 8, ptsParUnite: 0.5 };
+// Dossiers locaux plus courts (retour de Luc : 6 agents doivent suivre le rythme d'un dossier par jour), même récompense par dossier.
+// Simulation : 6 agents bouclent ~12 dossiers sur 13 (contre ~9 avant) ; il en fallait 8 à 11.
+export const DOSSIER = { tailleMin: 3, tailleMax: 5, ptsParUnite: 0.75, version: 2 };
 
 export const DELAI_ACADEMIE = 2;       // tours avant l'arrivée d'une recrue
 export const DUREE_FORMATION = 1;      // tours d'indisponibilité
