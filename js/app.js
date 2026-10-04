@@ -273,6 +273,7 @@ async function openParty(id) {
   if (!unsubState) {
     unsubState = S.backend.subscribeState(async (state) => {
       S.state = migrateState(state);
+      recalerJourSiBesoin();
       if (state && S.user && state.zones[S.user.uid]) { try { await loadTurnData(); } catch (e) { console.error(e); S.lastError = e; } }
       if (S.state) completerDepuisGazette(S.state, S.gazettes);
       render();
@@ -282,6 +283,16 @@ async function openParty(id) {
   if (!unsubPrive && S.backend.subscribePrives) unsubPrive = S.backend.subscribePrives(S.user.uid, (msgs) => { S.prives = msgs; if (S.route === 'prive' && !champActif('prive-msg')) rerender(); else majPastilles(); });
   render();
   tick(true);
+}
+
+/** Maître du jeu : corrige une fois le jour de la Rampe ouverte à la main juste avant le calcul du 4 octobre. */
+let recalageFait = false;
+async function recalerJourSiBesoin() {
+  if (recalageFait || !S.state || !S.user || !S.backend.isMaster(S.user) || !S.backend.adminModifierEtat) return;
+  const { jourRampeARecaler, recalerJourRampe } = await import('./engine/enquete.js');
+  if (!jourRampeARecaler(S.state)) return;
+  recalageFait = true;
+  try { await S.backend.adminModifierEtat((cur) => recalerJourRampe(cur)); } catch (e) { console.warn('Recalage du jour impossible :', e); }
 }
 
 let lastTick = 0, lastVu = 0;

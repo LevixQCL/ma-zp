@@ -9,7 +9,7 @@ import { recitAffaire } from '../engine/recit.js';
 import { photoScene, photoUne, photoButin } from './scene-crime.js';
 import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, SOURCES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
-  ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect,
+  ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect, celluleDe,
 } from '../engine/enquete.js';
 import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal, banniereTraque, primeHtml } from './enquete.js';
 import { LIEUX as LIEUX3, MODES, itineraire, fmtDist, nomTroncon } from '../engine/carte3.js';
@@ -610,12 +610,26 @@ function voletBoite(aff, et) {
     ${lignes.join('')}`;
 }
 
+/** Ma cellule d'enquête : les zones avec qui je travaille et les suspects que nous suivons. */
+function celluleHtml(aff) {
+  const st = S.state, e = st.enquete;
+  if (!e || !(e.nbCellules > 1)) return '';
+  const moi = S.user.uid, c = celluleDe(st, moi);
+  const zones = Object.values(st.zones).filter((x) => x.uid !== moi && (x.toursSansOrdres || 0) < 3 && celluleDe(st, x.uid) === c);
+  const suspects = aff.suspects.map((s2, i) => (dansMaCellule(st, moi, i) ? s2.prenom : null)).filter(Boolean);
+  return `<div class="tb-cellule"><span class="tb-ligne-k">🕵️ Ta cellule · ${e.nbCellules} cellules dans le district</span>
+    <span class="small"><strong>Avec toi :</strong> ${zones.length ? zones.map((x) => esc(zoneName(x))).join(', ') : '<span class="muted">personne d’autre pour l’instant</span>'}</span>
+    <span class="small"><strong>Vos suspects :</strong> ${esc(suspects.join(', '))} <span class="tiny muted">(les autres coûtent le double)</span></span>
+    <span class="tiny muted">Partagez-vous les démarches sur la radio pour ne pas payer deux fois la même.</span></div>`;
+}
+
 function voletSoir(aff, dos) {
   const d = S.draft, z = myZone();
   const dem = d.demarches || [];
   const v = voisinageInfo(aff);
   const nomDem = (x) => { const [k, i] = x.split(':'); const dm = demarcheDe(aff, k); return i !== undefined ? `${dm.nom} · ${aff.suspects[Number(i)].prenom}` : dm.nom; };
   return `<div class="between" style="padding-right:44px"><span class="tb-titre" style="padding-right:0">Ce soir</span><span class="small muted">reste ${Math.round((z.budget - coutTotal(d)) * 10) / 10} k€</span></div>
+    ${celluleHtml(aff)}
     <span class="tb-ligne-k">Démarches · ${dem.length} / ${ENQ.maxDemarches}</span>
     ${dem.map((x) => `<div class="tb-boite-l"><span class="small grow" style="font-weight:600">${esc(nomDem(x))}</span><button type="button" class="btn small ghost" data-action="dem-toggle" data-k="${esc(x)}" aria-label="Retirer ${esc(nomDem(x))}">✕</button></div>`).join('') || '<p class="tiny muted" style="margin:0">Touche une photo ou une fiche du tableau pour choisir une démarche.</p>'}
     <div class="voisinage"><span class="small"><strong>Voisinage</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? ` · piste : <strong>${esc(v.nom)}</strong>` : ''} : ${esc(v.txt)}</span></div>
