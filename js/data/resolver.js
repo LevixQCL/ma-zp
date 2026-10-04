@@ -62,6 +62,16 @@ async function versionEnLigneOk() {
   } catch (e) { return true; }
 }
 
+/** Chemins des tableaux rangés directement dans un tableau (Firestore les refuse). */
+export function tableauxImbriques(o, chemin = '', dansTableau = false, out = []) {
+  if (out.length >= 8) return out;
+  if (Array.isArray(o)) {
+    if (dansTableau) { out.push(chemin); return out; }
+    o.forEach((x, i) => tableauxImbriques(x, `${chemin}[${i}]`, true, out));
+  } else if (o && typeof o === 'object') for (const [k, v] of Object.entries(o)) tableauxImbriques(v, chemin ? `${chemin}.${k}` : k, false, out);
+  return out;
+}
+
 export async function resolvePending(backend, { hour = 20, now = () => Date.now(), maxTurns = 10, state: connu = null } = {}) {
   if (running) return 0;
   running = true;
@@ -99,7 +109,11 @@ export async function resolvePending(backend, { hour = 20, now = () => Date.now(
       gazette.date = state.nextDeadline;
       next.nextDeadline = nextDeadline;
       next.lastResolvedAt = state.nextDeadline;
-      const ok = await backend.commitResolution(state, allegerEtat(next, gazette), gazette);
+      allegerEtat(next, gazette);
+      const imbriques = [...tableauxImbriques(next), ...tableauxImbriques(gazette, 'gazette')];
+      if (imbriques.length) console.error('Tableaux imbriqués (refusés par Firestore) :', imbriques);
+      const ok = await backend.commitResolution(state, next, gazette);
+      if (!ok && imbriques.length && backend.derniereErreur) backend.derniereErreur += ` · chemins : ${imbriques.slice(0, 4).join(' ; ')}`;
       if (!ok) {
         if (backend.derniereErreur) { etatResolution.erreur = `Enregistrement du tour ${state.turn} refusé : ${backend.derniereErreur}`; etatResolution.at = Date.now(); }
         break;
