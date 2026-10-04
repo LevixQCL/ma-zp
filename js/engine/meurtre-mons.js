@@ -22,8 +22,12 @@ export const LIEUX_MONS = {
   dolez: { nom: 'Cabinet Mertens', sous: 'boulevard Dolez', x: 706, y: 560, adresse: 'Boulevard Dolez, 7000 Mons' },
   jemappes: { nom: '← Jemappes', sous: 'chez Sophie Willaert, à 5 km', x: 48, y: 300, adresse: 'Jemappes, 7012 Mons', horsPlan: true },
 };
-/** Lien d'itinéraire à pied dans Google Maps. */
-export const lienItineraire = (a, b, lieux = LIEUX_MONS) => `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(lieux[a].adresse)}&destination=${encodeURIComponent(lieux[b].adresse)}&travelmode=walking`;
+/** Lien d'itinéraire dans Google Maps (`mode` : walking, driving ou transit). */
+export const lienItineraire = (a, b, lieux = LIEUX_MONS, mode = 'walking') => `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(lieux[a].adresse)}&destination=${encodeURIComponent(lieux[b].adresse)}&travelmode=${mode}`;
+/** Les trois façons de faire le trajet, pour les liens Google Maps. */
+export const MODES_GMAPS = [['walking', '🚶', 'À pied'], ['driving', '🚗', 'En voiture'], ['transit', '🚌', 'En bus']];
+/** Moyen de transport d'un suspect, pour son lien d'itinéraire. */
+export const modeSuspect = (s) => (s.vehicule && s.vehicule.mode === 'moteur' ? 'driving' : /bus|train/.test((s.vehicule && s.vehicule.t) || '') ? 'transit' : 'walking');
 /** Lieux du plan de Mons pour une affaire (chaque affaire écrite à la main a les siens). */
 export const lieuxMons = (aff) => (aff && aff.lieux) || LIEUX_MONS;
 
