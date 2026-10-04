@@ -36,6 +36,10 @@ export const NOTE_MAJ = {
       ['Parts de la prime', 'démasquer l’auteur sans l’arrêter rapporte 6 k€, aider avec ses pièces partagées 2 k€.'],
     ]],
     ['Équilibrage', [
+      ['Satisfaction et réputation', 'elles redescendent d’autant plus vite qu’elles sont hautes (comme le moral) : 90 et plus se mérite chaque jour. Détail dans les « ? ».'],
+      ['IPZ', 'la satisfaction compte pour 30 % (au lieu de 35 %) et la réputation pour 15 % (au lieu de 10 %) : l’entraide pèse plus.'],
+      ['Rythme de travail', 'renforcé : +35 % d’efficacité (au lieu de +20 %) ; allégé : −35 % (au lieu de −20 %). Avant, alléger tous les jours était plus rentable que le rythme normal.'],
+      ['Salle des ventes', 'après un lot gagné, 5 jours d’attente au lieu de 7 (3 lots au plus par saison).'],
       ['Matériel du Roulage', 'équiper le Roulage donne maintenant aussi +15 % d’amendes par niveau, en plus de l’efficacité : l’achat est rentabilisé dans la saison.'],
       ['Traque', 'il suffit de 2 agents d’Intervention (au lieu de 4) pour tenter une interpellation.'],
     ]],

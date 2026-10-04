@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 64;
+export const APP_VERSION = 65;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -109,6 +109,21 @@ export function tauxRetourMoral(m) {
   for (const [min, taux] of MORAL.retour) if (m >= min) t = taux;
   return t;
 }
+/**
+ * Retour naturel de la satisfaction et de la réputation vers 50 : part de l'écart rattrapée chaque soir.
+ * `paliers` : au-dessus de ces valeurs, le taux grimpe (comme le moral). Vide = taux fixe `base`.
+ */
+export const DERIVE = {
+  // Plus c'est haut, plus ça redescend vite (retour de Luc, adouci) : 90+ reste possible pour une zone très active.
+  satisfaction: { cible: 50, base: 0.04, paliers: [[60, 0.06], [70, 0.10], [80, 0.15], [90, 0.20]] },
+  reputation: { cible: 50, base: 0.03, paliers: [[60, 0.05], [70, 0.08], [80, 0.12], [90, 0.16]] },
+};
+export function tauxDerive(k, v) {
+  const d = DERIVE[k];
+  let t = d.base;
+  if (v > d.cible) for (const [min, taux] of d.paliers) if (v >= min) t = taux;
+  return t;
+}
 export const gainMoral = (base, moral) => (base <= 0 ? base : moral < MORAL_PALIERS[0] ? base : moral < MORAL_PALIERS[1] ? Math.ceil(base / 2) : 1);
 export const gainPrime = (moral) => gainMoral(4, moral);
 /**
@@ -187,8 +202,9 @@ export const risqueBlessure = (z) => (z && z.infra && z.infra.tir ? INFRAS.tir.b
 
 export const RYTHMES = {
   normal:   { label: 'Normal', mult: 1, moral: 0, cout: 0, sub: 'aucun effet' },
-  renforce: { label: 'Renforcé', mult: 1.2, moral: -6, cout: 2, sub: '+20 % d’efficacité · −6 moral · 2 k€' },
-  allege:   { label: 'Allégé', mult: 0.8, moral: 5, cout: 0, sub: '−20 % d’efficacité · +5 moral' },
+  // Simulation (test/equip-sim.mjs) : à ×1,2 / ×0,8, allégé tous les jours battait le normal et renforcé ne payait jamais.
+  renforce: { label: 'Renforcé', mult: 1.35, moral: -6, cout: 2, sub: '+35 % d’efficacité · −6 moral · 2 k€' },
+  allege:   { label: 'Allégé', mult: 0.65, moral: 5, cout: 0, sub: '−35 % d’efficacité · +5 moral' },
 };
 
 export const GRADES = [
@@ -214,7 +230,7 @@ export function scoreBudget(b) {
 }
 
 // Poids de l'IPZ en version 1 (l'enquête arrivera en version 2).
-export const IPZ_POIDS = { satisfaction: 0.35, affaires: 0.25, moral: 0.20, budget: 0.10, reputation: 0.10 };
+export const IPZ_POIDS = { satisfaction: 0.30, affaires: 0.25, moral: 0.20, budget: 0.10, reputation: 0.15 };
 
 export const COULEURS_ZONE = ['#5AB0F0', '#3CC6B8', '#A78BFA', '#F59E5B', '#F08BB4', '#E6C36A', '#7FD18B', '#F2766B', '#8FA8FF', '#D9A5F5'];
 
@@ -330,7 +346,7 @@ export const REPUTATION = {
 
 // ───── Salle des ventes (enchères) ─────
 // Un lot par jour, offres secrètes dans les ordres, résolues à 20:00. Le plus offrant paie son offre.
-export const ENCHERE = { max: 30, delaiGain: 7, repReserve: 60, partReserve: 0.25 };
+export const ENCHERE = { max: 30, delaiGain: 5, repReserve: 60, partReserve: 0.25 };
 export const LOTS = {
   chien:     { nom: 'Chien pisteur', texte: 'Un malinois dressé et son maître-chien rejoignent tes enquêteurs.', effet: 'Recherche +15 % jusqu’à la fin de la saison', prix: 5, bonus: { recherche: 1.15 } },
   drone:     { nom: 'Drone de surveillance', texte: 'Un drone avec caméra thermique, et un agent formé pour le piloter.', effet: 'Intervention +10 % jusqu’à la fin de la saison', prix: 6, bonus: { intervention: 1.1 } },
