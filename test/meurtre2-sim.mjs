@@ -1,7 +1,12 @@
 // Simulation de l'affaire de la Rampe : en combien de jours quatre profils obtiennent-ils les aveux ?
 // Usage : node test/meurtre2-sim.mjs
-// Une zone seule (sans partage), 2 démarches + 1 réaudition + 1 recoupement par soir, rebondissements des jours 3 et 5,
-// 40 % de chance d'une pièce de voisinage. La confrontation se juge sur les pièces du matin.
+// 2 démarches + 1 réaudition + 1 recoupement par soir, rebondissements des jours 3 et 5, 40 % de chance d'une pièce de
+// voisinage. La confrontation se juge sur les pièces du matin. Trois situations :
+//  · seule : la zone joue seule, sans aucune autre source ;
+//  · + bonus : en plus, une pièce libre par énigme réussie (bonus « indice », 1 jour sur 2), appui PJF (1 jour sur 4),
+//    incidents et Directeur (1 jour sur 8) ;
+//  · équipe : + bonus, et trois collègues de cellule qui enquêtent au hasard et partagent chaque soir
+//    (au plus 2 pièces reçues par soir, comme dans le jeu).
 // Profils : parfait (soupçonne Olivier dès son audition), moyen (suit d'abord les leurres), parieur (confronte au hasard le 1er jour),
 // prudent (ne confronte que quand un seul suspect reste ET qu'il a deux décisives).
 import { affaireMeurtreRampe } from '../js/engine/meurtre-rampe.js';
@@ -19,8 +24,24 @@ function choixConfront(d, rng, fort) {
   return rng.shuffle(dispo).slice(0, 3);
 }
 
-function jouer(profil, graine) {
-  const rng = makeRng(`sim2:${profil}:${graine}`);
+/** Un collègue qui enquête sans plan : deux démarches utiles au hasard par soir, plus ses propres bonus. */
+function collegue(rng) {
+  const d = { pieces: [] };
+  const toutes = ['labo', 'cam', 'temoin', ...[0, 1, 2, 3, 4].flatMap((i) => ['alibi', 'banque', 'moyens'].map((k) => `${k}:${i}`))];
+  return {
+    d,
+    soir(j, bonus) {
+      const faites = [];
+      for (const x of rng.shuffle(toutes.slice())) { if (faites.length >= 2) break; const f = pieceDemarche(aff, d, x); if (f && !faites.includes(f)) faites.push(f); }
+      for (const f of faites) d.pieces.push({ f, j });
+      if (bonus && rng.chance(0.6)) { const l = aff.libres.filter((f) => !d.pieces.some((p) => p.f === f)); if (l.length) d.pieces.push({ f: rng.pick(l), j }); }
+    },
+  };
+}
+
+function jouer(profil, graine, { bonus = false, equipe = 0 } = {}) {
+  const rng = makeRng(`sim2:${profil}:${graine}:${bonus}:${equipe}`);
+  const collegues = Array.from({ length: equipe }, (_, k) => collegue(makeRng(`col:${graine}:${k}`)));
   const d = { pieces: [] };
   const a = (f, j) => { if (!d.pieces.some((p) => p.f === f)) d.pieces.push({ f, j }); };
   const ordre = profil === 'parfait' ? [1, 4, 0, 2, 3] : profil === 'moyen' ? rng.shuffle([0, 2, 3]).concat(rng.shuffle([1, 4])) : rng.shuffle([0, 1, 2, 3, 4]);
@@ -73,15 +94,27 @@ function jouer(profil, graine) {
     if (x) a(x, j);
     // Déclic.
     for (const dc of aff.declics) if (dc.si.every((f) => d.pieces.some((p) => p.f === f))) a(dc.f, j);
-    if (rng.chance(0.4)) { const libres = aff.libres.filter((f) => !d.pieces.some((p) => p.f === f)); if (libres.length) a(rng.pick(libres), j); }
+    const libre = () => { const libres = aff.libres.filter((f) => !d.pieces.some((p) => p.f === f)); if (libres.length) a(rng.pick(libres), j); };
+    if (rng.chance(0.4)) libre();
+    if (bonus) { if (rng.chance(0.5)) libre(); if (rng.chance(0.25)) libre(); if (rng.chance(0.125)) libre(); }
+    // Partages des collègues : chacun envoie une pièce que la zone n'a pas ; elle en traite 2 au plus.
+    let recus = 0;
+    for (const c of collegues) {
+      c.soir(j, bonus);
+      const neuves = c.d.pieces.filter((p) => !d.pieces.some((q) => q.f === p.f));
+      if (neuves.length && recus < 2) { a(rng.pick(neuves).f, j); recus += 1; }
+    }
   }
   return { jour: null, echec: 'affaire classée' };
 }
 
-for (const profil of ['parfait', 'moyen', 'parieur', 'prudent']) {
-  const res = Array.from({ length: 400 }, (_, g) => jouer(profil, g));
+for (const [nom, opts] of [['seule', {}], ['+ bonus', { bonus: true }], ['équipe de 4', { bonus: true, equipe: 3 }]]) {
+  console.log(`— ${nom}`);
+  for (const profil of ['parfait', 'moyen', 'parieur', 'prudent']) {
+  const res = Array.from({ length: 400 }, (_, g) => jouer(profil, g, opts));
   const ok = res.filter((x) => x.jour);
   const dist = [1, 2, 3, 4, 5, 6, 7].map((j) => ok.filter((x) => x.jour === j).length);
   const ecartes = res.filter((x) => x.echec && x.echec.startsWith('écarté')).length;
   console.log(`${profil.padEnd(8)} résolue ${String(Math.round(ok.length / 4)).padStart(3)} %  · jour moyen ${ok.length ? (ok.reduce((t, x) => t + x.jour, 0) / ok.length).toFixed(1) : '—'} · par jour J1..J7 ${dist.join(' ')} · écartés ${Math.round(ecartes / 4)} %`);
+}
 }
