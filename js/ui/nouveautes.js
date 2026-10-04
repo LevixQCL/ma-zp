@@ -36,6 +36,9 @@ export const NOTE_MAJ = {
       ['Parts de la prime', 'démasquer l’auteur sans l’arrêter rapporte 6 k€, aider avec ses pièces partagées 2 k€.'],
     ]],
     ['Affichage', [
+      ['Entraînement en tuiles', 'les énigmes et les mini-jeux d’entraînement se choisissent avec des tuiles illustrées, rangées par famille (logique, observation, chiffres ; incidents, appui PJF), au lieu d’un menu déroulant.'],
+      ['Toute l’équipe en mission', 'plusieurs figures peuvent partir le même soir, une par destination (chaque secteur de la zone de non-droit où tu envoies des agents, et le renfort). Leur mission reste affichée quand tu rouvres tes ordres.'],
+      ['Heures sup’ des enquêteurs', 'nouvelle dépense du jour (3 k€) : +3 unités de travail sur tes dossiers locaux ce soir, environ un demi-dossier. L’aperçu des dossiers en tient compte.'],
       ['Classements en couleurs', '« la course » : chaque zone a son couloir à sa couleur, avec dessous ce qui compose son IPZ (satisfaction, terrain, moral, budget, réputation), et une carte « Pourquoi X est devant toi ? ». Enquête et énigmes en couloirs aussi, onglets colorés.'],
       ['Incidents du jour', 'ils tombent entre 6 h et 12 h et restent ouverts jusqu’à 20:00 : plus d’incident qui ferme avant la fin de la journée.'],
       ['Jauge des skins', 'touche-la sur l’HP : comment elle se remplit, et tous les skins à gagner, avec un aperçu sur ton commissariat.'],

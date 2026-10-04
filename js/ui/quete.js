@@ -48,23 +48,35 @@ function renderGrille(q) {
   </section>`;
 }
 
-/** Entraînement aux mini-jeux d'incident : un bouton par mini-jeu, lancé directement. */
+const ICO_ENIGME = { quiment: '🤥', grille: '🏘️', cadenas: '🔐', chronologie: '🕒', code: '🔣', plaque: '🚗', photos: '📷', filature: '👣', butin: '💰', horaires: '🚌', ecriture: '✍️' };
+const GROUPES_ENIGMES = [['Logique', ['quiment', 'grille', 'chronologie', 'horaires']], ['Observation', ['photos', 'plaque', 'ecriture', 'filature']], ['Chiffres et codes', ['cadenas', 'code', 'butin']]];
+const ICO_MJ = { colis: '💣', crochetage: '🔓', depanneuse: '🚧', dossier: '📄', empreintes: '🖐️', adn: '🧬', reseau: '🔌', tracage: '🌐' };
+const COUL_MJ = { intervention: '#FF6E6A', recherche: '#63B0FF', roulage: '#FFB23F', proximite: '#3DD39A', labo: '#A78BFA', rccu: '#5AD1E6' };
+
+/** Entraînement aux mini-jeux : des tuiles par famille (incidents du jour, appui PJF), lancées directement. */
 function entrainementMiniJeux() {
-  return `<section class="card tight" aria-label="Mini-jeux d’incident" style="gap:8px">
-    <span class="tiny muted">Les incidents du jour, sans enjeu : choisis l’effectif, refais le tuto, recommence autant que tu veux.</span>
-    <div class="choices" style="grid-template-columns:repeat(2,minmax(0,1fr))">${MINI_JEUX.map((m) => `<button type="button" class="choice" data-action="mj-train" data-j="${m.jeu}" style="min-height:76px"><span>${esc(m.nom)}</span><span class="s">${esc(m.label || SERVICE_LABELS[m.service])}</span></button>`).join('')}</div>
+  const tuile = (m) => `<button type="button" class="tr-tuile" data-action="mj-train" data-j="${m.jeu}" style="--c:${COUL_MJ[m.service] || '#63B0FF'}"><span class="tr-ico" aria-hidden="true">${ICO_MJ[m.jeu] || '🎮'}</span><span class="tr-nom">${esc(m.nom)}</span><span class="tr-s">${esc(SERVICE_LABELS[m.service] || (m.service === 'labo' ? 'Labo' : 'RCCU'))}</span></button>`;
+  const inc = MINI_JEUX.filter((m) => !['labo', 'rccu'].includes(m.service)), pjf = MINI_JEUX.filter((m) => ['labo', 'rccu'].includes(m.service));
+  return `<section class="card tight" aria-label="Mini-jeux" style="gap:10px">
+    <span class="tiny muted">Sans enjeu : choisis l’effectif, refais le tuto, recommence autant que tu veux.</span>
+    <span class="tr-grp">Incidents du jour</span><div class="tr-grille">${inc.map(tuile).join('')}</div>
+    <span class="tr-grp">Appui PJF à l’enquête</span><div class="tr-grille">${pjf.map(tuile).join('')}</div>
   </section>`;
 }
 
-/** Barre de l'entraînement : type, difficulté, statistiques personnelles. */
+/** Barre de l'entraînement : type (tuiles par famille), difficulté, statistiques personnelles. */
 function entrainementBarre() {
   let st = {};
   try { st = JSON.parse(localStorage.getItem('mazp-entrainement') || '{}'); } catch (e) { /* rien */ }
   const t = S.trainType || 'quiment', d = S.trainDiff || 3;
   const x = st[t];
+  const ouvert = S.trainChoix !== false;
+  const tuile = (k) => { const y = st[k]; return `<button type="button" class="tr-tuile petite" data-action="train-type" data-v="${k}" aria-pressed="${k === t}"><span class="tr-ico" aria-hidden="true">${ICO_ENIGME[k] || '❓'}</span><span class="tr-nom">${esc(QUEST_LABELS[k])}</span>${y ? `<span class="tr-s">${y.ok}/${y.n}</span>` : ''}</button>`; };
+  const autres = QUEST_TYPES.filter((k) => !GROUPES_ENIGMES.some(([, l]) => l.includes(k)));
+  const groupes = [...GROUPES_ENIGMES, ...(autres.length ? [['Autres', autres]] : [])];
   return `<section class="card tight" aria-label="Réglages de l’entraînement" style="gap:8px">
-    <label class="field" style="margin:0">Type d’énigme
-      <select class="text" data-change="train-type" style="min-height:44px;font-size:14px">${QUEST_TYPES.map((k) => `<option value="${k}" ${k === t ? 'selected' : ''}>${esc(QUEST_LABELS[k])}</option>`).join('')}</select></label>
+    <button type="button" class="between tr-entete" data-action="train-choix" aria-expanded="${ouvert}"><span class="small" style="font-weight:600">Énigme : ${ICO_ENIGME[t] || ''} ${esc(QUEST_LABELS[t])}</span><span class="tiny muted">${ouvert ? 'replier' : 'changer'} ${icon('chevron', 12)}</span></button>
+    ${ouvert ? groupes.map(([g, l]) => `<span class="tr-grp">${esc(g)}</span><div class="tr-grille">${l.filter((k) => QUEST_TYPES.includes(k)).map(tuile).join('')}</div>`).join('') : ''}
     <div class="col" style="gap:4px"><span class="small" style="font-weight:600">Difficulté</span>
       <div class="segn" style="grid-template-columns:repeat(6,minmax(0,1fr))">${[1, 2, 3, 4, 5, 6].map((n) => `<button type="button" aria-selected="${n === d}" data-action="train-diff" data-v="${n}">${n === 6 ? 'HC' : n}</button>`).join('')}</div></div>
     <span class="tiny muted">${x ? `Ton entraînement en ${esc(QUEST_LABELS[t])} : ${x.ok} réussie${x.ok > 1 ? 's' : ''} sur ${x.n}.` : 'Rien ne compte ici : ni classement, ni moral, ni PS.'} « HC » = niveau hardcore, celui du dossier noir.</span>

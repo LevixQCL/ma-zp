@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 70;
+export const APP_VERSION = 71;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -152,6 +152,8 @@ export const DEPENSES = {
   prime:        { nom: 'Prime au personnel', cout: 3, texte: '+4 de moral (sous 70), +2 (de 70 à 85), +1 au-delà' },
   prevention:   { nom: 'Campagne de prévention', cout: 4, texte: 'criminalité −6' },
   soustraitance: { nom: 'Sous-traitance administrative', cout: 3, texte: '−5 dossiers de paperasse' },
+  // Simulation (test/equip-sim.mjs, FILTRE=enquêteurs) : à 3 unités, un peu plus efficace que 2 agents de réserve pour le même prix, mais réservé aux dossiers.
+  enqueteurs:   { nom: 'Heures sup’ des enquêteurs', cout: 3, unites: 3, texte: '+3 unités de travail sur tes dossiers locaux ce soir (environ un demi-dossier, les plus vieux d’abord)' },
   revision:     { nom: 'Révision du parc', cout: 2, texte: 'état des véhicules +20 %, effet le jour même' },
   carrosserie:  { nom: 'Carrosserie', cout: 1.5, texte: 'répare les véhicules cabossés (1,5 k€ chacun, moitié prix avec l’atelier) ; immobilisés ce jour-là, sauf avec l’atelier' },
 };

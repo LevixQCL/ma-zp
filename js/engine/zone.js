@@ -286,7 +286,7 @@ export function sanitizeOrders(zone, raw, state) {
   const depenses = {
     reserve: tutelle ? 0 : clamp(Math.floor(fini(dp.reserve)), 0, DEPENSES.reserve.max),
     reserveService: SERVICES.includes(dp.reserveService) ? dp.reserveService : 'intervention',
-    prime: !!dp.prime, prevention: !!dp.prevention, soustraitance: !!dp.soustraitance, revision: !!dp.revision, carrosserie: carrosserieOrdre(zone, dp.carrosserie),
+    prime: !!dp.prime, prevention: !!dp.prevention, soustraitance: !!dp.soustraitance, enqueteurs: !!dp.enqueteurs, revision: !!dp.revision, carrosserie: carrosserieOrdre(zone, dp.carrosserie),
   };
   // Enquête et FIPA : validés plus finement pendant la résolution.
   const int = (v, a, b) => clamp(Math.floor(fini(v)), a, b);
@@ -326,11 +326,13 @@ export function sanitizeOrders(zone, raw, state) {
     for (const [k2, v] of Object.entries(o.patrouilles).slice(0, 8)) { const n = int(v, 0, 12); if (/^\d{1,4}$/.test(k2) && n > 0) patrouilles[k2] = n; }
   }
   const ROLES_M = ['inter', 'rech', 'prox', 'roul', 'admin'];
-  const mission = o.mission && typeof o.mission === 'object' && ROLES_M.includes(o.mission.role) && ['nondroit', 'renfort'].includes(o.mission.type)
-    ? { role: o.mission.role, type: o.mission.type, secteur: /^\d{1,4}$/.test(String(o.mission.secteur || '')) ? String(o.mission.secteur) : '' } : null;
+  const propreM = (m) => (m && typeof m === 'object' && ROLES_M.includes(m.role) && ['nondroit', 'renfort'].includes(m.type)
+    ? { role: m.role, type: m.type, secteur: /^\d{1,4}$/.test(String(m.secteur || '')) ? String(m.secteur) : '' } : null);
+  const missions = (Array.isArray(o.missions) ? o.missions : o.mission ? [o.mission] : []).slice(0, ROLES_M.length).map(propreM).filter(Boolean);
+  const mission = missions[0] || null;
   // Dilemme du Directeur : indice du choix (vérifié à la résolution).
   const dilemme = Number.isInteger(o.dilemme) && o.dilemme >= 0 && o.dilemme <= 3 ? o.dilemme : null;
-  return { dilemme, mission, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
+  return { dilemme, mission, missions, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */
@@ -342,7 +344,7 @@ export function carrosserieOrdre(zone, v) {
 
 export function coutDepenses(d, z = null) {
   if (!d) return 0;
-  return (d.carrosserie && z ? coutCarrosserie(z, d.carrosserie) : 0) + (d.reserve || 0) * DEPENSES.reserve.cout + (d.prime ? DEPENSES.prime.cout : 0) + (d.prevention ? DEPENSES.prevention.cout : 0) + (d.soustraitance ? DEPENSES.soustraitance.cout : 0) + (d.revision ? DEPENSES.revision.cout : 0);
+  return (d.carrosserie && z ? coutCarrosserie(z, d.carrosserie) : 0) + (d.reserve || 0) * DEPENSES.reserve.cout + (d.prime ? DEPENSES.prime.cout : 0) + (d.prevention ? DEPENSES.prevention.cout : 0) + (d.enqueteurs ? DEPENSES.enqueteurs.cout : 0) + (d.soustraitance ? DEPENSES.soustraitance.cout : 0) + (d.revision ? DEPENSES.revision.cout : 0);
 }
 
 export const NIVEAUX_OPERATION = { complet: 1, reduit: 0.5, aucun: 0 };
