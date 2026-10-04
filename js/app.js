@@ -650,6 +650,8 @@ async function onClick(e) {
         break;
       }
       case 'tb-ban-fermer': S.banTraqueVue = S.state.turn; render(); break;
+      case 'tb-prime-fermer': S.banPrimeVue = S.state.turn; render(); break;
+      case 'tb-prime-ouvrir': S.banPrimeVue = null; render(); break;
       case 'traque-voir': S.enqVue = 'liste'; S.tabSheet = null; try { localStorage.setItem('mazp-enq-vue', 'liste'); } catch (err) { /* pas de stockage */ } render(); requestAnimationFrame(() => { const t = document.getElementById('traque'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); break;
       case 'tab-vue': S.enqVue = el.dataset.v; S.tabSheet = null; try { localStorage.setItem('mazp-enq-vue', S.enqVue); } catch (err) { /* pas de stockage */ } window.scrollTo(0, 0); render(); break;
       case 'tab-volet': S.tabSheet = S.tabSheet && S.tabSheet.k === el.dataset.k ? null : { k: el.dataset.k, id: el.dataset.k }; S.tabMode = 'main'; S.tabFrom = null; rerender(); break;
