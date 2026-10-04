@@ -334,7 +334,7 @@ export function sections() {
     },
     {
       id: 'incidents', titre: 'Les incidents du jour (mini-jeux)', html: `
-        <p>Une ou deux fois par jour, à une heure imprévue (entre 6 h et 12 h, ouvert jusqu’à 20:00), un incident tombe sur un de tes services. L’HP affiche un compte à rebours jusqu’au prochain, puis l’incident reste ouvert <strong>${INC.ouverture / 3600000} heures</strong>. S’il tombe tard, il reste jouable le lendemain matin et compte alors à la résolution suivante. Plus un service compte d’agents, plus il a de chances d’être touché.</p>
+        <p>Une ou deux fois par jour, à une heure imprévue (entre 6 h et 12 h, ouvert jusqu’à 20:00), un incident tombe sur un de tes services. L’HP affiche un compte à rebours jusqu’au prochain, puis l’incident reste ouvert <strong>jusqu’à 20:00</strong> (8 à 14 heures pour jouer). Plus un service compte d’agents, plus il a de chances d’être touché.</p>
         ${ul([
           '<strong>Un seul essai</strong> par incident. Quitter en cours de partie compte comme un échec.',
           'La difficulté suit l’effectif du service en service le jour où l’incident tombe (tes ordres validés la veille à 20:00) : plus d’agents que la répartition de base, c’est plus facile ; moins, c’est plus dur. Elle est fixée dès que l’incident tombe : changer tes ordres ensuite n’y change rien.',
