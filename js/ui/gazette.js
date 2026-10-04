@@ -107,8 +107,20 @@ function classementEnigmes(me) {
   let rang = 0;
   return `<section class="card"><h2 class="card-title">Esprit vif · énigmes du jour</h2>
     ${lignes.length ? lignes.map((l) => couloir({ z: l.z, rang: l.classe ? ++rang : 0, classe: l.classe, valeur: l.pct, txt: `${Math.round(l.pct)} %`, me: l.z.uid === me.uid,
-      sous: `${l.ok} réussie${l.ok > 1 ? 's' : ''} sur ${l.n}${noirs[l.z.uid] ? ` · ${noirs[l.z.uid].ok} dossier${noirs[l.z.uid].ok > 1 ? 's' : ''} noir${noirs[l.z.uid].ok > 1 ? 's' : ''}` : ''}${l.classe ? '' : ` · classé dès ${MIN_ENIGMES} réponses`}` })).join('') : '<p class="small muted" style="margin:0">Personne n’a encore répondu à une énigme.</p>'}
-    <p class="small muted" style="margin:0">Toutes les énigmes répondues depuis le début de la partie, y compris aujourd’hui. Classé à partir de ${MIN_ENIGMES} réponses ; les énigmes laissées sans réponse ne comptent pas. « Noirs » : dossiers noirs résolus (hors pourcentage). Le plus fort de la saison reçoit le titre « Cerveau du district ».</p></section>`;
+      sous: `${l.ok} réussie${l.ok > 1 ? 's' : ''} sur ${l.n}${noirs[l.z.uid] && noirs[l.z.uid].ok ? ` · 🕵 ${noirs[l.z.uid].ok} dossier${noirs[l.z.uid].ok > 1 ? 's' : ''} noir${noirs[l.z.uid].ok > 1 ? 's' : ''}` : ''}${l.classe ? '' : ` · classé dès ${MIN_ENIGMES} réponses`}` })).join('') : '<p class="small muted" style="margin:0">Personne n’a encore répondu à une énigme.</p>'}
+    <p class="small muted" style="margin:0">Toutes les énigmes répondues depuis le début de la partie, y compris aujourd’hui. Classé à partir de ${MIN_ENIGMES} réponses ; les énigmes laissées sans réponse ne comptent pas. Les dossiers noirs (🕵) ne comptent pas dans le pourcentage : ils ont leur propre classement juste en dessous.</p></section>${noirsHtml(noirs, me)}`;
+}
+
+/** Dossiers noirs (énigmes hardcore) : résolus depuis le début de la partie, et le compte de la saison pour le titre « Cerveau du district ». */
+function noirsHtml(noirs, me) {
+  const zs = Object.values(S.state.zones).map((z) => ({ z, ok: (noirs[z.uid] || {}).ok || 0, n: (noirs[z.uid] || {}).n || 0, saison: (z.stats && z.stats.noirs) || 0 }))
+    .filter((x) => x.n || x.saison).sort((a, b) => (b.saison - a.saison) || (b.ok - a.ok) || (a.n - b.n));
+  const max = Math.max(1, ...zs.map((x) => x.ok));
+  return `<section class="card" style="gap:8px"><h2 class="card-title">🕵 Dossiers noirs · énigmes hardcore</h2>
+    ${zs.length ? zs.map((x, k) => couloir({ z: x.z, rang: k + 1, classe: x.ok > 0 || x.saison > 0, valeur: x.ok, max, txt: `${x.ok} résolu${x.ok > 1 ? 's' : ''}`, me: x.z.uid === me.uid,
+      sous: `${x.saison} cette saison · ${x.n} tenté${x.n > 1 ? 's' : ''} depuis le début` })).join('')
+      : '<p class="small muted" style="margin:0">Personne n’a encore résolu de dossier noir. Il s’ouvre chaque jour dans les énigmes, facultatif et au niveau hardcore.</p>'}
+    <p class="small muted" style="margin:0">Classé sur les dossiers noirs résolus cette saison : le premier reçoit le titre « Cerveau du district » en fin de saison.</p></section>`;
 }
 
 const ONGLETS_CLASSEMENT = [['ipz', 'IPZ', '#63B0FF'], ['limier', 'Enquête', '#FFB23F'], ['enigmes', 'Énigmes', '#A78BFA'], ['grade', 'Grades', '#3DD39A'], ['palmares', 'Palmarès', '#F5C64A']];
