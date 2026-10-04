@@ -16,7 +16,7 @@ export const ENQ_VERSION = 2;
 export const ENQ = {
   dureeMax: 7,          // jours pour désigner le suspect
   traqueTours: 1,       // tours pour l'arrêter ensuite (une seule nuit : les indices sur la planque s'accumulent pendant l'enquête)
-  agentsTraque: 4,      // agents d'Intervention minimum pour une interpellation
+  agentsTraque: 2,      // agents d'Intervention minimum pour une interpellation (4 coûtaient plus que l'arrestation ne rapportait : voir l'historique)
   maxDemarches: 2,      // démarches par tour
   maxPartages: 3,       // pièces partagées par tour
   maxRecus: 2,          // pièces partagées qu'une zone peut recevoir par soir (les grandes parties restent équitables)

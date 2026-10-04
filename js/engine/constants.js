@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 58;
+export const APP_VERSION = 59;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -49,14 +49,15 @@ export const COUTS = {
 /** Coût du matériel pour passer du niveau n au niveau n+1 : 5, 7, 9, 11 k€. */
 export const coutEquipement = (n) => COUTS.equipementBase + 2 * (n - 1);
 /** Multiplicateurs d'efficacité : formation (+20 % par niveau) et matériel (+15 % par niveau). */
-export const multNiveau = (n) => 0.8 + 0.2 * n;
+export const FORMATION = { parNiveau: 0.2 };
+export const multNiveau = (n) => 1 - FORMATION.parNiveau + FORMATION.parNiveau * n;
 /** Matériel : un petit gain d'efficacité et surtout un effet propre à chaque service (k = niveau − 1).
  *  `actif: false` rend l'ancien comportement (+15 % d'efficacité, rien d'autre). */
 export const EQUIP = {
   actif: true,
   efficacite: 0.08,     // +5 % par niveau
   blessure: 0.15,       // Intervention : −15 % de risque de blessure par niveau
-  amendes: 0,           // (ancien effet Roulage, retiré : l'efficacité donne déjà les amendes)
+  amendes: 0.15,        // Roulage : +15 % d'amendes par niveau, en plus de l'efficacité (simulation : rentabilisé dans la saison, voir test/equip-sim.mjs)
   chasse: 0.05,         // Roulage : « chasse aux PV » repoussée de 5 points d'effectifs par niveau
   enquete: 0.15,        // Recherche : +15 % de chances de pièce d'enquête par niveau
   satisfaction: 0.5,    // Proximité : +0,5 de satisfaction par tour et par niveau
@@ -68,9 +69,9 @@ export const effetEquip = (service, k) => {
   const pc = (v) => `${Math.round(v * 100)} %`;
   switch (service) {
     case 'intervention': return `risque de blessure −${pc(Math.min(0.8, k * EQUIP.blessure))}`;
-    case 'roulage': return `seuil de la « chasse aux PV » +${Math.round(k * EQUIP.chasse * 100)} % des effectifs`;
+    case 'roulage': return `amendes +${pc(k * EQUIP.amendes)} et seuil de la « chasse aux PV » +${Math.round(k * EQUIP.chasse * 100)} % des effectifs`;
     case 'recherche': return `chances de pièce d’enquête +${pc(k * EQUIP.enquete)}`;
-    case 'proximite': return `+${String(Math.round(k * EQUIP.satisfaction * 10) / 10).replace('.', ',')} de satisfaction par jour`;
+    case 'proximite': return `+${String(Math.round(k * EQUIP.satisfaction * 10) / 10).replace('.', ',')} de satisfaction par jour (≈ +${Math.round(k * EQUIP.satisfaction * 12)} sur une saison)`;
     case 'admin': return `tracas internes évités +${pc(k * EQUIP.protection)}`;
     default: return '';
   }
