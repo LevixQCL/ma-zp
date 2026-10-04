@@ -399,7 +399,7 @@ function faillite(state, z, push, T, players) {
     ps, badges: z.badges, titres: z.titres, arrivee: z.arrivee || 0,
   });
   // On garde la saison en cours pour le classement (3 tours comptés à 0) et les statistiques.
-  nz.ipzSomme = z.ipzSomme; nz.toursJoues = z.toursJoues + 3; nz.ipzHist = z.ipzHist;
+  nz.ipzSomme = z.ipzSomme; nz.toursJoues = z.toursJoues + 3; nz.ipzHist = z.ipzHist; if (z.compSomme) { nz.compSomme = z.compSomme; nz.compTours = (z.compTours || 0) + 3; }
   nz.stats = { ...z.stats }; nz.enquete = z.enquete; nz.enquetePrecedente = z.enquetePrecedente;
   nz.faillites = (z.faillites || 0) + 1; nz.failliteSaison = true;
   nz.protegeJusqua = absT(state, T) + MAN.protectionTours;

@@ -1295,3 +1295,26 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .nd-gains { border: 1px solid var(--hair); border-radius: 10px; padding: 6px 10px; background: var(--surface2); }
 .nd-gains summary { cursor: pointer; font-weight: 600; }
 .nd-gains .g { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin-top: 6px; }
+/* Classements « La course » : un couloir par zone, barre à sa couleur, composition de l'IPZ dessous. */
+.crs-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.crs-tabs::-webkit-scrollbar { display: none; }
+.crs-tabs button { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; padding: 8px 12px; min-height: 38px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--text2); font: 700 13px var(--body); cursor: pointer; }
+.crs-tabs button i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); }
+.crs-tabs button[aria-selected="true"] { background: var(--c); border-color: var(--c); color: #0C1124; }
+.crs-tabs button[aria-selected="true"] i { background: #0C1124; }
+.crs { display: grid; grid-template-columns: 24px 1fr; gap: 8px; align-items: start; }
+.crs-r { font: 800 15px var(--body); color: var(--muted); text-align: center; line-height: 38px; }
+.crs.me .crs-r { color: var(--amber); }
+.crs-col { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.crs-piste { position: relative; display: block; width: 100%; padding: 0; border: 0; cursor: pointer; height: 38px; border-radius: 10px; background: repeating-linear-gradient(90deg, var(--surface2) 0 calc(10% - 1px), var(--hair) calc(10% - 1px) 10%); overflow: hidden; }
+.crs.me .crs-piste { box-shadow: 0 0 0 1.5px var(--amber); }
+.crs-barre { position: absolute; inset: 0 auto 0 0; border-radius: 10px; }
+.crs-lbl { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 0 10px; color: #fff; font: 700 13px var(--body); text-shadow: 0 1px 2px rgba(0,0,0,.55); white-space: nowrap; }
+.crs-nom { overflow: hidden; text-overflow: ellipsis; }
+.crs-v { font: 800 15px var(--display, inherit); }
+.crs.nc { opacity: .55; }
+.crs-compo { display: flex; gap: 1px; height: 6px; border-radius: 3px; overflow: hidden; min-width: 30px; }
+.crs-compo i { display: block; height: 100%; }
+.crs-leg { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 2px; }
+.crs-leg span { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--text2); }
+.crs-leg i { width: 9px; height: 9px; border-radius: 2px; }

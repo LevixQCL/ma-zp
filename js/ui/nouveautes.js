@@ -36,6 +36,7 @@ export const NOTE_MAJ = {
       ['Parts de la prime', 'démasquer l’auteur sans l’arrêter rapporte 6 k€, aider avec ses pièces partagées 2 k€.'],
     ]],
     ['Affichage', [
+      ['Classements en couleurs', '« la course » : chaque zone a son couloir à sa couleur, avec dessous ce qui compose son IPZ (satisfaction, terrain, moral, budget, réputation), et une carte « Pourquoi X est devant toi ? ». Enquête et énigmes en couloirs aussi, onglets colorés.'],
       ['Incidents du jour', 'ils tombent entre 6 h et 12 h et restent ouverts jusqu’à 20:00 : plus d’incident qui ferme avant la fin de la journée.'],
       ['Jauge des skins', 'touche-la sur l’HP : comment elle se remplit, et tous les skins à gagner, avec un aperçu sur ton commissariat.'],
       ['Zone de non-droit', 'chaque secteur dit ce qu’il rapporte : à la reprise, chaque nuit où il est tenu, et ta part si tu y as déjà de l’influence.'],
