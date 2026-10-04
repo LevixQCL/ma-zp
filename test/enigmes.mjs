@@ -1,4 +1,6 @@
 import { createRequire } from 'node:module';
+// Type d'énigme à l'entraînement : tuiles (déplie la liste si elle est repliée).
+async function choisirType(p, t) { if (!(await p.locator('[data-action="train-type"]').count())) await p.click('[data-action="train-choix"]'); await p.click(`[data-action="train-type"][data-v="${t}"]`); }
 const require = createRequire(import.meta.url);
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 // Énigmes visuelles (mode entraînement) : chaque type s'affiche sans erreur, et les manipulations marchent.
@@ -17,7 +19,7 @@ await p.goto(`${BASE}#quete`); await p.waitForTimeout(300);
 await p.click('[data-action="quest-mode"][data-v="train"]');
 await p.click(`[data-action="train-diff"][data-v="${diff}"]`);
 for (const t of types) {
-  await p.selectOption('[data-change="train-type"]', t); await p.waitForTimeout(300);
+  await choisirType(p, t); await p.waitForTimeout(300);
   await p.evaluate(() => document.querySelectorAll('.toast').forEach((x) => x.remove()));
   await p.locator('h1.big').scrollIntoViewIfNeeded();
   await p.screenshot({ path: `${OUT}/${t}-${diff}.png`, fullPage: true });
@@ -26,7 +28,7 @@ for (const t of types) {
 // Manipulations
 
   // Chronologie : glisser la dernière carte en premier
-  await p.selectOption('[data-change="train-type"]', 'chronologie'); await p.waitForTimeout(300);
+  await choisirType(p, 'chronologie'); await p.waitForTimeout(300);
   const v0 = await p.inputValue('.chr input[name="reponse"]');
   await p.locator('.chr').scrollIntoViewIfNeeded();
   const last = p.locator('.chr-carte').last().locator('.chr-poignee');
@@ -41,7 +43,7 @@ for (const t of types) {
   console.log('chrono flèche', await p.inputValue('.chr input[name="reponse"]'));
   await p.screenshot({ path: `${OUT}/chrono-apres.png`, fullPage: true });
   // Disque : tourner d'un quart de tour
-  await p.selectOption('[data-change="train-type"]', 'code'); await p.waitForTimeout(300);
+  await choisirType(p, 'code'); await p.waitForTimeout(300);
   await p.locator('svg.dq').scrollIntoViewIfNeeded();
   const d = await p.locator('svg.dq').boundingBox();
   const cx = d.x + d.width / 2, cy = d.y + d.height / 2, R = d.width * 0.32;
@@ -55,20 +57,20 @@ for (const t of types) {
   console.log('disque +1', await p.locator('.dq-ks').textContent());
   await p.screenshot({ path: `${OUT}/disque-apres.png`, fullPage: true });
   // Plaque : rayer, choisir
-  await p.selectOption('[data-change="train-type"]', 'plaque'); await p.waitForTimeout(300);
+  await choisirType(p, 'plaque'); await p.waitForTimeout(300);
   await p.locator('.pl-x').first().click(); await p.locator('.pl').nth(1).click(); await p.waitForTimeout(200);
   if (!(await p.locator('.pl-item.raye').count())) errs.push('Plaque : rayer ne marche pas');
   if (!(await p.locator('.pl[aria-pressed="true"]').count())) errs.push('Plaque : choix impossible');
   await p.locator('.pl-grille').scrollIntoViewIfNeeded();
   await p.screenshot({ path: `${OUT}/plaque-apres.png` });
   // Qui ment : marques
-  await p.selectOption('[data-change="train-type"]', 'quiment'); await p.waitForTimeout(300);
+  await choisirType(p, 'quiment'); await p.waitForTimeout(300);
   await p.locator('.tem-marque').first().click(); await p.locator('.tem-marque').nth(1).click(); await p.locator('.tem-marque').nth(1).click();
   await p.locator('.tem-liste').scrollIntoViewIfNeeded();
   await p.screenshot({ path: `${OUT}/quiment-apres.png` });
 
 
-  await p.selectOption('[data-change="train-type"]', 'filature'); await p.waitForTimeout(300);
+  await choisirType(p, 'filature'); await p.waitForTimeout(300);
   await p.locator('.fi-plan').scrollIntoViewIfNeeded();
   const xs = p.locator('.fi-x');
   for (const k of [7, 12, 13]) { await p.evaluate((k) => document.querySelectorAll('.fi-x')[k].dispatchEvent(new MouseEvent('click', { bubbles: true })), k); await p.waitForTimeout(100); }
@@ -79,31 +81,31 @@ for (const t of types) {
   if (!(await p.locator('.fi-lieu[data-sel]').count())) errs.push('Filature : toucher un lieu ne le choisit pas');
   await p.locator('.fi-plan').scrollIntoViewIfNeeded();
   await p.screenshot({ path: `${OUT}/filature-apres.png` });
-  await p.selectOption('[data-change="train-type"]', 'photos'); await p.waitForTimeout(300);
+  await choisirType(p, 'photos'); await p.waitForTimeout(300);
   await p.locator('.ph-hit').nth(2).click({ force: true }); await p.waitForTimeout(200);
   if (!(await p.locator('.ph-hit[data-sel]').count())) errs.push('Photos : toucher une place ne la choisit pas');
   await p.locator('.ph-hit[data-sel]').first().scrollIntoViewIfNeeded();
   await p.screenshot({ path: `${OUT}/photos-apres.png` });
-  await p.selectOption('[data-change="train-type"]', 'ecriture'); await p.waitForTimeout(300);
+  await choisirType(p, 'ecriture'); await p.waitForTimeout(300);
   await p.locator('.ec-t').first().click(); await p.locator('.ec-t').nth(1).click(); await p.locator('.ec-t').nth(1).click();
   await p.locator('.ec-pick').nth(1).click(); await p.waitForTimeout(200);
   if (!(await p.locator('.ec-ech.sel').count())) errs.push('Écriture : choix impossible');
   await p.locator('.ec-ech.sel').scrollIntoViewIfNeeded();
   await p.screenshot({ path: `${OUT}/ecriture-apres.png` });
-  await p.selectOption('[data-change="train-type"]', 'butin'); await p.waitForTimeout(300);
+  await choisirType(p, 'butin'); await p.waitForTimeout(300);
   await p.locator('[data-bt]').first().fill('450');
   const ans = await p.evaluate(async () => (await import('/js/ui/common.js')).S.train.answer);
   await p.fill('.bt input[name="reponse"]', ans);
   await p.click('.bt button[type="submit"]'); await p.waitForTimeout(400);
   if (!(await p.locator('.card.green').count())) errs.push('Butin : la bonne réponse n’est pas acceptée');
   await p.screenshot({ path: `${OUT}/butin-apres.png`, fullPage: true });
-  await p.selectOption('[data-change="train-type"]', 'horaires'); await p.waitForTimeout(300);
+  await choisirType(p, 'horaires'); await p.waitForTimeout(300);
   await p.locator('.hb-trajet').nth(1).click(); await p.waitForTimeout(200);
   if (!(await p.locator('.hb-trajet[aria-pressed="true"]').count())) errs.push('Horaires : choix impossible');
   await p.locator('.hb-trajet[aria-pressed="true"]').scrollIntoViewIfNeeded();
   await p.screenshot({ path: `${OUT}/horaires-apres.png` });
   // Chronologie : bonne réponse via les flèches
-  await p.selectOption('[data-change="train-type"]', 'chronologie'); await p.waitForTimeout(300);
+  await choisirType(p, 'chronologie'); await p.waitForTimeout(300);
   const bon = await p.evaluate(async () => (await import('/js/ui/common.js')).S.train.answer);
   for (let i = 0; i < bon.length; i++) {
     let cur = await p.inputValue('.chr input[name="reponse"]');

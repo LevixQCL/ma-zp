@@ -102,8 +102,9 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
     const engages = ouvert ? uids.filter((u) => ord[u] && ord[u].secteurs && ord[u].secteurs[k] > 0).map((u) => {
       const n = ord[u].secteurs[k];
       // Une figure de l'équipe en mission sur ce secteur : plus de force, moins de blessés.
-      const mi = ord[u].mission && ord[u].mission.type === 'nondroit' && ord[u].mission.secteur === k ? figure(state.zones[u], ord[u].mission.role) : null;
-      if (mi) state.zones[u]._mission = mi.role;
+      const mm = (ord[u].missions || (ord[u].mission ? [ord[u].mission] : [])).find((m) => m.type === 'nondroit' && m.secteur === k);
+      const mi = mm ? figure(state.zones[u], mm.role) : null;
+      if (mi) (state.zones[u]._missions ||= []).push(mi.role);
       const bonus = mi ? bonusChef(mi.niveau) : 0;
       return { u, n, f: forceEngagement(state.zones[u], n) * (1 + bonus), chef: mi, risque: mi ? CHEFS.nd.blessure : 1 };
     }) : [];

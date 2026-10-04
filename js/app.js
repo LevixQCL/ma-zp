@@ -365,8 +365,8 @@ async function onClick(e) {
       case 'tab-sync': S.carnetSync = 'encours'; rerender(); await synchroCarnetMaintenant(rerender); if (S.carnetSync === 'encours') S.carnetSync = 'ok'; rerender(); toast(S.carnetSync === 'ok' ? 'Tableau synchronisé avec tes autres appareils.' : 'Synchronisation impossible pour le moment.'); break;
       case 'ecran-reset': S.draft = null; S.help = {}; S.ordOpen = {}; S.ventilation = false; render(); break;
       case 'mission-qui': S.missionQui = S.missionQui === el.dataset.role ? null : el.dataset.role; rerender(); break;
-      case 'mission-ou': S.draft.mission = { role: el.dataset.role, type: el.dataset.type, secteur: el.dataset.secteur || '' }; S.missionQui = null; S.ordersDirty = true; rerender(); break;
-      case 'mission-annuler': S.draft.mission = null; S.ordersDirty = true; rerender(); break;
+      case 'mission-ou': { const m = { role: el.dataset.role, type: el.dataset.type, secteur: el.dataset.secteur || '' }; S.draft.missions = [...(S.draft.missions || []).filter((x) => x.role !== m.role), m]; S.draft.mission = S.draft.missions[0]; S.missionQui = null; S.ordersDirty = true; rerender(); break; }
+      case 'mission-annuler': S.draft.missions = (S.draft.missions || []).filter((x) => x.role !== el.dataset.role); S.draft.mission = S.draft.missions[0] || null; S.ordersDirty = true; rerender(); break;
       case 'parc': ouvrirParc(); break;
       case 'decor': ouvrirDecor(); break;
       case 'roulette-lancer': await lancerRoulette(b); rerender(); break;
@@ -846,7 +846,8 @@ async function onClick(e) {
       case 'quest-submit': await submitQuest(S.questPick); break;
       case 'quest-mode': S.questMode = el.dataset.v; if (S.questMode === 'train' && !S.train) nouvelEntrainement(); S.questPick = null; rerender(); break;
       case 'train-vue': S.trainVue = el.dataset.v; if (S.trainVue === 'enigmes' && !S.train) nouvelEntrainement(); rerender(); window.scrollTo(0, 0); break;
-      case 'train-type': S.trainType = el.dataset.v; nouvelEntrainement(); rerender(); break;
+      case 'train-type': S.trainType = el.dataset.v; S.trainChoix = false; nouvelEntrainement(); rerender(); break;
+      case 'train-choix': S.trainChoix = S.trainChoix === false; rerender(); break;
       case 'train-diff': S.trainDiff = Number(el.dataset.v); nouvelEntrainement(); rerender(); break;
       case 'train-new': nouvelEntrainement(); rerender(); window.scrollTo(0, 0); break;
       case 'quest-reroll': {

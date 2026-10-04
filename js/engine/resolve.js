@@ -11,7 +11,7 @@ import { QUIZ } from '../quests/quiz.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
-import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionValide, figure, nomComplet } from './equipe.js';
+import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet } from './equipe.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
   forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, pointsIpz, moyenneIpz, moralMult, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles,
@@ -210,8 +210,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
     // Mise à prix de l'enquête : le choix fait aujourd'hui (ou la confiscation par défaut).
     { const lp = appliquerPrime(z, ord[uid].prime, T, { services: SERVICES, niveauMax: NIVEAU_MAX }); if (lp) z.rapport.push(lp); }
-    ord[uid].mission = missionValide(ord[uid]);
-    z._mission = null; // rôle réellement parti en mission (renseigné par la zone de non-droit ou le renfort)
+    ord[uid].missions = missionsValides(ord[uid]);
+    ord[uid].mission = ord[uid].missions[0] || null;
+    z._missions = []; // rôles réellement partis en mission (renseignés par la zone de non-droit ou le renfort)
     z._points = 0;
     z._compta = z._compta || [];
     z._ps = 0;
@@ -357,9 +358,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const z = state.zones[u], c = state.zones[r.cible];
     const op = operationActive(c, T);
     if (!op) continue;
-    const mis = ord[u].mission && ord[u].mission.type === 'renfort' ? figure(z, ord[u].mission.role) : null;
+    const mr = (ord[u].missions || []).find((m) => m.type === 'renfort');
+    const mis = mr ? figure(z, mr.role) : null;
     const nChef = mis ? CHEFS.renfort.agents : 0;
-    if (mis) { z._mission = mis.role; z.rapport.push(`Mission : ${nomComplet(mis)} encadre ton renfort chez ${zoneLabel(c)} (compte pour ${nChef} agent de plus dans son dispositif).`); }
+    if (mis) { z._missions.push(mis.role); z.rapport.push(`Mission : ${nomComplet(mis)} encadre ton renfort chez ${zoneLabel(c)} (compte pour ${nChef} agent de plus dans son dispositif).`); }
     (renfortsRecus[r.cible] ||= []).push({ de: u, n: r.agents + nChef, chef: mis ? nomComplet(mis) : null });
     let { rep, ps } = gainRenfort(r.agents);
     const appel = op.appel ? DIR.appel : 1;
@@ -604,6 +606,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (dep.reserve) payer(`${dep.reserve} agent${dep.reserve > 1 ? 's' : ''} de réserve en ${SERVICE_LABELS[dep.reserveService]}`, dep.reserve * DEPENSES.reserve.cout, () => { reserve = dep.reserve; });
       if (dep.prime) { const g = gainPrime(z.moral); if (payer(`prime au personnel (+${g} de moral)`, DEPENSES.prime.cout, () => { z.moral += g; })) achete.add('prime'); }
       if (dep.prevention) { if (payer('campagne de prévention (criminalité −6)', DEPENSES.prevention.cout, () => { z.criminalite = clamp(z.criminalite - 6, 10, 95); })) achete.add('prevention'); }
+      if (dep.enqueteurs) { if (payer(`heures sup’ des enquêteurs (+${DEPENSES.enqueteurs.unites} unités sur les dossiers)`, DEPENSES.enqueteurs.cout, () => { z._travailBonus = DEPENSES.enqueteurs.unites; })) achete.add('enqueteurs'); }
       if (dep.soustraitance) { if (payer('sous-traitance administrative (−5 dossiers)', DEPENSES.soustraitance.cout, () => { z.paperasse = Math.max(0, z.paperasse - 5); })) achete.add('soustraitance'); }
       if (dep.revision) { if (payer(`révision du parc (état ${Math.round(100 - z.usure)} % → ${Math.round(100 - Math.max(0, z.usure - USURE.revision))} %)`, DEPENSES.revision.cout, () => { z.usure = Math.max(0, z.usure - USURE.revision); })) achete.add('revision'); }
       if (dep.carrosserie && (z.cabosses || []).length) { const nc = cabossesChoisis(z, dep.carrosserie).length; payer(`carrosserie (${nc} véhicule${nc > 1 ? 's' : ''} réparé${nc > 1 ? 's' : ''}${z.infra.garage ? ' à l’atelier' : ', immobilisé' + (nc > 1 ? 's' : '') + ' ce tour'})`, coutCarrosserie(z, dep.carrosserie), () => { reparerCabosses(z, T, dep.carrosserie); }); }
@@ -625,7 +628,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.bonusChefs = {};
     for (const m of z.equipe || []) {
       const s = ROLE_SERVICE[m.role];
-      if (!s || !cap[s] || z._mission === m.role) continue;
+      if (!s || !cap[s] || (z._missions || []).includes(m.role)) continue;
       const b = bonusChef(m.niveau);
       cap[s] *= 1 + b; z.bonusChefs[s] = b;
     }
@@ -692,7 +695,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const reste = zr.int(DOSSIER.tailleMin, DOSSIER.tailleMax);
       z.dossiers.push({ id: ++z.dossierSeq, titre: zr.pick(DOSSIERS_LOCAUX), reste, total: reste, points: round1(reste * DOSSIER.ptsParUnite), age: 0 });
     }
-    let travail = Math.max(0, cap.recherche - detaches);
+    let travail = Math.max(0, cap.recherche - detaches) + (z._travailBonus || 0);
+    const travail0 = travail;
+    delete z._travailBonus;
     let resolus = 0, ptsRech = 0;
     // Les plus vieux d'abord (avant qu'ils ne coûtent de la satisfaction).
     z.dossiers.sort((a, b) => b.age - a.age);
@@ -711,7 +716,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
     if (ptsRech > 0) {
       jalon(z, 'Recherche : travail sur les dossiers');
-      z.rapport.push(`Recherche : ${fmt1(cap.recherche - detaches - Math.max(0, travail))} unités de travail sur les dossiers, +${fmt1(ptsRech)} pts de résultats.`);
+      z.rapport.push(`Recherche : ${fmt1(travail0 - Math.max(0, travail))} unités de travail sur les dossiers, +${fmt1(ptsRech)} pts de résultats.`);
     }
     z.dossiers = z.dossiers.filter((d) => d.reste > 0.05);
     for (const d of z.dossiers) { d.age += 1; if (d.age > 6) z.satisfaction -= 0.4; }
@@ -871,7 +876,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const prog = faireProgresser(z, {
       inter: traites, rech: resolus * 3 + (o.demarches || []).length * 2 + (z._decouverteJour ? 8 : 0),
       prox: cap.proximite / 2, roul: cap.roulage / 2, admin: Math.max(0, cap.admin * 1.2 - 1.2) / 1.5,
-    }, z._mission ? { [z._mission]: CHEFS.xpMission } : null);
+    }, (z._missions || []).length ? Object.fromEntries(z._missions.map((r) => [r, CHEFS.xpMission])) : null);
     if (prog.ligne) z.rapport.push(prog.ligne);
     for (const m of prog.montees) {
       z.rapport.push(`Promotion d’honneur : ${m.prenom} ${m.nom} gagne un surnom, « ${surnomDe(m)} ».`);
@@ -985,7 +990,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
-    delete z._joue; delete z._nouveaux; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue;
+    delete z._joue; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue;
   }
 
   // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).

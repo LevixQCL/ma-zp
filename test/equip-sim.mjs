@@ -4,7 +4,7 @@
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { BOT_PROFILES, botOrders } from '../js/engine/bots.js';
 import { newZone } from '../js/engine/zone.js';
-import { EQUIP, FORMATION, SEASON_LENGTH, COUTS, coutEquipement, RYTHMES } from '../js/engine/constants.js';
+import { EQUIP, FORMATION, SEASON_LENGTH, COUTS, coutEquipement, RYTHMES, DEPENSES } from '../js/engine/constants.js';
 
 const SEEDS = Number(process.env.SEEDS || 40);
 function saison(seed, action) {
@@ -16,7 +16,7 @@ function saison(seed, action) {
     for (const b of BOT_PROFILES) { const o = botOrders(state.zones[b.uid], state, b.style) || {}; delete o.decision; orders[b.uid] = o; }
     // La zone testée garde une répartition fixe (Roulage 4, comme Luc) : on ne mesure que l'amélioration.
     const oc = orders[cible];
-    oc.alloc = { intervention: 7, proximite: 4, recherche: 3, roulage: 4, admin: 2 }; oc.rythme = 'normal';
+    oc.alloc = { intervention: 7, proximite: 4, recherche: 3, roulage: 4, admin: 2 }; oc.rythme = 'normal'; oc.depenses = {};
     if (action && action.type === 'rythme') oc.rythme = (action.cadence || [action.r])[t % (action.cadence || [action.r]).length];
     if (t === 2 && action) {
       const z = state.zones[cible];
@@ -25,6 +25,8 @@ function saison(seed, action) {
       if (action.type === 'recruter') { z.budget -= COUTS.recrue; z.agents += 1; oc.alloc.roulage += 1; }
     }
     if (t > 2 && action && action.type === 'recruter') oc.alloc.roulage += 1;
+    if (action && action.type === 'dep' && t >= 2 && (!action.pair || t % 2 === 0)) { oc.alloc.recherche = action.rech ?? 3; if (action.k === 'reserve') oc.depenses = { reserve: action.n, reserveService: 'recherche' }; else oc.depenses = { [action.k]: true }; }
+    if (action && action.type === 'rech') oc.alloc.recherche = action.rech;
     // Mises à prix de l'enquête (reçues au tour 7, milieu de saison).
     const T0 = Number(process.env.TOUR_PRIME || 7);
     if (action && action.type === 'prime' && t === T0) {
@@ -60,9 +62,10 @@ const actions = [
   ['Prime : véhicule + révision', { type: 'prime', p: 'vehicule', revision: true }], ['Prime : équipement Intervention', { type: 'prime', p: 'equip', s: 'intervention' }],
 ];
 actions.push(['Rythme renforcé tous les jours', { type: 'rythme', r: 'renforce' }], ['Rythme allégé tous les jours', { type: 'rythme', r: 'allege' }], ['Renforcé 1 jour sur 3', { type: 'rythme', cadence: ['renforce', 'normal', 'normal'] }], ['Allégé 1 jour sur 3', { type: 'rythme', cadence: ['allege', 'normal', 'normal'] }]);
+actions.push(['Heures sup’ enquêteurs chaque jour', { type: 'dep', k: 'enqueteurs' }], ['Heures sup’ un jour sur deux', { type: 'dep', k: 'enqueteurs', pair: true }], ['2 agents de réserve en Recherche (3 k€)', { type: 'dep', k: 'reserve', n: 2 }]);
 const filtre = process.env.FILTRE; if (filtre) actions.splice(0, actions.length, ...actions.filter(([n]) => n.includes(filtre)));
 const variante = process.argv[2] || 'actuel';
 // Variantes : clé=valeur séparées par des virgules, ex. « efficacite=0.15,amendes=0.1,formation=0.3 ».
-for (const kv of (variante === 'actuel' ? [] : variante.split(','))) { const [k, v] = kv.split('='); if (k.startsWith('renforce.') || k.startsWith('allege.')) { const [r, c] = k.split('.'); RYTHMES[r][c] = Number(v); continue; } if (k === 'formation') FORMATION.parNiveau = Number(v); else EQUIP[k] = Number(v); }
+for (const kv of (variante === 'actuel' ? [] : variante.split(','))) { const [k, v] = kv.split('='); if (k === 'unites') { DEPENSES.enqueteurs.unites = Number(v); continue; } if (k.startsWith('renforce.') || k.startsWith('allege.')) { const [r, c] = k.split('.'); RYTHMES[r][c] = Number(v); continue; } if (k === 'formation') FORMATION.parNiveau = Number(v); else EQUIP[k] = Number(v); }
 console.log(`Variante : ${variante} (efficacité ${EQUIP.efficacite}, amendes Roulage ${EQUIP.amendes}, satisfaction Prox ${EQUIP.satisfaction}, formation ${FORMATION.parNiveau})`);
 for (const [n, a] of actions) console.log(n.padEnd(28), ecart(a));

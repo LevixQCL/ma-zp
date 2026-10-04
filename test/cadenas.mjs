@@ -1,4 +1,6 @@
 import { createRequire } from 'node:module';
+// Type d'énigme à l'entraînement : tuiles (déplie la liste si elle est repliée).
+async function choisirType(p, t) { if (!(await p.locator('[data-action="train-type"]').count())) await p.click('[data-action="train-choix"]'); await p.click(`[data-action="train-type"][data-v="${t}"]`); }
 const require = createRequire(import.meta.url);
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 // Cadenas à molettes (mode entraînement) : glisser, flèches, toucher, clavier, ouverture.
@@ -16,7 +18,7 @@ await p.evaluate(() => document.querySelectorAll('.aide-wrap,.tuto').forEach((x)
 await p.goto(`${BASE}#quete`); await p.waitForTimeout(300);
 await p.evaluate(() => document.querySelectorAll('.aide-wrap,.tuto').forEach((x) => x.remove()));
 await p.click('[data-action="quest-mode"][data-v="train"]');
-await p.selectOption('[data-change="train-type"]', 'cadenas');
+await choisirType(p, 'cadenas');
 await p.waitForSelector('.cad-roue');
 const val = () => p.inputValue('.cad-form input[name="reponse"]');
 const v0 = await val(); console.log('départ', v0);

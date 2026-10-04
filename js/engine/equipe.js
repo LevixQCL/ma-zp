@@ -45,7 +45,21 @@ export function appliquerNoms(equipe, uid, noms) {
  * Mission du jour d'une figure (ordres déjà nettoyés) : zone de non-droit (sur un secteur où la zone envoie des agents,
  * par défaut celui où elle en envoie le plus) ou renfort (si des agents sont prêtés). null si impossible.
  */
+export function missionsValides(o) {
+  const brut = Array.isArray(o && o.missions) ? o.missions : (o && o.mission ? [o.mission] : []);
+  const out = [], roles = new Set(), dest = new Set();
+  for (const m of brut) {
+    if (!m || roles.has(m.role)) continue;
+    const v = missionValide({ ...o, mission: m, missions: undefined });
+    if (!v) continue;
+    const cle = v.type === 'nondroit' ? `nd:${v.secteur}` : 'renfort';
+    if (dest.has(cle)) continue; // une figure par destination (un secteur, ou le renfort)
+    roles.add(v.role); dest.add(cle); out.push(v);
+  }
+  return out;
+}
 export function missionValide(o) {
+  if (o && Array.isArray(o.missions) && !o.mission) return missionsValides(o)[0] || null;
   const m = o && o.mission;
   if (!m) return null;
   if (m.type === 'nondroit') {
