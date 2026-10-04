@@ -118,6 +118,8 @@ function cheveuxAvant(style, c, age, id, h) {
  * @param {object} s suspect (nom, f, age, role)
  */
 export function portraitSuspect(s, i, cls = 'tb-face') {
+  // Affaire écrite à la main avec de vraies photos d'identité : la photo, au même format que le portrait dessiné.
+  if (s.photo) return `<svg class="${cls}" viewBox="0 0 152 146" aria-hidden="true"><image href="${s.photo}" width="152" height="146" preserveAspectRatio="xMidYMid slice"/></svg>`;
   const h = hashString(`${s.nom}#${i}`);
   const pick = (arr, k) => arr[Math.floor(h / k) % arr.length];
   const [clair, peau, ombre, levres] = pick(PEAUX, 3);

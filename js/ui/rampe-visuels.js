@@ -94,7 +94,9 @@ export const PHOTOS_RAMPE = {
     <g transform="translate(511 270) scale(1 .82)" style="mix-blend-mode:multiply" opacity=".78">
       <text x="0" y="8" text-anchor="middle" font-family="'Special Elite', monospace" font-size="27" fill="#5A5A5A" letter-spacing="2">…BERT</text>
       <path d="M0 -38l3.6 7.4 8.1.9-6 5.4 1.8 8L0 -20.4l-7.5 3.7 1.8-8-6-5.4 8.1-.9z" fill="#5A5A5A"/></g>
-    <g transform="translate(-24 0) rotate(4 920 140)"><path d="M846 26H996V246L986 252 976 246 966 252 956 246 946 252 936 246 926 252 916 246 906 252 896 246 886 252 876 246 866 252 856 246 846 252Z" fill="#FBF9F2" stroke="#DDD"/>
+    <g transform="rotate(-3 300 470)"><rect x="196" y="452" width="212" height="40" fill="#F4F2EC" stroke="#CFCBC0"/><text x="208" y="477" ${MONO} font-size="14" fill="#333" textLength="188" lengthAdjust="spacingAndGlyphs">MOULAGE · PLAIE TEMPE G.</text></g>
+    <path d="M396 456Q450 400 470 330" stroke="#F4F2EC" stroke-width="3" fill="none" stroke-dasharray="6 5"/>
+    <g transform="translate(-24 0) rotate(4 920 140)"><rect x="846" y="256" width="150" height="26" fill="#F4F2EC" stroke="#CFCBC0"/><text x="854" y="274" ${MONO} font-size="12" fill="#555" textLength="134" lengthAdjust="spacingAndGlyphs">trouvé · cuisine</text><path d="M846 26H996V246L986 252 976 246 966 252 956 246 946 252 936 246 926 252 916 246 906 252 896 246 886 252 876 246 866 252 856 246 846 252Z" fill="#FBF9F2" stroke="#DDD"/>
       <text x="858" y="54" ${MONO} font-size="15" font-weight="600" fill="#222">TRAITEUR</text><text x="858" y="72" ${MONO} font-size="11" fill="#555" textLength="126" lengthAdjust="spacingAndGlyphs">livraison à domicile</text>
       <text x="858" y="100" ${MONO} font-size="13" fill="#222">JEU.     19:08</text><text x="858" y="120" ${MONO} font-size="11" fill="#222" textLength="120" lengthAdjust="spacingAndGlyphs">RAMPE STE-WAUDRU</text>
       <text x="858" y="150" ${MONO} font-size="12" fill="#222" textLength="126" lengthAdjust="spacingAndGlyphs">1 SOUPE      4,50</text><text x="858" y="170" ${MONO} font-size="11" fill="#222" textLength="126" lengthAdjust="spacingAndGlyphs">1 VOL-AU-VENT 14,00</text>

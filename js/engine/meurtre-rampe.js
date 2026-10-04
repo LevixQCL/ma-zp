@@ -32,35 +32,35 @@ export const RUES_RAMPE = [['Rampe Sainte-Waudru', [[440, 548], [420, 538], [400
 
 const SUSPECTS = [
   {
-    nom: 'Élodie Hennebert', prenom: 'Élodie', f: true, age: 41, role: 'fille de la victime, pharmacienne', roleDetail: 'tient une pharmacie à Jemappes', proche: true,
+    nom: 'Élodie Hennebert', photo: 'img/rampe/p0.webp', prenom: 'Élodie', f: true, age: 41, role: 'fille de la victime, pharmacienne', roleDetail: 'tient une pharmacie à Jemappes', proche: true,
     vehicule: { t: 'une Peugeot grise', mode: 'moteur' },
     alibi: { type: 'mensonge', pos: 'jemappes', lieu: 'chez elle, à Jemappes, seule', ditDe: hm(19, 0), ditA: hm(24, 30) },
     rumeur: 'argent',
     fiche: { declaration: 'Dit avoir passé la soirée chez elle, à Jemappes, seule.', rumeur: 'Rumeur : elle hérite de la maison, et sa pharmacie va mal.' },
   },
   {
-    nom: 'Grégoire Wautelet', prenom: 'Grégoire', f: false, age: 49, role: 'filleul de la victime, promoteur immobilier', roleDetail: 'dirige Wautelet Développement, boulevard Dolez', proche: true,
+    nom: 'Grégoire Wautelet', photo: 'img/rampe/p1.webp', prenom: 'Grégoire', f: false, age: 49, role: 'filleul de la victime, promoteur immobilier', roleDetail: 'dirige Wautelet Développement, boulevard Dolez', proche: true,
     vehicule: { t: 'une berline noire', mode: 'moteur' },
     alibi: { type: 'couvre', pos: 'dolez', lieu: 'au bureau avec Thibault Lempereur jusqu’à 22:10, puis au dîner du Cercle Saint-Georges', ditDe: hm(19, 0), ditA: hm(24, 30) },
     rumeur: 'argent',
     fiche: { declaration: 'Dit avoir travaillé au bureau avec Thibault Lempereur jusqu’à 22:10, puis rejoint le dîner du Cercle Saint-Georges à la Brasserie des Échevins.', rumeur: 'Rumeur : il voulait racheter la maison de la Rampe pour un projet immobilier.' },
   },
   {
-    nom: 'Rudy Stiévenart', prenom: 'Rudy', f: false, age: 58, role: 'patron du café « Le Ropieur », locataire de la victime', roleDetail: 'tient son café rue de la Chaussée depuis 1994', proche: false,
+    nom: 'Rudy Stiévenart', photo: 'img/rampe/p2.webp', prenom: 'Rudy', f: false, age: 58, role: 'patron du café « Le Ropieur », locataire de la victime', roleDetail: 'tient son café rue de la Chaussée depuis 1994', proche: false,
     vehicule: { t: 'à pied (habite au-dessus du café)', mode: 'pied', rien: true },
     alibi: { type: 'seul', pos: 'ropieur', lieu: 'derrière son comptoir, rue de la Chaussée', solitaire: 'derrière son comptoir', ditDe: hm(17, 0), ditA: hm(24, 30) },
     rumeur: 'vengeance',
     fiche: { declaration: 'Dit avoir tenu son café, rue de la Chaussée, toute la soirée.', rumeur: 'Rumeur : la victime refusait de renouveler son bail.' },
   },
   {
-    nom: 'Samira Debouck', prenom: 'Samira', f: true, age: 36, role: 'aide-ménagère de la victime', roleDetail: 'trois matinées par semaine, en titres-services ; elle a les clés', proche: true,
+    nom: 'Samira Debouck', photo: 'img/rampe/p3.webp', prenom: 'Samira', f: true, age: 36, role: 'aide-ménagère de la victime', roleDetail: 'trois matinées par semaine, en titres-services ; elle a les clés', proche: true,
     vehicule: { t: 'le bus (habite Cuesmes)', mode: 'pied', rien: true },
     alibi: { type: 'mensonge', pos: 'cuesmes', lieu: 'chez elle, à Cuesmes', ditDe: hm(18, 0), ditA: hm(24, 30) },
     rumeur: 'argent',
     fiche: { declaration: 'Dit avoir passé la soirée chez elle, à Cuesmes. A découvert le corps vendredi à 8:30.', rumeur: 'Rumeur : un objet de valeur aurait disparu de la maison.' },
   },
   {
-    nom: 'Thibault Lempereur', prenom: 'Thibault', f: false, age: 52, role: 'ancien clerc de l’étude, agent immobilier', roleDetail: 'clerc de 1994 à 2005, travaille aujourd’hui avec Grégoire Wautelet', proche: true,
+    nom: 'Thibault Lempereur', photo: 'img/rampe/p4.webp', prenom: 'Thibault', f: false, age: 52, role: 'ancien clerc de l’étude, agent immobilier', roleDetail: 'clerc de 1994 à 2005, travaille aujourd’hui avec Grégoire Wautelet', proche: true,
     vehicule: { t: 'une petite citadine', mode: 'moteur' },
     alibi: { type: 'couvre', pos: 'dolez', lieu: 'au bureau du boulevard Dolez, avec Grégoire Wautelet jusqu’à 22:10', ditDe: hm(18, 30), ditA: hm(22, 25) },
     rumeur: 'argent',
