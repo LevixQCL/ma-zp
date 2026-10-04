@@ -252,7 +252,7 @@ export function renderQuete() {
     ${q.mode === 'texte' && !fini ? disqueHtml(q) : ''}
     ${q.astuce && !fini ? `<details class="astuce"><summary>Un coup de pouce ?</summary><p class="small" style="margin:6px 0 0">${esc(q.astuce)}</p></details>` : ''}
     ${!fini ? `<label class="field">Brouillon <span class="tiny muted">(pour toi seul, gardé sur cet appareil)</span>
-      <textarea class="text notes" rows="2" data-qnote="${esc(q.id || '')}" placeholder="Tes hypothèses, tes calculs…">${esc(lire(`mazp-qnote-${q.id}`) || '')}</textarea></label>` : ''}
+      <textarea class="text notes" rows="6" data-qnote="${esc(q.id || '')}" placeholder="Tes hypothèses, tes calculs…">${esc(lire(`mazp-qnote-${q.id}`) || '')}</textarea></label>` : ''}
 
     ${!fini ? `<section class="col" aria-label="Ta réponse"><h2 class="section">${esc(q.question)}</h2>
       ${q.consigne && q.type !== 'chronologie' ? `<p class="small muted" style="margin:0">${esc(q.consigne)}</p>` : ''}
