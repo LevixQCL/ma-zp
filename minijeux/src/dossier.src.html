@@ -12,6 +12,7 @@
 .doc dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:12px 0;font-size:14px}
 .doc dt{font-family:var(--f-body);color:var(--paper-mute);font-size:12px;text-transform:uppercase;letter-spacing:.05em;padding-top:3px}
 .doc dd{margin:0;min-width:0}
+.doc .small-note{font-size:13px;color:var(--paper-mute);margin:6px 0 0}
 .doc h3{font-family:var(--f-body);font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--paper-mute);margin:14px 0 4px}
 .doc p{margin:0}
 .tk{cursor:pointer;border-radius:3px;padding:0 2px;margin:0 -2px;background:rgba(35,38,43,.06);border-bottom:1px dotted rgba(35,38,43,.35);transition:background .15s}
@@ -39,6 +40,7 @@ const NOMS=['Dubois','Lambert','Martin','Peeters','Janssens','Leroy','Renard','M
 const PRE_M=['Julien','Thomas','Kevin','Mehdi','Nicolas','Arnaud','Sébastien','Youssef','Maxime','Olivier','Loïc','Damien'];
 const PRE_F=['Laura','Sarah','Julie','Amandine','Inès','Céline','Manon','Nadia','Aurélie','Sophie','Emma','Chloé'];
 const RUES=['rue des Glycines','rue du Moulin','avenue des Tilleuls','rue de la Station','rue des Écoles','chemin des Prés','rue Haute','rue du Marché','rue des Fusillés','place du Jeu de Balle'];
+const COMMUNES=['Haut-Bois','Rivemont','Vaulx-Sainte-Anne','Fontaine-le-Val','Bray-sur-Haine','Montreuil-au-Bois','Sart-les-Prés','Villers-la-Source'];
 const AGENTS=['INP Delvaux','INP Carlier','INP Hanot','INP Vandamme','INPP Moreau','INP Lecocq'];
 const JOURS=['dimanche','lundi','mardi','mercredi','jeudi','vendredi','samedi'];
 const MOIS=['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
@@ -65,9 +67,14 @@ const ERR = {
   box:   {label:'N° de boîte différent', keys:['cBox','box']},
   concl: {label:'Avis contraire au constat', keys:['concl']},
   sign:  {label:'Rapport non signé', keys:['sign']},
-  hour:  {label:'Heure différente', keys:['cHour','visitHour']}
+  hour:  {label:'Heure différente', keys:['cHour','visitHour']},
+  idcard:{label:'N° de carte d’identité différent', keys:['cId','idnum']},
+  menage:{label:'Composition de ménage incohérente', keys:['menage','entourage']},
+  emmen: {label:'Mois d’emménagement contradictoire', keys:['cMonth','arrival']},
+  bail:  {label:'Bail daté après la visite', keys:['bail','visitDate','cDate']},
+  depart:{label:'Départ de l’ancienne adresse après l’arrivée', keys:['depart','arrival']}
 };
-const CLASH=[['bad31','arrLate'],['concl','name'],['concl','box'],['visit','arrLate'],['visit','wday']];
+const CLASH=[['bad31','arrLate'],['concl','name'],['concl','box'],['visit','arrLate'],['visit','wday'],['concl','idcard'],['concl','menage'],['concl','emmen'],['concl','bail'],['emmen','bad31'],['emmen','arrLate'],['bail','visit'],['depart','bad31'],['depart','arrLate'],['depart','emmen']];
 
 function makeCase(errs, fixed={}){
   const f=Math.random()<.5;
@@ -78,15 +85,21 @@ function makeCase(errs, fixed={}){
     fem:fixed.fem??f, nom:fixed.nom||pick(NOMS), pre:fixed.pre||pick(f?PRE_F:PRE_M), rue:fixed.rue||pick(RUES),
     house:fixed.house||randi(2,148), box:fixed.box||randi(1,6), d1, d2, birth,
     arrival:fixed.arrival||addD(d1,-randi(5,40)), hh:fixed.hh??randi(8,19), mm:fixed.mm??pick([0,5,10,15,20,25,30,35,40,45,50,55]),
-    agent:fixed.agent||pick(AGENTS), entourage:fixed.entourage||pick(['seul','avec son compagnon','avec ses deux enfants','avec sa compagne','en colocation avec un ami'])
+    agent:fixed.agent||pick(AGENTS), commune:fixed.commune||pick(COMMUNES), ancRue:pick(RUES), ancNum:randi(1,90),
+    idnum:`${randi(590,599)}-${String(randi(0,9999999)).padStart(7,'0')}-${p2(randi(10,99))}`, etage:pick(['un appartement au 1er étage','un appartement au 2e étage','un studio sous les toits','une maison unifamiliale','un rez-de-chaussée avec jardin']),
+    voisin:pick(NOMS), voisinF:Math.random()<.5, voisinN:randi(1,6), entourage:fixed.entourage||pick(['seul','avec son compagnon','avec ses deux enfants','avec sa compagne','en colocation avec un ami'])
   };
   if(c.fem && c.entourage==='seul') c.entourage='seule';
   c.age=ageAt(c.birth,c.d2);
+  c.bail=addD(c.arrival,-randi(3,25)); c.depart=addD(c.arrival,-randi(0,6));
+  c.nMenage={seul:1,seule:1,'avec son compagnon':2,'avec sa compagne':2,'avec ses deux enfants':3,'en colocation avec un ami':2}[c.entourage]||1;
   // valeurs affichées (mutées ensuite)
   const v={ reqDate:dshort(d1), name:c.nom.toUpperCase(), pre:c.pre, birth:dshort(birth), age:c.age+' ans',
     house:c.house, box:c.box, rue:c.rue, arrival:dshort(c.arrival), visitDate:dshort(d2), visitHour:`${p2(c.hh)}:${p2(c.mm)}`,
     cWday:JOURS[d2.getDay()], cDate:dlong(d2), cHour:`${c.hh}h${p2(c.mm)}`, cHouse:c.house, cName:c.nom.toUpperCase(), cBox:c.box,
-    concl:'favorable', sign:c.agent, negative:false };
+    concl:'favorable', sign:c.agent, negative:false,
+    idnum:c.idnum, cId:c.idnum, menage:`${c.nMenage} personne${c.nMenage>1?'s':''}`, entourage:c.entourage,
+    cMonth:MOIS[c.arrival.getMonth()], bail:dshort(c.bail), depart:dshort(c.depart) };
   for(const e of errs){
     if(e==='age') v.age=(c.age+pick([-3,-2,2,3,4]))+' ans';
     if(e==='visit'){ const bad=addD(d1,-randi(2,9)); v.visitDate=dshort(bad); v.cDate=dlong(bad); v.cWday=JOURS[bad.getDay()]; }
@@ -99,6 +112,11 @@ function makeCase(errs, fixed={}){
     if(e==='box') v.cBox=c.box+pick([1,2,-1].filter(x=>c.box+x>0));
     if(e==='concl') v.negative=true;
     if(e==='sign') v.sign=null;
+    if(e==='idcard'){ const a=c.idnum.split(''), pos=[4,5,6,7,8,9,10], k=pick(pos); a[k]=String((+a[k]+randi(1,8))%10); v.cId=a.join(''); }
+    if(e==='menage'){ const n=c.nMenage+pick(c.nMenage>1?[-1,1,2]:[1,2]); v.menage=`${n} personne${n>1?'s':''}`; }
+    if(e==='emmen') v.cMonth=MOIS[(c.arrival.getMonth()+pick([2,3,9,10]))%12];
+    if(e==='bail') v.bail=dshort(addD(d2,randi(4,30)));
+    if(e==='depart') v.depart=dshort(addD(c.arrival,randi(4,20)));
     if(e==='hour') v.cHour=`${(c.hh+pick([1,2,-1,-2])+24)%24}h${p2(c.mm)}`;
   }
   return {c,v,errs};
@@ -110,8 +128,10 @@ const tk=(k,txt)=>`<span class="tk" data-k="${k}" role="button" tabindex="0">${t
 function render({c,v}){
   const civ=c.fem?'Madame':'Monsieur', il=c.fem?'Elle':'Il';
   const constat = v.negative
-    ? `Le ${tk('cWday',v.cWday)} ${tk('cDate',v.cDate)} à ${tk('cHour',v.cHour)}, nous nous présentons ${c.rue} n° ${tk('cHouse',v.cHouse)}. Personne ne répond malgré plusieurs coups de sonnette. Les voisins interrogés déclarent ne pas connaître l'intéressé${c.fem?'e':''}. Aucun nom ne figure sur les boîtes aux lettres.`
-    : `Le ${tk('cWday',v.cWday)} ${tk('cDate',v.cDate)} à ${tk('cHour',v.cHour)}, nous nous présentons ${c.rue} n° ${tk('cHouse',v.cHouse)}. ${civ} ${tk('cName',v.cName)} nous ouvre et présente sa carte d'identité. Son nom figure sur la boîte aux lettres n° ${tk('cBox',v.cBox)}. ${il} déclare vivre ${c.entourage}. Nous constatons la présence d'effets personnels : vêtements, courrier à son nom, articles de toilette.`;
+    ? `Le ${tk('cWday',v.cWday)} ${tk('cDate',v.cDate)} à ${tk('cHour',v.cHour)}, nous nous présentons ${c.rue} n° ${tk('cHouse',v.cHouse)}. Personne ne répond malgré plusieurs coups de sonnette. Les voisins interrogés déclarent ne pas connaître l'intéressé${c.fem?'e':''}. Aucun nom ne figure sur les boîtes aux lettres, et le courrier déborde de la boîte n° ${v.box} sans être relevé. Un avis de passage est laissé sur place, invitant la personne à se présenter au bureau de quartier dans les huit jours. Le propriétaire, joint par téléphone, déclare ne plus avoir de nouvelles de son locataire depuis plusieurs semaines.`
+    : `Le ${tk('cWday',v.cWday)} ${tk('cDate',v.cDate)} à ${tk('cHour',v.cHour)}, nous nous présentons ${c.rue} n° ${tk('cHouse',v.cHouse)}. ${civ} ${tk('cName',v.cName)} nous ouvre et présente sa carte d'identité. Son nom figure sur la boîte aux lettres n° ${tk('cBox',v.cBox)}. ${il} déclare vivre ${tk('entourage',v.entourage)}. Le logement est ${c.etage}. Nous constatons la présence d'effets personnels : vêtements, courrier à son nom, articles de toilette, ainsi que des meubles installés de façon durable.</p>
+    <p>Pièce d'identité présentée : carte n° ${tk('cId',v.cId)}. ${il} déclare provenir du ${c.ancRue} n° ${c.ancNum} à ${c.commune}, et nous présente un bail signé le ${tk('bail',v.bail)}. Les compteurs d'eau et d'électricité sont à son nom.</p>
+    <p>${c.voisinF?'Madame':'Monsieur'} ${c.voisin.charAt(0)+c.voisin.slice(1).toLowerCase()}, voisin${c.voisinF?'e':''} du n° ${c.house+c.voisinN}, confirme l'avoir vu${c.fem?'e':''} emménager au mois de ${tk('cMonth',v.cMonth)} et ${c.fem?'la':'le'} croiser régulièrement depuis.`;
   $('doc').innerHTML=`
     <div class="hd"><span>Zone de police · Service Proximité</span><span>Pour le service Population</span></div>
     <h2>Rapport d'enquête de domiciliation</h2>
@@ -122,13 +142,17 @@ function render({c,v}){
       <dt>Personne</dt><dd>${tk('name',v.name)} ${tk('pre',v.pre)}</dd>
       <dt>Né${c.fem?'e':''} le</dt><dd>${tk('birth',v.birth)} · âge ${tk('age',v.age)}</dd>
       <dt>Adresse</dt><dd>${tk('rue',v.rue)} n° ${tk('house',v.house)}, boîte ${tk('box',v.box)}</dd>
+      <dt>Ancienne adresse</dt><dd>${c.ancRue} n° ${c.ancNum}, ${c.commune} · quittée le ${tk('depart',v.depart)}</dd>
       <dt>Arrivée déclarée</dt><dd>${tk('arrival',v.arrival)}</dd>
+      <dt>Ménage</dt><dd>${tk('menage',v.menage)}</dd>
+      <dt>Carte d'identité</dt><dd>${tk('idnum',v.idnum)}</dd>
       <dt>Visite</dt><dd>${tk('visitDate',v.visitDate)} à ${tk('visitHour',v.visitHour)}</dd>
     </dl>
     <h3>Constat</h3>
     <p>${constat}</p>
     <h3>Conclusion</h3>
-    <p>Avis ${tk('concl',v.concl)} : la personne réside effectivement à l'adresse déclarée.</p>
+    <p>Vu ce qui précède, avis ${tk('concl',v.concl)} : la personne réside effectivement à l'adresse déclarée et peut être inscrite au registre de la population à la date d'arrivée déclarée.</p>
+    <p class="small-note">Remarques : ${pick(['néant.','le nom sur la sonnette reste à mettre à jour.','présence d’un chien dans le logement, sans incident.','la personne a été informée de l’obligation de faire modifier l’adresse sur sa carte d’identité.'])}</p>
     <div class="sig"><div class="box">${v.sign
       ? `${tk('sign',`<svg viewBox="0 0 150 42" aria-hidden="true"><path d="M8 30 C 20 6, 30 40, 42 20 S 60 8, 70 26 S 96 34, 104 14 S 130 30, 144 18" fill="none" stroke="#23314f" stroke-width="2"/></svg>`)}${v.sign}, agent de quartier`
       : `${tk('sign','<svg viewBox="0 0 150 42" aria-hidden="true"><line x1="10" y1="34" x2="140" y2="34" stroke="#999" stroke-dasharray="4 4"/></svg>')}Signature de l'agent`}</div></div>`;
@@ -181,9 +205,9 @@ Shell.init({
   key:'dossier', service:'Incident Proximité', serviceShort:'Proximité',
   headline:'Dossier à relire',
   story:`<p>Le service Population de la commune attend ton rapport d'enquête de domiciliation avant midi. L'agent de quartier l'a rédigé en vitesse entre deux visites.</p><p>Relis-le avant l'envoi : <b>3 erreurs</b> s'y sont glissées. Un faux signalement te coûte 8 secondes.</p>`,
-  diffs:{difficile:{agents:2,label:'Difficile',time:75},normal:{agents:4,label:'Normal',time:105},facile:{agents:6,label:'Facile',time:140}},
+  diffs:{difficile:{agents:2,label:'Difficile',time:90},normal:{agents:4,label:'Normal',time:125},facile:{agents:6,label:'Facile',time:165}},
   diffHint:"Plus d'agents : plus de temps pour relire le dossier.",
-  rules:['<b>3 erreurs</b> par rapport : dates, âge, adresse, nom, heure, avis ou signature.','Compare le <b>tableau du haut</b> avec le <b>constat</b>, et vérifie que tout se tient.','Tape directement sur l\'élément erroné. Un <b>faux signalement</b> coûte 8 secondes.','Sans faux signalement : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
+  rules:['<b>3 erreurs</b> par rapport : dates, âge, adresse, nom, heure, carte d’identité, ménage, bail, avis ou signature.','Compare le <b>tableau du haut</b> avec le <b>constat</b>, et vérifie que tout se tient.','Tape directement sur l\'élément erroné. Un <b>faux signalement</b> coûte 8 secondes.','Sans faux signalement : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
   winTitle:'Dossier envoyé', loseTitle:'Dossier renvoyé', skin:'Vélo de quartier',
   malus:"la commune renvoie le dossier. 1 agent de quartier est mobilisé demain pour refaire l'enquête, et la satisfaction du quartier baisse.",
   onMenu(){ D.over=true; },
