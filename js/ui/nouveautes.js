@@ -44,6 +44,7 @@ export const NOTE_MAJ = {
       ['Confiance de la commune', 'la ligne est toujours affichée dans le détail du budget, avec son calcul (réputation − 50 × coefficient), même quand elle vaut 0.'],
     ]],
     ['Mini-jeux', [
+      ['Crochetage', 'nouvel habillage : serrure en coupe avec ressorts, goupilles usinées et rotor en laiton, clé de tension à voyants (vert = bonne tension) et lecture « Zone verte / Trop forte / Trop faible » sous Tension. Les règles et la difficulté ne changent pas.'],
       ['Empreintes', 'curseur rond au lieu du viseur, bouton « ? » qui explique ce qu’est une minutie (fin de crête, bifurcation). Relâcher pose seulement une visée, sans pénalité : double-clic (ou double tape) dessus pour valider.'],
       ['Dossier à relire', 'rapport plus long et plus fouillé (ancienne adresse, ménage, carte d’identité, bail, témoin du voisin), avec de nouvelles erreurs possibles et un peu plus de temps.'],
       ['Colis suspect', 'la fiche SEDEE change à chaque engin : couleurs, chiffres de l’horloge et interrupteurs différents, il faut la relire à chaque fois. Le bouton accepte une petite marge quand on relâche pile au changement de chiffre.'],
