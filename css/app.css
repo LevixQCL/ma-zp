@@ -1245,7 +1245,8 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .nd-cesoir { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--amber-line); border-radius: 14px; background: var(--amber-bg); }
 .nd-cesoir.vide { border-style: dashed; background: transparent; }
 .nd-cs-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 0; background: none; border: 0; border-top: 1px solid var(--hair); color: inherit; font: inherit; cursor: pointer; }
-.nd-cesoir .kicker + .nd-cs-row { border-top: 0; }
+.nd-cesoir .kicker + .nd-cs-row, .nd-cs-t + .nd-cs-row { border-top: 0; }
+.nd-cs-t { display: block; margin-top: 8px; font-size: 12px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: var(--text2); }
 .nd-quis { display: flex; flex-wrap: wrap; gap: 4px; }
 .nd-qui { --c: #9FB0C0; display: inline-flex; align-items: center; gap: 4px; font-size: 12px; line-height: 1; padding: 4px 7px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--c) 55%, transparent); background: color-mix(in srgb, var(--c) 14%, transparent); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 .nd-qui b { font-family: var(--mono); }
