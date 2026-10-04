@@ -693,9 +693,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const reste = zr.int(DOSSIER.tailleMin, DOSSIER.tailleMax);
       z.dossiers.push({ id: ++z.dossierSeq, titre: zr.pick(DOSSIERS_LOCAUX), reste, total: reste, points: round1(reste * DOSSIER.ptsParUnite), age: 0 });
     }
-    // Dossiers ouverts avec l'ancienne taille (4 à 8 unités) : ramenés aux deux tiers, même récompense.
+    // Dossiers ouverts avec l'ancienne taille (4 à 8 unités) : ramenés à la nouvelle taille maximale, même récompense.
     if ((z.dossiersV || 1) < DOSSIER.version) {
-      for (const d of z.dossiers) { if ((d.total || d.reste) > DOSSIER.tailleMax) { d.reste = round1(d.reste * 2 / 3); d.total = round1((d.total || d.reste) * 2 / 3); } }
+      for (const d of z.dossiers) { const tot = d.total || d.reste; if (tot > DOSSIER.tailleMax) { const k = DOSSIER.tailleMax / tot; d.reste = round1(d.reste * k); d.total = DOSSIER.tailleMax; } }
       z.dossiersV = DOSSIER.version;
     }
     let travail = Math.max(0, cap.recherche - detaches) + (z._travailBonus || 0);
