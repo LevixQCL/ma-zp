@@ -7,6 +7,9 @@ import { PS } from '../engine/constants.js';
 import { niveauIncidents } from '../engine/directeur.js';
 import { APPUI, appuiDuJour, DIFF_EXPERTS } from '../engine/appui.js';
 import { SERVICE_LABELS, DEFAULT_ALLOC } from '../engine/constants.js';
+import { TOUS_SKINS, SKINS } from '../engine/decor.js';
+import { ouvrirPanneau, sceneZone, monDecorPublic } from './logistique.js';
+import { ANNEXES_AILE } from './scene-aile.js';
 
 /** Les mini-jeux, pour l'entraînement. */
 export const MINI_JEUX = [
@@ -102,10 +105,10 @@ export function incidentsHtml() {
     <div class="between"><span class="kicker">Incidents du jour</span><a class="tiny" href="#guide-incidents">Comment ça marche ?</a></div>
     ${appuiRow}${lignes.join('')}
     ${prochain ? `<div class="inc-row inc-attente"><span class="inc-ico" aria-hidden="true">${icon('clock', 16)}</span><span class="col grow" style="gap:1px"><span style="font-weight:600">${lignes.length ? 'Un autre incident va tomber' : 'Un incident va tomber aujourd’hui'}</span><span class="tiny muted">sur un de tes services, dans <strong class="mono" data-inc-cd="${prochain.ouvre}">${duree(prochain.ouvre - now)}</strong> · il restera ouvert ${INC.ouverture / 3600000} heures</span></span></div>`
-      : !lignes.some((l) => l.includes('inc-ouvert')) ? '<p class="tiny muted" style="margin:0">Plus d’incident aujourd’hui. Les prochains tombent demain, entre 7 h et 19 h.</p>' : ''}
-    <div class="between small"><span class="row muted" style="gap:6px">${icon('star', 14)} Jauge des skins</span>
+      : !lignes.some((l) => l.includes('inc-ouvert')) ? '<p class="tiny muted" style="margin:0">Plus d’incident aujourd’hui. Les prochains tombent demain, entre 6 h et 12 h, et restent ouverts jusqu’à 20:00.</p>' : ''}
+    <button type="button" class="between small jauge-btn" data-action="jauge-skins" aria-label="Jauge des skins : voir ce que tu peux gagner"><span class="row muted" style="gap:6px">${icon('star', 14)} Jauge des skins</span>
       <span class="row" style="gap:8px"><span role="img" aria-label="${base} sur ${INC.jauge}" style="width:90px;height:5px;background:var(--line);border-radius:3px;display:inline-block;overflow:hidden"><span style="display:block;width:${Math.min(100, (base / INC.jauge) * 100)}%;height:5px;background:var(--amber)"></span></span>
-      <span class="mono">${base}/${INC.jauge}${plus ? ` <span class="ok">+${plus}</span>` : ''}</span></span></div>
+      <span class="mono">${base}/${INC.jauge}${plus ? ` <span class="ok">+${plus}</span>` : ''}</span></span>${icon('chevron', 12)}</button>
   </section>`;
 }
 
@@ -233,3 +236,34 @@ export function lancerIncident(id, onFin) {
 }
 
 export { INCIDENTS };
+
+/** Fenêtre « Jauge des skins » : comment elle se remplit et tous les skins à gagner (aperçu au toucher). */
+export function ouvrirJaugeSkins(apercu = null) {
+  const z = myZone();
+  if (!z) return;
+  const { base, plus } = jaugeDuJour();
+  const own = new Set(z.skins || []);
+  const manquants = TOUS_SKINS.filter((s) => !own.has(`${s.cat}:${s.id}`)).length;
+  const sk = apercu ? TOUS_SKINS.find((s) => `${s.cat}:${s.id}` === apercu) : null;
+  const sansAile = sk && sk.cat === 'aile' && !ANNEXES_AILE.some((k) => z.infra && z.infra[k]);
+  const parCat = Object.keys(SKINS).filter((c) => c !== 'fete').map((cat) => {
+    const l = TOUS_SKINS.filter((s) => s.cat === cat);
+    return `<div class="col" style="gap:6px"><span class="tiny muted">${esc(SKINS[cat].titre)}</span><div class="decor-opts">${l.map((s) => {
+      const k = `${s.cat}:${s.id}`, a = own.has(k);
+      return `<button type="button" class="decor-opt${apercu === k ? ' on' : ''}${a ? '' : ' verrou'}" data-action="jauge-apercu" data-k="${esc(k)}" aria-pressed="${apercu === k}"><span>${esc(s.nom)}</span><span class="cond">${a ? `${icon('check', 11)} à toi` : `${icon('lock', 11)} à gagner`}</span></button>`;
+    }).join('')}</div></div>`;
+  }).join('');
+  ouvrirPanneau(`<div class="col" style="gap:10px">
+    <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Jauge des skins</h2>
+      <span class="tiny muted">${own.size ? `${TOUS_SKINS.length - manquants} skin${TOUS_SKINS.length - manquants > 1 ? 's' : ''} sur ${TOUS_SKINS.length}` : `${TOUS_SKINS.length} skins à collectionner`}</span></div>
+      <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
+    <div class="between small"><span><strong>${base}</strong> / ${INC.jauge}${plus ? ` <span class="ok">+${plus} ce soir</span>` : ''}</span>
+      <span role="img" aria-label="${base} sur ${INC.jauge}" style="flex:1;max-width:60%;height:8px;background:var(--line);border-radius:4px;overflow:hidden"><span style="display:block;width:${Math.min(100, (base / INC.jauge) * 100)}%;height:8px;background:var(--amber)"></span></span></div>
+    <p class="small" style="margin:0">Chaque incident du jour réussi en jouant remplit la jauge : <strong>+2 sans faute</strong>, +1 avec des fautes. À ${INC.jauge}, tu gagnes <strong>un skin au hasard parmi ceux que tu n’as pas encore</strong>${manquants ? '' : ' (tu les as tous : la jauge pleine rapporte +5 k€)'}. Il s’équipe dans « Personnaliser mon commissariat » et les autres zones le voient.</p>
+    ${sk ? `<div class="card amber tight" style="gap:6px"><span class="kicker">Aperçu · ${esc(SKINS[sk.cat].titre)}</span><span style="font-weight:700">${esc(sk.nom)}</span><span class="tiny" style="color:var(--amber-soft)">${esc(sk.texte || '')}</span>
+      <div class="scene-voisin">${sceneZone(sansAile ? { ...z, infra: { ...(z.infra || {}), sport: true } } : z, S.state, monDecorPublic(z), { [sk.cat]: sk.id })}</div>
+      ${sansAile ? '<span class="tiny muted">L’aile apparaît avec ta première annexe (aperçu avec une salle de sport).</span>' : ''}</div>`
+      : '<p class="tiny muted" style="margin:0">Touche un skin pour le voir sur ton commissariat.</p>'}
+    ${parCat}
+  </div>`);
+}

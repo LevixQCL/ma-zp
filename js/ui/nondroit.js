@@ -101,6 +101,20 @@ function barre(v, coul) {
   return `<span class="nd-barre" role="img" aria-label="Emprise du milieu ${Math.round(v)} sur 100"><span style="width:${Math.max(2, Math.round(v))}%;background:${coul}"></span><span class="nd-seuil" style="left:${ND.seuilRechute}%"></span></span>`;
 }
 
+/** « Ce que ça rapporte » : reprise et retombées de chaque nuit, et la part de la zone si elle a déjà de l'influence. */
+function gainsHtml(s, moi) {
+  const mult = s.coeur ? ND.coeurMult : 1, f = (v) => fmt1(Math.round(v * 10) / 10);
+  const part = moi ? moi.part : null;
+  const pourToi = (fixe, var_, k = 1) => (part !== null ? ` <span class="ok">(toi, ${Math.round(part * 100)} % : ${f(mult * ((part >= ND.partMin ? fixe : 0) + var_ * part) * k)})</span>` : '');
+  const P = ND.prise, R = ND.retombees;
+  return `<details class="nd-gains tiny" data-k="nd-gains-${s.coeur ? 'c' : 'a'}" ${S.ouverts && S.ouverts[`nd-gains-${s.coeur ? 'c' : 'a'}`] ? 'open' : ''}><summary>💰 Ce que ça rapporte${s.coeur ? ` (Cœur : ×${String(ND.coeurMult).replace('.', ',')})` : ''}</summary>
+    <div class="g">
+      <strong>À la reprise</strong><span>+${f(P.points * mult)} pts de résultats + jusqu’à ${f(P.pointsPart * mult)} selon ta part${pourToi(P.points, P.pointsPart)} · jusqu’à ${f(P.prime * mult)} k€ selon ta part · +${f(P.satisfaction * mult)} de satisfaction, +${P.rep} de réputation (+1 à plusieurs), +${P.moral} de moral</span>
+      <strong>Chaque nuit tenu</strong><span>+${f(R.points * mult)} pts + jusqu’à ${f(R.pointsPart * mult)} selon ta part${pourToi(R.points, R.pointsPart)} · jusqu’à ${f(R.budget * mult)} k€ · +${f(Math.min(R.satisfaction * mult, R.satisfactionMax))} de satisfaction (${f(R.satisfactionMax)} au plus par nuit, tous secteurs) · +${Math.round(R.ps * mult)} PS</span>
+      <strong>Pour qui</strong><span>chaque zone qui a au moins ${Math.round(ND.partMin * 100)} % d’influence touche sa part entière : y aller à plusieurs ne divise pas les gains fixes.</span>
+    </div></details>`;
+}
+
 function carteSecteur(k, s, me, d) {
   const m = milieuDe(s);
   const ouvert = secteurOuvert(nd(), k);
@@ -142,6 +156,7 @@ function carteSecteur(k, s, me, d) {
     <p class="small" style="margin:0"><strong>Ce soir :</strong> ${ceSoir.length || n ? `<span class="nd-quis" style="display:inline-flex">${pastillesCeSoir([...(n ? [{ moi: true, n }] : []), ...ceSoir])}</span>` : '<span class="muted">personne d’annoncé pour l’instant</span>'}</p>
     <p class="tiny muted" style="margin:0">Hier soir : ${hier.length ? hier.map((x) => `${x.u === me.uid ? '<strong>toi</strong>' : nomZ(x.u)} (${x.n})`).join(', ') : 'personne'}${parts.length ? ` · influence : ${parts.slice(0, 4).map((p) => `${p.uid === me.uid ? '<strong>toi</strong>' : nomZ(p.uid)} ${Math.round(p.part * 100)} %`).join(', ')}${parts.length > 4 ? '…' : ''}` : ''}</p>
     ${moi && repris ? `<p class="tiny ${moi.part >= ND.partMin ? 'ok' : 'muted'}" style="margin:0">${moi.part >= ND.partMin ? `Tu touches les retombées chaque nuit (${Math.round(moi.part * 100)} % d’influence).` : `Ton influence (${Math.round(moi.part * 100)} %) est sous ${Math.round(ND.partMin * 100)} % : monte la garde pour toucher les retombées.`}</p>` : ''}
+    ${gainsHtml(s, moi)}
     ${ouvert && !repris && !n ? `<p class="tiny muted" style="margin:0">Pour le faire reculer ce soir : ≈ ${seuilAgents} agents, plutôt à plusieurs zones.</p>` : ''}
     ${prevision}
     ${ouvert ? `<div class="between"><span class="small">${repris ? 'Agents de garde ce soir' : 'Agents à l’assaut ce soir'}</span>

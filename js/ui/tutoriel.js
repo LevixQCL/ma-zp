@@ -143,7 +143,7 @@ export const ETAPES = [
         <li>Règle et <strong>valide tes ordres</strong> (et tranche le dilemme s’il y en a un).</li>
         <li>Avance l’<strong>enquête</strong> : pièces au tableau, deux démarches.</li>
         <li>Fais tes <strong>énigmes</strong>, ou le quiz express.</li>
-        <li>Quand un <strong>incident</strong> tombe, tu as 12 heures.</li>
+        <li>Quand un <strong>incident</strong> tombe, tu as jusqu’à 20:00 (il tombe entre 6 h et 12 h).</li>
         <li>Coup d’œil au <strong>Terrain</strong> et à la <strong>Radio</strong> : on avance mieux à plusieurs.</li>
       </ol>
       <p class="tuto-note">Le détail est dans le <strong>Guide du joueur</strong> (roue dentée en haut de l’HP), d’où tu peux aussi relancer cette visite. Bon service !</p>`,
