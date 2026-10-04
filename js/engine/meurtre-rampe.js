@@ -36,7 +36,7 @@ const SUSPECTS = [
     vehicule: { t: 'une Peugeot grise', mode: 'moteur' },
     alibi: { type: 'mensonge', pos: 'jemappes', lieu: 'chez elle, à Jemappes, seule', ditDe: hm(19, 0), ditA: hm(24, 30) },
     rumeur: 'argent',
-    fiche: { declaration: 'Dit avoir passé la soirée chez elle, à Jemappes, seule.', rumeur: 'Rumeur : elle hérite de la maison, et sa pharmacie va mal.' },
+    fiche: { declaration: 'Dit avoir passé la soirée chez elle, à Jemappes, seule.', rumeur: 'Rumeur : elle hérite de la maison, sa pharmacie va mal, et le testament devait être modifié lundi.' },
   },
   {
     nom: 'Grégoire Wautelet', photo: 'img/rampe/p1.webp', prenom: 'Grégoire', f: false, age: 49, role: 'filleul de la victime, promoteur immobilier', roleDetail: 'dirige Wautelet Développement, boulevard Dolez', proche: true,
@@ -50,7 +50,7 @@ const SUSPECTS = [
     vehicule: { t: 'à pied (habite au-dessus du café)', mode: 'pied', rien: true },
     alibi: { type: 'seul', pos: 'ropieur', lieu: 'derrière son comptoir, rue de la Chaussée', solitaire: 'derrière son comptoir', ditDe: hm(17, 0), ditA: hm(24, 30) },
     rumeur: 'vengeance',
-    fiche: { declaration: 'Dit avoir tenu son café, rue de la Chaussée, toute la soirée.', rumeur: 'Rumeur : la victime refusait de renouveler son bail.' },
+    fiche: { declaration: 'Dit avoir tenu son café, rue de la Chaussée, toute la soirée.', rumeur: 'Rumeur : la victime le met à la porte en décembre. Au comptoir, la semaine dernière, il aurait lancé : « Celui-là, un jour, quelqu’un lui réglera son compte. »' },
   },
   {
     nom: 'Samira Debouck', photo: 'img/rampe/p3.webp', prenom: 'Samira', f: true, age: 36, role: 'aide-ménagère de la victime', roleDetail: 'trois matinées par semaine, en titres-services ; elle a les clés', proche: true,
@@ -64,7 +64,7 @@ const SUSPECTS = [
     vehicule: { t: 'une petite citadine', mode: 'moteur' },
     alibi: { type: 'couvre', pos: 'dolez', lieu: 'au bureau du boulevard Dolez, avec Grégoire Wautelet jusqu’à 22:10', ditDe: hm(18, 30), ditA: hm(22, 25) },
     rumeur: 'argent',
-    fiche: { declaration: 'Dit avoir travaillé au bureau, boulevard Dolez, avec Grégoire Wautelet jusqu’à 22:10, puis être rentré chez lui.', rumeur: 'Rumeur : il touchait une commission si la maison de la Rampe était vendue.' },
+    fiche: { declaration: 'Dit avoir travaillé au bureau, boulevard Dolez, avec Grégoire Wautelet jusqu’à 22:10, puis être rentré chez lui.', rumeur: 'Rumeur : il a quitté l’étude en 2005 sur une histoire d’argent jamais éclaircie, et il touche une commission si la maison de la Rampe est vendue.' },
   },
 ];
 const COUPABLE = 1;
@@ -88,7 +88,7 @@ const AUDITIONS = [
     ['Quel est votre lien avec la victime ?', 'C’était mon propriétaire. Le café est à lui depuis trente ans. Il ne voulait plus renouveler le bail : décembre, dehors.'],
     ['Où étiez-vous jeudi soir ?', 'Derrière mon comptoir, comme tous les soirs, jusqu’à la fermeture. Avec le brouillard, il n’y avait que les habitués.'],
     ['Vous a-t-il appelé, ces derniers jours ?', 'Non. Pourquoi il m’aurait appelé ? On se parlait par lettres recommandées.'],
-    ['Vous lui en vouliez ?', 'Évidemment. Mais on ne tue pas un homme pour un bail. On boit un verre de plus et on cherche un autre local.'],
+    ['Votre lettre recommandée du 28 septembre : « Vous ne l’emporterez pas au paradis. »', 'J’étais en colère. Évidemment que je lui en voulais. Mais on ne tue pas un homme pour un bail. On boit un verre de plus et on cherche un autre local.'],
     ['Avez-vous quelque chose à ajouter ?', 'Le Ropieur, c’est trente ans de Doudou. En nonante-neuf, j’avais déjà la moitié du Cercle au comptoir. Ça ne vous dit rien, je sais.'],
   ],
   [
@@ -103,7 +103,7 @@ const AUDITIONS = [
     ['Où étiez-vous jeudi soir ?', 'Au bureau, boulevard Dolez, avec Grégoire, jusqu’à 22:10. Il est parti à son dîner, j’ai fini un dossier et je suis rentré.'],
     ['Pourquoi avez-vous quitté l’étude en 2005 ?', 'Une divergence de vues. Maître Hennebert n’oubliait rien. Jamais.'],
     ['Vous connaissez bien Grégoire Wautelet ?', 'Depuis toujours. On a fait le Lumeçon ensemble en nonante-neuf : on était douze hommes de feuilles, lui et moi compris.'],
-    ['Avez-vous quelque chose à ajouter ?', 'Si la maison se vend, je touche une commission, oui. Comme sur toutes les maisons. Ce n’est pas un mobile, c’est un métier.'],
+    ['Il avait noté : « Lempereur a encore appelé. NE PAS RAPPELER. »', 'Je voulais lui reparler de la vente, il ne voulait rien entendre. Si la maison se vend, je touche une commission, oui. Comme sur toutes les maisons. Ce n’est pas un mobile, c’est un métier.'],
   ],
 ];
 
@@ -319,7 +319,7 @@ const JOURNAL = {
     'C’est son aide-ménagère qui l’a découvert, vendredi vers 8:30, au pied de l’escalier qui mène à l’étage. Les secours n’ont pu que constater le décès. La porte n’avait pas été forcée.',
     'Une chute ? « Rien n’est exclu », se borne-t-on à dire au parquet, qui a pourtant demandé une autopsie et saisi un juge d’instruction dès vendredi après-midi.',
     'Notaire de 1979 à 2012, président d’honneur du Cercle Saint-Georges, Jean-Baptiste Hennebert était de toutes les fêtes du Doudou et de tous les conseils d’administration. « Il savait tout sur tout le monde, et il ne disait jamais rien », résume un ancien confrère.',
-    'Jeudi soir, un brouillard épais était tombé sur le centre. « On ne voyait pas le Beffroi depuis la Grand-Place », raconte un riverain.',
+    'Jeudi soir, un brouillard épais était tombé sur le centre. « On ne voyait pas le Beffroi depuis la Grand-Place », raconte un riverain. Une voisine, elle, a entendu « des éclats de voix, une voix de femme surtout » chez le notaire. L’heure ? « Après le journal télévisé. Avec ce brouillard, je ne saurais pas vous dire mieux. »',
     'Ses proches seront entendus. « Nous ne négligeons aucune piste », indique le commissaire divisionnaire Marc Dewinter.',
   ],
   encadre: [['Où', 'Rampe Sainte-Waudru, sous la Collégiale'], ['Quand', 'Découvert vendredi vers 8:30'], ['Victime', 'Jean-Baptiste Hennebert, 74 ans, notaire honoraire'], ['Cause', 'À l’autopsie'], ['Effraction', 'Aucune']],
@@ -331,8 +331,8 @@ const PVC = {
   titre: 'Premières constatations',
   lignes: [
     'Le vendredi, à 08:41, nous, INP Vranckx et INP Halleux, sommes requis par le dispatching : Mme Samira Debouck, aide-ménagère, signale avoir découvert son employeur inanimé à son domicile, Rampe Sainte-Waudru.',
-    'Arrivés à 08:52. La porte d’entrée était fermée à l’arrivée de Mme Debouck, qui l’a ouverte avec sa clé. Aucune trace d’effraction. M. Jean-Baptiste Hennebert, 74 ans, gît au pied de l’escalier qui mène à l’étage. Le médecin constate le décès : deux plaies à la tête.',
-    'Dans l’étude, au rez-de-chaussée, la lampe du bureau est allumée et un tiroir est ouvert. Le portefeuille et les clés de la victime sont dans la poche de son pardessus, au portemanteau. Son GSM est introuvable.',
+    'Arrivés à 08:52. Mme Debouck nous attend sur le pas de la porte, en ciré clair, très agitée ; elle dit d’abord être arrivée « vers 8:15 », puis « à 8:30 ». La porte d’entrée était fermée à son arrivée, elle l’a ouverte avec sa clé. Aucune trace d’effraction. M. Jean-Baptiste Hennebert, 74 ans, gît au pied de l’escalier qui mène à l’étage. Le médecin constate le décès : deux plaies à la tête.',
+    'Dans l’étude, au rez-de-chaussée, la lampe du bureau est allumée et un tiroir est ouvert. Le portefeuille et les clés de la victime sont dans la poche de son pardessus, au portemanteau. Son GSM est introuvable. Dans la corbeille à courrier, une lettre recommandée de M. Rudy Stiévenart, datée du 28 septembre : « Trente ans de loyers payés rubis sur l’ongle, et vous me jetez à la rue. Vous ne l’emporterez pas au paradis. » Sur le téléphone fixe de l’entrée, un post-it de la main de la victime : « Lempereur a encore appelé (3e fois). NE PAS RAPPELER. »',
     'Sur la console de l’entrée : une montre de gousset en or, une petite étiquette cartonnée attachée à la chaîne (« 4471 »). Mme Debouck dit ne l’avoir jamais vue là.',
     'Trois maisons plus bas, au-dessus de la porte d’un cabinet de kinésithérapie, une caméra filme la montée de la Rampe.',
     'Le laboratoire et le médecin légiste sont requis. Le magistrat de garde est avisé. Dont procès-verbal.',
