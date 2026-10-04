@@ -74,6 +74,11 @@ export const texteMisePrix = () => `Mise à prix : la zone qui arrête l’auteu
 /** Ouvre le choix de la mise à prix pour une zone (arrestation ou aveux). */
 function ouvrirPrime(state, z, aff, suspect) {
   z.primeAChoisir = { n: aff.n, titre: aff.titre, suspect, tour: state.turn };
+  // Avis de recherche tamponné « ARRÊTÉ », accroché au commissariat (les 12 derniers, gardés d'une saison à l'autre).
+  const s = aff.suspects[aff.coupable] || {};
+  const affiche = { n: aff.n, titre: aff.titre, nom: s.nom || suspect, f: !!s.f, age: s.age || null, role: s.role || '', i: aff.coupable, season: state.season, tour: state.turn, prime: null };
+  if (s.photo) affiche.photo = s.photo;
+  z.affiches = [...(z.affiches || []).filter((a) => !(a.n === aff.n && a.season === state.season)), affiche].slice(-12);
   z.rapport.push(`Mise à prix : choisis ta récompense avant le prochain 20:00 (écran Enquête). Sans choix, la confiscation des avoirs (+${PRIME.confiscation} k€) est versée.`);
 }
 /** Parts de la mise à prix : démasqué sans arrêter, pièces qui ont aidé. */
@@ -104,6 +109,8 @@ export function appliquerPrime(z, choix, T, { services, niveauMax }) {
   let [k, s] = String(choix || '').split(':');
   if (k === 'formation' && !(services.includes(s) && (z.niveaux[s] || 1) < niveauMax)) k = 'confiscation';
   if (!PRIME_CHOIX.includes(k)) k = 'confiscation';
+  const af = (z.affiches || []).slice().reverse().find((a) => a.n === p.n && !a.prime);
+  if (af) af.prime = k === 'formation' ? `formation:${s}` : k;
   if (k === 'renfort') {
     z.renforts = [...(z.renforts || []), { n: PRIME.renfort.agents, debut: T + 1, retour: T + 1 + PRIME.renfort.tours, de: 'federal' }];
     return `Mise à prix « ${p.titre} » : renfort fédéral, ${PRIME.renfort.agents} agents dans tes ordres dès demain, pendant ${PRIME.renfort.tours} jours.`;

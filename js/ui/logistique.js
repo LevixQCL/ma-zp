@@ -9,7 +9,9 @@ import { fiabilite } from '../engine/fipa.js';
 import { siteDe } from '../engine/sites.js';
 import { iconeSite } from './plan.js';
 import { moyenneIpz, operationActive, fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
-import { coutDemarche } from '../engine/enquete.js';
+import { coutDemarche, PRIME_LABELS } from '../engine/enquete.js';
+import { portraitSuspect } from './portrait.js';
+import { SERVICE_LABELS } from '../engine/constants.js';
 import { PERIL, absT, MANOEUVRES } from '../engine/rivalites.js';
 import { estimations } from './ordres.js';
 
@@ -101,6 +103,7 @@ export function sceneZone(z, st, decor = z.decor, skins = skinsValides(z, z.skin
     operation: !!operationActive(z, T),
     champion: estChampion(z, st),
     plaques: z.plaques || [],
+    affiches: z.affiches || [],
     trace: z.trace && z.trace.tour >= T - 1 && st.zones[z.trace.auteur] ? { type: z.trace.type, couleur: st.zones[z.trace.auteur].couleur } : null,
     poste: (() => { const p = (st.postes || []).find((x) => x.cible === z.uid && x.jusqua >= absT(st)); return p && st.zones[p.auteur] ? { couleur: st.zones[p.auteur].couleur } : null; })(),
   });
@@ -148,6 +151,30 @@ export function sceneCarteHtml() {
   </button>`;
 }
 
+/** Tableau des avis de recherche : les malfrats arrêtés par la zone (mise à prix), tamponnés « ARRÊTÉ ». */
+export function affichesHtml(z, { moi = false } = {}) {
+  const l = (z.affiches || []).slice().reverse();
+  if (!l.length) return moi ? '<p class="tiny muted" style="margin:0">Tableau des arrestations : arrête l’auteur d’une affaire pour y accrocher ton premier avis de recherche.</p>' : '';
+  const primeTxt = (p) => {
+    if (!p) return 'prime à choisir';
+    const [k, s] = p.split(':');
+    if (k === 'formation') return `${PRIME_LABELS.formation.ico} formation ${(SERVICE_LABELS[s] || s).toLowerCase()}`;
+    return PRIME_LABELS[k] ? `${PRIME_LABELS[k].ico} ${k === 'confiscation' ? 'avoirs confisqués' : 'renfort fédéral'}` : '';
+  };
+  return `<section class="affiches" aria-label="Tableau des arrestations">
+    <span class="affiches-t">Tableau des arrestations · ${l.length}</span>
+    <div class="affiches-g">${l.map((a, k) => `<figure class="affiche" style="--rot:${[-2.5, 1.8, -1.2, 2.4][k % 4]}deg">
+      <span class="affiche-pin" aria-hidden="true"></span>
+      <span class="affiche-h">Avis de recherche</span>
+      <span class="affiche-photo">${portraitSuspect({ nom: a.nom, f: a.f, age: a.age, role: a.role, photo: a.photo }, a.i, 'affiche-face')}</span>
+      <strong class="affiche-nom">${esc(a.nom)}</strong>
+      <span class="affiche-aff">« ${esc(a.titre)} »</span>
+      <span class="affiche-pied">Saison ${a.season} · jour ${a.tour}${a.prime !== undefined ? ` · ${esc(primeTxt(a.prime))}` : ''}</span>
+      <span class="affiche-tampon" aria-label="Arrêté${a.f ? 'e' : ''}">Arrêté${a.f ? 'e' : ''}</span>
+    </figure>`).join('')}</div>
+  </section>`;
+}
+
 /** Hôtel de police d'une autre zone (depuis la Carte ou le classement). */
 export function ouvrirHpVoisin(uid) {
   const st = S.state, z = st.zones[uid];
@@ -161,6 +188,7 @@ export function ouvrirHpVoisin(uid) {
       <span class="tiny muted">${moi ? 'Ta zone' : esc((S.players && S.players[uid] && S.players[uid].pseudo) || 'Chef de zone')} · ${esc(gradeFor(z.ps || 0).nom)} · ${(z.trophees || []).length} trophée${(z.trophees || []).length > 1 ? 's' : ''}</span></div>
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="scene-voisin">${moi ? sceneZone(z, st, d, mesSkins(z).choix) : sceneZone(z, st, d)}</div>
+    ${affichesHtml(z, { moi })}
     <div class="bats hp-logis">
       <div class="bat"><span class="tiny muted">Bâtiment</span><span style="font-weight:700">Niveau ${z.batiments.bureaux}</span></div>
       <div class="bat"><span class="tiny muted">Garage</span><span style="font-weight:700">Niveau ${z.batiments.garage} · ${z.vehicules} véhicule${z.vehicules > 1 ? 's' : ''}</span></div>
@@ -279,6 +307,7 @@ function logistiqueCorps() {
       <span class="mono tiny muted">entretien ${fmt1(entretienTotal)} k€ par tour</span></div>
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <button type="button" class="btn small block decor-btn" data-action="decor">${icon('star', 16)} Personnaliser mon commissariat <span class="tiny muted">${decorCompte(z).n} / ${decorCompte(z).total}</span></button>
+    ${affichesHtml(z, { moi: true })}
     <div class="bats">${bat}</div>
     ${Object.keys(BATIMENTS).some((id) => b[id] < BATIMENT_MAX) ? '<p class="tiny muted" style="margin:-4px 0 0">En vert : ce que t’apporte le niveau suivant.</p>' : ''}
     <div class="col" style="gap:6px">

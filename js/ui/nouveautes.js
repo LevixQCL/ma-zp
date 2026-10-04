@@ -8,7 +8,7 @@ export const NOTE_MAJ = {
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
     ['🌫️', 'Un nouveau meurtre à Mons, ce soir', 'un notaire retrouvé au pied de son escalier, Rampe Sainte-Waudru. Des heures qui mentent, un GSM qui parle, et une vieille histoire de Doudou.'],
-    ['💰', 'Mise à prix', 'arrête l’auteur d’une affaire et choisis ta récompense : 12 k€, 2 agents fédéraux pendant 5 jours ou une formation offerte.'],
+    ['💰', 'Mise à prix', 'arrête l’auteur d’une affaire, choisis ta récompense (12 k€, 2 agents fédéraux ou une formation) et accroche son avis de recherche au commissariat.'],
     ['💣', 'Colis suspect', 'la fiche SEDEE change à chaque engin : relis-la bien !'],
     ['🔍', 'Empreintes', 'curseur rond, aide « ? » sur les minuties, et tu vises avant de valider (double-clic).'],
   ],
@@ -32,6 +32,7 @@ export const NOTE_MAJ = {
     ]],
     ['Enquête', [
       ['Mise à prix', 'annoncée dès l’ouverture de l’affaire. Chaque zone qui arrête l’auteur (ou obtient ses aveux) choisit sa récompense le lendemain, avec ses ordres : confiscation des avoirs (+12 k€), renfort fédéral (+2 agents pendant 5 jours, salaires payés par le fédéral) ou formation offerte (+1 niveau, sans agent absent). Sans choix : confiscation. Elle remplace l’ancienne prime de 4 k€.'],
+      ['Tableau des arrestations', 'chaque malfrat arrêté laisse son avis de recherche tamponné « ARRÊTÉ » au commissariat : sur le panneau devant l’entrée, et en grand dans la fiche de l’hôtel de police (la tienne et celle des autres zones). Les 12 derniers sont gardés d’une saison à l’autre.'],
       ['Parts de la prime', 'démasquer l’auteur sans l’arrêter rapporte 6 k€, aider avec ses pièces partagées 2 k€.'],
     ]],
     ['Équilibrage', [

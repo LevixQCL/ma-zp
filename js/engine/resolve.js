@@ -1064,6 +1064,7 @@ function finDeSaison(state, classement) {
     nz.infra = { ...(z.infra || {}) };
     nz.equipe = z.equipe || creerEquipe(uid);
     nz.trophees = z.trophees || [];
+    if (z.affiches) nz.affiches = z.affiches;
     if (z.plaques) nz.plaques = z.plaques;
     if (z.decor) nz.decor = z.decor;
     if (z.skins) nz.skins = z.skins;

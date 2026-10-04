@@ -168,6 +168,7 @@ assert.equal(state.zones.B.stats.arrestations, 0, 'trop peu d’agents');
 assert.equal(state.traques.length, 0);
 // Mise à prix : C choisit sa récompense (le lendemain, avec ses ordres) ; sans choix, confiscation.
 assert.ok(state.zones.C.primeAChoisir, 'C peut choisir sa mise à prix');
+assert.equal((state.zones.C.affiches || []).length, 1, 'avis de recherche accroché chez C');
 assert.ok(!state.zones.A.primeAChoisir && !state.zones.B.primeAChoisir);
 { const b0 = state.zones.C.budget, lendemain = resolveTurn(JSON.parse(JSON.stringify(state)), { players, orders: { A: base, B: base, C: { ...base, prime: 'formation:recherche' } } }).state;
   assert.equal(lendemain.zones.C.primeAChoisir, undefined); assert.equal(lendemain.zones.C.niveaux.recherche, state.zones.C.niveaux.recherche + 1, 'formation offerte appliquée'); }
