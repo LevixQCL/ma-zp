@@ -10,7 +10,7 @@ export const NOTE_MAJ = {
     ['🌫️', 'Un nouveau meurtre à Mons, ce soir', 'un notaire retrouvé au pied de son escalier, Rampe Sainte-Waudru. Des heures qui mentent, un GSM qui parle, et une vieille histoire de Doudou.'],
     ['💰', 'Mise à prix', 'arrête l’auteur d’une affaire, choisis ta récompense (12 k€, 2 agents fédéraux ou une formation) et accroche son avis de recherche au commissariat.'],
     ['💣', 'Colis suspect', 'la fiche SEDEE change à chaque engin : relis-la bien !'],
-    ['🔍', 'Empreintes', 'curseur rond, aide « ? » sur les minuties, et tu vises avant de valider (double-clic).'],
+    ['🔍', 'Empreintes', 'curseur rond, aide « ? » sur les minuties, et tu vises avant de valider (touche le rond orange).'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
@@ -44,6 +44,7 @@ export const NOTE_MAJ = {
       ['Confiance de la commune', 'la ligne est toujours affichée dans le détail du budget, avec son calcul (réputation − 50 × coefficient), même quand elle vaut 0.'],
     ]],
     ['Mini-jeux', [
+      ['Empreintes : validation réparée', 'sur certains téléphones, le double tap pour valider une minutie n’était jamais reconnu. Désormais, il suffit de toucher le rond orange de ta visée pour valider (le double tap et la touche Entrée marchent toujours).'],
       ['Colis suspect', 'nouvel habillage : boîtier en inox vissé, plaque de série rivetée, fils tressés avec embouts et écrous, bouton lumineux à collerette chromée, interrupteurs à bascule. Les règles et la fiche SEDEE ne changent pas.'],
       ['Réseau', 'nouvel habillage : plateau en métal, dalles de verre gravées, câbles en néon cyan où l’on voit le courant circuler, fond de circuit imprimé. Les règles et la difficulté ne changent pas.'],
       ['ADN', 'nouvel habillage : hélices en tubes de verre, barreaux en capsules colorées, vitre de comparaison et fond de labo. Les règles et la difficulté ne changent pas.'],
