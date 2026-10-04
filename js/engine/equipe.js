@@ -1,5 +1,6 @@
 // L'équipe de la zone (trombinoscope) et les trophées.
 import { makeRng } from './rng.js';
+import { ROLE_SERVICE, bonusChef } from './constants.js';
 
 // ───── Trombinoscope ─────
 export const ROLES_EQUIPE = [
@@ -140,4 +141,26 @@ export function verifierTrophees(z) {
   if (z.batiments && z.batiments.bureaux >= 4) ok.push('batisseur');
   if ((z.equipe || []).some((m) => m.niveau >= 3)) ok.push('veteran');
   return ok;
+}
+
+/**
+ * Service encadré par chaque figure ce soir : le sien, ou celui choisi dans les ordres (`postes` : { role: service }).
+ * Une seule figure par service : si deux visent le même, la plus expérimentée l'encadre ; l'autre reprend le sien,
+ * ou prend le service laissé libre par la première (échange).
+ * Les figures en mission (`enMission` : liste de rôles) n'encadrent rien. Renvoie { service: { role, bonus } }.
+ */
+export function encadrement(equipe, postes = {}, enMission = []) {
+  const out = {};
+  const liste = (equipe || []).filter((m) => ROLE_SERVICE[m.role] && !enMission.includes(m.role))
+    .map((m) => ({ m, s: (postes && postes[m.role] && Object.values(ROLE_SERVICE).includes(postes[m.role])) ? postes[m.role] : ROLE_SERVICE[m.role] }))
+    .sort((a, b) => (b.m.niveau || 0) - (a.m.niveau || 0) || (b.m.xp || 0) - (a.m.xp || 0));
+  const restants = [];
+  for (const x of liste) { if (out[x.s]) restants.push(x); else out[x.s] = { role: x.m.role, bonus: bonusChef(x.m.niveau) }; }
+  // Place prise : la figure reprend son propre service, sinon celui que la première a libéré (un échange).
+  for (const x of restants) {
+    const home = ROLE_SERVICE[x.m.role], libere = ROLE_SERVICE[out[x.s].role];
+    const s2 = !out[home] ? home : !out[libere] ? libere : null;
+    if (s2) out[s2] = { role: x.m.role, bonus: bonusChef(x.m.niveau) };
+  }
+  return out;
 }

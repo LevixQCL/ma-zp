@@ -11,7 +11,7 @@ import { QUIZ } from '../quests/quiz.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
-import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet } from './equipe.js';
+import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet, encadrement } from './equipe.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
   forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, pointsIpz, moyenneIpz, moralMult, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles,
@@ -626,11 +626,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
     // Figures de l'équipe : bonus dans leur service (si quelqu'un y travaille), sauf celle partie en mission.
     z.bonusChefs = {};
-    for (const m of z.equipe || []) {
-      const s = ROLE_SERVICE[m.role];
-      if (!s || !cap[s] || (z._missions || []).includes(m.role)) continue;
-      const b = bonusChef(m.niveau);
-      cap[s] *= 1 + b; z.bonusChefs[s] = b;
+    for (const [s, x] of Object.entries(encadrement(z.equipe, o.postes, z._missions || []))) {
+      if (!cap[s]) continue;
+      cap[s] *= 1 + x.bonus; z.bonusChefs[s] = x.bonus;
     }
 
     // Efficacité due au moral (celui du moment du calcul, après aléas, énigmes et primes du jour).

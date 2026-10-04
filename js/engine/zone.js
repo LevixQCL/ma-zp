@@ -330,9 +330,12 @@ export function sanitizeOrders(zone, raw, state) {
     ? { role: m.role, type: m.type, secteur: /^\d{1,4}$/.test(String(m.secteur || '')) ? String(m.secteur) : '' } : null);
   const missions = (Array.isArray(o.missions) ? o.missions : o.mission ? [o.mission] : []).slice(0, ROLES_M.length).map(propreM).filter(Boolean);
   const mission = missions[0] || null;
+  // Service encadré par chaque figure pour la journée (sinon le sien).
+  const SERV = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
+  const postes = Object.fromEntries(Object.entries(o.postes && typeof o.postes === 'object' ? o.postes : {}).filter(([r, s]) => ROLES_M.includes(r) && SERV.includes(s)));
   // Dilemme du Directeur : indice du choix (vérifié à la résolution).
   const dilemme = Number.isInteger(o.dilemme) && o.dilemme >= 0 && o.dilemme <= 3 ? o.dilemme : null;
-  return { dilemme, mission, missions, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
+  return { dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */
