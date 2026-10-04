@@ -40,6 +40,30 @@ function lancementRampe(state, push) {
   if (push) push(9, 'Enquête', `« ${aff.titre} » est retirée`, 'Le parquet mobilise tout le district sur une affaire plus grave, qui s’ouvre ce soir. Les traques en cours continuent.');
 }
 
+/**
+ * Maître du jeu : ouvrir la Rampe tout de suite, sans attendre le 20:00 (affaire en cours retirée, traques intactes).
+ * Seulement si la partie n'a pas encore joué la Rampe. Renvoie le titre de l'affaire retirée, ou null si rien à faire.
+ */
+export function rampeDisponible(state) {
+  return !!(MEURTRE2.actif && state && state.meurtre2Des == null && (state.enquete || state.enquetePause));
+}
+export function ouvrirRampeMaintenant(state) {
+  if (!rampeDisponible(state)) return null;
+  let retiree = state.enquetePause ? state.enquetePause.titre : null;
+  if (state.enquete) {
+    const e = state.enquete;
+    retiree = affaire(state, e.n).titre;
+    // La rue de la Clef pas encore jouée (jour 1) reviendra plus tard ; entamée, elle est perdue comme un vol retiré.
+    if (state.meurtreDes != null && e.n === state.meurtreDes && (e.jour || 1) <= 1) delete state.meurtreDes;
+    state.enquetePause = { id: `rampe-mj-${state.season}-${state.turn}-${e.n}`, n: e.n, titre: retiree, tour: state.turn, reprise: state.nextDeadline };
+    state.enquete = null;
+  }
+  state.enquetePause.suivante = 'rampe';
+  delete state.meurtre2Suivante;
+  nouvelleAffaire(state);
+  return retiree || '';
+}
+
 export const ENQ_VERSION = 2;
 export const ENQ = {
   dureeMax: 7,          // jours pour désigner le suspect

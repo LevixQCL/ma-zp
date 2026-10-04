@@ -200,4 +200,22 @@ console.log('meurtre2 : OK');
   assert.equal(affaire(v, v.enquete.n).cas, 'rampe', 'réparée le lendemain');
   assert.equal(v.meurtreDes, undefined, 'la Clef reviendra plus tard');
 }
+// e) Maître du jeu : ouvrir la Rampe tout de suite (sans tour), puis le 20:00 suivant la fait avancer normalement.
+{
+  const { ouvrirRampeMaintenant, rampeDisponible } = await import('../js/engine/enquete.js');
+  const players2 = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' } };
+  const b2 = { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal' };
+  let w = createGame({ seed: 'maintenant' });
+  w = resolveTurn(w, { players: players2 }).state;
+  w = resolveTurn(w, { players: players2, orders: { A: b2, B: b2 } }).state;
+  const tour = w.turn, n0 = w.enquete.n;
+  assert.ok(rampeDisponible(w));
+  assert.ok(ouvrirRampeMaintenant(w));
+  assert.equal(w.turn, tour); assert.equal(w.enquete.n, n0 + 1); assert.equal(affaire(w, w.enquete.n).cas, 'rampe');
+  assert.equal(w.enquetePause, undefined); assert.ok(w.zones.A.enquete && w.zones.A.enquete.n === w.enquete.n);
+  assert.equal(rampeDisponible(w), false); assert.equal(ouvrirRampeMaintenant(w), null);
+  w = JSON.parse(JSON.stringify(w));
+  w = resolveTurn(w, { players: players2, orders: { A: b2, B: b2 } }).state;
+  assert.equal(affaire(w, w.enquete.n).cas, 'rampe'); assert.equal(w.enquete.jour, 2);
+}
 console.log('lancement programmé : OK');

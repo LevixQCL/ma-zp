@@ -230,6 +230,7 @@ export function createLocalBackend(config) {
 
     // Maître du jeu
     async adminDirecteur(champs) { self.state.dir = { ...(self.state.dir || {}), ...JSON.parse(JSON.stringify(champs)) }; persist(); emit('state', JSON.parse(JSON.stringify(self.state))); },
+    async adminModifierEtat(modifier) { const cur = JSON.parse(JSON.stringify(self.state)); const r = modifier(cur); if (r == null) return null; self.state = cur; persist(); emit('state', JSON.parse(JSON.stringify(self.state))); return r; },
     async adminPauseEnquete(pause, minClientVersion) { self.state.enquete = null; self.state.enquetePause = JSON.parse(JSON.stringify(pause)); self.state.minClientVersion = minClientVersion; persist(); emit('state', JSON.parse(JSON.stringify(self.state))); },
     async adminForceResolution() { self.state.nextDeadline = Date.now() - 1000; persist(); },
     async adminReset() { const m = P().meta; db.parties[m.id] = freshPartie(m.id, m.nom, m.code); persist(); emit('state', JSON.parse(JSON.stringify(self.state))); },

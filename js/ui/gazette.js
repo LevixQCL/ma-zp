@@ -6,7 +6,7 @@ import { GRADES, LOTS, ENCHERE, PS, SEASON_LENGTH } from '../engine/constants.js
 import { insigne } from './blasons.js';
 import { regrouperHonneur } from '../engine/honneur.js';
 import { apercuDirecteur, REGLAGES, DISTRICT } from '../engine/directeur.js';
-import { affaire, texteMisePrix } from '../engine/enquete.js';
+import { affaire, texteMisePrix, rampeDisponible } from '../engine/enquete.js';
 import { formatDateBe, formatHeureBe } from '../engine/time.js';
 
 export function renderGazette() {
@@ -231,7 +231,9 @@ export function renderAdmin() {
     <section class="card"><h2 class="card-title">Enquête</h2>
       ${st.enquetePause ? `<p class="small" style="margin:0">Enquête en pause : l’affaire « ${esc(st.enquetePause.titre)} » a été retirée. La nouvelle affaire s’ouvrira à la prochaine résolution (${esc(formatDateBe(st.nextDeadline))} à 20:00). Les traques continuent.</p>`
         : st.enquete ? `<p class="small muted" style="margin:0">Retire l’affaire en cours (par exemple si elle s’est ouverte en même temps qu’une traque). Les traques continuent, une édition spéciale de la Gazette s’affiche chez tout le monde, et la nouvelle affaire s’ouvre au prochain 20:00.</p>
-      <button class="btn block danger" data-action="admin-pause-enquete">Retirer l’affaire n° ${st.enquete.n} jusqu’à demain 20:00</button>` : '<p class="small muted" style="margin:0">Pas d’affaire en cours.</p>'}</section>
+      <button class="btn block danger" data-action="admin-pause-enquete">Retirer l’affaire n° ${st.enquete.n} jusqu’à demain 20:00</button>` : '<p class="small muted" style="margin:0">Pas d’affaire en cours.</p>'}
+      ${rampeDisponible(st) ? `<p class="small muted" style="margin:0">« Le notaire de la Rampe » n’a pas encore été joué dans cette partie. Tu peux l’ouvrir tout de suite : l’affaire en cours est retirée, les traques continuent.</p>
+      <button class="btn block primary" data-action="admin-rampe-maintenant">Ouvrir « Le notaire de la Rampe » maintenant</button>` : ''}</section>
     ${directeurAdminHtml(st)}
     <section class="card"><h2 class="card-title">Résolution</h2>
       <p class="small muted" style="margin:0">Force la résolution du tour en cours maintenant (utile pour tester). Les joueurs ne pourront plus modifier leurs ordres de ce tour.</p>

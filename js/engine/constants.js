@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 67;
+export const APP_VERSION = 68;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
