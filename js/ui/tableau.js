@@ -22,7 +22,7 @@ import { photoIndice, aPhoto } from './indices-photo.js';
 import { sceneFouilleHtml, sceneZoomHtml } from './scene-fouille.js';
 import { friseSvg, friseVolet } from './frise.js';
 import { opposables, pieceReaudition, REAUD } from '../engine/enquete.js';
-import { lienItineraire, lieuxMons } from '../engine/meurtre-mons.js';
+import { lienItineraire, lieuxMons, MODES_GMAPS } from '../engine/meurtre-mons.js';
 import { demarcheDe, mandatOk } from '../engine/enquete.js';
 import { relecturesHtml, recoupBoutons, voletRecoup, voletHypo, voletPouces, mobileHtml, soirPlusHtml } from './enquete-plus.js';
 
@@ -455,9 +455,11 @@ function voletLieu(aff, k, et) {
     const qui = aff.suspects.filter((s) => s.alibi.pos === k);
     return `<span class="tb-ligne-k" style="color:var(--blue-soft)">${esc(l.sous || 'Mons')}</span><span class="tb-titre">${esc(l.nom)}</span>
       ${qui.map((s) => `<p class="small" style="margin:0"><strong>${esc(s.prenom)}</strong> · ${esc(ficheSuspect(aff, s).declaration)}</p>`).join('')}
-      <a class="btn small" href="${lienItineraire(k, aff.pos, LX)}" target="_blank" rel="noopener">🚶 Itinéraire à pied jusqu’à la scène (Google Maps)</a>
-      <a class="btn small ghost" href="${lienItineraire(aff.pos, k, LX)}" target="_blank" rel="noopener">Dans l’autre sens : de la scène jusqu’ici</a>
-      <p class="tiny muted" style="margin:0">Compte large : une estimation à la minute près n’est jamais nécessaire.</p>
+      ${k === aff.pos ? '' : `<span class="tiny muted">D’ici jusqu’à la scène (Google Maps)</span>
+      <div class="tb-duo">${MODES_GMAPS.map(([m, ic, nom], j) => `<a class="btn small ${j ? 'ghost' : ''}" href="${lienItineraire(k, aff.pos, LX, m)}" target="_blank" rel="noopener">${ic} ${nom}</a>`).join('')}</div>
+      <span class="tiny muted">De la scène jusqu’ici</span>
+      <div class="tb-duo">${MODES_GMAPS.map(([m, ic, nom]) => `<a class="btn small ghost" href="${lienItineraire(aff.pos, k, LX, m)}" target="_blank" rel="noopener">${ic} ${nom}</a>`).join('')}</div>
+      <p class="tiny muted" style="margin:0">Compte large : une estimation à la minute près n’est jamais nécessaire. Le bus : Google donne les horaires du moment où tu regardes, pas ceux du soir des faits.</p>`}
       ${et.connus.has('c:legiste2') ? `<p class="tiny muted" style="margin:0">Le légiste : décès entre ${hm(aff.heure)} et ${hm(aff.fin)}.</p>` : ''}`;
   }
   if (aff.prof) {
