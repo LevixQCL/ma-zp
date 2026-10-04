@@ -1,9 +1,11 @@
+// Usage : node test/dossiers-sim.mjs [3-5]  (tailles min-max des dossiers ; par défaut celles du jeu)
 // Combien d'agents en Recherche pour suivre le rythme d'un dossier par jour ? Zone fixe, moral réel, 13 tours.
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { BOT_PROFILES, botOrders } from '../js/engine/bots.js';
 import { newZone } from '../js/engine/zone.js';
 import { DOSSIER } from '../js/engine/constants.js';
-const [a, b] = (process.argv[2] || '4-8').split('-').map(Number); DOSSIER.tailleMin = a; DOSSIER.tailleMax = b;
+if (process.argv[2]) { const [x, y] = process.argv[2].split('-').map(Number); DOSSIER.tailleMin = x; DOSSIER.tailleMax = y; }
+const a = DOSSIER.tailleMin, b = DOSSIER.tailleMax;
 for (const rech of [4, 5, 6, 8, 11]) {
   let fin = 0, elu = 0, ipz = 0, moral = 0; const S = 30;
   for (let s = 0; s < S; s++) {
