@@ -381,3 +381,5 @@ body:has(.demo-banner) .jr-wrap { top: 44px; }
 .tb-trajets-l { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .tb-trajets-l .btn { min-height: 56px; padding: 4px 6px; flex-direction: column; gap: 0; font-size: 13px; line-height: 1.15; text-align: center; }
 .tb-trajets-l .btn .ic { font-size: 20px; line-height: 1.2; }
+/* Ma cellule d'enquête, dans « Ce soir » */
+.tb-cellule { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 14px; background: var(--surface2); border: 1px solid var(--hair); }

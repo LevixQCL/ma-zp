@@ -64,7 +64,7 @@ export const rampeDisponible = (state) => affairesOuvrables(state).some((a) => a
  * une affaire écrite retirée au jour 1 (pas encore jouée) redevient disponible. Renvoie le titre de l'affaire
  * retirée ('' s'il n'y en avait pas), ou null si cette affaire n'est pas disponible.
  */
-export function ouvrirAffaireMaintenant(state, cas = 'rampe') {
+export function ouvrirAffaireMaintenant(state, cas = 'rampe', now = Date.now()) {
   const def = affairesOuvrables(state).find((a) => a.cas === cas);
   if (!def) return null;
   let retiree = state.enquetePause ? state.enquetePause.titre : '';
@@ -77,9 +77,25 @@ export function ouvrirAffaireMaintenant(state, cas = 'rampe') {
   }
   state.enquetePause.suivante = cas;
   nouvelleAffaire(state);
+  // Ouverte après l'échéance mais avant que le tour soit calculé : ce calcul ne doit pas la faire passer au jour 2
+  // (le 4 octobre, la Rampe ouverte à la main vers 20:30 s'est retrouvée au jour 2 dès le soir même).
+  if (state.enquete && state.nextDeadline && now >= state.nextDeadline) state.enquete.sansAvance = state.nextDeadline;
   return retiree;
 }
 export const ouvrirRampeMaintenant = (state) => ouvrirAffaireMaintenant(state, 'rampe');
+
+/**
+ * Réparation ponctuelle (partie où la Rampe a été ouverte à la main le 4 octobre après 20:00, avant le calcul
+ * du tour) : l'affaire affiche le jour 2 alors qu'elle s'est ouverte ce soir-là. Vrai si l'état est concerné.
+ */
+export const jourRampeARecaler = (state) => !!(state && state.enquete && state.meurtre2Des === state.enquete.n && state.enquete.jour === 2
+  && !state.enquete.recale && state.nextDeadline === Date.parse('2026-10-05T18:00:00Z'));
+export function recalerJourRampe(state) {
+  if (!jourRampeARecaler(state)) return null;
+  state.enquete.jour = 1; state.enquete.recale = true;
+  for (const z of Object.values(state.zones || {})) for (const p of (z.enquete && z.enquete.n === state.enquete.n && z.enquete.pieces) || []) if (p.j === 2) p.j = 1;
+  return true;
+}
 
 export const ENQ_VERSION = 2;
 export const ENQ = {
@@ -1382,7 +1398,10 @@ export function enquetePost(state, pre, push) {
     const b = nouvelleAffaire(state);
     pre.res.nouvelle = b.titre;
     push(5, 'Nouvelle affaire', b.titre, `${b.texte} ${b.accroche || accroche}`);
+  } else if (e.sansAvance && e.sansAvance === state.nextDeadline) {
+    delete e.sansAvance; // affaire ouverte à la main juste avant ce calcul : elle reste au jour 1
   } else {
+    delete e.sansAvance;
     e.jour += 1;
     // Rebondissement du jour : publié à toutes les zones.
     const aff = affaire(state, e.n);
