@@ -49,7 +49,7 @@ export const NOTE_MAJ = {
       ['Réseau', 'nouvel habillage : plateau en métal, dalles de verre gravées, câbles en néon cyan où l’on voit le courant circuler, fond de circuit imprimé. Les règles et la difficulté ne changent pas.'],
       ['ADN', 'nouvel habillage : hélices en tubes de verre, barreaux en capsules colorées, vitre de comparaison et fond de labo. Les règles et la difficulté ne changent pas.'],
       ['Crochetage', 'nouvel habillage : serrure en coupe avec ressorts, goupilles usinées et rotor en laiton, clé de tension à voyants (vert = bonne tension) et lecture « Zone verte / Trop forte / Trop faible » sous Tension. Les règles et la difficulté ne changent pas.'],
-      ['Empreintes', 'curseur rond au lieu du viseur, bouton « ? » qui explique ce qu’est une minutie (fin de crête, bifurcation). Relâcher pose seulement une visée, sans pénalité : double-clic (ou double tape) dessus pour valider.'],
+      ['Empreintes', 'curseur rond au lieu du viseur, bouton « ? » qui explique ce qu’est une minutie (fin de crête, bifurcation). Relâcher pose seulement une visée, sans pénalité : touche le rond orange pour valider.'],
       ['Dossier à relire', 'rapport plus long et plus fouillé (ancienne adresse, ménage, carte d’identité, bail, témoin du voisin), avec de nouvelles erreurs possibles et un peu plus de temps.'],
       ['Colis suspect', 'la fiche SEDEE change à chaque engin : couleurs, chiffres de l’horloge et interrupteurs différents, il faut la relire à chaque fois. Le bouton accepte une petite marge quand on relâche pile au changement de chiffre.'],
     ]],
