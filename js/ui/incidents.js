@@ -34,13 +34,15 @@ export function pourquoiIncident(service, n, aj = 0) {
   const minNormal = Math.ceil(base * 0.7 - 1e-9), minFacile = Math.ceil(base * 1.5 - 1e-9);
   const svc = SERVICE_LABELS[service] || service;
   const d = Math.max(-1, Math.min(1, Math.round(Number(aj) || 0)));
-  return `${n} agent${n > 1 ? 's' : ''} au service ${svc} dans tes ordres (base : ${base}). Moins de ${minNormal} : difficile · de ${minNormal} à ${minFacile - 1} : normal · ${minFacile} ou plus : facile.`
+  return `${n} agent${n > 1 ? 's' : ''} au service ${svc} en service quand l’incident est tombé (ordres validés à 20:00 ; base : ${base}). Niveau fixé, changer tes ordres n’y fait rien. Moins de ${minNormal} : difficile · de ${minNormal} à ${minFacile - 1} : normal · ${minFacile} ou plus : facile.`
     + (d ? ` Le Directeur rend l’incident d’un cran plus ${d < 0 ? 'facile' : 'difficile'}, vu tes derniers mini-jeux.` : '');
 }
 
-function agentsService(service) {
+/** Agents du service en service aujourd'hui : figés dans l'incident (jamais les ordres en cours d'édition). */
+function agentsService(service, inc) {
+  if (inc && Number.isFinite(inc.agents)) return inc.agents;
   const z = myZone();
-  const a = (S.savedOrders && S.savedOrders.alloc) || (z && z.dernierOrdre && z.dernierOrdre.alloc) || DEFAULT_ALLOC;
+  const a = (z && z.dernierOrdre && z.dernierOrdre.alloc) || DEFAULT_ALLOC;
   return a[service] || 0;
 }
 
@@ -143,8 +145,8 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
   document.querySelector('.mj-wrap')?.remove();
   const p = new URLSearchParams({ mode });
   if (mode === 'incident' && inc) {
-    const n = agentsService(inc.service), { base, plus } = jaugeDuJour();
-    const aj = niveauIncidents(myZone());
+    const n = agentsService(inc.service, inc), { base, plus } = jaugeDuJour();
+    const aj = Number.isFinite(inc.ajust) ? inc.ajust : niveauIncidents(myZone());
     p.set('id', inc.id); p.set('agents', String(n)); p.set('diff', difficulte(inc.service, n, aj));
     p.set('pourquoi', pourquoiIncident(inc.service, n, aj));
     p.set('jauge', String(base + plus)); p.set('malus', texteMalus(MALUS[inc.service].plein)); p.set('gain', `${gainAffiche(inc.service)}, +${PS.queteOk} PS`);

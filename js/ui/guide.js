@@ -337,7 +337,7 @@ export function sections() {
         <p>Une ou deux fois par jour, à une heure imprévue (entre 7 h et 19 h), un incident tombe sur un de tes services. L’HP affiche un compte à rebours jusqu’au prochain, puis l’incident reste ouvert <strong>${INC.ouverture / 3600000} heures</strong>. S’il tombe tard, il reste jouable le lendemain matin et compte alors à la résolution suivante. Plus un service compte d’agents, plus il a de chances d’être touché.</p>
         ${ul([
           '<strong>Un seul essai</strong> par incident. Quitter en cours de partie compte comme un échec.',
-          'La difficulté suit l’effectif du service : plus d’agents que la répartition de base, c’est plus facile ; moins, c’est plus dur.',
+          'La difficulté suit l’effectif du service en service le jour où l’incident tombe (tes ordres validés la veille à 20:00) : plus d’agents que la répartition de base, c’est plus facile ; moins, c’est plus dur. Elle est fixée dès que l’incident tombe : changer tes ordres ensuite n’y change rien.',
           `<strong>Réussi</strong> : +${PS.queteOk} PS, un bonus propre au service (voir le tableau) et des points sur la <strong>jauge des skins</strong> (+2 sans faute, +1 sinon). À ${INC.jauge} points, un nouveau skin pour ton commissariat (ou +5 k€ si tu les as tous).`,
           `<strong>Raté ou abandonné</strong> : −1 de moral, comme une énigme ratée (+${PS.queteTentee} PS pour avoir essayé).`,
           '<strong>Pas joué</strong> : ton équipe se débrouille seule. Elle réussit d’autant plus souvent que le service est fourni ; sinon, un petit malus. Rien à gagner sans jouer.',

@@ -418,7 +418,7 @@ const Shell = (() => {
         ${G.story}
         <div class="lbl2">${effLabel()}</div>
         <div class="seg" id="seg">${seg}</div>
-        <p class="small">${G.diffHint} ${G.unit ? `En vrai, l’équipe PJF compte 2 ${G.unit[1]}, +1 si une autre équipe est restée libre ce soir-là, +1 si ta Recherche est renforcée (−1 si elle est en sous-effectif).` : 'En vrai, le niveau dépend des agents du service dans tes ordres, comparés à la répartition de base.'}</p>
+        <p class="small">${G.diffHint} ${G.unit ? `En vrai, l’équipe PJF compte 2 ${G.unit[1]}, +1 si une autre équipe est restée libre ce soir-là, +1 si ta Recherche est renforcée (−1 si elle est en sous-effectif).` : 'En vrai, le niveau est fixé quand l’incident tombe : agents du service en service ce jour-là (ordres validés à 20:00), comparés à la répartition de base.'}</p>
         <div class="row">${tutoBtns('Jouer')}</div>
         ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
         <p class="demo">${MODE==='train'?'Entraînement : rien ne compte pour ta zone.':'Démo jouable, rien n\'est enregistré dans ta partie Ma ZP.'}</p>`);

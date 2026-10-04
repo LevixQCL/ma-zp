@@ -113,10 +113,16 @@ export function incidentsDuTour(state, uid) {
     liste.push({ service: tirer([liste[0].service]), ouvre: o2 });
     liste.sort((a, b) => a.ouvre - b.ouvre);
   }
+  // Difficulté figée dès que l'incident tombe : agents du service EN SERVICE aujourd'hui (ordres validés
+  // à la dernière résolution) et cran du Directeur du jour. Modifier ses ordres de ce soir ne change plus
+  // le niveau (avant : on gonflait un service juste avant de jouer pour l'avoir en facile).
+  // Un incident reporté au lendemain garde ces valeurs (elles sont stockées avec lui).
+  const niv = z.dir && z.dir.inc && Number.isFinite(z.dir.inc.niv) ? z.dir.inc.niv : 0;
   return liste.map((x, k) => ({
     id: `s${state.season}t${state.turn}-${k}`,
     service: x.service, jeu: INCIDENTS[x.service].jeu, titre: INCIDENTS[x.service].titre,
     ouvre: x.ouvre, ferme: x.ouvre + INC.ouverture,
+    agents: al[x.service] || 0, ajust: niv,
   }));
 }
 
@@ -187,7 +193,7 @@ export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng, ind
       appliquerMalus(z, m, T);
       z._ps = (z._ps || 0) + PS.queteTentee;
       lignes.push(`Incident · ${nom} : ${res.statut === 'abandon' ? 'abandonné' : 'raté'}. ${texteMalus(m)} (+${PS.queteTentee} PS pour avoir essayé).`);
-    } else if (rng.chance(chanceSeule(inc.service, alloc[inc.service]))) {
+    } else if (rng.chance(chanceSeule(inc.service, Number.isFinite(inc.agents) ? inc.agents : alloc[inc.service]))) {
       lignes.push(`Incident · ${nom} : personne n’est venu, ton équipe l’a réglé seule.`);
     } else {
       const m = MALUS[inc.service].leger;
