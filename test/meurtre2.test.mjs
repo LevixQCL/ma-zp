@@ -178,5 +178,26 @@ console.log('meurtre2 : OK');
   assert.equal(t.meurtre2Suivante, true);
   for (let k = 0; k < ENQ.dureeMax; k++) t = tours(t, 1);
   assert.equal(affaire(t, t.enquete.n).cas, 'rampe', 'la Rampe suit');
+  // c) Affaire retirée à la main par le maître du jeu juste avant le lancement : c'est la Rampe qui s'ouvre (pas un vol, pas la Clef).
+  let u = createGame({ seed: 'lancement-c' });
+  u = resolveTurn(u, { players: players2 }).state;
+  u = tours(u, 2);
+  u.enquetePause = { id: 'x', n: u.enquete.n, titre: 'retirée', tour: u.turn, reprise: u.nextDeadline };
+  u.enquete = null;
+  u.nextDeadline = MEURTRE2.lancement + 1800e3;
+  u = tours(u, 1);
+  assert.equal(affaire(u, u.enquete.n).cas, 'rampe', 'pause manuelle : la Rampe s’ouvre');
+  // d) Réparation : la rue de la Clef ouverte par erreur le soir du lancement est retirée le lendemain, la Rampe s'ouvre, la Clef reviendra.
+  let v = createGame({ seed: 'lancement-d' });
+  v = resolveTurn(v, { players: players2 }).state;
+  v = tours(v, 2);
+  v.enquetePause = { id: 'x', n: v.enquete.n, titre: 'retirée', tour: v.turn, reprise: v.nextDeadline, suivante: 'aucune' };
+  v.enquete = null; v.meurtreDes = undefined;
+  v.nextDeadline = MEURTRE2.lancement + 1800e3;
+  v = resolveTurn(v, { players: players2 }).state; v.lastResolvedAt = MEURTRE2.lancement + 1800e3;
+  assert.equal(affaire(v, v.enquete.n).titre, 'Meurtre rue de la Clef', 'situation de départ : la Clef ouverte à tort');
+  v = tours(v, 1);
+  assert.equal(affaire(v, v.enquete.n).cas, 'rampe', 'réparée le lendemain');
+  assert.equal(v.meurtreDes, undefined, 'la Clef reviendra plus tard');
 }
 console.log('lancement programmé : OK');
