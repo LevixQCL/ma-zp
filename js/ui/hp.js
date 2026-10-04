@@ -14,7 +14,7 @@ import { fipaCards } from './fipa.js';
 import { blasonSvg, BLASONS, insigne } from './blasons.js';
 import { GRADES, gradeFor } from '../engine/constants.js';
 import { PERIL, DUEL_INDICATEURS } from '../engine/rivalites.js';
-import { affaire, dossierDe, pointsDecouverte, ENQ, toursTraque, delaiTraque } from '../engine/enquete.js';
+import { affaire, dossierDe, pointsDecouverte, ENQ, toursTraque, delaiTraque, PRIME_LABELS } from '../engine/enquete.js';
 import { aideBtn } from './aide.js';
 import { sceneCarteHtml } from './logistique.js';
 import { encheresHtml } from './encheres.js';
@@ -270,11 +270,16 @@ export function renderHP() {
     const choix = cabossesChoisis(z, S.draft && S.draft.depenses && S.draft.depenses.carrosserie), prevu = choix.length;
     alertes.push({ cls: prevu ? 'blue' : 'red', titre: `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''}`, texte: prevu ? `${prevu < cab ? `${prevu} sur ${cab} ` : ''}en carrosserie ce soir (${fmt1(coutCarrosserie(z, choix))} k€)` : `carrosserie dans tes dépenses (${fmt1(coutCarrosserie(z))} k€), sinon ton image en prend un coup chaque tour`, href: '#ordres' });
   }
-  if (z.primeAChoisir) alertes.unshift({ cls: 'amber', titre: `Mise à prix : ${esc(z.primeAChoisir.suspect)} sous les verrous, choisis ta récompense`, texte: S.draft && S.draft.prime ? 'choix fait, appliqué à 20:00' : '12 k€, renfort fédéral ou formation offerte, avant 20:00', href: '#enquete' });
+  if (z.primeAChoisir) {
+    // Choix fait : plus une alerte à traiter, juste un rappel discret en bas de la liste.
+    const ch = S.draft && S.draft.prime, lab = ch && PRIME_LABELS[String(ch).split(':')[0]];
+    if (ch) alertes.push({ cls: 'blue', titre: `✓ Mise à prix : ${lab ? esc(lab.nom.toLowerCase()) : 'récompense'} choisi${lab && /^(confiscation|formation)/.test(String(ch)) ? 'e' : ''}`, texte: 'appliqué à 20:00 · tu peux encore changer d’avis dans l’Enquête', href: '#enquete' });
+    else alertes.unshift({ cls: 'amber', titre: `Mise à prix : ${esc(z.primeAChoisir.suspect)} sous les verrous, choisis ta récompense`, texte: '12 k€, renfort fédéral ou formation offerte, avant 20:00', href: '#enquete' });
+  }
   for (const x of z.indemnites || []) alertes.push({ cls: 'blue', titre: `Assurance : +${fmt1(x.montant)} k€ attendus`, texte: `remboursement du véhicule sinistré, ${x.tour - T <= 0 ? 'ce soir' : `dans ${x.tour - T} tour${x.tour - T > 1 ? 's' : ''}`}`, href: '#ordres' });
   { const ds = z.dossiers || [], retard = ds.filter((d) => d.age > 6).length, vieux = ds.filter((d) => d.age >= 5).length;
     if (vieux) alertes.push({ cls: retard ? 'red' : 'amber', titre: retard ? `${retard} dossier${retard > 1 ? 's' : ''} en retard` : `${vieux} dossier${vieux > 1 ? 's' : ''} de 5 jours ou plus`, texte: retard ? '−0,4 de satisfaction chacun par jour : renforce la Recherche' : 'renforce la Recherche avant qu’ils coûtent de la satisfaction', href: '#ordres' }); }
-  if (z.paperasse > 14) alertes.push({ cls: 'red', titre: `Paperasse : ${Math.round(z.paperasse)} dossiers en attente`, texte: 'au-delà de 20, gare à l’Inspection', href: '#ordres' });
+  if (z.paperasse > 14) alertes.push({ cls: 'red', titre: `Paperasse : ${Math.round(z.paperasse)} dossiers en attente`, texte: `−2 de moral chaque soir tant qu’elle dépasse 14, et l’Inspection au-delà de 20 · renforce l’Accueil ou paie la sous-traitance (−5 dossiers, 3 k€)`, href: '#ordres' });
   if (z.budget < 0) alertes.push({ cls: 'red', titre: 'Budget dans le rouge', texte: 'deux tours de suite et c’est l’Inspection', href: '#ordres' });
   else if (z.budget > BUDGET_IPZ.dormant) alertes.push({ cls: 'amber', titre: `${fmtK(z.budget)} qui dorment`, texte: `au-delà de ${BUDGET_IPZ.dormant} k€, ton IPZ budget baisse : investis (réserve, prévention, formation, matériel…)`, href: '#ordres' });
   const vieux = z.dossiers.filter((d) => d.age > 6).length;
