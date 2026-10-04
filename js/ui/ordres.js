@@ -206,7 +206,8 @@ function resultatService(e, s) {
       const txt = Math.abs(v) < 1 && Math.abs(v) >= 0.15 ? `${v > 0 ? '+' : '−'}${fmt1(Math.abs(Math.round(v * 10) / 10))}` : pap(e.pap);
       // Pile au-dessus de 14 (−2 de moral par soir) qui ne baisse pas : combien d'agents il faudrait en plus.
       const manque = z.paperasse > 14 && v > -1 ? Math.ceil((v + 1) / e.capAdmin1) : 0;
-      return `<span class="${v > 0.15 || manque ? 'warn' : 'muted'}">paperasse ${txt} ce soir${manque ? ` · ≈ ${manque} agent${manque > 1 ? 's' : ''} de plus pour la faire baisser` : ''}</span>`;
+      const apres = Math.max(0, z.paperasse + v);
+      return `<span class="${v > 0.15 || manque || apres > 14 ? 'warn' : 'muted'}">paperasse ${Math.round(z.paperasse)} → ${Math.round(apres)} ce soir (${txt})${manque ? ` · ≈ ${manque} agent${manque > 1 ? 's' : ''} de plus pour la faire baisser` : ''}</span>`;
     }
     default: return '';
   }
