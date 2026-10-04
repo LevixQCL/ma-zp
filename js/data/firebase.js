@@ -197,7 +197,7 @@ export async function createFirebaseBackend(config) {
 
     async commitResolution(prev, next, gazette) {
       try {
-        return await F.runTransaction(fs, async (tx) => {
+        const r = await F.runTransaction(fs, async (tx) => {
           const s = await tx.get(stateRef());
           const cur = s.data();
           if (!cur || cur.turn !== prev.turn || cur.season !== prev.season) return false;
@@ -205,7 +205,13 @@ export async function createFirebaseBackend(config) {
           tx.set(docIn('gazettes', `${prev.season}_${prev.turn}`), plain({ ...gazette, createdAt: Date.now() }));
           return true;
         });
-      } catch (e) { console.warn('Résolution déjà faite ou refusée :', e.message); return false; }
+        this.derniereErreur = null;
+        return r;
+      } catch (e) {
+        console.warn('Résolution déjà faite ou refusée :', e.message);
+        this.derniereErreur = `${e.code || ''} ${e.message || e}`.trim();
+        return false;
+      }
     },
     async getGazette(season, turn) {
       const s = await F.getDoc(docIn('gazettes', `${season}_${turn}`));

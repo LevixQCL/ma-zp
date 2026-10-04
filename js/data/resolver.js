@@ -6,6 +6,9 @@ import { nextResolutionAfter, weekdayBe } from '../engine/time.js';
 
 let running = false;
 
+/** Dernier échec du calcul ou de l'enregistrement du tour sur cet appareil (affiché à l'écran au lieu de bloquer en silence). */
+export const etatResolution = { erreur: null, at: 0 };
+
 /**
  * Le rapport du soir, le journal des jauges et le relevé du budget de chaque zone sont déjà dans la Gazette du tour :
  * on les retire du document d'état (limité à 1 Mo) et l'appareil les y relit (`completerDepuisGazette`).
@@ -84,12 +87,24 @@ export async function resolvePending(backend, { hour = 20, now = () => Date.now(
         break;
       }
       const nextDeadline = nextResolutionAfter(state.nextDeadline, hour);
-      const { state: next, gazette } = resolveTurn(state, { orders, quests, players, nextWeekday: weekdayBe(nextDeadline) });
+      let next, gazette;
+      try {
+        ({ state: next, gazette } = resolveTurn(state, { orders, quests, players, nextWeekday: weekdayBe(nextDeadline) }));
+      } catch (e) {
+        console.error('Calcul du tour impossible :', e);
+        etatResolution.erreur = `Calcul du tour ${state.turn} : ${e && e.message ? e.message : e}${e && e.stack ? ' · ' + String(e.stack).split('\n').slice(1, 3).map((l) => l.trim()).join(' · ') : ''}`;
+        etatResolution.at = Date.now();
+        break;
+      }
       gazette.date = state.nextDeadline;
       next.nextDeadline = nextDeadline;
       next.lastResolvedAt = state.nextDeadline;
       const ok = await backend.commitResolution(state, allegerEtat(next, gazette), gazette);
-      if (!ok) break; // déjà résolu par un autre appareil, ou refusé : on attend le prochain passage
+      if (!ok) {
+        if (backend.derniereErreur) { etatResolution.erreur = `Enregistrement du tour ${state.turn} refusé : ${backend.derniereErreur}`; etatResolution.at = Date.now(); }
+        break;
+      }
+      etatResolution.erreur = null; // déjà résolu par un autre appareil, ou refusé : on attend le prochain passage
       count++;
     }
   } finally {
