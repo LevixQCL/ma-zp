@@ -41,28 +41,45 @@ function lancementRampe(state, push) {
 }
 
 /**
- * Maître du jeu : ouvrir la Rampe tout de suite, sans attendre le 20:00 (affaire en cours retirée, traques intactes).
- * Seulement si la partie n'a pas encore joué la Rampe. Renvoie le titre de l'affaire retirée, ou null si rien à faire.
+ * Affaires écrites à la main que le maître du jeu peut ouvrir tout de suite (sans attendre le 20:00).
+ * Une nouvelle affaire écrite s'ajoute ici : `dispo` (pas encore jouée dans la partie) et `programmer`
+ * (marque le numéro `n` de la prochaine affaire pour qu'elle soit celle-ci).
  */
-export function rampeDisponible(state) {
-  return !!(MEURTRE2.actif && state && state.meurtre2Des == null && (state.enquete || state.enquetePause));
+export const AFFAIRES_ECRITES = [
+  { cas: 'rampe', titre: 'Le notaire de la Rampe', resume: 'Meurtre d’un notaire, Rampe Sainte-Waudru · 5 suspects · mandat puis confrontation',
+    dispo: (st) => MEURTRE2.actif && st.meurtre2Des == null, programmer: (st, n) => { st.meurtre2Des = n; delete st.meurtre2Suivante; } },
+  { cas: 'clef', titre: 'Meurtre rue de la Clef', resume: 'Meurtre d’un antiquaire dans sa boutique · 5 suspects · perquisition puis confrontation',
+    dispo: (st) => st.meurtreDes == null, programmer: (st, n) => { st.meurtreDes = n; } },
+];
+const casEnCours = (st) => (st.enquete ? (st.meurtre2Des === st.enquete.n ? 'rampe' : st.meurtreDes === st.enquete.n ? 'clef' : null) : null);
+/** Affaires écrites que le maître du jeu peut ouvrir maintenant dans cette partie. */
+export function affairesOuvrables(state) {
+  if (!state || !(state.enquete || state.enquetePause)) return [];
+  const enCours = casEnCours(state);
+  return AFFAIRES_ECRITES.filter((a) => a.cas !== enCours && a.dispo(state));
 }
-export function ouvrirRampeMaintenant(state) {
-  if (!rampeDisponible(state)) return null;
-  let retiree = state.enquetePause ? state.enquetePause.titre : null;
+export const rampeDisponible = (state) => affairesOuvrables(state).some((a) => a.cas === 'rampe');
+/**
+ * Maître du jeu : ouvre l'affaire écrite `cas` tout de suite. L'affaire en cours est retirée (traques intactes) ;
+ * une affaire écrite retirée au jour 1 (pas encore jouée) redevient disponible. Renvoie le titre de l'affaire
+ * retirée ('' s'il n'y en avait pas), ou null si cette affaire n'est pas disponible.
+ */
+export function ouvrirAffaireMaintenant(state, cas = 'rampe') {
+  const def = affairesOuvrables(state).find((a) => a.cas === cas);
+  if (!def) return null;
+  let retiree = state.enquetePause ? state.enquetePause.titre : '';
   if (state.enquete) {
     const e = state.enquete;
     retiree = affaire(state, e.n).titre;
-    // La rue de la Clef pas encore jouée (jour 1) reviendra plus tard ; entamée, elle est perdue comme un vol retiré.
-    if (state.meurtreDes != null && e.n === state.meurtreDes && (e.jour || 1) <= 1) delete state.meurtreDes;
-    state.enquetePause = { id: `rampe-mj-${state.season}-${state.turn}-${e.n}`, n: e.n, titre: retiree, tour: state.turn, reprise: state.nextDeadline };
+    if ((e.jour || 1) <= 1) { if (state.meurtreDes === e.n) delete state.meurtreDes; if (state.meurtre2Des === e.n) delete state.meurtre2Des; }
+    state.enquetePause = { id: `mj-${cas}-${state.season}-${state.turn}-${e.n}`, n: e.n, titre: retiree, tour: state.turn, reprise: state.nextDeadline };
     state.enquete = null;
   }
-  state.enquetePause.suivante = 'rampe';
-  delete state.meurtre2Suivante;
+  state.enquetePause.suivante = cas;
   nouvelleAffaire(state);
-  return retiree || '';
+  return retiree;
 }
+export const ouvrirRampeMaintenant = (state) => ouvrirAffaireMaintenant(state, 'rampe');
 
 export const ENQ_VERSION = 2;
 export const ENQ = {
@@ -935,8 +952,10 @@ export function nouvelleAffaire(state) {
   if (state.carteDes == null) state.carteDes = n; // les affaires ouvertes depuis cette version se jouent avec le plan
   if (state.profDes == null) state.profDes = n; // … et en dossier complet (plan routier, journal, PV) depuis la suivante
   if (state.distinctDes == null) state.distinctDes = n; // deux affaires de suite n'ont plus le même décor
+  const choisie = state.enquetePause && state.enquetePause.suivante && state.enquetePause.suivante !== 'rampe' && AFFAIRES_ECRITES.find((a) => a.cas === state.enquetePause.suivante && a.dispo(state));
   const rampeProgrammee = MEURTRE2.actif && state.meurtre2Des == null && ((state.enquetePause && state.enquetePause.suivante === 'rampe') || state.meurtre2Suivante);
-  if (rampeProgrammee) { state.meurtre2Des = n; delete state.meurtre2Suivante; } // la Rampe, programmée par le lancement : elle passe avant tout
+  if (choisie) choisie.programmer(state, n); // affaire écrite choisie par le maître du jeu
+  else if (rampeProgrammee) { state.meurtre2Des = n; delete state.meurtre2Suivante; } // la Rampe, programmée par le lancement : elle passe avant tout
   // Une affaire de meurtre écrite à la main, une fois par partie (jamais juste après la Rampe : un vol entre les deux).
   else if (state.meurtreDes == null && n >= 2 && !(state.meurtre2Des != null && n < state.meurtre2Des + MEURTRE2.ecart)) state.meurtreDes = n;
   else if (MEURTRE2.actif && state.meurtre2Des == null && state.meurtreDes != null && n >= state.meurtreDes + MEURTRE2.ecart) state.meurtre2Des = n; // … puis la seconde

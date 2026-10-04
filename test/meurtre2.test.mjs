@@ -219,3 +219,20 @@ console.log('meurtre2 : OK');
   assert.equal(affaire(w, w.enquete.n).cas, 'rampe'); assert.equal(w.enquete.jour, 2);
 }
 console.log('lancement programmé : OK');
+
+// Maître du jeu : liste des affaires écrites ouvrables, ouverture de la rue de la Clef, puis plus rien de rejouable.
+{
+  const { affairesOuvrables, ouvrirAffaireMaintenant } = await import('../js/engine/enquete.js');
+  const players2 = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' } };
+  let w = createGame({ seed: 'liste' });
+  w = resolveTurn(w, { players: players2 }).state;
+  w.meurtreDes = undefined; w.meurtre2Des = undefined;
+  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas).sort(), ['clef', 'rampe']);
+  assert.ok(ouvrirAffaireMaintenant(w, 'clef') != null);
+  assert.equal(affaire(w, w.enquete.n).titre, 'Meurtre rue de la Clef');
+  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas), ['rampe'], 'la Clef en cours ne se rouvre pas');
+  assert.ok(ouvrirAffaireMaintenant(w, 'rampe') != null);
+  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas), ['clef'], 'la Clef retirée au jour 1 redevient disponible');
+  assert.equal(ouvrirAffaireMaintenant(w, 'rampe'), null);
+  console.log('OK : affaires écrites ouvrables par le maître du jeu.');
+}
