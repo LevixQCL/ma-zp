@@ -21,11 +21,11 @@ function teinteCheveux(base, age, h) {
 /** Tenue d'après le lien avec la victime. */
 function tenue(role) {
   const r = role.toLowerCase();
-  if (/entretien/.test(r)) return 'blouse';
+  if (/entretien|ménag/.test(r)) return 'blouse';
   if (/technicien/.test(r)) return 'polo';
   if (/livreu/.test(r)) return 'livreur';
-  if (/associ|expert|commissaire/.test(r)) return 'costume';
-  if (/brasserie|restaura|patron/.test(r)) return 'tablier';
+  if (/associ|expert|commissaire|promoteur|immobilier|notaire/.test(r)) return 'costume';
+  if (/brasserie|restaura|patron|café/.test(r)) return 'tablier';
   if (/restauratrice|apprenti/.test(r)) return 'atelier';
   if (/brocant|voisin/.test(r)) return 'pull';
   if (/client/.test(r)) return 'sweat';
@@ -118,6 +118,8 @@ function cheveuxAvant(style, c, age, id, h) {
  * @param {object} s suspect (nom, f, age, role)
  */
 export function portraitSuspect(s, i, cls = 'tb-face') {
+  // Affaire écrite à la main avec de vraies photos d'identité : la photo, au même format que le portrait dessiné.
+  if (s.photo) return `<svg class="${cls}" viewBox="0 0 152 146" aria-hidden="true"><image href="${s.photo}" width="152" height="146" preserveAspectRatio="xMidYMid slice"/></svg>`;
   const h = hashString(`${s.nom}#${i}`);
   const pick = (arr, k) => arr[Math.floor(h / k) % arr.length];
   const [clair, peau, ombre, levres] = pick(PEAUX, 3);

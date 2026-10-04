@@ -3,10 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-06b-quiz',
+  id: '2026-10-07-rampe',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
+    ['🌫️', 'Un nouveau meurtre à Mons, ce soir', 'un notaire retrouvé au pied de son escalier, Rampe Sainte-Waudru. Des heures qui mentent, un GSM qui parle, et une vieille histoire de Doudou.'],
     ['📻', 'Zone de non-droit : qui y va ?', 'le Terrain montre les zones annoncées ce soir sur chaque secteur, et la radio a un bouton « Rejoindre ».'],
     ['⏱', 'Pas le temps pour les énigmes ?', 'un quiz express de 5 questions (15 s chacune) ou un agent qui planche à ta place : ton bonus reste à portée.'],
     ['⛈️', 'Le Directeur', 'un maître du jeu veille sur ta zone : regarde le ciel de l’HP, il annonce la journée.'],
@@ -18,6 +19,14 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Le notaire de la Rampe (ouverture ce soir à 20:00)', [
+      ['Une affaire plus grande', 'un notaire retrouvé au pied de son escalier, Rampe Sainte-Waudru. L’affaire en cours est retirée ce soir pour lui laisser la place (sauf le meurtre de la rue de la Clef, qui va jusqu’au bout). Cinq proches, chacun ment pour une raison ; derrière le meurtre, un second mystère.'],
+      ['Recouper deux pièces', 'sous chaque pièce, « Recouper » (1 k€, un par soir) : tes enquêteurs comparent deux pièces. Certaines paires apprennent du neuf, la plupart rien. Une ficelle tirée entre deux pièces propose de les recouper.'],
+      ['L’hypothèse au juge', 'une fois par soir, gratuit : un suspect et un créneau. Le juge ne dit jamais si c’est juste ; il cite les pièces de ton dossier qui l’appuient et celles qui la contredisent.'],
+      ['Des indices qui évoluent', 'une pièce peut prendre un autre sens quand une autre arrive au dossier : la relecture s’affiche dessous. Et certaines pièces arrivent d’elles-mêmes au commissariat quand ton dossier avance.'],
+      ['Coups de pouce', 'l’ampoule du tableau : trois niveaux par fil, débloqués les jours 2, 4 et 6. Une direction, jamais la solution.'],
+      ['Le vrai mobile', 'pendant la confrontation, tu peux dire pourquoi il a tué : +20 pts d’enquête si tu vises juste.'],
+    ]],
     ['Zone de non-droit', [
       ['Qui y va ce soir', 'en haut de la zone de non-droit (Terrain), un encadré liste les secteurs où des zones se sont annoncées à la radio, avec leurs agents et ce que ça donnerait ensemble. Touche une ligne pour ouvrir le secteur.'],
       ['Rejoindre d’un bouton', 'sous une annonce de la radio, choisis combien d’agents (le jeu propose le minimum pour faire tomber le secteur ce soir et montre l’effet), puis « Rejoindre » les envoie sur le même secteur et prévient la radio à ton tour. Il reste à valider tes ordres.'],

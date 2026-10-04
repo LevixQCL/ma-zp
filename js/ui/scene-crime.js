@@ -39,7 +39,10 @@ function decor(type) {
 }
 
 /** Photo de la scène prise par le labo : décor, plots numérotés, rubalise, flash. */
+import { photoUneRampe, photoSceneRampe } from './rampe-visuels.js';
+
 export function photoScene(type, id = 'sc') {
+  if (type === 'rampe') return photoSceneRampe(id);
   return `<svg viewBox="0 0 200 150" class="tb-photo-svg" aria-hidden="true">
     <defs><radialGradient id="${id}fl" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="rgba(255,250,235,.35)"/><stop offset="1" stop-color="rgba(0,0,0,.45)"/></radialGradient></defs>
     ${decor(type)}
@@ -51,6 +54,7 @@ export function photoScene(type, id = 'sc') {
 
 /** Photo de façade pour la une : rue de nuit, gyrophares, rubalise. */
 export function photoUne(type, id = 'un') {
+  if (type === 'rampe') return photoUneRampe(id);
   const vitrine = type === 'vitrine' || type === 'musee';
   return `<svg viewBox="0 0 200 120" class="tb-photo-svg" aria-hidden="true">
     <defs><radialGradient id="${id}g" cx="22%" cy="70%" r="40%"><stop offset="0" stop-color="rgba(120,170,255,.55)"/><stop offset="1" stop-color="rgba(120,170,255,0)"/></radialGradient>
