@@ -325,6 +325,7 @@ async function onClick(e) {
       case 'incident': { const err = lancerIncident(el.dataset.id, () => rerender()); if (err) { toast(err); rerender(); } break; }
       case 'appui-jouer': { const err = lancerAppui(() => rerender()); if (err) { toast(err); rerender(); } break; }
       case 'dilemme': { const i = Number(el.dataset.i); S.draft.dilemme = S.draft.dilemme === i ? null : i; S.ordersDirty = true; rerender(); break; }
+      case 'prime-choix': { const v = el.dataset.v; S.draft.prime = S.draft.prime === v ? null : v; S.ordersDirty = true; rerender(); break; }
       case 'appui-demande': { const k = el.dataset.k; S.draft.appui = S.draft.appui === k ? null : k; S.ordersDirty = true; rerender(); break; }
       case 'mj-train': ouvrirMiniJeu(el.dataset.j, { mode: 'train', onEntrainement: noterEntrainement }); break;
       case 'tuto': location.hash = '#hp'; setTimeout(() => lancerTuto(0), 50); break;

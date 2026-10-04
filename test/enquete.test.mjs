@@ -166,6 +166,11 @@ assert.equal(r.gazette.enquete.arrestations.length, 1, 'arrestation');
 assert.equal(state.zones.C.stats.arrestations, 1);
 assert.equal(state.zones.B.stats.arrestations, 0, 'trop peu d’agents');
 assert.equal(state.traques.length, 0);
+// Mise à prix : C choisit sa récompense (le lendemain, avec ses ordres) ; sans choix, confiscation.
+assert.ok(state.zones.C.primeAChoisir, 'C peut choisir sa mise à prix');
+assert.ok(!state.zones.A.primeAChoisir && !state.zones.B.primeAChoisir);
+{ const b0 = state.zones.C.budget, lendemain = resolveTurn(JSON.parse(JSON.stringify(state)), { players, orders: { A: base, B: base, C: { ...base, prime: 'formation:recherche' } } }).state;
+  assert.equal(lendemain.zones.C.primeAChoisir, undefined); assert.equal(lendemain.zones.C.niveaux.recherche, state.zones.C.niveaux.recherche + 1, 'formation offerte appliquée'); }
 // Sans la bonne planque cette nuit-là, l'auteur s'enfuit : pas de deuxième tour.
 const fuite = resolveTurn(avantTraque, { players, orders: { A: { ...base, traque: { n: tr.n, planque: autre, agents: 4 } }, B: base, C: base } });
 assert.equal(fuite.gazette.enquete.fuites.length, 1, 'fuite après une nuit');

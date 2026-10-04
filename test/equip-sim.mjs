@@ -24,6 +24,18 @@ function saison(seed, action) {
       if (action.type === 'recruter') { z.budget -= COUTS.recrue; z.agents += 1; oc.alloc.roulage += 1; }
     }
     if (t > 2 && action && action.type === 'recruter') oc.alloc.roulage += 1;
+    // Mises à prix de l'enquête (reçues au tour 7, milieu de saison).
+    const T0 = Number(process.env.TOUR_PRIME || 7);
+    if (action && action.type === 'prime' && t === T0) {
+      const z = state.zones[cible];
+      if (action.p === 'confiscation') z.budget += 12;
+      if (action.p === 'vehicule') { z.vehicules += 1; z.vehiculesSaisis = (z.vehiculesSaisis || 0) + 1; }
+      if (action.p === 'renfort') z.renforts.push({ n: action.n || 2, debut: t, retour: action.duree ? t + action.duree : 99, de: 'federal' });
+      if (action.p === 'vehicule' && action.revision) z.usure = 0;
+      if (action.p === 'formation') z.niveaux[action.s] += 1;
+      if (action.p === 'equip') z.equip[action.s] += 1;
+    }
+    if (action && action.type === 'prime' && action.p === 'renfort' && t >= T0 && (!action.duree || t < T0 + action.duree)) { const k = action.n || 2; oc.alloc.intervention += Math.ceil(k / 2); oc.alloc.proximite += Math.floor(k / 2); }
     const players = Object.fromEntries(BOT_PROFILES.map((b) => [b.uid, { nom: b.nom, code: b.code }]));
     state = resolveTurn(state, { orders, players, nextWeekday: (t + 1) % 7 }).state;
     if (t < SEASON_LENGTH) { somme += state.zones[cible].ipz || 0; n++; fin = { budget: state.zones[cible].budget, sat: state.zones[cible].satisfaction }; }
@@ -40,7 +52,13 @@ const actions = [
   ['Équiper Intervention', { type: 'equiper', s: 'intervention' }], ['Équiper Recherche', { type: 'equiper', s: 'recherche' }],
   ['Former Roulage', { type: 'former', s: 'roulage' }], ['Former Proximité', { type: 'former', s: 'proximite' }],
   ['Recruter 1 agent (Roulage)', { type: 'recruter' }],
+  ['Prime : confiscation 12 k€', { type: 'prime', p: 'confiscation' }], ['Prime : véhicule saisi', { type: 'prime', p: 'vehicule' }],
+  ['Prime : renfort fédéral +2', { type: 'prime', p: 'renfort' }], ['Prime : formation Intervention', { type: 'prime', p: 'formation', s: 'intervention' }],
+  ['Prime : formation Proximité', { type: 'prime', p: 'formation', s: 'proximite' }],
+  ['Prime : renfort +2 pour 5 tours', { type: 'prime', p: 'renfort', duree: 5 }], ['Prime : renfort +3 pour 4 tours', { type: 'prime', p: 'renfort', n: 3, duree: 4 }],
+  ['Prime : véhicule + révision', { type: 'prime', p: 'vehicule', revision: true }], ['Prime : équipement Intervention', { type: 'prime', p: 'equip', s: 'intervention' }],
 ];
+const filtre = process.env.FILTRE; if (filtre) actions.splice(0, actions.length, ...actions.filter(([n]) => n.includes(filtre)));
 const variante = process.argv[2] || 'actuel';
 // Variantes : clé=valeur séparées par des virgules, ex. « efficacite=0.15,amendes=0.1,formation=0.3 ».
 for (const kv of (variante === 'actuel' ? [] : variante.split(','))) { const [k, v] = kv.split('='); if (k === 'formation') FORMATION.parNiveau = Number(v); else EQUIP[k] = Number(v); }

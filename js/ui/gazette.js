@@ -6,7 +6,7 @@ import { GRADES, LOTS, ENCHERE, PS, SEASON_LENGTH } from '../engine/constants.js
 import { insigne } from './blasons.js';
 import { regrouperHonneur } from '../engine/honneur.js';
 import { apercuDirecteur, REGLAGES, DISTRICT } from '../engine/directeur.js';
-import { affaire } from '../engine/enquete.js';
+import { affaire, texteMisePrix } from '../engine/enquete.js';
 import { formatDateBe, formatHeureBe } from '../engine/time.js';
 
 export function renderGazette() {
@@ -78,7 +78,7 @@ function enqueteGazette(g) {
       const [tete, ...autres] = String(recit).split('\n');
       l.push(`<p><em>Le fin mot de l’affaire : ${esc(tete)}</em></p>${autres.length ? `<p class="k" style="margin-top:4px">Les autres suspects</p>${autres.map((x) => `<p><em>${esc(x)}</em></p>`).join('')}` : ''}`);
     }
-    if (e.nouvelle) l.push(`<p>Nouvelle affaire ouverte : <strong>${esc(e.nouvelle)}</strong>.</p>`);
+    if (e.nouvelle) l.push(`<p>Nouvelle affaire ouverte : <strong>${esc(e.nouvelle)}</strong>. ${esc(texteMisePrix())}</p>`);
   }
   for (const x of f) {
     const txt = !x.mult ? 'dispositif raté' : x.choixA === 'partager' && x.choixB === 'partager' ? 'succès partagé' : x.choixA === x.choixB ? 'chacun revendique le mérite' : `${x.choixA === 'revendiquer' ? x.a : x.b} revendique seul le succès`;

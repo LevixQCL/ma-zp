@@ -11,7 +11,7 @@ import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, SOURCES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
   ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect,
 } from '../engine/enquete.js';
-import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal, banniereTraque } from './enquete.js';
+import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal, banniereTraque, primeHtml } from './enquete.js';
 import { LIEUX as LIEUX3, MODES, itineraire, fmtDist, nomTroncon } from '../engine/carte3.js';
 import { dossierAffaire3, numeroPv } from '../engine/dossier.js';
 import { planSvg3, posLieu3, PLANQUE_POS3 } from './plan3.js';
@@ -732,6 +732,7 @@ export function renderTableau() {
       ${aff.coupsDePouce ? '<button type="button" class="tb-rond" data-action="tab-ouvrir" data-tid="pouce" aria-label="Coups de pouce" title="Coups de pouce">💡</button>' : ''}
       <button type="button" class="tb-chip ambre ${sp('soir')}" data-action="tab-volet" data-k="soir">Ce soir <span class="tb-compte">${(d.demarches || []).length}/${ENQ.maxDemarches}</span></button>
     </div>
+    ${primeHtml() ? `<div class="tb-banniere">${primeHtml({ tableau: true })}</div>` : ''}
     ${traque && S.banTraqueVue !== st.turn ? `<div class="tb-banniere">${banniereTraque(st, { tableau: true })}<button type="button" class="tb-rond tb-ban-x" data-action="tb-ban-fermer" aria-label="Fermer">✕</button></div>` : ''}
     <div id="tb-aide" class="tb-aide" ${fil ? '' : 'hidden'}>${S.tabFrom ? 'Touche l’élément à relier' : 'Glisse d’un élément à l’autre · touche une ficelle pour la couper'}</div>
     <div class="tb-outils tb-ui">

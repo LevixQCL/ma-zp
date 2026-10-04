@@ -8,7 +8,7 @@ import { PEINES } from './contenu.js';
 // siens à prix normal, ceux des autres coûtent le double, d'où l'intérêt de partager.
 // Tout est déterministe : une affaire se recalcule à partir de la graine et de son numéro.
 import { makeRng, hashString } from './rng.js';
-import { bonusEquip } from './constants.js';
+import { bonusEquip, SERVICE_LABELS } from './constants.js';
 import { LIEUX as LIEUX3, minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
 import { affaireMeurtre } from './meurtre-mons.js';
 import { affaireMeurtreRampe, evaluerHypothese } from './meurtre-rampe.js';
@@ -48,6 +48,73 @@ export const ENQ = {
 /** Points d'enquête pour une découverte au jour `j`. */
 export const pointsDecouverte = (j) => Math.max(40, 110 - 10 * j);
 export const POINTS = { contribution: 25, arrestation: 30, mobile: 20 };
+
+/**
+ * Mise à prix d'une affaire, annoncée dès l'ouverture. Chaque zone qui arrête l'auteur (ou obtient ses aveux)
+ * choisit sa récompense avant le 20:00 suivant ; sans choix, la confiscation est versée.
+ * Calibrage : test/equip-sim.mjs (FILTRE=Prime) — renfort et formation valent environ +2,4 d'IPZ moyen
+ * reçus en milieu de saison ; 12 k€ rachètent largement les démarches d'une affaire.
+ * Les zones qui ont démasqué l'auteur sans l'arrêter et celles dont les pièces ont aidé touchent une part.
+ */
+export const PRIME = {
+  confiscation: 12,                 // k€
+  renfort: { agents: 2, tours: 5 }, // renfort fédéral, salaires payés par le fédéral
+  partIdentification: 6,            // k€ : démasqué sans arrêter
+  partContribution: 2,              // k€ : pièces partagées qui ont aidé
+};
+export const PRIME_CHOIX = ['confiscation', 'renfort', 'formation'];
+export const PRIME_LABELS = {
+  confiscation: { ico: '💶', nom: 'Confiscation des avoirs', effet: `+${PRIME.confiscation} k€ tout de suite` },
+  renfort: { ico: '👮', nom: 'Renfort fédéral', effet: `+${PRIME.renfort.agents} agents pendant ${PRIME.renfort.tours} jours, salaires payés par le fédéral` },
+  formation: { ico: '🎓', nom: 'Formation offerte', effet: '+1 niveau dans le service de ton choix, sans agent absent' },
+};
+/** Texte de l'avis de recherche (ouverture de l'affaire). */
+export const texteMisePrix = () => `Mise à prix : la zone qui arrête l’auteur choisit sa récompense, ${PRIME_LABELS.confiscation.effet.replace(' tout de suite', '')}, ${PRIME.renfort.agents} agents fédéraux pendant ${PRIME.renfort.tours} jours ou une formation offerte. Démasquer sans arrêter rapporte ${PRIME.partIdentification} k€, aider avec ses pièces ${PRIME.partContribution} k€.`;
+
+/** Ouvre le choix de la mise à prix pour une zone (arrestation ou aveux). */
+function ouvrirPrime(state, z, aff, suspect) {
+  z.primeAChoisir = { n: aff.n, titre: aff.titre, suspect, tour: state.turn };
+  z.rapport.push(`Mise à prix : choisis ta récompense avant le prochain 20:00 (écran Enquête). Sans choix, la confiscation des avoirs (+${PRIME.confiscation} k€) est versée.`);
+}
+/** Parts de la mise à prix : démasqué sans arrêter, pièces qui ont aidé. */
+function partsPrime(state, decouvreurs, contributeurs, arreteurs) {
+  const deja = new Set(arreteurs);
+  for (const u of new Set(decouvreurs)) {
+    const z = state.zones[u];
+    if (!z || deja.has(u)) continue; deja.add(u);
+    z.budget += PRIME.partIdentification; (z._compta ||= []).push({ k: 'prime', l: 'Mise à prix : part pour avoir démasqué l’auteur', v: PRIME.partIdentification });
+    z.rapport.push(`Mise à prix : tu as démasqué l’auteur, ta part est de ${PRIME.partIdentification} k€.`);
+  }
+  for (const u of new Set(contributeurs)) {
+    const z = state.zones[u];
+    if (!z || deja.has(u)) continue; deja.add(u);
+    z.budget += PRIME.partContribution; (z._compta ||= []).push({ k: 'prime', l: 'Mise à prix : part pour tes pièces partagées', v: PRIME.partContribution });
+    z.rapport.push(`Mise à prix : tes pièces ont aidé, ta part est de ${PRIME.partContribution} k€.`);
+  }
+}
+
+/**
+ * Applique le choix de la mise à prix (au début de la résolution qui suit l'arrestation).
+ * `choix` : 'confiscation' | 'renfort' | 'formation:<service>'. Renvoie la ligne du rapport, ou null.
+ */
+export function appliquerPrime(z, choix, T, { services, niveauMax }) {
+  const p = z.primeAChoisir;
+  if (!p || p.tour >= T) return null;
+  delete z.primeAChoisir;
+  let [k, s] = String(choix || '').split(':');
+  if (k === 'formation' && !(services.includes(s) && (z.niveaux[s] || 1) < niveauMax)) k = 'confiscation';
+  if (!PRIME_CHOIX.includes(k)) k = 'confiscation';
+  if (k === 'renfort') {
+    z.renforts = [...(z.renforts || []), { n: PRIME.renfort.agents, debut: T + 1, retour: T + 1 + PRIME.renfort.tours, de: 'federal' }];
+    return `Mise à prix « ${p.titre} » : renfort fédéral, ${PRIME.renfort.agents} agents dans tes ordres dès demain, pendant ${PRIME.renfort.tours} jours.`;
+  }
+  if (k === 'formation') {
+    z.niveaux[s] += 1;
+    return `Mise à prix « ${p.titre} » : formation offerte, ${SERVICE_LABELS[s] || s} au niveau ${z.niveaux[s]}.`;
+  }
+  z.budget += PRIME.confiscation; (z._compta ||= []).push({ k: 'prime', l: 'Mise à prix : confiscation des avoirs', v: PRIME.confiscation });
+  return `Mise à prix « ${p.titre} » : confiscation des avoirs, +${PRIME.confiscation} k€.${choix ? '' : ' (aucun choix reçu : versée par défaut)'}`;
+}
 
 // Enquête de voisinage (service Recherche) : pièces rapportées chaque soir sur les suspects.
 // Nombre attendu de pièces = (capacité de Recherche − 2) × taux, plafonné.
@@ -995,7 +1062,8 @@ export function enquetePre(state, uids, ord, push) {
     res.decouverte = { suspect: cs.nom, zones: justes.map((u) => nomZone(state.zones[u])), uids: justes, pts, contributeurs: [...contributeurs].map((u) => nomZone(state.zones[u])), contribUids: [...contributeurs] };
     if (aff.meurtre) {
       // Pas de traque : les aveux valent arrestation.
-      for (const u of justes) { const z = state.zones[u]; z.stats.limier += POINTS.arrestation; z.stats.arrestations += 1; z.reputation += 3; z.rapport.push(`Enquête : ${cs.nom} passe aux aveux (+${POINTS.arrestation} pts d’enquête).`); }
+      for (const u of justes) { const z = state.zones[u]; z.stats.limier += POINTS.arrestation; z.stats.arrestations += 1; z.reputation += 3; z.rapport.push(`Enquête : ${cs.nom} passe aux aveux (+${POINTS.arrestation} pts d’enquête).`); ouvrirPrime(state, z, aff, cs.nom); }
+      partsPrime(state, [], [...contributeurs], justes);
       // Le vrai mobile, nommé pendant la confrontation : un bonus pour qui a compris toute l'histoire.
       if (aff.mobiles) {
         const bons = justes.filter((u) => ord[u].mobile === aff.mobileVrai);
@@ -1045,9 +1113,11 @@ function traquesDuSoir(state, uids, ord, push, prendre, res) {
       for (const { u } of gagnants) {
         const z = state.zones[u];
         z.stats.limier += POINTS.arrestation; z.stats.arrestations += 1;
-        z._points += 6; z.budget += 4; (z._compta ||= []).push({ k: 'prime', l: 'Prime d’arrestation', v: 4 }); z.satisfaction += 5; z.reputation += 3; z._ps += 10;
-        z.rapport.push(`Traque : ${s.nom} arrêté${s.f ? 'e' : ''} à ${a.planques[a.planque].nom} (+${POINTS.arrestation} pts d’enquête, prime de 4 k€).`);
+        z._points += 6; z.satisfaction += 5; z.reputation += 3; z._ps += 10;
+        z.rapport.push(`Traque : ${s.nom} arrêté${s.f ? 'e' : ''} à ${a.planques[a.planque].nom} (+${POINTS.arrestation} pts d’enquête).`);
+        ouvrirPrime(state, z, a, s.nom);
       }
+      partsPrime(state, tr.decouvreurs || [], tr.contributeurs || [], gagnants.map((g) => g.u));
       const noms = gagnants.map((g) => nomZone(state.zones[g.u]));
       res.arrestations.push({ titre: a.titre, suspect: s.nom, planque: a.planques[a.planque].nom, zones: noms });
       // Le procès : les zones qui ont trouvé ou apporté des pièces sont citées à la barre.

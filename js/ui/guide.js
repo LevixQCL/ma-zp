@@ -7,7 +7,7 @@ import {
   INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE, ND } from '../engine/constants.js';
 import { SINISTRE } from '../engine/sinistres.js';
 import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
-import { ENQ, DEMARCHES, POINTS, pointsDecouverte, delaiTraque } from '../engine/enquete.js';
+import { ENQ, DEMARCHES, POINTS, pointsDecouverte, delaiTraque, PRIME } from '../engine/enquete.js';
 import { PARTAGE, FIPA } from '../engine/fipa.js';
 import { QUEST_LABELS } from '../quests/quests.js';
 import { INCIDENTS, INC, MALUS, GAIN, texteMalus, texteGain } from '../engine/incidents.js';
@@ -211,6 +211,7 @@ export function sections() {
         ${ul([
           `Après la découverte, le suspect se cache dans l’une des six planques. <strong>Toutes les zones</strong> ont ${delaiTraque(ENQ.traqueTours).replace(/,$/, '')} pour l’arrêter : mettez-vous d’accord sur la radio pour fouiller des planques différentes.`,
           `Pour intervenir : choisis une planque et envoie au moins ${ENQ.agentsTraque} agents d’Intervention. Ils sont pris sur ton service du jour.`,
+          `<strong>Mise à prix</strong> : chaque zone qui arrête l’auteur (ou obtient ses aveux) choisit sa récompense le lendemain, avec ses ordres : ${PRIME.confiscation} k€, ${PRIME.renfort.agents} agents fédéraux pendant ${PRIME.renfort.tours} jours, ou +1 niveau de formation offert. Démasquer sans arrêter rapporte ${PRIME.partIdentification} k€, aider avec ses pièces ${PRIME.partContribution} k€.`,
           `Arrestation : ${POINTS.arrestation} points d’enquête, prime de 4 k€, +5 de satisfaction, +3 de réputation. Plusieurs zones à la bonne planque le même soir se partagent l’arrestation.`,
           'Mauvaise planque : tes agents ont perdu leur journée. Sans arrestation après deux tours, le suspect s’enfuit.',
           'Les indices sur les planques de l’affaire précédente restent consultables pendant la traque.',
