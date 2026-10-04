@@ -429,6 +429,16 @@ const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
 
 const ARRETS = ['Gare du Delta', 'Place des Martyrs', 'Les Casernes', 'Champ de Foire', 'Écluse', 'Quartier Stade', 'Les Viviers', 'Porte Sud'];
 
+// Moment de la journée : heure des départs, écarts possibles entre deux bus, lieu des faits.
+const MOMENTS_BUS = [
+  { de: 7 * 60, a: 7 * 60 + 25, ecarts: [6, 7, 8, 10, 12], quand: 'ce matin-là', faits: 'Un vélo a été volé devant l’athénée juste avant la sonnerie', lieu: 'l’athénée', qui: 'élèves et parents' },
+  { de: 11 * 60 + 35, a: 12 * 60 + 5, ecarts: [10, 12, 15, 18, 20], quand: 'ce midi-là', faits: 'Un portefeuille a disparu d’un étal du marché couvert', lieu: 'le marché', qui: 'clients du marché' },
+  { de: 14 * 60, a: 15 * 60 + 30, ecarts: [15, 20, 25, 30], quand: 'cet après-midi-là', faits: 'Une voiture a été rayée sur le parking de la piscine', lieu: 'la piscine', qui: 'nageurs' },
+  { de: 17 * 60 + 5, a: 17 * 60 + 30, ecarts: [6, 8, 9, 10, 12], quand: 'ce soir-là', faits: 'Une bousculade a mal tourné à la sortie de la galerie commerçante', lieu: 'la galerie', qui: 'clients' },
+  { de: 19 * 60 + 35, a: 20 * 60 + 40, ecarts: [12, 15, 20, 25], quand: 'ce soir-là', faits: 'Une bagarre a éclaté devant le bar « Le Relais » dans la soirée', lieu: 'le bar', qui: 'habitués' },
+  { de: 22 * 60, a: 22 * 60 + 40, ecarts: [20, 25, 30, 35], quand: 'cette nuit-là', faits: 'Un tapage a dégénéré devant la discothèque « L’Orbite »', lieu: 'la discothèque', qui: 'fêtards' },
+];
+
 function horaires(rng, diff) {
   const nArrets = diff <= 2 ? 4 : diff >= 6 ? 7 : 5;
   const nGens = diff <= 1 ? 3 : diff <= 3 ? 4 : diff >= 6 ? 6 : 5;
@@ -436,8 +446,13 @@ function horaires(rng, diff) {
     const arrets = rng.shuffle(ARRETS).slice(0, nArrets);
     const trajets = arrets.slice(1).map(() => rng.int(3, 9)); // minutes entre deux arrêts
     const cumul = [0]; for (const t of trajets) cumul.push(cumul[cumul.length - 1] + t);
-    const premier = rng.int(20 * 60 + 2, 20 * 60 + 14), freq = rng.pick([12, 15, 20]);
-    const departs = Array.from({ length: 6 }, (_, k) => premier + k * freq);
+    const moment = rng.pick(MOMENTS_BUS), numLigne = rng.pick([3, 7, 12, 21, 34, 82]);
+    // Aux petits niveaux, un écart fixe ; ensuite, une grille irrégulière (pointe, bus supprimé…).
+    const premier = rng.int(moment.de, moment.a), fixe = rng.pick(moment.ecarts);
+    const departs = [premier];
+    for (let k = 1; k < 6; k++) departs.push(departs[k - 1] + (diff <= 2 ? fixe : rng.pick(moment.ecarts)));
+    if (diff >= 3 && new Set(departs.slice(1).map((d0, k) => d0 - departs[k])).size < 3) continue;
+    const lieu = moment.lieu, arriveA = { 'l’athénée': 'jusqu’à l’athénée', 'le marché': 'jusqu’au marché', 'la piscine': 'jusqu’à la piscine', 'la galerie': 'jusqu’à la galerie', 'le bar': 'jusqu’au bar', 'la discothèque': 'jusqu’à la discothèque' }[lieu];
     const gens = rng.shuffle(PERSONNES).slice(0, nGens);
     const menteur = rng.int(0, nGens - 1);
     const decl = [];
@@ -462,21 +477,21 @@ function horaires(rng, diff) {
           raison = `le bus de ${hm(monte)} n’arrive à ${arrets[b]} qu’à ${hm(descend)}${marche ? `, plus ${marche} minutes à pied : au plus tôt ${hm(descend + marche)}` : ''}, pas à ${hm(arrivee)}`;
         }
       }
-      decl.push({ nom: gens[g], a, b, monte: texteMonte, arrivee: hm(arrivee), marche, texte: `« J’ai pris le bus de ${texteMonte} à l’arrêt ${arrets[a]}, je suis descendu${['Léa', 'Sofia', 'Nadia', 'Emma', 'Inès', 'Chloé', 'Sarah', 'Laura', 'Fatima', 'Manon'].includes(gens[g]) ? 'e' : ''} à ${arrets[b]}${marche ? `, puis ${marche} minutes à pied jusqu’au bar` : ''}. J’y étais à ${hm(arrivee)}. »` });
+      decl.push({ nom: gens[g], a, b, monte: texteMonte, arrivee: hm(arrivee), marche, texte: `« J’ai pris le bus de ${texteMonte} à l’arrêt ${arrets[a]}, je suis descendu${['Léa', 'Sofia', 'Nadia', 'Emma', 'Inès', 'Chloé', 'Sarah', 'Laura', 'Fatima', 'Manon'].includes(gens[g]) ? 'e' : ''} à ${arrets[b]}${marche ? `, puis ${marche} minutes à pied ${arriveA}` : ''}. J’y étais à ${hm(arrivee)}. »` });
     }
     if (!bon) continue;
     const fiche = `<table class="horaire"><tr><th>Arrêt</th><th>Temps depuis ${arrets[0]}</th></tr>${arrets.map((s, k) => `<tr><td>${s}</td><td class="mono">+${cumul[k]} min</td></tr>`).join('')}</table>`;
     return {
       titre: 'Les horaires', mode: 'choix',
-      contexte: `Une bagarre a éclaté devant le bar « Le Relais » dans la soirée. Pour situer chacun, ${nGens} habitués racontent comment ils sont venus en bus, par la ligne 7. La fiche horaire permet de vérifier leurs dires : un seul raconte quelque chose d’impossible.`,
-      tableau: `<p class="small" style="margin:0 0 6px">Départs de ${arrets[0]} : ${departs.map(hm).join(' · ')}</p>${fiche}<p class="tiny muted" style="margin:6px 0 0">Les bus sont à l’heure ce soir-là. Personne ne court, mais on peut arriver en retard ou traîner en route.</p>`,
+      contexte: `${moment.faits}. Pour situer chacun, ${nGens} ${moment.qui} racontent comment ils sont venus en bus, par la ligne ${numLigne}. La fiche horaire permet de vérifier leurs dires : un seul raconte quelque chose d’impossible.`,
+      tableau: `<p class="small" style="margin:0 0 6px">Départs de ${arrets[0]} : ${departs.map(hm).join(' · ')}</p>${fiche}<p class="tiny muted" style="margin:6px 0 0">Les bus sont à l’heure ${moment.quand}. Personne ne court, mais on peut arriver en retard ou traîner en route.</p>`,
       elements: decl.map((d) => ({ label: d.nom, texte: d.texte })),
-      ligne: { arrets, cumul, departs: departs.map(hm) },
+      ligne: { arrets, cumul, departs: departs.map(hm), num: numLigne, quand: moment.quand },
       trajets: decl.map((d) => ({ nom: d.nom, a: d.a, b: d.b, monte: d.monte, arrivee: d.arrivee, marche: d.marche })),
       question: 'Qui ment ?',
       choix: gens.map((n) => ({ id: n, label: n })),
       answer: gens[menteur],
-      astuce: 'Pour chaque déclaration : le bus passe-t-il vraiment à cet arrêt à cette heure ? Et peut-on être au bar aussi tôt ?',
+      astuce: 'Pour chaque déclaration : le bus passe-t-il vraiment à cet arrêt à cette heure ? Et peut-on être à destination aussi tôt ? Attention, les bus ne passent pas forcément à intervalles réguliers.',
       explication: `C’est ${gens[menteur]} : ${raison}. Les autres trajets sont possibles.`,
       _pas: 2,
     };

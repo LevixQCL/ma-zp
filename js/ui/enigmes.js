@@ -204,12 +204,12 @@ export function butinHtml(q, fini, r) {
 // ───────────────────────────── Les horaires ─────────────────────────────
 
 export function ligneHtml(q) {
-  const { arrets, cumul, departs } = q.ligne;
-  return `<section class="card tight hb" aria-label="Ligne 7">
-    <div class="row" style="gap:10px"><span class="hb-num">7</span><div class="col" style="gap:0"><strong>Ligne 7</strong><span class="tiny muted">Départs de ${esc(arrets[0])}</span></div></div>
+  const { arrets, cumul, departs, num = 7, quand = 'ce soir-là' } = q.ligne;
+  return `<section class="card tight hb" aria-label="Ligne ${num}">
+    <div class="row" style="gap:10px"><span class="hb-num">${num}</span><div class="col" style="gap:0"><strong>Ligne ${num}</strong><span class="tiny muted">Départs de ${esc(arrets[0])}</span></div></div>
     <div class="hb-departs">${departs.map((d) => `<span>${d}</span>`).join('')}</div>
     <ol class="hb-arrets">${arrets.map((a, k) => `<li><span class="hb-pt" aria-hidden="true"></span><span class="grow">${esc(a)}</span><span class="hb-min">${k ? `+${cumul[k]} min` : 'départ'}</span></li>`).join('')}</ol>
-    <p class="tiny muted" style="margin:0">Les bus sont à l’heure ce soir-là. Personne ne court, mais on peut arriver en retard ou traîner en route.</p>
+    <p class="tiny muted" style="margin:0">Les bus sont à l’heure ${esc(quand)}. Personne ne court, mais on peut arriver en retard ou traîner en route.</p>
   </section>`;
 }
 

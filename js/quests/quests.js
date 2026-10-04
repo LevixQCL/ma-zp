@@ -179,7 +179,10 @@ function quiment(rng, diff) {
   const coherent = (st, h) => vrai(st, h) === !h.includes(st.self);
   const types = deux
     ? [{ w: 3, k: 'accuse' }, { w: 2, k: 'couvre' }, { w: 3, k: 'unseul' }, { w: 2, k: 'parmi' }, { w: 1, k: 'lesdeux' }, { w: 1, k: 'deux' }]
-    : [{ w: 3, k: 'accuse' }, { w: 2, k: 'couvre' }, { w: 1, k: 'deux' }, { w: 3, k: 'unseul' }, { w: diff >= 3 ? 3 : 1, k: 'parmi' }];
+    // Avec un seul menteur, « X dit la vérité » (ou « X et Y disent la vérité ») est forcément vraie :
+    // si celui qui parle mentait, X mentirait aussi, et on aurait deux menteurs. Ces phrases
+    // innocentent d'office celui qui les prononce : on ne les utilise qu'à deux menteurs.
+    : [{ w: 3, k: 'accuse' }, { w: 3, k: 'unseul' }, { w: diff >= 3 ? 3 : 2, k: 'parmi' }];
   let meilleur = null;
   for (let essai = 0; essai < 4000; essai++) {
     const vraiH = rng.pick(hyps);
@@ -209,6 +212,8 @@ function quiment(rng, diff) {
     const score = [...Array(n).keys()].map((p) => st.reduce((t, x) => {
       const cite = x.k === 'parmi' ? x.l.includes(p) : x.k === 'accuse' || x.k === 'couvre' ? x.a === p : x.a === p || x.b === p;
       if (!cite) return t;
+      // À un seul menteur, il n'y a plus de phrase « X dit la vérité » : on ne compte que les accusations directes.
+      if (!deux) return t + (x.k === 'accuse' ? 1 : 0);
       return t + (['accuse', 'parmi', 'unseul', 'lesdeux'].includes(x.k) ? 1 : -1);
     }, 0));
     const tri = [...Array(n).keys()].sort((a, b) => score[b] - score[a]);
@@ -230,7 +235,7 @@ function quiment(rng, diff) {
   const qui = deux ? et(vraiH.map((i) => noms[i]).sort()) : noms[vraiH[0]];
   return {
     titre: 'Qui ment ?', mode: 'choix',
-    contexte: `${intro}. ${n} personnes ont été entendues. ${deux ? 'Deux d’entre elles mentent' : 'Une seule d’entre elles ment'} : ${deux ? `les ${NOMBRES[n - 2]} autres disent` : `les ${NOMBRES[n - 1]} autres disent`} la vérité. Règle : un menteur ne dit que des choses fausses. Si un menteur affirme « Untel ment », c’est donc qu’Untel dit la vérité ; s’il affirme « un seul des deux ment », c’est qu’en réalité aucun ou les deux mentent.`,
+    contexte: `${intro}. ${n} personnes ont été entendues. ${deux ? 'Deux d’entre elles mentent' : 'Une seule d’entre elles ment'} : ${deux ? `les ${NOMBRES[n - 2]} autres disent` : `les ${NOMBRES[n - 1]} autres disent`} la vérité. Règle : un menteur ne dit que des choses fausses. Si un menteur affirme « Untel ment », c’est donc qu’Untel dit la vérité ; ${deux ? 's’il affirme « un seul des deux ment », c’est qu’en réalité aucun ou les deux mentent.' : 's’il affirme « un seul des deux ment », c’est qu’en réalité aucun des deux ne ment (il n’y a qu’un menteur : lui).'}`,
     elements: decl.map((d) => ({ label: d.nom, texte: d.texte })),
     question: deux ? 'Qui sont les deux menteurs ?' : 'Qui ment ?', _pas: pas,
     choix, answer,
