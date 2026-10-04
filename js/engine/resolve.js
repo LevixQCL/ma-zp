@@ -14,7 +14,7 @@ import { genererEchos } from './gazette.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionValide, figure, nomComplet } from './equipe.js';
 import {
   clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
-  forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, moyenneIpz, moralMult, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles,
+  forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, pointsIpz, moyenneIpz, moralMult, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles,
 } from './zone.js';
 import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus, appliquerPrime } from './enquete.js';
@@ -859,6 +859,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.rapport.push(ligneIpz(comp, compHier, z.ipz, z.toursJoues > 0 || compHier ? ipzHier : null, z.ipzDetail));
     if (z._joue) {
       z.ipzSomme += z.ipz; z.toursJoues += 1;
+      // Composition de l'IPZ de la saison (classement : d'où vient la moyenne de chacun).
+      { const pt = pointsIpz(comp); z.compSomme = Object.fromEntries(Object.keys(pt).map((k) => [k, round1(((z.compSomme && z.compSomme[k]) || 0) + pt[k])])); z.compTours = (z.compTours || 0) + 1; }
       z.ipzSemaine = { s: ((z.ipzSemaine && z.ipzSemaine.s) || 0) + z.ipz, n: ((z.ipzSemaine && z.ipzSemaine.n) || 0) + 1 };
       z._ps += PS.ordres;
     }

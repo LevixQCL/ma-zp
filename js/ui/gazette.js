@@ -2,7 +2,8 @@ import { noteCourte } from './nouveautes.js';
 import { partageHtml } from './invitation.js';
 // La Gazette du Delta, le classement, l'espace maître du jeu.
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1, classementLive } from './common.js';
-import { GRADES, LOTS, ENCHERE, PS, SEASON_LENGTH } from '../engine/constants.js';
+import { GRADES, LOTS, ENCHERE, PS, SEASON_LENGTH, IPZ_POIDS, MIN_TOURS_CLASSEMENT } from '../engine/constants.js';
+import { pointsIpz, IPZ_LABELS } from '../engine/zone.js';
 import { insigne } from './blasons.js';
 import { regrouperHonneur } from '../engine/honneur.js';
 import { apercuDirecteur, REGLAGES, DISTRICT } from '../engine/directeur.js';
@@ -105,13 +106,57 @@ function classementEnigmes(me) {
     .sort((a, b) => (b.classe - a.classe) || (b.pct - a.pct) || (b.ok - a.ok));
   let rang = 0;
   return `<section class="card"><h2 class="card-title">Esprit vif · énigmes du jour</h2>
-    ${lignes.length ? `<table class="rank"><thead><tr><th>#</th><th>Zone</th><th class="num">Réussies</th><th class="num">Réussite</th><th class="num" title="Dossiers noirs résolus">Noirs</th></tr></thead><tbody>
-      ${lignes.map((l) => `<tr class="${l.z.uid === me.uid ? 'me' : ''}"><td>${l.classe ? ++rang : '–'}</td><td>${zoneName(l.z)}${S.players && S.players[l.z.uid] && S.players[l.z.uid].pseudo ? `<br><span class="tiny muted">${esc(S.players[l.z.uid].pseudo)}</span>` : ''}</td><td class="num">${l.ok}/${l.n}</td><td class="num"><strong>${Math.round(l.pct)} %</strong>${l.saisonN && l.saisonN !== l.n ? `<br><span class="tiny muted">saison : ${Math.round((100 * l.saison) / l.saisonN)} %</span>` : ''}</td><td class="num">${noirs[l.z.uid] ? `${noirs[l.z.uid].ok}/${noirs[l.z.uid].n}` : '–'}</td></tr>`).join('')}
-    </tbody></table>` : '<p class="small muted" style="margin:0">Personne n’a encore répondu à une énigme.</p>'}
+    ${lignes.length ? lignes.map((l) => couloir({ z: l.z, rang: l.classe ? ++rang : 0, classe: l.classe, valeur: l.pct, txt: `${Math.round(l.pct)} %`, me: l.z.uid === me.uid,
+      sous: `${l.ok} réussie${l.ok > 1 ? 's' : ''} sur ${l.n}${noirs[l.z.uid] ? ` · ${noirs[l.z.uid].ok} dossier${noirs[l.z.uid].ok > 1 ? 's' : ''} noir${noirs[l.z.uid].ok > 1 ? 's' : ''}` : ''}${l.classe ? '' : ` · classé dès ${MIN_ENIGMES} réponses`}` })).join('') : '<p class="small muted" style="margin:0">Personne n’a encore répondu à une énigme.</p>'}
     <p class="small muted" style="margin:0">Toutes les énigmes répondues depuis le début de la partie, y compris aujourd’hui. Classé à partir de ${MIN_ENIGMES} réponses ; les énigmes laissées sans réponse ne comptent pas. « Noirs » : dossiers noirs résolus (hors pourcentage). Le plus fort de la saison reçoit le titre « Cerveau du district ».</p></section>`;
 }
 
-const ONGLETS_CLASSEMENT = [['ipz', 'IPZ'], ['limier', 'Enquête'], ['enigmes', 'Énigmes'], ['grade', 'Grades'], ['palmares', 'Palmarès']];
+const ONGLETS_CLASSEMENT = [['ipz', 'IPZ', '#63B0FF'], ['limier', 'Enquête', '#FFB23F'], ['enigmes', 'Énigmes', '#A78BFA'], ['grade', 'Grades', '#3DD39A'], ['palmares', 'Palmarès', '#F5C64A']];
+// « La course » : chaque zone est un couloir dont la barre avance jusqu'à 100 (ou jusqu'au meilleur score).
+const COMPO = [['satisfaction', '#63B0FF'], ['affaires', '#9DCBFF'], ['moral', '#FFB23F'], ['budget', '#3DD39A'], ['reputation', '#A78BFA']];
+const MEDAILLES = ['🥇', '🥈', '🥉'];
+const coul = (z) => (/^#[0-9a-f]{6}$/i.test(z.couleur || '') ? z.couleur : '#63B0FF');
+/** Points de chaque composante dans la moyenne de la saison (approchés par la composition du jour pour les tours d'avant la mesure). */
+function compoSaison(z, moyenne) {
+  if (z.compSomme && z.compTours) {
+    const c = Object.fromEntries(COMPO.map(([k]) => [k, (z.compSomme[k] || 0) / z.compTours]));
+    const tot = COMPO.reduce((t, [k]) => t + c[k], 0) || 1;
+    return Object.fromEntries(COMPO.map(([k]) => [k, (c[k] / tot) * moyenne]));
+  }
+  if (!z.ipzComp) return null;
+  const pt = pointsIpz(z.ipzComp), tot = COMPO.reduce((t, [k]) => t + (pt[k] || 0), 0) || 1;
+  return Object.fromEntries(COMPO.map(([k]) => [k, ((pt[k] || 0) / tot) * moyenne]));
+}
+function couloir({ z, rang, classe, valeur, max = 100, txt, sous = '', compo = null, me }) {
+  const c = coul(z), w = Math.max(6, Math.min(100, (valeur / max) * 100));
+  const r = classe ? (rang <= 3 ? MEDAILLES[rang - 1] : rang) : '–';
+  return `<div class="crs ${me ? 'me' : ''} ${classe ? '' : 'nc'}">
+    <span class="crs-r">${r}</span>
+    <div class="crs-col">
+      <button type="button" class="crs-piste" data-action="voir-hp" data-uid="${esc(z.uid)}" aria-label="${esc(z.nom)} : ${txt}">
+        <span class="crs-barre" style="width:${w}%;background:linear-gradient(90deg,${c}40,${c}c0)"></span>
+        <span class="crs-lbl"><span class="crs-nom">${esc(z.nom)}${me ? ' · toi' : ''}</span><span class="crs-v">${txt}</span></span></button>
+      ${compo ? `<div class="crs-compo" style="width:${w}%" aria-hidden="true">${COMPO.map(([k, cc]) => `<i style="flex:${Math.max(0.01, compo[k])};background:${cc}"></i>`).join('')}</div>` : ''}
+      ${sous ? `<span class="tiny muted">${sous}</span>` : ''}
+    </div></div>`;
+}
+/** « Pourquoi X est devant toi ? » : écart composante par composante avec la zone juste au-dessus (ou la suivante si on est en tête). */
+function pourquoiHtml(rows, me) {
+  const i = rows.findIndex((r) => r.z.uid === me.uid);
+  if (i < 0 || !rows[i].classe) return '';
+  const autre = i > 0 ? rows[i - 1] : rows[i + 1];
+  if (!autre || !autre.classe) return '';
+  const a = compoSaison(autre.z, autre.moyenne), m = compoSaison(me, rows[i].moyenne);
+  if (!a || !m) return '';
+  const ecarts = COMPO.map(([k]) => ({ k, d: Math.round((a[k] - m[k]) * 10) / 10 })).filter((x) => Math.abs(x.d) >= 0.1).sort((x, y) => Math.abs(y.d) - Math.abs(x.d));
+  const sgn = (d) => (i > 0 ? d : -d);
+  const t = ecarts.map((x) => `${IPZ_LABELS[x.k]} <span class="${sgn(x.d) > 0 ? 'bad' : 'ok'}">${sgn(x.d) > 0 ? '+' : '−'}${fmt1(Math.abs(x.d))}</span>`).join(' · ');
+  const ecart = Math.abs(autre.moyenne - rows[i].moyenne);
+  return `<section class="card tight" style="gap:4px"><strong>${i > 0 ? `Pourquoi ${esc(autre.z.nom)} est devant toi ?` : `Ton avance sur ${esc(autre.z.nom)}`}</strong>
+    <span class="small">${i > 0 ? `${fmt1(ecart)} pt d’écart.` : `${fmt1(ecart)} pt d’avance.`} ${i > 0 ? `${esc(autre.z.nom)} fait mieux (rouge) ou moins bien (vert) que toi en :` : 'Ce qui te met devant (vert) ou te rattrape (rouge) :'}</span>
+    <span class="small">${t || 'composition très proche'}</span>
+    <span class="tiny muted">En points d’IPZ moyens sur la saison. Les fines barres de couleur montrent la même chose pour chaque zone.</span></section>`;
+}
 
 export function renderClassement() {
   const me = myZone();
@@ -121,15 +166,20 @@ export function renderClassement() {
   let corps = '';
   if (tab === 'ipz') {
     const rows = classementLive(S.state);
-    corps = `<section class="card"><h2 class="card-title">Performance · IPZ moyen de la saison</h2>
-      <p class="small muted" style="margin:0">Moyenne de l’IPZ par tour où tu as validé tes ordres. « – » : moins de 5 tours joués, pas encore classé.</p>
-      <table class="rank"><thead><tr><th>#</th><th>Zone</th><th class="num">Tours</th><th class="num">IPZ moy.</th></tr></thead><tbody>
-      ${rows.map((r, i) => `<tr class="${r.z.uid === me.uid ? 'me' : ''}"><td>${r.classe ? i + 1 : '–'}</td><td><span class="bullet" style="display:inline-block;background:${esc(r.z.couleur)};margin-right:6px"></span><button type="button" class="linkbtn voir-hp" data-action="voir-hp" data-uid="${esc(r.z.uid)}">${zoneName(r.z)}</button>${S.players && S.players[r.z.uid] && S.players[r.z.uid].pseudo ? `<br><span class="tiny muted">${esc(S.players[r.z.uid].pseudo)}</span>` : ''}</td><td class="num">${r.z.toursJoues}</td><td class="num">${fmt1(r.moyenne)}</td></tr>`).join('')}
-      </tbody></table></section>`;
+    let rang = 0;
+    corps = `<section class="card" style="gap:8px"><h2 class="card-title">Performance · IPZ moyen de la saison</h2>
+      <p class="small muted" style="margin:0">La barre avance jusqu’à 100. Dessous, d’où vient l’IPZ de chacun. Touche une zone pour voir son hôtel de police.</p>
+      ${rows.map((r) => couloir({ z: r.z, rang: r.classe ? ++rang : 0, classe: r.classe, valeur: r.moyenne, txt: r.classe || r.z.toursJoues ? fmt1(r.moyenne) : '—', compo: compoSaison(r.z, r.moyenne), me: r.z.uid === me.uid,
+        sous: r.classe ? '' : `${r.z.toursJoues || 0} tour${(r.z.toursJoues || 0) > 1 ? 's' : ''} joué${(r.z.toursJoues || 0) > 1 ? 's' : ''} sur ${MIN_TOURS_CLASSEMENT || 5} pour être classé` })).join('')}
+      <div class="crs-leg">${COMPO.map(([k, c]) => `<span><i style="background:${c}"></i>${IPZ_LABELS[k]} ${Math.round(IPZ_POIDS[k] * 100)} %</span>`).join('')}</div>
+    </section>${pourquoiHtml(rows, me)}`;
   } else if (tab === 'limier') {
-    corps = `<section class="card"><h2 class="card-title">Fin limier · points d’enquête</h2>
-      <table class="rank"><thead><tr><th>#</th><th>Zone</th><th class="num">Bilan</th><th class="num">Points</th></tr></thead><tbody>${Object.values(S.state.zones).sort((a, b) => b.stats.limier - a.stats.limier).map((z, i) => `<tr class="${z.uid === me.uid ? 'me' : ''}"><td>${i + 1}</td><td>${zoneName(z)}</td><td class="num">${z.stats.decouvertes} déc. · ${z.stats.arrestations} arr.</td><td class="num">${z.stats.limier}</td></tr>`).join('')}</tbody></table>
-      <p class="small muted" style="margin:0">Découverte : 40 à 100 pts selon le jour. Arrestation : 30. Pièce partagée qui a aidé : 25.</p></section>`;
+    const zs = Object.values(S.state.zones).sort((a, b) => b.stats.limier - a.stats.limier);
+    const max = Math.max(1, ...zs.map((z) => z.stats.limier));
+    corps = `<section class="card" style="gap:8px"><h2 class="card-title">Fin limier · points d’enquête</h2>
+      ${zs.map((z, k) => couloir({ z, rang: k + 1, classe: z.stats.limier > 0, valeur: z.stats.limier, max, txt: `${z.stats.limier} pts`, me: z.uid === me.uid,
+        sous: `${z.stats.decouvertes || 0} découverte${(z.stats.decouvertes || 0) > 1 ? 's' : ''} · ${z.stats.arrestations || 0} arrestation${(z.stats.arrestations || 0) > 1 ? 's' : ''}${(z.affiches || []).length ? ` · ${z.affiches.length} avis au mur` : ''}` })).join('')}
+      <p class="small muted" style="margin:0">Découverte : 40 à 100 pts selon le jour. Arrestation : 30. Pièce partagée qui a aidé : 25. La barre est relative au meilleur limier.</p></section>`;
   } else if (tab === 'enigmes') {
     corps = classementEnigmes(me);
   } else if (tab === 'grade') {
@@ -146,7 +196,7 @@ export function renderClassement() {
   return `<main class="screen">
     <a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
     <header class="col" style="gap:3px"><span class="kicker">Saison ${S.state.season} · tour ${S.state.turn} sur 14</span><h1 class="big">Classements</h1></header>
-    <div class="segn" role="tablist" aria-label="Classements" style="grid-template-columns:repeat(${onglets.length},minmax(0,1fr))">${onglets.map(([k, l]) => `<button type="button" role="tab" aria-selected="${tab === k}" data-action="class-tab" data-t="${k}">${l}</button>`).join('')}</div>
+    <div class="crs-tabs" role="tablist" aria-label="Classements">${onglets.map(([k, l, c]) => `<button type="button" role="tab" aria-selected="${tab === k}" data-action="class-tab" data-t="${k}" style="--c:${c}"><i></i>${l}</button>`).join('')}</div>
     ${corps}
   </main>${tabbar('hp')}`;
 }
