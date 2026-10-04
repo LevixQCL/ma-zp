@@ -4,7 +4,9 @@
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { BOT_PROFILES, botOrders } from '../js/engine/bots.js';
 import { newZone } from '../js/engine/zone.js';
-import { EQUIP, FORMATION, SEASON_LENGTH, COUTS, coutEquipement, RYTHMES, DEPENSES } from '../js/engine/constants.js';
+import { EQUIP, FORMATION, SEASON_LENGTH, COUTS, coutEquipement, RYTHMES, DEPENSES, DOSSIER } from '../js/engine/constants.js';
+if (process.env.TAILLE) { const [a, b] = process.env.TAILLE.split('-').map(Number); DOSSIER.tailleMin = a; DOSSIER.tailleMax = b; }
+if (process.env.PTS) DOSSIER.ptsParUnite = Number(process.env.PTS);
 
 const SEEDS = Number(process.env.SEEDS || 40);
 function saison(seed, action) {

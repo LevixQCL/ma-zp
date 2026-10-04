@@ -46,6 +46,7 @@ export const NOTE_MAJ = {
       ['Budget dans l’IPZ', 'le détail du budget (tuile Budget de l’HP) montre ton score budget de l’IPZ et son calcul.'],
     ]],
     ['Équilibrage', [
+      ['Dossiers locaux plus courts', 'un dossier fait maintenant 3 à 5 unités de travail (au lieu de 4 à 8), pour la même récompense (+0,75 pt par unité). Environ 6 enquêteurs suivent le rythme d’un dossier par jour ; les heures sup’ servent à rattraper le retard. Les dossiers déjà ouverts sont réduits aux deux tiers.'],
       ['Satisfaction et réputation', 'elles redescendent d’autant plus vite qu’elles sont hautes (comme le moral) : 90 et plus se mérite chaque jour. Détail dans les « ? ».'],
       ['IPZ', 'la satisfaction compte pour 30 % (au lieu de 35 %) et la réputation pour 15 % (au lieu de 10 %) : l’entraide pèse plus.'],
       ['Rythme de travail', 'renforcé : +35 % d’efficacité (au lieu de +20 %) ; allégé : −35 % (au lieu de −20 %). Avant, alléger tous les jours était plus rentable que le rythme normal.'],
