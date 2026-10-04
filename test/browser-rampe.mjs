@@ -80,7 +80,7 @@ if (await page.locator('[data-action="tab-tout-sortir"]').count()) await page.cl
 await page.click('[data-action="tab-fit"]');
 await shot('05-tableau-garni');
 // Volets de pièces avec photo.
-for (const f of ['c:cam', 'mob:2', 'x:wifi', 'moy:1', 'c:agenda', 'x:liste', 'c:lettres', 'c:legiste2']) {
+for (const f of ['c:cam', 'mob:2', 'x:wifi', 'moy:1', 'c:agenda', 'x:liste', 'c:lettres', 'c:legiste2', 'r:tel', 'moy:2']) {
   await action('tab-ouvrir', { tid: f });
   await page.waitForTimeout(450);
   if (await page.locator('.tb-volet').count()) await shot(`06-piece-${f.replace(':', '-')}`);

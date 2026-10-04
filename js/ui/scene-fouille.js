@@ -85,7 +85,7 @@ export function sceneFouilleHtml(aff) {
       <div class="between" style="gap:10px"><div class="col" style="gap:2px"><span class="kicker" style="color:var(--amber)">${rampe ? 'Photo du labo · rez-de-chaussée · vendredi 10:10' : 'Photo du labo · arrière-boutique · mercredi 00:30'}</span><h2 class="sf-titre">${rampe ? 'La scène, Rampe Sainte-Waudru' : 'La scène, rue de la Clef'}</h2></div>
         <button type="button" class="tb-fermer" style="position:static" data-action="scene-fermer" aria-label="Fermer">✕</button></div>
       <div class="sf-photo" data-action="scene-zoom" title="Agrandir la photo">${photo}<span class="sf-loupe" aria-hidden="true">⤢ Agrandir</span></div>
-      <div class="sf-detail">${sel ? `<span class="tb-ligne-k" style="color:var(--amber)">Plot ${sel.n}</span><strong>${esc(sel.titre)}</strong><p>${esc(sel.texte)}</p>` : '<p class="muted">Touche un plot jaune pour voir ce que le labo a relevé. Tout est sous tes yeux ; rien n’est souligné.</p>'}</div>
+      <div class="sf-detail">${sel ? `<span class="tb-ligne-k" style="color:var(--amber)">Plot ${sel.n}</span><strong>${esc(sel.titre)}</strong>${sel.photo ? `<img class="sf-gros-plan" src="${sel.photo}" alt="" loading="lazy">` : ''}<p>${esc(sel.texte)}</p>` : '<p class="muted">Touche un plot jaune pour voir ce que le labo a relevé. Tout est sous tes yeux ; rien n’est souligné.</p>'}</div>
       <p class="tiny muted" style="margin:0">${vus.size} plot${vus.size > 1 ? 's' : ''} examiné${vus.size > 1 ? 's' : ''} sur ${PTS.length} · ce que montre la photo est connu de toutes les zones.</p>
     </article>
   </div>`;

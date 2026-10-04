@@ -373,3 +373,5 @@ body:has(.demo-banner) .jr-wrap { top: 44px; }
 @media (min-aspect-ratio: 16/9) { .sf-zoom-img { height: auto; width: 100%; } }
 .sf-zoom-bas { padding: 10px 14px calc(12px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--line); max-height: 34vh; overflow: auto; }
 .sf-zoom-bas p { margin: 4px 0 0; line-height: 1.45; color: var(--amber-soft); }
+
+.sf-gros-plan { width: 100%; border-radius: 8px; display: block; margin: 4px 0 2px; }

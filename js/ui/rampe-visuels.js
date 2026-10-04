@@ -32,7 +32,7 @@ function personne(x, y, s, type, { dossier = false, dos = false } = {}) {
 }
 function vignetteCam(id, x, y, heure, inner) {
   return `<svg x="${x}" y="${y}" width="320" height="180" viewBox="0 0 320 180">${defsPhoto(id, 320, 180, { gris: true })}
-    <g style="filter:grayscale(1) contrast(1.05)">${rampeCam(id, inner)}</g>
+    <image href="img/rampe/cam.webp" width="320" height="179" preserveAspectRatio="xMidYMid slice"/><g style="filter:grayscale(1)">${inner}</g>
     <g opacity=".18">${Array.from({ length: 45 }, (_, k) => `<rect y="${k * 4}" width="320" height="1.2" fill="#000"/>`).join('')}</g>
     ${finPhoto(id, 320, 180, 0.3)}
     <text x="8" y="14" ${MONO} font-size="9" fill="#F5F5F5">CAB. KINÉ · PORTE</text>
@@ -58,12 +58,12 @@ function ecranGsm(id, titre, contenu, { w = 220, h = 320 } = {}) {
 // ───── Photos des pièces ─────
 export const PHOTOS_RAMPE = {
   'c:cam': (id) => svg(id, 640, 540, [
-    vignetteCam(`${id}1`, 0, 0, '22:04:12', personne(84, 150, 1.1, 'femme')),
-    vignetteCam(`${id}2`, 320, 0, '22:31:40', personne(150, 160, 1.15, 'femme', { dos: true })),
-    vignetteCam(`${id}3`, 0, 180, '22:47:20', personne(104, 146, 1.25, 'capuche')),
-    vignetteCam(`${id}4`, 320, 180, '23:09:31', personne(140, 158, 1.25, 'capuche', { dossier: true, dos: true })),
-    vignetteCam(`${id}5`, 0, 360, '23:36:18', personne(90, 148, 1.08, 'cire')),
-    vignetteCam(`${id}6`, 320, 360, '23:39:02', personne(170, 162, 1.1, 'cire', { dos: true })),
+    vignetteCam(`${id}1`, 0, 0, '22:04:12', personne(52, 150, 0.68, 'femme')),
+    vignetteCam(`${id}2`, 320, 0, '22:31:40', personne(118, 172, 0.95, 'femme', { dos: true })),
+    vignetteCam(`${id}3`, 0, 180, '22:47:20', personne(54, 150, 0.74, 'capuche')),
+    vignetteCam(`${id}4`, 320, 180, '23:09:31', personne(122, 174, 1.0, 'capuche', { dossier: true, dos: true })),
+    vignetteCam(`${id}5`, 0, 360, '23:36:18', personne(52, 150, 0.66, 'cire')),
+    vignetteCam(`${id}6`, 320, 360, '23:39:02', personne(132, 174, 0.95, 'cire', { dos: true })),
   ].join('') + '<path d="M320 0V540M0 180H640M0 360H640" stroke="#111" stroke-width="3"/>'),
 
   'c:tel1': (id) => feuille(id, 300, 230, '#3E4A54', -2, `
@@ -161,32 +161,17 @@ export const PHOTOS_RAMPE = {
     <text x="16" y="186" ${MONO} font-size="7" fill="#888">écouté 22:30 · effacé 22:31 · GSM de Rudy Stiévenart</text>
     ${finPhoto(id, 320, 200, 0.06)}`),
 
-  'moy:2': (id) => svg(id, 260, 300, `${defsPhoto(id, 260, 300)}<rect width="260" height="300" fill="#3A2C22"/>
-    <g transform="rotate(-4 130 150)"><rect x="24" y="22" width="212" height="250" fill="#F2E9D6"/>
-    <g transform="translate(36 34)"><rect width="188" height="190" fill="#A88E6A"/>
-      <g style="filter:sepia(1)"><rect width="188" height="190" fill="#B89C74"/>
-      ${Array.from({ length: 14 }, (_, k) => `<circle cx="${8 + k * 13}" cy="${36 + (k % 3) * 5}" r="7" fill="#8A6E4C" opacity=".7"/>`).join('')}
-      <path d="M0 64H188V190H0Z" fill="#9C8058"/>
-      <g transform="translate(64 168)"><ellipse cx="0" cy="-80" rx="11" ry="13" fill="#E4C9A4"/><path d="M-12 -86q12 -20 24 0q-2 -18 -12 -18t-12 18z" fill="#5A3A22"/><path d="M-12 -82q-6 24 -4 40h6zM12 -82q6 24 4 40h-6z" fill="#5A3A22"/>
-        <path d="M-18 -66q18 -8 36 0l4 66h-44z" fill="#D9D2C2"/><path d="M14 -56l26 -18" stroke="#E4C9A4" stroke-width="5" stroke-linecap="round"/><path d="M40 -74q8 -4 14 -16M40 -74q10 0 18 -8M40 -74q4 -8 2 -18" stroke="#2A1E14" stroke-width="1.4" fill="none"/>
-        <path d="M-6 -78q6 4 12 0" stroke="#7A4A3A" stroke-width="1.6" fill="none"/></g>
-      <g transform="translate(130 170)"><path d="M-22 -110q22 -16 44 0l6 110h-56z" fill="#3E5A2A"/>${Array.from({ length: 40 }, (_, k) => `<ellipse cx="${-20 + (k * 7) % 42}" cy="${-104 + Math.floor(k / 6) * 16 + (k % 2) * 6}" rx="5" ry="3.4" transform="rotate(${(k * 37) % 180})" fill="${k % 3 ? '#4E6E34' : '#2F4A1E'}"/>`).join('')}
-        <rect x="-34" y="-74" width="16" height="14" fill="#EFE7D2" stroke="#333" stroke-width=".6"/><text x="-26" y="-63" text-anchor="middle" ${MONO} font-size="11" font-weight="700" fill="#222">7</text>
-        <path d="M-34 -60q-14 0 -30 -6" stroke="#4E6E34" stroke-width="6" stroke-linecap="round"/></g>
-      </g></g>
-    <text x="130" y="250" text-anchor="middle" ${MAIN} font-size="17" fill="#3A2E20">Doudou 1999 — Lumeçon</text></g>
-    ${finPhoto(id, 260, 300, 0.16)}`),
-
-  'moy:1': (id) => svg(id, 300, 220, `${defsPhoto(id, 300, 220)}<rect width="300" height="220" fill="#2A2420"/>
-    <ellipse cx="150" cy="130" rx="130" ry="70" fill="#4A403A"/>${Array.from({ length: 40 }, (_, k) => `<path d="M${30 + (k * 53) % 240} ${90 + (k * 29) % 80}l${6 + (k % 5)} ${(k % 3) - 1}" stroke="#8A8580" stroke-width="${1 + (k % 3)}" opacity=".6"/>`).join('')}
-    <g transform="rotate(-8 140 110)"><path d="M70 70L210 62L222 92Q200 120 214 150L130 160Q100 140 80 156L64 120Q78 98 70 70Z" fill="#EDE4CF"/>
-      <path d="M70 70L210 62L222 92Q200 120 214 150L130 160Q100 140 80 156L64 120Q78 98 70 70Z" fill="none" stroke="#2A1A10" stroke-width="5" opacity=".8"/>
-      <text x="86" y="90" ${TAPE} font-size="7" fill="#7A2E26">CERCLE SAINT-GEORGES · ACTEURS DU COMBAT</text>
-      <text x="86" y="112" ${MONO} font-size="9" fill="#222">…euilles · n° 7 : G. Wau…</text>
-      <text x="86" y="128" ${MONO} font-size="9" fill="#222" opacity=".45">…euilles · n° 8 : …</text></g>
-    <g transform="translate(226 170) rotate(14)"><rect x="-26" y="-18" width="52" height="36" fill="#B89C74"/><path d="M-26 -18h52v36h-52z" fill="none" stroke="#1A1008" stroke-width="4"/>${Array.from({ length: 8 }, (_, k) => `<ellipse cx="${-16 + k * 5}" cy="${-4 + (k % 2) * 6}" rx="4" ry="2.6" fill="#3E5A2A"/>`).join('')}</g>
-    ${plot(40, 206, 1)}${finPhoto(id, 300, 220, 0.16)}`),
-
+  'moy:2': (id) => svg(id, 1024, 860, `<rect width="1024" height="860" fill="#F2E9D6"/>
+    <image href="img/rampe/doudou1999.webp" x="0" y="0" width="1024" height="765"/>
+    <g transform="translate(788 566) rotate(-6)"><text text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="46" font-weight="700" fill="#2A2420" opacity=".82">7</text></g>
+    <text x="512" y="826" text-anchor="middle" ${MAIN} font-size="44" fill="#3A2E20">Doudou 1999 — Lumeçon</text>`),
+  'moy:1': (id) => svg(id, 1024, 572, `<image href="img/rampe/cendres.webp" width="1024" height="572"/>
+    <g transform="translate(545 228) rotate(-2)" style="mix-blend-mode:multiply">
+      <text x="0" y="-62" text-anchor="middle" ${TAPE} font-size="13" fill="#7A2E26">CERCLE SAINT-GEORGES</text>
+      <text x="0" y="-44" text-anchor="middle" ${TAPE} font-size="11" fill="#7A2E26">Acteurs du Combat · 1999</text>
+      <path d="M-96 -32H96" stroke="#7A2E26" stroke-width="1" opacity=".6"/>
+      <text x="-102" y="2" ${MONO} font-size="13.5" fill="#2A2420">…euilles · n° 7 : G. Wau…</text>
+      <text x="-102" y="26" ${MONO} font-size="13.5" fill="#2A2420" opacity=".35">…euilles · n° 8 : …</text></g>`),
   'occ:4': (id) => feuille(id, 300, 220, '#33404A', 1, `
     ${ligne(40, 32, 'IMMEUBLE DOLEZ · CONTRÔLE D’ACCÈS · JEUDI', { taille: 7.4, gras: true })}
     <path d="M40 38H262" stroke="#999" stroke-dasharray="2 2"/>
@@ -231,13 +216,8 @@ export const PHOTOS_RAMPE = {
     <text x="120" y="56" text-anchor="middle" ${TAPE} font-size="7.4" fill="#222">Combat 1999 · hommes de feuilles</text>
     ${['DEPRETER P.', 'HOUZIAUX M.', 'FOSTIER F.', 'QUINTART L.', 'BURNIAUX T.', 'ROSSIGNON J.-F.', 'WAUTELET G.', 'VERVAET D.', 'HOYAS A.', 'LANDRAIN R.', 'LEMPEREUR T.', 'NIZET S.'].map((n, k) => `<text x="44" y="${76 + k * 15}" ${TAPE} font-size="7.6" fill="#222">n° ${String(k + 1).padStart(2, ' ')}  ${n}</text>`).join('')}`, { papier: '#F4EEDC' }),
 
-  'r:tel': (id) => svg(id, 300, 220, `${defsPhoto(id, 300, 220)}<rect width="300" height="220" fill="#D6D3CB"/>
-    <rect x="66" y="14" width="168" height="194" rx="6" fill="rgba(235,240,245,.55)" stroke="#9AA3AA"/><rect x="66" y="14" width="168" height="22" fill="#2F6FD3" opacity=".85"/>
-    <text x="150" y="29" text-anchor="middle" ${MONO} font-size="8.5" fill="#FFF">SCELLÉ · TÉLÉPHONIE</text>
-    <g transform="translate(150 116) rotate(-12)"><rect x="-30" y="-56" width="60" height="112" rx="9" fill="#15171A"/><rect x="-25" y="-46" width="50" height="90" rx="3" fill="#2A2E33"/><path d="M-25 20l50 -40" stroke="#5A6068" stroke-width="1"/><circle cx="12" cy="30" r="3" fill="#88A6B8" opacity=".6"/><circle cx="-8" cy="-12" r="2" fill="#88A6B8" opacity=".6"/></g>
-    <rect x="82" y="188" width="136" height="14" fill="#FFF"/><text x="150" y="198" text-anchor="middle" ${MONO} font-size="7" fill="#222">JARDIN DU MAYEUR · BASSIN · SAM. 07:50</text>
-    ${finPhoto(id, 300, 220, 0.1)}`),
-
+  'r:tel': (id) => svg(id, 1024, 572, `<image href="img/rampe/gsm.webp" width="1024" height="572"/>
+    <rect x="300" y="520" width="424" height="34" fill="#FFF" opacity=".92"/><text x="512" y="543" text-anchor="middle" ${MONO} font-size="17" fill="#222">SCELLÉ · JARDIN DU MAYEUR · BASSIN · SAM. 07:50</text>`),
   'd:corbeau': (id) => feuille(id, 240, 200, '#3E4A54', 3, `
     ${['Vous cherchez qui il attendait jeudi ?', 'Demandez au Cercle Saint-Georges', 'qui portait le brassard n° 7 en 1999.', 'Et demandez à celui qui a pris la photo', 'ce qu’il a vu ce soir-là.'].map((t, k) => `<text x="34" y="${48 + k * 18}" ${TAPE} font-size="8.4" fill="#222">${t}</text>`).join('')}
     <text x="34" y="164" ${MONO} font-size="6.6" fill="#777">Enveloppe sans timbre · déposée dans la boîte du commissariat</text>`, { papier: '#FCFBF6' }),
@@ -250,8 +230,8 @@ export const POINTS_SCENE_RAMPE = [
   { k: 'socle', n: 3, x: 318, y: 232, px: 508, py: 356, titre: 'Le socle vide', texte: 'Sur le bureau, un petit socle en bois verni, vide : une trace ronde, propre, dans la poussière. Une plaque de cuivre : « Étude Hennebert · 1979 ».' },
   { k: 'tiroir', n: 4, x: 404, y: 270, px: 528, py: 452, titre: 'Le tiroir de gauche', texte: 'Ouvert. Une chemise cartonnée vide, étiquetée à la main : « L. M. — 1999 ». Le reste du bureau est en ordre.' },
   { k: 'sousmain', n: 5, x: 356, y: 254, px: 640, py: 372, titre: 'Le sous-main', texte: 'Le cuir est plus clair à un endroit, un petit rectangle de la taille d’un GSM. Il n’y a de GSM ni sur le bureau, ni ailleurs dans la maison.' },
-  { k: 'calendrier', n: 6, x: 470, y: 96, px: 702, py: 160, titre: 'Le calendrier', texte: 'Un vieux calendrier du Doudou, année 1999, jamais décroché. Un dimanche de la fin mai est entouré au stylo.' },
-  { k: 'fenetre', n: 7, x: 372, y: 104, px: 563, py: 96, titre: 'La fenêtre de l’étude', texte: 'Elle donne sur les pavés de la Rampe et, en face, sur le haut mur de la Collégiale. Plus bas dans la rue, au-dessus de la porte d’un cabinet de kinésithérapie, on devine une petite caméra tournée vers la montée.' },
+  { k: 'calendrier', n: 6, photo: 'img/rampe/fenetre.webp', x: 470, y: 96, px: 702, py: 160, titre: 'Le calendrier', texte: 'Un vieux calendrier, resté ouvert sur juin 1999. Vingt-sept ans que personne ne l’a tourné.' },
+  { k: 'fenetre', n: 7, photo: 'img/rampe/fenetre.webp', x: 372, y: 104, px: 563, py: 96, titre: 'La fenêtre de l’étude', texte: 'Elle donne sur les pavés de la Rampe et, en face, sur le haut mur de la Collégiale. Plus bas dans la rue, au-dessus de la porte d’un cabinet de kinésithérapie, on devine une petite caméra tournée vers la montée.' },
   { k: 'console', n: 8, x: 576, y: 236, px: 835, py: 276, titre: 'La console de l’entrée', texte: 'Une montre de gousset en or, gravée « A.H. ». À la chaîne, une étiquette en carton : « 4471 ». Pas un grain de poussière dessus, contrairement au reste du meuble.' },
   { k: 'salon', n: 9, x: 620, y: 336, px: 905, py: 468, titre: 'Le salon, par l’arche', texte: 'Sur la table basse, deux verres de porto ; l’un porte une trace de rouge à lèvres. La bouteille est presque pleine. Deux fauteuils tirés l’un vers l’autre.' },
   { k: 'cuisine', n: 10, x: 506, y: 196, px: 793, py: 218, titre: 'La porte de la cuisine', texte: 'Sur l’égouttoir, un troisième verre à porto, lavé, encore perlé d’eau. L’évier est sec, sauf sous ce verre.' },
@@ -314,19 +294,7 @@ export function decorSceneRampe(id) {
 // ───── Une du journal et vignette de la scène ─────
 /** La maison de la Rampe dans le brouillard, rubalise et gyrophares (une du journal). */
 export function photoUneRampe(id = 'un') {
-  return `<svg viewBox="0 0 200 120" class="tb-photo-svg" aria-hidden="true">
-    <defs><radialGradient id="${id}g" cx="24%" cy="72%" r="40%"><stop offset="0" stop-color="rgba(120,170,255,.55)"/><stop offset="1" stop-color="rgba(120,170,255,0)"/></radialGradient>
-    <linearGradient id="${id}f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#CBD0D4" stop-opacity=".5"/><stop offset="1" stop-color="#CBD0D4" stop-opacity=".1"/></linearGradient></defs>
-    <rect width="200" height="120" fill="#5A5E62"/>
-    <path d="M150 0h50v40h-50z" fill="#6E7276"/><path d="M160 0l16 -0v20h-16z" fill="#4A4E52"/><path d="M168 -2l-6 12h12z" fill="#3E4246"/>
-    <path d="M0 30L200 6V120H0Z" fill="#45484C"/>
-    <rect x="34" y="26" width="88" height="70" fill="#3A3C40"/><rect x="40" y="36" width="20" height="24" fill="#8A8A70" opacity=".6"/><rect x="96" y="36" width="20" height="24" fill="#6A6C66" opacity=".6"/>
-    <rect x="66" y="58" width="24" height="38" fill="#1E1F22"/><text x="78" y="52" text-anchor="middle" font-family="'Special Elite', monospace" font-size="5" fill="#BBB">ÉTUDE</text>
-    <path d="M0 96L200 74V120H0Z" fill="#55585C"/><g stroke="#666A6E" stroke-width=".6">${Array.from({ length: 6 }, (_, k) => `<path d="M0 ${100 + k * 4}L200 ${78 + k * 7}"/>`).join('')}</g>
-    <g transform="translate(14 84)"><rect x="0" y="6" width="44" height="14" rx="3" fill="#E8E8E8"/><rect x="8" y="0" width="26" height="9" rx="2" fill="#D6D6D6"/><rect x="0" y="12" width="44" height="3" fill="#2F6FD3"/><rect x="14" y="-3" width="6" height="3" fill="#2F6FD3"/></g>
-    <path d="M30 98L190 82" stroke="#F2C230" stroke-width="3.5"/>
-    <rect width="200" height="120" fill="url(#${id}f)"/><rect width="200" height="120" fill="url(#${id}g)"/>
-  </svg>`;
+  return `<svg viewBox="0 0 200 112" class="tb-photo-svg" aria-hidden="true" preserveAspectRatio="xMidYMid slice"><image href="img/rampe/une.webp" width="200" height="112" preserveAspectRatio="xMidYMid slice"/></svg>`;
 }
 /** Vignette de la scène au tableau (l'escalier et le contour). */
 export function photoSceneRampe(id = 'sc') {
