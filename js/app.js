@@ -623,6 +623,22 @@ async function onClick(e) {
       case 'enq-tab': S.enqTab = el.dataset.t; rerender(); break;
       case 'edition-fermer': marquerEditionVue(); render(); break;
       case 'edition-ouvrir': S.editionOuverte = true; render(); break;
+      case 'admin-rampe-maintenant': {
+        if (!(await askConfirm('Ouvrir « Le notaire de la Rampe » maintenant ? L’affaire en cours est retirée (ses pièces sont perdues), les traques continuent. Tous les joueurs voient la nouvelle affaire tout de suite.', 'Ouvrir l’affaire'))) break;
+        const { ouvrirRampeMaintenant } = await import('./engine/enquete.js');
+        const { APP_VERSION } = await import('./engine/constants.js');
+        const r = await b.adminModifierEtat((cur) => {
+          const t = ouvrirRampeMaintenant(cur);
+          if (t == null) return null;
+          cur.minClientVersion = Math.max(cur.minClientVersion || 0, APP_VERSION);
+          return t;
+        });
+        if (r == null) { toast('Rien à faire : la Rampe a déjà été ouverte dans cette partie.'); break; }
+        try { await b.sendRadio && b.sendRadio(S.user.uid, '🚨 Le parquet ouvre une affaire grave : « Le notaire de la Rampe ». Le dossier est dans l’onglet Enquête.'); } catch (e) { /* message facultatif */ }
+        toast('« Le notaire de la Rampe » est ouverte.');
+        location.hash = '#enquete';
+        break;
+      }
       case 'admin-pause-enquete': {
         const st = S.state;
         if (!st.enquete || st.enquetePause) break;
