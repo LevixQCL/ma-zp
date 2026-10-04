@@ -72,20 +72,33 @@ function ceSoirHtml(n, me, ann) {
   const lignes = Object.entries(ann).filter(([k]) => n.secteurs[k]).sort((a, b) => b[1].length - a[1].length || b[1].reduce((t, x) => t + x.n, 0) - a[1].reduce((t, x) => t + x.n, 0));
   if (!lignes.length) return `<div class="nd-cesoir vide"><span class="kicker">📻 Qui y va ce soir</span>
     <p class="tiny muted" style="margin:0">Personne ne s’est encore annoncé. Mets des agents sur un secteur puis « Prévenir la radio » : les autres verront où te rejoindre, d’un bouton.</p></div>`;
-  return `<div class="nd-cesoir"><span class="kicker">📻 Qui y va ce soir</span>
-    ${lignes.map(([k, l]) => {
-      const s = n.secteurs[k];
-      const forces = l.map((x) => forceEngagement(S.state.zones[x.uid], x.n));
-      const p = prevoirSecteur(S.state, s, forces);
-      const tombe = s.statut !== 'repris' && p.emprise <= 0;
-      const moiDedans = l.some((x) => x.moi);
-      return `<button type="button" class="nd-cs-row" data-action="secteur" data-c="${k}">
+  const ligne = ([k, l]) => {
+    const s = n.secteurs[k];
+    const repris = s.statut === 'repris';
+    const forces = l.map((x) => forceEngagement(S.state.zones[x.uid], x.n));
+    const p = prevoirSecteur(S.state, s, forces);
+    const tombe = !repris && p.emprise <= 0;
+    const moiDedans = l.some((x) => x.moi);
+    // Secteur déjà repris : la garde suffit dès que l'emprise ne remonte pas.
+    const assuree = repris && p.emprise <= Math.max(s.emprise, 0) + 0.5;
+    const droite = repris
+      ? `<span class="tiny ${assuree ? 'ok' : 'bad'}">${assuree ? '🛡 garde assurée' : '🛡 garde trop faible'}</span>
+        <span class="tiny ${moiDedans ? 'ok' : assuree ? 'muted' : 'nd-rej'}">${moiDedans ? '✓ tu gardes' : assuree ? 'assez de monde' : 'Renforcer ›'}</span>`
+      : `<span class="tiny ${tombe ? 'good' : p.emprise < s.emprise ? '' : 'bad'}">${tombe ? 'repris ce soir' : `emprise ${Math.round(s.emprise)} → ${Math.round(p.emprise)}`}</span>
+        <span class="tiny ${moiDedans ? 'ok' : 'nd-rej'}">${moiDedans ? '✓ tu y vas' : 'Rejoindre ›'}</span>`;
+    return `<button type="button" class="nd-cs-row" data-action="secteur" data-c="${k}">
         <span class="col" style="gap:3px;min-width:0;flex:1;text-align:left"><span class="nd-nom">${s.coeur ? '★ ' : ''}${esc(nomSecteur(k))} <span class="tiny muted">· ${l.length} zone${l.length > 1 ? 's' : ''}, ${l.reduce((t, x) => t + x.n, 0)} agents</span></span>
         <span class="nd-quis">${pastillesCeSoir(l)}</span></span>
-        <span class="col" style="gap:0;align-items:flex-end;flex-shrink:0"><span class="tiny ${tombe ? 'good' : p.emprise < s.emprise ? '' : 'bad'}">${tombe ? 'repris ce soir' : `${Math.round(s.emprise)} → ${Math.round(p.emprise)}`}</span>
-        <span class="tiny ${moiDedans ? 'ok' : 'nd-rej'}">${moiDedans ? '✓ tu y vas' : 'Rejoindre ›'}</span></span>
+        <span class="col" style="gap:0;align-items:flex-end;flex-shrink:0">${droite}</span>
       </button>`;
-    }).join('')}
+  };
+  const assauts = lignes.filter(([k]) => n.secteurs[k].statut !== 'repris');
+  const gardes = lignes.filter(([k]) => n.secteurs[k].statut === 'repris');
+  const trop = gardes.filter(([k, l]) => l.reduce((t, x) => t + x.n, 0) > 4);
+  return `<div class="nd-cesoir"><span class="kicker">📻 Qui y va ce soir</span>
+    ${assauts.length ? `<span class="nd-cs-t">⚔️ À l’assaut <span class="muted">· secteurs encore aux mains du milieu</span></span>${assauts.map(ligne).join('')}` : ''}
+    ${gardes.length ? `<span class="nd-cs-t">🛡 De garde <span class="muted">· secteurs déjà repris</span></span>${gardes.map(ligne).join('')}` : ''}
+    ${trop.length ? `<p class="tiny warn" style="margin:4px 0 0">${trop.map(([k]) => esc(nomSecteur(k))).join(', ')} ${trop.length > 1 ? 'sont' : 'est'} déjà repris : 2 ou 3 agents suffisent à le garder. Les autres seraient plus utiles à l’assaut d’un secteur encore tenu par le milieu.</p>` : ''}
   </div>`;
 }
 
@@ -147,7 +160,10 @@ function carteSecteur(k, s, me, d) {
         : `<p class="tiny" style="margin:0">Toi seul : ${fleche(s.emprise, seul.emprise)} · ${nuits(seul)}. <span class="warn">Seul, ${Math.round(ND.seulEchec * 100)} % de risque de piège.</span></p>`) : ''}
         ${ensemble ? `<p class="tiny" style="margin:0">${ceSoir.length ? 'Avec les zones annoncées ce soir' : 'Avec les zones d’hier'}${n ? ' et toi' : ''} (+${Math.round((ensemble.coop - 1) * 100)} %) : ${fleche(s.emprise, ensemble.emprise)} · ${nuits(ensemble)}.</p>` : ''}`;
     } else {
-      prevision = `<p class="tiny" style="margin:0">${s.emprise >= ND.seuilRechute - 20 ? '<strong class="bad">Il faut de la garde.</strong> ' : ''}${n ? `Ta garde (force ${fmt1(maForce)}) : ${fleche(s.emprise, seul.emprise)}.` : `Le milieu revient de ${ND.remontee} par nuit ; à ${ND.seuilRechute}, il reprend le secteur. 2 ou 3 agents de garde suffisent.`}</p>`;
+      const sansMoi = autres.length ? prevoirSecteur(S.state, s, autres) : null;
+      const dejaGarde = sansMoi && sansMoi.emprise <= Math.max(s.emprise, 0) + 0.5;
+      prevision = `<p class="tiny" style="margin:0"><strong>Secteur déjà repris : il ne s’agit plus de l’attaquer, seulement de le garder.</strong> ${s.emprise >= ND.seuilRechute - 20 ? '<strong class="bad">Il faut de la garde.</strong> ' : ''}${n ? `Ta garde (force ${fmt1(maForce)}) : ${fleche(s.emprise, seul.emprise)}.` : `Le milieu revient de ${ND.remontee} par nuit ; à ${ND.seuilRechute}, il reprend le secteur. 2 ou 3 agents de garde suffisent.`}</p>
+        ${dejaGarde ? `<p class="tiny warn" style="margin:0">${ceSoir.length ? 'Les zones annoncées ce soir' : 'Les zones d’hier'} suffisent déjà à le garder. Tes agents seraient plus utiles à l’assaut d’un secteur encore aux mains du milieu.</p>` : ''}`;
     }
   }
   return `<div class="nd-detail" style="gap:6px">

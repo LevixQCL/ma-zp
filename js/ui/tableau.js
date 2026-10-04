@@ -452,14 +452,15 @@ function trajetsHtml(aff, a, b) {
 function voletLieu(aff, k, et) {
   if (aff.ville === 'mons') {
     const LX = lieuxMons(aff), l = LX[k];
+    const nomLieu = l.nom.replace(/[←→↑↓↖↗↘↙]/g, '').replace(/·.*$/, '').trim();
     const qui = aff.suspects.filter((s) => s.alibi.pos === k);
     return `<span class="tb-ligne-k" style="color:var(--blue-soft)">${esc(l.sous || 'Mons')}</span><span class="tb-titre">${esc(l.nom)}</span>
       ${qui.map((s) => `<p class="small" style="margin:0"><strong>${esc(s.prenom)}</strong> · ${esc(ficheSuspect(aff, s).declaration)}</p>`).join('')}
       ${k === aff.pos ? '' : `<div class="tb-trajets">
         <span class="tb-trajets-t">⏱ Temps de trajet <span class="muted">· Google Maps</span></span>
-        <span class="tiny muted">D’ici jusqu’à la scène</span>
+        <span class="small" style="font-weight:600">${esc(nomLieu)} → scène du crime</span>
         <div class="tb-trajets-l">${MODES_GMAPS.map(([m, ic, nom]) => `<a class="btn primary" href="${lienItineraire(k, aff.pos, LX, m)}" target="_blank" rel="noopener"><span class="ic">${ic}</span>${nom}</a>`).join('')}</div>
-        <span class="tiny muted">De la scène jusqu’ici</span>
+        <span class="small" style="font-weight:600">Scène du crime → ${esc(nomLieu)}</span>
         <div class="tb-trajets-l">${MODES_GMAPS.map(([m, ic, nom]) => `<a class="btn outline" href="${lienItineraire(aff.pos, k, LX, m)}" target="_blank" rel="noopener"><span class="ic">${ic}</span>${nom}</a>`).join('')}</div>
         <p class="tiny muted" style="margin:0">Compte large : la minute près n’est jamais nécessaire. En bus, Google donne les horaires d’aujourd’hui, pas ceux du soir des faits.</p>
       </div>`}
