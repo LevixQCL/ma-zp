@@ -455,11 +455,14 @@ function voletLieu(aff, k, et) {
     const qui = aff.suspects.filter((s) => s.alibi.pos === k);
     return `<span class="tb-ligne-k" style="color:var(--blue-soft)">${esc(l.sous || 'Mons')}</span><span class="tb-titre">${esc(l.nom)}</span>
       ${qui.map((s) => `<p class="small" style="margin:0"><strong>${esc(s.prenom)}</strong> · ${esc(ficheSuspect(aff, s).declaration)}</p>`).join('')}
-      ${k === aff.pos ? '' : `<span class="tiny muted">D’ici jusqu’à la scène (Google Maps)</span>
-      <div class="tb-duo">${MODES_GMAPS.map(([m, ic, nom], j) => `<a class="btn small ${j ? 'ghost' : ''}" href="${lienItineraire(k, aff.pos, LX, m)}" target="_blank" rel="noopener">${ic} ${nom}</a>`).join('')}</div>
-      <span class="tiny muted">De la scène jusqu’ici</span>
-      <div class="tb-duo">${MODES_GMAPS.map(([m, ic, nom]) => `<a class="btn small ghost" href="${lienItineraire(aff.pos, k, LX, m)}" target="_blank" rel="noopener">${ic} ${nom}</a>`).join('')}</div>
-      <p class="tiny muted" style="margin:0">Compte large : une estimation à la minute près n’est jamais nécessaire. Le bus : Google donne les horaires du moment où tu regardes, pas ceux du soir des faits.</p>`}
+      ${k === aff.pos ? '' : `<div class="tb-trajets">
+        <span class="tb-trajets-t">⏱ Temps de trajet <span class="muted">· Google Maps</span></span>
+        <span class="tiny muted">D’ici jusqu’à la scène</span>
+        <div class="tb-trajets-l">${MODES_GMAPS.map(([m, ic, nom]) => `<a class="btn primary" href="${lienItineraire(k, aff.pos, LX, m)}" target="_blank" rel="noopener"><span class="ic">${ic}</span>${nom}</a>`).join('')}</div>
+        <span class="tiny muted">De la scène jusqu’ici</span>
+        <div class="tb-trajets-l">${MODES_GMAPS.map(([m, ic, nom]) => `<a class="btn outline" href="${lienItineraire(aff.pos, k, LX, m)}" target="_blank" rel="noopener"><span class="ic">${ic}</span>${nom}</a>`).join('')}</div>
+        <p class="tiny muted" style="margin:0">Compte large : la minute près n’est jamais nécessaire. En bus, Google donne les horaires d’aujourd’hui, pas ceux du soir des faits.</p>
+      </div>`}
       ${et.connus.has('c:legiste2') ? `<p class="tiny muted" style="margin:0">Le légiste : décès entre ${hm(aff.heure)} et ${hm(aff.fin)}.</p>` : ''}`;
   }
   if (aff.prof) {
