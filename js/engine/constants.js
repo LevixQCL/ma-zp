@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 74;
+export const APP_VERSION = 75;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -359,7 +359,8 @@ export const LOTS = {
   banalise:  { nom: 'Véhicule banalisé saisi', texte: 'Une berline confisquée par la justice, remise en état.', effet: '+1 véhicule tout de suite, même si le garage est plein', prix: 4, immediat: 'vehicule' },
   prevention:{ nom: 'Subside européen de prévention', texte: 'Un appel à projets gagné sur le fil : éclairage, caméras, animateurs de rue.', effet: 'Criminalité −10 et +4 de satisfaction tout de suite', prix: 4, immediat: 'prevention' },
   stage:     { nom: 'Stage de formation offert', texte: 'Une place libérée à la dernière minute dans un stage spécialisé.', effet: '+1 niveau de formation dans ton service le plus faible (sans agents immobilisés)', prix: 6, immediat: 'stage' },
-  gilets:    { nom: 'Lot de gilets et de radios', texte: 'Du matériel neuf racheté à une zone qui s’est trop équipée.', effet: 'Équipement de l’Intervention +1 niveau', prix: 5, immediat: 'gilets' },
+  gilets:    { nom: 'Lot de gilets et de radios', texte: 'Du matériel neuf racheté à une zone qui s’est trop équipée.', effet: 'Équipement de l’Intervention +1 niveau, sans prendre ta grande décision du jour', prix: 3, immediat: 'gilets' },
+  // prix 3 (mise à prix 2 à 4 k€) : toujours sous le coût normal d'un niveau (5 k€ au minimum, puis 7, 9, 11). Avant : 4 à 6 k€, pas plus intéressant qu'équiper soi-même.
   // Lots réservés aux zones qui ont bonne réputation.
   parquet:   { nom: 'Convention avec le parquet', texte: 'Le parquet accepte de traiter tes dossiers en priorité.', effet: 'Recherche +20 % jusqu’à la fin de la saison', prix: 7, bonus: { recherche: 1.2 }, reserve: true },
   quartier:  { nom: 'Bureau de quartier prêté par la commune', texte: 'Un rez-de-chaussée en plein centre, gratuit pour la saison.', effet: 'Proximité +20 % jusqu’à la fin de la saison', prix: 6, bonus: { proximite: 1.2 }, reserve: true },
