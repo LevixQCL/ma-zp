@@ -7,7 +7,7 @@ import { pointsIpz, IPZ_LABELS } from '../engine/zone.js';
 import { insigne } from './blasons.js';
 import { regrouperHonneur } from '../engine/honneur.js';
 import { apercuDirecteur, REGLAGES, DISTRICT } from '../engine/directeur.js';
-import { affaire, texteMisePrix, rampeDisponible } from '../engine/enquete.js';
+import { affaire, texteMisePrix, affairesOuvrables } from '../engine/enquete.js';
 import { formatDateBe, formatHeureBe } from '../engine/time.js';
 
 export function renderGazette() {
@@ -282,8 +282,9 @@ export function renderAdmin() {
       ${st.enquetePause ? `<p class="small" style="margin:0">Enquête en pause : l’affaire « ${esc(st.enquetePause.titre)} » a été retirée. La nouvelle affaire s’ouvrira à la prochaine résolution (${esc(formatDateBe(st.nextDeadline))} à 20:00). Les traques continuent.</p>`
         : st.enquete ? `<p class="small muted" style="margin:0">Retire l’affaire en cours (par exemple si elle s’est ouverte en même temps qu’une traque). Les traques continuent, une édition spéciale de la Gazette s’affiche chez tout le monde, et la nouvelle affaire s’ouvre au prochain 20:00.</p>
       <button class="btn block danger" data-action="admin-pause-enquete">Retirer l’affaire n° ${st.enquete.n} jusqu’à demain 20:00</button>` : '<p class="small muted" style="margin:0">Pas d’affaire en cours.</p>'}
-      ${rampeDisponible(st) ? `<p class="small muted" style="margin:0">« Le notaire de la Rampe » n’a pas encore été joué dans cette partie. Tu peux l’ouvrir tout de suite : l’affaire en cours est retirée, les traques continuent.</p>
-      <button class="btn block primary" data-action="admin-rampe-maintenant">Ouvrir « Le notaire de la Rampe » maintenant</button>` : ''}</section>
+      ${affairesOuvrables(st).length ? `<h3 class="small" style="margin:8px 0 0">Ouvrir une affaire écrite maintenant</h3>
+      <p class="small muted" style="margin:0">Sans attendre le 20:00. ${st.enquete ? `L’affaire en cours (« ${esc(affaire(st, st.enquete.n).titre)} », jour ${st.enquete.jour || 1}) est retirée et ses pièces sont perdues ; ` : ''}les traques continuent. Chaque affaire ne se joue qu’une fois par partie.</p>
+      ${affairesOuvrables(st).map((a) => `<div class="list-row" style="gap:10px;align-items:center"><span class="grow"><b>${esc(a.titre)}</b><br><span class="tiny muted">${esc(a.resume)}</span></span><button class="btn small outline" data-action="admin-affaire-maintenant" data-cas="${a.cas}">Ouvrir</button></div>`).join('')}` : ''}</section>
     ${directeurAdminHtml(st)}
     <section class="card"><h2 class="card-title">Résolution</h2>
       <p class="small muted" style="margin:0">Force la résolution du tour en cours maintenant (utile pour tester). Les joueurs ne pourront plus modifier leurs ordres de ce tour.</p>
