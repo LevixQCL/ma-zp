@@ -36,6 +36,7 @@ export const NOTE_MAJ = {
       ['Parts de la prime', 'démasquer l’auteur sans l’arrêter rapporte 6 k€, aider avec ses pièces partagées 2 k€.'],
     ]],
     ['Affichage', [
+      ['Figures : changer de service', 'dans tes ordres (Mon équipe), chaque figure peut encadrer un autre service pour la journée avec son bonus : par exemple ta cheffe de patrouille à la Recherche. Une figure par service ; si la place est prise, les deux échangent.'],
       ['Entraînement en tuiles', 'les énigmes et les mini-jeux d’entraînement se choisissent avec des tuiles illustrées, rangées par famille (logique, observation, chiffres ; incidents, appui PJF), au lieu d’un menu déroulant.'],
       ['Toute l’équipe en mission', 'plusieurs figures peuvent partir le même soir, une par destination (chaque secteur de la zone de non-droit où tu envoies des agents, et le renfort). Leur mission reste affichée quand tu rouvres tes ordres.'],
       ['Heures sup’ des enquêteurs', 'nouvelle dépense du jour (3 k€) : +3 unités de travail sur tes dossiers locaux ce soir, environ un demi-dossier. L’aperçu des dossiers en tient compte.'],

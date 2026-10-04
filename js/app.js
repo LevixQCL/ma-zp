@@ -366,6 +366,8 @@ async function onClick(e) {
       case 'ecran-reset': S.draft = null; S.help = {}; S.ordOpen = {}; S.ventilation = false; render(); break;
       case 'mission-qui': S.missionQui = S.missionQui === el.dataset.role ? null : el.dataset.role; rerender(); break;
       case 'mission-ou': { const m = { role: el.dataset.role, type: el.dataset.type, secteur: el.dataset.secteur || '' }; S.draft.missions = [...(S.draft.missions || []).filter((x) => x.role !== m.role), m]; S.draft.mission = S.draft.missions[0]; S.missionQui = null; S.ordersDirty = true; rerender(); break; }
+      case 'poste-qui': S.posteQui = S.posteQui === el.dataset.role ? null : el.dataset.role; rerender(); break;
+      case 'poste-choix': { const r = el.dataset.role, sv = el.dataset.s; const p = { ...(S.draft.postes || {}) }; if (sv === ({ inter: 'intervention', rech: 'recherche', prox: 'proximite', roul: 'roulage', admin: 'admin' })[r]) delete p[r]; else { for (const k of Object.keys(p)) if (p[k] === sv) delete p[k]; p[r] = sv; } S.draft.postes = p; S.posteQui = null; S.ordersDirty = true; rerender(); break; }
       case 'mission-annuler': S.draft.missions = (S.draft.missions || []).filter((x) => x.role !== el.dataset.role); S.draft.mission = S.draft.missions[0] || null; S.ordersDirty = true; rerender(); break;
       case 'parc': ouvrirParc(); break;
       case 'decor': ouvrirDecor(); break;

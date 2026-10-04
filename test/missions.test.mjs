@@ -8,3 +8,13 @@ assert.deepEqual(v.map((x) => x.role), ['inter', 'prox', 'roul'], 'une figure pa
 assert.equal(missionsValides({ secteurs: {}, missions: [{ role: 'inter', type: 'nondroit', secteur: '3' }] }).length, 0, 'pas de mission sans agents');
 assert.equal(missionsValides({ secteurs: { 3: 1 }, mission: { role: 'inter', type: 'nondroit', secteur: '3' } }).length, 1, 'ancien format accepté');
 console.log('OK : missions de l’équipe (plusieurs, une par destination).');
+// Service encadré : choix du jour, une figure par service, échange si la place est prise.
+import { encadrement } from '../js/engine/equipe.js';
+const eq = [{ role: 'inter', niveau: 2 }, { role: 'rech', niveau: 1 }, { role: 'prox', niveau: 0 }, { role: 'roul', niveau: 0 }, { role: 'admin', niveau: 0 }];
+const e1 = encadrement(eq, { inter: 'recherche' });
+assert.equal(e1.recherche.role, 'inter', 'la cheffe de patrouille encadre la Recherche');
+assert.equal(e1.intervention.role, 'rech', 'échange : l’enquêteur prend l’Intervention libérée');
+const e2 = encadrement(eq, {}, ['inter']);
+assert.ok(!e2.intervention, 'figure en mission : pas de bonus dans son service');
+assert.equal(Object.keys(encadrement(eq, { prox: 'pirate' })).length, 5, 'service inconnu ignoré');
+console.log('OK : service encadré par les figures (choix, échange).');
