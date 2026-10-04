@@ -245,19 +245,31 @@ export const PHOTOS_RAMPE = {
 
 // ───── La scène à fouiller ─────
 export const POINTS_SCENE_RAMPE = [
-  { k: 'corps', n: 1, x: 124, y: 334, titre: 'Au pied de l’escalier', texte: 'L’endroit où la victime a été retrouvée, la tête contre la première marche. Peu de sang sur la marche. Le tapis du couloir est plissé en accordéon, du côté du bureau.' },
-  { k: 'lunettes', n: 2, x: 186, y: 252, titre: 'La troisième marche', texte: 'Les lunettes de lecture de la victime, intactes, posées bien à plat, verres vers le haut.' },
-  { k: 'socle', n: 3, x: 318, y: 232, titre: 'Le socle vide', texte: 'Sur le bureau, un petit socle en bois verni, vide : une trace ronde, propre, dans la poussière. Une plaque de cuivre : « Étude Dusart · 1979 ».' },
-  { k: 'tiroir', n: 4, x: 404, y: 270, titre: 'Le tiroir de gauche', texte: 'Ouvert. Une chemise cartonnée vide, étiquetée à la main : « L. M. — 1999 ». Le reste du bureau est en ordre.' },
-  { k: 'sousmain', n: 5, x: 356, y: 254, titre: 'Le sous-main', texte: 'Le cuir est plus clair à un endroit, un petit rectangle de la taille d’un GSM. Il n’y a de GSM ni sur le bureau, ni ailleurs dans la maison.' },
-  { k: 'calendrier', n: 6, x: 470, y: 96, titre: 'Le calendrier', texte: 'Un vieux calendrier du Doudou, année 1999, jamais décroché. Un dimanche de la fin mai est entouré au stylo.' },
-  { k: 'fenetre', n: 7, x: 372, y: 104, titre: 'La fenêtre de l’étude', texte: 'Elle donne sur la Rampe. En face, au-dessus de la porte d’un cabinet de kinésithérapie, une petite caméra pointe vers la maison.' },
-  { k: 'console', n: 8, x: 576, y: 236, titre: 'La console de l’entrée', texte: 'Une montre de gousset en or, gravée « A.D. ». À la chaîne, une étiquette en carton : « 4471 ». Pas un grain de poussière dessus, contrairement au reste du meuble.' },
-  { k: 'salon', n: 9, x: 620, y: 336, titre: 'Le salon, par l’arche', texte: 'Sur la table basse, deux verres de porto ; l’un porte une trace de rouge à lèvres. La bouteille est presque pleine. Deux fauteuils tirés l’un vers l’autre.' },
-  { k: 'cuisine', n: 10, x: 506, y: 196, titre: 'La porte de la cuisine', texte: 'Sur l’égouttoir, un troisième verre à porto, lavé, encore perlé d’eau. L’évier est sec, sauf sous ce verre.' },
+  { k: 'corps', n: 1, x: 124, y: 334, px: 170, py: 505, titre: 'Au pied de l’escalier', texte: 'L’endroit où la victime a été retrouvée, la tête contre la première marche. Peu de sang sur la marche. Le tapis du couloir est plissé en accordéon, du côté du bureau.' },
+  { k: 'lunettes', n: 2, x: 186, y: 252, px: 222, py: 360, titre: 'La troisième marche', texte: 'Les lunettes de lecture de la victime, intactes, posées bien à plat, verres vers le haut.' },
+  { k: 'socle', n: 3, x: 318, y: 232, px: 508, py: 356, titre: 'Le socle vide', texte: 'Sur le bureau, un petit socle en bois verni, vide : une trace ronde, propre, dans la poussière. Une plaque de cuivre : « Étude Dusart · 1979 ».' },
+  { k: 'tiroir', n: 4, x: 404, y: 270, px: 528, py: 452, titre: 'Le tiroir de gauche', texte: 'Ouvert. Une chemise cartonnée vide, étiquetée à la main : « L. M. — 1999 ». Le reste du bureau est en ordre.' },
+  { k: 'sousmain', n: 5, x: 356, y: 254, px: 640, py: 372, titre: 'Le sous-main', texte: 'Le cuir est plus clair à un endroit, un petit rectangle de la taille d’un GSM. Il n’y a de GSM ni sur le bureau, ni ailleurs dans la maison.' },
+  { k: 'calendrier', n: 6, x: 470, y: 96, px: 702, py: 160, titre: 'Le calendrier', texte: 'Un vieux calendrier du Doudou, année 1999, jamais décroché. Un dimanche de la fin mai est entouré au stylo.' },
+  { k: 'fenetre', n: 7, x: 372, y: 104, px: 563, py: 96, titre: 'La fenêtre de l’étude', texte: 'Elle donne sur la Rampe. En face, au-dessus de la porte d’un cabinet de kinésithérapie, une petite caméra pointe vers la maison.' },
+  { k: 'console', n: 8, x: 576, y: 236, px: 835, py: 276, titre: 'La console de l’entrée', texte: 'Une montre de gousset en or, gravée « A.D. ». À la chaîne, une étiquette en carton : « 4471 ». Pas un grain de poussière dessus, contrairement au reste du meuble.' },
+  { k: 'salon', n: 9, x: 620, y: 336, px: 905, py: 468, titre: 'Le salon, par l’arche', texte: 'Sur la table basse, deux verres de porto ; l’un porte une trace de rouge à lèvres. La bouteille est presque pleine. Deux fauteuils tirés l’un vers l’autre.' },
+  { k: 'cuisine', n: 10, x: 506, y: 196, px: 793, py: 218, titre: 'La porte de la cuisine', texte: 'Sur l’égouttoir, un troisième verre à porto, lavé, encore perlé d’eau. L’évier est sec, sauf sous ce verre.' },
 ];
 
-/** L'étude au rez-de-chaussée : l'escalier à gauche, le bureau au centre, l'entrée et le salon à droite. */
+/** Photo de la scène (image générée, sans texte) : les plots et ce qui se lit sont posés par le jeu par-dessus. */
+export const PHOTO_SCENE_RAMPE = { src: 'img/rampe/scene.webp', mini: 'img/rampe/scene-mini.webp', w: 1024, h: 572 };
+/** La scène en photo, avec ses plots (coordonnées px/py de la photo). */
+export function sceneRampeSvg(sel, vus, esc) {
+  const P = PHOTO_SCENE_RAMPE;
+  return `<svg viewBox="0 0 ${P.w} ${P.h}" role="img" aria-label="Rez-de-chaussée de l’étude, avec dix plots numérotés">
+    <image href="${P.src}" width="${P.w}" height="${P.h}" preserveAspectRatio="xMidYMid slice"/>
+    ${POINTS_SCENE_RAMPE.map((p) => `<g class="sf-plot ${sel && sel.k === p.k ? 'on' : ''} ${vus.has(p.k) ? 'vu' : ''}" data-action="scene-pt" data-k="${p.k}" transform="translate(${p.px} ${p.py}) scale(2.2)" tabindex="0" role="button" aria-label="Plot ${p.n} : ${esc(p.titre)}">
+      <circle r="22" fill="transparent"/><path d="M-11 0L0 -20L11 0Z" fill="#F2C230" stroke="#3A2E0A" stroke-width="1.2"/><text y="-5" text-anchor="middle" font-family="'Special Elite', monospace" font-size="11" fill="#1D1A15">${p.n}</text></g>`).join('')}
+  </svg>`;
+}
+
+/** L'étude au rez-de-chaussée (ancien dessin, gardé en secours) : l'escalier à gauche, le bureau au centre, l'entrée et le salon à droite. */
 export function decorSceneRampe(id) {
   return `<defs>
       <linearGradient id="${id}mur" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6E5E4A"/><stop offset="1" stop-color="#54473A"/></linearGradient>
@@ -318,5 +330,5 @@ export function photoUneRampe(id = 'un') {
 }
 /** Vignette de la scène au tableau (l'escalier et le contour). */
 export function photoSceneRampe(id = 'sc') {
-  return `<svg viewBox="0 0 680 380" class="tb-photo-svg" aria-hidden="true">${decorSceneRampe(id)}</svg>`;
+  return `<svg viewBox="0 0 400 224" class="tb-photo-svg" aria-hidden="true"><image href="${PHOTO_SCENE_RAMPE.mini}" width="400" height="224"/></svg>`;
 }
