@@ -224,7 +224,7 @@ table.rank td.num, table.rank th.num { text-align: right; font-family: var(--mon
 .mark.m-q { border-color: var(--amber-line); background: var(--amber-bg); color: var(--amber); }
 .mark.m-ok { border-color: rgba(61, 211, 154, .6); background: rgba(61, 211, 154, .14); color: var(--green-soft); }
 span.mark { width: 32px; height: 32px; font-size: 15px; }
-.notes { width: 100%; box-sizing: border-box; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); padding: 12px 14px; font: 500 14px/1.7 var(--code); resize: vertical; }
+.notes { min-height: 150px; width: 100%; box-sizing: border-box; border-radius: 12px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); padding: 12px 14px; font: 500 14px/1.7 var(--code); resize: vertical; }
 .notes:focus { outline: 2px solid var(--amber); outline-offset: 1px; }
 .sticky-save { position: sticky; bottom: calc(90px + env(safe-area-inset-bottom)); z-index: 5; padding-top: 4px; }
 .choice[disabled] { opacity: .55; }
@@ -977,7 +977,8 @@ body.mj-ouvert { overflow: hidden; }
 .bt-nom { font: 800 16px var(--display); line-height: 1.1; }
 .bt-num { font-size: 11px; color: #7A6A48; font-weight: 600; }
 .bt-val { margin-top: 4px; display: flex; align-items: center; gap: 4px; width: 100%; border-top: 1px dashed #B8A57C; padding-top: 6px; font: 700 15px var(--display); }
-.bt-val input { width: 100%; min-width: 0; height: 36px; border: 0; border-radius: 8px; background: rgba(255, 255, 255, .6); padding: 0 8px; font: 700 18px 'Caveat', var(--display); color: #1F3C8A; text-align: right; }
+.bt-val input { width: 100%; min-width: 0; height: 44px; border: 0; border-radius: 8px; background: rgba(255, 255, 255, .6); padding: 0 8px; font: 700 28px/1 'Caveat', var(--display); color: #1F3C8A; text-align: center; }
+.bt-val input::placeholder { font: 700 22px var(--display); color: #A8987A; }
 .bt-val input:focus { outline: 2px solid #B4141E; }
 .bt-tag.cible { background: #FFE3A3; box-shadow: 0 0 0 3px var(--amber), 0 10px 22px -8px rgba(255, 178, 63, .6); }
 .bt-tag.cible .bt-num { color: #A3290F; }
