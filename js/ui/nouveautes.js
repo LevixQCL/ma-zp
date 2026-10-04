@@ -44,6 +44,7 @@ export const NOTE_MAJ = {
       ['Confiance de la commune', 'la ligne est toujours affichée dans le détail du budget, avec son calcul (réputation − 50 × coefficient), même quand elle vaut 0.'],
     ]],
     ['Mini-jeux', [
+      ['Colis suspect', 'nouvel habillage : boîtier en inox vissé, plaque de série rivetée, fils tressés avec embouts et écrous, bouton lumineux à collerette chromée, interrupteurs à bascule. Les règles et la fiche SEDEE ne changent pas.'],
       ['Réseau', 'nouvel habillage : plateau en métal, dalles de verre gravées, câbles en néon cyan où l’on voit le courant circuler, fond de circuit imprimé. Les règles et la difficulté ne changent pas.'],
       ['ADN', 'nouvel habillage : hélices en tubes de verre, barreaux en capsules colorées, vitre de comparaison et fond de labo. Les règles et la difficulté ne changent pas.'],
       ['Crochetage', 'nouvel habillage : serrure en coupe avec ressorts, goupilles usinées et rotor en laiton, clé de tension à voyants (vert = bonne tension) et lecture « Zone verte / Trop forte / Trop faible » sous Tension. Les règles et la difficulté ne changent pas.'],
