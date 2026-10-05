@@ -15,6 +15,9 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Équilibrage', [
+      ['Vieux dossiers', 'un dossier local qui traîne rapporte moins de points : pleine valeur le jour de son arrivée et le lendemain, puis −20 % par jour (minimum 25 %). Les Ordres affichent « vaut … % » à côté des dossiers concernés. Suivre le rythme paie plus que tout rattraper d’un coup.'],
+    ]],
     ['Plus lisible', [
       ['Des couleurs', 'sous chaque service, le résultat estimé de ce soir est en vert (ça va), orange (à surveiller) ou rouge (ça coince).'],
       ['Proximité', 'la criminalité affiche sa prévision de ce soir et son niveau, avec les mêmes seuils que les quartiers de la Carte : calme sous 45, à surveiller, tendue dès 55, chaude dès 70.'],

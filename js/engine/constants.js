@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 80;
+export const APP_VERSION = 81;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -175,7 +175,11 @@ export const TERRAIN = { incidents: 45, parPoint: 2, report: 0.5 };
 /** Recherche : chaque unité de travail sur un dossier rapporte des points tout de suite (≈ 0,5). */
 // Dossiers locaux plus courts (retour de Luc : 6 agents doivent suivre le rythme d'un dossier par jour), même récompense par dossier.
 // Simulation : 6 agents bouclent ~12 dossiers sur 13 (contre ~9 avant) ; il en fallait 8 à 11.
-export const DOSSIER = { tailleMin: 3, tailleMax: 5, ptsParUnite: 0.75, version: 2 };
+export const DOSSIER = { tailleMin: 3, tailleMax: 5, ptsParUnite: 0.75, version: 2, delai: 1, decote: 0.2, plancher: 0.25 };
+// Décote des vieux dossiers (retour de Luc, oct. 2026) : rattraper d'un coup ne doit pas rapporter plus que suivre le rythme.
+// Simulation (test/dossiers-decote-sim.mjs) : joueur régulier inchangé (57,1) ; rattrapage 58,0 → 54,6 de terrain moyen.
+/** Valeur d'une unité de travail selon l'âge du dossier : pleine les `delai` premiers jours, puis −`decote` par jour (plancher). */
+export const valeurDossier = (age) => Math.max(DOSSIER.plancher, 1 - DOSSIER.decote * Math.max(0, (age || 0) - DOSSIER.delai));
 
 export const DELAI_ACADEMIE = 2;       // tours avant l'arrivée d'une recrue
 export const DUREE_FORMATION = 1;      // tours d'indisponibilité
