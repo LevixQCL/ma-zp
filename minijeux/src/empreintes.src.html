@@ -398,6 +398,7 @@ Shell.init({
     difficile:{agents:1,label:'Difficile',time:150,fiches:5,R:64,rot:[40,150],shared:5,smudge:1.25},
     normal:{agents:2,label:'Normal',time:180,fiches:4,R:72,rot:[25,90],shared:4,smudge:1},
     facile:{agents:3,label:'Facile',time:240,fiches:3,R:82,rot:[12,40],shared:2,smudge:.7}},
+  bornes:{time:[25,Infinity],fiches:[2,7],R:[58,100],rot:[[0,90],[0,180]],shared:[0,6],smudge:[.4,1.4]},
   diffHint:'Plus d’experts : plus de temps, une trace plus grande et moins de fiches à comparer.',
   desktopHint:'Sur ordinateur : molette de la souris pour tourner (Maj = rotation fine), touches D et P pour changer de mode, Entrée pour valider la visée.',
   rules:['Aligne la trace (rose) : glisser pour déplacer, molette ou deux doigts pour tourner.','Mode <b>Pointer</b> : vise avec la loupe et relâche (sans pénalité), puis <b>touche le rond</b> de la visée pour valider une minutie (fin de crête ou bifurcation). Bouton <b>?</b> : c’est quoi une minutie.','<b>8 concordances</b> sur une même fiche = identification. Une mauvaise fiche à 8 = erreur d’identification.','Valider à côté d’une minutie : −6 s. Discordance : −4 s. Viser ne coûte rien.','Sans erreur : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],

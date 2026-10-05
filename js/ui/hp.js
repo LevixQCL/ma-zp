@@ -1,3 +1,4 @@
+import { titresDefi } from './defis.js';
 import { noteVue } from './nouveautes.js';
 // Écran HP (Hôtel de police) : l'accueil.
 import { cabossesChoisis } from '../engine/parc.js';
@@ -429,7 +430,7 @@ export function renderProfil() {
     ${recompensesGrade(z)}
     <section class="card"><h2 class="card-title">Carrière</h2>
       <p class="small" style="margin:0">Faillites : <strong>${z.faillites || 0}</strong>${(z.badges || []).length ? ` · Badges : ${z.badges.map((b) => `<strong>${esc(b)}</strong>`).join(', ')}` : ''}</p></section>
-    ${z.titres && z.titres.length ? `<section class="card"><h2 class="card-title">Titres</h2>${z.titres.map((t) => `<p class="small" style="margin:0">${icon('trophy', 14)} ${esc(t)}</p>`).join('')}</section>` : ''}
+    ${(z.titres && z.titres.length) || titresDefi(z.uid).length ? `<section class="card"><h2 class="card-title">Titres</h2>${(z.titres || []).map((t) => `<p class="small" style="margin:0">${icon('trophy', 14)} ${esc(t)}</p>`).join('')}${titresDefi(z.uid).map((t) => `<p class="small" style="margin:0">🏆 ${esc(t.titre)} <span class="muted">· record du défi, niveau ${t.niveau}</span></p>`).join('')}</section>` : ''}
     <a class="list-row" href="#parties"><span class="col grow" style="gap:1px"><span style="font-weight:600">Changer de partie</span><span class="small muted">${esc((S.partie && S.partie.nom) || '')} · rejoindre ou créer une partie</span></span>${icon('chevron', 18)}</a>
     <section class="card"><h2 class="card-title">Installer le jeu sur ton téléphone</h2>
       <p class="small muted" style="margin:0">Android (Chrome) : menu ⋮ puis « Installer l’application ». iPhone (Safari) : bouton Partager puis « Sur l’écran d’accueil ».</p></section>

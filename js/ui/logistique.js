@@ -1,4 +1,5 @@
 // Logistique (bâtiments de la zone) et détail du budget : ce qui coûte, ce qui rapporte.
+import { titresDefi } from './defis.js';
 import { S, esc, icon, fmt1, myZone } from './common.js';
 import { gradeFor, LOTS, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE, DEPENSES, USURE } from '../engine/constants.js';
 import { parcVehicules, cabossesChoisis } from '../engine/parc.js';
@@ -196,6 +197,7 @@ export function ouvrirHpVoisin(uid) {
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="scene-voisin">${moi ? sceneZone(z, st, d, mesSkins(z).choix) : sceneZone(z, st, d)}</div>
     ${affichesHtml(z, { moi })}
+    ${titresDefi(uid).length ? `<p class="small" style="margin:0">${titresDefi(uid).map((t) => `🏆 <strong>${esc(t.titre)}</strong> <span class="muted">(défi, niv. ${t.niveau})</span>`).join(' · ')}</p>` : ''}
     <div class="bats hp-logis">
       <div class="bat"><span class="tiny muted">Bâtiment</span><span style="font-weight:700">Niveau ${z.batiments.bureaux}</span></div>
       <div class="bat"><span class="tiny muted">Garage</span><span style="font-weight:700">Niveau ${z.batiments.garage} · ${z.vehicules} véhicule${z.vehicules > 1 ? 's' : ''}</span></div>

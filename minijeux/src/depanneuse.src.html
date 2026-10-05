@@ -57,6 +57,16 @@
 </body>
 <script>
 const PUZ = /*INCLUDE:rush.json*/null;
+// Défi d'endurance : toutes les grilles classées par nombre minimum de coups (plus des grilles très dures générées à part).
+const PUZ_DEFI = /*INCLUDE:rush-defi.json*/null;
+const TOUTES = [...PUZ.facile, ...PUZ.normal, ...PUZ.difficile, ...(PUZ_DEFI||[])].filter(q=>q.v.some(x=>x[2]===3));
+/** Grille d'un niveau du défi : de 5 coups au niveau 1 à environ 15 au niveau 10, puis +1,5 coup par niveau. */
+function grilleNiveau(n){
+  const cible = n<=10 ? 5 + (n-1)*10/9 : 15 + (n-10)*1.5;
+  const tri = TOUTES.slice().sort((a,b)=>Math.abs(a.m-cible)-Math.abs(b.m-cible));
+  const proches = tri.filter(q=>Math.abs(q.m-tri[0].m)<=1);
+  return pick(proches);
+}
 const CIV = ['#eef0f2','#d23a33','#2f9e57','#e6e8eb','#3f6fc0','#c3c8ce','#1f2731','#b21f2a','#2a8a4c','#f2f3f5'];
 const R = {veh:[], init:[], cell:50, moves:0, min:0, over:true, cfg:null, tuto:0, els:[]};
 
@@ -240,6 +250,7 @@ Shell.init({
   headline:'Carrefour bloqué',
   story:`<p>Accrochage sur le parking du centre commercial à l'heure de pointe. La voiture accidentée est coincée entre les véhicules et la dépanneuse attend à la sortie.</p><p>Ton équipe Roulage doit faire déplacer les véhicules un par un pour la dégager avant que tout le quartier soit bloqué.</p>`,
   diffs:{difficile:{agents:2,label:'Difficile',time:150,set:'difficile'},normal:{agents:4,label:'Normal',time:150,set:'normal'},facile:{agents:6,label:'Facile',time:150,set:'facile'}},
+  bornes:{time:[30,Infinity]},
   diffHint:"Plus d'agents : un parking moins encombré, donc moins de coups à jouer.",
   desktopHint:'Sur ordinateur : fais glisser les véhicules à la souris.',
   rules:['Glisse les véhicules <b>dans le sens de leur longueur</b>, jamais en travers.','Fais descendre la <b>voiture accidentée</b> (orange) jusqu\'à la <b>dépanneuse</b>, en bas.','Le <b>minimum possible</b> est affiché. Termine en minimum + 3 coups ou moins : <b>+2</b> sur la jauge. Sinon : <b>+1</b>.','Replacer remet le parking à zéro, mais les coups déjà joués restent comptés.'],
@@ -247,7 +258,9 @@ Shell.init({
   malus:"le dépannage est facturé en urgence au budget de la zone, et 1 agent Roulage reste immobilisé sur place jusqu'à demain.",
   onMenu(){ R.over=true; },
   onInit(){ R.min=0; load(pick(PUZ.normal.filter(q=>q.v.some(x=>x[2]===3))).v); },
-  onPlay(cfg){ R.cfg=cfg; const p=pick(PUZ[cfg.set].filter(q=>q.v.some(x=>x[2]===3))); R.min=p.m; load(p.v); R.over=false; Shell.startTimer(cfg.time,()=>{ if(!R.over){ R.over=true; Shell.bad(); Shell.result({ok:false,faults:1,stats:[['Coups',R.moves],['Minimum',R.min]]}); } }); },
+  // Défi : le temps suit la taille de la grille (10 s par coup minimum au niveau 10, puis 6 % de moins par niveau, 2 s au plus serré).
+  niveau(n,cfg){ cfg.grille=grilleNiveau(n); cfg.time=Math.round(20 + cfg.grille.m*(n<=10?10:Math.max(2,10*Math.pow(.93,n-10)))); return cfg; },
+  onPlay(cfg){ R.cfg=cfg; const p=cfg.grille || pick(PUZ[cfg.set].filter(q=>q.v.some(x=>x[2]===3))); R.min=p.m; load(p.v); R.over=false; Shell.startTimer(cfg.time,()=>{ if(!R.over){ R.over=true; Shell.bad(); Shell.result({ok:false,faults:1,stats:[['Coups',R.moves],['Minimum',R.min]]}); } }); },
   onTuto(){ R.min=3; load(TUTO_BOARD); R.over=false; tutoGo(1); }
 });
 </script>

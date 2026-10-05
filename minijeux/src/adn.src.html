@@ -258,6 +258,7 @@ Shell.init({
     difficile:{agents:1,label:'Difficile',time:150,suspects:5,len:48,n:10,wild:3,near:9,miss:1},
     normal:{agents:2,label:'Normal',time:150,suspects:4,len:40,n:10,wild:2,near:6,miss:1},
     facile:{agents:3,label:'Facile',time:180,suspects:3,len:32,n:8,wild:0,near:3,miss:2}},
+  bornes:{time:[25,Infinity],suspects:[2,8],len:[24,72],wild:[0,6],near:[0,16],miss:[1,3]},
   diffHint:'Plus d’experts : plus de temps, moins de suspects, des ADN plus courts et moins de faux amis.',
   desktopHint:'Sur ordinateur : molette ou flèches pour faire défiler, Entrée pour comparer, glisser sur le côté pour faire pivoter.',
   rules:['Retrouve le <b>fragment de la scène</b> (à gauche) dans l’ADN d’un suspect (à droite).','Glisser haut/bas : faire défiler l’hélice. Glisser sur le côté : la faire pivoter. Onglets : changer de suspect.','Chaque barreau est une paire : <b>A avec T</b>, <b>C avec G</b>. Un barreau gris <b>?</b> est illisible : il compte comme bon.','Place la bonne suite dans le cadre puis <b>Comparer</b>. Comparaison ratée : −6 s.','Trouvé sans erreur : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],

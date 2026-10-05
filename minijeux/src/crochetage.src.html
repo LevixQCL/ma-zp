@@ -385,6 +385,7 @@ Shell.init({
   headline:'Porte verrouillée',
   story:`<p>Le juge d'instruction a délivré un mandat de perquisition pour le 14, rue des Tanneurs, dans un dossier de recel. Sur place, personne n'ouvre et le serrurier ne répond pas.</p><p>Ton équipe SER doit ouvrir la porte avant que le suspect ne fasse disparaître les preuves.</p>`,
   diffs:{difficile:{agents:2,label:'Difficile',time:50,band:.05,zone:.095,drift:.22,speed:1.12,jolt:.09,grace:1},normal:{agents:4,label:'Normal',time:60,band:.06,zone:.11,drift:.2,speed:1},facile:{agents:6,label:'Facile',time:75,band:.075,zone:.14,drift:.15,speed:.85}},
+  bornes:{time:[12,Infinity],band:[.02,1],zone:[.045,1],drift:[0,.45],speed:[0,2.3]},
   diffHint:"Plus d'agents : crans plus larges, tension plus stable, plus de temps.",
   desktopHint:'Sur ordinateur, au choix : <b>souris</b> (clic maintenu sur Tension, glisse haut/bas) et <b>Espace</b> pour crocheter ; ou <b>clavier seul</b> : flèches ↑ ↓ pour doser la tension (elle reste engagée toute seule) et Espace pour crocheter.',
   rules:['Cale les <b>5 goupilles</b>, de gauche à droite, avant la fin du chrono.','Chaque goupille a <b>son propre cran</b>. Ta clé se dessine au fil des goupilles calées.','Un tap raté fait <b>tressauter la tension</b>.','Tension hors du vert près d\'une seconde : <b>la dernière goupille retombe</b>.','Sans erreur : <b>+2</b> sur la jauge skins. Avec erreurs : <b>+1</b>.'],

@@ -194,6 +194,7 @@ Shell.init({
     difficile:{agents:1,label:'Difficile',time:75,cols:7,per:[2,3],mix:[.35,.35],unk:.3,speed:3.1,win:.62,flip:true},
     normal:{agents:2,label:'Normal',time:80,cols:6,per:[2,3],mix:[.45,.3],unk:.2,speed:2.6,win:.75,flip:false},
     facile:{agents:3,label:'Facile',time:90,cols:5,per:[2,3],mix:[.55,.25],unk:0,speed:2.1,win:.9,flip:false}},
+  bornes:{time:[15,Infinity],cols:[3,9],speed:[0,6],win:[.25,1],unk:[0,.7],mix:[[.15,1],[0,.45]]},
   diffHint:'Plus d’enquêteurs : moins de relais, des fenêtres plus larges et un curseur plus lent.',
   desktopHint:'Sur ordinateur : barre d’espace ou Entrée pour verrouiller.',
   rules:['Touche un relais relié à ta position pour l’attaquer. Tu ne peux qu’avancer : <b>choisis bien ta route</b>.','Pour franchir un relais : touche quand le <b>curseur</b> est dans la <b>zone verte</b>. Proxy : 1 verrou, routeur chiffré : 2 rapides, pare-feu : 3.','Un relais <b>?</b> ne révèle son type qu’au moment où tu l’attaques. « Autre route » te ramène à la carte sans pénalité.','Rejet : −6 s et le relais repart de zéro. Atteins le serveur avant la fin du chrono.','Sans rejet : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],

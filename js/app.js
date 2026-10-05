@@ -345,7 +345,11 @@ async function onClick(e) {
       case 'jauge-skins': ouvrirJaugeSkins(); break;
       case 'jauge-apercu': ouvrirJaugeSkins(el.dataset.k); break;
       case 'appui-demande': { const k = el.dataset.k; S.draft.appui = S.draft.appui === k ? null : k; S.ordersDirty = true; rerender(); break; }
-      case 'mj-train': ouvrirMiniJeu(el.dataset.j, { mode: 'train', onEntrainement: noterEntrainement }); break;
+      case 'mj-train': {
+        // Records du défi d'endurance à jour avant d'ouvrir (nominette et record à battre).
+        try { S.players = await b.getPlayers(); } catch (e) { /* hors ligne : on garde ceux connus */ }
+        ouvrirMiniJeu(el.dataset.j, { mode: 'train', onEntrainement: noterEntrainement, onFin: () => rerender() }); break;
+      }
       case 'tuto': location.hash = '#hp'; setTimeout(() => lancerTuto(0), 50); break;
       case 'post-n': { const a = S.state.affaires.find((x) => x.id === el.dataset.id); const cur = (S.postuler && S.postuler[a.id]) || Math.min(3, a.agentsMax || 3); S.postuler = { ...(S.postuler || {}), [a.id]: Math.max(1, Math.min(a.agentsMax || 10, cur + Number(el.dataset.d))) }; rerender(); break; }
       case 'postuler': {

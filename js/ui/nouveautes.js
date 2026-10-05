@@ -3,10 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-05-pactes',
+  id: '2026-10-05-defi',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
+    ['🏆', 'Défi d’endurance', 'dans l’Entraînement, chaque mini-jeu a son défi : du niveau 1 aussi haut que possible, de plus en plus dur, trois erreurs permises. Le record de la partie met son nom sur la tuile.'],
     ['🤝', 'Les pactes', 'dans la Carte, nouvel onglet Pactes : allie-toi avec une autre zone pendant 7 jours. Vos alliances s’affichent sur la carte du district.'],
     ['🧩', 'Pacte d’enquête', 'une pièce déchirée en deux : l’un a le début, l’autre la fin. Mettez-la en commun pour l’avoir en entier.'],
     ['🏁', 'Défi amical', 'trois jours d’incidents, d’énigmes ou de dossiers contre un collègue, avec une petite mise. Refuser ne coûte rien.'],
@@ -14,6 +15,11 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Défi d’endurance des mini-jeux', [
+      ['Où', 'Énigmes › Entraînement › Mini-jeux : touche un mini-jeu, puis « Défi d’endurance ». Aucun effet sur ta zone (ni IPZ, ni PS, ni skins).'],
+      ['Comment', 'on part du niveau 1, plus doux que « facile » ; le niveau 10 correspond au « difficile » des incidents ; au-delà, tout se resserre un peu plus à chaque niveau (moins de temps, crans plus fins, grilles plus grandes, embouteillages plus longs). Trois erreurs et la course s’arrête.'],
+      ['Records', 'chaque niveau réussi est enregistré. Le meilleur de la partie sur chaque mini-jeu a son nom sur la tuile (premier arrivé en cas d’égalité) et un titre sur son profil tant qu’il garde le record : Démineur du district, Maître serrurier, As du dépannage, Œil de lynx, Maître des empreintes, Génie de l’ADN, Maître du réseau, Traqueur d’IP.'],
+    ]],
     ['Pactes (la diplomatie refaite)', [
       ['Un onglet dans la Carte', 'la Diplomatie quitte la Radio (qui redevient Radio | Privé) et devient l’onglet Pactes de la Carte. La carte du district y montre qui est lié à qui.'],
       ['Trois pactes de 7 jours', 'jumelage terrain (+20 % de force les soirs où vous êtes sur le même secteur de la zone de non-droit, indemnité de renfort doublée entre vous), pacte d’enquête (une demi-pièce chacun un soir sur deux, à mettre en commun), centrale d’achat (formations et équipement −15 %). Deux pactes au plus.'],

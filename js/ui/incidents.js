@@ -1,7 +1,8 @@
 // Incidents du jour : la carte de l'HP, et l'ouverture des mini-jeux (incident ou entraînement).
 // Les mini-jeux sont des pages à part (dossier minijeux/), ouvertes en plein écran dans un cadre :
 // elles renvoient leur résultat par message (start, result, close).
-import { S, esc, icon, myZone } from './common.js';
+import { S, esc, icon, myZone, toast } from './common.js';
+import { paramsDefi, noterNiveauDefi } from './defis.js';
 import { incidentsVisibles, resultatsIncidents, INCIDENTS, MALUS, GAIN, texteMalus, texteGain, difficulte, pointsJauge, INC } from '../engine/incidents.js';
 import { PS } from '../engine/constants.js';
 import { niveauIncidents } from '../engine/directeur.js';
@@ -163,6 +164,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
     p.set('gain', `une pièce ${appui.unite === 'labo' ? 'sur les moyens' : 'sur le mobile ou l’occasion'} d’un suspect, au dossier à 20:00`);
     p.set('malus', `pas de pièce, l’équipe ${u.court} repart`);
   }
+  if (mode === 'train') for (const [k, v] of Object.entries(paramsDefi(jeu))) p.set(k, v);
   const wrap = document.createElement('div');
   wrap.className = 'mj-wrap';
   wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true');
@@ -177,6 +179,8 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
         if (d.type === 'result') await enregistrer(inc.id, { statut: d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Number(d.fautes) || 0 });
       }
       if (mode === 'train' && d.type === 'result' && !d.abandon) onEntrainement({ minijeux: 1 });
+      // Défi d'endurance : chaque niveau réussi peut battre le record personnel (et celui de la partie).
+      if (mode === 'train' && d.type === 'defi' && d.jeu === jeu) { const rec = await noterNiveauDefi(jeu, d.niveau); if (rec) toast(`Nouveau record de la partie : ${(MINI_JEUX.find((m) => m.jeu === jeu) || {}).nom || jeu}, niveau ${d.niveau} !`); }
       if (mode === 'renfort' && appui && d.id === appui.id) {
         if (d.type === 'start') await enregistrerAppui(appui.id, 'abandon');
         if (d.type === 'result') await enregistrerAppui(appui.id, d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate');
