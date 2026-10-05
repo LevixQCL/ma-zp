@@ -137,7 +137,11 @@ function render() {
         html = renderClassement(); break;
       case 'profil': html = renderProfil(); break;
       case 'admin': html = S.backend.isMaster(S.user) ? renderAdmin() : renderHP(); break;
-      default: html = renderHP();
+      default:
+        // Première ouverture : tant que les Gazettes ne sont pas lues, on n'affiche pas l'HP (ni ses pop-up),
+        // pour pouvoir ouvrir directement la Gazette du soir si elle n'a pas encore été lue (6 s au plus).
+        if (!S.gazettesChargees && Date.now() - (S.ouvertureA ||= Date.now()) < 6000) { loading('Chargement de la Gazette…'); setTimeout(() => { if (!S.gazettesChargees) render(); }, 6100); return; }
+        html = renderHP();
     }
     } catch (err) {
       // Un écran qui plante ne doit pas bloquer le jeu : on affiche l'erreur (à transmettre) et une sortie.
@@ -231,8 +235,9 @@ async function loadTurnData() {
   // Tri par saison et tour : l'ordre d'écriture dépend de l'horloge de l'appareil qui a calculé le tour.
   S.gazettes = (gazettes || []).slice().sort((x, y) => (y.season - x.season) || (y.turn - x.turn)); S.gazetteIndex = 0; S.rapportIdx = 0;
   completerDepuisGazette(S.state, S.gazettes);
+  S.gazettesChargees = true;
   if (isNew) toast(`Tour ${st.turn} : la Gazette est parue !`);
-  else if (gazetteAOuvrir()) { location.hash = '#gazette'; return; } // première ouverture depuis la parution : on lit la Gazette
+  else if (gazetteAOuvrir()) { S.route = 'gazette'; location.hash = '#gazette'; render(); return; } // première ouverture depuis la parution : on lit la Gazette
   render();
 }
 // Gazette du jour : à la première ouverture du jeu après sa parution (une fois par numéro et par appareil),
@@ -278,7 +283,7 @@ async function openParty(id) {
   if (unsubRadio) unsubRadio();
   if (unsubPrive) unsubPrive();
   unsubState = null; unsubRadio = null; unsubPrive = null;
-  Object.assign(S, { noParty: false, state: undefined, draft: null, quests: null, savedOrders: null, ordersDirty: false, gazettes: [], radio: [], prives: [], priveAvec: null, vu: null, signup: null, joinErreur: null, questResults: [null, null, null] });
+  Object.assign(S, { noParty: false, state: undefined, draft: null, quests: null, savedOrders: null, ordersDirty: false, gazettes: [], radio: [], prives: [], priveAvec: null, vu: null, signup: null, joinErreur: null, questResults: [null, null, null], gazettesChargees: false, ouvertureA: 0 });
   lastTurnKey = null;
   const jeton = ++ouvertures; // si le joueur change de partie pendant le chargement, on abandonne celle-ci
   render();
