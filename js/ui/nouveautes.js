@@ -15,6 +15,12 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Affectation plus parlante', [
+      ['Des couleurs', 'sous chaque service, le résultat estimé de ce soir est en vert (ça va), orange (à surveiller) ou rouge (ça coince).'],
+      ['Proximité', 'la criminalité affiche sa prévision de ce soir et son niveau, avec les mêmes seuils que les quartiers de la Carte : calme sous 45, à surveiller, tendue dès 55, chaude dès 70.'],
+      ['Recherche et Accueil', 'on lit « dossiers bouclés ce soir · en cours » et la paperasse rappelle son seuil de 14 (au-delà : −2 de moral par soir).'],
+      ['Agents de réserve', 'expliqués en clair : un renfort payant pour la journée, en plus de tes agents, à 1,5 k€ l’agent et 80 % d’efficacité.'],
+    ]],
     ['Challenge des mini-jeux', [
       ['Où', 'Énigmes › Entraînement › Challenge (l’ancien onglet Mini-jeux) : touche un mini-jeu, puis « Lancer le challenge ». Les premiers niveaux servent d’entraînement. Aucun effet sur ta zone (ni IPZ, ni PS, ni skins).'],
       ['Comment', 'on part du niveau 1, plus doux que « facile » ; le niveau 10 correspond au « difficile » des incidents ; au-delà, tout se resserre un peu plus à chaque niveau (moins de temps, crans plus fins, grilles plus grandes, embouteillages plus longs). Trois erreurs et la course s’arrête.'],
