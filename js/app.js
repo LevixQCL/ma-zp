@@ -19,7 +19,7 @@ import { DECOR, decorDebloque, conditionDecor, decorValide } from './engine/deco
 import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { tutoAuBesoin, lancerTuto, tutoFait } from './ui/tutoriel.js';
-import { rouletteAuBesoin, lancerRoulette } from './ui/roulette.js';
+import { lancerRoulette } from './ui/roulette.js';
 import { editionHtml, marquerEditionVue, editionVue } from './ui/edition.js';
 import { operationActive, effetsOperation } from './engine/zone.js';
 import { carteQuartiers } from './engine/quartiers.js';
@@ -164,8 +164,8 @@ function render() {
   }
   const scroll = window.scrollY;
   app.innerHTML = banner + html;
-  // La roulette attend la fin (ou le refus) de la visite guidée : sinon elle chasse l'invitation.
-  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin() && !(tutoFait() && rouletteAuBesoin())) nouveautesAuBesoin();
+  // La roulette « Early birds » n'est plus proposée (les skins déjà gagnés restent acquis).
+  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin()) nouveautesAuBesoin();
   if (S.route === 'ordres' && S.ordAncre) {
     const cible = document.querySelector(`[data-action="ord-open"][data-k="${S.ordAncre}"]`);
     S.ordAncre = null;
