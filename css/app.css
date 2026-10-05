@@ -1192,7 +1192,7 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .affect .svc-n { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; }
 .affect .svc-niv { font-size: 11.5px; }
 .affect .svc-chev { color: var(--faint); align-self: center; transition: transform .15s; flex-shrink: 0; }
-.affect .svc-r { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.affect .svc-r { display: block; line-height: 1.35; }
 .affect .stepper button { width: 36px; height: 36px; }
 .affect .stepper .n { min-width: 28px; }
 .affect .svc-det { margin: 0 0 10px 14px; padding: 10px 12px; border-radius: 14px; background: var(--bg); border: 1px solid var(--hair); display: flex; flex-direction: column; gap: 8px; }

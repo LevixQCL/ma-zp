@@ -12,7 +12,7 @@ import { COULEUR_ROLE, initiales, echelleBonus } from './equipe.js';
 import { creerEquipe, appliquerNoms, missionsValides, surnomDe, encadrement } from '../engine/equipe.js';
 import { nomSecteur } from '../engine/nondroit.js';
 import { secteurOuvert, ROLE_SERVICE, bonusChef, CHEFS } from '../engine/constants.js';
-import { carteQuartiers } from '../engine/quartiers.js';
+import { carteQuartiers, prevoirTensions, niveauTension } from '../engine/quartiers.js';
 import { pressionsVisibles } from '../engine/directeur.js';
 import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
 
@@ -143,7 +143,10 @@ export function estimations() {
   const reste = resteBase - enquete;
   const coutDep = coutDepenses(dep, z);
   const coutTotal = coutDep + (d.decision && !decisionImpossible(z, d.decision, st.turn) ? coutDecision(z, d.decision) : 0);
-  return { attendus, couverts, pap, papV, capAdmin1, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, coutTotal, prises, crim, cap };
+  // Criminalité prévue ce soir : quartiers (patrouilles, point chaud) + pressions du jour et prévention.
+  const prev = Object.values(prevoirTensions(st, z, { patrouilles: d.patrouilles || {}, agentsProx: eff.proximite || 0, capProx: cap.proximite || 0 }));
+  const crimSoir = Math.max(10, Math.min(95, (prev.length ? prev.reduce((a, b) => a + b, 0) / prev.length : z.criminalite) + (crim - z.criminalite)));
+  return { crimSoir, attendus, couverts, pap, papV, capAdmin1, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, coutTotal, prises, crim, cap };
 }
 
 /** « dont 2 en audition » sous un service : ces agents ne travaillent pas dans le service aujourd'hui. */
@@ -175,9 +178,9 @@ function reserveHtml(z, d, e) {
   const libres = Math.max(0, e.reste);
   return `<div class="svc svc-res">
     <div class="svc-l"><i class="svc-c" style="background:var(--faint)"></i>
-      <span class="svc-t"><span class="svc-n">Agents de réserve</span><span class="svc-r muted">${fmt1(DEPENSES.reserve.cout)} k€ pièce · efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} %</span></span>
+      <span class="svc-t"><span class="svc-n">Agents de réserve</span><span class="svc-r muted">Renfort payant pour la journée, en plus de tes agents : ${fmt1(DEPENSES.reserve.cout)} k€ l’agent, il travaille à ${Math.round(DEPENSES.reserve.efficacite * 100)} % d’un des tiens</span></span>
       <span class="stepper"><button type="button" data-action="dep-reserve" data-d="-1" aria-label="Un agent de réserve en moins" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="dep-reserve" data-d="1" aria-label="Un agent de réserve en plus" ${n >= DEPENSES.reserve.max ? 'disabled' : ''}>+</button></span></div>
-    ${n ? `<div class="svc-plus"><label class="field" style="font-weight:500">Ils prennent la place de tes agents en
+    ${n ? `<div class="svc-plus"><label class="field" style="font-weight:500">Service renforcé
       <select class="text" data-change="dep-service" style="min-height:44px;font-size:14px">${SERVICES.map((s2) => `<option value="${s2}" ${s === s2 ? 'selected' : ''}>${SERVICE_LABELS[s2]}</option>`).join('')}</select></label>
       ${(d.alloc[s] || 0) > 0 && libres < n ? `<button type="button" class="btn small outline block" data-action="reserve-libere">Libérer ${Math.min(n, d.alloc[s])} de mes agents de ${SERVICE_LABELS[s]}</button>` : ''}
       <span class="tiny muted">La réserve couvre le service pendant que tes propres agents partent ailleurs : zone de non-droit, renfort, autre service. Payée à 20:00 si le budget le permet.</span></div>` : ''}
@@ -193,12 +196,26 @@ function resultatService(e, s) {
   const z = myZone();
   const pap = (v) => (v < 0 ? `−${-v}` : v > 0 ? `+${v}` : '±0');
   switch (s) {
-    case 'intervention': return `<span class="${e.couverts >= e.attendus ? 'ok' : 'warn'}">${e.couverts}/${e.attendus} incidents couverts</span>`;
-    case 'proximite': return `<span class="muted">criminalité ${Math.round(e.crim)}</span>`;
+    case 'intervention': {
+      const rates = e.attendus - e.couverts;
+      return rates <= 0 ? `<span class="ok">${e.couverts}/${e.attendus} incidents couverts</span>`
+        : `<span class="${rates >= 2 ? 'bad' : 'warn'}">${e.couverts}/${e.attendus} couverts · ${rates} raté${rates > 1 ? 's' : ''} prévu${rates > 1 ? 's' : ''}</span>`;
+    }
+    case 'proximite': {
+      // Criminalité = moyenne des quartiers (10 à 95) ; prévision de ce soir, mêmes seuils que la Carte.
+      const avant = Math.round(z.criminalite), apres = Math.round(e.crimSoir);
+      const n = niveauTension(apres);
+      const cls = n.id === 'calme' ? 'ok' : n.id === 'surveille' ? 'warn' : 'bad';
+      return `<span class="${cls}">criminalité ${avant} → ${apres} ce soir · ${n.nom}</span>`;
+    }
     case 'recherche': {
       const p = projeterDossiers(z, ((e.cap && e.cap.recherche) || 0) + (S.draft && S.draft.depenses && S.draft.depenses.enqueteurs ? DEPENSES.enqueteurs.unites : 0));
       const retard = p.lignes.filter((l) => !l.boucle && l.d.age + 1 > 6).length;
-      return `<span class="${retard ? 'bad' : p.boucles ? 'ok' : 'muted'}">${retard ? `${retard} en retard · ` : p.boucles ? `${p.boucles} bouclé${p.boucles > 1 ? 's' : ''} · ` : ''}${p.restants} restant${p.restants > 1 ? 's' : ''}</span>`;
+      const enCours = `${p.restants} dossier${p.restants > 1 ? 's' : ''} en cours`;
+      if (retard) return `<span class="bad">${retard} dossier${retard > 1 ? 's' : ''} en retard · ${enCours}</span>`;
+      if (p.boucles) return `<span class="ok">${p.boucles} dossier${p.boucles > 1 ? 's' : ''} bouclé${p.boucles > 1 ? 's' : ''} ce soir · ${p.restants} en cours</span>`;
+      if (!p.restants) return '<span class="ok">aucun dossier en attente</span>';
+      return `<span class="warn">aucun dossier bouclé ce soir · ${enCours}</span>`;
     }
     case 'roulage': return e.chasse ? '<span class="bad">« chasse aux PV » : satisfaction −2</span>' : `<span class="ok">+${fmt1(e.amendes)} k€ d’amendes</span>`;
     case 'admin': {
@@ -207,7 +224,9 @@ function resultatService(e, s) {
       // Pile au-dessus de 14 (−2 de moral par soir) qui ne baisse pas : combien d'agents il faudrait en plus.
       const manque = z.paperasse > 14 && v > -1 ? Math.ceil((v + 1) / e.capAdmin1) : 0;
       const apres = Math.max(0, z.paperasse + v);
-      return `<span class="${v > 0.15 || manque || apres > 14 ? 'warn' : 'muted'}">paperasse ${Math.round(z.paperasse)} → ${Math.round(apres)} ce soir (${txt})${manque ? ` · ≈ ${manque} agent${manque > 1 ? 's' : ''} de plus pour la faire baisser` : ''}</span>`;
+      // Vert : la pile baisse et reste sous le seuil de 14 ; orange : elle monte ; rouge : au-dessus de 14 (−2 de moral).
+      const cls = apres > 14 ? 'bad' : v > 0.15 ? 'warn' : 'ok';
+      return `<span class="${cls}">paperasse ${Math.round(z.paperasse)} → ${Math.round(apres)} ce soir (${txt}) · seuil 14${manque ? ` · ≈ ${manque} agent${manque > 1 ? 's' : ''} de plus pour la faire baisser` : ''}</span>`;
     }
     default: return '';
   }
