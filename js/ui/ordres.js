@@ -3,6 +3,7 @@ import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './com
 import { AIDE, themeActif } from '../engine/rivalites.js';
 import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
+import { engagementsDuJour } from './engagements.js';
 import { primeHtml } from './prime.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
@@ -347,6 +348,22 @@ function detailDecision(z, dec, T) {
   return `<span class="tiny" style="font-weight:700;color:var(--amber)">Ce que ça change · ${cout} k€</span>${l.map((x) => `<p class="small" style="margin:0">${esc(x)}</p>`).join('')}`;
 }
 
+/** Alerte : dépenses + démarches + décision dépassent la caisse ; la décision, payée en dernier, serait refusée. */
+function avertBudget(z, d) {
+  if (!d.decision) return '';
+  const e = engagementsDuJour(d, z);
+  if (!e.decision || e.total <= z.budget + 0.05) return '';
+  const avant = [e.depenses ? `dépenses ${fmt1(e.depenses)} k€` : '', e.enquete ? `démarches d’enquête ${fmt1(e.enquete)} k€` : ''].filter(Boolean).join(' + ');
+  return `<p class="small bad" style="margin:0">⚠ Budget trop juste : ${avant} passent d’abord, il ne restera que ${fmt1(Math.max(0, z.budget - e.depenses - e.enquete))} k€ pour ta décision à ${fmt1(e.decision)} k€. Elle sera <strong>refusée</strong> à 20:00. Retire une dépense ou une démarche, ou choisis une décision moins chère.</p>`;
+}
+
+/** Formations lancées les soirs précédents : le niveau tombe à la résolution du tour indiqué. */
+function formationsEnCours(z, T) {
+  const f = (z.formations || []).filter((x) => x.fin >= T);
+  if (!f.length) return '';
+  return `<p class="small ok" style="margin:0">${f.map((x) => `🎓 Formation ${esc(SERVICE_LABELS[x.service])} en cours : niveau ${z.niveaux[x.service]} → ${z.niveaux[x.service] + 1} ${x.fin === T ? 'ce soir à 20:00' : `au tour ${x.fin}`}`).join('<br>')}</p>`;
+}
+
 /** Sélecteur de grande décision : quatre catégories, des tuiles compactes. */
 function decisionPicker(z, T, d) {
   const cat = S.decCat || catDe(d.decision) || 'recruter';
@@ -385,7 +402,9 @@ function decisionPicker(z, T, d) {
       ${d.decision || !d.sansDecision ? `<button type="button" class="btn small ghost" data-action="decision" data-json="null" data-aucune="1">${d.decision ? 'Aucune' : 'Aucune ce soir'}</button>` : ''}</div>
     <div class="segn" role="tablist" aria-label="Type de décision" style="grid-template-columns:repeat(4,minmax(0,1fr))">${DEC_CATS.map(([k, l]) => `<button type="button" role="tab" aria-selected="${cat === k}" data-action="dec-cat" data-v="${k}">${l}${catDe(d.decision) === k ? ' ●' : ''}</button>`).join('')}</div>
     ${corps}
-    <p class="tiny muted" style="margin:0">Une seule grande décision par tour, payée à 20:00 si le budget le permet (${fmt1(z.budget)} k€ aujourd’hui).</p>
+    ${avertBudget(z, d)}
+    ${formationsEnCours(z, T)}
+    <p class="tiny muted" style="margin:0">Une seule grande décision par tour, payée à 20:00 si le budget le permet (${fmt1(z.budget)} k€ aujourd’hui). Elle passe <strong>après</strong> les dépenses du jour et les démarches d’enquête.</p>
   </div>`;
 }
 
