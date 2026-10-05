@@ -11,7 +11,7 @@ import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, SOURCES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
   ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect, celluleDe,
 } from '../engine/enquete.js';
-import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal, banniereTraque, primeHtml } from './enquete.js';
+import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal, banniereTraque } from './enquete.js';
 import { LIEUX as LIEUX3, MODES, itineraire, fmtDist, nomTroncon } from '../engine/carte3.js';
 import { dossierAffaire3, numeroPv } from '../engine/dossier.js';
 import { planSvg3, posLieu3, PLANQUE_POS3 } from './plan3.js';
@@ -746,7 +746,6 @@ export function renderTableau() {
       ${sauvegardeCarnet(st.enquete.n) ? '<button type="button" class="tb-chip tb-pc" data-action="tab-restaurer" title="Remettre le tableau tel qu’il était sur cet appareil avant la dernière synchro">⟲ restaurer</button>' : ''}
       <button type="button" class="tb-chip ${S.carnetSync && S.carnetSync !== 'ok' && S.carnetSync !== 'encours' ? '' : 'tb-pc'}" data-action="tab-sync" aria-label="Synchroniser le tableau avec mes autres appareils" title="Synchroniser avec mes autres appareils" ${S.carnetSync && S.carnetSync !== 'ok' ? 'style="color:var(--red-soft)"' : ''}>${S.carnetSync === 'encours' ? '↻ …' : S.carnetSync && S.carnetSync !== 'ok' ? `⚠ non synchronisé${S.carnetSync === 'permission-denied' ? ' (règles Firebase)' : ''} · réessayer` : '↻'}</button>
       ${traque ? '<button type="button" class="tb-chip rouge" data-action="traque-voir">Traque en cours</button>' : ''}
-      ${primeHtml() && S.banPrimeVue === st.turn ? `<button type="button" class="tb-chip ambre" data-action="tb-prime-ouvrir">💰 Mise à prix${S.draft && S.draft.prime ? ' ✓' : ''}</button>` : ''}
       <span class="grow"></span>
       <button type="button" class="tb-rond" data-action="tab-vue" data-v="liste" aria-label="Affichage en liste">${icon('liste', 18)}</button>
       <button type="button" class="tb-chip ${sp('boite')}" data-action="tab-volet" data-k="boite" aria-label="Boîte à pièces, ${nbBoite} à ranger">
@@ -754,7 +753,6 @@ export function renderTableau() {
       ${aff.coupsDePouce ? '<button type="button" class="tb-rond" data-action="tab-ouvrir" data-tid="pouce" aria-label="Coups de pouce" title="Coups de pouce">💡</button>' : ''}
       <button type="button" class="tb-chip ambre ${sp('soir')}" data-action="tab-volet" data-k="soir">Ce soir <span class="tb-compte">${(d.demarches || []).length}/${ENQ.maxDemarches}</span></button>
     </div>
-    ${primeHtml() && S.banPrimeVue !== st.turn ? `<div class="tb-banniere">${primeHtml({ tableau: true })}<button type="button" class="tb-rond tb-ban-x" data-action="tb-prime-fermer" aria-label="Fermer (rouvrir avec le bouton Mise à prix)">✕</button></div>` : ''}
     ${traque && S.banTraqueVue !== st.turn ? `<div class="tb-banniere">${banniereTraque(st, { tableau: true })}<button type="button" class="tb-rond tb-ban-x" data-action="tb-ban-fermer" aria-label="Fermer">✕</button></div>` : ''}
     <div id="tb-aide" class="tb-aide" ${fil ? '' : 'hidden'}>${S.tabFrom ? 'Touche l’élément à relier' : 'Glisse d’un élément à l’autre · touche une ficelle pour la couper'}</div>
     <div class="tb-outils tb-ui">
