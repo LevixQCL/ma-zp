@@ -249,7 +249,7 @@ export function sections() {
           'Sur la carte de l’onglet, chaque pacte est un lien de couleur entre deux hôtels de police.',
         ])}
         ${table(['Pacte', 'Effet'], Object.values(PACTES).map((p) => [p.nom, esc(p.texte)]))}
-        ${note('Pacte d’enquête : chacun reçoit une moitié de pièce. L’en-tête dit sur qui ou sur quoi elle porte, le contenu ce qu’elle dit (noms masqués). Il faut que les deux cliquent « Mettre en commun » avant le 20:00 suivant (le même soir ou l’un après l’autre) pour que chacun ait la pièce entière. Une pièce par affaire tous les deux soirs au plus : le pacte aide sans résoudre l’enquête à votre place.')}
+        ${note('Pacte d’enquête : une pièce que vous n’avez ni l’un ni l’autre (une de celles qu’on obtient par les vérifications) est déchirée en deux. L’un reçoit l’en-tête et le début, l’autre la fin, noms masqués : le fait décisif est souvent dans l’autre moitié. Il faut que les deux cliquent « Mettre en commun » avant le 20:00 suivant (le même soir ou l’un après l’autre) pour que chacun ait la pièce entière. Une pièce par affaire tous les deux soirs au plus : le pacte aide sans résoudre l’enquête à votre place.')}
         <h3>Le défi amical</h3>
         ${ul([
           `${DEFI.duree} tours sur une activité que tu fais toi-même : ${Object.values(DEFI_INDICATEURS).map((x) => x.nom.toLowerCase()).join(', ')}.`,

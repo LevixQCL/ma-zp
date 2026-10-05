@@ -3,8 +3,9 @@
 // Un pacte lie deux zones pendant PACTE.duree tours. On le propose un soir, l'autre répond le lendemain.
 //  · Jumelage terrain : +20 % de force les soirs où les deux zones sont sur le même secteur de la zone de non-droit,
 //    indemnité fédérale doublée pour les renforts prêtés de l'une à l'autre.
-//  · Pacte d'enquête : un soir sur deux, une pièce que ni l'une ni l'autre n'a est coupée en deux : l'une sait sur
-//    qui ou sur quoi elle porte, l'autre ce qu'elle dit. Si les deux la mettent en commun, elles l'ont en entier.
+//  · Pacte d'enquête : un soir sur deux, une pièce que ni l'une ni l'autre n'a (prise parmi celles des vérifications,
+//    rien d'inventé) est déchirée en deux : en-tête et début d'un côté, fin sans noms de l'autre. Si les deux la
+//    mettent en commun, elles l'ont en entier.
 //    Calibrage : une pièce entière chaque soir faisait passer les affaires résolues au jour 5 de 17 % à 46 % (modèle
 //    simplifié) ; une demi-pièce un soir sur deux, à mettre en commun : de 8 % à 12 % avec 2 paires sur 10 zones et
 //    15 % si tout le monde est lié (test/pactes-sim.mjs). Les zones liées identifient un peu plus souvent l'auteur.
@@ -31,7 +32,7 @@ export const PACTES = {
   enquete: {
     nom: 'Pacte d’enquête', icone: 'enquete',
     court: 'Un soir sur deux, une demi-pièce chacun, à mettre en commun',
-    texte: 'Un soir sur deux, une nouvelle pièce est coupée en deux : l’un sait sur qui elle porte, l’autre ce qu’elle dit. Mettez-la en commun le lendemain pour l’avoir en entier, tous les deux.',
+    texte: 'Un soir sur deux, une pièce que vous n’avez pas encore est déchirée en deux : l’un a l’en-tête et le début, l’autre la fin. Mettez-la en commun le lendemain pour l’avoir en entier, tous les deux.',
   },
   achat: {
     nom: 'Centrale d’achat', icone: 'achat',
@@ -89,19 +90,53 @@ export function defiImpossible(state, uid, cible) {
 export const enDefi = (state, uid) => (state.defis || []).some((d) => d.a === uid || d.b === uid);
 
 /**
- * Les deux moitiés d'une pièce : la première dit sur qui ou sur quoi elle porte (le titre), la seconde ce qu'elle dit
- * (le texte, noms du suspect masqués). Ni l'une ni l'autre ne sert seule.
+ * Coupe un texte de pièce en morceaux qu'on peut répartir : ses lignes s'il en a plusieurs (pièces de vol :
+ * « Argent : … / Rancune : … / Recel : … »), sinon ses phrases (jamais après une initiale ou « n° », ni dans une citation).
+ */
+export function morceaux(texte) {
+  const lignes = String(texte).split('\n').map((l) => l.trim()).filter(Boolean);
+  if (lignes.length > 1) return lignes;
+  const out = [];
+  let cur = '';
+  const re = /[^.!?…]+(?:[.!?…]+(?:\s?[»"”])?|$)/g;
+  for (const m of String(texte).match(re) || []) {
+    cur += m;
+    const fin = cur.trim();
+    if (/(\b[A-Z]|n°|\bM|\bMme|\bDr|\bSt)\.$/.test(fin) || /\d\.$/.test(fin)) continue;
+    if ((cur.match(/«/g) || []).length > (cur.match(/»/g) || []).length) continue; // pas de coupure au milieu d'une citation
+    if (fin) out.push(fin);
+    cur = '';
+  }
+  if (cur.trim()) out.push(cur.trim());
+  if (out.length > 1) return out;
+  // Une seule phrase : on coupe au point-virgule ou à la virgule la plus proche du milieu.
+  const t = String(texte), mil = t.length / 2;
+  const coupes = [...t.matchAll(/[;,:] /g)].map((m) => m.index + 1).sort((x, y) => Math.abs(x - mil) - Math.abs(y - mil));
+  return coupes.length ? [t.slice(0, coupes[0]).trim(), t.slice(coupes[0]).trim()] : [t];
+}
+
+/**
+ * Les deux moitiés d'une pièce, comme un PV déchiré en deux : la première a l'en-tête et le début des constatations,
+ * la seconde la fin, sans en-tête et noms du suspect masqués. Chacune apprend quelque chose, aucune n'a tout :
+ * le fait décisif est souvent dans l'autre moitié. Coupure au milieu, à la frontière d'une phrase (ou d'une ligne).
  */
 export function moitiesPiece(aff, f) {
   const titre = titrePiece(aff, f) || 'Pièce du dossier';
-  let texte = texteFait(aff, f) || 'Le reste du procès-verbal.';
+  const texte = texteFait(aff, f) || '';
+  const ms = morceaux(texte);
+  // Partage équilibré en longueur, au moins un morceau de chaque côté.
+  const total = ms.reduce((n, m) => n + m.length, 0);
+  let k = 1, acc = ms[0] ? ms[0].length : 0;
+  while (k < ms.length - 1 && acc + ms[k].length / 2 < total / 2) { acc += ms[k].length; k += 1; }
+  const debut = ms.slice(0, k), fin = ms.slice(k);
   const [, x] = String(f).split(':');
   const s = aff.suspects && aff.suspects[Number(x)];
-  if (s && s.nom) {
-    for (const part of [s.nom, ...s.nom.split(' ').filter((w) => w.length > 3)]) texte = texte.split(part).join('█████');
-  }
-  const cat = titre.split(' · ')[0];
-  return { haut: { titre, texte: `${cat} : la suite du PV est chez ton partenaire.` }, bas: { titre: 'En-tête arraché', texte } };
+  let suite = fin.join(fin.length && String(texte).includes('\n') ? '\n' : ' ') || 'Le reste du procès-verbal est illisible.';
+  if (s && s.nom) for (const part of [s.nom, ...s.nom.split(' ').filter((w) => w.length > 3)]) suite = suite.split(part).join('█████');
+  return {
+    haut: { titre, texte: `${debut.join(String(texte).includes('\n') ? '\n' : ' ')} […]` },
+    bas: { titre: 'En-tête arraché', texte: `[…] ${suite}` },
+  };
 }
 
 // ───── Résolution ─────

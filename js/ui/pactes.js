@@ -66,7 +66,7 @@ function demiPiece(p) {
   const lui = !!(fr.donne && fr.donne[partenaire(p, me)]);
   const coche = S.draft && S.draft.fragment === p.id;
   return `<div class="demi-piece ${fr.haut === me ? 'haut' : 'bas'}">
-      <span class="tiny" style="font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Demi-pièce · ${fr.haut === me ? 'en-tête' : 'contenu'}</span>
+      <span class="tiny" style="font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)">Demi-pièce · ${fr.haut === me ? 'début' : 'fin'}</span>
       <strong style="font-family:var(--serif)">${esc(moi.titre)}</strong>
       <span class="small" style="white-space:pre-line">${esc(moi.texte)}</span>
     </div>

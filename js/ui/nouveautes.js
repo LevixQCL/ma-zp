@@ -8,7 +8,7 @@ export const NOTE_MAJ = {
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
     ['🤝', 'Les pactes', 'dans la Carte, nouvel onglet Pactes : allie-toi avec une autre zone pendant 7 jours. Vos alliances s’affichent sur la carte du district.'],
-    ['🧩', 'Pacte d’enquête', 'chacun reçoit la moitié d’une pièce : l’un sait sur qui elle porte, l’autre ce qu’elle dit. Mettez-la en commun pour l’avoir en entier.'],
+    ['🧩', 'Pacte d’enquête', 'une pièce déchirée en deux : l’un a le début, l’autre la fin. Mettez-la en commun pour l’avoir en entier.'],
     ['🏁', 'Défi amical', 'trois jours d’incidents, d’énigmes ou de dossiers contre un collègue, avec une petite mise. Refuser ne coûte rien.'],
   ],
 
