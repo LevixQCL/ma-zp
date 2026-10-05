@@ -5,7 +5,7 @@ import { makeRng } from './rng.js';
 import { agentsDisponibles, coutDecision, decisionImpossible, operationActive, NIVEAUX_OPERATION } from './zone.js';
 import { affaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ, dansMaCellule, pieceDemarche, confrontationOk } from './enquete.js';
 import { fipaPour, invitationImpossible, FIPA } from './fipa.js';
-import { cibleImpossible, enDuel } from './rivalites.js';
+import { pactesDe, pacteImpossible, defiImpossible, PACTES, DEFI_INDICATEURS } from './pactes.js';
 import { encherePossible } from './encheres.js';
 import { ND, secteurOuvert } from './constants.js';
 import { partsDe, secteursVoisins } from './nondroit.js';
@@ -228,28 +228,26 @@ function botFipa(zone, state, style, rng) {
   return out;
 }
 
-/** Entraide, manœuvres, duels et votes des robots. */
+/** Coup de main, pactes, défis et votes des robots. */
 function botRivalites(zone, state, style, rng) {
   const out = {};
   const autres = Object.values(state.zones).filter((z) => z.uid !== zone.uid && z.toursSansOrdres < 3);
   // Entraide : les robots coopératifs aident une zone en péril.
   const peril = autres.find((z) => z.peril || z.tutelle);
   if (peril && style !== 'agressif' && zone.budget > 30 && rng.chance(0.6)) out.aide = { cible: peril.uid, budget: 5, agents: agentsDisponibles(zone, state.turn) > 15 ? 1 : 0 };
-  // Manœuvres : surtout le robot agressif.
-  const envie = style === 'agressif' ? 0.18 : style === 'distrait' ? 0.04 : 0.02;
-  const cibles = autres.filter((z) => !cibleImpossible(state, z));
-  if (cibles.length && rng.chance(envie)) {
-    const c = rng.pick(cibles);
-    const type = c.paperasse > 14 ? 'signalement' : c.moral < 50 ? 'debauchage' : c.dossiers.some((d) => d.age > 3) ? 'dessaisissement' : 'poste';
-    out.manoeuvre = { type, cible: c.uid };
+  // Pactes : répondre, mettre en commun les demi-pièces, en proposer de temps en temps.
+  const T = state.turn;
+  for (const p of pactesDe(state, zone.uid)) {
+    if (p.etape === 'propose' && p.b === zone.uid && p.tourReponse === T) out.pacteReponse = { id: p.id, accepte: rng.chance(style === 'prudent' ? 0.5 : 0.75) };
+    if (p.etape === 'actif' && p.frag && !(p.frag.donne && p.frag.donne[zone.uid]) && rng.chance(style === 'distrait' ? 0.6 : 0.85)) out.fragment = p.id;
   }
-  // Duels.
-  if (!enDuel(state, zone.uid) && cibles.length && rng.chance(style === 'agressif' ? 0.08 : 0.02)) {
-    const c = rng.pick(cibles.filter((z) => !enDuel(state, z.uid)).concat([]));
-    if (c) out.duel = { cible: c.uid, ind: rng.pick(['satisfaction', 'affaires', 'incidents']) };
-  }
-  const invit = (state.duels || []).find((d) => d.b === zone.uid && d.etape === 'propose' && d.tourReponse === state.turn);
-  if (invit) out.duelReponse = { id: invit.id, accepte: rng.chance(style === 'prudent' ? 0.3 : 0.65) };
+  const libres = autres.filter((z) => !pacteImpossible(state, zone.uid, z.uid));
+  if (libres.length && rng.chance(style === 'agressif' ? 0.04 : 0.1)) out.pacte = { cible: rng.pick(libres).uid, type: rng.pick(Object.keys(PACTES)) };
+  // Défis amicaux.
+  const inv = (state.defis || []).find((d) => d.b === zone.uid && d.etape === 'propose' && d.tourReponse === T);
+  if (inv) out.defiReponse = { id: inv.id, accepte: rng.chance(style === 'prudent' ? 0.3 : 0.6) };
+  const defiables = autres.filter((z) => !defiImpossible(state, zone.uid, z.uid));
+  if (defiables.length && rng.chance(style === 'agressif' ? 0.08 : 0.02)) out.defi = { cible: rng.pick(defiables).uid, ind: rng.pick(Object.keys(DEFI_INDICATEURS)), mise: zone.budget > 30 ? 3 : 0 };
   // Salle des ventes : les robots enchérissent quand ils ont de la marge.
   const e = state.enchere;
   if (e && !encherePossible(state, zone) && zone.budget > 30 && rng.chance(style === 'agressif' ? 0.45 : style === 'prudent' ? 0.15 : 0.3)) {
@@ -262,6 +260,7 @@ function botRivalites(zone, state, style, rng) {
     for (const m of state.conseil.motions) {
       if (m.id === 'dotation') out.votes.dotation = style === 'agressif' ? 0 : rng.chance(0.7) ? 1 : 0;
       else if (m.id === 'theme') out.votes.theme = rng.int(0, 2);
+      else if (m.id === 'solidarite') out.votes.solidarite = m.cible === zone.uid || rng.chance(style === 'agressif' ? 0.3 : 0.7) ? 1 : 0;
       else if (m.id === 'blame') out.votes.blame = m.cibles.includes(zone.uid) ? 0 : rng.chance(0.5) ? 1 : 0;
       else if (m.id === 'chef') out.votes.chef = rng.chance(0.8) ? 1 : 0;
     }

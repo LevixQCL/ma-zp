@@ -26,7 +26,7 @@ export function newZone({ uid, code, nom, couleur }, turn, base = {}) {
     criminalite: START.criminalite, paperasse: START.paperasse, paperassePic: START.paperasse,
     dossiers: [], dossierSeq: 0,
     operation: null, pressions: [],
-    renforts: [], peril: null, tutelle: null, tutelleSaison: false, lots: [], derniereEnchere: -99, manoeuvres: [], faillites: base.faillites ?? 0, protegeJusqua: 0, motionSaison: false, failliteSaison: false,
+    renforts: [], peril: null, tutelle: null, tutelleSaison: false, lots: [], derniereEnchere: -99, faillites: base.faillites ?? 0, motionSaison: false, failliteSaison: false,
     dernierOrdre: null, toursSansOrdres: 0, toursJoues: 0,
     ipz: 0, ipzSomme: 0, ipzHist: [],
     ps: base.ps ?? 0, badges: base.badges ?? [], titres: base.titres ?? [],
@@ -86,7 +86,7 @@ export function coutRecrue(z) {
 }
 /** Vrai si la zone est sous tutelle pendant le tour `turn`. */
 export const sousTutelle = (z, turn) => !!(z && z.tutelle && turn <= z.tutelle.fin);
-/** Zone en difficulté (péril ou tutelle) : protégée des manœuvres, aide mieux récompensée. */
+/** Zone en difficulté (péril ou tutelle) : seule à pouvoir recevoir un coup de main, pas de défi. */
 export const enDifficulte = (z) => !!(z && (z.peril || z.tutelle));
 
 /** Péréquation : zone nettement moins équipée que la moyenne des zones actives. */
@@ -310,13 +310,16 @@ export function sanitizeOrders(zone, raw, state) {
   const fipa = o.fipa && typeof o.fipa === 'object' ? { id: str(o.fipa.id), invite: cible(o.fipa.invite), moi: int(o.fipa.moi, 0, 8), lui: int(o.fipa.lui, 0, 8) } : null;
   const fipaReponse = o.fipaReponse && typeof o.fipaReponse === 'object' ? { id: str(o.fipaReponse.id), accepte: !!o.fipaReponse.accepte } : null;
   const fipaChoix = o.fipaChoix && typeof o.fipaChoix === 'object' ? { id: str(o.fipaChoix.id), choix: o.fipaChoix.choix === 'revendiquer' ? 'revendiquer' : 'partager' } : null;
-  const MAN = ['debauchage', 'dessaisissement', 'signalement', 'poste'];
-  const manoeuvre = o.manoeuvre && MAN.includes(o.manoeuvre.type) ? { type: o.manoeuvre.type, cible: cible(o.manoeuvre.cible) } : null;
   const aide = o.aide && typeof o.aide === 'object' ? { cible: cible(o.aide.cible), budget: clamp(Math.round(fini(o.aide.budget) * 10) / 10, 0, 10), agents: int(o.aide.agents, 0, 3) } : null;
-  const duel = o.duel && ['satisfaction', 'affaires', 'incidents'].includes(o.duel.ind) ? { cible: cible(o.duel.cible), ind: o.duel.ind } : null;
-  const duelReponse = o.duelReponse && typeof o.duelReponse === 'object' ? { id: str(o.duelReponse.id), accepte: !!o.duelReponse.accepte } : null;
+  // Pactes et défis amicaux.
+  const pacte = o.pacte && typeof o.pacte === 'object' && ['terrain', 'enquete', 'achat'].includes(o.pacte.type) ? { cible: cible(o.pacte.cible), type: o.pacte.type } : null;
+  const pacteReponse = o.pacteReponse && typeof o.pacteReponse === 'object' ? { id: str(o.pacteReponse.id), accepte: !!o.pacteReponse.accepte } : null;
+  const pacteRompre = typeof o.pacteRompre === 'string' ? str(o.pacteRompre) : null;
+  const fragment = typeof o.fragment === 'string' ? str(o.fragment) : null;
+  const defi = o.defi && typeof o.defi === 'object' && ['incidents', 'enigmes', 'dossiers'].includes(o.defi.ind) ? { cible: cible(o.defi.cible), ind: o.defi.ind, mise: [0, 3, 5].includes(o.defi.mise) ? o.defi.mise : 0 } : null;
+  const defiReponse = o.defiReponse && typeof o.defiReponse === 'object' ? { id: str(o.defiReponse.id), accepte: !!o.defiReponse.accepte } : null;
   const votes = {};
-  if (o.votes && typeof o.votes === 'object') for (const [k2, v] of Object.entries(o.votes)) if (['dotation', 'theme', 'blame', 'chef'].includes(k2) && Number.isInteger(v)) votes[k2] = clamp(v, 0, 5);
+  if (o.votes && typeof o.votes === 'object') for (const [k2, v] of Object.entries(o.votes)) if (['dotation', 'theme', 'blame', 'chef', 'solidarite'].includes(k2) && Number.isInteger(v)) votes[k2] = clamp(v, 0, 5);
   const motionChef = ['prime', 'amnistie', 'subside'].includes(o.motionChef) ? o.motionChef : null;
   const montant = o.offre && typeof o.offre === 'object' ? int(o.offre.montant, 0, ENCHERE.max) : 0;
   const offre = montant > 0 && !tutelle ? { id: str(o.offre.id), montant } : null;
@@ -335,7 +338,7 @@ export function sanitizeOrders(zone, raw, state) {
   const postes = Object.fromEntries(Object.entries(o.postes && typeof o.postes === 'object' ? o.postes : {}).filter(([r, s]) => ROLES_M.includes(r) && SERV.includes(s)));
   // Dilemme du Directeur : indice du choix (vérifié à la résolution).
   const dilemme = Number.isInteger(o.dilemme) && o.dilemme >= 0 && o.dilemme <= 3 ? o.dilemme : null;
-  return { dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, manoeuvre: tutelle ? null : manoeuvre, aide, duel: tutelle ? null : duel, duelReponse, votes, motionChef, offre };
+  return { dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */
@@ -390,8 +393,9 @@ export function coutDecision(zone, decision) {
   if (!decision) return 0;
   switch (decision.type) {
     case 'recruter': return coutRecrue(zone) * decision.n;
-    case 'former': return coutFormation(zone, decision.service);
-    case 'equiper': return decision.cible === 'vehicule' ? COUTS.vehicule : coutEquipement(zone.equip[decision.cible]);
+    // Centrale d'achat (pacte) : formations et équipement moins chers.
+    case 'former': return round1(coutFormation(zone, decision.service) * (1 - (zone.remiseAchat || 0)));
+    case 'equiper': return round1((decision.cible === 'vehicule' ? COUTS.vehicule : coutEquipement(zone.equip[decision.cible])) * (1 - (zone.remiseAchat || 0)));
     case 'construire': return INFRAS[decision.infra].cout;
     case 'agrandir': return BATIMENTS[decision.batiment] ? BATIMENTS[decision.batiment].coutAgrandir(zone.batiments[decision.batiment]) : 0;
     default: return 0;

@@ -1,6 +1,6 @@
-// Messages privés entre zones, et invitations en attente (FIPA, duels, Conseil).
+// Messages privés entre zones, et invitations en attente (FIPA, pactes, défis, Conseil).
 import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
-import { ongletsRadio } from './diplomatie.js';
+import { aFairePactes } from './pactes.js';
 import { appelsRenfort, renfortPrevu, renfortCtrl } from './renfort.js';
 import { candidaturesRecues, candidatureCtrl, maCandidature, statutLabel } from './affaires.js';
 
@@ -41,6 +41,15 @@ export function nonLus() {
   return { radio, prive: Object.values(parZone).reduce((a, b) => a + b, 0), parZone };
 }
 
+/** Onglets Radio | Privé (les pactes et le Conseil sont passés dans la Carte). */
+export function ongletsRadio(actif) {
+  const n = nonLus();
+  const priveAFaire = n.prive > 0 || invitations().some((i) => !i.fait && i.href !== '#pactes');
+  const tab = (k, l, pastille) => `<a role="tab" href="#${k}" aria-selected="${actif === k}" class="segl">${l}${actif !== k && pastille ? '<span class="pastille" aria-label="nouveau"></span>' : ''}</a>`;
+  return `<div class="onglets-flottants"><div class="seg3 deux" role="tablist" aria-label="Radio et messages privés">
+    ${tab('radio', 'Radio', n.radio > 0)}${tab('prive', 'Privé', priveAFaire)}</div></div>`;
+}
+
 /** Invitations et demandes qui attendent une réponse de ma part ce tour-ci. */
 export function invitations() {
   const st = S.state, z = myZone();
@@ -52,13 +61,10 @@ export function invitations() {
     else if (f.etape === 'demande' && f.demandeur === me && f.tourDecision === T) out.push({ titre: `Le bourgmestre te confie « ${esc(f.titre)} »`, texte: d.fipa && d.fipa.id === f.id && d.fipa.invite ? `invitation prévue ce soir : ${nom(d.fipa.invite)}` : 'choisis une zone partenaire à inviter', href: '#hp-fipa', action: 'Inviter', fait: !!(d.fipa && d.fipa.id === f.id && d.fipa.invite) });
     else if (f.etape === 'accepte' && f.tourJ === T && (f.demandeur === me || f.partenaire === me)) out.push({ titre: `FIPA « ${esc(f.titre)} » ce soir avec ${nom(f.demandeur === me ? f.partenaire : f.demandeur)}`, texte: 'partager ou revendiquer le mérite ?', href: '#hp-fipa', action: 'Choisir', fait: !!(d.fipaChoix && d.fipaChoix.id === f.id) });
   }
-  for (const dl of st.duels || []) {
-    if (dl.b === me && dl.etape === 'propose' && dl.tourReponse === T) out.push({ titre: `${nom(dl.a)} te défie en duel`, texte: 'sans réponse, c’est un refus', href: '#diplomatie', action: 'Répondre', fait: !!(d.duelReponse && d.duelReponse.id === dl.id) });
-  }
   for (const c of candidaturesRecues()) out.push({ titre: `${nom(c.uid)} postule sur « ${esc(c.affaire.titre)} »`, texte: `${c.agents} agent${c.agents > 1 ? 's' : ''} proposé${c.agents > 1 ? 's' : ''} · réponds avant 20:00`, ctrl: candidatureCtrl(c), fait: c.statut !== 'attente' });
   for (const a of st.affaires) { const c = a.zone !== me && maCandidature(a); if (c && c.statut !== 'attente') out.push({ titre: `Candidature ${c.statut === 'acceptee' ? 'acceptée' : 'refusée'} par ${nom(a.zone)}`, texte: `« ${esc(a.titre)} » · ${c.agents} agent${c.agents > 1 ? 's' : ''}${c.statut === 'acceptee' ? ' · valide tes ordres' : ''}`, href: c.statut === 'acceptee' ? '#ordres' : '#carte', action: c.statut === 'acceptee' ? 'Ordres' : 'Voir', fait: true }); }
   for (const a of appelsRenfort()) out.push({ titre: `${nom(a.uid)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » ce soir${a.op.appel ? ' · appel du district : renfort payé ×1,5' : ''}`, ctrl: renfortCtrl(a), fait: renfortPrevu(a.uid) > 0 });
-  if (st.conseil && st.conseil.tour === T && !(S.draft && Object.keys(S.draft.votes || {}).length)) out.push({ titre: 'Conseil de police : vote ce soir', texte: 'une voix par zone, résultat à 20:00', href: '#diplomatie', action: 'Voter' });
+  for (const x of aFairePactes()) if (x.k !== 'conseil' || !x.fait) out.push({ titre: esc(x.titre), texte: esc(x.texte), href: '#pactes', action: x.k === 'conseil' ? 'Voter' : x.k === 'frag' ? 'Mettre en commun' : 'Répondre', fait: x.fait });
   return out;
 }
 
@@ -67,7 +73,7 @@ export function majPastilleRadio() {
   const a = document.querySelector('nav.tabs a[href="#radio"]');
   if (!a) return;
   const n = nonLus();
-  const doit = n.radio + n.prive > 0 || invitations().some((i) => !i.fait);
+  const doit = n.radio + n.prive > 0 || invitations().some((i) => !i.fait && i.href !== '#pactes');
   const dot = a.querySelector('.dot');
   if (doit && !dot) a.insertAdjacentHTML('beforeend', '<span class="dot" aria-label="nouveau"></span>');
   else if (!doit && dot) dot.remove();

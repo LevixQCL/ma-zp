@@ -29,7 +29,8 @@ import { renderQuete } from './ui/quete.js';
 import { demarrerQuiz, repondreQuiz, suivanteQuiz, quizLocal, bonnesReponses, arreterMinuteur } from './ui/quiz.js';
 import { renderGuide } from './ui/guide.js';
 import { offreApres } from './ui/encheres.js';
-import { renderDiplomatie, ongletsRadio } from './ui/diplomatie.js';
+import { renderPactes } from './ui/pactes.js';
+import { ongletsRadio } from './ui/prive.js';
 import { renderParties } from './ui/parties.js';
 import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet, synchroCarnetMaintenant, restaurerCarnet } from './ui/enquete.js';
 import { affaire, dossierDe } from './engine/enquete.js';
@@ -48,7 +49,7 @@ import { lancerIncident, lancerAppui, ouvrirMiniJeu, majComptesIncidents, signat
 import { migrateState, isOutdated } from './engine/resolve.js';
 
 const app = document.getElementById('app');
-const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'diplomatie', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin'];
+const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin'];
 let unsubState = null, unsubRadio = null, unsubPrive = null, lastTurnKey = null;
 
 function route() {
@@ -56,6 +57,8 @@ function route() {
   if (h.startsWith('guide')) { S.guideSection = h.split('-')[1] || null; return 'guide'; }
   // Lien vers un bloc précis de l'HP (ex. #hp-fipa) : on ouvre l'HP et on y descend.
   if (h.startsWith('hp-')) { S.ancre = h; return 'hp'; }
+  // Ancien écran Diplomatie : ses liens mènent aux Pactes de la Carte.
+  if (h === 'diplomatie') return 'pactes';
   // Lien vers un bloc des ordres (ex. #ordres-decision) : on ouvre ce bloc.
   if (h.startsWith('ordres-')) { S.ordOpen = { ...(S.ordOpen || {}), [h.slice(7)]: true }; S.ordAncre = h.slice(7); return 'ordres'; }
   return ROUTES.includes(h) ? h : 'hp';
@@ -113,7 +116,7 @@ function render() {
       case 'quete': html = renderQuete(); break;
       case 'enquete': html = renderEnquete(); break;
       case 'guide': html = renderGuide(); if (S.guideSection === 'debut') { S.premiersPasVus = true; try { localStorage.setItem('mazp-premiers-pas-vus', '1'); } catch (e) { /* pas de stockage */ } } break;
-      case 'diplomatie': html = renderDiplomatie(); break;
+      case 'pactes': html = renderPactes(); break;
       case 'carte': html = renderCarte(); break;
       case 'radio': html = renderRadio(); break;
       case 'prive': html = renderPrive(); break;
@@ -178,7 +181,7 @@ function render() {
 /** Pastilles « nouveau » sans redessiner l'écran (une saisie en cours n'est pas perdue). */
 function majPastilles() {
   majPastilleRadio();
-  if (['radio', 'prive', 'diplomatie'].includes(S.route)) {
+  if (['radio', 'prive'].includes(S.route)) {
     const o = document.querySelector('.onglets-flottants');
     if (o) { const t = document.createElement('div'); t.innerHTML = ongletsRadio(S.route); o.replaceWith(t.firstElementChild); }
   }
@@ -334,7 +337,6 @@ async function onClick(e) {
     switch (a) {
       case 'demo-start': await b.signInDemo(); break;
       case 'admin-all-parties': S.allParties = await b.listAllParties(); rerender(); break;
-      case 'diplo-open': { const k = el.dataset.k; const cur = S.diploOpen && k in S.diploOpen ? S.diploOpen[k] : !!document.querySelector(`section[data-k="${k}"]`); S.diploOpen = { ...(S.diploOpen || {}), [k]: !cur }; rerender(); break; }
       case 'aide': ouvrirAide(el.dataset.k); break;
       case 'incident': { const err = lancerIncident(el.dataset.id, () => rerender()); if (err) { toast(err); rerender(); } break; }
       case 'appui-jouer': { const err = lancerAppui(() => rerender()); if (err) { toast(err); rerender(); } break; }
@@ -767,15 +769,34 @@ async function onClick(e) {
       case 'fipa-choix': S.draft.fipaChoix = { id: el.dataset.id, choix: el.dataset.v }; S.ordersDirty = true; rerender(); break;
       case 'vote': S.draft.votes = { ...(S.draft.votes || {}), [el.dataset.m]: Number(el.dataset.i) }; S.ordersDirty = true; rerender(); break;
       case 'motion-chef': S.draft.motionChef = S.draft.motionChef === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;
-      case 'duel-rep': S.draft.duelReponse = { id: el.dataset.id, accepte: el.dataset.v === '1' }; S.ordersDirty = true; rerender(); break;
-      case 'duel-ind': S.draft.duel = { ...(S.draft.duel || {}), ind: el.dataset.v }; S.ordersDirty = true; rerender(); break;
+      // Pactes et défis amicaux (onglet Pactes de la Carte).
+      case 'pacte-form': S.pacteForm = {}; rerender(); break;
+      case 'pacte-form-fermer': S.pacteForm = null; rerender(); break;
+      case 'pacte-cible': S.pacteForm = { ...(S.pacteForm || {}), cible: el.dataset.v }; rerender(); break;
+      case 'pacte-type': S.pacteForm = { ...(S.pacteForm || {}), type: el.dataset.v }; rerender(); break;
+      case 'pacte-proposer': if (S.pacteForm && S.pacteForm.cible && S.pacteForm.type) { S.draft.pacte = { cible: S.pacteForm.cible, type: S.pacteForm.type }; S.pacteForm = null; S.ordersDirty = true; toast('Proposition prête : elle part ce soir avec tes ordres.'); } rerender(); break;
+      case 'pacte-annuler': S.draft.pacte = null; S.ordersDirty = true; rerender(); break;
+      case 'pacte-rep': S.draft.pacteReponse = { id: el.dataset.id, accepte: el.dataset.v === '1' }; S.ordersDirty = true; rerender(); break;
+      case 'pacte-frag': S.draft.fragment = S.draft.fragment === el.dataset.id ? null : el.dataset.id; S.ordersDirty = true; rerender(); break;
+      case 'pacte-rompre': {
+        if (S.draft.pacteRompre === el.dataset.id) { S.draft.pacteRompre = null; S.ordersDirty = true; rerender(); break; }
+        if (!(await askConfirm('Rompre ce pacte ce soir ? La Gazette l’annoncera et tu ne pourras pas signer de nouveau pacte pendant 3 tours.', 'Rompre', 'Garder'))) break;
+        S.draft.pacteRompre = el.dataset.id; S.ordersDirty = true; rerender(); break;
+      }
+      case 'defi-form': S.defiForm = { mise: 0 }; rerender(); break;
+      case 'defi-form-fermer': S.defiForm = null; rerender(); break;
+      case 'defi-cible': S.defiForm = { ...(S.defiForm || {}), cible: el.dataset.v }; rerender(); break;
+      case 'defi-ind': S.defiForm = { ...(S.defiForm || {}), ind: el.dataset.v }; rerender(); break;
+      case 'defi-mise': S.defiForm = { ...(S.defiForm || {}), mise: Number(el.dataset.v) }; rerender(); break;
+      case 'defi-lancer': if (S.defiForm && S.defiForm.cible && S.defiForm.ind) { S.draft.defi = { cible: S.defiForm.cible, ind: S.defiForm.ind, mise: S.defiForm.mise || 0 }; S.defiForm = null; S.ordersDirty = true; toast('Défi prêt : il part ce soir avec tes ordres.'); } rerender(); break;
+      case 'defi-annuler': S.draft.defi = null; S.ordersDirty = true; rerender(); break;
+      case 'defi-rep': S.draft.defiReponse = { id: el.dataset.id, accepte: el.dataset.v === '1' }; S.ordersDirty = true; rerender(); break;
+      case 'aide-cible': S.draft.aide = S.draft.aide && S.draft.aide.cible === el.dataset.v ? null : { budget: 0, agents: 0, cible: el.dataset.v }; S.ordersDirty = true; rerender(); break;
       case 'aide-n': {
         const ad = (S.draft.aide ||= { cible: '', budget: 0, agents: 0 });
         const k = el.dataset.k, max = k === 'budget' ? 10 : 3;
         ad[k] = Math.max(0, Math.min(max, (ad[k] || 0) + Number(el.dataset.d))); S.ordersDirty = true; rerender(); break;
       }
-      case 'man-type': S.draft.manoeuvre = { ...(S.draft.manoeuvre || { cible: '' }), type: el.dataset.v }; S.ordersDirty = true; rerender(); break;
-      case 'man-annuler': S.draft.manoeuvre = null; S.ordersDirty = true; rerender(); break;
       case 'pick-blason': await b.savePlayer(S.user.uid, { ...(S.player || {}), blason: el.dataset.v }); S.player = { ...(S.player || {}), blason: el.dataset.v }; S.players = await b.getPlayers(); toast('Blason enregistré.'); rerender(); break;
       case 'toggle-consigne': {
         const cs = { ...((S.player && S.player.consignes) || {}) };
@@ -1230,9 +1251,6 @@ async function onChange(e) {
       o.invite = el.value; S.draft.fipa = o; S.ordersDirty = true; rerender();
     }
   }
-  if (el.dataset.change === 'duel-cible') { S.draft.duel = el.value ? { ind: 'satisfaction', ...(S.draft.duel || {}), cible: el.value } : null; S.ordersDirty = true; rerender(); }
-  if (el.dataset.change === 'aide-cible') { S.draft.aide = el.value ? { budget: 0, agents: 0, ...(S.draft.aide || {}), cible: el.value } : null; S.ordersDirty = true; rerender(); }
-  if (el.dataset.change === 'man-cible') { S.draft.manoeuvre = { ...(S.draft.manoeuvre || {}), cible: el.value }; S.ordersDirty = true; rerender(); }
   if (el.dataset.change === 'dep-service') { S.draft.depenses.reserveService = el.value; S.ordersDirty = true; rerender(); }
 }
 

@@ -21,7 +21,7 @@ function enqueteDraft() {
   return {
     dilemme: Number.isInteger(o.dilemme) ? o.dilemme : null, demarches: o.demarches || [], appui: o.appui || null, prime: o.prime || null, piste: o.piste ?? null, accusation: o.accusation ?? null, confront: o.confront || [], reaud: o.reaud || null, recoup: o.recoup || null, hypo: o.hypo || null, mobile: Number.isInteger(o.mobile) ? o.mobile : null, traque: o.traque || null, partages: o.partages || [],
     fipa: o.fipa || null, fipaReponse: o.fipaReponse || null, fipaChoix: o.fipaChoix || null,
-    manoeuvre: o.manoeuvre || null, renfort: o.renfort || null, aide: o.aide || null, duel: o.duel || null, duelReponse: o.duelReponse || null, votes: o.votes || {}, motionChef: o.motionChef || null, offre: o.offre || null,
+    renfort: o.renfort || null, aide: o.aide || null, pacte: o.pacte || null, pacteReponse: o.pacteReponse || null, pacteRompre: o.pacteRompre || null, fragment: o.fragment || null, defi: o.defi || null, defiReponse: o.defiReponse || null, votes: o.votes || {}, motionChef: o.motionChef || null, offre: o.offre || null,
   };
 }
 
@@ -403,7 +403,7 @@ function ventilationHtml(z, e) {
     ${hors.map((h) => ligne(`${h.t}${h.bloque ? ` <span class="tiny bad">· ${esc(h.bloque)}</span>` : ''}`, h.compte === false ? `(${h.n})` : h.n, h.bloque ? 'bad' : '', btnRap(h.k))).join('')}
     ${ligne(e.reste >= 0 ? '<strong>Sans affectation</strong>' : e.resteBase >= 0 ? '<strong>Manquent pour l’enquête</strong>' : '<strong>De trop</strong>', `<strong>${Math.abs(e.reste)}</strong>`, `tot ${e.reste > 0 ? 'warn' : e.reste < 0 ? 'bad' : 'ok'}`)}
     ${prises.length ? `<span class="tiny warn" style="margin-top:4px">Pris dans tes services pour la journée : ${prises.map(([t, n]) => `${t} ${n}`).join(' · ')}. Enlève des agents d’un service pour les laisser libres, sinon ces services tourneront avec moins de monde.</span>` : ''}
-    ${aide ? `<span class="tiny muted">Entraide : ${aide} agent${aide > 1 ? 's' : ''} partiront demain pour ${AIDE.dureePret} tours.</span>` : ''}
+    ${aide ? `<span class="tiny muted">Coup de main : ${aide} agent${aide > 1 ? 's' : ''} partiront demain pour ${AIDE.dureePret} tours.</span>` : ''}
     ${academie ? `<span class="tiny muted">À l’académie : ${academie} recrue${academie > 1 ? 's' : ''}, pas encore disponible${academie > 1 ? 's' : ''}.</span>` : ''}
     ${bloques.length ? `<p class="tiny bad" style="margin:2px 0 0">Des agents sont bloqués : rapatrie-les pour les réaffecter.</p>` : ''}
     <div class="row" style="gap:8px;margin-top:4px;flex-wrap:wrap">
@@ -655,7 +655,7 @@ export function renderOrdres() {
         <p class="tiny muted" style="margin:-4px 0 0;text-align:center">Ou ajuste ci-dessous, puis valide.</p>` : ''}
 
     ${sousTutelle(z, T) ? `<section class="card red" aria-label="Zone sous tutelle"><span class="kicker" style="color:var(--red-soft)">Zone sous tutelle · jusqu’au tour ${z.tutelle.fin}</span>
-      <span class="small">Pas de rythme renforcé, d’agents de réserve, de manœuvre, de duel ni d’enchère. Grande décision : recruter seulement.</span></section>` : ''}
+      <span class="small">Pas de rythme renforcé, d’agents de réserve, de défi ni d’enchère. Grande décision : recruter seulement.</span></section>` : ''}
     ${situationHtml(z)}
     ${e.opx.op ? (() => { const op = e.opx.op; const jour = T - op.tourDebut + 1; return `<section class="card red" aria-label="Opération d'envergure">
       <div class="between"><span class="kicker" style="color:var(--red-soft)">Opération d’envergure${op.duree > 1 ? ` · jour ${jour} sur ${op.duree}` : ''}</span><span class="pill amber">${op.recompense} pts</span></div>

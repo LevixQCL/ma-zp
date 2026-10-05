@@ -131,7 +131,7 @@ export function planNonDroit(st, me, sel = null) {
   </svg>`;
 }
 
-export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
+export function planVille(st, me, { zoom = false, chaleur = true, liens = [] } = {}) {
   const zonesArr = Object.values(st.zones);
   const T = territoires(S.config.seed, zonesArr);
   const zoneOf = (k) => st.zones[T.order[k]];
@@ -288,6 +288,18 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
     return `<g transform="translate(${f1(c.c[0])} ${f1(c.c[1])}) scale(${f1(echelle)})"><circle r="14" fill="none" stroke="#FF6E6A" stroke-width="2"><animate attributeName="r" values="9;22;9" dur="2s" repeatCount="indefinite"/><animate attributeName="stroke-opacity" values="1;0;1" dur="2s" repeatCount="indefinite"/></circle><title>${esc(op.titre)}</title></g>`;
   })() : '';
   const hp = moi ? (() => { const c = T.cells[moi.capitale]; return `<g transform="translate(${f1(c.c[0] - 16 * echelle)} ${f1(c.c[1] + 16 * echelle)}) scale(${f1(echelle)})"><title>Ton hôtel de police</title><circle r="8.5" fill="#0C1124" stroke="#FFB23F" stroke-width="1.5"/><path d="M0 -5l4.5 1.7v2.8c0 2.8-2 4.5-4.5 5.6-2.5-1.1-4.5-2.8-4.5-5.6v-2.8z" fill="#FFB23F"/></g>`; })() : '';
+  // Liens entre zones (pactes) : une courbe d'un hôtel de police à l'autre.
+  const liensSvg = liens.map((l) => {
+    const za = T.zones.find((x) => x.uid === l.a), zb = T.zones.find((x) => x.uid === l.b);
+    if (!za || !zb) return '';
+    const [x1, y1] = T.cells[za.capitale].c, [x2, y2] = T.cells[zb.capitale].c;
+    const mxl = (x1 + x2) / 2, myl = (y1 + y2) / 2, dx = x2 - x1, dy = y2 - y1;
+    const cx = mxl - dy * 0.18, cy = myl + dx * 0.18;
+    const w = l.moi ? 4 : 2.6;
+    return `<path d="M${f1(x1)} ${f1(y1)}Q${f1(cx)} ${f1(cy)} ${f1(x2)} ${f1(y2)}" fill="none" stroke="#0C1124" stroke-opacity=".7" stroke-width="${w + 2.4}" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+      <path d="M${f1(x1)} ${f1(y1)}Q${f1(cx)} ${f1(cy)} ${f1(x2)} ${f1(y2)}" fill="none" stroke="${esc(l.couleur)}" stroke-width="${w}" stroke-linecap="round" ${l.pointille ? 'stroke-dasharray="6 5"' : ''} vector-effect="non-scaling-stroke"/>
+      ${[[x1, y1], [x2, y2]].map(([x, y]) => `<circle cx="${f1(x)}" cy="${f1(y)}" r="${f1(4.2 * echelle)}" fill="${esc(l.couleur)}" stroke="#0C1124" stroke-width="1.4" vector-effect="non-scaling-stroke"/>`).join('')}`;
+  }).join('');
   const mx = vx + vw / 2, my = vy + vh / 2;
   const place = (poss.length ? poss.map((i) => T.cells[i]) : T.cells).reduce((b, c) => ((c.c[0] - mx) ** 2 + (c.c[1] - my) ** 2 < (b.c[0] - mx) ** 2 + (b.c[1] - my) ** 2 ? c : b));
   const star = st.evenement ? `<g transform="translate(${f1(place.c[0])} ${f1(place.c[1] + 20 * echelle)}) scale(${f1(echelle)})"><title>${esc(st.evenement.titre)}</title><circle r="9" fill="#EDF0FA" stroke="#0C1124" stroke-width="1.5"/><path d="M0 -5.5l1.6 3.4 3.7.5-2.7 2.6.7 3.7L0 3 -3.3 4.7l.7-3.7-2.7-2.6 3.7-.5z" fill="#0C1124"/></g>` : '';
@@ -330,7 +342,7 @@ export function planVille(st, me, { zoom = false, chaleur = true } = {}) {
       ${coucheNonDroit(T, st, echelle, { chiffres: !zoom })}
       <g class="lim">${limites}</g>
       ${(() => { const c = T.cells[T.nd.coeur]; return `<text x="${f1(c.c[0])}" y="${f1(c.c[1] - 16 * echelle)}" text-anchor="middle" class="ndt">ZONE DE NON-DROIT</text>`; })()}
-      ${quartiersLabels}${sitesSvg}${zonesLabels}${hp}${star}${pinsAff}${opPin}${reperesQ}
+      ${quartiersLabels}${sitesSvg}${zonesLabels}${liensSvg}${hp}${star}${pinsAff}${opPin}${reperesQ}
     </g>
   </svg>`;
 }

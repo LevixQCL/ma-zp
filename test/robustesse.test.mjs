@@ -16,7 +16,7 @@ const finis = (z) => ['budget', 'moral', 'satisfaction', 'reputation', 'criminal
 const MECHANTS = ['constructor', 'toString', '__proto__', 'hasOwnProperty', 'valueOf'];
 const variantes = [];
 for (const k of MECHANTS) {
-  variantes.push({ rythme: k }, { aide: { cible: k, budget: 5 } }, { manoeuvre: { type: 'signalement', cible: k } }, { duel: { cible: k, ind: 'satisfaction' } },
+  variantes.push({ rythme: k }, { aide: { cible: k, budget: 5 } }, { pacte: { type: 'enquete', cible: k } }, { defi: { cible: k, ind: 'incidents', mise: 5 } }, { pacteRompre: k, fragment: k },
     { fipa: { id: 'x', invite: k, moi: 2, lui: 2 } }, { renfort: { cible: k, agents: 2 } }, { decision: { type: 'agrandir', batiment: k } },
     { decision: { type: 'construire', infra: k } }, { secteurs: { [k]: 3 } }, { patrouilles: { [k]: 2 } });
 }
@@ -41,7 +41,7 @@ for (const v of variantes) {
   assert.notEqual(r.state.zones.moi.decor.facade, 'constructor');
 }
 
-// Entraide entre deux zones qui vont bien : la réputation ne tombe qu'une fois par semaine pour la paire.
+// Coup de main entre deux zones qui vont bien : refusé (réservé aux zones en difficulté), rien ne bouge.
 {
   let st = partie();
   let gains = 0;
@@ -49,10 +49,10 @@ for (const v of variantes) {
     const orders = { ...ordresBots(st), moi: { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, aide: { cible: 'bot-canal', budget: 10 } } };
     orders['bot-canal'] = { ...(orders['bot-canal'] || { alloc: {} }), aide: { cible: 'moi', budget: 10 } };
     const r = resolveTurn(st, { orders, nextWeekday: (t + 1) % 7 });
-    for (const u of ['moi', 'bot-canal']) gains += r.gazette.rapports[u].filter((l) => l.startsWith('Entraide : tu envoies') && /\+\d+ de réputation/.test(l)).length;
+    for (const u of ['moi', 'bot-canal']) gains += r.gazette.rapports[u].filter((l) => l.startsWith('Coup de main : tu envoies')).length;
     st = r.state;
   }
-  assert.equal(gains, 1, 'une seule entraide récompensée sur 6 tours pour la même paire');
+  assert.equal(gains, 0, 'pas de coup de main entre deux zones qui vont bien');
 }
 
 // Résolution déterministe : même entrée, même sortie (y compris les inscriptions par le filet de sécurité).
@@ -64,7 +64,7 @@ for (const v of variantes) {
   assert.equal(a, b);
 }
 
-console.log(`OK : robustesse (${variantes.length} ordres malformés, profils, entraide en boucle, déterminisme).`);
+console.log(`OK : robustesse (${variantes.length} ordres malformés, profils, coup de main hors difficulté, déterminisme).`);
 
 // Document d'état allégé : rapports, journaux et relevés partent dans la Gazette, et l'appareil les y relit.
 {

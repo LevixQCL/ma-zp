@@ -1,4 +1,5 @@
 import { nonLus, invitations } from './prive.js';
+import { aFairePactes } from './pactes.js';
 import { terrainAFaire } from './terrain.js';
 // Outils partagés par tous les écrans.
 import { gradeFor, nextGrade, ENIGMES } from '../engine/constants.js';
@@ -91,7 +92,8 @@ export function tabbar(active, { questBadge = false, radioBadge = false } = {}) 
     enquete: !!(st && (st.traques || []).length && !(S.draft && S.draft.traque)),
     quete: questBadge || faites < 3,
     terrain: terrainAFaire() > 0,
-    radio: radioBadge || (() => { const n = nonLus(); return n.radio + n.prive > 0 || invitations().some((i) => !i.fait); })(),
+    radio: radioBadge || (() => { const n = nonLus(); return n.radio + n.prive > 0 || invitations().some((i) => !i.fait && i.href !== '#pactes'); })(),
+    carte: aFairePactes().some((x) => !x.fait),
   };
   return `<nav class="tabs" aria-label="Navigation principale">${tabs.map(([id, label]) => `
     <a href="#${id}" ${active === id ? 'aria-current="page"' : ''} ${id === 'enquete' ? 'class="centre"' : ''}>${id === 'enquete' ? `<span class="rond">${icon(id, 26)}</span>` : icon(id)}<span>${id === 'radio' ? 'Radio' : label}</span>${dots[id] ? '<span class="dot" aria-label="à faire"></span>' : ''}</a>`).join('')}

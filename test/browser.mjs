@@ -188,21 +188,45 @@ await page.goto(`${BASE}#gazette`);
 await page.waitForSelector('.paper');
 await shot('22-gazette-enquete');
 
-// Diplomatie : manœuvre, entraide, duel.
-await page.goto(`${BASE}#diplomatie`);
-await page.waitForSelector('[data-action="diplo-open"][data-k="man"]');
-await page.click('[data-action="diplo-open"][data-k="man"]');
-await page.click('[data-action="man-type"][data-v="poste"]');
-await page.waitForSelector('[data-change="man-cible"]');
-const opt = await page.$$eval('[data-change="man-cible"] option:not([disabled])', (o) => o.map((x) => x.value).filter(Boolean));
-if (opt.length) await page.selectOption('[data-change="man-cible"]', opt[0]);
-await page.click('[data-action="diplo-open"][data-k="aide"]');
-await page.selectOption('[data-change="aide-cible"]', { index: 1 });
-await page.click('[data-action="aide-n"][data-k="budget"][data-d="1"]');
-await page.click('[data-action="aide-n"][data-k="budget"][data-d="1"]');
-await shot('26-diplomatie');
+// Pactes (onglet de la Carte) : proposer un pacte d'enquête, lancer un défi amical.
+await page.goto(`${BASE}#carte`);
+await page.waitForSelector('a.segl[href="#pactes"]');
+await page.click('a.segl[href="#pactes"]');
+await page.waitForSelector('[data-action="pacte-form"]');
+await shot('26-pactes');
+await page.click('[data-action="pacte-form"]');
+await page.click('[data-action="pacte-cible"]:not([disabled])');
+await page.click('[data-action="pacte-type"][data-v="enquete"]');
+await page.click('[data-action="pacte-proposer"]');
+if (!(await page.locator('[data-action="pacte-annuler"]').count())) errors.push('Proposition de pacte absente');
+if (await page.locator('[data-action="defi-form"]:not([disabled])').count()) {
+  await page.click('[data-action="defi-form"]');
+  await page.click('[data-action="defi-cible"]:not([disabled])');
+  await page.click('[data-action="defi-ind"][data-v="incidents"]');
+  await page.click('[data-action="defi-mise"][data-v="3"]');
+  await shot('26b-pactes-defi');
+  await page.click('[data-action="defi-lancer"]');
+}
 await page.click('.savebar [data-action="save-orders"]');
 await page.waitForTimeout(300);
+// Un pacte d'enquête actif avec sa demi-pièce et un jumelage, posés dans la partie démo.
+await page.evaluate(() => {
+  const db = JSON.parse(localStorage.getItem('mazp-demo-v3')); const st = db.parties[db.current].state;
+  const autres = Object.keys(st.zones).filter((u) => u !== 'moi');
+  const A = (st.season - 1) * 100 + st.turn;
+  st.pactes = (st.pactes || []).filter((p) => p.a !== 'moi' && p.b !== 'moi').concat([
+    { id: 'p-test-1', a: 'moi', b: autres[0], type: 'enquete', etape: 'actif', debut: A - 1, fin: A + 5, depuis: st.turn - 1, frag: st.enquete ? { f: 'mob:1', n: st.enquete.n, tour: st.turn - 1, haut: 'moi', donne: {} } : null },
+    { id: 'p-test-2', a: autres[1], b: 'moi', type: 'terrain', etape: 'actif', debut: A - 4, fin: A + 2, depuis: st.turn - 4 },
+  ]);
+  localStorage.setItem('mazp-demo-v3', JSON.stringify(db));
+});
+await page.goto(`${BASE}#pactes`); await page.reload();
+await page.waitForSelector('.pacte-ligne');
+await shot('26c-pactes-actifs');
+if (await page.locator('[data-action="pacte-frag"]').count()) { await page.click('[data-action="pacte-frag"]'); await shot('26d-pactes-mise-en-commun'); await page.click('.savebar [data-action="save-orders"]'); await page.waitForTimeout(300); }
+// La Radio n'a plus que deux onglets.
+await page.goto(`${BASE}#radio`);
+if (await page.locator('a.segl[href="#diplomatie"]').count()) errors.push('Onglet Diplomatie encore présent');
 // Péril : on force un budget très négatif dans la partie démo, puis on passe un tour.
 await page.evaluate(() => { const db = JSON.parse(localStorage.getItem('mazp-demo-v3')); db.parties[db.current].state.zones.moi.budget = -60; localStorage.setItem('mazp-demo-v3', JSON.stringify(db)); });
 await page.goto(`${BASE}#hp`); await page.reload();

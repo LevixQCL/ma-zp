@@ -11,7 +11,8 @@ import { ENQ, DEMARCHES, POINTS, pointsDecouverte, delaiTraque, PRIME } from '..
 import { PARTAGE, FIPA } from '../engine/fipa.js';
 import { QUEST_LABELS } from '../quests/quests.js';
 import { INCIDENTS, INC, MALUS, GAIN, texteMalus, texteGain } from '../engine/incidents.js';
-import { MANOEUVRES, MAN, DUEL, DUEL_INDICATEURS, AIDE, THEMES, MOTIONS_CHEF, PERIL } from '../engine/rivalites.js';
+import { AIDE, THEMES, MOTIONS_CHEF, PERIL, SOLIDARITE } from '../engine/rivalites.js';
+import { PACTES, PACTE, DEFI, DEFI_INDICATEURS } from '../engine/pactes.js';
 
 const k = (v) => `${String(v).replace('.', ',')} k€`;
 const pc = (v) => `${Math.round(v * 100)} %`;
@@ -62,7 +63,6 @@ export function sections() {
           `<strong>Confiance de la commune</strong> : ${k(SUBSIDE.confiance)} par point au-dessus de 50, chaque tour ; en dessous, ${k(SUBSIDE.confianceMalus)} par point seulement. Réputation 60 : +${String(10 * SUBSIDE.confiance).replace('.', ',')} k€ ; réputation 80 : +${String(30 * SUBSIDE.confiance).replace('.', ',')} k€ ; réputation 30 : −${String(20 * SUBSIDE.confianceMalus).replace('.', ',')} k€.`,
           `<strong>Recrutement</strong> : à ${REPUTATION.recrueHaute} ou plus, une recrue coûte ${k(REPUTATION.coutRecrueHaute)} au lieu de ${k(COUTS.recrue)} ; sous ${REPUTATION.recrueBasse}, elle coûte ${k(REPUTATION.coutRecrueBasse)}.`,
           `<strong>Salle des ventes</strong> : certains lots sont réservés aux zones de réputation ${ENCHERE.repReserve} ou plus, et la réputation départage les offres égales.`,
-          `<strong>Scandale</strong> : une manœuvre ratée par une zone de réputation supérieure à ${REPUTATION.scandale} coûte ${REPUTATION.scandaleMalus} points de plus.`,
           'Au-dessus de 60, moins de plaintes contre ta zone ; en fin de saison, la meilleure réputation reçoit le titre « Collègue en or ».',
         ])}
         <p>Le moral multiplie l'efficacité de tous tes agents : 100 % à 67 de moral, +1,5 % par point au-dessus, −0,6 % par point en dessous. Moral 40 → 84 % · 50 → 90 % · 60 → 96 % · 67 → 100 % · 75 → 113 % · 80 → 120 % · 90 → 135 % · 100 → 150 %. Chaque soir, il redescend vers 60 d’autant plus vite qu’il est haut (5 % de l’écart de 60 à 70, 10 % de 70 à 80, 15 % de 80 à 90, 20 % au-delà) : garder une équipe vers 75-80 demande primes, énigmes et succès. Le rapport du soir indique l'efficacité appliquée. Sous 40, 10 % des agents restent absents ; sous 20, un agent démissionne.</p>
@@ -238,43 +238,50 @@ export function sections() {
         ])}`,
     },
     {
-      id: 'diplomatie', titre: 'Diplomatie : entraide, duels, Conseil, manœuvres', html: `
-        <p>Tout se trouve dans l'écran <strong>Diplomatie</strong> (depuis la Radio) et part avec tes ordres à 20:00.</p>
-        <h3>Entraide</h3>
+      id: 'pactes', titre: 'Pactes, défis amicaux et Conseil', html: `
+        <p>Tout se trouve dans l'onglet <strong>Pactes</strong> de la Carte et part avec tes ordres à 20:00.</p>
+        <h3>Les pactes</h3>
         ${ul([
-          `Envoie jusqu’à ${AIDE.budgetMax} k€ (reçus le soir même) et prête jusqu’à ${AIDE.agentsMax} agents pour ${AIDE.dureePret} tours. Tu gardes toujours au moins 8 agents.`,
-          'Aider une zone en péril ou sous tutelle : jusqu’à +5 de réputation. Une zone frappée par un coup dur : +3. Sinon : +1. Ces montants sont atteints avec 3 agents ou 7,5 k€ (1 agent vaut 2,5 k€) ; une aide plus petite rapporte moins, une aide plus large jusqu’à 40 % de plus (+7 pour une zone en péril).',
+          `Un pacte lie deux zones pendant <strong>${PACTE.duree} tours</strong>. Tu le proposes un soir, l’autre zone répond le lendemain ; il joue dès le soir suivant.`,
+          `${PACTE.max} pactes au plus en même temps, un seul avec une même zone. À la fin, chacune gagne ${PACTE.psFin} PS et peut le reconduire.`,
+          `Si ton partenaire ne joue plus pendant ${PACTE.inactif} jours, le pacte s’éteint sans pénalité.`,
+          `Rompre un pacte avant la fin est annoncé dans la Gazette, interdit tout nouveau pacte pendant ${PACTE.blocage} tours et peut valoir un blâme au Conseil.`,
+          'Sur la carte de l’onglet, chaque pacte est un lien de couleur entre deux hôtels de police.',
         ])}
-        <h3>Duels</h3>
+        ${table(['Pacte', 'Effet'], Object.values(PACTES).map((p) => [p.nom, esc(p.texte)]))}
+        ${note('Pacte d’enquête : chacun reçoit une moitié de pièce. L’en-tête dit sur qui ou sur quoi elle porte, le contenu ce qu’elle dit (noms masqués). Il faut que les deux cliquent « Mettre en commun » avant le 20:00 suivant (le même soir ou l’un après l’autre) pour que chacun ait la pièce entière. Une pièce par affaire tous les deux soirs au plus : le pacte aide sans résoudre l’enquête à votre place.')}
+        <h3>Le défi amical</h3>
         ${ul([
-          `Défie une zone pendant ${DUEL.duree} tours sur un indicateur : ${Object.values(DUEL_INDICATEURS).map((d) => d.nom.toLowerCase()).join(', ')}.`,
-          'La zone défiée accepte ou refuse au tour suivant ; un refus est publié dans la Gazette.',
-          `Le gagnant (la plus forte progression) prend ${DUEL.enjeu} points de réputation au perdant. Un seul duel à la fois par zone.`,
+          `${DEFI.duree} tours sur une activité que tu fais toi-même : ${Object.values(DEFI_INDICATEURS).map((x) => x.nom.toLowerCase()).join(', ')}.`,
+          `Chacun mise la même somme (${DEFI.mises.filter(Boolean).map((m) => `${m} k€`).join(' ou ')}, ou rien). Le gagnant prend le pot et ${DEFI.prime} k€ de prime du district ; en cas d’égalité, chacun récupère sa mise.`,
+          'La zone défiée répond le lendemain ; refuser ne coûte rien. Un seul défi à la fois, pas de défi pour une zone en difficulté.',
+        ])}
+        <h3>Coup de main</h3>
+        ${ul([
+          `Seulement vers une zone en péril ou sous tutelle : jusqu’à ${AIDE.budgetMax} k€ (reçus le soir même) et ${AIDE.agentsMax} agents prêtés pour ${AIDE.dureePret} tours. Tu gardes toujours au moins 8 agents.`,
+          'Jusqu’à +5 de réputation, atteints avec 3 agents ou 7,5 k€ (1 agent vaut 2,5 k€) ; une aide plus large rapporte jusqu’à 40 % de plus (+7).',
         ])}
         <h3>Le Conseil de police</h3>
         <p>Chaque dimanche, une voix par zone active, vote secret, résultat à 20:00 (égalité : la première option l'emporte).</p>
         ${ul([
-          '<strong>Dotation fédérale de 20 k€</strong> : parts égales, ou prime aux zones les plus coopératives (FIPA honorées, indices partagés).',
+          '<strong>Dotation fédérale de 20 k€</strong> : parts égales, ou prime aux zones les plus coopératives (pactes tenus, FIPA honorées, pièces partagées).',
           `<strong>Thème de la semaine</strong> (7 tours) : ${Object.values(THEMES).map((t) => `${t.nom} (${t.effet})`).join(' ; ')}.`,
-          '<strong>Blâme</strong> : proposé contre les zones les moins coopératives de la semaine (FIPA revendiquées ou refusées, manœuvres). Effet : −10 de réputation et −30 PS.',
+          `<strong>Fonds de solidarité</strong>, quand une zone est en difficulté : chaque autre zone active lui verse ${SOLIDARITE.parZone} k€.`,
+          '<strong>Blâme</strong> : proposé contre les zones les moins coopératives de la semaine (FIPA revendiquées ou refusées, pactes rompus). Effet : −10 de réputation et −30 PS.',
           `<strong>Motion de Chef de corps</strong>, une par saison : ${Object.values(MOTIONS_CHEF).map((m) => m.titre.toLowerCase()).join(', ')}.`,
-        ])}
-        <h3>Manœuvres</h3>
-        <p>Une manœuvre par tour. Chance de réussite : ${pc(MAN.base)} pour la première, puis ${MAN.pas * 100} points de moins par manœuvre des ${MAN.fenetre} derniers tours (minimum ${pc(MAN.min)}), avant les parades de la cible. Réussie ou non, elle coûte ${MAN.coutReputation} de réputation (et ${REPUTATION.scandaleMalus} de plus si elle rate alors que ta réputation dépasse ${REPUTATION.scandale} : le scandale) ; la cible le sait tout de suite, la Gazette révèle l'auteur le lendemain.</p>
-        ${table(['Manœuvre', 'Effet', 'Parade'], Object.values(MANOEUVRES).map((m) => [m.nom, esc(m.texte), esc(m.parade)]))}
-        ${note(`On ne peut viser ni une zone en péril ou sous tutelle, ni une zone arrivée depuis moins de ${MAN.protectionTours} tours. L’enquête reste coopérative : aucune manœuvre sur les indices.`)}`,
+        ])}`,
     },
     {
       id: 'faillite', titre: 'Péril, tutelle et faillite', html: `
         <p>Une zone est <strong>en péril</strong> dès que l'une de ces conditions est atteinte :</p>
         ${ul([`budget sous ${PERIL.budget} k€ ;`, `moins de ${PERIL.agents} agents disponibles ;`, `moral sous ${PERIL.moral}.`])}
-        <p>Le chef a alors <strong>${PERIL.tours} tours pour redresser la barre</strong>. Un bandeau rouge s'affiche sur l'HP ; les autres zones peuvent l'aider (entraide) et ne peuvent plus la viser par une manœuvre.</p>
+        <p>Le chef a alors <strong>${PERIL.tours} tours pour redresser la barre</strong>. Un bandeau rouge s'affiche sur l'HP ; les autres zones peuvent lui donner un coup de main (onglet Pactes de la Carte) et le Conseil peut voter un fonds de solidarité.</p>
         <h3>Toujours en péril au bout de ${PERIL.tours} tours : la tutelle</h3>
         <p>La première fois de la saison, la zone passe <strong>sous tutelle pendant ${TUTELLE.tours} tours</strong> : c'est la dernière chance.</p>
         ${ul([
           `Avance de trésorerie de ${k(TUTELLE.avance)} et +${TUTELLE.moral} de moral (la nouvelle direction rassure).`,
-          'Interdit : rythme renforcé, agents de réserve, manœuvres, duels, enchères, et toute grande décision sauf recruter.',
-          'La zone reste intouchable (pas de manœuvre contre elle) et l’entraide rapporte le plus de réputation (jusqu’à +7 selon l’aide envoyée).',
+          'Interdit : rythme renforcé, agents de réserve, défis, enchères, et toute grande décision sauf recruter.',
+          'Les autres zones peuvent toujours lui donner un coup de main (jusqu’à +7 de réputation pour elles).',
           `À la fin des ${TUTELLE.tours} tours : si la zone n'est plus en péril, elle retrouve son autonomie ; sinon, c'est la faillite.`,
           'Une zone qui a déjà connu la tutelle cette saison passe directement du péril à la faillite.',
         ])}
@@ -393,16 +400,16 @@ export function sections() {
     {
       id: 'progression', titre: 'Points de service, grades et saisons', html: `
         <h3>Points de service (PS)</h3>
-        <p>Ils récompensent l'assiduité et ne se perdent jamais, même d'une saison à l'autre. Maximum ${PS.plafondJour} PS par jour pour ton propre jeu, plus ${PS.plafondEntraide} PS d’entraide (renfort, indices partagés, contribution à l’enquête, FIPA, grand événement, secteurs tenus dans la zone de non-droit) : aider les autres n’est jamais perdu.</p>
+        <p>Ils récompensent l'assiduité et ne se perdent jamais, même d'une saison à l'autre. Maximum ${PS.plafondJour} PS par jour pour ton propre jeu, plus ${PS.plafondEntraide} PS d’entraide (renfort, indices partagés, contribution à l’enquête, FIPA, pactes, grand événement, secteurs tenus dans la zone de non-droit) : aider les autres n’est jamais perdu.</p>
         ${table(['Action', 'PS'], [
           ['Passer ses ordres', `+${PS.ordres}`], ['Bonne réponse à une énigme', `+${PS.queteOk} (tentative ratée : +${PS.queteTentee})`], ['Trois énigmes sur trois', '+5'],
           ['Découverte d’un auteur', '+15'], ['Arrestation', '+10'], ['Participer à une FIPA', '+10'], ['Partager un indice', '+5'], ['Indice qui aide une découverte', '+5'],
-          ['Agents envoyés sur un grand événement du district', `+${PS.evenement} pour 3 agents, proportionnel au nombre envoyé (max. +${PS.evenementMax})`], ['Renfort prêté sur une opération d’envergure', `+${RENFORT.psParAgent} par agent prêté`],
+          ['Agents envoyés sur un grand événement du district', `+${PS.evenement} pour 3 agents, proportionnel au nombre envoyé (max. +${PS.evenementMax})`], ['Renfort prêté sur une opération d’envergure', `+${RENFORT.psParAgent} par agent prêté`], ['Pacte conclu', `+${PACTE.psAccord}`], ['Pacte mené à son terme', `+${PACTE.psFin}`],
           ['Finir une saison classé', `+${PS.finSaison}`],
         ])}
         <h3>Grades</h3>
         ${table(['Grade', 'PS', 'Débloque'], GRADES.map((g) => [g.nom, g.ps, esc(g.debloque)]))}
-        <p>Les consignes du pilote et le blason se règlent dans ton Profil ; la motion du Chef de corps dans l'écran Diplomatie. Un blâme du Conseil retire 30 PS ; seule une faillite fait redescendre d'un grade.</p>
+        <p>Les consignes du pilote et le blason se règlent dans ton Profil ; la motion du Chef de corps dans l'onglet Pactes de la Carte. Un blâme du Conseil retire 30 PS ; seule une faillite fait redescendre d'un grade.</p>
         <h3>La saison</h3>
         ${ul([
           `Une saison dure ${SEASON_LENGTH} tours. Le classement se fait à la <strong>moyenne de l’IPZ par tour joué</strong> : une absence ne fait pas baisser ta moyenne.`,

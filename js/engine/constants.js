@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 77;
+export const APP_VERSION = 78;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -345,7 +345,7 @@ export const SUBSIDE = { parAgent: 0.15, seuil: START.agents, confiance: 0.2, co
 export const REPUTATION = {
   recrueHaute: 65, coutRecrueHaute: 1.5,   // zone réputée : les candidats se bousculent
   recrueBasse: 35, coutRecrueBasse: 2.5,   // zone mal vue : il faut payer plus pour attirer
-  scandale: 60, scandaleMalus: 3,          // manœuvre ratée d'une zone bien vue : le scandale fait plus de bruit
+  scandale: 60, scandaleMalus: 3,          // (ancien : manœuvre ratée d'une zone bien vue ; les manœuvres ont disparu)
 };
 
 // ───── Salle des ventes (enchères) ─────
@@ -369,7 +369,7 @@ export const LOTS = {
 
 // ───── Tutelle : dernière chance avant la faillite ─────
 // Une zone encore en péril au bout du délai passe sous tutelle (une fois par saison) :
-// avance de trésorerie, mais plus de manœuvres, de duels, d'enchères, d'heures sup ni de grande décision
+// avance de trésorerie, mais plus de défis, d'enchères, d'heures sup ni de grande décision
 // (sauf recruter). Si elle est toujours en péril à la fin de la tutelle : faillite.
 export const TUTELLE = { tours: 5, avance: 10, moral: 8 };
 

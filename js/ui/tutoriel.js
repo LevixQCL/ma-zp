@@ -127,13 +127,13 @@ export const ETAPES = [
     id: 'carte', route: 'carte', onglet: 'Tes quartiers et tout le district.', cible: '#mes-quartiers',
     titre: 'La carte et tes quartiers',
     texte: `<p>Chaque quartier a sa <strong>tension</strong>. Envoie des patrouilles de <strong>Proximité</strong> là où ça chauffe, surtout sur le <strong>point chaud</strong> annoncé la veille.</p>
-      <p>Au centre, hachurée de rouge : la zone de non-droit.</p>`,
+      <p>Au centre, hachurée de rouge : la zone de non-droit. L’onglet <strong>Pactes</strong>, en haut, sert à t’allier avec une autre zone (jumelage, enquête, achats) et à voter au Conseil.</p>`,
   },
   {
-    id: 'radio', route: 'radio', onglet: 'Pour parler avec les autres chefs de zone.', cible: '[aria-label="Radio, messages privés et diplomatie"]',
-    titre: 'Radio, privé et diplomatie',
+    id: 'radio', route: 'radio', onglet: 'Pour parler avec les autres chefs de zone.', cible: '[aria-label="Radio et messages privés"]',
+    titre: 'Radio et messages privés',
     texte: `<p><strong>Radio</strong> : le canal commun. On s’y organise pour la zone de non-droit (bouton « Rejoindre » sous une annonce), on échange des pièces, on négocie.</p>
-      <p><strong>Privé</strong> : en tête-à-tête. <strong>Diplomatie</strong> : entraide, duels, Conseil de police… et manœuvres contre les autres zones, à tes risques.</p>`,
+      <p><strong>Privé</strong> : en tête-à-tête, pour se mettre d’accord avant un pacte ou un défi amical.</p>`,
   },
   {
     id: 'fin', route: 'hp',
