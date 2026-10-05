@@ -400,7 +400,7 @@ const Shell = (() => {
   /**
    * Réglages d'un niveau : du niveau 1 (plus doux que « facile ») au niveau 10 (= « difficile »), en passant par
    * facile (4) et normal (7) ; au-delà, chaque réglage continue de se serrer au même rythme que de normal à difficile,
-   * en multipliant (au moins 3 % par niveau ; le temps fond de 5 % par niveau s'il ne bougeait pas). Bornes par jeu.
+   * en multipliant (au moins 3 % par niveau). Le temps, lui, tend vers un plancher jouable par un très bon joueur. Bornes par jeu.
    */
   function cfgNiveau(n){
     const F=G.diffs.facile, N=G.diffs.normal, D=G.diffs.difficile, B=G.bornes||{};
@@ -413,6 +413,9 @@ const Shell = (() => {
       let r = m>0&&d>0 ? Math.pow(d/m,1/3) : 1;
       if(r===1 && k==='time') r=0.95;
       else if(r!==1 && Math.abs(r-1)<0.03) r = r>1?1.03:0.97;
+      // Le temps s'approche de son plancher sans l'atteindre (un temps qu'un très bon joueur tient encore) :
+      // ce sont la précision et la complexité qui finissent par départager.
+      if(k==='time'){ const lo=(B.time&&B.time[0])||0; if(lo>0 && d>lo) return lo+(d-lo)*Math.pow(Math.min(r,.93),n-10); }
       return d*Math.pow(r,n-10);
     };
     const borne=(v,b,k,d,ent)=>{ const [lo,hi]=b||(k==='time'?[Math.max(15,d*0.3),Infinity]:[-Infinity,Infinity]); v=Math.min(hi,Math.max(lo,v)); return ent?Math.round(v):Math.round(v*1000)/1000; };
@@ -865,7 +868,7 @@ Shell.init({
   headline:'Colis suspect',
   story:`<p>Un sac à dos abandonné devant l'entrée de la gare émet un bip régulier. Ton équipe d'intervention a établi le périmètre, mais le SEDEE est retenu sur une autre mission à deux heures de route.</p><p>Neutralise l'engin avec la fiche réflexe avant la fin du compte à rebours.</p>`,
   diffs:{difficile:{agents:2,label:'Difficile',time:90,lives:1},normal:{agents:4,label:'Normal',time:120,lives:2},facile:{agents:6,label:'Facile',time:150,lives:3}},
-  bornes:{time:[12,Infinity],lives:[1,9]},
+  bornes:{time:[28,Infinity],lives:[1,9]},
   diffHint:"Plus d'agents : plus de temps et plus d'erreurs tolérées avant l'explosion.",
   desktopHint:'Sur ordinateur : coupe un fil en glissant la souris à travers, bouton gauche enfoncé.',
   rules:['Trois modules à neutraliser : <b>fils</b>, <b>bouton</b>, <b>interrupteurs</b>, dans l\'ordre que tu veux.','La <b>fiche SEDEE</b> (onglet du bas) donne les règles. <b>Elles changent à chaque engin</b> et dépendent du n° de série et de l\'étiquette.','Chaque erreur <b>accélère le compte à rebours</b>. Trop d\'erreurs : explosion.','Sans erreur : <b>+2</b> sur la jauge skins. Avec erreurs : <b>+1</b>.'],

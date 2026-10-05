@@ -184,7 +184,7 @@ Shell.init({
   headline:'Réseau à reconnecter',
   story:`<p>Le suspect a débranché son réseau en catastrophe avant la perquisition : les câbles sont tous dans le mauvais sens.</p><p><b>Tourne les cases</b> pour relier chaque PC au serveur, sans aucun câble dans le vide, avant la fin du chrono.</p>`,
   diffs:{difficile:{agents:1,label:'Difficile',time:150,cols:7,rows:8},normal:{agents:2,label:'Normal',time:150,cols:6,rows:7},facile:{agents:3,label:'Facile',time:150,cols:5,rows:5}},
-  bornes:{time:[20,Infinity],cols:[3,8],rows:[3,10]},
+  bornes:{time:[35,Infinity],cols:[3,8],rows:[3,10]},
   diffHint:'Plus d’enquêteurs : un réseau plus petit à reconnecter.',
   desktopHint:'Sur ordinateur : clic pour tourner, clic droit pour verrouiller une case.',
   rules:['Toucher une case la <b>tourne</b> d’un quart de tour.','Gagné quand <b>tous les PC</b> sont reliés au serveur et qu’<b>aucun câble</b> ne pend dans le vide.','Un câble au bord du plateau est forcément faux : commence par les bords et les coins.','<b>Appui long</b> (ou clic droit) : verrouiller une case sûre.','Terminé dans les 60 % du temps : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
