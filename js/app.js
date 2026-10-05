@@ -20,7 +20,7 @@ import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { tutoAuBesoin, lancerTuto, tutoFait } from './ui/tutoriel.js';
 import { rouletteAuBesoin, lancerRoulette } from './ui/roulette.js';
-import { editionHtml, marquerEditionVue } from './ui/edition.js';
+import { editionHtml, marquerEditionVue, editionVue } from './ui/edition.js';
 import { operationActive, effetsOperation } from './engine/zone.js';
 import { carteQuartiers } from './engine/quartiers.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
@@ -123,7 +123,7 @@ function render() {
       case 'radio': html = renderRadio(); break;
       case 'prive': html = renderPrive(); break;
       case 'terrain': html = renderTerrain(); break;
-      case 'gazette': html = renderGazette(); break;
+      case 'gazette': html = renderGazette(); if (S.gazetteIndex === 0) marquerGazetteLue(); break;
       case 'debrief': html = renderDebrief(); break;
       case 'classement':
         // Lecture de toutes les réponses aux énigmes : seulement sur l'onglet Énigmes, au plus toutes les 5 minutes.
@@ -232,7 +232,23 @@ async function loadTurnData() {
   S.gazettes = (gazettes || []).slice().sort((x, y) => (y.season - x.season) || (y.turn - x.turn)); S.gazetteIndex = 0; S.rapportIdx = 0;
   completerDepuisGazette(S.state, S.gazettes);
   if (isNew) toast(`Tour ${st.turn} : la Gazette est parue !`);
+  else if (gazetteAOuvrir()) { location.hash = '#gazette'; return; } // première ouverture depuis la parution : on lit la Gazette
   render();
+}
+// Gazette du jour : à la première ouverture du jeu après sa parution (une fois par numéro et par appareil),
+// le jeu s'ouvre sur la Gazette plutôt que sur l'HP. Pas pendant la visite guidée ni sous l'édition spéciale.
+const cleGazette = (g) => `mazp-gazette-lue-${S.state && S.state.seed}-${g.season}_${g.turn}`;
+function gazetteLue(g) { try { return localStorage.getItem(cleGazette(g)) === '1'; } catch (e) { return true; } }
+function marquerGazetteLue() {
+  const g = S.gazettes && S.gazettes[0];
+  if (g) { try { localStorage.setItem(cleGazette(g), '1'); } catch (e) { /* pas de stockage */ } }
+}
+function gazetteAOuvrir() {
+  const g = S.gazettes && S.gazettes[0];
+  if (!g || gazetteLue(g) || S.route !== 'hp' || S.ancre) return false;
+  if (!myZone() || S.tuto != null || !tutoFait()) return false; // nouveau joueur : la visite guidée d'abord
+  if (S.state.enquetePause && !editionVue()) return false;
+  return true;
 }
 async function afterAuth() {
   if (!S.user) { if (unsubState) unsubState(); unsubState = null; S.state = undefined; lastTurnKey = null; render(); return; }
