@@ -16,6 +16,8 @@ export const NOTE_MAJ = {
       ['Vieux dossiers', 'un dossier local qui traîne rapporte moins de points : pleine valeur le jour de son arrivée et le lendemain, puis −20 % par jour (minimum 25 %). Les Ordres affichent « vaut … % » à côté des dossiers concernés. Suivre le rythme paie plus que tout rattraper d’un coup.'],
     ]],
     ['Plus lisible', [
+      ['Grande décision', 'elle est payée à 20:00 après les dépenses du jour et les démarches d’enquête. Les Ordres préviennent maintenant si le tout dépasse ta caisse (sinon la décision est refusée), et une décision refusée s’affiche en rouge en tête du résultat de la nuit.'],
+      ['Formation en cours', 'visible dans Ordres › Former : le service et le soir où il gagne son niveau.'],
       ['Bâtir', 'chaque option affiche son délai : un agrandissement est prêt le lendemain soir, une infrastructure est en service dès ce soir.'],
       ['Tableau d’enquête', 'la barre du haut se resserre sur les petits écrans (ou avec une grande police) au lieu de sortir de l’écran.'],
       ['Des couleurs', 'sous chaque service, le résultat estimé de ce soir est en vert (ça va), orange (à surveiller) ou rouge (ça coince).'],

@@ -13,6 +13,7 @@ import {
   ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect, celluleDe,
 } from '../engine/enquete.js';
 import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal, banniereTraque } from './enquete.js';
+import { engagementsDuJour } from './engagements.js';
 import { LIEUX as LIEUX3, MODES, itineraire, fmtDist, nomTroncon } from '../engine/carte3.js';
 import { dossierAffaire3, numeroPv } from '../engine/dossier.js';
 import { planSvg3, posLieu3, PLANQUE_POS3 } from './plan3.js';
@@ -629,7 +630,7 @@ function voletSoir(aff, dos) {
   const dem = d.demarches || [];
   const v = voisinageInfo(aff);
   const nomDem = (x) => { const [k, i] = x.split(':'); const dm = demarcheDe(aff, k); return i !== undefined ? `${dm.nom} · ${aff.suspects[Number(i)].prenom}` : dm.nom; };
-  return `<div class="between" style="padding-right:44px"><span class="tb-titre" style="padding-right:0">Ce soir</span><span class="small muted">reste ${Math.round((z.budget - coutTotal(d)) * 10) / 10} k€</span></div>
+  return `<div class="between" style="padding-right:44px"><span class="tb-titre" style="padding-right:0">Ce soir</span><span class="small muted">reste ${Math.round((z.budget - engagementsDuJour(d, z).total) * 10) / 10} k€</span></div>
     ${celluleHtml(aff)}
     <span class="tb-ligne-k">Démarches · ${dem.length} / ${ENQ.maxDemarches}</span>
     ${dem.map((x) => `<div class="tb-boite-l"><span class="small grow" style="font-weight:600">${esc(nomDem(x))}</span><button type="button" class="btn small ghost" data-action="dem-toggle" data-k="${esc(x)}" aria-label="Retirer ${esc(nomDem(x))}">✕</button></div>`).join('') || '<p class="tiny muted" style="margin:0">Touche une photo ou une fiche du tableau pour choisir une démarche.</p>'}

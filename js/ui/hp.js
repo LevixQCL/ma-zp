@@ -131,7 +131,7 @@ function rapportHtml(z) {
     ${journalHtml(d.journal)}
     ${!d.journal && idx > 0 ? '<p class="tiny muted" style="margin:0">Détail des jauges indisponible pour les tours d’avant la mise à jour.</p>' : ''}
     <span class="kicker" style="margin-top:6px">Tout ce qui s’est passé</span>
-    ${lignes.map((l) => `<p class="small" style="margin:0">• ${esc(l)}</p>`).join('')}</div>`;
+    ${lignes.map((l) => `<p class="small" style="margin:0${/^Décision refusée/.test(l) ? ';color:var(--red-soft);font-weight:700' : ''}">• ${esc(l)}</p>`).join('')}</div>`;
 }
 
 function cleNuit(z) { return `mazp-nuit-${S.backend.gameId ? S.backend.gameId() : ''}-${S.state.season}-${S.state.turn}-${z.uid}`; }
@@ -145,12 +145,14 @@ function nuitHtml(z) {
     ['IPZ', z.ipz, z.hier.ipz], ['Satisfaction', z.satisfaction, z.hier.satisfaction], ['Moral', z.moral, z.hier.moral],
     ['Budget', z.budget, z.hier.budget, ' k€'], ['Réputation', z.reputation, z.hier.reputation],
   ].filter(([, v, a]) => a !== undefined && Math.abs(v - a) >= 0.05);
-  const importants = z.rapport.filter((l) => !/^Pas d’ordres/.test(l)).slice(0, 4);
+  // Une décision refusée passe toujours en tête (sinon elle se perd dans le rapport).
+  const refusees = z.rapport.filter((l) => /^Décision refusée/.test(l));
+  const importants = [...refusees, ...z.rapport.filter((l) => !/^Pas d’ordres/.test(l) && !/^Décision refusée/.test(l))].slice(0, 4);
   return `<section class="card" aria-label="Résultat de la nuit" style="border-color:var(--blue-soft)">
     <div class="between"><span class="kicker" style="color:var(--blue-soft)">Résultat de la nuit · tour ${S.state.turn - 1 || ''}</span>
       <button class="btn small ghost" data-action="nuit-ok">OK</button></div>
     ${lignes.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${lignes.map(([l, v, a, u]) => `<span class="pill">${l} ${fmt1(v)}${u || ''} ${delta(v, a)}</span>`).join('')}</div>` : ''}
-    <div class="col" style="gap:4px">${importants.map((l) => `<p class="small" style="margin:0;color:var(--text2)">• ${esc(l)}</p>`).join('')}</div>
+    <div class="col" style="gap:4px">${importants.map((l) => `<p class="small" style="margin:0;color:${/^Décision refusée/.test(l) ? 'var(--red-soft);font-weight:700' : 'var(--text2)'}">• ${esc(l)}</p>`).join('')}</div>
     <div class="row"><button class="btn small grow" data-action="voir-rapport">Rapport complet</button><a class="btn small grow" href="#gazette">La Gazette</a></div>
   </section>`;
 }

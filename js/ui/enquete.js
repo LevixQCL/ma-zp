@@ -3,6 +3,7 @@ import { formatDateBe } from '../engine/time.js';
 import { banniereDebrief } from './debrief.js';
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './common.js';
 import { capacite } from '../engine/zone.js';
+import { engagementsDuJour } from './engagements.js';
 import { APPUI } from '../engine/appui.js';
 import { monAppui } from './incidents.js';
 import { renderTableau } from './tableau.js';
@@ -122,7 +123,7 @@ export function demBtn(aff, dos, x, label, { compact = false } = {}) {
     if (aff.meurtre && ld && ld.k === 'moyens' && !mandatOk(aff, dos, ld.i) && !faitsDe(dos).has(x.replace('moyens', 'moy'))) raison = 'pas de mandat';
     else if (!pieceDemarche(aff, dos, x)) raison = 'au dossier';
     else if (dem.length >= ENQ.maxDemarches) raison = `${ENQ.maxDemarches} par jour`;
-    else if (prix > z.budget - coutTotal(d)) raison = 'budget';
+    else if (prix > z.budget - engagementsDuJour(d, z).total) raison = 'budget';
   }
   const prixTxt = prix ? `${prix} k€` : `${dm.agents} agents`;
   return `<button type="button" class="dem ${compact ? 'compact' : ''}" data-action="dem-toggle" data-k="${x}" aria-pressed="${on}" ${raison ? 'disabled' : ''}>
@@ -304,7 +305,7 @@ function aujourdhui(aff, dos) {
     <p class="small" style="margin:0;line-height:1.5">${etape}</p>
     ${(() => { const v = voisinageInfo(aff); return `<div class="voisinage"><div class="between" style="gap:8px;align-items:flex-start"><span class="small"><strong>Voisinage ce soir</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? ` sur la piste de <strong>${esc(v.nom)}</strong>` : ''} : <span class="${v.x >= 0.5 ? 'good' : v.x > 0 ? '' : 'bad'}">${v.txt}</span>.</span>${aideBtn('voisinage')}</div></div>`; })()}
     ${appuiHtml()}
-    <span class="tiny muted">Résultats à 20:00 · budget restant ${fmt1(z.budget - coutTotal(d))} k€${st.enquete.nbCellules > 1 ? ` · ta cellule : ${esc(miens.join(', '))} (les autres suspects coûtent le double)` : ''}</span>
+    <span class="tiny muted">Résultats à 20:00 · budget restant ${fmt1(z.budget - engagementsDuJour(d, z).total)} k€${engagementsDuJour(d, z).decision ? ' (grande décision comprise)' : ''}${st.enquete.nbCellules > 1 ? ` · ta cellule : ${esc(miens.join(', '))} (les autres suspects coûtent le double)` : ''}</span>
   </section>`;
 }
 
