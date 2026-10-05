@@ -255,18 +255,55 @@ export function planVille(st, me, { zoom = false, chaleur = true, liens = [] } =
     }
   }
 
-  // Étiquettes.
-  const zonesLabels = T.zones.map((tz) => {
-    const z = st.zones[tz.uid];
-    const [x0, y] = tz.label;
-    // Nom gardé dans le cadre : une zone au bord de la carte n'a plus son nom coupé.
-    const demi = (Math.min(16, z.nom.length) * 13 * 0.62 * echelle) / 2 + 3 * echelle;
-    const x = Math.max(vx + demi, Math.min(vx + vw - demi, x0));
-    return `<text x="${f1(x)}" y="${f1(y)}" text-anchor="middle" class="zl" style="fill:${esc(z.couleur)}">${esc(z.nom.toUpperCase().slice(0, 16))}</text>
-      <text x="${f1(x)}" y="${f1(y + 11)}" text-anchor="middle" class="zc">ZP ${esc(z.code)}${gradeIdx(z.ps) >= 3 ? ` ${'★'.repeat(gradeIdx(z.ps) - 2)}` : ''}${z.peril || z.tutelle ? ' ⚠' : ''}${pseudoDe(tz.uid) && !dense ? ` · ${esc(pseudoDe(tz.uid))}` : ''}</text>`;
-  }).join('');
+  // Étiquettes de zones : placées une à une sans se chevaucher (ni chevaucher sites et non-droit),
+  // sur un quartier de la zone, dans une pastille sombre pour rester lisibles sur n'importe quel fond.
   const sitesPos = T.zones.map((tz) => { const z = st.zones[tz.uid]; const s = siteDe(z); return s ? { tz, z, s, c: celluleSite(T, tz, s) } : null; }).filter(Boolean);
-  const occupe = [...T.zones.map((tz) => tz.label), ...sitesPos.map((p) => p.c.c), [WW * 0.3, HH * 0.78]];
+  const fsN = (dense ? 10.5 : 12) * echelle, fsC = 7 * echelle, ls = 0.6 * echelle;
+  const larg = (txt) => txt.length * (fsN * 0.66 + ls) + 10 * echelle;
+  const obst = [...sitesPos.map((p) => [p.c.c[0], p.c.c[1], 12 * echelle]),
+    ...T.cells.filter((c) => T.owner[c.i] === -2).map((c) => [c.c[0], c.c[1], 11 * echelle])];
+  const poses = [];
+  const chev = (a, b) => Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0)) * Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
+  const zonesLabels = T.zones.map((tz) => ({ tz, z: st.zones[tz.uid] }))
+    .sort((a, b) => a.tz.quartiers.length - b.tz.quartiers.length)
+    .map(({ tz, z }) => {
+      const nom = z.nom.toUpperCase().slice(0, 16);
+      // Nom long : sur deux lignes s'il le faut (coupé au mot le plus proche du milieu).
+      const mots = nom.split(' ');
+      let lignes = [nom];
+      if (mots.length > 1 && nom.length > 10) {
+        let best = null;
+        for (let k = 1; k < mots.length; k++) { const a = mots.slice(0, k).join(' '), b = mots.slice(k).join(' '); const m = Math.max(a.length, b.length); if (!best || m < best[0]) best = [m, [a, b]]; }
+        lignes = best[1];
+      }
+      const code = `ZP ${z.code}${gradeIdx(z.ps) >= 3 ? ` ${'★'.repeat(gradeIdx(z.ps) - 2)}` : ''}${z.peril || z.tutelle ? ' ⚠' : ''}${pseudoDe(tz.uid) && !dense ? ` · ${pseudoDe(tz.uid)}` : ''}`;
+      const options = [[nom], ...(lignes.length > 1 ? [lignes] : [])];
+      // Seulement les quartiers visibles : une zone hors du cadre n'a pas d'étiquette ramenée au bord.
+      const dedans = (c) => c[0] > vx + 4 * echelle && c[0] < vx + vw - 4 * echelle && c[1] > vy + 4 * echelle && c[1] < vy + vh - 4 * echelle;
+      const cand = [tz.label, ...tz.quartiers.map((i) => T.cells[i].c)].filter(dedans);
+      if (!cand.length) return '';
+      let best = null;
+      for (const ls2 of options) {
+        const w = Math.max(...ls2.map(larg), code.length * fsC * 0.58 + 10 * echelle);
+        const h = ls2.length * fsN * 1.05 + fsC * 1.2 + 6 * echelle;
+        for (const [k, c] of cand.entries()) {
+          const x = Math.max(vx + w / 2 + 2 * echelle, Math.min(vx + vw - w / 2 - 2 * echelle, c[0]));
+          const y = Math.max(vy + h / 2 + 2 * echelle, Math.min(vy + vh - h / 2 - 2 * echelle, c[1]));
+          const b = { x0: x - w / 2, x1: x + w / 2, y0: y - h / 2, y1: y + h / 2 };
+          let cout = poses.reduce((t, p) => t + chev(b, p) * 40, 0);
+          for (const [ox, oy, r] of obst) cout += chev(b, { x0: ox - r, x1: ox + r, y0: oy - r, y1: oy + r }) * 8;
+          cout += Math.hypot(x - tz.label[0], y - tz.label[1]) * echelle * 6 + (k ? 20 * echelle * echelle : 0) + (ls2.length > 1 ? 60 * echelle * echelle : 0);
+          if (!best || cout < best.cout) best = { cout, b, x, y, w, h, ls2 };
+        }
+      }
+      poses.push(best.b);
+      const { x, y, w, h, ls2, b } = best;
+      const t0 = b.y0 + 3 * echelle + fsN * 0.82;
+      return `<g class="zlab"><rect x="${f1(b.x0)}" y="${f1(b.y0)}" width="${f1(w)}" height="${f1(h)}" rx="${f1(5 * echelle)}" fill="#0C1124" fill-opacity=".78" stroke="${esc(z.couleur)}" stroke-opacity=".9" stroke-width="${tz.uid === me.uid ? 2.2 : 1}" vector-effect="non-scaling-stroke"/>
+        ${ls2.map((l, k) => `<text x="${f1(x)}" y="${f1(t0 + k * fsN * 1.05)}" text-anchor="middle" class="zl" style="fill:${esc(z.couleur)}">${esc(l)}</text>`).join('')}
+        <text x="${f1(x)}" y="${f1(t0 + (ls2.length - 1) * fsN * 1.05 + fsC * 1.25)}" text-anchor="middle" class="zc">${esc(code)}</text></g>`;
+    }).join('');
+  const occupe = [...poses.map((b) => [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2]), ...sitesPos.map((p) => p.c.c), [WW * 0.3, HH * 0.78]];
   const quartiersLabels = dense ? '' : T.cells.filter((c) => T.owner[c.i] >= 0 && (zoom ? moi && moi.quartiers.includes(c.i) : c.i % 2 === 0 || (moi && moi.quartiers.includes(c.i))))
     .filter((c) => occupe.every((o) => (o[0] - c.c[0]) ** 2 + (o[1] - c.c[1]) ** 2 > (24 * echelle) ** 2))
     .map((c) => `<text x="${f1(c.c[0])}" y="${f1(c.c[1])}" text-anchor="middle" class="ql">${esc(c.nom.toUpperCase())}</text>`).join('');
@@ -313,8 +350,8 @@ export function planVille(st, me, { zoom = false, chaleur = true, liens = [] } =
     </defs>
     <style>
       text{pointer-events:none}
-      .zl{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:${f1(13 * echelle)}px;fill:${C.texte};letter-spacing:1.2px;paint-order:stroke;stroke:#0C1124;stroke-width:3px}
-      .zc{font-family:'Instrument Sans',monospace;font-size:${f1(7.5 * echelle)}px;fill:#AFC0D2;paint-order:stroke;stroke:#0C1124;stroke-width:2.5px}
+      .zl{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:${f1(fsN)}px;fill:${C.texte};letter-spacing:${f1(ls)}px}
+      .zc{font-family:'Instrument Sans',monospace;font-size:${f1(fsC)}px;fill:#C9D4E2}
       .ql{font-family:'Instrument Sans',sans-serif;font-weight:600;font-size:${f1(5.6 * echelle)}px;fill:${C.quartier};letter-spacing:.9px;paint-order:stroke;stroke:${C.terre};stroke-width:2px}
       .sl{font-family:'Instrument Sans',sans-serif;font-weight:700;font-size:${f1(6.4 * echelle)}px;paint-order:stroke;stroke:#0C1124;stroke-width:2.4px}
       .sh{font-family:'Instrument Sans',sans-serif;font-weight:700;font-size:7.5px;fill:#fff}

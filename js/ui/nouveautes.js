@@ -15,10 +15,11 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
-    ['Affectation plus parlante', [
+    ['Plus lisible', [
       ['Des couleurs', 'sous chaque service, le résultat estimé de ce soir est en vert (ça va), orange (à surveiller) ou rouge (ça coince).'],
       ['Proximité', 'la criminalité affiche sa prévision de ce soir et son niveau, avec les mêmes seuils que les quartiers de la Carte : calme sous 45, à surveiller, tendue dès 55, chaude dès 70.'],
       ['Recherche et Accueil', 'on lit « dossiers bouclés ce soir · en cours » et la paperasse rappelle son seuil de 14 (au-delà : −2 de moral par soir).'],
+      ['Carte du district', 'les noms de zones ne se chevauchent plus : chacun dans une pastille sombre, placé sur un quartier libre de sa zone (sur deux lignes si besoin), sans masquer les sites ni la zone de non-droit. Ta zone a un contour plus épais.'],
       ['Agents de réserve', 'expliqués en clair : un renfort payant pour la journée, en plus de tes agents, à 1,5 k€ l’agent et 80 % d’efficacité.'],
     ]],
     ['Challenge des mini-jeux', [
