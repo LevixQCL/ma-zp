@@ -296,7 +296,7 @@ const Shell = (() => {
   function post(type, data={}){ try{ if(window.parent!==window) window.parent.postMessage({source:'mazp-mj', jeu:G.key, id:Q.get('id'), type, ...data}, location.origin); }catch(e){} }
   let joue=false, fini=false;
 
-  // ───── Défi d'endurance (depuis l'entraînement) : niveaux 1 → ∞, trois erreurs et la course s'arrête. ─────
+  // ───── Challenge (l'entraînement aux mini-jeux dans Ma ZP) : niveaux 1 → ∞, trois erreurs et la course s'arrête. ─────
   // Le record de la partie (et son détenteur) arrive par l'adresse ; chaque niveau réussi est signalé à Ma ZP.
   const DEFI = { rec: Math.max(0, Number(Q.get('rec'))||0), recNom: Q.get('recNom')||'', moi: Math.max(0, Number(Q.get('moi'))||0), erreurs: 3 };
   let run = null; // { niveau, erreurs, reussis } pendant une course
@@ -338,17 +338,18 @@ const Shell = (() => {
     return G.niveau ? G.niveau(n,out) : out;
   }
   const eyebrow = t => { const eb=document.querySelector('.top .eyebrow'); if(eb) eb.textContent=t; };
-  const eyebrowBase = () => (RENF?'Appui PJF · ':INC?'Incident du jour · ':MODE==='train'?'Entraînement · ':'')+G.serviceShort;
+  const eyebrowBase = () => (RENF?'Appui PJF · ':INC?'Incident du jour · ':MODE==='train'?'Challenge · ':'')+G.serviceShort;
   const recLigne = () => DEFI.rec ? `Record de la partie : <b>niveau ${DEFI.rec}</b>${DEFI.recNom?` par ${escH(DEFI.recNom)}`:''}.` : 'Pas encore de record dans la partie : le premier niveau réussi le crée.';
   function startDefi(){ run={niveau:1, erreurs:0, reussis:0}; jouerNiveau(); }
   function jouerNiveau(){
     hide(); hideCoach(); st.mode='play';
-    eyebrow(`Défi · niv. ${run.niveau} · ${'♥'.repeat(DEFI.erreurs-run.erreurs)}${'♡'.repeat(run.erreurs)}`);
+    eyebrow(`Challenge · niv. ${run.niveau} · ${'♥'.repeat(DEFI.erreurs-run.erreurs)}${'♡'.repeat(run.erreurs)}`);
     G.onPlay(cfgNiveau(run.niveau)); toast(`Niveau ${run.niveau}`);
   }
   function resultDefi({ok, stats, details}){
     st.timerOn=false; st.mode='result';
     const n=run.niveau;
+    post('result',{ok, defi:true}); // compté comme une partie d'entraînement
     const detailHtml = details && details.length && !ok ? `<div class="debrief-list"><b>Ce qui s’est mal passé</b><ul>${details.map(d=>`<li><span>${d}</span></li>`).join('')}</ul></div>` : '';
     const coeurs = `${'♥'.repeat(DEFI.erreurs-run.erreurs)}${'♡'.repeat(run.erreurs)}`;
     if(ok){
@@ -358,7 +359,7 @@ const Shell = (() => {
       if(record){ DEFI.rec=n; DEFI.recNom='toi'; } if(perso) DEFI.moi=n;
       showCard(`<div class="verdict ok">${ICONS.check}</div><h2>Niveau ${n} réussi</h2>
         <div class="stats">${stats.slice(0,2).map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')}<div class="stat"><span>Erreurs</span><b class="coeurs">${coeurs}</b></div></div>
-        ${record?'<div class="skin">Nouveau record de la partie ! Ton nom s’affiche sur la tuile de l’entraînement.</div>':perso?'<p class="small">Nouveau record personnel.</p>':''}
+        ${record?'<div class="skin">Nouveau record de la partie ! Ton nom s’affiche sur la tuile du challenge.</div>':perso?'<p class="small">Nouveau record personnel.</p>':''}
         <p class="small">Le niveau ${n+1} sera un peu plus dur.</p>
         <div class="row"><button class="btn primary" id="suite">Niveau ${n+1}</button><button class="btn" id="stop">Arrêter</button></div>`);
       $('suite').onclick=jouerNiveau; $('stop').onclick=finDefi;
@@ -375,7 +376,7 @@ const Shell = (() => {
   function finDefi(detailHtml=''){
     st.timerOn=false; st.mode='result';
     const k=run?run.reussis:0; run=null; eyebrow(eyebrowBase());
-    showCard(`${hero('Défi d’endurance')}<h2>Fin de la course</h2>
+    showCard(`${hero('Challenge')}<h2>Fin de la course</h2>
       <div class="stats"><div class="stat"><span>Niveaux réussis</span><b>${k}</b></div><div class="stat"><span>Ton record</span><b>${DEFI.moi}</b></div><div class="stat"><span>Record partie</span><b>${DEFI.rec}</b></div></div>
       ${typeof detailHtml==='string'?detailHtml:''}
       <p class="small">${recLigne()}</p>
@@ -407,25 +408,35 @@ const Shell = (() => {
         <div class="row">${tutoBtns(RENF?'Commencer':'Intervenir')}</div>
         <button class="btn small" id="later" style="align-self:center">Plus tard</button>
         ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}`);
+    } else if(MODE==='train'){
+      // Dans Ma ZP, l'entraînement aux mini-jeux, c'est le challenge : les premiers niveaux servent d'échauffement.
+      showCard(`
+        ${hero('Challenge · '+G.service)}
+        <h2>${G.headline}</h2>
+        ${G.story}
+        <div class="defi-box"><div><b>🏆 Challenge</b><span>Du niveau 1 (tout doux) à aussi haut que possible : chaque niveau est un peu plus dur. Trois erreurs et la course s’arrête.</span><span>${recLigne()}${DEFI.moi?` Ton record : niveau ${DEFI.moi}.`:''}</span></div></div>
+        <div class="row"><button class="btn primary" id="defiGo">Lancer le challenge</button><button class="btn" id="tuto">${st.tuto?'Revoir le tuto':'Tuto'}</button></div>
+        ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
+        <p class="demo">Rien ne compte pour ta zone : seul ton record s’affiche.</p>`);
+      $('tuto').onclick=startTuto; $('defiGo').onclick=startDefi;
+      return;
     } else {
       const seg=Object.entries(G.diffs).map(([k,d])=>`<button data-k="${k}" aria-pressed="${k===st.diff}"><span class="ppl">${'<i></i>'.repeat(d.agents)}</span><b>${G.unit ? unite(d.agents) : ({difficile:'Sous-effectif',normal:'Effectif de base',facile:'Renforcé'})[k]}</b>${d.label}</button>`).join('');
       showCard(`
-        ${hero((MODE==='train'?'Entraînement · ':'Ma ZP · ')+G.service)}
+        ${hero('Ma ZP · '+G.service)}
         <h2>${G.headline}</h2>
         ${G.story}
-        <div class="defi-box"><div><b>🏆 Défi d’endurance</b><span>Du niveau 1 à aussi haut que possible, chaque niveau un peu plus dur. Trois erreurs et la course s’arrête.</span><span>${recLigne()}${DEFI.moi?` Ton record : niveau ${DEFI.moi}.`:''}</span></div><button class="btn defi" id="defiGo">Défi d’endurance</button></div>
-        <div class="lbl2">Ou entraînement libre · ${effLabel()}</div>
+        <div class="lbl2">${effLabel()}</div>
         <div class="seg" id="seg">${seg}</div>
-        <p class="small">${G.diffHint} ${G.unit ? `En vrai, l’équipe PJF compte 2 ${G.unit[1]}, +1 si une autre équipe est restée libre ce soir-là, +1 si ta Recherche est renforcée (−1 si elle est en sous-effectif).` : 'En vrai, le niveau est fixé quand l’incident tombe : agents du service en service ce jour-là (ordres validés à 20:00), comparés à la répartition de base.'}</p>
+        <p class="small">${G.diffHint}</p>
         <div class="row">${tutoBtns('Jouer')}</div>
         ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
-        <p class="demo">${MODE==='train'?'Entraînement : rien ne compte pour ta zone.':'Démo jouable, rien n\'est enregistré dans ta partie Ma ZP.'}</p>`);
+        <p class="demo">Démo jouable, rien n'est enregistré dans ta partie Ma ZP.</p>`);
       $('seg').onclick=e=>{const b=e.target.closest('button'); if(!b) return; st.diff=b.dataset.k; store.set('diff',st.diff);
         [...$('seg').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===st.diff));};
     }
     $('go').onclick=play; $('tuto').onclick=startTuto;
     if($('later')) $('later').onclick=()=>post('close');
-    if($('defiGo')) $('defiGo').onclick=startDefi;
   }
   function play(){
     if(INC){ if(fini) return; if(!joue){ joue=true; post('start'); } }
@@ -435,8 +446,8 @@ const Shell = (() => {
   function endTuto(){
     st.tuto=true; store.set('tuto',true); hideCoach(); st.mode='menu'; st.timerOn=false; G.onMenu && G.onMenu();
     showCard(`${hero('Tutoriel terminé')}<h2>Les règles en bref</h2><ul>${G.rules.map(r=>`<li><span>${r}</span></li>`).join('')}</ul>
-      <div class="row"><button class="btn primary" id="go">${INC?'Intervenir':'Lancer une partie'}</button><button class="btn" id="tomenu">${INC?'Plus tard':'Menu'}</button></div>`);
-    $('go').onclick=play; $('tomenu').onclick=INC?()=>post('close'):menu;
+      <div class="row"><button class="btn primary" id="go">${INC?'Intervenir':MODE==='train'?'Lancer le challenge':'Lancer une partie'}</button><button class="btn" id="tomenu">${INC?'Plus tard':'Menu'}</button></div>`);
+    $('go').onclick=MODE==='train'?startDefi:play; $('tomenu').onclick=INC?()=>post('close'):menu;
   }
   function startTimer(sec,onTimeout){ st.timeLeft=sec; st.timeTotal=sec; st.timerOn=true; st.timerRate=1; st.onTimeout=onTimeout; }
   function stopTimer(){ st.timerOn=false; }
