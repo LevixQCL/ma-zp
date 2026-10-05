@@ -40,6 +40,7 @@ import { marquerJournalVu } from './ui/journal.js';
 import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, basculerFrise, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
+import { renderDebrief } from './ui/debrief.js';
 import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES } from './quests/quests.js';
 import { niveauEnigmes } from './engine/directeur.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
@@ -50,7 +51,7 @@ import { lancerIncident, lancerAppui, ouvrirMiniJeu, majComptesIncidents, signat
 import { migrateState, isOutdated } from './engine/resolve.js';
 
 const app = document.getElementById('app');
-const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin'];
+const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief'];
 let unsubState = null, unsubRadio = null, unsubPrive = null, lastTurnKey = null;
 
 function route() {
@@ -123,6 +124,7 @@ function render() {
       case 'prive': html = renderPrive(); break;
       case 'terrain': html = renderTerrain(); break;
       case 'gazette': html = renderGazette(); break;
+      case 'debrief': html = renderDebrief(); break;
       case 'classement':
         // Lecture de toutes les réponses aux énigmes : seulement sur l'onglet Énigmes, au plus toutes les 5 minutes.
         if (S.classTab === 'enigmes' && (!S.questStatsAt || Date.now() - S.questStatsAt > 300000)) {
@@ -643,6 +645,7 @@ async function onClick(e) {
       case 'enq-tab': S.enqTab = el.dataset.t; rerender(); break;
       case 'edition-fermer': marquerEditionVue(); render(); break;
       case 'edition-ouvrir': S.editionOuverte = true; render(); break;
+      case 'debrief-ouvrir': S.debriefId = el.dataset.id; if (location.hash !== '#debrief') location.hash = '#debrief'; else render(); break;
       case 'admin-affaire-maintenant': {
         const { ouvrirAffaireMaintenant, AFFAIRES_ECRITES, affaire } = await import('./engine/enquete.js');
         const { APP_VERSION } = await import('./engine/constants.js');

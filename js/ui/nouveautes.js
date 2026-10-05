@@ -3,14 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-05-defi',
+  id: '2026-10-06-dossier-clos',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🏆', 'Challenge des mini-jeux', 'Énigmes › Entraînement › Challenge : du niveau 1 aussi haut que possible, de plus en plus dur, trois erreurs permises. Le record de la partie met son nom sur la tuile.'],
-    ['🤝', 'Les pactes', 'dans la Carte, nouvel onglet Pactes : allie-toi avec une autre zone pendant 7 jours. Vos alliances s’affichent sur la carte du district.'],
-    ['🧩', 'Pacte d’enquête', 'une pièce déchirée en deux : l’un a le début, l’autre la fin. Mettez-la en commun pour l’avoir en entier.'],
-    ['🏁', 'Défi amical', 'trois jours d’incidents, d’énigmes ou de dossiers contre un collègue, avec une petite mise. Refuser ne coûte rien.'],
+    ['📂', 'Dossier clos', 'à la fin de chaque affaire, la Gazette ouvre le débrief : ce qui désignait l’auteur, ce qui écartait chaque innocent, qui a trouvé quoi et quand. Et ce qu’il te manquait.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
@@ -56,6 +53,11 @@ export const NOTE_MAJ = {
       ['Moins de doublons', 'la situation du jour et l’opération d’envergure (avec l’appel à renfort) ne se règlent plus que dans les Ordres ; l’HP les signale et y renvoie, le Terrain ne montre plus que ce qui se joue avec les autres zones.'],
       ['HP plus léger', 'l’incident en cours n’est plus répété dans la liste « à faire » (sa carte est juste en dessous), et le résumé de la nuit s’efface quand tu ouvres le rapport complet.'],
       ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
+    ]],
+    ['Dossier clos', [
+      ['Le débrief d’affaire', 'le soir où une affaire se termine (arrestation, fuite, aveux ou classement), la Gazette propose « Dossier clos ». On y voit l’auteur et les pièces qui le désignaient, la planque et ses indices, la pièce qui écartait chaque innocent et qui l’a trouvée en premier, les fausses accusations, le coup de théâtre du jour 3 (juste ou piège), la part de chaque zone et la chronologie. Touche une pièce pour la relire.'],
+      ['Ton enquête', 'combien de pièces clés tu avais, celles qui te manquaient, et ce que tu as trouvé, reçu et donné.'],
+      ['Où le retrouver', 'dans la Gazette du soir de la clôture, et pendant trois jours en haut de l’écran Enquête (bouton 📂 sur le tableau).'],
     ]],
     ['Enquête', [
       ['Mise à prix', 'annoncée dès l’ouverture de l’affaire. Chaque zone qui arrête l’auteur (ou obtient ses aveux) choisit sa récompense le lendemain, avec ses ordres : confiscation des avoirs (+12 k€), renfort fédéral (+2 agents pendant 5 jours, salaires payés par le fédéral) ou formation offerte (+1 niveau, sans agent absent). Sans choix : confiscation. Elle remplace l’ancienne prime de 4 k€.'],

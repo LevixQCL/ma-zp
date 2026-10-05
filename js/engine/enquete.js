@@ -12,6 +12,7 @@ import { bonusEquip, SERVICE_LABELS } from './constants.js';
 import { LIEUX as LIEUX3, minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
 import { affaireMeurtre } from './meurtre-mons.js';
 import { affaireMeurtreRampe, evaluerHypothese } from './meurtre-rampe.js';
+import { construireDebrief } from './debrief.js';
 
 /** Deuxième affaire de meurtre écrite à la main (« Le notaire de la Rampe ») : ouverte une fois par partie,
  * au plus tôt deux affaires après la première (une affaire de vol entre les deux). */
@@ -1100,14 +1101,14 @@ export function enquetePre(state, uids, ord, push) {
         z.rapport.push(`Enquête : confronté${aff.suspects[a].f ? 'e' : ''} à tes pièces, ${aff.suspects[a].nom} nie tout et repart libre. Tes pièces ne le mettaient pas face à ses contradictions (−1 de réputation). Tu peux recommencer demain avec d’autres pièces.`);
         continue;
       }
-      d.accuse = a;
+      d.accuse = a; d.accuseJ = e.jour;
       if (a === aff.coupable) { justes.push(u); continue; }
       d.exclu = true; z.reputation -= 3;
       z.rapport.push(`Enquête : ${aff.suspects[a].nom} n’avait rien à voir avec le meurtre ; le parquet te retire l’affaire (−3 de réputation). Tu peux encore aider les autres en partageant tes pièces.`);
       push(6, 'Enquête', `Fausse piste pour ${nomZone(z)}`, `Sa confrontation dans « ${aff.titre} » n’a rien donné. L’enquête continue pour les autres zones.`, u);
       continue;
     }
-    d.accuse = a;
+    d.accuse = a; d.accuseJ = e.jour;
     if (a === aff.coupable) justes.push(u);
     else {
       d.exclu = true; z.reputation -= 3;
@@ -1149,6 +1150,7 @@ export function enquetePre(state, uids, ord, push) {
         res.mobileTrouve = bons.map((u) => nomZone(state.zones[u]));
       }
       res.arrestations.push({ titre: aff.titre, suspect: cs.nom, planque: '', zones: res.decouverte.zones });
+      ajouterDebrief(res, () => construireDebrief(state, aff, 'aveux', { jour: e.jour, decouvreurs: justes, arreteurs: justes, mobileTrouve: res.mobileTrouve }));
       push(15, 'Aveux', `${aff.titre} : ${cs.nom} passe aux aveux`, `Confronté${cs.f ? 'e' : ''} à ses contradictions par ${res.decouverte.zones.join(' et ')}.${res.decouverte.contributeurs.length ? ` Avec les pièces de ${res.decouverte.contributeurs.join(', ')}.` : ''}`);
     } else push(14, 'Enquête', `${aff.titre} : ${cs.nom} identifié${cs.f ? 'e' : ''} par ${res.decouverte.zones.join(' et ')}`,
       `Mandat d’arrêt délivré. ${cs.f ? 'Elle' : 'Il'} se cache : la traque commence : une seule nuit pour l’arrêter, jusqu’à demain 20:00.${res.decouverte.contributeurs.length ? ` Avec les pièces de ${res.decouverte.contributeurs.join(', ')}.` : ''}`);
@@ -1202,12 +1204,19 @@ function traquesDuSoir(state, uids, ord, push, prendre, res) {
       push(13, 'Au tribunal', `${s.nom} ${peine}`, `Affaire « ${a.titre} ». ${temoins.length ? `À la barre, les enquêteurs de ${temoins.join(', ')}.` : ''} Interpellation par ${noms.join(' et ')}.`);
       push(15, 'Arrestation', `${s.nom} arrêté${s.f ? 'e' : ''} à ${a.planques[a.planque].nom}`, `Interpellation menée par ${noms.join(' et ')}. Affaire « ${a.titre} » bouclée.`);
       tr.fini = true;
+      ajouterDebrief(res, () => construireDebrief(state, a, 'arrestation', { jour: tr.jour, decouvreurs: tr.decouvreurs || [], arreteurs: gagnants.map((g) => g.u) }));
     } else if (tr.tours <= 1) {
       res.fuites.push({ titre: a.titre, suspect: s.nom, planque: a.planques[a.planque].nom });
       push(9, 'Traque', `${s.nom} a pris la fuite`, `${s.f ? 'Elle' : 'Il'} se cachait à ${a.planques[a.planque].nom}. Personne n’est venu ${s.f ? 'la' : 'le'} chercher à temps.`);
       tr.fini = true;
+      ajouterDebrief(res, () => construireDebrief(state, a, 'fuite', { jour: tr.jour, decouvreurs: tr.decouvreurs || [], arreteurs: [] }));
     }
   }
+}
+
+/** Débrief de fin d'affaire, publié dans la Gazette (une erreur de calcul ne doit jamais bloquer le tour). */
+function ajouterDebrief(res, f) {
+  try { (res.debriefs ||= []).push(f()); } catch (err) { console.error('débrief', err); }
 }
 
 /** Pendant la simulation d'une zone : démarches payées et résultats, enquête de voisinage. */
@@ -1384,7 +1393,7 @@ export function enquetePost(state, pre, push) {
   state.traques = (state.traques || []).filter((t) => !t.fini).map((t) => ({ ...t, tours: t.tours - 1 }));
   const accroche = 'Cinq suspects : une seule personne réunit le mobile, le moyen et l’occasion.';
   if (pre.res.decouverte) {
-    if (!affaire(state, e.n).meurtre) state.traques.push({ n: e.n, tours: ENQ.traqueTours, decouvreurs: pre.res.decouverte.uids, contributeurs: pre.res.decouverte.contribUids || [] });
+    if (!affaire(state, e.n).meurtre) state.traques.push({ n: e.n, jour: e.jour, tours: ENQ.traqueTours, decouvreurs: pre.res.decouverte.uids, contributeurs: pre.res.decouverte.contribUids || [] });
     const a = nouvelleAffaire(state);
     pre.res.nouvelle = a.titre;
     push(5, 'Nouvelle affaire', a.titre, `${a.texte} ${a.accroche || accroche}`);
@@ -1394,6 +1403,7 @@ export function enquetePost(state, pre, push) {
     pre.res.classee = true;
     pre.res.recit = recitFinal(a);
     pre.res.solution = { suspect: s.nom, planque: a.meurtre ? '' : a.planques[a.planque].nom };
+    ajouterDebrief(pre.res, () => construireDebrief(state, a, 'classee', { jour: e.jour }));
     push(8, 'Affaire classée', `« ${a.titre} » classée sans suite`, a.meurtre ? `Personne n’a obtenu d’aveux : c’était ${s.nom}.` : `Personne n’a trouvé : c’était ${s.nom}, caché${s.f ? 'e' : ''} à ${a.planques[a.planque].nom}.`);
     const b = nouvelleAffaire(state);
     pre.res.nouvelle = b.titre;

@@ -9,6 +9,7 @@ import { regrouperHonneur } from '../engine/honneur.js';
 import { apercuDirecteur, REGLAGES, DISTRICT } from '../engine/directeur.js';
 import { affaire, texteMisePrix, affairesOuvrables } from '../engine/enquete.js';
 import { formatDateBe, formatHeureBe } from '../engine/time.js';
+import { debriefsRecents, lienDebrief } from './debrief.js';
 
 export function renderGazette() {
   const list = S.gazettes;
@@ -62,6 +63,8 @@ function enqueteGazette(g) {
   const e = g.enquete, f = g.fipa || [];
   if (!e && !f.length) return '';
   const l = [];
+  // Dossier clos : le débrief de l'affaire terminée ce soir.
+  const dbs = debriefsRecents().filter((x) => x.g === g);
   if (e) {
     if (e.decouverte) l.push(`<p><strong>${esc(e.titre)}</strong> : ${esc(e.decouverte.suspect)} démasqué au jour ${e.jour} par ${esc(e.decouverte.zones.join(' et '))} (${e.decouverte.pts} pts). La traque commence.</p>`);
     for (const a of e.arrestations || []) l.push(a.planque ? `<p><strong>Arrestation</strong> : ${esc(a.suspect)}, à ${esc(a.planque)}, par ${esc(a.zones.join(' et '))}.</p>` : `<p><strong>Aveux</strong> : ${esc(a.suspect)}, confronté·e par ${esc(a.zones.join(' et '))}.</p>`);
@@ -69,6 +72,7 @@ function enqueteGazette(g) {
     if (e.classee && e.solution) l.push(`<p><strong>${esc(e.titre)}</strong> classée sans suite. La solution : ${esc(e.solution.suspect)}${e.solution.planque ? `, planque « ${esc(e.solution.planque)} »` : ''}.</p>`);
     if (!e.decouverte && !e.classee && !e.pause) l.push(`<p><strong>${esc(e.titre)}</strong> : jour ${e.jour}, toujours pas d’auteur identifié.</p>`);
     if (e.rebond) l.push(`<p><strong>${esc(e.rebond.titre)}</strong>. ${esc(e.rebond.texte)}</p>`);
+    if (dbs.length) l.push(dbs.map((x) => lienDebrief(x)).join(''));
     // Tant que la traque court, la planque ne figure pas dans le fin mot (anciens numéros compris).
     const traqueEnCours = (S.state.traques || []).some((t) => t.n === e.n && !t.fini);
     let fem = false;

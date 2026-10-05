@@ -1,5 +1,6 @@
 // Écran Enquête : le tableau Mobile · Moyen · Occasion, les pièces, les planques et les notes.
 import { formatDateBe } from '../engine/time.js';
+import { banniereDebrief } from './debrief.js';
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './common.js';
 import { capacite } from '../engine/zone.js';
 import { APPUI } from '../engine/appui.js';
@@ -411,7 +412,7 @@ export function renderEnquete() {
   const st = S.state, z = myZone();
   if (!st.enquete && st.enquetePause) {
     return `<main class="screen">
-      ${primeHtml()}${banniereTraque(st)}
+      ${primeHtml()}${banniereTraque(st)}${banniereDebrief()}
       <header class="col" style="gap:3px"><span class="kicker">Enquête</span><h1 class="big">Nouvelle affaire ${esc(formatDateBe(st.nextDeadline))} à 20:00</h1>
         <p class="small muted" style="margin:0">Pas d’enquête ce soir : place à la traque. La prochaine affaire s’ouvre à la Gazette de demain.</p></header>
       <button type="button" class="btn" data-action="edition-ouvrir">📰 Relire l’édition spéciale</button>
@@ -439,7 +440,7 @@ export function renderEnquete() {
   else if (tab === 'scene') body = constatations(aff, dos);
   else body = vueSuspects(aff, dos);
   return `<main class="screen">
-    ${primeHtml()}${banniereTraque(st)}
+    ${primeHtml()}${banniereTraque(st)}${banniereDebrief()}
     <header class="col" style="gap:6px">
       <div class="between"><span class="kicker">Enquête · affaire n° ${aff.n}</span><span class="row" style="gap:6px">${aff.prof ? '<button type="button" class="btn small" data-action="journal-ouvrir">📰 Journal</button>' : ''}<button type="button" class="btn small" data-action="tab-vue" data-v="tableau">${icon('tableau', 16)} Tableau</button></span></div>
       <h1 class="big" style="line-height:1.05">${esc(aff.titre)}</h1>
