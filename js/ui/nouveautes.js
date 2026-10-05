@@ -57,6 +57,7 @@ export const NOTE_MAJ = {
     ['Dossier clos', [
       ['Le débrief d’affaire', 'le soir où une affaire se termine (arrestation, fuite, aveux ou classement), la Gazette propose « Dossier clos ». On y voit l’auteur et les pièces qui le désignaient, la planque et ses indices, la pièce qui écartait chaque innocent et qui l’a trouvée en premier, les fausses accusations, le coup de théâtre du jour 3 (juste ou piège), la part de chaque zone et la chronologie. Touche une pièce pour la relire.'],
       ['Ton enquête', 'combien de pièces clés tu avais, celles qui te manquaient, et ce que tu as trouvé, reçu et donné.'],
+      ['La Gazette d’abord', 'à la première ouverture du jeu après la parution de 20:00, le jeu s’ouvre sur la Gazette du soir (une fois par numéro et par appareil). Le bouton retour ramène à l’HP.'],
       ['Où le retrouver', 'dans la Gazette du soir de la clôture, et pendant trois jours en haut de l’écran Enquête (bouton 📂 sur le tableau).'],
     ]],
     ['Enquête', [
