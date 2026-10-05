@@ -13,7 +13,8 @@ import { cielDe, dilemmeDuJour, feuilletonEnCours, pressionsVisibles } from '../
 import { fipaCards } from './fipa.js';
 import { blasonSvg, BLASONS, insigne } from './blasons.js';
 import { GRADES, gradeFor } from '../engine/constants.js';
-import { PERIL, DUEL_INDICATEURS } from '../engine/rivalites.js';
+import { PERIL } from '../engine/rivalites.js';
+import { aFairePactes } from './pactes.js';
 import { affaire, dossierDe, pointsDecouverte, ENQ, toursTraque, delaiTraque, PRIME_LABELS } from '../engine/enquete.js';
 import { aideBtn } from './aide.js';
 import { sceneCarteHtml } from './logistique.js';
@@ -189,7 +190,7 @@ function dilemmeHtml(st, z) {
   </section>`;
 }
 
-function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit, delegue }) {
+function ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue }) {
   const d = S.draft || {};
   const ciel = cielDe(z);
   const nbDem = (d.demarches || []).length;
@@ -217,8 +218,7 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, invit, delegue }) {
   items.push(delegue ? { ok: true, href: '#quete', t: delegue.statut === 'quiz' ? `Quiz express : ${Number(delegue.tentatives) || 0} sur 5` : 'Énigmes confiées à un agent', s: delegue.statut === 'quiz' ? ((Number(delegue.tentatives) || 0) >= 3 ? (delegue.bonus ? 'bonus choisi' : 'choisis ton bonus') : 'pas de bonus') : 'résultat ce soir' } : { ok: faites >= 3, href: '#quete', t: `Énigmes : ${faites} sur 3`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
   const fipa = (st.fipas || []).filter((f) => (f.demandeur === z.uid && f.etape === 'demande' && f.tourDecision === st.turn) || (f.partenaire === z.uid && f.etape === 'invite' && f.tourReponse === st.turn) || (f.etape === 'accepte' && f.tourJ === st.turn && (f.demandeur === z.uid || f.partenaire === z.uid)));
   if (fipa.length) items.push({ ok: !!(d.fipa || d.fipaReponse || d.fipaChoix), href: '#hp-fipa', t: 'FIPA : une décision t’attend', s: 'voir la carte FIPA ci-dessous' });
-  if (st.conseil && st.conseil.tour === st.turn) items.push({ ok: Object.keys(d.votes || {}).length > 0, href: '#diplomatie', t: 'Conseil de police : voter', s: 'une voix par zone, résultat à 20:00' });
-  if (invit) items.push({ ok: !!d.duelReponse, href: '#diplomatie', t: 'Répondre au défi en duel', s: 'sans réponse, c’est un refus' });
+  for (const x of aFairePactes()) items.push({ ok: x.fait, href: '#pactes', t: esc(x.titre), s: esc(x.texte) });
   const reste = items.filter((i) => !i.ok).length;
   const fait = items.length - reste;
   return `<section class="card soir" aria-label="Prochain tour" style="${cielStyle()}">
@@ -288,12 +288,10 @@ export function renderHP() {
   if (st.nonDroit && S.draft && !agentsND()) { const sc = Object.values(st.nonDroit.secteurs); const hier = sc.reduce((n, x) => n + ((x.hier || []).length ? 1 : 0), 0); alertes.push({ cls: 'blue', titre: `Zone de non-droit : ${sc.filter((x) => x.statut === 'repris').length} secteur${sc.filter((x) => x.statut === 'repris').length > 1 ? 's' : ''} repris sur ${sc.length}`, texte: hier ? `des zones y étaient hier sur ${hier} secteur${hier > 1 ? 's' : ''} : rejoins-les, à plusieurs ça tombe plus vite` : 'personne n’y était hier : lance le mouvement sur la radio', href: '#terrain' }); }
   if (st.affaires.length) alertes.push({ cls: 'blue', titre: `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} disputée${st.affaires.length > 1 ? 's' : ''} sur la carte`, texte: st.affaires.map((a) => esc(a.titre)).join(' · '), href: '#carte' });
 
-  if (st.conseil && st.conseil.tour === T) alertes.unshift({ cls: 'amber', titre: 'Conseil de police : vote ce soir', texte: st.conseil.motions.map((m) => esc(m.titre)).join(' · '), href: '#diplomatie' });
-  const invit = (st.duels || []).find((d) => d.b === z.uid && d.etape === 'propose' && d.tourReponse === T);
-  if (invit) alertes.unshift({ cls: 'amber', titre: `${esc(st.zones[invit.a]?.nom || 'Une zone')} te défie en duel`, texte: `${esc(DUEL_INDICATEURS[invit.ind].nom.toLowerCase())} · réponds avant 20:00`, href: '#diplomatie' });
+  for (const x of aFairePactes()) if (!x.fait) alertes.unshift({ cls: 'amber', titre: esc(x.titre), texte: esc(x.texte), href: '#pactes' });
   for (const a of appelsRenfort()) if (!renfortPrevu(a.uid)) alertes.unshift({ cls: 'amber', titre: `${esc(a.zone.nom)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » · ${a.op.appel ? 'appel du district : renfort payé ×1,5' : 'prête des agents contre de la réputation'}`, href: '#prive' });
   const perils = Object.values(st.zones).filter((x) => (x.peril || x.tutelle) && x.uid !== z.uid);
-  if (perils.length) alertes.push({ cls: 'red', titre: `${perils.map((x) => esc(x.nom)).join(', ')} en difficulté`, texte: 'un coup de main rapporte jusqu’à +7 de réputation', href: '#diplomatie' });
+  if (perils.length) alertes.push({ cls: 'red', titre: `${perils.map((x) => esc(x.nom)).join(', ')} en difficulté`, texte: 'un coup de main (onglet Pactes de la Carte) rapporte jusqu’à +7 de réputation', href: '#pactes' });
   const op = operationActive(z, T);
   if (op) alertes.unshift({ cls: 'red', titre: `Opération d\u2019envergure : ${esc(op.titre)}`, texte: `dispositif à régler dans tes ordres${op.duree > 1 ? ` · jour ${T - op.tourDebut + 1} sur ${op.duree}` : ''}`, href: '#ordres' });
   const tr = (st.traques || [])[0];
@@ -320,7 +318,7 @@ export function renderHP() {
       ${S.backend.isMaster(S.user) ? `<a class="list-row" href="#admin">${icon('shield', 18)}<span>Maître du jeu</span></a>` : ''}
     </nav>` : ''}
 
-    ${ceSoirHtml(st, z, { ordresOk, faites, reussies, invit, delegue })}
+    ${ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue })}
     ${dilemmeHtml(st, z)}
     ${incidentsHtml()}
     <section class="card mazone" aria-label="Ma zone">
@@ -361,7 +359,7 @@ export function renderHP() {
 
     ${z.tutelle ? `<section class="card red" aria-label="Zone sous tutelle"><span class="kicker" style="color:var(--red-soft)">Zone sous tutelle · verdict dans ${z.tutelle.fin - T + 1} résolution${z.tutelle.fin - T + 1 > 1 ? 's' : ''}</span>
       <span style="font-weight:700">${(z.tutelle.raisons || []).length ? esc(z.tutelle.raisons.join(', ')) : 'La zone tient le cap : continue comme ça'}</span>
-      <span class="small">Dernière chance : si ta zone est encore en péril au tour ${z.tutelle.fin}, c’est la faillite. En attendant : pas de rythme renforcé, d’agents de réserve, de manœuvre, de duel ni d’enchère, et seul le recrutement est permis comme grande décision. Tes collègues peuvent t’aider.</span>
+      <span class="small">Dernière chance : si ta zone est encore en péril au tour ${z.tutelle.fin}, c’est la faillite. En attendant : pas de rythme renforcé, d’agents de réserve, de défi ni d’enchère, et seul le recrutement est permis comme grande décision. Tes collègues peuvent t’aider.</span>
       <a class="small" href="#guide-faillite">Tutelle et faillite dans le guide</a></section>` : ''}
     ${z.peril ? `<section class="card red" aria-label="Zone en péril"><span class="kicker" style="color:var(--red-soft)">Zone en péril · ${z.tutelleSaison ? 'faillite' : 'tutelle'} dans ${z.peril.fin - T + 1} résolution${z.peril.fin - T + 1 > 1 ? 's' : ''}</span>
       <span style="font-weight:700">${esc((z.peril.raisons || []).join(', '))}</span>
@@ -407,7 +405,7 @@ function recompensesGrade(z) {
     out.push(`<section class="card"><h2 class="card-title">Blason de la zone</h2><p class="small muted" style="margin:0">Affiché sur l’HP et sur la carte (grade Commissaire divisionnaire).</p>
       <div class="swatches">${Object.entries(BLASONS).map(([k, b]) => `<button type="button" class="swatch" style="background:transparent;width:48px;height:52px" data-action="pick-blason" data-v="${k}" aria-pressed="${S.player && S.player.blason === k}" aria-label="Blason ${b.nom}">${blasonSvg(k, z.couleur, 36, b.nom)}</button>`).join('')}</div></section>`);
   }
-  if (gi >= 5) out.push(`<section class="card tight"><span class="kicker">Chef de corps</span><span class="small">${z.motionSaison ? 'Ta motion de la saison est déposée.' : 'Tu peux proposer une motion au Conseil cette saison, depuis l’écran Diplomatie.'}</span></section>`);
+  if (gi >= 5) out.push(`<section class="card tight"><span class="kicker">Chef de corps</span><span class="small">${z.motionSaison ? 'Ta motion de la saison est déposée.' : 'Tu peux proposer une motion au Conseil cette saison, depuis l’onglet Pactes de la Carte.'}</span></section>`);
   return out.join('');
 }
 

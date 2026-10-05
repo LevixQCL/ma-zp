@@ -21,7 +21,8 @@ import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus, app
 import { fipaPre, fipaGenerer } from './fipa.js';
 import { creerNonDroit, nonDroitResoudre } from './nondroit.js';
 import { encheresResoudre, annoncerLot } from './encheres.js';
-import { rivalitesPre, rivalitesPost, postesContre, themeActif, appliquerConsignes, absT, MAN } from './rivalites.js';
+import { rivalitesPre, rivalitesPost, themeActif, appliquerConsignes } from './rivalites.js';
+import { pactesPre, pactesPost, lies, PACTE } from './pactes.js';
 import { FLAGRANTS } from './contenu.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
@@ -64,7 +65,6 @@ export function buildJoinZone(state, uid, profile, turn = state.turn, arrivee = 
   attribuerSites(tmp);
   z.site = tmp.zones[uid].site;
   ajusterBatiments(z);
-  z.protegeJusqua = absT(state, turn) + MAN.protectionTours;
   return z;
 }
 
@@ -74,7 +74,7 @@ export function buildJoinZone(state, uid, profile, turn = state.turn, arrivee = 
  */
 export function migrateState(state) {
   if (!state) return state;
-  const defaults = { version: 1, season: 1, turn: 1, zones: {}, affaires: [], evenement: null, affaireSeq: 0, palmares: [], minClientVersion: 0, enquete: null, enqueteSeq: 0, traques: [], fipas: [], fipaSeq: 0, fipaPaires: {}, duels: [], postes: [], conseil: null, theme: null, motionsChef: [], toursSansFaillite: 0, aReveler: [], enchere: null, enchereResultat: null, lotsRecents: [] };
+  const defaults = { version: 1, season: 1, turn: 1, zones: {}, affaires: [], evenement: null, affaireSeq: 0, palmares: [], minClientVersion: 0, enquete: null, enqueteSeq: 0, traques: [], fipas: [], fipaSeq: 0, fipaPaires: {}, pactes: [], pacteSeq: 0, defis: [], defiSeq: 0, conseil: null, theme: null, motionsChef: [], toursSansFaillite: 0, aReveler: [], enchere: null, enchereResultat: null, lotsRecents: [] };
   for (const [k, v] of Object.entries(defaults)) if (state[k] === undefined) state[k] = v;
   for (const z of Object.values(state.zones)) migrateZone(z);
   attribuerSites(state);
@@ -223,9 +223,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   }
   const jalonTous = (label) => { for (const u of uids) jalon(state.zones[u], label); };
 
-  // Relations entre zones (entraide, manœuvres, duels, Conseil).
+  // Relations entre zones : pactes, défis amicaux, coup de main, Conseil.
+  pactesPre(state, uids, ord, push, T);
   const riv = rivalitesPre(state, uids, ord, push, T);
-  jalonTous('Diplomatie (entraide, manœuvres, duels, Conseil)');
+  jalonTous('Pactes, défis, Conseil');
   const theme = themeActif(state, T);
   // Salle des ventes : le lot gagné sert dès ce soir.
   const ench = encheresResoudre(state, uids, ord, push, T);
@@ -279,14 +280,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Plus l'équipe est forte, plus l'affaire rapporte (de 60 % à 130 % des points annoncés).
     const mult = multAffaire(aff, force);
     const qualite = mult < 1 ? `dispositif juste suffisant, ${Math.round(mult * 100)} % des points` : mult > 1.001 ? `dispositif solide, ${Math.round(mult * 100)} % des points` : 'dispositif conseillé, 100 % des points';
-    // Poste avancé : une zone rivale prélève 30 % des points.
-    const preleveurs = postesContre(state, chef, ord, T).filter((u) => !equipe.some((x) => x.u === u) && state.zones[u]);
-    let total = aff.recompense * mult;
-    if (preleveurs.length) {
-      const pris = total * 0.3; total -= pris;
-      for (const u of preleveurs) { state.zones[u]._points += pris / preleveurs.length; state.zones[u].rapport.push(`Poste avancé : tu récupères ${fmt1(pris / preleveurs.length)} pts sur « ${aff.titre} ».`); }
-      state.zones[chef].rapport.push(`${aff.titre} : un poste avancé rival a prélevé ${fmt1(pris)} pts.`);
-    }
+    const total = aff.recompense * mult;
     const sommeN = equipe.reduce((s, x) => s + x.n, 0);
     for (const x of equipe) {
       const z = state.zones[x.u];
@@ -369,9 +363,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.reputation += rep; z._psEntraide += ps; z.stats.renfortsPretes = (z.stats.renfortsPretes || 0) + 1;
     const ptsR = round1(r.agents * RENFORT.pointsParAgent * appel);
     if (ptsR > 0) { z._points += ptsR; jalon(z, `Renfort prêté à ${zoneLabel(c)}`); }
-    const indem = round1(r.agents * RENFORT.indemnite * appel);
+    const jumeles = lies(state, u, r.cible, 'terrain', T);
+    const indem = round1(r.agents * RENFORT.indemnite * appel * (jumeles ? PACTE.indemnite : 1));
     if (indem > 0) { z.budget += indem; z._compta.push({ k: 'renfort', l: `Indemnité fédérale de renfort (${r.agents} agent${r.agents > 1 ? 's' : ''})`, v: indem }); }
-    z.rapport.push(`Renfort : ${r.agents} de tes agents aident ${zoneLabel(c)} sur « ${op.titre} » (+${rep} de réputation, +${ps} PS d’entraide, indemnité fédérale +${fmt1(indem)} k€${op.appel ? ' ; appel du district : renfort payé ×1,5' : ''}).`);
+    z.rapport.push(`Renfort : ${r.agents} de tes agents aident ${zoneLabel(c)} sur « ${op.titre} » (+${rep} de réputation, +${ps} PS d’entraide, indemnité fédérale +${fmt1(indem)} k€${jumeles ? ', doublée par votre jumelage' : ''}${op.appel ? ' ; appel du district : renfort payé ×1,5' : ''}).`);
   }
   for (const [cible, l] of Object.entries(renfortsRecus)) {
     const n = l.reduce((a, b) => a + b.n, 0);
@@ -909,7 +904,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   enqueteDirecteur(state, push, makeRng(`${state.seed}:s${state.season}:t${T}:dir-enquete`));
   jalonTous('Enquête (fin d’affaire)');
   const rivPost = rivalitesPost(state, uids, push, T, nextWeekday, players);
-  jalonTous('Duels, péril, tutelle');
+  pactesPost(state, uids, push, T);
+  jalonTous('Pactes, défis, péril, tutelle');
   fipaGenerer(state, T, T >= SEASON_LENGTH - 3);
 
   // Bilan de l'événement de district.
@@ -1043,7 +1039,7 @@ function finDeSaison(state, classement) {
   for (const c of classes) state.zones[c.uid].ps += PS.finSaison;
   for (const c of classes) {
     const z = state.zones[c.uid];
-    if (!(z.stats.manoeuvresSaison > 0) && donnerTrophee(z, 'incorruptible', state.season, state.turn)) z.rapport.push('Trophée débloqué : « Incorruptible » (une saison classée sans aucune manœuvre).');
+    if (!(z.stats.pactesRompus > 0) && donnerTrophee(z, 'incorruptible', state.season, state.turn)) z.rapport.push('Trophée débloqué : « Incorruptible » (une saison classée sans jamais rompre un pacte).');
   }
   for (const z of zones) if ((z.stats.toursValides || 0) >= SEASON_LENGTH && donnerTrophee(z, 'increvable', state.season, state.turn)) z.rapport.push('Trophée débloqué : « Increvable » (ordres validés les 14 tours de la saison).');
   for (const [rang, c] of classes.slice(0, 3).entries()) {
@@ -1063,7 +1059,7 @@ function finDeSaison(state, classement) {
   state.affaires = [];
   state.evenement = null;
   state.nonDroit = creerNonDroit(state.seed, state.season);
-  state.fipas = []; state.traques = []; state.fipaPaires = {}; state.duels = []; state.postes = []; state.conseil = null; state.theme = null; state.motionsChef = [];
+  state.fipas = []; state.traques = []; state.fipaPaires = {}; state.duels = []; state.postes = []; state.pactes = []; state.defis = []; state.conseil = null; state.theme = null; state.motionsChef = [];
   for (const [uid, z] of Object.entries(state.zones)) {
     // Héritage : formations et bâtiments baissent d'un niveau, les annexes restent.
     const baisse = (n) => Math.max(1, (n || 1) - HERITAGE_PERTE);

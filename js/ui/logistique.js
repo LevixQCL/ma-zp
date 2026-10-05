@@ -13,7 +13,7 @@ import { coutDemarche, PRIME_LABELS } from '../engine/enquete.js';
 import { portraitSuspect } from './portrait.js';
 import { SERVICE_LABELS, scoreBudget, BUDGET_IPZ, IPZ_POIDS } from '../engine/constants.js';
 import { aideBtn } from './aide.js';
-import { PERIL, absT, MANOEUVRES } from '../engine/rivalites.js';
+import { PERIL, absT } from '../engine/rivalites.js';
 import { estimations } from './ordres.js';
 
 const k = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt1(Math.abs(v))} k€`;
@@ -30,7 +30,7 @@ export function previsionBudget() {
   if (d.decision && !decisionImpossible(z, d.decision, st.turn)) choix.push({ l: 'Grande décision', v: -coutDecision(z, d.decision) });
   const dem = (d.demarches || []).reduce((s, x) => s + coutDemarche(st, z.uid, x), 0);
   if (dem) choix.push({ l: 'Démarches d’enquête', v: -dem });
-  if (d.aide && d.aide.cible && d.aide.budget) choix.push({ l: 'Entraide envoyée', v: -d.aide.budget });
+  if (d.aide && d.aide.cible && d.aide.budget) choix.push({ l: 'Coup de main envoyé', v: -d.aide.budget });
   if (d.offre && st.enchere && d.offre.id === st.enchere.id && d.offre.montant) choix.push({ l: 'Offre à la salle des ventes (si tu l’emportes)', v: -d.offre.montant });
   const totalChoix = choix.reduce((s, x) => s + x.v, 0);
   return { fixes: ff, choix, totalChoix, solde: ff.total + totalChoix, apres: z.budget + ff.total + totalChoix };
@@ -203,7 +203,6 @@ export function ouvrirHpVoisin(uid) {
     <p class="small" style="margin:0"><span class="muted">Annexes :</span> ${annexes.length ? esc(annexes.join(', ')) : 'aucune'}${lots.length ? `<br><span class="muted">Lots :</span> ${esc(lots.join(', '))}` : ''}</p>
     ${estChampion(z, st) ? '<p class="small" style="margin:0;color:var(--amber)">★ Champion de la semaine</p>' : ''}
     ${(z.plaques || []).length ? `<p class="small" style="margin:0"><span class="muted">Podium :</span> ${z.plaques.map((pl) => `${pl.rang === 1 ? '1re' : `${pl.rang}e`} place saison ${pl.season}`).join(', ')}</p>` : ''}
-    ${z.trace && z.trace.tour >= st.turn - 1 && st.zones[z.trace.auteur] ? `<p class="small" style="margin:0"><span class="muted">Hier :</span> ${esc(MANOEUVRES[z.trace.type] ? MANOEUVRES[z.trace.type].nom.toLowerCase() : 'manœuvre')} réussi par ${esc(st.zones[z.trace.auteur].nom)}</p>` : ''}
     <div class="between small"><span class="muted">IPZ moyen</span><span class="mono">${fmt1(moyenneIpz(z))}</span></div>
     <div class="between small"><span class="muted">FIPA</span><span>${esc(fiabilite(z))}</span></div>
     ${siteDe(z) ? `<div class="between small"><span class="muted">Site sensible</span><span class="row" style="gap:4px;color:${siteDe(z).couleur}">${iconeSite(siteDe(z).id, siteDe(z).couleur, 14)}${esc(siteDe(z).nom)}</span></div>` : ''}

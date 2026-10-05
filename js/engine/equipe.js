@@ -114,7 +114,7 @@ export const TROPHEES = [
   { id: 'cerveau', nom: 'Cerveau', texte: 'Résoudre 3 dossiers noirs dans une saison' },
   { id: 'batisseur', nom: 'Bâtisseur', texte: 'Porter l’hôtel de police au niveau 4' },
   { id: 'veteran', nom: 'Vétéran', texte: 'Faire progresser un membre de l’équipe jusqu’à son dernier surnom' },
-  { id: 'incorruptible', nom: 'Incorruptible', texte: 'Finir une saison classé, sans aucune manœuvre' },
+  { id: 'incorruptible', nom: 'Incorruptible', texte: 'Finir une saison classé, sans jamais rompre un pacte' },
   { id: 'increvable', nom: 'Increvable', texte: 'Valider ses ordres les 14 tours d’une saison' },
 ];
 export const TROPHEE = Object.fromEntries(TROPHEES.map((t) => [t.id, t]));

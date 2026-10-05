@@ -1124,7 +1124,7 @@ export const PARQUET = {
 export function travailEnquete(z) {
   const p = (z && z.enquete && z.enquete.pieces) || [];
   const recues = p.filter((x) => x.src === 'partage').length;
-  const propres = p.filter((x) => x.src !== 'partage' && x.src !== 'ouverture' && x.src !== 'rebond' && x.src !== 'rattrapage' && x.src !== 'audition' && x.src !== 'tardif').length;
+  const propres = p.filter((x) => x.src !== 'partage' && x.src !== 'pacte' && x.src !== 'ouverture' && x.src !== 'rebond' && x.src !== 'rattrapage' && x.src !== 'audition' && x.src !== 'tardif').length;
   const part = recues + propres ? recues / (recues + propres) : 0;
   const stade = recues >= PARQUET.malus.recues && part >= PARQUET.malus.part ? 2 : recues >= PARQUET.avertissement.recues && part >= PARQUET.avertissement.part ? 1 : 0;
   return { recues, propres, part, stade };

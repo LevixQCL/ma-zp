@@ -7,8 +7,8 @@ import { siteDe } from '../engine/sites.js';
 import { chefDe, postulerCtrl } from './affaires.js';
 import { hashString } from '../engine/rng.js';
 import { fiabilite } from '../engine/fipa.js';
-import { ongletsRadio } from './diplomatie.js';
-import { marquerRadioLue } from './prive.js';
+import { marquerRadioLue, ongletsRadio } from './prive.js';
+import { ongletsCarte } from './pactes.js';
 import { appelsRenfort, renfortCtrl } from './renfort.js';
 import { annoncesND, suggestionND, placeND, prevoirRejoindre } from './nondroit.js';
 import { nomSecteur } from '../engine/nondroit.js';
@@ -98,6 +98,7 @@ export function renderCarte() {
       <span class="row" style="gap:4px"><span class="bullet" style="background:#63B0FF"></span>patrouille</span><span>pointillés : chez le voisin</span></div>`;
   const zoom = S.carteZoom !== false;
   return `<main class="screen">
+    ${ongletsCarte('carte')}
     <header class="between" style="align-items:flex-end"><h1 class="big">District Delta</h1><span class="small muted">${n} zone${n > 1 ? 's' : ''}</span></header>
     <div class="seg2" role="group" aria-label="Cadrage de la carte">
       <button type="button" data-action="carte-zoom" data-v="0" aria-selected="${!zoom}">Tout le district</button>

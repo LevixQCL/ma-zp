@@ -1331,3 +1331,27 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .tr-nom { line-height: 1.2; }
 .tr-s { font-size: 11px; color: var(--muted); }
 .tr-entete { width: 100%; border: 0; background: transparent; color: inherit; padding: 0; cursor: pointer; text-align: left; }
+
+/* ───── Pactes (onglet de la Carte) ───── */
+.seg3.deux { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.pacte-ico { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; background: var(--surface3); flex-shrink: 0; }
+.pacte-ligne { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pacte-ligne strong { overflow-wrap: anywhere; }
+.puce { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; vertical-align: 1px; }
+.jours { display: flex; gap: 3px; }
+.jours i { width: 6px; height: 6px; border-radius: 50%; background: var(--surface3); }
+.jours i.f { background: var(--green); }
+hr.sep { border: 0; border-top: 1px solid var(--hair); margin: 2px 0; width: 100%; }
+.zchips { display: flex; flex-wrap: wrap; gap: 6px; }
+.zchip { display: inline-flex; align-items: center; gap: 2px; min-height: 36px; padding: 6px 11px; border-radius: 999px; border: 1px solid var(--hair); background: var(--surface2); color: var(--text2); font: 600 12.5px var(--body); cursor: pointer; }
+.zchip[aria-pressed="true"] { border-color: var(--amber); background: var(--amber-bg); color: var(--amber-hi); }
+.zchip[disabled] { opacity: .45; cursor: default; }
+.choice.pacte-choix { flex-direction: row; align-items: flex-start; justify-content: flex-start; gap: 10px; text-align: left; min-height: 0; padding: 10px; }
+.pacte-form { border-top: 1px solid var(--hair); padding-top: 10px; }
+.defi-score { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; text-align: center; }
+.defi-score strong { font-family: var(--display); font-size: 30px; font-weight: 800; line-height: 1; }
+/* Demi-pièce : un morceau de PV déchiré, papier clair comme les pièces de l'enquête. */
+.demi-piece { position: relative; display: flex; flex-direction: column; gap: 4px; background: var(--paper); color: var(--ink); border-radius: 4px; padding: 12px 14px; box-shadow: 0 6px 14px rgba(0, 0, 0, .35); }
+.demi-piece .small { color: var(--ink2); }
+.demi-piece.haut { padding-bottom: 18px; clip-path: polygon(0 0, 100% 0, 100% 88%, 94% 96%, 86% 89%, 77% 98%, 68% 90%, 58% 97%, 48% 89%, 38% 98%, 28% 90%, 18% 97%, 9% 89%, 0 96%); }
+.demi-piece.bas { padding-top: 18px; clip-path: polygon(0 4%, 9% 11%, 18% 3%, 28% 10%, 38% 2%, 48% 11%, 58% 3%, 68% 10%, 77% 2%, 86% 11%, 94% 4%, 100% 12%, 100% 100%, 0 100%); }

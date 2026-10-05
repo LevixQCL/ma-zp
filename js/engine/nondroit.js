@@ -11,6 +11,7 @@ import { makeRng } from './rng.js';
 import { clamp, round1, forceEngagement, jalon, noter } from './zone.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
 import { donnerTrophee, TROPHEE, figure, nomComplet } from './equipe.js';
+import { lies, PACTE } from './pactes.js';
 
 export const MILIEUX = [
   { id: 'deal', titre: 'Point de deal', texte: 'Des guetteurs à chaque coin de rue, un trafic jour et nuit.' },
@@ -108,6 +109,11 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
       const bonus = mi ? bonusChef(mi.niveau) : 0;
       return { u, n, f: forceEngagement(state.zones[u], n) * (1 + bonus), chef: mi, risque: mi ? CHEFS.nd.blessure : 1 };
     }) : [];
+    // Jumelage terrain : +20 % de force pour deux zones jumelées sur le même secteur.
+    for (const e of engages) {
+      const jum = engages.filter((x) => x.u !== e.u && lies(state, e.u, x.u, 'terrain', T));
+      if (jum.length) { e.f *= 1 + PACTE.ndBonus; state.zones[e.u].rapport.push(`Jumelage : avec ${jum.map((x) => state.zones[x.u].nom).join(', ')} sur ${nomSecteur(k)}, ta force est majorée de ${Math.round(PACTE.ndBonus * 100)} %.`); }
+    }
     for (const e of engages) if (e.chef) state.zones[e.u].rapport.push(`Mission : ${nomComplet(e.chef)} mène tes agents à ${nomSecteur(k)} (force +${Math.round(bonusChef(e.chef.niveau) * 100)} %, deux fois moins de risque de blessure).`);
     s.hier = engages.map((e) => ({ u: e.u, n: e.n })); // public après 20:00 : qui y était hier soir
     const coop = multCoop(engages.length);

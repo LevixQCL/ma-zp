@@ -3,18 +3,26 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-07-rampe-prime',
+  id: '2026-10-05-pactes',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🌫️', 'Un nouveau meurtre à Mons, ce soir', 'un notaire retrouvé au pied de son escalier, Rampe Sainte-Waudru. Des heures qui mentent, un GSM qui parle, et une vieille histoire de Doudou.'],
-    ['💰', 'Mise à prix', 'arrête l’auteur d’une affaire, choisis ta récompense (12 k€, 2 agents fédéraux ou une formation) et accroche son avis de recherche au commissariat.'],
-    ['💣', 'Colis suspect', 'la fiche SEDEE change à chaque engin : relis-la bien !'],
-    ['🔍', 'Empreintes', 'curseur rond, aide « ? » sur les minuties, et tu vises avant de valider (touche le rond orange).'],
+    ['🤝', 'Les pactes', 'dans la Carte, nouvel onglet Pactes : allie-toi avec une autre zone pendant 7 jours. Vos alliances s’affichent sur la carte du district.'],
+    ['🧩', 'Pacte d’enquête', 'chacun reçoit la moitié d’une pièce : l’un sait sur qui elle porte, l’autre ce qu’elle dit. Mettez-la en commun pour l’avoir en entier.'],
+    ['🏁', 'Défi amical', 'trois jours d’incidents, d’énigmes ou de dossiers contre un collègue, avec une petite mise. Refuser ne coûte rien.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Pactes (la diplomatie refaite)', [
+      ['Un onglet dans la Carte', 'la Diplomatie quitte la Radio (qui redevient Radio | Privé) et devient l’onglet Pactes de la Carte. La carte du district y montre qui est lié à qui.'],
+      ['Trois pactes de 7 jours', 'jumelage terrain (+20 % de force les soirs où vous êtes sur le même secteur de la zone de non-droit, indemnité de renfort doublée entre vous), pacte d’enquête (une demi-pièce chacun un soir sur deux, à mettre en commun), centrale d’achat (formations et équipement −15 %). Deux pactes au plus.'],
+      ['Sans piège', 'si ton partenaire ne joue plus pendant deux jours, le pacte s’éteint sans pénalité. Le rompre toi-même est public et bloque trois jours. +5 PS à la signature, +10 PS au bout des 7 jours.'],
+      ['Défi amical', 'remplace les duels : 3 jours sur les incidents réussis, les énigmes réussies ou les dossiers locaux résolus. Mise de 0, 3 ou 5 k€ chacun ; le gagnant prend le pot et 2 k€ du district. Refuser ne coûte rien.'],
+      ['Fini les manœuvres', 'débauchage, dessaisissement, signalement et poste avancé disparaissent : on joue entre collègues. Le trophée « Incorruptible » récompense maintenant une saison sans pacte rompu.'],
+      ['Coup de main et Conseil', 'l’entraide est réservée aux zones en péril ou sous tutelle (l’encadré n’apparaît que s’il y en a une). Le Conseil peut voter un fonds de solidarité (2 k€ par zone) ; la prime à la coopération compte aussi les pactes tenus, et le blâme les pactes rompus.'],
+      ['Équilibrage', 'le pacte d’enquête a été simulé pour ne pas faire tomber les affaires trop vite : une demi-pièce un soir sur deux, que les deux zones doivent mettre en commun.'],
+    ]],
     ['Le notaire de la Rampe (ouverture ce soir à 20:00)', [
       ['Une affaire plus grande', 'un notaire retrouvé au pied de son escalier, Rampe Sainte-Waudru. L’affaire en cours est retirée ce soir pour lui laisser la place (sauf le meurtre de la rue de la Clef, qui va jusqu’au bout). Cinq proches, chacun ment pour une raison ; derrière le meurtre, un second mystère.'],
       ['Recouper deux pièces', 'sous chaque pièce, « Recouper » (1 k€, un par soir) : tes enquêteurs comparent deux pièces. Certaines paires apprennent du neuf, la plupart rien. Une ficelle tirée entre deux pièces propose de les recouper.'],
