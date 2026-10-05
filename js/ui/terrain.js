@@ -69,7 +69,7 @@ export function renderTerrain() {
 
   const section = (titre, items, vide) => `<section class="col" aria-label="${titre}" style="gap:8px"><h2 class="section">${titre}</h2>${items.length ? items.join('') : `<p class="small muted" style="margin:0">${vide}</p>`}</section>`;
   return `<main class="screen">
-    <header class="col" style="gap:3px"><h1 class="big">Terrain</h1><p class="sub">La zone de non-droit à reprendre ensemble, les affaires disputées et là où tu peux aider. Ta situation du jour et ton opération se règlent dans les <a href="#ordres">Ordres</a>. Tout se joue à 20:00.</p></header>
+    <header class="col" style="gap:3px"><h1 class="big">Terrain</h1><p class="sub">La zone de non-droit à reprendre ensemble et là où tu peux aider. Tout se joue à 20:00.</p></header>
     ${chezMoi.length ? section('Chez moi', chezMoi, '') : ''}
     ${nonDroitHtml()}
     ${section('Chez les voisins', voisins, 'Aucune demande d’aide pour l’instant.')}
