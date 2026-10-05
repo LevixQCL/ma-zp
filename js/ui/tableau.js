@@ -742,7 +742,7 @@ export function renderTableau() {
       </div>
     </div>
     <div class="tb-haut tb-ui">
-      <button type="button" class="tb-chip" data-action="tab-ouvrir" data-tid="titre">J${st.enquete.jour} / ${ENQ.dureeMax} · ${et.t.liens.length} ficelle${et.t.liens.length > 1 ? 's' : ''}</button>
+      <button type="button" class="tb-chip" data-action="tab-ouvrir" data-tid="titre">J${st.enquete.jour}/${ENQ.dureeMax}<span class="tb-fic"> · ${et.t.liens.length} ficelle${et.t.liens.length > 1 ? 's' : ''}</span></button>
       ${sauvegardeCarnet(st.enquete.n) ? '<button type="button" class="tb-chip tb-pc" data-action="tab-restaurer" title="Remettre le tableau tel qu’il était sur cet appareil avant la dernière synchro">⟲ restaurer</button>' : ''}
       <button type="button" class="tb-chip ${S.carnetSync && S.carnetSync !== 'ok' && S.carnetSync !== 'encours' ? '' : 'tb-pc'}" data-action="tab-sync" aria-label="Synchroniser le tableau avec mes autres appareils" title="Synchroniser avec mes autres appareils" ${S.carnetSync && S.carnetSync !== 'ok' ? 'style="color:var(--red-soft)"' : ''}>${S.carnetSync === 'encours' ? '↻ …' : S.carnetSync && S.carnetSync !== 'ok' ? `⚠ non synchronisé${S.carnetSync === 'permission-denied' ? ' (règles Firebase)' : ''} · réessayer` : '↻'}</button>
       ${traque ? '<button type="button" class="tb-chip rouge" data-action="traque-voir">Traque en cours</button>' : ''}
@@ -751,7 +751,7 @@ export function renderTableau() {
       <button type="button" class="tb-chip ${sp('boite')}" data-action="tab-volet" data-k="boite" aria-label="Boîte à pièces, ${nbBoite} à ranger">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l2-5h14l2 5"/><rect x="3" y="9" width="18" height="11" rx="1.5"/><path d="M9 13h6"/></svg>${nbBoite}${neuf ? '<span class="tb-dot"></span>' : ''}</button>
       ${aff.coupsDePouce ? '<button type="button" class="tb-rond" data-action="tab-ouvrir" data-tid="pouce" aria-label="Coups de pouce" title="Coups de pouce">💡</button>' : ''}
-      <button type="button" class="tb-chip ambre ${sp('soir')}" data-action="tab-volet" data-k="soir">Ce soir <span class="tb-compte">${(d.demarches || []).length}/${ENQ.maxDemarches}</span></button>
+      <button type="button" class="tb-chip ambre ${sp('soir')}" data-action="tab-volet" data-k="soir"><span class="tb-soir-l">Ce soir </span><span class="tb-compte">${(d.demarches || []).length}/${ENQ.maxDemarches}</span></button>
     </div>
     ${traque && S.banTraqueVue !== st.turn ? `<div class="tb-banniere">${banniereTraque(st, { tableau: true })}<button type="button" class="tb-rond tb-ban-x" data-action="tb-ban-fermer" aria-label="Fermer">✕</button></div>` : ''}
     <div id="tb-aide" class="tb-aide" ${fil ? '' : 'hidden'}>${S.tabFrom ? 'Touche l’élément à relier' : 'Glisse d’un élément à l’autre · touche une ficelle pour la couper'}</div>
@@ -974,9 +974,20 @@ export function basculerFrise(id) {
 export function marquerTutoVu() { S.tutoTabVu = true; try { localStorage.setItem(TUTO_KEY, '1'); } catch (e) { /* pas de stockage */ } }
 
 /** À appeler après chaque affichage de l'écran : branche les gestes sur le tableau. */
+/** Barre du haut : on la resserre par paliers tant qu'elle déborde (petit écran, grande police système). */
+function ajusterHaut() {
+  const h = document.querySelector('.tb-haut');
+  if (!h) return;
+  h.classList.remove('serre1', 'serre2', 'serre3');
+  for (const c of ['serre1', 'serre2', 'serre3']) { if (h.scrollWidth <= h.clientWidth + 1) break; h.classList.add(c); }
+}
+let ecouteHaut = false;
+
 export function monterTableau(rerender) {
   const vp = document.getElementById('tb-vp');
   if (!vp) { ctl = null; return; }
+  ajusterHaut();
+  if (!ecouteHaut) { ecouteHaut = true; addEventListener('resize', ajusterHaut); if (document.fonts) document.fonts.ready.then(ajusterHaut).catch(() => {}); }
   const st = S.state, n = st.enquete.n;
   if (!S.tabV || S.tabVn !== n) { S.tabV = dispo(n).vue || vueDepart(); S.tabVn = n; }
   S.tabV = borner(S.tabV);
