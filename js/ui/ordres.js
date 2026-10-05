@@ -1,7 +1,7 @@
 // Écran des ordres du tour.
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
-import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER } from '../engine/constants.js';
+import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier } from '../engine/constants.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { primeHtml } from './prime.js';
 import { demandeRenfortHtml } from './renfort.js';
@@ -488,8 +488,9 @@ function dossiersHtml(z, e) {
     const d = l.d, tot = d.total || d.reste;
     const deja = Math.max(0, (tot - d.reste) / tot) * 100, soir = (l.fait / tot) * 100;
     const ageSoir = d.age + 1, retard = !l.boucle && ageSoir > 6, bientot = !l.boucle && ageSoir >= 5;
+    const val = valeurDossier(d.age);
     return `<div class="dos ${retard ? 'bad' : bientot ? 'warn' : ''}">
-      <div class="between" style="gap:8px"><span class="dos-t"><span class="dos-age">J${d.age}</span>${esc(d.titre)}</span>
+      <div class="between" style="gap:8px"><span class="dos-t"><span class="dos-age">J${d.age}</span>${esc(d.titre)}${val < 1 ? ` <span class="tiny warn" title="Un dossier qui traîne rapporte moins de points">· vaut ${Math.round(val * 100)} %</span>` : ''}</span>
         <span class="dos-f ${l.boucle ? 'ok' : retard ? 'bad' : ''}">${l.boucle ? '✓ bouclé ce soir' : `reste ${Math.round((l.reste / tot) * 100)} %`}</span></div>
       <div class="dos-bar" aria-hidden="true"><i class="deja" style="width:${deja}%"></i><i class="soir" style="width:${soir}%"></i></div>
       ${retard ? '<span class="tiny bad">pas bouclé : il coûtera de la satisfaction chaque soir</span>' : bientot ? `<span class="tiny warn">pas bouclé ce soir : J${ageSoir} demain, en retard après J6</span>` : ''}
