@@ -19,6 +19,8 @@ export const NOTE_MAJ = {
       ['Vieux dossiers', 'un dossier local qui traîne rapporte moins de points : pleine valeur le jour de son arrivée et le lendemain, puis −20 % par jour (minimum 25 %). Les Ordres affichent « vaut … % » à côté des dossiers concernés. Suivre le rythme paie plus que tout rattraper d’un coup.'],
     ]],
     ['Plus lisible', [
+      ['Bâtir', 'chaque option affiche son délai : un agrandissement est prêt le lendemain soir, une infrastructure est en service dès ce soir.'],
+      ['Tableau d’enquête', 'la barre du haut se resserre sur les petits écrans (ou avec une grande police) au lieu de sortir de l’écran.'],
       ['Des couleurs', 'sous chaque service, le résultat estimé de ce soir est en vert (ça va), orange (à surveiller) ou rouge (ça coince).'],
       ['Proximité', 'la criminalité affiche sa prévision de ce soir et son niveau, avec les mêmes seuils que les quartiers de la Carte : calme sous 45, à surveiller, tendue dès 55, chaude dès 70.'],
       ['Recherche et Accueil', 'on lit « dossiers bouclés ce soir · en cours » et la paperasse rappelle son seuil de 14 (au-delà : −2 de moral par soir).'],
