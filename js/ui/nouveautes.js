@@ -28,6 +28,7 @@ export const NOTE_MAJ = {
       ['Records', 'chaque niveau réussi est enregistré. Le meilleur de la partie sur chaque mini-jeu a son nom sur la tuile (premier arrivé en cas d’égalité) et un titre sur son profil tant qu’il garde le record : Démineur du district, Maître serrurier, As du dépannage, Œil de lynx, Maître des empreintes, Génie de l’ADN, Maître du réseau, Traqueur d’IP.'],
     ]],
     ['Pactes (la diplomatie refaite)', [
+      ['Réponse le jour même', 'une proposition de pacte ou de défi part tout de suite en message privé et s’affiche chez l’autre (HP, Carte › Pactes). S’il accepte avant 20:00, c’est signé le soir même. Proposer ou répondre valide aussi tes ordres.'],
       ['Un onglet dans la Carte', 'la Diplomatie quitte la Radio (qui redevient Radio | Privé) et devient l’onglet Pactes de la Carte. La carte du district y montre qui est lié à qui.'],
       ['Trois pactes de 7 jours', 'jumelage terrain (+20 % de force les soirs où vous êtes sur le même secteur de la zone de non-droit, indemnité de renfort doublée entre vous), pacte d’enquête (une demi-pièce chacun un soir sur deux, à mettre en commun), centrale d’achat (formations et équipement −15 %). Deux pactes au plus.'],
       ['Sans piège', 'si ton partenaire ne joue plus pendant deux jours, le pacte s’éteint sans pénalité. Le rompre toi-même est public et bloque trois jours. +5 PS à la signature, +10 PS au bout des 7 jours.'],

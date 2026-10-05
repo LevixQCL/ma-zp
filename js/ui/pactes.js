@@ -24,6 +24,36 @@ function autres() {
 const nomCourt = (uid) => { const z = S.state.zones[uid]; return z ? `${esc(z.code)} ${esc(z.nom)}` : 'zone partie'; };
 const puce = (uid) => { const z = S.state.zones[uid]; return `<i class="puce" style="background:${esc((z && z.couleur) || '#67719A')}"></i>`; };
 
+// ───── Propositions du jour, échangées en messages privés (l'autre peut répondre avant 20:00) ─────
+const duTour = (x) => x && S.state && x.season === S.state.season && x.turn === S.state.turn;
+/** Dernier message du jour de `de` à `a` portant cette clé (pacte, pacteRep, defi, defiRep). */
+function dernierMsg(de, a, cle) {
+  return (S.prives || []).filter((m) => m[cle] && m.de === de && m.a === a && duTour(m[cle])).sort((x, y) => (x.at || 0) - (y.at || 0)).slice(-1)[0] || null;
+}
+/** Propositions de pacte reçues aujourd'hui par message (une par zone, la dernière). */
+export function pactesRecus() {
+  const st = S.state, me = S.user.uid, out = {};
+  for (const m of S.prives || []) {
+    if (!m.pacte || m.a !== me || !duTour(m.pacte) || !PACTES[m.pacte.type] || !st.zones[m.de]) continue;
+    if (!out[m.de] || (m.at || 0) > out[m.de].at) out[m.de] = { de: m.de, type: m.pacte.type, at: m.at || 0 };
+  }
+  return Object.values(out).filter((x) => !pactesDe(st, me).some((p) => partenaire(p, me) === x.de && p.etape === 'actif')).map((x) => {
+    const rep = dernierMsg(me, x.de, 'pacteRep');
+    return { ...x, reponse: rep && rep.pacteRep.type === x.type ? rep.pacteRep.ok : null };
+  });
+}
+/** Défis reçus aujourd'hui par message. */
+export function defisRecus() {
+  const st = S.state, me = S.user.uid, out = {};
+  for (const m of S.prives || []) {
+    if (!m.defi || m.a !== me || !duTour(m.defi) || !DEFI_INDICATEURS[m.defi.ind] || !st.zones[m.de]) continue;
+    if (!out[m.de] || (m.at || 0) > out[m.de].at) out[m.de] = { de: m.de, ind: m.defi.ind, mise: Number(m.defi.mise) || 0, at: m.at || 0 };
+  }
+  return Object.values(out).map((x) => { const rep = dernierMsg(me, x.de, 'defiRep'); return { ...x, reponse: rep && rep.defiRep.ind === x.ind ? rep.defiRep.ok : null }; });
+}
+/** Réponse reçue à ma proposition du jour (true, false ou null). */
+const reponseA = (cible, cle, ok) => { const m = dernierMsg(cible, S.user.uid, cle); return m && ok(m[cle]) ? !!m[cle].ok : null; };
+
 /** Ce qui attend une réponse ou un geste du joueur dans l'onglet Pactes (pour les pastilles et l'HP). */
 export function aFairePactes() {
   const st = S.state, z = myZone();
@@ -34,6 +64,8 @@ export function aFairePactes() {
     if (p.etape === 'actif' && p.frag && !(p.frag.donne && p.frag.donne[me])) out.push({ k: 'frag', titre: `Demi-pièce à mettre en commun avec ${nomCourt(partenaire(p, me))}`, texte: 'avant le prochain 20:00, sinon elle est perdue', fait: d.fragment === p.id });
   }
   for (const f of st.defis || []) if (f.b === me && f.etape === 'propose' && f.tourReponse === T) out.push({ k: 'defi', titre: `${nomCourt(f.a)} te lance un défi amical`, texte: `${DEFI_INDICATEURS[f.ind].nom.toLowerCase()}${f.mise ? ` · ${f.mise} k€ chacun` : ''} · refuser ne coûte rien`, fait: !!(d.defiReponse && d.defiReponse.id === f.id) });
+  for (const x of pactesRecus()) out.push({ k: 'pacte', titre: `${nomCourt(x.de)} te propose un ${PACTES[x.type].nom.toLowerCase()}`, texte: `${PACTES[x.type].court} · si tu acceptes avant 20:00, signé ce soir`, fait: x.reponse !== null });
+  for (const x of defisRecus()) out.push({ k: 'defi', titre: `${nomCourt(x.de)} te lance un défi amical`, texte: `${DEFI_INDICATEURS[x.ind].nom.toLowerCase()}${x.mise ? ` · ${x.mise} k€ chacun` : ''} · refuser ne coûte rien`, fait: x.reponse !== null });
   if (st.conseil && st.conseil.tour === T) out.push({ k: 'conseil', titre: 'Conseil de police : vote ce soir', texte: 'une voix par zone, résultat à 20:00', fait: Object.keys(d.votes || {}).length > 0 });
   return out;
 }
@@ -97,11 +129,15 @@ function mesPactesHtml() {
         : `<button type="button" class="lien" data-action="pacte-rompre" data-id="${esc(p.id)}" style="align-self:flex-end;color:var(--faint);font-size:12px">Rompre ce pacte</button>`}`;
   });
   const brouillon = d.pacte && d.pacte.cible && st.zones[d.pacte.cible]
-    ? `<div class="pacte-ligne">${ico(d.pacte.type)}<span class="col grow" style="gap:2px"><strong class="small">${esc(PACTES[d.pacte.type].nom)} · ${puce(d.pacte.cible)}${nomCourt(d.pacte.cible)}</strong><span class="tiny ${liste.length >= PACTE.max ? 'warn' : 'muted'}">${liste.length >= PACTE.max ? `ne partira pas : tu as déjà ${PACTE.max} pactes` : 'part ce soir avec tes ordres, réponse demain'}</span></span><button type="button" class="btn small ghost" data-action="pacte-annuler">Annuler</button></div>` : '';
+    ? `<div class="pacte-ligne">${ico(d.pacte.type)}<span class="col grow" style="gap:2px"><strong class="small">${esc(PACTES[d.pacte.type].nom)} · ${puce(d.pacte.cible)}${nomCourt(d.pacte.cible)}</strong><span class="tiny ${liste.length >= PACTE.max ? 'warn' : 'muted'}">${liste.length >= PACTE.max ? `ne partira pas : tu as déjà ${PACTE.max} pactes` : (() => { const r = reponseA(d.pacte.cible, 'pacteRep', (x) => x.type === d.pacte.type); return r === true ? '<span class="ok">accepté : signé ce soir à 20:00</span>' : r === false ? 'refusé, pas cette fois' : 'proposition envoyée en message ; s’il accepte avant 20:00, signé ce soir (sinon il pourra répondre demain)'; })()}</span></span><button type="button" class="btn small ghost" data-action="pacte-annuler">Annuler</button></div>` : '';
   const max = liste.length + (brouillon ? 1 : 0) >= PACTE.max;
   const bloque = (myZone().pacteBloque || 0) >= (st.season - 1) * 100 + st.turn;
+  const recus = pactesRecus().map((x) => `<div class="pacte-ligne">${ico(x.type)}<span class="col grow" style="gap:2px;min-width:0"><strong class="small">${puce(x.de)}${nomCourt(x.de)} te propose : ${esc(PACTES[x.type].nom)}</strong><span class="tiny muted">${esc(PACTES[x.type].texte)}</span></span></div>
+      <div class="choices"><button type="button" class="choice" data-action="pacte-accepter" data-de="${esc(x.de)}" data-type="${x.type}" data-v="1" aria-pressed="${x.reponse === true}">${x.reponse === true ? '✓ Accepté' : 'Accepter'}</button><button type="button" class="choice" data-action="pacte-accepter" data-de="${esc(x.de)}" data-type="${x.type}" data-v="0" aria-pressed="${x.reponse === false}">${x.reponse === false ? 'Refusé' : 'Refuser'}</button></div>
+      ${x.reponse === true ? '<span class="tiny ok">Signé ce soir à 20:00 (ta réponse lui a été envoyée).</span>' : ''}`).join('<hr class="sep">');
   return `<section class="card" aria-label="Mes pactes"><div class="between"><h2 class="card-title">Mes pactes</h2><span class="tiny muted">${Math.min(PACTE.max, liste.length + (brouillon ? 1 : 0))} sur ${PACTE.max}</span></div>
-    ${lignes.length || brouillon ? `${lignes.join('<hr class="sep">')}${brouillon ? `${lignes.length ? '<hr class="sep">' : ''}${brouillon}` : ''}` : '<p class="small muted" style="margin:0">Aucun pacte pour l’instant. Un pacte lie deux zones pendant 7 tours, avec un avantage concret pour les deux.</p>'}
+    ${recus ? `${recus}${lignes.length || brouillon ? '<hr class="sep">' : ''}` : ''}
+    ${lignes.length || brouillon || recus ? `${lignes.join('<hr class="sep">')}${brouillon ? `${lignes.length ? '<hr class="sep">' : ''}${brouillon}` : ''}` : '<p class="small muted" style="margin:0">Aucun pacte pour l’instant. Un pacte lie deux zones pendant 7 tours, avec un avantage concret pour les deux.</p>'}
     ${bloque ? `<p class="tiny warn" style="margin:0">Tu as rompu un pacte récemment : pas de nouveau pacte avant quelques tours.</p>` : max ? '' : S.pacteForm ? proposerHtml() : '<button type="button" class="btn primary" data-action="pacte-form">Proposer un pacte</button>'}
   </section>`;
 }
@@ -117,7 +153,7 @@ function proposerHtml() {
     <div class="col" style="gap:6px">${Object.entries(PACTES).map(([k, v]) => `<button type="button" class="choice pacte-choix" data-action="pacte-type" data-v="${k}" aria-pressed="${f.type === k}">${ico(k)}<span class="col" style="gap:2px;text-align:left"><span>${esc(v.nom)}</span><span class="s">${esc(v.texte)}</span></span></button>`).join('')}</div>
     <div class="row" style="gap:8px"><button type="button" class="btn ghost" data-action="pacte-form-fermer">Fermer</button>
       <button type="button" class="btn primary grow" data-action="pacte-proposer" ${f.cible && f.type ? '' : 'disabled'}>${f.cible && st.zones[f.cible] ? `Proposer à ${esc(st.zones[f.cible].nom)}` : 'Proposer'}</button></div>
-    <span class="tiny muted">Ta proposition part ce soir avec tes ordres ; l’autre zone répond demain. ${PACTE.max} pactes au plus, un seul par zone partenaire.</span>
+    <span class="tiny muted">Ta proposition part tout de suite en message privé. Si l’autre zone accepte avant 20:00, le pacte est signé ce soir ; sinon elle pourra répondre demain. ${PACTE.max} pactes au plus, un seul par zone partenaire.</span>
   </div>`;
 }
 
@@ -126,7 +162,11 @@ function defiHtml() {
   const st = S.state, me = S.user.uid, d = S.draft || {};
   const mien = (st.defis || []).find((x) => x.a === me || x.b === me);
   let corps = '';
-  if (mien && mien.etape === 'encours') {
+  const recu = !mien || mien.etape !== 'encours' ? defisRecus()[0] : null;
+  if (recu) {
+    corps = `<p class="small" style="margin:0"><strong>${nomCourt(recu.de)}</strong> te défie : ${esc(DEFI_INDICATEURS[recu.ind].nom.toLowerCase())} pendant ${DEFI.duree} tours${recu.mise ? `, ${recu.mise} k€ misés chacun` : ', sans mise'}. Si tu acceptes avant 20:00, il démarre ce soir. Refuser ne coûte rien.</p>
+      <div class="choices"><button type="button" class="choice" data-action="defi-accepter" data-de="${esc(recu.de)}" data-ind="${recu.ind}" data-mise="${recu.mise}" data-v="1" aria-pressed="${recu.reponse === true}">${recu.reponse === true ? '✓ Défi relevé' : 'Relever le défi'}</button><button type="button" class="choice" data-action="defi-accepter" data-de="${esc(recu.de)}" data-ind="${recu.ind}" data-mise="${recu.mise}" data-v="0" aria-pressed="${recu.reponse === false}">Pas cette fois</button></div>`;
+  } else if (mien && mien.etape === 'encours') {
     const lui = mien.a === me ? mien.b : mien.a;
     const mes = DEFI_INDICATEURS[mien.ind].mesure;
     const [bm, bl] = mien.base ? (mien.a === me ? [mien.base.a, mien.base.b] : [mien.base.b, mien.base.a]) : [null, null];
@@ -140,7 +180,7 @@ function defiHtml() {
         <div class="choices"><button type="button" class="choice" data-action="defi-rep" data-id="${esc(mien.id)}" data-v="1" aria-pressed="${r === true}">Relever le défi</button><button type="button" class="choice" data-action="defi-rep" data-id="${esc(mien.id)}" data-v="0" aria-pressed="${r === false}">Pas cette fois</button></div>`;
     } else corps = `<p class="small muted" style="margin:0">Défi envoyé à ${nomCourt(mien.b)}, réponse ce soir.</p>`;
   } else if (d.defi && d.defi.cible) {
-    corps = `<div class="between"><span class="small">${esc(DEFI_INDICATEURS[d.defi.ind].nom)} contre <strong>${nomCourt(d.defi.cible)}</strong>${d.defi.mise ? `, ${d.defi.mise} k€` : ', sans mise'} · part ce soir</span><button type="button" class="btn small ghost" data-action="defi-annuler">Annuler</button></div>`;
+    corps = `<div class="between"><span class="small">${esc(DEFI_INDICATEURS[d.defi.ind].nom)} contre <strong>${nomCourt(d.defi.cible)}</strong>${d.defi.mise ? `, ${d.defi.mise} k€` : ', sans mise'} · ${(() => { const r = reponseA(d.defi.cible, 'defiRep', (x) => x.ind === d.defi.ind); return r === true ? '<span class="ok">relevé : il démarre ce soir</span>' : r === false ? 'refusé' : 'envoyé, en attente de sa réponse'; })()}</span><button type="button" class="btn small ghost" data-action="defi-annuler">Annuler</button></div>`;
   } else if (S.defiForm) {
     const f = S.defiForm;
     corps = `<div class="zchips">${autres().map((z) => { const r = defiImpossible(st, me, z.uid); return `<button type="button" class="zchip" data-action="defi-cible" data-v="${esc(z.uid)}" aria-pressed="${f.cible === z.uid}" ${r ? 'disabled' : ''}>${puce(z.uid)}${esc(z.code)} ${esc(z.nom)}${r ? ` · ${esc(r)}` : ''}</button>`; }).join('')}</div>
@@ -199,7 +239,7 @@ export function renderPactes() {
   return `<main class="screen">
     ${ongletsCarte('pactes')}
     <header class="col" style="gap:3px"><h1 class="big">Pactes</h1>
-      <p class="sub">Des accords à deux, ${PACTE.duree} tours, avec un avantage concret pour chacun. Tout part avec tes ordres et se règle à 20:00.</p></header>
+      <p class="sub">Des accords à deux, ${PACTE.duree} tours, avec un avantage concret pour chacun. Ta proposition part tout de suite en message : acceptée avant 20:00, elle est signée le soir même.</p></header>
     ${carteHtml()}
     ${rem ? `<p class="tiny ok" style="margin:0">Centrale d’achat : formations et équipement −${Math.round(rem * 100)} % aujourd’hui.</p>` : ''}
     ${voteCeSoir ? conseil : ''}

@@ -317,6 +317,8 @@ export function sanitizeOrders(zone, raw, state) {
   const pacteRompre = typeof o.pacteRompre === 'string' ? str(o.pacteRompre) : null;
   const fragment = typeof o.fragment === 'string' ? str(o.fragment) : null;
   const defi = o.defi && typeof o.defi === 'object' && ['incidents', 'enigmes', 'dossiers'].includes(o.defi.ind) ? { cible: cible(o.defi.cible), ind: o.defi.ind, mise: [0, 3, 5].includes(o.defi.mise) ? o.defi.mise : 0 } : null;
+  const pacteAccepte = (Array.isArray(o.pacteAccepte) ? o.pacteAccepte : []).slice(0, 4).filter((x) => x && typeof x === 'object' && ['terrain', 'enquete', 'achat'].includes(x.type)).map((x) => ({ de: cible(x.de), type: x.type }));
+  const defiAccepte = (Array.isArray(o.defiAccepte) ? o.defiAccepte : []).slice(0, 2).filter((x) => x && typeof x === 'object' && ['incidents', 'enigmes', 'dossiers'].includes(x.ind)).map((x) => ({ de: cible(x.de), ind: x.ind, mise: [0, 3, 5].includes(x.mise) ? x.mise : 0 }));
   const defiReponse = o.defiReponse && typeof o.defiReponse === 'object' ? { id: str(o.defiReponse.id), accepte: !!o.defiReponse.accepte } : null;
   const votes = {};
   if (o.votes && typeof o.votes === 'object') for (const [k2, v] of Object.entries(o.votes)) if (['dotation', 'theme', 'blame', 'chef', 'solidarite'].includes(k2) && Number.isInteger(v)) votes[k2] = clamp(v, 0, 5);
@@ -338,7 +340,7 @@ export function sanitizeOrders(zone, raw, state) {
   const postes = Object.fromEntries(Object.entries(o.postes && typeof o.postes === 'object' ? o.postes : {}).filter(([r, s]) => ROLES_M.includes(r) && SERV.includes(s)));
   // Dilemme du Directeur : indice du choix (vérifié à la résolution).
   const dilemme = Number.isInteger(o.dilemme) && o.dilemme >= 0 && o.dilemme <= 3 ? o.dilemme : null;
-  return { dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, votes, motionChef, offre };
+  return { dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteAccepte, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, defiAccepte: tutelle ? [] : defiAccepte, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */

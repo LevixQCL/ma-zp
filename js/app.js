@@ -30,6 +30,7 @@ import { demarrerQuiz, repondreQuiz, suivanteQuiz, quizLocal, bonnesReponses, ar
 import { renderGuide } from './ui/guide.js';
 import { offreApres } from './ui/encheres.js';
 import { renderPactes } from './ui/pactes.js';
+import { PACTES, PACTE, DEFI, DEFI_INDICATEURS } from './engine/pactes.js';
 import { ongletsRadio } from './ui/prive.js';
 import { renderParties } from './ui/parties.js';
 import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet, synchroCarnetMaintenant, restaurerCarnet } from './ui/enquete.js';
@@ -778,8 +779,24 @@ async function onClick(e) {
       case 'pacte-form-fermer': S.pacteForm = null; rerender(); break;
       case 'pacte-cible': S.pacteForm = { ...(S.pacteForm || {}), cible: el.dataset.v }; rerender(); break;
       case 'pacte-type': S.pacteForm = { ...(S.pacteForm || {}), type: el.dataset.v }; rerender(); break;
-      case 'pacte-proposer': if (S.pacteForm && S.pacteForm.cible && S.pacteForm.type) { S.draft.pacte = { cible: S.pacteForm.cible, type: S.pacteForm.type }; S.pacteForm = null; S.ordersDirty = true; toast('Proposition prête : elle part ce soir avec tes ordres.'); } rerender(); break;
-      case 'pacte-annuler': S.draft.pacte = null; S.ordersDirty = true; rerender(); break;
+      case 'pacte-proposer': {
+        if (!(S.pacteForm && S.pacteForm.cible && S.pacteForm.type)) { rerender(); break; }
+        // La proposition part tout de suite en message privé (l'autre peut accepter aujourd'hui) et dans les ordres, validés d'office.
+        const { cible, type } = S.pacteForm, st = S.state;
+        S.draft.pacte = { cible, type }; S.pacteForm = null;
+        await b.sendPrive(S.user.uid, cible, `🤝 Je te propose un ${PACTES[type].nom.toLowerCase()} pour ${PACTE.duree} jours : ${PACTES[type].court.toLowerCase()}. Réponds dans Carte › Pactes ; si tu acceptes avant 20:00, il est signé ce soir.`, { pacte: { type, season: st.season, turn: st.turn } });
+        await validerOrdres();
+        toast(`Proposition envoyée à ${st.zones[cible].nom}. S’il accepte avant 20:00, le pacte est signé ce soir.`); rerender(); break;
+      }
+      case 'pacte-accepter': {
+        const de = el.dataset.de, type = el.dataset.type, ok = el.dataset.v === '1', st = S.state;
+        S.draft.pacteAccepte = (S.draft.pacteAccepte || []).filter((x) => x.de !== de);
+        if (ok) S.draft.pacteAccepte.push({ de, type });
+        await b.sendPrive(S.user.uid, de, ok ? `✅ J’accepte ton ${PACTES[type].nom.toLowerCase()} : signature ce soir à 20:00.` : `Merci pour ta proposition de ${PACTES[type].nom.toLowerCase()}, mais pas cette fois.`, { pacteRep: { type, ok, season: st.season, turn: st.turn } });
+        await validerOrdres();
+        toast(ok ? 'Accepté : le pacte sera signé ce soir à 20:00.' : 'Réponse envoyée.'); rerender(); break;
+      }
+      case 'pacte-annuler': S.draft.pacte = null; await validerOrdres(); toast('Proposition annulée.'); rerender(); break;
       case 'pacte-rep': S.draft.pacteReponse = { id: el.dataset.id, accepte: el.dataset.v === '1' }; S.ordersDirty = true; rerender(); break;
       case 'pacte-frag': S.draft.fragment = S.draft.fragment === el.dataset.id ? null : el.dataset.id; S.ordersDirty = true; rerender(); break;
       case 'pacte-rompre': {
@@ -792,8 +809,23 @@ async function onClick(e) {
       case 'defi-cible': S.defiForm = { ...(S.defiForm || {}), cible: el.dataset.v }; rerender(); break;
       case 'defi-ind': S.defiForm = { ...(S.defiForm || {}), ind: el.dataset.v }; rerender(); break;
       case 'defi-mise': S.defiForm = { ...(S.defiForm || {}), mise: Number(el.dataset.v) }; rerender(); break;
-      case 'defi-lancer': if (S.defiForm && S.defiForm.cible && S.defiForm.ind) { S.draft.defi = { cible: S.defiForm.cible, ind: S.defiForm.ind, mise: S.defiForm.mise || 0 }; S.defiForm = null; S.ordersDirty = true; toast('Défi prêt : il part ce soir avec tes ordres.'); } rerender(); break;
-      case 'defi-annuler': S.draft.defi = null; S.ordersDirty = true; rerender(); break;
+      case 'defi-lancer': {
+        if (!(S.defiForm && S.defiForm.cible && S.defiForm.ind)) { rerender(); break; }
+        const { cible, ind } = S.defiForm, mise = S.defiForm.mise || 0, st = S.state;
+        S.draft.defi = { cible, ind, mise }; S.defiForm = null;
+        await b.sendPrive(S.user.uid, cible, `🏁 Je te lance un défi amical : ${DEFI_INDICATEURS[ind].nom.toLowerCase()} pendant ${DEFI.duree} jours${mise ? `, ${mise} k€ misés chacun` : ', sans mise'}. Réponds dans Carte › Pactes ; refuser ne coûte rien.`, { defi: { ind, mise, season: st.season, turn: st.turn } });
+        await validerOrdres();
+        toast(`Défi envoyé à ${st.zones[cible].nom}. S’il accepte avant 20:00, il démarre ce soir.`); rerender(); break;
+      }
+      case 'defi-accepter': {
+        const de = el.dataset.de, ind = el.dataset.ind, mise = Number(el.dataset.mise) || 0, ok = el.dataset.v === '1', st = S.state;
+        S.draft.defiAccepte = (S.draft.defiAccepte || []).filter((x) => x.de !== de);
+        if (ok) S.draft.defiAccepte.push({ de, ind, mise });
+        await b.sendPrive(S.user.uid, de, ok ? '✅ Défi relevé : on démarre ce soir à 20:00.' : 'Pas cette fois pour le défi, merci quand même !', { defiRep: { ind, mise, ok, season: st.season, turn: st.turn } });
+        await validerOrdres();
+        toast(ok ? 'Défi relevé : il démarre ce soir à 20:00.' : 'Réponse envoyée.'); rerender(); break;
+      }
+      case 'defi-annuler': S.draft.defi = null; await validerOrdres(); toast('Défi annulé.'); rerender(); break;
       case 'defi-rep': S.draft.defiReponse = { id: el.dataset.id, accepte: el.dataset.v === '1' }; S.ordersDirty = true; rerender(); break;
       case 'aide-cible': S.draft.aide = S.draft.aide && S.draft.aide.cible === el.dataset.v ? null : { budget: 0, agents: 0, cible: el.dataset.v }; S.ordersDirty = true; rerender(); break;
       case 'aide-n': {
@@ -858,9 +890,7 @@ async function onClick(e) {
         toast('Modifications annulées.'); rerender(); break;
       }
       case 'save-orders': {
-        const st = S.state;
-        await b.saveOrders(S.user.uid, st.season, st.turn, S.draft);
-        S.savedOrders = JSON.parse(JSON.stringify(S.draft)); S.ordersDirty = false;
+        await validerOrdres();
         toast('C’est validé ! Tu peux encore modifier jusqu’à 20:00.'); rerender(); break;
       }
       case 'memo-voir': {
@@ -977,6 +1007,13 @@ function compterEntrainement(type, ok) {
   const x = (st[type] ||= { ok: 0, n: 0 }); x.n++; if (ok) x.ok++;
   try { localStorage.setItem('mazp-entrainement', JSON.stringify(st)); } catch (e) { /* rien */ }
   noterEntrainement({ enigmes: 1, reussies: ok ? 1 : 0 });
+}
+
+/** Enregistre les ordres du brouillon (comme le bouton Valider). */
+async function validerOrdres() {
+  const st = S.state;
+  await S.backend.saveOrders(S.user.uid, st.season, st.turn, S.draft);
+  S.savedOrders = JSON.parse(JSON.stringify(S.draft)); S.ordersDirty = false;
 }
 
 /** Compteurs d'entraînement envoyés au serveur, pour le classement du maître du jeu. */

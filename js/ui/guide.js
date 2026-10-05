@@ -242,7 +242,7 @@ export function sections() {
         <p>Tout se trouve dans l'onglet <strong>Pactes</strong> de la Carte et part avec tes ordres à 20:00.</p>
         <h3>Les pactes</h3>
         ${ul([
-          `Un pacte lie deux zones pendant <strong>${PACTE.duree} tours</strong>. Tu le proposes un soir, l’autre zone répond le lendemain ; il joue dès le soir suivant.`,
+          `Un pacte lie deux zones pendant <strong>${PACTE.duree} tours</strong>. Ta proposition part tout de suite en message privé. Si l’autre zone accepte avant 20:00, le pacte est signé le soir même ; sinon elle peut encore répondre le lendemain. Il joue dès le soir qui suit la signature. Même chose pour le défi amical.`,
           `${PACTE.max} pactes au plus en même temps, un seul avec une même zone. À la fin, chacune gagne ${PACTE.psFin} PS et peut le reconduire.`,
           `Si ton partenaire ne joue plus pendant ${PACTE.inactif} jours, le pacte s’éteint sans pénalité.`,
           `Rompre un pacte avant la fin est annoncé dans la Gazette, interdit tout nouveau pacte pendant ${PACTE.blocage} tours et peut valoir un blâme au Conseil.`,
@@ -254,7 +254,7 @@ export function sections() {
         ${ul([
           `${DEFI.duree} tours sur une activité que tu fais toi-même : ${Object.values(DEFI_INDICATEURS).map((x) => x.nom.toLowerCase()).join(', ')}.`,
           `Chacun mise la même somme (${DEFI.mises.filter(Boolean).map((m) => `${m} k€`).join(' ou ')}, ou rien). Le gagnant prend le pot et ${DEFI.prime} k€ de prime du district ; en cas d’égalité, chacun récupère sa mise.`,
-          'La zone défiée répond le lendemain ; refuser ne coûte rien. Un seul défi à la fois, pas de défi pour une zone en difficulté.',
+          'La zone défiée répond le jour même (en message) ou le lendemain ; refuser ne coûte rien. Un seul défi à la fois, pas de défi pour une zone en difficulté.',
         ])}
         <h3>Coup de main</h3>
         ${ul([

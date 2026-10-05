@@ -71,6 +71,16 @@ assert.ok([g.une, ...g.breves].some((n) => n.kicker === 'Pacte rompu'));
 assert.equal(s.zones.C.stats.pactesRompus, 1);
 assert.equal(pacteImpossible(s, 'C', 'B'), 'pacte rompu récemment');
 
+neuve('riv-jour');
+// ── Proposition par message, acceptée le jour même : signé dès ce soir (et défi lancé dès ce soir).
+tour({ A: { ...base, pacte: { cible: 'D', type: 'achat' }, defi: { cible: 'D', ind: 'incidents', mise: 3 } }, D: { ...base, pacteAccepte: [{ de: 'A', type: 'achat' }], defiAccepte: [{ de: 'A', ind: 'incidents', mise: 3 }] } });
+assert.equal(s.pactes.find((x) => x.a === 'A' && x.b === 'D').etape, 'actif', 'pacte signé le jour même');
+assert.equal(s.zones.A.remiseAchat, PACTE.remise, 'remise dès demain');
+assert.equal(s.defis.find((x) => x.a === 'A').etape, 'encours', 'défi lancé le jour même');
+// Acceptation d'un autre type que celui proposé : rien de signé, réponse possible demain.
+tour({ B: { ...base, pacte: { cible: 'C', type: 'terrain' } }, C: { ...base, pacteAccepte: [{ de: 'B', type: 'achat' }] } });
+assert.equal(s.pactes.find((x) => x.a === 'B' && x.b === 'C').etape, 'propose');
+
 neuve('riv-jum');
 // ── Jumelage : un partenaire qui ne joue plus éteint le pacte, sans pénalité.
 tour({ B: { ...base, pacte: { cible: 'D', type: 'terrain' } } });
