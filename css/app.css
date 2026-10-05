@@ -1355,3 +1355,12 @@ hr.sep { border: 0; border-top: 1px solid var(--hair); margin: 2px 0; width: 100
 .demi-piece .small { color: var(--ink2); }
 .demi-piece.haut { padding-bottom: 18px; clip-path: polygon(0 0, 100% 0, 100% 88%, 94% 96%, 86% 89%, 77% 98%, 68% 90%, 58% 97%, 48% 89%, 38% 98%, 28% 90%, 18% 97%, 9% 89%, 0 96%); }
 .demi-piece.bas { padding-top: 18px; clip-path: polygon(0 4%, 9% 11%, 18% 3%, 28% 10%, 38% 2%, 48% 11%, 58% 3%, 68% 10%, 77% 2%, 86% 11%, 94% 4%, 100% 12%, 100% 100%, 0 100%); }
+
+/* Qui y va ce soir : version allégée (une ligne par secteur, pions ronds aux couleurs des zones). */
+.nd-cs-row { gap: 8px; padding: 7px 0; }
+.nd-cs-ico { font-size: 15px; width: 20px; text-align: center; flex-shrink: 0; }
+.nd-pions { display: inline-flex; align-items: center; }
+.nd-pion { --c: #9FB0C0; display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; margin-left: -5px; font: 800 9.5px var(--body); color: #0C1124; background: var(--c); border: 2px solid var(--surface, #141B33); }
+.nd-pion:first-child { margin-left: 0; }
+.nd-pion.moi { width: auto; padding: 0 6px; border-radius: 999px; font-size: 10px; }
+.nd-pion.plus { background: var(--surface3); color: var(--text2); }

@@ -63,6 +63,13 @@ export function suggestionND(k, d = S.draft) {
 }
 
 /** Pastilles « qui y va ce soir » d'un secteur. */
+/** Version compacte : une pastille ronde par zone (initiales, à sa couleur), le nom complet au survol. */
+function pionsCeSoir(liste) {
+  const ini = (nom) => String(nom || '?').replace(/^ZP\s*\d*\s*/i, '').trim().slice(0, 2).toUpperCase();
+  const max = 5, vus = liste.slice(0, max);
+  return `<span class="nd-pions">${vus.map((x) => { const z = S.state.zones[x.uid]; const nom = x.moi ? 'toi' : (z ? z.nom : '?');
+    return `<span class="nd-pion ${x.moi ? 'moi' : ''}" style="--c:${x.moi ? 'var(--amber)' : esc((z && z.couleur) || '#9FB0C0')}" title="${esc(nom)} · ${x.n} agent${x.n > 1 ? 's' : ''}">${x.moi ? 'toi' : esc(ini(nom))}</span>`; }).join('')}${liste.length > max ? `<span class="nd-pion plus">+${liste.length - max}</span>` : ''}</span>`;
+}
 function pastillesCeSoir(liste) {
   return liste.map((x) => `<span class="nd-qui ${x.moi ? 'moi' : ''}" ${!x.moi && S.state.zones[x.uid] ? `style="--c:${esc(S.state.zones[x.uid].couleur || '#9FB0C0')}"` : ''}>${x.moi ? 'toi' : nomZ(x.uid)} <b>${x.n}</b></span>`).join('');
 }
@@ -86,9 +93,10 @@ function ceSoirHtml(n, me, ann) {
         <span class="tiny ${moiDedans ? 'ok' : assuree ? 'muted' : 'nd-rej'}">${moiDedans ? '✓ tu gardes' : assuree ? 'assez de monde' : 'Renforcer ›'}</span>`
       : `<span class="tiny ${tombe ? 'good' : p.emprise < s.emprise ? '' : 'bad'}">${tombe ? 'repris ce soir' : `emprise ${Math.round(s.emprise)} → ${Math.round(p.emprise)}`}</span>
         <span class="tiny ${moiDedans ? 'ok' : 'nd-rej'}">${moiDedans ? '✓ tu y vas' : 'Rejoindre ›'}</span>`;
-    return `<button type="button" class="nd-cs-row" data-action="secteur" data-c="${k}">
-        <span class="col" style="gap:3px;min-width:0;flex:1;text-align:left"><span class="nd-nom">${s.coeur ? '★ ' : ''}${esc(nomSecteur(k))} <span class="tiny muted">· ${l.length} zone${l.length > 1 ? 's' : ''}, ${l.reduce((t, x) => t + x.n, 0)} agents</span></span>
-        <span class="nd-quis">${pastillesCeSoir(l)}</span></span>
+    return `<button type="button" class="nd-cs-row" data-action="secteur" data-c="${k}" aria-label="${esc(nomSecteur(k))} : ${l.map((x) => (x.moi ? 'toi' : nomZ(x.uid)) + ' ' + x.n).join(', ')}">
+        <span class="nd-cs-ico" aria-hidden="true">${repris ? '🛡' : '⚔️'}</span>
+        <span class="col" style="gap:2px;min-width:0;flex:1;text-align:left"><span class="nd-nom">${s.coeur ? '★ ' : ''}${esc(nomSecteur(k))}</span>
+          <span class="row" style="gap:6px;align-items:center">${pionsCeSoir(l)}<span class="tiny muted">${l.reduce((t, x) => t + x.n, 0)} ag.</span></span></span>
         <span class="col" style="gap:0;align-items:flex-end;flex-shrink:0">${droite}</span>
       </button>`;
   };
@@ -96,9 +104,8 @@ function ceSoirHtml(n, me, ann) {
   const gardes = lignes.filter(([k]) => n.secteurs[k].statut === 'repris');
   const trop = gardes.filter(([k, l]) => l.reduce((t, x) => t + x.n, 0) > 4);
   return `<div class="nd-cesoir"><span class="kicker">📻 Qui y va ce soir</span>
-    ${assauts.length ? `<span class="nd-cs-t">⚔️ À l’assaut <span class="muted">· secteurs encore aux mains du milieu</span></span>${assauts.map(ligne).join('')}` : ''}
-    ${gardes.length ? `<span class="nd-cs-t">🛡 De garde <span class="muted">· secteurs déjà repris</span></span>${gardes.map(ligne).join('')}` : ''}
-    ${trop.length ? `<p class="tiny warn" style="margin:4px 0 0">${trop.map(([k]) => esc(nomSecteur(k))).join(', ')} ${trop.length > 1 ? 'sont' : 'est'} déjà repris : 2 ou 3 agents suffisent à le garder. Les autres seraient plus utiles à l’assaut d’un secteur encore tenu par le milieu.</p>` : ''}
+    ${assauts.map(ligne).join('')}${gardes.map(ligne).join('')}
+    ${trop.length ? `<p class="tiny warn" style="margin:2px 0 0">🛡 ${trop.map(([k]) => esc(nomSecteur(k))).join(', ')} : assez de garde, renforce plutôt un assaut ⚔️.</p>` : ''}
   </div>`;
 }
 

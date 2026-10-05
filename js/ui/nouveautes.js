@@ -44,6 +44,7 @@ export const NOTE_MAJ = {
       ['Parts de la prime', 'démasquer l’auteur sans l’arrêter rapporte 6 k€, aider avec ses pièces partagées 2 k€.'],
     ]],
     ['Affichage', [
+      ['Terrain plus léger', '« Qui y va ce soir » tient sur une ligne par secteur : ⚔️ assaut ou 🛡 garde, des pions ronds aux couleurs des zones (nom complet en touchant le secteur), et l’état à droite.'],
       ['Figures : changer de service', 'dans tes ordres (Mon équipe), chaque figure peut encadrer un autre service pour la journée avec son bonus : par exemple ta cheffe de patrouille à la Recherche. Une figure par service ; si la place est prise, les deux échangent.'],
       ['Entraînement en tuiles', 'les énigmes et les mini-jeux d’entraînement se choisissent avec des tuiles illustrées, rangées par famille (logique, observation, chiffres ; incidents, appui PJF), au lieu d’un menu déroulant.'],
       ['Toute l’équipe en mission', 'plusieurs figures peuvent partir le même soir, une par destination (chaque secteur de la zone de non-droit où tu envoies des agents, et le renfort). Leur mission reste affichée quand tu rouvres tes ordres.'],
