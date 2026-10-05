@@ -731,6 +731,7 @@ export function renderTableau() {
   const traque = (st.traques || []).length;
   return `<main class="tb-ecran ${S.tabSheet ? 'volet-ouvert' : ''} ${S.ordersDirty ? 'sale' : ''}">
     <div id="tb-vp" class="tb-vp ${fil ? 'mode-fil' : ''}">
+      <div id="tb-fond" class="tb-fond" style="width:${BW}px;height:${BH}px" aria-hidden="true"></div>
       <div id="tb-board" class="tb-board" style="width:${BW}px;height:${BH}px">
         <div class="tb-cadre"></div><div class="tb-liege"></div>
         <div class="tb-etiquette" data-tid="titre" style="left:${BW / 2 - 240}px"><span class="tb-scotch g"></span><span class="tb-scotch d"></span>
@@ -790,8 +791,13 @@ function vueDepart() {
 function appliquer(v, anim = false) {
   const b = document.getElementById('tb-board');
   if (!b) return;
-  b.style.transition = anim ? 'transform .35s cubic-bezier(.2,.8,.2,1)' : 'none';
-  b.style.transform = `translate(${v.tx}px,${v.ty}px) scale(${v.s})`;
+  const tr = `translate(${v.tx}px,${v.ty}px) scale(${v.s})`;
+  const tn = anim ? 'transform .35s cubic-bezier(.2,.8,.2,1)' : 'none';
+  b.style.transition = tn;
+  b.style.transform = tr;
+  // Fond uni synchronisé : évite les carrés noirs pendant que le GSM peint les tuiles du tableau.
+  const f = document.getElementById('tb-fond');
+  if (f) { f.style.transition = tn; f.style.transform = tr; f.style.width = `${BW}px`; f.style.height = `${BH}px`; }
 }
 function borner(v) {
   const [w, h] = vpTaille();
