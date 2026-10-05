@@ -883,7 +883,15 @@ async function onClick(e) {
       }
       case 'quest-submit': await submitQuest(S.questPick); break;
       case 'quest-mode': S.questMode = el.dataset.v; if (S.questMode === 'train' && !S.train) nouvelEntrainement(); S.questPick = null; rerender(); break;
-      case 'train-vue': S.trainVue = el.dataset.v; if (S.trainVue === 'enigmes' && !S.train) nouvelEntrainement(); rerender(); window.scrollTo(0, 0); break;
+      case 'train-vue': {
+        S.trainVue = el.dataset.v; if (S.trainVue === 'enigmes' && !S.train) nouvelEntrainement(); rerender(); window.scrollTo(0, 0);
+        // Onglet Challenge : records des autres relus (au plus une fois par minute), puis nominettes redessinées.
+        if (S.trainVue === 'minijeux' && Date.now() - (S.playersLus || 0) > 60000) {
+          S.playersLus = Date.now();
+          try { S.players = await b.getPlayers(); if (S.route === 'quete' && S.trainVue === 'minijeux') rerender(); } catch (e) { /* hors ligne : on garde ceux connus */ }
+        }
+        break;
+      }
       case 'train-type': S.trainType = el.dataset.v; S.trainChoix = false; nouvelEntrainement(); rerender(); break;
       case 'train-choix': S.trainChoix = S.trainChoix === false; rerender(); break;
       case 'train-diff': S.trainDiff = Number(el.dataset.v); nouvelEntrainement(); rerender(); break;
