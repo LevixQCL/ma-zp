@@ -207,8 +207,9 @@ if (await page.locator('[data-action="defi-form"]:not([disabled])').count()) {
   await shot('26b-pactes-defi');
   await page.click('[data-action="defi-lancer"]');
 }
-await page.click('.savebar [data-action="save-orders"]');
+// Proposer un pacte ou lancer un défi valide les ordres d'office (la proposition part aussi en message privé).
 await page.waitForTimeout(300);
+if (await page.locator('.savebar [data-action="save-orders"]').count()) errors.push('Ordres non validés après une proposition de pacte');
 // Un pacte d'enquête actif avec sa demi-pièce et un jumelage, posés dans la partie démo.
 await page.evaluate(() => {
   const db = JSON.parse(localStorage.getItem('mazp-demo-v3')); const st = db.parties[db.current].state;

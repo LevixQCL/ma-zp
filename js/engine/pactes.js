@@ -143,10 +143,40 @@ export function moitiesPiece(aff, f) {
 
 function rapport(z, t) { if (z) z.rapport.push(t); }
 
+/** Accord conclu : le pacte joue dès le soir suivant. */
+function signerPacte(state, p, push, T) {
+  const Z = state.zones, A = absT(state, T);
+  p.etape = 'actif'; p.debut = A; p.fin = A + PACTE.duree; p.depuis = T;
+  for (const [u, v] of [[p.a, p.b], [p.b, p.a]]) {
+    const z = Z[u];
+    z.stats.pactes = (z.stats.pactes || 0) + 1;
+    z._psEntraide = (z._psEntraide || 0) + PACTE.psAccord;
+    if (enDifficulte(Z[v])) z.stats.sauvetages = (z.stats.sauvetages || 0) + 1;
+    rapport(z, `Pacte : ${PACTES[p.type].nom.toLowerCase()} conclu avec ${nomZone(Z[v])} pour ${PACTE.duree} tours, à partir de demain (+${PACTE.psAccord} PS).`);
+  }
+  push(6, 'Pacte', `${nomZone(Z[p.a])} et ${nomZone(Z[p.b])} signent un ${PACTES[p.type].nom.toLowerCase()}`, `${PACTES[p.type].court}. Pour ${PACTE.duree} tours.`);
+}
+
+/** Défi accepté : les mises sont prises, le compteur démarre ce soir. */
+function lancerDefi(state, d, push, T) {
+  const za = state.zones[d.a], zb = state.zones[d.b];
+  const mise = Math.min(d.mise, Math.max(0, Math.floor(za.budget)), Math.max(0, Math.floor(zb.budget)));
+  d.etape = 'encours'; d.mise = mise; d.fin = T + DEFI.duree; d.base = null;
+  for (const z of [za, zb]) if (mise) { z.budget -= mise; (z._compta ||= []).push({ k: 'defi', l: 'Défi amical : mise', v: -mise }); }
+  rapport(za, `Défi : ${nomZone(zb)} relève ton défi (${DEFI_INDICATEURS[d.ind].nom.toLowerCase()}, ${DEFI.duree} tours${mise ? `, ${mise} k€ misés chacun` : ''}).`);
+  rapport(zb, `Défi : c’est parti contre ${nomZone(za)} (${DEFI_INDICATEURS[d.ind].nom.toLowerCase()}, ${DEFI.duree} tours${mise ? `, ${mise} k€ misés chacun` : ''}).`);
+  push(5, 'Défi amical', `${nomZone(za)} et ${nomZone(zb)} se lancent un défi`, `${DEFI_INDICATEURS[d.ind].nom} pendant ${DEFI.duree} tours.${mise ? ` ${mise * 2} k€ dans le pot, ${DEFI.prime} k€ de prime du district.` : ''}`);
+}
+
+/** Le partenaire a-t-il déjà accepté le jour même (proposition reçue en message privé) ? */
+const accepteDuJour = (ord, u, de, cle, ok) => ((ord[u] && ord[u][cle]) || []).some((x) => x && x.de === de && ok(x));
+
 /**
  * Avant la simulation des zones : réponses aux pactes, ruptures, propositions, mises en commun, défis.
- * `ord[u]` : { pacte: { cible, type }, pacteReponse: { id, accepte }, pacteRompre: id, fragment: id,
- *             defi: { cible, ind, mise }, defiReponse: { id, accepte } }
+ * `ord[u]` : { pacte: { cible, type }, pacteReponse: { id, accepte }, pacteAccepte: [{ de, type }], pacteRompre: id,
+ *             fragment: id, defi: { cible, ind, mise }, defiReponse: { id, accepte }, defiAccepte: [{ de, ind, mise }] }
+ * Une proposition part aussi en message privé : si le partenaire l'accepte le jour même (pacteAccepte / defiAccepte),
+ * le pacte est signé (le défi lancé) dès ce soir ; sinon il répond le lendemain, dans le jeu.
  */
 export function pactesPre(state, uids, ord, push, T) {
   state.pactes = state.pactes || [];
@@ -160,15 +190,7 @@ export function pactesPre(state, uids, ord, push, T) {
     if (p.etape === 'propose' && p.tourReponse === T) {
       const r = ord[p.b] && ord[p.b].pacteReponse;
       if (r && r.id === p.id && r.accepte) {
-        p.etape = 'actif'; p.debut = A; p.fin = A + PACTE.duree; p.depuis = T;
-        for (const [u, v] of [[p.a, p.b], [p.b, p.a]]) {
-          const z = Z[u];
-          z.stats.pactes = (z.stats.pactes || 0) + 1;
-          z._psEntraide = (z._psEntraide || 0) + PACTE.psAccord;
-          if (enDifficulte(Z[v])) z.stats.sauvetages = (z.stats.sauvetages || 0) + 1;
-          rapport(z, `Pacte : ${PACTES[p.type].nom.toLowerCase()} conclu avec ${nomZone(Z[v])} pour ${PACTE.duree} tours, à partir de demain (+${PACTE.psAccord} PS).`);
-        }
-        push(6, 'Pacte', `${nomZone(Z[p.a])} et ${nomZone(Z[p.b])} signent un ${PACTES[p.type].nom.toLowerCase()}`, `${PACTES[p.type].court}. Pour ${PACTE.duree} tours.`);
+        signerPacte(state, p, push, T);
       } else {
         p.fini = true;
         rapport(Z[p.a], `Pacte : ${nomZone(Z[p.b])} n’a pas donné suite à ton ${PACTES[p.type].nom.toLowerCase()}.`);
@@ -208,7 +230,10 @@ export function pactesPre(state, uids, ord, push, T) {
     const refus = pacteImpossible(state, u, o.cible, T);
     if (refus) { rapport(Z[u], `Pacte non envoyé : ${refus}.`); continue; }
     state.pacteSeq = (state.pacteSeq || 0) + 1;
-    state.pactes.push({ id: `p${state.season}-${state.pacteSeq}`, a: u, b: o.cible, type: o.type, etape: 'propose', tourReponse: T + 1 });
+    const p = { id: `p${state.season}-${state.pacteSeq}`, a: u, b: o.cible, type: o.type, etape: 'propose', tourReponse: T + 1 };
+    state.pactes.push(p);
+    // Proposition reçue en message privé et acceptée le jour même : signé ce soir.
+    if (accepteDuJour(ord, o.cible, u, 'pacteAccepte', (x) => x.type === o.type)) { signerPacte(state, p, push, T); continue; }
     rapport(Z[u], `Pacte : ${PACTES[o.type].nom.toLowerCase()} proposé à ${nomZone(Z[o.cible])}, réponse demain.`);
     rapport(Z[o.cible], `Pacte : ${nomZone(Z[u])} te propose un ${PACTES[o.type].nom.toLowerCase()}. Réponds avant 20:00 (onglet Pactes de la Carte).`);
   }
@@ -220,13 +245,8 @@ export function pactesPre(state, uids, ord, push, T) {
     const za = Z[d.a], zb = Z[d.b];
     const r = ord[d.b] && ord[d.b].defiReponse;
     if (!za || !zb) { d.fini = true; continue; }
-    const mise = Math.min(d.mise, Math.max(0, Math.floor(za.budget)), Math.max(0, Math.floor(zb.budget)));
     if (r && r.id === d.id && r.accepte) {
-      d.etape = 'encours'; d.mise = mise; d.fin = T + DEFI.duree; d.base = null;
-      for (const z of [za, zb]) if (mise) { z.budget -= mise; (z._compta ||= []).push({ k: 'defi', l: 'Défi amical : mise', v: -mise }); }
-      rapport(za, `Défi : ${nomZone(zb)} relève ton défi (${DEFI_INDICATEURS[d.ind].nom.toLowerCase()}, ${DEFI.duree} tours${mise ? `, ${mise} k€ misés chacun` : ''}).`);
-      rapport(zb, `Défi : c’est parti contre ${nomZone(za)} (${DEFI_INDICATEURS[d.ind].nom.toLowerCase()}, ${DEFI.duree} tours${mise ? `, ${mise} k€ misés chacun` : ''}).`);
-      push(5, 'Défi amical', `${nomZone(za)} et ${nomZone(zb)} se lancent un défi`, `${DEFI_INDICATEURS[d.ind].nom} pendant ${DEFI.duree} tours.${mise ? ` ${mise * 2} k€ dans le pot, ${DEFI.prime} k€ de prime du district.` : ''}`);
+      lancerDefi(state, d, push, T);
     } else {
       d.fini = true;
       rapport(za, `Défi : ${nomZone(zb)} décline, pas cette fois.`);
@@ -239,7 +259,9 @@ export function pactesPre(state, uids, ord, push, T) {
     if (refus) { rapport(Z[u], `Défi non envoyé : ${refus}.`); continue; }
     const mise = DEFI.mises.includes(o.mise) ? o.mise : 0;
     state.defiSeq = (state.defiSeq || 0) + 1;
-    state.defis.push({ id: `f${state.season}-${state.defiSeq}`, a: u, b: o.cible, ind: o.ind, mise, etape: 'propose', tourReponse: T + 1 });
+    const d = { id: `f${state.season}-${state.defiSeq}`, a: u, b: o.cible, ind: o.ind, mise, etape: 'propose', tourReponse: T + 1 };
+    state.defis.push(d);
+    if (accepteDuJour(ord, o.cible, u, 'defiAccepte', (x) => x.ind === o.ind && x.mise === mise)) { lancerDefi(state, d, push, T); continue; }
     rapport(Z[u], `Défi : envoyé à ${nomZone(Z[o.cible])}, réponse demain.`);
     rapport(Z[o.cible], `Défi : ${nomZone(Z[u])} te lance un défi amical (${DEFI_INDICATEURS[o.ind].nom.toLowerCase()}${mise ? `, ${mise} k€ chacun` : ''}). Réponds avant 20:00, refuser ne coûte rien.`);
   }
