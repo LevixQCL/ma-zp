@@ -294,7 +294,7 @@ const Shell = (() => {
   /**
    * Réglages d'un niveau : du niveau 1 (plus doux que « facile ») au niveau 10 (= « difficile »), en passant par
    * facile (4) et normal (7) ; au-delà, chaque réglage continue de se serrer au même rythme que de normal à difficile,
-   * en multipliant (au moins 3 % par niveau ; le temps fond de 5 % par niveau s'il ne bougeait pas). Bornes par jeu.
+   * en multipliant (au moins 3 % par niveau). Le temps, lui, tend vers un plancher jouable par un très bon joueur. Bornes par jeu.
    */
   function cfgNiveau(n){
     const F=G.diffs.facile, N=G.diffs.normal, D=G.diffs.difficile, B=G.bornes||{};
@@ -307,6 +307,9 @@ const Shell = (() => {
       let r = m>0&&d>0 ? Math.pow(d/m,1/3) : 1;
       if(r===1 && k==='time') r=0.95;
       else if(r!==1 && Math.abs(r-1)<0.03) r = r>1?1.03:0.97;
+      // Le temps s'approche de son plancher sans l'atteindre (un temps qu'un très bon joueur tient encore) :
+      // ce sont la précision et la complexité qui finissent par départager.
+      if(k==='time'){ const lo=(B.time&&B.time[0])||0; if(lo>0 && d>lo) return lo+(d-lo)*Math.pow(Math.min(r,.93),n-10); }
       return d*Math.pow(r,n-10);
     };
     const borne=(v,b,k,d,ent)=>{ const [lo,hi]=b||(k==='time'?[Math.max(15,d*0.3),Infinity]:[-Infinity,Infinity]); v=Math.min(hi,Math.max(lo,v)); return ent?Math.round(v):Math.round(v*1000)/1000; };
@@ -712,8 +715,8 @@ Shell.init({
   malus:"le dépannage est facturé en urgence au budget de la zone, et 1 agent Roulage reste immobilisé sur place jusqu'à demain.",
   onMenu(){ R.over=true; },
   onInit(){ R.min=0; load(pick(PUZ.normal.filter(q=>q.v.some(x=>x[2]===3))).v); },
-  // Défi : le temps suit la taille de la grille (10 s par coup minimum au niveau 10, puis 6 % de moins par niveau, 2 s au plus serré).
-  niveau(n,cfg){ cfg.grille=grilleNiveau(n); cfg.time=Math.round(20 + cfg.grille.m*(n<=10?10:Math.max(2,10*Math.pow(.93,n-10)))); return cfg; },
+  // Défi : le temps suit la taille de la grille (10 s par coup minimum au niveau 10, puis 6 % de moins par niveau, vers 2,5 s par coup au plus serré).
+  niveau(n,cfg){ cfg.grille=grilleNiveau(n); cfg.time=Math.round(20 + cfg.grille.m*(n<=10?10:(2.5+7.5*Math.pow(.9,n-10)))); return cfg; },
   onPlay(cfg){ R.cfg=cfg; const p=cfg.grille || pick(PUZ[cfg.set].filter(q=>q.v.some(x=>x[2]===3))); R.min=p.m; load(p.v); R.over=false; Shell.startTimer(cfg.time,()=>{ if(!R.over){ R.over=true; Shell.bad(); Shell.result({ok:false,faults:1,stats:[['Coups',R.moves],['Minimum',R.min]]}); } }); },
   onTuto(){ R.min=3; load(TUTO_BOARD); R.over=false; tutoGo(1); }
 });

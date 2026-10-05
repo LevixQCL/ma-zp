@@ -77,7 +77,7 @@ const Shell = (() => {
   /**
    * Réglages d'un niveau : du niveau 1 (plus doux que « facile ») au niveau 10 (= « difficile »), en passant par
    * facile (4) et normal (7) ; au-delà, chaque réglage continue de se serrer au même rythme que de normal à difficile,
-   * en multipliant (au moins 3 % par niveau ; le temps fond de 5 % par niveau s'il ne bougeait pas). Bornes par jeu.
+   * en multipliant (au moins 3 % par niveau). Le temps, lui, tend vers un plancher jouable par un très bon joueur. Bornes par jeu.
    */
   function cfgNiveau(n){
     const F=G.diffs.facile, N=G.diffs.normal, D=G.diffs.difficile, B=G.bornes||{};
@@ -90,6 +90,9 @@ const Shell = (() => {
       let r = m>0&&d>0 ? Math.pow(d/m,1/3) : 1;
       if(r===1 && k==='time') r=0.95;
       else if(r!==1 && Math.abs(r-1)<0.03) r = r>1?1.03:0.97;
+      // Le temps s'approche de son plancher sans l'atteindre (un temps qu'un très bon joueur tient encore) :
+      // ce sont la précision et la complexité qui finissent par départager.
+      if(k==='time'){ const lo=(B.time&&B.time[0])||0; if(lo>0 && d>lo) return lo+(d-lo)*Math.pow(Math.min(r,.93),n-10); }
       return d*Math.pow(r,n-10);
     };
     const borne=(v,b,k,d,ent)=>{ const [lo,hi]=b||(k==='time'?[Math.max(15,d*0.3),Infinity]:[-Infinity,Infinity]); v=Math.min(hi,Math.max(lo,v)); return ent?Math.round(v):Math.round(v*1000)/1000; };
