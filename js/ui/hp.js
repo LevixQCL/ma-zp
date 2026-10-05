@@ -274,8 +274,8 @@ export function renderHP() {
   if (z.primeAChoisir) {
     // Choix fait : plus une alerte à traiter, juste un rappel discret en bas de la liste.
     const ch = S.draft && S.draft.prime, lab = ch && PRIME_LABELS[String(ch).split(':')[0]];
-    if (ch) alertes.push({ cls: 'blue', titre: `✓ Mise à prix : ${lab ? esc(lab.nom.toLowerCase()) : 'récompense'} choisi${lab && /^(confiscation|formation)/.test(String(ch)) ? 'e' : ''}`, texte: 'appliqué à 20:00 · tu peux encore changer d’avis dans l’Enquête', href: '#enquete' });
-    else alertes.unshift({ cls: 'amber', titre: `Mise à prix : ${esc(z.primeAChoisir.suspect)} sous les verrous, choisis ta récompense`, texte: '12 k€, renfort fédéral ou formation offerte, avant 20:00', href: '#enquete' });
+    if (ch) alertes.push({ cls: 'blue', titre: `✓ Mise à prix : ${lab ? esc(lab.nom.toLowerCase()) : 'récompense'} choisi${lab && /^(confiscation|formation)/.test(String(ch)) ? 'e' : ''}`, texte: 'appliqué à 20:00 · tu peux encore changer d’avis dans les Ordres', href: '#ordres' });
+    else alertes.unshift({ cls: 'amber', titre: `Mise à prix : ${esc(z.primeAChoisir.suspect)} sous les verrous, choisis ta récompense`, texte: '12 k€, renfort fédéral ou formation offerte, avant 20:00', href: '#ordres' });
   }
   for (const x of z.indemnites || []) alertes.push({ cls: 'blue', titre: `Assurance : +${fmt1(x.montant)} k€ attendus`, texte: `remboursement du véhicule sinistré, ${x.tour - T <= 0 ? 'ce soir' : `dans ${x.tour - T} tour${x.tour - T > 1 ? 's' : ''}`}`, href: '#ordres' });
   { const ds = z.dossiers || [], retard = ds.filter((d) => d.age > 6).length, vieux = ds.filter((d) => d.age >= 5).length;
