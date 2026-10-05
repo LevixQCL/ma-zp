@@ -270,10 +270,11 @@ function setup(p){
   drawWires(); status(); view('dev');
 }
 function randomPuzzle(){
-  const n=randi(4,6), cols=Object.keys(COL);
+  // Défi d'endurance : à haut niveau, toujours 6 fils, et les cas particuliers de la fiche tombent plus souvent.
+  const cf=C.cfg||{}, n=randi(cf.filsMin||4,6), cols=Object.keys(COL), piege=cf.piege||.15;
   const wires=Array.from({length:n},()=>pick(cols));
   const btn={color:pick(cols.filter(c=>c!=='noir')), label:pick(['STOP','ARMER','ANNULER','TESTER']), strip:pick(['bleu','jaune','blanc','rouge'])};
-  if(Math.random()<.15){ btn.color=R.b.tapA.color; btn.label=R.b.tapA.label; }
+  if(Math.random()<piege){ btn.color=R.b.tapA.color; btn.label=R.b.tapA.label; }
   else if(Math.random()<.05){ btn.color=R.b.tapB.color; }
   let leds, togs; do{ leds=[0,1,2,3].map(()=>Math.random()<.5?1:0); togs=[0,1,2,3].map(()=>Math.random()<.5?1:0); }while(leds.join()===togs.join());
   return {serial:genSerial(), fragile:Math.random()<.4, wires, btn, leds, togs};
@@ -411,7 +412,9 @@ Shell.init({
   headline:'Colis suspect',
   story:`<p>Un sac à dos abandonné devant l'entrée de la gare émet un bip régulier. Ton équipe d'intervention a établi le périmètre, mais le SEDEE est retenu sur une autre mission à deux heures de route.</p><p>Neutralise l'engin avec la fiche réflexe avant la fin du compte à rebours.</p>`,
   diffs:{difficile:{agents:2,label:'Difficile',time:90,lives:1},normal:{agents:4,label:'Normal',time:120,lives:2},facile:{agents:6,label:'Facile',time:150,lives:3}},
-  bornes:{time:[28,Infinity],lives:[1,9]},
+  bornes:{time:[70,Infinity],lives:[1,9]},
+  // Défi : le temps de lire la fiche SEDEE reste réaliste ; la difficulté vient des engins plus chargés (et d'une seule vie).
+  niveau(n,cfg){ cfg.filsMin = n>=16?6:n>=12?5:4; cfg.piege = n>10 ? Math.min(.4,.15+.025*(n-10)) : .15; return cfg; },
   diffHint:"Plus d'agents : plus de temps et plus d'erreurs tolérées avant l'explosion.",
   desktopHint:'Sur ordinateur : coupe un fil en glissant la souris à travers, bouton gauche enfoncé.',
   rules:['Trois modules à neutraliser : <b>fils</b>, <b>bouton</b>, <b>interrupteurs</b>, dans l\'ordre que tu veux.','La <b>fiche SEDEE</b> (onglet du bas) donne les règles. <b>Elles changent à chaque engin</b> et dépendent du n° de série et de l\'étiquette.','Chaque erreur <b>accélère le compte à rebours</b>. Trop d\'erreurs : explosion.','Sans erreur : <b>+2</b> sur la jauge skins. Avec erreurs : <b>+1</b>.'],
