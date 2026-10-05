@@ -206,7 +206,7 @@ Shell.init({
   headline:'Dossier à relire',
   story:`<p>Le service Population de la commune attend ton rapport d'enquête de domiciliation avant midi. L'agent de quartier l'a rédigé en vitesse entre deux visites.</p><p>Relis-le avant l'envoi : <b>3 erreurs</b> s'y sont glissées. Un faux signalement te coûte 8 secondes.</p>`,
   diffs:{difficile:{agents:2,label:'Difficile',time:90},normal:{agents:4,label:'Normal',time:125},facile:{agents:6,label:'Facile',time:165}},
-  bornes:{time:[22,Infinity]},
+  bornes:{time:[45,Infinity]},
   diffHint:"Plus d'agents : plus de temps pour relire le dossier.",
   rules:['<b>3 erreurs</b> par rapport : dates, âge, adresse, nom, heure, carte d’identité, ménage, bail, avis ou signature.','Compare le <b>tableau du haut</b> avec le <b>constat</b>, et vérifie que tout se tient.','Tape directement sur l\'élément erroné. Un <b>faux signalement</b> coûte 8 secondes.','Sans faux signalement : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
   winTitle:'Dossier envoyé', loseTitle:'Dossier renvoyé', skin:'Vélo de quartier',
