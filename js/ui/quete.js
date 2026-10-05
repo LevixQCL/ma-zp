@@ -59,7 +59,7 @@ function entrainementMiniJeux() {
   const tuile = (m) => `<button type="button" class="tr-tuile" data-action="mj-train" data-j="${m.jeu}" style="--c:${COUL_MJ[m.service] || '#63B0FF'}"><span class="tr-ico" aria-hidden="true">${ICO_MJ[m.jeu] || '🎮'}</span><span class="tr-nom">${esc(m.nom)}</span><span class="tr-s">${esc(SERVICE_LABELS[m.service] || (m.service === 'labo' ? 'Labo' : 'RCCU'))}</span>${nominette(m.jeu)}</button>`;
   const inc = MINI_JEUX.filter((m) => !['labo', 'rccu'].includes(m.service)), pjf = MINI_JEUX.filter((m) => ['labo', 'rccu'].includes(m.service));
   return `<section class="card tight" aria-label="Mini-jeux" style="gap:10px">
-    <span class="tiny muted">Sans enjeu. Dans chaque mini-jeu, le <strong>défi d’endurance</strong> : du niveau 1 aussi haut que possible, trois erreurs permises. Le record de la partie met son nom sur la tuile.</span>
+    <span class="tiny muted">Chaque mini-jeu, du niveau 1 (tout doux) aussi haut que possible, trois erreurs permises. Le record de la partie met son nom sur la tuile. Sans enjeu pour ta zone.</span>
     <span class="tr-grp">Incidents du jour</span><div class="tr-grille">${inc.map(tuile).join('')}</div>
     <span class="tr-grp">Appui PJF à l’enquête</span><div class="tr-grille">${pjf.map(tuile).join('')}</div>
   </section>`;
@@ -162,7 +162,7 @@ export function renderQuete() {
   const train = S.questMode === 'train';
   const modes = `<div class="seg2" role="tablist" aria-label="Mode"><button type="button" role="tab" aria-selected="${!train}" data-action="quest-mode" data-v="jour">Énigmes du jour</button><button type="button" role="tab" aria-selected="${train}" data-action="quest-mode" data-v="train">Entraînement</button></div>`;
   const vueMj = train && S.trainVue === 'minijeux';
-  const sousOnglets = train ? `<div class="seg2" role="tablist" aria-label="Entraînement"><button type="button" role="tab" aria-selected="${!vueMj}" data-action="train-vue" data-v="enigmes">Énigmes</button><button type="button" role="tab" aria-selected="${vueMj}" data-action="train-vue" data-v="minijeux">Mini-jeux</button></div>` : '';
+  const sousOnglets = train ? `<div class="seg2" role="tablist" aria-label="Entraînement"><button type="button" role="tab" aria-selected="${!vueMj}" data-action="train-vue" data-v="enigmes">Énigmes</button><button type="button" role="tab" aria-selected="${vueMj}" data-action="train-vue" data-v="minijeux">🏆 Challenge</button></div>` : '';
   if (vueMj) {
     return `<main class="screen quete">
     ${modes}
