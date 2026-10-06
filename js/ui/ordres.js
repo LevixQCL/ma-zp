@@ -316,7 +316,7 @@ function detailDecision(z, dec, T) {
     const g = gainService(z, s, (x) => { x.niveaux[s] = n + 1; });
     l.push(`${SERVICE_LABELS[s]} niveau ${n} → ${n + 1} : efficacité ${pct(multNiveau(n), multNiveau(n + 1))}.`);
     const abs = agentsFormation(z, s);
-    l.push(`${abs ? `${abs} agents absents au tour ${T + 1}` : 'Formation au stand de tir : moitié prix et personne d’absent'}, niveau gagné à la résolution du tour ${T + DUREE_FORMATION + 1}. Conservé à la saison suivante (un niveau de moins).`);
+    l.push(`${abs ? `${abs} agents absents au tour ${T + 1}` : 'Formation au stand de tir : moitié prix et personne d’absent'}, niveau gagné au calcul du tour ${T + DUREE_FORMATION}, quand tes agents reviennent. Conservé à la saison suivante (un niveau de moins).`);
     effet(s, g); argent(s, g);
   } else if (dec.type === 'equiper' && dec.cible === 'vehicule') {
     const inter = S.draft.alloc.intervention || 0, lim = (v) => v * 2.5;
@@ -359,9 +359,9 @@ function avertBudget(z, d) {
 
 /** Formations lancées les soirs précédents : le niveau tombe à la résolution du tour indiqué. */
 function formationsEnCours(z, T) {
-  const f = (z.formations || []).filter((x) => x.fin >= T);
+  const f = (z.formations || []).filter((x) => x.fin >= T && !x.fait);
   if (!f.length) return '';
-  return `<p class="small ok" style="margin:0">${f.map((x) => `🎓 Formation ${esc(SERVICE_LABELS[x.service])} en cours : niveau ${z.niveaux[x.service]} → ${z.niveaux[x.service] + 1} ${x.fin === T ? 'ce soir à 20:00' : `au tour ${x.fin}`}`).join('<br>')}</p>`;
+  return `<p class="small ok" style="margin:0">${f.map((x) => `🎓 Formation ${esc(SERVICE_LABELS[x.service])} en cours : niveau ${z.niveaux[x.service]} → ${z.niveaux[x.service] + 1} ${x.fin <= T + 1 ? 'ce soir à 20:00, agents de retour demain' : `au calcul du tour ${x.fin - 1}`}`).join('<br>')}</p>`;
 }
 
 /** Sélecteur de grande décision : quatre catégories, des tuiles compactes. */

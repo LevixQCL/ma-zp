@@ -17,7 +17,7 @@ export const NOTE_MAJ = {
     ]],
     ['Plus lisible', [
       ['Grande décision', 'elle est payée à 20:00 après les dépenses du jour et les démarches d’enquête. Les Ordres préviennent maintenant si le tout dépasse ta caisse (sinon la décision est refusée), et une décision refusée s’affiche en rouge en tête du résultat de la nuit.'],
-      ['Formation en cours', 'visible dans Ordres › Former : le service et le soir où il gagne son niveau.'],
+      ['Formation', 'le niveau monte le soir même où tes agents sont en formation : ils reviennent le lendemain déjà formés (avant, le niveau ne s’affichait qu’un jour plus tard). Une formation en cours est visible dans Ordres › Former.'],
       ['Bâtir', 'chaque option affiche son délai : un agrandissement est prêt le lendemain soir, une infrastructure est en service dès ce soir.'],
       ['Tableau d’enquête', 'la barre du haut se resserre sur les petits écrans (ou avec une grande police) au lieu de sortir de l’écran.'],
       ['Des couleurs', 'sous chaque service, le résultat estimé de ce soir est en vert (ça va), orange (à surveiller) ou rouge (ça coince).'],
