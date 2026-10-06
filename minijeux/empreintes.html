@@ -668,6 +668,15 @@ function newCase(cfg, tuto=false){
 /* ---------- affichage ---------- */
 const cv=$('tbl'), tctx=cv.getContext('2d'), table=$('table');
 let geo={s:1,ox:0,oy:0,w:0,h:0}, fade=.55, mode='move';
+// Certains navigateurs (Safari sur Mac notamment) peuvent rater le mode « multiply » sur un canevas :
+// on le teste une fois ; s'il échoue, la trace est simplement posée par-dessus (toujours visible).
+const MULTIPLY_OK=(()=>{ try{
+  const a=document.createElement('canvas'); a.width=a.height=4; const ca=a.getContext('2d');
+  const b=document.createElement('canvas'); b.width=b.height=4; const cb=b.getContext('2d');
+  cb.fillStyle='rgb(214,38,108)'; cb.fillRect(0,0,4,4);
+  ca.fillStyle='#ffffff'; ca.fillRect(0,0,4,4); ca.globalCompositeOperation='multiply'; ca.drawImage(b,0,0);
+  const d=ca.getImageData(1,1,1,1).data; return d[1]<120 && d[3]>200;
+}catch(e){ return false; } })();
 function resize(){
   const r=table.getBoundingClientRect(), dpr=Math.min(2.5,devicePixelRatio||1);
   cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr);
@@ -694,7 +703,7 @@ function draw(){
   // la trace, en surimpression (multiplication : alignée, elle « disparaît » dans l'encre)
   const T=G.T, [tx,ty]=toScreen(G.tr.x,G.tr.y);
   ctx.save(); ctx.translate(tx,ty); ctx.rotate(G.tr.a);
-  ctx.globalCompositeOperation='multiply'; ctx.globalAlpha=.5+.5*fade; // jamais sous 50 % : la trace ne doit pas « disparaître » côté Fiche
+  ctx.globalCompositeOperation=MULTIPLY_OK?'multiply':'source-over'; ctx.globalAlpha=(MULTIPLY_OK?.5:.45)+(MULTIPLY_OK?.5:.4)*fade; // jamais sous 50 % : la trace ne doit pas « disparaître » côté Fiche
   ctx.drawImage(T.canvas, -T.L/2*s, -T.L/2*s, T.L*s, T.L*s);
   ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1;
   ctx.setLineDash([4,5]); ctx.strokeStyle='rgba(214,38,108,.55)'; ctx.lineWidth=1.2;
@@ -839,7 +848,7 @@ wh.addEventListener('pointerup',()=>wx=null); wh.addEventListener('pointercancel
 wh.addEventListener('keydown',e=>{ if(!G.fiches) return; const k={ArrowLeft:-1,ArrowRight:1}[e.key]; if(k){ e.preventDefault(); setAngle(G.tr.a+k*(e.shiftKey?2:.5)*Math.PI/180); } });
 $('modes').onclick=e=>{ const b=e.target.closest('button'); if(!b) return; setMode(b.dataset.m); };
 function setMode(m){ mode=m; if(G) G.aim=null; [...$('modes').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.m===m)); table.classList.toggle('pin',m==='pin');}
-$('fade').oninput=e=>{ fade=e.target.value/100; redraw(); };
+$('fade').oninput=e=>{ fade=e.target.value/100; redraw(); }; $('fade').onchange=$('fade').oninput; $('fade').value=Math.round(fade*100);
 $('mq').onclick=()=>{ $('mhelp').hidden=false; };
 $('mhelpOk').onclick=()=>{ $('mhelp').hidden=true; };
 document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ') && mode==='pin' && G.aim && !G.over){ e.preventDefault(); valider(); return; } if(e.key==='p'||e.key==='P') setMode('pin'); if(e.key==='d'||e.key==='D') setMode('move'); });
