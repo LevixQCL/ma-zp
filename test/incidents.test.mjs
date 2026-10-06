@@ -1,7 +1,8 @@
 // Incidents du jour : tirage déterministe, horaires, effets à la résolution.
 import assert from 'node:assert/strict';
 import { createGame, buildJoinZone, resolveTurn } from '../js/engine/resolve.js';
-import { incidentsDuTour as tousIncidents, incidentsVisibles, separerIncidents, appliquerIncidents, MALUS, INC, difficulte, chanceSeule, pointsJauge, URGENCE } from '../js/engine/incidents.js';
+import { incidentsDuTour as tousIncidents, incidentsVisibles, separerIncidents, appliquerIncidents, MALUS, INC, difficulte, chanceSeule, pointsJauge, URGENCE, CIBLE, refUrgence, cibleUrgence, adapterCibleUrgence } from '../js/engine/incidents.js';
+import { readFileSync } from 'node:fs';
 import { vitesseCombi, PREPA } from '../js/engine/constants.js';
 // Les incidents « classiques » (l'urgence du jour est vérifiée à part, section 6).
 const incidentsDuTour = (s, u) => tousIncidents(s, u).filter((i) => !i.urgence);
@@ -123,14 +124,38 @@ for (let t = 1; t <= 120; t++) {
   z = jouer({ statut: 'rate', raison: 'hs', fautes: 3 });
   assert.equal(z.cabosses.length, 1, 'combi hors service : un véhicule cabossé'); assert.ok(!z.blesses.length && z.moral === 60 && z.usure === 10);
   let blesses = 0, moralPerdu = 0;
-  for (let k = 0; k < 400; k++) { const zz = jouer({ statut: 'rate', fautes: 1 }, `t${k}`); if (zz.blesses.length) { blesses++; assert.equal(zz.blesses[0].retour, 4 + 1 + URGENCE.absence); } else if (zz.moral === 58) moralPerdu++; }
-  assert.ok(blesses > 180 && blesses < 300, `trop tard : ~60 % de blessé (${blesses}/400)`); assert.equal(blesses + moralPerdu, 400);
+  for (let k = 0; k < 400; k++) { const zz = jouer({ statut: 'rate', fautes: 1 }, `t${k}`); if (zz.blesses.length) { blesses++; assert.equal(zz.blesses[0].retour, 4 + 1 + URGENCE.absence); } else if (zz.moral === 59) moralPerdu++; }
+  assert.ok(blesses > 70 && blesses < 130, `trop tard : ~25 % de blessé (${blesses}/400)`); assert.equal(blesses + moralPerdu, 400);
   z = jouer({ statut: 'abandon', fautes: 1 });
   assert.equal(z.usure, 10, 'un abandon n’use pas le parc');
   // Stand de tir : moitié moins de blessés.
   let avecTir = 0;
   for (let k = 0; k < 400; k++) { const zz = base(); zz.infra = { ...(zz.infra || {}), tir: true }; appliquerIncidents(zz, { incidents: inc, resultats: { u: { statut: 'rate', fautes: 0 } }, alloc: {}, T: 4, rng: makeRng(`t${k}`) }); if (zz.blesses.length) avecTir++; }
   assert.ok(avecTir < blesses * 0.7, `stand de tir : moins de blessés (${avecTir} contre ${blesses})`);
+}
+// Temps cible : les parcours du moteur sont ceux du mini-jeu ; la marge suit les courses (65 % à temps), pas à pas, bornée.
+{
+  const html = readFileSync('minijeux/bitonal.html', 'utf8');
+  for (const [niv, cle] of [['facile', 'facile'], ['normal', 'moyen'], ['difficile', 'difficile']]) {
+    const m = html.match(new RegExp(`${cle}:\\s*\\{ long: (\\d+), inter: (\\d+),`));
+    assert.ok(m && Number(m[1]) === CIBLE.niveaux[niv].long && Number(m[2]) === CIBLE.niveaux[niv].inter, `parcours ${niv} identique au mini-jeu`);
+  }
+  const s8 = {};
+  assert.equal(cibleUrgence(s8, 'normal').cible, Math.round(refUrgence('normal') * CIBLE.niveaux.normal.marge));
+  adapterCibleUrgence(s8, [{ niveau: 'normal', temps: 100, vit: 1 }]);
+  assert.equal(s8.urgenceCible.normal.marge, CIBLE.niveaux.normal.marge, 'moins de 5 courses : pas d’ajustement');
+  // Des joueurs lents (ratios 1,5 à 1,7) : la marge monte, pas à pas, jusqu'à son maximum.
+  { const m0 = s8.urgenceCible.normal.marge; adapterCibleUrgence(s8, [1.5, 1.55, 1.6, 1.65, 1.7].map((r) => ({ niveau: 'normal', temps: r * refUrgence('normal'), vit: 1 }))); assert.ok(s8.urgenceCible.normal.marge > m0 && s8.urgenceCible.normal.marge - m0 <= CIBLE.pasMax + 1e-9, 'un pas borné'); }
+  for (let k = 0; k < 30; k++) adapterCibleUrgence(s8, [1.5, 1.55, 1.6, 1.65, 1.7].map((r) => ({ niveau: 'normal', temps: r * refUrgence('normal'), vit: 1 })));
+  assert.equal(s8.urgenceCible.normal.marge, CIBLE.niveaux.normal.max, 'bornée au maximum');
+  // Des joueurs rapides (1,10) : elle redescend.
+  for (let k = 0; k < 30; k++) adapterCibleUrgence(s8, Array.from({ length: 5 }, () => ({ niveau: 'normal', temps: 1.1 * refUrgence('normal'), vit: 1 })));
+  assert.ok(Math.abs(s8.urgenceCible.normal.marge - 1.1) < 0.01, `redescend vers les temps réels (${s8.urgenceCible.normal.marge})`);
+  // Une combi lente (×0,9) : son temps est ramené à une combi neuve.
+  const s9 = {};
+  for (let k = 0; k < 40; k++) adapterCibleUrgence(s9, [{ niveau: 'facile', temps: 1.25 / 0.9 * refUrgence('facile'), vit: 0.9 }]);
+  assert.ok(Math.abs(s9.urgenceCible.facile.marge - 1.25) < 0.01, 'temps ramené à une combi neuve');
+  assert.ok(s9.urgenceCible.facile.h.length <= CIBLE.garde);
 }
 // Résolution : l'urgence jouée est lue dans le profil ; « pas le temps » ne compte pas pour le Directeur.
 {
@@ -140,5 +165,10 @@ for (let t = 1; t <= 120; t++) {
   const { state: ap } = resolveTurn(s7, { players: pl });
   assert.ok(ap.zones.a.rapport.some((l) => l.startsWith('Urgence ·') && l.includes('sur place à temps')));
   assert.equal(ap.zones.a.stats.urgencesOk, 1);
+  // Le temps de la course entre dans le calcul de la marge (stocké dans l'état de la partie).
+  const pl2 = { ...pl, a: { ...pl.a, incidents: { cle: 's1t1', r: { [u.id]: { statut: 'rate', fautes: 0, temps: 150, niveau: 'normal' } } } } };
+  const { state: ap2 } = resolveTurn(structuredClone(st), { players: pl2 });
+  assert.equal(ap2.urgenceCible.normal.h.length, 1);
+  assert.ok(Number.isFinite(tousIncidents(ap2, 'a').find((i) => i.urgence).cible));
 }
 console.log('OK : incidents du jour (tirage, horaires, difficulté, effets, jauge, résolution).');

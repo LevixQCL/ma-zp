@@ -26,7 +26,7 @@ import { pactesPre, pactesPost, lies, PACTE } from './pactes.js';
 import { FLAGRANTS } from './contenu.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
-import { separerIncidents, appliquerIncidents, resultatsIncidents, incidentsVisibles } from './incidents.js';
+import { separerIncidents, appliquerIncidents, resultatsIncidents, incidentsVisibles, adapterCibleUrgence, NIVEAUX_URGENCE } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND } from './contenu.js';
 import { imprevusDuJour, directeurNuit, directeurSoir, districtNuit, districtBilan, duoBilan, coopResoudre, enqueteDirecteur, memoirePlainte, formes, rangsEnigmes, adapterEnigmes, adapterIncidents, dirHeritage, parquetSoir, parquetDecouverte, DIR } from './directeur.js';
@@ -154,6 +154,7 @@ function genererAffaires(state, rng) {
 export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, nextWeekday = null } = {}) {
   // Incidents du jour : tirés sur l'état d'avant la résolution, comme les joueurs les ont vus.
   // Ceux encore ouverts après 20:00 et pas encore joués sont reportés à la résolution de demain.
+  const coursesUrgence = []; // temps des urgences jouées cette nuit : ajustent le temps cible de demain
   const incidentsAvant = Object.fromEntries(Object.keys((stateIn && stateIn.zones) || {}).map((u) => [u, separerIncidents(stateIn, u, resultatsIncidents(players[u], incidentsVisibles(stateIn, u)))]));
   const state = migrateState(clone(stateIn));
   state.minClientVersion = Math.max(state.minClientVersion || 0, APP_VERSION);
@@ -534,10 +535,18 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (incs.reportes.length) z.incidentsReportes = incs.reportes; else delete z.incidentsReportes;
     if (incs.maintenant.length) {
       const resInc = Object.values(resultatsIncidents(players[uid], incs.maintenant));
-      const comptes = resInc.filter((x) => x.statut !== 'passe');
+      // L'urgence a son propre réglage (temps cible ajusté sur toute la partie) : elle ne pousse pas le niveau du Directeur.
+      const comptes = Object.values(resultatsIncidents(players[uid], incs.maintenant.filter((i) => !i.urgence))).filter((x) => x.statut !== 'passe');
       adapterIncidents(z, comptes.filter((x) => x.statut === 'ok').length, comptes.length);
       const inc = appliquerIncidents(z, { incidents: incs.maintenant, resultats: resultatsIncidents(players[uid], incs.maintenant), alloc: o.alloc || {}, T, rng: makeRng(`${state.seed}:s${state.season}:t${T}:incidents-res:${uid}`), indice: () => indiceBonus(state, z, zr) });
       z.rapport.push(...inc.lignes);
+      for (const i of incs.maintenant) {
+        const r0 = i.urgence && resultatsIncidents(players[uid], [i])[i.id];
+        if (r0 && (r0.statut === 'ok' || r0.statut === 'rate') && r0.raison !== 'hs' && Number.isFinite(Number(r0.temps))) {
+          const niveau = NIVEAUX_URGENCE.includes(r0.niveau) ? r0.niveau : i.diff;
+          coursesUrgence.push({ niveau, temps: Math.max(10, Math.min(900, Number(r0.temps))), vit: Number.isFinite(i.vit) ? i.vit : 1 });
+        }
+      }
       if (inc.skin) push(3, 'Décor', `${zoneLabel(z)} décroche le skin « ${inc.skin.nom} »`, 'Jauge des incidents remplie à force d’interventions réussies.', uid);
     }
     jalon(z, 'Incidents du jour');
@@ -903,6 +912,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
   // Le parquet surveille les dossiers trop dépendants des pièces des autres (avant la fin d'affaire).
   parquetSoir(state, uids, push);
+  // Urgences : le temps cible s'ajuste sur les courses de la partie.
+  adapterCibleUrgence(state, coursesUrgence);
   // Enquête : fin d'affaire, nouvelle affaire ; nouvelles demandes de FIPA.
   enquetePost(state, pre, push);
   // Le Directeur : témoin tardif si le district piétine sur l'enquête.

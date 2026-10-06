@@ -35,10 +35,73 @@ export const URGENCE = {
   jeu: 'bitonal', service: 'intervention', titre: 'Collègues pris à partie',
   texte: 'Une patrouille est prise à partie et demande du renfort. Rejoins-les au plus vite, en feu bleu.',
   gain: { moral: 3 },
-  blessure: 0.6, absence: 2, moralRetard: -2,
+  // Simulation (test/urgence-sim.mjs) : jouer ne doit jamais coûter plus de blessés que ne pas venir.
+  blessure: 0.25, absence: 2, moralRetard: -1,
   usureParAccrochage: 2, usureHS: 8,
-  seule: { blessure: 0.3, moral: -1 },
+  seule: { blessure: 0.45, moral: -1 },
 };
+/**
+ * Temps cible de l'urgence, par niveau. Parcours (identiques au mini-jeu) : longueur et carrefours.
+ * Référence = trajet parfait d'une combi neuve ; cible = référence × marge.
+ * La marge s'ajuste chaque nuit sur les courses réelles de la partie : chaque temps est ramené à une combi neuve
+ * (temps × vitesse de la combi ÷ référence) ; la marge vise le quantile `quantile` de ces temps (≈ 65 % de courses
+ * à temps à combi égale), en n'avançant que de `pas` vers lui (au plus `pasMax` par nuit), entre `min` et `max`,
+ * et seulement à partir de `minCourses` courses. Une combi lente ou cabossée garde donc moins de marge.
+ */
+export const CIBLE = {
+  base: 31, parInter: 2.8, fixe: 4,
+  niveaux: {
+    // Marges de départ calées sur la simulation (joueur moyen ≈ 1,25 × le trajet parfait) ; les niveaux se distinguent surtout par le trafic.
+    facile: { long: 1800, inter: 3, marge: 1.35, min: 1.15, max: 1.6 },
+    normal: { long: 2100, inter: 4, marge: 1.28, min: 1.08, max: 1.55 },
+    difficile: { long: 2400, inter: 5, marge: 1.22, min: 1.0, max: 1.5 },
+  },
+  quantile: 0.7, minCourses: 5, garde: 30, pas: 0.5, pasMax: 0.08,
+};
+export const NIVEAUX_URGENCE = Object.keys(CIBLE.niveaux);
+/** Trajet parfait (s) d'une combi neuve sur ce niveau. */
+export const refUrgence = (niv) => { const n = CIBLE.niveaux[niv] || CIBLE.niveaux.normal; return n.long / CIBLE.base + n.inter * CIBLE.parInter + CIBLE.fixe; };
+/** Marge actuelle du niveau (ajustée sur les courses de la partie). */
+export function margeUrgence(state, niv) {
+  const c = state && state.urgenceCible && state.urgenceCible[niv];
+  return c && Number.isFinite(c.marge) ? c.marge : (CIBLE.niveaux[niv] || CIBLE.niveaux.normal).marge;
+}
+/** Temps cible (s) du niveau, et nombre de courses sur lesquelles il s'appuie. */
+export function cibleUrgence(state, niv) {
+  const c = state && state.urgenceCible && state.urgenceCible[niv];
+  return { cible: Math.round(refUrgence(niv) * margeUrgence(state, niv)), courses: (c && c.h && c.h.length) || 0 };
+}
+/** Quantile q d'une liste (interpolé). */
+export function quantile(l, q) {
+  const s = l.slice().sort((a, b) => a - b);
+  if (!s.length) return NaN;
+  const i = (s.length - 1) * q, a = Math.floor(i), b = Math.ceil(i);
+  return s[a] + (s[b] - s[a]) * (i - a);
+}
+/**
+ * Ajuste les marges sur les courses de la nuit : [{ niveau, temps, vit }] (temps en s, vitesse de la combi en ×).
+ * Renvoie les marges modifiées { niveau: [avant, après] }.
+ */
+export function adapterCibleUrgence(state, courses) {
+  const out = {};
+  state.urgenceCible ||= {};
+  for (const niv of NIVEAUX_URGENCE) {
+    const P = CIBLE.niveaux[niv];
+    const c = (state.urgenceCible[niv] ||= { marge: P.marge, h: [] });
+    const neuves = courses.filter((x) => x && x.niveau === niv && Number.isFinite(x.temps) && x.temps > 0)
+      .map((x) => Math.round(Math.max(0.7, Math.min(3, (x.temps * (Number.isFinite(x.vit) ? x.vit : 1)) / refUrgence(niv))) * 1000) / 1000);
+    if (!neuves.length) continue;
+    c.h = [...c.h, ...neuves].slice(-CIBLE.garde);
+    if (c.h.length < CIBLE.minCourses) continue;
+    const vise = Math.max(P.min, Math.min(P.max, quantile(c.h, CIBLE.quantile)));
+    const pas = Math.max(-CIBLE.pasMax, Math.min(CIBLE.pasMax, (vise - c.marge) * CIBLE.pas));
+    const avant = c.marge;
+    c.marge = Math.round((c.marge + pas) * 1000) / 1000;
+    if (c.marge !== avant) out[niv] = [avant, c.marge];
+  }
+  return out;
+}
+
 /** Ce qu'on risque, en clair (écran du mini-jeu). */
 export const texteRisqueUrgence = () => `trop tard : un collègue peut être blessé (${URGENCE.absence} jours d’absence) ; combi hors service : un véhicule cabossé ; chaque accrochage use le parc (+${URGENCE.usureParAccrochage} %)`;
 
@@ -151,9 +214,11 @@ export function incidentsDuTour(state, uid) {
     service: URGENCE.service, jeu: URGENCE.jeu, titre: URGENCE.titre,
     ouvre: debut + INC.premier + Math.floor(ru.next() * fenetre), ferme: fin,
     agents: al[URGENCE.service] || 0, ajust: niv,
+    diff: difficulte(URGENCE.service, al[URGENCE.service] || 0, niv),
     vit: v.mult, frein: v.frein, etat: v.etat, cabosse: v.cabosse, prepa: v.prepa,
     seed: Math.floor(ru.next() * 1e9),
   };
+  { const c = cibleUrgence(state, urgence.diff); urgence.cible = c.cible; urgence.courses = c.courses; }
   return [...liste.map((x, k) => ({
     id: `s${state.season}t${state.turn}-${k}`,
     service: x.service, jeu: INCIDENTS[x.service].jeu, titre: INCIDENTS[x.service].titre,
