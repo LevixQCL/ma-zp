@@ -9,6 +9,8 @@ import { formatCountdown, formatDateBe } from '../engine/time.js';
 import { QUEST_LABELS } from '../quests/quests.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
 import { estimations } from './ordres.js';
+import { vagueTodo, vagueEnvoyeeAlerte } from './vagues.js';
+import { releveTodos, releveHtml } from './releve.js';
 import { operationActive } from '../engine/zone.js';
 import { cielDe, dilemmeDuJour, feuilletonEnCours, pressionsVisibles } from '../engine/directeur.js';
 import { fipaCards } from './fipa.js';
@@ -217,6 +219,8 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue }) {
     const ok = sg.quartier != null ? ((d.patrouilles || {})[sg.quartier] || 0) >= (sg.patrouilles || 2) : (al[sg.service] || 0) >= sg.min;
     items.unshift({ ok, href: sg.quartier != null ? '#carte' : '#ordres', t: esc(sg.titre), s: esc(sg.texte) });
   }
+  { let vt = null; try { vt = vagueTodo(estimations()); } catch (e) { /* pas de brouillon */ } if (vt) items.unshift(vt); }
+  for (const x of releveTodos()) items.unshift(x);
   // Un incident ouvert a déjà sa carte (avec son compte à rebours) juste sous la liste : pas de ligne en double ici.
   items.push(delegue ? { ok: true, href: '#quete', t: delegue.statut === 'quiz' ? `Quiz express : ${Number(delegue.tentatives) || 0} sur 5` : 'Énigmes confiées à un agent', s: delegue.statut === 'quiz' ? ((Number(delegue.tentatives) || 0) >= 3 ? (delegue.bonus ? 'bonus choisi' : 'choisis ton bonus') : 'pas de bonus') : 'résultat ce soir' } : { ok: faites >= 3, href: '#quete', t: `Énigmes : ${faites} sur 3`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
   const fipa = (st.fipas || []).filter((f) => (f.demandeur === z.uid && f.etape === 'demande' && f.tourDecision === st.turn) || (f.partenaire === z.uid && f.etape === 'invite' && f.tourReponse === st.turn) || (f.etape === 'accepte' && f.tourJ === st.turn && (f.demandeur === z.uid || f.partenaire === z.uid)));
@@ -299,6 +303,7 @@ export function renderHP() {
   if (op) alertes.unshift({ cls: 'red', titre: `Opération d\u2019envergure : ${esc(op.titre)}`, texte: `dispositif à régler dans tes ordres${op.duree > 1 ? ` · jour ${T - op.tourDebut + 1} sur ${op.duree}` : ''}`, href: '#ordres' });
   const tr = (st.traques || [])[0];
   if (tr) { const ta = affaire(st, tr.n); alertes.unshift({ cls: 'red', titre: `Suspect identifié : ${esc(ta.suspects[ta.coupable].nom)} en fuite`, texte: `affaire « ${esc(ta.titre)} » résolue · ${delaiTraque(toursTraque(tr))} pour trouver sa planque et l’arrêter`, href: '#enquete' }); }
+  { const ve = vagueEnvoyeeAlerte(); if (ve) alertes.push(ve); }
   const dotColor = { red: 'var(--red)', amber: 'var(--amber)', blue: 'var(--blue)' };
   const last = S.gazettes[0];
 
@@ -323,6 +328,7 @@ export function renderHP() {
 
     ${ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue })}
     ${dilemmeHtml(st, z)}
+    ${releveHtml()}
     ${incidentsHtml()}
     <section class="card mazone" aria-label="Ma zone">
       <div class="mz-tete">

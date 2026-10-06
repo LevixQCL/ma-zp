@@ -15,6 +15,8 @@ import { PREPA, coutPrepa } from '../engine/constants.js';
 import { MODELES, RENDEMENT } from '../engine/flotte.js';
 import { AIDE, THEMES, MOTIONS_CHEF, PERIL, SOLIDARITE } from '../engine/rivalites.js';
 import { PACTES, PACTE, DEFI, DEFI_INDICATEURS } from '../engine/pactes.js';
+import { VAGUES } from '../engine/vagues.js';
+import { RELEVE } from '../engine/releve.js';
 
 const k = (v) => `${String(v).replace('.', ',')} k€`;
 const pc = (v) => `${Math.round(v * 100)} %`;
@@ -284,6 +286,27 @@ export function sections() {
           `<strong>Fonds de solidarité</strong>, quand une zone est en difficulté : chaque autre zone active lui verse ${SOLIDARITE.parZone} k€.`,
           '<strong>Blâme</strong> : proposé contre les zones les moins coopératives de la semaine (FIPA revendiquées ou refusées, pactes rompus). Effet : −10 de réputation et −30 PS.',
           `<strong>Motion de Chef de corps</strong>, une par saison : ${Object.values(MOTIONS_CHEF).map((m) => m.titre.toLowerCase()).join(', ')}.`,
+        ])}`,
+    },
+    {
+      id: 'vagues', titre: 'Vagues de délinquance et relèves', html: `
+        <p>Ce que fait ta zone déborde chez les voisines, en bien comme en mal.</p>
+        <h3>Les vagues de délinquance</h3>
+        ${ul([
+          `Une zone dont un service (Intervention, Proximité, Recherche ou Roulage) atteint au moins <strong>${String(VAGUES.seuil).replace('.', ',')} fois la médiane du district</strong> chasse la délinquance de chez elle. Elle part, la nuit, vers <strong>la zone voisine la plus faible</strong>, et frappe le soir suivant là où cette voisine est la plus faible (n’importe quel service, Accueil compris).`,
+          'Le matin, la Gazette annonce la vague et le quartier visé, sans dire qui l’a provoquée. Un repère 🌊 apparaît sur la carte. La zone visée voit sur son HP et dans ses ordres combien de capacité il lui faut pour tenir.',
+          `<strong>Vague brisée</strong> (capacité au moins égale à la médiane, un peu plus pour une vague forte) : +${VAGUES.gain.points} pts, +${VAGUES.gain.moral} de moral, +${VAGUES.gain.satisfaction} de satisfaction et +${VAGUES.gain.ps} PS par niveau de force (1 à ${VAGUES.forceMax}).`,
+          `<strong>Vague subie</strong>, par niveau de force : +${VAGUES.effet.incidents} incidents (Intervention), +${VAGUES.effet.tension} de tension dans le quartier frontalier (Proximité), un dossier en plus (Recherche), −${String(VAGUES.effet.roulageSatisf).replace('.', ',')} de satisfaction (Roulage) ou +${VAGUES.effet.paperasse} de paperasse (Accueil).`,
+          `Une zone envoie au plus une vague tous les ${VAGUES.repos} soirs et en reçoit au plus une par soir. Les zones arrivées depuis moins de ${VAGUES.protectionNouveaux} tours et celles sans ordres depuis 2 tours n’en reçoivent pas.`,
+          'Tout miser sur un service, c’est donc envoyer des vagues… et laisser un trou ailleurs, où celles des autres arriveront.',
+        ])}
+        <h3>La relève</h3>
+        ${ul([
+          'Quand une opération d’envergure ne réussit qu’à moitié, qu’une affaire disputée est bouclée avec un dispositif juste suffisant, ou parfois quand une vague est brisée, un suspect file vers une zone voisine.',
+          `Le lendemain, cette zone choisit : <strong>le prendre</strong> (${RELEVE.min} à ${RELEVE.max} agents d’Intervention pour la soirée), <strong>« pas l’effectif »</strong> (aucune conséquence, le suspect s’évapore) ou <strong>le transmettre</strong> à une autre de ses voisines (une seule fois).`,
+          `La zone de départ peut ajouter jusqu’à ${RELEVE.appuiMax} agents d’appui. Avec ${RELEVE.requis} agents au total, la capture est assurée ; à un près, une chance sur deux.`,
+          `Capture : +${RELEVE.gain.releve.points} pts, +${RELEVE.gain.releve.reputation} de réputation et +${RELEVE.gain.releve.satisfaction} de satisfaction pour celle qui l’a prise ; +${RELEVE.gain.depart.points} pts et +${RELEVE.gain.depart.reputation} de réputation pour celle qui a passé le relais (+${RELEVE.gain.appui.points} pts par agent d’appui).`,
+          `Une fois sur trois environ, un bonus : les <strong>félicitations du juge</strong> (+${RELEVE.juge.reputation} de réputation, +${RELEVE.juge.moral} de moral), ou une <strong>saisie à partager</strong> : celle qui a fait la capture choisit l’argent (${RELEVE.saisie.argent} k€) ou une voiture anonymisée, l’autre zone reçoit le reste.`,
         ])}`,
     },
     {
