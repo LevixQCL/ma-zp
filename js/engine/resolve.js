@@ -25,7 +25,7 @@ import { rivalitesPre, rivalitesPost, themeActif, appliquerConsignes } from './r
 import { pactesPre, pactesPost, lies, PACTE } from './pactes.js';
 import { FLAGRANTS } from './contenu.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
-import { ajouterVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES } from './flotte.js';
+import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
 import { separerIncidents, appliquerIncidents, resultatsIncidents, incidentsVisibles, adapterCibleUrgence, NIVEAUX_URGENCE } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
@@ -274,7 +274,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
     for (const u of candidats) if (!acceptes.includes(u)) rendre(u, ord[u].engagements[aff.id].agents, 'candidature non retenue.');
 
-    const force = equipe.reduce((s, x) => s + forceEngagement(state.zones[x.u], x.n), 0);
+    const force = equipe.reduce((s, x) => s + forceEngagement(state.zones[x.u], x.n, T), 0);
     if (force < aff.forceMin) {
       for (const x of equipe) state.zones[x.u].rapport.push(`${aff.titre} : force insuffisante (${fmt1(force)} sur ${aff.forceMin}), l’affaire reste ouverte.`);
       continue;
@@ -629,7 +629,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     for (const s of SERVICES) {
       const renfort = reserve && dep.reserveService === s ? reserve * DEPENSES.reserve.efficacite : 0;
       const bTheme = theme && ((theme.id === 'routiere' && s === 'roulage') ? 1.5 : (theme.id === 'proximite' && s === 'proximite') ? 1.3 : 1) || 1;
-      cap[s] = capacite(z, s, alloc[s] + renfort, { rythme: o.rythme, turn: T, bonus: (bonusService === s ? ENIGMES.bonusCapacite : 1) * bTheme, adminMult });
+      cap[s] = capacite(z, s, alloc[s] + renfort, { rythme: o.rythme, turn: T, bonus: (bonusService === s ? ENIGMES.bonusCapacite : 1) * bTheme, adminMult, alloc });
     }
     // Figures de l'équipe : bonus dans leur service (si quelqu'un y travaille), sauf celle partie en mission.
     z.bonusChefs = {};
@@ -638,6 +638,15 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       cap[s] *= 1 + x.bonus; z.bonusChefs[s] = x.bonus;
     }
 
+    // Flotte : agents de Roulage et de Proximité en voiture, prime verte, force des fourgons (affichage).
+    {
+      const mt = agentsMontes(z, alloc, T, o.rythme), bouts = [];
+      if (mt.roulage + mt.proximite > 0) bouts.push(`${[mt.roulage ? `${fmt1(mt.roulage)} agent${mt.roulage > 1 ? 's' : ''} de Roulage` : '', mt.proximite ? `${fmt1(mt.proximite)} de Proximité` : ''].filter(Boolean).join(' et ')} en voiture (+${Math.round(RENDEMENT.monte * 100)} % chacun)`);
+      else if (mt.libres < 0.5 && (alloc.roulage || alloc.proximite)) bouts.push('aucune place libre après l’Intervention : Roulage et Proximité à pied');
+      const pv = primeVerte(z); if (pv) bouts.push(`prime verte +${fmt1(pv)} k€`);
+      const bo = Math.round((bonusOrdre(z, T) - 1) * 100); if (bo) bouts.push(`fourgons : force des engagements +${bo} %`);
+      if (bouts.length) z.rapport.push(`Flotte : ${bouts.join(' · ')}.`);
+    }
     // Efficacité due au moral (celui du moment du calcul, après aléas, énigmes et primes du jour).
     const mm = moralMult(z.moral);
     z.efficaciteMoral = { moral: round1(z.moral), mult: Math.round(mm * 100) / 100 };
@@ -662,9 +671,11 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Flagrant délit : les patrouilles qui ne sont pas prises par les incidents peuvent tomber sur un auteur.
     const surplus = Math.max(0, cap.intervention / 1.1 - incidents);
     // Jauge de flagrant délit : la marge des patrouilles s'accumule jour après jour (plus de tirage au sort).
-    const gainFlag = Math.min(FLAGRANT.max, surplus * FLAGRANT.parUnite);
+    // Les voitures anonymisées en service planquent aux bons endroits : la jauge monte aussi sans patrouilles libres.
+    const filature = bonusFilature(z, T);
+    const gainFlag = Math.min(FLAGRANT.max, surplus * FLAGRANT.parUnite) + filature;
     z.jaugeFlagrant = round1(Math.min(1.5, (z.jaugeFlagrant || 0) + gainFlag) * 100) / 100;
-    if (z.jaugeFlagrant < 0.995 && gainFlag > 0) z.rapport.push(`Patrouilles libres : jauge de flagrant délit ${Math.round(z.jaugeFlagrant * 100)} % (+${Math.round(gainFlag * 100)} % aujourd’hui ; à 100 %, flagrant délit).`);
+    if (z.jaugeFlagrant < 0.995 && gainFlag > 0) z.rapport.push(`${filature ? 'Patrouilles libres et planques en voiture banalisée' : 'Patrouilles libres'} : jauge de flagrant délit ${Math.round(z.jaugeFlagrant * 100)} % (+${Math.round(gainFlag * 100)} % aujourd’hui${filature ? `, dont ${Math.round(filature * 100)} % par les anonymes` : ''} ; à 100 %, flagrant délit).`);
     if (z.jaugeFlagrant >= 0.995) {
       z.jaugeFlagrant = Math.max(0, round1((z.jaugeFlagrant - 1) * 100) / 100);
       const q = assurerQuartiers(state, z);
@@ -773,7 +784,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
           z.rapport.push(`Formation lancée : ${SERVICE_LABELS[dec.service]} (${absents ? `${absents} agents indisponibles ${DUREE_FORMATION} tour${DUREE_FORMATION > 1 ? 's' : ''}` : 'au stand de tir, sans agent absent'}).`);
         }
         if (dec.type === 'equiper') {
-          if (dec.cible === 'vehicule') { ajouterVehicule(z, dec.modele || 'diesel', T); z.rapport.push(`Nouveau véhicule livré : ${(MODELES[dec.modele] || MODELES.diesel).nom}.`); }
+          if (dec.cible === 'vehicule' && dec.reprise != null && dec.reprise < z.flotte.length) {
+            const ancien = modeleDe(z.flotte[dec.reprise]).nom, px = remplacerVehicule(z, dec.reprise, dec.modele || 'diesel', T);
+            z.rapport.push(`Nouveau véhicule livré : ${(MODELES[dec.modele] || MODELES.diesel).nom}, avec reprise d’un${ancien.startsWith('Voiture') ? 'e' : ''} ${ancien.toLowerCase()} (${fmt1(px)} k€ déduits du prix).`);
+          } else if (dec.cible === 'vehicule') { ajouterVehicule(z, dec.modele || 'diesel', T); z.rapport.push(`Nouveau véhicule livré : ${(MODELES[dec.modele] || MODELES.diesel).nom}.`); }
           else if (dec.cible === 'prepa') { z.prepa = (z.prepa || 0) + 1; z.rapport.push(`Combis préparées au niveau ${z.prepa} : +${Math.round(z.prepa * PREPA.vitesse * 100)} % de vitesse de pointe et freinage renforcé sur les urgences.`); }
           else { z.equip[dec.cible] += 1; z.rapport.push(`Équipement ${SERVICE_LABELS[dec.cible]} au niveau ${z.equip[dec.cible]}.`); }
         }
@@ -1104,7 +1118,10 @@ function finDeSaison(state, classement) {
     if (z.skinsChoix) nz.skinsChoix = z.skinsChoix;
     if (z.jaugeIncidents) nz.jaugeIncidents = z.jaugeIncidents;
     if (z.dir) nz.dir = dirHeritage(z); // niveau des énigmes et des mini-jeux, souvenirs du Directeur
-    nz.rapport = [`Nouvelle saison : tu conserves tes formations et tes bâtiments, baissés d’un niveau (hôtel de police ${nz.batiments.bureaux}, garage ${nz.batiments.garage}), et tes annexes. Budget, effectifs et véhicules repartent des valeurs de départ.`];
+    // Le parc suit la zone : les véhicules gardent leur modèle et passent au contrôle technique (usure divisée par deux).
+    // Le garage a perdu un niveau : s'il manque de places, les plus usés sont revendus et le produit s'ajoute au budget.
+    const parc = heritageFlotte(z, nz);
+    nz.rapport = [`Nouvelle saison : tu conserves tes formations et tes bâtiments, baissés d’un niveau (hôtel de police ${nz.batiments.bureaux}, garage ${nz.batiments.garage}), tes annexes et ton parc (${parc.gardes} véhicule${parc.gardes > 1 ? 's' : ''}, passés au contrôle technique${parc.vendus ? ` ; ${parc.vendus} revendu${parc.vendus > 1 ? 's' : ''} faute de place au garage, +${fmt1(parc.produit)} k€` : ''}). Budget et effectifs repartent des valeurs de départ.`];
     nz.heritage = { season: oldSeason, niveaux, batiments: { ...nz.batiments }, annexes: Object.keys(nz.infra).filter((k) => nz.infra[k]).length };
     state.zones[uid] = nz;
   }

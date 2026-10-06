@@ -48,8 +48,8 @@ export function placeND(k, d = S.draft) {
 /** Prévision d'un secteur si je rejoins avec n agents, en plus des zones annoncées ce soir. */
 export function prevoirRejoindre(k, n) {
   const s = nd().secteurs[k], me = myZone();
-  const autres = (annoncesND()[k] || []).filter((x) => !x.moi).map((x) => forceEngagement(S.state.zones[x.uid], x.n));
-  return prevoirSecteur(S.state, s, [...autres, n ? forceEngagement(me, n) : 0]);
+  const autres = (annoncesND()[k] || []).filter((x) => !x.moi).map((x) => forceEngagement(S.state.zones[x.uid], x.n, S.state.turn));
+  return prevoirSecteur(S.state, s, [...autres, n ? forceEngagement(me, n, S.state.turn) : 0]);
 }
 
 /** Agents proposés pour rejoindre : le minimum qui fait tomber le secteur ce soir avec les zones annoncées ;
@@ -82,7 +82,7 @@ function ceSoirHtml(n, me, ann) {
   const ligne = ([k, l]) => {
     const s = n.secteurs[k];
     const repris = s.statut === 'repris';
-    const forces = l.map((x) => forceEngagement(S.state.zones[x.uid], x.n));
+    const forces = l.map((x) => forceEngagement(S.state.zones[x.uid], x.n, S.state.turn));
     const p = prevoirSecteur(S.state, s, forces);
     const tombe = !repris && p.emprise <= 0;
     const moiDedans = l.some((x) => x.moi);
@@ -143,11 +143,11 @@ function carteSecteur(k, s, me, d) {
   const parts = partsDe(s);
   const moi = parts.find((p) => p.uid === me.uid);
   const hier = (s.hier || []).filter((x) => S.state.zones[x.u]);
-  const maForce = n ? forceEngagement(me, n) : 0;
+  const maForce = n ? forceEngagement(me, n, S.state.turn) : 0;
   const seul = prevoirSecteur(S.state, s, [maForce]);
   const ceSoir = (annoncesND()[k] || []).filter((x) => !x.moi);
   const base = ceSoir.length ? ceSoir.map((x) => ({ u: x.uid, n: x.n })) : hier.filter((x) => x.u !== me.uid);
-  const autres = base.map((x) => forceEngagement(S.state.zones[x.u], x.n));
+  const autres = base.map((x) => forceEngagement(S.state.zones[x.u], x.n, S.state.turn));
   const ensemble = autres.length ? prevoirSecteur(S.state, s, [maForce, ...autres]) : null;
   const annonce = monAnnonceND(k);
   const regen = regenSecteur(S.state, s);
@@ -156,7 +156,7 @@ function carteSecteur(k, s, me, d) {
     ? `<span class="pill green">Repris${s.chef && S.state.zones[s.chef] ? ` · ${nomZ(s.chef)}` : ''}</span>`
     : ouvert ? '<span class="pill" style="color:var(--red-soft);border-color:var(--red-line)">Aux mains du milieu</span>' : '<span class="pill">Verrouillé</span>';
   const fleche = (a, b) => (b < a - 0.5 ? `<span class="good">${Math.round(a)} → ${Math.round(b)}</span>` : b > a + 0.5 ? `<span class="bad">${Math.round(a)} → ${Math.round(b)}</span>` : `<span class="muted">${Math.round(a)} → ${Math.round(b)}</span>`);
-  const seuilAgents = Math.ceil(regen / ND.efficacite / Math.max(0.5, forceEngagement(me, 1)));
+  const seuilAgents = Math.ceil(regen / ND.efficacite / Math.max(0.5, forceEngagement(me, 1, S.state.turn)));
   let prevision = '';
   if (ouvert) {
     if (!repris) {

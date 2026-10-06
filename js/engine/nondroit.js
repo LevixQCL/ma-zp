@@ -107,7 +107,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
       const mi = mm ? figure(state.zones[u], mm.role) : null;
       if (mi) (state.zones[u]._missions ||= []).push(mi.role);
       const bonus = mi ? bonusChef(mi.niveau) : 0;
-      return { u, n, f: forceEngagement(state.zones[u], n) * (1 + bonus), chef: mi, risque: mi ? CHEFS.nd.blessure : 1 };
+      return { u, n, f: forceEngagement(state.zones[u], n, T) * (1 + bonus), chef: mi, risque: mi ? CHEFS.nd.blessure : 1 };
     }) : [];
     // Jumelage terrain : +20 % de force pour deux zones jumelées sur le même secteur.
     for (const e of engages) {

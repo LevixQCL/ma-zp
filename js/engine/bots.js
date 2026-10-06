@@ -2,7 +2,7 @@
 import { dilemmeDuJour } from './directeur.js';
 import { SERVICES, INFRAS, COUTS, BATIMENTS } from './constants.js';
 import { makeRng } from './rng.js';
-import { agentsDisponibles, coutDecision, decisionImpossible, operationActive, NIVEAUX_OPERATION } from './zone.js';
+import { agentsDisponibles, coutDecision, decisionImpossible, operationActive, NIVEAUX_OPERATION, capaciteVehicules } from './zone.js';
 import { affaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ, dansMaCellule, pieceDemarche, confrontationOk } from './enquete.js';
 import { fipaPour, invitationImpossible, FIPA } from './fipa.js';
 import { pactesDe, pacteImpossible, defiImpossible, PACTES, DEFI_INDICATEURS } from './pactes.js';
@@ -81,7 +81,13 @@ export function botOrders(zone, state, style = 'equilibre') {
     if (zone.agents < 22) options.push({ type: 'recruter', n: 2 });
     if (!zone.travaux && zone.batiments && zone.agents + 2 > BATIMENTS.bureaux.capacite(zone.batiments.bureaux) && zone.batiments.bureaux < 5) options.push({ type: 'agrandir', batiment: 'bureaux' });
   }
-  if (zone.budget > COUTS.vehicule + 10 && zone.vehicules < 5) options.push({ type: 'equiper', cible: 'vehicule' });
+  // Flotte : chaque style a son modèle préféré (agressif : fourgon pour les engagements ; prudent : électrique, qui se rembourse ;
+  // équilibré : anonyme pour les flagrants ; distrait : combi).
+  const prefere = { agressif: 'fourgon', prudent: 'electrique', equilibre: 'anonyme' }[style] || 'diesel';
+  if (zone.budget > COUTS.vehicule + 10 && zone.vehicules < 6) options.push({ type: 'equiper', cible: 'vehicule', modele: zone.budget > 30 ? prefere : 'diesel' });
+  // Garage plein : ils remplacent une vieille combi par leur modèle préféré (reprise).
+  const vieille = (zone.flotte || []).reduce((b, v, i, f) => (v.m === 'diesel' && (b < 0 || v.u > f[b].u) ? i : b), -1);
+  if (zone.budget > 30 && prefere !== 'diesel' && vieille >= 0 && zone.vehicules >= capaciteVehicules(zone)) options.push({ type: 'equiper', cible: 'vehicule', modele: prefere, reprise: vieille });
   if (options.length && rng.chance(style === 'prudent' ? 0.25 : 0.45)) {
     const d = rng.pick(options);
     if (!decisionImpossible(zone, d, T) && zone.budget - coutDecision(zone, d) > 5) decision = d;
@@ -201,7 +207,7 @@ function botEnquete(zone, state, style, rng, alloc) {
     const a2 = affaire(state, tr.n);
     const cp = candidats(a2, faitsConnus(dossierAffaire(state, zone, tr.n)));
     const agents = Math.min(alloc.intervention - 2, ENQ.agentsTraque + (style === 'agressif' ? 1 : 0));
-    if (agents >= ENQ.agentsTraque && cp.planques.length <= 2 && rng.chance(0.8)) { out.traque = { n: tr.n, planque: rng.pick(cp.planques), agents }; break; }
+    if (agents >= ENQ.agentsTraque && cp.planques.length <= 2 && rng.chance(0.8)) { const pq = rng.shuffle(cp.planques); out.traque = { n: tr.n, planque: pq[0], agents, ...(pq.length > 1 && (zone.flotte || []).some((v) => v.m === 'anonyme') ? { planque2: pq[1] } : {}) }; break; }
   }
   return out;
 }

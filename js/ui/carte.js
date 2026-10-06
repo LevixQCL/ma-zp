@@ -34,7 +34,7 @@ function quartiersHtml(st, me) {
   const prox = opx.eff.proximite || 0;
   const pris = (opx.pris && opx.pris.proximite) || 0;
   const cibles = Object.values(pat).reduce((s2, x) => s2 + x, 0);
-  const capProx = capacite(me, 'proximite', prox, { rythme: d.rythme, turn: st.turn, bonus: bonusEnigme('proximite') });
+  const capProx = capacite(me, 'proximite', prox, { rythme: d.rythme, turn: st.turn, bonus: bonusEnigme('proximite'), alloc: opx.eff });
   const prev = prevoirTensions(st, me, { patrouilles: pat, agentsProx: prox, capProx });
   const sel = S.quartierSel != null ? String(S.quartierSel) : null;
   const pc = me.pointChaud && me.pointChaud.cell in mesT ? me.pointChaud : null;

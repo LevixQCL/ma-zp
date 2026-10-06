@@ -3,11 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-06-flotte',
+  id: '2026-10-06-flotte-rendement',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🚓', 'Ta flotte', 'chaque véhicule a désormais son modèle et son propre état. Nouveaux : combi électrique, voiture anonymisée, fourgon d’intervention (Grande décision › Équiper). Revends les vieux depuis leur fiche.'],
+    ['🚓', 'Ta flotte rapporte', 'chaque place libre après l’Intervention met un agent de Roulage ou de Proximité en voiture (+40 %). Chaque modèle a son rôle : l’électrique se rembourse (prime verte), l’anonyme fait tomber des flagrants et surveille une 2ᵉ planque en traque, le fourgon renforce tes engagements. Et ton parc te suit d’une saison à l’autre. Le détail : HP › Véhicules.'],
     ['🚨', 'L’urgence du jour', 'des collègues pris à partie : choisis le véhicule qui part et fonce en feu bleu. Bats le meilleur score de la partie.'],
     ['📂', 'Dossier clos', 'à la fin de chaque affaire, la Gazette ouvre le débrief : ce qui désignait l’auteur, les fausses pistes, qui a trouvé quoi.'],
   ],
@@ -57,6 +57,17 @@ export const NOTE_MAJ = {
       ['Moins de doublons', 'la situation du jour et l’opération d’envergure (avec l’appel à renfort) ne se règlent plus que dans les Ordres ; l’HP les signale et y renvoie, le Terrain ne montre plus que ce qui se joue avec les autres zones.'],
       ['HP plus léger', 'l’incident en cours n’est plus répété dans la liste « à faire » (sa carte est juste en dessous), et le résumé de la nuit s’efface quand tu ouvres le rapport complet.'],
       ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
+    ]],
+    ['La flotte rapporte', [
+      ['En voiture', 'les places à bord vont d’abord à l’Intervention ; chaque place qui reste met un agent de Roulage (puis de Proximité) en voiture : +40 % d’efficacité. À pied, rien ne change. Un véhicule de plus sert donc dès que tu as du monde au Roulage ou à la Proximité.'],
+      ['Combi diesel', 'polyvalente : le meilleur prix par place.'],
+      ['Combi électrique', 'la commune verse une prime verte de 0,45 k€ par jour pour chacune (3 au plus) : avec l’entretien moitié prix, elle se rembourse en une saison.'],
+      ['Voiture anonymisée', 'planques en voiture banalisée : +12 % à la jauge de flagrant délit chaque soir (2 au plus). Pendant une traque, elle surveille une deuxième planque : si le suspect y est, tes agents l’interpellent.'],
+      ['Fourgon d’intervention', 'un peloton à bord : +12 % de force sur les affaires disputées et la zone de non-droit (2 au plus), en plus des 3,5 places et de la protection contre les blessures.'],
+      ['Reprise', 'garage plein ? Tu peux quand même acheter : ton véhicule le plus usé est repris (son prix de revente est déduit) et le neuf prend sa place. Remplacer une vieille combi par le modèle qui sert ton jeu ne demande donc pas d’agrandir le garage.'],
+      ['Ton parc te suit', 'à la nouvelle saison, tes véhicules gardent leur modèle et passent au contrôle technique (usure divisée par deux), comme tes bâtiments. Le garage perd un niveau : s’il manque de places, les plus usés sont revendus et le produit s’ajoute au budget de départ. Remplacer peu à peu tes combis de départ par les modèles qui servent ton jeu devient un projet sur plusieurs saisons.'],
+      ['Où le voir', 'HP › Véhicules : « Ce que rapporte ta flotte » avec ta répartition du jour. À l’achat (Grande décision › Équiper), la fiche dit ce que le véhicule rapporterait chez toi, aujourd’hui. Le rapport du soir a une ligne « Flotte ».'],
+      ['Équilibrage', 'simulé sur une saison : un véhicule bien choisi rapporte à peu près autant qu’un niveau de matériel. Les robots achètent maintenant selon leur style.'],
     ]],
     ['La flotte', [
       ['Un état par véhicule', 'chaque véhicule s’use à son rythme (chaque jour, et à chaque intervention, réparties sur le parc) ; la fiche du parc montre l’état de chacun. La révision du parc les remet tous en forme. L’« état du parc » est la moyenne.'],

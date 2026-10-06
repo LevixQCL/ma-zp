@@ -786,7 +786,14 @@ async function onClick(e) {
       case 'traque-planque': {
         const n = Number(el.dataset.n), i = Number(el.dataset.i);
         const ag = S.draft.traque && S.draft.traque.n === n ? S.draft.traque.agents : Math.min(4, S.draft.alloc.intervention || 0);
-        S.draft.traque = { n, planque: i, agents: ag }; S.ordersDirty = true; rerender(); break;
+        const p2 = S.draft.traque && S.draft.traque.n === n && S.draft.traque.planque2 !== i ? S.draft.traque.planque2 : undefined;
+        S.draft.traque = { n, planque: i, agents: ag, ...(p2 != null ? { planque2: p2 } : {}) }; S.ordersDirty = true; rerender(); break;
+      }
+      case 'traque-planque2': {
+        const t = S.draft.traque; if (!t) break;
+        const i = Number(el.dataset.i);
+        if (t.planque2 === i || i === t.planque) delete t.planque2; else t.planque2 = i;
+        S.ordersDirty = true; rerender(); break;
       }
       case 'traque-agents': {
         const t = S.draft.traque; if (!t) break;

@@ -4,7 +4,8 @@ import { createGame, buildJoinZone, resolveTurn, migrateState } from '../js/engi
 import { MODELES, assurerFlotte, ajouterVehicule, retirerVehicule, placesIntervention, prixRevente, usureDuTour, reviser, vehiculesUrgence, entretienFlotte, protectionFourgons } from '../js/engine/flotte.js';
 import { risqueBlessure } from '../js/engine/constants.js';
 import { parcVehicules } from '../js/engine/parc.js';
-import { coutDecision } from '../js/engine/zone.js';
+import { coutDecision, capacite, forceEngagement, decisionImpossible, sanitizeOrders } from '../js/engine/zone.js';
+import { agentsMontes, primeVerte, bonusFilature, bonusOrdre, apportAchat, heritageFlotte, remplacerVehicule, RENDEMENT } from '../js/engine/flotte.js';
 
 // 1. Migration : une ancienne zone garde son nombre de véhicules et son usure, en combis diesel.
 {
@@ -74,4 +75,51 @@ import { coutDecision } from '../js/engine/zone.js';
   migrateState(vieux);
   assert.equal(vieux.zones.a.flotte.length, 6); assert.equal(vieux.zones.a.usure, 40);
 }
-console.log('OK : flotte (modèles, usure par véhicule, places, revente, migration).');
+// Rendement : places libres → Roulage puis Proximité en voiture ; prime verte, filatures, fourgons (plafonnés).
+{
+  const z = assurerFlotte({ vehicules: 4, usure: 0, cabosses: [], vehiculesHS: [], niveaux: { intervention: 1, recherche: 1, roulage: 1, proximite: 1, admin: 1 }, equip: { intervention: 1, recherche: 1, roulage: 1, proximite: 1, admin: 1 }, moral: 67, infra: {}, lots: [] });
+  const alloc = { intervention: 7, roulage: 2, proximite: 4 };
+  assert.deepEqual(agentsMontes(z, alloc, 1), { libres: 3, roulage: 2, proximite: 1 });
+  assert.deepEqual(agentsMontes(z, { intervention: 12, roulage: 2 }, 1), { libres: 0, roulage: 0, proximite: 0 }, 'Intervention d’abord');
+  const sans = capacite(z, 'roulage', 2, { turn: 1 }), avec = capacite(z, 'roulage', 2, { turn: 1, alloc });
+  assert.ok(Math.abs(avec / sans - (1 + RENDEMENT.monte)) < 1e-9, 'Roulage en voiture : +monte');
+  assert.equal(primeVerte(z), 0); assert.equal(bonusFilature(z, 1), 0); assert.equal(bonusOrdre(z, 1), 1);
+  const f0 = forceEngagement(z, 4, 1);
+  for (let k = 0; k < 4; k++) { ajouterVehicule(z, 'electrique'); ajouterVehicule(z, 'anonyme'); ajouterVehicule(z, 'fourgon'); }
+  assert.equal(primeVerte(z), Math.round(RENDEMENT.verte * RENDEMENT.verteMax * 100) / 100, 'prime verte plafonnée');
+  assert.equal(bonusFilature(z, 1), RENDEMENT.filatureMax);
+  assert.ok(Math.abs(forceEngagement(z, 4, 1) / f0 - (1 + RENDEMENT.ordreMax)) < 1e-9, 'force des fourgons plafonnée');
+  z.vehiculesHS = z.flotte.map((v, i) => (v.m === 'fourgon' ? { slot: i, retour: 9 } : null)).filter(Boolean);
+  assert.equal(bonusOrdre(z, 1), 1, 'fourgons à l’atelier : pas de bonus');
+  assert.ok(apportAchat(z, 'electrique', alloc, 1).some((l) => l.includes('maximum')));
+}
+// Nouvelle saison : le parc suit, dans la limite du garage ; les plus usés sont revendus.
+{
+  const z = { flotte: [{ m: 'anonyme', u: 10 }, { m: 'diesel', u: 60 }, { m: 'electrique', u: 20 }, { m: 'fourgon', u: 0 }, { m: 'diesel', u: 40 }, { m: 'diesel', u: 50 }] };
+  const nz = { batiments: { garage: 1 }, budget: 60 };
+  const r = heritageFlotte(z, nz);
+  assert.equal(r.gardes, 4); assert.equal(r.vendus, 2);
+  assert.deepEqual(nz.flotte.map((v) => v.m).sort(), ['anonyme', 'diesel', 'electrique', 'fourgon']);
+  assert.equal(nz.flotte.find((v) => v.m === 'diesel').u, 20, 'usure divisée par deux');
+  assert.ok(nz.budget > 60 && nz.budget === Math.round((60 + r.produit) * 10) / 10);
+  const nz2 = { batiments: { garage: 2 }, budget: 60 };
+  assert.equal(heritageFlotte({ flotte: [{ m: 'fourgon', u: 0 }] }, nz2).gardes, 4, 'complété à 4 en combis');
+}
+// Reprise : garage plein, on achète en reprenant un véhicule (il cède sa place, son prix est déduit).
+{
+  let st = createGame({ seed: 'reprise' });
+  const players = { a: { uid: 'a', code: '5324', nom: 'Horizon' } };
+  st.zones.a = buildJoinZone(st, 'a', players.a, 1);
+  const z = st.zones.a;
+  z.flotte[2].u = 50; z.budget = 40;
+  const sansRep = { type: 'equiper', cible: 'vehicule', modele: 'anonyme' };
+  assert.ok(decisionImpossible(z, sansRep, st.turn), 'garage plein');
+  const o = sanitizeOrders(z, { decision: { ...sansRep, reprise: 2 }, ventes: [2, 1] }, st);
+  assert.equal(o.decision.reprise, 2); assert.deepEqual(o.ventes, [1], 'le véhicule repris n’est pas revendu en plus');
+  assert.equal(decisionImpossible(z, o.decision, st.turn), null);
+  assert.equal(coutDecision(z, o.decision), Math.round((MODELES.anonyme.prix - prixRevente(z, 2)) * 10) / 10);
+  const zz = JSON.parse(JSON.stringify(z));
+  const px = remplacerVehicule(zz, 2, 'anonyme', 3);
+  assert.equal(zz.flotte.length, 4); assert.equal(zz.flotte[2].m, 'anonyme'); assert.equal(zz.flotte[2].u, 0); assert.ok(px > 0);
+}
+console.log('OK : flotte (modèles, usure par véhicule, places, revente, migration, rendement).');
