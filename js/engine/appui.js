@@ -12,7 +12,7 @@ import { DEFAULT_ALLOC } from './constants.js';
 export const APPUI = {
   unites: {
     labo: { nom: 'Labo PJF', court: 'Labo', jeux: ['empreintes', 'adn'], elements: ['moy'], quoi: 'traces, empreintes, ADN' },
-    rccu: { nom: 'RCCU', court: 'RCCU', jeux: ['reseau', 'tracage'], elements: ['mob', 'occ'], quoi: 'téléphones, ordinateurs, comptes en ligne' },
+    rccu: { nom: 'RCCU', court: 'RCCU', jeux: ['reseau', 'interception'], elements: ['mob', 'occ'], quoi: 'téléphones, ordinateurs, comptes en ligne' },
   },
   zonesParEquipe: 6,       // une équipe par service pour 6 zones actives (au moins une) : voir test/appui-sim.mjs
   ecart: [[-1, 0.2], [0, 0.5], [1, 0.3]], // disponibilité du jour autour de la base

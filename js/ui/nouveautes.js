@@ -3,10 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-06-conseil-chefs',
+  id: '2026-10-06-interception',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
+    ['📡', 'Nouveau mini-jeu RCCU : Interception', 'il remplace le traçage d’IP. Coupe des relais pour forcer la connexion du suspect à passer par l’écoute de la RCCU, sans lui fermer toutes les sorties. Au Challenge : blindés, fibre, reconnexions…'],
     ['🗳️', 'Le Conseil des chefs', 'tous les 5 jours environ, une crise frappe le district. Votez en secret : opération visible, travail discret ou opération commune. Le plan gagnant tient 3 jours.'],
     ['🌊', 'Vagues de délinquance', 'une zone très forte dans un service chasse la délinquance… chez la voisine la plus faible. Annoncée le matin, sans l’auteur : prépare-toi et brise-la pour des points.'],
     ['🤝', 'La relève', 'un suspect file vers ta zone : prends-le, transmets-le, ou dis « pas l’effectif ». Avec parfois les félicitations du juge ou une saisie à partager.'],

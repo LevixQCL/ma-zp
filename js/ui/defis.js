@@ -6,7 +6,7 @@ import { S, esc } from './common.js';
 
 export const TITRES_DEFI = {
   colis: 'Démineur du district', crochetage: 'Maître serrurier', depanneuse: 'As du dépannage', dossier: 'Œil de lynx',
-  empreintes: 'Maître des empreintes', adn: 'Génie de l’ADN', reseau: 'Maître du réseau', tracage: 'Traqueur d’IP',
+  empreintes: 'Maître des empreintes', adn: 'Génie de l’ADN', reseau: 'Maître du réseau', interception: 'As de l’interception',
 };
 export const NIVEAU_MAX = 500;
 

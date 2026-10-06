@@ -26,7 +26,7 @@ export const MINI_JEUX = [
   { jeu: 'empreintes', service: 'labo', nom: 'Empreintes', label: 'Appui PJF · Labo' },
   { jeu: 'adn', service: 'labo', nom: 'Fragment d’ADN', label: 'Appui PJF · Labo' },
   { jeu: 'reseau', service: 'rccu', nom: 'Réseau à reconnecter', label: 'Appui PJF · RCCU' },
-  { jeu: 'tracage', service: 'rccu', nom: 'Traçage d’IP', label: 'Appui PJF · RCCU' },
+  { jeu: 'interception', service: 'rccu', nom: 'Interception', label: 'Appui PJF · RCCU' },
 ];
 
 export function mesIncidents() {
@@ -152,6 +152,7 @@ function gainAffiche(service) {
 
 export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, onFin = () => {}, onEntrainement = () => {} } = {}) {
   document.querySelector('.mj-wrap')?.remove();
+  if (jeu === 'tracage') jeu = 'interception'; // appui accordé avant le remplacement du traçage d'IP
   const p = new URLSearchParams({ mode });
   if (jeu === 'bitonal') {
     const v = mode === 'incident' && inc && Number.isFinite(inc.vit) ? { mult: inc.vit, frein: inc.frein || 1, etat: inc.etat, prepa: inc.prepa || 0, cabosse: !!inc.cabosse } : vitesseCombi(myZone());
@@ -232,7 +233,7 @@ export function monAppui() {
   const a = S.state && S.user ? appuiDuJour(S.state, S.state.zones[S.user.uid]) : null;
   if (!a) return null;
   const r = S.player && S.player.appui && S.player.appui.id === a.id ? S.player.appui : null;
-  return { ...a, res: r, nomJeu: (MINI_JEUX.find((m) => m.jeu === a.jeu) || {}).nom || a.jeu };
+  return { ...a, res: r, nomJeu: (MINI_JEUX.find((m) => m.jeu === (a.jeu === 'tracage' ? 'interception' : a.jeu)) || {}).nom || a.jeu };
 }
 
 /** Lance le mini-jeu de l'appui du jour (un seul essai). */

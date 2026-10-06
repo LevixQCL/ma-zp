@@ -1,5 +1,5 @@
 # Construit les pages des mini-jeux (minijeux/*.html) à partir des sources de ce dossier.
-# Usage : python3 minijeux/src/build.py crochetage colis depanneuse dossier empreintes adn reseau tracage
+# Usage : python3 minijeux/src/build.py crochetage colis depanneuse dossier empreintes adn reseau interception
 import sys, re, pathlib
 here = pathlib.Path(__file__).parent
 base_css = (here/'base.css').read_text()

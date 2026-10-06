@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f17">
 <style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
-<title>Traçage d’IP</title>
+<title>Interception</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400..700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
@@ -142,42 +142,100 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .coeurs{color:#FF6E6A;letter-spacing:2px}
 
 
-.map{position:relative;flex:1;min-height:240px;border-radius:18px;overflow:hidden;
-  background:linear-gradient(rgba(180,155,255,.05) 1px,transparent 1px) 0 0/22px 22px,linear-gradient(90deg,rgba(180,155,255,.05) 1px,transparent 1px) 0 0/22px 22px,radial-gradient(90% 70% at 50% 50%,#141236,#070914 75%);
-  box-shadow:inset 0 0 0 1px rgba(180,155,255,.18)}
-.map svg{position:absolute;inset:0;width:100%;height:100%}
-.edge{stroke:rgba(180,155,255,.18);stroke-width:2;fill:none}
-.edge.next{stroke:rgba(180,155,255,.5);stroke-dasharray:4 5}
-.edge.done{stroke:#b49bff;stroke-width:3;stroke-dasharray:6 6;animation:flow .6s linear infinite;filter:drop-shadow(0 0 4px rgba(180,155,255,.9))}
-@keyframes flow{to{stroke-dashoffset:-12}}
-.node{cursor:default}
-.node .halo{fill:none;stroke:transparent;stroke-width:2}
-.node .disc{fill:#141a33;stroke:#3b4566;stroke-width:2}
-.node text{font:700 10px "IBM Plex Mono",monospace;fill:#8f9bb1;text-anchor:middle}
-.node .lbl{font:700 9.5px "Instrument Sans",sans-serif;letter-spacing:.04em;text-transform:uppercase}
-.node .ico{fill:none;stroke:#8f9bb1;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.node.next{cursor:pointer}
-.node.next .disc{stroke:#b49bff;fill:#1f1a45}
-.node.next .halo{stroke:rgba(180,155,255,.6);animation:pulse 1.2s ease-out infinite;transform-box:fill-box;transform-origin:center}
-@keyframes pulse{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(1.55)}}
-.node.next .ico{stroke:#e2d9ff}
-.node.done .disc{fill:#b49bff;stroke:#e2d9ff}
-.node.done .ico{stroke:#170a33}
-.node.here .disc{fill:#3df59a;stroke:#c9ffe3}
-.node.here .ico{stroke:#06281a}
-.node.t-fw .disc{stroke:#ff7a59}.node.t-fw.next .disc{stroke:#ff9b80}
-.node.t-srv .disc{stroke:#3df59a}
-.node.dead{opacity:.35}
-.lock{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(7,9,20,.86);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);touch-action:manipulation}
-.lock h3{margin:0;font:700 20px var(--f-disp);text-align:center}
-.lock .sub{font:600 12px var(--f-mono);color:var(--mute)}
-.pips{display:flex;gap:6px}.pips i{width:22px;height:6px;border-radius:3px;background:var(--surface-2)}.pips i.on{background:var(--accent);box-shadow:0 0 8px var(--accent)}
-.dial{position:relative;width:min(62vw,240px);aspect-ratio:1;cursor:pointer}
-.dial svg{width:100%;height:100%}
-.lockbtns{display:flex;gap:8px;width:min(86vw,320px)}
-.status{flex:0 0 auto;padding-bottom:env(safe-area-inset-bottom,0px)}
-.legend{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;font-size:11px;color:var(--mute);flex:0 0 auto}
-.legend b{color:var(--ink);font-weight:700}
+/* Restylage « salle des serveurs RCCU » : en-tête en métal brossé avec afficheur LCD, plateau en circuit imprimé,
+   relais en cristal bleu, câbles lumineux où circulent les données, cible rouge pour les coupures. */
+.top{position:relative;padding:8px 10px;border-radius:16px;
+  background:linear-gradient(180deg,#d9dee6 0%,#aeb6c3 48%,#c7cdd7 52%,#8f98a7 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.8),inset 0 -2px 3px rgba(0,0,0,.35),0 0 0 1px #4b5262,0 6px 18px rgba(0,0,0,.5)}
+.top::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:.35;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.18) 0 1px,transparent 1px 3px)}
+.top .badge{background:linear-gradient(180deg,#2a3354,#121a33);color:#bcd2ff;box-shadow:inset 0 0 0 1px #6c7a99,0 1px 0 rgba(255,255,255,.6)}
+.top .eyebrow{color:#3c4456}.top h1{color:#141a28;text-shadow:0 1px 0 rgba(255,255,255,.6)}
+.top .iconbtn{background:linear-gradient(180deg,#2a3354,#121a33);border-color:#5b6886;color:#cfe0ff}
+.top .ring .trk{stroke:#273152}.top .ring{border-radius:50%;background:radial-gradient(circle,#1a2340 60%,#0c1226);box-shadow:0 0 0 2px #59658a}
+.top .timer{color:#d9e6ff}
+.lcd{flex:0 0 auto;height:40px;min-width:86px;padding:0 10px;border-radius:8px;display:grid;place-items:center;
+  font:400 25px/1 "Share Tech Mono",ui-monospace,monospace;letter-spacing:.08em;color:#b9d4ff;
+  background:linear-gradient(180deg,#0a1230,#141f4a);box-shadow:inset 0 2px 6px rgba(0,0,0,.8),0 0 0 2px #59658a,0 1px 0 3px rgba(255,255,255,.4);
+  text-shadow:0 0 6px rgba(140,180,255,.9)}
+.lcd.r{color:#ff9aa1;text-shadow:0 0 6px rgba(255,90,102,.9)} .lcd.g{color:#8ff7c4;text-shadow:0 0 6px rgba(61,245,154,.9)}
+@media (max-width:440px){.lcd{min-width:58px;height:36px;font-size:18px;padding:0 6px}.top .badge{display:none}.top{gap:8px}.top .hud{gap:5px}.top h1{font-size:20px}}
+.gauge{padding:6px 10px;border-radius:10px;background:linear-gradient(180deg,#0b1430,#08102a);box-shadow:inset 0 0 0 1px #2b3a66}
+.gauge .gbar{height:8px;background:repeating-linear-gradient(90deg,rgba(120,160,255,.12) 0 6px,transparent 6px 8px)}
+.gauge .gbar i{background:linear-gradient(90deg,#3b6cff,#7fb0ff);box-shadow:0 0 8px rgba(110,150,255,.8)}
+
+.boardwrap{position:relative;flex:1;min-height:0;border-radius:18px;overflow:hidden;
+  background:radial-gradient(60% 45% at 50% 50%,rgba(40,120,255,.14),transparent 75%),linear-gradient(180deg,#0b1834,#06102a);
+  box-shadow:inset 0 0 0 1px rgba(110,170,255,.25),inset 0 0 40px rgba(0,0,0,.6)}
+.pcb{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pcb path{fill:none;stroke:rgba(90,150,255,.16);stroke-width:1.6;stroke-linejoin:round}
+.pcb circle{fill:none;stroke:rgba(90,150,255,.28);stroke-width:1.4}
+.pcb text{font:500 9px "IBM Plex Mono",monospace;fill:rgba(110,170,255,.16)}
+#map{position:absolute;inset:0;width:100%;height:100%;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.grid path{stroke:rgba(110,170,255,.06);stroke-width:1}
+.e{stroke:rgba(80,190,255,.85);stroke-width:2.2;stroke-linecap:round;transition:stroke .3s,opacity .3s}
+.eg{stroke:rgba(60,150,255,.35);stroke-width:9;stroke-linecap:round;filter:url(#flou);transition:opacity .3s}
+.ef{stroke:#e8fbff;stroke-width:2.6;stroke-linecap:round;stroke-dasharray:1.5 22;animation:flux 1.6s linear infinite;opacity:.85}
+@keyframes flux{to{stroke-dashoffset:-47}}
+.dead .e{stroke:rgba(80,120,170,.25);stroke-dasharray:3 8}.dead .eg,.dead .ef{opacity:0}
+.route{fill:none;stroke:#ff4d5e;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2 11;animation:march .6s linear infinite;filter:drop-shadow(0 0 5px rgba(255,60,80,.95))}
+.route.piege{stroke:#3df59a;filter:drop-shadow(0 0 6px rgba(61,245,154,.95))}
+.route.bloque{stroke:#ffb347;filter:drop-shadow(0 0 5px rgba(255,180,70,.9))}
+@keyframes march{to{stroke-dashoffset:-13}}
+.n{cursor:pointer}
+.n .hit{fill:transparent}
+.n .halo{fill:url(#halo);transition:opacity .3s}
+.n .gem{fill:url(#cristal);stroke:#bfe6ff;stroke-width:1.4;transition:opacity .3s}
+.n .facet{fill:rgba(255,255,255,.22)}
+.n .core{fill:#f2fbff;filter:url(#flou2)}
+.n:hover .gem{stroke:#fff}
+.n .tgt{display:none}
+.n.cut .gem,.n.cut .facet,.n.cut .core,.n.cut .halo{opacity:.18}
+.n.cut .tgt{display:block}
+.tgt .rg{fill:rgba(255,40,60,.16);stroke:#ff4d5e;stroke-width:2.4;filter:drop-shadow(0 0 6px rgba(255,60,80,.9))}
+.tgt .rd{fill:none;stroke:#ff8890;stroke-width:1.6;stroke-dasharray:5 6;transform-origin:0 0;animation:spin 6s linear infinite}
+.tgt .xx{stroke:#ff3347;stroke-width:5;stroke-linecap:round;filter:drop-shadow(0 0 6px rgba(255,40,60,1))}
+.tgt.neuf{animation:verrou .45s cubic-bezier(.2,.9,.3,1.3)}
+@keyframes verrou{from{transform:scale(2.2) rotate(-45deg);opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.n.hint .gem{animation:hintN 1s ease-in-out infinite}
+@keyframes hintN{50%{stroke:#ffd166;stroke-width:4;filter:drop-shadow(0 0 9px rgba(255,209,102,1))}}
+.n.fixe{cursor:default}
+.src .beam{fill:url(#rayon);opacity:.75}
+.src rect.box{fill:url(#rack);stroke:#ff5a66;stroke-width:2.6;filter:drop-shadow(0 0 10px rgba(255,60,80,.8))}
+.src path{stroke:#ffb3b8;stroke-width:2.4;fill:none;stroke-linecap:round}
+.src .led{animation:blink 1s steps(2) infinite}.src .led.b{animation-delay:.33s}.src .led.c{animation-delay:.66s}
+@keyframes blink{50%{opacity:.25}}
+.exit .globe{fill:url(#globe);stroke:#7fe6ff;stroke-width:2;filter:drop-shadow(0 0 10px rgba(80,220,255,.8))}
+.exit path{stroke:rgba(210,250,255,.75);stroke-width:1.6;fill:none}
+.exit .land{fill:rgba(160,240,220,.45);stroke:none}
+.ear .disk{fill:#062a1c;stroke:#3df59a;stroke-width:3;filter:drop-shadow(0 0 10px rgba(61,245,154,.85))}
+.ear .r1{fill:none;stroke:#3df59a;stroke-width:2;stroke-dasharray:14 8;transform-origin:0 0;animation:spin 9s linear infinite;opacity:.8}
+.ear .r2{fill:none;stroke:#3df59a;stroke-width:1.2;stroke-dasharray:3 6;transform-origin:0 0;animation:spin 14s linear infinite reverse;opacity:.6}
+.ear circle.p{fill:none;stroke:#3df59a;stroke-width:2;opacity:0;animation:ping 1.8s ease-out infinite}
+@keyframes ping{0%{opacity:.8;r:24}100%{opacity:0;r:52}}
+.ear path{stroke:#c9ffe3;stroke-width:2.6;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.ear .bars rect{fill:#3df59a;opacity:.7}
+.lbl{font:700 15px "Instrument Sans",system-ui,sans-serif;fill:#cdd8ee;text-anchor:middle;paint-order:stroke;stroke:#06102a;stroke-width:5px;pointer-events:none}
+.lbl.r{fill:#ff8b94}.lbl.g{fill:#7ff5bb}.lbl.b{fill:#a6ecff}
+.tag{font:600 9px "IBM Plex Mono",monospace;fill:#ffd9dc;pointer-events:none}
+.tagbox{fill:rgba(60,8,16,.85);stroke:#ff4d5e;stroke-width:1}
+.pkt,.trail{pointer-events:none}
+.trail{fill:none;stroke:url(#queue);stroke-width:7;stroke-linecap:round;stroke-linejoin:round;filter:url(#flou)}
+.pkt .core{fill:#fff}
+.pkt .glow{fill:#ff2f45;opacity:.7;filter:url(#flou3)}
+.pkt.got .glow{fill:#3df59a}
+.flash{position:absolute;left:50%;top:12px;transform:translateX(-50%);padding:6px 14px;border-radius:8px;font:600 12.5px "IBM Plex Mono",monospace;letter-spacing:.02em;
+  background:rgba(40,6,14,.88);box-shadow:inset 0 0 0 1px #ff4d5e,0 0 14px rgba(255,60,80,.35);color:#ffc2c7;pointer-events:none;transition:opacity .3s;white-space:nowrap;text-transform:uppercase}
+.flash.ok{background:rgba(4,36,24,.88);box-shadow:inset 0 0 0 1px #3df59a,0 0 14px rgba(61,245,154,.35);color:#b9ffd9}
+.readout{position:absolute;left:10px;bottom:8px;font:500 9.5px/1.35 "IBM Plex Mono",monospace;color:rgba(150,190,255,.55);pointer-events:none;white-space:pre}
+.hintline{font-size:12.5px;color:var(--mute);text-align:center;flex:0 0 auto}
+.status{flex:0 0 auto;align-items:center;padding:8px 12px;border-radius:12px;background:linear-gradient(180deg,#0b1430,#08102a);box-shadow:inset 0 0 0 1px #2b3a66;
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;white-space:nowrap;margin-bottom:env(safe-area-inset-bottom,0px)}
+.cuts{display:inline-flex;gap:4px;vertical-align:-2px;margin-left:6px}
+.cuts i{width:14px;height:11px;border-radius:2px;background:#ff3347;box-shadow:0 0 8px rgba(255,50,70,.85)}
+.cuts i.used{background:#2a1a24;box-shadow:inset 0 0 0 1px rgba(255,80,100,.35)}
+@media (prefers-reduced-motion:reduce){.ef,.tgt .rd,.ear .r1,.ear .r2,.route{animation:none}}
 
 </style>
 </head>
@@ -186,7 +244,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 <div class="app" id="app">
   <div class="top">
     <div class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2"/><circle cx="12" cy="7" r="2"/><circle cx="19" cy="15" r="2"/><path d="M6.2 16.3l4.6-7.6M13.4 8.6l4.3 4.8"/><path d="M19 3v4M17 5h4"/></svg></div>
-    <div class="ttl"><div class="eyebrow">RCCU · démo</div><h1>Traçage</h1></div>
+    <div class="ttl"><div class="eyebrow">RCCU · démo</div><h1>Interception</h1></div>
     <div class="hud">
       <button class="iconbtn" id="sound" aria-label="Couper le son"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
       <button class="iconbtn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
@@ -197,17 +255,10 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
   <div class="coach" id="coach" hidden></div>
   <div class="stage" id="stage">
 
-  <div class="map" id="map"><svg id="svg"></svg>
-    <div class="lock" id="lock" hidden>
-      <div class="sub" id="lkSub">185.12.4.7 · PARE-FEU</div>
-      <h3 id="lkTtl">Synchronise la connexion</h3>
-      <div class="pips" id="pips"></div>
-      <div class="dial" id="dial"><svg viewBox="0 0 220 220" id="rsvg"></svg></div>
-      <div class="lockbtns"><button class="btn primary" id="hit">Verrouiller</button><button class="btn small" id="back">Autre route</button></div>
-    </div>
-  </div>
-  <div class="legend"><span><b>Proxy</b> 1 verrou</span><span><b>Routeur chiffré</b> 2 verrous rapides</span><span><b style="color:#ff9b80">Pare-feu</b> 3 verrous</span><span><b>?</b> inconnu</span></div>
-  <div class="status"><span id="hopTxt">Relais 0/0</span><span id="faultTxt">Rejets 0</span></div>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap">
+  <div class="boardwrap" id="wrap"><svg class="pcb" id="pcb" aria-hidden="true"></svg><svg id="map" aria-label="Carte des relais"></svg><div class="flash" id="flash" style="opacity:0"></div></div>
+  <div class="hintline">Toucher un relais : le <b>couper</b> · le paquet suit toujours le plus court chemin vers une sortie</div>
+  <div class="status"><span>COUPES<span class="cuts" id="cuts"></span> <b id="cutTxt">0/0</b></span><span id="hopTxt">Relais franchis 0</span></div>
 
   </div>
 </div>
@@ -523,164 +574,326 @@ const Shell = (() => {
 })();
 
 
-/* Traçage : remonter la connexion du suspect, relais après relais, jusqu'à son serveur, avant qu'il ne coupe.
-   Choisir sa route (types de relais visibles), puis franchir chaque relais : toucher quand le curseur
-   passe dans la fenêtre verte (plusieurs verrous selon le type). Un rejet coûte du temps. */
-const TAU=Math.PI*2, PEN=6;
-const TYPES={
-  proxy:{lbl:'Proxy',locks:1,w:1,sp:1},
-  chif:{lbl:'Chiffré',locks:2,w:.85,sp:1.45},
-  fw:{lbl:'Pare-feu',locks:3,w:.8,sp:1.1},
-  srv:{lbl:'Suspect',locks:3,w:.75,sp:1.25}
-};
-const ICO={
-  rccu:'<path d="M-7 4h14M-5 4v-8h10v8M-2 -1h4"/>',
-  proxy:'<path d="M-8 0h16M3 -5l5 5-5 5M-3 -5l-5 5 5 5"/>',
-  chif:'<rect x="-6" y="-2" width="12" height="9" rx="2"/><path d="M-3.5 -2v-3a3.5 3.5 0 0 1 7 0v3"/>',
-  fw:'<path d="M-8 -6h16v12h-16zM-8 0h16M-2 -6v6M3 0v6"/>',
-  srv:'<rect x="-6" y="-8" width="12" height="16" rx="2"/><path d="M-3 -3h6M-3 1h6"/>',
-  unk:'<path d="M-3 -4a3.2 3.2 0 1 1 3.5 3.2c-.6.2-.6 1.2-.6 2"/><circle cx="0" cy="6" r=".8"/>'
-};
-const ip=()=>`${randi(23,213)}.${randi(1,254)}.${randi(1,254)}.${randi(2,254)}`;
-const T={nodes:[],edges:[],at:0,path:[0],over:true,faults:0,lock:null,cfg:null,tuto:0};
+/* Interception : la connexion du suspect (paquet rouge) file au plus court vers une sortie VPN.
+   Couper des relais pour la forcer à passer par l'écoute de la RCCU (vert). Si elle atteint une sortie : perdue.
+   Si elle n'a plus aucune sortie possible : le suspect flaire le piège et coupe. Les coupures sont limitées.
+   Profondeur (niveaux) : plusieurs connexions d'affilée (l'écoute grillée change de relais, les coupures restent),
+   relais blindés (impossibles à couper), liaisons fibre (le paquet y file deux fois plus vite),
+   et aux niveaux durs un suspect méfiant qui, à distance égale, évite l'écoute. */
+const DENS={h:.72,v:.82,d:.22};
+const R={nodes:[],adj:[],src:0,ears:[],ear:0,round:0,exits:[],pri:[],blind:new Set(),fast:new Set(),smart:false,
+  cut:new Set(),pkt:0,next:-1,over:true,won:false,K:0,minK:0,mins:[],hops:0,cfg:null,anim:null,tuto:0,W:0,H:0,trail:[],sol:[]};
+const ek=(a,b)=>a<b?a+'-'+b:b+'-'+a;
 
-function makeMap(cfg){
-  const cols=cfg.cols, nodes=[{c:0,y:.5,type:'rccu',ip:'RCCU · Bruxelles'}], edges=[], layers=[[0]];
-  for(let c=1;c<cols-1;c++){
-    const k=randi(cfg.per[0],cfg.per[1]), L=[];
-    for(let j=0;j<k;j++){ const r=Math.random(); let type=r<cfg.mix[0]?'proxy':r<cfg.mix[0]+cfg.mix[1]?'chif':'fw';
-      const hidden=Math.random()<cfg.unk; nodes.push({c,y:(j+.5)/k+rand(-.06,.06)/k*2,type,hidden,ip:ip()}); L.push(nodes.length-1); }
-    layers.push(L);
-  }
-  nodes.push({c:cols-1,y:.5,type:'srv',ip:ip()}); layers.push([nodes.length-1]);
-  for(let c=0;c<layers.length-1;c++){
-    const A=layers[c], B=layers[c+1];
-    // chaque nœud vers 1 ou 2 voisins proches de la couche suivante ; chaque nœud suivant a au moins une entrée
-    A.forEach((a,ia)=>{ const pos=ia/(Math.max(1,A.length-1))*(B.length-1); const near=[Math.floor(pos),Math.ceil(pos)];
-      const tg=uniq(near.concat(Math.random()<.45?[Math.min(B.length-1,Math.max(0,Math.round(pos)+pick([-1,1])))]:[]));
-      tg.forEach(j=>edges.push([a,B[j]])); });
-    B.forEach(b=>{ if(!edges.some(e=>e[1]===b)) edges.push([pick(A),b]); });
-  }
-  // au moins une route ne doit pas être « que des proxys » : sinon le choix est trop simple
-  return {nodes,edges};
+/* ---------- génération ---------- */
+function maxflowCut(n,adj,src,exits,ear,removed,blind){
+  // Coupe minimale en sommets (relais coupables) entre le suspect et les sorties, l'écoute et les relais déjà coupés retirés.
+  const INF=1e9, N=2*n+1, T=2*n, cap=new Map(), g=Array.from({length:N},()=>[]);
+  const add=(a,b,c)=>{ const k=a*N+b; if(!cap.has(k)){ g[a].push(b); g[b].push(a); cap.set(k,0); if(!cap.has(b*N+a)) cap.set(b*N+a,0); } cap.set(k,cap.get(k)+c); };
+  const hors=v=>v===ear||removed.has(v);
+  const fixe=v=>v===src||exits.includes(v)||blind.has(v);
+  for(let v=0;v<n;v++){ if(hors(v)) continue; add(2*v,2*v+1,fixe(v)?INF:1); for(const w of adj[v]) if(!hors(w)) add(2*v+1,2*w,INF); }
+  for(const x of exits) if(!hors(x)) add(2*x+1,T,INF);
+  const S=2*src+1; let flow=0;
+  for(;;){ const par=new Array(N).fill(-1); par[S]=S; const q=[S];
+    while(q.length&&par[T]<0){ const a=q.shift(); for(const b of g[a]) if(par[b]<0&&cap.get(a*N+b)>0){ par[b]=a; q.push(b); } }
+    if(par[T]<0) break; let f=INF; for(let b=T;b!==S;b=par[b]) f=Math.min(f,cap.get(par[b]*N+b));
+    for(let b=T;b!==S;b=par[b]){ const a=par[b]; cap.set(a*N+b,cap.get(a*N+b)-f); cap.set(b*N+a,cap.get(b*N+a)+f); }
+    flow+=f; if(flow>=INF) return {k:Infinity,set:[]}; }
+  const seen=new Array(N).fill(false); seen[S]=true; const q=[S];
+  while(q.length){ const a=q.shift(); for(const b of g[a]) if(!seen[b]&&cap.get(a*N+b)>0){ seen[b]=true; q.push(b); } }
+  const set=[]; for(let v=0;v<n;v++) if(!hors(v)&&seen[2*v]&&!seen[2*v+1]) set.push(v);
+  return {k:flow,set};
 }
-const uniq=a=>[...new Set(a)];
+function distances(cut){
+  const n=R.nodes.length, d=new Array(n).fill(Infinity), q=[];
+  for(const x of R.exits) if(!cut.has(x)){ d[x]=0; q.push(x); }
+  while(q.length){ const a=q.shift(); for(const b of R.adj[a]) if(!cut.has(b)&&d[b]===Infinity){ d[b]=d[a]+1; q.push(b); } }
+  return d;
+}
+function hop(u,cut=R.cut,ear=R.ear){
+  const d=distances(cut); if(d[u]===Infinity) return -1;
+  let best=-1;
+  for(const v of R.adj[u]){ if(cut.has(v)||d[v]!==d[u]-1) continue;
+    // suspect méfiant : à distance égale, il évite l'écoute
+    const sc=v=>(R.smart&&v===ear?1:0)*10+R.pri[v];
+    if(best<0||sc(v)<sc(best)) best=v; }
+  return best;
+}
+function route(from,cut=R.cut,ear=R.ear){ const r=[from]; let u=from; for(let i=0;i<80;i++){ if(u===ear||R.exits.includes(u)) break; const v=hop(u,cut,ear); if(v<0) break; r.push(v); u=v; } return r; }
 
-/* ---------- carte ---------- */
-function geom(){ const r=$('map').getBoundingClientRect(); return {w:r.width,h:r.height}; }
-function pos(n){ const {w,h}=geom(), cols=T.cfg.cols; return [34+n.c*(w-68)/(cols-1), 38+n.y*(h-76)]; }
-const nexts=()=>T.edges.filter(e=>e[0]===T.at).map(e=>e[1]);
-function drawMap(){
-  const {w,h}=geom(), svg=$('svg'); svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
-  const nx=nexts(), done=new Set(T.path);
-  const isDone=e=>T.path.some((p,i)=>T.path[i+1]===e[1]&&p===e[0]);
-  let s='';
-  for(const e of T.edges){ const [x1,y1]=pos(T.nodes[e[0]]), [x2,y2]=pos(T.nodes[e[1]]), mx=(x1+x2)/2;
-    const cls=isDone(e)?'done':(e[0]===T.at&&!T.over?'next':''); s+=`<path class="edge ${cls}" d="M${x1} ${y1}C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}"/>`; }
-  T.nodes.forEach((n,i)=>{ const [x,y]=pos(n), ty=n.hidden&&!done.has(i)?'unk':n.type;
-    const reach=new Set(); // nœuds encore atteignables depuis la position actuelle
-    const cls=[ 'node', 't-'+(ty==='unk'?'unk':n.type), done.has(i)?(i===T.at?'here':'done'):'', nx.includes(i)&&!T.over?'next':'', (!done.has(i)&&n.c<=T.nodes[T.at].c)?'dead':'' ].join(' ');
-    const lbl=n.type==='rccu'?'RCCU':ty==='unk'?'???':TYPES[n.type].lbl;
-    s+=`<g class="${cls}" data-i="${i}" transform="translate(${x} ${y})"><circle class="halo" r="17"/><circle class="disc" r="17"/><g class="ico">${ICO[ty]}</g>
-      <text class="lbl" y="31">${lbl}</text>${(nx.includes(i)&&!T.over)||(done.has(i)&&n.type!=='rccu')||n.type==='srv'?`<text y="-23" style="font-size:8.5px;opacity:.8">${ty==='unk'?'?.?.?.?':n.ip}</text>`:''}</g>`; });
-  svg.innerHTML=s;
-  $('hopTxt').textContent=`Relais ${T.path.length-1}/${T.cfg.cols-1}`; $('faultTxt').textContent=`Rejets ${T.faults}`;
+function generate(c){
+  const cols=Math.round(c.cols), rows=Math.round(c.rows), extra=Math.round(c.extra), kmin=Math.round(c.kmin), kmax=Math.round(c.kmax);
+  const rounds=Math.max(1,Math.round(c.rounds||1)), nbBlind=Math.round(c.blind||0), nbFast=Math.round(c.fast||0);
+  for(let t=0;t<500;t++){
+    const n=cols*rows, id=(cc,r)=>r*cols+cc, nodes=[], adj=Array.from({length:n},()=>new Set());
+    for(let r=0;r<rows;r++) for(let cc=0;cc<cols;cc++) nodes.push({c:cc,r,x:cc*100+50+rand(-17,17),y:r*100+50+rand(-15,15)});
+    const link=(a,b)=>{ adj[a].add(b); adj[b].add(a); };
+    for(let r=0;r<rows;r++) for(let cc=0;cc<cols;cc++){
+      if(cc+1<cols&&Math.random()<DENS.h) link(id(cc,r),id(cc+1,r));
+      if(r+1<rows&&Math.random()<DENS.v) link(id(cc,r),id(cc,r+1));
+      if(r+1<rows&&cc+1<cols&&Math.random()<DENS.d&&!adj[id(cc+1,r)].has(id(cc,r+1))) link(id(cc,r),id(cc+1,r+1));
+      else if(r+1<rows&&cc>0&&Math.random()<DENS.d&&!adj[id(cc-1,r)].has(id(cc,r+1))) link(id(cc,r),id(cc-1,r+1));
+    }
+    const src=id(Math.floor(cols/2),0);
+    const seen=new Set([src]), q=[src]; while(q.length){ const a=q.shift(); for(const b of adj[a]) if(!seen.has(b)){ seen.add(b); q.push(b); } }
+    if(seen.size<n) continue;
+    const nbx=cols>=5?3:2, bas=shuffle([...Array(cols).keys()]).slice(0,nbx).sort((a,b)=>a-b);
+    if(nbx===2&&bas[1]-bas[0]<2&&cols>3) continue;
+    const exits=bas.map(cc=>id(cc,rows-1));
+    const libres=nodes.map((_,i)=>i).filter(i=>i!==src&&!exits.includes(i));
+    const blind=new Set(shuffle(libres.filter(i=>nodes[i].r>=1)).slice(0,nbBlind));
+    const edges=[]; adj.forEach((s,a)=>s.forEach(b=>{ if(a<b) edges.push(ek(a,b)); }));
+    const fast=new Set(shuffle(edges).slice(0,nbFast));
+    Object.assign(R,{nodes,adj,src,exits,blind,fast,pri:nodes.map(()=>Math.random()),cut:new Set(),smart:!!c.smart});
+    // Connexions successives : chaque écoute est posée hors de la route du moment ; les coupures s'additionnent.
+    const acc=new Set(), ears=[], mins=[], sols=[]; let ok=true;
+    for(let k=0;k<rounds&&ok;k++){
+      const r0=route(src,acc,-1);
+      const cands=shuffle(libres.filter(i=>{ const rr=nodes[i].r; return rr>=2&&rr<=rows-2&&!adj[src].has(i)&&!r0.includes(i)&&!acc.has(i)&&!blind.has(i)&&!ears.includes(i); }));
+      let trouve=false;
+      for(const ear of cands){
+        const mf=maxflowCut(n,adj,src,exits,ear,acc,blind);
+        const lo=k===0?kmin:1, hi=k===0?kmax:Math.max(1,kmax-1);
+        if(mf.k<lo||mf.k>hi) continue;
+        const cs=new Set([...acc,...mf.set]), rr=route(src,cs,ear);
+        if(rr[rr.length-1]!==ear||rr.length<4) continue;
+        mf.set.forEach(v=>acc.add(v)); ears.push(ear); mins.push(mf.k); sols.push(mf.set); trouve=true; break;
+      }
+      ok=trouve;
+    }
+    if(!ok) continue;
+    const minK=mins.reduce((a,b)=>a+b,0);
+    Object.assign(R,{ears,ear:ears[0],round:0,mins,minK,sols,sol:[...acc],K:minK+extra});
+    return true;
+  }
+  return false;
 }
-new ResizeObserver(()=>{ if(T.cfg) drawMap(); }).observe($('map'));
-$('svg').addEventListener('click',e=>{ const g=e.target.closest('.node'); if(!g||T.lock||T.over&&Shell.st.mode!=='tuto') return;
-  const i=+g.dataset.i; if(!nexts().includes(i)) return; openLock(i); });
 
-/* ---------- verrou : fenêtre de synchronisation ---------- */
-function openLock(i){
-  const n=T.nodes[i]; if(n.hidden){ n.hidden=false; Shell.toast(`Relais révélé : ${TYPES[n.type].lbl}`,'info'); }
-  const ty=TYPES[n.type], c=T.cfg;
-  T.lock={i, step:0, steps:ty.locks, ang:rand(0,TAU), dir:1, sp:c.speed*ty.sp, w:c.win*ty.w, at:rand(0,TAU), cool:0};
-  T.lock.at=newWindow(T.lock.ang);
-  $('lkSub').textContent=`${n.ip} · ${ty.lbl.toUpperCase()}`; $('lkTtl').textContent=n.type==='srv'?'Serveur du suspect':'Synchronise la connexion';
-  $('lock').hidden=false; drawLock();
-  if(Shell.st.mode==='tuto'&&T.tuto===1) tutoNext();
+/* ---------- rendu ---------- */
+const DEFS=`<defs>
+  <filter id="flou" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+  <filter id="flou2" x="-80%" y="-80%" width="260%" height="260%"><feGaussianBlur stdDeviation="1.6"/></filter>
+  <filter id="flou3" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="7"/></filter>
+  <radialGradient id="halo"><stop offset="0" stop-color="#5ab4ff" stop-opacity=".55"/><stop offset="1" stop-color="#5ab4ff" stop-opacity="0"/></radialGradient>
+  <linearGradient id="cristal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#bfe8ff"/><stop offset=".45" stop-color="#3f8bff"/><stop offset="1" stop-color="#0d2a7a"/></linearGradient>
+  <linearGradient id="blinde" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe7a6"/><stop offset=".5" stop-color="#c79a3a"/><stop offset="1" stop-color="#5a3c0c"/></linearGradient>
+  <linearGradient id="rack" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a1420"/><stop offset="1" stop-color="#21060c"/></linearGradient>
+  <radialGradient id="globe" cx=".35" cy=".3"><stop offset="0" stop-color="#9ff0ff"/><stop offset=".5" stop-color="#1b7fa8"/><stop offset="1" stop-color="#062436"/></radialGradient>
+</defs>`;
+function hexa(r){ return Array.from({length:6},(_,k)=>{ const a=Math.PI/180*(60*k-90); return `${(r*Math.cos(a)).toFixed(1)},${(r*Math.sin(a)).toFixed(1)}`; }).join(' '); }
+function relaisSvg(i,a){
+  const bl=R.blind.has(i);
+  return `<g class="n${bl?' fixe blinde':''}" data-i="${i}" transform="translate(${a.x} ${a.y})"><circle class="hit" r="34"/><circle class="halo" r="30"/>
+    <polygon class="gem" points="${hexa(16)}" ${bl?'style="fill:url(#blinde);stroke:#ffe7a6"':''}/><polygon class="facet" points="0,-16 13.9,-8 0,0 -13.9,-8"/>
+    ${bl?'<path d="M0 -8l7 3v4c0 5-3 8-7 9-4-1-7-4-7-9v-4z" fill="#3a2606" stroke="#ffe7a6" stroke-width="1.5"/>':'<circle class="core" r="4.5"/>'}
+    <g class="tgt"><circle class="rg" r="22"/><circle class="rd" r="30"/><path class="xx" d="M-12 -12l24 24M12 -12l-24 24"/></g></g>`;
 }
-function newWindow(from){ return (from+rand(Math.PI*.55,Math.PI*1.45))%TAU; }
-function arc(a0,a1,r){ const p=a=>[110+r*Math.cos(a-Math.PI/2),110+r*Math.sin(a-Math.PI/2)]; const [x0,y0]=p(a0),[x1,y1]=p(a1); return `M${x0} ${y0}A${r} ${r} 0 ${((a1-a0+TAU)%TAU)>Math.PI?1:0} 1 ${x1} ${y1}`; }
-function drawLock(flash){
-  const L=T.lock; if(!L) return;
-  $('pips').innerHTML=Array.from({length:L.steps},(_,k)=>`<i class="${k<L.step?'on':''}"></i>`).join('');
-  const cx=110+86*Math.cos(L.ang-Math.PI/2), cy=110+86*Math.sin(L.ang-Math.PI/2);
-  const ticks=Array.from({length:48},(_,k)=>{ const a=k/48*TAU, r1=k%4?100:96; return `<line x1="${110+r1*Math.cos(a)}" y1="${110+r1*Math.sin(a)}" x2="${110+104*Math.cos(a)}" y2="${110+104*Math.sin(a)}" stroke="rgba(180,155,255,.35)" stroke-width="1.5"/>`; }).join('');
-  $('rsvg').innerHTML=`${ticks}
-    <circle cx="110" cy="110" r="86" fill="none" stroke="rgba(255,255,255,.07)" stroke-width="16"/>
-    <path d="${arc(L.at-L.w/2,L.at+L.w/2,86)}" fill="none" stroke="${flash==='bad'?'#ff5d5d':'#3df59a'}" stroke-width="16" stroke-linecap="butt" style="filter:drop-shadow(0 0 8px rgba(61,245,154,.8))"/>
-    <circle cx="${cx}" cy="${cy}" r="11" fill="#fff" style="filter:drop-shadow(0 0 10px #b49bff)"/>
-    <circle cx="110" cy="110" r="54" fill="#120f2a" stroke="rgba(180,155,255,.4)" stroke-width="2"/>
-    <text x="110" y="106" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-weight="700" font-size="22" fill="${flash==='ok'?'#3df59a':flash==='bad'?'#ff5d5d':'#e2d9ff'}">${flash==='ok'?'OK':flash==='bad'?'REJET':(L.step+1)+'/'+L.steps}</text>
-    <text x="110" y="128" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-size="11" fill="#8f9bb1">${flash?'':'verrou'}</text>`;
+function earSvg(i,a,k){
+  const act=k===R.round, past=k<R.round;
+  if(past) return relaisSvg(i,a);
+  return `<g class="n fixe ear${act?'':' attente'}" data-i="${i}" transform="translate(${a.x} ${a.y})" ${act?'':'opacity=".42"'}>
+    ${act?'<circle class="p" r="24"/>':''}<circle class="r2" r="38"/><circle class="r1" r="30"/><circle class="disk" r="22"/>
+    <path d="M-9 6a11 11 0 0 1 9-15M-4 6l6-9M-2 -2l9 -9M6 -12l3 3"/><path d="M-11 9h22"/>
+    <g class="bars" transform="translate(30 -30)"><rect x="0" y="6" width="3" height="6"/><rect x="5" y="2" width="3" height="10"/><rect x="10" y="-2" width="3" height="14"/><rect x="15" y="4" width="3" height="8"/></g>
+    <text class="lbl g" y="${act?52:50}">${R.ears.length>1?`Écoute ${k+1}`:'Écoute'}</text></g>`;
 }
-function hit(){
-  const L=T.lock; if(!L||L.cool>0) return;
-  let d=Math.abs(((L.ang-L.at)%TAU+TAU+Math.PI)%TAU-Math.PI);
-  if(d<=L.w/2+.04){
-    L.step++; Shell.good(); L.cool=.32; drawLock('ok');
-    if(L.step>=L.steps){ setTimeout(()=>capture(L.i),280); return; }
-    L.at=newWindow(L.ang); L.sp*=1.12; if(T.cfg.flip&&Math.random()<.5) L.dir*=-1;
-  } else {
-    L.cool=.5; drawLock('bad'); Shell.shake($('dial'));
-    if(Shell.st.mode==='tuto'){ Shell.bad(); Shell.toast('Raté : vise la zone verte','bad'); L.step=0; return; }
-    T.faults++; Shell.st.timeLeft=Math.max(0,Shell.st.timeLeft-PEN); Shell.bad(); Shell.toast(`Connexion rejetée · −${PEN} s`,'bad');
-    L.step=0; L.at=newWindow(L.ang); L.sp=T.cfg.speed*TYPES[T.nodes[L.i].type].sp; drawMap();
+function draw(){
+  const cols=Math.max(...R.nodes.map(n=>n.c))+1, rows=Math.max(...R.nodes.map(n=>n.r))+1;
+  R.W=cols*100; R.H=rows*100;
+  const m=$('map'); m.setAttribute('viewBox',`-10 -28 ${R.W+20} ${R.H+58}`);
+  let s=DEFS+'<g class="grid">'; for(let x=0;x<=R.W;x+=50) s+=`<path d="M${x} -28V${R.H+30}"/>`; for(let y=0;y<=R.H;y+=50) s+=`<path d="M-10 ${y}H${R.W+10}"/>`; s+='</g><g id="edges">';
+  R.nodes.forEach((a,i)=>R.adj[i].forEach(j=>{ if(j>i){ const b=R.nodes[j], f=R.fast.has(ek(i,j)), L=`x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"`;
+    s+=`<g class="edge${f?' fast':''}" data-a="${i}" data-b="${j}"><line class="eg" ${L}${f?' style="stroke:rgba(190,120,255,.45)"':''}/><line class="e" ${L}${f?' style="stroke:#d6a8ff;stroke-width:3.4"':''}/><line class="ef" ${L} style="animation-delay:-${(Math.random()*1.6).toFixed(2)}s${f?';animation-duration:.7s':''}"/></g>`; } }));
+  s+='</g><polyline class="route" id="route" points=""/><polyline class="trail" id="trail" points=""/><g id="nodes">';
+  R.nodes.forEach((a,i)=>{
+    const ke=R.ears.indexOf(i);
+    if(i===R.src) s+=`<g class="n fixe src" data-i="${i}" transform="translate(${a.x} ${a.y})">
+      <rect class="box" x="-22" y="-26" width="44" height="46" rx="6"/><path d="M-13 -16h26M-13 -9h26M-13 -2h26M-13 5h26"/>
+      <circle class="led" cx="-8" cy="13" r="2.4" fill="#ff5a66"/><circle class="led b" cx="0" cy="13" r="2.4" fill="#ffd166"/><circle class="led c" cx="8" cy="13" r="2.4" fill="#3df59a"/>
+      <text class="lbl r" y="-34">Suspect</text></g>`;
+    else if(ke>=0) s+=earSvg(i,a,ke);
+    else if(R.exits.includes(i)) s+=`<g class="n fixe exit" data-i="${i}" transform="translate(${a.x} ${a.y})"><circle class="globe" r="21"/>
+      <path class="land" d="M-12 -6c4-5 9-4 11 0s-2 7 2 9-3 7-7 4-8-8-6-13zM4 -14c5 0 9 3 10 7-3 1-6 0-8-2s-4-3-2-5z"/>
+      <path d="M-21 0h42M0 -21c-9 9-9 33 0 42M0 -21c9 9 9 33 0 42M-18 -10h36M-18 10h36"/><text class="lbl b" y="42">Sortie VPN</text></g>`;
+    else s+=relaisSvg(i,a);
+  });
+  s+=`</g><g class="pkt" id="pkt"><circle class="glow" r="17"/><circle class="core" r="7"/></g>`;
+  m.innerHTML=s; R.trail=[]; placePkt(R.nodes[R.src]); refresh(); decor();
+}
+function placePkt(p){
+  $('pkt').setAttribute('transform',`translate(${p.x} ${p.y})`);
+  R.trail.push([p.x,p.y]); if(R.trail.length>14) R.trail.shift();
+  $('trail').setAttribute('points',R.trail.map(q=>q.join(',')).join(' '));
+}
+function refresh(){
+  document.querySelectorAll('#nodes .n').forEach(g=>g.classList.toggle('cut',R.cut.has(+g.dataset.i)));
+  document.querySelectorAll('#edges .edge').forEach(l=>l.classList.toggle('dead',R.cut.has(+l.dataset.a)||R.cut.has(+l.dataset.b)));
+  const from=R.next>=0?R.next:R.pkt, rr=R.won?[]:route(from), last=rr[rr.length-1];
+  const pts=(R.next>=0?[R.pkt,...rr]:rr).map(i=>`${R.nodes[i].x},${R.nodes[i].y}`).join(' ');
+  const el=$('route'); el.setAttribute('points',R.over&&!R.plan?'':pts);
+  el.setAttribute('class','route'+(last===R.ear?' piege':(!R.exits.includes(last)&&last!==R.ear?' bloque':'')));
+  $('cuts').innerHTML=Array.from({length:R.K},(_,k)=>`<i class="${k<R.cut.size?'used':''}"></i>`).join('');
+  $('cutTxt').textContent=`${R.K-R.cut.size}/${R.K}`;
+  $('hopTxt').textContent=R.ears.length>1?`Connexion ${Math.min(R.round+1,R.ears.length)}/${R.ears.length}`:`Relais franchis ${R.hops}`;
+  //`TRACE  CNX ${Math.min(R.round+1,R.ears.length)}/${R.ears.length}\nNOEUDS ${R.nodes.length}  BLINDÉS ${R.blind.size}\nFIBRE ${R.fast.size}  MIN ${R.minK}`;
+  return {last};
+}
+/* Circuit imprimé et colonnes de chiffres en fond (décor fixe, recalculé à la taille). */
+function decor(){
+  const r=$('wrap').getBoundingClientRect(), w=Math.round(r.width), h=Math.round(r.height); if(!w) return;
+  let seed=7; const rnd=()=>((seed=(seed*16807)%2147483647)/2147483647); let out='';
+  for(let n=0;n<Math.round(w*h/5200);n++){
+    let x=Math.round(rnd()*w/12)*12, y=Math.round(rnd()*h/12)*12, d=`M${x} ${y}`;
+    for(let q=0;q<3;q++){ const L=24+rnd()*80, k=Math.floor(rnd()*4); if(k===0)x+=L; else if(k===1)y+=L; else if(k===2){x+=L*.7;y+=L*.7;} else {x-=L*.7;y+=L*.7;} d+=`L${x|0} ${y|0}`; }
+    out+=`<path d="${d}"/><circle cx="${x|0}" cy="${y|0}" r="3"/>`;
   }
+  for(let c=0;c<Math.round(w/70);c++){ const x=8+rnd()*w; for(let k=0;k<Math.round(h/16);k++) if(rnd()<.45) out+=`<text x="${x|0}" y="${(k*16+12)|0}">${Math.floor(rnd()*256).toString(16).padStart(2,'0')}</text>`; }
+  const t=$('pcb'); t.setAttribute('viewBox',`0 0 ${w} ${h}`); t.innerHTML=out;
 }
-function capture(i){
-  $('lock').hidden=true; T.lock=null; T.at=i; T.path.push(i); Shell.win(); drawMap();
-  if(T.nodes[i].type==='srv'){
-    if(Shell.st.mode==='tuto'){ setTimeout(Shell.endTuto,700); return; }
-    T.over=true; Shell.stopTimer(); const used=Math.round(T.cfg.time-Shell.st.timeLeft);
-    setTimeout(()=>Shell.result({ok:true,faults:T.faults,stats:[['Temps',used+' s'],['Rejets',T.faults],['Relais',T.path.length-2]],
-      note:T.faults===0?'Aucun rejet : double point.':'Sans rejet, tu gagnes +2.'}),800); return;
+new ResizeObserver(decor).observe($('wrap'));
+let flashT=0;
+function flash(t,ok){ const f=$('flash'); f.textContent=t; f.className='flash'+(ok?' ok':''); f.style.opacity=1; clearTimeout(flashT); flashT=setTimeout(()=>f.style.opacity=0,2000); }
+function lcd(t,k=''){ const l=$('lcd'); if(l){ l.textContent=t; l.className='lcd '+k; } }
+
+/* ---------- jeu ---------- */
+$('map').addEventListener('pointerdown',e=>{
+  const g=e.target.closest('.n'); if(!g) return; const i=+g.dataset.i;
+  if(R.won||(R.over&&!R.plan)) return;
+  if(R.blind.has(i)){ Shell.toast('Relais blindé : impossible à couper','info'); Shell.buzz(30); return; }
+  if(g.classList.contains('fixe')){ Shell.toast(R.ears.includes(i)?'C’est une écoute de la RCCU : laisse-la ouverte':i===R.src?'Le serveur du suspect : hors de portée':'Sortie VPN à l’étranger : hors de portée','info'); return; }
+  if(R.cut.has(i)){ Shell.toast('Relais déjà coupé','info'); return; }
+  if(i===R.pkt){ Shell.toast('Le paquet est déjà sur ce relais','info'); return; }
+  if(i===R.next){ Shell.toast('Trop tard : le paquet y arrive','info'); Shell.buzz(30); return; }
+  if(R.cut.size>=R.K){ Shell.toast('Plus de coupure disponible','info'); return; }
+  R.cut.add(i); Shell.blip(240,.08,'sawtooth',.05); Shell.buzz(25);
+  document.querySelectorAll('.n.hint').forEach(x=>x.classList.remove('hint'));
+  const {last}=refresh();
+  const tg=g.querySelector('.tgt'); tg.classList.remove('neuf'); void tg.getBBox(); tg.classList.add('neuf');
+  if(last===R.ear) flash('Route déviée vers l’écoute',true);
+  else if(!R.exits.includes(last)) flash('Plus aucune sortie : il va flairer le piège');
+  if(Shell.st.mode==='tuto'&&R.tuto===1) tutoNext();
+});
+
+function depart(){
+  if(R.over&&!R.plan) return;
+  R.plan=false; R.over=false; lcd('TRACE','r');
+  const v=hop(R.pkt);
+  if(v<0){ lose('piege'); return; }
+  R.next=v; refresh();
+  const a=R.nodes[R.pkt], b=R.nodes[v], t0=performance.now(), dur=R.cfg.step*(R.fast.has(ek(R.pkt,v))?.45:1);
+  const tick=now=>{ if(R.over) return; const k=Math.min(1,(now-t0)/dur), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    placePkt({x:a.x+(b.x-a.x)*e,y:a.y+(b.y-a.y)*e}); if(k<1){ R.anim=requestAnimationFrame(tick); return; } arrive(v); };
+  R.anim=requestAnimationFrame(tick);
+}
+function arrive(v){
+  R.pkt=v; R.next=-1; R.hops++; Shell.blip(700,.03,'square',.02);
+  if(v===R.ear){ capte(); return; }
+  if(R.exits.includes(v)){ lose('sortie'); return; }
+  refresh(); R.wait=setTimeout(depart,R.cfg.step*.45);
+}
+function stop(){ R.over=true; R.plan=false; cancelAnimationFrame(R.anim); clearTimeout(R.wait); clearTimeout(R.go); }
+function capte(){
+  if(R.round+1<R.ears.length){
+    // Connexion interceptée, mais le suspect se reconnecte : l'écoute est grillée, la suivante prend le relais.
+    stop(); $('pkt').classList.add('got'); Shell.good(); lcd('CAPTÉ','g');
+    flash(`Connexion ${R.round+1} captée · il se reconnecte`,true);
+    setTimeout(()=>{ R.round++; R.ear=R.ears[R.round]; R.pkt=R.src; R.next=-1; $('pkt').classList.remove('got'); const keep=new Set(R.cut); draw(); R.cut=keep; refresh();
+      lancer(Math.max(2000,(R.cfg.plan||3000)*.6)); },1400);
+    return;
   }
-  Shell.toast(`Relais ${T.path.length-1} franchi`,'ok');
-  if(Shell.st.mode==='tuto'&&T.tuto===2) tutoNext();
+  win();
 }
-$('hit').onclick=hit;
-$('dial').addEventListener('pointerdown',e=>{ e.preventDefault(); hit(); });
-$('back').onclick=()=>{ if(!T.lock) return; T.lock=null; $('lock').hidden=true; drawMap(); };
-document.addEventListener('keydown',e=>{ if((e.key===' '||e.key==='Enter')&&T.lock){ e.preventDefault(); hit(); } });
+function win(){
+  stop(); R.won=true; $('pkt').classList.add('got'); refresh(); lcd('CAPTÉ','g'); flash(R.ears.length>1?'Toutes les connexions captées':'Connexion interceptée',true); Shell.win();
+  if(Shell.st.mode==='tuto'){ setTimeout(Shell.endTuto,1100); return; }
+  Shell.stopTimer(); const sobre=R.cut.size<=R.minK;
+  setTimeout(()=>Shell.result({ok:true,faults:sobre?0:1,stats:[['Coupures',`${R.cut.size} / ${R.K}`],['Minimum possible',R.minK],[R.ears.length>1?'Connexions':'Relais franchis',R.ears.length>1?R.ears.length:R.hops]],
+    note:sobre?'Interception propre, sans coupure de trop : double point.':`Réussi avec ${R.minK} coupure${R.minK>1?'s':''} seulement pour gagner +2.`}),1100);
+}
+function lose(why){
+  stop(); refresh(); Shell.bad(); Shell.stopTimer(); lcd('PERDU','r');
+  flash(why==='sortie'?'Le paquet est sorti par le VPN':why==='temps'?'Temps écoulé':'Plus de sortie : le suspect a coupé');
+  if(Shell.st.mode==='tuto'){ setTimeout(()=>{ Shell.toast('On recommence','info'); tutoStart(); },1500); return; }
+  const det=[why==='sortie'?'Le paquet prend toujours le plus court chemin vers une sortie : coupe en avance les relais de la ligne rouge, pas seulement celui qu’il va atteindre.'
+      :why==='temps'?'Le chrono est tombé avant la fin des connexions.'
+      :'Ne bloque pas toutes les sorties : laisse-lui une seule route, celle qui passe par l’écoute (la ligne devient verte).'];
+  if(R.ears.length>1) det.push('Plusieurs connexions : regarde aussi les écoutes suivantes (grisées) avant de couper. Une coupure faite pour la première peut gêner la suivante, et elles restent toutes.');
+  setTimeout(()=>Shell.result({ok:false,faults:1,stats:[['Coupures',`${R.cut.size} / ${R.K}`],['Connexion',`${R.round+1} / ${R.ears.length}`],['Fin',why==='sortie'?'sortie VPN':why==='temps'?'chrono':'piège flairé']],details:det}),1300);
+}
+function newGame(cfg){
+  stop(); R.cfg=cfg; R.won=false; R.hops=0; R.next=-1; $('pkt')&&$('pkt').classList.remove('got');
+  if(!generate(cfg)) generate({cols:4,rows:5,extra:1,kmin:1,kmax:3,rounds:1});
+  R.pkt=R.src; draw(); lcd('VEILLE');
+}
+function lancer(planMs){
+  R.plan=true; R.over=true; refresh();
+  const fin=performance.now()+planMs;
+  const cd=()=>{ if(!R.plan) return; const s=Math.ceil((fin-performance.now())/1000); if(s>0){ lcd('T-'+s,'r'); setTimeout(cd,200); } }; cd();
+  flash(R.round>0?`Connexion ${R.round+1} détectée`:`Connexion détectée · départ dans ${Math.round(planMs/1000)} s`);
+  R.go=setTimeout(depart,planMs);
+}
 
 /* ---------- tutoriel ---------- */
 const TSTEPS=[null,
-  'Remonte la connexion du suspect jusqu’à son <b>serveur</b> (à droite). Touche un <b>relais</b> qui clignote pour t’y attaquer.',
-  'Touche <b>Verrouiller</b> (ou l’anneau) quand le <b>curseur blanc</b> passe dans la <b>zone verte</b>. Un proxy n’a qu’un verrou.',
-  'Bien joué. Choisis ta route : un <b>pare-feu</b> a 3 verrous, un <b>proxy</b> un seul. Atteins le serveur du suspect.'];
-function tutoNext(){ T.tuto++; if(T.tuto<TSTEPS.length) Shell.coach(T.tuto,3,TSTEPS[T.tuto]); }
+  'Le <b>paquet rouge</b> du suspect va suivre la <b>ligne pointillée</b> : toujours le plus court chemin vers une <b>sortie VPN</b>. Touche le relais qui clignote pour le <b>couper</b>.',
+  'La ligne est devenue <b>verte</b> : sa route passe maintenant par ton <b>écoute</b>. Regarde-le s’y faire prendre.'];
+function tutoNext(){ R.tuto++; if(R.tuto<TSTEPS.length) Shell.coach(R.tuto,2,TSTEPS[R.tuto]); if(R.tuto===2) setTimeout(depart,900); }
+function tutoStart(){
+  let ok=false; for(let t=0;t<50&&!ok;t++){ ok=generate({cols:3,rows:4,extra:0,kmin:1,kmax:1,rounds:1}); }
+  R.cfg={step:1100}; R.won=false; R.hops=0; R.next=-1; R.pkt=R.src; draw(); $('pkt').classList.remove('got');
+  R.plan=true; R.over=true; R.tuto=0; refresh(); lcd('TUTO');
+  const h=document.querySelector(`#nodes .n[data-i="${R.sol[0]}"]`); h&&h.classList.add('hint'); tutoNext();
+}
 
-function start(cfg,map){ Object.assign(T,{cfg,...map,at:0,path:[0],faults:0,lock:null,over:false}); $('lock').hidden=true; drawMap(); }
+// Afficheur LCD dans l'en-tête en métal.
+(()=>{ const d=document.createElement('div'); d.className='lcd'; d.id='lcd'; d.textContent='RCCU'; const hud=document.querySelector('.top .hud'); hud.parentNode.insertBefore(d,hud); })();
+
 Shell.init({
-  key:'tracage', service:'Renfort fédéral · RCCU', serviceShort:'RCCU',
+  key:'interception', service:'Renfort fédéral · RCCU', serviceShort:'RCCU',
   unit:['enquêteur','enquêteurs'], effLabel:'Enquêteurs de la RCCU sur le dossier',
-  headline:'Traçage d’IP',
-  story:`<p>Le suspect est connecté en ce moment, caché derrière une chaîne de relais. Remonte la connexion jusqu’à son serveur <b>avant qu’il ne coupe</b>.</p><p>Choisis ta route, puis franchis chaque relais en touchant au bon moment. Chaque rejet coûte ${PEN} secondes.</p>`,
-  diffs:{
-    difficile:{agents:1,label:'Difficile',time:75,cols:7,per:[2,3],mix:[.35,.35],unk:.3,speed:3.1,win:.62,flip:true},
-    normal:{agents:2,label:'Normal',time:80,cols:6,per:[2,3],mix:[.45,.3],unk:.2,speed:2.6,win:.75,flip:false},
-    facile:{agents:3,label:'Facile',time:90,cols:5,per:[2,3],mix:[.55,.25],unk:0,speed:2.1,win:.9,flip:false}},
-  bornes:{time:[25,Infinity],cols:[3,9],speed:[0,6],win:[.25,1],unk:[0,.7],mix:[[.15,1],[0,.45]]},
-  diffHint:'Plus d’enquêteurs : moins de relais, des fenêtres plus larges et un curseur plus lent.',
-  desktopHint:'Sur ordinateur : barre d’espace ou Entrée pour verrouiller.',
-  rules:['Touche un relais relié à ta position pour l’attaquer. Tu ne peux qu’avancer : <b>choisis bien ta route</b>.','Pour franchir un relais : touche quand le <b>curseur</b> est dans la <b>zone verte</b>. Proxy : 1 verrou, routeur chiffré : 2 rapides, pare-feu : 3.','Un relais <b>?</b> ne révèle son type qu’au moment où tu l’attaques. « Autre route » te ramène à la carte sans pénalité.','Rejet : −6 s et le relais repart de zéro. Atteins le serveur avant la fin du chrono.','Sans rejet : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
-  winTitle:'Suspect localisé', loseTitle:'Connexion coupée', skin:'Salle des écrans',
-  malus:'le suspect a coupé la connexion : pas d’indice supplémentaire aujourd’hui.',
-  onMenu(){ T.over=true; T.lock=null; $('lock').hidden=true; },
-  onInit(){ const c={cols:5,per:[2,3],mix:[.55,.25],unk:0,speed:2.1,win:.9}; start(c,makeMap(c)); T.over=true; drawMap(); },
-  onFrame(dt){
-    const L=T.lock; if(!L) return;
-    if(L.cool>0){ L.cool-=dt; if(L.cool<=0) drawLock(); else return; }
-    L.ang=(L.ang+L.dir*L.sp*dt+TAU)%TAU; drawLock();
+  headline:'Interception',
+  story:`<p>Le suspect se connecte en ce moment. Sa connexion file de relais en relais vers une <b>sortie VPN</b> à l’étranger : si elle y arrive, on le perd.</p><p>La RCCU a posé une <b>écoute</b> sur un relais. <b>Coupe des relais</b> pour forcer la connexion à passer par l’écoute, sans lui fermer toutes les sorties : sinon il flaire le piège et coupe.</p><p>Plus haut : il se <b>reconnecte</b> (nouvelle écoute, tes coupures restent), des relais sont <b>blindés</b> et des liaisons en <b>fibre</b> (violet) le font filer.</p>`,
+  diffs:{difficile:{agents:1,label:'Difficile',time:150,cols:5,rows:7,step:700,extra:0,kmin:2,kmax:3,plan:3500,rounds:2,blind:3,fast:4},
+         normal:{agents:2,label:'Normal',time:150,cols:5,rows:6,step:900,extra:1,kmin:2,kmax:3,plan:4000,rounds:2,blind:1,fast:2},
+         facile:{agents:3,label:'Facile',time:120,cols:4,rows:5,step:1200,extra:2,kmin:1,kmax:2,plan:5000,rounds:1,blind:0,fast:0}},
+  bornes:{time:[90,Infinity],cols:[3,6],rows:[4,9],step:[380,Infinity],extra:[0,3],kmin:[1,4],kmax:[2,5],plan:[1800,Infinity],rounds:[1,3],blind:[0,7],fast:[0,10]},
+  // Au-delà du niveau 10 : trois connexions dès le niveau 13, suspect méfiant dès le niveau 16.
+  // Progression du challenge : chaque mécanique arrive à un palier précis, puis tout se resserre doucement.
+  niveau(n,c){
+    if(n<=4){ c.rounds=1; c.blind=0; c.fast=0; }
+    // une mécanique à la fois : blindés au niveau 5, fibre au 6, reconnexion au 7
+    if(n===5){ c.rounds=1; c.blind=1; c.fast=0; }
+    if(n===6){ c.rounds=1; c.blind=1; c.fast=2; }
+    if(n>=7&&n<=10) c.rounds=2;
+    if(n>10){ const k=n-10;
+      c.rounds=n>=13?3:2; c.blind=Math.min(7,3+Math.floor(k/2)); c.fast=Math.min(10,4+k);
+      c.cols=n>=15?6:5; c.rows=Math.min(9,7+Math.floor(k/3)); c.extra=0;
+      c.kmin=n>=18?3:2; c.kmax=n>=18?4:3; }
+    if(n>=16) c.smart=true;
+    return c; },
+  diffHint:'Plus d’enquêteurs : un réseau plus petit, un paquet plus lent, des coupures en réserve et une seule connexion.',
+  desktopHint:'Sur ordinateur : clic sur un relais pour le couper.',
+  rules:['Le <b>paquet rouge</b> suit toujours le <b>plus court chemin</b> vers une sortie : la ligne pointillée montre sa route.','Touche un relais pour le <b>couper</b> (coupures limitées, définitives). La route se recalcule aussitôt.','Gagné quand le paquet passe par l’<b>écoute</b> (ligne verte). Perdu s’il atteint une <b>sortie VPN</b>, ou si tu lui fermes <b>toutes</b> les sorties (ligne orange).','<b>Plusieurs connexions</b> : après une capture, il se reconnecte et l’écoute suivante (grisée) prend le relais. Tes coupures restent : prévois-les pour toutes les écoutes.','Relais <b>blindé</b> (doré) : impossible à couper. Liaison <b>fibre</b> (violet) : le paquet y file deux fois plus vite.','Avec le minimum de coupures : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
+  winTitle:'Connexion interceptée', loseTitle:'Connexion perdue', skin:'Salle d’écoute',
+  malus:'la RCCU n’a pas pu intercepter la connexion : pas d’indice supplémentaire aujourd’hui.',
+  onMenu(){ stop(); lcd('RCCU'); },
+  onInit(){ newGame({cols:4,rows:5,step:1200,extra:2,kmin:1,kmax:2,rounds:1}); R.over=true; refresh(); lcd('RCCU'); },
+  onPlay(cfg){
+    newGame(cfg);
+    // Challenge : quand une mécanique apparaît, on la présente et on laisse un peu plus de temps pour la découvrir.
+    let neuf='';
+    if(cfg.defi&&cfg.niveau>1){ const p=Shell.cfgNiveau(cfg.niveau-1);
+      if(Math.round(cfg.rounds||1)>Math.round(p.rounds||1)) neuf=Math.round(cfg.rounds)===2?'Nouveau : il se reconnecte ! 2 connexions, 2 écoutes, tes coupures restent.':'Nouveau : 3 connexions d’affilée.';
+      else if(Math.round(cfg.blind||0)>0&&Math.round(p.blind||0)===0) neuf='Nouveau : relais blindés (dorés), impossibles à couper.';
+      else if(Math.round(cfg.fast||0)>0&&Math.round(p.fast||0)===0) neuf='Nouveau : liaisons fibre (violet), le paquet y file deux fois plus vite.';
+      else if(cfg.smart&&!p.smart) neuf='Nouveau : suspect méfiant. À distance égale, il évite l’écoute.';
+      else if((cfg.cols||0)>(p.cols||0)) neuf='Le réseau s’agrandit.'; }
+    Shell.startTimer(cfg.time,()=>{ if(!R.won) lose('temps'); });
+    lancer((cfg.plan||3000)+(neuf?3000:0));
+    if(neuf){ R.neuf=neuf; setTimeout(()=>flash(neuf,true),50); clearTimeout(flashT); setTimeout(()=>{ clearTimeout(flashT); flashT=setTimeout(()=>$('flash').style.opacity=0,5000); },60); }
   },
-  onPlay(cfg){ start(cfg,makeMap(cfg));
-    Shell.startTimer(cfg.time,()=>{ if(!T.over){ T.over=true; T.lock=null; $('lock').hidden=true; Shell.bad(); Shell.result({ok:false,faults:1,stats:[['Relais',(T.path.length-1)+'/'+(cfg.cols-1)],['Rejets',T.faults],['Temps','écoulé']]}); } }); },
-  onTuto(){
-    const c={cols:4,per:[2,2],mix:[.5,0],unk:0,speed:1.7,win:1.05,time:999};
-    const m=makeMap(c); m.nodes.forEach(n=>{ if(n.c===1) n.type='proxy'; }); start(c,m); T.tuto=0; tutoNext();
-  }
+  onTuto(){ tutoStart(); }
 });
 
 </script>
