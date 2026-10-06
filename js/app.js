@@ -405,6 +405,7 @@ async function onClick(e) {
       }
       case 'budget': ouvrirBudget(); break;
       case 'vehicule': ouvrirVehicule(el.dataset.slot); break;
+      case 'vente-veh': { const sl = Number(el.dataset.slot); const l = new Set(S.draft.ventes || []); if (l.has(sl)) l.delete(sl); else l.add(sl); S.draft.ventes = [...l]; S.ordersDirty = true; ouvrirVehicule(sl); rerender(); break; }
       case 'logistique': ouvrirLogistique(); break;
       case 'tab-restaurer': if (await askConfirm('Remettre ton tableau tel qu’il était sur cet appareil avant la dernière synchronisation ?', 'Restaurer')) { restaurerCarnet(S.state.enquete.n); toast('Tableau restauré.'); rerender(); } break;
       case 'tab-sync': S.carnetSync = 'encours'; rerender(); await synchroCarnetMaintenant(rerender); if (S.carnetSync === 'encours') S.carnetSync = 'ok'; rerender(); toast(S.carnetSync === 'ok' ? 'Tableau synchronisé avec tes autres appareils.' : 'Synchronisation impossible pour le moment.'); break;

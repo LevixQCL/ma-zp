@@ -3,12 +3,12 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-06-urgence',
+  id: '2026-10-06-flotte',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🚨', 'L’urgence du jour', 'une fois par jour, des collègues sont pris à partie : fonce les rejoindre en feu bleu et bitonal. Dépasse, frôle, passe les feux en douceur… et bats le meilleur score de la partie.'],
-    ['🚐', 'Tes combis comptent', 'plus ton parc est en bon état, plus tu vas vite. Nouveau : « Préparer les combis » dans Grande décision › Équiper.'],
+    ['🚓', 'Ta flotte', 'chaque véhicule a désormais son modèle et son propre état. Nouveaux : combi électrique, voiture anonymisée, fourgon d’intervention (Grande décision › Équiper). Revends les vieux depuis leur fiche.'],
+    ['🚨', 'L’urgence du jour', 'des collègues pris à partie : choisis le véhicule qui part et fonce en feu bleu. Bats le meilleur score de la partie.'],
     ['📂', 'Dossier clos', 'à la fin de chaque affaire, la Gazette ouvre le débrief : ce qui désignait l’auteur, les fausses pistes, qui a trouvé quoi.'],
   ],
 
@@ -57,6 +57,13 @@ export const NOTE_MAJ = {
       ['Moins de doublons', 'la situation du jour et l’opération d’envergure (avec l’appel à renfort) ne se règlent plus que dans les Ordres ; l’HP les signale et y renvoie, le Terrain ne montre plus que ce qui se joue avec les autres zones.'],
       ['HP plus léger', 'l’incident en cours n’est plus répété dans la liste « à faire » (sa carte est juste en dessous), et le résumé de la nuit s’efface quand tu ouvres le rapport complet.'],
       ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
+    ]],
+    ['La flotte', [
+      ['Un état par véhicule', 'chaque véhicule s’use à son rythme (chaque jour, et à chaque intervention, réparties sur le parc) ; la fiche du parc montre l’état de chacun. La révision du parc les remet tous en forme. L’« état du parc » est la moyenne.'],
+      ['Quatre modèles', 'combi diesel (6 k€, 2,5 agents), combi électrique (9 k€ : plus rapide et nerveuse, s’use 40 % moins, entretien moitié prix, mais moins maniable et limitée à 1,5 agent en rythme renforcé), voiture anonymisée (7 k€ : vive, +5 % de Recherche, mais 2 agents et on la remarque tard sur les urgences), fourgon d’intervention (10 k€ : 3,5 agents, encaisse 4 chocs, −10 % de risque de blessure, mais lent et 0,3 k€ d’entretien).'],
+      ['Revente', 'depuis la fiche d’un véhicule : 60 % du prix neuf s’il est parfait, moins s’il est usé, −30 % cabossé, 15 % au minimum. Il roule encore le soir de la vente. Il reste toujours au moins un véhicule.'],
+      ['Tes véhicules actuels', 'ils deviennent des combis diesel, avec l’usure qu’avait ton parc. Les anciennes « voitures anonymisées » n’étaient qu’un habillage.'],
+      ['Sur les urgences', 'tu choisis le véhicule qui part. Les accrochages usent ce véhicule-là, et c’est lui qui rentre cabossé.'],
     ]],
     ['L’urgence du jour (Bitonal)', [
       ['Quand', 'une fois par jour, en plus des incidents, à une heure imprévue entre 6 h et 12 h, ouverte jusqu’à 20:00 (carte rouge 🚨 dans les incidents de l’HP). Un seul essai.'],

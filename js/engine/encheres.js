@@ -3,6 +3,7 @@
 import { SERVICES, SERVICE_LABELS, ENCHERE, LOTS, NIVEAU_MAX } from './constants.js';
 import { makeRng } from './rng.js';
 import { round1, sousTutelle } from './zone.js';
+import { ajouterVehicule } from './flotte.js';
 import { absT } from './rivalites.js';
 
 const nomZone = (z) => `ZP ${z.code} ${z.nom}`;
@@ -41,7 +42,7 @@ function livrer(z, id, T) {
   if (lot.bonus) z.lots = [...(z.lots || []), { id, tour: T }];
   switch (lot.immediat) {
     case 'paperasse': z.paperasse = Math.max(0, z.paperasse - 6); break;
-    case 'vehicule': z.usure = z.usure * z.vehicules / (z.vehicules + 1); z.vehicules += 1; break;
+    case 'vehicule': ajouterVehicule(z, 'anonyme', T); break; // berline saisie : une voiture anonymisée
     case 'prevention': z.criminalite = Math.max(10, z.criminalite - 10); z.satisfaction += 4; break;
     case 'agents': z.agents += 2; z._nouveaux = (z._nouveaux || 0) + 2; break;
     case 'stage': {

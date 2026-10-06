@@ -4,6 +4,7 @@ import {
   SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, coutEquipement, multNiveau, multEquip, coutFormation , PREPA, coutPrepa } from './constants.js';
 import { coutCarrosserie } from './sinistres.js';
 import { cabossesChoisis } from './parc.js';
+import { assurerFlotte, placesIntervention, entretienFlotte, bonusAnonymes, MODELES, IDS_MODELES } from './flotte.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 export const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -19,6 +20,7 @@ export function newZone({ uid, code, nom, couleur }, turn, base = {}) {
     blesses: [], formations: [], academie: [], absents: 0,
     budget: base.budget ?? START.budget,
     vehicules: START.vehicules, vehiculesHS: [], usure: 0, cabosses: [], indemnites: [], prepa: 0,
+    flotte: Array.from({ length: START.vehicules }, () => ({ m: 'diesel', u: 0, km: 0, achat: 0 })),
     moral: base.moral ?? START.moral,
     satisfaction: base.satisfaction ?? START.satisfaction,
     reputation: base.reputation ?? START.reputation,
@@ -50,11 +52,13 @@ export function fillDefaults(target, tpl) {
 /** Met une zone enregistrée par une ancienne version au format actuel. */
 export function migrateZone(z) {
   const neuf = !z.batiments;
+  if (!neuf) assurerFlotte(z); // avant fillDefaults : une ancienne zone garde son nombre de véhicules et son usure
   fillDefaults(z, newZone({ uid: z.uid, code: z.code, nom: z.nom, couleur: z.couleur }, z.joinedTurn ?? 1));
   // Zones d'avant la logistique : des bâtiments à la taille de leurs effectifs.
   if (neuf) ajusterBatiments(z);
   if (!z.equipe) z.equipe = creerEquipe(z.uid);
   if (!z.trophees) z.trophees = [];
+  assurerFlotte(z);
   return z;
 }
 
@@ -118,7 +122,7 @@ export function fraisFixes(z, state, { amendes = 0, rythme = 'normal' } = {}) {
     { k: 'amendes', l: 'Amendes du Roulage', v: amendes },
     { k: 'radars', l: 'Radars automatiques (caméras)', v: z.infra && z.infra.anpr ? INFRAS.anpr.fixe : 0 },
     { k: 'salaires', l: `Salaires (${payes} agents${nv})`, v: -payes * ECONOMIE.salaire },
-    { k: 'vehicules', l: `Entretien des véhicules (${z.vehicules})`, v: -z.vehicules * ECONOMIE.entretienVehicule },
+    { k: 'vehicules', l: `Entretien des véhicules (${z.vehicules})`, v: -(z.flotte ? entretienFlotte(z) : z.vehicules * ECONOMIE.entretienVehicule) },
     { k: 'batiments', l: `Entretien des bâtiments (niveaux ${b.bureaux} et ${b.garage})`, v: -(BATIMENTS.bureaux.entretien(b.bureaux) + BATIMENTS.garage.entretien(b.garage)) },
     { k: 'annexes', l: `Entretien des annexes (${annexes})`, v: -annexes * ENTRETIEN_ANNEXE },
     { k: 'rythme', l: 'Heures supplémentaires (rythme renforcé)', v: -(RYTHMES[rythme] ? RYTHMES[rythme].cout : 0) },
@@ -168,8 +172,8 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
   if (n <= 0) return 0;
   let eff = n;
   if (service === 'intervention') {
-    const v = vehiculesDisponibles(zone, turn);
-    const lim = v * 2.5;
+    // Places à bord : 2,5 agents par combi, 2 par anonyme, 3,5 par fourgon (électriques limitées en rythme renforcé).
+    const lim = placesIntervention(zone, turn, rythme);
     if (eff > lim) eff = lim + (eff - lim) * 0.5;
     eff *= malusEtat(100 - zone.usure);
   }
@@ -178,6 +182,7 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
   if (service === 'proximite' && zone.infra.antenne) c *= 1.3;
   if (service === 'roulage' && zone.infra.anpr) c *= 1.2;
   if (service === 'recherche' && zone.infra.audition) c *= 1.2;
+  if (service === 'recherche' && zone.flotte) c *= 1 + bonusAnonymes(zone, turn);
   if (service === 'intervention' && zone.infra.tir) c *= INFRAS.tir.bonus;
   if (service === 'admin') c *= (zone.infra.logiciel ? 1.5 : 1) * adminMult;
   c *= bonusLots(zone, service);
@@ -276,7 +281,7 @@ export function sanitizeOrders(zone, raw, state) {
   if (d && typeof d === 'object') {
     if (d.type === 'recruter') decision = { type: 'recruter', n: clamp(Math.floor(fini(d.n) || 1), 1, 3) };
     else if (d.type === 'former' && SERVICES.includes(d.service)) decision = { type: 'former', service: d.service };
-    else if (d.type === 'equiper' && (d.cible === 'vehicule' || d.cible === 'prepa' || SERVICES.includes(d.cible))) decision = { type: 'equiper', cible: d.cible };
+    else if (d.type === 'equiper' && (d.cible === 'vehicule' || d.cible === 'prepa' || SERVICES.includes(d.cible))) decision = { type: 'equiper', cible: d.cible, ...(d.cible === 'vehicule' ? { modele: IDS_MODELES.includes(d.modele) ? d.modele : 'diesel' } : {}) };
     else if (d.type === 'construire' && typeof d.infra === 'string' && Object.hasOwn(INFRAS, d.infra)) decision = { type: 'construire', infra: d.infra };
     else if (d.type === 'agrandir' && typeof d.batiment === 'string' && Object.hasOwn(BATIMENTS, d.batiment)) decision = { type: 'agrandir', batiment: d.batiment };
     if (tutelle && decision && decision.type !== 'recruter') decision = null;
@@ -340,7 +345,10 @@ export function sanitizeOrders(zone, raw, state) {
   const postes = Object.fromEntries(Object.entries(o.postes && typeof o.postes === 'object' ? o.postes : {}).filter(([r, s]) => ROLES_M.includes(r) && SERV.includes(s)));
   // Dilemme du Directeur : indice du choix (vérifié à la résolution).
   const dilemme = Number.isInteger(o.dilemme) && o.dilemme >= 0 && o.dilemme <= 3 ? o.dilemme : null;
-  return { dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteAccepte, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, defiAccepte: tutelle ? [] : defiAccepte, votes, motionChef, offre };
+  // Reventes de véhicules : places valides, sans doublon, et il en reste toujours un.
+  const nv = (zone.flotte || []).length || zone.vehicules || 0;
+  const ventes = Array.isArray(o.ventes) ? [...new Set(o.ventes.map((x) => Math.floor(Number(x))).filter((x) => Number.isInteger(x) && x >= 0 && x < nv))].slice(0, Math.max(0, nv - 1)) : [];
+  return { ventes, dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteAccepte, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, defiAccepte: tutelle ? [] : defiAccepte, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */
@@ -397,7 +405,7 @@ export function coutDecision(zone, decision) {
     case 'recruter': return coutRecrue(zone) * decision.n;
     // Centrale d'achat (pacte) : formations et équipement moins chers.
     case 'former': return round1(coutFormation(zone, decision.service) * (1 - (zone.remiseAchat || 0)));
-    case 'equiper': return round1((decision.cible === 'vehicule' ? COUTS.vehicule : decision.cible === 'prepa' ? coutPrepa(zone.prepa) : coutEquipement(zone.equip[decision.cible])) * (1 - (zone.remiseAchat || 0)));
+    case 'equiper': return round1((decision.cible === 'vehicule' ? (MODELES[decision.modele] || MODELES.diesel).prix : decision.cible === 'prepa' ? coutPrepa(zone.prepa) : coutEquipement(zone.equip[decision.cible])) * (1 - (zone.remiseAchat || 0)));
     case 'construire': return INFRAS[decision.infra].cout;
     case 'agrandir': return BATIMENTS[decision.batiment] ? BATIMENTS[decision.batiment].coutAgrandir(zone.batiments[decision.batiment]) : 0;
     default: return 0;

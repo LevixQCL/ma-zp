@@ -5,7 +5,8 @@ import { S, esc, icon, myZone, toast } from './common.js';
 import { paramsDefi, noterNiveauDefi } from './defis.js';
 import { incidentsVisibles, resultatsIncidents, INCIDENTS, MALUS, GAIN, texteMalus, texteGain, difficulte, pointsJauge, INC, URGENCE, texteRisqueUrgence } from '../engine/incidents.js';
 import { paramsBitonal, noterScoreBitonal, NOM_NIVEAU } from './bitonal.js';
-import { vitesseCombi } from '../engine/constants.js';
+import { vitesseCombi, vehiculesUrgence, assurerFlotte } from '../engine/flotte.js';
+import { parcVehicules } from '../engine/parc.js';
 import { PS } from '../engine/constants.js';
 import { niveauIncidents } from '../engine/directeur.js';
 import { APPUI, appuiDuJour, DIFF_EXPERTS } from '../engine/appui.js';
@@ -155,6 +156,14 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
   if (jeu === 'bitonal') {
     const v = mode === 'incident' && inc && Number.isFinite(inc.vit) ? { mult: inc.vit, frein: inc.frein || 1, etat: inc.etat, prepa: inc.prepa || 0, cabosse: !!inc.cabosse } : vitesseCombi(myZone());
     for (const [k, val] of Object.entries(paramsBitonal(v))) p.set(k, val);
+    // Véhicules au choix : ceux disponibles quand l'urgence est tombée (ou, à l'entraînement, ceux d'aujourd'hui).
+    const z = myZone(), T = S.state.turn;
+    if (z) {
+      assurerFlotte(z);
+      const noms = Object.fromEntries(parcVehicules(z, T).map((x) => [x.slot, x.nom]));
+      const l = mode === 'incident' && inc && Array.isArray(inc.vehicules) ? inc.vehicules : vehiculesUrgence(z, T);
+      p.set('vh', JSON.stringify(l.map((x) => ({ s: x.slot, n: noms[x.slot] || 'Véhicule', m: x.m, e: x.etat, c: x.cabosse ? 1 : 0, v: x.mult, f: x.frein, a: x.accel, x: x.maniab, p: x.pv }))));
+    }
     if (inc && inc.seed) p.set('seed', String(inc.seed));
     // Urgence : temps cible figé quand elle est tombée (ajusté chaque nuit sur les courses de la partie).
     if (inc && inc.urgence && Number.isFinite(inc.cible) && inc.diff) { p.set(`c_${inc.diff}`, String(inc.cible)); p.set(`k_${inc.diff}`, String(inc.courses || 0)); }
@@ -191,7 +200,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
         if (d.type === 'start') await enregistrer(inc.id, { statut: 'abandon', fautes: 1 });
         if (d.type === 'result' && inc.urgence) {
           const niv = ['facile', 'normal', 'difficile'].includes(d.niveau) ? d.niveau : null;
-          await enregistrer(inc.id, { statut: d.passe ? 'passe' : d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Math.max(0, Math.min(3, Number(d.fautes) || 0)), ...(d.raison === 'hs' ? { raison: 'hs' } : {}), ...(Number.isFinite(Number(d.temps)) && d.temps > 0 ? { temps: Math.round(Number(d.temps) * 10) / 10 } : {}), ...(d.score ? { score: Math.floor(Number(d.score) || 0) } : {}), ...(niv ? { niveau: niv } : {}) });
+          await enregistrer(inc.id, { statut: d.passe ? 'passe' : d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Math.max(0, Math.min(3, Number(d.fautes) || 0)), ...(d.raison === 'hs' ? { raison: 'hs' } : {}), ...(Number.isFinite(Number(d.temps)) && d.temps > 0 ? { temps: Math.round(Number(d.temps) * 10) / 10 } : {}), ...(Number.isInteger(d.vehicule) && (inc.vehicules || []).some((x) => x.slot === d.vehicule) ? { vehicule: d.vehicule } : {}), ...(d.score ? { score: Math.floor(Number(d.score) || 0) } : {}), ...(niv ? { niveau: niv } : {}) });
           if (!d.passe && niv && d.score > 0 && await noterScoreBitonal(niv, d.score)) toast(`Nouveau meilleur score de la partie en ${NOM_NIVEAU[niv].toLowerCase()} : ${Math.floor(d.score).toLocaleString('fr-BE')} !`);
         } else if (d.type === 'result') await enregistrer(inc.id, { statut: d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Number(d.fautes) || 0 });
       }

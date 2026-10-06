@@ -12,7 +12,8 @@ import { iconeSite } from './plan.js';
 import { moyenneIpz, operationActive, fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
 import { coutDemarche, PRIME_LABELS } from '../engine/enquete.js';
 import { portraitSuspect } from './portrait.js';
-import { SERVICE_LABELS, scoreBudget, BUDGET_IPZ, IPZ_POIDS, vitesseCombi } from '../engine/constants.js';
+import { SERVICE_LABELS, scoreBudget, BUDGET_IPZ, IPZ_POIDS } from '../engine/constants.js';
+import { vitesseCombi, MODELES, modeleDe, prixRevente, vitesseVehicule } from '../engine/flotte.js';
 import { aideBtn } from './aide.js';
 import { PERIL, absT } from '../engine/rivalites.js';
 import { estimations } from './ordres.js';
@@ -339,22 +340,23 @@ function parcCorps() {
   const dep = d.depenses || {};
   const tuiles = parc.map((v) => {
     const prevu = v.etat === 'cabosse' && choixCarro.includes(v.cab);
-    const [coul, txt] = v.etat === 'cabosse' ? (prevu ? ['var(--blue)', 'réparé ce soir'] : ['var(--amber)', 'cabossé'])
-      : v.etat === 'atelier' ? ['var(--red)', `atelier ${v.jours} j`] : ['var(--green)', 'en service'];
+    const vendu = (d.ventes || []).includes(v.slot);
+    const [coul, txt] = vendu ? ['var(--red)', 'revendu ce soir'] : v.etat === 'cabosse' ? (prevu ? ['var(--blue)', 'réparé ce soir'] : ['var(--amber)', 'cabossé'])
+      : v.etat === 'atelier' ? ['var(--red)', `atelier ${v.jours} j`] : ['var(--green)', v.etatPc != null ? `état ${v.etatPc} %` : 'en service'];
     return `<button type="button" class="veh ${v.etat}${prevu ? ' prevu' : ''}" data-action="vehicule" data-slot="${v.slot}" aria-label="${esc(v.nom)} : ${txt}">
-      ${vehiculeSvg(v.type, 20)}<span class="n">${esc(v.nom)}</span><span class="s"><i style="background:${coul}"></i>${txt}</span></button>`;
+      ${vehiculeSvg(v.type, 20)}<span class="n">${esc(v.nom)}</span><span class="s"><i style="background:${coul}"></i>${txt}</span>${v.etatPc != null ? `<span class="veh-u" aria-hidden="true"><b style="width:${v.etatPc}%;background:${v.etatPc >= 80 ? 'var(--green)' : v.etatPc >= 60 ? 'var(--amber)' : 'var(--red)'}"></b></span>` : ''}</button>`;
   }).join('') + (libres ? `<a class="veh libre" href="#ordres" data-close aria-label="Acheter un véhicule (grande décision)"><span style="font-size:16px;line-height:1">+</span><span class="s">${libres} place${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''}</span></a>` : '');
   return `<div class="col hp-logis" style="gap:10px">
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Parc automobile</h2>
       <span class="tiny muted">${z.vehicules} véhicule${z.vehicules > 1 ? 's' : ''} · garage niv. ${z.batiments.garage} (${capaciteVehicules(z)} places)</span></div>
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="col" style="gap:5px">
-      <div class="between"><span class="tiny muted">État du parc</span><span class="mono tiny ${etat < 60 ? 'bad' : etat < 80 ? 'warn' : ''}">${etat} %</span></div>
+      <div class="between"><span class="tiny muted">État moyen du parc</span><span class="mono tiny ${etat < 60 ? 'bad' : etat < 80 ? 'warn' : ''}">${etat} %</span></div>
       <div class="parc-etat"><span style="width:${etat}%;background:${etat >= 80 ? 'var(--green)' : etat >= 60 ? 'var(--amber)' : 'var(--red)'}"></span></div>
     </div>
     <div class="parc">${tuiles}</div>
     ${(() => { const v = vitesseCombi(z); return `<div class="between small"><span class="muted">🚨 Vitesse sur les urgences</span><span class="mono">${Math.round(31 * 3.6 * v.mult)} km/h${v.prepa ? ` · préparation niv. ${v.prepa}` : ''}${v.cabosse ? ' · combi cabossée' : ''}</span></div>`; })()}
-    <p class="tiny muted" style="margin:0">Touche un véhicule cabossé pour le faire réparer. Révision, carrosserie et préparation des combis (Grande décision › Équiper) rendent les urgences plus rapides.</p>
+    <p class="tiny muted" style="margin:0">Touche un véhicule : son état, son modèle, la carrosserie, la revente. Acheter : Grande décision › Équiper (combi diesel ou électrique, voiture anonymisée, fourgon).</p>
     <button type="button" class="btn block" data-action="dep-toggle" data-k="revision" data-fermer="1">${dep.revision ? '✓ Révision du parc prévue · annuler' : `Révision du parc · ${fmt1(DEPENSES.revision.cout)} k€ · +${USURE.revision} %`}</button>
     <button type="button" class="btn small ghost block" data-action="logistique">Voir mon hôtel de police</button>
     <p class="tiny muted" style="margin:0">Réparations et révision se paient à 20:00. Pense à valider tes ordres.</p>
@@ -368,7 +370,9 @@ export function ouvrirVehicule(slot) {
   if (!v) return;
   const dep = d.depenses || {};
   const atelier = !!(z.infra && z.infra.garage);
-  const etat = Math.round(100 - z.usure);
+  const etat = v.etatPc != null ? v.etatPc : Math.round(100 - z.usure);
+  const M = MODELES[v.modele] || MODELES.diesel, vit = vitesseVehicule(z, v.slot);
+  const vendu = (d.ventes || []).includes(v.slot), prixV = prixRevente(z, v.slot);
   const prevu = v.etat === 'cabosse' && cabossesChoisis(z, dep.carrosserie).includes(v.cab);
   const prix = coutCarrosserie(z, [0]);
   const statut = v.etat === 'cabosse'
@@ -381,7 +385,12 @@ export function ouvrirVehicule(slot) {
     ${v.etat === 'cabosse' ? `<div class="bat" style="gap:3px"><div class="between small"><span style="font-weight:600">Carrosserie ce soir</span><span class="mono">${fmt1(prix)} k€</span></div>
       <span class="tiny muted">${atelier ? 'Réparé à ton atelier mécanique, sans immobilisation.' : 'Immobilisé le temps de la réparation. Avec l’atelier mécanique : moitié prix et sans immobilisation.'}</span></div>
       <button type="button" class="btn ${prevu ? '' : 'primary'} block" data-action="carro-veh" data-i="${v.cab}">${prevu ? 'Annuler la réparation' : `Réparer ce soir · ${fmt1(prix)} k€`}</button>` : ''}
-    <div class="between small"><span class="muted">État du parc (tous les véhicules)</span><span class="mono">${etat} %</span></div>
+    <div class="col" style="gap:4px"><div class="between small"><span class="muted">État de ce véhicule</span><span class="mono">${etat} %${v.km ? ` · ${v.km} interventions` : ''}</span></div>
+      <div class="parc-etat"><span style="width:${etat}%;background:${etat >= 80 ? 'var(--green)' : etat >= 60 ? 'var(--amber)' : 'var(--red)'}"></span></div></div>
+    <div class="bat" style="gap:3px"><span style="font-weight:600">${esc(M.nom)}</span><span class="tiny muted">${esc(M.texte)}</span>
+      <span class="tiny">${fmt1(M.places)} agents à bord · urgences : ${vit ? Math.round(31 * 3.6 * vit.mult) : '–'} km/h · usure ${M.usure === 1 ? 'normale' : `−${Math.round((1 - M.usure) * 100)} %`} · entretien ${fmt1(M.entretien)} k€/tour</span></div>
+    ${z.vehicules > 1 ? `<button type="button" class="btn ${vendu ? '' : 'ghost'} block" data-action="vente-veh" data-slot="${v.slot}">${vendu ? 'Annuler la revente' : `Revendre ce soir · +${fmt1(prixV)} k€`}</button>
+      <span class="tiny muted">Prix selon l’état (${Math.round(100 * 0.6)} % du prix neuf pour un véhicule parfait, ${v.etat === 'cabosse' ? '−30 % cabossé, ' : ''}15 % au minimum). Il roule encore ce soir.</span>` : '<span class="tiny muted">Ton dernier véhicule ne peut pas être revendu.</span>'}
     <button type="button" class="btn block" data-action="dep-toggle" data-k="revision" data-fermer="1">${dep.revision ? '✓ Révision du parc prévue · annuler' : `Révision du parc · ${fmt1(DEPENSES.revision.cout)} k€ · +${USURE.revision} %`}</button>
     <p class="tiny muted" style="margin:0">Payé à 20:00 avec tes dépenses du jour. Pense à valider tes ordres.</p>`;
   ouvrirPanneau(html);

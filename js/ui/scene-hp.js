@@ -34,11 +34,28 @@ function anonyme(x, y, s = 1, teinte = '#4B5968') {
     <circle cx="37" cy="16" r="3.2" fill="#0C1124"/><circle cx="37" cy="16" r="1.3" fill="#6B7A8A"/></g>`;
 }
 
+/** Fourgon d'intervention : plus haut et plus long, même livrée, environ 52 × 25. */
+function fourgon(x, y, s = 1) {
+  return `<g transform="translate(${x},${y}) scale(${s})">
+    <path d="M2 21 V5 Q2 2 5 2 H38 Q40 2 41.5 4 L47 12 H49 Q52 12 52 15 V21 Z" fill="#EDF0FA"/>
+    <path d="M39 4 L44.5 12 H39 Z" fill="#8CC8F5" opacity=".6"/>
+    <rect x="6" y="5" width="8" height="5" rx="1" fill="#0C1124" opacity=".55"/><rect x="16" y="5" width="8" height="5" rx="1" fill="#0C1124" opacity=".55"/><rect x="26" y="5" width="8" height="5" rx="1" fill="#0C1124" opacity=".55"/>
+    <rect x="2" y="13" width="50" height="3.4" fill="#2F6FB5"/>
+    <g fill="#E3E84A">${[4, 12, 20, 28, 36, 44].map((i) => `<rect x="${i}" y="13" width="4" height="3.4"/>`).join('')}</g>
+    <rect x="14" y="0" width="12" height="2.2" rx="1" fill="#63B0FF"/>
+    <circle cx="12" cy="21" r="3.8" fill="#0C1124"/><circle cx="12" cy="21" r="1.5" fill="#6B7A8A"/>
+    <circle cx="42" cy="21" r="3.8" fill="#0C1124"/><circle cx="42" cy="21" r="1.5" fill="#6B7A8A"/></g>`;
+}
+/** Combi électrique : la combi, avec un liseré vert et l'éclair. */
+function combiElec(x, y, s = 1) {
+  return `${combi(x, y, s)}<g transform="translate(${x},${y}) scale(${s})"><rect x="2" y="14.2" width="44" height="1" fill="#3DD39A"/><path d="M29 5 l-2.4 3.4 h2 l-1.6 3 l3.6 -4 h-2 l1.4 -2.4 Z" fill="#3DD39A"/></g>`;
+}
+
 /** Icône de véhicule pour les tuiles du parc. */
 export function vehiculeSvg(type, h = 18) {
-  return type === 'anonyme'
-    ? `<svg viewBox="0 0 48 20" style="height:${h}px;width:auto" aria-hidden="true">${anonyme(0, 0, 1, '#5B6B7D')}</svg>`
-    : `<svg viewBox="0 0 48 22" style="height:${h}px;width:auto" aria-hidden="true">${combi(0, 0.5)}</svg>`;
+  if (type === 'anonyme') return `<svg viewBox="0 0 48 20" style="height:${h}px;width:auto" aria-hidden="true">${anonyme(0, 0, 1, '#5B6B7D')}</svg>`;
+  if (type === 'fourgon') return `<svg viewBox="0 0 54 26" style="height:${h}px;width:auto" aria-hidden="true">${fourgon(0, 0.5)}</svg>`;
+  return `<svg viewBox="0 0 48 22" style="height:${h}px;width:auto" aria-hidden="true">${type === 'electrique' ? combiElec(0, 0.5) : combi(0, 0.5)}</svg>`;
 }
 
 // Lever et coucher du soleil en Belgique, heure locale (approximatifs, heure d'été comprise), par mois.
@@ -358,7 +375,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   let vx = Math.min(gx - 2, W - 150);
   s += '<g class="hp-vehicules">';
   for (const v of vehs.slice(0, 3)) {
-    s += v.type === 'anonyme' ? anonyme(vx, base + 10, 0.9) : combi(vx, base + 8, 0.95);
+    s += v.type === 'anonyme' ? anonyme(vx, base + 10, 0.9) : v.type === 'fourgon' ? fourgon(vx - 2, base + 5, 0.92) : v.type === 'electrique' ? combiElec(vx, base + 8, 0.95) : combi(vx, base + 8, 0.95);
     if (v.type !== 'anonyme') s += `<g class="hp-gyro" opacity="0"><circle cx="${vx + 16}" cy="${base + 8}" r="8" fill="url(#hp-bleu-${uid})"/><circle cx="${vx + 16}" cy="${base + 8.2}" r="1.6" fill="#8CC8F5"/></g>`;
     if (v.cabosse) s += `<path d="M${vx + 30} ${base + 18} l3 -3 l2 2 l3 -3" stroke="#0C1124" stroke-width="1" fill="none" opacity=".7"/><path d="M${vx + 34} ${base + 12} l5 5 M${vx + 39} ${base + 12} l-5 5" stroke="#C8D3DD" stroke-width="1.4" opacity=".9"/>`;
     if (operation && v.type !== 'anonyme') s += `<circle cx="${vx + 16}" cy="${base + 8}" r="7" fill="url(#hp-bleu-${uid})"/>`;

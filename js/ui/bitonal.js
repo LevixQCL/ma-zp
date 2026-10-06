@@ -2,7 +2,7 @@
 // (players/{uid}.bitonal = { facile, normal, difficile }, bitonalAt = { niveau: date }). Seules les urgences du jour
 // comptent (un essai par jour) : l'entraînement est hors classement.
 import { S, esc } from './common.js';
-import { vitesseCombi } from '../engine/constants.js';
+import { vitesseCombi } from '../engine/flotte.js';
 import { cibleUrgence } from '../engine/incidents.js';
 
 export const NIVEAUX_BITONAL = ['facile', 'normal', 'difficile'];
