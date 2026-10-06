@@ -397,7 +397,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.travaux = null;
     }
     payerIndemnites(z, T);
-    for (const f of z.formations) if (f.fin === T) { z.niveaux[f.service] = Math.min(5, z.niveaux[f.service] + 1); z.rapport.push(`Formation terminée : ${SERVICE_LABELS[f.service]} passe au niveau ${z.niveaux[f.service]}.`); }
+    for (const f of z.formations) if (f.fin === T && !f.fait) { z.niveaux[f.service] = Math.min(5, z.niveaux[f.service] + 1); z.rapport.push(`Formation terminée : ${SERVICE_LABELS[f.service]} passe au niveau ${z.niveaux[f.service]}.`); }
 
     // Aléa léger et coup dur (effets immédiats sur ce tour ou les suivants). `z.scene` les garde pour l'illustration de l'HP.
     z.scene = { tour: T };
@@ -845,6 +845,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
     z.blesses = z.blesses.filter((b) => b.retour > T);
     z.vehiculesHS = z.vehiculesHS.filter((v) => v.retour > T + 1);
+    // Fin de formation : les agents reviennent demain déjà formés, le niveau s'affiche tout de suite (retour de Luc :
+    // avant, il ne montait qu'au début du calcul suivant, et la formation semblait « ne pas être passée »).
+    for (const f of z.formations) if (f.fin === T + 1 && !f.fait) { f.fait = true; z.niveaux[f.service] = Math.min(5, z.niveaux[f.service] + 1); z.rapport.push(`Formation terminée : ${SERVICE_LABELS[f.service]} passe au niveau ${z.niveaux[f.service]}, tes agents reviennent demain.`); }
     z.formations = z.formations.filter((f) => f.fin > T);
     z.renforts = (z.renforts || []).filter((x) => x.retour > T + 1);
 
