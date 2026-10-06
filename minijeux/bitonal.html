@@ -71,8 +71,8 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .consigne small { display: block; font: 600 12px var(--body); letter-spacing: 0; text-transform: none; color: var(--texte2); margin-top: 2px; }
 .consigne.rouge { border-color: var(--rouge); color: #FFD0CE; }
 .consigne.vert { border-color: var(--vert); color: #C9F5E3; }
-.alerte { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); font: 800 34px var(--display); letter-spacing: .04em; text-transform: uppercase; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.5), 0 0 18px var(--rouge); pointer-events: none; white-space: nowrap; animation: pop .25s ease-out; }
-.alerte small { display: block; text-align: center; font: 600 14px var(--body); text-transform: none; letter-spacing: 0; }
+.alerte { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); font: 800 34px var(--display); letter-spacing: .04em; text-transform: uppercase; color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.5), 0 0 18px var(--rouge); pointer-events: none; white-space: nowrap; animation: pop .25s ease-out; width: max-content; max-width: calc(100% - 24px); text-align: center; }
+.alerte small { display: block; text-align: center; font: 600 14px var(--body); text-transform: none; letter-spacing: 0; white-space: normal; margin-top: 4px; }
 @keyframes pop { from { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
 
 .commandes { display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 10px; padding: 10px 16px calc(12px + env(safe-area-inset-bottom, 0px)); }
@@ -449,6 +449,8 @@ function accrochage(e, quoi, frontal = false) {
   S.v = Math.min(S.v, frontal ? 0 : 2);
   S.accrochages.push(quoi);
   e.fantome = 1.8; e.v = 0;
+  // Carrefour : après un choc, le trafic transversal s'arrête (un seul accrochage par carrefour).
+  if (e.type === 'croise' && e.i) e.i.choc = true;
   if (e.sens > 0 && e.type !== 'croise') { e.tx = RANGE + .4; e.reagi = true; e.tv = 0; }
   if (e.sens < 0) { e.tx = RANGE_FACE - .3; e.tv = 0; }
   majDegats();
@@ -528,11 +530,11 @@ function pas(dt) {
     c.fantome = Math.max(0, c.fantome - dt);
     const d = c.i.z - S.z, avant = c.dir * c.x;   // avant < −4,8 : pas encore entrée dans le carrefour
     const prudent = c.i.passe ? c.i.lent : d < 45 && S.v <= LENT + 0.3;
-    const cede = !c.sourd && prudent && S.z < c.i.z + 15 && avant + c.w / 2 < c.dir * S.x - 1.4 && avant > -14;
+    const cede = (c.i.choc || (!c.sourd && prudent)) && S.z < c.i.z + 15 && avant + c.w / 2 < c.dir * S.x - 1.4 && avant > -14;
     const bouche = S.croiseurs.some((o) => o !== c && o.z === c.z && o.dir * o.x > avant && o.dir * o.x - avant < 6.2 && o.v < 0.5);
     c.v = cede || bouche ? Math.max(0, c.v - 18 * dt) : Math.min(c.v0, c.v + 6 * dt);
     c.x += c.dir * c.v * dt;
-    if (c.fantome <= 0 && c.z < S.z + 0.2 && c.z + c.len > S.z - 5 && Math.abs(c.x - S.x) < (c.w + 2.05) / 2 - 0.2) accrochage(c, c.sourd ? 'Ce conducteur n’a pas entendu la sirène et a traversé.' : !c.i.lent ? 'Tu es arrivé trop vite au feu : la voiture qui traversait ne t’a pas vu à temps.' : 'Tu t’es engagé devant une voiture déjà au milieu du carrefour.');
+    if (!c.i.choc && c.fantome <= 0 && c.z < S.z + 0.2 && c.z + c.len > S.z - 5 && Math.abs(c.x - S.x) < (c.w + 2.05) / 2 - 0.2) accrochage(c, c.sourd ? 'Ce conducteur n’a pas entendu la sirène et a traversé.' : !c.i.lent ? 'Tu es arrivé trop vite au feu : la voiture qui traversait ne t’a pas vu à temps.' : 'Tu t’es engagé devant une voiture déjà au milieu du carrefour.');
     if (!S.enCours) return;
   }
   S.croiseurs = S.croiseurs.filter((c) => Math.abs(c.x) < 40 && c.z > S.z - 30);
