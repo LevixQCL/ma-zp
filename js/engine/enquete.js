@@ -1,4 +1,5 @@
 import { PEINES } from './contenu.js';
+import { enService } from './flotte.js';
 // Enquête principale : une affaire de 7 jours au plus, résolue par le trio
 // Mobile · Moyen · Occasion. Cinq suspects ; le coupable est le seul à réunir
 // les trois. Les constatations disent ce qu'il fallait (l'heure exacte, la façon
@@ -1181,8 +1182,12 @@ function traquesDuSoir(state, uids, ord, push, prendre, res) {
       const z = state.zones[u];
       const lieu = a.planques[t.planque] ? a.planques[t.planque].nom : 'un lieu inconnu';
       if (n < ENQ.agentsTraque) { z.rapport.push(`Traque : ${n} agents à ${lieu}, trop peu pour une interpellation (${ENQ.agentsTraque} minimum).`); continue; }
+      // Filature : une voiture anonymisée en service surveille une deuxième planque ; si le suspect y est, l'équipage l'interpelle.
+      const p2 = t.planque2 != null && t.planque2 !== t.planque && a.planques[t.planque2] && enService(z, 'anonyme', state.turn) > 0 ? t.planque2 : null;
+      const lieu2 = p2 != null ? a.planques[p2].nom : '';
       if (t.planque === a.planque) gagnants.push({ u, n });
-      else z.rapport.push(`Traque : ${lieu} fouillé avec ${n} agents, personne.`);
+      else if (p2 === a.planque) { gagnants.push({ u, n }); z.rapport.push(`Traque : ${lieu} fouillé pour rien, mais la voiture anonymisée en planque à ${lieu2} a repéré le suspect : tes agents y foncent.`); }
+      else z.rapport.push(`Traque : ${lieu} fouillé avec ${n} agents, personne.${p2 != null ? ` Rien non plus à ${lieu2}, surveillé par ta voiture anonymisée.` : ''}`);
     }
     const s = a.suspects[a.coupable];
     if (gagnants.length) {

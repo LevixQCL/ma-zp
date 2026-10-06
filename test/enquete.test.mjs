@@ -176,6 +176,17 @@ assert.ok(!state.zones.A.primeAChoisir && !state.zones.B.primeAChoisir);
 const fuite = resolveTurn(avantTraque, { players, orders: { A: { ...base, traque: { n: tr.n, planque: autre, agents: 4 } }, B: base, C: base } });
 assert.equal(fuite.gazette.enquete.fuites.length, 1, 'fuite après une nuit');
 assert.equal(fuite.state.traques.length, 0);
+// Filature : une voiture anonymisée surveille une deuxième planque (sans anonyme, la deuxième planque est ignorée).
+{
+  const ordA = { ...base, traque: { n: tr.n, planque: autre, planque2: aff.planque, agents: 4 } };
+  const sansAnon = resolveTurn(JSON.parse(JSON.stringify(avantTraque)), { players, orders: { A: ordA, B: base, C: base } });
+  assert.equal(sansAnon.gazette.enquete.arrestations.length, 0, 'deuxième planque sans anonyme : ignorée');
+  const avecAnon = JSON.parse(JSON.stringify(avantTraque));
+  avecAnon.zones.A.flotte.push({ m: 'anonyme', u: 0, km: 0, achat: 0 }); avecAnon.zones.A.vehicules += 1;
+  const r2 = resolveTurn(avecAnon, { players, orders: { A: ordA, B: base, C: base } });
+  assert.equal(r2.gazette.enquete.arrestations.length, 1, 'l’anonyme repère le suspect dans la deuxième planque');
+  assert.ok(r2.state.zones.A.rapport.some((l) => l.includes('voiture anonymisée en planque')));
+}
 // Une traque ouverte quand elle durait deux tours se termine aussi en une nuit.
 const ancienne = JSON.parse(JSON.stringify(avantTraque)); ancienne.traques[0].tours = 2;
 assert.equal(resolveTurn(ancienne, { players, orders: { A: base, B: base, C: base } }).gazette.enquete.fuites.length, 1, 'ancienne traque ramenée à une nuit');

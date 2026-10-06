@@ -1,5 +1,6 @@
 // Écran Enquête : le tableau Mobile · Moyen · Occasion, les pièces, les planques et les notes.
 import { formatDateBe } from '../engine/time.js';
+import { enService } from '../engine/flotte.js';
 import { banniereDebrief } from './debrief.js';
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './common.js';
 import { capacite } from '../engine/zone.js';
@@ -159,10 +160,11 @@ export function traqueHtml(tr) {
   const maxAg = d.alloc.intervention || 0;
   const s = a.suspects[a.coupable];
   const indices = dos.pieces.filter((p) => p.f.startsWith('p:')).map((p) => esc(texteFait(a, p.f)));
+  const anonymes = enService(z, 'anonyme', st.turn) > 0;
   return `<section id="traque" class="card red" aria-label="Traque en cours">
     <div class="between"><span class="kicker" style="color:var(--red-soft)">Traque · ${toursTraque(tr) > 1 ? `${toursTraque(tr)} tours restants` : 'jusqu’au prochain 20:00'}</span><span class="tiny muted">${esc(a.titre)}</span></div>
     <h2 class="card-title" style="margin:0">${esc(s.nom)} est en fuite</h2>
-    <p class="small" style="margin:0">Choisis une planque et envoie au moins ${ENQ.agentsTraque} agents d’Intervention. Ce que tu sais de la planque${indices.length ? '' : ' : rien. Les indices sur la planque viennent de ton dossier sur cette affaire (constatations, butin retrouvé)'}.</p>
+    <p class="small" style="margin:0">Choisis une planque et envoie au moins ${ENQ.agentsTraque} agents d’Intervention${anonymes ? ' ; ta voiture anonymisée peut en surveiller une deuxième' : ''}. Ce que tu sais de la planque${indices.length ? '' : ' : rien. Les indices sur la planque viennent de ton dossier sur cette affaire (constatations, butin retrouvé)'}.</p>
     ${indices.length ? `<ul class="small" style="margin:0;padding-left:18px">${indices.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''}
     <div class="col" style="gap:6px">${a.planques.map((p, i) => {
       const m = MARQUES[carnet.p[i] || 0];
@@ -170,6 +172,9 @@ export function traqueHtml(tr) {
         <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(p.nom)}</span><span class="s">${esc(fichePlanque(p))}</span></span>
         <span class="mark ${m.cls}" aria-label="${m.nom} dans ton carnet">${m.sym}</span></button>`;
     }).join('')}</div>
+    ${t && anonymes ? `<div class="col" style="gap:4px"><span class="small" style="font-weight:600">🕶️ Voiture anonymisée en planque</span>
+      <span class="tiny muted">Elle surveille une deuxième planque : si ${esc(s.nom)} y est, tes agents y foncent et l’interpellent.</span>
+      <div class="row wrap" style="gap:6px">${a.planques.map((p, i) => i === t.planque ? '' : `<button type="button" class="chip${t.planque2 === i ? ' on' : ''}" data-action="traque-planque2" data-i="${i}" aria-pressed="${t.planque2 === i}">${esc(p.nom)}</button>`).join('')}</div></div>` : ''}
     ${t ? `<div class="between"><span class="small" style="font-weight:600">Agents envoyés</span>
       <span class="stepper"><button type="button" data-action="traque-agents" data-d="-1" aria-label="Un agent en moins">−</button><span class="n">${t.agents}</span><button type="button" data-action="traque-agents" data-d="1" aria-label="Un agent en plus" ${t.agents >= maxAg ? 'disabled' : ''}>+</button></span></div>
       <p class="tiny ${t.agents < ENQ.agentsTraque ? 'bad' : 'muted'}" style="margin:0">${t.agents < ENQ.agentsTraque ? `Il faut au moins ${ENQ.agentsTraque} agents.` : `Pris sur tes ${maxAg} agents d’Intervention du jour.`} <button class="btn small ghost" data-action="traque-annuler">Ne pas intervenir</button></p>` : ''}

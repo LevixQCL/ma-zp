@@ -13,7 +13,7 @@ import { moyenneIpz, operationActive, fraisFixes, coutDepenses, coutDecision, de
 import { coutDemarche, PRIME_LABELS } from '../engine/enquete.js';
 import { portraitSuspect } from './portrait.js';
 import { SERVICE_LABELS, scoreBudget, BUDGET_IPZ, IPZ_POIDS } from '../engine/constants.js';
-import { vitesseCombi, MODELES, modeleDe, prixRevente, vitesseVehicule } from '../engine/flotte.js';
+import { vitesseCombi, MODELES, modeleDe, prixRevente, vitesseVehicule, rendementFlotte, RENDEMENT } from '../engine/flotte.js';
 import { aideBtn } from './aide.js';
 import { PERIL, absT } from '../engine/rivalites.js';
 import { estimations } from './ordres.js';
@@ -355,12 +355,32 @@ function parcCorps() {
       <div class="parc-etat"><span style="width:${etat}%;background:${etat >= 80 ? 'var(--green)' : etat >= 60 ? 'var(--amber)' : 'var(--red)'}"></span></div>
     </div>
     <div class="parc">${tuiles}</div>
+    ${rendementHtml(z, T, d)}
     ${(() => { const v = vitesseCombi(z); return `<div class="between small"><span class="muted">🚨 Vitesse sur les urgences</span><span class="mono">${Math.round(31 * 3.6 * v.mult)} km/h${v.prepa ? ` · préparation niv. ${v.prepa}` : ''}${v.cabosse ? ' · combi cabossée' : ''}</span></div>`; })()}
-    <p class="tiny muted" style="margin:0">Touche un véhicule : son état, son modèle, la carrosserie, la revente. Acheter : Grande décision › Équiper (combi diesel ou électrique, voiture anonymisée, fourgon).</p>
+    <p class="tiny muted" style="margin:0">Touche un véhicule : son état, son modèle, la carrosserie, la revente. Acheter : Grande décision › Équiper. Combi : la moins chère par place · électrique : se rembourse (prime verte) · anonyme : flagrants et traques · fourgon : engagements et blessures.</p>
     <button type="button" class="btn block" data-action="dep-toggle" data-k="revision" data-fermer="1">${dep.revision ? '✓ Révision du parc prévue · annuler' : `Révision du parc · ${fmt1(DEPENSES.revision.cout)} k€ · +${USURE.revision} %`}</button>
     <button type="button" class="btn small ghost block" data-action="logistique">Voir mon hôtel de police</button>
     <p class="tiny muted" style="margin:0">Réparations et révision se paient à 20:00. Pense à valider tes ordres.</p>
   </div>`;
+}
+
+/** Ce que rapporte la flotte avec la répartition du jour (panneau du parc). */
+function rendementHtml(z, T, d) {
+  const alloc = d.alloc || {};
+  const r = rendementFlotte(z, alloc, T, d.rythme || 'normal');
+  const ligne = (ic, l, v, cls = '') => `<div class="between small"><span class="muted">${ic} ${l}</span><span class="mono ${cls}">${v}</span></div>`;
+  const pi = Math.min(r.intervention, r.places);
+  const l = [
+    ligne('👮', 'Places à bord', `${fmt1(r.places)} · Intervention ${fmt1(pi)}${r.intervention > r.places ? ` (${fmt1(r.intervention - r.places)} à moitié)` : ''}`, r.intervention > r.places ? 'warn' : ''),
+    ligne('🚔', `En voiture (+${Math.round(RENDEMENT.monte * 100)} %)`, r.montes.roulage + r.montes.proximite > 0 ? `Roulage ${fmt1(r.montes.roulage)} · Proximité ${fmt1(r.montes.proximite)}` : 'personne', r.montes.roulage + r.montes.proximite > 0 ? 'ok' : ''),
+  ];
+  if (r.verte) l.push(ligne('⚡', 'Prime verte', `+${fmt1(r.verte)} k€/jour`, 'ok'));
+  if (r.filature) l.push(ligne('🕶️', 'Filatures', `flagrants +${r.filature} %/jour · traque : 2ᵉ planque`, 'ok'));
+  if (r.recherche) l.push(ligne('🔎', 'Recherche (anonymes)', `+${r.recherche} %`, 'ok'));
+  if (r.ordre) l.push(ligne('🛡️', 'Engagements (fourgons)', `force +${r.ordre} %`, 'ok'));
+  if (r.protection) l.push(ligne('🦺', 'Blessures (fourgons)', `−${r.protection} %`, 'ok'));
+  l.push(ligne('🔧', 'Entretien', `−${fmt1(r.entretien)} k€/jour`));
+  return `<div class="col" style="gap:3px"><span class="tiny muted" style="font-weight:600">Ce que rapporte ta flotte (répartition du jour)</span>${l.join('')}</div>`;
 }
 
 /** Fenêtre d'un véhicule (clic sur une tuile du parc) : état et réparations possibles. */
