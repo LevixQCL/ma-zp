@@ -694,7 +694,7 @@ function draw(){
   // la trace, en surimpression (multiplication : alignée, elle « disparaît » dans l'encre)
   const T=G.T, [tx,ty]=toScreen(G.tr.x,G.tr.y);
   ctx.save(); ctx.translate(tx,ty); ctx.rotate(G.tr.a);
-  ctx.globalCompositeOperation='multiply'; ctx.globalAlpha=.28+.72*fade;
+  ctx.globalCompositeOperation='multiply'; ctx.globalAlpha=.5+.5*fade; // jamais sous 50 % : la trace ne doit pas « disparaître » côté Fiche
   ctx.drawImage(T.canvas, -T.L/2*s, -T.L/2*s, T.L*s, T.L*s);
   ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1;
   ctx.setLineDash([4,5]); ctx.strokeStyle='rgba(214,38,108,.55)'; ctx.lineWidth=1.2;
