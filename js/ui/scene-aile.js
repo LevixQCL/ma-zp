@@ -1,6 +1,6 @@
 // Aile des annexes de l'hôtel de police : un module par annexe construite, chacun avec sa façade
 // et, derrière la vitre, un aperçu de la pièce (salle de sport, pas de tir, salle d'audition…).
-// Trois skins (conteneurs, roulotte de cirque, serre) reprennent les mêmes intérieurs.
+// Les skins (conteneurs, roulotte, serre, cabanes, wagons, pilotis, tiroirs, cabines) reprennent les mêmes intérieurs.
 
 export const ANNEXES_AILE = ['sport', 'tir', 'audition', 'logiciel', 'antenne'];
 export const MODULE = 30;
@@ -131,6 +131,11 @@ export function aileSvg({ ids, ax, base, P, moment, SA, teinte, mix, uid }) {
   if (SA === 'conteneurs') return s + conteneurs();
   if (SA === 'roulotte') return s + roulotte();
   if (SA === 'serre') return s + serre();
+  if (SA === 'cabanes') return s + cabanes();
+  if (SA === 'wagons') return s + wagons();
+  if (SA === 'pilotis') return s + pilotis();
+  if (SA === 'tiroirs') return s + tiroirs();
+  if (SA === 'cabines') return s + cabines();
   return s + standard();
 
   // ───── Aile standard : façade sobre, un module par annexe ─────
@@ -256,6 +261,134 @@ export function aileSvg({ ids, ax, base, P, moment, SA, teinte, mix, uid }) {
     // Ligne dorée sur le toit, petit chapiteau et fanion au sommet.
     t += `<path d="M${ax + 4} ${by - 1} Q${ax + aw / 2} ${by - 14} ${ax + aw - 4} ${by - 1}" stroke="${or}" stroke-width=".4" fill="none" opacity=".7"/>
       <path d="M${ax + aw / 2 - 3.5} ${by - 7.2} l3.5 -5 l3.5 5 Z" fill="${or}"/><line x1="${ax + aw / 2}" y1="${by - 12.2}" x2="${ax + aw / 2}" y2="${by - 17.6}" stroke="${or}" stroke-width=".5"/><path d="M${ax + aw / 2} ${by - 17.6} l5 1.4 l-5 1.4 Z" fill="${teinte('#2F6FB5')}"/>`;
+    return t;
+  }
+
+  // ───── Skin « Cabanes de plage » ─────
+  function cabanes() {
+    const pastels = ['#F2C14E', '#5FA8D3', '#F28482', '#2A9D8F', '#B39CD0'];
+    const blanc = teinte('#FBF7EE'), sable = teinte('#E9D8A6');
+    let t = `<rect x="${ax - 2}" y="${base - 3}" width="${aw + 4}" height="3" fill="${sable}"/>`;
+    ids.forEach((id, i) => {
+      const x = mx(i) + 1, w = MODULE - 2, haut = atop + 9, c = teinte(pastels[i % pastels.length]), toit = mix(c, '#000000', 0.25);
+      // Planches rayées.
+      t += `<rect x="${x}" y="${haut}" width="${w}" height="${base - 3 - haut}" fill="${blanc}"/>`;
+      for (let xx = x, k = 0; xx < x + w; xx += 3, k++) if (k % 2 === 0) t += `<rect x="${f1(xx)}" y="${haut}" width="${f1(Math.min(3, x + w - xx))}" height="${base - 3 - haut}" fill="${c}"/>`;
+      // Porte vitrée au milieu.
+      t += vitre(id, x + 7, haut + 6, w - 14, base - 3 - haut - 7, { P, lit, moment, mix, cadre: toit, clip: clip(i) });
+      // Toit en pointe et petite fenêtre en losange.
+      t += `<path d="M${x - 2} ${haut + 1} L${x + w / 2} ${atop - 6} L${x + w + 2} ${haut + 1} Z" fill="${toit}"/><path d="M${x - 2} ${haut + 1} L${x + w / 2} ${atop - 6} L${x + w + 2} ${haut + 1}" stroke="${blanc}" stroke-width=".9" fill="none"/>`;
+      t += ecusson(id, x + w / 2, atop + 2.4, 2.8);
+      // Fanion au sommet, une cabine sur deux.
+      if (i % 2 === 0) t += `<line x1="${x + w / 2}" y1="${atop - 6}" x2="${x + w / 2}" y2="${atop - 13}" stroke="${teinte('#6B4420')}" stroke-width=".5"/><g class="hp-flotte" style="animation-delay:${-i * 0.7}s"><path d="M${x + w / 2} ${atop - 13} l5 1.4 l-5 1.4 Z" fill="${teinte(pastels[(i + 2) % pastels.length])}"/></g>`;
+      // Bouée sur la première cabine.
+      if (i === 0) t += `<circle cx="${x + 3.6}" cy="${haut + 9}" r="2.6" fill="none" stroke="${teinte('#E1332B')}" stroke-width="1.5"/><circle cx="${x + 3.6}" cy="${haut + 9}" r="2.6" fill="none" stroke="${blanc}" stroke-width="1.5" stroke-dasharray="2 2.08"/>`;
+    });
+    return t;
+  }
+
+  // ───── Skin « Wagons d'époque » ─────
+  function wagons() {
+    const vert = teinte('#344E41'), clair = teinte('#A3B18A'), or = teinte('#C9A13B'), noir = teinte('#1A1A1A');
+    const caisse = atop + 6, bas = base - 8;
+    let t = `<rect x="${ax - 2}" y="${base - 2}" width="${aw + 4}" height="1.2" fill="${teinte('#8A97A6')}"/>`;
+    ids.forEach((id, i) => {
+      const x = mx(i) + 1.5, w = MODULE - 3;
+      // Soufflet vers le wagon suivant.
+      if (i < ids.length - 1) { t += `<rect x="${x + w}" y="${caisse + 5}" width="3" height="${bas - caisse - 8}" fill="${noir}"/>`; for (let yy = caisse + 7; yy < bas - 3; yy += 2) t += `<rect x="${x + w}" y="${yy}" width="3" height=".5" fill="${teinte('#4A4A4A')}"/>`; }
+      // Toit bombé, caisse, filet doré.
+      t += `<path d="M${x - 1} ${caisse + 1} Q${x + w / 2} ${caisse - 7} ${x + w + 1} ${caisse + 1} Z" fill="${noir}"/>
+        <rect x="${x}" y="${caisse}" width="${w}" height="${bas - caisse}" rx="2.5" fill="${vert}"/>
+        <rect x="${x + 1}" y="${bas - 5}" width="${w - 2}" height=".8" fill="${or}"/><rect x="${x + 1}" y="${caisse + 2}" width="${w - 2}" height=".6" fill="${clair}" opacity=".7"/>`;
+      t += vitre(id, x + 4, caisse + 4, w - 8, bas - caisse - 11, { P, lit, moment, mix, cadre: or, clip: clip(i) });
+      // Bogies : deux petites roues.
+      for (const rx of [x + 6, x + w - 6]) t += `<circle cx="${rx}" cy="${base - 5}" r="3.2" fill="${noir}"/><circle cx="${rx}" cy="${base - 5}" r="1.1" fill="${teinte('#8A97A6')}"/>`;
+      t += `<rect x="${x + 3}" y="${bas}" width="${w - 6}" height="1.6" fill="${noir}"/>`;
+      t += ecusson(id, x + w / 2, bas - 2.6, 2.2);
+    });
+    // Cheminée et vapeur sur le premier wagon, fanal au bout du dernier.
+    const x0 = mx(0) + 5;
+    t += `<rect x="${x0}" y="${caisse - 9}" width="3" height="6" fill="${noir}"/><rect x="${x0 - 0.8}" y="${caisse - 10}" width="4.6" height="1.6" fill="${noir}"/>
+      ${[0, 1, 2].map((k) => `<circle class="hp-fumee" style="animation-delay:${-k * 0.9}s" cx="${x0 + 1.5}" cy="${caisse - 13}" r="2.2" fill="#FFFFFF" opacity=".7"/>`).join('')}`;
+    const xf = mx(ids.length - 1) + MODULE - 1.5;
+    t += `<rect x="${xf}" y="${bas - 8}" width="2.4" height="3.4" rx=".6" fill="${lit ? '#FFD27A' : teinte('#F2D02E')}"/>${lit ? `<circle cx="${xf + 1.2}" cy="${bas - 6.3}" r="3.6" fill="#FFC56B" opacity=".35"/>` : ''}`;
+    return t;
+  }
+
+  // ───── Skin « Cabanes sur pilotis » ─────
+  function pilotis() {
+    const bambou = teinte('#D9C27E'), trait = teinte('#9C8445'), chaume = teinte('#B8893E'), bois = teinte('#6B4420'), corde = teinte('#E9D8A6');
+    const sol = base - 11, haut = atop + 9;
+    let t = '';
+    ids.forEach((id, i) => {
+      const x = mx(i) + 1, w = MODULE - 2;
+      // Pilotis croisés et cordages.
+      t += `<path d="M${x + 3} ${base} L${x + w / 2} ${sol} L${x + w - 3} ${base} M${x + 3} ${sol} L${x + w - 3} ${base} M${x + w - 3} ${sol} L${x + 3} ${base}" stroke="${bois}" stroke-width="1.3" fill="none"/>
+        <circle cx="${x + w / 2}" cy="${f1((sol + base) / 2)}" r="1.3" fill="${corde}"/>
+        <rect x="${x - 1}" y="${sol - 1.5}" width="${w + 2}" height="2.2" fill="${bois}"/>`;
+      // Murs de bambou.
+      t += `<rect x="${x + 1}" y="${haut}" width="${w - 2}" height="${sol - 1.5 - haut}" fill="${bambou}"/>`;
+      for (let xx = x + 3; xx < x + w - 1; xx += 2.6) t += `<rect x="${f1(xx)}" y="${haut}" width=".5" height="${sol - 1.5 - haut}" fill="${trait}" opacity=".7"/>`;
+      t += vitre(id, x + 6, haut + 3, w - 12, sol - haut - 8, { P, lit, moment, mix, cadre: bois, clip: clip(i) });
+      // Toit de chaume à frange.
+      let fr = `M${x - 3} ${haut + 2}`;
+      for (let xx = x - 3; xx < x + w + 3; xx += 2.5) fr += ` l1.25 1.8 l1.25 -1.8`;
+      t += `<path d="M${x - 3} ${haut + 2} L${x + w / 2} ${atop - 7} L${x + w + 3} ${haut + 2} Z" fill="${chaume}"/><path d="${fr} L${x + w + 3} ${haut + 2} Z" fill="${chaume}"/>`;
+      for (let k = 1; k < 4; k++) t += `<path d="M${f1(x - 3 + k * 1.6)} ${f1(haut + 2 - k * 2.6)} H${f1(x + w + 3 - k * 1.6)}" stroke="${mix(chaume, '#000000', 0.25)}" stroke-width=".4" opacity=".7"/>`;
+      t += ecusson(id, x + w / 2, atop + 1.4, 2.4);
+    });
+    // Une palme qui se balance au bout de l'aile.
+    const px = ax + aw + 1;
+    t += `<line x1="${px}" y1="${base}" x2="${px + 2}" y2="${atop + 4}" stroke="${teinte('#8A6A3A')}" stroke-width="1.4"/>
+      <g class="hp-pivote" style="transform-origin:${px + 2}px ${atop + 4}px">${[[-9, -3], [-6, -7], [2, -8], [8, -4], [9, 2]].map(([dx, dy]) => `<path d="M${px + 2} ${atop + 4} q${dx / 2} ${dy - 2} ${dx} ${dy}" stroke="${teinte('#3E8A55')}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`).join('')}</g>`;
+    return t;
+  }
+
+  // ───── Skin « Bibliothèque à tiroirs » ─────
+  function tiroirs() {
+    const bois = teinte('#5A3A22'), boisF = teinte('#3E2614'), face = teinte('#8A5A36'), laiton = teinte('#D4A04A'), carte = teinte('#F4EFE3');
+    let t = `<rect x="${ax}" y="${atop - 3}" width="${aw}" height="${ah + 3}" fill="${bois}"/><rect x="${ax - 2.5}" y="${atop - 6}" width="${aw + 5}" height="3.4" rx=".8" fill="${boisF}"/>`;
+    // Rangée de petits tiroirs décoratifs en haut.
+    for (let xx = ax + 2; xx < ax + aw - 7; xx += 9) t += `<rect x="${f1(xx)}" y="${atop - 1.6}" width="8" height="5.4" rx=".6" fill="${face}"/><circle cx="${f1(xx + 4)}" cy="${atop + 1.6}" r=".7" fill="${laiton}"/>`;
+    ids.forEach((id, i) => {
+      const x = mx(i) + 1.5, w = MODULE - 3, y = atop + 5.5, h = ah - 9.5, sortie = 1 + (i % 3) * 0.8;
+      // Tiroir entrouvert : ombre et flanc, puis la façade.
+      t += `<rect x="${x - sortie}" y="${y + sortie}" width="${w}" height="${h}" fill="${boisF}"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx=".8" fill="${face}"/>
+        <rect x="${x}" y="${y}" width="${w}" height=".8" fill="#FFFFFF" opacity=".12"/>`;
+      // Porte-étiquette en laiton avec l'écusson de l'annexe.
+      t += `<rect x="${x + w / 2 - 6}" y="${y + 1.6}" width="12" height="6" rx=".6" fill="${laiton}"/><rect x="${x + w / 2 - 5}" y="${y + 2.4}" width="10" height="4.4" fill="${carte}"/>`;
+      t += ecusson(id, x + w / 2, y + 4.6, 1.9);
+      t += vitre(id, x + 3.5, y + 9.5, w - 7, h - 16, { P, lit, moment, mix, cadre: boisF, clip: clip(i) });
+      // Poignée coquille.
+      t += `<path d="M${x + w / 2 - 4} ${y + h - 4.4} a4 3 0 0 0 8 0 Z" fill="${laiton}"/><path d="M${x + w / 2 - 2} ${y + h - 4.4} v1.6 M${x + w / 2} ${y + h - 4.4} v2.4 M${x + w / 2 + 2} ${y + h - 4.4} v1.6" stroke="${mix(laiton, '#000000', 0.3)}" stroke-width=".4"/>`;
+    });
+    t += `<rect x="${ax + 2}" y="${base - 2}" width="4" height="2" fill="${boisF}"/><rect x="${ax + aw - 6}" y="${base - 2}" width="4" height="2" fill="${boisF}"/>`;
+    return t;
+  }
+
+  // ───── Skin « Cabines téléphoniques » ─────
+  function cabines() {
+    const rouge = teinte('#C8102E'), fonce = teinte('#8A0A1E'), noir = teinte('#2B2D42');
+    let t = '';
+    const centres = ids.map((_, i) => mx(i) + MODULE / 2);
+    // Gros câble qui relie les toits.
+    for (let i = 0; i < centres.length - 1; i++) t += `<path d="M${centres[i] + 6} ${atop - 2} Q${f1((centres[i] + centres[i + 1]) / 2)} ${atop + 5} ${centres[i + 1] - 6} ${atop - 2}" stroke="${noir}" stroke-width="1.3" fill="none"/>`;
+    const veille = Math.floor(ids.length / 2);
+    ids.forEach((id, i) => {
+      const w = 21, x = centres[i] - w / 2, haut = atop - 2;
+      t += `<rect x="${x - 1}" y="${base - 2.5}" width="${w + 2}" height="2.5" fill="${fonce}"/>
+        <rect x="${x}" y="${haut}" width="${w}" height="${base - 2.5 - haut}" fill="${rouge}"/>
+        <path d="M${x - 1} ${haut + 0.5} Q${x + w / 2} ${haut - 7} ${x + w + 1} ${haut + 0.5} Z" fill="${rouge}"/><path d="M${x + 1} ${haut} Q${x + w / 2} ${haut - 5} ${x + w - 1} ${haut}" stroke="${fonce}" stroke-width=".6" fill="none"/>
+        <rect x="${x + 2}" y="${haut + 2}" width="${w - 4}" height="4" fill="${noir}"/><text x="${x + w / 2}" y="${haut + 5.2}" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="3.4" letter-spacing=".4" fill="#FFFFFF">POLICE</text>`;
+      const vx = x + 3, vy = haut + 8, vw = w - 6, vh = base - 2.5 - haut - 11;
+      t += vitre(id, vx, vy, vw, vh, { P, lit, moment, mix, cadre: fonce, clip: clip(i) });
+      if (lit && i === veille) t += `<rect class="hp-clignote" x="${vx}" y="${vy}" width="${vw}" height="${vh}" fill="#FFE7B0" opacity=".35"/>`;
+      // Petits carreaux.
+      for (let k = 1; k < 3; k++) t += `<rect x="${f1(vx + (vw * k) / 3 - 0.4)}" y="${vy}" width=".8" height="${vh}" fill="${rouge}"/>`;
+      for (let k = 1; k < 5; k++) t += `<rect x="${vx}" y="${f1(vy + (vh * k) / 5 - 0.4)}" width="${vw}" height=".8" fill="${rouge}"/>`;
+      t += `<rect x="${x + w - 2.2}" y="${vy + vh / 2}" width="1" height="3" rx=".4" fill="${teinte('#C8D3DD')}"/>`;
+      t += ecusson(id, x + w / 2, haut - 2.6, 2);
+    });
     return t;
   }
 

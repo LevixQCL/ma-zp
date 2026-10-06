@@ -3,18 +3,20 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-06-gaufre',
+  id: '2026-10-06-skins-gemini',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🧇', 'Nouveau skin : Briqueterie à gaufres', 'façade en pâte à gaufre, nappage chocolat qui coule et cerise sur le toit. À gagner avec la jauge des skins.'],
-    ['🏅', 'Une prime pour le Challenge', 'chaque dimanche, le meilleur niveau de la semaine sur chaque mini-jeu rapporte 5 k€ et des points de skin. Une prime par joueur : tout le monde a sa chance.'],
+    ['🎨', '13 nouveaux skins à gagner', 'gaufre au chocolat, aquarium à poissons-gyrophares, ruche, ampli, moulin à café, observatoire à canard… pour ton hôtel de police, ton garage et ton aile des annexes.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
-    ['Nouveau skin', [
-      ['Briqueterie à gaufres', 'un nouvel habillage de l’hôtel de police : pâte à gaufre quadrillée, perles de sucre, nappage chocolat et cerise confite sur la chantilly. Il rejoint les skins à gagner avec la jauge.'],
+    ['Nouveaux skins', [
+      ['Hôtel de police', 'Briqueterie à gaufres, Observatoire à canard (périscope en canard de bain), Bocal aquatique (bulles et poissons-gyrophares), Moulin à café (manivelle qui tourne), Caisse résonnante (tête d’ampli au voyant rouge), Ruche d’intervention (abeilles et miel).'],
+      ['Garage', 'Caisses en carton (scotch et « découper ici ») et Coffre-fort géant (portes blindées à volant).'],
+      ['Aile des annexes', 'Cabanes de plage, Wagons d’époque (cheminée qui fume), Cabanes sur pilotis, Bibliothèque à tiroirs et Cabines téléphoniques.'],
+      ['Comment les avoir', 'comme les autres : la jauge des skins (incidents réussis, prime du Challenge). Touche la jauge sur l’HP pour les voir sur ton commissariat. 25 skins à collectionner en tout.'],
     ]],
     ['Prime du Challenge', [
       ['Quoi', 'chaque dimanche à 20:00, le meilleur niveau de la semaine sur chaque mini-jeu du Challenge (dès le niveau 5) rapporte 5 k€ à sa zone et +10 sur la jauge des skins (50 pour un skin). Le Bitonal n’en fait pas partie : ses scores viennent des urgences, déjà récompensées.'],

@@ -16,7 +16,7 @@ console.log('decor : ok');
 
 // Skins Early birds.
 import { SKINS, TOUS_SKINS, skinsValides, earlyBirdEligible, tirerSkin, skinDe } from '../js/engine/decor.js';
-assert.equal(TOUS_SKINS.length, 13);
+assert.equal(TOUS_SKINS.length, 25);
 const st0 = { zones: { a: { uid: 'a' }, b: { uid: 'b' } } };
 assert.ok(earlyBirdEligible(st0.zones.a, st0), 'avant la première résolution : toute zone existante');
 const st1 = { ...st0, zones: { ...st0.zones, c: { uid: 'c' } }, earlyBird: { uids: ['a', 'b'] } };

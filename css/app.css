@@ -1505,3 +1505,20 @@ div.db-cle { cursor: default; }
 .prime-l li span:last-child { font-weight: 600; text-align: right; }
 .prime-d summary { cursor: pointer; }
 .prime-d[open] .prime-l { margin-top: 4px; }
+
+/* Skins d'octobre 2026 : petites animations de la scène du commissariat */
+@keyframes hp-bulles { 0% { transform: translateY(6px); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-10px); opacity: 0; } }
+.hp-bulles { animation: hp-bulles 3.6s linear infinite; }
+@keyframes hp-flotte { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+.hp-flotte { animation: hp-flotte 2.2s ease-in-out infinite; }
+@keyframes hp-pivote { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+.hp-pivote { animation: hp-pivote 6s ease-in-out infinite; }
+@keyframes hp-manivelle { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
+.hp-manivelle { animation: hp-manivelle 4s ease-in-out infinite; }
+@keyframes hp-volant { 0%, 80% { transform: rotate(0); } 92%, 100% { transform: rotate(90deg); } }
+.hp-volant { animation: hp-volant 7s ease-in-out infinite; }
+@keyframes hp-clignote { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+.hp-clignote { animation: hp-clignote 3s ease-in-out infinite; }
+@keyframes hp-fumee { 0% { transform: translate(0, 0) scale(.6); opacity: .8; } 100% { transform: translate(4px, -10px) scale(1.4); opacity: 0; } }
+.hp-fumee { animation: hp-fumee 2.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
+@media (prefers-reduced-motion: reduce) { .hp-bulles, .hp-flotte, .hp-pivote, .hp-manivelle, .hp-volant, .hp-clignote, .hp-fumee { animation: none; } }

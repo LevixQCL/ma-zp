@@ -4,6 +4,7 @@
 import { esc } from './common.js';
 import { BATIMENT_MAX } from '../engine/constants.js';
 import { DECOR, DECOR_DEFAUT, SKINS } from '../engine/decor.js';
+import { SKINS_BATIMENT_NEUFS, fondBatiment, habillageBatiment, toitBatiment, corpsGarage, porteGarage } from './skins-hp.js';
 import { ANNEXES_AILE, aileSvg, largeurAile, HAUT_AILE } from './scene-aile.js';
 
 const LIT = '#FFB23F', DIM = '#223041', EDGE = '#2C3D51';
@@ -207,6 +208,8 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   }
   // Bâtiment.
   s += `<rect x="${x0}" y="${top}" width="${w}" height="${base - top}" fill="url(#hp-facade-${uid})"/><rect x="${x0}" y="${top}" width="16" height="${base - top}" fill="${P.tour}"/>`;
+  const ctxSkin = { x0, w, top, base, gf, fh, b, P, teinte, mix, uid, nom, moment, rnd, graine, LIT };
+  if (SB) s += fondBatiment(SB, ctxSkin);
   if (SB === 'gaufre') {
     // Pâte à gaufre : alvéoles creusées (carrés sombres) séparées par des arêtes dorées.
     const creux = teinte('#B9772F'), arete = teinte('#F2C676');
@@ -258,6 +261,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
     // Perles de sucre entre les fenêtres (jamais sur les vitres).
     if (b > 1) for (let i = 0; i < 12; i++) s += `<rect x="${(x0 + 41 + Math.floor(lr() * 5) * 22 + lr() * 3).toFixed(1)}" y="${(top + 12 + lr() * (base - top - gf - 16)).toFixed(1)}" width="2.2" height="1.8" rx=".6" fill="${teinte('#FFF8EA')}" opacity=".85"/>`;
   }
+  if (SB) s += habillageBatiment(SB, ctxSkin);
   // Abords accrochés à la façade.
   if (D.abords === 'fresque') s += `<g opacity=".95"><rect x="${x0}" y="${top}" width="16" height="${base - top}" fill="#2A3A4D"/>${[['#FFB23F', 0.1], ['#FF6E6A', 0.3], ['#63B0FF', 0.5], ['#3DD39A', 0.7], ['#A78BFA', 0.88]].map(([c, k]) => `<circle cx="${x0 + 8}" cy="${(top + (base - top) * k).toFixed(1)}" r="${(3.5 + (k * 10) % 2).toFixed(1)}" fill="${c}"/>`).join('')}<path d="M${x0} ${base - 8} Q${x0 + 8} ${top + 20} ${x0 + 16} ${top + 6}" stroke="#EDF0FA" stroke-width="1.4" fill="none"/></g>`;
   if (D.abords === 'horloge') s += `<circle cx="${x0 + 8}" cy="${top + 11}" r="5.5" fill="#F4EFE3" stroke="#C9A13B" stroke-width="1"/><path d="M${x0 + 8} ${top + 11} V${top + 7.5} M${x0 + 8} ${top + 11} H${x0 + 10.6}" stroke="#1D1A15" stroke-width=".8"/>`;
@@ -278,10 +282,11 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   s += `<rect x="${x0 - 3}" y="${top - 4}" width="${w + 6}" height="4" rx="1" fill="${P.arete}"/>`;
   if (SB === 'chalet') s += `<path d="M${x0 - 8} ${top - 2} L${x0 + w / 2} ${top - 34} L${x0 + w + 8} ${top - 2} Z" fill="${teinte('#5A3A22')}"/><path d="M${x0 - 8} ${top - 2} L${x0 + w / 2} ${top - 34} L${x0 + w + 8} ${top - 2}" stroke="${teinte('#3A2410')}" stroke-width="2" fill="none"/>${meteo.neige ? `<path d="M${x0 - 6} ${top - 4} L${x0 + w / 2} ${top - 32} L${x0 + w + 6} ${top - 4}" stroke="#F4F8FB" stroke-width="2.5" fill="none"/>` : ''}`;
   if (D.abords === 'toitvert') { s += `<rect x="${x0 - 3}" y="${top - 6}" width="${w + 6}" height="3" rx="1.5" fill="#3E7D4F"/>`; for (let i = 0; i < 9; i++) s += `<circle cx="${x0 + 4 + i * 11}" cy="${top - 6.5}" r="${2.2 + (i % 3) * 0.6}" fill="${i % 2 ? '#4E9A5E' : '#3E7D4F'}"/>`; }
-  if (b >= 2 && !['chalet', 'friterie', 'gateau', 'gaufre'].includes(SB) && SF !== 'carnaval') s += `<rect x="${x0 + w - 30}" y="${top - 11}" width="20" height="7" rx="1" fill="${P.toit}"/><rect x="${x0 + w - 27}" y="${top - 9}" width="14" height="1" fill="${P.toit2}"/>`;
+  const toitLibre = ['chalet', 'friterie', 'gateau', 'gaufre', ...SKINS_BATIMENT_NEUFS].includes(SB);
+  if (b >= 2 && !toitLibre && SF !== 'carnaval') s += `<rect x="${x0 + w - 30}" y="${top - 11}" width="20" height="7" rx="1" fill="${P.toit}"/><rect x="${x0 + w - 27}" y="${top - 9}" width="14" height="1" fill="${P.toit2}"/>`;
   if (b >= 3) s += `<line x1="${x0 + w - 6}" y1="${top - 4}" x2="${x0 + w - 6}" y2="${top - 30}" stroke="${P.mat}" stroke-width="1.4"/><line x1="${x0 + w - 10}" y1="${top - 20}" x2="${x0 + w - 2}" y2="${top - 20}" stroke="${P.mat}"/><circle cx="${x0 + w - 6}" cy="${top - 32}" r="4" fill="#FF6E6A" opacity=".22"/><circle class="hp-balise" cx="${x0 + w - 6}" cy="${top - 32}" r="1.7" fill="#FF6E6A"/>`;
-  if (b >= 4) s += `<g transform="translate(${x0 + w - 22},${top - 11})"><path d="M0 0 L2 -6" stroke="${P.mat}" stroke-width="1.3"/><path d="M-5 -6 Q2 -14 9 -6 Z" fill="${P.toit2}"/></g>`;
-  if (b >= 5 && SB !== 'chalet') s += `<rect x="${x0 + w - 44}" y="${top - 12}" width="12" height="8" rx="1" fill="${P.toit}"/>`;
+  if (b >= 4 && !toitLibre) s += `<g transform="translate(${x0 + w - 22},${top - 11})"><path d="M0 0 L2 -6" stroke="${P.mat}" stroke-width="1.3"/><path d="M-5 -6 Q2 -14 9 -6 Z" fill="${P.toit2}"/></g>`;
+  if (b >= 5 && SB !== 'chalet' && !toitLibre) s += `<rect x="${x0 + w - 44}" y="${top - 12}" width="12" height="8" rx="1" fill="${P.toit}"/>`;
   if (SB === 'chateau') {
     for (let x = x0 - 3; x < x0 + w + 3; x += 8) s += `<rect x="${x}" y="${top - 9}" width="5" height="5" fill="${P.arete}"/>`;
     for (const tx of [x0 - 8, x0 + w - 6]) {
@@ -308,6 +313,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
       <path d="M0.5 -15 Q2 -22 7 -24" stroke="${teinte('#4E7A2A')}" stroke-width="1.1" fill="none"/><path d="M5 -23.5 Q9 -27 11 -23 Q8 -21 5 -23.5 Z" fill="${teinte('#5FA33A')}"/>
       ${P.neon ? `<circle cx="0" cy="-12" r="9" fill="#FF3B5C" opacity=".18"/>` : ''}<circle cx="0" cy="-12" r="5.2" fill="${teinte('#E01E3C')}"/><circle cx="-1.8" cy="-13.8" r="1.5" fill="#FFFFFF" opacity=".7"/></g>`;
   }
+  if (SB) s += toitBatiment(SB, ctxSkin);
   // Enseigne « ZP + nom de la zone » : néon allumé le soir et la nuit, lettres bleues éteintes le jour.
   const texte = `ZP ${nom}`;
   const nx = x0 + 8, nw = Math.min(112, 14 + texte.length * 5.2), ny = top - 9;
@@ -324,8 +330,10 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   const GC = SG ? SKINS.garage.options[SG].jour.map(teinte) : null;
   if (SG === 'hangar') s += `<path d="M${gx - 2} ${gtop + 4} Q${gx + gw / 2} ${gtop - 26} ${gx + gw + 2} ${gtop + 4} Z" fill="${GC[1]}"/>${Array.from({ length: 6 }, (_, i) => `<path d="M${gx + (i + 1) * gw / 7} ${gtop + 4} Q${gx + (i + 1) * gw / 7} ${gtop - 12} ${gx + gw / 2} ${gtop - 11}" stroke="${mix(GC[1], '#000000', 0.25)}" stroke-width=".6" fill="none" opacity=".6"/>`).join('')}`;
   if (SG === 'grange') s += `<path d="M${gx - 4} ${gtop + 2} L${gx + gw / 2} ${gtop - 18} L${gx + gw + 4} ${gtop + 2} Z" fill="${GC[1]}"/><path d="M${gx - 4} ${gtop + 2} L${gx + gw / 2} ${gtop - 18} L${gx + gw + 4} ${gtop + 2}" stroke="${teinte('#F4EFE3')}" stroke-width="1.6" fill="none"/><rect x="${gx + gw / 2 - 5}" y="${gtop - 8}" width="10" height="8" fill="${teinte('#F4EFE3')}"/><rect x="${gx + gw / 2 - 3.5}" y="${gtop - 6.5}" width="7" height="5" fill="${mix(GC[1], '#000000', 0.3)}"/>`;
-  s += `<rect x="${gx}" y="${gtop}" width="${gw}" height="${gh}" fill="${GC ? GC[0] : P.garage}"/>${SG === 'hangar' || SG === 'grange' ? '' : `<rect x="${gx - 2}" y="${gtop - 4}" width="${gw + 4}" height="5" rx="1" fill="${SG === 'retro' ? teinte('#F08BB4') : P.arete}"/>`}
-  <text x="${gx + 8}" y="${gtop + 11}" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="9" letter-spacing="1.2" fill="${SG === 'retro' ? '#F08BB4' : SG === 'grange' ? teinte('#F4EFE3') : P.texteGarage}">GARAGE</text>`;
+  s += `<rect x="${gx}" y="${gtop}" width="${gw}" height="${gh}" fill="${GC ? GC[0] : P.garage}"/>${SG === 'hangar' || SG === 'grange' || SG === 'cartons' ? '' : `<rect x="${gx - 2}" y="${gtop - 4}" width="${gw + 4}" height="5" rx="1" fill="${SG === 'retro' ? teinte('#F08BB4') : P.arete}"/>`}
+  <text x="${gx + 8}" y="${gtop + 11}" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="9" letter-spacing="1.2" fill="${SG === 'retro' ? '#F08BB4' : SG === 'grange' ? teinte('#F4EFE3') : SG === 'cartons' ? teinte('#3A2A1A') : SG === 'coffre' ? teinte('#2A3340') : P.texteGarage}">GARAGE</text>`;
+  const ctxG = { gx, gw, gtop, gh, base, teinte, mix, GC };
+  if (SG) s += corpsGarage(SG, ctxG);
   if (SG === 'grange') for (let x = gx + 3; x < gx + gw; x += 5) s += `<rect x="${x}" y="${gtop + 13}" width=".6" height="${gh - 13}" fill="${mix(GC[0], '#000000', 0.3)}" opacity=".6"/>`;
   if (SG === 'retro') { s += `<rect x="${gx}" y="${gtop + 14}" width="${gw}" height="1.4" fill="#5CE1E6"/><rect x="${gx}" y="${base - 5}" width="${gw}" height="1.4" fill="#F08BB4"/>`; for (let x = gx, i = 0; x < gx + gw; x += 4, i++) s += `<rect x="${x}" y="${base - 3.6}" width="4" height="3.6" fill="${i % 2 ? '#C8D3DD' : '#1D1A2A'}"/>`; if (P.neon) s += `<ellipse cx="${gx + gw / 2}" cy="${gtop + 14}" rx="${gw / 2}" ry="6" fill="url(#hp-halo-${uid})" opacity=".4"/>`; }
   if (SG === 'lavage') { for (let y = gtop + 2; y < base; y += 5) s += `<rect x="${gx}" y="${y}" width="${gw}" height=".5" fill="#FFFFFF" opacity=".35"/>`; for (let x = gx + 2; x < gx + gw; x += 5) s += `<rect x="${x}" y="${gtop}" width=".5" height="${gh}" fill="#FFFFFF" opacity=".25"/>`; }
@@ -334,6 +342,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
     const dx = gx + 12 + d * 26, ouverte = (atelier || infra.garage) && d === 0;
     s += `<circle cx="${dx + 11}" cy="${gtop + 17}" r="1.3" fill="${P.lueur ? LIT : P.lamelle}"/>${P.lueur ? `<ellipse cx="${dx + 11}" cy="${gtop + 26}" rx="12" ry="8" fill="url(#hp-ambre-${uid})" opacity="${P.lueur}"/>` : ''}`;
     if (SG === 'grange' && !ouverte) { s += `<rect x="${dx}" y="${gtop + 20}" width="22" height="${gh - 20}" fill="${mix(GC[0], '#000000', 0.15)}" stroke="${teinte('#F4EFE3')}" stroke-width="1.2"/><path d="M${dx} ${gtop + 20} L${dx + 22} ${base} M${dx + 22} ${gtop + 20} L${dx} ${base}" stroke="${teinte('#F4EFE3')}" stroke-width="1.2"/>`; continue; }
+    if (SG && !ouverte) { const pg = porteGarage(SG, dx, ctxG, d); if (pg) { s += pg; continue; } }
     if (SG === 'retro' && !ouverte) { s += `<rect x="${dx}" y="${gtop + 20}" width="22" height="${gh - 26}" rx="1" fill="${teinte('#4A3A6A')}" stroke="#5CE1E6" stroke-width=".8"/>`; continue; }
     if (SG === 'lavage' && !ouverte) { s += `<rect x="${dx}" y="${gtop + 20}" width="22" height="${gh - 20}" fill="${teinte('#2F6FB5')}"/>${[4, 11, 18].map((bx) => `<rect x="${dx + bx - 1.5}" y="${gtop + 22}" width="3" height="${gh - 24}" rx="1.5" fill="${['#FF6E6A', '#F2D02E', '#3DD39A'][bx % 3]}" opacity=".85"/>`).join('')}`; continue; }
     if (ouverte) {

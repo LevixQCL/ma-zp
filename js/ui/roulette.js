@@ -5,7 +5,7 @@ import { TOUS_SKINS, SKINS, tirerSkin, skinDe, earlyBirdEligible } from '../engi
 import { ouvrirPanneau, sceneZone, monDecorPublic } from './logistique.js';
 import { ANNEXES_AILE } from './scene-aile.js';
 
-const COURT = { friterie: 'Friterie', chateau: 'Fort Delta', orbitale: 'Orbitale', chalet: 'Chalet', gateau: 'Gâteau', gaufre: 'Gaufre', hangar: 'Dirigeable', grange: 'Grange', retro: 'Rétro 80', lavage: 'Car-wash', conteneurs: 'Conteneurs', roulotte: 'Roulotte', serre: 'Serre' };
+const COURT = { friterie: 'Friterie', chateau: 'Fort Delta', orbitale: 'Orbitale', chalet: 'Chalet', gateau: 'Gâteau', gaufre: 'Gaufre', hangar: 'Dirigeable', grange: 'Grange', retro: 'Rétro 80', lavage: 'Car-wash', conteneurs: 'Conteneurs', roulotte: 'Roulotte', serre: 'Serre', canard: 'Canard', aquarium: 'Aquarium', moulin: 'Moulin', ampli: 'Ampli', ruche: 'Ruche', cartons: 'Cartons', coffre: 'Coffre-fort', cabanes: 'Cabanes', wagons: 'Wagons', pilotis: 'Pilotis', tiroirs: 'Tiroirs', cabines: 'Cabines' };
 const TEINTE = { batiment: ['#FFB23F', '#C98F1E'], garage: ['#63B0FF', '#2F6FB5'], aile: ['#3DD39A', '#2F8F5E'] };
 const N = TOUS_SKINS.length, SEG = 360 / N;
 

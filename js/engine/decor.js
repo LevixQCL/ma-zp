@@ -88,6 +88,11 @@ export const SKINS = {
       chalet:   { nom: 'Chalet des Fagnes', texte: 'Bois, toit à deux pans et jardinières fleuries.', jour: ['#9A6A40', '#86592F', '#6E4826'] },
       gateau:   { nom: 'Gâteau d’anniversaire', texte: 'Glaçage rose qui coule et bougies allumées sur le toit.', jour: ['#F6D6E0', '#EDC2D2', '#E0A9BE'] },
       gaufre:   { nom: 'Briqueterie à gaufres', texte: 'Façade en pâte à gaufre quadrillée, nappage chocolat qui coule et cerise sur le toit.', jour: ['#E6AE5C', '#D49647', '#A96B2C'] },
+      canard:   { nom: 'Observatoire à canard', texte: 'Hublots cerclés de jaune, dôme d’observation et périscope en canard de bain.', jour: ['#5E8A64', '#4A7352', '#2F4F38'] },
+      aquarium: { nom: 'Bocal aquatique', texte: 'Un aquarium géant : bulles, algues et poissons-gyrophares qui patrouillent.', jour: ['#70D6FF', '#3AA8E0', '#0B6FA8'] },
+      moulin:   { nom: 'Moulin à café', texte: 'Bois patiné, cerclages de laiton, grains sculptés et manivelle géante sur le toit.', jour: ['#9C6B45', '#86593A', '#5C3A26'] },
+      ampli:    { nom: 'Caisse résonnante', texte: 'Toile de haut-parleur bordeaux, coins chromés et tête d’ampli au voyant rouge.', jour: ['#7A1E1E', '#661616', '#1E1A1A'] },
+      ruche:    { nom: 'Ruche d’intervention', texte: 'Alvéoles dorées, rayures d’abeille, miel qui coule et ruche de paille sur le toit.', jour: ['#FFC23D', '#F5A300', '#B86A00'] },
     },
   },
   garage: {
@@ -97,6 +102,8 @@ export const SKINS = {
       grange:  { nom: 'Grange de ferme', texte: 'Planches rouges, portes à croix blanche et botte de foin.', jour: ['#A8432F', '#8A3424'] },
       retro:   { nom: 'Garage rétro 80', texte: 'Violet nuit, néons rose et turquoise, damier chromé.', jour: ['#3A2A55', '#2A1F3D'] },
       lavage:  { nom: 'Car-wash à bulles', texte: 'Carrelage bleu et bulles de savon qui s’envolent.', jour: ['#8CC8F5', '#5AB0F0'] },
+      cartons: { nom: 'Caisses en carton', texte: 'Cartons empilés, rabats ouverts, scotch orange et pointillés « découper ici ».', jour: ['#C99A5B', '#B0844A'] },
+      coffre:  { nom: 'Coffre-fort géant', texte: 'Acier brossé, rivets et portes blindées à volant qui tourne.', jour: ['#C3CAD3', '#8A95A3'] },
     },
   },
   fete: {
@@ -114,6 +121,11 @@ export const SKINS = {
       conteneurs: { nom: 'Conteneurs empilés', texte: 'Chaque annexe dans un conteneur maritime de couleur, porte vitrée et barres de verrouillage, un conteneur couché par-dessus.', jour: ['#E07A3A', '#3C7DB8'] },
       roulotte:   { nom: 'Roulotte de cirque', texte: 'Caisse rayée rouge et crème, fenêtres en arc dorées, lampions, toit bombé festonné et roues à rayons.', jour: ['#D8453A', '#F4EFE3'] },
       serre:      { nom: 'Serre tropicale', texte: 'Verrière à l’ancienne et sa crête ouvragée, muret de briques et plantes au pied des vitres.', jour: ['#BFE3D0', '#7FC6A0'] },
+      cabanes:    { nom: 'Cabanes de plage', texte: 'Une cabine rayée pastel par annexe, toits en pointe, fanions et bouée.', jour: ['#F2C14E', '#5FA8D3'] },
+      wagons:     { nom: 'Wagons d’époque', texte: 'Voitures de train vert sombre à filets dorés, soufflets noirs et cheminée qui fume.', jour: ['#344E41', '#A3B18A'] },
+      pilotis:    { nom: 'Cabanes sur pilotis', texte: 'Huttes de bambou perchées sur des pilotis croisés, toits de chaume et palme au vent.', jour: ['#D9C27E', '#B8893E'] },
+      tiroirs:    { nom: 'Bibliothèque à tiroirs', texte: 'Un meuble à fiches géant : tiroirs entrouverts, étiquettes et poignées en laiton.', jour: ['#8A5A36', '#D4A04A'] },
+      cabines:    { nom: 'Cabines téléphoniques', texte: 'Cabines rouges à petits carreaux reliées par un gros câble, une veilleuse qui clignote.', jour: ['#C8102E', '#2B2D42'] },
     },
   },
 };
