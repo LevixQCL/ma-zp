@@ -87,6 +87,7 @@ export const SKINS = {
       orbitale: { nom: 'Base orbitale', texte: 'Coque blanche, hublots, dôme et satellite.', jour: ['#E4EBF2', '#CAD5DF', '#AEBCC9'] },
       chalet:   { nom: 'Chalet des Fagnes', texte: 'Bois, toit à deux pans et jardinières fleuries.', jour: ['#9A6A40', '#86592F', '#6E4826'] },
       gateau:   { nom: 'Gâteau d’anniversaire', texte: 'Glaçage rose qui coule et bougies allumées sur le toit.', jour: ['#F6D6E0', '#EDC2D2', '#E0A9BE'] },
+      gaufre:   { nom: 'Briqueterie à gaufres', texte: 'Façade en pâte à gaufre quadrillée, nappage chocolat qui coule et cerise sur le toit.', jour: ['#E6AE5C', '#D49647', '#A96B2C'] },
     },
   },
   garage: {

@@ -207,6 +207,11 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   }
   // Bâtiment.
   s += `<rect x="${x0}" y="${top}" width="${w}" height="${base - top}" fill="url(#hp-facade-${uid})"/><rect x="${x0}" y="${top}" width="16" height="${base - top}" fill="${P.tour}"/>`;
+  if (SB === 'gaufre') {
+    // Pâte à gaufre : alvéoles creusées (carrés sombres) séparées par des arêtes dorées.
+    const creux = teinte('#B9772F'), arete = teinte('#F2C676');
+    for (let y = top + 3; y < base - gf - 2; y += 8) for (let x = x0 + 19; x < x0 + w - 3; x += 8) s += `<rect x="${x}" y="${y}" width="5.4" height="5.4" rx="1" fill="${creux}" opacity=".55"/><rect x="${x}" y="${y}" width="5.4" height="1.1" rx=".5" fill="${arete}" opacity=".5"/>`;
+  }
   for (let f = 0; f < b - 1; f++) {
     const y = base - gf - (f + 1) * fh;
     s += `<rect x="${x0}" y="${y + fh - 1}" width="${w}" height="1" fill="${P.arete}"/>`;
@@ -241,6 +246,18 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
     s += `<path d="${d} Z" fill="${teinte('#FFF6F0')}"/>`;
     for (let x = x0 + 22; x < x0 + w; x += 18) s += `<circle cx="${x}" cy="${gy0(base, gf) - 4}" r="1.2" fill="${['#FF6E6A', '#63B0FF', '#F2D02E', '#3DD39A'][(x / 18 | 0) % 4]}"/>`;
   }
+  if (SB === 'gaufre') {
+    // Nappage chocolat qui coule du toit (coulures de longueurs différentes) et quelques perles de sucre.
+    const choco = teinte('#5A2E17'), lr = rnd(graine(nom) + 41);
+    let d = `M${x0 - 3} ${top} H${x0 + w + 3} V${top + 5}`;
+    for (let x = x0 + w + 3; x > x0 - 3; x -= 9) {
+      const L = b > 1 ? 2 + Math.floor(lr() * 4) * 2 : 1 + Math.floor(lr() * 3); // de plain-pied : coulures courtes (enseigne POLICE)
+      d += ` Q${x - 2} ${top + 5} ${x - 2.5} ${top + 5 + L} Q${x - 4.5} ${top + 8 + L} ${x - 6.5} ${top + 5 + L} Q${x - 7} ${top + 5} ${x - 9} ${top + 5}`;
+    }
+    s += `<path d="${d} Z" fill="${choco}"/><path d="M${x0} ${top + 1.6} H${x0 + w}" stroke="${teinte('#8A4A26')}" stroke-width="1" opacity=".8"/>`;
+    // Perles de sucre entre les fenêtres (jamais sur les vitres).
+    if (b > 1) for (let i = 0; i < 12; i++) s += `<rect x="${(x0 + 41 + Math.floor(lr() * 5) * 22 + lr() * 3).toFixed(1)}" y="${(top + 12 + lr() * (base - top - gf - 16)).toFixed(1)}" width="2.2" height="1.8" rx=".6" fill="${teinte('#FFF8EA')}" opacity=".85"/>`;
+  }
   // Abords accrochés à la façade.
   if (D.abords === 'fresque') s += `<g opacity=".95"><rect x="${x0}" y="${top}" width="16" height="${base - top}" fill="#2A3A4D"/>${[['#FFB23F', 0.1], ['#FF6E6A', 0.3], ['#63B0FF', 0.5], ['#3DD39A', 0.7], ['#A78BFA', 0.88]].map(([c, k]) => `<circle cx="${x0 + 8}" cy="${(top + (base - top) * k).toFixed(1)}" r="${(3.5 + (k * 10) % 2).toFixed(1)}" fill="${c}"/>`).join('')}<path d="M${x0} ${base - 8} Q${x0 + 8} ${top + 20} ${x0 + 16} ${top + 6}" stroke="#EDF0FA" stroke-width="1.4" fill="none"/></g>`;
   if (D.abords === 'horloge') s += `<circle cx="${x0 + 8}" cy="${top + 11}" r="5.5" fill="#F4EFE3" stroke="#C9A13B" stroke-width="1"/><path d="M${x0 + 8} ${top + 11} V${top + 7.5} M${x0 + 8} ${top + 11} H${x0 + 10.6}" stroke="#1D1A15" stroke-width=".8"/>`;
@@ -261,7 +278,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   s += `<rect x="${x0 - 3}" y="${top - 4}" width="${w + 6}" height="4" rx="1" fill="${P.arete}"/>`;
   if (SB === 'chalet') s += `<path d="M${x0 - 8} ${top - 2} L${x0 + w / 2} ${top - 34} L${x0 + w + 8} ${top - 2} Z" fill="${teinte('#5A3A22')}"/><path d="M${x0 - 8} ${top - 2} L${x0 + w / 2} ${top - 34} L${x0 + w + 8} ${top - 2}" stroke="${teinte('#3A2410')}" stroke-width="2" fill="none"/>${meteo.neige ? `<path d="M${x0 - 6} ${top - 4} L${x0 + w / 2} ${top - 32} L${x0 + w + 6} ${top - 4}" stroke="#F4F8FB" stroke-width="2.5" fill="none"/>` : ''}`;
   if (D.abords === 'toitvert') { s += `<rect x="${x0 - 3}" y="${top - 6}" width="${w + 6}" height="3" rx="1.5" fill="#3E7D4F"/>`; for (let i = 0; i < 9; i++) s += `<circle cx="${x0 + 4 + i * 11}" cy="${top - 6.5}" r="${2.2 + (i % 3) * 0.6}" fill="${i % 2 ? '#4E9A5E' : '#3E7D4F'}"/>`; }
-  if (b >= 2 && !['chalet', 'friterie', 'gateau'].includes(SB) && SF !== 'carnaval') s += `<rect x="${x0 + w - 30}" y="${top - 11}" width="20" height="7" rx="1" fill="${P.toit}"/><rect x="${x0 + w - 27}" y="${top - 9}" width="14" height="1" fill="${P.toit2}"/>`;
+  if (b >= 2 && !['chalet', 'friterie', 'gateau', 'gaufre'].includes(SB) && SF !== 'carnaval') s += `<rect x="${x0 + w - 30}" y="${top - 11}" width="20" height="7" rx="1" fill="${P.toit}"/><rect x="${x0 + w - 27}" y="${top - 9}" width="14" height="1" fill="${P.toit2}"/>`;
   if (b >= 3) s += `<line x1="${x0 + w - 6}" y1="${top - 4}" x2="${x0 + w - 6}" y2="${top - 30}" stroke="${P.mat}" stroke-width="1.4"/><line x1="${x0 + w - 10}" y1="${top - 20}" x2="${x0 + w - 2}" y2="${top - 20}" stroke="${P.mat}"/><circle cx="${x0 + w - 6}" cy="${top - 32}" r="4" fill="#FF6E6A" opacity=".22"/><circle class="hp-balise" cx="${x0 + w - 6}" cy="${top - 32}" r="1.7" fill="#FF6E6A"/>`;
   if (b >= 4) s += `<g transform="translate(${x0 + w - 22},${top - 11})"><path d="M0 0 L2 -6" stroke="${P.mat}" stroke-width="1.3"/><path d="M-5 -6 Q2 -14 9 -6 Z" fill="${P.toit2}"/></g>`;
   if (b >= 5 && SB !== 'chalet') s += `<rect x="${x0 + w - 44}" y="${top - 12}" width="12" height="8" rx="1" fill="${P.toit}"/>`;
@@ -284,6 +301,13 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
       <g transform="translate(${x0 + w + 4},${Math.max(vy + 14, top - 30)}) rotate(-20)"><rect x="-3" y="-2" width="6" height="4" fill="#C8D3DD"/><rect x="-13" y="-1.5" width="9" height="3" fill="#3C7DB8"/><rect x="4" y="-1.5" width="9" height="3" fill="#3C7DB8"/></g>`;
   }
   if (SB === 'gateau') for (const [i, cx] of [x0 + w - 44, x0 + w - 32, x0 + w - 20].entries()) s += `<rect x="${cx - 1.5}" y="${top - 18}" width="3" height="14" fill="${['#F08BB4', '#8FA8FF', '#7FD18B'][i]}"/><path d="M${cx - 1.5} ${top - 14} l3 -2 M${cx - 1.5} ${top - 9} l3 -2" stroke="#FFFFFF" stroke-width=".6"/><path d="M${cx} ${top - 24} q2.4 3 0 5 q-2.4 -2 0 -5 Z" fill="#FFB23F"/>${P.neon ? `<circle cx="${cx}" cy="${top - 21}" r="4" fill="url(#hp-ambre-${uid})"/>` : ''}`;
+  if (SB === 'gaufre') {
+    // Chantilly et cerise confite sur le toit.
+    const cx = x0 + w - 26, cy = top - 4;
+    s += `<g transform="translate(${cx},${cy})"><ellipse cx="0" cy="-2" rx="11" ry="4" fill="${teinte('#FFFDF7')}"/><ellipse cx="0" cy="-5.5" rx="7.5" ry="3.6" fill="${teinte('#FFFFFF')}"/><path d="M-4 -8 Q0 -14 4 -8 Z" fill="${teinte('#FFFFFF')}"/>
+      <path d="M0.5 -15 Q2 -22 7 -24" stroke="${teinte('#4E7A2A')}" stroke-width="1.1" fill="none"/><path d="M5 -23.5 Q9 -27 11 -23 Q8 -21 5 -23.5 Z" fill="${teinte('#5FA33A')}"/>
+      ${P.neon ? `<circle cx="0" cy="-12" r="9" fill="#FF3B5C" opacity=".18"/>` : ''}<circle cx="0" cy="-12" r="5.2" fill="${teinte('#E01E3C')}"/><circle cx="-1.8" cy="-13.8" r="1.5" fill="#FFFFFF" opacity=".7"/></g>`;
+  }
   // Enseigne « ZP + nom de la zone » : néon allumé le soir et la nuit, lettres bleues éteintes le jour.
   const texte = `ZP ${nom}`;
   const nx = x0 + 8, nw = Math.min(112, 14 + texte.length * 5.2), ny = top - 9;
