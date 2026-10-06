@@ -223,7 +223,7 @@ function conseilHtml() {
         <div class="col" style="gap:6px">${m.options.map((o, i) => `<button type="button" class="choice" data-action="vote" data-m="${m.id}" data-i="${i}" aria-pressed="${d.votes && d.votes[m.id] === i}" style="text-align:left;align-items:flex-start;min-height:42px">${esc(o)}</button>`).join('')}</div></div>`).join('')}
     </section>`;
   } else {
-    html += `<section class="card tight"><span class="kicker">Conseil de police</span><span class="small muted">Il se réunit chaque dimanche : dotation, thème de la semaine, fonds de solidarité si une zone est en difficulté, blâme éventuel.${theme ? ` Thème en cours : ${esc(THEMES[theme.id].nom)} (${esc(THEMES[theme.id].effet)}).` : ''}</span></section>`;
+    html += `<section class="card tight"><span class="kicker">Conseil de police</span><span class="small muted">Il se réunit chaque dimanche : dotation, fonds de solidarité si une zone est en difficulté, blâme éventuel.${theme ? ` Thème en cours : ${esc(THEMES[theme.id].nom)} (${esc(THEMES[theme.id].effet)}).` : ''} Les crises du district, elles, sont votées par le Conseil des chefs sur l’HP, environ tous les 5 jours.</span></section>`;
   }
   if (gradeFor(z.ps).nom === 'Chef de corps' && !z.motionSaison) {
     html += `<section class="card"><span class="kicker">Privilège de Chef de corps</span><span class="small">Propose une motion au prochain Conseil (une fois par saison).</span>

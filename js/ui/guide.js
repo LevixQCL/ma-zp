@@ -17,6 +17,7 @@ import { AIDE, THEMES, MOTIONS_CHEF, PERIL, SOLIDARITE } from '../engine/rivalit
 import { PACTES, PACTE, DEFI, DEFI_INDICATEURS } from '../engine/pactes.js';
 import { VAGUES } from '../engine/vagues.js';
 import { RELEVE } from '../engine/releve.js';
+import { CRISE, PLANS } from '../engine/crise.js';
 
 const k = (v) => `${String(v).replace('.', ',')} k€`;
 const pc = (v) => `${Math.round(v * 100)} %`;
@@ -282,10 +283,18 @@ export function sections() {
         <p>Chaque dimanche, une voix par zone active, vote secret, résultat à 20:00 (égalité : la première option l'emporte).</p>
         ${ul([
           '<strong>Dotation fédérale de 20 k€</strong> : parts égales, ou prime aux zones les plus coopératives (pactes tenus, FIPA honorées, pièces partagées).',
-          `<strong>Thème de la semaine</strong> (7 tours) : ${Object.values(THEMES).map((t) => `${t.nom} (${t.effet})`).join(' ; ')}.`,
           `<strong>Fonds de solidarité</strong>, quand une zone est en difficulté : chaque autre zone active lui verse ${SOLIDARITE.parZone} k€.`,
           '<strong>Blâme</strong> : proposé contre les zones les moins coopératives de la semaine (FIPA revendiquées ou refusées, pactes rompus). Effet : −10 de réputation et −30 PS.',
           `<strong>Motion de Chef de corps</strong>, une par saison : ${Object.values(MOTIONS_CHEF).map((m) => m.titre.toLowerCase()).join(', ')}.`,
+        ])}
+        <h3>Le Conseil des chefs : les crises du district</h3>
+        <p>Environ tous les 5 jours, le Directeur annonce une crise choisie d’après l’état du district (cambriolages, rodéos, deal, nuits agitées). Le lendemain, chaque zone active vote sur l’HP, en secret jusqu’à 20:00. Le plan gagnant s’applique à tout le district pendant ${CRISE.duree} jours.</p>
+        ${table(['Plan', 'Avantage', 'Prix'], PLANS.map((p) => [`<strong>${p.k}</strong> · ${esc(p.nom)}`, esc(p.plus), esc(p.moins)]))}
+        ${ul([
+          'Une zone, une voix, quelle que soit sa taille. Égalité ou aucune voix : travail discret (B). La Gazette publie le score, pas qui a voté quoi.',
+          `Opération commune : voter C, c’est s’engager (on peut se retirer un soir sur l’HP) ; les autres zones peuvent la rejoindre. Chaque participant engage ${Math.round(CRISE.C.part * 100)} % de ses agents (${CRISE.C.min} au moins), à laisser sans affectation dans les Ordres. Un soir est réussi si au moins la moitié des zones actives sont là ; il en faut ${CRISE.C.nuitsOk} sur 3.`,
+          `Réussie : chaque zone présente au moins ${CRISE.C.nuitsOk} soirs est récompensée, les autres ont seulement criminalité −${Math.abs(CRISE.C.crimDistrict)}. Ratée : rien de plus. Qui ne participe pas ne paie ni ne gagne.`,
+          'Le bon plan dépend de ta zone : une zone forte en Recherche gagne plus au B, une zone d’Intervention et de Roulage au A. De quoi discuter sur la radio avant le vote.',
         ])}`,
     },
     {

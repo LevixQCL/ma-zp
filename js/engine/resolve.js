@@ -3,6 +3,7 @@
 
 import { VAGUES, vagueVisee, appliquerVague, vaguesNuit } from './vagues.js';
 import { RELEVE, lireOrdresReleve, releveResoudre, releveNuit } from './releve.js';
+import { lireOrdresCrise, crisePre, criseZone, crisePost } from './crise.js';
 import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
 import {
@@ -201,7 +202,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.rapport = [];
     if (orders[uid]) {
       ord[uid] = sanitizeOrders(z, orders[uid], state);
-      Object.assign(ord[uid], lireOrdresReleve(orders[uid]));
+      Object.assign(ord[uid], lireOrdresReleve(orders[uid]), lireOrdresCrise(orders[uid]));
       if (z.toursSansOrdres >= 3) z._retour = z.toursSansOrdres; // retour d'absence (accueilli par le Directeur)
       z.toursSansOrdres = 0;
       z.dernierOrdre = { alloc: ord[uid].alloc, rythme: ord[uid].rythme, patrouilles: ord[uid].patrouilles || {}, secteurs: ord[uid].secteurs || {} };
@@ -250,6 +251,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // La relève : suspects en fuite pris en charge (ou non) par les zones voisines, saisies partagées.
   const rel = releveResoudre(state, uids, ord, push, T, zoneLabel);
   const fuites = []; // suspects qui filent ce soir : relèves proposées demain
+  // Crise du district : vote du Conseil des chefs, opération commune de ce soir.
+  const cri = crisePre(state, uids, ord, push, T, zoneLabel);
   jalonTous('Relève');
 
   // 3. Affaires disputées : la zone où l'affaire éclate la dirige ; les autres postulent,
@@ -572,7 +575,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const alloc = opx.eff;
     // Agents partis en traque, en audition ou en FIPA : d'abord ceux laissés sans affectation, puis les services.
     let libres = agentsLibres(z, o, T);
-    for (const pr2 of [pre.prises[uid], fp.prises[uid], rel.prises[uid]]) {
+    for (const pr2 of [pre.prises[uid], fp.prises[uid], rel.prises[uid], cri.prises[uid]]) {
       if (!pr2) continue;
       for (const [s, n0] of Object.entries(pr2)) { const k = Math.min(libres, n0); libres -= k; alloc[s] = Math.max(0, (alloc[s] || 0) - (n0 - k)); }
       const n = Object.values(pr2).reduce((a2, b2) => a2 + b2, 0);
@@ -649,6 +652,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       cap[s] *= 1 + x.bonus; z.bonusChefs[s] = x.bonus;
     }
 
+    // Plan du district en vigueur (crise votée par le Conseil des chefs).
+    if (criseZone(state, z, cap, T)) jalon(z, 'Plan du district');
     capsSoir[uid] = { ...cap };
     // Vague de délinquance chassée d'une zone voisine hier soir : absorbée ou subie.
     if (VAGUES.actif) {
@@ -957,6 +962,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // Vagues de délinquance : les zones très fortes dans un domaine chassent la délinquance chez une voisine.
   vaguesNuit(state, uids, capsSoir, T, { zoneLabel, push });
   releveNuit(state, fuites, T, { push, zoneLabel });
+  crisePost(state, uids, push, T, zoneLabel);
   // Le parquet surveille les dossiers trop dépendants des pièces des autres (avant la fin d'affaire).
   parquetSoir(state, uids, push);
   // Urgences : le temps cible s'ajuste sur les courses de la partie.

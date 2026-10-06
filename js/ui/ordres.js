@@ -6,6 +6,7 @@ import { vitesseCombi, MODELES, IDS_MODELES, placesIntervention, agentsMontes, a
 import { agentsFipaCeSoir } from './fipa.js';
 import { vagueServiceHtml } from './vagues.js';
 import { agentsReleve } from '../engine/releve.js';
+import { participeCommune, agentsCommune } from '../engine/crise.js';
 import { engagementsDuJour } from './engagements.js';
 import { primeHtml } from './prime.js';
 import { demandeRenfortHtml } from './renfort.js';
@@ -27,7 +28,7 @@ function enqueteDraft() {
     dilemme: Number.isInteger(o.dilemme) ? o.dilemme : null, demarches: o.demarches || [], appui: o.appui || null, prime: o.prime || null, piste: o.piste ?? null, accusation: o.accusation ?? null, confront: o.confront || [], reaud: o.reaud || null, recoup: o.recoup || null, hypo: o.hypo || null, mobile: Number.isInteger(o.mobile) ? o.mobile : null, traque: o.traque || null, partages: o.partages || [],
     fipa: o.fipa || null, fipaReponse: o.fipaReponse || null, fipaChoix: o.fipaChoix || null,
     renfort: o.renfort || null, aide: o.aide || null, pacte: o.pacte || null, pacteReponse: o.pacteReponse || null, pacteAccepte: o.pacteAccepte || [], defiAccepte: o.defiAccepte || [], pacteRompre: o.pacteRompre || null, fragment: o.fragment || null, defi: o.defi || null, defiReponse: o.defiReponse || null, votes: o.votes || {}, motionChef: o.motionChef || null, offre: o.offre || null,
-    releve: o.releve || null, releveAppui: o.releveAppui || [], saisie: o.saisie || null,
+    releve: o.releve || null, releveAppui: o.releveAppui || [], saisie: o.saisie || null, crise: Number.isInteger(o.crise) ? o.crise : null, criseC: o.criseC || null,
   };
 }
 
@@ -94,6 +95,7 @@ export function missionsEnquete(d) {
   if (d.traque && d.traque.agents) l.push({ k: 'traque', t: 'Traque du suspect (enquête)', n: d.traque.agents, service: 'intervention' });
   const nr = S.state && myZone() ? agentsReleve(S.state, myZone().uid, d) : 0;
   if (nr) l.push({ k: 'relève', t: 'Relève (suspect en fuite)', n: nr, service: 'intervention' });
+  if (S.state && myZone() && participeCommune(S.state, myZone().uid, d)) l.push({ k: 'opération commune', t: 'Opération commune du district', n: agentsCommune(myZone(), S.state.turn), service: null });
   const f = agentsFipaCeSoir();
   if (f) l.push({ k: 'FIPA', t: 'FIPA (dispositif commun)', n: f, service: null });
   return l;
@@ -719,7 +721,7 @@ export function renderOrdres() {
 
   return `<main class="screen">
     <header class="between" style="align-items:flex-start;gap:10px"><div class="col" style="gap:3px;min-width:0"><h1 class="big">Ordres du tour ${T}</h1>
-      <p class="sub">${e.dispo} agents disponibles${e.enquete ? `, dont ${e.enquete} en mission (enquête, FIPA ou relève) : ${e.dispo - e.enquete} à répartir` : ''}${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p></div>
+      <p class="sub">${e.dispo} agents disponibles${e.enquete ? `, dont ${e.enquete} en mission (enquête, FIPA, relève ou opération commune) : ${e.dispo - e.enquete} à répartir` : ''}${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p></div>
       <span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} Validés` : S.savedOrders ? 'Modifiés' : 'Pas validés'}</span></header>
 
     ${saved ? '<p class="tiny muted" style="margin:-6px 0 0">Tes ordres sont validés ; tu peux encore les modifier jusqu’à 20:00.</p>'

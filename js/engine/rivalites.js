@@ -37,7 +37,7 @@ function motionsDuConseil(state, T, rng) {
   const actives = Object.values(state.zones).filter((z) => z.toursSansOrdres < 3);
   const motions = [];
   motions.push({ id: 'dotation', titre: 'Répartition d’une dotation fédérale de 20 k€', options: ['Parts égales entre les zones actives', 'Prime aux zones les plus coopératives (pactes tenus, FIPA honorées, pièces partagées)'] });
-  motions.push({ id: 'theme', titre: 'Thème de la semaine', options: ['Aucun thème', THEMES.routiere.nom, THEMES.proximite.nom] });
+  // Le thème de la semaine est remplacé par les crises du district (crise.js), votées tous les 5 jours environ.
   // Blâme : les zones les moins coopératives de la semaine.
   const score = (z) => (z.stats.fipaFaites - z.stats.fipaHonorees) * 2 + (z.ruptures || []).filter((t) => absT(state, T) - t < 7).length * 2 + (z.stats.refusFipa || 0);
   const candidats = actives.filter((z) => score(z) > 0).sort((a, b) => score(b) - score(a)).slice(0, 3);

@@ -3,16 +3,21 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-06-vagues-releve',
+  id: '2026-10-06-conseil-chefs',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
+    ['🗳️', 'Le Conseil des chefs', 'tous les 5 jours environ, une crise frappe le district. Votez en secret : opération visible, travail discret ou opération commune. Le plan gagnant tient 3 jours.'],
     ['🌊', 'Vagues de délinquance', 'une zone très forte dans un service chasse la délinquance… chez la voisine la plus faible. Annoncée le matin, sans l’auteur : prépare-toi et brise-la pour des points.'],
     ['🤝', 'La relève', 'un suspect file vers ta zone : prends-le, transmets-le, ou dis « pas l’effectif ». Avec parfois les félicitations du juge ou une saisie à partager.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Conseil des chefs', [
+      ['Les crises du district', 'le Directeur annonce une crise d’après l’état du district ; le lendemain, chaque zone vote sur l’HP (secret jusqu’à 20:00, une voix par zone). Le plan gagnant s’applique 3 jours : A (Intervention et Roulage renforcés, criminalité en baisse, mais Proximité −25 %), B (Recherche +60 %, satisfaction en légère baisse), C (opération commune : 10 % des agents de chaque participant, grosse récompense si au moins la moitié des zones viennent 2 soirs sur 3).'],
+      ['Le thème de la semaine', 'il disparaît du Conseil du dimanche, remplacé par les crises. Le dimanche garde la dotation, le fonds de solidarité, le blâme et les motions.'],
+    ]],
     ['Vagues et relèves', [
       ['Vagues de délinquance', 'un service à 1,75 fois la médiane du district ou plus fait fuir la délinquance vers la zone voisine la plus faible, qui la reçoit le soir suivant dans son service le plus faible. L’HP et les Ordres disent combien de capacité il faut pour la briser ; la carte montre un repère 🌊. Une vague envoyée tous les 2 soirs au plus, une reçue par soir au plus, et rien pour les nouvelles zones ni les zones absentes.'],
       ['La relève', 'opération réussie à moitié, affaire bouclée de justesse ou vague brisée : un suspect file chez une voisine. Elle le prend (2 à 4 agents, 3 avec l’appui pour une capture sûre), le transmet une fois, ou décline sans conséquence. Mérite partagé, et environ une fois sur trois les félicitations du juge ou une saisie : l’une prend l’argent, l’autre la voiture.'],

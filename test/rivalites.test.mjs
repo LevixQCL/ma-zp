@@ -132,11 +132,11 @@ assert.ok(rap('B', 'Coup de main annulé'));
 
 // ── Conseil : annoncé la veille du dimanche, dépouillé le dimanche.
 tour({}, 0);
-assert.ok(s.conseil && s.conseil.motions.length >= 2);
+assert.ok(s.conseil && s.conseil.motions.length >= 1 && !s.conseil.motions.some((m) => m.id === 'theme'));
 const budgets = Object.fromEntries(['A', 'B', 'C'].map((u) => [u, s.zones[u].budget]));
 g = tour({ A: { ...base, votes: { dotation: 0, theme: 1 } }, B: { ...base, votes: { dotation: 0, theme: 1 } }, C: { ...base, votes: { dotation: 1, theme: 2 } } });
-assert.ok(g.conseil.length >= 2);
-assert.equal(s.theme && s.theme.id, 'routiere', 'thème voté');
+assert.ok(g.conseil.length >= 1);
+assert.ok(!s.theme, 'plus de thème de la semaine : remplacé par les crises du district');
 assert.ok(s.zones.A.budget > budgets.A - 15, 'dotation reçue');
 assert.equal(s.conseil, null);
 
