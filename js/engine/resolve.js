@@ -1,6 +1,7 @@
 // Résolution d'un tour. Fonction pure et déterministe :
 // mêmes données en entrée → même résultat, quel que soit l'ordinateur qui calcule.
 
+import { VAGUES, vagueVisee, appliquerVague, vaguesNuit } from './vagues.js';
 import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
 import {
@@ -382,6 +383,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   jalonTous('Coopération (fugitif à la frontière)');
   // Le Directeur : rang aux énigmes, bilan de l'événement de district.
   const rangEnig = rangsEnigmes(state), districtRes = [];
+  const capsSoir = {}; // capacités de chaque zone ce soir (vagues de délinquance pour demain)
   // 5. Simulation locale de chaque zone.
   for (const uid of uids) {
     const z = state.zones[uid];
@@ -638,6 +640,13 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       cap[s] *= 1 + x.bonus; z.bonusChefs[s] = x.bonus;
     }
 
+    capsSoir[uid] = { ...cap };
+    // Vague de délinquance chassée d'une zone voisine hier soir : absorbée ou subie.
+    if (VAGUES.actif) {
+      const vg = appliquerVague(state, z, vagueVisee(state, uid, T), cap, { T, zoneLabel, push });
+      if (vg && vg.incidents) pr.incidents = (pr.incidents || 0) + vg.incidents;
+      if (vg) jalon(z, vg.absorbee ? 'Vague de délinquance absorbée' : 'Vague de délinquance subie');
+    }
     // Flotte : agents de Roulage et de Proximité en voiture, prime verte, force des fourgons (affichage).
     {
       const mt = agentsMontes(z, alloc, T, o.rythme), bouts = [];
@@ -935,6 +944,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.reputation = round1(z.reputation);
   }
 
+  // Vagues de délinquance : les zones très fortes dans un domaine chassent la délinquance chez une voisine.
+  vaguesNuit(state, uids, capsSoir, T, { zoneLabel, push });
   // Le parquet surveille les dossiers trop dépendants des pièces des autres (avant la fin d'affaire).
   parquetSoir(state, uids, push);
   // Urgences : le temps cible s'ajuste sur les courses de la partie.
