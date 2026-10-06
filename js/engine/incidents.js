@@ -21,7 +21,7 @@ export const SERVICES_INCIDENTS = Object.keys(INCIDENTS);
 
 /**
  * L'urgence du jour (une par jour, en plus des incidents) : des collègues pris à partie demandent du renfort.
- * Mini-jeu « Bitonal » : rejoindre l'adresse au plus vite, en feu bleu. La vitesse de la combi dépend du parc
+ * Mini-jeu « Bitonal » : rejoindre l'adresse au plus vite, en feu bleu. La vitesse du combi dépend du parc
  * (état, véhicules cabossés) et de la préparation des combis ; elle est figée quand l'urgence tombe, comme la difficulté.
  * Issues :
  *  - à temps : +3 de moral (comme un incident d'Intervention réussi), +5 PS, jauge des skins ;
@@ -43,11 +43,11 @@ export const URGENCE = {
 };
 /**
  * Temps cible de l'urgence, par niveau. Parcours (identiques au mini-jeu) : longueur et carrefours.
- * Référence = trajet parfait d'une combi neuve ; cible = référence × marge.
- * La marge s'ajuste chaque nuit sur les courses réelles de la partie : chaque temps est ramené à une combi neuve
- * (temps × vitesse de la combi ÷ référence) ; la marge vise le quantile `quantile` de ces temps (≈ 65 % de courses
+ * Référence = trajet parfait d'un combi neuf ; cible = référence × marge.
+ * La marge s'ajuste chaque nuit sur les courses réelles de la partie : chaque temps est ramené à un combi neuf
+ * (temps × vitesse du combi ÷ référence) ; la marge vise le quantile `quantile` de ces temps (≈ 65 % de courses
  * à temps à combi égale), en n'avançant que de `pas` vers lui (au plus `pasMax` par nuit), entre `min` et `max`,
- * et seulement à partir de `minCourses` courses. Une combi lente ou cabossée garde donc moins de marge.
+ * et seulement à partir de `minCourses` courses. Un combi lent ou cabossé garde donc moins de marge.
  */
 export const CIBLE = {
   base: 31, parInter: 2.8, fixe: 4,
@@ -60,7 +60,7 @@ export const CIBLE = {
   quantile: 0.7, minCourses: 5, garde: 30, pas: 0.5, pasMax: 0.08,
 };
 export const NIVEAUX_URGENCE = Object.keys(CIBLE.niveaux);
-/** Trajet parfait (s) d'une combi neuve sur ce niveau. */
+/** Trajet parfait (s) d'un combi neuf sur ce niveau. */
 export const refUrgence = (niv) => { const n = CIBLE.niveaux[niv] || CIBLE.niveaux.normal; return n.long / CIBLE.base + n.inter * CIBLE.parInter + CIBLE.fixe; };
 /** Marge actuelle du niveau (ajustée sur les courses de la partie). */
 export function margeUrgence(state, niv) {
@@ -80,7 +80,7 @@ export function quantile(l, q) {
   return s[a] + (s[b] - s[a]) * (i - a);
 }
 /**
- * Ajuste les marges sur les courses de la nuit : [{ niveau, temps, vit }] (temps en s, vitesse de la combi en ×).
+ * Ajuste les marges sur les courses de la nuit : [{ niveau, temps, vit }] (temps en s, vitesse du combi en ×).
  * Renvoie les marges modifiées { niveau: [avant, après] }.
  */
 export function adapterCibleUrgence(state, courses) {
@@ -279,7 +279,7 @@ export function appliquerUrgence(z, inc, res, { alloc = {}, T, rng }) {
   const veh = (inc.vehicules || []).find((x) => x.slot === res.vehicule) || (inc.vehicules || [])[0] || null;
   // Sans choix connu (urgence d'une version précédente) : le véhicule en meilleur état.
   const slot = veh && veh.slot < ((z.flotte || []).length || z.vehicules || 0) ? veh.slot : (z.flotte || []).reduce((b, x, i, f) => (b < 0 || x.u < f[b].u ? i : b), -1);
-  const nomVeh = { diesel: 'la combi', electrique: 'la combi électrique', anonyme: 'la voiture anonymisée', fourgon: 'le fourgon' }[veh ? veh.m : 'diesel'] || 'la combi';
+  const nomVeh = { diesel: 'le combi', electrique: 'le combi électrique', anonyme: 'la voiture anonymisée', fourgon: 'le fourgon' }[veh ? veh.m : 'diesel'] || 'le combi';
   if (hits && res.raison !== 'hs') { user(z, slot >= 0 ? slot : null, hits * U.usureParAccrochage); out.push(`${hits} accrochage${hits > 1 ? 's' : ''} en route (${nomVeh} s’use de ${hits * U.usureParAccrochage} %)`); }
   if (res.statut === 'ok') {
     const gm = gainMoral(U.gain.moral, z.moral);
@@ -294,7 +294,7 @@ export function appliquerUrgence(z, inc, res, { alloc = {}, T, rng }) {
   if (res.raison === 'hs') {
     const cible = slot != null && slot >= 0 ? slot : placeLibre(z, T);
     if (cible != null && cible >= 0 && !(z.cabosses || []).some((c) => c.slot === cible)) { z.cabosses = [...(z.cabosses || []), { depuis: T, slot: cible }]; out.push(`${nomVeh} rentre avec la carrosserie à refaire`); }
-    else { user(z, cible != null && cible >= 0 ? cible : null, U.usureHS); out.push(`${nomVeh}, déjà abîmée, encaisse encore (+${U.usureHS} % d’usure)`); }
+    else { user(z, cible != null && cible >= 0 ? cible : null, U.usureHS); out.push(`${nomVeh}, déjà abîmé${nomVeh.startsWith('la ') ? 'e' : ''}, encaisse encore (+${U.usureHS} % d’usure)`); }
     return [`${nom} : trop d’accrochages, ${nomVeh} a dû s’arrêter en route (une autre équipe a pris le relais). ${nomVeh.charAt(0).toUpperCase() + nomVeh.slice(1)} n’est pas perdu${nomVeh.startsWith('le ') ? '' : 'e'} : ${out.join(' ; ')} (+${PS.queteTentee} PS pour avoir essayé).`];
   }
   return [`${nom} : arrivé trop tard${res.statut === 'abandon' ? ' (renfort abandonné en route)' : ''} ; ${blesser(U.blessure, U.moralRetard)}${out.length ? ` ; ${out.join(', ')}` : ''} (+${PS.queteTentee} PS pour avoir essayé).`];
