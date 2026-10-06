@@ -1,17 +1,14 @@
 // « Bitonal » (urgence du jour) : meilleurs scores de la partie par niveau, gardés dans le profil de chaque joueur
 // (players/{uid}.bitonal = { facile, normal, difficile }, bitonalAt = { niveau: date }). Seules les urgences du jour
 // comptent (un essai par jour) : l'entraînement est hors classement.
-import { S, esc } from './common.js';
+import { S, esc, pseudoJoueur } from './common.js';
 import { vitesseCombi } from '../engine/flotte.js';
 import { cibleUrgence } from '../engine/incidents.js';
 
 export const NIVEAUX_BITONAL = ['facile', 'normal', 'difficile'];
 export const NOM_NIVEAU = { facile: 'Facile', normal: 'Normal', difficile: 'Difficile' };
 
-const nomJoueur = (uid) => {
-  const p = (S.players || {})[uid] || {}, z = S.state && S.state.zones[uid];
-  return (z && `ZP ${z.code} ${z.nom}`) || p.pseudo || p.nom || 'Un joueur';
-};
+const nomJoueur = pseudoJoueur;
 
 /** Meilleur score de la partie sur un niveau : { uid, nom, score } ou null (premier arrivé en cas d'égalité). */
 export function recordBitonal(niv) {

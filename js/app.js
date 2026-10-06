@@ -6,7 +6,7 @@ import { createBackend } from './data/backend.js';
 import { codeDejaPris, MSG_CODE_PRIS } from './data/codes.js';
 import { installerEuros } from './ui/euros.js';
 import { resolvePending, completerDepuisGazette, etatResolution } from './data/resolver.js';
-import { S, toast, myZone, esc, cielDuMoment, tabbar } from './ui/common.js';
+import { S, toast, myZone, esc, cielDuMoment, tabbar, pseudoParDefaut } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil } from './ui/hp.js';
 import { ouvrirAide } from './ui/aide.js';
@@ -305,6 +305,15 @@ async function openParty(id) {
   try { player = await S.backend.getPlayer(S.user.uid); } catch (e) { player = null; }
   try { players = await S.backend.getPlayers(); } catch (e) { players = {}; }
   if (jeton !== ouvertures) return;
+  // Ancien compte sans pseudo : on en pose un (prénom du compte) pour que les badges affichent un nom de joueur.
+  if (player && !player.pseudo && S.backend.mode !== 'demo') {
+    const ps = pseudoParDefaut(S.user);
+    if (ps) {
+      player = { ...player, pseudo: ps };
+      players = { ...players, [S.user.uid]: { ...(players[S.user.uid] || {}), pseudo: ps } };
+      try { await S.backend.savePlayer(S.user.uid, player); } catch (e) { console.error(e); }
+    }
+  }
   S.player = player; S.players = players;
   reprendreEntrainementLocal();
   if (!unsubState) {

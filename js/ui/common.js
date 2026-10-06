@@ -20,6 +20,23 @@ export const S = {
   editingName: false, busy: false, decisionOpen: false, showRapport: false,
 };
 
+/** Nom affiché d'un joueur sur les badges (records, nominettes) : toujours son pseudo, jamais le nom de sa zone. */
+export function pseudoJoueur(uid) {
+  const p = (S.players || {})[uid] || {};
+  if (p.pseudo) return p.pseudo;
+  if (S.user && uid === S.user.uid && S.player && S.player.pseudo) return S.player.pseudo;
+  const z = S.state && S.state.zones && S.state.zones[uid];
+  return z && z.code ? `ZP ${z.code}` : 'Un joueur';
+}
+
+/** Pseudo par défaut pour un ancien compte qui n'en a pas : prénom Google, sinon début de l'adresse e-mail. */
+export function pseudoParDefaut(user) {
+  const d = String((user && user.displayName) || '').trim().split(/\s+/)[0];
+  if (d) return d.slice(0, 24);
+  const m = String((user && user.email) || '').split('@')[0].split(/[._\-+]/)[0].replace(/\d+$/, '');
+  return m ? (m[0].toUpperCase() + m.slice(1)).slice(0, 24) : '';
+}
+
 export function esc(v) {
   return String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }

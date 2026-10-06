@@ -2,7 +2,7 @@
 // Records sans effet sur le jeu ; la prime de la semaine est dans engine/challenge.js. Chaque joueur garde son meilleur niveau par mini-jeu dans son profil de la partie
 // (players/{uid}.defis = { jeu: niveau }, defisAt = { jeu: date }) ; le record est le plus haut niveau, le premier
 // arrivé gardant le record en cas d'égalité.
-import { S, esc } from './common.js';
+import { S, esc, pseudoJoueur } from './common.js';
 import { CHALLENGE, cleSemaine, classementSemaine, laureatsSemaine, niveauSemaine } from '../engine/challenge.js';
 import { CONFIG } from '../config.js';
 
@@ -12,10 +12,7 @@ export const TITRES_DEFI = {
 };
 export const NIVEAU_MAX = 500;
 
-const nomJoueur = (uid) => {
-  const p = (S.players || {})[uid] || {}, z = S.state && S.state.zones[uid];
-  return p.pseudo || (z && z.nom) || p.nom || 'Un joueur';
-};
+const nomJoueur = pseudoJoueur;
 
 /** Record de la partie sur ce mini-jeu : { uid, nom, niveau } ou null. */
 export function recordDefi(jeu) {
