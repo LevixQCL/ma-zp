@@ -171,6 +171,12 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .opt[disabled] .ct b{color:var(--mute)}
 .sheet .acts{display:flex;gap:8px}
 .sheet .acts .btn{padding:11px 10px;font-size:14px}
+.radio{display:flex;gap:9px;align-items:center;font-size:13px;line-height:1.35;color:#d5dce8;background:var(--surface);border:1px solid var(--stroke);border-radius:12px;padding:7px 10px}
+.radio svg{flex:0 0 auto;width:18px;height:18px;color:var(--accent)}
+.radio b{color:var(--ink)}
+.radio.fix{border-color:color-mix(in srgb,var(--bad) 55%,transparent);background:var(--bad-soft)}
+.radio.fix svg{color:var(--bad)}
+.radio .var{color:#ffb23f;font-weight:700}
 .legend{display:grid;gap:8px}
 .legend .it{display:grid;grid-template-columns:40px 1fr;gap:10px;align-items:center;font-size:13px;line-height:1.4;color:#d5dce8}
 .legend .it b{color:var(--ink)}
@@ -195,6 +201,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
   <div class="stage" id="stage">
 
   <div class="status"><span id="stWave">Préparation</span><span id="stAg">Agents <b>10</b></span><span class="fu" id="stFu">Fuites</span></div>
+  <div class="radio" id="radio" hidden></div>
   <div class="field" id="field"><canvas id="cv"></canvas><div class="sheet" id="sheet" hidden></div></div>
   <div class="bar2"><div class="chips" id="chips"></div><button class="btn spd" id="spd" aria-pressed="false" aria-label="Vitesse double">×2</button><button class="btn primary go" id="launch">Lancer</button></div>
 
@@ -549,6 +556,19 @@ const MEANS={
     ds:'Prend en chasse les véhicules, scooters compris.'},
   drone:{nom:'Drone',slot:'post',cout:1,range:2.4,
     ds:'Repère les fuyards (+35 % d’efficacité des autres) et voit dans les ruelles.'}};
+const ACTIONS={
+  combi:{nom:'Sirènes et gyrophares',ds:'les fuyards à moins de 1,5 case ralentissent de moitié pendant 3 s'},
+  patrouille:{nom:'Interpellation ciblée',ds:'immobilise le piéton le plus proche à portée pendant 2,5 s'},
+  anon:{nom:'Prise en chasse',ds:'double l’efficacité de la voiture pendant 4 s'},
+  drone:{nom:'Projecteur thermique',ds:'repérage renforcé (+70 %) dans sa zone pendant 4 s'}};
+/* Variantes de quartier tirées à chaque partie (hors tuto) : un chantier coupe un tronçon aux véhicules,
+   un marché ralentit les véhicules d'une rue et cache les piétons dans la foule. */
+const VARIANTES=[
+  {k:'chantier',seg:['N2','N4'],slot:'r1',rue:'rue des Tanneurs'},
+  {k:'chantier',seg:['N3','N6'],slot:'r2',rue:'rue du Rempart'},
+  {k:'chantier',seg:['N1','N5'],slot:'r3',rue:'rue de la Halle'},
+  {k:'marche',rue:'rue des Carmes',y:7},
+  {k:'marche',rue:'rue Neuve',y:2.5}];
 const UPG={cout:2, txt:{combi:'Barrage renforcé : tient bien plus longtemps, plus d’agents sur place.',patrouille:'Binôme renforcé : +45 % d’efficacité, portée accrue.',
   anon:'Équipage chevronné : +45 % d’efficacité, portée accrue.',drone:'Caméra thermique : portée et repérage accrus.'}};
 /* Fuyards : résistance (hp) et vitesse (cases/s). */
@@ -592,6 +612,11 @@ function posAt(r,d){
 }
 ROUTES_V.forEach(k=>routes.push(buildRoute(k,false)));
 ROUTES_P.forEach(k=>routes.push(buildRoute(k,true)));
+// Points d'appui assez proches d'une ruelle pour qu'une patrouille l'éclaire en partie.
+SLOTS.forEach(s=>{ if(s.k!=='post') return; for(const A of ALLEYS){ const d=projSeg(s.x,s.y,PT[A.pts[0]],PT[A.pts[1]]); if(d.dist<1.0){ s.ruelle=A.n; s.lx=PT[A.pts[0]][0]; s.ly=s.y; } } });
+const usesSeg=(r,[a,b])=>r.keys.some((k,i)=>i&&((r.keys[i-1]===a&&k===b)||(r.keys[i-1]===b&&k===a)));
+const slotOff=id=>R.vari&&R.vari.slot===id;
+function activeRoutes(){ return routes.filter(r=>r.ped||!(R.vari&&R.vari.k==='chantier'&&usesSeg(r,R.vari.seg))); }
 
 /* ───── partie ───── */
 function resetGame(cfg,tuto){
@@ -602,29 +627,50 @@ function resetGame(cfg,tuto){
   R.agents=tuto?12:(inc?qn('agents',cfg.eff):cfg.eff);
   R.dispo={combi:inc?qn('combi',cfg.combi):cfg.combi, anon:inc?qn('anon',cfg.anon):cfg.anon, drone:inc?qn('drone',cfg.drone):cfg.drone, herse:cfg.herses};
   R.usure=inc?Math.max(0,Math.min(1,qn('usure',0)/100)):0;
+  const vq=Q2.get('variante');
+  R.vari = tuto ? null : (vq==='aucune' ? null : vq!==null&&VARIANTES[Number(vq)] ? VARIANTES[Number(vq)] : (Math.random()<.4 ? null : pick(VARIANTES)));
   R.over=false; prep(true);
 }
 function prep(first){
   R.phase='prep'; if(!R.tuto) Shell.st.mode='play';
   if(!first){ R.agents+=R.renf; Shell.toast(`Renfort : +${R.renf} agents`,'ok'); }
-  for(const id in R.placed){ const m=R.placed[id]; m.broken=false; m.bhp=maxBhp(m); m.armed=true; }
-  if(R.tuto) Shell.stopTimer(); else Shell.startTimer(first?R.cfg.prep:R.cfg.prep2,launchWave);
-  ui();
+  for(const id in R.placed){ const m=R.placed[id]; m.broken=false; m.bhp=maxBhp(m); m.armed=true; m.used=false; m.boostUntil=0; }
+  // Première préparation sans chrono : on lance quand on est prêt. Ensuite, un chrono court entre deux vagues.
+  R.freePrep = first || R.tuto>0;
+  if(R.freePrep) Shell.stopTimer(); else Shell.startTimer(R.cfg.prep2,launchWave);
+  radioPlan(); ui(); radioUi();
 }
 function maxBhp(m){ return (m.lvl>1?170:100)*(1-.3*R.usure); }
 function launchWave(){
   if(R.phase!=='prep'||R.over) return;
-  Shell.stopTimer(); R.phase='wave'; R.wave++; closeSheet();
+  Shell.stopTimer(); R.phase='wave'; R.wave++; R.freePrep=false; closeSheet(); if(R.intel) R.intel.spawned=0;
   const comp=R.tuto?TUTO_WAVE:waveComp(R.wave);
   const list=[]; for(const k in comp) for(let i=0;i<comp[k];i++) list.push(k);
   R.units=R.units.filter(u=>!u.done); R.queue=shuffle(list); if(R.tuto) R.queue=['voiture','pieton','voiture'];
-  R.waveTotal=R.queue.length; R.spawnT=.4; Shell.blip(520,.12,'triangle',.06); Shell.toast(`Vague ${R.wave}`,'info'); ui();
+  R.waveTotal=R.queue.length; R.spawnT=.4; Shell.blip(520,.12,'triangle',.06); Shell.toast(`Vague ${R.wave}`,'info'); ui(); radioUi();
+}
+/* Radio : la centrale annonce la sortie visée par la majorité de la vague. Fiable 4 fois sur 5 ; sinon elle rectifie en cours de vague. */
+function radioPlan(){
+  if(R.tuto){ R.intel=null; return; }
+  const ex=Object.keys(EXITS), real=pick(ex), ok=Math.random()<.8;
+  R.intel={real, ann: ok?real:pick(ex.filter(e=>e!==real)), ok, fixed:false, spawned:0};
+}
+const RADIO_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="14" rx="2"/><path d="M10 7V3M10 11h4M10 14.5h4"/><circle cx="12" cy="18" r=".8" fill="currentColor"/></svg>';
+function radioUi(){
+  const el=$('radio'); if(!el) return; const I=R.intel;
+  if(!I||R.phase==='idle'){ el.hidden=true; return; }
+  const vari = R.vari ? ` <span class="var">${R.vari.k==='chantier'?`Chantier ${R.vari.rue} : coupée aux véhicules.`:`Jour de marché ${R.vari.rue} : véhicules ralentis, piétons noyés dans la foule.`}</span>` : '';
+  el.hidden=false; el.classList.toggle('fix',I.fixed);
+  el.innerHTML = RADIO_SVG + (I.fixed ? `<span><b>Rectification radio :</b> la majorité file en réalité vers la <b>sortie ${EXITS[I.real]}</b> !</span>`
+    : `<span><b>Dispatching :</b> la majorité de la vague ${R.phase==='wave'?'file':'filerait'} vers la <b>sortie ${EXITS[I.ann]}</b>.${R.phase==='prep'?vari:''}</span>`);
 }
 function waveComp(w){ return WAVES[Math.min(WAVES.length-1,w-1)]; }
 function spawn(type){
   const F=FOES[type];
-  let cand=routes.filter(r=>!r.ped);
-  if(type==='pieton') cand = Math.random()<.6 ? routes.filter(r=>r.ped) : cand;
+  const act=activeRoutes();
+  let cand=act.filter(r=>!r.ped);
+  if(type==='pieton') cand = Math.random()<.6 ? act.filter(r=>r.ped) : cand;
+  if(R.intel){ R.intel.spawned++; if(Math.random()<.6){ const c2=(type==='pieton'?act:act.filter(r=>!r.ped)).filter(r=>r.exit===R.intel.real); if(c2.length) cand=c2; } }
   if(R.tuto) cand=[routes[0]];
   const w=cand.map(r=>{ if(type!=='voiture'&&type!=='volee') return 1; let n=0; for(const id in r.slotD){ const m=R.placed[id]; if(m&&m.type==='combi'&&!m.broken) n++; } return 1/(1+.9*n); });
   let x=Math.random()*w.reduce((a,b)=>a+b,0), r=cand[0]; for(let i=0;i<cand.length;i++){ x-=w[i]; if(x<=0){ r=cand[i]; break; } }
@@ -632,7 +678,7 @@ function spawn(type){
 }
 let UID=0;
 function addUnit(type,r,dist){ const F=FOES[type]; const hp=F.hp*R.cfg.hp;
-  R.units.push({id:UID++,type,r,dist,hp,max:hp,done:null,blocked:null,punct:false,marked:false,dark:false,got:0,col:pick(['#c9ced6','#a33a34','#3f6fc0','#d9dde2','#2f2f35','#6b7a8c','#8a6b3b']),bob:Math.random()*6}); }
+  R.units.push({id:UID++,type,r,dist,hp,max:hp,done:null,blocked:null,punct:false,punctT:-9,jante:false,stunUntil:0,slowUntil:0,marked:false,dark:false,lit:false,crowd:false,got:0,col:pick(['#c9ced6','#a33a34','#3f6fc0','#d9dde2','#2f2f35','#6b7a8c','#8a6b3b']),bob:Math.random()*6}); }
 
 const isCar=u=>FOES[u.type].car, isVeh=u=>FOES[u.type].veh;
 function meansPos(id){ const s=SLOTS.find(s=>s.id===id); return [s.x,s.y]; }
@@ -647,15 +693,23 @@ function step(dt){
   // repérage du drone
   for(const u of units){ u.marked=false; }
   for(const id in R.placed){ const m=R.placed[id]; if(m.type!=='drone') continue; const [mx,my]=meansPos(id), rg=rangeOf(m);
-    for(const u of units){ const p=posAt(u.r,u.dist); if(Math.hypot(p.x-mx,p.y-my)<=rg) u.marked=m.lvl>1?1.5:1.35; } }
+    const k = m.boostUntil>R.t ? (m.lvl>1?1.85:1.7) : (m.lvl>1?1.5:1.35);
+    for(const u of units){ const p=posAt(u.r,u.dist); if(Math.hypot(p.x-mx,p.y-my)<=rg) u.marked=Math.max(u.marked||0,k); } }
+  if(R.intel&&!R.intel.ok&&!R.intel.fixed&&R.intel.spawned>=Math.ceil(R.waveTotal*.3)){ R.intel.fixed=true; Shell.toast(`Radio : vers la sortie ${EXITS[R.intel.real]} !`,'bad'); Shell.blip(300,.2,'square',.05); radioUi(); }
   // déplacements
   for(const u of units){
     const F=FOES[u.type]; const p=posAt(u.r,u.dist); u.dark=p.seg.ruelle;
+    u.lit = u.dark && SLOTS.some(s=>s.ruelle&&R.placed[s.id]&&R.placed[s.id].type==='patrouille'&&Math.hypot(p.x-s.lx,p.y-s.ly)<=1.5);
+    u.crowd = !isVeh(u) && !!R.vari && R.vari.k==='marche' && p.seg.nom===R.vari.rue;
+    if(u.stunUntil>R.t) continue;
     if(u.blocked){ const m=R.placed[u.blocked];
       if(!m||m.broken){ u.blocked=null; }
       else { if(frontOf(u)){ m.bhp-=F.ram*dt; if(m.bhp<=0){ m.broken=true; fx(...meansPos(u.blocked),'Barrage enfoncé','bad'); Shell.bad(); Shell.shake(); release(u.blocked); } } continue; }
     }
     let v=F.v*(u.punct?(u.type==='fourgon'?.45:.4):1);
+    if(u.jante) v=Math.min(v,.5);
+    if(u.slowUntil>R.t) v*=.5;
+    if(isVeh(u)&&R.vari&&R.vari.k==='marche'&&p.seg.nom===R.vari.rue) v*=.7;
     if(isVeh(u)&&nearTurn(u)) v*=.55; // on ralentit pour tourner
     if(u.type==='scooter'){ for(const id in u.r.slotD){ const m=R.placed[id]; if(m&&m.type==='combi'&&!m.broken&&Math.abs(u.r.slotD[id]-u.dist)<.7) v*=.5; } }
     const adv=v*dt, nd=u.dist+adv;
@@ -664,7 +718,7 @@ function step(dt){
       const q=R.units.filter(o=>!o.done&&o.blocked===id&&o!==u).length; const at=sd-.62-.58*q; if(nd>=at){ stop={id,at}; break; } } }
     if(stop){ u.dist=Math.max(u.dist,Math.min(nd,stop.at)); u.blocked=stop.id; continue; }
     if(isVeh(u)){ for(const id in u.r.slotD){ const m=R.placed[id]; if(!m||m.type!=='herse'||!m.armed) continue; const sd=u.r.slotD[id];
-      if(u.dist<sd&&nd>=sd){ m.armed=false; u.punct=true; u.hp=Math.max(1,u.hp-.2*u.max); const pp=meansPos(id); fx(pp[0],pp[1],'Pneus crevés','ok'); Shell.good(); } } }
+      if(u.dist<sd&&nd>=sd){ m.armed=false; u.punct=true; u.punctT=R.t; u.hp=Math.max(1,u.hp-.2*u.max); const pp=meansPos(id); fx(pp[0],pp[1],'Pneus crevés','ok'); Shell.good(); } } }
     u.dist=nd;
     if(u.dist>=u.r.len){ escape(u); }
   }
@@ -675,13 +729,17 @@ function step(dt){
     m.tgt=null;
     if(!inR.length) continue;
     const wear = (m.type==='anon'||m.type==='combi') ? 1-.25*R.usure : 1;
-    const hit=(u)=>{ let k=M.pr[u.type]*boost*wear; if(u.marked) k*=u.marked; else if(u.dark) k*=.35;
-      if(m.type==='patrouille'&&isVeh(u)&&(u.blocked||u.punct)) k*=3; if(m.type==='anon'&&u.blocked) k*=1.3; u.hp-=k*dt; u.got+=k*dt; };
+    const chasse = m.boostUntil>R.t ? 2 : 1;
+    const hit=(u)=>{ let k=M.pr[u.type]*boost*wear*chasse; if(u.marked) k*=u.marked; else if(u.dark) k*=u.lit?.75:.35; else if(u.crowd) k*=.6;
+      if(m.type==='patrouille'&&isVeh(u)&&(u.blocked||u.punct)){
+        // Herse puis patrouille juste derrière : « jante endommagée », le véhicule ne repartira plus vite.
+        if(u.punct&&R.t-u.punctT<2.5){ k*=4.5; if(!u.jante){ u.jante=true; const pp=posAt(u.r,u.dist); fx(pp.x,pp.y,'Jante endommagée','ok'); } } else k*=3; }
+      if(m.type==='anon'&&u.blocked) k*=1.3; u.hp-=k*dt; u.got+=k*dt; };
     if(m.type==='combi'){ inR.forEach(o=>hit(o.u)); m.tgt=inR.map(o=>o.u); continue; }
     const score=o=>{ const u=o.u; let s=u.dist/30;
       if(m.type==='patrouille'){ if(!isVeh(u)) s+=3; else if(u.blocked||u.punct) s+=2; }
       else { if(isVeh(u)) s+=3; }
-      if(u.dark&&!u.marked) s-=1.5; return s; };
+      if(u.dark&&!u.marked&&!u.lit) s-=1.5; return s; };
     inR.sort((a,b)=>score(b)-score(a)); const t=inR[0].u; hit(t); m.tgt=[t];
   }
   for(const u of R.units){ if(u.done) continue;
@@ -691,6 +749,16 @@ function step(dt){
   }
   R.fx=R.fx.filter(f=>R.t-f.t<1.4);
   if(!R.queue.length && !R.units.some(u=>!u.done)) endWave();
+}
+function action(id){
+  const m=R.placed[id]; if(!m||!ACTIONS[m.type]||m.used||R.phase!=='wave') return false;
+  if(m.type==='combi'&&m.broken) return false;
+  const [x,y]=meansPos(id), live=R.units.filter(u=>!u.done), dist=u=>{ const p=posAt(u.r,u.dist); return Math.hypot(p.x-x,p.y-y); };
+  if(m.type==='combi') live.filter(u=>dist(u)<=1.5).forEach(u=>u.slowUntil=R.t+3);
+  else if(m.type==='patrouille'){ const c=live.filter(u=>u.type==='pieton'&&dist(u)<=rangeOf(m)).sort((a,b)=>dist(a)-dist(b))[0];
+    if(!c){ Shell.toast('Aucun piéton à portée','bad'); return 'rien'; } c.stunUntil=R.t+2.5; }
+  else m.boostUntil=R.t+4;
+  m.used=true; m.flash=R.t; fx(x,y,ACTIONS[m.type].nom,'info'); Shell.blip(880,.14,'triangle',.07); Shell.buzz(25); return true;
 }
 function nearTurn(u){ const r=u.r; for(let i=1;i<r.pts.length-1;i++){ if(Math.abs(r.cum[i]-u.dist)<.45){ const a=r.pts[i-1],b=r.pts[i],c=r.pts[i+1]; if((b[0]-a[0])*(c[1]-b[1])-(b[1]-a[1])*(c[0]-b[0])!==0) return true; } } return false; }
 function frontOf(u){ const sd=u.r.slotD[u.blocked]; return !R.units.some(o=>o!==u&&!o.done&&o.blocked===u.blocked&&o.r.slotD[u.blocked]-o.dist < sd-u.dist-.01); }
@@ -721,7 +789,7 @@ function endWave(){
   Shell.win(); prep(false);
 }
 function finish(ok){
-  if(R.over) return; R.over=true; R.phase='idle'; Shell.stopTimer(); closeSheet(); ui();
+  if(R.over) return; R.over=true; R.phase='idle'; Shell.stopTimer(); closeSheet(); ui(); radioUi();
   if(ok) Shell.win();
   Shell.result({ok, faults:R.fuites, stats:[['Interpellés',R.caught],['Fuites',`${R.fuites} / 3`]], details:R.det.slice(0,4),
     note:R.fuites===0?'Bouclage parfait : double point.':'Sans aucune fuite : +2 sur la jauge.'});
@@ -752,7 +820,8 @@ function openSheet(slot){
   if(m){ const M=MEANS[m.type], can=R.phase==='prep';
     const upOk=UPG.txt[m.type]&&m.lvl<2, upAff=R.agents>=UPG.cout;
     sh.innerHTML=`<div class="sh-h"><span><b>${M.nom}</b>${m.lvl>1?' · renforcé':''}</span><button class="x" id="shx">Fermer</button></div>
-      <p class="small" style="margin:0;color:var(--mute);font-size:13px;line-height:1.4">${M.ds}${m.type==='herse'?(m.armed?' Armée.':' Déjà utilisée pour cette vague.'):''}${m.type==='combi'&&m.broken?' <b style="color:var(--bad)">Enfoncé : réparé à la prochaine préparation.</b>':''}</p>
+      <p class="small" style="margin:0;color:var(--mute);font-size:13px;line-height:1.4">${M.ds}${m.type==='herse'?(m.armed?' Armée.':' Déjà utilisée pour cette vague.'):''}${m.type==='combi'&&m.broken?' <b style="color:var(--bad)">Enfoncé : réparé à la prochaine préparation.</b>':''}${m.type==='patrouille'&&slot.ruelle?` Éclaire en partie le ${slot.ruelle}.`:''}</p>
+      ${ACTIONS[m.type]?`<p class="small" style="margin:0;font-size:13px;line-height:1.4;color:#d5dce8"><b style="color:var(--accent)">⚡ ${ACTIONS[m.type].nom}</b> : ${ACTIONS[m.type].ds}. ${m.used?'Déjà utilisée pour cette vague.':R.phase==='wave'?'Touche le moyen sur la carte pour la déclencher.':'Une fois par vague : pendant la vague, touche le moyen.'}</p>`:''}
       ${upOk?`<button class="opt" id="up" ${upAff?'':'disabled'}><canvas data-ic="${m.type}"></canvas><span><span class="nm">Renforcer</span><br><span class="ds">${UPG.txt[m.type]}</span></span><span class="ct"><b>${UPG.cout}</b>agents</span></button>`:''}
       <div class="acts"><button class="btn" id="rm" ${can?'':'disabled'}>${can?`Retirer (+${M.cout+(m.lvl>1?UPG.cout:0)} agents)`:'Retrait entre deux vagues'}</button></div>`;
     if($('up')) $('up').onclick=()=>{ if(R.agents<UPG.cout) return; R.agents-=UPG.cout; m.lvl=2; m.bhp=maxBhp(m); Shell.good(); closeSheet(); ui(); };
@@ -763,7 +832,7 @@ function openSheet(slot){
     sh.innerHTML=`<div class="sh-h"><span><b>${slot.k==='road'?'Emplacement sur chaussée':'Point d’appui'}</b></span><button class="x" id="shx">Fermer</button></div>`+
       types.map(t=>{ const M=MEANS[t], lim=R.dispo[t], nope = lim!==undefined&&lim<=0, cher=R.agents<M.cout, tutoNo=!allow.includes(t);
         const why = nope?(t==='drone'&&!lim?'pas de cellule drone':'plus disponible'):cher?'pas assez d’agents':'';
-        return `<button class="opt" data-t="${t}" ${(nope||cher||tutoNo)?'disabled':''}><canvas data-ic="${t}"></canvas><span><span class="nm">${M.nom}</span><br><span class="ds">${why?`<b style="color:var(--bad)">${why}</b> · `:''}${M.ds}</span></span><span class="ct"><b>${M.cout}</b>agent${M.cout>1?'s':''}${lim!==undefined?`<br>${Math.max(0,lim)} dispo`:''}</span></button>`; }).join('')+
+        return `<button class="opt" data-t="${t}" ${(nope||cher||tutoNo)?'disabled':''}><canvas data-ic="${t}"></canvas><span><span class="nm">${M.nom}</span><br><span class="ds">${why?`<b style="color:var(--bad)">${why}</b> · `:''}${M.ds}${t==='patrouille'&&slot.ruelle?' Ici, elle éclaire aussi la ruelle.':''}</span></span><span class="ct"><b>${M.cout}</b>agent${M.cout>1?'s':''}${lim!==undefined?`<br>${Math.max(0,lim)} dispo`:''}</span></button>`; }).join('')+
       (R.usure>0&&slot.k==='road'||R.usure>0&&slot.k==='post'?`<p class="small" style="margin:0;font-size:12px;color:var(--mute)">Véhicules usés à ${Math.round(R.usure*100)} % : combis et voitures un peu moins efficaces.</p>`:'');
     sh.querySelectorAll('.opt[data-t]').forEach(b=>b.onclick=()=>place(slot.id,b.dataset.t));
   }
@@ -772,7 +841,7 @@ function openSheet(slot){
 }
 function closeSheet(){ R.sel=null; const sh=$('sheet'); if(sh) sh.hidden=true; }
 function place(id,t){
-  const M=MEANS[t]; if(R.agents<M.cout) return; if(R.dispo[t]!==undefined){ if(R.dispo[t]<=0) return; R.dispo[t]--; }
+  const M=MEANS[t]; if(slotOff(id)||R.placed[id]) return; if(R.agents<M.cout) return; if(R.dispo[t]!==undefined){ if(R.dispo[t]<=0) return; R.dispo[t]--; }
   R.agents-=M.cout; R.placed[id]={type:t,lvl:1,broken:false,armed:true,bhp:0,born:R.t}; R.placed[id].bhp=maxBhp(R.placed[id]);
   Shell.good(); closeSheet(); ui();
   if(R.tuto===1&&t==='combi') tutoStep(2); else if(R.tuto===2&&t==='patrouille') tutoStep(3);
@@ -933,7 +1002,7 @@ function drawFoe(g,u,t){
   const x=p.x-Math.sin(p.ang)*off, y=p.y+Math.cos(p.ang)*off;
   u.px=x; u.py=y;
   g.save(); g.translate(x,y);
-  if(u.dark&&!u.marked) g.globalAlpha=.32;
+  if(u.dark&&!u.marked) g.globalAlpha=u.lit?.7:.32; else if(u.crowd&&!u.marked) g.globalAlpha=.55;
   g.save(); g.rotate(p.ang);
   if(isVeh(u)){ // phares
     g.globalCompositeOperation='lighter'; const L=u.type==='scooter'?.2:.3, gr=g.createRadialGradient(L,0,0,L+.4,0,.7); gr.addColorStop(0,'rgba(255,240,200,.28)'); gr.addColorStop(1,'rgba(255,240,200,0)');
@@ -946,9 +1015,14 @@ function drawFoe(g,u,t){
     g.fillStyle='#3a3f4a'; g.beginPath(); g.ellipse(sw,0,.09,.07,0,0,7); g.fill(); g.fillStyle='#2a2d33'; g.beginPath(); g.arc(.01,0,.045,0,7); g.fill(); }
   if(isVeh(u)){ g.fillStyle=u.punct?'#ffb21f':'#ff3b3b'; const L=u.type==='fourgon'?.38:u.type==='scooter'?.16:.27; g.fillRect(-L-.01,-.09,.03,.05); g.fillRect(-L-.01,.04,.03,.05); }
   g.restore();
-  if(u.marked){ g.strokeStyle='rgba(255,93,93,.85)'; g.lineWidth=.025; const r=.26+Math.sin(t*6)*.02; g.beginPath(); g.arc(0,0,r,0,7); g.stroke();
+  if(u.marked){ g.strokeStyle='rgba(255,93,93,.85)'; g.lineWidth=.03; const r=.38+Math.sin(t*6)*.02;
     g.beginPath(); g.moveTo(-r-.07,0); g.lineTo(-r+.05,0); g.moveTo(r-.05,0); g.lineTo(r+.07,0); g.moveTo(0,-r-.07); g.lineTo(0,-r+.05); g.moveTo(0,r-.05); g.lineTo(0,r+.07); g.stroke(); }
-  if(u.hp<u.max){ const w=.4,f=Math.max(0,u.hp/u.max); g.fillStyle='rgba(0,0,0,.6)'; g.fillRect(-w/2,-.34,w,.06); g.fillStyle=f>.5?'#ffb23f':'#ff5d5d'; g.fillRect(-w/2,-.34,w*f,.06); }
+  // anneau de pression : il se remplit à mesure que les agents serrent le fuyard ; plein, il est interpellé
+  if(u.hp<u.max){ const lim=u.type==='volee'?.55:1, f=Math.min(1,(1-u.hp/u.max)/lim), r=.29;
+    g.lineWidth=.055; g.strokeStyle='rgba(8,10,18,.6)'; g.beginPath(); g.arc(0,0,r,0,7); g.stroke();
+    g.strokeStyle=f<.4?'#46d98a':f<.75?'#ffb23f':'#ff5d5d'; g.lineCap='round'; g.beginPath(); g.arc(0,0,r,-Math.PI/2,-Math.PI/2+f*Math.PI*2); g.stroke(); g.lineCap='butt'; }
+  if(u.stunUntil>R.t){ g.strokeStyle='#62b0ff'; g.lineWidth=.04; g.setLineDash([.05,.05]); g.lineDashOffset=t; g.beginPath(); g.arc(0,0,.2,0,7); g.stroke(); g.setLineDash([]); }
+  if(u.slowUntil>R.t){ g.fillStyle='rgba(98,176,255,.9)'; g.font='800 .16px "Instrument Sans",sans-serif'; g.textAlign='center'; g.fillText('≈',.3,-.25); }
   if(u.blocked){ g.fillStyle='#ffb23f'; g.font='800 .2px "Instrument Sans",sans-serif'; g.textAlign='center'; g.fillText('!',0,-.42); }
   g.restore();
 }
@@ -963,9 +1037,21 @@ function render(){
   for(const k in EXITS){ const [ex,ey]=edgePos(k), a=.35+.25*Math.sin(t*4);
     const vert=k==='XB'; g.fillStyle=`rgba(255,70,70,${a*.6})`; if(vert) g.fillRect(ex-RW/2,MH-.18,RW,.18); else g.fillRect(k==='XW'?0:MW-.18,ey-RW/2,.18,RW);
     pill(g,vert?ex+1.25:(k==='XW'?.95:MW-.95),vert?MH-.32:ey-.75,'SORTIE '+EXITS[k].toUpperCase(),'#ff5d5d'); }
+  // variante du quartier
+  if(R.vari&&R.vari.k==='chantier') drawChantier(g,...meansPos(R.vari.slot),t);
+  if(R.vari&&R.vari.k==='marche') drawMarche(g,R.vari.y,t);
+  // ruelles éclairées par une patrouille voisine
+  for(const sl of SLOTS){ const m=R.placed[sl.id]; if(!sl.ruelle||!m||m.type!=='patrouille') continue;
+    g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(sl.lx,sl.ly,0,sl.lx,sl.ly,1.5); gr.addColorStop(0,'rgba(255,230,170,.22)'); gr.addColorStop(1,'rgba(255,230,170,0)');
+    g.fillStyle=gr; g.fillRect(sl.lx-.3,sl.ly-1.5,.6,3); g.globalCompositeOperation='source-over'; }
+  // aperçu des itinéraires annoncés par la radio
+  if(R.phase==='prep'&&R.intel){ const rs=activeRoutes().filter(r=>r.exit===R.intel.ann);
+    g.save(); g.lineWidth=.07; g.setLineDash([.16,.14]); g.lineDashOffset=-t*.5; g.lineCap='round';
+    rs.forEach(r=>{ g.strokeStyle=r.ped?'rgba(255,214,120,.38)':'rgba(255,122,89,.42)'; g.beginPath(); r.pts.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1])); g.stroke(); });
+    g.restore(); }
   // emplacements
   const prep=R.phase==='prep'||R.phase==='idle';
-  for(const sl of SLOTS){ if(R.placed[sl.id]) continue;
+  for(const sl of SLOTS){ if(R.placed[sl.id]||slotOff(sl.id)) continue;
     const hl=(R.tuto===1&&sl.id==='r3')||(R.tuto===2&&sl.id==='p2'), sel=R.sel===sl.id, pulse=.5+.5*Math.sin(t*5);
     g.save(); g.translate(sl.x,sl.y);
     g.strokeStyle=hl?`rgba(255,122,89,${.5+.5*pulse})`:sel?'#ff7a59':`rgba(255,255,255,${prep?.42:.18})`; g.lineWidth=hl||sel?.05:.03; g.setLineDash([.08,.06]);
@@ -983,7 +1069,8 @@ function render(){
     if(m.type==='patrouille'&&m.tgt&&m.tgt[0]&&m.tgt[0].px!==undefined) m.aim=Math.atan2(m.tgt[0].py-y,m.tgt[0].px-x);
     const sc=Math.min(1,(R.t-(m.born||0))*5+.4); g.scale(sc,sc); drawMeans(g,m.type,m.lvl,t,m); g.restore();
     if(m.type==='combi'&&!m.broken&&m.bhp<maxBhp(m)){ const w=.7,f=m.bhp/maxBhp(m); g.fillStyle='rgba(0,0,0,.6)'; g.fillRect(x-w/2,y+.42,w,.07); g.fillStyle=f>.4?'#46d98a':'#ff5d5d'; g.fillRect(x-w/2,y+.42,w*f,.07); }
-    if(m.lvl>1) chevron(g,x+.3,y-.3); }
+    if(m.lvl>1) chevron(g,x+.3,y-.3);
+    urgence(g,m,x,y,t); }
   // fuyards
   for(const u of R.units) if(!u.done) drawFoe(g,u,t);
   // liaisons moyens → cibles
@@ -991,10 +1078,39 @@ function render(){
     for(const u of m.tgt){ if(u.done||u.px===undefined) continue; g.strokeStyle=m.type==='combi'?'rgba(120,170,255,.45)':'rgba(255,122,89,.7)'; g.lineWidth=.03; g.setLineDash([.08,.07]); g.lineDashOffset=-t*.6;
       g.beginPath(); g.moveTo(x,y); g.lineTo(u.px,u.py); g.stroke(); g.setLineDash([]); } }
   // drones (au-dessus de tout)
-  for(const id in R.placed){ const m=R.placed[id]; if(m.type!=='drone') continue; const [x,y]=meansPos(id); g.save(); g.translate(x,y); drawDrone(g,m.lvl,t); g.restore(); if(m.lvl>1) chevron(g,x+.3,y-.3); }
+  for(const id in R.placed){ const m=R.placed[id]; if(m.type!=='drone') continue; const [x,y]=meansPos(id); g.save(); g.translate(x,y); drawDrone(g,m.lvl,t); g.restore(); if(m.lvl>1) chevron(g,x+.3,y-.3); urgence(g,m,x,y,t); }
   // textes flottants
   for(const f of R.fx){ const k=(R.t-f.t)/1.4; g.globalAlpha=1-k; g.font='800 .24px "Instrument Sans",sans-serif'; g.textAlign='center'; g.textBaseline='middle';
     g.lineWidth=.07; g.strokeStyle='rgba(8,10,18,.85)'; g.strokeText(f.txt,f.x,f.y-.35-k*.5); g.fillStyle=f.k==='ok'?'#46d98a':f.k==='bad'?'#ff5d5d':'#ffb23f'; g.fillText(f.txt,f.x,f.y-.35-k*.5); g.globalAlpha=1; }
+}
+function urgence(g,m,x,y,t){
+  if(!ACTIONS[m.type]) return;
+  if(m.flash&&R.t-m.flash<.8){ const k=(R.t-m.flash)/.8; g.strokeStyle=`rgba(98,176,255,${1-k})`; g.lineWidth=.06; g.beginPath(); g.arc(x,y,.3+k*(m.type==='combi'?1.3:.7),0,7); g.stroke(); }
+  if(R.phase!=='wave'||m.used||(m.type==='combi'&&m.broken)) return;
+  const bx=x-.3, by=y-.3, pu=.5+.5*Math.sin(t*5);
+  g.fillStyle=`rgba(98,176,255,${.25+.25*pu})`; g.beginPath(); g.arc(bx,by,.17,0,7); g.fill();
+  g.fillStyle='#62b0ff'; g.beginPath(); g.arc(bx,by,.12,0,7); g.fill();
+  g.fillStyle='#04182c'; g.beginPath(); g.moveTo(bx+.02,by-.085); g.lineTo(bx-.05,by+.01); g.lineTo(bx,by+.01); g.lineTo(bx-.02,by+.085); g.lineTo(bx+.05,by-.01); g.lineTo(bx,by-.01); g.closePath(); g.fill();
+}
+function drawChantier(g,x,y,t){
+  g.save(); g.translate(x,y);
+  g.fillStyle='#3b2f24'; rr(g,-.42,-.36,.84,.72,.05); g.fill();
+  g.fillStyle='#2a211a'; g.beginPath(); g.ellipse(.02,.04,.24,.17,0,0,7); g.fill();
+  g.fillStyle='rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(.04,.08,.18,.11,0,0,7); g.fill();
+  [-.4,.4].forEach(yy=>{ for(let i=0;i<8;i++){ g.fillStyle=i%2?'#f2f2f2':'#e8452c'; g.fillRect(-.46+i*.115,yy-.035,.115,.07); } });
+  const on=Math.floor(t*3)%2; [[-.46,-.4],[.46,-.4],[-.46,.4],[.46,.4]].forEach(([cx,cy],i)=>{ g.fillStyle=(on^(i%2))?'#ffb21f':'#5a3d08'; g.beginPath(); g.arc(cx,cy,.045,0,7); g.fill(); });
+  [[-.3,-.2],[.3,.22],[.32,-.18]].forEach(([cx,cy])=>{ g.fillStyle='#ff7a1a'; g.beginPath(); g.arc(cx,cy,.05,0,7); g.fill(); g.fillStyle='#fff'; g.beginPath(); g.arc(cx,cy,.02,0,7); g.fill(); });
+  g.restore(); pill(g,x>6?x-.95:x+.95,y,'CHANTIER','#ffb23f');
+}
+function drawMarche(g,y,t){
+  const cols=['#c0392b','#2e7d5b','#d4a017','#3f6fc0','#8e44ad'];
+  const nodes=[1.5,4.5,7.5,...(y<5?[6]:[3,6])]; let n=0;
+  for(let x=1.5+.62;x<7.5-.5;x+=.36){ if(nodes.some(nx=>Math.abs(nx-x)<.5)) continue;
+    [-1,1].forEach(sd=>{ const yy=y+sd*(RW/2+.16), c=cols[(n++)%cols.length];
+      g.fillStyle='rgba(0,0,0,.35)'; g.fillRect(x-.15+.03,yy-.12+.03,.3,.24);
+      for(let i=0;i<4;i++){ g.fillStyle=i%2?'#f4efe4':c; g.fillRect(x-.15+i*.075,yy-.12,.075,.24); } }); }
+  g.fillStyle='rgba(255,220,160,.07)'; g.fillRect(1.5,y-RW/2-.3,6,RW+.6);
+  pill(g,5.25,y-.72,'MARCHÉ','#ffb23f');
 }
 function pill(g,x,y,txt,col){ g.font='800 .17px "Instrument Sans",sans-serif'; g.textAlign='center'; g.textBaseline='middle'; const w=g.measureText(txt).width+.22;
   g.fillStyle='rgba(10,12,20,.82)'; rr(g,x-w/2,y-.13,w,.26,.13); g.fill(); g.strokeStyle=col; g.lineWidth=.02; g.stroke(); g.fillStyle=col; g.fillText(txt,x,y+.005); }
@@ -1004,7 +1120,9 @@ function chevron(g,x,y){ g.fillStyle='#ffb23f'; g.beginPath(); g.arc(x,y,.11,0,7
 function onTap(e){
   const r=C.cv.getBoundingClientRect(), x=(e.clientX-r.left)/C.s, y=(e.clientY-r.top)/C.s;
   if(R.over&&!R.tuto) return; if(R.phase==='idle') return;
-  let best=null,bd=.62; for(const s of SLOTS){ const d=Math.hypot(s.x-x,s.y-y); if(d<bd){ bd=d; best=s; } }
+  let best=null,bd=.62; for(const s of SLOTS){ if(slotOff(s.id)) continue; const d=Math.hypot(s.x-x,s.y-y); if(d<bd){ bd=d; best=s; } }
+  // En pleine vague, toucher un moyen déclenche son action d'urgence (une fois par vague).
+  if(best&&R.phase==='wave'&&R.placed[best.id]&&ACTIONS[R.placed[best.id].type]&&!R.placed[best.id].used){ closeSheet(); if(action(best.id)) return; }
   if(R.tuto===1&&best&&best.id!=='r3') best=null; if(R.tuto===2&&best&&best.id!=='p2') best=null; if(R.tuto===3&&best&&!R.placed[best.id]) best=null;
   if(!best){ closeSheet(); return; }
   if(R.sel===best.id){ closeSheet(); return; }
@@ -1016,19 +1134,20 @@ Shell.init({
   headline:'Car-jacking, bouclage du quartier',
   story:`<p>Car-jacking violent rue de la Halle. Les auteurs et leurs complices se dispersent en voitures, scooters et à pied pour sortir du quartier.</p><p>Le dispatching te confie le plan de bouclage&nbsp;: place tes moyens sur les points d’appui et empêche-les de franchir le périmètre. Trois fuites et c’est raté.</p>`,
   diffs:{
-    difficile:{agents:9,label:'Difficile',eff:9,renf:3,combi:2,anon:1,drone:1,herses:1,hp:1.05,gap:1.35,prep:45,prep2:15,waves:5},
-    normal:{agents:10,label:'Normal',eff:10,renf:4,combi:2,anon:2,drone:1,herses:2,hp:1,gap:1.5,prep:45,prep2:18,waves:5},
-    facile:{agents:12,label:'Facile',eff:12,renf:4,combi:3,anon:2,drone:1,herses:2,hp:.82,gap:1.8,prep:50,prep2:20,waves:4}},
+    difficile:{agents:9,label:'Difficile',eff:9,renf:3,combi:2,anon:1,drone:1,herses:1,hp:1.25,gap:1.35,prep:45,prep2:15,waves:5},
+    normal:{agents:10,label:'Normal',eff:10,renf:4,combi:2,anon:2,drone:1,herses:2,hp:1.15,gap:1.5,prep:45,prep2:18,waves:5},
+    facile:{agents:12,label:'Facile',eff:12,renf:4,combi:3,anon:2,drone:1,herses:2,hp:.9,gap:1.8,prep:50,prep2:20,waves:4}},
   bornes:{eff:[7,14],renf:[2,4],gap:[.75,3],hp:[.5,Infinity],prep:[25,60],prep2:[10,25],combi:[1,3],anon:[1,3],herses:[1,3],drone:[1,1]},
   diffHint:'Plus d’agents au départ et plus de véhicules disponibles : le bouclage est plus facile à tenir.',
   desktopHint:'Sur ordinateur : clique sur les emplacements pour y poser tes moyens.',
   rules:['Touche un emplacement pour y poser un moyen : <b>rectangle sur la chaussée</b> = combi en barrage ou herse ; <b>rond</b> = patrouille, voiture anonymisée ou drone. Chaque moyen coûte des agents.',
-    'Les fuyards partent du <b>lieu des faits</b> (en haut) vers les trois <b>sorties</b>. À la <b>3<sup>e</sup> fuite</b>, le bouclage a échoué.',
-    'Le <b>combi</b> arrête voitures et fourgons, mais scooters et piétons le contournent, et un <b>fourgon</b> l’enfonce vite. Les voitures évitent les barrages qu’elles voient : la <b>herse</b>, elle, est invisible.',
-    'La <b>herse</b> crève les pneus du premier véhicule qui passe (scooter compris). Elle est réarmée à chaque vague.',
-    'La <b>patrouille</b> interpelle les piétons et les conducteurs arrêtés ; la <b>voiture anonymisée</b> chasse les véhicules ; le <b>drone</b> repère (+35&nbsp;%) et voit dans les ruelles sombres.',
-    'Une <b>voiture volée</b> à bout est abandonnée : ses deux occupants continuent à pied.',
-    'Entre deux vagues : des agents de renfort arrivent, tu peux <b>renforcer</b> ou <b>retirer</b> un moyen (touche-le). Aucune fuite : <b>+2</b> sur la jauge.'],
+    'Les fuyards partent du <b>lieu des faits</b> vers les trois <b>sorties</b>. La <b>radio</b> annonce où file la majorité : elle se trompe parfois, et rectifie alors en cours de vague. À la <b>3<sup>e</sup> fuite</b>, le bouclage a échoué.',
+    'Le <b>combi</b> arrête voitures et fourgons, mais scooters et piétons le contournent, et un <b>fourgon</b> l’enfonce vite. Les voitures évitent les barrages qu’elles voient ; la <b>herse</b>, elle, est invisible.',
+    'La <b>herse</b> crève les pneus du premier véhicule (scooter compris). Une <b>patrouille juste derrière</b> l’achève : jante endommagée, il ne repartira plus vite.',
+    'La <b>patrouille</b> interpelle piétons et conducteurs arrêtés ; la <b>voiture anonymisée</b> chasse les véhicules ; le <b>drone</b> repère (+35&nbsp;%) et voit dans les ruelles sombres. Une patrouille <b>près d’une ruelle</b> l’éclaire en partie.',
+    'Pendant la vague, <b>touche un moyen</b> pour son <b>action d’urgence</b> (⚡, une fois par vague) : sirènes du combi, interpellation ciblée, prise en chasse, projecteur du drone.',
+    'Certaines parties, un <b>chantier</b> coupe une rue aux véhicules ou un <b>marché</b> les ralentit et cache les piétons dans la foule.',
+    'Une <b>voiture volée</b> à bout est abandonnée : deux fuyards continuent à pied. Entre deux vagues : renforts, <b>renforcer</b> ou <b>retirer</b> un moyen. Aucune fuite : <b>+2</b> sur la jauge.'],
   winTitle:'Périmètre tenu', loseTitle:'Le bouclage a cédé', skin:'Barrage de nuit',
   malus:'les auteurs restent dans la nature : moral des équipes Intervention en baisse et un combi immobilisé jusqu’à demain.',
   // Challenge : de 3 vagues (niveau 1) à 5 vagues (niveau 6+), puis les fuyards résistent davantage et arrivent plus serrés.
@@ -1042,20 +1161,21 @@ Shell.init({
     $('spd').onclick=()=>{ R.speed=R.speed===1?2:1; $('spd').setAttribute('aria-pressed',R.speed===2); };
     R.phase='idle'; R.cfg=this.diffs.normal; ui();
   },
-  onMenu(){ R.over=true; R.phase='idle'; R.units=[]; R.placed={}; R.tuto=0; closeSheet(); ui(); },
+  onMenu(){ R.over=true; R.phase='idle'; R.units=[]; R.placed={}; R.tuto=0; R.intel=null; R.vari=null; closeSheet(); ui(); radioUi(); },
   onPlay(cfg){ resetGame(cfg,false); },
   onTuto(){ resetGame(this.diffs.facile,true); tutoStep(1); },
   onFrame(dt){
     if(!C.ctx) return;
     if(!R.over||R.tuto){ const n=R.speed*2; for(let i=0;i<n;i++) step(dt*R.speed/n); }
     else R.t+=dt;
+    if(R.phase==='prep'&&R.freePrep){ $('timer').textContent='–'; $('ring').classList.remove('warn'); $('ringval').style.strokeDashoffset=0; }
     if(R.phase==='wave'){ const left=R.queue.length+R.units.filter(u=>!u.done).length; $('timer').textContent='V'+R.wave;
       $('ring').classList.remove('warn'); $('ringval').style.strokeDashoffset=2*Math.PI*21*(1-left/Math.max(1,R.waveTotal));
       if(((R.t*4)|0)!==R._lastUi){ R._lastUi=(R.t*4)|0; ui(); } }
     render();
   }
 });
-window.__bouclage={R,SLOTS,place,launchWave,step,routes,resetGame,MEANS,UPG,FOES,WAVES};
+window.__bouclage={R,SLOTS,place,launchWave,step,routes,resetGame,MEANS,UPG,FOES,WAVES,ACTIONS,VARIANTES,action,posAt,rangeOf,meansPos};
 
 </script>
 </body>
