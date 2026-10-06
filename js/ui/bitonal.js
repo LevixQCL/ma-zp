@@ -3,6 +3,7 @@
 // comptent (un essai par jour) : l'entraînement est hors classement.
 import { S, esc } from './common.js';
 import { vitesseCombi } from '../engine/constants.js';
+import { cibleUrgence } from '../engine/incidents.js';
 
 export const NIVEAUX_BITONAL = ['facile', 'normal', 'difficile'];
 export const NOM_NIVEAU = { facile: 'Facile', normal: 'Normal', difficile: 'Difficile' };
@@ -31,6 +32,7 @@ export function paramsBitonal(v = vitesseCombi(S.state && S.user ? S.state.zones
   const p = { vit: String(v.mult), frein: String(v.frein), etat: String(v.etat), prepa: String(v.prepa), cabosse: v.cabosse ? '1' : '0' };
   for (const n of NIVEAUX_BITONAL) {
     const r = recordBitonal(n), moi = S.user && r && r.uid === S.user.uid;
+    const c = cibleUrgence(S.state, n); p[`c_${n}`] = String(c.cible); p[`k_${n}`] = String(c.courses);
     p[`r_${n}`] = String(r ? r.score : 0); p[`rn_${n}`] = r ? (moi ? 'toi' : r.nom) : ''; p[`m_${n}`] = String(monScoreBitonal(n));
   }
   return p;

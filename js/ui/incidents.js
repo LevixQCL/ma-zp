@@ -156,6 +156,8 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
     const v = mode === 'incident' && inc && Number.isFinite(inc.vit) ? { mult: inc.vit, frein: inc.frein || 1, etat: inc.etat, prepa: inc.prepa || 0, cabosse: !!inc.cabosse } : vitesseCombi(myZone());
     for (const [k, val] of Object.entries(paramsBitonal(v))) p.set(k, val);
     if (inc && inc.seed) p.set('seed', String(inc.seed));
+    // Urgence : temps cible figé quand elle est tombée (ajusté chaque nuit sur les courses de la partie).
+    if (inc && inc.urgence && Number.isFinite(inc.cible) && inc.diff) { p.set(`c_${inc.diff}`, String(inc.cible)); p.set(`k_${inc.diff}`, String(inc.courses || 0)); }
   }
   if (mode === 'incident' && inc) {
     const n = agentsService(inc.service, inc), { base, plus } = jaugeDuJour();
@@ -189,7 +191,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
         if (d.type === 'start') await enregistrer(inc.id, { statut: 'abandon', fautes: 1 });
         if (d.type === 'result' && inc.urgence) {
           const niv = ['facile', 'normal', 'difficile'].includes(d.niveau) ? d.niveau : null;
-          await enregistrer(inc.id, { statut: d.passe ? 'passe' : d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Math.max(0, Math.min(3, Number(d.fautes) || 0)), ...(d.raison === 'hs' ? { raison: 'hs' } : {}), ...(d.score ? { score: Math.floor(Number(d.score) || 0) } : {}), ...(niv ? { niveau: niv } : {}) });
+          await enregistrer(inc.id, { statut: d.passe ? 'passe' : d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Math.max(0, Math.min(3, Number(d.fautes) || 0)), ...(d.raison === 'hs' ? { raison: 'hs' } : {}), ...(Number.isFinite(Number(d.temps)) && d.temps > 0 ? { temps: Math.round(Number(d.temps) * 10) / 10 } : {}), ...(d.score ? { score: Math.floor(Number(d.score) || 0) } : {}), ...(niv ? { niveau: niv } : {}) });
           if (!d.passe && niv && d.score > 0 && await noterScoreBitonal(niv, d.score)) toast(`Nouveau meilleur score de la partie en ${NOM_NIVEAU[niv].toLowerCase()} : ${Math.floor(d.score).toLocaleString('fr-BE')} !`);
         } else if (d.type === 'result') await enregistrer(inc.id, { statut: d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Number(d.fautes) || 0 });
       }

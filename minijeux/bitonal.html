@@ -275,7 +275,7 @@ function nouvelleMission() {
   mission = INC ? { titre: 'Collègues pris à partie', lieu: m[1], seed: Math.floor(r() * 1e9) } : { titre: m[0], lieu: m[1], seed: Math.floor(r() * 1e9) };
 }
 // La cible ne dépend pas de la combi : une combi lente ou cabossée a moins de marge, une combi préparée en a plus.
-const cibleDe = (N) => Math.round((N.long / 31 + N.inter * 2.8 + 4) * N.marge);
+const cibleDe = (N) => { const k = CLE_NIV[Object.keys(NIV).find((x) => NIV[x] === N)]; const c = Number(Q.get(`c_${k}`)); return Number.isFinite(c) && c > 20 ? Math.round(c) : Math.round((N.long / 31 + N.inter * 2.8 + 4) * N.marge); };
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 function afficherIntro() {
   $('surtitre').textContent = INC ? 'Urgence du jour · Intervention' : MODE === 'train' ? 'Entraînement · Intervention' : 'Ma ZP · Intervention';
@@ -290,6 +290,10 @@ function afficherIntro() {
     }).join('');
     $('records').hidden = false;
     $('records').innerHTML = `<span class="t">🏆 Meilleurs scores de la partie</span>${lignes}<span class="tiny" style="color:var(--texte2)">Seules les urgences du jour comptent${MODE === 'train' ? ' : ici, entraînement hors classement' : ''}.</span>`;
+  }
+  if (MODE) {
+    const k = Number(Q.get(`k_${CLE_NIV[niveau]}`)) || 0;
+    $('combiInfo').innerHTML += `<span>⏱</span><span>Temps cible <b>${fmt(cibleDe(NIV[niveau]))}</b> ${k >= 5 ? `· ajusté sur les ${k} dernières courses de la partie` : '· s’ajustera sur les courses de la partie'}</span>`;
   }
   if (INC) {
     $('enjeux').hidden = false;
@@ -535,7 +539,7 @@ function terminer(arrive, raison) {
   let record = 0;
   if (MODE) record = Number(Q.get(`m_${CLE_NIV[niveau]}`)) || 0;
   else try { record = Number(localStorage.getItem(`bitonal-record-${niveau}`)) || 0; if (raison !== 'hs' && score > record) localStorage.setItem(`bitonal-record-${niveau}`, String(score)); } catch (e) { record = 0; }
-  if (MODE) post('result', { ok, abandon: raison === 'abandon', raison: raison === 'hs' ? 'hs' : ok ? null : 'temps', fautes: S.hits, score: raison === 'hs' || raison === 'abandon' ? 0 : score, niveau: CLE_NIV[niveau], etoiles });
+  if (MODE) post('result', { ok, abandon: raison === 'abandon', raison: raison === 'hs' ? 'hs' : ok ? null : 'temps', fautes: S.hits, score: raison === 'hs' || raison === 'abandon' ? 0 : score, niveau: CLE_NIV[niveau], etoiles, ...(arrive ? { temps: Math.round(total * 10) / 10 } : {}) });
   if (INC) { $('rejouer').hidden = true; $('menu').hidden = true; $('retour').hidden = false; }
   if (raison === 'abandon') { post('close'); return; }
   setTimeout(() => {
