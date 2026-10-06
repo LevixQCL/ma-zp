@@ -3,6 +3,7 @@ import { CONFIG } from './config.js';
 import { installerCadenas } from './ui/cadenas.js';
 import { installerEnigmes } from './ui/enigmes.js';
 import { createBackend } from './data/backend.js';
+import { codeDejaPris, MSG_CODE_PRIS } from './data/codes.js';
 import { resolvePending, completerDepuisGazette, etatResolution } from './data/resolver.js';
 import { S, toast, myZone, esc, cielDuMoment, tabbar } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
@@ -201,6 +202,12 @@ const rerender = () => { S.keepScroll = true; render(); };
 
 async function ensureZone() {
   if (S.joining || S.joinErreur) return;
+  // Profil dont le code est déjà pris par une autre zone de la partie : on repasse par l'inscription pour en choisir un autre.
+  if (S.player && S.state && codeDejaPris(S.state, S.player.code, S.user.uid)) {
+    const p = S.player;
+    S.signup = { pseudo: p.pseudo || '', nom: p.nom || '', code: '', couleur: p.couleur || COULEURS_ZONE[0] };
+    S.player = null; toast(MSG_CODE_PRIS(p.code)); render(); return;
+  }
   S.joining = true;
   try { await S.backend.joinGame(S.user.uid, S.player); }
   catch (e) { S.joinErreur = e.message || 'Impossible de créer la zone.'; toast(S.joinErreur); render(); }
@@ -616,7 +623,7 @@ async function onClick(e) {
       case 'logout': await b.signOut(); S.user = null; S.player = null; lastTurnKey = null; location.hash = '#hp'; afterAuth(); break;
       case 'pick-color': {
         const f = document.querySelector('[data-form="signup"]');
-        S.signup = { code: f.code.value, nom: f.nom.value, couleur: el.dataset.color }; rerender(); break;
+        S.signup = { pseudo: f.pseudo ? f.pseudo.value : undefined, code: f.code.value, nom: f.nom.value, couleur: el.dataset.color }; rerender(); break;
       }
       case 'pick-color-profil': S.profilColor = el.dataset.color; rerender(); break;
       case 'rename': S.editingName = true; rerender(); setTimeout(() => document.getElementById('nom-zone')?.focus(), 0); break;
@@ -1197,6 +1204,7 @@ async function onSubmit(e) {
       const code = form.code.value.trim(), nom = form.nom.value.trim();
       if (!/^\d{4}$/.test(code)) { toast('Le code doit comporter 4 chiffres.'); return; }
       if (!nom) { toast('Donne un nom à ta zone.'); return; }
+      if (codeDejaPris(S.state, code, S.user.uid)) { toast(MSG_CODE_PRIS(code)); return; }
       const couleur = (S.signup && S.signup.couleur) || COULEURS_ZONE[0];
       const pseudo = (form.pseudo ? form.pseudo.value.trim() : '').slice(0, 24);
       if (!pseudo) { toast('Indique ton prénom ou ton pseudo.'); return; }
@@ -1224,6 +1232,7 @@ async function onSubmit(e) {
 	const nom = String(champ('nom') ?? z.nom ?? '').trim().slice(0, 24);
 	const code = String(champ('code') ?? z.code ?? '').trim();
       if (!nom || !/^\d{4}$/.test(code)) { toast('Nom requis et code à 4 chiffres.'); return; }
+      if (code !== String(z.code || '') && codeDejaPris(S.state, code, S.user.uid)) { toast(MSG_CODE_PRIS(code)); return; }
       const pseudo = String(champ('pseudo') ?? (S.player && S.player.pseudo) ?? '').trim().slice(0, 24);
       const profile = { code, nom, couleur: S.profilColor || z.couleur, pseudo };
       await b.savePlayer(S.user.uid, profile);

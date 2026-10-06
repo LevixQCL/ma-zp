@@ -3,6 +3,7 @@
 import { buildJoinZone, createGame } from '../engine/resolve.js';
 import { nextResolutionAfter } from '../engine/time.js';
 import { MAX_ZONES, partieComplete } from '../engine/constants.js';
+import { codeDejaPris, MSG_CODE_PRIS } from './codes.js';
 
 const V = '10.12.2'; // si tu changes de version : mets aussi à jour les « modulepreload » de index.html
 const CDN = `https://www.gstatic.com/firebasejs/${V}`;
@@ -157,6 +158,7 @@ export async function createFirebaseBackend(config) {
         const state = s.data();
         if (state.zones && state.zones[uid]) return;
         if (partieComplete(state, uid)) throw new Error(`Cette partie est complète (${MAX_ZONES} zones). Demande au maître du jeu d’en créer une autre.`);
+        if (profile && codeDejaPris(state, profile.code, uid)) throw new Error(MSG_CODE_PRIS(profile.code));
         const zone = buildJoinZone(state, uid, profile, state.turn);
         tx.update(stateRef(), new F.FieldPath('zones', uid), plain(zone));
       });

@@ -1,6 +1,7 @@
 // Écrans de connexion et d'inscription.
 import { S, esc, icon, skyline, cielStyle } from './common.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
+import { codesPris, codeLibre } from '../data/codes.js';
 
 export function renderLogin() {
   const demo = S.backend.mode === 'demo';
@@ -46,12 +47,15 @@ export function renderInscription({ gameExists, isAdmin }) {
   }
   const f = S.signup || { code: '', nom: '', couleur: COULEURS_ZONE[0] };
   const pris = new Set(Object.values(S.state?.zones || {}).map((z) => z.couleur));
+  const codesOccupes = [...codesPris(S.state, S.user && S.user.uid)].sort();
+  if (!S.codeSuggere || codesOccupes.includes(S.codeSuggere)) S.codeSuggere = codeLibre(S.state, S.user && S.user.uid) || '1234';
   return `<main class="center-screen" style="justify-content:flex-start;padding-top:32px">
     <div class="col" style="gap:4px"><span class="kicker">Prise de fonction</span><h1 class="big">Ta zone de police</h1>
     <p class="sub">Choisis le code et le nom de ta zone. Tu pourras renommer ta zone plus tard.</p></div>
     <form class="col" data-form="signup" style="gap:14px">
       <label class="field">Ton prénom ou pseudo (affiché sur la carte)<input class="text" name="pseudo" maxlength="24" required value="${esc(f.pseudo ?? ((S.user && S.user.displayName) || '').split(' ')[0])}" placeholder="Bryan"></label>
-      <label class="field">Code de zone (4 chiffres)<input class="text mono" name="code" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required value="${esc(f.code)}" placeholder="5324"></label>
+      <label class="field">Code de zone (4 chiffres)<input class="text mono" name="code" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required value="${esc(f.code)}" placeholder="${esc(S.codeSuggere)}"></label>
+      ${codesOccupes.length ? `<p class="tiny muted" style="margin:-8px 0 0">Chaque zone a son propre code. Déjà pris dans cette partie : <span class="mono">${codesOccupes.map(esc).join(', ')}</span></p>` : ''}
       <label class="field">Nom de la zone<input class="text" name="nom" maxlength="24" required value="${esc(f.nom)}" placeholder="Horizon"></label>
       <fieldset style="border:none;padding:0;margin:0" class="col">
         <legend class="small muted" style="font-weight:600;margin-bottom:6px">Couleur</legend>
