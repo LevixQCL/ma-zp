@@ -82,6 +82,8 @@ export function disqueHtml(q) {
     <text class="dq-k" y="-6" text-anchor="middle">${AB[k]}</text><text class="dq-ks" y="20" text-anchor="middle">décalage ${k}</text>
   </svg>`;
   let lecture = '';
+  // Le message codé reste sous les yeux pendant qu'on tourne le disque (plus besoin de remonter).
+  const rappel = n > 1 ? '' : `<div class="roue-lecture dq-rappel" aria-label="Message codé">${codeHtml(q.code)}</div>`;
   if (n > 1) {
     let pos = 0;
     const brut = q.code.split(' ').map((g) => g.split('').map((c) => (c === '_' ? (pos++, TROU_HTML) : `<span class="roue-c${pos++ % n}">${c}</span>`)).join('')).join(' ');
@@ -92,8 +94,9 @@ export function disqueHtml(q) {
     <div class="between"><h2 class="section" style="margin:0">${n > 1 ? 'Disques de décodage' : 'Disque de décodage'}</h2>
       <span class="row" style="gap:4px"><button type="button" class="btn small" data-action="roue" data-i="${sel}" data-d="-1" aria-label="Tourner d’un cran vers la gauche">−</button><button type="button" class="btn small" data-action="roue" data-i="${sel}" data-d="1" aria-label="Tourner d’un cran vers la droite">+</button></span></div>
     ${n > 1 ? `<div class="seg${n === 2 ? '2' : n === 3 ? '3' : '4'}" role="tablist">${Array.from({ length: n }, (_, i) => `<button type="button" role="tab" class="roue-c${i}" aria-selected="${i === sel}" data-disque="${i}">Roue ${i + 1} · ${AB[decalage(q, i)]}</button>`).join('')}</div>` : ''}
-    <div class="dq-wrap">${disque}</div>
-    <p class="tiny muted" style="margin:0;text-align:center">Fais tourner le disque intérieur du doigt. Dehors, la lettre du message codé ; dedans, la lettre claire.</p>
+    ${rappel}
+    <div class="dq-wrap"><div class="dq-boite">${disque}<div class="dq-prise" aria-hidden="true"></div><div class="dq-libre" aria-hidden="true"></div></div></div>
+    <p class="tiny muted" style="margin:0;text-align:center">Tourne l’anneau orange du doigt (le centre et le bord laissent défiler la page). Dehors, la lettre du message codé ; dedans, la lettre claire.</p>
     ${lecture}
   </section>`;
 }
@@ -345,14 +348,16 @@ export function installerEnigmes() {
       li.classList.add('drag'); li.setPointerCapture(e.pointerId); e.preventDefault();
       return;
     }
-    const svg = e.target.closest('svg.dq');
+    // Seul l'anneau intérieur fait tourner le disque : ailleurs, le doigt fait défiler la page.
+    const prise = e.target.closest('.dq-prise');
+    const svg = prise && prise.parentElement.querySelector('svg.dq');
     if (svg) {
       const carte = svg.closest('.dq-carte'), g = svg.querySelector('.dq-int'), r = svg.getBoundingClientRect();
       const c = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
       const ang = Math.atan2(e.clientY - c.y, e.clientX - c.x) * 180 / Math.PI;
       const base = Number((g.style.transform.match(/-?[\d.]+/) || [0])[0]);
       drag = { type: 'dq', carte, g, c, ang, base, id: e.pointerId };
-      g.style.transition = 'none'; svg.setPointerCapture(e.pointerId); e.preventDefault();
+      g.style.transition = 'none'; prise.setPointerCapture(e.pointerId); e.preventDefault();
     }
   });
   document.addEventListener('pointermove', (e) => {

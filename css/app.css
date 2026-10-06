@@ -912,8 +912,13 @@ body.mj-ouvert { overflow: hidden; }
 
 /* Disque de décodage */
 .dq-wrap { display: grid; place-items: center; }
-.dq { width: min(100%, 300px); height: auto; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
-.dq:active { cursor: grabbing; }
+.dq-boite { position: relative; width: min(100%, 260px); }
+.dq { display: block; width: 100%; height: auto; user-select: none; -webkit-user-select: none; }
+/* Zone de prise : l'anneau intérieur (rayon 107/150), le moyeu (74/150) laissé au défilement */
+.dq-prise { position: absolute; left: 50%; top: 50%; width: 71.3%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; touch-action: none; cursor: grab; }
+.dq-prise:active { cursor: grabbing; }
+.dq-libre { position: absolute; left: 50%; top: 50%; width: 49.3%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; }
+.dq-rappel { text-align: center; position: sticky; top: 8px; z-index: 2; }
 .dq-ext { fill: #E9DFC6; stroke: #9C8A5F; stroke-width: 2; }
 .dq-traits line { stroke: #B9A87E; stroke-width: 1; }
 .dq-code { font: 800 15px var(--display); fill: #2A2214; }
