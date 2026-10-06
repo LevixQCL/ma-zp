@@ -1,5 +1,6 @@
 // Guide du joueur (wiki intégré). Les chiffres viennent directement du moteur,
 // pour que le guide reste exact quand l'équilibrage change.
+import { CHALLENGE } from '../engine/challenge.js';
 import { DECOR, conditionDecor } from '../engine/decor.js';
 import { S, esc, icon, tabbar } from './common.js';
 import {
@@ -396,6 +397,7 @@ export function sections() {
           `<strong>Raté ou abandonné</strong> : −1 de moral, comme une énigme ratée (+${PS.queteTentee} PS pour avoir essayé).`,
           '<strong>Pas joué</strong> : ton équipe se débrouille seule. Elle réussit d’autant plus souvent que le service est fourni ; sinon, un petit malus. Rien à gagner sans jouer.',
           'Chaque mini-jeu a son tuto. Pour t’exercer sans enjeu : écran Énigmes, onglet « Entraînement ».',
+          `<strong>Challenge</strong> (Énigmes › Entraînement › Challenge) : chaque dimanche à 20:00, le meilleur niveau de la semaine sur chaque mini-jeu (dès le niveau ${CHALLENGE.niveauMin}) rapporte ${CHALLENGE.prime} k€ et +${CHALLENGE.jauge} sur la jauge des skins. Une seule prime par joueur et par semaine : en tête sur plusieurs mini-jeux, les autres primes passent au suivant.`,
         ])}
         ${table(['Service', 'Incident', 'Réussi', 'Raté', 'Pas joué et raté'], Object.entries(INCIDENTS).map(([k, x]) => [SERVICE_LABELS[k], esc(x.titre), esc(texteGain(GAIN[k])), esc(texteMalus(MALUS[k].plein)), esc(texteMalus(MALUS[k].leger))]))}
         <h3 class="kicker" style="margin:10px 0 0">🚨 L’urgence du jour : « ${esc(URGENCE.titre)} »</h3>

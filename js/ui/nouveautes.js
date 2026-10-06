@@ -3,18 +3,21 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-06-interception',
+  id: '2026-10-06-prime-challenge',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['📡', 'Nouveau mini-jeu RCCU : Interception', 'il remplace le traçage d’IP. Coupe des relais pour forcer la connexion du suspect à passer par l’écoute de la RCCU, sans lui fermer toutes les sorties. Au Challenge : blindés, fibre, reconnexions…'],
-    ['🗳️', 'Le Conseil des chefs', 'tous les 5 jours environ, une crise frappe le district. Votez en secret : opération visible, travail discret ou opération commune. Le plan gagnant tient 3 jours.'],
-    ['🌊', 'Vagues de délinquance', 'une zone très forte dans un service chasse la délinquance… chez la voisine la plus faible. Annoncée le matin, sans l’auteur : prépare-toi et brise-la pour des points.'],
-    ['🤝', 'La relève', 'un suspect file vers ta zone : prends-le, transmets-le, ou dis « pas l’effectif ». Avec parfois les félicitations du juge ou une saisie à partager.'],
+    ['🏅', 'Une prime pour le Challenge', 'chaque dimanche, le meilleur niveau de la semaine sur chaque mini-jeu rapporte 5 k€ et des points de skin. Une prime par joueur : tout le monde a sa chance.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Prime du Challenge', [
+      ['Quoi', 'chaque dimanche à 20:00, le meilleur niveau de la semaine sur chaque mini-jeu du Challenge (dès le niveau 5) rapporte 5 k€ à sa zone et +10 sur la jauge des skins (50 pour un skin). Le Bitonal n’en fait pas partie : ses scores viennent des urgences, déjà récompensées.'],
+      ['Une prime par joueur', 'en tête sur plusieurs mini-jeux ? Tu gardes une prime, les autres passent au suivant du classement. Égalité : le premier arrivé.'],
+      ['Semaine', 'les compteurs repartent de zéro chaque dimanche après 20:00 (le record de la partie, lui, reste). Les tuiles affichent qui mène la semaine, l’encadré « Prime de la semaine » les lauréats provisoires et ceux de la semaine passée.'],
+      ['Équilibre', 'simulé : environ 5 % des revenus d’une semaine, soit un quart de place au classement pour un joueur qui gagnerait toutes les semaines.'],
+    ]],
     ['Conseil des chefs', [
       ['Les crises du district', 'le Directeur annonce une crise d’après l’état du district ; le lendemain, chaque zone vote sur l’HP (secret jusqu’à 20:00, une voix par zone). Le plan gagnant s’applique 3 jours : A (Intervention et Roulage renforcés, criminalité en baisse, mais Proximité −25 %), B (Recherche +60 %, satisfaction en légère baisse), C (opération commune : 10 % des agents de chaque participant, grosse récompense si les zones qui l’ont votée tiennent parole, 2 soirs sur 3).'],
       ['Le thème de la semaine', 'il disparaît du Conseil du dimanche, remplacé par les crises. Le dimanche garde la dotation, le fonds de solidarité, le blâme et les motions.'],

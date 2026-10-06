@@ -350,7 +350,16 @@ export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng, ind
       lignes.push(`Incident · ${nom} : personne n’est venu et ton équipe n’y est pas arrivée seule. ${texteMalus(m)}.`);
     }
   }
-  // Jauge pleine : un skin que la zone n'a pas encore (sinon une prime).
+  const j = remplirJauge(z, rng);
+  lignes.push(...j.lignes);
+  if (j.skin) skin = j.skin;
+  return { lignes, skin };
+}
+
+/** Jauge des skins pleine : un skin que la zone n'a pas encore (sinon une prime). Renvoie { lignes, skin }. */
+export function remplirJauge(z, rng) {
+  const lignes = [];
+  let skin = null;
   while ((z.jaugeIncidents || 0) >= INC.jauge) {
     z.jaugeIncidents -= INC.jauge;
     const manquants = TOUS_SKINS.filter((s) => !(z.skins || []).includes(`${s.cat}:${s.id}`));
@@ -358,10 +367,10 @@ export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng, ind
       const s = manquants[Math.floor(rng.next() * manquants.length)];
       ajouterSkin(z, `${s.cat}:${s.id}`);
       skin = s;
-      lignes.push(`Jauge des incidents pleine : nouveau skin « ${s.nom} » (${s.categorie}). Équipe-le dans « Personnaliser mon commissariat ».`);
+      lignes.push(`Jauge des skins pleine : nouveau skin « ${s.nom} » (${s.categorie}). Équipe-le dans « Personnaliser mon commissariat ».`);
     } else {
-      z.budget += 5; (z._compta ||= []).push({ k: 'incident', l: 'Jauge des incidents pleine', v: 5 });
-      lignes.push('Jauge des incidents pleine : tu as déjà tous les skins, prime de +5 k€.');
+      z.budget += 5; (z._compta ||= []).push({ k: 'incident', l: 'Jauge des skins pleine', v: 5 });
+      lignes.push('Jauge des skins pleine : tu as déjà tous les skins, prime de +5 k€.');
     }
   }
   return { lignes, skin };

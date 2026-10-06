@@ -1,5 +1,7 @@
 // Écran de l’énigme du jour.
-import { nominette } from './defis.js';
+import { nominette, ligneSemaine, laureatsProvisoires } from './defis.js';
+import { CHALLENGE } from '../engine/challenge.js';
+import { euros } from './euros.js';
 import { nominetteBitonal } from './bitonal.js';
 import { S, esc, icon, tabbar, myZone } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS } from '../quests/quests.js';
@@ -55,12 +57,29 @@ const GROUPES_ENIGMES = [['Logique', ['quiment', 'grille', 'chronologie', 'horai
 const ICO_MJ = { bitonal: '🚨', colis: '💣', crochetage: '🔓', depanneuse: '🚧', dossier: '📄', empreintes: '🖐️', adn: '🧬', reseau: '🔌', interception: '📡' };
 const COUL_MJ = { intervention: '#FF6E6A', recherche: '#63B0FF', roulage: '#FFB23F', proximite: '#3DD39A', labo: '#A78BFA', rccu: '#5AD1E6' };
 
+/** Encart « Prime de la semaine » du Challenge : la règle, les lauréats provisoires et ceux de la semaine passée. */
+function primeSemaine() {
+  const nomJeu = (j) => (MINI_JEUX.find((m) => m.jeu === j) || {}).nom || j;
+  const moi = S.user && S.user.uid;
+  const prov = laureatsProvisoires();
+  const zn = (uid) => { const z = S.state && S.state.zones[uid]; return z ? z.nom : 'une zone'; };
+  const passe = (S.state && S.state.challenge && S.state.challenge.laureats) || [];
+  const ligne = (l, nom) => `<li><span>${esc(nomJeu(l.jeu))}</span><span class="${l.uid === moi ? 'ok' : ''}">${esc(l.uid === moi ? 'toi' : nom)} · niv. ${l.niveau}</span></li>`;
+  return `<div class="prime-chal">
+    <div class="between" style="gap:8px;align-items:flex-start"><span class="prime-t">🏅 Prime de la semaine</span><span class="tiny muted" style="text-align:right">remise dimanche 20:00</span></div>
+    <span class="small">Le meilleur niveau de la semaine sur chaque mini-jeu (dès le niveau ${CHALLENGE.niveauMin}) rapporte <strong>${euros(CHALLENGE.prime)}</strong> à sa zone et <strong>+${CHALLENGE.jauge}</strong> sur la jauge des skins. <strong>Une prime par joueur</strong> : en tête sur plusieurs jeux, les autres primes passent au suivant.</span>
+    ${prov.length ? `<span class="tr-grp">Si la semaine finissait maintenant</span><ul class="prime-l">${prov.map((l) => ligne(l, l.nom)).join('')}</ul>` : '<span class="tiny muted">Personne n’a encore atteint le niveau ' + CHALLENGE.niveauMin + ' cette semaine : les primes sont à prendre.</span>'}
+    ${passe.length ? `<details class="prime-d"><summary class="tiny muted">Lauréats de la semaine passée</summary><ul class="prime-l">${passe.map((l) => ligne(l, zn(l.uid))).join('')}</ul></details>` : ''}
+  </div>`;
+}
+
 /** Entraînement aux mini-jeux : des tuiles par famille (incidents du jour, appui PJF), lancées directement. */
 function entrainementMiniJeux() {
-  const tuile = (m) => `<button type="button" class="tr-tuile" data-action="mj-train" data-j="${m.jeu}" style="--c:${COUL_MJ[m.service] || '#63B0FF'}"><span class="tr-ico" aria-hidden="true">${ICO_MJ[m.jeu] || '🎮'}</span><span class="tr-nom">${esc(m.nom)}</span><span class="tr-s">${esc(SERVICE_LABELS[m.service] || (m.service === 'labo' ? 'Labo' : 'RCCU'))}</span>${m.jeu === 'bitonal' ? nominetteBitonal() : nominette(m.jeu)}</button>`;
+  const tuile = (m) => `<button type="button" class="tr-tuile" data-action="mj-train" data-j="${m.jeu}" style="--c:${COUL_MJ[m.service] || '#63B0FF'}"><span class="tr-ico" aria-hidden="true">${ICO_MJ[m.jeu] || '🎮'}</span><span class="tr-nom">${esc(m.nom)}</span><span class="tr-s">${esc(SERVICE_LABELS[m.service] || (m.service === 'labo' ? 'Labo' : 'RCCU'))}</span>${m.jeu === 'bitonal' ? nominetteBitonal() : nominette(m.jeu) + (CHALLENGE.jeux.includes(m.jeu) ? ligneSemaine(m.jeu) : '')}</button>`;
   const inc = MINI_JEUX.filter((m) => !['labo', 'rccu'].includes(m.service)), pjf = MINI_JEUX.filter((m) => ['labo', 'rccu'].includes(m.service));
   return `<section class="card tight" aria-label="Mini-jeux" style="gap:10px">
-    <span class="tiny muted">Chaque mini-jeu, du niveau 1 (tout doux) aussi haut que possible, trois erreurs permises. Le record de la partie met son nom sur la tuile. Sans enjeu pour ta zone.</span>
+    <span class="tiny muted">Chaque mini-jeu, du niveau 1 (tout doux) aussi haut que possible, trois erreurs permises. Le record de la partie met son nom sur la tuile.</span>
+    ${primeSemaine()}
     <span class="tr-grp">Incidents du jour</span><div class="tr-grille">${inc.map(tuile).join('')}</div>
     <span class="tr-grp">Appui PJF à l’enquête</span><div class="tr-grille">${pjf.map(tuile).join('')}</div>
   </section>`;

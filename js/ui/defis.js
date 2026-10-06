@@ -1,8 +1,10 @@
 // Défi d'endurance des mini-jeux (entraînement) : records de la partie, nominettes et titres.
-// Sans aucun effet sur le jeu. Chaque joueur garde son meilleur niveau par mini-jeu dans son profil de la partie
+// Records sans effet sur le jeu ; la prime de la semaine est dans engine/challenge.js. Chaque joueur garde son meilleur niveau par mini-jeu dans son profil de la partie
 // (players/{uid}.defis = { jeu: niveau }, defisAt = { jeu: date }) ; le record est le plus haut niveau, le premier
 // arrivé gardant le record en cas d'égalité.
 import { S, esc } from './common.js';
+import { CHALLENGE, cleSemaine, classementSemaine, laureatsSemaine, niveauSemaine } from '../engine/challenge.js';
+import { CONFIG } from '../config.js';
 
 export const TITRES_DEFI = {
   colis: 'Démineur du district', crochetage: 'Maître serrurier', depanneuse: 'As du dépannage', dossier: 'Œil de lynx',
@@ -49,16 +51,48 @@ export function paramsDefi(jeu) {
   return { rec: String(r ? r.niveau : 0), recNom: r ? (moi ? 'toi' : r.nom) : '', moi: String(monRecordDefi(jeu)) };
 }
 
-/** Niveau réussi pendant une course : enregistré s'il bat le record personnel. Renvoie true si c'est un nouveau record de la partie. */
+/** Semaine du Challenge en cours (échéance du dimanche 20:00 qui la clôt). */
+export const cleSemaineEnCours = () => cleSemaine(S.state && S.state.nextDeadline, CONFIG.resolutionHour || 20);
+
+/** En tête cette semaine sur ce mini-jeu (dès le niveau minimum) : { uid, nom, niveau } ou null. */
+export function enTeteSemaine(jeu) {
+  const cl = classementSemaine(S.players, cleSemaineEnCours(), jeu);
+  return cl.length ? { ...cl[0], nom: nomJoueur(cl[0].uid) } : null;
+}
+
+/** Lauréats si la semaine s'arrêtait maintenant (une prime par joueur). */
+export const laureatsProvisoires = () => laureatsSemaine(S.players, cleSemaineEnCours()).map((l) => ({ ...l, nom: nomJoueur(l.uid) }));
+
+/** Ligne « cette semaine » d'une tuile du Challenge. */
+export function ligneSemaine(jeu) {
+  const r = enTeteSemaine(jeu);
+  if (!r) return '<span class="tr-sem">semaine : libre</span>';
+  const moi = S.user && r.uid === S.user.uid;
+  return `<span class="tr-sem${moi ? ' moi' : ''}">semaine : ${esc(moi ? 'toi' : r.nom)} · ${r.niveau}</span>`;
+}
+
+/** Niveau réussi pendant une course : record personnel et meilleur niveau de la semaine. Renvoie true si c'est un nouveau record de la partie. */
 export async function noterNiveauDefi(jeu, niveau) {
   const n = Math.min(NIVEAU_MAX, Math.floor(Number(niveau) || 0));
-  if (!S.user || !S.backend || !TITRES_DEFI[jeu] || n <= monRecordDefi(jeu)) return false;
+  if (!S.user || !S.backend || !TITRES_DEFI[jeu]) return false;
+  const cle = cleSemaineEnCours();
+  const record = n > monRecordDefi(jeu);
+  // La semaine ne compte qu'à partir du niveau minimum de la prime (moins d'écritures pendant les premiers niveaux).
+  const semaine = CHALLENGE.jeux.includes(jeu) && cle && n >= CHALLENGE.niveauMin && n > niveauSemaine(S.player, cle, jeu);
+  if (!record && !semaine) return false;
   const avant = recordDefi(jeu);
   const p = { ...(S.player || {}) };
-  p.defis = { ...(p.defis || {}), [jeu]: n };
-  p.defisAt = { ...(p.defisAt || {}), [jeu]: Date.now() };
+  if (record) {
+    p.defis = { ...(p.defis || {}), [jeu]: n };
+    p.defisAt = { ...(p.defisAt || {}), [jeu]: Date.now() };
+  }
+  if (semaine) {
+    p.defisSem = { ...(p.defisSem || {}), [jeu]: { c: cle, n, at: Date.now() } };
+  }
   S.player = p;
-  S.players = { ...(S.players || {}), [S.user.uid]: { ...((S.players || {})[S.user.uid] || {}), defis: p.defis, defisAt: p.defisAt } };
+  const moi = { ...((S.players || {})[S.user.uid] || {}) };
+  for (const k of ['defis', 'defisAt', 'defisSem']) if (p[k]) moi[k] = p[k];
+  S.players = { ...(S.players || {}), [S.user.uid]: moi };
   await S.backend.savePlayer(S.user.uid, p);
-  return !avant || n > avant.niveau;
+  return record && (!avant || n > avant.niveau);
 }

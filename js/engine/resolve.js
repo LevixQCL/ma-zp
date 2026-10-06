@@ -30,7 +30,8 @@ import { FLAGRANTS } from './contenu.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
-import { separerIncidents, appliquerIncidents, resultatsIncidents, incidentsVisibles, adapterCibleUrgence, NIVEAUX_URGENCE } from './incidents.js';
+import { primeChallenge } from './challenge.js';
+import { separerIncidents, appliquerIncidents, remplirJauge, resultatsIncidents, incidentsVisibles, adapterCibleUrgence, NIVEAUX_URGENCE } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND } from './contenu.js';
 import { imprevusDuJour, directeurNuit, directeurSoir, districtNuit, districtBilan, duoBilan, coopResoudre, enqueteDirecteur, memoirePlainte, formes, rangsEnigmes, adapterEnigmes, adapterIncidents, dirHeritage, parquetSoir, parquetDecouverte, DIR } from './directeur.js';
@@ -42,6 +43,8 @@ const median = (arr) => {
   const m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
+
+const NOMS_CHALLENGE = { colis: 'Colis suspect', crochetage: 'Crochetage', depanneuse: 'Dépanneuse', dossier: 'Dossier à relire', empreintes: 'Empreintes', adn: 'Fragment d’ADN', reseau: 'Réseau à reconnecter', interception: 'Interception' };
 
 export function zoneLabel(z) { return `ZP ${z.code} ${z.nom}`; }
 
@@ -561,7 +564,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
           coursesUrgence.push({ niveau, temps: Math.max(10, Math.min(900, Number(r0.temps))), vit: vh ? vh.mult : Number.isFinite(i.vit) ? i.vit : 1 });
         }
       }
-      if (inc.skin) push(3, 'Décor', `${zoneLabel(z)} décroche le skin « ${inc.skin.nom} »`, 'Jauge des incidents remplie à force d’interventions réussies.', uid);
+      if (inc.skin) push(3, 'Décor', `${zoneLabel(z)} décroche le skin « ${inc.skin.nom} »`, 'Jauge des skins remplie à force d’interventions réussies.', uid);
     }
     jalon(z, 'Incidents du jour');
     // Situation du jour (annoncée au début du tour).
@@ -973,6 +976,14 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   enqueteDirecteur(state, push, makeRng(`${state.seed}:s${state.season}:t${T}:dir-enquete`));
   jalonTous('Enquête (fin d’affaire)');
   const rivPost = rivalitesPost(state, uids, push, T, nextWeekday, players);
+  // Prime du Challenge : le dimanche, meilleur niveau de la semaine sur chaque mini-jeu (une prime par joueur).
+  if (nextWeekday === 0) {
+    primeChallenge(state, uids, players, { push, zoneLabel, noms: NOMS_CHALLENGE, remplirJauge: (z) => {
+      const r = remplirJauge(z, makeRng(`${state.seed}:s${state.season}:t${T}:challenge:${z.uid}`));
+      if (r.skin) push(3, 'Décor', `${zoneLabel(z)} décroche le skin « ${r.skin.nom} »`, 'Jauge des skins remplie grâce au Challenge.', z.uid);
+      return r;
+    } });
+  }
   pactesPost(state, uids, push, T);
   jalonTous('Pactes, défis, péril, tutelle');
   fipaGenerer(state, T, T >= SEASON_LENGTH - 3);

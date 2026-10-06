@@ -3,6 +3,7 @@
 // elles renvoient leur résultat par message (start, result, close).
 import { S, esc, icon, myZone, toast } from './common.js';
 import { paramsDefi, noterNiveauDefi } from './defis.js';
+import { CHALLENGE } from '../engine/challenge.js';
 import { incidentsVisibles, resultatsIncidents, INCIDENTS, MALUS, GAIN, texteMalus, texteGain, difficulte, pointsJauge, INC, URGENCE, texteRisqueUrgence } from '../engine/incidents.js';
 import { paramsBitonal, noterScoreBitonal, NOM_NIVEAU } from './bitonal.js';
 import { vitesseCombi, vehiculesUrgence, assurerFlotte } from '../engine/flotte.js';
@@ -290,7 +291,7 @@ export function ouvrirJaugeSkins(apercu = null) {
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="between small"><span><strong>${base}</strong> / ${INC.jauge}${plus ? ` <span class="ok">+${plus} ce soir</span>` : ''}</span>
       <span role="img" aria-label="${base} sur ${INC.jauge}" style="flex:1;max-width:60%;height:8px;background:var(--line);border-radius:4px;overflow:hidden"><span style="display:block;width:${Math.min(100, (base / INC.jauge) * 100)}%;height:8px;background:var(--amber)"></span></span></div>
-    <p class="small" style="margin:0">Chaque incident du jour réussi en jouant remplit la jauge : <strong>+2 sans faute</strong>, +1 avec des fautes. À ${INC.jauge}, tu gagnes <strong>un skin au hasard parmi ceux que tu n’as pas encore</strong>${manquants ? '' : ' (tu les as tous : la jauge pleine rapporte +5 k€)'}. Il s’équipe dans « Personnaliser mon commissariat » et les autres zones le voient.</p>
+    <p class="small" style="margin:0">Chaque incident du jour réussi en jouant remplit la jauge : <strong>+2 sans faute</strong>, +1 avec des fautes. Une prime du Challenge (meilleur niveau de la semaine sur un mini-jeu) ajoute <strong>+${CHALLENGE.jauge}</strong>. À ${INC.jauge}, tu gagnes <strong>un skin au hasard parmi ceux que tu n’as pas encore</strong>${manquants ? '' : ' (tu les as tous : la jauge pleine rapporte +5 k€)'}. Il s’équipe dans « Personnaliser mon commissariat » et les autres zones le voient.</p>
     ${sk ? `<div class="card amber tight" style="gap:6px"><span class="kicker">Aperçu · ${esc(SKINS[sk.cat].titre)}</span><span style="font-weight:700">${esc(sk.nom)}</span><span class="tiny" style="color:var(--amber-soft)">${esc(sk.texte || '')}</span>
       <div class="scene-voisin">${sceneZone(sansAile ? { ...z, infra: { ...(z.infra || {}), sport: true } } : z, S.state, monDecorPublic(z), { [sk.cat]: sk.id })}</div>
       ${sansAile ? '<span class="tiny muted">L’aile apparaît avec ta première annexe (aperçu avec une salle de sport).</span>' : ''}</div>`

@@ -1494,3 +1494,14 @@ div.db-cle { cursor: default; }
 }
 @media (prefers-reduced-motion: reduce) { .db-tampon { animation: none; } }
 .tile .v.v-euros, .mz-tiles .tile .v.v-euros { font-size: clamp(15px, 4.4vw, 19px); letter-spacing: -.6px; }
+
+/* Prime du Challenge (semaine) */
+.tr-sem { font: 600 10px var(--body); color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr-sem.moi { color: var(--green-soft); }
+.prime-chal { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--line)); background: linear-gradient(180deg, color-mix(in srgb, var(--amber) 12%, var(--surface2)), var(--surface2)); }
+.prime-t { font: 700 13.5px var(--body); color: #FFD27A; }
+.prime-l { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.prime-l li { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }
+.prime-l li span:last-child { font-weight: 600; text-align: right; }
+.prime-d summary { cursor: pointer; }
+.prime-d[open] .prime-l { margin-top: 4px; }
