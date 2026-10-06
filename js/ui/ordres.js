@@ -4,6 +4,8 @@ import { AIDE, themeActif } from '../engine/rivalites.js';
 import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier, PREPA, coutPrepa } from '../engine/constants.js';
 import { vitesseCombi, MODELES, IDS_MODELES, placesIntervention, agentsMontes, apportAchat, plusUse, prixRevente, modeleDe, RENDEMENT } from '../engine/flotte.js';
 import { agentsFipaCeSoir } from './fipa.js';
+import { vagueServiceHtml } from './vagues.js';
+import { agentsReleve } from '../engine/releve.js';
 import { engagementsDuJour } from './engagements.js';
 import { primeHtml } from './prime.js';
 import { demandeRenfortHtml } from './renfort.js';
@@ -25,6 +27,7 @@ function enqueteDraft() {
     dilemme: Number.isInteger(o.dilemme) ? o.dilemme : null, demarches: o.demarches || [], appui: o.appui || null, prime: o.prime || null, piste: o.piste ?? null, accusation: o.accusation ?? null, confront: o.confront || [], reaud: o.reaud || null, recoup: o.recoup || null, hypo: o.hypo || null, mobile: Number.isInteger(o.mobile) ? o.mobile : null, traque: o.traque || null, partages: o.partages || [],
     fipa: o.fipa || null, fipaReponse: o.fipaReponse || null, fipaChoix: o.fipaChoix || null,
     renfort: o.renfort || null, aide: o.aide || null, pacte: o.pacte || null, pacteReponse: o.pacteReponse || null, pacteAccepte: o.pacteAccepte || [], defiAccepte: o.defiAccepte || [], pacteRompre: o.pacteRompre || null, fragment: o.fragment || null, defi: o.defi || null, defiReponse: o.defiReponse || null, votes: o.votes || {}, motionChef: o.motionChef || null, offre: o.offre || null,
+    releve: o.releve || null, releveAppui: o.releveAppui || [], saisie: o.saisie || null,
   };
 }
 
@@ -89,6 +92,8 @@ export function missionsEnquete(d) {
   const l = [];
   if ((d.demarches || []).includes('temoin')) l.push({ k: 'audition', t: 'Audition de la victime (enquête)', n: 2, service: 'recherche' });
   if (d.traque && d.traque.agents) l.push({ k: 'traque', t: 'Traque du suspect (enquête)', n: d.traque.agents, service: 'intervention' });
+  const nr = S.state && myZone() ? agentsReleve(S.state, myZone().uid, d) : 0;
+  if (nr) l.push({ k: 'relève', t: 'Relève (suspect en fuite)', n: nr, service: 'intervention' });
   const f = agentsFipaCeSoir();
   if (f) l.push({ k: 'FIPA', t: 'FIPA (dispositif commun)', n: f, service: null });
   return l;
@@ -155,9 +160,10 @@ export function estimations() {
 /** « dont 2 en audition » sous un service : ces agents ne travaillent pas dans le service aujourd'hui. */
 function prisHtml(e, s) {
   const l = (e.prises || {})[s];
-  if (!l || !l.length) return '';
+  const vg = vagueServiceHtml(e, s);
+  if (!l || !l.length) return vg;
   const n = l.reduce((t, [k]) => t + k, 0);
-  return `<span class="tiny warn">${l.map(([k, m]) => `${k} ${m === 'l’opération' ? 'sur l’opération' : `en ${m}`}`).join(', ')} → ${Math.max(0, S.draft.alloc[s] - n)} au service</span>`;
+  return `${vg}<span class="tiny warn">${l.map(([k, m]) => `${k} ${m === 'l’opération' ? 'sur l’opération' : `en ${m}`}`).join(', ')} → ${Math.max(0, S.draft.alloc[s] - n)} au service</span>`;
 }
 
 function opCouvHtml(e) {
@@ -238,7 +244,7 @@ function resultatService(e, s) {
 function statusHtml(e) {
   if (e.reste === 0) return `<span class="small ok" style="font-weight:600">${e.dispo} agents affectés</span>`;
   if (e.reste > 0) return `<span class="small warn" style="font-weight:600">${e.reste} agent${e.reste > 1 ? 's' : ''} sans affectation</span>`;
-  if (e.resteBase >= 0) return `<span class="small warn" style="font-weight:600">${-e.reste} pris dans tes services pour l’enquête</span>`;
+  if (e.resteBase >= 0) return `<span class="small warn" style="font-weight:600">${-e.reste} pris dans tes services (missions du jour)</span>`;
   return `<span class="small bad" style="font-weight:600">${-e.reste} agent${e.reste < -1 ? 's' : ''} de trop</span>`;
 }
 
@@ -464,7 +470,7 @@ function ventilationHtml(z, e) {
     ${ligne('Dans les cinq services', services)}
     ${missionsEnquete(d).map((m) => ligne(esc(m.t), m.n, 'warn')).join('')}
     ${hors.map((h) => ligne(`${h.t}${h.bloque ? ` <span class="tiny bad">· ${esc(h.bloque)}</span>` : ''}`, h.compte === false ? `(${h.n})` : h.n, h.bloque ? 'bad' : '', btnRap(h.k))).join('')}
-    ${ligne(e.reste >= 0 ? '<strong>Sans affectation</strong>' : e.resteBase >= 0 ? '<strong>Manquent pour l’enquête</strong>' : '<strong>De trop</strong>', `<strong>${Math.abs(e.reste)}</strong>`, `tot ${e.reste > 0 ? 'warn' : e.reste < 0 ? 'bad' : 'ok'}`)}
+    ${ligne(e.reste >= 0 ? '<strong>Sans affectation</strong>' : e.resteBase >= 0 ? '<strong>Manquent pour les missions</strong>' : '<strong>De trop</strong>', `<strong>${Math.abs(e.reste)}</strong>`, `tot ${e.reste > 0 ? 'warn' : e.reste < 0 ? 'bad' : 'ok'}`)}
     ${prises.length ? `<span class="tiny warn" style="margin-top:4px">Pris dans tes services pour la journée : ${prises.map(([t, n]) => `${t} ${n}`).join(' · ')}. Enlève des agents d’un service pour les laisser libres, sinon ces services tourneront avec moins de monde.</span>` : ''}
     ${aide ? `<span class="tiny muted">Coup de main : ${aide} agent${aide > 1 ? 's' : ''} partiront demain pour ${AIDE.dureePret} tours.</span>` : ''}
     ${academie ? `<span class="tiny muted">À l’académie : ${academie} recrue${academie > 1 ? 's' : ''}, pas encore disponible${academie > 1 ? 's' : ''}.</span>` : ''}
@@ -713,7 +719,7 @@ export function renderOrdres() {
 
   return `<main class="screen">
     <header class="between" style="align-items:flex-start;gap:10px"><div class="col" style="gap:3px;min-width:0"><h1 class="big">Ordres du tour ${T}</h1>
-      <p class="sub">${e.dispo} agents disponibles${e.enquete ? `, dont ${e.enquete} en mission (enquête ou FIPA) : ${e.dispo - e.enquete} à répartir` : ''}${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p></div>
+      <p class="sub">${e.dispo} agents disponibles${e.enquete ? `, dont ${e.enquete} en mission (enquête, FIPA ou relève) : ${e.dispo - e.enquete} à répartir` : ''}${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p></div>
       <span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} Validés` : S.savedOrders ? 'Modifiés' : 'Pas validés'}</span></header>
 
     ${saved ? '<p class="tiny muted" style="margin:-6px 0 0">Tes ordres sont validés ; tu peux encore les modifier jusqu’à 20:00.</p>'

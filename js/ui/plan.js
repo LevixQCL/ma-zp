@@ -255,6 +255,14 @@ export function planVille(st, me, { zoom = false, chaleur = true, liens = [] } =
     }
   }
 
+  // Vagues de délinquance attendues ce soir : repère sur le quartier visé, visible de tout le district (sans l'auteur).
+  for (const v of ((st.vagues && st.vagues.liste) || []).filter((x) => x.tour === st.turn && T.cells[Number(x.cell)])) {
+    const c = T.cells[Number(v.cell)].c, mienne = me && v.vers === me.uid;
+    reperesQ += `<g transform="translate(${f1(c[0] + 13 * echelle)} ${f1(c[1] - 12 * echelle)}) scale(${f1(echelle)})" style="pointer-events:none"><title>Vague de délinquance attendue ce soir</title>
+      <circle r="8.5" fill="#B4532A" stroke="#0C1124" stroke-width="1.4">${mienne ? '<animate attributeName="r" values="7.5;10;7.5" dur="1.4s" repeatCount="indefinite"/>' : ''}</circle>
+      <path d="M-5.5 -1.5q1.4-2 2.8 0t2.8 0 2.8 0 2.8 0M-5.5 2.5q1.4-2 2.8 0t2.8 0 2.8 0 2.8 0" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></g>`;
+  }
+
   // Étiquettes de zones : placées une à une sans se chevaucher (ni chevaucher sites et non-droit),
   // sur un quartier de la zone, dans une pastille sombre pour rester lisibles sur n'importe quel fond.
   const sitesPos = T.zones.map((tz) => { const z = st.zones[tz.uid]; const s = siteDe(z); return s ? { tz, z, s, c: celluleSite(T, tz, s) } : null; }).filter(Boolean);

@@ -49,6 +49,7 @@ import { nomSecteur } from './engine/nondroit.js';
 import { agentsND, monAnnonceND, suggestionND, placeND } from './ui/nondroit.js';
 import { lancerIncident, lancerAppui, ouvrirMiniJeu, majComptesIncidents, signatureIncidents, ouvrirJaugeSkins } from './ui/incidents.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
+import { actionReleve } from './ui/releve.js';
 
 const app = document.getElementById('app');
 const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief'];
@@ -368,6 +369,7 @@ async function onClick(e) {
         const err = lancerIncident(el.dataset.id, () => rerender()); if (err) { toast(err); rerender(); } break;
       }
       case 'appui-jouer': { const err = lancerAppui(() => rerender()); if (err) { toast(err); rerender(); } break; }
+      case 'releve': case 'releve-n': case 'releve-appui': case 'saisie': { if (actionReleve(a, el)) rerender(); break; }
       case 'dilemme': { const i = Number(el.dataset.i); S.draft.dilemme = S.draft.dilemme === i ? null : i; S.ordersDirty = true; rerender(); break; }
       case 'prime-choix': { const v = el.dataset.v; S.draft.prime = S.draft.prime === v ? null : v; S.ordersDirty = true; rerender(); break; }
       case 'jauge-skins': ouvrirJaugeSkins(); break;

@@ -2,6 +2,7 @@
 // mêmes données en entrée → même résultat, quel que soit l'ordinateur qui calcule.
 
 import { VAGUES, vagueVisee, appliquerVague, vaguesNuit } from './vagues.js';
+import { RELEVE, lireOrdresReleve, releveResoudre, releveNuit } from './releve.js';
 import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
 import {
@@ -200,6 +201,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.rapport = [];
     if (orders[uid]) {
       ord[uid] = sanitizeOrders(z, orders[uid], state);
+      Object.assign(ord[uid], lireOrdresReleve(orders[uid]));
       if (z.toursSansOrdres >= 3) z._retour = z.toursSansOrdres; // retour d'absence (accueilli par le Directeur)
       z.toursSansOrdres = 0;
       z.dernierOrdre = { alloc: ord[uid].alloc, rythme: ord[uid].rythme, patrouilles: ord[uid].patrouilles || {}, secteurs: ord[uid].secteurs || {} };
@@ -245,6 +247,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   jalonTous('Enquête (partages, accusation, traque)');
   const fp = fipaPre(state, uids, ord, push, T);
   jalonTous('FIPA');
+  // La relève : suspects en fuite pris en charge (ou non) par les zones voisines, saisies partagées.
+  const rel = releveResoudre(state, uids, ord, push, T, zoneLabel);
+  const fuites = []; // suspects qui filent ce soir : relèves proposées demain
+  jalonTous('Relève');
 
   // 3. Affaires disputées : la zone où l'affaire éclate la dirige ; les autres postulent,
   // et seules celles qu'elle accepte participent, dans la limite des places (agentsMax).
@@ -308,6 +314,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     push(8 + aff.recompense / 4, 'Affaire résolue', `${zoneLabel(state.zones[chef])} boucle l’affaire : ${aff.titre.toLowerCase()}`,
       `${aff.recompense} points en jeu.${aides.length ? ` Avec l’appui de ${aides.join(', ')}.` : ' Sans aide extérieure.'}`, chef);
     aff._resolue = true;
+    if (mult < 1) fuites.push({ de: chef, titre: aff.titre, cause: `${aff.titre} : dispositif juste suffisant` });
   }
 
   jalonTous('Affaires disputées');
@@ -565,10 +572,11 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const alloc = opx.eff;
     // Agents partis en traque, en audition ou en FIPA : d'abord ceux laissés sans affectation, puis les services.
     let libres = agentsLibres(z, o, T);
-    for (const pr2 of [pre.prises[uid], fp.prises[uid]]) {
+    for (const pr2 of [pre.prises[uid], fp.prises[uid], rel.prises[uid]]) {
       if (!pr2) continue;
       for (const [s, n0] of Object.entries(pr2)) { const k = Math.min(libres, n0); libres -= k; alloc[s] = Math.max(0, (alloc[s] || 0) - (n0 - k)); }
       const n = Object.values(pr2).reduce((a2, b2) => a2 + b2, 0);
+      if (n && pr2 === rel.prises[uid]) z.rapport.push(`Relève : ${n} agent${n > 1 ? 's' : ''} d’Intervention sur le suspect en fuite.`);
       if (n && pr2 === fp.prises[uid]) z.rapport.push(`FIPA : ${n} agent${n > 1 ? 's' : ''} mobilisé${n > 1 ? 's' : ''} sur le dispositif commun.`);
     }
     // Agent chargé des énigmes du jour : pendant qu'il planche, sa paperasse prend du retard.
@@ -594,6 +602,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
           const pts = Math.round(op.recompense * 0.4);
           z._points += pts; z.satisfaction += 1;
           z.rapport.push(`${op.titre} : réussite partielle, dispositif incomplet (+${pts} pts).`);
+          fuites.push({ de: uid, titre: op.titre, cause: `${op.titre} réussie à moitié` });
           push(6, 'Opération', `${zoneLabel(z)} : ${op.titre.charAt(0).toLowerCase()}${op.titre.slice(1)}, résultat mitigé`, 'Le dispositif était incomplet.', uid);
         } else {
           z.satisfaction -= 10; z.moral -= 4; z.reputation -= 2;
@@ -646,6 +655,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const vg = appliquerVague(state, z, vagueVisee(state, uid, T), cap, { T, zoneLabel, push });
       if (vg && vg.incidents) pr.incidents = (pr.incidents || 0) + vg.incidents;
       if (vg) jalon(z, vg.absorbee ? 'Vague de délinquance absorbée' : 'Vague de délinquance subie');
+      if (vg && vg.absorbee && makeRng(`${state.seed}:s${state.season}:t${T}:vague-fuite:${uid}`).chance(RELEVE.chanceVague)) fuites.push({ de: uid, titre: '', cause: 'Vague brisée' });
     }
     // Flotte : agents de Roulage et de Proximité en voiture, prime verte, force des fourgons (affichage).
     {
@@ -946,6 +956,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
   // Vagues de délinquance : les zones très fortes dans un domaine chassent la délinquance chez une voisine.
   vaguesNuit(state, uids, capsSoir, T, { zoneLabel, push });
+  releveNuit(state, fuites, T, { push, zoneLabel });
   // Le parquet surveille les dossiers trop dépendants des pièces des autres (avant la fin d'affaire).
   parquetSoir(state, uids, push);
   // Urgences : le temps cible s'ajuste sur les courses de la partie.

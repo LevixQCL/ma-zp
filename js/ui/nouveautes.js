@@ -3,17 +3,21 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-06-flotte-rendement',
+  id: '2026-10-06-vagues-releve',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🚓', 'Ta flotte rapporte', 'chaque place libre après l’Intervention met un agent de Roulage ou de Proximité en voiture (+40 %). Chaque modèle a son rôle : le combi électrique se rembourse (prime verte), l’anonyme fait tomber des flagrants et surveille une 2ᵉ planque en traque, le fourgon renforce tes engagements. Et ton parc te suit d’une saison à l’autre. Le détail : HP › Véhicules.'],
-    ['🚨', 'L’urgence du jour', 'des collègues pris à partie : choisis le véhicule qui part et fonce en feu bleu. Bats le meilleur score de la partie.'],
-    ['📂', 'Dossier clos', 'à la fin de chaque affaire, la Gazette ouvre le débrief : ce qui désignait l’auteur, les fausses pistes, qui a trouvé quoi.'],
+    ['🌊', 'Vagues de délinquance', 'une zone très forte dans un service chasse la délinquance… chez la voisine la plus faible. Annoncée le matin, sans l’auteur : prépare-toi et brise-la pour des points.'],
+    ['🤝', 'La relève', 'un suspect file vers ta zone : prends-le, transmets-le, ou dis « pas l’effectif ». Avec parfois les félicitations du juge ou une saisie à partager.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Vagues et relèves', [
+      ['Vagues de délinquance', 'un service à 1,75 fois la médiane du district ou plus fait fuir la délinquance vers la zone voisine la plus faible, qui la reçoit le soir suivant dans son service le plus faible. L’HP et les Ordres disent combien de capacité il faut pour la briser ; la carte montre un repère 🌊. Une vague envoyée tous les 2 soirs au plus, une reçue par soir au plus, et rien pour les nouvelles zones ni les zones absentes.'],
+      ['La relève', 'opération réussie à moitié, affaire bouclée de justesse ou vague brisée : un suspect file chez une voisine. Elle le prend (2 à 4 agents, 3 avec l’appui pour une capture sûre), le transmet une fois, ou décline sans conséquence. Mérite partagé, et environ une fois sur trois les félicitations du juge ou une saisie : l’une prend l’argent, l’autre la voiture.'],
+      ['Où', 'tout est sur l’HP. Le détail : Guide › Vagues de délinquance et relèves.'],
+    ]],
     ['Équilibrage', [
       ['Vieux dossiers', 'un dossier local qui traîne rapporte moins de points : pleine valeur le jour de son arrivée et le lendemain, puis −20 % par jour (minimum 25 %). Les Ordres affichent « vaut … % » à côté des dossiers concernés. Suivre le rythme paie plus que tout rattraper d’un coup.'],
     ]],
