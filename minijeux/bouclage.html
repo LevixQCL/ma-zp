@@ -144,45 +144,32 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 
 .field{position:relative;flex:1;min-height:0;display:grid;place-items:center}
 .field canvas{display:block;touch-action:none;border-radius:16px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 24px 50px rgba(0,0,0,.55)}
-.status .fu i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-left:3px;background:var(--surface-2);vertical-align:-1px}
-.status .fu i.on{background:var(--bad);box-shadow:0 0 8px var(--bad)}
+.hudrow{display:flex;gap:8px;align-items:center}
+.hudrow .pillh{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--stroke);border-radius:999px;padding:5px 11px 5px 8px;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+.hudrow .pillh b{font-family:var(--f-disp);font-size:17px;color:var(--ink)}
+.hudrow .pillh svg{width:18px;height:18px}
+.hudrow .lives svg{color:#ff4d6a} .hudrow .ag svg{color:#62b0ff}
+.hudrow .pillh.hit{animation:hit .4s} @keyframes hit{30%{background:var(--bad-soft);border-color:var(--bad)}}
+.hudrow .wv{margin-left:auto}
+.tip{min-height:38px;display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.35;color:#d5dce8;background:var(--surface);border:1px solid var(--stroke);border-radius:12px;padding:6px 11px}
+.tip b{color:var(--ink)} .tip .c{color:#ffd166;font-weight:700}
 .bar2{display:flex;gap:8px;align-items:center;padding-bottom:env(safe-area-inset-bottom,0px)}
-.chips{flex:1;min-width:0;display:flex;gap:5px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--mute)}
-.chips .lb{font-weight:600;margin-right:2px}
-.chip{display:inline-flex;align-items:center;gap:3px;background:var(--surface);border:1px solid var(--stroke);border-radius:999px;padding:3px 8px 3px 5px;color:var(--ink);font-weight:700;font-variant-numeric:tabular-nums}
-.chip svg{width:18px;height:18px}
-.btn.go{flex:0 0 auto;min-width:0;padding:11px 16px;font-size:14px}
-.btn.spd{flex:0 0 auto;min-width:0;padding:11px 12px;font-size:14px;font-family:var(--f-mono)}
+.btn.pw{flex:0 0 auto;min-width:0;padding:10px 12px;font-size:14px;display:inline-flex;align-items:center;gap:7px;position:relative;overflow:hidden}
+.btn.pw svg{width:20px;height:20px}
+.btn.pw .cd{position:absolute;left:0;bottom:0;height:3px;background:var(--accent);transition:width .2s linear}
+.btn.pw[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.btn.spd{flex:0 0 auto;min-width:0;padding:10px 12px;font-size:14px;font-family:var(--f-mono)}
 .btn.spd[aria-pressed="true"]{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
-/* tiroir de choix des moyens */
-.sheet{position:absolute;left:0;right:0;bottom:0;z-index:3;background:rgba(18,24,40,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--stroke-2);border-radius:18px;padding:12px;display:grid;gap:8px;box-shadow:0 -14px 40px rgba(0,0,0,.45);animation:up .2s cubic-bezier(.2,.9,.3,1.1)}
-@keyframes up{from{opacity:0;transform:translateY(14px)}}
-.sheet .sh-h{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--mute)}
-.sheet .sh-h b{color:var(--ink);font-family:var(--f-disp);font-size:16px}
-.sheet .x{background:none;border:0;color:var(--mute);font:600 13px var(--f-body);cursor:pointer;padding:4px}
-.opt{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;text-align:left;background:var(--surface);border:1px solid var(--stroke);border-radius:14px;padding:8px 10px;color:var(--ink);cursor:pointer;font:inherit}
-.opt:active{transform:scale(.985)}
-.opt canvas{width:44px;height:44px;border-radius:10px;background:#1a2133}
-.opt .nm{font-weight:700;font-size:14px}
-.opt .ds{font-size:12px;color:var(--mute);line-height:1.35}
-.opt .ct{text-align:right;font-size:12px;color:var(--mute);white-space:nowrap}
-.opt .ct b{display:block;font-family:var(--f-disp);font-size:16px;color:var(--accent)}
-.opt[disabled]{opacity:.42;cursor:not-allowed}
-.opt[disabled] .ct b{color:var(--mute)}
-.sheet .acts{display:flex;gap:8px}
-.sheet .acts .btn{padding:11px 10px;font-size:14px}
-.radio{display:flex;gap:8px;align-items:center;font-size:12.5px;line-height:1.3;color:#d5dce8;background:var(--surface);border:1px solid var(--stroke);border-radius:12px;padding:7px 10px}
-.radio svg{flex:0 0 auto;width:18px;height:18px;color:var(--accent)}
-.radio b{color:var(--ink)}
-.radio>span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.radio{padding:6px 10px!important}
-.radio.fix{border-color:color-mix(in srgb,var(--bad) 55%,transparent);background:var(--bad-soft)}
-.radio.fix svg{color:var(--bad)}
-.radio .var{color:#ffb23f;font-weight:700}
-.legend{display:grid;gap:8px}
-.legend .it{display:grid;grid-template-columns:40px 1fr;gap:10px;align-items:center;font-size:13px;line-height:1.4;color:#d5dce8}
-.legend .it b{color:var(--ink)}
-.legend canvas{width:40px;height:40px;border-radius:10px;background:#1a2133}
+.btn.go{flex:1;min-width:0;padding:11px 12px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn.go small{font-weight:600;opacity:.8}
+.btn.go:disabled{background:var(--surface);color:var(--mute);box-shadow:none;border-color:var(--stroke)}
+.newfoe{position:absolute;left:8px;right:8px;top:50%;transform:translateY(-50%);z-index:3;background:rgba(18,24,40,.96);border:1px solid var(--stroke-2);border-radius:18px;padding:16px;display:grid;gap:10px;box-shadow:0 20px 50px rgba(0,0,0,.55)}
+.newfoe .hd{display:flex;gap:12px;align-items:center}
+.newfoe canvas{width:64px;height:64px;border-radius:14px;background:#2a2f3b;flex:0 0 auto}
+.newfoe .ey{font-size:12px;font-weight:700;color:var(--bad);text-transform:uppercase;letter-spacing:.06em}
+.newfoe h3{margin:2px 0 0;font-family:var(--f-disp);font-size:22px}
+.newfoe p{margin:0;font-size:14px;line-height:1.45;color:#d5dce8}
+.newfoe p b{color:var(--ink)}
 
 </style>
 </head>
@@ -202,10 +189,18 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
   <div class="coach" id="coach" hidden></div>
   <div class="stage" id="stage">
 
-  <div class="status"><span id="stWave">Préparation</span><span id="stAg">Agents <b>10</b></span><span class="fu" id="stFu">Fuites</span></div>
-  <div class="radio" id="radio" hidden></div>
-  <div class="field" id="field"><canvas id="cv"></canvas><div class="sheet" id="sheet" hidden></div></div>
-  <div class="bar2"><div class="chips" id="chips"></div><button class="btn spd" id="spd" aria-pressed="false" aria-label="Vitesse double">×2</button><button class="btn primary go" id="launch">Lancer</button></div>
+  <div class="hudrow">
+    <span class="pillh lives" id="hLives" title="Fuites encore tolérées"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.3-9.2C1.4 8.4 3.6 5 7 5c2 0 3.5 1.1 5 3 1.5-1.9 3-3 5-3 3.4 0 5.6 3.4 4.3 6.8C19.5 16.4 12 21 12 21z"/></svg><b id="stLives">10</b></span>
+    <span class="pillh ag" id="hAg" title="Agents disponibles"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.5" r="3.6"/><path d="M4.5 20.5c.4-4.4 3.6-7 7.5-7s7.1 2.6 7.5 7z"/></svg><b id="stAg">16</b><span>agents</span></span>
+    <span class="pillh wv">Vague <b id="stWave">0/6</b></span>
+  </div>
+  <div class="field" id="field"><canvas id="cv"></canvas><div class="newfoe" id="newfoe" hidden></div></div>
+  <div class="tip" id="tip"></div>
+  <div class="bar2">
+    <button class="btn pw" id="herse" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="10" width="19" height="5" rx="1.2"/><path d="M5 10l1.5-3 1.5 3M10 10l1.5-3 1.5 3M15 10l1.5-3 1.5 3"/></svg><span id="herseTxt">Herse</span><i class="cd" id="herseCd"></i></button>
+    <button class="btn spd" id="spd" aria-pressed="false" aria-label="Vitesse double">×2</button>
+    <button class="btn primary go" id="launch">Lancer la vague 1</button>
+  </div>
 
   </div>
 </div>
@@ -522,340 +517,252 @@ const Shell = (() => {
 })();
 
 
-/* ───────────── Plan de bouclage : tower defense « réaliste » du service Intervention ─────────────
-   Les fuyards partent du lieu des faits (en haut) et tentent de sortir du périmètre par l'une des trois sorties.
-   Le joueur place ses moyens (combi en barrage, herse, patrouille à pied, voiture anonymisée, drone) sur des emplacements fixes. */
+/* ───────────── Plan de bouclage : tower defense du service Intervention ─────────────
+   Un seul itinéraire : du lieu des faits (en haut) jusqu'au périmètre (en bas). Les fuyards le suivent tous.
+   Le joueur pose ses moyens sur les emplacements bleus le long du trajet. Chaque interpellation rapporte des agents. */
 const MW=9, MH=14;
-const PT={S:[4.5,-0.7],N1:[4.5,2.5],N2:[1.5,2.5],N3:[7.5,2.5],N4:[1.5,7],N5:[4.5,7],N6:[7.5,7],N7:[4.5,11.5],N8:[1.5,11.5],N9:[7.5,11.5],
-  XB:[4.5,14.7],XW:[-0.7,11.5],XE:[9.7,11.5],rE1:[6,2.5],rE2:[6,7],rW1:[3,7],rW2:[3,11.5]};
-const STREETS=[
-  {n:'rue de la Halle',pts:['S','N1','N5','N7','XB']},
-  {n:'rue des Tanneurs',pts:['N2','N4','N8']},
-  {n:'rue du Rempart',pts:['N3','N6','N9']},
-  {n:'rue Neuve',pts:['N2','N1','rE1','N3']},
-  {n:'rue des Carmes',pts:['N4','rW1','N5','rE2','N6']},
-  {n:'boulevard du Ring',pts:['XW','N8','rW2','N7','N9','XE']}];
-const ALLEYS=[{n:'passage des Arbalétriers',pts:['rE1','rE2']},{n:'ruelle du Béguinage',pts:['rW1','rW2']}];
-const EXITS={XB:'sud',XW:'ouest',XE:'est'};
-const ROUTES_V=[['S','N1','N5','N7','XB'],['S','N1','N2','N4','N8','XW'],['S','N1','N3','N6','N9','XE'],['S','N1','N2','N4','N5','N7','XB'],
-  ['S','N1','N3','N6','N5','N7','XB'],['S','N1','N5','N4','N8','XW'],['S','N1','N5','N6','N9','XE']];
-const ROUTES_P=[['S','N1','rE1','rE2','N6','N9','XE'],['S','N1','N5','rW1','rW2','N8','XW']];
-const SLOTS=[
-  {id:'r1',k:'road',x:1.5,y:4.75},{id:'r3',k:'road',x:4.5,y:4.75},{id:'r2',k:'road',x:7.5,y:4.75},
-  {id:'r5',k:'road',x:1.5,y:9.25},{id:'r4',k:'road',x:4.5,y:9.25},{id:'r6',k:'road',x:7.5,y:9.25},
-  {id:'p1',k:'post',x:3.3,y:1.35},{id:'p2',k:'post',x:3.0,y:4.75},{id:'p3',k:'post',x:5.45,y:4.1},
-  {id:'p7',k:'post',x:8.47,y:5.6},{id:'p4',k:'post',x:0.53,y:9.25},{id:'p5',k:'post',x:3.8,y:8.5},
-  {id:'p6',k:'post',x:6.0,y:9.25},{id:'p9',k:'post',x:2.6,y:12.85},{id:'p8',k:'post',x:6.4,y:12.85}];
+const PATH=[[1.5,-.6],[1.5,2.6],[7.5,2.6],[7.5,5.6],[1.5,5.6],[1.5,8.6],[7.5,8.6],[7.5,11.6],[4.5,11.6],[4.5,14.7]];
+const PADS=[
+  {id:'a',x:3.4,y:1.2},{id:'b',x:6.0,y:1.2},
+  {id:'c',x:3.0,y:4.1},{id:'d',x:6.0,y:4.1},{id:'e',x:8.45,y:4.1},
+  {id:'f',x:0.55,y:7.1},{id:'g',x:3.0,y:7.1},{id:'h',x:6.0,y:7.1},
+  {id:'i',x:3.0,y:10.1},{id:'j',x:6.0,y:10.1},{id:'k',x:8.45,y:10.1},
+  {id:'l',x:2.9,y:13.1},{id:'m',x:6.1,y:13.1}];
 
-/* Moyens. pr = pression (en points de résistance par seconde) selon le type de fuyard. */
+/* Moyens. dps = interpellation (points de résistance par seconde) selon le type de fuyard. */
 const MEANS={
-  combi:{nom:'Combi en barrage',slot:'road',cout:3,range:1.0,bhp:100,pr:{pieton:16,scooter:16,voiture:16,volee:16,fourgon:16},
-    ds:'Bloque voitures et fourgons. Scooters et piétons le contournent.'},
-  herse:{nom:'Herse',slot:'road',cout:1,ds:'Crève les pneus du premier véhicule qui passe. Invisible. Une par vague.'},
-  patrouille:{nom:'Patrouille à pied',slot:'post',cout:2,range:1.7,pr:{pieton:34,scooter:9,voiture:8,volee:8,fourgon:6},
-    ds:'Interpelle les piétons, et les conducteurs arrêtés.'},
-  anon:{nom:'Voiture anonymisée',slot:'post',cout:2,range:1.9,pr:{pieton:12,scooter:36,voiture:34,volee:34,fourgon:20},
-    ds:'Prend en chasse les véhicules, scooters compris.'},
-  drone:{nom:'Drone',slot:'post',cout:1,range:2.4,
-    ds:'Repère les fuyards (+35 % d’efficacité des autres) et voit dans les ruelles.'}};
-const ACTIONS={
-  combi:{nom:'Sirènes et gyrophares',ds:'les fuyards à moins de 1,5 case ralentissent de moitié pendant 3 s'},
-  patrouille:{nom:'Interpellation ciblée',ds:'immobilise le piéton le plus proche à portée pendant 2,5 s'},
-  anon:{nom:'Prise en chasse',ds:'double l’efficacité de la voiture pendant 4 s'},
-  drone:{nom:'Projecteur thermique',ds:'repérage renforcé (+70 %) dans sa zone pendant 4 s'}};
-/* Variantes de quartier tirées à chaque partie (hors tuto) : un chantier coupe un tronçon aux véhicules,
-   un marché ralentit les véhicules d'une rue et cache les piétons dans la foule. */
-const VARIANTES=[
-  {k:'chantier',seg:['N2','N4'],slot:'r1',rue:'rue des Tanneurs'},
-  {k:'chantier',seg:['N3','N6'],slot:'r2',rue:'rue du Rempart'},
-  {k:'chantier',seg:['N1','N5'],slot:'r3',rue:'rue de la Halle'},
-  {k:'marche',rue:'rue des Carmes',y:7},
-  {k:'marche',rue:'rue Neuve',y:2.5}];
-const UPG={cout:2, txt:{combi:'Barrage renforcé : tient bien plus longtemps, plus d’agents sur place.',patrouille:'Binôme renforcé : +45 % d’efficacité, portée accrue.',
-  anon:'Équipage chevronné : +45 % d’efficacité, portée accrue.',drone:'Caméra thermique : portée et repérage accrus.'}};
-/* Fuyards : résistance (hp) et vitesse (cases/s). */
+  patrouille:{nom:'Patrouille à pied',cout:5,range:2.0,dps:{pieton:16,scooter:6,voiture:5,fourgon:4},
+    ds:'Interpelle les <b>piétons</b>. Contre un véhicule <b>ralenti</b> (combi, herse) : ×2,5.'},
+  anon:{nom:'Voiture anonymisée',cout:7,range:2.2,dps:{pieton:4,scooter:14,voiture:14,fourgon:10},
+    ds:'Prend en chasse les <b>véhicules</b>. Peu utile contre les piétons.'},
+  combi:{nom:'Combi (barrage filtrant)',cout:6,range:1.7,aoe:3,slow:[.5,.6,.7],
+    ds:'<b>Ralentit</b> tous les véhicules à portée (les piétons un peu). Les autres moyens en profitent.'},
+  drone:{nom:'Drone',cout:5,range:2.6,mark:[.3,.45,.6],
+    ds:'<b>Repère</b> les fuyards : +30 % d’efficacité pour tous les moyens autour.'}};
+const LV={dmg:[1,1.5,2.1],rng:[0,.2,.35],cout:[0,.8,1.2]};
+const UPTXT={patrouille:['','Binôme renforcé','Équipe d’intervention'],anon:['','Équipage chevronné','Deux voitures'],combi:['','Barrage renforcé','Double barrage'],drone:['','Caméra thermique','Drone longue portée']};
+/* Fuyards : résistance, vitesse (cases/s), agents gagnés à l'interpellation, vies perdues s'il sort. */
 const FOES={
-  pieton:{nom:'Fuyard à pied',un:'un fuyard à pied',f:0,hp:40,v:.75,veh:false},
-  scooter:{nom:'Scooter',un:'un scooter',f:0,hp:48,v:2.3,veh:true},
-  voiture:{nom:'Voiture',un:'une voiture',f:1,hp:80,v:1.5,veh:true,car:true,ram:8},
-  volee:{nom:'Voiture volée (2 occupants)',un:'une voiture volée',f:1,hp:110,v:1.7,veh:true,car:true,ram:8},
-  fourgon:{nom:'Fourgon',un:'un fourgon',f:0,hp:190,v:1.1,veh:true,car:true,ram:28}};
+  pieton:{nom:'Fuyard à pied',hp:30,v:.85,gain:1,vies:1,veh:false,
+    ds:'Lent mais nombreux. La <b>patrouille à pied</b> est faite pour lui.'},
+  scooter:{nom:'Scooter',hp:34,v:2.4,gain:2,vies:1,veh:true,
+    ds:'<b>Très rapide</b>, fragile. Ralentis-le avec un <b>combi</b> ; la <b>voiture anonymisée</b> le rattrape.'},
+  voiture:{nom:'Voiture',hp:70,v:1.6,gain:2,vies:1,veh:true,
+    ds:'Résistante et rapide. <b>Voiture anonymisée</b>, ou patrouille derrière un <b>combi</b>.'},
+  fourgon:{nom:'Fourgon',hp:220,v:1.0,gain:5,vies:2,veh:true,
+    ds:'<b>Très résistant</b> et coûte <b>2 vies</b> s’il passe. Concentre tes moyens et pose une <b>herse</b>.'}};
 const WAVES=[
-  {voiture:2,pieton:3},
-  {voiture:3,pieton:3,scooter:2},
-  {voiture:3,volee:2,scooter:3,pieton:2},
-  {fourgon:1,voiture:4,scooter:3,pieton:4},
-  {fourgon:2,volee:2,voiture:4,scooter:4,pieton:3}];
-const TUTO_WAVE={voiture:2,pieton:1};
+  [['pieton',6]],
+  [['pieton',4],['voiture',3]],
+  [['scooter',6],['pieton',3]],
+  [['voiture',5],['pieton',4],['scooter',2]],
+  [['fourgon',2],['voiture',4],['scooter',4]],
+  [['pieton',6],['voiture',6],['scooter',5],['fourgon',3]]];
+const TUTO_WAVE=[['pieton',4]];
+const HERSE={cd:20,dure:10};
 
 const Q2=new URLSearchParams(location.search);
-const R={cfg:null,phase:'idle',wave:0,waves:5,agents:0,placed:{},fuites:0,caught:0,units:[],queue:[],spawnT:0,fx:[],det:[],speed:1,sel:null,tuto:0,t:0,over:true,
-  dispo:{combi:2,anon:2,drone:1,herse:2},usure:0,renf:3};
-const C={cv:null,ctx:null,s:30,ox:0,oy:0,dpr:1,map:null};
-const routes=[];
+const R={cfg:null,phase:'idle',wave:0,waves:6,lives:10,agents:0,towers:{},units:[],spawnQ:[],nextIn:null,sel:null,waveEnd:0,
+  herse:{cd:0,placing:false,strips:[]},seen:new Set(),pause:false,caught:0,leaks:{},fx:[],speed:1,t:0,tuto:0,dispo:{},usure:0,over:true};
+const C={cv:null,ctx:null,s:30,dpr:1,map:null};
 
-/* ───── géométrie ───── */
-function buildRoute(keys,ped){
-  const pts=keys.map(k=>PT[k]), cum=[0], seg=[];
-  for(let i=1;i<pts.length;i++){ const [a,b]=[pts[i-1],pts[i]]; cum.push(cum[i-1]+Math.hypot(b[0]-a[0],b[1]-a[1]));
-    const al=ALLEYS.find(A=>A.pts.includes(keys[i-1])&&A.pts.includes(keys[i]));
-    const st=al||STREETS.find(S=>{const ia=S.pts.indexOf(keys[i-1]),ib=S.pts.indexOf(keys[i]);return ia>=0&&ib>=0;});
-    seg.push({ruelle:!!al,nom:st?st.n:''}); }
-  const r={keys,pts,cum,seg,len:cum[cum.length-1],exit:keys[keys.length-1],ped,slotD:{}};
-  for(const s of SLOTS){ if(s.k!=='road') continue;
-    for(let i=1;i<pts.length;i++){ const d=projSeg(s.x,s.y,pts[i-1],pts[i]); if(d.dist<.15){ r.slotD[s.id]=cum[i-1]+d.t*(cum[i]-cum[i-1]); break; } } }
-  return r;
-}
-function projSeg(x,y,a,b){ const dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy; let t=((x-a[0])*dx+(y-a[1])*dy)/L; t=Math.max(0,Math.min(1,t)); return {t,dist:Math.hypot(a[0]+t*dx-x,a[1]+t*dy-y)}; }
-function posAt(r,d){
-  d=Math.max(0,Math.min(r.len,d)); let i=1; while(i<r.cum.length-1&&r.cum[i]<d) i++;
-  const a=r.pts[i-1],b=r.pts[i],t=(d-r.cum[i-1])/((r.cum[i]-r.cum[i-1])||1);
-  return {x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t,ang:Math.atan2(b[1]-a[1],b[0]-a[0]),seg:r.seg[i-1]};
-}
-ROUTES_V.forEach(k=>routes.push(buildRoute(k,false)));
-ROUTES_P.forEach(k=>routes.push(buildRoute(k,true)));
-// Points d'appui assez proches d'une ruelle pour qu'une patrouille l'éclaire en partie.
-SLOTS.forEach(s=>{ if(s.k!=='post') return; for(const A of ALLEYS){ const d=projSeg(s.x,s.y,PT[A.pts[0]],PT[A.pts[1]]); if(d.dist<1.0){ s.ruelle=A.n; s.lx=PT[A.pts[0]][0]; s.ly=s.y; } } });
-const usesSeg=(r,[a,b])=>r.keys.some((k,i)=>i&&((r.keys[i-1]===a&&k===b)||(r.keys[i-1]===b&&k===a)));
-const slotOff=id=>R.vari&&R.vari.slot===id;
-function activeRoutes(){ return routes.filter(r=>r.ped||!(R.vari&&R.vari.k==='chantier'&&usesSeg(r,R.vari.seg))); }
+/* ───── géométrie du trajet ───── */
+const CUM=[0]; for(let i=1;i<PATH.length;i++) CUM.push(CUM[i-1]+Math.hypot(PATH[i][0]-PATH[i-1][0],PATH[i][1]-PATH[i-1][1]));
+const LEN=CUM[CUM.length-1];
+function posAt(d){ d=Math.max(0,Math.min(LEN,d)); let i=1; while(i<CUM.length-1&&CUM[i]<d) i++;
+  const a=PATH[i-1],b=PATH[i],t=(d-CUM[i-1])/(CUM[i]-CUM[i-1]); return {x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t,ang:Math.atan2(b[1]-a[1],b[0]-a[0])}; }
+function nearestOnPath(x,y){ let best={dist:1e9,d:0}; for(let i=1;i<PATH.length;i++){ const a=PATH[i-1],b=PATH[i],dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy;
+  let t=((x-a[0])*dx+(y-a[1])*dy)/L; t=Math.max(0,Math.min(1,t)); const px=a[0]+t*dx,py=a[1]+t*dy,dd=Math.hypot(px-x,py-y);
+  if(dd<best.dist) best={dist:dd,d:CUM[i-1]+t*(CUM[i]-CUM[i-1])}; } return best; }
+const padOf=id=>PADS.find(p=>p.id===id);
+const rangeOf=tw=>MEANS[tw.type].range+LV.rng[tw.lvl-1];
+const upCost=tw=>tw.lvl>=3?null:Math.round(MEANS[tw.type].cout*LV.cout[tw.lvl]);
+const sellVal=tw=>Math.floor(tw.spent*.6);
 
 /* ───── partie ───── */
 function resetGame(cfg,tuto){
-  R.cfg=cfg; R.tuto=tuto?1:0; R.wave=0; R.fuites=0; R.caught=0; R.units=[]; R.queue=[]; R.fx=[]; R.det=[]; R.placed={}; R.sel=null; closeSheet();
-  R.waves=tuto?1:cfg.waves; R.renf=cfg.renf;
+  R.cfg=cfg; R.tuto=tuto?1:0; R.wave=0; R.units=[]; R.spawnQ=[]; R.fx=[]; R.towers={}; R.sel=null; R.caught=0; R.leaks={}; R.seen=new Set(); R.pause=false;
+  R.herse={cd:0,placing:false,strips:[]}; $('newfoe').hidden=true;
+  R.waves=tuto?1:cfg.waves; R.lives=tuto?10:cfg.lives;
   const qn=(k,d)=>{ const v=Q2.get(k); return v!==null&&v!==''&&Number.isFinite(Number(v))?Number(v):d; };
   const inc=Q2.get('mode')==='incident';
-  R.agents=tuto?12:(inc?qn('agents',cfg.eff):cfg.eff);
-  R.dispo={combi:inc?qn('combi',cfg.combi):cfg.combi, anon:inc?qn('anon',cfg.anon):cfg.anon, drone:inc?qn('drone',cfg.drone):cfg.drone, herse:cfg.herses};
+  // En incident, l'effectif Intervention réel de la zone fixe les agents de départ (2,5 points par policier présent).
+  R.agents=tuto?10:(inc?Math.max(10,Math.round(qn('agents',cfg.agents)*2.5)):cfg.eff);
+  // Moyens disponibles : nombre de combis et de voitures de la zone, drone seulement avec une cellule drone.
+  R.dispo={combi:inc?qn('combi',cfg.combi):cfg.combi, anon:inc?qn('anon',cfg.anon):cfg.anon, drone:inc?qn('drone',cfg.drone):cfg.drone};
   R.usure=inc?Math.max(0,Math.min(1,qn('usure',0)/100)):0;
-  const vq=Q2.get('variante');
-  R.vari = tuto ? null : (vq==='aucune' ? null : vq!==null&&VARIANTES[Number(vq)] ? VARIANTES[Number(vq)] : (Math.random()<.4 ? null : pick(VARIANTES)));
-  R.over=false; prep(true);
+  R.phase='build'; R.nextIn=null; R.over=false; if(!tuto) Shell.st.mode='play';
+  tip(); ui();
 }
-function prep(first){
-  R.phase='prep'; if(!R.tuto) Shell.st.mode='play';
-  if(!first){ R.agents+=R.renf; Shell.toast(`Renfort : +${R.renf} agents`,'ok'); }
-  for(const id in R.placed){ const m=R.placed[id]; m.broken=false; m.bhp=maxBhp(m); m.armed=true; m.used=false; m.boostUntil=0; }
-  // Première préparation sans chrono : on lance quand on est prêt. Ensuite, un chrono court entre deux vagues.
-  R.freePrep = first || R.tuto>0;
-  if(R.freePrep) Shell.stopTimer(); else Shell.startTimer(R.cfg.prep2,launchWave);
-  radioPlan(); ui(); radioUi();
-}
-function maxBhp(m){ return (m.lvl>1?170:100)*(1-.3*R.usure); }
 function launchWave(){
-  if(R.phase!=='prep'||R.over) return;
-  Shell.stopTimer(); R.phase='wave'; R.wave++; R.freePrep=false; closeSheet(); if(R.intel) R.intel.spawned=0;
-  const comp=R.tuto?TUTO_WAVE:waveComp(R.wave);
-  const list=[]; for(const k in comp) for(let i=0;i<comp[k];i++) list.push(k);
-  R.units=R.units.filter(u=>!u.done); R.queue=shuffle(list); if(R.tuto) R.queue=['voiture','pieton','voiture'];
-  R.waveTotal=R.queue.length; R.spawnT=.4; Shell.blip(520,.12,'triangle',.06); Shell.toast(`Vague ${R.wave}`,'info'); ui(); radioUi();
+  if(R.over||R.wave>=R.waves) return;
+  const early = R.nextIn!==null&&R.wave>0 ? Math.ceil(R.nextIn/4) : 0;
+  if(early>0){ R.agents+=early; Shell.toast(`Appel anticipé : +${early} agents`,'ok'); }
+  R.wave++; R.phase='run'; R.nextIn=null;
+  const groups=R.tuto?TUTO_WAVE:WAVES[Math.min(WAVES.length-1,R.wave-1)];
+  // Les groupes arrivent l'un après l'autre, à intervalle régulier.
+  let t=Math.max(R.t,R.waveEnd)+.3; const gap=R.cfg.gap;
+  for(const [type,n] of groups) for(let i=0;i<n;i++){ R.spawnQ.push({type,at:t}); t+=gap*(type==='fourgon'?2:type==='scooter'?.6:1); }
+  R.waveEnd=t;
+  Shell.blip(520,.12,'triangle',.06); Shell.toast(`Vague ${R.wave}`,'info'); ui(); if(!R.sel) tip();
 }
-/* Radio : la centrale annonce la sortie visée par la majorité de la vague. Fiable 4 fois sur 5 ; sinon elle rectifie en cours de vague. */
-function radioPlan(){
-  if(R.tuto){ R.intel=null; return; }
-  const ex=Object.keys(EXITS), real=pick(ex), ok=Math.random()<.8;
-  R.intel={real, ann: ok?real:pick(ex.filter(e=>e!==real)), ok, fixed:false, spawned:0};
+function addUnit(type,d){ const F=FOES[type], hp=F.hp*R.cfg.hp;
+  R.units.push({type,d,hp,max:hp,slow:0,mark:1,punct:false,alive:true,bob:Math.random()*6,col:pick(['#e8283c','#c81e32','#ff4d5e','#d7263d'])});
+  if(!R.seen.has(type)){ R.seen.add(type); if(!R.tuto&&!R.sim) introFoe(type); }
 }
-const RADIO_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="10" height="14" rx="2"/><path d="M10 7V3M10 11h4M10 14.5h4"/><circle cx="12" cy="18" r=".8" fill="currentColor"/></svg>';
-function radioUi(){
-  const el=$('radio'); if(!el) return; const I=R.intel;
-  if(!I||R.phase==='idle'){ el.hidden=true; return; }
-  const vari = R.vari ? ` · <span class="var">${R.vari.k==='chantier'?`Chantier ${R.vari.rue} (fermée aux véhicules)`:`Marché ${R.vari.rue} (véhicules ralentis, piétons cachés)`}</span>` : '';
-  el.hidden=false; el.classList.toggle('fix',I.fixed);
-  el.innerHTML = RADIO_SVG + (I.fixed ? `<span><b>Rectification :</b> ils filent en réalité vers la sortie <b>${EXITS[I.real].toUpperCase()}</b> !</span>`
-    : `<span><b>Radio :</b> majorité vers la sortie <b>${EXITS[I.ann].toUpperCase()}</b>${R.phase==='prep'?vari:''}</span>`);
-}
-function waveComp(w){ return WAVES[Math.min(WAVES.length-1,w-1)]; }
-function spawn(type){
-  const F=FOES[type];
-  const act=activeRoutes();
-  let cand=act.filter(r=>!r.ped);
-  if(type==='pieton') cand = Math.random()<.6 ? act.filter(r=>r.ped) : cand;
-  if(R.intel){ R.intel.spawned++; if(Math.random()<.6){ const c2=(type==='pieton'?act:act.filter(r=>!r.ped)).filter(r=>r.exit===R.intel.real); if(c2.length) cand=c2; } }
-  if(R.tuto) cand=[routes[0]];
-  const w=cand.map(r=>{ if(type!=='voiture'&&type!=='volee') return 1; let n=0; for(const id in r.slotD){ const m=R.placed[id]; if(m&&m.type==='combi'&&!m.broken) n++; } return 1/(1+.9*n); });
-  let x=Math.random()*w.reduce((a,b)=>a+b,0), r=cand[0]; for(let i=0;i<cand.length;i++){ x-=w[i]; if(x<=0){ r=cand[i]; break; } }
-  addUnit(type,r,0);
-}
-let UID=0;
-function addUnit(type,r,dist){ const F=FOES[type]; const hp=F.hp*R.cfg.hp;
-  R.units.push({id:UID++,type,r,dist,hp,max:hp,done:null,blocked:null,punct:false,punctT:-9,jante:false,stunUntil:0,slowUntil:0,marked:false,dark:false,lit:false,crowd:false,got:0,col:pick(['#e8283c','#c81e32','#ff4d5e','#d7263d']),bob:Math.random()*6}); }
-
-const isCar=u=>FOES[u.type].car, isVeh=u=>FOES[u.type].veh;
-function meansPos(id){ const s=SLOTS.find(s=>s.id===id); return [s.x,s.y]; }
-function rangeOf(m){ const b=MEANS[m.type].range||0; return b+(m.lvl>1?(m.type==='drone'?.6:.3):0); }
-
 function step(dt){
+  if(R.over||R.pause) return;
   R.t+=dt;
-  if(R.phase!=='wave') return;
-  // apparitions
-  if(R.queue.length){ R.spawnT-=dt; if(R.spawnT<=0){ spawn(R.queue.shift()); R.spawnT=R.cfg.gap*(.75+Math.random()*.5); } }
-  const units=R.units.filter(u=>!u.done);
-  // repérage du drone
-  for(const u of units){ u.marked=false; }
-  for(const id in R.placed){ const m=R.placed[id]; if(m.type!=='drone') continue; const [mx,my]=meansPos(id), rg=rangeOf(m);
-    const k = m.boostUntil>R.t ? (m.lvl>1?1.85:1.7) : (m.lvl>1?1.5:1.35);
-    for(const u of units){ const p=posAt(u.r,u.dist); if(Math.hypot(p.x-mx,p.y-my)<=rg) u.marked=Math.max(u.marked||0,k); } }
-  if(R.intel&&!R.intel.ok&&!R.intel.fixed&&R.intel.spawned>=Math.ceil(R.waveTotal*.3)){ R.intel.fixed=true; Shell.toast(`Radio : vers la sortie ${EXITS[R.intel.real]} !`,'bad'); Shell.blip(300,.2,'square',.05); radioUi(); }
+  if(R.herse.cd>0) R.herse.cd=Math.max(0,R.herse.cd-dt);
+  R.herse.strips=R.herse.strips.filter(s=>R.t<s.until);
+  if(R.phase!=='run') return;
+  while(R.spawnQ.length&&R.spawnQ[0].at<=R.t) addUnit(R.spawnQ.shift().type,0);
+  // vague suivante : compte à rebours dès que la vague en cours a fini d'arriver
+  if(!R.spawnQ.length&&R.wave<R.waves&&R.nextIn===null&&R.t>=R.waveEnd&&!R.tuto) R.nextIn=R.cfg.pause;
+  if(R.nextIn!==null){ R.nextIn-=dt; if(R.nextIn<=0){ R.nextIn=null; launchWave(); } }
+  const live=R.units.filter(u=>u.alive);
+  for(const u of live){ u.slow=0; u.mark=1; u.p=posAt(u.d); }
+  // soutien : combis (ralentissement) et drones (repérage)
+  for(const id in R.towers){ const tw=R.towers[id], M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw);
+    if(tw.type!=='combi'&&tw.type!=='drone') continue;
+    for(const u of live){ if(Math.hypot(u.p.x-P.x,u.p.y-P.y)>rg) continue;
+      if(tw.type==='combi'){ const s=M.slow[tw.lvl-1]*(1-.25*R.usure); u.slow=Math.max(u.slow,FOES[u.type].veh?s:s*.5); }
+      else u.mark=Math.max(u.mark,1+M.mark[tw.lvl-1]); } }
   // déplacements
-  for(const u of units){
-    const F=FOES[u.type]; const p=posAt(u.r,u.dist); u.dark=p.seg.ruelle;
-    u.lit = u.dark && SLOTS.some(s=>s.ruelle&&R.placed[s.id]&&R.placed[s.id].type==='patrouille'&&Math.hypot(p.x-s.lx,p.y-s.ly)<=1.5);
-    u.crowd = !isVeh(u) && !!R.vari && R.vari.k==='marche' && p.seg.nom===R.vari.rue;
-    if(u.stunUntil>R.t) continue;
-    if(u.blocked){ const m=R.placed[u.blocked];
-      if(!m||m.broken){ u.blocked=null; }
-      else { if(frontOf(u)){ m.bhp-=F.ram*dt; if(m.bhp<=0){ m.broken=true; fx(...meansPos(u.blocked),'Barrage enfoncé','bad'); Shell.bad(); Shell.shake(); release(u.blocked); } } continue; }
-    }
-    let v=F.v*(u.punct?(u.type==='fourgon'?.45:.4):1);
-    if(u.jante) v=Math.min(v,.5);
-    if(u.slowUntil>R.t) v*=.5;
-    if(isVeh(u)&&R.vari&&R.vari.k==='marche'&&p.seg.nom===R.vari.rue) v*=.7;
-    if(isVeh(u)&&nearTurn(u)) v*=.55; // on ralentit pour tourner
-    if(u.type==='scooter'){ for(const id in u.r.slotD){ const m=R.placed[id]; if(m&&m.type==='combi'&&!m.broken&&Math.abs(u.r.slotD[id]-u.dist)<.7) v*=.5; } }
-    const adv=v*dt, nd=u.dist+adv;
-    let stop=null;
-    if(isCar(u)){ for(const id in u.r.slotD){ const m=R.placed[id]; if(!m||m.type!=='combi'||m.broken) continue; const sd=u.r.slotD[id]; if(sd<u.dist-.05) continue;
-      const q=R.units.filter(o=>!o.done&&o.blocked===id&&o!==u).length; const at=sd-.62-.58*q; if(nd>=at){ stop={id,at}; break; } } }
-    if(stop){ u.dist=Math.max(u.dist,Math.min(nd,stop.at)); u.blocked=stop.id; continue; }
-    if(isVeh(u)){ for(const id in u.r.slotD){ const m=R.placed[id]; if(!m||m.type!=='herse'||!m.armed) continue; const sd=u.r.slotD[id];
-      if(u.dist<sd&&nd>=sd){ m.armed=false; u.punct=true; u.punctT=R.t; u.hp=Math.max(1,u.hp-.2*u.max); const pp=meansPos(id); fx(pp[0],pp[1],'Pneus crevés','ok'); Shell.good(); } } }
-    u.dist=nd;
-    if(u.dist>=u.r.len){ escape(u); }
-  }
-  // pression des moyens
-  for(const id in R.placed){ const m=R.placed[id], M=MEANS[m.type]; if(!M.pr) continue; if(m.type==='combi'&&m.broken) continue;
-    const [mx,my]=meansPos(id), rg=rangeOf(m), boost=m.lvl>1?1.45:1;
-    const inR=R.units.filter(u=>!u.done).map(u=>({u,p:posAt(u.r,u.dist)})).filter(o=>Math.hypot(o.p.x-mx,o.p.y-my)<=rg);
-    m.tgt=null;
+  for(const u of live){ const F=FOES[u.type];
+    const v=F.v*(1-u.slow)*(u.punct?.5:1), nd=u.d+v*dt;
+    if(F.veh&&!u.punct) for(const s of R.herse.strips){ if(u.d<s.d&&nd>=s.d){ u.punct=true; u.hp-=.25*u.max; fx(u.p.x,u.p.y,'Pneus crevés','ok'); Shell.good(); } }
+    u.d=nd; if(u.d>=LEN) leak(u); }
+  // interpellations
+  for(const id in R.towers){ const tw=R.towers[id], M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw);
+    tw.tgt=null; if(tw.type==='drone') continue;
+    const inR=live.filter(u=>u.alive&&Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg);
     if(!inR.length) continue;
-    const wear = (m.type==='anon'||m.type==='combi') ? 1-.25*R.usure : 1;
-    const chasse = m.boostUntil>R.t ? 2 : 1;
-    const hit=(u)=>{ let k=M.pr[u.type]*boost*wear*chasse; if(u.marked) k*=u.marked; else if(u.dark) k*=u.lit?.75:.35; else if(u.crowd) k*=.6;
-      if(m.type==='patrouille'&&isVeh(u)&&(u.blocked||u.punct)){
-        // Herse puis patrouille juste derrière : « jante endommagée », le véhicule ne repartira plus vite.
-        if(u.punct&&R.t-u.punctT<2.5){ k*=4.5; if(!u.jante){ u.jante=true; const pp=posAt(u.r,u.dist); fx(pp.x,pp.y,'Jante endommagée','ok'); } } else k*=3; }
-      if(m.type==='anon'&&u.blocked) k*=1.3; u.hp-=k*dt; u.got+=k*dt; };
-    if(m.type==='combi'){ inR.forEach(o=>hit(o.u)); m.tgt=inR.map(o=>o.u); continue; }
-    const score=o=>{ const u=o.u; let s=u.dist/30;
-      if(m.type==='patrouille'){ if(!isVeh(u)) s+=3; else if(u.blocked||u.punct) s+=2; }
-      else { if(isVeh(u)) s+=3; }
-      if(u.dark&&!u.marked&&!u.lit) s-=1.5; return s; };
-    inR.sort((a,b)=>score(b)-score(a)); const t=inR[0].u; hit(t); m.tgt=[t];
-  }
-  for(const u of R.units){ if(u.done) continue;
-    if(u.type==='volee'&&u.hp<=.45*u.max){ u.done='abandon'; release(u.blocked); const p=posAt(u.r,u.dist); fx(p.x,p.y,'Abandonnée !','info');
-      for(let i=0;i<2;i++){ addUnit('pieton',u.r,u.dist+(i?-.15:.1)); } continue; }
-    if(u.hp<=0){ u.done='caught'; R.caught++; release(u.blocked); const p=posAt(u.r,u.dist); fx(p.x,p.y,'Interpellé','ok'); fx(p.x,p.y,'','catch'); Shell.good(); }
-  }
-  R.fx=R.fx.filter(f=>R.t-f.t<1.4);
-  if(!R.queue.length && !R.units.some(u=>!u.done)) endWave();
+    const wear=(tw.type==='anon'||tw.type==='combi')?1-.25*R.usure:1, k=LV.dmg[tw.lvl-1]*wear;
+    if(tw.type==='combi'){ inR.forEach(u=>u.hp-=M.aoe*k*u.mark*dt); tw.tgt=inR; continue; }
+    // cible : le plus avancé, en commençant par ceux pour qui le moyen est fait
+    const pref=u=>tw.type==='patrouille'?(!FOES[u.type].veh||u.slow>0||u.punct?1:0):(FOES[u.type].veh?1:0);
+    inR.sort((a,b)=>pref(b)-pref(a)||b.d-a.d); const t=inR[0];
+    let dps=M.dps[t.type]*k; if(tw.type==='patrouille'&&FOES[t.type].veh&&(t.slow>0||t.punct)) dps*=2.5;
+    t.hp-=dps*t.mark*dt; tw.tgt=[t]; }
+  for(const u of live){ if(u.alive&&u.hp<=0){ u.alive=false; R.caught++; const F=FOES[u.type]; R.agents+=F.gain;
+    fx(u.p.x,u.p.y,`+${F.gain}`,'gain'); fx(u.p.x,u.p.y,'','catch'); Shell.good(); } }
+  R.units=R.units.filter(u=>u.alive);
+  R.fx=R.fx.filter(f=>R.t-f.t<1.2);
+  if(R.wave>=R.waves&&!R.spawnQ.length&&!R.units.length) endGame();
 }
-function action(id){
-  const m=R.placed[id]; if(!m||!ACTIONS[m.type]||m.used||R.phase!=='wave') return false;
-  if(m.type==='combi'&&m.broken) return false;
-  const [x,y]=meansPos(id), live=R.units.filter(u=>!u.done), dist=u=>{ const p=posAt(u.r,u.dist); return Math.hypot(p.x-x,p.y-y); };
-  if(m.type==='combi') live.filter(u=>dist(u)<=1.5).forEach(u=>u.slowUntil=R.t+3);
-  else if(m.type==='patrouille'){ const c=live.filter(u=>u.type==='pieton'&&dist(u)<=rangeOf(m)).sort((a,b)=>dist(a)-dist(b))[0];
-    if(!c){ Shell.toast('Aucun piéton à portée','bad'); return 'rien'; } c.stunUntil=R.t+2.5; }
-  else m.boostUntil=R.t+4;
-  m.used=true; m.flash=R.t; fx(x,y,ACTIONS[m.type].nom,'info'); Shell.blip(880,.14,'triangle',.07); Shell.buzz(25); return true;
-}
-function nearTurn(u){ const r=u.r; for(let i=1;i<r.pts.length-1;i++){ if(Math.abs(r.cum[i]-u.dist)<.45){ const a=r.pts[i-1],b=r.pts[i],c=r.pts[i+1]; if((b[0]-a[0])*(c[1]-b[1])-(b[1]-a[1])*(c[0]-b[0])!==0) return true; } } return false; }
-function frontOf(u){ const sd=u.r.slotD[u.blocked]; return !R.units.some(o=>o!==u&&!o.done&&o.blocked===u.blocked&&o.r.slotD[u.blocked]-o.dist < sd-u.dist-.01); }
-function release(id){ if(!id) return; R.units.forEach(o=>{ if(o.blocked===id) o.blocked=null; }); }
-function fx(x,y,txt,k){ R.fx.push({x,y,txt,k,t:R.t}); }
-function escape(u){
-  u.done='escaped'; R.fuites++; Shell.bad(); Shell.shake(); Shell.toast(`Fuite par la sortie ${EXITS[u.r.exit]} !`,'bad');
-  R.det.push(raison(u)); fx(...edgePos(u.r.exit),'Fuite !','bad');
-  if(R.fuites>=3 && !R.tuto) setTimeout(()=>finish(false),700);
+function leak(u){
+  u.alive=false; const F=FOES[u.type]; R.lives-=F.vies; R.leaks[u.type]=(R.leaks[u.type]||0)+1;
+  Shell.bad(); if(!R.sim){ Shell.shake(); const h=$('hLives'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit'); }
+  fx(4.5,13.2,`−${F.vies} vie${F.vies>1?'s':''}`,'bad');
+  if(R.lives<=0&&!R.tuto){ R.lives=0; finish(false); }
   ui();
 }
-function edgePos(k){ const p=PT[k]; return [Math.max(.4,Math.min(MW-.4,p[0])),Math.max(.4,Math.min(MH-.4,p[1]))]; }
-function raison(u){
-  const F=FOES[u.type], sortie=`la sortie ${EXITS[u.r.exit]}`, v=`Vague ${R.wave} · `;
-  const sur=t=>Object.keys(u.r.slotD).some(id=>R.placed[id]&&R.placed[id].type===t);
-  const ruelle=u.r.seg.find(s=>s.ruelle);
-  if(u.type==='pieton'&&ruelle&&!Object.values(R.placed).some(m=>m.type==='drone')) return `${v}un fuyard à pied a filé par le ${ruelle.nom} vers ${sortie} : dans le noir des ruelles, sans drone, tes agents le voient mal.`;
-  if(u.type==='scooter'&&sur('combi')&&!sur('herse')) return `${v}un scooter a contourné ton combi vers ${sortie} : contre eux, il faut une herse ou une voiture anonymisée.`;
-  if(u.type==='fourgon') return `${v}un fourgon est sorti par ${sortie} : il enfonce vite un barrage seul. Crève-lui d’abord les pneus avec une herse, puis concentre plusieurs moyens.`;
-  if(u.got<2) return `${v}${F.un} est sorti${F.f?'e':''} par ${sortie} sans qu’aucun moyen ne l’approche : cet itinéraire n’était pas couvert.`;
-  if(u.type==='pieton') return `${v}un fuyard à pied est sorti par ${sortie} : une patrouille à pied plus près de son chemin l’aurait arrêté.`;
-  return `${v}${F.un} est sorti${F.f?'e':''} par ${sortie} : tes moyens l’ont ralenti${F.f?'e':''} sans l’arrêter. Un barrage ou une herse l’immobilise, et les agents à pied finissent le travail.`;
-}
-function endWave(){
+function fx(x,y,txt,k){ R.fx.push({x,y,txt,k,t:R.t}); }
+function endGame(){
   if(R.over) return;
-  if(R.tuto){ R.over=true; R.phase='idle'; Shell.win(); setTimeout(()=>tutoStep(4),500); return; }
-  if(R.wave>=R.waves){ finish(R.fuites<3); return; }
-  Shell.win(); prep(false);
+  if(R.tuto){ R.over=true; R.phase='idle'; Shell.win(); setTimeout(()=>tutoStep(5),400); return; }
+  finish(R.lives>0);
 }
 function finish(ok){
-  if(R.over) return; R.over=true; R.phase='idle'; Shell.stopTimer(); closeSheet(); ui(); radioUi();
+  if(R.over) return; R.over=true; R.phase='idle'; R.sel=null; R.herse.placing=false; ui(); tip();
+  if(R.sim) return;
   if(ok) Shell.win();
-  Shell.result({ok, faults:R.fuites, stats:[['Interpellés',R.caught],['Fuites',`${R.fuites} / 3`]], details:R.det.slice(0,4),
-    note:R.fuites===0?'Bouclage parfait : double point.':'Sans aucune fuite : +2 sur la jauge.'});
+  const fuites=Object.values(R.leaks).reduce((a,b)=>a+b,0);
+  const conseils={pieton:'<b>piétons</b> : place des <b>patrouilles à pied</b> le long du trajet.',
+    scooter:'<b>scooters</b> : un <b>combi</b> les ralentit et la <b>voiture anonymisée</b> les rattrape.',
+    voiture:'<b>voitures</b> : la <b>voiture anonymisée</b> est faite pour elles, une patrouille derrière un <b>combi</b> aussi.',
+    fourgon:'<b>fourgons</b> : très résistants, <b>renforce</b> tes moyens et pose une <b>herse</b> à leur passage.'};
+  const details=Object.entries(R.leaks).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${n} fuite${n>1?'s':''} de ${conseils[k]}`);
+  Shell.result({ok, faults:fuites, stats:[['Interpellés',R.caught],['Fuites',String(fuites)]], details,
+    note:fuites===0?'Bouclage parfait : double point.':'Sans aucune fuite : +2 sur la jauge.'});
+}
+
+/* ───── nouveaux fuyards : petite fiche, jeu en pause ───── */
+function introFoe(type){
+  const F=FOES[type], el=$('newfoe'); R.pause=true;
+  el.innerHTML=`<div class="hd"><canvas id="nfc"></canvas><div><div class="ey">Nouveau fuyard</div><h3>${F.nom}</h3></div></div>
+    <p>${F.ds}</p><p style="color:var(--mute);font-size:13px">Interpellé : <b>+${F.gain} agent${F.gain>1?'s':''}</b> · S’il sort : <b>−${F.vies} vie${F.vies>1?'s':''}</b></p>
+    <button class="btn primary" id="nfOk">Compris</button>`;
+  el.hidden=false;
+  const c=$('nfc'); c.width=128; c.height=128; const g=c.getContext('2d'); const z=type==='pieton'?240:type==='scooter'?220:type==='fourgon'?120:150; g.setTransform(z,0,0,z,64,64); g.rotate(-Math.PI/2);
+  drawFoeBody(g,{type,col:'#e8283c',bob:0},0);
+  $('nfOk').onclick=()=>{ el.hidden=true; R.pause=false; };
 }
 
 /* ───── interface ───── */
-const FOE_ICON={voiture:'🚗',volee:'🚙',scooter:'🛵',pieton:'🏃',fourgon:'🚐'};
 function ui(){
-  $('stWave').innerHTML = R.phase==='wave' ? `Vague <b>${R.wave} / ${R.waves}</b>` : R.phase==='prep' ? `Préparation · vague <b>${R.wave+1} / ${R.waves}</b>` : 'Plan de bouclage';
-  $('stAg').innerHTML=`Agents <b>${R.agents}</b>`;
-  $('stFu').innerHTML='Fuites'+[0,1,2].map(i=>`<i class="${i<R.fuites?'on':''}"></i>`).join('');
-  const comp = R.phase==='prep' ? (R.tuto?TUTO_WAVE:waveComp(R.wave+1)) : null;
-  if(comp){ $('chips').innerHTML=`<span class="lb">Prochaine vague</span>`+Object.entries(comp).map(([k,n])=>`<span class="chip" title="${FOES[k].nom}">${foeIcon(k)}${n}</span>`).join(''); }
-  else if(R.phase==='wave'){ const left=R.queue.length+R.units.filter(u=>!u.done).length; $('chips').innerHTML=`<span class="lb">En fuite</span><span class="chip">${left}</span><span class="lb" style="margin-left:6px">Interpellés</span><span class="chip">${R.caught}</span>`; }
-  else $('chips').innerHTML='';
-  $('launch').hidden = R.phase!=='prep'; $('launch').textContent = R.wave===0?'Lancer':'Vague suivante';
-  $('launch').disabled = R.tuto>0 && R.tuto<3;
-  $('spd').hidden = R.phase==='idle';
+  $('stLives').textContent=Math.max(0,R.lives); $('stAg').textContent=R.agents; $('stWave').textContent=`${Math.min(R.wave,R.waves)}/${R.waves}`;
+  const b=$('launch');
+  if(R.phase==='build'){ b.disabled=R.tuto>0&&R.tuto<4; b.innerHTML='Lancer la vague 1'; }
+  else if(R.phase==='run'&&R.nextIn!==null){ b.disabled=false; b.innerHTML=`Vague ${R.wave+1} dans ${Math.ceil(R.nextIn)} s <small>· maintenant : +${Math.ceil(R.nextIn/4)}</small>`; }
+  else { b.disabled=true; b.innerHTML=R.phase==='run'?(R.wave>=R.waves?'Dernière vague':`Vague ${R.wave} en cours`):'—'; }
+  const hz=$('herse'); hz.hidden=R.phase==='idle'||R.tuto>0; hz.disabled=R.herse.cd>0||R.phase!=='run';
+  hz.setAttribute('aria-pressed',R.herse.placing); $('herseTxt').textContent=R.herse.cd>0?`${Math.ceil(R.herse.cd)} s`:'Herse';
+  $('herseCd').style.width=(R.herse.cd>0?(1-R.herse.cd/HERSE.cd)*100:0)+'%';
+  $('spd').hidden=R.phase==='idle';
 }
-function foeIcon(k){ return `<svg viewBox="-1 -1 2 2">${({voiture:'<rect x="-.75" y="-.38" width="1.5" height=".76" rx=".25" fill="#c9ced6"/><rect x=".15" y="-.3" width=".3" height=".6" rx=".08" fill="#17202c"/>',
-  volee:'<rect x="-.78" y="-.4" width="1.56" height=".8" rx=".25" fill="#2f2f35" stroke="#ff5d5d" stroke-width=".1"/><rect x=".15" y="-.3" width=".3" height=".6" rx=".08" fill="#17202c"/>',
-  scooter:'<rect x="-.7" y="-.16" width="1.4" height=".32" rx=".16" fill="#d9dde2"/><circle cx="-.05" cy="0" r=".24" fill="#2b2f36"/>',
-  pieton:'<circle cx="0" cy="-.5" r=".24" fill="#d9b48f"/><path d="M-.38 .85 L-.3 -.12 Q0 -.28 .3 -.12 L.38 .85 Z" fill="#8f9bb1"/>',
-  fourgon:'<rect x="-.85" y="-.42" width="1.7" height=".84" rx=".14" fill="#eceef1"/><rect x=".45" y="-.34" width=".25" height=".68" rx=".06" fill="#17202c"/>'})[k]}</svg>`; }
-
-function openSheet(slot){
-  if(R.over&&!R.tuto) return; R.sel=slot.id; const m=R.placed[slot.id]; const sh=$('sheet'); sh.hidden=false;
-  if(m){ const M=MEANS[m.type], can=R.phase==='prep';
-    const upOk=UPG.txt[m.type]&&m.lvl<2, upAff=R.agents>=UPG.cout;
-    sh.innerHTML=`<div class="sh-h"><span><b>${M.nom}</b>${m.lvl>1?' · renforcé':''}</span><button class="x" id="shx">Fermer</button></div>
-      <p class="small" style="margin:0;color:var(--mute);font-size:13px;line-height:1.4">${M.ds}${m.type==='herse'?(m.armed?' Armée.':' Déjà utilisée pour cette vague.'):''}${m.type==='combi'&&m.broken?' <b style="color:var(--bad)">Enfoncé : réparé à la prochaine préparation.</b>':''}${m.type==='patrouille'&&slot.ruelle?` Éclaire en partie le ${slot.ruelle}.`:''}</p>
-      ${ACTIONS[m.type]?`<p class="small" style="margin:0;font-size:13px;line-height:1.4;color:#d5dce8"><b style="color:var(--accent)">⚡ ${ACTIONS[m.type].nom}</b> : ${ACTIONS[m.type].ds}. ${m.used?'Déjà utilisée pour cette vague.':R.phase==='wave'?'Touche le moyen sur la carte pour la déclencher.':'Une fois par vague : pendant la vague, touche le moyen.'}</p>`:''}
-      ${upOk?`<button class="opt" id="up" ${upAff?'':'disabled'}><canvas data-ic="${m.type}"></canvas><span><span class="nm">Renforcer</span><br><span class="ds">${UPG.txt[m.type]}</span></span><span class="ct"><b>${UPG.cout}</b>agents</span></button>`:''}
-      <div class="acts"><button class="btn" id="rm" ${can?'':'disabled'}>${can?`Retirer (+${M.cout+(m.lvl>1?UPG.cout:0)} agents)`:'Retrait entre deux vagues'}</button></div>`;
-    if($('up')) $('up').onclick=()=>{ if(R.agents<UPG.cout) return; R.agents-=UPG.cout; m.lvl=2; m.bhp=maxBhp(m); Shell.good(); closeSheet(); ui(); };
-    $('rm').onclick=()=>{ if(R.phase!=='prep') return; R.agents+=M.cout+(m.lvl>1?UPG.cout:0); if(R.dispo[m.type]!==undefined) R.dispo[m.type]++; delete R.placed[slot.id]; closeSheet(); ui(); };
-  } else {
-    const types=Object.keys(MEANS).filter(t=>MEANS[t].slot===slot.k);
-    const allow = R.tuto===1?['combi']:R.tuto===2?['patrouille']:types;
-    sh.innerHTML=`<div class="sh-h"><span><b>${slot.k==='road'?'Emplacement sur chaussée':'Point d’appui'}</b></span><button class="x" id="shx">Fermer</button></div>`+
-      types.map(t=>{ const M=MEANS[t], lim=R.dispo[t], nope = lim!==undefined&&lim<=0, cher=R.agents<M.cout, tutoNo=!allow.includes(t);
-        const why = nope?(t==='drone'&&!lim?'pas de cellule drone':'plus disponible'):cher?'pas assez d’agents':'';
-        return `<button class="opt" data-t="${t}" ${(nope||cher||tutoNo)?'disabled':''}><canvas data-ic="${t}"></canvas><span><span class="nm">${M.nom}</span><br><span class="ds">${why?`<b style="color:var(--bad)">${why}</b> · `:''}${M.ds}${t==='patrouille'&&slot.ruelle?' Ici, elle éclaire aussi la ruelle.':''}</span></span><span class="ct"><b>${M.cout}</b>agent${M.cout>1?'s':''}${lim!==undefined?`<br>${Math.max(0,lim)} dispo`:''}</span></button>`; }).join('')+
-      (R.usure>0&&slot.k==='road'||R.usure>0&&slot.k==='post'?`<p class="small" style="margin:0;font-size:12px;color:var(--mute)">Véhicules usés à ${Math.round(R.usure*100)} % : combis et voitures un peu moins efficaces.</p>`:'');
-    sh.querySelectorAll('.opt[data-t]').forEach(b=>b.onclick=()=>place(slot.id,b.dataset.t));
-  }
-  $('shx').onclick=closeSheet;
-  sh.querySelectorAll('canvas[data-ic]').forEach(c=>drawIcon(c,c.dataset.ic));
+function tip(html){
+  const el=$('tip');
+  if(html){ el.innerHTML=html; return; }
+  if(R.herse.placing){ el.innerHTML='<span><b>Herse :</b> touche la route là où la poser. Pendant 10 s, elle crève les pneus des véhicules qui passent.</span>'; return; }
+  if(R.sel){ const tw=R.towers[R.sel.pad];
+    if(R.sel.opt){ const o=R.sel.opt;
+      if(o==='up'){ el.innerHTML=`<span><b>${UPTXT[tw.type][tw.lvl]}</b> · <span class="c">${upCost(tw)} agents</span> — plus efficace, portée accrue. <b>Touche encore pour confirmer.</b></span>`; return; }
+      if(o==='sell'){ el.innerHTML=`<span><b>Retirer</b> ce moyen · récupère <span class="c">${sellVal(tw)} agents</span>. <b>Touche encore pour confirmer.</b></span>`; return; }
+      const M=MEANS[o]; el.innerHTML=`<span><b>${M.nom}</b> · <span class="c">${M.cout} agents</span> — ${M.ds} <b>Touche encore pour poser.</b></span>`; return; }
+    el.innerHTML= tw ? `<span><b>${MEANS[tw.type].nom}</b> (niveau ${tw.lvl}) — ${MEANS[tw.type].ds}</span>` : '<span>Choisis un moyen autour de l’emplacement.</span>'; return; }
+  if(R.phase==='build') el.innerHTML='<span>Touche un <b>emplacement bleu</b> pour poser un moyen, puis lance la vague. Les fuyards suivent tous la route jusqu’au <b>périmètre</b>.</span>';
+  else if(R.phase==='run') el.innerHTML='<span>Chaque interpellation rapporte des <b>agents</b> : pose ou <b>renforce</b> tes moyens à tout moment.</span>';
+  else el.innerHTML='';
 }
-function closeSheet(){ R.sel=null; const sh=$('sheet'); if(sh) sh.hidden=true; }
-function place(id,t){
-  const M=MEANS[t]; if(slotOff(id)||R.placed[id]) return; if(R.agents<M.cout) return; if(R.dispo[t]!==undefined){ if(R.dispo[t]<=0) return; R.dispo[t]--; }
-  R.agents-=M.cout; R.placed[id]={type:t,lvl:1,broken:false,armed:true,bhp:0,born:R.t}; R.placed[id].bhp=maxBhp(R.placed[id]);
-  Shell.good(); closeSheet(); ui();
-  if(R.tuto===1&&t==='combi') tutoStep(2); else if(R.tuto===2&&t==='patrouille') tutoStep(3);
+/* menu circulaire autour de l'emplacement sélectionné */
+function menuItems(){
+  if(!R.sel) return [];
+  const P=padOf(R.sel.pad), tw=R.towers[R.sel.pad];
+  let items;
+  if(tw){ items=[]; if(tw.lvl<3) items.push({k:'up',a:-Math.PI/2}); items.push({k:'sell',a:Math.PI/2}); }
+  else { const keys=['patrouille','anon','combi','drone'], allow=R.tuto?['patrouille']:keys; items=keys.map((k,i)=>({k,a:-Math.PI/2+i*Math.PI/2,lock:!allow.includes(k)})); }
+  const r=.92, cx=Math.min(MW-r-.42,Math.max(r+.42,P.x)), cy=Math.min(MH-r-.6,Math.max(r+.42,P.y));
+  return items.map(it=>{ const x=cx+Math.cos(it.a)*r, y=cy+Math.sin(it.a)*r; let ok=true, why='';
+    if(it.k==='up') ok=R.agents>=upCost(tw);
+    else if(it.k!=='sell'){ const used=Object.values(R.towers).filter(t=>t.type===it.k).length, lim=R.dispo[it.k];
+      if(it.lock){ ok=false; why='pas pour le moment'; }
+      else if(lim!==undefined&&used>=lim){ ok=false; why=it.k==='drone'&&!lim?'ta zone n’a pas de cellule drone':`tous tes véhicules sont engagés (${lim})`; }
+      else if(R.agents<MEANS[it.k].cout){ ok=false; why=`il faut ${MEANS[it.k].cout} agents`; } }
+    return {...it,x,y,ok,why}; });
+}
+function choose(it){
+  const id=R.sel.pad;
+  if(R.sel.opt!==it.k){ R.sel.opt=it.k; tip(); if(!it.ok){ const nm=it.k==='up'?'Renforcer':MEANS[it.k].nom; tip(`<span><b>${nm}</b> : ${it.why||'pas assez d’agents'}.</span>`); } return; }
+  if(!it.ok) return;
+  if(it.k==='sell'){ R.agents+=sellVal(R.towers[id]); delete R.towers[id]; }
+  else if(it.k==='up'){ const tw=R.towers[id], c=upCost(tw); R.agents-=c; tw.spent+=c; tw.lvl++; tw.born=R.t; }
+  else { const M=MEANS[it.k]; R.agents-=M.cout; R.towers[id]={type:it.k,lvl:1,spent:M.cout,born:R.t}; if(R.tuto===3) tutoStep(4); }
+  Shell.good(); R.sel=null; tip(); ui();
+}
+function onTap(e){
+  const r=C.cv.getBoundingClientRect(), x=(e.clientX-r.left)/C.s, y=(e.clientY-r.top)/C.s;
+  if((R.over&&!R.tuto)||R.phase==='idle'||R.pause) return;
+  if(R.herse.placing){ const n=nearestOnPath(x,y);
+    if(n.dist<.75){ R.herse.strips.push({d:n.d,until:R.t+HERSE.dure}); R.herse.cd=HERSE.cd; Shell.good(); }
+    R.herse.placing=false; tip(); ui(); return; }
+  for(const it of menuItems()){ if(Math.hypot(it.x-x,it.y-y)<.44){ choose(it); return; } }
+  let best=null,bd=.6; for(const p of PADS){ const d=Math.hypot(p.x-x,p.y-y); if(d<bd){ bd=d; best=p; } }
+  if(R.tuto===1&&best&&best.id!=='c') best=null;
+  if(R.tuto===3&&best&&best.id!=='c') best=null;
+  if(best){ R.sel={pad:best.id,opt:null}; if(R.tuto===1) tutoStep(3); Shell.blip(700,.04,'square',.03); }
+  else if(R.tuto!==3) R.sel=null;
+  tip();
 }
 
 /* ───── tutoriel ───── */
 function tutoStep(n){
   R.tuto=n; ui();
-  if(n===1) Shell.coach(1,3,'Les fuyards partent du <b>lieu des faits</b> (en haut) et foncent vers les <b>sorties</b> du périmètre. Touche l’emplacement de chaussée qui clignote et poses-y un <b>combi en barrage</b>.');
-  if(n===2) Shell.coach(2,3,'Une voiture arrêtée au barrage est une proie facile. Pose une <b>patrouille à pied</b> sur le point d’appui qui clignote : elle interpelle les piétons et les conducteurs bloqués.');
-  if(n===3) Shell.coach(3,3,'Tout est en place. Touche <b>Lancer</b> : deux voitures et un fuyard à pied vont descendre la rue de la Halle.');
-  if(n===4) Shell.endTuto();
+  if(n===1) Shell.coach(1,3,'Les fuyards suivent <b>la route</b>, du lieu des faits jusqu’au <b>périmètre</b>. Touche l’<b>emplacement bleu</b> qui clignote.');
+  if(n===3) Shell.coach(2,3,'Choisis la <b>patrouille à pied</b> au-dessus de l’emplacement. Premier toucher : sa portée s’affiche. Deuxième toucher : elle est posée.');
+  if(n===4) Shell.coach(3,3,'Parfait. Touche <b>Lancer la vague</b> : quatre fuyards à pied arrivent. Chaque interpellation te rapporte des agents.');
+  if(n===5) Shell.endTuto();
 }
 
 /* ───── rendu ───── */
@@ -868,89 +775,35 @@ function resize(){
   const g=C.map.getContext('2d'); g.setTransform(s*C.dpr,0,0,s*C.dpr,0,0); drawMap(g);
 }
 function rng(seed){ let x=seed||1; return ()=>{ x=(x*16807)%2147483647; return (x-1)/2147483646; }; }
-const RW=.92, SW=.26; // largeur chaussée, trottoir
+const RW=1.0;
+function strokePath(g,w,col,dash){ g.strokeStyle=col; g.lineWidth=w; g.lineJoin='round'; g.lineCap='butt'; if(dash) g.setLineDash(dash); g.beginPath(); PATH.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.stroke(); g.setLineDash([]); }
 function drawMap(g){
   const rnd=rng(5324);
-  g.fillStyle='#0d1016'; g.fillRect(0,0,MW,MH);
-  // trottoirs puis chaussées
-  const line=(keys,w,col)=>{ g.strokeStyle=col; g.lineWidth=w; g.lineCap='butt'; g.lineJoin='miter'; g.beginPath(); keys.forEach((k,i)=>{ const p=PT[k]; i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]); }); g.stroke(); };
-  STREETS.forEach(S=>line(S.pts,RW+SW*2,'#4b5263'));
-  STREETS.forEach(S=>line(S.pts,RW+.06,'#c9d0dc'));
-  STREETS.forEach(S=>line(S.pts,RW,'#363c4b'));
-  // grain de l'asphalte
-  for(let i=0;i<900;i++){ g.fillStyle=`rgba(255,255,255,${rnd()*.025})`; g.fillRect(rnd()*MW,rnd()*MH,.03,.03); }
-  // marquage central
-  g.setLineDash([.28,.26]); STREETS.forEach(S=>line(S.pts,.04,'rgba(240,240,230,.55)')); g.setLineDash([]);
-  // ruelles pavées
-  ALLEYS.forEach(A=>{ line(A.pts,.42,'#2b2722'); g.setLineDash([.06,.06]); line(A.pts,.36,'#3a342c'); g.setLineDash([]); });
-  // pâtés de maisons
-  const xs=[0,1.5,4.5,7.5,MW], ys=[0,2.5,7,11.5,MH], ins=RW/2+SW+.06;
-  for(let i=0;i<4;i++) for(let j=0;j<4;j++){
-    let x0=xs[i]+(i?ins:0), x1=xs[i+1]-(i<3?ins:0), y0=ys[j]+(j?ins:0), y1=ys[j+1]-(j<3?ins:0);
-    if(i===2&&j===0){ park(g,x0,y0,x1,y1+.02,rnd); continue; }
-    if(i===1&&j===0){ // le haut de la rue de la Halle traverse ce pâté : on le coupe
-    }
-    const cuts=[];
-    if(i===2&&j===1) cuts.push(6); if(i===1&&j===2) cuts.push(3);
-    if(j===0&&i===1){ x1=Math.min(x1,4.5-ins); }
-    if(j===0&&i===2){ x0=Math.max(x0,4.5+ins); }
-    let segs=[[x0,x1]]; cuts.forEach(c=>{ segs=segs.flatMap(([a,b])=>c>a&&c<b?[[a,c-.24],[c+.24,b]]:[[a,b]]); });
-    segs.forEach(([a,b])=>buildings(g,a,y0,b,y1,rnd));
-  }
-  // passages piétons
-  ['N1','N2','N3','N4','N5','N6','N7','N8','N9'].forEach(k=>{ const [x,y]=PT[k]; g.fillStyle='rgba(235,235,225,.6)';
-    for(let d=-.36;d<=.36;d+=.12){ g.fillRect(x+d-.03,y-RW/2-.2,.06,.16); g.fillRect(x+d-.03,y+RW/2+.04,.06,.16); g.fillRect(x-RW/2-.2,y+d-.03,.16,.06); g.fillRect(x+RW/2+.04,y+d-.03,.16,.06); } });
+  g.fillStyle='#14171f'; g.fillRect(0,0,MW,MH);
+  // toits du quartier (la route passe par-dessus)
+  for(let y=-.2;y<MH;y+=1.15) for(let x=-.2;x<MW;x+=1.05){
+    const w=.8+rnd()*.25, h=.85+rnd()*.25, bx=x+.06, by=y+.06, l=16+rnd()*6;
+    g.fillStyle='rgba(0,0,0,.45)'; g.fillRect(bx+.08,by+.08,w,h);
+    g.fillStyle=`hsl(222 12% ${l}%)`; g.fillRect(bx,by,w,h);
+    g.strokeStyle='rgba(255,255,255,.05)'; g.lineWidth=.02; g.strokeRect(bx+.02,by+.02,w-.04,h-.04);
+    if(rnd()<.5){ g.fillStyle=`hsl(222 10% ${l+6}%)`; g.fillRect(bx+.15+rnd()*.3,by+.15+rnd()*.3,.14+rnd()*.1,.12+rnd()*.08); } }
+  // trottoirs, bordures, chaussée
+  strokePath(g,RW+.5,'#4b5263'); strokePath(g,RW+.07,'#d9dee8'); strokePath(g,RW,'#3b4252');
+  for(let i=0;i<700;i++){ g.fillStyle=`rgba(255,255,255,${rnd()*.03})`; g.fillRect(rnd()*MW,rnd()*MH,.03,.03); }
+  strokePath(g,.045,'rgba(240,240,230,.55)',[.3,.25]);
+  // flèches peintes au sol : le sens de fuite
+  for(let d=1.2; d<LEN-.8; d+=1.6){ const p=posAt(d); g.save(); g.translate(p.x,p.y); g.rotate(p.ang); g.fillStyle='rgba(255,255,255,.14)';
+    g.beginPath(); g.moveTo(.22,0); g.lineTo(-.08,-.2); g.lineTo(-.08,-.08); g.lineTo(-.26,-.08); g.lineTo(-.26,.08); g.lineTo(-.08,.08); g.lineTo(-.08,.2); g.closePath(); g.fill(); g.restore(); }
   // lampadaires
-  g.globalCompositeOperation='lighter';
-  STREETS.forEach(S=>{ for(let i=1;i<S.pts.length;i++){ const a=PT[S.pts[i-1]],b=PT[S.pts[i]], L=Math.hypot(b[0]-a[0],b[1]-a[1]);
-    for(let d=.8;d<L;d+=1.6){ const t=d/L, x=a[0]+(b[0]-a[0])*t, y=a[1]+(b[1]-a[1])*t, nx=-(b[1]-a[1])/L, ny=(b[0]-a[0])/L, sd=((d/1.6|0)%2?1:-1)*(RW/2+.12);
-      const lx=x+nx*sd, ly=y+ny*sd, gr=g.createRadialGradient(lx,ly,0,lx,ly,1.0); gr.addColorStop(0,'rgba(255,196,120,.06)'); gr.addColorStop(1,'rgba(255,196,120,0)');
-      g.fillStyle=gr; g.fillRect(lx-1,ly-1,2,2); } } });
-  g.globalCompositeOperation='source-over';
-  STREETS.forEach(S=>{ for(let i=1;i<S.pts.length;i++){ const a=PT[S.pts[i-1]],b=PT[S.pts[i]], L=Math.hypot(b[0]-a[0],b[1]-a[1]);
-    for(let d=.8;d<L;d+=1.6){ const t=d/L, x=a[0]+(b[0]-a[0])*t, y=a[1]+(b[1]-a[1])*t, nx=-(b[1]-a[1])/L, ny=(b[0]-a[0])/L, sd=((d/1.6|0)%2?1:-1)*(RW/2+.12);
-      g.fillStyle='#ffe2b0'; g.beginPath(); g.arc(x+nx*sd,y+ny*sd,.035,0,7); g.fill(); } } });
-  // noms de rues
-  g.font='600 .2px "Instrument Sans",system-ui,sans-serif'; g.fillStyle='rgba(220,228,240,.42)'; g.textBaseline='middle';
-  const lab=(t,x,y,rot)=>{ g.save(); g.translate(x,y); g.rotate(rot); g.textAlign='center'; g.fillText(t.toUpperCase(),0,0); g.restore(); };
-  g.font='600 .14px "Instrument Sans",system-ui,sans-serif';
-  lab('rue de la Halle',4.5,3.83,-Math.PI/2); lab('rue des Tanneurs',1.5,3.83,-Math.PI/2); lab('rue du Rempart',7.5,3.83,-Math.PI/2);
-  lab('rue Neuve',3.0,2.5,0); lab('boulevard du Ring',6.0,11.5,0);
-  g.font='600 .15px "Instrument Sans",system-ui,sans-serif'; g.fillStyle='rgba(220,200,170,.4)';
-  lab('passage des Arbalétriers',6,4.75,-Math.PI/2); lab('ruelle du Béguinage',3,9.6,-Math.PI/2);
-  // vignette
-  const v=g.createRadialGradient(MW/2,MH/2,MH*.25,MW/2,MH/2,MH*.75); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.3)'); g.fillStyle=v; g.fillRect(0,0,MW,MH);
+  for(let d=.8; d<LEN; d+=1.7){ const p=posAt(d), sd=((d/1.7|0)%2?1:-1)*(RW/2+.16), x=p.x-Math.sin(p.ang)*sd, y=p.y+Math.cos(p.ang)*sd;
+    g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(x,y,0,x,y,.9); gr.addColorStop(0,'rgba(255,196,120,.07)'); gr.addColorStop(1,'rgba(255,196,120,0)'); g.fillStyle=gr; g.fillRect(x-.9,y-.9,1.8,1.8);
+    g.globalCompositeOperation='source-over'; g.fillStyle='#ffe2b0'; g.beginPath(); g.arc(x,y,.035,0,7); g.fill(); }
+  // ligne du périmètre
+  g.fillStyle='rgba(216,31,53,.55)'; g.fillRect(4.5-RW/2-.25,MH-.22,RW+.5,.22);
+  for(let i=0;i<6;i++){ g.fillStyle=i%2?'#f2f2f2':'#d81f35'; g.fillRect(4.5-RW/2-.25+i*(RW+.5)/6,MH-.32,(RW+.5)/6,.1); }
+  const v=g.createRadialGradient(MW/2,MH/2,MH*.3,MW/2,MH/2,MH*.75); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.3)'); g.fillStyle=v; g.fillRect(0,0,MW,MH);
 }
-function buildings(g,x0,y0,x1,y1,rnd){
-  if(x1-x0<.2||y1-y0<.2) return;
-  g.fillStyle='#12151c'; g.fillRect(x0-.04,y0-.04,x1-x0+.08,y1-y0+.08);
-  const cols=Math.max(1,Math.round((x1-x0)/1.0)), rows=Math.max(1,Math.round((y1-y0)/1.1));
-  const cw=(x1-x0)/cols, ch=(y1-y0)/rows;
-  for(let i=0;i<cols;i++) for(let j=0;j<rows;j++){
-    // une cour intérieure de temps en temps
-    if(cols>1&&rows>1&&i>0&&i<cols-1&&j>0&&j<rows-1&&rnd()<.6) continue;
-    const bx=x0+i*cw+.03, by=y0+j*ch+.03, bw=cw-.06, bh=ch-.06, hgt=.06+rnd()*.14;
-    g.fillStyle='rgba(0,0,0,.55)'; g.fillRect(bx+hgt,by+hgt,bw,bh);
-    const base=15+rnd()*7, hue=215+rnd()*20;
-    const gr=g.createLinearGradient(bx,by,bx+bw,by+bh); gr.addColorStop(0,`hsl(${hue} 12% ${base+4}%)`); gr.addColorStop(1,`hsl(${hue} 14% ${base-2}%)`);
-    g.fillStyle=gr; g.fillRect(bx,by,bw,bh);
-    g.strokeStyle='rgba(255,255,255,.07)'; g.lineWidth=.02; g.strokeRect(bx+.01,by+.01,bw-.02,bh-.02);
-    if(rnd()<.5){ g.strokeStyle='rgba(0,0,0,.22)'; g.beginPath(); if(bw>bh){ g.moveTo(bx+.04,by+bh/2); g.lineTo(bx+bw-.04,by+bh/2); } else { g.moveTo(bx+bw/2,by+.04); g.lineTo(bx+bw/2,by+bh-.04); } g.stroke(); }
-    const n=Math.floor(rnd()*3); for(let k=0;k<n;k++){ const w=.1+rnd()*.12, h=.08+rnd()*.1, ax=bx+.06+rnd()*(bw-w-.12), ay=by+.06+rnd()*(bh-h-.12);
-      g.fillStyle='rgba(0,0,0,.3)'; g.fillRect(ax+.03,ay+.03,w,h); g.fillStyle=`hsl(${hue} 8% ${base+7}%)`; g.fillRect(ax,ay,w,h); }
-    if(rnd()<.2){ g.fillStyle='rgba(120,170,255,.07)'; g.fillRect(bx+bw*.2,by+bh*.2,bw*.25,bh*.15); }
-  }
-}
-function park(g,x0,y0,x1,y1,rnd){
-  g.fillStyle='#14231b'; g.fillRect(x0,y0,x1-x0,y1-y0);
-  g.strokeStyle='#2c3328'; g.lineWidth=.12; g.beginPath(); g.moveTo(x0,y1-.5); g.quadraticCurveTo((x0+x1)/2,y0+.3,x1,y0+.8); g.stroke();
-  for(let i=0;i<34;i++){ const x=x0+.2+rnd()*(x1-x0-.4), y=y0+.15+rnd()*(y1-y0-.3), r=.14+rnd()*.14;
-    g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.arc(x+.06,y+.06,r,0,7); g.fill();
-    const gr=g.createRadialGradient(x-r*.3,y-r*.3,0,x,y,r); gr.addColorStop(0,'#3d6b45'); gr.addColorStop(1,'#1d3a24'); g.fillStyle=gr; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
-  g.font='600 .17px "Instrument Sans",system-ui,sans-serif'; g.fillStyle='rgba(190,230,200,.4)'; g.textAlign='center'; g.fillText('PARC DU BEFFROI',(x0+x1)/2,y1-.18);
-}
-
-/* sprites des moyens (vue du dessus, coordonnées en cases) */
+/* sprites (vue du dessus, coordonnées en cases) */
 function batten(g,x,y,w,h){ const n=Math.max(2,Math.round(w/.09)); for(let i=0;i<n;i++){ g.fillStyle=i%2?'#1d4ea3':'#d7ee3a'; g.fillRect(x+i*w/n,y,w/n+.002,h); } }
 function drawCombi(g,lvl,t,broken){
   g.fillStyle='rgba(0,0,0,.45)'; g.fillRect(-.47,-.2,1.0,.48);
@@ -988,215 +841,158 @@ function drawDrone(g,lvl,t){ g.fillStyle='rgba(0,0,0,.35)'; g.beginPath(); g.arc
     g.strokeStyle='rgba(230,240,255,.7)'; g.lineWidth=.015; const r=t*30+i; g.beginPath(); g.moveTo(x+Math.cos(r)*.1,y+Math.sin(r)*.1); g.lineTo(x-Math.cos(r)*.1,y-Math.sin(r)*.1); g.stroke(); });
   g.fillStyle='#e9edf2'; rr(g,-.08,-.06,.16,.12,.03); g.fill(); g.fillStyle=Math.floor(t*3)%2?'#ff4a4a':'#5a1a1a'; g.beginPath(); g.arc(0,0,.025,0,7); g.fill(); }
 function rr(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
-function drawMeans(g,type,lvl,t,m){
-  if(type==='combi') drawCombi(g,lvl,t,m&&m.broken);
-  else if(type==='herse') drawHerse(g,!m||m.armed);
-  else if(type==='patrouille') drawPatrouille(g,lvl,t,m&&m.aim);
-  else if(type==='anon'){ g.save(); g.rotate(-.6); drawAnon(g,lvl,t,m&&m.tgt&&m.tgt.length); g.restore(); }
-  else if(type==='drone') drawDrone(g,lvl,t);
+function drawFoeBody(g,u,t){
+  const sw=Math.sin(t*9+u.bob)*.03;
+  if(u.type==='voiture') drawCar(g,u.col,.56,.28);
+  else if(u.type==='fourgon'){ g.fillStyle='rgba(0,0,0,.45)'; g.fillRect(-.38,-.15,.82,.34); g.fillStyle='#eceef1'; rr(g,-.4,-.17,.8,.34,.04); g.fill(); g.fillStyle='#e8283c'; g.fillRect(-.38,-.03,.58,.06); g.fillStyle='#17202c'; rr(g,.24,-.14,.1,.28,.02); g.fill(); }
+  else if(u.type==='scooter'){ g.fillStyle='rgba(0,0,0,.4)'; g.fillRect(-.15,-.04,.34,.11); g.fillStyle='#e8283c'; rr(g,-.17,-.055,.34,.11,.05); g.fill(); g.fillStyle='#2b2f36'; g.beginPath(); g.arc(-.02,0,.07,0,7); g.fill(); }
+  else { // fuyard à pied, vu du dessus : épaules, bras qui balancent, capuche
+    g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(.04,.04,.17,.13,0,0,7); g.fill();
+    g.fillStyle='#b81f30'; g.beginPath(); g.ellipse(sw*2,-.13,.05,.04,0,0,7); g.fill(); g.beginPath(); g.ellipse(-sw*2,.13,.05,.04,0,0,7); g.fill();
+    g.fillStyle='#e8283c'; g.beginPath(); g.ellipse(0,0,.09,.15,0,0,7); g.fill();
+    g.fillStyle='#2a1418'; g.beginPath(); g.arc(.02,0,.075,0,7); g.fill(); g.strokeStyle='#ff6b7a'; g.lineWidth=.02; g.beginPath(); g.arc(.02,0,.075,-1.2,1.2); g.stroke(); }
 }
-function drawIcon(c,type){ const d=2; c.width=88; c.height=88; const g=c.getContext('2d'); g.setTransform(44,0,0,44,44,44);
-  if(type==='combi'||type==='herse'){ g.fillStyle='#262b35'; g.fillRect(-.48,-1,.96,2); g.save(); g.scale(.85,.85); drawMeans(g,type,1,0,null); g.restore(); }
-  else { g.save(); g.scale(1.6,1.6); drawMeans(g,type,1,.3,null); g.restore(); } }
 function drawFoe(g,u,t){
-  const p=posAt(u.r,u.dist), F=FOES[u.type];
-  let off = isVeh(u) ? .2 : (p.seg.ruelle?0:.44);
-  if(u.type==='scooter'){ for(const id in u.r.slotD){ const m=R.placed[id]; if(m&&m.type==='combi'&&!m.broken&&Math.abs(u.r.slotD[id]-u.dist)<.75) off=.4; } }
-  const x=p.x-Math.sin(p.ang)*off, y=p.y+Math.cos(p.ang)*off;
-  u.px=x; u.py=y;
+  const p=u.p||posAt(u.d), F=FOES[u.type], off=F.veh?.2:.55, x=p.x-Math.sin(p.ang)*off, y=p.y+Math.cos(p.ang)*off; u.px=x; u.py=y;
   g.save(); g.translate(x,y);
-  if(u.dark&&!u.marked) g.globalAlpha=u.lit?.7:.32; else if(u.crowd&&!u.marked) g.globalAlpha=.55;
-  // halo rouge au sol : on repère les fuyards d'un coup d'œil
-  { const hr=isVeh(u)?(u.type==='fourgon'?.5:.4):.28, hg=g.createRadialGradient(0,0,0,0,0,hr); hg.addColorStop(0,'rgba(255,45,85,.5)'); hg.addColorStop(1,'rgba(255,45,85,0)'); g.fillStyle=hg; g.beginPath(); g.arc(0,0,hr,0,7); g.fill(); }
+  const hr=F.veh?(u.type==='fourgon'?.5:.4):.34, hg=g.createRadialGradient(0,0,0,0,0,hr); hg.addColorStop(0,'rgba(255,45,85,.45)'); hg.addColorStop(1,'rgba(255,45,85,0)'); g.fillStyle=hg; g.beginPath(); g.arc(0,0,hr,0,7); g.fill();
   g.save(); g.rotate(p.ang);
-  if(isVeh(u)){ // phares
-    g.globalCompositeOperation='lighter'; const L=u.type==='scooter'?.2:.3, gr=g.createRadialGradient(L,0,0,L+.4,0,.7); gr.addColorStop(0,'rgba(255,240,200,.28)'); gr.addColorStop(1,'rgba(255,240,200,0)');
-    g.fillStyle=gr; g.beginPath(); g.moveTo(L,0); g.lineTo(L+1.0,-.4); g.lineTo(L+1.0,.4); g.closePath(); g.fill(); g.globalCompositeOperation='source-over'; }
-  if(u.type==='voiture') drawCar(g,u.col,.54,.27);
-  else if(u.type==='volee'){ drawCar(g,'#8c1022',.58,.29); g.fillStyle='rgba(255,255,255,.75)'; g.fillRect(-.26,-.02,.52,.04); g.strokeStyle='#ff4d5e'; g.lineWidth=.03; rr(g,-.29,-.145,.58,.29,.08); g.stroke(); }
-  else if(u.type==='fourgon'){ g.fillStyle='rgba(0,0,0,.45)'; g.fillRect(-.36,-.14,.76,.32); g.fillStyle='#eceef1'; rr(g,-.38,-.16,.76,.32,.04); g.fill(); g.fillStyle='#e8283c'; g.fillRect(-.36,-.03,.56,.06); g.fillStyle='#17202c'; rr(g,.22,-.13,.1,.26,.02); g.fill(); g.fillStyle='rgba(0,0,0,.08)'; g.fillRect(-.3,-.1,.45,.2); }
-  else if(u.type==='scooter'){ g.fillStyle='rgba(0,0,0,.4)'; g.fillRect(-.14,-.04,.32,.1); g.fillStyle='#e8283c'; rr(g,-.16,-.05,.32,.1,.05); g.fill(); g.fillStyle='#2b2f36'; g.beginPath(); g.arc(-.02,0,.065,0,7); g.fill(); }
-  else { const sw=Math.sin(t*9+u.bob)*.03; g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(.03,.03,.1,.07,0,0,7); g.fill();
-    g.fillStyle='#d42a3c'; g.beginPath(); g.ellipse(sw,0,.09,.07,0,0,7); g.fill(); g.fillStyle='#3a1a20'; g.beginPath(); g.arc(.01,0,.045,0,7); g.fill(); }
-  if(isVeh(u)){ g.fillStyle=u.punct?'#ffb21f':'#ff3b3b'; const L=u.type==='fourgon'?.38:u.type==='scooter'?.16:.27; g.fillRect(-L-.01,-.09,.03,.05); g.fillRect(-L-.01,.04,.03,.05); }
+  if(F.veh){ g.globalCompositeOperation='lighter'; const L=u.type==='scooter'?.2:.3, gr=g.createRadialGradient(L,0,0,L+.4,0,.7); gr.addColorStop(0,'rgba(255,240,200,.25)'); gr.addColorStop(1,'rgba(255,240,200,0)');
+    g.fillStyle=gr; g.beginPath(); g.moveTo(L,0); g.lineTo(L+1,-.4); g.lineTo(L+1,.4); g.closePath(); g.fill(); g.globalCompositeOperation='source-over'; }
+  if(u.type==='scooter') g.scale(1.25,1.25); if(u.type==='pieton') g.scale(1.45,1.45); drawFoeBody(g,u,t);
   g.restore();
-  if(u.marked){ g.strokeStyle='rgba(255,93,93,.85)'; g.lineWidth=.03; const r=.38+Math.sin(t*6)*.02;
-    g.beginPath(); g.moveTo(-r-.07,0); g.lineTo(-r+.05,0); g.moveTo(r-.05,0); g.lineTo(r+.07,0); g.moveTo(0,-r-.07); g.lineTo(0,-r+.05); g.moveTo(0,r-.05); g.lineTo(0,r+.07); g.stroke(); }
-  // anneau de pression : il se remplit à mesure que les agents serrent le fuyard ; plein, il est interpellé
-  if(u.hp<u.max){ const lim=u.type==='volee'?.55:1, f=Math.min(1,(1-u.hp/u.max)/lim), r=.29;
-    g.lineWidth=.055; g.strokeStyle='rgba(8,10,18,.6)'; g.beginPath(); g.arc(0,0,r,0,7); g.stroke();
-    g.strokeStyle=f<.4?'#46d98a':f<.75?'#ffb23f':'#ff5d5d'; g.lineCap='round'; g.beginPath(); g.arc(0,0,r,-Math.PI/2,-Math.PI/2+f*Math.PI*2); g.stroke(); g.lineCap='butt'; }
-  if(u.stunUntil>R.t){ g.strokeStyle='#62b0ff'; g.lineWidth=.04; g.setLineDash([.05,.05]); g.lineDashOffset=t; g.beginPath(); g.arc(0,0,.2,0,7); g.stroke(); g.setLineDash([]); }
-  if(u.slowUntil>R.t){ g.fillStyle='rgba(98,176,255,.9)'; g.font='800 .16px "Instrument Sans",sans-serif'; g.textAlign='center'; g.fillText('≈',.3,-.25); }
-  if(u.blocked){ g.fillStyle='#ffb23f'; g.font='800 .2px "Instrument Sans",sans-serif'; g.textAlign='center'; g.fillText('!',0,-.42); }
+  if(u.slow>0){ g.strokeStyle='rgba(98,176,255,.85)'; g.lineWidth=.04; g.beginPath(); g.arc(0,0,F.veh?.36:.24,0,7); g.stroke(); }
+  if(u.mark>1){ g.strokeStyle='rgba(255,209,102,.9)'; g.lineWidth=.03; const r=F.veh?.42:.28; g.beginPath(); [[-1,0],[1,0],[0,-1],[0,1]].forEach(([a,b])=>{ g.moveTo(a*(r+.06),b*(r+.06)); g.lineTo(a*(r-.04),b*(r-.04)); }); g.stroke(); }
+  if(u.punct){ g.fillStyle='#ffb21f'; g.font='800 .18px "Instrument Sans",sans-serif'; g.textAlign='center'; g.fillText('✱',.3,.3); }
+  // barre de résistance, comme dans tous les tower defense
+  const w=F.veh?(u.type==='fourgon'?.7:.5):.4, f=Math.max(0,u.hp/u.max), by=F.veh?-.38:-.32;
+  g.fillStyle='rgba(0,0,0,.7)'; g.fillRect(-w/2-.02,by-.02,w+.04,.1); g.fillStyle=f>.5?'#46d98a':f>.25?'#ffd166':'#ff4d5e'; g.fillRect(-w/2,by,w*f,.06);
+  g.restore();
+}
+function drawTower(g,tw,x,y,t){
+  g.save(); g.translate(x,y);
+  if(tw.type==='patrouille'){ const a=tw.tgt&&tw.tgt[0]&&tw.tgt[0].px!==undefined?Math.atan2(tw.tgt[0].py-y,tw.tgt[0].px-x):Math.PI/2;
+    g.scale(1.5,1.5); drawAgent(g,-.1,-.06,a); drawAgent(g,.1,.07,a); if(tw.lvl>1) drawAgent(g,-.09,.14,a); if(tw.lvl>2) drawAgent(g,.12,-.12,a); }
+  else if(tw.type==='anon'){ g.rotate(-.5); drawAnon(g,tw.lvl,t,tw.tgt&&tw.tgt.length); if(tw.lvl>2){ g.translate(.05,.32); drawAnon(g,1,t+.3,tw.tgt&&tw.tgt.length); } }
+  else if(tw.type==='combi'){ g.scale(.8,.8); drawCombi(g,tw.lvl,t,false); }
+  else if(tw.type==='drone'){ g.scale(1.25,1.25); drawDrone(g,tw.lvl,t); }
   g.restore();
 }
 function render(){
-  const g=C.ctx; if(!C.map) return; const s=C.s*C.dpr, t=R.t;
+  const g=C.ctx; if(!C.map) return; const s=C.s*C.dpr, t=R.t, rt=performance.now()/1000;
   g.setTransform(1,0,0,1,0,0); g.drawImage(C.map,0,0); g.setTransform(s,0,0,s,0,0);
   // lieu des faits
-  { const x=4.5,y=.55, on=Math.floor(t*4)%2; g.save(); g.translate(x+.62,y+.1); g.rotate(.5); drawCar(g,'#8fa3b8',.54,.27); g.restore();
-    g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(x,y,0,x,y,1.1); gr.addColorStop(0,on?'rgba(255,70,70,.32)':'rgba(70,120,255,.32)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(x-1.2,y-1.2,2.4,2.4); g.globalCompositeOperation='source-over';
-    pill(g,x-1.3,y-.02,'LIEU DES FAITS','#fff',.21,'#d81f35'); }
-  // variante du quartier
-  if(R.vari&&R.vari.k==='chantier') drawChantier(g,...meansPos(R.vari.slot),t);
-  if(R.vari&&R.vari.k==='marche') drawMarche(g,R.vari.y,t);
-  // ruelles éclairées par une patrouille voisine
-  for(const sl of SLOTS){ const m=R.placed[sl.id]; if(!sl.ruelle||!m||m.type!=='patrouille') continue;
-    g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(sl.lx,sl.ly,0,sl.lx,sl.ly,1.5); gr.addColorStop(0,'rgba(255,230,170,.22)'); gr.addColorStop(1,'rgba(255,230,170,0)');
-    g.fillStyle=gr; g.fillRect(sl.lx-.3,sl.ly-1.5,.6,3); g.globalCompositeOperation='source-over'; }
-  // aperçu des itinéraires annoncés par la radio
-  if(R.phase==='prep'&&R.intel){ const rs=activeRoutes().filter(r=>r.exit===R.intel.ann);
-    const off=(t*.6)%.7, seen=new Set();
-    rs.forEach(r=>{ for(let d=.9+off; d<r.len-.3; d+=.7){ const q=posAt(r,d), key=Math.round(q.x*10)+','+Math.round(q.y*10)+','+Math.round(q.ang*10); if(seen.has(key)) continue; seen.add(key);
-      g.save(); g.translate(q.x,q.y); g.rotate(q.ang); g.strokeStyle=r.ped?'rgba(255,214,120,.8)':'rgba(255,140,70,.9)'; g.lineWidth=.07; g.lineCap='round'; g.lineJoin='round';
-      g.beginPath(); g.moveTo(-.09,-.13); g.lineTo(.07,0); g.lineTo(-.09,.13); g.stroke(); g.restore(); } }); }
-  // sorties (au-dessus des flèches)
-  for(const k in EXITS){ const [ex,ey]=edgePos(k), a=.35+.25*Math.sin(t*4);
-    const vert=k==='XB'; g.fillStyle=`rgba(255,70,70,${a*.6})`; if(vert) g.fillRect(ex-RW/2,MH-.18,RW,.18); else g.fillRect(k==='XW'?0:MW-.18,ey-RW/2,.18,RW);
-    const lbl = k==='XW'?'◀ SORTIE OUEST':k==='XE'?'SORTIE EST ▶':'SORTIE SUD ▼';
-    pill(g,vert?ex+1.35:(k==='XW'?1.02:MW-1.02),vert?MH-.38:ey-.82,lbl,'#fff',.21,'#d81f35'); }
-  // emplacements
-  const prep=R.phase==='prep'||R.phase==='idle';
-  for(const sl of SLOTS){ if(R.placed[sl.id]||slotOff(sl.id)) continue;
-    const hl=(R.tuto===1&&sl.id==='r3')||(R.tuto===2&&sl.id==='p2'), sel=R.sel===sl.id, pulse=.5+.5*Math.sin(t*5);
-    g.save(); g.translate(sl.x,sl.y);
-    const on=hl||sel, al=prep?1:.45;
-    if(sl.k==='road'){
-      g.globalAlpha=al; g.save(); rr(g,-.44,-.3,.88,.6,.07); g.clip();
-      for(let i=-6;i<8;i++){ g.fillStyle=i%2?'rgba(20,20,24,.75)':'rgba(255,170,40,.6)'; g.beginPath(); g.moveTo(-.5+i*.13,-.35); g.lineTo(-.37+i*.13,-.35); g.lineTo(-.6+i*.13,.35); g.lineTo(-.73+i*.13,.35); g.closePath(); g.fill(); }
-      g.restore(); g.strokeStyle=on?'#fff':'#ffaa28'; g.lineWidth=on?.06:.04; rr(g,-.44,-.3,.88,.6,.07); g.stroke();
-      g.fillStyle='rgba(20,20,24,.9)'; g.beginPath(); g.arc(0,0,.15,0,7); g.fill(); g.strokeStyle='#ffaa28'; g.lineWidth=.045; g.beginPath(); g.moveTo(-.07,0); g.lineTo(.07,0); g.moveTo(0,-.07); g.lineTo(0,.07); g.stroke();
-    } else {
-      g.globalAlpha=al; g.fillStyle=on?'rgba(98,176,255,.4)':'rgba(40,110,220,.28)'; g.beginPath(); g.arc(0,0,.4,0,7); g.fill();
-      g.strokeStyle=on?'#fff':'#62b0ff'; g.lineWidth=on?.06:.045; g.beginPath(); g.arc(0,0,.4,0,7); g.stroke();
-      // silhouette d'agent : on y pose des équipes (patrouille, voiture, drone)
-      g.fillStyle='#e8f1ff'; g.beginPath(); g.arc(0,-.08,.075,0,7); g.fill(); g.beginPath(); g.moveTo(-.15,.17); g.quadraticCurveTo(-.14,.02,0,.02); g.quadraticCurveTo(.14,.02,.15,.17); g.closePath(); g.fill();
-    }
-    g.globalAlpha=1;
-    if(hl){ g.strokeStyle=`rgba(255,122,89,${1-pulse})`; g.lineWidth=.04; g.beginPath(); g.arc(0,0,.45+pulse*.25,0,7); g.stroke(); }
-    g.restore(); }
-  // portée de l'élément sélectionné
-  if(R.sel&&R.placed[R.sel]){ const m=R.placed[R.sel], rg=rangeOf(m); if(rg){ const [x,y]=meansPos(R.sel); g.fillStyle='rgba(255,122,89,.08)'; g.strokeStyle='rgba(255,122,89,.6)'; g.lineWidth=.03; g.beginPath(); g.arc(x,y,rg,0,7); g.fill(); g.stroke(); } }
-  // drones : zone survolée
-  for(const id in R.placed){ const m=R.placed[id]; if(m.type!=='drone') continue; const [x,y]=meansPos(id); g.strokeStyle='rgba(255,255,255,.12)'; g.setLineDash([.1,.1]); g.lineWidth=.02; g.beginPath(); g.arc(x,y,rangeOf(m),0,7); g.stroke(); g.setLineDash([]); }
-  // moyens au sol (hors drones)
-  for(const id in R.placed){ const m=R.placed[id]; const sl0=SLOTS.find(q=>q.id===id); if(sl0.k==='post'){ const [px,py]=meansPos(id); g.fillStyle='rgba(40,110,220,.3)'; g.strokeStyle='rgba(98,176,255,.7)'; g.lineWidth=.03; g.beginPath(); g.arc(px,py,.4,0,7); g.fill(); g.stroke(); } }
-  for(const id in R.placed){ const m=R.placed[id]; if(m.type==='drone') continue; const [x,y]=meansPos(id); g.save(); g.translate(x,y);
-    if(m.type==='patrouille'&&m.tgt&&m.tgt[0]&&m.tgt[0].px!==undefined) m.aim=Math.atan2(m.tgt[0].py-y,m.tgt[0].px-x);
-    const sc=Math.min(1,(R.t-(m.born||0))*5+.4); g.scale(sc,sc); drawMeans(g,m.type,m.lvl,t,m); g.restore();
-    if(m.type==='combi'&&!m.broken&&m.bhp<maxBhp(m)){ const w=.7,f=m.bhp/maxBhp(m); g.fillStyle='rgba(0,0,0,.6)'; g.fillRect(x-w/2,y+.42,w,.07); g.fillStyle=f>.4?'#46d98a':'#ff5d5d'; g.fillRect(x-w/2,y+.42,w*f,.07); }
-    if(m.lvl>1) chevron(g,x+.3,y-.3);
-    urgence(g,m,x,y,t); }
+  { const x=1.5,y=.45, on=Math.floor(rt*4)%2; g.save(); g.translate(x+.55,y+.15); g.rotate(.6); drawCar(g,'#8fa3b8',.54,.27); g.restore();
+    g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(x,y,0,x,y,1.1); gr.addColorStop(0,on?'rgba(255,70,70,.3)':'rgba(70,120,255,.3)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(x-1.2,y-1.2,2.4,2.4); g.globalCompositeOperation='source-over'; }
+  // zones des combis (ralentissement visible sur la route)
+  for(const id in R.towers){ const tw=R.towers[id]; if(tw.type!=='combi') continue; const P=padOf(id);
+    g.fillStyle='rgba(98,176,255,.09)'; g.strokeStyle='rgba(98,176,255,.35)'; g.lineWidth=.03; g.setLineDash([.12,.1]); g.beginPath(); g.arc(P.x,P.y,rangeOf(tw),0,7); g.fill(); g.stroke(); g.setLineDash([]); }
+  // herses posées
+  for(const st of R.herse.strips){ const p=posAt(st.d), left=st.until-R.t; g.save(); g.translate(p.x,p.y); g.rotate(p.ang+Math.PI/2); g.globalAlpha=left<2?.4+.6*(Math.floor(rt*6)%2):1; g.scale(1.1,1.1); drawHerse(g,true); g.restore(); g.globalAlpha=1; }
+  // emplacements libres
+  for(const P of PADS){ if(R.towers[P.id]) continue; const hl=R.tuto===1&&P.id==='c', sel=R.sel&&R.sel.pad===P.id, pu=.5+.5*Math.sin(rt*5);
+    g.fillStyle=sel?'rgba(98,176,255,.45)':'rgba(40,110,220,.3)'; g.beginPath(); g.arc(P.x,P.y,.42,0,7); g.fill();
+    g.strokeStyle=sel?'#fff':'#62b0ff'; g.lineWidth=sel?.06:.045; g.beginPath(); g.arc(P.x,P.y,.42,0,7); g.stroke();
+    g.fillStyle='rgba(232,241,255,.9)'; g.beginPath(); g.arc(P.x,P.y-.08,.08,0,7); g.fill(); g.beginPath(); g.moveTo(P.x-.16,P.y+.18); g.quadraticCurveTo(P.x-.15,P.y+.02,P.x,P.y+.02); g.quadraticCurveTo(P.x+.15,P.y+.02,P.x+.16,P.y+.18); g.closePath(); g.fill();
+    if(hl){ g.strokeStyle=`rgba(255,255,255,${1-pu})`; g.lineWidth=.05; g.beginPath(); g.arc(P.x,P.y,.5+pu*.3,0,7); g.stroke(); } }
+  // moyens posés
+  for(const id in R.towers){ const tw=R.towers[id], P=padOf(id);
+    g.fillStyle='rgba(40,110,220,.32)'; g.strokeStyle=R.sel&&R.sel.pad===id?'#fff':'rgba(98,176,255,.8)'; g.lineWidth=.035; g.beginPath(); g.arc(P.x,P.y,.42,0,7); g.fill(); g.stroke();
+    if(tw.type!=='drone'){ const sc=Math.min(1,(R.t-(tw.born||0))*5+.5); g.save(); g.translate(P.x,P.y); g.scale(sc,sc); drawTower(g,tw,0,0,rt); g.restore(); }
+    for(let i=0;i<tw.lvl;i++) star(g,P.x+(i-(tw.lvl-1)/2)*.2,P.y+.47,.08); }
   // fuyards
-  for(const u of R.units) if(!u.done) drawFoe(g,u,t);
+  for(const u of R.units) drawFoe(g,u,rt);
   // liaisons moyens → cibles
-  for(const id in R.placed){ const m=R.placed[id]; if(!m.tgt||m.type==='herse'||R.phase!=='wave') continue; const [x,y]=meansPos(id);
-    for(const u of m.tgt){ if(u.done||u.px===undefined) continue; g.strokeStyle=m.type==='combi'?'rgba(120,170,255,.45)':'rgba(255,122,89,.7)'; g.lineWidth=.03; g.setLineDash([.08,.07]); g.lineDashOffset=-t*.6;
-      g.beginPath(); g.moveTo(x,y); g.lineTo(u.px,u.py); g.stroke(); g.setLineDash([]); } }
-  // drones (au-dessus de tout)
-  for(const id in R.placed){ const m=R.placed[id]; if(m.type!=='drone') continue; const [x,y]=meansPos(id); g.save(); g.translate(x,y); drawDrone(g,m.lvl,t); g.restore(); if(m.lvl>1) chevron(g,x+.3,y-.3); urgence(g,m,x,y,t); }
-  // textes flottants
-  for(const f of R.fx){ if(f.k!=='catch') continue; const k=(R.t-f.t)/1.4, on=Math.floor((R.t-f.t)*10)%2;
-    g.globalAlpha=Math.max(0,1-k); g.fillStyle=on?'rgba(70,140,255,.55)':'rgba(255,60,60,.5)'; g.beginPath(); g.arc(f.x,f.y,.2+k*.35,0,7); g.fill();
-    g.strokeStyle='#fff'; g.lineWidth=.03; g.beginPath(); g.arc(f.x,f.y,.2+k*.35,0,7); g.stroke(); g.globalAlpha=1; }
-  for(const f of R.fx){ if(f.k==='catch') continue; const k=(R.t-f.t)/1.4; g.globalAlpha=1-k; g.font='800 .24px "Instrument Sans",sans-serif'; g.textAlign='center'; g.textBaseline='middle';
-    g.lineWidth=.07; g.strokeStyle='rgba(8,10,18,.85)'; g.strokeText(f.txt,f.x,f.y-.35-k*.5); g.fillStyle=f.k==='ok'?'#46d98a':f.k==='bad'?'#ff5d5d':'#ffb23f'; g.fillText(f.txt,f.x,f.y-.35-k*.5); g.globalAlpha=1; }
+  if(R.phase==='run') for(const id in R.towers){ const tw=R.towers[id], P=padOf(id); if(!tw.tgt||tw.type==='combi') continue;
+    for(const u of tw.tgt){ if(u.px===undefined) continue; g.strokeStyle=tw.type==='anon'?'rgba(98,176,255,.85)':'rgba(255,209,102,.85)'; g.lineWidth=.04; g.setLineDash([.1,.08]); g.lineDashOffset=-rt*1.2;
+      g.beginPath(); g.moveTo(P.x,P.y); g.lineTo(u.px,u.py); g.stroke(); g.setLineDash([]); } }
+  // drones au-dessus
+  for(const id in R.towers){ const tw=R.towers[id]; if(tw.type!=='drone') continue; const P=padOf(id);
+    g.strokeStyle='rgba(255,209,102,.3)'; g.setLineDash([.1,.1]); g.lineWidth=.025; g.beginPath(); g.arc(P.x,P.y,rangeOf(tw),0,7); g.stroke(); g.setLineDash([]);
+    drawTower(g,tw,P.x,P.y-.05,rt); }
+  // panneaux
+  pill(g,2.75,.42,'LIEU DES FAITS','#fff',.21,'#d81f35');
+  pill(g,6.05,13.75,'PÉRIMÈTRE ▼','#fff',.22,'#d81f35');
+  // mode herse : route en surbrillance
+  if(R.herse.placing){ g.save(); g.globalAlpha=.35+.2*Math.sin(rt*6); strokePath(g,RW,'rgba(255,178,63,.6)'); g.restore(); }
+  // portée et menu de l'emplacement sélectionné
+  if(R.sel){ const P=padOf(R.sel.pad), tw=R.towers[R.sel.pad];
+    let rg=null;
+    if(R.sel.opt&&MEANS[R.sel.opt]) rg=MEANS[R.sel.opt].range;
+    else if(tw) rg=MEANS[tw.type].range+LV.rng[Math.min(2,tw.lvl-1+(R.sel.opt==='up'?1:0))];
+    if(rg){ g.fillStyle='rgba(255,255,255,.07)'; g.strokeStyle='rgba(255,255,255,.75)'; g.lineWidth=.035; g.beginPath(); g.arc(P.x,P.y,rg,0,7); g.fill(); g.stroke(); }
+    for(const it of menuItems()){ const on=R.sel.opt===it.k;
+      g.fillStyle='rgba(0,0,0,.5)'; g.beginPath(); g.arc(it.x+.03,it.y+.05,.38,0,7); g.fill();
+      g.fillStyle=on?'#ffd166':it.ok?'#1d2638':'#2a2d35'; g.beginPath(); g.arc(it.x,it.y,.38,0,7); g.fill();
+      g.strokeStyle=on?'#fff':it.ok?'#ffd166':'#5a5f6a'; g.lineWidth=.045; g.beginPath(); g.arc(it.x,it.y,.38,0,7); g.stroke();
+      g.save(); g.translate(it.x,it.y-.03); g.globalAlpha=it.ok?1:.4;
+      if(it.k==='up'){ g.fillStyle=on?'#241400':'#ffd166'; g.beginPath(); g.moveTo(0,-.17); g.lineTo(.15,.03); g.lineTo(.05,.03); g.lineTo(.05,.15); g.lineTo(-.05,.15); g.lineTo(-.05,.03); g.lineTo(-.15,.03); g.closePath(); g.fill(); }
+      else if(it.k==='sell'){ g.strokeStyle=on?'#241400':'#ff8a8a'; g.lineWidth=.05; g.beginPath(); g.moveTo(-.11,-.11); g.lineTo(.11,.11); g.moveTo(.11,-.11); g.lineTo(-.11,.11); g.stroke(); }
+      else { g.scale(.62,.62); drawTower(g,{type:it.k,lvl:1,tgt:null},0,0,rt); }
+      g.restore(); g.globalAlpha=1;
+      const cost=it.k==='up'?upCost(tw):it.k==='sell'?'+'+sellVal(tw):MEANS[it.k].cout;
+      pill(g,it.x,it.y+.42,String(cost),it.k==='sell'?'#46d98a':it.ok?'#ffd166':'#8a8f99',.17,'#10141d'); } }
+  // textes flottants et flashs d'interpellation
+  for(const f of R.fx){ const k=(R.t-f.t)/1.2;
+    if(f.k==='catch'){ const on=Math.floor((R.t-f.t)*10)%2; g.globalAlpha=Math.max(0,1-k); g.fillStyle=on?'rgba(70,140,255,.55)':'rgba(255,60,60,.5)'; g.beginPath(); g.arc(f.x,f.y,.2+k*.35,0,7); g.fill(); g.globalAlpha=1; continue; }
+    g.globalAlpha=Math.max(0,1-k); g.font=`800 ${f.k==='gain'?.26:.22}px "Instrument Sans",sans-serif`; g.textAlign='center'; g.textBaseline='middle';
+    g.lineWidth=.07; g.strokeStyle='rgba(8,10,18,.85)'; g.strokeText(f.txt,f.x,f.y-.35-k*.5); g.fillStyle=f.k==='gain'?'#62b0ff':f.k==='ok'?'#46d98a':f.k==='bad'?'#ff5d5d':'#ffd166'; g.fillText(f.txt,f.x,f.y-.35-k*.5); g.globalAlpha=1; }
 }
-function urgence(g,m,x,y,t){
-  if(!ACTIONS[m.type]) return;
-  if(m.flash&&R.t-m.flash<.8){ const k=(R.t-m.flash)/.8; g.strokeStyle=`rgba(98,176,255,${1-k})`; g.lineWidth=.06; g.beginPath(); g.arc(x,y,.3+k*(m.type==='combi'?1.3:.7),0,7); g.stroke(); }
-  if(R.phase!=='wave'||m.used||(m.type==='combi'&&m.broken)) return;
-  const bx=x-.3, by=y-.3, pu=.5+.5*Math.sin(t*5);
-  g.fillStyle=`rgba(98,176,255,${.25+.25*pu})`; g.beginPath(); g.arc(bx,by,.17,0,7); g.fill();
-  g.fillStyle='#62b0ff'; g.beginPath(); g.arc(bx,by,.12,0,7); g.fill();
-  g.fillStyle='#04182c'; g.beginPath(); g.moveTo(bx+.02,by-.085); g.lineTo(bx-.05,by+.01); g.lineTo(bx,by+.01); g.lineTo(bx-.02,by+.085); g.lineTo(bx+.05,by-.01); g.lineTo(bx,by-.01); g.closePath(); g.fill();
-}
-function drawChantier(g,x,y,t){
-  g.save(); g.translate(x,y);
-  g.fillStyle='#3b2f24'; rr(g,-.42,-.36,.84,.72,.05); g.fill();
-  g.fillStyle='#2a211a'; g.beginPath(); g.ellipse(.02,.04,.24,.17,0,0,7); g.fill();
-  g.fillStyle='rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(.04,.08,.18,.11,0,0,7); g.fill();
-  [-.4,.4].forEach(yy=>{ for(let i=0;i<8;i++){ g.fillStyle=i%2?'#f2f2f2':'#e8452c'; g.fillRect(-.46+i*.115,yy-.035,.115,.07); } });
-  const on=Math.floor(t*3)%2; [[-.46,-.4],[.46,-.4],[-.46,.4],[.46,.4]].forEach(([cx,cy],i)=>{ g.fillStyle=(on^(i%2))?'#ffb21f':'#5a3d08'; g.beginPath(); g.arc(cx,cy,.045,0,7); g.fill(); });
-  [[-.3,-.2],[.3,.22],[.32,-.18]].forEach(([cx,cy])=>{ g.fillStyle='#ff7a1a'; g.beginPath(); g.arc(cx,cy,.05,0,7); g.fill(); g.fillStyle='#fff'; g.beginPath(); g.arc(cx,cy,.02,0,7); g.fill(); });
-  g.restore(); pill(g,x>6?x-.95:x+.95,y,'CHANTIER','#ffb23f');
-}
-function drawMarche(g,y,t){
-  const cols=['#8a6f4e','#6c7c8c','#86605c','#5f7868'];
-  const nodes=[1.5,4.5,7.5,...(y<5?[6]:[3,6])]; let n=0;
-  for(let x=1.5+.62;x<7.5-.5;x+=.36){ if(nodes.some(nx=>Math.abs(nx-x)<.5)) continue;
-    [-1,1].forEach(sd=>{ const yy=y+sd*(RW/2+.16), c=cols[(n++)%cols.length];
-      g.fillStyle='rgba(0,0,0,.35)'; g.fillRect(x-.15+.03,yy-.12+.03,.3,.24);
-      for(let i=0;i<4;i++){ g.fillStyle=i%2?'rgba(216,210,196,.75)':c; g.fillRect(x-.15+i*.075,yy-.12,.075,.24); } }); }
-  g.fillStyle='rgba(255,220,160,.07)'; g.fillRect(1.5,y-RW/2-.3,6,RW+.6);
-  pill(g,5.25,y-.72,'MARCHÉ','#ffb23f');
-}
+function star(g,x,y,r){ g.fillStyle='#ffd166'; g.strokeStyle='#241400'; g.lineWidth=.02; g.beginPath(); for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, q=i%2?r*.45:r; i?g.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q):g.moveTo(x+Math.cos(a)*q,y+Math.sin(a)*q); } g.closePath(); g.fill(); g.stroke(); }
 function pill(g,x,y,txt,col,sz=.17,bg){ g.font=`800 ${sz}px "Instrument Sans",sans-serif`; g.textAlign='center'; g.textBaseline='middle'; const w=g.measureText(txt).width+sz*1.3, h=sz*1.55;
-  g.fillStyle='rgba(0,0,0,.45)'; rr(g,x-w/2+.03,y-h/2+.04,w,h,h/2); g.fill();
-  g.fillStyle=bg||'rgba(10,12,20,.85)'; rr(g,x-w/2,y-h/2,w,h,h/2); g.fill(); g.strokeStyle=bg?'rgba(255,255,255,.85)':col; g.lineWidth=.025; g.stroke(); g.fillStyle=col; g.fillText(txt,x,y+.01); }
-function chevron(g,x,y){ g.fillStyle='#ffb23f'; g.beginPath(); g.arc(x,y,.11,0,7); g.fill(); g.strokeStyle='#241400'; g.lineWidth=.035; g.beginPath(); g.moveTo(x-.05,y+.03); g.lineTo(x,y-.03); g.lineTo(x+.05,y+.03); g.stroke(); }
-
-/* ───── entrées ───── */
-function onTap(e){
-  const r=C.cv.getBoundingClientRect(), x=(e.clientX-r.left)/C.s, y=(e.clientY-r.top)/C.s;
-  if(R.over&&!R.tuto) return; if(R.phase==='idle') return;
-  let best=null,bd=.62; for(const s of SLOTS){ if(slotOff(s.id)) continue; const d=Math.hypot(s.x-x,s.y-y); if(d<bd){ bd=d; best=s; } }
-  // En pleine vague, toucher un moyen déclenche son action d'urgence (une fois par vague).
-  if(best&&R.phase==='wave'&&R.placed[best.id]&&ACTIONS[R.placed[best.id].type]&&!R.placed[best.id].used){ closeSheet(); if(action(best.id)) return; }
-  if(R.tuto===1&&best&&best.id!=='r3') best=null; if(R.tuto===2&&best&&best.id!=='p2') best=null; if(R.tuto===3&&best&&!R.placed[best.id]) best=null;
-  if(!best){ closeSheet(); return; }
-  if(R.sel===best.id){ closeSheet(); return; }
-  openSheet(best);
-}
+  g.fillStyle=bg||'rgba(10,12,20,.85)'; rr(g,x-w/2,y-h/2,w,h,h/2); g.fill(); g.strokeStyle='rgba(255,255,255,.7)'; g.lineWidth=.022; g.stroke(); g.fillStyle=col; g.fillText(txt,x,y+.01); }
 
 Shell.init({
   key:'bouclage', service:'Incident Intervention', serviceShort:'Intervention',
   headline:'Car-jacking, bouclage du quartier',
-  story:`<p>Car-jacking violent rue de la Halle. Les auteurs et leurs complices se dispersent en voitures, scooters et à pied pour sortir du quartier.</p><p>Le dispatching te confie le plan de bouclage&nbsp;: place tes moyens sur les points d’appui et empêche-les de franchir le périmètre. Trois fuites et c’est raté.</p>`,
+  story:`<p>Car-jacking violent : les auteurs et leurs complices s’enfuient à pied, en scooter, en voiture et en fourgon par la seule route qui sort du quartier.</p><p>Place tes moyens le long du trajet et interpelle-les avant le périmètre. Chaque interpellation te rapporte des agents pour renforcer ton dispositif.</p>`,
   diffs:{
-    difficile:{agents:9,label:'Difficile',eff:9,renf:3,combi:2,anon:1,drone:1,herses:1,hp:1.25,gap:1.35,prep:45,prep2:15,waves:5},
-    normal:{agents:10,label:'Normal',eff:10,renf:4,combi:2,anon:2,drone:1,herses:2,hp:1.15,gap:1.5,prep:45,prep2:18,waves:5},
-    facile:{agents:12,label:'Facile',eff:12,renf:4,combi:3,anon:2,drone:1,herses:2,hp:.9,gap:1.8,prep:50,prep2:20,waves:4}},
-  bornes:{eff:[7,14],renf:[2,4],gap:[.75,3],hp:[.5,Infinity],prep:[25,60],prep2:[10,25],combi:[1,3],anon:[1,3],herses:[1,3],drone:[1,1]},
-  diffHint:'Plus d’agents au départ et plus de véhicules disponibles : le bouclage est plus facile à tenir.',
-  desktopHint:'Sur ordinateur : clique sur les emplacements pour y poser tes moyens.',
-  rules:['Touche un emplacement pour y poser un moyen : <b>rectangle sur la chaussée</b> = combi en barrage ou herse ; <b>rond</b> = patrouille, voiture anonymisée ou drone. Chaque moyen coûte des agents.',
-    'Les fuyards partent du <b>lieu des faits</b> vers les trois <b>sorties</b>. La <b>radio</b> annonce où file la majorité : elle se trompe parfois, et rectifie alors en cours de vague. À la <b>3<sup>e</sup> fuite</b>, le bouclage a échoué.',
-    'Le <b>combi</b> arrête voitures et fourgons, mais scooters et piétons le contournent, et un <b>fourgon</b> l’enfonce vite. Les voitures évitent les barrages qu’elles voient ; la <b>herse</b>, elle, est invisible.',
-    'La <b>herse</b> crève les pneus du premier véhicule (scooter compris). Une <b>patrouille juste derrière</b> l’achève : jante endommagée, il ne repartira plus vite.',
-    'La <b>patrouille</b> interpelle piétons et conducteurs arrêtés ; la <b>voiture anonymisée</b> chasse les véhicules ; le <b>drone</b> repère (+35&nbsp;%) et voit dans les ruelles sombres. Une patrouille <b>près d’une ruelle</b> l’éclaire en partie.',
-    'Pendant la vague, <b>touche un moyen</b> pour son <b>action d’urgence</b> (⚡, une fois par vague) : sirènes du combi, interpellation ciblée, prise en chasse, projecteur du drone.',
-    'Certaines parties, un <b>chantier</b> coupe une rue aux véhicules ou un <b>marché</b> les ralentit et cache les piétons dans la foule.',
-    'Une <b>voiture volée</b> à bout est abandonnée : deux fuyards continuent à pied. Entre deux vagues : renforts, <b>renforcer</b> ou <b>retirer</b> un moyen. Aucune fuite : <b>+2</b> sur la jauge.'],
+    difficile:{agents:6,label:'Difficile',eff:16,lives:8,combi:2,anon:2,drone:1,hp:1.15,gap:1.1,pause:12,waves:6},
+    normal:{agents:8,label:'Normal',eff:20,lives:12,combi:2,anon:3,drone:1,hp:1,gap:1.25,pause:14,waves:6},
+    facile:{agents:10,label:'Facile',eff:22,lives:15,combi:3,anon:4,drone:1,hp:.85,gap:1.4,pause:16,waves:5}},
+  bornes:{eff:[10,24],lives:[5,15],gap:[.6,2],hp:[.5,Infinity],pause:[8,20],combi:[1,4],anon:[1,4],drone:[1,1]},
+  diffHint:'Plus d’agents au départ et plus de fuites tolérées.',
+  desktopHint:'Sur ordinateur : clique sur un emplacement bleu, puis sur le moyen voulu (deux fois pour confirmer).',
+  rules:['Les fuyards suivent tous <b>la route</b>, du lieu des faits au <b>périmètre</b>. Chaque fuyard qui sort te coûte une <b>vie</b> (deux pour un fourgon).',
+    'Touche un <b>emplacement bleu</b> : quatre moyens apparaissent autour. Premier toucher : portée et prix. Deuxième toucher : c’est posé.',
+    '<b>Patrouille</b> contre les piétons, <b>voiture anonymisée</b> contre les véhicules, <b>combi</b> pour ralentir, <b>drone</b> pour rendre tout le monde plus efficace autour de lui.',
+    'Chaque interpellation rapporte des <b>agents</b> : dépense-les pour poser ou <b>renforcer</b> tes moyens (touche un moyen posé), même pendant la vague.',
+    'La <b>herse</b> (en bas à gauche) se pose sur la route et crève les pneus des véhicules qui passent. Elle se recharge en 20 s.',
+    'Lancer la vague suivante <b>en avance</b> rapporte des agents en bonus. Aucune fuite : <b>+2</b> sur la jauge.'],
   winTitle:'Périmètre tenu', loseTitle:'Le bouclage a cédé', skin:'Barrage de nuit',
   malus:'les auteurs restent dans la nature : moral des équipes Intervention en baisse et un combi immobilisé jusqu’à demain.',
-  // Challenge : de 3 vagues (niveau 1) à 5 vagues (niveau 6+), puis les fuyards résistent davantage et arrivent plus serrés.
-  niveau(n,cfg){ cfg.waves=n<=2?3:n<=5?4:5; return cfg; },
+  // Challenge : 3 vagues au niveau 1, jusqu'à 6 ; ensuite les fuyards résistent davantage et arrivent plus serrés.
+  niveau(n,cfg){ cfg.waves=n<=2?3:n<=4?4:n<=7?5:6; return cfg; },
   onInit(){
     C.cv=$('cv'); C.ctx=C.cv.getContext('2d');
     resize(); new ResizeObserver(resize).observe($('field'));
     if(document.fonts) document.fonts.ready.then(resize);
     C.cv.addEventListener('pointerdown',onTap);
-    $('launch').onclick=()=>{ if(R.tuto===3){ R.tuto=3.5; Shell.hideCoach(); } launchWave(); };
+    $('launch').onclick=()=>{ if(R.phase==='build'){ if(R.tuto===4) Shell.hideCoach(); launchWave(); } else if(R.phase==='run'&&R.nextIn!==null) launchWave(); };
     $('spd').onclick=()=>{ R.speed=R.speed===1?2:1; $('spd').setAttribute('aria-pressed',R.speed===2); };
-    R.phase='idle'; R.cfg=this.diffs.normal; ui();
+    $('herse').onclick=()=>{ if(R.herse.cd>0||R.phase!=='run') return; R.herse.placing=!R.herse.placing; R.sel=null; tip(); ui(); };
+    R.phase='idle'; R.cfg=this.diffs.normal; ui(); tip();
   },
-  onMenu(){ R.over=true; R.phase='idle'; R.units=[]; R.placed={}; R.tuto=0; R.intel=null; R.vari=null; closeSheet(); ui(); radioUi(); },
+  onMenu(){ R.over=true; R.phase='idle'; R.units=[]; R.towers={}; R.tuto=0; R.sel=null; $('newfoe').hidden=true; R.pause=false; ui(); tip(); },
   onPlay(cfg){ resetGame(cfg,false); },
   onTuto(){ resetGame(this.diffs.facile,true); tutoStep(1); },
   onFrame(dt){
     if(!C.ctx) return;
-    if(!R.over||R.tuto){ const n=R.speed*2; for(let i=0;i<n;i++) step(dt*R.speed/n); }
-    else R.t+=dt;
-    if(R.phase==='prep'&&R.freePrep){ $('timer').textContent='–'; $('ring').classList.remove('warn'); $('ringval').style.strokeDashoffset=0; }
-    if(R.phase==='wave'){ const left=R.queue.length+R.units.filter(u=>!u.done).length; $('timer').textContent='V'+R.wave;
-      $('ring').classList.remove('warn'); $('ringval').style.strokeDashoffset=2*Math.PI*21*(1-left/Math.max(1,R.waveTotal));
-      if(((R.t*4)|0)!==R._lastUi){ R._lastUi=(R.t*4)|0; ui(); } }
+    const n=R.speed*2; for(let i=0;i<n;i++) step(dt*R.speed/n);
+    if(R.phase==='build'||R.phase==='run'){
+      const T=$('timer'); $('ring').classList.remove('warn');
+      if(R.phase==='run'&&R.nextIn!==null){ T.textContent=Math.ceil(R.nextIn); $('ringval').style.strokeDashoffset=2*Math.PI*21*(1-R.nextIn/R.cfg.pause); }
+      else { T.textContent=R.phase==='run'?'V'+R.wave:'–'; $('ringval').style.strokeDashoffset=0; }
+      if(((R.t*5)|0)!==R._lu){ R._lu=(R.t*5)|0; ui(); }
+    }
     render();
   }
 });
-window.__bouclage={R,SLOTS,place,launchWave,step,routes,resetGame,MEANS,UPG,FOES,WAVES,ACTIONS,VARIANTES,action,posAt,rangeOf,meansPos};
+// Accès pour les simulations d'équilibrage (sans effet en jeu).
+window.__bouclage={R,PADS,MEANS,FOES,WAVES,LV,resetGame,launchWave,step,upCost,
+  build(pad,type){ const M=MEANS[type]; if(R.towers[pad]||R.agents<M.cout) return false; const used=Object.values(R.towers).filter(t=>t.type===type).length; if(R.dispo[type]!==undefined&&used>=R.dispo[type]) return false; R.agents-=M.cout; R.towers[pad]={type,lvl:1,spent:M.cout,born:R.t}; return true; },
+  up(pad){ const tw=R.towers[pad]; if(!tw||tw.lvl>=3) return false; const c=upCost(tw); if(R.agents<c) return false; R.agents-=c; tw.spent+=c; tw.lvl++; return true; },
+  herse(d){ if(R.herse.cd>0||R.phase!=='run') return false; R.herse.strips.push({d,until:R.t+HERSE.dure}); R.herse.cd=HERSE.cd; return true; }};
 
 </script>
 </body>
