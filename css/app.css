@@ -1493,3 +1493,4 @@ div.db-cle { cursor: default; }
   .db-cles.quatre { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 @media (prefers-reduced-motion: reduce) { .db-tampon { animation: none; } }
+.tile .v.v-euros, .mz-tiles .tile .v.v-euros { font-size: clamp(15px, 4.4vw, 19px); letter-spacing: -.6px; }

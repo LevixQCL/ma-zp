@@ -524,7 +524,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const bons = Math.max(0, Math.min(QUIZ.questions, Math.floor(Number(quiz.tentatives) || 0)));
       if (bons >= QUIZ.seuil) {
         const t = appliquerBonus(quiz.bonus ? quiz : { bonus: 'budget' });
-        z.rapport.push(`Quiz express : ${bons} bonnes réponses sur ${QUIZ.questions}${t ? `, ${t}` : ''}${quiz.bonus ? '' : ' (bonus non choisi : k€ par défaut)'}.`);
+        z.rapport.push(`Quiz express : ${bons} bonnes réponses sur ${QUIZ.questions}${t ? `, ${t}` : ''}${quiz.bonus ? '' : ' (bonus non choisi : argent par défaut)'}.`);
       } else z.rapport.push(`Quiz express : ${bons} bonne${bons > 1 ? 's' : ''} réponse${bons > 1 ? 's' : ''} sur ${QUIZ.questions}, il en fallait ${QUIZ.seuil}. Pas de bonus, sans autre conséquence.`);
     }
     if (qs.length) {

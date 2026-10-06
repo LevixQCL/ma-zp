@@ -85,7 +85,7 @@ function ipzDetailHtml(d) {
     <div class="between"><span style="font-weight:700">IPZ ${fmt1(d.ipz)}</span>${delta !== null ? `<span class="small">${evol(delta)} depuis la veille</span>` : ''}</div>
     <table class="ipz-table"><thead><tr><th>Composante</th><th>Valeur</th><th>Poids</th><th>Points</th><th>vs veille</th></tr></thead>
       <tbody>${Object.keys(IPZ_POIDS).map(ligne).join('')}</tbody></table>
-    <span class="tiny muted"><strong>Résultats terrain</strong> (ce ne sont pas les PS, qui servent aux grades) = ${TERRAIN.incidents} × part des incidents traités + ${fmt1(TERRAIN.parPoint)} × bilan des points (points du jour + moitié du bilan d’hier), plafonné à 100${det ? ` · ce tour : ${det.traites}/${det.incidents} incidents, ${fmt1(det.points)} points, bilan ${fmt1(det.bilan !== undefined ? det.bilan : det.points)}` : ''}. <strong>Budget</strong> = 50 + 1,5 × budget en k€ (100 de 34 à ${BUDGET_IPZ.dormant} k€ ; au-delà, l’argent qui dort coûte ${BUDGET_IPZ.pente} point par k€).</span>
+    <span class="tiny muted"><strong>Résultats terrain</strong> (ce ne sont pas les PS, qui servent aux grades) = ${TERRAIN.incidents} × part des incidents traités + ${fmt1(TERRAIN.parPoint)} × bilan des points (points du jour + moitié du bilan d’hier), plafonné à 100${det ? ` · ce tour : ${det.traites}/${det.incidents} incidents, ${fmt1(det.points)} points, bilan ${fmt1(det.bilan !== undefined ? det.bilan : det.points)}` : ''}. <strong>Budget</strong> = 50 + 1,5 par tranche de 1 000 € de budget (100 de 34 à ${BUDGET_IPZ.dormant} k€ ; au-delà, l’argent qui dort coûte ${BUDGET_IPZ.pente} point par tranche de 1 000 €).</span>
   </div>`;
 }
 
@@ -354,7 +354,7 @@ export function renderHP() {
       <div class="tiles mz-tiles">
         <div class="tile"><span class="l">Agents</span><span class="v">${dispo}<span class="muted" style="font-size:13px">/${z.agents}</span></span>
           <span class="s ${blesses ? 'bad' : ''}">${blesses ? `${blesses} absent${blesses > 1 ? 's' : ''}` : form ? `${form} en form.` : z.academie.length ? `+${z.academie.reduce((s, a) => s + a.n, 0)} recrue${z.academie.reduce((s, a) => s + a.n, 0) > 1 ? 's' : ''}` : 'au complet'}</span></div>
-        <button type="button" class="tile tile-btn" data-action="budget" aria-label="Détail du budget"><span class="l row" style="gap:4px">Budget ${icon('chevron', 12)}</span><span class="v ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s ${fraisFixesDuJour(z) < 0 ? 'bad' : 'ok'}">${fraisFixesDuJour(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(fraisFixesDuJour(z)))}/jour</span></button>
+        <button type="button" class="tile tile-btn" data-action="budget" aria-label="Détail du budget"><span class="l row" style="gap:4px">Budget ${icon('chevron', 12)}</span><span class="v v-euros ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s ${fraisFixesDuJour(z) < 0 ? 'bad' : 'ok'}">${fraisFixesDuJour(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(fraisFixesDuJour(z)))} k€/jour</span></button>
         <button type="button" class="tile tile-btn" data-action="parc" aria-label="Parc automobile"><span class="l row" style="gap:4px">Véhicules ${icon('chevron', 12)}</span><span class="v">${vDispo}<span class="muted" style="font-size:13px">/${z.vehicules}</span></span><span class="s ${cab || 100 - z.usure < 60 ? 'bad' : 100 - z.usure < 80 ? 'warn' : ''}">${cab ? `${cab} cabossé${cab > 1 ? 's' : ''}` : `état ${Math.round(100 - z.usure)} %`}</span></button>
       </div>
       <div class="cadrans">

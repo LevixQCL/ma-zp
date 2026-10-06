@@ -28,6 +28,8 @@ export const NOTE_MAJ = {
       ['Vieux dossiers', 'un dossier local qui traîne rapporte moins de points : pleine valeur le jour de son arrivée et le lendemain, puis −20 % par jour (minimum 25 %). Les Ordres affichent « vaut … % » à côté des dossiers concernés. Suivre le rythme paie plus que tout rattraper d’un coup.'],
     ]],
     ['Plus lisible', [
+      ['En euros', 'tout le jeu affiche maintenant les montants en euros (60 000 € plutôt qu’une notation en milliers). Rien ne change dans les calculs.'],
+      ['Codes de zone', 'chaque zone a désormais son propre code dans une partie : l’inscription refuse un code déjà pris et liste ceux qui sont occupés.'],
       ['Grande décision', 'elle est payée à 20:00 après les dépenses du jour et les démarches d’enquête. Les Ordres préviennent maintenant si le tout dépasse ta caisse (sinon la décision est refusée), et une décision refusée s’affiche en rouge en tête du résultat de la nuit.'],
       ['Formation', 'le niveau monte le soir même où tes agents sont en formation : ils reviennent le lendemain déjà formés (avant, le niveau ne s’affichait qu’un jour plus tard). Une formation en cours est visible dans Ordres › Former.'],
       ['Bâtir', 'chaque option affiche son délai : un agrandissement est prêt le lendemain soir, une infrastructure est en service dès ce soir.'],
@@ -246,7 +248,7 @@ export const NOTE_MAJ = {
       ['Matériel utile', 'chaque matériel a maintenant son propre effet, par niveau : Intervention −15 % de risque de blessure, Roulage seuil de la « chasse aux PV » repoussé, Recherche +15 % de chances de pièce d’enquête, Proximité +0,5 de satisfaction par jour, Accueil +10 % de tracas internes évités. Le gain d’efficacité passe de 15 % à 8 % par niveau. La formation (+20 %, conservée d’une saison à l’autre) reste l’investissement de long terme, le matériel le coup de pouce immédiat et ciblé.'],
       ['Résultats terrain', 'nouveau calcul : 45 × part des incidents traités + 2,5 × bilan. Tes points (Recherche, flagrants, zone de non-droit, opérations) font davantage la différence. Tous les IPZ baissent un peu, de la même façon pour tout le monde.'],
       ['Moins de hasard', 'la Recherche rapporte des points chaque jour, au fil du travail sur les dossiers ; le flagrant délit suit une jauge qui se remplit avec tes patrouilles libres ; le bilan garde la moitié de celui de la veille.'],
-      ['L’argent qui dort', 'au-delà de 75 k€ en caisse, la composante Budget de l’IPZ perd 1 point par k€ en plus (jusqu’à 50). Garde une réserve de 35 à 75 k€ et investis le reste. L’HP te prévient.'],
+      ['L’argent qui dort', 'au-delà de 75 k€ en caisse, la composante Budget de l’IPZ perd 1 point par tranche de 1 000 € en plus (jusqu’à 50). Garde une réserve de 35 à 75 k€ et investis le reste. L’HP te prévient.'],
       ['Bonus de moral', 'énigmes, incident réussi, prime au personnel : plein effet sous 70 de moral, moitié de 70 à 85, +1 au-delà.'],
       ['Recrues', 'elles sortent de l’académie le soir et sont dans tes ordres dès le lendemain.'],
       ['Délinquance déplacée', 'quand tu concentres beaucoup d’agents sur un quartier, la délinquance qui part chez tes voisins compte vraiment chez eux.'],

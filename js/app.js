@@ -4,6 +4,7 @@ import { installerCadenas } from './ui/cadenas.js';
 import { installerEnigmes } from './ui/enigmes.js';
 import { createBackend } from './data/backend.js';
 import { codeDejaPris, MSG_CODE_PRIS } from './data/codes.js';
+import { installerEuros } from './ui/euros.js';
 import { resolvePending, completerDepuisGazette, etatResolution } from './data/resolver.js';
 import { S, toast, myZone, esc, cielDuMoment, tabbar } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
@@ -1367,6 +1368,7 @@ function messageErreur(err, contexte = '') {
 // ───────── Démarrage ─────────
 async function boot() {
   window.__mazpBoot = true; // les modules sont chargés : le filet de sécurité de index.html se retire
+  installerEuros(document.body); // le moteur compte en k€ : tout ce qui s'affiche est converti en euros
   installerInvitationAppli(); // bandeau « installe Ma ZP » (iPhone et Android), seulement hors appli installée
   loading();
   S.config = CONFIG;
