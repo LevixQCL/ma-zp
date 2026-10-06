@@ -1,6 +1,6 @@
 // Crise du district (Conseil des chefs), côté joueur : vote secret, plan en vigueur, opération commune.
 import { S, esc, myZone } from './common.js';
-import { CRISE, CRISES, PLANS, criseCourante, planDuJour, agentsCommune, participeCommune } from '../engine/crise.js';
+import { CRISE, CRISES, PLANS, criseCourante, planDuJour, agentsCommune, participeCommune, requisCommune } from '../engine/crise.js';
 
 /** Ligne de la liste « avant ce soir ». */
 export function criseTodo() {
@@ -39,7 +39,7 @@ export function criseHtml() {
   if (p === 'C') {
     const part = participeCommune(st, z.uid, d);
     const ok = (c.nuits || []).filter((x) => x.ok).length;
-    corps += `<p class="small" style="margin:0">Soirs réussis : <strong>${ok}</strong> sur ${(c.nuits || []).length} (il en faut ${CRISE.C.nuitsOk} sur 3, avec au moins la moitié des zones actives). ${part ? `Tu engages <strong>${agentsCommune(z, T)} agents</strong> ce soir : laisse-les sans affectation dans tes ordres, sinon ils partent d’abord de ta Proximité puis de ton Intervention.` : 'Tu n’y participes pas : ni coût ni récompense.'}</p>
+    corps += `<p class="small" style="margin:0">Soirs réussis : <strong>${ok}</strong> sur ${(c.nuits || []).length} (il en faut ${CRISE.C.nuitsOk} sur 3, avec au moins ${requisCommune(c)} zones présentes : les 3/4 de celles qui ont voté C). ${part ? `Tu engages <strong>${agentsCommune(z, T)} agents</strong> ce soir : laisse-les sans affectation dans tes ordres, sinon ils partent d’abord de ta Proximité puis de ton Intervention.` : 'Tu n’y participes pas : ni coût ni récompense.'}</p>
       <button type="button" class="btn small ${part ? 'outline' : 'primary'}" data-action="crise-c" data-v="${part ? 'non' : 'oui'}">${part ? 'Me retirer ce soir' : `Rejoindre l’opération (${agentsCommune(z, T)} agents)`}</button>`;
   }
   return `<section class="card crise" id="hp-crise" aria-label="Plan du district">

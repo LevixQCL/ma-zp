@@ -194,7 +194,9 @@ export function releveNuit(state, fuites, T, { push, zoneLabel }) {
     const vois = zonesVoisines(state, f.de);
     const cibles = Object.keys(vois).filter((u) => !occupees.has(u) && peutRecevoir(state.zones[u], T + 1)).sort();
     if (!cibles.length) continue;
-    const vers = rng.pick(cibles);
+    // De préférence une voisine qui a joué ce soir (elle a plus de chances de voir la relève demain).
+    const presentes = cibles.filter((u) => (state.zones[u].toursSansOrdres || 0) === 0);
+    const vers = rng.pick(presentes.length ? presentes : cibles);
     occupees.add(vers); lancees.add(f.de);
     const suspect = rng.pick(SUSPECTS);
     const r = { id: `r${state.season}-${T}-${f.de}`, origine: f.de, vers, par: null, transmis: false, suspect, titre: f.titre || '', cause: f.cause, cell: vois[vers].chezLui, tour: T + 1, etape: 'proposee' };

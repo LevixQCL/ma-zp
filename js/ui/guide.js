@@ -292,7 +292,7 @@ export function sections() {
         ${table(['Plan', 'Avantage', 'Prix'], PLANS.map((p) => [`<strong>${p.k}</strong> · ${esc(p.nom)}`, esc(p.plus), esc(p.moins)]))}
         ${ul([
           'Une zone, une voix, quelle que soit sa taille. Égalité ou aucune voix : travail discret (B). La Gazette publie le score, pas qui a voté quoi.',
-          `Opération commune : voter C, c’est s’engager (on peut se retirer un soir sur l’HP) ; les autres zones peuvent la rejoindre. Chaque participant engage ${Math.round(CRISE.C.part * 100)} % de ses agents (${CRISE.C.min} au moins), à laisser sans affectation dans les Ordres. Un soir est réussi si au moins la moitié des zones actives sont là ; il en faut ${CRISE.C.nuitsOk} sur 3.`,
+          `Opération commune : voter C, c’est s’engager (on peut se retirer un soir sur l’HP) ; les autres zones peuvent la rejoindre. Chaque participant engage ${Math.round(CRISE.C.part * 100)} % de ses agents (${CRISE.C.min} au moins), à laisser sans affectation dans les Ordres. Un soir est réussi si au moins les 3/4 des zones qui ont voté C sont là (2 au moins ; celles qui rejoignent comptent aussi) ; il en faut ${CRISE.C.nuitsOk} sur 3.`,
           `Réussie : chaque zone présente au moins ${CRISE.C.nuitsOk} soirs est récompensée, les autres ont seulement criminalité −${Math.abs(CRISE.C.crimDistrict)}. Ratée : rien de plus. Qui ne participe pas ne paie ni ne gagne.`,
           'Le bon plan dépend de ta zone : une zone forte en Recherche gagne plus au B, une zone d’Intervention et de Roulage au A. De quoi discuter sur la radio avant le vote.',
         ])}`,

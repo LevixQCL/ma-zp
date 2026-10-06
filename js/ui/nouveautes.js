@@ -15,7 +15,7 @@ export const NOTE_MAJ = {
   // Liste complète, dans le menu Nouveautés.
   sections: [
     ['Conseil des chefs', [
-      ['Les crises du district', 'le Directeur annonce une crise d’après l’état du district ; le lendemain, chaque zone vote sur l’HP (secret jusqu’à 20:00, une voix par zone). Le plan gagnant s’applique 3 jours : A (Intervention et Roulage renforcés, criminalité en baisse, mais Proximité −25 %), B (Recherche +60 %, satisfaction en légère baisse), C (opération commune : 10 % des agents de chaque participant, grosse récompense si au moins la moitié des zones viennent 2 soirs sur 3).'],
+      ['Les crises du district', 'le Directeur annonce une crise d’après l’état du district ; le lendemain, chaque zone vote sur l’HP (secret jusqu’à 20:00, une voix par zone). Le plan gagnant s’applique 3 jours : A (Intervention et Roulage renforcés, criminalité en baisse, mais Proximité −25 %), B (Recherche +60 %, satisfaction en légère baisse), C (opération commune : 10 % des agents de chaque participant, grosse récompense si les zones qui l’ont votée tiennent parole, 2 soirs sur 3).'],
       ['Le thème de la semaine', 'il disparaît du Conseil du dimanche, remplacé par les crises. Le dimanche garde la dotation, le fonds de solidarité, le blâme et les motions.'],
     ]],
     ['Vagues et relèves', [

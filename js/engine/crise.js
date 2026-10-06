@@ -9,7 +9,7 @@
 //   par jour (la population ne voit rien).
 // - C, Opération commune : chaque zone participante engage 10 % de ses agents (2 au moins) chaque soir.
 //   Les zones qui ont voté C participent d'office (elles peuvent se retirer), les autres peuvent rejoindre.
-//   Objectif : au moins la moitié des zones actives présentes, 2 soirs sur 3. Réussite : grosse récompense
+//   Objectif : au moins les 3/4 des zones qui ont voté C (2 au moins) présentes, 2 soirs sur 3 : tenir parole. Réussite : grosse récompense
 //   pour les participants (2 soirs au moins, criminalité −6 chez eux) et criminalité −2 ailleurs. Échec : rien de plus.
 //   Ceux qui ne participent pas ne paient ni ne gagnent rien.
 
@@ -25,7 +25,7 @@ export const CRISE = {
   zonesMin: 3,
   A: { intervention: 1.05, roulage: 1.1, proximite: 0.75, crimDebut: -1, crimJour: -0.5 },
   B: { recherche: 1.6, satisfactionJour: -0.3 },
-  C: { part: 0.1, min: 2, seuil: 0.5, nuitsOk: 2, gain: { points: 14, reputation: 4, satisfaction: 3, ps: 15 }, crimParticipants: -5, crimDistrict: -2 },
+  C: { part: 0.1, min: 2, seuil: 0.75, nuitsOk: 2, gain: { points: 14, reputation: 4, satisfaction: 3, ps: 15 }, crimParticipants: -5, crimDistrict: -2 },
 };
 
 export const CRISES = {
@@ -54,7 +54,7 @@ const pct = (m) => `${m > 1 ? '+' : '−'}${Math.round(Math.abs(m - 1) * 100)} %
 export const PLANS = [
   { k: 'A', nom: 'Opération visible', plus: `Intervention ${pct(CRISE.A.intervention)}, Roulage ${pct(CRISE.A.roulage)}, criminalité en baisse chaque jour`, moins: `Proximité ${pct(CRISE.A.proximite)} (méfiance dans les quartiers)` },
   { k: 'B', nom: 'Travail discret', plus: `Recherche ${pct(CRISE.B.recherche)} (dossiers, enquête de voisinage)`, moins: `${String(CRISE.B.satisfactionJour).replace('.', ',').replace('-', '−')} de satisfaction par jour (rien de visible)` },
-  { k: 'C', nom: 'Opération commune', plus: `réussie : +${CRISE.C.gain.points} pts, +${CRISE.C.gain.reputation} de réputation, +${CRISE.C.gain.satisfaction} de satisfaction et criminalité −${Math.abs(CRISE.C.crimParticipants)} pour chaque participant`, moins: `${Math.round(CRISE.C.part * 100)} % de tes agents chaque soir (${CRISE.C.min} au moins) si tu participes ; ratée si moins de la moitié des zones viennent` },
+  { k: 'C', nom: 'Opération commune', plus: `réussie : +${CRISE.C.gain.points} pts, +${CRISE.C.gain.reputation} de réputation, +${CRISE.C.gain.satisfaction} de satisfaction et criminalité −${Math.abs(CRISE.C.crimParticipants)} pour chaque participant`, moins: `${Math.round(CRISE.C.part * 100)} % de tes agents chaque soir (${CRISE.C.min} au moins) si tu participes ; ratée si moins des 3/4 des zones qui l’ont votée viennent` },
 ];
 
 const actif = (z) => z && (z.toursSansOrdres || 0) < 3;
@@ -68,6 +68,10 @@ export function criseCourante(state) {
 export function planDuJour(state, T = state.turn) {
   const c = criseCourante(state);
   return c && c.plan && c.debut <= T && T <= c.fin ? c.plan : null;
+}
+/** Zones présentes requises chaque soir pour l'opération commune : 3/4 des zones qui l'ont votée, 2 au moins. */
+export function requisCommune(c) {
+  return Math.max(CRISE.C.min, Math.ceil(Object.keys((c && c.participants) || {}).length * CRISE.C.seuil));
 }
 /** Agents engagés chaque soir par une zone dans l'opération commune. */
 export function agentsCommune(z, T) {
@@ -140,8 +144,8 @@ export function crisePre(state, uids, ord, push, T, zoneLabel) {
       c.presences = { ...(c.presences || {}), [u]: ((c.presences || {})[u] || 0) + 1 };
       z.rapport.push(`Opération commune : ${n} de tes agents sur le dispositif du district ce soir.`);
     }
-    const actives = uids.filter((u) => actif(state.zones[u])).length;
-    const requis = Math.max(2, Math.ceil(actives * CRISE.C.seuil));
+    // Objectif : que les zones qui ont voté C tiennent parole (les zones qui rejoignent comptent aussi).
+    const requis = requisCommune(c);
     const ok = presents.length >= requis;
     c.nuits = [...(c.nuits || []), { T, n: presents.length, requis, ok }];
     push(ok ? 6 : 5, 'Opération commune', ok ? `Opération commune : ${presents.length} zones au rendez-vous` : `Opération commune : ${presents.length} zone${presents.length > 1 ? 's' : ''} sur ${requis} requises`, ok ? 'Le dispositif tient ce soir.' : 'Le dispositif est troué ce soir : il faut plus de zones.');
