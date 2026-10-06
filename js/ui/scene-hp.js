@@ -34,26 +34,37 @@ function anonyme(x, y, s = 1, teinte = '#4B5968') {
     <circle cx="37" cy="16" r="3.2" fill="#0C1124"/><circle cx="37" cy="16" r="1.3" fill="#6B7A8A"/></g>`;
 }
 
-/** Fourgon d'intervention : plus haut et plus long, même livrée, environ 52 × 25. */
+/** Fourgon d'intervention : caisse haute et carrée, petites vitres grillagées, roues jumelées, grande rampe, environ 52 × 26. */
 function fourgon(x, y, s = 1) {
+  const grille = (gx) => `<rect x="${gx}" y="5" width="9" height="5" rx=".6" fill="#0C1124" opacity=".7"/><path d="M${gx + 3} 5 V10 M${gx + 6} 5 V10 M${gx} 7.5 H${gx + 9}" stroke="#8A97A8" stroke-width=".4"/>`;
   return `<g transform="translate(${x},${y}) scale(${s})">
-    <path d="M2 21 V5 Q2 2 5 2 H38 Q40 2 41.5 4 L47 12 H49 Q52 12 52 15 V21 Z" fill="#EDF0FA"/>
-    <path d="M39 4 L44.5 12 H39 Z" fill="#8CC8F5" opacity=".6"/>
-    <rect x="6" y="5" width="8" height="5" rx="1" fill="#0C1124" opacity=".55"/><rect x="16" y="5" width="8" height="5" rx="1" fill="#0C1124" opacity=".55"/><rect x="26" y="5" width="8" height="5" rx="1" fill="#0C1124" opacity=".55"/>
-    <rect x="2" y="13" width="50" height="3.4" fill="#2F6FB5"/>
-    <g fill="#E3E84A">${[4, 12, 20, 28, 36, 44].map((i) => `<rect x="${i}" y="13" width="4" height="3.4"/>`).join('')}</g>
-    <rect x="14" y="0" width="12" height="2.2" rx="1" fill="#63B0FF"/>
-    <circle cx="12" cy="21" r="3.8" fill="#0C1124"/><circle cx="12" cy="21" r="1.5" fill="#6B7A8A"/>
-    <circle cx="42" cy="21" r="3.8" fill="#0C1124"/><circle cx="42" cy="21" r="1.5" fill="#6B7A8A"/></g>`;
+    <path d="M1.5 21.5 V3.5 Q1.5 2 3 2 H39 Q40.5 2 41.5 3.5 L46.5 11 H49.5 Q52 11 52 14 V21.5 Z" fill="#EDF0FA"/>
+    <path d="M40 4 L44.5 11 H40 Z" fill="#8CC8F5" opacity=".6"/>
+    ${grille(5)}${grille(17)}
+    <path d="M28 3.5 V20" stroke="#B9C2CE" stroke-width=".5"/>
+    <g>${[0, 1, 2].map((r) => [...Array(13)].map((_, i) => `<rect x="${1.5 + i * 3.85}" y="${12 + r * 1.6}" width="3.9" height="1.6" fill="${(i + r) % 2 ? '#2F6FB5' : '#E3E84A'}"/>`).join('')).join('')}</g>
+    <rect x="1.5" y="10.6" width="1.6" height="1" fill="#FFB23F"/>
+    <rect x="10" y="-.4" width="22" height="2.4" rx="1" fill="#1D2335"/><rect x="11" y="0" width="5" height="1.6" rx=".6" fill="#63B0FF"/><rect x="26" y="0" width="5" height="1.6" rx=".6" fill="#63B0FF"/>
+    <circle cx="10" cy="21.5" r="3.8" fill="#0C1124"/><circle cx="16.5" cy="21.5" r="3.8" fill="#0C1124"/><circle cx="10" cy="21.5" r="1.4" fill="#6B7A8A"/><circle cx="16.5" cy="21.5" r="1.4" fill="#6B7A8A"/>
+    <circle cx="43" cy="21.5" r="3.8" fill="#0C1124"/><circle cx="43" cy="21.5" r="1.5" fill="#6B7A8A"/></g>`;
 }
-/** Combi électrique : la combi, avec un liseré vert et l'éclair. */
+/** Combi électrique : plus basse et galbée, longue vitre d'une pièce, livrée en chevrons, rampe LED fine, liseré turquoise. */
 function combiElec(x, y, s = 1) {
-  return `${combi(x, y, s)}<g transform="translate(${x},${y}) scale(${s})"><rect x="2" y="14.2" width="44" height="1" fill="#3DD39A"/><path d="M29 5 l-2.4 3.4 h2 l-1.6 3 l3.6 -4 h-2 l1.4 -2.4 Z" fill="#3DD39A"/></g>`;
+  return `<g transform="translate(${x},${y}) scale(${s})">
+    <path d="M2 17 V7 Q2 3 6 3 H30 Q33 3 35 5 L40.5 10 H43 Q46 10.5 46 13.5 V17 Z" fill="#F4F6F9"/>
+    <path d="M6 5 H31 Q32.5 5 33.5 6 L37.5 9.5 H6 Q5 9.5 5 8.5 V6 Q5 5 6 5 Z" fill="#0C1124" opacity=".6"/>
+    <rect x="2" y="11" width="44" height="2.8" fill="#E3E84A"/>
+    <g fill="#2F6FB5">${[3, 9, 15, 21, 27, 33, 39].map((i) => `<path d="M${i} 11 h2.4 l1.8 2.8 h-2.4 Z"/>`).join('')}</g>
+    <rect x="2" y="14" width="44" height=".9" fill="#2FD1A0"/>
+    <path d="M24 5.4 l-2.2 2.6 h1.8 l-1.3 2.4 l3.3 -3.1 h-1.8 l1.2 -1.9 Z" fill="#2FD1A0"/>
+    <rect x="12" y="1.4" width="12" height="1.6" rx=".8" fill="#1D2335"/><rect x="13" y="1.8" width="10" height=".9" rx=".45" fill="#63B0FF"/>
+    <circle cx="11" cy="17" r="3.4" fill="#0C1124"/><circle cx="11" cy="17" r="1.6" fill="#9AA6B4"/>
+    <circle cx="37" cy="17" r="3.4" fill="#0C1124"/><circle cx="37" cy="17" r="1.6" fill="#9AA6B4"/></g>`;
 }
 
 /** Icône de véhicule pour les tuiles du parc. */
 export function vehiculeSvg(type, h = 18) {
-  if (type === 'anonyme') return `<svg viewBox="0 0 48 20" style="height:${h}px;width:auto" aria-hidden="true">${anonyme(0, 0, 1, '#5B6B7D')}</svg>`;
+  if (type === 'anonyme') return `<svg viewBox="0 0 48 20" style="height:${h}px;width:auto" aria-hidden="true">${anonyme(0, 0, 1, '#4E5B6B')}</svg>`;
   if (type === 'fourgon') return `<svg viewBox="0 0 54 26" style="height:${h}px;width:auto" aria-hidden="true">${fourgon(0, 0.5)}</svg>`;
   return `<svg viewBox="0 0 48 22" style="height:${h}px;width:auto" aria-hidden="true">${type === 'electrique' ? combiElec(0, 0.5) : combi(0, 0.5)}</svg>`;
 }
