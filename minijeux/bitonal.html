@@ -179,7 +179,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
         <span class="ico" style="color:var(--rouge)">●</span><span><b>Feu rouge :</b> des voitures traversent. Passe sous 30 km/h : elles t’entendent et s’arrêtent. Plus vite, elles ne te voient pas à temps.</span>
         <span class="ico">⛔</span><span><b>Îlots au milieu</b> de la chaussée : impossible de rester sur l’axe. Et en face, certains dépassent sur ta bande.</span>
         <span class="ico" style="color:var(--sodium)">×5</span><span><b>Points :</b> dépasse, frôle sans toucher, enchaîne pour le multiplicateur. Arriver vite rapporte un bonus. Un accrochage remet le multiplicateur à zéro.</span>
-        <span class="ico" style="color:var(--rouge)">3×</span><span>Trois accrochages et le véhicule est hors service (quatre pour un fourgon).</span>
+        <span class="ico" style="color:var(--rouge)">3×</span><span>Trois accrochages (quatre pour un fourgon) et tu dois t’arrêter : une autre équipe prend le relais. Le véhicule n’est pas perdu, il rentre juste cabossé.</span>
       </div>
       </details>
       <p class="proto" id="proto">Clavier : ← → et Espace.</p>
@@ -573,11 +573,11 @@ function terminer(arrive, raison) {
     $('etoiles').innerHTML = [0, 1, 2].map((k) => `<span class="${k < etoiles ? '' : 'off'}">⭐</span>`).join('');
     $('etoiles').setAttribute('aria-label', `${etoiles} étoile${etoiles > 1 ? 's' : ''} sur 3`);
     $('verdict').className = `verdict ${ok ? 'ok' : 'ko'}`;
-    $('verdict').textContent = raison === 'hs' ? 'Combi hors service' : ok ? 'Sur place à temps' : 'Arrivé trop tard';
+    $('verdict').textContent = raison === 'hs' ? 'Arrêt forcé' : ok ? 'Sur place à temps' : 'Arrivé trop tard';
     $('points').innerHTML = `<b>${score.toLocaleString('fr-BE')}</b><span>${MODE === 'train' ? 'entraînement, hors classement' : raison !== 'hs' && score > record ? `<span class="record">${MODE ? 'Nouveau record perso !' : 'Nouveau record !'}</span>` : record ? `Ton record : ${record.toLocaleString('fr-BE')}` : 'points'}</span>`;
     $('finTxt').textContent = (raison === 'hs'
-      ? 'Trop de dégâts : la combi reste sur le carreau, une autre équipe est envoyée.'
-      : ok ? `Sur place en ${fmt(total)}, ${fmt(S.cible - total)} d’avance sur la cible.` : `Sur place en ${fmt(total)} au lieu de ${fmt(S.cible)} : une autre patrouille est arrivée avant toi.`) + (INC ? (raison === 'hs' ? ' À 20:00 : un véhicule cabossé.' : ok ? ' À 20:00 : +moral pour l’équipe.' : ' À 20:00 : un collègue risque d’être blessé.') : '');
+      ? `Trop d’accrochages : tu dois t’arrêter, une autre équipe prend le relais. Pas de panique, ${VEH && VEH.m === 'fourgon' ? 'le fourgon n’est pas perdu' : VEH && VEH.m === 'anonyme' ? 'la voiture n’est pas perdue' : 'la combi n’est pas perdue'} : ${VEH && VEH.m === 'fourgon' ? 'il reste' : 'elle reste'} dans ton parc et roule encore.`
+      : ok ? `Sur place en ${fmt(total)}, ${fmt(S.cible - total)} d’avance sur la cible.` : `Sur place en ${fmt(total)} au lieu de ${fmt(S.cible)} : une autre patrouille est arrivée avant toi.`) + (INC ? (raison === 'hs' ? ' À 20:00 : carrosserie à refaire (à passer dans tes dépenses), ou +8 % d’usure si elle l’était déjà.' : ok ? ' À 20:00 : +moral pour l’équipe.' : ' À 20:00 : un collègue risque d’être blessé.') : '');
     $('bilan').innerHTML = [
       `<li><span>⏱</span><span>Bonus d’avance<small>${ok ? `${Math.round(S.cible - total)} s d’avance × 40` : 'Pas de bonus sans arriver à temps.'}</small></span><span class="v">+${bonus}</span></li>`,
       `<li><span>🚓</span><span>Dépassements et frôlements<small>${S.nbDep} dépassé${S.nbDep > 1 ? 's' : ''}, ${S.nbFrole} frôlé${S.nbFrole > 1 ? 's' : ''} sans toucher. Enchaîne-les pour monter le multiplicateur.</small></span><span class="v">${S.nbDep + S.nbFrole}</span></li>`,
