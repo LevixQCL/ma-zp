@@ -339,7 +339,7 @@ function detailDecision(z, dec, T) {
   } else if (dec.type === 'equiper' && dec.cible === 'prepa') {
     const n = z.prepa || 0, av = vitesseCombi(z), ap = vitesseCombi({ ...z, prepa: n + 1 });
     l.push(`Préparation des combis ${n} → ${n + 1} (moteur, freins, pneus), dès demain : vitesse de pointe sur les urgences ${Math.round(31 * 3.6 * av.mult)} → ${Math.round(31 * 3.6 * ap.mult)} km/h, freinage +${Math.round(PREPA.frein * 100)} %. Remise à zéro en fin de saison.`);
-    l.push(`La vitesse dépend aussi de l’état du parc (${av.etat} % aujourd’hui) et des combis cabossées : révision et carrosserie comptent autant.`);
+    l.push(`La vitesse dépend aussi de l’état du parc (${av.etat} % aujourd’hui) et des combis cabossés : révision et carrosserie comptent autant.`);
   } else if (dec.type === 'equiper') {
     const s = dec.cible, n = z.equip[s];
     const g = gainService(z, s, (x) => { x.equip[s] = n + 1; });

@@ -434,7 +434,7 @@ export function decisionImpossible(zone, decision, turn) {
     if (zone.niveaux[decision.service] + zone.formations.filter((f) => f.service === decision.service && f.fin > turn).length >= NIVEAU_MAX) return 'Niveau maximum atteint';
     if (agentsDisponibles(zone, turn) < 6) return 'Pas assez d’agents disponibles';
   }
-  if (decision.type === 'equiper' && decision.cible === 'prepa' && (zone.prepa || 0) >= PREPA.max) return 'Combis déjà préparées au maximum';
+  if (decision.type === 'equiper' && decision.cible === 'prepa' && (zone.prepa || 0) >= PREPA.max) return 'Combis déjà préparés au maximum';
   if (decision.type === 'equiper' && decision.cible !== 'vehicule' && decision.cible !== 'prepa' && zone.equip[decision.cible] >= NIVEAU_MAX) return 'Équipement au maximum';
   if (decision.type === 'construire' && zone.infra[decision.infra]) return 'Déjà construit';
   if (decision.type === 'agrandir') {

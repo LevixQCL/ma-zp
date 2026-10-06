@@ -7,7 +7,7 @@ export const NOTE_MAJ = {
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🚓', 'Ta flotte rapporte', 'chaque place libre après l’Intervention met un agent de Roulage ou de Proximité en voiture (+40 %). Chaque modèle a son rôle : l’électrique se rembourse (prime verte), l’anonyme fait tomber des flagrants et surveille une 2ᵉ planque en traque, le fourgon renforce tes engagements. Et ton parc te suit d’une saison à l’autre. Le détail : HP › Véhicules.'],
+    ['🚓', 'Ta flotte rapporte', 'chaque place libre après l’Intervention met un agent de Roulage ou de Proximité en voiture (+40 %). Chaque modèle a son rôle : le combi électrique se rembourse (prime verte), l’anonyme fait tomber des flagrants et surveille une 2ᵉ planque en traque, le fourgon renforce tes engagements. Et ton parc te suit d’une saison à l’autre. Le détail : HP › Véhicules.'],
     ['🚨', 'L’urgence du jour', 'des collègues pris à partie : choisis le véhicule qui part et fonce en feu bleu. Bats le meilleur score de la partie.'],
     ['📂', 'Dossier clos', 'à la fin de chaque affaire, la Gazette ouvre le débrief : ce qui désignait l’auteur, les fausses pistes, qui a trouvé quoi.'],
   ],
@@ -61,17 +61,17 @@ export const NOTE_MAJ = {
     ['La flotte rapporte', [
       ['En voiture', 'les places à bord vont d’abord à l’Intervention ; chaque place qui reste met un agent de Roulage (puis de Proximité) en voiture : +40 % d’efficacité. À pied, rien ne change. Un véhicule de plus sert donc dès que tu as du monde au Roulage ou à la Proximité.'],
       ['Combi diesel', 'polyvalente : le meilleur prix par place.'],
-      ['Combi électrique', 'la commune verse une prime verte de 0,45 k€ par jour pour chacune (3 au plus) : avec l’entretien moitié prix, elle se rembourse en une saison.'],
+      ['Combi électrique', 'la commune verse une prime verte de 0,45 k€ par jour pour chacun (3 au plus) : avec l’entretien moitié prix, il se rembourse en une saison.'],
       ['Voiture anonymisée', 'planques en voiture banalisée : +12 % à la jauge de flagrant délit chaque soir (2 au plus). Pendant une traque, elle surveille une deuxième planque : si le suspect y est, tes agents l’interpellent.'],
       ['Fourgon d’intervention', 'un peloton à bord : +12 % de force sur les affaires disputées et la zone de non-droit (2 au plus), en plus des 3,5 places et de la protection contre les blessures.'],
-      ['Reprise', 'garage plein ? Tu peux quand même acheter : ton véhicule le plus usé est repris (son prix de revente est déduit) et le neuf prend sa place. Remplacer une vieille combi par le modèle qui sert ton jeu ne demande donc pas d’agrandir le garage.'],
+      ['Reprise', 'garage plein ? Tu peux quand même acheter : ton véhicule le plus usé est repris (son prix de revente est déduit) et le neuf prend sa place. Remplacer un vieux combi par le modèle qui sert ton jeu ne demande donc pas d’agrandir le garage.'],
       ['Ton parc te suit', 'à la nouvelle saison, tes véhicules gardent leur modèle et passent au contrôle technique (usure divisée par deux), comme tes bâtiments. Le garage perd un niveau : s’il manque de places, les plus usés sont revendus et le produit s’ajoute au budget de départ. Remplacer peu à peu tes combis de départ par les modèles qui servent ton jeu devient un projet sur plusieurs saisons.'],
       ['Où le voir', 'HP › Véhicules : « Ce que rapporte ta flotte » avec ta répartition du jour. À l’achat (Grande décision › Équiper), la fiche dit ce que le véhicule rapporterait chez toi, aujourd’hui. Le rapport du soir a une ligne « Flotte ».'],
       ['Équilibrage', 'simulé sur une saison : un véhicule bien choisi rapporte à peu près autant qu’un niveau de matériel. Les robots achètent maintenant selon leur style.'],
     ]],
     ['La flotte', [
       ['Un état par véhicule', 'chaque véhicule s’use à son rythme (chaque jour, et à chaque intervention, réparties sur le parc) ; la fiche du parc montre l’état de chacun. La révision du parc les remet tous en forme. L’« état du parc » est la moyenne.'],
-      ['Quatre modèles', 'combi diesel (6 k€, 2,5 agents), combi électrique (9 k€ : plus rapide et nerveuse, s’use 40 % moins, entretien moitié prix, mais moins maniable et limitée à 1,5 agent en rythme renforcé), voiture anonymisée (7 k€ : vive, +5 % de Recherche, mais 2 agents et on la remarque tard sur les urgences), fourgon d’intervention (10 k€ : 3,5 agents, encaisse 4 chocs, −10 % de risque de blessure, mais lent et 0,3 k€ d’entretien).'],
+      ['Quatre modèles', 'combi diesel (6 k€, 2,5 agents), combi électrique (9 k€ : plus rapide et nerveux, s’use 40 % moins, entretien moitié prix, mais moins maniable et limité à 1,5 agent en rythme renforcé), voiture anonymisée (7 k€ : vive, +5 % de Recherche, mais 2 agents et on la remarque tard sur les urgences), fourgon d’intervention (10 k€ : 3,5 agents, encaisse 4 chocs, −10 % de risque de blessure, mais lent et 0,3 k€ d’entretien).'],
       ['Revente', 'depuis la fiche d’un véhicule : 60 % du prix neuf s’il est parfait, moins s’il est usé, −30 % cabossé, 15 % au minimum. Il roule encore le soir de la vente. Il reste toujours au moins un véhicule.'],
       ['Tes véhicules actuels', 'ils deviennent des combis diesel, avec l’usure qu’avait ton parc. Les anciennes « voitures anonymisées » n’étaient qu’un habillage.'],
       ['Sur les urgences', 'tu choisis le véhicule qui part. Les accrochages usent ce véhicule-là, et c’est lui qui rentre cabossé.'],
@@ -79,10 +79,10 @@ export const NOTE_MAJ = {
     ['L’urgence du jour (Bitonal)', [
       ['Quand', 'une fois par jour, en plus des incidents, à une heure imprévue entre 6 h et 12 h, ouverte jusqu’à 20:00 (carte rouge 🚨 dans les incidents de l’HP). Un seul essai.'],
       ['Le jeu', 'rue à double sens : ta bande, l’axe ou la bande d’en face. Devant, on s’écarte tard ; en face, la plupart serrent ; des îlots bloquent l’axe ; aux feux rouges des voitures traversent, elles s’arrêtent si tu passes sous 30 km/h. Points pour les dépassements et les frôlements, multiplicateur jusqu’à ×5, bonus d’avance.'],
-      ['Ta combi', 'la vitesse de pointe dépend de l’état du parc (de 80 % à 100 %), d’une combi cabossée (−6 % si tous les véhicules le sont) et de la préparation des combis (Grande décision › Équiper, 3 niveaux à 4, 6 et 8 k€ : +5 % de vitesse et +8 % de freinage chacun, remise à zéro chaque saison). Le parc affiche ta vitesse.'],
+      ['Ton combi', 'la vitesse de pointe dépend de l’état du parc (de 80 % à 100 %), d’un combi cabossé (−6 % si tous les véhicules le sont) et de la préparation des combis (Grande décision › Équiper, 3 niveaux à 4, 6 et 8 k€ : +5 % de vitesse et +8 % de freinage chacun, remise à zéro chaque saison). Le parc affiche ta vitesse.'],
       ['À temps', '+3 de moral, +5 PS et la jauge des skins (+2 sans accrochage). Chaque accrochage use le parc de 2 %.'],
       ['Trop tard', '25 % de risque qu’un collègue soit blessé (2 jours), moins avec le stand de tir et le matériel d’Intervention ; sinon −1 de moral. Trop d’accrochages (3, ou 4 pour un fourgon) : le véhicule doit s’arrêter, mais il n’est pas perdu : il rentre cabossé.'],
-      ['Temps cible', 'il s’ajuste chaque nuit sur les courses réelles de la partie (les 30 dernières de chaque niveau, ramenées à une combi neuve) : il vise environ deux courses sur trois à temps avec une combi en parfait état. Une combi usée ou cabossée garde moins de marge.'],
+      ['Temps cible', 'il s’ajuste chaque nuit sur les courses réelles de la partie (les 30 dernières de chaque niveau, ramenées à un combi neuf) : il vise environ deux courses sur trois à temps avec un combi en parfait état. Un combi usé ou cabossée garde moins de marge.'],
       ['Pas le temps', 'un bouton dans le mini-jeu : une autre équipe y va, ni bonus ni malus. Pas joué du tout : l’Intervention se débrouille seule, et si elle échoue le risque de blessé est plus élevé que si tu étais venu (45 %).'],
       ['Meilleurs scores', 'un classement par niveau (facile, normal, difficile), affiché à l’ouverture de l’urgence et sur la tuile Bitonal du Challenge. Seules les urgences comptent ; l’entraînement est hors classement.'],
     ]],

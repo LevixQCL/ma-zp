@@ -788,7 +788,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
             const ancien = modeleDe(z.flotte[dec.reprise]).nom, px = remplacerVehicule(z, dec.reprise, dec.modele || 'diesel', T);
             z.rapport.push(`Nouveau véhicule livré : ${(MODELES[dec.modele] || MODELES.diesel).nom}, avec reprise d’un${ancien.startsWith('Voiture') ? 'e' : ''} ${ancien.toLowerCase()} (${fmt1(px)} k€ déduits du prix).`);
           } else if (dec.cible === 'vehicule') { ajouterVehicule(z, dec.modele || 'diesel', T); z.rapport.push(`Nouveau véhicule livré : ${(MODELES[dec.modele] || MODELES.diesel).nom}.`); }
-          else if (dec.cible === 'prepa') { z.prepa = (z.prepa || 0) + 1; z.rapport.push(`Combis préparées au niveau ${z.prepa} : +${Math.round(z.prepa * PREPA.vitesse * 100)} % de vitesse de pointe et freinage renforcé sur les urgences.`); }
+          else if (dec.cible === 'prepa') { z.prepa = (z.prepa || 0) + 1; z.rapport.push(`Combis préparés au niveau ${z.prepa} : +${Math.round(z.prepa * PREPA.vitesse * 100)} % de vitesse de pointe et freinage renforcé sur les urgences.`); }
           else { z.equip[dec.cible] += 1; z.rapport.push(`Équipement ${SERVICE_LABELS[dec.cible]} au niveau ${z.equip[dec.cible]}.`); }
         }
         if (dec.type === 'construire') { z.infra[dec.infra] = true; z.rapport.push(`Infrastructure construite : ${INFRAS[dec.infra].nom}.`); push(4, 'Chantier', `${zoneLabel(z)} inaugure : ${INFRAS[dec.infra].nom.toLowerCase()}`, INFRAS[dec.infra].effet + '.', uid); }

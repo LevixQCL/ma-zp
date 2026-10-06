@@ -27,7 +27,7 @@ export function recordBitonal(niv) {
 }
 export const monScoreBitonal = (niv) => Math.floor(Number(S.player && S.player.bitonal && S.player.bitonal[niv]) || 0);
 
-/** Paramètres d'adresse du mini-jeu : records de la partie, records perso, vitesse de la combi. */
+/** Paramètres d'adresse du mini-jeu : records de la partie, records perso, vitesse du combi. */
 export function paramsBitonal(v = vitesseCombi(S.state && S.user ? S.state.zones[S.user.uid] : null)) {
   const p = { vit: String(v.mult), frein: String(v.frein), etat: String(v.etat), prepa: String(v.prepa), cabosse: v.cabosse ? '1' : '0' };
   for (const n of NIVEAUX_BITONAL) {

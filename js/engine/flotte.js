@@ -12,11 +12,11 @@ import { USURE, PREPA, START, BATIMENTS } from './constants.js';
  */
 export const MODELES = {
   diesel: { nom: 'Combi diesel', court: 'Combi', type: 'combi', prix: 6, vitesse: 1, accel: 1, maniab: 1, frein: 1, places: 2.5, usure: 1, entretien: 0.2, pv: 3,
-    role: 'Polyvalente, la moins chère',
+    role: 'Polyvalent, le moins cher',
     texte: 'Le cheval de bataille : 2,5 places, le meilleur prix par place. Chaque place libre après l’Intervention met un agent de Roulage ou de Proximité en voiture.' },
   electrique: { nom: 'Combi électrique', court: 'Électrique', type: 'electrique', prix: 9, vitesse: 1.06, accel: 1.25, maniab: 0.85, frein: 0.92, places: 2.5, usure: 0.6, entretien: 0.1, pv: 3, recharge: 1.5,
     role: 'Se rembourse : prime verte',
-    texte: 'La commune verse une prime « plan climat » chaque jour (3 électriques au plus), l’entretien est moitié prix et elle s’use moins : elle se rembourse en une saison. Plus vive sur les urgences, mais plus lourde (change de voie et freine moins bien). En rythme renforcé, la recharge la limite à 1,5 place.' },
+    texte: 'La commune verse une prime « plan climat » chaque jour (3 électriques au plus), l’entretien est moitié prix et il s’use moins : il se rembourse en une saison. Plus vif sur les urgences, mais plus lourd (change de voie et freine moins bien). En rythme renforcé, la recharge le limite à 1,5 place.' },
   anonyme: { nom: 'Voiture anonymisée', court: 'Anonyme', type: 'anonyme', prix: 7, vitesse: 1.05, accel: 1.1, maniab: 1.15, frein: 1.05, places: 2, usure: 1, entretien: 0.15, pv: 3, recherche: 0.05, discrete: 0.65,
     role: 'Filatures : flagrants et traques',
     texte: 'Planques en voiture banalisée : la jauge de flagrant délit monte chaque soir, +5 % de Recherche, et pendant une traque elle surveille une deuxième planque. Vive et maniable, mais sans marquage on la remarque tard sur les urgences. 2 places seulement.' },

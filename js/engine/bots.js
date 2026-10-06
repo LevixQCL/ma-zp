@@ -85,7 +85,7 @@ export function botOrders(zone, state, style = 'equilibre') {
   // équilibré : anonyme pour les flagrants ; distrait : combi).
   const prefere = { agressif: 'fourgon', prudent: 'electrique', equilibre: 'anonyme' }[style] || 'diesel';
   if (zone.budget > COUTS.vehicule + 10 && zone.vehicules < 6) options.push({ type: 'equiper', cible: 'vehicule', modele: zone.budget > 30 ? prefere : 'diesel' });
-  // Garage plein : ils remplacent une vieille combi par leur modèle préféré (reprise).
+  // Garage plein : ils remplacent un vieux combi par leur modèle préféré (reprise).
   const vieille = (zone.flotte || []).reduce((b, v, i, f) => (v.m === 'diesel' && (b < 0 || v.u > f[b].u) ? i : b), -1);
   if (zone.budget > 30 && prefere !== 'diesel' && vieille >= 0 && zone.vehicules >= capaciteVehicules(zone)) options.push({ type: 'equiper', cible: 'vehicule', modele: prefere, reprise: vieille });
   if (options.length && rng.chance(style === 'prudent' ? 0.25 : 0.45)) {

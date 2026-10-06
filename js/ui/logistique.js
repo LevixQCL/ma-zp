@@ -356,8 +356,8 @@ function parcCorps() {
     </div>
     <div class="parc">${tuiles}</div>
     ${rendementHtml(z, T, d)}
-    ${(() => { const v = vitesseCombi(z); return `<div class="between small"><span class="muted">🚨 Vitesse sur les urgences</span><span class="mono">${Math.round(31 * 3.6 * v.mult)} km/h${v.prepa ? ` · préparation niv. ${v.prepa}` : ''}${v.cabosse ? ' · combi cabossée' : ''}</span></div>`; })()}
-    <p class="tiny muted" style="margin:0">Touche un véhicule : son état, son modèle, la carrosserie, la revente. Acheter : Grande décision › Équiper. Combi : la moins chère par place · électrique : se rembourse (prime verte) · anonyme : flagrants et traques · fourgon : engagements et blessures.</p>
+    ${(() => { const v = vitesseCombi(z); return `<div class="between small"><span class="muted">🚨 Vitesse sur les urgences</span><span class="mono">${Math.round(31 * 3.6 * v.mult)} km/h${v.prepa ? ` · préparation niv. ${v.prepa}` : ''}${v.cabosse ? ' · combi cabossé' : ''}</span></div>`; })()}
+    <p class="tiny muted" style="margin:0">Touche un véhicule : son état, son modèle, la carrosserie, la revente. Acheter : Grande décision › Équiper. Combi : le moins cher par place · électrique : se rembourse (prime verte) · anonyme : flagrants et traques · fourgon : engagements et blessures.</p>
     <button type="button" class="btn block" data-action="dep-toggle" data-k="revision" data-fermer="1">${dep.revision ? '✓ Révision du parc prévue · annuler' : `Révision du parc · ${fmt1(DEPENSES.revision.cout)} k€ · +${USURE.revision} %`}</button>
     <button type="button" class="btn small ghost block" data-action="logistique">Voir mon hôtel de police</button>
     <p class="tiny muted" style="margin:0">Réparations et révision se paient à 20:00. Pense à valider tes ordres.</p>

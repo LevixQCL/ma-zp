@@ -132,7 +132,7 @@ function indispensables(indices, mondes, ok, rep, vraie) {
 const CONTEXTES_MENT = [
   'La recette de la kermesse a disparu du bureau du comité des fêtes',
   'Le trophée du tournoi de mini-foot interzones a disparu de la vitrine du hall',
-  'Le rétroviseur d’une combi a été arraché cette nuit sur le parking de la zone',
+  'Le rétroviseur d’un combi a été arraché cette nuit sur le parking de la zone',
   'Les clés du local des saisies ont disparu du tableau de l’accueil',
   'La caisse de la buvette du club de basket est vide ce matin',
   'Quelqu’un a vidé la cagnotte du pot de départ du commissaire',
