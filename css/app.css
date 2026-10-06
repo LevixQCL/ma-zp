@@ -764,6 +764,8 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 /* Incidents du jour et mini-jeux */
 .inc-row { display: flex; gap: 10px; align-items: center; background: var(--surface2); border: 1px solid var(--hair); border-radius: 16px; padding: 10px 11px; font-size: 13px; }
 .inc-row.inc-ouvert { background: var(--amber-bg); border-color: var(--amber-line); }
+.inc-row.inc-urgence { background: var(--red-bg); border-color: var(--red-line); }
+.inc-urgence .inc-ico { background: rgba(255, 110, 106, .16); }
 .inc-row.inc-attente { background: transparent; border-style: dashed; }
 .inc-ico { flex-shrink: 0; width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: var(--bg); color: var(--muted); }
 .inc-ouvert .inc-ico { color: var(--amber); background: rgba(255, 178, 63, .14); animation: inc-pulse 1.6s ease-in-out infinite; }

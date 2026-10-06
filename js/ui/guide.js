@@ -10,7 +10,8 @@ import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
 import { ENQ, DEMARCHES, POINTS, pointsDecouverte, delaiTraque, PRIME } from '../engine/enquete.js';
 import { PARTAGE, FIPA } from '../engine/fipa.js';
 import { QUEST_LABELS } from '../quests/quests.js';
-import { INCIDENTS, INC, MALUS, GAIN, texteMalus, texteGain } from '../engine/incidents.js';
+import { INCIDENTS, INC, MALUS, GAIN, texteMalus, texteGain, URGENCE } from '../engine/incidents.js';
+import { PREPA, coutPrepa } from '../engine/constants.js';
 import { AIDE, THEMES, MOTIONS_CHEF, PERIL, SOLIDARITE } from '../engine/rivalites.js';
 import { PACTES, PACTE, DEFI, DEFI_INDICATEURS } from '../engine/pactes.js';
 
@@ -350,7 +351,18 @@ export function sections() {
           '<strong>Pas joué</strong> : ton équipe se débrouille seule. Elle réussit d’autant plus souvent que le service est fourni ; sinon, un petit malus. Rien à gagner sans jouer.',
           'Chaque mini-jeu a son tuto. Pour t’exercer sans enjeu : écran Énigmes, onglet « Entraînement ».',
         ])}
-        ${table(['Service', 'Incident', 'Réussi', 'Raté', 'Pas joué et raté'], Object.entries(INCIDENTS).map(([k, x]) => [SERVICE_LABELS[k], esc(x.titre), esc(texteGain(GAIN[k])), esc(texteMalus(MALUS[k].plein)), esc(texteMalus(MALUS[k].leger))]))}`,
+        ${table(['Service', 'Incident', 'Réussi', 'Raté', 'Pas joué et raté'], Object.entries(INCIDENTS).map(([k, x]) => [SERVICE_LABELS[k], esc(x.titre), esc(texteGain(GAIN[k])), esc(texteMalus(MALUS[k].plein)), esc(texteMalus(MALUS[k].leger))]))}
+        <h3 class="kicker" style="margin:10px 0 0">🚨 L’urgence du jour : « ${esc(URGENCE.titre)} »</h3>
+        <p>Une fois par jour, en plus des incidents, des collègues pris à partie demandent du renfort (même horaire, ouvert jusqu’à 20:00). Mini-jeu <strong>Bitonal</strong> : rejoindre l’adresse au plus vite, en feu bleu, sur une rue à double sens. Les voitures devant toi s’écartent tard, celles d’en face serrent (pas toutes), des îlots bloquent l’axe, des voitures traversent aux feux rouges : passe sous 30 km/h et elles s’arrêtent.</p>
+        ${ul([
+          '<strong>La vitesse de ta combi</strong> dépend de ton parc, au moment où l’urgence tombe : état du parc (de 80 % de la vitesse avec un parc usé à 100 % avec un parc neuf), combi cabossée si tous tes véhicules le sont (−6 %), et la <strong>préparation des combis</strong> (Grande décision › Équiper, ' + PREPA.max + ' niveaux à ' + [0, 1, 2].map(coutPrepa).join(', ') + ' k€ : +' + Math.round(PREPA.vitesse * 100) + ' % de vitesse et +' + Math.round(PREPA.frein * 100) + ' % de freinage par niveau, remise à zéro chaque saison).',
+          `<strong>À temps</strong> : +${URGENCE.gain.moral} de moral, +${PS.queteOk} PS et la jauge des skins (+2 sans accrochage, +1 sinon). Chaque accrochage use le parc (+${URGENCE.usureParAccrochage} %).`,
+          `<strong>Trop tard</strong> (ou abandon en route) : ${Math.round(URGENCE.blessure * 100)} % de risque qu’un collègue soit blessé, absent ${URGENCE.absence} jours (moins avec le stand de tir et le matériel d’Intervention) ; sinon ${URGENCE.moralRetard} de moral.`,
+          `<strong>Combi hors service</strong> (3 accrochages) : un véhicule rentre cabossé (s’ils le sont tous, +${URGENCE.usureHS} % d’usure). Rien d’autre.`,
+          '<strong>« Pas le temps »</strong> : une autre équipe y va. Ni bonus, ni malus.',
+          `<strong>Pas joué</strong> : l’Intervention se débrouille seule ; si elle n’y arrive pas, ${Math.round(URGENCE.seule.blessure * 100)} % de risque de blessé, sinon ${URGENCE.seule.moral} de moral.`,
+          '<strong>Meilleurs scores</strong> : le score de chaque urgence (dépassements, frôlements, avance) entre au classement de la partie, un par niveau (facile, normal, difficile), affiché à l’ouverture du mini-jeu et sur sa tuile d’entraînement. L’entraînement ne compte pas.',
+        ])}`,
     },
     {
       id: 'imprevus', titre: 'Le Directeur, imprévus et coups durs', html: `

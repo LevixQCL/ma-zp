@@ -158,6 +158,25 @@ export const DEPENSES = {
   carrosserie:  { nom: 'Carrosserie', cout: 1.5, texte: 'répare les véhicules cabossés (1,5 k€ chacun, moitié prix avec l’atelier) ; immobilisés ce jour-là, sauf avec l’atelier' },
 };
 
+// Préparation des combis (Grande décision › Équiper) : moteur, freins, pneus. Sert sur les urgences
+// (mini-jeu « Bitonal ») : chaque niveau donne +5 % de vitesse de pointe et +8 % de freinage. Remise à 0 chaque saison.
+export const PREPA = { max: 3, vitesse: 0.05, frein: 0.08 };
+/** Coût du niveau suivant : 4, 6, 8 k€. */
+export const coutPrepa = (n) => 4 + 2 * (n || 0);
+/**
+ * Vitesse de la combi envoyée sur une urgence, figée quand l'urgence tombe.
+ * État du parc (100 − usure) : de ×0,80 (parc à 0 %) à ×1 (parc neuf). Si tous les véhicules en service sont
+ * cabossés : ×0,94. Préparation : +5 % par niveau. `frein` : multiplicateur du freinage.
+ */
+export function vitesseCombi(z) {
+  const etat = Math.round(100 - ((z && z.usure) || 0));
+  const enService = Math.max(0, ((z && z.vehicules) || 0) - ((z && z.vehiculesHS) || []).length);
+  const cabosse = enService > 0 && ((z && z.cabosses) || []).length >= enService;
+  const prepa = Math.max(0, Math.min(PREPA.max, (z && z.prepa) || 0));
+  const mult = Math.round((0.8 + 0.2 * etat / 100) * (cabosse ? 0.94 : 1) * (1 + PREPA.vitesse * prepa) * 1000) / 1000;
+  return { etat, cabosse, prepa, mult, frein: Math.round((1 + PREPA.frein * prepa) * 100) / 100 };
+}
+
 // Usure des véhicules (en % du parc) : chaque intervention use un peu les véhicules.
 export const USURE = { parTour: 1, parIntervention: 1.5, max: 70, revision: 20 };
 /** Efficacité de l'Intervention selon l'état du parc (100 − usure). */

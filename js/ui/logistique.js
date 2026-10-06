@@ -12,7 +12,7 @@ import { iconeSite } from './plan.js';
 import { moyenneIpz, operationActive, fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
 import { coutDemarche, PRIME_LABELS } from '../engine/enquete.js';
 import { portraitSuspect } from './portrait.js';
-import { SERVICE_LABELS, scoreBudget, BUDGET_IPZ, IPZ_POIDS } from '../engine/constants.js';
+import { SERVICE_LABELS, scoreBudget, BUDGET_IPZ, IPZ_POIDS, vitesseCombi } from '../engine/constants.js';
 import { aideBtn } from './aide.js';
 import { PERIL, absT } from '../engine/rivalites.js';
 import { estimations } from './ordres.js';
@@ -353,7 +353,8 @@ function parcCorps() {
       <div class="parc-etat"><span style="width:${etat}%;background:${etat >= 80 ? 'var(--green)' : etat >= 60 ? 'var(--amber)' : 'var(--red)'}"></span></div>
     </div>
     <div class="parc">${tuiles}</div>
-    <p class="tiny muted" style="margin:0">Touche un véhicule cabossé pour le faire réparer.</p>
+    ${(() => { const v = vitesseCombi(z); return `<div class="between small"><span class="muted">🚨 Vitesse sur les urgences</span><span class="mono">${Math.round(31 * 3.6 * v.mult)} km/h${v.prepa ? ` · préparation niv. ${v.prepa}` : ''}${v.cabosse ? ' · combi cabossée' : ''}</span></div>`; })()}
+    <p class="tiny muted" style="margin:0">Touche un véhicule cabossé pour le faire réparer. Révision, carrosserie et préparation des combis (Grande décision › Équiper) rendent les urgences plus rapides.</p>
     <button type="button" class="btn block" data-action="dep-toggle" data-k="revision" data-fermer="1">${dep.revision ? '✓ Révision du parc prévue · annuler' : `Révision du parc · ${fmt1(DEPENSES.revision.cout)} k€ · +${USURE.revision} %`}</button>
     <button type="button" class="btn small ghost block" data-action="logistique">Voir mon hôtel de police</button>
     <p class="tiny muted" style="margin:0">Réparations et révision se paient à 20:00. Pense à valider tes ordres.</p>

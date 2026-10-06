@@ -5,7 +5,7 @@ import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
 import {
   APP_VERSION, NIVEAU_MAX, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue , PREPA } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
 import { jourBe } from './time.js';
@@ -534,7 +534,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (incs.reportes.length) z.incidentsReportes = incs.reportes; else delete z.incidentsReportes;
     if (incs.maintenant.length) {
       const resInc = Object.values(resultatsIncidents(players[uid], incs.maintenant));
-      adapterIncidents(z, resInc.filter((x) => x.statut === 'ok').length, resInc.length);
+      const comptes = resInc.filter((x) => x.statut !== 'passe');
+      adapterIncidents(z, comptes.filter((x) => x.statut === 'ok').length, comptes.length);
       const inc = appliquerIncidents(z, { incidents: incs.maintenant, resultats: resultatsIncidents(players[uid], incs.maintenant), alloc: o.alloc || {}, T, rng: makeRng(`${state.seed}:s${state.season}:t${T}:incidents-res:${uid}`), indice: () => indiceBonus(state, z, zr) });
       z.rapport.push(...inc.lignes);
       if (inc.skin) push(3, 'Décor', `${zoneLabel(z)} décroche le skin « ${inc.skin.nom} »`, 'Jauge des incidents remplie à force d’interventions réussies.', uid);
@@ -762,6 +763,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         }
         if (dec.type === 'equiper') {
           if (dec.cible === 'vehicule') { z.usure = z.usure * z.vehicules / (z.vehicules + 1); z.vehicules += 1; z.rapport.push('Nouveau véhicule livré.'); }
+          else if (dec.cible === 'prepa') { z.prepa = (z.prepa || 0) + 1; z.rapport.push(`Combis préparées au niveau ${z.prepa} : +${Math.round(z.prepa * PREPA.vitesse * 100)} % de vitesse de pointe et freinage renforcé sur les urgences.`); }
           else { z.equip[dec.cible] += 1; z.rapport.push(`Équipement ${SERVICE_LABELS[dec.cible]} au niveau ${z.equip[dec.cible]}.`); }
         }
         if (dec.type === 'construire') { z.infra[dec.infra] = true; z.rapport.push(`Infrastructure construite : ${INFRAS[dec.infra].nom}.`); push(4, 'Chantier', `${zoneLabel(z)} inaugure : ${INFRAS[dec.infra].nom.toLowerCase()}`, INFRAS[dec.infra].effet + '.', uid); }

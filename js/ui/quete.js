@@ -1,5 +1,6 @@
 // Écran de l’énigme du jour.
 import { nominette } from './defis.js';
+import { nominetteBitonal } from './bitonal.js';
 import { S, esc, icon, tabbar, myZone } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS } from '../quests/quests.js';
 import { SERVICES, SERVICE_LABELS, ENIGMES, gainMoral, chanceDelegue } from '../engine/constants.js';
@@ -51,12 +52,12 @@ function renderGrille(q) {
 
 const ICO_ENIGME = { quiment: '🤥', grille: '🏘️', cadenas: '🔐', chronologie: '🕒', code: '🔣', plaque: '🚗', photos: '📷', filature: '👣', butin: '💰', horaires: '🚌', ecriture: '✍️' };
 const GROUPES_ENIGMES = [['Logique', ['quiment', 'grille', 'chronologie', 'horaires']], ['Observation', ['photos', 'plaque', 'ecriture', 'filature']], ['Chiffres et codes', ['cadenas', 'code', 'butin']]];
-const ICO_MJ = { colis: '💣', crochetage: '🔓', depanneuse: '🚧', dossier: '📄', empreintes: '🖐️', adn: '🧬', reseau: '🔌', tracage: '🌐' };
+const ICO_MJ = { bitonal: '🚨', colis: '💣', crochetage: '🔓', depanneuse: '🚧', dossier: '📄', empreintes: '🖐️', adn: '🧬', reseau: '🔌', tracage: '🌐' };
 const COUL_MJ = { intervention: '#FF6E6A', recherche: '#63B0FF', roulage: '#FFB23F', proximite: '#3DD39A', labo: '#A78BFA', rccu: '#5AD1E6' };
 
 /** Entraînement aux mini-jeux : des tuiles par famille (incidents du jour, appui PJF), lancées directement. */
 function entrainementMiniJeux() {
-  const tuile = (m) => `<button type="button" class="tr-tuile" data-action="mj-train" data-j="${m.jeu}" style="--c:${COUL_MJ[m.service] || '#63B0FF'}"><span class="tr-ico" aria-hidden="true">${ICO_MJ[m.jeu] || '🎮'}</span><span class="tr-nom">${esc(m.nom)}</span><span class="tr-s">${esc(SERVICE_LABELS[m.service] || (m.service === 'labo' ? 'Labo' : 'RCCU'))}</span>${nominette(m.jeu)}</button>`;
+  const tuile = (m) => `<button type="button" class="tr-tuile" data-action="mj-train" data-j="${m.jeu}" style="--c:${COUL_MJ[m.service] || '#63B0FF'}"><span class="tr-ico" aria-hidden="true">${ICO_MJ[m.jeu] || '🎮'}</span><span class="tr-nom">${esc(m.nom)}</span><span class="tr-s">${esc(SERVICE_LABELS[m.service] || (m.service === 'labo' ? 'Labo' : 'RCCU'))}</span>${m.jeu === 'bitonal' ? nominetteBitonal() : nominette(m.jeu)}</button>`;
   const inc = MINI_JEUX.filter((m) => !['labo', 'rccu'].includes(m.service)), pjf = MINI_JEUX.filter((m) => ['labo', 'rccu'].includes(m.service));
   return `<section class="card tight" aria-label="Mini-jeux" style="gap:10px">
     <span class="tiny muted">Chaque mini-jeu, du niveau 1 (tout doux) aussi haut que possible, trois erreurs permises. Le record de la partie met son nom sur la tuile. Sans enjeu pour ta zone.</span>

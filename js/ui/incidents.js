@@ -3,7 +3,9 @@
 // elles renvoient leur résultat par message (start, result, close).
 import { S, esc, icon, myZone, toast } from './common.js';
 import { paramsDefi, noterNiveauDefi } from './defis.js';
-import { incidentsVisibles, resultatsIncidents, INCIDENTS, MALUS, GAIN, texteMalus, texteGain, difficulte, pointsJauge, INC } from '../engine/incidents.js';
+import { incidentsVisibles, resultatsIncidents, INCIDENTS, MALUS, GAIN, texteMalus, texteGain, difficulte, pointsJauge, INC, URGENCE, texteRisqueUrgence } from '../engine/incidents.js';
+import { paramsBitonal, noterScoreBitonal, NOM_NIVEAU } from './bitonal.js';
+import { vitesseCombi } from '../engine/constants.js';
 import { PS } from '../engine/constants.js';
 import { niveauIncidents } from '../engine/directeur.js';
 import { APPUI, appuiDuJour, DIFF_EXPERTS } from '../engine/appui.js';
@@ -15,6 +17,7 @@ import { ANNEXES_AILE } from './scene-aile.js';
 /** Les mini-jeux, pour l'entraînement. */
 export const MINI_JEUX = [
   { jeu: 'colis', service: 'intervention', nom: 'Colis suspect' },
+  { jeu: 'bitonal', service: 'intervention', nom: 'Bitonal (urgence)' },
   { jeu: 'crochetage', service: 'recherche', nom: 'Crochetage' },
   { jeu: 'depanneuse', service: 'roulage', nom: 'Dépanneuse' },
   { jeu: 'dossier', service: 'proximite', nom: 'Dossier à relire' },
@@ -90,22 +93,23 @@ export function incidentsHtml() {
   const lignes = liste.filter((i) => etat(i, res[i.id], now) !== 'avenir').map((i) => {
     const e = etat(i, res[i.id], now), r = res[i.id];
     const svc = `<span class="tiny muted">${SERVICE_LABELS[i.service]}</span>`;
-    if (e === 'ouvert') return `<div class="inc-row inc-ouvert"><span class="inc-ico" aria-hidden="true">${icon('alert', 18)}</span>
-      <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:700">${esc(i.titre)}</span><span class="tiny muted">${SERVICE_LABELS[i.service]} · encore <span data-inc-fin="${i.ferme}">${duree(i.ferme - now)}</span> pour intervenir</span></span>
+    if (e === 'ouvert') return `<div class="inc-row inc-ouvert${i.urgence ? ' inc-urgence' : ''}"><span class="inc-ico" aria-hidden="true">${i.urgence ? '🚨' : icon('alert', 18)}</span>
+      <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:700">${esc(i.titre)}</span><span class="tiny muted">${i.urgence ? `Urgence · combi à ${Math.round(31 * 3.6 * (i.vit || 1))} km/h` : SERVICE_LABELS[i.service]} · encore <span data-inc-fin="${i.ferme}">${duree(i.ferme - now)}</span> pour intervenir</span></span>
       <button class="btn primary small" data-action="incident" data-id="${esc(i.id)}">Intervenir</button></div>`;
     if (e === 'joue') {
       const ok = r.statut === 'ok';
-      return `<div class="inc-row"><span class="inc-ico ${ok ? 'ok' : 'bad'}" aria-hidden="true">${icon(ok ? 'check' : 'alert', 16)}</span>
-        <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:600">${esc(i.titre)}</span>${svc}</span>
-        <span class="pill ${ok ? 'green' : 'red'}">${ok ? `Réussi · +${pointsJauge(r)}` : r.statut === 'abandon' ? 'Abandonné' : 'Raté'}</span></div>`;
+      const passe = r.statut === 'passe';
+      return `<div class="inc-row"><span class="inc-ico ${passe ? '' : ok ? 'ok' : 'bad'}" aria-hidden="true">${icon(passe ? 'clock' : ok ? 'check' : 'alert', 16)}</span>
+        <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:600">${esc(i.titre)}</span>${i.urgence ? `<span class="tiny muted">Urgence${r.score ? ` · ${Number(r.score).toLocaleString('fr-BE')} points` : ''}</span>` : svc}</span>
+        <span class="pill ${r.statut === 'passe' ? '' : ok ? 'green' : 'red'}">${r.statut === 'passe' ? 'Pas le temps · sans effet' : ok ? `${i.urgence ? 'À temps' : 'Réussi'} · +${pointsJauge(r)}` : r.statut === 'abandon' ? 'Abandonné' : i.urgence ? (r.raison === 'hs' ? 'Combi HS' : 'Trop tard') : 'Raté'}</span></div>`;
     }
     return `<div class="inc-row"><span class="inc-ico" aria-hidden="true">${icon('clock', 16)}</span>
-      <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:600">${esc(i.titre)}</span><span class="tiny muted">${SERVICE_LABELS[i.service]} · non traité : ton équipe s’en charge seule, résultat à 20:00</span></span></div>`;
+      <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:600">${esc(i.titre)}</span><span class="tiny muted">${i.urgence ? 'Urgence' : SERVICE_LABELS[i.service]} · non traité : ton équipe s’en charge seule, résultat à 20:00</span></span></div>`;
   });
   return `<section class="card" id="hp-incidents" aria-label="Incidents du jour" style="gap:8px;scroll-margin-top:16px">
     <div class="between"><span class="kicker">Incidents du jour</span><a class="tiny" href="#guide-incidents">Comment ça marche ?</a></div>
     ${appuiRow}${lignes.join('')}
-    ${prochain ? `<div class="inc-row inc-attente"><span class="inc-ico" aria-hidden="true">${icon('clock', 16)}</span><span class="col grow" style="gap:1px"><span style="font-weight:600">${lignes.length ? 'Un autre incident va tomber' : 'Un incident va tomber aujourd’hui'}</span><span class="tiny muted">sur un de tes services, dans <strong class="mono" data-inc-cd="${prochain.ouvre}">${duree(prochain.ouvre - now)}</strong> · ouvert jusqu’à 20:00</span></span></div>`
+    ${prochain ? `<div class="inc-row inc-attente"><span class="inc-ico" aria-hidden="true">${icon('clock', 16)}</span><span class="col grow" style="gap:1px"><span style="font-weight:600">${prochain.urgence ? '🚨 Une urgence va tomber aujourd’hui' : lignes.length ? 'Un autre incident va tomber' : 'Un incident va tomber aujourd’hui'}</span><span class="tiny muted">${prochain.urgence ? 'des collègues demanderont du renfort' : 'sur un de tes services'}, dans <strong class="mono" data-inc-cd="${prochain.ouvre}">${duree(prochain.ouvre - now)}</strong> · ouvert jusqu’à 20:00</span></span></div>`
       : !lignes.some((l) => l.includes('inc-ouvert')) ? '<p class="tiny muted" style="margin:0">Plus d’incident aujourd’hui. Les prochains tombent demain, entre 6 h et 12 h, et restent ouverts jusqu’à 20:00.</p>' : ''}
     <button type="button" class="between small jauge-btn" data-action="jauge-skins" aria-label="Jauge des skins : voir ce que tu peux gagner"><span class="row muted" style="gap:6px">${icon('star', 14)} Jauge des skins</span>
       <span class="row" style="gap:8px"><span role="img" aria-label="${base} sur ${INC.jauge}" style="width:90px;height:5px;background:var(--line);border-radius:3px;display:inline-block;overflow:hidden"><span style="display:block;width:${Math.min(100, (base / INC.jauge) * 100)}%;height:5px;background:var(--amber)"></span></span>
@@ -148,12 +152,19 @@ function gainAffiche(service) {
 export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, onFin = () => {}, onEntrainement = () => {} } = {}) {
   document.querySelector('.mj-wrap')?.remove();
   const p = new URLSearchParams({ mode });
+  if (jeu === 'bitonal') {
+    const v = mode === 'incident' && inc && Number.isFinite(inc.vit) ? { mult: inc.vit, frein: inc.frein || 1, etat: inc.etat, prepa: inc.prepa || 0, cabosse: !!inc.cabosse } : vitesseCombi(myZone());
+    for (const [k, val] of Object.entries(paramsBitonal(v))) p.set(k, val);
+    if (inc && inc.seed) p.set('seed', String(inc.seed));
+  }
   if (mode === 'incident' && inc) {
     const n = agentsService(inc.service, inc), { base, plus } = jaugeDuJour();
     const aj = Number.isFinite(inc.ajust) ? inc.ajust : niveauIncidents(myZone());
     p.set('id', inc.id); p.set('agents', String(n)); p.set('diff', difficulte(inc.service, n, aj));
     p.set('pourquoi', pourquoiIncident(inc.service, n, aj));
-    p.set('jauge', String(base + plus)); p.set('malus', texteMalus(MALUS[inc.service].plein)); p.set('gain', `${gainAffiche(inc.service)}, +${PS.queteOk} PS`);
+    p.set('jauge', String(base + plus));
+    if (inc.urgence) { p.set('malus', texteRisqueUrgence()); p.set('gain', `+${URGENCE.gain.moral} de moral, +${PS.queteOk} PS, jauge des skins`); }
+    else { p.set('malus', texteMalus(MALUS[inc.service].plein)); p.set('gain', `${gainAffiche(inc.service)}, +${PS.queteOk} PS`); }
   }
   if (mode === 'renfort' && appui) {
     const u = APPUI.unites[appui.unite];
@@ -176,7 +187,11 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
     try {
       if (mode === 'incident' && inc && d.id === inc.id) {
         if (d.type === 'start') await enregistrer(inc.id, { statut: 'abandon', fautes: 1 });
-        if (d.type === 'result') await enregistrer(inc.id, { statut: d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Number(d.fautes) || 0 });
+        if (d.type === 'result' && inc.urgence) {
+          const niv = ['facile', 'normal', 'difficile'].includes(d.niveau) ? d.niveau : null;
+          await enregistrer(inc.id, { statut: d.passe ? 'passe' : d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Math.max(0, Math.min(3, Number(d.fautes) || 0)), ...(d.raison === 'hs' ? { raison: 'hs' } : {}), ...(d.score ? { score: Math.floor(Number(d.score) || 0) } : {}), ...(niv ? { niveau: niv } : {}) });
+          if (!d.passe && niv && d.score > 0 && await noterScoreBitonal(niv, d.score)) toast(`Nouveau meilleur score de la partie en ${NOM_NIVEAU[niv].toLowerCase()} : ${Math.floor(d.score).toLocaleString('fr-BE')} !`);
+        } else if (d.type === 'result') await enregistrer(inc.id, { statut: d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Number(d.fautes) || 0 });
       }
       if (mode === 'train' && d.type === 'result' && !d.abandon) onEntrainement({ minijeux: 1 });
       // Défi d'endurance : chaque niveau réussi peut battre le record personnel (et celui de la partie).
