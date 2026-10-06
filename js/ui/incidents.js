@@ -102,7 +102,7 @@ export function incidentsHtml() {
       const passe = r.statut === 'passe';
       return `<div class="inc-row"><span class="inc-ico ${passe ? '' : ok ? 'ok' : 'bad'}" aria-hidden="true">${icon(passe ? 'clock' : ok ? 'check' : 'alert', 16)}</span>
         <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:600">${esc(i.titre)}</span>${i.urgence ? `<span class="tiny muted">Urgence${r.score ? ` · ${Number(r.score).toLocaleString('fr-BE')} points` : ''}</span>` : svc}</span>
-        <span class="pill ${r.statut === 'passe' ? '' : ok ? 'green' : 'red'}">${r.statut === 'passe' ? 'Pas le temps · sans effet' : ok ? `${i.urgence ? 'À temps' : 'Réussi'} · +${pointsJauge(r)}` : r.statut === 'abandon' ? 'Abandonné' : i.urgence ? (r.raison === 'hs' ? 'Combi HS' : 'Trop tard') : 'Raté'}</span></div>`;
+        <span class="pill ${r.statut === 'passe' ? '' : ok ? 'green' : 'red'}">${r.statut === 'passe' ? 'Pas le temps · sans effet' : ok ? `${i.urgence ? 'À temps' : 'Réussi'} · +${pointsJauge(r)}` : r.statut === 'abandon' ? 'Abandonné' : i.urgence ? (r.raison === 'hs' ? 'Accrochages · cabossé' : 'Trop tard') : 'Raté'}</span></div>`;
     }
     return `<div class="inc-row"><span class="inc-ico" aria-hidden="true">${icon('clock', 16)}</span>
       <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:600">${esc(i.titre)}</span><span class="tiny muted">${i.urgence ? 'Urgence' : SERVICE_LABELS[i.service]} · non traité : ton équipe s’en charge seule, résultat à 20:00</span></span></div>`;
