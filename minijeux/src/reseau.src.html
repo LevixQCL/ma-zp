@@ -87,9 +87,12 @@ function powered(){
       const t=ny*R.cols+nx; if(!on.has(t) && (cur(t)&o)){ on.add(t); q.push(t); } } }
   return on;
 }
+/* Gagné : tous les PC reliés au serveur, et aucun câble du réseau allumé ne pend dans le vide.
+   Une case de câble restée à l'écart (éteinte) ne compte pas : un autre branchement valable que celui
+   du générateur est accepté (retour de joueur : tous les PC allumés, deux cases grises, pas de victoire). */
 function solved(on){
-  if(on.size!==R.cells.length) return false;
-  for(let i=0;i<R.cells.length;i++){ const m=cur(i), x=i%R.cols, y=Math.floor(i/R.cols);
+  for(let i=0;i<R.cells.length;i++) if(i!==R.srv && deg(R.cells[i].base)===1 && !on.has(i)) return false;
+  for(const i of on){ const m=cur(i), x=i%R.cols, y=Math.floor(i/R.cols);
     for(const [b,dx,dy,o] of DIRS){ if(!(m&b)) continue; const nx=x+dx, ny=y+dy;
       if(nx<0||ny<0||nx>=R.cols||ny>=R.rows) return false; if(!(cur(ny*R.cols+nx)&o)) return false; } }
   return true;
@@ -187,7 +190,7 @@ Shell.init({
   bornes:{time:[35,Infinity],cols:[3,8],rows:[3,10]},
   diffHint:'Plus d’enquêteurs : un réseau plus petit à reconnecter.',
   desktopHint:'Sur ordinateur : clic pour tourner, clic droit pour verrouiller une case.',
-  rules:['Toucher une case la <b>tourne</b> d’un quart de tour.','Gagné quand <b>tous les PC</b> sont reliés au serveur et qu’<b>aucun câble</b> ne pend dans le vide.','Un câble au bord du plateau est forcément faux : commence par les bords et les coins.','<b>Appui long</b> (ou clic droit) : verrouiller une case sûre.','Terminé dans les 60 % du temps : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
+  rules:['Toucher une case la <b>tourne</b> d’un quart de tour.','Gagné quand <b>tous les PC</b> sont reliés au serveur et qu’<b>aucun câble</b> du réseau allumé ne pend dans le vide (une case restée grise ne compte pas).','Un câble au bord du plateau est forcément faux : commence par les bords et les coins.','<b>Appui long</b> (ou clic droit) : verrouiller une case sûre.','Terminé dans les 60 % du temps : <b>+2</b> sur la jauge skins. Sinon : <b>+1</b>.'],
   winTitle:'Réseau reconnecté', loseTitle:'Réseau toujours coupé', skin:'Baie de serveurs',
   malus:'la RCCU n’a pas pu accéder au réseau : pas d’indice supplémentaire aujourd’hui.',
   onMenu(){ R.over=true; },
