@@ -9,6 +9,7 @@
 //  - accident grave : sinistre total et un agent blessé.
 import { COUTS } from './constants.js';
 import { placeLibre, cabossesChoisis } from './parc.js';
+import { retirerVehicule, plusUse, assurerFlotte } from './flotte.js';
 
 export const SINISTRE = {
   base: 0.02,             // risque de base par tour
@@ -133,7 +134,8 @@ export function accidentVehicule(z, T, rng, ctx, push, label) {
     // On ne laisse jamais une zone sans aucun véhicule : le dernier part en réparation lourde.
     z.vehiculesHS.push({ retour: T + 4, slot: 0 });
   } else {
-    z.vehicules -= 1;
+    assurerFlotte(z);
+    retirerVehicule(z, plusUse(z)); // c'est le plus usé qui lâche
     if (z.cabosses.length > z.vehicules) z.cabosses.pop();
     z.stats.sinistres = (z.stats.sinistres || 0) + 1;
   }

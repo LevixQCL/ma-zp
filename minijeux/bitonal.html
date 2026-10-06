@@ -116,6 +116,11 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
 .records .l b { font: 800 16px var(--display); font-variant-numeric: tabular-nums; }
 .records .l.on { color: var(--texte); } .records .l span:first-child { color: var(--texte2); }
 .tiny { font-size: 11.5px; }
+.vehs { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 6px; }
+.veh { display: grid; grid-template-columns: auto 1fr; gap: 0 6px; text-align: left; padding: 7px 8px; border-radius: 10px; border: 1px solid var(--ligne); background: var(--nuit2); color: var(--texte); cursor: pointer; font: inherit; }
+.veh .vi { grid-row: span 3; font-size: 20px; }
+.veh .vn { font-weight: 700; font-size: 13px; } .veh .vv { font-size: 12px; color: var(--texte2); font-variant-numeric: tabular-nums; } .veh .va { font-size: 11px; color: var(--sodium); }
+.veh.on { border-color: var(--sodium); background: rgba(255,178,63,.12); }
 .regles-d summary { cursor: pointer; font: 700 15px var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--texte2); padding: 4px 0; }
 .regles-d[open] summary { margin-bottom: 10px; }
 .enjeux { margin: 0; font-size: 13px; line-height: 1.45; color: var(--texte2); }
@@ -174,7 +179,7 @@ canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block
         <span class="ico" style="color:var(--rouge)">●</span><span><b>Feu rouge :</b> des voitures traversent. Passe sous 30 km/h : elles t’entendent et s’arrêtent. Plus vite, elles ne te voient pas à temps.</span>
         <span class="ico">⛔</span><span><b>Îlots au milieu</b> de la chaussée : impossible de rester sur l’axe. Et en face, certains dépassent sur ta bande.</span>
         <span class="ico" style="color:var(--sodium)">×5</span><span><b>Points :</b> dépasse, frôle sans toucher, enchaîne pour le multiplicateur. Arriver vite rapporte un bonus. Un accrochage remet le multiplicateur à zéro.</span>
-        <span class="ico" style="color:var(--rouge)">3×</span><span>Trois accrochages et la combi est hors service.</span>
+        <span class="ico" style="color:var(--rouge)">3×</span><span>Trois accrochages et le véhicule est hors service (quatre pour un fourgon).</span>
       </div>
       </details>
       <p class="proto" id="proto">Clavier : ← → et Espace.</p>
@@ -225,10 +230,23 @@ const Q = new URLSearchParams(location.search);
 const MODE = ['incident', 'train'].includes(Q.get('mode')) ? Q.get('mode') : null;
 const INC = MODE === 'incident';
 const numQ = (k, d, lo, hi) => { const v = Number(Q.get(k)); return Number.isFinite(v) && Q.get(k) !== null ? Math.max(lo, Math.min(hi, v)) : d; };
-const VIT = numQ('vit', 1, 0.6, 1.3), FREIN = numQ('frein', 1, 1, 1.5);
+let VIT = numQ('vit', 1, 0.6, 1.3), FREIN = numQ('frein', 1, 0.8, 1.5), ACCM = 1, MANIAB = 1, PV = 3;
+// Véhicules de la zone (Ma ZP) : le joueur choisit lequel part. s place, n nom, m modèle, e état, c cabossé,
+// v vitesse, f freinage, a accélération, x maniabilité, p accrochages encaissés.
+const VEHS = (() => { try { const l = JSON.parse(Q.get('vh') || '[]'); return Array.isArray(l) ? l.slice(0, 12) : []; } catch (e) { return []; } })();
+let VEH = null;
 const escH = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 function post(type, data = {}) { try { if (window.parent !== window) window.parent.postMessage({ source: 'mazp-mj', jeu: 'bitonal', id: Q.get('id'), type, ...data }, location.origin); } catch (e) {} }
-const VMAX = 31 * VIT, ACC = 9.5, LENT = 30 / 3.6;
+let VMAX = 31 * VIT;
+const ACC = 9.5, LENT = 30 / 3.6;
+const lim = (v, a, b, d) => (Number.isFinite(Number(v)) ? Math.max(a, Math.min(b, Number(v))) : d);
+function choisirVehicule(i) {
+  VEH = VEHS[i] || null;
+  if (!VEH) return;
+  VIT = lim(VEH.v, 0.6, 1.4, 1); FREIN = lim(VEH.f, 0.8, 1.5, 1); ACCM = lim(VEH.a, 0.7, 1.4, 1); MANIAB = lim(VEH.x, 0.7, 1.3, 1); PV = Math.round(lim(VEH.p, 3, 4, 3));
+  VMAX = 31 * VIT;
+  const d = $('degats'); if (d) d.innerHTML = `Dégâts ${'<i></i>'.repeat(PV)}`;
+}
 const POS = [-1.8, 0, 1.8];   // bande d'en face · axe · ta bande
 const BANDE = 3.6, RANGE = 4.15, RANGE_FACE = -4.05; // s'écarter = monter à moitié sur le trottoir
 const COUL = ['#C8CCD6', '#2B2F3A', '#7B1E22', '#1F3B6E', '#5E6B73', '#E3E1DA', '#8A6B3E', '#294F3B', '#3B3F4E', '#A3A7AE'];
@@ -283,7 +301,13 @@ function afficherIntro() {
   if (MODE) {
     const etat = Q.get('etat'), prepa = Number(Q.get('prepa')) || 0, cab = Q.get('cabosse') === '1';
     $('combiInfo').hidden = false;
-    $('combiInfo').innerHTML = `<span>🚐</span><span>Vitesse de pointe <b>${Math.round(VMAX * 3.6)} km/h</b>${etat !== null ? ` · parc à <b>${escH(etat)} %</b>` : ''}${cab ? ' · <b>combi cabossée</b>' : ''}${prepa ? ` · préparation <b>niv. ${prepa}</b>` : ''}</span><span></span><span class="tiny">${escH(Q.get('vitTxt') || 'Révision, carrosserie et préparation des combis (Grande décision › Équiper) font gagner de la vitesse.')}</span>`;
+    const ICO = { diesel: '🚐', electrique: '⚡', anonyme: '🚘', fourgon: '🚌' };
+    const atouts = (x) => [x.a > 1.05 ? 'nerveuse' : x.a < 0.95 ? 'lente au démarrage' : '', x.x > 1.05 ? 'maniable' : x.x < 0.95 ? 'lourde en virage' : '', x.f < 0.97 ? 'freine moins bien' : x.f > 1.07 ? 'bons freins' : '', x.p > 3 ? 'encaisse 4 chocs' : '', x.c ? 'cabossée' : ''].filter(Boolean).join(' · ');
+    $('combiInfo').innerHTML = VEHS.length > 1
+      ? `<span>🚓</span><span><b>Quel véhicule part ?</b></span><span></span><div class="vehs">${VEHS.map((x, i) => `<button type="button" class="veh${VEH === x ? ' on' : ''}" data-i="${i}" aria-pressed="${VEH === x}"><span class="vi">${ICO[x.m] || '🚐'}</span><span class="vn">${escH(x.n || 'Véhicule')}</span><span class="vv">${Math.round(31 * 3.6 * lim(x.v, 0.6, 1.4, 1))} km/h · état ${Math.round(Number(x.e) || 0)} %</span><span class="va">${escH(atouts(x))}</span></button>`).join('')}</div>`
+      : `<span>${VEH ? (ICO[VEH.m] || '🚐') : '🚐'}</span><span>${VEH ? `<b>${escH(VEH.n)}</b> · ` : ''}Vitesse de pointe <b>${Math.round(VMAX * 3.6)} km/h</b>${etat !== null ? ` · état <b>${escH(VEH ? VEH.e : etat)} %</b>` : ''}${cab ? ' · <b>cabossée</b>' : ''}${prepa ? ` · préparation <b>niv. ${prepa}</b>` : ''}</span>`;
+    $('combiInfo').innerHTML += `<span></span><span class="tiny">${escH('L’état de chaque véhicule, la carrosserie, son modèle et la préparation des combis (Grande décision › Équiper) jouent sur la vitesse.')}</span>`;
+    $('combiInfo').querySelectorAll('.veh').forEach((b) => b.addEventListener('click', () => { choisirVehicule(Number(b.dataset.i)); afficherIntro(); }));
     const lignes = ['facile', 'normal', 'difficile'].map((k) => {
       const sc = Number(Q.get(`r_${k}`)) || 0, nom = Q.get(`rn_${k}`) || '', moi = Number(Q.get(`m_${k}`)) || 0;
       return `<div class="l${CLE_NIV[niveau] === k ? ' on' : ''}"><span>${NOM_NIV[{ normal: 'moyen' }[k] || k]}</span><span>${sc ? escH(nom) : 'pas encore de score'}${moi ? ` · toi : ${moi.toLocaleString('fr-BE')}` : ''}</span><b>${sc ? sc.toLocaleString('fr-BE') : '–'}</b></div>`;
@@ -332,6 +356,8 @@ function creer() {
       else if (t === 'livreur') { e = { z, x: 2.3, v: 0, sens: 1, w: 2.15, h: 2.6, len: 5.5, type: t, fantome: 0, reagi: true, feux: true }; dernierFixe = z; }
       else { e = voiture(r, z, POS[2], 8 + r() * 4, 1); e.type = t; if (t === 'panique') dernierFixe = z; }
       e.portee = t === 'tard' ? 13 + r() * 8 : t === 'range' ? 28 + r() * 14 : 34;
+      // Voiture anonymisée : sans marquage, on la remarque tard.
+      if (VEH && VEH.m === 'anonyme') e.portee *= 0.65;
       ent.push(e);
     }
     z += N.gap[0] + r() * (N.gap[1] - N.gap[0]);
@@ -427,7 +453,7 @@ function accrochage(e, quoi, frontal = false) {
   if (e.sens < 0) { e.tx = RANGE_FACE - .3; e.tv = 0; }
   majDegats();
   if (navigator.vibrate) try { navigator.vibrate(frontal ? 250 : 120); } catch (x) {}
-  if (S.hits >= 3) { terminer(false, 'hs'); return; }
+  if (S.hits >= PV) { terminer(false, 'hs'); return; }
   alerte(frontal ? 'Choc frontal !' : 'Accrochage !', quoi);
 }
 
@@ -437,10 +463,10 @@ function pas(dt) {
   S.cooldown = Math.max(0, S.cooldown - dt); S.choc = Math.max(0, S.choc - dt); S.flash = Math.max(0, S.flash - dt);
   const freinage = (N.pluie ? 13 : 17) * FREIN;
   if (S.frein) S.v = Math.max(0, S.v - freinage * dt);
-  else S.v = Math.min(VMAX, S.v + ACC * (1 - S.v / (VMAX * 1.1)) * dt * 1.3);
+  else S.v = Math.min(VMAX, S.v + ACC * ACCM * (1 - S.v / (VMAX * 1.1)) * dt * 1.3);
   S.z += S.v * dt;
   S.pts += S.v * dt * 0.2; if (Math.floor(S.t * 4) !== Math.floor((S.t - dt) * 4)) $('pts').textContent = Math.round(S.pts).toLocaleString('fr-BE');
-  const cx = POS[S.pos], dx = cx - S.x; S.x += Math.sign(dx) * Math.min(Math.abs(dx), 13 * dt);
+  const cx = POS[S.pos], dx = cx - S.x; S.x += Math.sign(dx) * Math.min(Math.abs(dx), 13 * MANIAB * dt);
 
   for (const e of S.ent) {
     e.fantome = Math.max(0, e.fantome - dt);
@@ -539,7 +565,7 @@ function terminer(arrive, raison) {
   let record = 0;
   if (MODE) record = Number(Q.get(`m_${CLE_NIV[niveau]}`)) || 0;
   else try { record = Number(localStorage.getItem(`bitonal-record-${niveau}`)) || 0; if (raison !== 'hs' && score > record) localStorage.setItem(`bitonal-record-${niveau}`, String(score)); } catch (e) { record = 0; }
-  if (MODE) post('result', { ok, abandon: raison === 'abandon', raison: raison === 'hs' ? 'hs' : ok ? null : 'temps', fautes: S.hits, score: raison === 'hs' || raison === 'abandon' ? 0 : score, niveau: CLE_NIV[niveau], etoiles, ...(arrive ? { temps: Math.round(total * 10) / 10 } : {}) });
+  if (MODE) post('result', { ok, abandon: raison === 'abandon', raison: raison === 'hs' ? 'hs' : ok ? null : 'temps', fautes: Math.min(3, S.hits), score: raison === 'hs' || raison === 'abandon' ? 0 : score, niveau: CLE_NIV[niveau], etoiles, ...(VEH ? { vehicule: VEH.s } : {}), ...(arrive ? { temps: Math.round(total * 10) / 10 } : {}) });
   if (INC) { $('rejouer').hidden = true; $('menu').hidden = true; $('retour').hidden = false; }
   if (raison === 'abandon') { post('close'); return; }
   setTimeout(() => {
@@ -555,7 +581,7 @@ function terminer(arrive, raison) {
     $('bilan').innerHTML = [
       `<li><span>⏱</span><span>Bonus d’avance<small>${ok ? `${Math.round(S.cible - total)} s d’avance × 40` : 'Pas de bonus sans arriver à temps.'}</small></span><span class="v">+${bonus}</span></li>`,
       `<li><span>🚓</span><span>Dépassements et frôlements<small>${S.nbDep} dépassé${S.nbDep > 1 ? 's' : ''}, ${S.nbFrole} frôlé${S.nbFrole > 1 ? 's' : ''} sans toucher. Enchaîne-les pour monter le multiplicateur.</small></span><span class="v">${S.nbDep + S.nbFrole}</span></li>`,
-      `<li><span>💥</span><span>Accrochages${S.accrochages.length ? `<small>${S.accrochages.join(' ')} (−300 chacun)</small>` : '<small>Aucun : la combi rentre sans une rayure.</small>'}</span><span class="v">${Math.min(3, S.hits)}/3</span></li>`,
+      `<li><span>💥</span><span>Accrochages${S.accrochages.length ? `<small>${S.accrochages.join(' ')} (−300 chacun)</small>` : '<small>Aucun : la combi rentre sans une rayure.</small>'}</span><span class="v">${Math.min(PV, S.hits)}/${PV}</span></li>`,
     ].join('');
     $('etoiles').title = '1 étoile : à temps · 2 : au plus un accrochage · 3 : aucun accrochage et 5 s d’avance';
     $('fin').hidden = false;
@@ -845,10 +871,31 @@ function croiseur(c) {
   g.addColorStop(0, 'rgba(255,250,220,.55)'); g.addColorStop(1, 'rgba(255,250,220,0)');
   ctx.fillStyle = g; ctx.beginPath(); ctx.arc(avant, y + h * .6, w * .7, 0, 7); ctx.fill();
 }
+function berline(temps) {
+  // Voiture anonymisée vue de l'arrière : berline sombre, sans marquage ; les feux bleus sont cachés derrière la lunette.
+  const p = proj(S.x, S.z - 5, 0); if (!p) return;
+  const w = 1.9 * p.s, h = 1.5 * p.s, x = p.x - w / 2, y = p.y - h;
+  const pench = (POS[S.pos] - S.x) * 0.03;
+  ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(pench); ctx.translate(-p.x, -p.y);
+  ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.beginPath(); ctx.ellipse(p.x, p.y, w * .66, h * .07, 0, 0, 7); ctx.fill();
+  ctx.fillStyle = '#0B0C10'; ctx.fillRect(x + w * .06, p.y - h * .14, w * .2, h * .14); ctx.fillRect(x + w * .74, p.y - h * .14, w * .2, h * .14);
+  ctx.fillStyle = '#3B4250'; rrect(x, y + h * .36, w, h * .52, w * .08); ctx.fill();
+  rrect(x + w * .14, y, w * .72, h * .44, w * .12); ctx.fill();
+  ctx.fillStyle = '#131926'; rrect(x + w * .2, y + h * .06, w * .6, h * .3, w * .05); ctx.fill();
+  const ph = Math.floor(temps / 160) % 2;
+  for (const c of [0, 1]) { const on = c === ph; ctx.fillStyle = on ? '#9CCBFF' : '#1A3B78'; ctx.fillRect(x + w * (c ? .56 : .26), y + h * .09, w * .18, h * .05); if (on) { const g = ctx.createRadialGradient(x + w * (c ? .65 : .35), y + h * .11, 0, x + w * (c ? .65 : .35), y + h * .11, w * .25); g.addColorStop(0, 'rgba(80,150,255,.35)'); g.addColorStop(1, 'rgba(80,150,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x + w * (c ? .65 : .35), y + h * .11, w * .25, 0, 7); ctx.fill(); } }
+  for (const c of [0, 1]) { ctx.fillStyle = S.frein ? '#FF2A2A' : '#A01C1C'; ctx.fillRect(x + (c ? w * .78 : w * .02), y + h * .45, w * .2, h * .1); }
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(x, y + h * .74, w, h * .14);
+  ctx.fillStyle = '#F3F1EA'; ctx.fillRect(p.x - w * .16, y + h * .62, w * .32, h * .1);
+  ctx.fillStyle = '#B01E1E'; ctx.font = `700 ${Math.max(6, h * .07)}px system-ui`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('2-KTR-381', p.x, y + h * .67);
+  ctx.restore();
+}
 function combi(temps) {
   // Combi vue de l'arrière, légèrement en plongée : toit visible, rampe bleue, rétros, damier, feux verticaux.
+  const MOD = VEH ? VEH.m : 'diesel';
+  if (MOD === 'anonyme') return berline(temps);
   const p = proj(S.x, S.z - 5, 0); if (!p) return;
-  const w = 2.05 * p.s, h = 2.5 * p.s, x = p.x - w / 2, y = p.y - h;
+  const w = (MOD === 'fourgon' ? 2.25 : 2.05) * p.s, h = (MOD === 'fourgon' ? 2.95 : 2.5) * p.s, x = p.x - w / 2, y = p.y - h;
   const pench = (POS[S.pos] - S.x) * 0.03;
   ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(pench); ctx.translate(-p.x, -p.y);
   // ombre et pneus
@@ -880,6 +927,7 @@ function combi(temps) {
   ctx.fillText('POLICE', p.x, y + h * .5);
   const by = y + h * .57, bh = h * .14, nb = 10;
   for (let k = 0; k < nb; k++) for (let r2 = 0; r2 < 2; r2++) { ctx.fillStyle = (k + r2) % 2 ? '#1E4FA3' : '#D9D046'; ctx.fillRect(x + (w * k) / nb, by + r2 * bh / 2, w / nb + .5, bh / 2); }
+  if (MOD === 'electrique') { ctx.fillStyle = '#3DD39A'; ctx.fillRect(x, y + h * .715, w, h * .018); ctx.font = `800 ${Math.max(7, h * .06)}px 'Barlow Condensed', 'Arial Narrow', sans-serif`; ctx.fillText('⚡ e', x + w * .82, y + h * .5); ctx.fillStyle = '#1E4FA3'; }
   // feux arrière verticaux
   for (const c of [0, 1]) {
     const lx = c ? x + w * .915 : x + w * .005;
@@ -941,6 +989,7 @@ $('continuer').addEventListener('click', () => { $('abandon').hidden = true; S.p
 $('confAband').addEventListener('click', () => { $('abandon').hidden = true; S.pause = false; terminer(false, 'abandon'); });
 if (!MODE) $('quitter').hidden = true;
 
+if (VEHS.length) choisirVehicule(0);
 taille(); nouvelleMission(); afficherDispatch(); afficherIntro(); creer(); S.enCours = false;
 requestAnimationFrame(boucle);
 })();

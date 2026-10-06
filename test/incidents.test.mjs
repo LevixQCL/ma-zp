@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { createGame, buildJoinZone, resolveTurn } from '../js/engine/resolve.js';
 import { incidentsDuTour as tousIncidents, incidentsVisibles, separerIncidents, appliquerIncidents, MALUS, INC, difficulte, chanceSeule, pointsJauge, URGENCE, CIBLE, refUrgence, cibleUrgence, adapterCibleUrgence } from '../js/engine/incidents.js';
 import { readFileSync } from 'node:fs';
-import { vitesseCombi, PREPA } from '../js/engine/constants.js';
+import { PREPA } from '../js/engine/constants.js';
+import { vitesseCombi, assurerFlotte } from '../js/engine/flotte.js';
 // Les incidents « classiques » (l'urgence du jour est vérifiée à part, section 6).
 const incidentsDuTour = (s, u) => tousIncidents(s, u).filter((i) => !i.urgence);
 import { makeRng } from '../js/engine/rng.js';
@@ -100,25 +101,25 @@ for (let t = 1; t <= 120; t++) {
   assert.equal(u[0].jeu, 'bitonal'); assert.ok(u[0].id.endsWith('-u'));
   assert.ok(u[0].vit > 0.79 && u[0].vit <= 1.16);
 }
-// Vitesse : parc neuf 1, parc usé à 70 % 0,86 ; tout cabossé −6 % ; préparation +5 % par niveau.
+// Vitesse : véhicule neuf 1, usé à 70 % 0,86 ; cabossé −6 % ; préparation +5 % par niveau ; le plus rapide en service.
 {
-  const z0 = { usure: 0, vehicules: 4, vehiculesHS: [], cabosses: [], prepa: 0 };
-  assert.equal(vitesseCombi(z0).mult, 1);
-  assert.equal(vitesseCombi({ ...z0, usure: 70 }).mult, 0.86);
-  assert.equal(vitesseCombi({ ...z0, cabosses: [{}, {}, {}, {}] }).mult, 0.94);
-  assert.equal(vitesseCombi({ ...z0, cabosses: [{}] }).cabosse, false, 'une combi saine reste disponible');
-  assert.equal(vitesseCombi({ ...z0, prepa: 3 }).mult, 1.15);
-  assert.equal(vitesseCombi({ ...z0, prepa: 9 }).prepa, PREPA.max);
+  const z0 = () => assurerFlotte({ usure: 0, vehicules: 4, vehiculesHS: [], cabosses: [], prepa: 0 });
+  assert.equal(vitesseCombi(z0()).mult, 1);
+  assert.equal(vitesseCombi({ ...z0(), flotte: z0().flotte.map((v) => ({ ...v, u: 70 })) }).mult, 0.86);
+  assert.equal(vitesseCombi({ ...z0(), cabosses: [0, 1, 2, 3].map((slot) => ({ slot })) }).mult, 0.94);
+  assert.equal(vitesseCombi({ ...z0(), cabosses: [{ slot: 0 }] }).cabosse, false, 'une combi saine reste disponible');
+  assert.equal(vitesseCombi({ ...z0(), prepa: 3 }).mult, 1.15);
+  assert.equal(vitesseCombi({ ...z0(), prepa: 9 }).prepa, PREPA.max);
 }
 // Conséquences.
 {
-  const base = () => { const z = structuredClone(st.zones.a); z._compta = []; z.moral = 60; z.usure = 10; z.cabosses = []; z.blesses = []; return z; };
+  const base = () => { const z = structuredClone(st.zones.a); z._compta = []; z.moral = 60; z.flotte = z.flotte.map((v) => ({ ...v, u: 10 })); z.usure = 10; z.cabosses = []; z.blesses = []; return z; };
   const inc = [{ id: 'u', urgence: true, service: 'intervention', titre: URGENCE.titre, agents: 7 }];
   const jouer = (res, seed = 'r') => { const z = base(); appliquerIncidents(z, { incidents: inc, resultats: res ? { u: res } : {}, alloc: { intervention: 7 }, T: 4, rng: makeRng(seed) }); return z; };
   let z = jouer({ statut: 'ok', fautes: 0, score: 5000 });
   assert.equal(z.moral, 63); assert.equal(z.jaugeIncidents, 2); assert.equal(z._ps, 5); assert.equal(z.usure, 10);
   z = jouer({ statut: 'ok', fautes: 2 });
-  assert.equal(z.usure, 14, 'deux accrochages : +4 % d’usure'); assert.equal(z.jaugeIncidents, 1);
+  assert.equal(z.flotte[0].u, 14, 'deux accrochages : +4 % d’usure sur le véhicule parti'); assert.equal(z.flotte[1].u, 10); assert.equal(z.jaugeIncidents, 1);
   z = jouer({ statut: 'passe', fautes: 0 });
   assert.equal(z.moral, 60); assert.ok(!z._ps && !z.jaugeIncidents && !z.blesses.length && z.usure === 10, 'pas le temps : rien');
   z = jouer({ statut: 'rate', raison: 'hs', fautes: 3 });

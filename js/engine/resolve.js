@@ -25,6 +25,7 @@ import { rivalitesPre, rivalitesPost, themeActif, appliquerConsignes } from './r
 import { pactesPre, pactesPost, lies, PACTE } from './pactes.js';
 import { FLAGRANTS } from './contenu.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
+import { ajouterVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES } from './flotte.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
 import { separerIncidents, appliquerIncidents, resultatsIncidents, incidentsVisibles, adapterCibleUrgence, NIVEAUX_URGENCE } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
@@ -544,7 +545,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         const r0 = i.urgence && resultatsIncidents(players[uid], [i])[i.id];
         if (r0 && (r0.statut === 'ok' || r0.statut === 'rate') && r0.raison !== 'hs' && Number.isFinite(Number(r0.temps))) {
           const niveau = NIVEAUX_URGENCE.includes(r0.niveau) ? r0.niveau : i.diff;
-          coursesUrgence.push({ niveau, temps: Math.max(10, Math.min(900, Number(r0.temps))), vit: Number.isFinite(i.vit) ? i.vit : 1 });
+          const vh = (i.vehicules || []).find((x) => x.slot === r0.vehicule);
+          coursesUrgence.push({ niveau, temps: Math.max(10, Math.min(900, Number(r0.temps))), vit: vh ? vh.mult : Number.isFinite(i.vit) ? i.vit : 1 });
         }
       }
       if (inc.skin) push(3, 'Décor', `${zoneLabel(z)} décroche le skin « ${inc.skin.nom} »`, 'Jauge des incidents remplie à force d’interventions réussies.', uid);
@@ -613,7 +615,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (dep.prevention) { if (payer('campagne de prévention (criminalité −6)', DEPENSES.prevention.cout, () => { z.criminalite = clamp(z.criminalite - 6, 10, 95); })) achete.add('prevention'); }
       if (dep.enqueteurs) { if (payer(`heures sup’ des enquêteurs (+${DEPENSES.enqueteurs.unites} unités sur les dossiers)`, DEPENSES.enqueteurs.cout, () => { z._travailBonus = DEPENSES.enqueteurs.unites; })) achete.add('enqueteurs'); }
       if (dep.soustraitance) { if (payer('sous-traitance administrative (−5 dossiers)', DEPENSES.soustraitance.cout, () => { z.paperasse = Math.max(0, z.paperasse - 5); })) achete.add('soustraitance'); }
-      if (dep.revision) { if (payer(`révision du parc (état ${Math.round(100 - z.usure)} % → ${Math.round(100 - Math.max(0, z.usure - USURE.revision))} %)`, DEPENSES.revision.cout, () => { z.usure = Math.max(0, z.usure - USURE.revision); })) achete.add('revision'); }
+      if (dep.revision) { if (payer(`révision du parc (état ${Math.round(100 - z.usure)} % → ${Math.round(100 - Math.max(0, z.usure - USURE.revision))} %)`, DEPENSES.revision.cout, () => { reviser(z, USURE.revision); })) achete.add('revision'); }
       if (dep.carrosserie && (z.cabosses || []).length) { const nc = cabossesChoisis(z, dep.carrosserie).length; payer(`carrosserie (${nc} véhicule${nc > 1 ? 's' : ''} réparé${nc > 1 ? 's' : ''}${z.infra.garage ? ' à l’atelier' : ', immobilisé' + (nc > 1 ? 's' : '') + ' ce tour'})`, coutCarrosserie(z, dep.carrosserie), () => { reparerCabosses(z, T, dep.carrosserie); }); }
       z.rapport.push(`Dépenses du jour : ${achats.join(', ')}.`);
       if (paye) z._compta.push({ k: 'depenses', l: 'Dépenses du jour', v: -paye });
@@ -771,7 +773,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
           z.rapport.push(`Formation lancée : ${SERVICE_LABELS[dec.service]} (${absents ? `${absents} agents indisponibles ${DUREE_FORMATION} tour${DUREE_FORMATION > 1 ? 's' : ''}` : 'au stand de tir, sans agent absent'}).`);
         }
         if (dec.type === 'equiper') {
-          if (dec.cible === 'vehicule') { z.usure = z.usure * z.vehicules / (z.vehicules + 1); z.vehicules += 1; z.rapport.push('Nouveau véhicule livré.'); }
+          if (dec.cible === 'vehicule') { ajouterVehicule(z, dec.modele || 'diesel', T); z.rapport.push(`Nouveau véhicule livré : ${(MODELES[dec.modele] || MODELES.diesel).nom}.`); }
           else if (dec.cible === 'prepa') { z.prepa = (z.prepa || 0) + 1; z.rapport.push(`Combis préparées au niveau ${z.prepa} : +${Math.round(z.prepa * PREPA.vitesse * 100)} % de vitesse de pointe et freinage renforcé sur les urgences.`); }
           else { z.equip[dec.cible] += 1; z.rapport.push(`Équipement ${SERVICE_LABELS[dec.cible]} au niveau ${z.equip[dec.cible]}.`); }
         }
@@ -799,14 +801,23 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (arrivees) { z.agents += arrivees; z.rapport.push(`${arrivees} recrue${arrivees > 1 ? 's' : ''} sort${arrivees > 1 ? 'ent' : ''} de l’académie : dans tes ordres dès demain.`); }
     z.academie = z.academie.filter((a) => a.arrivee > T + 1);
     // Usure : un peu chaque jour, et surtout à chaque intervention (répartie sur le parc).
+    // Chaque véhicule s'use selon son modèle (électriques −40 %, fourgons −20 %).
     const avant = z.usure;
-    z.usure = clamp(z.usure + (USURE.parTour + traites * USURE.parIntervention / Math.max(1, z.vehicules)) * (z.infra.garage ? 0.5 : 1), 0, USURE.max);
+    usureDuTour(z, traites, !!z.infra.garage);
     const etat = Math.round(100 - z.usure), malus = Math.round((1 - malusEtat(etat)) * 100);
     z.rapport.push(`Véhicules : ${traites} intervention${traites > 1 ? 's' : ''}, usure +${fmt1(z.usure - avant)} %, état du parc ${etat} %${malus ? ` (Intervention −${malus} %, pense à une révision)` : ''}.`);
     // Accident de véhicule de service : le risque suit la façon dont la zone roule.
     const acc = accidentVehicule(z, T, makeRng(`${state.seed}:s${state.season}:t${T}:${uid}:veh`),
       { traites, rythme: o.rythme, interventionAgents: alloc.intervention || 0, vehiculesDispo: vehiculesDisponibles(z, T) }, push, zoneLabel(z));
     if (acc) jalon(z, acc.type === 'accrochage' ? 'Accrochage d’un véhicule' : 'Véhicule sinistré');
+    // Reventes : les véhicules vendus roulent encore ce soir, puis quittent le parc (il en reste toujours un).
+    for (const slot of [...(o.ventes || [])].sort((a, b) => b - a)) {
+      if (z.vehicules <= 1 || !(slot < z.vehicules)) continue;
+      const prix = prixRevente(z, slot), nom = modeleDe(z.flotte[slot]).nom;
+      retirerVehicule(z, slot);
+      z.budget += prix; z._compta.push({ k: 'vente', l: `Revente : ${nom}`, v: prix });
+      z.rapport.push(`Véhicule revendu : ${nom}, +${fmt1(prix)} k€.`);
+    }
 
     // Moral.
     jalon(z, 'Accident de véhicule');

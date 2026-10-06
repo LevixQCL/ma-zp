@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 84;
+export const APP_VERSION = 85;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -163,20 +163,6 @@ export const DEPENSES = {
 export const PREPA = { max: 3, vitesse: 0.05, frein: 0.08 };
 /** Coût du niveau suivant : 4, 6, 8 k€. */
 export const coutPrepa = (n) => 4 + 2 * (n || 0);
-/**
- * Vitesse de la combi envoyée sur une urgence, figée quand l'urgence tombe.
- * État du parc (100 − usure) : de ×0,80 (parc à 0 %) à ×1 (parc neuf). Si tous les véhicules en service sont
- * cabossés : ×0,94. Préparation : +5 % par niveau. `frein` : multiplicateur du freinage.
- */
-export function vitesseCombi(z) {
-  const etat = Math.round(100 - ((z && z.usure) || 0));
-  const enService = Math.max(0, ((z && z.vehicules) || 0) - ((z && z.vehiculesHS) || []).length);
-  const cabosse = enService > 0 && ((z && z.cabosses) || []).length >= enService;
-  const prepa = Math.max(0, Math.min(PREPA.max, (z && z.prepa) || 0));
-  const mult = Math.round((0.8 + 0.2 * etat / 100) * (cabosse ? 0.94 : 1) * (1 + PREPA.vitesse * prepa) * 1000) / 1000;
-  return { etat, cabosse, prepa, mult, frein: Math.round((1 + PREPA.frein * prepa) * 100) / 100 };
-}
-
 // Usure des véhicules (en % du parc) : chaque intervention use un peu les véhicules.
 export const USURE = { parTour: 1, parIntervention: 1.5, max: 70, revision: 20 };
 /** Efficacité de l'Intervention selon l'état du parc (100 − usure). */
@@ -225,7 +211,8 @@ export const coutFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.f
 /** Agents absents pendant une formation de ce service. */
 export const agentsFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.agents : AGENTS_EN_FORMATION);
 /** Multiplicateur du risque de blessure d'une zone (stand de tir). */
-export const risqueBlessure = (z) => (z && z.infra && z.infra.tir ? INFRAS.tir.blessure : 1) * Math.max(0.2, 1 - bonusEquip(z, 'intervention', 'blessure'));
+// Fourgons d'intervention : −10 % de risque chacun, −20 % au plus (voir engine/flotte.js, MODELES.fourgon).
+export const risqueBlessure = (z) => (z && z.infra && z.infra.tir ? INFRAS.tir.blessure : 1) * Math.max(0.2, 1 - bonusEquip(z, 'intervention', 'blessure')) * (1 - Math.min(0.2, 0.1 * ((z && z.flotte) || []).filter((v) => v.m === 'fourgon').length));
 
 export const RYTHMES = {
   normal:   { label: 'Normal', mult: 1, moral: 0, cout: 0, sub: 'aucun effet' },

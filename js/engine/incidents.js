@@ -3,7 +3,8 @@
 // il déborde sur le lendemain matin et compte alors à la résolution suivante (incidents « reportés »). Joué : réussite (jauge des skins) ou échec (malus
 // à 20:00). Pas joué : l'équipe se débrouille seule, avec une chance qui dépend de ses effectifs.
 import { makeRng } from './rng.js';
-import { DEFAULT_ALLOC, SERVICE_LABELS, PS, gainMoral, vitesseCombi, risqueBlessure, USURE } from './constants.js';
+import { DEFAULT_ALLOC, SERVICE_LABELS, PS, gainMoral, risqueBlessure, USURE } from './constants.js';
+import { vitesseCombi, vehiculesUrgence, user, modeleDe } from './flotte.js';
 import { TOUS_SKINS, ajouterSkin } from './decor.js';
 import { placeLibre } from './parc.js';
 
@@ -208,7 +209,9 @@ export function incidentsDuTour(state, uid) {
   const niv = z.dir && z.dir.inc && Number.isFinite(z.dir.inc.niv) ? z.dir.inc.niv : 0;
   // L'urgence du jour : tirée à part (n'a aucun effet sur le tirage des autres incidents).
   const ru = makeRng(`${state.seed}:s${state.season}:t${state.turn}:urgence:${uid}`);
-  const v = vitesseCombi(z);
+  // Véhicules disponibles quand l'urgence tombe : le joueur choisit lequel part (le plus rapide par défaut).
+  const vehs = vehiculesUrgence(z, state.turn).slice(0, 12);
+  const v = vehs[0] || vitesseCombi(z, state.turn);
   const urgence = {
     id: `s${state.season}t${state.turn}-u`, urgence: true,
     service: URGENCE.service, jeu: URGENCE.jeu, titre: URGENCE.titre,
@@ -216,6 +219,7 @@ export function incidentsDuTour(state, uid) {
     agents: al[URGENCE.service] || 0, ajust: niv,
     diff: difficulte(URGENCE.service, al[URGENCE.service] || 0, niv),
     vit: v.mult, frein: v.frein, etat: v.etat, cabosse: v.cabosse, prepa: v.prepa,
+    vehicules: vehs.map((x) => ({ slot: x.slot, m: x.m, etat: x.etat, cabosse: x.cabosse, mult: x.mult, frein: x.frein, accel: x.accel, maniab: x.maniab, pv: x.pv })),
     seed: Math.floor(ru.next() * 1e9),
   };
   { const c = cibleUrgence(state, urgence.diff); urgence.cible = c.cible; urgence.courses = c.courses; }
@@ -271,7 +275,12 @@ export function appliquerUrgence(z, inc, res, { alloc = {}, T, rng }) {
     return [`${nom} : personne n’est venu en renfort à temps ; ${blesser(U.seule.blessure, U.seule.moral)}.`];
   }
   const hits = res.statut === 'abandon' ? 0 : Math.max(0, Math.min(3, Math.floor(Number(res.fautes) || 0)));
-  if (hits && res.raison !== 'hs') { z.usure = Math.min(USURE.max, (z.usure || 0) + hits * U.usureParAccrochage); out.push(`${hits} accrochage${hits > 1 ? 's' : ''} en route (parc +${hits * U.usureParAccrochage} % d’usure)`); }
+  // Le véhicule parti (choisi dans le mini-jeu, parmi ceux disponibles quand l'urgence est tombée).
+  const veh = (inc.vehicules || []).find((x) => x.slot === res.vehicule) || (inc.vehicules || [])[0] || null;
+  // Sans choix connu (urgence d'une version précédente) : le véhicule en meilleur état.
+  const slot = veh && veh.slot < ((z.flotte || []).length || z.vehicules || 0) ? veh.slot : (z.flotte || []).reduce((b, x, i, f) => (b < 0 || x.u < f[b].u ? i : b), -1);
+  const nomVeh = { diesel: 'la combi', electrique: 'la combi électrique', anonyme: 'la voiture anonymisée', fourgon: 'le fourgon' }[veh ? veh.m : 'diesel'] || 'la combi';
+  if (hits && res.raison !== 'hs') { user(z, slot >= 0 ? slot : null, hits * U.usureParAccrochage); out.push(`${hits} accrochage${hits > 1 ? 's' : ''} en route (${nomVeh} s’use de ${hits * U.usureParAccrochage} %)`); }
   if (res.statut === 'ok') {
     const gm = gainMoral(U.gain.moral, z.moral);
     z.moral += gm;
@@ -283,10 +292,10 @@ export function appliquerUrgence(z, inc, res, { alloc = {}, T, rng }) {
   }
   z._ps = (z._ps || 0) + PS.queteTentee;
   if (res.raison === 'hs') {
-    const slot = placeLibre(z, T);
-    if (slot >= 0) { z.cabosses = [...(z.cabosses || []), { depuis: T, slot }]; out.push('la combi rentre cabossée (carrosserie à prévoir)'); }
-    else { z.usure = Math.min(USURE.max, (z.usure || 0) + U.usureHS); out.push(`la combi déjà cabossée encaisse encore (parc +${U.usureHS} % d’usure)`); }
-    return [`${nom} : combi hors service en route ; ${out.join(' ; ')} (+${PS.queteTentee} PS pour avoir essayé).`];
+    const cible = slot != null && slot >= 0 ? slot : placeLibre(z, T);
+    if (cible != null && cible >= 0 && !(z.cabosses || []).some((c) => c.slot === cible)) { z.cabosses = [...(z.cabosses || []), { depuis: T, slot: cible }]; out.push(`${nomVeh} rentre avec la carrosserie à refaire`); }
+    else { user(z, cible != null && cible >= 0 ? cible : null, U.usureHS); out.push(`${nomVeh}, déjà abîmée, encaisse encore (+${U.usureHS} % d’usure)`); }
+    return [`${nom} : ${nomVeh} hors service en route ; ${out.join(' ; ')} (+${PS.queteTentee} PS pour avoir essayé).`];
   }
   return [`${nom} : arrivé trop tard${res.statut === 'abandon' ? ' (renfort abandonné en route)' : ''} ; ${blesser(U.blessure, U.moralRetard)}${out.length ? ` ; ${out.join(', ')}` : ''} (+${PS.queteTentee} PS pour avoir essayé).`];
 }

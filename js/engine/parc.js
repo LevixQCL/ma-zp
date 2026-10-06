@@ -5,7 +5,9 @@
 // d'un tour à l'autre. Le type (combi ou voiture anonymisée) découle de la place : c'est
 // un habillage, sans effet sur les règles.
 
-/** Type d'un véhicule selon sa place : deux combis pour une voiture anonymisée. */
+import { MODELES } from './flotte.js';
+
+/** Ancien habillage (avant les modèles) : deux combis pour une voiture anonymisée. */
 export const typeVehicule = (slot) => (slot % 3 === 2 ? 'anonyme' : 'combi');
 
 /** Nom affiché : « Combi 3 », « Anonyme 1 »… (numérotés par type). */
@@ -30,7 +32,14 @@ export function placeLibre(z, T = 0) {
  */
 export function parcVehicules(z, T) {
   const n = Math.max(0, z.vehicules || 0);
-  const places = Array.from({ length: n }, (_, slot) => ({ slot, type: typeVehicule(slot), nom: nomVehicule(slot), etat: 'service' }));
+  const f = Array.isArray(z.flotte) && z.flotte.length === n ? z.flotte : null;
+  const compte = {};
+  const places = Array.from({ length: n }, (_, slot) => {
+    if (!f) return { slot, type: typeVehicule(slot), nom: nomVehicule(slot), etat: 'service' };
+    const m = MODELES[f[slot].m] || MODELES.diesel;
+    compte[f[slot].m] = (compte[f[slot].m] || 0) + 1;
+    return { slot, type: m.type, modele: f[slot].m, nom: `${m.court} ${compte[f[slot].m]}`, etatPc: Math.round(100 - (f[slot].u || 0)), km: Math.round(f[slot].km || 0), etat: 'service' };
+  });
   const pris = new Set();
   const aPlacer = [];
   const poser = (slot, info) => { pris.add(slot); Object.assign(places[slot], info); };
