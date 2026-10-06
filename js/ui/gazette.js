@@ -92,8 +92,14 @@ function enqueteGazette(g) {
   return `<div class="rule"></div><section class="col" style="gap:4px"><span class="k">Enquête et FIPA</span>${l.join('')}</section>`;
 }
 
-// Esprit vif : taux de réussite aux énigmes du jour, depuis le début de la partie.
-const MIN_ENIGMES = 6;
+// Esprit vif : score aux énigmes du jour, depuis le début de la partie.
+// Le score tient compte du taux de réussite ET du nombre d'énigmes : on ajoute à chaque joueur
+// ENIG_POIDS énigmes « fictives » réussies au taux moyen du district (moyenne bayésienne).
+// Peu d'énigmes → score tiré vers la moyenne ; beaucoup → score proche de son vrai taux.
+// Ex. (moyenne 80 %) : 21/21 → 93,5 · 20/21 → 90,3 · 3/3 → 84,6 · 18/21 → 83,9.
+const MIN_ENIGMES = 3;
+const ENIG_POIDS = 10;
+export function scoreEnigmes(ok, n, moyenne) { return (100 * (ok + ENIG_POIDS * moyenne)) / (n + ENIG_POIDS); }
 function classementEnigmes(me) {
   const res = S.questStats;
   if (!res) return `<section class="card"><h2 class="card-title">Esprit vif · énigmes du jour</h2><p class="small muted" style="margin:0">${S.questStatsErreur ? 'Classement indisponible pour le moment.' : 'Chargement…'}</p></section>`;
@@ -106,13 +112,15 @@ function classementEnigmes(me) {
     x.n++; if (r.statut === 'ok') x.ok++;
     if (r.season === S.state.season) { x.saisonN++; if (r.statut === 'ok') x.saison++; }
   }
-  const lignes = Object.entries(par).map(([uid, x]) => ({ z: S.state.zones[uid], ...x, pct: x.n ? (100 * x.ok) / x.n : 0, classe: x.n >= MIN_ENIGMES }))
-    .sort((a, b) => (b.classe - a.classe) || (b.pct - a.pct) || (b.ok - a.ok));
+  const tous = Object.values(par).reduce((t, x) => [t[0] + x.ok, t[1] + x.n], [0, 0]);
+  const moyenne = Math.min(0.8, Math.max(0.4, tous[1] ? tous[0] / tous[1] : 0.6));
+  const lignes = Object.entries(par).map(([uid, x]) => ({ z: S.state.zones[uid], ...x, pct: x.n ? (100 * x.ok) / x.n : 0, score: scoreEnigmes(x.ok, x.n, moyenne), classe: x.n >= MIN_ENIGMES }))
+    .sort((a, b) => (b.classe - a.classe) || (b.score - a.score) || (b.ok - a.ok));
   let rang = 0;
   return `<section class="card"><h2 class="card-title">Esprit vif · énigmes du jour</h2>
-    ${lignes.length ? lignes.map((l) => couloir({ z: l.z, rang: l.classe ? ++rang : 0, classe: l.classe, valeur: l.pct, txt: `${Math.round(l.pct)} %`, me: l.z.uid === me.uid,
-      sous: `${l.ok} réussie${l.ok > 1 ? 's' : ''} sur ${l.n}${noirs[l.z.uid] && noirs[l.z.uid].ok ? ` · 🕵 ${noirs[l.z.uid].ok} dossier${noirs[l.z.uid].ok > 1 ? 's' : ''} noir${noirs[l.z.uid].ok > 1 ? 's' : ''}` : ''}${l.classe ? '' : ` · classé dès ${MIN_ENIGMES} réponses`}` })).join('') : '<p class="small muted" style="margin:0">Personne n’a encore répondu à une énigme.</p>'}
-    <p class="small muted" style="margin:0">Toutes les énigmes répondues depuis le début de la partie, y compris aujourd’hui. Classé à partir de ${MIN_ENIGMES} réponses ; les énigmes laissées sans réponse ne comptent pas. Les dossiers noirs (🕵) ne comptent pas dans le pourcentage : ils ont leur propre classement juste en dessous.</p></section>${noirsHtml(noirs, me)}`;
+    ${lignes.length ? lignes.map((l) => couloir({ z: l.z, rang: l.classe ? ++rang : 0, classe: l.classe, valeur: l.score, txt: `${String(Math.round(l.score * 10) / 10).replace('.', ',')} pts`, me: l.z.uid === me.uid,
+      sous: `${l.ok} réussie${l.ok > 1 ? 's' : ''} sur ${l.n} (${Math.round(l.pct)} %)${noirs[l.z.uid] && noirs[l.z.uid].ok ? ` · 🕵 ${noirs[l.z.uid].ok} dossier${noirs[l.z.uid].ok > 1 ? 's' : ''} noir${noirs[l.z.uid].ok > 1 ? 's' : ''}` : ''}${l.classe ? '' : ` · classé dès ${MIN_ENIGMES} réponses`}` })).join('') : '<p class="small muted" style="margin:0">Personne n’a encore répondu à une énigme.</p>'}
+    <p class="small muted" style="margin:0">Score = taux de réussite pondéré par le nombre d’énigmes : chacun part avec ${ENIG_POIDS} énigmes fictives à la moyenne du district (${Math.round(moyenne * 100)} %). Plus tu réponds, plus c’est ton vrai taux qui compte : 21 sur 21 passe devant 3 sur 3. Classé dès ${MIN_ENIGMES} réponses. Les dossiers noirs (🕵) ne comptent pas dans le score : ils ont leur propre classement juste en dessous.</p></section>${noirsHtml(noirs, me)}`;
 }
 
 /** Dossiers noirs (énigmes hardcore) : résolus depuis le début de la partie, et le compte de la saison pour le titre « Cerveau du district ». */
