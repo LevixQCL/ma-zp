@@ -1,7 +1,7 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
 import {
-  SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, coutEquipement, multNiveau, multEquip, coutFormation } from './constants.js';
+  SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, coutEquipement, multNiveau, multEquip, coutFormation , PREPA, coutPrepa } from './constants.js';
 import { coutCarrosserie } from './sinistres.js';
 import { cabossesChoisis } from './parc.js';
 
@@ -18,7 +18,7 @@ export function newZone({ uid, code, nom, couleur }, turn, base = {}) {
     agents: base.agents ?? START.agents,
     blesses: [], formations: [], academie: [], absents: 0,
     budget: base.budget ?? START.budget,
-    vehicules: START.vehicules, vehiculesHS: [], usure: 0, cabosses: [], indemnites: [],
+    vehicules: START.vehicules, vehiculesHS: [], usure: 0, cabosses: [], indemnites: [], prepa: 0,
     moral: base.moral ?? START.moral,
     satisfaction: base.satisfaction ?? START.satisfaction,
     reputation: base.reputation ?? START.reputation,
@@ -276,7 +276,7 @@ export function sanitizeOrders(zone, raw, state) {
   if (d && typeof d === 'object') {
     if (d.type === 'recruter') decision = { type: 'recruter', n: clamp(Math.floor(fini(d.n) || 1), 1, 3) };
     else if (d.type === 'former' && SERVICES.includes(d.service)) decision = { type: 'former', service: d.service };
-    else if (d.type === 'equiper' && (d.cible === 'vehicule' || SERVICES.includes(d.cible))) decision = { type: 'equiper', cible: d.cible };
+    else if (d.type === 'equiper' && (d.cible === 'vehicule' || d.cible === 'prepa' || SERVICES.includes(d.cible))) decision = { type: 'equiper', cible: d.cible };
     else if (d.type === 'construire' && typeof d.infra === 'string' && Object.hasOwn(INFRAS, d.infra)) decision = { type: 'construire', infra: d.infra };
     else if (d.type === 'agrandir' && typeof d.batiment === 'string' && Object.hasOwn(BATIMENTS, d.batiment)) decision = { type: 'agrandir', batiment: d.batiment };
     if (tutelle && decision && decision.type !== 'recruter') decision = null;
@@ -397,7 +397,7 @@ export function coutDecision(zone, decision) {
     case 'recruter': return coutRecrue(zone) * decision.n;
     // Centrale d'achat (pacte) : formations et équipement moins chers.
     case 'former': return round1(coutFormation(zone, decision.service) * (1 - (zone.remiseAchat || 0)));
-    case 'equiper': return round1((decision.cible === 'vehicule' ? COUTS.vehicule : coutEquipement(zone.equip[decision.cible])) * (1 - (zone.remiseAchat || 0)));
+    case 'equiper': return round1((decision.cible === 'vehicule' ? COUTS.vehicule : decision.cible === 'prepa' ? coutPrepa(zone.prepa) : coutEquipement(zone.equip[decision.cible])) * (1 - (zone.remiseAchat || 0)));
     case 'construire': return INFRAS[decision.infra].cout;
     case 'agrandir': return BATIMENTS[decision.batiment] ? BATIMENTS[decision.batiment].coutAgrandir(zone.batiments[decision.batiment]) : 0;
     default: return 0;
@@ -414,7 +414,8 @@ export function decisionImpossible(zone, decision, turn) {
     if (zone.niveaux[decision.service] + zone.formations.filter((f) => f.service === decision.service && f.fin > turn).length >= NIVEAU_MAX) return 'Niveau maximum atteint';
     if (agentsDisponibles(zone, turn) < 6) return 'Pas assez d’agents disponibles';
   }
-  if (decision.type === 'equiper' && decision.cible !== 'vehicule' && zone.equip[decision.cible] >= NIVEAU_MAX) return 'Équipement au maximum';
+  if (decision.type === 'equiper' && decision.cible === 'prepa' && (zone.prepa || 0) >= PREPA.max) return 'Combis déjà préparées au maximum';
+  if (decision.type === 'equiper' && decision.cible !== 'vehicule' && decision.cible !== 'prepa' && zone.equip[decision.cible] >= NIVEAU_MAX) return 'Équipement au maximum';
   if (decision.type === 'construire' && zone.infra[decision.infra]) return 'Déjà construit';
   if (decision.type === 'agrandir') {
     if (zone.travaux) return 'Des travaux sont déjà en cours';

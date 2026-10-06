@@ -362,7 +362,11 @@ async function onClick(e) {
       case 'demo-start': await b.signInDemo(); break;
       case 'admin-all-parties': S.allParties = await b.listAllParties(); rerender(); break;
       case 'aide': ouvrirAide(el.dataset.k); break;
-      case 'incident': { const err = lancerIncident(el.dataset.id, () => rerender()); if (err) { toast(err); rerender(); } break; }
+      case 'incident': {
+        // Meilleurs scores à jour avant d'ouvrir (l'urgence du jour les affiche).
+        if (/-u$/.test(el.dataset.id || '')) { try { S.players = await b.getPlayers(); } catch (e) { /* hors ligne : on garde ceux connus */ } }
+        const err = lancerIncident(el.dataset.id, () => rerender()); if (err) { toast(err); rerender(); } break;
+      }
       case 'appui-jouer': { const err = lancerAppui(() => rerender()); if (err) { toast(err); rerender(); } break; }
       case 'dilemme': { const i = Number(el.dataset.i); S.draft.dilemme = S.draft.dilemme === i ? null : i; S.ordersDirty = true; rerender(); break; }
       case 'prime-choix': { const v = el.dataset.v; S.draft.prime = S.draft.prime === v ? null : v; S.ordersDirty = true; rerender(); break; }

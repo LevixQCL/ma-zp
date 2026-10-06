@@ -1,7 +1,10 @@
 // Incidents du jour : tirage déterministe, horaires, effets à la résolution.
 import assert from 'node:assert/strict';
 import { createGame, buildJoinZone, resolveTurn } from '../js/engine/resolve.js';
-import { incidentsDuTour, incidentsVisibles, separerIncidents, appliquerIncidents, MALUS, INC, difficulte, chanceSeule, pointsJauge } from '../js/engine/incidents.js';
+import { incidentsDuTour as tousIncidents, incidentsVisibles, separerIncidents, appliquerIncidents, MALUS, INC, difficulte, chanceSeule, pointsJauge, URGENCE } from '../js/engine/incidents.js';
+import { vitesseCombi, PREPA } from '../js/engine/constants.js';
+// Les incidents « classiques » (l'urgence du jour est vérifiée à part, section 6).
+const incidentsDuTour = (s, u) => tousIncidents(s, u).filter((i) => !i.urgence);
 import { makeRng } from '../js/engine/rng.js';
 
 const H = 3600 * 1000;
@@ -72,7 +75,7 @@ assert.ok(apres.zones.a.rapport.some((l) => l.startsWith('Incident ·') && l.inc
 for (const u of ['b', 'c']) {
   const { maintenant, reportes } = separerIncidents(s3, u, {});
   const seul = apres.zones[u].rapport.filter((l) => l.startsWith('Incident ·') && l.includes('personne n’est venu')).length;
-  assert.equal(seul, maintenant.length, `incidents clos non joués gérés seuls (${u})`);
+  assert.equal(seul, maintenant.filter((i) => !i.urgence).length, `incidents clos non joués gérés seuls (${u})`);
   assert.deepEqual(apres.zones[u].incidentsReportes || [], reportes, `incidents encore ouverts reportés (${u})`);
 }
 // 5. Plus de report : tout incident ferme à 20:00 et se règle ce soir-là (les reportés d'une ancienne version restent gérés).
@@ -85,4 +88,57 @@ const players2 = { ...players, a: { ...players.a, incidents: { cle: 's1t0', r: {
 const { state: apres2 } = resolveTurn(structuredClone(st), { players: players2 });
 assert.ok(!apres2.zones.a.jaugeIncidents);
 assert.equal(INC.jauge, 50);
+
+// 6. L'urgence du jour : une par jour, entre 6 h et 12 h, sans changer le tirage des autres incidents.
+for (let t = 1; t <= 120; t++) {
+  const s6 = { ...st, turn: t, nextDeadline: deadline + (t - 1) * 24 * H };
+  const tous = tousIncidents(s6, 'a'), u = tous.filter((i) => i.urgence);
+  assert.equal(u.length, 1, 'une urgence par jour');
+  const debut = s6.nextDeadline - 24 * H;
+  assert.ok(u[0].ouvre >= debut + 10 * H && u[0].ouvre <= debut + 16 * H && u[0].ferme === s6.nextDeadline);
+  assert.equal(u[0].jeu, 'bitonal'); assert.ok(u[0].id.endsWith('-u'));
+  assert.ok(u[0].vit > 0.79 && u[0].vit <= 1.16);
+}
+// Vitesse : parc neuf 1, parc usé à 70 % 0,86 ; tout cabossé −6 % ; préparation +5 % par niveau.
+{
+  const z0 = { usure: 0, vehicules: 4, vehiculesHS: [], cabosses: [], prepa: 0 };
+  assert.equal(vitesseCombi(z0).mult, 1);
+  assert.equal(vitesseCombi({ ...z0, usure: 70 }).mult, 0.86);
+  assert.equal(vitesseCombi({ ...z0, cabosses: [{}, {}, {}, {}] }).mult, 0.94);
+  assert.equal(vitesseCombi({ ...z0, cabosses: [{}] }).cabosse, false, 'une combi saine reste disponible');
+  assert.equal(vitesseCombi({ ...z0, prepa: 3 }).mult, 1.15);
+  assert.equal(vitesseCombi({ ...z0, prepa: 9 }).prepa, PREPA.max);
+}
+// Conséquences.
+{
+  const base = () => { const z = structuredClone(st.zones.a); z._compta = []; z.moral = 60; z.usure = 10; z.cabosses = []; z.blesses = []; return z; };
+  const inc = [{ id: 'u', urgence: true, service: 'intervention', titre: URGENCE.titre, agents: 7 }];
+  const jouer = (res, seed = 'r') => { const z = base(); appliquerIncidents(z, { incidents: inc, resultats: res ? { u: res } : {}, alloc: { intervention: 7 }, T: 4, rng: makeRng(seed) }); return z; };
+  let z = jouer({ statut: 'ok', fautes: 0, score: 5000 });
+  assert.equal(z.moral, 63); assert.equal(z.jaugeIncidents, 2); assert.equal(z._ps, 5); assert.equal(z.usure, 10);
+  z = jouer({ statut: 'ok', fautes: 2 });
+  assert.equal(z.usure, 14, 'deux accrochages : +4 % d’usure'); assert.equal(z.jaugeIncidents, 1);
+  z = jouer({ statut: 'passe', fautes: 0 });
+  assert.equal(z.moral, 60); assert.ok(!z._ps && !z.jaugeIncidents && !z.blesses.length && z.usure === 10, 'pas le temps : rien');
+  z = jouer({ statut: 'rate', raison: 'hs', fautes: 3 });
+  assert.equal(z.cabosses.length, 1, 'combi hors service : un véhicule cabossé'); assert.ok(!z.blesses.length && z.moral === 60 && z.usure === 10);
+  let blesses = 0, moralPerdu = 0;
+  for (let k = 0; k < 400; k++) { const zz = jouer({ statut: 'rate', fautes: 1 }, `t${k}`); if (zz.blesses.length) { blesses++; assert.equal(zz.blesses[0].retour, 4 + 1 + URGENCE.absence); } else if (zz.moral === 58) moralPerdu++; }
+  assert.ok(blesses > 180 && blesses < 300, `trop tard : ~60 % de blessé (${blesses}/400)`); assert.equal(blesses + moralPerdu, 400);
+  z = jouer({ statut: 'abandon', fautes: 1 });
+  assert.equal(z.usure, 10, 'un abandon n’use pas le parc');
+  // Stand de tir : moitié moins de blessés.
+  let avecTir = 0;
+  for (let k = 0; k < 400; k++) { const zz = base(); zz.infra = { ...(zz.infra || {}), tir: true }; appliquerIncidents(zz, { incidents: inc, resultats: { u: { statut: 'rate', fautes: 0 } }, alloc: {}, T: 4, rng: makeRng(`t${k}`) }); if (zz.blesses.length) avecTir++; }
+  assert.ok(avecTir < blesses * 0.7, `stand de tir : moins de blessés (${avecTir} contre ${blesses})`);
+}
+// Résolution : l'urgence jouée est lue dans le profil ; « pas le temps » ne compte pas pour le Directeur.
+{
+  const s7 = structuredClone(st);
+  const u = tousIncidents(s7, 'a').find((i) => i.urgence);
+  const pl = { a: { nom: 'Zone 1111', code: '1111', incidents: { cle: 's1t1', r: { [u.id]: { statut: 'ok', fautes: 0, score: 4200, niveau: 'normal' } } } }, b: { nom: 'Zone 2222', code: '2222' }, c: { nom: 'Zone 3333', code: '3333' } };
+  const { state: ap } = resolveTurn(s7, { players: pl });
+  assert.ok(ap.zones.a.rapport.some((l) => l.startsWith('Urgence ·') && l.includes('sur place à temps')));
+  assert.equal(ap.zones.a.stats.urgencesOk, 1);
+}
 console.log('OK : incidents du jour (tirage, horaires, difficulté, effets, jauge, résolution).');

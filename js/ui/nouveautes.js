@@ -3,11 +3,13 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-06-dossier-clos',
+  id: '2026-10-06-urgence',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['📂', 'Dossier clos', 'à la fin de chaque affaire, la Gazette ouvre le débrief : ce qui désignait l’auteur, ce qui écartait chaque innocent, qui a trouvé quoi et quand. Et ce qu’il te manquait.'],
+    ['🚨', 'L’urgence du jour', 'une fois par jour, des collègues sont pris à partie : fonce les rejoindre en feu bleu et bitonal. Dépasse, frôle, passe les feux en douceur… et bats le meilleur score de la partie.'],
+    ['🚐', 'Tes combis comptent', 'plus ton parc est en bon état, plus tu vas vite. Nouveau : « Préparer les combis » dans Grande décision › Équiper.'],
+    ['📂', 'Dossier clos', 'à la fin de chaque affaire, la Gazette ouvre le débrief : ce qui désignait l’auteur, les fausses pistes, qui a trouvé quoi.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
@@ -55,6 +57,15 @@ export const NOTE_MAJ = {
       ['Moins de doublons', 'la situation du jour et l’opération d’envergure (avec l’appel à renfort) ne se règlent plus que dans les Ordres ; l’HP les signale et y renvoie, le Terrain ne montre plus que ce qui se joue avec les autres zones.'],
       ['HP plus léger', 'l’incident en cours n’est plus répété dans la liste « à faire » (sa carte est juste en dessous), et le résumé de la nuit s’efface quand tu ouvres le rapport complet.'],
       ['Prévisions à jour', 'la prévision « à plusieurs » se base sur les zones annoncées ce soir, plus sur celles d’hier.'],
+    ]],
+    ['L’urgence du jour (Bitonal)', [
+      ['Quand', 'une fois par jour, en plus des incidents, à une heure imprévue entre 6 h et 12 h, ouverte jusqu’à 20:00 (carte rouge 🚨 dans les incidents de l’HP). Un seul essai.'],
+      ['Le jeu', 'rue à double sens : ta bande, l’axe ou la bande d’en face. Devant, on s’écarte tard ; en face, la plupart serrent ; des îlots bloquent l’axe ; aux feux rouges des voitures traversent, elles s’arrêtent si tu passes sous 30 km/h. Points pour les dépassements et les frôlements, multiplicateur jusqu’à ×5, bonus d’avance.'],
+      ['Ta combi', 'la vitesse de pointe dépend de l’état du parc (de 80 % à 100 %), d’une combi cabossée (−6 % si tous les véhicules le sont) et de la préparation des combis (Grande décision › Équiper, 3 niveaux à 4, 6 et 8 k€ : +5 % de vitesse et +8 % de freinage chacun, remise à zéro chaque saison). Le parc affiche ta vitesse.'],
+      ['À temps', '+3 de moral, +5 PS et la jauge des skins (+2 sans accrochage). Chaque accrochage use le parc de 2 %.'],
+      ['Trop tard', '60 % de risque qu’un collègue soit blessé (2 jours), moins avec le stand de tir et le matériel d’Intervention ; sinon −2 de moral. Combi hors service (3 accrochages) : un véhicule rentre cabossé.'],
+      ['Pas le temps', 'un bouton dans le mini-jeu : une autre équipe y va, ni bonus ni malus. Pas joué du tout : l’Intervention se débrouille, avec un petit risque.'],
+      ['Meilleurs scores', 'un classement par niveau (facile, normal, difficile), affiché à l’ouverture de l’urgence et sur la tuile Bitonal du Challenge. Seules les urgences comptent ; l’entraînement est hors classement.'],
     ]],
     ['Dossier clos', [
       ['Le débrief d’affaire', 'le soir où une affaire se termine (arrestation, fuite, aveux ou classement), la Gazette propose « Dossier clos ». On y voit l’auteur et les pièces qui le désignaient, la planque et ses indices, la pièce qui écartait chaque innocent et qui l’a trouvée en premier, les fausses accusations, le coup de théâtre du jour 3 (juste ou piège), la part de chaque zone et la chronologie. Touche une pièce pour la relire.'],

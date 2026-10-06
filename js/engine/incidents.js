@@ -3,8 +3,9 @@
 // il déborde sur le lendemain matin et compte alors à la résolution suivante (incidents « reportés »). Joué : réussite (jauge des skins) ou échec (malus
 // à 20:00). Pas joué : l'équipe se débrouille seule, avec une chance qui dépend de ses effectifs.
 import { makeRng } from './rng.js';
-import { DEFAULT_ALLOC, SERVICE_LABELS, PS, gainMoral } from './constants.js';
+import { DEFAULT_ALLOC, SERVICE_LABELS, PS, gainMoral, vitesseCombi, risqueBlessure, USURE } from './constants.js';
 import { TOUS_SKINS, ajouterSkin } from './decor.js';
+import { placeLibre } from './parc.js';
 
 const H = 3600 * 1000;
 
@@ -16,6 +17,30 @@ export const INCIDENTS = {
   proximite: { jeu: 'dossier', titre: 'Dossier à relire', texte: 'Un rapport de domiciliation doit partir à la commune : 3 erreurs s’y sont glissées.' },
 };
 export const SERVICES_INCIDENTS = Object.keys(INCIDENTS);
+
+/**
+ * L'urgence du jour (une par jour, en plus des incidents) : des collègues pris à partie demandent du renfort.
+ * Mini-jeu « Bitonal » : rejoindre l'adresse au plus vite, en feu bleu. La vitesse de la combi dépend du parc
+ * (état, véhicules cabossés) et de la préparation des combis ; elle est figée quand l'urgence tombe, comme la difficulté.
+ * Issues :
+ *  - à temps : +3 de moral (comme un incident d'Intervention réussi), +5 PS, jauge des skins ;
+ *  - trop tard (ou abandon en route) : `blessure` de chances qu'un collègue soit blessé (× risque de blessure de la zone :
+ *    stand de tir, matériel), absent `absence` tours ; sinon `moralRetard` ;
+ *  - combi hors service (3 accrochages) : un véhicule sain devient cabossé (ou, s'ils le sont tous, `usureHS` d'usure), rien d'autre ;
+ *  - chaque accrochage en route : +`usureParAccrochage` d'usure du parc ;
+ *  - « Pas le temps » : rien, ni bonus ni malus (ni PS, ni jauge) ;
+ *  - pas joué : l'équipe se débrouille (chance selon les effectifs d'Intervention), sinon `seule`.
+ */
+export const URGENCE = {
+  jeu: 'bitonal', service: 'intervention', titre: 'Collègues pris à partie',
+  texte: 'Une patrouille est prise à partie et demande du renfort. Rejoins-les au plus vite, en feu bleu.',
+  gain: { moral: 3 },
+  blessure: 0.6, absence: 2, moralRetard: -2,
+  usureParAccrochage: 2, usureHS: 8,
+  seule: { blessure: 0.3, moral: -1 },
+};
+/** Ce qu'on risque, en clair (écran du mini-jeu). */
+export const texteRisqueUrgence = () => `trop tard : un collègue peut être blessé (${URGENCE.absence} jours d’absence) ; combi hors service : un véhicule cabossé ; chaque accrochage use le parc (+${URGENCE.usureParAccrochage} %)`;
 
 export const INC = {
   // Retour de Luc : il tombe entre 6 h et 12 h et reste ouvert jusqu'à la résolution de 20:00 (8 à 14 heures pour jouer).
@@ -118,12 +143,23 @@ export function incidentsDuTour(state, uid) {
   // le niveau (avant : on gonflait un service juste avant de jouer pour l'avoir en facile).
   // Un incident reporté au lendemain garde ces valeurs (elles sont stockées avec lui).
   const niv = z.dir && z.dir.inc && Number.isFinite(z.dir.inc.niv) ? z.dir.inc.niv : 0;
-  return liste.map((x, k) => ({
+  // L'urgence du jour : tirée à part (n'a aucun effet sur le tirage des autres incidents).
+  const ru = makeRng(`${state.seed}:s${state.season}:t${state.turn}:urgence:${uid}`);
+  const v = vitesseCombi(z);
+  const urgence = {
+    id: `s${state.season}t${state.turn}-u`, urgence: true,
+    service: URGENCE.service, jeu: URGENCE.jeu, titre: URGENCE.titre,
+    ouvre: debut + INC.premier + Math.floor(ru.next() * fenetre), ferme: fin,
+    agents: al[URGENCE.service] || 0, ajust: niv,
+    vit: v.mult, frein: v.frein, etat: v.etat, cabosse: v.cabosse, prepa: v.prepa,
+    seed: Math.floor(ru.next() * 1e9),
+  };
+  return [...liste.map((x, k) => ({
     id: `s${state.season}t${state.turn}-${k}`,
     service: x.service, jeu: INCIDENTS[x.service].jeu, titre: INCIDENTS[x.service].titre,
     ouvre: x.ouvre, ferme: fin,
     agents: al[x.service] || 0, ajust: niv,
-  }));
+  })), urgence].sort((a, b) => a.ouvre - b.ouvre);
 }
 
 /** Incidents visibles par le joueur : ceux du jour, plus ceux d'hier encore ouverts ce matin (reportés). */
@@ -151,6 +187,44 @@ export function resultatsIncidents(player, incidents) {
 
 /** Points de jauge d'un incident réussi en jouant : 2 sans faute, sinon 1. */
 export const pointsJauge = (res) => (res && res.statut === 'ok' ? (res.fautes ? 1 : 2) : 0);
+/** Résultats qui comptent pour le Directeur et les statistiques (« Pas le temps » est neutre). */
+export const compte = (res) => !!res && res.statut !== 'passe';
+
+/** Conséquences de l'urgence du jour (voir URGENCE). Renvoie les lignes du rapport. */
+export function appliquerUrgence(z, inc, res, { alloc = {}, T, rng }) {
+  const U = URGENCE, nom = `Urgence · ${inc.titre}`;
+  if (res && res.statut === 'passe') return [`${nom} : « Pas le temps ». Une autre équipe y est allée, sans effet pour ta zone.`];
+  z.stats.urgences = (z.stats.urgences || 0) + 1;
+  const out = [];
+  const blesser = (p, sinon) => {
+    if (rng.chance(p * risqueBlessure(z))) { z.blesses.push({ n: 1, retour: T + 1 + U.absence, motif: 'blessé' }); return `un collègue est blessé, absent ${U.absence} jours`; }
+    z.moral += sinon; return `personne n’est blessé, mais l’équipe l’a mal vécu (${sinon} de moral)`;
+  };
+  if (!res) {
+    const n = Number.isFinite(inc.agents) ? inc.agents : alloc.intervention;
+    if (rng.chance(chanceSeule('intervention', n))) return [`${nom} : personne n’est venu, l’Intervention s’en est sortie seule.`];
+    return [`${nom} : personne n’est venu en renfort à temps ; ${blesser(U.seule.blessure, U.seule.moral)}.`];
+  }
+  const hits = res.statut === 'abandon' ? 0 : Math.max(0, Math.min(3, Math.floor(Number(res.fautes) || 0)));
+  if (hits && res.raison !== 'hs') { z.usure = Math.min(USURE.max, (z.usure || 0) + hits * U.usureParAccrochage); out.push(`${hits} accrochage${hits > 1 ? 's' : ''} en route (parc +${hits * U.usureParAccrochage} % d’usure)`); }
+  if (res.statut === 'ok') {
+    const gm = gainMoral(U.gain.moral, z.moral);
+    z.moral += gm;
+    const pts = pointsJauge(res);
+    z.jaugeIncidents = (z.jaugeIncidents || 0) + pts;
+    z._ps = (z._ps || 0) + PS.queteOk;
+    z.stats.urgencesOk = (z.stats.urgencesOk || 0) + 1;
+    return [`${nom} : sur place à temps${res.score ? ` (${res.score} points)` : ''}, les collègues sont dégagés. +${gm} de moral, +${PS.queteOk} PS, +${pts} sur la jauge des skins${out.length ? ` ; ${out.join(', ')}` : ''}.`];
+  }
+  z._ps = (z._ps || 0) + PS.queteTentee;
+  if (res.raison === 'hs') {
+    const slot = placeLibre(z, T);
+    if (slot >= 0) { z.cabosses = [...(z.cabosses || []), { depuis: T, slot }]; out.push('la combi rentre cabossée (carrosserie à prévoir)'); }
+    else { z.usure = Math.min(USURE.max, (z.usure || 0) + U.usureHS); out.push(`la combi déjà cabossée encaisse encore (parc +${U.usureHS} % d’usure)`); }
+    return [`${nom} : combi hors service en route ; ${out.join(' ; ')} (+${PS.queteTentee} PS pour avoir essayé).`];
+  }
+  return [`${nom} : arrivé trop tard${res.statut === 'abandon' ? ' (renfort abandonné en route)' : ''} ; ${blesser(U.blessure, U.moralRetard)}${out.length ? ` ; ${out.join(', ')}` : ''} (+${PS.queteTentee} PS pour avoir essayé).`];
+}
 
 function appliquerMalus(z, m, T) {
   if (m.agents) z.blesses.push({ n: m.agents, retour: T + 1 + m.tours, motif: m.motif });
@@ -173,6 +247,7 @@ export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng, ind
   for (const inc of incidents) {
     const res = resultats[inc.id];
     const nom = `${inc.titre} (${SERVICE_LABELS[inc.service]})`;
+    if (inc.urgence) { lignes.push(...appliquerUrgence(z, inc, res, { alloc, T, rng })); continue; }
     z.stats.incidentsJeu = (z.stats.incidentsJeu || 0) + 1;
     if (res && res.statut === 'ok') {
       const pts = pointsJauge(res);
