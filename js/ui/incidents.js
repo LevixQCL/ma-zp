@@ -1,7 +1,7 @@
 // Incidents du jour : la carte de l'HP, et l'ouverture des mini-jeux (incident ou entraînement).
 // Les mini-jeux sont des pages à part (dossier minijeux/), ouvertes en plein écran dans un cadre :
 // elles renvoient leur résultat par message (start, result, close).
-import { S, esc, icon, myZone, toast } from './common.js';
+import { S, esc, icon, myZone, toast, pseudoJoueur } from './common.js';
 import { paramsDefi, noterNiveauDefi } from './defis.js';
 import { CHALLENGE } from '../engine/challenge.js';
 import { incidentsVisibles, resultatsIncidents, INCIDENTS, MALUS, GAIN, texteMalus, texteGain, difficulte, pointsJauge, INC, URGENCE, texteRisqueUrgence } from '../engine/incidents.js';
@@ -153,6 +153,34 @@ function gainAffiche(service) {
   return texteGain(g);
 }
 
+/** Records par quartier d'un mini-jeu à cartes : { [carte]: { rec: { nom, score }, moi } } (premier arrivé en cas d'égalité). */
+export function recordsQuartiers(jeu) {
+  const out = {}, moi = S.user && S.user.uid;
+  for (const [uid, p] of Object.entries(S.players || {})) {
+    if (!p || p.retire) continue;
+    const q = p.quartiers && p.quartiers[jeu]; if (!q) continue;
+    for (const [m, e] of Object.entries(q)) {
+      const sc = Math.floor(Number(e && e.s) || 0); if (sc <= 0) continue;
+      const o = out[m] || (out[m] = {});
+      if (uid === moi) o.moi = sc;
+      if (!o.rec || sc > o.rec.score || (sc === o.rec.score && (e.at || 0) < o.rec.at)) o.rec = { nom: uid === moi ? 'toi' : pseudoJoueur(uid), score: sc, at: e.at || 0 };
+    }
+  }
+  return out;
+}
+/** Enregistre un quartier réussi s'il bat le meilleur score personnel sur ce quartier. */
+async function noterQuartier(jeu, m, score) {
+  const sc = Math.floor(Number(score) || 0), k = String(Math.floor(Number(m)));
+  if (!S.user || !S.backend || sc <= 0 || !/^\d+$/.test(k)) return;
+  const p = { ...(S.player || {}) }, q = { ...((p.quartiers || {})[jeu] || {}) };
+  if (q[k] && q[k].s >= sc) return;
+  q[k] = { s: sc, at: Date.now() };
+  p.quartiers = { ...(p.quartiers || {}), [jeu]: q };
+  S.player = p;
+  S.players = { ...(S.players || {}), [S.user.uid]: { ...((S.players || {})[S.user.uid] || {}), quartiers: p.quartiers } };
+  await S.backend.savePlayer(S.user.uid, p);
+}
+
 export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, onFin = () => {}, onEntrainement = () => {} } = {}) {
   document.querySelector('.mj-wrap')?.remove();
   if (jeu === 'tracage') jeu = 'interception'; // appui accordé avant le remplacement du traçage d'IP
@@ -211,8 +239,12 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
         const skinB = sb && SKINS.batiment.options[sb], fac = skinB ? skinB.jour : (DECOR.facade.options[d.facade] || DECOR.facade.options.beton).jour;
         const neon = DECOR.neon.options[d.neon] || DECOR.neon.options.bleu;
         const hp = { nom: z.nom, b: (z.batiments && z.batiments.bureaux) || 1, facade: fac, neon: { lettre: neon.lettre, halo: neon.halo }, skin: skinB ? skinB.nom : '' };
+        // Petits avantages venus de la zone (stand de tir, drone, atelier, équipement, combis en état) et records par quartier.
+        const T = S.state.turn, parc = parcVehicules(z, T).filter((v) => v.etat !== 'atelier' && v.type !== 'anonyme');
+        const zone = { tir: !!(z.infra && z.infra.tir), atelier: !!(z.infra && z.infra.garage), drone: (z.lots || []).some((l) => (l.id || l) === 'drone'),
+          equip: (z.equip && z.equip.intervention) || 1, combis: parc.length };
         const fr = wrap.querySelector('iframe');
-        fr.addEventListener('load', () => fr.contentWindow && fr.contentWindow.postMessage({ source: 'mazp-parent', type: 'hp', hp }, location.origin));
+        fr.addEventListener('load', () => fr.contentWindow && fr.contentWindow.postMessage({ source: 'mazp-parent', type: 'hp', hp, zone, quartiers: recordsQuartiers('bouclage') }, location.origin));
       }
     } catch (e) { /* le mini-jeu garde son hôtel de ville */ }
   }
@@ -237,6 +269,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
         } else if (d.type === 'result') await enregistrer(inc.id, { statut: d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Number(d.fautes) || 0 });
       }
       if (mode === 'train' && d.type === 'result' && !d.abandon) onEntrainement({ minijeux: 1 });
+      if (mode === 'train' && d.type === 'quartier' && d.jeu === jeu) await noterQuartier(jeu, d.map, d.score);
       // Bitonal au Challenge : la course compte pour les meilleurs scores, comme une urgence (sauf arrêt forcé).
       if (mode === 'train' && jeu === 'bitonal' && d.type === 'result' && !d.abandon && d.raison !== 'hs') {
         const niv = ['facile', 'normal', 'difficile'].includes(d.niveau) ? d.niveau : null;

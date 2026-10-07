@@ -26,6 +26,7 @@
 .dir{display:flex;gap:6px;align-items:center;flex-wrap:wrap;width:100%}.dir .dq{font-size:12px;width:100%}
 .dirb{flex:1 1 0;min-width:0;display:grid;gap:1px;text-align:left;background:rgba(98,176,255,.1);border:1px solid rgba(98,176,255,.45);border-radius:10px;padding:5px 7px;color:var(--ink);font:inherit;cursor:pointer}
 .dirb b{font-size:12.5px}.dirb small{font-size:10.5px;color:var(--mute);line-height:1.2}
+.qrec{font-size:13px;line-height:1.45;background:rgba(98,176,255,.1);border:1px solid rgba(98,176,255,.35);border-radius:12px;padding:8px 10px;margin:8px 0;color:#d5dce8}.qrec .ok{color:#46d98a;font-weight:700}
 .tip{min-height:38px;display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.35;color:#d5dce8;background:var(--surface);border:1px solid var(--stroke);border-radius:12px;padding:6px 11px}
 .tip b{color:var(--ink)} .tip .c{color:#ffd166;font-weight:700}
 .bar2{display:flex;gap:8px;align-items:center;padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -257,7 +258,21 @@ function genMap(seed,nP){
 const GEN={};
 function genHp(P){ const tronc=Math.min(P[0].rawLen,46); return Math.round((1.15+(tronc-24)*.03)*(P.length===1?1.05:P.length===2?1.15:1.12)*100)/100; }
 const padOf=id=>R.pads.find(p=>p.id===id);
-const rangeOf=tw=>MEANS[tw.type].range+LV.rng[tw.lvl-1];
+/* Météo du niveau : brouillard (portée réduite, sauf avec le drone de la zone) ou pluie (les émeutiers se découragent
+   en marchant, l'eau de l'autopompe porte moins). */
+const METEO={brouillard:{nom:'Brouillard',ds:'portée de tes moyens réduite'},pluie:{nom:'Pluie',ds:'les émeutiers se découragent, l’autopompe porte moins'}};
+const porteeMeteo=()=>R.meteo==='brouillard'?(R.bonus&&R.bonus.drone?.92:.72):1;
+const rangeOf=tw=>(MEANS[tw.type].range+LV.rng[tw.lvl-1]+(R.bonus&&R.bonus.drone?.2:0))*porteeMeteo();
+/* Ta zone dans Ma ZP (envoyée par l'app) : petits avantages concrets, plafonnés pour garder le Challenge équitable. */
+const ZONE={ok:false};
+function bonusZone(){ const b={}; if(!ZONE.ok) return b;
+  if(ZONE.tir) b.tir=true;                                  // stand de tir : agents MO plus endurants
+  if(ZONE.drone) b.drone=true;                              // drone : voit à travers le brouillard, portée +0,2
+  if(ZONE.atelier) b.atelier=true;                          // atelier mécanique : barrières relevées plus vite
+  const eq=Math.max(1,Math.min(5,ZONE.equip||1)); if(eq>1) b.equip=eq; // équipement Intervention : agents MO un peu plus efficaces
+  if(Number.isFinite(ZONE.combis)) b.combis=Math.max(1,Math.min(4,ZONE.combis)); // combis en état = barrages disponibles
+  return b; }
+const textesBonus=b=>[b.tir&&'stand de tir : agents MO +20 % d’endurance',b.drone&&'drone : portée +0,2 et voit à travers le brouillard',b.atelier&&'atelier : barrières relevées 25 % plus vite',b.equip&&`équipement niveau ${b.equip} : MO +${(b.equip-1)*5} %`,b.combis&&`${b.combis} combi${b.combis>1?'s':''} en état : ${b.combis} barrage${b.combis>1?'s':''} possible${b.combis>1?'s':''}`].filter(Boolean);
 const upCost=tw=>tw.lvl>=3?null:Math.round(MEANS[tw.type].cout*LV.cout[tw.lvl]);
 const sellVal=tw=>tw.spent;
 const rendement=()=>(R.tuto?1:REND[Math.max(0,Math.min(REND.length-1,R.wave-1))])*(R.maitrise>=3?1.15:1);
@@ -279,7 +294,9 @@ function resetGame(cfg,tuto,mapIdx){
   // En incident, l'effectif Intervention réel de la zone fixe les agents de départ.
   R.agents=tuto?12:(inc?Math.max(12,Math.round(qn('agents',cfg.agents)*2.2)):cfg.eff);
   // Véhicules disponibles : autopompes et combis selon la zone (la cavalerie vient en appui fédéral).
-  R.dispo={barrage:inc?qn('combi',cfg.combi):cfg.combi, autopompe:cfg.autopompe, cavalerie:cfg.cavalerie};
+  R.bonus=tuto?{}:bonusZone();
+  R.dispo={barrage:inc?qn('combi',cfg.combi):(R.bonus.combis??cfg.combi), autopompe:cfg.autopompe, cavalerie:cfg.cavalerie};
+  R.meteo=tuto?null:cfg.meteo||null;
   R.usure=inc?Math.max(0,Math.min(1,qn('usure',0)/100)):0;
   R.phase='build'; R.nextIn=null; R.waveEnd=0; R.over=false; if(!tuto) Shell.st.mode='play';
   resize(); tip(); ui();
@@ -357,7 +374,7 @@ const AGENTS=[1,2,3], ENDU=[100,115,130];
 function setupTower(tw,id){
   const P=padOf(id);
   if(tw.type==='barrage'){ const mx=BAR_HP[tw.lvl-1]*(1-.25*R.usure); tw.bar=tw.bar||{hp:mx,up:true,downAt:0}; tw.bar.max=mx; if(tw.bar.up) tw.bar.hp=mx; }
-  if(tw.type==='peloton'){ tw.agents=tw.agents||[]; const n=AGENTS[tw.lvl-1], mx=ENDU[tw.lvl-1];
+  if(tw.type==='peloton'){ tw.agents=tw.agents||[]; const n=AGENTS[tw.lvl-1], mx=ENDU[tw.lvl-1]*(R.bonus&&R.bonus.tir?1.2:1);
     while(tw.agents.length<n) tw.agents.push({x:P.x,y:P.y,e:mx,st:'ready',u:null,until:0});
     if(R.phase!=='run') tw.agents.forEach((a,i)=>{ const sl=slotOf(tw,i); a.x=sl.x; a.y=sl.y; });
     tw.agents.forEach(a=>{ a.max=mx; if(a.st!=='back') a.e=Math.max(a.e,mx*.6); }); }
@@ -378,6 +395,7 @@ function step(dt){
   // cohésion : un émeutier entouré résiste mieux ; dispersé (jet d'eau), il est plus facile à repousser
   const cohR=R.mods.compacts?.75:.6, cohMax=R.mods.compacts?.55:.4;
   for(const u of live){ if(u.dispUntil>R.t){ u.coh=0; continue; } let n=0; for(const o of live) if(o!==u&&Math.abs(o.p.x-u.p.x)<cohR&&Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<cohR) n++; u.coh=n>=2?Math.min(cohMax,.1*n):0; }
+  if(R.meteo==='pluie') for(const u of live) if(!u.held&&u.type!=='bloc') u.hp-=.35*dt;
   const hit=(u,v,choc)=>{ u.hp-=v*(u.boost?.7:1)*(u.dispUntil>R.t?1.25:1-(u.coh||0)); if(choc) u.hitT=R.t; };
   // meneurs (galvanisent), sommations et flaques (ralentissent)
   const leaders=live.filter(u=>u.type==='meneur');
@@ -387,7 +405,7 @@ function step(dt){
   const towers=Object.entries(R.towers);
   // barrières : relevage par les agents du combi quand la place est libre
   for(const [id,tw] of towers){ if(tw.type!=='barrage') continue; const b=tw.bar;
-    if(!b.up&&R.t-b.downAt>BAR_RELEVE[tw.lvl-1]&&!live.some(u=>Math.hypot(u.p.x-tw.rx,u.p.y-tw.ry)<.55)){ b.up=true; b.hp=b.max; b.upAt=R.t; fx(tw.rx,tw.ry,'Barrières relevées','info'); } }
+    if(!b.up&&R.t-b.downAt>BAR_RELEVE[tw.lvl-1]*(R.bonus&&R.bonus.atelier?.75:1)&&!live.some(u=>Math.hypot(u.p.x-tw.rx,u.p.y-tw.ry)<.55)){ b.up=true; b.hp=b.max; b.upAt=R.t; fx(tw.rx,tw.ry,'Barrières relevées','info'); } }
   // déplacements
   for(const u of R.units){ const F=FOES[u.type];
     if(u.state==='flee'){ u.d-=F.v*1.6*R.M.P[u.pi].k*dt; continue; }
@@ -414,7 +432,7 @@ function step(dt){
           let best=null; for(const u of live){ if(u.held||u.alive===false) continue; const db=blockOn(tw,u.pi); if(db===null) continue; if(u.d<db-.9||u.d>db+.25) continue; if(!best||u.d>best.d) best=u; }
           if(best){ a.u=best; best.held=a; a.st='eng'; } return; }
         if(a.st==='eng'){ const u=a.u; const L=mv(u.p.x,u.p.y,2.8);
-          if(L<.42){ hit(u,M.dps[u.type]*k*dt); a.e-=STRAIN[u.type]*(u.boost?1.3:1)*dt; a.push=R.t; }
+          if(L<.42){ hit(u,M.dps[u.type]*k*(R.bonus&&R.bonus.equip?1+.05*(R.bonus.equip-1):1)*dt); a.e-=STRAIN[u.type]*(u.boost?1.3:1)*dt; a.push=R.t; }
           if(a.e<=0){ a.e=0; a.st='back'; a.until=R.t+6; u.held=null; a.u=null; fx(a.x,a.y,'Agent à bout','bad'); } } });
       tw.tgt=tw.agents.filter(a=>a.u).map(a=>a.u); continue; }
     const inR=live.filter(u=>u.alive!==false&&Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg);
@@ -430,9 +448,9 @@ function step(dt){
       tw.charge={t0:R.t,dur:1.3,x:best.p.x,y:best.p.y,hit:false}; tw.cd=M.cd[tw.lvl-1]; tw.tgt=[best]; continue; }
     if(tw.type==='autopompe'){ if(!inR.length) continue; tw.tgt=[inR[0]]; if(tw.cd>0) continue;
       let best=inR[0], bn=-1; for(const u of inR){ const n=live.filter(o=>Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<=M.splash).length; if(n>bn){ bn=n; best=u; } }
-      for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-best.p.x,o.p.y-best.p.y)<=M.splash*(tw.lvl>2?1.2:1)){ hit(o,M.dmg*k*M.mult[o.type],true); o.dispUntil=R.t+4; if(!o.held) o.d=Math.max(0,o.d-M.recul*(o.type==='bloc'?.35:1));
+      for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-best.p.x,o.p.y-best.p.y)<=M.splash*(tw.lvl>2?1.2:1)){ hit(o,M.dmg*k*M.mult[o.type]*(R.meteo==='pluie'?.85:1),true); o.dispUntil=R.t+4; if(!o.held) o.d=Math.max(0,o.d-M.recul*(o.type==='bloc'?.35:1));
         if(o.type==='bloc'&&o.hp>0&&o.hp<o.max*BLOC_ECLATE.seuil) eclate(o); }
-      R.flaques.push({x:best.p.x,y:best.p.y+.05,r:.5+.1*tw.lvl,until:R.t+6,t:R.t});
+      R.flaques.push({x:best.p.x,y:best.p.y+.05,r:.5+.1*tw.lvl,until:R.t+(R.meteo==='pluie'?9:6),t:R.t});
       tw.cd=M.cd; tw.tgt=[best]; R.jets.push({id,x1:best.p.x,y1:best.p.y,t:R.t,lvl:tw.lvl}); Shell.blip(180,.15,'sawtooth',.02);
       puff(best.p.x,best.p.y-.25,18+6*tw.lvl,{v:1.3,r:.035,life:.55,grav:2.2,col:'rgba(200,230,255,',flat:1,a:-Math.PI/2,spread:Math.PI*1.4}); }
   }
@@ -502,9 +520,22 @@ function finish(ok){
   const evalu=!ok?'Dispositif débordé':perdu===0?'Maîtrise':perdu<=R.lives0*.25?'Bon dispositif':'Sous tension';
   const st=[['Repoussés',R.disp],['Agents récupérés',`+${R.stats.rec}`],['Cordon perdu',`${perdu} / ${R.lives0}`]];
   if(R.stats.blocs) st.push(['Blocs dispersés',R.stats.blocs]); if(R.stats.combos) st.push(['Interventions maîtrisées',R.stats.combos]);
+  const qScore=ok?Math.round(Math.max(0,R.lives)/R.lives0*1000)+R.stats.rec:0;
   Shell.result({ok, faults:perdu, stats:st, details, note:`Évaluation : ${evalu.toUpperCase()}. `+(note||(perdu===0?'Cordon intact : double point.':'Cordon intact : +2 sur la jauge.'))});
+  if(ok&&Shell.enDefi&&R.map>=0&&R.cfg.niveau<=MAPS.length) recordQuartier(R.map,qScore);
 }
 const campagne=()=>!Q2.get('mode');
+/* Classement par quartier (niveaux 1 à 10 du Challenge) : score = cordon restant (‰) + agents récupérés.
+   Ma ZP envoie les records de la partie ; on lui renvoie chaque quartier réussi. */
+const QREC={data:{}};
+function recordQuartier(m,score){
+  const q=QREC.data[m]||(QREC.data[m]={}), avant=q.moi||0, rec=q.rec;
+  try{ if(window.parent!==window) window.parent.postMessage({source:'mazp-mj',type:'quartier',jeu:'bouclage',map:m,score},location.origin); }catch(e){}
+  if(score>avant) q.moi=score;
+  const battu=!rec||score>rec.score; if(battu) q.rec={nom:'toi',score};
+  const html=`<div class="qrec"><b>🏙️ ${MAPS[m].nom}</b> · ton score <b>${score}</b>${score>avant&&avant?' (record perso)':''}<br>${battu?'<span class="ok">Record du quartier !</span>':`Record du quartier : <b>${rec.score}</b> (${rec.nom})`}</div>`;
+  setTimeout(()=>{ const c=$('card'), row=c&&c.querySelector('.row'); if(row) row.insertAdjacentHTML('beforebegin',html); },30);
+}
 
 /* ───── fiches et choix du quartier ───── */
 function introFoe(type){
@@ -868,7 +899,7 @@ function lamp(g,x,y){
    redessiné dans le style de la carte, en vue de trois quarts, à la place de l'hôtel de ville. */
 const HP={ok:false};
 window.addEventListener('message',e=>{ const d=e.data; if(e.origin!==location.origin||!d||d.source!=='mazp-parent'||d.type!=='hp'||!d.hp) return;
-  Object.assign(HP,d.hp,{ok:true}); C.mapFor=null; if(R.M) resize(); });
+  Object.assign(HP,d.hp,{ok:true}); if(d.zone) Object.assign(ZONE,d.zone,{ok:true}); if(d.quartiers) QREC.data=d.quartiers; C.mapFor=null; if(R.M) resize(); });
 function melange(a,b,t){ const p=x=>[1,3,5].map(i=>parseInt(x.slice(i,i+2),16)), A=p(a), B=p(b); return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join(''); }
 function commissariat(g,M){
   const hb=hallBox(M), et=Math.max(1,Math.min(5,HP.b||1)), base=MH-.06, OUT='#0a1222';
@@ -1196,6 +1227,17 @@ function render(){
       puff(x,y+.08,1,{v:.25,r:.06,grow:2.2,life:.6,col:'rgba(150,140,125,',flat:.3,jit:.4}); } }
   items.sort((a,b)=>a.y-b.y).forEach(it=>it.d());
   drawParts(g);
+  if(R.meteo==='brouillard'){ g.save(); g.fillStyle='rgba(170,185,215,.15)'; g.fillRect(0,0,MW,MH);
+    for(let i=0;i<9;i++){ const x=((i*1.7+rt*.12*(i%2?1:-1))%(MW+3)+MW+3)%(MW+3)-1.5, y=1+i*1.45+Math.sin(rt*.3+i)*.3, r=1.6+(i%3)*.5;
+      const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,'rgba(190,205,230,.42)'); gr.addColorStop(1,'rgba(190,205,230,0)'); g.fillStyle=gr; g.beginPath(); g.ellipse(x,y,r*1.6,r,0,0,7); g.fill(); }
+    g.restore(); }
+  if(R.meteo==='pluie'){ g.save(); g.fillStyle='rgba(10,20,45,.12)'; g.fillRect(0,0,MW,MH); g.strokeStyle='rgba(180,205,240,.35)'; g.lineWidth=.015; g.beginPath();
+    for(let i=0;i<140;i++){ const x=(i*.613+rt*.9)%MW, y=((i*.377)*7+rt*9)%MH; g.moveTo(x,y); g.lineTo(x-.05,y+.28); } g.stroke(); g.restore(); }
+  if(R.bonus&&R.bonus.drone&&R.phase!=='idle'){ const a=rt*.5, x=MW/2+Math.cos(a)*2.6, y=MH/2+Math.sin(a)*4.2-.6;
+    g.save(); g.fillStyle='rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(x+.2,y+.9,.18,.06,0,0,7); g.fill();
+    g.fillStyle='#1d2638'; g.strokeStyle='#0a1222'; g.lineWidth=.02; g.fillRect(x-.09,y-.05,.18,.1); g.strokeRect(x-.09,y-.05,.18,.1);
+    for(const [dx,dy] of [[-.16,-.08],[.16,-.08],[-.16,.08],[.16,.08]]){ g.strokeStyle='rgba(200,215,240,.6)'; g.beginPath(); g.ellipse(x+dx,y+dy,.09,.03,rt*20,0,7); g.stroke(); }
+    if(Math.floor(rt*3)%2){ g.fillStyle='#ff4d4d'; g.beginPath(); g.arc(x,y+.06,.025,0,7); g.fill(); } g.restore(); }
   for(const id in R.towers){ const tw=R.towers[id], P=padOf(id), k=(R.t-(tw.born||0))/.5; if(k<0||k>1) continue;
     g.strokeStyle=`rgba(255,209,102,${.9*(1-k)})`; g.lineWidth=.05*(1-k)+.01; g.beginPath(); g.ellipse(P.x,P.y+.1,.3+k*.7,(.3+k*.7)*.62,0,0,7); g.stroke(); }
   // étoiles de niveau
@@ -1313,7 +1355,7 @@ Shell.init({
   // Challenge : les dix quartiers dans l'ordre (vagues de plus en plus longues), puis ils reviennent en boucle,
   // avec des émeutiers de plus en plus déterminés (réglages du niveau) et des vagues plus longues.
   niveau(n,cfg){
-    cfg.map=(n-1)%MAPS.length; cfg.seed=n;
+    cfg.map=(n-1)%MAPS.length; cfg.seed=n; cfg.meteo=n%5===3?'brouillard':n%5===0?'pluie':null;
     cfg.waves=n<=2?4:n<=5?5:n<=10?6:n<=20?7:8; return cfg; },
   onInit(){
     C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); spr('lance'); spr('frise'); spr('heras-tombee'); R.M=MAPDATA[0]; R.pads=R.M.pads;
@@ -1329,7 +1371,11 @@ Shell.init({
   },
   onMenu(){ R.over=true; R.phase='idle'; R.units=[]; R.towers={}; R.tuto=0; R.sel=null; $('panel').hidden=true; R.pause=false; ui(); tip(); },
   onPlay(cfg){
-    if(Shell.enDefi){ if(cfg.map>=0) return resetGame(cfg,false,cfg.map);
+    const annonce=()=>{ const M=R.M, l=[`${M.nom} · ${M.sous}`]; if(R.meteo) l.push(`${METEO[R.meteo].nom} : ${METEO[R.meteo].ds}`);
+      l.forEach((t,i)=>setTimeout(()=>Shell.toast(t,t.startsWith('Brouillard')||t.startsWith('Pluie')?'bad':'info'),700+i*1700));
+      const qr=QREC.data[R.map]; if(Shell.enDefi&&R.cfg.niveau<=MAPS.length) l.push(qr&&qr.rec?`Record du quartier : ${qr.rec.score} (${qr.rec.nom})${qr.moi?` · ton meilleur : ${qr.moi}`:''}`:'Aucun record sur ce quartier : à toi de le poser');
+      const tb=textesBonus(R.bonus||{}); if(tb.length) setTimeout(()=>Shell.toast(`Ta zone : ${tb.join(' · ')}`,'ok'),700+l.length*1700); };
+    if(Shell.enDefi){ if(cfg.map>=0){ resetGame(cfg,false,cfg.map); annonce(); return; }
       const M=GEN[cfg.seed]||(GEN[cfg.seed]=genMap(cfg.seed,cfg.cort)); resetGame(cfg,false,M);
       setTimeout(()=>Shell.toast(`${M.nom} · ${M.sous}`,'info'),900);
       const mods=Object.keys(R.mods); if(mods.length) setTimeout(()=>Shell.toast(`Consigne : ${mods.map(k=>MODS[k]).join(' · ')}`,'bad'),2600);
