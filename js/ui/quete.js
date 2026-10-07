@@ -54,7 +54,7 @@ function renderGrille(q) {
 
 const ICO_ENIGME = { quiment: '🤥', grille: '🏘️', cadenas: '🔐', chronologie: '🕒', code: '🔣', plaque: '🚗', photos: '📷', filature: '👣', butin: '💰', horaires: '🚌', ecriture: '✍️' };
 const GROUPES_ENIGMES = [['Logique', ['quiment', 'grille', 'chronologie', 'horaires']], ['Observation', ['photos', 'plaque', 'ecriture', 'filature']], ['Chiffres et codes', ['cadenas', 'code', 'butin']]];
-const ICO_MJ = { bitonal: '🚨', colis: '💣', crochetage: '🔓', depanneuse: '🚧', dossier: '📄', empreintes: '🖐️', adn: '🧬', reseau: '🔌', interception: '📡' };
+const ICO_MJ = { bitonal: '🚨', bouclage: '🛡️', colis: '💣', crochetage: '🔓', depanneuse: '🚧', dossier: '📄', empreintes: '🖐️', adn: '🧬', reseau: '🔌', interception: '📡' };
 const COUL_MJ = { intervention: '#FF6E6A', recherche: '#63B0FF', roulage: '#FFB23F', proximite: '#3DD39A', labo: '#A78BFA', rccu: '#5AD1E6' };
 
 /** Encart « Prime de la semaine » du Challenge : la règle, les lauréats provisoires et ceux de la semaine passée. */

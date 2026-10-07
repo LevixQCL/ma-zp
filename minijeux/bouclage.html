@@ -203,7 +203,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 <div class="app" id="app">
   <div class="top">
     <div class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="6" rx="1.5"/><path d="M8 7l-3 6M13 7l-3 6M18 7l-3 6"/><path d="M6 13v6M18 13v6M4 19h4M16 19h4"/></svg></div>
-    <div class="ttl"><div class="eyebrow">Intervention · démo</div><h1>Maintien de l'ordre</h1></div>
+    <div class="ttl"><div class="eyebrow">Intervention · Challenge</div><h1>Maintien de l'ordre</h1></div>
     <div class="hud">
       <button class="iconbtn" id="sound" aria-label="Couper le son"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
       <button class="iconbtn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
@@ -1577,7 +1577,7 @@ function pill(g,x,y,txt,col,sz=.17,bg){ g.font=`800 ${sz}px "Instrument Sans",sa
 Shell.init({
   key:'bouclage', service:'Incident Intervention', serviceShort:'Intervention',
   headline:'Manifestation qui dégénère',
-  story:`<p>Une manifestation dégénère : des cortèges de casseurs remontent les rues vers l’hôtel de ville.</p><p>Place tes moyens de maintien de l’ordre le long du trajet et <b>repousse-les</b> : à bout de détermination, ils font demi-tour. Chaque émeutier repoussé te rend des agents.</p>`,
+  story:`<p>Une manifestation dégénère : des cortèges de casseurs remontent les rues vers l’hôtel de ville.</p><p>Place tes moyens de maintien de l’ordre le long du trajet et <b>repousse-les</b> : à bout de détermination, ils font demi-tour. Chaque émeutier repoussé te rend des agents, de moins en moins au fil des vagues : garde une réserve.</p>`,
   diffs:{
     difficile:{agents:7,label:'Difficile',eff:17,lives:12,combi:2,autopompe:1,cavalerie:2,hp:1,gap:.5,pause:12,waves:6},
     normal:{agents:9,label:'Normal',eff:18,lives:15,combi:3,autopompe:2,cavalerie:3,hp:1,gap:.55,pause:14,waves:6},

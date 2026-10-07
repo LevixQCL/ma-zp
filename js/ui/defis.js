@@ -9,6 +9,7 @@ import { CONFIG } from '../config.js';
 export const TITRES_DEFI = {
   colis: 'Démineur du district', crochetage: 'Maître serrurier', depanneuse: 'As du dépannage', dossier: 'Œil de lynx',
   empreintes: 'Maître des empreintes', adn: 'Génie de l’ADN', reseau: 'Maître du réseau', interception: 'As de l’interception',
+  bouclage: 'Maître du maintien de l’ordre',
 };
 export const NIVEAU_MAX = 500;
 

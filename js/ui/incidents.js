@@ -20,6 +20,8 @@ import { ANNEXES_AILE } from './scene-aile.js';
 export const MINI_JEUX = [
   { jeu: 'colis', service: 'intervention', nom: 'Colis suspect' },
   { jeu: 'bitonal', service: 'intervention', nom: 'Bitonal (urgence)' },
+  // Challenge uniquement pour l'instant (pas d'incident du jour, pas de prime de la semaine) : tower defense de l'Intervention.
+  { jeu: 'bouclage', service: 'intervention', nom: 'Maintien de l’ordre' },
   { jeu: 'crochetage', service: 'recherche', nom: 'Crochetage' },
   { jeu: 'depanneuse', service: 'roulage', nom: 'Dépanneuse' },
   { jeu: 'dossier', service: 'proximite', nom: 'Dossier à relire' },
