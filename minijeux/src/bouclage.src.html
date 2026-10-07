@@ -520,8 +520,22 @@ function van(g,f,t,L,turret){
   g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(lx+.1,-H-T*.6,0,lx+.1,-H-T*.6,.8); gr.addColorStop(0,`rgba(70,140,255,${on?.4:.15})`); gr.addColorStop(1,'rgba(70,140,255,0)'); g.fillStyle=gr; g.fillRect(lx-.7,-H-T-.7,1.6,1.4); g.globalCompositeOperation='source-over';
   g.restore();
 }
-function nozzle(tw,P){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, L=1.05; return {x:P.x+f*(-L/2+.12+L*.25),y:P.y-.4-.12,f}; }
+/* Sprites illustrés (facultatifs) : img/bouclage/<nom>.webp, fond transparent. Sinon, dessin en code. */
+const SPR={};
+function spr(n){ if(SPR[n]) return SPR[n]; const d=SPR[n]={ok:false,img:new Image()}; d.img.onload=()=>{ d.ok=true; }; d.img.src=`img/bouclage/${n}.webp`; return d; }
+// autopompe : image tournée vers la gauche ; position relative de la lance (bout du canon) dans l'image
+const AUTOPOMPE={w:1.4,lance:[.01,.3]};
+function nozzle(tw,P){ const S=spr('autopompe');
+  if(S.ok){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, W=AUTOPOMPE.w, h=W*S.img.height/S.img.width, lx=-W/2+AUTOPOMPE.lance[0]*W, ly=.22-h+AUTOPOMPE.lance[1]*h;
+    return {x:P.x+(f>0?-lx:lx),y:P.y+.1+ly,f}; }
+  return nozzle0(tw,P); }
+function nozzle0(tw,P){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, L=1.05; return {x:P.x+f*(-L/2+.12+L*.25),y:P.y-.4-.12,f}; }
 function drawAutopompe(g,tw,P,t){
+  const S=spr('autopompe');
+  if(S.ok){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, W=AUTOPOMPE.w, h=W*S.img.height/S.img.width;
+    g.save(); if(f>0) g.scale(-1,1); g.drawImage(S.img,-W/2,.22-h,W,h); g.restore();
+    const on=Math.floor(t*6)%2; g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(0,-h*.55,0,0,-h*.55,.7); gr.addColorStop(0,`rgba(70,140,255,${on?.28:.1})`); gr.addColorStop(1,'rgba(70,140,255,0)'); g.fillStyle=gr; g.fillRect(-.8,-h-.4,1.6,1.4); g.globalCompositeOperation='source-over';
+    return; }
   const f=nozzle(tw,P).f; van(g,f,t,1.05,true);
   const nz=nozzle(tw,P), a=tw.aim??tw.face, lx=nz.x-P.x, ly=nz.y-P.y, lances=tw.lvl>2?[-.05,.05]:[0];
   g.save(); g.translate(lx,ly); g.fillStyle='#c9ced6'; g.beginPath(); g.ellipse(0,0,.11,.07,0,0,7); g.fill(); g.strokeStyle='#5b6472'; g.lineWidth=.02; g.stroke();
