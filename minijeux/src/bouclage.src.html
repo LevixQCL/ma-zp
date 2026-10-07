@@ -50,17 +50,6 @@
 .panel h3{margin:2px 0 0;font-family:var(--f-disp);font-size:22px}
 .panel p{margin:0;font-size:14px;line-height:1.45;color:#d5dce8}
 .panel p b{color:var(--ink)}
-.lvq{flex:0 0 auto;margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:999px;border:1px solid var(--stroke-2);background:transparent;color:#cfe4ff;font:700 12px var(--f-body);cursor:pointer;white-space:nowrap}
-.lvq i{font-style:normal;display:inline-grid;place-items:center;width:15px;height:15px;border-radius:50%;border:1.5px solid currentColor;font-size:10px}
-.lvg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.lvc{border:1px solid var(--stroke);border-radius:12px;padding:8px 7px;display:grid;gap:4px;align-content:start;font-size:12px;line-height:1.3;color:#d5dce8;background:rgba(255,255,255,.03)}
-.lvc.cur{border-color:#62b0ff;background:rgba(98,176,255,.1)}
-.lvc.nxt{border-color:#ffd166;background:rgba(255,209,102,.08)}
-.lvc .t{font:800 11px var(--f-body);text-transform:uppercase;letter-spacing:.05em;color:var(--mute)}
-.lvc.cur .t{color:#62b0ff}.lvc.nxt .t{color:#ffd166}
-.lvc b{font-family:var(--f-disp);font-size:13.5px;color:var(--ink);line-height:1.2}
-.lvc .k{color:#ffd166;font-weight:700}
-.lvc ul{margin:0;padding:0 0 0 14px;display:grid;gap:2px}
 .levels{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .lvl{display:grid;gap:6px;text-align:left;background:var(--surface);border:1px solid var(--stroke);border-radius:14px;padding:8px;color:var(--ink);cursor:pointer;font:inherit;position:relative}
 .lvl canvas{width:100%;aspect-ratio:9/14;max-height:150px;object-fit:cover;border-radius:9px;background:#14171f}
@@ -333,27 +322,15 @@ function bonusZone(){ const b={}; if(!ZONE.ok) return b;
   return b; }
 const textesBonus=b=>[b.tir&&'stand de tir : agents MO +20 % d’endurance',b.drone&&'drone : portée +0,2 et voit à travers le brouillard',b.atelier&&'atelier : barrières relevées 25 % plus vite',b.equip&&`équipement niveau ${b.equip} : MO +${(b.equip-1)*5} %`,b.combis&&`${b.combis} combi${b.combis>1?'s':''} en état : ${b.combis} barrage${b.combis>1?'s':''} possible${b.combis>1?'s':''}`].filter(Boolean);
 const upCost=tw=>tw.lvl>=3?null:Math.round(MEANS[tw.type].cout*LV.cout[tw.lvl]);
-/* Ce que change chaque niveau d'un moyen (fiche « Niveaux » ouverte par le petit bouton ? du bandeau). */
+/* Ce que change chaque niveau d'un moyen (dit dans le bandeau au premier toucher de « Renforcer »). */
 const pc=x=>Math.round(x*100)+' %', dec=x=>String(Math.round(x*100)/100).replace('.',',');
-const NOMS_NIV={peloton:['Un agent MO','Deux agents MO','Trois agents MO'],autopompe:['Une lance à eau','Deux lances à eau','Camion autopompe'],
-  barrage:['Une barrière Heras','Deux barrières Heras','Cheval de frise'],cavalerie:['Un cavalier','Deux cavaliers','Escouade montée (3)']};
 function effetsNiv(type,i){ const M=MEANS[type], eff=`efficacité ${pc(LV.dmg[i])}`, por=`portée ${dec(M.range+LV.rng[i])}`;
   if(type==='peloton') return [`retient ${AGENTS[i]} émeutier${AGENTS[i]>1?'s':''} à la fois`,eff,`endurance ${ENDU[i]}`];
   if(type==='autopompe') return [eff,por,...(i>1?['jet plus large (+20 %)']:[])];
   if(type==='barrage') return [`solidité ${BAR_HP[i]}`,`relevées en ${BAR_RELEVE[i]} s`,...(i>1?['barbelés : usent ceux qui poussent']:[])];
   return [`charge toutes les ${dec(M.cd[i])} s`,eff,por]; }
-const coutNiv=(type,i)=>i===0?MEANS[type].cout:Math.round(MEANS[type].cout*LV.cout[i]);
 /* Résumé de ce que la montée de niveau apporte (bandeau de confirmation). */
 function gainNiv(tw){ const a=effetsNiv(tw.type,tw.lvl-1), b=effetsNiv(tw.type,tw.lvl); return b.filter(x=>!a.includes(x)).join(', '); }
-function ficheNiveaux(type,lvl){
-  const el=$('panel'), avant=R.pause; R.pause=true; R.ficheNiv=true;
-  el.innerHTML=`<div><div class="ey" style="color:#62b0ff">Niveaux</div><h3>${MEANS[type].nom}</h3></div>
-    <div class="lvg">${[0,1,2].map(i=>`<div class="lvc ${lvl===i+1?'cur':lvl&&lvl===i?'nxt':''}"><span class="t">Niv. ${i+1}${lvl===i+1?' · actuel':lvl&&lvl===i?' · suivant':''}</span><b>${NOMS_NIV[type][i]}</b><span class="k">${i?'+':''}${coutNiv(type,i)} agents</span><ul>${effetsNiv(type,i).map(x=>`<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
-    <p style="color:var(--mute);font-size:12.5px">Efficacité : la force avec laquelle le moyen fait perdre leur détermination aux émeutiers. Pour monter de niveau : touche le moyen, puis « Renforcer ».</p>
-    <button class="btn primary" id="nivOk">Compris</button>`;
-  el.hidden=false;
-  $('nivOk').onclick=()=>{ el.hidden=true; R.pause=avant; R.ficheNiv=false; };
-}
 const sellVal=tw=>tw.spent;
 const rendement=()=>(R.tuto?1:REND[Math.max(0,Math.min(REND.length-1,R.wave-1))])*(R.maitrise>=3?1.15:1);
 
@@ -701,7 +678,6 @@ function majVitesse(){
   b.dataset.l=lbl; b.textContent=lbl; b.setAttribute('aria-pressed',x2); b.setAttribute('aria-label',x2?'Revenir à la vitesse normale (jeu en ×2)':'Passer en vitesse double');
   b.classList.toggle('x2',x2);
 }
-const lvq=(type,lvl)=>`<button type="button" class="lvq" data-lv="${type}" data-n="${lvl}" aria-label="Effets des niveaux : ${MEANS[type].nom}"><i aria-hidden="true">?</i>Niveaux</button>`;
 const sommCd=()=>R.mods&&R.mods.sommation?36:SOMM.cd;
 function tip(html){
   const el=$('tip');
@@ -714,13 +690,12 @@ function tip(html){
   if(R.somm.placing){ el.innerHTML='<span><b>Sommations :</b> touche le cortège. Ceux qui sont autour ralentissent 4 s et perdent de la détermination ; les plus découragés <b>font demi-tour</b> tout de suite.</span>'; return; }
   if(R.sel){ const tw=R.towers[R.sel.pad];
     if(R.sel.opt){ const o=R.sel.opt;
-      if(o==='up'){ el.innerHTML=`<span><b>${UPTXT[tw.type][tw.lvl]}</b> · <span class="c">${upCost(tw)} agents</span> — ${gainNiv(tw)}. <b>Touche encore pour confirmer.</b></span>${lvq(tw.type,tw.lvl)}`; return; }
+      if(o==='up'){ el.innerHTML=`<span><b>${UPTXT[tw.type][tw.lvl]}</b> · <span class="c">${upCost(tw)} agents</span> — ${gainNiv(tw)}. <b>Touche encore pour confirmer.</b></span>`; return; }
       if(o==='sell'){ el.innerHTML=`<span><b>Désengager</b> ce moyen · ses <span class="c">${sellVal(tw)} agents</span> reviennent en réserve dans ${RETOUR} s. <b>Touche encore pour confirmer.</b></span>`; return; }
       if(o==='rally'){ el.innerHTML=`<span><b>Déplacer</b> ${tw.type==='barrage'?'les barrières':'la ligne des agents'} ailleurs dans la rue, autour de l’emplacement (gratuit). <b>Touche encore</b>, puis touche la rue.</span>`; return; }
       if(o==='move'){ el.innerHTML='<span><b>Redéployer</b> la cavalerie sur un autre emplacement (gratuit, puis 10 s avant le prochain). <b>Touche encore</b>, puis touche l’emplacement.</span>'; return; }
-      if(o==='max'){ el.innerHTML=`<span><b>${MEANS[tw.type].nom}</b> : niveau maximum atteint.</span>${lvq(tw.type,tw.lvl)}`; return; }
-      const M=MEANS[o]; el.innerHTML=`<span><b>${M.nom}</b> · <span class="c">${M.cout} agents</span> — ${M.ds} <b>Touche encore pour poser.</b></span>${lvq(o,0)}`; return; }
-    el.innerHTML= tw ? `<span><b>${MEANS[tw.type].nom}</b> (niveau ${tw.lvl}) — ${tw.type==='cavalerie'?'<b>fais-la glisser</b> vers un emplacement libre pour la redéployer.':tw.type==='autopompe'?MEANS[tw.type].ds:'<b>fais glisser</b> pour déplacer '+(tw.type==='barrage'?'les barrières':'la ligne')+' dans la rue, autour de l’emplacement.'}</span>${lvq(tw.type,tw.lvl)}` : '<span>Choisis un moyen autour de l’emplacement.</span>'; return; }
+      const M=MEANS[o]; el.innerHTML=`<span><b>${M.nom}</b> · <span class="c">${M.cout} agents</span> — ${M.ds} <b>Touche encore pour poser.</b></span>`; return; }
+    el.innerHTML= tw ? `<span><b>${MEANS[tw.type].nom}</b> (niveau ${tw.lvl}) — ${tw.type==='cavalerie'?'<b>fais-la glisser</b> vers un emplacement libre pour la redéployer.':tw.type==='autopompe'?MEANS[tw.type].ds:'<b>fais glisser</b> pour déplacer '+(tw.type==='barrage'?'les barrières':'la ligne')+' dans la rue, autour de l’emplacement.'}</span>` : '<span>Choisis un moyen autour de l’emplacement.</span>'; return; }
   if(R.phase==='build') el.innerHTML='<span>Touche un <b>emplacement bleu</b> pour poser un moyen, puis lance la vague. Les cortèges suivent les rues jusqu’à l’<b>hôtel de ville</b>.</span>';
   else if(R.phase==='run') el.innerHTML=`<span>Repousser rend des agents, <b>de moins en moins</b> (${Math.round(rendement()*100)} % cette vague) : vise les <b>interventions groupées</b> et garde une réserve.</span>`;
   else el.innerHTML='';
@@ -766,7 +741,7 @@ function menuLayout(){
 function menuHit(L,x,y){ const dx=x-L.cx, dy=y-L.cy; if(Math.hypot(dx,dy)>L.r) return null; let a=Math.atan2(dy,dx); if(a>=Math.PI-1e-9) a=-Math.PI; return L.items.find(it=>a>=it.a0&&a<it.a1)||null; }
 function choose(it){
   const id=R.sel.pad;
-  if(R.sel.opt!==it.k){ R.sel.opt=it.k; tip(); if(!it.ok){ const nm=it.k==='up'||it.k==='max'?'Renforcer':MEANS[it.k].nom; const tw=R.towers[id]; tip(`<span><b>${nm}</b> : ${it.why||'pas assez d’agents'}.</span>${tw?lvq(tw.type,tw.lvl):lvq(it.k,0)}`); } return; }
+  if(R.sel.opt!==it.k){ R.sel.opt=it.k; tip(); if(!it.ok){ const nm=it.k==='up'||it.k==='max'?'Renforcer':MEANS[it.k].nom; const tw=R.towers[id]; tip(it.k==='up'?`<span><b>${UPTXT[tw.type][tw.lvl]}</b> — ${gainNiv(tw)}. Il faut <span class="c">${upCost(tw)} agents</span>.</span>`:`<span><b>${nm}</b> : ${it.why||'pas assez d’agents'}.</span>`); } return; }
   if(!it.ok) return;
   if(it.k==='rally'){ R.rally=id; R.sel=null; tip(); Shell.blip(600,.05,'square',.03); return; }
   if(it.k==='move'){ R.redeploy=id; R.sel=null; tip(); Shell.blip(600,.05,'square',.03); return; }
@@ -1575,7 +1550,7 @@ Shell.init({
     if(document.fonts) document.fonts.ready.then(resize);
     C.cv.addEventListener('pointerdown',onDown); C.cv.addEventListener('pointermove',onMove); C.cv.addEventListener('pointerup',onUp);
     C.cv.addEventListener('pointercancel',()=>{ C.drag=null; R.rally=null; R.dragCav=null; tip(); });
-    $('tip').addEventListener('click',e=>{ const v=e.target.closest('[data-lv]'); if(v){ if(!R.ficheNiv&&$('panel').hidden) ficheNiveaux(v.dataset.lv,+v.dataset.n); return; } const b=e.target.closest('[data-dir]'); if(b) choisirDir(b.dataset.dir); });
+    $('tip').addEventListener('click',e=>{ const b=e.target.closest('[data-dir]'); if(b) choisirDir(b.dataset.dir); });
     $('launch').onclick=()=>{ if(R.phase==='build'){ if(R.tuto===4) Shell.hideCoach(); launchWave(); } else if(R.phase==='run'&&R.nextIn!==null) launchWave(); };
     $('spd').onclick=()=>{ R.speed=R.speed===1?2:1; majVitesse(); };
     $('somm').onclick=()=>{ if(R.somm.cd>0||R.phase!=='run') return; R.somm.placing=!R.somm.placing; R.sel=null; tip(); ui(); };
