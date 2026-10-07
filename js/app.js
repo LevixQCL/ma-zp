@@ -979,7 +979,17 @@ async function onClick(e) {
         rerender(); break;
       }
       case 'quest-submit': await submitQuest(S.questPick); break;
-      case 'quest-mode': S.questMode = el.dataset.v; if (S.questMode === 'train' && !S.train) nouvelEntrainement(); S.questPick = null; rerender(); break;
+      case 'quest-mode': {
+        S.questMode = el.dataset.v; S.questPick = null;
+        // Entraînement : on ouvre d'abord le Challenge des mini-jeux (bien plus joué que l'entraînement aux énigmes).
+        if (S.questMode === 'train') S.trainVue = 'minijeux';
+        rerender();
+        if (S.questMode === 'train' && Date.now() - (S.playersLus || 0) > 60000) {
+          S.playersLus = Date.now();
+          try { S.players = await b.getPlayers(); if (S.route === 'quete' && S.trainVue === 'minijeux') rerender(); } catch (e) { /* hors ligne : on garde ceux connus */ }
+        }
+        break;
+      }
       case 'train-vue': {
         S.trainVue = el.dataset.v; if (S.trainVue === 'enigmes' && !S.train) nouvelEntrainement(); rerender(); window.scrollTo(0, 0);
         // Onglet Challenge : records des autres relus (au plus une fois par minute), puis nominettes redessinées.

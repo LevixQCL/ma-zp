@@ -194,7 +194,7 @@ export function renderQuete() {
   const train = S.questMode === 'train';
   const modes = `<div class="seg2" role="tablist" aria-label="Mode"><button type="button" role="tab" aria-selected="${!train}" data-action="quest-mode" data-v="jour">Énigmes du jour</button><button type="button" role="tab" aria-selected="${train}" data-action="quest-mode" data-v="train">Entraînement</button></div>`;
   const vueMj = train && S.trainVue === 'minijeux';
-  const sousOnglets = train ? `<div class="seg2" role="tablist" aria-label="Entraînement"><button type="button" role="tab" aria-selected="${!vueMj}" data-action="train-vue" data-v="enigmes">Énigmes</button><button type="button" role="tab" aria-selected="${vueMj}" data-action="train-vue" data-v="minijeux">🏆 Challenge</button></div>` : '';
+  const sousOnglets = train ? `<div class="seg2" role="tablist" aria-label="Entraînement"><button type="button" role="tab" aria-selected="${vueMj}" data-action="train-vue" data-v="minijeux">🏆 Challenge</button><button type="button" role="tab" aria-selected="${!vueMj}" data-action="train-vue" data-v="enigmes">Énigmes</button></div>` : '';
   if (vueMj) {
     return `<main class="screen quete">
     ${modes}
