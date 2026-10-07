@@ -83,6 +83,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .toast{position:fixed;left:50%;top:84px;transform:translate(-50%,-6px);display:flex;align-items:center;gap:8px;font:700 15px var(--f-body);padding:9px 16px;border-radius:999px;background:rgba(20,27,51,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--stroke-2);box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;transition:opacity .15s,transform .15s;pointer-events:none;white-space:nowrap;z-index:4}
 .toast::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+.toast{max-width:calc(100vw - 24px);white-space:normal;text-align:center;line-height:1.25}
 .toast.ok{color:var(--ok)} .toast.bad{color:var(--bad)} .toast.info{color:var(--accent)}
 
 /* overlay cards */
@@ -250,10 +251,13 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .embed .hudrow .pillh{padding:3px 9px 3px 7px;font-size:12px}
 .embed .hudrow .pillh b{font-size:15px}
 .embed .hudrow .pillh svg{width:16px;height:16px}
-.embed .tip{min-height:44px;font-size:12.5px;line-height:1.3;padding:5px 10px;border-radius:10px}
+.embed .tip{min-height:0;font-size:12.5px;line-height:1.3;padding:5px 10px;border-radius:10px}
 .embed .btn.pw,.embed .btn.spd{padding:8px 11px;font-size:13.5px}
 .embed .btn.go{padding:9px 12px;font-size:14px}
 .embed .field canvas#cv{border-radius:12px}
+/* hauteur fixe : la carte ne change plus de taille quand le texte d'aide change (le texte se resserre s'il est long) */
+.tip{height:66px!important;min-height:0!important;overflow:hidden;align-items:center}
+.tip>*{transform-origin:left center}
 
 </style>
 </head>
@@ -1331,6 +1335,12 @@ function majVitesse(){
   b.classList.toggle('x2',x2);
 }
 const sommCd=()=>R.mods&&R.mods.sommation?36:SOMM.cd;
+function ajusteTip(){
+  const el=$('tip'), c=el.firstElementChild; if(!c) return;
+  c.style.zoom=''; let z=1;
+  while(z>.7&&(el.scrollHeight>el.clientHeight+1||el.scrollWidth>el.clientWidth+1)){ z-=.05; c.style.zoom=z; }
+}
+{ const el=document.getElementById('tip'); if(el) new MutationObserver(ajusteTip).observe(el,{childList:true}); }
 function tip(html){
   if(R.sim) return;
   const el=$('tip');

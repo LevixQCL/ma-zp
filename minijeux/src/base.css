@@ -71,6 +71,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .toast{position:fixed;left:50%;top:84px;transform:translate(-50%,-6px);display:flex;align-items:center;gap:8px;font:700 15px var(--f-body);padding:9px 16px;border-radius:999px;background:rgba(20,27,51,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--stroke-2);box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;transition:opacity .15s,transform .15s;pointer-events:none;white-space:nowrap;z-index:4}
 .toast::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+.toast{max-width:calc(100vw - 24px);white-space:normal;text-align:center;line-height:1.25}
 .toast.ok{color:var(--ok)} .toast.bad{color:var(--bad)} .toast.info{color:var(--accent)}
 
 /* overlay cards */
