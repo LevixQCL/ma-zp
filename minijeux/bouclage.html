@@ -597,13 +597,13 @@ const MAPS=[
 
 /* Moyens de maintien de l'ordre. dps = perte de détermination par seconde selon le type d'émeutier. */
 const MEANS={
-  peloton:{nom:'Peloton MO',cout:5,range:1.8,dps:{manif:14,casseur:11,meneur:10,bloc:7},
+  peloton:{nom:'Peloton MO',cout:5,range:1.8,dps:{manif:14,casseur:11,meneur:10,bloc:7,tracteur:0,sono:0,car:0},
     ds:'Les agents descendent sur la chaussée et <b>retiennent</b> chacun un émeutier au bouclier. Un agent de plus à chaque niveau.'},
-  autopompe:{nom:'Lance à eau / autopompe',cout:9,range:2.1,splash:.8,dmg:15,cd:1.6,recul:.45,mult:{manif:1,casseur:.8,meneur:.8,bloc:1.6},
+  autopompe:{nom:'Lance à eau / autopompe',cout:9,range:2.1,splash:.8,dmg:15,cd:1.6,recul:.45,mult:{manif:1,casseur:.8,meneur:.8,bloc:1.6,tracteur:.15,sono:.45,car:.3},
     ds:'<b>Disperse</b> : le jet fait reculer un groupe, lui fait perdre sa <b>cohésion</b> (plus facile à repousser) et <b>fait éclater</b> les blocs compacts entamés.'},
   barrage:{nom:'Barrage (combi + barrières)',cout:6,range:1.8,
     ds:'Barrières en travers de la rue : elles <b>bloquent</b> le cortège jusqu’à céder, puis le combi les relève. Niveau 3 : <b>cheval de frise</b>, bien plus solide, ses barbelés découragent ceux qui poussent.'},
-  cavalerie:{nom:'Cavalerie',cout:8,range:2.6,cd:[4,3.3,2.6],choc:{manif:16,casseur:20,meneur:28,bloc:10},
+  cavalerie:{nom:'Cavalerie',cout:8,range:2.6,cd:[4,3.3,2.6],choc:{manif:16,casseur:20,meneur:28,bloc:10,tracteur:3,sono:8,car:5},
     ds:'<b>Charge</b> dans le groupe le plus dense (meneurs en priorité). Seul moyen <b>mobile</b> : fais-la glisser vers un autre emplacement pour la redéployer.'}};
 const LV={dmg:[1,1.5,2.1],rng:[0,.2,.35],cout:[0,1,1.5]};
 const UPTXT={peloton:['','Deux agents MO','Trois agents MO'],autopompe:['','Deux lances à eau','Camion autopompe'],
@@ -613,7 +613,20 @@ const FOES={
   manif:{nom:'Émeutier',hp:24,v:.9,gain:1,vies:1,ds:'Avance en masse. Le <b>peloton MO</b> en repousse plusieurs à la fois.'},
   casseur:{nom:'Casseur',hp:18,v:1.7,gain:1,vies:2,ds:'<b>Rapide</b> et agressif : ses projectiles renversent les barrières et <b>désorganisent</b> tes moyens quelques secondes. Coûte <b>2</b> s’il passe.'},
   meneur:{nom:'Meneur',hp:70,v:.85,gain:3,vies:1,aura:1.3,ds:'Au mégaphone, il <b>galvanise</b> ceux qui l’entourent : plus rapides et plus durs à repousser. Vise-le avec la <b>cavalerie</b>.'},
-  bloc:{nom:'Bloc compact',hp:160,v:.55,gain:5,vies:3,ds:'Groupe serré derrière une banderole : <b>très résistant</b>, coûte <b>3</b> s’il passe. Entamé, un jet d’<b>autopompe</b> le fait <b>éclater</b> en petits groupes.'}};
+  bloc:{nom:'Bloc compact',hp:160,v:.55,gain:5,vies:3,ds:'Groupe serré derrière une banderole : <b>très résistant</b>, coûte <b>3</b> s’il passe. Entamé, un jet d’<b>autopompe</b> le fait <b>éclater</b> en petits groupes.'},
+  tracteur:{nom:'Tracteur',hp:90,v:.5,gain:6,vies:4,ds:'Convoi agricole : <b>lent mais presque insensible</b> à l’eau, aux chevaux et aux boucliers. Il force les barrières et <b>abrite</b> ceux qui le suivent. Arrête-le avec un <b>barrage</b> et amène le <b>commandant</b> tout près : il <b>négocie</b>, et le tracteur fait demi-tour. Coûte <b>4</b> s’il passe.'},
+  sono:{nom:'Camion sono',hp:65,v:.6,gain:5,vies:3,aura:1.7,ds:'Tant qu’il roule, sa musique <b>galvanise</b> tout le cortège autour de lui. Arrêté par un <b>barrage</b> ou une sommation, il se tait : poste alors le <b>commandant</b> à côté pour <b>négocier</b> son départ. Coûte <b>3</b> s’il passe.'},
+  car:{nom:'Car de supporters',hp:55,v:.85,gain:5,vies:3,charge:9,ds:'Il s’arrête à mi-parcours (ou devant un barrage) et, après quelques secondes, <b>débarque d’un coup</b> une foule de supporters. Poste le <b>commandant</b> là où il s’arrête : s’il négocie à temps, le car repart sans débarquer.'}};
+/* Boss (véhicules) : ni retenus par le peloton ni reculés par l'eau ou les chevaux ; on ne les repousse pas, on les arrête
+   (barrage, sommation) puis le commandant posté à côté négocie leur départ. */
+const VEH=new Set(['tracteur','sono','car']), veh=u=>VEH.has(u.type);
+const BOSS_NOM={tracteur:['un tracteur','tracteurs'],sono:['un camion sono','camions sono'],car:['un car de supporters','cars de supporters']};
+const VIMG={tracteur:{h:.82,gauche:true,r:1.72},sono:{h:1.08,gauche:false,r:1.1},car:{h:.9,gauche:true,r:1.5}};
+const TOUR_DECALE=1;
+// Véhicules en tête de la dernière vague, par quartier (1er tour, puis tours suivants)
+const BOSS_TOUR1={4:['tracteur'],7:['sono'],8:['car'],10:['tracteur','sono']};
+const BOSS_TOUR2={2:['sono'],4:['tracteur','tracteur'],5:['car'],7:['sono','tracteur'],8:['car','car'],10:['tracteur','sono','car']};
+const TRACT={nego:15,portee:1.4,abri:.5,suite:.7,megaphone:3,arretCar:2.5};
 /* Chaque vague a une intention : prise de contact, pression, groupes compacts, meneurs, casseurs, nuit tendue. */
 const WAVES=[
   [['manif',9]],
@@ -624,7 +637,7 @@ const WAVES=[
   [['manif',12],['bloc',2],['meneur',2],['casseur',8],['manif',8],['bloc',2],['meneur',1]]];
 const WAVE_NOM=['Prise de contact','Pression','Groupes compacts','Meneurs','Casseurs','Nuit tendue'];
 /* Économie : les agents engagés sont immobilisés ; repousser rapporte de moins en moins au fil des vagues. */
-const REND=[1,.6,.42,.32,.26,.22,.2,.18], RETOUR=6, COMBO={n:4,dt:1.2,r:1.6,gain:1}, BLOC_ECLATE={seuil:.6,n:3,gain:3};
+const REND=[.85,.52,.37,.29,.24,.2,.18,.16], RETOUR=6, COMBO={n:4,dt:1.2,r:1.6,gain:1}, BLOC_ECLATE={seuil:.6,n:3,gain:3};
 const DIR={tient:{nom:'On tient',c:'+2 cordon',ds:'+2 au cordon'},renfort:{nom:'Renfort',c:'+6 agents · vague +30 %',ds:'+6 agents tout de suite, mais la vague suivante est 30 % plus nombreuse'},
   pousse:{nom:'On pousse',c:'+10 si 0 perte · plus durs',ds:'+10 agents si la vague suivante passe sans perte, mais ses émeutiers sont plus déterminés'}};
 const MODS={rapides:'Émeutiers plus rapides',compacts:'Cortèges très soudés',sommation:'Sommations moins fréquentes',barricade:'Un emplacement est en feu'};
@@ -774,7 +787,7 @@ function resetGame(cfg,tuto,mapIdx){
   R.cfg=cfg; if(mapIdx&&typeof mapIdx==='object'){ R.map=-1; R.M=mapIdx; } else { R.map=mapIdx||0; R.M=MAPDATA[R.map]; } R.pads=R.M.pads;
   R.tuto=tuto?1:0; R.wave=0; R.units=[]; R.spawnQ=[]; R.fx=[]; R.jets=[]; R.towers={}; R.sel=null; R.disp=0; R.leaks={}; R.seen=new Set(); R.pause=false;
   R.somm={cd:0,placing:false,fx:[]}; R.flaques=[]; R.projs=[]; $('panel').hidden=true;
-  R.parts=[]; R.fumees=[]; R.vuFumee=false; R.frac=0;
+  R.parts=[]; R.introQ=[]; R.introOuverte=false; R.fumees=[]; R.vuFumee=false; R.frac=0;
   { const hb=hallBox(R.M), hx=hb.x0+hb.w/2, hy=MH-2.6; R.cmd=tuto?null:{x:hx,y:hy,tx:hx,ty:hy,hx,hy,cd:0,repli:0,shoutT:-9,cheerT:-9,f:1,walk:false}; } R.maitrise=0; R.waveLoss=0; R.retours=[]; R.dir=null; R.dirOffer=false; R.recent=[]; R.redeploy=null; R.rally=null; R.vHp=1;
   R.stats={rec:0,blocs:0,meneurs:0,combos:0,best:null};
   // Challenge : consignes qui changent les règles à partir du niveau 6
@@ -806,9 +819,15 @@ function launchWave(){
   if(dir==='renfort') groups=groups.map(([t,n])=>[t,Math.round(n*1.3)]);
   // Au-delà de la 6e vague (Challenge), la dernière vague revient, plus fournie.
   if(!R.tuto&&R.wave>WAVES.length) groups=groups.map(([t,n])=>[t,Math.round(n*(1+.15*(R.wave-WAVES.length)))]);
+  // Boss : convoi de tracteurs en tête de la dernière vague, le cortège suit à l'abri
+  const boss=!R.tuto&&R.wave===R.waves?(R.cfg.boss||[]):[];
+  if(boss.length){ const cpt={}; boss.forEach(b=>cpt[b]=(cpt[b]||0)+1);
+    groups=[...Object.entries(cpt),...groups];
+    const txt=Object.entries(cpt).map(([b,n])=>n>1?`${n} ${BOSS_NOM[b][1]}`:BOSS_NOM[b][0]).join(' et ');
+    if(!R.sim) setTimeout(()=>Shell.toast(`⚠️ Signalé en tête du cortège : ${txt}`,'bad'),900); }
   // Répartition des émeutiers entre les cortèges (tourniquet pondéré), chaque cortège avance à son rythme.
   const W=R.M.w, acc=W.map(()=>0), tc=W.map(()=>Math.max(R.t,R.waveEnd)+.3), gap=R.cfg.gap, sum=W.reduce((a,b)=>a+b,0);
-  const fac={manif:1,casseur:.6,meneur:1.5,bloc:3};
+  const fac={manif:1,casseur:.6,meneur:1.5,bloc:3,tracteur:4,sono:4,car:6};
   for(const [type,n] of groups) for(let i=0;i<n;i++){
     W.forEach((w,j)=>acc[j]+=w); let pi=0; acc.forEach((a,j)=>{ if(a>acc[pi]) pi=j; }); acc[pi]-=sum;
     R.spawnQ.push({type,pi,at:tc[pi]}); tc[pi]+=gap*fac[type]*W.length/sum*W[pi]; }
@@ -837,11 +856,17 @@ function choisirDir(k){ if(!R.dirOffer) return; R.dirOffer=false; R.dir={k,wave:
   Shell.toast(`Directeur : « ${DIR[k].nom} »`,'info'); Shell.good(); tip(); ui(); }
 let UID=0;
 const HOOD=['#c0392b','#2e86c1','#27ae60','#d4a017','#8e44ad','#e67e22','#7f8c8d','#16a085','#b03a5b'];
-function addUnit(type,pi){ const F=FOES[type], hp=F.hp*R.cfg.hp*R.M.hp*(R.cmd?CMD.hp:1)*(R.vHp||1)*(R.wave>WAVES.length?1+.06*(R.wave-WAVES.length):1);
+function addUnit(type,pi){ const F=FOES[type], hp=F.hp*R.cfg.hp*(VEH.has(type)?1:R.M.hp)*(R.cmd?CMD.hp:1)*(R.vHp||1)*(R.wave>WAVES.length?1+.06*(R.wave-WAVES.length):1);
   R.units.push({id:UID++,born:R.t,jit:Math.random(),type,pi,d:0,hp,max:hp,state:'go',slow:0,boost:false,somUntil:0,lo:type==='manif'||type==='casseur'?(Math.random()-.5)*.7:(Math.random()-.5)*.2,
     col:type==='casseur'?'#17181c':type==='meneur'?'#e8732a':pick(HOOD),flare:type==='casseur'&&Math.random()<.35,bob:Math.random()*6,ban:pick(['#c0392b','#d4a017','#2e86c1','#27ae60','#8e44ad','#e8e8e8'])});
   if(!R.seen.has(type)){ R.seen.add(type); if(!R.tuto&&!R.sim) introFoe(type); }
   return R.units[R.units.length-1];
+}
+/* Le car arrêté débarque ses supporters d'un coup, puis repart à vide. */
+function debarque(c){
+  c.vide=true; c.state='flee'; c.turnT=R.t; c.hp=0; const n=Math.round(FOES.car.charge*(R.cfg.boss&&R.cfg.boss.length>2?1.2:1));
+  for(let i=0;i<n;i++){ const u=addUnit('manif',c.pi); u.d=Math.max(0,c.d-.5+i*.09); u.p=upos(u); u.born=R.t-.1+i*.03; }
+  fx(c.p.x,c.p.y-1,'Supporters débarqués !','bad'); if(!R.sim){ Shell.bad(); Shell.shake(); }
 }
 /* Un bloc compact entamé que le jet touche éclate en petits groupes déjà dispersés. */
 function eclate(b){
@@ -861,8 +886,8 @@ function upos(u){ const P=R.M.P[u.pi], p=posOn(P,u.d), o=u.lo*(u.state==='flee'?
 function blocksFor(x,y){ const out=[]; R.M.P.forEach((P,pi)=>{ const n=nearestOn(P,x,y); if(n.dist<.6) out.push({pi,d:n.d}); }); return out; }
 function blockOn(tw,pi){ const b=tw.block&&tw.block.find(b=>b.pi===pi); return b?b.d:null; }
 const BAR_HP=[150,260,520], BAR_RELEVE=[8,6,5];
-const PUSH={manif:3,casseur:4,meneur:2,bloc:24};          // poussée sur une barrière (points/s)
-const STRAIN={manif:5,casseur:6,meneur:4,bloc:22};        // usure de l'endurance d'un agent MO au contact (points/s)
+const PUSH={manif:3,casseur:4,meneur:2,bloc:24,tracteur:10,sono:6,car:8};          // poussée sur une barrière (points/s)
+const STRAIN={manif:5,casseur:6,meneur:4,bloc:22,tracteur:0,sono:0,car:0};        // usure de l'endurance d'un agent MO au contact (points/s)
 const AGENTS=[1,2,3], ENDU=[100,115,130];
 function setupTower(tw,id){
   const P=padOf(id);
@@ -890,16 +915,19 @@ function step(dt){
   const live=R.units.filter(u=>u.state==='go');
   // cohésion : un émeutier entouré résiste mieux ; dispersé (jet d'eau), il est plus facile à repousser
   const cohR=R.mods.compacts?.75:.6, cohMax=R.mods.compacts?.55:.4;
-  for(const u of live){ if(u.dispUntil>R.t){ u.coh=0; continue; } let n=0; for(const o of live) if(o!==u&&Math.abs(o.p.x-u.p.x)<cohR&&Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<cohR) n++; u.coh=n>=2?Math.min(cohMax,.1*n):0; }
-  if(R.meteo==='pluie') for(const u of live) if(!u.held&&u.type!=='bloc') u.hp-=.35*dt;
-  const hit=(u,v,choc)=>{ u.hp-=v*(u.boost?.7:1)*(u.dispUntil>R.t?1.25:1-(u.coh||0)); if(choc) u.hitT=R.t; };
+  for(const u of live){ if(u.dispUntil>R.t||veh(u)){ u.coh=0; continue; } let n=0; for(const o of live) if(o!==u&&!veh(o)&&Math.abs(o.p.x-u.p.x)<cohR&&Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<cohR) n++; u.coh=n>=2?Math.min(cohMax,.1*n):0; }
+  if(R.meteo==='pluie') for(const u of live) if(!u.held&&u.type!=='bloc'&&!veh(u)) u.hp-=.35*dt;
+  const hit=(u,v,choc)=>{ u.hp-=v*(u.boost?.7:1)*(u.abri?TRACT.abri:1)*(u.dispUntil>R.t?1.25:1-(u.coh||0)); if(choc) u.hitT=R.t; };
   // meneurs (galvanisent), sommations et flaques (ralentissent)
   const leaders=live.filter(u=>u.type==='meneur');
   R.flaques=(R.flaques||[]).filter(f=>R.t<f.until);
   // fumigènes : dans la fumée, les moyens ne voient plus personne (ni jet ni charge ; le peloton tâtonne)
   R.fumees=(R.fumees||[]).filter(f=>R.t<f.until);
   for(const u of live) u.cache=R.fumees.some(f=>R.t-f.t0>.3&&Math.hypot(u.p.x-f.x,(u.p.y-f.y)/.8)<f.r);
-  for(const u of live){ u.boost=u.type!=='meneur'&&leaders.some(m=>Math.hypot(m.p.x-u.p.x,m.p.y-u.p.y)<FOES.meneur.aura);
+  const tracts=live.filter(u=>u.type==='tracteur'), vehs=live.filter(veh);
+  for(const u of live) u.abri=!veh(u)&&tracts.some(t=>t.pi===u.pi&&t.d-u.d>0&&t.d-u.d<1.3);
+  const sonos=live.filter(u=>u.type==='sono'&&!u.atBar&&!(u.somUntil>R.t)); for(const so of sonos) so.music=R.t;
+  for(const u of live){ u.boost=u.type!=='meneur'&&!veh(u)&&(leaders.some(m=>Math.hypot(m.p.x-u.p.x,m.p.y-u.p.y)<FOES.meneur.aura)||sonos.some(m=>Math.hypot(m.p.x-u.p.x,m.p.y-u.p.y)<FOES.sono.aura));
     u.slow=u.somUntil>R.t?.6:0; if(R.flaques.some(f=>Math.hypot(f.x-u.p.x,(f.y-u.p.y)/.7)<f.r)) u.slow=Math.max(u.slow,.3); u.atBar=null; }
   const towers=Object.entries(R.towers);
   if(R.cmd&&!(R.cmd.repli>R.t)&&live.filter(u=>Math.hypot(u.p.x-R.cmd.x,u.p.y-R.cmd.y)<.7).length>=CMD.deborde){ R.cmd.repli=R.t+CMD.repli; R.cmd.tx=R.cmd.hx; R.cmd.ty=R.cmd.hy; fx(R.cmd.x,R.cmd.y-.9,'Commandant débordé : repli','bad'); }
@@ -913,8 +941,15 @@ function step(dt){
     if(u.held) continue;                                   // retenu par un agent MO
     let nd=u.d+F.v*R.M.P[u.pi].k*(R.mods.rapides?1.15:1)*(1-u.slow)*(u.boost?1.3:1)*dt;
     for(const [id,tw] of towers){ if(tw.type!=='barrage'||!tw.bar.up) continue; const db=blockOn(tw,u.pi); if(db===null||db<u.d-.05) continue;
-      const stop=db-.24-u.jit*.45; if(nd>=stop){ nd=Math.max(u.d,stop); u.atBar=id; } }
+      const stop=veh(u)?db-.62:db-.24-u.jit*.45; if(nd>=stop){ nd=Math.max(u.d,stop); u.atBar=id; } }
+    if(!veh(u)&&u.state==='go') for(const t of vehs) if(t.pi===u.pi&&t.d>u.d+.1) nd=Math.min(nd,Math.max(u.d,t.d-TRACT.suite-u.jit*.3));
+    // car de supporters : s'arrête à mi-parcours ou au barrage, puis débarque
+    if(u.type==='car'&&u.state==='go'&&!u.vide){ const arr=R.M.P[u.pi].len*.45; if(nd>=arr||u.atBar){ nd=Math.min(nd,Math.max(u.d,arr)); u.stopT??=R.t;
+      if(R.t-u.stopT>TRACT.arretCar){ debarque(u); continue; } } }
     u.d=nd; if(u.d>=R.M.P[u.pi].len) leak(u); }
+  // négociation : le commandant, posté à côté d'un tracteur arrêté (barrage ou sommation), le convainc de faire demi-tour
+  if(R.cmd&&!(R.cmd.repli>R.t)&&!R.cmd.walk) for(const t of vehs){ if(!(t.atBar||t.somUntil>R.t||t.stopT!=null)||Math.hypot(t.p.x-R.cmd.x,t.p.y-R.cmd.y)>TRACT.portee) continue;
+    t.hp-=TRACT.nego*dt; t.nego=R.t; }
   // poussée sur les barrières
   for(const u of live){ if(!u.atBar||u.alive===false) continue; const tw=R.towers[u.atBar]; if(!tw||!tw.bar.up) continue;
     tw.bar.hp-=PUSH[u.type]*(u.boost?1.3:1)*dt; if(tw.lvl>2) hit(u,4*dt);
@@ -930,7 +965,7 @@ function step(dt){
         if(a.st==='back'){ mv(P.x,P.y,2.2); if(R.t>a.until){ a.st='ready'; a.e=a.max; } return; }
         if(a.st==='ready'){ a.e=Math.min(a.max,a.e+6*dt); mv(sl.x,sl.y,2.6);
           // engage le premier émeutier qui arrive sur sa ligne
-          let best=null; for(const u of live){ if(u.held||u.alive===false) continue; const db=blockOn(tw,u.pi); if(db===null) continue; if(u.d<db-.9||u.d>db+.25) continue; if(!best||u.d>best.d) best=u; }
+          let best=null; for(const u of live){ if(u.held||u.alive===false||veh(u)) continue; const db=blockOn(tw,u.pi); if(db===null) continue; if(u.d<db-.9||u.d>db+.25) continue; if(!best||u.d>best.d) best=u; }
           if(best){ a.u=best; best.held=a; a.st='eng'; } return; }
         if(a.st==='eng'){ const u=a.u; const L=mv(u.p.x,u.p.y,2.8);
           if(L<.42){ hit(u,(u.cache?.5:1)*M.dps[u.type]*k*(R.bonus&&R.bonus.equip?1+.05*(R.bonus.equip-1):1)*dt); a.e-=STRAIN[u.type]*(u.boost?1.3:1)*dt; a.push=R.t; }
@@ -940,7 +975,7 @@ function step(dt){
     if(tw.type==='barrage'){ continue; }
     if(tw.type==='cavalerie'){
       if(tw.charge){ const c=tw.charge, k2=(R.t-c.t0)/c.dur;
-        if(!c.hit&&k2>=.42){ c.hit=true; for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-c.x,o.p.y-c.y)<=.75){ hit(o,M.choc[o.type]*k,true); if(!o.held) o.d=Math.max(0,o.d-(o.type==='bloc'?.2:.6)); } Shell.blip(140,.12,'triangle',.05);
+        if(!c.hit&&k2>=.42){ c.hit=true; for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-c.x,o.p.y-c.y)<=.75){ hit(o,M.choc[o.type]*k,true); if(!o.held&&!veh(o)) o.d=Math.max(0,o.d-(o.type==='bloc'?.2:.6)); } Shell.blip(140,.12,'triangle',.05);
           puff(c.x,c.y,14,{v:1.1,r:.07,grow:2.5,life:.7,col:'rgba(150,140,125,',flat:.35}); }
         if(k2>=1) tw.charge=null; continue; }
       if(!inR.length||tw.cd>0) continue;
@@ -949,7 +984,7 @@ function step(dt){
       tw.charge={t0:R.t,dur:1.3,x:best.p.x,y:best.p.y,hit:false}; tw.cd=M.cd[tw.lvl-1]; tw.tgt=[best]; continue; }
     if(tw.type==='autopompe'){ if(!inR.length) continue; tw.tgt=[inR[0]]; if(tw.cd>0) continue;
       let best=inR[0], bn=-1; for(const u of inR){ const n=live.filter(o=>Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<=M.splash).length; if(n>bn){ bn=n; best=u; } }
-      for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-best.p.x,o.p.y-best.p.y)<=M.splash*(tw.lvl>2?1.2:1)){ hit(o,M.dmg*k*M.mult[o.type]*(R.meteo==='pluie'?.85:1),true); o.dispUntil=R.t+4; if(!o.held) o.d=Math.max(0,o.d-M.recul*(o.type==='bloc'?.35:1));
+      for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-best.p.x,o.p.y-best.p.y)<=M.splash*(tw.lvl>2?1.2:1)){ hit(o,M.dmg*k*M.mult[o.type]*(R.meteo==='pluie'?.85:1),true); o.dispUntil=R.t+4; if(!o.held&&!veh(o)) o.d=Math.max(0,o.d-M.recul*(o.type==='bloc'?.35:1));
         if(o.type==='bloc'&&o.hp>0&&o.hp<o.max*BLOC_ECLATE.seuil) eclate(o); }
       R.flaques.push({x:best.p.x,y:best.p.y+.05,r:.5+.1*tw.lvl,until:R.t+(R.meteo==='pluie'?9:6),t:R.t});
       tw.cd=M.cd; tw.tgt=[best]; R.jets.push({id,x1:best.p.x,y1:best.p.y,t:R.t,lvl:tw.lvl}); Shell.blip(180,.15,'sawtooth',.02);
@@ -978,6 +1013,7 @@ function step(dt){
   // ceux qui renoncent font demi-tour : agents récupérés
   for(const u of live){ if(u.hp<=0&&u.state==='go'&&u.alive!==false){ u.state='flee'; u.turnT=R.t; puff(u.p.x,u.p.y,6,{v:.5,r:.05,grow:1.5,life:.5,flat:.3}); if(u.held){ u.held.u=null; u.held.st='ready'; u.held=null; } R.disp++; const F=FOES[u.type];
     if(u.type==='meneur') R.stats.meneurs++;
+    if(veh(u)){ fx(u.p.x,u.p.y-1,'Négociation réussie : demi-tour','info'); if(!R.sim) Shell.toast(`${FOES[u.type].nom} : demi-tour négocié`,'ok'); }
     gagne(F.gain,u.p.x,u.p.y); Shell.good();
     // intervention maîtrisée : plusieurs émeutiers repoussés presque en même temps au même endroit
     R.recent=R.recent.filter(r=>R.t-r.t<COMBO.dt); R.recent.push({t:R.t,x:u.p.x,y:u.p.y});
@@ -1046,14 +1082,15 @@ function recordQuartier(m,score){
 
 /* ───── fiches et choix du quartier ───── */
 function introFoe(type){
+  if(R.introOuverte){ (R.introQ=R.introQ||[]).push(type); return; } R.introOuverte=true;
   const F=FOES[type], el=$('panel'); R.pause=true;
   el.innerHTML=`<div class="hd"><canvas class="ic" id="nfc"></canvas><div><div class="ey">Nouveau dans le cortège</div><h3>${F.nom}</h3></div></div>
-    <p>${F.ds}</p><p style="color:var(--mute);font-size:13px">Repoussé : <b>+${F.gain} agent${F.gain>1?'s':''}</b> · S’il passe : <b>−${F.vies}</b> au cordon</p>
+    <p>${F.ds}</p><p style="color:var(--mute);font-size:13px">${VEH.has(type)?'Demi-tour négocié':'Repoussé'} : <b>+${F.gain} agent${F.gain>1?'s':''}</b> · S’il passe : <b>−${F.vies}</b> au cordon</p>
     <button class="btn primary" id="nfOk">Compris</button>`;
   el.hidden=false;
   const c=$('nfc'); c.width=128; c.height=128; const g=c.getContext('2d'); const z=type==='bloc'?140:170; g.setTransform(z,0,0,z,64,type==='bloc'?110:118);
-  drawRioter(g,{type,id:1,f:1,col:'#c0392b',flare:type==='casseur',bob:0,ban:'#c0392b',state:'go'},.3);
-  $('nfOk').onclick=()=>{ el.hidden=true; R.pause=false; };
+  if(VEH.has(type)){ g.setTransform(62,0,0,62,64,104); vehImg(g,type,-1,VIMG[type].h); } else drawRioter(g,{type,id:1,f:1,col:'#c0392b',flare:type==='casseur',bob:0,ban:'#c0392b',state:'go'},.3);
+  $('nfOk').onclick=()=>{ el.hidden=true; R.pause=false; R.introOuverte=false; const q=R.introQ&&R.introQ.shift(); if(q) introFoe(q); };
 }
 function chooseMap(cfg){
   const el=$('panel'), c=store.get('campagne',{});
@@ -1162,7 +1199,7 @@ function newTower(id,type){ const P=padOf(id), tw={type,lvl:1,spent:MEANS[type].
 /* Sommations : ralentit et décourage ; les émeutiers déjà à bout (pas les meneurs ni les blocs) font demi-tour sur-le-champ. */
 function sommer(x,y){
   R.units.filter(u=>u.state==='go'&&u.p&&Math.hypot(u.p.x-x,u.p.y-y)<=SOMM.rayon).forEach(u=>{ u.somUntil=R.t+SOMM.dure; u.hp-=SOMM.perte;
-    if(u.type!=='meneur'&&u.type!=='bloc'&&u.hp<=u.max*SOMM.demiTour) u.hp=0; });
+    if(u.type!=='meneur'&&u.type!=="bloc"&&!veh(u)&&u.hp<=u.max*SOMM.demiTour) u.hp=0; });
   R.somm.fx.push({x,y,t:R.t}); R.somm.cd=sommCd(); }
 /* Cliquer-glisser (doigt ou souris) : on attrape un peloton MO ou un barrage (son emplacement ou sa ligne dans la rue)
    et on le lâche sur la rue, dans le cercle ; on attrape la cavalerie et on la lâche sur un emplacement libre.
@@ -1194,7 +1231,7 @@ function onUp(e){ const D=C.drag; C.drag=null; if(!D) return;
     if(best&&tw){ if(tw.transit||tw.charge) tip('<span>La cavalerie est déjà en mouvement.</span>'); else if(tw.moveCd>R.t) tip(`<span>La cavalerie souffle : redéploiement possible dans <b>${Math.ceil(tw.moveCd-R.t)} s</b>.</span>`); else if(redeploy(D.id,best.id)) Shell.good(); return; } }
   tip(); }
 function ordreCmd(){ const c=R.cmd; if(!c||c.cd>0||c.repli>R.t||R.phase!=='run') return false;
-  R.units.filter(u=>u.state==='go'&&u.p&&Math.hypot(u.p.x-c.x,u.p.y-c.y)<=CMD.r).forEach(u=>{ u.somUntil=R.t+CMD.dure; u.hp-=CMD.perte; if(u.type!=='meneur'&&u.type!=='bloc'&&u.hp<=u.max*SOMM.demiTour) u.hp=0; });
+  R.units.filter(u=>u.state==='go'&&u.p&&Math.hypot(u.p.x-c.x,u.p.y-c.y)<=CMD.r).forEach(u=>{ u.somUntil=R.t+CMD.dure; u.hp-=CMD.perte*(veh(u)?TRACT.megaphone:1); if(u.type!=='meneur'&&u.type!=="bloc"&&!veh(u)&&u.hp<=u.max*SOMM.demiTour) u.hp=0; });
   c.cd=CMD.cd; c.shoutT=R.t; R.somm.fx.push({x:c.x,y:c.y,t:R.t}); if(!R.sim) Shell.blip(330,.35,'square',.05); return true; }
 function onTap(e){
   const r=C.cv.getBoundingClientRect(), x=(e.clientX-r.left)/C.s, y=(e.clientY-r.top)/C.s;
@@ -1526,6 +1563,7 @@ function drawUnit(g,u,t){
   g.globalAlpha=Math.min(1,vie/.35)*(u.state==='flee'?Math.max(.4,1-tourne*.35):1);
   if(coup<.18&&u.p){ const k=1-coup/.18, a=u.p.ang; g.translate(-Math.cos(a)*.09*k,-Math.sin(a)*.09*k); }
   if(tourne<.28){ const k=tourne/.28; g.scale(Math.abs(Math.cos(k*Math.PI))*.9+.1,1); g.translate(0,-Math.sin(k*Math.PI)*.12); }
+  if(veh(u)){ drawVeh(g,u,t); g.restore(); return; }
   const vit=u.state==='flee'?9:u.type==='casseur'?7:u.type==='bloc'?3:4.5, fr=Math.floor(t*vit*(u.type==='manif'?2:1)+u.bob)%4; let flip=(u.f||1)<0;
   const lance=u.type==='casseur'&&u.state==='go'&&R.t-(u.throwT??-9)<.4&&setOk('casL'), fuit=u.type==='manif'&&u.state==='flee'&&setOk('fuite-'+EMC[(u.id||0)%EMC.length]);
   let nm=u.type==='manif'?(fuit?'fuite-':'em-')+EMC[(u.id||0)%EMC.length]:u.type, hh={manif:.84,casseur:.84,meneur:.88,bloc:1.3}[u.type];
@@ -1549,6 +1587,26 @@ function drawUnit(g,u,t){
       g.fillStyle='rgba(0,0,0,.75)'; rr(g,-w/2-.025,by-.025,w+.05,.1,.04); g.fill(); g.fillStyle=f>.5?'#ff9f43':f>.25?'#ff6b4a':'#ff3b3b'; rr(g,-w/2,by,w*f,.05,.025); g.fill(); }
   }
   g.restore();
+}
+/* Véhicules (boss) : image vue de trois quarts ; repli en dessin si l'image manque. */
+function vehImg(g,type,f,h){ const V=VIMG[type]; if(sprite1(g,type,h,V.gauche?f>0:f<0)) return;
+  g.save(); if(f>0) g.scale(-1,1); const w=h*V.r, col={tracteur:'#2f6b36',sono:'#e8e8e8',car:'#2b4fa8'}[type];
+  g.fillStyle=col; rr(g,-w/2,-h*.85,w,h*.6,.06); g.fill(); g.fillStyle='rgba(190,220,230,.7)'; g.fillRect(-w/2+.05,-h*.78,w*.25,h*.25);
+  g.fillStyle='#1b1d20'; [[-w*.3,-h*.22],[w*.3,-h*.22]].forEach(([x,y])=>{ g.beginPath(); g.arc(x,y,h*.2,0,7); g.fill(); }); g.restore(); }
+function drawVeh(g,u,t){
+  const f=u.f||1, V=VIMG[u.type], arret=u.atBar||u.stopT!=null&&!u.vide, vib=Math.sin(t*38+u.bob)*.008;
+  g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(0,.02,V.h*V.r*.5,.15,0,0,7); g.fill();
+  if(u.state==='go'&&u.type==='tracteur'){ for(let i=0;i<3;i++){ const k=((t*.9+i/3+u.bob)%1); g.fillStyle=`rgba(120,120,125,${.35*(1-k)})`; g.beginPath(); g.arc(-.2*f+k*.1*f,-.95-k*.45,.05+k*.1,0,7); g.fill(); } }
+  // musique du camion sono : ondes et notes autour de lui tant qu'il roule
+  if(u.type==='sono'&&u.state==='go'&&R.t-(u.music??-9)<.1){ for(let i=0;i<2;i++){ const k=((t*.7+i*.5)%1); g.strokeStyle=`rgba(255,120,200,${.45*(1-k)})`; g.lineWidth=.03; g.beginPath(); g.ellipse(0,0,.4+k*1.3,(.4+k*1.3)*.6,0,0,7); g.stroke(); }
+    g.fillStyle='#ff8ad8'; g.font='800 .2px "Instrument Sans",sans-serif'; g.textAlign='center'; for(let i=0;i<2;i++){ const k=((t*.6+i*.5)%1); g.globalAlpha*=1; g.fillText('♪',(i?.35:-.3)+Math.sin(t*3+i)*.05,-1-k*.4); } }
+  g.save(); g.translate(0,vib+(arret?Math.sin(t*20)*.012:0)); if(u.atBar) g.rotate(-f*.02); vehImg(g,u.type,f,V.h); g.restore();
+  if(u.state!=='go') return;
+  const neg=R.t-(u.nego??-9)<.25, w=.7, fr=Math.max(0,u.hp/u.max), by=-V.h-.25;
+  g.fillStyle='rgba(0,0,0,.75)'; rr(g,-w/2-.025,by-.025,w+.05,.1,.04); g.fill(); g.fillStyle=neg?'#ffd166':'#ff9f43'; rr(g,-w/2,by,w*fr,.05,.025); g.fill();
+  if(neg) pill(g,0,.3,'Négociation…','#1a1a1a',.13,'#ffd166');
+  else if(u.type==='car'&&u.stopT!=null){ const k=Math.min(1,(R.t-u.stopT)/TRACT.arretCar); pill(g,0,.3,`Débarquement ${Math.round(k*100)} %`,'#fff',.13,'#c0392b'); }
+  else if(u.slow>0){ g.strokeStyle='rgba(98,176,255,.85)'; g.lineWidth=.035; g.beginPath(); g.ellipse(0,0,.7,.16,0,0,7); g.stroke(); }
 }
 /* policiers et véhicules */
 function cop(g,f,ph,shield){
@@ -1870,7 +1928,7 @@ Shell.init({
   diffs:{
     difficile:{agents:7,label:'Difficile',eff:17,lives:12,combi:2,autopompe:1,cavalerie:2,hp:1,gap:.5,pause:12,waves:6},
     normal:{agents:9,label:'Normal',eff:18,lives:15,combi:3,autopompe:2,cavalerie:3,hp:1,gap:.55,pause:14,waves:6},
-    facile:{agents:11,label:'Facile',eff:22,lives:20,combi:3,autopompe:3,cavalerie:4,hp:.85,gap:.6,pause:16,waves:5}},
+    facile:{agents:11,label:'Facile',eff:19,lives:17,combi:3,autopompe:2,cavalerie:3,hp:1,gap:.55,pause:15,waves:5}},
   bornes:{eff:[12,26],lives:[8,20],gap:[.3,1],hp:[.5,Infinity],pause:[8,20],combi:[1,4],autopompe:[1,3],cavalerie:[1,4]},
   diffHint:'Plus d’agents au départ, plus de véhicules et un cordon plus solide.',
   desktopHint:'Sur ordinateur : clique sur un emplacement bleu, puis sur le moyen voulu (deux fois pour confirmer).',
@@ -1882,6 +1940,7 @@ Shell.init({
     '<b>Barrage</b> : bloque la rue jusqu’à céder. <b>Peloton MO</b> : retient les émeutiers au contact. <b>Fais-les glisser</b> pour choisir leur place dans la rue, dans un rayon autour de l’emplacement. <b>Cavalerie</b> : charge ; fais-la glisser sur un autre emplacement pour la <b>redéployer</b>.',
     'Plusieurs émeutiers repoussés au même endroit en même temps : <b>intervention maîtrisée</b>, +1 agent. Trois vagues sans perte d’affilée : <b>dispositif maîtrisé</b>, +15 %.',
     'Le <b>commandant</b> (brassard rouge) : fais-le glisser où ça chauffe, ses moyens proches sont <b>plus efficaces</b> ; touche-le pour un <b>ordre au mégaphone</b> (sommation sur sa zone, recharge 20 s). Débordé par le cortège, il se replie.',
+    'Certains quartiers finissent sur un <b>véhicule</b> en tête de cortège (tracteur, camion sono, car de supporters) : ni l’eau ni les chevaux n’en viennent à bout. Arrête-le (<b>barrage</b>, sommation) et poste le <b>commandant</b> à côté pour <b>négocier</b> son départ.',
     'Dès la 3e vague, certains casseurs allument des <b>fumigènes</b> : dans la fumée, l’autopompe et la cavalerie ne voient plus personne et le peloton MO tâtonne, pendant 6 s.',
     'Les <b>sommations</b> ralentissent et font faire demi-tour aux émeutiers déjà découragés. Entre deux vagues, le <b>Directeur</b> te demande parfois la situation : choisis vite.'],
   winTitle:'Ordre rétabli', loseTitle:'Le cordon a cédé', skin:'Cordon de nuit',
@@ -1894,15 +1953,18 @@ Shell.init({
   niveau(n,cfg){
     cfg.map=(n-1)%MAPS.length; cfg.seed=n; cfg.meteo=n%5===3?'brouillard':n%5===0?'pluie':null;
     cfg.waves=n<=2?4:n<=5?5:6;
-    // Après le niveau 10, les quartiers reviennent par tours de 10 : chaque tour reprend les réglages du premier
-    // passage sur le même quartier, en plus dur (émeutiers +22 % et une vague de plus par tour, cordon un peu
-    // plus court). La difficulté monte donc en dents de scie, sans mur (simulation test/bouclage-sim.mjs).
-    if(n>10){ const L=Math.floor((n-1)/10), c=Shell.cfgNiveau(n-10*L);
-      Object.assign(cfg,c,{label:`Niveau ${n}`,niveau:n,seed:n,meteo:cfg.meteo});
-      cfg.hp=c.hp*(1+.22*L); cfg.waves=Math.min(8,c.waves+L); cfg.lives=Math.max(8,c.lives-L); }
+    // Après le niveau 10, les quartiers reviennent par tours de 10 : chaque tour reprend les réglages du passage
+    // précédent décalés d'un niveau, en plus dur (émeutiers +12 % par tour, une vague de plus à partir du 3e tour,
+    // cordon un peu plus court) et avec plus de véhicules. Dents de scie, sans mur (simulation test/bouclage-sim.mjs).
+    // Le tour suivant ne repart pas du niveau 1 : il reprend les réglages de TOUR_DECALE niveaux plus loin.
+    if(n>10){ const L=Math.floor((n-1)/10), c=Shell.cfgNiveau(Math.min(10,n-10*L+TOUR_DECALE*L));
+      Object.assign(cfg,c,{label:`Niveau ${n}`,niveau:n,seed:n,meteo:cfg.meteo,map:cfg.map});
+      cfg.hp=c.hp*(1+.12*L); cfg.waves=Math.min(8,c.waves+L-1); cfg.lives=Math.max(8,c.lives-L); }
+    // Boss : véhicules en tête de la dernière vague (BOSS_TOUR1 / BOSS_TOUR2).
+    { const m=(n-1)%10+1, L=Math.floor((n-1)/10); cfg.boss=((L?BOSS_TOUR2:BOSS_TOUR1)[m]||[]).slice(); if(L>=2&&cfg.boss.length&&cfg.boss.length<3) cfg.boss.push('tracteur'); }
     return cfg; },
   onInit(){
-    C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); spr('lance'); spr('frise'); spr('heras-tombee'); R.M=MAPDATA[0]; R.pads=R.M.pads;
+    C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); ['tracteur','sono','car'].forEach(spr); spr('lance'); spr('frise'); spr('heras-tombee'); R.M=MAPDATA[0]; R.pads=R.M.pads;
     resize(); new ResizeObserver(resize).observe($('field'));
     if(document.fonts) document.fonts.ready.then(resize);
     C.cv.addEventListener('pointerdown',onDown); C.cv.addEventListener('pointermove',onMove); C.cv.addEventListener('pointerup',onUp);
