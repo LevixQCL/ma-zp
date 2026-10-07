@@ -147,6 +147,26 @@ const MEANS={
   cavalerie:{nom:'Cavalerie',cout:8,range:2.6,cd:[4,3.3,2.6],choc:{manif:16,casseur:20,meneur:28,bloc:10,tracteur:3,sono:8,car:5},
     ds:'<b>Charge</b> dans le groupe le plus dense (meneurs en priorité). Seul moyen <b>mobile</b> : fais-la glisser vers un autre emplacement pour la redéployer.'}};
 const LV={dmg:[1,1.5,2.1],rng:[0,.2,.35],cout:[0,1,1.5]};
+/* Spécialisation au niveau 3 : la demi-bulle « Renforcer » se coupe en deux quarts, on choisit une voie (gauche a, droite b).
+   Chaque voie modifie le niveau 3 de base (dmg : efficacité ×, endu : endurance ×, vs : efficacité × contre certains émeutiers,
+   rng : portée +, splash : largeur du jet ×, cd : délai entre charges ×, hp/releve : barrières, barbeles : usure de ceux qui poussent).
+   Équilibrage : test/bouclage-sim.mjs avec SPEC=a / SPEC=b / SPEC=mix, comparé au niveau 3 d'avant (SPEC=0). */
+const SPEC={
+  peloton:{a:{nom:'Bouclier',ico:'🛡️',endu:1.4,dmg:.9},b:{nom:'Interpellation',ico:'🎯',vs:{meneur:1.7,casseur:1.7},endu:.85}},
+  autopompe:{a:{nom:'Grand débit',ico:'🌊',splash:1.45,rng:-.15},b:{nom:'Canon à eau',ico:'🎯',rng:.55,splash:1}},
+  barrage:{a:{nom:'Cheval de frise',ico:'🧱',hp:520,releve:5,barbeles:true},b:{nom:'Barrage mobile',ico:'⚡',hp:330,releve:2.2}},
+  cavalerie:{a:{nom:'Charge lourde',ico:'🐎',dmg:1.35,cd:1.18},b:{nom:'Patrouille',ico:'⚡',cd:.7,dmg:.85}}};
+// niveau 3 d'avant les voies (référence de la simulation uniquement, jamais proposé)
+for(const t in SPEC) SPEC[t].base=t==='barrage'?{nom:'',hp:520,releve:5,barbeles:true}:{nom:''};
+/* Ce qui distingue une voie : ▲ son point fort, ▼ son point faible (valeurs réelles du niveau 3 avec cette voie). */
+function descSpec(type,k){ const sp=SPEC[type][k], M=MEANS[type], x=(c,d=1)=>sp[c]!==undefined?sp[c]:d, eff=pc(LV.dmg[2]*x('dmg')), por=dec(M.range+LV.rng[2]+x('rng',0));
+  if(type==='peloton') return k==='a'?[`▲ endurance ${Math.round(ENDU[2]*x('endu'))}`,'▲ 3 agents MO',`▼ efficacité ${eff}`]:[`▲ +${Math.round((sp.vs.meneur-1)*100)} % contre meneurs et casseurs`,'▲ 3 agents MO',`▼ endurance ${Math.round(ENDU[2]*x('endu'))}`];
+  if(type==='autopompe') return k==='a'?[`▲ jet très large (${pc(x('splash'))})`,`▲ efficacité ${eff}`,`▼ portée ${por}`]:[`▲ portée ${por}`,`▲ efficacité ${eff}`,`▼ jet étroit (${pc(x('splash'))})`];
+  if(type==='barrage') return k==='a'?[`▲ solidité ${sp.hp}`,'▲ barbelés : usent ceux qui poussent',`▼ relevées en ${dec(sp.releve)} s`]:[`▲ relevées en ${dec(sp.releve)} s`,`▼ solidité ${sp.hp}`,'▼ sans barbelés'];
+  return k==='a'?[`▲ efficacité ${eff} par charge`,`▲ portée ${por}`,`▼ charge toutes les ${dec(M.cd[2]*x('cd'))} s`]:[`▲ charge toutes les ${dec(M.cd[2]*x('cd'))} s`,`▲ portée ${por}`,`▼ efficacité ${eff}`]; }
+const specOf=tw=>tw&&tw.lvl>=3?SPEC[tw.type][tw.spec||'a']:null;
+const spX=(tw,k,d=1)=>{ const sp=specOf(tw); return sp&&sp[k]!==undefined?sp[k]:d; };
+const barHp=tw=>tw.lvl>=3?spX(tw,'hp'):BAR_HP[tw.lvl-1], barReleve=tw=>tw.lvl>=3?spX(tw,'releve'):BAR_RELEVE[tw.lvl-1];
 const UPTXT={peloton:['','Deux agents MO','Trois agents MO'],autopompe:['','Deux lances à eau','Camion autopompe'],
   barrage:['','Deux barrières Heras','Cheval de frise (barbelés)'],cavalerie:['','Deux cavaliers','Escouade montée']};
 /* Émeutiers : détermination, vitesse (cases/s), agents récupérés quand ils renoncent, tenue du cordon perdue s'ils passent. */
@@ -217,7 +237,7 @@ function cmdXp(n,x,y){ const c=R.cmd; if(!c||c.lvl>=CMDN.length) return; c.xp+=n
 
 const Q2=new URLSearchParams(location.search);
 /* Lancé depuis Ma ZP, le bout du trajet est l'hôtel de police du joueur (dessiné avec ses skins) ; en démo, l'hôtel de ville. */
-const DANS_ZP=!!(Q2.get('mode')||Q2.get('evt')), LIEU=DANS_ZP?'ton hôtel de police':'l’hôtel de ville';
+const INC_MODE=Q2.get('mode')==='incident', DANS_ZP=!!(Q2.get('mode')||Q2.get('evt')), LIEU=DANS_ZP?'ton hôtel de police':'l’hôtel de ville';
 /* Événement d'actualité (lancé depuis Ma ZP) : même Challenge, autre scénario, avec la cause de la mobilisation et ses sources. */
 const EVT={'2026-10-mobilisation-etudiante':{
   headline:'Mobilisation étudiante',
@@ -345,7 +365,7 @@ const padOf=id=>R.pads.find(p=>p.id===id);
    en marchant, l'eau de l'autopompe porte moins). */
 const METEO={brouillard:{nom:'Brouillard',ds:'portée de tes moyens réduite'},pluie:{nom:'Pluie',ds:'les émeutiers se découragent, l’autopompe porte moins'}};
 const porteeMeteo=()=>R.meteo==='brouillard'?(R.bonus&&R.bonus.drone?.92:.72):1;
-const rangeOf=tw=>(MEANS[tw.type].range+LV.rng[tw.lvl-1]+(R.bonus&&R.bonus.drone?.2:0))*porteeMeteo();
+const rangeOf=tw=>(MEANS[tw.type].range+LV.rng[tw.lvl-1]+spX(tw,'rng',0)+(R.bonus&&R.bonus.drone?.2:0))*porteeMeteo();
 /* Ta zone dans Ma ZP (envoyée par l'app) : petits avantages concrets, plafonnés pour garder le Challenge équitable. */
 const ZONE={ok:false};
 function bonusZone(){ const b={}; if(!ZONE.ok) return b;
@@ -359,13 +379,13 @@ const textesBonus=b=>[b.tir&&'stand de tir : agents MO +20 % d’endurance',b.dr
 const upCost=tw=>tw.lvl>=3?null:Math.round(MEANS[tw.type].cout*LV.cout[tw.lvl]);
 /* Ce que change chaque niveau d'un moyen (dit dans le bandeau au premier toucher de « Renforcer »). */
 const pc=x=>Math.round(x*100)+' %', dec=x=>String(Math.round(x*100)/100).replace('.',',');
-function effetsNiv(type,i){ const M=MEANS[type], eff=`efficacité ${pc(LV.dmg[i])}`, por=`portée ${dec(M.range+LV.rng[i])}`;
-  if(type==='peloton') return [`retient ${AGENTS[i]} émeutier${AGENTS[i]>1?'s':''} à la fois`,eff,`endurance ${ENDU[i]}`];
-  if(type==='autopompe') return [eff,por,...(i>1?['jet plus large (+20 %)']:[])];
-  if(type==='barrage') return [`solidité ${BAR_HP[i]}`,`relevées en ${BAR_RELEVE[i]} s`,...(i>1?['barbelés : usent ceux qui poussent']:[])];
-  return [`charge toutes les ${dec(M.cd[i])} s`,eff,por]; }
-/* Résumé de ce que la montée de niveau apporte (bandeau de confirmation). */
-function gainNiv(tw){ const a=effetsNiv(tw.type,tw.lvl-1), b=effetsNiv(tw.type,tw.lvl); return b.filter(x=>!a.includes(x)).join(', '); }
+function effetsNiv(type,i,sp){ const M=MEANS[type], x=(k,d=1)=>sp&&sp[k]!==undefined?sp[k]:d;
+  const eff=`efficacité ${pc(LV.dmg[i]*x('dmg'))}`, por=`portée ${dec(M.range+LV.rng[i]+x('rng',0))}`;
+  if(type==='peloton') return [`retient ${AGENTS[i]} émeutier${AGENTS[i]>1?'s':''} à la fois`,eff,`endurance ${Math.round(ENDU[i]*x('endu'))}`,...(sp&&sp.vs?[`+${Math.round((sp.vs.meneur-1)*100)} % contre meneurs et casseurs`]:[])];
+  if(type==='autopompe') return [eff,por,...(i>1?[`jet ${x('splash',1.2)>1.3?'très large':x('splash',1.2)>1?'plus large':'normal'} (${pc(x('splash',1.2))})`]:[])];
+  if(type==='barrage') return [`solidité ${i>1?x('hp',BAR_HP[i]):BAR_HP[i]}`,`relevées en ${dec(i>1?x('releve',BAR_RELEVE[i]):BAR_RELEVE[i])} s`,...(i>1&&(!sp||sp.barbeles)?['barbelés : usent ceux qui poussent']:[])];
+  return [`charge toutes les ${dec(M.cd[i]*x('cd'))} s`,eff,por]; }
+function gainNiv(tw,spk){ const a=effetsNiv(tw.type,tw.lvl-1,specOf(tw)), b=effetsNiv(tw.type,tw.lvl,spk?SPEC[tw.type][spk]:null); return b.filter(x=>!a.includes(x)).join(', '); }
 const sellVal=tw=>tw.spent;
 const rendement=()=>(R.tuto?1:REND[Math.max(0,Math.min(REND.length-1,R.wave-1))])*(R.maitrise>=3?1.15:1);
 
@@ -377,6 +397,8 @@ function resetGame(cfg,tuto,mapIdx){
   R.parts=[]; R.introQ=[]; R.introOuverte=false; R.fumees=[]; R.vuFumee=false; R.frac=0;
   { const hb=hallBox(R.M), hx=hb.x0+hb.w/2, hy=MH-2.6; R.cmd=tuto?null:{x:hx,y:hy,tx:hx,ty:hy,hx,hy,cd:0,repli:0,shoutT:-9,cheerT:-9,f:1,walk:false,lvl:1,xp:0,lvlT:-9}; } R.maitrise=0; R.waveLoss=0; R.retours=[]; R.dir=null; R.dirOffer=false; R.recent=[]; R.redeploy=null; R.rally=null; R.vHp=1;
   R.stats={rec:0,blocs:0,meneurs:0,combos:0,best:null};
+  // carte des points faibles : par tronçon de rue (0,5 case), efforts des moyens (dmg) et passages sans opposition (br)
+  R.heat={dmg:R.M.P.map(P=>new Float32Array(Math.ceil(P.len/HEAT_PAS)+1)),br:R.M.P.map(P=>new Float32Array(Math.ceil(P.len/HEAT_PAS)+1))};
   // Challenge : consignes qui changent les règles à partir du niveau 6
   R.mods={}; R.fire=null; const nv=cfg.seed||0;
   if(!tuto&&nv>=6){ const L=Object.keys(MODS); R.mods[L[nv%4]]=true; if(nv>=15) R.mods[L[(nv+1)%4]]=true; }
@@ -391,8 +413,29 @@ function resetGame(cfg,tuto,mapIdx){
   R.dispo={barrage:inc?qn('combi',cfg.combi):(R.bonus.combis??cfg.combi), autopompe:cfg.autopompe, cavalerie:cfg.cavalerie};
   R.meteo=tuto?null:cfg.meteo||null;
   R.usure=inc?Math.max(0,Math.min(1,qn('usure',0)/100)):0;
+  R.cavUtilisee=false; R.defiB=null; R.defiB=tirerDefiBonus();
+  if(BONUS_SUIVANT&&!tuto&&Shell.enDefi){ R.agents+=BONUS_SUIVANT; setTimeout(()=>Shell.toast(`🎯 Défi bonus du niveau précédent : +${BONUS_SUIVANT} agents`,'ok'),400); } BONUS_SUIVANT=0;
   R.phase='build'; R.nextIn=null; R.waveEnd=0; R.over=false; if(!tuto) Shell.st.mode='play';
   resize(); tip(); ui();
+}
+/* Composition d'une vague (aussi utilisée pour l'aperçu de la vague suivante). */
+function groupesVague(n,dir){
+  let groups=R.tuto?TUTO_WAVE:WAVES[Math.min(WAVES.length-1,n-1)];
+  if(dir==='renfort') groups=groups.map(([t,k])=>[t,Math.round(k*1.3)]);
+  // Au-delà de la 6e vague (Challenge), la dernière vague revient, plus fournie.
+  if(!R.tuto&&n>WAVES.length) groups=groups.map(([t,k])=>[t,Math.round(k*(1+.15*(n-WAVES.length)))]);
+  // Boss : convoi de véhicules en tête de la dernière vague, le cortège suit à l'abri
+  const boss=!R.tuto&&n===R.waves?(R.cfg.boss||[]):[];
+  if(boss.length){ const cpt={}; boss.forEach(b=>cpt[b]=(cpt[b]||0)+1); groups=[...Object.entries(cpt),...groups]; }
+  return groups;
+}
+/* Aperçu discret de la vague suivante, sous le panneau « CORTÈGE » : une ligne d'icônes avec les effectifs. */
+const ICO_FOE={manif:'✊',casseur:'🧱',meneur:'📢',bloc:'🚩',tracteur:'🚜',sono:'🔊',car:'🚌'};
+function apercuVague(){
+  if(R.tuto||R.over||R.wave>=R.waves||!(R.phase==='build'||(R.phase==='run'&&R.nextIn!==null))) return null;
+  const dir=R.dir&&R.dir.wave===R.wave+1?R.dir.k:null, cpt={};
+  for(const [t,k] of groupesVague(R.wave+1,dir)) cpt[t]=(cpt[t]||0)+k;
+  return Object.entries(cpt).sort((a,b)=>VEH.has(b[0])-VEH.has(a[0])).map(([t,k])=>`${k}${ICO_FOE[t]}`).join(' ');
 }
 function launchWave(){
   if(R.over||R.wave>=R.waves) return;
@@ -402,14 +445,9 @@ function launchWave(){
   R.dirOffer=false; const dir=R.dir&&R.dir.wave===R.wave+1?R.dir.k:null;
   R.wave++; R.phase='run'; R.nextIn=null; R.waveLoss=0;
   R.vHp=dir==='pousse'?1.15:1;
-  let groups=R.tuto?TUTO_WAVE:WAVES[Math.min(WAVES.length-1,R.wave-1)];
-  if(dir==='renfort') groups=groups.map(([t,n])=>[t,Math.round(n*1.3)]);
-  // Au-delà de la 6e vague (Challenge), la dernière vague revient, plus fournie.
-  if(!R.tuto&&R.wave>WAVES.length) groups=groups.map(([t,n])=>[t,Math.round(n*(1+.15*(R.wave-WAVES.length)))]);
-  // Boss : convoi de tracteurs en tête de la dernière vague, le cortège suit à l'abri
+  let groups=groupesVague(R.wave,dir);
   const boss=!R.tuto&&R.wave===R.waves?(R.cfg.boss||[]):[];
   if(boss.length){ const cpt={}; boss.forEach(b=>cpt[b]=(cpt[b]||0)+1);
-    groups=[...Object.entries(cpt),...groups];
     const txt=Object.entries(cpt).map(([b,n])=>n>1?`${n} ${BOSS_NOM[b][1]}`:BOSS_NOM[b][0]).join(' et ');
     if(!R.sim) setTimeout(()=>Shell.toast(`⚠️ Signalé en tête du cortège : ${txt}`,'bad'),900); }
   // Répartition des émeutiers entre les cortèges (tourniquet pondéré), chaque cortège avance à son rythme.
@@ -445,7 +483,7 @@ let UID=0;
 const HOOD=['#c0392b','#2e86c1','#27ae60','#d4a017','#8e44ad','#e67e22','#7f8c8d','#16a085','#b03a5b'];
 function addUnit(type,pi){ const F=FOES[type], hp=F.hp*R.cfg.hp*(VEH.has(type)?1:R.M.hp)*(R.cmd?CMD.hp:1)*(R.vHp||1)*(R.wave>WAVES.length?1+.06*(R.wave-WAVES.length):1);
   R.units.push({id:UID++,born:R.t,jit:Math.random(),type,pi,d:0,hp,max:hp,state:'go',slow:0,boost:false,somUntil:0,lo:type==='manif'||type==='casseur'?(Math.random()-.5)*.7:(Math.random()-.5)*.2,
-    col:type==='casseur'?'#17181c':type==='meneur'?'#e8732a':pick(HOOD),flare:type==='casseur'&&Math.random()<.35,bob:Math.random()*6,ban:pick(['#c0392b','#d4a017','#2e86c1','#27ae60','#8e44ad','#e8e8e8'])});
+    col:type==='casseur'?'#17181c':type==='meneur'?'#e8732a':pick(HOOD),fumi:type==='manif'&&Math.random()<.16?['rgba(255,95,140,','rgba(255,120,60,','rgba(230,70,90,'][Math.floor(Math.random()*3)]:null,flare:type==='casseur'&&Math.random()<.35,bob:Math.random()*6,ban:pick(['#c0392b','#d4a017','#2e86c1','#27ae60','#8e44ad','#e8e8e8'])});
   if(!R.seen.has(type)){ R.seen.add(type); if(!R.tuto&&!R.sim){
     // fiche « Nouveau dans le cortège » une seule fois par appareil (pas à chaque partie) ; ensuite, un véhicule de tête
     // n'est plus annoncé que par un petit bandeau qui ne met pas la partie en pause
@@ -483,8 +521,8 @@ const STRAIN={manif:5,casseur:6,meneur:4,bloc:22,tracteur:0,sono:0,car:0};      
 const AGENTS=[1,2,3], ENDU=[100,115,130];
 function setupTower(tw,id){
   const P=padOf(id);
-  if(tw.type==='barrage'){ const mx=BAR_HP[tw.lvl-1]*(1-.25*R.usure); tw.bar=tw.bar||{hp:mx,up:true,downAt:0}; tw.bar.max=mx; if(tw.bar.up) tw.bar.hp=mx; }
-  if(tw.type==='peloton'){ tw.agents=tw.agents||[]; const n=AGENTS[tw.lvl-1], mx=ENDU[tw.lvl-1]*(R.bonus&&R.bonus.tir?1.2:1);
+  if(tw.type==='barrage'){ const mx=barHp(tw)*(1-.25*R.usure); tw.bar=tw.bar||{hp:mx,up:true,downAt:0}; tw.bar.max=mx; if(tw.bar.up) tw.bar.hp=mx; }
+  if(tw.type==='peloton'){ tw.agents=tw.agents||[]; const n=AGENTS[tw.lvl-1], mx=ENDU[tw.lvl-1]*spX(tw,'endu')*(R.bonus&&R.bonus.tir?1.2:1);
     while(tw.agents.length<n) tw.agents.push({x:P.x,y:P.y,e:mx,st:'ready',u:null,until:0});
     if(R.phase!=='run') tw.agents.forEach((a,i)=>{ const sl=slotOf(tw,i); a.x=sl.x; a.y=sl.y; });
     tw.agents.forEach(a=>{ a.max=mx; if(a.st!=='back') a.e=Math.max(a.e,mx*.6); }); }
@@ -509,7 +547,7 @@ function step(dt){
   const cohR=R.mods.compacts?.75:.6, cohMax=R.mods.compacts?.55:.4;
   for(const u of live){ if(u.dispUntil>R.t||veh(u)){ u.coh=0; continue; } let n=0; for(const o of live) if(o!==u&&!veh(o)&&Math.abs(o.p.x-u.p.x)<cohR&&Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<cohR) n++; u.coh=n>=2?Math.min(cohMax,.1*n):0; }
   if(R.meteo==='pluie') for(const u of live) if(!u.held&&u.type!=='bloc'&&!veh(u)) u.hp-=.35*dt;
-  const hit=(u,v,choc)=>{ u.hp-=v*(u.boost?.7:1)*(u.abri?TRACT.abri:1)*(u.dispUntil>R.t?1.25:1-(u.coh||0)); if(choc) u.hitT=R.t; };
+  const hit=(u,v,choc)=>{ u.hp-=v*(u.boost?.7:1)*(u.abri?TRACT.abri:1)*(u.dispUntil>R.t?1.25:1-(u.coh||0)); if(choc) u.hitT=R.t; noteHeat(u,v); };
   // meneurs (galvanisent), sommations et flaques (ralentissent)
   const leaders=live.filter(u=>u.type==='meneur');
   R.flaques=(R.flaques||[]).filter(f=>R.t<f.until);
@@ -526,7 +564,7 @@ function step(dt){
   const auraOk=R.cmd&&!(R.cmd.repli>R.t)&&!R.cmd.walk;
   // barrières : relevage par les agents du combi quand la place est libre
   for(const [id,tw] of towers){ if(tw.type!=='barrage') continue; const b=tw.bar;
-    if(!b.up&&R.t-b.downAt>BAR_RELEVE[tw.lvl-1]*(R.bonus&&R.bonus.atelier?.75:1)&&!live.some(u=>Math.hypot(u.p.x-tw.rx,u.p.y-tw.ry)<.55)){ b.up=true; b.hp=b.max; b.upAt=R.t; fx(tw.rx,tw.ry,'Barrières relevées','info'); } }
+    if(!b.up&&R.t-b.downAt>barReleve(tw)*(R.bonus&&R.bonus.atelier?.75:1)&&!live.some(u=>Math.hypot(u.p.x-tw.rx,u.p.y-tw.ry)<.55)){ b.up=true; b.hp=b.max; b.upAt=R.t; fx(tw.rx,tw.ry,'Barrières relevées','info'); } }
   // déplacements
   for(const u of R.units){ const F=FOES[u.type];
     if(u.state==='flee'){ u.d-=F.v*1.6*R.M.P[u.pi].k*dt; continue; }
@@ -558,12 +596,15 @@ function step(dt){
         if(best.p.x!==c.x) c.f=best.p.x>c.x?1:-1; fx(best.p.x,best.p.y-.9,'Gazé !','info');
         puff(best.p.x,best.p.y-.35,10,{v:.6,r:.06,grow:2.5,life:1,col:'rgba(235,225,175,',jit:.2,flat:.4});
         if(!R.sim) Shell.blip(180,.18,'sawtooth',.03); } } }
+  // ambiance (décor seulement) : la tension monte au fil des vagues, des fumigènes roses s'allument dans le cortège
+  { const I=tension(); if(I>0&&!R.sim) for(const u of live){ if(u.alive===false||!u.fumi||veh(u)) continue;
+      if(Math.random()<dt*5*I){ const p=u.p; puff(p.x+.08,p.y-.6,1,{v:.35,r:.08,grow:4,life:2.3,a:-Math.PI/2,spread:.8,col:u.fumi,flat:1,jit:.05,al:.32}); } } }
   // poussée sur les barrières
   for(const u of live){ if(!u.atBar||u.alive===false) continue; const tw=R.towers[u.atBar]; if(!tw||!tw.bar.up) continue;
-    tw.bar.hp-=PUSH[u.type]*(u.boost?1.3:1)*dt; if(tw.lvl>2) hit(u,4*dt);
+    tw.bar.hp-=PUSH[u.type]*(u.boost?1.3:1)*dt; if(tw.lvl>2&&spX(tw,'barbeles',false)) hit(u,4*dt);
     if(tw.bar.hp<=0){ tw.bar.up=false; tw.bar.hp=0; tw.bar.downAt=R.t; fx(tw.rx,tw.ry,'Barrières renversées !','bad'); Shell.bad(); if(!R.sim) Shell.shake(); puff(tw.rx,tw.ry,16,{v:.9,r:.06,grow:2,life:.8,col:'rgba(140,145,160,',flat:.4}); } }
   // moyens
-  for(const [id,tw] of towers){ const M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw), k=LV.dmg[tw.lvl-1]*((tw.type==='autopompe'||tw.type==='barrage')?1-.25*R.usure:1)*(auraOk&&Math.hypot(P.x-R.cmd.x,P.y-R.cmd.y)<=cn().aura?1+cn().bonus:1);
+  for(const [id,tw] of towers){ const M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw), k=LV.dmg[tw.lvl-1]*spX(tw,'dmg')*((tw.type==='autopompe'||tw.type==='barrage')?1-.25*R.usure:1)*(auraOk&&Math.hypot(P.x-R.cmd.x,P.y-R.cmd.y)<=cn().aura?1+cn().bonus:1);
     tw.tgt=null; if(tw.cd>0) tw.cd-=dt;
     if(tw.transit){ if(R.t>=tw.transit.t0+tw.transit.dur) tw.transit=null; else continue; }
     if(tw.stun>R.t&&tw.type!=='barrage'&&tw.type!=='peloton') continue;
@@ -576,7 +617,7 @@ function step(dt){
           let best=null; for(const u of live){ if(u.held||u.alive===false||veh(u)) continue; const db=blockOn(tw,u.pi); if(db===null) continue; if(u.d<db-.9||u.d>db+.25) continue; if(!best||u.d>best.d) best=u; }
           if(best){ a.u=best; best.held=a; a.st='eng'; } return; }
         if(a.st==='eng'){ const u=a.u; const L=mv(u.p.x,u.p.y,2.8);
-          if(L<.42){ hit(u,(u.cache?.5:1)*M.dps[u.type]*k*(R.bonus&&R.bonus.equip?1+.05*(R.bonus.equip-1):1)*dt); a.e-=STRAIN[u.type]*(u.boost?1.3:1)*dt; a.push=R.t; }
+          if(L<.42){ hit(u,(u.cache?.5:1)*M.dps[u.type]*k*((specOf(tw)||{}).vs?.[u.type]||1)*(R.bonus&&R.bonus.equip?1+.05*(R.bonus.equip-1):1)*dt); a.e-=STRAIN[u.type]*(u.boost?1.3:1)*dt; a.push=R.t; }
           if(a.e<=0){ a.e=0; a.st='back'; a.until=R.t+6; u.held=null; a.u=null; fx(a.x,a.y,'Agent à bout','bad'); } } });
       tw.tgt=tw.agents.filter(a=>a.u).map(a=>a.u); continue; }
     const inR=live.filter(u=>u.alive!==false&&!u.cache&&Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg);
@@ -589,10 +630,10 @@ function step(dt){
       if(!inR.length||tw.cd>0) continue;
       const pr=u=>u.type==='meneur'?3:u.type==='casseur'?1:0; let best=null,bs=-1;
       for(const u of inR){ const n=inR.filter(o=>Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<.75).length, sc=n+pr(u)*2; if(sc>bs){ bs=sc; best=u; } }
-      tw.charge={t0:R.t,dur:1.3,x:best.p.x,y:best.p.y,hit:false}; tw.cd=M.cd[tw.lvl-1]; tw.tgt=[best]; continue; }
+      tw.charge={t0:R.t,dur:1.3,x:best.p.x,y:best.p.y,hit:false}; tw.cd=M.cd[tw.lvl-1]*spX(tw,'cd'); tw.tgt=[best]; continue; }
     if(tw.type==='autopompe'){ if(!inR.length) continue; tw.tgt=[inR[0]]; if(tw.cd>0) continue;
       let best=inR[0], bn=-1; for(const u of inR){ const n=live.filter(o=>Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<=M.splash).length; if(n>bn){ bn=n; best=u; } }
-      for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-best.p.x,o.p.y-best.p.y)<=M.splash*(tw.lvl>2?1.2:1)){ hit(o,M.dmg*k*M.mult[o.type]*(R.meteo==='pluie'?.85:1),true); o.dispUntil=R.t+4; if(!o.held&&!veh(o)) o.d=Math.max(0,o.d-M.recul*(o.type==='bloc'?.35:1));
+      for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-best.p.x,o.p.y-best.p.y)<=M.splash*(tw.lvl>2?spX(tw,'splash',1.2):1)){ hit(o,M.dmg*k*M.mult[o.type]*(R.meteo==='pluie'?.85:1),true); o.dispUntil=R.t+4; if(!o.held&&!veh(o)) o.d=Math.max(0,o.d-M.recul*(o.type==='bloc'?.35:1));
         if(o.type==='bloc'&&o.hp>0&&o.hp<o.max*BLOC_ECLATE.seuil) eclate(o); }
       R.flaques.push({x:best.p.x,y:best.p.y+.05,r:.5+.1*tw.lvl,until:R.t+(R.meteo==='pluie'?9:6),t:R.t});
       tw.cd=M.cd; tw.tgt=[best]; R.jets.push({id,x1:best.p.x,y1:best.p.y,t:R.t,lvl:tw.lvl}); Shell.blip(180,.15,'sawtooth',.02);
@@ -633,10 +674,35 @@ function step(dt){
   R.fx=R.fx.filter(f=>R.t-f.t<1.2); R.jets=R.jets.filter(j=>R.t-j.t<.45); R.somm.fx=R.somm.fx.filter(f=>R.t-f.t<1);
   if(R.wave>=R.waves&&!R.spawnQ.length&&!R.units.some(u=>u.state==='go')) endGame();
 }
+const HEAT_PAS=.5;
+function noteHeat(u,v){ const H=R.heat&&R.heat.dmg[u.pi]; if(!H||!(u.d>=0)) return; H[Math.min(H.length-1,Math.floor(u.d/HEAT_PAS))]+=v; u.lastHitD=u.d; }
+/* Tension du décor : 0 aux premières vagues, 1 à la dernière (fumigènes, lueurs, vignette rouge). */
+/* Défi bonus : un petit objectif facultatif par partie, tiré selon le niveau (toujours le même pour un niveau donné).
+   Réussi : +3 agents au départ du niveau suivant (Challenge), +1 sur la jauge des skins (incident du jour),
+   une cible 🎯 sur le quartier (campagne). Raté : rien de plus que la partie elle-même. */
+const DEFIS_BONUS={
+  casseurs:{txt:'aucun casseur ne passe',ok:()=>!(R.leaks.casseur>0),dispo:()=>R.waves>=2},
+  meneurs:{txt:'aucun meneur ne passe',ok:()=>!(R.leaks.meneur>0),dispo:()=>R.waves>=4},
+  vehicules:{txt:'aucun véhicule ne passe',ok:()=>!['tracteur','sono','car'].some(t=>R.leaks[t]>0),dispo:()=>(R.cfg.boss||[]).length>0},
+  sanscav:{txt:'gagne sans la cavalerie',ok:()=>!R.cavUtilisee,dispo:()=>(R.dispo.cavalerie||0)>0},
+  reserve:{txt:'termine avec 10 agents en réserve',ok:()=>R.agents>=10,fin:true,dispo:()=>true},
+  cordon:{txt:'garde 80 % du cordon',ok:()=>R.lives>=R.lives0*.8,fin:true,dispo:()=>true}};
+let BONUS_SUIVANT=0; // Challenge : agents offerts au niveau suivant après un défi bonus réussi
+function tirerDefiBonus(){
+  if(R.tuto) return null; const L=Object.keys(DEFIS_BONUS).filter(k=>DEFIS_BONUS[k].dispo()); if(!L.length) return null;
+  const n=(R.cfg.seed||0)*7+(R.map>=0?R.map*3:0)+(R.cfg.waves||0); return {k:L[n%L.length],rate:false};
+}
+function verifDefiBonus(){ const d=R.defiB; if(!d||d.rate||R.sim) return; const D=DEFIS_BONUS[d.k]; if(D.fin||D.ok()) return;
+  d.rate=true; Shell.toast(`🎯 Défi bonus manqué : ${D.txt}`,'bad'); }
+const tension=()=>R.tuto||R.phase!=='run'&&R.phase!=='build'?0:Math.max(0,Math.min(1,(R.wave-1)/Math.max(1,R.waves-1)));
 function leak(u){
-  u.alive=false; const F=FOES[u.type]; R.lives-=F.vies; R.waveLoss+=F.vies; R.leaks[u.type]=(R.leaks[u.type]||0)+1;
-  Shell.bad(); if(!R.sim){ Shell.shake(); const h=$('hLives'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit'); }
+  u.alive=false; const F=FOES[u.type];
+  { const H=R.heat&&R.heat.br[u.pi]; if(H) for(let i=Math.floor((u.lastHitD||0)/HEAT_PAS);i<H.length;i++) H[i]+=F.vies; } R.lives-=F.vies; R.waveLoss+=F.vies; R.leaks[u.type]=(R.leaks[u.type]||0)+1;
+  // le téléphone vibre d'autant plus fort que le passage coûte cher au cordon (1, 2, 3 ou 4)
+  Shell.blip(130,.18,'sawtooth',.06); if(!R.sim) Shell.buzz([[45],[70,40,70],[90,40,90,40,90],[120,40,120,40,120]][Math.min(3,F.vies-1)]);
+  if(!R.sim){ Shell.shake(); const h=$('hLives'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit'); }
   const ex=R.M.P[u.pi].pts.at(-1); fx(ex[0],MH-1.1,`−${F.vies}`,'bad');
+  verifDefiBonus();
   if(R.lives<=0&&!R.tuto){ R.lives=0; finish(false); }
   ui();
 }
@@ -645,12 +711,12 @@ function fx(x,y,txt,k){ R.fx.push({x,y,txt,k,t:R.t}); }
 function puff(x,y,n,o={}){ if(R.sim) return; const P=R.parts||(R.parts=[]);
   for(let i=0;i<n;i++){ const a=(o.a??-Math.PI/2)+(Math.random()-.5)*(o.spread??Math.PI*2), v=(o.v??.8)*(.4+Math.random()*.8);
     P.push({x:x+(Math.random()-.5)*(o.jit??.1),y:y+(Math.random()-.5)*(o.jit??.1)*.5,vx:Math.cos(a)*v,vy:Math.sin(a)*v*(o.flat??.6),t0:R.t,life:(o.life??.6)*(.7+Math.random()*.6),
-      r:(o.r??.05)*(.6+Math.random()*.8),grow:o.grow??0,grav:o.grav??0,col:o.col||'rgba(160,165,180,',sq:o.sq}); }
+      r:(o.r??.05)*(.6+Math.random()*.8),grow:o.grow??0,grav:o.grav??0,col:o.col||'rgba(160,165,180,',sq:o.sq,al:o.al??1}); }
   if(P.length>500) P.splice(0,P.length-500); }
 function drawParts(g){ const P=R.parts; if(!P||!P.length) return;
   R.parts=P.filter(q=>R.t-q.t0<q.life);
   for(const q of R.parts){ const a=R.t-q.t0, k=a/q.life, x=q.x+q.vx*a, y=q.y+q.vy*a+.5*q.grav*a*a, r=q.r*(1+q.grow*k);
-    g.fillStyle=q.col+(1-k)*(q.sq?1:.75)+')'; if(q.sq){ g.fillRect(x-r/2,y-r/2,r,r); } else { g.beginPath(); g.arc(x,y,r,0,7); g.fill(); } } }
+    g.fillStyle=q.col+(1-k)*(q.sq?1:.75)*q.al+')'; if(q.sq){ g.fillRect(x-r/2,y-r/2,r,r); } else { g.beginPath(); g.arc(x,y,r,0,7); g.fill(); } } }
 function endGame(){
   if(R.over) return;
   if(R.tuto){ R.over=true; R.phase='idle'; Shell.win(); setTimeout(()=>tutoStep(5),400); return; }
@@ -673,11 +739,40 @@ function finish(ok){
   const evalu=!ok?'Dispositif débordé':perdu===0?'Maîtrise':perdu<=R.lives0*.25?'Bon dispositif':'Sous tension';
   const st=[['Repoussés',R.disp],['Agents récupérés',`+${R.stats.rec}`],['Cordon perdu',`${perdu} / ${R.lives0}`]];
   if(R.stats.blocs) st.push(['Blocs dispersés',R.stats.blocs]); if(R.stats.combos) st.push(['Interventions maîtrisées',R.stats.combos]); if(R.stats.gaz) st.push(['Émeutiers gazés',R.stats.gaz]); if(R.cmd&&R.cmd.lvl>1) st.push(['Commandant',`niveau ${R.cmd.lvl} ${'★'.repeat(R.cmd.lvl)}`]);
+  // défi bonus
+  let bonusPts=0; if(R.defiB){ const D=DEFIS_BONUS[R.defiB.k], reussi=ok&&!R.defiB.rate&&D.ok();
+    st.push(['Défi bonus',reussi?'réussi 🎯':'manqué']);
+    if(reussi){ if(Shell.enDefi){ BONUS_SUIVANT=3; Shell.toast('🎯 Défi bonus réussi : +3 agents au niveau suivant','ok'); }
+      else if(INC_MODE){ bonusPts=1; }
+      else if(campagne()&&R.map>=0){ const c=store.get('defisB',{}); c[R.map]=true; store.set('defisB',c); note+=(note?' ':'')+'🎯 Défi bonus réussi sur ce quartier.'; } } }
   const qScore=ok?Math.round(Math.max(0,R.lives)/R.lives0*1000)+R.stats.rec:0;
-  Shell.result({ok, faults:perdu, stats:st, details, note:`Évaluation : ${evalu.toUpperCase()}. `+(note||(perdu===0?'Cordon intact : double point.':'Cordon intact : +2 sur la jauge.'))});
+  Shell.result({ok, faults:perdu, bonusPts, stats:st, details, note:`Évaluation : ${evalu.toUpperCase()}. `+(note||(perdu===0?'Cordon intact : double point.':'Cordon intact : +2 sur la jauge.'))});
+  carteBreches();
   if(ok&&Shell.enDefi&&R.map>=0&&R.cfg.niveau<=MAPS.length) recordQuartier(R.map,qScore);
 }
 const campagne=()=>!Q2.get('mode');
+/* Écran de résultat : petite carte du quartier, en vert là où tes moyens ont travaillé, en rouge là où les émeutiers
+   sont passés sans plus être inquiétés jusqu'au bout du trajet (les brèches du dispositif). */
+function carteBreches(){
+  const card=document.getElementById('card'); if(!card||!R.heat||!C.map) return;
+  const dl=card.querySelector('.debrief-list'), anc=card.querySelector('.stats')||(dl&&dl.previousElementSibling)||card.querySelector('h2'); if(!anc) return;
+  const mx=a=>a.reduce((m,H)=>Math.max(m,...H),0), md=mx(R.heat.dmg), mb=mx(R.heat.br);
+  const H=170, W=Math.round(H*MW/MH), k=W/MW, cv=document.createElement('canvas'), dpr=Math.min(2,window.devicePixelRatio||1);
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.cssText=`width:${W}px;height:${H}px;border-radius:10px;flex:0 0 auto;background:#14171f`;
+  const g=cv.getContext('2d'); g.drawImage(C.map,0,0,cv.width,cv.height); g.fillStyle='rgba(8,12,22,.45)'; g.fillRect(0,0,cv.width,cv.height);
+  g.setTransform(k*dpr,0,0,k*dpr,0,0); g.lineCap='round';
+  // rouge : tronçons empruntés par ceux qui ont filé, là où tes moyens n'agissaient pas ; vert par-dessus : là où ils ont travaillé
+  const seg=(P,i,col,w)=>{ const a=posOn(P,i*HEAT_PAS), b=posOn(P,Math.min(P.len,(i+1)*HEAT_PAS)); g.strokeStyle=col; g.lineWidth=w; g.beginPath(); g.moveTo(a.x,a.y); g.lineTo(b.x,b.y); g.stroke(); };
+  if(mb) R.M.P.forEach((P,pi)=>R.heat.br[pi].forEach((v,i)=>{ const cov=md?Math.min(1,R.heat.dmg[pi][i]/md*3):0, a=(.3+.7*v/mb)*(1-cov); if(v>0&&a>.05) seg(P,i,`rgba(255,77,94,${a.toFixed(2)})`,.42); }));
+  if(md) R.M.P.forEach((P,pi)=>R.heat.dmg[pi].forEach((v,i)=>{ if(v>0) seg(P,i,`rgba(70,217,138,${(.3+.7*Math.min(1,v/md)).toFixed(2)})`,.55); }));
+  const fig=document.createElement('div'); fig.className='breches';
+  fig.style.cssText='display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--stroke);border-radius:14px;padding:8px';
+  const nb=Object.values(R.leaks).reduce((a,b)=>a+b,0);
+  fig.innerHTML=`<div style="display:grid;gap:6px;font-size:12.5px;line-height:1.35;color:#d5dce8"><b style="font-size:13px;color:var(--ink)">Ton dispositif</b>
+    <span><i style="display:inline-block;width:14px;height:5px;border-radius:3px;background:#46d98a;vertical-align:middle;margin-right:6px"></i>tes moyens ont travaillé</span>
+    <span><i style="display:inline-block;width:14px;height:5px;border-radius:3px;background:#ff4d5e;vertical-align:middle;margin-right:6px"></i>${nb?`brèches : rues sans opposition (${nb>1?`${nb} émeutiers ont filé`:'un émeutier a filé'})`:'aucune brèche'}</span></div>`;
+  fig.prepend(cv); anc.after(fig);
+}
 /* Classement par quartier (niveaux 1 à 10 du Challenge) : score = cordon restant (‰) + agents récupérés.
    Ma ZP envoie les records de la partie ; on lui renvoie chaque quartier réussi. */
 const QREC={data:{}};
@@ -705,7 +800,7 @@ function introFoe(type){
 function chooseMap(cfg){
   const el=$('panel'), c=store.get('campagne',{});
   el.innerHTML=`<div><div class="ey" style="color:var(--accent)">Campagne</div><h3>Choisis le quartier</h3></div><button class="btn" id="toDefi">🏆 Challenge : niveaux sans fin, de plus en plus durs</button><div class="levels">${MAPS.map((m,i)=>{ const open=i===0||c[i-1]>0, st=c[i]||0;
-    return `<button class="lvl" data-i="${i}" ${open?'':'disabled'}><canvas data-m="${i}"></canvas><span class="n">${i+1}</span>${open?'':'<span class="lock">🔒</span>'}<b>${m.nom}</b><span>${m.sous}</span><span class="st">${'★'.repeat(st)}${'☆'.repeat(3-st)}</span></button>`; }).join('')}</div>
+    return `<button class="lvl" data-i="${i}" ${open?'':'disabled'}><canvas data-m="${i}"></canvas><span class="n">${i+1}</span>${open?'':'<span class="lock">🔒</span>'}<b>${m.nom}</b><span>${m.sous}</span><span class="st">${'★'.repeat(st)}${'☆'.repeat(3-st)}${store.get('defisB',{})[i]?' 🎯':''}</span></button>`; }).join('')}</div>
     <p style="color:var(--mute);font-size:13px">Réussis un quartier pour débloquer le suivant.</p>`;
   el.hidden=false;
   el.querySelectorAll('canvas[data-m]').forEach((cv,k)=>setTimeout(()=>{ const i=+cv.dataset.m; cv.width=180; cv.height=280; const g=cv.getContext('2d'); g.setTransform(20,0,0,20,0,0); drawMap(g,MAPDATA[i],MAPDATA[i].pads); },80+k*120));
@@ -747,12 +842,13 @@ function tip(html){
   if(R.sel){ const tw=R.towers[R.sel.pad];
     if(R.sel.opt){ const o=R.sel.opt;
       if(o==='up'){ el.innerHTML='<span><b>Touche encore</b> la demi-bulle pour renforcer.</span>'; return; }
+      if(o.startsWith('up:')){ const sp=SPEC[tw.type][o.slice(3)]; el.innerHTML=`<span><b>Niveau 3 : choisis une voie.</b> Touche encore « ${sp.nom} » pour la prendre, ou l’autre quart pour comparer.</span>`; return; }
       if(o==='sell'){ el.innerHTML=`<span><b>Désengager</b> ce moyen · ses <span class="c">${sellVal(tw)} agents</span> reviennent en réserve dans ${RETOUR} s. <b>Touche encore pour confirmer.</b></span>`; return; }
       if(o==='rally'){ el.innerHTML=`<span><b>Déplacer</b> ${tw.type==='barrage'?'les barrières':'la ligne des agents'} ailleurs dans la rue, autour de l’emplacement (gratuit). <b>Touche encore</b>, puis touche la rue.</span>`; return; }
       if(o==='move'){ el.innerHTML='<span><b>Redéployer</b> la cavalerie sur un autre emplacement (gratuit, puis 10 s avant le prochain). <b>Touche encore</b>, puis touche l’emplacement.</span>'; return; }
       const M=MEANS[o]; el.innerHTML=`<span><b>${M.nom}</b> · <span class="c">${M.cout} agents</span> — ${M.ds} <b>Touche encore pour poser.</b></span>`; return; }
     el.innerHTML= tw ? `<span><b>${MEANS[tw.type].nom}</b> (niveau ${tw.lvl}) — ${tw.type==='cavalerie'?'<b>fais-la glisser</b> vers un emplacement libre pour la redéployer.':tw.type==='autopompe'?MEANS[tw.type].ds:'<b>fais glisser</b> pour déplacer '+(tw.type==='barrage'?'les barrières':'la ligne')+' dans la rue, autour de l’emplacement.'}</span>` : '<span>Choisis un moyen autour de l’emplacement.</span>'; return; }
-  if(R.phase==='build') el.innerHTML=`<span>Touche un <b>emplacement bleu</b> pour poser un moyen, puis lance la vague. Les cortèges suivent les rues jusqu’à <b>${LIEU}</b>.</span>`;
+  if(R.phase==='build') el.innerHTML=R.defiB&&R.wave===0?`<span>Touche un <b>emplacement bleu</b> pour poser un moyen, puis lance la vague.<br>🎯 <b>Défi bonus :</b> ${DEFIS_BONUS[R.defiB.k].txt} <span style="opacity:.7">(${Shell.enDefi?'+3 agents au niveau suivant':INC_MODE?'+1 jauge des skins':'facultatif'})</span>.</span>`:`<span>Touche un <b>emplacement bleu</b> pour poser un moyen, puis lance la vague. Les cortèges suivent les rues jusqu’à <b>${LIEU}</b>.</span>`;
   else if(R.phase==='run') el.innerHTML=`<span>Repousser rend des agents, <b>de moins en moins</b> (${Math.round(rendement()*100)} % cette vague) : vise les <b>interventions groupées</b> et garde une réserve.</span>`;
   else el.innerHTML='';
 }
@@ -767,7 +863,7 @@ function pointRally(id,x,y){ const tw=R.towers[id], P=padOf(id), rg=rayonRally(t
 function rallier(id,x,y){ const tw=R.towers[id], b=pointRally(id,x,y); if(!tw||!b) return false; const q=b.q;
   tw.rx=q.x; tw.ry=q.y; tw.rang=q.ang; tw.road={pi:b.pi,d:b.d}; tw.block=blocksFor(q.x,q.y); tw.born=R.t; tw.rallyT=R.t;
   if(tw.type==='peloton') tw.agents.forEach(a=>{ if(a.u){ a.u.held=null; a.u=null; } if(a.st==='eng') a.st='ready'; });
-  if(tw.type==='barrage'&&R.phase==='run'&&tw.bar.up){ tw.bar.up=false; tw.bar.hp=0; tw.bar.downAt=R.t-BAR_RELEVE[tw.lvl-1]+2; }
+  if(tw.type==='barrage'&&R.phase==='run'&&tw.bar.up){ tw.bar.up=false; tw.bar.hp=0; tw.bar.downAt=R.t-barReleve(tw)+2; }
   puff(q.x,q.y,8,{v:.5,r:.05,grow:1.5,life:.5,flat:.3}); fx(q.x,q.y-.3,tw.type==='barrage'?'Barrières déplacées':'Ligne déplacée','info'); return true; }
 /* Redéploiement de la cavalerie : elle traverse au trot jusqu'au nouvel emplacement, inactive pendant le trajet. */
 function redeploy(from,to){
@@ -780,7 +876,8 @@ function menuLayout(){
   const P=padOf(R.sel.pad), tw=R.towers[R.sel.pad];
   const cx=Math.min(MW-MENU_R-.08,Math.max(MENU_R+.08,P.x)), cy=Math.min(MH-MENU_R-.35,Math.max(MENU_R+.08,P.y));
   let items;
-  if(tw) items=[{k:tw.lvl<3?'up':'max',a0:-Math.PI,a1:0},{k:'sell',a0:0,a1:Math.PI}];
+  // niveau 2 → 3 : la demi-bulle se coupe en deux quarts, une voie de spécialisation chacun
+  if(tw) items=[...(tw.lvl===2&&!R.tuto?[{k:'up',sp:'a',a0:-Math.PI,a1:-Math.PI/2},{k:'up',sp:'b',a0:-Math.PI/2,a1:0}]:[{k:tw.lvl<3?'up':'max',a0:-Math.PI,a1:0}]),{k:'sell',a0:0,a1:Math.PI}];
   else { const allow=R.tuto?['peloton']:ORDER; items=ORDER.map(k=>({k,a0:QUAD[k][0],a1:QUAD[k][1],lock:!allow.includes(k)})); }
   items=items.map(it=>{ let ok=true, why='';
     if(it.k==='max'){ ok=false; why='niveau maximum atteint'; }
@@ -795,16 +892,17 @@ function menuLayout(){
   return {cx,cy,r:MENU_R,items};
 }
 function menuHit(L,x,y){ const dx=x-L.cx, dy=y-L.cy; if(Math.hypot(dx,dy)>L.r) return null; let a=Math.atan2(dy,dx); if(a>=Math.PI-1e-9) a=-Math.PI; return L.items.find(it=>a>=it.a0&&a<it.a1)||null; }
+const cleItem=it=>it.k+(it.sp?':'+it.sp:'');
 function choose(it){
-  const id=R.sel.pad;
-  if(R.sel.opt!==it.k){ R.sel.opt=it.k; tip(); if(!it.ok){ const nm=it.k==='up'||it.k==='max'?'Renforcer':MEANS[it.k].nom; const tw=R.towers[id]; tip(it.k==='up'?`<span>Pas assez d’agents pour renforcer (il en faut <span class="c">${upCost(tw)}</span>).</span>`:`<span><b>${nm}</b> : ${it.why||'pas assez d’agents'}.</span>`); } return; }
+  const id=R.sel.pad, key=cleItem(it);
+  if(R.sel.opt!==key){ R.sel.opt=key; tip(); if(!it.ok){ const nm=it.k==='up'||it.k==='max'?'Renforcer':MEANS[it.k].nom; const tw=R.towers[id]; tip(it.k==='up'?`<span>Pas assez d’agents pour renforcer (il en faut <span class="c">${upCost(tw)}</span>).</span>`:`<span><b>${nm}</b> : ${it.why||'pas assez d’agents'}.</span>`); } return; }
   if(!it.ok) return;
   if(it.k==='rally'){ R.rally=id; R.sel=null; tip(); Shell.blip(600,.05,'square',.03); return; }
   if(it.k==='move'){ R.redeploy=id; R.sel=null; tip(); Shell.blip(600,.05,'square',.03); return; }
   if(it.k==='sell'){ const tw=R.towers[id], P=padOf(id); (tw.agents||[]).forEach(a=>{ if(a.u){ a.u.held=null; } }); delete R.towers[id];
     if(R.phase==='build'){ R.agents+=sellVal(tw); } else { R.retours.push({n:sellVal(tw),at:R.t+RETOUR,x:P.x,y:P.y}); fx(P.x,P.y-.3,`Retour en ${RETOUR} s`,'info'); } }
-  else if(it.k==='up'){ const tw=R.towers[id], c=upCost(tw); R.agents-=c; tw.spent+=c; tw.lvl++; tw.born=R.t; setupTower(tw,id); }
-  else { const M=MEANS[it.k]; R.agents-=M.cout; R.towers[id]=newTower(id,it.k); if(R.tuto===3) tutoStep(4); }
+  else if(it.k==='up'){ const tw=R.towers[id], c=upCost(tw); R.agents-=c; tw.spent+=c; tw.lvl++; if(it.sp) tw.spec=it.sp; tw.born=R.t; setupTower(tw,id); if(it.sp) fx(padOf(id).x,padOf(id).y-.4,SPEC[tw.type][it.sp].nom,'gain'); }
+  else { const M=MEANS[it.k]; R.agents-=M.cout; R.towers[id]=newTower(id,it.k); if(it.k==='cavalerie'){ R.cavUtilisee=true; verifDefiBonus(); } if(R.tuto===3) tutoStep(4); }
   Shell.good(); R.sel=null; tip(); ui();
 }
 function newTower(id,type){ const P=padOf(id), tw={type,lvl:1,spent:MEANS[type].cout,born:R.t,cd:0,face:Math.PI/2};
@@ -1340,7 +1438,7 @@ function frise(g,cx,cy,ang,down,rt,L=.5){ // cheval de frise : croisillons méta
 function drawBarrier(g,tw,rt){
   const b=tw.bar, vert=Math.abs(Math.sin(tw.rang))>.7, px=-Math.sin(tw.rang), py=Math.cos(tw.rang);
   const dmg=b.up?1-b.hp/b.max:0, shake=b.up&&dmg>0?Math.sin(rt*28)*.012*(1+dmg*2):0;
-  if(tw.lvl>2){ g.save(); g.translate(shake,0); const S=spr('frise');
+  if(tw.lvl>2&&tw.spec!=='b'){ g.save(); g.translate(shake,0); const S=spr('frise');
       // toujours dessiné de face pour rester lisible ; sur une rue horizontale, deux éléments empilés couvrent la largeur
       const offs=vert?[0]:[-.24,.24];
       offs.forEach(o=>{ if(S.ok&&b.up){ g.save(); g.translate(tw.rx,tw.ry+o+.08); sprite1(g,'frise',vert?.78:.6,false); g.restore(); }
@@ -1356,7 +1454,7 @@ function drawBarrier(g,tw,rt){
     const ok=sprite(g,'heras',0,.66,i===1); g.restore();
     if(!ok) heras(g,cx,cy,tw.rang+Math.PI/2); });
   if(b.up&&b.hp<b.max){ const w=.6,f=b.hp/b.max; g.fillStyle='rgba(0,0,0,.75)'; rr(g,tw.rx-w/2-.025,tw.ry-.92,w+.05,.1,.04); g.fill(); g.fillStyle=f>.5?'#62b0ff':f>.25?'#ffd166':'#ff4d5e'; rr(g,tw.rx-w/2,tw.ry-.895,w*f,.05,.025); g.fill(); }
-  if(!b.up){ const k=Math.min(1,(R.t-b.downAt)/BAR_RELEVE[tw.lvl-1]); g.strokeStyle='rgba(98,176,255,.9)'; g.lineWidth=.05; g.beginPath(); g.arc(tw.rx,tw.ry-.5,.16,-Math.PI/2,-Math.PI/2+k*Math.PI*2); g.stroke();
+  if(!b.up){ const k=Math.min(1,(R.t-b.downAt)/barReleve(tw)); g.strokeStyle='rgba(98,176,255,.9)'; g.lineWidth=.05; g.beginPath(); g.arc(tw.rx,tw.ry-.5,.16,-Math.PI/2,-Math.PI/2+k*Math.PI*2); g.stroke();
     g.fillStyle='#cfe4ff'; g.font='800 .13px "Instrument Sans",sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(k<1?'…':'!',tw.rx,tw.ry-.5); }
 }
 function drawAgentMO(g,tw,a,rt){
@@ -1448,6 +1546,9 @@ function render(){
       puff(x,y+.08,1,{v:.25,r:.06,grow:2.2,life:.6,col:'rgba(150,140,125,',flat:.3,jit:.4}); } }
   items.sort((a,b)=>a.y-b.y).forEach(it=>it.d());
   drawParts(g);
+  { const I=tension(); if(I>.15&&!R.over){ const pu=.65+.35*Math.sin(rt*2.2), cx=MW/2, cy=MH/2, r0=Math.min(MW,MH)*.45, r1=Math.hypot(MW,MH)*.62;
+      const gv=g.createRadialGradient(cx,cy,r0,cx,cy,r1); gv.addColorStop(0,'rgba(200,30,40,0)'); gv.addColorStop(1,`rgba(200,30,40,${(.2*I*pu).toFixed(3)})`);
+      g.fillStyle=gv; g.fillRect(0,0,MW,MH); } }
   for(const f of (R.fumees||[])){ const a=R.t-f.t0, rest=f.until-R.t, k=Math.min(1,a/.6), op=Math.min(1,rest/1.2)*k, [r,gg,b]=f.c;
     for(let i=0;i<14;i++){ const an=i*2.39+f.seed, d=(i%5)/5*f.r*.75*k, px=f.x+Math.cos(an+rt*.15)*d, py=f.y+Math.sin(an+rt*.15)*d*.8-.25-a*.04*(i%3), rad=(.45+.35*((i*7)%3)/2)*(.6+.4*k);
       const gr=g.createRadialGradient(px,py,0,px,py,rad); const t2=i%3===0?1:.7;
@@ -1495,6 +1596,9 @@ function render(){
   // panneaux
   R.M.P.forEach(P=>{ const a=P.pts[0], b=P.pts[1], x=Math.max(.35,Math.min(MW-.35,a[0])), y=Math.max(.35,Math.min(MH-.35,a[1]));
     const lx=Math.max(1.05,Math.min(MW-1.05,x+(b[0]===a[0]?1.05:0))), ly=y+(b[0]===a[0]?.05:.7); pill(g,lx,ly,'CORTÈGE','#fff',.18,'#c0392b'); });
+  { const ap=apercuVague(); if(ap){ const P=R.M.P[0], a=P.pts[0], b=P.pts[1], x=Math.max(.35,Math.min(MW-.35,a[0])), y=Math.max(.35,Math.min(MH-.35,a[1]));
+      const lx=Math.max(1.3,Math.min(MW-1.3,x+(b[0]===a[0]?1.05:0))), ly=y+(b[0]===a[0]?.05:.7)+.36;
+      g.globalAlpha=.92; pill(g,lx,ly,`Vague ${R.wave+1} : ${ap}`,'#ffe2a8',.15,'rgba(10,12,20,.78)'); g.globalAlpha=1; } }
   const ex=R.M.P[0].pts.at(-1)[0], hx=Math.max(1.15,Math.min(MW-1.15,ex)); if(!HP.ok) pill(g,hx,MH-1.8,'Hôtel de ville','#fff',.2,'rgba(16,24,40,.85)');
   if(R.rally&&R.towers[R.rally]){ const tw=R.towers[R.rally], P=padOf(R.rally), rg=rayonRally(tw), pu=.5+.5*Math.sin(rt*5);
     g.save(); g.fillStyle='rgba(255,209,102,.07)'; g.strokeStyle='rgba(255,209,102,.8)'; g.lineWidth=.04; g.setLineDash([.14,.1]); g.lineDashOffset=-rt*.6; g.beginPath(); g.arc(P.x,P.y,rg,0,7); g.fill(); g.stroke(); g.setLineDash([]);
@@ -1512,25 +1616,35 @@ function render(){
   const L=menuLayout();
   if(L){ const P=padOf(R.sel.pad), tw=R.towers[R.sel.pad];
     let rg=null;
-    if(R.sel.opt&&MEANS[R.sel.opt]) rg=MEANS[R.sel.opt].range; else if(tw) rg=MEANS[tw.type].range+LV.rng[Math.min(2,tw.lvl-1+(R.sel.opt==='up'?1:0))];
+    if(R.sel.opt&&MEANS[R.sel.opt]) rg=MEANS[R.sel.opt].range; else if(tw){ const up=(R.sel.opt||'').startsWith('up'), spk=(R.sel.opt||'').split(':')[1]; rg=MEANS[tw.type].range+LV.rng[Math.min(2,tw.lvl-1+(up?1:0))]+(spk?SPEC[tw.type][spk].rng||0:tw.lvl>=3?spX(tw,'rng',0):0); }
     if(rg){ g.fillStyle='rgba(255,255,255,.06)'; g.strokeStyle='rgba(255,255,255,.7)'; g.lineWidth=.035; g.setLineDash([.12,.08]); g.beginPath(); g.arc(P.x,P.y,rg,0,7); g.fill(); g.stroke(); g.setLineDash([]); }
     g.save(); g.shadowColor='rgba(80,160,255,.6)'; g.shadowBlur=14*C.dpr; g.fillStyle='rgba(12,20,36,.93)'; g.beginPath(); g.arc(L.cx,L.cy,L.r,0,7); g.fill(); g.restore();
     g.strokeStyle='#62b0ff'; g.lineWidth=.05; g.beginPath(); g.arc(L.cx,L.cy,L.r,0,7); g.stroke();
-    for(const it of L.items){ const on=R.sel.opt===it.k;
+    const choixSpec=L.items.find(it=>it.sp&&R.sel.opt===cleItem(it));
+    for(const it of L.items){ const on=R.sel.opt===cleItem(it);
       if(on){ g.fillStyle='rgba(255,209,102,.22)'; g.beginPath(); g.moveTo(L.cx,L.cy); g.arc(L.cx,L.cy,L.r-.03,it.a0,it.a1); g.closePath(); g.fill(); }
       g.strokeStyle='rgba(98,176,255,.45)'; g.lineWidth=.025; g.beginPath(); g.moveTo(L.cx,L.cy); g.lineTo(L.cx+Math.cos(it.a0)*L.r,L.cy+Math.sin(it.a0)*L.r); g.stroke();
       // « Renforcer » touché une fois : la demi-bulle affiche ce que le niveau apporte (même sans assez d'agents).
+      // quart de spécialisation choisi : toute la demi-bulle du haut détaille cette voie (l'autre quart reste touchable)
+      if(choixSpec&&it.sp){ if(it!==choixSpec) continue; const sp=SPEC[tw.type][it.sp], o=L.items.find(x=>x.sp&&x!==it), so=SPEC[tw.type][o.sp], y0=L.cy-1.24;
+        const gains=descSpec(tw.type,it.sp);
+        g.textAlign='center'; g.textBaseline='middle';
+        g.font='800 .2px "Instrument Sans",sans-serif'; g.fillStyle=it.sp==='a'?'#ffd166':'rgba(238,244,255,.45)'; g.fillText(SPEC[tw.type].a.nom,L.cx-.62,y0+.04);
+        g.fillStyle=it.sp==='b'?'#ffd166':'rgba(238,244,255,.45)'; g.fillText(SPEC[tw.type].b.nom,L.cx+.62,y0+.04);
+        g.font='700 .16px "Instrument Sans",sans-serif'; g.fillStyle=it.ok?'#9fb3cf':'#ff8a80'; g.fillText(it.ok?`Niveau 3 · ${upCost(tw)} agents · touche encore`:`Niveau 3 · il faut ${upCost(tw)} agents`,L.cx,y0+.3);
+        g.font='700 .18px "Instrument Sans",sans-serif'; gains.forEach((t,i)=>{ g.fillStyle=t[0]==='▼'?'#ff9b8f':'#eef4ff'; g.fillText(t,L.cx,y0+.58+i*.23); }); continue; }
+      if(choixSpec&&it.k==='up') continue;
       if(on&&it.k==='up'&&tw&&tw.lvl<3){ const gains=gainNiv(tw).split(', ').slice(0,3), y0=L.cy-1.22;
         g.textAlign='center'; g.textBaseline='middle';
         g.font='800 .24px "Instrument Sans",sans-serif'; g.fillStyle='#ffd166'; g.fillText(`Niveau ${tw.lvl+1}`,L.cx,y0);
         g.font='700 .17px "Instrument Sans",sans-serif'; g.fillStyle=it.ok?'#9fb3cf':'#ff8a80'; g.fillText(it.ok?`${upCost(tw)} agents · touche encore`:`il faut ${upCost(tw)} agents`,L.cx,y0+.26);
         g.font='700 .19px "Instrument Sans",sans-serif'; g.fillStyle='#eef4ff';
         gains.forEach((t,i)=>g.fillText('▲ '+t,L.cx,y0+.56+i*.24)); continue; }
-      g.save(); g.globalAlpha=it.ok?1:.38; g.translate(it.ix,it.iy-.16); g.scale(1.25,1.25); menuIcon(g,it.k,on); g.restore();
-      const nm={peloton:'MO',autopompe:'Autopompe',barrage:'Barrage',cavalerie:'Cavalerie',up:tw&&tw.lvl<3?`Niveau ${tw.lvl+1}`:'',max:'Niveau max',sell:'Désengager',move:'Redéployer',rally:'Déplacer'}[it.k];
+      g.save(); g.globalAlpha=it.ok?1:.38; g.translate(it.ix,it.iy-.16); if(it.sp){ g.font='.34px sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(SPEC[tw.type][it.sp].ico,0,0); } else { g.scale(1.25,1.25); menuIcon(g,it.k,on); } g.restore();
+      const nm={peloton:'MO',autopompe:'Autopompe',barrage:'Barrage',cavalerie:'Cavalerie',up:it.sp?SPEC[tw.type][it.sp].nom:tw&&tw.lvl<3?`Niveau ${tw.lvl+1}`:'',max:specOf(tw)?specOf(tw).nom:'Niveau max',sell:'Désengager',move:'Redéployer',rally:'Déplacer'}[it.k];
       const sub=it.k==='up'?`${upCost(tw)} agents`:it.k==='sell'?`+${sellVal(tw)} en ${RETOUR} s`:it.k==='move'?(tw.moveCd>R.t?`dans ${Math.ceil(tw.moveCd-R.t)} s`:'gratuit'):it.k==='rally'?'dans la rue':it.k==='max'?'':`${MEANS[it.k].cout} agents`;
       g.globalAlpha=it.ok||it.k==='sell'?1:.45; g.textAlign='center'; g.textBaseline='middle';
-      g.font='800 .25px "Instrument Sans",sans-serif'; g.fillStyle=on?'#ffd166':'#eef4ff'; g.fillText(nm,it.ix,it.iy+.24);
+      g.font=`800 ${it.sp||(it.k==='max'&&specOf(tw))?.18:.25}px "Instrument Sans",sans-serif`; g.fillStyle=on?'#ffd166':'#eef4ff'; g.fillText(nm,it.ix,it.iy+.24);
       g.font='700 .18px "Instrument Sans",sans-serif'; g.fillStyle=it.k==='sell'?'#46d98a':'#9fb3cf'; g.fillText(sub,it.ix,it.iy+.47); g.globalAlpha=1; } }
   // textes flottants
   for(const f of R.fx){ if(L&&Math.hypot(f.x-L.cx,f.y-.75-L.cy)<L.r+.25) continue; // pas de texte flottant sur la bulle ouverte
@@ -1681,6 +1795,6 @@ Shell.init({
 window.__bouclage={R,posOn,addUnit,upos,MAPS,MAPDATA,genMap,mapOk,MEANS,FOES,WAVES,LV,resetGame,launchWave,step,upCost,
   cmdVers(x,y){ if(R.cmd){ R.cmd.tx=x; R.cmd.ty=y; } }, ordreCmd, redeploy, rallier, dir(k){ R.dirOffer=true; choisirDir(k); }, sell(pad){ const tw=R.towers[pad]; if(!tw) return false; delete R.towers[pad]; R.retours.push({n:sellVal(tw),at:R.t+RETOUR,x:0,y:0}); return true; },
   build(pad,type){ const M=MEANS[type]; if(R.towers[pad]||pad===R.fire||R.agents<M.cout) return false; const used=Object.values(R.towers).filter(t=>t.type===type).length; if(R.dispo[type]!==undefined&&used>=R.dispo[type]) return false; R.agents-=M.cout; R.towers[pad]=newTower(pad,type); return true; },
-  up(pad){ const tw=R.towers[pad]; if(!tw||tw.lvl>=3) return false; const c=upCost(tw); if(R.agents<c) return false; R.agents-=c; tw.spent+=c; tw.lvl++; setupTower(tw,pad); return true; },
+  up(pad,sp){ const tw=R.towers[pad]; if(!tw||tw.lvl>=3) return false; const c=upCost(tw); if(R.agents<c) return false; R.agents-=c; tw.spent+=c; tw.lvl++; if(tw.lvl===3&&sp) tw.spec=sp; setupTower(tw,pad); return true; },
   somm(x,y){ if(R.somm.cd>0||R.phase!=='run') return false; sommer(x,y); return true; }};
 </script>

@@ -254,8 +254,8 @@ export function resultatsIncidents(player, incidents) {
   return Object.fromEntries(incidents.filter((i) => r[i.id]).map((i) => [i.id, r[i.id]]));
 }
 
-/** Points de jauge d'un incident réussi en jouant : 2 sans faute, sinon 1. */
-export const pointsJauge = (res) => (res && res.statut === 'ok' ? (res.fautes ? 1 : 2) : 0);
+/** Points de jauge d'un incident réussi en jouant : 2 sans faute, sinon 1 ; +1 si le défi bonus du mini-jeu est réussi (Maintien de l'ordre). */
+export const pointsJauge = (res) => (res && res.statut === 'ok' ? (res.fautes ? 1 : 2) + (res.bonus === true ? 1 : 0) : 0);
 /** Résultats qui comptent pour le Directeur et les statistiques (« Pas le temps » est neutre). */
 export const compte = (res) => !!res && res.statut !== 'passe';
 

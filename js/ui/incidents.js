@@ -267,7 +267,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, e
           const niv = ['facile', 'normal', 'difficile'].includes(d.niveau) ? d.niveau : null;
           await enregistrer(inc.id, { statut: d.passe ? 'passe' : d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Math.max(0, Math.min(3, Number(d.fautes) || 0)), ...(d.raison === 'hs' ? { raison: 'hs' } : {}), ...(Number.isFinite(Number(d.temps)) && d.temps > 0 ? { temps: Math.round(Number(d.temps) * 10) / 10 } : {}), ...(Number.isInteger(d.vehicule) && (inc.vehicules || []).some((x) => x.slot === d.vehicule) ? { vehicule: d.vehicule } : {}), ...(d.score ? { score: Math.floor(Number(d.score) || 0) } : {}), ...(niv ? { niveau: niv } : {}) });
           if (!d.passe && niv && d.score > 0 && await noterScoreBitonal(niv, d.score)) toast(`Nouveau meilleur score de la partie en ${NOM_NIVEAU[niv].toLowerCase()} : ${Math.floor(d.score).toLocaleString('fr-BE')} !`);
-        } else if (d.type === 'result') await enregistrer(inc.id, { statut: d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Number(d.fautes) || 0 });
+        } else if (d.type === 'result') await enregistrer(inc.id, { statut: d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Number(d.fautes) || 0, ...(d.ok && d.bonus === true ? { bonus: true } : {}) });
       }
       if (mode === 'train' && d.type === 'result' && !d.abandon) onEntrainement({ minijeux: 1 });
       if (mode === 'train' && d.type === 'quartier' && d.jeu === jeu) await noterQuartier(jeu, d.map, d.score);

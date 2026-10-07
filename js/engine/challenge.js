@@ -7,7 +7,7 @@
 import { nextResolutionAfter, weekdayBe } from './time.js';
 
 export const CHALLENGE = {
-  jeux: ['colis', 'crochetage', 'depanneuse', 'dossier', 'empreintes', 'adn', 'reseau', 'interception'],
+  jeux: ['colis', 'crochetage', 'depanneuse', 'dossier', 'bouclage', 'empreintes', 'adn', 'reseau', 'interception'],
   prime: 5,        // k€ par mini-jeu remporté : ~5 % des revenus d'une semaine (voir test/challenge-sim.mjs)
   jauge: 10,       // points sur la jauge des skins (50 pour un skin)
   niveauMin: 5,    // en dessous, la course ne compte pas pour la prime (les premiers niveaux servent d'entraînement)

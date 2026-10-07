@@ -390,7 +390,7 @@ const Shell = (() => {
     if(run.erreurs>=DEFI.erreurs){ finDefi(detailHtml); return; }
     const reste=DEFI.erreurs-run.erreurs;
     showCard(`<div class="verdict bad">${ICONS.cross}</div><h2>Niveau ${n} raté</h2>
-      <p class="small">Encore <b>${reste} erreur${reste>1?'s':''}</b> permise${reste>1?'s':''} <span class="coeurs">${coeurs}</span>.</p>${detailHtml}
+      <p class="small">Encore <b>${reste} erreur${reste>1?'s':''}</b> permise${reste>1?'s':''} <span class="coeurs">${'♥'.repeat(DEFI.erreurs-run.erreurs)}${'♡'.repeat(run.erreurs)}</span>.</p>${detailHtml}
       <div class="row"><button class="btn primary" id="suite">Retenter le niveau ${n}</button><button class="btn" id="stop">Terminer la course</button></div>
       ${MODE==='train'?`<p class="small" style="opacity:.75">Besoin de partir ? Quitte le jeu : ta course reprendra au niveau ${n}.</p>`:''}`);
     $('suite').onclick=jouerNiveau; $('stop').onclick=finDefi;
@@ -511,14 +511,14 @@ const Shell = (() => {
   function stopTimer(){ st.timerOn=false; }
   function fmt(s){ s=Math.max(0,Math.ceil(s)); return s>=60? Math.floor(s/60)+':'+String(s%60).padStart(2,'0') : String(s); }
 
-  function result({ok, stats, faults, malus, note, details}){
+  function result({ok, stats, faults, malus, note, details, bonusPts=0}){
     if(run && !INC){ resultDefi({ok, stats, details}); return; }
     if(G.evt && !INC){ resultEvt({ok, stats, details}); return; }
     st.timerOn=false; st.mode='result';
     let pts=0, skin=false;
-    if(ok) pts=faults===0?2:1;
+    if(ok) pts=(faults===0?2:1)+(bonusPts||0); // bonusPts : défi bonus réussi (Maintien de l'ordre)
     if(INC){
-      fini=true; post('result',{ok, fautes:faults, pts});
+      fini=true; post('result',{ok, fautes:faults, pts, ...(bonusPts>0?{bonus:true}:{})});
       if(ok && !RENF){ st.gauge+=pts; renderGauge(); }
     } else if(MODE!=='train' && ok){ st.gauge+=pts; if(st.gauge>=50){st.gauge-=50; skin=true;} store.set('gauge',st.gauge); renderGauge(); }
     const statHtml=stats.map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')+(MODE==='train'||RENF?'':`<div class="stat pts"><span>Jauge skins</span><b>${ok?'+'+pts:'+0'}</b></div>`);

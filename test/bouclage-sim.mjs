@@ -4,6 +4,7 @@
 // le cordon perdu en moyenne et l'effectif total en fin de partie (pour repérer un effet boule de neige).
 // CMD=0 : commandant laissé à l'hôtel de ville · CHASSE=1 : il va gazer les émeutiers isolés qui ont passé les moyens.
 // Les bots n'utilisent ni le glisser-déplacer, ni le Directeur, ni les avantages de zone : un bon joueur fait mieux.
+// SPEC=base|a|b|mix : voie de spécialisation prise au niveau 3 (base = niveau 3 d'avant les voies, pour comparer).
 // Servir le dossier (http-server -p 8765 -c-1 .) puis : node test/bouclage-sim.mjs [premier=1] [dernier=30] [répétitions=2]
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -13,8 +14,10 @@ const BASE = process.env.BASE || 'http://127.0.0.1:8765/';
 const PAR = Number(process.env.PAR || 4);
 
 const AVEC_CMD = process.env.CMD !== '0', CHASSE = process.env.CHASSE === '1';
+// SPEC : voie prise au niveau 3 — base (niveau 3 d'avant les voies), a, b ou mix (au hasard)
+const SPEC = process.env.SPEC || 'base';
 async function jouer(page, niveau, reps) {
-  return page.evaluate(([n, N, avecCmd, chasse]) => {
+  return page.evaluate(([n, N, avecCmd, chasse, spec]) => {
     const B = window.__bouclage, R = B.R;
     const T = ['peloton', 'barrage', 'autopompe', 'cavalerie'];
     const cycles = [[0, 1, 2, 3], [1, 0, 2, 3], [2, 0, 1, 3], [0, 2, 1, 3], [1, 2, 0, 3], [0, 0, 2, 1]];
@@ -27,7 +30,7 @@ async function jouer(page, niveau, reps) {
       const act = () => {
         for (let t = 0; t < 3; t++) { const id = ids.find((i) => !R.towers[i]); if (!id) break; const ty = T[s.c[k % s.c.length]];
           if (B.build(id, ty)) k++; else if (R.agents >= 12) k++; else break; }
-        for (const id of ids) { const tw = R.towers[id]; if (tw && tw.lvl < 3 && R.agents >= B.upCost(tw) + (s.pol === 'reserve' ? 5 : 0)) B.up(id); } };
+        for (const id of ids) { const tw = R.towers[id]; if (tw && tw.lvl < 3 && R.agents >= B.upCost(tw) + (s.pol === 'reserve' ? 5 : 0)) B.up(id, spec === 'mix' ? (Math.random() < .5 ? 'a' : 'b') : spec); } };
       act(); B.launchWave();
       for (let t = 0; t < 60 * 420 && !R.over; t++) {
         if (t % 60 === 0) { act(); const go = R.units.filter((u) => u.state === 'go' && u.p && u.p.y > 8); let best = null, bn = 3;
@@ -51,7 +54,7 @@ async function jouer(page, niveau, reps) {
       res.fin += R.agents + Object.values(R.towers).reduce((a, t) => a + t.spent, 0);
     }
     return { ...res, nom: B.MAPS[(n - 1) % B.MAPS.length].nom, cfg: Shell.cfgNiveau(n) };
-  }, [niveau, reps, AVEC_CMD, CHASSE]);
+  }, [niveau, reps, AVEC_CMD, CHASSE, SPEC]);
 }
 
 const browser = await chromium.launch();
