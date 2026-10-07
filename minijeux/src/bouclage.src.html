@@ -282,7 +282,7 @@ function resetGame(cfg,tuto,mapIdx){
   R.cfg=cfg; if(mapIdx&&typeof mapIdx==='object'){ R.map=-1; R.M=mapIdx; } else { R.map=mapIdx||0; R.M=MAPDATA[R.map]; } R.pads=R.M.pads;
   R.tuto=tuto?1:0; R.wave=0; R.units=[]; R.spawnQ=[]; R.fx=[]; R.jets=[]; R.towers={}; R.sel=null; R.disp=0; R.leaks={}; R.seen=new Set(); R.pause=false;
   R.somm={cd:0,placing:false,fx:[]}; R.flaques=[]; R.projs=[]; $('panel').hidden=true;
-  R.parts=[]; R.frac=0; R.maitrise=0; R.waveLoss=0; R.retours=[]; R.dir=null; R.dirOffer=false; R.recent=[]; R.redeploy=null; R.rally=null; R.vHp=1;
+  R.parts=[]; R.fumees=[]; R.vuFumee=false; R.frac=0; R.maitrise=0; R.waveLoss=0; R.retours=[]; R.dir=null; R.dirOffer=false; R.recent=[]; R.redeploy=null; R.rally=null; R.vHp=1;
   R.stats={rec:0,blocs:0,meneurs:0,combos:0,best:null};
   // Challenge : consignes qui changent les règles à partir du niveau 6
   R.mods={}; R.fire=null; const nv=cfg.seed||0;
@@ -400,6 +400,9 @@ function step(dt){
   // meneurs (galvanisent), sommations et flaques (ralentissent)
   const leaders=live.filter(u=>u.type==='meneur');
   R.flaques=(R.flaques||[]).filter(f=>R.t<f.until);
+  // fumigènes : dans la fumée, les moyens ne voient plus personne (ni jet ni charge ; le peloton tâtonne)
+  R.fumees=(R.fumees||[]).filter(f=>R.t<f.until);
+  for(const u of live) u.cache=R.fumees.some(f=>R.t-f.t0>.3&&Math.hypot(u.p.x-f.x,(u.p.y-f.y)/.8)<f.r);
   for(const u of live){ u.boost=u.type!=='meneur'&&leaders.some(m=>Math.hypot(m.p.x-u.p.x,m.p.y-u.p.y)<FOES.meneur.aura);
     u.slow=u.somUntil>R.t?.6:0; if(R.flaques.some(f=>Math.hypot(f.x-u.p.x,(f.y-u.p.y)/.7)<f.r)) u.slow=Math.max(u.slow,.3); u.atBar=null; }
   const towers=Object.entries(R.towers);
@@ -432,10 +435,10 @@ function step(dt){
           let best=null; for(const u of live){ if(u.held||u.alive===false) continue; const db=blockOn(tw,u.pi); if(db===null) continue; if(u.d<db-.9||u.d>db+.25) continue; if(!best||u.d>best.d) best=u; }
           if(best){ a.u=best; best.held=a; a.st='eng'; } return; }
         if(a.st==='eng'){ const u=a.u; const L=mv(u.p.x,u.p.y,2.8);
-          if(L<.42){ hit(u,M.dps[u.type]*k*(R.bonus&&R.bonus.equip?1+.05*(R.bonus.equip-1):1)*dt); a.e-=STRAIN[u.type]*(u.boost?1.3:1)*dt; a.push=R.t; }
+          if(L<.42){ hit(u,(u.cache?.5:1)*M.dps[u.type]*k*(R.bonus&&R.bonus.equip?1+.05*(R.bonus.equip-1):1)*dt); a.e-=STRAIN[u.type]*(u.boost?1.3:1)*dt; a.push=R.t; }
           if(a.e<=0){ a.e=0; a.st='back'; a.until=R.t+6; u.held=null; a.u=null; fx(a.x,a.y,'Agent à bout','bad'); } } });
       tw.tgt=tw.agents.filter(a=>a.u).map(a=>a.u); continue; }
-    const inR=live.filter(u=>u.alive!==false&&Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg);
+    const inR=live.filter(u=>u.alive!==false&&!u.cache&&Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg);
     if(tw.type==='barrage'){ continue; }
     if(tw.type==='cavalerie'){
       if(tw.charge){ const c=tw.charge, k2=(R.t-c.t0)/c.dur;
@@ -461,6 +464,12 @@ function step(dt){
     if(p.ag&&p.ag.st!=='back'){ p.ag.e-=10; if(p.ag.e<=0){ p.ag.e=0; p.ag.st='back'; p.ag.until=R.t+6; if(p.ag.u){ p.ag.u.held=null; p.ag.u=null; } } }
     if(p.tw){ const tw=R.towers[p.tw]; if(tw&&!(tw.stun>R.t)){ tw.stun=R.t+3; const P=padOf(p.tw); fx(P.x,P.y-.3,'Désorganisé','bad'); } }
     return false; });
+  for(const u of live){ if(u.type!=='casseur'||u.alive===false||!u.flare||R.wave<3||R.tuto) continue;
+    if((u.fumT??R.t+2+Math.random()*4)>R.t){ u.fumT??=R.t+2+Math.random()*4; continue; }
+    if(R.fumees.length>=3||!towers.some(([id])=>{ const P=padOf(id); return Math.hypot(P.x-u.p.x,P.y-u.p.y)<2.8; })) continue;
+    const q=posOn(R.M.P[u.pi],u.d+.7), cols=[[220,60,60],[70,190,110],[150,90,210],[240,170,60]], c=cols[Math.floor(Math.random()*cols.length)];
+    R.fumees.push({x:q.x,y:q.y,r:1.25,t0:R.t,until:R.t+6.5,c,seed:Math.random()*10}); u.fumT=R.t+14;
+    if(!R.vuFumee&&!R.sim){ R.vuFumee=true; Shell.toast('Fumigène ! Dans la fumée, tes moyens ne voient plus les émeutiers','bad'); } }
   for(const u of live){ if(u.type!=='casseur'||u.alive===false) continue; u.lance=(u.lance??(1+Math.random()*2))-dt; if(u.lance>0) continue; u.lance=2.6+Math.random();
     let cible=null, bd=2.1;
     for(const [id,tw] of towers){ if(tw.type==='barrage'&&tw.bar.up){ const d=Math.hypot(tw.rx-u.p.x,tw.ry-u.p.y); if(d<bd){ bd=d; cible={bar:id,x:tw.rx,y:tw.ry}; } }
@@ -1227,6 +1236,13 @@ function render(){
       puff(x,y+.08,1,{v:.25,r:.06,grow:2.2,life:.6,col:'rgba(150,140,125,',flat:.3,jit:.4}); } }
   items.sort((a,b)=>a.y-b.y).forEach(it=>it.d());
   drawParts(g);
+  for(const f of (R.fumees||[])){ const a=R.t-f.t0, rest=f.until-R.t, k=Math.min(1,a/.6), op=Math.min(1,rest/1.2)*k, [r,gg,b]=f.c;
+    for(let i=0;i<14;i++){ const an=i*2.39+f.seed, d=(i%5)/5*f.r*.75*k, px=f.x+Math.cos(an+rt*.15)*d, py=f.y+Math.sin(an+rt*.15)*d*.8-.25-a*.04*(i%3), rad=(.45+.35*((i*7)%3)/2)*(.6+.4*k);
+      const gr=g.createRadialGradient(px,py,0,px,py,rad); const t2=i%3===0?1:.7;
+      gr.addColorStop(0,`rgba(${Math.round(r*t2+60)},${Math.round(gg*t2+60)},${Math.round(b*t2+60)},${.9*op})`); gr.addColorStop(.6,`rgba(${r},${gg},${b},${.75*op})`); gr.addColorStop(1,`rgba(${r},${gg},${b},0)`);
+      g.fillStyle=gr; g.beginPath(); g.arc(px,py,rad,0,7); g.fill(); }
+    // la torche au sol
+    if(rest>1){ g.save(); g.globalCompositeOperation='lighter'; g.fillStyle=`rgba(255,${120+((rt*20)|0)%60},80,.8)`; g.beginPath(); g.arc(f.x,f.y,.05,0,7); g.fill(); g.restore(); } }
   if(R.meteo==='brouillard'){ g.save(); g.fillStyle='rgba(170,185,215,.15)'; g.fillRect(0,0,MW,MH);
     for(let i=0;i<9;i++){ const x=((i*1.7+rt*.12*(i%2?1:-1))%(MW+3)+MW+3)%(MW+3)-1.5, y=1+i*1.45+Math.sin(rt*.3+i)*.3, r=1.6+(i%3)*.5;
       const gr=g.createRadialGradient(x,y,0,x,y,r); gr.addColorStop(0,'rgba(190,205,230,.42)'); gr.addColorStop(1,'rgba(190,205,230,0)'); g.fillStyle=gr; g.beginPath(); g.ellipse(x,y,r*1.6,r,0,0,7); g.fill(); }
@@ -1346,6 +1362,7 @@ Shell.init({
     '<b>Cohésion</b> : un cortège serré résiste mieux. L’<b>autopompe</b> le disperse (plus facile à repousser) et fait <b>éclater</b> les blocs compacts entamés.',
     '<b>Barrage</b> : bloque la rue jusqu’à céder. <b>Peloton MO</b> : retient les émeutiers au contact. <b>Fais-les glisser</b> pour choisir leur place dans la rue, dans un rayon autour de l’emplacement. <b>Cavalerie</b> : charge ; fais-la glisser sur un autre emplacement pour la <b>redéployer</b>.',
     'Plusieurs émeutiers repoussés au même endroit en même temps : <b>intervention maîtrisée</b>, +1 agent. Trois vagues sans perte d’affilée : <b>dispositif maîtrisé</b>, +15 %.',
+    'Dès la 3e vague, certains casseurs allument des <b>fumigènes</b> : dans la fumée, l’autopompe et la cavalerie ne voient plus personne et le peloton MO tâtonne, pendant 6 s.',
     'Les <b>sommations</b> ralentissent et font faire demi-tour aux émeutiers déjà découragés. Entre deux vagues, le <b>Directeur</b> te demande parfois la situation : choisis vite.'],
   winTitle:'Ordre rétabli', loseTitle:'Le cordon a cédé', skin:'Cordon de nuit',
   malus:'l’hôtel de ville est dégradé : moral des équipes Intervention en baisse et un combi immobilisé jusqu’à demain.',
