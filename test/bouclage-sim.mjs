@@ -11,8 +11,9 @@ const [A = 1, Z = 30, N = 2] = process.argv.slice(2).map(Number);
 const BASE = process.env.BASE || 'http://127.0.0.1:8765/';
 const PAR = Number(process.env.PAR || 4);
 
+const AVEC_CMD = process.env.CMD !== '0';
 async function jouer(page, niveau, reps) {
-  return page.evaluate(([n, N]) => {
+  return page.evaluate(([n, N, avecCmd]) => {
     const B = window.__bouclage, R = B.R;
     const T = ['peloton', 'barrage', 'autopompe', 'cavalerie'];
     const cycles = [[0, 1, 2, 3], [1, 0, 2, 3], [2, 0, 1, 3], [0, 2, 1, 3], [1, 2, 0, 3], [0, 0, 2, 1]];
@@ -30,14 +31,19 @@ async function jouer(page, niveau, reps) {
       for (let t = 0; t < 60 * 420 && !R.over; t++) {
         if (t % 60 === 0) { act(); const go = R.units.filter((u) => u.state === 'go' && u.p && u.p.y > 8); let best = null, bn = 3;
           for (const u of go) { const m = go.filter((o) => Math.hypot(o.p.x - u.p.x, o.p.y - u.p.y) < 1.6).length; if (m > bn) { bn = m; best = u; } }
-          if (best) B.somm(best.p.x, best.p.y); }
+          if (best) B.somm(best.p.x, best.p.y);
+          // commandant : se poste sur l'emplacement occupé où il y a le plus d'émeutiers autour, mégaphone dès qu'un groupe est à portée
+          if (avecCmd && R.cmd) { const live = R.units.filter((u) => u.state === 'go' && u.p); let bp = null, bc = 0;
+            for (const id of Object.keys(R.towers)) { const P = R.pads.find((q) => q.id === id), c = live.filter((u) => Math.hypot(u.p.x - P.x, u.p.y - P.y) < 2.5).length; if (c > bc) { bc = c; bp = P; } }
+            if (bp && t % 120 === 0) B.cmdVers(bp.x, bp.y);
+            if (live.filter((u) => Math.hypot(u.p.x - R.cmd.x, u.p.y - R.cmd.y) < 1.9).length >= 4) B.ordreCmd(); } }
         B.step(1 / 60); }
       res.games++; if (R.lives > 0) res.wins++; res.vies = R.lives0;
       res.perte += R.lives0 - Math.max(0, R.lives);
       res.fin += R.agents + Object.values(R.towers).reduce((a, t) => a + t.spent, 0);
     }
     return { ...res, nom: B.MAPS[(n - 1) % B.MAPS.length].nom, cfg: Shell.cfgNiveau(n) };
-  }, [niveau, reps]);
+  }, [niveau, reps, AVEC_CMD]);
 }
 
 const browser = await chromium.launch();
