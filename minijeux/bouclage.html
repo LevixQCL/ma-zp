@@ -900,6 +900,7 @@ function step(dt){
     for(const [id,tw] of towers){ if(tw.type==='barrage'&&tw.bar.up){ const d=Math.hypot(tw.rx-u.p.x,tw.ry-u.p.y); if(d<bd){ bd=d; cible={bar:id,x:tw.rx,y:tw.ry}; } }
       if(tw.type==='peloton') tw.agents.forEach(a=>{ if(a.st==='back') return; const d=Math.hypot(a.x-u.p.x,a.y-u.p.y); if(d<bd&&d>.3){ bd=d; cible={ag:a,x:a.x,y:a.y}; } });
       if((tw.type==='autopompe'||tw.type==='cavalerie')&&!tw.transit&&!tw.charge&&!(tw.stun>R.t)){ const P=padOf(id), d=Math.hypot(P.x-u.p.x,P.y-u.p.y); if(d<bd-.3){ bd=d; cible={tw:id,x:P.x,y:P.y}; } } }
+    if(cible){ u.throwT=R.t; u.throwF=cible.x>=u.p.x?1:-1; }
     if(cible) R.projs.push({...cible,x0:u.p.x,y0:u.p.y-.45,t0:R.t,dur:.55+bd*.12,rot:Math.random()*6}); }
   // ceux qui renoncent font demi-tour : agents récupérés
   for(const u of live){ if(u.hp<=0&&u.state==='go'&&u.alive!==false){ u.state='flee'; u.turnT=R.t; puff(u.p.x,u.p.y,6,{v:.5,r:.05,grow:1.5,life:.5,flat:.3}); if(u.held){ u.held.u=null; u.held.st='ready'; u.held=null; } R.disp++; const F=FOES[u.type];
@@ -1373,8 +1374,10 @@ function drawUnit(g,u,t){
   g.globalAlpha=Math.min(1,vie/.35)*(u.state==='flee'?Math.max(.4,1-tourne*.35):1);
   if(coup<.18&&u.p){ const k=1-coup/.18, a=u.p.ang; g.translate(-Math.cos(a)*.09*k,-Math.sin(a)*.09*k); }
   if(tourne<.28){ const k=tourne/.28; g.scale(Math.abs(Math.cos(k*Math.PI))*.9+.1,1); g.translate(0,-Math.sin(k*Math.PI)*.12); }
-  const vit=u.state==='flee'?9:u.type==='casseur'?7:u.type==='bloc'?3:4.5, fr=Math.floor(t*vit+u.bob)%2, flip=(u.f||1)<0;
-  const nm=u.type==='manif'?'em-'+EMC[(u.id||0)%EMC.length]:u.type, hh={manif:.84,casseur:.84,meneur:.88,bloc:1.3}[u.type];
+  const vit=u.state==='flee'?9:u.type==='casseur'?7:u.type==='bloc'?3:4.5, fr=Math.floor(t*vit*(u.type==='manif'?2:1)+u.bob)%4; let flip=(u.f||1)<0;
+  const lance=u.type==='casseur'&&u.state==='go'&&R.t-(u.throwT??-9)<.4&&setOk('casL'), fuit=u.type==='manif'&&u.state==='flee'&&setOk('fuite-'+EMC[(u.id||0)%EMC.length]);
+  let nm=u.type==='manif'?(fuit?'fuite-':'em-')+EMC[(u.id||0)%EMC.length]:u.type, hh={manif:.84,casseur:.84,meneur:.88,bloc:1.3}[u.type];
+  if(lance){ nm='casL'; flip=(u.throwF||1)<0; }
   const bloque=u.held||u.atBar, bob=u.state==='go'&&!bloque?Math.abs(Math.sin(t*(u.type==='bloc'?5:7)+u.bob))*.035:0;
   if(bloque){ g.translate(Math.sin(t*26+u.bob)*.018,0); }
   if(setOk(nm)){ g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(.02,.01,(u.type==='bloc'?.42:.16)*(1-bob*2),u.type==='bloc'?.12:.05,0,0,7); g.fill();
@@ -1423,7 +1426,9 @@ function spr(n){ if(SPR[n]) return SPR[n]; const d=SPR[n]={ok:false,img:new Imag
 /* jeux d'images : poses (animation de marche), hauteur de référence en pixels (même échelle pour toutes les poses) */
 const SETS={mo:{f:['mo1','mo2'],ref:342}, cav:{f:['cav1','cav2'],ref:304}, combi:{f:['combi']}, heras:{f:['heras']}, bloc:{f:['bloc']},
   casseur:{f:['casseur-1','casseur-2'],ref:300}, meneur:{f:['meneur-1','meneur-2'],ref:300}};
-['rouge','bleu','vert','jaune','violet','gris'].forEach(c=>SETS['em-'+c]={f:[`em-${c}-1`,`em-${c}-2`],ref:300});
+// marche en 4 poses (2 d'origine + 2 générées), fuite, poussée au bouclier, lancer de pavé, galop
+['rouge','bleu','vert','jaune','violet','gris'].forEach(c=>{ SETS['em-'+c]={f:[`em-${c}-1`,`marche-${c}-a`,`em-${c}-2`,`marche-${c}-b`],ref:300}; SETS['fuite-'+c]={f:[`fuite-${c}-1`],ref:300}; });
+Object.assign(SETS,{mop:{f:['mo-pousse'],ref:375},casL:{f:['casseur-lance'],ref:320},gal:{f:['galop1','galop2'],ref:335}});
 const EMC=['rouge','bleu','vert','jaune','violet','gris'];
 function sprite1(g,n,h,flip){ const S=spr(n); if(!S.ok) return false; const w=h*S.img.width/S.img.height; g.save(); if(flip) g.scale(-1,1); g.drawImage(S.img,-w/2,-h,w,h); g.restore(); return true; }
 function setOk(n){ const S=SETS[n]; return S&&S.f.every(x=>spr(x).ok); }
@@ -1483,7 +1488,7 @@ function horseRider(g,f,ph){
   g.restore();
 }
 function drawHorses(g,tw,f,t,galop){ const pos=tw.lvl===1?[[0,0]]:tw.lvl===2?[[-.2,-.06],[.2,.06]]:[[-.24,-.1],[.24,-.06],[0,.1]];
-  pos.forEach(([x,y],i)=>{ g.save(); g.translate(x,y); if(!sprite(g,'cav',galop?Math.floor(t*7+i)%2:0,.95,f<0)) horseRider(g,f,t*(galop?9:2)+i); g.restore(); }); }
+  pos.forEach(([x,y],i)=>{ g.save(); g.translate(x,y); if(!(galop&&sprite(g,'gal',Math.floor(t*7+i)%2,.95,f<0))&&!sprite(g,'cav',galop?Math.floor(t*7+i)%2:0,.95,f<0)) horseRider(g,f,t*(galop?9:2)+i); g.restore(); }); }
 function chargePos(tw,P){ const c=tw.charge, k=(R.t-c.t0)/c.dur, e=x=>x*x*(3-2*x);
   const u=k<.42?e(k/.42):1-e((k-.42)/.58), x=P.x+(c.x-P.x)*u, y=P.y+(c.y-P.y)*u; return {x,y,f:(k<.42?c.x-P.x:P.x-c.x)>=0?1:-1}; }
 function frise(g,cx,cy,ang,down,rt,L=.5){ // cheval de frise : croisillons métalliques et barbelés, en travers de la rue
@@ -1508,6 +1513,7 @@ function drawBarrier(g,tw,rt){
       g.restore(); }
   else (tw.lvl===1?[0]:[-.27,.27]).forEach((o,i)=>{ const cx=tw.rx+px*o, cy=tw.ry+py*o;
     g.save(); g.translate(cx+shake,cy+.06);
+    if(!b.up&&R.t-b.downAt>=.35&&spr('heras-tombee').ok){ const hT=vert?.62:.5; g.translate(0,hT*.45); g.rotate(i?.12:-.1); sprite1(g,'heras-tombee',hT,false); g.restore(); return; }
     if(!b.up){ const k=Math.min(1,(R.t-b.downAt)/.35), e=k*k; g.globalAlpha=.85+.15*(1-k); g.scale(1,1-.7*e); g.rotate((i?.2:-.15)*e); }
     else if(R.t-(b.upAt??-9)<.4){ const k=(R.t-b.upAt)/.4; g.scale(1,.3+.7*(1-Math.cos(k*Math.PI*1.5)*(1-k))); }
     else if(dmg>.4) g.rotate((i?1:-1)*dmg*.12);
@@ -1524,7 +1530,7 @@ function drawAgentMO(g,tw,a,rt){
   let lx=0, ly=0; if(pushing&&a.u&&a.u.p){ const dx=a.u.p.x-a.x, dy=a.u.p.y-a.y, L=Math.hypot(dx,dy)||1, k=Math.max(0,Math.sin(rt*7+tw.agents.indexOf(a)*1.7))**3*.07; lx=dx/L*k; ly=dy/L*k; }
   g.save(); g.translate(a.x+lx,a.y+ly); if(a.st==='back') g.globalAlpha=.55; if(pushing) g.rotate(f*.08); else if(moving) g.rotate(Math.sin(rt*10)*.04);
   g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(.02,.01,.16,.05,0,0,7); g.fill();
-  if(!sprite(g,'mo',moving||pushing?Math.floor(rt*(pushing?8:5))%2:0,.72,f<0)) cop(g,f,rt*5,true);
+  if(!(pushing&&sprite(g,'mop',0,.72,f<0))&&!sprite(g,'mo',moving?Math.floor(rt*5)%2:0,.72,f<0)) cop(g,f,rt*5,true);
   if(a.e<a.max){ const w=.3,k=a.e/a.max; g.fillStyle='rgba(0,0,0,.7)'; rr(g,-w/2-.02,-.84,w+.04,.08,.03); g.fill(); g.fillStyle=k>.4?'#62b0ff':'#ff9f43'; rr(g,-w/2,-.82,w*k,.04,.02); g.fill(); }
   g.restore(); }
 function aimOf(tw,P){ const u=tw.tgt&&tw.tgt[0]; return u&&u.px!==undefined?Math.atan2(u.py-P.y,u.px-P.x):tw.face; }
@@ -1702,7 +1708,7 @@ Shell.init({
     cfg.map=-1; cfg.seed=n; cfg.cort=n<=5?1:n<=10?2:n<=14?(n%2?3:2):3;
     cfg.waves=n<=12?6:n<=20?7:8; return cfg; },
   onInit(){
-    C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); spr('lance'); spr('frise'); R.M=MAPDATA[0]; R.pads=R.M.pads;
+    C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); spr('lance'); spr('frise'); spr('heras-tombee'); R.M=MAPDATA[0]; R.pads=R.M.pads;
     resize(); new ResizeObserver(resize).observe($('field'));
     if(document.fonts) document.fonts.ready.then(resize);
     C.cv.addEventListener('pointerdown',onDown); C.cv.addEventListener('pointermove',onMove); C.cv.addEventListener('pointerup',onUp);
