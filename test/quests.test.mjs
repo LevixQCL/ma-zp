@@ -46,3 +46,14 @@ for (const uid of ['a', 'b', 'c']) {
 }
 console.log(`OK : ${n} quêtes générées et vérifiées.`);
 for (const t of QUEST_TYPES) console.log(JSON.stringify(generateQuest(t, 'demo', 3), null, 1).slice(0, 900));
+// Dossier noir : jamais le même type qu'une des énigmes du jour (sauf s'il a déjà été tenté).
+{
+  const { dossierNoir } = await import('../js/quests/quests.js');
+  for (const uid of ['a', 'b', 'c', 'd']) for (let t = 1; t <= 40; t++) {
+    const types = questsFor({ seed: 's', uid, season: 1, turn: t, weekday: t % 7 }).map((q) => q.type);
+    const noir = dossierNoir({ seed: 's', uid, season: 1, turn: t, exclure: types });
+    assert.ok(!types.includes(noir.type), `dossier noir en double (${noir.type})`);
+    assert.equal(dossierNoir({ seed: 's', uid, season: 1, turn: t, exclure: types, garder: 'butin' }).type, 'butin');
+  }
+  console.log('OK : dossier noir jamais en double avec les énigmes du jour.');
+}

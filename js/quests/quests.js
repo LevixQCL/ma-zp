@@ -54,9 +54,16 @@ export const HARDCORE_TYPES = ['quiment', 'grille', 'cadenas', 'chronologie', 'p
 export const DIFF_NOIR = 6;
 export const SLOT_NOIR = 3;
 
-export function dossierNoir({ seed, uid, season, turn }) {
+/**
+ * `exclure` : types déjà tirés dans les énigmes du jour (le dossier noir prend le suivant de sa rotation,
+ * pour ne jamais faire deux fois le même type le même jour). `garder` : type d'un dossier noir déjà
+ * tenté aujourd'hui, qu'on ne change plus.
+ */
+export function dossierNoir({ seed, uid, season, turn, exclure = [], garder = null }) {
   const order = makeRng(`${seed}:noir-order:${uid}:${season}`).shuffle(HARDCORE_TYPES);
-  const type = order[(turn - 1) % order.length];
+  let type = order[(turn - 1) % order.length];
+  if (garder && HARDCORE_TYPES.includes(garder)) type = garder;
+  else for (let k = 1; exclure.includes(type) && k < order.length; k++) type = order[(turn - 1 + k) % order.length];
   const q = GENERATORS[type](makeRng(`${seed}:noir:${uid}:${season}:${turn}`), DIFF_NOIR);
   const { astuce, ...sans } = q;
   return { ...sans, type, typeLabel: QUEST_LABELS[type], difficulte: DIFF_NOIR, slot: SLOT_NOIR, noir: true, id: `${season}-${turn}-noir` };
