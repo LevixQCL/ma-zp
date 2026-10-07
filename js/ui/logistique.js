@@ -97,7 +97,7 @@ export function ouvrirPanneau(html) {
 }
 
 /** Paramètres de l'illustration pour n'importe quelle zone (la sienne ou celle d'un voisin). */
-export function sceneZone(z, st, decor = z.decor, skins = skinsValides(z, z.skinsChoix)) {
+export function sceneZone(z, st, decor = z.decor, skins = skinsValides(z, z.skinsChoix), extra = {}) {
   const T = st.turn;
   const parc = parcVehicules(z, T);
   return sceneHp({
@@ -115,6 +115,7 @@ export function sceneZone(z, st, decor = z.decor, skins = skinsValides(z, z.skin
     affiches: z.affiches || [],
     trace: z.trace && z.trace.tour >= T - 1 && st.zones[z.trace.auteur] ? { type: z.trace.type, couleur: st.zones[z.trace.auteur].couleur } : null,
     poste: (() => { const p = (st.postes || []).find((x) => x.cible === z.uid && x.jusqua >= absT(st)); return p && st.zones[p.auteur] ? { couleur: st.zones[p.auteur].couleur } : null; })(),
+    ...extra,
   });
 }
 

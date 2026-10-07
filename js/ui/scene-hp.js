@@ -135,7 +135,7 @@ function passant(x, y, habit, peau = '#E8C39E') {
  * en service à garer devant (3 au plus) ; `travaux` : 'bureaux' | 'garage' | null ;
  * `moment` : 'jour' | 'aube' | 'crepuscule' | 'nuit' (par défaut, l'heure de l'appareil).
  */
-export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = false, infra = {}, lots = [], moment = momentDuJour(), decor = null, skins = {}, drapeau = null, file = false, renforce = false, imprevu = {}, operation = false, date = new Date(), champion = false, plaques = [], affiches = [], trace = null, poste = null }) {
+export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = false, infra = {}, lots = [], moment = momentDuJour(), decor = null, skins = {}, drapeau = null, file = false, renforce = false, imprevu = {}, operation = false, date = new Date(), champion = false, plaques = [], affiches = [], trace = null, poste = null, isole = false }) {
   const uid = `${moment}-${++numeroScene}`;
   const H = 210, base = 172, x0 = 22, w = 160, gf = 30, fh = 24;
   // Aile des annexes entre l'hôtel de police et le garage (une travée par annexe).
@@ -170,7 +170,9 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   const r = rnd(graine(nom));
   const top = base - gf - (b - 1) * fh;
   const vy = Math.max(0, Math.min(top - 48, 56));
-  let s = `<svg class="scene-hp" viewBox="0 ${vy} ${W} ${H - vy}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hôtel de police niveau ${b} sur ${BATIMENT_MAX}, garage niveau ${g} sur ${BATIMENT_MAX}">
+  // isole : le bâtiment seul, sur fond transparent (repris dans le mini-jeu Maintien de l'ordre).
+  const vb = isole ? `${x0 - 8} ${top - 52} ${w + 16} ${base - top + 56}` : `0 ${vy} ${W} ${H - vy}`;
+  let s = `<svg class="scene-hp" viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hôtel de police niveau ${b} sur ${BATIMENT_MAX}, garage niveau ${g} sur ${BATIMENT_MAX}">
   <defs><linearGradient id="hp-ciel-${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${P.ciel[0]}"/><stop offset="1" stop-color="${P.ciel[1]}"/></linearGradient>
   <radialGradient id="hp-bleu-${uid}"><stop offset="0" stop-color="#63B0FF" stop-opacity=".55"/><stop offset="1" stop-color="#63B0FF" stop-opacity="0"/></radialGradient>
   <radialGradient id="hp-ambre-${uid}"><stop offset="0" stop-color="#FFB23F" stop-opacity=".22"/><stop offset="1" stop-color="#FFB23F" stop-opacity="0"/></radialGradient>
@@ -178,10 +180,10 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   <radialGradient id="hp-soleil-${uid}"><stop offset="0" stop-color="#FFF4D0" stop-opacity=".9"/><stop offset="1" stop-color="#FFF4D0" stop-opacity="0"/></radialGradient>
   <filter id="hp-neon-${uid}" x="-20%" y="-60%" width="140%" height="220%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
   <linearGradient id="hp-facade-${uid}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${P.facade[0]}"/><stop offset="1" stop-color="${P.facade[1]}"/></linearGradient></defs>
-  <rect width="${W}" height="${H}" fill="url(#hp-ciel-${uid})"/>`;
+  ${isole ? '' : `<rect width="${W}" height="${H}" fill="url(#hp-ciel-${uid})"/>`}`;
   // Ciel : étoiles et lune la nuit, soleil et nuages le jour, soleil bas à l'aube et au crépuscule.
   const nuages = (op, k2 = 11) => { const n = rnd(graine(nom) + k2); let c = ''; for (let i = 0; i < 3; i++) { const cx = 40 + n() * 250, cy = vy + 16 + n() * 30, k = 0.7 + n() * 0.6; c += `<g fill="#FFFFFF" opacity="${op}"><ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${(20 * k).toFixed(1)}" ry="${(6 * k).toFixed(1)}"/><ellipse cx="${(cx + 8 * k).toFixed(1)}" cy="${(cy - 5 * k).toFixed(1)}" rx="${(11 * k).toFixed(1)}" ry="${(7 * k).toFixed(1)}"/></g>`; } return c; };
-  if (gris) {
+  if (isole) { /* pas de ciel */ } else if (gris) {
     s += nuages(0.9).replace(/#FFFFFF/g, '#E4EAF0') + nuages(0.6, 23).replace(/#FFFFFF/g, '#C8D3DD');
   } else if (moment === 'jour') {
     s += `<circle cx="${W - 42}" cy="${vy + 28}" r="30" fill="url(#hp-soleil-${uid})"/><circle cx="${W - 42}" cy="${vy + 28}" r="10" fill="#FFF1C2"/>${nuages(0.75)}`;
@@ -195,10 +197,10 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   }
   // Ville en arrière-plan.
   const sk = rnd(3);
-  for (let sx = 0; sx < W;) { const ww = 18 + sk() * 26, hh = 30 + sk() * 50; s += `<rect x="${sx.toFixed(1)}" y="${(base - hh).toFixed(1)}" width="${ww.toFixed(1)}" height="${hh.toFixed(1)}" fill="${P.ville}"/>`; sx += ww + 2; }
-  s += `<rect y="${base}" width="${W}" height="${H - base}" fill="${P.sol}"/><rect y="${base}" width="${W}" height="2" fill="${P.bord}"/>`;
-  for (let i = 0; i < Math.ceil(W / 42); i++) s += `<rect x="${8 + i * 42}" y="${H - 10}" width="20" height="2" rx="1" fill="${P.marquage}"/>`;
-  if (P.lueur) s += `<ellipse cx="${x0 + w / 2}" cy="${base - 20}" rx="${w * 0.8}" ry="${(base - top) * 0.9}" fill="url(#hp-ambre-${uid})" opacity="${P.lueur}"/>`;
+  if (!isole) for (let sx = 0; sx < W;) { const ww = 18 + sk() * 26, hh = 30 + sk() * 50; s += `<rect x="${sx.toFixed(1)}" y="${(base - hh).toFixed(1)}" width="${ww.toFixed(1)}" height="${hh.toFixed(1)}" fill="${P.ville}"/>`; sx += ww + 2; }
+  if (!isole) s += `<rect y="${base}" width="${W}" height="${H - base}" fill="${P.sol}"/><rect y="${base}" width="${W}" height="2" fill="${P.bord}"/>`;
+  if (!isole) for (let i = 0; i < Math.ceil(W / 42); i++) s += `<rect x="${8 + i * 42}" y="${H - 10}" width="20" height="2" rx="1" fill="${P.marquage}"/>`;
+  if (P.lueur && !isole) s += `<ellipse cx="${x0 + w / 2}" cy="${base - 20}" rx="${w * 0.8}" ry="${(base - top) * 0.9}" fill="url(#hp-ambre-${uid})" opacity="${P.lueur}"/>`;
   // Étage en travaux (échafaudage).
   if (travaux === 'bureaux' && b < BATIMENT_MAX) {
     const ty = top - fh - 4;

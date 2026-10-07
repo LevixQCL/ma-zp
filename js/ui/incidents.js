@@ -13,7 +13,7 @@ import { niveauIncidents } from '../engine/directeur.js';
 import { APPUI, appuiDuJour, DIFF_EXPERTS } from '../engine/appui.js';
 import { SERVICE_LABELS, DEFAULT_ALLOC } from '../engine/constants.js';
 import { TOUS_SKINS, SKINS } from '../engine/decor.js';
-import { ouvrirPanneau, sceneZone, monDecorPublic } from './logistique.js';
+import { ouvrirPanneau, sceneZone, monDecorPublic, mesSkins } from './logistique.js';
 import { ANNEXES_AILE } from './scene-aile.js';
 
 /** Les mini-jeux, pour l'entraînement. */
@@ -195,6 +195,17 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
   wrap.className = 'mj-wrap';
   wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true');
   wrap.innerHTML = `<iframe src="minijeux/${jeu}.html?${p}" title="Mini-jeu ${esc((MINI_JEUX.find((m) => m.jeu === jeu) || {}).nom || '')}" allow="autoplay; fullscreen"></iframe>`;
+  // Maintien de l'ordre : les cortèges marchent sur NOTRE hôtel de police, avec ses skins (dessin de l'HP, sans le décor autour).
+  if (jeu === 'bouclage') {
+    try {
+      const z = myZone();
+      if (z) {
+        const svg = sceneZone(z, S.state, monDecorPublic(z), mesSkins(z).choix, { isole: true, moment: 'crepuscule', devant: [], file: false, imprevu: {}, operation: false, trace: null, poste: null });
+        const fr = wrap.querySelector('iframe');
+        fr.addEventListener('load', () => fr.contentWindow && fr.contentWindow.postMessage({ source: 'mazp-parent', type: 'hp', svg, nom: z.nom }, location.origin));
+      }
+    } catch (e) { /* le mini-jeu garde son hôtel de ville */ }
+  }
   const fermer = () => { window.removeEventListener('message', recevoir); wrap.remove(); document.body.classList.remove('mj-ouvert'); onFin(); };
   async function recevoir(e) {
     const d = e.data;

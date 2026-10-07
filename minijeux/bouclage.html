@@ -1316,7 +1316,16 @@ function lamp(g,x,y){
   g.fillRect(x-.012,ly-.19,.024,.04);
 }
 /* hôtel de ville néoclassique : emmarchement, colonnade éclairée de l'intérieur, entablement, fronton */
+/* Hôtel de police du joueur (envoyé par Ma ZP, avec ses skins) : remplace l'hôtel de ville au bout du trajet. */
+const HP={img:null,ok:false,nom:''};
+window.addEventListener('message',e=>{ const d=e.data; if(e.origin!==location.origin||!d||d.source!=='mazp-parent'||d.type!=='hp'||!d.svg) return;
+  const im=new Image(); im.onload=()=>{ HP.img=im; HP.ok=true; HP.nom=d.nom||''; C.mapFor=null; if(R.M) resize(); }; im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(d.svg); });
+const hpDims=M=>{ const hb=hallBox(M), r=HP.img.height/HP.img.width, w=Math.min(3.1,3/r*.9), h=w*r; return {x:hb.x0+hb.w/2-w/2,w,h,y:MH-.02-h}; };
 function cityHall(g,M){
+  if(HP.ok){ const d=hpDims(M);
+    g.save(); g.globalCompositeOperation='lighter'; const gl=g.createRadialGradient(d.x+d.w/2,MH-.3,0,d.x+d.w/2,MH-.3,1.7); gl.addColorStop(0,'rgba(120,170,255,.25)'); gl.addColorStop(1,'rgba(120,170,255,0)'); g.fillStyle=gl; g.beginPath(); g.ellipse(d.x+d.w/2,MH-.3,1.7,1.1,0,0,7); g.fill(); g.restore();
+    g.fillStyle='rgba(0,0,0,.45)'; g.fillRect(d.x+.15,MH-.12,d.w-.2,.14);
+    g.drawImage(HP.img,d.x,d.y,d.w,d.h); return; }
   const hb=hallBox(M), w=hb.w, x0=hb.x0, base=MH-.06, OUT='#070b14', st='#c9d0dc', st2='#a5aebf', st3='#e7ebf1';
   g.save(); g.globalCompositeOperation='lighter'; const gl=g.createRadialGradient(x0+w/2,base-.3,0,x0+w/2,base-.3,1.6); gl.addColorStop(0,'rgba(140,175,255,.22)'); gl.addColorStop(1,'rgba(140,175,255,0)');
   g.fillStyle=gl; g.beginPath(); g.ellipse(x0+w/2,base-.4,1.6,1.1,0,0,7); g.fill(); g.restore();
@@ -1627,7 +1636,7 @@ function render(){
   // panneaux
   R.M.P.forEach(P=>{ const a=P.pts[0], b=P.pts[1], x=Math.max(.35,Math.min(MW-.35,a[0])), y=Math.max(.35,Math.min(MH-.35,a[1]));
     const lx=Math.max(1.05,Math.min(MW-1.05,x+(b[0]===a[0]?1.05:0))), ly=y+(b[0]===a[0]?.05:.7); pill(g,lx,ly,'CORTÈGE','#fff',.18,'#c0392b'); });
-  const ex=R.M.P[0].pts.at(-1)[0], hx=Math.max(1.15,Math.min(MW-1.15,ex)); pill(g,hx,MH-1.8,'Hôtel de ville','#fff',.2,'rgba(16,24,40,.85)');
+  const ex=R.M.P[0].pts.at(-1)[0], hx=Math.max(1.15,Math.min(MW-1.15,ex)); if(!HP.ok) pill(g,hx,MH-1.8,'Hôtel de ville','#fff',.2,'rgba(16,24,40,.85)');
   if(R.rally&&R.towers[R.rally]){ const tw=R.towers[R.rally], P=padOf(R.rally), rg=rayonRally(tw), pu=.5+.5*Math.sin(rt*5);
     g.save(); g.fillStyle='rgba(255,209,102,.07)'; g.strokeStyle='rgba(255,209,102,.8)'; g.lineWidth=.04; g.setLineDash([.14,.1]); g.lineDashOffset=-rt*.6; g.beginPath(); g.arc(P.x,P.y,rg,0,7); g.fill(); g.stroke(); g.setLineDash([]);
     g.beginPath(); g.arc(P.x,P.y,rg,0,7); g.clip(); g.globalAlpha=.25+.2*pu; R.M.P.forEach(Pa=>strokeP(g,Pa,RW*.8,'rgba(255,209,102,.9)')); g.restore();
