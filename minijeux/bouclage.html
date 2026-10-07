@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f17">
 <style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
-<title>Plan de bouclage</title>
+<title>Maintien de l'ordre</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400..700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
@@ -143,12 +143,12 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 
 
 .field{position:relative;flex:1;min-height:0;display:grid;place-items:center}
-.field canvas{display:block;touch-action:none;border-radius:16px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 24px 50px rgba(0,0,0,.55)}
+.field canvas#cv{display:block;touch-action:none;border-radius:16px;box-shadow:0 0 0 1px rgba(255,255,255,.08),0 24px 50px rgba(0,0,0,.55)}
 .hudrow{display:flex;gap:8px;align-items:center}
-.hudrow .pillh{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--stroke);border-radius:999px;padding:5px 11px 5px 8px;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums}
+.hudrow .pillh{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--stroke);border-radius:999px;padding:5px 11px 5px 8px;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums;white-space:nowrap}
 .hudrow .pillh b{font-family:var(--f-disp);font-size:17px;color:var(--ink)}
 .hudrow .pillh svg{width:18px;height:18px}
-.hudrow .lives svg{color:#ff4d6a} .hudrow .ag svg{color:#62b0ff}
+.hudrow .lives svg{color:#ffd166} .hudrow .ag svg{color:#62b0ff}
 .hudrow .pillh.hit{animation:hit .4s} @keyframes hit{30%{background:var(--bad-soft);border-color:var(--bad)}}
 .hudrow .wv{margin-left:auto}
 .tip{min-height:38px;display:flex;align-items:center;gap:8px;font-size:13px;line-height:1.35;color:#d5dce8;background:var(--surface);border:1px solid var(--stroke);border-radius:12px;padding:6px 11px}
@@ -163,13 +163,22 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .btn.go{flex:1;min-width:0;padding:11px 12px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .btn.go small{font-weight:600;opacity:.8}
 .btn.go:disabled{background:var(--surface);color:var(--mute);box-shadow:none;border-color:var(--stroke)}
-.newfoe{position:absolute;left:8px;right:8px;top:50%;transform:translateY(-50%);z-index:3;background:rgba(18,24,40,.96);border:1px solid var(--stroke-2);border-radius:18px;padding:16px;display:grid;gap:10px;box-shadow:0 20px 50px rgba(0,0,0,.55)}
-.newfoe .hd{display:flex;gap:12px;align-items:center}
-.newfoe canvas{width:64px;height:64px;border-radius:14px;background:#2a2f3b;flex:0 0 auto}
-.newfoe .ey{font-size:12px;font-weight:700;color:var(--bad);text-transform:uppercase;letter-spacing:.06em}
-.newfoe h3{margin:2px 0 0;font-family:var(--f-disp);font-size:22px}
-.newfoe p{margin:0;font-size:14px;line-height:1.45;color:#d5dce8}
-.newfoe p b{color:var(--ink)}
+.panel{position:absolute;left:8px;right:8px;top:50%;transform:translateY(-50%);z-index:3;background:rgba(18,24,40,.97);border:1px solid var(--stroke-2);border-radius:18px;padding:16px;display:grid;gap:10px;box-shadow:0 20px 50px rgba(0,0,0,.55);max-height:calc(100% - 16px);overflow:auto}
+.panel .hd{display:flex;gap:12px;align-items:center}
+.panel canvas.ic{width:64px;height:64px;border-radius:14px;background:#2a2f3b;flex:0 0 auto}
+.panel .ey{font-size:12px;font-weight:700;color:var(--bad);text-transform:uppercase;letter-spacing:.06em}
+.panel h3{margin:2px 0 0;font-family:var(--f-disp);font-size:22px}
+.panel p{margin:0;font-size:14px;line-height:1.45;color:#d5dce8}
+.panel p b{color:var(--ink)}
+.levels{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lvl{display:grid;gap:6px;text-align:left;background:var(--surface);border:1px solid var(--stroke);border-radius:14px;padding:8px;color:var(--ink);cursor:pointer;font:inherit;position:relative}
+.lvl canvas{width:100%;aspect-ratio:9/14;max-height:150px;object-fit:cover;border-radius:9px;background:#14171f}
+.lvl b{font-family:var(--f-disp);font-size:15px;line-height:1.15}
+.lvl span{font-size:12px;color:var(--mute)}
+.lvl .st{color:#ffd166;letter-spacing:2px;font-size:14px}
+.lvl[disabled]{opacity:.45;cursor:not-allowed}
+.lvl .lock{position:absolute;top:14px;left:50%;transform:translateX(-50%);font-size:28px}
+.lvl .n{position:absolute;top:12px;left:12px;background:rgba(10,12,20,.85);border-radius:999px;padding:2px 9px;font:800 13px var(--f-disp);color:#ffd166}
 
 </style>
 </head>
@@ -178,7 +187,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 <div class="app" id="app">
   <div class="top">
     <div class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="6" rx="1.5"/><path d="M8 7l-3 6M13 7l-3 6M18 7l-3 6"/><path d="M6 13v6M18 13v6M4 19h4M16 19h4"/></svg></div>
-    <div class="ttl"><div class="eyebrow">Intervention · démo</div><h1>Plan de bouclage</h1></div>
+    <div class="ttl"><div class="eyebrow">Intervention · démo</div><h1>Maintien de l'ordre</h1></div>
     <div class="hud">
       <button class="iconbtn" id="sound" aria-label="Couper le son"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
       <button class="iconbtn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
@@ -190,14 +199,14 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
   <div class="stage" id="stage">
 
   <div class="hudrow">
-    <span class="pillh lives" id="hLives" title="Fuites encore tolérées"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7.5-4.6-9.3-9.2C1.4 8.4 3.6 5 7 5c2 0 3.5 1.1 5 3 1.5-1.9 3-3 5-3 3.4 0 5.6 3.4 4.3 6.8C19.5 16.4 12 21 12 21z"/></svg><b id="stLives">10</b></span>
-    <span class="pillh ag" id="hAg" title="Agents disponibles"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.5" r="3.6"/><path d="M4.5 20.5c.4-4.4 3.6-7 7.5-7s7.1 2.6 7.5 7z"/></svg><b id="stAg">16</b><span>agents</span></span>
+    <span class="pillh lives" id="hLives" title="Tenue du cordon : chaque casseur qui passe la fait baisser"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l8 3v6.2c0 4.6-3.3 8.4-8 9.8-4.7-1.4-8-5.2-8-9.8V5.5z"/></svg><b id="stLives">15</b></span>
+    <span class="pillh ag" title="Agents disponibles"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.5" r="3.6"/><path d="M4.5 20.5c.4-4.4 3.6-7 7.5-7s7.1 2.6 7.5 7z"/></svg><b id="stAg">18</b><span>agents</span></span>
     <span class="pillh wv">Vague <b id="stWave">0/6</b></span>
   </div>
-  <div class="field" id="field"><canvas id="cv"></canvas><div class="newfoe" id="newfoe" hidden></div></div>
+  <div class="field" id="field"><canvas id="cv"></canvas><div class="panel" id="panel" hidden></div></div>
   <div class="tip" id="tip"></div>
   <div class="bar2">
-    <button class="btn pw" id="herse" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="10" width="19" height="5" rx="1.2"/><path d="M5 10l1.5-3 1.5 3M10 10l1.5-3 1.5 3M15 10l1.5-3 1.5 3"/></svg><span id="herseTxt">Herse</span><i class="cd" id="herseCd"></i></button>
+    <button class="btn pw" id="somm" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4h3l7 4V6L6 10z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg><span id="sommTxt">Sommation</span><i class="cd" id="sommCd"></i></button>
     <button class="btn spd" id="spd" aria-pressed="false" aria-label="Vitesse double">×2</button>
     <button class="btn primary go" id="launch">Lancer la vague 1</button>
   </div>
@@ -517,82 +526,96 @@ const Shell = (() => {
 })();
 
 
-/* ───────────── Plan de bouclage : tower defense du service Intervention ─────────────
-   Un seul itinéraire : du lieu des faits (en haut) jusqu'au périmètre (en bas). Les fuyards le suivent tous.
-   Le joueur pose ses moyens sur les emplacements bleus le long du trajet. Chaque interpellation rapporte des agents. */
+/* ───────────── Maintien de l'ordre : tower defense du service Intervention ─────────────
+   Des cortèges de casseurs remontent les rues vers l'hôtel de ville. On ne les « élimine » pas : on les repousse.
+   Quand leur détermination tombe à zéro, ils font demi-tour et repartent par où ils sont venus. */
 const MW=9, MH=14;
-const PATH=[[1.5,-.6],[1.5,2.6],[7.5,2.6],[7.5,5.6],[1.5,5.6],[1.5,8.6],[7.5,8.6],[7.5,11.6],[4.5,11.6],[4.5,14.7]];
-const PADS=[
-  {id:'a',x:3.4,y:1.2},{id:'b',x:6.0,y:1.2},
-  {id:'c',x:3.0,y:4.1},{id:'d',x:6.0,y:4.1},{id:'e',x:8.45,y:4.1},
-  {id:'f',x:0.55,y:7.1},{id:'g',x:3.0,y:7.1},{id:'h',x:6.0,y:7.1},
-  {id:'i',x:3.0,y:10.1},{id:'j',x:6.0,y:10.1},{id:'k',x:8.45,y:10.1},
-  {id:'l',x:2.9,y:13.1},{id:'m',x:6.1,y:13.1}];
+const T2=[[4.5,3.5],[4.5,6.5],[1.8,6.5],[1.8,10],[7,10],[7,12.3],[4.5,12.3],[4.5,14.7]];
+const T3=[[4.5,6],[4.5,9],[7.5,9],[7.5,11.6],[2,11.6],[2,14.7]];
+const T4=[[4.5,4],[4.5,8],[6.8,8],[6.8,11.2],[4.5,11.2],[4.5,14.7]];
+const MAPS=[
+  {nom:'Place du Marché',sous:'1 cortège',hp:1.5,w:[1],
+    paths:[[[1.5,-.6],[1.5,2.6],[7.5,2.6],[7.5,5.6],[1.5,5.6],[1.5,8.6],[7.5,8.6],[7.5,11.6],[4.5,11.6],[4.5,14.7]]]},
+  {nom:'Quartier de la Gare',sous:'2 cortèges',hp:1.6,w:[1,1],
+    paths:[[[1.5,-.6],[1.5,3.5],...T2],[[7.5,-.6],[7.5,3.5],...T2]]},
+  {nom:'Grand-Place',sous:'2 cortèges, dont un par le côté',hp:1.75,w:[1,1],
+    paths:[[[4.5,-.6],[4.5,2],[1.5,2],[1.5,6],...T3],[[9.7,3.5],[7.5,3.5],[7.5,6],...T3]]},
+  {nom:'Abords du stade',sous:'3 cortèges',hp:1.4,w:[1,1,.6],
+    paths:[[[1.5,-.6],[1.5,4],...T4],[[7.5,-.6],[7.5,4],...T4],[[-.7,8.6],[2.4,8.6],[2.4,11.2],[4.5,11.2],[4.5,14.7]]]}];
 
-/* Moyens. dps = interpellation (points de résistance par seconde) selon le type de fuyard. */
+/* Moyens de maintien de l'ordre. dps = perte de détermination par seconde selon le type d'émeutier. */
 const MEANS={
-  patrouille:{nom:'Patrouille à pied',cout:5,range:2.0,dps:{pieton:16,scooter:6,voiture:5,fourgon:4},
-    ds:'Interpelle les <b>piétons</b>. Contre un véhicule <b>ralenti</b> (combi, herse) : ×2,5.'},
-  anon:{nom:'Voiture anonymisée',cout:7,range:2.2,dps:{pieton:4,scooter:14,voiture:14,fourgon:10},
-    ds:'Prend en chasse les <b>véhicules</b>. Peu utile contre les piétons.'},
-  combi:{nom:'Combi (barrage filtrant)',cout:6,range:1.7,aoe:3,slow:[.5,.6,.7],
-    ds:'<b>Ralentit</b> tous les véhicules à portée (les piétons un peu). Les autres moyens en profitent.'},
-  drone:{nom:'Drone',cout:5,range:2.6,mark:[.3,.45,.6],
-    ds:'<b>Repère</b> les fuyards : +30 % d’efficacité pour tous les moyens autour.'}};
+  peloton:{nom:'Peloton MO',cout:5,range:1.6,cibles:[2,3,5],dps:{manif:8,casseur:6,meneur:6,bloc:4},
+    ds:'Boucliers en ligne : repousse <b>plusieurs émeutiers</b> à la fois. Bon contre la masse.'},
+  autopompe:{nom:'Autopompe',cout:9,range:2.1,splash:.8,dmg:15,cd:1.6,recul:.45,mult:{manif:1,casseur:.8,meneur:.8,bloc:1.6},
+    ds:'Jet d’eau sur un groupe : <b>fait reculer</b> tout le monde autour. Efficace contre les <b>blocs</b>.'},
+  barrage:{nom:'Barrage (combi + barrières)',cout:6,range:1.5,slow:[.45,.55,.65],aoe:2,
+    ds:'Barrières Heras sur la chaussée : <b>ralentit</b> tout le cortège à portée. Les autres moyens en profitent.'},
+  cavalerie:{nom:'Cavalerie',cout:8,range:2.6,dps:{manif:12,casseur:20,meneur:24,bloc:8},
+    ds:'Longue portée, rapide : vise d’abord les <b>meneurs</b>, puis les <b>casseurs</b>.'}};
 const LV={dmg:[1,1.5,2.1],rng:[0,.2,.35],cout:[0,.8,1.2]};
-const UPTXT={patrouille:['','Binôme renforcé','Équipe d’intervention'],anon:['','Équipage chevronné','Deux voitures'],combi:['','Barrage renforcé','Double barrage'],drone:['','Caméra thermique','Drone longue portée']};
-/* Fuyards : résistance, vitesse (cases/s), agents gagnés à l'interpellation, vies perdues s'il sort. */
+const UPTXT={peloton:['','Section (3 boucliers)','Peloton complet (5 boucliers)'],autopompe:['','Lance renforcée','Double lance'],
+  barrage:['','Deux rangées de barrières','Barrage lourd'],cavalerie:['','Deux cavaliers','Escouade montée']};
+/* Émeutiers : détermination, vitesse (cases/s), agents récupérés quand ils renoncent, tenue du cordon perdue s'ils passent. */
 const FOES={
-  pieton:{nom:'Fuyard à pied',hp:30,v:.85,gain:1,vies:1,veh:false,
-    ds:'Lent mais nombreux. La <b>patrouille à pied</b> est faite pour lui.'},
-  scooter:{nom:'Scooter',hp:34,v:2.4,gain:2,vies:1,veh:true,
-    ds:'<b>Très rapide</b>, fragile. Ralentis-le avec un <b>combi</b> ; la <b>voiture anonymisée</b> le rattrape.'},
-  voiture:{nom:'Voiture',hp:70,v:1.6,gain:2,vies:1,veh:true,
-    ds:'Résistante et rapide. <b>Voiture anonymisée</b>, ou patrouille derrière un <b>combi</b>.'},
-  fourgon:{nom:'Fourgon',hp:220,v:1.0,gain:5,vies:2,veh:true,
-    ds:'<b>Très résistant</b> et coûte <b>2 vies</b> s’il passe. Concentre tes moyens et pose une <b>herse</b>.'}};
+  manif:{nom:'Émeutier',hp:24,v:.9,gain:1,vies:1,ds:'Avance en masse. Le <b>peloton MO</b> en repousse plusieurs à la fois.'},
+  casseur:{nom:'Casseur',hp:18,v:1.7,gain:1,vies:1,ds:'<b>Rapide</b>, il se faufile. Un <b>barrage</b> le freine, la <b>cavalerie</b> le rattrape.'},
+  meneur:{nom:'Meneur',hp:70,v:.85,gain:3,vies:1,aura:1.3,ds:'Au mégaphone, il <b>galvanise</b> ceux qui l’entourent : plus rapides et plus durs à repousser. Vise-le avec la <b>cavalerie</b>.'},
+  bloc:{nom:'Bloc compact',hp:160,v:.55,gain:5,vies:3,ds:'Groupe serré derrière une banderole : <b>très résistant</b>, coûte <b>3</b> s’il passe. L’<b>autopompe</b> le disperse.'}};
 const WAVES=[
-  [['pieton',6]],
-  [['pieton',4],['voiture',3]],
-  [['scooter',6],['pieton',3]],
-  [['voiture',5],['pieton',4],['scooter',2]],
-  [['fourgon',2],['voiture',4],['scooter',4]],
-  [['pieton',6],['voiture',6],['scooter',5],['fourgon',3]]];
-const TUTO_WAVE=[['pieton',4]];
-const HERSE={cd:20,dure:10};
+  [['manif',10]],
+  [['manif',12],['casseur',6]],
+  [['casseur',8],['meneur',2],['manif',10]],
+  [['manif',14],['bloc',2],['casseur',8]],
+  [['meneur',3],['manif',16],['bloc',3],['casseur',10]],
+  [['casseur',14],['meneur',4],['manif',20],['bloc',4]]];
+const TUTO_WAVE=[['manif',8]];
+const SOMM={cd:25,dure:4,rayon:1.6,perte:10};
 
 const Q2=new URLSearchParams(location.search);
-const R={cfg:null,phase:'idle',wave:0,waves:6,lives:10,agents:0,towers:{},units:[],spawnQ:[],nextIn:null,sel:null,waveEnd:0,
-  herse:{cd:0,placing:false,strips:[]},seen:new Set(),pause:false,caught:0,leaks:{},fx:[],speed:1,t:0,tuto:0,dispo:{},usure:0,over:true};
+const R={cfg:null,map:0,M:null,pads:[],phase:'idle',wave:0,waves:6,lives:15,lives0:15,agents:0,towers:{},units:[],spawnQ:[],nextIn:null,sel:null,waveEnd:0,
+  somm:{cd:0,placing:false,fx:[]},jets:[],seen:new Set(),pause:false,disp:0,leaks:{},fx:[],speed:1,t:0,tuto:0,dispo:{},usure:0,over:true};
 const C={cv:null,ctx:null,s:30,dpr:1,map:null};
+const store={get(k,d){ try{ const v=localStorage.getItem('bouclage.'+k); return v===null?d:JSON.parse(v); }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem('bouclage.'+k,JSON.stringify(v)); }catch(e){} }};
 
-/* ───── géométrie du trajet ───── */
-const CUM=[0]; for(let i=1;i<PATH.length;i++) CUM.push(CUM[i-1]+Math.hypot(PATH[i][0]-PATH[i-1][0],PATH[i][1]-PATH[i-1][1]));
-const LEN=CUM[CUM.length-1];
-function posAt(d){ d=Math.max(0,Math.min(LEN,d)); let i=1; while(i<CUM.length-1&&CUM[i]<d) i++;
-  const a=PATH[i-1],b=PATH[i],t=(d-CUM[i-1])/(CUM[i]-CUM[i-1]); return {x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t,ang:Math.atan2(b[1]-a[1],b[0]-a[0])}; }
-function nearestOnPath(x,y){ let best={dist:1e9,d:0}; for(let i=1;i<PATH.length;i++){ const a=PATH[i-1],b=PATH[i],dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy;
-  let t=((x-a[0])*dx+(y-a[1])*dy)/L; t=Math.max(0,Math.min(1,t)); const px=a[0]+t*dx,py=a[1]+t*dy,dd=Math.hypot(px-x,py-y);
-  if(dd<best.dist) best={dist:dd,d:CUM[i-1]+t*(CUM[i]-CUM[i-1])}; } return best; }
-const padOf=id=>PADS.find(p=>p.id===id);
+/* ───── géométrie ───── */
+function mkPath(pts){ const cum=[0]; for(let i=1;i<pts.length;i++) cum.push(cum[i-1]+Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1])); return {pts,cum,len:cum[cum.length-1]}; }
+function posOn(P,d){ d=Math.max(0,Math.min(P.len,d)); let i=1; while(i<P.cum.length-1&&P.cum[i]<d) i++;
+  const a=P.pts[i-1],b=P.pts[i],t=(d-P.cum[i-1])/(P.cum[i]-P.cum[i-1]); return {x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t,ang:Math.atan2(b[1]-a[1],b[0]-a[0])}; }
+function nearestOn(P,x,y){ let best={dist:1e9,d:0}; const pts=P.pts; for(let i=1;i<pts.length;i++){ const a=pts[i-1],b=pts[i],dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy;
+  let t=((x-a[0])*dx+(y-a[1])*dy)/L; t=Math.max(0,Math.min(1,t)); const dd=Math.hypot(a[0]+t*dx-x,a[1]+t*dy-y); if(dd<best.dist) best={dist:dd,d:P.cum[i-1]+t*(P.cum[i]-P.cum[i-1])}; } return best; }
+/* Emplacements générés le long des rues : assez loin de la chaussée, là où ils couvrent le plus de trajet. */
+function genPads(paths){
+  const pts=[]; paths.forEach(P=>{ for(let d=0;d<P.len;d+=.2){ const q=posOn(P,d); if(q.y>-.3&&q.y<MH&&q.x>-.3&&q.x<MW+.3) pts.push(q); } });
+  const cand=[];
+  for(let y=.7;y<=MH-1.05;y+=.25) for(let x=.55;x<=MW-.55;x+=.25){ let dmin=9; for(const q of pts){ const d=Math.hypot(q.x-x,q.y-y); if(d<dmin) dmin=d; }
+    if(dmin<1.05||dmin>1.7) continue; let cov=0; for(const q of pts) if(Math.hypot(q.x-x,q.y-y)<=2) cov++; cand.push({x,y,cov}); }
+  cand.sort((a,b)=>b.cov-a.cov);
+  const out=[]; for(const c of cand){ if(out.every(o=>Math.hypot(o.x-c.x,o.y-c.y)>=1.55)) out.push(c); if(out.length>=14) break; }
+  return out.map((c,i)=>({id:'p'+i,x:c.x,y:c.y}));
+}
+const MAPDATA=MAPS.map(m=>{ const paths=m.paths.map(mkPath); return {...m,P:paths,pads:genPads(paths)}; });
+const padOf=id=>R.pads.find(p=>p.id===id);
 const rangeOf=tw=>MEANS[tw.type].range+LV.rng[tw.lvl-1];
 const upCost=tw=>tw.lvl>=3?null:Math.round(MEANS[tw.type].cout*LV.cout[tw.lvl]);
 const sellVal=tw=>Math.floor(tw.spent*.6);
 
 /* ───── partie ───── */
-function resetGame(cfg,tuto){
-  R.cfg=cfg; R.tuto=tuto?1:0; R.wave=0; R.units=[]; R.spawnQ=[]; R.fx=[]; R.towers={}; R.sel=null; R.caught=0; R.leaks={}; R.seen=new Set(); R.pause=false;
-  R.herse={cd:0,placing:false,strips:[]}; $('newfoe').hidden=true;
-  R.waves=tuto?1:cfg.waves; R.lives=tuto?10:cfg.lives;
+function resetGame(cfg,tuto,mapIdx){
+  R.cfg=cfg; R.map=mapIdx||0; R.M=MAPDATA[R.map]; R.pads=R.M.pads;
+  R.tuto=tuto?1:0; R.wave=0; R.units=[]; R.spawnQ=[]; R.fx=[]; R.jets=[]; R.towers={}; R.sel=null; R.disp=0; R.leaks={}; R.seen=new Set(); R.pause=false;
+  R.somm={cd:0,placing:false,fx:[]}; $('panel').hidden=true;
+  R.waves=tuto?1:cfg.waves; R.lives=R.lives0=tuto?15:cfg.lives;
   const qn=(k,d)=>{ const v=Q2.get(k); return v!==null&&v!==''&&Number.isFinite(Number(v))?Number(v):d; };
   const inc=Q2.get('mode')==='incident';
-  // En incident, l'effectif Intervention réel de la zone fixe les agents de départ (2,5 points par policier présent).
-  R.agents=tuto?10:(inc?Math.max(10,Math.round(qn('agents',cfg.agents)*2.5)):cfg.eff);
-  // Moyens disponibles : nombre de combis et de voitures de la zone, drone seulement avec une cellule drone.
-  R.dispo={combi:inc?qn('combi',cfg.combi):cfg.combi, anon:inc?qn('anon',cfg.anon):cfg.anon, drone:inc?qn('drone',cfg.drone):cfg.drone};
+  // En incident, l'effectif Intervention réel de la zone fixe les agents de départ.
+  R.agents=tuto?12:(inc?Math.max(12,Math.round(qn('agents',cfg.agents)*2.2)):cfg.eff);
+  // Véhicules disponibles : autopompes et combis selon la zone (la cavalerie vient en appui fédéral).
+  R.dispo={barrage:inc?qn('combi',cfg.combi):cfg.combi, autopompe:cfg.autopompe, cavalerie:cfg.cavalerie};
   R.usure=inc?Math.max(0,Math.min(1,qn('usure',0)/100)):0;
-  R.phase='build'; R.nextIn=null; R.over=false; if(!tuto) Shell.st.mode='play';
-  tip(); ui();
+  R.phase='build'; R.nextIn=null; R.waveEnd=0; R.over=false; if(!tuto) Shell.st.mode='play';
+  resize(); tip(); ui();
 }
 function launchWave(){
   if(R.over||R.wave>=R.waves) return;
@@ -600,61 +623,68 @@ function launchWave(){
   if(early>0){ R.agents+=early; Shell.toast(`Appel anticipé : +${early} agents`,'ok'); }
   R.wave++; R.phase='run'; R.nextIn=null;
   const groups=R.tuto?TUTO_WAVE:WAVES[Math.min(WAVES.length-1,R.wave-1)];
-  // Les groupes arrivent l'un après l'autre, à intervalle régulier.
-  let t=Math.max(R.t,R.waveEnd)+.3; const gap=R.cfg.gap;
-  for(const [type,n] of groups) for(let i=0;i<n;i++){ R.spawnQ.push({type,at:t}); t+=gap*(type==='fourgon'?2:type==='scooter'?.6:1); }
-  R.waveEnd=t;
+  // Répartition des émeutiers entre les cortèges (tourniquet pondéré), chaque cortège avance à son rythme.
+  const W=R.M.w, acc=W.map(()=>0), tc=W.map(()=>Math.max(R.t,R.waveEnd)+.3), gap=R.cfg.gap, sum=W.reduce((a,b)=>a+b,0);
+  const fac={manif:1,casseur:.6,meneur:1.5,bloc:3};
+  for(const [type,n] of groups) for(let i=0;i<n;i++){
+    W.forEach((w,j)=>acc[j]+=w); let pi=0; acc.forEach((a,j)=>{ if(a>acc[pi]) pi=j; }); acc[pi]-=sum;
+    R.spawnQ.push({type,pi,at:tc[pi]}); tc[pi]+=gap*fac[type]*W.length/sum*W[pi]; }
+  R.spawnQ.sort((a,b)=>a.at-b.at); R.waveEnd=Math.max(...tc);
   Shell.blip(520,.12,'triangle',.06); Shell.toast(`Vague ${R.wave}`,'info'); ui(); if(!R.sel) tip();
 }
-function addUnit(type,d){ const F=FOES[type], hp=F.hp*R.cfg.hp;
-  R.units.push({type,d,hp,max:hp,slow:0,mark:1,punct:false,alive:true,bob:Math.random()*6,col:pick(['#e8283c','#c81e32','#ff4d5e','#d7263d'])});
+let UID=0;
+const HOOD=['#c0392b','#2e86c1','#27ae60','#d4a017','#8e44ad','#e67e22','#7f8c8d','#16a085','#b03a5b'];
+function addUnit(type,pi){ const F=FOES[type], hp=F.hp*R.cfg.hp*R.M.hp;
+  R.units.push({id:UID++,type,pi,d:0,hp,max:hp,state:'go',slow:0,boost:false,somUntil:0,lo:type==='manif'||type==='casseur'?(Math.random()-.5)*.7:(Math.random()-.5)*.2,
+    col:type==='casseur'?'#17181c':type==='meneur'?'#e8732a':pick(HOOD),flare:type==='casseur'&&Math.random()<.35,bob:Math.random()*6,ban:pick(['#c0392b','#d4a017','#2e86c1','#27ae60','#8e44ad','#e8e8e8'])});
   if(!R.seen.has(type)){ R.seen.add(type); if(!R.tuto&&!R.sim) introFoe(type); }
 }
+function upos(u){ const P=R.M.P[u.pi], p=posOn(P,u.d), o=u.lo*(u.state==='flee'?.8:1); return {x:p.x-Math.sin(p.ang)*o,y:p.y+Math.cos(p.ang)*o,ang:p.ang}; }
 function step(dt){
   if(R.over||R.pause) return;
   R.t+=dt;
-  if(R.herse.cd>0) R.herse.cd=Math.max(0,R.herse.cd-dt);
-  R.herse.strips=R.herse.strips.filter(s=>R.t<s.until);
+  if(R.somm.cd>0) R.somm.cd=Math.max(0,R.somm.cd-dt);
   if(R.phase!=='run') return;
-  while(R.spawnQ.length&&R.spawnQ[0].at<=R.t) addUnit(R.spawnQ.shift().type,0);
-  // vague suivante : compte à rebours dès que la vague en cours a fini d'arriver
+  while(R.spawnQ.length&&R.spawnQ[0].at<=R.t){ const q=R.spawnQ.shift(); addUnit(q.type,q.pi); }
   if(!R.spawnQ.length&&R.wave<R.waves&&R.nextIn===null&&R.t>=R.waveEnd&&!R.tuto) R.nextIn=R.cfg.pause;
   if(R.nextIn!==null){ R.nextIn-=dt; if(R.nextIn<=0){ R.nextIn=null; launchWave(); } }
-  const live=R.units.filter(u=>u.alive);
-  for(const u of live){ u.slow=0; u.mark=1; u.p=posAt(u.d); }
-  // soutien : combis (ralentissement) et drones (repérage)
-  for(const id in R.towers){ const tw=R.towers[id], M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw);
-    if(tw.type!=='combi'&&tw.type!=='drone') continue;
-    for(const u of live){ if(Math.hypot(u.p.x-P.x,u.p.y-P.y)>rg) continue;
-      if(tw.type==='combi'){ const s=M.slow[tw.lvl-1]*(1-.25*R.usure); u.slow=Math.max(u.slow,FOES[u.type].veh?s:s*.5); }
-      else u.mark=Math.max(u.mark,1+M.mark[tw.lvl-1]); } }
-  // déplacements
-  for(const u of live){ const F=FOES[u.type];
-    const v=F.v*(1-u.slow)*(u.punct?.5:1), nd=u.d+v*dt;
-    if(F.veh&&!u.punct) for(const s of R.herse.strips){ if(u.d<s.d&&nd>=s.d){ u.punct=true; u.hp-=.25*u.max; fx(u.p.x,u.p.y,'Pneus crevés','ok'); Shell.good(); } }
-    u.d=nd; if(u.d>=LEN) leak(u); }
-  // interpellations
-  for(const id in R.towers){ const tw=R.towers[id], M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw);
-    tw.tgt=null; if(tw.type==='drone') continue;
-    const inR=live.filter(u=>u.alive&&Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg);
+  for(const u of R.units) u.p=upos(u);
+  const live=R.units.filter(u=>u.state==='go');
+  // meneurs : ils galvanisent ceux qui les entourent
+  const leaders=live.filter(u=>u.type==='meneur');
+  for(const u of live){ u.boost=u.type!=='meneur'&&leaders.some(m=>Math.hypot(m.p.x-u.p.x,m.p.y-u.p.y)<FOES.meneur.aura); u.slow=u.somUntil>R.t?.6:0; }
+  // barrages : ralentissement
+  for(const id in R.towers){ const tw=R.towers[id]; if(tw.type!=='barrage') continue; const P=padOf(id), rg=rangeOf(tw), s=MEANS.barrage.slow[tw.lvl-1]*(1-.25*R.usure);
+    for(const u of live) if(Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg) u.slow=Math.max(u.slow,s); }
+  // déplacements (ceux qui renoncent repartent en sens inverse)
+  for(const u of R.units){ const F=FOES[u.type];
+    if(u.state==='flee'){ u.d-=F.v*1.6*dt; continue; }
+    u.d+=F.v*(1-u.slow)*(u.boost?1.3:1)*dt; if(u.d>=R.M.P[u.pi].len) leak(u); }
+  // moyens
+  const hit=(u,v)=>{ u.hp-=v*(u.boost?.7:1); };
+  for(const id in R.towers){ const tw=R.towers[id], M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw), k=LV.dmg[tw.lvl-1]*((tw.type==='autopompe'||tw.type==='barrage')?1-.25*R.usure:1);
+    tw.tgt=null; if(tw.cd>0) tw.cd-=dt;
+    const inR=live.filter(u=>u.state==='go'&&Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg);
     if(!inR.length) continue;
-    const wear=(tw.type==='anon'||tw.type==='combi')?1-.25*R.usure:1, k=LV.dmg[tw.lvl-1]*wear;
-    if(tw.type==='combi'){ inR.forEach(u=>u.hp-=M.aoe*k*u.mark*dt); tw.tgt=inR; continue; }
-    // cible : le plus avancé, en commençant par ceux pour qui le moyen est fait
-    const pref=u=>tw.type==='patrouille'?(!FOES[u.type].veh||u.slow>0||u.punct?1:0):(FOES[u.type].veh?1:0);
-    inR.sort((a,b)=>pref(b)-pref(a)||b.d-a.d); const t=inR[0];
-    let dps=M.dps[t.type]*k; if(tw.type==='patrouille'&&FOES[t.type].veh&&(t.slow>0||t.punct)) dps*=2.5;
-    t.hp-=dps*t.mark*dt; tw.tgt=[t]; }
-  for(const u of live){ if(u.alive&&u.hp<=0){ u.alive=false; R.caught++; const F=FOES[u.type]; R.agents+=F.gain;
-    fx(u.p.x,u.p.y,`+${F.gain}`,'gain'); fx(u.p.x,u.p.y,'','catch'); Shell.good(); } }
-  R.units=R.units.filter(u=>u.alive);
-  R.fx=R.fx.filter(f=>R.t-f.t<1.2);
-  if(R.wave>=R.waves&&!R.spawnQ.length&&!R.units.length) endGame();
+    if(tw.type==='barrage'){ inR.forEach(u=>hit(u,M.aoe*k*dt)); tw.tgt=inR.slice(0,3); continue; }
+    if(tw.type==='peloton'){ inR.sort((a,b)=>b.d-a.d); const tg=inR.slice(0,M.cibles[tw.lvl-1]); tg.forEach(u=>hit(u,M.dps[u.type]*k*dt)); tw.tgt=tg; continue; }
+    if(tw.type==='cavalerie'){ const pr=u=>u.type==='meneur'?2:u.type==='casseur'?1:0; inR.sort((a,b)=>pr(b)-pr(a)||b.d-a.d); const t=inR[0]; hit(t,M.dps[t.type]*k*dt); tw.tgt=[t]; continue; }
+    if(tw.type==='autopompe'){ tw.tgt=[inR[0]]; if(tw.cd>0) continue;
+      let best=inR[0], bn=-1; for(const u of inR){ const n=live.filter(o=>Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<=M.splash).length; if(n>bn){ bn=n; best=u; } }
+      for(const o of live) if(Math.hypot(o.p.x-best.p.x,o.p.y-best.p.y)<=M.splash*(tw.lvl>2?1.2:1)){ hit(o,M.dmg*k*M.mult[o.type]); o.d=Math.max(0,o.d-M.recul*(o.type==='bloc'?.35:1)); }
+      tw.cd=M.cd; tw.tgt=[best]; R.jets.push({x0:P.x,y0:P.y,x1:best.p.x,y1:best.p.y,t:R.t,lvl:tw.lvl}); Shell.blip(180,.15,'sawtooth',.02); }
+  }
+  // ceux qui renoncent font demi-tour : agents récupérés
+  for(const u of live){ if(u.hp<=0&&u.state==='go'){ u.state='flee'; R.disp++; const F=FOES[u.type]; R.agents+=F.gain;
+    fx(u.p.x,u.p.y,`+${F.gain}`,'gain'); Shell.good(); } }
+  R.units=R.units.filter(u=>u.alive!==false&&!(u.state==='flee'&&u.d<=0));
+  R.fx=R.fx.filter(f=>R.t-f.t<1.2); R.jets=R.jets.filter(j=>R.t-j.t<.45); R.somm.fx=R.somm.fx.filter(f=>R.t-f.t<1);
+  if(R.wave>=R.waves&&!R.spawnQ.length&&!R.units.some(u=>u.state==='go')) endGame();
 }
 function leak(u){
   u.alive=false; const F=FOES[u.type]; R.lives-=F.vies; R.leaks[u.type]=(R.leaks[u.type]||0)+1;
   Shell.bad(); if(!R.sim){ Shell.shake(); const h=$('hLives'); h.classList.remove('hit'); void h.offsetWidth; h.classList.add('hit'); }
-  fx(4.5,13.2,`−${F.vies} vie${F.vies>1?'s':''}`,'bad');
+  const ex=R.M.P[u.pi].pts.at(-1); fx(ex[0],MH-1.1,`−${F.vies}`,'bad');
   if(R.lives<=0&&!R.tuto){ R.lives=0; finish(false); }
   ui();
 }
@@ -665,29 +695,43 @@ function endGame(){
   finish(R.lives>0);
 }
 function finish(ok){
-  if(R.over) return; R.over=true; R.phase='idle'; R.sel=null; R.herse.placing=false; ui(); tip();
+  if(R.over) return; R.over=true; R.phase='idle'; R.sel=null; R.somm.placing=false; ui(); tip();
   if(R.sim) return;
   if(ok) Shell.win();
-  const fuites=Object.values(R.leaks).reduce((a,b)=>a+b,0);
-  const conseils={pieton:'<b>piétons</b> : place des <b>patrouilles à pied</b> le long du trajet.',
-    scooter:'<b>scooters</b> : un <b>combi</b> les ralentit et la <b>voiture anonymisée</b> les rattrape.',
-    voiture:'<b>voitures</b> : la <b>voiture anonymisée</b> est faite pour elles, une patrouille derrière un <b>combi</b> aussi.',
-    fourgon:'<b>fourgons</b> : très résistants, <b>renforce</b> tes moyens et pose une <b>herse</b> à leur passage.'};
-  const details=Object.entries(R.leaks).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${n} fuite${n>1?'s':''} de ${conseils[k]}`);
-  Shell.result({ok, faults:fuites, stats:[['Interpellés',R.caught],['Fuites',String(fuites)]], details,
-    note:fuites===0?'Bouclage parfait : double point.':'Sans aucune fuite : +2 sur la jauge.'});
+  const perdu=R.lives0-Math.max(0,R.lives);
+  const etoiles = !ok ? 0 : perdu===0 ? 3 : perdu<=R.lives0*.4 ? 2 : 1;
+  let note='';
+  if(ok&&campagne()){ const c=store.get('campagne',{}); if(etoiles>(c[R.map]||0)) c[R.map]=etoiles; store.set('campagne',c);
+    note=`${'★'.repeat(etoiles)}${'☆'.repeat(3-etoiles)} sur ce quartier.${R.map<MAPS.length-1?` Quartier suivant débloqué : ${MAPS[R.map+1].nom}.`:' Campagne terminée !'}`; }
+  const conseils={manif:'<b>émeutiers</b> : place des <b>pelotons MO</b>, ils en repoussent plusieurs à la fois.',
+    casseur:'<b>casseurs</b> : un <b>barrage</b> les freine et la <b>cavalerie</b> les rattrape.',
+    meneur:'<b>meneurs</b> : la <b>cavalerie</b> les vise en priorité ; sans eux, le cortège faiblit.',
+    bloc:'<b>blocs compacts</b> (3 chacun) : l’<b>autopompe</b> les fait reculer, renforce-la.'};
+  const details=Object.entries(R.leaks).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${n} passage${n>1?'s':''} de ${conseils[k]}`);
+  Shell.result({ok, faults:perdu, stats:[['Repoussés',R.disp],['Cordon perdu',`${perdu} / ${R.lives0}`]], details, note:note||(perdu===0?'Cordon intact : double point.':'Cordon intact : +2 sur la jauge.')});
 }
+const campagne=()=>!Q2.get('mode');
 
-/* ───── nouveaux fuyards : petite fiche, jeu en pause ───── */
+/* ───── fiches et choix du quartier ───── */
 function introFoe(type){
-  const F=FOES[type], el=$('newfoe'); R.pause=true;
-  el.innerHTML=`<div class="hd"><canvas id="nfc"></canvas><div><div class="ey">Nouveau fuyard</div><h3>${F.nom}</h3></div></div>
-    <p>${F.ds}</p><p style="color:var(--mute);font-size:13px">Interpellé : <b>+${F.gain} agent${F.gain>1?'s':''}</b> · S’il sort : <b>−${F.vies} vie${F.vies>1?'s':''}</b></p>
+  const F=FOES[type], el=$('panel'); R.pause=true;
+  el.innerHTML=`<div class="hd"><canvas class="ic" id="nfc"></canvas><div><div class="ey">Nouveau dans le cortège</div><h3>${F.nom}</h3></div></div>
+    <p>${F.ds}</p><p style="color:var(--mute);font-size:13px">Repoussé : <b>+${F.gain} agent${F.gain>1?'s':''}</b> · S’il passe : <b>−${F.vies}</b> au cordon</p>
     <button class="btn primary" id="nfOk">Compris</button>`;
   el.hidden=false;
-  const c=$('nfc'); c.width=128; c.height=128; const g=c.getContext('2d'); const z=type==='pieton'?240:type==='scooter'?220:type==='fourgon'?120:150; g.setTransform(z,0,0,z,64,64); g.rotate(-Math.PI/2);
-  drawFoeBody(g,{type,col:'#e8283c',bob:0},0);
+  const c=$('nfc'); c.width=128; c.height=128; const g=c.getContext('2d'); const z=type==='bloc'?150:type==='meneur'?260:280; g.setTransform(z,0,0,z,64,64); g.rotate(-Math.PI/2);
+  drawRioter(g,{type,col:type==='casseur'?'#17181c':type==='meneur'?'#e8732a':'#4a3b5a',flare:type==='casseur',bob:0,ban:'#c0392b',state:'go'},.3);
   $('nfOk').onclick=()=>{ el.hidden=true; R.pause=false; };
+}
+function chooseMap(cfg){
+  const el=$('panel'), c=store.get('campagne',{});
+  el.innerHTML=`<div><div class="ey" style="color:var(--accent)">Campagne</div><h3>Choisis le quartier</h3></div><div class="levels">${MAPS.map((m,i)=>{ const open=i===0||c[i-1]>0, st=c[i]||0;
+    return `<button class="lvl" data-i="${i}" ${open?'':'disabled'}><canvas data-m="${i}"></canvas><span class="n">${i+1}</span>${open?'':'<span class="lock">🔒</span>'}<b>${m.nom}</b><span>${m.sous}</span><span class="st">${'★'.repeat(st)}${'☆'.repeat(3-st)}</span></button>`; }).join('')}</div>
+    <p style="color:var(--mute);font-size:13px">Réussis un quartier pour débloquer le suivant.</p>`;
+  el.hidden=false;
+  el.querySelectorAll('canvas[data-m]').forEach(cv=>{ const i=+cv.dataset.m; cv.width=180; cv.height=280; const g=cv.getContext('2d'); g.setTransform(20,0,0,20,0,0); drawMap(g,MAPDATA[i]); });
+  el.querySelectorAll('.lvl').forEach(b=>b.onclick=()=>{ if(b.disabled) return; el.hidden=true; resetGame(cfg,false,+b.dataset.i); });
+  R.phase='idle'; ui();
 }
 
 /* ───── interface ───── */
@@ -697,38 +741,38 @@ function ui(){
   if(R.phase==='build'){ b.disabled=R.tuto>0&&R.tuto<4; b.innerHTML='Lancer la vague 1'; }
   else if(R.phase==='run'&&R.nextIn!==null){ b.disabled=false; b.innerHTML=`Vague ${R.wave+1} dans ${Math.ceil(R.nextIn)} s <small>· maintenant : +${Math.ceil(R.nextIn/4)}</small>`; }
   else { b.disabled=true; b.innerHTML=R.phase==='run'?(R.wave>=R.waves?'Dernière vague':`Vague ${R.wave} en cours`):'—'; }
-  const hz=$('herse'); hz.hidden=R.phase==='idle'||R.tuto>0; hz.disabled=R.herse.cd>0||R.phase!=='run';
-  hz.setAttribute('aria-pressed',R.herse.placing); $('herseTxt').textContent=R.herse.cd>0?`${Math.ceil(R.herse.cd)} s`:'Herse';
-  $('herseCd').style.width=(R.herse.cd>0?(1-R.herse.cd/HERSE.cd)*100:0)+'%';
+  const sm=$('somm'); sm.hidden=R.phase==='idle'||R.tuto>0; sm.disabled=R.somm.cd>0||R.phase!=='run';
+  sm.setAttribute('aria-pressed',R.somm.placing); $('sommTxt').textContent=R.somm.cd>0?`${Math.ceil(R.somm.cd)} s`:'Sommation';
+  $('sommCd').style.width=(R.somm.cd>0?(1-R.somm.cd/SOMM.cd)*100:0)+'%';
   $('spd').hidden=R.phase==='idle';
 }
 function tip(html){
   const el=$('tip');
   if(html){ el.innerHTML=html; return; }
-  if(R.herse.placing){ el.innerHTML='<span><b>Herse :</b> touche la route là où la poser. Pendant 10 s, elle crève les pneus des véhicules qui passent.</span>'; return; }
+  if(R.somm.placing){ el.innerHTML='<span><b>Sommations :</b> touche le cortège. Ceux qui sont autour ralentissent 4 s et perdent de la détermination.</span>'; return; }
   if(R.sel){ const tw=R.towers[R.sel.pad];
     if(R.sel.opt){ const o=R.sel.opt;
       if(o==='up'){ el.innerHTML=`<span><b>${UPTXT[tw.type][tw.lvl]}</b> · <span class="c">${upCost(tw)} agents</span> — plus efficace, portée accrue. <b>Touche encore pour confirmer.</b></span>`; return; }
       if(o==='sell'){ el.innerHTML=`<span><b>Retirer</b> ce moyen · récupère <span class="c">${sellVal(tw)} agents</span>. <b>Touche encore pour confirmer.</b></span>`; return; }
       const M=MEANS[o]; el.innerHTML=`<span><b>${M.nom}</b> · <span class="c">${M.cout} agents</span> — ${M.ds} <b>Touche encore pour poser.</b></span>`; return; }
     el.innerHTML= tw ? `<span><b>${MEANS[tw.type].nom}</b> (niveau ${tw.lvl}) — ${MEANS[tw.type].ds}</span>` : '<span>Choisis un moyen autour de l’emplacement.</span>'; return; }
-  if(R.phase==='build') el.innerHTML='<span>Touche un <b>emplacement bleu</b> pour poser un moyen, puis lance la vague. Les fuyards suivent tous la route jusqu’au <b>périmètre</b>.</span>';
-  else if(R.phase==='run') el.innerHTML='<span>Chaque interpellation rapporte des <b>agents</b> : pose ou <b>renforce</b> tes moyens à tout moment.</span>';
+  if(R.phase==='build') el.innerHTML='<span>Touche un <b>emplacement bleu</b> pour poser un moyen, puis lance la vague. Les cortèges suivent les rues jusqu’à l’<b>hôtel de ville</b>.</span>';
+  else if(R.phase==='run') el.innerHTML='<span>Chaque émeutier repoussé rend des <b>agents</b> : pose ou <b>renforce</b> tes moyens à tout moment.</span>';
   else el.innerHTML='';
 }
-/* menu circulaire autour de l'emplacement sélectionné */
+const ORDER=['peloton','autopompe','barrage','cavalerie'];
 function menuItems(){
   if(!R.sel) return [];
   const P=padOf(R.sel.pad), tw=R.towers[R.sel.pad];
   let items;
   if(tw){ items=[]; if(tw.lvl<3) items.push({k:'up',a:-Math.PI/2}); items.push({k:'sell',a:Math.PI/2}); }
-  else { const keys=['patrouille','anon','combi','drone'], allow=R.tuto?['patrouille']:keys; items=keys.map((k,i)=>({k,a:-Math.PI/2+i*Math.PI/2,lock:!allow.includes(k)})); }
+  else { const allow=R.tuto?['peloton']:ORDER; items=ORDER.map((k,i)=>({k,a:-Math.PI/2+i*Math.PI/2,lock:!allow.includes(k)})); }
   const r=.92, cx=Math.min(MW-r-.42,Math.max(r+.42,P.x)), cy=Math.min(MH-r-.6,Math.max(r+.42,P.y));
   return items.map(it=>{ const x=cx+Math.cos(it.a)*r, y=cy+Math.sin(it.a)*r; let ok=true, why='';
     if(it.k==='up') ok=R.agents>=upCost(tw);
     else if(it.k!=='sell'){ const used=Object.values(R.towers).filter(t=>t.type===it.k).length, lim=R.dispo[it.k];
       if(it.lock){ ok=false; why='pas pour le moment'; }
-      else if(lim!==undefined&&used>=lim){ ok=false; why=it.k==='drone'&&!lim?'ta zone n’a pas de cellule drone':`tous tes véhicules sont engagés (${lim})`; }
+      else if(lim!==undefined&&used>=lim){ ok=false; why=`tous engagés (${lim} disponible${lim>1?'s':''})`; }
       else if(R.agents<MEANS[it.k].cout){ ok=false; why=`il faut ${MEANS[it.k].cout} agents`; } }
     return {...it,x,y,ok,why}; });
 }
@@ -738,19 +782,24 @@ function choose(it){
   if(!it.ok) return;
   if(it.k==='sell'){ R.agents+=sellVal(R.towers[id]); delete R.towers[id]; }
   else if(it.k==='up'){ const tw=R.towers[id], c=upCost(tw); R.agents-=c; tw.spent+=c; tw.lvl++; tw.born=R.t; }
-  else { const M=MEANS[it.k]; R.agents-=M.cout; R.towers[id]={type:it.k,lvl:1,spent:M.cout,born:R.t}; if(R.tuto===3) tutoStep(4); }
+  else { const M=MEANS[it.k]; R.agents-=M.cout; R.towers[id]=newTower(id,it.k); if(R.tuto===3) tutoStep(4); }
   Shell.good(); R.sel=null; tip(); ui();
 }
+function newTower(id,type){ const P=padOf(id), tw={type,lvl:1,spent:MEANS[type].cout,born:R.t,cd:0,face:Math.PI/2};
+  // orientation : face à la rue la plus proche (et, pour le barrage, les barrières posées en travers de la chaussée)
+  let best=null; R.M.P.forEach((Pa,pi)=>{ const n=nearestOn(Pa,P.x,P.y); if(!best||n.dist<best.dist) best={...n,pi}; });
+  const q=posOn(R.M.P[best.pi],best.d); tw.face=Math.atan2(q.y-P.y,q.x-P.x); tw.road={pi:best.pi,d:best.d};
+  return tw; }
 function onTap(e){
   const r=C.cv.getBoundingClientRect(), x=(e.clientX-r.left)/C.s, y=(e.clientY-r.top)/C.s;
   if((R.over&&!R.tuto)||R.phase==='idle'||R.pause) return;
-  if(R.herse.placing){ const n=nearestOnPath(x,y);
-    if(n.dist<.75){ R.herse.strips.push({d:n.d,until:R.t+HERSE.dure}); R.herse.cd=HERSE.cd; Shell.good(); }
-    R.herse.placing=false; tip(); ui(); return; }
+  if(R.somm.placing){ R.somm.placing=false;
+    const hitN=R.units.filter(u=>u.state==='go'&&Math.hypot(u.p.x-x,u.p.y-y)<=SOMM.rayon);
+    hitN.forEach(u=>{ u.somUntil=R.t+SOMM.dure; u.hp-=SOMM.perte; }); R.somm.fx.push({x,y,t:R.t}); R.somm.cd=SOMM.cd; Shell.blip(440,.3,'square',.05);
+    tip(); ui(); return; }
   for(const it of menuItems()){ if(Math.hypot(it.x-x,it.y-y)<.44){ choose(it); return; } }
-  let best=null,bd=.6; for(const p of PADS){ const d=Math.hypot(p.x-x,p.y-y); if(d<bd){ bd=d; best=p; } }
-  if(R.tuto===1&&best&&best.id!=='c') best=null;
-  if(R.tuto===3&&best&&best.id!=='c') best=null;
+  let best=null,bd=.6; for(const p of R.pads){ const d=Math.hypot(p.x-x,p.y-y); if(d<bd){ bd=d; best=p; } }
+  if((R.tuto===1||R.tuto===3)&&best&&best.id!=='p0') best=null;
   if(best){ R.sel={pad:best.id,opt:null}; if(R.tuto===1) tutoStep(3); Shell.blip(700,.04,'square',.03); }
   else if(R.tuto!==3) R.sel=null;
   tip();
@@ -759,51 +808,52 @@ function onTap(e){
 /* ───── tutoriel ───── */
 function tutoStep(n){
   R.tuto=n; ui();
-  if(n===1) Shell.coach(1,3,'Les fuyards suivent <b>la route</b>, du lieu des faits jusqu’au <b>périmètre</b>. Touche l’<b>emplacement bleu</b> qui clignote.');
-  if(n===3) Shell.coach(2,3,'Choisis la <b>patrouille à pied</b> au-dessus de l’emplacement. Premier toucher : sa portée s’affiche. Deuxième toucher : elle est posée.');
-  if(n===4) Shell.coach(3,3,'Parfait. Touche <b>Lancer la vague</b> : quatre fuyards à pied arrivent. Chaque interpellation te rapporte des agents.');
+  if(n===1) Shell.coach(1,3,'Le cortège suit <b>la rue</b> jusqu’à l’<b>hôtel de ville</b>. Touche l’<b>emplacement bleu</b> qui clignote.');
+  if(n===3) Shell.coach(2,3,'Choisis le <b>peloton MO</b> au-dessus. Premier toucher : sa portée. Deuxième toucher : il est posé.');
+  if(n===4) Shell.coach(3,3,'Lance la vague. Les émeutiers repoussés <b>font demi-tour</b> et te rendent des agents.');
   if(n===5) Shell.endTuto();
 }
 
 /* ───── rendu ───── */
 function resize(){
-  const f=$('field'), w=f.clientWidth, h=f.clientHeight; if(!w||!h) return;
+  const f=$('field'), w=f.clientWidth, h=f.clientHeight; if(!w||!h||!R.M) return;
   const s=Math.min(w/MW,h/MH); C.s=s; C.dpr=Math.min(2.5,window.devicePixelRatio||1);
   const cw=Math.floor(MW*s), ch=Math.floor(MH*s);
   C.cv.style.width=cw+'px'; C.cv.style.height=ch+'px'; C.cv.width=Math.round(cw*C.dpr); C.cv.height=Math.round(ch*C.dpr);
   C.map=document.createElement('canvas'); C.map.width=C.cv.width; C.map.height=C.cv.height;
-  const g=C.map.getContext('2d'); g.setTransform(s*C.dpr,0,0,s*C.dpr,0,0); drawMap(g);
+  const g=C.map.getContext('2d'); g.setTransform(s*C.dpr,0,0,s*C.dpr,0,0); drawMap(g,R.M);
 }
 function rng(seed){ let x=seed||1; return ()=>{ x=(x*16807)%2147483647; return (x-1)/2147483646; }; }
-const RW=1.0;
-function strokePath(g,w,col,dash){ g.strokeStyle=col; g.lineWidth=w; g.lineJoin='round'; g.lineCap='butt'; if(dash) g.setLineDash(dash); g.beginPath(); PATH.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.stroke(); g.setLineDash([]); }
-function drawMap(g){
-  const rnd=rng(5324);
-  g.fillStyle='#14171f'; g.fillRect(0,0,MW,MH);
-  // toits du quartier (la route passe par-dessus)
+const RW=1.05;
+function strokeP(g,P,w,col,dash){ g.strokeStyle=col; g.lineWidth=w; g.lineJoin='round'; g.lineCap='butt'; if(dash) g.setLineDash(dash); g.beginPath(); P.pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.stroke(); g.setLineDash([]); }
+function drawMap(g,M){
+  const rnd=rng(5324+M.paths.length*17);
+  g.fillStyle='#16191f'; g.fillRect(0,0,MW,MH);
   for(let y=-.2;y<MH;y+=1.15) for(let x=-.2;x<MW;x+=1.05){
-    const w=.8+rnd()*.25, h=.85+rnd()*.25, bx=x+.06, by=y+.06, l=16+rnd()*6;
+    const w=.8+rnd()*.25, h=.85+rnd()*.25, bx=x+.06, by=y+.06, l=17+rnd()*6, hue=rnd()<.25?20:222;
     g.fillStyle='rgba(0,0,0,.45)'; g.fillRect(bx+.08,by+.08,w,h);
-    g.fillStyle=`hsl(222 12% ${l}%)`; g.fillRect(bx,by,w,h);
+    g.fillStyle=`hsl(${hue} ${hue===20?18:12}% ${l}%)`; g.fillRect(bx,by,w,h);
     g.strokeStyle='rgba(255,255,255,.05)'; g.lineWidth=.02; g.strokeRect(bx+.02,by+.02,w-.04,h-.04);
-    if(rnd()<.5){ g.fillStyle=`hsl(222 10% ${l+6}%)`; g.fillRect(bx+.15+rnd()*.3,by+.15+rnd()*.3,.14+rnd()*.1,.12+rnd()*.08); } }
-  // trottoirs, bordures, chaussée
-  strokePath(g,RW+.5,'#4b5263'); strokePath(g,RW+.07,'#d9dee8'); strokePath(g,RW,'#3b4252');
-  for(let i=0;i<700;i++){ g.fillStyle=`rgba(255,255,255,${rnd()*.03})`; g.fillRect(rnd()*MW,rnd()*MH,.03,.03); }
-  strokePath(g,.045,'rgba(240,240,230,.55)',[.3,.25]);
-  // flèches peintes au sol : le sens de fuite
-  for(let d=1.2; d<LEN-.8; d+=1.6){ const p=posAt(d); g.save(); g.translate(p.x,p.y); g.rotate(p.ang); g.fillStyle='rgba(255,255,255,.14)';
-    g.beginPath(); g.moveTo(.22,0); g.lineTo(-.08,-.2); g.lineTo(-.08,-.08); g.lineTo(-.26,-.08); g.lineTo(-.26,.08); g.lineTo(-.08,.08); g.lineTo(-.08,.2); g.closePath(); g.fill(); g.restore(); }
+    if(rnd()<.5){ g.fillStyle=`hsl(${hue} 10% ${l+6}%)`; g.fillRect(bx+.15+rnd()*.3,by+.15+rnd()*.3,.14+rnd()*.1,.12+rnd()*.08); } }
+  // pavés gris : trottoirs puis chaussée
+  M.P.forEach(P=>strokeP(g,P,RW+.5,'#4e5562')); M.P.forEach(P=>strokeP(g,P,RW+.07,'#d9dee8')); M.P.forEach(P=>strokeP(g,P,RW,'#3d4351'));
+  for(let i=0;i<800;i++){ g.fillStyle=`rgba(255,255,255,${rnd()*.035})`; g.fillRect(rnd()*MW,rnd()*MH,.03,.03); }
+  M.P.forEach(P=>strokeP(g,P,.045,'rgba(240,240,230,.4)',[.3,.25]));
+  // flèches au sol : le sens du cortège
+  M.P.forEach(P=>{ for(let d=1.2; d<P.len-.8; d+=1.6){ const p=posOn(P,d); g.save(); g.translate(p.x,p.y); g.rotate(p.ang); g.fillStyle='rgba(255,255,255,.12)';
+    g.beginPath(); g.moveTo(.22,0); g.lineTo(-.08,-.2); g.lineTo(-.08,-.08); g.lineTo(-.26,-.08); g.lineTo(-.26,.08); g.lineTo(-.08,.08); g.lineTo(-.08,.2); g.closePath(); g.fill(); g.restore(); } });
   // lampadaires
-  for(let d=.8; d<LEN; d+=1.7){ const p=posAt(d), sd=((d/1.7|0)%2?1:-1)*(RW/2+.16), x=p.x-Math.sin(p.ang)*sd, y=p.y+Math.cos(p.ang)*sd;
-    g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(x,y,0,x,y,.9); gr.addColorStop(0,'rgba(255,196,120,.07)'); gr.addColorStop(1,'rgba(255,196,120,0)'); g.fillStyle=gr; g.fillRect(x-.9,y-.9,1.8,1.8);
-    g.globalCompositeOperation='source-over'; g.fillStyle='#ffe2b0'; g.beginPath(); g.arc(x,y,.035,0,7); g.fill(); }
-  // ligne du périmètre
-  g.fillStyle='rgba(216,31,53,.55)'; g.fillRect(4.5-RW/2-.25,MH-.22,RW+.5,.22);
-  for(let i=0;i<6;i++){ g.fillStyle=i%2?'#f2f2f2':'#d81f35'; g.fillRect(4.5-RW/2-.25+i*(RW+.5)/6,MH-.32,(RW+.5)/6,.1); }
+  M.P.forEach(P=>{ for(let d=.8; d<P.len; d+=1.7){ const p=posOn(P,d), sd=((d/1.7|0)%2?1:-1)*(RW/2+.16), x=p.x-Math.sin(p.ang)*sd, y=p.y+Math.cos(p.ang)*sd;
+    g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(x,y,0,x,y,.9); gr.addColorStop(0,'rgba(255,196,120,.06)'); gr.addColorStop(1,'rgba(255,196,120,0)'); g.fillStyle=gr; g.fillRect(x-.9,y-.9,1.8,1.8);
+    g.globalCompositeOperation='source-over'; g.fillStyle='#ffe2b0'; g.beginPath(); g.arc(x,y,.035,0,7); g.fill(); } });
+  // hôtel de ville en bas : façade à colonnes, la rue y débouche
+  const ex=M.P[0].pts.at(-1)[0];
+  g.fillStyle='#2a2e3a'; g.fillRect(0,MH-.75,MW,.75); g.fillStyle='#3a3f4e'; g.fillRect(0,MH-.75,MW,.12);
+  for(let x=.3;x<MW;x+=.45){ if(Math.abs(x-ex)<.8) continue; g.fillStyle='#c9c2b0'; g.fillRect(x,MH-.6,.14,.6); g.fillStyle='rgba(0,0,0,.25)'; g.fillRect(x+.1,MH-.6,.04,.6); }
+  g.fillStyle='#b9b2a0'; g.fillRect(ex-.75,MH-.75,1.5,.1);
   const v=g.createRadialGradient(MW/2,MH/2,MH*.3,MW/2,MH/2,MH*.75); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,0,.3)'); g.fillStyle=v; g.fillRect(0,0,MW,MH);
 }
-/* sprites (vue du dessus, coordonnées en cases) */
+/* sprites communs (vue du dessus, coordonnées en cases) */
 function batten(g,x,y,w,h){ const n=Math.max(2,Math.round(w/.09)); for(let i=0;i<n;i++){ g.fillStyle=i%2?'#1d4ea3':'#d7ee3a'; g.fillRect(x+i*w/n,y,w/n+.002,h); } }
 function drawCombi(g,lvl,t,broken){
   g.fillStyle='rgba(0,0,0,.45)'; g.fillRect(-.47,-.2,1.0,.48);
@@ -841,80 +891,131 @@ function drawDrone(g,lvl,t){ g.fillStyle='rgba(0,0,0,.35)'; g.beginPath(); g.arc
     g.strokeStyle='rgba(230,240,255,.7)'; g.lineWidth=.015; const r=t*30+i; g.beginPath(); g.moveTo(x+Math.cos(r)*.1,y+Math.sin(r)*.1); g.lineTo(x-Math.cos(r)*.1,y-Math.sin(r)*.1); g.stroke(); });
   g.fillStyle='#e9edf2'; rr(g,-.08,-.06,.16,.12,.03); g.fill(); g.fillStyle=Math.floor(t*3)%2?'#ff4a4a':'#5a1a1a'; g.beginPath(); g.arc(0,0,.025,0,7); g.fill(); }
 function rr(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
-function drawFoeBody(g,u,t){
-  const sw=Math.sin(t*9+u.bob)*.03;
-  if(u.type==='voiture') drawCar(g,u.col,.56,.28);
-  else if(u.type==='fourgon'){ g.fillStyle='rgba(0,0,0,.45)'; g.fillRect(-.38,-.15,.82,.34); g.fillStyle='#eceef1'; rr(g,-.4,-.17,.8,.34,.04); g.fill(); g.fillStyle='#e8283c'; g.fillRect(-.38,-.03,.58,.06); g.fillStyle='#17202c'; rr(g,.24,-.14,.1,.28,.02); g.fill(); }
-  else if(u.type==='scooter'){ g.fillStyle='rgba(0,0,0,.4)'; g.fillRect(-.15,-.04,.34,.11); g.fillStyle='#e8283c'; rr(g,-.17,-.055,.34,.11,.05); g.fill(); g.fillStyle='#2b2f36'; g.beginPath(); g.arc(-.02,0,.07,0,7); g.fill(); }
-  else { // fuyard à pied, vu du dessus : épaules, bras qui balancent, capuche
-    g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(.04,.04,.17,.13,0,0,7); g.fill();
-    g.fillStyle='#b81f30'; g.beginPath(); g.ellipse(sw*2,-.13,.05,.04,0,0,7); g.fill(); g.beginPath(); g.ellipse(-sw*2,.13,.05,.04,0,0,7); g.fill();
-    g.fillStyle='#e8283c'; g.beginPath(); g.ellipse(0,0,.09,.15,0,0,7); g.fill();
-    g.fillStyle='#2a1418'; g.beginPath(); g.arc(.02,0,.075,0,7); g.fill(); g.strokeStyle='#ff6b7a'; g.lineWidth=.02; g.beginPath(); g.arc(.02,0,.075,-1.2,1.2); g.stroke(); }
+/* émeutier vu du dessus ; t sert à l'animation de marche */
+function person(g,col,sw,head){
+  g.fillStyle='rgba(0,0,0,.35)'; g.beginPath(); g.ellipse(.03,.03,.12,.09,0,0,7); g.fill();
+  g.fillStyle=col; g.beginPath(); g.ellipse(sw*2,-.1,.04,.035,0,0,7); g.fill(); g.beginPath(); g.ellipse(-sw*2,.1,.04,.035,0,0,7); g.fill();
+  g.beginPath(); g.ellipse(0,0,.07,.115,0,0,7); g.fill();
+  g.fillStyle=head||'#20232a'; g.beginPath(); g.arc(.015,0,.055,0,7); g.fill();
 }
-function drawFoe(g,u,t){
-  const p=u.p||posAt(u.d), F=FOES[u.type], off=F.veh?.2:.55, x=p.x-Math.sin(p.ang)*off, y=p.y+Math.cos(p.ang)*off; u.px=x; u.py=y;
-  g.save(); g.translate(x,y);
-  const hr=F.veh?(u.type==='fourgon'?.5:.4):.34, hg=g.createRadialGradient(0,0,0,0,0,hr); hg.addColorStop(0,'rgba(255,45,85,.45)'); hg.addColorStop(1,'rgba(255,45,85,0)'); g.fillStyle=hg; g.beginPath(); g.arc(0,0,hr,0,7); g.fill();
-  g.save(); g.rotate(p.ang);
-  if(F.veh){ g.globalCompositeOperation='lighter'; const L=u.type==='scooter'?.2:.3, gr=g.createRadialGradient(L,0,0,L+.4,0,.7); gr.addColorStop(0,'rgba(255,240,200,.25)'); gr.addColorStop(1,'rgba(255,240,200,0)');
-    g.fillStyle=gr; g.beginPath(); g.moveTo(L,0); g.lineTo(L+1,-.4); g.lineTo(L+1,.4); g.closePath(); g.fill(); g.globalCompositeOperation='source-over'; }
-  if(u.type==='scooter') g.scale(1.25,1.25); if(u.type==='pieton') g.scale(1.45,1.45); drawFoeBody(g,u,t);
-  g.restore();
-  if(u.slow>0){ g.strokeStyle='rgba(98,176,255,.85)'; g.lineWidth=.04; g.beginPath(); g.arc(0,0,F.veh?.36:.24,0,7); g.stroke(); }
-  if(u.mark>1){ g.strokeStyle='rgba(255,209,102,.9)'; g.lineWidth=.03; const r=F.veh?.42:.28; g.beginPath(); [[-1,0],[1,0],[0,-1],[0,1]].forEach(([a,b])=>{ g.moveTo(a*(r+.06),b*(r+.06)); g.lineTo(a*(r-.04),b*(r-.04)); }); g.stroke(); }
-  if(u.punct){ g.fillStyle='#ffb21f'; g.font='800 .18px "Instrument Sans",sans-serif'; g.textAlign='center'; g.fillText('✱',.3,.3); }
-  // barre de résistance, comme dans tous les tower defense
-  const w=F.veh?(u.type==='fourgon'?.7:.5):.4, f=Math.max(0,u.hp/u.max), by=F.veh?-.38:-.32;
-  g.fillStyle='rgba(0,0,0,.7)'; g.fillRect(-w/2-.02,by-.02,w+.04,.1); g.fillStyle=f>.5?'#46d98a':f>.25?'#ffd166':'#ff4d5e'; g.fillRect(-w/2,by,w*f,.06);
-  g.restore();
+function drawRioter(g,u,t){
+  const run=u.state==='flee', sw=Math.sin(t*(run?14:9)+u.bob)*(run?.045:.03);
+  if(u.type==='bloc'){ // groupe serré derrière une banderole
+    [[-.12,-.16],[-.12,.16],[-.2,0],[.02,-.08],[.02,.08],[-.3,-.12],[-.3,.12]].forEach(([x,y],i)=>{ g.save(); g.translate(x,y); person(g,HOOD[(i*3+u.bob*7|0)%HOOD.length],sw*(i%2?1:-1),'#15161a'); g.restore(); });
+    g.fillStyle='rgba(0,0,0,.35)'; g.fillRect(.13,-.32,.06,.66); g.fillStyle=u.ban; g.fillRect(.1,-.32,.05,.64);
+    g.fillStyle='rgba(255,255,255,.35)'; for(let i=0;i<4;i++) g.fillRect(.11,-.26+i*.15,.03,.08);
+    return; }
+  person(g,u.col,sw,u.type==='casseur'?'#0c0d10':undefined);
+  if(u.type==='meneur'){ g.fillStyle='#f2f2f2'; g.beginPath(); g.moveTo(.06,-.03); g.lineTo(.18,-.07); g.lineTo(.18,.07); g.lineTo(.06,.03); g.closePath(); g.fill(); }
+  if(u.flare&&!run){ g.globalCompositeOperation='lighter'; const fl=.6+.4*Math.sin(t*20+u.bob); const gr=g.createRadialGradient(.08,.12,0,.08,.12,.32); gr.addColorStop(0,`rgba(255,80,40,${.7*fl})`); gr.addColorStop(1,'rgba(255,80,40,0)'); g.fillStyle=gr; g.fillRect(-.3,-.2,.7,.7);
+    g.globalCompositeOperation='source-over'; g.fillStyle='#fff3c0'; g.beginPath(); g.arc(.08,.12,.025,0,7); g.fill(); }
 }
-function drawTower(g,tw,x,y,t){
-  g.save(); g.translate(x,y);
-  if(tw.type==='patrouille'){ const a=tw.tgt&&tw.tgt[0]&&tw.tgt[0].px!==undefined?Math.atan2(tw.tgt[0].py-y,tw.tgt[0].px-x):Math.PI/2;
-    g.scale(1.5,1.5); drawAgent(g,-.1,-.06,a); drawAgent(g,.1,.07,a); if(tw.lvl>1) drawAgent(g,-.09,.14,a); if(tw.lvl>2) drawAgent(g,.12,-.12,a); }
-  else if(tw.type==='anon'){ g.rotate(-.5); drawAnon(g,tw.lvl,t,tw.tgt&&tw.tgt.length); if(tw.lvl>2){ g.translate(.05,.32); drawAnon(g,1,t+.3,tw.tgt&&tw.tgt.length); } }
-  else if(tw.type==='combi'){ g.scale(.8,.8); drawCombi(g,tw.lvl,t,false); }
-  else if(tw.type==='drone'){ g.scale(1.25,1.25); drawDrone(g,tw.lvl,t); }
+function drawUnit(g,u,t){
+  const p=u.p||upos(u); u.px=p.x; u.py=p.y;
+  g.save(); g.translate(p.x,p.y);
+  if(u.state==='flee') g.globalAlpha=.45;
+  else { const hr=u.type==='bloc'?.5:.26, hg=g.createRadialGradient(0,0,0,0,0,hr); hg.addColorStop(0,'rgba(255,45,85,.35)'); hg.addColorStop(1,'rgba(255,45,85,0)'); g.fillStyle=hg; g.beginPath(); g.arc(0,0,hr,0,7); g.fill(); }
+  if(u.type==='meneur'&&u.state==='go'){ const r=FOES.meneur.aura, pu=.5+.5*Math.sin(t*3); g.strokeStyle=`rgba(255,209,102,${.18+.15*pu})`; g.lineWidth=.03; g.setLineDash([.08,.08]); g.beginPath(); g.arc(0,0,r,0,7); g.stroke(); g.setLineDash([]); }
+  g.save(); g.rotate(p.ang+(u.state==='flee'?Math.PI:0)); const z=u.type==='bloc'?1.15:u.type==='meneur'?1.85:1.7; g.scale(z,z); drawRioter(g,u,t); g.restore();
+  if(u.state==='go'){
+    if(u.slow>0){ g.strokeStyle='rgba(98,176,255,.8)'; g.lineWidth=.035; g.beginPath(); g.arc(0,0,u.type==='bloc'?.42:.22,0,7); g.stroke(); }
+    if(u.boost){ g.fillStyle='#ffd166'; g.font='800 .16px "Instrument Sans",sans-serif'; g.textAlign='center'; g.fillText('»',.2,-.18); }
+    if(u.hp<u.max){ const w=u.type==='bloc'?.6:.34, f=Math.max(0,u.hp/u.max), by=u.type==='bloc'?-.45:-.27;
+      g.fillStyle='rgba(0,0,0,.7)'; g.fillRect(-w/2-.02,by-.02,w+.04,.09); g.fillStyle=f>.5?'#46d98a':f>.25?'#ffd166':'#ff4d5e'; g.fillRect(-w/2,by,w*f,.05); }
+  }
   g.restore();
 }
+/* moyens de maintien de l'ordre, dessinés selon leur niveau */
+function shieldAgent(g,x,y){ g.save(); g.translate(x,y);
+  g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(.03,.03,.11,.08,0,0,7); g.fill();
+  g.fillStyle='#1f3256'; g.beginPath(); g.ellipse(0,0,.09,.075,0,0,7); g.fill();
+  g.fillStyle='#0f1a2e'; g.beginPath(); g.arc(-.01,0,.05,0,7); g.fill(); g.strokeStyle='#62b0ff'; g.lineWidth=.012; g.stroke();
+  g.fillStyle='rgba(200,225,255,.55)'; g.strokeStyle='#e8f1ff'; g.lineWidth=.015; rr(g,.08,-.1,.035,.2,.015); g.fill(); g.stroke(); g.restore(); }
+function drawPeloton(g,lvl,face,t){
+  g.save(); g.rotate(face); g.scale(1.6,1.6);
+  const pos = lvl===1?[[0,-.1],[0,.1]] : lvl===2?[[0,-.2],[0,0],[0,.2]] : [[.02,-.32],[.02,-.16],[.02,0],[.02,.16],[.02,.32],[-.17,0]];
+  pos.forEach(([x,y])=>shieldAgent(g,x,y));
+  g.restore(); }
+function drawAutopompe(g,lvl,aim,face,t){
+  g.save(); g.rotate(face+Math.PI/2);
+  g.fillStyle='rgba(0,0,0,.45)'; g.fillRect(-.24,-.5,.56,1.04);
+  g.fillStyle='#eef1f5'; rr(g,-.27,-.52,.54,1.0,.06); g.fill();
+  batten(g,-.27,-.4,.06,.8); batten(g,.21,-.4,.06,.8);
+  g.fillStyle='#17202c'; rr(g,-.2,-.5,.4,.16,.04); g.fill(); // pare-brise (cabine en haut)
+  g.fillStyle=lvl>1?'#2e86c1':'#5b6472'; rr(g,-.18,-.25,.36,.62,.05); g.fill(); // citerne
+  const on=Math.floor(t*6)%2; g.fillStyle=on?'#4c9bff':'#1c3a74'; g.fillRect(-.16,-.37,.13,.05); g.fillStyle=on?'#1c3a74':'#4c9bff'; g.fillRect(.03,-.37,.13,.05);
+  g.restore();
+  // tourelle et lance(s), orientées vers la cible
+  const lances=lvl>2?[-.07,.07]:[0];
+  g.save(); g.rotate(aim); g.fillStyle='#c9ced6'; g.beginPath(); g.arc(0,0,.13,0,7); g.fill(); g.strokeStyle='#5b6472'; g.lineWidth=.02; g.stroke();
+  lances.forEach(o=>{ g.fillStyle='#8a929e'; g.fillRect(.05,o-.025,.3,.05); g.fillStyle='#2e86c1'; g.fillRect(.32,o-.03,.05,.06); });
+  g.restore(); }
+function drawBarrage(g,lvl,face,t){ g.save(); g.rotate(face+Math.PI/2); g.scale(.8,.8); drawCombi(g,lvl,t,false); g.restore(); }
+function heras(g,x,y,ang,len){ g.save(); g.translate(x,y); g.rotate(ang);
+  g.fillStyle='rgba(0,0,0,.35)'; g.fillRect(-len/2+.03,-.02,len,.07);
+  g.strokeStyle='#c9ced6'; g.lineWidth=.025; g.strokeRect(-len/2,-.03,len,.06);
+  g.strokeStyle='rgba(201,206,214,.6)'; g.lineWidth=.01; for(let x0=-len/2;x0<len/2;x0+=.06){ g.beginPath(); g.moveTo(x0,-.03); g.lineTo(x0+.03,.03); g.stroke(); }
+  for(let x0=-len/2;x0<=len/2+.01;x0+=len/3){ g.fillStyle='#2b2f36'; g.fillRect(x0-.04,-.05,.08,.1); }
+  g.restore(); }
+function horse(g,x,y){ g.save(); g.translate(x,y);
+  g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(.03,.03,.24,.1,0,0,7); g.fill();
+  g.fillStyle='#6b4a2f'; g.beginPath(); g.ellipse(-.02,0,.21,.085,0,0,7); g.fill();
+  g.beginPath(); g.ellipse(.22,0,.09,.045,0,0,7); g.fill(); g.fillStyle='#3d2a1a'; g.fillRect(.08,-.015,.12,.03);
+  g.fillStyle='#2a1c12'; g.beginPath(); g.moveTo(-.22,0); g.lineTo(-.33,-.03); g.lineTo(-.33,.03); g.closePath(); g.fill();
+  g.fillStyle='#1f3256'; g.beginPath(); g.ellipse(0,0,.075,.1,0,0,7); g.fill(); g.fillStyle='#d7ee3a'; g.fillRect(-.02,-.1,.04,.2);
+  g.fillStyle='#e8eef6'; g.beginPath(); g.arc(.01,0,.045,0,7); g.fill(); g.restore(); }
+function drawCavalerie(g,lvl,aim,t){ g.save(); g.rotate(aim); const pos=lvl===1?[[0,0]]:lvl===2?[[0,-.14],[0,.14]]:[[.06,-.22],[.06,.22],[-.08,0]]; pos.forEach(([x,y])=>horse(g,x,y)); g.restore(); }
+function aimOf(tw,P){ const u=tw.tgt&&tw.tgt[0]; return u&&u.px!==undefined?Math.atan2(u.py-P.y,u.px-P.x):tw.face; }
+function drawTower(g,tw,P,t){
+  g.save(); g.translate(P.x,P.y);
+  if(tw.type==='peloton') drawPeloton(g,tw.lvl,aimOf(tw,P),t);
+  else if(tw.type==='autopompe') drawAutopompe(g,tw.lvl,aimOf(tw,P),tw.face,t);
+  else if(tw.type==='barrage') drawBarrage(g,tw.lvl,tw.face,t);
+  else if(tw.type==='cavalerie') drawCavalerie(g,tw.lvl,aimOf(tw,P),t);
+  g.restore(); }
 function render(){
-  const g=C.ctx; if(!C.map) return; const s=C.s*C.dpr, t=R.t, rt=performance.now()/1000;
+  const g=C.ctx; if(!C.map||!R.M) return; const s=C.s*C.dpr, rt=performance.now()/1000;
   g.setTransform(1,0,0,1,0,0); g.drawImage(C.map,0,0); g.setTransform(s,0,0,s,0,0);
-  // lieu des faits
-  { const x=1.5,y=.45, on=Math.floor(rt*4)%2; g.save(); g.translate(x+.55,y+.15); g.rotate(.6); drawCar(g,'#8fa3b8',.54,.27); g.restore();
-    g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(x,y,0,x,y,1.1); gr.addColorStop(0,on?'rgba(255,70,70,.3)':'rgba(70,120,255,.3)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(x-1.2,y-1.2,2.4,2.4); g.globalCompositeOperation='source-over'; }
-  // zones des combis (ralentissement visible sur la route)
-  for(const id in R.towers){ const tw=R.towers[id]; if(tw.type!=='combi') continue; const P=padOf(id);
-    g.fillStyle='rgba(98,176,255,.09)'; g.strokeStyle='rgba(98,176,255,.35)'; g.lineWidth=.03; g.setLineDash([.12,.1]); g.beginPath(); g.arc(P.x,P.y,rangeOf(tw),0,7); g.fill(); g.stroke(); g.setLineDash([]); }
-  // herses posées
-  for(const st of R.herse.strips){ const p=posAt(st.d), left=st.until-R.t; g.save(); g.translate(p.x,p.y); g.rotate(p.ang+Math.PI/2); g.globalAlpha=left<2?.4+.6*(Math.floor(rt*6)%2):1; g.scale(1.1,1.1); drawHerse(g,true); g.restore(); g.globalAlpha=1; }
+  // départs des cortèges
+  R.M.P.forEach(P=>{ const a=P.pts[0], b=P.pts[1], x=Math.max(.35,Math.min(MW-.35,a[0])), y=Math.max(.35,Math.min(MH-.35,a[1])), on=Math.floor(rt*3)%2;
+    g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(x,y,0,x,y,1); gr.addColorStop(0,on?'rgba(255,90,60,.28)':'rgba(255,90,60,.12)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(x-1,y-1,2,2); g.globalCompositeOperation='source-over';
+    const lx=Math.max(1.05,Math.min(MW-1.05,x+(b[0]===a[0]?1.05:0))), ly=y+(b[0]===a[0]?0:.7); pill(g,lx,ly,'CORTÈGE','#fff',.18,'#c0392b'); });
+  // barrières Heras des barrages, en travers de la chaussée
+  for(const id in R.towers){ const tw=R.towers[id]; if(tw.type!=='barrage') continue; const P=padOf(id), Pa=R.M.P[tw.road.pi];
+    g.fillStyle='rgba(98,176,255,.08)'; g.strokeStyle='rgba(98,176,255,.3)'; g.lineWidth=.03; g.setLineDash([.12,.1]); g.beginPath(); g.arc(P.x,P.y,rangeOf(tw),0,7); g.fill(); g.stroke(); g.setLineDash([]);
+    const offs=tw.lvl===1?[0]:tw.lvl===2?[-.35,.35]:[-.55,0,.55];
+    offs.forEach((o,i)=>{ const q=posOn(Pa,tw.road.d+o), side=(i%2?1:-1)*.2; heras(g,q.x-Math.sin(q.ang)*side,q.y+Math.cos(q.ang)*side,q.ang+Math.PI/2,RW*.62); }); }
   // emplacements libres
-  for(const P of PADS){ if(R.towers[P.id]) continue; const hl=R.tuto===1&&P.id==='c', sel=R.sel&&R.sel.pad===P.id, pu=.5+.5*Math.sin(rt*5);
+  for(const P of R.pads){ if(R.towers[P.id]) continue; const hl=(R.tuto===1)&&P.id==='p0', sel=R.sel&&R.sel.pad===P.id, pu=.5+.5*Math.sin(rt*5);
     g.fillStyle=sel?'rgba(98,176,255,.45)':'rgba(40,110,220,.3)'; g.beginPath(); g.arc(P.x,P.y,.42,0,7); g.fill();
     g.strokeStyle=sel?'#fff':'#62b0ff'; g.lineWidth=sel?.06:.045; g.beginPath(); g.arc(P.x,P.y,.42,0,7); g.stroke();
     g.fillStyle='rgba(232,241,255,.9)'; g.beginPath(); g.arc(P.x,P.y-.08,.08,0,7); g.fill(); g.beginPath(); g.moveTo(P.x-.16,P.y+.18); g.quadraticCurveTo(P.x-.15,P.y+.02,P.x,P.y+.02); g.quadraticCurveTo(P.x+.15,P.y+.02,P.x+.16,P.y+.18); g.closePath(); g.fill();
     if(hl){ g.strokeStyle=`rgba(255,255,255,${1-pu})`; g.lineWidth=.05; g.beginPath(); g.arc(P.x,P.y,.5+pu*.3,0,7); g.stroke(); } }
-  // moyens posés
-  for(const id in R.towers){ const tw=R.towers[id], P=padOf(id);
-    g.fillStyle='rgba(40,110,220,.32)'; g.strokeStyle=R.sel&&R.sel.pad===id?'#fff':'rgba(98,176,255,.8)'; g.lineWidth=.035; g.beginPath(); g.arc(P.x,P.y,.42,0,7); g.fill(); g.stroke();
-    if(tw.type!=='drone'){ const sc=Math.min(1,(R.t-(tw.born||0))*5+.5); g.save(); g.translate(P.x,P.y); g.scale(sc,sc); drawTower(g,tw,0,0,rt); g.restore(); }
-    for(let i=0;i<tw.lvl;i++) star(g,P.x+(i-(tw.lvl-1)/2)*.2,P.y+.47,.08); }
-  // fuyards
-  for(const u of R.units) drawFoe(g,u,rt);
-  // liaisons moyens → cibles
-  if(R.phase==='run') for(const id in R.towers){ const tw=R.towers[id], P=padOf(id); if(!tw.tgt||tw.type==='combi') continue;
-    for(const u of tw.tgt){ if(u.px===undefined) continue; g.strokeStyle=tw.type==='anon'?'rgba(98,176,255,.85)':'rgba(255,209,102,.85)'; g.lineWidth=.04; g.setLineDash([.1,.08]); g.lineDashOffset=-rt*1.2;
+  // socles des moyens posés
+  for(const id in R.towers){ const P=padOf(id); g.fillStyle='rgba(40,110,220,.3)'; g.strokeStyle=R.sel&&R.sel.pad===id?'#fff':'rgba(98,176,255,.75)'; g.lineWidth=.035; g.beginPath(); g.arc(P.x,P.y,.44,0,7); g.fill(); g.stroke(); }
+  // émeutiers (ceux qui repartent d'abord, en dessous)
+  for(const u of R.units) if(u.state==='flee') drawUnit(g,u,rt);
+  for(const u of R.units) if(u.state==='go') drawUnit(g,u,rt);
+  // moyens
+  for(const id in R.towers){ const tw=R.towers[id], P=padOf(id); const sc=Math.min(1,(R.t-(tw.born||0))*5+.5);
+    g.save(); g.translate(P.x,P.y); g.scale(sc,sc); g.translate(-P.x,-P.y); drawTower(g,tw,P,rt); g.restore();
+    for(let i=0;i<tw.lvl;i++) star(g,P.x+(i-(tw.lvl-1)/2)*.2,P.y+.5,.08); }
+  // action des pelotons et de la cavalerie
+  if(R.phase==='run') for(const id in R.towers){ const tw=R.towers[id], P=padOf(id); if(!tw.tgt||tw.type==='autopompe'||tw.type==='barrage') continue;
+    for(const u of tw.tgt){ if(u.px===undefined) continue; g.strokeStyle=tw.type==='cavalerie'?'rgba(255,209,102,.8)':'rgba(200,225,255,.55)'; g.lineWidth=.03; g.setLineDash([.08,.08]); g.lineDashOffset=-rt*1.2;
       g.beginPath(); g.moveTo(P.x,P.y); g.lineTo(u.px,u.py); g.stroke(); g.setLineDash([]); } }
-  // drones au-dessus
-  for(const id in R.towers){ const tw=R.towers[id]; if(tw.type!=='drone') continue; const P=padOf(id);
-    g.strokeStyle='rgba(255,209,102,.3)'; g.setLineDash([.1,.1]); g.lineWidth=.025; g.beginPath(); g.arc(P.x,P.y,rangeOf(tw),0,7); g.stroke(); g.setLineDash([]);
-    drawTower(g,tw,P.x,P.y-.05,rt); }
-  // panneaux
-  pill(g,2.75,.42,'LIEU DES FAITS','#fff',.21,'#d81f35');
-  pill(g,6.05,13.75,'PÉRIMÈTRE ▼','#fff',.22,'#d81f35');
-  // mode herse : route en surbrillance
-  if(R.herse.placing){ g.save(); g.globalAlpha=.35+.2*Math.sin(rt*6); strokePath(g,RW,'rgba(255,178,63,.6)'); g.restore(); }
+  // jets d'eau
+  for(const j of R.jets){ const k=(R.t-j.t)/.45, dx=j.x1-j.x0, dy=j.y1-j.y0;
+    g.save(); g.globalAlpha=1-k; g.lineCap='round';
+    const grd=g.createLinearGradient(j.x0,j.y0,j.x1,j.y1); grd.addColorStop(0,'rgba(220,240,255,.95)'); grd.addColorStop(1,'rgba(120,190,255,.6)');
+    g.strokeStyle=grd; g.lineWidth=.09+.04*(j.lvl-1); g.beginPath(); g.moveTo(j.x0,j.y0); g.quadraticCurveTo(j.x0+dx*.5-dy*.1,j.y0+dy*.5+dx*.1,j.x1,j.y1); g.stroke();
+    for(let i=0;i<10;i++){ const a=i/10*7+j.t, r=.15+k*.6; g.fillStyle='rgba(200,230,255,.8)'; g.beginPath(); g.arc(j.x1+Math.cos(a)*r,j.y1+Math.sin(a)*r,.03,0,7); g.fill(); }
+    g.strokeStyle='rgba(180,220,255,.6)'; g.lineWidth=.03; g.beginPath(); g.arc(j.x1,j.y1,.2+k*.6,0,7); g.stroke(); g.restore(); }
+  // sommations
+  for(const f of R.somm.fx){ const k=(R.t-f.t); for(let i=0;i<3;i++){ const r=(k*1.6+i*.35)%SOMM.rayon; g.strokeStyle=`rgba(255,209,102,${(1-r/SOMM.rayon)*.8})`; g.lineWidth=.05; g.beginPath(); g.arc(f.x,f.y,r,0,7); g.stroke(); } }
+  // panneau de l'hôtel de ville
+  const ex=R.M.P[0].pts.at(-1)[0]; pill(g,ex<4.5?ex+2.1:ex-2.1,MH-.35,'HÔTEL DE VILLE','#fff',.2,'#1d4ea3');
+  if(R.somm.placing){ g.save(); g.globalAlpha=.25+.15*Math.sin(rt*6); R.M.P.forEach(P=>strokeP(g,P,RW,'rgba(255,209,102,.6)')); g.restore(); }
   // portée et menu de l'emplacement sélectionné
   if(R.sel){ const P=padOf(R.sel.pad), tw=R.towers[R.sel.pad];
     let rg=null;
@@ -928,15 +1029,13 @@ function render(){
       g.save(); g.translate(it.x,it.y-.03); g.globalAlpha=it.ok?1:.4;
       if(it.k==='up'){ g.fillStyle=on?'#241400':'#ffd166'; g.beginPath(); g.moveTo(0,-.17); g.lineTo(.15,.03); g.lineTo(.05,.03); g.lineTo(.05,.15); g.lineTo(-.05,.15); g.lineTo(-.05,.03); g.lineTo(-.15,.03); g.closePath(); g.fill(); }
       else if(it.k==='sell'){ g.strokeStyle=on?'#241400':'#ff8a8a'; g.lineWidth=.05; g.beginPath(); g.moveTo(-.11,-.11); g.lineTo(.11,.11); g.moveTo(.11,-.11); g.lineTo(-.11,.11); g.stroke(); }
-      else { g.scale(.62,.62); drawTower(g,{type:it.k,lvl:1,tgt:null},0,0,rt); }
+      else { g.scale(.5,.5); drawTower(g,{type:it.k,lvl:1,face:-Math.PI/2,tgt:null},{x:0,y:0},rt); }
       g.restore(); g.globalAlpha=1;
       const cost=it.k==='up'?upCost(tw):it.k==='sell'?'+'+sellVal(tw):MEANS[it.k].cout;
       pill(g,it.x,it.y+.42,String(cost),it.k==='sell'?'#46d98a':it.ok?'#ffd166':'#8a8f99',.17,'#10141d'); } }
-  // textes flottants et flashs d'interpellation
-  for(const f of R.fx){ const k=(R.t-f.t)/1.2;
-    if(f.k==='catch'){ const on=Math.floor((R.t-f.t)*10)%2; g.globalAlpha=Math.max(0,1-k); g.fillStyle=on?'rgba(70,140,255,.55)':'rgba(255,60,60,.5)'; g.beginPath(); g.arc(f.x,f.y,.2+k*.35,0,7); g.fill(); g.globalAlpha=1; continue; }
-    g.globalAlpha=Math.max(0,1-k); g.font=`800 ${f.k==='gain'?.26:.22}px "Instrument Sans",sans-serif`; g.textAlign='center'; g.textBaseline='middle';
-    g.lineWidth=.07; g.strokeStyle='rgba(8,10,18,.85)'; g.strokeText(f.txt,f.x,f.y-.35-k*.5); g.fillStyle=f.k==='gain'?'#62b0ff':f.k==='ok'?'#46d98a':f.k==='bad'?'#ff5d5d':'#ffd166'; g.fillText(f.txt,f.x,f.y-.35-k*.5); g.globalAlpha=1; }
+  // textes flottants
+  for(const f of R.fx){ const k=(R.t-f.t)/1.2; g.globalAlpha=Math.max(0,1-k); g.font=`800 ${f.k==='gain'?.24:.26}px "Instrument Sans",sans-serif`; g.textAlign='center'; g.textBaseline='middle';
+    g.lineWidth=.07; g.strokeStyle='rgba(8,10,18,.85)'; g.strokeText(f.txt,f.x,f.y-.3-k*.5); g.fillStyle=f.k==='gain'?'#62b0ff':f.k==='bad'?'#ff5d5d':'#ffd166'; g.fillText(f.txt,f.x,f.y-.3-k*.5); g.globalAlpha=1; }
 }
 function star(g,x,y,r){ g.fillStyle='#ffd166'; g.strokeStyle='#241400'; g.lineWidth=.02; g.beginPath(); for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, q=i%2?r*.45:r; i?g.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q):g.moveTo(x+Math.cos(a)*q,y+Math.sin(a)*q); } g.closePath(); g.fill(); g.stroke(); }
 function pill(g,x,y,txt,col,sz=.17,bg){ g.font=`800 ${sz}px "Instrument Sans",sans-serif`; g.textAlign='center'; g.textBaseline='middle'; const w=g.measureText(txt).width+sz*1.3, h=sz*1.55;
@@ -944,38 +1043,42 @@ function pill(g,x,y,txt,col,sz=.17,bg){ g.font=`800 ${sz}px "Instrument Sans",sa
 
 Shell.init({
   key:'bouclage', service:'Incident Intervention', serviceShort:'Intervention',
-  headline:'Car-jacking, bouclage du quartier',
-  story:`<p>Car-jacking violent : les auteurs et leurs complices s’enfuient à pied, en scooter, en voiture et en fourgon par la seule route qui sort du quartier.</p><p>Place tes moyens le long du trajet et interpelle-les avant le périmètre. Chaque interpellation te rapporte des agents pour renforcer ton dispositif.</p>`,
+  headline:'Manifestation qui dégénère',
+  story:`<p>Une manifestation dégénère : des cortèges de casseurs remontent les rues vers l’hôtel de ville.</p><p>Place tes moyens de maintien de l’ordre le long du trajet et <b>repousse-les</b> : à bout de détermination, ils font demi-tour. Chaque émeutier repoussé te rend des agents.</p>`,
   diffs:{
-    difficile:{agents:6,label:'Difficile',eff:16,lives:8,combi:2,anon:2,drone:1,hp:1.15,gap:1.1,pause:12,waves:6},
-    normal:{agents:8,label:'Normal',eff:20,lives:12,combi:2,anon:3,drone:1,hp:1,gap:1.25,pause:14,waves:6},
-    facile:{agents:10,label:'Facile',eff:22,lives:15,combi:3,anon:4,drone:1,hp:.85,gap:1.4,pause:16,waves:5}},
-  bornes:{eff:[10,24],lives:[5,15],gap:[.6,2],hp:[.5,Infinity],pause:[8,20],combi:[1,4],anon:[1,4],drone:[1,1]},
-  diffHint:'Plus d’agents au départ et plus de fuites tolérées.',
+    difficile:{agents:7,label:'Difficile',eff:17,lives:12,combi:2,autopompe:1,cavalerie:2,hp:1.08,gap:.5,pause:12,waves:6},
+    normal:{agents:9,label:'Normal',eff:18,lives:15,combi:3,autopompe:2,cavalerie:3,hp:1,gap:.55,pause:14,waves:6},
+    facile:{agents:11,label:'Facile',eff:22,lives:20,combi:3,autopompe:3,cavalerie:4,hp:.85,gap:.6,pause:16,waves:5}},
+  bornes:{eff:[12,26],lives:[8,20],gap:[.3,1],hp:[.5,Infinity],pause:[8,20],combi:[1,4],autopompe:[1,3],cavalerie:[1,4]},
+  diffHint:'Plus d’agents au départ, plus de véhicules et un cordon plus solide.',
   desktopHint:'Sur ordinateur : clique sur un emplacement bleu, puis sur le moyen voulu (deux fois pour confirmer).',
-  rules:['Les fuyards suivent tous <b>la route</b>, du lieu des faits au <b>périmètre</b>. Chaque fuyard qui sort te coûte une <b>vie</b> (deux pour un fourgon).',
-    'Touche un <b>emplacement bleu</b> : quatre moyens apparaissent autour. Premier toucher : portée et prix. Deuxième toucher : c’est posé.',
-    '<b>Patrouille</b> contre les piétons, <b>voiture anonymisée</b> contre les véhicules, <b>combi</b> pour ralentir, <b>drone</b> pour rendre tout le monde plus efficace autour de lui.',
-    'Chaque interpellation rapporte des <b>agents</b> : dépense-les pour poser ou <b>renforcer</b> tes moyens (touche un moyen posé), même pendant la vague.',
-    'La <b>herse</b> (en bas à gauche) se pose sur la route et crève les pneus des véhicules qui passent. Elle se recharge en 20 s.',
-    'Lancer la vague suivante <b>en avance</b> rapporte des agents en bonus. Aucune fuite : <b>+2</b> sur la jauge.'],
-  winTitle:'Périmètre tenu', loseTitle:'Le bouclage a cédé', skin:'Barrage de nuit',
-  malus:'les auteurs restent dans la nature : moral des équipes Intervention en baisse et un combi immobilisé jusqu’à demain.',
-  // Challenge : 3 vagues au niveau 1, jusqu'à 6 ; ensuite les fuyards résistent davantage et arrivent plus serrés.
-  niveau(n,cfg){ cfg.waves=n<=2?3:n<=4?4:n<=7?5:6; return cfg; },
+  rules:['Les cortèges suivent les rues jusqu’à l’<b>hôtel de ville</b>. Chaque émeutier qui arrive entame le <b>cordon</b> (bouclier jaune).',
+    'On ne blesse personne : on <b>repousse</b>. À bout de détermination, l’émeutier fait <b>demi-tour</b> et te rend des agents.',
+    'Touche un <b>emplacement bleu</b> : quatre moyens apparaissent. Premier toucher : portée et prix. Deuxième toucher : c’est posé.',
+    '<b>Peloton MO</b> contre la masse, <b>autopompe</b> pour faire reculer les groupes, <b>barrage</b> pour ralentir, <b>cavalerie</b> contre les meneurs et les casseurs.',
+    'Touche un moyen posé pour le <b>renforcer</b> (jusqu’au niveau 3, son allure change) ou le retirer.',
+    'Les <b>sommations</b> (en bas à gauche) ralentissent un groupe. Lancer la vague suivante <b>en avance</b> rapporte des agents.'],
+  winTitle:'Ordre rétabli', loseTitle:'Le cordon a cédé', skin:'Cordon de nuit',
+  malus:'l’hôtel de ville est dégradé : moral des équipes Intervention en baisse et un combi immobilisé jusqu’à demain.',
+  // Challenge : on enchaîne les quartiers, puis les cortèges deviennent plus déterminés et plus serrés.
+  niveau(n,cfg){ cfg.map=(n-1)%MAPS.length; cfg.waves=n<=2?4:n<=4?5:6; return cfg; },
   onInit(){
-    C.cv=$('cv'); C.ctx=C.cv.getContext('2d');
+    C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); R.M=MAPDATA[0]; R.pads=R.M.pads;
     resize(); new ResizeObserver(resize).observe($('field'));
     if(document.fonts) document.fonts.ready.then(resize);
     C.cv.addEventListener('pointerdown',onTap);
     $('launch').onclick=()=>{ if(R.phase==='build'){ if(R.tuto===4) Shell.hideCoach(); launchWave(); } else if(R.phase==='run'&&R.nextIn!==null) launchWave(); };
     $('spd').onclick=()=>{ R.speed=R.speed===1?2:1; $('spd').setAttribute('aria-pressed',R.speed===2); };
-    $('herse').onclick=()=>{ if(R.herse.cd>0||R.phase!=='run') return; R.herse.placing=!R.herse.placing; R.sel=null; tip(); ui(); };
+    $('somm').onclick=()=>{ if(R.somm.cd>0||R.phase!=='run') return; R.somm.placing=!R.somm.placing; R.sel=null; tip(); ui(); };
     R.phase='idle'; R.cfg=this.diffs.normal; ui(); tip();
   },
-  onMenu(){ R.over=true; R.phase='idle'; R.units=[]; R.towers={}; R.tuto=0; R.sel=null; $('newfoe').hidden=true; R.pause=false; ui(); tip(); },
-  onPlay(cfg){ resetGame(cfg,false); },
-  onTuto(){ resetGame(this.diffs.facile,true); tutoStep(1); },
+  onMenu(){ R.over=true; R.phase='idle'; R.units=[]; R.towers={}; R.tuto=0; R.sel=null; $('panel').hidden=true; R.pause=false; ui(); tip(); },
+  onPlay(cfg){
+    if(Shell.enDefi) return resetGame(cfg,false,cfg.map||0);
+    if(Q2.get('mode')==='incident'){ const cq=Number(Q2.get('carte')); return resetGame(cfg,false,Number.isInteger(cq)&&MAPS[cq]?cq:({facile:0,normal:1,difficile:2}[Q2.get('diff')]??1)); }
+    chooseMap(cfg);
+  },
+  onTuto(){ resetGame(this.diffs.facile,true,0); tutoStep(1); },
   onFrame(dt){
     if(!C.ctx) return;
     const n=R.speed*2; for(let i=0;i<n;i++) step(dt*R.speed/n);
@@ -989,10 +1092,10 @@ Shell.init({
   }
 });
 // Accès pour les simulations d'équilibrage (sans effet en jeu).
-window.__bouclage={R,PADS,MEANS,FOES,WAVES,LV,resetGame,launchWave,step,upCost,
-  build(pad,type){ const M=MEANS[type]; if(R.towers[pad]||R.agents<M.cout) return false; const used=Object.values(R.towers).filter(t=>t.type===type).length; if(R.dispo[type]!==undefined&&used>=R.dispo[type]) return false; R.agents-=M.cout; R.towers[pad]={type,lvl:1,spent:M.cout,born:R.t}; return true; },
+window.__bouclage={R,MAPS,MAPDATA,MEANS,FOES,WAVES,LV,resetGame,launchWave,step,upCost,
+  build(pad,type){ const M=MEANS[type]; if(R.towers[pad]||R.agents<M.cout) return false; const used=Object.values(R.towers).filter(t=>t.type===type).length; if(R.dispo[type]!==undefined&&used>=R.dispo[type]) return false; R.agents-=M.cout; R.towers[pad]=newTower(pad,type); return true; },
   up(pad){ const tw=R.towers[pad]; if(!tw||tw.lvl>=3) return false; const c=upCost(tw); if(R.agents<c) return false; R.agents-=c; tw.spent+=c; tw.lvl++; return true; },
-  herse(d){ if(R.herse.cd>0||R.phase!=='run') return false; R.herse.strips.push({d,until:R.t+HERSE.dure}); R.herse.cd=HERSE.cd; return true; }};
+  somm(x,y){ if(R.somm.cd>0||R.phase!=='run') return false; R.units.filter(u=>u.state==='go'&&u.p&&Math.hypot(u.p.x-x,u.p.y-y)<=SOMM.rayon).forEach(u=>{ u.somUntil=R.t+SOMM.dure; u.hp-=SOMM.perte; }); R.somm.cd=SOMM.cd; return true; }};
 
 </script>
 </body>
