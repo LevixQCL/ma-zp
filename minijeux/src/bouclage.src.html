@@ -673,7 +673,7 @@ function drawBarrier(g,tw,rt){
   if(tw.lvl>2){ g.save(); g.translate(shake,0); const S=spr('frise');
       // toujours dessiné de face pour rester lisible ; sur une rue horizontale, deux éléments empilés couvrent la largeur
       const offs=vert?[0]:[-.24,.24];
-      offs.forEach(o=>{ if(S.ok&&b.up){ g.save(); g.translate(tw.rx,tw.ry+o+.08); sprite1(g,'frise',vert?.55:.45,false); g.restore(); }
+      offs.forEach(o=>{ if(S.ok&&b.up){ g.save(); g.translate(tw.rx,tw.ry+o+.08); sprite1(g,'frise',vert?.78:.6,false); g.restore(); }
         else frise(g,tw.rx,tw.ry+o+.05,Math.PI/2,!b.up,rt,vert?.5:.34); });
       g.restore(); }
   else (tw.lvl===1?[0]:[-.27,.27]).forEach((o,i)=>{ const cx=tw.rx+px*o, cy=tw.ry+py*o;
