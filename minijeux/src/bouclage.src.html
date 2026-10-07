@@ -132,7 +132,12 @@ const FOES={
    (barrage, sommation) puis le commandant posté à côté négocie leur départ. */
 const VEH=new Set(['tracteur','sono','car']), veh=u=>VEH.has(u.type);
 const BOSS_NOM={tracteur:['un tracteur','tracteurs'],sono:['un camion sono','camions sono'],car:['un car de supporters','cars de supporters']};
-const VIMG={tracteur:{h:.82,gauche:true,r:1.72},sono:{h:1.08,gauche:false,r:1.1},car:{h:.9,gauche:true,r:1.5}};
+// Images vues de trois quarts : h = hauteur à l'écran (un manifestant ≈ .84), r = largeur/hauteur de l'image,
+// pied = ligne où les roues côté spectateur touchent la route (fractions de l'image, de l'avant à l'arrière), prof = recul jusqu'au centre.
+const VIMG={tracteur:{h:1.35,gauche:true,r:1.72,pied:[.08,.88,.92,.5],prof:.05},
+  sono:{h:1.45,gauche:false,r:1.1,pied:[.1,.9,.95,.66],prof:.05},
+  car:{h:1.45,gauche:true,r:1.5,pied:[.08,.88,.95,.51],prof:.05}};
+const vDemi=t=>VIMG[t].h*VIMG[t].r*.38; // demi-longueur au sol, en cases
 const TOUR_DECALE=1;
 // Véhicules en tête de la dernière vague, par quartier (1er tour, puis tours suivants)
 const BOSS_TOUR1={4:['tracteur'],7:['sono'],8:['car'],10:['tracteur','sono']};
@@ -436,7 +441,7 @@ function step(dt){
   R.fumees=(R.fumees||[]).filter(f=>R.t<f.until);
   for(const u of live) u.cache=R.fumees.some(f=>R.t-f.t0>.3&&Math.hypot(u.p.x-f.x,(u.p.y-f.y)/.8)<f.r);
   const tracts=live.filter(u=>u.type==='tracteur'), vehs=live.filter(veh);
-  for(const u of live) u.abri=!veh(u)&&tracts.some(t=>t.pi===u.pi&&t.d-u.d>0&&t.d-u.d<1.3);
+  for(const u of live) u.abri=!veh(u)&&tracts.some(t=>t.pi===u.pi&&t.d-u.d>0&&t.d-u.d<vDemi('tracteur')+1);
   const sonos=live.filter(u=>u.type==='sono'&&!u.atBar&&!(u.somUntil>R.t)); for(const so of sonos) so.music=R.t;
   for(const u of live){ u.boost=u.type!=='meneur'&&!veh(u)&&(leaders.some(m=>Math.hypot(m.p.x-u.p.x,m.p.y-u.p.y)<FOES.meneur.aura)||sonos.some(m=>Math.hypot(m.p.x-u.p.x,m.p.y-u.p.y)<FOES.sono.aura));
     u.slow=u.somUntil>R.t?.6:0; if(R.flaques.some(f=>Math.hypot(f.x-u.p.x,(f.y-u.p.y)/.7)<f.r)) u.slow=Math.max(u.slow,.3); u.atBar=null; }
@@ -452,8 +457,8 @@ function step(dt){
     if(u.held) continue;                                   // retenu par un agent MO
     let nd=u.d+F.v*R.M.P[u.pi].k*(R.mods.rapides?1.15:1)*(1-u.slow)*(u.boost?1.3:1)*dt;
     for(const [id,tw] of towers){ if(tw.type!=='barrage'||!tw.bar.up) continue; const db=blockOn(tw,u.pi); if(db===null||db<u.d-.05) continue;
-      const stop=veh(u)?db-.62:db-.24-u.jit*.45; if(nd>=stop){ nd=Math.max(u.d,stop); u.atBar=id; } }
-    if(!veh(u)&&u.state==='go') for(const t of vehs) if(t.pi===u.pi&&t.d>u.d+.1) nd=Math.min(nd,Math.max(u.d,t.d-TRACT.suite-u.jit*.3));
+      const stop=veh(u)?db-vDemi(u.type)*.8:db-.24-u.jit*.45; if(nd>=stop){ nd=Math.max(u.d,stop); u.atBar=id; } }
+    if(!veh(u)&&u.state==='go') for(const t of vehs) if(t.pi===u.pi&&t.d>u.d+.1) nd=Math.min(nd,Math.max(u.d,t.d-vDemi(t.type)-TRACT.suite*.5-u.jit*.3));
     // car de supporters : s'arrête à mi-parcours ou au barrage, puis débarque
     if(u.type==='car'&&u.state==='go'&&!u.vide){ const arr=R.M.P[u.pi].len*.45; if(nd>=arr||u.atBar){ nd=Math.min(nd,Math.max(u.d,arr)); u.stopT??=R.t;
       if(R.t-u.stopT>TRACT.arretCar){ debarque(u); continue; } } }
@@ -600,7 +605,7 @@ function introFoe(type){
     <button class="btn primary" id="nfOk">Compris</button>`;
   el.hidden=false;
   const c=$('nfc'); c.width=128; c.height=128; const g=c.getContext('2d'); const z=type==='bloc'?140:170; g.setTransform(z,0,0,z,64,type==='bloc'?110:118);
-  if(VEH.has(type)){ g.setTransform(62,0,0,62,64,104); vehImg(g,type,-1,VIMG[type].h); } else drawRioter(g,{type,id:1,f:1,col:'#c0392b',flare:type==='casseur',bob:0,ban:'#c0392b',state:'go'},.3);
+  if(VEH.has(type)){ const z=100/(VIMG[type].h*VIMG[type].r); g.setTransform(z,0,0,z,64,64+VIMG[type].h*z/2); vehImg(g,type,-1,VIMG[type].h); } else drawRioter(g,{type,id:1,f:1,col:'#c0392b',flare:type==='casseur',bob:0,ban:'#c0392b',state:'go'},.3);
   $('nfOk').onclick=()=>{ el.hidden=true; R.pause=false; R.introOuverte=false; const q=R.introQ&&R.introQ.shift(); if(q) introFoe(q); };
 }
 function chooseMap(cfg){
@@ -1105,19 +1110,26 @@ function vehImg(g,type,f,h){ const V=VIMG[type]; if(sprite1(g,type,h,V.gauche?f>
   g.fillStyle=col; rr(g,-w/2,-h*.85,w,h*.6,.06); g.fill(); g.fillStyle='rgba(190,220,230,.7)'; g.fillRect(-w/2+.05,-h*.78,w*.25,h*.25);
   g.fillStyle='#1b1d20'; [[-w*.3,-h*.22],[w*.3,-h*.22]].forEach(([x,y])=>{ g.beginPath(); g.arc(x,y,h*.2,0,7); g.fill(); }); g.restore(); }
 function drawVeh(g,u,t){
-  const f=u.f||1, V=VIMG[u.type], arret=u.atBar||u.stopT!=null&&!u.vide, vib=Math.sin(t*38+u.bob)*.008;
-  g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(0,.02,V.h*V.r*.5,.15,0,0,7); g.fill();
-  if(u.state==='go'&&u.type==='tracteur'){ for(let i=0;i<3;i++){ const k=((t*.9+i/3+u.bob)%1); g.fillStyle=`rgba(120,120,125,${.35*(1-k)})`; g.beginPath(); g.arc(-.2*f+k*.1*f,-.95-k*.45,.05+k*.1,0,7); g.fill(); } }
+  const f=u.f||1, V=VIMG[u.type], h=V.h, w=h*V.r, arret=u.atBar||u.stopT!=null&&!u.vide, vib=Math.sin(t*38+u.bob)*.008;
+  // l'image est calée pour que le centre de son empreinte au sol tombe sur la position du véhicule
+  const sg=(V.gauche?f>0:f<0)?-1:1, [x1,y1,x2,y2]=V.pied, X=fx=>sg*(fx-.5)*w, Y=fy=>-(1-fy)*h;
+  const cx=(X(x1)+X(x2))/2, cy=(Y(y1)+Y(y2))/2-V.prof*h;
+  g.save(); g.translate(-cx,-cy);
+  // ombre allongée sous tout le véhicule, dans l'axe de la vue de trois quarts
+  const ang=Math.atan2(Y(y2)-Y(y1),X(x2)-X(x1)), L=Math.hypot(Y(y2)-Y(y1),X(x2)-X(x1));
+  g.fillStyle='rgba(0,0,0,.5)'; g.save(); g.translate(cx,cy); g.rotate(ang); g.beginPath(); g.ellipse(0,0,L*.56,h*.16,0,0,7); g.fill(); g.restore();
+  if(u.state==='go'&&u.type==='tracteur'){ const ex=X(.26), ey=Y(.1); for(let i=0;i<3;i++){ const k=((t*.9+i/3+u.bob)%1); g.fillStyle=`rgba(120,120,125,${.35*(1-k)})`; g.beginPath(); g.arc(ex+k*.1*sg,ey-k*.5,.06+k*.12,0,7); g.fill(); } }
+  g.save(); g.translate(0,vib+(arret?Math.sin(t*20)*.012:0)); vehImg(g,u.type,f,h); g.restore();
+  g.restore();
   // musique du camion sono : ondes et notes autour de lui tant qu'il roule
-  if(u.type==='sono'&&u.state==='go'&&R.t-(u.music??-9)<.1){ for(let i=0;i<2;i++){ const k=((t*.7+i*.5)%1); g.strokeStyle=`rgba(255,120,200,${.45*(1-k)})`; g.lineWidth=.03; g.beginPath(); g.ellipse(0,0,.4+k*1.3,(.4+k*1.3)*.6,0,0,7); g.stroke(); }
-    g.fillStyle='#ff8ad8'; g.font='800 .2px "Instrument Sans",sans-serif'; g.textAlign='center'; for(let i=0;i<2;i++){ const k=((t*.6+i*.5)%1); g.globalAlpha*=1; g.fillText('♪',(i?.35:-.3)+Math.sin(t*3+i)*.05,-1-k*.4); } }
-  g.save(); g.translate(0,vib+(arret?Math.sin(t*20)*.012:0)); if(u.atBar) g.rotate(-f*.02); vehImg(g,u.type,f,V.h); g.restore();
+  if(u.type==='sono'&&u.state==='go'&&R.t-(u.music??-9)<.1){ for(let i=0;i<2;i++){ const k=((t*.7+i*.5)%1), r=.6+k*1.2; g.strokeStyle=`rgba(255,120,200,${.45*(1-k)})`; g.lineWidth=.03; g.beginPath(); g.ellipse(0,0,r,r*.6,0,0,7); g.stroke(); }
+    g.fillStyle='#ff8ad8'; g.font='800 .22px "Instrument Sans",sans-serif'; g.textAlign='center'; for(let i=0;i<2;i++){ const k=((t*.6+i*.5)%1); g.fillText('♪',(i?.4:-.35)+Math.sin(t*3+i)*.05,-h*.8-k*.4); } }
   if(u.state!=='go') return;
-  const neg=R.t-(u.nego??-9)<.25, w=.7, fr=Math.max(0,u.hp/u.max), by=-V.h-.25;
-  g.fillStyle='rgba(0,0,0,.75)'; rr(g,-w/2-.025,by-.025,w+.05,.1,.04); g.fill(); g.fillStyle=neg?'#ffd166':'#ff9f43'; rr(g,-w/2,by,w*fr,.05,.025); g.fill();
-  if(neg) pill(g,0,.3,'Négociation…','#1a1a1a',.13,'#ffd166');
-  else if(u.type==='car'&&u.stopT!=null){ const k=Math.min(1,(R.t-u.stopT)/TRACT.arretCar); pill(g,0,.3,`Débarquement ${Math.round(k*100)} %`,'#fff',.13,'#c0392b'); }
-  else if(u.slow>0){ g.strokeStyle='rgba(98,176,255,.85)'; g.lineWidth=.035; g.beginPath(); g.ellipse(0,0,.7,.16,0,0,7); g.stroke(); }
+  const neg=R.t-(u.nego??-9)<.25, bw=.8, fr=Math.max(0,u.hp/u.max), by=-h*.85;
+  g.fillStyle='rgba(0,0,0,.75)'; rr(g,-bw/2-.025,by-.025,bw+.05,.1,.04); g.fill(); g.fillStyle=neg?'#ffd166':'#ff9f43'; rr(g,-bw/2,by,bw*fr,.05,.025); g.fill();
+  if(neg) pill(g,0,.45,'Négociation…','#1a1a1a',.14,'#ffd166');
+  else if(u.type==='car'&&u.stopT!=null){ const k=Math.min(1,(R.t-u.stopT)/TRACT.arretCar); pill(g,0,.45,`Débarquement ${Math.round(k*100)} %`,'#fff',.14,'#c0392b'); }
+  else if(u.slow>0){ g.strokeStyle='rgba(98,176,255,.85)'; g.lineWidth=.035; g.beginPath(); g.ellipse(0,0,w*.4,.2,0,0,7); g.stroke(); }
 }
 /* policiers et véhicules */
 function cop(g,f,ph,shield){
@@ -1514,7 +1526,7 @@ Shell.init({
   }
 });
 // Accès pour les simulations d'équilibrage (sans effet en jeu).
-window.__bouclage={R,posOn,MAPS,MAPDATA,genMap,mapOk,MEANS,FOES,WAVES,LV,resetGame,launchWave,step,upCost,
+window.__bouclage={R,posOn,addUnit,upos,MAPS,MAPDATA,genMap,mapOk,MEANS,FOES,WAVES,LV,resetGame,launchWave,step,upCost,
   cmdVers(x,y){ if(R.cmd){ R.cmd.tx=x; R.cmd.ty=y; } }, ordreCmd, redeploy, rallier, dir(k){ R.dirOffer=true; choisirDir(k); }, sell(pad){ const tw=R.towers[pad]; if(!tw) return false; delete R.towers[pad]; R.retours.push({n:sellVal(tw),at:R.t+RETOUR,x:0,y:0}); return true; },
   build(pad,type){ const M=MEANS[type]; if(R.towers[pad]||pad===R.fire||R.agents<M.cout) return false; const used=Object.values(R.towers).filter(t=>t.type===type).length; if(R.dispo[type]!==undefined&&used>=R.dispo[type]) return false; R.agents-=M.cout; R.towers[pad]=newTower(pad,type); return true; },
   up(pad){ const tw=R.towers[pad]; if(!tw||tw.lvl>=3) return false; const c=upCost(tw); if(R.agents<c) return false; R.agents-=c; tw.spent+=c; tw.lvl++; setupTower(tw,pad); return true; },
