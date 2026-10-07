@@ -12,7 +12,7 @@ import { PS } from '../engine/constants.js';
 import { niveauIncidents } from '../engine/directeur.js';
 import { APPUI, appuiDuJour, DIFF_EXPERTS } from '../engine/appui.js';
 import { SERVICE_LABELS, DEFAULT_ALLOC } from '../engine/constants.js';
-import { TOUS_SKINS, SKINS } from '../engine/decor.js';
+import { TOUS_SKINS, SKINS, DECOR, DECOR_DEFAUT } from '../engine/decor.js';
 import { ouvrirPanneau, sceneZone, monDecorPublic, mesSkins } from './logistique.js';
 import { ANNEXES_AILE } from './scene-aile.js';
 
@@ -205,9 +205,14 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
     try {
       const z = myZone();
       if (z) {
-        const svg = sceneZone(z, S.state, monDecorPublic(z), mesSkins(z).choix, { isole: true, moment: 'crepuscule', devant: [], file: false, imprevu: {}, operation: false, trace: null, poste: null });
+        // Le mini-jeu redessine l'hôtel de police dans son propre style (vue de trois quarts) avec nos couleurs :
+        // façade (ou skin de bâtiment), enseigne néon, nombre d'étages et nom de la zone.
+        const d = { ...DECOR_DEFAUT, ...(monDecorPublic(z) || {}) }, sb = (mesSkins(z).choix || {}).batiment;
+        const skinB = sb && SKINS.batiment.options[sb], fac = skinB ? skinB.jour : (DECOR.facade.options[d.facade] || DECOR.facade.options.beton).jour;
+        const neon = DECOR.neon.options[d.neon] || DECOR.neon.options.bleu;
+        const hp = { nom: z.nom, b: (z.batiments && z.batiments.bureaux) || 1, facade: fac, neon: { lettre: neon.lettre, halo: neon.halo }, skin: skinB ? skinB.nom : '' };
         const fr = wrap.querySelector('iframe');
-        fr.addEventListener('load', () => fr.contentWindow && fr.contentWindow.postMessage({ source: 'mazp-parent', type: 'hp', svg, nom: z.nom }, location.origin));
+        fr.addEventListener('load', () => fr.contentWindow && fr.contentWindow.postMessage({ source: 'mazp-parent', type: 'hp', hp }, location.origin));
       }
     } catch (e) { /* le mini-jeu garde son hôtel de ville */ }
   }
