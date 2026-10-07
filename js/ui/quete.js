@@ -77,10 +77,11 @@ function primeSemaine() {
     const etat = tete ? `à prendre <small style="display:block">${qui(tete.uid, tete.nom)} en tête (niv. ${tete.niveau}), déjà primé${tete.uid === moi ? '' : '(e)'} ailleurs</small>` : `à prendre dès le niv. ${CHALLENGE.niveauMin}`;
     return `<li class="muted"><span>${esc(nomJeu(j))}</span><span style="font-weight:400">${etat}</span></li>`;
   };
+  const libres = CHALLENGE.jeux.filter((j) => !prov.some((l) => l.jeu === j));
   return `<div class="prime-chal">
     <div class="between" style="gap:8px;align-items:flex-start"><span class="prime-t">🏅 Prime de la semaine</span><span class="tiny muted" style="text-align:right">remise dimanche 20:00</span></div>
     <span class="small">Le meilleur niveau de la semaine sur chaque mini-jeu (dès le niveau ${CHALLENGE.niveauMin}) rapporte <strong>${euros(CHALLENGE.prime)}</strong> à sa zone et <strong>+${CHALLENGE.jauge}</strong> sur la jauge des skins. <strong>Une prime par joueur</strong> : en tête sur plusieurs jeux, les autres primes passent au suivant.</span>
-    ${prov.length ? `<span class="tr-grp">Si la semaine finissait maintenant</span><ul class="prime-l">${CHALLENGE.jeux.map((j) => ligneProv(j, prov.find((l) => l.jeu === j))).join('')}</ul>` : '<span class="tiny muted">Personne n’a encore atteint le niveau ' + CHALLENGE.niveauMin + ' cette semaine : les primes sont à prendre.</span>'}
+    ${prov.length ? `<span class="tr-grp">Si la semaine finissait maintenant</span><ul class="prime-l">${prov.slice().sort((a, b) => CHALLENGE.jeux.indexOf(a.jeu) - CHALLENGE.jeux.indexOf(b.jeu)).map((l) => ligneProv(l.jeu, l)).join('')}</ul>${libres.length ? `<details class="prime-d"><summary class="tiny muted">${libres.length} prime${libres.length > 1 ? 's' : ''} encore à prendre</summary><ul class="prime-l">${libres.map((j) => ligneProv(j, null)).join('')}</ul></details>` : ''}` : '<span class="tiny muted">Personne n’a encore atteint le niveau ' + CHALLENGE.niveauMin + ' cette semaine : les primes sont à prendre.</span>'}
     ${passe.length ? `<details class="prime-d"><summary class="tiny muted">Lauréats de la semaine passée</summary><ul class="prime-l">${passe.map((l) => ligne(l, zn(l.uid))).join('')}</ul></details>` : ''}
   </div>`;
 }

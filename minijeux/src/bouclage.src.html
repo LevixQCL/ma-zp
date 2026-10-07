@@ -91,7 +91,7 @@
 </style>
 <body>
   <div class="hudrow">
-    <span class="pillh lives" id="hLives"><i class="cfill" id="cFill"></i><span class="cin" title="Tenue du cordon : chaque émeutier qui atteint l’hôtel de ville la fait baisser"><svg viewBox="0 0 24 24"><path fill="#ffd166" d="M12 2.2l8.2 3.1v6.4c0 4.8-3.4 8.7-8.2 10.1-4.8-1.4-8.2-5.3-8.2-10.1V5.3z"/><path fill="#7a5200" d="M12 7.2l1.4 2.9 3.2.4-2.3 2.2.6 3.1L12 14.3l-2.9 1.5.6-3.1-2.3-2.2 3.2-.4z"/></svg><span class="lb">Cordon</span><b id="stLives">100%</b></span></span>
+    <span class="pillh lives" id="hLives"><i class="cfill" id="cFill"></i><span class="cin" title="Tenue du cordon : chaque émeutier qui arrive au bout du trajet la fait baisser"><svg viewBox="0 0 24 24"><path fill="#ffd166" d="M12 2.2l8.2 3.1v6.4c0 4.8-3.4 8.7-8.2 10.1-4.8-1.4-8.2-5.3-8.2-10.1V5.3z"/><path fill="#7a5200" d="M12 7.2l1.4 2.9 3.2.4-2.3 2.2.6 3.1L12 14.3l-2.9 1.5.6-3.1-2.3-2.2 3.2-.4z"/></svg><span class="lb">Cordon</span><b id="stLives">100%</b></span></span>
     <span class="pillh wv">Vague <b id="stWave">0/6</b><span class="mai" id="stMai"></span></span>
     <span class="pillh ag" title="Agents disponibles"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.5" r="3.6"/><path d="M4.5 20.5c.4-4.4 3.6-7 7.5-7s7.1 2.6 7.5 7z"/></svg><b id="stAg">18</b></span>
   </div>
@@ -216,6 +216,8 @@ function cmdXp(n,x,y){ const c=R.cmd; if(!c||c.lvl>=CMDN.length) return; c.xp+=n
     if(!R.sim){ Shell.toast(`⭐ Commandant ${N.titre} (niv. ${c.lvl}) : tient face à ${N.deborde}, cercle +${Math.round(N.bonus*100)} %, mégaphone ${N.cd} s`,'ok'); Shell.blip(660,.2,'triangle',.06); setTimeout(()=>Shell.blip(880,.25,'triangle',.06),130); } } }
 
 const Q2=new URLSearchParams(location.search);
+/* Lancé depuis Ma ZP, le bout du trajet est l'hôtel de police du joueur (dessiné avec ses skins) ; en démo, l'hôtel de ville. */
+const DANS_ZP=!!(Q2.get('mode')||Q2.get('evt')), LIEU=DANS_ZP?'ton hôtel de police':'l’hôtel de ville';
 /* Événement d'actualité (lancé depuis Ma ZP) : même Challenge, autre scénario, avec la cause de la mobilisation et ses sources. */
 const EVT={'2026-10-mobilisation-etudiante':{
   headline:'Mobilisation étudiante',
@@ -370,7 +372,7 @@ const rendement=()=>(R.tuto?1:REND[Math.max(0,Math.min(REND.length-1,R.wave-1))]
 /* ───── partie ───── */
 function resetGame(cfg,tuto,mapIdx){
   R.cfg=cfg; if(mapIdx&&typeof mapIdx==='object'){ R.map=-1; R.M=mapIdx; } else { R.map=mapIdx||0; R.M=MAPDATA[R.map]; } R.pads=R.M.pads;
-  R.tuto=tuto?1:0; R.wave=0; R.units=[]; R.spawnQ=[]; R.fx=[]; R.jets=[]; R.towers={}; R.sel=null; R.disp=0; R.leaks={}; R.seen=new Set(); R.pause=false;
+  R.tuto=tuto?1:0; R.wave=0; R.units=[]; R.spawnQ=[]; R.fx=[]; R.jets=[]; R.towers={}; R.sel=null; R.disp=0; R.leaks={}; R.seen=new Set(); R.pause=false; R.speed=1;
   R.somm={cd:0,placing:false,fx:[]}; R.flaques=[]; R.projs=[]; $('panel').hidden=true;
   R.parts=[]; R.introQ=[]; R.introOuverte=false; R.fumees=[]; R.vuFumee=false; R.frac=0;
   { const hb=hallBox(R.M), hx=hb.x0+hb.w/2, hy=MH-2.6; R.cmd=tuto?null:{x:hx,y:hy,tx:hx,ty:hy,hx,hy,cd:0,repli:0,shoutT:-9,cheerT:-9,f:1,walk:false,lvl:1,xp:0,lvlT:-9}; } R.maitrise=0; R.waveLoss=0; R.retours=[]; R.dir=null; R.dirOffer=false; R.recent=[]; R.redeploy=null; R.rally=null; R.vHp=1;
@@ -744,13 +746,13 @@ function tip(html){
   if(R.somm.placing){ el.innerHTML='<span><b>Sommations :</b> touche le cortège. Ceux qui sont autour ralentissent 4 s et perdent de la détermination ; les plus découragés <b>font demi-tour</b> tout de suite.</span>'; return; }
   if(R.sel){ const tw=R.towers[R.sel.pad];
     if(R.sel.opt){ const o=R.sel.opt;
-      if(o==='up'){ el.innerHTML=`<span><b>${UPTXT[tw.type][tw.lvl]}</b> · <span class="c">${upCost(tw)} agents</span> — ${gainNiv(tw)}. <b>Touche encore pour confirmer.</b></span>`; return; }
+      if(o==='up'){ el.innerHTML='<span><b>Touche encore</b> la demi-bulle pour renforcer.</span>'; return; }
       if(o==='sell'){ el.innerHTML=`<span><b>Désengager</b> ce moyen · ses <span class="c">${sellVal(tw)} agents</span> reviennent en réserve dans ${RETOUR} s. <b>Touche encore pour confirmer.</b></span>`; return; }
       if(o==='rally'){ el.innerHTML=`<span><b>Déplacer</b> ${tw.type==='barrage'?'les barrières':'la ligne des agents'} ailleurs dans la rue, autour de l’emplacement (gratuit). <b>Touche encore</b>, puis touche la rue.</span>`; return; }
       if(o==='move'){ el.innerHTML='<span><b>Redéployer</b> la cavalerie sur un autre emplacement (gratuit, puis 10 s avant le prochain). <b>Touche encore</b>, puis touche l’emplacement.</span>'; return; }
       const M=MEANS[o]; el.innerHTML=`<span><b>${M.nom}</b> · <span class="c">${M.cout} agents</span> — ${M.ds} <b>Touche encore pour poser.</b></span>`; return; }
     el.innerHTML= tw ? `<span><b>${MEANS[tw.type].nom}</b> (niveau ${tw.lvl}) — ${tw.type==='cavalerie'?'<b>fais-la glisser</b> vers un emplacement libre pour la redéployer.':tw.type==='autopompe'?MEANS[tw.type].ds:'<b>fais glisser</b> pour déplacer '+(tw.type==='barrage'?'les barrières':'la ligne')+' dans la rue, autour de l’emplacement.'}</span>` : '<span>Choisis un moyen autour de l’emplacement.</span>'; return; }
-  if(R.phase==='build') el.innerHTML='<span>Touche un <b>emplacement bleu</b> pour poser un moyen, puis lance la vague. Les cortèges suivent les rues jusqu’à l’<b>hôtel de ville</b>.</span>';
+  if(R.phase==='build') el.innerHTML=`<span>Touche un <b>emplacement bleu</b> pour poser un moyen, puis lance la vague. Les cortèges suivent les rues jusqu’à <b>${LIEU}</b>.</span>`;
   else if(R.phase==='run') el.innerHTML=`<span>Repousser rend des agents, <b>de moins en moins</b> (${Math.round(rendement()*100)} % cette vague) : vise les <b>interventions groupées</b> et garde une réserve.</span>`;
   else el.innerHTML='';
 }
@@ -795,7 +797,7 @@ function menuLayout(){
 function menuHit(L,x,y){ const dx=x-L.cx, dy=y-L.cy; if(Math.hypot(dx,dy)>L.r) return null; let a=Math.atan2(dy,dx); if(a>=Math.PI-1e-9) a=-Math.PI; return L.items.find(it=>a>=it.a0&&a<it.a1)||null; }
 function choose(it){
   const id=R.sel.pad;
-  if(R.sel.opt!==it.k){ R.sel.opt=it.k; tip(); if(!it.ok){ const nm=it.k==='up'||it.k==='max'?'Renforcer':MEANS[it.k].nom; const tw=R.towers[id]; tip(it.k==='up'?`<span><b>${UPTXT[tw.type][tw.lvl]}</b> — ${gainNiv(tw)}. Il faut <span class="c">${upCost(tw)} agents</span>.</span>`:`<span><b>${nm}</b> : ${it.why||'pas assez d’agents'}.</span>`); } return; }
+  if(R.sel.opt!==it.k){ R.sel.opt=it.k; tip(); if(!it.ok){ const nm=it.k==='up'||it.k==='max'?'Renforcer':MEANS[it.k].nom; const tw=R.towers[id]; tip(it.k==='up'?`<span>Pas assez d’agents pour renforcer (il en faut <span class="c">${upCost(tw)}</span>).</span>`:`<span><b>${nm}</b> : ${it.why||'pas assez d’agents'}.</span>`); } return; }
   if(!it.ok) return;
   if(it.k==='rally'){ R.rally=id; R.sel=null; tip(); Shell.blip(600,.05,'square',.03); return; }
   if(it.k==='move'){ R.redeploy=id; R.sel=null; tip(); Shell.blip(600,.05,'square',.03); return; }
@@ -868,7 +870,7 @@ function onTap(e){
 /* ───── tutoriel ───── */
 function tutoStep(n){
   R.tuto=n; ui();
-  if(n===1) Shell.coach(1,3,'Le cortège suit <b>la rue</b> jusqu’à l’<b>hôtel de ville</b>. Touche l’<b>emplacement bleu</b> qui clignote.');
+  if(n===1) Shell.coach(1,3,`Le cortège suit <b>la rue</b> jusqu’à <b>${LIEU}</b>. Touche l’<b>emplacement bleu</b> qui clignote.`);
   if(n===3) Shell.coach(2,3,'Choisis le <b>peloton MO</b> au-dessus. Premier toucher : sa portée. Deuxième toucher : il est posé.');
   if(n===4) Shell.coach(3,3,'Lance la vague. Les émeutiers repoussés <b>font demi-tour</b> et te rendent des agents.');
   if(n===5) Shell.endTuto();
@@ -1531,7 +1533,8 @@ function render(){
       g.font='800 .25px "Instrument Sans",sans-serif'; g.fillStyle=on?'#ffd166':'#eef4ff'; g.fillText(nm,it.ix,it.iy+.24);
       g.font='700 .18px "Instrument Sans",sans-serif'; g.fillStyle=it.k==='sell'?'#46d98a':'#9fb3cf'; g.fillText(sub,it.ix,it.iy+.47); g.globalAlpha=1; } }
   // textes flottants
-  for(const f of R.fx){ const k=(R.t-f.t)/1.2, pop=f.k==='gain'?(k<.15?.6+k/.15*.6:1.2-Math.min(.2,(k-.15))):1, sz=(f.k==='gain'?.3:.26)*pop, y=f.y-.75-k*.6;
+  for(const f of R.fx){ if(L&&Math.hypot(f.x-L.cx,f.y-.75-L.cy)<L.r+.25) continue; // pas de texte flottant sur la bulle ouverte
+    const k=(R.t-f.t)/1.2, pop=f.k==='gain'?(k<.15?.6+k/.15*.6:1.2-Math.min(.2,(k-.15))):1, sz=(f.k==='gain'?.3:.26)*pop, y=f.y-.75-k*.6;
     g.globalAlpha=Math.max(0,1-k*k); g.font=`800 ${sz}px "Instrument Sans",sans-serif`; g.textAlign='center'; g.textBaseline='middle';
     g.lineWidth=.09; g.strokeStyle=f.k==='gain'?'rgba(255,255,255,.9)':'rgba(8,10,18,.85)'; g.strokeText(f.txt,f.x,y); g.fillStyle=f.k==='gain'?'#1fae5b':f.k==='bad'?'#ff5d5d':'#ffd166'; g.fillText(f.txt,f.x,y); g.globalAlpha=1; }
 }
@@ -1567,7 +1570,7 @@ Shell.init({
     cfg:()=>Object.assign(Shell.cfgNiveau(EVT.niveau),{label:EVT.headline,evt:true,seed:1,boss:EVT.boss.slice(),meteo:null}),
     fin:'Retrouve-le quand tu veux dans <b>Énigmes › Entraînement › 🏆 Challenge</b> : le même jeu en niveaux de plus en plus durs, avec tracteurs, cars de supporters et un record à battre.'}:null,
   headline:EVT?EVT.headline:'Manifestation qui dégénère',
-  story:EVT?EVT.story:`<p>Une manifestation dégénère : des cortèges de casseurs remontent les rues vers l’hôtel de ville.</p><p>Place tes moyens de maintien de l’ordre le long du trajet et <b>repousse-les</b> : à bout de détermination, ils font demi-tour. Chaque émeutier repoussé te rend des agents, de moins en moins au fil des vagues : garde une réserve.</p>`,
+  story:EVT?EVT.story:`<p>Une manifestation dégénère : des cortèges de casseurs remontent les rues vers ${LIEU}.</p><p>Place tes moyens de maintien de l’ordre le long du trajet et <b>repousse-les</b> : à bout de détermination, ils font demi-tour. Chaque émeutier repoussé te rend des agents, de moins en moins au fil des vagues : garde une réserve.</p>`,
   diffs:{
     difficile:{agents:7,label:'Difficile',eff:17,lives:12,combi:2,autopompe:1,cavalerie:2,hp:1,gap:.5,pause:12,waves:6},
     normal:{agents:9,label:'Normal',eff:18,lives:15,combi:3,autopompe:2,cavalerie:3,hp:1,gap:.55,pause:14,waves:6},
@@ -1579,7 +1582,7 @@ Shell.init({
     return `<div class="gd">
     <div class="bloc"><h3><span class="n">1</span>Le but</h3>
       <div class="ill">${im('em-rouge-1')}${im('casseur-1')}${im('em-bleu-1')}${im('meneur-1')}</div>
-      <p>Des cortèges remontent les rues vers l’<b>hôtel de ville</b>. Chaque émeutier qui arrive entame ton <b>cordon</b> : à zéro, c’est perdu. On ne blesse personne, on les <b>repousse</b> : à bout de détermination, ils font demi-tour.</p></div>
+      <p>Des cortèges remontent les rues vers <b>${LIEU}</b>. Chaque émeutier qui arrive entame ton <b>cordon</b> : à zéro, c’est perdu. On ne blesse personne, on les <b>repousse</b> : à bout de détermination, ils font demi-tour.</p></div>
     <div class="bloc"><h3><span class="n">2</span>Tes moyens</h3>
       <p>Touche un <b>rond bleu</b> au bord de la rue, puis un moyen (deux fois pour confirmer). Touche un moyen posé pour le <b>renforcer</b>.</p>
       <div class="moy"><div>${im('mo1')}<b>Peloton MO</b>retient au bouclier</div><div>${im('lance')}<b>Lance à eau</b>disperse les groupes</div><div>${im('heras')}<b>Barrières</b>bloquent la rue</div><div>${im('cav1')}<b>Cavalerie</b>charge les meneurs</div></div></div>
@@ -1592,7 +1595,7 @@ Shell.init({
       <div class="geste"><div class="ic">📢</div><div><span class="t">Touche-le : mégaphone</span><span>Sommation sur sa zone : les émeutiers autour ralentissent, les plus découragés font demi-tour. L’anneau autour de ses pieds montre la recharge.</span></div></div>
       <div class="geste"><div class="ic">💨</div><div><span class="t">Gaz, tout seul</span><span>Un émeutier <b>isolé</b> passe à sa portée ? Il le gaze et le retient. Envoie-le chercher celui qui a échappé à tes moyens.</span></div></div>
       <div class="geste"><div class="ic">🚜</div><div><span class="t">Négocie les véhicules</span><span>Tracteur, camion sono, car : arrête-le (barrières, sommation) puis poste le commandant juste à côté.</span></div></div>
-      <div class="geste"><div class="ic">⚠️</div><div><span class="t">Attention au contact</span><span>Trop d’émeutiers sur lui et il se <b>replie</b> vers l’hôtel de ville quelques secondes (pastille rouge « repli »).</span></div></div>
+      <div class="geste"><div class="ic">⚠️</div><div><span class="t">Attention au contact</span><span>Trop d’émeutiers sur lui et il se <b>replie</b> vers ${LIEU} quelques secondes (pastille rouge « repli »).</span></div></div>
       <div class="geste"><div class="ic">★</div><div><span class="t">Il monte de niveau</span><span>Chaque émeutier repoussé dans son cercle, gazé ou négocié le fait progresser : il tient face à plus de monde, son cercle s’élargit, son mégaphone recharge plus vite. Il repart novice à chaque partie.</span></div></div>
       <p class="nivt">Émeutiers au contact qu’il supporte avant de se replier :</p><div class="niv">${lv}</div></div>
     <div class="bloc"><h3><span class="n">5</span>En plus</h3>
@@ -1600,7 +1603,7 @@ Shell.init({
     </div>`; },
   diffHint:'Plus d’agents au départ, plus de véhicules et un cordon plus solide.',
   desktopHint:'Sur ordinateur : clique sur un emplacement bleu, puis sur le moyen voulu (deux fois pour confirmer).',
-  rules:['Les cortèges suivent les rues jusqu’à l’<b>hôtel de ville</b>. Chaque émeutier qui arrive entame le <b>cordon</b> (un casseur : 2, un bloc : 3).',
+  rules:[`Les cortèges suivent les rues jusqu’à <b>${LIEU}</b>. Chaque émeutier qui arrive entame le <b>cordon</b> (un casseur : 2, un bloc : 3).`,
     'On ne blesse personne : on <b>repousse</b>. À bout de détermination, l’émeutier fait <b>demi-tour</b> et te rend des agents, <b>de moins en moins</b> au fil des vagues.',
     'Les agents engagés sont <b>immobilisés</b>. Désengager un moyen les rend à la réserve <b>6 s plus tard</b> : garde une marge.',
     'Touche un <b>emplacement bleu</b> : quatre moyens apparaissent. Premier toucher : portée et prix. Deuxième toucher : c’est posé. Touche un moyen posé pour le <b>renforcer</b>.',
@@ -1614,7 +1617,7 @@ Shell.init({
     'Dès la 3e vague, certains casseurs allument des <b>fumigènes</b> : dans la fumée, l’autopompe et la cavalerie ne voient plus personne et le peloton MO tâtonne, pendant 6 s.',
     'Les <b>sommations</b> ralentissent et font faire demi-tour aux émeutiers déjà découragés. Entre deux vagues, le <b>Directeur</b> te demande parfois la situation : choisis vite.'],
   winTitle:'Ordre rétabli', loseTitle:'Le cordon a cédé', skin:'Cordon de nuit',
-  malus:'l’hôtel de ville est dégradé : moral des équipes Intervention en baisse et un combi immobilisé jusqu’à demain.',
+  malus:`${LIEU} est dégradé : moral des équipes Intervention en baisse et un combi immobilisé jusqu’à demain.`,
   // Challenge : on enchaîne les quartiers, puis les cortèges deviennent plus déterminés et plus serrés.
   // Niveaux 1 à 4 : les quartiers de la campagne. Ensuite, une carte inédite par niveau (la même pour tout le monde),
   // avec de plus en plus de cortèges ; les vagues s'allongent et les émeutiers se durcissent un peu à chaque niveau.
