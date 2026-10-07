@@ -1461,6 +1461,13 @@ function render(){
     for(const it of L.items){ const on=R.sel.opt===it.k;
       if(on){ g.fillStyle='rgba(255,209,102,.22)'; g.beginPath(); g.moveTo(L.cx,L.cy); g.arc(L.cx,L.cy,L.r-.03,it.a0,it.a1); g.closePath(); g.fill(); }
       g.strokeStyle='rgba(98,176,255,.45)'; g.lineWidth=.025; g.beginPath(); g.moveTo(L.cx,L.cy); g.lineTo(L.cx+Math.cos(it.a0)*L.r,L.cy+Math.sin(it.a0)*L.r); g.stroke();
+      // « Renforcer » touché une fois : la demi-bulle affiche ce que le niveau apporte (même sans assez d'agents).
+      if(on&&it.k==='up'&&tw&&tw.lvl<3){ const gains=gainNiv(tw).split(', ').slice(0,3), y0=L.cy-1.22;
+        g.textAlign='center'; g.textBaseline='middle';
+        g.font='800 .24px "Instrument Sans",sans-serif'; g.fillStyle='#ffd166'; g.fillText(`Niveau ${tw.lvl+1}`,L.cx,y0);
+        g.font='700 .17px "Instrument Sans",sans-serif'; g.fillStyle=it.ok?'#9fb3cf':'#ff8a80'; g.fillText(it.ok?`${upCost(tw)} agents · touche encore`:`il faut ${upCost(tw)} agents`,L.cx,y0+.26);
+        g.font='700 .19px "Instrument Sans",sans-serif'; g.fillStyle='#eef4ff';
+        gains.forEach((t,i)=>g.fillText('▲ '+t,L.cx,y0+.56+i*.24)); continue; }
       g.save(); g.globalAlpha=it.ok?1:.38; g.translate(it.ix,it.iy-.16); g.scale(1.25,1.25); menuIcon(g,it.k,on); g.restore();
       const nm={peloton:'MO',autopompe:'Autopompe',barrage:'Barrage',cavalerie:'Cavalerie',up:tw&&tw.lvl<3?`Niveau ${tw.lvl+1}`:'',max:'Niveau max',sell:'Désengager',move:'Redéployer',rally:'Déplacer'}[it.k];
       const sub=it.k==='up'?`${upCost(tw)} agents`:it.k==='sell'?`+${sellVal(tw)} en ${RETOUR} s`:it.k==='move'?(tw.moveCd>R.t?`dans ${Math.ceil(tw.moveCd-R.t)} s`:'gratuit'):it.k==='rally'?'dans la rue':it.k==='max'?'':`${MEANS[it.k].cout} agents`;
