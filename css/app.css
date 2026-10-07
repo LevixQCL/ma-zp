@@ -443,7 +443,7 @@ nav.tabs a { font-size: 10.5px; min-width: 0; }
 nav.tabs a span:not(.rond):not(.dot) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 nav.tabs a.centre { color: var(--amber); }
 nav.tabs a.centre .rond { width: 54px; height: 54px; margin-top: -30px; border-radius: 19px; background: linear-gradient(160deg, var(--amber-hi), var(--amber) 60%, #F09A1E); color: var(--amber-ink);
-  display: flex; align-items: center; justify-content: center; transform: rotate(-6deg); box-shadow: 0 0 0 4px var(--bg), 0 1px 0 rgba(255,255,255,.5) inset, 0 10px 24px -6px rgba(255, 178, 63, .55); transition: transform .2s; }
+  display: flex; align-items: center; justify-content: center; transform: rotate(-6deg); box-shadow: 0 0 0 4px var(--bg), 0 1px 0 rgba(255,255,255,.5) inset, 0 10px 24px -6px rgba(255, 178, 63, .55); }
 nav.tabs a.centre .rond svg { transform: rotate(6deg); }
 nav.tabs a.centre[aria-current="page"] .rond { transform: rotate(0); box-shadow: 0 0 0 4px var(--bg), 0 0 0 7px var(--amber-line), 0 10px 24px -6px rgba(255, 178, 63, .7); }
 nav.tabs a.centre[aria-current="page"] .rond svg { transform: none; }
@@ -1535,7 +1535,31 @@ div.db-cle { cursor: default; }
 /* Prime du Challenge (semaine) */
 .tr-sem { font: 600 10px var(--body); color: var(--muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tr-sem.moi { color: var(--green-soft); }
-.prime-chal { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--line)); background: linear-gradient(180deg, color-mix(in srgb, var(--amber) 12%, var(--surface2)), var(--surface2)); }
+.prime-chal { display: block; border-radius: 14px; border: 1px solid rgba(255, 194, 77, .38); background: linear-gradient(100deg, rgba(255, 194, 77, .17), rgba(255, 194, 77, .04)); }
+.prime-b { list-style: none; display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; }
+.prime-b::-webkit-details-marker { display: none; }
+.prime-m { font: 800 18px var(--display, var(--body)); color: #FFC24D; white-space: nowrap; }
+.prime-x { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.3; color: #e7dcc2; }
+.prime-x b, .prime-x strong { color: #fff; }
+.prime-q { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid rgba(255, 194, 77, .6); color: #FFC24D; font-weight: 700; font-size: 12px; }
+.prime-chal[open] .prime-q { background: rgba(255, 194, 77, .2); color: #fff; }
+.prime-c { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 12px; }
+/* Challenge : une affiche par mini-jeu (image du jeu, progression, record) */
+.aff-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.aff { --c: var(--amber); position: relative; display: block; aspect-ratio: 5 / 6; padding: 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--surface2); color: var(--text); font: inherit; text-align: left; cursor: pointer; box-shadow: 0 8px 20px rgba(0, 0, 0, .35); transition: transform .12s, border-color .15s; }
+.aff:active { transform: scale(.97); }
+.aff:hover, .aff:focus-visible { border-color: var(--c); }
+.aff img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.aff::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6, 9, 20, 0) 35%, rgba(6, 9, 20, .78) 62%, rgba(6, 9, 20, .97)); pointer-events: none; }
+.aff-sv { position: absolute; z-index: 1; top: 8px; left: 8px; padding: 3px 8px; border-radius: 999px; font: 700 10px var(--body); letter-spacing: .05em; text-transform: uppercase; background: rgba(6, 9, 20, .75); color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent); }
+.aff-prime { position: absolute; z-index: 1; top: 7px; right: 7px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 800 11px var(--body); color: #3a2500; background: linear-gradient(180deg, #FFE08A, #E3A12E); box-shadow: 0 0 10px rgba(255, 194, 77, .6); }
+.aff-b { position: absolute; z-index: 1; left: 10px; right: 10px; bottom: 9px; display: grid; gap: 5px; }
+.aff-n { font: 800 15.5px var(--display, var(--body)); line-height: 1.08; text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
+.aff-bar { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .16); overflow: hidden; }
+.aff-bar i { display: block; height: 100%; background: var(--c); }
+.aff-r { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 11px; color: #c9d1e8; white-space: nowrap; }
+.aff-r b { font-size: 12.5px; color: #fff; }
+.aff-r .nominette { margin: 0; font-size: 9.5px; padding: 2px 5px; min-width: 0; }
 .prime-t { font: 700 13.5px var(--body); color: #FFD27A; }
 .prime-l { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
 .prime-l li { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }

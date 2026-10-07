@@ -1,8 +1,8 @@
 // Écran de l’énigme du jour.
-import { nominette, ligneSemaine, laureatsProvisoires, enTeteSemaine } from './defis.js';
+import { laureatsProvisoires, enTeteSemaine, recordDefi, monRecordDefi } from './defis.js';
 import { CHALLENGE } from '../engine/challenge.js';
 import { euros } from './euros.js';
-import { nominetteBitonal } from './bitonal.js';
+import { recordBitonal, monScoreBitonal } from './bitonal.js';
 import { S, esc, icon, tabbar, myZone } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS } from '../quests/quests.js';
 import { SERVICES, SERVICE_LABELS, ENIGMES, gainMoral, chanceDelegue } from '../engine/constants.js';
@@ -54,7 +54,6 @@ function renderGrille(q) {
 
 const ICO_ENIGME = { quiment: '🤥', grille: '🏘️', cadenas: '🔐', chronologie: '🕒', code: '🔣', plaque: '🚗', photos: '📷', filature: '👣', butin: '💰', horaires: '🚌', ecriture: '✍️' };
 const GROUPES_ENIGMES = [['Logique', ['quiment', 'grille', 'chronologie', 'horaires']], ['Observation', ['photos', 'plaque', 'ecriture', 'filature']], ['Chiffres et codes', ['cadenas', 'code', 'butin']]];
-const ICO_MJ = { bitonal: '🚨', bouclage: '🛡️', colis: '💣', crochetage: '🔓', depanneuse: '🚧', dossier: '📄', empreintes: '🖐️', adn: '🧬', reseau: '🔌', interception: '📡' };
 const COUL_MJ = { intervention: '#FF6E6A', recherche: '#63B0FF', roulage: '#FFB23F', proximite: '#3DD39A', labo: '#A78BFA', rccu: '#5AD1E6' };
 
 /** Encart « Prime de la semaine » du Challenge : la règle, les lauréats provisoires et ceux de la semaine passée. */
@@ -78,23 +77,43 @@ function primeSemaine() {
     return `<li class="muted"><span>${esc(nomJeu(j))}</span><span style="font-weight:400">${etat}</span></li>`;
   };
   const libres = CHALLENGE.jeux.filter((j) => !prov.some((l) => l.jeu === j));
-  return `<div class="prime-chal">
-    <div class="between" style="gap:8px;align-items:flex-start"><span class="prime-t">🏅 Prime de la semaine</span><span class="tiny muted" style="text-align:right">remise dimanche 20:00</span></div>
-    <span class="small">Le meilleur niveau de la semaine sur chaque mini-jeu (dès le niveau ${CHALLENGE.niveauMin}) rapporte <strong>${euros(CHALLENGE.prime)}</strong> à sa zone et <strong>+${CHALLENGE.jauge}</strong> sur la jauge des skins. <strong>Une prime par joueur</strong> : en tête sur plusieurs jeux, les autres primes passent au suivant.</span>
-    ${prov.length ? `<span class="tr-grp">Si la semaine finissait maintenant</span><ul class="prime-l">${prov.slice().sort((a, b) => CHALLENGE.jeux.indexOf(a.jeu) - CHALLENGE.jeux.indexOf(b.jeu)).map((l) => ligneProv(l.jeu, l)).join('')}</ul>${libres.length ? `<details class="prime-d"><summary class="tiny muted">${libres.length} prime${libres.length > 1 ? 's' : ''} encore à prendre</summary><ul class="prime-l">${libres.map((j) => ligneProv(j, null)).join('')}</ul></details>` : ''}` : '<span class="tiny muted">Personne n’a encore atteint le niveau ' + CHALLENGE.niveauMin + ' cette semaine : les primes sont à prendre.</span>'}
-    ${passe.length ? `<details class="prime-d"><summary class="tiny muted">Lauréats de la semaine passée</summary><ul class="prime-l">${passe.map((l) => ligne(l, zn(l.uid))).join('')}</ul></details>` : ''}
-  </div>`;
+  const mesPrimes = prov.filter((l) => l.uid === moi).map((l) => nomJeu(l.jeu));
+  const etat = mesPrimes.length ? `Tu la tiens sur <strong>${mesPrimes.map(esc).join(', ')}</strong>` : libres.length ? `${libres.length} prime${libres.length > 1 ? 's' : ''} encore à prendre` : 'Toutes les primes ont un lauréat : à toi de passer devant';
+  return `<details class="prime-chal">
+    <summary class="prime-b"><span class="prime-m">${euros(CHALLENGE.prime)}</span><span class="prime-x"><b>Prime de la semaine</b> · meilleur niveau par jeu · dim. 20:00<br>${etat}</span><span class="prime-q" aria-hidden="true">?</span></summary>
+    <div class="prime-c">
+    <span class="small">Chaque mini-jeu se joue du niveau 1 (tout doux) aussi haut que possible, trois erreurs permises ; le record de la partie met son nom sur la tuile. Le meilleur niveau de la semaine sur chaque mini-jeu (dès le niveau ${CHALLENGE.niveauMin}) rapporte <strong>${euros(CHALLENGE.prime)}</strong> à sa zone et <strong>+${CHALLENGE.jauge}</strong> sur la jauge des skins. <strong>Une prime par joueur</strong> : en tête sur plusieurs jeux, les autres primes passent au suivant. Remise dimanche 20:00.</span>
+    ${prov.length ? `<span class="tr-grp">Si la semaine finissait maintenant</span><ul class="prime-l">${prov.slice().sort((a, b) => CHALLENGE.jeux.indexOf(a.jeu) - CHALLENGE.jeux.indexOf(b.jeu)).map((l) => ligneProv(l.jeu, l)).join('')}</ul>${libres.length ? `<span class="tr-grp">Encore à prendre</span><ul class="prime-l">${libres.map((j) => ligneProv(j, null)).join('')}</ul>` : ''}` : '<span class="tiny muted">Personne n’a encore atteint le niveau ' + CHALLENGE.niveauMin + ' cette semaine : les primes sont à prendre.</span>'}
+    ${passe.length ? `<span class="tr-grp">Lauréats de la semaine passée</span><ul class="prime-l">${passe.map((l) => ligne(l, zn(l.uid))).join('')}</ul>` : ''}
+    </div>
+  </details>`;
 }
 
-/** Entraînement aux mini-jeux : des tuiles par famille (incidents du jour, appui PJF), lancées directement. */
+/** Entraînement aux mini-jeux : une affiche par jeu (image du jeu, ta progression, le record), lancée directement. */
 function entrainementMiniJeux() {
-  const tuile = (m) => `<button type="button" class="tr-tuile" data-action="mj-train" data-j="${m.jeu}" style="--c:${COUL_MJ[m.service] || '#63B0FF'}"><span class="tr-ico" aria-hidden="true">${ICO_MJ[m.jeu] || '🎮'}</span><span class="tr-nom">${esc(m.nom)}</span><span class="tr-s">${esc(SERVICE_LABELS[m.service] || (m.service === 'labo' ? 'Labo' : 'RCCU'))}</span>${m.jeu === 'bitonal' ? nominetteBitonal() : nominette(m.jeu) + (CHALLENGE.jeux.includes(m.jeu) ? ligneSemaine(m.jeu) : '')}</button>`;
+  const moi = S.user && S.user.uid;
+  const primes = new Set(laureatsProvisoires().filter((l) => l.uid === moi).map((l) => l.jeu));
+  const nb = (n) => Number(n).toLocaleString('fr-BE');
+  const affiche = (m) => {
+    let mien, rec, qui, unite = 'niv. ';
+    if (m.jeu === 'bitonal') {
+      const niv = ['difficile', 'normal', 'facile'].find((k) => recordBitonal(k)) || 'normal';
+      const r = recordBitonal(niv); mien = monScoreBitonal(niv); rec = r ? r.score : 0; qui = r ? (r.uid === moi ? 'Toi' : r.nom.replace(/^ZP \d+ /, '')) : null; unite = '';
+    } else { const r = recordDefi(m.jeu); mien = monRecordDefi(m.jeu); rec = r ? r.niveau : 0; qui = r ? (r.uid === moi ? 'Toi' : r.nom) : null; }
+    const pct = rec ? Math.max(mien ? 4 : 0, Math.min(100, Math.round((mien / rec) * 100))) : 0;
+    const nomi = qui ? `<span class="nominette${qui === 'Toi' ? ' moi' : ''}">🏆 ${esc(qui)} · ${unite}${nb(rec)}</span>` : '<span class="nominette vide">🏆 libre</span>';
+    const svc = SERVICE_LABELS[m.service] || (m.service === 'labo' ? 'Labo' : 'RCCU');
+    return `<button type="button" class="aff" data-action="mj-train" data-j="${m.jeu}" style="--c:${COUL_MJ[m.service] || '#63B0FF'}" aria-label="${esc(m.nom)} (${esc(svc)})">
+      <img src="img/challenge/${m.jeu}.jpg" alt="" loading="lazy" decoding="async">
+      <span class="aff-sv">${esc(svc)}</span>${primes.has(m.jeu) ? '<span class="aff-prime" title="Tu tiens la prime de la semaine sur ce jeu">€</span>' : ''}
+      <span class="aff-b"><span class="aff-n">${esc(m.nom)}</span><span class="aff-bar"><i style="width:${pct}%"></i></span>
+      <span class="aff-r"><span>toi <b>${mien ? unite + nb(mien) : '—'}</b></span>${nomi}</span></span></button>`;
+  };
   const inc = MINI_JEUX.filter((m) => !['labo', 'rccu'].includes(m.service)), pjf = MINI_JEUX.filter((m) => ['labo', 'rccu'].includes(m.service));
-  return `<section class="card tight" aria-label="Mini-jeux" style="gap:10px">
-    <span class="tiny muted">Chaque mini-jeu, du niveau 1 (tout doux) aussi haut que possible, trois erreurs permises. Le record de la partie met son nom sur la tuile.</span>
+  return `<section class="col" aria-label="Mini-jeux" style="gap:10px">
     ${primeSemaine()}
-    <span class="tr-grp">Incidents du jour</span><div class="tr-grille">${inc.map(tuile).join('')}</div>
-    <span class="tr-grp">Appui PJF à l’enquête</span><div class="tr-grille">${pjf.map(tuile).join('')}</div>
+    <span class="tr-grp">Incidents du jour</span><div class="aff-g">${inc.map(affiche).join('')}</div>
+    <span class="tr-grp">Appui PJF à l’enquête</span><div class="aff-g">${pjf.map(affiche).join('')}</div>
   </section>`;
 }
 

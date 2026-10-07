@@ -13,6 +13,11 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Challenge et écrans des mini-jeux', [
+      ['Challenge en affiches', 'chaque mini-jeu a sa tuile avec une image du jeu, ton meilleur niveau, une barre jusqu’au record et la nominette du détenteur. Une pièce € marque les jeux où tu tiens la prime de la semaine ; la prime tient en un bandeau (touche-le pour le détail).'],
+      ['Plus de place pour jouer', 'dans Ma ZP, l’en-tête des mini-jeux tient sur une ligne et la barre « Retour à ma zone » est plus fine : le jeu gagne de la hauteur sur téléphone.'],
+      ['Maintien de l’ordre', 'carte plus grande, plus d’écran noir ni de carte qui rétrécit à chaque toucher, et une fiche de début de partie (quartier, météo, consignes, record) qui reste affichée jusqu’à la première vague.'],
+    ]],
     ['Bilan de saison', [
       ['Ce que tu gardes', 'formations, matériel (il n’est plus remis au niveau 1), bâtiments, annexes, parc, équipe, skins et trophées. Budget, effectifs et moral repartent toujours des valeurs de départ.'],
       ['Les imprévus', 'chacun retire un niveau : départs à la pension ou mutations (formation), matériel cassé ou recalé au contrôle, bâtiment à entretenir. Leur nombre vaut environ un tiers des niveaux gagnés depuis le départ, plus une bonne part de ce qui dépasse la moyenne du district (jamais plus de 60 %). Ils tombent d’abord sur ce qui est le plus au-dessus de la moyenne, au plus 2 niveaux par élément ; l’hôtel de police ne redescend jamais sous 4 une fois atteint.'],
