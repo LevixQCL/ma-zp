@@ -86,13 +86,17 @@ function ceSoirHtml(n, me, ann) {
     const p = prevoirSecteur(S.state, s, forces);
     const tombe = !repris && p.emprise <= 0;
     const moiDedans = l.some((x) => x.moi);
+    // Mes agents ne sont visibles des autres que s'ils sont annoncés à la radio (à jour).
+    const moiN = (l.find((x) => x.moi) || {}).n || 0;
+    const nonAnnonce = moiDedans && monAnnonceND(k) !== moiN;
+    const moiTxt = (t) => (nonAnnonce ? `<span class="tiny bad">📻 pas encore à la radio ›</span>` : `<span class="tiny ok">${t}</span>`);
     // Secteur déjà repris : la garde suffit dès que l'emprise ne remonte pas.
     const assuree = repris && p.emprise <= Math.max(s.emprise, 0) + 0.5;
     const droite = repris
       ? `<span class="tiny ${assuree ? 'ok' : 'bad'}">${assuree ? '🛡 garde assurée' : '🛡 garde trop faible'}</span>
-        <span class="tiny ${moiDedans ? 'ok' : assuree ? 'muted' : 'nd-rej'}">${moiDedans ? '✓ tu gardes' : assuree ? 'assez de monde' : 'Renforcer ›'}</span>`
+        ${moiDedans ? moiTxt('✓ tu gardes') : `<span class="tiny ${assuree ? 'muted' : 'nd-rej'}">${assuree ? 'assez de monde' : 'Renforcer ›'}</span>`}`
       : `<span class="tiny ${tombe ? 'good' : p.emprise < s.emprise ? '' : 'bad'}">${tombe ? 'repris ce soir' : `emprise ${Math.round(s.emprise)} → ${Math.round(p.emprise)}`}</span>
-        <span class="tiny ${moiDedans ? 'ok' : 'nd-rej'}">${moiDedans ? '✓ tu y vas' : 'Rejoindre ›'}</span>`;
+        ${moiDedans ? moiTxt('✓ tu y vas') : '<span class="tiny nd-rej">Rejoindre ›</span>'}`;
     return `<button type="button" class="nd-cs-row" data-action="secteur" data-c="${k}" aria-label="${esc(nomSecteur(k))} : ${l.map((x) => (x.moi ? 'toi' : nomZ(x.uid)) + ' ' + x.n).join(', ')}">
         <span class="nd-cs-ico" aria-hidden="true">${repris ? '🛡' : '⚔️'}</span>
         <span class="col" style="gap:2px;min-width:0;flex:1;text-align:left"><span class="nd-nom">${s.coeur ? '★ ' : ''}${esc(nomSecteur(k))}</span>
