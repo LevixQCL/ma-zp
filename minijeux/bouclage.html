@@ -566,18 +566,33 @@ const Shell = (() => {
    Des cortèges de casseurs remontent les rues vers l'hôtel de ville. On ne les « élimine » pas : on les repousse.
    Quand leur détermination tombe à zéro, ils font demi-tour et repartent par où ils sont venus. */
 const MW=9, MH=14;
-const T2=[[4.5,3.5],[4.5,6.5],[1.8,6.5],[1.8,10],[7,10],[7,12.3],[4.5,12.3],[4.5,14.7]];
-const T3=[[4.5,6],[4.5,9],[7.5,9],[7.5,11.6],[2,11.6],[2,14.7]];
-const T4=[[4.5,4],[4.5,8],[6.8,8],[6.8,11.2],[4.5,11.2],[4.5,14.7]];
+/* Dix quartiers en serpentin (comme la Place du Marché), du plus simple au plus exigeant : moins de lacets
+   (moins de temps pour repousser), puis 2 et 3 cortèges qui se rejoignent de plus en plus tard. */
+const S5=[[4.5,2.8],[4.5,5.6],[1.5,5.6],[1.5,8.6],[7.5,8.6],[7.5,11.6],[4.5,11.6],[4.5,14.7]];
+const S9=[[1.5,-.6],[1.5,2.6],[7.5,2.6],[7.5,5.6],[1.5,5.6],[1.5,8.6],[7.5,8.6],[7.5,11.6],[4.5,11.6],[4.5,14.7]];
+const S10=[[4.5,3],[4.5,5.8],[7.5,5.8],[7.5,8.8],[1.5,8.8],[1.5,11.8],[4.5,11.8],[4.5,14.7]];
 const MAPS=[
   {nom:'Place du Marché',sous:'1 cortège',hp:1.8,w:[1],
     paths:[[[1.5,-.6],[1.5,2.6],[7.5,2.6],[7.5,5.6],[1.5,5.6],[1.5,8.6],[7.5,8.6],[7.5,11.6],[4.5,11.6],[4.5,14.7]]]},
-  {nom:'Quartier de la Gare',sous:'2 cortèges',hp:1.85,w:[1,1],
-    paths:[[[1.5,-.6],[1.5,3.5],...T2],[[7.5,-.6],[7.5,3.5],...T2]]},
-  {nom:'Grand-Place',sous:'2 cortèges, dont un par le côté',hp:2.2,w:[1,1],
-    paths:[[[4.5,-.6],[4.5,2],[1.5,2],[1.5,6],...T3],[[9.7,3.5],[7.5,3.5],[7.5,6],...T3]]},
-  {nom:'Abords du stade',sous:'3 cortèges',hp:1.6,w:[1,1,.6],
-    paths:[[[1.5,-.6],[1.5,4],...T4],[[7.5,-.6],[7.5,4],...T4],[[-.7,8.6],[2.4,8.6],[2.4,11.2],[4.5,11.2],[4.5,14.7]]]}];
+  {nom:'Rue Haute',sous:'1 cortège',hp:1.8,w:[1],
+    paths:[[[7.5,-.6],[7.5,2.4],[1.5,2.4],[1.5,5.4],[7.5,5.4],[7.5,8.4],[1.5,8.4],[1.5,11.4],[4.5,11.4],[4.5,14.7]]]},
+  {nom:'Quai aux Briques',sous:'1 cortège, plus court',hp:1.9,w:[1],
+    paths:[[[2,-.6],[2,3.2],[7,3.2],[7,6.6],[2,6.6],[2,10],[4.5,10],[4.5,14.7]]]},
+  {nom:'Porte de Hal',sous:'2 cortèges, dont un par le côté',hp:1.8,w:[1,.6],
+    paths:[[[7.5,-.6],[7.5,2.4],[1.5,2.4],[1.5,5.4],[7.5,5.4],[7.5,8.4],[1.5,8.4],[1.5,11.4],[4.5,11.4],[4.5,14.7]],
+      [[-.7,5.4],[7.5,5.4],[7.5,8.4],[1.5,8.4],[1.5,11.4],[4.5,11.4],[4.5,14.7]]]},
+  {nom:'Quartier de la Gare',sous:'2 cortèges',hp:1.9,w:[1,1],
+    paths:[[[1.5,-.6],[1.5,2.8],...S5],[[7.5,-.6],[7.5,2.8],...S5]]},
+  {nom:'Rue des Tanneurs',sous:'2 cortèges, trajet court',hp:1.45,w:[1,1],
+    paths:[[[2,-.6],[2,4],[7,4],[7,8],[2,8],[2,11.4],[4.5,11.4],[4.5,14.7]],[[7,-.6],[7,4],[7,8],[2,8],[2,11.4],[4.5,11.4],[4.5,14.7]]]},
+  {nom:'Grand-Place',sous:'2 cortèges, un par le côté',hp:1.6,w:[1,.7],
+    paths:[S9,[[9.7,5.6],[1.5,5.6],[1.5,8.6],[7.5,8.6],[7.5,11.6],[4.5,11.6],[4.5,14.7]]]},
+  {nom:'Abords du stade',sous:'3 cortèges',hp:1.5,w:[1,1,.6],
+    paths:[[[1.5,-.6],[1.5,2.8],...S5],[[7.5,-.6],[7.5,2.8],...S5],[[-.7,8.6],[7.5,8.6],[7.5,11.6],[4.5,11.6],[4.5,14.7]]]},
+  {nom:'Boulevard du Midi',sous:'3 cortèges, deux par les côtés',hp:1.4,w:[1,.8,.5],
+    paths:[S9,[[9.7,5.6],[1.5,5.6],[1.5,8.6],[7.5,8.6],[7.5,11.6],[4.5,11.6],[4.5,14.7]],[[-.7,8.6],[7.5,8.6],[7.5,11.6],[4.5,11.6],[4.5,14.7]]]},
+  {nom:'Place Rouppe',sous:'3 cortèges, tout converge',hp:1.2,w:[1,1,.7],
+    paths:[[[1.5,-.6],[1.5,3],...S10],[[7.5,-.6],[7.5,3],...S10],[[-.7,8.8],[1.5,8.8],[1.5,11.8],[4.5,11.8],[4.5,14.7]]]}];
 
 /* Moyens de maintien de l'ordre. dps = perte de détermination par seconde selon le type d'émeutier. */
 const MEANS={
@@ -616,6 +631,8 @@ const TUTO_WAVE=[['manif',8]];
 const SOMM={cd:25,dure:4,rayon:1.6,perte:10,demiTour:.35};
 
 const Q2=new URLSearchParams(location.search);
+// Ouvert directement (sans mode) : on part sur le Challenge, une carte à la fois, de plus en plus dure.
+if(!Q2.get('mode')&&!Q2.has('demo')){ Q2.set('mode','train'); location.replace(location.pathname+'?'+Q2.toString()); }
 const R={cfg:null,map:0,M:null,pads:[],phase:'idle',wave:0,waves:6,lives:15,lives0:15,agents:0,towers:{},units:[],spawnQ:[],nextIn:null,sel:null,waveEnd:0,
   somm:{cd:0,placing:false,fx:[]},mods:{},jets:[],seen:new Set(),pause:false,disp:0,leaks:{},fx:[],speed:1,t:0,tuto:0,dispo:{},usure:0,over:true};
 const C={cv:null,ctx:null,s:30,dpr:1,map:null};
@@ -1782,10 +1799,11 @@ Shell.init({
   // Challenge : on enchaîne les quartiers, puis les cortèges deviennent plus déterminés et plus serrés.
   // Niveaux 1 à 4 : les quartiers de la campagne. Ensuite, une carte inédite par niveau (la même pour tout le monde),
   // avec de plus en plus de cortèges ; les vagues s'allongent et les émeutiers se durcissent un peu à chaque niveau.
+  // Challenge : les dix quartiers dans l'ordre (vagues de plus en plus longues), puis ils reviennent en boucle,
+  // avec des émeutiers de plus en plus déterminés (réglages du niveau) et des vagues plus longues.
   niveau(n,cfg){
-    if(n<=MAPS.length){ cfg.map=n-1; cfg.waves=n<=2?4:5; return cfg; }
-    cfg.map=-1; cfg.seed=n; cfg.cort=n<=5?1:n<=10?2:n<=14?(n%2?3:2):3;
-    cfg.waves=n<=12?6:n<=20?7:8; return cfg; },
+    cfg.map=(n-1)%MAPS.length; cfg.seed=n;
+    cfg.waves=n<=2?4:n<=5?5:n<=10?6:n<=20?7:8; return cfg; },
   onInit(){
     C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); spr('lance'); spr('frise'); spr('heras-tombee'); R.M=MAPDATA[0]; R.pads=R.M.pads;
     resize(); new ResizeObserver(resize).observe($('field'));
