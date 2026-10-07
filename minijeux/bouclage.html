@@ -1382,7 +1382,7 @@ function drawMap(g,M,pads){
   M.P.forEach(P=>{ for(let d=.8; d<P.len; d+=1.6){ const p=posOn(P,d), sd=((d/1.6|0)%2?1:-1)*off, x=p.x-Math.sin(p.ang)*sd, y=p.y+Math.cos(p.ang)*sd;
     if(x<.15||x>MW-.15||y<.75||y>MH-1.75) continue; if(pads&&pads.some(q=>Math.hypot(q.x-x,q.y-y)<.75||Math.hypot(q.x-x,q.y-(y-.6))<.8)) continue; if(done.some(o=>Math.hypot(o[0]-x,o[1]-y)<1.25)) continue;
     if(D(x,y)<RD/2+.12) continue; done.push([x,y]); lampGlow(g,x,y); items.push({y,d:()=>lamp(g,x,y)}); } });
-  items.push({y:MH,d:()=>cityHall(g,M)});
+  items.push({y:MH,d:()=>cityHall(g,M)}); M.lamps=done.slice();
   items.sort((a,b)=>a.y-b.y).forEach(it=>it.d());
   g.restore();
   const v=g.createRadialGradient(MW/2,MH/2,MH*.32,MW/2,MH/2,MH*.78); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(4,10,30,.32)'); g.fillStyle=v; g.fillRect(0,0,MW,MH);
@@ -1436,9 +1436,9 @@ function lampGlow(g,x,y){
   g.fillStyle=gr; g.beginPath(); g.ellipse(x,y-.1,1.5,1.15,0,0,7); g.fill(); g.restore();
 }
 /* lanterne à l'ancienne : fût sombre, lanterne à quatre vitres, halo chaud */
-function lamp(g,x,y){
+function lamp(g,x,y,devant){
   const OUT='#05080f';
-  g.fillStyle='rgba(0,0,0,.5)'; g.beginPath(); g.ellipse(x+.05,y+.015,.09,.035,0,0,7); g.fill();
+  if(!devant){ g.fillStyle='rgba(0,0,0,.5)'; g.beginPath(); g.ellipse(x+.05,y+.015,.09,.035,0,0,7); g.fill(); }
   g.fillStyle='#1c2331'; g.beginPath(); g.moveTo(x-.065,y); g.lineTo(x+.065,y); g.lineTo(x+.04,y-.08); g.lineTo(x-.04,y-.08); g.closePath(); g.fill(); g.strokeStyle=OUT; g.lineWidth=.018; g.stroke();
   g.fillStyle='#202837'; g.fillRect(x-.022,y-.68,.044,.6); g.strokeRect(x-.022,y-.68,.044,.6);
   g.fillRect(x-.045,y-.7,.09,.03);
@@ -1813,6 +1813,9 @@ function render(){
       if(rep2){ pill(g,0,-.95,'repli','#fff',.14,'#c0392b'); }
       g.restore(); }}); }
   for(const u of R.units){ if(!u.p) u.p=upos(u); items.push({y:u.p.y,d:()=>drawUnit(g,u,rt)}); }
+  // les lampadaires sont peints dans le décor : quand quelqu'un passe derrière, on redessine le fût par-dessus
+  for(const [lx,ly] of (R.M.lamps||[])){ const derriere=R.units.some(u=>u.p&&u.p.y<ly&&(veh(u)?ly-u.p.y<1.8&&Math.abs(u.p.x-lx)<VIMG[u.type].h*VIMG[u.type].r*.55:ly-u.p.y<.9&&Math.abs(u.p.x-lx)<.3))||R.cmd&&R.cmd.y<ly&&ly-R.cmd.y<.9&&Math.abs(R.cmd.x-lx)<.3;
+    if(derriere) items.push({y:ly,d:()=>{ g.save(); g.translate(0,-.085); lamp(g,lx,ly,true); g.restore(); }}); }
   for(const id in R.towers){ const tw=R.towers[id], P=padOf(id);
     items.push({y:P.y+.1,d:()=>{ const sc=Math.min(1,(R.t-(tw.born||0))*5+.5); g.save(); g.translate(P.x,P.y); g.scale(sc,sc); g.translate(-P.x,-P.y); drawTower(g,tw,P,rt); g.restore(); }});
     if(tw.type==='barrage') items.push({y:tw.ry+.06,d:()=>drawBarrier(g,tw,rt)});
