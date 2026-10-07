@@ -76,28 +76,28 @@ const T2=[[4.5,3.5],[4.5,6.5],[1.8,6.5],[1.8,10],[7,10],[7,12.3],[4.5,12.3],[4.5
 const T3=[[4.5,6],[4.5,9],[7.5,9],[7.5,11.6],[2,11.6],[2,14.7]];
 const T4=[[4.5,4],[4.5,8],[6.8,8],[6.8,11.2],[4.5,11.2],[4.5,14.7]];
 const MAPS=[
-  {nom:'Place du Marché',sous:'1 cortège',hp:1.5,w:[1],
+  {nom:'Place du Marché',sous:'1 cortège',hp:1.8,w:[1],
     paths:[[[1.5,-.6],[1.5,2.6],[7.5,2.6],[7.5,5.6],[1.5,5.6],[1.5,8.6],[7.5,8.6],[7.5,11.6],[4.5,11.6],[4.5,14.7]]]},
-  {nom:'Quartier de la Gare',sous:'2 cortèges',hp:1.6,w:[1,1],
+  {nom:'Quartier de la Gare',sous:'2 cortèges',hp:2.15,w:[1,1],
     paths:[[[1.5,-.6],[1.5,3.5],...T2],[[7.5,-.6],[7.5,3.5],...T2]]},
-  {nom:'Grand-Place',sous:'2 cortèges, dont un par le côté',hp:1.75,w:[1,1],
+  {nom:'Grand-Place',sous:'2 cortèges, dont un par le côté',hp:2.45,w:[1,1],
     paths:[[[4.5,-.6],[4.5,2],[1.5,2],[1.5,6],...T3],[[9.7,3.5],[7.5,3.5],[7.5,6],...T3]]},
-  {nom:'Abords du stade',sous:'3 cortèges',hp:1.4,w:[1,1,.6],
+  {nom:'Abords du stade',sous:'3 cortèges',hp:1.7,w:[1,1,.6],
     paths:[[[1.5,-.6],[1.5,4],...T4],[[7.5,-.6],[7.5,4],...T4],[[-.7,8.6],[2.4,8.6],[2.4,11.2],[4.5,11.2],[4.5,14.7]]]}];
 
 /* Moyens de maintien de l'ordre. dps = perte de détermination par seconde selon le type d'émeutier. */
 const MEANS={
-  peloton:{nom:'Peloton MO',cout:5,range:1.6,cibles:[2,3,5],dps:{manif:8,casseur:6,meneur:6,bloc:4},
-    ds:'Boucliers en ligne : repousse <b>plusieurs émeutiers</b> à la fois. Bon contre la masse.'},
-  autopompe:{nom:'Autopompe',cout:9,range:2.1,splash:.8,dmg:15,cd:1.6,recul:.45,mult:{manif:1,casseur:.8,meneur:.8,bloc:1.6},
-    ds:'Jet d’eau sur un groupe : <b>fait reculer</b> tout le monde autour. Efficace contre les <b>blocs</b>.'},
-  barrage:{nom:'Barrage (combi + barrières)',cout:6,range:1.5,slow:[.45,.55,.65],aoe:2,
-    ds:'Barrières Heras sur la chaussée : <b>ralentit</b> tout le cortège à portée. Les autres moyens en profitent.'},
-  cavalerie:{nom:'Cavalerie',cout:8,range:2.6,dps:{manif:12,casseur:20,meneur:24,bloc:8},
-    ds:'Longue portée, rapide : vise d’abord les <b>meneurs</b>, puis les <b>casseurs</b>.'}};
+  peloton:{nom:'Peloton MO',cout:5,range:1.8,dps:{manif:10,casseur:8,meneur:7,bloc:5},
+    ds:'Les agents descendent sur la chaussée et <b>retiennent</b> chacun un émeutier au bouclier. Plus de boucliers à chaque niveau.'},
+  autopompe:{nom:'Lance à eau / autopompe',cout:9,range:2.1,splash:.8,dmg:15,cd:1.6,recul:.45,mult:{manif:1,casseur:.8,meneur:.8,bloc:1.6},
+    ds:'Jet d’eau sur un groupe : <b>fait reculer</b> tout le monde autour et laisse une <b>flaque glissante</b>.'},
+  barrage:{nom:'Barrage (combi + barrières)',cout:6,range:1.8,
+    ds:'Barrières Heras en travers de la rue : elles <b>bloquent</b> le cortège jusqu’à céder. Les agents du combi les relèvent ensuite.'},
+  cavalerie:{nom:'Cavalerie',cout:8,range:2.6,cd:[4,3.3,2.6],choc:{manif:16,casseur:20,meneur:28,bloc:10},
+    ds:'<b>Charge</b> dans le groupe le plus dense (meneurs en priorité) : fait reculer et décourage.'}};
 const LV={dmg:[1,1.5,2.1],rng:[0,.2,.35],cout:[0,.8,1.2]};
-const UPTXT={peloton:['','Section (3 boucliers)','Peloton complet (5 boucliers)'],autopompe:['','Lance renforcée','Double lance'],
-  barrage:['','Deux rangées de barrières','Barrage lourd'],cavalerie:['','Deux cavaliers','Escouade montée']};
+const UPTXT={peloton:['','Section (3 boucliers)','Peloton complet (5 boucliers)'],autopompe:['','Deux lances à eau','Camion autopompe'],
+  barrage:['','Barrières doublées','Barrage lourd (relevé plus vite)'],cavalerie:['','Deux cavaliers','Escouade montée']};
 /* Émeutiers : détermination, vitesse (cases/s), agents récupérés quand ils renoncent, tenue du cordon perdue s'ils passent. */
 const FOES={
   manif:{nom:'Émeutier',hp:24,v:.9,gain:1,vies:1,ds:'Avance en masse. Le <b>peloton MO</b> en repousse plusieurs à la fois.'},
@@ -147,7 +147,7 @@ const sellVal=tw=>Math.floor(tw.spent*.6);
 function resetGame(cfg,tuto,mapIdx){
   R.cfg=cfg; R.map=mapIdx||0; R.M=MAPDATA[R.map]; R.pads=R.M.pads;
   R.tuto=tuto?1:0; R.wave=0; R.units=[]; R.spawnQ=[]; R.fx=[]; R.jets=[]; R.towers={}; R.sel=null; R.disp=0; R.leaks={}; R.seen=new Set(); R.pause=false;
-  R.somm={cd:0,placing:false,fx:[]}; $('panel').hidden=true;
+  R.somm={cd:0,placing:false,fx:[]}; R.flaques=[]; R.projs=[]; $('panel').hidden=true;
   R.waves=tuto?1:cfg.waves; R.lives=R.lives0=tuto?15:cfg.lives;
   const qn=(k,d)=>{ const v=Q2.get(k); return v!==null&&v!==''&&Number.isFinite(Number(v))?Number(v):d; };
   const inc=Q2.get('mode')==='incident';
@@ -177,11 +177,32 @@ function launchWave(){
 let UID=0;
 const HOOD=['#c0392b','#2e86c1','#27ae60','#d4a017','#8e44ad','#e67e22','#7f8c8d','#16a085','#b03a5b'];
 function addUnit(type,pi){ const F=FOES[type], hp=F.hp*R.cfg.hp*R.M.hp;
-  R.units.push({id:UID++,type,pi,d:0,hp,max:hp,state:'go',slow:0,boost:false,somUntil:0,lo:type==='manif'||type==='casseur'?(Math.random()-.5)*.7:(Math.random()-.5)*.2,
+  R.units.push({id:UID++,jit:Math.random(),type,pi,d:0,hp,max:hp,state:'go',slow:0,boost:false,somUntil:0,lo:type==='manif'||type==='casseur'?(Math.random()-.5)*.7:(Math.random()-.5)*.2,
     col:type==='casseur'?'#17181c':type==='meneur'?'#e8732a':pick(HOOD),flare:type==='casseur'&&Math.random()<.35,bob:Math.random()*6,ban:pick(['#c0392b','#d4a017','#2e86c1','#27ae60','#8e44ad','#e8e8e8'])});
   if(!R.seen.has(type)){ R.seen.add(type); if(!R.tuto&&!R.sim) introFoe(type); }
 }
 function upos(u){ const P=R.M.P[u.pi], p=posOn(P,u.d), o=u.lo*(u.state==='flee'?.8:1); return {x:p.x-Math.sin(p.ang)*o,y:p.y+Math.cos(p.ang)*o,ang:p.ang}; }
+/* ───── simulation ─────
+   Barrage : une ligne de barrières Heras en travers de la rue. Elle BLOQUE : les émeutiers s'y entassent et poussent ;
+   à bout, elle tombe et ils passent ; les agents du combi la relèvent dès que la place est libre.
+   Peloton MO : les agents sortent sur la chaussée et retiennent chacun un émeutier au contact, tant que leur endurance tient.
+   Cavalerie : charge dans le groupe (recul + perte de détermination), puis revient se placer.
+   Autopompe : jet qui fait reculer, laisse une flaque glissante.
+   Casseurs : lancent des projectiles sur les barrières et les agents. */
+function blocksFor(x,y){ const out=[]; R.M.P.forEach((P,pi)=>{ const n=nearestOn(P,x,y); if(n.dist<.3) out.push({pi,d:n.d}); }); return out; }
+function blockOn(tw,pi){ const b=tw.block&&tw.block.find(b=>b.pi===pi); return b?b.d:null; }
+const BAR_HP=[150,260,400], BAR_RELEVE=[8,6,4.5];
+const PUSH={manif:3,casseur:4,meneur:2,bloc:24};          // poussée sur une barrière (points/s)
+const STRAIN={manif:5,casseur:6,meneur:4,bloc:22};        // usure de l'endurance d'un agent MO au contact (points/s)
+const AGENTS=[2,3,5], ENDU=[70,85,100];
+function setupTower(tw,id){
+  const P=padOf(id);
+  if(tw.type==='barrage'){ const mx=BAR_HP[tw.lvl-1]*(1-.25*R.usure); tw.bar=tw.bar||{hp:mx,up:true,downAt:0}; tw.bar.max=mx; if(tw.bar.up) tw.bar.hp=mx; }
+  if(tw.type==='peloton'){ tw.agents=tw.agents||[]; const n=AGENTS[tw.lvl-1], mx=ENDU[tw.lvl-1];
+    while(tw.agents.length<n) tw.agents.push({x:P.x,y:P.y,e:mx,st:'ready',u:null,until:0});
+    tw.agents.forEach(a=>{ a.max=mx; if(a.st!=='back') a.e=Math.max(a.e,mx*.6); }); }
+}
+function slotOf(tw,i){ const n=tw.agents.length, w=Math.min(.24,.84/Math.max(1,n-1)), o=(i-(n-1)/2)*w, r=(i%2?.14:-.06); return {x:tw.rx-Math.sin(tw.rang)*o+Math.cos(tw.rang)*r, y:tw.ry+Math.cos(tw.rang)*o+Math.sin(tw.rang)*r}; }
 function step(dt){
   if(R.over||R.pause) return;
   R.t+=dt;
@@ -192,32 +213,71 @@ function step(dt){
   if(R.nextIn!==null){ R.nextIn-=dt; if(R.nextIn<=0){ R.nextIn=null; launchWave(); } }
   for(const u of R.units) u.p=upos(u);
   const live=R.units.filter(u=>u.state==='go');
-  // meneurs : ils galvanisent ceux qui les entourent
+  const hit=(u,v)=>{ u.hp-=v*(u.boost?.7:1); };
+  // meneurs (galvanisent), sommations et flaques (ralentissent)
   const leaders=live.filter(u=>u.type==='meneur');
-  for(const u of live){ u.boost=u.type!=='meneur'&&leaders.some(m=>Math.hypot(m.p.x-u.p.x,m.p.y-u.p.y)<FOES.meneur.aura); u.slow=u.somUntil>R.t?.6:0; }
-  // barrages : ralentissement
-  for(const id in R.towers){ const tw=R.towers[id]; if(tw.type!=='barrage') continue; const P=padOf(id), rg=rangeOf(tw), s=MEANS.barrage.slow[tw.lvl-1]*(1-.25*R.usure);
-    for(const u of live) if(Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg) u.slow=Math.max(u.slow,s); }
-  // déplacements (ceux qui renoncent repartent en sens inverse)
+  R.flaques=(R.flaques||[]).filter(f=>R.t<f.until);
+  for(const u of live){ u.boost=u.type!=='meneur'&&leaders.some(m=>Math.hypot(m.p.x-u.p.x,m.p.y-u.p.y)<FOES.meneur.aura);
+    u.slow=u.somUntil>R.t?.6:0; if(R.flaques.some(f=>Math.hypot(f.x-u.p.x,(f.y-u.p.y)/.7)<f.r)) u.slow=Math.max(u.slow,.3); u.atBar=null; }
+  const towers=Object.entries(R.towers);
+  // barrières : relevage par les agents du combi quand la place est libre
+  for(const [id,tw] of towers){ if(tw.type!=='barrage') continue; const b=tw.bar;
+    if(!b.up&&R.t-b.downAt>BAR_RELEVE[tw.lvl-1]&&!live.some(u=>Math.hypot(u.p.x-tw.rx,u.p.y-tw.ry)<.55)){ b.up=true; b.hp=b.max; fx(tw.rx,tw.ry,'Barrières relevées','info'); } }
+  // déplacements
   for(const u of R.units){ const F=FOES[u.type];
     if(u.state==='flee'){ u.d-=F.v*1.6*dt; continue; }
-    u.d+=F.v*(1-u.slow)*(u.boost?1.3:1)*dt; if(u.d>=R.M.P[u.pi].len) leak(u); }
+    if(u.held) continue;                                   // retenu par un agent MO
+    let nd=u.d+F.v*(1-u.slow)*(u.boost?1.3:1)*dt;
+    for(const [id,tw] of towers){ if(tw.type!=='barrage'||!tw.bar.up) continue; const db=blockOn(tw,u.pi); if(db===null||db<u.d-.05) continue;
+      const stop=db-.24-u.jit*.45; if(nd>=stop){ nd=Math.max(u.d,stop); u.atBar=id; } }
+    u.d=nd; if(u.d>=R.M.P[u.pi].len) leak(u); }
+  // poussée sur les barrières
+  for(const u of live){ if(!u.atBar||u.alive===false) continue; const tw=R.towers[u.atBar]; if(!tw||!tw.bar.up) continue;
+    tw.bar.hp-=PUSH[u.type]*(u.boost?1.3:1)*dt;
+    if(tw.bar.hp<=0){ tw.bar.up=false; tw.bar.hp=0; tw.bar.downAt=R.t; fx(tw.rx,tw.ry,'Barrières renversées !','bad'); Shell.bad(); if(!R.sim) Shell.shake(); } }
   // moyens
-  const hit=(u,v)=>{ u.hp-=v*(u.boost?.7:1); };
-  for(const id in R.towers){ const tw=R.towers[id], M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw), k=LV.dmg[tw.lvl-1]*((tw.type==='autopompe'||tw.type==='barrage')?1-.25*R.usure:1);
+  for(const [id,tw] of towers){ const M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw), k=LV.dmg[tw.lvl-1]*((tw.type==='autopompe'||tw.type==='barrage')?1-.25*R.usure:1);
     tw.tgt=null; if(tw.cd>0) tw.cd-=dt;
-    const inR=live.filter(u=>u.state==='go'&&Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg);
-    if(!inR.length) continue;
-    if(tw.type==='barrage'){ inR.forEach(u=>hit(u,M.aoe*k*dt)); tw.tgt=inR.slice(0,3); continue; }
-    if(tw.type==='peloton'){ inR.sort((a,b)=>b.d-a.d); const tg=inR.slice(0,M.cibles[tw.lvl-1]); tg.forEach(u=>hit(u,M.dps[u.type]*k*dt)); tw.tgt=tg; continue; }
-    if(tw.type==='cavalerie'){ const pr=u=>u.type==='meneur'?2:u.type==='casseur'?1:0; inR.sort((a,b)=>pr(b)-pr(a)||b.d-a.d); const t=inR[0]; hit(t,M.dps[t.type]*k*dt); tw.tgt=[t]; continue; }
-    if(tw.type==='autopompe'){ tw.tgt=[inR[0]]; if(tw.cd>0) continue;
+    if(tw.type==='peloton'){
+      tw.agents.forEach((a,i)=>{ const sl=slotOf(tw,i), mv=(tx,ty,sp)=>{ const dx=tx-a.x, dy=ty-a.y, L=Math.hypot(dx,dy); if(L>.01){ const s=Math.min(L,sp*dt); a.x+=dx/L*s; a.y+=dy/L*s; } return L; };
+        if(a.u&&(a.u.state!=='go'||a.u.alive===false)){ a.u.held=null; a.u=null; a.st='ready'; }
+        if(a.st==='back'){ mv(P.x,P.y,2.2); if(R.t>a.until){ a.st='ready'; a.e=a.max; } return; }
+        if(a.st==='ready'){ a.e=Math.min(a.max,a.e+6*dt); mv(sl.x,sl.y,2.6);
+          // engage le premier émeutier qui arrive sur sa ligne
+          let best=null; for(const u of live){ if(u.held||u.alive===false) continue; const db=blockOn(tw,u.pi); if(db===null) continue; if(u.d<db-.9||u.d>db+.25) continue; if(!best||u.d>best.d) best=u; }
+          if(best){ a.u=best; best.held=a; a.st='eng'; } return; }
+        if(a.st==='eng'){ const u=a.u; const L=mv(u.p.x,u.p.y,2.8);
+          if(L<.42){ hit(u,M.dps[u.type]*k*dt); a.e-=STRAIN[u.type]*(u.boost?1.3:1)*dt; a.push=R.t; }
+          if(a.e<=0){ a.e=0; a.st='back'; a.until=R.t+6; u.held=null; a.u=null; fx(a.x,a.y,'Agent à bout','bad'); } } });
+      tw.tgt=tw.agents.filter(a=>a.u).map(a=>a.u); continue; }
+    const inR=live.filter(u=>u.alive!==false&&Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg);
+    if(tw.type==='barrage'){ continue; }
+    if(tw.type==='cavalerie'){
+      if(tw.charge){ const c=tw.charge, k2=(R.t-c.t0)/c.dur;
+        if(!c.hit&&k2>=.42){ c.hit=true; for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-c.x,o.p.y-c.y)<=.75){ hit(o,M.choc[o.type]*k); if(!o.held) o.d=Math.max(0,o.d-(o.type==='bloc'?.2:.6)); } Shell.blip(140,.12,'triangle',.05); }
+        if(k2>=1) tw.charge=null; continue; }
+      if(!inR.length||tw.cd>0) continue;
+      const pr=u=>u.type==='meneur'?3:u.type==='casseur'?1:0; let best=null,bs=-1;
+      for(const u of inR){ const n=inR.filter(o=>Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<.75).length, sc=n+pr(u)*2; if(sc>bs){ bs=sc; best=u; } }
+      tw.charge={t0:R.t,dur:1.3,x:best.p.x,y:best.p.y,hit:false}; tw.cd=M.cd[tw.lvl-1]; tw.tgt=[best]; continue; }
+    if(tw.type==='autopompe'){ if(!inR.length) continue; tw.tgt=[inR[0]]; if(tw.cd>0) continue;
       let best=inR[0], bn=-1; for(const u of inR){ const n=live.filter(o=>Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<=M.splash).length; if(n>bn){ bn=n; best=u; } }
-      for(const o of live) if(Math.hypot(o.p.x-best.p.x,o.p.y-best.p.y)<=M.splash*(tw.lvl>2?1.2:1)){ hit(o,M.dmg*k*M.mult[o.type]); o.d=Math.max(0,o.d-M.recul*(o.type==='bloc'?.35:1)); }
+      for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-best.p.x,o.p.y-best.p.y)<=M.splash*(tw.lvl>2?1.2:1)){ hit(o,M.dmg*k*M.mult[o.type]); if(!o.held) o.d=Math.max(0,o.d-M.recul*(o.type==='bloc'?.35:1)); }
+      R.flaques.push({x:best.p.x,y:best.p.y+.05,r:.5+.1*tw.lvl,until:R.t+6,t:R.t});
       tw.cd=M.cd; tw.tgt=[best]; R.jets.push({id,x1:best.p.x,y1:best.p.y,t:R.t,lvl:tw.lvl}); Shell.blip(180,.15,'sawtooth',.02); }
   }
+  // casseurs : jets de projectiles sur les barrières et les agents MO
+  R.projs=(R.projs||[]).filter(p=>{ if(R.t<p.t0+p.dur) return true;
+    if(p.bar){ const tw=R.towers[p.bar]; if(tw&&tw.bar&&tw.bar.up){ tw.bar.hp-=8; if(tw.bar.hp<=0){ tw.bar.up=false; tw.bar.hp=0; tw.bar.downAt=R.t; fx(tw.rx,tw.ry,'Barrières renversées !','bad'); } } }
+    if(p.ag&&p.ag.st!=='back'){ p.ag.e-=10; if(p.ag.e<=0){ p.ag.e=0; p.ag.st='back'; p.ag.until=R.t+6; if(p.ag.u){ p.ag.u.held=null; p.ag.u=null; } } }
+    return false; });
+  for(const u of live){ if(u.type!=='casseur'||u.alive===false) continue; u.lance=(u.lance??(1+Math.random()*2))-dt; if(u.lance>0) continue; u.lance=2.6+Math.random();
+    let cible=null, bd=2.1;
+    for(const [id,tw] of towers){ if(tw.type==='barrage'&&tw.bar.up){ const d=Math.hypot(tw.rx-u.p.x,tw.ry-u.p.y); if(d<bd){ bd=d; cible={bar:id,x:tw.rx,y:tw.ry}; } }
+      if(tw.type==='peloton') tw.agents.forEach(a=>{ if(a.st==='back') return; const d=Math.hypot(a.x-u.p.x,a.y-u.p.y); if(d<bd&&d>.3){ bd=d; cible={ag:a,x:a.x,y:a.y}; } }); }
+    if(cible) R.projs.push({...cible,x0:u.p.x,y0:u.p.y-.45,t0:R.t,dur:.55+bd*.12,rot:Math.random()*6}); }
   // ceux qui renoncent font demi-tour : agents récupérés
-  for(const u of live){ if(u.hp<=0&&u.state==='go'){ u.state='flee'; R.disp++; const F=FOES[u.type]; R.agents+=F.gain;
+  for(const u of live){ if(u.hp<=0&&u.state==='go'&&u.alive!==false){ u.state='flee'; if(u.held){ u.held.u=null; u.held.st='ready'; u.held=null; } R.disp++; const F=FOES[u.type]; R.agents+=F.gain;
     fx(u.p.x,u.p.y,`+${F.gain}`,'gain'); Shell.good(); } }
   R.units=R.units.filter(u=>u.alive!==false&&!(u.state==='flee'&&u.d<=0));
   R.fx=R.fx.filter(f=>R.t-f.t<1.2); R.jets=R.jets.filter(j=>R.t-j.t<.45); R.somm.fx=R.somm.fx.filter(f=>R.t-f.t<1);
@@ -329,8 +389,8 @@ function choose(it){
   const id=R.sel.pad;
   if(R.sel.opt!==it.k){ R.sel.opt=it.k; tip(); if(!it.ok){ const nm=it.k==='up'||it.k==='max'?'Renforcer':MEANS[it.k].nom; tip(`<span><b>${nm}</b> : ${it.why||'pas assez d’agents'}.</span>`); } return; }
   if(!it.ok) return;
-  if(it.k==='sell'){ R.agents+=sellVal(R.towers[id]); delete R.towers[id]; }
-  else if(it.k==='up'){ const tw=R.towers[id], c=upCost(tw); R.agents-=c; tw.spent+=c; tw.lvl++; tw.born=R.t; }
+  if(it.k==='sell'){ const tw=R.towers[id]; (tw.agents||[]).forEach(a=>{ if(a.u) a.u.held=null; }); R.agents+=sellVal(tw); delete R.towers[id]; }
+  else if(it.k==='up'){ const tw=R.towers[id], c=upCost(tw); R.agents-=c; tw.spent+=c; tw.lvl++; tw.born=R.t; setupTower(tw,id); }
   else { const M=MEANS[it.k]; R.agents-=M.cout; R.towers[id]=newTower(id,it.k); if(R.tuto===3) tutoStep(4); }
   Shell.good(); R.sel=null; tip(); ui();
 }
@@ -338,6 +398,7 @@ function newTower(id,type){ const P=padOf(id), tw={type,lvl:1,spent:MEANS[type].
   // orientation : vers la rue la plus proche (pour le barrage, les barrières sont posées en travers de cette rue)
   let best=null; R.M.P.forEach((Pa,pi)=>{ const n=nearestOn(Pa,P.x,P.y); if(!best||n.dist<best.dist) best={...n,pi}; });
   const q=posOn(R.M.P[best.pi],best.d); tw.face=Math.atan2(q.y-P.y,q.x-P.x); tw.road={pi:best.pi,d:best.d};
+  tw.rx=q.x; tw.ry=q.y; tw.rang=q.ang; tw.block=blocksFor(q.x,q.y); setupTower(tw,id);
   return tw; }
 function onTap(e){
   const r=C.cv.getBoundingClientRect(), x=(e.clientX-r.left)/C.s, y=(e.clientY-r.top)/C.s;
@@ -491,7 +552,9 @@ function drawUnit(g,u,t){
   if(u.state==='flee') g.globalAlpha=.45;
   const fr=Math.floor(t*(u.state==='flee'?7:4)+u.bob)%2, flip=(u.f||1)<0;
   const nm=u.type==='manif'?'em-'+EMC[(u.id||0)%EMC.length]:u.type, hh={manif:.84,casseur:.84,meneur:.88,bloc:1.3}[u.type];
-  if(setOk(nm)){ g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(.02,.01,u.type==='bloc'?.42:.16,u.type==='bloc'?.12:.05,0,0,7); g.fill(); sprite(g,nm,fr,hh,flip); }
+  const bloque=u.held||u.atBar, bob=u.state==='go'&&!bloque?Math.abs(Math.sin(t*(u.type==='bloc'?5:7)+u.bob))*.035:0;
+  if(bloque){ g.translate(Math.sin(t*26+u.bob)*.018,0); }
+  if(setOk(nm)){ g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(.02,.01,u.type==='bloc'?.42:.16,u.type==='bloc'?.12:.05,0,0,7); g.fill(); g.save(); g.translate(0,-bob); if(u.type==='bloc'&&!bloque) g.rotate(Math.sin(t*2.5+u.bob)*.025); sprite(g,nm,bloque?0:fr,hh,flip); g.restore(); }
   else { const z=u.type==='bloc'?1:1.2; g.scale(z,z); drawRioter(g,u,t); g.scale(1/z,1/z); }
   if(u.state==='go'){
     if(u.slow>0){ g.strokeStyle='rgba(98,176,255,.85)'; g.lineWidth=.035; g.beginPath(); g.ellipse(0,0,u.type==='bloc'?.45:.2,u.type==='bloc'?.16:.08,0,0,7); g.stroke(); }
@@ -531,18 +594,27 @@ const SETS={mo:{f:['mo1','mo2'],ref:342}, cav:{f:['cav1','cav2'],ref:304}, combi
   casseur:{f:['casseur-1','casseur-2'],ref:300}, meneur:{f:['meneur-1','meneur-2'],ref:300}};
 ['rouge','bleu','vert','jaune','violet','gris'].forEach(c=>SETS['em-'+c]={f:[`em-${c}-1`,`em-${c}-2`],ref:300});
 const EMC=['rouge','bleu','vert','jaune','violet','gris'];
+function sprite1(g,n,h,flip){ const S=spr(n); if(!S.ok) return false; const w=h*S.img.width/S.img.height; g.save(); if(flip) g.scale(-1,1); g.drawImage(S.img,-w/2,-h,w,h); g.restore(); return true; }
 function setOk(n){ const S=SETS[n]; return S&&S.f.every(x=>spr(x).ok); }
 /* dessine la pose « frame » d'un jeu d'images, pieds en (0,0), tournée vers la droite (flip = vers la gauche) */
 function sprite(g,n,frame,h,flip){ const S=SETS[n]; if(!setOk(n)) return false; const im=spr(S.f[frame%S.f.length]).img, hh=h*(S.ref?im.height/S.ref:1), w=hh*im.width/im.height;
   g.save(); if(flip) g.scale(-1,1); g.drawImage(im,-w/2,-hh,w,hh); g.restore(); return true; }
 // autopompe : image tournée vers la gauche ; position relative de la lance (bout du canon) dans l'image
 const AUTOPOMPE={w:1.6,lance:[.01,.3]};
+// niveaux 1 et 2 : agents à la lance à eau (image tournée vers la droite, bout de lance à 98 % / 45 %), niveau 3 : le camion
+const LANCIER={h:.84,bout:[.98,.455],pos:[[[0,0]],[[-.2,-.06],[.22,.06]]]};
+function lanciers(tw){ return tw.lvl<3&&spr('lance').ok; }
 function nozzle(tw,P){ const S=spr('autopompe');
+  if(lanciers(tw)){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, im=spr('lance').img, h=LANCIER.h, w=h*im.width/im.height, [ox,oy]=LANCIER.pos[tw.lvl-1][0];
+    const lx=-w/2+LANCIER.bout[0]*w, ly=-h+LANCIER.bout[1]*h; return {x:P.x+ox+(f>0?lx:-lx),y:P.y+.1+oy+ly,f}; }
   if(S.ok){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, W=AUTOPOMPE.w, h=W*S.img.height/S.img.width, lx=-W/2+AUTOPOMPE.lance[0]*W, ly=.22-h+AUTOPOMPE.lance[1]*h;
     return {x:P.x+(f>0?-lx:lx),y:P.y+.1+ly,f}; }
   return nozzle0(tw,P); }
 function nozzle0(tw,P){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, L=1.05; return {x:P.x+f*(-L/2+.12+L*.25),y:P.y-.4-.12,f}; }
 function drawAutopompe(g,tw,P,t){
+  if(lanciers(tw)){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1;
+    LANCIER.pos[tw.lvl-1].forEach(([x,y])=>{ g.save(); g.translate(x,y); g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(0,.01,.2,.06,0,0,7); g.fill(); sprite1(g,'lance',LANCIER.h,f<0); g.restore(); });
+    return; }
   const S=spr('autopompe');
   if(S.ok){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, W=AUTOPOMPE.w, h=W*S.img.height/S.img.width;
     g.save(); if(f>0) g.scale(-1,1); g.drawImage(S.img,-W/2,.22-h,W,h); g.restore();
@@ -579,17 +651,41 @@ function horseRider(g,f,ph){
   g.fillStyle='#eef2f8'; g.beginPath(); g.arc(.005,-.76,.065,0,7); g.fill(); g.fillStyle='#0b1220'; g.fillRect(-.06,-.77,.13,.02);
   g.restore();
 }
+function drawHorses(g,tw,f,t,galop){ const pos=tw.lvl===1?[[0,0]]:tw.lvl===2?[[-.2,-.06],[.2,.06]]:[[-.24,-.1],[.24,-.06],[0,.1]];
+  pos.forEach(([x,y],i)=>{ g.save(); g.translate(x,y); if(!sprite(g,'cav',galop?Math.floor(t*7+i)%2:0,.95,f<0)) horseRider(g,f,t*(galop?9:2)+i); g.restore(); }); }
+function chargePos(tw,P){ const c=tw.charge, k=(R.t-c.t0)/c.dur, e=x=>x*x*(3-2*x);
+  const u=k<.42?e(k/.42):1-e((k-.42)/.58), x=P.x+(c.x-P.x)*u, y=P.y+(c.y-P.y)*u; return {x,y,f:(k<.42?c.x-P.x:P.x-c.x)>=0?1:-1}; }
+function drawBarrier(g,tw,rt){
+  const b=tw.bar, vert=Math.abs(Math.sin(tw.rang))>.7, px=-Math.sin(tw.rang), py=Math.cos(tw.rang), ax=Math.cos(tw.rang), ay=Math.sin(tw.rang);
+  const rows=tw.lvl>1?[0,.22]:[0], dmg=b.up?1-b.hp/b.max:0, shake=b.up&&dmg>0?Math.sin(rt*28)*.012*(1+dmg*2):0;
+  rows.forEach(ro=>[-.27,.27].forEach((o,i)=>{ const cx=tw.rx+px*o+ax*ro, cy=tw.ry+py*o+ay*ro;
+    g.save(); g.translate(cx+shake,cy+.06);
+    if(!b.up){ g.globalAlpha=.85; g.scale(1,.3); g.rotate(i?.2:-.15); }
+    else if(dmg>.4) g.rotate((i?1:-1)*dmg*.12);
+    if(!vert&&b.up) g.scale(.5,1);
+    const ok=sprite(g,'heras',0,.66,i===1); g.restore();
+    if(!ok) heras(g,cx,cy,tw.rang+Math.PI/2); }));
+  if(b.up&&b.hp<b.max){ const w=.6,f=b.hp/b.max; g.fillStyle='rgba(0,0,0,.75)'; rr(g,tw.rx-w/2-.025,tw.ry-.92,w+.05,.1,.04); g.fill(); g.fillStyle=f>.5?'#62b0ff':f>.25?'#ffd166':'#ff4d5e'; rr(g,tw.rx-w/2,tw.ry-.895,w*f,.05,.025); g.fill(); }
+  if(!b.up){ const k=Math.min(1,(R.t-b.downAt)/BAR_RELEVE[tw.lvl-1]); g.strokeStyle='rgba(98,176,255,.9)'; g.lineWidth=.05; g.beginPath(); g.arc(tw.rx,tw.ry-.5,.16,-Math.PI/2,-Math.PI/2+k*Math.PI*2); g.stroke();
+    g.fillStyle='#cfe4ff'; g.font='800 .13px "Instrument Sans",sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(k<1?'…':'!',tw.rx,tw.ry-.5); }
+}
+function drawAgentMO(g,tw,a,rt){
+  const up=-(Math.cos(tw.rang)>=0?1:-1), f=a.u?(a.u.p.x>=a.x?1:-1):(Math.abs(Math.cos(tw.rang))<.3?(a.x<=tw.rx?1:-1):up);
+  const moving=a.st!=='eng'&&Math.hypot(a.x-slotOf(tw,tw.agents.indexOf(a)).x,a.y-slotOf(tw,tw.agents.indexOf(a)).y)>.05, pushing=a.st==='eng'&&R.t-(a.push||0)<.1;
+  g.save(); g.translate(a.x+(pushing?Math.sin(rt*30)*.015:0),a.y); if(a.st==='back') g.globalAlpha=.55;
+  g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(.02,.01,.16,.05,0,0,7); g.fill();
+  if(!sprite(g,'mo',moving||pushing?Math.floor(rt*(pushing?8:5))%2:0,.72,f<0)) cop(g,f,rt*5,true);
+  if(a.e<a.max){ const w=.3,k=a.e/a.max; g.fillStyle='rgba(0,0,0,.7)'; rr(g,-w/2-.02,-.84,w+.04,.08,.03); g.fill(); g.fillStyle=k>.4?'#62b0ff':'#ff9f43'; rr(g,-w/2,-.82,w*k,.04,.02); g.fill(); }
+  g.restore(); }
 function aimOf(tw,P){ const u=tw.tgt&&tw.tgt[0]; return u&&u.px!==undefined?Math.atan2(u.py-P.y,u.px-P.x):tw.face; }
 function drawTower(g,tw,P,t){
   tw.aim=aimOf(tw,P); const f=Math.cos(tw.aim)>=0?1:-1;
   g.save(); g.translate(P.x,P.y+.1); if(tw.type!=='autopompe'&&tw.type!=='barrage') g.scale(1.2,1.2);
-  if(tw.type==='peloton'){ const pos=tw.lvl===1?[[-.13,0],[.13,.02]]:tw.lvl===2?[[-.25,0],[0,.03],[.25,0]]:[[-.36,.02],[-.18,-.02],[0,.03],[.18,-.02],[.36,.02]];
-    if(tw.lvl>2){ g.save(); g.translate(-.05*f,-.2); g.scale(.95,.95); if(!sprite(g,'mo',0,.74,f<0)) cop(g,f,t*2,false); g.restore(); }
-    pos.forEach(([x,y],i)=>{ g.save(); g.translate(x,y); if(!sprite(g,'mo',tw.tgt?Math.floor(t*3+i)%2:0,.74,f<0)) cop(g,f,i,true); g.restore(); }); }
+  if(tw.type==='peloton'){ // le chef de peloton reste au point d'appui, ses agents sont sur la chaussée
+    if(!sprite(g,'mo',0,.66,f<0)) cop(g,f,0,true); }
   else if(tw.type==='autopompe') drawAutopompe(g,tw,{x:0,y:0},t);
   else if(tw.type==='barrage'){ if(!sprite(g,'combi',0,.85,f<0)) van(g,f,t,.85,false); }
-  else if(tw.type==='cavalerie'){ const pos=tw.lvl===1?[[0,0]]:tw.lvl===2?[[-.18,-.06],[.18,.06]]:[[-.22,-.1],[.22,-.06],[0,.1]];
-    const ph=t*(tw.tgt?9:2); pos.forEach(([x,y],i)=>{ g.save(); g.translate(x,y); if(!sprite(g,'cav',tw.tgt?Math.floor(t*5+i)%2:0,.95,f<0)) horseRider(g,f,ph+i); g.restore(); }); }
+  else if(tw.type==='cavalerie'&&!tw.charge) drawHorses(g,tw,f,t,false);
   g.restore();
 }
 function render(){
@@ -599,7 +695,7 @@ function render(){
   R.M.P.forEach(P=>{ const a=P.pts[0], b=P.pts[1], x=Math.max(.35,Math.min(MW-.35,a[0])), y=Math.max(.35,Math.min(MH-.35,a[1])), on=Math.floor(rt*3)%2;
     g.globalCompositeOperation='lighter'; const gr=g.createRadialGradient(x,y,0,x,y,1.1); gr.addColorStop(0,on?'rgba(255,80,50,.3)':'rgba(255,80,50,.14)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle=gr; g.fillRect(x-1.1,y-1.1,2.2,2.2); g.globalCompositeOperation='source-over'; });
   // zones des barrages
-  for(const id in R.towers){ const tw=R.towers[id]; if(tw.type!=='barrage') continue; const P=padOf(id);
+  for(const id in R.towers){ const tw=R.towers[id]; if(tw.type!=='barrage'||true) continue; const P=padOf(id);
     g.fillStyle='rgba(98,176,255,.07)'; g.strokeStyle='rgba(98,176,255,.28)'; g.lineWidth=.03; g.setLineDash([.12,.1]); g.beginPath(); g.ellipse(P.x,P.y,rangeOf(tw),rangeOf(tw),0,0,7); g.fill(); g.stroke(); g.setLineDash([]); }
   // gyrophares : lueur rouge et bleue au sol autour des moyens
   g.globalCompositeOperation='lighter';
@@ -619,18 +715,23 @@ function render(){
   // auras des meneurs et sommations, au sol
   for(const u of R.units) if(u.type==='meneur'&&u.state==='go'&&u.p){ const pu=.5+.5*Math.sin(rt*3); g.fillStyle=`rgba(255,209,102,${.06+.04*pu})`; g.strokeStyle=`rgba(255,209,102,${.35+.25*pu})`; g.lineWidth=.04; g.beginPath(); g.ellipse(u.p.x,u.p.y,FOES.meneur.aura,FOES.meneur.aura*.7,0,0,7); g.fill(); g.stroke(); }
   for(const f of R.somm.fx){ const k=(R.t-f.t); for(let i=0;i<3;i++){ const r=(k*1.6+i*.35)%SOMM.rayon; g.strokeStyle=`rgba(255,209,102,${(1-r/SOMM.rayon)*.8})`; g.lineWidth=.05; g.beginPath(); g.ellipse(f.x,f.y,r,r*.7,0,0,7); g.stroke(); } }
+  for(const f of (R.flaques||[])){ const left=f.until-R.t, a=Math.min(1,left/1.5)*Math.min(1,(R.t-f.t)*4);
+    g.save(); g.globalAlpha=a; g.fillStyle='rgba(110,170,240,.22)'; g.beginPath(); g.ellipse(f.x,f.y,f.r,f.r*.6,0,0,7); g.fill();
+    g.strokeStyle='rgba(190,225,255,.35)'; g.lineWidth=.02; g.beginPath(); g.ellipse(f.x-.08,f.y-.04,f.r*.5,f.r*.22,-.2,3.6,5.6); g.stroke(); g.restore(); }
   // tout ce qui est debout, trié de haut en bas pour la profondeur
   const items=[];
   for(const u of R.units){ if(!u.p) u.p=upos(u); items.push({y:u.p.y,d:()=>drawUnit(g,u,rt)}); }
   for(const id in R.towers){ const tw=R.towers[id], P=padOf(id);
     items.push({y:P.y+.1,d:()=>{ const sc=Math.min(1,(R.t-(tw.born||0))*5+.5); g.save(); g.translate(P.x,P.y); g.scale(sc,sc); g.translate(-P.x,-P.y); drawTower(g,tw,P,rt); g.restore(); }});
-    if(tw.type==='barrage'){ const Pa=R.M.P[tw.road.pi], offs=tw.lvl===1?[0]:tw.lvl===2?[-.3,.3]:[-.5,0,.5];
-      offs.forEach(o=>{ const q=posOn(Pa,tw.road.d+o); items.push({y:q.y,d:()=>{ g.save(); g.translate(q.x,q.y+.12); const ok=sprite(g,'heras',0,.8,Math.cos(q.ang)<-.3); g.restore(); if(!ok) heras(g,q.x,q.y,q.ang+Math.PI/2); }}); }); } }
+    if(tw.type==='barrage') items.push({y:tw.ry+.06,d:()=>drawBarrier(g,tw,rt)});
+    if(tw.type==='peloton') tw.agents.forEach(a=>items.push({y:a.y,d:()=>drawAgentMO(g,tw,a,rt)}));
+    if(tw.type==='cavalerie'&&tw.charge){ const c=chargePos(tw,P); items.push({y:c.y,d:()=>{ g.save(); g.translate(c.x,c.y+.1); g.scale(1.2,1.2); drawHorses(g,tw,c.f,rt,true); g.restore(); }}); } }
   items.sort((a,b)=>a.y-b.y).forEach(it=>it.d());
   // étoiles de niveau
   for(const id in R.towers){ const tw=R.towers[id], P=padOf(id); for(let i=0;i<tw.lvl;i++) star(g,P.x+(i-(tw.lvl-1)/2)*.2,P.y+.48,.08); }
-  // action des pelotons et de la cavalerie
-  if(R.phase==='run') for(const id in R.towers){ const tw=R.towers[id], P=padOf(id); if(!tw.tgt||tw.type==='autopompe'||tw.type==='barrage') continue;
+  for(const pj of (R.projs||[])){ const k=Math.min(1,(R.t-pj.t0)/pj.dur), x=pj.x0+(pj.x-pj.x0)*k, y=pj.y0+(pj.y-.4-pj.y0)*k-Math.sin(Math.PI*k)*.7;
+    g.save(); g.translate(x,y); g.rotate(pj.rot+k*12); g.fillStyle='#8a8f99'; g.beginPath(); g.moveTo(-.05,-.03); g.lineTo(.04,-.05); g.lineTo(.06,.02); g.lineTo(-.02,.05); g.closePath(); g.fill(); g.strokeStyle='#2b2f36'; g.lineWidth=.015; g.stroke(); g.restore(); }
+  if(false) for(const id in R.towers){ const tw=R.towers[id], P=padOf(id); if(!tw.tgt||tw.type==='autopompe'||tw.type==='barrage') continue;
     for(const u of tw.tgt){ if(u.px===undefined) continue; g.strokeStyle=tw.type==='cavalerie'?'rgba(255,209,102,.7)':'rgba(200,225,255,.5)'; g.lineWidth=.03; g.setLineDash([.08,.08]); g.lineDashOffset=-rt*1.2;
       g.beginPath(); g.moveTo(P.x,P.y-.25); g.lineTo(u.px,u.py-.3); g.stroke(); g.setLineDash([]); } }
   // jets d'eau
@@ -695,18 +796,20 @@ Shell.init({
   bornes:{eff:[12,26],lives:[8,20],gap:[.3,1],hp:[.5,Infinity],pause:[8,20],combi:[1,4],autopompe:[1,3],cavalerie:[1,4]},
   diffHint:'Plus d’agents au départ, plus de véhicules et un cordon plus solide.',
   desktopHint:'Sur ordinateur : clique sur un emplacement bleu, puis sur le moyen voulu (deux fois pour confirmer).',
-  rules:['Les cortèges suivent les rues jusqu’à l’<b>hôtel de ville</b>. Chaque émeutier qui arrive entame le <b>cordon</b> (bouclier jaune).',
+  rules:['Les cortèges suivent les rues jusqu’à l’<b>hôtel de ville</b>. Chaque émeutier qui arrive entame le <b>cordon</b>.',
     'On ne blesse personne : on <b>repousse</b>. À bout de détermination, l’émeutier fait <b>demi-tour</b> et te rend des agents.',
-    'Touche un <b>emplacement bleu</b> : quatre moyens apparaissent. Premier toucher : portée et prix. Deuxième toucher : c’est posé.',
-    '<b>Peloton MO</b> contre la masse, <b>autopompe</b> pour faire reculer les groupes, <b>barrage</b> pour ralentir, <b>cavalerie</b> contre les meneurs et les casseurs.',
-    'Touche un moyen posé pour le <b>renforcer</b> (jusqu’au niveau 3, son allure change) ou le retirer.',
-    'Les <b>sommations</b> (en bas à gauche) ralentissent un groupe. Lancer la vague suivante <b>en avance</b> rapporte des agents.'],
+    'Touche un <b>emplacement bleu</b> : quatre moyens apparaissent. Premier toucher : portée et prix. Deuxième toucher : c’est posé. Touche un moyen posé pour le <b>renforcer</b>.',
+    '<b>Barrage</b> : les barrières Heras <b>bloquent</b> la rue jusqu’à céder sous la poussée, puis le combi les relève. Le cortège s’y entasse : c’est là que tes autres moyens font mouche.',
+    '<b>Peloton MO</b> : les agents descendent sur la chaussée et retiennent chacun un émeutier. À bout d’endurance, un agent se replie et revient plus tard.',
+    '<b>Autopompe</b> : fait reculer un groupe et laisse une flaque glissante. <b>Cavalerie</b> : charge le groupe le plus dense, meneurs en priorité.',
+    'Attention aux <b>casseurs</b> : ils lancent des projectiles sur les barrières et les agents. Les <b>blocs compacts</b> renversent vite les barrières.',
+    'Les <b>sommations</b> ralentissent un groupe. Lancer la vague suivante <b>en avance</b> rapporte des agents.'],
   winTitle:'Ordre rétabli', loseTitle:'Le cordon a cédé', skin:'Cordon de nuit',
   malus:'l’hôtel de ville est dégradé : moral des équipes Intervention en baisse et un combi immobilisé jusqu’à demain.',
   // Challenge : on enchaîne les quartiers, puis les cortèges deviennent plus déterminés et plus serrés.
   niveau(n,cfg){ cfg.map=(n-1)%MAPS.length; cfg.waves=n<=2?4:n<=4?5:6; return cfg; },
   onInit(){
-    C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); R.M=MAPDATA[0]; R.pads=R.M.pads;
+    C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); spr('lance'); R.M=MAPDATA[0]; R.pads=R.M.pads;
     resize(); new ResizeObserver(resize).observe($('field'));
     if(document.fonts) document.fonts.ready.then(resize);
     C.cv.addEventListener('pointerdown',onTap);
@@ -735,8 +838,8 @@ Shell.init({
   }
 });
 // Accès pour les simulations d'équilibrage (sans effet en jeu).
-window.__bouclage={R,MAPS,MAPDATA,MEANS,FOES,WAVES,LV,resetGame,launchWave,step,upCost,
+window.__bouclage={R,posOn,MAPS,MAPDATA,MEANS,FOES,WAVES,LV,resetGame,launchWave,step,upCost,
   build(pad,type){ const M=MEANS[type]; if(R.towers[pad]||R.agents<M.cout) return false; const used=Object.values(R.towers).filter(t=>t.type===type).length; if(R.dispo[type]!==undefined&&used>=R.dispo[type]) return false; R.agents-=M.cout; R.towers[pad]=newTower(pad,type); return true; },
-  up(pad){ const tw=R.towers[pad]; if(!tw||tw.lvl>=3) return false; const c=upCost(tw); if(R.agents<c) return false; R.agents-=c; tw.spent+=c; tw.lvl++; return true; },
+  up(pad){ const tw=R.towers[pad]; if(!tw||tw.lvl>=3) return false; const c=upCost(tw); if(R.agents<c) return false; R.agents-=c; tw.spent+=c; tw.lvl++; setupTower(tw,pad); return true; },
   somm(x,y){ if(R.somm.cd>0||R.phase!=='run') return false; R.units.filter(u=>u.state==='go'&&u.p&&Math.hypot(u.p.x-x,u.p.y-y)<=SOMM.rayon).forEach(u=>{ u.somUntil=R.t+SOMM.dure; u.hp-=SOMM.perte; }); R.somm.cd=SOMM.cd; return true; }};
 </script>
