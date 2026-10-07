@@ -719,7 +719,7 @@ function resetGame(cfg,tuto,mapIdx){
   R.cfg=cfg; if(mapIdx&&typeof mapIdx==='object'){ R.map=-1; R.M=mapIdx; } else { R.map=mapIdx||0; R.M=MAPDATA[R.map]; } R.pads=R.M.pads;
   R.tuto=tuto?1:0; R.wave=0; R.units=[]; R.spawnQ=[]; R.fx=[]; R.jets=[]; R.towers={}; R.sel=null; R.disp=0; R.leaks={}; R.seen=new Set(); R.pause=false;
   R.somm={cd:0,placing:false,fx:[]}; R.flaques=[]; R.projs=[]; $('panel').hidden=true;
-  R.parts=[]; R.frac=0; R.maitrise=0; R.waveLoss=0; R.retours=[]; R.dir=null; R.dirOffer=false; R.recent=[]; R.redeploy=null; R.vHp=1;
+  R.parts=[]; R.frac=0; R.maitrise=0; R.waveLoss=0; R.retours=[]; R.dir=null; R.dirOffer=false; R.recent=[]; R.redeploy=null; R.rally=null; R.vHp=1;
   R.stats={rec:0,blocs:0,meneurs:0,combos:0,best:null};
   // Challenge : consignes qui changent les règles à partir du niveau 6
   R.mods={}; R.fire=null; const nv=cfg.seed||0;
@@ -998,12 +998,14 @@ function tip(html){
   const el=$('tip');
   if(html){ el.innerHTML=html; return; }
   if(R.dirOffer&&!R.sel&&!R.redeploy){ el.innerHTML=`<div class="dir"><span class="dq">📻 <b>Directeur :</b> situation ?</span>${Object.entries(DIR).map(([k,d])=>`<button class="dirb" data-dir="${k}" title="${d.ds}"><b>${d.nom}</b><small>${d.c}</small></button>`).join('')}</div>`; return; }
+  if(R.rally){ const tw=R.towers[R.rally]; el.innerHTML=`<span><b>Déplacer ${tw&&tw.type==='barrage'?'les barrières':'la ligne MO'}</b> : touche la rue <b>dans le cercle</b> (ailleurs pour annuler).${tw&&tw.type==='barrage'&&R.phase==='run'?' Le combi les remonte en 2 s.':''}</span>`; return; }
   if(R.redeploy){ el.innerHTML='<span><b>Redéploiement</b> : touche un <b>emplacement libre</b> où envoyer la cavalerie (ailleurs pour annuler).</span>'; return; }
   if(R.somm.placing){ el.innerHTML='<span><b>Sommations :</b> touche le cortège. Ceux qui sont autour ralentissent 4 s et perdent de la détermination ; les plus découragés <b>font demi-tour</b> tout de suite.</span>'; return; }
   if(R.sel){ const tw=R.towers[R.sel.pad];
     if(R.sel.opt){ const o=R.sel.opt;
       if(o==='up'){ el.innerHTML=`<span><b>${UPTXT[tw.type][tw.lvl]}</b> · <span class="c">${upCost(tw)} agents</span> — plus efficace, portée accrue. <b>Touche encore pour confirmer.</b></span>`; return; }
       if(o==='sell'){ el.innerHTML=`<span><b>Désengager</b> ce moyen · ses <span class="c">${sellVal(tw)} agents</span> reviennent en réserve dans ${RETOUR} s. <b>Touche encore pour confirmer.</b></span>`; return; }
+      if(o==='rally'){ el.innerHTML=`<span><b>Déplacer</b> ${tw.type==='barrage'?'les barrières':'la ligne des agents'} ailleurs dans la rue, autour de l’emplacement (gratuit). <b>Touche encore</b>, puis touche la rue.</span>`; return; }
       if(o==='move'){ el.innerHTML='<span><b>Redéployer</b> la cavalerie sur un autre emplacement (gratuit, puis 10 s avant le prochain). <b>Touche encore</b>, puis touche l’emplacement.</span>'; return; }
       const M=MEANS[o]; el.innerHTML=`<span><b>${M.nom}</b> · <span class="c">${M.cout} agents</span> — ${M.ds} <b>Touche encore pour poser.</b></span>`; return; }
     el.innerHTML= tw ? `<span><b>${MEANS[tw.type].nom}</b> (niveau ${tw.lvl}) — ${MEANS[tw.type].ds}</span>` : '<span>Choisis un moyen autour de l’emplacement.</span>'; return; }
@@ -1014,6 +1016,16 @@ function tip(html){
 /* menu circulaire en quartiers : peloton (haut-gauche), autopompe (haut-droite), barrage (bas-gauche), cavalerie (bas-droite) */
 const ORDER=['peloton','autopompe','barrage','cavalerie'];
 const QUAD={peloton:[-Math.PI,-Math.PI/2],autopompe:[-Math.PI/2,0],cavalerie:[0,Math.PI/2],barrage:[Math.PI/2,Math.PI]};
+/* Déplacer la ligne MO ou les barrières le long de la rue, dans un rayon autour de l'emplacement (comme un point de ralliement). */
+const rayonRally=tw=>rangeOf(tw)+.2;
+function pointRally(id,x,y){ const tw=R.towers[id], P=padOf(id), rg=rayonRally(tw); let best=null;
+  R.M.P.forEach((Pa,pi)=>{ for(let d=0;d<=Pa.len;d+=.08){ const q=posOn(Pa,d); if(Math.hypot(q.x-P.x,q.y-P.y)>rg||q.y<.2||q.y>MH-.6||q.x<.1||q.x>MW-.1) continue; const e=Math.hypot(q.x-x,q.y-y); if(!best||e<best.e) best={e,q,pi,d}; } });
+  return best&&best.e<1.2?best:null; }
+function rallier(id,x,y){ const tw=R.towers[id], b=pointRally(id,x,y); if(!tw||!b) return false; const q=b.q;
+  tw.rx=q.x; tw.ry=q.y; tw.rang=q.ang; tw.road={pi:b.pi,d:b.d}; tw.block=blocksFor(q.x,q.y); tw.born=R.t; tw.rallyT=R.t;
+  if(tw.type==='peloton') tw.agents.forEach(a=>{ if(a.u){ a.u.held=null; a.u=null; } if(a.st==='eng') a.st='ready'; });
+  if(tw.type==='barrage'&&R.phase==='run'&&tw.bar.up){ tw.bar.up=false; tw.bar.hp=0; tw.bar.downAt=R.t-BAR_RELEVE[tw.lvl-1]+2; }
+  puff(q.x,q.y,8,{v:.5,r:.05,grow:1.5,life:.5,flat:.3}); fx(q.x,q.y-.3,tw.type==='barrage'?'Barrières déplacées':'Ligne déplacée','info'); return true; }
 /* Redéploiement de la cavalerie : elle traverse au trot jusqu'au nouvel emplacement, inactive pendant le trajet. */
 function redeploy(from,to){
   const tw=R.towers[from]; if(!tw||R.towers[to]||to===R.fire) return false; const A=padOf(from), B=padOf(to), g2=newTower(to,'cavalerie');
@@ -1025,7 +1037,8 @@ function menuLayout(){
   const P=padOf(R.sel.pad), tw=R.towers[R.sel.pad];
   const cx=Math.min(MW-MENU_R-.08,Math.max(MENU_R+.08,P.x)), cy=Math.min(MH-MENU_R-.35,Math.max(MENU_R+.08,P.y));
   let items;
-  if(tw&&tw.type==='cavalerie') items=[{k:tw.lvl<3?'up':'max',a0:-Math.PI,a1:-Math.PI/3},{k:'move',a0:-Math.PI/3,a1:Math.PI/3},{k:'sell',a0:Math.PI/3,a1:Math.PI}];
+  if(tw&&(tw.type==='peloton'||tw.type==='barrage')) items=[{k:tw.lvl<3?'up':'max',a0:-Math.PI,a1:-Math.PI/3},{k:'rally',a0:-Math.PI/3,a1:Math.PI/3},{k:'sell',a0:Math.PI/3,a1:Math.PI}];
+  else if(tw&&tw.type==='cavalerie') items=[{k:tw.lvl<3?'up':'max',a0:-Math.PI,a1:-Math.PI/3},{k:'move',a0:-Math.PI/3,a1:Math.PI/3},{k:'sell',a0:Math.PI/3,a1:Math.PI}];
   else if(tw) items=[{k:tw.lvl<3?'up':'max',a0:-Math.PI,a1:0},{k:'sell',a0:0,a1:Math.PI}];
   else { const allow=R.tuto?['peloton']:ORDER; items=ORDER.map(k=>({k,a0:QUAD[k][0],a1:QUAD[k][1],lock:!allow.includes(k)})); }
   items=items.map(it=>{ let ok=true, why='';
@@ -1045,6 +1058,7 @@ function choose(it){
   const id=R.sel.pad;
   if(R.sel.opt!==it.k){ R.sel.opt=it.k; tip(); if(!it.ok){ const nm=it.k==='up'||it.k==='max'?'Renforcer':MEANS[it.k].nom; tip(`<span><b>${nm}</b> : ${it.why||'pas assez d’agents'}.</span>`); } return; }
   if(!it.ok) return;
+  if(it.k==='rally'){ R.rally=id; R.sel=null; tip(); Shell.blip(600,.05,'square',.03); return; }
   if(it.k==='move'){ R.redeploy=id; R.sel=null; tip(); Shell.blip(600,.05,'square',.03); return; }
   if(it.k==='sell'){ const tw=R.towers[id], P=padOf(id); (tw.agents||[]).forEach(a=>{ if(a.u){ a.u.held=null; } }); delete R.towers[id];
     if(R.phase==='build'){ R.agents+=sellVal(tw); } else { R.retours.push({n:sellVal(tw),at:R.t+RETOUR,x:P.x,y:P.y}); fx(P.x,P.y-.3,`Retour en ${RETOUR} s`,'info'); } }
@@ -1067,6 +1081,7 @@ function onTap(e){
   const r=C.cv.getBoundingClientRect(), x=(e.clientX-r.left)/C.s, y=(e.clientY-r.top)/C.s;
   if((R.over&&!R.tuto)||R.phase==='idle'||R.pause) return;
   if(R.somm.placing){ R.somm.placing=false; sommer(x,y); Shell.blip(440,.3,'square',.05); tip(); ui(); return; }
+  if(R.rally){ const id=R.rally; R.rally=null; if(rallier(id,x,y)) Shell.good(); tip(); return; }
   if(R.redeploy){ let best=null,bd=.6; for(const p of R.pads){ const d=Math.hypot(p.x-x,p.y-y); if(d<bd&&!R.towers[p.id]&&p.id!==R.fire){ bd=d; best=p; } }
     if(best&&redeploy(R.redeploy,best.id)) Shell.good(); R.redeploy=null; tip(); return; }
   const L=menuLayout();
@@ -1573,6 +1588,10 @@ function render(){
   R.M.P.forEach(P=>{ const a=P.pts[0], b=P.pts[1], x=Math.max(.35,Math.min(MW-.35,a[0])), y=Math.max(.35,Math.min(MH-.35,a[1]));
     const lx=Math.max(1.05,Math.min(MW-1.05,x+(b[0]===a[0]?1.05:0))), ly=y+(b[0]===a[0]?.05:.7); pill(g,lx,ly,'CORTÈGE','#fff',.18,'#c0392b'); });
   const ex=R.M.P[0].pts.at(-1)[0], hx=Math.max(1.15,Math.min(MW-1.15,ex)); pill(g,hx,MH-1.8,'Hôtel de ville','#fff',.2,'rgba(16,24,40,.85)');
+  if(R.rally&&R.towers[R.rally]){ const tw=R.towers[R.rally], P=padOf(R.rally), rg=rayonRally(tw), pu=.5+.5*Math.sin(rt*5);
+    g.save(); g.fillStyle='rgba(255,209,102,.07)'; g.strokeStyle='rgba(255,209,102,.8)'; g.lineWidth=.04; g.setLineDash([.14,.1]); g.lineDashOffset=-rt*.6; g.beginPath(); g.arc(P.x,P.y,rg,0,7); g.fill(); g.stroke(); g.setLineDash([]);
+    g.beginPath(); g.arc(P.x,P.y,rg,0,7); g.clip(); g.globalAlpha=.25+.2*pu; R.M.P.forEach(Pa=>strokeP(g,Pa,RW*.8,'rgba(255,209,102,.9)')); g.restore();
+    g.fillStyle='#ffd166'; g.beginPath(); g.arc(tw.rx,tw.ry,.09+.03*pu,0,7); g.fill(); }
   if(R.somm.placing){ g.save(); g.globalAlpha=.22+.15*Math.sin(rt*6); R.M.P.forEach(P=>strokeP(g,P,RW,'rgba(255,209,102,.6)')); g.restore(); }
   // portée et menu circulaire
   const L=menuLayout();
@@ -1586,8 +1605,8 @@ function render(){
       if(on){ g.fillStyle='rgba(255,209,102,.22)'; g.beginPath(); g.moveTo(L.cx,L.cy); g.arc(L.cx,L.cy,L.r-.03,it.a0,it.a1); g.closePath(); g.fill(); }
       g.strokeStyle='rgba(98,176,255,.45)'; g.lineWidth=.025; g.beginPath(); g.moveTo(L.cx,L.cy); g.lineTo(L.cx+Math.cos(it.a0)*L.r,L.cy+Math.sin(it.a0)*L.r); g.stroke();
       g.save(); g.globalAlpha=it.ok?1:.38; g.translate(it.ix,it.iy-.16); g.scale(1.25,1.25); menuIcon(g,it.k,on); g.restore();
-      const nm={peloton:'MO',autopompe:'Autopompe',barrage:'Barrage',cavalerie:'Cavalerie',up:tw&&tw.lvl<3?`Niveau ${tw.lvl+1}`:'',max:'Niveau max',sell:'Désengager',move:'Redéployer'}[it.k];
-      const sub=it.k==='up'?`${upCost(tw)} agents`:it.k==='sell'?`+${sellVal(tw)} en ${RETOUR} s`:it.k==='move'?(tw.moveCd>R.t?`dans ${Math.ceil(tw.moveCd-R.t)} s`:'gratuit'):it.k==='max'?'':`${MEANS[it.k].cout} agents`;
+      const nm={peloton:'MO',autopompe:'Autopompe',barrage:'Barrage',cavalerie:'Cavalerie',up:tw&&tw.lvl<3?`Niveau ${tw.lvl+1}`:'',max:'Niveau max',sell:'Désengager',move:'Redéployer',rally:'Déplacer'}[it.k];
+      const sub=it.k==='up'?`${upCost(tw)} agents`:it.k==='sell'?`+${sellVal(tw)} en ${RETOUR} s`:it.k==='move'?(tw.moveCd>R.t?`dans ${Math.ceil(tw.moveCd-R.t)} s`:'gratuit'):it.k==='rally'?'dans la rue':it.k==='max'?'':`${MEANS[it.k].cout} agents`;
       g.globalAlpha=it.ok||it.k==='sell'?1:.45; g.textAlign='center'; g.textBaseline='middle';
       g.font='800 .25px "Instrument Sans",sans-serif'; g.fillStyle=on?'#ffd166':'#eef4ff'; g.fillText(nm,it.ix,it.iy+.24);
       g.font='700 .18px "Instrument Sans",sans-serif'; g.fillStyle=it.k==='sell'?'#46d98a':'#9fb3cf'; g.fillText(sub,it.ix,it.iy+.47); g.globalAlpha=1; } }
@@ -1607,6 +1626,7 @@ function menuIcon(g,k,on){
   else if(k==='up'){ g.beginPath(); g.moveTo(0,-.22); g.lineTo(.18,0); g.lineTo(.07,0); g.lineTo(.07,.18); g.lineTo(-.07,.18); g.lineTo(-.07,0); g.lineTo(-.18,0); g.closePath(); g.fill(); g.stroke(); }
   else if(k==='max'){ star(g,0,0,.2); }
   else if(k==='sell'){ g.strokeStyle='#8fd3ff'; g.beginPath(); g.arc(0,.02,.15,-Math.PI*.9,Math.PI*.55); g.stroke(); g.beginPath(); g.moveTo(-.2,-.14); g.lineTo(-.15,-.01); g.lineTo(-.03,-.08); g.stroke(); }
+  else if(k==='rally'){ g.beginPath(); g.arc(0,0,.17,0,7); g.stroke(); g.beginPath(); g.moveTo(0,-.27); g.lineTo(0,-.08); g.moveTo(0,.08); g.lineTo(0,.27); g.moveTo(-.27,0); g.lineTo(-.08,0); g.moveTo(.08,0); g.lineTo(.27,0); g.stroke(); g.beginPath(); g.arc(0,0,.04,0,7); g.fill(); }
   else if(k==='move'){ g.beginPath(); g.moveTo(-.24,.06); g.lineTo(.12,.06); g.lineTo(.12,.16); g.lineTo(.26,0); g.lineTo(.12,-.16); g.lineTo(.12,-.06); g.lineTo(-.24,-.06); g.closePath(); g.fill(); g.stroke(); }
 }
 /* poubelles incendiées : emplacement inutilisable (consigne du Challenge) */
@@ -1637,7 +1657,7 @@ Shell.init({
     'Les agents engagés sont <b>immobilisés</b>. Désengager un moyen les rend à la réserve <b>6 s plus tard</b> : garde une marge.',
     'Touche un <b>emplacement bleu</b> : quatre moyens apparaissent. Premier toucher : portée et prix. Deuxième toucher : c’est posé. Touche un moyen posé pour le <b>renforcer</b>.',
     '<b>Cohésion</b> : un cortège serré résiste mieux. L’<b>autopompe</b> le disperse (plus facile à repousser) et fait <b>éclater</b> les blocs compacts entamés.',
-    '<b>Barrage</b> : bloque la rue jusqu’à céder. <b>Peloton MO</b> : retient les émeutiers au contact. <b>Cavalerie</b> : charge, et se <b>redéploie</b> ailleurs à la demande.',
+    '<b>Barrage</b> : bloque la rue jusqu’à céder. <b>Peloton MO</b> : retient les émeutiers au contact. Touche-les puis « <b>Déplacer</b> » pour choisir leur place dans la rue, dans un rayon autour de l’emplacement. <b>Cavalerie</b> : charge, et se <b>redéploie</b> sur un autre emplacement.',
     'Plusieurs émeutiers repoussés au même endroit en même temps : <b>intervention maîtrisée</b>, +1 agent. Trois vagues sans perte d’affilée : <b>dispositif maîtrisé</b>, +15 %.',
     'Les <b>sommations</b> ralentissent et font faire demi-tour aux émeutiers déjà découragés. Entre deux vagues, le <b>Directeur</b> te demande parfois la situation : choisis vite.'],
   winTitle:'Ordre rétabli', loseTitle:'Le cordon a cédé', skin:'Cordon de nuit',
@@ -1685,7 +1705,7 @@ Shell.init({
 });
 // Accès pour les simulations d'équilibrage (sans effet en jeu).
 window.__bouclage={R,posOn,MAPS,MAPDATA,genMap,mapOk,MEANS,FOES,WAVES,LV,resetGame,launchWave,step,upCost,
-  redeploy, dir(k){ R.dirOffer=true; choisirDir(k); }, sell(pad){ const tw=R.towers[pad]; if(!tw) return false; delete R.towers[pad]; R.retours.push({n:sellVal(tw),at:R.t+RETOUR,x:0,y:0}); return true; },
+  redeploy, rallier, dir(k){ R.dirOffer=true; choisirDir(k); }, sell(pad){ const tw=R.towers[pad]; if(!tw) return false; delete R.towers[pad]; R.retours.push({n:sellVal(tw),at:R.t+RETOUR,x:0,y:0}); return true; },
   build(pad,type){ const M=MEANS[type]; if(R.towers[pad]||pad===R.fire||R.agents<M.cout) return false; const used=Object.values(R.towers).filter(t=>t.type===type).length; if(R.dispo[type]!==undefined&&used>=R.dispo[type]) return false; R.agents-=M.cout; R.towers[pad]=newTower(pad,type); return true; },
   up(pad){ const tw=R.towers[pad]; if(!tw||tw.lvl>=3) return false; const c=upCost(tw); if(R.agents<c) return false; R.agents-=c; tw.spent+=c; tw.lvl++; setupTower(tw,pad); return true; },
   somm(x,y){ if(R.somm.cd>0||R.phase!=='run') return false; sommer(x,y); return true; }};
