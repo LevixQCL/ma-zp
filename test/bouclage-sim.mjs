@@ -2,6 +2,7 @@
 // Pour chaque niveau, 12 stratégies de bot (ordre des moyens × réserve gardée ou non, sommations sur le plus gros groupe)
 // jouent la partie complète avec les vrais réglages du niveau (Shell.cfgNiveau) : on mesure combien gagnent,
 // le cordon perdu en moyenne et l'effectif total en fin de partie (pour repérer un effet boule de neige).
+// CMD=0 : commandant laissé à l'hôtel de ville · CHASSE=1 : il va gazer les émeutiers isolés qui ont passé les moyens.
 // Les bots n'utilisent ni le glisser-déplacer, ni le Directeur, ni les avantages de zone : un bon joueur fait mieux.
 // Servir le dossier (http-server -p 8765 -c-1 .) puis : node test/bouclage-sim.mjs [premier=1] [dernier=30] [répétitions=2]
 import { createRequire } from 'node:module';
@@ -11,9 +12,9 @@ const [A = 1, Z = 30, N = 2] = process.argv.slice(2).map(Number);
 const BASE = process.env.BASE || 'http://127.0.0.1:8765/';
 const PAR = Number(process.env.PAR || 4);
 
-const AVEC_CMD = process.env.CMD !== '0';
+const AVEC_CMD = process.env.CMD !== '0', CHASSE = process.env.CHASSE === '1';
 async function jouer(page, niveau, reps) {
-  return page.evaluate(([n, N, avecCmd]) => {
+  return page.evaluate(([n, N, avecCmd, chasse]) => {
     const B = window.__bouclage, R = B.R;
     const T = ['peloton', 'barrage', 'autopompe', 'cavalerie'];
     const cycles = [[0, 1, 2, 3], [1, 0, 2, 3], [2, 0, 1, 3], [0, 2, 1, 3], [1, 2, 0, 3], [0, 0, 2, 1]];
@@ -36,17 +37,21 @@ async function jouer(page, niveau, reps) {
           if (avecCmd && R.cmd) { const live = R.units.filter((u) => u.state === 'go' && u.p); let bp = null, bc = 0;
             for (const id of Object.keys(R.towers)) { const P = R.pads.find((q) => q.id === id), c = live.filter((u) => Math.hypot(u.p.x - P.x, u.p.y - P.y) < 2.5).length; if (c > bc) { bc = c; bp = P; } }
             const tr = live.find((u) => ['tracteur', 'sono', 'car'].includes(u.type));
+            // CHASSE=1 : un émeutier isolé a passé les moyens (dernier tiers du trajet) → le commandant va le chercher (gaz)
+            const fuyard = chasse && live.filter((u) => !['tracteur', 'sono', 'car', 'bloc'].includes(u.type) && !u.held && u.d > R.M.P[u.pi].len * .66
+              && !live.some((o) => o !== u && Math.hypot(o.p.x - u.p.x, o.p.y - u.p.y) < 1)).sort((a, b) => b.d - a.d)[0];
+            if (fuyard && !tr) B.cmdVers(fuyard.p.x, fuyard.p.y); else
             if (tr && t % 60 === 0) B.cmdVers(tr.p.x, tr.p.y + .5); // tracteur : on va négocier
             else if (!tr && bp && t % 120 === 0) B.cmdVers(bp.x, bp.y);
             if (tr && Math.hypot(tr.p.x - R.cmd.x, tr.p.y - R.cmd.y) < 1.2) B.ordreCmd();
             if (live.filter((u) => Math.hypot(u.p.x - R.cmd.x, u.p.y - R.cmd.y) < 1.9).length >= 4) B.ordreCmd(); } }
         B.step(1 / 60); }
-      res.games++; if (R.lives > 0) res.wins++; if (R.cmd) { res.cmdNiv += R.cmd.lvl || 1; res.cmdXp += R.stats.cmdXp || 0; } res.vies = R.lives0;
+      res.games++; if (R.lives > 0) res.wins++; if (R.cmd) { res.cmdNiv += R.cmd.lvl || 1; res.cmdXp += R.stats.cmdXp || 0; res.gaz = (res.gaz || 0) + (R.stats.gaz || 0); } res.vies = R.lives0;
       res.perte += R.lives0 - Math.max(0, R.lives);
       res.fin += R.agents + Object.values(R.towers).reduce((a, t) => a + t.spent, 0);
     }
     return { ...res, nom: B.MAPS[(n - 1) % B.MAPS.length].nom, cfg: Shell.cfgNiveau(n) };
-  }, [niveau, reps, AVEC_CMD]);
+  }, [niveau, reps, AVEC_CMD, CHASSE]);
 }
 
 const browser = await chromium.launch();
@@ -61,7 +66,7 @@ let mur = null;
 for (const n of niveaux) {
   const r = out[n], c = r.cfg, pc = Math.round((r.wins / r.games) * 100);
   const met = n % 5 === 3 ? 'brouillard' : n % 5 === 0 ? 'pluie' : '';
-  console.log(`${String(n).padStart(3)}  ${r.nom.padEnd(21)} ${met.padEnd(11)}${(c.boss||[]).map((b) => b[0].toUpperCase()).join('').padStart(3)} ${String(c.waves).padStart(6)} ${String(Math.round(c.lives)).padStart(6)} ${String(Math.round(c.eff)).padStart(6)} | ${String(pc).padStart(4)} %   ${(r.perte / r.games).toFixed(1).padStart(6)} / ${Math.round(r.vies)}   ${String(Math.round(r.fin / r.games)).padStart(4)}       ${(r.cmdNiv / r.games).toFixed(1)}    ${Math.round(r.cmdXp / r.games)}`);
+  console.log(`${String(n).padStart(3)}  ${r.nom.padEnd(21)} ${met.padEnd(11)}${(c.boss||[]).map((b) => b[0].toUpperCase()).join('').padStart(3)} ${String(c.waves).padStart(6)} ${String(Math.round(c.lives)).padStart(6)} ${String(Math.round(c.eff)).padStart(6)} | ${String(pc).padStart(4)} %   ${(r.perte / r.games).toFixed(1).padStart(6)} / ${Math.round(r.vies)}   ${String(Math.round(r.fin / r.games)).padStart(4)}       ${(r.cmdNiv / r.games).toFixed(1)}    ${Math.round(r.cmdXp / r.games)}   gaz ${((r.gaz || 0) / r.games).toFixed(1)}`);
   if (mur === null && r.wins === 0) mur = n;
 }
 console.log(mur ? `Premier niveau qu'aucune stratégie de bot ne passe : ${mur}` : 'Toutes les stratégies passent au moins une fois sur la plage testée.');

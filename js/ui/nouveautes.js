@@ -3,11 +3,11 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-07-commandant-niveaux',
+  id: '2026-10-07-commandant-gaz',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['⭐', 'Maintien de l’ordre : le commandant monte en grade', 'novice, il se replie au moindre contact ; envoie-le là où ça chauffe et il devient une vraie légende du MO (5 niveaux).'],
+    ['⭐', 'Maintien de l’ordre : le commandant monte en grade', 'novice, il se replie au moindre contact ; envoie-le là où ça chauffe et il devient une vraie légende du MO (5 niveaux). Un émeutier isolé t’échappe ? Envoie-le le chercher : il le gaze et le retient.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
@@ -15,6 +15,7 @@ export const NOTE_MAJ = {
     ['Maintien de l’ordre : niveaux du commandant', [
       ['Comment il progresse', 'pendant la partie, il gagne de l’expérience pour chaque émeutier repoussé dans son cercle (posté, pas en marche) ou par son mégaphone, et pour chaque véhicule dont il négocie le départ. Ses étoiles et sa barre d’expérience s’affichent au-dessus de sa tête.'],
       ['Niveau 1 → 5', 'novice, il se replie dès que 2 émeutiers l’approchent (8 s de repli), cercle étroit (+6 %), mégaphone toutes les 28 s. Légende du MO (niveau 5) : il tient face à 9, se replie 3 s seulement, cercle bien plus large (+28 %), mégaphone toutes les 12 s qui fait reculer bien plus de monde, et il marche et négocie plus vite.'],
+      ['Gaz', 'un émeutier isolé (personne d’autre tout près) à portée du commandant est gazé automatiquement, même en marche : retenu sur place, il perd de sa détermination. Novice : 2,5 s, il repart souvent. Niveau 5 : 4,5 s, portée plus grande, et il fait presque toujours demi-tour. Pas d’effet sur un groupe, un bloc ou un véhicule. De quoi rattraper le fuyard qui a passé tes moyens.'],
       ['Équilibre', 'simulé sur les 30 premiers niveaux du Challenge : difficulté globale inchangée pour qui le déplace régulièrement ; laissé à l’hôtel de ville, il reste novice et la partie devient nettement plus dure.'],
     ]],
     ['Nouveaux skins', [

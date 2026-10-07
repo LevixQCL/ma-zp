@@ -687,13 +687,17 @@ const CMD={dure:3,hp:1.05};
    face à un cortège entier, son cercle est large et son mégaphone fait reculer bien plus de monde.
    xp : expérience cumulée pour l'atteindre · deborde : émeutiers au contact qui le font replier · repli : durée du repli (s)
    aura/bonus : cercle et gain d'efficacité des moyens · r/cd/perte/dt : mégaphone (portée, recharge, effet, seuil de demi-tour)
-   v : vitesse de marche · nego : vitesse de négociation (×) */
+   v : vitesse de marche · nego : vitesse de négociation (×)
+   gaz : spray au poivre sur un émeutier ISOLÉ (personne d’autre à moins de 3/4 de case) : il est retenu sur place (r : portée,
+   dure : durée, f : part de sa détermination perdue par seconde, cd : recharge). Pas sur les blocs ni les véhicules.
+   Novice, il ne fait que le freiner ; au niveau 5, l'émeutier gazé fait presque toujours demi-tour. */
+const GAZ_SEUL=.75;
 const CMDN=[
-  {xp:0, titre:'novice',      deborde:2,repli:8,  aura:1.4,bonus:.06,r:1.6,cd:28,perte:5, dt:.35,v:1.9,nego:.8},
-  {xp:6, titre:'aguerri',     deborde:3,repli:6.5,aura:1.7,bonus:.10,r:1.8,cd:23,perte:7, dt:.38,v:2.2,nego:1},
-  {xp:16,titre:'chevronné',   deborde:4,repli:5,  aura:2.0,bonus:.15,r:2.0,cd:19,perte:9, dt:.42,v:2.5,nego:1.2},
-  {xp:30,titre:'vétéran',     deborde:6,repli:4,  aura:2.3,bonus:.21,r:2.2,cd:15,perte:11,dt:.47,v:2.8,nego:1.5},
-  {xp:50,titre:'légende du MO',deborde:9,repli:3, aura:2.7,bonus:.28,r:2.5,cd:12,perte:14,dt:.55,v:3.2,nego:1.9}];
+  {xp:0, titre:'novice',      deborde:2,repli:8,  aura:1.4,bonus:.06,r:1.6,cd:28,perte:5, dt:.35,v:1.9,nego:.8, gaz:{r:1.2,dure:2.5,f:.13,cd:11}},
+  {xp:6, titre:'aguerri',     deborde:3,repli:6.5,aura:1.7,bonus:.10,r:1.8,cd:23,perte:7, dt:.38,v:2.2,nego:1,  gaz:{r:1.35,dure:3,f:.17,cd:9}},
+  {xp:16,titre:'chevronné',   deborde:4,repli:5,  aura:2.0,bonus:.15,r:2.0,cd:19,perte:9, dt:.42,v:2.5,nego:1.2,gaz:{r:1.5,dure:3.5,f:.21,cd:7.5}},
+  {xp:30,titre:'vétéran',     deborde:6,repli:4,  aura:2.3,bonus:.21,r:2.2,cd:15,perte:11,dt:.47,v:2.8,nego:1.5,gaz:{r:1.65,dure:4,f:.26,cd:6}},
+  {xp:50,titre:'légende du MO',deborde:9,repli:3, aura:2.7,bonus:.28,r:2.5,cd:12,perte:14,dt:.55,v:3.2,nego:1.9,gaz:{r:1.8,dure:4.5,f:.32,cd:4.5}}];
 const cn=()=>CMDN[(R.cmd&&R.cmd.lvl||1)-1];
 const CMD_GAIN={tracteur:5,sono:5,car:5,meneur:2,bloc:2};
 function cmdXp(n,x,y){ const c=R.cmd; if(!c||c.lvl>=CMDN.length) return; c.xp+=n; R.stats.cmdXp=(R.stats.cmdXp||0)+n;
@@ -1021,6 +1025,22 @@ function step(dt){
   // négociation : le commandant, posté à côté d'un tracteur arrêté (barrage ou sommation), le convainc de faire demi-tour
   if(R.cmd&&!(R.cmd.repli>R.t)&&!R.cmd.walk) for(const t of vehs){ if(!(t.atBar||t.somUntil>R.t||t.stopT!=null)||Math.hypot(t.p.x-R.cmd.x,t.p.y-R.cmd.y)>TRACT.portee) continue;
     t.hp-=TRACT.nego*cn().nego*dt; t.nego=R.t; }
+  // gaz : le commandant neutralise un émeutier isolé à sa portée (même en marchant : on peut l'envoyer le chercher)
+  if(R.cmd){ const c=R.cmd, G=cn().gaz; if(c.gazCd>0) c.gazCd=Math.max(0,c.gazCd-dt);
+    const g=c.gaz; if(g){ const u=g.cible;
+      if(u.state!=='go'||u.alive===false||R.t>=g.fin){ if(u.held===g) u.held=null;
+        if(u.state==='go'&&u.alive!==false&&u.type!=='meneur'&&u.hp<=u.max*cn().dt){ u.hp=0; u.parCmd=true; }
+        c.gaz=null; }
+      else { u.hp-=u.max*g.f*dt; if(u.hp<=0) u.parCmd=true; if(Math.random()<dt*14) puff(u.p.x,u.p.y-.35,1,{v:.25,r:.07,grow:2.2,life:.9,col:'rgba(235,225,175,',jit:.25,flat:.4}); } }
+    if(!c.gaz&&!(c.gazCd>0)&&!(c.repli>R.t)){ let best=null;
+      for(const u of live){ if(u.held||u.alive===false||veh(u)||u.type==='bloc'||!u.p) continue;
+        if(Math.hypot(u.p.x-c.x,(u.p.y-c.y)/.8)>G.r) continue;
+        if(live.some(o=>o!==u&&o.p&&Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<GAZ_SEUL)) continue;
+        if(!best||u.d>best.d) best=u; }
+      if(best){ const g={cible:best,fin:R.t+G.dure,f:G.f,t0:R.t,cmd:true}; best.held=g; c.gaz=g; c.gazCd=G.cd+G.dure; c.gazT=R.t; R.stats.gaz=(R.stats.gaz||0)+1;
+        if(best.p.x!==c.x) c.f=best.p.x>c.x?1:-1; fx(best.p.x,best.p.y-.9,'Gazé !','info');
+        puff(best.p.x,best.p.y-.35,10,{v:.6,r:.06,grow:2.5,life:1,col:'rgba(235,225,175,',jit:.2,flat:.4});
+        if(!R.sim) Shell.blip(180,.18,'sawtooth',.03); } } }
   // poussée sur les barrières
   for(const u of live){ if(!u.atBar||u.alive===false) continue; const tw=R.towers[u.atBar]; if(!tw||!tw.bar.up) continue;
     tw.bar.hp-=PUSH[u.type]*(u.boost?1.3:1)*dt; if(tw.lvl>2) hit(u,4*dt);
@@ -1135,7 +1155,7 @@ function finish(ok){
   const details=Object.entries(R.leaks).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${n} passage${n>1?'s':''} de ${conseils[k]}`);
   const evalu=!ok?'Dispositif débordé':perdu===0?'Maîtrise':perdu<=R.lives0*.25?'Bon dispositif':'Sous tension';
   const st=[['Repoussés',R.disp],['Agents récupérés',`+${R.stats.rec}`],['Cordon perdu',`${perdu} / ${R.lives0}`]];
-  if(R.stats.blocs) st.push(['Blocs dispersés',R.stats.blocs]); if(R.stats.combos) st.push(['Interventions maîtrisées',R.stats.combos]); if(R.cmd&&R.cmd.lvl>1) st.push(['Commandant',`niveau ${R.cmd.lvl} ${'★'.repeat(R.cmd.lvl)}`]);
+  if(R.stats.blocs) st.push(['Blocs dispersés',R.stats.blocs]); if(R.stats.combos) st.push(['Interventions maîtrisées',R.stats.combos]); if(R.stats.gaz) st.push(['Émeutiers gazés',R.stats.gaz]); if(R.cmd&&R.cmd.lvl>1) st.push(['Commandant',`niveau ${R.cmd.lvl} ${'★'.repeat(R.cmd.lvl)}`]);
   const qScore=ok?Math.round(Math.max(0,R.lives)/R.lives0*1000)+R.stats.rec:0;
   Shell.result({ok, faults:perdu, stats:st, details, note:`Évaluation : ${evalu.toUpperCase()}. `+(note||(perdu===0?'Cordon intact : double point.':'Cordon intact : +2 sur la jauge.'))});
   if(ok&&Shell.enDefi&&R.map>=0&&R.cfg.niveau<=MAPS.length) recordQuartier(R.map,qScore);
@@ -1885,6 +1905,8 @@ function render(){
       const st=crie?(R.t-c.shoutT>.55&&setOk('cmdO2')?'cmdO2':'cmdO'):c.walk&&setOk('cmdM')?'cmdM':!rep2&&R.t-c.cheerT<1.4&&setOk('cmdR')?'cmdR':'cmd';
       if(!sprite(g,st,c.walk?0:Math.floor(rt*.7)%2,.8,st==='cmdO2'||st==='cmdR'?c.f>0:c.f<0)) cop(g,c.f,rt*5,false);
       if(crie){ for(let i=0;i<3;i++){ const k=((R.t-c.shoutT)*1.6+i*.3)%1; g.strokeStyle=`rgba(255,209,102,${(1-k)*.9})`; g.lineWidth=.03; g.beginPath(); g.arc(c.f*.42,-.62,.1+k*.35,-.7,.7); g.stroke(); } }
+      if(c.gaz&&R.t-c.gaz.t0<1.1&&c.gaz.cible.p){ const u=c.gaz.cible, k=(R.t-c.gaz.t0)/1.1; g.save(); g.strokeStyle=`rgba(240,230,180,${.75*(1-k)})`; g.lineWidth=.05; g.setLineDash([.06,.05]); g.lineDashOffset=-rt*2;
+        g.beginPath(); g.moveTo(c.f*.18,-.45); g.lineTo(u.p.x-c.x,u.p.y-c.y-.4); g.stroke(); g.restore(); }
       if(rep2){ pill(g,0,-.95,'repli','#fff',.14,'#c0392b'); }
       else if(R.phase!=='idle'){ // niveau + barre d'expérience au-dessus de la tête
         const lv=c.lvl, mx=lv>=CMDN.length, pr=mx?1:(c.xp-CMDN[lv-1].xp)/(CMDN[lv].xp-CMDN[lv-1].xp), up=R.t-c.lvlT<1.5, sc=up?1+.35*Math.sin(Math.min(1,(R.t-c.lvlT)/1.5)*Math.PI):1;
@@ -2047,6 +2069,7 @@ Shell.init({
     'Plusieurs émeutiers repoussés au même endroit en même temps : <b>intervention maîtrisée</b>, +1 agent. Trois vagues sans perte d’affilée : <b>dispositif maîtrisé</b>, +15 %.',
     'Le <b>commandant</b> (brassard rouge) : fais-le glisser où ça chauffe, ses moyens proches sont <b>plus efficaces</b> ; touche-le pour un <b>ordre au mégaphone</b> (sommation sur sa zone). Débordé par le cortège, il se replie.',
     'Le commandant <b>monte de niveau</b> (★ au-dessus de sa tête) à chaque émeutier repoussé dans son cercle ou par son mégaphone, et à chaque véhicule négocié. Novice, il se replie dès que 2 émeutiers l’approchent ; au niveau 5, il tient face à 9, son cercle est bien plus large (+28 %) et son mégaphone recharge en 12 s. <b>Déplace-le souvent là où ça chauffe.</b>',
+    'Un émeutier <b>isolé</b> passe entre les mailles ? Envoie le commandant le chercher : arrivé à portée, il le <b>gaze</b> automatiquement et le retient sur place. Novice, il le freine juste quelques secondes ; plus il monte de niveau, plus le gaz porte loin, dure longtemps et le fait renoncer. Pas d’effet sur un groupe, un bloc ou un véhicule.',
     'Certains quartiers finissent sur un <b>véhicule</b> en tête de cortège (tracteur, camion sono, car de supporters) : ni l’eau ni les chevaux n’en viennent à bout. Arrête-le (<b>barrage</b>, sommation) et poste le <b>commandant</b> à côté pour <b>négocier</b> son départ.',
     'Dès la 3e vague, certains casseurs allument des <b>fumigènes</b> : dans la fumée, l’autopompe et la cavalerie ne voient plus personne et le peloton MO tâtonne, pendant 6 s.',
     'Les <b>sommations</b> ralentissent et font faire demi-tour aux émeutiers déjà découragés. Entre deux vagues, le <b>Directeur</b> te demande parfois la situation : choisis vite.'],
