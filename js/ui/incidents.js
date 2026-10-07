@@ -209,6 +209,11 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
         } else if (d.type === 'result') await enregistrer(inc.id, { statut: d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate', fautes: Number(d.fautes) || 0 });
       }
       if (mode === 'train' && d.type === 'result' && !d.abandon) onEntrainement({ minijeux: 1 });
+      // Bitonal au Challenge : la course compte pour les meilleurs scores, comme une urgence (sauf arrêt forcé).
+      if (mode === 'train' && jeu === 'bitonal' && d.type === 'result' && !d.abandon && d.raison !== 'hs') {
+        const niv = ['facile', 'normal', 'difficile'].includes(d.niveau) ? d.niveau : null;
+        if (niv && d.score > 0 && await noterScoreBitonal(niv, d.score)) toast(`Nouveau meilleur score de la partie en ${NOM_NIVEAU[niv].toLowerCase()} : ${Math.floor(d.score).toLocaleString('fr-BE')} !`);
+      }
       // Défi d'endurance : chaque niveau réussi peut battre le record personnel (et celui de la partie).
       if (mode === 'train' && d.type === 'defi' && d.jeu === jeu) { const rec = await noterNiveauDefi(jeu, d.niveau); if (rec) toast(`Nouveau record de la partie : ${(MINI_JEUX.find((m) => m.jeu === jeu) || {}).nom || jeu}, niveau ${d.niveau} !`); }
       if (mode === 'renfort' && appui && d.id === appui.id) {

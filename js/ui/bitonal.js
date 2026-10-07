@@ -1,6 +1,6 @@
 // « Bitonal » (urgence du jour) : meilleurs scores de la partie par niveau, gardés dans le profil de chaque joueur
-// (players/{uid}.bitonal = { facile, normal, difficile }, bitonalAt = { niveau: date }). Seules les urgences du jour
-// comptent (un essai par jour) : l'entraînement est hors classement.
+// (players/{uid}.bitonal = { facile, normal, difficile }, bitonalAt = { niveau: date }). Les urgences du jour
+// (un essai) et les courses du Challenge comptent toutes les deux.
 import { S, esc, pseudoJoueur } from './common.js';
 import { vitesseCombi } from '../engine/flotte.js';
 import { cibleUrgence } from '../engine/incidents.js';

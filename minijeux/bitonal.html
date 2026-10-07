@@ -225,7 +225,7 @@ const INTERS = [
   ['Agression d’un chauffeur de bus', 'Gare de Mons, quai 3'],
   ['Cambriolage en cours', 'Avenue de l’Hôpital, 7'],
 ];
-// Intégration dans Ma ZP : ?mode=incident (urgence du jour, un seul essai) ou ?mode=train (entraînement, hors classement).
+// Intégration dans Ma ZP : ?mode=incident (urgence du jour, un seul essai) ou ?mode=train (Challenge : compte aussi pour les meilleurs scores).
 const Q = new URLSearchParams(location.search);
 const MODE = ['incident', 'train'].includes(Q.get('mode')) ? Q.get('mode') : null;
 const INC = MODE === 'incident';
@@ -285,6 +285,7 @@ $('son').addEventListener('click', () => { sonOn = !sonOn; $('son').textContent 
 // ───────────── Partie ─────────────
 const DIFF_Q = { facile: 'facile', normal: 'moyen', difficile: 'difficile' }[Q.get('diff')];
 let niveau = DIFF_Q || 'moyen', S = null, mission = null;
+const MES_REC = {}; // records perso battus pendant cette ouverture (les paramètres d'URL restent ceux de l'ouverture)
 const NOM_NIV = { facile: 'Facile', moyen: 'Normal', difficile: 'Difficile' };
 const CLE_NIV = { facile: 'facile', moyen: 'normal', difficile: 'difficile' };
 function nouvelleMission() {
@@ -296,7 +297,7 @@ function nouvelleMission() {
 const cibleDe = (N) => { const k = CLE_NIV[Object.keys(NIV).find((x) => NIV[x] === N)]; const c = Number(Q.get(`c_${k}`)); return Number.isFinite(c) && c > 20 ? Math.round(c) : Math.round((N.long / 31 + N.inter * 2.8 + 4) * N.marge); };
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 function afficherIntro() {
-  $('surtitre').textContent = INC ? 'Urgence du jour · Intervention' : MODE === 'train' ? 'Entraînement · Intervention' : 'Ma ZP · Intervention';
+  $('surtitre').textContent = INC ? 'Urgence du jour · Intervention' : MODE === 'train' ? 'Challenge · Intervention' : 'Ma ZP · Intervention';
   document.querySelector('.niveaux').hidden = INC;
   if (MODE) {
     const etat = Q.get('etat'), prepa = Number(Q.get('prepa')) || 0, cab = Q.get('cabosse') === '1';
@@ -313,7 +314,7 @@ function afficherIntro() {
       return `<div class="l${CLE_NIV[niveau] === k ? ' on' : ''}"><span>${NOM_NIV[{ normal: 'moyen' }[k] || k]}</span><span>${sc ? escH(nom) : 'pas encore de score'}${moi ? ` · toi : ${moi.toLocaleString('fr-BE')}` : ''}</span><b>${sc ? sc.toLocaleString('fr-BE') : '–'}</b></div>`;
     }).join('');
     $('records').hidden = false;
-    $('records').innerHTML = `<span class="t">🏆 Meilleurs scores de la partie</span>${lignes}<span class="tiny" style="color:var(--texte2)">Seules les urgences du jour comptent${MODE === 'train' ? ' : ici, entraînement hors classement' : ''}.</span>`;
+    $('records').innerHTML = `<span class="t">🏆 Meilleurs scores de la partie</span>${lignes}<span class="tiny" style="color:var(--texte2)">${MODE === 'train' ? '✅ Cette course compte : bats un score et il s’affiche ici.' : 'Les urgences du jour et les courses du Challenge comptent.'}</span>`;
   }
   if (MODE) {
     const k = Number(Q.get(`k_${CLE_NIV[niveau]}`)) || 0;
@@ -565,7 +566,7 @@ function terminer(arrive, raison) {
   const score = Math.round(S.pts) + bonus;
   const etoiles = !ok ? 0 : 1 + (S.hits <= 1 ? 1 : 0) + (S.hits === 0 && S.cible - total >= 5 ? 1 : 0);
   let record = 0;
-  if (MODE) record = Number(Q.get(`m_${CLE_NIV[niveau]}`)) || 0;
+  if (MODE) { const k = CLE_NIV[niveau]; record = MES_REC[k] ?? (Number(Q.get(`m_${k}`)) || 0); if (raison !== 'hs' && raison !== 'abandon' && score > record) MES_REC[k] = score; }
   else try { record = Number(localStorage.getItem(`bitonal-record-${niveau}`)) || 0; if (raison !== 'hs' && score > record) localStorage.setItem(`bitonal-record-${niveau}`, String(score)); } catch (e) { record = 0; }
   if (MODE) post('result', { ok, abandon: raison === 'abandon', raison: raison === 'hs' ? 'hs' : ok ? null : 'temps', fautes: Math.min(3, S.hits), score: raison === 'hs' || raison === 'abandon' ? 0 : score, niveau: CLE_NIV[niveau], etoiles, ...(VEH ? { vehicule: VEH.s } : {}), ...(arrive ? { temps: Math.round(total * 10) / 10 } : {}) });
   if (INC) { $('rejouer').hidden = true; $('menu').hidden = true; $('retour').hidden = false; }
@@ -576,10 +577,10 @@ function terminer(arrive, raison) {
     $('etoiles').setAttribute('aria-label', `${etoiles} étoile${etoiles > 1 ? 's' : ''} sur 3`);
     $('verdict').className = `verdict ${ok ? 'ok' : 'ko'}`;
     $('verdict').textContent = raison === 'hs' ? 'Arrêt forcé' : ok ? 'Sur place à temps' : 'Arrivé trop tard';
-    $('points').innerHTML = `<b>${score.toLocaleString('fr-BE')}</b><span>${MODE === 'train' ? 'entraînement, hors classement' : raison !== 'hs' && score > record ? `<span class="record">${MODE ? 'Nouveau record perso !' : 'Nouveau record !'}</span>` : record ? `Ton record : ${record.toLocaleString('fr-BE')}` : 'points'}</span>`;
+    $('points').innerHTML = `<b>${score.toLocaleString('fr-BE')}</b><span>${raison !== 'hs' && score > record ? `<span class="record">${MODE ? 'Nouveau record perso !' : 'Nouveau record !'}</span>` : record ? `Ton record : ${record.toLocaleString('fr-BE')}` : 'points'}</span>`;
     $('finTxt').textContent = (raison === 'hs'
       ? `Trop d’accrochages : tu dois t’arrêter, une autre équipe prend le relais. Pas de panique, ${VEH && VEH.m === 'anonyme' ? 'la voiture n’est pas perdue : elle reste' : `${VEH && VEH.m === 'fourgon' ? 'le fourgon' : 'le combi'} n’est pas perdu : il reste`} dans ton parc et roule encore.`
-      : ok ? `Sur place en ${fmt(total)}, ${fmt(S.cible - total)} d’avance sur la cible.` : `Sur place en ${fmt(total)} au lieu de ${fmt(S.cible)} : une autre patrouille est arrivée avant toi.`) + (INC ? (raison === 'hs' ? ` À 20:00 : carrosserie à refaire (à passer dans tes dépenses), ou +8 % d’usure ${VEH && VEH.m === 'anonyme' ? 'si elle l’était' : 's’il l’était'} déjà.` : ok ? ' À 20:00 : +moral pour l’équipe.' : ' À 20:00 : un collègue risque d’être blessé.') : '');
+      : ok ? `Sur place en ${fmt(total)}, ${fmt(Math.round(S.cible - total))} d’avance sur la cible.` : `Sur place en ${fmt(total)} au lieu de ${fmt(S.cible)} : une autre patrouille est arrivée avant toi.`) + (INC ? (raison === 'hs' ? ` À 20:00 : carrosserie à refaire (à passer dans tes dépenses), ou +8 % d’usure ${VEH && VEH.m === 'anonyme' ? 'si elle l’était' : 's’il l’était'} déjà.` : ok ? ' À 20:00 : +moral pour l’équipe.' : ' À 20:00 : un collègue risque d’être blessé.') : '');
     $('bilan').innerHTML = [
       `<li><span>⏱</span><span>Bonus d’avance<small>${ok ? `${Math.round(S.cible - total)} s d’avance × 40` : 'Pas de bonus sans arriver à temps.'}</small></span><span class="v">+${bonus}</span></li>`,
       `<li><span>🚓</span><span>Dépassements et frôlements<small>${S.nbDep} dépassé${S.nbDep > 1 ? 's' : ''}, ${S.nbFrole} frôlé${S.nbFrole > 1 ? 's' : ''} sans toucher. Enchaîne-les pour monter le multiplicateur.</small></span><span class="v">${S.nbDep + S.nbFrole}</span></li>`,

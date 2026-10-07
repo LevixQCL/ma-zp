@@ -105,7 +105,7 @@ export const NOTE_MAJ = {
       ['Trop tard', '25 % de risque qu’un collègue soit blessé (2 jours), moins avec le stand de tir et le matériel d’Intervention ; sinon −1 de moral. Trop d’accrochages (3, ou 4 pour un fourgon) : le véhicule doit s’arrêter, mais il n’est pas perdu : il rentre cabossé.'],
       ['Temps cible', 'il s’ajuste chaque nuit sur les courses réelles de la partie (les 30 dernières de chaque niveau, ramenées à un combi neuf) : il vise environ deux courses sur trois à temps avec un combi en parfait état. Un combi usé ou cabossée garde moins de marge.'],
       ['Pas le temps', 'un bouton dans le mini-jeu : une autre équipe y va, ni bonus ni malus. Pas joué du tout : l’Intervention se débrouille seule, et si elle échoue le risque de blessé est plus élevé que si tu étais venu (45 %).'],
-      ['Meilleurs scores', 'un classement par niveau (facile, normal, difficile), affiché à l’ouverture de l’urgence et sur la tuile Bitonal du Challenge. Seules les urgences comptent ; l’entraînement est hors classement.'],
+      ['Meilleurs scores', 'un classement par niveau (facile, normal, difficile), affiché à l’ouverture de l’urgence et sur la tuile Bitonal du Challenge. Les urgences du jour et les courses du Challenge comptent toutes les deux.'],
     ]],
     ['Dossier clos', [
       ['Le débrief d’affaire', 'le soir où une affaire se termine (arrestation, fuite, aveux ou classement), la Gazette propose « Dossier clos ». On y voit l’auteur et les pièces qui le désignaient, la planque et ses indices, la pièce qui écartait chaque innocent et qui l’a trouvée en premier, les fausses accusations, le coup de théâtre du jour 3 (juste ou piège), la part de chaque zone et la chronologie. Touche une pièce pour la relire.'],
