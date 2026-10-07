@@ -226,8 +226,19 @@ export async function createFirebaseBackend(config) {
     },
 
     subscribeRadio(cb) {
-      const q = F.query(col('radio'), F.orderBy('at', 'desc'), F.limit(40));
-      return F.onSnapshot(q, (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() })).reverse()), (e) => console.error(e));
+      // Les 40 derniers messages, plus toutes les annonces de la zone de non-droit / renforts des 30 dernières heures :
+      // sans ça, une annonce du matin sortait de la fenêtre des 40 et les autres zones ne la voyaient plus.
+      let recents = [], jour = [];
+      const envoyer = () => {
+        const par = new Map();
+        for (const m of [...jour, ...recents]) par.set(m.id, m);
+        cb([...par.values()].sort((a, b) => (a.at || 0) - (b.at || 0)));
+      };
+      const lire = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const u1 = F.onSnapshot(F.query(col('radio'), F.orderBy('at', 'desc'), F.limit(40)), (snap) => { recents = lire(snap); envoyer(); }, (e) => console.error(e));
+      const u2 = F.onSnapshot(F.query(col('radio'), F.where('at', '>=', Date.now() - 30 * 3600 * 1000)),
+        (snap) => { jour = lire(snap).filter((m) => m.nd || m.renfort); envoyer(); }, (e) => console.error(e));
+      return () => { u1(); u2(); };
     },
     async sendRadio(uid, texte, extra = {}) {
       await F.addDoc(col('radio'), { ...extra, uid, texte: String(texte).slice(0, 280), at: Date.now() });

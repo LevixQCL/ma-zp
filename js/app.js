@@ -325,11 +325,17 @@ async function openParty(id) {
       render();
     }, (e) => { S.lastError = e; if (S.state === undefined) bloque(e); });
   }
-  if (!unsubRadio) unsubRadio = S.backend.subscribeRadio((msgs) => { S.radio = msgs; if (S.route === 'radio') rerender(); else majPastilles(); });
+  if (!unsubRadio) unsubRadio = S.backend.subscribeRadio((msgs) => {
+    S.radio = msgs; if (S.route === 'radio') rerender(); else majPastilles();
+    // Rattrapage, une fois : des agents déjà validés dans la zone de non-droit mais jamais annoncés à la radio.
+    if (!rattrapageND) { rattrapageND = true; setTimeout(() => { if (S.savedOrders && !S.ordersDirty) annoncerNDAuto(true).catch((e) => console.warn(e)); }, 5000); }
+  });
   if (!unsubPrive && S.backend.subscribePrives) unsubPrive = S.backend.subscribePrives(S.user.uid, (msgs) => { S.prives = msgs; if (S.route === 'prive' && !champActif('prive-msg')) rerender(); else majPastilles(); });
   render();
   tick(true);
 }
+
+let rattrapageND = false;
 
 /** Maître du jeu : corrige une fois le jour de la Rampe ouverte à la main juste avant le calcul du 4 octobre. */
 let recalageFait = false;
@@ -1071,6 +1077,28 @@ async function validerOrdres() {
   const st = S.state;
   await S.backend.saveOrders(S.user.uid, st.season, st.turn, S.draft);
   S.savedOrders = JSON.parse(JSON.stringify(S.draft)); S.ordersDirty = false;
+  await annoncerNDAuto();
+}
+
+/** À la validation : la radio suit les agents réellement envoyés dans la zone de non-droit, sans bouton à toucher.
+ *  Sinon les autres zones ne voyaient pas qu'on y allait (seul notre propre écran l'affichait). */
+async function annoncerNDAuto(rattrapage = false) {
+  const st = S.state, z = myZone();
+  const ordres = rattrapage ? S.savedOrders : S.draft;
+  if (!st || !z || !st.nonDroit || !ordres || !S.backend.sendRadio) return;
+  const sect = ordres.secteurs || {};
+  const cles = new Set([...Object.keys(sect), ...Object.keys(st.nonDroit.secteurs || {})]);
+  for (const k of cles) {
+    if (!st.nonDroit.secteurs[k]) continue;
+    const n = sect[k] || 0, deja = monAnnonceND(k);
+    if (n === deja || (rattrapage && !n)) continue;
+    const texte = !n
+      ? `📻 ${z.nom} (ZP ${z.code}) ne va finalement pas à ${nomSecteur(k)} ce soir.`
+      : deja
+        ? `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) sera finalement à ${nomSecteur(k)} avec ${n} agent${n > 1 ? 's' : ''} ce soir.`
+        : `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) envoie ${n} agent${n > 1 ? 's' : ''} à ${nomSecteur(k)} ce soir.`;
+    try { await S.backend.sendRadio(S.user.uid, texte, { nd: { season: st.season, turn: st.turn, secteur: String(k), agents: n } }); } catch (e) { console.warn('Annonce radio non envoyée', e); }
+  }
 }
 
 /** Compteurs d'entraînement envoyés au serveur, pour le classement du maître du jeu. */
