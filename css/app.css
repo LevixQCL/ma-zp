@@ -777,12 +777,12 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 .mj-wrap { position: fixed; inset: 0; z-index: 60; background: var(--bg-deep); padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
 .mj-wrap { display: flex; flex-direction: column; }
 .mj-wrap iframe { display: block; width: 100%; flex: 1; min-height: 0; border: 0; }
-.mj-barre { flex: none; display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--bg-deep); border-bottom: 1px solid rgba(255, 255, 255, .08); }
-.mj-retour { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 20px 0 14px; border: none; border-radius: 999px; background: #F4F6FF; color: #0B1022; font: inherit; font-weight: 800; font-size: 16px; letter-spacing: .01em; cursor: pointer; box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .7), 0 0 0 3px rgba(244, 246, 255, .14); transition: transform .1s, background-color .15s; }
+.mj-barre { flex: none; display: flex; align-items: center; gap: 12px; padding: 6px 12px; background: var(--bg-deep); border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.mj-retour { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 18px 0 12px; border: none; border-radius: 999px; background: #F4F6FF; color: #0B1022; font: inherit; font-weight: 800; font-size: 15px; letter-spacing: .01em; cursor: pointer; box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .7), 0 0 0 3px rgba(244, 246, 255, .14); transition: transform .1s, background-color .15s; }
 .mj-retour:hover { background: #fff; }
 .mj-retour:active { transform: scale(.97); }
 .mj-retour:focus-visible { outline: 3px solid var(--amber-hi); outline-offset: 3px; }
-.mj-retour svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
+.mj-retour svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; }
 .mj-nom { flex: 1; min-width: 0; text-align: right; color: rgba(244, 246, 255, .6); font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body.mj-ouvert { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .inc-ouvert .inc-ico { animation: none; } }
