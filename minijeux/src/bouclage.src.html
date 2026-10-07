@@ -415,7 +415,12 @@ const HOOD=['#c0392b','#2e86c1','#27ae60','#d4a017','#8e44ad','#e67e22','#7f8c8d
 function addUnit(type,pi){ const F=FOES[type], hp=F.hp*R.cfg.hp*(VEH.has(type)?1:R.M.hp)*(R.cmd?CMD.hp:1)*(R.vHp||1)*(R.wave>WAVES.length?1+.06*(R.wave-WAVES.length):1);
   R.units.push({id:UID++,born:R.t,jit:Math.random(),type,pi,d:0,hp,max:hp,state:'go',slow:0,boost:false,somUntil:0,lo:type==='manif'||type==='casseur'?(Math.random()-.5)*.7:(Math.random()-.5)*.2,
     col:type==='casseur'?'#17181c':type==='meneur'?'#e8732a':pick(HOOD),flare:type==='casseur'&&Math.random()<.35,bob:Math.random()*6,ban:pick(['#c0392b','#d4a017','#2e86c1','#27ae60','#8e44ad','#e8e8e8'])});
-  if(!R.seen.has(type)){ R.seen.add(type); if(!R.tuto&&!R.sim) introFoe(type); }
+  if(!R.seen.has(type)){ R.seen.add(type); if(!R.tuto&&!R.sim){
+    // fiche « Nouveau dans le cortège » une seule fois par appareil (pas à chaque partie) ; ensuite, un véhicule de tête
+    // n'est plus annoncé que par un petit bandeau qui ne met pas la partie en pause
+    const vus=store.get('vus',[]), cle=type+':'+FOES[type].nom;
+    if(!vus.includes(cle)){ vus.push(cle); store.set('vus',vus); introFoe(type); }
+    else if(VEH.has(type)) Shell.toast(`${FOES[type].nom} en tête de cortège : barrage puis commandant pour négocier`,'bad'); } }
   return R.units[R.units.length-1];
 }
 /* Le car arrêté débarque ses supporters d'un coup, puis repart à vide. */
