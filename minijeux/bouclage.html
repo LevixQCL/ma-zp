@@ -250,7 +250,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .embed .hudrow .pillh{padding:3px 9px 3px 7px;font-size:12px}
 .embed .hudrow .pillh b{font-size:15px}
 .embed .hudrow .pillh svg{width:16px;height:16px}
-.embed .tip{min-height:0;font-size:12.5px;line-height:1.3;padding:5px 10px;border-radius:10px}
+.embed .tip{min-height:44px;font-size:12.5px;line-height:1.3;padding:5px 10px;border-radius:10px}
 .embed .btn.pw,.embed .btn.spd{padding:8px 11px;font-size:13.5px}
 .embed .btn.go{padding:9px 12px;font-size:14px}
 .embed .field canvas#cv{border-radius:12px}
@@ -1473,14 +1473,18 @@ function resize(){
   const f=$('field'), w=f.clientWidth, h=f.clientHeight; if(!w||!h||!R.M) return;
   const s=Math.min(w/MW,h/MH); C.s=s; C.dpr=Math.min(2,window.devicePixelRatio||1);
   const cw=Math.floor(MW*s), ch=Math.floor(MH*s), W=Math.round(cw*C.dpr), H=Math.round(ch*C.dpr);
-  if(C.cv.width!==W||C.cv.height!==H){ C.cv.style.width=cw+'px'; C.cv.style.height=ch+'px'; C.cv.width=W; C.cv.height=H; }
+  const autreCarte=C.mapFor!==R.M;
+  if(C.cv.width!==W||C.cv.height!==H){ C.cv.style.width=cw+'px'; C.cv.style.height=ch+'px'; C.cv.width=W; C.cv.height=H;
+    // Changer la taille du canevas l'efface : on redessine tout de suite (avec l'ancien décor étiré au besoin),
+    // sinon l'écran clignote en noir chaque fois que le texte d'aide change de hauteur.
+    if(!autreCarte&&C.map&&C.ctx) render(); }
   // Le décor est lourd à dessiner (surtout sur téléphone) : on ne le refait que si la carte ou la taille change,
-  // et après avoir laissé l'écran s'afficher.
-  if(C.mapFor===R.M&&C.mapW===W&&C.mapH===H) return;
-  C.mapFor=R.M; C.mapW=W; C.mapH=H; C.map=null; const M=R.M, pads=R.pads;
+  // et après avoir laissé l'écran s'afficher. Tant qu'il n'est pas prêt, l'ancien reste affiché (étiré).
+  if(!autreCarte&&C.mapW===W&&C.mapH===H) return;
+  C.mapFor=R.M; C.mapW=W; C.mapH=H; if(autreCarte) C.map=null; const M=R.M, pads=R.pads;
   clearTimeout(C.mt); C.mt=setTimeout(()=>{ if(C.mapFor!==M||C.mapW!==W||C.mapH!==H) return;
     const m=document.createElement('canvas'); m.width=W; m.height=H; const g=m.getContext('2d'); g.setTransform(s*C.dpr,0,0,s*C.dpr,0,0);
-    drawMap(g,M,pads); C.map=m; },R.sim?0:C.premier?30:350); C.premier=true;
+    drawMap(g,M,pads); C.map=m; },R.sim?0:!autreCarte?150:C.premier?30:350); C.premier=true;
 }
 function rng(seed){ let x=seed||1; return ()=>{ x=(x*16807)%2147483647; return (x-1)/2147483646; }; }
 function rr(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
@@ -1988,7 +1992,7 @@ function drawTower(g,tw,P,t){
 }
 function render(){
   const g=C.ctx; if(!C.map||!R.M) return; const s=C.s*C.dpr, rt=performance.now()/1000;
-  g.setTransform(1,0,0,1,0,0); g.drawImage(C.map,0,0); g.setTransform(s,0,0,s,0,0);
+  g.setTransform(1,0,0,1,0,0); g.drawImage(C.map,0,0,C.cv.width,C.cv.height); g.setTransform(s,0,0,s,0,0);
   // départs des cortèges
   R.M.P.forEach(P=>{ const a=P.pts[0], b=P.pts[1], x=Math.max(.35,Math.min(MW-.35,a[0])), y=Math.max(.35,Math.min(MH-.35,a[1])), on=Math.floor(rt*3)%2;
     g.globalCompositeOperation='lighter'; halo(g,x,y,1.1,1.1,'255,80,50',on?.3:.14); g.globalCompositeOperation='source-over'; });
