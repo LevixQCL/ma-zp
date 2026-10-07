@@ -1201,13 +1201,10 @@ function drawMap(g,M,pads){
   // 1. chaussée (au fond) : pavés rectangulaires en quinconce, joints sombres fins
   g.fillStyle='#121a2e'; g.fillRect(0,0,MW,MH);
   g.lineCap='butt'; g.lineJoin='round';
-  M.P.forEach(P=>{ g.strokeStyle='#33456a'; g.lineWidth=RD+.3; g.beginPath(); linePath(g,P); g.stroke(); });
+  M.P.forEach(P=>{ g.strokeStyle='#3a4c74'; g.lineWidth=RD+.3; g.beginPath(); linePath(g,P); g.stroke(); });
   { const [Mc,Mx]=layer(); Mx.lineJoin='round'; Mx.strokeStyle='#000'; M.P.forEach(P=>{ Mx.lineWidth=RD+.3; Mx.beginPath(); linePath(Mx,P); Mx.stroke(); });
-    const [Sc,S]=layer(); const tons=['#3a4a70','#3e4f76','#36466a','#42537a','#33425f'], lots=tons.map(()=>new Path2D()), BW=.27, BH=.135;
-    for(let y=-.1,row=0;y<MH+.2;y+=BH,row++) for(let x=-(row%2)*BW/2-.1;x<MW+.2;x+=BW){ if(D(x+BW/2,y+BH/2)>RD/2+.3) continue; lots[Math.floor(rnd()*lots.length)].rect(x,y,BW,BH); }
-    lots.forEach((P2,i)=>{ S.fillStyle=tons[i]; S.fill(P2); });
-    S.strokeStyle='rgba(16,24,44,.9)'; S.lineWidth=.017; lots.forEach(P2=>S.stroke(P2));
-    S.strokeStyle='rgba(150,175,225,.07)'; S.lineWidth=.01; S.save(); S.translate(0,.012); lots.forEach(P2=>S.stroke(P2)); S.restore();
+    const [Sc,S]=layer(); S.fillStyle='#3a4c74'; S.fillRect(0,0,MW,MH);
+    const r5=rng(57+(M.seed||0)); for(let i=0;i<420;i++){ S.fillStyle=`rgba(${r5()<.5?'12,18,34':'150,175,225'},.06)`; S.beginPath(); S.ellipse(r5()*MW,r5()*MH,.15+r5()*.45,.1+r5()*.25,0,0,7); S.fill(); }
     mask(S,Mc); put(Sc); }
   // ombre au pied des bordures (la chaussée est en contrebas)
   { const [Oc,O]=layer(); O.lineJoin='round'; O.strokeStyle='rgba(0,0,0,.45)'; M.P.forEach(P=>{ O.lineWidth=RD+.3; O.beginPath(); linePath(O,P); O.stroke(); });
@@ -1223,8 +1220,12 @@ function drawMap(g,M,pads){
     Tx.save(); Tx.lineJoin='round'; Tx.lineCap='round'; Tx.strokeStyle=Tx.fillStyle='#121b30';
     M.P.forEach(P=>{ Tx.lineWidth=RD+1.16; Tx.beginPath(); linePath(Tx,P); Tx.stroke(); });
     (pads||[]).forEach(p=>{ Tx.beginPath(); Tx.ellipse(p.x,p.y+.08,.65,.53,0,0,7); Tx.fill(); }); Tx.restore();
-    const [Fc,F]=layer(); F.fillStyle='#253350'; F.fillRect(0,0,MW,MH);
-    const r4=rng(91+(M.seed||0)); for(let i=0;i<260;i++){ F.fillStyle=`rgba(${r4()<.5?'10,16,30':'140,165,215'},.05)`; F.beginPath(); F.ellipse(r4()*MW,r4()*MH,.2+r4()*.5,.12+r4()*.3,0,0,7); F.fill(); }
+    const [Fc,F]=layer(); F.fillStyle='#2a3858'; F.fillRect(0,0,MW,MH);
+    { const tons=['#324163','#354568','#2f3d5e','#38486c','#2c3a59'], lots=tons.map(()=>new Path2D()), BW=.27, BH=.135, r4=rng(91+(M.seed||0));
+      for(let y=-.1,row=0;y<MH+.2;y+=BH,row++) for(let x=-(row%2)*BW/2-.1;x<MW+.2;x+=BW){ if(D(x+BW/2,y+BH/2)>RD/2+1.2) continue; lots[Math.floor(r4()*lots.length)].rect(x,y,BW,BH); }
+      lots.forEach((P2,i)=>{ F.fillStyle=tons[i]; F.fill(P2); });
+      F.strokeStyle='rgba(16,24,44,.9)'; F.lineWidth=.017; lots.forEach(P2=>F.stroke(P2));
+      F.strokeStyle='rgba(150,175,225,.07)'; F.lineWidth=.01; F.save(); F.translate(0,.012); lots.forEach(P2=>F.stroke(P2)); F.restore(); }
     mask(F,Pc); Tx.save(); Tx.setTransform(1,0,0,1,0,0); Tx.drawImage(Fc,0,0); Tx.restore(); }
   const Wm=routeMask(RD+.02), We=routeMask(RD+.2);
   // face avant (sombre) du plateau, visible au-dessus de la chaussée
