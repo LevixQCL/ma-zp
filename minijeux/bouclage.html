@@ -547,26 +547,26 @@ const T4=[[4.5,4],[4.5,8],[6.8,8],[6.8,11.2],[4.5,11.2],[4.5,14.7]];
 const MAPS=[
   {nom:'Place du Marché',sous:'1 cortège',hp:1.8,w:[1],
     paths:[[[1.5,-.6],[1.5,2.6],[7.5,2.6],[7.5,5.6],[1.5,5.6],[1.5,8.6],[7.5,8.6],[7.5,11.6],[4.5,11.6],[4.5,14.7]]]},
-  {nom:'Quartier de la Gare',sous:'2 cortèges',hp:2.15,w:[1,1],
+  {nom:'Quartier de la Gare',sous:'2 cortèges',hp:2.0,w:[1,1],
     paths:[[[1.5,-.6],[1.5,3.5],...T2],[[7.5,-.6],[7.5,3.5],...T2]]},
-  {nom:'Grand-Place',sous:'2 cortèges, dont un par le côté',hp:2.45,w:[1,1],
+  {nom:'Grand-Place',sous:'2 cortèges, dont un par le côté',hp:2.2,w:[1,1],
     paths:[[[4.5,-.6],[4.5,2],[1.5,2],[1.5,6],...T3],[[9.7,3.5],[7.5,3.5],[7.5,6],...T3]]},
-  {nom:'Abords du stade',sous:'3 cortèges',hp:1.7,w:[1,1,.6],
+  {nom:'Abords du stade',sous:'3 cortèges',hp:1.4,w:[1,1,.6],
     paths:[[[1.5,-.6],[1.5,4],...T4],[[7.5,-.6],[7.5,4],...T4],[[-.7,8.6],[2.4,8.6],[2.4,11.2],[4.5,11.2],[4.5,14.7]]]}];
 
 /* Moyens de maintien de l'ordre. dps = perte de détermination par seconde selon le type d'émeutier. */
 const MEANS={
-  peloton:{nom:'Peloton MO',cout:5,range:1.8,dps:{manif:10,casseur:8,meneur:7,bloc:5},
-    ds:'Les agents descendent sur la chaussée et <b>retiennent</b> chacun un émeutier au bouclier. Plus de boucliers à chaque niveau.'},
+  peloton:{nom:'Peloton MO',cout:5,range:1.8,dps:{manif:14,casseur:11,meneur:10,bloc:7},
+    ds:'Les agents descendent sur la chaussée et <b>retiennent</b> chacun un émeutier au bouclier. Un agent de plus à chaque niveau.'},
   autopompe:{nom:'Lance à eau / autopompe',cout:9,range:2.1,splash:.8,dmg:15,cd:1.6,recul:.45,mult:{manif:1,casseur:.8,meneur:.8,bloc:1.6},
     ds:'Jet d’eau sur un groupe : <b>fait reculer</b> tout le monde autour et laisse une <b>flaque glissante</b>.'},
   barrage:{nom:'Barrage (combi + barrières)',cout:6,range:1.8,
-    ds:'Barrières Heras en travers de la rue : elles <b>bloquent</b> le cortège jusqu’à céder. Les agents du combi les relèvent ensuite.'},
+    ds:'Barrières en travers de la rue : elles <b>bloquent</b> le cortège jusqu’à céder, puis le combi les relève. Niveau 3 : <b>cheval de frise</b>, bien plus solide, ses barbelés découragent ceux qui poussent.'},
   cavalerie:{nom:'Cavalerie',cout:8,range:2.6,cd:[4,3.3,2.6],choc:{manif:16,casseur:20,meneur:28,bloc:10},
     ds:'<b>Charge</b> dans le groupe le plus dense (meneurs en priorité) : fait reculer et décourage.'}};
 const LV={dmg:[1,1.5,2.1],rng:[0,.2,.35],cout:[0,.8,1.2]};
-const UPTXT={peloton:['','Section (3 boucliers)','Peloton complet (5 boucliers)'],autopompe:['','Deux lances à eau','Camion autopompe'],
-  barrage:['','Barrières doublées','Barrage lourd (relevé plus vite)'],cavalerie:['','Deux cavaliers','Escouade montée']};
+const UPTXT={peloton:['','Deux agents MO','Trois agents MO'],autopompe:['','Deux lances à eau','Camion autopompe'],
+  barrage:['','Deux barrières Heras','Cheval de frise (barbelés)'],cavalerie:['','Deux cavaliers','Escouade montée']};
 /* Émeutiers : détermination, vitesse (cases/s), agents récupérés quand ils renoncent, tenue du cordon perdue s'ils passent. */
 const FOES={
   manif:{nom:'Émeutier',hp:24,v:.9,gain:1,vies:1,ds:'Avance en masse. Le <b>peloton MO</b> en repousse plusieurs à la fois.'},
@@ -660,15 +660,16 @@ function upos(u){ const P=R.M.P[u.pi], p=posOn(P,u.d), o=u.lo*(u.state==='flee'?
    Casseurs : lancent des projectiles sur les barrières et les agents. */
 function blocksFor(x,y){ const out=[]; R.M.P.forEach((P,pi)=>{ const n=nearestOn(P,x,y); if(n.dist<.3) out.push({pi,d:n.d}); }); return out; }
 function blockOn(tw,pi){ const b=tw.block&&tw.block.find(b=>b.pi===pi); return b?b.d:null; }
-const BAR_HP=[150,260,400], BAR_RELEVE=[8,6,4.5];
+const BAR_HP=[150,260,520], BAR_RELEVE=[8,6,5];
 const PUSH={manif:3,casseur:4,meneur:2,bloc:24};          // poussée sur une barrière (points/s)
 const STRAIN={manif:5,casseur:6,meneur:4,bloc:22};        // usure de l'endurance d'un agent MO au contact (points/s)
-const AGENTS=[2,3,5], ENDU=[70,85,100];
+const AGENTS=[1,2,3], ENDU=[100,115,130];
 function setupTower(tw,id){
   const P=padOf(id);
   if(tw.type==='barrage'){ const mx=BAR_HP[tw.lvl-1]*(1-.25*R.usure); tw.bar=tw.bar||{hp:mx,up:true,downAt:0}; tw.bar.max=mx; if(tw.bar.up) tw.bar.hp=mx; }
   if(tw.type==='peloton'){ tw.agents=tw.agents||[]; const n=AGENTS[tw.lvl-1], mx=ENDU[tw.lvl-1];
     while(tw.agents.length<n) tw.agents.push({x:P.x,y:P.y,e:mx,st:'ready',u:null,until:0});
+    if(R.phase!=='run') tw.agents.forEach((a,i)=>{ const sl=slotOf(tw,i); a.x=sl.x; a.y=sl.y; });
     tw.agents.forEach(a=>{ a.max=mx; if(a.st!=='back') a.e=Math.max(a.e,mx*.6); }); }
 }
 function slotOf(tw,i){ const n=tw.agents.length, w=Math.min(.24,.84/Math.max(1,n-1)), o=(i-(n-1)/2)*w, r=(i%2?.14:-.06); return {x:tw.rx-Math.sin(tw.rang)*o+Math.cos(tw.rang)*r, y:tw.ry+Math.cos(tw.rang)*o+Math.sin(tw.rang)*r}; }
@@ -702,7 +703,7 @@ function step(dt){
     u.d=nd; if(u.d>=R.M.P[u.pi].len) leak(u); }
   // poussée sur les barrières
   for(const u of live){ if(!u.atBar||u.alive===false) continue; const tw=R.towers[u.atBar]; if(!tw||!tw.bar.up) continue;
-    tw.bar.hp-=PUSH[u.type]*(u.boost?1.3:1)*dt;
+    tw.bar.hp-=PUSH[u.type]*(u.boost?1.3:1)*dt; if(tw.lvl>2) hit(u,4*dt);
     if(tw.bar.hp<=0){ tw.bar.up=false; tw.bar.hp=0; tw.bar.downAt=R.t; fx(tw.rx,tw.ry,'Barrières renversées !','bad'); Shell.bad(); if(!R.sim) Shell.shake(); } }
   // moyens
   for(const [id,tw] of towers){ const M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw), k=LV.dmg[tw.lvl-1]*((tw.type==='autopompe'||tw.type==='barrage')?1-.25*R.usure:1);
@@ -1124,16 +1125,33 @@ function drawHorses(g,tw,f,t,galop){ const pos=tw.lvl===1?[[0,0]]:tw.lvl===2?[[-
   pos.forEach(([x,y],i)=>{ g.save(); g.translate(x,y); if(!sprite(g,'cav',galop?Math.floor(t*7+i)%2:0,.95,f<0)) horseRider(g,f,t*(galop?9:2)+i); g.restore(); }); }
 function chargePos(tw,P){ const c=tw.charge, k=(R.t-c.t0)/c.dur, e=x=>x*x*(3-2*x);
   const u=k<.42?e(k/.42):1-e((k-.42)/.58), x=P.x+(c.x-P.x)*u, y=P.y+(c.y-P.y)*u; return {x,y,f:(k<.42?c.x-P.x:P.x-c.x)>=0?1:-1}; }
+function frise(g,cx,cy,ang,down,rt,L=.5){ // cheval de frise : croisillons métalliques et barbelés, en travers de la rue
+  const px=-Math.sin(ang), py=Math.cos(ang);
+  g.save(); if(down){ g.globalAlpha=.8; }
+  const ax=cx-px*L, ay=cy-py*L, bx=cx+px*L, by=cy+py*L, H=down?.12:.4;
+  g.fillStyle='rgba(0,0,0,.4)'; g.beginPath(); g.ellipse(cx+.03,cy+.03,Math.abs(px)*L+.12,Math.abs(py)*L*.6+.08,0,0,7); g.fill();
+  for(let i=0;i<=4;i++){ const k=i/4, x=ax+(bx-ax)*k, y=ay+(by-ay)*k;
+    g.strokeStyle='#6b7280'; g.lineWidth=.035; g.beginPath(); g.moveTo(x-.12,y); g.lineTo(x+.06,y-H); g.moveTo(x+.12,y); g.lineTo(x-.06,y-H); g.stroke(); }
+  g.strokeStyle='#8a929e'; g.lineWidth=.04; g.beginPath(); g.moveTo(ax,ay-H*.55); g.lineTo(bx,by-H*.55); g.stroke();
+  g.strokeStyle='rgba(205,212,222,.75)'; g.lineWidth=.012;
+  for(let k=0;k<=1.001;k+=.07){ const x=ax+(bx-ax)*k, y=ay+(by-ay)*k-H*.55; g.beginPath(); g.ellipse(x,y,.06,H*.32,.4,0,7); g.stroke(); }
+  g.restore(); }
 function drawBarrier(g,tw,rt){
-  const b=tw.bar, vert=Math.abs(Math.sin(tw.rang))>.7, px=-Math.sin(tw.rang), py=Math.cos(tw.rang), ax=Math.cos(tw.rang), ay=Math.sin(tw.rang);
-  const rows=tw.lvl>1?[0,.22]:[0], dmg=b.up?1-b.hp/b.max:0, shake=b.up&&dmg>0?Math.sin(rt*28)*.012*(1+dmg*2):0;
-  rows.forEach(ro=>[-.27,.27].forEach((o,i)=>{ const cx=tw.rx+px*o+ax*ro, cy=tw.ry+py*o+ay*ro;
+  const b=tw.bar, vert=Math.abs(Math.sin(tw.rang))>.7, px=-Math.sin(tw.rang), py=Math.cos(tw.rang);
+  const dmg=b.up?1-b.hp/b.max:0, shake=b.up&&dmg>0?Math.sin(rt*28)*.012*(1+dmg*2):0;
+  if(tw.lvl>2){ g.save(); g.translate(shake,0); const S=spr('frise');
+      // toujours dessiné de face pour rester lisible ; sur une rue horizontale, deux éléments empilés couvrent la largeur
+      const offs=vert?[0]:[-.24,.24];
+      offs.forEach(o=>{ if(S.ok&&b.up){ g.save(); g.translate(tw.rx,tw.ry+o+.08); sprite1(g,'frise',vert?.55:.45,false); g.restore(); }
+        else frise(g,tw.rx,tw.ry+o+.05,Math.PI/2,!b.up,rt,vert?.5:.34); });
+      g.restore(); }
+  else (tw.lvl===1?[0]:[-.27,.27]).forEach((o,i)=>{ const cx=tw.rx+px*o, cy=tw.ry+py*o;
     g.save(); g.translate(cx+shake,cy+.06);
     if(!b.up){ g.globalAlpha=.85; g.scale(1,.3); g.rotate(i?.2:-.15); }
     else if(dmg>.4) g.rotate((i?1:-1)*dmg*.12);
-    if(!vert&&b.up) g.scale(.5,1);
+    if(!vert&&b.up) g.scale(.8,.8);
     const ok=sprite(g,'heras',0,.66,i===1); g.restore();
-    if(!ok) heras(g,cx,cy,tw.rang+Math.PI/2); }));
+    if(!ok) heras(g,cx,cy,tw.rang+Math.PI/2); });
   if(b.up&&b.hp<b.max){ const w=.6,f=b.hp/b.max; g.fillStyle='rgba(0,0,0,.75)'; rr(g,tw.rx-w/2-.025,tw.ry-.92,w+.05,.1,.04); g.fill(); g.fillStyle=f>.5?'#62b0ff':f>.25?'#ffd166':'#ff4d5e'; rr(g,tw.rx-w/2,tw.ry-.895,w*f,.05,.025); g.fill(); }
   if(!b.up){ const k=Math.min(1,(R.t-b.downAt)/BAR_RELEVE[tw.lvl-1]); g.strokeStyle='rgba(98,176,255,.9)'; g.lineWidth=.05; g.beginPath(); g.arc(tw.rx,tw.ry-.5,.16,-Math.PI/2,-Math.PI/2+k*Math.PI*2); g.stroke();
     g.fillStyle='#cfe4ff'; g.font='800 .13px "Instrument Sans",sans-serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(k<1?'…':'!',tw.rx,tw.ry-.5); }
@@ -1278,7 +1296,7 @@ Shell.init({
   // Challenge : on enchaîne les quartiers, puis les cortèges deviennent plus déterminés et plus serrés.
   niveau(n,cfg){ cfg.map=(n-1)%MAPS.length; cfg.waves=n<=2?4:n<=4?5:6; return cfg; },
   onInit(){
-    C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); spr('lance'); R.M=MAPDATA[0]; R.pads=R.M.pads;
+    C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); spr('lance'); spr('frise'); R.M=MAPDATA[0]; R.pads=R.M.pads;
     resize(); new ResizeObserver(resize).observe($('field'));
     if(document.fonts) document.fonts.ready.then(resize);
     C.cv.addEventListener('pointerdown',onTap);
