@@ -89,7 +89,7 @@ function primeSemaine() {
   </details>`;
 }
 
-/** Entraînement aux mini-jeux : une affiche par jeu (image du jeu, ta progression, le record), lancée directement. */
+/** Entraînement aux mini-jeux : une ligne illustrée par jeu (image du jeu, record, ton niveau), lancée directement. */
 function entrainementMiniJeux() {
   const moi = S.user && S.user.uid;
   const primes = new Set(laureatsProvisoires().filter((l) => l.uid === moi).map((l) => l.jeu));
@@ -100,20 +100,18 @@ function entrainementMiniJeux() {
       const niv = ['difficile', 'normal', 'facile'].find((k) => recordBitonal(k)) || 'normal';
       const r = recordBitonal(niv); mien = monScoreBitonal(niv); rec = r ? r.score : 0; qui = r ? (r.uid === moi ? 'Toi' : r.nom.replace(/^ZP \d+ /, '')) : null; unite = '';
     } else { const r = recordDefi(m.jeu); mien = monRecordDefi(m.jeu); rec = r ? r.niveau : 0; qui = r ? (r.uid === moi ? 'Toi' : r.nom) : null; }
-    const pct = rec ? Math.max(mien ? 4 : 0, Math.min(100, Math.round((mien / rec) * 100))) : 0;
     const nomi = qui ? `<span class="nominette${qui === 'Toi' ? ' moi' : ''}">🏆 ${esc(qui)} · ${unite}${nb(rec)}</span>` : '<span class="nominette vide">🏆 libre</span>';
     const svc = SERVICE_LABELS[m.service] || (m.service === 'labo' ? 'Labo' : 'RCCU');
-    return `<button type="button" class="aff" data-action="mj-train" data-j="${m.jeu}" style="--c:${COUL_MJ[m.service] || '#63B0FF'}" aria-label="${esc(m.nom)} (${esc(svc)})">
-      <img src="img/challenge/${m.jeu}.jpg" alt="" loading="lazy" decoding="async">
-      <span class="aff-sv">${esc(svc)}</span>${primes.has(m.jeu) ? '<span class="aff-prime" title="Tu tiens la prime de la semaine sur ce jeu">€</span>' : ''}
-      <span class="aff-b"><span class="aff-n">${esc(m.nom)}</span><span class="aff-bar"><i style="width:${pct}%"></i></span>
-      <span class="aff-r"><span>toi <b>${mien ? unite + nb(mien) : '—'}</b></span>${nomi}</span></span></button>`;
+    return `<button type="button" class="lgn" data-action="mj-train" data-j="${m.jeu}" style="--c:${COUL_MJ[m.service] || '#63B0FF'}" aria-label="${esc(m.nom)} (${esc(svc)})">
+      <img src="img/challenge/${m.jeu}.jpg" alt="" loading="lazy" decoding="async">${primes.has(m.jeu) ? '<span class="aff-prime" title="Tu tiens la prime de la semaine sur ce jeu">€</span>' : ''}
+      <span class="lgn-t"><span class="lgn-n">${esc(m.nom)}</span><span class="lgn-sv">${esc(svc)}</span>${nomi}</span>
+      <span class="lgn-moi${qui === 'Toi' ? ' top' : ''}"><b>${mien ? nb(mien) : '—'}</b><span>${m.jeu === 'bitonal' ? 'points' : 'ton niv.'}</span></span></button>`;
   };
   const inc = MINI_JEUX.filter((m) => !['labo', 'rccu'].includes(m.service)), pjf = MINI_JEUX.filter((m) => ['labo', 'rccu'].includes(m.service));
   return `<section class="col" aria-label="Mini-jeux" style="gap:10px">
     ${primeSemaine()}
-    <span class="tr-grp">Incidents du jour</span><div class="aff-g">${inc.map(affiche).join('')}</div>
-    <span class="tr-grp">Appui PJF à l’enquête</span><div class="aff-g">${pjf.map(affiche).join('')}</div>
+    <span class="tr-grp">Incidents du jour</span><div class="lgn-l">${inc.map(affiche).join('')}</div>
+    <span class="tr-grp">Appui PJF à l’enquête</span><div class="lgn-l">${pjf.map(affiche).join('')}</div>
   </section>`;
 }
 

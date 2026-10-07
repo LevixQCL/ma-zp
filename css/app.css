@@ -1544,22 +1544,21 @@ div.db-cle { cursor: default; }
 .prime-q { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; border: 1.5px solid rgba(255, 194, 77, .6); color: #FFC24D; font-weight: 700; font-size: 12px; }
 .prime-chal[open] .prime-q { background: rgba(255, 194, 77, .2); color: #fff; }
 .prime-c { display: flex; flex-direction: column; gap: 6px; padding: 0 12px 12px; }
-/* Challenge : une affiche par mini-jeu (image du jeu, progression, record) */
-.aff-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
-.aff { --c: var(--amber); position: relative; display: block; aspect-ratio: 5 / 6; padding: 0; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: var(--surface2); color: var(--text); font: inherit; text-align: left; cursor: pointer; box-shadow: 0 8px 20px rgba(0, 0, 0, .35); transition: transform .12s, border-color .15s; }
-.aff:active { transform: scale(.97); }
-.aff:hover, .aff:focus-visible { border-color: var(--c); }
-.aff img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.aff::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6, 9, 20, 0) 35%, rgba(6, 9, 20, .78) 62%, rgba(6, 9, 20, .97)); pointer-events: none; }
-.aff-sv { position: absolute; z-index: 1; top: 8px; left: 8px; padding: 3px 8px; border-radius: 999px; font: 700 10px var(--body); letter-spacing: .05em; text-transform: uppercase; background: rgba(6, 9, 20, .75); color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 50%, transparent); }
-.aff-prime { position: absolute; z-index: 1; top: 7px; right: 7px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 800 11px var(--body); color: #3a2500; background: linear-gradient(180deg, #FFE08A, #E3A12E); box-shadow: 0 0 10px rgba(255, 194, 77, .6); }
-.aff-b { position: absolute; z-index: 1; left: 10px; right: 10px; bottom: 9px; display: grid; gap: 5px; }
-.aff-n { font: 800 15.5px var(--display, var(--body)); line-height: 1.08; text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
-.aff-bar { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .16); overflow: hidden; }
-.aff-bar i { display: block; height: 100%; background: var(--c); }
-.aff-r { display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 11px; color: #c9d1e8; white-space: nowrap; }
-.aff-r b { font-size: 12.5px; color: #fff; }
-.aff-r .nominette { margin: 0; font-size: 9.5px; padding: 2px 5px; min-width: 0; }
+/* Challenge : une ligne illustrée par mini-jeu (image du jeu, record, ton niveau) */
+.lgn-l { display: grid; gap: 8px; }
+.lgn { --c: var(--amber); position: relative; display: grid; grid-template-columns: 96px 1fr auto; gap: 11px; align-items: center; width: 100%; padding: 6px; border-radius: 15px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: transform .12s, border-color .15s; }
+.lgn:active { transform: scale(.98); }
+.lgn:hover, .lgn:focus-visible { border-color: var(--c); }
+.lgn img { width: 96px; height: 72px; border-radius: 10px; object-fit: cover; display: block; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1); }
+.lgn-t { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+.lgn-n { font: 800 15px var(--display, var(--body)); line-height: 1.1; }
+.lgn-sv { font-size: 11px; font-weight: 600; color: var(--c); margin: 2px 0 5px; }
+.lgn-t .nominette { margin: 0; }
+.lgn-moi { text-align: right; padding-right: 6px; }
+.lgn-moi b { display: block; font: 800 20px var(--display, var(--body)); }
+.lgn-moi span { font-size: 10.5px; color: var(--muted); }
+.lgn-moi.top b { color: var(--green-soft, #3DD39A); }
+.aff-prime { position: absolute; z-index: 1; top: -5px; left: -5px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 800 11px var(--body); color: #3a2500; background: linear-gradient(180deg, #FFE08A, #E3A12E); box-shadow: 0 0 10px rgba(255, 194, 77, .6); }
 .prime-t { font: 700 13.5px var(--body); color: #FFD27A; }
 .prime-l { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
 .prime-l li { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; }

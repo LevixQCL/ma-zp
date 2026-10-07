@@ -14,7 +14,7 @@ export const NOTE_MAJ = {
   // Liste complète, dans le menu Nouveautés.
   sections: [
     ['Challenge et écrans des mini-jeux', [
-      ['Challenge en affiches', 'chaque mini-jeu a sa tuile avec une image du jeu, ton meilleur niveau, une barre jusqu’au record et la nominette du détenteur. Une pièce € marque les jeux où tu tiens la prime de la semaine ; la prime tient en un bandeau (touche-le pour le détail).'],
+      ['Challenge illustré', 'une ligne par mini-jeu avec une image du jeu, la nominette du record et ton meilleur niveau en gros. Une pièce € marque les jeux où tu tiens la prime de la semaine ; la prime tient en un bandeau (touche-le pour le détail).'],
       ['Plus de place pour jouer', 'dans Ma ZP, l’en-tête des mini-jeux tient sur une ligne et la barre « Retour à ma zone » est plus fine : le jeu gagne de la hauteur sur téléphone.'],
       ['Maintien de l’ordre', 'carte plus grande, plus d’écran noir ni de carte qui rétrécit à chaque toucher, et une fiche de début de partie (quartier, météo, consignes, record) qui reste affichée jusqu’à la première vague.'],
     ]],
