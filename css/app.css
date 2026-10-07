@@ -1536,3 +1536,23 @@ div.db-cle { cursor: default; }
 @keyframes hp-fumee { 0% { transform: translate(0, 0) scale(.6); opacity: .8; } 100% { transform: translate(4px, -10px) scale(1.4); opacity: 0; } }
 .hp-fumee { animation: hp-fumee 2.8s ease-out infinite; transform-box: fill-box; transform-origin: center; }
 @media (prefers-reduced-motion: reduce) { .hp-bulles, .hp-flotte, .hp-pivote, .hp-manivelle, .hp-volant, .hp-clignote, .hp-fumee { animation: none; } }
+
+/* Bilan de saison : une de Gazette en tête, imprévus à remettre en état ou à accepter */
+.card.bilan { display: flex; flex-direction: column; gap: 12px; }
+.bil-une { background: var(--paper); color: var(--ink); border-radius: 14px; padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; }
+.bil-ed { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--press); font-weight: 700; border-bottom: 1px solid var(--paper-rule); padding-bottom: 5px; }
+.bil-titre { font-family: var(--serif); font-size: 22px; line-height: 1.15; margin: 0; color: var(--ink); text-wrap: balance; }
+.bil-chapo { margin: 0; font-size: 14px; color: var(--ink2); }
+.bil-jauge { position: relative; height: 10px; border-radius: 5px; background: var(--paper2); border: 1px solid var(--paper-rule); margin-top: 4px; }
+.bil-jauge i { position: absolute; inset: 0 auto 0 0; background: var(--ink); border-radius: 5px; }
+.bil-jauge b { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--press); }
+.bil-cas { display: grid; grid-template-columns: 44px 1fr; gap: 10px; padding: 12px; border-radius: 14px; background: var(--surface2); border: 1px solid var(--hair); }
+.bil-cas > .rel-choix, .bil-cas > p { grid-column: 1 / -1; }
+.bil-cas.paye { border-color: rgba(61, 211, 154, .5); }
+.bil-cas.accepte { opacity: .8; }
+.bil-ic { width: 44px; height: 44px; border-radius: 12px; background: var(--amber-bg); color: var(--amber); display: grid; place-items: center; }
+.bil-ic svg { width: 26px; height: 26px; }
+.bil-eff { align-self: start; font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: var(--red-bg); color: var(--red-soft); width: fit-content; }
+.bil-cas.paye .bil-eff { background: rgba(61, 211, 154, .12); color: var(--green-soft); }
+.card.bilan .dil-btn[aria-pressed="true"] { border-color: var(--amber); background: var(--amber-bg); box-shadow: 0 0 0 3px rgba(255, 178, 63, .2); }
+.card.bilan .dil-btn:disabled { opacity: .45; cursor: not-allowed; }

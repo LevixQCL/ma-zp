@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 97;
+export const APP_VERSION = 98;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -388,8 +388,8 @@ export const ENTRETIEN_ANNEXE = 0.3;     // k€ par tour et par annexe (salle d
 // Péréquation : une zone nettement moins équipée que la moyenne du district reçoit un coup de pouce.
 export const PEREQUATION = { ecart: 2, montant: 1.5 };
 
-// Héritage de fin de saison : ce qui est conservé (niveaux baissés de HERITAGE_PERTE, minimum 1).
-// Le budget, les effectifs, les véhicules, le moral et le reste repartent des valeurs de départ.
+// Héritage de fin de saison : voir bilan.js (Bilan de saison, cas calculés sur la moyenne du district).
+// Ancienne règle (jusqu'à la v. du bilan) : formations et bâtiments −1, matériel remis à 1.
 export const HERITAGE_PERTE = 1;
 
 /** Tour où une décision prise au tour `turn` produira son effet (null = immédiat). */

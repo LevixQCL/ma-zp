@@ -94,7 +94,7 @@ function regleActuelle(z) {
  */
 function bilan(z, moy, P, rng) {
   const pts = points(z);
-  const nb = Math.round(P.part * pts + P.surplus * Math.max(0, pts - moy.total));
+  const nb = Math.min(Math.round(0.6 * pts), Math.round(P.part * pts + P.surplus * Math.max(0, pts - moy.total)));
   const etat = items(z).map((it) => ({ ...it, pris: 0 }));
   const cas = [];
   for (let i = 0; i < nb; i++) {

@@ -3,15 +3,22 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-07-commandant-gaz',
+  id: '2026-10-07-bilan-saison',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
+    ['📰', 'Fin de saison : le Bilan de saison', 'fini le « −1 partout » et le matériel remis à zéro. Tu gardes tes formations, ton matériel et tes bâtiments, mais quelques imprévus t’attendent : départs à la pension, drone écrasé, toiture qui fuit… Tu choisis lesquels remettre en état.'],
     ['⭐', 'Maintien de l’ordre : le commandant monte en grade', 'novice, il se replie au moindre contact ; envoie-le là où ça chauffe et il devient une vraie légende du MO (5 niveaux). Un émeutier isolé t’échappe ? Envoie-le le chercher : il le gaze et le retient.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Bilan de saison', [
+      ['Ce que tu gardes', 'formations, matériel (il n’est plus remis au niveau 1), bâtiments, annexes, parc, équipe, skins et trophées. Budget, effectifs et moral repartent toujours des valeurs de départ.'],
+      ['Les imprévus', 'chacun retire un niveau : départs à la pension ou mutations (formation), matériel cassé ou recalé au contrôle, bâtiment à entretenir. Leur nombre vaut environ un tiers des niveaux gagnés depuis le départ, plus une bonne part de ce qui dépasse la moyenne du district (jamais plus de 60 %). Ils tombent d’abord sur ce qui est le plus au-dessus de la moyenne, au plus 2 niveaux par élément ; l’hôtel de police ne redescend jamais sous 4 une fois atteint.'],
+      ['Remettre en état', 'pendant les 3 premiers soirs de la nouvelle saison, depuis la carte « Bilan de saison » de l’HP : la moitié de tes imprévus peut être remise en état, à moitié prix du niveau (payé à 20:00). « Accepter tout le reste » en un clic ; sans réponse au 3e soir, tout est accepté.'],
+      ['Équilibre', 'simulé sur 16 parties de 12 zones : environ 50 % des niveaux gagnés perdus au lieu de 85 % (55 % pour les zones très développées, 35 % pour les petites et les retardataires, qui perdaient presque tout) ; l’écart entre le premier et le dernier la saison suivante est inchangé.'],
+    ]],
     ['Maintien de l’ordre : niveaux du commandant', [
       ['Comment jouer', 'nouveau bouton sur l’écran de départ du mini-jeu : un guide illustré (but, moyens, agents) avec tout ce que sait faire le commandant.'],
       ['Comment il progresse', 'pendant la partie, il gagne de l’expérience pour chaque émeutier repoussé dans son cercle (posté, pas en marche) ou par son mégaphone, et pour chaque véhicule dont il négocie le départ. Ses étoiles et sa barre d’expérience s’affichent au-dessus de sa tête.'],

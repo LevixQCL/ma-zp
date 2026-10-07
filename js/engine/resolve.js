@@ -6,9 +6,10 @@ import { RELEVE, lireOrdresReleve, releveResoudre, releveNuit } from './releve.j
 import { lireOrdresCrise, crisePre, criseZone, crisePost } from './crise.js';
 import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
+import { BILAN, moyennesDistrict, calculerBilan, appliquerBilan, lireOrdresBilan, resoudreBilan } from './bilan.js';
 import {
   APP_VERSION, NIVEAU_MAX, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, HERITAGE_PERTE, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue , PREPA } from './constants.js';
+  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue , PREPA } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
 import { jourBe } from './time.js';
@@ -205,7 +206,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.rapport = [];
     if (orders[uid]) {
       ord[uid] = sanitizeOrders(z, orders[uid], state);
-      Object.assign(ord[uid], lireOrdresReleve(orders[uid]), lireOrdresCrise(orders[uid]));
+      Object.assign(ord[uid], lireOrdresReleve(orders[uid]), lireOrdresCrise(orders[uid]), lireOrdresBilan(orders[uid]));
       if (z.toursSansOrdres >= 3) z._retour = z.toursSansOrdres; // retour d'absence (accueilli par le Directeur)
       z.toursSansOrdres = 0;
       z.dernierOrdre = { alloc: ord[uid].alloc, rythme: ord[uid].rythme, patrouilles: ord[uid].patrouilles || {}, secteurs: ord[uid].secteurs || {} };
@@ -231,6 +232,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     ouvrirJournal(z);
   }
   const jalonTous = (label) => { for (const u of uids) jalon(state.zones[u], label); };
+
+  // Bilan de fin de saison : remises en état payées ce soir (avant tout le reste, elles servent dès ce soir).
+  for (const u of uids) resoudreBilan(state.zones[u], ord[u], T);
 
   // Relations entre zones : pactes, défis amicaux, coup de main, Conseil.
   pactesPre(state, uids, ord, push, T);
@@ -1140,13 +1144,13 @@ function finDeSaison(state, classement) {
   state.evenement = null;
   state.nonDroit = creerNonDroit(state.seed, state.season);
   state.fipas = []; state.traques = []; state.fipaPaires = {}; state.duels = []; state.postes = []; state.pactes = []; state.defis = []; state.conseil = null; state.theme = null; state.motionsChef = [];
+  // Bilan de saison : les pertes dépendent de ce que chaque zone a gagné et de la moyenne du district.
+  const moy = moyennesDistrict(zones);
   for (const [uid, z] of Object.entries(state.zones)) {
-    // Héritage : formations et bâtiments baissent d'un niveau, les annexes restent.
-    const baisse = (n) => Math.max(1, (n || 1) - HERITAGE_PERTE);
-    const niveaux = Object.fromEntries(SERVICES.map((s) => [s, baisse(z.niveaux && z.niveaux[s])]));
-    const nz = newZone({ uid, code: z.code, nom: z.nom, couleur: z.couleur }, 1, { ps: z.ps, badges: z.badges, titres: z.titres, faillites: z.faillites, niveaux, arrivee: z.arrivee || 0 });
-    const b = z.batiments || {};
-    nz.batiments = { bureaux: baisse(b.bureaux), garage: baisse(b.garage) };
+    const bilan = calculerBilan(z, moy, `${state.seed}:bilan:${oldSeason}:${uid}`);
+    const nz = newZone({ uid, code: z.code, nom: z.nom, couleur: z.couleur }, 1, { ps: z.ps, badges: z.badges, titres: z.titres, faillites: z.faillites, arrivee: z.arrivee || 0 });
+    appliquerBilan(nz, z, bilan);
+    nz.bilan = { season: oldSeason, gagnes: bilan.gagnes, moyenne: bilan.moyenne, cas: bilan.cas, fin: BILAN.tours, clos: !bilan.cas.length };
     nz.infra = { ...(z.infra || {}) };
     nz.equipe = z.equipe || creerEquipe(uid);
     nz.trophees = z.trophees || [];
@@ -1158,10 +1162,11 @@ function finDeSaison(state, classement) {
     if (z.jaugeIncidents) nz.jaugeIncidents = z.jaugeIncidents;
     if (z.dir) nz.dir = dirHeritage(z); // niveau des énigmes et des mini-jeux, souvenirs du Directeur
     // Le parc suit la zone : les véhicules gardent leur modèle et passent au contrôle technique (usure divisée par deux).
-    // Le garage a perdu un niveau : s'il manque de places, les plus usés sont revendus et le produit s'ajoute au budget.
+    // Si le garage a perdu un niveau et manque de places, les plus usés sont revendus et le produit s'ajoute au budget.
     const parc = heritageFlotte(z, nz);
-    nz.rapport = [`Nouvelle saison : tu conserves tes formations et tes bâtiments, baissés d’un niveau (hôtel de police ${nz.batiments.bureaux}, garage ${nz.batiments.garage}), tes annexes et ton parc (${parc.gardes} véhicule${parc.gardes > 1 ? 's' : ''}, passés au contrôle technique${parc.vendus ? ` ; ${parc.vendus} revendu${parc.vendus > 1 ? 's' : ''} faute de place au garage, +${fmt1(parc.produit)} k€` : ''}). Budget et effectifs repartent des valeurs de départ.`];
-    nz.heritage = { season: oldSeason, niveaux, batiments: { ...nz.batiments }, annexes: Object.keys(nz.infra).filter((k) => nz.infra[k]).length };
+    const n = bilan.cas.length;
+    nz.rapport = [`Nouvelle saison : tu conserves tes formations, ton matériel, tes bâtiments, tes annexes et ton parc (${parc.gardes} véhicule${parc.gardes > 1 ? 's' : ''}, passés au contrôle technique${parc.vendus ? ` ; ${parc.vendus} revendu${parc.vendus > 1 ? 's' : ''} faute de place au garage, +${fmt1(parc.produit)} k€` : ''}), ${n ? `moins ${n} imprévu${n > 1 ? 's' : ''} de fin de saison (voir le Bilan de saison sur l’HP : tu peux en remettre en état jusqu’au tour ${BILAN.tours})` : 'sans aucun imprévu de fin de saison'}. Budget et effectifs repartent des valeurs de départ.`];
+    nz.heritage = { season: oldSeason, niveaux: { ...nz.niveaux }, batiments: { ...nz.batiments }, annexes: Object.keys(nz.infra).filter((k) => nz.infra[k]).length };
     state.zones[uid] = nz;
   }
   nouvelleAffaire(state);

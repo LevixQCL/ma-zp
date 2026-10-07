@@ -12,6 +12,7 @@ import { COULEURS_ZONE } from '../engine/constants.js';
 import { estimations } from './ordres.js';
 import { vagueTodo, vagueEnvoyeeAlerte } from './vagues.js';
 import { releveTodos, releveHtml } from './releve.js';
+import { bilanTodo, bilanHtml } from './bilan.js';
 import { criseTodo, criseHtml } from './crise.js';
 import { operationActive } from '../engine/zone.js';
 import { cielDe, dilemmeDuJour, feuilletonEnCours, pressionsVisibles } from '../engine/directeur.js';
@@ -223,6 +224,7 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue }) {
   }
   { let vt = null; try { vt = vagueTodo(estimations()); } catch (e) { /* pas de brouillon */ } if (vt) items.unshift(vt); }
   for (const x of releveTodos()) items.unshift(x);
+  { const bt = bilanTodo(); if (bt) items.unshift(bt); }
   { const ct = criseTodo(); if (ct) items.unshift(ct); }
   // Un incident ouvert a déjà sa carte (avec son compte à rebours) juste sous la liste : pas de ligne en double ici.
   items.push(delegue ? { ok: true, href: '#quete', t: delegue.statut === 'quiz' ? `Quiz express : ${Number(delegue.tentatives) || 0} sur 5` : 'Énigmes confiées à un agent', s: delegue.statut === 'quiz' ? ((Number(delegue.tentatives) || 0) >= 3 ? (delegue.bonus ? 'bonus choisi' : 'choisis ton bonus') : 'pas de bonus') : 'résultat ce soir' } : { ok: faites >= 3, href: '#quete', t: `Énigmes : ${faites} sur 3`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
@@ -330,6 +332,7 @@ export function renderHP() {
     </nav>` : ''}
 
     ${ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue })}
+    ${bilanHtml()}
     ${dilemmeHtml(st, z)}
     ${criseHtml()}
     ${releveHtml()}

@@ -6,6 +6,7 @@ import { vitesseCombi, MODELES, IDS_MODELES, placesIntervention, agentsMontes, a
 import { agentsFipaCeSoir } from './fipa.js';
 import { vagueServiceHtml } from './vagues.js';
 import { agentsReleve } from '../engine/releve.js';
+import { coutBilan } from '../engine/bilan.js';
 import { participeCommune, agentsCommune } from '../engine/crise.js';
 import { engagementsDuJour } from './engagements.js';
 import { primeHtml } from './prime.js';
@@ -28,7 +29,7 @@ function enqueteDraft() {
     dilemme: Number.isInteger(o.dilemme) ? o.dilemme : null, demarches: o.demarches || [], appui: o.appui || null, prime: o.prime || null, piste: o.piste ?? null, accusation: o.accusation ?? null, confront: o.confront || [], reaud: o.reaud || null, recoup: o.recoup || null, hypo: o.hypo || null, mobile: Number.isInteger(o.mobile) ? o.mobile : null, traque: o.traque || null, partages: o.partages || [],
     fipa: o.fipa || null, fipaReponse: o.fipaReponse || null, fipaChoix: o.fipaChoix || null,
     renfort: o.renfort || null, aide: o.aide || null, pacte: o.pacte || null, pacteReponse: o.pacteReponse || null, pacteAccepte: o.pacteAccepte || [], defiAccepte: o.defiAccepte || [], pacteRompre: o.pacteRompre || null, fragment: o.fragment || null, defi: o.defi || null, defiReponse: o.defiReponse || null, votes: o.votes || {}, motionChef: o.motionChef || null, offre: o.offre || null,
-    releve: o.releve || null, releveAppui: o.releveAppui || [], saisie: o.saisie || null, crise: Number.isInteger(o.crise) ? o.crise : null, criseC: o.criseC || null,
+    releve: o.releve || null, releveAppui: o.releveAppui || [], saisie: o.saisie || null, crise: Number.isInteger(o.crise) ? o.crise : null, criseC: o.criseC || null, bilan: o.bilan || {},
   };
 }
 
@@ -152,7 +153,7 @@ export function estimations() {
   // Les agents en mission d'enquête ou en FIPA sortent du total : ils ne sont plus à répartir.
   const reste = resteBase - enquete;
   const coutDep = coutDepenses(dep, z);
-  const coutTotal = coutDep + (d.decision && !decisionImpossible(z, d.decision, st.turn) ? coutDecision(z, d.decision) : 0);
+  const coutTotal = coutDep + coutBilan(z, d.bilan) + (d.decision && !decisionImpossible(z, d.decision, st.turn) ? coutDecision(z, d.decision) : 0);
   // Criminalité prévue ce soir : quartiers (patrouilles, point chaud) + pressions du jour et prévention.
   const prev = Object.values(prevoirTensions(st, z, { patrouilles: d.patrouilles || {}, agentsProx: eff.proximite || 0, capProx: cap.proximite || 0 }));
   const crimSoir = Math.max(10, Math.min(95, (prev.length ? prev.reduce((a, b) => a + b, 0) / prev.length : z.criminalite) + (crim - z.criminalite)));
