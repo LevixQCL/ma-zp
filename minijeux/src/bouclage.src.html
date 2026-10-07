@@ -734,31 +734,22 @@ function drawMap(g,M,pads){
     g.save(); g.lineJoin='round'; g.lineCap='round'; g.strokeStyle=g.fillStyle='#121b30';
     M.P.forEach(P=>{ g.lineWidth=RD+1.16; g.beginPath(); linePath(g,P); g.stroke(); });
     (pads||[]).forEach(p=>{ g.beginPath(); g.ellipse(p.x,p.y+.08,.65,.53,0,0,7); g.fill(); }); g.restore();
-    const [Fc,F]=layer(); F.fillStyle='#24324f'; F.fillRect(0,0,MW,MH);
-    const r4=rng(91+(M.seed||0)), tF=['#33456a','#2f4064','#384b71','#2c3c5d'], lF=tF.map(()=>new Path2D());
-    for(let y=0,row=0;y<MH;y+=.16,row++) for(let x=(row%2)*.09-.1;x<MW;x+=.18){ if(D(x,y)>RD/2+.95) continue; lF[Math.floor(r4()*lF.length)].roundRect(x+.012,y+.012,.156,.136,.045); }
-    lF.forEach((P2,i)=>{ F.fillStyle=tF[i]; F.fill(P2); }); F.strokeStyle='rgba(150,180,235,.08)'; F.lineWidth=.012; lF.forEach(P2=>F.stroke(P2));
+    const [Fc,F]=layer(); F.fillStyle='#253350'; F.fillRect(0,0,MW,MH);
+    const r4=rng(91+(M.seed||0)); for(let i=0;i<260;i++){ F.fillStyle=`rgba(${r4()<.5?'10,16,30':'140,165,215'},.05)`; F.beginPath(); F.ellipse(r4()*MW,r4()*MH,.2+r4()*.5,.12+r4()*.3,0,0,7); F.fill(); }
     mask(F,Pc); put(Fc); }
   // 2. chaussée : bordure de pierres claires, joint sombre, pavés en rangs qui suivent la rue
   g.lineCap='butt';
-  M.P.forEach(P=>{ g.strokeStyle='#5b70a0'; g.lineWidth=RD+.16; g.beginPath(); linePath(g,P); g.stroke(); });
-  M.P.forEach(P=>{ g.strokeStyle='rgba(20,30,52,.6)'; g.lineWidth=RD+.16; g.setLineDash([.022,.26]); g.beginPath(); linePath(g,P); g.stroke(); g.setLineDash([]); });
-  M.P.forEach(P=>{ g.strokeStyle='#1d2942'; g.lineWidth=RD+.03; g.beginPath(); linePath(g,P); g.stroke(); });
+  M.P.forEach(P=>{ g.strokeStyle='#0f1729'; g.lineWidth=RD+.24; g.beginPath(); linePath(g,P); g.stroke(); g.strokeStyle='#44567e'; g.lineWidth=RD+.18; g.beginPath(); linePath(g,P); g.stroke(); });
+  M.P.forEach(P=>{ g.strokeStyle='rgba(14,22,40,.8)'; g.lineWidth=RD+.18; g.setLineDash([.02,.3]); g.beginPath(); linePath(g,P); g.stroke(); g.setLineDash([]); });
+  M.P.forEach(P=>{ g.strokeStyle='#121b30'; g.lineWidth=RD+.03; g.beginPath(); linePath(g,P); g.stroke(); });
   M.P.forEach(P=>{ g.strokeStyle='#33456a'; g.lineWidth=RD-.03; g.beginPath(); linePath(g,P); g.stroke(); });
   { const [Mc,Mx]=layer(); Mx.lineJoin='round'; Mx.strokeStyle='#000'; M.P.forEach(P=>{ Mx.lineWidth=RD-.05; Mx.beginPath(); linePath(Mx,P); Mx.stroke(); });
-    const [Sc,S]=layer(); const tons=['#4c6189','#566b94','#5f749c','#475b81','#647aa3'], lots=tons.map(()=>new Path2D());
-    const pierre=new Path2D(); pierre.roundRect(-.075,-.065,.15,.13,.04); const pose=new Map();
-    M.P.forEach((P,pi)=>{ let row=0; for(let d=0;d<=P.len;d+=.155,row++){ const q=posOn(P,d);
-      if(M.P.slice(0,pi).some(O=>nearestOn(O,q.x,q.y).dist<.06)) continue;
-      const nx=-Math.sin(q.ang), ny=Math.cos(q.ang), sh=(row%2)*.085;
-      for(let o=-RD/2-.05+sh;o<=RD/2+.1;o+=.17){ const sx=q.x+nx*o, sy=q.y+ny*o, hk=Math.round(sx/.2)+','+Math.round(sy/.2);
-        let pris=false; for(let a=-1;a<=1&&!pris;a++) for(let b=-1;b<=1&&!pris;b++){ const c=pose.get((Math.round(sx/.2)+a)+','+(Math.round(sy/.2)+b)); if(c&&c.some(t=>Math.hypot(t[0]-sx,t[1]-sy)<.14)) pris=true; }
-        if(pris) continue; (pose.get(hk)||pose.set(hk,[]).get(hk)).push([sx,sy]);
-        const m=new DOMMatrix().translate(sx,sy).rotate(q.ang*180/Math.PI+(rnd()-.5)*6);
-        lots[Math.floor(rnd()*lots.length)].addPath(pierre,m); } } });
+    // pavés rectangulaires posés en quinconce (comme la maquette), à plat, joints sombres fins
+    const [Sc,S]=layer(); const tons=['#3a4a70','#3e4f76','#36466a','#42537a','#33425f'], lots=tons.map(()=>new Path2D()), BW=.27, BH=.135;
+    for(let y=-.1,row=0;y<MH+.2;y+=BH,row++) for(let x=-(row%2)*BW/2-.1;x<MW+.2;x+=BW){ if(D(x+BW/2,y+BH/2)>RD/2+.15) continue; lots[Math.floor(rnd()*lots.length)].rect(x,y,BW,BH); }
     lots.forEach((P2,i)=>{ S.fillStyle=tons[i]; S.fill(P2); });
-    S.strokeStyle='rgba(22,32,56,.75)'; S.lineWidth=.018; lots.forEach(P2=>S.stroke(P2));
-    S.strokeStyle='rgba(200,215,245,.16)'; S.lineWidth=.012; S.save(); S.translate(-.01,-.012); lots.forEach(P2=>S.stroke(P2)); S.restore();
+    S.strokeStyle='rgba(16,24,44,.9)'; S.lineWidth=.017; lots.forEach(P2=>S.stroke(P2));
+    S.strokeStyle='rgba(150,175,225,.07)'; S.lineWidth=.01; S.save(); S.translate(0,.012); lots.forEach(P2=>S.stroke(P2)); S.restore();
     mask(S,Mc); put(Sc); }
   // ombre portée des bords de rue (la chaussée est un peu en contrebas)
   M.P.forEach(P=>{ g.save(); g.translate(.03,.05); g.strokeStyle='rgba(0,0,0,.18)'; g.lineWidth=.06; g.beginPath(); linePath(g,P); g.restore(); });
