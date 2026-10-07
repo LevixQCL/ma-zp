@@ -99,7 +99,7 @@ const MEANS={
   barrage:{nom:'Barrage (combi + barrières)',cout:6,range:1.8,
     ds:'Barrières en travers de la rue : elles <b>bloquent</b> le cortège jusqu’à céder, puis le combi les relève. Niveau 3 : <b>cheval de frise</b>, bien plus solide, ses barbelés découragent ceux qui poussent.'},
   cavalerie:{nom:'Cavalerie',cout:8,range:2.6,cd:[4,3.3,2.6],choc:{manif:16,casseur:20,meneur:28,bloc:10},
-    ds:'<b>Charge</b> dans le groupe le plus dense (meneurs en priorité). Seul moyen <b>mobile</b> : touche-la puis « Redéployer » pour l’envoyer sur un autre emplacement.'}};
+    ds:'<b>Charge</b> dans le groupe le plus dense (meneurs en priorité). Seul moyen <b>mobile</b> : fais-la glisser vers un autre emplacement pour la redéployer.'}};
 const LV={dmg:[1,1.5,2.1],rng:[0,.2,.35],cout:[0,1,1.5]};
 const UPTXT={peloton:['','Deux agents MO','Trois agents MO'],autopompe:['','Deux lances à eau','Camion autopompe'],
   barrage:['','Deux barrières Heras','Cheval de frise (barbelés)'],cavalerie:['','Deux cavaliers','Escouade montée']};
@@ -529,7 +529,8 @@ function tip(html){
   const el=$('tip');
   if(html){ el.innerHTML=html; return; }
   if(R.dirOffer&&!R.sel&&!R.redeploy){ el.innerHTML=`<div class="dir"><span class="dq">📻 <b>Directeur :</b> situation ?</span>${Object.entries(DIR).map(([k,d])=>`<button class="dirb" data-dir="${k}" title="${d.ds}"><b>${d.nom}</b><small>${d.c}</small></button>`).join('')}</div>`; return; }
-  if(R.rally){ const tw=R.towers[R.rally]; el.innerHTML=`<span><b>Déplacer ${tw&&tw.type==='barrage'?'les barrières':'la ligne MO'}</b> : touche la rue <b>dans le cercle</b> (ailleurs pour annuler).${tw&&tw.type==='barrage'&&R.phase==='run'?' Le combi les remonte en 2 s.':''}</span>`; return; }
+  if(R.rally){ const tw=R.towers[R.rally]; el.innerHTML=`<span><b>Déplacer ${tw&&tw.type==='barrage'?'les barrières':'la ligne MO'}</b> : lâche sur la rue <b>dans le cercle</b> (hors du cercle : annulé).${tw&&tw.type==='barrage'&&R.phase==='run'?' Le combi les remonte en 2 s.':''}</span>`; return; }
+  if(R.dragCav){ el.innerHTML='<span><b>Redéployer la cavalerie</b> : lâche-la sur un <b>emplacement libre</b>.</span>'; return; }
   if(R.redeploy){ el.innerHTML='<span><b>Redéploiement</b> : touche un <b>emplacement libre</b> où envoyer la cavalerie (ailleurs pour annuler).</span>'; return; }
   if(R.somm.placing){ el.innerHTML='<span><b>Sommations :</b> touche le cortège. Ceux qui sont autour ralentissent 4 s et perdent de la détermination ; les plus découragés <b>font demi-tour</b> tout de suite.</span>'; return; }
   if(R.sel){ const tw=R.towers[R.sel.pad];
@@ -539,7 +540,7 @@ function tip(html){
       if(o==='rally'){ el.innerHTML=`<span><b>Déplacer</b> ${tw.type==='barrage'?'les barrières':'la ligne des agents'} ailleurs dans la rue, autour de l’emplacement (gratuit). <b>Touche encore</b>, puis touche la rue.</span>`; return; }
       if(o==='move'){ el.innerHTML='<span><b>Redéployer</b> la cavalerie sur un autre emplacement (gratuit, puis 10 s avant le prochain). <b>Touche encore</b>, puis touche l’emplacement.</span>'; return; }
       const M=MEANS[o]; el.innerHTML=`<span><b>${M.nom}</b> · <span class="c">${M.cout} agents</span> — ${M.ds} <b>Touche encore pour poser.</b></span>`; return; }
-    el.innerHTML= tw ? `<span><b>${MEANS[tw.type].nom}</b> (niveau ${tw.lvl}) — ${MEANS[tw.type].ds}</span>` : '<span>Choisis un moyen autour de l’emplacement.</span>'; return; }
+    el.innerHTML= tw ? `<span><b>${MEANS[tw.type].nom}</b> (niveau ${tw.lvl}) — ${tw.type==='cavalerie'?'<b>fais-la glisser</b> vers un emplacement libre pour la redéployer.':tw.type==='autopompe'?MEANS[tw.type].ds:'<b>fais glisser</b> pour déplacer '+(tw.type==='barrage'?'les barrières':'la ligne')+' dans la rue, autour de l’emplacement.'}</span>` : '<span>Choisis un moyen autour de l’emplacement.</span>'; return; }
   if(R.phase==='build') el.innerHTML='<span>Touche un <b>emplacement bleu</b> pour poser un moyen, puis lance la vague. Les cortèges suivent les rues jusqu’à l’<b>hôtel de ville</b>.</span>';
   else if(R.phase==='run') el.innerHTML=`<span>Repousser rend des agents, <b>de moins en moins</b> (${Math.round(rendement()*100)} % cette vague) : vise les <b>interventions groupées</b> et garde une réserve.</span>`;
   else el.innerHTML='';
@@ -568,9 +569,7 @@ function menuLayout(){
   const P=padOf(R.sel.pad), tw=R.towers[R.sel.pad];
   const cx=Math.min(MW-MENU_R-.08,Math.max(MENU_R+.08,P.x)), cy=Math.min(MH-MENU_R-.35,Math.max(MENU_R+.08,P.y));
   let items;
-  if(tw&&(tw.type==='peloton'||tw.type==='barrage')) items=[{k:tw.lvl<3?'up':'max',a0:-Math.PI,a1:-Math.PI/3},{k:'rally',a0:-Math.PI/3,a1:Math.PI/3},{k:'sell',a0:Math.PI/3,a1:Math.PI}];
-  else if(tw&&tw.type==='cavalerie') items=[{k:tw.lvl<3?'up':'max',a0:-Math.PI,a1:-Math.PI/3},{k:'move',a0:-Math.PI/3,a1:Math.PI/3},{k:'sell',a0:Math.PI/3,a1:Math.PI}];
-  else if(tw) items=[{k:tw.lvl<3?'up':'max',a0:-Math.PI,a1:0},{k:'sell',a0:0,a1:Math.PI}];
+  if(tw) items=[{k:tw.lvl<3?'up':'max',a0:-Math.PI,a1:0},{k:'sell',a0:0,a1:Math.PI}];
   else { const allow=R.tuto?['peloton']:ORDER; items=ORDER.map(k=>({k,a0:QUAD[k][0],a1:QUAD[k][1],lock:!allow.includes(k)})); }
   items=items.map(it=>{ let ok=true, why='';
     if(it.k==='max'){ ok=false; why='niveau maximum atteint'; }
@@ -608,6 +607,32 @@ function sommer(x,y){
   R.units.filter(u=>u.state==='go'&&u.p&&Math.hypot(u.p.x-x,u.p.y-y)<=SOMM.rayon).forEach(u=>{ u.somUntil=R.t+SOMM.dure; u.hp-=SOMM.perte;
     if(u.type!=='meneur'&&u.type!=='bloc'&&u.hp<=u.max*SOMM.demiTour) u.hp=0; });
   R.somm.fx.push({x,y,t:R.t}); R.somm.cd=sommCd(); }
+/* Cliquer-glisser (doigt ou souris) : on attrape un peloton MO ou un barrage (son emplacement ou sa ligne dans la rue)
+   et on le lâche sur la rue, dans le cercle ; on attrape la cavalerie et on la lâche sur un emplacement libre.
+   Un simple toucher garde son effet habituel (menu). */
+const pos=e=>{ const r=C.cv.getBoundingClientRect(); return {x:(e.clientX-r.left)/C.s, y:(e.clientY-r.top)/C.s}; };
+function prise(x,y){ let best=null,bd=.62;
+  for(const id in R.towers){ const tw=R.towers[id]; if(!['peloton','barrage','cavalerie'].includes(tw.type)) continue; const P=padOf(id);
+    const d=Math.min(Math.hypot(P.x-x,P.y-.15-y),tw.type==='cavalerie'?9:Math.hypot(tw.rx-x,tw.ry-.15-y)); if(d<bd){ bd=d; best=id; } }
+  return best; }
+function onDown(e){
+  const {x,y}=pos(e);
+  if(!((R.over&&!R.tuto)||R.phase==='idle'||R.pause||R.somm.placing||R.tuto)){
+    const L=menuLayout(), surMenu=L&&menuHit(L,x,y);
+    const id=!surMenu&&prise(x,y);
+    if(id){ C.drag={id,x0:x,y0:y,x,y,on:false,e:{clientX:e.clientX,clientY:e.clientY}}; try{ C.cv.setPointerCapture(e.pointerId); }catch(_){} return; } }
+  onTap(e);
+}
+function onMove(e){ const D=C.drag; if(!D) return; const {x,y}=pos(e); D.x=x; D.y=y;
+  if(!D.on&&Math.hypot(x-D.x0,y-D.y0)>.3){ const tw=R.towers[D.id]; if(!tw) { C.drag=null; return; }
+    D.on=true; R.sel=null; if(tw.type==='cavalerie') R.dragCav=D.id; else R.rally=D.id; tip(); Shell.blip(600,.04,'square',.03); } }
+function onUp(e){ const D=C.drag; C.drag=null; if(!D) return;
+  if(!D.on){ onTap(D.e); return; }
+  const tw=R.towers[D.id];
+  if(R.rally){ R.rally=null; if(tw&&rallier(D.id,D.x,D.y)) Shell.good(); }
+  else if(R.dragCav){ R.dragCav=null; let best=null,bd=.7; for(const p of R.pads){ const d=Math.hypot(p.x-D.x,p.y-D.y); if(d<bd&&!R.towers[p.id]&&p.id!==R.fire){ bd=d; best=p; } }
+    if(best&&tw){ if(tw.transit||tw.charge) tip('<span>La cavalerie est déjà en mouvement.</span>'); else if(tw.moveCd>R.t) tip(`<span>La cavalerie souffle : redéploiement possible dans <b>${Math.ceil(tw.moveCd-R.t)} s</b>.</span>`); else if(redeploy(D.id,best.id)) Shell.good(); return; } }
+  tip(); }
 function onTap(e){
   const r=C.cv.getBoundingClientRect(), x=(e.clientX-r.left)/C.s, y=(e.clientY-r.top)/C.s;
   if((R.over&&!R.tuto)||R.phase==='idle'||R.pause) return;
@@ -1122,7 +1147,14 @@ function render(){
   if(R.rally&&R.towers[R.rally]){ const tw=R.towers[R.rally], P=padOf(R.rally), rg=rayonRally(tw), pu=.5+.5*Math.sin(rt*5);
     g.save(); g.fillStyle='rgba(255,209,102,.07)'; g.strokeStyle='rgba(255,209,102,.8)'; g.lineWidth=.04; g.setLineDash([.14,.1]); g.lineDashOffset=-rt*.6; g.beginPath(); g.arc(P.x,P.y,rg,0,7); g.fill(); g.stroke(); g.setLineDash([]);
     g.beginPath(); g.arc(P.x,P.y,rg,0,7); g.clip(); g.globalAlpha=.25+.2*pu; R.M.P.forEach(Pa=>strokeP(g,Pa,RW*.8,'rgba(255,209,102,.9)')); g.restore();
-    g.fillStyle='#ffd166'; g.beginPath(); g.arc(tw.rx,tw.ry,.09+.03*pu,0,7); g.fill(); }
+    const D=C.drag, b=D&&pointRally(R.rally,D.x,D.y);
+    if(b){ g.strokeStyle='rgba(255,209,102,.9)'; g.lineWidth=.03; g.setLineDash([.08,.07]); g.beginPath(); g.moveTo(tw.rx,tw.ry); g.lineTo(b.q.x,b.q.y); g.stroke(); g.setLineDash([]);
+      const px=-Math.sin(b.q.ang)*.5, py=Math.cos(b.q.ang)*.5; g.strokeStyle='#ffd166'; g.lineWidth=.09; g.lineCap='round'; g.beginPath(); g.moveTo(b.q.x-px,b.q.y-py); g.lineTo(b.q.x+px,b.q.y+py); g.stroke(); }
+    else if(D){ g.strokeStyle='rgba(255,90,90,.9)'; g.lineWidth=.05; g.beginPath(); g.moveTo(D.x-.15,D.y-.15); g.lineTo(D.x+.15,D.y+.15); g.moveTo(D.x+.15,D.y-.15); g.lineTo(D.x-.15,D.y+.15); g.stroke(); } }
+  if(R.dragCav&&R.towers[R.dragCav]&&C.drag){ const P=padOf(R.dragCav), D=C.drag, pu=.5+.5*Math.sin(rt*5);
+    for(const q of R.pads){ if(R.towers[q.id]||q.id===R.fire) continue; g.strokeStyle=`rgba(255,209,102,${.45+.4*pu})`; g.lineWidth=.06; g.beginPath(); g.ellipse(q.x,q.y+.1,.46,.31,0,0,7); g.stroke(); }
+    g.strokeStyle='rgba(255,209,102,.9)'; g.lineWidth=.035; g.setLineDash([.1,.08]); g.beginPath(); g.moveTo(P.x,P.y); g.lineTo(D.x,D.y); g.stroke(); g.setLineDash([]);
+    g.save(); g.globalAlpha=.6; g.translate(D.x,D.y+.2); drawHorses(g,R.towers[R.dragCav],D.x>=P.x?1:-1,rt,false); g.restore(); }
   if(R.somm.placing){ g.save(); g.globalAlpha=.22+.15*Math.sin(rt*6); R.M.P.forEach(P=>strokeP(g,P,RW,'rgba(255,209,102,.6)')); g.restore(); }
   // portée et menu circulaire
   const L=menuLayout();
@@ -1188,7 +1220,7 @@ Shell.init({
     'Les agents engagés sont <b>immobilisés</b>. Désengager un moyen les rend à la réserve <b>6 s plus tard</b> : garde une marge.',
     'Touche un <b>emplacement bleu</b> : quatre moyens apparaissent. Premier toucher : portée et prix. Deuxième toucher : c’est posé. Touche un moyen posé pour le <b>renforcer</b>.',
     '<b>Cohésion</b> : un cortège serré résiste mieux. L’<b>autopompe</b> le disperse (plus facile à repousser) et fait <b>éclater</b> les blocs compacts entamés.',
-    '<b>Barrage</b> : bloque la rue jusqu’à céder. <b>Peloton MO</b> : retient les émeutiers au contact. Touche-les puis « <b>Déplacer</b> » pour choisir leur place dans la rue, dans un rayon autour de l’emplacement. <b>Cavalerie</b> : charge, et se <b>redéploie</b> sur un autre emplacement.',
+    '<b>Barrage</b> : bloque la rue jusqu’à céder. <b>Peloton MO</b> : retient les émeutiers au contact. <b>Fais-les glisser</b> pour choisir leur place dans la rue, dans un rayon autour de l’emplacement. <b>Cavalerie</b> : charge ; fais-la glisser sur un autre emplacement pour la <b>redéployer</b>.',
     'Plusieurs émeutiers repoussés au même endroit en même temps : <b>intervention maîtrisée</b>, +1 agent. Trois vagues sans perte d’affilée : <b>dispositif maîtrisé</b>, +15 %.',
     'Les <b>sommations</b> ralentissent et font faire demi-tour aux émeutiers déjà découragés. Entre deux vagues, le <b>Directeur</b> te demande parfois la situation : choisis vite.'],
   winTitle:'Ordre rétabli', loseTitle:'Le cordon a cédé', skin:'Cordon de nuit',
@@ -1204,7 +1236,8 @@ Shell.init({
     C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); spr('lance'); spr('frise'); R.M=MAPDATA[0]; R.pads=R.M.pads;
     resize(); new ResizeObserver(resize).observe($('field'));
     if(document.fonts) document.fonts.ready.then(resize);
-    C.cv.addEventListener('pointerdown',onTap);
+    C.cv.addEventListener('pointerdown',onDown); C.cv.addEventListener('pointermove',onMove); C.cv.addEventListener('pointerup',onUp);
+    C.cv.addEventListener('pointercancel',()=>{ C.drag=null; R.rally=null; R.dragCav=null; tip(); });
     $('tip').addEventListener('click',e=>{ const b=e.target.closest('[data-dir]'); if(b) choisirDir(b.dataset.dir); });
     $('launch').onclick=()=>{ if(R.phase==='build'){ if(R.tuto===4) Shell.hideCoach(); launchWave(); } else if(R.phase==='run'&&R.nextIn!==null) launchWave(); };
     $('spd').onclick=()=>{ R.speed=R.speed===1?2:1; $('spd').setAttribute('aria-pressed',R.speed===2); };
