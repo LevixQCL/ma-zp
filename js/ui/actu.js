@@ -1,5 +1,6 @@
 // Événement d'actualité : une mobilisation réelle sert de prétexte à un mini-jeu. Affiché une fois par appareil
-// à l'ouverture du jeu pendant sa période, puis rappelé par une carte sur l'HP jusqu'à la date de fin.
+// à l'ouverture du jeu, puis rappelé par une carte sur l'HP tant que le joueur n'a pas joué sa partie
+// (au plus tard jusqu'à la date de fin). Une partie terminée clôt l'événement pour ce joueur, sur tous ses appareils.
 // Ton factuel : on explique pourquoi les gens manifestent, sources à l'appui, sans prendre parti.
 import { S, esc } from './common.js';
 
@@ -24,7 +25,17 @@ export const EVT_ACTU = {
   ],
 };
 
-export const evtActif = (now = Date.now()) => now <= Date.parse(EVT_ACTU.fin);
+const cleJoue = () => `mazp-actu-joue-${EVT_ACTU.id}`;
+/** Le joueur a terminé sa partie de l'événement (profil synchronisé, ou cet appareil). */
+export const evtJoue = () => { if (S.player && S.player.actu && S.player.actu[EVT_ACTU.id]) return true; try { return !!localStorage.getItem(cleJoue()); } catch (e) { return false; } };
+export const evtActif = (now = Date.now()) => now <= Date.parse(EVT_ACTU.fin) && !evtJoue();
+/** Partie terminée : l'événement se ferme pour ce joueur. */
+export async function marquerEvtJoue() {
+  try { localStorage.setItem(cleJoue(), '1'); } catch (e) { /* pas de stockage */ }
+  if (!S.user || !S.backend) return;
+  const p = { ...(S.player || {}) }; p.actu = { ...(p.actu || {}), [EVT_ACTU.id]: Date.now() }; S.player = p;
+  try { await S.backend.savePlayer(S.user.uid, p); } catch (e) { /* hors ligne : l'appareil s'en souvient */ }
+}
 const cle = () => `mazp-actu-vue-${EVT_ACTU.id}`;
 const evtVu = () => { try { return !!localStorage.getItem(cle()); } catch (e) { return true; } };
 

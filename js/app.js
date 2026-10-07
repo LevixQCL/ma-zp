@@ -20,7 +20,7 @@ import { ouvrirBudget, ouvrirVehicule, ouvrirLogistique, ouvrirParc, rafraichirL
 import { DECOR, decorDebloque, conditionDecor, decorValide } from './engine/decor.js';
 import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
-import { actuAuBesoin, ouvrirActu, EVT_ACTU } from './ui/actu.js';
+import { actuAuBesoin, ouvrirActu, EVT_ACTU, marquerEvtJoue } from './ui/actu.js';
 import { tutoAuBesoin, lancerTuto, tutoFait } from './ui/tutoriel.js';
 import { lancerRoulette } from './ui/roulette.js';
 import { editionHtml, marquerEditionVue, editionVue } from './ui/edition.js';
@@ -1109,7 +1109,7 @@ async function annoncerNDAuto(rattrapage = false) {
 /** Événement d'actualité : lance son mini-jeu (Challenge) avec le scénario du jour. */
 async function lancerActu() {
   try { S.players = await S.backend.getPlayers(); } catch (e) { /* hors ligne */ }
-  ouvrirMiniJeu(EVT_ACTU.jeu, { mode: 'train', evt: EVT_ACTU.id, onEntrainement: noterEntrainement, onFin: () => rerender() });
+  ouvrirMiniJeu(EVT_ACTU.jeu, { mode: 'train', evt: EVT_ACTU.id, onEntrainement: (x) => { noterEntrainement(x); marquerEvtJoue(); }, onFin: () => rerender() });
 }
 function noterEntrainement(plus) {
   if (!S.user || !S.backend || !S.backend.compterEntrainement) return;
