@@ -644,7 +644,7 @@ function genPads(paths){
       c.x=Math.max(.5,Math.min(MW-.5,c.x+dx/L*.06)); c.y=Math.max(.6,Math.min(MH-1,c.y+dy/L*.06)); } });
   return out.map((c,i)=>({id:'p'+i,x:c.x,y:c.y}));
 }
-const MAPDATA=MAPS.map(m=>{ const paths=mkPaths(m.paths); return {...m,P:paths,pads:genPads(paths)}; });
+const MAPDATA=MAPS.map(m=>{ const o={...m,P:mkPaths(m.paths)}; let pads=null; Object.defineProperty(o,'pads',{get(){ return pads||(pads=genPads(o.P)); },enumerable:true}); return o; });
 /* ───── Cartes générées (Challenge, après les 4 quartiers) ─────
    Un tronc qui serpente du haut jusqu'à l'hôtel de ville, puis des cortèges secondaires (par le haut ou par un côté)
    qui le rejoignent. Rues à angle droit, jamais collées les unes aux autres, assez d'emplacements le long du trajet. */
@@ -960,7 +960,7 @@ function chooseMap(cfg){
     return `<button class="lvl" data-i="${i}" ${open?'':'disabled'}><canvas data-m="${i}"></canvas><span class="n">${i+1}</span>${open?'':'<span class="lock">🔒</span>'}<b>${m.nom}</b><span>${m.sous}</span><span class="st">${'★'.repeat(st)}${'☆'.repeat(3-st)}</span></button>`; }).join('')}</div>
     <p style="color:var(--mute);font-size:13px">Réussis un quartier pour débloquer le suivant.</p>`;
   el.hidden=false;
-  el.querySelectorAll('canvas[data-m]').forEach(cv=>{ const i=+cv.dataset.m; cv.width=180; cv.height=280; const g=cv.getContext('2d'); g.setTransform(20,0,0,20,0,0); drawMap(g,MAPDATA[i],MAPDATA[i].pads); });
+  el.querySelectorAll('canvas[data-m]').forEach((cv,k)=>setTimeout(()=>{ const i=+cv.dataset.m; cv.width=180; cv.height=280; const g=cv.getContext('2d'); g.setTransform(20,0,0,20,0,0); drawMap(g,MAPDATA[i],MAPDATA[i].pads); },80+k*120));
   $('toDefi').onclick=()=>{ const q=new URLSearchParams(location.search); q.set('mode','train'); location.search=q.toString(); };
   el.querySelectorAll('.lvl').forEach(b=>b.onclick=()=>{ if(b.disabled) return; el.hidden=true; resetGame(cfg,false,+b.dataset.i); });
   R.phase='idle'; ui();
@@ -1077,12 +1077,16 @@ function tutoStep(n){
 /* ───── rendu : vue de trois quarts (sol vu du dessus, personnages, véhicules, bâtiments et lampadaires debout) ───── */
 function resize(){
   const f=$('field'), w=f.clientWidth, h=f.clientHeight; if(!w||!h||!R.M) return;
-  const s=Math.min(w/MW,h/MH); C.s=s; C.dpr=Math.min(2.5,window.devicePixelRatio||1);
-  const cw=Math.floor(MW*s), ch=Math.floor(MH*s);
-  C.cv.style.width=cw+'px'; C.cv.style.height=ch+'px'; C.cv.width=Math.round(cw*C.dpr); C.cv.height=Math.round(ch*C.dpr);
-  C.map=document.createElement('canvas'); C.map.width=C.cv.width; C.map.height=C.cv.height;
-  const g=C.map.getContext('2d'); g.setTransform(s*C.dpr,0,0,s*C.dpr,0,0);
-  drawMap(g,R.M,R.pads);
+  const s=Math.min(w/MW,h/MH); C.s=s; C.dpr=Math.min(2,window.devicePixelRatio||1);
+  const cw=Math.floor(MW*s), ch=Math.floor(MH*s), W=Math.round(cw*C.dpr), H=Math.round(ch*C.dpr);
+  if(C.cv.width!==W||C.cv.height!==H){ C.cv.style.width=cw+'px'; C.cv.style.height=ch+'px'; C.cv.width=W; C.cv.height=H; }
+  // Le décor est lourd à dessiner (surtout sur téléphone) : on ne le refait que si la carte ou la taille change,
+  // et après avoir laissé l'écran s'afficher.
+  if(C.mapFor===R.M&&C.mapW===W&&C.mapH===H) return;
+  C.mapFor=R.M; C.mapW=W; C.mapH=H; C.map=null; const M=R.M, pads=R.pads;
+  clearTimeout(C.mt); C.mt=setTimeout(()=>{ if(C.mapFor!==M||C.mapW!==W||C.mapH!==H) return;
+    const m=document.createElement('canvas'); m.width=W; m.height=H; const g=m.getContext('2d'); g.setTransform(s*C.dpr,0,0,s*C.dpr,0,0);
+    drawMap(g,M,pads); C.map=m; },R.sim?0:C.premier?30:350); C.premier=true;
 }
 function rng(seed){ let x=seed||1; return ()=>{ x=(x*16807)%2147483647; return (x-1)/2147483646; }; }
 function rr(g,x,y,w,h,r){ g.beginPath(); g.moveTo(x+r,y); g.arcTo(x+w,y,x+w,y+h,r); g.arcTo(x+w,y+h,x,y+h,r); g.arcTo(x,y+h,x,y,r); g.arcTo(x,y,x+w,y,r); g.closePath(); }
@@ -1096,8 +1100,11 @@ function minDistPaths(M,x,y){ let m=9; M.P.forEach(P=>{ const n=nearestOn(P,x,y)
    bordure claire, maisons à toits à quatre pans cernés de noir (façades visibles en trois quarts, fenêtres éclairées),
    lanternes à l'ancienne qui posent des flaques de lumière chaude, hôtel de ville néoclassique au bout du trajet. */
 function distField(M){
-  const S=.1, nx=Math.ceil((MW+2)/S)+1, ny=Math.ceil((MH+2)/S)+1, D=new Float32Array(nx*ny);
-  for(let j=0;j<ny;j++) for(let i=0;i<nx;i++) D[j*nx+i]=minDistPaths(M,-1+i*S,-1+j*S);
+  const S=.1, nx=Math.ceil((MW+2)/S)+1, ny=Math.ceil((MH+2)/S)+1, D=new Float32Array(nx*ny), B=1.5, CAP=1.5, cases=new Map();
+  M.P.forEach(P=>{ for(let d=0;d<=P.len;d+=.08){ const q=posOn(P,d), k=Math.floor(q.x/B)+','+Math.floor(q.y/B); (cases.get(k)||cases.set(k,[]).get(k)).push(q.x,q.y); } });
+  for(let j=0;j<ny;j++){ const y=-1+j*S, by=Math.floor(y/B); for(let i=0;i<nx;i++){ const x=-1+i*S, bx=Math.floor(x/B); let m=CAP*CAP;
+    for(let a=-1;a<=1;a++) for(let c=-1;c<=1;c++){ const L=cases.get((bx+a)+','+(by+c)); if(!L) continue; for(let t=0;t<L.length;t+=2){ const dx=L[t]-x, dy=L[t+1]-y, d2=dx*dx+dy*dy; if(d2<m) m=d2; } }
+    D[j*nx+i]=Math.sqrt(m); } }
   return (x,y)=>{ const i=Math.max(0,Math.min(nx-1,Math.round((x+1)/S))), j=Math.max(0,Math.min(ny-1,Math.round((y+1)/S))); return D[j*nx+i]; };
 }
 function hallBox(M){ const ex=M.P[0].pts.at(-1)[0], w=2.05, x0=Math.max(.05,Math.min(MW-w-.05,ex-w/2)); return {x0,w,x1:x0+w,top:MH-1.42}; }
@@ -1129,7 +1136,7 @@ function drawMap(g,M,pads){
   const layer=()=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'); x.setTransform(T); return [c,x]; };
   const put=c=>{ g.save(); g.setTransform(1,0,0,1,0,0); g.drawImage(c,0,0); g.restore(); };
   const mask=(x,m)=>{ x.save(); x.setTransform(1,0,0,1,0,0); x.globalCompositeOperation='destination-in'; x.drawImage(m,0,0); x.restore(); };
-  const D=distField(M);
+  const D=M._D||(M._D=distField(M));
   // 1. sol : dalles sombres, à peine visibles
   g.fillStyle='#161d2b'; g.fillRect(0,0,MW,MH);
   g.strokeStyle='rgba(120,140,190,.06)'; g.lineWidth=.018; g.beginPath();
@@ -1138,8 +1145,9 @@ function drawMap(g,M,pads){
   { const [Pc,Px]=layer(); Px.lineJoin='round'; Px.lineCap='round'; Px.strokeStyle=Px.fillStyle='#000';
     M.P.forEach(P=>{ Px.lineWidth=RD+1.1; Px.beginPath(); linePath(Px,P); Px.stroke(); });
     (pads||[]).forEach(p=>{ Px.beginPath(); Px.ellipse(p.x,p.y+.08,.62,.5,0,0,7); Px.fill(); });
-    const [Ec,E]=layer(); E.drawImage(Pc,0,0); E.globalCompositeOperation='source-in'; E.fillStyle='#0b0f19'; E.fillRect(-1,-1,MW+2,MH+2);
-    g.save(); g.setTransform(1,0,0,1,0,0); for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]) g.drawImage(Ec,dx*T.a*.03,dy*T.a*.03); g.restore();
+    g.save(); g.lineJoin='round'; g.lineCap='round'; g.strokeStyle=g.fillStyle='#0b0f19';
+    M.P.forEach(P=>{ g.lineWidth=RD+1.16; g.beginPath(); linePath(g,P); g.stroke(); });
+    (pads||[]).forEach(p=>{ g.beginPath(); g.ellipse(p.x,p.y+.08,.65,.53,0,0,7); g.fill(); }); g.restore();
     const [Fc,F]=layer(); F.fillStyle='#232c40'; F.fillRect(0,0,MW,MH);
     F.strokeStyle='rgba(8,11,19,.55)'; F.lineWidth=.02; F.beginPath();
     for(let y=0,row=0;y<MH;y+=.34,row++){ F.moveTo(0,y); F.lineTo(MW,y); for(let x=(row%2)*.17;x<MW;x+=.34){ F.moveTo(x,y); F.lineTo(x,y+.34); } } F.stroke();
