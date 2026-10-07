@@ -391,7 +391,7 @@ function step(dt){
   // agents désengagés qui reviennent à la réserve
   if(R.retours.length){ R.retours=R.retours.filter(r=>{ if(R.t<r.at) return true; R.agents+=r.n; fx(r.x,r.y,`+${r.n} de retour`,'gain'); ui(); return false; }); }
   if(R.cmd){ const c=R.cmd, tx=c.repli>R.t?c.hx:c.tx, ty=c.repli>R.t?c.hy:c.ty, dx=tx-c.x, dy=ty-c.y, L=Math.hypot(dx,dy);
-    c.walk=L>.04; if(c.walk){ const st=Math.min(L,CMD.v*dt*(c.repli>R.t?1.3:1)); c.x+=dx/L*st; c.y+=dy/L*st; if(Math.abs(dx)>.02) c.f=dx>0?1:-1; }
+    const was=c.walk; c.walk=L>.04; if(was&&!c.walk&&!(c.repli>R.t)) c.cheerT=R.t; if(c.walk){ const st=Math.min(L,CMD.v*dt*(c.repli>R.t?1.3:1)); c.x+=dx/L*st; c.y+=dy/L*st; if(Math.abs(dx)>.02) c.f=dx>0?1:-1; }
     if(c.cd>0) c.cd=Math.max(0,c.cd-dt); }
   if(R.phase!=='run') return;
   while(R.spawnQ.length&&R.spawnQ[0].at<=R.t){ const q=R.spawnQ.shift(); addUnit(q.type,q.pi); }
@@ -1091,8 +1091,9 @@ const SETS={mo:{f:['mo1','mo2'],ref:342}, cav:{f:['cav1','cav2'],ref:304}, combi
   casseur:{f:['casseur-1','casseur-2'],ref:300}, meneur:{f:['meneur-1','meneur-2'],ref:300}};
 // marche en 4 poses (2 d'origine + 2 générées), fuite, poussée au bouclier, lancer de pavé, galop
 ['rouge','bleu','vert','jaune','violet','gris'].forEach(c=>{ SETS['em-'+c]={f:[`em-${c}-1`,`marche-${c}-a`,`em-${c}-2`,`marche-${c}-b`],ref:300}; SETS['fuite-'+c]={f:[`fuite-${c}-1`],ref:300}; });
-Object.assign(SETS,{cmd:{f:['cmd-repos','cmd-repos2'],ref:300},cmdM:{f:['cmd-marche1'],ref:300},cmdO:{f:['cmd-ordre'],ref:300},mop:{f:['mo-pousse'],ref:375},casL:{f:['casseur-lance'],ref:320},gal:{f:['galop1','galop2'],ref:335}});
+Object.assign(SETS,{cmd:{f:['cmd-repos','cmd-repos2'],ref:300},cmdM:{f:['cmd-marche1'],ref:300},cmdO:{f:['cmd-ordre'],ref:300},cmdO2:{f:['cmd-ordre2'],ref:300},cmdR:{f:['cmd-radio'],ref:300},mop:{f:['mo-pousse'],ref:375},casL:{f:['casseur-lance'],ref:320},gal:{f:['galop1','galop2'],ref:335}});
 const EMC=['rouge','bleu','vert','jaune','violet','gris'];
+['cmd','cmdM','cmdO','cmdO2','cmdR'].forEach(n=>SETS[n].f.forEach(spr)); // poses du commandant préchargées (sinon la 1re apparition passe en dessin de secours)
 function sprite1(g,n,h,flip){ const S=spr(n); if(!S.ok) return false; const w=h*S.img.width/S.img.height; g.save(); if(flip) g.scale(-1,1); g.drawImage(S.img,-w/2,-h,w,h); g.restore(); return true; }
 function setOk(n){ const S=SETS[n]; return S&&S.f.every(x=>spr(x).ok); }
 /* dessine la pose « frame » d'un jeu d'images, pieds en (0,0), tournée vers la droite (flip = vers la gauche) */
@@ -1247,7 +1248,8 @@ function render(){
       if(!rep2&&c.cd<=0&&R.phase==='run'){ g.strokeStyle=`rgba(255,209,102,${.6+.4*pu})`; g.lineWidth=.04; g.beginPath(); g.ellipse(0,.01,.26,.09,0,0,7); g.stroke(); }
       else if(c.cd>0){ g.strokeStyle='rgba(255,209,102,.8)'; g.lineWidth=.035; g.beginPath(); g.ellipse(0,.01,.26,.09,0,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-c.cd/CMD.cd)); g.stroke(); }
       const crie=R.t-c.shoutT<1.2, bob=c.walk?Math.abs(Math.sin(rt*9))*.04:0; g.translate(0,-bob); if(c.walk) g.rotate(c.f*.05+Math.sin(rt*9)*.03);
-      if(!sprite(g,crie?'cmdO':c.walk&&setOk('cmdM')?'cmdM':'cmd',c.walk?0:Math.floor(rt*.7)%2,.8,c.f<0)) cop(g,c.f,rt*5,false);
+      const st=crie?(R.t-c.shoutT>.55&&setOk('cmdO2')?'cmdO2':'cmdO'):c.walk&&setOk('cmdM')?'cmdM':!rep2&&R.t-c.cheerT<1.4&&setOk('cmdR')?'cmdR':'cmd';
+      if(!sprite(g,st,c.walk?0:Math.floor(rt*.7)%2,.8,st==='cmdO2'||st==='cmdR'?c.f>0:c.f<0)) cop(g,c.f,rt*5,false);
       if(crie){ for(let i=0;i<3;i++){ const k=((R.t-c.shoutT)*1.6+i*.3)%1; g.strokeStyle=`rgba(255,209,102,${(1-k)*.9})`; g.lineWidth=.03; g.beginPath(); g.arc(c.f*.42,-.62,.1+k*.35,-.7,.7); g.stroke(); } }
       if(rep2){ pill(g,0,-.95,'repli','#fff',.14,'#c0392b'); }
       g.restore(); }}); }
