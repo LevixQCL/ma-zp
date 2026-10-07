@@ -607,6 +607,69 @@ function genPads(paths){
   return out.map((c,i)=>({id:'p'+i,x:c.x,y:c.y}));
 }
 const MAPDATA=MAPS.map(m=>{ const paths=m.paths.map(mkPath); return {...m,P:paths,pads:genPads(paths)}; });
+/* ───── Cartes générées (Challenge, après les 4 quartiers) ─────
+   Un tronc qui serpente du haut jusqu'à l'hôtel de ville, puis des cortèges secondaires (par le haut ou par un côté)
+   qui le rejoignent. Rues à angle droit, jamais collées les unes aux autres, assez d'emplacements le long du trajet. */
+const RUES=['Rue Haute','Rue Neuve','Boulevard du Midi','Quartier des Casernes','Place du Jeu de Balle','Rue des Tanneurs','Quai aux Briques','Place Rouppe',
+  'Rue de Flandre','Porte de Hal','Place Fontainas','Rue Royale','Quartier Nord','Place Flagey','Boulevard Anspach','Rue du Marché','Place Liedts','Avenue de Stalingrad',
+  'Rue de la Loi','Place Saint-Josse','Parvis de Saint-Gilles','Square Ambiorix','Rue Belliard','Place Bara','Quartier Matonge','Rue Blaes','Place Sainte-Catherine','Rue Haute (bas)'];
+const XS=[1.5,2.5,3.5,4.5,5.5,6.5,7.5];
+function segDist(a,b){ // segments à angle droit [[x1,y1],[x2,y2]]
+  const h=s=>s[0][1]===s[1][1], cross=(s,t)=>{ const [H,V]=h(s)?[s,t]:[t,s]; const x0=Math.min(H[0][0],H[1][0]),x1=Math.max(H[0][0],H[1][0]),y0=Math.min(V[0][1],V[1][1]),y1=Math.max(V[0][1],V[1][1]);
+    return V[0][0]>=x0&&V[0][0]<=x1&&H[0][1]>=y0&&H[0][1]<=y1; };
+  if(h(a)!==h(b)&&cross(a,b)) return 0;
+  const ps=(p,s)=>{ const [A,B]=s,dx=B[0]-A[0],dy=B[1]-A[1],L=dx*dx+dy*dy||1; let t=((p[0]-A[0])*dx+(p[1]-A[1])*dy)/L; t=Math.max(0,Math.min(1,t)); return Math.hypot(A[0]+t*dx-p[0],A[1]+t*dy-p[1]); };
+  return Math.min(ps(a[0],b),ps(a[1],b),ps(b[0],a),ps(b[1],a)); }
+function mapOk(paths){
+  const segs=[], key=s=>s.map(p=>p.join(',')).join('|'), seen=new Set(), juncs=[];
+  paths.forEach((p,n)=>{ if(!n) return; const k=p.findIndex((q,i)=>i>0&&paths.slice(0,n).some(o=>o.some(t=>t[0]===q[0]&&t[1]===q[1]))); if(k>0) juncs.push(p[k-1]); });
+  paths.forEach(pts=>{ for(let i=1;i<pts.length;i++){ let parts=[[pts[i-1],pts[i]]];
+    // coupe les segments aux points de jonction
+    for(const j of juncs){ parts=parts.flatMap(s=>{ const on=segDist([j,j],s)<1e-6&&!(s.some(q=>q[0]===j[0]&&q[1]===j[1])); return on?[[s[0],j],[j,s[1]]]:[s]; }); }
+    for(const s of parts){ const k=key(s), k2=key([s[1],s[0]]); if(!seen.has(k)&&!seen.has(k2)){ seen.add(k); segs.push(s); } } } });
+  const share=(a,b)=>a.some(p=>b.some(q=>p[0]===q[0]&&p[1]===q[1]));
+  for(let i=0;i<segs.length;i++) for(let j=i+1;j<segs.length;j++){ if(share(segs[i],segs[j])) continue; if(segDist(segs[i],segs[j])<2.15) return false; }
+  return true; }
+function genMap(seed,nP){
+  for(let essai=0;essai<600;essai++){
+    const r=rng(seed*7919+essai*104729+13), pick2=a=>a[Math.floor(r()*a.length)], rnd=(a,b)=>Math.round((a+r()*(b-a))*10)/10;
+    // tronc
+    let x=pick2(XS), y=nP>2?rnd(3,5):nP>1?rnd(1.6,4.4):rnd(1.6,3.2); const T=[[x,-.6]];
+    while(y<=12.2){ const opts=XS.filter(v=>Math.abs(v-x)>=2&&(nP<3||Math.abs(v-x)<=4)); const nx=pick2(opts); T.push([x,y],[nx,y]); x=nx; y+=nP>2?rnd(3,4.6):rnd(2.6,4.1); }
+    if(T.length<(nP>2?3:5)) continue; T.push([x,14.7]);
+    const paths=[T]; let ok=true;
+    for(let k=1;k<nP&&ok;k++){ let p=null;
+      for(let t=0;t<120&&!p;t++){
+        // point de jonction sur le tronc (pas trop près d'un virage), puis un trajet à angle droit depuis le haut ou un côté
+        const base=r()<.7?T:paths[Math.floor(r()*paths.length)], i=1+Math.floor(r()*(base.length-1)), A=base[i-1], B=base[i], vert=A[0]===B[0], L=Math.hypot(B[0]-A[0],B[1]-A[1]);
+        if(L<3) continue; const f=1.2+r()*(L-2.7), J=[A[0]+(B[0]-A[0])*f/L, A[1]+(B[1]-A[1])*f/L].map(v=>Math.round(v*10)/10);
+        if(J[1]<3||J[1]>10.8) continue;
+        if(base!==T&&T.some(q=>q[0]===A[0]&&q[1]===A[1])) continue; // déjà sur le tronc
+        const reste=[J,...base.slice(i)]; let tete;
+        if(vert){ // on arrive à l'horizontale
+          const de=r()<.5?'haut':'cote';
+          if(de==='cote'){ const x0=J[0]<MW/2?-.7:MW+.7; tete=[[x0,J[1]]]; }
+          else { const xs=pick2(XS.filter(v=>Math.abs(v-J[0])>=2.2)); tete=[[xs,-.6],[xs,J[1]]]; }
+        } else { // on arrive à la verticale
+          const de=r()<.65?'haut':'cote';
+          if(de==='haut') tete=[[J[0],-.6]];
+          else { const x0=r()<.5?-.7:MW+.7, ys=rnd(1.2,J[1]-2.2); if(ys<1.2) continue; tete=[[x0,ys],[J[0],ys]]; }
+        }
+        p=[...tete,...reste];
+        if(paths.some(q=>Math.hypot(q[0][0]-p[0][0],q[0][1]-p[0][1])<2.2)||!mapOk([...paths,p])) p=null;
+      }
+      if(p) paths.push(p); else ok=false; }
+    if(!ok||!mapOk(paths)) continue;
+    const P=paths.map(mkPath); if(P[0].len<(nP>2?18:24)||P.some(q=>q.len<11)) continue;
+    const pads=genPads(P); if(pads.length<9+nP) continue;
+    const cotes=paths.filter(q=>q[0][0]<0||q[0][0]>MW).length;
+    return {nom:RUES[seed%RUES.length],sous:nP>1?`${nP} cortèges${cotes?`, dont ${cotes>1?cotes:'un'} par le côté`:''}`:'1 cortège',
+      hp:genHp(P),w:P.map((q,i)=>i?(nP>2?.75:1):1),paths,P,pads,seed,gen:true}; }
+  return MAPDATA[seed%MAPDATA.length];
+}
+/* Résistance des émeutiers selon la carte : plus le trajet commun est long, plus on a le temps de les repousser. */
+const GEN={};
+function genHp(P){ const tronc=Math.min(P[0].len,46); return Math.round((1.15+(tronc-24)*.03)*(P.length===1?1.05:P.length===2?1.15:1.12)*100)/100; }
 const padOf=id=>R.pads.find(p=>p.id===id);
 const rangeOf=tw=>MEANS[tw.type].range+LV.rng[tw.lvl-1];
 const upCost=tw=>tw.lvl>=3?null:Math.round(MEANS[tw.type].cout*LV.cout[tw.lvl]);
@@ -614,7 +677,7 @@ const sellVal=tw=>Math.floor(tw.spent*.6);
 
 /* ───── partie ───── */
 function resetGame(cfg,tuto,mapIdx){
-  R.cfg=cfg; R.map=mapIdx||0; R.M=MAPDATA[R.map]; R.pads=R.M.pads;
+  R.cfg=cfg; if(mapIdx&&typeof mapIdx==='object'){ R.map=-1; R.M=mapIdx; } else { R.map=mapIdx||0; R.M=MAPDATA[R.map]; } R.pads=R.M.pads;
   R.tuto=tuto?1:0; R.wave=0; R.units=[]; R.spawnQ=[]; R.fx=[]; R.jets=[]; R.towers={}; R.sel=null; R.disp=0; R.leaks={}; R.seen=new Set(); R.pause=false;
   R.somm={cd:0,placing:false,fx:[]}; R.flaques=[]; R.projs=[]; $('panel').hidden=true;
   R.waves=tuto?1:cfg.waves; R.lives=R.lives0=tuto?15:cfg.lives;
@@ -797,11 +860,12 @@ function introFoe(type){
 }
 function chooseMap(cfg){
   const el=$('panel'), c=store.get('campagne',{});
-  el.innerHTML=`<div><div class="ey" style="color:var(--accent)">Campagne</div><h3>Choisis le quartier</h3></div><div class="levels">${MAPS.map((m,i)=>{ const open=i===0||c[i-1]>0, st=c[i]||0;
+  el.innerHTML=`<div><div class="ey" style="color:var(--accent)">Campagne</div><h3>Choisis le quartier</h3></div><button class="btn" id="toDefi">🏆 Challenge : niveaux sans fin, de plus en plus durs</button><div class="levels">${MAPS.map((m,i)=>{ const open=i===0||c[i-1]>0, st=c[i]||0;
     return `<button class="lvl" data-i="${i}" ${open?'':'disabled'}><canvas data-m="${i}"></canvas><span class="n">${i+1}</span>${open?'':'<span class="lock">🔒</span>'}<b>${m.nom}</b><span>${m.sous}</span><span class="st">${'★'.repeat(st)}${'☆'.repeat(3-st)}</span></button>`; }).join('')}</div>
     <p style="color:var(--mute);font-size:13px">Réussis un quartier pour débloquer le suivant.</p>`;
   el.hidden=false;
   el.querySelectorAll('canvas[data-m]').forEach(cv=>{ const i=+cv.dataset.m; cv.width=180; cv.height=280; const g=cv.getContext('2d'); g.setTransform(20,0,0,20,0,0); drawMap(g,MAPDATA[i],MAPDATA[i].pads); });
+  $('toDefi').onclick=()=>{ const q=new URLSearchParams(location.search); q.set('mode','train'); location.search=q.toString(); };
   el.querySelectorAll('.lvl').forEach(b=>b.onclick=()=>{ if(b.disabled) return; el.hidden=true; resetGame(cfg,false,+b.dataset.i); });
   R.phase='idle'; ui();
 }
@@ -907,6 +971,7 @@ function resize(){
 /* Décors illustrés (facultatifs) : déposer img/bouclage/quartier-1.webp … quartier-4.webp (ou .png), même cadrage que les plans. */
 const DECORS={};
 function decor(i){
+  if(i<0) return null;
   if(DECORS[i]) return DECORS[i];
   const d=DECORS[i]={ok:false,img:new Image()}, ext=['webp','png']; let k=0;
   d.img.onload=()=>{ d.ok=true; if(R.map===i) resize(); };
@@ -922,7 +987,7 @@ const RW=1.05;
 function strokeP(g,P,w,col,dash){ g.strokeStyle=col; g.lineWidth=w; g.lineJoin='round'; g.lineCap='butt'; if(dash) g.setLineDash(dash); g.beginPath(); P.pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.stroke(); g.setLineDash([]); }
 function minDistPaths(M,x,y){ let m=9; M.P.forEach(P=>{ const n=nearestOn(P,x,y); if(n.dist<m) m=n.dist; }); return m; }
 function drawMap(g,M,pads){
-  const rnd=rng(5324+M.paths.length*17);
+  const rnd=rng(5324+M.paths.length*17+(M.seed||0)*131);
   // sol : dalles sombres
   g.fillStyle='#1b2333'; g.fillRect(0,0,MW,MH);
   g.strokeStyle='rgba(255,255,255,.035)'; g.lineWidth=.015;
@@ -1294,7 +1359,12 @@ Shell.init({
   winTitle:'Ordre rétabli', loseTitle:'Le cordon a cédé', skin:'Cordon de nuit',
   malus:'l’hôtel de ville est dégradé : moral des équipes Intervention en baisse et un combi immobilisé jusqu’à demain.',
   // Challenge : on enchaîne les quartiers, puis les cortèges deviennent plus déterminés et plus serrés.
-  niveau(n,cfg){ cfg.map=(n-1)%MAPS.length; cfg.waves=n<=2?4:n<=4?5:6; return cfg; },
+  // Niveaux 1 à 4 : les quartiers de la campagne. Ensuite, une carte inédite par niveau (la même pour tout le monde),
+  // avec de plus en plus de cortèges ; les vagues s'allongent et les émeutiers se durcissent un peu à chaque niveau.
+  niveau(n,cfg){
+    if(n<=MAPS.length){ cfg.map=n-1; cfg.waves=n<=2?4:5; return cfg; }
+    cfg.map=-1; cfg.seed=n; cfg.cort=n<=5?1:n<=10?2:n<=14?(n%2?3:2):3;
+    cfg.waves=n<=12?6:n<=20?7:8; return cfg; },
   onInit(){
     C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); spr('lance'); spr('frise'); R.M=MAPDATA[0]; R.pads=R.M.pads;
     resize(); new ResizeObserver(resize).observe($('field'));
@@ -1307,7 +1377,9 @@ Shell.init({
   },
   onMenu(){ R.over=true; R.phase='idle'; R.units=[]; R.towers={}; R.tuto=0; R.sel=null; $('panel').hidden=true; R.pause=false; ui(); tip(); },
   onPlay(cfg){
-    if(Shell.enDefi) return resetGame(cfg,false,cfg.map||0);
+    if(Shell.enDefi){ if(cfg.map>=0) return resetGame(cfg,false,cfg.map);
+      const M=GEN[cfg.seed]||(GEN[cfg.seed]=genMap(cfg.seed,cfg.cort)); resetGame(cfg,false,M);
+      return setTimeout(()=>Shell.toast(`${M.nom} · ${M.sous}`,'info'),900); }
     if(Q2.get('mode')==='incident'){ const cq=Number(Q2.get('carte')); return resetGame(cfg,false,Number.isInteger(cq)&&MAPS[cq]?cq:({facile:0,normal:1,difficile:2}[Q2.get('diff')]??1)); }
     chooseMap(cfg);
   },
@@ -1325,7 +1397,7 @@ Shell.init({
   }
 });
 // Accès pour les simulations d'équilibrage (sans effet en jeu).
-window.__bouclage={R,posOn,MAPS,MAPDATA,MEANS,FOES,WAVES,LV,resetGame,launchWave,step,upCost,
+window.__bouclage={R,posOn,MAPS,MAPDATA,genMap,mapOk,MEANS,FOES,WAVES,LV,resetGame,launchWave,step,upCost,
   build(pad,type){ const M=MEANS[type]; if(R.towers[pad]||R.agents<M.cout) return false; const used=Object.values(R.towers).filter(t=>t.type===type).length; if(R.dispo[type]!==undefined&&used>=R.dispo[type]) return false; R.agents-=M.cout; R.towers[pad]=newTower(pad,type); return true; },
   up(pad){ const tw=R.towers[pad]; if(!tw||tw.lvl>=3) return false; const c=upCost(tw); if(R.agents<c) return false; R.agents-=c; tw.spent+=c; tw.lvl++; setupTower(tw,pad); return true; },
   somm(x,y){ if(R.somm.cd>0||R.phase!=='run') return false; R.units.filter(u=>u.state==='go'&&u.p&&Math.hypot(u.p.x-x,u.p.y-y)<=SOMM.rayon).forEach(u=>{ u.somUntil=R.t+SOMM.dure; u.hp-=SOMM.perte; }); R.somm.cd=SOMM.cd; return true; }};
