@@ -549,11 +549,14 @@ const Shell = (() => {
   function frame(ts){
     const dt=Math.min(.05,(ts-last)/1000); last=ts;
     if(st.timerOn){ st.timeLeft-=dt*st.timerRate; if(st.timeLeft<=0){ st.timeLeft=0; st.timerOn=false; st.onTimeout && st.onTimeout(); } }
-    const playing = st.mode==='play';
-    $('timer').textContent = playing ? fmt(st.timeLeft) : '–';
-    const frac = playing ? Math.max(0,st.timeLeft/st.timeTotal) : 1;
-    $('ringval').style.strokeDashoffset = CIRC*(1-frac);
-    $('ring').classList.toggle('warn', playing && st.timeLeft<10);
+    // G.ownTimer : le mini-jeu gère lui-même l'anneau du haut (Maintien de l'ordre : compte à rebours entre les vagues)
+    if(!G.ownTimer){
+      const playing = st.mode==='play';
+      $('timer').textContent = playing ? fmt(st.timeLeft) : '–';
+      const frac = playing ? Math.max(0,st.timeLeft/st.timeTotal) : 1;
+      $('ringval').style.strokeDashoffset = CIRC*(1-frac);
+      $('ring').classList.toggle('warn', playing && st.timeLeft<10);
+    }
     if(!st.pause) G.onFrame && G.onFrame(dt, ts/1000);
     requestAnimationFrame(frame);
   }
