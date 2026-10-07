@@ -348,7 +348,7 @@ const Shell = (() => {
     return G.niveau ? G.niveau(n,out) : out;
   }
   const eyebrow = t => { const eb=document.querySelector('.top .eyebrow'); if(eb) eb.textContent=t; };
-  const eyebrowBase = () => (RENF?'Appui PJF · ':INC?'Incident du jour · ':MODE==='train'?'Challenge · ':'')+G.serviceShort;
+  const eyebrowBase = () => (RENF?'Appui PJF · ':INC?'Incident du jour · ':G&&G.evt?'Événement · ':MODE==='train'?'Challenge · ':'')+G.serviceShort;
   const recLigne = () => DEFI.rec ? `Record de la partie : <b>niveau ${DEFI.rec}</b>${DEFI.recNom?` par ${escH(DEFI.recNom)}`:''}.` : 'Pas encore de record dans la partie : le premier niveau réussi le crée.';
   // Course en cours gardée sur l'appareil : on peut quitter le mini-jeu (ou être coupé) et reprendre au même niveau,
   // avec les mêmes cœurs. Un niveau quitté en cours de route est simplement rejoué. La sauvegarde vaut pour ce joueur
@@ -421,6 +421,18 @@ const Shell = (() => {
     const tutoBtns = (goLbl) => st.tuto
       ? `<button class="btn primary" id="go">${goLbl}</button><button class="btn" id="tuto">Revoir le tuto</button>`
       : `<button class="btn primary" id="tuto">Commencer le tuto</button><button class="btn" id="go">${RENF?'Commencer sans tuto':INC?'Intervenir sans tuto':'Jouer directement'}</button>`;
+    // Événement d'actualité (lancé depuis Ma ZP) : une seule partie, réglage normal, puis invitation au Challenge.
+    if(G.evt && !INC){
+      showCard(`
+        ${hero('Événement · '+G.service)}
+        <h2>${G.headline}</h2>
+        ${G.story}
+        <div class="row"><button class="btn primary" id="evtGo">${G.evt.go||'Jouer'}</button><button class="btn" id="tuto">${st.tuto?'Revoir le tuto':'Tuto'}</button></div>
+        ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
+        <p class="demo">Une partie en difficulté normale, sans effet sur ta zone.</p>`);
+      $('evtGo').onclick=jouerEvt; $('tuto').onclick=startTuto;
+      return;
+    }
     if(INC){
       const d=G.diffs[st.diff];
       showCard(`
@@ -471,12 +483,23 @@ const Shell = (() => {
     if(INC){ if(fini) return; if(!joue){ joue=true; post('start'); } }
     hide(); hideCoach(); st.mode='play'; G.onPlay(G.diffs[st.diff]);
   }
+  function jouerEvt(){ hide(); hideCoach(); st.mode='play'; G.onPlay(G.evt.cfg()); }
+  function resultEvt({ok, stats, details}){
+    st.timerOn=false; st.mode='result'; post('result',{ok, defi:true});
+    const detailHtml = details && details.length && !ok ? `<div class="debrief-list"><b>Ce qui s’est mal passé</b><ul>${details.map(d=>`<li><span>${d}</span></li>`).join('')}</ul></div>` : '';
+    showCard(`<div class="verdict ${ok?'ok':'bad'}">${ok?ICONS.check:ICONS.cross}</div><h2>${ok?G.winTitle:G.loseTitle}</h2>
+      <div class="stats">${stats.slice(0,3).map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')}</div>
+      ${detailHtml}
+      <div class="defi-box"><div><b>${G.evt.finTitre||'Tu as aimé ce jeu ?'}</b><span>${G.evt.fin}</span></div></div>
+      <div class="row"><button class="btn primary" id="evtFin">Retour à ma zone</button><button class="btn" id="evtAgain">${ok?'Rejouer':'Réessayer'}</button></div>`);
+    $('evtFin').onclick=()=>post('close'); $('evtAgain').onclick=jouerEvt;
+  }
   function startTuto(){ hide(); st.mode='tuto'; st.timerOn=false; G.onTuto(); }
   function endTuto(){
     st.tuto=true; store.set('tuto',true); hideCoach(); st.mode='menu'; st.timerOn=false; G.onMenu && G.onMenu();
     showCard(`${hero('Tutoriel terminé')}<h2>Les règles en bref</h2><ul>${G.rules.map(r=>`<li><span>${r}</span></li>`).join('')}</ul>
       <div class="row"><button class="btn primary" id="go">${INC?'Intervenir':MODE==='train'?'Lancer le challenge':'Lancer une partie'}</button><button class="btn" id="tomenu">${INC?'Plus tard':'Menu'}</button></div>`);
-    $('go').onclick=MODE==='train'?startDefi:play; $('tomenu').onclick=INC?()=>post('close'):menu;
+    $('go').onclick=G.evt&&!INC?jouerEvt:MODE==='train'?startDefi:play; $('tomenu').onclick=INC?()=>post('close'):menu;
   }
   function startTimer(sec,onTimeout){ st.timeLeft=sec; st.timeTotal=sec; st.timerOn=true; st.timerRate=1; st.onTimeout=onTimeout; }
   function stopTimer(){ st.timerOn=false; }
@@ -484,6 +507,7 @@ const Shell = (() => {
 
   function result({ok, stats, faults, malus, note, details}){
     if(run && !INC){ resultDefi({ok, stats, details}); return; }
+    if(G.evt && !INC){ resultEvt({ok, stats, details}); return; }
     st.timerOn=false; st.mode='result';
     let pts=0, skin=false;
     if(ok) pts=faults===0?2:1;
@@ -653,6 +677,14 @@ const SOMM={cd:25,dure:4,rayon:1.6,perte:10,demiTour:.35};
 const CMD={v:2.2,aura:2.0,bonus:.12,r:1.9,cd:20,perte:7,dure:3,deborde:4,repli:5,hp:1.05};
 
 const Q2=new URLSearchParams(location.search);
+/* Événement d'actualité (lancé depuis Ma ZP) : même Challenge, autre scénario, avec la cause de la mobilisation et ses sources. */
+const EVT={'2026-10-mobilisation-etudiante':{
+  headline:'Mobilisation étudiante',
+  story:`<p>Étudiants du supérieur et élèves du secondaire manifestent en Fédération Wallonie-Bruxelles. Ils protestent contre la <b>hausse du minerval</b> (près de 1 200 € pour plus de la moitié des étudiants), soutiennent leurs <b>professeurs</b> face aux réformes de l’enseignement (classes surchargées, bâtiments vétustes, profs non remplacés) et dénoncent la hausse des <b>abonnements TEC</b>.</p><p>Le cortège est pacifique dans sa grande majorité ; quelques casseurs s’y mêlent. <b>Encadre-le</b> jusqu’à ton hôtel de police sans débordement.</p><p class="small" style="opacity:.8">Pour en savoir plus : <a href="https://www.parismatch.be/actualites/societe/2026/10/07/le-blocus-des-lyceens-francais-sexporte-en-belgique-pourquoi-nos-etudiants-du-secondaire-manifestent-ils-JRSQLVH4TNHWPADWTPONFEUSMU/" target="_blank" rel="noopener">Paris Match Belgique</a> · <a href="https://www.rtbf.be/article/les-etudiants-se-mobilisent-a-bruxelles-contre-la-hausse-du-minerval-11786067" target="_blank" rel="noopener">RTBF</a></p>`,
+  manif:'Manifestant', meneur:'Délégué étudiant',
+  // Une seule partie, réglage « normal » (celui du niveau 7 du Challenge) sur la Grand-Place, camion sono en tête de la dernière vague.
+  niveau:7, boss:['sono'], go:'🛡️ Encadrer la manifestation'}}[Q2.get('evt')]||null;
+if(EVT){ FOES.manif.nom=EVT.manif; FOES.meneur.nom=EVT.meneur; }
 // Ouvert directement (sans mode) : on part sur le Challenge, une carte à la fois, de plus en plus dure.
 if(!Q2.get('mode')&&!Q2.has('demo')){ Q2.set('mode','train'); location.replace(location.pathname+'?'+Q2.toString()); }
 const R={cfg:null,map:0,M:null,pads:[],phase:'idle',wave:0,waves:6,lives:15,lives0:15,agents:0,towers:{},units:[],spawnQ:[],nextIn:null,sel:null,waveEnd:0,
@@ -1938,8 +1970,11 @@ function pill(g,x,y,txt,col,sz=.17,bg){ g.font=`800 ${sz}px "Instrument Sans",sa
 
 Shell.init({
   key:'bouclage', service:'Incident Intervention', serviceShort:'Intervention',
-  headline:'Manifestation qui dégénère',
-  story:`<p>Une manifestation dégénère : des cortèges de casseurs remontent les rues vers l’hôtel de ville.</p><p>Place tes moyens de maintien de l’ordre le long du trajet et <b>repousse-les</b> : à bout de détermination, ils font demi-tour. Chaque émeutier repoussé te rend des agents, de moins en moins au fil des vagues : garde une réserve.</p>`,
+  evt:EVT?{go:EVT.go, finTitre:'Tu as aimé ce jeu ?',
+    cfg:()=>Object.assign(Shell.cfgNiveau(EVT.niveau),{label:EVT.headline,evt:true,seed:1,boss:EVT.boss.slice(),meteo:null}),
+    fin:'Retrouve-le quand tu veux dans <b>Énigmes › Entraînement › 🏆 Challenge</b> : le même jeu en niveaux de plus en plus durs, avec tracteurs, cars de supporters et un record à battre.'}:null,
+  headline:EVT?EVT.headline:'Manifestation qui dégénère',
+  story:EVT?EVT.story:`<p>Une manifestation dégénère : des cortèges de casseurs remontent les rues vers l’hôtel de ville.</p><p>Place tes moyens de maintien de l’ordre le long du trajet et <b>repousse-les</b> : à bout de détermination, ils font demi-tour. Chaque émeutier repoussé te rend des agents, de moins en moins au fil des vagues : garde une réserve.</p>`,
   diffs:{
     difficile:{agents:7,label:'Difficile',eff:17,lives:12,combi:2,autopompe:1,cavalerie:2,hp:1,gap:.5,pause:12,waves:6},
     normal:{agents:9,label:'Normal',eff:18,lives:15,combi:3,autopompe:2,cavalerie:3,hp:1,gap:.55,pause:14,waves:6},
@@ -1992,6 +2027,8 @@ Shell.init({
   },
   onMenu(){ R.over=true; R.phase='idle'; R.units=[]; R.towers={}; R.tuto=0; R.sel=null; $('panel').hidden=true; R.pause=false; ui(); tip(); },
   onPlay(cfg){
+    if(cfg.evt){ resetGame(cfg,false,cfg.map); const M=R.M; setTimeout(()=>Shell.toast(`${M.nom} · ${M.sous}`,'info'),700);
+      const tb=textesBonus(R.bonus||{}); if(tb.length) setTimeout(()=>Shell.toast(`Ta zone : ${tb.join(' · ')}`,'ok'),2400); return; }
     const annonce=()=>{ const M=R.M, l=[`${M.nom} · ${M.sous}`]; if(R.meteo) l.push(`${METEO[R.meteo].nom} : ${METEO[R.meteo].ds}`);
       l.forEach((t,i)=>setTimeout(()=>Shell.toast(t,t.startsWith('Brouillard')||t.startsWith('Pluie')?'bad':'info'),700+i*1700));
       const qr=QREC.data[R.map]; if(Shell.enDefi&&R.cfg.niveau<=MAPS.length) l.push(qr&&qr.rec?`Record du quartier : ${qr.rec.score} (${qr.rec.nom})${qr.moi?` · ton meilleur : ${qr.moi}`:''}`:'Aucun record sur ce quartier : à toi de le poser');

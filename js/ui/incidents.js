@@ -181,7 +181,7 @@ async function noterQuartier(jeu, m, score) {
   await S.backend.savePlayer(S.user.uid, p);
 }
 
-export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, onFin = () => {}, onEntrainement = () => {} } = {}) {
+export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, evt = null, onFin = () => {}, onEntrainement = () => {} } = {}) {
   document.querySelector('.mj-wrap')?.remove();
   if (jeu === 'tracage') jeu = 'interception'; // appui accordé avant le remplacement du traçage d'IP
   const p = new URLSearchParams({ mode });
@@ -219,6 +219,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
     p.set('malus', `pas de pièce, l’équipe ${u.court} repart`);
   }
   if (mode === 'train') for (const [k, v] of Object.entries(paramsDefi(jeu))) p.set(k, v);
+  if (evt) p.set('evt', evt); // événement d'actualité : scénario du mini-jeu
   const wrap = document.createElement('div');
   wrap.className = 'mj-wrap';
   wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true');

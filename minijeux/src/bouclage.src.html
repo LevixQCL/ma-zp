@@ -164,6 +164,14 @@ const SOMM={cd:25,dure:4,rayon:1.6,perte:10,demiTour:.35};
 const CMD={v:2.2,aura:2.0,bonus:.12,r:1.9,cd:20,perte:7,dure:3,deborde:4,repli:5,hp:1.05};
 
 const Q2=new URLSearchParams(location.search);
+/* Événement d'actualité (lancé depuis Ma ZP) : même Challenge, autre scénario, avec la cause de la mobilisation et ses sources. */
+const EVT={'2026-10-mobilisation-etudiante':{
+  headline:'Mobilisation étudiante',
+  story:`<p>Étudiants du supérieur et élèves du secondaire manifestent en Fédération Wallonie-Bruxelles. Ils protestent contre la <b>hausse du minerval</b> (près de 1 200 € pour plus de la moitié des étudiants), soutiennent leurs <b>professeurs</b> face aux réformes de l’enseignement (classes surchargées, bâtiments vétustes, profs non remplacés) et dénoncent la hausse des <b>abonnements TEC</b>.</p><p>Le cortège est pacifique dans sa grande majorité ; quelques casseurs s’y mêlent. <b>Encadre-le</b> jusqu’à ton hôtel de police sans débordement.</p><p class="small" style="opacity:.8">Pour en savoir plus : <a href="https://www.parismatch.be/actualites/societe/2026/10/07/le-blocus-des-lyceens-francais-sexporte-en-belgique-pourquoi-nos-etudiants-du-secondaire-manifestent-ils-JRSQLVH4TNHWPADWTPONFEUSMU/" target="_blank" rel="noopener">Paris Match Belgique</a> · <a href="https://www.rtbf.be/article/les-etudiants-se-mobilisent-a-bruxelles-contre-la-hausse-du-minerval-11786067" target="_blank" rel="noopener">RTBF</a></p>`,
+  manif:'Manifestant', meneur:'Délégué étudiant',
+  // Une seule partie, réglage « normal » (celui du niveau 7 du Challenge) sur la Grand-Place, camion sono en tête de la dernière vague.
+  niveau:7, boss:['sono'], go:'🛡️ Encadrer la manifestation'}}[Q2.get('evt')]||null;
+if(EVT){ FOES.manif.nom=EVT.manif; FOES.meneur.nom=EVT.meneur; }
 // Ouvert directement (sans mode) : on part sur le Challenge, une carte à la fois, de plus en plus dure.
 if(!Q2.get('mode')&&!Q2.has('demo')){ Q2.set('mode','train'); location.replace(location.pathname+'?'+Q2.toString()); }
 const R={cfg:null,map:0,M:null,pads:[],phase:'idle',wave:0,waves:6,lives:15,lives0:15,agents:0,towers:{},units:[],spawnQ:[],nextIn:null,sel:null,waveEnd:0,
@@ -1449,8 +1457,11 @@ function pill(g,x,y,txt,col,sz=.17,bg){ g.font=`800 ${sz}px "Instrument Sans",sa
 
 Shell.init({
   key:'bouclage', service:'Incident Intervention', serviceShort:'Intervention',
-  headline:'Manifestation qui dégénère',
-  story:`<p>Une manifestation dégénère : des cortèges de casseurs remontent les rues vers l’hôtel de ville.</p><p>Place tes moyens de maintien de l’ordre le long du trajet et <b>repousse-les</b> : à bout de détermination, ils font demi-tour. Chaque émeutier repoussé te rend des agents, de moins en moins au fil des vagues : garde une réserve.</p>`,
+  evt:EVT?{go:EVT.go, finTitre:'Tu as aimé ce jeu ?',
+    cfg:()=>Object.assign(Shell.cfgNiveau(EVT.niveau),{label:EVT.headline,evt:true,seed:1,boss:EVT.boss.slice(),meteo:null}),
+    fin:'Retrouve-le quand tu veux dans <b>Énigmes › Entraînement › 🏆 Challenge</b> : le même jeu en niveaux de plus en plus durs, avec tracteurs, cars de supporters et un record à battre.'}:null,
+  headline:EVT?EVT.headline:'Manifestation qui dégénère',
+  story:EVT?EVT.story:`<p>Une manifestation dégénère : des cortèges de casseurs remontent les rues vers l’hôtel de ville.</p><p>Place tes moyens de maintien de l’ordre le long du trajet et <b>repousse-les</b> : à bout de détermination, ils font demi-tour. Chaque émeutier repoussé te rend des agents, de moins en moins au fil des vagues : garde une réserve.</p>`,
   diffs:{
     difficile:{agents:7,label:'Difficile',eff:17,lives:12,combi:2,autopompe:1,cavalerie:2,hp:1,gap:.5,pause:12,waves:6},
     normal:{agents:9,label:'Normal',eff:18,lives:15,combi:3,autopompe:2,cavalerie:3,hp:1,gap:.55,pause:14,waves:6},
@@ -1503,6 +1514,8 @@ Shell.init({
   },
   onMenu(){ R.over=true; R.phase='idle'; R.units=[]; R.towers={}; R.tuto=0; R.sel=null; $('panel').hidden=true; R.pause=false; ui(); tip(); },
   onPlay(cfg){
+    if(cfg.evt){ resetGame(cfg,false,cfg.map); const M=R.M; setTimeout(()=>Shell.toast(`${M.nom} · ${M.sous}`,'info'),700);
+      const tb=textesBonus(R.bonus||{}); if(tb.length) setTimeout(()=>Shell.toast(`Ta zone : ${tb.join(' · ')}`,'ok'),2400); return; }
     const annonce=()=>{ const M=R.M, l=[`${M.nom} · ${M.sous}`]; if(R.meteo) l.push(`${METEO[R.meteo].nom} : ${METEO[R.meteo].ds}`);
       l.forEach((t,i)=>setTimeout(()=>Shell.toast(t,t.startsWith('Brouillard')||t.startsWith('Pluie')?'bad':'info'),700+i*1700));
       const qr=QREC.data[R.map]; if(Shell.enDefi&&R.cfg.niveau<=MAPS.length) l.push(qr&&qr.rec?`Record du quartier : ${qr.rec.score} (${qr.rec.nom})${qr.moi?` · ton meilleur : ${qr.moi}`:''}`:'Aucun record sur ce quartier : à toi de le poser');

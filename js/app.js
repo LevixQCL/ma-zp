@@ -20,6 +20,7 @@ import { ouvrirBudget, ouvrirVehicule, ouvrirLogistique, ouvrirParc, rafraichirL
 import { DECOR, decorDebloque, conditionDecor, decorValide } from './engine/decor.js';
 import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
+import { actuAuBesoin, ouvrirActu, EVT_ACTU } from './ui/actu.js';
 import { tutoAuBesoin, lancerTuto, tutoFait } from './ui/tutoriel.js';
 import { lancerRoulette } from './ui/roulette.js';
 import { editionHtml, marquerEditionVue, editionVue } from './ui/edition.js';
@@ -169,7 +170,8 @@ function render() {
   const scroll = window.scrollY;
   app.innerHTML = banner + html;
   // La roulette « Early birds » n'est plus proposée (les skins déjà gagnés restent acquis).
-  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin()) nouveautesAuBesoin();
+  // Événement d'actualité (une fois par appareil) avant la note de nouveautés.
+  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin() && !actuAuBesoin(lancerActu)) nouveautesAuBesoin();
   if (S.route === 'ordres' && S.ordAncre) {
     const cible = document.querySelector(`[data-action="ord-open"][data-k="${S.ordAncre}"]`);
     S.ordAncre = null;
@@ -397,6 +399,8 @@ async function onClick(e) {
       case 'crise-vote': case 'crise-c': { if (actionCrise(a, el)) rerender(); break; }
       case 'dilemme': { const i = Number(el.dataset.i); S.draft.dilemme = S.draft.dilemme === i ? null : i; S.ordersDirty = true; rerender(); break; }
       case 'prime-choix': { const v = el.dataset.v; S.draft.prime = S.draft.prime === v ? null : v; S.ordersDirty = true; rerender(); break; }
+      case 'actu-voir': ouvrirActu(lancerActu); break;
+      case 'actu-jouer': lancerActu(); break;
       case 'jauge-skins': ouvrirJaugeSkins(); break;
       case 'jauge-apercu': ouvrirJaugeSkins(el.dataset.k); break;
       case 'appui-demande': { const k = el.dataset.k; S.draft.appui = S.draft.appui === k ? null : k; S.ordersDirty = true; rerender(); break; }
@@ -1102,6 +1106,11 @@ async function annoncerNDAuto(rattrapage = false) {
 }
 
 /** Compteurs d'entraînement envoyés au serveur, pour le classement du maître du jeu. */
+/** Événement d'actualité : lance son mini-jeu (Challenge) avec le scénario du jour. */
+async function lancerActu() {
+  try { S.players = await S.backend.getPlayers(); } catch (e) { /* hors ligne */ }
+  ouvrirMiniJeu(EVT_ACTU.jeu, { mode: 'train', evt: EVT_ACTU.id, onEntrainement: noterEntrainement, onFin: () => rerender() });
+}
 function noterEntrainement(plus) {
   if (!S.user || !S.backend || !S.backend.compterEntrainement) return;
   // Une seule fois par appareil : on y ajoute les énigmes comptées sur cet appareil avant le classement.

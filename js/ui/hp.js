@@ -1,5 +1,6 @@
 import { titresDefi } from './defis.js';
 import { noteVue } from './nouveautes.js';
+import { actuHtml } from './actu.js';
 // Écran HP (Hôtel de police) : l'accueil.
 import { cabossesChoisis } from '../engine/parc.js';
 import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone, skyline, cielStyle } from './common.js';
@@ -332,6 +333,7 @@ export function renderHP() {
     ${dilemmeHtml(st, z)}
     ${criseHtml()}
     ${releveHtml()}
+    ${actuHtml()}
     ${incidentsHtml()}
     <section class="card mazone" aria-label="Ma zone">
       <div class="mz-tete">

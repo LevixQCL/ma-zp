@@ -339,7 +339,7 @@ const Shell = (() => {
     return G.niveau ? G.niveau(n,out) : out;
   }
   const eyebrow = t => { const eb=document.querySelector('.top .eyebrow'); if(eb) eb.textContent=t; };
-  const eyebrowBase = () => (RENF?'Appui PJF · ':INC?'Incident du jour · ':MODE==='train'?'Challenge · ':'')+G.serviceShort;
+  const eyebrowBase = () => (RENF?'Appui PJF · ':INC?'Incident du jour · ':G&&G.evt?'Événement · ':MODE==='train'?'Challenge · ':'')+G.serviceShort;
   const recLigne = () => DEFI.rec ? `Record de la partie : <b>niveau ${DEFI.rec}</b>${DEFI.recNom?` par ${escH(DEFI.recNom)}`:''}.` : 'Pas encore de record dans la partie : le premier niveau réussi le crée.';
   // Course en cours gardée sur l'appareil : on peut quitter le mini-jeu (ou être coupé) et reprendre au même niveau,
   // avec les mêmes cœurs. Un niveau quitté en cours de route est simplement rejoué. La sauvegarde vaut pour ce joueur
@@ -412,6 +412,18 @@ const Shell = (() => {
     const tutoBtns = (goLbl) => st.tuto
       ? `<button class="btn primary" id="go">${goLbl}</button><button class="btn" id="tuto">Revoir le tuto</button>`
       : `<button class="btn primary" id="tuto">Commencer le tuto</button><button class="btn" id="go">${RENF?'Commencer sans tuto':INC?'Intervenir sans tuto':'Jouer directement'}</button>`;
+    // Événement d'actualité (lancé depuis Ma ZP) : une seule partie, réglage normal, puis invitation au Challenge.
+    if(G.evt && !INC){
+      showCard(`
+        ${hero('Événement · '+G.service)}
+        <h2>${G.headline}</h2>
+        ${G.story}
+        <div class="row"><button class="btn primary" id="evtGo">${G.evt.go||'Jouer'}</button><button class="btn" id="tuto">${st.tuto?'Revoir le tuto':'Tuto'}</button></div>
+        ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
+        <p class="demo">Une partie en difficulté normale, sans effet sur ta zone.</p>`);
+      $('evtGo').onclick=jouerEvt; $('tuto').onclick=startTuto;
+      return;
+    }
     if(INC){
       const d=G.diffs[st.diff];
       showCard(`
@@ -462,12 +474,23 @@ const Shell = (() => {
     if(INC){ if(fini) return; if(!joue){ joue=true; post('start'); } }
     hide(); hideCoach(); st.mode='play'; G.onPlay(G.diffs[st.diff]);
   }
+  function jouerEvt(){ hide(); hideCoach(); st.mode='play'; G.onPlay(G.evt.cfg()); }
+  function resultEvt({ok, stats, details}){
+    st.timerOn=false; st.mode='result'; post('result',{ok, defi:true});
+    const detailHtml = details && details.length && !ok ? `<div class="debrief-list"><b>Ce qui s’est mal passé</b><ul>${details.map(d=>`<li><span>${d}</span></li>`).join('')}</ul></div>` : '';
+    showCard(`<div class="verdict ${ok?'ok':'bad'}">${ok?ICONS.check:ICONS.cross}</div><h2>${ok?G.winTitle:G.loseTitle}</h2>
+      <div class="stats">${stats.slice(0,3).map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')}</div>
+      ${detailHtml}
+      <div class="defi-box"><div><b>${G.evt.finTitre||'Tu as aimé ce jeu ?'}</b><span>${G.evt.fin}</span></div></div>
+      <div class="row"><button class="btn primary" id="evtFin">Retour à ma zone</button><button class="btn" id="evtAgain">${ok?'Rejouer':'Réessayer'}</button></div>`);
+    $('evtFin').onclick=()=>post('close'); $('evtAgain').onclick=jouerEvt;
+  }
   function startTuto(){ hide(); st.mode='tuto'; st.timerOn=false; G.onTuto(); }
   function endTuto(){
     st.tuto=true; store.set('tuto',true); hideCoach(); st.mode='menu'; st.timerOn=false; G.onMenu && G.onMenu();
     showCard(`${hero('Tutoriel terminé')}<h2>Les règles en bref</h2><ul>${G.rules.map(r=>`<li><span>${r}</span></li>`).join('')}</ul>
       <div class="row"><button class="btn primary" id="go">${INC?'Intervenir':MODE==='train'?'Lancer le challenge':'Lancer une partie'}</button><button class="btn" id="tomenu">${INC?'Plus tard':'Menu'}</button></div>`);
-    $('go').onclick=MODE==='train'?startDefi:play; $('tomenu').onclick=INC?()=>post('close'):menu;
+    $('go').onclick=G.evt&&!INC?jouerEvt:MODE==='train'?startDefi:play; $('tomenu').onclick=INC?()=>post('close'):menu;
   }
   function startTimer(sec,onTimeout){ st.timeLeft=sec; st.timeTotal=sec; st.timerOn=true; st.timerRate=1; st.onTimeout=onTimeout; }
   function stopTimer(){ st.timerOn=false; }
@@ -475,6 +498,7 @@ const Shell = (() => {
 
   function result({ok, stats, faults, malus, note, details}){
     if(run && !INC){ resultDefi({ok, stats, details}); return; }
+    if(G.evt && !INC){ resultEvt({ok, stats, details}); return; }
     st.timerOn=false; st.mode='result';
     let pts=0, skin=false;
     if(ok) pts=faults===0?2:1;
