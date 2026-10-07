@@ -57,3 +57,27 @@ for (const t of QUEST_TYPES) console.log(JSON.stringify(generateQuest(t, 'demo',
   }
   console.log('OK : dossier noir jamais en double avec les énigmes du jour.');
 }
+// Formes d'énigmes : chaque forme, chaque niveau (hardcore compris), une seule bonne réponse.
+{
+  const { FORMES } = await import('../js/quests/quests.js');
+  let nf = 0;
+  for (const [type, fs] of Object.entries(FORMES)) for (const f of fs.filter((x) => x.gen)) for (let diff = 1; diff <= 6; diff++) for (let i = 0; i < 40; i++) {
+    const q = generateQuest(type, `f-${f.id}-${diff}-${i}`, diff, f.id);
+    nf++;
+    assert.equal(q.forme, f.id); assert.equal(q.type, type);
+    assert.ok(q.question && q.contexte, `${f.id} sans texte`);
+    if (q.mode === 'choix') {
+      const ids = q.choix.map((c) => c.id);
+      assert.equal(new Set(ids).size, ids.length, `${f.id} : choix en double`);
+      assert.ok(ids.length >= 3, `${f.id} : trop peu de choix`);
+      assert.equal(ids.filter((id) => checkAnswer(q, id)).length, 1, `${f.id} : plusieurs bonnes réponses`);
+    } else {
+      assert.ok(checkAnswer(q, q.answer), `${f.id} : réponse refusée`);
+      assert.ok(!checkAnswer(q, q.answer + '1'), `${f.id} : réponse fausse acceptée`);
+    }
+    if (f.id === 'sansmontre') assert.equal([...q.answer].sort().join(''), q.lettres);
+    if (f.id === 'arrivees') assert.equal(q.grille.gens.length, q.grille.veh.length);
+    if (['alibis', 'demi', 'arrivees', 'sansmontre', 'digicode'].includes(f.id)) assert.ok(q._pas >= 2, `${f.id} niv. ${diff} : trop facile (${q._pas})`);
+  }
+  console.log(`OK : ${nf} énigmes en formes nouvelles vérifiées.`);
+}

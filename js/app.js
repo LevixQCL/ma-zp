@@ -28,7 +28,7 @@ import { operationActive, effetsOperation } from './engine/zone.js';
 import { carteQuartiers } from './engine/quartiers.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations, agentsHorsServices } from './ui/ordres.js';
-import { renderQuete } from './ui/quete.js';
+import { renderQuete, formesVisibles } from './ui/quete.js';
 import { demarrerQuiz, repondreQuiz, suivanteQuiz, quizLocal, bonnesReponses, arreterMinuteur } from './ui/quiz.js';
 import { renderGuide } from './ui/guide.js';
 import { offreApres } from './ui/encheres.js';
@@ -44,7 +44,7 @@ import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, bas
 import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { renderDebrief } from './ui/debrief.js';
-import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES } from './quests/quests.js';
+import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES, FORMES } from './quests/quests.js';
 import { niveauEnigmes } from './engine/directeur.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
 import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND } from './engine/constants.js';
@@ -1015,6 +1015,7 @@ async function onClick(e) {
       case 'train-type': S.trainType = el.dataset.v; S.trainChoix = false; nouvelEntrainement(); rerender(); break;
       case 'train-choix': S.trainChoix = S.trainChoix === false; rerender(); break;
       case 'train-diff': S.trainDiff = Number(el.dataset.v); nouvelEntrainement(); rerender(); break;
+      case 'train-forme': S.trainForme = el.dataset.v; nouvelEntrainement(); rerender(); break;
       case 'train-new': nouvelEntrainement(); rerender(); window.scrollTo(0, 0); break;
       case 'quest-reroll': {
         const i = S.questIdx || 0;
@@ -1165,7 +1166,9 @@ function reprendreEntrainementLocal() {
 function nouvelEntrainement() {
   const type = S.trainType || 'quiment', diff = S.trainDiff || 3;
   if (type.startsWith('mj:')) { S.train = null; S.trainRes = null; S.questPick = null; return; }
-  S.train = { ...generateQuest(type, `train:${S.user.uid}:${Date.now()}:${Math.random()}`, diff), id: `train-${Date.now()}` };
+  const fs = formesVisibles() && FORMES[type];
+  const forme = fs && fs.some((f) => f.id === S.trainForme) ? S.trainForme : 'classique';
+  S.train = { ...generateQuest(type, `train:${S.user.uid}:${Date.now()}:${Math.random()}`, diff, forme), id: `train-${Date.now()}` };
   S.trainRes = null; S.questPick = null;
 }
 

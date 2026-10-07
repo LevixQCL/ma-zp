@@ -4,7 +4,14 @@ import { CHALLENGE } from '../engine/challenge.js';
 import { euros } from './euros.js';
 import { recordBitonal, monScoreBitonal } from './bitonal.js';
 import { S, esc, icon, tabbar, myZone } from './common.js';
-import { QUEST_TYPES, QUEST_LABELS } from '../quests/quests.js';
+import { QUEST_TYPES, QUEST_LABELS, FORMES, FORMES_EN_JEU } from '../quests/quests.js';
+import { digicodeHtml, digicodeResultat } from './digicode.js';
+
+/** Formes d'énigmes visibles en entraînement : en jeu, ou en aperçu (?apercu dans l'adresse). */
+export function formesVisibles() {
+  if (FORMES_EN_JEU) return true;
+  try { if (/[?&]apercu\b/.test(location.search)) sessionStorage.setItem('mazp-apercu', '1'); return sessionStorage.getItem('mazp-apercu') === '1'; } catch (e) { return false; }
+}
 import { SERVICES, SERVICE_LABELS, ENIGMES, gainMoral, chanceDelegue } from '../engine/constants.js';
 import { MINI_JEUX } from './incidents.js';
 import { quizLocal, quizEnregistre, quizQuestionHtml, bonnesReponses } from './quiz.js';
@@ -36,7 +43,7 @@ function renderFigures(q, fini) {
 
 // Grille de déduction à cocher : ✗ impossible, ✓ certain (mémorisée sur cet appareil).
 function renderGrille(q) {
-  const { gens, veh, lieux } = q.grille;
+  const { gens, veh, lieux, titres = ['Qui · véhicule', 'Qui · endroit', 'Véhicule · endroit'] } = q.grille;
   const m = (S.grilleMarks && S.grilleMarks[q.id]) || lire(`mazp-grille-${q.id}`) || {};
   S.grilleMarks = { ...(S.grilleMarks || {}), [q.id]: m };
   const table = (titre, lignes, cols, pre) => `<div class="gtab"><table><caption>${titre}</caption>
@@ -48,7 +55,7 @@ function renderGrille(q) {
   return `<section class="card tight" aria-label="Grille de déduction">
     <div class="between"><h2 class="section" style="margin:0">Ta grille</h2><button type="button" class="btn small ghost" data-action="grille-reset">Effacer</button></div>
     <p class="tiny muted" style="margin:0">Touche une case : ✗ impossible, puis ✓ certain, puis vide.</p>
-    ${table('Qui · véhicule', gens, veh, 'v')}${table('Qui · endroit', gens, lieux, 'l')}${table('Véhicule · endroit', veh, lieux, 'x')}
+    ${table(titres[0], gens, veh, 'v')}${table(titres[1], gens, lieux, 'l')}${table(titres[2], veh, lieux, 'x')}
   </section>`;
 }
 
@@ -121,6 +128,8 @@ function entrainementBarre() {
   try { st = JSON.parse(localStorage.getItem('mazp-entrainement') || '{}'); } catch (e) { /* rien */ }
   const t = S.trainType || 'quiment', d = S.trainDiff || 3;
   const x = st[t];
+  const fs = formesVisibles() && FORMES[t];
+  const f = (fs && S.trainForme && fs.some((y) => y.id === S.trainForme)) ? S.trainForme : 'classique';
   const ouvert = S.trainChoix !== false;
   const tuile = (k) => { const y = st[k]; return `<button type="button" class="tr-tuile petite" data-action="train-type" data-v="${k}" aria-pressed="${k === t}"><span class="tr-ico" aria-hidden="true">${ICO_ENIGME[k] || '❓'}</span><span class="tr-nom">${esc(QUEST_LABELS[k])}</span>${y ? `<span class="tr-s">${y.ok}/${y.n}</span>` : ''}</button>`; };
   const autres = QUEST_TYPES.filter((k) => !GROUPES_ENIGMES.some(([, l]) => l.includes(k)));
@@ -128,6 +137,8 @@ function entrainementBarre() {
   return `<section class="card tight" aria-label="Réglages de l’entraînement" style="gap:8px">
     <button type="button" class="between tr-entete" data-action="train-choix" aria-expanded="${ouvert}"><span class="small" style="font-weight:600">Énigme : ${ICO_ENIGME[t] || ''} ${esc(QUEST_LABELS[t])}</span><span class="tiny muted">${ouvert ? 'replier' : 'changer'} ${icon('chevron', 12)}</span></button>
     ${ouvert ? groupes.map(([g, l]) => `<span class="tr-grp">${esc(g)}</span><div class="tr-grille">${l.filter((k) => QUEST_TYPES.includes(k)).map(tuile).join('')}</div>`).join('') : ''}
+    ${fs ? `<div class="col" style="gap:4px"><span class="small" style="font-weight:600">Forme${FORMES_EN_JEU ? '' : ' <span class="pill" style="font-size:10px;padding:1px 6px">aperçu</span>'}</span>
+      <div class="segn" style="grid-template-columns:repeat(${fs.length},minmax(0,1fr))">${fs.map((y) => `<button type="button" aria-selected="${y.id === f}" data-action="train-forme" data-v="${y.id}">${esc(y.nom)}</button>`).join('')}</div></div>` : ''}
     <div class="col" style="gap:4px"><span class="small" style="font-weight:600">Difficulté</span>
       <div class="segn" style="grid-template-columns:repeat(6,minmax(0,1fr))">${[1, 2, 3, 4, 5, 6].map((n) => `<button type="button" aria-selected="${n === d}" data-action="train-diff" data-v="${n}">${n === 6 ? 'HC' : n}</button>`).join('')}</div></div>
     <span class="tiny muted">${x ? `Ton entraînement en ${esc(QUEST_LABELS[t])} : ${x.ok} réussie${x.ok > 1 ? 's' : ''} sur ${x.n}.` : 'Rien ne compte ici : ni classement, ni moral, ni PS.'} « HC » = niveau hardcore, celui du dossier noir.</span>
@@ -283,7 +294,7 @@ export function renderQuete() {
     ${bonusCard}
     ${propositionDelegue}
     <header class="between" style="align-items:flex-start">
-      <div class="col" style="gap:3px"><span class="kicker" ${noir ? 'style="color:#E0625A"' : ''}>${train ? 'Entraînement · ne compte pas' : noir ? 'Dossier noir · niveau hardcore' : `Énigme ${i + 1} sur 3`}</span><h1 class="big">${esc(q.typeLabel)}</h1></div>
+      <div class="col" style="gap:3px"><span class="kicker" ${noir ? 'style="color:#E0625A"' : ''}>${train ? 'Entraînement · ne compte pas' : noir ? 'Dossier noir · niveau hardcore' : `Énigme ${i + 1} sur 3`}</span><h1 class="big">${esc(q.typeLabel)}</h1>${q.formeNom ? `<span class="forme-nom">${esc(q.formeNom)}</span>` : ''}</div>
       <div class="col" style="gap:4px;align-items:flex-end"><span class="pill" ${q.difficulte >= 6 ? 'style="background:#2A1414;border-color:#6B2E2A;color:#F59A92"' : ''}>${q.difficulte >= 6 ? 'Hardcore' : `Difficulté ${q.difficulte}/5`}</span>
         <span class="tiny muted">${fini ? 'terminée' : train ? 'correction immédiate' : 'une seule réponse'}</span></div>
     </header>
@@ -292,11 +303,11 @@ export function renderQuete() {
     ${q.variante ? '<p class="tiny muted" style="margin:0">Énigme changée : c’est ton changement du jour.</p>' : ''}
     <p style="margin:0;font-size:14px;line-height:1.45;color:var(--text2)">${esc(q.contexte)}</p>
     ${q.figures ? renderFigures(q, fini) : ''}
-    ${q.ligne ? ligneHtml(q) : q.tableau ? `<section class="card tight" aria-label="Fiche horaire">${q.tableau}</section>` : ''}
+    ${q.ligne ? ligneHtml(q) : q.tableau ? `<section class="card tight" aria-label="${esc(q.titreTableau || 'Fiche horaire')}">${q.titreTableau ? `<h2 class="section">${esc(q.titreTableau)}</h2>` : ''}${q.tableau}</section>` : ''}
     ${q.type === 'filature' && !fini ? filatureOutils(q) : ''}
 
-    ${q.elements && q.elements.length && !((q.type === 'chronologie' && !fini) || (q.type === 'horaires' && q.trajets)) ? (q.type === 'cadenas' ? essaisHtml(q) : q.type === 'quiment' ? temoignagesHtml(q, { marques: !fini }) : q.type === 'plaque' ? temoignagesHtml(q) : `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who">${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>`) : ''}
-    ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${q.type === 'grille' ? 'Auditions' : 'Indices'}</h2>${q.indices.map((t) => `<p class="small" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
+    ${q.elements && q.elements.length && !((q.type === 'chronologie' && !fini) || (q.type === 'horaires' && q.trajets)) ? (q.type === 'cadenas' ? essaisHtml(q) : q.type === 'quiment' ? temoignagesHtml(q, { marques: !fini && q.forme !== 'demi' }) : q.type === 'plaque' ? temoignagesHtml(q) : `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who">${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>`) : ''}
+    ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${esc(q.titreIndices || (q.type === 'grille' ? 'Auditions' : 'Indices'))}</h2>${q.indices.map((t) => `<p class="small" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
     ${q.mode === 'texte' ? `<div class="codebox" aria-label="Message codé">${codeHtml(q.code)}</div>
       <p class="small muted" style="margin:0">${esc(q.aide)}</p>` : ''}
     ${q.grille && !fini ? renderGrille(q) : ''}
@@ -308,12 +319,12 @@ export function renderQuete() {
     ${!fini ? `<section class="col" aria-label="Ta réponse"><h2 class="section">${esc(q.question)}</h2>
       ${q.consigne && q.type !== 'chronologie' ? `<p class="small muted" style="margin:0">${esc(q.consigne)}</p>` : ''}
       ${choixHtml}
-      ${q.type === 'cadenas' ? cadenasHtml(q) : q.type === 'chronologie' ? chronoHtml(q) : q.type === 'butin' && q.objets ? butinHtml(q, false) : q.mode === 'texte' || q.mode === 'exact' ? `<form data-form="quest-text" class="row"><label class="sr" for="qtext">Ta réponse</label><input id="qtext" class="text grow ${q.mode === 'exact' ? 'mono' : ''}" name="reponse" autocomplete="off" ${q.inputmode ? `inputmode="${q.inputmode}"` : 'autocapitalize="characters"'} placeholder="${esc(q.placeholder || 'Ta réponse')}"><button class="btn primary" type="submit">Valider</button></form>` : ''}
+      ${q.forme === 'digicode' ? digicodeHtml(q) : q.type === 'cadenas' ? cadenasHtml(q) : q.type === 'chronologie' ? chronoHtml(q) : q.type === 'butin' && q.objets ? butinHtml(q, false) : q.mode === 'texte' || q.mode === 'exact' ? `<form data-form="quest-text" class="row"><label class="sr" for="qtext">Ta réponse</label><input id="qtext" class="text grow ${q.mode === 'exact' ? 'mono' : ''}" name="reponse" autocomplete="off" ${q.inputmode ? `inputmode="${q.inputmode}"` : 'autocapitalize="characters"'} placeholder="${esc(q.placeholder || 'Ta réponse')}"><button class="btn primary" type="submit">Valider</button></form>` : ''}
       <p class="tiny muted" style="margin:0">${train ? 'Entraînement : la réponse est corrigée tout de suite, sans effet sur ta zone.' : noir ? 'Une seule réponse, sans pénalité en cas d’erreur.' : 'Une seule réponse possible : une erreur est définitive (−1 de moral).'}</p>
       ${q.mode !== 'texte' && q.mode !== 'exact' ? `<button class="btn primary block" data-action="quest-submit" ${picked == null ? 'disabled' : ''}>Valider ma réponse</button>` : ''}
     </section>` : ''}
 
-    ${q.type === 'cadenas' && fini ? cadenasResultat(q, r) : ''}
+    ${q.forme === 'digicode' && fini ? digicodeResultat(q, r) : q.type === 'cadenas' && fini ? cadenasResultat(q, r) : ''}
     ${q.type === 'butin' && q.objets && fini ? butinHtml(q, true, r) : ''}
     ${r.statut === 'ok' ? `<section class="card green"><span class="ok" style="font-size:15px;font-weight:700">Bien vu !</span>
       <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p></section>` : ''}

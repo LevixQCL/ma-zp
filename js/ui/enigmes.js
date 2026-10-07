@@ -2,6 +2,7 @@
 // (ligne du temps, disque de décodage, plaques, plan, étiquettes de scellés…).
 // Les générateurs ne changent pas : seules l'apparence et la façon de répondre changent.
 import { S, esc } from './common.js';
+import { digicodeTouche } from './digicode.js';
 
 const rerender = () => document.dispatchEvent(new CustomEvent('mazp:rerender'));
 const mod = (v, n) => ((v % n) + n) % n;
@@ -144,7 +145,7 @@ export function temoignagesHtml(q, { marques = false } = {}) {
   const m = marques ? etat('qm', q.id, () => ({})) : {};
   const lib = { '': 'À vérifier', v: 'Dit vrai', m: 'Ment' };
   return `<section class="col tem-liste" aria-label="Déclarations" data-q="${esc(q.id)}">${q.elements.map((el) => `<div class="tem ${m[el.label] ? `tem-${m[el.label]}` : ''}">
-      ${avatar(el.label)}<div class="tem-corps"><span class="tem-nom">${esc(el.label)}</span><p class="tem-bulle">${esc(el.texte)}</p></div>
+      ${avatar(el.label)}<div class="tem-corps"><span class="tem-nom">${esc(el.label)}</span>${(el.phrases || [el.texte]).map((t) => `<p class="tem-bulle">${esc(t)}</p>`).join('')}</div>
       ${marques ? `<button type="button" class="tem-marque" data-qm="${esc(el.label)}" aria-label="Ton avis sur ${esc(el.label)} : ${lib[m[el.label] || '']}">${lib[m[el.label] || '']}</button>` : ''}
     </div>`).join('')}</section>`;
 }
@@ -165,7 +166,7 @@ export function figureInteractive(q, svg, picked) {
 
 export function filatureOutils(q) {
   const n = (((S.trace || {})[q.id]) || []).length;
-  return `<div class="row fi-outils" data-q="${esc(q.id)}"><span class="tiny muted grow">Touche les carrefours pour tracer son chemin, puis touche le lieu d’arrivée.</span>
+  return `<div class="row fi-outils" data-q="${esc(q.id)}"><span class="tiny muted grow">${q.forme === 'rebours' ? 'Touche les carrefours pour remonter son chemin depuis le point rouge, puis touche le lieu de départ.' : 'Touche les carrefours pour tracer son chemin, puis touche le lieu d’arrivée.'}</span>
     <button type="button" class="btn small" data-fi="annuler" ${n ? '' : 'disabled'}>Annuler</button><button type="button" class="btn small" data-fi="effacer" ${n ? '' : 'disabled'}>Effacer</button></div>`;
 }
 
@@ -272,6 +273,9 @@ export function installerEnigmes() {
 
   document.addEventListener('click', (e) => {
     const t = e.target;
+    // Digicode : touches
+    const dg = t.closest('[data-dg]');
+    if (dg) { digicodeTouche(dg); return; }
     // Chronologie : flèches
     const fl = t.closest('[data-chr]');
     if (fl) {

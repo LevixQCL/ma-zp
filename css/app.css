@@ -1602,3 +1602,40 @@ div.db-cle { cursor: default; }
 .bil-cas.paye .bil-eff { background: rgba(61, 211, 154, .12); color: var(--green-soft); }
 .card.bilan .dil-btn[aria-pressed="true"] { border-color: var(--amber); background: var(--amber-bg); box-shadow: 0 0 0 3px rgba(255, 178, 63, .2); }
 .card.bilan .dil-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+/* ───── Formes d'énigmes ───── */
+.forme-nom { align-self: flex-start; font: 600 12px var(--body); color: var(--amber-soft); background: var(--amber-bg); border: 1px solid var(--amber-line); border-radius: 999px; padding: 2px 10px; }
+
+/* Digicode : boîtier métal brossé, touches inox, poudre sur les touches usées */
+.dg-form { display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 4px; }
+.dg { width: min(260px, 100%); padding: 16px 16px 18px; border-radius: 18px; background: linear-gradient(160deg, #4A5268, #2B3144 55%, #20253A); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .18), inset 0 -2px 0 rgba(0, 0, 0, .35), 0 10px 22px rgba(0, 0, 0, .45); display: flex; flex-direction: column; gap: 14px; }
+.dg-tete { display: flex; align-items: center; gap: 10px; }
+.dg-led { width: 10px; height: 10px; border-radius: 50%; background: #5B1E1E; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .5); flex-shrink: 0; }
+.dg.ouvert .dg-led { background: #3DD39A; box-shadow: 0 0 10px #3DD39A; }
+.dg.refuse .dg-led { background: #FF4D47; box-shadow: 0 0 10px #FF4D47; }
+.dg-ecran { flex: 1; display: flex; justify-content: center; gap: 6px; padding: 8px 10px; border-radius: 8px; background: #0E1A12; box-shadow: inset 0 2px 6px rgba(0, 0, 0, .7); }
+.dg-c { width: 22px; height: 30px; display: grid; place-items: center; border-bottom: 2px solid rgba(120, 226, 150, .25); font: 600 22px var(--code); color: #8FF0A4; text-shadow: 0 0 6px rgba(143, 240, 164, .55); }
+.dg-c.plein { border-bottom-color: rgba(120, 226, 150, .55); }
+.dg.refuse .dg-c { color: #FF9E99; text-shadow: 0 0 6px rgba(255, 110, 106, .5); }
+.dg-touches { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.dg-t { position: relative; height: 52px; border: 0; border-radius: 12px; font: 700 21px var(--display); color: #2A2F3E; cursor: pointer; touch-action: manipulation;
+  background: radial-gradient(circle at 35% 30%, #F4F6FA, #C9CFDB 70%, #A9B0BF); box-shadow: 0 3px 0 #6E7587, 0 5px 8px rgba(0, 0, 0, .35); transition: transform .06s, box-shadow .06s; }
+.dg-t:active, .dg-t.appui { transform: translateY(2px); box-shadow: 0 1px 0 #6E7587, 0 2px 4px rgba(0, 0, 0, .35); }
+.dg-t.use i { position: absolute; inset: 7px 9px; border-radius: 50%; pointer-events: none; opacity: .75;
+  background: radial-gradient(ellipse at 45% 50%, rgba(70, 60, 50, .55), rgba(70, 60, 50, .28) 45%, transparent 70%),
+              repeating-radial-gradient(ellipse at 50% 55%, transparent 0 2px, rgba(60, 50, 40, .18) 2px 3px); }
+.dg-t.eff { color: #8A2A25; font-size: 17px; }
+.dg-t.ok { color: #fff; background: radial-gradient(circle at 35% 30%, #6FE3AE, #2FA875 70%); box-shadow: 0 3px 0 #1D6B4A, 0 5px 8px rgba(0, 0, 0, .35); }
+.dg-t:disabled { cursor: default; }
+.dg-form.fini .dg { opacity: .95; }
+
+/* La caisse : la liasse saisie */
+.ca-liasse { display: flex; align-items: baseline; justify-content: center; gap: 8px; font-size: 14px; color: var(--text2); }
+.ca-n { font: 700 26px var(--display); color: var(--text); }
+.ca-sep { color: var(--faint); }
+.ca-coupures { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.ca-b { font: 700 13px var(--display); padding: 6px 10px; border-radius: 5px; color: #1D1A15; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35), 0 2px 4px rgba(0, 0, 0, .3); }
+.ca-5 { background: #B9B3A8; } .ca-10 { background: #E39A8F; } .ca-20 { background: #8FB5E3; } .ca-50 { background: #E8B76C; } .ca-100 { background: #8FD3A0; }
+
+/* Journal des badges */
+table.horaire.bd tr.bd-arch td { color: var(--amber-hi); font-weight: 600; }

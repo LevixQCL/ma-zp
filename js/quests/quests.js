@@ -5,6 +5,14 @@
 
 import { makeRng } from '../engine/rng.js';
 import { GENERATORS2, LABELS2 } from './quests2.js';
+import { FORMES } from './formes.js';
+
+export { FORMES };
+/**
+ * Formes d'énigmes dans les énigmes du jour et le dossier noir. Tant que c'est faux, elles ne
+ * sont jouables qu'en entraînement (aperçu) et les énigmes du jour restent strictement identiques.
+ */
+export const FORMES_EN_JEU = false;
 
 export const QUEST_TYPES = ['quiment', 'grille', 'cadenas', 'chronologie', 'code', 'plaque', 'photos', 'filature', 'butin', 'horaires', 'ecriture'];
 export const QUEST_LABELS = {
@@ -29,10 +37,12 @@ export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], 
   const diffs = [Math.max(1, base - 1), base, Math.min(5, base + 1)];
   const out = [];
   for (let slot = 0; slot < QUESTS_PAR_JOUR; slot++) {
-    const type = order[((turn - 1) * QUESTS_PAR_JOUR + slot) % order.length];
+    const idx = (turn - 1) * QUESTS_PAR_JOUR + slot;
+    const type = order[idx % order.length];
     const rng = makeRng(`${seed}:quest:${uid}:${season}:${turn}:${slot}`);
-    const q = GENERATORS[type](rng, diffs[slot]);
-    out.push({ ...q, type, typeLabel: QUEST_LABELS[type], difficulte: diffs[slot], slot, id: `${season}-${turn}-${slot}` });
+    // Chaque passage d'un type dans la rotation prend la forme suivante : jamais deux fois la même d'affilée.
+    const forme = formeDe(`${seed}:forme:${uid}:${season}:${type}`, type, Math.floor(idx / order.length));
+    out.push({ ...fabriquer(type, rng, diffs[slot], forme), slot, id: `${season}-${turn}-${slot}` });
   }
   // Énigmes changées : même difficulté, type absent des énigmes du jour.
   for (const slot of rerolls) {
@@ -41,8 +51,8 @@ export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], 
     const autres = QUEST_TYPES.filter((t) => !pris.has(t));
     const rng = makeRng(`${seed}:reroll:${uid}:${season}:${turn}:${slot}`);
     const type = rng.pick(autres);
-    const q = GENERATORS[type](rng, diffs[slot]);
-    out[slot] = { ...q, type, typeLabel: QUEST_LABELS[type], difficulte: diffs[slot], slot, id: `${season}-${turn}-${slot}r`, variante: 1 };
+    const forme = FORMES_EN_JEU && FORMES[type] ? rng.pick(FORMES[type]).id : 'classique';
+    out[slot] = { ...fabriquer(type, rng, diffs[slot], forme), slot, id: `${season}-${turn}-${slot}r`, variante: 1 };
   }
   return out;
 }
@@ -64,14 +74,28 @@ export function dossierNoir({ seed, uid, season, turn, exclure = [], garder = nu
   let type = order[(turn - 1) % order.length];
   if (garder && HARDCORE_TYPES.includes(garder)) type = garder;
   else for (let k = 1; exclure.includes(type) && k < order.length; k++) type = order[(turn - 1 + k) % order.length];
-  const q = GENERATORS[type](makeRng(`${seed}:noir:${uid}:${season}:${turn}`), DIFF_NOIR);
+  const forme = formeDe(`${seed}:noir-forme:${uid}:${season}:${type}`, type, turn);
+  const q = fabriquer(type, makeRng(`${seed}:noir:${uid}:${season}:${turn}`), DIFF_NOIR, forme);
   const { astuce, ...sans } = q;
-  return { ...sans, type, typeLabel: QUEST_LABELS[type], difficulte: DIFF_NOIR, slot: SLOT_NOIR, noir: true, id: `${season}-${turn}-noir` };
+  return { ...sans, slot: SLOT_NOIR, noir: true, id: `${season}-${turn}-noir` };
 }
 
-export function generateQuest(type, seedStr, diff = 2) {
-  const q = GENERATORS[type](makeRng(seedStr), diff);
-  return { ...q, type, typeLabel: QUEST_LABELS[type], difficulte: diff };
+/** Forme d'un type pour le n-ième passage (rotation propre à chaque joueur). */
+function formeDe(cle, type, n) {
+  const fs = FORMES[type];
+  if (!FORMES_EN_JEU || !fs) return 'classique';
+  return fs[(n + makeRng(cle).int(0, fs.length - 1)) % fs.length].id;
+}
+
+/** Une énigme d'un type, dans une forme donnée (« classique » : la forme d'origine). */
+function fabriquer(type, rng, diff, forme = 'classique') {
+  const f = forme !== 'classique' && FORMES[type] ? FORMES[type].find((x) => x.id === forme) : null;
+  const q = f && f.gen ? f.gen(rng, diff) : GENERATORS[type](rng, diff);
+  return { ...q, type, typeLabel: QUEST_LABELS[type], ...(f && f.gen ? { forme: f.id, formeNom: f.nom } : {}), difficulte: diff };
+}
+
+export function generateQuest(type, seedStr, diff = 2, forme = 'classique') {
+  return fabriquer(type, makeRng(seedStr), diff, forme);
 }
 
 export function normalize(s) {
