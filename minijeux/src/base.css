@@ -99,7 +99,15 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .embed .top{position:relative;z-index:6}
 /* en jeu intégré, l’en-tête reste au-dessus des cartes : elles commencent donc sous lui */
-.embed .overlay{padding-top:76px}
+.embed .overlay{padding-top:56px}
+/* dans Ma ZP, la barre « Retour à ma zone » affiche déjà le nom du jeu : en-tête réduit à une ligne */
+.embed .app{gap:8px;padding-block:8px}
+.embed .top{gap:8px}
+.embed .top .badge,.embed .top h1{display:none}
+.embed .top .eyebrow{font-size:13px;font-weight:700}
+.embed .top .iconbtn{width:32px;height:32px;border-radius:10px}
+.embed .top .ring{width:40px;height:40px}
+.embed .top .timer{font-size:13px}
 .btn{flex:1;min-width:120px;border-radius:14px;padding:14px 12px;font:700 15px var(--f-body);cursor:pointer;border:1px solid var(--stroke-2);background:var(--surface);color:var(--ink);transition:transform .08s,filter .15s}
 .btn:active{transform:scale(.97)}
 .btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink);box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 30%,transparent)}

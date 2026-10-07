@@ -111,7 +111,15 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .row{display:flex;gap:8px;flex-wrap:wrap}
 .embed .top{position:relative;z-index:6}
 /* en jeu intégré, l’en-tête reste au-dessus des cartes : elles commencent donc sous lui */
-.embed .overlay{padding-top:76px}
+.embed .overlay{padding-top:56px}
+/* dans Ma ZP, la barre « Retour à ma zone » affiche déjà le nom du jeu : en-tête réduit à une ligne */
+.embed .app{gap:8px;padding-block:8px}
+.embed .top{gap:8px}
+.embed .top .badge,.embed .top h1{display:none}
+.embed .top .eyebrow{font-size:13px;font-weight:700}
+.embed .top .iconbtn{width:32px;height:32px;border-radius:10px}
+.embed .top .ring{width:40px;height:40px}
+.embed .top .timer{font-size:13px}
 .btn{flex:1;min-width:120px;border-radius:14px;padding:14px 12px;font:700 15px var(--f-body);cursor:pointer;border:1px solid var(--stroke-2);background:var(--surface);color:var(--ink);transition:transform .08s,filter .15s}
 .btn:active{transform:scale(.97)}
 .btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink);box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 30%,transparent)}
@@ -189,6 +197,8 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .pick.hit .ring{transform:scale(.92);box-shadow:0 0 0 5px #2a2116,0 0 0 7px #8a6a32,0 0 34px 10px rgba(255,190,90,.55),0 6px 14px rgba(0,0,0,.55),inset 0 4px 10px rgba(0,0,0,.35)}
 .coach .prog{height:4px;border-radius:2px;background:var(--surface-2);margin-top:8px;overflow:hidden}
 .coach .prog i{display:block;height:100%;width:0;background:var(--ok);transition:width .1s}
+/* petits écrans : le bouton « Crocheter » et ses consignes ne se chevauchent plus */
+@media (max-height:740px){.pick .lbl{display:none}.pick .ring{margin-top:0;width:clamp(80px,26vw,104px);height:clamp(80px,26vw,104px)}.tension .lbl{font-size:11px;bottom:8px}}
 
 </style>
 </head>
