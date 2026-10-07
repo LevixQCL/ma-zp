@@ -1862,7 +1862,14 @@ Shell.init({
   // avec des émeutiers de plus en plus déterminés (réglages du niveau) et des vagues plus longues.
   niveau(n,cfg){
     cfg.map=(n-1)%MAPS.length; cfg.seed=n; cfg.meteo=n%5===3?'brouillard':n%5===0?'pluie':null;
-    cfg.waves=n<=2?4:n<=5?5:n<=10?6:n<=20?7:8; return cfg; },
+    cfg.waves=n<=2?4:n<=5?5:6;
+    // Après le niveau 10, les quartiers reviennent par tours de 10 : chaque tour reprend les réglages du premier
+    // passage sur le même quartier, en plus dur (émeutiers +22 % et une vague de plus par tour, cordon un peu
+    // plus court). La difficulté monte donc en dents de scie, sans mur (simulation test/bouclage-sim.mjs).
+    if(n>10){ const L=Math.floor((n-1)/10), c=Shell.cfgNiveau(n-10*L);
+      Object.assign(cfg,c,{label:`Niveau ${n}`,niveau:n,seed:n,meteo:cfg.meteo});
+      cfg.hp=c.hp*(1+.22*L); cfg.waves=Math.min(8,c.waves+L); cfg.lives=Math.max(8,c.lives-L); }
+    return cfg; },
   onInit(){
     C.cv=$('cv'); C.ctx=C.cv.getContext('2d'); Object.values(SETS).forEach(S=>S.f.forEach(spr)); spr('autopompe'); spr('lance'); spr('frise'); spr('heras-tombee'); R.M=MAPDATA[0]; R.pads=R.M.pads;
     resize(); new ResizeObserver(resize).observe($('field'));
