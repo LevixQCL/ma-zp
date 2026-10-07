@@ -681,7 +681,25 @@ const TUTO_WAVE=[['manif',8]];
 const SOMM={cd:25,dure:4,rayon:1.6,perte:10,demiTour:.35};
 /* Commandant : un seul, gratuit. On le fait glisser où on veut (il y marche) ; ses moyens proches sont plus efficaces
    (aura) ; touché, il lance un ordre au mégaphone (sommation sur sa zone). Débordé par le cortège, il se replie. */
-const CMD={v:2.2,aura:2.0,bonus:.12,r:1.9,cd:20,perte:7,dure:3,deborde:4,repli:5,hp:1.05};
+const CMD={dure:3,hp:1.05};
+/* Niveaux du commandant (pendant la partie) : il gagne de l'expérience quand un émeutier est repoussé dans son cercle
+   (ou par son mégaphone) et quand il négocie le départ d'un véhicule. Novice, il est vite débordé ; au niveau 5, il tient
+   face à un cortège entier, son cercle est large et son mégaphone fait reculer bien plus de monde.
+   xp : expérience cumulée pour l'atteindre · deborde : émeutiers au contact qui le font replier · repli : durée du repli (s)
+   aura/bonus : cercle et gain d'efficacité des moyens · r/cd/perte/dt : mégaphone (portée, recharge, effet, seuil de demi-tour)
+   v : vitesse de marche · nego : vitesse de négociation (×) */
+const CMDN=[
+  {xp:0, titre:'novice',      deborde:2,repli:8,  aura:1.4,bonus:.06,r:1.6,cd:28,perte:5, dt:.35,v:1.9,nego:.8},
+  {xp:6, titre:'aguerri',     deborde:3,repli:6.5,aura:1.7,bonus:.10,r:1.8,cd:23,perte:7, dt:.38,v:2.2,nego:1},
+  {xp:16,titre:'chevronné',   deborde:4,repli:5,  aura:2.0,bonus:.15,r:2.0,cd:19,perte:9, dt:.42,v:2.5,nego:1.2},
+  {xp:30,titre:'vétéran',     deborde:6,repli:4,  aura:2.3,bonus:.21,r:2.2,cd:15,perte:11,dt:.47,v:2.8,nego:1.5},
+  {xp:50,titre:'légende du MO',deborde:9,repli:3, aura:2.7,bonus:.28,r:2.5,cd:12,perte:14,dt:.55,v:3.2,nego:1.9}];
+const cn=()=>CMDN[(R.cmd&&R.cmd.lvl||1)-1];
+const CMD_GAIN={tracteur:5,sono:5,car:5,meneur:2,bloc:2};
+function cmdXp(n,x,y){ const c=R.cmd; if(!c||c.lvl>=CMDN.length) return; c.xp+=n; R.stats.cmdXp=(R.stats.cmdXp||0)+n;
+  while(c.lvl<CMDN.length&&c.xp>=CMDN[c.lvl].xp){ c.lvl++; c.lvlT=R.t; c.cheerT=R.t; const N=CMDN[c.lvl-1];
+    fx(c.x,c.y-1.1,`Commandant niveau ${c.lvl} !`,'gain');
+    if(!R.sim){ Shell.toast(`⭐ Commandant ${N.titre} (niv. ${c.lvl}) : tient face à ${N.deborde}, cercle +${Math.round(N.bonus*100)} %, mégaphone ${N.cd} s`,'ok'); Shell.blip(660,.2,'triangle',.06); setTimeout(()=>Shell.blip(880,.25,'triangle',.06),130); } } }
 
 const Q2=new URLSearchParams(location.search);
 /* Événement d'actualité (lancé depuis Ma ZP) : même Challenge, autre scénario, avec la cause de la mobilisation et ses sources. */
@@ -832,7 +850,7 @@ function resetGame(cfg,tuto,mapIdx){
   R.tuto=tuto?1:0; R.wave=0; R.units=[]; R.spawnQ=[]; R.fx=[]; R.jets=[]; R.towers={}; R.sel=null; R.disp=0; R.leaks={}; R.seen=new Set(); R.pause=false;
   R.somm={cd:0,placing:false,fx:[]}; R.flaques=[]; R.projs=[]; $('panel').hidden=true;
   R.parts=[]; R.introQ=[]; R.introOuverte=false; R.fumees=[]; R.vuFumee=false; R.frac=0;
-  { const hb=hallBox(R.M), hx=hb.x0+hb.w/2, hy=MH-2.6; R.cmd=tuto?null:{x:hx,y:hy,tx:hx,ty:hy,hx,hy,cd:0,repli:0,shoutT:-9,cheerT:-9,f:1,walk:false}; } R.maitrise=0; R.waveLoss=0; R.retours=[]; R.dir=null; R.dirOffer=false; R.recent=[]; R.redeploy=null; R.rally=null; R.vHp=1;
+  { const hb=hallBox(R.M), hx=hb.x0+hb.w/2, hy=MH-2.6; R.cmd=tuto?null:{x:hx,y:hy,tx:hx,ty:hy,hx,hy,cd:0,repli:0,shoutT:-9,cheerT:-9,f:1,walk:false,lvl:1,xp:0,lvlT:-9}; } R.maitrise=0; R.waveLoss=0; R.retours=[]; R.dir=null; R.dirOffer=false; R.recent=[]; R.redeploy=null; R.rally=null; R.vHp=1;
   R.stats={rec:0,blocs:0,meneurs:0,combos:0,best:null};
   // Challenge : consignes qui changent les règles à partir du niveau 6
   R.mods={}; R.fire=null; const nv=cfg.seed||0;
@@ -949,7 +967,7 @@ function step(dt){
   // agents désengagés qui reviennent à la réserve
   if(R.retours.length){ R.retours=R.retours.filter(r=>{ if(R.t<r.at) return true; R.agents+=r.n; fx(r.x,r.y,`+${r.n} de retour`,'gain'); ui(); return false; }); }
   if(R.cmd){ const c=R.cmd, tx=c.repli>R.t?c.hx:c.tx, ty=c.repli>R.t?c.hy:c.ty, dx=tx-c.x, dy=ty-c.y, L=Math.hypot(dx,dy);
-    const was=c.walk; c.walk=L>.04; if(was&&!c.walk&&!(c.repli>R.t)) c.cheerT=R.t; if(c.walk){ const st=Math.min(L,CMD.v*dt*(c.repli>R.t?1.3:1)); c.x+=dx/L*st; c.y+=dy/L*st; if(Math.abs(dx)>.02) c.f=dx>0?1:-1; }
+    const was=c.walk; c.walk=L>.04; if(was&&!c.walk&&!(c.repli>R.t)) c.cheerT=R.t; if(c.walk){ const st=Math.min(L,cn().v*dt*(c.repli>R.t?1.3:1)); c.x+=dx/L*st; c.y+=dy/L*st; if(Math.abs(dx)>.02) c.f=dx>0?1:-1; }
     if(c.cd>0) c.cd=Math.max(0,c.cd-dt); }
   if(R.phase!=='run') return;
   while(R.spawnQ.length&&R.spawnQ[0].at<=R.t){ const q=R.spawnQ.shift(); addUnit(q.type,q.pi); }
@@ -974,7 +992,7 @@ function step(dt){
   for(const u of live){ u.boost=u.type!=='meneur'&&!veh(u)&&(leaders.some(m=>Math.hypot(m.p.x-u.p.x,m.p.y-u.p.y)<FOES.meneur.aura)||sonos.some(m=>Math.hypot(m.p.x-u.p.x,m.p.y-u.p.y)<FOES.sono.aura));
     u.slow=u.somUntil>R.t?.6:0; if(R.flaques.some(f=>Math.hypot(f.x-u.p.x,(f.y-u.p.y)/.7)<f.r)) u.slow=Math.max(u.slow,.3); u.atBar=null; }
   const towers=Object.entries(R.towers);
-  if(R.cmd&&!(R.cmd.repli>R.t)&&live.filter(u=>Math.hypot(u.p.x-R.cmd.x,u.p.y-R.cmd.y)<.7).length>=CMD.deborde){ R.cmd.repli=R.t+CMD.repli; R.cmd.tx=R.cmd.hx; R.cmd.ty=R.cmd.hy; fx(R.cmd.x,R.cmd.y-.9,'Commandant débordé : repli','bad'); }
+  if(R.cmd&&!(R.cmd.repli>R.t)&&live.filter(u=>Math.hypot(u.p.x-R.cmd.x,u.p.y-R.cmd.y)<.7).length>=cn().deborde){ R.cmd.repli=R.t+cn().repli; R.cmd.tx=R.cmd.hx; R.cmd.ty=R.cmd.hy; fx(R.cmd.x,R.cmd.y-.9,'Commandant débordé : repli','bad'); }
   const auraOk=R.cmd&&!(R.cmd.repli>R.t)&&!R.cmd.walk;
   // barrières : relevage par les agents du combi quand la place est libre
   for(const [id,tw] of towers){ if(tw.type!=='barrage') continue; const b=tw.bar;
@@ -993,13 +1011,13 @@ function step(dt){
     u.d=nd; if(u.d>=R.M.P[u.pi].len) leak(u); }
   // négociation : le commandant, posté à côté d'un tracteur arrêté (barrage ou sommation), le convainc de faire demi-tour
   if(R.cmd&&!(R.cmd.repli>R.t)&&!R.cmd.walk) for(const t of vehs){ if(!(t.atBar||t.somUntil>R.t||t.stopT!=null)||Math.hypot(t.p.x-R.cmd.x,t.p.y-R.cmd.y)>TRACT.portee) continue;
-    t.hp-=TRACT.nego*dt; t.nego=R.t; }
+    t.hp-=TRACT.nego*cn().nego*dt; t.nego=R.t; }
   // poussée sur les barrières
   for(const u of live){ if(!u.atBar||u.alive===false) continue; const tw=R.towers[u.atBar]; if(!tw||!tw.bar.up) continue;
     tw.bar.hp-=PUSH[u.type]*(u.boost?1.3:1)*dt; if(tw.lvl>2) hit(u,4*dt);
     if(tw.bar.hp<=0){ tw.bar.up=false; tw.bar.hp=0; tw.bar.downAt=R.t; fx(tw.rx,tw.ry,'Barrières renversées !','bad'); Shell.bad(); if(!R.sim) Shell.shake(); puff(tw.rx,tw.ry,16,{v:.9,r:.06,grow:2,life:.8,col:'rgba(140,145,160,',flat:.4}); } }
   // moyens
-  for(const [id,tw] of towers){ const M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw), k=LV.dmg[tw.lvl-1]*((tw.type==='autopompe'||tw.type==='barrage')?1-.25*R.usure:1)*(auraOk&&Math.hypot(P.x-R.cmd.x,P.y-R.cmd.y)<=CMD.aura?1+CMD.bonus:1);
+  for(const [id,tw] of towers){ const M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw), k=LV.dmg[tw.lvl-1]*((tw.type==='autopompe'||tw.type==='barrage')?1-.25*R.usure:1)*(auraOk&&Math.hypot(P.x-R.cmd.x,P.y-R.cmd.y)<=cn().aura?1+cn().bonus:1);
     tw.tgt=null; if(tw.cd>0) tw.cd-=dt;
     if(tw.transit){ if(R.t>=tw.transit.t0+tw.transit.dur) tw.transit=null; else continue; }
     if(tw.stun>R.t&&tw.type!=='barrage'&&tw.type!=='peloton') continue;
@@ -1057,6 +1075,8 @@ function step(dt){
   // ceux qui renoncent font demi-tour : agents récupérés
   for(const u of live){ if(u.hp<=0&&u.state==='go'&&u.alive!==false){ u.state='flee'; u.turnT=R.t; puff(u.p.x,u.p.y,6,{v:.5,r:.05,grow:1.5,life:.5,flat:.3}); if(u.held){ u.held.u=null; u.held.st='ready'; u.held=null; } R.disp++; const F=FOES[u.type];
     if(u.type==='meneur') R.stats.meneurs++;
+    // expérience du commandant : repoussé dans son cercle (posté), par son mégaphone, ou véhicule négocié
+    if(R.cmd&&(u.parCmd||veh(u)&&u.nego>R.t-1||!(R.cmd.repli>R.t)&&!R.cmd.walk&&Math.hypot(u.p.x-R.cmd.x,(u.p.y-R.cmd.y)/.7)<=cn().aura*1.2)) cmdXp(CMD_GAIN[u.type]||1,u.p.x,u.p.y);
     if(veh(u)){ fx(u.p.x,u.p.y-1,'Négociation réussie : demi-tour','info'); if(!R.sim) Shell.toast(`${FOES[u.type].nom} : demi-tour négocié`,'ok'); }
     gagne(F.gain,u.p.x,u.p.y); Shell.good();
     // intervention maîtrisée : plusieurs émeutiers repoussés presque en même temps au même endroit
@@ -1106,7 +1126,7 @@ function finish(ok){
   const details=Object.entries(R.leaks).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`${n} passage${n>1?'s':''} de ${conseils[k]}`);
   const evalu=!ok?'Dispositif débordé':perdu===0?'Maîtrise':perdu<=R.lives0*.25?'Bon dispositif':'Sous tension';
   const st=[['Repoussés',R.disp],['Agents récupérés',`+${R.stats.rec}`],['Cordon perdu',`${perdu} / ${R.lives0}`]];
-  if(R.stats.blocs) st.push(['Blocs dispersés',R.stats.blocs]); if(R.stats.combos) st.push(['Interventions maîtrisées',R.stats.combos]);
+  if(R.stats.blocs) st.push(['Blocs dispersés',R.stats.blocs]); if(R.stats.combos) st.push(['Interventions maîtrisées',R.stats.combos]); if(R.cmd&&R.cmd.lvl>1) st.push(['Commandant',`niveau ${R.cmd.lvl} ${'★'.repeat(R.cmd.lvl)}`]);
   const qScore=ok?Math.round(Math.max(0,R.lives)/R.lives0*1000)+R.stats.rec:0;
   Shell.result({ok, faults:perdu, stats:st, details, note:`Évaluation : ${evalu.toUpperCase()}. `+(note||(perdu===0?'Cordon intact : double point.':'Cordon intact : +2 sur la jauge.'))});
   if(ok&&Shell.enDefi&&R.map>=0&&R.cfg.niveau<=MAPS.length) recordQuartier(R.map,qScore);
@@ -1174,7 +1194,7 @@ function tip(html){
   if(html){ el.innerHTML=html; return; }
   if(R.dirOffer&&!R.sel&&!R.redeploy){ el.innerHTML=`<div class="dir"><span class="dq">📻 <b>Directeur :</b> situation ?</span>${Object.entries(DIR).map(([k,d])=>`<button class="dirb" data-dir="${k}" title="${d.ds}"><b>${d.nom}</b><small>${d.c}</small></button>`).join('')}</div>`; return; }
   if(R.rally){ const tw=R.towers[R.rally]; el.innerHTML=`<span><b>Déplacer ${tw&&tw.type==='barrage'?'les barrières':'la ligne MO'}</b> : lâche sur la rue <b>dans le cercle</b> (hors du cercle : annulé).${tw&&tw.type==='barrage'&&R.phase==='run'?' Le combi les remonte en 2 s.':''}</span>`; return; }
-  if(R.dragCmd){ el.innerHTML='<span><b>Commandant</b> : lâche-le où il doit se placer. Les moyens dans son cercle sont plus efficaces (+12 %).</span>'; return; }
+  if(R.dragCmd){ el.innerHTML=`<span><b>Commandant</b> : lâche-le où il doit se placer. Les moyens dans son cercle sont plus efficaces (+${Math.round(cn().bonus*100)} %). Niveau ${R.cmd?R.cmd.lvl:1} : il tient face à ${cn().deborde} émeutiers.</span>`; return; }
   if(R.dragCav){ el.innerHTML='<span><b>Redéployer la cavalerie</b> : lâche-la sur un <b>emplacement libre</b>.</span>'; return; }
   if(R.redeploy){ el.innerHTML='<span><b>Redéploiement</b> : touche un <b>emplacement libre</b> où envoyer la cavalerie (ailleurs pour annuler).</span>'; return; }
   if(R.somm.placing){ el.innerHTML='<span><b>Sommations :</b> touche le cortège. Ceux qui sont autour ralentissent 4 s et perdent de la détermination ; les plus découragés <b>font demi-tour</b> tout de suite.</span>'; return; }
@@ -1282,8 +1302,8 @@ function onUp(e){ const D=C.drag; C.drag=null; if(!D) return;
     if(best&&tw){ if(tw.transit||tw.charge) tip('<span>La cavalerie est déjà en mouvement.</span>'); else if(tw.moveCd>R.t) tip(`<span>La cavalerie souffle : redéploiement possible dans <b>${Math.ceil(tw.moveCd-R.t)} s</b>.</span>`); else if(redeploy(D.id,best.id)) Shell.good(); return; } }
   tip(); }
 function ordreCmd(){ const c=R.cmd; if(!c||c.cd>0||c.repli>R.t||R.phase!=='run') return false;
-  R.units.filter(u=>u.state==='go'&&u.p&&Math.hypot(u.p.x-c.x,u.p.y-c.y)<=CMD.r).forEach(u=>{ u.somUntil=R.t+CMD.dure; u.hp-=CMD.perte*(veh(u)?TRACT.megaphone:1); if(u.type!=='meneur'&&u.type!=="bloc"&&!veh(u)&&u.hp<=u.max*SOMM.demiTour) u.hp=0; });
-  c.cd=CMD.cd; c.shoutT=R.t; R.somm.fx.push({x:c.x,y:c.y,t:R.t}); if(!R.sim) Shell.blip(330,.35,'square',.05); return true; }
+  R.units.filter(u=>u.state==='go'&&u.p&&Math.hypot(u.p.x-c.x,u.p.y-c.y)<=cn().r).forEach(u=>{ u.somUntil=R.t+CMD.dure; u.hp-=cn().perte*(veh(u)?TRACT.megaphone:1); if(u.type!=='meneur'&&u.type!=="bloc"&&!veh(u)&&u.hp<=u.max*cn().dt) u.hp=0; if(u.hp<=0) u.parCmd=true; else cmdXp(.5); });
+  c.cd=cn().cd; c.cdMax=cn().cd; c.shoutT=R.t; R.somm.fx.push({x:c.x,y:c.y,t:R.t}); if(!R.sim) Shell.blip(330,.35,'square',.05); return true; }
 function onTap(e){
   const r=C.cv.getBoundingClientRect(), x=(e.clientX-r.left)/C.s, y=(e.clientY-r.top)/C.s;
   if((R.over&&!R.tuto)||R.phase==='idle'||R.pause) return;
@@ -1846,17 +1866,23 @@ function render(){
   // tout ce qui est debout, trié de haut en bas pour la profondeur
   const items=[];
   if(R.cmd){ const c=R.cmd, rep2=c.repli>R.t, pu=.5+.5*Math.sin(rt*3);
-    if(!rep2&&!c.walk&&R.phase!=='idle'){ g.save(); g.strokeStyle=`rgba(255,209,102,${.35+.2*pu})`; g.fillStyle='rgba(255,209,102,.05)'; g.lineWidth=.035; g.setLineDash([.15,.12]); g.lineDashOffset=-rt*.4; g.beginPath(); g.ellipse(c.x,c.y,CMD.aura,CMD.aura*.7,0,0,7); g.fill(); g.stroke(); g.restore(); }
-    if(R.dragCmd&&C.drag){ g.strokeStyle='rgba(255,209,102,.9)'; g.lineWidth=.035; g.setLineDash([.1,.08]); g.beginPath(); g.moveTo(c.x,c.y); g.lineTo(C.drag.x,C.drag.y); g.stroke(); g.setLineDash([]); g.strokeStyle='rgba(255,209,102,.5)'; g.beginPath(); g.ellipse(C.drag.x,C.drag.y,CMD.aura,CMD.aura*.7,0,0,7); g.stroke(); }
+    if(!rep2&&!c.walk&&R.phase!=='idle'){ g.save(); g.strokeStyle=`rgba(255,209,102,${.35+.2*pu})`; g.fillStyle='rgba(255,209,102,.05)'; g.lineWidth=.035; g.setLineDash([.15,.12]); g.lineDashOffset=-rt*.4; g.beginPath(); g.ellipse(c.x,c.y,cn().aura,cn().aura*.7,0,0,7); g.fill(); g.stroke(); g.restore(); }
+    if(R.dragCmd&&C.drag){ g.strokeStyle='rgba(255,209,102,.9)'; g.lineWidth=.035; g.setLineDash([.1,.08]); g.beginPath(); g.moveTo(c.x,c.y); g.lineTo(C.drag.x,C.drag.y); g.stroke(); g.setLineDash([]); g.strokeStyle='rgba(255,209,102,.5)'; g.beginPath(); g.ellipse(C.drag.x,C.drag.y,cn().aura,cn().aura*.7,0,0,7); g.stroke(); }
     items.push({y:c.y,d:()=>{ g.save(); g.translate(c.x,c.y); if(rep2) g.globalAlpha=.55;
       g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(.02,.01,.17,.055,0,0,7); g.fill();
       if(!rep2&&c.cd<=0&&R.phase==='run'){ g.strokeStyle=`rgba(255,209,102,${.6+.4*pu})`; g.lineWidth=.04; g.beginPath(); g.ellipse(0,.01,.26,.09,0,0,7); g.stroke(); }
-      else if(c.cd>0){ g.strokeStyle='rgba(255,209,102,.8)'; g.lineWidth=.035; g.beginPath(); g.ellipse(0,.01,.26,.09,0,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-c.cd/CMD.cd)); g.stroke(); }
+      else if(c.cd>0){ g.strokeStyle='rgba(255,209,102,.8)'; g.lineWidth=.035; g.beginPath(); g.ellipse(0,.01,.26,.09,0,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-c.cd/(c.cdMax||cn().cd))); g.stroke(); }
       const crie=R.t-c.shoutT<1.2, bob=c.walk?Math.abs(Math.sin(rt*9))*.04:0; g.translate(0,-bob); if(c.walk) g.rotate(c.f*.05+Math.sin(rt*9)*.03);
       const st=crie?(R.t-c.shoutT>.55&&setOk('cmdO2')?'cmdO2':'cmdO'):c.walk&&setOk('cmdM')?'cmdM':!rep2&&R.t-c.cheerT<1.4&&setOk('cmdR')?'cmdR':'cmd';
       if(!sprite(g,st,c.walk?0:Math.floor(rt*.7)%2,.8,st==='cmdO2'||st==='cmdR'?c.f>0:c.f<0)) cop(g,c.f,rt*5,false);
       if(crie){ for(let i=0;i<3;i++){ const k=((R.t-c.shoutT)*1.6+i*.3)%1; g.strokeStyle=`rgba(255,209,102,${(1-k)*.9})`; g.lineWidth=.03; g.beginPath(); g.arc(c.f*.42,-.62,.1+k*.35,-.7,.7); g.stroke(); } }
       if(rep2){ pill(g,0,-.95,'repli','#fff',.14,'#c0392b'); }
+      else if(R.phase!=='idle'){ // niveau + barre d'expérience au-dessus de la tête
+        const lv=c.lvl, mx=lv>=CMDN.length, pr=mx?1:(c.xp-CMDN[lv-1].xp)/(CMDN[lv].xp-CMDN[lv-1].xp), up=R.t-c.lvlT<1.5, sc=up?1+.35*Math.sin(Math.min(1,(R.t-c.lvlT)/1.5)*Math.PI):1;
+        g.save(); g.translate(0,-1.02); g.scale(sc,sc);
+        pill(g,0,0,'★'.repeat(lv),mx?'#1a1300':'#ffd166',.15,mx?'#ffd166':'rgba(20,16,4,.82)');
+        if(!mx){ g.fillStyle='rgba(0,0,0,.6)'; g.fillRect(-.2,.16,.4,.05); g.fillStyle='#ffd166'; g.fillRect(-.2,.16,.4*Math.max(0,Math.min(1,pr)),.05); }
+        g.restore(); if(up&&!R.sim){ g.strokeStyle=`rgba(255,209,102,${1-(R.t-c.lvlT)/1.5})`; g.lineWidth=.05; g.beginPath(); g.ellipse(0,.01,.3+(R.t-c.lvlT)*.9,.1+(R.t-c.lvlT)*.3,0,0,7); g.stroke(); } }
       g.restore(); }}); }
   for(const u of R.units){ if(!u.p) u.p=upos(u); items.push({y:u.p.y,d:()=>drawUnit(g,u,rt)}); }
   // les lampadaires sont peints dans le décor : quand quelqu'un passe derrière, on redessine le fût par-dessus
@@ -2003,7 +2029,8 @@ Shell.init({
     '<b>Cohésion</b> : un cortège serré résiste mieux. L’<b>autopompe</b> le disperse (plus facile à repousser) et fait <b>éclater</b> les blocs compacts entamés.',
     '<b>Barrage</b> : bloque la rue jusqu’à céder. <b>Peloton MO</b> : retient les émeutiers au contact. <b>Fais-les glisser</b> pour choisir leur place dans la rue, dans un rayon autour de l’emplacement. <b>Cavalerie</b> : charge ; fais-la glisser sur un autre emplacement pour la <b>redéployer</b>.',
     'Plusieurs émeutiers repoussés au même endroit en même temps : <b>intervention maîtrisée</b>, +1 agent. Trois vagues sans perte d’affilée : <b>dispositif maîtrisé</b>, +15 %.',
-    'Le <b>commandant</b> (brassard rouge) : fais-le glisser où ça chauffe, ses moyens proches sont <b>plus efficaces</b> ; touche-le pour un <b>ordre au mégaphone</b> (sommation sur sa zone, recharge 20 s). Débordé par le cortège, il se replie.',
+    'Le <b>commandant</b> (brassard rouge) : fais-le glisser où ça chauffe, ses moyens proches sont <b>plus efficaces</b> ; touche-le pour un <b>ordre au mégaphone</b> (sommation sur sa zone). Débordé par le cortège, il se replie.',
+    'Le commandant <b>monte de niveau</b> (★ au-dessus de sa tête) à chaque émeutier repoussé dans son cercle ou par son mégaphone, et à chaque véhicule négocié. Novice, il se replie dès que 2 émeutiers l’approchent ; au niveau 5, il tient face à 9, son cercle est bien plus large (+28 %) et son mégaphone recharge en 12 s. <b>Déplace-le souvent là où ça chauffe.</b>',
     'Certains quartiers finissent sur un <b>véhicule</b> en tête de cortège (tracteur, camion sono, car de supporters) : ni l’eau ni les chevaux n’en viennent à bout. Arrête-le (<b>barrage</b>, sommation) et poste le <b>commandant</b> à côté pour <b>négocier</b> son départ.',
     'Dès la 3e vague, certains casseurs allument des <b>fumigènes</b> : dans la fumée, l’autopompe et la cavalerie ne voient plus personne et le peloton MO tâtonne, pendant 6 s.',
     'Les <b>sommations</b> ralentissent et font faire demi-tour aux émeutiers déjà découragés. Entre deux vagues, le <b>Directeur</b> te demande parfois la situation : choisis vite.'],

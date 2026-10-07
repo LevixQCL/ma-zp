@@ -3,15 +3,20 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-06-skins-gemini',
+  id: '2026-10-07-commandant-niveaux',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🎨', '13 nouveaux skins à gagner', 'gaufre au chocolat, aquarium à poissons-gyrophares, ruche, ampli, moulin à café, observatoire à canard… pour ton hôtel de police, ton garage et ton aile des annexes.'],
+    ['⭐', 'Maintien de l’ordre : le commandant monte en grade', 'novice, il se replie au moindre contact ; envoie-le là où ça chauffe et il devient une vraie légende du MO (5 niveaux).'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Maintien de l’ordre : niveaux du commandant', [
+      ['Comment il progresse', 'pendant la partie, il gagne de l’expérience pour chaque émeutier repoussé dans son cercle (posté, pas en marche) ou par son mégaphone, et pour chaque véhicule dont il négocie le départ. Ses étoiles et sa barre d’expérience s’affichent au-dessus de sa tête.'],
+      ['Niveau 1 → 5', 'novice, il se replie dès que 2 émeutiers l’approchent (8 s de repli), cercle étroit (+6 %), mégaphone toutes les 28 s. Légende du MO (niveau 5) : il tient face à 9, se replie 3 s seulement, cercle bien plus large (+28 %), mégaphone toutes les 12 s qui fait reculer bien plus de monde, et il marche et négocie plus vite.'],
+      ['Équilibre', 'simulé sur les 30 premiers niveaux du Challenge : difficulté globale inchangée pour qui le déplace régulièrement ; laissé à l’hôtel de ville, il reste novice et la partie devient nettement plus dure.'],
+    ]],
     ['Nouveaux skins', [
       ['Hôtel de police', 'Briqueterie à gaufres, Observatoire à canard (périscope en canard de bain), Bocal aquatique (bulles et poissons-gyrophares), Moulin à café (manivelle qui tourne), Caisse résonnante (tête d’ampli au voyant rouge), Ruche d’intervention (abeilles et miel).'],
       ['Garage', 'Caisses en carton (scotch et « découper ici ») et Coffre-fort géant (portes blindées à volant).'],

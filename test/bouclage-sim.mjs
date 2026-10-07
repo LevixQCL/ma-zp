@@ -18,7 +18,7 @@ async function jouer(page, niveau, reps) {
     const T = ['peloton', 'barrage', 'autopompe', 'cavalerie'];
     const cycles = [[0, 1, 2, 3], [1, 0, 2, 3], [2, 0, 1, 3], [0, 2, 1, 3], [1, 2, 0, 3], [0, 0, 2, 1]];
     const strats = []; cycles.forEach((c) => ['eager', 'reserve'].forEach((pol) => strats.push({ c, pol })));
-    const res = { wins: 0, games: 0, perte: 0, fin: 0, vies: 0 };
+    const res = { wins: 0, games: 0, perte: 0, fin: 0, vies: 0, cmdNiv: 0, cmdXp: 0 };
     for (const s of strats) for (let rep = 0; rep < N; rep++) {
       Math.random = ((z) => () => { z = (z * 16807) % 2147483647; return (z - 1) / 2147483646; })(rep * 7 + 3 + n * 101);
       const cf = Shell.cfgNiveau(n); B.resetGame(cf, false, cf.map); R.sim = true;
@@ -41,7 +41,7 @@ async function jouer(page, niveau, reps) {
             if (tr && Math.hypot(tr.p.x - R.cmd.x, tr.p.y - R.cmd.y) < 1.2) B.ordreCmd();
             if (live.filter((u) => Math.hypot(u.p.x - R.cmd.x, u.p.y - R.cmd.y) < 1.9).length >= 4) B.ordreCmd(); } }
         B.step(1 / 60); }
-      res.games++; if (R.lives > 0) res.wins++; res.vies = R.lives0;
+      res.games++; if (R.lives > 0) res.wins++; if (R.cmd) { res.cmdNiv += R.cmd.lvl || 1; res.cmdXp += R.stats.cmdXp || 0; } res.vies = R.lives0;
       res.perte += R.lives0 - Math.max(0, R.lives);
       res.fin += R.agents + Object.values(R.towers).reduce((a, t) => a + t.spent, 0);
     }
@@ -56,12 +56,12 @@ const out = {};
 await Promise.all(pages.map(async (p, i) => { for (let j = i; j < niveaux.length; j += PAR) out[niveaux[j]] = await jouer(p, niveaux[j], N); }));
 await browser.close();
 
-console.log('niv  quartier              météo  boss  vagues cordon agents | gagnantes  cordon perdu  effectif fin');
+console.log('niv  quartier              météo  boss  vagues cordon agents | gagnantes  cordon perdu  effectif fin  cmd niv  cmd xp');
 let mur = null;
 for (const n of niveaux) {
   const r = out[n], c = r.cfg, pc = Math.round((r.wins / r.games) * 100);
   const met = n % 5 === 3 ? 'brouillard' : n % 5 === 0 ? 'pluie' : '';
-  console.log(`${String(n).padStart(3)}  ${r.nom.padEnd(21)} ${met.padEnd(11)}${(c.boss||[]).map((b) => b[0].toUpperCase()).join('').padStart(3)} ${String(c.waves).padStart(6)} ${String(Math.round(c.lives)).padStart(6)} ${String(Math.round(c.eff)).padStart(6)} | ${String(pc).padStart(4)} %   ${(r.perte / r.games).toFixed(1).padStart(6)} / ${Math.round(r.vies)}   ${Math.round(r.fin / r.games)}`);
+  console.log(`${String(n).padStart(3)}  ${r.nom.padEnd(21)} ${met.padEnd(11)}${(c.boss||[]).map((b) => b[0].toUpperCase()).join('').padStart(3)} ${String(c.waves).padStart(6)} ${String(Math.round(c.lives)).padStart(6)} ${String(Math.round(c.eff)).padStart(6)} | ${String(pc).padStart(4)} %   ${(r.perte / r.games).toFixed(1).padStart(6)} / ${Math.round(r.vies)}   ${String(Math.round(r.fin / r.games)).padStart(4)}       ${(r.cmdNiv / r.games).toFixed(1)}    ${Math.round(r.cmdXp / r.games)}`);
   if (mur === null && r.wins === 0) mur = n;
 }
 console.log(mur ? `Premier niveau qu'aucune stratégie de bot ne passe : ${mur}` : 'Toutes les stratégies passent au moins une fois sur la plage testée.');
