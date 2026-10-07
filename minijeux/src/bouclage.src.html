@@ -59,6 +59,35 @@
 .lvl[disabled]{opacity:.45;cursor:not-allowed}
 .lvl .lock{position:absolute;top:14px;left:50%;transform:translateX(-50%);font-size:28px}
 .lvl .n{position:absolute;top:12px;left:12px;background:rgba(10,12,20,.85);border-radius:999px;padding:2px 9px;font:800 13px var(--f-disp);color:#ffd166}
+
+/* ───── guide « Comment jouer » ───── */
+.gd{display:flex;flex-direction:column;gap:14px;text-align:left}
+.gd h3{margin:0 0 6px;font:800 15px var(--f-head,inherit);display:flex;align-items:center;gap:8px}
+.gd h3 .n{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:var(--accent,#ff7a59);color:#1a0d07;font-size:12px;flex:none}
+.gd p{margin:0;font-size:14px;line-height:1.4}
+.gd .bloc{background:rgba(255,255,255,.04);border:1px solid var(--stroke);border-radius:14px;padding:12px}
+.gd .ill{display:flex;align-items:flex-end;justify-content:center;gap:6px;margin:6px 0 2px;min-height:64px}
+.gd .ill img{height:62px;width:auto;object-fit:contain}
+.gd .moy{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.gd .moy div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;line-height:1.2;text-align:center;color:var(--mute)}
+.gd .moy img{height:48px;width:auto;object-fit:contain}
+.gd .moy b{color:var(--ink);font-size:12px}
+.gd .cmd{border-color:rgba(255,209,102,.45);background:rgba(255,209,102,.06)}
+.gd .cmdhero{position:relative;display:grid;place-items:end center;height:132px;margin:4px 0 8px}
+.gd .cmdhero .cercle{position:absolute;width:190px;height:96px;border-radius:50%;border:2px dashed rgba(255,209,102,.75);background:rgba(255,209,102,.07);bottom:4px}
+.gd .cmdhero img{position:relative;height:96px;width:auto;margin-bottom:16px}
+.gd .cmdhero .etoiles{position:absolute;top:2px;padding:1px 8px;border-radius:999px;background:rgba(20,16,4,.85);color:#ffd166;font-size:12px;font-weight:800}
+.gd .geste{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;padding:7px 0;border-top:1px solid var(--stroke)}
+.gd .geste:first-of-type{border-top:0}
+.gd .geste .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:rgba(255,209,102,.14);font-size:18px}
+.gd .geste .t{display:block;font-weight:800;font-size:14px;margin-bottom:1px;color:var(--ink)}
+.gd .geste span b{color:var(--ink)}
+.gd .geste span{font-size:13px;color:var(--mute);line-height:1.35}
+.gd .nivt{margin:10px 0 0;font-size:12.5px;color:var(--mute)}
+.gd .niv{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-top:8px;text-align:center;font-size:11px;color:var(--mute)}
+.gd .niv div{background:rgba(0,0,0,.25);border-radius:8px;padding:5px 2px}
+.gd .niv i{display:block;font-style:normal;color:#ffd166;font-size:10px;letter-spacing:-1px}
+.gd .niv b{display:block;color:var(--ink);font-size:13px}
 </style>
 <body>
   <div class="hudrow">
@@ -1544,6 +1573,31 @@ Shell.init({
     normal:{agents:9,label:'Normal',eff:18,lives:15,combi:3,autopompe:2,cavalerie:3,hp:1,gap:.55,pause:14,waves:6},
     facile:{agents:11,label:'Facile',eff:19,lives:17,combi:3,autopompe:2,cavalerie:3,hp:1,gap:.55,pause:15,waves:5}},
   bornes:{eff:[12,26],lives:[8,20],gap:[.3,1],hp:[.5,Infinity],pause:[8,20],combi:[1,4],autopompe:[1,3],cavalerie:[1,4]},
+  // Guide illustré (bouton « Comment jouer » de l'écran de départ) : l'essentiel, avec les vrais dessins du jeu.
+  guide:()=>{ const im=(n,alt)=>`<img src="img/bouclage/${n}.webp" alt="${alt||''}" loading="lazy">`;
+    const N=CMDN, lv=N.map((x,i)=>`<div><i>${'★'.repeat(i+1)}</i><b>${x.deborde}</b></div>`).join('');
+    return `<div class="gd">
+    <div class="bloc"><h3><span class="n">1</span>Le but</h3>
+      <div class="ill">${im('em-rouge-1')}${im('casseur-1')}${im('em-bleu-1')}${im('meneur-1')}</div>
+      <p>Des cortèges remontent les rues vers l’<b>hôtel de ville</b>. Chaque émeutier qui arrive entame ton <b>cordon</b> : à zéro, c’est perdu. On ne blesse personne, on les <b>repousse</b> : à bout de détermination, ils font demi-tour.</p></div>
+    <div class="bloc"><h3><span class="n">2</span>Tes moyens</h3>
+      <p>Touche un <b>rond bleu</b> au bord de la rue, puis un moyen (deux fois pour confirmer). Touche un moyen posé pour le <b>renforcer</b>.</p>
+      <div class="moy"><div>${im('mo1')}<b>Peloton MO</b>retient au bouclier</div><div>${im('lance')}<b>Lance à eau</b>disperse les groupes</div><div>${im('heras')}<b>Barrières</b>bloquent la rue</div><div>${im('cav1')}<b>Cavalerie</b>charge les meneurs</div></div></div>
+    <div class="bloc"><h3><span class="n">3</span>Tes agents</h3>
+      <p>Poser un moyen coûte des <b>agents</b> (compteur 👤 en haut). Chaque émeutier repoussé t’en rend, <b>de moins en moins</b> au fil des vagues : garde une petite réserve.</p></div>
+    <div class="bloc cmd"><h3><span class="n">4</span>Le commandant</h3>
+      <div class="cmdhero"><div class="cercle"></div>${im('cmd-repos','Commandant')}<span class="etoiles">★★</span></div>
+      <p style="margin-bottom:6px">Ton atout : un seul, gratuit, au brassard rouge. <b>Il ne se gère pas tout seul</b> : déplace-le sans arrêt là où ça chauffe.</p>
+      <div class="geste"><div class="ic">✋</div><div><span class="t">Fais-le glisser</span><span>Il marche jusqu’où tu le lâches. Une fois arrêté, son <b>cercle jaune</b> rend les moyens à l’intérieur plus efficaces.</span></div></div>
+      <div class="geste"><div class="ic">📢</div><div><span class="t">Touche-le : mégaphone</span><span>Sommation sur sa zone : les émeutiers autour ralentissent, les plus découragés font demi-tour. L’anneau autour de ses pieds montre la recharge.</span></div></div>
+      <div class="geste"><div class="ic">💨</div><div><span class="t">Gaz, tout seul</span><span>Un émeutier <b>isolé</b> passe à sa portée ? Il le gaze et le retient. Envoie-le chercher celui qui a échappé à tes moyens.</span></div></div>
+      <div class="geste"><div class="ic">🚜</div><div><span class="t">Négocie les véhicules</span><span>Tracteur, camion sono, car : arrête-le (barrières, sommation) puis poste le commandant juste à côté.</span></div></div>
+      <div class="geste"><div class="ic">⚠️</div><div><span class="t">Attention au contact</span><span>Trop d’émeutiers sur lui et il se <b>replie</b> vers l’hôtel de ville quelques secondes (pastille rouge « repli »).</span></div></div>
+      <div class="geste"><div class="ic">★</div><div><span class="t">Il monte de niveau</span><span>Chaque émeutier repoussé dans son cercle, gazé ou négocié le fait progresser : il tient face à plus de monde, son cercle s’élargit, son mégaphone recharge plus vite. Il repart novice à chaque partie.</span></div></div>
+      <p class="nivt">Émeutiers au contact qu’il supporte avant de se replier :</p><div class="niv">${lv}</div></div>
+    <div class="bloc"><h3><span class="n">5</span>En plus</h3>
+      <p><b>Sommation</b> (bouton en bas) : comme le mégaphone, mais où tu veux sur la carte. <b>×2</b> accélère la partie. Entre deux vagues, le <b>Directeur</b> te demande parfois la situation : choisis vite.</p></div>
+    </div>`; },
   diffHint:'Plus d’agents au départ, plus de véhicules et un cordon plus solide.',
   desktopHint:'Sur ordinateur : clique sur un emplacement bleu, puis sur le moyen voulu (deux fois pour confirmer).',
   rules:['Les cortèges suivent les rues jusqu’à l’<b>hôtel de ville</b>. Chaque émeutier qui arrive entame le <b>cordon</b> (un casseur : 2, un bloc : 3).',

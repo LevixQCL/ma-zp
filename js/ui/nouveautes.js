@@ -13,6 +13,7 @@ export const NOTE_MAJ = {
   // Liste complète, dans le menu Nouveautés.
   sections: [
     ['Maintien de l’ordre : niveaux du commandant', [
+      ['Comment jouer', 'nouveau bouton sur l’écran de départ du mini-jeu : un guide illustré (but, moyens, agents) avec tout ce que sait faire le commandant.'],
       ['Comment il progresse', 'pendant la partie, il gagne de l’expérience pour chaque émeutier repoussé dans son cercle (posté, pas en marche) ou par son mégaphone, et pour chaque véhicule dont il négocie le départ. Ses étoiles et sa barre d’expérience s’affichent au-dessus de sa tête.'],
       ['Niveau 1 → 5', 'novice, il se replie dès que 2 émeutiers l’approchent (8 s de repli), cercle étroit (+6 %), mégaphone toutes les 28 s. Légende du MO (niveau 5) : il tient face à 9, se replie 3 s seulement, cercle bien plus large (+28 %), mégaphone toutes les 12 s qui fait reculer bien plus de monde, et il marche et négocie plus vite.'],
       ['Gaz', 'un émeutier isolé (personne d’autre tout près) à portée du commandant est gazé automatiquement, même en marche : retenu sur place, il perd de sa détermination. Novice : 2,5 s, il repart souvent. Niveau 5 : 4,5 s, portée plus grande, et il fait presque toujours demi-tour. Pas d’effet sur un groupe, un bloc ou un véhicule. De quoi rattraper le fuyard qui a passé tes moyens.'],

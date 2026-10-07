@@ -105,6 +105,7 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink);box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 30%,transparent)}
 .btn.small{flex:0 0 auto;min-width:0;padding:9px 14px;font-size:13px;border-radius:12px}
 .tuto-mini{align-self:flex-end;display:inline-flex;align-items:center;gap:6px;margin:-4px 0 -6px;padding:5px 11px;border-radius:999px;border:1px solid var(--stroke);background:transparent;color:var(--mute);font:600 12.5px var(--f-body);cursor:pointer}
+.minis{align-self:flex-end;display:flex;gap:8px;margin:-4px 0 -6px}.minis .tuto-mini{margin:0}#guideBtn{color:var(--ink);border-color:var(--stroke-2)}
 .tuto-mini:hover{color:var(--ink);border-color:var(--stroke-2)}
 .tuto-mini i{font-style:normal;display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1.5px solid currentColor;font-size:10px;font-weight:800}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
