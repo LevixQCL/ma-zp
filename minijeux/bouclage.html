@@ -986,36 +986,63 @@ function shade(hex,f){ const n=parseInt(hex.slice(1),16); let r=n>>16,g2=n>>8&25
 const RW=1.05;
 function strokeP(g,P,w,col,dash){ g.strokeStyle=col; g.lineWidth=w; g.lineJoin='round'; g.lineCap='butt'; if(dash) g.setLineDash(dash); g.beginPath(); P.pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1])); g.stroke(); g.setLineDash([]); }
 function minDistPaths(M,x,y){ let m=9; M.P.forEach(P=>{ const n=nearestOn(P,x,y); if(n.dist<m) m=n.dist; }); return m; }
+/* Terrain dessiné (cartes générées et quartiers sans décor illustré), style épuré :
+   de grands toits sombres, des rues pavées aux virages arrondis bordées d'un trottoir, des placettes pour les emplacements,
+   quelques lampadaires. Vue de trois quarts : sous chaque toit, on voit le mur de façade. */
+function roadPath(g,P,rad){ const p=P.pts; g.moveTo(p[0][0],p[0][1]);
+  for(let i=1;i<p.length-1;i++) g.arcTo(p[i][0],p[i][1],p[i+1][0],p[i+1][1],rad); g.lineTo(p.at(-1)[0],p.at(-1)[1]); }
 function drawMap(g,M,pads){
-  const rnd=rng(5324+M.paths.length*17+(M.seed||0)*131);
-  // sol : dalles sombres
-  g.fillStyle='#1b2333'; g.fillRect(0,0,MW,MH);
-  g.strokeStyle='rgba(255,255,255,.035)'; g.lineWidth=.015;
-  for(let x=0;x<=MW;x+=.5){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,MH); g.stroke(); }
-  for(let y=0;y<=MH;y+=.5){ g.beginPath(); g.moveTo(0,y); g.lineTo(MW,y); g.stroke(); }
-  // trottoirs, bordures et rue pavée
-  M.P.forEach(P=>strokeP(g,P,RW+.5,'#2b3548'));
-  M.P.forEach(P=>strokeP(g,P,RW+.1,'#8a97ae'));
-  M.P.forEach(P=>strokeP(g,P,RW,'#3a4558'));
-  M.P.forEach(P=>{ for(let d=0;d<P.len;d+=.15){ const q=posOn(P,d), row=Math.round(d/.15);
-    for(let o=-RW/2+.08;o<RW/2-.03;o+=.15){ const oo=o+(row%2?.075:0); if(oo>RW/2-.07) continue; const x=q.x-Math.sin(q.ang)*oo, y=q.y+Math.cos(q.ang)*oo, l=36+rnd()*12;
-      g.save(); g.translate(x,y); g.rotate(q.ang); g.fillStyle=`hsl(218 13% ${l}%)`; rr(g,-.062,-.062,.124,.124,.035); g.fill(); g.restore(); } } });
-  // bâtiments en trois quarts, à l'écart des rues et des emplacements
-  const blocs=[];
-  for(let y=.15;y<MH-1.1;y+=1.0) for(let x=.06;x<MW-.3;x+=1.0){ const cx=x+.44, cy=y+.42;
-    if(minDistPaths(M,cx,cy)<1.2) continue; if(pads&&pads.some(p=>Math.hypot(p.x-cx,p.y-cy)<.9)) continue; blocs.push({x,y}); }
-  blocs.forEach(b=>building(g,b.x,b.y,rnd));
-  // arbres sur les places, entre les rues
-  const arbres=[];
-  for(let y=.5;y<MH-1.5;y+=.62) for(let x=.35;x<MW-.3;x+=.62){ const jx=x+(rnd()-.5)*.25, jy=y+(rnd()-.5)*.25;
-    if(minDistPaths(M,jx,jy)<1.0) continue; if(pads&&pads.some(q=>Math.hypot(q.x-jx,q.y-jy)<.75)) continue;
-    if(blocs.some(b=>jx>b.x-.15&&jx<b.x+1.0&&jy>b.y-.1&&jy<b.y+1.0)) continue; if(rnd()<.45) arbres.push({x:jx,y:jy}); }
-  arbres.sort((a,b)=>a.y-b.y).forEach(a=>tree(g,a.x,a.y,rnd));
-  // lampadaires
-  M.P.forEach(P=>{ for(let d=.9; d<P.len; d+=1.8){ const p=posOn(P,d), sd=((d/1.8|0)%2?1:-1)*(RW/2+.2), x=p.x-Math.sin(p.ang)*sd, y=p.y+Math.cos(p.ang)*sd;
-    if(x<.15||x>MW-.15||y<.6||y>MH-1.3) continue; if(pads&&pads.some(q=>Math.hypot(q.x-x,q.y+.1-y)<1.0)) continue; lamp(g,x,y); } });
-  cityHall(g,M.P[0].pts.at(-1)[0]);
-  const v=g.createRadialGradient(MW/2,MH/2,MH*.3,MW/2,MH/2,MH*.78); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,10,.35)'); g.fillStyle=v; g.fillRect(0,0,MW,MH);
+  const rnd=rng(5324+M.paths.length*17+(M.seed||0)*131), T=g.getTransform(), W=g.canvas.width, H=g.canvas.height;
+  const layer=()=>{ const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d'); x.setTransform(T); return [c,x]; };
+  const put=c=>{ g.save(); g.setTransform(1,0,0,1,0,0); g.drawImage(c,0,0); g.restore(); };
+  const RAD=.75, ex=M.P[0].pts.at(-1)[0];
+  // 1. espace ouvert : chaussée + trottoirs, placettes des emplacements, parvis de l'hôtel de ville
+  const [Oc,O]=layer(); O.strokeStyle=O.fillStyle='#000'; O.lineJoin='round'; O.lineCap='round';
+  M.P.forEach(P=>{ O.lineWidth=RW+.95; O.beginPath(); roadPath(O,P,RAD); O.stroke(); });
+  (pads||[]).forEach(p=>{ let best=null; M.P.forEach(P=>{ const n=nearestOn(P,p.x,p.y); if(!best||n.dist<best.dist) best={...n,P}; }); const q=posOn(best.P,best.d);
+    O.lineWidth=.95; O.beginPath(); O.moveTo(p.x,p.y); O.lineTo(q.x,q.y); O.stroke(); O.beginPath(); O.ellipse(p.x,p.y,.62,.5,0,0,7); O.fill(); });
+  const hx=Math.max(.05,Math.min(MW-2.25,ex-1.1)); rr(O,hx-.35,MH-1.75,2.9,2,.3); O.fill();
+  // 2. toits = tout le reste
+  const [Rc,Rg]=layer(); Rg.fillStyle='#000'; Rg.fillRect(-1,-1,MW+2,MH+2); Rg.globalCompositeOperation='destination-out';
+  Rg.save(); Rg.setTransform(1,0,0,1,0,0); Rg.drawImage(Oc,0,0); Rg.restore();
+  const tint=(c,col)=>{ const [k,x]=layer(); x.save(); x.setTransform(1,0,0,1,0,0); x.drawImage(c,0,0); x.restore(); x.globalCompositeOperation='source-in'; x.fillStyle=col; x.fillRect(-1,-1,MW+2,MH+2); return k; };
+  g.fillStyle='#121a29'; g.fillRect(0,0,MW,MH);
+  const mask=(x,m,dy)=>{ x.save(); x.setTransform(1,0,0,1,0,dy||0); x.globalCompositeOperation='destination-in'; x.drawImage(m,0,0); x.restore(); };
+  const over=(x,c,op)=>{ x.save(); x.setTransform(1,0,0,1,0,0); if(op) x.globalCompositeOperation=op; x.drawImage(c,0,0); x.restore(); };
+  // sol des trottoirs et placettes : dalles discrètes
+  const [Gc,G]=layer(); G.fillStyle='#253049'; G.fillRect(0,0,MW,MH);
+  G.strokeStyle='rgba(255,255,255,.045)'; G.lineWidth=.02; G.beginPath();
+  for(let y=0;y<MH;y+=.42){ G.moveTo(0,y); G.lineTo(MW,y); const off=(Math.round(y/.42)%2)*.21; for(let x=off;x<MW;x+=.42){ G.moveTo(x,y); G.lineTo(x,y+.42); } }
+  G.stroke(); mask(G,Oc);
+  // façade visible sous chaque toit (vue de trois quarts), avec quelques fenêtres éclairées
+  { const [Fa,Fx]=layer(); Fx.fillStyle='#0e1422'; Fx.fillRect(0,0,MW,MH); const r2=rng(77+(M.seed||0)); Fx.fillStyle='rgba(255,196,120,.6)';
+    for(let y=0;y<MH;y+=.13) for(let x=.15;x<MW;x+=.36) if(r2()<.05) Fx.fillRect(x,y,.1,.09);
+    mask(Fx,Rc,T.d*.34); over(G,Fa,'source-atop'); }
+  put(Gc);
+  // 3. chaussée : bordure claire, pavés en quinconce, discrets
+  g.lineJoin='round'; g.lineCap='butt';
+  M.P.forEach(P=>{ g.strokeStyle='#7d8aa6'; g.lineWidth=RW+.1; g.beginPath(); roadPath(g,P,RAD); g.stroke(); });
+  M.P.forEach(P=>{ g.strokeStyle='#3e4b66'; g.lineWidth=RW-.02; g.beginPath(); roadPath(g,P,RAD); g.stroke(); });
+  { const [Mc,Mx]=layer(); Mx.lineJoin='round'; Mx.strokeStyle='#000'; M.P.forEach(P=>{ Mx.lineWidth=RW-.06; Mx.beginPath(); roadPath(Mx,P,RAD); Mx.stroke(); });
+    const [Sc,S]=layer(); const tons=[0,1,2,3].map(i=>`hsl(220 20% ${37+i*2.2}%)`), lots=tons.map(()=>new Path2D());
+    for(let y=-.1,row=0;y<MH;y+=.17,row++) for(let x=(row%2)*.11-.1;x<MW;x+=.22){ if(minDistPaths(M,x+.1,y+.08)>RW/2+.2) continue; const P2=lots[Math.floor(rnd()*4)]; P2.roundRect(x+.012,y+.012,.196,.146,.04); }
+    lots.forEach((P2,i)=>{ S.fillStyle=tons[i]; S.fill(P2); }); mask(S,Mc); put(Sc); }
+  // 4. toits : grands aplats, bord inférieur éclairé, faîtages discrets
+  { const [Fc,F]=layer(); F.fillStyle='#34405a'; F.fillRect(0,0,MW,MH); mask(F,Rc);
+    const [Kc,K]=layer(); K.fillStyle='#19212f'; K.fillRect(0,0,MW,MH);
+    const r3=rng(31+(M.seed||0)), haut=new Path2D(), sep=new Path2D(), ridge=new Path2D();
+    for(let y=-.4;y<MH;){ const H=1.7+r3()*1.2; let x=-.3; sep.moveTo(0,y); sep.lineTo(MW,y);
+      while(x<MW){ const w=1.6+r3()*1.8; haut.rect(x,y,w,H*.48); sep.moveTo(x,y); sep.lineTo(x,y+H); ridge.moveTo(x+.1,y+H*.48); ridge.lineTo(x+w-.1,y+H*.48); x+=w; } y+=H; }
+    K.fillStyle='#232d43'; K.fill(haut);
+    K.lineWidth=.035; K.strokeStyle='rgba(5,8,15,.55)'; K.stroke(sep); K.lineWidth=.025; K.strokeStyle='rgba(140,160,200,.16)'; K.stroke(ridge);
+    mask(K,Rc,-T.d*.035); over(F,Kc); put(Fc); }
+  // 5. lampadaires le long des rues, espacés
+  const done=[];
+  M.P.forEach(P=>{ for(let d=1.2; d<P.len; d+=2.6){ const p=posOn(P,d), sd=((d/2.6|0)%2?1:-1)*(RW/2+.22), x=p.x-Math.sin(p.ang)*sd, y=p.y+Math.cos(p.ang)*sd;
+    if(x<.15||x>MW-.15||y<.6||y>MH-1.8) continue; if(pads&&pads.some(q=>Math.hypot(q.x-x,q.y-y)<.9)) continue; if(done.some(o=>Math.hypot(o[0]-x,o[1]-y)<1.6)) continue;
+    if(minDistPaths(M,x,y)<RW/2+.1) continue; done.push([x,y]); lamp(g,x,y); } });
+  cityHall(g,ex);
+  const v=g.createRadialGradient(MW/2,MH/2,MH*.35,MW/2,MH/2,MH*.8); v.addColorStop(0,'rgba(0,0,0,0)'); v.addColorStop(1,'rgba(0,0,10,.3)'); g.fillStyle=v; g.fillRect(0,0,MW,MH);
 }
 function building(g,x,y,rnd){
   const w=.88, d=.48, h=.3+rnd()*.12, hue=214+rnd()*14, l=21+rnd()*6;
