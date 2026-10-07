@@ -1145,9 +1145,11 @@ $('quitter').addEventListener('click', () => {
   if (INC && S && S.enCours) { S.pause = true; S.frein = false; $('abandon').hidden = false; return; }
   if (MODE) post('close'); else { $('fin').hidden = true; if (S) { S.enCours = false; arreterSon(); } $('intro').hidden = false; }
 });
+// Bouton « Retour à ma zone » de Ma ZP pendant une urgence : même confirmation que le ✕ (jeu en pause).
+window.addEventListener('message', (e) => { const d = e.data; if (e.origin !== location.origin || !d || d.source !== 'mazp' || d.type !== 'quitter') return; if (INC && S && S.enCours) { S.pause = true; S.frein = false; $('abandon').hidden = false; } else post('close'); });
 $('continuer').addEventListener('click', () => { $('abandon').hidden = true; S.pause = false; dernier = 0; });
 $('confAband').addEventListener('click', () => { $('abandon').hidden = true; S.pause = false; terminer(false, 'abandon'); });
-if (!MODE) $('quitter').hidden = true;
+$('quitter').hidden = true; // dans Ma ZP, la barre du haut a son bouton « Retour » ; hors du jeu, rien à quitter
 
 if (VEHS.length) choisirVehicule(0);
 taille(); nouvelleMission(); afficherDispatch(); afficherIntro(); creer(); S.enCours = false;

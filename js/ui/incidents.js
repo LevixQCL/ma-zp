@@ -194,7 +194,12 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
   const wrap = document.createElement('div');
   wrap.className = 'mj-wrap';
   wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true');
-  wrap.innerHTML = `<iframe src="minijeux/${jeu}.html?${p}" title="Mini-jeu ${esc((MINI_JEUX.find((m) => m.jeu === jeu) || {}).nom || '')}" allow="autoplay; fullscreen"></iframe>`;
+  const nomJeu = (MINI_JEUX.find((m) => m.jeu === jeu) || {}).nom || '';
+  const enjeu = mode === 'incident' || mode === 'renfort';
+  // Barre du haut : un gros bouton « Retour » toujours visible, commun à tous les mini-jeux.
+  wrap.innerHTML = `<div class="mj-barre"><button type="button" class="mj-retour" aria-label="Quitter le mini-jeu et revenir à ma zone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Retour à ma zone</button><span class="mj-nom">${esc(nomJeu)}</span></div>
+    <iframe src="minijeux/${jeu}.html?${p}" title="Mini-jeu ${esc(nomJeu)}" allow="autoplay; fullscreen"></iframe>`;
+  let enCours = false; // incident ou appui lancé et pas encore terminé
   // Maintien de l'ordre : les cortèges marchent sur NOTRE hôtel de police, avec ses skins (dessin de l'HP, sans le décor autour).
   if (jeu === 'bouclage') {
     try {
@@ -207,9 +212,16 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, o
     } catch (e) { /* le mini-jeu garde son hôtel de ville */ }
   }
   const fermer = () => { window.removeEventListener('message', recevoir); wrap.remove(); document.body.classList.remove('mj-ouvert'); onFin(); };
+  // Partie d'incident ou d'appui en cours : le jeu met en pause et demande confirmation (un seul essai), puis se ferme lui-même.
+  wrap.querySelector('.mj-retour').addEventListener('click', () => {
+    const fen = wrap.querySelector('iframe').contentWindow;
+    if (enCours && enjeu && fen) fen.postMessage({ source: 'mazp', type: 'quitter' }, location.origin); else fermer();
+  });
   async function recevoir(e) {
     const d = e.data;
     if (e.origin !== location.origin || !d || d.source !== 'mazp-mj') return;
+    if (d.type === 'start') enCours = true;
+    if (d.type === 'result') enCours = false;
     try {
       if (mode === 'incident' && inc && d.id === inc.id) {
         if (d.type === 'start') await enregistrer(inc.id, { statut: 'abandon', fautes: 1 });

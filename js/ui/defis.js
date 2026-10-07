@@ -46,7 +46,8 @@ export function titresDefi(uid) {
 /** Paramètres d'adresse transmis au mini-jeu (record et record personnel). */
 export function paramsDefi(jeu) {
   const r = recordDefi(jeu), moi = S.user && r && r.uid === S.user.uid;
-  return { rec: String(r ? r.niveau : 0), recNom: r ? (moi ? 'toi' : r.nom) : '', moi: String(monRecordDefi(jeu)) };
+  // u et sem : la course en cours est gardée sur l'appareil pour ce joueur et cette semaine (reprise après une coupure).
+  return { rec: String(r ? r.niveau : 0), recNom: r ? (moi ? 'toi' : r.nom) : '', moi: String(monRecordDefi(jeu)), u: S.user ? String(S.user.uid).slice(0, 12) : '', sem: String(cleSemaineEnCours() || '') };
 }
 
 /** Semaine du Challenge en cours (échéance du dimanche 20:00 qui la clôt). */
