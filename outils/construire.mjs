@@ -30,7 +30,15 @@ function trouverEsbuild() {
   throw new Error('esbuild introuvable : npm i -g esbuild@0.24.2 (ou ESBUILD_PATH=/chemin/vers/node_modules/esbuild)');
 }
 
+/** index.html avec l'écran de chargement de js/ui/chargeur.js (affiché avant que le code du jeu arrive). */
+export async function indexAvecChargeur() {
+  const { chargeurHtml } = await import(new URL('../js/ui/chargeur.js', import.meta.url).href);
+  const index = readFileSync(join(racine, 'index.html'), 'utf8');
+  return index.replace(/(<!-- chargeur[^>]*-->\n\s*<div id="app">)[\s\S]*?(<\/div>\n\s*<!-- \/chargeur -->)/, (_, a, b) => a + chargeurHtml() + b);
+}
+
 if (import.meta.url === `file://${process.argv[1]}`) {
+  writeFileSync(join(racine, 'index.html'), await indexAvecChargeur());
   const esbuild = trouverEsbuild();
   const empreinte = empreinteSources();
   await esbuild.build({

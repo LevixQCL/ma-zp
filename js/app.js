@@ -55,6 +55,7 @@ import { migrateState, isOutdated } from './engine/resolve.js';
 import { actionReleve } from './ui/releve.js';
 import { actionBilan } from './ui/bilan.js';
 import { actionCrise } from './ui/crise.js';
+import { chargeurHtml, avancerChargeur, sortirChargeur } from './ui/chargeur.js';
 
 const app = document.getElementById('app');
 const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief'];
@@ -74,14 +75,21 @@ function route() {
 
 // Chargement avec garde-fou : si rien ne se passe en 20 secondes, on affiche la cause au lieu de tourner sans fin.
 let chargementDepuis = 0, garde = null;
-function loading(msg = 'Chargement…') {
+function loading(msg, pct) {
   const cur = app.querySelector('.loader .loader-msg');
-  if (cur) { cur.textContent = msg; return; } // garde l'animation en cours, change seulement le texte
-  app.innerHTML = `<main class="center-screen loader" aria-busy="true"><div class="loader-halo" aria-hidden="true"></div><div class="lightbar" aria-hidden="true"><span class="lb-blue"></span><span class="lb-amber"></span></div><h1 class="brand brand-xl">Ma ZP</h1><p class="loader-tag">Gère ta zone · Démasque le coupable</p><div class="loader-bar" aria-hidden="true"><span></span></div><p class="loader-msg" role="status">${esc(msg)}</p></main>`;
+  if (cur) { // garde l'animation en cours ; une étape déjà dépassée ne fait pas reculer le texte
+    const b = app.querySelector('.loader-bar span'), deja = b ? parseFloat(b.style.width) || 0 : 0;
+    if (msg && !(pct && pct < deja)) cur.textContent = msg;
+    if (pct) avancerChargeur(app, pct);
+    return;
+  }
+  app.innerHTML = chargeurHtml(esc(msg || 'Chargement…'), pct || 6);
   if (!chargementDepuis) chargementDepuis = Date.now();
   clearTimeout(garde);
   garde = setTimeout(() => { if (app.querySelector('[aria-busy="true"]')) bloque(); }, 20000);
 }
+/** Étape du chargement : n'agit que si l'écran de chargement est affiché (sinon on ne touche pas au jeu). */
+function etape(msg, pct) { if (app.querySelector('main.loader')) loading(msg, pct); }
 function bloque(err = S.lastError) {
   const msg = err ? String(err.code || '') + ' ' + String(err.message || err) : 'aucune réponse du serveur';
   let conseil = 'Vérifie ta connexion, puis réessaie.';
@@ -108,12 +116,12 @@ function render() {
   let html;
   if (!S.user) html = renderLogin();
   else if (S.noParty || S.route === 'parties') html = renderParties();
-  else if (S.state === undefined) { loading(); return; }
+  else if (S.state === undefined) { loading('Ouverture de ta partie…', 45); return; }
   else if (!S.state) html = renderInscription({ gameExists: false, isAdmin: S.backend.isMaster(S.user) });
   else if (S.player && S.player.retire) html = `<main class="center-screen"><h1 class="brand">Ma ZP</h1><div class="card"><h2 class="card-title">Tu as été retiré de la partie</h2><p class="small muted" style="margin:0">Contacte le maître du jeu si c’est une erreur.</p></div><button class="btn ghost" data-action="logout">Se déconnecter</button></main>`;
   else if (!myZone()) {
     if (S.player && S.joinErreur) html = `<main class="center-screen"><h1 class="brand">Ma ZP</h1><div class="card"><h2 class="card-title">Ta zone n’a pas pu être créée</h2><p class="small muted" style="margin:0">${esc(S.joinErreur)}</p></div><button class="btn primary" data-action="join-retry">Réessayer</button><a class="btn ghost" href="#parties">Retour aux parties</a></main>`;
-    else if (S.player) { loading('Création de ta zone…'); ensureZone(); return; }
+    else if (S.player) { loading('Création de ta zone…', 85); ensureZone(); return; }
     else html = renderInscription({ gameExists: true });
   } else {
     try {
@@ -146,7 +154,7 @@ function render() {
       default:
         // Première ouverture : tant que les Gazettes ne sont pas lues, on n'affiche pas l'HP (ni ses pop-up),
         // pour pouvoir ouvrir directement la Gazette du soir si elle n'a pas encore été lue (6 s au plus).
-        if (!S.gazettesChargees && Date.now() - (S.ouvertureA ||= Date.now()) < 6000) { loading('Chargement de la Gazette…'); setTimeout(() => { if (!S.gazettesChargees) render(); }, 6100); return; }
+        if (!S.gazettesChargees && Date.now() - (S.ouvertureA ||= Date.now()) < 6000) { loading('Arrivée de la Gazette…', 92); setTimeout(() => { if (!S.gazettesChargees) render(); }, 6100); return; }
         html = renderHP();
     }
     } catch (err) {
@@ -169,6 +177,7 @@ function render() {
     html += `<div class="savebar calme" role="status"><span class="col" style="gap:1px"><span class="small" style="font-weight:700">Ordres pas encore validés</span><span class="tiny muted">coût ce soir : ${String(Math.round(cout * 10) / 10).replace('.', ',')} k€</span></span><button class="btn primary small" data-action="save-orders">Valider</button></div>`;
   }
   const scroll = window.scrollY;
+  sortirChargeur(app.querySelector('main.loader')); // le logo remonte et s'efface par-dessus le jeu
   app.innerHTML = banner + html;
   // La roulette « Early birds » n'est plus proposée (les skins déjà gagnés restent acquis).
   // Événement d'actualité (une fois par appareil) avant la note de nouveautés.
@@ -270,6 +279,7 @@ function gazetteAOuvrir() {
 }
 async function afterAuth() {
   if (!S.user) { if (unsubState) unsubState(); unsubState = null; S.state = undefined; lastTurnKey = null; render(); return; }
+  etape('Contrôle du badge…', 34);
   try { S.parties = await S.backend.listMyParties(S.user.uid); } catch (e) { console.warn(e); S.lastError = e; S.parties = []; }
   // Arrivée par un lien d'invitation : on rejoint la partie directement.
   if (S.invitation && S.backend.joinByCode) {
@@ -303,6 +313,7 @@ async function openParty(id) {
   const partie = await S.backend.useGame(id);
   if (jeton !== ouvertures) return;
   S.partie = partie;
+  etape('Rassemblement de l’équipe…', 58);
   try { localStorage.setItem(`mazp-partie-${S.user.uid}`, id); } catch (e) { /* stockage indisponible */ }
   let player = null, players = {};
   try { player = await S.backend.getPlayer(S.user.uid); } catch (e) { player = null; }
@@ -323,7 +334,7 @@ async function openParty(id) {
     unsubState = S.backend.subscribeState(async (state) => {
       S.state = migrateState(state);
       recalerJourSiBesoin();
-      if (state && S.user && state.zones[S.user.uid]) { try { await loadTurnData(); } catch (e) { console.error(e); S.lastError = e; } }
+      if (state && S.user && state.zones[S.user.uid]) { etape('Lecture des PV de la nuit…', 76); try { await loadTurnData(); } catch (e) { console.error(e); S.lastError = e; } }
       if (S.state) completerDepuisGazette(S.state, S.gazettes);
       render();
     }, (e) => { S.lastError = e; if (S.state === undefined) bloque(e); });
@@ -1428,7 +1439,7 @@ async function boot() {
   window.__mazpBoot = true; // les modules sont chargés : le filet de sécurité de index.html se retire
   installerEuros(document.body); // le moteur compte en k€ : tout ce qui s'affiche est converti en euros
   installerInvitationAppli(); // bandeau « installe Ma ZP » (iPhone et Android), seulement hors appli installée
-  loading();
+  loading('Connexion au central…', 18);
   S.config = CONFIG;
   S.invitation = lireInvitationUrl();
   S.route = route();
