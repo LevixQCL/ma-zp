@@ -183,8 +183,10 @@ const Shell = (() => {
     st.mode='menu'; st.timerOn=false; hideCoach(); G.onMenu && G.onMenu();
     if(run){ run=null; eyebrow(eyebrowBase()); }
     const touch=matchMedia('(pointer:coarse)').matches;
+    // Tuto déjà vu (ou en option) : petit bouton discret au-dessus de l'action principale, pas un second gros bouton.
+    const tutoMini = () => `<button class="tuto-mini" id="tuto" type="button"><i aria-hidden="true">?</i>${st.tuto?'Revoir le tuto':'Tuto'}</button>`;
     const tutoBtns = (goLbl) => st.tuto
-      ? `<button class="btn primary" id="go">${goLbl}</button><button class="btn" id="tuto">Revoir le tuto</button>`
+      ? `<button class="btn primary" id="go">${goLbl}</button>`
       : `<button class="btn primary" id="tuto">Commencer le tuto</button><button class="btn" id="go">${RENF?'Commencer sans tuto':INC?'Intervenir sans tuto':'Jouer directement'}</button>`;
     // Événement d'actualité (lancé depuis Ma ZP) : une seule partie, réglage normal, puis invitation au Challenge.
     if(G.evt && !INC){
@@ -192,7 +194,7 @@ const Shell = (() => {
         ${hero('Événement · '+G.service)}
         <h2>${G.headline}</h2>
         ${G.story}
-        <div class="row"><button class="btn primary" id="evtGo">${G.evt.go||'Jouer'}</button><button class="btn" id="tuto">${st.tuto?'Revoir le tuto':'Tuto'}</button></div>
+        ${tutoMini()}<div class="row"><button class="btn primary" id="evtGo">${G.evt.go||'Jouer'}</button></div>
         ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
         <p class="demo">Une partie en difficulté normale, sans effet sur ta zone.</p>`);
       $('evtGo').onclick=jouerEvt; $('tuto').onclick=startTuto;
@@ -208,7 +210,7 @@ const Shell = (() => {
         <div class="seg seg1"><button aria-pressed="true" tabindex="-1"><span class="ppl">${'<i></i>'.repeat(Math.max(1,Math.min(12,Number(Q.get('agents'))||d.agents)))}</span><b>${effectif()}</b>${d.label}</button></div>
         ${Q.get('pourquoi')?`<p class="small" style="opacity:.8">${escH(Q.get('pourquoi'))}</p>`:''}
         <p class="small">${RENF?`Un seul essai. Réussi : ${escH(Q.get('gain')||'une pièce pour ton enquête')}. Raté ou abandonné : ${escH(Q.get('malus')||'pas de pièce')}.`:`Un seul essai. Réussi : ${escH(Q.get('gain')||'un bonus')} et des points de jauge des skins. Raté ou abandonné : ${escH(Q.get('malus')||G.malus)}. Tout s’applique à 20:00.`}</p>
-        <div class="row">${tutoBtns(RENF?'Commencer':'Intervenir')}</div>
+        ${st.tuto?tutoMini():''}<div class="row">${tutoBtns(RENF?'Commencer':'Intervenir')}</div>
         <button class="btn small" id="later" style="align-self:center">Plus tard</button>
         ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}`);
     } else if(MODE==='train'){
@@ -219,9 +221,10 @@ const Shell = (() => {
         <h2>${G.headline}</h2>
         ${G.story}
         <div class="defi-box"><div><b>🏆 Challenge</b><span>Du niveau 1 (tout doux) à aussi haut que possible : chaque niveau est un peu plus dur. Trois erreurs et la course s’arrête.</span><span>${recLigne()}${DEFI.moi?` Ton record : niveau ${DEFI.moi}.`:''}</span></div></div>
+        ${tutoMini()}
         ${reprise?`<div class="row"><button class="btn primary" id="defiReprise">Reprendre au niveau ${reprise.niveau} <span class="coeurs" style="color:inherit;opacity:.8;margin-left:6px">${'♥'.repeat(DEFI.erreurs-reprise.erreurs)}${'♡'.repeat(reprise.erreurs)}</span></button></div>
-        <div class="row"><button class="btn" id="defiGo">Recommencer au niveau 1</button><button class="btn" id="tuto">${st.tuto?'Revoir le tuto':'Tuto'}</button></div>`
-        :`<div class="row"><button class="btn primary" id="defiGo">Lancer le challenge</button><button class="btn" id="tuto">${st.tuto?'Revoir le tuto':'Tuto'}</button></div>`}
+        <div class="row"><button class="btn" id="defiGo">Recommencer au niveau 1</button></div>`
+        :`<div class="row"><button class="btn primary" id="defiGo">Lancer le challenge</button></div>`}
         ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
         <p class="demo">Sans effet sur ta zone : ton meilleur niveau s’affiche sur la tuile du Challenge.</p>`);
       $('tuto').onclick=startTuto; $('defiGo').onclick=startDefi; if(reprise) $('defiReprise').onclick=reprendreDefi;
@@ -235,7 +238,7 @@ const Shell = (() => {
         <div class="lbl2">${effLabel()}</div>
         <div class="seg" id="seg">${seg}</div>
         <p class="small">${G.diffHint}</p>
-        <div class="row">${tutoBtns('Jouer')}</div>
+        ${st.tuto?tutoMini():''}<div class="row">${tutoBtns('Jouer')}</div>
         ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
         <p class="demo">Démo jouable, rien n'est enregistré dans ta partie Ma ZP.</p>`);
       $('seg').onclick=e=>{const b=e.target.closest('button'); if(!b) return; st.diff=b.dataset.k; store.set('diff',st.diff);

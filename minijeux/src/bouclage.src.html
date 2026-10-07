@@ -41,6 +41,7 @@
 .btn.go{background:#ffd166;color:#241400;border-color:transparent;box-shadow:0 0 18px rgba(255,209,102,.35)}
 #somm{border:2px solid #62b0ff;color:#cfe4ff;box-shadow:0 0 14px rgba(98,176,255,.3)}
 #spd{border:2px solid #62b0ff;color:#cfe4ff}
+#spd.x2{font:700 12px var(--f-body);line-height:1.15;max-width:86px;white-space:normal;background:color-mix(in srgb,#FFB23F 22%,var(--surface));border-color:#FFB23F;color:#FFE2A8}
 .btn.go:disabled{background:var(--surface);color:var(--mute);box-shadow:none;border-color:var(--stroke)}
 .panel{position:absolute;left:8px;right:8px;top:50%;transform:translateY(-50%);z-index:3;background:rgba(18,24,40,.97);border:1px solid var(--stroke-2);border-radius:18px;padding:16px;display:grid;gap:10px;box-shadow:0 20px 50px rgba(0,0,0,.55);max-height:calc(100% - 16px);overflow:auto}
 .panel .hd{display:flex;gap:12px;align-items:center}
@@ -69,7 +70,7 @@
   <div class="tip" id="tip"></div>
   <div class="bar2">
     <button class="btn pw" id="somm" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10v4h3l7 4V6L6 10z"/><path d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11"/></svg><span id="sommTxt">Sommation</span><i class="cd" id="sommCd"></i></button>
-    <button class="btn spd" id="spd" aria-pressed="false" aria-label="Vitesse double">×2</button>
+    <button class="btn spd" id="spd" aria-pressed="false" aria-label="Passer en vitesse double">×2</button>
     <button class="btn primary go" id="launch">Lancer la vague 1</button>
   </div>
 </body>
@@ -639,7 +640,14 @@ function ui(){
   const sm=$('somm'); sm.hidden=R.phase==='idle'||R.tuto>0; sm.disabled=R.somm.cd>0||R.phase!=='run';
   sm.setAttribute('aria-pressed',R.somm.placing); $('sommTxt').textContent=R.somm.cd>0?`${Math.ceil(R.somm.cd)} s`:'Sommation';
   $('sommCd').style.width=(R.somm.cd>0?(1-R.somm.cd/sommCd())*100:0)+'%';
-  $('spd').hidden=R.phase==='idle';
+  $('spd').hidden=R.phase==='idle'; majVitesse();
+}
+// Le bouton dit ce qu'il fera : « ×2 » en vitesse normale, « Vitesse normale » quand on joue en ×2.
+function majVitesse(){
+  const b=$('spd'), x2=R.speed===2, lbl=x2?'Vitesse normale':'×2';
+  if(b.dataset.l===lbl) return;
+  b.dataset.l=lbl; b.textContent=lbl; b.setAttribute('aria-pressed',x2); b.setAttribute('aria-label',x2?'Revenir à la vitesse normale (jeu en ×2)':'Passer en vitesse double');
+  b.classList.toggle('x2',x2);
 }
 const sommCd=()=>R.mods&&R.mods.sommation?36:SOMM.cd;
 function tip(html){
@@ -1508,7 +1516,7 @@ Shell.init({
     C.cv.addEventListener('pointercancel',()=>{ C.drag=null; R.rally=null; R.dragCav=null; tip(); });
     $('tip').addEventListener('click',e=>{ const b=e.target.closest('[data-dir]'); if(b) choisirDir(b.dataset.dir); });
     $('launch').onclick=()=>{ if(R.phase==='build'){ if(R.tuto===4) Shell.hideCoach(); launchWave(); } else if(R.phase==='run'&&R.nextIn!==null) launchWave(); };
-    $('spd').onclick=()=>{ R.speed=R.speed===1?2:1; $('spd').setAttribute('aria-pressed',R.speed===2); };
+    $('spd').onclick=()=>{ R.speed=R.speed===1?2:1; majVitesse(); };
     $('somm').onclick=()=>{ if(R.somm.cd>0||R.phase!=='run') return; R.somm.placing=!R.somm.placing; R.sel=null; tip(); ui(); };
     R.phase='idle'; R.cfg=this.diffs.normal; ui(); tip();
   },

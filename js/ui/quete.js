@@ -1,5 +1,5 @@
 // Écran de l’énigme du jour.
-import { nominette, ligneSemaine, laureatsProvisoires } from './defis.js';
+import { nominette, ligneSemaine, laureatsProvisoires, enTeteSemaine } from './defis.js';
 import { CHALLENGE } from '../engine/challenge.js';
 import { euros } from './euros.js';
 import { nominetteBitonal } from './bitonal.js';
@@ -65,10 +65,22 @@ function primeSemaine() {
   const zn = (uid) => { const z = S.state && S.state.zones[uid]; return z ? z.nom : 'une zone'; };
   const passe = (S.state && S.state.challenge && S.state.challenge.laureats) || [];
   const ligne = (l, nom) => `<li><span>${esc(nomJeu(l.jeu))}</span><span class="${l.uid === moi ? 'ok' : ''}">${esc(l.uid === moi ? 'toi' : nom)} · niv. ${l.niveau}</span></li>`;
+  // Tous les mini-jeux du Challenge : le lauréat provisoire, ou pourquoi la prime reste à prendre
+  // (personne au niveau minimum, ou le seul en tête a déjà sa prime sur un autre jeu).
+  const qui = (uid, nom) => esc(uid === moi ? 'toi' : nom);
+  const ligneProv = (j, l) => {
+    const tete = enTeteSemaine(j);
+    if (l) {
+      const note = !l.premier && tete ? `<small class="muted" style="display:block;font-weight:400">${qui(tete.uid, tete.nom)} en tête, déjà primé${tete.uid === moi ? '' : '(e)'} ailleurs</small>` : '';
+      return `<li><span>${esc(nomJeu(j))}</span><span class="${l.uid === moi ? 'ok' : ''}">${qui(l.uid, l.nom)} · niv. ${l.niveau}${note}</span></li>`;
+    }
+    const etat = tete ? `à prendre <small style="display:block">${qui(tete.uid, tete.nom)} en tête (niv. ${tete.niveau}), déjà primé${tete.uid === moi ? '' : '(e)'} ailleurs</small>` : `à prendre dès le niv. ${CHALLENGE.niveauMin}`;
+    return `<li class="muted"><span>${esc(nomJeu(j))}</span><span style="font-weight:400">${etat}</span></li>`;
+  };
   return `<div class="prime-chal">
     <div class="between" style="gap:8px;align-items:flex-start"><span class="prime-t">🏅 Prime de la semaine</span><span class="tiny muted" style="text-align:right">remise dimanche 20:00</span></div>
     <span class="small">Le meilleur niveau de la semaine sur chaque mini-jeu (dès le niveau ${CHALLENGE.niveauMin}) rapporte <strong>${euros(CHALLENGE.prime)}</strong> à sa zone et <strong>+${CHALLENGE.jauge}</strong> sur la jauge des skins. <strong>Une prime par joueur</strong> : en tête sur plusieurs jeux, les autres primes passent au suivant.</span>
-    ${prov.length ? `<span class="tr-grp">Si la semaine finissait maintenant</span><ul class="prime-l">${prov.map((l) => ligne(l, l.nom)).join('')}</ul>` : '<span class="tiny muted">Personne n’a encore atteint le niveau ' + CHALLENGE.niveauMin + ' cette semaine : les primes sont à prendre.</span>'}
+    ${prov.length ? `<span class="tr-grp">Si la semaine finissait maintenant</span><ul class="prime-l">${CHALLENGE.jeux.map((j) => ligneProv(j, prov.find((l) => l.jeu === j))).join('')}</ul>` : '<span class="tiny muted">Personne n’a encore atteint le niveau ' + CHALLENGE.niveauMin + ' cette semaine : les primes sont à prendre.</span>'}
     ${passe.length ? `<details class="prime-d"><summary class="tiny muted">Lauréats de la semaine passée</summary><ul class="prime-l">${passe.map((l) => ligne(l, zn(l.uid))).join('')}</ul></details>` : ''}
   </div>`;
 }
