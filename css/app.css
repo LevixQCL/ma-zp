@@ -1802,3 +1802,14 @@ details.crise-pli .crise-k, .crise-ligne .crise-k { flex-shrink: 0; margin-right
 .freq-t { font-weight: 700; font-size: 13.5px; line-height: 1.15; }
 .freq-s { font-size: 11px; color: var(--muted); line-height: 1.2; }
 .freq .compteur { position: absolute; top: -6px; right: -4px; }
+
+/* Ordres : situation du jour et opération repliées une fois les ordres validés */
+details.pli-ordres { display: block; }
+details.pli-ordres > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+details.pli-ordres > summary::-webkit-details-marker { display: none; }
+details.pli-ordres > summary > svg:last-child { color: var(--muted); flex-shrink: 0; transition: transform .15s; }
+details.pli-ordres[open] > summary > svg:last-child { transform: rotate(90deg); }
+details.pli-ordres[open] > summary { margin-bottom: 10px; }
+details.pli-ordres[open] .pli-resume, details.pli-ordres[open] .pli-resume-s { display: none; }
+.pli-resume { font-weight: 700; font-size: 14.5px; line-height: 1.3; }
+.case.mission { border: 1.5px solid var(--c); background: repeating-linear-gradient(135deg, rgba(255,255,255,.07) 0 3px, transparent 3px 6px); opacity: .75; }

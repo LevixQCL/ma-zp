@@ -215,12 +215,16 @@ function badgeService(s, b, n) {
   return `<span class="pill ${t[1]} svc-badge">${t[0]}</span>`;
 }
 /** Rangée de cases : pleines (agents qui couvrent le besoin), pointillées (places à pourvoir), pâles (en plus). */
-function casesService(s, b, n) {
+function casesService(s, b, n, e) {
   const coul = COUL_SVC[s];
+  // Agents de ce service partis en mission (opération, enquête, FIPA…) : ils restent comptés dans l'affectation
+  // mais ne travaillent pas au service aujourd'hui.
+  const pris = Math.min(n, ((e && e.prises && e.prises[s]) || []).reduce((t, [k]) => t + k, 0));
   const nb = Math.max(b.bes, n), vus = Math.min(nb, MAX_CASES);
   let h = '';
   for (let i = 0; i < vus; i++) {
     const plein = i < n, enPlus = s === 'roulage' ? i >= b.utile : i >= b.bes;
+    if (plein && i >= n - pris) { h += `<span class="case mission" style="--c:${coul}" title="en mission aujourd’hui">${PION('#67719A')}</span>`; continue; }
     h += plein ? (enPlus ? `<span class="case plus" style="--c:${coul}">${PION(coul)}</span>` : `<span class="case pleine" style="--c:${coul}">${PION('#0C1124')}</span>`)
       : `<span class="case vide">${PION('#67719A')}</span>`;
   }
@@ -336,7 +340,7 @@ export function updateOrdresLive() {
   set('alloc-status', statusHtml(e));
   for (const s of SERVICES) set(`res-${s}`, resultatService(e, s));
   const bs = besoinsServices(e);
-  for (const s of SERVICES) { set(`cases-${s}`, casesService(s, bs[s], S.draft.alloc[s])); set(`badge-${s}`, badgeService(s, bs[s], S.draft.alloc[s])); }
+  for (const s of SERVICES) { set(`cases-${s}`, casesService(s, bs[s], S.draft.alloc[s], e)); set(`badge-${s}`, badgeService(s, bs[s], S.draft.alloc[s])); }
   set('barre-aff', barreAffectation(e));
   set('dos-recherche', dossiersHtml(myZone(), e));
   const ch = document.getElementById('est-chasse'); if (ch) ch.hidden = !e.chasse;
@@ -663,9 +667,19 @@ function prisesHtml() {
 export function situationHtml(z) {
   const pressions = pressionsVisibles(S.state, z);
   if (!pressions.length) return '';
-  return `<section class="card amber" aria-label="Situation du jour" style="gap:6px"><span class="kicker">Situation du jour</span>
-    ${pressions.map((p) => `<div class="col" style="gap:1px"><span style="font-weight:600;font-size:14px">${esc(p.titre)}</span><span class="small" style="color:var(--amber-soft)">${esc(p.texte)}</span></div>`).join('')}
-  </section>`;
+  const corps = pressions.map((p) => `<div class="col" style="gap:1px"><span style="font-weight:600;font-size:14px">${esc(p.titre)}</span><span class="small" style="color:var(--amber-soft)">${esc(p.texte)}</span></div>`).join('');
+  if (S.route !== 'ordres') return `<section class="card amber" aria-label="Situation du jour" style="gap:6px"><span class="kicker">Situation du jour</span>${corps}</section>`;
+  // Dans les Ordres : repliée sur une ligne une fois les ordres validés.
+  return `<details class="card amber pli-ordres" data-k="ord-situ" aria-label="Situation du jour" ${ouvertOrdres('ord-situ') ? 'open' : ''}>
+    <summary><span class="col grow" style="gap:1px;min-width:0"><span class="kicker">Situation du jour</span><span class="pli-resume">${pressions.map((p) => esc(p.titre)).join(' · ')}</span></span>${icon('chevron', 16)}</summary>
+    <div class="col" style="gap:6px">${corps}</div></details>`;
+}
+
+/** Cartes des Ordres qui se replient une fois les ordres validés (sauf si le joueur les a rouvertes). */
+function ouvertOrdres(k, forcer = false) {
+  if (forcer) return true;
+  if (S.ouverts && k in S.ouverts) return S.ouverts[k];
+  return !(S.savedOrders && !S.ordersDirty);
 }
 
 /** Mon équipe dans les ordres : bonus de chaque figure, et leurs missions du jour (une figure par destination). */
@@ -812,8 +826,10 @@ export function renderOrdres() {
       <span class="small">Pas de rythme renforcé, d’agents de réserve, de défi ni d’enchère. Grande décision : recruter seulement.</span></section>` : ''}
     ${primeHtml()}
     ${situationHtml(z)}
-    ${e.opx.op ? (() => { const op = e.opx.op; const jour = T - op.tourDebut + 1; return `<section class="card red" aria-label="Opération d'envergure">
-      <div class="between"><span class="kicker" style="color:var(--red-soft)">Opération d’envergure${op.duree > 1 ? ` · jour ${jour} sur ${op.duree}` : ''}</span><span class="pill amber">${op.recompense} pts</span></div>
+    ${e.opx.op ? (() => { const op = e.opx.op; const jour = T - op.tourDebut + 1; const couv = Math.round(e.opx.couverture * 100); const niv = { complet: 'Complet', reduit: 'Réduit', aucun: 'Aucun' }[d.operation] || 'Complet'; return `<details class="card red pli-ordres" data-k="ord-op" aria-label="Opération d'envergure" ${ouvertOrdres('ord-op', e.opx.couverture < 0.9 && d.operation !== 'aucun') ? 'open' : ''}>
+      <summary><span class="col grow" style="gap:1px;min-width:0"><span class="between" style="gap:8px"><span class="kicker" style="color:var(--red-soft)">Opération d’envergure${op.duree > 1 ? ` · jour ${jour} sur ${op.duree}` : ''}</span><span class="pill amber">${op.recompense} pts</span></span>
+        <span class="pli-resume">${esc(op.titre)}</span><span class="tiny pli-resume-s ${couv >= 90 ? 'ok' : couv >= 50 ? 'warn' : 'bad'}">Dispositif ${niv.toLowerCase()} · couvert à ${couv} %</span></span>${icon('chevron', 16)}</summary>
+      <div class="col" style="gap:10px">
       <h2 class="card-title">${esc(op.titre)}</h2>
       <p class="small" style="margin:0;color:var(--text2)">${esc(op.texte)} Les agents engagés quittent leur service pour la journée.</p>
       <p class="small" style="margin:0"><strong>Dispositif requis :</strong> ${Object.entries(op.besoins).map(([s2, n]) => `${n} en ${SERVICE_LABELS[s2]}`).join(' · ')}</p>
@@ -821,14 +837,15 @@ export function renderOrdres() {
         <button type="button" data-action="op-niveau" data-v="${k}" aria-pressed="${d.operation === k}"><span class="t">${t}</span><span class="d">${dsc}</span></button>`).join('')}</div>
       <div class="col" id="op-couv" style="gap:2px">${opCouvHtml(e)}</div>
       ${demandeRenfortHtml()}
-    </section>`; })() : ''}
+      </div>
+    </details>`; })() : ''}
 
     <section class="card affect" aria-label="Affectation des agents">
       <div class="between" style="align-items:baseline;margin-bottom:2px"><h2 class="card-title">Affectation</h2>
         <button type="button" class="lien-statut" data-action="ventilation" aria-expanded="${!!S.ventilation}"><span id="alloc-status">${statusHtml(e)}</span><span class="tiny muted"> · ${S.ventilation ? 'masquer' : 'détail'}</span>${agentsHorsServices().some((h) => h.bloque) ? ' <span class="small bad">· agents bloqués</span>' : ''}</button></div>
       ${S.ventilation ? ventilationHtml(z, e) : ''}
       <div class="barre-aff" id="barre-aff" aria-hidden="true">${barreAffectation(e)}</div>
-      <div class="legende-cases tiny muted"><span><span class="case vide mini"></span>place à pourvoir</span><span><span class="case plus mini" style="--c:var(--faint)"></span>en plus du besoin</span></div>
+      <div class="legende-cases tiny muted"><span><span class="case vide mini"></span>place à pourvoir</span><span><span class="case plus mini" style="--c:var(--faint)"></span>en plus du besoin</span>${Object.values(e.prises || {}).some((l) => l.length) ? '<span><span class="case mission mini" style="--c:var(--faint)"></span>en mission</span>' : ''}</div>
       ${(() => { S._bs = besoinsServices(e); return ''; })()}
       ${SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc svc-${b.st}${ouvert ? ' ouvert' : ''}">
         <div class="svc-l"><i class="svc-c" style="background:${COUL_SVC[s2]}"></i>
@@ -836,7 +853,7 @@ export function renderOrdres() {
             <span class="svc-n">${s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2]}<span class="svc-niv">niv. ${z.niveaux[s2]}</span>${bonusEnigme(s2) > 1 ? `<span class="svc-niv" style="color:var(--green, #3fbf7f)" title="Bonus d’énigme du jour">+${Math.round((bonusEnigme(s2) - 1) * 100)} % énigme</span>` : ''}${icon('chevron', 13, `class="svc-chev"${ouvert ? ' style="transform:rotate(90deg)"' : ''}`)}</span>
             <span class="svc-r" id="res-${s2}">${resultatService(e, s2)}</span></button>
           <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
-        <div class="cases-l"><div class="cases" id="cases-${s2}">${casesService(s2, b, d.alloc[s2])}</div><span id="badge-${s2}">${badgeService(s2, b, d.alloc[s2])}</span></div>
+        <div class="cases-l"><div class="cases" id="cases-${s2}">${casesService(s2, b, d.alloc[s2], e)}</div><span id="badge-${s2}">${badgeService(s2, b, d.alloc[s2])}</span></div>
         <span id="pris-${s2}" class="svc-plus">${prisHtml(e, s2)}</span>
         ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} de réserve en renfort (efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} %)</span>` : ''}
         ${ouvert ? `<div class="svc-det">${s2 === 'recherche' ? `<div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}<p class="tiny" style="margin:0;color:var(--text2);line-height:1.45">${esc(aide(s2, z))}</p></div>` : ''}
