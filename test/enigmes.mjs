@@ -17,7 +17,7 @@ await p.fill('[name="pseudo"]', 'Bryan'); await p.fill('[name="code"]', '5324');
 await p.click('[data-form="signup"] button[type="submit"]'); await p.waitForSelector('#countdown');
 await p.goto(`${BASE}#quete`); await p.waitForTimeout(300);
 await p.click('[data-action="quest-mode"][data-v="train"]');
-await p.click(`[data-action="train-diff"][data-v="${diff}"]`);
+await choisirType(p, types[0]); await p.click(`[data-action="train-diff"][data-v="${diff}"]`);
 for (const t of types) {
   await choisirType(p, t); await p.waitForTimeout(300);
   await p.evaluate(() => document.querySelectorAll('.toast').forEach((x) => x.remove()));

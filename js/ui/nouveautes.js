@@ -79,7 +79,7 @@ export const NOTE_MAJ = {
       ['Agents de réserve', 'expliqués en clair : un renfort payant pour la journée, en plus de tes agents, à 1,5 k€ l’agent et 80 % d’efficacité.'],
     ]],
     ['Challenge des mini-jeux', [
-      ['Où', 'Énigmes › Entraînement › Challenge (l’ancien onglet Mini-jeux) : touche un mini-jeu, puis « Lancer le challenge ». Les premiers niveaux servent d’entraînement. Aucun effet sur ta zone (ni IPZ, ni PS, ni skins).'],
+      ['Où', 'Énigmes › Challenge (l’ancien onglet Mini-jeux) : touche un mini-jeu, puis « Lancer le challenge ». Les premiers niveaux servent d’entraînement. Aucun effet sur ta zone (ni IPZ, ni PS, ni skins).'],
       ['Comment', 'on part du niveau 1, plus doux que « facile » ; le niveau 10 correspond au « difficile » des incidents ; au-delà, tout se resserre un peu plus à chaque niveau (moins de temps, crans plus fins, grilles plus grandes, embouteillages plus longs). Trois erreurs et la course s’arrête.'],
       ['Records', 'chaque niveau réussi est enregistré. Le meilleur de la partie sur chaque mini-jeu a son nom sur la tuile (premier arrivé en cas d’égalité) et un titre sur son profil tant qu’il garde le record : Démineur du district, Maître serrurier, As du dépannage, Œil de lynx, Maître des empreintes, Génie de l’ADN, Maître du réseau, Traqueur d’IP.'],
     ]],

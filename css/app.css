@@ -1650,3 +1650,6 @@ table.horaire.bd tr.bd-arch td { color: var(--amber-hi); font-weight: 600; }
 .tr-retour:hover { border-color: var(--c); color: var(--text); }
 .tr-titre { font: 800 16px var(--display); line-height: 1.15; }
 .tr-lbl { font-size: 13px; font-weight: 600; }
+.seg3 { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 4px; background: var(--bg); border: 1px solid var(--hair); border-radius: 16px; padding: 4px; }
+.seg3 button { min-height: 44px; min-width: 0; border: none; border-radius: 12px; background: transparent; color: var(--text2); font: 600 13px var(--body); padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.seg3 button[aria-selected="true"] { background: var(--surface3); color: var(--text); font-weight: 700; box-shadow: var(--lift), 0 2px 8px rgba(0, 0, 0, .3); }
