@@ -4,7 +4,7 @@ import { gradeFor, INFRAS, SERVICE_LABELS } from '../engine/constants.js';
 import { reglesV2 } from '../engine/regles.js';
 import { tabbar } from './common.js';
 import { COMPETENCES, IDS_COMPETENCES, PARCOURS, IDS_PARCOURS, TALENTS, TALENT, AGENDA, IDS_AGENDA, CHEF,
-  niveauChef, progresChef, talentsDebloques, totalNiveaux, signatureChef, niveauXp, XP_CUMUL, NIVEAU_MAX_CHEF } from '../engine/chef.js';
+  niveauChef, progresChef, talentsDebloques, totalNiveaux, signatureChef, niveauXp, XP_CUMUL, NIVEAU_MAX_CHEF, JEUX_COMP } from '../engine/chef.js';
 
 // ───── Portraits (images générées avec Gemini, img/chefs/pNN.webp) ─────
 // Tant qu'une image manque, un portrait dessiné (silhouette en uniforme, initiales) la remplace.
@@ -267,4 +267,14 @@ export function brancherPanneauChef(fn) { ouvrirPanneauChef = fn; }
 export function felicitationsDe(uid) {
   const s = S.state.season;
   return Object.entries(S.players || {}).filter(([u, p]) => u !== uid && p && p.felicite && p.felicite[uid] === s).map(([u]) => u);
+}
+
+// ───── Le chef partout dans le jeu ─────
+/** Ma zone, avec l'agenda du brouillon d'ordres (pour les limites qui en dépendent, ex. talent « Intuition »). */
+export function zoneAvecAgenda() { const z = myZone(); return z ? { ...z, _agenda: (S.draft && S.draft.agenda) || (z.dernierOrdre && z.dernierOrdre.agenda) || null } : z; }
+/** Petite pastille « entraîne telle compétence du chef » (saison 2, si le chef existe). */
+export function chipEntraine(cle, texte = null) {
+  const z = myZone(), c = JEUX_COMP[cle] || (COMPETENCES[cle] ? cle : null);
+  if (!z || !z.chef || !reglesV2(S.state) || !c) return '';
+  return `<span class="chip-chef" style="--c:${COUL_COMP[c]}" title="Entraîne la compétence ${esc(COMPETENCES[c].nom)} de ton chef">${COMPETENCES[c].ico} ${texte === '' ? esc(COMPETENCES[c].nom) : texte || `${esc(COMPETENCES[c].nom)} +1`}</span>`;
 }

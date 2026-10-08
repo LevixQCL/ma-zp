@@ -306,7 +306,7 @@ export function sanitizeOrders(zone, raw, state) {
   const int = (v, a, b) => clamp(Math.floor(fini(v)), a, b);
   const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
   const cible = (v) => (zoneExiste(v) ? v : '');
-  const demarches = Array.isArray(o.demarches) ? [...new Set(o.demarches.filter((x) => typeof x === 'string' && lireDemarche(x)))].slice(0, ENQ.maxDemarches + ENQ.demarcheSolo) : [];
+  const demarches = Array.isArray(o.demarches) ? [...new Set(o.demarches.filter((x) => typeof x === 'string' && lireDemarche(x)))].slice(0, ENQ.maxDemarches + ENQ.demarcheSolo + 1) : [];
   const accusation = Number.isInteger(o.accusation) && o.accusation >= 0 && o.accusation < ENQ.nbSuspects ? o.accusation : null;
   // Deux complices : le second nom de l'accusation (ignoré dans les autres affaires).
   const accusation2 = accusation !== null && Number.isInteger(o.accusation2) && o.accusation2 >= 0 && o.accusation2 < ENQ.nbSuspects && o.accusation2 !== accusation ? o.accusation2 : null;

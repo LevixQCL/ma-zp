@@ -1,4 +1,5 @@
 // Écran de l’énigme du jour.
+import { chipEntraine } from './chef.js';
 import { laureatsProvisoires, enTeteSemaine, recordDefi, monRecordDefi } from './defis.js';
 import { CHALLENGE } from '../engine/challenge.js';
 import { euros } from './euros.js';
@@ -120,7 +121,7 @@ function entrainementMiniJeux() {
     const svc = SERVICE_LABELS[m.service] || (m.service === 'labo' ? 'Labo' : 'RCCU');
     return `<button type="button" class="lgn" data-action="mj-train" data-j="${m.jeu}" style="--c:${COUL_MJ[m.service] || '#63B0FF'}" aria-label="${esc(m.nom)} (${esc(svc)})">
       <img src="img/challenge/${m.jeu}.jpg" alt="" loading="lazy" decoding="async">${primes.has(m.jeu) ? '<span class="aff-prime" title="Tu tiens la prime de la semaine sur ce jeu">€</span>' : ''}
-      <span class="lgn-t"><span class="lgn-n">${esc(m.nom)}</span><span class="lgn-sv">${esc(svc)}</span>${nomi}</span>
+      <span class="lgn-t"><span class="lgn-n">${esc(m.nom)}</span><span class="lgn-sv">${esc(svc)}${m.jeu !== 'bitonal' ? ` ${chipEntraine(m.jeu, '')}` : ''}</span>${nomi}</span>
       <span class="lgn-moi${qui === 'Toi' ? ' top' : ''}"><b>${mien ? nb(mien) : '—'}</b><span>${m.jeu === 'bitonal' ? 'points' : 'ton niv.'}</span></span></button>`;
   };
   const inc = MINI_JEUX.filter((m) => !['labo', 'rccu'].includes(m.service)), pjf = MINI_JEUX.filter((m) => ['labo', 'rccu'].includes(m.service));
@@ -339,7 +340,7 @@ export function renderQuete() {
     ${bonusCard}
     ${propositionDelegue}
     <header class="between" style="align-items:flex-start">
-      <div class="col" style="gap:3px"><span class="kicker" ${noir ? 'style="color:#E0625A"' : ''}>${train ? 'Entraînement · ne compte pas' : noir ? 'Dossier noir · niveau hardcore' : `Énigme ${S.quests.indexOf(q) + 1} sur ${nbJour}`}</span><h1 class="big">${esc(q.typeLabel)}</h1>${q.formeNom ? `<span class="forme-nom">${esc(q.formeNom)}</span>` : ''}</div>
+      <div class="col" style="gap:3px"><span class="kicker" ${noir ? 'style="color:#E0625A"' : ''}>${train ? 'Entraînement · ne compte pas' : noir ? 'Dossier noir · niveau hardcore' : `Énigme ${S.quests.indexOf(q) + 1} sur ${nbJour}`}</span><h1 class="big">${esc(q.typeLabel)}</h1>${q.formeNom ? `<span class="forme-nom">${esc(q.formeNom)}</span>` : ''}${!train && !noir ? chipEntraine('flair', 'Réussie : Flair +1 pour ton chef') : ''}</div>
       <div class="col" style="gap:4px;align-items:flex-end"><span class="pill" ${q.difficulte >= 6 ? 'style="background:#2A1414;border-color:#6B2E2A;color:#F59A92"' : ''}>${q.difficulte >= 6 ? 'Hardcore' : `Difficulté ${q.difficulte}/5`}</span>
         <span class="tiny muted">${fini ? 'terminée' : train ? 'correction immédiate' : 'une seule réponse'}</span></div>
     </header>

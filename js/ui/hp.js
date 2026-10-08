@@ -1,4 +1,4 @@
-import { chefACreer, creationChefHtml, portraitChef, ficheChefHtml, chefNuitHtml } from './chef.js';
+import { chefACreer, creationChefHtml, portraitChef, ficheChefHtml, chefNuitHtml, zoneAvecAgenda } from './chef.js';
 import { titresDefi } from './defis.js';
 import { DOCTRINES } from '../engine/constants.js';
 import { maxDemarchesDe } from '../engine/enquete.js';
@@ -232,7 +232,7 @@ function dilemmeHtml(st, z) {
   return `<section class="card dilemme" id="hp-dilemme" aria-label="Dilemme du jour">
     <span class="kicker">Dilemme du jour · ${esc(dl.titre)}</span>
     <p class="dil-q">${esc(dl.question)}</p>
-    <div class="dil-choix">${dl.choix.map((c, i) => `<button type="button" class="dil-btn" data-action="dilemme" data-i="${i}" aria-pressed="${pris === i}"><span class="t">${esc(c.l)}</span><span class="s">${esc(c.s)}</span></button>`).join('')}</div>
+    <div class="dil-choix">${dl.choix.map((c, i) => `<button type="button" class="dil-btn${c.chef ? ' dil-chef' : ''}" data-action="dilemme" data-i="${i}" aria-pressed="${pris === i}"><span class="t">${c.chef ? `${portraitChef(z.uid, 20, { galons: false })} ` : ''}${esc(c.l)}</span><span class="s">${esc(c.s)}</span></button>`).join('')}</div>
     <p class="tiny muted" style="margin:0">${pris === null ? `Sans réponse à 20:00, ton adjoint choisira « ${esc(dl.choix[dl.defaut].l)} ».` : enregistre ? 'Choix enregistré avec tes ordres. Tu peux encore changer d’avis.' : 'Valide tes ordres pour l’envoyer.'}</p>
     ${pris !== null && !enregistre ? '<button type="button" class="btn primary small" data-action="save-orders">Valider mes ordres</button>' : ''}
   </section>`;
@@ -250,7 +250,7 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue }) {
     const a = (d.patrouilles || {})[pc.cell] || 0;
     items.push({ ok: a >= 2, href: '#carte', t: a >= 2 ? `Point chaud : ${a} agents envoyés` : `Point chaud : ${pc.titre.toLowerCase()}`, s: a >= 2 ? 'désamorcé à 20:00 si tes ordres sont validés' : 'envoie 2 patrouilles depuis la Carte' });
   }
-  if (st.enquete) items.push({ ok: nbDem >= 1 || (d.accusation !== null && d.accusation !== undefined), href: '#enquete', t: `Enquête : ${nbDem} démarche${nbDem > 1 ? 's' : ''} sur ${maxDemarchesDe(st, z)}`, s: (st.traques || []).length ? 'une traque est en cours !' : 'constatations, vérifications, partage, accusation' });
+  if (st.enquete) items.push({ ok: nbDem >= 1 || (d.accusation !== null && d.accusation !== undefined), href: '#enquete', t: `Enquête : ${nbDem} démarche${nbDem > 1 ? 's' : ''} sur ${maxDemarchesDe(st, zoneAvecAgenda())}`, s: (st.traques || []).length ? 'une traque est en cours !' : 'constatations, vérifications, partage, accusation' });
   // Le Directeur : dilemme à trancher, feuilleton à préparer pour ce soir.
   const dl = dilemmeDuJour(st, z);
   if (dl) items.unshift({ ok: Number.isInteger(d.dilemme), href: '#hp-dilemme', t: `Dilemme : ${esc(dl.titre.toLowerCase())}`, s: Number.isInteger(d.dilemme) ? `« ${esc(dl.choix[d.dilemme].l)} »` : 'deux choix, à trancher avant 20:00' });

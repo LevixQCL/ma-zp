@@ -1,4 +1,5 @@
 // Carte du District Delta, Radio Delta.
+import { portraitChef } from './chef.js';
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1, bonusEnigme } from './common.js';
 import { sceneVignette, estChampion } from './logistique.js';
 import { moyenneIpz, operationActive } from '../engine/zone.js';
@@ -191,7 +192,7 @@ export function renderRadio() {
     <p class="sub" style="margin:-4px 0 0">${canal === 'parole' ? 'Canal public de tout le district. Négociez, chambrez, mais restez corrects.' : 'Appels à renfort, zone de non-droit et annonces automatiques. Réponds ici pour coordonner.'}</p>
     <section class="col" aria-label="Messages" id="radio-list" style="gap:8px">
       ${msgs.length ? msgs.map((m) => { const w = nameOf(m.uid); const moi = m.uid === me.uid; const appel = m.renfort && appels.find((x) => x.uid === m.uid && x.at === m.at); const nd = m.nd && !moi ? ndCtrl(m) : ''; return `<div class="card tight" ${m.renfort ? 'style="border-color:var(--red-line);background:var(--red-bg)"' : nd ? 'style="border-color:var(--amber-line);background:var(--amber-bg, transparent)"' : moi ? 'style="border-color:var(--amber-line)"' : ''}>
-        <div class="between"><span class="small" style="font-weight:700;color:${esc(w.couleur)}">ZP ${esc(w.code)} ${esc(w.nom)}${moi ? ' (toi)' : ''}</span><span class="tiny muted mono">${new Date(m.at).toLocaleString('fr-BE', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>
+        <div class="between"><span class="small row" style="font-weight:700;gap:6px;align-items:center;color:${esc(w.couleur)}">${st.zones[m.uid] && st.zones[m.uid].chef ? portraitChef(m.uid, 22, { galons: false }) : ''}ZP ${esc(w.code)} ${esc(w.nom)}${moi ? ' (toi)' : ''}</span><span class="tiny muted mono">${new Date(m.at).toLocaleString('fr-BE', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>
         <p style="margin:0;font-size:14px;line-height:1.4;overflow-wrap:anywhere">${esc(m.texte)}</p>${appel ? renfortCtrl(appel) : ''}${nd}</div>`; }).join('') : `<p class="small muted">${canal === 'parole' ? 'Aucun message pour l’instant. Lance la conversation !' : 'Aucun appel ni annonce pour l’instant.'}</p>`}
     </section>
     <form data-form="radio" data-canal="${canal}" class="row" style="position:sticky;bottom:96px;background:var(--bg);padding-top:6px">

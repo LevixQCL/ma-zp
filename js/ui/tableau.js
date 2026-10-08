@@ -2,6 +2,7 @@
 // Le plan du district au centre, les fiches de constatation en haut, les photos des suspects,
 // une boîte d'où l'on sort les pièces une à une, et des ficelles que l'on tire soi-même.
 // Rien n'est rangé d'avance : la disposition, les ficelles et la vue sont gardées sur l'appareil.
+import { zoneAvecAgenda } from './chef.js';
 import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
 import { hashString } from '../engine/rng.js';
 import { portraitSuspect } from './portrait.js';
@@ -638,7 +639,7 @@ function voletSoir(aff, dos) {
   return `<div class="between" style="padding-right:44px"><span class="tb-titre" style="padding-right:0">Ce soir</span><span class="small muted">reste ${Math.round((z.budget - engagementsDuJour(d, z).total) * 10) / 10} k€</span></div>
     ${regleHtml(aff)}
     ${celluleHtml(aff)}
-    <span class="tb-ligne-k">Démarches · ${dem.length} / ${maxDemarchesDe(S.state, myZone())}</span>
+    <span class="tb-ligne-k">Démarches · ${dem.length} / ${maxDemarchesDe(S.state, zoneAvecAgenda())}</span>
     ${dem.map((x) => `<div class="tb-boite-l"><span class="small grow" style="font-weight:600">${esc(nomDem(x))}</span><button type="button" class="btn small ghost" data-action="dem-toggle" data-k="${esc(x)}" aria-label="Retirer ${esc(nomDem(x))}">✕</button></div>`).join('') || '<p class="tiny muted" style="margin:0">Touche une photo ou une fiche du tableau pour choisir une démarche.</p>'}
     <div class="voisinage"><span class="small"><strong>Voisinage</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? ` · piste : <strong>${esc(v.nom)}</strong>` : ''} : ${esc(v.txt)}</span></div>
     ${appuiHtml()}
@@ -760,7 +761,7 @@ export function renderTableau() {
       <button type="button" class="tb-chip ${sp('boite')}" data-action="tab-volet" data-k="boite" aria-label="Boîte à pièces, ${nbBoite} à ranger">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l2-5h14l2 5"/><rect x="3" y="9" width="18" height="11" rx="1.5"/><path d="M9 13h6"/></svg>${nbBoite}${neuf ? '<span class="tb-dot"></span>' : ''}</button>
       ${aff.coupsDePouce ? '<button type="button" class="tb-rond" data-action="tab-ouvrir" data-tid="pouce" aria-label="Coups de pouce" title="Coups de pouce">💡</button>' : ''}
-      <button type="button" class="tb-chip ambre ${sp('soir')}" data-action="tab-volet" data-k="soir"><span class="tb-soir-l">Ce soir </span><span class="tb-compte">${(d.demarches || []).length}/${maxDemarchesDe(S.state, myZone())}</span></button>
+      <button type="button" class="tb-chip ambre ${sp('soir')}" data-action="tab-volet" data-k="soir"><span class="tb-soir-l">Ce soir </span><span class="tb-compte">${(d.demarches || []).length}/${maxDemarchesDe(S.state, zoneAvecAgenda())}</span></button>
     </div>
     ${traque && S.banTraqueVue !== st.turn ? `<div class="tb-banniere">${banniereTraque(st, { tableau: true })}<button type="button" class="tb-rond tb-ban-x" data-action="tb-ban-fermer" aria-label="Fermer">✕</button></div>` : ''}
     <div id="tb-aide" class="tb-aide" ${fil ? '' : 'hidden'}>${S.tabFrom ? 'Touche l’élément à relier' : 'Glisse d’un élément à l’autre · touche une ficelle pour la couper'}</div>

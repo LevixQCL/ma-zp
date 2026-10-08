@@ -1,6 +1,7 @@
 // Incidents du jour : la carte de l'HP, et l'ouverture des mini-jeux (incident ou entraînement).
 // Les mini-jeux sont des pages à part (dossier minijeux/), ouvertes en plein écran dans un cadre :
 // elles renvoient leur résultat par message (start, result, close).
+import { chipEntraine } from './chef.js';
 import { S, esc, icon, myZone, toast, pseudoJoueur } from './common.js';
 import { paramsDefi, noterNiveauDefi } from './defis.js';
 import { CHALLENGE } from '../engine/challenge.js';
@@ -100,7 +101,7 @@ export function incidentsHtml({ avant = '', titre = 'Incidents du jour' } = {}) 
     const e = etat(i, res[i.id], now), r = res[i.id];
     const svc = `<span class="tiny muted">${SERVICE_LABELS[i.service]}</span>`;
     if (e === 'ouvert') return `<div class="inc-row inc-ouvert${i.urgence ? ' inc-urgence' : ''}"><span class="inc-ico" aria-hidden="true">${i.urgence ? '🚨' : icon('alert', 18)}</span>
-      <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:700">${esc(i.titre)}</span><span class="tiny muted">${i.urgence ? `Urgence · combi à ${Math.round(31 * 3.6 * (i.vit || 1))} km/h` : SERVICE_LABELS[i.service]}${i.pression ? ' · en plus (IPZ élevé)' : ''} · encore <span data-inc-fin="${i.ferme}">${duree(i.ferme - now)}</span> pour intervenir</span></span>
+      <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:700">${esc(i.titre)}</span><span class="tiny muted">${i.urgence ? `Urgence · combi à ${Math.round(31 * 3.6 * (i.vit || 1))} km/h` : SERVICE_LABELS[i.service]}${i.pression ? ' · en plus (IPZ élevé)' : ''} · encore <span data-inc-fin="${i.ferme}">${duree(i.ferme - now)}</span> pour intervenir</span>${chipEntraine(i.urgence ? 'intervention' : i.service)}</span>
       <button class="btn primary small" data-action="incident" data-id="${esc(i.id)}">Intervenir</button></div>`;
     if (e === 'joue') {
       const ok = r.statut === 'ok';

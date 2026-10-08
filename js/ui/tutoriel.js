@@ -53,6 +53,12 @@ export const ETAPES = [
       <p>Surveille la <strong>satisfaction</strong> (le plus gros poids) et le <strong>moral</strong>, qui règle l’efficacité de tous tes agents. Chaque <strong>?</strong> détaille le calcul avec tes chiffres. Touche ton commissariat pour voir ce que te rapportent tes bâtiments.</p>`,
   },
   {
+    id: 'chef', route: 'hp', cible: ['.hp-chef', '.chef-creation', 'h1.brand'],
+    titre: 'Ton chef de corps',
+    texte: `<p>C’est toi. Son <strong>portrait</strong>, en haut, ouvre sa fiche : 5 compétences (Gestion, Commandement, Flair, Diplomatie, Proximité) qui montent selon ta façon de gérer ta zone <strong>et</strong> quand tu réussis tes énigmes et tes mini-jeux.</p>
+      <p>Elles débloquent des <strong>talents</strong> (3 équipés au plus, dans tes ordres). Chaque nuit, la carte « Ton chef cette nuit » te dit ce qu’il a changé.</p>`,
+  },
+  {
     id: 'rapport', route: 'hp', cible: '[data-action="toggle-rapport"]', parent: '.trio',
     titre: 'Chaque soir : rapport et Gazette',
     texte: `<p>Après 20:00, ton <strong>rapport</strong> dit ce qui s’est passé chez toi et pourquoi. La <strong>Gazette</strong> raconte la soirée du district.</p>

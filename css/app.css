@@ -1906,3 +1906,5 @@ details.pli-ordres[open] .pli-resume, details.pli-ordres[open] .pli-resume-s { d
 .chef-rang { width: 38px; height: 38px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; font-family: var(--mono); font-weight: 700; background: var(--surface2); border: 2px solid var(--line); }
 .chef-rang small { font-size: 9px; } .chef-rang.or { border-color: #E6B84A; color: #E6B84A; } .chef-rang.ar { border-color: #C9CED8; } .chef-rang.br { border-color: #C98A54; }
 .chef-slot .tiny.muted { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.chip-chef { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; margin-top: 3px; padding: 2px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 700; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 45%, transparent); white-space: nowrap; }
+.dil-chef { border-color: var(--amber-line) !important; }

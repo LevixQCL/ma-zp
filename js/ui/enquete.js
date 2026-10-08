@@ -1,4 +1,5 @@
 // Écran Enquête : le tableau Mobile · Moyen · Occasion, les pièces, les planques et les notes.
+import { zoneAvecAgenda } from './chef.js';
 import { formatDateBe } from '../engine/time.js';
 import { enService } from '../engine/flotte.js';
 import { banniereDebrief } from './debrief.js';
@@ -123,7 +124,7 @@ export function demBtn(aff, dos, x, label, { compact = false } = {}) {
   if (!on) {
     if (aff.meurtre && ld && ld.k === 'moyens' && !mandatOk(aff, dos, ld.i) && !faitsDe(dos).has(x.replace('moyens', 'moy'))) raison = 'pas de mandat';
     else if (!pieceDemarche(aff, dos, x)) raison = 'au dossier';
-    else if (dem.length >= maxDemarchesDe(S.state, myZone())) raison = `${maxDemarchesDe(S.state, myZone())} par jour`;
+    else if (dem.length >= maxDemarchesDe(S.state, zoneAvecAgenda())) raison = `${maxDemarchesDe(S.state, zoneAvecAgenda())} par jour`;
     else if (prix > z.budget - engagementsDuJour(d, z).total) raison = 'budget';
   }
   const prixTxt = prix ? `${prix} k€` : `${dm.agents} agents`;
@@ -344,7 +345,7 @@ function aujourdhui(aff, dos) {
   const vCourt = v.x <= 0 ? 'aucune chance' : v.x < 1 ? `${Math.round(v.x * 100)} %` : `1 pièce${v.x % 1 > 0.05 ? ` + ${Math.round((v.x % 1) * 100)} %` : ''}`;
   const reste = z.budget - engagementsDuJour(d, z).total;
   return `<section class="card tight aujourdhui" aria-label="Aujourd’hui" style="gap:8px">
-    <div class="between"><span style="font-weight:700">Aujourd’hui · ${dem.length}/${maxDemarchesDe(S.state, myZone())} démarches${maxDemarchesDe(S.state, myZone()) > ENQ.maxDemarches ? ' (une de plus : tu enquêtes seul)' : ''}</span><span class="small mono" style="white-space:nowrap">${fmt1(coutTotal(d))} k€</span></div>
+    <div class="between"><span style="font-weight:700">Aujourd’hui · ${dem.length}/${maxDemarchesDe(S.state, zoneAvecAgenda())} démarches${maxDemarchesDe(S.state, zoneAvecAgenda()) > ENQ.maxDemarches ? ` (${maxDemarchesDe(S.state, myZone()) > ENQ.maxDemarches ? 'une de plus : tu enquêtes seul' : ''}${maxDemarchesDe(S.state, zoneAvecAgenda()) > maxDemarchesDe(S.state, myZone()) ? `${maxDemarchesDe(S.state, myZone()) > ENQ.maxDemarches ? ', ' : ''}une de plus : ton chef au parquet, Intuition` : ''})` : ''}</span><span class="small mono" style="white-space:nowrap">${fmt1(coutTotal(d))} k€</span></div>
     ${dem.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${dem.map((x) => `<button type="button" class="chip on" data-action="dem-toggle" data-k="${x}" aria-label="Annuler : ${esc(nomDem(x))}">${esc(nomDem(x))} ✕</button>`).join('')}</div>` : ''}
     <p class="small" style="margin:0;line-height:1.5">${etape}</p>
     <div class="row enq-pastilles" style="gap:6px;flex-wrap:wrap">
