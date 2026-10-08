@@ -23,6 +23,13 @@ export const NOTE_MAJ = {
       ['Entraînement', 'Énigmes › Entraînement : choisis le type, puis sa forme et la difficulté (jusqu’au hardcore).'],
       ['Dossier noir', 'il ne tombe plus jamais sur un type déjà présent dans tes trois énigmes du jour.'],
     ]],
+    ['HP plus légère', [
+      ['Ce soir', 'seules les choses qui restent à faire s’affichent ; ce qui est fait tient sur une ligne verte.'],
+      ['Aujourd’hui', 'l’événement du jour et les incidents réunis dans une seule carte, une ligne chacun avec son bouton.'],
+      ['Ma zone', 'les quatre cadrans sur une ligne ; salle des ventes, équipe et trophées sur une ligne de trois tuiles.'],
+      ['Nuit et alertes', 'le résultat de la nuit garde ses chiffres, le détail se déplie (une décision refusée reste toujours visible). « À traiter » montre d’abord le rouge, trois alertes, le reste se déplie. La variation du budget s’affiche enfin en euros.'],
+      ['Écran Énigmes', 'une seule rangée d’onglets : Énigmes du jour, Challenge, Entraînement. L’entraînement devient une liste illustrée, une ligne par énigme avec ses formes et tes réussites.'],
+    ]],
     ['Challenge et écrans des mini-jeux', [
       ['Challenge illustré', 'une ligne par mini-jeu avec une image du jeu, la nominette du record et ton meilleur niveau en gros. Une pièce € marque les jeux où tu tiens la prime de la semaine ; la prime tient en un bandeau (touche-le pour le détail).'],
       ['Plus de place pour jouer', 'dans Ma ZP, l’en-tête des mini-jeux tient sur une ligne et la barre « Retour à ma zone » est plus fine : le jeu gagne de la hauteur sur téléphone.'],

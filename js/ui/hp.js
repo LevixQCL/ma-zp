@@ -44,6 +44,13 @@ function delta(v, avant) {
   return `<span class="delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${fmt1(Math.abs(d))}</span>`;
 }
 
+/** Variation d'un montant (k€ en interne), affichée en euros comme le montant lui-même. */
+function deltaEuros(v, avant) {
+  const d = Math.round((v - avant) * 10) / 10;
+  if (Math.abs(d) < 0.05) return '';
+  return `<span class="delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '▲' : '▼'}${fmtK(Math.abs(d))}</span>`;
+}
+
 /** Variation depuis la veille, en petite pastille colorée. */
 function pastilleDelta(v, avant) {
   if (avant === undefined || avant === null) return '';
@@ -141,9 +148,9 @@ function rapportHtml(z) {
 
 function cleNuit(z) { return `mazp-nuit-${S.backend.gameId ? S.backend.gameId() : ''}-${S.state.season}-${S.state.turn}-${z.uid}`; }
 
-/** HP allégée (aperçu : ?hpc dans l'adresse, retenu pour la session). */
+/** HP allégée : en service pour tous (8 oct. 2026). */
 export function hpCompacte() {
-  try { if (/[?&]hpc\b/.test(location.search)) sessionStorage.setItem('mazp-hpc', '1'); return sessionStorage.getItem('mazp-hpc') === '1'; } catch (e) { return false; }
+  return true;
 }
 
 /** Carte « Résultat de la nuit », affichée jusqu'à ce que le joueur la ferme. */
@@ -161,7 +168,7 @@ function nuitHtml(z) {
   return `<section class="card" aria-label="Résultat de la nuit" style="border-color:var(--blue-soft)">
     <div class="between"><span class="kicker" style="color:var(--blue-soft)">Résultat de la nuit · tour ${S.state.turn - 1 || ''}</span>
       <button class="btn small ghost" data-action="nuit-ok">OK</button></div>
-    ${lignes.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${lignes.map(([l, v, a, u]) => `<span class="pill">${l} ${fmt1(v)}${u || ''} ${delta(v, a)}</span>`).join('')}</div>` : ''}
+    ${lignes.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${lignes.map(([l, v, a, u]) => `<span class="pill">${l} ${u ? fmtK(v) : fmt1(v)} ${u ? deltaEuros(v, a) : delta(v, a)}</span>`).join('')}</div>` : ''}
     ${(() => {
       const ps = importants.map((l) => `<p class="small" style="margin:0;color:${/^Décision refusée/.test(l) ? 'var(--red-soft);font-weight:700' : 'var(--text2)'}">• ${esc(l)}</p>`);
       if (!hpCompacte()) return `<div class="col" style="gap:4px">${ps.join('')}</div>`;
