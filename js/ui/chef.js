@@ -2,7 +2,7 @@
 import { S, esc, icon, myZone, zoneName } from './common.js';
 import { gradeFor, INFRAS, SERVICE_LABELS } from '../engine/constants.js';
 import { reglesV2 } from '../engine/regles.js';
-import { bureauSvg } from './bureau-scene.js';
+import { bureauPhotoSvg as bureauSvg } from './bureau-photo.js';
 import { tabbar } from './common.js';
 import { COMPETENCES, IDS_COMPETENCES, PARCOURS, IDS_PARCOURS, TALENTS, TALENT, AGENDA, IDS_AGENDA, CHEF,
   niveauChef, progresChef, talentsDebloques, totalNiveaux } from '../engine/chef.js';
