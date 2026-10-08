@@ -81,3 +81,26 @@ for (const t of QUEST_TYPES) console.log(JSON.stringify(generateQuest(t, 'demo',
   }
   console.log(`OK : ${nf} énigmes en formes nouvelles vérifiées.`);
 }
+// Formes en jeu : un type qui revient change de forme, et les énigmes restent valides.
+{
+  const { FORMES, formesPourTour, FORMES_DEPUIS, dossierNoir } = await import('../js/quests/quests.js');
+  assert.equal(formesPourTour(FORMES_DEPUIS - 3600e3), false, 'le tour en cours au moment de la mise à jour garde ses énigmes');
+  assert.equal(formesPourTour(FORMES_DEPUIS + 86400e3), true);
+  for (const uid of ['a', 'b', 'c']) {
+    const derniere = {};
+    const vues = new Set();
+    for (let t = 1; t <= 40; t++) {
+      const qs = questsFor({ seed: 's', uid, season: 3, turn: t, weekday: t % 7, formes: true });
+      for (const q of qs) {
+        const f = q.forme || 'classique';
+        if (FORMES[q.type]) { assert.notEqual(derniere[q.type], f, `${q.type} : deux fois la même forme d'affilée`); derniere[q.type] = f; vues.add(`${q.type}/${f}`); }
+        if (q.mode === 'choix') assert.equal(q.choix.filter((c) => checkAnswer(q, c.id)).length, 1);
+      }
+      dossierNoir({ seed: 's', uid, season: 3, turn: t, exclure: qs.map((q) => q.type), formes: true });
+      questsFor({ seed: 's', uid, season: 3, turn: t, weekday: t % 7, formes: true, rerolls: [2] });
+    }
+    const total = Object.values(FORMES).reduce((a, fs) => a + fs.length, 0);
+    assert.equal(vues.size, total, 'toutes les formes doivent apparaître en 40 jours');
+  }
+  console.log('OK : formes en rotation (jamais deux fois la même d’affilée, toutes vues).');
+}

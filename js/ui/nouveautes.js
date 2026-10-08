@@ -3,16 +3,26 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-07-bilan-saison',
+  id: '2026-10-08-formes-enigmes',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
+    ['🧩', 'Énigmes : 9 nouvelles formes', 'dès ce soir 20:00, « Qui ment ? » devient aussi Les alibis ou Demi-vérités, et le cadenas un vrai digicode à taper. On voit aussi arriver La caisse, L’imprimante, Sans montre, À rebours, Les badges et Les arrivées. Chaque type change de forme à chaque fois qu’il revient. Pour essayer tout de suite : Énigmes › Entraînement.'],
     ['📰', 'Fin de saison : le Bilan de saison', 'fini le « −1 partout » et le matériel remis à zéro. Tu gardes tes formations, ton matériel et tes bâtiments, mais quelques imprévus t’attendent : départs à la pension, drone écrasé, toiture qui fuit… Tu choisis lesquels remettre en état.'],
     ['⭐', 'Maintien de l’ordre : le commandant monte en grade', 'novice, il se replie au moindre contact ; envoie-le là où ça chauffe et il devient une vraie légende du MO (5 niveaux). Un émeutier isolé t’échappe ? Envoie-le le chercher : il le gaze et le retient.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Énigmes : nouvelles formes', [
+      ['Pourquoi', 'une énigme qui revient toujours sous la même forme se résout vite par réflexe. Huit types d’énigmes ont maintenant une ou deux formes de plus, qui demandent de raisonner autrement. Chaque fois qu’un type revient dans tes énigmes, il change de forme (jamais deux fois la même d’affilée) ; le dossier noir aussi.'],
+      ['Qui ment ?', 'Les alibis : chacun dit où il était et qui il a croisé, avec des faits établis (« le friturier est formel… ») ; un menteur ne dit que des choses fausses. Demi-vérités : chaque suspect dit une vérité et un mensonge, il faut trouver le coupable.'],
+      ['Logique', 'Enquête de voisinage › Les arrivées : qui est arrivé à quelle heure et qu’a-t-il pris, avec « juste après » ou « une arrivée entre les deux ». Chronologie › Sans montre : plus de minutes, seulement l’ordre des faits. Les horaires › Les badges : le journal des badges d’un bâtiment, qui a pu être dans les archives pendant le vol ?'],
+      ['Observation', 'La filature › À rebours : on connaît l’endroit de l’interpellation, il faut retrouver le départ. Expertise › L’imprimante : un défaut d’impression apparu ne disparaît plus, et les pages de test sont datées.'],
+      ['Chiffres et codes', 'Le cadenas › Le digicode : un vrai clavier, la poudre révèle les touches usées, reste à trouver l’ordre. Le butin › La caisse : nombre de billets et total connus, on trouve la composition par élimination.'],
+      ['Entraînement', 'Énigmes › Entraînement : choisis le type, puis sa forme et la difficulté (jusqu’au hardcore).'],
+      ['Dossier noir', 'il ne tombe plus jamais sur un type déjà présent dans tes trois énigmes du jour.'],
+    ]],
     ['Challenge et écrans des mini-jeux', [
       ['Challenge illustré', 'une ligne par mini-jeu avec une image du jeu, la nominette du record et ton meilleur niveau en gros. Une pièce € marque les jeux où tu tiens la prime de la semaine ; la prime tient en un bandeau (touche-le pour le détail).'],
       ['Plus de place pour jouer', 'dans Ma ZP, l’en-tête des mini-jeux tient sur une ligne et la barre « Retour à ma zone » est plus fine : le jeu gagne de la hauteur sur téléphone.'],

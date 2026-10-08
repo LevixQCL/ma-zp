@@ -12,7 +12,14 @@ export { FORMES };
  * Formes d'énigmes dans les énigmes du jour et le dossier noir. Tant que c'est faux, elles ne
  * sont jouables qu'en entraînement (aperçu) et les énigmes du jour restent strictement identiques.
  */
-export const FORMES_EN_JEU = false;
+export const FORMES_EN_JEU = true;
+/**
+ * Mise en service : seulement pour les tours qui se terminent après cette date (le tour du
+ * 8 oct. 2026, en cours au moment de la mise à jour, garde ses énigmes d'origine).
+ */
+export const FORMES_DEPUIS = Date.parse('2026-10-08T18:30:00Z');
+/** Les formes s'appliquent-elles au tour qui se termine à `fin` (ms) ? */
+export const formesPourTour = (fin) => FORMES_EN_JEU && Number(fin) > FORMES_DEPUIS;
 
 export const QUEST_TYPES = ['quiment', 'grille', 'cadenas', 'chronologie', 'code', 'plaque', 'photos', 'filature', 'butin', 'horaires', 'ecriture'];
 export const QUEST_LABELS = {
@@ -29,7 +36,7 @@ const DIFF_PAR_JOUR = [2, 3, 3, 4, 4, 5, 5];
  * `ajust` : décalage de niveau décidé par le Directeur (forme du joueur aux énigmes).
  * `rerolls` : emplacements que le joueur a changés (une autre énigme, d'un type absent du jour).
  */
-export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], ajust = 0 }) {
+export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], ajust = 0, formes = false }) {
   const order = makeRng(`${seed}:qorder:${uid}:${season}`).shuffle(QUEST_TYPES);
   // `ajust` : décalage du Directeur selon la forme du joueur (−2 à +1).
   const a = Number.isFinite(ajust) ? Math.max(-2, Math.min(1, Math.round(ajust))) : 0;
@@ -41,7 +48,7 @@ export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], 
     const type = order[idx % order.length];
     const rng = makeRng(`${seed}:quest:${uid}:${season}:${turn}:${slot}`);
     // Chaque passage d'un type dans la rotation prend la forme suivante : jamais deux fois la même d'affilée.
-    const forme = formeDe(`${seed}:forme:${uid}:${season}:${type}`, type, Math.floor(idx / order.length));
+    const forme = formes ? formeDe(`${seed}:forme:${uid}:${season}:${type}`, type, Math.floor(idx / order.length)) : 'classique';
     out.push({ ...fabriquer(type, rng, diffs[slot], forme), slot, id: `${season}-${turn}-${slot}` });
   }
   // Énigmes changées : même difficulté, type absent des énigmes du jour.
@@ -51,7 +58,7 @@ export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], 
     const autres = QUEST_TYPES.filter((t) => !pris.has(t));
     const rng = makeRng(`${seed}:reroll:${uid}:${season}:${turn}:${slot}`);
     const type = rng.pick(autres);
-    const forme = FORMES_EN_JEU && FORMES[type] ? rng.pick(FORMES[type]).id : 'classique';
+    const forme = formes && FORMES[type] ? rng.pick(FORMES[type]).id : 'classique';
     out[slot] = { ...fabriquer(type, rng, diffs[slot], forme), slot, id: `${season}-${turn}-${slot}r`, variante: 1 };
   }
   return out;
@@ -69,12 +76,12 @@ export const SLOT_NOIR = 3;
  * pour ne jamais faire deux fois le même type le même jour). `garder` : type d'un dossier noir déjà
  * tenté aujourd'hui, qu'on ne change plus.
  */
-export function dossierNoir({ seed, uid, season, turn, exclure = [], garder = null }) {
+export function dossierNoir({ seed, uid, season, turn, exclure = [], garder = null, formes = false }) {
   const order = makeRng(`${seed}:noir-order:${uid}:${season}`).shuffle(HARDCORE_TYPES);
   let type = order[(turn - 1) % order.length];
   if (garder && HARDCORE_TYPES.includes(garder)) type = garder;
   else for (let k = 1; exclure.includes(type) && k < order.length; k++) type = order[(turn - 1 + k) % order.length];
-  const forme = formeDe(`${seed}:noir-forme:${uid}:${season}:${type}`, type, turn);
+  const forme = formes ? formeDe(`${seed}:noir-forme:${uid}:${season}:${type}`, type, turn) : 'classique';
   const q = fabriquer(type, makeRng(`${seed}:noir:${uid}:${season}:${turn}`), DIFF_NOIR, forme);
   const { astuce, ...sans } = q;
   return { ...sans, slot: SLOT_NOIR, noir: true, id: `${season}-${turn}-noir` };
@@ -83,7 +90,7 @@ export function dossierNoir({ seed, uid, season, turn, exclure = [], garder = nu
 /** Forme d'un type pour le n-ième passage (rotation propre à chaque joueur). */
 function formeDe(cle, type, n) {
   const fs = FORMES[type];
-  if (!FORMES_EN_JEU || !fs) return 'classique';
+  if (!fs) return 'classique';
   return fs[(n + makeRng(cle).int(0, fs.length - 1)) % fs.length].id;
 }
 

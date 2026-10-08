@@ -365,8 +365,10 @@ export function sections() {
           `Chaque bonne réponse : +${PS.queteOk} PS (une tentative ratée : +${PS.queteTentee}). Trois sur trois : +5 PS en plus.
         <h3>Le dossier noir</h3>
         <p>Chaque jour, une 4<sup>e</sup> énigme facultative, de niveau hardcore : plus d’indices à croiser, des pièges assumés, aucun coup de pouce, et pas de changement possible. Une seule réponse, mais une erreur ne coûte rien. Une réussite rapporte +15 PS et compte pour le titre de fin de saison « Cerveau du district ».</p>
+        <h3>Plusieurs formes par énigme</h3>
+        <p>La plupart des énigmes existent sous deux ou trois formes qui se résolvent différemment : « Qui ment ? » classique, Les alibis ou Demi-vérités ; voisinage avec véhicules ou Les arrivées ; le cadenas à essais ou Le digicode ; la chronologie en minutes ou Sans montre ; la filature à l’endroit ou À rebours ; le bus ou Les badges ; les objets volés ou La caisse ; l’écriture manuscrite ou L’imprimante. Chaque fois qu’un type revient dans tes énigmes, il change de forme : jamais deux fois la même d’affilée. Le nom de la forme s’affiche sous le titre de l’énigme.</p>
         <h3>L’entraînement</h3>
-        <p>Dans l’écran Énigmes, l’onglet « Entraînement » permet de choisir un type et une difficulté (jusqu’au niveau hardcore) et de s’exercer autant qu’on veut. La correction est immédiate et rien ne compte : ni classement, ni moral, ni PS.</p>`,
+        <p>Dans l’écran Énigmes, l’onglet « Entraînement » permet de choisir un type, sa forme et une difficulté (jusqu’au niveau hardcore) et de s’exercer autant qu’on veut. La correction est immédiate et rien ne compte : ni classement, ni moral, ni PS.</p>`,
           'Deux bonnes réponses débloquent un bonus au choix : +1 indice d’enquête, +3 de moral, +2 k€ ou +10 % de capacité pour un service. Trois sur trois : prime « sans faute » en plus (+3 k€, +2 de moral, +5 PS). Comme pour la prime au personnel, les bonus de moral rapportent moins quand le moral est déjà haut : moitié de 70 à 85, +1 au-delà.',
         ])}
         <h3>Pas le temps ou pas l’envie ?</h3>
