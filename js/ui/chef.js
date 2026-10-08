@@ -2,11 +2,9 @@
 import { S, esc, icon, myZone, zoneName } from './common.js';
 import { gradeFor, INFRAS, SERVICE_LABELS } from '../engine/constants.js';
 import { reglesV2 } from '../engine/regles.js';
-import { bureauPhotoSvg as bureauSvg } from './bureau-photo.js';
 import { tabbar } from './common.js';
 import { COMPETENCES, IDS_COMPETENCES, PARCOURS, IDS_PARCOURS, TALENTS, TALENT, AGENDA, IDS_AGENDA, CHEF,
-  niveauChef, progresChef, talentsDebloques, totalNiveaux, signatureChef } from '../engine/chef.js';
-import { COULEURS_COMP } from './bureau-scene.js';
+  niveauChef, progresChef, talentsDebloques, totalNiveaux, signatureChef, niveauXp, XP_CUMUL, NIVEAU_MAX_CHEF } from '../engine/chef.js';
 
 // ───── Portraits (images générées avec Gemini, img/chefs/pNN.webp) ─────
 // Tant qu'une image manque, un portrait dessiné (silhouette en uniforme, initiales) la remplace.
@@ -151,79 +149,94 @@ export function emplacementsHtml(z, d) {
 }
 void icon;
 
-// ───── Le bureau du chef (écran illustré) ─────
-// Rien de nouveau à gérer : le bureau montre ce que le chef a déjà accompli. Les objets apparaissent avec les
-// compétences (niveaux 2, 5, 8), les médailles et les états de service se posent au mur, et les quatre visages du
-// réseau reflètent la zone (satisfaction, réputation, moral, presse).
+// ───── La fiche du chef (écran « Mon chef ») ─────
+// Des stats claires, dans le style du jeu : compétences (niveau, progression, prochain déblocage), talents en tableau
+// (une colonne par compétence, une ligne par palier), saison en cours, réseau, carrière.
+export const COUL_COMP = { gestion: '#E8B530', commandement: '#E1453A', flair: '#A78BFA', diplomatie: '#5AB0F0', proximite: '#3DD39A' };
 const RESEAU = {
-  bourgmestre: { nom: 'Le bourgmestre', suit: 'la satisfaction de la population', humeur: (z) => (z.satisfaction >= 65 ? 1 : z.satisfaction < 45 ? -1 : 0) },
-  procureur: { nom: 'Le procureur', suit: 'ta réputation et ton travail d’enquête (le parquet n’aime pas les dossiers recopiés)', humeur: (z) => ((z.dir && z.dir.parquet && z.dir.parquet.stade) || z.reputation < 40 ? -1 : z.reputation >= 60 ? 1 : 0) },
-  syndicat: { nom: 'Le délégué syndical', suit: 'le moral de tes agents', humeur: (z) => ((z.dir && z.dir.mem && z.dir.mem.greve === 'arret') || z.moral < 45 ? -1 : z.moral >= 65 ? 1 : 0) },
-  journaliste: { nom: 'La journaliste de La Voix du Delta', suit: 'tes interviews et la bonne ou mauvaise presse', humeur: (z) => { const j = z.dir && z.dir.mem && z.dir.mem.journaliste; return j === 'amie' ? 1 : j === 'hostile' ? -1 : 0; } },
-};
-const PALIERS = {
-  gestion: ['des classeurs', 'une calculatrice et un écran de graphiques', 'un stylo plume doré et la plaque « budget en équilibre »'],
-  commandement: ['une radio portative', 'la carte tactique de la ville au mur', 'la casquette de commandement et une console radio'],
-  flair: ['une loupe', 'un petit tableau d’enquête avec ses fils rouges', 'le grand mur d’enquête et la boîte des dossiers classés'],
-  diplomatie: ['un téléphone de bureau', 'la photo d’une poignée de main', 'les petits drapeaux et la plaque de jumelage'],
-  proximite: ['une plante verte', 'le plan du quartier épinglé de cœurs', 'les dessins d’enfants et les fleurs'],
+  bourgmestre: { nom: 'Bourgmestre', suit: (z) => `satisfaction ${Math.round(z.satisfaction)}`, humeur: (z) => (z.satisfaction >= 65 ? 1 : z.satisfaction < 45 ? -1 : 0) },
+  procureur: { nom: 'Procureur', suit: (z) => `réputation ${Math.round(z.reputation)}${z.dir && z.dir.parquet && z.dir.parquet.stade ? ', dossier trop recopié' : ''}`, humeur: (z) => ((z.dir && z.dir.parquet && z.dir.parquet.stade) || z.reputation < 40 ? -1 : z.reputation >= 60 ? 1 : 0) },
+  syndicat: { nom: 'Syndicat', suit: (z) => `moral ${Math.round(z.moral)}`, humeur: (z) => ((z.dir && z.dir.mem && z.dir.mem.greve === 'arret') || z.moral < 45 ? -1 : z.moral >= 65 ? 1 : 0) },
+  journaliste: { nom: 'Presse', suit: (z) => { const j = z.dir && z.dir.mem && z.dir.mem.journaliste; return j === 'amie' ? 'interview réussie' : j === 'hostile' ? 'article au vitriol' : 'pas encore d’interview'; }, humeur: (z) => { const j = z.dir && z.dir.mem && z.dir.mem.journaliste; return j === 'amie' ? 1 : j === 'hostile' ? -1 : 0; } },
 };
 const MONTE = {
-  gestion: 'finir la journée dans le vert, investir (formation, matériel, bâtiments), boucler la paperasse, passer la journée au bureau ou à la commune ; mini-jeux : embouteillage (Roulage), dossier à relire (Accueil)',
-  commandement: 'tenir ses services, réussir incidents et urgences, mener un assaut en non-droit, gagner une affaire disputée, aller sur le terrain ; mini-jeux : colis suspect, maintien de l’ordre, bitonal',
-  flair: 'trouver des pièces d’enquête, identifier un auteur, résoudre un dossier noir, arrêter un suspect, passer la journée au parquet ; jeux : énigmes du jour, crochetage, empreintes, ADN',
-  diplomatie: 'prêter un renfort, prendre une relève, tenir un pacte, partager des pièces, rendre visite à un voisin ; mini-jeux de la RCCU (réseau, interception), en appui avec la fédérale',
-  proximite: 'garder une satisfaction haute, absorber une vague de délinquance, éviter les imprévus, tenir une réunion de quartier ; incidents de Proximité',
+  gestion: 'revenu positif, investissements, paperasse bouclée, journée au bureau ou à la commune · jeux : embouteillage, dossier à relire',
+  commandement: 'services tenus, incidents et urgences réussis, assauts en non-droit, affaires disputées, journée sur le terrain · jeux : colis, maintien de l’ordre, bitonal',
+  flair: 'pièces d’enquête, auteur identifié, dossier noir, arrestation, journée au parquet · jeux : énigmes, crochetage, empreintes, ADN',
+  diplomatie: 'renforts, relèves, pactes tenus, pièces partagées, visite à un voisin · jeux : réseau, interception (RCCU)',
+  proximite: 'satisfaction haute, vagues absorbées, imprévus évités, réunion de quartier · jeux : incidents de Proximité',
 };
+const xpTxt = (chef, c) => { const xp = (chef.xp && chef.xp[c]) || 0, L = niveauXp(xp); return L >= NIVEAU_MAX_CHEF ? 'niveau maximum' : `${Math.floor(xp - XP_CUMUL[L])} / ${XP_CUMUL[L + 1] - XP_CUMUL[L]} XP`; };
 export function renderBureau() {
   const st = S.state, me = myZone();
   const uid = S.bureauUid && st.zones[S.bureauUid] ? S.bureauUid : me && me.uid;
   const z = st.zones[uid], moi = me && uid === me.uid;
   const back = `<a href="${moi ? '#hp' : '#carte'}" class="backlink">${icon('back', 20)}<span>${moi ? 'Retour à l’HP' : 'Retour à la carte'}</span></a>`;
-  if (!z || !z.chef) return `<main class="screen">${back}<section class="card"><p class="small muted" style="margin:0">Le bureau du chef ouvre avec la saison 2.</p></section></main>${tabbar('hp')}`;
+  if (!z || !z.chef) return `<main class="screen">${back}<section class="card"><p class="small muted" style="margin:0">Le chef de corps arrive avec la saison 2.</p></section></main>${tabbar('hp')}`;
   const p = (S.players && S.players[uid]) || (moi ? S.player : {}) || {};
-  const chef = z.chef, niveaux = Object.fromEntries(IDS_COMPETENCES.map((c) => [c, niveauChef(chef, c)]));
-  const g = gradeFor(z.ps || 0);
-  const ets = ['Aspirant', 'Inspecteur', 'Inspecteur principal', 'Commissaire', 'Commissaire divisionnaire', 'Chef de corps'].indexOf(g.nom);
-  const h = new Date().getHours();
-  const svg = bureauSvg({ uid: `b${uid.slice(0, 4)}`, niveaux, portrait: p.chef && p.chef.portrait, grade: g.nom, etoiles: Math.max(0, ets), nom: p.pseudo || z.nom, devise: (p.chef && p.chef.devise) || '', couleur: z.couleur,
-    medailles: chef.medailles || [], etats: chef.etats || [], talents: chef.talents || [],
-    reseau: Object.entries(RESEAU).map(([id, R]) => ({ id, humeur: R.humeur(z) })), souvenirs: (chef.souvenirs || []).slice(-2).map((x) => ({ a: p.chef && p.chef.portrait, b: S.players && S.players[x.u] && S.players[x.u].chef && S.players[x.u].chef.portrait, nom: st.zones[x.u] ? st.zones[x.u].nom : '' })), actifs: ((z.chefNuit && z.chefNuit.tour === st.turn - 1 && z.chefNuit.faits) || []).map((f) => f.id), moment: h >= 8 && h < 18 ? 'jour' : h >= 18 && h < 20 ? 'crepuscule' : 'nuit', affiches: (z.affiches || []).length });
-  const o = S.bureauObj || null;
-  let info = '<p class="small muted" style="margin:0">Touche un objet du bureau pour voir ce qu’il raconte. Le bureau se remplit à mesure que ton chef progresse.</p>';
-  if (o && COMPETENCES[o]) {
-    const L = niveaux[o], tier = L >= 8 ? 3 : L >= 5 ? 2 : L >= 2 ? 1 : 0, suiv = [2, 5, 8].find((x) => x > L);
-    info = `<span style="font-weight:700">${COMPETENCES[o].ico} ${esc(COMPETENCES[o].nom)} · niveau ${L}</span>
-      <span class="pc-barre"><span style="width:${Math.max(3, Math.round(progresChef(chef, o) * 100))}%"></span></span>
-      <span class="small">${tier ? `Sur le bureau : ${esc(PALIERS[o].slice(0, tier).join(', '))}.` : 'Rien encore sur le bureau pour cette compétence.'}${suiv ? ` Au niveau ${suiv} : ${esc(PALIERS[o][[2, 5, 8].indexOf(suiv)])}.` : ''}</span>
-      <span class="tiny muted">Elle monte en : ${esc(MONTE[o])}.</span>`;
-  } else if (o && o.startsWith('reseau-')) {
-    const R = RESEAU[o.slice(7)], hm = R.humeur(z);
-    info = `<span style="font-weight:700">${esc(R.nom)} · ${hm > 0 ? 'satisfait' : hm < 0 ? 'mécontent' : 'neutre'}</span><span class="small">Son humeur suit ${esc(R.suit)}.</span>`;
-  } else if (o === 'medailles') info = (chef.medailles || []).length ? chef.medailles.map((m) => `<span class="small">🎖️ ${esc(m.nom)} · saison ${m.season}</span>`).join('') : '<span class="small muted">Une médaille par compétence récompense, à chaque fin de saison, la plus forte progression du district.</span>';
-  else if (o === 'etats') info = (chef.etats || []).length ? chef.etats.slice().reverse().map((e) => `<span class="small">Saison ${e.season} · ${e.rang ? `${e.rang}${e.rang === 1 ? 'er' : 'e'} sur ${e.sur}` : 'non classé'}${e.moyenne != null ? ` · IPZ moyen ${String(e.moyenne).replace('.', ',')}` : ''}</span>`).join('') : '<span class="small muted">Chaque saison terminée accroche un certificat au mur.</span>';
-  else if (o === 'talents') info = (chef.talents || []).length ? chef.talents.map((t) => `<span class="small"><b>${esc(TALENT[t].nom)}</b> · ${esc(TALENT[t].texte)}</span>`).join('') : '<span class="small muted">Les talents équipés sont cousus sur la veste. Le premier se débloque au niveau 2 d’une compétence.</span>';
-  else if (o === 'souvenirs') info = (chef.souvenirs || []).length ? chef.souvenirs.slice().reverse().map((x) => `<span class="small">📸 Réunion avec ${st.zones[x.u] ? zoneName(st.zones[x.u]) : 'une zone'} · saison ${x.s}, jour ${x.t}</span>`).join('') : '<span class="small muted">Quand deux chefs se rendent visite le même jour (agenda), une photo souvenir rejoint les deux bureaux.</span>';
-  else if (o === 'affiches') info = `<span class="small">${(z.affiches || []).length} suspect${(z.affiches || []).length > 1 ? 's' : ''} arrêté${(z.affiches || []).length > 1 ? 's' : ''}.</span>`;
-  else if (o === 'portrait' || o === 'nom') info = `<span style="font-weight:700">${esc(p.pseudo || z.nom)} · ${esc(g.nom)}</span><span class="small">${chef.parcours && PARCOURS[chef.parcours] ? esc(PARCOURS[chef.parcours].nom) : ''}${p.chef && p.chef.devise ? ` · « ${esc(p.chef.devise)} »` : ''}</span>`;
-  return `<main class="screen">${back}
-    <div class="col" style="gap:2px"><span class="kicker">Bureau du chef</span><h1 class="big" style="margin:0">${moi ? 'Ton bureau' : `Le bureau de ${esc(p.pseudo || z.nom)}`}</h1><span class="small muted">${zoneName(z)} · <span style="color:var(--amber-soft);font-weight:700">${esc(signatureChef(chef) || '')}</span></span></div>
-    <section class="card bureau-scene" style="padding:0;overflow:hidden" data-bureau>${svg}</section>
-    <section class="card" style="gap:6px" aria-live="polite">${info}</section>
-    ${(() => { const f = felicitationsDe(uid), deja = !moi && S.player && S.player.felicite && S.player.felicite[uid] === st.season;
-      return `<section class="card" style="gap:6px"><span class="tiny muted" style="font-weight:700">👏 Félicitations cette saison</span>
-        <span class="small">${f.length ? f.map((u) => esc((S.players[u] && S.players[u].pseudo) || (st.zones[u] && st.zones[u].nom) || '?')).join(', ') : 'Aucune pour l’instant.'}</span>
-        ${moi ? '<span class="tiny muted">Tes collègues peuvent te féliciter depuis ton bureau (une fois par saison).</span>' : `<button type="button" class="btn small ${deja ? 'ghost' : 'primary'} block" data-action="feliciter" data-u="${esc(uid)}" ${deja ? 'disabled' : ''}>${deja ? '✓ Tu l’as félicité cette saison' : `Féliciter ${esc(p.pseudo || 'ce chef')}`}</button>`}</section>`; })()}
-    ${ficheChefHtml(uid, { moi })}
-  </main>${tabbar('hp')}`;
+  const chef = z.chef, g = gradeFor(z.ps || 0), pc = chef.parcours && PARCOURS[chef.parcours];
+  const deb = new Set(talentsDebloques(chef)), eq = chef.talents || [];
+  const actifs = new Set(((z.chefNuit && z.chefNuit.tour === st.turn - 1 && z.chefNuit.faits) || []).map((f) => f.id));
+  const ouvert = S.bureauObj || null;
+  const total = totalNiveaux(chef);
+  // En-tête.
+  const hero = `<section class="card chef-hero" style="--zc:${esc(z.couleur || '#5AB0F0')}">
+    <div class="row" style="gap:14px;align-items:center">${portraitChef(uid, 84)}
+      <span class="col" style="gap:3px;min-width:0"><span class="kicker">${moi ? 'Mon chef de corps' : 'Chef de corps'}</span>
+        <span style="font-weight:800;font-size:20px;line-height:1.1">${esc(p.pseudo || z.nom)}</span>
+        <span class="small">${esc(g.nom)} · ${zoneName(z)}</span>
+        <span class="chef-sig">${esc(signatureChef(chef) || '')}</span></span></div>
+    <span class="small muted">${pc ? esc(pc.nom) : 'Parcours à choisir'}${p.chef && p.chef.devise ? ` · « ${esc(p.chef.devise)} »` : ''}</span>
+    <div class="pc-stats" style="grid-template-columns:repeat(3,1fr)">
+      <div class="pc-stat"><span class="v">${total}<small>/50</small></span><span class="l">niveaux</span></div>
+      <div class="pc-stat"><span class="v">${deb.size}<small>/15</small></span><span class="l">talents</span></div>
+      <div class="pc-stat"><span class="v">${(chef.medailles || []).length}</span><span class="l">médaille${(chef.medailles || []).length > 1 ? 's' : ''}</span></div>
+    </div></section>`;
+  // Compétences.
+  const comp = `<section class="card" style="gap:10px"><h2 class="card-title">Compétences</h2>
+    ${IDS_COMPETENCES.map((c) => { const L = niveauChef(chef, c), suiv = TALENTS.find((t) => t.comp === c && t.niv > L), o = ouvert === c;
+      return `<button type="button" class="chef-comp${o ? ' ouvert' : ''}" data-action="chef-detail" data-k="${c}" style="--c:${COUL_COMP[c]}" aria-expanded="${o}">
+        <span class="chef-comp-ico">${COMPETENCES[c].ico}</span>
+        <span class="col grow" style="gap:4px;min-width:0"><span class="between"><span style="font-weight:700">${esc(COMPETENCES[c].nom)}</span><span class="tiny muted">${xpTxt(chef, c)}</span></span>
+          <span class="chef-barre"><span style="width:${Math.max(3, Math.round(progresChef(chef, c) * 100))}%"></span></span>
+          <span class="tiny muted">${suiv ? `Niveau ${suiv.niv} : talent « ${esc(suiv.nom)} »` : 'Tous ses talents sont débloqués'}</span>
+          ${o ? `<span class="tiny" style="color:var(--text2);line-height:1.4">Monte avec : ${esc(MONTE[c])}.${moi && chef.saison && chef.saison[c] ? ` Cette saison : +${Math.round(chef.saison[c])} XP.` : ''}</span>` : ''}</span>
+        <span class="chef-niv">${L}</span></button>`; }).join('')}
+  </section>`;
+  // Talents : tableau compétences × paliers.
+  const tal = `<section class="card" style="gap:10px"><div class="between"><h2 class="card-title">Talents</h2><span class="tiny muted">${eq.length}/${CHEF.maxTalents} équipés</span></div>
+    <div class="chef-slots">${[0, 1, 2].map((i) => { const t = eq[i]; return t ? `<div class="chef-slot on${actifs.has(t) ? ' actif' : ''}" style="--c:${COUL_COMP[TALENT[t].comp]}"><img src="img/talents/${t}.webp" alt=""><span class="tiny" style="font-weight:700">${esc(TALENT[t].nom)}</span><span class="tiny muted">${esc(TALENT[t].texte)}</span></div>` : '<div class="chef-slot"><span class="tiny muted">Emplacement libre</span></div>'; }).join('')}</div>
+    ${moi ? '<a class="tiny" href="#ordres" data-action="ord-chef">Changer mes talents dans les Ordres →</a>' : ''}
+    <div class="chef-grille-tal">${IDS_COMPETENCES.map((c) => `<span class="tiny chef-gt-h" style="color:${COUL_COMP[c]}">${COMPETENCES[c].ico}</span>`).join('')}
+      ${[2, 5, 8].map((n) => IDS_COMPETENCES.map((c) => { const t = TALENTS.find((x) => x.comp === c && x.niv === n), ok = deb.has(t.id), on = eq.includes(t.id);
+        return `<button type="button" class="chef-gt${ok ? '' : ' verr'}${on ? ' on' : ''}" data-action="chef-detail" data-k="t:${t.id}" title="${esc(t.nom)}"><img src="img/talents/${t.id}.webp" alt="${esc(t.nom)}"><span class="chef-gt-n">${ok ? '' : n}</span></button>`; }).join('')).join('')}
+    </div>
+    ${ouvert && ouvert.startsWith('t:') && TALENT[ouvert.slice(2)] ? (() => { const t = TALENT[ouvert.slice(2)]; return `<div class="ddetail"><b>${esc(t.nom)}</b> · ${esc(COMPETENCES[t.comp].nom)} ${t.niv}${deb.has(t.id) ? '' : ' (verrouillé)'}<br><span class="small">${esc(t.texte)}</span></div>`; })() : '<span class="tiny muted">Une colonne par compétence, un talent aux niveaux 2, 5 et 8. Touche un écusson pour le détail.</span>'}
+  </section>`;
+  // Réseau.
+  const res = `<section class="card" style="gap:10px"><h2 class="card-title">Le réseau</h2>
+    <div class="chef-reseau">${Object.entries(RESEAU).map(([id, R]) => { const h = R.humeur(z); return `<div class="chef-pers ${h > 0 ? 'ok' : h < 0 ? 'ko' : ''}">
+      <img src="img/bureau/${id}-${h > 0 ? 1 : h < 0 ? '-1' : 0}.webp" alt=""><span class="tiny" style="font-weight:700">${R.nom}</span><span class="chef-humeur">${h > 0 ? 'Satisfait' : h < 0 ? 'Mécontent' : 'Neutre'}</span><span class="tiny muted">${esc(R.suit(z))}</span></div>`; }).join('')}</div></section>`;
+  // Carrière.
+  const f = felicitationsDe(uid), deja = !moi && S.player && S.player.felicite && S.player.felicite[uid] === st.season;
+  const car = `<section class="card" style="gap:10px"><h2 class="card-title">Carrière</h2>
+    ${(chef.medailles || []).length ? `<div class="pc-titres">${chef.medailles.map((m) => `<span class="pc-plaque">🎖️ ${esc(m.nom)} <small>saison ${m.season}</small></span>`).join('')}</div>` : '<span class="tiny muted">À chaque fin de saison, une médaille par compétence récompense la plus forte progression du district.</span>'}
+    ${(chef.etats || []).length ? chef.etats.slice().reverse().map((e) => `<div class="chef-etat"><span class="chef-rang${e.rang === 1 ? ' or' : e.rang === 2 ? ' ar' : e.rang === 3 ? ' br' : ''}">${e.rang ? `${e.rang}<small>${e.rang === 1 ? 'er' : 'e'}</small>` : '–'}</span>
+      <span class="col" style="gap:1px"><span class="small" style="font-weight:700">Saison ${e.season}${e.moyenne != null ? ` · IPZ ${String(e.moyenne).replace('.', ',')}` : ''}${e.anticipee ? ' · écourtée' : ''}</span>${(e.faits || []).length ? `<span class="tiny muted">${esc(e.faits.join(' · '))}</span>` : ''}</span></div>`).join('') : ''}
+    ${(chef.souvenirs || []).length ? `<span class="tiny muted" style="font-weight:700">Réunions avec d’autres chefs</span><div class="row" style="gap:8px;flex-wrap:wrap">${chef.souvenirs.slice().reverse().map((x) => `<span class="row" style="gap:4px;align-items:center">${portraitChef(x.u, 24, { galons: false })}<span class="tiny">${st.zones[x.u] ? esc(st.zones[x.u].nom) : '?'} · s${x.s}</span></span>`).join('')}</div>` : ''}
+    <span class="tiny muted" style="font-weight:700">👏 Félicitations cette saison</span>
+    <span class="small">${f.length ? f.map((u) => esc((S.players[u] && S.players[u].pseudo) || (st.zones[u] && st.zones[u].nom) || '?')).join(', ') : 'Aucune pour l’instant.'}</span>
+    ${moi ? '' : `<button type="button" class="btn small ${deja ? 'ghost' : 'primary'} block" data-action="feliciter" data-u="${esc(uid)}" ${deja ? 'disabled' : ''}>${deja ? '✓ Tu l’as félicité cette saison' : `Féliciter ${esc(p.pseudo || 'ce chef')}`}</button>`}
+  </section>`;
+  return `<main class="screen">${back}${hero}${comp}${tal}${res}${car}</main>${tabbar('hp')}`;
 }
 
 // ───── Le chef se voit agir : bloc « Ton chef cette nuit », moment de promotion, félicitations ─────
-const OBJ_PALIER = (c, L) => (L >= 8 ? PALIERS[c][2] : L >= 5 ? PALIERS[c][1] : L >= 2 ? PALIERS[c][0] : null);
+const talentAuNiveau = (c, L) => TALENTS.find((t) => t.comp === c && t.niv === L) || null;
 export function chefNuitHtml(z) {
   const cn = z && z.chefNuit;
   if (!cn || cn.tour !== S.state.turn - 1 || !(cn.faits || []).length && !(cn.montees || []).length) return '';
-  const l = [...(cn.montees || []).map((m) => `<b>${esc(COMPETENCES[m.comp].nom)} ${m.niveau}</b>${[2, 5, 8].includes(m.niveau) ? ` · nouveau sur ton bureau : ${esc(OBJ_PALIER(m.comp, m.niveau))}` : ''}`),
+  const l = [...(cn.montees || []).map((m) => `<b>${esc(COMPETENCES[m.comp].nom)} ${m.niveau}</b>${talentAuNiveau(m.comp, m.niveau) ? ` · talent « ${esc(talentAuNiveau(m.comp, m.niveau).nom)} » débloqué` : ''}`),
     ...(cn.faits || []).map((f) => `${TALENT[f.id] ? `<img class="chef-insigne" src="img/talents/${f.id}.webp" alt="">` : ''}${esc(f.t)}`)].slice(0, 3);
   return `<button type="button" class="chef-nuit" data-action="bureau-ouvrir">${portraitChef(z.uid, 36, { galons: false })}
     <span class="col" style="gap:2px;min-width:0;text-align:left"><span class="tiny muted" style="font-weight:700">Ton chef cette nuit${cn.signature ? ` · ${esc(cn.signature)}` : ''}</span>${l.map((x) => `<span class="small" style="line-height:1.35">${x}</span>`).join('')}</span></button>`;
@@ -237,16 +250,14 @@ export function promotionAuBesoin() {
   try { if (localStorage.getItem(cle)) return false; localStorage.setItem(cle, '1'); } catch (e) { return false; }
   const m = (cn.montees || []).filter((x) => [2, 5, 8, 10].includes(x.niveau)).sort((a, b) => b.niveau - a.niveau)[0];
   const t = (cn.nouveaux || [])[0];
-  const chef = z.chef, niveaux = Object.fromEntries(IDS_COMPETENCES.map((c) => [c, niveauChef(chef, c)]));
-  const p = S.player || {};
   S.bureauUid = null; S.bureauObj = null;
   setTimeout(() => ouvrirPanneauChef(`<span class="kicker" style="color:var(--amber)">Promotion</span>
     <h2 id="aide-titre" class="aide-titre" style="margin:0">${m ? `${COMPETENCES[m.comp].ico} ${esc(COMPETENCES[m.comp].nom)} niveau ${m.niveau} !` : 'Nouveau talent !'}</h2>
-    <div class="bureau-scene promo" style="border-radius:12px;overflow:hidden">${bureauSvg({ uid: 'promo', niveaux, portrait: p.chef && p.chef.portrait, grade: gradeFor(z.ps || 0).nom, nom: p.pseudo || z.nom, couleur: z.couleur, medailles: chef.medailles || [], etats: chef.etats || [], talents: chef.talents || [], reseau: [], moment: 'nuit', affiches: (z.affiches || []).length, souvenirs: [] })}</div>
-    ${m && OBJ_PALIER(m.comp, m.niveau) ? `<p class="small" style="margin:0">Nouveau sur ton bureau : <b>${esc(OBJ_PALIER(m.comp, m.niveau))}</b>.</p>` : ''}
+    <div class="row" style="gap:14px;align-items:center;justify-content:center;padding:6px 0">${portraitChef(z.uid, 72)}${t ? `<img src="img/talents/${t}.webp" alt="" width="72" height="72" style="filter:drop-shadow(0 0 10px rgba(255,217,138,.7))">` : ''}</div>
+    ${m ? `<span class="chef-barre" style="--c:${COUL_COMP[m.comp]}"><span style="width:100%"></span></span>` : ''}
     ${t ? `<p class="small" style="margin:0">Talent débloqué : <b>${esc(TALENT[t].nom)}</b> · ${esc(TALENT[t].texte)}. Équipe-le dans tes ordres (Chef de corps).</p>` : ''}
     ${cn.signature ? `<p class="tiny muted" style="margin:0">Ton style : ${esc(cn.signature)}.</p>` : ''}
-    <div class="row" style="gap:8px"><a class="btn primary grow" href="#bureau" data-close>Voir mon bureau</a><button type="button" class="btn ghost grow" data-close>Plus tard</button></div>`), 500);
+    <div class="row" style="gap:8px"><a class="btn primary grow" href="#bureau" data-close>Voir mon chef</a><button type="button" class="btn ghost grow" data-close>Plus tard</button></div>`), 500);
   return true;
 }
 let ouvrirPanneauChef = () => {};

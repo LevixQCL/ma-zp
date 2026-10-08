@@ -724,6 +724,8 @@ async function onClick(e) {
         S.ordersDirty = true; rerender(); break;
       }
       case 'bureau-ouvrir': S.bureauUid = el.dataset.u || null; S.bureauObj = null; if (document.querySelector('.aide-wrap')) document.querySelectorAll('.aide-wrap').forEach((x) => x.remove()); location.hash = '#bureau'; break;
+      case 'chef-detail': S.bureauObj = S.bureauObj === el.dataset.k ? null : el.dataset.k; rerender(); break;
+      case 'ord-chef': S.ordOpen = { ...(S.ordOpen || {}), chef: true }; location.hash = '#ordres'; break;
       case 'feliciter': {
         const u = el.dataset.u, sn = S.state.season;
         S.player = { ...(S.player || {}), felicite: { ...((S.player && S.player.felicite) || {}), [u]: sn } };
@@ -1539,7 +1541,6 @@ async function boot() {
     S.user = u;
     if (changed) afterAuth();
   });
-  document.addEventListener('click', (e) => { const g = e.target.closest && e.target.closest('[data-bureau] [data-obj]'); if (g) { S.bureauObj = S.bureauObj === g.dataset.obj ? null : g.dataset.obj; rerender(); } });
   document.addEventListener('click', onClick);
   installerAntiTriche();
   installerCadenas();

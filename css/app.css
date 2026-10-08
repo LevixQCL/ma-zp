@@ -1875,3 +1875,34 @@ details.pli-ordres[open] .pli-resume, details.pli-ordres[open] .pli-resume-s { d
 .bureau-scene > svg { display: block; width: 100%; height: auto; }
 .chef-nuit { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: 16px; border: 1px solid var(--amber-line); background: linear-gradient(135deg, rgba(255, 197, 107, .10), transparent 60%), var(--surface); color: var(--text); cursor: pointer; width: 100%; }
 .chef-insigne { display: inline-block; width: 20px; height: 20px; border-radius: 50%; box-shadow: 0 0 0 2px rgba(255, 217, 138, .6), 0 0 10px rgba(255, 217, 138, .8); margin-right: 6px; vertical-align: -5px; }
+/* Fiche du chef (remplace le bureau illustré) */
+.chef-hero { gap: 10px; border-color: color-mix(in srgb, var(--zc) 45%, var(--line)); background: linear-gradient(160deg, color-mix(in srgb, var(--zc) 14%, transparent), transparent 55%), var(--surface); }
+.chef-sig { align-self: flex-start; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; color: #2A1E08; background: linear-gradient(180deg, #FFD98A, #E6A93A); }
+.chef-comp { display: flex; gap: 12px; align-items: center; width: 100%; padding: 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); text-align: left; cursor: pointer; }
+.chef-comp.ouvert { border-color: var(--c); }
+.chef-comp-ico { width: 38px; height: 38px; flex-shrink: 0; display: grid; place-items: center; border-radius: 11px; font-size: 20px; background: color-mix(in srgb, var(--c) 22%, transparent); }
+.chef-niv { font-family: var(--mono); font-size: 26px; font-weight: 700; color: var(--c); min-width: 34px; text-align: right; }
+.chef-barre { display: block; height: 7px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.chef-barre > span { display: block; height: 100%; border-radius: 4px; background: var(--c, var(--amber)); }
+.chef-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.chef-slot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px; border-radius: 14px; border: 1.5px dashed var(--line); text-align: center; min-height: 96px; justify-content: center; }
+.chef-slot.on { border: 1.5px solid var(--c); background: color-mix(in srgb, var(--c) 10%, transparent); justify-content: flex-start; }
+.chef-slot img { width: 48px; height: 48px; }
+.chef-slot.actif img { filter: drop-shadow(0 0 8px #FFD98A); animation: chefPulse 1.6s ease-in-out infinite; }
+@keyframes chefPulse { 50% { transform: scale(1.08); } }
+.chef-grille-tal { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; justify-items: center; }
+.chef-gt-h { font-size: 18px; }
+.chef-gt { position: relative; width: 100%; max-width: 56px; aspect-ratio: 1; padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%; }
+.chef-gt img { width: 100%; height: 100%; }
+.chef-gt.verr img { filter: grayscale(1) brightness(.55); }
+.chef-gt.on { box-shadow: 0 0 0 2.5px var(--amber); }
+.chef-gt-n { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--mono); font-weight: 700; font-size: 15px; color: #fff; text-shadow: 0 1px 3px #000; }
+.chef-reseau { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.chef-pers { display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; }
+.chef-pers img { width: 100%; max-width: 72px; aspect-ratio: 1; object-fit: cover; border-radius: 14px; border: 2px solid var(--line); }
+.chef-pers.ok img { border-color: #3DD39A; } .chef-pers.ko img { border-color: #E1453A; }
+.chef-humeur { font-size: 12px; font-weight: 700; color: var(--text2); } .chef-pers.ok .chef-humeur { color: #3DD39A; } .chef-pers.ko .chef-humeur { color: #F2766B; }
+.chef-etat { display: flex; gap: 10px; align-items: center; }
+.chef-rang { width: 38px; height: 38px; flex-shrink: 0; display: grid; place-items: center; border-radius: 50%; font-family: var(--mono); font-weight: 700; background: var(--surface2); border: 2px solid var(--line); }
+.chef-rang small { font-size: 9px; } .chef-rang.or { border-color: #E6B84A; color: #E6B84A; } .chef-rang.ar { border-color: #C9CED8; } .chef-rang.br { border-color: #C98A54; }
+.chef-slot .tiny.muted { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
