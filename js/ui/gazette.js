@@ -2,7 +2,7 @@ import { noteCourte } from './nouveautes.js';
 import { partageHtml } from './invitation.js';
 // La Gazette du Delta, le classement, l'espace maître du jeu.
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1, classementLive } from './common.js';
-import { GRADES, LOTS, ENCHERE, PS, SEASON_LENGTH, IPZ_POIDS, MIN_TOURS_CLASSEMENT } from '../engine/constants.js';
+import { GRADES, LOTS, ENCHERE, PS, SEASON_LENGTH, IPZ_POIDS, MIN_TOURS_CLASSEMENT, DOCTRINES } from '../engine/constants.js';
 import { pointsIpz, IPZ_LABELS } from '../engine/zone.js';
 import { insigne } from './blasons.js';
 import { regrouperHonneur } from '../engine/honneur.js';
@@ -38,7 +38,7 @@ export function renderGazette() {
         ${g.prochainLot && LOTS[g.prochainLot.lot] ? `<div class="devise">Aujourd’hui à la salle des ventes : <strong>${esc(LOTS[g.prochainLot.lot].nom)}</strong>, mise à prix ${g.prochainLot.prixMin} k€${LOTS[g.prochainLot.lot].reserve ? ` (réputation ${ENCHERE.repReserve}+)` : ''}</div>` : ''}</header>
       ${g.finSaison ? `<section class="box sombre"><span class="k" style="color:#FFB23F">Fin de la saison ${g.finSaison.season}</span>
         ${g.finSaison.titres.map((t) => { const z = S.state.zones[t.uid]; return `<p style="color:#F4EFE3">${icon('trophy', 13)} <strong>${esc(t.titre)}</strong> : ${z ? zoneName(z) : ''}</p>`; }).join('')}
-        <p style="color:#C9B68F">La saison ${g.finSaison.saisonSuivante} commence : budgets et effectifs repartent des valeurs de départ. Chaque zone reçoit son Bilan de saison : quelques imprévus (pension, matériel cassé, entretien), à remettre en état ou à accepter dans les 3 premiers jours.</p></section>` : ''}
+        <p style="color:#C9B68F">La saison ${g.finSaison.saisonSuivante} commence : budgets et effectifs repartent des valeurs de départ. Chaque zone reçoit son Bilan de saison : quelques imprévus (pension, matériel cassé, entretien), à remettre en état ou à accepter dans les 3 premiers jours.</p>${(S.state.regles || 1) >= 2 ? '<p style="color:#F4EFE3"><strong>Nouveau cette saison :</strong> choisis la <strong>doctrine</strong> de ta zone dans tes ordres (routière, de quartier, judiciaire, d’intervention ou partenaire), avec sa force et son prix. Le classement compte désormais tous les jours de la saison, et la capacité que tu construis paie davantage.</p>' : ''}</section>` : ''}
       <section class="une"><span class="k">${esc(g.une.kicker)}</span><h2>${esc(g.une.titre)}</h2>${g.une.texte ? `<p class="lettrine${/^[A-Za-zÀ-ÿ]/.test(g.une.texte) ? '' : ' sans'}">${esc(g.une.texte)}</p>` : ''}</section>
       ${g.breves && g.breves.length ? `<div class="rule double"></div>
         <div class="colonnes">${g.breves.slice(0, 6).map((b) => `<section class="breve"><span class="k">${esc(b.kicker)}</span><h3>${esc(b.titre)}</h3>${b.texte ? `<p>${esc(b.texte)}</p>` : ''}</section>`).join('')}</div>` : ''}
@@ -158,7 +158,7 @@ function couloir({ z, rang, classe, valeur, max = 100, txt, sous = '', compo = n
     <div class="crs-col">
       <button type="button" class="crs-piste" data-action="voir-hp" data-uid="${esc(z.uid)}" aria-label="${esc(z.nom)} : ${txt}">
         <span class="crs-barre" style="width:${w}%;background:linear-gradient(90deg,${c}40,${c}c0)"></span>
-        <span class="crs-lbl"><span class="crs-nom">${esc(z.nom)}${me ? ' · toi' : ''}</span><span class="crs-v">${txt}</span></span></button>
+        <span class="crs-lbl"><span class="crs-nom">${z.doctrine && DOCTRINES[z.doctrine] ? `${DOCTRINES[z.doctrine].ico} ` : ''}${esc(z.nom)}${me ? ' · toi' : ''}</span><span class="crs-v">${txt}</span></span></button>
       ${compo ? `<div class="crs-compo" style="width:${w}%" aria-hidden="true">${COMPO.map(([k, cc]) => `<i style="flex:${Math.max(0.01, compo[k])};background:${cc}"></i>`).join('')}</div>` : ''}
       ${sous ? `<span class="tiny muted">${sous}</span>` : ''}
     </div></div>`;

@@ -94,7 +94,7 @@ export async function createFirebaseBackend(config) {
         tx.set(F.doc(fs, 'codes', code), { gid: id, owner: uid });
       });
       await this.useGame(id);
-      const state = createGame({ seed: `${config.seed}-${id}`, turnDeadline: nextResolutionAfter(Date.now(), hour) });
+      const state = createGame({ seed: `${config.seed}-${id}`, turnDeadline: nextResolutionAfter(Date.now(), hour), regles: 2 });
       await F.setDoc(stateRef(), plain(state));
       return id;
     },
@@ -273,7 +273,7 @@ export async function createFirebaseBackend(config) {
 
     // Maître du jeu
     async adminCreateGame() {
-      const state = createGame({ seed: `${config.seed}-${gid}-${Date.now()}`, turnDeadline: nextResolutionAfter(Date.now(), hour) });
+      const state = createGame({ seed: `${config.seed}-${gid}-${Date.now()}`, turnDeadline: nextResolutionAfter(Date.now(), hour), regles: 2 });
       await F.setDoc(stateRef(), plain(state));
     },
     async adminReset() {

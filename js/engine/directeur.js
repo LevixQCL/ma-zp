@@ -20,7 +20,7 @@ import { clamp, round1, moyenneIpz } from './zone.js';
 import { assurerQuartiers, carteQuartiers, lirePatrouilles } from './quartiers.js';
 import { ALEAS, COUPS_DURS, OPERATIONS, PRESSIONS } from './contenu.js';
 import { siteDe } from './sites.js';
-import { SEASON_LENGTH, BUDGET_IPZ, NIVEAU_MAX, SERVICES, SERVICE_LABELS, coutEquipement } from './constants.js';
+import { SEASON_LENGTH, BUDGET_IPZ, NIVEAU_MAX, SERVICES, SERVICE_LABELS, coutEquipement, REGLES } from './constants.js';
 import { affaire, candidats, faitsConnus, pieceCoupDePouce } from './enquete.js';
 
 // ───── Réglages ─────
@@ -370,12 +370,13 @@ export const FEUILLETONS = {
           : z.dir.mem.greve === 'arret' ? 'Encore la grogne : le dernier arrêt de travail est dans toutes les têtes. Le délégué menace de recommencer.'
             : 'Heures sup’, vestiaires vétustes : le délégué syndical menace d’un arrêt de travail.'),
         choix: [
-          { l: 'Lâcher une prime', s: '−2,5 k€, +5 de moral' },
+          // Règles v2 : plus de réponse « gratuite » en argent : un jour de récupération coûte des agents.
+          { get l() { return REGLES.v2 ? 'Accorder un jour de récupération' : 'Lâcher une prime'; }, get s() { return REGLES.v2 ? '2 agents en récupération 2 jours, +5 de moral' : '−2,5 k€, +5 de moral'; } },
           { l: 'Tenir bon', s: 'si le moral est à 50 ou plus ce soir, la grogne retombe ; sinon, arrêt de travail' },
         ],
         defaut: 1,
         resoudre: (c, d, ch) => (ch === 0
-          ? { ok: true, fx: { budget: -2.5, moral: 5 }, texte: 'prime versée, la tension retombe', mem: { greve: 'prime' } }
+          ? (REGLES.v2 ? { ok: true, fx: { bloques: 2, moral: 5 }, texte: 'jour de récupération accordé, la tension retombe', mem: { greve: 'prime' } } : { ok: true, fx: { budget: -2.5, moral: 5 }, texte: 'prime versée, la tension retombe', mem: { greve: 'prime' } })
           : c.z.moral >= 50
             ? { ok: true, fx: { moral: 2, rep: 1 }, texte: 'la grogne retombe d’elle-même', mem: { greve: 'tenu' } }
             : { ok: false, fx: { bloques: 2, moral: -2 }, texte: 'arrêt de travail, 2 agents absents 2 tours', une: [6, 'Social', `Arrêt de travail à ${c.label}`], mem: { greve: 'arret' } }),
@@ -814,7 +815,8 @@ export function directeurNuit(state, z, rng, { T, nextWeekday, forme = 0, PRESSI
     quartiers: Object.keys(assurerQuartiers(state, z)).length > 0,
     tensionMax: Math.max(0, ...Object.values(z.quartiers || {})),
   };
-  const routine = d.routine >= DIR.routine;
+  // Une zone qui a choisi une doctrine assume sa spécialisation : la rue met deux fois plus de temps à le remarquer.
+  const routine = d.routine >= DIR.routine * (z.doctrine ? 2 : 1);
   const allocHier = (z.dernierOrdre && z.dernierOrdre.alloc) || {};
   if (!d.fe && present(z) && d.retour !== T && T1 >= d.cdF && (d.ph === 'calme' || d.ph === 'montee') && rng.chance(Math.min(0.95, DIR.feuilleton * multF(state) * (routine ? 2 : 1)))) {
     const pool = Object.entries(FEUILLETONS)

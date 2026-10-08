@@ -1,7 +1,8 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
 import {
-  SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, scoreRevenu, BUDGET_IPZ, CLASSEMENT, coutEquipement, multNiveau, multEquip, coutFormation , PREPA, coutPrepa } from './constants.js';
+  SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, scoreRevenu, BUDGET_IPZ, CLASSEMENT, coutEquipement, multNiveau, multEquip, coutFormation , PREPA, coutPrepa, REGLES, multDoctrine } from './constants.js';
+import { terrainDoux } from './regles.js';
 import { coutCarrosserie } from './sinistres.js';
 import { cabossesChoisis } from './parc.js';
 import { prixRevente, assurerFlotte, placesIntervention, entretienFlotte, bonusAnonymes, agentsMontes, primeVerte, bonusOrdre, RENDEMENT, MODELES, IDS_MODELES } from './flotte.js';
@@ -189,6 +190,7 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
   if (service === 'intervention' && zone.infra.tir) c *= INFRAS.tir.bonus;
   if (service === 'admin') c *= (zone.infra.logiciel ? 1.5 : 1) * adminMult;
   c *= bonusLots(zone, service);
+  c *= multDoctrine(zone, service);
   return c;
 }
 
@@ -452,7 +454,8 @@ export function terrainBrut(ratio, bilan) { return TERRAIN.incidents * ratio + T
 export function ipzComposantes(zone, { ratio = 1, bilan = 0, revenus = null } = {}) {
   return {
     satisfaction: clamp(zone.satisfaction, 0, 100),
-    affaires: clamp(terrainBrut(ratio, bilan), 0, 100),
+    // Règles v2 : plus de plafond dur à 100, la capacité construite continue de payer (moitié au-delà de 80).
+    affaires: REGLES.v2 ? clamp(terrainDoux(terrainBrut(ratio, bilan)), 0, 120) : clamp(terrainBrut(ratio, bilan), 0, 100),
     moral: clamp(zone.moral, 0, 100),
     budget: BUDGET_IPZ.mode === 'revenu' ? scoreRevenu(revenus || zone.revenus) : scoreBudget(zone.budget),
     reputation: clamp(zone.reputation, 0, 100),
@@ -540,7 +543,13 @@ export function ligneIpz(comp, hier, ipz, ipzHier, det) {
  * par saison contre 1,4 avec la moyenne simple (1,5 avec les 5 derniers jours seuls).
  */
 export function moyenneIpz(zone) {
-  const h = (zone.ipzHist || []).filter((x) => x && x.joue && Number.isFinite(x.v) && Number.isFinite(x.t));
+  // Règles v2 : tous les jours de la saison comptent (pilote automatique compris), et une zone arrivée en cours de saison
+  // compte ses jours d'avant à l'IPZ médian du district moins 5 (abandonner ou arriver tard ne rapporte plus).
+  const h = (zone.ipzHist || []).filter((x) => x && (x.joue || REGLES.v2) && Number.isFinite(x.v) && Number.isFinite(x.t));
+  if (REGLES.v2 && zone.avantArrivee && zone.avantArrivee.n > 0 && h.length) {
+    const t0 = Math.min(...h.map((x) => x.t));
+    for (let k = 1; k <= zone.avantArrivee.n; k++) h.push({ t: t0 - k, v: zone.avantArrivee.v });
+  }
   if (!h.length) return zone.toursJoues ? round1(zone.ipzSomme / zone.toursJoues) : 0;
   const tRef = Math.max(...zone.ipzHist.filter((x) => x && Number.isFinite(x.t)).map((x) => x.t));
   let s = 0, w = 0;

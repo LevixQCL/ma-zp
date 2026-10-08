@@ -1,5 +1,6 @@
 // Point d'entrée de l'application « Ma ZP ».
 import { basculerPiste, cibler } from './ui/pistes.js';
+import { appliquerRegles } from './engine/regles.js';
 import { CONFIG } from './config.js';
 import { installerCadenas } from './ui/cadenas.js';
 import { installerEnigmes } from './ui/enigmes.js';
@@ -326,7 +327,7 @@ async function openParty(id) {
   reprendreEntrainementLocal();
   if (!unsubState) {
     unsubState = S.backend.subscribeState(async (state) => {
-      S.state = migrateState(state);
+      S.state = migrateState(state); appliquerRegles(S.state);
       recalerJourSiBesoin();
       if (state && S.user && state.zones[S.user.uid]) { etape('Lecture des PV de la nuit…', 76); try { await loadTurnData(); } catch (e) { console.error(e); S.lastError = e; } }
       if (S.state) completerDepuisGazette(S.state, S.gazettes);
@@ -696,6 +697,7 @@ async function onClick(e) {
         S.draft.alloc[s2] -= n;
         S.ordersDirty = true; toast(`${n} agent${n > 1 ? 's' : ''} libéré${n > 1 ? 's' : ''} : place-les dans la zone de non-droit (Terrain) ou dans un autre service.`); rerender(); break;
       }
+      case 'doctrine': S.draft.doctrine = S.draft.doctrine === el.dataset.k ? null : el.dataset.k; S.ordersDirty = true; rerender(); break;
       case 'piste-toggle': basculerPiste(el.dataset.k); S.ordersDirty = true; rerender(); break;
       case 'dep-toggle': {
         const dd = (S.draft.depenses ||= { reserve: 0, reserveService: 'intervention' });

@@ -16,6 +16,16 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['À la prochaine saison : nouvelles règles (révision d’octobre)', [
+      ['Quand ?', 'au début de la prochaine saison (jamais en cours de saison : le classement en cours garde ses règles). Les nouvelles parties les ont tout de suite.'],
+      ['Doctrine de zone', 'au début de la saison, chaque chef de zone choisit une doctrine : Routière (amendes +20 %, satisfaction −0,3 par jour), De quartier (Proximité +10 %, satisfaction qui redescend bien moins vite, vagues reçues atténuées ; Intervention −5 %), Judiciaire (pièces d’enquête +25 %, Recherche +15 % ; Intervention −8 %), D’intervention (Intervention +12 %, flagrants délits +30 % ; usure des véhicules +50 %), Partenaire (un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 % ; capacité −3 %). Garder la même d’une saison à l’autre la fait monter en maîtrise (force +15 % par cran, jusqu’à 3 étoiles). Le Directeur met deux fois plus de temps à remarquer la routine d’une zone qui a une doctrine.'],
+      ['Classement', 'tous les jours de la saison comptent (pilote automatique compris), avec un poids d’ancienneté de 0,93 par jour (au lieu de 0,8). Une zone qui arrive en cours de saison compte ses jours d’avant à l’IPZ médian du district moins 5.'],
+      ['Poids de l’IPZ', 'satisfaction 25 %, résultats terrain 35 %, moral 10 %, budget 10 %, réputation 20 %. Le moral agit déjà sur l’efficacité de tous les agents : il ne compte plus deux fois. Le terrain n’a plus de plafond dur : au-delà de 80, chaque point compte moitié.'],
+      ['Pression', 'un incident de base de plus tous les 4 jours de la saison : en fin de saison, la capacité construite fait la différence.'],
+      ['Choix qui coûtent', 'deux dépenses du jour au plus (les agents de réserve comptent pour une, la carrosserie ne compte pas) ; la prime au personnel coûte le double si elle a déjà été versée la veille ; rythme allégé +2 de moral (au lieu de +5), rythme renforcé −3 (au lieu de −6) ; un dispositif complet d’opération met un agent en récupération le lendemain ; la grève se règle par un jour de récupération (des agents) au lieu d’une prime.'],
+      ['Énigmes', 'la prime « sans faute » donne +5 PS et +3 sur la jauge des skins (plus d’argent ni de moral) : les énigmes restent un plaisir, pas une obligation pour le classement.'],
+      ['Vagues', 'la zone qui fait fuir la délinquance chez une voisine gagne +5 PS, et la Gazette la nomme.'],
+    ]],
     ['Une enquête plus vivante (9 octobre)', [
       ['Énigme d’enquête', 'dès le tour du 9 octobre au soir, pendant un vol, la 3e énigme du jour devient l’énigme d’enquête (un « Qui ment ? » sur les témoins de la soirée). Réussie : une pièce de plus sur ta piste prioritaire (bouton sur la fiche du suspect), ou sur un suspect encore possible.'],
       ['3 énigmes qui comptent', 'bonus dès 2 bonnes réponses, prime à 3 sur 3 ; la 4e énigme reste là pour le plaisir (+5 PS si réussie), sans compter pour le bonus, la prime ni le classement.'],

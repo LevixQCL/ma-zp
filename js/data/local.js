@@ -36,7 +36,7 @@ export function createLocalBackend(config) {
 
   function freshPartie(id, nom, code) {
     const now = Date.now();
-    const state = createGame({ seed: `${config.seed}-demo-${id}`, turnDeadline: nextResolutionAfter(now, hour) });
+    const state = createGame({ seed: `${config.seed}-demo-${id}`, turnDeadline: nextResolutionAfter(now, hour), regles: 2 });
     // La démo ouvre directement sur l'affaire de meurtre écrite à la main, pour pouvoir la tester.
     // Avec « ?demo=rampe », elle ouvre sur la seconde (« Le notaire de la Rampe »).
     if (id === 'demo') {

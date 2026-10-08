@@ -1,4 +1,5 @@
 import { titresDefi } from './defis.js';
+import { DOCTRINES } from '../engine/constants.js';
 import { maxDemarchesDe } from '../engine/enquete.js';
 import { cetteNuitHtml, pistesHpHtml } from './pistes.js';
 import { noteVue } from './nouveautes.js';
@@ -388,7 +389,7 @@ export function renderHP() {
       <div class="mz-tete">
         ${S.player && S.player.blason && GRADES.indexOf(gradeFor(z.ps)) >= 4 ? blasonSvg(S.player.blason, z.couleur, 34) : `<span class="mz-coul" style="background:${esc(z.couleur)}"></span>`}
         <div class="mz-id">
-          <span class="mz-sur"><span style="color:var(--blue-soft)">ZP ${esc(z.code)} ${insigne(z.ps)}</span>${z.toursJoues >= 5 ? ` · ${rang}${rang === 1 ? 'er' : 'e'} sur ${total}` : ` · non classé (${z.toursJoues}/5 tours)`}${z.toursJoues ? ` · moy. ${fmt1(moyenneIpz(z))}` : ''}</span>
+          <span class="mz-sur"><span style="color:var(--blue-soft)">ZP ${esc(z.code)} ${insigne(z.ps)}</span>${z.doctrine && DOCTRINES[z.doctrine] ? ` · <span title="Doctrine : ${esc(DOCTRINES[z.doctrine].force)}">${DOCTRINES[z.doctrine].ico} ${esc(DOCTRINES[z.doctrine].nom)}${z.maitrise ? ` ${'★'.repeat(z.maitrise + 1)}` : ''}</span>` : ''}${z.toursJoues >= 5 ? ` · ${rang}${rang === 1 ? 'er' : 'e'} sur ${total}` : ` · non classé (${z.toursJoues}/5 tours)`}${z.toursJoues ? ` · moy. ${fmt1(moyenneIpz(z))}` : ''}</span>
           ${S.editingName ? `<form class="row" data-form="rename" style="gap:6px"><label class="sr" for="nom-zone">Nom de la zone</label>
             <input id="nom-zone" class="text" name="nom" maxlength="24" value="${esc(z.nom)}" style="min-height:36px;width:170px;font:700 18px var(--display)">
             <button class="btn primary small" type="submit">OK</button></form>`

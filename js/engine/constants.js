@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 107;
+export const APP_VERSION = 108;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -153,7 +153,7 @@ export const ENIGMES = { rateeMoral: 0, bonusMoral: 3, bonusBudget: 2, bonusCapa
 /** Chance qu'un agent chargé des énigmes décroche le bonus, selon le moral de la zone. */
 export const chanceDelegue = (moral) => { const d = ENIGMES.delegue; return Math.min(d.max, Math.max(d.min, d.base + ((Number(moral) || 50) - 50) * d.parMoral)); };
 /** Part des effectifs en Roulage au-delà de laquelle joue l'effet « chasse aux PV ». */
-export const seuilChasse = (z) => (z.infra && z.infra.anpr ? ROULAGE.chasseCameras : ROULAGE.chasse) + bonusEquip(z, 'roulage', 'chasse');
+export const seuilChasse = (z) => (z.infra && z.infra.anpr ? ROULAGE.chasseCameras : ROULAGE.chasse) + bonusEquip(z, 'roulage', 'chasse') + forceDoctrine(z, 'chasse');
 
 export const DEPENSES = {
   reserve:      { nom: 'Agents de réserve', cout: 1.5, max: 4, efficacite: 0.8, texte: '1,5 k€ par agent, pour la journée, dans le service de ton choix (efficacité 80 %)' },
@@ -428,3 +428,38 @@ export function tourEffet(decision, turn) {
   if (decision.type === 'agrandir') return turn + TRAVAUX_TOURS;
   return null;
 }
+
+// ───────────── Révision d'oct. 2026 : règles « v2 » (lots 1 à 3), actives à partir de la saison qui suit la mise à jour ─────────────
+/** Drapeau des règles en vigueur pour la partie en cours de calcul ou d'affichage (posé par appliquerRegles, engine/regles.js). */
+export const REGLES = { v2: false };
+/**
+ * Doctrines de zone (choisies au début de chaque saison) : une vraie force, un vrai prix.
+ * `cap` : multiplicateur de capacité par service ('*' = tous). Maîtrise (même doctrine d'une saison à l'autre, 0 à 2) :
+ * la force grandit de `MAITRISE` par cran (le prix ne bouge pas).
+ */
+export const DOCTRINES = {
+  routiere: { nom: 'Routière', ico: '🚓', force: 'amendes +20 %, « chasse aux PV » repoussée de 15 points d’effectifs', prix: 'satisfaction −0,3 par jour (les automobilistes râlent)', brille: 'opérations de contrôle, besoin d’argent pour bâtir', amendes: 0.2, chasse: 0.15, satJour: -0.3 },
+  quartier: { nom: 'De quartier', ico: '🏘️', force: 'Proximité +10 %, la satisfaction redescend bien moins vite, vagues de délinquance reçues atténuées de moitié', prix: 'Intervention −5 % de capacité', brille: 'fêtes, tensions de quartier, vagues venues des voisins', derive: 0.4, vagues: 0.5, cap: { proximite: 1.1, intervention: 0.95 } },
+  judiciaire: { nom: 'Judiciaire', ico: '🔎', force: 'chances de pièce d’enquête +25 %, Recherche +15 %', prix: 'Intervention −8 % (patrouilles plus minces)', brille: 'semaines d’affaire, appuis PJF, traques', enquete: 0.25, cap: { recherche: 1.15, intervention: 0.92 } },
+  intervention: { nom: 'D’intervention', ico: '🚨', force: 'Intervention +12 %, flagrants délits 30 % plus fréquents', prix: 'usure des véhicules +50 %, −1 de moral de plus en rythme renforcé', brille: 'urgences, zone de non-droit, émeutes, nuits d’orage', flagrant: 0.3, usure: 1.5, renforce: -1, cap: { intervention: 1.12 } },
+  partenaire: { nom: 'Partenaire', ico: '🤝', force: 'un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 %', prix: 'capacité −3 % dans tous les services', brille: 'crises de district, assauts de la zone de non-droit, grandes parties', renfort: 1, entraide: 0.5, cap: { '*': 0.97 } },
+};
+export const IDS_DOCTRINES = Object.keys(DOCTRINES);
+export const MAITRISE = 0.15;
+/** Force d'une doctrine pour la clé `cle` (0 si la zone n'a pas cette doctrine), maîtrise comprise. */
+export function forceDoctrine(z, cle) {
+  const d = z && z.doctrine && DOCTRINES[z.doctrine];
+  if (!d || d[cle] == null) return 0;
+  const v = d[cle];
+  return typeof v === 'number' && cle !== 'derive' && cle !== 'vagues' && cle !== 'usure' && cle !== 'renforce' && cle !== 'satJour' ? v * (1 + MAITRISE * (z.maitrise || 0)) : v;
+}
+/** Multiplicateur de capacité de la doctrine pour un service (bonus grandi par la maîtrise, malus fixe). */
+export function multDoctrine(z, service) {
+  const d = z && z.doctrine && DOCTRINES[z.doctrine];
+  if (!d || !d.cap) return 1;
+  const m = d.cap[service] ?? d.cap['*'] ?? 1;
+  return m > 1 ? 1 + (m - 1) * (1 + MAITRISE * (z.maitrise || 0)) : m;
+}
+
+/** Prix de la prime au personnel ce soir : doublé si elle a déjà été versée la veille (règles v2). */
+export const coutPrime = (z, T) => DEPENSES.prime.cout * (REGLES.v2 && z && z.primeVeille === T - 1 ? 2 : 1);

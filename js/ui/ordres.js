@@ -12,6 +12,8 @@ import { participeCommune, agentsCommune } from '../engine/crise.js';
 import { engagementsDuJour } from './engagements.js';
 import { primeHtml } from './prime.js';
 import { previsionHtml, suivrePrevision } from './prevision.js';
+import { reglesV2, MAX_DEPENSES } from '../engine/regles.js';
+import { DOCTRINES, IDS_DOCTRINES, REGLES, coutPrime } from '../engine/constants.js';
 import { pistesOrdresHtml, resumePistes } from './pistes.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
@@ -41,7 +43,7 @@ export function initDraft() {
   const st = S.state;
   const dispo = agentsDisponibles(z, st.turn);
   const base = S.savedOrders || (z.dernierOrdre ? { alloc: z.dernierOrdre.alloc, rythme: z.dernierOrdre.rythme, patrouilles: z.dernierOrdre.patrouilles } : { alloc: DEFAULT_ALLOC, rythme: 'normal' });
-  const d = JSON.parse(JSON.stringify({ secteurs: base.secteurs || (!S.savedOrders && z.dernierOrdre && z.dernierOrdre.secteurs) || {}, alloc: { ...DEFAULT_ALLOC, ...(base.alloc || {}) }, rythme: base.rythme || 'normal', decision: base.decision || null, engagements: base.engagements || {}, evenement: base.evenement || 0, operation: base.operation || 'complet', patrouilles: base.patrouilles || {}, sansDecision: !!(S.savedOrders && S.savedOrders.sansDecision), depenses: (S.savedOrders && S.savedOrders.depenses) || { reserve: 0, reserveService: 'intervention' }, missions: (S.savedOrders && (S.savedOrders.missions || (S.savedOrders.mission ? [S.savedOrders.mission] : []))) || [], postes: (S.savedOrders && S.savedOrders.postes) || {}, ventes: (S.savedOrders && S.savedOrders.ventes) || [], pistesNew: (S.savedOrders && S.savedOrders.pistesNew) || [], ...enqueteDraft() }));
+  const d = JSON.parse(JSON.stringify({ secteurs: base.secteurs || (!S.savedOrders && z.dernierOrdre && z.dernierOrdre.secteurs) || {}, alloc: { ...DEFAULT_ALLOC, ...(base.alloc || {}) }, rythme: base.rythme || 'normal', decision: base.decision || null, engagements: base.engagements || {}, evenement: base.evenement || 0, operation: base.operation || 'complet', patrouilles: base.patrouilles || {}, sansDecision: !!(S.savedOrders && S.savedOrders.sansDecision), depenses: (S.savedOrders && S.savedOrders.depenses) || { reserve: 0, reserveService: 'intervention' }, missions: (S.savedOrders && (S.savedOrders.missions || (S.savedOrders.mission ? [S.savedOrders.mission] : []))) || [], postes: (S.savedOrders && S.savedOrders.postes) || {}, ventes: (S.savedOrders && S.savedOrders.ventes) || [], doctrine: (S.savedOrders && S.savedOrders.doctrine) || null, pistesNew: (S.savedOrders && S.savedOrders.pistesNew) || [], ...enqueteDraft() }));
   // Patrouilles : seulement dans mes quartiers.
   const mesQ = new Set((carteQuartiers(st).deZone[z.uid] || []).map(String));
   for (const k of Object.keys(d.patrouilles)) if (!mesQ.has(k)) delete d.patrouilles[k];
@@ -816,6 +818,17 @@ export function ouvertureOrdres(z) {
   out.prochain = ancien ? null : PALIERS_ORDRES.find(([, j]) => jour < j) || null;
   return out;
 }
+/** Choix de la doctrine de la saison (règles v2), tant qu'elle n'est pas fixée. */
+function doctrineHtml(z, d) {
+  if (!reglesV2(S.state) || z.doctrine) return '';
+  return `<section class="card" aria-label="Doctrine de la saison" style="gap:8px;border-color:var(--amber-line)">
+    <span class="kicker">Doctrine de la saison</span>
+    <p class="small" style="margin:0">Quelle zone veux-tu construire ? Ta doctrine donne une vraie force et un vrai prix, pour toute la saison (elle part avec tes ordres de ce soir). Garder la même d’une saison à l’autre la fait monter en maîtrise.${z.doctrinePrec && DOCTRINES[z.doctrinePrec] ? ` La saison dernière : ${DOCTRINES[z.doctrinePrec].ico} ${esc(DOCTRINES[z.doctrinePrec].nom)} (maîtrise ${(z.maitrisePrec || 0) + 1}).` : ''}</p>
+    ${IDS_DOCTRINES.map((k) => { const x = DOCTRINES[k]; return `<button type="button" class="choice" data-action="doctrine" data-k="${k}" aria-pressed="${d.doctrine === k}" style="text-align:left;align-items:flex-start">
+      <span style="font-size:15px;font-weight:700">${x.ico} ${esc(x.nom)}${z.doctrinePrec === k ? ' <span class="tiny" style="color:var(--amber)">· maîtrise +1</span>' : ''}</span>
+      <span class="s"><span class="ok">+ ${esc(x.force)}</span><br><span class="bad">− ${esc(x.prix)}</span><br><span class="muted">Brille : ${esc(x.brille)}</span></span></button>`; }).join('')}
+  </section>`;
+}
 export function renderOrdres() {
   const z = myZone(), st = S.state, d = S.draft, T = st.turn;
   const e = estimations();
@@ -839,9 +852,10 @@ export function renderOrdres() {
   const depensesHtml = `<div class="col" style="gap:6px">
       <p class="tiny muted" style="margin:0">Agents de réserve : ${dep.reserve ? `<strong>${dep.reserve}</strong> en ${SERVICE_LABELS[dep.reserveService]} (${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€)` : 'aucun'} · ils se règlent dans l’Affectation, plus haut.</p>
     </div>
+    ${REGLES.v2 ? `<p class="tiny ${nbDep >= MAX_DEPENSES ? 'warn' : 'muted'}" style="margin:0">${MAX_DEPENSES} dépenses par jour au plus (les agents de réserve comptent pour une, la carrosserie ne compte pas) : ${nbDep - (dep.carrosserie ? 1 : 0)} sur ${MAX_DEPENSES}.</p>` : ''}
     <div class="col" style="gap:6px">${depKeys.map((k) => `
-      <button type="button" class="choice" data-action="dep-toggle" data-k="${k}" aria-pressed="${!!dep[k]}" style="flex-direction:row;justify-content:space-between;text-align:left">
-        <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(DEPENSES[k].nom)}</span><span class="s">${esc(DEPENSES[k].texte)}${k === 'carrosserie' && Array.isArray(dep.carrosserie) && dep.carrosserie.length < cab ? ` · ${dep.carrosserie.length} sur ${cab} choisi${dep.carrosserie.length > 1 ? 's' : ''} depuis l’HP` : ''}${k === 'revision' ? ` · état actuel ${Math.round(100 - z.usure)} %${z.stats && z.stats.risqueAccident != null ? ` · risque d’accident hier ${fmt1(z.stats.risqueAccident)} %` : ''}` : ''}${k === 'carrosserie' ? ` · ${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} : sans réparation, −${Math.min(3, cab)} de satisfaction et de réputation par tour` : ''}</span></span><span class="mono small">${fmt1(k === 'carrosserie' ? coutCarrosserie(z, dep.carrosserie || true) : DEPENSES[k].cout)} k€</span></button>`).join('')}
+      <button type="button" class="choice" data-action="dep-toggle" data-k="${k}" aria-pressed="${!!dep[k]}" ${REGLES.v2 && !dep[k] && k !== 'carrosserie' && nbDep - (dep.carrosserie ? 1 : 0) >= MAX_DEPENSES ? 'disabled' : ''} style="flex-direction:row;justify-content:space-between;text-align:left">
+        <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(DEPENSES[k].nom)}</span><span class="s">${esc(DEPENSES[k].texte)}${k === 'carrosserie' && Array.isArray(dep.carrosserie) && dep.carrosserie.length < cab ? ` · ${dep.carrosserie.length} sur ${cab} choisi${dep.carrosserie.length > 1 ? 's' : ''} depuis l’HP` : ''}${k === 'revision' ? ` · état actuel ${Math.round(100 - z.usure)} %${z.stats && z.stats.risqueAccident != null ? ` · risque d’accident hier ${fmt1(z.stats.risqueAccident)} %` : ''}` : ''}${k === 'carrosserie' ? ` · ${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} : sans réparation, −${Math.min(3, cab)} de satisfaction et de réputation par tour` : ''}</span></span><span class="mono small">${fmt1(k === 'carrosserie' ? coutCarrosserie(z, dep.carrosserie || true) : k === 'prime' ? coutPrime(z, T) : DEPENSES[k].cout)} k€${k === 'prime' && coutPrime(z, T) > DEPENSES.prime.cout ? ' (déjà versée hier)' : ''}</span></button>`).join('')}
     </div>
     <p class="tiny muted" style="margin:0">Payées à 20:00 si le budget le permet (${fmt1(z.budget)} k€). Elles ne sont pas reconduites le lendemain.</p>`;
 
@@ -855,6 +869,7 @@ export function renderOrdres() {
       : !S.savedOrders && !S.ordersDirty && z.dernierOrdre ? `<button class="btn primary block" data-action="save-orders">Reprendre les ordres d’hier et valider</button>
         <p class="tiny muted" style="margin:-4px 0 0;text-align:center">Ou ajuste ci-dessous, puis valide.</p>` : ''}
 
+    ${doctrineHtml(z, d)}
     ${sousTutelle(z, T) ? `<section class="card red" aria-label="Zone sous tutelle"><span class="kicker" style="color:var(--red-soft)">Zone sous tutelle · jusqu’au tour ${z.tutelle.fin}</span>
       <span class="small">Pas de rythme renforcé, d’agents de réserve, de défi ni d’enchère. Grande décision : recruter seulement.</span></section>` : ''}
     ${primeHtml()}

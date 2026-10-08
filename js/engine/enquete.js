@@ -9,7 +9,7 @@ import { enService } from './flotte.js';
 // siens à prix normal, ceux des autres coûtent le double, d'où l'intérêt de partager.
 // Tout est déterministe : une affaire se recalcule à partir de la graine et de son numéro.
 import { makeRng, hashString } from './rng.js';
-import { bonusEquip, SERVICE_LABELS } from './constants.js';
+import { bonusEquip, SERVICE_LABELS, forceDoctrine } from './constants.js';
 import { LIEUX as LIEUX3, minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
 import { affaireMeurtre } from './meurtre-mons.js';
 import { affaireMeurtreRampe, evaluerHypothese } from './meurtre-rampe.js';
@@ -1324,7 +1324,7 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
   // Enquête de voisinage : plus on a de capacité de Recherche, plus elle rapporte ; une piste prioritaire la concentre.
   const piste = Number.isInteger(o.piste) && o.piste >= 0 && o.piste < aff.suspects.length ? o.piste : null;
   const surPiste = piste !== null && piecesLibres(aff).some((f) => !faitsConnus(d).includes(f) && Number(f.split(':')[1]) === piste);
-  const attendu = chanceVoisinage(state, z.uid, capa.recherche * (1 + bonusEquip(z, 'recherche', 'enquete')), surPiste ? piste : null);
+  const attendu = chanceVoisinage(state, z.uid, capa.recherche * (1 + bonusEquip(z, 'recherche', 'enquete') + forceDoctrine(z, 'enquete')), surPiste ? piste : null);
   const nb = Math.floor(attendu) + (zr.chance(attendu % 1) ? 1 : 0);
   const trouvees = [];
   for (let k = 0; k < nb; k++) {

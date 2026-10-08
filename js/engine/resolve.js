@@ -13,6 +13,8 @@ import {
 import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
 import { pistesDuSoir, lireOrdresPistes } from './pistes.js';
+import { appliquerRegles, reglesV2, MAX_DEPENSES, pressionSaison } from './regles.js';
+import { REGLES, forceDoctrine, DOCTRINES, coutPrime } from './constants.js';
 import { enquetePourTour, SLOT_QUATRE } from '../quests/quests.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
@@ -76,6 +78,8 @@ export function buildJoinZone(state, uid, profile, turn = state.turn, arrivee = 
   attribuerSites(tmp);
   z.site = tmp.zones[uid].site;
   ajusterBatiments(z);
+  // Règles v2 : les jours de la saison d'avant l'arrivée comptent à l'IPZ médian du district moins 5 (voir moyenneIpz).
+  if (reglesV2(state) && existants.length && turn > 1) z.avantArrivee = { n: turn - 1, v: round1(Math.max(0, median(existants.map((x) => Number(x.ipz) || 50)) - 5)) };
   return z;
 }
 
@@ -125,9 +129,9 @@ export function isOutdated(state) {
 export function isActive(z) { return z.toursSansOrdres < 3; }
 
 /** Crée une nouvelle partie. */
-export function createGame({ seed = 'delta', turnDeadline = 0 } = {}) {
+export function createGame({ seed = 'delta', turnDeadline = 0, regles = 1 } = {}) {
   const state = {
-    version: 1, minClientVersion: APP_VERSION, seed, season: 1, turn: 1, nextDeadline: turnDeadline,
+    version: 1, minClientVersion: APP_VERSION, seed, season: 1, turn: 1, nextDeadline: turnDeadline, regles,
     zones: {}, affaires: [], evenement: null, affaireSeq: 0, palmares: [], createdAt: turnDeadline,
   };
   state.nonDroit = creerNonDroit(seed, 1);
@@ -168,6 +172,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   const coursesUrgence = []; // temps des urgences jouées cette nuit : ajustent le temps cible de demain
   const incidentsAvant = Object.fromEntries(Object.keys((stateIn && stateIn.zones) || {}).map((u) => [u, separerIncidents(stateIn, u, resultatsIncidents(players[u], incidentsVisibles(stateIn, u)))]));
   const state = migrateState(clone(stateIn));
+  appliquerRegles(state);
   state.minClientVersion = Math.max(state.minClientVersion || 0, APP_VERSION);
   const T = state.turn;
   const rng = makeRng(`${state.seed}:s${state.season}:t${T}`);
@@ -231,6 +236,13 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.toursSansOrdres += 1;
       z._joue = false;
       z.rapport.push('Pas d’ordres ce tour : le pilote automatique a repris la dernière répartition.');
+    }
+    // Doctrine de la saison (règles v2) : choisie une fois, au plus tard en fin de 3e jour (sinon « sans doctrine »).
+    if (reglesV2(state) && !z.doctrine && orders[uid] && DOCTRINES[orders[uid].doctrine]) {
+      z.doctrine = orders[uid].doctrine;
+      z.maitrise = z.doctrinePrec === z.doctrine ? Math.min(2, (z.maitrisePrec || 0) + 1) : 0;
+      z.rapport.push(`Doctrine de la saison : ${DOCTRINES[z.doctrine].nom}${z.maitrise ? ` (maîtrise ${z.maitrise + 1})` : ''}. Force : ${DOCTRINES[z.doctrine].force}. Prix : ${DOCTRINES[z.doctrine].prix}.`);
+      push(3, 'Doctrine', `${zoneLabel(z)} choisit la doctrine ${DOCTRINES[z.doctrine].nom.toLowerCase()}`, `${DOCTRINES[z.doctrine].force}.`, uid);
     }
     // Mise à prix de l'enquête : le choix fait aujourd'hui (ou la confiscation par défaut).
     { const lp = appliquerPrime(z, ord[uid].prime, T, { services: SERVICES, niveauMax: NIVEAU_MAX }); if (lp) z.rapport.push(lp); }
@@ -390,7 +402,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const mis = mr ? figure(z, mr.role) : null;
     const nChef = mis ? CHEFS.renfort.agents : 0;
     if (mis) { z._missions.push(mis.role); z.rapport.push(`Mission : ${nomComplet(mis)} encadre ton renfort chez ${zoneLabel(c)} (compte pour ${nChef} agent de plus dans son dispositif).`); }
-    (renfortsRecus[r.cible] ||= []).push({ de: u, n: r.agents + nChef, chef: mis ? nomComplet(mis) : null });
+    const nDoc = r.agents > 0 ? Math.round(forceDoctrine(z, 'renfort')) : 0; // doctrine Partenaire : un agent de plus
+    (renfortsRecus[r.cible] ||= []).push({ de: u, n: r.agents + nChef + nDoc, chef: mis ? nomComplet(mis) : null });
     let { rep, ps } = gainRenfort(r.agents);
     const appel = op.appel ? DIR.appel : 1;
     if (op.appel) { rep += 1; ps = Math.round(ps * appel); }
@@ -576,7 +589,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       let txt = `Énigmes du jour : ${ok} bonne${ok > 1 ? 's' : ''} réponse${ok > 1 ? 's' : ''} sur ${qs.length}${faux && ENIGMES.rateeMoral ? ` (−${faux * ENIGMES.rateeMoral} de moral)` : ''}`;
       if (ok >= 2 && b) { const t = appliquerBonus(b); if (t) txt += `, ${t}`; }
       jalon(z, 'Énigmes : bonus choisi');
-      if (ok >= ENIGMES.primeSeuil) { const sf = ENIGMES.sansFaute, g = gainMoral(sf.moral, z.moral); z._ps += sf.ps; z.budget += sf.budget; z.moral += g; z._compta.push({ k: 'bonus', l: 'Prime « sans faute » (énigmes)', v: sf.budget }); txt += `, prime des ${ENIGMES.primeSeuil} réussies : +${sf.budget} k€, +${g} de moral, +${sf.ps} PS`; }
+      if (ok >= ENIGMES.primeSeuil) { const sf = ENIGMES.sansFaute, g = gainMoral(sf.moral, z.moral); z._ps += sf.ps; z.budget += sf.budget; z.moral += g; if (sf.budget) z._compta.push({ k: 'bonus', l: 'Prime « sans faute » (énigmes)', v: sf.budget }); if (sf.jauge) z.jaugeIncidents = (z.jaugeIncidents || 0) + sf.jauge;
+        txt += `, prime des ${ENIGMES.primeSeuil} réussies : ${[sf.budget ? `+${sf.budget} k€` : '', g ? `+${g} de moral` : '', `+${sf.ps} PS`, sf.jauge ? `+${sf.jauge} sur la jauge des skins` : ''].filter(Boolean).join(', ')}`; }
       paliersEnigmes(z, ok);
       z.rapport.push(`${txt}.`);
     }
@@ -638,6 +652,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       op.couvertures = [...(op.couvertures || []), round1(opx.couverture)];
       const n = Object.values(opx.pris).reduce((s2, v) => s2 + v, 0);
       z.rapport.push(`${op.titre} : ${n} agent${n > 1 ? 's' : ''} mobilisé${n > 1 ? 's' : ''} (${Math.round(opx.couverture * 100)} % du dispositif requis).`);
+      // Règles v2 : un dispositif complet fatigue (un agent en récupération demain).
+      if (REGLES.v2 && (o.operation || 'complet') === 'complet' && n >= 4) { z.blesses.push({ n: 1, retour: T + 2, motif: 'en récupération' }); z.rapport.push('Dispositif complet : un agent en récupération demain.'); }
       if (T === op.tourDebut + op.duree - 1) {
         const moy = op.couvertures.reduce((s2, v) => s2 + v, 0) / op.couvertures.length;
         if (moy >= 0.9) {
@@ -666,14 +682,20 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (dep && coutDepenses(dep, z) > 0) {
       const achats = [];
       let paye = 0;
-      const payer = (k, cout, fn) => { if (z.budget >= cout) { z.budget -= cout; paye += cout; fn(); achats.push(k); return true; } achats.push(`${k} (refusé : budget insuffisant)`); return false; };
+      // Règles v2 : deux dépenses par jour au plus (la carrosserie, une réparation, ne compte pas).
+      let nbDep = 0;
+      const payer = (k, cout, fn, compte = true) => {
+        if (compte && REGLES.v2 && nbDep >= MAX_DEPENSES) { achats.push(`${k} (refusé : ${MAX_DEPENSES} dépenses par jour au plus)`); return false; }
+        if (z.budget >= cout) { z.budget -= cout; paye += cout; fn(); achats.push(k); if (compte) nbDep += 1; return true; }
+        achats.push(`${k} (refusé : budget insuffisant)`); return false;
+      };
       if (dep.reserve) payer(`${dep.reserve} agent${dep.reserve > 1 ? 's' : ''} de réserve en ${SERVICE_LABELS[dep.reserveService]}`, dep.reserve * DEPENSES.reserve.cout, () => { reserve = dep.reserve; });
-      if (dep.prime) { const g = gainPrime(z.moral); if (payer(`prime au personnel (+${g} de moral)`, DEPENSES.prime.cout, () => { z.moral += g; })) achete.add('prime'); }
+      if (dep.prime) { const g = gainPrime(z.moral), cp = coutPrime(z, T); if (payer(`prime au personnel (+${g} de moral${cp > DEPENSES.prime.cout ? ', prix doublé : déjà versée hier' : ''})`, cp, () => { z.moral += g; z.primeVeille = T; })) achete.add('prime'); }
       if (dep.prevention) { if (payer('campagne de prévention (criminalité −6)', DEPENSES.prevention.cout, () => { z.criminalite = clamp(z.criminalite - 6, 10, 95); })) achete.add('prevention'); }
       if (dep.enqueteurs) { if (payer(`heures sup’ des enquêteurs (+${DEPENSES.enqueteurs.unites} unités sur les dossiers)`, DEPENSES.enqueteurs.cout, () => { z._travailBonus = DEPENSES.enqueteurs.unites; })) achete.add('enqueteurs'); }
       if (dep.soustraitance) { if (payer('sous-traitance administrative (−5 dossiers)', DEPENSES.soustraitance.cout, () => { z.paperasse = Math.max(0, z.paperasse - 5); })) achete.add('soustraitance'); }
       if (dep.revision) { if (payer(`révision du parc (état ${Math.round(100 - z.usure)} % → ${Math.round(100 - Math.max(0, z.usure - USURE.revision))} %)`, DEPENSES.revision.cout, () => { reviser(z, USURE.revision); })) achete.add('revision'); }
-      if (dep.carrosserie && (z.cabosses || []).length) { const nc = cabossesChoisis(z, dep.carrosserie).length; payer(`carrosserie (${nc} véhicule${nc > 1 ? 's' : ''} réparé${nc > 1 ? 's' : ''}${z.infra.garage ? ' à l’atelier' : ', immobilisé' + (nc > 1 ? 's' : '') + ' ce tour'})`, coutCarrosserie(z, dep.carrosserie), () => { reparerCabosses(z, T, dep.carrosserie); }); }
+      if (dep.carrosserie && (z.cabosses || []).length) { const nc = cabossesChoisis(z, dep.carrosserie).length; payer(`carrosserie (${nc} véhicule${nc > 1 ? 's' : ''} réparé${nc > 1 ? 's' : ''}${z.infra.garage ? ' à l’atelier' : ', immobilisé' + (nc > 1 ? 's' : '') + ' ce tour'})`, coutCarrosserie(z, dep.carrosserie), () => { reparerCabosses(z, T, dep.carrosserie); }, false); }
       z.rapport.push(`Dépenses du jour : ${achats.join(', ')}.`);
       if (paye) z._compta.push({ k: 'depenses', l: 'Dépenses du jour', v: -paye });
     }
@@ -724,7 +746,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
     jalon(z, 'Enquête (démarches)');
     // Intervention : incidents du jour.
-    const incidents = clamp(Math.round(1.5 + z.criminalite / 14) + (pr.incidents || 0) + zr.int(-1, 1), 1, 14);
+    const incidents = clamp(Math.round(1.5 + z.criminalite / 14) + (pr.incidents || 0) + pressionSaison(state, T) + zr.int(-1, 1), 1, 14);
     const traites = Math.min(incidents, Math.floor(cap.intervention / 1.1));
     const rates = incidents - traites;
     z.stats.incidents += incidents; z.stats.traites += traites;
@@ -740,7 +762,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Jauge de flagrant délit : la marge des patrouilles s'accumule jour après jour (plus de tirage au sort).
     // Les voitures anonymisées en service planquent aux bons endroits : la jauge monte aussi sans patrouilles libres.
     const filature = bonusFilature(z, T);
-    const gainFlag = Math.min(FLAGRANT.max, surplus * FLAGRANT.parUnite) + filature;
+    const gainFlag = Math.min(FLAGRANT.max * (1 + forceDoctrine(z, 'flagrant')), surplus * FLAGRANT.parUnite * (1 + forceDoctrine(z, 'flagrant'))) + filature;
     z.jaugeFlagrant = round1(Math.min(1.5, (z.jaugeFlagrant || 0) + gainFlag) * 100) / 100;
     if (z.jaugeFlagrant < 0.995 && gainFlag > 0) z.rapport.push(`${filature ? 'Patrouilles libres et planques en voiture banalisée' : 'Patrouilles libres'} : jauge de flagrant délit ${Math.round(z.jaugeFlagrant * 100)} % (+${Math.round(gainFlag * 100)} % aujourd’hui${filature ? `, dont ${Math.round(filature * 100)} % par les anonymes` : ''} ; à 100 %, flagrant délit).`);
     if (z.jaugeFlagrant >= 0.995) {
@@ -817,7 +839,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     jalon(z, 'Le parquet réclame les dossiers en retard');
 
     // Roulage : amendes et sécurité routière.
-    const recettes = cap.roulage * ECONOMIE.amendeParCapacite * (1 + bonusEquip(z, 'roulage', 'amendes'));
+    const recettes = cap.roulage * ECONOMIE.amendeParCapacite * (1 + bonusEquip(z, 'roulage', 'amendes') + forceDoctrine(z, 'amendes'));
     const totalAlloc = SERVICES.reduce((s, k) => s + alloc[k], 0) || 1;
     if (pr.roulageMin) {
       if (alloc.roulage >= pr.roulageMin) { z.satisfaction += 2; z.rapport.push('Contrôles de vitesse demandés par les riverains : assurés (+2 de satisfaction).'); }
@@ -884,7 +906,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Usure : un peu chaque jour, et surtout à chaque intervention (répartie sur le parc).
     // Chaque véhicule s'use selon son modèle (électriques −40 %, fourgons −20 %).
     const avant = z.usure;
-    usureDuTour(z, traites, !!z.infra.garage);
+    usureDuTour(z, traites * (forceDoctrine(z, 'usure') || 1), !!z.infra.garage);
     const etat = Math.round(100 - z.usure), malus = Math.round((1 - malusEtat(etat)) * 100);
     z.rapport.push(`Véhicules : ${traites} intervention${traites > 1 ? 's' : ''}, usure +${fmt1(z.usure - avant)} %, état du parc ${etat} %${malus ? ` (Intervention −${malus} %, pense à une révision)` : ''}.`);
     // Accident de véhicule de service : le risque suit la façon dont la zone roule.
@@ -906,7 +928,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const tr = tauxRetourMoral(z.moral);
     z.moral += (MORAL.cible - z.moral) * tr;
     jalon(z, `Retour naturel vers ${MORAL.cible} : ${Math.round(tr * 100)} % de l’écart (${fmt1(m0)} → ${MORAL.cible})`);
-    z.moral += RYTHMES[o.rythme].moral;
+    z.moral += RYTHMES[o.rythme].moral + (o.rythme === 'renforce' ? forceDoctrine(z, 'renforce') : 0);
     jalon(z, `Rythme ${RYTHMES[o.rythme].label.toLowerCase()}`);
     if (z.infra.sport) z.moral += 1;
     jalon(z, 'Salle de sport');
@@ -915,7 +937,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.renforceSuite = o.rythme === 'renforce' ? z.renforceSuite + 1 : 0;
 
     // Dérives naturelles.
-    { const ts = tauxDerive('satisfaction', z.satisfaction); z.satisfaction += (DERIVE.satisfaction.cible - z.satisfaction) * ts;
+    { const ts = tauxDerive('satisfaction', z.satisfaction) * (forceDoctrine(z, 'derive') || 1); z.satisfaction += (DERIVE.satisfaction.cible - z.satisfaction) * ts + forceDoctrine(z, 'satJour');
       jalon(z, `Retour naturel vers ${DERIVE.satisfaction.cible} : ${Math.round(ts * 100)} % de l’écart`); }
     { const tp = tauxDerive('reputation', z.reputation); z.reputation += (DERIVE.reputation.cible - z.reputation) * tp;
       jalon(z, `Retour naturel vers ${DERIVE.reputation.cible} : ${Math.round(tp * 100)} % de l’écart`); }
@@ -996,7 +1018,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       push(5, 'Trophée', `${zoneLabel(z)} décroche le trophée « ${TROPHEE[id].nom} »`, TROPHEE[id].texte + '.', uid);
     }
     if (z.ipzHist.length > 30) z.ipzHist.shift();
-    const psSolo = Math.min(PS.plafondJour, z._ps), psEntr = Math.min(PS.plafondEntraide, z._psEntraide || 0);
+    const psSolo = Math.min(PS.plafondJour, z._ps), psEntr = Math.min(PS.plafondEntraide * (1 + forceDoctrine(z, 'entraide')), z._psEntraide || 0);
     z.ps += psSolo + psEntr;
     // Au-delà du plafond du jour, les PS ne sont plus perdus : 1 point de jauge des skins par tranche de 5.
     const psTrop = Math.max(0, (z._ps || 0) - PS.plafondJour), jaugeSurplus = Math.floor(psTrop / 5);
@@ -1235,6 +1257,8 @@ function finDeSaison(state, classement) {
   const oldSeason = state.season;
   state.season += 1;
   state.turn = 1;
+  // Révision d'oct. 2026 : la nouvelle saison passe aux règles v2 (classement, doctrines, choix qui coûtent).
+  state.regles = 2;
   state.affaires = [];
   state.evenement = null;
   state.nonDroit = creerNonDroit(state.seed, state.season);
@@ -1248,6 +1272,8 @@ function finDeSaison(state, classement) {
     nz.bilan = { season: oldSeason, gagnes: bilan.gagnes, moyenne: bilan.moyenne, cas: bilan.cas, fin: BILAN.tours, clos: !bilan.cas.length };
     nz.infra = { ...(z.infra || {}) };
     nz.equipe = z.equipe || creerEquipe(uid);
+    // Doctrine : à rechoisir ; garder la même fait monter la maîtrise.
+    if (z.doctrine) { nz.doctrinePrec = z.doctrine; nz.maitrisePrec = z.maitrise || 0; }
     nz.trophees = z.trophees || [];
     if (z.affiches) nz.affiches = z.affiches;
     if (z.plaques) nz.plaques = z.plaques;
