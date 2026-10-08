@@ -376,8 +376,11 @@ export const EVENEMENTS = [
   { id: 'badgeJ', f: 'occ:4', de: hm(21, 0), a: hm(22, 25), qui: 4, t: 'Thibault seul au bureau (badges, caméra du couloir)' },
 ];
 
-/** L'affaire, au format des affaires générées (champs supplémentaires : meurtre, sceneSeq, charges, confront…). */
-export function affaireMeurtreRampe(n) {
+/**
+ * L'affaire, au format des affaires générées (champs supplémentaires : meurtre, sceneSeq, charges, confront…).
+ * `variante` : 'a' (l'histoire d'origine, par défaut) ou 'b' (voir VARIANTES_RAMPE plus bas).
+ */
+export function affaireMeurtreRampe(n, variante = 'a') {
   const suspects = SUSPECTS.map((s, i) => ({
     ...s, coupable: i === COUPABLE, tech: false,
     statut: { mob: true, moy: true, occ: i === COUPABLE },
@@ -390,7 +393,7 @@ export function affaireMeurtreRampe(n) {
     ...reponses,
     ...RECOUPEMENTS.map((r) => r.f), ...DECLICS.map((d) => d.f),
   ];
-  return {
+  const aff = {
     n, id: `aff${n}`, meurtre: true, cas: 'rampe', ville: 'mons', carte: true, prof: true, travaux: null,
     pos: 'scene', titre: 'Le notaire de la Rampe', texte: 'Un notaire honoraire a été retrouvé mort au pied de son escalier, Rampe Sainte-Waudru, sous la Collégiale.',
     butin: 'un dossier', lieu: 'la maison de la Rampe Sainte-Waudru', pres: 'de la Rampe Sainte-Waudru',
@@ -464,5 +467,156 @@ export function affaireMeurtreRampe(n) {
       'Thibault Lempereur avait couvert Grégoire en croyant à une maîtresse. Son vieux dossier de 2004 et sa commission en faisaient un suspect commode ; les badges de l’immeuble le montrent seul à son bureau toute la soirée.',
     ].join('\n'),
     accroche: 'Cinq proches, cinq mensonges, une vieille histoire de Doudou : un seul a tué.',
+  };
+  return variante === 'b' ? varianteB(aff) : aff;
+}
+
+// ─────────────────────────────── Variantes ───────────────────────────────
+// L'affaire se rejoue : à l'ouverture, la partie tire une variante (graine + n° de l'affaire), gardée dans l'état
+// (state.variantes, voir enquete.js). Sans variante enregistrée : l'histoire d'origine, à l'identique.
+//  · 'a' : l'histoire d'origine. Grégoire Wautelet, le n° 7, a tué ; Thibault Lempereur le couvre.
+//  · 'b' : les rôles du bureau du boulevard Dolez s'inversent. Le n° 7 de 1999, c'était Thibault Lempereur, alors
+//    clerc à l'étude (Grégoire portait le 11). Thibault quitte le bureau à 20:55 en demandant à Grégoire de le couvrir
+//    (« une histoire de femme ») ; il tue à 21:58, puis entre à 22:31 au bar des Échevins, où dîne le comité, et
+//    envoie le SMS de 22:41 depuis les toilettes. Vendredi à 10:14, il appelle Grégoire pour caler leur version, et
+//    lui glisse que le notaire « a écrit à sa fille à onze heures moins vingt » : Grégoire le répète dans son
+//    audition. Étienne Wautelet avait payé Rudy pour toute la bande, pour que le nom de son fils ne traîne pas
+//    dans une histoire de noyée.
+// Les documents du premier jour (journal, PV, auditions, fiches des suspects) et toutes les pièces de la scène sont
+// les mêmes dans les deux variantes : on ne reconnaît la variante qu'en enquêtant sur les personnes.
+export const VARIANTES_RAMPE = ['a', 'b'];
+const COUPABLE_B = 4;
+
+const TEXTES_B = {
+  // Grégoire (1) : innocent, il couvre Thibault en croyant à une maîtresse.
+  'occ:1': 'Brasserie des Échevins : Grégoire Wautelet arrive au dîner du comité à 22:20, en sortant du bureau, et ne quitte pas la table jusqu’à 00:30. Vers 22:31, Thibault Lempereur entre au bar « saluer le comité » ; il y reste jusqu’à 22:52. Le serveur : il s’est absenté aux toilettes de 22:38 à 22:47 environ. Un convive : « Vers 22:35, un GSM a vibré longtemps dans la poche de Thibault, au bar ; il ne l’a pas sorti. » Thibault Lempereur confirme qu’ils étaient ensemble au bureau jusqu’à 22:10.',
+  'mob:1': 'GSM de Grégoire Wautelet : allumé toute la soirée ; il borne au boulevard Dolez jusqu’à 22:12, puis sur la Grand-Place. Vendredi, 10:14 : appel reçu de Thibault Lempereur, 6 minutes, quelques heures avant son audition. Comptes : Wautelet Développement doit 1,2 million à sa banque ; le projet de la Rampe, qui suppose le rachat de la maison Hennebert, conditionne le prêt.',
+  'moy:1': 'Perquisition chez Grégoire Wautelet, à Nimy : les plans du projet de la Rampe, le mandat de vente signé avec Thibault Lempereur (5 % du prix pour lui), et une lettre de la victime, datée de septembre : « La maison n’est pas à vendre, Grégoire. Ni à toi, ni à personne. Ton parrain. » Rien qui vienne de la Rampe : ni cendres, ni papiers du Cercle.',
+  // Thibault (4) : l'assassin.
+  'occ:4': 'Badges de l’immeuble du boulevard Dolez : Grégoire Wautelet entre à 18:12 et sort à 22:10 ; Thibault Lempereur entre à 18:40, sort à 20:55 et ne revient pas. La caméra du couloir montre Grégoire seul à son bureau de 21:00 à 22:10. Thibault Lempereur n’était pas avec lui.',
+  'mob:4': 'Comptes de Thibault Lempereur : un mandat de vente, signé avec Wautelet Développement, lui promet 5 % du prix de la maison de la Rampe (environ 40 000 €). GSM : éteint de 20:58 à 22:56 (« batterie à plat », dit-il). Vendredi à 10:14, il appelle Grégoire Wautelet, 6 minutes, quelques heures avant l’audition de celui-ci.',
+  'moy:4': 'Perquisition chez Thibault Lempereur : dans la cheminée, des cendres fraîches. Un fragment de papier à en-tête du Cercle Saint-Georges a échappé au feu : « …euilles · n° 7 : T. Lemp… ». Un coin de photo, du lierre sur un bras. Dans sa voiture, un ticket de pressing de vendredi, 8:05 : « manteau trois-quarts noir, à capuche ». Dans un tiroir, une lettre de la victime, datée de septembre : « Je n’ai rien oublié de 2004, Thibault. Ne revenez plus me parler de vendre. J.-B. »',
+  'x:liste': 'Recoupement : le Cercle Saint-Georges garde la liste de ses acteurs. Combat de 1999, hommes de feuilles : douze noms. Brassard n° 7 : Thibault Lempereur, 25 ans, alors clerc à l’étude Hennebert. (Grégoire Wautelet portait le n° 11.)',
+};
+const COUVERTURE_B = 'D’accord. Thibault n’était pas avec moi. Il est parti vers neuf heures moins cinq. Il m’a demandé de dire qu’il était au bureau jusqu’à dix heures, « une histoire de femme, ne pose pas de questions ». Vendredi matin, avant que vous m’appeliez, il m’a téléphoné pour qu’on dise la même chose. J’ai cru à une maîtresse.';
+// Réauditions de la variante b (mêmes règles : clé = suspect, pièce opposée → [code, réponse]).
+const REACTIONS_B = {
+  0: REACTIONS[0],
+  1: {
+    'occ:4': ['Rb', COUVERTURE_B],
+    'mob:1': ['Rb', COUVERTURE_B],
+    'mob:0': ['Ra', 'Le SMS d’Élodie ? C’est Thibault qui m’en a parlé, vendredi matin, au téléphone : « Il était encore en vie à onze heures moins vingt, il a écrit à sa fille. On ne risque rien, ni toi ni moi. » Je n’ai pas demandé comment il le savait. Je l’ai répété, c’est tout.'],
+    'occ:1': ['Rc', 'Thibault au bar ? Oui, il est passé saluer la table, vers dix heures et demie, les cheveux trempés de brouillard. Il m’a glissé : « On était ensemble jusqu’à dix heures, hein. » Je n’y ai plus pensé.'],
+    'x:liste': ['Rd', 'Le n° 7 ? Pas moi : j’avais le 11. Le 7, c’était Thibault. Lise, on la connaissait tous. Cette nuit-là, on était chez Rudy, et des gens sont partis avant moi ; je ne saurais plus dire qui. Mon père m’a seulement dit de ne jamais parler de cette soirée.'],
+    'Rb:2': ['Re', 'Mon père a payé Rudy ? … Il disait que les Wautelet n’avaient rien à faire dans une histoire de noyée. Je croyais qu’il me protégeait, moi. Je n’ai jamais su qui il protégeait vraiment.'],
+  },
+  2: {
+    'mob:2': REACTIONS[2]['mob:2'],
+    'c:acte': ['Rb', 'Étienne Wautelet m’a prêté six cent mille francs en juillet nonante-neuf, pour que je dise à la police que son fils et ses copains étaient au café jusqu’à deux heures, la nuit où la petite Moreels s’est noyée. C’est faux. Thibault Lempereur, le clerc du notaire, est parti avec elle vers onze heures. Je ne l’ai jamais revu de la nuit. Le vieux Wautelet ne voulait pas que le nom de son fils traîne dans une histoire de noyée : ils étaient tous à ma table, et c’est lui qui payait les tournées.'],
+    'moy:2': REACTIONS[2]['moy:2'],
+    'c:lettres': REACTIONS[2]['c:lettres'],
+  },
+  3: REACTIONS[3],
+  4: {
+    'mob:0': ['Ra', 'Le SMS d’Élodie ? Je… On m’en a parlé. Au bar, sans doute. Ou c’était dans le journal. Tout se sait, à Mons.'],
+    'occ:4': ['Rb', 'Bon. Je n’étais pas au bureau. J’étais chez une femme, rue de Nimy. Je ne dirai pas son nom : ma femme n’en sait rien. J’ai demandé à Grégoire de me couvrir, c’est tout.'],
+    'x:liste': ['Rc', REACTIONS[1]['x:liste'][1]],
+    'x:wifi': ['Rd', REACTIONS[1]['x:wifi'][1]],
+    'moy:2': ['Re', REACTIONS[1]['moy:2'][1]],
+    'Rb:2': ['Rf', 'Rudy ment. Il a toujours menti. Le vieux Wautelet l’a aidé à garder son café, et voilà comment il remercie la famille.'],
+    'occ:1': ['Rg', 'Le bar des Échevins ? J’y suis passé en rentrant, saluer le comité. Un verre. Ça ne fait pas de moi un assassin.'],
+    'Ra:1': ['Rh', 'Grégoire se trompe. C’est lui qui m’a parlé de ce SMS, vendredi matin. Il était à table aux Échevins, il a dû l’entendre là-bas.'],
+    'c:acte': ['Ri', REACTIONS[4]['c:acte'][1]],
+  },
+};
+const quoiOpposeB = (f, i) => (f === 'occ:1' && Number(i) === 4 ? 'la vérification d’alibi de Grégoire' : quoiOppose(f, i));
+const TITRES_B = { ...TITRES0 };
+for (const [i, t] of Object.entries(REACTIONS_B)) for (const [f, [code]] of Object.entries(t)) if (!TITRES_B[`${code}:${i}`]) TITRES_B[`${code}:${i}`] = `Réaudition · ${NOMS_R[i]} · face à ${quoiOpposeB(f, i)}`.replace('face à le ', 'face au ').replace('face à les ', 'face aux ').replace(/ de (?=[AEIOUÉ])/g, ' d’');
+
+// Chronologie de la variante b.
+const EVENEMENTS_B = [
+  ...EVENEMENTS.filter((e) => !['toilettes', 'vibre', 'telO', 'badgeO', 'badgeJ'].includes(e.id)),
+  { id: 'bar', f: 'occ:1', de: hm(22, 31), a: hm(22, 52), qui: 4, t: 'Thibault au bar des Échevins' },
+  { id: 'toilettes', f: 'occ:1', de: hm(22, 38), a: hm(22, 47), qui: 4, t: 'Thibault aux toilettes des Échevins' },
+  { id: 'vibre', f: 'occ:1', de: hm(22, 35), qui: 4, t: 'Un GSM vibre longtemps dans la poche de Thibault' },
+  { id: 'telO', f: 'mob:4', de: hm(20, 58), a: hm(22, 56), qui: 4, t: 'GSM de Thibault éteint' },
+  { id: 'badgeO', f: 'occ:4', de: hm(20, 55), qui: 4, t: 'Thibault quitte l’immeuble du boulevard Dolez (badge)' },
+  { id: 'badgeJ', f: 'occ:4', de: hm(21, 0), a: hm(22, 10), qui: 1, t: 'Grégoire seul au bureau (badges, caméra du couloir)' },
+];
+const RELECTURES_B = { ...RELECTURES, 'moy:2': [{ si: 'x:liste', t: 'Brassard n° 7 : Thibault Lempereur, d’après la liste du Cercle.' }] };
+
+// Hypothèse au juge, variante b : les règles d'origine, sauf celles qui tiennent aux rôles de Grégoire et de Thibault.
+const REGLES_B = {
+  ...REGLES,
+  // Les Échevins : Grégoire à table dès 22:20 ; Thibault au bar de 22:31 à 22:52, et « au bureau jusqu'à 22:10 »
+  // tant que les badges n'ont pas fait tomber sa version.
+  'occ:1': (i, s, K) => (i === 1 ? -1 : i === 4 ? (s === 3 ? -1 : K('occ:4') || K('Rb:1') ? 0 : -1) : 0),
+  'mob:1': (i, s) => (i === 1 && s <= 2 ? -1 : 0),
+  'occ:4': (i, s) => (i === 1 ? -1 : i === 4 && s <= 2 ? 1 : 0),
+  'mob:4': (i, s) => (i === 4 && s <= 2 ? 1 : 0),
+  'Rb:1': (i, s) => (i === 1 ? -1 : i === 4 && s <= 2 ? 1 : 0),
+  'Ra:1': (i) => (i === 4 ? 1 : 0),
+  'Rc:1': (i) => (i === 4 ? 1 : 0),
+  'Rd:1': (i) => (i === 4 ? 1 : 0),
+  'Rb:4': (i) => (i === 4 ? 1 : 0),
+  'Ra:4': (i) => (i === 4 ? 1 : 0),
+  'Rc:4': (i) => (i === 4 ? 1 : 0),
+  'Rg:4': (i) => (i === 4 ? 1 : 0),
+  'Rh:4': (i) => (i === 4 ? 1 : 0),
+  'x:wifi': (i, s) => (s >= 3 ? -1 : i === 1 || i === 4 ? 1 : 0),
+  'x:liste': (i) => (i === 4 ? 1 : 0),
+  'x:pv1999': (i) => (i === 1 || i === 4 ? 1 : 0),
+  'Rb:2': (i) => (i === 4 ? 1 : 0),
+};
+/** Hypothèse « suspect i, créneau s » face aux pièces connues, variante b : { pour: [f], contre: [f] }. */
+export function evaluerHypotheseB(connus, i, s) {
+  const K = (f) => connus.has(f);
+  const pour = [], contre = [];
+  for (const [f, r] of Object.entries(REGLES_B)) {
+    if (!K(f)) continue;
+    const v = r(i, s, K);
+    if (v > 0) pour.push(f); else if (v < 0) contre.push(f);
+  }
+  return { pour, contre };
+}
+
+const RECIT_FINAL_B = [
+  'Thibault Lempereur, l’ancien clerc, avait tué Jean-Baptiste Hennebert jeudi vers 21:58, d’un coup du sceau de l’étude. Il avait quitté le bureau du boulevard Dolez à 20:55 en demandant à Grégoire Wautelet de le couvrir (« une histoire de femme »), et éteint son GSM. Il a maquillé une chute au pied de l’escalier, lavé son verre, emporté le dossier « L. M. — 1999 », le sceau et le GSM de la victime. À 22:31, il est entré au bar de la Brasserie des Échevins, où dînait le comité du Cercle ; à 22:41, depuis les toilettes, il a envoyé à Élodie « Reviens. Il faut qu’on parle. Papa. » pour faire vivre le mort. Le GSM, lui, s’était connecté au wifi de la brasserie. Vendredi matin, il a appelé Grégoire pour caler leur version, et lui a glissé que le notaire « avait écrit à sa fille à onze heures moins vingt » : Grégoire l’a répété dans son audition, sans savoir que personne ne pouvait le savoir.',
+  'Pourquoi ? Le soir du Doudou 1999, Thibault, 25 ans, clerc de l’étude et homme de feuilles n° 7, était parti au bord du canal avec Lise Moreels, 19 ans. Elle était tombée à l’eau pendant une dispute ; il était rentré chez lui sans appeler personne. Étienne Wautelet, qui ne voulait pas que le nom de son fils traîne dans une histoire de noyée, avait acheté le témoignage de Rudy Stiévenart pour toute la bande. Vingt-sept ans plus tard, Jean-Baptiste Hennebert avait tout compris, et avait convoqué le n° 7 jeudi soir, avant d’aller chez le juge.',
+  'Ce que personne n’avait compris : Lise était la fille cachée du notaire. Le vieil homme aux « petits dossiers » n’enquêtait pas pour tenir quelqu’un : il voulait, lundi, la reconnaître enfin. L’acte de prêt de juillet 1999, celui qui avait payé le silence, c’est lui qui l’avait rédigé et signé ; et le n° 7 travaillait alors dans son étude, sous ses yeux. « Vous étiez là, Maître », écrivait le corbeau.',
+  'Élodie Hennebert avait menti sur sa soirée : elle était venue à 21:04 demander 40 000 € pour sa pharmacie, et repartie à 21:31, furieuse, en apprenant qu’elle avait eu une sœur. Son verre au salon, le SMS effacé, une caméra qui la montrait ressortir « à 22:31 » : la coupable idéale. Mais la caméra de la kiné était restée à l’heure d’été, et à 21:47 son père était vivant, au téléphone, et ouvrait la porte à un homme.',
+  'Rudy Stiévenart avait effacé le dernier message de la victime parce qu’il était le corbeau : celui qui avait menti pour les Wautelet en 1999 et qui, menacé d’expulsion, voulait que le notaire fasse ce qu’il n’avait jamais osé faire. Il n’a pas quitté son comptoir de la soirée.',
+  'Samira Debouck avait mis au clou la montre de gousset du père de la victime. Elle l’avait rachetée jeudi et était venue la remettre en cachette, à 22:36. Elle a trouvé le corps, lâché la montre sur la console et fui ; le lendemain, elle a « découvert » le corps. Elle a vu ce que personne d’autre n’a vu : le GSM n’était déjà plus sur le bureau, avant le SMS de 22:41.',
+  'Grégoire Wautelet, le filleul, avait couvert Thibault en croyant à une maîtresse, et répété sans y penser ce que Thibault lui avait dit du SMS. Son projet immobilier, sa place à la table des Échevins et ce SMS dont il parlait trop tôt en faisaient un suspect commode ; les badges de l’immeuble le montrent seul à son bureau jusqu’à 22:10.',
+].join('\n');
+
+/** Variante b, construite sur l'affaire d'origine : seules changent les pièces de l'enquête et ce qui en découle. */
+function varianteB(a) {
+  const textes = Object.fromEntries(Object.entries(a.textes).filter(([f]) => !/^R[a-z]:\d$/.test(f)));
+  Object.assign(textes, TEXTES_B);
+  for (const [i, t] of Object.entries(REACTIONS_B)) for (const [code, r] of Object.values(t)) textes[`${code}:${i}`] = r;
+  const reponses = [...new Set(Object.entries(REACTIONS_B).flatMap(([i, t]) => Object.values(t).map(([code]) => `${code}:${i}`)))];
+  return {
+    ...a,
+    variante: 'b',
+    suspects: a.suspects.map((s, i) => ({ ...s, coupable: i === COUPABLE_B, statut: { ...s.statut, occ: i === COUPABLE_B } })),
+    coupable: COUPABLE_B,
+    faits: [...a.faits.filter((f) => !/^R[a-z]:\d$/.test(f) && !f.startsWith('x:') && !f.startsWith('d:')), ...reponses, ...RECOUPEMENTS.map((r) => r.f), ...DECLICS.map((d) => d.f)],
+    textes, titres: { ...TITRES_B }, reactions: REACTIONS_B,
+    evenements: EVENEMENTS_B, relectures: RELECTURES_B, evaluer: evaluerHypotheseB,
+    charges: {
+      ...a.charges,
+      1: ['occ:4', 'mob:1', 'x:wifi', 'x:pv1999'],
+      4: ['c:acte', 'occ:4', 'occ:1', 'mob:4', 'x:liste', 'x:wifi', 'Rb:2', 'Rb:1', 'Ra:1'],
+    },
+    // Grégoire est blanchi par les badges et la caméra du couloir ; les autres, comme dans l'histoire d'origine.
+    innocente: { 0: a.innocente[0], 1: ['occ:4'], 2: a.innocente[2], 3: a.innocente[3] },
+    confront: {
+      decisives: ['x:wifi', 'moy:4', 'Rb:1', 'Ra:1'],
+      accablantes: ['A:4', 'x:wifi', 'moy:4', 'Rb:1', 'Ra:1', 'x:liste', 'Ra:4', 'Rb:4', 'Rc:4', 'Rd:4', 'Re:4', 'Rf:4', 'Rg:4', 'Rh:4', 'Ri:4', 'Rc:1', 'Rd:1',
+        'occ:1', 'mob:1', 'occ:4', 'mob:4', 'c:cam', 'x:heure', 'mob:2', 'Ra:2', 'Rb:2', 'Rc:2', 'mob:0', 'Rb:0', 'c:agenda', 'c:lettres', 'c:acte',
+        'moy:2', 'x:pv1999', 'c:tel1', 'c:tel2', 'r:tel', 'c:legiste2', 'Rc:0', 'Ra:3', 'r:mireille', 'd:corbeau', 'c:labo', 'Re:0'],
+    },
+    recitFinal: RECIT_FINAL_B,
   };
 }

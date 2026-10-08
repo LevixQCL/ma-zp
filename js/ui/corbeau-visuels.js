@@ -29,6 +29,26 @@ function ecranGsm(id, titre, contenu, { w = 220, h = 320 } = {}) {
     <rect x="46" y="30" width="${w - 92}" height="22" fill="#E3E6EA"/><text x="${w / 2}" y="45" text-anchor="middle" font-family="Instrument Sans, sans-serif" font-size="9" font-weight="700" fill="#222">${titre}</text>
     ${contenu}</g>${finPhoto(id, w, h, 0.1)}`);
 }
+/** La cassette d'étiqueteuse saisie (photo générée, sans texte) : légende de la saisie et ce que garde le ruban encreur. */
+const cassette = (id, legende, ruban) => svg(id, 1024, 559, `<image href="img/corbeau/cassette.webp" width="1024" height="559"/>
+    <g transform="translate(560 430)"><rect width="440" height="96" rx="4" fill="#F4F2EC" opacity=".96"/>${ligne(18, 30, 'Ruban encreur déroulé (négatif, lu à l’envers) :', { taille: 15 })}${ligne(18, 66, ruban, { taille: 17, gras: true })}</g>
+    <rect x="12" y="12" width="520" height="26" rx="3" fill="#000" opacity=".55"/>${ligne(22, 30, legende, { taille: 14, coul: '#F5F5F5' })}`);
+/** Registre du point relais de la librairie (lignes [heure de remise, expéditeur, destinataire, statut]). */
+const registreRelais = (id, lignes) => feuille(id, 280, 230, '#3E4A54', 1.5, `
+    ${ligne(36, 34, 'COLIS-POINT · REGISTRE DU POINT RELAIS', { taille: 7.5, gras: true })}
+    ${ligne(36, 46, 'Librairie Dufrasne · rue d’Havré · ouvert 9:30-18:30', { taille: 6.5, coul: '#555' })}
+    <path d="M36 54H246" stroke="#999"/>
+    ${lignes.map((r, k) => `${ligne(36, 72 + k * 22, r[0], { taille: 7.4 })}${ligne(96, 72 + k * 22, r[1], { taille: 7.4 })}${ligne(168, 72 + k * 22, r[2], { taille: 7.4 })}${ligne(214, 72 + k * 22, r[3], { taille: 7.4 })}<path d="M214 ${76 + k * 22}q8 -6 18 0q6 -8 12 2" stroke="#2A3A8A" fill="none"/>`).join('')}
+    ${ligne(36, 180, 'Signature du destinataire à la remise.', { taille: 6.5, coul: '#777' })}`);
+/** Écran de la plateforme de livraison : le trajet de Jordan (et, s'il y en a, un arrêt marqué sur la carte). */
+const gpsLivraisons = (id, arret, bilan) => ecranGsm(id, 'Livraisons · jeudi', `
+    <rect x="46" y="52" width="128" height="170" fill="#E8EEE4"/>
+    <g stroke="#FFFFFF" stroke-width="5"><path d="M50 120H170M110 56V220M60 70L160 200"/></g>
+    <path d="M70 70L92 98L104 120L122 140L132 172L150 196" stroke="#1E88E5" stroke-width="3" fill="none"/>
+    ${[[70, 70], [104, 120], [132, 172], [150, 196]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.5" fill="#E53935"/>`).join('')}
+    ${ligne(108, 114, '22:10', { taille: 6.5, coul: '#1E88E5', gras: true })}${ligne(112, 124, 'r. d’Havré · 18 km/h', { taille: 5, coul: '#333' })}${arret}
+    ${ligne(52, 240, 'Compte : Ryan L. · 21:30 → 22:45', { taille: 6.5 })}${ligne(52, 252, bilan, { taille: 6.5 })}`);
+
 // ───── Photos des pièces ─────
 export const PHOTOS_CORBEAU = {
   'c:labo1': (id) => svg(id, 320, 230, `${defsPhoto(id, 320, 230)}<rect width="320" height="230" fill="#26313A"/>
@@ -90,24 +110,11 @@ export const PHOTOS_CORBEAU = {
     ${ligne(14, 222, 'Perquisition Vanderhaegen · tiroir du bureau · pas de timbre', { taille: 6.5, coul: '#EEE' })}
     ${finPhoto(id, 300, 230, 0.12)}`),
 
-  'moy:4': (id) => svg(id, 1024, 559, `<image href="img/corbeau/cassette.webp" width="1024" height="559"/>
-    <g transform="translate(560 430)"><rect width="440" height="96" rx="4" fill="#F4F2EC" opacity=".96"/>${ligne(18, 30, 'Ruban encreur déroulé (négatif, lu à l’envers) :', { taille: 15 })}${ligne(18, 66, '« MADAME ODILE. NE SIGNEZ RIEN LUNDI. »', { taille: 17, gras: true })}</g>
-    <rect x="12" y="12" width="520" height="26" rx="3" fill="#000" opacity=".55"/>${ligne(22, 30, 'Perquisition Librairie Dufrasne · bac à papier · cassette usagée', { taille: 14, coul: '#F5F5F5' })}`),
+  'moy:4': (id) => cassette(id, 'Perquisition Librairie Dufrasne · bac à papier · cassette usagée', '« MADAME ODILE. NE SIGNEZ RIEN LUNDI. »'),
 
-  'mob:4': (id) => feuille(id, 280, 230, '#3E4A54', 1.5, `
-    ${ligne(36, 34, 'COLIS-POINT · REGISTRE DU POINT RELAIS', { taille: 7.5, gras: true })}
-    ${ligne(36, 46, 'Librairie Dufrasne · rue d’Havré · ouvert 9:30-18:30', { taille: 6.5, coul: '#555' })}
-    <path d="M36 54H246" stroke="#999"/>
-    ${[['LUN 10:12', 'Bol.com', 'J. Pire', 'remis'], ['MAR 11:40', 'Zalando', 'S. Cornez', 'remis'], ['MAR 18:41', 'AfficheExpress', 'M. Odon', 'remis'], ['MER 16:05', 'Amazon', 'G. Petit', 'remis']].map((r, k) => `${ligne(36, 72 + k * 22, r[0], { taille: 7.4 })}${ligne(96, 72 + k * 22, r[1], { taille: 7.4 })}${ligne(168, 72 + k * 22, r[2], { taille: 7.4 })}${ligne(214, 72 + k * 22, r[3], { taille: 7.4 })}<path d="M214 ${76 + k * 22}q8 -6 18 0q6 -8 12 2" stroke="#2A3A8A" fill="none"/>`).join('')}
-    ${ligne(36, 180, 'Signature du destinataire à la remise.', { taille: 6.5, coul: '#777' })}`),
+  'mob:4': (id) => registreRelais(id, [['LUN 10:12', 'Bol.com', 'J. Pire', 'remis'], ['MAR 11:40', 'Zalando', 'S. Cornez', 'remis'], ['MAR 18:41', 'AfficheExpress', 'M. Odon', 'remis'], ['MER 16:05', 'Amazon', 'G. Petit', 'remis']]),
 
-  'occ:3': (id) => ecranGsm(id, 'Livraisons · jeudi', `
-    <rect x="46" y="52" width="128" height="170" fill="#E8EEE4"/>
-    <g stroke="#FFFFFF" stroke-width="5"><path d="M50 120H170M110 56V220M60 70L160 200"/></g>
-    <path d="M70 70L92 98L104 120L122 140L132 172L150 196" stroke="#1E88E5" stroke-width="3" fill="none"/>
-    ${[[70, 70], [104, 120], [132, 172], [150, 196]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3.5" fill="#E53935"/>`).join('')}
-    ${ligne(108, 114, '22:10', { taille: 6.5, coul: '#1E88E5', gras: true })}${ligne(112, 124, 'r. d’Havré · 18 km/h', { taille: 5, coul: '#333' })}
-    ${ligne(52, 240, 'Compte : Ryan L. · 21:30 → 22:45', { taille: 6.5 })}${ligne(52, 252, '6 courses · 0 arrêt hors adresse', { taille: 6.5 })}`),
+  'occ:3': (id) => gpsLivraisons(id, '', '6 courses · 0 arrêt hors adresse'),
 
   'd:lettre': (id) => feuille(id, 260, 200, '#3E4A54', 3, `
     ${ruban(36, 50, ['VOUS', 'COMPTEZ', 'LES', 'LETTRES', '?'])}
@@ -116,6 +123,17 @@ export const PHOTOS_CORBEAU = {
     ${ruban(36, 122, ['LE', 'PRÉSIDENT', 'SAIT', 'OÙ', 'ELLE', 'EST.'])}
     ${ligne(36, 166, 'Sans timbre · boîte du commissariat', { taille: 6.6, coul: '#777' })}`, { papier: '#FFFFFF' }),
 };
+// Variante b (Jordan Lambotte, le corbeau) : sa cassette parle, celle de la librairie ne garde que des prix ; le GPS
+// garde son arrêt ; le colis de Gand a été retiré le mercredi. La photo de la cassette ne porte aucun texte.
+export const PHOTOS_CORBEAU_B = {
+  ...PHOTOS_CORBEAU,
+  'moy:3': (id) => cassette(id, 'Perquisition Lambotte · Jemappes · poubelle de l’atelier · cassette usagée', '« MADAME ODILE. NE SIGNEZ RIEN LUNDI. »'),
+  'moy:4': (id) => cassette(id, 'Perquisition Librairie Dufrasne · bac à papier · cassette usagée', '« POCHE · BD · 4,90 € · 12,50 € · POCHE »'),
+  'mob:4': (id) => registreRelais(id, [['LUN 10:12', 'Bol.com', 'J. Pire', 'remis'], ['MAR 11:40', 'Zalando', 'S. Cornez', 'remis'], ['MER 16:05', 'Amazon', 'G. Petit', 'remis'], ['MER 17:52', 'AfficheExpress', 'M. Odon', 'remis']]),
+  'occ:3': (id) => gpsLivraisons(id, `<circle cx="138" cy="150" r="5" fill="none" stroke="#E53935" stroke-width="2"/>${ligne(60, 162, 'arrêt 21:48 → 21:56', { taille: 5.6, coul: '#E53935', gras: true })}`, '6 courses · 1 arrêt (8 min)'),
+};
+/** Photos des pièces du corbeau dans la variante de l'affaire. */
+export const photosCorbeau = (variante) => (variante === 'b' ? PHOTOS_CORBEAU_B : PHOTOS_CORBEAU);
 
 // ───── La scène à fouiller ─────
 export const PHOTO_SCENE_CORBEAU = { src: 'img/corbeau/scene.webp', mini: 'img/corbeau/scene-mini.webp', w: 1376, h: 768 };

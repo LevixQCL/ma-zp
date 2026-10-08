@@ -11,9 +11,9 @@ import { enService } from './flotte.js';
 import { makeRng, hashString } from './rng.js';
 import { bonusEquip, SERVICE_LABELS, forceDoctrine } from './constants.js';
 import { LIEUX as LIEUX3, minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
-import { affaireMeurtre } from './meurtre-mons.js';
-import { affaireMeurtreRampe, evaluerHypothese } from './meurtre-rampe.js';
-import { affaireCorbeau } from './corbeau-havre.js';
+import { affaireMeurtre, VARIANTES_MEURTRE } from './meurtre-mons.js';
+import { affaireMeurtreRampe, evaluerHypothese, VARIANTES_RAMPE } from './meurtre-rampe.js';
+import { affaireCorbeau, VARIANTES_CORBEAU } from './corbeau-havre.js';
 import { construireDebrief } from './debrief.js';
 
 /** Deuxième affaire de meurtre écrite à la main (« Le notaire de la Rampe ») : ouverte une fois par partie,
@@ -59,6 +59,18 @@ export const AFFAIRES_ECRITES = [
     dispo: (st) => st.meurtreDes == null, programmer: (st, n) => { st.meurtreDes = n; } },
 ];
 const casEnCours = (st) => (st.enquete ? (st.meurtre2Des === st.enquete.n ? 'rampe' : st.meurtreDes === st.enquete.n ? 'clef' : st.corbeauDes === st.enquete.n ? 'corbeau' : null) : null);
+/** Affaire écrite que porte le numéro n dans cette partie ('clef', 'rampe' ou 'corbeau'), ou null (un vol généré). Même ordre que affaire(). */
+export const casDe = (st, n) => (st.meurtreDes != null && n === st.meurtreDes ? 'clef' : st.meurtre2Des != null && n === st.meurtre2Des ? 'rampe' : st.corbeauDes != null && n === st.corbeauDes ? 'corbeau' : null);
+/**
+ * Variantes des affaires écrites : pour qu'un joueur qui connaît déjà l'histoire (ou en a entendu parler dans une
+ * autre partie) n'en connaisse pas la solution, chaque affaire écrite tire une variante à son ouverture (graine de la
+ * partie + n° de l'affaire). Elle est gardée dans state.variantes[n] pour toute la partie (le débrief d'une affaire
+ * close la relit). Sans entrée : l'affaire d'origine, à l'identique (les affaires ouvertes avant les variantes).
+ */
+export const VARIANTES = { clef: VARIANTES_MEURTRE, rampe: VARIANTES_RAMPE, corbeau: VARIANTES_CORBEAU };
+export const tirerVariante = (seed, n, cas) => makeRng(`${seed}:variante:${cas}:${n}`).pick(VARIANTES[cas]);
+/** Variante de l'affaire n dans cette partie ('a' : l'histoire d'origine). */
+export const varianteDe = (state, n) => (state.variantes && state.variantes[n]) || 'a';
 /** Affaires écrites que le maître du jeu peut ouvrir maintenant dans cette partie. */
 export function affairesOuvrables(state) {
   if (!state || !(state.enquete || state.enquetePause)) return [];
@@ -1002,6 +1014,9 @@ export function nouvelleAffaire(state) {
   // Une affaire de meurtre écrite à la main, une fois par partie (jamais juste après la Rampe ni le corbeau : un vol entre les deux).
   else if (state.meurtreDes == null && n >= 2 && !(state.meurtre2Des != null && n < state.meurtre2Des + MEURTRE2.ecart) && !(state.corbeauDes != null && n < state.corbeauDes + MEURTRE2.ecart)) state.meurtreDes = n;
   else if (MEURTRE2.actif && state.meurtre2Des == null && state.meurtreDes != null && n >= state.meurtreDes + MEURTRE2.ecart) state.meurtre2Des = n; // … puis la seconde
+  // Affaire écrite : sa variante est tirée maintenant, une fois pour toutes (une variante déjà posée, par la démo, reste).
+  const cas = casDe(state, n);
+  if (cas && !(state.variantes && state.variantes[n])) state.variantes = { ...(state.variantes || {}), [n]: tirerVariante(state.seed, n, cas) };
   state.enquete = { n, jour: 1, nbCellules: 1, cellules: {}, rebonds: [], figee: false };
   repartirCellules(state);
   for (const z of Object.values(state.zones)) {
@@ -1012,11 +1027,11 @@ export function nouvelleAffaire(state) {
   return affaire(state, n);
 }
 
-/** Affaire n° n de cette partie (avec le plan des trajets si elle a été ouverte depuis son arrivée). */
+/** Affaire n° n de cette partie (avec le plan des trajets si elle a été ouverte depuis son arrivée ; affaire écrite : dans sa variante). */
 export function affaire(state, n) {
-  if (state.meurtreDes != null && n === state.meurtreDes) return affaireMeurtre(n);
-  if (state.meurtre2Des != null && n === state.meurtre2Des) return affaireMeurtreRampe(n);
-  if (state.corbeauDes != null && n === state.corbeauDes) return affaireCorbeau(n);
+  if (state.meurtreDes != null && n === state.meurtreDes) return affaireMeurtre(n, varianteDe(state, n));
+  if (state.meurtre2Des != null && n === state.meurtre2Des) return affaireMeurtreRampe(n, varianteDe(state, n));
+  if (state.corbeauDes != null && n === state.corbeauDes) return affaireCorbeau(n, varianteDe(state, n));
   return genererAffaire(state.seed, n, state.carteDes != null && n >= state.carteDes, state.profDes != null && n >= state.profDes, state.distinctDes);
 }
 

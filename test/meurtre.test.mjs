@@ -43,6 +43,7 @@ assert.ok(/22:13/.test(d.journal.breve[1]) && /suppr/.test(d.journal.breve[1]));
 const players = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' }, C: { code: '3333', nom: 'Charlie' } };
 const base = { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal' };
 let st = createGame({ seed: 'meurtre' });
+st.variantes = { 2: 'a' }; // ce scénario suit l'histoire d'origine (la variante b a son test, variantes.test.mjs)
 st = resolveTurn(st, { players }).state;
 assert.equal(st.enquete.n, 1);
 // On classe la première affaire en avançant les jours.
@@ -81,7 +82,7 @@ assert.notEqual(affaire(st, st.enquete.n).meurtre, true, 'nouvelle affaire : un 
   assert.ok(confrontationOk(m2, 2, ['Rg:2', 'occ:2', 'c:cam']), 'la statuette dont personne ne parlait');
   assert.ok(!confrontationOk(m2, 2, ['Rg:2', 'doc:journal', 'c:cam']), 'une seule preuve d’enquête');
   // Partie : une zone réentend Julien face à sa propre audition.
-  let s2 = createGame({ seed: 'reaud' }); s2.meurtreDes = 1;
+  let s2 = createGame({ seed: 'reaud' }); s2.meurtreDes = 1; s2.variantes = { 1: 'a' };
   s2 = resolveTurn(s2, { players }).state;
   s2.zones.A.budget = 20;
   s2 = resolveTurn(s2, { players, orders: { A: { ...base, reaud: { i: 2, f: 'A:2' } }, B: base, C: base } }).state;

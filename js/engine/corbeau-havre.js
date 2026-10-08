@@ -355,8 +355,11 @@ export const EVENEMENTS = [
   { id: 'traverse', f: 'occ:3', de: hm(22, 10), qui: 3, t: 'Jordan traverse la rue d’Havré à 18 km/h' },
 ];
 
-/** L'affaire, au format des affaires écrites (mêmes champs que les meurtres : confrontation, recoupements…). */
-export function affaireCorbeau(n) {
+/**
+ * L'affaire, au format des affaires écrites (mêmes champs que les meurtres : confrontation, recoupements…).
+ * `variante` : 'a' (l'histoire d'origine, par défaut) ou 'b' (voir VARIANTES_CORBEAU plus bas).
+ */
+export function affaireCorbeau(n, variante = 'a') {
   const suspects = SUSPECTS.map((s, i) => ({
     ...s, coupable: i === COUPABLE, tech: false,
     statut: { mob: true, moy: true, occ: i === COUPABLE },
@@ -370,7 +373,7 @@ export function affaireCorbeau(n) {
     ...reponses,
     ...RECOUPEMENTS.map((r) => r.f), ...DECLICS.map((d) => d.f),
   ];
-  return {
+  const aff = {
     n, id: `aff${n}`, meurtre: true, genre: 'corbeau', cas: 'corbeau', ville: 'mons', carte: true, prof: true, travaux: null,
     pos: 'scene', titre: 'Le corbeau de la rue d’Havré', texte: 'Lettres anonymes, puis six vitrines couvertes d’affiches, rue d’Havré, pendant la réunion du comité de quartier.',
     butin: 'des lettres anonymes', lieu: 'la rue d’Havré', pres: 'de la rue d’Havré',
@@ -442,5 +445,152 @@ export function affaireCorbeau(n) {
       'Bernard Vanderhaegen avait caché la première lettre du corbeau pour protéger son vol. Il n’a pas quitté sa chaise de la soirée.',
     ].join('\n'),
     accroche: 'Dix lettres, six affiches, une rue qui se regarde de travers : un seul corbeau.',
+  };
+  return variante === 'b' ? varianteB(aff) : aff;
+}
+
+// ─────────────────────────────── Variantes ───────────────────────────────
+// L'affaire se rejoue : à l'ouverture, la partie tire une variante (graine + n° de l'affaire), gardée dans l'état
+// (state.variantes, voir enquete.js). Sans variante enregistrée : l'histoire d'origine, à l'identique.
+//  · 'a' : l'histoire d'origine. Hélène Dufrasne, la plaignante, est le corbeau.
+//  · 'b' : le corbeau est Jordan Lambotte, le petit-neveu à qui Odile raconte tout chaque soir. Jeudi, il livrait à
+//    vélo : à 21:48 il entre dans la rue par le bout du boulevard (que la caméra communale ne filme pas), pose les sept
+//    films en huit minutes et repart. Il s'est écrit une lettre vraie, et a prêté à la libraire un faux secret pour
+//    que les soupçons aillent vers elle. Les films ont été retirés au point relais de la librairie avec le numéro de
+//    son compte de livreur. Son erreur : vendredi à 7:45, il appelle Hélène pour qu'elle aille lire à Odile
+//    « l'affiche sur sa porte » ; à 8:15, Hélène parle des « sept affiches » au commissariat sans comprendre ce
+//    qu'elle dit. Hélène, elle, était sortie imprimer les photocopies qu'elle avait oubliées.
+// Les documents du premier jour (journal, PV, auditions, fiches des suspects) et les pièces de la scène sont les
+// mêmes dans les deux variantes : on ne reconnaît la variante qu'en enquêtant sur les personnes.
+export const VARIANTES_CORBEAU = ['a', 'b'];
+const COUPABLE_B = 3;
+
+const TEXTES_B = {
+  // Jordan (3) : le corbeau.
+  'occ:3': 'Plateforme de livraison : le compte est au nom de Ryan Lambotte, son frère, mais les selfies de contrôle montrent Jordan. GPS du vélo jeudi soir : en mouvement de 21:30 à 22:45, avec un arrêt. 21:38, retrait d’un repas à Nimy ; de 21:48 à 21:56, arrêt de huit minutes rue d’Havré, à hauteur du n° 40, entré par le bout du boulevard ; aucune course à cette adresse. 22:04, retrait à la Grand-Place ; 22:10, il traverse la rue d’Havré à 18 km/h sans s’arrêter ; 22:16, livraison boulevard Dolez ; 22:31, livraison à Hyon du repas pris à Nimy, « froid », note du client : 1 sur 5.',
+  'mob:3': 'GSM de Jordan Lambotte : il appelle Odile Hautecœur chaque soir vers 19:00 (jeudi : 19:02, onze minutes). Vendredi à 7:45, un appel de deux minutes vers Hélène Dufrasne, qu’il n’appelle jamais. Le 22 septembre, à un ami : « ce Vanderhaegen, je vais finir par lui faire bouffer ses colis de Noël ». Comptes : des virements réguliers de son frère Ryan.',
+  'moy:3': 'Perquisition chez Jordan Lambotte, à Jemappes : un tube à plans noir, avec trois plans d’atelier en A1 et, roulées au fond, sept bandes de papier siliconé au format A2, le dos de films qu’on a posés. Une veste jaune de livreur. Une étiqueteuse de maquettiste, ruban de 12 mm, fond blanc. Dans la poubelle de l’atelier, une cassette usagée du même modèle : le labo déroule son ruban encreur, qui garde le négatif de tout ce qui a été imprimé. On y lit, à l’envers, les mots des dix lettres du corbeau. Et tout au début du ruban, avant tous les autres : « MADAME ODILE. NE SIGNEZ RIEN LUNDI. »',
+  // Hélène (4) : la plaignante, innocente.
+  'occ:4': 'Le direct : Hélène Dufrasne sort à 21:49 (« Je vais chercher les photocopies du budget ») et revient à 21:57, une pile de feuilles à la main ; elle porte une jupe longue et des bottines à talons. Sa librairie est à côté du café, à quinze mètres. Journal de son imprimante : les 40 photocopies du budget ont été lancées depuis le panneau de la machine à 21:50 et imprimées jusqu’à 21:56.',
+  'mob:4': 'Comptes d’Hélène Dufrasne : la librairie survit de justesse. Depuis 2021, 300 € par mois versés à Bernard Vanderhaegen (une reconnaissance de dette de 20 000 €, « prêt Covid »). La librairie est point relais Colis-Point ; registre de la semaine : quatre colis, dont un colis d’AfficheExpress (Gand) pour « M. Odon », arrivé mardi, retiré mercredi à 17:52 avec le code de retrait. GSM : rien jeudi soir ; vendredi à 7:45, un appel reçu de Jordan Lambotte, deux minutes.',
+  'moy:4': 'Perquisition à la Librairie Dufrasne : l’étiqueteuse des prix, à transfert thermique, ruban de 12 mm, fond blanc. Dans le bac à papier à recycler, une cassette usagée du même modèle. Le labo déroule son ruban encreur : des prix et des cotes de rayon (« POCHE », « BD », « 4,90 € »), rien d’autre. Pas un mot des lettres du corbeau. Ni film, ni papier siliconé.',
+  // Recoupements dont la conclusion change.
+  'x:sept': 'Recoupement : vendredi à 8:15, au commissariat, Hélène Dufrasne parle des « sept affiches ». À cette heure-là, la patrouille en avait compté six ; la septième, au fond de la cour du 40, n’a été découverte par le facteur qu’à 9:40. Personne ne pouvait savoir qu’il y en avait sept : sauf qui les avait posées, ou qui l’avait appris de cette personne.',
+  'x:secrets': 'Recoupement : chaque secret des dix lettres, Odile Hautecœur le connaissait : on le lui avait confié à la mercerie, ou elle l’avait deviné. Neuf sont vrais. Un seul est faux : le fils d’Hélène Dufrasne, Arnaud, est ingénieur à Gand, casier vierge, et Odile reçoit ses cartes postales. Le corbeau connaissait tout ce que raconte Odile ; et le seul secret inventé, c’est la libraire qui l’a reçu.',
+  'x:relais': 'Recoupement : le colis d’AfficheExpress, les sept films, a été retiré au point relais de la Librairie Dufrasne mercredi à 17:52, avec le code de retrait envoyé par SMS au numéro de « M. Odon ». AfficheExpress communique ce numéro : c’est celui du compte de livreur ouvert au nom de Ryan Lambotte, celui qu’utilise son frère Jordan. Hélène Dufrasne se souvient d’un jeune homme pressé, en veste jaune. Personne du nom d’Odon n’est connu à Mons.',
+};
+const SEPT_B = 'La septième… Oui, je savais. Vendredi à 7:45, Jordan Lambotte m’a téléphoné : il voulait que je passe chez Odile lui lire « l’affiche sur sa porte ». Je n’ai pas compris, je devais ouvrir la librairie, je n’y suis pas allée. Au commissariat, j’ai dit « sept » sans réfléchir.';
+// Réauditions de la variante b (mêmes règles : clé = suspect, pièce opposée → [code, réponse]).
+const REACTIONS_B = {
+  0: REACTIONS[0],
+  1: REACTIONS[1],
+  2: REACTIONS[2],
+  3: {
+    'c:camville': ['Ra', REACTIONS[3]['c:camville'][1]],
+    'c:dest': REACTIONS[3]['c:dest'],
+    'mob:3': REACTIONS[3]['mob:3'],
+    'c:septieme': ['Rd', 'Neuf centimètres… À un mètre quarante, elle n’a pas besoin de se pencher, et avec sa loupe… Elle l’a lue ? Dites-moi qu’elle l’a lue.'],
+    'Rh:4': ['Re', 'Hélène a mal compris. Je lui ai demandé de passer voir ma tante, c’est tout. Elle ne voit plus rien, vous savez. Il faut bien que quelqu’un lui lise ce qu’on lui écrit.'],
+    'moy:3': ['Rf', 'Ma tante allait signer lundi. Il fallait que quelqu’un le lui dise, et personne d’autre que lui n’ouvre son courrier. Je n’ai rien d’autre à dire.'],
+    'occ:3': ['Rg', 'Oui, je livrais, sur le compte de mon frère : avec ma bourse, je n’ai pas le droit de travailler autant. L’arrêt de huit minutes ? Je suis passé voir si ma tante avait de la lumière. Elle dormait. Je ne suis pas allé plus loin que le porche.'],
+  },
+  4: {
+    'occ:4': ['Ra', 'Huit minutes… J’avais oublié d’imprimer les photocopies du budget. Je les ai lancées en vitesse à la librairie, et j’ai attendu que la machine ait fini. Je n’allais pas le dire devant Bernard : il m’aurait fait une remarque de plus.'],
+    'moy:0': REACTIONS[4]['moy:0'],
+    'mob:4': ['Rd', 'Oui, je dois de l’argent à Bernard, il le rappelle à chaque réunion. Ce n’est pas un crime d’avoir des dettes. Le colis de Gand ? Un jeune homme est venu le chercher mercredi, avec le code sur son téléphone. Je ne regarde pas les noms.'],
+    'x:secrets': REACTIONS[4]['x:secrets'],
+    'c:sonnette': ['Rf', 'Des chaussures plates ? Je ne porte que des bottines, depuis vingt ans. Regardez le direct.'],
+    'c:septieme': ['Rh', SEPT_B],
+    'x:sept': ['Rh', SEPT_B],
+  },
+};
+const TITRES_B = { ...TITRES0 };
+for (const [i, t] of Object.entries(REACTIONS_B)) for (const [f, [code]] of Object.entries(t)) if (!TITRES_B[`${code}:${i}`]) TITRES_B[`${code}:${i}`] = `Réaudition · ${NOMS_R[i]} · face à ${quoiOppose(f, i)}`.replace('face à le ', 'face au ').replace('face à les ', 'face aux ').replace(/ de (?=[AEIOUÉH])/g, ' d’');
+
+const RECOUPEMENTS_B = RECOUPEMENTS.map((r) => (r.f === 'x:relais' ? { ...r, paires: [...r.paires, ['r:relais', 'occ:3']] } : r));
+const RELECTURES_B = {
+  ...RELECTURES,
+  'c:labo2': [RELECTURES['c:labo2'][0], { si: 'moy:3', t: 'La cassette retrouvée chez Jordan Lambotte garde le texte de toutes les lettres.' }],
+  'occ:3': [{ si: 'x:fenetre', t: 'Huit minutes à l’arrêt, de 21:48 à 21:56 : en plein dans la fenêtre de pose.' }],
+};
+const COUPS_DE_POUCE_B = COUPS_DE_POUCE.map((c) => (c.fil === 'Les sorties de la réunion'
+  ? { ...c, niveaux: [c.niveaux[0], c.niveaux[1], [6, 'Toute la rue était dans la salle, ou presque. Qui pouvait passer dans la rue d’Havré sans qu’on s’en étonne ?']] }
+  : c.fil === 'Les menteurs' ? { ...c, niveaux: [c.niveaux[0], c.niveaux[1], [6, 'Le GPS d’un livreur garde aussi ses arrêts.']] } : c));
+
+// Chronologie de la variante b.
+const EVENEMENTS_B = [
+  ...EVENEMENTS.filter((e) => e.id !== 'gps'),
+  { id: 'gps', f: 'occ:3', de: hm(21, 30), a: hm(22, 45), qui: 3, t: 'Jordan livre à vélo (GPS)' },
+  { id: 'arret', f: 'occ:3', de: hm(21, 48), a: hm(21, 56), qui: 3, t: 'Jordan à l’arrêt rue d’Havré, à hauteur du n° 40 (GPS)' },
+  { id: 'impression', f: 'occ:4', de: hm(21, 50), a: hm(21, 56), qui: 4, t: 'L’imprimante de la librairie sort les photocopies' },
+];
+
+// Hypothèse au juge, variante b : les règles d'origine, sauf celles qui tiennent aux rôles de Jordan et d'Hélène.
+const REGLES_B = {
+  ...REGLES,
+  'occ:3': (i, s) => (i !== 3 ? 0 : s === 1 ? 1 : -1), // à l'arrêt rue d'Havré de 21:48 à 21:56
+  'occ:4': (i) => (i === 4 ? -1 : 0), // à son imprimante, en jupe et en bottines
+  'moy:3': (i) => (i === 3 ? 1 : 0),
+  'moy:4': (i) => (i === 4 ? -1 : 0),
+  'mob:4': (i, s, K) => (i === 4 && !K('x:relais') ? 1 : 0),
+  // Lus naïvement, la plainte et le faux secret désignent Hélène ; ce qui les explique désigne Jordan.
+  'x:sept': (i, s, K) => (K('Rh:4') ? (i === 3 ? 1 : 0) : (i === 4 ? 1 : 0)),
+  'x:secrets': (i, s, K) => (K('moy:3') ? (i === 3 ? 1 : 0) : (i === 4 ? 1 : 0)),
+  'x:relais': (i) => (i === 3 ? 1 : 0),
+  'Ra:3': (i, s, K) => (i === 3 && !K('occ:3') ? -1 : 0), // « sans m'arrêter »
+  'Rd:3': (i) => (i === 3 ? 1 : 0),
+  'Re:3': (i) => (i === 3 ? 1 : 0),
+  'Rf:3': (i) => (i === 3 ? 1 : 0),
+  'Rg:3': (i, s) => (i === 3 && s === 1 ? 1 : 0),
+  'Ra:4': (i) => (i === 4 ? -1 : 0),
+  'Rh:4': (i) => (i === 3 ? 1 : i === 4 ? -1 : 0),
+};
+/** Hypothèse « suspect i, créneau s » face aux pièces connues, variante b : { pour: [f], contre: [f] }. */
+export function evaluerHypotheseCorbeauB(connus, i, s) {
+  const K = (f) => connus.has(f);
+  const pour = [], contre = [];
+  for (const [f, r] of Object.entries(REGLES_B)) {
+    if (!K(f)) continue;
+    const v = r(i, s, K);
+    if (v > 0) pour.push(f); else if (v < 0) contre.push(f);
+  }
+  return { pour, contre };
+}
+
+const RECIT_FINAL_B = [
+  'Jordan Lambotte, le petit-neveu, était le corbeau. Jeudi soir, il livrait à vélo, sur le compte de son frère. À 21:48, il est entré dans la rue d’Havré par le bout du boulevard, que la caméra communale ne filme pas, pendant que toute la rue était au Comptoir. En huit minutes, il a posé sept films électrostatiques, commandés à Gand et retirés au point relais de la librairie avec le numéro de son compte de livreur : six sur les vitrines, la septième au fond de la cour du 40, sur la porte de sa grand-tante, à hauteur de ses yeux. À 21:56, il repartait livrer un repas froid à Hyon.',
+  'Pourquoi ? Pour une seule lettre. Le samedi 19 septembre, il avait glissé dans la boîte d’Odile : « Ne signez rien lundi. Celui qui vous aide vous vole. » Mais c’est Bernard Vanderhaegen qui trie le courrier d’Odile : il l’a ouverte et gardée. Alors Jordan a écrit à toute la rue, dix lettres, dix secrets qu’Odile lui racontait au téléphone chaque soir. Il s’en est envoyé une, vraie, pour se compter parmi les victimes, et il a prêté à la libraire un fils en prison qui n’existe pas : si quelqu’un comparait les lettres, c’est elle qu’on soupçonnerait. Il ne pouvait pas accuser Bernard à visage découvert : Bernard l’avait déjà écarté de sa tante, « il vient pour son argent ».',
+  'Son erreur : vendredi à 7:45, de peur qu’Odile ne voie jamais l’affiche, il a appelé Hélène Dufrasne pour qu’elle aille la lui lire. À 8:15, au commissariat, Hélène a parlé des « sept affiches » sans comprendre ce qu’elle disait : la septième n’a été trouvée qu’à 9:40.',
+  'Ce que personne n’avait compris : les affiches disaient vrai. Le président dévoué, la « victime », prenait 600 € par mois sur le compte d’Odile et avait vidé la caisse des colis de Noël. Lundi, il devait lui faire signer une procuration générale. Le parquet le poursuit pour abus de faiblesse. Odile, elle, n’a lu ni la lettre ni l’affiche.',
+  'Hélène Dufrasne, la plaignante, avait tout de la coupable : huit minutes dehors en pleine fenêtre de pose, une étiqueteuse du bon modèle, le point relais, un faux secret dans sa propre lettre et ces « sept affiches ». Elle était allée imprimer les photocopies qu’elle avait oubliées, en jupe et en bottines, et sa cassette ne contenait que des prix.',
+  'Nathalie Brasseur avait menti sur ses vingt-deux minutes dehors : elle fumait en cachette dans la cour fermée, au téléphone avec sa sœur, à propos de son divorce. Son étiqueteuse imprime sur du 9 mm transparent.',
+  'Maxime Delcourt n’était pas chez lui mais à une table de poker clandestine, à Cuesmes ; et sa machine, en panne, n’imprime pas ce genre de film.',
+  'Bernard Vanderhaegen avait caché la première lettre du corbeau pour protéger son vol. Il n’a pas quitté sa chaise de la soirée.',
+].join('\n');
+
+/** Variante b, construite sur l'affaire d'origine : seules changent les pièces de l'enquête et ce qui en découle. */
+function varianteB(a) {
+  const textes = Object.fromEntries(Object.entries(a.textes).filter(([f]) => !/^R[a-z]:\d$/.test(f)));
+  Object.assign(textes, TEXTES_B);
+  for (const [i, t] of Object.entries(REACTIONS_B)) for (const [code, r] of Object.values(t)) textes[`${code}:${i}`] = r;
+  const reponses = [...new Set(Object.entries(REACTIONS_B).flatMap(([i, t]) => Object.values(t).map(([code]) => `${code}:${i}`)))];
+  return {
+    ...a,
+    variante: 'b',
+    suspects: a.suspects.map((s, i) => ({ ...s, coupable: i === COUPABLE_B, statut: { ...s.statut, occ: i === COUPABLE_B } })),
+    coupable: COUPABLE_B,
+    faits: [...a.faits.filter((f) => !/^R[a-z]:\d$/.test(f) && !f.startsWith('x:') && !f.startsWith('d:')), ...reponses, ...RECOUPEMENTS_B.map((r) => r.f), ...DECLICS.map((d) => d.f)],
+    textes, titres: { ...TITRES_B }, reactions: REACTIONS_B,
+    evenements: EVENEMENTS_B, recoupements: RECOUPEMENTS_B, relectures: RELECTURES_B, coupsDePouce: COUPS_DE_POUCE_B, evaluer: evaluerHypotheseCorbeauB,
+    charges: { ...a.charges, 3: ['c:camville', 'mob:3', 'occ:3', 'x:relais', 'Rh:4'] },
+    // Ce qui écarte un innocent : pour Hélène, son imprimante et sa tenue face aux jambes de la sonnette.
+    innocente: { 0: a.innocente[0], 1: a.innocente[1], 2: a.innocente[2], 4: [['occ:4', 'c:sonnette'], ['occ:4', 'moy:4']] },
+    confront: {
+      decisives: ['moy:3', 'x:relais', 'Rd:3', 'Rh:4'],
+      accablantes: ['moy:3', 'x:relais', 'Rd:3', 'Rh:4', 'occ:3', 'mob:3', 'A:3', 'Ra:3', 'Rb:3', 'Rc:3', 'Re:3', 'Rf:3', 'Rg:3', 'mob:4', 'Rd:4',
+        'x:fenetre', 'x:secrets', 'x:premiere', 'x:sept', 'x:caisse', 'c:septieme', 'c:camville', 'c:sonnette', 'c:labo1', 'c:labo2', 'c:labo3',
+        'c:dest', 'r:odile', 'r:relais', 'moy:0', 'Ra:0', 'Rd:0', 'd:lettre'],
+    },
+    recitFinal: RECIT_FINAL_B,
   };
 }

@@ -89,6 +89,7 @@ assert.ok(!evaluer(new Set([...naif, 'c:labo1', 'x:fenetre']), 4, 1).contre.leng
 const players = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' }, C: { code: '3333', nom: 'Charlie' } };
 const base = { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal' };
 let st = createGame({ seed: 'corbeau' });
+st.variantes = { 1: 'a', 2: 'a' }; // ce scénario suit l'histoire d'origine (la variante b a son test, variantes.test.mjs)
 st.meurtreDes = 0; st.meurtre2Des = 1;
 st = resolveTurn(st, { players }).state;
 assert.equal(affaire(st, st.enquete.n).cas, 'rampe');

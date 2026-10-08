@@ -13,12 +13,19 @@ import { affaireCorbeau as affaireMeurtreRampe } from '../js/engine/corbeau-havr
 import { pieceDemarche, confrontationOk, mandatOk, pieceReaudition, candidats, pieceRecoupement, ENQ } from '../js/engine/enquete.js';
 import { makeRng } from '../js/engine/rng.js';
 
-let aff = affaireMeurtreRampe(1);
+// « --variante=b » : Jordan (3) est le corbeau ; mêmes profils, rôles d'Hélène et de Jordan échangés.
+const VARIANTE = (process.argv.find((x) => x.startsWith('--variante=')) || '--variante=a').split('=')[1];
+const role = (i) => (VARIANTE === 'b' ? ({ 3: 4, 4: 3 }[i] ?? i) : i);
+// Qui soupçonne qui : le parfait sait qui a tué ; les autres partent des mêmes documents du premier jour (identiques dans
+// les deux variantes), donc des mêmes personnes. « --roles » : les autres profils échangent aussi les rôles.
+const soupcon = (profil) => (profil === 'parfait' || process.argv.includes('--roles') ? role : (i) => i);
+let aff = affaireMeurtreRampe(1, VARIANTE);
+console.log(`Variante ${VARIANTE} : corbeau ${aff.suspects[aff.coupable].nom}`);
 let PUBLICS = ['doc:journal', 'doc:pvc', 'A:0', 'A:1', 'A:2', 'A:3', 'A:4'];
 // Variante à six suspects (« --six ») : un sixième innocent, écarté par son alibi seul (« simple »)
 // ou seulement par son alibi ET l'heure de la mort (« paire », comme Élodie).
 function avecSixieme(mode) {
-  const a = affaireMeurtreRampe(1);
+  const a = affaireMeurtreRampe(1, VARIANTE);
   a.suspects = [...a.suspects, { ...a.suspects[2], nom: 'Sixième', prenom: 'Sixième', coupable: false }];
   a.faits = [...a.faits, 'occ:5', 'mob:5', 'moy:5'];
   a.libres = [...a.libres, 'occ:5', 'mob:5'];
@@ -27,7 +34,8 @@ function avecSixieme(mode) {
   return a;
 }
 const opp = (d) => new Set([...d.pieces.map((p) => p.f), ...PUBLICS]);
-const ORDRE_FORT = ['moy:4', 'x:sept', 'x:relais', 'Rb:4', 'x:secrets', 'occ:4', 'mob:4', 'x:fenetre', 'A:4'];
+const ORDRE_FORT = VARIANTE === 'b' ? ['moy:3', 'x:relais', 'Rd:3', 'Rh:4', 'x:secrets', 'occ:3', 'mob:3', 'x:fenetre', 'A:3']
+  : ['moy:4', 'x:sept', 'x:relais', 'Rb:4', 'x:secrets', 'occ:4', 'mob:4', 'x:fenetre', 'A:4'];
 
 function choixConfront(d, rng, fort) {
   const dispo = [...opp(d)];
@@ -56,7 +64,7 @@ function jouer(profil, graine, { bonus = false, equipe = 0 } = {}) {
   const d = { pieces: [] };
   const a = (f, j) => { if (!d.pieces.some((p) => p.f === f)) d.pieces.push({ f, j }); };
   const six = aff.suspects.length > 5;
-  const ordre = profil === 'parfait' ? [4, 0, 2, 1, 3] : profil === 'moyen' ? rng.shuffle([0, 1, 2, 3]).concat([4]) : rng.shuffle(aff.suspects.map((_, i) => i));
+  const ordre = (profil === 'parfait' ? [4, 0, 2, 1, 3] : profil === 'moyen' ? rng.shuffle([0, 1, 2, 3]).concat([4]) : rng.shuffle(aff.suspects.map((_, i) => i))).map(soupcon(profil));
   let rep = 0;
   for (let j = 1; j <= 7; j++) {
     if (j === 3) a('r:odile', j);
@@ -65,7 +73,7 @@ function jouer(profil, graine, { bonus = false, equipe = 0 } = {}) {
     const dec = aff.confront.decisives.filter((f) => opp(d).has(f)).length;
     let cible = null;
     if (profil === 'parieur' && j === 1) cible = ordre[0];
-    else if (profil === 'parfait' && dec >= 2) cible = 4;
+    else if (profil === 'parfait' && dec >= 2) cible = aff.coupable;
     else if (restants.length === 1 && (profil !== 'prudent' || dec >= 2)) cible = restants[0];
     else if (profil === 'moyen' && j >= 6) cible = ordre.find((i) => restants.includes(i));
     if (cible !== null) {
