@@ -55,6 +55,27 @@ function ecranGsm(id, titre, contenu, { w = 220, h = 320 } = {}) {
     ${contenu}</g>${finPhoto(id, w, h, 0.1)}`);
 }
 
+/** Cendres de la cheminée, avec le fragment de la liste du Cercle qui a échappé au feu (perquisition de l'assassin). */
+const cendres = (id, fragment) => svg(id, 1024, 572, `<image href="img/rampe/cendres.webp" width="1024" height="572"/>
+    <g transform="translate(545 228) rotate(-2)" style="mix-blend-mode:multiply">
+      <text x="0" y="-62" text-anchor="middle" ${TAPE} font-size="13" fill="#7A2E26">CERCLE SAINT-GEORGES</text>
+      <text x="0" y="-44" text-anchor="middle" ${TAPE} font-size="11" fill="#7A2E26">Acteurs du Combat · 1999</text>
+      <path d="M-96 -32H96" stroke="#7A2E26" stroke-width="1" opacity=".6"/>
+      <text x="-102" y="2" ${MONO} font-size="13.5" fill="#2A2420" textLength="204" lengthAdjust="spacingAndGlyphs">${fragment}</text>
+      <text x="-102" y="26" ${MONO} font-size="13.5" fill="#2A2420" opacity=".35" textLength="150" lengthAdjust="spacingAndGlyphs">…euilles · n° 8 : …</text></g>`);
+/** Journal des badges de l'immeuble du boulevard Dolez (lignes [heure, sens, nom]) et ce que montre la caméra du couloir. */
+const badgesDolez = (id, lignes, couloir) => feuille(id, 300, 220, '#33404A', 1, `
+    ${ligne(40, 32, 'IMMEUBLE DOLEZ · CONTRÔLE D’ACCÈS · JEUDI', { taille: 7.4, gras: true })}
+    <path d="M40 38H262" stroke="#999" stroke-dasharray="2 2"/>
+    ${lignes.map(([h, t, q], k) => ligne(40, 58 + k * 18, `${h}   ${t.padEnd(8, ' ')} ${q}`, { taille: 8 })).join('')}
+    <path d="M40 152H262" stroke="#999" stroke-dasharray="2 2"/>
+    ${ligne(40, 170, 'Caméra couloir 2e étage : 1 personne', { taille: 7.2 })}${ligne(40, 184, couloir, { taille: 7.2 })}`);
+/** Liste des douze hommes de feuilles du Combat de 1999, dans l'ordre des brassards. */
+const listeCercle = (id, noms) => feuille(id, 240, 290, '#3A2E26', -1, `
+    <text x="120" y="42" text-anchor="middle" ${TAPE} font-size="8.5" fill="#7A2E26">CERCLE SAINT-GEORGES</text>
+    <text x="120" y="56" text-anchor="middle" ${TAPE} font-size="7.4" fill="#222">Combat 1999 · hommes de feuilles</text>
+    ${noms.map((n, k) => `<text x="44" y="${76 + k * 15}" ${TAPE} font-size="7.6" fill="#222">n° ${String(k + 1).padStart(2, ' ')}  ${n}</text>`).join('')}`, { papier: '#F4EEDC' });
+
 // ───── Photos des pièces ─────
 export const PHOTOS_RAMPE = {
   'c:cam': (id) => svg(id, 640, 540, [
@@ -158,19 +179,8 @@ export const PHOTOS_RAMPE = {
     <image href="img/rampe/doudou1999.webp" x="0" y="0" width="1024" height="765"/>
     <g transform="translate(788 566) rotate(-6)"><text text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="46" font-weight="700" fill="#2A2420" opacity=".82">7</text></g>
     <text x="512" y="826" text-anchor="middle" ${MAIN} font-size="44" fill="#3A2E20">Doudou 1999 — Lumeçon</text>`),
-  'moy:1': (id) => svg(id, 1024, 572, `<image href="img/rampe/cendres.webp" width="1024" height="572"/>
-    <g transform="translate(545 228) rotate(-2)" style="mix-blend-mode:multiply">
-      <text x="0" y="-62" text-anchor="middle" ${TAPE} font-size="13" fill="#7A2E26">CERCLE SAINT-GEORGES</text>
-      <text x="0" y="-44" text-anchor="middle" ${TAPE} font-size="11" fill="#7A2E26">Acteurs du Combat · 1999</text>
-      <path d="M-96 -32H96" stroke="#7A2E26" stroke-width="1" opacity=".6"/>
-      <text x="-102" y="2" ${MONO} font-size="13.5" fill="#2A2420" textLength="204" lengthAdjust="spacingAndGlyphs">…euilles · n° 7 : G. Wau…</text>
-      <text x="-102" y="26" ${MONO} font-size="13.5" fill="#2A2420" opacity=".35" textLength="150" lengthAdjust="spacingAndGlyphs">…euilles · n° 8 : …</text></g>`),
-  'occ:4': (id) => feuille(id, 300, 220, '#33404A', 1, `
-    ${ligne(40, 32, 'IMMEUBLE DOLEZ · CONTRÔLE D’ACCÈS · JEUDI', { taille: 7.4, gras: true })}
-    <path d="M40 38H262" stroke="#999" stroke-dasharray="2 2"/>
-    ${[['18:05', 'SORTIE', 'WAUTELET G.'], ['18:12', 'ENTRÉE', 'WAUTELET G.'], ['18:40', 'ENTRÉE', 'LEMPEREUR T.'], ['20:55', 'SORTIE', 'WAUTELET G.'], ['22:25', 'SORTIE', 'LEMPEREUR T.']].map(([h, t, q], k) => ligne(40, 58 + k * 18, `${h}   ${t.padEnd(8, ' ')} ${q}`, { taille: 8 })).join('')}
-    <path d="M40 152H262" stroke="#999" stroke-dasharray="2 2"/>
-    ${ligne(40, 170, 'Caméra couloir 2e étage : 1 personne', { taille: 7.2 })}${ligne(40, 184, 'de 21:00 à 22:25 (LEMPEREUR T.).', { taille: 7.2 })}`),
+  'moy:1': (id) => cendres(id, '…euilles · n° 7 : G. Wau…'),
+  'occ:4': (id) => badgesDolez(id, [['18:05', 'SORTIE', 'WAUTELET G.'], ['18:12', 'ENTRÉE', 'WAUTELET G.'], ['18:40', 'ENTRÉE', 'LEMPEREUR T.'], ['20:55', 'SORTIE', 'WAUTELET G.'], ['22:25', 'SORTIE', 'LEMPEREUR T.']], 'de 21:00 à 22:25 (LEMPEREUR T.).'),
 
   'occ:3': (id) => svg(id, 300, 190, `${defsPhoto(id, 300, 190)}<rect width="300" height="190" fill="#3C3430"/>
     <g transform="rotate(-5 110 90)"><rect x="30" y="34" width="150" height="96" rx="10" fill="#E8EEF4"/><rect x="30" y="34" width="150" height="26" rx="10" fill="#E2001A"/><rect x="30" y="50" width="150" height="10" fill="#E2001A"/>
@@ -203,10 +213,7 @@ export const PHOTOS_RAMPE = {
     <rect x="52" y="198" width="116" height="34" rx="4" fill="#FFF" stroke="#DDD"/><text x="58" y="211" ${MONO} font-size="6.6" fill="#222">22:41 → Élodie</text><text x="58" y="223" ${MONO} font-size="6.6" fill="#B3261E">wifi : Echevins-Clients</text>
     <text x="56" y="252" ${MONO} font-size="6.4" fill="#666">47 autres SMS signés « J.-B. »</text>`),
 
-  'x:liste': (id) => feuille(id, 240, 290, '#3A2E26', -1, `
-    <text x="120" y="42" text-anchor="middle" ${TAPE} font-size="8.5" fill="#7A2E26">CERCLE SAINT-GEORGES</text>
-    <text x="120" y="56" text-anchor="middle" ${TAPE} font-size="7.4" fill="#222">Combat 1999 · hommes de feuilles</text>
-    ${['DEPRETER P.', 'HOUZIAUX M.', 'FOSTIER F.', 'QUINTART L.', 'BURNIAUX T.', 'ROSSIGNON J.-F.', 'WAUTELET G.', 'VERVAET D.', 'HOYAS A.', 'LANDRAIN R.', 'LEMPEREUR T.', 'NIZET S.'].map((n, k) => `<text x="44" y="${76 + k * 15}" ${TAPE} font-size="7.6" fill="#222">n° ${String(k + 1).padStart(2, ' ')}  ${n}</text>`).join('')}`, { papier: '#F4EEDC' }),
+  'x:liste': (id) => listeCercle(id, ['DEPRETER P.', 'HOUZIAUX M.', 'FOSTIER F.', 'QUINTART L.', 'BURNIAUX T.', 'ROSSIGNON J.-F.', 'WAUTELET G.', 'VERVAET D.', 'HOYAS A.', 'LANDRAIN R.', 'LEMPEREUR T.', 'NIZET S.']),
 
   'r:tel': (id) => svg(id, 1024, 572, `<image href="img/rampe/gsm.webp" width="1024" height="572"/>
     <rect x="300" y="520" width="424" height="34" fill="#FFF" opacity=".92"/><text x="512" y="543" text-anchor="middle" ${MONO} font-size="17" fill="#222">SCELLÉ · JARDIN DU MAYEUR · BASSIN · SAM. 07:50</text>`),
@@ -214,6 +221,16 @@ export const PHOTOS_RAMPE = {
     ${['Vous cherchez qui il attendait jeudi ?', 'Demandez au Cercle Saint-Georges', 'qui portait le brassard n° 7 en 1999.', 'Et demandez à celui qui a pris la photo', 'ce qu’il a vu ce soir-là.'].map((t, k) => `<text x="34" y="${48 + k * 18}" ${TAPE} font-size="8.4" fill="#222">${t}</text>`).join('')}
     <text x="34" y="164" ${MONO} font-size="6.6" fill="#777">Enveloppe sans timbre · déposée dans la boîte du commissariat</text>`, { papier: '#FCFBF6' }),
 };
+// Variante b (Thibault Lempereur, n° 7) : les cendres sont chez lui, les badges et la liste du Cercle s'inversent.
+// Les images générées (cendres, photo de 1999) ne portent aucun texte : seuls les textes posés par le jeu changent.
+export const PHOTOS_RAMPE_B = {
+  ...Object.fromEntries(Object.entries(PHOTOS_RAMPE).filter(([f]) => f !== 'moy:1')),
+  'moy:4': (id) => cendres(id, '…euilles · n° 7 : T. Lemp…'),
+  'occ:4': (id) => badgesDolez(id, [['18:05', 'SORTIE', 'WAUTELET G.'], ['18:12', 'ENTRÉE', 'WAUTELET G.'], ['18:40', 'ENTRÉE', 'LEMPEREUR T.'], ['20:55', 'SORTIE', 'LEMPEREUR T.'], ['22:10', 'SORTIE', 'WAUTELET G.']], 'de 21:00 à 22:10 (WAUTELET G.).'),
+  'x:liste': (id) => listeCercle(id, ['DEPRETER P.', 'HOUZIAUX M.', 'FOSTIER F.', 'QUINTART L.', 'BURNIAUX T.', 'ROSSIGNON J.-F.', 'LEMPEREUR T.', 'VERVAET D.', 'HOYAS A.', 'LANDRAIN R.', 'WAUTELET G.', 'NIZET S.']),
+};
+/** Photos des pièces de la Rampe dans la variante de l'affaire. */
+export const photosRampe = (variante) => (variante === 'b' ? PHOTOS_RAMPE_B : PHOTOS_RAMPE);
 
 // ───── La scène à fouiller ─────
 export const POINTS_SCENE_RAMPE = [

@@ -257,8 +257,11 @@ export const EVENEMENTS = [
   { id: 'temoin', f: 'r:temoin', de: hm(22, 25), qui: null, t: 'Un homme sans parapluie remonte vers la Grand-Place' },
 ];
 
-/** L'affaire, au format des affaires générées (champs supplémentaires : meurtre, sceneSeq, charges, confront…). */
-export function affaireMeurtre(n) {
+/**
+ * L'affaire, au format des affaires générées (champs supplémentaires : meurtre, sceneSeq, charges, confront…).
+ * `variante` : 'a' (l'histoire d'origine, par défaut) ou 'b' (voir VARIANTES_MEURTRE plus bas).
+ */
+export function affaireMeurtre(n, variante = 'a') {
   const suspects = SUSPECTS.map((s, i) => ({
     ...s, coupable: i === COUPABLE, tech: false,
     statut: { mob: true, moy: true, occ: i === COUPABLE },
@@ -269,7 +272,7 @@ export function affaireMeurtre(n) {
     ...suspects.flatMap((_, i) => [`occ:${i}`, `mob:${i}`, `moy:${i}`]),
     ...[...new Set(Object.entries(REACTIONS).flatMap(([i, t]) => Object.values(t).map(([code]) => `${code}:${i}`)))],
   ];
-  return {
+  const aff = {
     n, id: `aff${n}`, meurtre: true, ville: 'mons', carte: true, prof: true, travaux: null,
     pos: 'scene', titre: 'Meurtre rue de la Clef', texte: 'Un antiquaire a été tué dans sa boutique, à deux pas de la Grand-Place de Mons.',
     butin: 'une statuette en bronze', lieu: 'la boutique de la rue de la Clef', pres: 'de la boutique de la rue de la Clef',
@@ -323,5 +326,108 @@ export function affaireMeurtre(n) {
       'Jean-Marc Lemaître, le voisin, avait menacé la victime par écrit à cause du mur mitoyen, découvert le corps et déclaré une caméra « en panne ». La caméra marchait : elle le montre derrière ses fourneaux toute la soirée… et un commis que l’ONSS ne connaît pas. C’est ce travail au noir qu’il cachait, pas un meurtre.',
     ].join('\n'),
     accroche: 'Cinq proches, cinq mensonges : un seul cache le meurtre.',
+  };
+  return variante === 'b' ? varianteB(aff) : aff;
+}
+
+// ─────────────────────────────── Variantes ───────────────────────────────
+// L'affaire se rejoue : à l'ouverture, la partie tire une variante (graine + n° de l'affaire), gardée dans l'état
+// (state.variantes, voir enquete.js). Sans variante enregistrée : l'histoire d'origine, à l'identique.
+//  · 'a' : l'histoire d'origine. Julien Mertens a tué.
+//  · 'b' : Thierry Gobert a tué. Les six faux venaient de lui ; Julien les certifiait sans les examiner, contre
+//    30 %. Convoqué à 22 h (le « J.M. » de l'agenda), Julien n'y est pas allé : à 21:31, il a appelé Thierry
+//    (« ce sont tes faux, va t'expliquer ») et il a attendu au buffet de la gare. Thierry a laissé Claire chez lui
+//    « pour déplacer la camionnette », il est venu sous son parapluie du Salon de Namur, il a tué, puis jeté le
+//    Saint Georges place Léopold, devant la gare où il savait Julien. Mercredi à 7:02, il a appelé Julien pour le
+//    faire taire, et lui a parlé de la statuette : Julien la cite dans son audition sans savoir ce qu'il dit.
+// Les documents du premier jour (journal, PV, auditions, fiches des suspects) sont les mêmes dans les deux
+// variantes : on ne reconnaît la variante qu'en enquêtant. Seules changent les pièces que l'enquête fait sortir.
+export const VARIANTES_MEURTRE = ['a', 'b'];
+const COUPABLE_B = 4;
+
+const TEXTES_B = {
+  // Julien (2) : innocent du meurtre, complice des faux, a fui le rendez-vous.
+  'occ:2': 'Gare de Mons : billet Mons → Bruxelles-Central acheté à l’automate à 21:48 (un billet de train vaut pour n’importe quel train de la journée). Caméra du buffet de la gare : Julien Mertens s’y attable à 21:52, un journal ouvert devant lui, et n’en bouge pas avant 22:37. Caméra du quai 3 : il y arrive à 22:39, sec, et monte dans le train de 22:43.',
+  'mob:2': 'Téléphone de Julien Mertens : à 21:31, un appel de quatre minutes vers Thierry Gobert ; puis éteint de 21:51 à 22:46. Mercredi à 07:02, un appel reçu de Thierry Gobert, six minutes. Comptes : le 2 septembre, un virement de 15 000 € à Henri Delattre, libellé « remboursement pièces ».',
+  'moy:2': 'Perquisition chez Julien Mertens, boulevard Dolez : dans l’entrée, son parapluie du Salon de Namur, sec, roulé dans sa housse. Dans son bureau, six certificats d’authenticité à son cachet ; leurs numéros sont ceux des six pièces que la victime avait fait mettre de côté. Dans un carnet, au crayon : « T.G. — 6 pièces — 30 % ».',
+  // Thierry (4) : l'assassin.
+  'occ:4': 'Personne ne confirme qu’il était seul. Une voisine de la rue des Capucins a vu « une femme en imperméable jaune » entrer chez lui vers 21:00 ; elle n’est ressortie qu’après minuit. Vers 21:50, Thierry Gobert, lui, est sorti à pied sous un grand parapluie noir ; elle l’a entendu rentrer vers 22:50. Il n’en a rien dit.',
+  'mob:4': 'Comptes : à découvert ; la dette de 8 000 € envers la victime n’est pas remboursée. Téléphone : à 21:31, un appel de quatre minutes de Julien Mertens ; puis éteint de 21:36 à 00:20. Mercredi à 07:02, un appel vers Julien Mertens, six minutes.',
+  'moy:4': 'Perquisition chez Thierry Gobert : deux verres, une écharpe de femme, un mot sur la table : « Merci pour ce soir. C. » Dans la camionnette, aucun parapluie. Au garage, un manteau long qui sèche encore, la manche droite fraîchement rincée. Dans un tiroir, un carnet : « J.M. — 6 pièces — certificats — 30 % ».',
+};
+// Réauditions de la variante b (mêmes règles : clé = suspect, pièce opposée → [code, réponse]).
+const AVEU_CLAIRE_B = 'Rue des Capucins… Oui. J’étais chez Thierry Gobert. On est ensemble depuis un an ; sa femme ne sait rien. Je suis arrivée vers 21:00, repartie après minuit. Il est sorti un moment, vers dix heures moins dix, déplacer sa camionnette à cause de l’orage ; il est revenu trempé, sans son parapluie. J’ai demandé à Sophie de me couvrir.';
+const REACTIONS_B = {
+  0: {
+    'occ:0': REACTIONS[0]['occ:0'],
+    'mob:0': ['Rb', AVEU_CLAIRE_B],
+    'occ:4': ['Rb', AVEU_CLAIRE_B],
+    'doc:pvc': REACTIONS[0]['doc:pvc'],
+    'c:agenda': REACTIONS[0]['c:agenda'],
+  },
+  1: REACTIONS[1],
+  2: {
+    'doc:journal': REACTIONS[2]['doc:journal'],
+    'occ:2': ['Rb', 'Oui, j’ai attendu au buffet, pas dans le train de 22:13. Je ne voulais pas qu’on sache que j’étais encore à Mons à dix heures : Henri m’attendait à la boutique, et je n’y suis pas allé.'],
+    'doc:pvc': REACTIONS[2]['doc:pvc'],
+    'c:courriel': REACTIONS[2]['c:courriel'],
+    'moy:2': ['Re', 'Bon. Ces six pièces, c’est Thierry Gobert qui les apportait ; je signais les certificats sans les examiner, contre trente pour cent. Henri avait compris. Il m’attendait mardi à 22 h. Je n’y suis pas allé : à 21:31, j’ai appelé Thierry, c’étaient ses faux, à lui d’aller s’expliquer. Moi, je suis allé à la gare.'],
+    'c:cafe': REACTIONS[2]['c:cafe'],
+    'A:2': ['Rg', 'La statuette ? … C’est Thierry Gobert qui m’en a parlé, mercredi à sept heures, au téléphone : « Il a été frappé avec son Saint Georges. » Il disait le tenir de Claire. Surtout, il voulait que je ne dise rien des certificats.'],
+  },
+  3: REACTIONS[3],
+  4: {
+    'c:dette': REACTIONS[4]['c:dette'],
+    'occ:4': ['Rb', 'La femme en imperméable jaune… C’était Claire. On est ensemble. Je voulais la protéger, et protéger mon mariage. Sortir ? Dix minutes, pour déplacer la camionnette, à cause de l’orage. C’est tout.'],
+    'doc:pvc': ['Rc', 'Le parapluie du Salon de Namur ? J’en ai un, oui. Il doit être dans la camionnette. Ou au stand, je ne sais plus.'],
+    'Rg:2': ['Rd', 'Julien raconte n’importe quoi. Je ne lui ai pas parlé de statuette. Je ne lui ai pas parlé du tout, mercredi.'],
+    'moy:4': ['Re', 'Ce manteau, je l’ai lavé, c’est interdit ? Je suis sorti déplacer la camionnette, je vous l’ai dit. Et ce carnet, ce sont des affaires entre marchands.'],
+  },
+};
+const quoiOpposeB = (f) => (/^R[a-z]:\d$/.test(f) ? `la nouvelle version de ${NOMS_R[Number(f.split(':')[1])].split(' ')[0]}` : quoiOppose(f));
+
+// Chronologie de la variante b : celle d'origine, sans le quai trempé de Julien ni le téléphone de Thierry, plus ce
+// que la variante fait sortir.
+const EVENEMENTS_B = [
+  ...EVENEMENTS.filter((e) => !['quai', 'telT'].includes(e.id)),
+  { id: 'appelJT', f: 'mob:2', de: hm(21, 31), qui: 2, t: 'Julien appelle Thierry Gobert (4 min)' },
+  { id: 'buffet', f: 'occ:2', de: hm(21, 52), a: hm(22, 37), qui: 2, t: 'Julien attablé au buffet de la gare' },
+  { id: 'quai', f: 'occ:2', de: hm(22, 39), qui: 2, t: 'Julien arrive sec sur le quai, monte dans le 22:43' },
+  { id: 'appelTJ', f: 'mob:4', de: hm(21, 31), qui: 4, t: 'Thierry reçoit l’appel de Julien' },
+  { id: 'telT', f: 'mob:4', de: hm(21, 36), a: hm(24, 20), qui: 4, t: 'Téléphone de Thierry éteint' },
+  { id: 'sortieT', f: 'occ:4', de: hm(21, 50), a: hm(22, 50), qui: 4, t: 'Thierry sort sous un grand parapluie noir (la voisine)' },
+];
+
+const RECIT_FINAL_B = [
+  'Thierry Gobert, le brocanteur, fournissait à la boutique des pièces que Julien Mertens certifiait sans les examiner, contre trente pour cent. Six étaient fausses. Henri Delattre avait tout compris et attendait l’expert mardi à 22 h. À 21:31, Julien a appelé Thierry : il n’irait pas, c’étaient ses faux. Thierry a laissé Claire chez lui, rue des Capucins, « pour déplacer la camionnette », et il est venu sous son parapluie du Salon de Namur. Deux cafés à 22:07, puis le coup de statuette. Il a rincé sa tasse mais oublié son parapluie. Reparti à 22:24 sous l’orage, il a jeté le Saint Georges place Léopold, devant la gare où il savait Julien, et il est rentré trempé vers 22:50. Mercredi à 7:02, il a appelé Julien pour le faire taire : « Il a été frappé avec son Saint Georges. » Julien l’a répété dans son audition, sans savoir que personne ne devait le savoir.',
+  'Julien Mertens, l’expert, avait tout du coupable : le « J.M. » de l’agenda, un billet acheté à 21:48, un train de 22:13 qui n’a jamais roulé, et une statuette dont personne n’avait parlé. Il cachait la fraude des certificats, et sa lâcheté : au lieu d’aller au rendez-vous, il a envoyé Thierry et il a attendu au buffet de la gare, de 21:52 à 22:37, que tout se règle sans lui.',
+  'Claire Delattre, la fille, héritait de tout et avait menti sur sa soirée : elle était rue des Capucins, chez son amant, Thierry Gobert. Sans le savoir, elle a passé la soirée avec l’assassin de son père, et c’est elle qui a raconté qu’il était sorti « déplacer la camionnette ». Le « J.M. » de l’agenda, elle ne l’a compris qu’en lisant le dossier : son père attendait l’expert, pas le voisin.',
+  'Sophie Willaert, l’apprentie, avait ses empreintes partout sur le socle vide et un patron qui la payait mal. Elle a menti pour couvrir Claire, sans savoir pourquoi ; elle-même passait la soirée à Jemappes, en appel vidéo avec sa sœur à Montréal, pour fêter la promesse d’embauche bruxelloise qu’elle n’osait pas annoncer. Les empreintes ? Elle avait nettoyé la statuette lundi.',
+  'Jean-Marc Lemaître, le voisin, avait menacé la victime par écrit à cause du mur mitoyen, découvert le corps et déclaré une caméra « en panne ». La caméra marchait : elle le montre derrière ses fourneaux toute la soirée… et un commis que l’ONSS ne connaît pas. C’est ce travail au noir qu’il cachait, pas un meurtre.',
+].join('\n');
+
+/** Variante b, construite sur l'affaire d'origine : seules changent les pièces de l'enquête et ce qui en découle. */
+function varianteB(a) {
+  const textes = Object.fromEntries(Object.entries(a.textes).filter(([f]) => !/^R[a-z]:\d$/.test(f)));
+  Object.assign(textes, TEXTES_B);
+  for (const [i, t] of Object.entries(REACTIONS_B)) for (const [code, r] of Object.values(t)) textes[`${code}:${i}`] = r;
+  const titres = { ...TITRES0 };
+  for (const [i, t] of Object.entries(REACTIONS_B)) for (const [f, [code]] of Object.entries(t)) if (!titres[`${code}:${i}`]) titres[`${code}:${i}`] = `Réaudition · ${NOMS_R[i]} · face à ${quoiOpposeB(f)}`.replace('face à le ', 'face au ').replace('tasses et empreintes', 'ses empreintes');
+  const reponses = [...new Set(Object.entries(REACTIONS_B).flatMap(([i, t]) => Object.values(t).map(([code]) => `${code}:${i}`)))];
+  return {
+    ...a,
+    variante: 'b',
+    suspects: a.suspects.map((s, i) => ({ ...s, coupable: i === COUPABLE_B, statut: { ...s.statut, occ: i === COUPABLE_B } })),
+    coupable: COUPABLE_B,
+    faits: [...a.faits.filter((f) => !/^R[a-z]:\d$/.test(f)), ...reponses],
+    textes, titres, reactions: REACTIONS_B, evenements: EVENEMENTS_B,
+    charges: { ...a.charges, 4: ['c:dette', 'occ:4', 'mob:4', 'mob:2', 'Rb:0', 'Rg:2', 'Re:2'] },
+    // Julien est blanchi par la caméra du buffet ; Claire, comme dans l'histoire d'origine, par sa liaison.
+    innocente: { 0: ['moy:0', 'occ:4', 'moy:4', 'Rb:0', 'Rb:4'], 1: ['moy:1'], 2: ['occ:2'], 3: ['mob:3'] },
+    confront: {
+      decisives: ['occ:4', 'moy:4', 'Rg:2'],
+      accablantes: ['doc:journal', 'doc:pvc', 'occ:4', 'moy:4', 'mob:4', 'Rg:2', 'Re:2', 'Rb:0', 'mob:2', 'Rb:4', 'Rc:4', 'Rd:4', 'Re:4', 'c:cam', 'c:cafe', 'c:courriel', 'c:dette', 'c:legiste2', 'r:statue', 'r:temoin'],
+    },
+    recitFinal: RECIT_FINAL_B,
   };
 }

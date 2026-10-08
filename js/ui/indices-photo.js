@@ -20,16 +20,11 @@ function rueCam(id, pluie, foule) {
     ${foule || ''}
     ${gouttes}`;
 }
-import { PHOTOS_RAMPE } from './rampe-visuels.js';
-import { PHOTOS_CORBEAU } from './corbeau-visuels.js';
+import { photosRampe } from './rampe-visuels.js';
+import { photosCorbeau } from './corbeau-visuels.js';
 
-// Chaque affaire écrite à la main a ses photos (les codes de pièces se recoupent d'une affaire à l'autre).
-const photosDe = (aff) => (aff.cas === 'rampe' ? PHOTOS_RAMPE : aff.cas === 'corbeau' ? PHOTOS_CORBEAU : PHOTOS);
-
-const PHOTOS = {
-  'c:cam': (id) => `<div class="ip-duo">${svg(`${id}a`, 320, 180, cadreCam(`${id}a`, 'CAM 07 · GRAND-PLACE / R. DE LA CLEF', '22:04:31', rueCam(`${id}a`, true, silhouette(176, 150, 1.2, { parapluie: true }))))}
-    ${svg(`${id}b`, 320, 180, cadreCam(`${id}b`, 'CAM 07 · GRAND-PLACE / R. DE LA CLEF', '22:24:12', rueCam(`${id}b`, true, silhouette(150, 152, 1.25, { parapluie: false, sac: true, dos: true }))))}</div>`,
-  'occ:2': (id) => `<div class="ip-duo">${svg(`${id}a`, 220, 300, `${defsPhoto(`${id}a`, 220, 300)}
+/** Billet de train Mons → Bruxelles, émis à 21:48. */
+const billet = (id) => svg(id, 220, 300, `${defsPhoto(id, 220, 300)}
       <rect width="220" height="300" fill="#6E6A62"/>
       <g transform="rotate(-4 110 150)"><rect x="34" y="40" width="152" height="220" rx="6" fill="#F4F1E6"/><rect x="34" y="40" width="152" height="34" rx="6" fill="#1F4F8C"/><rect x="34" y="62" width="152" height="12" fill="#1F4F8C"/>
         <text x="110" y="62" text-anchor="middle" ${MONO} font-size="11" fill="#FFF" font-weight="600">BILLET · 2e CLASSE</text>
@@ -38,7 +33,26 @@ const PHOTOS = {
         <text x="48" y="190" ${MONO} font-size="9" fill="#222">ÉMIS  MAR. 21:48</text><text x="48" y="204" ${MONO} font-size="9" fill="#222">AUTOMATE 03 · MONS</text>
         <text x="172" y="252" text-anchor="end" ${MONO} font-size="14" fill="#222" font-weight="600">10,80 €</text>
         <g fill="#222">${Array.from({ length: 28 }, (_, k) => `<rect x="${48 + k * 3.4}" y="214" width="${k % 3 ? 1.4 : 2.4}" height="20"/>`).join('')}</g></g>
-      ${finPhoto(`${id}a`, 220, 300, 0.12)}`)}
+      ${finPhoto(id, 220, 300, 0.12)}`);
+/** Manteau long qui sèche, la manche droite rincée (perquisition de l'assassin). */
+const manteauRince = (id) => svg(id, 300, 220, `${defsPhoto(id, 300, 220)}<rect width="300" height="220" fill="#D7D3C9"/><rect x="0" y="0" width="300" height="220" fill="#BFC7CC" opacity=".4"/>
+      <path d="M150 20q-6 -10 6 -12" stroke="#777" stroke-width="2" fill="none"/><path d="M110 40h80" stroke="#8A8A8A" stroke-width="3"/>
+      <path d="M112 40q-30 20 -36 70l-6 100h160l-6 -100q-6 -50 -36 -70l-38 30z" fill="#3A3F46"/>
+      <path d="M76 110l-20 90h22l12 -70z" fill="#2B3036"/><path d="M224 110l20 90h-22l-12 -70z" fill="#353A41"/>
+      <path d="M244 140l6 60h-26z" fill="#22262B" opacity=".9"/><path d="M226 150q14 10 22 40" stroke="#5E7380" stroke-width="5" opacity=".6"/>
+      ${[0, 1, 2, 3, 4].map((k) => `<circle cx="${236 + (k % 2) * 6}" cy="${206 + k * 2}" r="1.6" fill="#8FB3C8" opacity=".8"/>`).join('')}
+      ${plot(262, 214, 1)}${finPhoto(id, 300, 220, 0.14)}`);
+/** Chez Thierry Gobert : deux verres et le mot de Claire. */
+const motDeClaire = (id) => svg(id, 300, 200, `${defsPhoto(id, 300, 200)}<rect width="300" height="200" fill="#6B4E3A"/>
+      <g transform="rotate(-6 150 100)"><rect x="80" y="44" width="150" height="100" fill="#FBF7EE"/><text x="98" y="86" ${MAIN} font-size="22" fill="#2A3A6A" textLength="120" lengthAdjust="spacingAndGlyphs">Merci pour ce soir.</text><text x="180" y="120" ${MAIN} font-size="24" fill="#2A3A6A">C.</text></g>
+      <g transform="translate(46 60)"><path d="M-10 0h20l-4 30h-12z" fill="rgba(240,240,245,.6)" stroke="#CCC"/><path d="M0 30v20M-8 50h16" stroke="#CCC" stroke-width="2"/></g>
+      <g transform="translate(262 66)"><path d="M-10 0h20l-4 30h-12z" fill="rgba(240,240,245,.6)" stroke="#CCC"/><path d="M0 30v20M-8 50h16" stroke="#CCC" stroke-width="2"/><path d="M-6 18h12" stroke="#8A1E2E" stroke-width="5" opacity=".5"/></g>
+      ${finPhoto(id, 300, 200, 0.14)}`);
+
+const PHOTOS = {
+  'c:cam': (id) => `<div class="ip-duo">${svg(`${id}a`, 320, 180, cadreCam(`${id}a`, 'CAM 07 · GRAND-PLACE / R. DE LA CLEF', '22:04:31', rueCam(`${id}a`, true, silhouette(176, 150, 1.2, { parapluie: true }))))}
+    ${svg(`${id}b`, 320, 180, cadreCam(`${id}b`, 'CAM 07 · GRAND-PLACE / R. DE LA CLEF', '22:24:12', rueCam(`${id}b`, true, silhouette(150, 152, 1.25, { parapluie: false, sac: true, dos: true }))))}</div>`,
+  'occ:2': (id) => `<div class="ip-duo">${billet(`${id}a`)}
     ${svg(`${id}b`, 320, 180, cadreCam(`${id}b`, 'GARE DE MONS · QUAI 3', '22:39:47', `<rect width="320" height="180" fill="#3C3E40"/><path d="M0 120H320V180H0Z" fill="#5C5E60"/><path d="M0 118H320" stroke="#D8D060" stroke-width="3" stroke-dasharray="14 8"/>
       <path d="M0 40H320V112H0Z" fill="#2E3032"/>${[0, 1, 2, 3, 4, 5].map((k) => `<rect x="${10 + k * 54}" y="54" width="40" height="26" fill="#8C8E80" opacity=".5"/>`).join('')}
       <rect x="200" y="20" width="90" height="16" fill="#111"/><text x="245" y="31" text-anchor="middle" ${MONO} font-size="8" fill="#F2B030">22:43 BRUXELLES</text>
@@ -98,19 +112,33 @@ const PHOTOS = {
       <text x="100" y="38" text-anchor="middle" ${MONO} font-size="8.5" font-weight="600" fill="#222">LE CARILLON · CAISSE</text><text x="100" y="52" text-anchor="middle" ${MONO} font-size="7" fill="#444">Ouvertures tiroir · mardi</text>
       ${[['20:16', 'VENTE', 'JML'], ['21:31', 'VENTE', 'JML'], ['22:04', 'OUVERTURE', 'JML'], ['22:19', 'OUVERTURE', 'JML'], ['22:33', 'OUVERTURE', 'JML'], ['22:51', 'VENTE', 'JML'], ['23:14', 'CLÔTURE', 'JML']].map(([h, t, c], k) => `<text x="54" y="${80 + k * 18}" ${MONO} font-size="8.5" fill="#222">${h}  ${t.padEnd(10, ' ')} ${c}</text>`).join('')}</g>
       ${finPhoto(id, 200, 300, 0.12)}`),
-  'moy:2': (id) => svg(id, 300, 220, `${defsPhoto(id, 300, 220)}<rect width="300" height="220" fill="#D7D3C9"/><rect x="0" y="0" width="300" height="220" fill="#BFC7CC" opacity=".4"/>
-      <path d="M150 20q-6 -10 6 -12" stroke="#777" stroke-width="2" fill="none"/><path d="M110 40h80" stroke="#8A8A8A" stroke-width="3"/>
-      <path d="M112 40q-30 20 -36 70l-6 100h160l-6 -100q-6 -50 -36 -70l-38 30z" fill="#3A3F46"/>
-      <path d="M76 110l-20 90h22l12 -70z" fill="#2B3036"/><path d="M224 110l20 90h-22l-12 -70z" fill="#353A41"/>
-      <path d="M244 140l6 60h-26z" fill="#22262B" opacity=".9"/><path d="M226 150q14 10 22 40" stroke="#5E7380" stroke-width="5" opacity=".6"/>
-      ${[0, 1, 2, 3, 4].map((k) => `<circle cx="${236 + (k % 2) * 6}" cy="${206 + k * 2}" r="1.6" fill="#8FB3C8" opacity=".8"/>`).join('')}
-      ${plot(262, 214, 1)}${finPhoto(id, 300, 220, 0.14)}`),
-  'moy:4': (id) => svg(id, 300, 200, `${defsPhoto(id, 300, 200)}<rect width="300" height="200" fill="#6B4E3A"/>
-      <g transform="rotate(-6 150 100)"><rect x="80" y="44" width="150" height="100" fill="#FBF7EE"/><text x="98" y="86" ${MAIN} font-size="22" fill="#2A3A6A" textLength="120" lengthAdjust="spacingAndGlyphs">Merci pour ce soir.</text><text x="180" y="120" ${MAIN} font-size="24" fill="#2A3A6A">C.</text></g>
-      <g transform="translate(46 60)"><path d="M-10 0h20l-4 30h-12z" fill="rgba(240,240,245,.6)" stroke="#CCC"/><path d="M0 30v20M-8 50h16" stroke="#CCC" stroke-width="2"/></g>
-      <g transform="translate(262 66)"><path d="M-10 0h20l-4 30h-12z" fill="rgba(240,240,245,.6)" stroke="#CCC"/><path d="M0 30v20M-8 50h16" stroke="#CCC" stroke-width="2"/><path d="M-6 18h12" stroke="#8A1E2E" stroke-width="5" opacity=".5"/></g>
-      ${finPhoto(id, 300, 200, 0.14)}`),
+  'moy:2': (id) => manteauRince(id),
+  'moy:4': (id) => motDeClaire(id),
 };
+
+// Variante b (Thierry Gobert a tué) : Julien attendait au buffet de la gare ; chez lui, son parapluie sec et les
+// certificats ; chez Thierry, le mot de Claire et le manteau rincé.
+const PHOTOS_B = {
+  ...PHOTOS,
+  'occ:2': (id) => `<div class="ip-duo">${billet(`${id}a`)}
+    ${svg(`${id}b`, 320, 180, cadreCam(`${id}b`, 'GARE DE MONS · BUFFET', '22:15:06', `<rect width="320" height="180" fill="#4A4038"/><path d="M0 0H320V70H0Z" fill="#5E5246"/>
+      ${[0, 1, 2, 3].map((k) => `<rect x="${18 + k * 78}" y="14" width="56" height="40" fill="#8C8470" opacity=".45"/>`).join('')}
+      <rect x="60" y="118" width="200" height="10" fill="#2E2620"/><path d="M80 128v40M240 128v40" stroke="#2E2620" stroke-width="6"/>
+      <g transform="translate(160 118)"><ellipse cx="0" cy="-58" rx="7" ry="8" fill="#1A1A1A"/><path d="M-13 -48Q-16 -20 -14 0H14Q16 -20 13 -48Q0 -53 -13 -48Z" fill="#202020"/>
+        <rect x="-30" y="-14" width="60" height="16" fill="#D8D4C8" transform="rotate(-4)"/><path d="M-30 -10h56M-28 -5h50" stroke="#9A968A" stroke-width=".8"/></g>
+      <g fill="#E6E2D8"><ellipse cx="96" cy="114" rx="7" ry="2.4"/><ellipse cx="224" cy="114" rx="7" ry="2.4"/></g>`))}</div>`,
+  'moy:2': (id) => svg(id, 300, 220, `${defsPhoto(id, 300, 220)}<rect width="300" height="220" fill="#5A4E44"/>
+      ${[0, 1, 2, 3, 4, 5].map((k) => `<g transform="translate(${70 + k * 12} ${40 + k * 10}) rotate(${(k % 3) - 1})"><rect width="130" height="96" fill="#FBF8EE" stroke="#D8D0BC"/>
+        <text x="65" y="20" text-anchor="middle" ${MONO} font-size="7.5" fill="#222">CERTIFICAT D’AUTHENTICITÉ</text><path d="M14 34H116M14 44H100M14 54H108" stroke="#BBB"/>
+        <circle cx="100" cy="76" r="11" fill="none" stroke="#2A3A8A" stroke-width="1.4" opacity=".7"/><text x="100" y="79" text-anchor="middle" ${MONO} font-size="5" fill="#2A3A8A">J. MERTENS</text></g>`).join('')}
+      <g transform="translate(30 70) rotate(-8)"><path d="M0 0l8 120" stroke="#151515" stroke-width="4"/><path d="M-6 -2q14 -6 22 4l-4 92q-8 6 -14 0z" fill="#1E1E1E"/><path d="M8 120q4 10 -6 10" stroke="#151515" stroke-width="4" fill="none"/></g>
+      ${plot(262, 206, 1)}${finPhoto(id, 300, 220, 0.14)}`),
+  'moy:4': (id) => `<div class="ip-duo">${motDeClaire(`${id}a`)}
+    ${manteauRince(`${id}b`)}</div>`,
+};
+
+// Chaque affaire écrite à la main a ses photos, dans sa variante (les codes de pièces se recoupent d'une affaire à l'autre).
+const photosDe = (aff) => (aff.cas === 'rampe' ? photosRampe(aff.variante) : aff.cas === 'corbeau' ? photosCorbeau(aff.variante) : aff.variante === 'b' ? PHOTOS_B : PHOTOS);
 
 /** Photo d'une pièce, ou chaîne vide si la pièce n'en a pas. `id` : préfixe unique des motifs SVG. */
 export function photoIndice(aff, f, id = 'ip') {

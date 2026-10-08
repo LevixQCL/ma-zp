@@ -89,6 +89,7 @@ assert.ok(!evaluerHypothese(new Set([...naif, 'x:heure', 'x:wifi']), 1, 1).contr
 const players = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' }, C: { code: '3333', nom: 'Charlie' } };
 const base = { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal' };
 let st = createGame({ seed: 'rampe' });
+st.variantes = { 2: 'a', 4: 'a' }; // ce scénario suit l'histoire d'origine (la variante b a son test, variantes.test.mjs)
 st = resolveTurn(st, { players }).state;
 let garde = 0;
 while (st.enquete.n < 4 && garde++ < 40) st = resolveTurn(st, { players, orders: { A: base, B: base, C: base } }).state;

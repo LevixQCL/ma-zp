@@ -1,13 +1,20 @@
 // Simulation de l'affaire de Mons : en combien de jours trois profils de joueurs obtiennent-ils les aveux ?
-// Usage : node test/meurtre-sim.mjs
+// Usage : node test/meurtre-sim.mjs [--variante=b]
 // Profils : parfait (repère l'assassin dès le journal), moyen (suit les leurres), parieur (accuse au hasard le 1er jour),
 // malin (fouille le bureau, puis parie le 2e jour avec les meilleurs documents publics).
 // Une zone seule, 2 démarches par soir, 1 réaudition par soir, la confrontation se juge sur les pièces du matin.
+// Variante b : Thierry (4) a tué ; les profils gardent le même comportement, rôles de Julien et de Thierry échangés.
 import { affaireMeurtre } from '../js/engine/meurtre-mons.js';
 import { pieceDemarche, confrontationOk, mandatOk, pieceReaudition, candidats } from '../js/engine/enquete.js';
 import { makeRng } from '../js/engine/rng.js';
 
-const aff = affaireMeurtre(1);
+const VARIANTE = (process.argv.find((x) => x.startsWith('--variante=')) || '--variante=a').split('=')[1];
+const aff = affaireMeurtre(1, VARIANTE);
+const role = (i) => (VARIANTE === 'b' ? ({ 2: 4, 4: 2 }[i] ?? i) : i);
+// Qui soupçonne qui : le parfait sait qui a tué ; les autres partent des mêmes documents du premier jour (identiques dans
+// les deux variantes), donc des mêmes personnes. « --roles » : les autres profils échangent aussi les rôles.
+const soupcon = (profil) => (profil === 'parfait' || process.argv.includes('--roles') ? role : (i) => i);
+console.log(`Variante ${VARIANTE} : coupable ${aff.suspects[aff.coupable].nom}`);
 const PUBLICS = ['doc:journal', 'doc:pvc', 'A:0', 'A:1', 'A:2', 'A:3', 'A:4'];
 const opp = (d) => new Set([...d.pieces.map((p) => p.f), ...PUBLICS]);
 
@@ -18,7 +25,8 @@ const reaudOk = (d, i) => mandatOk(aff, d, i);
 function choixConfront(d, i, rng, fort) {
   const dispo = [...opp(d)].filter((f) => f.startsWith('doc:') || /^(c|r|occ|moy|mob|R[a-z]):/.test(f));
   if (fort) {
-    const ord = ['occ:2', 'moy:2', 'Rg:2', 'Rb:2', 'Ra:2', 'c:cam', 'doc:journal', 'doc:pvc', 'c:cafe', 'c:agenda'];
+    const ord = VARIANTE === 'b' ? ['occ:4', 'moy:4', 'Rg:2', 'Re:2', 'Rb:0', 'c:cam', 'doc:journal', 'doc:pvc', 'c:cafe', 'c:dette']
+      : ['occ:2', 'moy:2', 'Rg:2', 'Rb:2', 'Ra:2', 'c:cam', 'doc:journal', 'doc:pvc', 'c:cafe', 'c:agenda'];
     return ord.filter((f) => dispo.includes(f)).slice(0, 3);
   }
   return rng.shuffle(dispo).slice(0, 3);
@@ -29,7 +37,7 @@ function jouer(profil, graine) {
   const d = { pieces: [] };
   const a = (f, j) => d.pieces.push({ f, j });
   // Ordre de soupçon : le parfait voit tout de suite la statuette ; le moyen suit les leurres.
-  const ordre = profil === 'parfait' ? [2, 0, 1, 4, 3] : profil === 'parieur' || profil === 'malin' ? rng.shuffle([0, 1, 2, 3, 4]) : rng.shuffle([0, 1, 4]).concat(rng.shuffle([2, 3]));
+  const ordre = (profil === 'parfait' ? [2, 0, 1, 4, 3] : profil === 'parieur' || profil === 'malin' ? rng.shuffle([0, 1, 2, 3, 4]) : rng.shuffle([0, 1, 4]).concat(rng.shuffle([2, 3]))).map(soupcon(profil));
   let rep = 0;
   for (let j = 1; j <= 7; j++) {
     // 1. Confrontation du matin.
@@ -37,7 +45,7 @@ function jouer(profil, graine) {
     let cible = null;
     if (profil === 'parieur' && j === 1) cible = ordre[0];
     else if (profil === 'malin' && j === 2) cible = ordre[0];
-    else if (profil === 'parfait' && j >= 2) cible = 2;
+    else if (profil === 'parfait' && j >= 2) cible = aff.coupable;
     else if (restants.length === 1) cible = restants[0];
     else if (profil !== 'parfait' && j >= 6) cible = ordre.find((i) => restants.includes(i));
     if (cible !== null) {
