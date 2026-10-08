@@ -261,8 +261,9 @@ export function voisinageInfo(aff) {
   return { n, piste, x, txt, sansPiste, nom: piste !== null ? aff.suspects[piste].prenom : null };
 }
 
-/** Appui fédéral : équipe du jour à faire travailler, et demande pour demain (labo ou RCCU). */
-export function appuiHtml() {
+/** Appui fédéral : équipe du jour à faire travailler, et demande pour demain (labo ou RCCU).
+ *  compact : une seule ligne de puces (écran Enquête en liste). */
+export function appuiHtml({ compact = false } = {}) {
   const d = S.draft, z = myZone(), a = monAppui();
   let jour = '';
   if (a) {
@@ -272,6 +273,11 @@ export function appuiHtml() {
         <button type="button" class="btn primary small" data-action="appui-jouer">Analyser</button></div>`
       : a.res.statut === 'ok' ? `<p class="small ok" style="margin:0">${icon('check', 14)} ${esc(u.court)} : analyse réussie, la pièce arrive dans ton dossier à 20:00.</p>`
       : `<p class="small muted" style="margin:0">${esc(u.court)} : l’analyse n’a rien donné aujourd’hui.</p>`;
+  }
+  if (compact) {
+    const puce = (k, ico) => { const u = APPUI.unites[k], on = d.appui === k; return `<button type="button" class="chip ${on ? 'on' : ''}" data-action="appui-demande" data-k="${k}" aria-pressed="${on}" title="${esc(u.quoi)}">${ico} ${esc(u.court || u.nom)}${on ? ' ✓' : ''}</button>`; };
+    return `${jour ? `<div class="voisinage">${jour}</div>` : ''}
+      <div class="enq-ligne"><span class="tiny muted">Appui fédéral pour demain${z.appuiPrio ? ' · <strong>prioritaire</strong>' : ''}</span><span class="row" style="gap:6px">${puce('labo', '🧪')}${puce('rccu', '💻')}${aideBtn('appui')}</span></div>`;
   }
   const btn = (k) => { const u = APPUI.unites[k]; return `<button type="button" class="dem compact" data-action="appui-demande" data-k="${k}" aria-pressed="${d.appui === k}"><span class="l">${esc(u.nom)}</span><span class="p">${d.appui === k ? 'demandé ✓' : esc(u.quoi)}</span></button>`; };
   return `<div class="voisinage" style="gap:6px">
@@ -304,13 +310,20 @@ function aujourdhui(aff, dos) {
   else if (enLice.length === 1) etape = `<strong>Étape 3 · l’accusation.</strong> Il ne reste que ${aff.suspects[enLice[0]].prenom} dans ton tableau. Accuse si tu es sûr : une seule chance.`;
   else etape = 'Tous les suspects sont exclus dans ton tableau : une coche est sans doute fausse. Relis les pièces.';
   const miens = aff.suspects.map((s2, i) => (dansMaCellule(st, S.user.uid, i) ? s2.prenom : null)).filter(Boolean);
+  const v = voisinageInfo(aff);
+  const vCourt = v.x <= 0 ? 'aucune chance' : v.x < 1 ? `${Math.round(v.x * 100)} %` : `1 pièce${v.x % 1 > 0.05 ? ` + ${Math.round((v.x % 1) * 100)} %` : ''}`;
+  const reste = z.budget - engagementsDuJour(d, z).total;
   return `<section class="card tight aujourdhui" aria-label="Aujourd’hui" style="gap:8px">
-    <div class="between"><span style="font-weight:700">Aujourd’hui : ${dem.length} démarche${dem.length > 1 ? 's' : ''} sur ${ENQ.maxDemarches}</span><span class="small mono" style="white-space:nowrap">${fmt1(coutTotal(d))} k€</span></div>
+    <div class="between"><span style="font-weight:700">Aujourd’hui · ${dem.length}/${ENQ.maxDemarches} démarche${ENQ.maxDemarches > 1 ? 's' : ''}</span><span class="small mono" style="white-space:nowrap">${fmt1(coutTotal(d))} k€</span></div>
     ${dem.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${dem.map((x) => `<button type="button" class="chip on" data-action="dem-toggle" data-k="${x}" aria-label="Annuler : ${esc(nomDem(x))}">${esc(nomDem(x))} ✕</button>`).join('')}</div>` : ''}
     <p class="small" style="margin:0;line-height:1.5">${etape}</p>
-    ${(() => { const v = voisinageInfo(aff); return `<div class="voisinage"><div class="between" style="gap:8px;align-items:flex-start"><span class="small"><strong>Voisinage ce soir</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? ` sur la piste de <strong>${esc(v.nom)}</strong>` : ''} : <span class="${v.x >= 0.5 ? 'good' : v.x > 0 ? '' : 'bad'}">${v.txt}</span>.</span>${aideBtn('voisinage')}</div></div>`; })()}
-    ${appuiHtml()}
-    <span class="tiny muted">Résultats à 20:00 · budget restant ${fmt1(z.budget - engagementsDuJour(d, z).total)} k€${engagementsDuJour(d, z).decision ? ' (grande décision comprise)' : ''}${st.enquete.nbCellules > 1 ? ` · ta cellule : ${esc(miens.join(', '))} (les autres suspects coûtent le double)` : ''}</span>
+    <div class="row enq-pastilles" style="gap:6px;flex-wrap:wrap">
+      <span class="pill ${v.x >= 0.5 ? 'green' : v.x > 0 ? 'blue' : 'red'}" title="Voisinage ce soir : ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? `, piste ${esc(v.nom)}` : ''} · ${esc(v.txt)}">🏘 Voisinage ${vCourt}${v.nom ? ` · ${esc(v.nom)}` : ''}</span>
+      <span class="pill" title="Budget restant après tes engagements du jour">💶 reste ${fmt1(reste)} k€</span>
+      ${st.enquete.nbCellules > 1 ? `<span class="pill violet" title="Ta cellule : les autres suspects coûtent le double">● ${esc(miens.join(', '))}</span>` : ''}
+      ${aideBtn('voisinage')}
+    </div>
+    ${appuiHtml({ compact: true })}
   </section>`;
 }
 
@@ -466,9 +479,9 @@ export function renderEnquete() {
     })()}
     ${(st.traques || []).map(traqueHtml).join('')}
     ${aujourdhui(aff, dos)}
-    ${mesPieces(aff, dos)}
     <div class="segn onglets-enq" role="tablist" aria-label="Parties du dossier" style="grid-template-columns:repeat(${tabs.length},minmax(0,1fr))">${tabs.map(([k, l]) => `<button type="button" role="tab" aria-selected="${tab === k}" data-action="enq-tab" data-t="${k}">${l}</button>`).join('')}</div>
     <section class="col" style="gap:10px">${body}</section>
+    ${mesPieces(aff, dos)}
     <a class="small" href="#guide-enquete" style="text-align:center">Comment fonctionne l’enquête ?</a>
     ${S.savedOrders && !S.ordersDirty ? `<p class="tiny muted" style="margin:0;text-align:center">${icon('check', 14)} Choix enregistrés avec tes ordres du tour.</p>` : ''}
   </main>${journalHtml(aff)}${tabbar('enquete')}`;

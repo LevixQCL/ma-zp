@@ -1,6 +1,6 @@
 // Onglet « Pactes » de la Carte : pactes entre zones, défi amical, coup de main aux zones en difficulté, Conseil.
 // Remplace l'ancien écran Diplomatie (duels, manœuvres, entraide libre).
-import { S, esc, tabbar, myZone, zoneName } from './common.js';
+import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
 import { gradeFor } from '../engine/constants.js';
 import { planVille } from './plan.js';
 import { AIDE, gainEntraide, MOTIONS_CHEF, themeActif, THEMES } from '../engine/rivalites.js';
@@ -239,11 +239,13 @@ export function renderPactes() {
   return `<main class="screen">
     ${ongletsCarte('pactes')}
     <header class="col" style="gap:3px"><h1 class="big">Pactes</h1>
-      <p class="sub">Des accords à deux, ${PACTE.duree} tours, avec un avantage concret pour chacun. Ta proposition part tout de suite en message : acceptée avant 20:00, elle est signée le soir même.</p></header>
-    ${carteHtml()}
+      <p class="sub">Des accords à deux pendant ${PACTE.duree} tours, avec un avantage concret pour chacun. Accepté avant 20:00, signé le soir même.</p></header>
     ${rem ? `<p class="tiny ok" style="margin:0">Centrale d’achat : formations et équipement −${Math.round(rem * 100)} % aujourd’hui.</p>` : ''}
     ${voteCeSoir ? conseil : ''}
     ${mesPactesHtml()}
+    <details class="card repli" data-k="pactes-carte" ${S.ouverts && S.ouverts['pactes-carte'] ? 'open' : ''}>
+      <summary><span style="color:var(--amber)">${icon('carte', 18)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Les pactes sur la carte</span><span class="tiny muted">qui est lié à qui dans le district</span></span>${icon('chevron', 16)}</summary>
+      <div class="col" style="gap:8px">${carteHtml()}</div></details>
     ${coupDeMainHtml()}
     ${defiHtml()}
     ${voteCeSoir ? '' : conseil}

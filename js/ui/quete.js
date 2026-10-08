@@ -314,7 +314,14 @@ export function renderQuete() {
     <a class="small" href="#guide-quetes" style="text-align:center">Règles des énigmes</a>
   </main>${tabbar('quete', { questBadge: false })}`;
   }
-  const propositionDelegue = !train && !noir && aucuneReponse ? delegueHtml(null, moralZ, gBonus, enqueteOuverte) : '';
+  // Les deux échappatoires (changer d'énigme, gagner le bonus autrement) tiennent sur une seule ligne sous le titre.
+  const altPossible = !train && !noir && aucuneReponse;
+  const propositionDelegue = altPossible && S.altVue ? delegueHtml(null, moralZ, gBonus, enqueteOuverte) : '';
+  const peutChanger = !train && !noir && !fini && !rerollUtilise();
+  const actionsQuete = peutChanger || (altPossible && !S.altVue) ? `<div class="quete-actions">
+      ${peutChanger ? `<button type="button" class="chip" data-action="quest-reroll" title="Une fois par jour">${icon('refresh', 14)} Changer d’énigme</button>` : ''}
+      ${altPossible && !S.altVue ? `<button type="button" class="chip" data-action="alt-vue" data-v="choix" title="Quiz express ou agent qui planche à ta place">${icon('send', 14)} Bonus autrement</button>` : ''}
+    </div>` : '';
   return `<main class="screen quete ${noir ? 'mode-noir' : ''} ${train ? '' : 'sans-copie'}">
     ${modes}
     ${sousOnglets}
@@ -327,7 +334,7 @@ export function renderQuete() {
         <span class="tiny muted">${fini ? 'terminée' : train ? 'correction immédiate' : 'une seule réponse'}</span></div>
     </header>
     ${noir && !fini ? '<p class="small" style="margin:0;color:var(--red-soft)">Le dossier que personne n’a su boucler. Pas de coup de pouce, une seule réponse. Une erreur ne coûte rien ; une réussite rapporte des PS et compte pour le titre « Cerveau du district ».</p>' : ''}
-    ${!train && !noir && !fini && !rerollUtilise() ? `<button type="button" class="btn small ghost block" data-action="quest-reroll">${icon('refresh', 16)} Pas ton style ? Changer cette énigme (une fois par jour)</button>` : ''}
+    ${actionsQuete}
     ${q.variante ? '<p class="tiny muted" style="margin:0">Énigme changée : c’est ton changement du jour.</p>' : ''}
     <p style="margin:0;font-size:14px;line-height:1.45;color:var(--text2)">${esc(q.contexte)}</p>
     ${q.figures ? renderFigures(q, fini) : ''}

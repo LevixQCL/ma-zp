@@ -16,6 +16,7 @@ export function echelleBonus(m, { xp = true } = {}) {
 
 export const COULEUR_ROLE = { inter: '#FF6E6A', rech: '#63B0FF', prox: '#3DD39A', roul: '#FFB23F', admin: '#C084FC' };
 
+import { vignetteEquipe, vignetteTrophees } from './vignettes-hp.js';
 export function equipeHtml() {
   const z = myZone();
   // Les noms choisis s'affichent tout de suite (ils sont recopiés dans la partie à 20:00).
@@ -51,7 +52,7 @@ export function equipeHtml() {
   }).join('');
   const nbSurnoms = equipe.filter((m) => m.niveau > 0).length;
   return `<details class="card repli" aria-label="Mon équipe" data-k="equipe" ${S.ouverts && S.ouverts.equipe ? 'open' : ''}>
-    <summary><span style="color:var(--amber)">${icon('shield', 20)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Mon équipe</span>
+    <summary><span class="vign">${vignetteEquipe(z.couleur)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Mon équipe</span>
       <span class="tiny muted">${equipe.length} figures · ${nbSurnoms} surnom${nbSurnoms > 1 ? 's' : ''} gagné${nbSurnoms > 1 ? 's' : ''}</span></span>${icon('chevron', 16)}</summary>
     <div class="col" style="gap:8px">
       <p class="tiny muted" style="margin:0">Chaque figure encadre son service et le rend plus efficace (de +3 % à +20 %, selon ses surnoms). Dans tes ordres, tu peux en envoyer une en mission chaque jour : mener l’assaut en zone de non-droit (plus de force, deux fois moins de blessés) ou encadrer ton renfort chez un collègue. Elles gagnent de l’expérience avec le travail de leur service et restent d’une saison à l’autre. Tu peux les renommer (des collègues, par exemple).</p>
@@ -69,7 +70,7 @@ export function tropheesHtml() {
   }).join('');
   const nb = acquis.size;
   return `<details class="card repli" aria-label="Mes trophées" data-k="trophees" ${S.ouverts && S.ouverts.trophees ? 'open' : ''}>
-    <summary><span style="color:var(--amber)">${icon('trophy', 20)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Mes trophées</span>
+    <summary><span class="vign">${vignetteTrophees(nb)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Mes trophées</span>
       <span class="tiny muted">${nb} sur ${TROPHEES.length}</span></span>${icon('chevron', 16)}</summary>
     <div class="trophees">${trophees}</div></details>`;
 }

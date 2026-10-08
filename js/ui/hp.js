@@ -23,10 +23,11 @@ import { PERIL } from '../engine/rivalites.js';
 import { aFairePactes } from './pactes.js';
 import { affaire, dossierDe, pointsDecouverte, ENQ, toursTraque, delaiTraque, PRIME_LABELS } from '../engine/enquete.js';
 import { aideBtn } from './aide.js';
-import { sceneCarteHtml } from './logistique.js';
+import { sceneCarteHtml, sceneZone, monDecor, mesSkins } from './logistique.js';
 import { encheresHtml } from './encheres.js';
 import { TUTELLE } from '../engine/constants.js';
 import { equipeHtml, tropheesHtml } from './equipe.js';
+import { TROPHEES } from '../engine/equipe.js';
 import { fraisFixes, pointsIpz, IPZ_LABELS, confianceCommune, moralMult, moyenneIpz } from '../engine/zone.js';
 const AIDE_COMP = { satisfaction: 'satisfaction', affaires: 'terrain', moral: 'moral', budget: 'budgetIpz', reputation: 'reputation' };
 import { IPZ_POIDS, TERRAIN, BUDGET_IPZ } from '../engine/constants.js';
@@ -94,7 +95,7 @@ function ipzDetailHtml(d) {
     <div class="between"><span style="font-weight:700">IPZ ${fmt1(d.ipz)}</span>${delta !== null ? `<span class="small">${evol(delta)} depuis la veille</span>` : ''}</div>
     <table class="ipz-table"><thead><tr><th>Composante</th><th>Valeur</th><th>Poids</th><th>Points</th><th>vs veille</th></tr></thead>
       <tbody>${Object.keys(IPZ_POIDS).map(ligne).join('')}</tbody></table>
-    <span class="tiny muted"><strong>Résultats terrain</strong> (ce ne sont pas les PS, qui servent aux grades) = ${TERRAIN.incidents} × part des incidents traités + ${fmt1(TERRAIN.parPoint)} × bilan des points (points du jour + moitié du bilan d’hier), plafonné à 100${det ? ` · ce tour : ${det.traites}/${det.incidents} incidents, ${fmt1(det.points)} points, bilan ${fmt1(det.bilan !== undefined ? det.bilan : det.points)}` : ''}. <strong>Budget</strong> = 50 + 1,5 par tranche de 1 000 € de budget (100 de 34 à ${BUDGET_IPZ.dormant} k€ ; au-delà, l’argent qui dort coûte ${BUDGET_IPZ.pente} point par tranche de 1 000 €).</span>
+    <details class="formule"><summary class="tiny muted">Comment c’est calculé ? ${icon('chevron', 12)}</summary><span class="tiny muted"><strong>Résultats terrain</strong> (ce ne sont pas les PS, qui servent aux grades) = ${TERRAIN.incidents} × part des incidents traités + ${fmt1(TERRAIN.parPoint)} × bilan des points (points du jour + moitié du bilan d’hier), plafonné à 100${det ? ` · ce tour : ${det.traites}/${det.incidents} incidents, ${fmt1(det.points)} points, bilan ${fmt1(det.bilan !== undefined ? det.bilan : det.points)}` : ''}. <strong>Budget</strong> = 50 + 1,5 par tranche de 1 000 € de budget (100 de 34 à ${BUDGET_IPZ.dormant} k€ ; au-delà, l’argent qui dort coûte ${BUDGET_IPZ.pente} point par tranche de 1 000 €).</span></details>
   </div>`;
 }
 
@@ -143,7 +144,24 @@ function rapportHtml(z) {
     ${journalHtml(d.journal)}
     ${!d.journal && idx > 0 ? '<p class="tiny muted" style="margin:0">Détail des jauges indisponible pour les tours d’avant la mise à jour.</p>' : ''}
     <span class="kicker" style="margin-top:6px">Tout ce qui s’est passé</span>
-    ${lignes.map((l) => `<p class="small" style="margin:0${/^Décision refusée/.test(l) ? ';color:var(--red-soft);font-weight:700' : ''}">• ${esc(l)}</p>`).join('')}</div>`;
+    <div class="faits">${lignes.map(faitHtml).join('')}</div></div>`;
+}
+
+/** Une ligne du rapport : icône du service, intitulé en gras, ton (bon / mauvais / neutre) en liseré. */
+const FAITS_ICO = [
+  [/^(Intervention|Urgence|Colis|Bitonal)/i, '🚨'], [/^(Recherche|Enquête|Appui|Voisinage|Dossier|Pièce|Traque)/i, '🔎'],
+  [/^(Proximité|Patrouille|Point chaud|Flagrant|Quartier|Vague)/i, '🏘'], [/^(Roulage|Flotte|Véhicule|Garage)/i, '🚓'],
+  [/^(Accueil|Paperasse)/i, '🗂'], [/^(Moral|Équipe|Chef|Agent|Formation|Recrut)/i, '👮'], [/^(Incident|Imprévu|Coup dur)/i, '⚠️'],
+  [/^(Décision|Plan|Conseil|Pacte|District|Crise|Défi|Relève)/i, '🏛'], [/^(Budget|Salle|Vente|Enchère|Subside|Prime)/i, '💶'],
+  [/^(Zone de non-droit|Non-droit|Assaut)/i, '🧱'], [/^(Pas d’ordres|Pilote)/i, '🤖'], [/^(Énigme|Challenge)/i, '🧩'],
+];
+function faitHtml(l) {
+  const ico = (FAITS_ICO.find(([re]) => re.test(l)) || [null, '•'])[1];
+  const mauvais = /^Décision refusée|personne n’est venu|n’a rien donné|refusée|bless|−\d|-\d|manqu|échou|raté|perdu/i.test(l);
+  const bon = !mauvais && /\+\d|réussi|élucidé|interpellé|repris|gagn/i.test(l);
+  const m = l.match(/^([^:·]{2,48}?)\s*[:·]\s+(.*)$/s);
+  const corps = m ? `<strong>${esc(m[1])}</strong> · ${esc(m[2])}` : esc(l);
+  return `<div class="fait ${mauvais ? 'mauvais' : bon ? 'bon' : ''}${/^Décision refusée/.test(l) ? ' alerte' : ''}"><span class="fait-i" aria-hidden="true">${ico}</span><span class="small">${corps}</span></div>`;
 }
 
 function cleNuit(z) { return `mazp-nuit-${S.backend.gameId ? S.backend.gameId() : ''}-${S.state.season}-${S.state.turn}-${z.uid}`; }
@@ -383,7 +401,7 @@ export function renderHP() {
       <div class="tiles mz-tiles">
         <div class="tile"><span class="l">Agents</span><span class="v">${dispo}<span class="muted" style="font-size:13px">/${z.agents}</span></span>
           <span class="s ${blesses ? 'bad' : ''}">${blesses ? `${blesses} absent${blesses > 1 ? 's' : ''}` : form ? `${form} en form.` : z.academie.length ? `+${z.academie.reduce((s, a) => s + a.n, 0)} recrue${z.academie.reduce((s, a) => s + a.n, 0) > 1 ? 's' : ''}` : 'au complet'}</span></div>
-        <button type="button" class="tile tile-btn" data-action="budget" aria-label="Détail du budget"><span class="l row" style="gap:4px">Budget ${icon('chevron', 12)}</span><span class="v v-euros ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s ${fraisFixesDuJour(z) < 0 ? 'bad' : 'ok'}">${fraisFixesDuJour(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(fraisFixesDuJour(z)))} k€/jour</span></button>
+        <button type="button" class="tile tile-btn" data-action="budget" aria-label="Détail du budget"><span class="l row" style="gap:4px">Budget ${icon('chevron', 12)}</span><span class="v v-euros ${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</span><span class="s ${fraisFixesDuJour(z) < 0 ? 'bad' : 'ok'}">${fraisFixesDuJour(z) >= 0 ? '+' : '−'}${fmt1(Math.abs(fraisFixesDuJour(z)))} k€/j</span></button>
         <button type="button" class="tile tile-btn" data-action="parc" aria-label="Parc automobile"><span class="l row" style="gap:4px">Véhicules ${icon('chevron', 12)}</span><span class="v">${vDispo}<span class="muted" style="font-size:13px">/${z.vehicules}</span></span><span class="s ${cab || 100 - z.usure < 60 ? 'bad' : 100 - z.usure < 80 ? 'warn' : ''}">${cab ? `${cab} cabossé${cab > 1 ? 's' : ''}` : `état ${Math.round(100 - z.usure)} %`}</span></button>
       </div>
       <div class="cadrans">
@@ -453,12 +471,44 @@ function recompensesGrade(z) {
 export function renderProfil() {
   const z = myZone();
   const p = S.player || {};
-  const { g } = gradeInfo(z.ps);
+  const { g, n, pct } = gradeInfo(z.ps);
   const etendue = z.ps >= 200;
+  const records = titresDefi(z.uid);
+  const affiches = (z.affiches || []).slice().reverse();
+  const nbTro = (z.trophees || []).length;
+  const stat = (v, l) => `<div class="pc-stat"><span class="v">${v}</span><span class="l">${l}</span></div>`;
+  const editer = S.editingName || S.profilColor || !(p.pseudo);
   return `<main class="screen">
     <a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
-    <div class="col" style="gap:3px"><span class="kicker">Profil</span><h1 class="big">ZP ${esc(z.code)} ${esc(z.nom)}</h1><p class="sub">${g.nom} · ${z.ps} points de service</p></div>
-    <form class="card" data-form="profil">
+    <section class="card profil-carte" style="--zc:${esc(z.couleur || '#5AA0F0')}">
+      <div class="pc-scene">${sceneZone(z, S.state, monDecor(z), mesSkins(z).choix)}</div>
+      <div class="pc-id">
+        <span class="pc-insigne">${p.blason ? blasonSvg(p.blason, z.couleur, 40, '') : `<span class="pc-ecu">${icon('shield', 24)}</span>`}</span>
+        <span class="col" style="gap:1px;min-width:0"><span class="pc-pseudo">${esc(p.pseudo || 'Sans pseudo')}</span>
+          <span class="small muted">Chef de la <strong style="color:var(--zc)">ZP ${esc(z.code)} ${esc(z.nom)}</strong></span></span>
+      </div>
+      <div class="pc-grade">
+        <div class="between"><span style="font-weight:700">${esc(g.nom)}</span><span class="tiny muted mono">${z.ps} PS${n ? ` · ${esc(n.nom)} à ${n.ps}` : ' · grade maximal'}</span></div>
+        <span class="pc-barre"><span style="width:${Math.max(3, pct)}%"></span></span>
+      </div>
+      <div class="pc-stats">
+        ${stat(z.ipz !== undefined && z.ipz !== null ? fmt1(z.ipz) : '—', 'IPZ')}
+        ${stat(`${nbTro}<small>/${TROPHEES.length}</small>`, 'Trophées')}
+        ${stat(affiches.length, `Arrestation${affiches.length > 1 ? 's' : ''}`)}
+        ${stat(records.length, `Record${records.length > 1 ? 's' : ''}`)}
+        ${stat(z.toursJoues || 0, 'Tours joués')}
+        ${stat(z.faillites || 0, `Faillite${(z.faillites || 0) > 1 ? 's' : ''}`)}
+      </div>
+      ${records.length || (z.titres || []).length || (z.badges || []).length ? `<div class="pc-titres">
+        ${records.map((t) => `<span class="pc-plaque">🏆 ${esc(t.titre)} <small>niv. ${t.niveau} · ${esc(p.pseudo || '')}</small></span>`).join('')}
+        ${(z.titres || []).map((t) => `<span class="pc-plaque">${icon('trophy', 12)} ${esc(t)}</span>`).join('')}
+        ${(z.badges || []).map((b) => `<span class="pc-plaque argent">${esc(b)}</span>`).join('')}
+      </div>` : ''}
+      ${affiches.length ? `<div class="pc-affiches" aria-label="Suspects arrêtés">${affiches.slice(0, 6).map((a) => `<span class="pc-affiche" title="${esc(a.titre)} · saison ${a.season}"><b>ARRÊTÉ</b><span>${esc(String(a.nom).split(' ')[0])}</span></span>`).join('')}</div>` : ''}
+    </section>
+    <details class="card repli" data-k="profil-edit" ${editer ? 'open' : ''}>
+      <summary><span style="color:var(--amber)">${icon('pencil', 18)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Modifier ma zone</span><span class="tiny muted">pseudo, nom, code et couleur</span></span>${icon('chevron', 16)}</summary>
+    <form class="col" data-form="profil" style="gap:12px">
       <label class="field">Ton prénom ou pseudo<input class="text" name="pseudo" maxlength="24" required value="${esc(p.pseudo || '')}"></label>
       <label class="field">Nom de la zone<input class="text" name="nom" maxlength="24" required value="${esc(z.nom)}"></label>
       <label class="field">Code de zone (4 chiffres)<input class="text mono" name="code" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required value="${esc(z.code)}"></label>
@@ -466,15 +516,12 @@ export function renderProfil() {
         <div class="swatches">${COULEURS_ZONE.map((c, i) => `<button type="button" class="swatch" style="background:${c}" data-action="pick-color-profil" data-color="${c}" aria-pressed="${(S.profilColor || z.couleur) === c}" ${i >= 6 && !etendue ? 'disabled title="Grade Inspecteur requis"' : ''} aria-label="Couleur ${c}"></button>`).join('')}</div>
       </fieldset>
       <button class="btn primary block" type="submit">Enregistrer</button>
-    </form>
+    </form></details>
     ${recompensesGrade(z)}
-    <section class="card"><h2 class="card-title">Carrière</h2>
-      <p class="small" style="margin:0">Faillites : <strong>${z.faillites || 0}</strong>${(z.badges || []).length ? ` · Badges : ${z.badges.map((b) => `<strong>${esc(b)}</strong>`).join(', ')}` : ''}</p></section>
-    ${(z.titres && z.titres.length) || titresDefi(z.uid).length ? `<section class="card"><h2 class="card-title">Titres</h2>${(z.titres || []).map((t) => `<p class="small" style="margin:0">${icon('trophy', 14)} ${esc(t)}</p>`).join('')}${titresDefi(z.uid).map((t) => `<p class="small" style="margin:0">🏆 ${esc(t.titre)} <span class="muted">· record du défi, niveau ${t.niveau}</span></p>`).join('')}</section>` : ''}
     <a class="list-row" href="#parties"><span class="col grow" style="gap:1px"><span style="font-weight:600">Changer de partie</span><span class="small muted">${esc((S.partie && S.partie.nom) || '')} · rejoindre ou créer une partie</span></span>${icon('chevron', 18)}</a>
     <section class="card"><h2 class="card-title">Installer le jeu sur ton téléphone</h2>
       <p class="small muted" style="margin:0">Android (Chrome) : menu ⋮ puis « Installer l’application ». iPhone (Safari) : bouton Partager puis « Sur l’écran d’accueil ».</p></section>
-    <p class="tiny muted" style="margin:0">Connecté${S.user.email ? ` : ${esc(S.user.email)}` : ''}${p.bot ? '' : ''}</p>
+    <p class="tiny muted" style="margin:0">Connecté${S.user.email ? ` : ${esc(S.user.email)}` : ''}</p>
     <button class="btn danger block" data-action="logout">Se déconnecter</button>
   </main>${tabbar('hp')}`;
 }

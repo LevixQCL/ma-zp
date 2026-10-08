@@ -134,7 +134,7 @@ export function mesSkins(z) {
 }
 
 /** Personnalisation choisie par le joueur (tout de suite visible chez lui, recopiée dans la partie à 20:00). */
-function monDecor(z) { return decorValide(z, (S.player && S.player.decor) || z.decor); }
+export function monDecor(z) { return decorValide(z, (S.player && S.player.decor) || z.decor); }
 export const monDecorPublic = monDecor;
 
 /** Illustration d'une zone pour la vitrine de la Carte (la sienne avec ses choix en cours). */

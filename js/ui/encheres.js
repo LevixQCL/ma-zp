@@ -27,6 +27,7 @@ function resultatHtml(st) {
   return `<p class="tiny muted" style="margin:0">Dernière vente (tour ${r.tour}) : ${esc(lot ? lot.nom : r.nom)} · ${g ? `remporté par ${zoneName(g)} pour ${r.montant} k€ (${r.offres} offre${r.offres > 1 ? 's' : ''})` : 'aucun acheteur'}.</p>`;
 }
 
+import { vignetteVentes } from './vignettes-hp.js';
 export function encheresHtml() {
   const z = myZone(), st = S.state;
   const e = st.enchere && st.enchere.tour === st.turn ? st.enchere : null;
@@ -57,7 +58,7 @@ export function encheresHtml() {
       <p class="tiny muted" style="margin:0">Offres secrètes, dévoilées à 20:00. Le plus offrant gagne et paie son offre ; à égalité, la meilleure réputation l’emporte. Après un lot gagné, pas d’enchère pendant ${ENCHERE.delaiGain} tours.</p>`;
   }
   return `<details class="card repli" aria-label="Salle des ventes" data-k="encheres" ${S.ouverts && S.ouverts.encheres ? 'open' : ''}>
-    <summary><span style="color:var(--amber)">${icon('marteau', 20)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Salle des ventes</span>
+    <summary><span class="vign">${vignetteVentes(!!offre)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Salle des ventes</span>
       <span class="tiny muted">${resume}</span></span>${icon('chevron', 16)}</summary>
     <div class="col" style="gap:10px">${corps}
       ${mesLots.length ? `<p class="small" style="margin:0"><strong>Tes lots cette saison</strong> : ${mesLots.map((l) => esc(l.nom)).join(' · ')}</p>` : ''}

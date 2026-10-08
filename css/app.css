@@ -1204,7 +1204,7 @@ body:has(.savebar, .mj-wrap, .aide-wrap, .tuto, .troll) .inst-barre { display: n
 .pdelta.down { color: var(--red-soft); background: var(--red-bg); }
 .mz-tiles .tile { padding: 10px; }
 .mz-tiles .tile .v { font-size: clamp(19px, 5.6vw, 22px); }
-.mz-tiles .tile .s { font-size: 11.5px; white-space: nowrap; }
+.mz-tiles .tile .s { font-size: clamp(10px, 3vw, 11.5px); white-space: normal; }
 .cadrans { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .cadran { display: flex; flex-direction: column; align-items: center; gap: 2px; background: var(--bg); border: 1px solid var(--hair); border-radius: 18px; padding: 10px 8px 12px; min-width: 0; text-align: center; }
 .cad-svg { width: 78px; height: 66px; flex-shrink: 0; overflow: visible; }
@@ -1679,6 +1679,87 @@ table.horaire.bd tr.bd-arch td { color: var(--amber-hi); font-weight: 600; }
 .hp.compacte .duo:not(:has(details[open])) > :nth-child(3):last-child { grid-column: auto; }
 .hp.compacte .duo:not(:has(details[open])) > details.repli > summary { padding: 10px 8px; flex-direction: column; gap: 4px; }
 .hp.compacte .duo:not(:has(details[open])) > details.repli > summary .tiny { -webkit-line-clamp: 1; font-size: 10.5px; }
-.hp.compacte .cad-s { white-space: nowrap; font-size: 9.5px; }
+.hp.compacte .cad-s { white-space: normal; font-size: 9.5px; text-wrap: balance; overflow-wrap: anywhere; max-width: 100%; }
+/* Cadrans : rien ne déborde de la case, même avec une grande taille de texte sur le téléphone */
+.hp.compacte .cadran { overflow: hidden; }
+.hp.compacte .cad-l { font-size: clamp(9.5px, 2.85vw, 11.5px); letter-spacing: -.01em; max-width: 100%; }
+.hp.compacte .cad-s b { white-space: nowrap; }
 .linkbtn { background: none; border: 0; padding: 0; color: var(--blue-soft); font: inherit; text-decoration: underline; cursor: pointer; }
 .inc-row.inc-actu { border-color: rgba(255, 178, 62, .45); }
+
+/* Enquête (liste) : appui fédéral sur une ligne, pastilles d'état */
+.enq-ligne { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.enq-ligne .chip { min-height: 30px; padding: 0 11px; }
+.enq-pastilles .pill { white-space: normal; }
+
+/* Rapport de la nuit : une ligne par fait, icône du service et liseré de ton */
+.faits { display: flex; flex-direction: column; gap: 4px; }
+.fait { display: flex; gap: 9px; align-items: flex-start; padding: 6px 9px; border-radius: 10px; background: var(--surface2); border-left: 3px solid var(--hair); line-height: 1.4; }
+.fait.bon { border-left-color: var(--green, #3DD39A); }
+.fait.mauvais { border-left-color: var(--red-soft, #FF7A7A); }
+.fait.alerte { background: var(--red-bg); }
+.fait-i { font-size: 15px; line-height: 1.25; flex-shrink: 0; width: 18px; text-align: center; }
+.fait strong { color: var(--text); }
+details.formule > summary { cursor: pointer; list-style: none; }
+details.formule > summary::-webkit-details-marker { display: none; }
+details.formule[open] > summary { margin-bottom: 4px; }
+
+/* Terrain : la carte choisit le secteur ; le reste se replie */
+.nd-autres > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 10px 14px; border: 1px solid var(--hair); border-radius: 14px; color: var(--text2); font-weight: 600; }
+.nd-autres > summary::-webkit-details-marker { display: none; }
+.nd-autres > summary svg { margin-left: auto; transition: transform .15s; }
+.nd-autres[open] > summary svg { transform: rotate(90deg); }
+.nd-fiche { border-color: var(--amber-line); }
+
+/* Tuiles illustrées de l'HP */
+.vign { display: block; flex-shrink: 0; width: 64px; line-height: 0; }
+.vign-svg { width: 100%; height: auto; display: block; }
+.duo:not(:has(details[open])) > details.repli > summary { flex-direction: column; align-items: stretch; }
+.duo:not(:has(details[open])) > details.repli > summary .vign { width: 100%; }
+.duo > details.repli[open] > summary .vign { width: 56px; }
+
+/* Profil : carte de joueur */
+.profil-carte { gap: 12px; overflow: hidden; }
+.pc-scene { margin: -16px -16px 0; line-height: 0; border-bottom: 3px solid var(--zc); }
+.pc-scene svg { width: 100%; height: auto; display: block; }
+.pc-id { display: flex; align-items: center; gap: 12px; }
+.pc-insigne { flex-shrink: 0; line-height: 0; }
+.pc-ecu { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: color-mix(in srgb, var(--zc) 22%, transparent); border: 1px solid var(--zc); color: var(--zc); }
+.pc-pseudo { font-family: var(--display, inherit); font-size: 24px; font-weight: 800; line-height: 1.05; }
+.pc-grade { display: flex; flex-direction: column; gap: 6px; }
+.pc-barre { display: block; height: 8px; border-radius: 99px; background: var(--surface2); overflow: hidden; }
+.pc-barre > span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--amber), #FFD27A); }
+.pc-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.pc-stat { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 9px 4px; border-radius: 12px; background: var(--surface2); }
+.pc-stat .v { font-family: var(--mono); font-size: 19px; font-weight: 700; }
+.pc-stat .v small { font-size: 11px; color: var(--muted); }
+.pc-stat .l { font-size: 11px; color: var(--text2); }
+.pc-titres { display: flex; flex-wrap: wrap; gap: 6px; }
+.pc-plaque { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; color: #2A1E08; background: linear-gradient(180deg, #FFD98A, #E6A93A); box-shadow: inset 0 -2px 0 rgba(0,0,0,.18); }
+.pc-plaque small { font-weight: 600; opacity: .75; }
+.pc-plaque.argent { background: linear-gradient(180deg, #E8ECF5, #AEB7CC); }
+.pc-affiches { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.pc-affiche { flex-shrink: 0; width: 54px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 3px 6px; background: #EFE3C4; color: #3B2F1C; border-radius: 3px; font-size: 10.5px; font-weight: 700; transform: rotate(-2deg); }
+.pc-affiche:nth-child(even) { transform: rotate(2deg); }
+.pc-affiche b { display: block; width: 100%; text-align: center; background: #B5342C; color: #EFE3C4; font-size: 9px; letter-spacing: .04em; }
+@media (min-width: 720px) { .pc-stats { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+
+/* Énigmes : changer / autre façon, sur une ligne */
+.quete-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: -4px; }
+.quete-actions .chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; }
+
+/* PC : navigation en barre latérale à gauche (plus de dock qui flotte par-dessus le contenu) */
+@media (min-width: 1000px) and (hover: hover) and (pointer: fine) {
+  #app { max-width: 1228px; padding-left: 108px; box-sizing: border-box; }
+  main.screen { padding-bottom: 48px; }
+  nav.tabs { top: 50%; bottom: auto; left: max(12px, calc(50% - 614px + 8px)); transform: translateY(-50%); width: 84px; max-width: none; flex-direction: column; gap: 4px; padding: 10px 6px; border-radius: 26px; }
+  nav.tabs a { flex: none; min-height: 58px; padding: 6px 0; font-size: 11.5px; }
+  nav.tabs a.centre .rond { margin-top: 0; width: 52px; height: 52px; }
+  nav.tabs a.centre .dot { top: 2px; right: 6px; }
+  nav.tabs .dot { right: 14px; }
+  .savebar { bottom: 20px; margin-left: 54px; }
+  .inst-barre { bottom: 20px; margin-left: 54px; }
+}
+/* Tuiles Agents / Budget / Véhicules : le texte se replie au lieu de déborder sur petit écran */
+.tile { min-width: 0; overflow: hidden; }
+.tile .s, .tile .l { min-width: 0; }

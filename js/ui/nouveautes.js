@@ -14,6 +14,16 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Écrans plus visuels', [
+      ['Profil', 'une vraie carte de joueur : ton commissariat, ton grade et ce qu’il manque pour le suivant, IPZ, trophées, arrestations, records, et tes avis « ARRÊTÉ ». Les réglages de la zone se déplient.'],
+      ['Enquête (liste)', 'les onglets Suspects, Scène, Pièces remontent : voisinage, budget restant et cellule tiennent en pastilles, l’appui fédéral sur une ligne. « Mes démarches » passe sous le dossier.'],
+      ['Rapport de la nuit', 'chaque fait sur sa ligne avec l’icône de son service, liseré vert ou rouge selon que ça s’est bien ou mal passé. La formule de l’IPZ se déplie (« Comment c’est calculé ? »).'],
+      ['Terrain', 'touche un secteur sur le plan : sa fiche s’ouvre juste en dessous. La liste ne garde que tes secteurs, ceux en danger et ceux où une zone s’annonce ; les autres se déplient.'],
+      ['Énigmes', '« Changer d’énigme » et « Bonus autrement » sur une seule ligne sous le titre.'],
+      ['Pactes', 'tes pactes d’abord ; la carte des liens se déplie en dessous.'],
+      ['HP', 'salle des ventes, équipe et trophées ont leur petite illustration. Les petites lignes sous les cadrans et les tuiles ne débordent plus sur les petits écrans.'],
+      ['Sur PC', 'la navigation passe dans une barre à gauche et ne cache plus le contenu.'],
+    ]],
     ['Énigmes : nouvelles formes', [
       ['Pourquoi', 'une énigme qui revient toujours sous la même forme se résout vite par réflexe. Huit types d’énigmes ont maintenant une ou deux formes de plus, qui demandent de raisonner autrement. Chaque fois qu’un type revient dans tes énigmes, il change de forme (jamais deux fois la même d’affilée) ; le dossier noir aussi.'],
       ['Qui ment ?', 'Les alibis : chacun dit où il était et qui il a croisé, avec des faits établis (« le friturier est formel… ») ; un menteur ne dit que des choses fausses. Demi-vérités : chaque suspect dit une vérité et un mensonge, il faut trouver le coupable.'],
