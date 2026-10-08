@@ -6,6 +6,7 @@ import { recordBitonal, monScoreBitonal } from './bitonal.js';
 import { S, esc, icon, tabbar, myZone } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS, FORMES, FORMES_EN_JEU } from '../quests/quests.js';
 import { digicodeHtml, digicodeResultat } from './digicode.js';
+import { vignetteEnigme, couleurEnigme } from './vignettes-enigmes.js';
 
 /** Formes d'énigmes visibles en entraînement : en jeu, ou en aperçu (?apercu dans l'adresse). */
 export function formesVisibles() {
@@ -122,29 +123,47 @@ function entrainementMiniJeux() {
   </section>`;
 }
 
-/** Barre de l'entraînement : type (tuiles par famille), difficulté, statistiques personnelles. */
+function statsEntrainement() {
+  try { return JSON.parse(localStorage.getItem('mazp-entrainement') || '{}'); } catch (e) { return {}; }
+}
+
+/** Liste des énigmes de l'entraînement : une ligne par énigme (miniature, formes, tes réussites). */
+function entrainementListe() {
+  const st = statsEntrainement();
+  const autres = QUEST_TYPES.filter((k) => !GROUPES_ENIGMES.some(([, l]) => l.includes(k)));
+  const groupes = [...GROUPES_ENIGMES, ...(autres.length ? [['Autres', autres]] : [])];
+  const ligne = (k) => {
+    const y = st[k], fs = formesVisibles() && FORMES[k];
+    return `<button type="button" class="lgn lgn-en" data-action="train-type" data-v="${k}" style="--c:${couleurEnigme(k)}" aria-label="${esc(QUEST_LABELS[k])}">
+      ${vignetteEnigme(k, ICO_ENIGME[k])}
+      <span class="lgn-t"><span class="lgn-n">${esc(QUEST_LABELS[k])}</span>${fs ? `<span class="lgn-sv">${fs.length} formes</span><span class="lgn-f">${fs.map((f) => esc(f.nom)).join(' · ')}</span>` : '<span class="lgn-sv">1 forme</span>'}</span>
+      <span class="lgn-moi${y && y.n && y.ok === y.n ? ' top' : ''}"><b>${y ? `${y.ok}/${y.n}` : '—'}</b><span>réussies</span></span></button>`;
+  };
+  return `<section class="col" aria-label="Énigmes d’entraînement" style="gap:10px">
+    <p class="tiny muted" style="margin:0">Choisis une énigme, sa forme et sa difficulté (jusqu’au hardcore du dossier noir). Correction immédiate, rien ne compte : ni classement, ni moral, ni PS.</p>
+    ${groupes.map(([g, l]) => `<span class="tr-grp">${esc(g)}</span><div class="lgn-l">${l.filter((k) => QUEST_TYPES.includes(k)).map(ligne).join('')}</div>`).join('')}
+  </section>`;
+}
+
+/** Barre de l'énigme d'entraînement choisie : retour à la liste, forme, difficulté. */
 function entrainementBarre() {
-  let st = {};
-  try { st = JSON.parse(localStorage.getItem('mazp-entrainement') || '{}'); } catch (e) { /* rien */ }
+  const st = statsEntrainement();
   const t = S.trainType || 'quiment', d = S.trainDiff || 3;
   const x = st[t];
   const fs = formesVisibles() && FORMES[t];
   const f = (fs && S.trainForme && fs.some((y) => y.id === S.trainForme)) ? S.trainForme : 'classique';
-  const ouvert = S.trainChoix !== false;
-  const tuile = (k) => { const y = st[k]; return `<button type="button" class="tr-tuile petite" data-action="train-type" data-v="${k}" aria-pressed="${k === t}"><span class="tr-ico" aria-hidden="true">${ICO_ENIGME[k] || '❓'}</span><span class="tr-nom">${esc(QUEST_LABELS[k])}</span>${y ? `<span class="tr-s">${y.ok}/${y.n}</span>` : ''}</button>`; };
-  const autres = QUEST_TYPES.filter((k) => !GROUPES_ENIGMES.some(([, l]) => l.includes(k)));
-  const groupes = [...GROUPES_ENIGMES, ...(autres.length ? [['Autres', autres]] : [])];
-  return `<section class="card tight" aria-label="Réglages de l’entraînement" style="gap:8px">
-    <button type="button" class="between tr-entete" data-action="train-choix" aria-expanded="${ouvert}"><span class="small" style="font-weight:600">Énigme : ${ICO_ENIGME[t] || ''} ${esc(QUEST_LABELS[t])}</span><span class="tiny muted">${ouvert ? 'replier' : 'changer'} ${icon('chevron', 12)}</span></button>
-    ${ouvert ? groupes.map(([g, l]) => `<span class="tr-grp">${esc(g)}</span><div class="tr-grille">${l.filter((k) => QUEST_TYPES.includes(k)).map(tuile).join('')}</div>`).join('') : ''}
-    ${fs ? `<div class="col" style="gap:4px"><span class="small" style="font-weight:600">Forme${FORMES_EN_JEU ? '' : ' <span class="pill" style="font-size:10px;padding:1px 6px">aperçu</span>'}</span>
+  return `<section class="card tight tr-barre" aria-label="Réglages de l’entraînement" style="gap:10px;--c:${couleurEnigme(t)}">
+    <div class="row" style="gap:10px">
+      <button type="button" class="tr-retour" data-action="train-choix" aria-label="Toutes les énigmes">${icon('chevron', 14)}</button>
+      ${vignetteEnigme(t, ICO_ENIGME[t])}
+      <div class="col grow" style="gap:1px;min-width:0"><span class="tr-titre">${esc(QUEST_LABELS[t])}</span><span class="tiny muted">${x ? `${x.ok} réussie${x.ok > 1 ? 's' : ''} sur ${x.n}` : 'Pas encore essayée'}</span></div>
+    </div>
+    ${fs ? `<div class="col" style="gap:4px"><span class="tr-lbl">Forme${FORMES_EN_JEU ? '' : ' <span class="pill" style="font-size:10px;padding:1px 6px">aperçu</span>'}</span>
       <div class="segn" style="grid-template-columns:repeat(${fs.length},minmax(0,1fr))">${fs.map((y) => `<button type="button" aria-selected="${y.id === f}" data-action="train-forme" data-v="${y.id}">${esc(y.nom)}</button>`).join('')}</div></div>` : ''}
-    <div class="col" style="gap:4px"><span class="small" style="font-weight:600">Difficulté</span>
+    <div class="col" style="gap:4px"><span class="tr-lbl">Difficulté <span class="tiny muted" style="font-weight:500">· HC = hardcore</span></span>
       <div class="segn" style="grid-template-columns:repeat(6,minmax(0,1fr))">${[1, 2, 3, 4, 5, 6].map((n) => `<button type="button" aria-selected="${n === d}" data-action="train-diff" data-v="${n}">${n === 6 ? 'HC' : n}</button>`).join('')}</div></div>
-    <span class="tiny muted">${x ? `Ton entraînement en ${esc(QUEST_LABELS[t])} : ${x.ok} réussie${x.ok > 1 ? 's' : ''} sur ${x.n}.` : 'Rien ne compte ici : ni classement, ni moral, ni PS.'} « HC » = niveau hardcore, celui du dossier noir.</span>
   </section>`;
 }
-
 
 /** Libellé d'un bonus d'énigmes. */
 function bonusLabel(b, gBonus, enqueteOuverte) {
@@ -229,6 +248,13 @@ export function renderQuete() {
     ${modes}
     ${sousOnglets}
     ${entrainementMiniJeux()}
+  </main>${tabbar('quete', { questBadge: false })}`;
+  }
+  if (train && S.trainChoix !== false) {
+    return `<main class="screen quete">
+    ${modes}
+    ${sousOnglets}
+    ${entrainementListe()}
   </main>${tabbar('quete', { questBadge: false })}`;
   }
   const i = Math.min(S.questIdx || 0, 3);

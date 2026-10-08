@@ -1012,8 +1012,8 @@ async function onClick(e) {
         }
         break;
       }
-      case 'train-type': S.trainType = el.dataset.v; S.trainChoix = false; nouvelEntrainement(); rerender(); break;
-      case 'train-choix': S.trainChoix = S.trainChoix === false; rerender(); break;
+      case 'train-type': S.trainType = el.dataset.v; S.trainChoix = false; nouvelEntrainement(); rerender(); window.scrollTo(0, 0); break;
+      case 'train-choix': S.trainChoix = S.trainChoix === false; rerender(); window.scrollTo(0, 0); break;
       case 'train-diff': S.trainDiff = Number(el.dataset.v); nouvelEntrainement(); rerender(); break;
       case 'train-forme': S.trainForme = el.dataset.v; nouvelEntrainement(); rerender(); break;
       case 'train-new': nouvelEntrainement(); rerender(); window.scrollTo(0, 0); break;

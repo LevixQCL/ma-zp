@@ -1639,3 +1639,14 @@ div.db-cle { cursor: default; }
 
 /* Journal des badges */
 table.horaire.bd tr.bd-arch td { color: var(--amber-hi); font-weight: 600; }
+
+/* Entraînement aux énigmes : liste illustrée et barre de l'énigme choisie */
+.vig { width: 96px; height: 72px; border-radius: 10px; display: block; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .1); flex-shrink: 0; }
+.vig-ico { display: grid; place-items: center; font-size: 30px; background: var(--surface3); }
+.lgn-en .lgn-sv { margin: 2px 0 2px; }
+.lgn-f { font-size: 11px; color: var(--muted); line-height: 1.3; }
+.tr-barre .vig { width: 64px; height: 48px; border-radius: 8px; }
+.tr-retour { flex-shrink: 0; width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--text2); display: grid; place-items: center; transform: scaleX(-1); cursor: pointer; }
+.tr-retour:hover { border-color: var(--c); color: var(--text); }
+.tr-titre { font: 800 16px var(--display); line-height: 1.15; }
+.tr-lbl { font-size: 13px; font-weight: 600; }
