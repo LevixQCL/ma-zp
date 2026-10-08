@@ -586,7 +586,9 @@ function step(dt){
           if(a.e<=0){ a.e=0; a.st='back'; a.until=R.t+6; u.held=null; a.u=null; fx(a.x,a.y,'Agent à bout','bad'); } } });
       tw.tgt=tw.agents.filter(a=>a.u).map(a=>a.u); continue; }
     if(tw.type==='barrage') continue;
-    const inR=live.filter(u=>u.alive!==false&&!u.cache&&Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg);
+    const proches=live.filter(u=>u.alive!==false&&Math.hypot(u.p.x-P.x,u.p.y-P.y)<=rg), inR=proches.filter(u=>!u.cache);
+    // émeutiers à portée mais tous dans la fumée : le moyen ne tire pas, on le montre au joueur (pastille « fumée »)
+    if(proches.length&&!inR.length) tw.aveugle=R.t;
     if(tw.type==='cavalerie'){
       if(tw.charge){ const c=tw.charge, k2=(R.t-c.t0)/c.dur;
         if(!c.hit&&k2>=.42){ c.hit=true; for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-c.x,o.p.y-c.y)<=.75){ hit(o,M.choc[o.type]*k,true); if(!o.held&&!veh(o)) o.d=Math.max(0,o.d-(o.type==='bloc'?.2:.6)); } Shell.blip(140,.12,'triangle',.05);
@@ -1566,6 +1568,7 @@ function render(){
   // étoiles de niveau
   for(const id in R.towers){ const tw=R.towers[id], P=padOf(id); for(let i=0;i<tw.lvl;i++) star(g,P.x+(i-(tw.lvl-1)/2)*.2,P.y+.48,.08);
     if(tw.stun>R.t){ for(let i=0;i<3;i++){ const a=rt*5+i*2.1; star(g,P.x+Math.cos(a)*.22,P.y-.95+Math.sin(a)*.07,.06); } }
+    else if(R.t-(tw.aveugle??-9)<.4) pill(g,P.x,P.y-1.05,'aveuglé (fumée)','#ffe2a8',.15,'rgba(10,12,20,.85)');
     if(tw.moveCd>R.t&&!tw.transit){ g.strokeStyle='rgba(255,209,102,.8)'; g.lineWidth=.04; g.beginPath(); g.arc(P.x,P.y+.48,.16,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-(tw.moveCd-R.t)/10)); g.stroke(); } }
   // émeutiers dispersés (jet d'eau) : gouttelettes au-dessus d'eux
   for(const u of R.units) if(u.dispUntil>R.t&&u.state==='go'&&u.p){ g.fillStyle='rgba(150,205,255,.85)'; for(let i=0;i<3;i++){ const a=rt*4+i*2.1+u.id; g.beginPath(); g.arc(u.p.x+Math.cos(a)*.13,u.p.y-.78+Math.sin(a*1.3)*.04,.025,0,7); g.fill(); } }
