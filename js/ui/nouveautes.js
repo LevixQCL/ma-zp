@@ -10,11 +10,20 @@ export const NOTE_MAJ = {
     ['🧩', 'Une 4e énigme chaque jour', 'dès ce soir 20:00 : quatre énigmes, bonus dès 2 réussies, prime dès 3. Une erreur ne te prive plus de la prime. Et toutes les 10 énigmes réussies depuis ton arrivée, un palier : +2 000 € et +3 sur la jauge des skins.'],
     ['🏆', '8 nouveaux trophées', 'Rempart, Première ligne, Recordman, Érudit, Sur tous les fronts, Trésorier, Collectionneur, Au sommet : 20 en tout, et d’autres viendront.'],
     ['⚠️', 'Les gangs contre-attaquent', 'zone de non-droit : au-delà de 2 secteurs tenus, le milieu envoie des gangs les reprendre. Ils sont annoncés la veille : montez la garde ensemble, un gang repoussé rapporte à chaque zone de garde.'],
+    ['🚨', 'Bitonal plus lisible', 'caméra plus haute : tu vois enfin ce qui est juste devant le combi. Fini les accrochages contre une voiture invisible et les panneaux qui glissent tout seuls.'],
     ['🚓', 'Véhicules : le comparatif', 'tous les modèles côte à côte (prix, places, vitesse, maniabilité, usure…), dans le parc et à l’achat.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Bitonal : corrections (8 octobre, soir)', [
+      ['Caméra', 'plus haute et un peu plus reculée : le combi ne cache plus les voitures qui sont juste devant lui. Avant, tout obstacle à moins de ~8 m disparaissait derrière ton propre véhicule.'],
+      ['Décor stable', 'les virages sont maintenant dessinés sur le tracé de la rue : feux, panneaux et immeubles ne glissent plus de gauche à droite tout seuls. Plus de tremblement aléatoire de l’image à grande vitesse.'],
+      ['Accrochages justes', 'il faut un vrai chevauchement (20 cm) pour qu’il y ait choc : en dessous, c’est un frôlement (et des points). Les conducteurs d’en face qui ne s’écartent pas roulent collés à la ligne du milieu, et la voiture qui pile se déporte vers l’axe : on voit de loin que l’axe n’est pas libre.'],
+      ['Carrefours', 'les voitures qui te cèdent s’arrêtent au bord de la chaussée (plus à 40 cm du combi). Celle qui traverse sans s’arrêter est signalée par une flèche au bord de l’écran, et ses phares éclairent la rue avant qu’elle apparaisse. Les voitures « garées » que les autres traversaient ont disparu.'],
+      ['Écran dégagé', 'points, alerte d’accrochage et consigne du feu ne s’affichent plus sur la route devant toi. Cycliste avec gilet fluo et feu arrière clignotant.'],
+      ['Fluidité', 'rendu allégé (lueurs pré-calculées, fenêtres lointaines simplifiées) et résolution réduite automatiquement si le téléphone peine.'],
+    ]],
     ['Retours de Luc (8 octobre)', [
       ['4 énigmes par jour', 'à partir du tour de ce soir : une 4e énigme du jour (un type absent des trois autres, difficulté du jour). Bonus au choix dès 2 bonnes réponses, prime (+3 k€, +2 de moral, +5 PS) dès 3 ; rien de plus à 4. Le dossier noir reste à part.'],
       ['Paliers des énigmes', 'toutes les 10 énigmes réussies depuis ton arrivée (toutes saisons, dossier noir compris) : +2 000 € et +3 sur la jauge des skins. Le compteur et le prochain palier s’affichent sous les onglets de l’écran Énigmes.'],
