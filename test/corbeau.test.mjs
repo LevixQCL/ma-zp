@@ -16,7 +16,7 @@ assert.equal(affaire(st0, 4).cas, 'rampe');
 assert.equal(affaire(st0, 6).meurtre, undefined, 'la suivante redevient un vol');
 
 // Toutes les pièces ont un texte et un titre ; tous les lieux une adresse ; les pièces citées existent.
-const REB = ['r:odile', 'r:relais'];
+const REB = ['r:odile', 'r:relais', 'r:l1', 'r:l2', 'r:l3'];
 for (const f of [...a.faits, ...REB]) { assert.ok(texteFait(a, f).length > 40, f); assert.ok(titrePiece(a, f) && !/undefined/.test(titrePiece(a, f)), f); }
 for (const s of a.suspects) assert.ok(LIEUX_CORBEAU[s.alibi.pos], s.nom);
 for (const l of Object.values(LIEUX_CORBEAU)) assert.ok(l.adresse);
@@ -30,7 +30,7 @@ for (const f of [...a.confront.decisives, ...a.confront.accablantes]) assert.ok(
 for (const f of a.confront.decisives) assert.ok(a.confront.accablantes.includes(f), `décisive mais pas accablante : ${f}`);
 for (const [i, l] of Object.entries(a.innocente)) for (const x of l) for (const f of [].concat(x)) assert.ok(existe(f), `innocente ${i} ${f}`);
 for (const d of a.declics) for (const f of [...d.si, d.f]) assert.ok(existe(f), `déclic ${f}`);
-assert.equal(COUPS_DE_POUCE.length, 5);
+assert.equal(COUPS_DE_POUCE.length, 6);
 for (const c of COUPS_DE_POUCE) assert.deepEqual(c.niveaux.map(([j]) => j), [2, 4, 6]);
 assert.equal(CRENEAUX.length, 5);
 

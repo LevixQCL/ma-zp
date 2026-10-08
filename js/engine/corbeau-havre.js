@@ -137,6 +137,12 @@ const TEXTES = {
   'occ:4': 'Le direct : Hélène Dufrasne sort à 21:49 (« Je vais chercher les photocopies du budget ») et revient à 21:57, une pile de feuilles à la main. Sa librairie est à côté du café, à quinze mètres. Journal de son imprimante : les 40 photocopies du budget ont été imprimées à 18:20.',
   'mob:4': 'Comptes d’Hélène Dufrasne : la librairie survit de justesse. Depuis 2021, 300 € par mois versés à Bernard Vanderhaegen (une reconnaissance de dette de 20 000 €, « prêt Covid »). La librairie est point relais Colis-Point ; registre de la semaine : quatre colis, dont, mardi, un colis d’AfficheExpress (Gand) pour « M. Odon », remis à 18:41. GSM : rien d’utile jeudi soir.',
   'moy:4': 'Perquisition à la Librairie Dufrasne : l’étiqueteuse des prix, à transfert thermique, ruban de 12 mm, fond blanc. Dans le bac à papier à recycler, une cassette usagée du même modèle. Le labo déroule son ruban encreur, qui garde le négatif de tout ce qui a été imprimé : on y lit, à l’envers, les mots des dix lettres du corbeau. Et tout au début du ruban, avant tous les autres : « MADAME ODILE. NE SIGNEZ RIEN LUNDI. »',
+  // Le corbeau écrit au commissariat (rebondissements publics des jours 2, 4 et 6). Chaque lettre a plusieurs lectures :
+  // ce qu'elle dit (vrai), ce qu'elle cherche (faire regarder les comptes du président, empêcher la signature de lundi),
+  // ce qu'elle trahit de son auteur (ce qu'il sait, et comment il le sait) ; elle se relit autrement avec d'autres pièces.
+  'r:l1': 'Samedi matin, une enveloppe kraft sans timbre attendait dans la boîte du commissariat. Dedans, une feuille A4 et des mots au ruban d’étiqueteuse, 12 mm, fond blanc, comme les dix lettres de la rue : « VOUS AVEZ DÉCROCHÉ MES AFFICHES COMME DES INSULTES. LISEZ-LES COMME UNE QUESTION. QUI COMPTE L’ARGENT DES VIEUX DANS CETTE RUE ? — LE CORBEAU D’HAVRÉ »',
+  'r:l2': 'Deuxième lettre au commissariat, même ruban, même enveloppe, déposée dans la nuit : « LUNDI À 10 HEURES, À LA BANQUE, IL NE SUFFIRA PAS D’UN TÉMOIN. IL FAUDRA UN POLICIER. NE ME CHERCHEZ PAS. CHERCHEZ CE QU’ON VA LUI FAIRE SIGNER. »',
+  'r:l3': 'Troisième lettre au commissariat, la dernière, plus courte, le ruban posé de travers comme écrit vite : « ELLE N’A LU NI MA LETTRE NI MON AFFICHE. ELLE NE LIT PLUS QU’À LA LOUPE, ET SON COURRIER PASSE PAR D’AUTRES MAINS. VOUS, VOUS SAVEZ LIRE : LISEZ SES RELEVÉS. »',
   // Rebondissements.
   'r:odile': 'Odile Hautecœur, 84 ans, s’est fait conduire au commissariat par une voisine : « On m’a dit qu’il y avait une affiche pour moi. Pour moi ! Je n’ai jamais reçu de lettre : c’est Bernard qui ouvre mon courrier, mes yeux ne lisent plus que les gros titres, à la loupe. Lundi, oui, je devais signer à la banque ; Bernard m’accompagne, c’est plus simple. Qui le savait ? Bernard, bien sûr. Mon petit-neveu Jordan, qui m’appelle tous les soirs : je lui raconte tout, Bernard dit que j’ai tort. Et la petite Hélène, qui me lit la Gazette le dimanche. Les secrets de la rue ? Évidemment que je les connais : j’ai tenu la mercerie quarante-deux ans. Les gens racontent tout à leur mercière. Et moi, je raconte tout à ceux qui viennent me voir. »',
   'r:relais': 'AfficheExpress, imprimerie en ligne à Gand, répond à la réquisition : mercredi 30 septembre, commande de sept films électrostatiques A2, dont un avec un autre texte, en très gros caractères. Client : « M. Odon », payé par carte prépayée. Livraison : mardi 6 octobre, au point relais Colis-Point « Librairie Dufrasne, rue d’Havré ». Statut : « remis au destinataire ».',
@@ -193,6 +199,7 @@ const TITRES0 = {
   'c:direct': 'Le direct de la réunion', 'c:camville': 'La caméra communale', 'c:sonnette': 'La sonnette de la pharmacie',
   'c:dest': 'Les dix destinataires', 'c:rosine': 'La promeneuse', 'c:septieme': 'La septième affiche',
   'r:odile': 'Odile Hautecœur se présente', 'r:relais': 'La réponse d’AfficheExpress',
+  'r:l1': 'Le corbeau écrit au commissariat', 'r:l2': 'Deuxième lettre du corbeau : lundi, 10 heures', 'r:l3': 'Dernière lettre du corbeau : « elle n’a rien lu »',
   'x:fenetre': 'Quelques minutes suffisent', 'x:sept': 'Elle savait pour la septième', 'x:premiere': 'La première lettre',
   'x:secrets': 'Ce que savait Odile', 'x:caisse': 'Les affiches disaient vrai', 'x:relais': 'Le point relais',
   'd:lettre': 'Une lettre au commissariat',
@@ -236,6 +243,10 @@ export const RELECTURES = {
   'c:septieme': [{ si: 'x:sept', t: 'À 8:15, Hélène Dufrasne parlait déjà de sept affiches ; celle-ci n’a été trouvée qu’à 9:40.' }],
   'c:labo1': [{ si: 'x:caisse', t: 'Ce que disent les affiches est vrai. Mais Bernard Vanderhaegen ne les a pas écrites.' }],
   'mob:4': [{ si: 'r:relais', t: 'AfficheExpress est l’imprimerie qui a fabriqué les affiches.' }],
+  // Les lettres au commissariat se relisent avec ce que l'enquête apprend.
+  'r:l1': [{ si: 'x:caisse', t: 'Les affiches disaient vrai : le corbeau ne calomniait pas le président, il le dénonçait.' }, { si: 'c:dest', t: 'Ses dix lettres à la rue sont toutes des questions, comme celle-ci. Mais celle-ci, il la pose à la police.' }],
+  'r:l2': [{ si: 'mob:0', t: '« Lundi 10:00, banque, Odile, procuration » : c’est l’agenda du président. Le corbeau connaissait l’heure exacte du rendez-vous.' }, { si: 'r:odile', t: 'Qui savait, pour lundi ? Le président, et ceux à qui Odile raconte tout.' }, { si: 'x:caisse', t: 'Ce n’est pas une menace contre le président : c’est un appel au secours pour Odile.' }],
+  'r:l3': [{ si: 'moy:0', t: '« Ni ma lettre » : la lettre cachée dans le tiroir du président est bien du corbeau. Et le corbeau sait qu’elle n’est jamais arrivée.' }, { si: 'r:odile', t: 'Odile lit à la loupe, et seulement les gros titres : le corbeau la voit de près, et souvent.' }],
 };
 
 // Coups de pouce : trois niveaux par fil, débloqués avec les jours. Jamais la solution, toujours une direction.
@@ -244,6 +255,7 @@ export const COUPS_DE_POUCE = [
   { fil: 'Les sorties de la réunion', niveaux: [[2, 'Toute la rue était dans la même salle. Le direct montre qui sort, et quand.'], [4, 'Une sortie courte n’est pas forcément une sortie innocente.'], [6, 'Combien de temps faut-il pour aller chercher une pile de feuilles déjà imprimées, à quinze mètres ?']] },
   { fil: 'Le vrai destinataire', niveaux: [[2, 'Relis le PV jusqu’au bout, et compte.'], [4, 'Une lettre n’est jamais arrivée. Qui trie le courrier d’Odile Hautecœur ?'], [6, 'Compare la lettre trouvée chez le président avec les cachets des dix autres.']] },
   { fil: 'Ce que savait le corbeau', niveaux: [[2, 'Les secrets des lettres viennent de quelqu’un qui connaît la rue depuis longtemps.'], [4, 'Odile Hautecœur sait tout de tout le monde. À qui le raconte-t-elle ?'], [6, 'Un des dix secrets est faux. Recoupe la liste des destinataires avec ce que dit Odile.']] },
+  { fil: 'Les lettres du corbeau à la police', niveaux: [[2, 'Le corbeau écrit à la police. Que veut-il qu’on regarde ? Pas lui : autre chose.'], [4, 'Il connaît l’heure du rendez-vous de lundi. Qui la connaissait ?'], [6, 'Il veut qu’on lise ses affiches, pas qu’on le trouve : qui cherche-t-il à protéger ?']] },
   { fil: 'Les menteurs', niveaux: [[2, 'Chacun ment pour cacher autre chose : cherche quoi.'], [4, 'Une étiqueteuse n’en vaut pas une autre : regarde la largeur du ruban.'], [6, 'Le GPS d’un livreur ne s’arrête pas pour coller des affiches.']] },
 ];
 
@@ -427,6 +439,9 @@ export function affaireCorbeau(n, variante = 'a') {
         'c:dest', 'r:odile', 'r:relais', 'moy:0', 'Ra:0', 'Rd:0', 'd:lettre', 'Rb:3'],
     },
     rebonds: {
+      2: { f: 'r:l1', titre: 'Le corbeau écrit à la police', texte: 'Une lettre en ruban d’étiqueteuse est arrivée au commissariat. Le corbeau ne se cache plus : il demande qu’on « lise ses affiches comme une question ».' },
+      4: { f: 'r:l2', titre: 'Le corbeau donne rendez-vous', texte: 'Deuxième lettre au commissariat : le corbeau parle d’un rendez-vous à la banque, lundi à 10 heures.' },
+      6: { f: 'r:l3', titre: 'Le corbeau : « elle n’a rien lu »', texte: 'Troisième et dernière lettre du corbeau à la police, plus personnelle que les autres.' },
       3: { f: 'r:odile', titre: 'Odile Hautecœur au commissariat', texte: 'L’ancienne mercière de la rue d’Havré, 84 ans, a appris qu’une affiche lui était destinée.' },
       5: { f: 'r:relais', titre: 'L’imprimerie en ligne répond', texte: 'AfficheExpress, à Gand, a retrouvé la commande des affiches.' },
     },

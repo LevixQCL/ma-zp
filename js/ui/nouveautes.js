@@ -14,6 +14,10 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Le corbeau écrit à la police (8 octobre, soir)', [
+      ['Trois lettres au commissariat', 'dans « Le corbeau de la rue d’Havré », le corbeau écrit aussi à la police : aux jours 2, 4 et 6, une lettre en ruban d’étiqueteuse arrive au commissariat, publiée pour toutes les zones. Que veut-il qu’on regarde ? Que sait-il, et comment le sait-il ? Chaque lettre se relit autrement quand ton dossier avance (relectures sous la pièce).'],
+      ['Nouveau coup de pouce', '« Les lettres du corbeau à la police », trois niveaux.'],
+    ]],
     ['Enquêtes : variantes (9 octobre)', [
       ['Vols : deux complices', 'les deux ont le mobile ; l’un a fourni le moyen sans être sur place, l’autre a fait le coup. Il faut les accuser tous les deux (un seul nom est refusé, sans pénalité). Un suspect est hors de cause s’il n’a pas le mobile, ou s’il n’a ni le moyen ni l’occasion. Le complice est arrêté tout de suite, l’exécutant part en traque.'],
       ['Vols : faux témoin', 'l’alibi du coupable ne repose que sur une parole. Un autre suspect, ou un proche, jure qu’il était ailleurs ; ses propres traces (téléphone, horaires) le trahissent. Un innocent peut aussi avoir un témoin… honnête, lui.'],

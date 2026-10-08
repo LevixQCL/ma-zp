@@ -18,7 +18,7 @@ import { empreinte, empreinteAffaire, empreintePhotos } from './empreinte-affair
 const AVANT = {
   2: ['Meurtre rue de la Clef', 'f1c0d162ad8d04317d15', 'db0fe0f78ac044e21cdd'],
   4: ['Le notaire de la Rampe', 'e32ec2cfdcc57117fd1d', '4824b334e47ef32a0cbc'],
-  5: ['Le corbeau de la rue d’Havré', 'ba003a3f57a674ff454f', '642dd7aa8c9232e8fc9a'],
+  5: ['Le corbeau de la rue d’Havré', '275c74bae35c7d2a234a', 'a1503331f9ee0a9d3a10'], // lettres du corbeau au commissariat ajoutées le 8 oct. (avant son ouverture)
 };
 const st0 = { seed: 'empreinte', meurtreDes: 2, meurtre2Des: 4, corbeauDes: 5 };
 for (const [n, [titre, e, p]] of Object.entries(AVANT)) {
@@ -35,7 +35,8 @@ const AVANT_JUGE = { 4: '996b2fd0835f0cdfda5a', 5: '9fc7ad15c0581b01b84e' };
 for (const [n, e] of Object.entries(AVANT_JUGE)) {
   const a = affaire(st0, Number(n));
   const ev = a.evaluer || evaluerHypothese;
-  const tout = [...a.faits, ...Object.values(a.rebonds).map((r) => r.f)];
+  // (les lettres du corbeau au commissariat, ajoutées ensuite, ne jouent pas dans l'hypothèse : hors du tirage)
+  const tout = [...a.faits, ...Object.values(a.rebonds).map((r) => r.f).filter((f) => !/^r:l\d$/.test(f))];
   const rng = makeRng(`hyp:${n}`);
   const out = [];
   for (let k = 0; k < 60; k++) {
@@ -84,7 +85,7 @@ const publicSuspect = (s) => ({ ...s, coupable: undefined, statut: undefined });
 const CAS = [
   { nom: 'clef', A: affaireMeurtre(6, 'a'), B: affaireMeurtre(6, 'b'), reb: ['r:statue', 'r:temoin'] },
   { nom: 'rampe', A: affaireMeurtreRampe(6, 'a'), B: affaireMeurtreRampe(6, 'b'), reb: ['r:tel', 'r:mireille'] },
-  { nom: 'corbeau', A: affaireCorbeau(6, 'a'), B: affaireCorbeau(6, 'b'), reb: ['r:odile', 'r:relais'] },
+  { nom: 'corbeau', A: affaireCorbeau(6, 'a'), B: affaireCorbeau(6, 'b'), reb: ['r:odile', 'r:relais', 'r:l1', 'r:l2', 'r:l3'] },
 ];
 for (const { nom, A, B, reb } of CAS) {
   assert.equal(B.variante, 'b');
