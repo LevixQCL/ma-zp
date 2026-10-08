@@ -1,7 +1,7 @@
 // Logistique (bâtiments de la zone) et détail du budget : ce qui coûte, ce qui rapporte.
 import { titresDefi } from './defis.js';
 import { S, esc, icon, fmt1, myZone } from './common.js';
-import { gradeFor, LOTS, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE, DEPENSES, USURE } from '../engine/constants.js';
+import { gradeFor, LOTS, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE, DEPENSES, USURE, PREPA } from '../engine/constants.js';
 import { parcVehicules, cabossesChoisis } from '../engine/parc.js';
 import { DECOR, SKINS, decorValide, decorDebloque, conditionDecor, decorCompte, skinsValides, skinDe, earlyBirdEligible } from '../engine/decor.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
@@ -12,9 +12,10 @@ import { iconeSite } from './plan.js';
 import { moyenneIpz, operationActive, fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
 import { coutDemarche, PRIME_LABELS } from '../engine/enquete.js';
 import { portraitSuspect } from './portrait.js';
-import { SERVICE_LABELS, scoreBudget, BUDGET_IPZ, IPZ_POIDS } from '../engine/constants.js';
+import { SERVICE_LABELS, scoreRevenu, BUDGET_IPZ, IPZ_POIDS } from '../engine/constants.js';
 import { vitesseCombi, MODELES, modeleDe, prixRevente, vitesseVehicule, rendementFlotte, RENDEMENT } from '../engine/flotte.js';
 import { aideBtn } from './aide.js';
+import { comparatifModeles } from './modeles.js';
 import { PERIL, absT } from '../engine/rivalites.js';
 import { estimations } from './ordres.js';
 
@@ -56,10 +57,10 @@ export function ouvrirBudget() {
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="between"><span class="small muted">Aujourd’hui</span><span class="mono" style="font-size:20px;font-weight:700">${fmt1(z.budget)} k€</span></div>
     ${(() => {
-      const b = z.budget, sc = Math.round(scoreBudget(b) * 10) / 10, dort = b > BUDGET_IPZ.dormant, brut = BUDGET_IPZ.base + BUDGET_IPZ.parK * b;
-      const calc = dort ? `100 − ${fmt1(BUDGET_IPZ.pente * (b - BUDGET_IPZ.dormant))} (argent qui dort au-delà de ${BUDGET_IPZ.dormant} k€)` : `${BUDGET_IPZ.base} + ${fmt1(BUDGET_IPZ.parK)} × ${fmt1(b)}${brut > 100 ? ', plafonné à 100' : brut < 0 ? ', plancher 0' : ''}`;
+      const rv = (z.ipzDetail && z.ipzDetail.revenus) || z.revenus || [], sc = z.ipzComp ? z.ipzComp.budget : scoreRevenu(rv);
+      const moy = rv.length ? rv.reduce((a, x) => a + x, 0) / rv.length : 0;
       return `<div class="card tight" style="gap:4px;padding:8px 10px"><div class="between"><span class="small"><strong>Dans l’IPZ</strong> · ${Math.round(IPZ_POIDS.budget * 100)} %</span><span class="row" style="gap:6px"><span class="mono" style="font-weight:700">${fmt1(sc)}/100</span>${aideBtn('budgetIpz', 'Comment est calculé le score du budget')}</span></div>
-        <span class="tiny muted">Score = ${calc}. Idéal : garder entre 34 et ${BUDGET_IPZ.dormant} k€ (100/100), investir le reste. Le score compte le solde après 20:00.</span></div>`;
+        <span class="tiny muted">Score = ${BUDGET_IPZ.revenu.base} + ${BUDGET_IPZ.revenu.parK} × revenu moyen des ${BUDGET_IPZ.jours} derniers jours${rv.length ? ` (${fmt1(moy)} k€ par jour)` : ''}, entre 0 et 100 ; 100 dès 15 000 € par jour. Tes achats et dépenses du jour ne comptent pas : investir ne coûte rien à l’IPZ.</span></div>`;
     })()}
     <h3 class="compta-t">Chaque jour, quoi qu’il arrive</h3>
     ${lignes(recettes)}${lignes(frais)}
@@ -357,6 +358,7 @@ function parcCorps() {
     </div>
     <div class="parc">${tuiles}</div>
     ${rendementHtml(z, T, d)}
+    ${comparatifModeles(z)}
     ${(() => { const v = vitesseCombi(z); return `<div class="between small"><span class="muted">🚨 Vitesse sur les urgences</span><span class="mono">${Math.round(31 * 3.6 * v.mult)} km/h${v.prepa ? ` · préparation niv. ${v.prepa}` : ''}${v.cabosse ? ' · combi cabossé' : ''}</span></div>`; })()}
     <p class="tiny muted" style="margin:0">Touche un véhicule : son état, son modèle, la carrosserie, la revente. Acheter : Grande décision › Équiper. Combi : le moins cher par place · électrique : se rembourse (prime verte) · anonyme : flagrants et traques · fourgon : engagements et blessures.</p>
     <button type="button" class="btn block" data-action="dep-toggle" data-k="revision" data-fermer="1">${dep.revision ? '✓ Révision du parc prévue · annuler' : `Révision du parc · ${fmt1(DEPENSES.revision.cout)} k€ · +${USURE.revision} %`}</button>

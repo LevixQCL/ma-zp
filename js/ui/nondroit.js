@@ -3,7 +3,7 @@
 import { S, esc, fmt1, icon, myZone } from './common.js';
 import { ND, secteurOuvert, regenSecteur } from '../engine/constants.js';
 import { forceEngagement } from '../engine/zone.js';
-import { milieuDe, nomSecteur, partsDe, prevoirSecteur, secteursVoisins } from '../engine/nondroit.js';
+import { milieuDe, nomSecteur, partsDe, prevoirSecteur, secteursVoisins, gangCeSoir } from '../engine/nondroit.js';
 import { planNonDroit } from './plan.js';
 
 const nd = () => (S.state && S.state.nonDroit) || null;
@@ -117,7 +117,7 @@ function ceSoirHtml(n, me, ann) {
 export function secteursEnDanger() {
   const n = nd(), me = myZone();
   if (!n || !me) return [];
-  return Object.entries(n.secteurs).filter(([k, s]) => s.statut === 'repris' && s.emprise >= ND.seuilRechute - 20
+  return Object.entries(n.secteurs).filter(([k, s]) => s.statut === 'repris' && (s.emprise >= ND.seuilRechute - 20 || gangCeSoir(S.state, s))
     && partsDe(s).some((p) => p.uid === me.uid && p.part >= ND.partMin) && !((S.draft && S.draft.secteurs) || {})[k]).map(([k]) => k);
 }
 
@@ -148,6 +148,7 @@ function carteSecteur(k, s, me, d) {
   const moi = parts.find((p) => p.uid === me.uid);
   const hier = (s.hier || []).filter((x) => S.state.zones[x.u]);
   const maForce = n ? forceEngagement(me, n, S.state.turn) : 0;
+  const gang = repris ? gangCeSoir(S.state, s) : null;
   const seul = prevoirSecteur(S.state, s, [maForce]);
   const ceSoir = (annoncesND()[k] || []).filter((x) => !x.moi);
   const base = ceSoir.length ? ceSoir.map((x) => ({ u: x.uid, n: x.n })) : hier.filter((x) => x.u !== me.uid);
@@ -173,7 +174,7 @@ function carteSecteur(k, s, me, d) {
     } else {
       const sansMoi = autres.length ? prevoirSecteur(S.state, s, autres) : null;
       const dejaGarde = sansMoi && sansMoi.emprise <= Math.max(s.emprise, 0) + 0.5;
-      prevision = `<p class="tiny" style="margin:0"><strong>Secteur déjà repris : il ne s’agit plus de l’attaquer, seulement de le garder.</strong> ${s.emprise >= ND.seuilRechute - 20 ? '<strong class="bad">Il faut de la garde.</strong> ' : ''}${n ? `Ta garde (force ${fmt1(maForce)}) : ${fleche(s.emprise, seul.emprise)}.` : `Le milieu revient de ${ND.remontee} par nuit ; à ${ND.seuilRechute}, il reprend le secteur. 2 ou 3 agents de garde suffisent.`}</p>
+      prevision = `${gang ? `<p class="tiny bad" style="margin:0"><strong>⚠️ Un gang attaque ce soir</strong> : +${gang.force} d’emprise en plus du retour du milieu. Il faut une vraie garde, à plusieurs zones : repoussé, il rapporte +${ND.gangs.rep} de réputation et +${ND.gangs.ps} PS à chaque zone de garde.</p>` : ''}<p class="tiny" style="margin:0"><strong>Secteur déjà repris : il ne s’agit plus de l’attaquer, seulement de le garder.</strong> ${s.emprise >= ND.seuilRechute - 20 ? '<strong class="bad">Il faut de la garde.</strong> ' : ''}${n ? `Ta garde (force ${fmt1(maForce)}) : ${fleche(s.emprise, seul.emprise)}.` : `Le milieu revient de ${ND.remontee} par nuit ; à ${ND.seuilRechute}, il reprend le secteur. ${gang ? 'Face au gang, il faut bien plus que d’habitude.' : '2 ou 3 agents de garde suffisent.'}`}</p>
         ${dejaGarde ? `<p class="tiny warn" style="margin:0">${ceSoir.length ? 'Les zones annoncées ce soir' : 'Les zones d’hier'} suffisent déjà à le garder. Tes agents seraient plus utiles à l’assaut d’un secteur encore aux mains du milieu.</p>` : ''}`;
     }
   }
@@ -202,7 +203,8 @@ function ligneSecteur(k, s, me, d) {
   const sel = S.secteurSel === k;
   const moi = partsDe(s).some((p) => p.uid === me.uid && p.part >= ND.partMin);
   const autresCeSoir = (annoncesND()[k] || []).filter((x) => !x.moi).length;
-  const etat = (autresCeSoir ? ` · <span class="nd-rej">📻 ${autresCeSoir} zone${autresCeSoir > 1 ? 's' : ''}</span>` : '') + (repris ? ` · <span class="ok">✓ repris${s.chef && S.state.zones[s.chef] ? ` (${nomZ(s.chef)})` : ''}</span>` : ouvert ? '' : ' · 🔒 verrouillé');
+  const gang = repris ? gangCeSoir(S.state, s) : null;
+  const etat = (gang ? ` · <span class="bad">⚠️ gang ce soir (+${gang.force})</span>` : '') + (autresCeSoir ? ` · <span class="nd-rej">📻 ${autresCeSoir} zone${autresCeSoir > 1 ? 's' : ''}</span>` : '') + (repris ? ` · <span class="ok">✓ repris${s.chef && S.state.zones[s.chef] ? ` (${nomZ(s.chef)})` : ''}</span>` : ouvert ? '' : ' · 🔒 verrouillé');
   return `<div class="nd-sect ${sel ? 'sel' : ''}" id="nd-${k}">
     <button type="button" class="nd-row" data-action="secteur" data-c="${k}" aria-expanded="${sel}">
       <span class="col" style="gap:0;min-width:0;flex:1;text-align:left"><span class="nd-nom">${s.coeur ? '★ ' : ''}${esc(nomSecteur(k))}${moi ? ' <span class="nd-moi">toi</span>' : ''}</span><span class="tiny muted nd-titre">${esc(m.titre)}${etat}</span></span>

@@ -1,7 +1,7 @@
 // Énigmes visuelles : chaque type d'énigme se joue sur un objet qu'on manipule
 // (ligne du temps, disque de décodage, plaques, plan, étiquettes de scellés…).
 // Les générateurs ne changent pas : seules l'apparence et la façon de répondre changent.
-import { S, esc } from './common.js';
+import { S, esc, questDuSlot } from './common.js';
 import { digicodeTouche } from './digicode.js';
 
 const rerender = () => document.dispatchEvent(new CustomEvent('mazp:rerender'));
@@ -13,7 +13,7 @@ function etat(nom, id, def) {
   if (!(id in S[nom])) S[nom][id] = def();
   return S[nom][id];
 }
-const questCourante = () => (S.questMode === 'train' ? S.train : S.questIdx === 3 ? S.noir : S.quests && S.quests[S.questIdx || 0]);
+const questCourante = () => (S.questMode === 'train' ? S.train : S.questIdx === 3 ? S.noir : questDuSlot(S.questIdx || 0));
 
 // Avatar : initiale sur une pastille de couleur stable pour un prénom donné.
 const TEINTES = ['#63B0FF', '#3CC6B8', '#A78BFA', '#F59E5B', '#F08BB4', '#E6C36A', '#7FD18B', '#F2766B', '#8FA8FF', '#D9A5F5'];

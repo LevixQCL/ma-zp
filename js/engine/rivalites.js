@@ -258,12 +258,12 @@ function faillite(state, z, push, T, players) {
     ps, badges: z.badges, titres: z.titres, arrivee: z.arrivee || 0,
   });
   // On garde la saison en cours pour le classement (3 tours comptés à 0) et les statistiques.
-  nz.ipzSomme = z.ipzSomme; nz.toursJoues = z.toursJoues + 3; nz.ipzHist = z.ipzHist; if (z.compSomme) { nz.compSomme = z.compSomme; nz.compTours = (z.compTours || 0) + 3; }
+  nz.ipzSomme = z.ipzSomme; nz.toursJoues = z.toursJoues + 3; nz.ipzHist = [...(z.ipzHist || []), ...[0, 1, 2].map(() => ({ t: T, v: 0, joue: true, faillite: true }))]; if (z.compSomme) { nz.compSomme = z.compSomme; nz.compTours = (z.compTours || 0) + 3; }
   nz.stats = { ...z.stats }; nz.enquete = z.enquete; nz.enquetePrecedente = z.enquetePrecedente;
   nz.faillites = (z.faillites || 0) + 1; nz.failliteSaison = true;
   nz.motionSaison = z.motionSaison;
   // Ce qui survit aussi à une fin de saison : décor, skins, trophées, plaques, équipe, jauge des incidents.
-  for (const k of ['equipe', 'trophees', 'plaques', 'decor', 'skins', 'skinsChoix', 'jaugeIncidents']) if (z[k] !== undefined) nz[k] = z[k];
+  for (const k of ['equipe', 'trophees', 'plaques', 'decor', 'skins', 'skinsChoix', 'jaugeIncidents', 'carriere']) if (z[k] !== undefined) nz[k] = z[k];
   nz.rapport = [`Faillite : ta zone est dissoute. Tu repars avec une nouvelle zone et les ressources de départ (${START.agents} agents, ${START.budget} k€).${g > 0 ? ` Rétrogradation : ${GRADES[g - 1].nom}.` : ''}`];
   state.zones[uid] = nz;
   state.toursSansFaillite = 0;

@@ -99,7 +99,7 @@ export function incidentsHtml({ avant = '', titre = 'Incidents du jour' } = {}) 
     const e = etat(i, res[i.id], now), r = res[i.id];
     const svc = `<span class="tiny muted">${SERVICE_LABELS[i.service]}</span>`;
     if (e === 'ouvert') return `<div class="inc-row inc-ouvert${i.urgence ? ' inc-urgence' : ''}"><span class="inc-ico" aria-hidden="true">${i.urgence ? '🚨' : icon('alert', 18)}</span>
-      <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:700">${esc(i.titre)}</span><span class="tiny muted">${i.urgence ? `Urgence · combi à ${Math.round(31 * 3.6 * (i.vit || 1))} km/h` : SERVICE_LABELS[i.service]} · encore <span data-inc-fin="${i.ferme}">${duree(i.ferme - now)}</span> pour intervenir</span></span>
+      <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:700">${esc(i.titre)}</span><span class="tiny muted">${i.urgence ? `Urgence · combi à ${Math.round(31 * 3.6 * (i.vit || 1))} km/h` : SERVICE_LABELS[i.service]}${i.pression ? ' · en plus (IPZ élevé)' : ''} · encore <span data-inc-fin="${i.ferme}">${duree(i.ferme - now)}</span> pour intervenir</span></span>
       <button class="btn primary small" data-action="incident" data-id="${esc(i.id)}">Intervenir</button></div>`;
     if (e === 'joue') {
       const ok = r.statut === 'ok';
@@ -208,7 +208,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, e
     p.set('pourquoi', pourquoiIncident(inc.service, n, aj));
     p.set('jauge', String(base + plus));
     if (inc.urgence) { p.set('malus', texteRisqueUrgence()); p.set('gain', `+${URGENCE.gain.moral} de moral, +${PS.queteOk} PS, jauge des skins`); }
-    else { p.set('malus', texteMalus(MALUS[inc.service].plein)); p.set('gain', `${gainAffiche(inc.service)}, +${PS.queteOk} PS`); }
+    else { p.set('malus', texteMalus(MALUS[inc.service].plein)); p.set('gain', inc.pression ? `+${PS.queteOk} PS et la jauge des skins (incident en plus : ta zone est très en vue)` : `${gainAffiche(inc.service)}, +${PS.queteOk} PS`); }
   }
   if (mode === 'renfort' && appui) {
     const u = APPUI.unites[appui.unite];

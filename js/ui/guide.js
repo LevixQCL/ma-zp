@@ -6,7 +6,7 @@ import { DECOR, conditionDecor } from '../engine/decor.js';
 import { S, esc, icon, tabbar } from './common.js';
 import {
   AFFAIRE, SERVICES, SERVICE_LABELS, EQUIP, effetEquip, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION,
-  INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE, ND } from '../engine/constants.js';
+  INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE, ND, TERRAIN, BUDGET_IPZ, ENIGMES } from '../engine/constants.js';
 import { SINISTRE } from '../engine/sinistres.js';
 import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
 import { ENQ, DEMARCHES, POINTS, pointsDecouverte, delaiTraque, PRIME } from '../engine/enquete.js';
@@ -40,7 +40,7 @@ export function sections() {
           '<strong>Lis la Gazette</strong> de la veille et ton rapport : ce qui s’est passé chez toi et dans le district.',
           '<strong>Passe tes ordres</strong> : répartis tes agents entre les cinq services, choisis ton rythme, éventuellement une grande décision et des dépenses du jour.',
           '<strong>Avance l’enquête</strong> : lance jusqu’à deux démarches, partage des indices, accuse quand tu es sûr.',
-          '<strong>Résous tes trois énigmes du jour</strong> : trois petits casse-tête, une seule réponse chacun.',
+          '<strong>Résous tes énigmes du jour</strong> : quatre petits casse-tête, une seule réponse chacun (3 réussies suffisent pour la prime).',
           'Réponds aux <strong>FIPA</strong> et aux collègues sur la <strong>Radio</strong> si besoin.',
         ])}
         <p>Tu peux modifier tes ordres autant de fois que tu veux jusqu'à 20:00. Si tu oublies un jour, le <strong>pilote automatique</strong> reprend ta dernière répartition (voir « Absences »).</p>
@@ -49,7 +49,7 @@ export function sections() {
           ['HP', 'Hôtel de police : compte à rebours, état de ta zone, situation du jour, FIPA, enquête, alertes, rapport.'],
           ['Ordres', 'Répartition des agents, rythme, opérations, zone de non-droit, grande décision, dépenses du jour.'],
           ['Enquête', 'L’affaire en cours : démarches, pièces, carnet, accusation, traque.'],
-          ['Énigmes', 'Les trois énigmes du jour.'],
+          ['Énigmes', 'Les quatre énigmes du jour.'],
           ['Carte', 'Le plan de la ville, tes quartiers (zones chaudes, point chaud, patrouilles), la zone de non-droit, la liste des zones.'],
           ['Radio', 'Messagerie commune entre tous les chefs de zone.'],
         ])}`,
@@ -107,7 +107,7 @@ export function sections() {
         <h3>L'IPZ, ton score du jour</h3>
         <p>L'Indice de performance de zone est calculé à chaque tour :</p>
         ${table(['Composante', 'Poids'], Object.entries(IPZ_POIDS).map(([c, w]) => [{ satisfaction: 'Satisfaction', affaires: 'Résultats (incidents traités et points gagnés)', moral: 'Moral', budget: 'Budget', reputation: 'Réputation' }[c], pc(w)]))}
-        <p>La composante « Résultats terrain » vaut 60 × la part d'incidents traités, plus 3 × ton <strong>bilan</strong> de points, plafonnée à 100. Le bilan = les points du jour + la moitié du bilan de la veille : un gros coup compte encore les jours suivants, et un jour creux ne fait pas tout tomber. Les points viennent de la Recherche (+0,5 par unité de travail sur les dossiers, chaque jour), des flagrants délits (+3), de la zone de non-droit, des opérations d'envergure, des pièces de voisinage (+2), d'une découverte (+8) ou d'une arrestation (+6).</p>`,
+        <p>La composante « Résultats terrain » vaut ${TERRAIN.incidents} × la part d'incidents traités, plus ${TERRAIN.parPoint} × ton <strong>bilan</strong> de points, plafonnée à 100. Le bilan = les points du jour + ${Math.round(TERRAIN.report * 100)} % du bilan de la veille : un gros coup compte encore le lendemain, et un jour creux ne fait pas tout tomber. La composante « Budget » suit ton <strong>revenu</strong> moyen des ${BUDGET_IPZ.jours} derniers jours (${BUDGET_IPZ.revenu.base} + ${BUDGET_IPZ.revenu.parK} par tranche de 1 000 € par jour, 100 dès 15 000 €), sans compter tes achats. Le <strong>classement</strong> de la saison est la moyenne de tes IPZ, les derniers jours comptant plus (hier 1, il y a 5 jours 0,33, il y a 10 jours 0,11) : une avance se garde en continuant à bien jouer. Les points viennent de la Recherche (+0,5 par unité de travail sur les dossiers, chaque jour), des flagrants délits (+3), de la zone de non-droit, des opérations d'envergure, des pièces de voisinage (+2), d'une découverte (+8) ou d'une arrestation (+6).</p>`,
     },
     {
       id: 'ordres', titre: 'Les ordres et les cinq services', html: `
@@ -168,6 +168,7 @@ export function sections() {
           `<strong>Tenir le secteur</strong> : chaque nuit, il rapporte à chaque zone qui a de l'influence (des points, un peu de satisfaction, ${ND.retombees.ps} PS et jusqu’à ${String(ND.retombees.budget).replace('.', ',')} k€ selon ta part d’influence). Mais le milieu revient de ${ND.remontee} par nuit, et riposte parfois : il faut laisser 2 ou 3 agents de garde (à plusieurs, c'est plus léger). À ${ND.seuilRechute}, le secteur retombe et tout est à refaire.`,
           `<strong>L'influence</strong> : elle vient de la force engagée et s'efface de ${Math.round((1 - ND.usure) * 100)} % par nuit sur un secteur tenu. Qui monte la garde garde son influence ; qui ne vient plus la perd peu à peu. La zone qui en a le plus est la « zone de référence » : le secteur prend sa couleur sur la carte.`,
           `<strong>Le QG</strong> : il ne s'attaque qu'une fois ${ND.coeurSeuil} secteurs de l'anneau tenus en même temps. Plus coriace, il rapporte ${String(ND.coeurMult).replace('.', ',')} fois plus, et le trophée « Libérateur ».`,
+          `<strong>Les gangs</strong> : plus le district tient de secteurs, plus le milieu contre-attaque. Jusqu’à ${ND.gangs.seuil} secteurs de l’anneau tenus, rien ; au-delà, un gang par secteur en plus ; le QG tombé, un gang de plus et tous plus forts (+${ND.gangs.coeur}). Chaque gang est <strong>annoncé la veille</strong> (Gazette, Terrain) sur un secteur tenu : ce soir-là, il ajoute sa force à l’emprise (${ND.gangs.base} + ${ND.gangs.parZone} par zone active, ${ND.gangs.max} au plus). Repoussé, il rapporte +${ND.gangs.rep} de réputation et +${ND.gangs.ps} PS à chaque zone de garde, et le trophée « Rempart ».`,
           `<strong>Les voisins du centre</strong> : un quartier qui touche un secteur du milieu prend +${String(ND.contagion).replace('.', ',')} de tension chaque nuit ; s'il touche un secteur repris, il perd ${String(ND.apaisement).replace('.', ',')}.`,
           `<strong>Limites</strong> : ${ND.maxParSecteur} agents par secteur et ${ND.maxTotal} en tout, pris sur tes services pour la journée. Au-delà de 3 agents au même endroit, risque d'un blessé pendant l'assaut. Si tu oublies tes ordres un jour, tes agents restent sur place ; au-delà, ils rentrent.`,
           'Une zone qui ne joue plus ne bloque personne : les autres continuent sans elle. La zone de non-droit repart de zéro à chaque saison.',
@@ -338,7 +339,7 @@ export function sections() {
         ${ul([
           '<strong>Tout est perdu</strong> : budget, infrastructures, équipement, niveaux. Le chef repart aussitôt avec une nouvelle zone et les ressources de départ.',
           '<strong>Rétrogradation</strong> d’un grade (jamais sous Aspirant).',
-          '<strong>Classement</strong> : 3 tours comptés à IPZ 0 dans la moyenne de la saison.',
+          '<strong>Classement</strong> : 3 soirs comptés à IPZ 0 dans la moyenne de la saison.',
           'La Gazette lui consacre sa une, et le compteur « District Delta : N tours sans faillite » retombe à zéro.',
           'Le nombre de faillites reste affiché à vie sur le profil. Finir dans le top 3 d’une saison après une faillite donne le badge <strong>Phénix</strong>.',
         ])}`,
@@ -358,18 +359,20 @@ export function sections() {
     },
     {
       id: 'quetes', titre: 'Les énigmes du jour', html: `
-        <p>Trois énigmes par jour, de difficultés différentes, publiées à 20:00. Elles se corsent au fil de la semaine.</p>
+        <p>Quatre énigmes par jour, de difficultés différentes, publiées à 20:00. Elles se corsent au fil de la semaine. Pas besoin de toutes les réussir : le bonus arrive dès 2 bonnes réponses, la prime dès 3.</p>
         ${ul([
           '<strong>Une seule réponse par énigme</strong>, confirmée avant envoi : une erreur est définitive et coûte 1 point de moral.',
           'Chaque joueur reçoit ses propres données : on peut en discuter, mais la réponse d’un collègue ne marche pas chez toi.',
-          `Chaque bonne réponse : +${PS.queteOk} PS (une tentative ratée : +${PS.queteTentee}). Trois sur trois : +5 PS en plus.
+          `Chaque bonne réponse : +${PS.queteOk} PS (une tentative ratée : +${PS.queteTentee}). Trois réussies : +5 PS en plus (rien de plus à quatre).
         <h3>Le dossier noir</h3>
-        <p>Chaque jour, une 4<sup>e</sup> énigme facultative, de niveau hardcore : plus d’indices à croiser, des pièges assumés, aucun coup de pouce, et pas de changement possible. Une seule réponse, mais une erreur ne coûte rien. Une réussite rapporte +15 PS et compte pour le titre de fin de saison « Cerveau du district ».</p>
+        <p>Chaque jour, une 5<sup>e</sup> énigme facultative, de niveau hardcore : plus d’indices à croiser, des pièges assumés, aucun coup de pouce, et pas de changement possible. Une seule réponse, mais une erreur ne coûte rien. Une réussite rapporte +15 PS et compte pour le titre de fin de saison « Cerveau du district ».</p>
+        <h3>Les paliers</h3>
+        <p>Toutes les ${ENIGMES.paliers.pas} énigmes réussies depuis ton arrivée (toutes saisons confondues, dossier noir compris) : +${ENIGMES.paliers.budget} k€ et +${ENIGMES.paliers.jauge} sur la jauge des skins. Ton compteur et le prochain palier s’affichent sous les onglets de l’écran Énigmes.</p>
         <h3>Plusieurs formes par énigme</h3>
         <p>La plupart des énigmes existent sous deux ou trois formes qui se résolvent différemment : « Qui ment ? » classique, Les alibis ou Demi-vérités ; voisinage avec véhicules ou Les arrivées ; le cadenas à essais ou Le digicode ; la chronologie en minutes ou Sans montre ; la filature à l’endroit ou À rebours ; le bus ou Les badges ; les objets volés ou La caisse ; l’écriture manuscrite ou L’imprimante. Chaque fois qu’un type revient dans tes énigmes, il change de forme : jamais deux fois la même d’affilée. Le nom de la forme s’affiche sous le titre de l’énigme.</p>
         <h3>L’entraînement</h3>
         <p>Dans l’écran Énigmes, l’onglet « Entraînement » permet de choisir un type, sa forme et une difficulté (jusqu’au niveau hardcore) et de s’exercer autant qu’on veut. La correction est immédiate et rien ne compte : ni classement, ni moral, ni PS.</p>`,
-          'Deux bonnes réponses débloquent un bonus au choix : +1 indice d’enquête, +3 de moral, +2 k€ ou +10 % de capacité pour un service. Trois sur trois : prime « sans faute » en plus (+3 k€, +2 de moral, +5 PS). Comme pour la prime au personnel, les bonus de moral rapportent moins quand le moral est déjà haut : moitié de 70 à 85, +1 au-delà.',
+          'Deux bonnes réponses débloquent un bonus au choix : +1 indice d’enquête, +3 de moral, +2 k€ ou +10 % de capacité pour un service. Trois réussies : prime en plus (+3 k€, +2 de moral, +5 PS) ; la quatrième ne rapporte que ses PS, mais te laisse droit à une erreur. Comme pour la prime au personnel, les bonus de moral rapportent moins quand le moral est déjà haut : moitié de 70 à 85, +1 au-delà.',
         ])}
         <h3>Pas le temps ou pas l’envie ?</h3>
         <p>Tant que tu n’as répondu à aucune énigme du jour, deux autres façons de gagner le bonus (bouton en haut de l’écran Énigmes). Dans les deux cas, pas de PS ni de prime « sans faute », et les 3 énigmes se ferment (le dossier noir reste ouvert).</p>
@@ -466,7 +469,7 @@ export function sections() {
         <h3>Points de service (PS)</h3>
         <p>Ils récompensent l'assiduité et ne se perdent jamais, même d'une saison à l'autre. Maximum ${PS.plafondJour} PS par jour pour ton propre jeu, plus ${PS.plafondEntraide} PS d’entraide (renfort, indices partagés, contribution à l’enquête, FIPA, pactes, grand événement, secteurs tenus dans la zone de non-droit) : aider les autres n’est jamais perdu.</p>
         ${table(['Action', 'PS'], [
-          ['Passer ses ordres', `+${PS.ordres}`], ['Bonne réponse à une énigme', `+${PS.queteOk} (tentative ratée : +${PS.queteTentee})`], ['Trois énigmes sur trois', '+5'],
+          ['Passer ses ordres', `+${PS.ordres}`], ['Bonne réponse à une énigme', `+${PS.queteOk} (tentative ratée : +${PS.queteTentee})`], ['Trois énigmes réussies dans la journée', '+5'],
           ['Découverte d’un auteur', '+15'], ['Arrestation', '+10'], ['Participer à une FIPA', '+10'], ['Partager un indice', '+5'], ['Indice qui aide une découverte', '+5'],
           ['Agents envoyés sur un grand événement du district', `+${PS.evenement} pour 3 agents, proportionnel au nombre envoyé (max. +${PS.evenementMax})`], ['Renfort prêté sur une opération d’envergure', `+${RENFORT.psParAgent} par agent prêté`], ['Pacte conclu', `+${PACTE.psAccord}`], ['Pacte mené à son terme', `+${PACTE.psFin}`],
           ['Finir une saison classé', `+${PS.finSaison}`],

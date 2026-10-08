@@ -6,7 +6,7 @@
 // Une zone qui ne joue plus ne bloque personne : son influence s'efface, les autres continuent.
 import { CONFIG } from '../config.js';
 import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
-import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure } from './constants.js';
+import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND } from './constants.js';
 import { makeRng } from './rng.js';
 import { clamp, round1, forceEngagement, jalon, noter } from './zone.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
@@ -61,10 +61,17 @@ export const multCoop = (k) => 1 + ND.coop * (Math.min(k, ND.coopMax) - 1);
  * Prévision pour l'affichage : emprise ce soir si ces forces sont engagées
  * (`forces` : liste des forces de chaque zone engagée, la mienne comprise).
  */
+/** Gang annoncé ce soir sur ce secteur (ou null). */
+export function gangCeSoir(state, s) {
+  const nd = state && state.nonDroit;
+  return (nd && Array.isArray(nd.gangs) && nd.gangs.find((g) => g.nuit === state.turn && Number(g.cell) === Number(s.cell))) || null;
+}
+
 export function prevoirSecteur(state, s, forces) {
   const f = forces.filter((x) => x > 0);
   const F = f.reduce((a, b) => a + b, 0) * multCoop(f.length);
-  const regen = regenSecteur(state, s);
+  const g = s.statut === 'repris' ? gangCeSoir(state, s) : null;
+  const regen = regenSecteur(state, s) + (g ? g.force : 0);
   const haut = s.statut === 'repris' ? s.emprise + regen : Math.min(s.emprise + regen, Math.max(s.emprise, s.max || 100));
   return { force: round1(F), emprise: round1(clamp(haut - F * ND.efficacite, 0, 100)), regen, coop: multCoop(f.length) };
 }
@@ -85,8 +92,11 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
   const cles = Object.keys(nd.secteurs).sort((a, b) => Number(a) - Number(b));
   const regen = Object.fromEntries(cles.map((k) => [k, regenSecteur(state, nd.secteurs[k])]));
 
-  // Riposte du milieu : un secteur tenu reprend un coup (annoncé dans la Gazette).
-  const tenus = cles.filter((k) => nd.secteurs[k].statut === 'repris');
+  const assauts = new Set();
+  // Gangs annoncés hier pour ce soir.
+  const gangs = Object.fromEntries((nd.gangs || []).filter((g) => g.nuit === T).map((g) => [String(g.cell), g]));
+  // Riposte du milieu : un secteur tenu reprend un coup (annoncé dans la Gazette), sauf là où un gang est déjà annoncé.
+  const tenus = cles.filter((k) => nd.secteurs[k].statut === 'repris' && !gangs[k]);
   if (tenus.length && rng.chance(ND.riposte)) {
     const k = rng.pick(tenus);
     const f = rng.int(...ND.riposteForce);
@@ -116,6 +126,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
     }
     for (const e of engages) if (e.chef) state.zones[e.u].rapport.push(`Mission : ${nomComplet(e.chef)} mène tes agents à ${nomSecteur(k)} (force +${Math.round(bonusChef(e.chef.niveau) * 100)} %, deux fois moins de risque de blessure).`);
     s.hier = engages.map((e) => ({ u: e.u, n: e.n })); // public après 20:00 : qui y était hier soir
+    if (s.statut === 'milieu' && engages.length) assauts.add(k);
     const coop = multCoop(engages.length);
     const F = engages.reduce((a, e) => a + e.f, 0) * coop;
     const avant = s.emprise;
@@ -170,7 +181,8 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
       }
     } else {
       // Secteur tenu : le milieu revient, la garde le repousse ; l'influence suit la garde.
-      s.emprise = round1(clamp(s.emprise + ND.remontee - F * ND.efficacite, 0, 100));
+      const gang = gangs[k];
+      s.emprise = round1(clamp(s.emprise + ND.remontee + (gang ? gang.force : 0) - F * ND.efficacite, 0, 100));
       for (const u of Object.keys(s.influence)) { s.influence[u] = round1(s.influence[u] * ND.usure); if (s.influence[u] < 0.2) delete s.influence[u]; }
       for (const e of engages) s.influence[e.u] = round1((s.influence[e.u] || 0) + e.f);
       const ancienChef = s.chef;
@@ -180,7 +192,8 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
         // Rechute : le secteur retombe aux mains du milieu.
         const anciens = parts.map((p) => p.uid);
         s.statut = 'milieu'; s.emprise = s.coeur ? ND.empriseCoeur : ND.rechute; s.max = Math.max(s.max || 0, s.emprise); s.influence = {}; s.chef = null; s.reprisLe = null;
-        res.rechutes.push({ cell: Number(k), anciens });
+        res.rechutes.push({ cell: Number(k), anciens, gang: !!gang });
+        if (gang) push(8, 'Zone de non-droit', `Le gang reprend ${nomS}`, `Pas assez d’agents de garde face au gang annoncé (force ${gang.force}).`);
         push(7, 'Zone de non-droit', `${nomS} retombe aux mains du milieu`, `Faute d’agents sur place, ${m.titre.toLowerCase()} se réinstalle. Il faudra tout recommencer.`);
         for (const u of anciens) if (state.zones[u]) state.zones[u].rapport.push(`Zone de non-droit : ${nomS} est retombé aux mains du milieu (personne pour le tenir). Les retombées s’arrêtent.`);
         continue;
@@ -189,14 +202,61 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
         state.zones[s.chef].rapport.push(`Zone de non-droit : tu deviens la zone de référence à ${nomS} (plus grande influence).`);
         if (state.zones[ancienChef]) state.zones[ancienChef].rapport.push(`Zone de non-droit : ${nom(s.chef)} te dépasse en influence à ${nomS}.`);
       }
+      if (gang) gangRepousse(state, k, gang, engages, T, push, nom, res);
       retombees(state, s, k, parts, engages, avant, nom);
     }
   }
+  // Première ligne : une zone engagée sur tous les assauts du soir (secteurs du milieu attaqués), deux soirs d'affilée.
+  if (assauts.size) for (const u of uids) {
+    const z = state.zones[u]; if (!z) continue;
+    const mes = new Set(Object.keys((ord[u] && ord[u].secteurs) || {}).filter((k) => ord[u].secteurs[k] > 0));
+    z.stats.serieAssauts = [...assauts].every((k) => mes.has(k)) ? (z.stats.serieAssauts || 0) + 1 : 0;
+  }
+  planifierGangs(state, nd, T, push, res);
   for (const u of uids) if (state.zones[u]) delete state.zones[u]._ndSatisf;
   // Zone de non-droit dans les quartiers voisins : le milieu déborde, un secteur repris apaise.
   contagion(state, nd);
   res.etat = cles.map((k) => ({ cell: Number(k), statut: nd.secteurs[k].statut, emprise: Math.round(nd.secteurs[k].emprise), chef: nd.secteurs[k].chef }));
   return res;
+}
+
+/** Gang repoussé : chaque zone de garde ce soir-là est récompensée. */
+function gangRepousse(state, k, gang, engages, T, push, nom, res) {
+  const nomS = nomSecteur(k), G = ND.gangs;
+  (res.gangsRepousses ||= []).push({ cell: Number(k), zones: engages.map((e) => e.u) });
+  for (const e of engages) {
+    const z = state.zones[e.u];
+    if (!z) continue;
+    z.stats.gangsRepousses = (z.stats.gangsRepousses || 0) + 1;
+    z.reputation += G.rep; z._psEntraide = (z._psEntraide || 0) + G.ps;
+    jalon(z, `Gang repoussé à ${nomS}`);
+    if (donnerTrophee(z, 'rempart', state.season, T)) z.rapport.push(`Trophée débloqué : « ${TROPHEE.rempart.nom} » (${TROPHEE.rempart.texte.toLowerCase()}).`);
+    z.rapport.push(`Zone de non-droit · ${nomS} : le gang (force ${gang.force}) s’est cassé les dents sur ta garde ! +${G.rep} de réputation, +${G.ps} PS.`);
+  }
+  push(engages.length ? 7 : 4, 'Zone de non-droit', `${nomS} tient face au gang`, engages.length ? `${engages.map((e) => nom(e.u)).join(', ')} ${engages.length > 1 ? 'ont' : 'a'} tenu la garde.` : 'Le secteur a tenu, de justesse.');
+}
+
+/**
+ * Gangs de demain : au-delà de ND.gangs.seuil secteurs de l'anneau tenus, un gang par secteur en plus ;
+ * le Cœur tenu en ajoute un et renforce tous les gangs. Annoncés tout de suite (Gazette, rapports, carte).
+ */
+function planifierGangs(state, nd, T, push, res) {
+  const G = ND.gangs;
+  const tenus = Object.keys(nd.secteurs).filter((k) => nd.secteurs[k].statut === 'repris');
+  const anneau = tenus.filter((k) => !nd.secteurs[k].coeur).length, coeur = tenus.some((k) => nd.secteurs[k].coeur);
+  const n = Math.min(tenus.length, Math.max(0, anneau - G.seuil) + (coeur ? 1 : 0));
+  if (!n) { nd.gangs = []; return; }
+  const force = Math.min(G.max, G.base + G.parZone * zonesActivesND(state)) + (coeur ? G.coeur : 0);
+  const rng = makeRng(`${state.seed}:s${state.season}:t${T}:gangs`);
+  const cibles = rng.shuffle(tenus.slice().sort((a, b) => Number(a) - Number(b))).slice(0, n);
+  nd.gangs = cibles.map((k) => ({ cell: Number(k), force, nuit: T + 1 }));
+  res.gangs = nd.gangs;
+  const noms = cibles.map((k) => nomSecteur(k));
+  push(6, 'Zone de non-droit', `Le milieu prépare ${n > 1 ? `${n} descentes` : 'une descente'} demain soir`, `${n > 1 ? 'Des gangs visent' : 'Un gang vise'} ${noms.join(', ')} (force ${force}${coeur ? ', renforcés depuis la chute du QG' : ''}). Renforcez la garde.`);
+  for (const k of cibles) for (const p of partsDe(nd.secteurs[k])) {
+    const z = state.zones[p.uid];
+    if (z && Array.isArray(z.rapport)) z.rapport.push(`Zone de non-droit : un gang attaquera ${nomSecteur(k)} demain soir (force ${force} : +${force} d’emprise). Mets du monde de garde, avec les autres zones.`);
+  }
 }
 
 function prise(state, s, k, T, push, res, nom) {

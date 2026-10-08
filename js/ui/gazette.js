@@ -191,8 +191,8 @@ export function renderClassement() {
   if (tab === 'ipz') {
     const rows = classementLive(S.state);
     let rang = 0;
-    corps = `<section class="card" style="gap:8px"><h2 class="card-title">Performance · IPZ moyen de la saison</h2>
-      <p class="small muted" style="margin:0">La barre avance jusqu’à 100. Dessous, d’où vient l’IPZ de chacun. Touche une zone pour voir son hôtel de police.</p>
+    corps = `<section class="card" style="gap:8px"><h2 class="card-title">Performance · IPZ de la saison</h2>
+      <p class="small muted" style="margin:0">Moyenne de la saison, les derniers jours comptant plus. La barre avance jusqu’à 100. Dessous, d’où vient l’IPZ de chacun. Touche une zone pour voir son hôtel de police.</p>
       ${rows.map((r) => couloir({ z: r.z, rang: r.classe ? ++rang : 0, classe: r.classe, valeur: r.moyenne, txt: r.classe || r.z.toursJoues ? fmt1(r.moyenne) : '—', compo: compoSaison(r.z, r.moyenne), me: r.z.uid === me.uid,
         sous: r.classe ? '' : `${r.z.toursJoues || 0} tour${(r.z.toursJoues || 0) > 1 ? 's' : ''} joué${(r.z.toursJoues || 0) > 1 ? 's' : ''} sur ${MIN_TOURS_CLASSEMENT || 5} pour être classé` })).join('')}
       <div class="crs-leg">${COMPO.map(([k, c]) => `<span><i style="background:${c}"></i>${IPZ_LABELS[k]} ${Math.round(IPZ_POIDS[k] * 100)} %</span>`).join('')}</div>

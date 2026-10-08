@@ -3,17 +3,30 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-08-formes-enigmes',
+  id: '2026-10-08-retours-luc',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🧩', 'Énigmes : 9 nouvelles formes', 'dès ce soir 20:00, « Qui ment ? » devient aussi Les alibis ou Demi-vérités, et le cadenas un vrai digicode à taper. On voit aussi arriver La caisse, L’imprimante, Sans montre, À rebours, Les badges et Les arrivées. Chaque type change de forme à chaque fois qu’il revient. Pour essayer tout de suite : Énigmes › Entraînement.'],
-    ['📰', 'Fin de saison : le Bilan de saison', 'fini le « −1 partout » et le matériel remis à zéro. Tu gardes tes formations, ton matériel et tes bâtiments, mais quelques imprévus t’attendent : départs à la pension, drone écrasé, toiture qui fuit… Tu choisis lesquels remettre en état.'],
-    ['⭐', 'Maintien de l’ordre : le commandant monte en grade', 'novice, il se replie au moindre contact ; envoie-le là où ça chauffe et il devient une vraie légende du MO (5 niveaux). Un émeutier isolé t’échappe ? Envoie-le le chercher : il le gaze et le retient.'],
+    ['🧩', 'Une 4e énigme chaque jour', 'dès ce soir 20:00 : quatre énigmes, bonus dès 2 réussies, prime dès 3. Une erreur ne te prive plus de la prime. Et toutes les 10 énigmes réussies depuis ton arrivée, un palier : +2 000 € et +3 sur la jauge des skins.'],
+    ['🏆', '8 nouveaux trophées', 'Rempart, Première ligne, Recordman, Érudit, Sur tous les fronts, Trésorier, Collectionneur, Au sommet : 20 en tout, et d’autres viendront.'],
+    ['⚠️', 'Les gangs contre-attaquent', 'zone de non-droit : au-delà de 2 secteurs tenus, le milieu envoie des gangs les reprendre. Ils sont annoncés la veille : montez la garde ensemble, un gang repoussé rapporte à chaque zone de garde.'],
+    ['🚓', 'Véhicules : le comparatif', 'tous les modèles côte à côte (prix, places, vitesse, maniabilité, usure…), dans le parc et à l’achat.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Retours de Luc (8 octobre)', [
+      ['4 énigmes par jour', 'à partir du tour de ce soir : une 4e énigme du jour (un type absent des trois autres, difficulté du jour). Bonus au choix dès 2 bonnes réponses, prime (+3 k€, +2 de moral, +5 PS) dès 3 ; rien de plus à 4. Le dossier noir reste à part.'],
+      ['Paliers des énigmes', 'toutes les 10 énigmes réussies depuis ton arrivée (toutes saisons, dossier noir compris) : +2 000 € et +3 sur la jauge des skins. Le compteur et le prochain palier s’affichent sous les onglets de l’écran Énigmes.'],
+      ['Résultats terrain', 'le bilan ne garde plus que le quart de celui de la veille (au lieu de la moitié). En simulation, la composante passe de 77 à 65 en moyenne pour les joueurs assidus.'],
+      ['Satisfaction', 'elle redescend un peu plus vite vers 50 : +5 points de % dans chaque tranche (9 % de l’écart sous 60, puis 11, 15, 20 et 25 % au-dessus de 90).'],
+      ['Budget dans l’IPZ', 'il suit désormais ton revenu (moyenne des 3 derniers jours) et non plus l’argent en caisse : 40 + 4 par tranche de 1 000 € par jour, 100 dès 15 000 € par jour. Tes achats, dépenses du jour, reventes et le bilan de saison ne comptent pas : investir ne coûte rien à l’IPZ. Fini aussi « l’argent qui dort ».'],
+      ['Classement', 'la moyenne de la saison compte davantage les derniers jours (hier 1, il y a 5 jours 0,33, il y a 10 jours 0,11). Une avance se garde en continuant à bien jouer ; une zone qui progresse remonte plus vite. Le classement en cours est recalculé tout de suite avec cette règle.'],
+      ['Incidents et IPZ', 'à partir de demain, plus ton IPZ de la veille est haut, plus il tombe d’incidents : un second incident 3 fois sur 4 dès 75 d’IPZ (au lieu d’une fois sur 2), à coup sûr dès 85, et un troisième une fois sur deux dès 90. Ces incidents « en plus » ne rapportent que les PS et la jauge des skins, mais coûtent comme les autres s’ils sont ratés ou laissés.'],
+      ['Gangs', 'zone de non-droit : jusqu’à 2 secteurs de l’anneau tenus, rien ; au-delà, un gang par secteur en plus ; le QG tombé, un gang de plus et +20 de force pour tous. Chaque gang est annoncé la veille (Gazette, rapport, Terrain) et ajoute sa force à l’emprise du secteur visé (10 + 2 par zone active, 40 au plus). Repoussé : +1 de réputation et +5 PS pour chaque zone de garde.'],
+      ['Trophées', '8 nouveaux : Rempart (repousser un gang), Première ligne (tous les assauts de la zone de non-droit deux soirs d’affilée), Recordman (10 records du Challenge battus), Érudit (50 énigmes), Sur tous les fronts (25 incidents du jour), Trésorier (20 000 € de revenu en une journée), Collectionneur (5 skins), Au sommet (85 d’IPZ un soir).'],
+      ['Véhicules', 'comparatif de tous les modèles (prix, places, vitesse sur urgence, accélération, maniabilité, freinage, accrochages, usure, entretien, atout), dans le parc automobile et dans Grande décision › Équiper.'],
+    ]],
     ['Maintien de l’ordre : un début plus doux (merci Luc)', [
       ['Premiers niveaux', 'niveau 1 : quelques émeutiers lents pour commencer (2, puis 5, 8, 12), et plus aucun autre type. Un seul nouveau venu par niveau : casseurs au 2, bloc compact au 3, meneur et tracteur au 4. Les vagues complètes arrivent au niveau 5.'],
       ['Plus d’agents au départ', '28 agents au niveau 1 (de quoi essayer chaque moyen), puis 26, 24, 22 et 21 jusqu’au niveau 5.'],

@@ -3,7 +3,7 @@ import { noteVue } from './nouveautes.js';
 import { actuHtml, actuLigne } from './actu.js';
 // Écran HP (Hôtel de police) : l'accueil.
 import { cabossesChoisis } from '../engine/parc.js';
-import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone, skyline, cielStyle } from './common.js';
+import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone, skyline, cielStyle, slotsJour } from './common.js';
 import { agentsDisponibles, blessesActifs, enFormation, vehiculesDisponibles } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { formatCountdown, formatDateBe } from '../engine/time.js';
@@ -95,7 +95,7 @@ function ipzDetailHtml(d) {
     <div class="between"><span style="font-weight:700">IPZ ${fmt1(d.ipz)}</span>${delta !== null ? `<span class="small">${evol(delta)} depuis la veille</span>` : ''}</div>
     <table class="ipz-table"><thead><tr><th>Composante</th><th>Valeur</th><th>Poids</th><th>Points</th><th>vs veille</th></tr></thead>
       <tbody>${Object.keys(IPZ_POIDS).map(ligne).join('')}</tbody></table>
-    <details class="formule"><summary class="tiny muted">Comment c’est calculé ? ${icon('chevron', 12)}</summary><span class="tiny muted"><strong>Résultats terrain</strong> (ce ne sont pas les PS, qui servent aux grades) = ${TERRAIN.incidents} × part des incidents traités + ${fmt1(TERRAIN.parPoint)} × bilan des points (points du jour + moitié du bilan d’hier), plafonné à 100${det ? ` · ce tour : ${det.traites}/${det.incidents} incidents, ${fmt1(det.points)} points, bilan ${fmt1(det.bilan !== undefined ? det.bilan : det.points)}` : ''}. <strong>Budget</strong> = 50 + 1,5 par tranche de 1 000 € de budget (100 de 34 à ${BUDGET_IPZ.dormant} k€ ; au-delà, l’argent qui dort coûte ${BUDGET_IPZ.pente} point par tranche de 1 000 €).</span></details>
+    <details class="formule"><summary class="tiny muted">Comment c’est calculé ? ${icon('chevron', 12)}</summary><span class="tiny muted"><strong>Résultats terrain</strong> (ce ne sont pas les PS, qui servent aux grades) = ${TERRAIN.incidents} × part des incidents traités + ${fmt1(TERRAIN.parPoint)} × bilan des points (points du jour + ${Math.round(TERRAIN.report * 100)} % du bilan d’hier), plafonné à 100${det ? ` · ce tour : ${det.traites}/${det.incidents} incidents, ${fmt1(det.points)} points, bilan ${fmt1(det.bilan !== undefined ? det.bilan : det.points)}` : ''}. <strong>Budget</strong> = ${BUDGET_IPZ.revenu.base} + ${BUDGET_IPZ.revenu.parK} par tranche de 1 000 € de revenu moyen des ${BUDGET_IPZ.jours} derniers jours (tes achats ne comptent pas ; 100 dès 15 000 € par jour).</span></details>
   </div>`;
 }
 
@@ -263,7 +263,7 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue }) {
   { const bt = bilanTodo(); if (bt) items.unshift(bt); }
   { const ct = criseTodo(); if (ct) items.unshift(ct); }
   // Un incident ouvert a déjà sa carte (avec son compte à rebours) juste sous la liste : pas de ligne en double ici.
-  items.push(delegue ? { ok: true, href: '#quete', t: delegue.statut === 'quiz' ? `Quiz express : ${Number(delegue.tentatives) || 0} sur 5` : 'Énigmes confiées à un agent', s: delegue.statut === 'quiz' ? ((Number(delegue.tentatives) || 0) >= 3 ? (delegue.bonus ? 'bonus choisi' : 'choisis ton bonus') : 'pas de bonus') : 'résultat ce soir' } : { ok: faites >= 3, href: '#quete', t: `Énigmes : ${faites} sur 3`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
+  items.push(delegue ? { ok: true, href: '#quete', t: delegue.statut === 'quiz' ? `Quiz express : ${Number(delegue.tentatives) || 0} sur 5` : 'Énigmes confiées à un agent', s: delegue.statut === 'quiz' ? ((Number(delegue.tentatives) || 0) >= 3 ? (delegue.bonus ? 'bonus choisi' : 'choisis ton bonus') : 'pas de bonus') : 'résultat ce soir' } : { ok: faites >= slotsJour().length, href: '#quete', t: `Énigmes : ${faites} sur ${slotsJour().length}`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
   const fipa = (st.fipas || []).filter((f) => (f.demandeur === z.uid && f.etape === 'demande' && f.tourDecision === st.turn) || (f.partenaire === z.uid && f.etape === 'invite' && f.tourReponse === st.turn) || (f.etape === 'accepte' && f.tourJ === st.turn && (f.demandeur === z.uid || f.partenaire === z.uid)));
   if (fipa.length) items.push({ ok: !!(d.fipa || d.fipaReponse || d.fipaChoix), href: '#hp-fipa', t: 'FIPA : une décision t’attend', s: 'voir la carte FIPA ci-dessous' });
   for (const x of aFairePactes()) items.push({ ok: x.fait, href: '#pactes', t: esc(x.titre), s: esc(x.texte) });
@@ -298,7 +298,7 @@ export function renderHP() {
   const faites = qr.filter((r) => r && (r.statut === 'ok' || r.statut === 'rate')).length;
   const reussies = qr.filter((r) => r && r.statut === 'ok').length;
   const delegue = qr.find((r) => r && (r.statut === 'delegue' || r.statut === 'quiz'));
-  const questDone = faites >= 3 || !!delegue;
+  const questDone = faites >= slotsJour().length || !!delegue;
 
   const alertes = [];
   const bless = z.blesses.filter((b) => b.retour > T);
@@ -330,7 +330,6 @@ export function renderHP() {
     if (vieux) alertes.push({ cls: retard ? 'red' : 'amber', titre: retard ? `${retard} dossier${retard > 1 ? 's' : ''} en retard` : `${vieux} dossier${vieux > 1 ? 's' : ''} de 5 jours ou plus`, texte: retard ? '−0,4 de satisfaction chacun par jour : renforce la Recherche' : 'renforce la Recherche avant qu’ils coûtent de la satisfaction', href: '#ordres' }); }
   if (z.paperasse > 14) alertes.push({ cls: 'red', titre: `Paperasse : ${Math.round(z.paperasse)} dossiers en attente`, texte: `−2 de moral chaque soir tant qu’elle dépasse 14, et l’Inspection au-delà de 20 · renforce l’Accueil ou paie la sous-traitance (−5 dossiers, 3 k€)`, href: '#ordres' });
   if (z.budget < 0) alertes.push({ cls: 'red', titre: 'Budget dans le rouge', texte: 'deux tours de suite et c’est l’Inspection', href: '#ordres' });
-  else if (z.budget > BUDGET_IPZ.dormant) alertes.push({ cls: 'amber', titre: `${fmtK(z.budget)} qui dorment`, texte: `au-delà de ${BUDGET_IPZ.dormant} k€, ton IPZ budget baisse : investis (réserve, prévention, formation, matériel…)`, href: '#ordres' });
   const vieux = z.dossiers.filter((d) => d.age > 6).length;
   if (vieux) alertes.push({ cls: 'amber', titre: `${vieux} dossier${vieux > 1 ? 's' : ''} qui traîne${vieux > 1 ? 'nt' : ''}`, texte: 'renforce la Recherche', href: '#ordres' });
   { const dg = S.draft ? secteursEnDanger() : []; if (dg.length) alertes.unshift({ cls: 'red', titre: `Zone de non-droit : ${dg.map((k) => esc(nomSecteur(k))).join(', ')} menacé${dg.length > 1 ? 's' : ''}`, texte: 'le milieu remonte : mets 2 ou 3 agents de garde ce soir', href: '#terrain' }); }

@@ -1,7 +1,7 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
 import {
-  SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, coutEquipement, multNiveau, multEquip, coutFormation , PREPA, coutPrepa } from './constants.js';
+  SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, scoreRevenu, BUDGET_IPZ, CLASSEMENT, coutEquipement, multNiveau, multEquip, coutFormation , PREPA, coutPrepa } from './constants.js';
 import { coutCarrosserie } from './sinistres.js';
 import { cabossesChoisis } from './parc.js';
 import { prixRevente, assurerFlotte, placesIntervention, entretienFlotte, bonusAnonymes, agentsMontes, primeVerte, bonusOrdre, RENDEMENT, MODELES, IDS_MODELES } from './flotte.js';
@@ -449,12 +449,12 @@ export function decisionImpossible(zone, decision, turn) {
 /** Résultats terrain : incidents traités (sur 60) + bilan des points de résultats, plafonné à 100. */
 export function terrainBrut(ratio, bilan) { return TERRAIN.incidents * ratio + TERRAIN.parPoint * bilan; }
 
-export function ipzComposantes(zone, { ratio = 1, bilan = 0 } = {}) {
+export function ipzComposantes(zone, { ratio = 1, bilan = 0, revenus = null } = {}) {
   return {
     satisfaction: clamp(zone.satisfaction, 0, 100),
     affaires: clamp(terrainBrut(ratio, bilan), 0, 100),
     moral: clamp(zone.moral, 0, 100),
-    budget: scoreBudget(zone.budget),
+    budget: BUDGET_IPZ.mode === 'revenu' ? scoreRevenu(revenus || zone.revenus) : scoreBudget(zone.budget),
     reputation: clamp(zone.reputation, 0, 100),
   };
 }
@@ -529,12 +529,23 @@ export function ligneIpz(comp, hier, ipz, ipzHier, det) {
     const pourquoi = [plus ? `surtout grâce à : ${IPZ_LABELS[plus.k].toLowerCase()}` : '', moins ? `plombé par : ${IPZ_LABELS[moins.k].toLowerCase()}` : ''].filter(Boolean).join(' ; ');
     if (pourquoi) tete += `, ${pourquoi}`;
   }
-  const res = det ? ` Résultats terrain : ${det.traites}/${det.incidents} incidents traités, ${f(det.points)} pts de résultats aujourd’hui${det.bilan !== undefined ? ` (bilan ${f(det.bilan)} avec la moitié d’hier)` : ''}.` : '';
+  const res = det ? ` Résultats terrain : ${det.traites}/${det.incidents} incidents traités, ${f(det.points)} pts de résultats aujourd’hui${det.bilan !== undefined ? ` (bilan ${f(det.bilan)} avec le quart d’hier)` : ''}.` : '';
   return `${tete}. Détail en points d’IPZ : ${parts.map((p) => p.txt).join(' · ')}.${res}`;
 }
 
+/**
+ * IPZ du classement : moyenne des soirs joués de la saison, les plus récents comptant plus (retour de Luc, oct. 2026 :
+ * une avance prise en début de saison ne doit pas rendre une zone inarrêtable). Poids d'un soir = CLASSEMENT.recence ^ âge
+ * (hier : 1 ; il y a 5 jours : 0,33 ; il y a 10 jours : 0,11). Simulation test/ipz-luc-sim.mjs : 2,2 changements de 1er
+ * par saison contre 1,4 avec la moyenne simple (1,5 avec les 5 derniers jours seuls).
+ */
 export function moyenneIpz(zone) {
-  return zone.toursJoues ? round1(zone.ipzSomme / zone.toursJoues) : 0;
+  const h = (zone.ipzHist || []).filter((x) => x && x.joue && Number.isFinite(x.v) && Number.isFinite(x.t));
+  if (!h.length) return zone.toursJoues ? round1(zone.ipzSomme / zone.toursJoues) : 0;
+  const tRef = Math.max(...zone.ipzHist.filter((x) => x && Number.isFinite(x.t)).map((x) => x.t));
+  let s = 0, w = 0;
+  for (const x of h) { const k = CLASSEMENT.recence ** Math.max(0, tRef - x.t); s += k * x.v; w += k; }
+  return round1(s / w);
 }
 
 export { clone };

@@ -112,7 +112,16 @@ export const INC = {
   dernier: 16 * H,        // au plus tard 12 h
   jauge: 50,              // points de jauge pour un skin
   deuxiemeChance: 0.5,    // probabilité d'un second incident dans la journée
+  // Retour de Luc (oct. 2026) : plus l'IPZ de la veille est haut, plus il tombe d'incidents (zone très en vue).
+  // Ces incidents « en plus » ne rapportent que les PS et la jauge des skins ; ratés ou laissés, ils coûtent comme les autres.
+  pression: { depuis: Date.parse('2026-10-08T18:30:00Z'), deuxieme: [[75, 0.75], [85, 1]], troisieme: { ipz: 90, chance: 0.5 } },
 };
+/** Chance d'un second incident selon l'IPZ de la veille. */
+export function chanceDeuxieme(ipz) {
+  let c = INC.deuxiemeChance;
+  for (const [min, v] of INC.pression.deuxieme) if ((Number(ipz) || 0) >= min) c = v;
+  return c;
+}
 
 /**
  * Équilibrage aligné sur les énigmes du jour (une énigme : +5 PS si réussie, −1 de moral si ratée ;
@@ -195,13 +204,23 @@ export function incidentsDuTour(state, uid) {
   const fenetre = INC.dernier - INC.premier;
   const ouvre1 = debut + INC.premier + Math.floor(r.next() * fenetre);
   const liste = [{ service: tirer([]), ouvre: ouvre1 }];
-  if (r.next() < INC.deuxiemeChance) {
+  const pression = fin > INC.pression.depuis, ipz = Number(z.ipz) || 0;
+  const x2 = r.next();
+  if (x2 < (pression ? chanceDeuxieme(ipz) : INC.deuxiemeChance)) {
     // Le second, au moins 2 heures avant ou après le premier, toujours entre 7 h et 19 h.
     let o2 = ouvre1 + 2 * H + Math.floor(r.next() * (fenetre - 4 * H));
     if (o2 > debut + INC.dernier) o2 -= fenetre;
-    liste.push({ service: tirer([liste[0].service]), ouvre: o2 });
-    liste.sort((a, b) => a.ouvre - b.ouvre);
+    liste.push({ service: tirer([liste[0].service]), ouvre: o2, ...(x2 >= INC.deuxiemeChance ? { pression: true } : {}) });
   }
+  // Troisième incident pour une zone à 90 d'IPZ ou plus (tirage à part : ne change rien aux autres).
+  if (pression && ipz >= INC.pression.troisieme.ipz) {
+    const r3 = makeRng(`${state.seed}:s${state.season}:t${state.turn}:incidents3:${uid}`);
+    if (r3.chance(INC.pression.troisieme.chance)) {
+      const pris = liste.map((x) => x.service), pool = SERVICES_INCIDENTS.filter((s) => !pris.includes(s));
+      liste.push({ service: pool[Math.floor(r3.next() * pool.length)] || SERVICES_INCIDENTS[0], ouvre: debut + INC.premier + Math.floor(r3.next() * fenetre), pression: true });
+    }
+  }
+  liste.sort((a, b) => a.ouvre - b.ouvre);
   // Difficulté figée dès que l'incident tombe : agents du service EN SERVICE aujourd'hui (ordres validés
   // à la dernière résolution) et cran du Directeur du jour. Modifier ses ordres de ce soir ne change plus
   // le niveau (avant : on gonflait un service juste avant de jouer pour l'avoir en facile).
@@ -227,7 +246,7 @@ export function incidentsDuTour(state, uid) {
     id: `s${state.season}t${state.turn}-${k}`,
     service: x.service, jeu: INCIDENTS[x.service].jeu, titre: INCIDENTS[x.service].titre,
     ouvre: x.ouvre, ferme: fin,
-    agents: al[x.service] || 0, ajust: niv,
+    agents: al[x.service] || 0, ajust: niv, ...(x.pression ? { pression: true } : {}),
   })), urgence].sort((a, b) => a.ouvre - b.ouvre);
 }
 
@@ -288,6 +307,7 @@ export function appliquerUrgence(z, inc, res, { alloc = {}, T, rng }) {
     z.jaugeIncidents = (z.jaugeIncidents || 0) + pts;
     z._ps = (z._ps || 0) + PS.queteOk;
     z.stats.urgencesOk = (z.stats.urgencesOk || 0) + 1;
+    (z.carriere ||= {}).incidents = (z.carriere.incidents || 0) + 1;
     return [`${nom} : sur place à temps${res.score ? ` (${res.score} points)` : ''}, les collègues sont dégagés. +${gm} de moral, +${PS.queteOk} PS, +${pts} sur la jauge des skins${out.length ? ` ; ${out.join(', ')}` : ''}.`];
   }
   z._ps = (z._ps || 0) + PS.queteTentee;
@@ -328,7 +348,9 @@ export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng, ind
       z.jaugeIncidents = (z.jaugeIncidents || 0) + pts;
       z._ps = (z._ps || 0) + PS.queteOk;
       z.stats.incidentsOk = (z.stats.incidentsOk || 0) + 1;
-      const g = GAIN[inc.service], gains = [];
+      (z.carriere ||= {}).incidents = (z.carriere.incidents || 0) + 1;
+      // Incident « en plus » (IPZ élevé) : seulement les PS et la jauge.
+      const g = inc.pression ? {} : GAIN[inc.service], gains = inc.pression ? ['incident en plus (IPZ élevé) : pas de gain de service'] : [];
       if (g.moral) { const gm = gainMoral(g.moral, z.moral); z.moral += gm; gains.push(`+${gm} de moral`); }
       if (g.satisfaction) { z.satisfaction += g.satisfaction; gains.push(`+${g.satisfaction} de satisfaction`); }
       if (g.budget) { z.budget += g.budget; (z._compta ||= []).push({ k: 'incident', l: 'Incident réussi', v: g.budget }); gains.push(`+${g.budget} k€`); }

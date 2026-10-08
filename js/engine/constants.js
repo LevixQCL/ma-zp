@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 103;
+export const APP_VERSION = 104;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -17,6 +17,8 @@ export const SERVICE_LABELS = {
 
 export const SEASON_LENGTH = 14;          // tours par saison
 export const RESOLUTION_HOUR = 20;        // heure de résolution (heure belge)
+/** Classement : poids d'un soir selon son ancienneté (voir moyenneIpz). */
+export const CLASSEMENT = { recence: 0.8 };
 export const MIN_TOURS_CLASSEMENT = 5;    // tours joués pour être classé
 
 export const START = {
@@ -115,7 +117,8 @@ export function tauxRetourMoral(m) {
  */
 export const DERIVE = {
   // Plus c'est haut, plus ça redescend vite (retour de Luc, adouci) : 90+ reste possible pour une zone très active.
-  satisfaction: { cible: 50, base: 0.04, paliers: [[60, 0.06], [70, 0.10], [80, 0.15], [90, 0.20]] },
+  // Oct. 2026 (retour de Luc) : +5 points de % dans chaque tranche.
+  satisfaction: { cible: 50, base: 0.09, paliers: [[60, 0.11], [70, 0.15], [80, 0.20], [90, 0.25]] },
   reputation: { cible: 50, base: 0.03, paliers: [[60, 0.05], [70, 0.08], [80, 0.12], [90, 0.16]] },
 };
 export function tauxDerive(k, v) {
@@ -138,6 +141,10 @@ export const ROLE_SERVICE = { inter: 'intervention', rech: 'recherche', prox: 'p
 export const bonusChef = (niveau) => CHEFS.bonus[Math.max(0, Math.min(3, niveau || 0))];
 // Énigmes du jour : bonus au choix dès 2 bonnes réponses, prime « sans faute » à 3 sur 3.
 export const ENIGMES = { rateeMoral: 1, bonusMoral: 3, bonusBudget: 2, bonusCapacite: 1.1, sansFaute: { budget: 3, moral: 2, ps: 5 },
+  // Retour de Luc (oct. 2026) : 4 énigmes par jour. Bonus dès 2 bonnes réponses, prime dès 3 (rien de plus à 4).
+  primeSeuil: 3,
+  // Paliers de carrière (toutes saisons confondues) : toutes les `pas` énigmes réussies, une récompense.
+  paliers: { pas: 10, budget: 2, jauge: 3 },
   // Énigmes confiées à un agent (pas le temps, pas l'envie) : un agent planche dessus toute la journée
   // (sa paperasse prend du retard : +`paperasse` dossiers) et décroche le bonus choisi avec une chance qui dépend du moral.
   // Jamais de PS, jamais de prime « sans faute », jamais de moral perdu.
@@ -173,10 +180,12 @@ export function malusEtat(etat) { return etat >= 80 ? 1 : etat >= 60 ? 0.95 : et
 export const FLAGRANT = { parUnite: 0.1, max: 0.4, points: 3, ps: 3, tension: 5 };
 /**
  * Résultats terrain (composante de l'IPZ) : incidents traités + bilan des points de résultats.
- * Le bilan garde la moitié de celui de la veille (`report`) : un gros coup compte plusieurs jours,
- * un jour creux ne fait pas tout tomber. Bilan stable ≈ 2 × points moyens par jour.
+ * Le bilan garde le quart de celui de la veille (`report`) : un gros coup compte encore le lendemain,
+ * un jour creux ne fait pas tout tomber. Bilan stable ≈ 1,33 × points moyens par jour.
  */
-export const TERRAIN = { incidents: 45, parPoint: 2, report: 0.5 };
+// Retour de Luc (oct. 2026) : le bilan ne garde plus que le quart de celui de la veille (simulation test/ipz-luc-sim.mjs :
+// terrain moyen des joueurs assidus 77 → 65, soirs à 95+ divisés par 2 à 6).
+export const TERRAIN = { incidents: 45, parPoint: 2, report: 0.25 };
 /** Recherche : chaque unité de travail sur un dossier rapporte des points tout de suite (≈ 0,5). */
 // Dossiers locaux plus courts (retour de Luc : 6 agents doivent suivre le rythme d'un dossier par jour), même récompense par dossier.
 // Simulation : 6 agents bouclent ~12 dossiers sur 13 (contre ~9 avant) ; il en fallait 8 à 11.
@@ -237,7 +246,19 @@ export const psEvenement = (c) => (c > 0 ? Math.max(1, Math.min(PS.evenementMax,
 
 // Composante Budget de l'IPZ : 50 + 1,5 × budget (100 dès 34 k€). Au-delà de `dormant` k€, l'argent qui dort
 // coûte `pente` point par k€ (jusqu'à `plancher`) : la commune juge qu'une zone qui ne dépense pas est trop dotée.
-export const BUDGET_IPZ = { base: 50, parK: 1.5, dormant: 75, pente: 1, plancher: 50 };
+export const BUDGET_IPZ = { base: 50, parK: 1.5, dormant: 75, pente: 1, plancher: 50,
+  // Retour de Luc : le budget de l'IPZ suit le revenu (moyenne des `jours` derniers jours) et non plus l'argent amassé.
+  mode: 'revenu', jours: 3, revenu: { base: 40, parK: 4 } };
+// Revenu moyen de 0 → 40 ; 10 k€ par jour → 80 ; 100 dès 15 k€ par jour (simulation : 100 atteint 3 à 8 % des soirs, contre 50 à 90 % avant).
+/** Mouvements qui ne comptent pas dans le revenu du jour : achats, dépenses choisies, reventes, bilan de saison. */
+export const HORS_REVENU = new Set(['decision', 'depenses', 'vente', 'bilan']);
+/** Composante Budget selon le revenu moyen des derniers jours (k€ par jour). */
+export function scoreRevenu(revenus) {
+  const l = (revenus || []).filter(Number.isFinite);
+  if (!l.length) return BUDGET_IPZ.revenu.base;
+  const m = l.reduce((a, b) => a + b, 0) / l.length;
+  return Math.max(0, Math.min(100, BUDGET_IPZ.revenu.base + BUDGET_IPZ.revenu.parK * m));
+}
 export function scoreBudget(b) {
   if (b > BUDGET_IPZ.dormant) return Math.max(BUDGET_IPZ.plancher, 100 - BUDGET_IPZ.pente * (b - BUDGET_IPZ.dormant));
   return Math.max(0, Math.min(100, BUDGET_IPZ.base + BUDGET_IPZ.parK * b));
@@ -306,6 +327,11 @@ export const ND = {
   absenceRepousse: 2,     // tours d'absence des blessés
   risqueParAgent: 0.04,   // assaut réussi : risque de blessé par agent engagé au-delà de 3 (plafonné)
   risqueMax: 0.2,
+  // Gangs (retour de Luc, oct. 2026) : plus le district tient de secteurs, plus le milieu envoie de gangs les reprendre.
+  // Au-delà de `seuil` secteurs de l'anneau tenus, un gang par secteur en plus ; le Cœur tenu : un gang de plus et +`coeur` de force.
+  // Chaque gang est annoncé la veille (Gazette, carte) sur un secteur tenu : il ajoute sa force à l'emprise ce soir-là.
+  // Force : `base` + `parZone` par zone active (plafond `max`). Le repousser rapporte à chaque zone de garde.
+  gangs: { seuil: 2, base: 10, parZone: 2, max: 40, coeur: 20, ps: 5, rep: 1 },
 };
 /** Nombre maximum de zones par partie (le document d'état de Firestore est limité à 1 Mo, environ 8 Ko par zone). */
 export const MAX_ZONES = 100;

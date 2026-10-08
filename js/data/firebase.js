@@ -180,14 +180,14 @@ export async function createFirebaseBackend(config) {
       await F.setDoc(docIn('quests', `${id3(season, turn, uid)}_${slot}`), plain({ ...data, uid, season, turn, slot, at: Date.now() }));
     },
     async getQuests(uid, season, turn) {
-      const snaps = await Promise.all([0, 1, 2, 3].map((slot) => F.getDoc(docIn('quests', `${id3(season, turn, uid)}_${slot}`))));
+      const snaps = await Promise.all([0, 1, 2, 3, 4].map((slot) => F.getDoc(docIn('quests', `${id3(season, turn, uid)}_${slot}`))));
       return snaps.map((s) => (s.exists() ? s.data() : null));
     },
     async getAllQuests(season, turn) {
       const q = F.query(col('quests'), F.where('season', '==', season), F.where('turn', '==', turn));
       const snap = await F.getDocs(q);
       const out = {};
-      snap.forEach((d) => { const v = d.data(); (out[v.uid] ||= [null, null, null, null])[v.slot ?? 0] = v; });
+      snap.forEach((d) => { const v = d.data(); (out[v.uid] ||= [null, null, null, null, null])[v.slot ?? 0] = v; });
       return out;
     },
 

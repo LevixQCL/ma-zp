@@ -6,7 +6,7 @@ import { createBackend } from './data/backend.js';
 import { codeDejaPris, MSG_CODE_PRIS } from './data/codes.js';
 import { installerEuros } from './ui/euros.js';
 import { resolvePending, completerDepuisGazette, etatResolution } from './data/resolver.js';
-import { S, toast, myZone, esc, cielDuMoment, tabbar, pseudoParDefaut } from './ui/common.js';
+import { S, toast, myZone, esc, cielDuMoment, tabbar, pseudoParDefaut, slotsJour, questDuSlot } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil } from './ui/hp.js';
 import { ouvrirAide } from './ui/aide.js';
@@ -44,7 +44,7 @@ import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, bas
 import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { renderDebrief } from './ui/debrief.js';
-import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES, FORMES, formesPourTour } from './quests/quests.js';
+import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES, FORMES, formesPourTour, quatrePourTour } from './quests/quests.js';
 import { niveauEnigmes } from './engine/directeur.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
 import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND } from './engine/constants.js';
@@ -233,7 +233,7 @@ function loadQuest() {
   // Énigme changée : mémorisée sur l'appareil, et dans la réponse une fois donnée (pour les autres appareils).
   const rerolls = new Set((S.questResults || []).map((r, k) => (r && r.variante ? k : -1)).filter((k) => k >= 0));
   try { const v = localStorage.getItem(cleReroll()); if (v !== null && !(S.questResults || []).some((r) => r && r.variante)) rerolls.add(Number(v)); } catch (e) { /* pas de stockage */ }
-  S.quests = questsFor({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn, weekday: weekdayBe(st.nextDeadline), rerolls: [...rerolls].slice(0, 1), ajust: niveauEnigmes(st.zones && st.zones[S.user.uid]), formes: formesPourTour(st.nextDeadline) });
+  S.quests = questsFor({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn, weekday: weekdayBe(st.nextDeadline), rerolls: [...rerolls].slice(0, 1), ajust: niveauEnigmes(st.zones && st.zones[S.user.uid]), formes: formesPourTour(st.nextDeadline), quatre: quatrePourTour(st.nextDeadline) });
   S.noir = dossierNoir({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn, exclure: S.quests.map((q) => q.type), garder: S.noirResult && S.noirResult.type, formes: formesPourTour(st.nextDeadline) });
 }
 
@@ -252,8 +252,9 @@ async function loadTurnData() {
     lire(S.backend.listGazettes(10), [], 'gazettes'),
   ]);
   S.savedOrders = orders; S.ordersDirty = false; S.draft = null; S.decisionOpen = false;
-  S.questResults = (quest || [null, null, null]).slice(0, 3); S.noirResult = (quest && quest[3]) || null; S.quests = null; S.questPick = null;
-  S.questIdx = Math.max(0, (S.questResults || []).findIndex((r) => !r || (r.statut !== 'ok' && r.statut !== 'rate')));
+  // Réponses rangées par emplacement : 0, 1, 2 (et 4 avec la 4e énigme) ; le 3 est le dossier noir, gardé à part.
+  S.questResults = [0, 1, 2, 3, 4].map((k) => (k === 3 ? null : (quest && quest[k]) || null)); S.noirResult = (quest && quest[3]) || null; S.quests = null; S.questPick = null;
+  S.questIdx = slotsJour().find((k) => { const r = S.questResults[k]; return !r || (r.statut !== 'ok' && r.statut !== 'rate'); }) ?? 0;
   // Tri par saison et tour : l'ordre d'écriture dépend de l'horloge de l'appareil qui a calculé le tour.
   S.gazettes = (gazettes || []).slice().sort((x, y) => (y.season - x.season) || (y.turn - x.turn)); S.gazetteIndex = 0; S.rapportIdx = 0;
   completerDepuisGazette(S.state, S.gazettes);
@@ -1033,7 +1034,7 @@ async function onClick(e) {
       case 'alt-vue': S.altVue = el.dataset.v || null; rerender(); break;
       case 'quiz-start': {
         if ((S.questResults || []).some((r) => r && r.statut)) break;
-        if (!(await askConfirm('Lancer le quiz express ? Un seul essai, et les 3 énigmes du jour se ferment.', 'C\u2019est parti'))) break;
+        if (!(await askConfirm('Lancer le quiz express ? Un seul essai, et les énigmes du jour se ferment.', 'C\u2019est parti'))) break;
         demarrerQuiz(); S.altVue = null; rerender(); window.scrollTo(0, 0); break;
       }
       case 'quiz-rep': repondreQuiz(Number(el.dataset.v)); rerender(); break;
@@ -1092,7 +1093,7 @@ function takeAgent() {
 }
 
 /** Énigme affichée : entraînement, dossier noir ou énigme du jour. */
-function questCourante() { return S.questMode === 'train' ? S.train : (S.questIdx || 0) === 3 ? S.noir : S.quests[S.questIdx || 0]; }
+function questCourante() { return S.questMode === 'train' ? S.train : (S.questIdx || 0) === 3 ? S.noir : questDuSlot(S.questIdx || 0); }
 
 /** Statistiques d'entraînement, gardées sur l'appareil. */
 function compterEntrainement(type, ok) {
@@ -1200,7 +1201,7 @@ async function submitQuest(reponse) {
     toast(ok ? 'Dossier noir résolu. Chapeau !' : 'Raté, sans conséquence.');
     rerender(); return;
   }
-  const q = S.quests[i];
+  const q = questDuSlot(i);
   const r = S.questResults[i] || { statut: null, tentatives: 0 };
   if (r.statut === 'ok' || r.statut === 'rate') return;
   // Une seule réponse possible : on demande confirmation, puis c'est définitif.
@@ -1210,7 +1211,7 @@ async function submitQuest(reponse) {
   S.questPick = null;
   await S.backend.saveQuest(S.user.uid, st.season, st.turn, i, S.questResults[i]);
   toast(ok ? 'Bonne réponse !' : 'Mauvaise réponse.');
-  const suivante = S.questResults.findIndex((x) => !x || (x.statut !== 'ok' && x.statut !== 'rate'));
+  const suivante = slotsJour().find((k) => { const x = S.questResults[k]; return !x || (x.statut !== 'ok' && x.statut !== 'rate'); }) ?? -1;
   S.questNext = suivante;
   rerender();
 }

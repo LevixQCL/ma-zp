@@ -116,6 +116,15 @@ export const TROPHEES = [
   { id: 'veteran', nom: 'Vétéran', texte: 'Faire progresser un membre de l’équipe jusqu’à son dernier surnom' },
   { id: 'incorruptible', nom: 'Incorruptible', texte: 'Finir une saison classé, sans jamais rompre un pacte' },
   { id: 'increvable', nom: 'Increvable', texte: 'Valider ses ordres les 14 tours d’une saison' },
+  // Oct. 2026 (idées de Luc) : 8 de plus, d'autres viendront.
+  { id: 'rempart', nom: 'Rempart', texte: 'Repousser un gang dans la zone de non-droit' },
+  { id: 'premiereligne', nom: 'Première ligne', texte: 'Participer à tous les assauts de la zone de non-droit deux soirs d’affilée' },
+  { id: 'recordman', nom: 'Recordman', texte: 'Battre 10 records du Challenge' },
+  { id: 'erudit', nom: 'Érudit', texte: 'Réussir 50 énigmes' },
+  { id: 'urgentiste', nom: 'Sur tous les fronts', texte: 'Réussir 25 incidents du jour' },
+  { id: 'tresorier', nom: 'Trésorier', texte: 'Dégager 20 000 € de revenu en une journée' },
+  { id: 'collection', nom: 'Collectionneur', texte: 'Débloquer 5 skins pour son commissariat' },
+  { id: 'sommet', nom: 'Au sommet', texte: 'Atteindre 85 d’IPZ un soir' },
 ];
 export const TROPHEE = Object.fromEntries(TROPHEES.map((t) => [t.id, t]));
 
@@ -140,6 +149,15 @@ export function verifierTrophees(z) {
   if ((st.noirs || 0) >= 3) ok.push('cerveau');
   if (z.batiments && z.batiments.bureaux >= 4) ok.push('batisseur');
   if ((z.equipe || []).some((m) => m.niveau >= 3)) ok.push('veteran');
+  const c = z.carriere || {};
+  if ((st.gangsRepousses || 0) >= 1) ok.push('rempart');
+  if ((st.serieAssauts || 0) >= 2) ok.push('premiereligne');
+  if ((c.records || 0) >= 10) ok.push('recordman');
+  if ((c.enigmes || 0) >= 50) ok.push('erudit');
+  if ((c.incidents || 0) >= 25) ok.push('urgentiste');
+  if ((st.revenuMax || 0) >= 20) ok.push('tresorier');
+  if ((z.skins || []).length >= 5) ok.push('collection');
+  if ((Number(z.ipz) || 0) >= 85) ok.push('sommet');
   return ok;
 }
 

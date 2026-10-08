@@ -49,7 +49,7 @@ export const ETAPES = [
   {
     id: 'zone', route: 'hp', cible: 'section[aria-label="Ma zone"]',
     titre: 'Ta zone en un coup d’œil',
-    texte: `<p>L’<strong>IPZ</strong> est ta note du jour, sur 100 ; c’est la moyenne de la saison qui compte au classement.</p>
+    texte: `<p>L’<strong>IPZ</strong> est ta note du jour, sur 100 ; c’est la moyenne de la saison qui compte au classement (les derniers jours comptent plus).</p>
       <p>Surveille la <strong>satisfaction</strong> (le plus gros poids) et le <strong>moral</strong>, qui règle l’efficacité de tous tes agents. Chaque <strong>?</strong> détaille le calcul avec tes chiffres. Touche ton commissariat pour voir ce que te rapportent tes bâtiments.</p>`,
   },
   {

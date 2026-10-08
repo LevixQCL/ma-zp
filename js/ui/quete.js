@@ -3,12 +3,20 @@ import { laureatsProvisoires, enTeteSemaine, recordDefi, monRecordDefi } from '.
 import { CHALLENGE } from '../engine/challenge.js';
 import { euros } from './euros.js';
 import { recordBitonal, monScoreBitonal } from './bitonal.js';
-import { S, esc, icon, tabbar, myZone } from './common.js';
+import { S, esc, icon, tabbar, myZone, questDuSlot } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS, FORMES, FORMES_EN_JEU } from '../quests/quests.js';
 import { digicodeHtml, digicodeResultat } from './digicode.js';
 import { vignetteEnigme, couleurEnigme } from './vignettes-enigmes.js';
 
 /** Formes d'énigmes visibles en entraînement : en jeu, ou en aperçu (?apercu dans l'adresse). */
+/** Paliers de carrière des énigmes (toutes saisons) : une ligne discrète avec la barre vers le prochain. */
+function palierHtml() {
+  const z = myZone(); if (!z) return '';
+  const n = (z.carriere && Number.isFinite(z.carriere.enigmes)) ? z.carriere.enigmes : (z.stats && z.stats.quetesOk) || 0;
+  const P = ENIGMES.paliers, prochain = (Math.floor(n / P.pas) + 1) * P.pas, pct = Math.round(100 * (n % P.pas) / P.pas);
+  return `<div class="palier-enig" title="Toutes les ${P.pas} énigmes réussies (dossier noir compris), depuis ton arrivée"><span class="tiny"><strong>${n}</strong> énigme${n > 1 ? 's' : ''} réussie${n > 1 ? 's' : ''} depuis ton arrivée · palier à ${prochain} : +${P.budget} k€ et +${P.jauge} jauge des skins</span><span class="palier-barre"><i style="width:${pct}%"></i></span></div>`;
+}
+
 export function formesVisibles() {
   if (FORMES_EN_JEU) return true;
   try { if (/[?&]apercu\b/.test(location.search)) sessionStorage.setItem('mazp-apercu', '1'); return sessionStorage.getItem('mazp-apercu') === '1'; } catch (e) { return false; }
@@ -204,7 +212,7 @@ function delegueHtml(delegue, moral, gBonus, enqueteOuverte) {
         <button type="button" class="choice alt-c" data-action="alt-vue" data-v="quiz"><span>⏱ Quiz express</span><span class="s">${QUIZ.questions} questions de culture générale, ${QUIZ.secondes} s chacune. ${QUIZ.seuil} bonnes réponses : bonus complet.</span></button>
         <button type="button" class="choice alt-c" data-action="alt-vue" data-v="agent"><span>🧑‍💼 Confier à un agent</span><span class="s">Rien à faire : il a ${pct} % de chances de décrocher le bonus.</span></button>
       </div>
-      <p class="tiny muted" style="margin:0">Dans les deux cas : pas de PS ni de prime « sans faute », et les 3 énigmes du jour se ferment (le dossier noir reste ouvert).</p>
+      <p class="tiny muted" style="margin:0">Dans les deux cas : pas de PS ni de prime « sans faute », et les énigmes du jour se ferment (le dossier noir reste ouvert).</p>
     </section>`;
   }
   if (S.altVue === 'quiz') {
@@ -212,14 +220,14 @@ function delegueHtml(delegue, moral, gBonus, enqueteOuverte) {
       <div class="between"><span style="font-weight:700">⏱ Quiz express</span>${fermer}</div>
       <p class="small" style="margin:0">${QUIZ.questions} questions, ${QUIZ.secondes} secondes chacune, 4 réponses possibles. Thèmes : ${Object.values(QUIZ_THEMES).map((t) => `${t.ico} ${esc(t.nom)}`).join(', ')}.</p>
       <p class="small" style="margin:0"><strong>${QUIZ.seuil} bonnes réponses sur ${QUIZ.questions}</strong> : tu choisis ton bonus, comme avec les énigmes. Moins : pas de bonus, sans autre conséquence.</p>
-      <p class="tiny" style="margin:0;color:var(--red-soft)">Un seul essai. Le chrono tourne même si tu quittes l’écran. Les 3 énigmes du jour se ferment dès la première question.</p>
+      <p class="tiny" style="margin:0;color:var(--red-soft)">Un seul essai. Le chrono tourne même si tu quittes l’écran. Les énigmes du jour se ferment dès la première question.</p>
       <button type="button" class="btn primary block" data-action="quiz-start">Lancer le quiz</button>
     </section>`;
   }
   return `<section class="card" aria-label="Confier les énigmes à un agent" style="gap:10px">
       <div class="between"><span style="font-weight:700">🧑‍💼 Confier les énigmes à un agent</span>${fermer}</div>
       <p class="small" style="margin:0">Un agent planche dessus à ta place. ${regles}</p>
-      <p class="tiny" style="margin:0;color:var(--red-soft)">Définitif pour aujourd’hui : tu ne pourras plus répondre aux 3 énigmes (le dossier noir reste ouvert).</p>
+      <p class="tiny" style="margin:0;color:var(--red-soft)">Définitif pour aujourd’hui : tu ne pourras plus répondre aux énigmes du jour (le dossier noir reste ouvert).</p>
       <span class="small" style="font-weight:600">Quel bonus doit-il viser ?</span>
       ${choixBonus(null, gBonus, enqueteOuverte, { action: 'quest-delegue', change: 'quest-delegue-capacite' })}
     </section>`;
@@ -259,9 +267,10 @@ export function renderQuete() {
     ${entrainementListe()}
   </main>${tabbar('quete', { questBadge: false })}`;
   }
-  const i = Math.min(S.questIdx || 0, 3);
+  const i = [0, 1, 2, 3, 4].includes(S.questIdx) ? S.questIdx : 0;
   const noir = !train && i === 3;
-  const q = train ? S.train : noir ? S.noir : S.quests[i];
+  const q = train ? S.train : noir ? S.noir : questDuSlot(i);
+  const nbJour = S.quests ? S.quests.length : 3, P = ENIGMES.primeSeuil;
   const results = S.questResults || [];
   const r = train ? (S.trainRes ? { statut: S.trainRes.ok ? 'ok' : 'rate', reponse: S.trainRes.reponse } : { statut: null })
     : noir ? (S.noirResult || { statut: null, tentatives: 0 }) : (results[i] || { statut: null, tentatives: 0 });
@@ -289,11 +298,11 @@ export function renderQuete() {
       ${bonusPris && !S.bonusChanger ? `<div class="between" style="gap:8px"><p class="small" style="margin:0;font-weight:600">Bonus du jour : ${esc(bonusLabel(bonusPris, gBonus, enqueteOuverte))}. Il sera appliqué à 20:00.</p><button type="button" class="btn small ghost" data-action="bonus-changer">Changer</button></div><span class="tiny muted">Tu peux changer d’avis jusqu’à 20:00.</span>`
         : `<span class="ok" style="font-weight:700">${bonusPris ? 'Change ton bonus du jour (jusqu’à 20:00)' : `${ok} bonnes réponses : choisis ton bonus du jour`}</span>
         ${choixBonus(bonusPris, gBonus, enqueteOuverte)}`}
-      ${ok >= 3 ? `<p class="small ok" style="margin:0;font-weight:700">🏅 Sans faute ! Prime en plus de ton bonus : ${primeSf} ce soir.</p>` : `<p class="tiny muted" style="margin:0">Réussis les 3 énigmes pour une prime « sans faute » : ${primeSf}.</p>`}
+      ${ok >= P ? `<p class="small ok" style="margin:0;font-weight:700">🏅 ${nbJour > P ? `${P} réussies` : 'Sans faute'} ! Prime en plus de ton bonus : ${primeSf} ce soir.</p>` : `<p class="tiny muted" style="margin:0">${nbJour > P ? `Réussis ${P} énigmes sur ${nbJour}` : `Réussis les ${P} énigmes`} pour une prime : ${primeSf}.</p>`}
     </section>` : '';
 
-  const onglets = train ? entrainementBarre() : `<div class="seg quatre" role="tablist" aria-label="Énigmes du jour">${S.quests.map((x, k) => `
-      <button type="button" role="tab" data-action="quest-tab" data-i="${k}" aria-pressed="${k === i}" aria-selected="${k === i}"><span class="t">Énigme ${k + 1}${icone(results[k])}</span><span class="d">${esc(x.typeLabel)}</span></button>`).join('')}
+  const onglets = train ? entrainementBarre() : `<div class="seg ${S.quests.length > 3 ? 'cinq' : 'quatre'}" role="tablist" aria-label="Énigmes du jour">${S.quests.map((x, k) => `
+      <button type="button" role="tab" data-action="quest-tab" data-i="${x.slot}" aria-pressed="${x.slot === i}" aria-selected="${x.slot === i}"><span class="t">${S.quests.length > 3 ? 'n°' : 'Énigme '}${k + 1}${icone(results[x.slot])}</span><span class="d">${esc(x.typeLabel)}</span></button>`).join('')}
       <button type="button" role="tab" class="noir" data-action="quest-tab" data-i="3" aria-pressed="${noir}" aria-selected="${noir}"><span class="t">Dossier noir${icone(S.noirResult)}</span><span class="d">facultatif</span></button></div>`;
   const delegue = !train ? results.find((x) => x && x.statut === 'delegue') : null;
   const aucuneReponse = !results.some((x) => x && (x.statut === 'ok' || x.statut === 'rate'));
@@ -326,10 +335,11 @@ export function renderQuete() {
     ${modes}
     ${sousOnglets}
     ${onglets}
+    ${!train ? palierHtml() : ''}
     ${bonusCard}
     ${propositionDelegue}
     <header class="between" style="align-items:flex-start">
-      <div class="col" style="gap:3px"><span class="kicker" ${noir ? 'style="color:#E0625A"' : ''}>${train ? 'Entraînement · ne compte pas' : noir ? 'Dossier noir · niveau hardcore' : `Énigme ${i + 1} sur 3`}</span><h1 class="big">${esc(q.typeLabel)}</h1>${q.formeNom ? `<span class="forme-nom">${esc(q.formeNom)}</span>` : ''}</div>
+      <div class="col" style="gap:3px"><span class="kicker" ${noir ? 'style="color:#E0625A"' : ''}>${train ? 'Entraînement · ne compte pas' : noir ? 'Dossier noir · niveau hardcore' : `Énigme ${S.quests.indexOf(q) + 1} sur ${nbJour}`}</span><h1 class="big">${esc(q.typeLabel)}</h1>${q.formeNom ? `<span class="forme-nom">${esc(q.formeNom)}</span>` : ''}</div>
       <div class="col" style="gap:4px;align-items:flex-end"><span class="pill" ${q.difficulte >= 6 ? 'style="background:#2A1414;border-color:#6B2E2A;color:#F59A92"' : ''}>${q.difficulte >= 6 ? 'Hardcore' : `Difficulté ${q.difficulte}/5`}</span>
         <span class="tiny muted">${fini ? 'terminée' : train ? 'correction immédiate' : 'une seule réponse'}</span></div>
     </header>

@@ -9,7 +9,7 @@ import { appuiResolution } from './appui.js';
 import { BILAN, moyennesDistrict, calculerBilan, appliquerBilan, lireOrdresBilan, resoudreBilan } from './bilan.js';
 import {
   APP_VERSION, NIVEAU_MAX, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue , PREPA } from './constants.js';
+  MIN_TOURS_CLASSEMENT, BUDGET_IPZ, HORS_REVENU, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue , PREPA } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
 import { jourBe } from './time.js';
@@ -31,7 +31,7 @@ import { FLAGRANTS } from './contenu.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
-import { primeChallenge } from './challenge.js';
+import { primeChallenge, CHALLENGE } from './challenge.js';
 import { separerIncidents, appliquerIncidents, remplirJauge, resultatsIncidents, incidentsVisibles, adapterCibleUrgence, NIVEAUX_URGENCE } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND } from './contenu.js';
@@ -45,7 +45,7 @@ const median = (arr) => {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
 
-const NOMS_CHALLENGE = { colis: 'Colis suspect', crochetage: 'Crochetage', depanneuse: 'Dépanneuse', dossier: 'Dossier à relire', empreintes: 'Empreintes', adn: 'Fragment d’ADN', reseau: 'Réseau à reconnecter', interception: 'Interception' };
+const NOMS_CHALLENGE = { colis: 'Colis suspect', crochetage: 'Crochetage', depanneuse: 'Dépanneuse', dossier: 'Dossier à relire', empreintes: 'Empreintes', adn: 'Fragment d’ADN', reseau: 'Réseau à reconnecter', interception: 'Interception', bouclage: 'Maintien de l’ordre' };
 
 export function zoneLabel(z) { return `ZP ${z.code} ${z.nom}`; }
 
@@ -500,7 +500,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const ALT = ['delegue', 'quiz'];
     const qs = tous.filter((x, k) => x && (x.slot ?? k) !== 3 && !ALT.includes(x.statut));
     const noir = tous.find((x, k) => x && (x.slot ?? k) === 3);
-    if (noir && noir.statut === 'ok') { z.stats.noirs = (z.stats.noirs || 0) + 1; z._ps += PS.noir; z.rapport.push(`Dossier noir résolu : chapeau (+${PS.noir} PS).`); }
+    if (noir && noir.statut === 'ok') { paliersEnigmes(z, 1); z.stats.noirs = (z.stats.noirs || 0) + 1; z._ps += PS.noir; z.rapport.push(`Dossier noir résolu : chapeau (+${PS.noir} PS).`); }
     else if (noir && noir.statut === 'rate') z.rapport.push('Dossier noir : raté cette fois, sans conséquence.');
     const ok = qs.filter((x) => x.statut === 'ok').length;
     const faux = qs.filter((x) => x.statut === 'rate').length;
@@ -543,7 +543,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       let txt = `Énigmes du jour : ${ok} bonne${ok > 1 ? 's' : ''} réponse${ok > 1 ? 's' : ''} sur ${qs.length}${faux ? ` (−${faux} de moral)` : ''}`;
       if (ok >= 2 && b) { const t = appliquerBonus(b); if (t) txt += `, ${t}`; }
       jalon(z, 'Énigmes : bonus choisi');
-      if (ok === 3) { const sf = ENIGMES.sansFaute, g = gainMoral(sf.moral, z.moral); z._ps += sf.ps; z.budget += sf.budget; z.moral += g; z._compta.push({ k: 'bonus', l: 'Prime « sans faute » (énigmes)', v: sf.budget }); txt += `, sans faute : +${sf.budget} k€, +${g} de moral, +${sf.ps} PS`; }
+      if (ok >= ENIGMES.primeSeuil) { const sf = ENIGMES.sansFaute, g = gainMoral(sf.moral, z.moral); z._ps += sf.ps; z.budget += sf.budget; z.moral += g; z._compta.push({ k: 'bonus', l: 'Prime « sans faute » (énigmes)', v: sf.budget }); txt += `, prime des ${ENIGMES.primeSeuil} réussies : +${sf.budget} k€, +${g} de moral, +${sf.ps} PS`; }
+      paliersEnigmes(z, ok);
       z.rapport.push(`${txt}.`);
     }
     // Le Directeur ajuste le niveau des énigmes de demain (réussites récentes et classement aux énigmes).
@@ -923,12 +924,17 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Bilan des résultats : les points du jour + la moitié du bilan d'hier.
     const bilanHier = z.bilanTerrain || 0;
     z.bilanTerrain = round1(bilanHier * TERRAIN.report + z._points);
-    const comp = ipzComposantes(z, { ratio: incidents ? traites / incidents : 1, bilan: z.bilanTerrain });
+    // Revenu du jour (composante Budget) : ce que la zone gagne ou perd en fonctionnant, sans ses achats
+    // (grandes décisions, dépenses du jour), reventes ni bilan de saison : investir ne fait pas baisser l'IPZ.
+    const revenu = round1(z.budget - budget0[uid] - (z._compta || []).filter((x) => HORS_REVENU.has(x.k)).reduce((a2, x) => a2 + x.v, 0));
+    z.revenus = [...(z.revenus || []), revenu].slice(-BUDGET_IPZ.jours);
+    if (revenu > (z.stats.revenuMax || 0)) z.stats.revenuMax = revenu;
+    const comp = ipzComposantes(z, { ratio: incidents ? traites / incidents : 1, bilan: z.bilanTerrain, revenus: z.revenus });
     const ipzHier = z.ipz, compHier = z.ipzComp || null;
     z.ipz = ipzFrom(comp);
     z.ipzComp = comp;
     z.ipzCompHier = compHier;
-    z.ipzDetail = { incidents, traites, points: round1(z._points), report: round1(bilanHier * TERRAIN.report), bilan: z.bilanTerrain, budget: round1(z.budget), coefInc: TERRAIN.incidents, coefPt: TERRAIN.parPoint };
+    z.ipzDetail = { revenu, revenus: z.revenus.slice(), incidents, traites, points: round1(z._points), report: round1(bilanHier * TERRAIN.report), bilan: z.bilanTerrain, budget: round1(z.budget), coefInc: TERRAIN.incidents, coefPt: TERRAIN.parPoint };
     z.rapport.push(ligneIpz(comp, compHier, z.ipz, z.toursJoues > 0 || compHier ? ipzHier : null, z.ipzDetail));
     if (z._joue) {
       z.ipzSomme += z.ipz; z.toursJoues += 1;
@@ -980,6 +986,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   enqueteDirecteur(state, push, makeRng(`${state.seed}:s${state.season}:t${T}:dir-enquete`));
   jalonTous('Enquête (fin d’affaire)');
   const rivPost = rivalitesPost(state, uids, push, T, nextWeekday, players);
+  // Records du Challenge battus (trophée « Recordman ») : relevés chaque soir.
+  recordsBattus(state, players, push, zoneLabel);
   // Prime du Challenge : le dimanche, meilleur niveau de la semaine sur chaque mini-jeu (une prime par joueur).
   if (nextWeekday === 0) {
     primeChallenge(state, uids, players, { push, zoneLabel, noms: NOMS_CHALLENGE, remplirJauge: (z) => {
@@ -1100,6 +1108,48 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   return { state, gazette };
 }
 
+/**
+ * Records du Challenge (meilleur niveau de la partie sur chaque mini-jeu, meilleur score Bitonal par niveau) :
+ * chaque soir, un record plus haut que celui relevé la veille compte pour son auteur (carrière, trophée « Recordman »).
+ * Premier relevé (mise en service) : on note les records existants sans rien compter.
+ */
+function recordsBattus(state, players, push, zoneLabel) {
+  if (!players) return;
+  const cles = [...CHALLENGE.jeux.map((j) => ['defis', j]), ...NIVEAUX_URGENCE.map((n) => ['bitonal', n])];
+  const init = !state.records;
+  const rec = (state.records ||= {});
+  for (const [champ, k] of cles) {
+    let best = null;
+    for (const [uid, p] of Object.entries(players)) {
+      if (!p || p.retire || !state.zones[uid]) continue;
+      const v = Math.min(champ === 'defis' ? CHALLENGE.niveauMax : 1e7, Math.floor(Number(p[champ] && p[champ][k]) || 0));
+      if (v > 0 && (!best || v > best.v)) best = { uid, v };
+    }
+    const cle = `${champ}:${k}`, avant = rec[cle];
+    if (!best || (avant && best.v <= avant.v)) continue;
+    rec[cle] = { uid: best.uid, v: best.v };
+    if (init || !avant) continue;
+    const z = state.zones[best.uid];
+    const c = (z.carriere ||= {});
+    c.records = (c.records || 0) + 1;
+    z.rapport.push(`Record battu (${champ === 'defis' ? NOMS_CHALLENGE[k] || k : `Bitonal ${k}`}) : ${c.records} record${c.records > 1 ? 's' : ''} battu${c.records > 1 ? 's' : ''} au total.`);
+  }
+}
+
+/** Énigmes réussies sur toute la carrière (toutes saisons) et paliers : toutes les ENIGMES.paliers.pas, une récompense. */
+function paliersEnigmes(z, n) {
+  if (!n) return;
+  const c = (z.carriere ||= {});
+  if (!Number.isFinite(c.enigmes)) c.enigmes = (z.stats && z.stats.quetesOk) || 0;
+  const P = ENIGMES.paliers, avant = Math.floor(c.enigmes / P.pas);
+  c.enigmes += n;
+  for (let k = avant + 1; k <= Math.floor(c.enigmes / P.pas); k++) {
+    z.budget += P.budget; (z._compta ||= []).push({ k: 'bonus', l: `Palier des énigmes (${k * P.pas} réussies)`, v: P.budget });
+    z.jaugeIncidents = (z.jaugeIncidents || 0) + P.jauge;
+    z.rapport.push(`Palier des énigmes : ${k * P.pas} énigmes réussies depuis ton arrivée ! +${P.budget} k€ et +${P.jauge} sur la jauge des skins.`);
+  }
+}
+
 function finDeSaison(state, classement) {
   const zones = Object.values(state.zones);
   const classes = classement.filter((c) => c.classe);
@@ -1160,6 +1210,7 @@ function finDeSaison(state, classement) {
     if (z.skins) nz.skins = z.skins;
     if (z.skinsChoix) nz.skinsChoix = z.skinsChoix;
     if (z.jaugeIncidents) nz.jaugeIncidents = z.jaugeIncidents;
+    if (z.carriere) nz.carriere = z.carriere;
     if (z.dir) nz.dir = dirHeritage(z); // niveau des énigmes et des mini-jeux, souvenirs du Directeur
     // Le parc suit la zone : les véhicules gardent leur modèle et passent au contrôle technique (usure divisée par deux).
     // Si le garage a perdu un niveau et manque de places, les plus usés sont revendus et le produit s'ajoute au budget.

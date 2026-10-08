@@ -1,6 +1,6 @@
 // Aides rapides (bouton « ? ») : l'essentiel d'une jauge en quelques lignes, sans ouvrir le guide.
 import { esc, fmt1, myZone } from './common.js';
-import { IPZ_POIDS, START, ECONOMIE, SUBSIDE, TERRAIN, FLAGRANT, DOSSIER, ND, BUDGET_IPZ, scoreBudget, MORAL_PALIERS, MORAL } from '../engine/constants.js';
+import { IPZ_POIDS, START, ECONOMIE, SUBSIDE, TERRAIN, FLAGRANT, DOSSIER, ND, BUDGET_IPZ, scoreBudget, scoreRevenu, MORAL_PALIERS, MORAL } from '../engine/constants.js';
 import { confianceCommune, pointsIpz, IPZ_LABELS, moralMult } from '../engine/zone.js';
 import { PERIL } from '../engine/rivalites.js';
 
@@ -49,7 +49,7 @@ export const AIDES = {
   },
   ipz: {
     titre: 'IPZ · Indice de performance de zone',
-    intro: 'Ton score du jour, sur 100, recalculé à chaque tour à 20:00. La moyenne de tes IPZ fait ton classement de la saison (dès 5 tours joués).',
+    intro: 'Ton score du jour, sur 100, recalculé à chaque tour à 20:00. La moyenne de tes IPZ fait ton classement de la saison (dès 5 tours joués), les derniers jours comptant plus : hier pèse 1, il y a 5 jours 0,33, il y a 10 jours 0,11.',
     lignes: [
       `<strong>Satisfaction</strong> citoyenne : ${pc(IPZ_POIDS.satisfaction)}`,
       `<strong>Résultats</strong> : ${pc(IPZ_POIDS.affaires)} (part des incidents traités + points gagnés dans la journée)`,
@@ -141,7 +141,7 @@ export const AIDES = {
     lignes: [
       `<strong>Calcul</strong> : ${TERRAIN.incidents} × part des incidents traités + ${TERRAIN.parPoint} × bilan, plafonné à 100`,
       `<strong>Incidents</strong> : tout traiter donne déjà ${TERRAIN.incidents} ; en rater la moitié n’en donne que ${fmt1(TERRAIN.incidents / 2)}`,
-      `<strong>Bilan</strong> = points du jour + ${pc(TERRAIN.report)} du bilan d’hier. Un gros coup compte encore les jours suivants ; en régime régulier, le bilan vaut environ 2 × tes points par jour`,
+      `<strong>Bilan</strong> = points du jour + ${pc(TERRAIN.report)} du bilan d’hier. Un gros coup compte encore les jours suivants ; en régime régulier, le bilan vaut environ 1,33 × tes points par jour`,
       `<strong>Recherche</strong> : +${String(DOSSIER.ptsParUnite).replace('.', ',')} pt par unité de travail sur les dossiers, chaque jour (un nouveau dossier arrive chaque jour, il y a toujours du travail). Repère : 4 enquêteurs ≈ +2 pts par jour. <strong>Un dossier qui traîne rapporte moins</strong> : pleine valeur le jour de son arrivée et le lendemain, puis −${Math.round(DOSSIER.decote * 100)} % par jour (minimum ${Math.round(DOSSIER.plancher * 100)} %). Mieux vaut suivre le rythme que tout rattraper d’un coup`,
       `<strong>Flagrant délit</strong> : +${FLAGRANT.points} pts quand la jauge des patrouilles libres atteint 100 % (+${Math.round(FLAGRANT.parUnite * 100)} % par unité de marge après les incidents, ${Math.round(FLAGRANT.max * 100)} % au plus par jour) : plus de tirage au sort`,
       `<strong>Zone de non-droit</strong> : reprise d’un secteur +${String(ND.prise.points).replace('.', ',')} pts + jusqu’à ${ND.prise.pointsPart} selon ta part ; chaque nuit où tu le tiens, +${String(ND.retombees.points).replace('.', ',')} à +${String(Math.round((ND.retombees.points + ND.retombees.pointsPart) * 100) / 100).replace('.', ',')} ; le Cœur compte ×${String(ND.coeurMult).replace('.', ',')}`,
@@ -153,12 +153,12 @@ export const AIDES = {
   },
   budgetIpz: {
     titre: 'Budget dans l’IPZ',
-    intro: 'La composante « budget » de l’IPZ (10 %) : elle regarde ton solde à la fin du tour, pas tes dépenses du jour.',
+    intro: `La composante « budget » de l’IPZ (${pc(IPZ_POIDS.budget)}) : elle regarde ce que ta zone <strong>gagne chaque jour</strong> (ton revenu), pas l’argent amassé.`,
     lignes: [
-      `<strong>Calcul</strong> : 50 + 1,5 par tranche de 1 000 € de budget, entre 0 et 100 (100 dès 34 k€)`,
-      `<strong>Argent qui dort</strong> : au-delà de ${BUDGET_IPZ.dormant} k€, −${BUDGET_IPZ.pente} point par tranche de 1 000 € en plus (jusqu’à ${BUDGET_IPZ.plancher} au minimum). La commune juge qu’une zone qui ne dépense pas son argent est trop dotée`,
-      `<strong>Exemples</strong> : −10 k€ → 35 · 0 k€ → 50 · 20 k€ → 80 · de 34 à ${BUDGET_IPZ.dormant} k€ → 100 · ${BUDGET_IPZ.dormant + 20} k€ → ${scoreBudget(BUDGET_IPZ.dormant + 20)} · ${BUDGET_IPZ.dormant + 50} k€ et plus → ${BUDGET_IPZ.plancher}`,
-      `<strong>Le bon réflexe</strong> : garder une réserve de 35 à ${BUDGET_IPZ.dormant} k€ et investir le reste (agents de réserve, prévention, formation, matériel, bâtiments)`,
+      '<strong>Revenu du jour</strong> : tout ce qui entre et sort en fonctionnant (dotation, subsides, amendes, primes, salaires, entretien, zone de non-droit…). <strong>Tes achats ne comptent pas</strong> : grandes décisions, dépenses du jour, reventes et bilan de saison sont mis de côté. Investir ne fait donc jamais baisser l’IPZ',
+      `<strong>Calcul</strong> : ${BUDGET_IPZ.revenu.base} + ${BUDGET_IPZ.revenu.parK} par tranche de 1 000 € de revenu moyen sur les ${BUDGET_IPZ.jours} derniers jours, entre 0 et 100`,
+      `<strong>Exemples</strong> : −5 000 € par jour → ${scoreRevenu([-5])} · 0 € → ${scoreRevenu([0])} · 5 000 € → ${scoreRevenu([5])} · 10 000 € → ${scoreRevenu([10])} · 15 000 € et plus → 100`,
+      '<strong>Pour le faire monter</strong> : Roulage (amendes), zone de non-droit tenue, primes d’enquête et d’opérations ; attention aux salaires et à l’entretien d’un gros parc',
     ],
     guide: 'guide-zone',
   },
@@ -207,7 +207,7 @@ function tourTerrain(z) {
     ${calc(`Incidents traités : ${d.traites} sur ${d.incidents}`, `${ci} × ${Math.round(ratio * 100)} % = ${fmt1(a)}`)}
     ${calc(`Points gagnés ce jour-là`, `+${fmt1(d.points || 0)}`)}
     ${pts.length ? `<div class="aide-sous">${pts.slice().sort((x, y) => y.v - x.v).map((x) => ligne(esc(x.l), x.v, ' pt')).join('')}</div>` : ''}
-    ${d.report !== undefined ? calc('Reporté du bilan de la veille (moitié)', `+${fmt1(d.report)}`) : ''}
+    ${d.report !== undefined ? calc(`Reporté du bilan de la veille (${pc(TERRAIN.report)})`, `+${fmt1(d.report)}`) : ''}
     ${calc(`Bilan : ${fmt1(bilan)}`, `${String(cp).replace('.', ',')} × ${fmt1(bilan)} = ${fmt1(b)}`)}
     ${calc('Total', `${fmt1(brut)}${brut > 100 ? ' → plafonné à 100' : ''}`)}
     ${partIpz(z, 'terrain')}
@@ -224,9 +224,13 @@ function tourBudget(z, pourIpz) {
     ${c.lignes.slice().sort((x, y) => y.v - x.v).map((x) => ligne(esc(x.l), x.v, ' k€')).join('')}
     ${calc('<strong>Fin du tour</strong>', `<strong>${fmt1(c.fin)} k€</strong>`)}` : '';
   const brut = 50 + 1.5 * b, dort = b > BUDGET_IPZ.dormant;
-  const ipz = pourIpz && z.ipzComp ? `${dort
+  const rv = d && Array.isArray(d.revenus) ? d.revenus : null;
+  const moyR = rv && rv.length ? rv.reduce((a2, x) => a2 + x, 0) / rv.length : 0, brutR = BUDGET_IPZ.revenu.base + BUDGET_IPZ.revenu.parK * moyR;
+  const ipz = pourIpz && z.ipzComp ? `${rv
+    ? `${calc('Revenu du jour (sans tes achats)', `${sgn(d.revenu)} k€`)}${calc(`Moyenne sur ${rv.length} jour${rv.length > 1 ? 's' : ''} (${rv.map(fmt1).join(' · ')})`, `${fmt1(moyR)} k€`)}${calc(`${BUDGET_IPZ.revenu.base} + ${BUDGET_IPZ.revenu.parK} × ${fmt1(moyR)}`, `${fmt1(brutR)}${brutR > 100 ? ' → 100' : brutR < 0 ? ' → 0' : ''}`)}`
+    : dort
     ? calc(`Argent qui dort : ${fmt1(b)} k€, soit ${fmt1(b - BUDGET_IPZ.dormant)} au-delà de ${BUDGET_IPZ.dormant}`, `100 − ${fmt1(BUDGET_IPZ.pente * (b - BUDGET_IPZ.dormant))} = ${fmt1(scoreBudget(b))}`)
-    : calc(`50 + 1,5 × ${fmt1(b)} k€`, `${fmt1(brut)}${brut > 100 ? ' → 100' : brut < 0 ? ' → 0' : ''}`)}${partIpz(z, 'budgetIpz')}` : '';
+    : calc(`50 + 1,5 × ${fmt1(b)} k€ (ancienne règle)`, `${fmt1(brut)}${brut > 100 ? ' → 100' : brut < 0 ? ' → 0' : ''}`)}${partIpz(z, 'budgetIpz')}` : '';
   return { tour: c ? c.tour : z.journal && z.journal.tour, html: pourIpz ? `${ipz}${rel ? `<details class="aide-det"><summary class="small">D’où vient ce solde</summary>${rel}</details>` : ''}` : rel };
 }
 

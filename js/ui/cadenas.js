@@ -1,6 +1,6 @@
 // Énigme « Le cadenas » : un vrai cadenas à molettes. On fait rouler les chiffres
 // (glisser, toucher les flèches, molette de la souris ou clavier), puis on tire l'anse.
-import { S, esc } from './common.js';
+import { S, esc, questDuSlot } from './common.js';
 
 const H = 46; // hauteur d'un chiffre sur la molette (px), à garder égale à --cad-h dans le CSS
 
@@ -63,7 +63,7 @@ function regler(roueEl, pos, anime = true) {
   const v = ((pos % 10) + 10) % 10;
   roueEl.setAttribute('aria-valuenow', v);
   const form = roueEl.closest('form');
-  const q = S.questMode === 'train' ? S.train : S.questIdx === 3 ? S.noir : S.quests && S.quests[S.questIdx || 0];
+  const q = S.questMode === 'train' ? S.train : S.questIdx === 3 ? S.noir : questDuSlot(S.questIdx || 0);
   const vals = [...form.querySelectorAll('.cad-roue')].map((x) => Number(x.getAttribute('aria-valuenow')));
   form.reponse.value = vals.join('');
   if (q) { S.cadVal = S.cadVal || {}; S.cadVal[cle(q)] = vals; }

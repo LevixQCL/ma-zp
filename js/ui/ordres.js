@@ -1,4 +1,5 @@
 // Écran des ordres du tour.
+import { comparatifModeles } from './modeles.js';
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
 import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier, PREPA, coutPrepa } from '../engine/constants.js';
@@ -517,7 +518,8 @@ function decisionPicker(z, T, d) {
         const plein = z.vehicules >= capaciteVehicules(z), rep = plein ? plusUse(z) : null;
         const nomRep = rep != null ? `${modeleDe(z.flotte[rep]).court.toLowerCase()} à ${Math.round(100 - z.flotte[rep].u)} %` : '';
         return `${plein ? `<p class="tiny muted" style="margin:0">Garage plein : achat <strong>avec reprise</strong> de ton véhicule le plus usé (${esc(nomRep)}, ${fmt1(prixRevente(z, rep))} k€ déduits). Pour en avoir plus, agrandis le garage (Bâtir).</p>` : ''}
-      <div class="dgrille">${IDS_MODELES.map((m) => { const M = MODELES[m], dec = { type: 'equiper', cible: 'vehicule', modele: m, ...(plein ? { reprise: rep } : {}) }; return tuile(dec, M.nom, `${M.role} · ${fmt1(M.places)} places · ${String(M.entretien).replace('.', ',')} k€/tour`, fmt1(coutDecision(z, dec))); }).join('')}</div>`;
+      <div class="dgrille">${IDS_MODELES.map((m) => { const M = MODELES[m], dec = { type: 'equiper', cible: 'vehicule', modele: m, ...(plein ? { reprise: rep } : {}) }; return tuile(dec, M.nom, `${M.role} · ${fmt1(M.places)} places · ${String(M.entretien).replace('.', ',')} k€/tour`, fmt1(coutDecision(z, dec))); }).join('')}</div>
+      ${comparatifModeles(z)}`;
       })()}
       <div class="dgrille">
       ${SERVICES.map((sv) => tuile({ type: 'equiper', cible: sv }, SERVICE_LABELS[sv], `matériel ${z.equip[sv]} → ${z.equip[sv] + 1} · ${effetEquip(sv, 1)} · efficacité ${pc(multEquip(z.equip[sv] + 1) / multEquip(z.equip[sv]) - 1)}`, coutEquipement(z.equip[sv]), niv(z.equip[sv]))).join('')}

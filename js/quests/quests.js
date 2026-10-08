@@ -27,6 +27,13 @@ export const QUEST_LABELS = {
   cadenas: 'Le cadenas', grille: 'Enquête de voisinage', ...LABELS2,
 };
 export const QUESTS_PAR_JOUR = 3;
+// Retour de Luc (oct. 2026) : une 4e énigme du jour, rangée à l'emplacement 4 (le 3 est celui du dossier noir).
+// Elle arrive avec le tour qui se termine après QUATRE_DEPUIS (pas au milieu d'une journée déjà commencée).
+export const SLOT_QUATRE = 4;
+export const QUATRE_DEPUIS = Date.parse('2026-10-08T18:30:00Z');
+export const quatrePourTour = (fin) => Number(fin) > QUATRE_DEPUIS;
+/** Emplacements des énigmes du jour (sans le dossier noir). */
+export const slotsDuJour = (fin) => (quatrePourTour(fin) ? [0, 1, 2, SLOT_QUATRE] : [0, 1, 2]);
 
 // Difficulté selon le jour : lundi facile, dimanche corsé.
 const DIFF_PAR_JOUR = [2, 3, 3, 4, 4, 5, 5];
@@ -36,7 +43,7 @@ const DIFF_PAR_JOUR = [2, 3, 3, 4, 4, 5, 5];
  * `ajust` : décalage de niveau décidé par le Directeur (forme du joueur aux énigmes).
  * `rerolls` : emplacements que le joueur a changés (une autre énigme, d'un type absent du jour).
  */
-export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], ajust = 0, formes = false }) {
+export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], ajust = 0, formes = false, quatre = false }) {
   const order = makeRng(`${seed}:qorder:${uid}:${season}`).shuffle(QUEST_TYPES);
   // `ajust` : décalage du Directeur selon la forme du joueur (−2 à +1).
   const a = Number.isFinite(ajust) ? Math.max(-2, Math.min(1, Math.round(ajust))) : 0;
@@ -51,15 +58,24 @@ export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], 
     const forme = formes ? formeDe(`${seed}:forme:${uid}:${season}:${type}`, type, Math.floor(idx / order.length)) : 'classique';
     out.push({ ...fabriquer(type, rng, diffs[slot], forme), slot, id: `${season}-${turn}-${slot}` });
   }
+  // 4e énigme : un type absent des trois autres, difficulté du jour.
+  if (quatre) {
+    const pris = new Set(out.map((q) => q.type));
+    const rng = makeRng(`${seed}:quest4:${uid}:${season}:${turn}`);
+    const type = rng.pick(QUEST_TYPES.filter((t) => !pris.has(t)));
+    const forme = formes && FORMES[type] ? rng.pick(FORMES[type]).id : 'classique';
+    out.push({ ...fabriquer(type, rng, base, forme), slot: SLOT_QUATRE, id: `${season}-${turn}-${SLOT_QUATRE}` });
+  }
   // Énigmes changées : même difficulté, type absent des énigmes du jour.
   for (const slot of rerolls) {
-    if (!out[slot]) continue;
+    const i = out.findIndex((q) => q.slot === slot);
+    if (i < 0) continue;
     const pris = new Set(out.map((q) => q.type));
     const autres = QUEST_TYPES.filter((t) => !pris.has(t));
     const rng = makeRng(`${seed}:reroll:${uid}:${season}:${turn}:${slot}`);
     const type = rng.pick(autres);
     const forme = formes && FORMES[type] ? rng.pick(FORMES[type]).id : 'classique';
-    out[slot] = { ...fabriquer(type, rng, diffs[slot], forme), slot, id: `${season}-${turn}-${slot}r`, variante: 1 };
+    out[i] = { ...fabriquer(type, rng, slot === SLOT_QUATRE ? base : diffs[slot], forme), slot, id: `${season}-${turn}-${slot}r`, variante: 1 };
   }
   return out;
 }

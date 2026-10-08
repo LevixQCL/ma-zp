@@ -528,6 +528,13 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 /* Énigmes : 4 onglets (dont le dossier noir) */
 .seg.quatre { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .seg.quatre button .t { font-size: 12px; }
+.seg.cinq { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.seg.cinq button { padding-left: 4px; padding-right: 4px; }
+.seg.cinq button .t { font-size: 12px; white-space: nowrap; }
+.seg.cinq button .d { font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.palier-enig { display: grid; gap: 4px; margin: -4px 2px 0; color: var(--text2); }
+.palier-barre { height: 4px; border-radius: 3px; background: var(--line, rgba(255,255,255,.08)); overflow: hidden; }
+.palier-barre i { display: block; height: 100%; background: var(--amber, #E6C36A); border-radius: 3px; }
 .seg button.noir { background: #1A0F10; border-color: #4A2220; }
 .seg button.noir .t { color: #F59A92; }
 .seg button.noir[aria-pressed="true"] { border: 1.5px solid #E0625A; background: #2A1414; }
@@ -1825,3 +1832,18 @@ details.pli-ordres[open] .pli-resume, details.pli-ordres[open] .pli-resume-s { d
 .grp-c { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
 .grp.mission { padding-left: 10px; border-left: 1px dashed var(--line); }
 .grp.mission .grp-l { color: var(--amber-soft); }
+
+/* Comparatif des modèles de véhicules */
+.cmp-modeles summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 6px; }
+.cmp-modeles summary::-webkit-details-marker { display: none; }
+.cmp-modeles[open] summary svg:last-child { transform: rotate(180deg); }
+.cmp-scroll { margin: 6px 0 4px; }
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+.cmp-table th, .cmp-table td { padding: 4px 2px; text-align: center; border-bottom: 1px solid rgba(255,255,255,.06); overflow-wrap: anywhere; }
+.cmp-table thead th:first-child { width: 24%; }
+.cmp-table thead th { font-size: 10.5px; font-weight: 600; color: var(--muted); vertical-align: bottom; }
+.cmp-table thead th span { display: block; margin-top: 2px; }
+.cmp-table tbody th { text-align: left; font-weight: 500; color: var(--text2); font-size: 10.5px; }
+.cmp-table td { font-variant-numeric: tabular-nums; }
+.cmp-table td.ok { color: var(--green); font-weight: 700; }
+.cmp-table td.role { font-family: inherit; font-size: 10.5px; color: var(--text2); line-height: 1.25; }
