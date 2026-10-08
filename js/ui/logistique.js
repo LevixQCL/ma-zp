@@ -201,7 +201,7 @@ export function ouvrirHpVoisin(uid) {
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="scene-voisin">${moi ? sceneZone(z, st, d, mesSkins(z).choix) : sceneZone(z, st, d)}</div>
     ${affichesHtml(z, { moi })}
-    ${z.chef ? ficheChefHtml(uid, { moi }) : ''}
+    ${z.chef ? `<button type="button" class="btn small outline block" data-action="bureau-ouvrir" data-u="${esc(uid)}">${portraitChef(uid, 22, { galons: false })} Visiter le bureau de son chef</button>` : ''}
     ${titresDefi(uid).length ? `<p class="small" style="margin:0">${titresDefi(uid).map((t) => `🏆 <strong>${esc(t.titre)}</strong> <span class="muted">(défi, niv. ${t.niveau})</span>`).join(' · ')}</p>` : ''}
     <div class="bats hp-logis">
       <div class="bat"><span class="tiny muted">Bâtiment</span><span style="font-weight:700">Niveau ${z.batiments.bureaux}</span></div>

@@ -365,10 +365,11 @@ export function renderHP() {
       <div class="col" style="gap:6px;align-items:flex-end">
         <span class="row" style="gap:6px"><span class="pill">Tour ${T} · Saison ${st.season}</span>
           <button type="button" class="iconbtn roue" data-action="menu-hp" aria-expanded="${!!S.menuHp}" aria-label="Guide, nouveautés et profil">${icon('gear', 20)}${noteVue() ? '' : '<i class="roue-pastille" aria-hidden="true"></i>'}</button></span>
+        <span class="row" style="gap:8px;align-items:center">${z.chef ? `<button type="button" class="hp-chef" data-action="bureau-ouvrir" aria-label="Mon bureau de chef">${portraitChef(z.uid, 34, { galons: false })}<span class="tiny">Bureau</span></button>` : ''}
         <a href="#classement" class="row" style="gap:6px;text-decoration:none;color:var(--text)">
-          ${z.chef ? portraitChef(z.uid, 26, { galons: false }) : `<span style="color:var(--amber)">${icon('shield', 14)}</span>`}<span class="small" style="font-weight:600">${g.nom}</span>
+          ${z.chef ? '' : `<span style="color:var(--amber)">${icon('shield', 14)}</span>`}<span class="small" style="font-weight:600">${g.nom}</span>
           <span role="img" aria-label="${z.ps} points de service${n ? ` sur ${n.ps}` : ''}" style="width:56px;height:5px;background:var(--line);border-radius:3px;display:inline-block"><span style="display:block;width:${pct}%;height:5px;background:var(--amber);border-radius:3px"></span></span>
-        </a>
+        </a></span>
       </div>
     </header>
     ${S.menuHp ? `<nav class="card menu-hp" aria-label="Menu">
@@ -513,7 +514,7 @@ export function renderProfil() {
       </div>` : ''}
       ${affiches.length ? `<div class="pc-affiches" aria-label="Suspects arrêtés">${affiches.slice(0, 6).map((a) => `<span class="pc-affiche" title="${esc(a.titre)} · saison ${a.season}"><b>ARRÊTÉ</b><span>${esc(String(a.nom).split(' ')[0])}</span></span>`).join('')}</div>` : ''}
     </section>
-    ${z.chef ? ficheChefHtml(z.uid, { moi: true }) : ''}
+    ${z.chef ? `<button type="button" class="btn primary block" data-action="bureau-ouvrir">Entrer dans mon bureau de chef</button>${ficheChefHtml(z.uid, { moi: true })}` : ''}
     ${z.chef && !chefACreer() ? (S.chefEdit ? creationChefHtml() : '<button type="button" class="btn small outline block" data-action="chef-modifier">Changer le portrait ou la devise de mon chef</button>') : ''}
     <details class="card repli" data-k="profil-edit" ${editer ? 'open' : ''}>
       <summary><span style="color:var(--amber)">${icon('pencil', 18)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Modifier ma zone</span><span class="tiny muted">pseudo, nom, code et couleur</span></span>${icon('chevron', 16)}</summary>

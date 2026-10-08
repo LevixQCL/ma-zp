@@ -11,6 +11,7 @@ import { resolvePending, completerDepuisGazette, etatResolution } from './data/r
 import { S, toast, myZone, esc, cielDuMoment, tabbar, pseudoParDefaut, slotsJour, questDuSlot } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil } from './ui/hp.js';
+import { renderBureau } from './ui/chef.js';
 import { ouvrirAide } from './ui/aide.js';
 import { monAppel } from './ui/renfort.js';
 import { maCandidature } from './ui/affaires.js';
@@ -62,7 +63,7 @@ import { actionCrise } from './ui/crise.js';
 import { chargeurHtml, avancerChargeur, sortirChargeur } from './ui/chargeur.js';
 
 const app = document.getElementById('app');
-const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief'];
+const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief', 'bureau'];
 let unsubState = null, unsubRadio = null, unsubPrive = null, lastTurnKey = null;
 
 function route() {
@@ -146,6 +147,7 @@ function render() {
       case 'classement':
         html = renderClassement(); break;
       case 'profil': html = renderProfil(); break;
+      case 'bureau': html = renderBureau(); break;
       case 'admin': html = S.backend.isMaster(S.user) ? renderAdmin() : renderHP(); break;
       default:
         // Première ouverture : tant que les Gazettes ne sont pas lues, on n'affiche pas l'HP (ni ses pop-up),
@@ -719,6 +721,7 @@ async function onClick(e) {
         if (m > 0) S.draft.finales[k] = { ...f, montant: m }; else delete S.draft.finales[k];
         S.ordersDirty = true; rerender(); break;
       }
+      case 'bureau-ouvrir': S.bureauUid = el.dataset.u || null; S.bureauObj = null; if (document.querySelector('.aide-wrap')) document.querySelectorAll('.aide-wrap').forEach((x) => x.remove()); location.hash = '#bureau'; break;
       case 'chef-modifier': S.chefEdit = true; S.chefBrouillon = { ...((S.player && S.player.chef) || {}) }; rerender(); break;
       case 'chef-portrait': S.chefBrouillon = { ...(S.chefBrouillon || {}), portrait: el.dataset.v }; rerender(); break;
       case 'chef-parcours': S.chefBrouillon = { ...(S.chefBrouillon || {}), parcours: el.dataset.v }; rerender(); break;
@@ -1528,6 +1531,7 @@ async function boot() {
     S.user = u;
     if (changed) afterAuth();
   });
+  document.addEventListener('click', (e) => { const g = e.target.closest && e.target.closest('[data-bureau] [data-obj]'); if (g) { S.bureauObj = S.bureauObj === g.dataset.obj ? null : g.dataset.obj; rerender(); } });
   document.addEventListener('click', onClick);
   installerAntiTriche();
   installerCadenas();

@@ -2,6 +2,8 @@
 import { S, esc, icon, myZone, zoneName } from './common.js';
 import { gradeFor, INFRAS, SERVICE_LABELS } from '../engine/constants.js';
 import { reglesV2 } from '../engine/regles.js';
+import { bureauSvg } from './bureau-scene.js';
+import { tabbar } from './common.js';
 import { COMPETENCES, IDS_COMPETENCES, PARCOURS, IDS_PARCOURS, TALENTS, TALENT, AGENDA, IDS_AGENDA, CHEF,
   niveauChef, progresChef, talentsDebloques, totalNiveaux } from '../engine/chef.js';
 
@@ -147,3 +149,65 @@ export function emplacementsHtml(z, d) {
     ${faites.length ? `<label class="field tiny">Démolir une annexe ce soir (gratuit, sans remboursement)<select class="text" data-change="demolir"><option value="">Aucune</option>${faites.map((k) => `<option value="${k}" ${d.demolir === k ? 'selected' : ''}>${esc(INFRAS[k].nom)}</option>`).join('')}</select></label>` : ''}</div>`;
 }
 void icon;
+
+// ───── Le bureau du chef (écran illustré) ─────
+// Rien de nouveau à gérer : le bureau montre ce que le chef a déjà accompli. Les objets apparaissent avec les
+// compétences (niveaux 2, 5, 8), les médailles et les états de service se posent au mur, et les quatre visages du
+// réseau reflètent la zone (satisfaction, réputation, moral, presse).
+const RESEAU = {
+  bourgmestre: { nom: 'Le bourgmestre', suit: 'la satisfaction de la population', humeur: (z) => (z.satisfaction >= 65 ? 1 : z.satisfaction < 45 ? -1 : 0) },
+  procureur: { nom: 'Le procureur', suit: 'ta réputation et ton travail d’enquête (le parquet n’aime pas les dossiers recopiés)', humeur: (z) => ((z.dir && z.dir.parquet && z.dir.parquet.stade) || z.reputation < 40 ? -1 : z.reputation >= 60 ? 1 : 0) },
+  syndicat: { nom: 'Le délégué syndical', suit: 'le moral de tes agents', humeur: (z) => ((z.dir && z.dir.mem && z.dir.mem.greve === 'arret') || z.moral < 45 ? -1 : z.moral >= 65 ? 1 : 0) },
+  journaliste: { nom: 'La journaliste de La Voix du Delta', suit: 'tes interviews et la bonne ou mauvaise presse', humeur: (z) => { const j = z.dir && z.dir.mem && z.dir.mem.journaliste; return j === 'amie' ? 1 : j === 'hostile' ? -1 : 0; } },
+};
+const PALIERS = {
+  gestion: ['des classeurs', 'une calculatrice et un écran de graphiques', 'un stylo plume doré et la plaque « budget en équilibre »'],
+  commandement: ['une radio portative', 'la carte tactique de la ville au mur', 'la casquette de commandement et une console radio'],
+  flair: ['une loupe', 'un petit tableau d’enquête avec ses fils rouges', 'le grand mur d’enquête et la boîte des dossiers classés'],
+  diplomatie: ['un téléphone de bureau', 'la photo d’une poignée de main', 'les petits drapeaux et la plaque de jumelage'],
+  proximite: ['une plante verte', 'le plan du quartier épinglé de cœurs', 'les dessins d’enfants et les fleurs'],
+};
+const MONTE = {
+  gestion: 'finir la journée dans le vert, investir (formation, matériel, bâtiments), boucler la paperasse, passer la journée au bureau ou à la commune',
+  commandement: 'tenir ses services, réussir incidents et urgences, mener un assaut en non-droit, gagner une affaire disputée, aller sur le terrain',
+  flair: 'trouver des pièces d’enquête, identifier un auteur, résoudre un dossier noir, arrêter un suspect, passer la journée au parquet',
+  diplomatie: 'prêter un renfort, prendre une relève, tenir un pacte, partager des pièces, rendre visite à un voisin',
+  proximite: 'garder une satisfaction haute, absorber une vague de délinquance, éviter les imprévus, tenir une réunion de quartier',
+};
+export function renderBureau() {
+  const st = S.state, me = myZone();
+  const uid = S.bureauUid && st.zones[S.bureauUid] ? S.bureauUid : me && me.uid;
+  const z = st.zones[uid], moi = me && uid === me.uid;
+  const back = `<a href="${moi ? '#hp' : '#carte'}" class="backlink">${icon('back', 20)}<span>${moi ? 'Retour à l’HP' : 'Retour à la carte'}</span></a>`;
+  if (!z || !z.chef) return `<main class="screen">${back}<section class="card"><p class="small muted" style="margin:0">Le bureau du chef ouvre avec la saison 2.</p></section></main>${tabbar('hp')}`;
+  const p = (S.players && S.players[uid]) || (moi ? S.player : {}) || {};
+  const chef = z.chef, niveaux = Object.fromEntries(IDS_COMPETENCES.map((c) => [c, niveauChef(chef, c)]));
+  const g = gradeFor(z.ps || 0);
+  const ets = ['Aspirant', 'Inspecteur', 'Inspecteur principal', 'Commissaire', 'Commissaire divisionnaire', 'Chef de corps'].indexOf(g.nom);
+  const h = new Date().getHours();
+  const svg = bureauSvg({ uid: `b${uid.slice(0, 4)}`, niveaux, portrait: p.chef && p.chef.portrait, grade: g.nom, etoiles: Math.max(0, ets), nom: p.pseudo || z.nom, devise: (p.chef && p.chef.devise) || '', couleur: z.couleur,
+    medailles: chef.medailles || [], etats: chef.etats || [], talents: chef.talents || [],
+    reseau: Object.entries(RESEAU).map(([id, R]) => ({ id, humeur: R.humeur(z) })), moment: h >= 8 && h < 18 ? 'jour' : h >= 18 && h < 20 ? 'crepuscule' : 'nuit', affiches: (z.affiches || []).length });
+  const o = S.bureauObj || null;
+  let info = '<p class="small muted" style="margin:0">Touche un objet du bureau pour voir ce qu’il raconte. Le bureau se remplit à mesure que ton chef progresse.</p>';
+  if (o && COMPETENCES[o]) {
+    const L = niveaux[o], tier = L >= 8 ? 3 : L >= 5 ? 2 : L >= 2 ? 1 : 0, suiv = [2, 5, 8].find((x) => x > L);
+    info = `<span style="font-weight:700">${COMPETENCES[o].ico} ${esc(COMPETENCES[o].nom)} · niveau ${L}</span>
+      <span class="pc-barre"><span style="width:${Math.max(3, Math.round(progresChef(chef, o) * 100))}%"></span></span>
+      <span class="small">${tier ? `Sur le bureau : ${esc(PALIERS[o].slice(0, tier).join(', '))}.` : 'Rien encore sur le bureau pour cette compétence.'}${suiv ? ` Au niveau ${suiv} : ${esc(PALIERS[o][[2, 5, 8].indexOf(suiv)])}.` : ''}</span>
+      <span class="tiny muted">Elle monte en : ${esc(MONTE[o])}.</span>`;
+  } else if (o && o.startsWith('reseau-')) {
+    const R = RESEAU[o.slice(7)], hm = R.humeur(z);
+    info = `<span style="font-weight:700">${esc(R.nom)} · ${hm > 0 ? 'satisfait' : hm < 0 ? 'mécontent' : 'neutre'}</span><span class="small">Son humeur suit ${esc(R.suit)}.</span>`;
+  } else if (o === 'medailles') info = (chef.medailles || []).length ? chef.medailles.map((m) => `<span class="small">🎖️ ${esc(m.nom)} · saison ${m.season}</span>`).join('') : '<span class="small muted">Une médaille par compétence récompense, à chaque fin de saison, la plus forte progression du district.</span>';
+  else if (o === 'etats') info = (chef.etats || []).length ? chef.etats.slice().reverse().map((e) => `<span class="small">Saison ${e.season} · ${e.rang ? `${e.rang}${e.rang === 1 ? 'er' : 'e'} sur ${e.sur}` : 'non classé'}${e.moyenne != null ? ` · IPZ moyen ${String(e.moyenne).replace('.', ',')}` : ''}</span>`).join('') : '<span class="small muted">Chaque saison terminée accroche un certificat au mur.</span>';
+  else if (o === 'talents') info = (chef.talents || []).length ? chef.talents.map((t) => `<span class="small"><b>${esc(TALENT[t].nom)}</b> · ${esc(TALENT[t].texte)}</span>`).join('') : '<span class="small muted">Les talents équipés sont cousus sur la veste. Le premier se débloque au niveau 2 d’une compétence.</span>';
+  else if (o === 'affiches') info = `<span class="small">${(z.affiches || []).length} suspect${(z.affiches || []).length > 1 ? 's' : ''} arrêté${(z.affiches || []).length > 1 ? 's' : ''}.</span>`;
+  else if (o === 'portrait' || o === 'nom') info = `<span style="font-weight:700">${esc(p.pseudo || z.nom)} · ${esc(g.nom)}</span><span class="small">${chef.parcours && PARCOURS[chef.parcours] ? esc(PARCOURS[chef.parcours].nom) : ''}${p.chef && p.chef.devise ? ` · « ${esc(p.chef.devise)} »` : ''}</span>`;
+  return `<main class="screen">${back}
+    <div class="col" style="gap:2px"><span class="kicker">Bureau du chef</span><h1 class="big" style="margin:0">${moi ? 'Ton bureau' : `Le bureau de ${esc(p.pseudo || z.nom)}`}</h1><span class="small muted">${zoneName(z)}</span></div>
+    <section class="card bureau-scene" style="padding:0;overflow:hidden" data-bureau>${svg}</section>
+    <section class="card" style="gap:6px" aria-live="polite">${info}</section>
+    ${ficheChefHtml(uid, { moi })}
+  </main>${tabbar('hp')}`;
+}
