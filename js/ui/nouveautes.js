@@ -14,6 +14,10 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Le corbeau de la rue d’Havré (après la Rampe)', [
+      ['Une enquête sans meurtre', 'dès que le notaire de la Rampe est élucidé (ou classé), un corbeau s’abat sur la rue d’Havré : dix lettres anonymes, puis six vitrines couvertes d’affiches pendant la réunion du comité de quartier. Cinq suspects, chacun cache quelque chose ; un seul a écrit.'],
+      ['Mêmes outils', 'scène à fouiller, recoupements, hypothèse au juge, réauditions, coups de pouce et confrontation avec le vrai mobile, comme pour la Rampe.'],
+    ]],
     ['Écrans plus visuels', [
       ['Ordres repliés', 'une fois tes ordres validés, la situation du jour et l’opération d’envergure tiennent sur une ligne (titre, dispositif, couverture). Touche-les pour les rouvrir. Une opération mal couverte (sous 90 %) reste ouverte.'],
       ['Cases des services', 'elles ne montrent que les agents qui travaillent au service aujourd’hui (ceux partis en mission sont indiqués en dessous) et les agents qui manquent. Le badge dit en clair « Encore 3 agents », « Besoin couvert », « Au-delà du besoin » ou « Pas de besoin ».'],

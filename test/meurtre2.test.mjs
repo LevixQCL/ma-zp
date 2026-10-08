@@ -125,7 +125,7 @@ st = r.state;
 assert.ok(st.zones.A.rapport.some((x) => /tu avais aussi compris pourquoi/.test(x)));
 assert.ok(st.zones.A.stats.limier >= avant + 20 + 30, 'aveux + mobile');
 assert.ok(!st.traques.some((t) => t.n === 4), 'pas de traque');
-assert.notEqual(affaire(st, st.enquete.n).meurtre, true, 'nouvelle affaire : un vol');
+assert.equal(affaire(st, st.enquete.n).cas, 'corbeau', 'nouvelle affaire : le corbeau suit la Rampe');
 assert.equal(st.meurtre2Des, 4, 'une seule fois par partie');
 
 // Déclic : avec les lettres, le relevé et le message vocal, une lettre anonyme arrive.
@@ -162,10 +162,10 @@ console.log('meurtre2 : OK');
   s = r.state;
   assert.equal(s.enquete.n, 2); assert.equal(s.meurtre2Des, 2); assert.equal(affaire(s, 2).cas, 'rampe');
   assert.ok(s.zones.A.rapport.some((x) => /pas d’affaire en cours ce soir/.test(x)));
-  // La suivante est un vol, et la rue de la Clef ne vient qu'après un vol.
+  // La suivante est le corbeau (pas un meurtre), et la rue de la Clef ne vient qu'après un vol.
   for (let k = 0; k < ENQ.dureeMax + 1; k++) s = tours(s, 1);
-  assert.equal(s.enquete.n, 3); assert.notEqual(affaire(s, 3).meurtre, true);
-  assert.equal(s.meurtreDes == null || s.meurtreDes >= 4, true);
+  assert.equal(s.enquete.n, 3); assert.equal(affaire(s, 3).cas, 'corbeau');
+  assert.equal(s.meurtreDes == null || s.meurtreDes >= 5, true);
   // b) La rue de la Clef en cours : elle va jusqu'au bout, la Rampe suit directement.
   let t = createGame({ seed: 'lancement-b' });
   t.meurtreDes = 1;
@@ -227,12 +227,12 @@ console.log('lancement programmé : OK');
   let w = createGame({ seed: 'liste' });
   w = resolveTurn(w, { players: players2 }).state;
   w.meurtreDes = undefined; w.meurtre2Des = undefined;
-  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas).sort(), ['clef', 'rampe']);
+  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas).sort(), ['clef', 'corbeau', 'rampe']);
   assert.ok(ouvrirAffaireMaintenant(w, 'clef') != null);
   assert.equal(affaire(w, w.enquete.n).titre, 'Meurtre rue de la Clef');
-  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas), ['rampe'], 'la Clef en cours ne se rouvre pas');
+  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas).sort(), ['corbeau', 'rampe'], 'la Clef en cours ne se rouvre pas');
   assert.ok(ouvrirAffaireMaintenant(w, 'rampe') != null);
-  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas), ['clef'], 'la Clef retirée au jour 1 redevient disponible');
+  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas).sort(), ['clef', 'corbeau'], 'la Clef retirée au jour 1 redevient disponible');
   assert.equal(ouvrirAffaireMaintenant(w, 'rampe'), null);
   console.log('OK : affaires écrites ouvrables par le maître du jeu.');
 }

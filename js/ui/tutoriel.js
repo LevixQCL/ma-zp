@@ -24,6 +24,7 @@ const ONGLETS = { hp: 'HP', ordres: 'Ordres', terrain: 'Terrain', enquete: 'Enqu
 /** Étape « onglet » dont l'écran n'est pas encore ouvert : le joueur doit toucher l'onglet. */
 const attendOnglet = (e) => !!(e.onglet && e.route && S.route !== e.route);
 /** L'affaire en cours se conclut-elle par une confrontation (meurtre) plutôt qu'une accusation ? */
+const corbeau = () => { try { const n = S.state && S.state.enquete && S.state.enquete.n; return !!(n && affaire(S.state, n).genre === 'corbeau'); } catch (e) { return false; } };
 const meurtre = () => { try { const n = S.state && S.state.enquete && S.state.enquete.n; return !!(n && affaire(S.state, n).meurtre); } catch (e) { return false; } };
 
 export const ETAPES = [
@@ -112,7 +113,7 @@ export const ETAPES = [
     id: 'conclure', route: 'enquete', cible: ['.tb-outils [data-action="tab-tuto"]', '.synthese'], parent: '.tb-outils',
     titre: 'Démasquer le coupable',
     texte: () => (meurtre()
-      ? `<p>Un seul suspect a tué ; les autres mentent pour d’autres raisons. Quand tu es sûr de toi, <strong>confronte-le</strong> avec trois éléments de ton dossier. Si tu as visé juste, il avoue. Sinon, il nie et repart, et tu perds de la réputation. Si tu t’es trompé de personne, le parquet te retire l’affaire.</p>
+      ? `<p>${corbeau() ? 'Un seul suspect est le corbeau' : 'Un seul suspect a tué'} ; les autres mentent pour d’autres raisons. Quand tu es sûr de toi, <strong>confronte-le</strong> avec trois éléments de ton dossier. Si tu as visé juste, il avoue. Sinon, il nie et repart, et tu perds de la réputation. Si tu t’es trompé de personne, le parquet te retire l’affaire.</p>
          <p>Le bouton <strong>?</strong> remontre les gestes du tableau.</p>`
       : `<p>Le coupable est le <strong>seul</strong> à réunir mobile, moyen et occasion. Note tes ✓ et ✕ sur chaque fiche, puis porte <strong>une seule accusation</strong>. Plus elle tombe tôt, plus elle rapporte.</p>
          <p>Ensuite, toutes les zones ont ${delaiTraque(ENQ.traqueTours).replace(/,$/, '')} pour <strong>l’arrêter</strong> dans sa planque. Le bouton <strong>?</strong> remontre les gestes du tableau.</p>`),

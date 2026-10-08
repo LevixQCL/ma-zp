@@ -36,7 +36,7 @@ export function recoupBoutons(aff, dos, f, liens = []) {
 export function voletRecoup(aff, dos, f) {
   const d = S.draft;
   const op = [...opposables(aff, dos)].filter((x) => x !== f);
-  const deja = new Set((dos.recoups || []).map((r) => r.join('|')));
+  const deja = new Set((dos.recoups || []).map((r) => (Array.isArray(r) ? r.join('|') : r)));
   const ligne = (x) => {
     const on = d.recoup && d.recoup.includes(f) && d.recoup.includes(x);
     const fait = deja.has([f, x].sort().join('|'));

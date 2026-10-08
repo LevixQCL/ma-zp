@@ -282,7 +282,7 @@ function elementsHtml(aff, dos, et) {
   }
   // Procès-verbal d'ouverture : le récit de l'affaire, toujours au tableau.
   const d3 = aff.prof ? dossierAffaire3(S.state.seed, aff) : null;
-  if (d3) out.push(wrap('recit', 220, 1.6, `<div class="tb-obj tb-pv"><span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">PV n° ${esc(d3.pvc.numero)} · ${esc(d3.pvc.titre)}</span><strong>${esc(aff.titre)}</strong><div class="tb-txt">${d3.pvc.lignes.map((x) => `<p>${esc(x)}</p>`).join('')}</div><span class="tb-k">Affaire n° ${aff.n} · ${aff.meurtre ? 'victime' : `plaignant${/^la /.test(aff.vic) ? 'e' : ''}`} : ${esc(d3.victime)}</span></div>`, 'w'));
+  if (d3) out.push(wrap('recit', 220, 1.6, `<div class="tb-obj tb-pv"><span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">PV n° ${esc(d3.pvc.numero)} · ${esc(d3.pvc.titre)}</span><strong>${esc(aff.titre)}</strong><div class="tb-txt">${d3.pvc.lignes.map((x) => `<p>${esc(x)}</p>`).join('')}</div><span class="tb-k">Affaire n° ${aff.n} · ${aff.meurtre ? (aff.libVictime || 'victime') : `plaignant${/^la /.test(aff.vic) ? 'e' : ''}`} : ${esc(d3.victime)}</span></div>`, 'w'));
   else out.push(wrap('recit', 210, 1.6, `<div class="tb-obj tb-pv"><span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">Procès-verbal d’ouverture · affaire n° ${aff.n}</span><strong>${esc(aff.titre)}</strong><div class="tb-txt"><p>${esc(aff.recit)}</p></div><span class="tb-k">Plaignant${/^la /.test(aff.vic) ? 'e' : ''} : ${esc(aff.vic)} · butin : ${esc(aff.butin)}</span></div>`, 'w'));
   // Affaires ouvertes depuis le plan : la une de la Gazette, la photo de la scène et le dépôt de plainte.
   if (d3) {
@@ -460,13 +460,13 @@ function voletLieu(aff, k, et) {
       ${qui.map((s) => `<p class="small" style="margin:0"><strong>${esc(s.prenom)}</strong> · ${esc(ficheSuspect(aff, s).declaration)}</p>`).join('')}
       ${k === aff.pos ? '' : `<div class="tb-trajets">
         <span class="tb-trajets-t">⏱ Temps de trajet <span class="muted">· Google Maps</span></span>
-        <span class="small" style="font-weight:600">${esc(nomLieu)} → scène du crime</span>
+        <span class="small" style="font-weight:600">${esc(nomLieu)} → ${aff.genre === 'corbeau' ? 'la scène' : 'scène du crime'}</span>
         <div class="tb-trajets-l">${MODES_GMAPS.map(([m, ic, nom]) => `<a class="btn primary" href="${lienItineraire(k, aff.pos, LX, m)}" target="_blank" rel="noopener"><span class="ic">${ic}</span>${nom}</a>`).join('')}</div>
-        <span class="small" style="font-weight:600">Scène du crime → ${esc(nomLieu)}</span>
+        <span class="small" style="font-weight:600">${aff.genre === 'corbeau' ? 'La scène' : 'Scène du crime'} → ${esc(nomLieu)}</span>
         <div class="tb-trajets-l">${MODES_GMAPS.map(([m, ic, nom]) => `<a class="btn outline" href="${lienItineraire(aff.pos, k, LX, m)}" target="_blank" rel="noopener"><span class="ic">${ic}</span>${nom}</a>`).join('')}</div>
         <p class="tiny muted" style="margin:0">Compte large : la minute près n’est jamais nécessaire. En bus, Google donne les horaires d’aujourd’hui, pas ceux du soir des faits.</p>
       </div>`}
-      ${et.connus.has('c:legiste2') ? `<p class="tiny muted" style="margin:0">Le légiste : décès entre ${hm(aff.heure)} et ${hm(aff.fin)}.</p>` : ''}`;
+      ${et.connus.has(aff.pieceHeure || 'c:legiste2') ? `<p class="tiny muted" style="margin:0">${aff.texteHeure ? esc(aff.texteHeure) : `Le légiste : décès entre ${hm(aff.heure)} et ${hm(aff.fin)}.`}</p>` : ''}`;
   }
   if (aff.prof) {
     const l = LIEUX3[k];
@@ -503,7 +503,7 @@ function voletPlan(aff, et) {
     const LIEUX_MONS = lieuxMons(aff);
     const lieux = Object.keys(LIEUX_MONS).filter((k) => !LIEUX_MONS[k].repere && k !== aff.pos);
     return `<span class="tb-titre">Mons, le centre</span>
-      <p class="small muted" style="margin:0">Croix rouge : ${esc(LIEUX_MONS[aff.pos].nom)}, ${esc(LIEUX_MONS[aff.pos].sous ? LIEUX_MONS[aff.pos].sous.split(' · ')[0] : '')}. Les rues et les monuments sont réels ; ${aff.cas === 'rampe' ? 'l’étude, la brasserie, le café, le Cercle' : 'la boutique, la brasserie, le café'} et toutes les personnes de l’affaire sont inventés. Pour un temps de trajet, ouvre l’itinéraire à pied dans Google Maps.</p>
+      <p class="small muted" style="margin:0">Croix rouge : ${esc(LIEUX_MONS[aff.pos].nom)}, ${esc(LIEUX_MONS[aff.pos].sous ? LIEUX_MONS[aff.pos].sous.split(' · ')[0] : '')}. Les rues et les monuments sont réels ; ${aff.lieuxInventes ? esc(aff.lieuxInventes) : aff.cas === 'rampe' ? 'l’étude, la brasserie, le café, le Cercle' : 'la boutique, la brasserie, le café'} et toutes les personnes de l’affaire sont inventés. Pour un temps de trajet, ouvre l’itinéraire à pied dans Google Maps.</p>
       ${lieux.map((k) => `<button type="button" class="tb-trajet-l" data-action="tab-ouvrir" data-tid="L:${k}"><span>${esc(LIEUX_MONS[k].nom)}</span><span class="tiny muted">${esc(LIEUX_MONS[k].sous || '')}</span><strong>›</strong></button>`).join('')}`;
   }
   if (aff.prof) {
@@ -738,7 +738,7 @@ export function renderTableau() {
         <div class="tb-cadre"></div><div class="tb-liege"></div>
         <div class="tb-etiquette" data-tid="titre" style="left:${BW / 2 - 240}px"><span class="tb-scotch g"></span><span class="tb-scotch d"></span>
           <span class="tb-n">DOSSIER N° ${aff.n} · JOUR ${st.enquete.jour} / ${ENQ.dureeMax}</span><span class="tb-dossier">${esc(aff.titre.toUpperCase())}</span></div>
-        <div class="tb-map" data-tid="plan" style="left:${MAP.x}px;top:${MAP.y}px;width:${MAP.w}px;height:${MAP.h}px">${planSvg(aff, aff.meurtre ? et.connus.has('c:legiste2') : et.t.fiches.includes('occ'))}
+        <div class="tb-map" data-tid="plan" style="left:${MAP.x}px;top:${MAP.y}px;width:${MAP.w}px;height:${MAP.h}px">${planSvg(aff, aff.meurtre ? et.connus.has(aff.pieceHeure || 'c:legiste2') : et.t.fiches.includes('occ'))}
           ${['tl', 'tr', 'bl', 'br'].map((c) => `<span class="tb-mpin ${c}"></span>`).join('')}</div>
         ${elementsHtml(aff, dos, et)}
       </div>

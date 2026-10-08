@@ -13,11 +13,14 @@ import { bonusEquip, SERVICE_LABELS } from './constants.js';
 import { LIEUX as LIEUX3, minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
 import { affaireMeurtre } from './meurtre-mons.js';
 import { affaireMeurtreRampe, evaluerHypothese } from './meurtre-rampe.js';
+import { affaireCorbeau } from './corbeau-havre.js';
 import { construireDebrief } from './debrief.js';
 
 /** Deuxième affaire de meurtre écrite à la main (« Le notaire de la Rampe ») : ouverte une fois par partie,
  * au plus tôt deux affaires après la première (une affaire de vol entre les deux). */
 export const MEURTRE2 = { actif: true, ecart: 2, lancement: Date.parse('2026-10-04T17:30:00Z') };
+/** Troisième affaire écrite (« Le corbeau de la rue d'Havré », sans meurtre) : elle suit directement la Rampe. */
+export const CORBEAU = { actif: true };
 /**
  * Lancement programmé : au premier tour résolu après `lancement` (dimanche 4 octobre 2026, 20:00), une partie qui n'a pas
  * encore joué la Rampe retire l'affaire en cours (comme le maître du jeu le ferait) et l'ouvre le soir même.
@@ -50,10 +53,12 @@ function lancementRampe(state, push) {
 export const AFFAIRES_ECRITES = [
   { cas: 'rampe', titre: 'Le notaire de la Rampe', resume: 'Meurtre d’un notaire, Rampe Sainte-Waudru · 5 suspects · mandat puis confrontation',
     dispo: (st) => MEURTRE2.actif && st.meurtre2Des == null, programmer: (st, n) => { st.meurtre2Des = n; delete st.meurtre2Suivante; } },
+  { cas: 'corbeau', titre: 'Le corbeau de la rue d’Havré', resume: 'Lettres anonymes et affiches, rue d’Havré · 5 suspects · mandat puis confrontation',
+    dispo: (st) => CORBEAU.actif && st.corbeauDes == null, programmer: (st, n) => { st.corbeauDes = n; } },
   { cas: 'clef', titre: 'Meurtre rue de la Clef', resume: 'Meurtre d’un antiquaire dans sa boutique · 5 suspects · perquisition puis confrontation',
     dispo: (st) => st.meurtreDes == null, programmer: (st, n) => { st.meurtreDes = n; } },
 ];
-const casEnCours = (st) => (st.enquete ? (st.meurtre2Des === st.enquete.n ? 'rampe' : st.meurtreDes === st.enquete.n ? 'clef' : null) : null);
+const casEnCours = (st) => (st.enquete ? (st.meurtre2Des === st.enquete.n ? 'rampe' : st.meurtreDes === st.enquete.n ? 'clef' : st.corbeauDes === st.enquete.n ? 'corbeau' : null) : null);
 /** Affaires écrites que le maître du jeu peut ouvrir maintenant dans cette partie. */
 export function affairesOuvrables(state) {
   if (!state || !(state.enquete || state.enquetePause)) return [];
@@ -73,7 +78,7 @@ export function ouvrirAffaireMaintenant(state, cas = 'rampe', now = Date.now()) 
   if (state.enquete) {
     const e = state.enquete;
     retiree = affaire(state, e.n).titre;
-    if ((e.jour || 1) <= 1) { if (state.meurtreDes === e.n) delete state.meurtreDes; if (state.meurtre2Des === e.n) delete state.meurtre2Des; }
+    if ((e.jour || 1) <= 1) { if (state.meurtreDes === e.n) delete state.meurtreDes; if (state.meurtre2Des === e.n) delete state.meurtre2Des; if (state.corbeauDes === e.n) delete state.corbeauDes; }
     state.enquetePause = { id: `mj-${cas}-${state.season}-${state.turn}-${e.n}`, n: e.n, titre: retiree, tour: state.turn, reprise: state.nextDeadline };
     state.enquete = null;
   }
@@ -974,8 +979,10 @@ export function nouvelleAffaire(state) {
   const rampeProgrammee = MEURTRE2.actif && state.meurtre2Des == null && ((state.enquetePause && state.enquetePause.suivante === 'rampe') || state.meurtre2Suivante);
   if (choisie) choisie.programmer(state, n); // affaire écrite choisie par le maître du jeu
   else if (rampeProgrammee) { state.meurtre2Des = n; delete state.meurtre2Suivante; } // la Rampe, programmée par le lancement : elle passe avant tout
-  // Une affaire de meurtre écrite à la main, une fois par partie (jamais juste après la Rampe : un vol entre les deux).
-  else if (state.meurtreDes == null && n >= 2 && !(state.meurtre2Des != null && n < state.meurtre2Des + MEURTRE2.ecart)) state.meurtreDes = n;
+  // Le corbeau suit la Rampe (pas de meurtre : il peut venir juste après).
+  else if (CORBEAU.actif && state.corbeauDes == null && state.meurtre2Des != null && n > state.meurtre2Des) state.corbeauDes = n;
+  // Une affaire de meurtre écrite à la main, une fois par partie (jamais juste après la Rampe ni le corbeau : un vol entre les deux).
+  else if (state.meurtreDes == null && n >= 2 && !(state.meurtre2Des != null && n < state.meurtre2Des + MEURTRE2.ecart) && !(state.corbeauDes != null && n < state.corbeauDes + MEURTRE2.ecart)) state.meurtreDes = n;
   else if (MEURTRE2.actif && state.meurtre2Des == null && state.meurtreDes != null && n >= state.meurtreDes + MEURTRE2.ecart) state.meurtre2Des = n; // … puis la seconde
   state.enquete = { n, jour: 1, nbCellules: 1, cellules: {}, rebonds: [], figee: false };
   repartirCellules(state);
@@ -991,6 +998,7 @@ export function nouvelleAffaire(state) {
 export function affaire(state, n) {
   if (state.meurtreDes != null && n === state.meurtreDes) return affaireMeurtre(n);
   if (state.meurtre2Des != null && n === state.meurtre2Des) return affaireMeurtreRampe(n);
+  if (state.corbeauDes != null && n === state.corbeauDes) return affaireCorbeau(n);
   return genererAffaire(state.seed, n, state.carteDes != null && n >= state.carteDes, state.profDes != null && n >= state.profDes, state.distinctDes);
 }
 
@@ -1105,7 +1113,7 @@ export function enquetePre(state, uids, ord, push) {
       d.accuse = a; d.accuseJ = e.jour;
       if (a === aff.coupable) { justes.push(u); continue; }
       d.exclu = true; z.reputation -= 3;
-      z.rapport.push(`Enquête : ${aff.suspects[a].nom} n’avait rien à voir avec le meurtre ; le parquet te retire l’affaire (−3 de réputation). Tu peux encore aider les autres en partageant tes pièces.`);
+      z.rapport.push(`Enquête : ${aff.suspects[a].nom} n’avait rien à voir avec ${aff.faitsNom || 'le meurtre'} ; le parquet te retire l’affaire (−3 de réputation). Tu peux encore aider les autres en partageant tes pièces.`);
       push(6, 'Enquête', `Fausse piste pour ${nomZone(z)}`, `Sa confrontation dans « ${aff.titre} » n’a rien donné. L’enquête continue pour les autres zones.`, u);
       continue;
     }
@@ -1317,7 +1325,8 @@ function recouper(aff, z, d, [a, b], jour) {
   if (!op.has(a) || !op.has(b) || a === b) return;
   if (z.budget < RECOUP.cout) { z.rapport.push('Enquête : recoupement annulé (budget insuffisant).'); return; }
   z.budget -= RECOUP.cout; (z._compta ||= []).push({ k: 'enquete', l: 'Démarches d’enquête', v: -RECOUP.cout });
-  d.recoups = [...(d.recoups || []).slice(-30), [a, b].sort()];
+  // « a|b » et pas [a, b] : Firestore refuse les tableaux dans un tableau (l'enregistrement du tour échouait).
+  d.recoups = [...(d.recoups || []).slice(-30).map((x) => (Array.isArray(x) ? x.join('|') : x)), [a, b].sort().join('|')];
   const p = pieceRecoupement(aff, d, a, b);
   if (!p) { z.rapport.push(`Enquête : recoupement de « ${titrePiece(aff, a)} » et « ${titrePiece(aff, b)} » : rien de neuf.`); return; }
   d.pieces.push({ f: p, j: jour, src: 'recoup' });
@@ -1336,7 +1345,7 @@ function declics(aff, z, d, jour) {
 function hypotheseAuJuge(aff, z, d, h) {
   const s = aff.suspects[h.i], c = aff.creneaux[h.s];
   if (!s || !c) return;
-  const { pour, contre } = evaluerHypothese(new Set(opposables(aff, d)), h.i, h.s);
+  const { pour, contre } = (aff.evaluer || evaluerHypothese)(new Set(opposables(aff, d)), h.i, h.s);
   const liste = (l) => l.slice(0, 4).map((f) => `« ${titrePiece(aff, f)} »`).join(', ') + (l.length > 4 ? ` et ${l.length - 4} autre${l.length > 5 ? 's' : ''}` : '');
   const t = `Le juge d’instruction a lu ton hypothèse (${s.nom}, ${c}). ${pour.length ? `${pour.length} pièce${pour.length > 1 ? 's' : ''} de ton dossier l’appui${pour.length > 1 ? 'ent' : 'e'}` : 'Aucune pièce de ton dossier ne l’appuie'}${contre.length ? ` ; ${contre.length} la contredi${contre.length > 1 ? 'sent' : 't'} : ${liste(contre)}. Explique-les avant de confronter.` : '. Rien dans ton dossier ne la contredit.'}`;
   z.rapport.push(`Enquête : ${t}`);

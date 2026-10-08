@@ -21,9 +21,10 @@ function rueCam(id, pluie, foule) {
     ${gouttes}`;
 }
 import { PHOTOS_RAMPE } from './rampe-visuels.js';
+import { PHOTOS_CORBEAU } from './corbeau-visuels.js';
 
 // Chaque affaire écrite à la main a ses photos (les codes de pièces se recoupent d'une affaire à l'autre).
-const photosDe = (aff) => (aff.cas === 'rampe' ? PHOTOS_RAMPE : PHOTOS);
+const photosDe = (aff) => (aff.cas === 'rampe' ? PHOTOS_RAMPE : aff.cas === 'corbeau' ? PHOTOS_CORBEAU : PHOTOS);
 
 const PHOTOS = {
   'c:cam': (id) => `<div class="ip-duo">${svg(`${id}a`, 320, 180, cadreCam(`${id}a`, 'CAM 07 · GRAND-PLACE / R. DE LA CLEF', '22:04:31', rueCam(`${id}a`, true, silhouette(176, 150, 1.2, { parapluie: true }))))}

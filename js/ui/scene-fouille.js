@@ -2,6 +2,15 @@
 // Chaque plot décrit ce que l'on voit, sans dire ce qu'il faut en penser : à chacun de faire le lien.
 import { S, esc } from './common.js';
 import { POINTS_SCENE_RAMPE, sceneRampeSvg } from './rampe-visuels.js';
+import { POINTS_SCENE_CORBEAU, sceneCorbeauSvg } from './corbeau-visuels.js';
+
+/** Plots et titres de la scène de chaque affaire écrite. */
+const SCENES = {
+  rampe: { pts: () => POINTS_SCENE_RAMPE, kicker: 'Photo du labo · rez-de-chaussée · vendredi 10:10', titre: 'La scène, Rampe Sainte-Waudru' },
+  corbeau: { pts: () => POINTS_SCENE_CORBEAU, kicker: 'Photo du labo · rue d’Havré · jeudi 23:05', titre: 'La scène, rue d’Havré' },
+};
+const SCENE_CLEF = { pts: () => POINTS_SCENE, kicker: 'Photo du labo · arrière-boutique · mercredi 00:30', titre: 'La scène, rue de la Clef' };
+const sceneDe = (aff) => SCENES[aff.cas] || SCENE_CLEF;
 
 export const POINTS_SCENE = [
   { k: 'tasses', n: 1, x: 300, y: 262, titre: 'Deux tasses à expresso', texte: 'Sur le bureau, une tasse sale. Sur l’égouttoir, près du petit évier, une seconde tasse rincée, posée à l’envers. Une goutte d’eau perle encore sous l’anse.' },
@@ -65,8 +74,9 @@ function decorScene(id) {
 
 /** La photo de la scène et ses plots (première affaire : dessin ; la Rampe : photo). */
 function photoScene(aff, sel, vus) {
-  const rampe = aff.cas === 'rampe';
-  return rampe ? sceneRampeSvg(sel, vus, esc) : `<svg viewBox="0 0 680 380" aria-hidden="false" role="img" aria-label="Arrière-boutique, avec dix plots numérotés">${decorScene('sf')}
+  if (aff.cas === 'rampe') return sceneRampeSvg(sel, vus, esc);
+  if (aff.cas === 'corbeau') return sceneCorbeauSvg(sel, vus, esc);
+  return `<svg viewBox="0 0 680 380" aria-hidden="false" role="img" aria-label="Arrière-boutique, avec dix plots numérotés">${decorScene('sf')}
         ${POINTS_SCENE.map((p) => `<g class="sf-plot ${sel && sel.k === p.k ? 'on' : ''} ${vus.has(p.k) ? 'vu' : ''}" data-action="scene-pt" data-k="${p.k}" transform="translate(${p.x} ${p.y})" tabindex="0" role="button" aria-label="Plot ${p.n} : ${esc(p.titre)}">
           <circle r="22" fill="transparent"/><path d="M-11 0L0 -20L11 0Z" fill="#F2C230" stroke="#3A2E0A" stroke-width="1.2"/><text y="-5" text-anchor="middle" font-family="'Special Elite', monospace" font-size="11" fill="#1D1A15">${p.n}</text></g>`).join('')}
       </svg>`;
@@ -75,14 +85,14 @@ function photoScene(aff, sel, vus) {
 /** La scène en grand, avec ses plots (overlay plein écran, comme le journal). */
 export function sceneFouilleHtml(aff) {
   if (!aff || !aff.meurtre || S.sceneOuverte !== aff.n) return '';
-  const rampe = aff.cas === 'rampe';
-  const PTS = rampe ? POINTS_SCENE_RAMPE : POINTS_SCENE;
+  const sc = sceneDe(aff);
+  const PTS = sc.pts();
   const sel = PTS.find((p) => p.k === S.scenePt) || null;
   const vus = new Set(S.scenePtsVus || []);
   const photo = photoScene(aff, sel, vus);
   return `<div class="jr-wrap sf-wrap" role="dialog" aria-modal="true" aria-label="La scène">
     <article class="sf">
-      <div class="between" style="gap:10px"><div class="col" style="gap:2px"><span class="kicker" style="color:var(--amber)">${rampe ? 'Photo du labo · rez-de-chaussée · vendredi 10:10' : 'Photo du labo · arrière-boutique · mercredi 00:30'}</span><h2 class="sf-titre">${rampe ? 'La scène, Rampe Sainte-Waudru' : 'La scène, rue de la Clef'}</h2></div>
+      <div class="between" style="gap:10px"><div class="col" style="gap:2px"><span class="kicker" style="color:var(--amber)">${sc.kicker}</span><h2 class="sf-titre">${sc.titre}</h2></div>
         <button type="button" class="tb-fermer" style="position:static" data-action="scene-fermer" aria-label="Fermer">✕</button></div>
       <div class="sf-photo" data-action="scene-zoom" title="Agrandir la photo">${photo}<span class="sf-loupe" aria-hidden="true">⤢ Agrandir</span></div>
       <div class="sf-detail">${sel ? `<span class="tb-ligne-k" style="color:var(--amber)">Plot ${sel.n}</span><strong>${esc(sel.titre)}</strong>${sel.photo ? `<img class="sf-gros-plan" src="${sel.photo}" alt="" loading="lazy">` : ''}<p>${esc(sel.texte)}</p>` : '<p class="muted">Touche un plot jaune pour voir ce que le labo a relevé. Tout est sous tes yeux ; rien n’est souligné.</p>'}</div>
@@ -94,8 +104,7 @@ export function sceneFouilleHtml(aff) {
 /** La scène en plein écran (rendue hors de l'écran du tableau, au-dessus de la barre d'onglets). */
 export function sceneZoomHtml(aff) {
   if (!aff || !aff.meurtre || S.sceneOuverte !== aff.n || !S.sceneZoom) return '';
-  const rampe = aff.cas === 'rampe';
-  const PTS = rampe ? POINTS_SCENE_RAMPE : POINTS_SCENE;
+  const PTS = sceneDe(aff).pts();
   const sel = PTS.find((p) => p.k === S.scenePt) || null;
   return zoomHtml(photoScene(aff, sel, new Set(S.scenePtsVus || [])), sel);
 }

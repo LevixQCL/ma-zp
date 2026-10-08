@@ -117,7 +117,7 @@ export function construireDebrief(state, aff, issue, fin = {}) {
 
   const s = aff.suspects[aff.coupable];
   return {
-    v: 1, n, titre: aff.titre, meurtre: !!aff.meurtre, cas: aff.cas || (aff.meurtre ? 'clef' : null), issue,
+    v: 1, n, titre: aff.titre, meurtre: !!aff.meurtre, genre: aff.genre || null, cas: aff.cas || (aff.meurtre ? 'clef' : null), issue,
     jours: fin.jour || null,
     coupable: { i: aff.coupable, nom: s.nom, f: !!s.f, role: s.role },
     planque: aff.meurtre ? null : (aff.planques[aff.planque] ? { nom: aff.planques[aff.planque].nom, lieu: aff.planques[aff.planque].lieu } : null),

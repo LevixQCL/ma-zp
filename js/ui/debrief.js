@@ -139,7 +139,7 @@ export function renderDebrief() {
       <div class="db-onglet">Dossier n° ${db.n}</div>
       <div class="db-feuille">
         <header class="db-tete">
-          <span class="db-k">Dossier clos · ${db.meurtre ? 'meurtre' : 'vol'}</span>
+          <span class="db-k">Dossier clos · ${db.genre || (db.meurtre ? 'meurtre' : 'vol')}</span>
           <h1>${esc(db.titre)}</h1>
           <span class="db-tampon ${ton}">${esc(tampon)}</span>
           <div class="db-stats">

@@ -40,8 +40,10 @@ export function createLocalBackend(config) {
     // La démo ouvre directement sur l'affaire de meurtre écrite à la main, pour pouvoir la tester.
     // Avec « ?demo=rampe », elle ouvre sur la seconde (« Le notaire de la Rampe »).
     if (id === 'demo') {
-      const rampe = typeof location !== 'undefined' && /(^|[?&])demo=rampe\b/.test(location.search || '');
-      if (rampe) { state.meurtreDes = 0; state.meurtre2Des = 1; } else state.meurtreDes = 1;
+      // Avec « ?demo=corbeau », sur la troisième (« Le corbeau de la rue d'Havré »).
+      const q = typeof location !== 'undefined' ? (location.search || '') : '';
+      const rampe = /(^|[?&])demo=rampe\b/.test(q), corbeau = /(^|[?&])demo=corbeau\b/.test(q);
+      if (corbeau) { state.meurtreDes = -1; state.meurtre2Des = 0; state.corbeauDes = 1; } else if (rampe) { state.meurtreDes = 0; state.meurtre2Des = 1; } else state.meurtreDes = 1;
     }
     const players = {};
     for (const b of BOT_PROFILES) {
