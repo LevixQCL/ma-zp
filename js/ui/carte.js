@@ -7,7 +7,7 @@ import { siteDe } from '../engine/sites.js';
 import { chefDe, postulerCtrl } from './affaires.js';
 import { hashString } from '../engine/rng.js';
 import { fiabilite } from '../engine/fipa.js';
-import { marquerRadioLue, ongletsRadio } from './prive.js';
+import { marquerRadioLue, ongletsRadio, canalRadio, nonLus } from './prive.js';
 import { ongletsCarte } from './pactes.js';
 import { appelsRenfort, renfortCtrl } from './renfort.js';
 import { annoncesND, suggestionND, placeND, prevoirRejoindre } from './nondroit.js';
@@ -143,8 +143,11 @@ export function renderRadio() {
     const z = st.zones[uid] || S.players[uid];
     return z ? { nom: `${z.nom}${pseudoDe(uid) ? ` · ${pseudoDe(uid)}` : ''}`, code: z.code, couleur: z.couleur } : { nom: 'Ancienne zone', code: '', couleur: '#9FB0C0' };
   };
-  const msgs = S.radio.slice(-50);
-  marquerRadioLue();
+  const canal = S.radioCanal === 'ops' ? 'ops' : 'parole';
+  const nl = nonLus();
+  const tous = S.radio || [];
+  const msgs = tous.filter((m) => canalRadio(m) === canal).slice(-50);
+  marquerRadioLue(canal);
   const appels = appelsRenfort();
   // Annonces « zone de non-droit » de ce soir : seule la dernière de chaque secteur porte le bouton Rejoindre.
   const ann = annoncesND();
@@ -178,15 +181,22 @@ export function renderRadio() {
   };
   return `<main class="screen">
     ${ongletsRadio('radio')}
-    <header class="col" style="gap:3px"><h1 class="big">Radio Delta</h1><p class="sub">Canal public de tout le district. Négociez, chambrez, mais restez corrects.</p></header>
+    <header class="col" style="gap:3px"><h1 class="big">Radio Delta</h1></header>
+    <div class="frequences" role="tablist" aria-label="Fréquences de la radio">
+      <button type="button" role="tab" class="freq ${canal === 'parole' ? 'on' : ''}" data-action="radio-canal" data-v="parole" aria-selected="${canal === 'parole'}">
+        <span class="freq-n">F1</span><span class="col" style="gap:0;min-width:0"><span class="freq-t">Discussion</span><span class="freq-s">les chefs de zone se parlent</span></span>${canal !== 'parole' && nl.radio ? `<span class="compteur">${nl.radio}</span>` : ''}</button>
+      <button type="button" role="tab" class="freq ops ${canal === 'ops' ? 'on' : ''}" data-action="radio-canal" data-v="ops" aria-selected="${canal === 'ops'}">
+        <span class="freq-n">F2</span><span class="col" style="gap:0;min-width:0"><span class="freq-t">Renforts & opérations</span><span class="freq-s">${appels.length ? `${appels.length} appel${appels.length > 1 ? 's' : ''} en cours` : 'appels, non-droit, annonces'}</span></span>${canal !== 'ops' && nl.ops ? `<span class="compteur">${nl.ops}</span>` : ''}</button>
+    </div>
+    <p class="sub" style="margin:-4px 0 0">${canal === 'parole' ? 'Canal public de tout le district. Négociez, chambrez, mais restez corrects.' : 'Appels à renfort, zone de non-droit et annonces automatiques. Réponds ici pour coordonner.'}</p>
     <section class="col" aria-label="Messages" id="radio-list" style="gap:8px">
       ${msgs.length ? msgs.map((m) => { const w = nameOf(m.uid); const moi = m.uid === me.uid; const appel = m.renfort && appels.find((x) => x.uid === m.uid && x.at === m.at); const nd = m.nd && !moi ? ndCtrl(m) : ''; return `<div class="card tight" ${m.renfort ? 'style="border-color:var(--red-line);background:var(--red-bg)"' : nd ? 'style="border-color:var(--amber-line);background:var(--amber-bg, transparent)"' : moi ? 'style="border-color:var(--amber-line)"' : ''}>
         <div class="between"><span class="small" style="font-weight:700;color:${esc(w.couleur)}">ZP ${esc(w.code)} ${esc(w.nom)}${moi ? ' (toi)' : ''}</span><span class="tiny muted mono">${new Date(m.at).toLocaleString('fr-BE', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>
-        <p style="margin:0;font-size:14px;line-height:1.4;overflow-wrap:anywhere">${esc(m.texte)}</p>${appel ? renfortCtrl(appel) : ''}${nd}</div>`; }).join('') : '<p class="small muted">Aucun message pour l’instant. Lance la conversation !</p>'}
+        <p style="margin:0;font-size:14px;line-height:1.4;overflow-wrap:anywhere">${esc(m.texte)}</p>${appel ? renfortCtrl(appel) : ''}${nd}</div>`; }).join('') : `<p class="small muted">${canal === 'parole' ? 'Aucun message pour l’instant. Lance la conversation !' : 'Aucun appel ni annonce pour l’instant.'}</p>`}
     </section>
-    <form data-form="radio" class="row" style="position:sticky;bottom:96px;background:var(--bg);padding-top:6px">
+    <form data-form="radio" data-canal="${canal}" class="row" style="position:sticky;bottom:96px;background:var(--bg);padding-top:6px">
       <label class="sr" for="radio-msg">Message</label>
-      <input id="radio-msg" class="text grow" name="texte" maxlength="280" placeholder="Message à tout le district…" autocomplete="off">
+      <input id="radio-msg" class="text grow" name="texte" maxlength="280" placeholder="${canal === 'parole' ? 'Message à tout le district…' : 'Réponse sur F2 (ex. « j’arrive avec 2 »)…'}" autocomplete="off">
       <button class="btn primary" type="submit" aria-label="Envoyer" style="width:48px;padding:0">${icon('send', 18)}</button>
     </form>
   </main>${tabbar('radio')}`;

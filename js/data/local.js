@@ -197,7 +197,7 @@ export function createLocalBackend(config) {
       if (rng.chance(0.6)) {
         const bot = rng.pick(BOT_PROFILES);
         self.radio.push({ id: `r${Date.now()}`, uid: bot.uid, texte: rng.pick(RADIO_BOTS), at: Date.now() });
-        emit('radio', self.radio.slice(-50));
+        emit('radio', self.radio.slice(-100));
       }
       // Ménage : on garde les ordres des 3 derniers tours.
       for (const k of Object.keys(self.orders)) { const [s, t] = k.split('-').map(Number); if (s < prev.season || t < prev.turn - 3) delete self.orders[k]; }
@@ -224,10 +224,10 @@ export function createLocalBackend(config) {
         setTimeout(() => { self.prives.push({ id: `p${Date.now()}`, de: a, a: de, participants: [a, de], texte: rep[Math.floor(Math.random() * rep.length)], at: Date.now() }); persist(); emit('prive', self.prives.slice()); }, 2500);
       }
     },
-    subscribeRadio(cb) { listeners.radio.add(cb); cb(self.radio.slice(-50)); return () => listeners.radio.delete(cb); },
+    subscribeRadio(cb) { listeners.radio.add(cb); cb(self.radio.slice(-100)); return () => listeners.radio.delete(cb); },
     async sendRadio(uid, texte, extra = {}) {
       self.radio.push({ ...extra, id: `r${Date.now()}`, uid, texte: String(texte).slice(0, 280), at: Date.now() });
-      persist(); emit('radio', self.radio.slice(-50));
+      persist(); emit('radio', self.radio.slice(-100));
     },
 
     // Maître du jeu

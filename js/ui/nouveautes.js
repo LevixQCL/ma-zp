@@ -15,6 +15,7 @@ export const NOTE_MAJ = {
   // Liste complète, dans le menu Nouveautés.
   sections: [
     ['Écrans plus visuels', [
+      ['Radio : deux fréquences', 'F1 · Discussion pour se parler entre chefs de zone, F2 · Renforts & opérations pour les appels à renfort, la zone de non-droit et les annonces automatiques. Chaque fréquence a son compteur de messages non lus ; la pastille de l’onglet Radio ne s’allume plus que pour la discussion et les messages privés.'],
       ['Pastilles rouges', 'elles s’éteignent dès que tu ouvres l’onglet et ne se rallument que s’il y a du nouveau (nouveau tour, nouvelle demande, nouveau message). Seuls des ordres modifiés mais pas validés gardent leur pastille. Ce qui reste à faire est toujours listé dans « Ce soir » sur l’HP.'],
       ['Plan du district', 'une fois tes ordres validés, la carte du plan (et ton vote au Conseil des chefs) se replie sur une ligne sur l’HP : le plan, le jour et ce que tu engages. Touche-la pour la rouvrir.'],
       ['Ordres', 'chaque service montre ses places : une case pleine par agent, une case en pointillés par agent qui manque pour couvrir le besoin du soir, et un pion pâle par agent en plus. Un badge dit tout de suite « Rempli », « Il manque 2 » ou « Beaucoup ». En haut, une barre colorée montre toute ta répartition et les agents encore libres.'],

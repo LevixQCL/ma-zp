@@ -226,7 +226,7 @@ export async function createFirebaseBackend(config) {
     },
 
     subscribeRadio(cb) {
-      // Les 40 derniers messages, plus toutes les annonces de la zone de non-droit / renforts des 30 dernières heures :
+      // Les 80 derniers messages (les deux fréquences), plus toutes les annonces de la zone de non-droit / renforts des 30 dernières heures :
       // sans ça, une annonce du matin sortait de la fenêtre des 40 et les autres zones ne la voyaient plus.
       let recents = [], jour = [];
       const envoyer = () => {
@@ -235,7 +235,7 @@ export async function createFirebaseBackend(config) {
         cb([...par.values()].sort((a, b) => (a.at || 0) - (b.at || 0)));
       };
       const lire = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-      const u1 = F.onSnapshot(F.query(col('radio'), F.orderBy('at', 'desc'), F.limit(40)), (snap) => { recents = lire(snap); envoyer(); }, (e) => console.error(e));
+      const u1 = F.onSnapshot(F.query(col('radio'), F.orderBy('at', 'desc'), F.limit(80)), (snap) => { recents = lire(snap); envoyer(); }, (e) => console.error(e));
       const u2 = F.onSnapshot(F.query(col('radio'), F.where('at', '>=', Date.now() - 30 * 3600 * 1000)),
         (snap) => { jour = lire(snap).filter((m) => m.nd || m.renfort); envoyer(); }, (e) => console.error(e));
       return () => { u1(); u2(); };

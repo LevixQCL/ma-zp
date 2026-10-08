@@ -340,7 +340,7 @@ async function openParty(id) {
     }, (e) => { S.lastError = e; if (S.state === undefined) bloque(e); });
   }
   if (!unsubRadio) unsubRadio = S.backend.subscribeRadio((msgs) => {
-    S.radio = msgs; if (S.route === 'radio') rerender(); else majPastilles();
+    S.radio = msgs; if (S.route === 'radio' && !champActif('radio-msg')) rerender(); else majPastilles();
     // Rattrapage, une fois : des agents déjà validés dans la zone de non-droit mais jamais annoncés à la radio.
     if (!rattrapageND) { rattrapageND = true; setTimeout(() => { if (S.savedOrders && !S.ordersDirty) annoncerNDAuto(true).catch((e) => console.warn(e)); }, 5000); }
   });
@@ -935,6 +935,7 @@ async function onClick(e) {
         }
         S.ordersDirty = true; rerender(); break;
       }
+      case 'radio-canal': S.radioCanal = el.dataset.v === 'ops' ? 'ops' : 'parole'; rerender(); break;
       case 'ventilation': S.ventilation = !S.ventilation; rerender(); break;
       case 'rapatrier': {
         const k = el.dataset.k, d = S.draft;
@@ -1330,7 +1331,7 @@ async function onSubmit(e) {
     } else if (kind === 'radio') {
       const texte = form.texte.value.trim();
       if (!texte) return;
-      await b.sendRadio(S.user.uid, texte);
+      await b.sendRadio(S.user.uid, texte, { canal: form.dataset.canal === 'ops' ? 'ops' : 'parole' });
       form.texte.value = '';
     } else if (kind === 'prive') {
       const texte = form.texte.value.trim();

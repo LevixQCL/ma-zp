@@ -1791,3 +1791,14 @@ details.crise-pli[open] > summary { margin-bottom: 10px; }
 details.crise-pli .crise-k, .crise-ligne .crise-k { flex-shrink: 0; margin-right: 0; width: 28px; height: 28px; font-size: 15px; }
 .crise-ligne { display: flex; flex-direction: row; align-items: center; gap: 10px; width: 100%; font: inherit; color: inherit; cursor: pointer; }
 .crise-ligne > svg:last-child { color: var(--muted); flex-shrink: 0; }
+
+/* Radio : deux fréquences */
+.frequences { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.freq { position: relative; display: flex; align-items: center; gap: 9px; padding: 10px 10px; border-radius: 16px; border: 1px solid var(--hair); background: var(--surface); color: var(--text2); text-align: left; font: inherit; cursor: pointer; min-height: 58px; }
+.freq.on { border-color: var(--amber); background: var(--amber-bg); color: var(--text); box-shadow: 0 0 0 3px rgba(255, 178, 63, .14); }
+.freq.ops.on { border-color: var(--red-line); background: var(--red-bg); box-shadow: 0 0 0 3px rgba(255, 110, 106, .14); }
+.freq-n { flex-shrink: 0; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: #0A0F1F; border: 1px solid var(--line); font: 800 13px var(--display); color: var(--amber); letter-spacing: .5px; text-shadow: 0 0 8px rgba(255, 178, 63, .55); }
+.freq.ops .freq-n { color: var(--red-soft); text-shadow: 0 0 8px rgba(255, 110, 106, .55); }
+.freq-t { font-weight: 700; font-size: 13.5px; line-height: 1.15; }
+.freq-s { font-size: 11px; color: var(--muted); line-height: 1.2; }
+.freq .compteur { position: absolute; top: -6px; right: -4px; }

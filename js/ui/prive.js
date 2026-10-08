@@ -10,17 +10,27 @@ function lireVu() {
   if (S.vu && S.vu.cle === cleVu()) return S.vu;
   let v = null;
   try { v = JSON.parse(localStorage.getItem(cleVu()) || 'null'); } catch (e) { /* pas de stockage */ }
-  S.vu = { cle: cleVu(), radio: (v && v.radio) || 0, prive: (v && v.prive) || {} };
+  S.vu = { cle: cleVu(), radio: (v && v.radio) || 0, ops: (v && (v.ops || v.radio)) || 0, prive: (v && v.prive) || {} };
   // Première visite sur cet appareil : on ne signale pas tout l'historique comme nouveau.
-  if (!v) S.vu.radio = Date.now();
+  if (!v) { S.vu.radio = Date.now(); S.vu.ops = Date.now(); }
   return S.vu;
 }
-function ecrireVu() { try { localStorage.setItem(cleVu(), JSON.stringify({ radio: S.vu.radio, prive: S.vu.prive })); } catch (e) { /* pas de stockage */ } }
+function ecrireVu() { try { localStorage.setItem(cleVu(), JSON.stringify({ radio: S.vu.radio, ops: S.vu.ops, prive: S.vu.prive })); } catch (e) { /* pas de stockage */ } }
 
-export function marquerRadioLue() {
-  const v = lireVu();
-  const der = Math.max(0, ...(S.radio || []).map((m) => m.at || 0));
-  if (der > v.radio) { v.radio = der; ecrireVu(); }
+/**
+ * Deux fréquences sur la Radio : « parole » (les joueurs qui se parlent) et « ops » (appels à renfort,
+ * zone de non-droit, annonces automatiques, et les réponses envoyées sur cette fréquence).
+ */
+export function canalRadio(m) {
+  if (m.canal === 'ops' || m.renfort || m.nd) return 'ops';
+  if (m.canal === 'parole') return 'parole';
+  return /^(🚨|🚔|🤝|📻)/u.test(m.texte || '') ? 'ops' : 'parole';
+}
+/** Marque comme lue une fréquence (par défaut celle qu'on regarde). */
+export function marquerRadioLue(canal = 'parole') {
+  const v = lireVu(), cle = canal === 'ops' ? 'ops' : 'radio';
+  const der = Math.max(0, ...(S.radio || []).filter((m) => canalRadio(m) === canal).map((m) => m.at || 0));
+  if (der > v[cle]) { v[cle] = der; ecrireVu(); }
 }
 export function marquerPriveLu(autre) {
   const v = lireVu();
@@ -30,15 +40,17 @@ export function marquerPriveLu(autre) {
 
 /** Nombre de messages non lus, envoyés par d'autres. */
 export function nonLus() {
-  if (!S.user) return { radio: 0, prive: 0, parZone: {} };
+  if (!S.user) return { radio: 0, ops: 0, prive: 0, parZone: {} };
   const v = lireVu(), me = S.user.uid;
-  const radio = (S.radio || []).filter((m) => m.uid !== me && (m.at || 0) > v.radio).length;
+  const autres = (S.radio || []).filter((m) => m.uid !== me);
+  const radio = autres.filter((m) => canalRadio(m) === 'parole' && (m.at || 0) > v.radio).length;
+  const ops = autres.filter((m) => canalRadio(m) === 'ops' && (m.at || 0) > v.ops).length;
   const parZone = {};
   for (const m of S.prives || []) {
     if (m.de === me) continue;
     if ((m.at || 0) > (v.prive[m.de] || 0)) parZone[m.de] = (parZone[m.de] || 0) + 1;
   }
-  return { radio, prive: Object.values(parZone).reduce((a, b) => a + b, 0), parZone };
+  return { radio, ops, prive: Object.values(parZone).reduce((a, b) => a + b, 0), parZone };
 }
 
 /** Onglets Radio | Privé (les pactes et le Conseil sont passés dans la Carte). */
