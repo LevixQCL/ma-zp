@@ -1851,3 +1851,19 @@ details.pli-ordres[open] .pli-resume, details.pli-ordres[open] .pli-resume-s { d
 .cmp-table td { font-variant-numeric: tabular-nums; }
 .cmp-table td.ok { color: var(--green); font-weight: 700; }
 .cmp-table td.role { font-family: inherit; font-size: 12px; color: var(--text2); line-height: 1.25; }
+
+/* ───── Chef de corps (saison 2) ───── */
+.chef-portrait { position: relative; display: inline-block; width: var(--t); height: var(--t); flex-shrink: 0; border-radius: 22%; overflow: hidden; box-shadow: 0 0 0 2px var(--zc, var(--amber)); background: #1B2436; }
+.chef-portrait img, .chef-portrait svg { width: 100%; height: 100%; }
+.chef-galons { position: absolute; left: 0; right: 0; bottom: 0; text-align: center; font-size: 9px; line-height: 12px; color: #FFD98A; background: rgba(10,14,24,.72); letter-spacing: 1px; }
+.chef-grille { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 420px) { .chef-grille { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.chef-choix { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 3px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface2); color: var(--text2); cursor: pointer; }
+.chef-choix img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; background: #1B2436; }
+.chef-choix[aria-pressed="true"] { border-color: var(--amber); box-shadow: 0 0 0 2px var(--amber); color: var(--text); }
+.chef-fiche { gap: 10px; }
+.chef-toile { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; }
+.repli-mini summary { cursor: pointer; }
+.chef-choix-svg svg { width: 100%; height: auto; border-radius: 8px; }
+.chef-grille { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+@media (max-width: 420px) { .chef-grille { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; } }

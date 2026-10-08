@@ -251,6 +251,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (!z.chef) z.chef = creerChef(pf);
       else if (!z.chef.parcours && pf && Object.hasOwn(PARCOURS, pf.parcours)) z.chef.parcours = pf.parcours;
       z._agenda = lireAgenda(orders[uid], state, uid);
+      if (orders[uid] && z.dernierOrdre) z.dernierOrdre.agenda = z._agenda;
       const lt = changerTalents(z.chef, lireTalents(orders[uid]), T);
       if (lt) z.rapport.push(lt);
       z._chefAvant = { stats: { ...z.stats }, n: z.enquete && z.enquete.n, pieces: piecesPropres(z) };

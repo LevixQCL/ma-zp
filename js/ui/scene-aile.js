@@ -2,15 +2,18 @@
 // et, derrière la vitre, un aperçu de la pièce (salle de sport, pas de tir, salle d'audition…).
 // Les skins (conteneurs, roulotte, serre, cabanes, wagons, pilotis, tiroirs, cabines) reprennent les mêmes intérieurs.
 
-export const ANNEXES_AILE = ['sport', 'tir', 'audition', 'logiciel', 'antenne'];
+// Ordre fixe, de gauche à droite (les nouvelles annexes viennent après, l'aile d'une zone existante ne bouge pas).
+// L'atelier mécanique (porte du garage) et les caméras ANPR (mâts) sont dessinés ailleurs : au plus 9 modules ici.
+export const ANNEXES_AILE = ['sport', 'tir', 'audition', 'logiciel', 'antenne', 'cachots', 'drone', 'crise', 'sapv'];
 export const MODULE = 30;
 export const HAUT_AILE = 40;
 /** Largeur de l'aile pour `n` annexes. */
 export const largeurAile = (n) => (n ? 6 + n * MODULE : 0);
 
 const LIT = '#FFC56B';
+const LIT_DOUX = '#FFD9A8'; // lumière plus douce de l'accueil des victimes
 // Couleur de l'écusson de chaque annexe.
-const COULEUR = { sport: '#F59E5B', tir: '#E1453A', audition: '#A78BFA', logiciel: '#5AB0F0', antenne: '#3DD39A' };
+const COULEUR = { sport: '#F59E5B', tir: '#E1453A', audition: '#A78BFA', logiciel: '#5AB0F0', antenne: '#3DD39A', cachots: '#7C8798', drone: '#E8B530', crise: '#2E4FA8', sapv: '#F28FB0' };
 // Pictogrammes (dessinés autour de 0,0, environ 12 × 12), repris dans les écussons.
 const PICTO = {
   sport: '<path d="M-5 0 H5"/><path d="M-5 -3.5 V3.5 M-3 -2.5 V2.5 M5 -3.5 V3.5 M3 -2.5 V2.5"/>',
@@ -18,6 +21,10 @@ const PICTO = {
   audition: '<path d="M-5 1 H5 M-3.5 1 V4.5 M3.5 1 V4.5"/><circle cx="-4" cy="-3" r="1.4"/><circle cx="4" cy="-3" r="1.4"/>',
   logiciel: '<rect x="-5" y="-4.5" width="10" height="7" rx="1"/><path d="M-2 5 H2 M0 2.5 V5"/>',
   antenne: '<path d="M-5 0 L0 -4.5 L5 0 M-3.5 -1 V4.5 H3.5 V-1"/><path d="M-1 4.5 V1.5 H1 V4.5"/>',
+  cachots: '<rect x="-5" y="-5" width="10" height="10" rx="1"/><path d="M-1.7 -5 V5 M1.7 -5 V5"/>',
+  drone: '<path d="M-3 -3 L3 3 M3 -3 L-3 3"/><circle cx="-4.4" cy="-4.4" r="1.9"/><circle cx="4.4" cy="-4.4" r="1.9"/><circle cx="-4.4" cy="4.4" r="1.9"/><circle cx="4.4" cy="4.4" r="1.9"/>',
+  crise: '<path d="M0 -5.5 L6 5 H-6 Z"/><path d="M0 -1.6 V1.2 M0 3.2 V3.3"/>',
+  sapv: '<path d="M0 5 C-7.5 -0.5 -5.5 -7 0 -2.6 C5.5 -7 7.5 -0.5 0 5 Z"/>',
 };
 const f1 = (v) => Math.round(v * 10) / 10;
 
@@ -96,20 +103,82 @@ const INTERIEUR = {
       <rect x="${f1(w * 0.4)}" y="${f1(sol - 5)}" width="${f1(w * 0.56)}" height="5" fill="${k}"/><rect x="${f1(w * 0.4)}" y="${f1(sol - 5)}" width="${f1(w * 0.56)}" height=".8" fill="#FFFFFF" opacity=".3"/>
       <circle cx="${f1(w * 0.86)}" cy="${f1(h * 0.2)}" r="1.9" fill="#2F6FB5"/><rect x="${f1(w * 0.86 - 0.3)}" y="${f1(h * 0.2 - 0.6)}" width=".6" height="1.6" fill="#FFFFFF"/><circle cx="${f1(w * 0.86)}" cy="${f1(h * 0.2 - 1.1)}" r=".32" fill="#FFFFFF"/>`;
   },
+  cachots(w, h, k) {
+    // Cellule : banc-couchette avec sa couverture, WC inox, puis les barreaux devant.
+    const sol = h - 1;
+    let s = `<rect x="${f1(w * 0.08)}" y="${f1(sol - Math.min(4.5, h * 0.3))}" width="${f1(w * 0.55)}" height="${f1(Math.min(1.8, h * 0.12))}" fill="${k}"/>
+      <rect x="${f1(w * 0.12)}" y="${f1(sol - Math.min(5.3, h * 0.36))}" width="${f1(w * 0.3)}" height=".9" rx=".4" fill="${k}" opacity=".7"/>
+      <rect x="${f1(w * 0.74)}" y="${f1(sol - Math.min(3, h * 0.22))}" width="${f1(Math.max(1.2, w * 0.14))}" height="${f1(Math.min(3, h * 0.22))}" rx=".5" fill="${k}" opacity=".8"/>
+      <rect x="0" y="${f1(sol)}" width="${w}" height="1" fill="${k}" opacity=".55"/>`;
+    const pas = w < 8 ? 1.6 : 2.3;
+    for (let x = pas / 2 + 0.2; x < w; x += pas) s += `<rect x="${f1(x - 0.35)}" y="0" width=".7" height="${h}" fill="#4A5566"/><rect x="${f1(x - 0.35)}" y="0" width=".25" height="${h}" fill="#FFFFFF" opacity=".25"/>`;
+    s += `<rect x="0" y="${f1(h * 0.3)}" width="${w}" height=".7" fill="#4A5566"/>`;
+    return s;
+  },
+  drone(w, h, k, a) {
+    // Établi avec un drone posé, écran du retour caméra thermique au mur.
+    const sol = h - 1.2, et = sol - Math.min(6, h * 0.32);
+    const sx = w * 0.56, sw = w * 0.38, sy = h * 0.1, sh = Math.min(h * 0.32, sw * 0.7);
+    const dx = w * 0.3, dy = et - 1.6;
+    return `<rect x="${f1(sx - 0.6)}" y="${f1(sy - 0.6)}" width="${f1(sw + 1.2)}" height="${f1(sh + 1.2)}" fill="${k}"/>
+      <rect x="${f1(sx)}" y="${f1(sy)}" width="${f1(sw)}" height="${f1(sh)}" fill="#1B2440"/>
+      <circle cx="${f1(sx + sw * 0.45)}" cy="${f1(sy + sh * 0.55)}" r="${f1(sh * 0.36)}" fill="#C2410C"/><circle cx="${f1(sx + sw * 0.45)}" cy="${f1(sy + sh * 0.55)}" r="${f1(sh * 0.2)}" fill="${a}"/><circle cx="${f1(sx + sw * 0.45)}" cy="${f1(sy + sh * 0.5)}" r="${f1(sh * 0.08)}" fill="#FFF1C2"/>
+      <path d="M${f1(sx + sw * 0.8)} ${f1(sy + sh * 0.2)} v${f1(sh * 0.6)} M${f1(sx + sw * 0.1)} ${f1(sy + sh * 0.2)} h${f1(sw * 0.15)}" stroke="#63B0FF" stroke-width=".4"/>
+      <rect x="${f1(w * 0.06)}" y="${f1(et)}" width="${f1(w * 0.62)}" height="1.1" fill="${k}"/><path d="M${f1(w * 0.1)} ${f1(et + 1.1)} V${f1(sol)} M${f1(w * 0.64)} ${f1(et + 1.1)} V${f1(sol)}" stroke="${k}" stroke-width=".8"/>
+      <path d="M${f1(dx - 4.4)} ${f1(dy - 0.4)} H${f1(dx + 4.4)}" stroke="${k}" stroke-width=".6"/><rect x="${f1(dx - 1.6)}" y="${f1(dy - 0.8)}" width="3.2" height="1.6" rx=".6" fill="${k}"/>
+      <ellipse cx="${f1(dx - 4.4)}" cy="${f1(dy - 0.9)}" rx="1.8" ry=".35" fill="${k}"/><ellipse cx="${f1(dx + 4.4)}" cy="${f1(dy - 0.9)}" rx="1.8" ry=".35" fill="${k}"/>
+      <path d="M${f1(dx - 1.2)} ${f1(dy + 0.8)} l-.6 .8 M${f1(dx + 1.2)} ${f1(dy + 0.8)} l.6 .8" stroke="${k}" stroke-width=".4"/>
+      <rect x="0" y="${f1(sol)}" width="${w}" height="1.2" fill="${k}" opacity=".55"/>`;
+  },
+  crise(w, h, k, a) {
+    // Mur d'écrans (carte du secteur au centre, une alerte rouge) et, devant, la table de crise vue de dos.
+    const n = w < 14 ? 2 : 3, mur = h * 0.6, gap = 0.7;
+    const cw = (w - 1.4 - gap * (n - 1)) / n, ch = (mur - 1 - gap) / 2;
+    let s = `<rect x="0" y="0" width="${w}" height="${f1(mur + 0.6)}" fill="#0A1220"/>`;
+    for (let r = 0; r < 2; r++) for (let c = 0; c < n; c++) {
+      const x = 0.7 + c * (cw + gap), y = 0.7 + r * (ch + gap), j = r * n + c, centre = c === Math.floor(n / 2);
+      const alerte = j === n * 2 - 1;
+      s += `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(cw)}" height="${f1(ch)}" fill="${alerte ? '#7A1F1F' : centre ? '#1F5E8C' : '#1C4770'}"/>`;
+      if (centre) s += `<path d="M${f1(x + cw * 0.1)} ${f1(y + ch * 0.7)} L${f1(x + cw * 0.35)} ${f1(y + ch * 0.25)} L${f1(x + cw * 0.65)} ${f1(y + ch * 0.45)} L${f1(x + cw * 0.9)} ${f1(y + ch * 0.2)}" stroke="#8CC8F5" stroke-width=".35" fill="none"/><circle cx="${f1(x + cw * 0.6)}" cy="${f1(y + ch * 0.5)}" r=".7" fill="${a}"${r ? '' : ' class="hp-balise"'}/>`;
+      else if (alerte) { const t2 = Math.min(ch * 0.6, cw * 0.7); s += `<path d="M${f1(x + cw / 2)} ${f1(y + (ch - t2) / 2)} l${f1(t2 / 2)} ${f1(t2)} h${f1(-t2)} Z" fill="#FF6E6A"/>`; }
+      else for (let b = 0; b < 3; b++) s += `<rect x="${f1(x + cw * (0.15 + b * 0.27))}" y="${f1(y + ch * (0.75 - (b + 1) * 0.15))}" width="${f1(cw * 0.18)}" height="${f1(ch * (b + 1) * 0.15)}" fill="#63B0FF" opacity=".75"/>`;
+    }
+    // Têtes et épaules, table.
+    const ty = h * 0.82;
+    for (const fx of (w < 14 ? [0.3, 0.72] : [0.2, 0.5, 0.8])) s += `<circle cx="${f1(w * fx)}" cy="${f1(ty - 3.6)}" r="1.4" fill="${k}"/><path d="M${f1(w * fx - 2.6)} ${f1(ty)} Q${f1(w * fx)} ${f1(ty - 3.8)} ${f1(w * fx + 2.6)} ${f1(ty)} Z" fill="${k}"/>`;
+    s += `<rect x="0" y="${f1(ty)}" width="${w}" height="${f1(h - ty)}" fill="${k}"/><rect x="0" y="${f1(ty)}" width="${w}" height=".5" fill="#63B0FF" opacity=".35"/>`;
+    return s;
+  },
+  sapv(w, h, k) {
+    // Petit salon d'accueil : fauteuil, table basse et tasse, lampadaire, plante et cadre au mur.
+    const sol = h - 1.2;
+    return `<rect x="${f1(w * 0.42)}" y="${f1(h * 0.14)}" width="${f1(w * 0.26)}" height="${f1(Math.min(h * 0.24, w * 0.2))}" fill="none" stroke="${k}" stroke-width=".6" opacity=".7"/>
+      <path d="M${f1(w * 0.46)} ${f1(h * 0.14 + Math.min(h * 0.24, w * 0.2) - 0.8)} l${f1(w * 0.06)} ${f1(-Math.min(h * 0.12, w * 0.1))} l${f1(w * 0.05)} ${f1(Math.min(h * 0.07, w * 0.06))} l${f1(w * 0.06)} ${f1(-Math.min(h * 0.08, w * 0.07))}" stroke="${k}" stroke-width=".4" fill="none" opacity=".6"/>
+      <path d="M${f1(w * 0.84)} ${f1(sol)} V${f1(sol - 11)}" stroke="${k}" stroke-width=".5"/><path d="M${f1(w * 0.84 - 2)} ${f1(sol - 11)} h4 l-1 -2.6 h-2 Z" fill="${k}"/>
+      <path d="M${f1(w * 0.36)} ${f1(sol)} V${f1(sol - 7.5)} Q${f1(w * 0.36)} ${f1(sol - 9)} ${f1(w * 0.36 + 1.6)} ${f1(sol - 9)} H${f1(w * 0.62)} Q${f1(w * 0.64)} ${f1(sol - 9)} ${f1(w * 0.64)} ${f1(sol - 7.5)} V${f1(sol)} Z" fill="${k}"/>
+      <rect x="${f1(w * 0.33)}" y="${f1(sol - 4.6)}" width="${f1(w * 0.34)}" height="2.6" rx="1" fill="${k}"/><rect x="${f1(w * 0.38)}" y="${f1(sol - 5.4)}" width="${f1(w * 0.22)}" height="1" fill="#FFFFFF" opacity=".18"/>
+      <rect x="${f1(w * 0.68)}" y="${f1(sol - 3)}" width="${f1(w * 0.12)}" height=".8" fill="${k}"/><path d="M${f1(w * 0.74)} ${f1(sol - 2.2)} V${f1(sol)}" stroke="${k}" stroke-width=".6"/><rect x="${f1(w * 0.72)}" y="${f1(sol - 4.4)}" width="1.3" height="1.4" rx=".3" fill="${k}"/>
+      <path d="M${f1(w * 0.07)} ${f1(sol - 3)} h${f1(w * 0.16)} l-1 3 h${f1(-w * 0.16 + 2)} Z" fill="${k}"/>
+      <path d="M${f1(w * 0.15)} ${f1(sol - 3)} q-3 -3 -2 -8 q2 4 2 8 Z M${f1(w * 0.15)} ${f1(sol - 3)} q3 -2.5 3.5 -6.5 q-2 3.2 -3.5 6.5 Z M${f1(w * 0.15)} ${f1(sol - 3)} q.5 -5 -.6 -9.5" fill="${k}" stroke="${k}" stroke-width=".4"/>
+      <rect x="0" y="${f1(sol)}" width="${w}" height="1.2" fill="${k}" opacity=".55"/>`;
+  },
 };
 
 /**
  * Vitre avec l'intérieur de la pièce. `lit` : lumière allumée (soir et nuit).
  * Le jour, la vitre reflète le ciel et laisse deviner l'intérieur.
  */
+// Pièces toujours éclairées de l'intérieur par leurs écrans (fond sombre, même le jour).
+const SALLE_ECRANS = { logiciel: ['#141E2B', '#2A3A4F', '#3DD39A'], crise: ['#0E1726', '#16233A', '#E1453A'] };
 function vitre(id, x, y, w, h, { P, lit, moment, mix, cadre, clip }) {
-  const fond = id === 'logiciel' ? '#141E2B' : lit ? LIT : P.vitre;
-  const k = id === 'logiciel' ? '#2A3A4F' : lit ? '#7A4A12' : mix(P.vitre, '#0C1124', 0.45);
-  const a = id === 'logiciel' ? '#3DD39A' : id === 'tir' ? '#E1453A' : '#FFFFFF';
+  const ecrans = SALLE_ECRANS[id];
+  const fond = ecrans ? ecrans[0] : lit ? (id === 'sapv' ? LIT_DOUX : LIT) : P.vitre;
+  const k = ecrans ? ecrans[1] : lit ? (id === 'sapv' ? '#8A5A3A' : '#7A4A12') : mix(P.vitre, '#0C1124', 0.45);
+  const a = ecrans ? ecrans[2] : id === 'tir' ? '#E1453A' : id === 'drone' ? '#FFB23F' : '#FFFFFF';
   let s = `<clipPath id="${clip}"><rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}"/></clipPath>
     <rect x="${f1(x - 0.8)}" y="${f1(y - 0.8)}" width="${f1(w + 1.6)}" height="${f1(h + 1.6)}" rx=".6" fill="${cadre}"/>
     <rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" fill="${fond}"/>`;
-  if (lit && id !== 'logiciel') s += `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h * 0.45)}" fill="#FFE7B0" opacity=".45"/>`;
+  if (lit && !ecrans) s += `<rect x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h * 0.45)}" fill="${id === 'sapv' ? '#FFF1E0' : '#FFE7B0'}" opacity=".45"/>`;
   s += `<g clip-path="url(#${clip})"><g transform="translate(${f1(x)},${f1(y)})">${INTERIEUR[id](w, h, k, a)}</g>`;
   if (moment === 'jour') s += `<path d="M${f1(x + w * 0.15)} ${f1(y + h)} L${f1(x + w * 0.55)} ${f1(y)} H${f1(x + w * 0.72)} L${f1(x + w * 0.32)} ${f1(y + h)} Z" fill="#FFFFFF" opacity=".16"/>`;
   s += '</g>';
@@ -119,8 +188,10 @@ function vitre(id, x, y, w, h, { P, lit, moment, mix, cadre, clip }) {
 /**
  * L'aile complète. `ax` : bord gauche ; `base` : niveau du trottoir ; `SA` : skin choisi ou null.
  * `teinte` assombrit une couleur de jour selon le moment ; `mix` mélange deux couleurs.
+ * `garde` : quelqu'un dort en cellule cette nuit (une fenêtre du complexe cellulaire reste allumée) ;
+ * sans précision, on laisse une cellule allumée.
  */
-export function aileSvg({ ids, ax, base, P, moment, SA, teinte, mix, uid }) {
+export function aileSvg({ ids, ax, base, P, moment, SA, teinte, mix, uid, garde = true }) {
   if (!ids.length) return '';
   const aw = largeurAile(ids.length), ah = HAUT_AILE, atop = base - ah;
   const lit = P.allume > 0;
@@ -149,6 +220,43 @@ export function aileSvg({ ids, ax, base, P, moment, SA, teinte, mix, uid }) {
       if (id === 'sport') t += [0, 1].map((j) => `<path d="M${x + 4 + j * 11} ${atop - 2} l2.5 -5.5 h8 l-2.5 5.5 Z" fill="${teinte('#2B4C7E')}" stroke="${teinte('#9FB0C0')}" stroke-width=".5"/><path d="M${x + 7.6 + j * 11} ${atop - 4.8} h8" stroke="${teinte('#9FB0C0')}" stroke-width=".3" opacity=".6"/>`).join('');
       if (id === 'tir') t += `<rect x="${x + 19}" y="${atop - 12}" width="4" height="10" fill="${P.mat}"/><rect x="${x + 17.5}" y="${atop - 14}" width="7" height="2.4" rx=".8" fill="${P.toit2}"/><path d="M${x + 19} ${atop - 6} H${x + 13} V${atop - 2}" stroke="${P.mat}" stroke-width="2.2" fill="none"/>`;
       if (id === 'logiciel') t += `<rect x="${x + 6}" y="${atop - 9}" width="15" height="7" rx="1" fill="${P.toit}"/><circle cx="${x + 10.5}" cy="${atop - 5.5}" r="2.4" fill="${P.toit2}"/><path d="M${x + 8.1} ${atop - 5.5} H${x + 12.9} M${x + 10.5} ${atop - 7.9} V${atop - 3.1}" stroke="${P.toit}" stroke-width=".5"/>${[15, 17, 19].map((dx) => `<rect x="${x + dx}" y="${atop - 7.8}" width=".8" height="4.6" fill="${P.toit2}"/>`).join('')}`;
+      if (id === 'cachots') {
+        // Concertina sur l'acrotère et extracteur d'air.
+        t += `<rect x="${x + 4}" y="${atop - 8}" width="7" height="5" rx=".8" fill="${P.toit}"/><path d="M${x + 5} ${atop - 6.5} h5 M${x + 5} ${atop - 5} h5" stroke="${P.toit2}" stroke-width=".5"/>`;
+        t += `<path d="M${x + 13} ${atop - 3} V${atop - 8} M${x + 28} ${atop - 3} V${atop - 8}" stroke="${P.mat}" stroke-width=".6"/>`;
+        for (let cx = x + 14.2; cx < x + 28; cx += 2.2) t += `<circle cx="${f1(cx)}" cy="${atop - 6}" r="1.5" fill="none" stroke="${teinte('#A9B4C0')}" stroke-width=".35"/>`;
+      }
+      if (id === 'drone') {
+        // Hélisurface : plot surélevé, « H » dans un cercle, balises ; le drone fait du surplace au-dessus.
+        const cx = x + 15, cy = atop - 6.4;
+        t += `<rect x="${x + 6}" y="${cy}" width="1.2" height="${atop - 3 - cy}" fill="${P.mat}"/><rect x="${x + 22.8}" y="${cy}" width="1.2" height="${atop - 3 - cy}" fill="${P.mat}"/>
+          <ellipse cx="${cx}" cy="${cy + 0.8}" rx="12.5" ry="3.4" fill="${mix(P.toit, '#000000', 0.25)}"/><ellipse cx="${cx}" cy="${cy}" rx="12.5" ry="3.4" fill="${teinte('#3C4656')}"/>
+          <ellipse cx="${cx}" cy="${cy}" rx="9" ry="2.4" fill="none" stroke="${teinte('#F2D02E')}" stroke-width=".6"/>
+          <path d="M${cx - 2.6} ${cy - 1.3} V${cy + 1.3} M${cx + 2.6} ${cy - 1.3} V${cy + 1.3} M${cx - 2.6} ${cy} H${cx + 2.6}" stroke="${teinte('#FFFFFF')}" stroke-width=".8"/>
+          ${[x + 3.4, x + 26.6].map((bx) => `<circle cx="${bx}" cy="${cy}" r=".7" fill="${lit ? '#7CF29A' : teinte('#3DD39A')}"/>${lit ? `<circle cx="${bx}" cy="${cy}" r="2" fill="#7CF29A" opacity=".3"/>` : ''}`).join('')}`;
+        const dy = cy - 9;
+        t += `<g class="hp-flotte" style="animation-delay:-.6s">
+          <path d="M${cx - 6} ${dy} H${cx + 6}" stroke="#1D2335" stroke-width=".9"/>
+          <rect x="${cx - 2.4}" y="${dy - 0.8}" width="4.8" height="2.4" rx=".9" fill="${teinte('#EDF0FA')}"/><rect x="${cx - 2.4}" y="${dy + 0.6}" width="4.8" height=".6" fill="${teinte('#2F6FB5')}"/>
+          <circle cx="${cx}" cy="${dy + 2.1}" r=".9" fill="#1D2335"/>
+          <path d="M${cx - 6} ${dy} V${dy - 1} M${cx + 6} ${dy} V${dy - 1}" stroke="#1D2335" stroke-width=".6"/>
+          <ellipse cx="${cx - 6}" cy="${dy - 1.2}" rx="3" ry=".45" fill="${teinte('#9FB0C0')}" opacity=".8"/><ellipse cx="${cx + 6}" cy="${dy - 1.2}" rx="3" ry=".45" fill="${teinte('#9FB0C0')}" opacity=".8"/>
+          <path d="M${cx - 1.6} ${dy + 1.6} l-.9 1.5 h-.8 M${cx + 1.6} ${dy + 1.6} l.9 1.5 h.8" stroke="#1D2335" stroke-width=".4" fill="none"/>
+          <circle class="hp-balise" cx="${cx + 2.4}" cy="${dy - 0.2}" r=".55" fill="#FF4A3D"/><circle cx="${cx - 2.4}" cy="${dy - 0.2}" r=".55" fill="#3DD39A"/>
+          ${lit ? `<path d="M${cx - 0.6} ${dy + 3} L${cx - 3.2} ${cy - 1} H${cx + 3.2} L${cx + 0.6} ${dy + 3} Z" fill="#FFF1C2" opacity=".18"/>` : ''}</g>`;
+      }
+      if (id === 'crise') {
+        // Parabole satellite et mât d'antennes avec son feu.
+        t += `<rect x="${x + 7.4}" y="${atop - 6}" width="1.2" height="3" fill="${P.mat}"/><path d="M${x + 3} ${atop - 9.5} A6 6 0 0 0 ${x + 12.4} ${atop - 4.2} Z" fill="${teinte('#E4EAF0')}"/><path d="M${x + 7.7} ${atop - 6.8} L${x + 5.2} ${atop - 9.6}" stroke="${P.mat}" stroke-width=".5"/><circle cx="${x + 5}" cy="${atop - 9.8}" r=".7" fill="${P.mat}"/>
+          <line x1="${x + 23}" y1="${atop - 2}" x2="${x + 23}" y2="${atop - 16}" stroke="${P.mat}" stroke-width=".9"/><path d="M${x + 20.5} ${atop - 12} H${x + 25.5} M${x + 21.3} ${atop - 9} H${x + 24.7}" stroke="${P.mat}" stroke-width=".6"/>
+          <circle cx="${x + 23}" cy="${atop - 16.8}" r="2.8" fill="#FF6E6A" opacity="${lit ? 0.25 : 0}"/><circle class="hp-balise" cx="${x + 23}" cy="${atop - 16.8}" r=".9" fill="#FF4A3D"/>`;
+      }
+      if (id === 'sapv') {
+        // Toit-jardin : bacs et petits arbustes.
+        t += `<rect x="${x + 3}" y="${atop - 5}" width="24" height="2.2" fill="${teinte('#8A5A36')}"/>`;
+        [[6, 2.6], [10.5, 3.2], [15.5, 2.4], [20, 3.4], [24.5, 2.6]].forEach(([dx, r], j) => { t += `<circle cx="${x + dx}" cy="${f1(atop - 5 - r * 0.55)}" r="${r}" fill="${teinte(j % 2 ? '#4E9A5E' : '#3E7D4F')}"/>`; });
+        t += `<circle cx="${x + 10.5}" cy="${atop - 8.4}" r=".7" fill="${teinte('#F28FB0')}"/><circle cx="${x + 20}" cy="${atop - 8.8}" r=".7" fill="${teinte('#FFD27A')}"/>`;
+      }
       if (id === 'antenne') t += `<line x1="${x + 24}" y1="${atop - 2}" x2="${x + 24}" y2="${atop - 13}" stroke="${P.mat}" stroke-width=".8"/><path d="M${x + 24} ${atop - 13} h6 l-1.5 2 l1.5 2 h-6 Z" fill="#FFFFFF" opacity=".9"/><rect x="${x + 24}" y="${atop - 13}" width="2" height="4" fill="${teinte('#2F6FB5')}"/>`;
     });
     ids.forEach((id, i) => {
@@ -185,6 +293,41 @@ export function aileSvg({ ids, ax, base, P, moment, SA, teinte, mix, uid }) {
         const ay = atop + 11;
         t += `<rect x="${x + 1.5}" y="${ay - 0.8}" width="27" height=".8" fill="${cadre}"/>`;
         for (let k2 = 0, xx = x + 1.5; xx < x + 28.5; xx += 3, k2++) t += `<path d="M${f1(xx)} ${ay} h3 v3.2 q-1.5 1.8 -3 0 Z" fill="${k2 % 2 ? teinte('#F4F8FB') : teinte('#2F6FB5')}"/>`;
+      } else if (id === 'cachots') {
+        // Béton à bandeaux, trois fenêtres de cellule à barreaux, porte blindée à judas, caméra de surveillance.
+        for (let yy = atop + 11; yy < base - 3; yy += 4) t += `<rect x="${x + 1}" y="${yy}" width="28" height=".5" fill="${sombre}" opacity=".5"/>`;
+        [0, 1, 2].forEach((j) => {
+          const wx = x + 3.6 + j * 8.4, allume = lit && garde && j === 1;
+          if (allume) t += `<circle cx="${wx + 3}" cy="${atop + 17}" r="5" fill="#FFC56B" opacity=".18"/>`;
+          t += vitre(id, wx, atop + 13, 6, 8, { P, lit: allume, moment, mix, cadre, clip: `${clip(i)}-${j}` });
+          t += `<rect x="${wx - 1}" y="${atop + 21.6}" width="8" height=".9" fill="${sombre}"/>`;
+        });
+        t += `<rect x="${x + 10}" y="${base - 13.5}" width="10" height="10.5" fill="${cadre}"/><rect x="${x + 11}" y="${base - 12.5}" width="8" height="9.5" fill="${mix(P.porte, '#5B6B7D', 0.4)}"/>
+          <rect x="${x + 13.6}" y="${base - 11}" width="2.8" height="1.4" fill="${cadre}"/><rect x="${x + 11}" y="${base - 7.4}" width="8" height=".5" fill="${cadre}" opacity=".6"/><rect x="${x + 17}" y="${base - 7}" width="1.4" height=".9" rx=".4" fill="#C8D3DD"/>
+          <path d="M${x + 27} ${base - 15} h-2 v1.6" stroke="${cadre}" stroke-width=".6" fill="none"/><rect x="${x + 22.4}" y="${base - 13.8}" width="4.2" height="1.8" rx=".5" fill="${teinte('#C8D3DD')}" transform="rotate(14 ${x + 24.5} ${base - 12.9})"/><circle class="hp-balise" cx="${x + 22.9}" cy="${base - 13.4}" r=".35" fill="#FF4A3D"/>`;
+      } else if (id === 'drone') {
+        // Bande de balisage jaune et noir, grande baie sur l'atelier des télépilotes.
+        for (let xx = x + 1, k2 = 0; xx < x + 29; xx += 2, k2++) t += `<rect x="${xx}" y="${atop + 9.6}" width="2" height="1.2" fill="${k2 % 2 ? teinte('#1D1A15') : teinte('#F2D02E')}"/>`;
+        t += vitre(id, x + 3, atop + 12.5, 24, ah - 17.5, { P, lit, moment, mix, cadre, clip: clip(i) });
+        t += `<rect x="${x + 3}" y="${atop + 12.5}" width="24" height="1.4" fill="${cadre}" opacity=".7"/>`;
+      } else if (id === 'crise') {
+        // Large baie sur le mur d'écrans, qui jette sa lueur bleue dehors le soir.
+        if (lit) t += `<ellipse cx="${x + 15}" cy="${atop + 24}" rx="14" ry="10" fill="#63B0FF" opacity=".1"/>`;
+        t += vitre(id, x + 2.5, atop + 12, 25, ah - 17, { P, lit, moment, mix, cadre, clip: clip(i) });
+        t += `<rect x="${x + 2.5}" y="${atop + 12}" width="25" height="${ah - 17}" fill="#63B0FF" opacity="${lit ? 0.1 : 0.05}"/><rect x="${x + 10.8}" y="${atop + 12}" width=".7" height="${ah - 17}" fill="${cadre}"/><rect x="${x + 18.6}" y="${atop + 12}" width=".7" height="${ah - 17}" fill="${cadre}"/>`;
+      } else if (id === 'sapv') {
+        // Façade accueillante : bardage bois autour de la porte, plaque douce, banc et plante, applique chaude.
+        t += vitre(id, x + 3, atop + 15, 12, ah - 20, { P, lit, moment, mix, cadre, clip: clip(i) });
+        const bois = teinte('#B98A5E');
+        t += `<rect x="${x + 17.6}" y="${atop + 10.5}" width="11.4" height="${ah - 13.5}" fill="${bois}"/>`;
+        for (let xx = x + 18.8; xx < x + 29; xx += 1.6) t += `<rect x="${f1(xx)}" y="${atop + 10.5}" width=".4" height="${ah - 13.5}" fill="${mix(bois, '#000000', 0.25)}" opacity=".6"/>`;
+        t += `<rect x="${x + 19.2}" y="${atop + 18.2}" width="8.6" height="${ah - 21.2}" rx="1" fill="${cadre}"/><rect x="${x + 20}" y="${atop + 19}" width="7" height="${ah - 22}" rx=".6" fill="${lit ? LIT_DOUX : P.vitre}" opacity="${lit ? 0.85 : 1}"/>
+          <rect x="${x + 21}" y="${atop + 28}" width="5" height=".8" fill="#C8D3DD"/>
+          <rect x="${x + 19.4}" y="${atop + 12.6}" width="8.2" height="4" rx="2" fill="${teinte('#F28FB0')}"/><path d="M${x + 23.5} ${atop + 15.8} c-2.2 -1.4 -1.6 -3 0 -1.9 c1.6 -1.1 2.2 .5 0 1.9 Z" fill="#FFFFFF"/>
+          ${lit ? `<circle cx="${x + 18.6}" cy="${atop + 20.9}" r="2.2" fill="#FFD9A8" opacity=".35"/>` : ''}<rect x="${x + 18.1}" y="${atop + 20}" width="1" height="1.8" rx=".4" fill="${lit ? '#FFE7B0' : teinte('#F4EFE3')}"/>
+          <rect x="${x + 3.5}" y="${base - 6}" width="11" height="1.2" rx=".5" fill="${teinte('#8A5A36')}"/><path d="M${x + 4.6} ${base - 4.8} V${base - 3} M${x + 13.4} ${base - 4.8} V${base - 3}" stroke="${teinte('#5B4630')}" stroke-width=".8"/>
+          <path d="M${x + 15.4} ${base - 6} h2.4 l-.4 3 h-1.6 Z" fill="${teinte('#C8693E')}"/>
+          <path d="M${x + 16.6} ${base - 6} q-2.6 -2.4 -1.6 -6.4 q1.6 3 1.6 6.4 Z M${x + 16.6} ${base - 6} q2.4 -1.8 2.4 -5 q-1.6 2.4 -2.4 5 Z" fill="${teinte('#4E9A5E')}"/>`;
       }
       // Écusson de l'annexe.
       t += ecusson(id, x + (id === 'tir' ? 8 : 15), atop + 5.6);

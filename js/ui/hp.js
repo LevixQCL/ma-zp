@@ -1,3 +1,4 @@
+import { chefACreer, creationChefHtml, portraitChef, ficheChefHtml } from './chef.js';
 import { titresDefi } from './defis.js';
 import { DOCTRINES } from '../engine/constants.js';
 import { maxDemarchesDe } from '../engine/enquete.js';
@@ -365,7 +366,7 @@ export function renderHP() {
         <span class="row" style="gap:6px"><span class="pill">Tour ${T} · Saison ${st.season}</span>
           <button type="button" class="iconbtn roue" data-action="menu-hp" aria-expanded="${!!S.menuHp}" aria-label="Guide, nouveautés et profil">${icon('gear', 20)}${noteVue() ? '' : '<i class="roue-pastille" aria-hidden="true"></i>'}</button></span>
         <a href="#classement" class="row" style="gap:6px;text-decoration:none;color:var(--text)">
-          <span style="color:var(--amber)">${icon('shield', 14)}</span><span class="small" style="font-weight:600">${g.nom}</span>
+          ${z.chef ? portraitChef(z.uid, 26, { galons: false }) : `<span style="color:var(--amber)">${icon('shield', 14)}</span>`}<span class="small" style="font-weight:600">${g.nom}</span>
           <span role="img" aria-label="${z.ps} points de service${n ? ` sur ${n.ps}` : ''}" style="width:56px;height:5px;background:var(--line);border-radius:3px;display:inline-block"><span style="display:block;width:${pct}%;height:5px;background:var(--amber);border-radius:3px"></span></span>
         </a>
       </div>
@@ -377,6 +378,7 @@ export function renderHP() {
       ${S.backend.isMaster(S.user) ? `<a class="list-row" href="#admin">${icon('shield', 18)}<span>Maître du jeu</span></a>` : ''}
     </nav>` : ''}
 
+    ${chefACreer() ? creationChefHtml() : ''}
     ${cetteNuitHtml(z)}
     ${ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue })}
     ${pistesHpHtml(z)}
@@ -511,6 +513,8 @@ export function renderProfil() {
       </div>` : ''}
       ${affiches.length ? `<div class="pc-affiches" aria-label="Suspects arrêtés">${affiches.slice(0, 6).map((a) => `<span class="pc-affiche" title="${esc(a.titre)} · saison ${a.season}"><b>ARRÊTÉ</b><span>${esc(String(a.nom).split(' ')[0])}</span></span>`).join('')}</div>` : ''}
     </section>
+    ${z.chef ? ficheChefHtml(z.uid, { moi: true }) : ''}
+    ${z.chef && !chefACreer() ? (S.chefEdit ? creationChefHtml() : '<button type="button" class="btn small outline block" data-action="chef-modifier">Changer le portrait ou la devise de mon chef</button>') : ''}
     <details class="card repli" data-k="profil-edit" ${editer ? 'open' : ''}>
       <summary><span style="color:var(--amber)">${icon('pencil', 18)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Modifier ma zone</span><span class="tiny muted">pseudo, nom, code et couleur</span></span>${icon('chevron', 16)}</summary>
     <form class="col" data-form="profil" style="gap:12px">

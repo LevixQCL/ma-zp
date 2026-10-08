@@ -697,6 +697,23 @@ async function onClick(e) {
         S.draft.alloc[s2] -= n;
         S.ordersDirty = true; toast(`${n} agent${n > 1 ? 's' : ''} libéré${n > 1 ? 's' : ''} : place-les dans la zone de non-droit (Terrain) ou dans un autre service.`); rerender(); break;
       }
+      case 'chef-modifier': S.chefEdit = true; S.chefBrouillon = { ...((S.player && S.player.chef) || {}) }; rerender(); break;
+      case 'chef-portrait': S.chefBrouillon = { ...(S.chefBrouillon || {}), portrait: el.dataset.v }; rerender(); break;
+      case 'chef-parcours': S.chefBrouillon = { ...(S.chefBrouillon || {}), parcours: el.dataset.v }; rerender(); break;
+      case 'chef-enregistrer': {
+        const dv = document.getElementById('chef-devise');
+        const chef = { ...((S.player && S.player.chef) || {}), ...(S.chefBrouillon || {}), devise: dv ? String(dv.value || '').trim().slice(0, 60) : '' };
+        if (!chef.portrait || !chef.parcours) break;
+        S.player = { ...(S.player || {}), chef };
+        await b.savePlayer(S.user.uid, S.player);
+        S.chefBrouillon = null; S.chefEdit = false; S.players = await b.getPlayers();
+        toast('Ton chef prend ses fonctions. Son parcours compte dès ce soir.'); rerender(); break;
+      }
+      case 'chef-agenda': { const v = el.dataset.v; const cur = S.draft.agenda || {}; S.draft.agenda = v === 'terrain' ? { type: 'terrain', service: cur.service || 'intervention' } : v === 'voisin' ? { type: 'voisin', zone: cur.zone || null } : { type: v }; S.ordersDirty = true; rerender(); break; }
+      case 'chef-talent': {
+        const z0 = myZone(); const cur = [...(S.draft.talents || (z0.chef && z0.chef.talents) || [])]; const v = el.dataset.v;
+        S.draft.talents = cur.includes(v) ? cur.filter((t) => t !== v) : [...cur, v].slice(0, 3); S.ordersDirty = true; rerender(); break;
+      }
       case 'doctrine': S.draft.doctrine = S.draft.doctrine === el.dataset.k ? null : el.dataset.k; S.ordersDirty = true; rerender(); break;
       case 'piste-toggle': basculerPiste(el.dataset.k); S.ordersDirty = true; rerender(); break;
       case 'dep-toggle': {
@@ -1424,6 +1441,10 @@ async function onChange(e) {
     if (eg) eg.partenaire = el.value || null;
     S.ordersDirty = true; rerender();
   }
+  if (el.dataset.change === 'chef-service' && S.draft) { S.draft.agenda = { type: 'terrain', service: el.value }; S.ordersDirty = true; rerender(); }
+  if (el.dataset.change === 'chef-voisin' && S.draft) { S.draft.agenda = { type: 'voisin', zone: el.value || null }; S.ordersDirty = true; rerender(); }
+  if (el.dataset.change === 'chef-parrainer' && S.draft) { S.draft.parrainer = el.value || null; S.ordersDirty = true; rerender(); }
+  if (el.dataset.change === 'demolir' && S.draft) { S.draft.demolir = el.value || null; S.ordersDirty = true; rerender(); }
   if (el.dataset.change === 'piste-cible') { cibler(el.dataset.k, el.value); S.ordersDirty = true; rerender(); }
   if (el.dataset.change === 'train-type') { S.trainType = el.value; nouvelEntrainement(); rerender(); }
   if (el.dataset.change === 'quest-capacite' && el.value) await saveQuestBonus('capacite', el.value);
