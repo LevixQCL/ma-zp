@@ -209,27 +209,39 @@ export function besoinsServices(e = estimations()) {
 }
 const PION = (c) => `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="12" cy="7.5" r="4" fill="${c}"/><path d="M4 21c0-5 3.6-8 8-8s8 3 8 8z" fill="${c}"/></svg>`;
 const MAX_CASES = 14;
-/** Badge d'état du service. */
+/** Agents de ce service partis en mission aujourd'hui (opération, enquête, FIPA…). */
+function prisDe(e, s) { return ((e && e.prises && e.prises[s]) || []).reduce((t, [k]) => t + k, 0); }
+/** Badge d'état du service, en clair : ce qu'il faut encore, ou que le besoin est couvert. */
 function badgeService(s, b, n) {
-  const t = { manque: [`Il manque ${b.bes - n}`, 'red'], juste: [`Il manque ${b.bes - n}`, 'amber'], ok: ['Rempli', 'green'], trop: [s === 'roulage' ? 'Chasse aux PV' : 'Beaucoup', 'amber'], libre: [s === 'roulage' ? 'Libre' : 'Rien en attente', 'blue'] }[b.st];
+  const k = b.bes - n;
+  const t = {
+    manque: [`Encore ${k} agent${k > 1 ? 's' : ''}`, 'red'],
+    juste: [`Encore ${k} agent${k > 1 ? 's' : ''}`, 'amber'],
+    ok: ['Besoin couvert', 'green'],
+    trop: [s === 'roulage' ? 'Chasse aux PV' : 'Au-delà du besoin', 'amber'],
+    libre: [s === 'roulage' ? 'Pas de besoin' : 'Rien en attente', 'blue'],
+  }[b.st];
   return `<span class="pill ${t[1]} svc-badge">${t[0]}</span>`;
 }
-/** Rangée de cases : pleines (agents qui couvrent le besoin), pointillées (places à pourvoir), pâles (en plus). */
+/**
+ * Rangée de cases, uniquement pour les agents qui travaillent AU SERVICE aujourd'hui (ceux partis en mission
+ * sont annoncés en dessous) : pleines = agents au service, pointillées = agents qui manquent, pâles = en plus.
+ */
 function casesService(s, b, n, e) {
   const coul = COUL_SVC[s];
-  // Agents de ce service partis en mission (opération, enquête, FIPA…) : ils restent comptés dans l'affectation
-  // mais ne travaillent pas au service aujourd'hui.
-  const pris = Math.min(n, ((e && e.prises && e.prises[s]) || []).reduce((t, [k]) => t + k, 0));
-  const nb = Math.max(b.bes, n), vus = Math.min(nb, MAX_CASES);
+  const pris = Math.min(n, prisDe(e, s));
+  const au = n - pris;
+  const besoin = s === 'roulage' ? 0 : Math.max(0, b.bes - pris);
+  const limite = s === 'roulage' ? Math.max(0, b.utile - pris) : besoin;
+  const nb = Math.max(besoin, au), vus = Math.min(nb, MAX_CASES);
   let h = '';
   for (let i = 0; i < vus; i++) {
-    const plein = i < n, enPlus = s === 'roulage' ? i >= b.utile : i >= b.bes;
-    if (plein && i >= n - pris) { h += `<span class="case mission" style="--c:${coul}" title="en mission aujourd’hui">${PION('#67719A')}</span>`; continue; }
+    const plein = i < au, enPlus = i >= limite;
     h += plein ? (enPlus ? `<span class="case plus" style="--c:${coul}">${PION(coul)}</span>` : `<span class="case pleine" style="--c:${coul}">${PION('#0C1124')}</span>`)
       : `<span class="case vide">${PION('#67719A')}</span>`;
   }
   if (nb > vus) h += `<span class="tiny muted">+${nb - vus}</span>`;
-  return h || '<span class="tiny muted">aucun agent</span>';
+  return h || `<span class="tiny muted">${pris ? 'personne au service' : 'aucun agent'}</span>`;
 }
 /** Barre de toute l'affectation : un segment par agent à répartir, couleur de son service ; pointillés = encore libres. */
 function barreAffectation(e) {
@@ -845,7 +857,7 @@ export function renderOrdres() {
         <button type="button" class="lien-statut" data-action="ventilation" aria-expanded="${!!S.ventilation}"><span id="alloc-status">${statusHtml(e)}</span><span class="tiny muted"> · ${S.ventilation ? 'masquer' : 'détail'}</span>${agentsHorsServices().some((h) => h.bloque) ? ' <span class="small bad">· agents bloqués</span>' : ''}</button></div>
       ${S.ventilation ? ventilationHtml(z, e) : ''}
       <div class="barre-aff" id="barre-aff" aria-hidden="true">${barreAffectation(e)}</div>
-      <div class="legende-cases tiny muted"><span><span class="case vide mini"></span>place à pourvoir</span><span><span class="case plus mini" style="--c:var(--faint)"></span>en plus du besoin</span>${Object.values(e.prises || {}).some((l) => l.length) ? '<span><span class="case mission mini" style="--c:var(--faint)"></span>en mission</span>' : ''}</div>
+      <div class="legende-cases tiny muted"><span><span class="case pleine mini" style="--c:var(--faint)"></span>au service</span><span><span class="case vide mini"></span>manquant</span><span><span class="case plus mini" style="--c:var(--faint)"></span>en plus du besoin</span></div>
       ${(() => { S._bs = besoinsServices(e); return ''; })()}
       ${SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc svc-${b.st}${ouvert ? ' ouvert' : ''}">
         <div class="svc-l"><i class="svc-c" style="background:${COUL_SVC[s2]}"></i>
