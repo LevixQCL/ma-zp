@@ -34,7 +34,7 @@ export function encheresHtml() {
   const lot = e && LOTS[e.lot];
   const offre = monOffre();
   const mesLots = (z.lots || []).map((l) => LOTS[l.id]).filter(Boolean);
-  const resume = lot ? `${esc(lot.nom)} · mise à prix ${e.prixMin} k€${offre ? ` · <strong class="ok">ton offre : ${offre} k€</strong>` : ''}` : 'Premier lot annoncé à 20:00';
+  const resume = lot ? `${esc(lot.nom)} · mise à prix ${e.prixMin} k€${offre ? (S.ordersDirty ? ` · <strong class="warn">offre de ${offre} k€ à valider</strong>` : ` · <strong class="ok">ton offre : ${offre} k€</strong>`) : ''}` : 'Premier lot annoncé à 20:00';
   let corps;
   if (!lot) corps = '<p class="small muted" style="margin:0">La salle des ventes ouvre après la prochaine résolution : un nouveau lot chaque jour.</p>';
   else {
@@ -54,6 +54,8 @@ export function encheresHtml() {
         <span class="tiny muted" style="text-align:center">${offre ? 'Débitée seulement si tu l’emportes.' : 'Aucune offre : touche + pour enchérir à partir de la mise à prix.'}</span>
       </div>
       ${offre > z.budget ? '<p class="small bad" style="margin:0">Ton budget actuel ne couvre pas cette offre : elle sera refusée si c’est encore le cas à 20:00.</p>' : ''}
+      ${offre && S.ordersDirty ? '<p class="small warn" style="margin:0">Offre pas encore envoyée : valide tes ordres avant 20:00, sinon elle ne compte pas.</p>' : ''}
+      ${offre && !S.ordersDirty && S.savedOrders ? `<p class="tiny ok" style="margin:0;text-align:center">${icon('check', 14)} Offre envoyée avec tes ordres.</p>` : ''}
       ${offre ? '<button type="button" class="btn small ghost block" data-action="offre-retirer">Retirer mon offre</button>' : ''}`}
       <p class="tiny muted" style="margin:0">Offres secrètes, dévoilées à 20:00. Le plus offrant gagne et paie son offre ; à égalité, la meilleure réputation l’emporte. Après un lot gagné, pas d’enchère pendant ${ENCHERE.delaiGain} tours.</p>`;
   }
