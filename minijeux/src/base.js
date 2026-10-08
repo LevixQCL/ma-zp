@@ -152,7 +152,7 @@ const Shell = (() => {
         <p class="small">Le niveau ${n+1} sera un peu plus dur.</p>
         <div class="row"><button class="btn primary" id="suite">Niveau ${n+1}</button><button class="btn" id="stop">Terminer la course</button></div>
         ${MODE==='train'?`<p class="small" style="opacity:.75">Besoin de partir ? Quitte le jeu : ta course reprendra au niveau ${n+1}.</p>`:''}`);
-      $('suite').onclick=jouerNiveau; $('stop').onclick=finDefi;
+      $('suite').onclick=jouerNiveau; $('stop').onclick=()=>confirmerFin(n+1);
       return;
     }
     run.erreurs++; sauverRun();
@@ -162,7 +162,18 @@ const Shell = (() => {
       <p class="small">Encore <b>${reste} erreur${reste>1?'s':''}</b> permise${reste>1?'s':''} <span class="coeurs">${'♥'.repeat(DEFI.erreurs-run.erreurs)}${'♡'.repeat(run.erreurs)}</span>.</p>${detailHtml}
       <div class="row"><button class="btn primary" id="suite">Retenter le niveau ${n}</button><button class="btn" id="stop">Terminer la course</button></div>
       ${MODE==='train'?`<p class="small" style="opacity:.75">Besoin de partir ? Quitte le jeu : ta course reprendra au niveau ${n}.</p>`:''}`);
-    $('suite').onclick=jouerNiveau; $('stop').onclick=finDefi;
+    $('suite').onclick=jouerNiveau; $('stop').onclick=()=>confirmerFin(n);
+  }
+  // « Terminer la course » efface la progression : on demande confirmation (un clic de travers ne doit rien coûter).
+  function confirmerFin(prochain){
+    const row=$('stop') && $('stop').parentNode; if(!row) return finDefi();
+    const box=document.createElement('div'); box.className='confirm-fin'; box.setAttribute('role','alertdialog'); box.setAttribute('aria-label','Confirmer la fin de la course');
+    box.innerHTML=`<p class="small"><b>Terminer la course ?</b> Ta progression sera perdue : la prochaine course repartira du niveau 1${prochain>1?` au lieu du niveau ${prochain}`:''}.</p>
+      <div class="row"><button class="btn primary" id="garder">Non, je continue</button><button class="btn danger" id="confStop">Oui, terminer</button></div>`;
+    row.replaceWith(box);
+    $('garder').onclick=()=>{ box.replaceWith(row); };
+    $('confStop').onclick=()=>finDefi();
+    $('garder').focus();
   }
   function finDefi(detailHtml=''){
     st.timerOn=false; st.mode='result';

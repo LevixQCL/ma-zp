@@ -111,6 +111,9 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .embed .top .timer{font-size:13px}
 .btn{flex:1;min-width:120px;border-radius:14px;padding:14px 12px;font:700 15px var(--f-body);cursor:pointer;border:1px solid var(--stroke-2);background:var(--surface);color:var(--ink);transition:transform .08s,filter .15s}
 .btn:active{transform:scale(.97)}
+.confirm-fin{border:1px solid color-mix(in srgb,#E5484D 55%,transparent);background:color-mix(in srgb,#E5484D 10%,transparent);border-radius:14px;padding:10px 12px;display:grid;gap:8px}
+.confirm-fin p{margin:0}
+.btn.danger{background:transparent;border-color:#E5484D;color:#FF7A7E}
 .btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink);box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 30%,transparent)}
 .btn.small{flex:0 0 auto;min-width:0;padding:9px 14px;font-size:13px;border-radius:12px}
 .tuto-mini{align-self:flex-end;display:inline-flex;align-items:center;gap:6px;margin:-4px 0 -6px;padding:5px 11px;border-radius:999px;border:1px solid var(--stroke);background:transparent;color:var(--mute);font:600 12.5px var(--f-body);cursor:pointer}

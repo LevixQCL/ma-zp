@@ -123,6 +123,9 @@ button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);ou
 .embed .top .timer{font-size:13px}
 .btn{flex:1;min-width:120px;border-radius:14px;padding:14px 12px;font:700 15px var(--f-body);cursor:pointer;border:1px solid var(--stroke-2);background:var(--surface);color:var(--ink);transition:transform .08s,filter .15s}
 .btn:active{transform:scale(.97)}
+.confirm-fin{border:1px solid color-mix(in srgb,#E5484D 55%,transparent);background:color-mix(in srgb,#E5484D 10%,transparent);border-radius:14px;padding:10px 12px;display:grid;gap:8px}
+.confirm-fin p{margin:0}
+.btn.danger{background:transparent;border-color:#E5484D;color:#FF7A7E}
 .btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink);box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 30%,transparent)}
 .btn.small{flex:0 0 auto;min-width:0;padding:9px 14px;font-size:13px;border-radius:12px}
 .tuto-mini{align-self:flex-end;display:inline-flex;align-items:center;gap:6px;margin:-4px 0 -6px;padding:5px 11px;border-radius:999px;border:1px solid var(--stroke);background:transparent;color:var(--mute);font:600 12.5px var(--f-body);cursor:pointer}
@@ -363,7 +366,7 @@ const Shell = (() => {
         <p class="small">Le niveau ${n+1} sera un peu plus dur.</p>
         <div class="row"><button class="btn primary" id="suite">Niveau ${n+1}</button><button class="btn" id="stop">Terminer la course</button></div>
         ${MODE==='train'?`<p class="small" style="opacity:.75">Besoin de partir ? Quitte le jeu : ta course reprendra au niveau ${n+1}.</p>`:''}`);
-      $('suite').onclick=jouerNiveau; $('stop').onclick=finDefi;
+      $('suite').onclick=jouerNiveau; $('stop').onclick=()=>confirmerFin(n+1);
       return;
     }
     run.erreurs++; sauverRun();
@@ -373,7 +376,18 @@ const Shell = (() => {
       <p class="small">Encore <b>${reste} erreur${reste>1?'s':''}</b> permise${reste>1?'s':''} <span class="coeurs">${'♥'.repeat(DEFI.erreurs-run.erreurs)}${'♡'.repeat(run.erreurs)}</span>.</p>${detailHtml}
       <div class="row"><button class="btn primary" id="suite">Retenter le niveau ${n}</button><button class="btn" id="stop">Terminer la course</button></div>
       ${MODE==='train'?`<p class="small" style="opacity:.75">Besoin de partir ? Quitte le jeu : ta course reprendra au niveau ${n}.</p>`:''}`);
-    $('suite').onclick=jouerNiveau; $('stop').onclick=finDefi;
+    $('suite').onclick=jouerNiveau; $('stop').onclick=()=>confirmerFin(n);
+  }
+  // « Terminer la course » efface la progression : on demande confirmation (un clic de travers ne doit rien coûter).
+  function confirmerFin(prochain){
+    const row=$('stop') && $('stop').parentNode; if(!row) return finDefi();
+    const box=document.createElement('div'); box.className='confirm-fin'; box.setAttribute('role','alertdialog'); box.setAttribute('aria-label','Confirmer la fin de la course');
+    box.innerHTML=`<p class="small"><b>Terminer la course ?</b> Ta progression sera perdue : la prochaine course repartira du niveau 1${prochain>1?` au lieu du niveau ${prochain}`:''}.</p>
+      <div class="row"><button class="btn primary" id="garder">Non, je continue</button><button class="btn danger" id="confStop">Oui, terminer</button></div>`;
+    row.replaceWith(box);
+    $('garder').onclick=()=>{ box.replaceWith(row); };
+    $('confStop').onclick=()=>finDefi();
+    $('garder').focus();
   }
   function finDefi(detailHtml=''){
     st.timerOn=false; st.mode='result';

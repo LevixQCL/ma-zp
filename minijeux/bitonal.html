@@ -314,7 +314,7 @@ function afficherIntro() {
       return `<div class="l${CLE_NIV[niveau] === k ? ' on' : ''}"><span>${NOM_NIV[{ normal: 'moyen' }[k] || k]}</span><span>${sc ? escH(nom) : 'pas encore de score'}${moi ? ` · toi : ${moi.toLocaleString('fr-BE')}` : ''}</span><b>${sc ? sc.toLocaleString('fr-BE') : '–'}</b></div>`;
     }).join('');
     $('records').hidden = false;
-    $('records').innerHTML = `<span class="t">🏆 Meilleurs scores de la partie</span>${lignes}<span class="tiny" style="color:var(--texte2)">${MODE === 'train' ? '✅ Cette course compte : bats un score et il s’affiche ici.' : 'Les urgences du jour et les courses du Challenge comptent.'}</span>`;
+    $('records').innerHTML = `<span class="t">🏆 Meilleurs scores de la partie</span>${lignes}<span class="tiny" style="color:var(--texte2)">${MODE === 'train' ? '✅ Cette course compte : bats un score et il s’affiche ici.<br>🛡️ Challenge : tes véhicules ne s’abîment pas (dégâts et usure uniquement pendant l’urgence du jour).' : 'Les urgences du jour et les courses du Challenge comptent.'}</span>`;
   }
   if (MODE) {
     const k = Number(Q.get(`k_${CLE_NIV[niveau]}`)) || 0;

@@ -556,7 +556,7 @@ function step(dt){
       for(const u of live){ if(u.held||u.alive===false||veh(u)||u.type==='bloc'||!u.p) continue;
         if(Math.hypot(u.p.x-c.x,(u.p.y-c.y)/.8)>G.r) continue;
         if(live.some(o=>o!==u&&o.p&&Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<GAZ_SEUL)) continue;
-        if(!best||u.d>best.d) best=u; }
+        if(!best||R.M.P[u.pi].len-u.d<R.M.P[best.pi].len-best.d) best=u; }
       if(best){ const g={cible:best,fin:R.t+G.dure,f:G.f,t0:R.t,cmd:true}; best.held=g; c.gaz=g; c.gazCd=G.cd+G.dure; c.gazT=R.t; R.stats.gaz=(R.stats.gaz||0)+1;
         if(best.p.x!==c.x) c.f=best.p.x>c.x?1:-1; fx(best.p.x,best.p.y-.9,'Gazé !','info');
         puff(best.p.x,best.p.y-.35,10,{v:.6,r:.06,grow:2.5,life:1,col:'rgba(235,225,175,',jit:.2,flat:.4});
@@ -569,6 +569,8 @@ function step(dt){
     tw.bar.hp-=PUSH[u.type]*(u.boost?1.3:1)*dt; if(tw.lvl>2&&spX(tw,'barbeles',false)) hit(u,4*dt);
     if(tw.bar.hp<=0) renverser(tw,true); }
   // moyens
+  // Priorité de tir : toujours l'émeutier le plus proche du commissariat (le moins de chemin restant à parcourir).
+  const reste=u=>R.M.P[u.pi].len-u.d, plusProche=l=>{ let b=null; for(const u of l) if(!b||reste(u)<reste(b)) b=u; return b; };
   for(const [id,tw] of towers){ const M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw), k=LV.dmg[tw.lvl-1]*spX(tw,'dmg')*((tw.type==='autopompe'||tw.type==='barrage')?1-.25*R.usure:1)*(auraOk&&Math.hypot(P.x-R.cmd.x,P.y-R.cmd.y)<=cn().aura?1+cn().bonus:1);
     tw.tgt=null; if(tw.cd>0) tw.cd-=dt;
     if(tw.transit){ if(R.t>=tw.transit.t0+tw.transit.dur) tw.transit=null; else continue; }
@@ -579,7 +581,7 @@ function step(dt){
         if(a.st==='back'){ mv(P.x,P.y,2.2); if(R.t>a.until){ a.st='ready'; a.e=a.max; } return; }
         if(a.st==='ready'){ a.e=Math.min(a.max,a.e+6*dt); mv(sl.x,sl.y,2.6);
           // engage le premier émeutier qui arrive sur sa ligne
-          let best=null; for(const u of live){ if(u.held||u.alive===false||veh(u)) continue; const db=blockOn(tw,u.pi); if(db===null) continue; if(u.d<db-.9||u.d>db+.25) continue; if(!best||u.d>best.d) best=u; }
+          let best=null; for(const u of live){ if(u.held||u.alive===false||veh(u)) continue; const db=blockOn(tw,u.pi); if(db===null) continue; if(u.d<db-.9||u.d>db+.25) continue; if(!best||reste(u)<reste(best)) best=u; }
           if(best){ a.u=best; best.held=a; a.st='eng'; } return; }
         if(a.st==='eng'){ const u=a.u; const L=mv(u.p.x,u.p.y,2.8);
           if(L<.42){ hit(u,(u.cache?.5:1)*M.dps[u.type]*k*((specOf(tw)||{}).vs?.[u.type]||1)*(R.bonus&&R.bonus.equip?1+.05*(R.bonus.equip-1):1)*dt); a.e-=STRAIN[u.type]*(u.boost?1.3:1)*dt; a.push=R.t; }
@@ -595,11 +597,10 @@ function step(dt){
           puff(c.x,c.y,14,{v:1.1,r:.07,grow:2.5,life:.7,col:'rgba(150,140,125,',flat:.35}); }
         if(k2>=1) tw.charge=null; continue; }
       if(!inR.length||tw.cd>0) continue;
-      const pr=u=>u.type==='meneur'?3:u.type==='casseur'?1:0; let best=null,bs=-1;
-      for(const u of inR){ const n=inR.filter(o=>Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<.75).length, sc=n+pr(u)*2; if(sc>bs){ bs=sc; best=u; } }
+      const best=plusProche(inR);
       tw.charge={t0:R.t,dur:1.3,x:best.p.x,y:best.p.y,hit:false}; tw.cd=M.cd[tw.lvl-1]*spX(tw,'cd'); tw.tgt=[best]; continue; }
-    if(tw.type==='autopompe'){ if(!inR.length) continue; tw.tgt=[inR[0]]; if(tw.cd>0) continue;
-      const spl=M.splash*(tw.lvl>2?spX(tw,'splash',1.2):1); let best=inR[0], bn=-1; for(const u of inR){ const n=live.filter(o=>Math.hypot(o.p.x-u.p.x,o.p.y-u.p.y)<=spl).length; if(n>bn){ bn=n; best=u; } }
+    if(tw.type==='autopompe'){ if(!inR.length) continue; const best=plusProche(inR); tw.tgt=[best]; if(tw.cd>0) continue;
+      const spl=M.splash*(tw.lvl>2?spX(tw,'splash',1.2):1);
       for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-best.p.x,o.p.y-best.p.y)<=spl){ hit(o,M.dmg*k*M.mult[o.type]*(R.meteo==='pluie'?.85:1),true); o.dispUntil=R.t+4; if(!o.held&&!veh(o)) o.d=Math.max(0,o.d-M.recul*(o.type==='bloc'?.35:1));
         if(o.type==='bloc'&&o.hp>0&&o.hp<o.max*BLOC_ECLATE.seuil) eclate(o); }
       R.flaques.push({x:best.p.x,y:best.p.y+.05,r:.5+.1*tw.lvl,until:R.t+(R.meteo==='pluie'?9:6),t:R.t});
