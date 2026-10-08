@@ -100,6 +100,16 @@ export function icon(name, size = 22, extra = '') {
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${PATHS[name] || ''}</svg>`;
 }
 
+function clePastilles() { return `mazp-pastilles-${(S.backend && S.backend.gameId && S.backend.gameId()) || ''}-${(S.user && S.user.uid) || ''}`; }
+function pastillesVues() {
+  if (S._pastilles && S._pastilles.cle === clePastilles()) return S._pastilles.v;
+  let v = {};
+  try { v = JSON.parse(localStorage.getItem(clePastilles()) || '{}') || {}; } catch (e) { v = {}; }
+  S._pastilles = { cle: clePastilles(), v };
+  return v;
+}
+function ecrirePastillesVues(v) { try { localStorage.setItem(clePastilles(), JSON.stringify(v)); } catch (e) { /* pas de stockage : la mémoire suffit pour la session */ } }
+
 export function tabbar(active, { questBadge = false, radioBadge = false } = {}) {
   const tabs = [['hp', 'HP'], ['ordres', 'Ordres'], ['terrain', 'Terrain'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['carte', 'Carte'], ['radio', 'Radio']];
   const st = S.state, me = S.user && st && st.zones ? st.zones[S.user.uid] : null;
@@ -112,6 +122,20 @@ export function tabbar(active, { questBadge = false, radioBadge = false } = {}) 
     radio: radioBadge || (() => { const n = nonLus(); return n.radio + n.prive > 0 || invitations().some((i) => !i.fait && i.href !== '#pactes'); })(),
     carte: aFairePactes().some((x) => !x.fait),
   };
+  // Pastille = « du nouveau depuis ta dernière visite » : elle s'éteint quand tu ouvres la page et ne se rallume
+  // que si ce qu'elle signale change (nouveau tour, nouvelle demande…). Exception : des ordres modifiés mais
+  // pas validés gardent leur pastille. La Radio garde son propre compteur de messages non lus.
+  const T = st ? `${st.season}-${st.turn}` : '';
+  const sig = {
+    ordres: T,
+    quete: `${T}:${faites}`,
+    terrain: `${T}:${dots.terrain ? terrainAFaire() : 0}`,
+    carte: `${T}:${dots.carte ? aFairePactes().filter((x) => !x.fait).map((x) => x.titre).join('|') : ''}`,
+    enquete: `${T}:${st ? (st.traques || []).length : 0}`,
+  };
+  const vus = pastillesVues();
+  if (sig[active] !== undefined && vus[active] !== sig[active]) { vus[active] = sig[active]; ecrirePastillesVues(vus); }
+  for (const k of Object.keys(sig)) if (dots[k] && vus[k] === sig[k] && !(k === 'ordres' && S.ordersDirty)) dots[k] = false;
   return `<nav class="tabs" aria-label="Navigation principale">${tabs.map(([id, label]) => `
     <a href="#${id}" ${active === id ? 'aria-current="page"' : ''} ${id === 'enquete' ? 'class="centre"' : ''}>${id === 'enquete' ? `<span class="rond">${icon(id, 26)}</span>` : icon(id)}<span>${id === 'radio' ? 'Radio' : label}</span>${dots[id] ? '<span class="dot" aria-label="à faire"></span>' : ''}</a>`).join('')}
   </nav>`;
