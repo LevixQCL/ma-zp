@@ -213,7 +213,19 @@ export const INFRAS = {
   // (interpellations des affaires, assauts en zone de non-droit) ; une rébellion ne blesse plus qu'un agent.
   // `formation` : la formation Intervention se fait au stand, moins chère et sans agents absents.
   tir:      { nom: 'Stand de tir', cout: 10, effet: 'Intervention +15 %, formation Intervention à moitié prix et sans agents absents, agents deux fois moins souvent blessés', bonus: 1.15, blessure: 0.5, formation: { cout: 2, agents: 0 } },
+  // Saison 2 (règles v2) : quatre annexes de plus, dans des emplacements limités (voir emplacementsAnnexes).
+  cachots:  { nom: 'Complexe cellulaire', cout: 10, v2: true, effet: 'Interpellations (affaires, flagrants délits) +25 % de points, une relève se prend avec un agent de moins, garde à vue : le premier interpellé de chaque affaire balance une pièce d’enquête (1 agent de garde le lendemain)', points: 0.25 },
+  drone:    { nom: 'Cellule drone', cout: 12, v2: true, effet: 'Non-droit : dès 3 agents engagés, le drone les guide (force +20 %, blessures −30 %). Traque : un survol ajoute un indice sur la planque', force: 1.2, blessure: 0.7, minAgents: 3 },
+  crise:    { nom: 'Salle de crise', cout: 10, v2: true, effet: 'Non-droit : force +15 % quand au moins deux zones attaquent le même secteur ; crise du district : ta participation compte un agent de plus', coop: 0.15 },
+  sapv:     { nom: 'Assistance aux victimes', cout: 10, v2: true, effet: 'Accueil +20 %, la satisfaction retombe 20 % moins vite, plaintes et audits de l’Inspection deux fois moins fréquents', admin: 1.2, derive: 0.8 },
 };
+/** Annexes de base (avant la saison 2), dessinées et proposées dans toutes les parties. */
+export const ANNEXES_V1 = ['sport', 'logiciel', 'anpr', 'antenne', 'garage', 'audition', 'tir'];
+/** Emplacements d'annexes (règles v2) : 3 + niveau des bureaux. */
+export const emplacementsAnnexes = (z) => 3 + ((z && z.batiments && z.batiments.bureaux) || 1);
+export const nbAnnexes = (z) => Object.values((z && z.infra) || {}).filter(Boolean).length;
+/** Vrai si la zone a cette annexe (et que les règles de la partie la font jouer). */
+export const aAnnexe = (z, k) => !!(z && z.infra && z.infra[k]) && (!INFRAS[k] || !INFRAS[k].v2 || REGLES.v2);
 /** Formation au stand de tir : seulement pour l'Intervention, et si le stand est construit. */
 const auStand = (z, service) => service === 'intervention' && !!(z && z.infra && z.infra.tir);
 /** Coût d'une formation (k€) pour ce service. */

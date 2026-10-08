@@ -1,8 +1,9 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
 import {
-  SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, scoreRevenu, BUDGET_IPZ, CLASSEMENT, coutEquipement, multNiveau, multEquip, coutFormation , PREPA, coutPrepa, REGLES, multDoctrine } from './constants.js';
+  SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, scoreRevenu, BUDGET_IPZ, CLASSEMENT, coutEquipement, multNiveau, multEquip, coutFormation , PREPA, coutPrepa, REGLES, multDoctrine, emplacementsAnnexes, nbAnnexes, aAnnexe } from './constants.js';
 import { terrainDoux } from './regles.js';
+import { talent, talentVal, AGENDA } from './chef.js';
 import { coutCarrosserie } from './sinistres.js';
 import { cabossesChoisis } from './parc.js';
 import { prixRevente, assurerFlotte, placesIntervention, entretienFlotte, bonusAnonymes, agentsMontes, primeVerte, bonusOrdre, RENDEMENT, MODELES, IDS_MODELES } from './flotte.js';
@@ -125,8 +126,8 @@ export function fraisFixes(z, state, { amendes = 0, rythme = 'normal' } = {}) {
     { k: 'radars', l: 'Radars automatiques (caméras)', v: z.infra && z.infra.anpr ? INFRAS.anpr.fixe : 0 },
     { k: 'salaires', l: `Salaires (${payes} agents${nv})`, v: -payes * ECONOMIE.salaire },
     { k: 'vehicules', l: `Entretien des véhicules (${z.vehicules})`, v: -(z.flotte ? entretienFlotte(z) : z.vehicules * ECONOMIE.entretienVehicule) },
-    { k: 'batiments', l: `Entretien des bâtiments (niveaux ${b.bureaux} et ${b.garage})`, v: -(BATIMENTS.bureaux.entretien(b.bureaux) + BATIMENTS.garage.entretien(b.garage)) },
-    { k: 'annexes', l: `Entretien des annexes (${annexes})`, v: -annexes * ENTRETIEN_ANNEXE },
+    { k: 'batiments', l: `Entretien des bâtiments (niveaux ${b.bureaux} et ${b.garage})${talent(z, 'gestionnaire') ? ', bon gestionnaire −20 %' : ''}`, v: -(BATIMENTS.bureaux.entretien(b.bureaux) + BATIMENTS.garage.entretien(b.garage)) * talentVal(z, 'gestionnaire', 'entretien', 1) },
+    { k: 'annexes', l: `Entretien des annexes (${annexes})`, v: -annexes * ENTRETIEN_ANNEXE * talentVal(z, 'gestionnaire', 'entretien', 1) },
     { k: 'rythme', l: 'Heures supplémentaires (rythme renforcé)', v: -(RYTHMES[rythme] ? RYTHMES[rythme].cout : 0) },
   ].filter((x) => x.garder || Math.abs(x.v) >= 0.05);
   for (const x of lignes) { x.v = round1(x.v); delete x.garder; }
@@ -188,9 +189,11 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
   if (service === 'recherche' && zone.infra.audition) c *= 1.2;
   if (service === 'recherche' && zone.flotte) c *= 1 + bonusAnonymes(zone, turn);
   if (service === 'intervention' && zone.infra.tir) c *= INFRAS.tir.bonus;
-  if (service === 'admin') c *= (zone.infra.logiciel ? 1.5 : 1) * adminMult;
+  if (service === 'admin') c *= (zone.infra.logiciel ? 1.5 : 1) * (aAnnexe(zone, 'sapv') ? INFRAS.sapv.admin : 1) * adminMult;
   c *= bonusLots(zone, service);
   c *= multDoctrine(zone, service);
+  // Agenda du chef (règles v2) : sur le terrain avec ce service.
+  if (REGLES.v2 && zone._agenda && zone._agenda.type === 'terrain' && zone._agenda.service === service) c *= AGENDA.terrain.cap;
   return c;
 }
 
@@ -418,7 +421,7 @@ export function coutDecision(zone, decision) {
     // Centrale d'achat (pacte) : formations et équipement moins chers.
     case 'former': return round1(coutFormation(zone, decision.service) * (1 - (zone.remiseAchat || 0)));
     case 'equiper': {
-      const brut = round1((decision.cible === 'vehicule' ? (MODELES[decision.modele] || MODELES.diesel).prix : decision.cible === 'prepa' ? coutPrepa(zone.prepa) : coutEquipement(zone.equip[decision.cible])) * (1 - (zone.remiseAchat || 0)));
+      const brut = round1((decision.cible === 'vehicule' ? (MODELES[decision.modele] || MODELES.diesel).prix : decision.cible === 'prepa' ? coutPrepa(zone.prepa) : coutEquipement(zone.equip[decision.cible])) * (1 - (zone.remiseAchat || 0)) * (1 - talentVal(zone, 'marches', 'remise', 0)));
       // Reprise : le prix de revente de l'ancien véhicule est déduit.
       return decision.cible === 'vehicule' && repriseValide(zone, decision) ? round1(Math.max(0, brut - prixRevente(zone, decision.reprise))) : brut;
     }
@@ -441,6 +444,8 @@ export function decisionImpossible(zone, decision, turn) {
   if (decision.type === 'equiper' && decision.cible === 'prepa' && (zone.prepa || 0) >= PREPA.max) return 'Combis déjà préparés au maximum';
   if (decision.type === 'equiper' && decision.cible !== 'vehicule' && decision.cible !== 'prepa' && zone.equip[decision.cible] >= NIVEAU_MAX) return 'Équipement au maximum';
   if (decision.type === 'construire' && zone.infra[decision.infra]) return 'Déjà construit';
+  if (decision.type === 'construire' && INFRAS[decision.infra].v2 && !REGLES.v2) return 'Annexe disponible à partir de la saison 2';
+  if (decision.type === 'construire' && REGLES.v2 && nbAnnexes(zone) >= emplacementsAnnexes(zone)) return `Plus d’emplacement libre (${emplacementsAnnexes(zone)} annexes au niveau ${zone.batiments.bureaux} des bureaux) : agrandis l’hôtel de police ou démolis une annexe`;
   if (decision.type === 'agrandir') {
     if (zone.travaux) return 'Des travaux sont déjà en cours';
     if (zone.batiments[decision.batiment] >= BATIMENT_MAX) return 'Niveau maximum atteint';

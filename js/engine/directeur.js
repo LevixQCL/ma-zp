@@ -20,7 +20,8 @@ import { clamp, round1, moyenneIpz } from './zone.js';
 import { assurerQuartiers, carteQuartiers, lirePatrouilles } from './quartiers.js';
 import { ALEAS, COUPS_DURS, OPERATIONS, PRESSIONS } from './contenu.js';
 import { siteDe } from './sites.js';
-import { SEASON_LENGTH, BUDGET_IPZ, NIVEAU_MAX, SERVICES, SERVICE_LABELS, coutEquipement, REGLES } from './constants.js';
+import { niveauChef, COMPETENCES } from './chef.js';
+import { SEASON_LENGTH, BUDGET_IPZ, NIVEAU_MAX, SERVICES, SERVICE_LABELS, coutEquipement, REGLES, aAnnexe } from './constants.js';
 import { affaire, candidats, faitsConnus, pieceCoupDePouce } from './enquete.js';
 
 // ───── Réglages ─────
@@ -141,6 +142,7 @@ export function fragilites(z) {
     let w = 1, pq = 'un plaignant mécontent a alerté la presse';
     if (z.paperasse >= 12) { w *= 2.5; pq = `${Math.round(z.paperasse)} dossiers en souffrance : un plaignant s’est lassé`; } else if (z.paperasse < 8) w *= 0.5;
     if (z.reputation > 60) w *= 0.6; else if (z.reputation < 40) { w *= 1.4; if (z.paperasse < 12) pq = 'ta réputation est fragile'; }
+    if (aAnnexe(z, 'sapv')) { w *= 0.5; pq += ' (l’assistance aux victimes en a désamorcé la moitié)'; }
     l.push({ id: 'plainte', w: 2 * w, f: w, pourquoi: pq });
   }
   {
@@ -301,7 +303,7 @@ export const FEUILLETONS = {
   },
   audit: {
     titre: 'Audit de l’Inspection', besoin: 'admin', min: 4,
-    poids: (z) => ((z.paperasse >= 9 ? 2 : 0) + ((z.dir.neg.admin || 0) >= 2 ? 1 : 0) + ((z.dossiers || []).filter((x) => x.age > 4).length >= 2 ? 1 : 0)),
+    poids: (z) => ((z.paperasse >= 9 ? 2 : 0) + ((z.dir.neg.admin || 0) >= 2 ? 1 : 0) + ((z.dossiers || []).filter((x) => x.age > 4).length >= 2 ? 1 : 0)) * (aAnnexe(z, 'sapv') ? 0.5 : 1),
     etapes: {
       debut: {
         delai: 2,
@@ -395,13 +397,13 @@ export const FEUILLETONS = {
           ? 'Le délégué revient : la dernière prime a donné des idées. Heures sup’, vestiaires vétustes, il menace d’un arrêt de travail.'
           : z.dir.mem.greve === 'arret' ? 'Encore la grogne : le dernier arrêt de travail est dans toutes les têtes. Le délégué menace de recommencer.'
             : 'Heures sup’, vestiaires vétustes : le délégué syndical menace d’un arrêt de travail.'),
-        choix: [
+        choix: (z) => avecChef(z, [
           // Règles v2 : plus de réponse « gratuite » en argent : un jour de récupération coûte des agents.
-          { get l() { return REGLES.v2 ? 'Accorder un jour de récupération' : 'Lâcher une prime'; }, get s() { return REGLES.v2 ? '2 agents en récupération 2 jours, +5 de moral' : '−2,5 k€, +5 de moral'; } },
+          { l: REGLES.v2 ? 'Accorder un jour de récupération' : 'Lâcher une prime', s: REGLES.v2 ? '2 agents en récupération 2 jours, +5 de moral' : '−2,5 k€, +5 de moral' },
           { l: 'Tenir bon', s: 'si le moral est à 50 ou plus ce soir, la grogne retombe ; sinon, arrêt de travail' },
-        ],
+        ], 'diplomatie', { l: 'Négocier avec le délégué', s: 'la grogne retombe, +3 de moral' }),
         defaut: 1,
-        resoudre: (c, d, ch) => (ch === 0
+        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { moral: 3 }, texte: 'le chef a trouvé les mots, accord sur les vestiaires', mem: { greve: 'tenu' } } : ch === 0
           ? (REGLES.v2 ? { ok: true, fx: { bloques: 2, moral: 5 }, texte: 'jour de récupération accordé, la tension retombe', mem: { greve: 'prime' } } : { ok: true, fx: { budget: -2.5, moral: 5 }, texte: 'prime versée, la tension retombe', mem: { greve: 'prime' } })
           : c.z.moral >= 50
             ? { ok: true, fx: { moral: 2, rep: 1 }, texte: 'la grogne retombe d’elle-même', mem: { greve: 'tenu' } }
@@ -416,12 +418,13 @@ export const FEUILLETONS = {
       debut: {
         signe: () => ({ titre: 'Un indic veut parler', texte: 'Il attend ta réponse avant 20:00.' }),
         question: 'Un petit voyou prétend savoir quelque chose sur l’affaire en cours. Il demande à être payé.',
-        choix: [
+        choix: (z) => avecChef(z, [
           { l: 'Le payer', s: '−2 k€ : un indice d’enquête' },
           { l: 'Le confier à la Recherche', s: '4 agents en Recherche ce soir : indice gratuit ; sinon il disparaît' },
-        ],
+        ], 'flair', { l: 'Le cuisiner toi-même', s: 'un indice sans payer, mais il ne reviendra plus jamais' }),
         defaut: 1,
         resoudre: (c, d, ch) => {
+          if (ch === 2) return { ok: true, fx: { indice: 1 }, texte: 'le chef l’a retourné en dix minutes ; vexé, il ne reviendra pas', mem: { indic: 'perdu' } };
           if (ch === 0) return { ok: true, fx: { budget: -2, indice: 1 }, texte: 'il a parlé', mem: { indic: 'paye' } };
           return c.alloc.recherche >= 4 ? { ok: true, fx: { indice: 1 }, texte: 'tes enquêteurs l’ont fait parler sans débourser un euro', mem: { indic: 'recherche' } } : { ok: false, fx: {}, texte: 'personne pour l’écouter, il s’est évaporé', mem: { indic: 'perdu' } };
         },
@@ -458,14 +461,14 @@ export const FEUILLETONS = {
       debut: {
         signe: () => ({ titre: 'Une journaliste demande une interview', texte: 'Réponds avant 20:00.' }),
         question: (z) => `La Voix du Delta prépare un portrait de la zone. Ta satisfaction ce matin : ${Math.round(z.satisfaction)}.${z.dir.mem.journaliste === 'amie' ? ' C’est la même journaliste que la dernière fois.' : z.dir.mem.journaliste === 'hostile' ? ' C’est celle qui t’avait étrillé.' : ''}`,
-        choix: [
+        choix: (z) => avecChef(z, [
           { l: 'Accorder l’interview', s: 'satisfaction à 55 ou plus ce soir : bonne presse ; sinon, ça se retourne contre toi' },
           { l: 'Pas de commentaire', s: '−1 de satisfaction' },
-        ],
+        ], 'proximite', { l: 'Interview préparée avec soin', s: 'bonne presse dès 45 de satisfaction ce soir' }),
         defaut: 1,
         resoudre: (c, d, ch) => (ch === 1
           ? { ok: true, fx: { sat: -1 }, texte: '« la police ne souhaite pas s’exprimer »', mem: { journaliste: c.z.dir.mem.journaliste || 'muet' } }
-          : c.z.satisfaction >= 55
+          : c.z.satisfaction >= (ch === 2 ? 45 : 55)
             ? { ok: true, fx: { sat: 4, rep: 2 }, texte: 'portrait élogieux, la journaliste te garde en estime', une: [5, 'Presse', `Portrait flatteur de ${c.label} dans La Voix du Delta`], mem: { journaliste: 'amie' } }
             : { ok: false, fx: { sat: -4, rep: -1 }, texte: 'article au vitriol', une: [5, 'Presse', `${c.label} étrillée par La Voix du Delta`], mem: { journaliste: 'hostile' } }),
       },
@@ -478,12 +481,12 @@ export const FEUILLETONS = {
       debut: {
         signe: () => ({ titre: 'Une proposition de sponsoring', texte: 'Réponds avant 20:00.' }),
         question: 'Le garage Delta Auto offre 4 k€ si son logo est peint sur un de tes combis.',
-        choix: [
+        choix: (z) => avecChef(z, [
           { l: 'Accepter', s: '+4 k€, −2 de réputation' },
           { l: 'Refuser poliment', s: '+1 de réputation' },
-        ],
+        ], 'gestion', { l: 'Négocier un mécénat discret', s: '+2 k€, sans logo sur le combi' }),
         defaut: 1,
-        resoudre: (c, d, ch) => (ch === 0
+        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { budget: 2 }, texte: 'Delta Auto finance discrètement l’entretien, sans logo', mem: { sponsor: 'refuse' } } : ch === 0
           ? { ok: true, fx: { budget: 4, rep: -2 }, texte: 'le combi « Delta Auto » fait sourire le district', une: [2, 'Insolite', `Un combi publicitaire chez ${c.label}`, 'Le logo d’un garage s’affiche désormais sur la portière.'], mem: { sponsor: c.T } }
           : { ok: true, fx: { rep: 1 }, texte: 'la commune salue ton intégrité', mem: { sponsor: 'refuse' } }),
       },
@@ -607,6 +610,15 @@ export function memoirePlainte(z) {
   if (j === 'amie') return { sat: 3, texte: ' La Voix du Delta prend ta défense : l’effet est réduit de moitié.' };
   if (j === 'hostile') return { sat: -2, texte: ' La Voix du Delta en remet une couche (−2 de plus).' };
   return { sat: 0, texte: '' };
+}
+
+/**
+ * Saison 2 : une option de plus quand le chef de corps a le niveau (4) dans la compétence. Jamais la seule bonne
+ * réponse : une autre sortie, pas une victoire automatique.
+ */
+function avecChef(z, base, comp, extra) {
+  const L = REGLES.v2 && z && z.chef ? niveauChef(z.chef, comp) : 0;
+  return L >= 4 ? [...base, { ...extra, l: extra.l, s: `${COMPETENCES[comp].nom} ${L} : ${extra.s}`, chef: comp }] : base;
 }
 
 // ───── Événements de district ─────

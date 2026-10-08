@@ -2,6 +2,7 @@
 // entre 7 h et 19 h. Il reste ouvert 12 heures : s'il tombe tard,
 // il déborde sur le lendemain matin et compte alors à la résolution suivante (incidents « reportés »). Joué : réussite (jauge des skins) ou échec (malus
 // à 20:00). Pas joué : l'équipe se débrouille seule, avec une chance qui dépend de ses effectifs.
+import { talentVal } from './chef.js';
 import { makeRng } from './rng.js';
 import { DEFAULT_ALLOC, SERVICE_LABELS, PS, gainMoral, risqueBlessure, USURE } from './constants.js';
 import { vitesseCombi, vehiculesUrgence, user, modeleDe } from './flotte.js';
@@ -370,7 +371,7 @@ export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng, ind
       // Raté en jouant : jamais pire que ne pas jouer. L'équipe reprend la main avec la même chance que si personne n'était venu.
       z._ps = (z._ps || 0) + PS.queteTentee;
       const n = Number.isFinite(inc.agents) ? inc.agents : alloc[inc.service];
-      if (rng.chance(chanceSeule(inc.service, n))) lignes.push(`Incident · ${nom} : ${res.statut === 'abandon' ? 'abandonné' : 'raté'}, mais ton équipe a repris la main et l’a réglé (+${PS.queteTentee} PS pour avoir essayé).`);
+      if (rng.chance(Math.min(0.95, chanceSeule(inc.service, n) + talentVal(z, 'sangfroid', 'chance', 0)))) lignes.push(`Incident · ${nom} : ${res.statut === 'abandon' ? 'abandonné' : 'raté'}, mais ton équipe a repris la main et l’a réglé (+${PS.queteTentee} PS pour avoir essayé).`);
       else { const m = MALUS[inc.service].leger; appliquerMalus(z, m, T); lignes.push(`Incident · ${nom} : ${res.statut === 'abandon' ? 'abandonné' : 'raté'}, et ton équipe n’y est pas arrivée non plus. ${texteMalus(m)} (+${PS.queteTentee} PS pour avoir essayé).`); }
     } else if (rng.chance(chanceSeule(inc.service, Number.isFinite(inc.agents) ? inc.agents : alloc[inc.service]))) {
       lignes.push(`Incident · ${nom} : personne n’est venu, ton équipe l’a réglé seule.`);

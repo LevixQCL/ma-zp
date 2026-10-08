@@ -6,7 +6,8 @@
 // Une zone qui ne joue plus ne bloque personne : son influence s'efface, les autres continuent.
 import { CONFIG } from '../config.js';
 import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
-import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND } from './constants.js';
+import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND, INFRAS, aAnnexe } from './constants.js';
+import { talentVal } from './chef.js';
 import { makeRng } from './rng.js';
 import { clamp, round1, forceEngagement, jalon, noter } from './zone.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
@@ -117,8 +118,16 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
       const mi = mm ? figure(state.zones[u], mm.role) : null;
       if (mi) (state.zones[u]._missions ||= []).push(mi.role);
       const bonus = mi ? bonusChef(mi.niveau) : 0;
-      return { u, n, f: forceEngagement(state.zones[u], n, T) * (1 + bonus), chef: mi, risque: mi ? CHEFS.nd.blessure : 1 };
+      // Saison 2 : cellule drone (dès 3 agents, le drone guide l'assaut), talent « Tacticien ».
+      const zz = state.zones[u];
+      const drone = aAnnexe(zz, 'drone') && n >= INFRAS.drone.minAgents;
+      const f0 = forceEngagement(zz, n, T) * (drone ? INFRAS.drone.force : 1);
+      return { u, n, f: f0 * (1 + bonus) * (1 + talentVal(zz, 'tacticien', 'force', 0)), chef: mi, drone,
+        risque: (mi ? CHEFS.nd.blessure : 1) * (drone ? INFRAS.drone.blessure : 1) * talentVal(zz, 'tacticien', 'blessure', 1) };
     }) : [];
+    // Salle de crise : +15 % de force quand au moins deux zones attaquent ensemble.
+    if (engages.length >= 2) for (const e of engages) if (aAnnexe(state.zones[e.u], 'crise')) { e.f *= 1 + INFRAS.crise.coop; state.zones[e.u].rapport.push(`Salle de crise : coordination avec les autres zones sur ${nomSecteur(k)}, force +${Math.round(INFRAS.crise.coop * 100)} %.`); }
+    for (const e of engages) if (e.drone) state.zones[e.u].rapport.push(`Cellule drone : le drone survole ${nomSecteur(k)} et guide tes ${e.n} agents (force +${Math.round((INFRAS.drone.force - 1) * 100)} %, moins de blessés).`);
     // Jumelage terrain : +20 % de force pour deux zones jumelées sur le même secteur.
     for (const e of engages) {
       const jum = engages.filter((x) => x.u !== e.u && lies(state, e.u, x.u, 'terrain', T));

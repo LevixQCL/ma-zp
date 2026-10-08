@@ -1,6 +1,6 @@
 // Zones robots : utilisées par le mode démo et par la simulation d'équilibrage.
 import { dilemmeDuJour } from './directeur.js';
-import { SERVICES, INFRAS, COUTS, BATIMENTS } from './constants.js';
+import { SERVICES, INFRAS, COUTS, BATIMENTS , REGLES, nbAnnexes, emplacementsAnnexes } from './constants.js';
 import { makeRng } from './rng.js';
 import { agentsDisponibles, coutDecision, decisionImpossible, operationActive, NIVEAUX_OPERATION, capaciteVehicules } from './zone.js';
 import { affaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ, dansMaCellule, pieceDemarche, confrontationOk } from './enquete.js';
@@ -76,7 +76,7 @@ export function botOrders(zone, state, style = 'equilibre') {
   let decision = null;
   const options = [];
   if (zone.budget > 25) {
-    for (const [id, inf] of Object.entries(INFRAS)) if (!zone.infra[id] && zone.budget - inf.cout > 15) options.push({ type: 'construire', infra: id });
+    for (const [id, inf] of Object.entries(INFRAS)) if (!zone.infra[id] && zone.budget - inf.cout > 15 && !(inf.v2 && !REGLES.v2) && !(REGLES.v2 && nbAnnexes(zone) >= emplacementsAnnexes(zone))) options.push({ type: 'construire', infra: id });
     options.push({ type: 'former', service: rng.pick(SERVICES) });
     if (zone.agents < 22) options.push({ type: 'recruter', n: 2 });
     if (!zone.travaux && zone.batiments && zone.agents + 2 > BATIMENTS.bureaux.capacite(zone.batiments.bureaux) && zone.batiments.bureaux < 5) options.push({ type: 'agrandir', batiment: 'bureaux' });

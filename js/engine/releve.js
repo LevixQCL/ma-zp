@@ -10,6 +10,8 @@
 // Capture : mérite partagé, et parfois un bonus (félicitations du juge, ou saisie à se partager :
 // l'une prend l'argent, l'autre la voiture).
 
+import { aAnnexe } from './constants.js';
+import { talent, TALENT } from './chef.js';
 import { makeRng } from './rng.js';
 import { zonesVoisines, peutRecevoir } from './vagues.js';
 import { carteQuartiers } from './quartiers.js';
@@ -32,6 +34,9 @@ export const RELEVE = {
   juge: { reputation: 3, moral: 3, reputationDepart: 1 },
   saisie: { argent: 7, usure: 30, argentSiGaragePlein: 6 },
 };
+
+/** Agents au minimum pour prendre une relève (un de moins avec le complexe cellulaire). */
+export const minReleve = (z) => Math.max(1, RELEVE.min - (aAnnexe(z, 'cachots') ? 1 : 0));
 
 const SUSPECTS = ['le chauffeur', 'le guetteur', 'le receleur', 'le troisième homme', 'la complice', 'le passager du scooter', 'le rabatteur', 'la conductrice'];
 
@@ -71,7 +76,7 @@ export function lireOrdresReleve(o) {
 export function agentsReleve(state, uid, o, T = state.turn) {
   let n = 0;
   const r = releveRecue(state, uid, T);
-  if (r && o && o.releve && o.releve.id === r.id && o.releve.choix === 'prendre') n += clamp(o.releve.agents || RELEVE.min, RELEVE.min, RELEVE.max);
+  if (r && o && o.releve && o.releve.id === r.id && o.releve.choix === 'prendre') n += clamp(o.releve.agents || minReleve(state.zones[uid]), minReleve(state.zones[uid]), RELEVE.max);
   for (const a of (o && o.releveAppui) || []) if (relevesLancees(state, uid, T).some((x) => x.id === a.id)) n += a.agents;
   return n;
 }
@@ -124,11 +129,12 @@ export function releveResoudre(state, uids, ord, push, T, zoneLabel) {
     const lieu = c.nomDe(Number(r.cell));
     if (choix && choix.choix === 'prendre') {
       const dispo = agentsDisponibles(zb, T);
-      const n = clamp(choix.agents || RELEVE.min, RELEVE.min, Math.min(RELEVE.max, dispo));
+      const n = clamp(choix.agents || minReleve(zb), minReleve(zb), Math.min(RELEVE.max, dispo));
       const ap = (ord[r.origine] && (ord[r.origine].releveAppui || []).find((x) => x.id === r.id)) || null;
       const nAp = za && ap && uids.includes(r.origine) ? Math.min(ap.agents, RELEVE.appuiMax) : 0;
       prendre(r.vers, n); prendre(r.origine, nAp);
-      const force = n + nAp;
+      // Complexe cellulaire (saison 2) : la zone qui prend la relève a les cellules pour garder l'interpellé, un agent de moins suffit.
+      const force = n + nAp + (aAnnexe(zb, 'cachots') ? 1 : 0);
       const rng = makeRng(`${state.seed}:s${state.season}:t${T}:releve:${r.id}`);
       const pris = force >= RELEVE.requis || (force === RELEVE.requis - 1 && rng.chance(0.5));
       const equipe = `${n} agent${n > 1 ? 's' : ''}${nAp ? ` + ${nAp} d’appui de ${zoneLabel(za)}` : ''}`;
@@ -137,6 +143,7 @@ export function releveResoudre(state, uids, ord, push, T, zoneLabel) {
         const fxA = { ...RELEVE.gain.depart, points: RELEVE.gain.depart.points + nAp * RELEVE.gain.appui.points, ps: RELEVE.gain.depart.ps + nAp * RELEVE.gain.appui.ps };
         const gA = gagner(za, fxA);
         zb.stats.releves = (zb.stats.releves || 0) + 1;
+        if (talent(zb, 'bonvoisin')) { zb.reputation += TALENT.bonvoisin.rep; zb.rapport.push('Bon voisin : +1 de réputation pour cette relève.'); }
         zb.rapport.push(`Relève réussie à ${lieu} : ${r.suspect} interpellé${r.suspect.startsWith('la ') ? 'e' : ''} (${equipe}) : ${gB}.`);
         if (za) za.rapport.push(`Ta relève a payé : ${zoneLabel(zb)} a interpellé ${r.suspect} à ${lieu}. Ta part du mérite : ${gA}.`);
         if (r.par && Z(r.par)) Z(r.par).rapport.push(`Bien vu : ${zoneLabel(zb)} a interpellé ${r.suspect}, que tu lui avais transmis (${gagner(Z(r.par), RELEVE.gain.transmis)}).`);

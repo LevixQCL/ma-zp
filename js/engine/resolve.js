@@ -14,7 +14,7 @@ import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
 import { pistesDuSoir, lireOrdresPistes } from './pistes.js';
 import { appliquerRegles, reglesV2, MAX_DEPENSES, pressionSaison } from './regles.js';
-import { REGLES, forceDoctrine, DOCTRINES, coutPrime } from './constants.js';
+import { REGLES, forceDoctrine, DOCTRINES, coutPrime, aAnnexe } from './constants.js';
 import { enquetePourTour, SLOT_QUATRE } from '../quests/quests.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
@@ -25,7 +25,7 @@ import {
   forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, pointsIpz, moyenneIpz, moralMult, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles,
 } from './zone.js';
 import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
-import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus, appliquerPrime, pieceSurSuspect, affaire } from './enquete.js';
+import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus, appliquerPrime, pieceSurSuspect, affaire, dossierDe, pieceGardeAVue } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
 import { creerNonDroit, nonDroitResoudre } from './nondroit.js';
 import { encheresResoudre, annoncerLot } from './encheres.js';
@@ -36,6 +36,7 @@ import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
 import { primeChallenge, CHALLENGE } from './challenge.js';
+import { creerChef, lireAgenda, lireTalents, changerTalents, gainsDuJour, progresser, totalNiveaux, niveauChef, talent, TALENT, AGENDA, COMPETENCES, IDS_COMPETENCES, PARCOURS, CHEF } from './chef.js';
 import { separerIncidents, appliquerIncidents, remplirJauge, resultatsIncidents, incidentsVisibles, adapterCibleUrgence, NIVEAUX_URGENCE } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND } from './contenu.js';
@@ -244,6 +245,19 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Doctrine de la saison : ${DOCTRINES[z.doctrine].nom}${z.maitrise ? ` (maîtrise ${z.maitrise + 1})` : ''}. Force : ${DOCTRINES[z.doctrine].force}. Prix : ${DOCTRINES[z.doctrine].prix}.`);
       push(3, 'Doctrine', `${zoneLabel(z)} choisit la doctrine ${DOCTRINES[z.doctrine].nom.toLowerCase()}`, `${DOCTRINES[z.doctrine].force}.`, uid);
     }
+    // Chef de corps (saison 2) : création, parcours, talents (une fois par semaine), agenda du jour.
+    if (reglesV2(state)) {
+      const pf = players[uid] && players[uid].chef;
+      if (!z.chef) z.chef = creerChef(pf);
+      else if (!z.chef.parcours && pf && Object.hasOwn(PARCOURS, pf.parcours)) z.chef.parcours = pf.parcours;
+      z._agenda = lireAgenda(orders[uid], state, uid);
+      const lt = changerTalents(z.chef, lireTalents(orders[uid]), T);
+      if (lt) z.rapport.push(lt);
+      z._chefAvant = { stats: { ...z.stats }, n: z.enquete && z.enquete.n, pieces: piecesPropres(z) };
+      // Démolition d'une annexe (gratuite, sans remboursement) : libère un emplacement dès ce soir.
+      const dm = orders[uid] && orders[uid].demolir;
+      if (typeof dm === 'string' && Object.hasOwn(INFRAS, dm) && z.infra[dm]) { delete z.infra[dm]; z.rapport.push(`Annexe démolie : ${INFRAS[dm].nom}. Un emplacement est libre.`); }
+    } else delete z._agenda;
     // Mise à prix de l'enquête : le choix fait aujourd'hui (ou la confiscation par défaut).
     { const lp = appliquerPrime(z, ord[uid].prime, T, { services: SERVICES, niveauMax: NIVEAU_MAX }); if (lp) z.rapport.push(lp); }
     ord[uid].missions = missionsValides(ord[uid]);
@@ -258,6 +272,29 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     ouvrirJournal(z);
   }
   const jalonTous = (label) => { for (const u of uids) jalon(state.zones[u], label); };
+  // Chef de corps : visites croisées, parrainages, niveau moyen de la partie (rattrapage des arrivées tardives).
+  let moyChef = 0;
+  if (reglesV2(state)) {
+    for (const u of uids) {
+      const z = state.zones[u], a = z._agenda;
+      z._croise = !!(a && a.type === 'voisin' && state.zones[a.zone] && state.zones[a.zone]._agenda && state.zones[a.zone]._agenda.type === 'voisin' && state.zones[a.zone]._agenda.zone === u);
+    }
+    for (const u of uids) {
+      const z = state.zones[u], fu = orders[u] && orders[u].parrainer, f = typeof fu === 'string' && Object.hasOwn(state.zones, fu) && fu !== u ? state.zones[fu] : null;
+      if (!f || !f.chef || !z.chef) continue;
+      if (totalNiveaux(z.chef) < CHEF.parrainage.minParrain) { z.rapport.push(`Parrainage refusé : il faut ${CHEF.parrainage.minParrain} niveaux de compétence au total pour parrainer.`); continue; }
+      if (totalNiveaux(f.chef) > CHEF.parrainage.maxFilleul || (f.chef.parrain && f.chef.parrain.fin >= T)) { z.rapport.push(`Parrainage refusé : ${zoneLabel(f)} a déjà un parrain ou assez d’expérience.`); continue; }
+      const comp = IDS_COMPETENCES.slice().sort((a, b) => niveauChef(z.chef, b) - niveauChef(z.chef, a))[0];
+      f.chef.parrain = { uid: u, comp, fin: T + CHEF.parrainage.jours - 1 };
+      z.rapport.push(`Parrainage : tu prends sous ton aile le chef de ${zoneLabel(f)} pendant ${CHEF.parrainage.jours} jours (${COMPETENCES[comp].nom}).`);
+      f.rapport.push(`Parrainage : le chef de ${zoneLabel(z)} te prend sous son aile. Pendant ${CHEF.parrainage.jours} jours, ta ${COMPETENCES[comp].nom.toLowerCase()} progresse 50 % plus vite.`);
+      push(3, 'Parrainage', `${zoneLabel(z)} parraine ${zoneLabel(f)}`, 'Un chef expérimenté prend un nouveau sous son aile.', u);
+    }
+    // Le parrain gagne des PS d'entraide chaque jour où son filleul joue.
+    for (const u of uids) { const p = state.zones[u].chef && state.zones[u].chef.parrain; if (p && p.fin >= T && orders[u] && state.zones[p.uid]) state.zones[p.uid]._psEntraide += CHEF.parrainage.ps; }
+    const chefs = uids.map((u) => state.zones[u].chef).filter(Boolean);
+    moyChef = chefs.length ? chefs.reduce((a, c) => a + totalNiveaux(c), 0) / chefs.length : 0;
+  }
 
   // Bilan de fin de saison : remises en état payées ce soir (avant tout le reste, elles servent dès ce soir).
   for (const u of uids) resoudreBilan(state.zones[u], ord[u], T);
@@ -329,7 +366,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const sommeN = equipe.reduce((s, x) => s + x.n, 0);
     for (const x of equipe) {
       const z = state.zones[x.u];
-      const part = total * x.n / sommeN;
+      const part = total * x.n / sommeN * (aAnnexe(z, 'cachots') ? 1 + INFRAS.cachots.points : 1);
+      z._interpelle = true;
       z._points += part; z.stats.pointsAffaires += part; z.stats.affairesGagnees += 1; z.moral += 2;
       // Prime : de l'argent concret, partagé selon les agents engagés.
       const prime = round1(aff.recompense * mult * AFFAIRE.prime * x.n / sommeN);
@@ -407,6 +445,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     let { rep, ps } = gainRenfort(r.agents);
     const appel = op.appel ? DIR.appel : 1;
     if (op.appel) { rep += 1; ps = Math.round(ps * appel); }
+    if (talent(z, 'bonvoisin')) rep += TALENT.bonvoisin.rep;
     z.reputation += rep; z._psEntraide += ps; z.stats.renfortsPretes = (z.stats.renfortsPretes || 0) + 1;
     const ptsR = round1(r.agents * RENFORT.pointsParAgent * appel);
     if (ptsR > 0) { z._points += ptsR; jalon(z, `Renfort prêté à ${zoneLabel(c)}`); }
@@ -439,6 +478,21 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.cetteNuit = []; // faits marquants de la nuit pour la carte « Cette nuit » de l'HP
     const zr = makeRng(`${state.seed}:s${state.season}:t${T}:${uid}`);
     const q = quests[uid];
+    // Agenda du chef (saison 2).
+    if (z.chef && z._agenda) {
+      const a = z._agenda, A = AGENDA[a.type];
+      let fx = A.effet;
+      if (a.type === 'bureau' && z.paperasse > A.seuil) z.paperasse = Math.max(0, z.paperasse - A.paperasse);
+      if (a.type === 'commune') { z.budget += A.budget; z._compta.push({ k: 'agenda', l: 'Réunion budgétaire à la commune', v: A.budget }); }
+      if (a.type === 'quartier') z.satisfaction += A.satisfaction;
+      if (a.type === 'terrain') fx = `${SERVICE_LABELS[a.service]} +${Math.round((A.cap - 1) * 100)} % aujourd’hui`;
+      if (a.type === 'voisin') {
+        const v = state.zones[a.zone];
+        if (z._croise) { z._psEntraide += A.ps; z.reputation += A.rep; fx = `réunion avec le chef de ${zoneLabel(v)}, venu chez toi le même jour : +${A.ps} PS d’entraide, +${A.rep} de réputation`; }
+        else fx = `visite à ${v ? zoneLabel(v) : 'une zone voisine'} (son chef n’est pas venu chez toi : pas de réunion)`;
+      }
+      z.rapport.push(`Agenda du chef : ${A.nom.toLowerCase()}, ${fx}.`);
+    }
 
 
     // Fins de formation, arrivées de l'académie.
@@ -510,8 +564,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         }
         case 'plainte': {
           const presse = memoirePlainte(z);
-          z.satisfaction -= 6 - presse.sat; z.blesses.push({ n: 1, retour: T + 3, motif: 'enquête interne' });
-          texte = `−${6 - presse.sat} de satisfaction, un agent bloqué en administration 2 tours.${presse.texte}`; break;
+          const perte = Math.round((6 - presse.sat) * (talent(z, 'communicant') ? TALENT.communicant.presse : 1));
+          z.satisfaction -= perte; z.blesses.push({ n: 1, retour: T + 3, motif: 'enquête interne' });
+          texte = `−${perte} de satisfaction, un agent bloqué en administration 2 tours.${presse.texte}${talent(z, 'communicant') ? ' Ton talent de communicant a limité les dégâts.' : ''}`; break;
         }
         case 'panne': { adminMult = 0; texte = 'Administration à l’arrêt ce tour.'; break; }
         case 'epuisement': {
@@ -685,7 +740,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       // Règles v2 : deux dépenses par jour au plus (la carrosserie, une réparation, ne compte pas).
       let nbDep = 0;
       const payer = (k, cout, fn, compte = true) => {
-        if (compte && REGLES.v2 && nbDep >= MAX_DEPENSES) { achats.push(`${k} (refusé : ${MAX_DEPENSES} dépenses par jour au plus)`); return false; }
+        // Talent « Rallonge budgétaire » : une 3e dépense, une fois par semaine.
+        const rallonge = talent(z, 'rallonge') && !(z.chef.rallongeT != null && T < z.chef.rallongeT + CHEF.semaine);
+        if (compte && REGLES.v2 && nbDep >= MAX_DEPENSES + (rallonge ? 1 : 0)) { achats.push(`${k} (refusé : ${MAX_DEPENSES} dépenses par jour au plus)`); return false; }
+        if (compte && REGLES.v2 && nbDep >= MAX_DEPENSES && rallonge && z.budget >= cout) { z.chef.rallongeT = T; achats.push('rallonge budgétaire utilisée'); }
         if (z.budget >= cout) { z.budget -= cout; paye += cout; fn(); achats.push(k); if (compte) nbDep += 1; return true; }
         achats.push(`${k} (refusé : budget insuffisant)`); return false;
       };
@@ -772,7 +830,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const cell = cells.length ? cells[zr.int(0, Math.min(2, cells.length - 1))] : null;
       const lieu = cell ? carteQuartiers(state).nomDe(Number(cell)) : 'dans la zone';
       const fait = zr.pick(FLAGRANTS);
-      z._points += FLAGRANT.points; z._ps += FLAGRANT.ps; z.satisfaction += 1; z.stats.flagrants = (z.stats.flagrants || 0) + 1;
+      z._points += FLAGRANT.points * (aAnnexe(z, 'cachots') ? 1 + INFRAS.cachots.points : 1); z._ps += FLAGRANT.ps; z.satisfaction += 1; z.stats.flagrants = (z.stats.flagrants || 0) + 1;
+      z._interpelle = true;
       if (cell) { q[cell] = clamp(q[cell] - FLAGRANT.tension, 10, 95); z.criminalite = clamp(z.criminalite - FLAGRANT.tension / cells.length, 10, 95); }
       jalon(z, 'Flagrant délit (patrouilles libres)');
       z.rapport.push(`Flagrant délit ${cell ? `à ${lieu}` : lieu} : ${fait}. +${FLAGRANT.points} pts, +${FLAGRANT.ps} PS${cell ? `, tension du quartier −${FLAGRANT.tension}` : ''}.`);
@@ -863,6 +922,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (refus) z.rapport.push(`Décision refusée : ${refus}.`);
       else {
         const cd = coutDecision(z, dec);
+        if (dec.type !== 'recruter') z._investi = true;
         z.budget -= cd;
         z._compta.push({ k: 'decision', l: 'Grande décision', v: -cd });
         if (dec.type === 'agrandir') { z.travaux = { batiment: dec.batiment, fin: T + TRAVAUX_TOURS }; z.rapport.push(`Travaux lancés : ${BATIMENTS[dec.batiment].nom}, niveau ${z.batiments[dec.batiment] + 1} dans ${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''}.`); }
@@ -928,7 +988,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const tr = tauxRetourMoral(z.moral);
     z.moral += (MORAL.cible - z.moral) * tr;
     jalon(z, `Retour naturel vers ${MORAL.cible} : ${Math.round(tr * 100)} % de l’écart (${fmt1(m0)} → ${MORAL.cible})`);
-    z.moral += RYTHMES[o.rythme].moral + (o.rythme === 'renforce' ? forceDoctrine(z, 'renforce') : 0);
+    z.moral += RYTHMES[o.rythme].moral + (o.rythme === 'renforce' ? forceDoctrine(z, 'renforce') + (talent(z, 'meneur') ? TALENT.meneur.moral : 0) : 0);
     jalon(z, `Rythme ${RYTHMES[o.rythme].label.toLowerCase()}`);
     if (z.infra.sport) z.moral += 1;
     jalon(z, 'Salle de sport');
@@ -937,7 +997,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.renforceSuite = o.rythme === 'renforce' ? z.renforceSuite + 1 : 0;
 
     // Dérives naturelles.
-    { const ts = tauxDerive('satisfaction', z.satisfaction) * (forceDoctrine(z, 'derive') || 1); z.satisfaction += (DERIVE.satisfaction.cible - z.satisfaction) * ts + forceDoctrine(z, 'satJour');
+    { const ts = tauxDerive('satisfaction', z.satisfaction) * (forceDoctrine(z, 'derive') || 1) * (aAnnexe(z, 'sapv') ? INFRAS.sapv.derive : 1) * (talent(z, 'visage') ? TALENT.visage.derive : 1); z.satisfaction += (DERIVE.satisfaction.cible - z.satisfaction) * ts + forceDoctrine(z, 'satJour');
       jalon(z, `Retour naturel vers ${DERIVE.satisfaction.cible} : ${Math.round(ts * 100)} % de l’écart`); }
     { const tp = tauxDerive('reputation', z.reputation); z.reputation += (DERIVE.reputation.cible - z.reputation) * tp;
       jalon(z, `Retour naturel vers ${DERIVE.reputation.cible} : ${Math.round(tp * 100)} % de l’écart`); }
@@ -1009,6 +1069,30 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       prox: cap.proximite / 2, roul: cap.roulage / 2, admin: Math.max(0, cap.admin * 1.2 - 1.2) / 1.5,
     }, (z._missions || []).length ? Object.fromEntries(z._missions.map((r) => [r, CHEFS.xpMission])) : null);
     if (prog.ligne) z.rapport.push(prog.ligne);
+    // Complexe cellulaire : garde à vue des interpellés de la journée (relève comprise).
+    if (aAnnexe(z, 'cachots') && (z._interpelle || (z._chefAvant && (z.stats.releves || 0) > (z._chefAvant.stats.releves || 0)))) {
+      const f = pieceGardeAVue(state, z, makeRng(`${state.seed}:s${state.season}:t${T}:gav:${uid}`));
+      if (f) {
+        z.blesses.push({ n: 1, retour: T + 2, motif: 'garde des cellules' });
+        z.rapport.push('Garde à vue : un interpellé balance, espérant la clémence du juge. Une pièce s’ajoute à ton dossier d’enquête ; un agent reste demain à la garde des cellules.');
+        (z.cetteNuit ||= []).push({ ico: '🔒', t: 'Garde à vue : un interpellé a parlé (une pièce d’enquête)' });
+      }
+    }
+    // Chef de corps : expérience du jour (par l'usage), montées de niveau, talents débloqués.
+    if (z.chef && reglesV2(state)) {
+      const av = z._chefAvant || { stats: {} };
+      const d = {}; for (const k of Object.keys(z.stats)) d[k] = (Number(z.stats[k]) || 0) - (Number(av.stats[k]) || 0);
+      const piecesGagnees = z.enquete && z.enquete.n === av.n ? Math.max(0, piecesPropres(z) - (av.pieces || 0)) : 0;
+      const gains = gainsDuJour({ revenu, investi: !!z._investi, ratio: incidents ? traites / incidents : 1, satisfaction: z.satisfaction, piecesGagnees, agenda: z._agenda, croise: z._croise, d });
+      const par = z.chef.parrain && z.chef.parrain.fin >= T ? z.chef.parrain : null;
+      const r = progresser(z.chef, gains, { rattrapage: totalNiveaux(z.chef) < moyChef - 1, parrain: par });
+      for (const m of r.montees) {
+        z.rapport.push(`Chef de corps : ${COMPETENCES[m.comp].nom} niveau ${m.niveau}.`);
+        if (m.niveau >= 5) push(3, 'Chef de corps', `Le chef de ${zoneLabel(z)} passe ${COMPETENCES[m.comp].nom.toLowerCase()} ${m.niveau}`, 'Son expérience se fait sentir dans tout le district.', uid);
+      }
+      for (const t of r.nouveaux) z.rapport.push(`Nouveau talent débloqué : « ${TALENT[t].nom} » (${TALENT[t].texte.toLowerCase()}). Équipe-le dans tes ordres.`);
+      if (r.nouveaux.length) z.chef.nouveauxTalents = [...new Set([...(z.chef.nouveauxTalents || []), ...r.nouveaux])];
+    }
     for (const m of prog.montees) {
       z.rapport.push(`Promotion d’honneur : ${m.prenom} ${m.nom} gagne un surnom, « ${surnomDe(m)} ».`);
       push(4, 'Portrait', `${zoneLabel(z)} : ${m.prenom} ${m.nom} devient « ${surnomDe(m)} »`, `${intitule(m)} de la zone, ${m.f ? 'saluée' : 'salué'} par ses collègues.`, uid);
@@ -1148,7 +1232,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
-    delete z._joue; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue;
+    delete z._joue; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._croise; delete z._chefAvant; delete z._investi; delete z._interpelle;
   }
 
   // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).
@@ -1163,8 +1247,11 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   }
 
   // 10. Fin de saison ou tour suivant.
-  if (T >= SEASON_LENGTH) {
-    gazette.finSaison = finDeSaison(state, classement);
+  // Fin anticipée décidée par le maître du jeu : ce soir, ou le soir où l'affaire en cours se termine (et la suivante s'ouvre).
+  const finAnticipee = T < SEASON_LENGTH && (state.finSaison === 'soir' || (state.finSaison === 'enquete' && !!(pre && pre.res && pre.res.nouvelle)));
+  if (T >= SEASON_LENGTH || finAnticipee) {
+    delete state.finSaison;
+    gazette.finSaison = finDeSaison(state, classement, { leger: finAnticipee });
   } else {
     state.turn = T + 1;
     // Les événements collectifs sont remplacés par les FIPA (plus de nouvel événement).
@@ -1203,6 +1290,10 @@ function recordsBattus(state, players, push, zoneLabel) {
   }
 }
 
+/** Pièces d'enquête trouvées par la zone elle-même (pas reçues, ni données à tous). */
+const SRC_RECUES = new Set(['partage', 'pacte', 'ouverture', 'rebond', 'rattrapage', 'tardif', 'audition']);
+function piecesPropres(z) { return ((z.enquete && z.enquete.pieces) || []).filter((p) => !SRC_RECUES.has(p.src)).length; }
+
 /** Énigmes réussies sur toute la carrière (toutes saisons) et paliers : toutes les ENIGMES.paliers.pas, une récompense. */
 function paliersEnigmes(z, n) {
   if (!n) return;
@@ -1217,7 +1308,7 @@ function paliersEnigmes(z, n) {
   }
 }
 
-function finDeSaison(state, classement) {
+function finDeSaison(state, classement, opts = {}) {
   const zones = Object.values(state.zones);
   const classes = classement.filter((c) => c.classe);
   const titres = [];
@@ -1248,6 +1339,14 @@ function finDeSaison(state, classement) {
     z.plaques = [...(z.plaques || []), { season: state.season, rang: rang + 1 }];
     if (z.failliteSaison && !z.badges.includes('Phénix')) { z.badges.push('Phénix'); titres.push({ uid: c.uid, titre: 'Phénix' }); }
   }
+  // Chef de corps : une médaille par compétence pour la plus forte progression de la saison (pas le plus haut niveau).
+  for (const c of IDS_COMPETENCES) {
+    const best = zones.filter((z) => z.chef && (z.chef.saison[c] || 0) > 0).sort((a, b) => (b.chef.saison[c] || 0) - (a.chef.saison[c] || 0))[0];
+    if (!best) continue;
+    const nomM = `Médaille ${({ gestion: 'de la bonne gestion', commandement: 'du commandement', flair: 'du mérite judiciaire', diplomatie: 'de la coopération', proximite: 'de la proximité' })[c]}`;
+    best.chef.medailles = [...(best.chef.medailles || []), { season: state.season, comp: c, nom: nomM }];
+    give(best.uid, nomM);
+  }
   const resume = { season: state.season, classement: classes.slice(0, 10), titres };
   state.palmares.push(resume);
   // Le document d'état est limité à 1 Mo : on garde les 12 dernières saisons au palmarès.
@@ -1266,7 +1365,7 @@ function finDeSaison(state, classement) {
   // Bilan de saison : les pertes dépendent de ce que chaque zone a gagné et de la moyenne du district.
   const moy = moyennesDistrict(zones);
   for (const [uid, z] of Object.entries(state.zones)) {
-    const bilan = calculerBilan(z, moy, `${state.seed}:bilan:${oldSeason}:${uid}`);
+    const bilan = calculerBilan(z, moy, `${state.seed}:bilan:${oldSeason}:${uid}`, !!opts.leger);
     const nz = newZone({ uid, code: z.code, nom: z.nom, couleur: z.couleur }, 1, { ps: z.ps, badges: z.badges, titres: z.titres, faillites: z.faillites, arrivee: z.arrivee || 0 });
     appliquerBilan(nz, z, bilan);
     nz.bilan = { season: oldSeason, gagnes: bilan.gagnes, moyenne: bilan.moyenne, cas: bilan.cas, fin: BILAN.tours, clos: !bilan.cas.length };
@@ -1282,6 +1381,11 @@ function finDeSaison(state, classement) {
     if (z.skinsChoix) nz.skinsChoix = z.skinsChoix;
     if (z.jaugeIncidents) nz.jaugeIncidents = z.jaugeIncidents;
     if (z.carriere) nz.carriere = z.carriere;
+    // Chef de corps : gardé de saison en saison (compétences, talents, médailles), avec une ligne d'états de service.
+    nz.chef = z.chef ? { ...z.chef, saison: Object.fromEntries(IDS_COMPETENCES.map((c) => [c, 0])) } : creerChef(null);
+    delete nz.chef.parrain;
+    { const ci = classes.findIndex((c) => c.uid === uid), cl = classes[ci];
+      nz.chef.etats = [...(nz.chef.etats || []), { season: oldSeason, rang: cl ? ci + 1 : null, sur: classes.length, moyenne: cl ? round1(cl.moyenne) : null, affaires: (z.stats.decouvertes || 0) + (z.stats.arrestations || 0), trophees: (z.trophees || []).filter((t) => t.s === oldSeason).length, anticipee: !!opts.leger }].slice(-20); }
     if (z.dir) nz.dir = dirHeritage(z); // niveau des énigmes et des mini-jeux, souvenirs du Directeur
     // Le parc suit la zone : les véhicules gardent leur modèle et passent au contrôle technique (usure divisée par deux).
     // Si le garage a perdu un niveau et manque de places, les plus usés sont revendus et le produit s'ajoute au budget.
@@ -1291,8 +1395,12 @@ function finDeSaison(state, classement) {
     nz.heritage = { season: oldSeason, niveaux: { ...nz.niveaux }, batiments: { ...nz.batiments }, annexes: Object.keys(nz.infra).filter((k) => nz.infra[k]).length };
     state.zones[uid] = nz;
   }
-  nouvelleAffaire(state);
-  return { ...resume, saisonSuivante: oldSeason + 1 };
+  // L'affaire qui vient de s'ouvrir ce soir (fin anticipée à la clôture de l'enquête) continue dans la nouvelle saison :
+  // on ne la remplace pas, chaque zone retrouve juste son dossier (vide, jour 1).
+  if (state.enquete && (state.enquete.jour || 1) <= 1 && !state.enquetePause && opts.leger) {
+    for (const nz of Object.values(state.zones)) nz.enquete = dossierDe(state, nz);
+  } else nouvelleAffaire(state);
+  return { ...resume, saisonSuivante: oldSeason + 1, ...(opts.leger ? { anticipee: true } : {}) };
 }
 
 export { START };

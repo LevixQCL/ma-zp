@@ -9,6 +9,7 @@
 // Garde-fous : une seule vague reçue par zone et par nuit, une seule envoyée ; rien vers les zones
 // arrivées depuis moins de VAGUES.protectionNouveaux tours ni vers celles sans ordres depuis 2 tours.
 
+import { talent, TALENT } from './chef.js';
 import { REGLES, forceDoctrine } from './constants.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
 import { clamp, round1 } from './zone.js';
@@ -155,7 +156,9 @@ export function vaguesNuit(state, uids, caps, T, { zoneLabel, push }) {
     const t = cibles[0];
     recues.add(t.p);
     // Doctrine « De quartier » chez la zone visée : la vague arrive atténuée de moitié (au moins 1).
-    const fv = state.zones[t.p] && state.zones[t.p].doctrine === 'quartier' ? Math.max(1, Math.round(force * forceDoctrine(state.zones[t.p], 'vagues'))) : force;
+    const fv0 = state.zones[t.p] && state.zones[t.p].doctrine === 'quartier' ? Math.max(1, Math.round(force * forceDoctrine(state.zones[t.p], 'vagues'))) : force;
+    // Talent « Médiateur » (saison 2) : −25 % de plus, sans descendre sous 1.
+    const fv = talent(state.zones[t.p], 'mediateur') ? Math.max(1, Math.round(fv0 * TALENT.mediateur.vagues)) : fv0;
     const v = { de: cd.u, vers: t.p, origine: cd.d, domaine: t.dom, force: fv, cell: t.fr.chezLui, depuis: t.fr.chezMoi, ref: ref[t.dom], tour: T + 1 };
     liste.push(v);
     z.vagueEnvoyee = { tour: T, domaine: cd.d, vers: t.p, force };

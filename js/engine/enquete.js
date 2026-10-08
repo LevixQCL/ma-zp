@@ -9,7 +9,8 @@ import { enService } from './flotte.js';
 // siens à prix normal, ceux des autres coûtent le double, d'où l'intérêt de partager.
 // Tout est déterministe : une affaire se recalcule à partir de la graine et de son numéro.
 import { makeRng, hashString } from './rng.js';
-import { bonusEquip, SERVICE_LABELS, forceDoctrine } from './constants.js';
+import { bonusEquip, SERVICE_LABELS, forceDoctrine, REGLES, aAnnexe } from './constants.js';
+import { talent, AGENDA } from './chef.js';
 import { LIEUX as LIEUX3, minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
 import { affaireMeurtre, VARIANTES_MEURTRE } from './meurtre-mons.js';
 import { affaireMeurtreRampe, evaluerHypothese, VARIANTES_RAMPE } from './meurtre-rampe.js';
@@ -141,7 +142,7 @@ export function maxDemarchesDe(state, z) {
   const d = e && z && z.enquete && z.enquete.n === e.n ? z.enquete : null;
   // Pièces reçues la veille (celles qui arrivent ce soir ne comptent pas : le joueur ne les connaissait pas en choisissant).
   const recu = d && d.pieces.some((p) => p.de && (p.j || 0) >= (e.jour || 1) - 1 && (p.j || 0) < (e.jour || 1));
-  return ENQ.maxDemarches + (recu ? 0 : ENQ.demarcheSolo);
+  return ENQ.maxDemarches + (recu ? 0 : ENQ.demarcheSolo) + (talent(z, 'intuition') && z._agenda && z._agenda.type === 'parquet' ? 1 : 0);
 }
 
 /** Points d'enquête pour une découverte au jour `j`. */
@@ -1336,8 +1337,8 @@ export function enquetePre(state, uids, ord, push) {
       }
       d.accuseJ = e.jour;
       if (paire.every((k) => estAuteur(aff, k))) { d.accuse = aff.coupable; d.accuse2 = aff.complice; justes.push(u); continue; }
-      d.accuse = a; d.accuse2 = a2; d.exclu = true; z.reputation -= 3;
-      z.rapport.push(`Enquête : accusation rejetée par le parquet. Plus d’accusation possible sur cette affaire (−3 de réputation).`);
+      d.accuse = a; d.accuse2 = a2; d.exclu = true; if (!talent(z, 'renard')) z.reputation -= 3;
+      z.rapport.push(`Enquête : accusation rejetée par le parquet. Plus d’accusation possible sur cette affaire (${talent(z, 'renard') ? 'vieux renard : ta réputation n’en souffre pas' : '−3 de réputation'}).`);
       continue;
     }
     if (!(restants.length === 1 && restants[0] === a)) {
@@ -1348,8 +1349,8 @@ export function enquetePre(state, uids, ord, push) {
     d.accuse = a; d.accuseJ = e.jour;
     if (a === aff.coupable) justes.push(u);
     else {
-      d.exclu = true; z.reputation -= 3;
-      z.rapport.push(`Enquête : accusation ${deN(aff.suspects[a].nom)} rejetée par le parquet. Plus d’accusation possible sur cette affaire (−3 de réputation). Tu peux encore aider les autres en partageant tes pièces.`);
+      d.exclu = true; if (!talent(z, 'renard')) z.reputation -= 3;
+      z.rapport.push(`Enquête : accusation ${deN(aff.suspects[a].nom)} rejetée par le parquet. Plus d’accusation possible sur cette affaire (${talent(z, 'renard') ? 'vieux renard : ta réputation n’en souffre pas' : '−3 de réputation'}). Tu peux encore aider les autres en partageant tes pièces.`);
       // La Gazette ne dit pas qui a été accusé : le nom d'un innocent serait un indice gratuit pour toutes les zones.
       push(6, 'Enquête', `Fausse piste pour ${nomZone(z)}`, `Son accusation dans « ${aff.titre} » est rejetée par le parquet. L’enquête continue pour les autres zones.`, u);
     }
@@ -1533,7 +1534,7 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
   // Enquête de voisinage : plus on a de capacité de Recherche, plus elle rapporte ; une piste prioritaire la concentre.
   const piste = Number.isInteger(o.piste) && o.piste >= 0 && o.piste < aff.suspects.length ? o.piste : null;
   const surPiste = piste !== null && piecesLibres(aff).some((f) => !faitsConnus(d).includes(f) && Number(f.split(':')[1]) === piste);
-  const attendu = chanceVoisinage(state, z.uid, capa.recherche * (1 + bonusEquip(z, 'recherche', 'enquete') + forceDoctrine(z, 'enquete')), surPiste ? piste : null);
+  const attendu = chanceVoisinage(state, z.uid, capa.recherche * (1 + bonusEquip(z, 'recherche', 'enquete') + forceDoctrine(z, 'enquete') + (REGLES.v2 && z._agenda && z._agenda.type === 'parquet' ? AGENDA.parquet.enquete : 0)), surPiste ? piste : null);
   const nb = Math.floor(attendu) + (zr.chance(attendu % 1) ? 1 : 0);
   const trouvees = [];
   for (let k = 0; k < nb; k++) {
@@ -1664,6 +1665,17 @@ export function pieceSurSuspect(state, z, cible, rng, src) {
   return { f, i };
 }
 
+/** Garde à vue (complexe cellulaire) : le premier interpellé de l'affaire en cours balance une pièce, une fois par affaire. */
+export function pieceGardeAVue(state, z, rng) {
+  if (!state.enquete || state.enquetePause || !z.enquete || z.enquete.n !== state.enquete.n || z.enquete.gav) return null;
+  const aff = affaire(state, state.enquete.n);
+  const f = pieceHasard(state, z, aff, rng);
+  if (!f) return null;
+  z.enquete.gav = true;
+  z.enquete.pieces.push({ f, j: state.enquete.jour, src: 'gav' });
+  return f;
+}
+
 /** Bonus d’énigme : une pièce de l'affaire en cours. */
 export function indiceBonus(state, z, rng) {
   if (!state.enquete || !z.enquete) return false;
@@ -1690,6 +1702,16 @@ export function enquetePost(state, pre, push) {
   const accroche = 'Cinq suspects : une seule personne réunit le mobile, le moyen et l’occasion.';
   if (pre.res.decouverte) {
     if (!affaire(state, e.n).meurtre) state.traques.push({ n: e.n, jour: e.jour, tours: ENQ.traqueTours, attrs: ENQ.attrsTraque + (e.trace ? 1 : 0), decouvreurs: pre.res.decouverte.uids, contributeurs: pre.res.decouverte.contribUids || [] });
+    // Cellule drone (saison 2) : un survol de la zone ajoute un indice sur la planque au dossier de chaque zone équipée.
+    if (!affaire(state, e.n).meurtre && REGLES.v2) for (const z of Object.values(state.zones)) {
+      if (!aAnnexe(z, 'drone') || !z.enquete || z.enquete.n !== e.n) continue;
+      const aff = affaire(state, e.n), connus = new Set(faitsConnus(z.enquete));
+      const libres = (aff.faits || []).filter((f) => f.startsWith('p:') && !connus.has(f));
+      if (!libres.length) continue;
+      const f = makeRng(`${state.seed}:drone:${e.n}:${z.uid}`).pick(libres);
+      z.enquete.pieces.push({ f, j: e.jour, src: 'drone' });
+      z.rapport.push('Cellule drone : un survol de nuit ajoute un indice sur la planque à ton dossier, pour la traque.');
+    }
     const a = nouvelleAffaire(state);
     pre.res.nouvelle = a.titre;
     push(5, 'Nouvelle affaire', a.titre, `${a.texte} ${a.accroche || accroche}`);

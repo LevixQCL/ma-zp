@@ -16,6 +16,7 @@
 //
 // Défi amical : trois tours sur une activité que le joueur fait lui-même ; chacun mise la même somme, le gagnant
 // prend le pot et le district ajoute une prime. Refuser n'a aucune conséquence.
+import { talent } from './chef.js';
 import { makeRng } from './rng.js';
 import { affaire, piecesLibres, faitsConnus, titrePiece, texteFait, dossierDe } from './enquete.js';
 import { enDifficulte } from './zone.js';
@@ -70,8 +71,9 @@ export function pacteImpossible(state, uid, cible, T = state.turn) {
   const z = state.zones[uid], c = state.zones[cible];
   if (!z || !c || uid === cible) return 'zone inconnue';
   if ((z.pacteBloque || 0) >= absT(state, T)) return 'pacte rompu récemment';
-  if (pactesDe(state, uid).length >= PACTE.max) return `déjà ${PACTE.max} pactes`;
-  if (pactesDe(state, cible).length >= PACTE.max) return `elle a déjà ${PACTE.max} pactes`;
+  const maxDe = (u) => PACTE.max + (talent(state.zones && state.zones[u], 'adresses') ? 1 : 0); // talent « Carnet d'adresses » (saison 2)
+  if (pactesDe(state, uid).length >= maxDe(uid)) return `déjà ${maxDe(uid)} pactes`;
+  if (pactesDe(state, cible).length >= maxDe(cible)) return `elle a déjà ${maxDe(cible)} pactes`;
   if (pactesDe(state, uid).some((p) => partenaire(p, uid) === cible)) return 'déjà liée';
   if ((c.toursSansOrdres || 0) >= PACTE.inactif) return 'inactive';
   return null;

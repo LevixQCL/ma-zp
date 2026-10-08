@@ -14,7 +14,8 @@
 //   Ceux qui ne participent pas ne paient ni ne gagnent rien.
 
 import { makeRng } from './rng.js';
-import { SEASON_LENGTH } from './constants.js';
+import { SEASON_LENGTH, aAnnexe } from './constants.js';
+import { talent } from './chef.js';
 import { clamp, agentsDisponibles } from './zone.js';
 
 export const CRISE = {
@@ -75,7 +76,8 @@ export function requisCommune(c) {
 }
 /** Agents engagés chaque soir par une zone dans l'opération commune. */
 export function agentsCommune(z, T) {
-  return Math.max(CRISE.C.min, Math.ceil((z ? agentsDisponibles(z, T) : 0) * CRISE.C.part));
+  // Salle de crise (saison 2) : la coordination libère un agent.
+  return Math.max(1, Math.max(CRISE.C.min, Math.ceil((z ? agentsDisponibles(z, T) : 0) * CRISE.C.part)) - (aAnnexe(z, 'crise') ? 1 : 0));
 }
 /** La zone participe-t-elle ce soir à l'opération commune, d'après ses ordres ? */
 export function participeCommune(state, uid, o, T = state.turn) {
@@ -120,7 +122,7 @@ export function crisePre(state, uids, ord, push, T, zoneLabel) {
     const votants = uids.filter((u) => actif(state.zones[u]));
     const compte = [0, 0, 0];
     const participants = {};
-    for (const u of votants) { const v = ord[u] && ord[u].crise; if (Number.isInteger(v)) { compte[v]++; if (v === 2) participants[u] = true; } }
+    for (const u of votants) { const v = ord[u] && ord[u].crise; if (Number.isInteger(v)) { compte[v] += talent(state.zones[u], 'porteparole') ? 2 : 1; if (v === 2) participants[u] = true; } }
     const total = compte.reduce((a, b) => a + b, 0);
     const max = Math.max(...compte);
     const gagnants = [0, 1, 2].filter((i) => compte[i] === max);

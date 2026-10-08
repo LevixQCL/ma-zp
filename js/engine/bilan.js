@@ -20,6 +20,9 @@ export const BILAN = {
   plafond: 0.5,        // part des cas qu'on peut remettre en état (arrondi en dessous, au moins 1 s'il y a des cas)
   tours: 3,            // soirs pour décider (sans réponse : accepté)
 };
+// Bilan allégé : saison écourtée par le maître du jeu (passage anticipé à la saison suivante). Peu de pertes, au plus
+// un niveau par élément, pour que personne ne se sente puni d'une décision qu'il n'a pas prise.
+export const BILAN_LEGER = { part: 0.1, surplus: 0.2, plafondCas: 0.15, maxParElement: 1 };
 
 const round1 = (v) => Math.round(v * 10) / 10;
 
@@ -107,17 +110,18 @@ export function libelleCas(c) {
  * Cas de fin de saison d'une zone (pur, déterministe). `moy` : moyennesDistrict().
  * Retourne { gagnes, moyenne, cas: [{ id, k, s, de, prix, t, x, a, etat }] }.
  */
-export function calculerBilan(z, moy, seed) {
+export function calculerBilan(z, moy, seed, leger = false) {
   const rng = makeRng(seed);
+  const B = leger ? { ...BILAN, ...BILAN_LEGER } : BILAN;
   const gagnes = niveauxGagnes(z);
-  const nb = Math.min(Math.round(BILAN.plafondCas * gagnes), Math.round(BILAN.part * gagnes + BILAN.surplus * Math.max(0, gagnes - (moy.total || 0))));
+  const nb = Math.min(Math.round(B.plafondCas * gagnes), Math.round(B.part * gagnes + B.surplus * Math.max(0, gagnes - (moy.total || 0))));
   const etat = elementsZone(z).map((it) => ({ ...it, pris: 0 }));
   const hp = (z.batiments && z.batiments.bureaux) || 1;
   const vus = {};
   const cas = [];
   for (let i = 0; i < nb; i++) {
     const cand = etat
-      .filter((it) => it.n > 1 && it.pris < BILAN.maxParElement && !(it.s === 'bureaux' && hp >= BILAN.hpProtege && it.n <= BILAN.hpProtege))
+      .filter((it) => it.n > 1 && it.pris < B.maxParElement && !(it.s === 'bureaux' && hp >= BILAN.hpProtege && it.n <= BILAN.hpProtege))
       .map((it) => ({ it, e: it.n - (moy[cle(it)] || 1) + rng.next() * 0.4 }))
       .sort((a, b) => b.e - a.e);
     if (!cand.length) break;

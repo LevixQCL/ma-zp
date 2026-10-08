@@ -1054,6 +1054,7 @@ async function onClick(e) {
       case 'dir-reglage': { const r = { ...((S.state.dir && S.state.dir.reglages) || {}), [el.dataset.k]: el.dataset.v }; await b.adminDirecteur({ reglages: r }); toast('Réglage du Directeur enregistré : il s’applique dès la prochaine nuit.'); break; }
       case 'dir-forcer': await b.adminDirecteur({ forcer: el.dataset.id }); toast('Demandé : annoncé à la prochaine nuit, le district le vivra le surlendemain.'); break;
       case 'admin-vus': S.players = await b.getPlayers(); toast('Connexions actualisées.'); rerender(); break;
+      case 'admin-fin-saison': { const m = el.dataset.mode || null; await b.adminFinSaison(m); toast(m === 'enquete' ? 'La saison se terminera le soir où l’affaire en cours se clôt.' : m === 'soir' ? 'La saison se termine ce soir à 20:00.' : 'Fin anticipée annulée.'); break; }
       case 'admin-variantes': await b.adminVariantesEcrites(!S.state.variantesEcrites); toast(!S.state.variantesEcrites ? 'Les prochaines affaires écrites pourront tirer une autre version.' : 'Retour au scénario d’origine pour les prochaines affaires écrites.'); break;
       case 'admin-passer-tour': if (await askConfirm(`Passer le tour ${S.state.turn} sans le calculer ? Aucune zone n’avance ce soir.`)) { await b.adminPasserTour(); toast('Tour passé.'); } break;
       case 'admin-force': await b.adminForceResolution(); await tick(true); toast(etatResolution.erreur ? 'Le tour n’a pas pu être résolu (détail en haut de l’écran).' : 'Tour résolu.'); break;
