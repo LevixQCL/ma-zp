@@ -121,8 +121,9 @@ export function accidentVehicule(z, T, rng, ctx, push, label) {
 
   if (type === 'accrochage') {
     const slot = placeLibre(z, T);
-    z.cabosses.push({ depuis: T, ...(slot >= 0 ? { slot } : {}) });
     const quoi = rng.pick(['un rétroviseur arraché contre un poteau', 'une portière enfoncée en manœuvrant', 'un pare-chocs plié contre une borne', 'une aile froissée dans un parking trop étroit', 'un feu arrière brisé en marche arrière']);
+    // cause gardée pour la fiche du véhicule (« pourquoi est-il cabossé ? »)
+    z.cabosses.push({ depuis: T, cause: `accrochage pendant le service : ${quoi}`, ...(slot >= 0 ? { slot } : {}) });
     z.rapport.push(`Accident de véhicule : accrochage, ${quoi}. Le véhicule roule encore mais il est cabossé : passe-le en carrosserie (${k(coutCarrosserie(z) / z.cabosses.length)}) avant qu’il ne ternisse l’image de la zone.`);
     return { type, tort };
   }

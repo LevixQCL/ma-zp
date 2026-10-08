@@ -397,7 +397,7 @@ export function ouvrirVehicule(slot) {
   const prevu = v.etat === 'cabosse' && cabossesChoisis(z, dep.carrosserie).includes(v.cab);
   const prix = coutCarrosserie(z, [0]);
   const statut = v.etat === 'cabosse'
-    ? `<span class="tiny" style="color:var(--amber)">Cabossé${T - v.depuis > 0 ? ` depuis ${T - v.depuis} tour${T - v.depuis > 1 ? 's' : ''}` : ' aujourd’hui'} · il abîme l’image de la zone tant qu’il roule ainsi</span>`
+    ? `<span class="tiny" style="color:var(--amber)">Cabossé${T - v.depuis > 0 ? ` depuis ${T - v.depuis} tour${T - v.depuis > 1 ? 's' : ''}` : ' aujourd’hui'} · il abîme l’image de la zone tant qu’il roule ainsi</span>${v.cause ? `<span class="tiny muted" style="display:block">Cause : ${esc(v.cause)} (tour ${v.depuis}).</span>` : ''}`
     : v.etat === 'atelier' ? `<span class="tiny bad">À l’atelier : de retour dans ${v.jours} tour${v.jours > 1 ? 's' : ''}</span>`
     : '<span class="tiny ok">En service</span>';
   const html = `

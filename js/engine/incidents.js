@@ -293,7 +293,7 @@ export function appliquerUrgence(z, inc, res, { alloc = {}, T, rng }) {
   z._ps = (z._ps || 0) + PS.queteTentee;
   if (res.raison === 'hs') {
     const cible = slot != null && slot >= 0 ? slot : placeLibre(z, T);
-    if (cible != null && cible >= 0 && !(z.cabosses || []).some((c) => c.slot === cible)) { z.cabosses = [...(z.cabosses || []), { depuis: T, slot: cible }]; out.push(`${nomVeh} rentre avec la carrosserie à refaire`); }
+    if (cible != null && cible >= 0 && !(z.cabosses || []).some((c) => c.slot === cible)) { z.cabosses = [...(z.cabosses || []), { depuis: T, slot: cible, cause: 'urgence (Bitonal) : trop d’accrochages en route' }]; out.push(`${nomVeh} rentre avec la carrosserie à refaire`); }
     else { user(z, cible != null && cible >= 0 ? cible : null, U.usureHS); out.push(`${nomVeh}, déjà abîmé${nomVeh.startsWith('la ') ? 'e' : ''}, encaisse encore (+${U.usureHS} % d’usure)`); }
     return [`${nom} : trop d’accrochages, ${nomVeh} a dû s’arrêter en route (une autre équipe a pris le relais). ${nomVeh.charAt(0).toUpperCase() + nomVeh.slice(1)} n’est pas perdu${nomVeh.startsWith('le ') ? '' : 'e'} : ${out.join(' ; ')} (+${PS.queteTentee} PS pour avoir essayé).`];
   }

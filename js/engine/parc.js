@@ -49,7 +49,7 @@ export function parcVehicules(z, T) {
     if (v.slot != null && v.slot < n && !pris.has(v.slot)) poser(v.slot, info); else aPlacer.push(info);
   }
   (z.cabosses || []).forEach((c, i) => {
-    const info = { etat: 'cabosse', cab: i, depuis: c.depuis };
+    const info = { etat: 'cabosse', cab: i, depuis: c.depuis, ...(c.cause ? { cause: c.cause } : {}) };
     if (c.slot != null && c.slot < n && !pris.has(c.slot)) poser(c.slot, info); else aPlacer.push(info);
   });
   for (const info of aPlacer) {
