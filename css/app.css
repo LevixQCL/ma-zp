@@ -1653,3 +1653,30 @@ table.horaire.bd tr.bd-arch td { color: var(--amber-hi); font-weight: 600; }
 .seg3 { display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 4px; background: var(--bg); border: 1px solid var(--hair); border-radius: 16px; padding: 4px; }
 .seg3 button { min-height: 44px; min-width: 0; border: none; border-radius: 12px; background: transparent; color: var(--text2); font: 600 13px var(--body); padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .seg3 button[aria-selected="true"] { background: var(--surface3); color: var(--text); font-weight: 700; box-shadow: var(--lift), 0 2px 8px rgba(0, 0, 0, .3); }
+
+/* HP allégée */
+.hp.compacte .todo { min-height: 46px; padding: 8px 12px; }
+.hp.compacte .todo .tiny { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.soir-faits { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--green-soft); padding: 2px 4px 0; line-height: 1.3; }
+.soir-faits svg { flex-shrink: 0; }
+.hp.compacte .cadrans { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.hp.compacte .cadran { padding: 6px 2px 8px; border-radius: 14px; gap: 0; }
+.hp.compacte .cad-svg { width: 58px; height: 48px; }
+.hp.compacte .cad-v { font-size: 21px; }
+.hp.compacte .cad-txt { gap: 2px; }
+.hp.compacte .cad-l { font-size: 11.5px; }
+.hp.compacte .cad-q { display: none; }
+.hp.compacte .cad-d { min-height: 15px; }
+.hp.compacte .cad-d .pdelta { font-size: 10px; }
+.hp.compacte .cad-s { font-size: 10px; line-height: 1.2; }
+.nuit-plus summary, .alertes-plus summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--blue-soft); list-style: none; }
+.nuit-plus summary::-webkit-details-marker, .alertes-plus summary::-webkit-details-marker { display: none; }
+.nuit-plus summary::after, .alertes-plus summary::after { content: ' ›'; }
+.nuit-plus[open] summary::after, .alertes-plus[open] summary::after { content: ' ⌄'; }
+.alertes-plus summary { padding: 4px 2px; color: var(--muted); }
+/* Allégée : ventes, équipe et trophées sur une seule ligne de trois tuiles (une seule ligne de résumé) */
+.hp.compacte .duo:not(:has(details[open])) { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.hp.compacte .duo:not(:has(details[open])) > :nth-child(3):last-child { grid-column: auto; }
+.hp.compacte .duo:not(:has(details[open])) > details.repli > summary { padding: 10px 8px; flex-direction: column; gap: 4px; }
+.hp.compacte .duo:not(:has(details[open])) > details.repli > summary .tiny { -webkit-line-clamp: 1; font-size: 10.5px; }
+.hp.compacte .cad-s { white-space: nowrap; font-size: 9.5px; }

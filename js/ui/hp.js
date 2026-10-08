@@ -141,6 +141,11 @@ function rapportHtml(z) {
 
 function cleNuit(z) { return `mazp-nuit-${S.backend.gameId ? S.backend.gameId() : ''}-${S.state.season}-${S.state.turn}-${z.uid}`; }
 
+/** HP allégée (aperçu : ?hpc dans l'adresse, retenu pour la session). */
+export function hpCompacte() {
+  try { if (/[?&]hpc\b/.test(location.search)) sessionStorage.setItem('mazp-hpc', '1'); return sessionStorage.getItem('mazp-hpc') === '1'; } catch (e) { return false; }
+}
+
 /** Carte « Résultat de la nuit », affichée jusqu'à ce que le joueur la ferme. */
 function nuitHtml(z) {
   // Inutile quand le rapport complet est ouvert juste en dessous : il dit la même chose, en entier.
@@ -157,7 +162,13 @@ function nuitHtml(z) {
     <div class="between"><span class="kicker" style="color:var(--blue-soft)">Résultat de la nuit · tour ${S.state.turn - 1 || ''}</span>
       <button class="btn small ghost" data-action="nuit-ok">OK</button></div>
     ${lignes.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${lignes.map(([l, v, a, u]) => `<span class="pill">${l} ${fmt1(v)}${u || ''} ${delta(v, a)}</span>`).join('')}</div>` : ''}
-    <div class="col" style="gap:4px">${importants.map((l) => `<p class="small" style="margin:0;color:${/^Décision refusée/.test(l) ? 'var(--red-soft);font-weight:700' : 'var(--text2)'}">• ${esc(l)}</p>`).join('')}</div>
+    ${(() => {
+      const ps = importants.map((l) => `<p class="small" style="margin:0;color:${/^Décision refusée/.test(l) ? 'var(--red-soft);font-weight:700' : 'var(--text2)'}">• ${esc(l)}</p>`);
+      if (!hpCompacte()) return `<div class="col" style="gap:4px">${ps.join('')}</div>`;
+      // Allégée : une décision refusée reste visible, le reste se déplie.
+      const nRef = refusees.length;
+      return `${nRef ? `<div class="col" style="gap:4px">${ps.slice(0, nRef).join('')}</div>` : ''}${ps.length > nRef ? `<details class="nuit-plus"><summary>Ce qui s’est passé · ${ps.length - nRef} fait${ps.length - nRef > 1 ? 's' : ''}</summary><div class="col" style="gap:4px;margin-top:6px">${ps.slice(nRef).join('')}</div></details>` : ''}`;
+    })()}
     <div class="row"><button class="btn small grow" data-action="voir-rapport">Rapport complet</button><a class="btn small grow" href="#gazette">La Gazette</a></div>
   </section>`;
 }
@@ -242,8 +253,9 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue }) {
     </div>
     ${situationPastilles(z, ciel)}
     <p class="soir-etat ${reste ? '' : 'ok'}">${reste ? `${reste} chose${reste > 1 ? 's' : ''} à faire avant ce soir` : 'Tout est prêt pour ce soir'}</p>
-    ${reste ? `<div class="col soir-todo" style="gap:6px">${items.map((i) => `<a class="todo ${i.ok ? 'done' : ''}" href="${i.href}"><span class="box" aria-hidden="true">${i.ok ? icon('check', 14) : ''}</span>
-      <span class="col grow" style="gap:0"><span style="font-weight:600">${i.t}</span><span class="tiny muted">${i.s}</span></span>${icon('chevron', 16)}</a>`).join('')}</div>` : ''}
+    ${reste ? `<div class="col soir-todo" style="gap:6px">${items.filter((i) => !hpCompacte() || !i.ok).map((i) => `<a class="todo ${i.ok ? 'done' : ''}" href="${i.href}"><span class="box" aria-hidden="true">${i.ok ? icon('check', 14) : ''}</span>
+      <span class="col grow" style="gap:0;min-width:0"><span style="font-weight:600">${i.t}</span><span class="tiny muted">${i.s}</span></span>${icon('chevron', 16)}</a>`).join('')}
+      ${hpCompacte() && fait ? `<span class="soir-faits">${icon('check', 12)} ${fait} déjà fait${fait > 1 ? 's' : ''} : ${items.filter((i) => i.ok).map((i) => i.t.replace(/ :.*$/, '')).join(' · ')}</span>` : ''}</div>` : ''}
   </section>`;
 }
 
@@ -312,7 +324,13 @@ export function renderHP() {
   const dotColor = { red: 'var(--red)', amber: 'var(--amber)', blue: 'var(--blue)' };
   const last = S.gazettes[0];
 
-  return `<main class="screen hp">
+  const compacte = hpCompacte();
+  const MAX_ALERTES = 3;
+  const ligneAlerte = (a) => `<a class="list-row" href="${a.href}" ${a.cls === 'red' ? 'style="background:var(--red-bg);border-color:var(--red-line)"' : ''}><span class="bullet" style="background:${dotColor[a.cls]}"></span>
+        <span class="col" style="gap:1px"><span style="font-weight:600">${a.titre}</span><span class="small muted">${a.texte}</span></span></a>`;
+  // Allégée : les alertes rouges d'abord, 3 visibles, le reste se déplie.
+  const alertesTri = compacte ? alertes.slice().sort((x, y) => (x.cls === 'red' ? 0 : 1) - (y.cls === 'red' ? 0 : 1)) : alertes;
+  return `<main class="screen hp${compacte ? ' compacte' : ''}">
     <header class="between" style="align-items:flex-start">
       <div class="col" style="gap:3px"><h1 class="brand">Ma ZP</h1><a class="sub" href="#parties" style="text-decoration:none">Hôtel de police · <span style="color:var(--amber-soft);text-decoration:underline">${esc((S.partie && S.partie.nom) || 'District Delta')}</span></a></div>
       <div class="col" style="gap:6px;align-items:flex-end">
@@ -386,8 +404,8 @@ export function renderHP() {
 
 
     ${alertes.length ? `<section class="col" aria-label="À traiter"><h2 class="section">À traiter</h2>
-      ${alertes.map((a) => `<a class="list-row" href="${a.href}" ${a.cls === 'red' ? 'style="background:var(--red-bg);border-color:var(--red-line)"' : ''}><span class="bullet" style="background:${dotColor[a.cls]}"></span>
-        <span class="col" style="gap:1px"><span style="font-weight:600">${a.titre}</span><span class="small muted">${a.texte}</span></span></a>`).join('')}</section>` : ''}
+      ${(compacte ? alertesTri.slice(0, MAX_ALERTES) : alertesTri).map(ligneAlerte).join('')}
+      ${compacte && alertesTri.length > MAX_ALERTES ? `<details class="alertes-plus"><summary>${alertesTri.length - MAX_ALERTES} autre${alertesTri.length - MAX_ALERTES > 1 ? 's' : ''}</summary><div class="col" style="gap:8px;margin-top:8px">${alertesTri.slice(MAX_ALERTES).map(ligneAlerte).join('')}</div></details>` : ''}</section>` : ''}
 
     <section class="col">
       <div class="trio">
