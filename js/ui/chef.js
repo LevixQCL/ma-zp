@@ -8,9 +8,9 @@ import { COMPETENCES, IDS_COMPETENCES, PARCOURS, IDS_PARCOURS, TALENTS, TALENT, 
 // ───── Portraits (images générées avec Gemini, img/chefs/pNN.webp) ─────
 // Tant qu'une image manque, un portrait dessiné (silhouette en uniforme, initiales) la remplace.
 export const PORTRAITS = [
-  ['p01', 'h'], ['p02', 'f'], ['p03', 'h'], ['p04', 'f'], ['p05', 'h'], ['p06', 'f'], ['p07', 'h'], ['p08', 'f'],
-  ['p09', 'h'], ['p10', 'f'], ['p11', 'h'], ['p12', 'f'], ['p13', 'h'], ['p14', 'f'], ['p15', 'h'], ['p16', 'f'],
-  ['p17', 'h'], ['p18', 'f'], ['p19', 'h'], ['p20', 'f'], ['p21', 'h'], ['p22', 'f'], ['p23', 'h'], ['p24', 'f'],
+  ['p01', 'f'], ['p02', 'h'], ['p03', 'f'], ['p04', 'h'], ['p05', 'f'], ['p06', 'h'], ['p07', 'f'], ['p08', 'h'],
+  ['p09', 'f'], ['p10', 'h'], ['p11', 'f'], ['p12', 'h'], ['p13', 'h'], ['p14', 'f'], ['p15', 'h'], ['p16', 'f'],
+  ['p17', 'h'], ['p18', 'f'], ['p19', 'h'], ['p20', 'h'], ['p21', 'f'], ['p22', 'f'], ['p23', 'h'], ['p24', 'f'],
 ].map(([id, g]) => ({ id, g }));
 const PORTRAIT = Object.fromEntries(PORTRAITS.map((p) => [p.id, p]));
 
