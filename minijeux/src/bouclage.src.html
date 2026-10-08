@@ -39,7 +39,14 @@
 .btn.go{flex:1;min-width:0;padding:11px 12px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .btn.go small{font-weight:600;opacity:.8}
 .btn.go{background:#ffd166;color:#241400;border-color:transparent;box-shadow:0 0 18px rgba(255,209,102,.35)}
-#somm{border:2px solid #62b0ff;color:#cfe4ff;box-shadow:0 0 14px rgba(98,176,255,.3)}
+#somm{border:2px solid #8cc6ff;color:#fff;font-weight:800;font-size:15px;padding:11px 16px;background:linear-gradient(180deg,#2f7fe0,#1b5bb0);box-shadow:0 0 16px rgba(98,176,255,.45);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+#somm svg{width:22px;height:22px}
+#somm .cd{background:#fff;height:4px}
+#somm.pret{animation:sommPret 1.6s ease-in-out infinite}
+@keyframes sommPret{50%{box-shadow:0 0 26px rgba(120,190,255,.85);transform:scale(1.04)}}
+#somm[aria-pressed="true"]{background:#fff;color:#1b5bb0;border-color:#fff;animation:none}
+#somm:disabled{background:#1d2a44;border-color:#3a5680;color:#9fb6d8;box-shadow:none;animation:none;opacity:1}
+@media (prefers-reduced-motion:reduce){#somm.pret{animation:none}}
 #spd{border:2px solid #62b0ff;color:#cfe4ff}
 #spd.x2{font:700 12px var(--f-body);line-height:1.15;max-width:86px;white-space:normal;background:color-mix(in srgb,#FFB23F 22%,var(--surface));border-color:#FFB23F;color:#FFE2A8}
 .btn.go:disabled{background:var(--surface);color:var(--mute);box-shadow:none;border-color:var(--stroke)}
@@ -802,7 +809,7 @@ function ui(){
   else if(R.phase==='run'&&R.nextIn!==null){ b.disabled=false; const eb=earlyBonus(); b.innerHTML=`Vague ${R.wave+1} dans ${Math.ceil(R.nextIn)} s${eb?` <small>· maintenant : +${eb}</small>`:''}`; }
   else { b.disabled=true; b.innerHTML=R.phase==='run'?(R.wave>=R.waves?'Dernière vague':`Vague ${R.wave} en cours`):'—'; }
   const sm=$('somm'); sm.hidden=R.phase==='idle'||R.tuto>0; sm.disabled=R.somm.cd>0||R.phase!=='run';
-  sm.setAttribute('aria-pressed',R.somm.placing); $('sommTxt').textContent=R.somm.cd>0?`${Math.ceil(R.somm.cd)} s`:'Sommation';
+  sm.setAttribute('aria-pressed',R.somm.placing); sm.classList.toggle('pret',!sm.disabled&&!R.somm.placing); $('sommTxt').textContent=R.somm.cd>0?`${Math.ceil(R.somm.cd)} s`:'Sommation';
   $('sommCd').style.width=(R.somm.cd>0?(1-R.somm.cd/sommCd())*100:0)+'%';
   $('spd').hidden=R.phase==='idle'; majVitesse();
 }
