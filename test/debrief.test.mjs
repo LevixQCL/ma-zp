@@ -20,6 +20,11 @@ state = r.state;
 assert.ok(!r.gazette.enquete.debriefs, 'pas de débrief tant que l’affaire court');
 const aPieces = state.zones.A.enquete.pieces.filter((p) => p.src !== 'ouverture').map((p) => p.f).slice(0, 2);
 state = resolveTurn(state, { players, orders: { A: { ...base, partages: aPieces.map((f) => ({ f, a: 'C' })) }, B: base, C: base } }).state;
+// Le parquet exige un dossier qui écarte les autres suspects (et le juge, des caractéristiques de la planque) : on les donne à C.
+{ const d = state.zones.C.enquete, add = (f) => { if (!d.pieces.some((p) => p.f === f)) d.pieces.push({ f, j: state.enquete.jour, src: 'test' }); };
+  for (const e of ['mob', 'moy', 'occ']) add(`c:${e}`);
+  aff.suspects.forEach((sus, i) => { for (const e of ['mob', 'moy', 'occ']) if (!sus.statut[e]) add(`${e}:${i}`); });
+  for (const k of ['humidite', 'temperature', 'rive', 'acces']) add(`p:${k}`); }
 r = resolveTurn(state, { players, orders: { A: base, B: base, C: { ...base, accusation: c } } });
 state = r.state;
 assert.ok(r.gazette.enquete.decouverte);
@@ -40,13 +45,12 @@ assert.deepEqual(occ.par, ['A'], 'A a trouvé l’alibi de l’auteur le premier
 assert.equal(occ.j, 1);
 assert.equal(db.pistes.length, 4, 'quatre innocents');
 for (const p of db.pistes) assert.equal(p.pieces.length, 1, 'une pièce écarte chaque innocent');
-assert.deepEqual(db.pistes.find((p) => p.i === faux).accusePar, ['B'], 'la fausse accusation de B est rappelée');
+assert.ok(!(db.pistes.find((p) => p.i === faux).accusePar || []).length, 'l’accusation sans dossier de B a été refusée : pas de fausse accusation');
 const zB = db.zones.find((z) => z.uid === 'B'), zC = db.zones.find((z) => z.uid === 'C'), zA = db.zones.find((z) => z.uid === 'A');
-assert.equal(zB.accuse, faux); assert.equal(zB.accuseJ, 1); assert.equal(zB.juste, false);
+assert.ok(!zB || zB.accuse == null, 'B n’a pas pu accuser sans dossier');
 assert.ok(zC.juste && zC.arrete);
 assert.equal(zA.donnees, aPieces.length, 'les pièces données par A');
 assert.equal(db.zones[0].uid, 'C', 'la zone qui a démasqué l’auteur en tête');
-assert.ok(db.chrono.some((x) => x.t === 'faux' && x.j === 1));
 assert.ok(db.chrono.some((x) => x.t === 'decouverte' && x.j === 3));
 assert.ok(JSON.stringify(db).length < 12000, 'débrief compact (Gazette)');
 assert.ok(!/undefined|NaN/.test(JSON.stringify(db)));

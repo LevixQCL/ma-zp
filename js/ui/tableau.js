@@ -25,7 +25,7 @@ import { sceneFouilleHtml, sceneZoomHtml } from './scene-fouille.js';
 import { friseSvg, friseVolet } from './frise.js';
 import { opposables, pieceReaudition, REAUD } from '../engine/enquete.js';
 import { lienItineraire, lieuxMons, MODES_GMAPS } from '../engine/meurtre-mons.js';
-import { demarcheDe, mandatOk } from '../engine/enquete.js';
+import { demarcheDe, mandatOk, accusationRecevable } from '../engine/enquete.js';
 import { relecturesHtml, recoupBoutons, voletRecoup, voletHypo, voletPouces, mobileHtml, soirPlusHtml } from './enquete-plus.js';
 
 // ───── Dimensions du tableau ─────
@@ -373,7 +373,9 @@ function voletSuspect(aff, dos, i, et) {
   if (dos.exclu) acc = '<span class="tiny muted">Ton accusation a été rejetée : tu ne peux plus accuser sur cette affaire.</span>';
   else if (dos.accuse !== null && dos.accuse !== undefined) acc = '<span class="tiny muted">Accusation transmise au parquet.</span>';
   else if (aff.meurtre) acc = accuse ? '<button type="button" class="btn ghost small" data-action="accuser-annuler">Annuler la confrontation</button>' : `<button type="button" class="btn outline small" data-action="tab-ouvrir" data-tid="X:${i}" style="border-color:var(--red-line);color:var(--red-soft)">Confronter ${esc(s.prenom)}</button>`;
-  else acc = accuse ? '<button type="button" class="btn ghost small" data-action="accuser-annuler">Retirer l’accusation</button>' : `<button type="button" class="btn outline small" data-action="accuser" data-i="${i}" style="border-color:var(--red-line);color:var(--red-soft)">Accuser ${esc(s.prenom)}</button>`;
+  else if (accuse) acc = '<button type="button" class="btn ghost small" data-action="accuser-annuler">Retirer l’accusation</button>';
+  else if (!accusationRecevable(aff, dos, i)) acc = `<span class="tiny muted">Le parquet n’acceptera d’accuser ${esc(s.prenom)} que si ton dossier écarte tous les autres suspects (pièces à l’appui, les tiennes ou celles reçues).</span>`;
+  else acc = `<button type="button" class="btn outline small" data-action="accuser" data-i="${i}" style="border-color:var(--red-line);color:var(--red-soft)">Accuser ${esc(s.prenom)}</button>`;
   const suivi = zonesDuSuspect(st, i).filter((u) => u !== S.user.uid && st.zones[u]);
   return `<div class="tb-tete">${portraitSuspect(s, i, 'tb-face tb-mini')}
       <div class="col" style="gap:2px;min-width:0"><span class="tb-titre">${esc(s.nom)}</span><span class="tiny muted">${esc(fiche.lien)}</span>

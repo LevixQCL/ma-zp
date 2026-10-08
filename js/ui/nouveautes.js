@@ -3,19 +3,25 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-08-retours-luc',
+  id: '2026-10-08-preuves',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🧩', 'Une 4e énigme chaque jour', 'dès ce soir 20:00 : quatre énigmes, bonus dès 2 réussies, prime dès 3. Une erreur ne te prive plus de la prime. Et toutes les 10 énigmes réussies depuis ton arrivée, un palier : +2 000 € et +3 sur la jauge des skins.'],
-    ['🏆', '8 nouveaux trophées', 'Rempart, Première ligne, Recordman, Érudit, Sur tous les fronts, Trésorier, Collectionneur, Au sommet : 20 en tout, et d’autres viendront.'],
-    ['⚠️', 'Les gangs contre-attaquent', 'zone de non-droit : au-delà de 2 secteurs tenus, le milieu envoie des gangs les reprendre. Ils sont annoncés la veille : montez la garde ensemble, un gang repoussé rapporte à chaque zone de garde.'],
-    ['🚨', 'Bitonal plus lisible', 'caméra plus haute : tu vois enfin ce qui est juste devant le combi. Fini les accrochages contre une voiture invisible et les panneaux qui glissent tout seuls.'],
-    ['🚓', 'Véhicules : le comparatif', 'tous les modèles côte à côte (prix, places, vitesse, maniabilité, usure…), dans le parc et à l’achat.'],
+    ['⚖️', 'Le parquet veut des preuves', 'pour accuser dans un vol, ton dossier doit écarter tous les autres suspects ; pour la traque, le juge signe la perquisition des lieux que ton dossier désigne (badge « mandat »). Un nom soufflé ne suffit plus : c’est ton enquête qui gagne. Et un refus ne coûte rien.'],
+    ['🕗', 'Le tour tombe à 20:00, même si personne n’ouvre le jeu', 'dès que le maître du jeu l’a activé : la Gazette et ton rapport t’attendent.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Preuves et fiabilité (8 octobre, nuit)', [
+      ['Accusation (vols)', 'le parquet n’accepte l’accusation que si ton dossier (tes pièces et celles reçues) écarte les quatre autres suspects. Sinon, refus expliqué dans ton rapport, sans pénalité : tu reviens avec les pièces. Le bouton « Accuser » n’apparaît que quand c’est le cas.'],
+      ['Traque', 'le juge ne signe la perquisition que pour un lieu que ton dossier désigne : au moins 2 caractéristiques de la planque connues, et le lieu y correspond (badge « mandat » dans la liste des planques). La voiture anonymisée suit la même règle.'],
+      ['Tour de 20:00', 'une tâche planifiée calcule le tour de toutes les parties quelques minutes après 20:00, même si personne n’ouvre le jeu. Les appareils ne le calculent plus qu’en secours, 20 minutes plus tard.'],
+      ['Une zone en erreur ne bloque plus la partie', 'si le calcul d’une zone échoue, elle saute son tour (c’est noté dans son rapport) et toutes les autres avancent.'],
+      ['Profil', 'ton profil n’écrase plus ce qu’un autre appareil (téléphone, PC) vient d’enregistrer.'],
+      ['Chargement', 'seules les 3 dernières Gazettes sont chargées à l’ouverture ; les plus anciennes quand tu remontes le temps.'],
+      ['Nouvelles zones', 'une zone qui arrive en cours de saison reçoit au plus le budget de départ (60 000 €). Une partie accueille jusqu’à 40 zones.'],
+    ]],
     ['Bitonal : corrections (8 octobre, soir)', [
       ['Caméra', 'plus haute et un peu plus reculée : le combi ne cache plus les voitures qui sont juste devant lui. Avant, tout obstacle à moins de ~8 m disparaissait derrière ton propre véhicule.'],
       ['Décor stable', 'les virages sont maintenant dessinés sur le tracé de la rue : feux, panneaux et immeubles ne glissent plus de gauche à droite tout seuls. Plus de tremblement aléatoire de l’image à grande vitesse.'],

@@ -140,14 +140,6 @@ function render() {
       case 'gazette': html = renderGazette(); if (S.gazetteIndex === 0) marquerGazetteLue(); break;
       case 'debrief': html = renderDebrief(); break;
       case 'classement':
-        // Lecture de toutes les réponses aux énigmes : seulement sur l'onglet Énigmes, au plus toutes les 5 minutes.
-        if (S.classTab === 'enigmes' && (!S.questStatsAt || Date.now() - S.questStatsAt > 300000)) {
-          S.questStatsAt = Date.now();
-          Promise.resolve(S.backend.listQuestResults ? S.backend.listQuestResults() : [])
-            .then((r) => { S.questStats = r; S.questStatsErreur = false; })
-            .catch((e) => { console.warn(e); S.questStatsErreur = true; })
-            .then(() => { if (S.route === 'classement') rerender(); });
-        }
         html = renderClassement(); break;
       case 'profil': html = renderProfil(); break;
       case 'admin': html = S.backend.isMaster(S.user) ? renderAdmin() : renderHP(); break;
@@ -249,14 +241,14 @@ async function loadTurnData() {
   const [orders, quest, gazettes] = await Promise.all([
     lire(S.backend.getOrders(uid, st.season, st.turn), null, 'ordres'),
     lire(S.backend.getQuests(uid, st.season, st.turn), null, 'énigmes'),
-    lire(S.backend.listGazettes(10), [], 'gazettes'),
+    lire(S.backend.listGazettes(3), [], 'gazettes'), // les 3 derniers soirs ; les plus anciens à la demande (chargerArchivesGazette)
   ]);
   S.savedOrders = orders; S.ordersDirty = false; S.draft = null; S.decisionOpen = false;
   // Réponses rangées par emplacement : 0, 1, 2 (et 4 avec la 4e énigme) ; le 3 est le dossier noir, gardé à part.
   S.questResults = [0, 1, 2, 3, 4].map((k) => (k === 3 ? null : (quest && quest[k]) || null)); S.noirResult = (quest && quest[3]) || null; S.quests = null; S.questPick = null;
   S.questIdx = slotsJour().find((k) => { const r = S.questResults[k]; return !r || (r.statut !== 'ok' && r.statut !== 'rate'); }) ?? 0;
   // Tri par saison et tour : l'ordre d'écriture dépend de l'horloge de l'appareil qui a calculé le tour.
-  S.gazettes = (gazettes || []).slice().sort((x, y) => (y.season - x.season) || (y.turn - x.turn)); S.gazetteIndex = 0; S.rapportIdx = 0;
+  S.gazettes = (gazettes || []).slice().sort((x, y) => (y.season - x.season) || (y.turn - x.turn)); S.gazetteIndex = 0; S.rapportIdx = 0; S.gazettesArchives = false;
   completerDepuisGazette(S.state, S.gazettes);
   S.gazettesChargees = true;
   if (isNew) toast(`Tour ${st.turn} : la Gazette est parue !`);
@@ -384,7 +376,7 @@ async function tick(force = false) {
   lastTick = Date.now();
   try {
     const avant = etatResolution.erreur;
-    const n = await resolvePending(S.backend, { hour: CONFIG.resolutionHour, state: force ? null : S.state });
+    const n = await resolvePending(S.backend, { hour: CONFIG.resolutionHour, state: force ? null : S.state, sansDelai: force && S.backend.isMaster(S.user) });
     if (n > 0) { attenteTick = 15000; S.players = await S.backend.getPlayers(); }
     else attenteTick = Math.min(240000, attenteTick * 2);
     if (etatResolution.erreur !== avant) rerender();
@@ -662,7 +654,7 @@ async function onClick(e) {
       case 'pick-color-profil': S.profilColor = el.dataset.color; rerender(); break;
       case 'rename': S.editingName = true; rerender(); setTimeout(() => document.getElementById('nom-zone')?.focus(), 0); break;
       case 'toggle-rapport': S.showRapport = !S.showRapport; S.rapportIdx = 0; rerender(); break;
-      case 'rapport-nav': S.rapportIdx = Math.max(0, (S.rapportIdx || 0) + Number(el.dataset.d)); rerender(); break;
+      case 'rapport-nav': if (Number(el.dataset.d) > 0) chargerArchivesGazette(); S.rapportIdx = Math.max(0, (S.rapportIdx || 0) + Number(el.dataset.d)); rerender(); break;
       case 'voir-rapport': {
         // Depuis « Résultat de la nuit » : ouvre le rapport et descend jusqu'à lui.
         S.showRapport = true; S.rapportIdx = 0; rerender();
@@ -1043,7 +1035,8 @@ async function onClick(e) {
       case 'quiz-bonus': await saveQuizBonus(el.dataset.v); break;
       case 'delegue-changer': S.delegueChanger = true; rerender(); break;
       case 'quest-delegue': await saveDelegue(el.dataset.v); break;
-      case 'gazette-nav': S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
+      case 'gazette-nav': if (Number(el.dataset.d) > 0) chargerArchivesGazette();
+        S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
       case 'admin-create': await b.adminCreateGame(); toast('Partie lancée !'); break;
       case 'equipe-edit': S.equipeEdit = el.dataset.role || null; S.ouverts = { ...(S.ouverts || {}), equipe: true }; rerender(); break;
       case 'equipe-origine': {
@@ -1055,6 +1048,7 @@ async function onClick(e) {
       case 'dir-reglage': { const r = { ...((S.state.dir && S.state.dir.reglages) || {}), [el.dataset.k]: el.dataset.v }; await b.adminDirecteur({ reglages: r }); toast('Réglage du Directeur enregistré : il s’applique dès la prochaine nuit.'); break; }
       case 'dir-forcer': await b.adminDirecteur({ forcer: el.dataset.id }); toast('Demandé : annoncé à la prochaine nuit, le district le vivra le surlendemain.'); break;
       case 'admin-vus': S.players = await b.getPlayers(); toast('Connexions actualisées.'); rerender(); break;
+      case 'admin-passer-tour': if (await askConfirm(`Passer le tour ${S.state.turn} sans le calculer ? Aucune zone n’avance ce soir.`)) { await b.adminPasserTour(); toast('Tour passé.'); } break;
       case 'admin-force': await b.adminForceResolution(); await tick(true); toast(etatResolution.erreur ? 'Le tour n’a pas pu être résolu (détail en haut de l’écran).' : 'Tour résolu.'); break;
       case 'admin-remove': if (await askConfirm('Retirer ce joueur de la partie ?', 'Retirer')) { await b.adminRemovePlayer(el.dataset.uid); toast('Joueur retiré.'); } break;
       case 'admin-reset': if (await askConfirm('Recommencer la partie ? Toutes les zones repartent de zéro.', 'Recommencer')) { await b.adminReset(); lastTurnKey = null; toast('Nouvelle partie lancée.'); location.hash = '#hp'; } break;
@@ -1065,6 +1059,17 @@ async function onClick(e) {
     toast(['postuler', 'cand-ok', 'cand-non'].includes(a) ? messageErreur(err, 'prive') : messageErreur(err));
     if (a === 'demo-next' || a === 'postuler') rerender();
   }
+}
+
+/** Anciens numéros de la Gazette (rapports archivés) : lus seulement quand on remonte le temps, une fois. */
+function chargerArchivesGazette() {
+  if (S.gazettesArchives || !S.backend.listGazettes) return;
+  S.gazettesArchives = true;
+  S.backend.listGazettes(10).then((l) => {
+    const cle = (g) => `${g.season}_${g.turn}`, deja = new Set((S.gazettes || []).map(cle));
+    S.gazettes = [...(S.gazettes || []), ...(l || []).filter((g) => !deja.has(cle(g)))].sort((x, y) => (y.season - x.season) || (y.turn - x.turn));
+    rerender();
+  }).catch((e) => { console.warn(e); S.gazettesArchives = false; });
 }
 
 /** Fenêtre de confirmation intégrée à la page (confirm() n'est pas disponible partout). */

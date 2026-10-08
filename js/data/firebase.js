@@ -34,6 +34,7 @@ export async function createFirebaseBackend(config) {
   const hour = config.resolutionHour ?? 20;
   const admins = (config.adminEmails || []).map((e) => e.toLowerCase());
   let currentUser = null;
+  const vus = new Map(); // dernier contenu connu de chaque profil (pour n'écrire que ce qui change)
 
   const isStandalone = () => globalThis.matchMedia && matchMedia('(display-mode: standalone)').matches;
 
@@ -67,7 +68,7 @@ export async function createFirebaseBackend(config) {
     gameId() { return gid; },
     gameMeta() { return meta; },
     async useGame(id) {
-      gid = id;
+      gid = id; vus.clear();
       const s = await F.getDoc(F.doc(fs, 'parties', id));
       meta = s.exists() ? { id, ...s.data() } : null;
       return meta;
@@ -132,11 +133,11 @@ export async function createFirebaseBackend(config) {
       const affaires = Object.fromEntries(Object.entries(data.affaires || {}).map(([k, v]) => [k, JSON.stringify(v)]));
       await F.setDoc(docIn('carnets', uid), { affaires, maj: data.maj || Date.now() });
     },
-    async getPlayer(uid) { try { const s = await F.getDoc(docIn('players', uid)); return s.exists() ? s.data() : null; } catch (e) { return null; } },
+    async getPlayer(uid) { try { const s = await F.getDoc(docIn('players', uid)); if (s.exists()) vus.set(uid, plain(s.data())); return s.exists() ? s.data() : null; } catch (e) { return null; } },
     async getPlayers({ strict = false } = {}) {
       let snap;
       try { snap = await F.getDocs(col('players')); } catch (e) { if (strict) throw e; return {}; }
-      const out = {}; snap.forEach((d) => { out[d.id] = d.data(); }); return out;
+      const out = {}; snap.forEach((d) => { out[d.id] = d.data(); vus.set(d.id, plain(d.data())); }); return out;
     },
     /** Dernière connexion du joueur (pour la page du maître du jeu). */
     async touchPlayer(uid) {
@@ -148,8 +149,25 @@ export async function createFirebaseBackend(config) {
       for (const [k, v] of Object.entries(plus)) if (v) maj[`entrainement.${k}`] = F.increment(v);
       await F.updateDoc(docIn('players', uid), maj);
     },
+    // N'écrit que les champs qui ont changé depuis la dernière lecture ou écriture : les compteurs tenus par le serveur
+    // (entraînement, dernière connexion) ne sont plus écrasés, deux appareils ne s'effacent plus, et une map
+    // raccourcie (anciens résultats d'incidents) est vraiment remplacée au lieu d'être fusionnée.
     async savePlayer(uid, profile) {
-      await F.setDoc(docIn('players', uid), plain({ ...profile, updatedAt: Date.now() }), { merge: true });
+      const neuf = plain(profile);
+      const avant = vus.get(uid);
+      if (!avant) {
+        await F.setDoc(docIn('players', uid), { ...neuf, updatedAt: Date.now() }, { merge: true });
+        vus.set(uid, neuf); return;
+      }
+      const maj = {};
+      for (const k of new Set([...Object.keys(neuf), ...Object.keys(avant)])) {
+        if (k === 'updatedAt' || k === 'vuLe' || k === 'entrainement') continue;
+        if (!(k in neuf)) maj[k] = F.deleteField();
+        else if (JSON.stringify(neuf[k]) !== JSON.stringify(avant[k])) maj[k] = neuf[k];
+      }
+      if (!Object.keys(maj).length) return;
+      await F.updateDoc(docIn('players', uid), { ...maj, updatedAt: Date.now() });
+      vus.set(uid, { ...avant, ...neuf });
     },
     async joinGame(uid, profile) {
       await F.runTransaction(fs, async (tx) => {
@@ -284,6 +302,16 @@ export async function createFirebaseBackend(config) {
       });
     },
     async adminPauseEnquete(pause, minClientVersion) { await F.updateDoc(stateRef(), { enquete: null, enquetePause: pause, minClientVersion }); },
+    /** Secours du maître du jeu : le tour avance sans calcul (rien ne change dans les zones), avec une Gazette d'une ligne. */
+    async adminPasserTour() {
+      await F.runTransaction(fs, async (tx) => {
+        const s = await tx.get(stateRef()); const cur = s.data();
+        if (!cur) return;
+        const next = { ...cur, turn: cur.turn + 1, nextDeadline: nextResolutionAfter(Math.max(Date.now(), cur.nextDeadline), hour), lastResolvedAt: cur.nextDeadline };
+        tx.set(stateRef(), plain(next));
+        tx.set(docIn('gazettes', `${cur.season}_${cur.turn}`), plain({ date: cur.nextDeadline, turn: cur.turn, season: cur.season, une: { kicker: 'District', titre: 'Soirée calme', texte: 'Le tour n’a pas été calculé ce soir (incident technique) : la partie reprend demain.' }, breves: [], createdAt: Date.now() }));
+      });
+    },
     async adminForceResolution() { await F.updateDoc(stateRef(), { nextDeadline: Date.now() - 1000 }); },
     async adminExport() {
       const [state, players] = await Promise.all([this.getState(), this.getPlayers()]);

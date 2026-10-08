@@ -1,5 +1,5 @@
 // Troisième affaire écrite à la main : « Le corbeau de la rue d'Havré » (Mons). Pas de meurtre : un corbeau.
-// Bible complète (vérité, chronologie, personnages, révélations) : docs/bible-affaire-corbeau.md.
+// Bible complète (vérité, chronologie, personnages, révélations) : hors dépôt (projet Claude « MA ZP », gardée privée).
 // En bref : trois semaines de lettres en ruban d'étiqueteuse, puis six affiches accusant le président du comité de
 // quartier, posées jeudi soir pendant sa réunion. On croit à un règlement de comptes ; en réalité, tout servait à cacher
 // une seule lettre, pour une vieille dame malvoyante que le président dépouillait et dont il triait le courrier.

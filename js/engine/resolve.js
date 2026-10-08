@@ -58,7 +58,8 @@ export function buildJoinZone(state, uid, profile, turn = state.turn, arrivee = 
   const base = {};
   if (existants.length) {
     base.agents = Math.round(median(existants.map((z) => z.agents)));
-    base.budget = round1(median(existants.map((z) => z.budget)));
+    // Jamais plus que le budget de départ : arriver en cours de saison ne doit pas rapporter une caisse déjà pleine.
+    base.budget = Math.min(START.budget, round1(median(existants.map((z) => z.budget))));
     base.moral = Math.round(median(existants.map((z) => z.moral)));
     base.satisfaction = Math.round(median(existants.map((z) => z.satisfaction)));
     base.niveaux = {}; base.equip = {};
@@ -159,7 +160,7 @@ function genererAffaires(state, rng) {
  * @param {object} input  { orders: {uid: ordres}, quests: {uid: énigme}, players: {uid: profil} }
  * @returns {{ state: object, gazette: object }}
  */
-export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, nextWeekday = null } = {}) {
+export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, nextWeekday = null, historiqueEnigmes = null } = {}) {
   // Incidents du jour : tirés sur l'état d'avant la résolution, comme les joueurs les ont vus.
   // Ceux encore ouverts après 20:00 et pas encore joués sont reportés à la résolution de demain.
   const coursesUrgence = []; // temps des urgences jouées cette nuit : ajustent le temps cible de demain
@@ -196,6 +197,17 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (p && p.retire) delete state.zones[uid];
   }
 
+  // Une seule fois par partie : compteurs de carrière aux énigmes repris de l'historique des réponses (tours d'avant celui-ci).
+  if (!state.enigCarriereInit && Array.isArray(historiqueEnigmes)) {
+    for (const z of Object.values(state.zones)) z.enigCarriere = { ok: 0, n: 0, noirOk: 0, noirN: 0 };
+    for (const r of historiqueEnigmes) {
+      const z = r && state.zones[r.uid];
+      if (!z || (r.statut !== 'ok' && r.statut !== 'rate') || (r.season === state.season && r.turn >= T)) continue;
+      const c = z.enigCarriere;
+      if (r.slot === 3) { c.noirN += 1; if (r.statut === 'ok') c.noirOk += 1; } else { c.n += 1; if (r.statut === 'ok') c.ok += 1; }
+    }
+    state.enigCarriereInit = true;
+  }
   const uids = Object.keys(state.zones).filter((u) => state.zones[u].joinedTurn <= T).sort();
   const budget0 = Object.fromEntries(uids.map((u) => [u, state.zones[u].budget]));
 
@@ -401,8 +413,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // Le Directeur : rang aux énigmes, bilan de l'événement de district.
   const rangEnig = rangsEnigmes(state), districtRes = [];
   const capsSoir = {}; // capacités de chaque zone ce soir (vagues de délinquance pour demain)
-  // 5. Simulation locale de chaque zone.
+  // 5. Simulation locale de chaque zone. Une erreur dans une zone ne bloque plus la partie : la zone garde son état
+  // d'avant ce passage (son tour est sauté, c'est noté dans son rapport) et les autres continuent.
+  const zonesEnErreur = [];
   for (const uid of uids) {
+    const sauve = clone(state.zones[uid]);
+    try {
     const z = state.zones[uid];
     const o = ord[uid];
     const zr = makeRng(`${state.seed}:s${state.season}:t${T}:${uid}`);
@@ -504,6 +520,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     else if (noir && noir.statut === 'rate') z.rapport.push('Dossier noir : raté cette fois, sans conséquence.');
     const ok = qs.filter((x) => x.statut === 'ok').length;
     const faux = qs.filter((x) => x.statut === 'rate').length;
+    // Compteurs de carrière (classement « Esprit vif ») : tenus ici, plus besoin de relire toutes les réponses de la partie.
+    { const c = (z.enigCarriere ||= { ok: 0, n: 0, noirOk: 0, noirN: 0 }); c.ok += ok; c.n += ok + faux;
+      if (noir && (noir.statut === 'ok' || noir.statut === 'rate')) { c.noirN += 1; if (noir.statut === 'ok') c.noirOk += 1; } }
     const appliquerBonus = (b) => {
       if (b.bonus === 'moral') { const g = gainMoral(ENIGMES.bonusMoral, z.moral); z.moral += g; return `bonus +${g} de moral`; }
       if (b.bonus === 'budget' || (b.bonus === 'indice' && (!state.enquete || state.enquetePause))) {
@@ -970,7 +989,14 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.satisfaction = round1(z.satisfaction);
     z.moral = round1(z.moral);
     z.reputation = round1(z.reputation);
+    } catch (err) {
+      console.error(`Tour ${T}, zone ${uid} :`, err);
+      const z = (state.zones[uid] = sauve);
+      z.rapport = [...(z.rapport || []), `Incident technique : ta zone n’a pas pu être calculée ce soir (${String((err && err.message) || err).slice(0, 120)}). Rien n’est perdu : elle reprend demain. Préviens le maître du jeu.`];
+      zonesEnErreur.push(uid);
+    }
   }
+  if (zonesEnErreur.length) state.zonesEnErreur = { tour: T, uids: zonesEnErreur }; else delete state.zonesEnErreur;
 
   // Vagues de délinquance : les zones très fortes dans un domaine chassent la délinquance chez une voisine.
   vaguesNuit(state, uids, capsSoir, T, { zoneLabel, push });

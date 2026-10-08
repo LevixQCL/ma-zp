@@ -114,6 +114,7 @@ export const ENQ = {
   maxRecus: 2,          // pièces partagées qu'une zone peut recevoir par soir (les grandes parties restent équitables)
   nbSuspects: 5,
   maxCellules: 3,
+  attrsTraque: 2,        // caractéristiques de la planque à avoir au dossier pour que le juge autorise la perquisition
   surcoutHorsCellule: 2, // multiplicateur de coût pour un suspect d'une autre cellule
 };
 
@@ -1117,6 +1118,13 @@ export function enquetePre(state, uids, ord, push) {
       push(6, 'Enquête', `Fausse piste pour ${nomZone(z)}`, `Sa confrontation dans « ${aff.titre} » n’a rien donné. L’enquête continue pour les autres zones.`, u);
       continue;
     }
+    // Vol : le parquet exige un dossier qui écarte tous les autres suspects (un nom soufflé ou deviné ne suffit pas).
+    const restants = candidats(aff, faitsConnus(d)).suspects;
+    if (!(restants.length === 1 && restants[0] === a)) {
+      const autres = restants.filter((k) => k !== a).length;
+      z.rapport.push(`Enquête : le parquet refuse ton accusation ${deN(aff.suspects[a].nom)} : ton dossier ${restants.includes(a) ? `n’écarte pas encore ${autres} autre${autres > 1 ? 's' : ''} suspect${autres > 1 ? 's' : ''}` : 'ne tient pas contre ce suspect'}. Aucune pénalité : reviens avec les pièces qui le démontrent.`);
+      continue;
+    }
     d.accuse = a; d.accuseJ = e.jour;
     if (a === aff.coupable) justes.push(u);
     else {
@@ -1169,6 +1177,20 @@ export function enquetePre(state, uids, ord, push) {
   return { prises, res };
 }
 
+/** Vrai si le dossier de la zone désigne ce lieu : au moins `ENQ.attrsTraque` caractéristiques de la planque connues, et le lieu y correspond. */
+export function traqueAutorisee(aff, dossier, planque) {
+  if (!aff || !aff.planques || !aff.planques[planque]) return false;
+  const faits = faitsConnus(dossier);
+  const n = ATTRS_P.filter((x) => faits.includes(`p:${x}`)).length;
+  return n >= ENQ.attrsTraque && candidats(aff, faits).planques.includes(planque);
+}
+/** Vrai si le parquet accepterait d'accuser ce suspect (vol) : le dossier écarte tous les autres. */
+export function accusationRecevable(aff, dossier, i) {
+  if (!aff || aff.meurtre) return true;
+  const r = candidats(aff, faitsConnus(dossier)).suspects;
+  return r.length === 1 && r[0] === i;
+}
+
 /** Tours qui restent à une traque (celles ouvertes avant le passage à une nuit comptent comme les nouvelles). */
 export const toursTraque = (tr) => Math.min(tr.tours, ENQ.traqueTours);
 export const delaiTraque = (n) => (n <= 1 ? 'une seule nuit, jusqu’au prochain 20:00,' : `${n} tours`);
@@ -1183,6 +1205,12 @@ function traquesDuSoir(state, uids, ord, push, prendre, res) {
     for (const u of uids) {
       const t = ord[u].traque;
       if (!t || t.n !== tr.n) continue;
+      // Perquisition : le juge veut un dossier qui désigne ce lieu (au moins 2 caractéristiques de la planque connues).
+      const zd = state.zones[u];
+      const dosT = zd ? dossierAffaire(state, zd, tr.n) : null;
+      const mandat1 = traqueAutorisee(a, dosT, t.planque);
+      const mandat2 = t.planque2 != null && t.planque2 !== t.planque && traqueAutorisee(a, dosT, t.planque2) && enService(zd, 'anonyme', state.turn) > 0;
+      if (!mandat1 && !mandat2) { if (zd) zd.rapport.push(`Traque : le juge refuse la perquisition à ${a.planques[t.planque] ? a.planques[t.planque].nom : 'ce lieu'} : ton dossier ne désigne pas encore ce lieu (il faut au moins ${ENQ.attrsTraque} caractéristiques de la planque qui lui correspondent). Tes agents restent en service.`); continue; }
       const dispo = ((ord[u].alloc && ord[u].alloc.intervention) || 0) + (ord[u]._libres || 0); // agents sans affectation d'abord
       const n = Math.min(t.agents, dispo);
       if (n <= 0) continue;
@@ -1191,11 +1219,13 @@ function traquesDuSoir(state, uids, ord, push, prendre, res) {
       const lieu = a.planques[t.planque] ? a.planques[t.planque].nom : 'un lieu inconnu';
       if (n < ENQ.agentsTraque) { z.rapport.push(`Traque : ${n} agents à ${lieu}, trop peu pour une interpellation (${ENQ.agentsTraque} minimum).`); continue; }
       // Filature : une voiture anonymisée en service surveille une deuxième planque ; si le suspect y est, l'équipage l'interpelle.
-      const p2 = t.planque2 != null && t.planque2 !== t.planque && a.planques[t.planque2] && enService(z, 'anonyme', state.turn) > 0 ? t.planque2 : null;
+      const p2 = t.planque2 != null && t.planque2 !== t.planque && a.planques[t.planque2] && enService(z, 'anonyme', state.turn) > 0 && mandat2 ? t.planque2 : null;
       const lieu2 = p2 != null ? a.planques[p2].nom : '';
-      if (t.planque === a.planque) gagnants.push({ u, n });
-      else if (p2 === a.planque) { gagnants.push({ u, n }); z.rapport.push(`Traque : ${lieu} fouillé pour rien, mais la voiture anonymisée en planque à ${lieu2} a repéré le suspect : tes agents y foncent.`); }
-      else z.rapport.push(`Traque : ${lieu} fouillé avec ${n} agents, personne.${p2 != null ? ` Rien non plus à ${lieu2}, surveillé par ta voiture anonymisée.` : ''}`);
+      if (!mandat1) z.rapport.push(`Traque : pas de mandat pour ${lieu} (ton dossier ne le désigne pas) : tes agents attendent l’appel de la voiture anonymisée.`);
+      if (mandat1 && t.planque === a.planque) gagnants.push({ u, n });
+      else if (p2 === a.planque) { gagnants.push({ u, n }); z.rapport.push(`Traque : ${mandat1 ? `${lieu} fouillé pour rien` : 'en attente'}, mais la voiture anonymisée en planque à ${lieu2} a repéré le suspect : tes agents y foncent.`); }
+      else if (mandat1) z.rapport.push(`Traque : ${lieu} fouillé avec ${n} agents, personne.${p2 != null ? ` Rien non plus à ${lieu2}, surveillé par ta voiture anonymisée.` : ''}`);
+      else z.rapport.push(`Traque : rien à ${lieu2}, surveillé par ta voiture anonymisée.`);
     }
     const s = a.suspects[a.coupable];
     if (gagnants.length) {

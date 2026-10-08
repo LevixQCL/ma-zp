@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 104;
+export const APP_VERSION = 105;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -333,8 +333,9 @@ export const ND = {
   // Force : `base` + `parZone` par zone active (plafond `max`). Le repousser rapporte à chaque zone de garde.
   gangs: { seuil: 2, base: 10, parZone: 2, max: 40, coeur: 20, ps: 5, rep: 1 },
 };
-/** Nombre maximum de zones par partie (le document d'état de Firestore est limité à 1 Mo, environ 8 Ko par zone). */
-export const MAX_ZONES = 100;
+/** Nombre maximum de zones par partie (le document d'état de Firestore est limité à 1 Mo : ~800 Ko à 100 zones, trop près ;
+ *  40 garde de la marge). La même valeur est dans firestore.rules. */
+export const MAX_ZONES = 40;
 /** Vrai si la partie n'accepte plus de nouvelle zone. */
 export const partieComplete = (state, uid = null) => !!state && !(uid && state.zones && state.zones[uid]) && Object.keys((state && state.zones) || {}).length >= MAX_ZONES;
 

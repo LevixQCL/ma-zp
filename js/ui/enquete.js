@@ -14,7 +14,7 @@ import { tutoActif } from './tutoriel.js';
 import { dossierAffaire3 } from '../engine/dossier.js';
 import { minutes, MODES } from '../engine/carte3.js';
 import { planifierEnvoi, synchroniser, synchroniserMaintenant, contenuChange, carnetVide } from './carnet-sync.js';
-import {
+import { accusationRecevable, traqueAutorisee,
   ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece,
   chanceVoisinage, VOISINAGE,
   ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee,
@@ -164,13 +164,13 @@ export function traqueHtml(tr) {
   return `<section id="traque" class="card red" aria-label="Traque en cours">
     <div class="between"><span class="kicker" style="color:var(--red-soft)">Traque · ${toursTraque(tr) > 1 ? `${toursTraque(tr)} tours restants` : 'jusqu’au prochain 20:00'}</span><span class="tiny muted">${esc(a.titre)}</span></div>
     <h2 class="card-title" style="margin:0">${esc(s.nom)} est en fuite</h2>
-    <p class="small" style="margin:0">Choisis une planque et envoie au moins ${ENQ.agentsTraque} agents d’Intervention${anonymes ? ' ; ta voiture anonymisée peut en surveiller une deuxième' : ''}. Ce que tu sais de la planque${indices.length ? '' : ' : rien. Les indices sur la planque viennent de ton dossier sur cette affaire (constatations, butin retrouvé)'}.</p>
+    <p class="small" style="margin:0">Choisis une planque et envoie au moins ${ENQ.agentsTraque} agents d’Intervention${anonymes ? ' ; ta voiture anonymisée peut en surveiller une deuxième' : ''}. Le juge ne signe la perquisition que pour un lieu que ton dossier désigne (au moins ${ENQ.attrsTraque} caractéristiques de la planque qui lui correspondent : badge « mandat »). Ce que tu sais de la planque${indices.length ? '' : ' : rien. Les indices sur la planque viennent de ton dossier sur cette affaire (constatations, butin retrouvé)'}.</p>
     ${indices.length ? `<ul class="small" style="margin:0;padding-left:18px">${indices.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''}
     <div class="col" style="gap:6px">${a.planques.map((p, i) => {
       const m = MARQUES[carnet.p[i] || 0];
       return `<button type="button" class="choice" data-action="traque-planque" data-n="${tr.n}" data-i="${i}" aria-pressed="${!!t && t.planque === i}" style="flex-direction:row;justify-content:space-between;text-align:left;align-items:center;gap:10px">
         <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(p.nom)}</span><span class="s">${esc(fichePlanque(p))}</span></span>
-        <span class="mark ${m.cls}" aria-label="${m.nom} dans ton carnet">${m.sym}</span></button>`;
+        <span class="row" style="gap:6px;align-items:center">${traqueAutorisee(a, dos, i) ? '<span class="tag" style="background:var(--green-bg,#1d3a2c);color:var(--green,#3DD39A)">mandat</span>' : ''}<span class="mark ${m.cls}" aria-label="${m.nom} dans ton carnet">${m.sym}</span></span></button>`;
     }).join('')}</div>
     ${t && anonymes ? `<div class="col" style="gap:4px"><span class="small" style="font-weight:600">🕶️ Voiture anonymisée en planque</span>
       <span class="tiny muted">Elle surveille une deuxième planque : si ${esc(s.nom)} y est, tes agents y foncent et l’interpellent.</span>
@@ -236,7 +236,7 @@ function suspectCard(aff, dos, s, i, carnet) {
       <div class="dem-row">${demBtn(aff, dos, `alibi:${i}`, 'Son alibi', { compact: true })}${demBtn(aff, dos, `moyens:${i}`, aff.meurtre ? 'Perquisition' : 'Ses moyens', { compact: true })}${demBtn(aff, dos, `banque:${i}`, aff.meurtre ? 'Téléphone, comptes' : 'Son mobile', { compact: true })}</div>
       ${mien ? '' : `<div class="col" style="gap:6px"><p class="tiny muted" style="margin:0">Suspect suivi par ${suivi.length ? esc(suivi.join(', ')) : 'une autre cellule'} : tes vérifications coûtent le double. Demande-leur leurs pièces :</p>
         <div class="row" style="gap:6px;flex-wrap:wrap">${zonesDuSuspect(st, i).filter((u) => u !== S.user.uid && st.zones[u]).map((u) => `<button type="button" class="btn small" data-action="ecrire-a" data-uid="${esc(u)}">✉ ${esc(st.zones[u].nom)}</button>`).join('')}<a class="btn small ghost" href="#radio">Radio</a></div></div>`}
-      ${!dos.exclu && dos.accuse === null ? (accuse ? '<button class="btn small ghost" data-action="accuser-annuler">Retirer l’accusation</button>' : aff.meurtre ? `<button class="btn small outline" data-action="tab-confront" data-i="${i}">Confronter ${esc(s.prenom)}</button>` : `<button class="btn small outline" data-action="accuser" data-i="${i}">Accuser ${esc(s.prenom)}</button>`) : ''}
+      ${!dos.exclu && dos.accuse === null ? (accuse ? '<button class="btn small ghost" data-action="accuser-annuler">Retirer l’accusation</button>' : aff.meurtre ? `<button class="btn small outline" data-action="tab-confront" data-i="${i}">Confronter ${esc(s.prenom)}</button>` : accusationRecevable(aff, dos, i) ? `<button class="btn small outline" data-action="accuser" data-i="${i}">Accuser ${esc(s.prenom)}</button>` : `<span class="tiny muted">Accusation possible quand ton dossier écarte tous les autres suspects.</span>`) : ''}
     </div>` : ''}
   </article>`;
 }

@@ -103,7 +103,8 @@ let aff = affaire(state, state.enquete.n);
 const faux = (aff.coupable + 1) % ENQ.nbSuspects;
 r = resolveTurn(state, { players, orders: { A: { ...base, demarches: ['labo', 'alibi:0'] }, B: { ...base, accusation: faux }, C: base } });
 state = r.state;
-assert.equal(state.zones.B.enquete.exclu, true, 'fausse accusation : B est écarté');
+assert.ok(!state.zones.B.enquete.exclu && state.zones.B.enquete.accuse === null, 'accusation sans dossier : refusée sans pénalité');
+assert.ok(state.zones.B.rapport.some((l) => /parquet refuse/.test(l)), 'le refus est expliqué');
 assert.ok(state.zones.A.enquete.pieces.some((p) => p.f === 'c:moy') && state.zones.A.enquete.pieces.some((p) => p.f === 'occ:0'), 'démarches reçues');
 // Cellules : jusqu'à trois zones, une seule cellule (personne n'est seul dans la sienne).
 assert.equal(state.enquete.nbCellules, 1);
@@ -140,9 +141,18 @@ for (const f of aPieces) assert.ok(state.zones.C.enquete.pieces.some((p) => p.f 
   assert.ok(lg && lg.includes(`+${5 * aPieces.length} PS`), 'récompense par pièce');
 }
 
+// Dossier complet (pièces qui écartent les innocents, caractéristiques de la planque) : le parquet et le juge exigent des preuves.
+function dossierComplet(st, uid, af) {
+  const d = st.zones[uid].enquete;
+  const add = (f) => { if (!d.pieces.some((p) => p.f === f)) d.pieces.push({ f, src: 'test' }); };
+  for (const e of ['mob', 'moy', 'occ']) add(`c:${e}`);
+  af.suspects.forEach((sus, i) => { for (const e of ['mob', 'moy', 'occ']) if (!sus.statut[e]) add(`${e}:${i}`); });
+  for (const k of ['humidite', 'temperature', 'rive', 'acces']) add(`p:${k}`);
+}
 // C accuse juste (il « connaît » la solution) : découverte, contribution de A, nouvelle affaire, traque.
 const jour = state.enquete.jour;
 const limierA = state.zones.A.stats.limier;
+dossierComplet(state, 'C', aff); dossierComplet(state, 'A', aff);
 r = resolveTurn(state, { players, orders: { A: base, B: base, C: { ...base, accusation: aff.coupable } } });
 state = r.state;
 assert.ok(r.gazette.enquete.decouverte, 'découverte annoncée');

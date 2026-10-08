@@ -101,16 +101,15 @@ const MIN_ENIGMES = 3;
 const ENIG_POIDS = 10;
 export function scoreEnigmes(ok, n, moyenne) { return (100 * (ok + ENIG_POIDS * moyenne)) / (n + ENIG_POIDS); }
 function classementEnigmes(me) {
-  const res = S.questStats;
-  if (!res) return `<section class="card"><h2 class="card-title">Esprit vif · énigmes du jour</h2><p class="small muted" style="margin:0">${S.questStatsErreur ? 'Classement indisponible pour le moment.' : 'Chargement…'}</p></section>`;
+  // Compteurs tenus par le tour de 20:00 (aucune lecture en plus) ; repris de l'historique au premier tour qui les calcule.
+  if (!S.state.enigCarriereInit) return `<section class="card"><h2 class="card-title">Esprit vif · énigmes du jour</h2><p class="small muted" style="margin:0">Le classement des énigmes se met à jour au tour de 20:00 : il sera là ce soir.</p></section>`;
   const par = {};
   const noirs = {};
-  for (const r of res) {
-    if (!S.state.zones[r.uid] || (r.statut !== 'ok' && r.statut !== 'rate')) continue;
-    if (r.slot === 3) { const y = (noirs[r.uid] ||= { ok: 0, n: 0 }); y.n++; if (r.statut === 'ok') y.ok++; continue; }
-    const x = (par[r.uid] ||= { ok: 0, n: 0, saison: 0, saisonN: 0 });
-    x.n++; if (r.statut === 'ok') x.ok++;
-    if (r.season === S.state.season) { x.saisonN++; if (r.statut === 'ok') x.saison++; }
+  for (const z of Object.values(S.state.zones)) {
+    const c = z.enigCarriere;
+    if (!c) continue;
+    if (c.n) par[z.uid] = { ok: c.ok, n: c.n };
+    if (c.noirN) noirs[z.uid] = { ok: c.noirOk, n: c.noirN };
   }
   const tous = Object.values(par).reduce((t, x) => [t[0] + x.ok, t[1] + x.n], [0, 0]);
   const moyenne = Math.min(0.8, Math.max(0.4, tous[1] ? tous[0] / tous[1] : 0.6));
@@ -312,7 +311,11 @@ export function renderAdmin() {
     ${directeurAdminHtml(st)}
     <section class="card"><h2 class="card-title">Résolution</h2>
       <p class="small muted" style="margin:0">Force la résolution du tour en cours maintenant (utile pour tester). Les joueurs ne pourront plus modifier leurs ordres de ce tour.</p>
-      <button class="btn block" data-action="admin-force">Résoudre le tour maintenant</button></section>
+      <button class="btn block" data-action="admin-force">Résoudre le tour maintenant</button>
+      <p class="small muted" style="margin:0">${st.tourServeur ? 'Le tour est calculé par la tâche planifiée (quelques minutes après 20:00) ; les appareils ne le calculent qu’en secours, 20 minutes plus tard.' : 'Le tour est calculé par le premier appareil ouvert après 20:00 (la tâche planifiée n’est pas encore active).'}</p>
+      ${st.zonesEnErreur ? `<p class="small bad" style="margin:0">Tour ${st.zonesEnErreur.tour} : ${st.zonesEnErreur.uids.length} zone${st.zonesEnErreur.uids.length > 1 ? 's' : ''} sautée${st.zonesEnErreur.uids.length > 1 ? 's' : ''} sur erreur (${st.zonesEnErreur.uids.map((u) => st.zones[u] ? esc(st.zones[u].nom) : '?').join(', ')}). Le détail est dans leur rapport.</p>` : ''}
+      <p class="small muted" style="margin:8px 0 0">Si le calcul du tour échoue pour tout le monde (message d’erreur en haut de l’écran), tu peux passer ce tour sans le calculer : rien ne change dans les zones, la partie repart au tour suivant.</p>
+      <button class="btn block danger" data-action="admin-passer-tour" ${st.turn >= SEASON_LENGTH ? 'disabled' : ''}>Passer le tour ${st.turn} sans calcul</button></section>
     <section class="card"><div class="between"><h2 class="card-title">Joueurs (${zones.length})</h2><button class="btn small ghost" data-action="admin-vus">Actualiser</button></div>
       ${zones.slice().sort((a, b) => (((S.players || {})[b.uid] || {}).vuLe || 0) - (((S.players || {})[a.uid] || {}).vuLe || 0)).map((z) => { const p = (S.players || {})[z.uid] || {}; return `<div class="between" style="gap:8px"><span class="small">${zoneName(z)}${p.pseudo ? ` <span class="muted">(${esc(p.pseudo)})</span>` : ''}<br><span class="tiny ${vuClasse(p.vuLe)}">${vuTexte(p.vuLe)}</span><span class="tiny muted"> · ${z.toursJoues} tours joués${z.toursSansOrdres ? ` · ${z.toursSansOrdres} sans ordres` : ''}</span></span>
         ${z.uid !== S.user.uid ? `<button class="btn small danger" data-action="admin-remove" data-uid="${esc(z.uid)}">Retirer</button>` : ''}</div>`; }).join('')}

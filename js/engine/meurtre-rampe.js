@@ -1,5 +1,5 @@
 // Deuxième affaire de meurtre écrite à la main : « Le notaire de la Rampe » (Mons).
-// Bible complète (vérité, chronologie, personnages, révélations) : docs/bible-affaire-rampe.md.
+// Bible complète (vérité, chronologie, personnages, révélations) : hors dépôt (projet Claude « MA ZP », gardée privée).
 // En bref : un vieux notaire retrouvé au pied de son escalier. On croit à une chute, puis à un héritage ;
 // en réalité son filleul l'a tué parce qu'il venait de comprendre que sa fille cachée, noyée le soir du Doudou 1999,
 // n'était pas morte par accident. Deux pièges d'horloge : la caméra de la kiné est restée à l'heure d'été (une heure

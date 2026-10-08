@@ -12,9 +12,14 @@ service cloud.firestore {
     function superAdmin() { return signedIn() && request.auth.token.email in ['houben.bryan@gmail.com']; }
     function partie(gid) { return get(/databases/$(database)/documents/parties/$(gid)).data; }
     function master(gid) { return superAdmin() || (signedIn() && partie(gid).owner == request.auth.uid); }
-    function member(gid) { return signedIn() && exists(/databases/$(database)/documents/parties/$(gid)/players/$(request.auth.uid)); }
+    // Membre : un profil dans la partie, et pas retiré par le maître du jeu.
+    function member(gid) { return signedIn() && exists(/databases/$(database)/documents/parties/$(gid)/players/$(request.auth.uid))
+      && get(/databases/$(database)/documents/parties/$(gid)/players/$(request.auth.uid)).data.get('retire', false) != true; }
     function st(gid) { return get(/databases/$(database)/documents/parties/$(gid)/state/current).data; }
     function afterDeadline(gid) { return request.time.toMillis() >= st(gid).nextDeadline; }
+    // Le tour est calculé par la tâche planifiée (compte de service, hors règles). Un appareil ne peut le calculer
+    // qu'en secours, 20 minutes après l'heure limite, si la tâche n'est pas passée.
+    function secours(gid) { return request.time.toMillis() >= st(gid).nextDeadline + 20 * 60000; }
     function currentTurn(gid, season, turn) { return season == st(gid).season && turn == st(gid).turn; }
     function pastTurn(gid, season, turn) {
       return season < st(gid).season || (season == st(gid).season && turn < st(gid).turn);
@@ -56,18 +61,22 @@ service cloud.firestore {
           // Résolution d'un tour : uniquement après l'heure limite, et le tour doit avancer.
           // Le tour avance d'exactement un cran (ou la saison change), l'échéance suivante reste proche,
           // et la version minimale du jeu ne recule jamais.
-          || (member(gid) && afterDeadline(gid)
+          || (member(gid) && secours(gid)
               && request.resource.data.nextDeadline > resource.data.nextDeadline
               && request.resource.data.nextDeadline <= request.time.toMillis() + 3 * 86400000
               && request.resource.data.get('minClientVersion', 0) >= resource.data.get('minClientVersion', 0)
               && ((request.resource.data.season == resource.data.season && request.resource.data.turn == resource.data.turn + 1)
                   || (request.resource.data.season == resource.data.season + 1 && request.resource.data.turn == 1)))
-          // Inscription : un joueur ne peut ajouter que sa propre zone, tant que la partie n'est pas complète (100 zones).
+          // Inscription : un joueur ne peut ajouter que sa propre zone, tant que la partie n'est pas complète (40 zones).
           || (member(gid)
-              && request.resource.data.zones.size() <= 100
+              && request.resource.data.zones.size() <= 40
               && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['zones'])
               && request.resource.data.zones.diff(resource.data.zones).affectedKeys().hasOnly([request.auth.uid])
-              && !(request.auth.uid in resource.data.zones));
+              && !(request.auth.uid in resource.data.zones)
+              // Zone de départ : pas plus que les ressources de départ (60 000 € de budget, 40 agents au plus).
+              && request.resource.data.zones[request.auth.uid].budget <= 60
+              && request.resource.data.zones[request.auth.uid].agents <= 40
+              && request.resource.data.zones[request.auth.uid].uid == request.auth.uid);
       }
 
       // Profils des joueurs de cette partie (code, nom et couleur de zone).
@@ -130,7 +139,7 @@ service cloud.firestore {
         allow read: if member(gid) || master(gid);
         // Seulement celle du tour qu'on résout, et dans la même transaction que l'état (qui doit avancer) :
         // personne ne peut la créer à l'avance pour bloquer la résolution.
-        allow create, update: if master(gid) || (member(gid) && afterDeadline(gid)
+        allow create, update: if master(gid) || (member(gid) && secours(gid)
           && id == string(st(gid).season) + '_' + string(st(gid).turn)
           && getAfter(/databases/$(database)/documents/parties/$(gid)/state/current).data.turn != st(gid).turn);
         allow delete: if master(gid);

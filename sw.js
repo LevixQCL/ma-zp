@@ -3,7 +3,7 @@
 // un appareil pouvait mélanger d'anciens et de nouveaux fichiers et rester bloqué au chargement.
 // Ici, chaque fichier du jeu est revérifié auprès du serveur (réponse « inchangé » très légère s'il n'a pas bougé) ;
 // sans réseau, on sert la dernière copie connue.
-const CACHE = 'mazp-fichiers-v1';
+const CACHE = 'mazp-fichiers-v2'; // v2 : purge des vérifications de version mises en cache par la v1
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil((async () => {
@@ -16,6 +16,8 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // Firebase, polices : le navigateur s'en charge
+  // Vérification de version horodatée (?t=…) : jamais mise en cache (une copie par seconde s'accumulait).
+  if (url.searchParams.has('t')) return;
   e.respondWith((async () => {
     try {
       const frais = req.mode === 'navigate'

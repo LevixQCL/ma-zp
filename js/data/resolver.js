@@ -72,16 +72,20 @@ export function tableauxImbriques(o, chemin = '', dansTableau = false, out = [])
   return out;
 }
 
-export async function resolvePending(backend, { hour = 20, now = () => Date.now(), maxTurns = 10, state: connu = null } = {}) {
+/** Délai de secours : quand la tâche planifiée calcule les tours, un appareil n'essaie qu'après ce délai (elle a pu tarder). */
+export const DELAI_SECOURS = 20 * 60000;
+const echeance = (st, serveur) => st.nextDeadline + (!serveur && st.tourServeur ? DELAI_SECOURS : 0);
+
+export async function resolvePending(backend, { hour = 20, now = () => Date.now(), maxTurns = 10, state: connu = null, serveur = false, sansDelai = false } = {}) {
   if (running) return 0;
   running = true;
   let count = 0;
   try {
     for (let i = 0; i < maxTurns; i++) {
       // L'état déjà reçu par l'abonnement évite de retélécharger tout le document pour rien.
-      if (i === 0 && connu && now() < connu.nextDeadline) break;
+      if (i === 0 && connu && now() < echeance(connu, serveur || sansDelai)) break;
       const state = await backend.getState();
-      if (!state || now() < state.nextDeadline) break;
+      if (!state || now() < echeance(state, serveur || sansDelai)) break;
       if (isOutdated(state)) break; // ancienne version : on laisse les appareils à jour calculer
       if (!(await versionEnLigneOk())) break; // une version plus récente est en ligne : on recharge d'abord
       let orders, quests, players;
@@ -96,10 +100,13 @@ export async function resolvePending(backend, { hour = 20, now = () => Date.now(
         console.warn('Lecture des ordres impossible :', e.message);
         break;
       }
+      // Une seule fois par partie : l'historique des énigmes, pour les compteurs de carrière (classement « Esprit vif »).
+      let historiqueEnigmes = null;
+      if (!state.enigCarriereInit && backend.listQuestResults) { try { historiqueEnigmes = await backend.listQuestResults(); } catch (e) { console.warn('Historique des énigmes illisible :', e.message); } }
       const nextDeadline = nextResolutionAfter(state.nextDeadline, hour);
       let next, gazette;
       try {
-        ({ state: next, gazette } = resolveTurn(state, { orders, quests, players, nextWeekday: weekdayBe(nextDeadline) }));
+        ({ state: next, gazette } = resolveTurn(state, { orders, quests, players, nextWeekday: weekdayBe(nextDeadline), historiqueEnigmes }));
       } catch (e) {
         console.error('Calcul du tour impossible :', e);
         etatResolution.erreur = `Calcul du tour ${state.turn} : ${e && e.message ? e.message : e}${e && e.stack ? ' · ' + String(e.stack).split('\n').slice(1, 3).map((l) => l.trim()).join(' · ') : ''}`;
@@ -107,6 +114,8 @@ export async function resolvePending(backend, { hour = 20, now = () => Date.now(
         break;
       }
       gazette.date = state.nextDeadline;
+      // Calculé par la tâche planifiée : les appareils passent en secours (ils attendent DELAI_SECOURS avant d'essayer).
+      if (serveur) next.tourServeur = true;
       next.nextDeadline = nextDeadline;
       next.lastResolvedAt = state.nextDeadline;
       allegerEtat(next, gazette);

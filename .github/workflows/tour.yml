@@ -1,0 +1,27 @@
+# Calcule le tour de 20:00 (heure belge) de toutes les parties, même si personne n'ouvre le jeu.
+# 20:00 à Bruxelles = 18:00 UTC en été, 19:00 UTC en hiver : la tâche passe aux deux heures, plusieurs fois
+# (GitHub peut retarder une tâche planifiée de quelques minutes) ; elle ne fait rien si le tour n'est pas échu.
+# Prérequis : le secret FIREBASE_SERVICE_ACCOUNT (clé JSON d'un compte de service Firebase). Sans lui, elle ne fait rien.
+name: Tour de 20:00
+on:
+  schedule:
+    - cron: '2,9,16 18 * * *'
+    - cron: '2,9,16 19 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: tour
+  cancel-in-progress: false
+jobs:
+  tour:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i --no-save firebase-admin@12.7.0
+      - run: node outils/serveur/tour.mjs
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
