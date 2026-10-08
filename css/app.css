@@ -1680,3 +1680,5 @@ table.horaire.bd tr.bd-arch td { color: var(--amber-hi); font-weight: 600; }
 .hp.compacte .duo:not(:has(details[open])) > details.repli > summary { padding: 10px 8px; flex-direction: column; gap: 4px; }
 .hp.compacte .duo:not(:has(details[open])) > details.repli > summary .tiny { -webkit-line-clamp: 1; font-size: 10.5px; }
 .hp.compacte .cad-s { white-space: nowrap; font-size: 9.5px; }
+.linkbtn { background: none; border: 0; padding: 0; color: var(--blue-soft); font: inherit; text-decoration: underline; cursor: pointer; }
+.inc-row.inc-actu { border-color: rgba(255, 178, 62, .45); }

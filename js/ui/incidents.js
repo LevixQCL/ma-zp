@@ -87,10 +87,11 @@ export function incidentEnCours() {
 /** Signature de l'état des incidents : sert à redessiner l'HP quand un incident s'ouvre ou se ferme. */
 export const signatureIncidents = () => { const res = mesResultats(); return mesIncidents().map((i) => etat(i, res[i.id])).join(','); };
 
-export function incidentsHtml() {
+/** `avant` : lignes ajoutées en tête (HP allégée : l'événement du jour) ; `titre` : titre de la carte. */
+export function incidentsHtml({ avant = '', titre = 'Incidents du jour' } = {}) {
   const liste = mesIncidents();
   const appuiRow = ligneAppuiHp();
-  if (!liste.length && !appuiRow) return '';
+  if (!liste.length && !appuiRow && !avant) return '';
   const res = mesResultats(liste), now = Date.now();
   const { base, plus } = jaugeDuJour();
   const prochain = liste.find((i) => etat(i, res[i.id], now) === 'avenir');
@@ -111,8 +112,8 @@ export function incidentsHtml() {
       <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:600">${esc(i.titre)}</span><span class="tiny muted">${i.urgence ? 'Urgence' : SERVICE_LABELS[i.service]} · non traité : ton équipe s’en charge seule, résultat à 20:00</span></span></div>`;
   });
   return `<section class="card" id="hp-incidents" aria-label="Incidents du jour" style="gap:8px;scroll-margin-top:16px">
-    <div class="between"><span class="kicker">Incidents du jour</span><a class="tiny" href="#guide-incidents">Comment ça marche ?</a></div>
-    ${appuiRow}${lignes.join('')}
+    <div class="between"><span class="kicker">${titre}</span><a class="tiny" href="#guide-incidents">${avant ? 'Les incidents ?' : 'Comment ça marche ?'}</a></div>
+    ${avant}${appuiRow}${lignes.join('')}
     ${prochain ? `<div class="inc-row inc-attente"><span class="inc-ico" aria-hidden="true">${icon('clock', 16)}</span><span class="col grow" style="gap:1px"><span style="font-weight:600">${prochain.urgence ? '🚨 Une urgence va tomber aujourd’hui' : lignes.length ? 'Un autre incident va tomber' : 'Un incident va tomber aujourd’hui'}</span><span class="tiny muted">${prochain.urgence ? 'des collègues demanderont du renfort' : 'sur un de tes services'}, dans <strong class="mono" data-inc-cd="${prochain.ouvre}">${duree(prochain.ouvre - now)}</strong> · ouvert jusqu’à 20:00</span></span></div>`
       : !lignes.some((l) => l.includes('inc-ouvert')) ? '<p class="tiny muted" style="margin:0">Plus d’incident aujourd’hui. Les prochains tombent demain, entre 6 h et 12 h, et restent ouverts jusqu’à 20:00.</p>' : ''}
     <button type="button" class="between small jauge-btn" data-action="jauge-skins" aria-label="Jauge des skins : voir ce que tu peux gagner"><span class="row muted" style="gap:6px">${icon('star', 14)} Jauge des skins</span>

@@ -77,6 +77,15 @@ export function actuAuBesoin(lancer) {
   return true;
 }
 
+/** L'événement en une ligne, pour la carte « Aujourd'hui » de l'HP allégée. */
+export function actuLigne() {
+  if (!evtActif()) return '';
+  const E = EVT_ACTU;
+  return `<div class="inc-row inc-actu"><span class="inc-ico" aria-hidden="true" style="font-size:18px">${E.ico}</span>
+    <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:700">${esc(E.titre)}</span><span class="tiny muted">${esc(E.kicker.replace(/^Actualité\s*·\s*/, ''))} · ${esc(E.court)} <button type="button" class="linkbtn" data-action="actu-voir">Pourquoi ?</button></span></span>
+    <button class="btn primary small" data-action="actu-jouer">Encadrer</button></div>`;
+}
+
 /** Carte de l'HP tant que l'événement dure. */
 export function actuHtml() {
   if (!evtActif()) return '';

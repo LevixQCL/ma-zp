@@ -1,6 +1,6 @@
 import { titresDefi } from './defis.js';
 import { noteVue } from './nouveautes.js';
-import { actuHtml } from './actu.js';
+import { actuHtml, actuLigne } from './actu.js';
 // Écran HP (Hôtel de police) : l'accueil.
 import { cabossesChoisis } from '../engine/parc.js';
 import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone, skyline, cielStyle } from './common.js';
@@ -354,8 +354,7 @@ export function renderHP() {
     ${dilemmeHtml(st, z)}
     ${criseHtml()}
     ${releveHtml()}
-    ${actuHtml()}
-    ${incidentsHtml()}
+    ${compacte ? incidentsHtml({ avant: actuLigne(), titre: 'Aujourd’hui' }) : `${actuHtml()}${incidentsHtml()}`}
     <section class="card mazone" aria-label="Ma zone">
       <div class="mz-tete">
         ${S.player && S.player.blason && GRADES.indexOf(gradeFor(z.ps)) >= 4 ? blasonSvg(S.player.blason, z.couleur, 34) : `<span class="mz-coul" style="background:${esc(z.couleur)}"></span>`}
