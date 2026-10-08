@@ -72,7 +72,8 @@ export function ventesHtml() {
       <span class="tiny muted">${resume}</span></span>${icon('chevron', 16)}</summary>
     <div class="col" style="gap:10px">
       ${v ? `<p class="tiny muted" style="margin:0">${ph === 'visible' ? 'Jour 1 sur 2 : les relances sont visibles de tous (sur la Radio). Demain, chaque zone dépose une seule offre finale secrète ; ta relance compte déjà comme offre.' : 'Jour 2 sur 2 : une seule offre finale secrète par lot, dévoilée au coup de marteau de 20:00. À égalité, la négociation (Diplomatie) du chef départage.'}</p>
-        ${v.lots.map((lot) => lotHtml(v, lot, ph, z, rel)).join('')}` : '<p class="small muted" style="margin:0">La prochaine vente ouvre à 20:00 : trois lots, deux jours pour enchérir.</p>'}
+        ${v.lots.map((lot) => lotHtml(v, lot, ph, z, rel)).join('')}
+        ${S.ordersDirty && (nbFin || d.expertise || d.tuyau) ? '<p class="small warn" style="margin:0">Offre finale, expertise ou tuyau pas encore envoyés : valide tes ordres avant 20:00.</p>' : ''}` : '<p class="small muted" style="margin:0">La prochaine vente ouvre à 20:00 : trois lots, deux jours pour enchérir.</p>'}
       ${mesLots.length ? `<p class="small" style="margin:0"><strong>Tes lots cette saison</strong> : ${mesLots.map(esc).join(' · ')}</p>` : ''}
       ${r && r.adjuges ? `<p class="tiny muted" style="margin:0">Dernière vente (jour ${r.tour}) : ${r.adjuges.length ? r.adjuges.map((a) => `${esc(a.nom)} adjugé à ${a.uids.map((u) => (st.zones[u] ? esc(st.zones[u].nom) : '?')).join(' et ')} pour ${euros(a.montant)}`).join(' · ') : 'aucun lot adjugé'}.</p>` : ''}
     </div></details>`;
