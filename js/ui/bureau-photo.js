@@ -30,12 +30,12 @@ export function bureauPhotoSvg(o = {}) {
   // ── Veste : talents cousus.
   const tal = (o.talents || []).filter((t) => TALENT[t]).slice(0, 3);
   const actifs = new Set(o.actifs || []);
-  s += grp('talents', tal.map((t, i) => `${actifs.has(t) ? `<circle cx="${40 + i * 10}" cy="160" r="7" fill="#FFD98A" opacity=".55"><animate attributeName="opacity" values=".2;.75;.2" dur="1.6s" repeatCount="indefinite"/></circle>` : ''}<circle cx="${40 + i * 10}" cy="160" r="4.2" fill="${COULEURS_COMP[TALENT[t].comp]}" stroke="#F4EFE3" stroke-width=".9" stroke-dasharray="1.2 .8"/>`).join('') + '<rect x="14" y="125" width="70" height="95" fill="transparent"/>', tal.length ? `Talents : ${tal.map((t) => TALENT[t].nom).join(', ')}` : 'Veste du chef (les talents s’y cousent)');
+  s += grp('talents', tal.map((t, i) => `${actifs.has(t) ? `<circle cx="${40 + i * 11}" cy="160" r="8" fill="#FFD98A" opacity=".55"><animate attributeName="opacity" values=".2;.75;.2" dur="1.6s" repeatCount="indefinite"/></circle>` : ''}<image href="img/talents/${t}.webp" x="${40 + i * 11 - 5.5}" y="154.5" width="11" height="11"/>`).join('') + '<rect x="14" y="125" width="70" height="95" fill="transparent"/>', tal.length ? `Talents : ${tal.map((t) => TALENT[t].nom).join(', ')}` : 'Veste du chef (les talents s’y cousent)');
   // ── Mur de droite : le réseau, le tableau d'enquête, les affiches, le plan du quartier.
   const hum = Object.fromEntries((o.reseau || []).map((r) => [r.id, Math.max(-1, Math.min(1, Math.round(Number(r.humeur) || 0)))]));
   RESEAU.forEach(([id, nom], i) => {
     const x = 510 + (i % 2) * 46, y = 14 + Math.floor(i / 2) * 64, h = hum[id] ?? 0;
-    const img = `<image href="${I(`${id}-${h > 0 ? 1 : 0}`)}" x="${x + 3}" y="${y + 3}" width="36" height="40" preserveAspectRatio="xMidYMid slice" ${h < 0 ? 'style="filter:grayscale(.55) brightness(.8) sepia(.25) hue-rotate(-20deg)"' : ''}/>`;
+    const img = `<image href="${I(`${id}-${h > 0 ? 1 : h < 0 ? '-1' : 0}`)}" x="${x + 3}" y="${y + 3}" width="36" height="40" preserveAspectRatio="xMidYMid slice"/>`;
     s += grp(`reseau-${id}`, `<rect x="${x}" y="${y}" width="42" height="46" rx="2" fill="#4A3426" ${om}/>${img}<circle cx="${x + 38}" cy="${y + 4}" r="3.6" fill="${h > 0 ? '#3DD39A' : h < 0 ? '#E1453A' : '#9AA3B5'}" stroke="#1B2436" stroke-width="1"/>
       <rect x="${x}" y="${y + 47}" width="42" height="11" rx="2" fill="#1B2436" opacity=".85"/><text x="${x + 21}" y="${y + 55.5}" text-anchor="middle" font-size="7.5" font-weight="700" fill="#F4EFE3" font-family="Barlow Condensed, Arial Narrow, sans-serif">${nom}</text>`, `${nom} : ${h > 0 ? 'satisfait' : h < 0 ? 'mécontent' : 'neutre'}`);
   });
@@ -73,7 +73,7 @@ export function bureauPhotoSvg(o = {}) {
   // Plaque nominative.
   const et5 = Math.max(0, Math.min(5, Number(o.etoiles) || 0));
   s += grp('nom', `<text x="323" y="286" text-anchor="middle" font-size="10.5" font-weight="700" fill="#3B2A12" font-family="Barlow Condensed, Arial Narrow, sans-serif" textLength="${Math.min(70, 6 + String(o.nom || '').length * 6)}" lengthAdjust="spacingAndGlyphs">${esc(o.nom || '')}</text>
-    <text x="323" y="296" text-anchor="middle" font-size="6.5" font-weight="700" fill="#5A4220" font-family="Barlow Condensed, Arial Narrow, sans-serif" letter-spacing=".5"${String(o.grade || '').length + et5 > 10 ? ' textLength="68" lengthAdjust="spacingAndGlyphs"' : ''}>${esc(String(o.grade || '').toUpperCase())}${et5 ? ` ${'★'.repeat(et5)}` : ''}</text>`, o.devise ? `« ${o.devise} »` : 'Plaque nominative');
+    <text x="323" y="296" text-anchor="middle" font-size="${String(o.grade || '').length + et5 > 14 ? 5 : String(o.grade || '').length + et5 > 10 ? 5.6 : 6.5}" font-weight="700" fill="#3B2A12" font-family="Barlow Condensed, Arial Narrow, sans-serif">${esc(String(o.grade || '').toUpperCase())}${et5 ? ` ${'★'.repeat(et5)}` : ''}</text>`, o.devise ? `« ${o.devise} »` : 'Plaque nominative');
   // Nouveau chef : des cartons à déballer.
   const total = ['gestion', 'commandement', 'flair', 'diplomatie', 'proximite'].reduce((a, c) => a + L(c), 0);
   if (total < 5 && !med.length) s += pose('archives', 585, 380, 52, `${om} opacity=".9"`);
