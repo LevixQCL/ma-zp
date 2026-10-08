@@ -1763,3 +1763,20 @@ details.formule[open] > summary { margin-bottom: 4px; }
 /* Tuiles Agents / Budget / Véhicules : le texte se replie au lieu de déborder sur petit écran */
 .tile { min-width: 0; overflow: hidden; }
 .tile .s, .tile .l { min-width: 0; }
+
+/* Ordres : remplissage des services (une case par agent dont le service a besoin) */
+.barre-aff { display: flex; gap: 2px; margin: 2px 0 2px; }
+.barre-aff i { flex: 1; height: 9px; border-radius: 3px; min-width: 3px; }
+.barre-aff i.libre { border: 1.5px dashed var(--faint); box-sizing: border-box; }
+.legende-cases { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+.legende-cases > span { display: inline-flex; align-items: center; gap: 5px; }
+.cases-l { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 0 9px 14px; }
+.cases { display: flex; flex-wrap: wrap; align-items: center; gap: 3px; min-width: 0; }
+.case { width: 22px; height: 22px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; }
+.case.pleine { background: var(--c); }
+.case.plus { border: 1.5px solid var(--c); opacity: .6; }
+.case.vide { border: 1.5px dashed var(--faint); opacity: .85; }
+.case.mini { width: 12px; height: 12px; border-radius: 4px; }
+.case.mini.plus { background: var(--c); }
+.svc-badge { font-family: var(--body); font-size: 11.5px; padding: 3px 9px; flex-shrink: 0; }
+.svc.svc-manque { background: linear-gradient(90deg, var(--red-bg), transparent 70%); border-radius: 12px; }

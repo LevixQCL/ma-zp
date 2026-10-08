@@ -160,6 +160,82 @@ export function estimations() {
   return { crimSoir, attendus, couverts, pap, papV, capAdmin1, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, coutTotal, prises, crim, cap };
 }
 
+// ───── Remplissage des services : une case par agent dont le service a besoin ce soir ─────
+/** Le service a-t-il son compte ce soir ? (mêmes critères que la ligne de résultat sous son nom) */
+function serviceRempli(s, e, z) {
+  if (s === 'intervention') return e.couverts >= e.attendus;
+  if (s === 'proximite') return Math.round(e.crimSoir) <= Math.round(z.criminalite);
+  if (s === 'admin') return z.paperasse + e.papV <= 14 && e.papV <= 0.15;
+  if (s === 'recherche') {
+    const p = projeterDossiers(z, ((e.cap && e.cap.recherche) || 0) + (S.draft && S.draft.depenses && S.draft.depenses.enqueteurs ? DEPENSES.enqueteurs.unites : 0));
+    const retard = p.lignes.filter((l) => !l.boucle && l.d.age + 1 > 6).length;
+    return !retard && (p.boucles > 0 || !p.restants);
+  }
+  return true;
+}
+let cacheBesoins = { cle: null, val: null };
+/** Besoin de chaque service : le plus petit nombre d'agents qui le remplit, à répartition égale ailleurs. */
+export function besoinsServices(e = estimations()) {
+  const z = myZone(), d = S.draft;
+  const cle = JSON.stringify([S.state.turn, d.alloc, d.rythme, d.depenses, d.postes, d.operation, d.missions, d.patrouilles, d.engagements, d.secteurs]);
+  if (cacheBesoins.cle === cle) return cacheBesoins.val;
+  const val = {};
+  for (const s of SERVICES) {
+    const n = d.alloc[s];
+    if (s === 'roulage') {
+      const total = SERVICES.reduce((t, k) => t + d.alloc[k], 0) || 1;
+      const maxChasse = Math.max(1, Math.floor(seuilChasse(z) * total));
+      const utile = Math.min(ROULAGE.seuil, maxChasse);
+      val[s] = { bes: 0, utile, st: e.chasse ? 'trop' : n > utile ? 'trop' : 'libre' };
+      continue;
+    }
+    let bes = 0;
+    if (s === 'recherche' && !(z.dossiers || []).length) bes = 0;
+    else {
+      const orig = d.alloc[s];
+      bes = 31;
+      for (let k = 0; k <= 30; k++) { d.alloc[s] = k; if (serviceRempli(s, estimations(), z)) { bes = k; break; } }
+      d.alloc[s] = orig;
+    }
+    // Toujours cohérent avec l'estimation affichée : rempli ⇒ le besoin est couvert, et inversement.
+    const ok = serviceRempli(s, e, z);
+    if (ok) bes = Math.min(bes, n); else bes = Math.max(bes, n + 1);
+    const utile = s === 'intervention' ? bes + 4 : s === 'proximite' ? bes + 3 : Math.max(bes + 2, 6);
+    const st = !ok ? (bes - n >= 2 ? 'manque' : 'juste') : !bes && s === 'recherche' ? 'libre' : n > utile ? 'trop' : 'ok';
+    val[s] = { bes, utile, st };
+  }
+  cacheBesoins = { cle, val };
+  return val;
+}
+const PION = (c) => `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="12" cy="7.5" r="4" fill="${c}"/><path d="M4 21c0-5 3.6-8 8-8s8 3 8 8z" fill="${c}"/></svg>`;
+const MAX_CASES = 14;
+/** Badge d'état du service. */
+function badgeService(s, b, n) {
+  const t = { manque: [`Il manque ${b.bes - n}`, 'red'], juste: [`Il manque ${b.bes - n}`, 'amber'], ok: ['Rempli', 'green'], trop: [s === 'roulage' ? 'Chasse aux PV' : 'Beaucoup', 'amber'], libre: [s === 'roulage' ? 'Libre' : 'Rien en attente', 'blue'] }[b.st];
+  return `<span class="pill ${t[1]} svc-badge">${t[0]}</span>`;
+}
+/** Rangée de cases : pleines (agents qui couvrent le besoin), pointillées (places à pourvoir), pâles (en plus). */
+function casesService(s, b, n) {
+  const coul = COUL_SVC[s];
+  const nb = Math.max(b.bes, n), vus = Math.min(nb, MAX_CASES);
+  let h = '';
+  for (let i = 0; i < vus; i++) {
+    const plein = i < n, enPlus = s === 'roulage' ? i >= b.utile : i >= b.bes;
+    h += plein ? (enPlus ? `<span class="case plus" style="--c:${coul}">${PION(coul)}</span>` : `<span class="case pleine" style="--c:${coul}">${PION('#0C1124')}</span>`)
+      : `<span class="case vide">${PION('#67719A')}</span>`;
+  }
+  if (nb > vus) h += `<span class="tiny muted">+${nb - vus}</span>`;
+  return h || '<span class="tiny muted">aucun agent</span>';
+}
+/** Barre de toute l'affectation : un segment par agent à répartir, couleur de son service ; pointillés = encore libres. */
+function barreAffectation(e) {
+  const d = S.draft;
+  const segs = [];
+  for (const s of SERVICES) for (let i = 0; i < d.alloc[s]; i++) segs.push(`<i style="background:${COUL_SVC[s]}"></i>`);
+  for (let i = 0; i < Math.max(0, e.reste); i++) segs.push('<i class="libre"></i>');
+  return segs.join('');
+}
+
 /** « dont 2 en audition » sous un service : ces agents ne travaillent pas dans le service aujourd'hui. */
 function prisHtml(e, s) {
   const l = (e.prises || {})[s];
@@ -259,6 +335,9 @@ export function updateOrdresLive() {
   if (e.opx.op) set('op-couv', opCouvHtml(e));
   set('alloc-status', statusHtml(e));
   for (const s of SERVICES) set(`res-${s}`, resultatService(e, s));
+  const bs = besoinsServices(e);
+  for (const s of SERVICES) { set(`cases-${s}`, casesService(s, bs[s], S.draft.alloc[s])); set(`badge-${s}`, badgeService(s, bs[s], S.draft.alloc[s])); }
+  set('barre-aff', barreAffectation(e));
   set('dos-recherche', dossiersHtml(myZone(), e));
   const ch = document.getElementById('est-chasse'); if (ch) ch.hidden = !e.chasse;
   const btn = document.getElementById('btn-valider'); if (btn) btn.disabled = e.resteBase < 0;
@@ -748,12 +827,16 @@ export function renderOrdres() {
       <div class="between" style="align-items:baseline;margin-bottom:2px"><h2 class="card-title">Affectation</h2>
         <button type="button" class="lien-statut" data-action="ventilation" aria-expanded="${!!S.ventilation}"><span id="alloc-status">${statusHtml(e)}</span><span class="tiny muted"> · ${S.ventilation ? 'masquer' : 'détail'}</span>${agentsHorsServices().some((h) => h.bloque) ? ' <span class="small bad">· agents bloqués</span>' : ''}</button></div>
       ${S.ventilation ? ventilationHtml(z, e) : ''}
-      ${SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); return `<div class="svc${ouvert ? ' ouvert' : ''}">
+      <div class="barre-aff" id="barre-aff" aria-hidden="true">${barreAffectation(e)}</div>
+      <div class="legende-cases tiny muted"><span><span class="case vide mini"></span>place à pourvoir</span><span><span class="case plus mini" style="--c:var(--faint)"></span>en plus du besoin</span></div>
+      ${(() => { S._bs = besoinsServices(e); return ''; })()}
+      ${SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc svc-${b.st}${ouvert ? ' ouvert' : ''}">
         <div class="svc-l"><i class="svc-c" style="background:${COUL_SVC[s2]}"></i>
           <button type="button" class="svc-t svc-tog" data-action="help" data-s="${s2}" aria-expanded="${ouvert}" aria-label="${ouvert ? 'Masquer' : 'Afficher'} le détail : ${SERVICE_LABELS[s2]}">
             <span class="svc-n">${s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2]}<span class="svc-niv">niv. ${z.niveaux[s2]}</span>${bonusEnigme(s2) > 1 ? `<span class="svc-niv" style="color:var(--green, #3fbf7f)" title="Bonus d’énigme du jour">+${Math.round((bonusEnigme(s2) - 1) * 100)} % énigme</span>` : ''}${icon('chevron', 13, `class="svc-chev"${ouvert ? ' style="transform:rotate(90deg)"' : ''}`)}</span>
             <span class="svc-r" id="res-${s2}">${resultatService(e, s2)}</span></button>
           <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
+        <div class="cases-l"><div class="cases" id="cases-${s2}">${casesService(s2, b, d.alloc[s2])}</div><span id="badge-${s2}">${badgeService(s2, b, d.alloc[s2])}</span></div>
         <span id="pris-${s2}" class="svc-plus">${prisHtml(e, s2)}</span>
         ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} de réserve en renfort (efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} %)</span>` : ''}
         ${ouvert ? `<div class="svc-det">${s2 === 'recherche' ? `<div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}<p class="tiny" style="margin:0;color:var(--text2);line-height:1.45">${esc(aide(s2, z))}</p></div>` : ''}
