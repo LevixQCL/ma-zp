@@ -179,15 +179,15 @@ export function renderRadio() {
         : `<span class="tiny muted">Tu as déjà engagé tes ${ND.maxTotal} agents possibles dans la zone de non-droit.</span>`}
     </div>`;
   };
-  return `<main class="screen">
-    ${ongletsRadio('radio')}
-    <header class="col" style="gap:3px"><h1 class="big">Radio Delta</h1></header>
-    <div class="frequences" role="tablist" aria-label="Fréquences de la radio">
+  const frequences = `    <div class="frequences" role="tablist" aria-label="Fréquences de la radio">
       <button type="button" role="tab" class="freq ${canal === 'parole' ? 'on' : ''}" data-action="radio-canal" data-v="parole" aria-selected="${canal === 'parole'}">
         <span class="freq-n">F1</span><span class="col" style="gap:0;min-width:0"><span class="freq-t">Discussion</span><span class="freq-s">les chefs de zone se parlent</span></span>${canal !== 'parole' && nl.radio ? `<span class="compteur">${nl.radio}</span>` : ''}</button>
       <button type="button" role="tab" class="freq ops ${canal === 'ops' ? 'on' : ''}" data-action="radio-canal" data-v="ops" aria-selected="${canal === 'ops'}">
         <span class="freq-n">F2</span><span class="col" style="gap:0;min-width:0"><span class="freq-t">Renforts & opérations</span><span class="freq-s">${appels.length ? `${appels.length} appel${appels.length > 1 ? 's' : ''} en cours` : 'appels, non-droit, annonces'}</span></span>${canal !== 'ops' && nl.ops ? `<span class="compteur">${nl.ops}</span>` : ''}</button>
-    </div>
+    </div>`;
+  return `<main class="screen">
+    ${ongletsRadio('radio', frequences)}
+    <header class="col" style="gap:3px"><h1 class="big">Radio Delta</h1></header>
     <p class="sub" style="margin:-4px 0 0">${canal === 'parole' ? 'Canal public de tout le district. Négociez, chambrez, mais restez corrects.' : 'Appels à renfort, zone de non-droit et annonces automatiques. Réponds ici pour coordonner.'}</p>
     <section class="col" aria-label="Messages" id="radio-list" style="gap:8px">
       ${msgs.length ? msgs.map((m) => { const w = nameOf(m.uid); const moi = m.uid === me.uid; const appel = m.renfort && appels.find((x) => x.uid === m.uid && x.at === m.at); const nd = m.nd && !moi ? ndCtrl(m) : ''; return `<div class="card tight" ${m.renfort ? 'style="border-color:var(--red-line);background:var(--red-bg)"' : nd ? 'style="border-color:var(--amber-line);background:var(--amber-bg, transparent)"' : moi ? 'style="border-color:var(--amber-line)"' : ''}>

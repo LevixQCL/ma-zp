@@ -54,12 +54,12 @@ export function nonLus() {
 }
 
 /** Onglets Radio | Privé (les pactes et le Conseil sont passés dans la Carte). */
-export function ongletsRadio(actif) {
+export function ongletsRadio(actif, extra = '') {
   const n = nonLus();
   const priveAFaire = n.prive > 0 || invitations().some((i) => !i.fait && i.href !== '#pactes');
   const tab = (k, l, pastille) => `<a role="tab" href="#${k}" aria-selected="${actif === k}" class="segl">${l}${actif !== k && pastille ? '<span class="pastille" aria-label="nouveau"></span>' : ''}</a>`;
   return `<div class="onglets-flottants"><div class="seg3 deux" role="tablist" aria-label="Radio et messages privés">
-    ${tab('radio', 'Radio', n.radio > 0)}${tab('prive', 'Privé', priveAFaire)}</div></div>`;
+    ${tab('radio', 'Radio', n.radio > 0)}${tab('prive', 'Privé', priveAFaire)}</div>${extra}</div>`;
 }
 
 /** Invitations et demandes qui attendent une réponse de ma part ce tour-ci. */
