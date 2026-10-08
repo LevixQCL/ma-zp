@@ -229,7 +229,8 @@ function badgeService(s, b, n) {
  */
 function casesService(s, b, n, e) {
   const coul = COUL_SVC[s];
-  const pris = Math.min(n, prisDe(e, s));
+  const groupes = ((e && e.prises && e.prises[s]) || []).filter(([k]) => k > 0);
+  const pris = Math.min(n, groupes.reduce((t, [k]) => t + k, 0));
   const au = n - pris;
   const besoin = s === 'roulage' ? 0 : Math.max(0, b.bes - pris);
   const limite = s === 'roulage' ? Math.max(0, b.utile - pris) : besoin;
@@ -241,7 +242,11 @@ function casesService(s, b, n, e) {
       : `<span class="case vide">${PION('#67719A')}</span>`;
   }
   if (nb > vus) h += `<span class="tiny muted">+${nb - vus}</span>`;
-  return h || `<span class="tiny muted">${pris ? 'personne au service' : 'aucun agent'}</span>`;
+  // Groupe « au service » (avec les places manquantes), puis un groupe par mission : on voit tous ses agents,
+  // et d'un coup d'œil lesquels travaillent vraiment au service aujourd'hui.
+  const service = `<span class="grp"><span class="grp-l">au service · ${au}</span><span class="grp-c">${h || '<span class="tiny muted">personne</span>'}</span></span>`;
+  const missions = groupes.map(([k, motif]) => `<span class="grp mission"><span class="grp-l">${motif === 'l’opération' ? 'opération' : esc(motif)} · ${k}</span><span class="grp-c">${Array.from({ length: Math.min(k, MAX_CASES) }, () => `<span class="case mission" style="--c:${coul}">${PION('#8A93B5')}</span>`).join('')}</span></span>`).join('');
+  return pris ? service + missions : `<span class="grp-c">${h || '<span class="tiny muted">aucun agent</span>'}</span>`;
 }
 /** Barre de toute l'affectation : un segment par agent à répartir, couleur de son service ; pointillés = encore libres. */
 function barreAffectation(e) {
@@ -256,9 +261,9 @@ function barreAffectation(e) {
 function prisHtml(e, s) {
   const l = (e.prises || {})[s];
   const vg = vagueServiceHtml(e, s);
+  // Les agents partis en mission se voient maintenant dans les cases du service (groupes séparés).
   if (!l || !l.length) return vg;
-  const n = l.reduce((t, [k]) => t + k, 0);
-  return `${vg}<span class="tiny warn">${l.map(([k, m]) => `${k} ${m === 'l’opération' ? 'sur l’opération' : `en ${m}`}`).join(', ')} → ${Math.max(0, S.draft.alloc[s] - n)} au service</span>`;
+  return vg;
 }
 
 function opCouvHtml(e) {
@@ -857,7 +862,7 @@ export function renderOrdres() {
         <button type="button" class="lien-statut" data-action="ventilation" aria-expanded="${!!S.ventilation}"><span id="alloc-status">${statusHtml(e)}</span><span class="tiny muted"> · ${S.ventilation ? 'masquer' : 'détail'}</span>${agentsHorsServices().some((h) => h.bloque) ? ' <span class="small bad">· agents bloqués</span>' : ''}</button></div>
       ${S.ventilation ? ventilationHtml(z, e) : ''}
       <div class="barre-aff" id="barre-aff" aria-hidden="true">${barreAffectation(e)}</div>
-      <div class="legende-cases tiny muted"><span><span class="case pleine mini" style="--c:var(--faint)"></span>au service</span><span><span class="case vide mini"></span>manquant</span><span><span class="case plus mini" style="--c:var(--faint)"></span>en plus du besoin</span></div>
+      <div class="legende-cases tiny muted"><span><span class="case pleine mini" style="--c:var(--faint)"></span>au service</span><span><span class="case vide mini"></span>manquant</span><span><span class="case plus mini" style="--c:var(--faint)"></span>en plus</span>${Object.values(e.prises || {}).some((l) => l.some(([k]) => k > 0)) ? '<span><span class="case mission mini" style="--c:var(--faint)"></span>en mission</span>' : ''}</div>
       ${(() => { S._bs = besoinsServices(e); return ''; })()}
       ${SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc svc-${b.st}${ouvert ? ' ouvert' : ''}">
         <div class="svc-l"><i class="svc-c" style="background:${COUL_SVC[s2]}"></i>
