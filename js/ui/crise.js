@@ -1,5 +1,5 @@
 // Crise du district (Conseil des chefs), côté joueur : vote secret, plan en vigueur, opération commune.
-import { S, esc, myZone } from './common.js';
+import { S, esc, icon, myZone } from './common.js';
 import { CRISE, CRISES, PLANS, criseCourante, planDuJour, agentsCommune, participeCommune, requisCommune } from '../engine/crise.js';
 
 /** Ligne de la liste « avant ce soir ». */
@@ -20,6 +20,10 @@ export function criseHtml() {
   const T = st.turn, cr = CRISES[c.id];
   if (c.vote === T && !c.plan) {
     const v = Number.isInteger(d.crise) ? d.crise : null;
+    // Vote enregistré avec les ordres : la carte se replie sur une ligne (on peut la rouvrir pour changer d'avis).
+    if (v !== null && S.savedOrders && !S.ordersDirty && !(S.ouverts && S.ouverts.crise)) {
+      return `<button type="button" class="card crise crise-ligne" id="hp-crise" data-action="crise-ouvrir" aria-label="Revoir le vote du Conseil des chefs"><span class="crise-k">${PLANS[v].k}</span><span class="col grow" style="gap:0;text-align:left"><span class="kicker">Conseil des chefs · vote secret jusqu’à 20:00</span><span style="font-weight:700">Ton vote : ${esc(PLANS[v].nom)} <span class="ok">✓</span></span></span>${icon('chevron', 16)}</button>`;
+    }
     return `<section class="card crise" id="hp-crise" aria-label="Conseil des chefs">
       <span class="kicker">Conseil des chefs · vote secret jusqu’à 20:00</span>
       <p class="dil-q">${esc(cr.titre)}</p>
@@ -42,17 +46,23 @@ export function criseHtml() {
     corps += `<p class="small" style="margin:0">Soirs réussis : <strong>${ok}</strong> sur ${(c.nuits || []).length} (il en faut ${CRISE.C.nuitsOk} sur 3, avec au moins ${requisCommune(c)} zones présentes : les 3/4 de celles qui ont voté C). ${part ? `Tu engages <strong>${agentsCommune(z, T)} agents</strong> ce soir : laisse-les sans affectation dans tes ordres, sinon ils partent d’abord de ta Proximité puis de ton Intervention.` : 'Tu n’y participes pas : ni coût ni récompense.'}</p>
       <button type="button" class="btn small ${part ? 'outline' : 'primary'}" data-action="crise-c" data-v="${part ? 'non' : 'oui'}">${part ? 'Me retirer ce soir' : `Rejoindre l’opération (${agentsCommune(z, T)} agents)`}</button>`;
   }
-  return `<section class="card crise" id="hp-crise" aria-label="Plan du district">
-    <span class="kicker">Plan du district · jour ${jour} sur ${CRISE.duree}${votes}</span>
-    <p class="dil-q"><span class="crise-k">${p}</span> ${esc(PLANS[i].nom)} : ${esc(cr.plans[i].charAt(0).toLowerCase() + cr.plans[i].slice(1))}</p>
+  // Plan en vigueur : replié sur une ligne une fois les ordres validés (rien à décider), ouvert sinon.
+  const etat = p === 'C' ? (participeCommune(st, z.uid, d) ? `tu engages ${agentsCommune(z, T)} agents ce soir` : 'tu n’y participes pas') : `jour ${jour} sur ${CRISE.duree}`;
+  const ouvert = S.ouverts && 'crise' in S.ouverts ? S.ouverts.crise : !(S.savedOrders && !S.ordersDirty);
+  return `<details class="card crise crise-pli" id="hp-crise" data-k="crise" aria-label="Plan du district" ${ouvert ? 'open' : ''}>
+    <summary><span class="crise-k">${p}</span><span class="col grow" style="gap:0"><span class="kicker">Plan du district · jour ${jour} sur ${CRISE.duree}${votes}</span><span style="font-weight:700">${esc(PLANS[i].nom)}<span class="tiny muted" style="font-weight:500"> · ${etat}</span></span></span>${icon('chevron', 16)}</summary>
+    <div class="col" style="gap:10px">
+    <p class="dil-q" style="margin:0">${esc(cr.plans[i].charAt(0).toUpperCase() + cr.plans[i].slice(1))}</p>
     ${corps}
-  </section>`;
+    </div>
+  </details>`;
 }
 
 /** Actions des boutons (renvoie true si l'action est traitée). */
 export function actionCrise(act, el) {
   const d = S.draft;
   if (!d) return false;
+  if (act === 'crise-ouvrir') { S.ouverts = { ...(S.ouverts || {}), crise: true }; return true; }
   if (act === 'crise-vote') { const i = Number(el.dataset.i); d.crise = d.crise === i ? null : i; }
   else if (act === 'crise-c') d.criseC = el.dataset.v;
   else return false;

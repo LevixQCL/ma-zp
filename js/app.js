@@ -409,7 +409,7 @@ async function onClick(e) {
       case 'appui-jouer': { const err = lancerAppui(() => rerender()); if (err) { toast(err); rerender(); } break; }
       case 'releve': case 'releve-n': case 'releve-appui': case 'saisie': { if (actionReleve(a, el)) rerender(); break; }
       case 'bilan': case 'bilan-tout': { if (actionBilan(a, el)) rerender(); break; }
-      case 'crise-vote': case 'crise-c': { if (actionCrise(a, el)) rerender(); break; }
+      case 'crise-vote': case 'crise-c': case 'crise-ouvrir': { if (actionCrise(a, el)) rerender(); break; }
       case 'dilemme': { const i = Number(el.dataset.i); S.draft.dilemme = S.draft.dilemme === i ? null : i; S.ordersDirty = true; rerender(); break; }
       case 'prime-choix': { const v = el.dataset.v; S.draft.prime = S.draft.prime === v ? null : v; S.ordersDirty = true; rerender(); break; }
       case 'actu-voir': ouvrirActu(lancerActu); break;

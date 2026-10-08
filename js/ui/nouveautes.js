@@ -15,6 +15,7 @@ export const NOTE_MAJ = {
   // Liste complète, dans le menu Nouveautés.
   sections: [
     ['Écrans plus visuels', [
+      ['Plan du district', 'une fois tes ordres validés, la carte du plan (et ton vote au Conseil des chefs) se replie sur une ligne sur l’HP : le plan, le jour et ce que tu engages. Touche-la pour la rouvrir.'],
       ['Ordres', 'chaque service montre ses places : une case pleine par agent, une case en pointillés par agent qui manque pour couvrir le besoin du soir, et un pion pâle par agent en plus. Un badge dit tout de suite « Rempli », « Il manque 2 » ou « Beaucoup ». En haut, une barre colorée montre toute ta répartition et les agents encore libres.'],
       ['Profil', 'une vraie carte de joueur : ton commissariat, ton grade et ce qu’il manque pour le suivant, IPZ, trophées, arrestations, records, et tes avis « ARRÊTÉ ». Les réglages de la zone se déplient.'],
       ['Enquête (liste)', 'les onglets Suspects, Scène, Pièces remontent : voisinage, budget restant et cellule tiennent en pastilles, l’appui fédéral sur une ligne. « Mes démarches » passe sous le dossier.'],
