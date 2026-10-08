@@ -1176,9 +1176,11 @@ export function nouvelleAffaire(state) {
   // Une affaire de meurtre écrite à la main, une fois par partie (jamais juste après la Rampe ni le corbeau : un vol entre les deux).
   else if (state.meurtreDes == null && n >= 2 && !(state.meurtre2Des != null && n < state.meurtre2Des + MEURTRE2.ecart) && !(state.corbeauDes != null && n < state.corbeauDes + MEURTRE2.ecart)) state.meurtreDes = n;
   else if (MEURTRE2.actif && state.meurtre2Des == null && state.meurtreDes != null && n >= state.meurtreDes + MEURTRE2.ecart) state.meurtre2Des = n; // … puis la seconde
-  // Affaire écrite : sa variante est tirée maintenant, une fois pour toutes (une variante déjà posée, par la démo, reste).
+  // Affaire écrite : par défaut, toujours le scénario d'origine (celui écrit par le maître du jeu). La version « b »
+  // (autre coupable) n'est tirée que si le maître du jeu l'a activée pour cette partie (state.variantesEcrites),
+  // par exemple quand les joueurs connaissent déjà l'histoire. Tirée une fois pour toutes à l'ouverture.
   const cas = casDe(state, n);
-  if (cas && !(state.variantes && state.variantes[n])) state.variantes = { ...(state.variantes || {}), [n]: tirerVariante(state.seed, n, cas) };
+  if (cas && state.variantesEcrites && !(state.variantes && state.variantes[n])) state.variantes = { ...(state.variantes || {}), [n]: tirerVariante(state.seed, n, cas) };
   state.enquete = { n, jour: 1, nbCellules: 1, cellules: {}, rebonds: [], figee: false };
   repartirCellules(state);
   for (const z of Object.values(state.zones)) {

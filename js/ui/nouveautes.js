@@ -8,7 +8,6 @@ export const NOTE_MAJ = {
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
     ['🕵️', 'Des vols qui sortent du moule', 'deux complices à démasquer ensemble, un témoin qui ment, une plainte qui sent la fraude à l’assurance. La particularité est annoncée dès l’ouverture de l’affaire.'],
-    ['🎭', 'Des affaires écrites rejouables', 'chaque partie tire sa propre version : même décor, mêmes suspects… mais pas forcément le même coupable. Ce que tu sais d’une autre partie ne vaut plus rien.'],
     ['🧩', 'L’énigme d’enquête', 'pendant un vol, ta 3e énigme du jour se joue sur l’affaire et te rapporte une pièce sur ta piste prioritaire.'],
     ['🕵️', 'Les pistes', 'dans tes ordres : indic, filature, dialogue avec un quartier tendu. Le résultat tombe une à trois nuits plus tard.'],
   ],
@@ -20,7 +19,7 @@ export const NOTE_MAJ = {
       ['Vols : faux témoin', 'l’alibi du coupable ne repose que sur une parole. Un autre suspect, ou un proche, jure qu’il était ailleurs ; ses propres traces (téléphone, horaires) le trahissent. Un innocent peut aussi avoir un témoin… honnête, lui.'],
       ['Vols : fraude à l’assurance', 'la « victime » fait partie des cinq suspects, et les pièces peuvent la désigner.'],
       ['Fréquence', 'environ une affaire de vol sur trois prend une particularité, jamais deux de suite ; elle est annoncée dès l’ouverture (encadré « Particularité », note du magistrat au PV).'],
-      ['Affaires écrites', 'la rue de la Clef, la Rampe et le corbeau de la rue d’Havré tirent leur version à l’ouverture : celle d’origine ou une autre où quelqu’un d’autre a fait le coup. Journal, PV et scène sont les mêmes au départ : seule l’enquête fait la différence. Une affaire déjà ouverte ne change pas.'],
+      ['Affaires écrites', 'la rue de la Clef, la Rampe et le corbeau de la rue d’Havré se jouent dans leur scénario d’origine. Le maître du jeu peut, pour une partie dont les joueurs connaissent déjà l’histoire, permettre une autre version où quelqu’un d’autre a fait le coup (journal, PV et scène identiques au départ).'],
     ]],
     ['À la prochaine saison : compléments (9 octobre)', [
       ['Investir paie', 'former un service coûte 3 000 € (au lieu de 4 000 €) et n’immobilise plus qu’un agent ; le matériel démarre à 4 000 € (au lieu de 5 000 €).'],

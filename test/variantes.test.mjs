@@ -58,6 +58,9 @@ for (const cas of ['clef', 'rampe', 'corbeau']) {
     let s = createGame({ seed: `tirage-${cas}` });
     s = resolveTurn(s, { players }).state;
     s.meurtreDes = undefined; s.meurtre2Des = undefined;
+    // Par défaut : le scénario d'origine, jamais de tirage.
+    { const s0 = JSON.parse(JSON.stringify(s)); ouvrirAffaireMaintenant(s0, cas); assert.ok(!(s0.variantes && s0.variantes[s0.enquete.n]), `${cas} : scénario d’origine par défaut`); }
+    s.variantesEcrites = true; // activé par le maître du jeu
     assert.ok(ouvrirAffaireMaintenant(s, cas) != null);
     const n = s.enquete.n;
     assert.equal(s.variantes[n], tirerVariante(s.seed, n, cas), `${cas} : tirée à l’ouverture (graine + n° de l’affaire)`);

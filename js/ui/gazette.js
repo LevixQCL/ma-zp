@@ -308,6 +308,9 @@ export function renderAdmin() {
       ${affairesOuvrables(st).length ? `<h3 class="small" style="margin:8px 0 0">Ouvrir une affaire écrite maintenant</h3>
       <p class="small muted" style="margin:0">Sans attendre le 20:00. ${st.enquete ? `L’affaire en cours (« ${esc(affaire(st, st.enquete.n).titre)} », jour ${st.enquete.jour || 1}) est retirée et ses pièces sont perdues ; ` : ''}les traques continuent. Chaque affaire ne se joue qu’une fois par partie.</p>
       ${affairesOuvrables(st).map((a) => `<div class="list-row" style="gap:10px;align-items:center"><span class="grow"><b>${esc(a.titre)}</b><br><span class="tiny muted">${esc(a.resume)}</span></span><button class="btn small outline" data-action="admin-affaire-maintenant" data-cas="${a.cas}">Ouvrir</button></div>`).join('')}` : ''}</section>
+    <section class="card"><h2 class="card-title">Affaires écrites : version</h2>
+      <p class="small muted" style="margin:0">Par défaut, chaque affaire écrite (rue de la Clef, la Rampe, le corbeau) se joue dans ton scénario d’origine. Si les joueurs de cette partie connaissent déjà l’histoire, active l’autre version : à son ouverture, chaque affaire tirera son scénario (l’origine ou une version où quelqu’un d’autre a fait le coup). Une affaire déjà ouverte ne change pas.</p>
+      <button class="btn block ${st.variantesEcrites ? '' : 'outline'}" data-action="admin-variantes">${st.variantesEcrites ? '✓ Autre version possible (toucher pour revenir au scénario d’origine)' : 'Scénario d’origine (toucher pour permettre l’autre version)'}</button></section>
     ${directeurAdminHtml(st)}
     <section class="card"><h2 class="card-title">Résolution</h2>
       <p class="small muted" style="margin:0">Force la résolution du tour en cours maintenant (utile pour tester). Les joueurs ne pourront plus modifier leurs ordres de ce tour.</p>

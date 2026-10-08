@@ -312,6 +312,7 @@ export async function createFirebaseBackend(config) {
         tx.set(docIn('gazettes', `${cur.season}_${cur.turn}`), plain({ date: cur.nextDeadline, turn: cur.turn, season: cur.season, une: { kicker: 'District', titre: 'Soirée calme', texte: 'Le tour n’a pas été calculé ce soir (incident technique) : la partie reprend demain.' }, breves: [], createdAt: Date.now() }));
       });
     },
+    async adminVariantesEcrites(v) { await F.updateDoc(stateRef(), { variantesEcrites: !!v }); },
     async adminForceResolution() { await F.updateDoc(stateRef(), { nextDeadline: Date.now() - 1000 }); },
     async adminExport() {
       const [state, players] = await Promise.all([this.getState(), this.getPlayers()]);
