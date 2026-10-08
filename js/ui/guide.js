@@ -380,6 +380,7 @@ export function sections() {
           '<strong>Parcours</strong> : choisi une fois, il donne +2 niveaux dans une compétence.',
           '<strong>Cinq compétences</strong> (0 à 10) : Gestion, Commandement, Flair, Diplomatie, Proximité. Elles montent par l’usage, selon ce que tu fais chaque jour, avec un plafond quotidien. Elles te suivent de saison en saison.',
           '<strong>Talents</strong> : 15 à débloquer (niveaux 2, 5 et 8), 3 équipés au plus. Ajouter dans un emplacement vide est libre, remplacer un talent est possible une fois par semaine. Les effets sont petits et situationnels : un vétéran a plus de choix, pas plus de puissance.',
+          '<strong>Jouer entraîne le chef</strong> : chaque réussite aux énigmes et aux mini-jeux (incidents du jour, Challenge) fait aussi progresser une compétence, avec un plafond à part : énigmes, crochetage, empreintes, ADN → Flair ; colis, maintien de l’ordre, bitonal → Commandement ; embouteillage, dossier → Gestion ; réseau, interception → Diplomatie ; incidents de Proximité → Proximité.',
           '<strong>Agenda</strong> : dans les ordres, où passe le chef aujourd’hui (bureau, commune, terrain, parquet, quartier ou chez un voisin). C’est ce qui nourrit le plus ses compétences.',
           '<strong>Directeur</strong> : avec une compétence à 4, certains dilemmes proposent une option de plus.',
           '<strong>Carrière</strong> : états de service, médaille de la plus forte progression de la saison, parrainage des nouveaux chefs.',

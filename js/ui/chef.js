@@ -169,11 +169,11 @@ const PALIERS = {
   proximite: ['une plante verte', 'le plan du quartier épinglé de cœurs', 'les dessins d’enfants et les fleurs'],
 };
 const MONTE = {
-  gestion: 'finir la journée dans le vert, investir (formation, matériel, bâtiments), boucler la paperasse, passer la journée au bureau ou à la commune',
-  commandement: 'tenir ses services, réussir incidents et urgences, mener un assaut en non-droit, gagner une affaire disputée, aller sur le terrain',
-  flair: 'trouver des pièces d’enquête, identifier un auteur, résoudre un dossier noir, arrêter un suspect, passer la journée au parquet',
-  diplomatie: 'prêter un renfort, prendre une relève, tenir un pacte, partager des pièces, rendre visite à un voisin',
-  proximite: 'garder une satisfaction haute, absorber une vague de délinquance, éviter les imprévus, tenir une réunion de quartier',
+  gestion: 'finir la journée dans le vert, investir (formation, matériel, bâtiments), boucler la paperasse, passer la journée au bureau ou à la commune ; mini-jeux : embouteillage (Roulage), dossier à relire (Accueil)',
+  commandement: 'tenir ses services, réussir incidents et urgences, mener un assaut en non-droit, gagner une affaire disputée, aller sur le terrain ; mini-jeux : colis suspect, maintien de l’ordre, bitonal',
+  flair: 'trouver des pièces d’enquête, identifier un auteur, résoudre un dossier noir, arrêter un suspect, passer la journée au parquet ; jeux : énigmes du jour, crochetage, empreintes, ADN',
+  diplomatie: 'prêter un renfort, prendre une relève, tenir un pacte, partager des pièces, rendre visite à un voisin ; mini-jeux de la RCCU (réseau, interception), en appui avec la fédérale',
+  proximite: 'garder une satisfaction haute, absorber une vague de délinquance, éviter les imprévus, tenir une réunion de quartier ; incidents de Proximité',
 };
 export function renderBureau() {
   const st = S.state, me = myZone();

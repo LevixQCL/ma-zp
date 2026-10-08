@@ -352,6 +352,7 @@ export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng, ind
       z.jaugeIncidents = (z.jaugeIncidents || 0) + pts;
       z._ps = (z._ps || 0) + PS.queteOk;
       z.stats.incidentsOk = (z.stats.incidentsOk || 0) + 1;
+      (z._incOk ||= []).push(inc.service);
       (z.carriere ||= {}).incidents = (z.carriere.incidents || 0) + 1;
       // Incident « en plus » (IPZ élevé) : seulement les PS et la jauge.
       const g = inc.pression ? {} : GAIN[inc.service], gains = inc.pression ? ['incident en plus (IPZ élevé) : pas de gain de service'] : [];

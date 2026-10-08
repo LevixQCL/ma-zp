@@ -36,6 +36,15 @@ export const CHEF = {
   parrainage: { mult: 1.5, jours: 7, ps: 2, minParrain: 12, maxFilleul: 6 },
   semaine: 7,            // jours entre deux changements de talents
   maxTalents: 3,
+  plafondJeux: 4,        // expérience des mini-jeux et énigmes, en plus, par compétence et par jour
+};
+// Mini-jeux et énigmes : chaque réussite entraîne une compétence du chef (en plus de sa façon de gérer la zone).
+export const JEUX_COMP = {
+  // Incidents du jour, par service.
+  intervention: 'commandement', roulage: 'gestion', proximite: 'proximite', recherche: 'flair', admin: 'gestion',
+  // Challenge, par mini-jeu.
+  colis: 'commandement', bouclage: 'commandement', crochetage: 'flair', empreintes: 'flair', adn: 'flair',
+  reseau: 'diplomatie', interception: 'diplomatie', depanneuse: 'gestion', dossier: 'gestion',
 };
 
 /** Niveau (0 à 10) pour une expérience donnée. */
@@ -153,10 +162,10 @@ export function gainsDuJour(f) {
  * Applique les gains du jour au chef (plafond par jour, rattrapage, parrainage). Retourne les niveaux gagnés
  * [{ comp, niveau }] et les talents débloqués ce soir.
  */
-export function progresser(chef, gains, { rattrapage = false, parrain = null } = {}) {
+export function progresser(chef, gains, { rattrapage = false, parrain = null, jeux = null } = {}) {
   const montees = [], avantT = new Set(talentsDebloques(chef));
   for (const c of IDS_COMPETENCES) {
-    let g = Math.min(CHEF.plafondJour, Math.max(0, gains[c] || 0));
+    let g = Math.min(CHEF.plafondJour, Math.max(0, gains[c] || 0)) + Math.min(CHEF.plafondJeux, Math.max(0, (jeux && jeux[c]) || 0));
     if (!g) continue;
     if (rattrapage) g *= CHEF.rattrapage;
     if (parrain && parrain.comp === c) g *= CHEF.parrainage.mult;

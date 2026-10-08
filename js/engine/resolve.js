@@ -37,7 +37,7 @@ import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
 import { primeChallenge, CHALLENGE } from './challenge.js';
-import { creerChef, lireAgenda, lireTalents, changerTalents, gainsDuJour, progresser, totalNiveaux, niveauChef, talent, TALENT, AGENDA, COMPETENCES, IDS_COMPETENCES, PARCOURS, CHEF, noterChef, signatureChef, faitsDArmes } from './chef.js';
+import { creerChef, lireAgenda, lireTalents, changerTalents, gainsDuJour, progresser, totalNiveaux, niveauChef, talent, TALENT, AGENDA, COMPETENCES, IDS_COMPETENCES, PARCOURS, CHEF, noterChef, signatureChef, faitsDArmes, JEUX_COMP } from './chef.js';
 import { separerIncidents, appliquerIncidents, remplirJauge, resultatsIncidents, incidentsVisibles, adapterCibleUrgence, NIVEAUX_URGENCE } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND } from './contenu.js';
@@ -250,6 +250,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (reglesV2(state)) {
       const pf = players[uid] && players[uid].chef;
       if (!z.chef) z.chef = creerChef(pf);
+      if (!z.chef.defisVus) z.chef.defisVus = Object.fromEntries(Object.entries((players[uid] && players[uid].defis) || {}).map(([k, v]) => [k, Math.floor(Number(v) || 0)]));
       else if (!z.chef.parcours && pf && Object.hasOwn(PARCOURS, pf.parcours)) z.chef.parcours = pf.parcours;
       z._agenda = lireAgenda(orders[uid], state, uid);
       if (orders[uid] && z.dernierOrdre) z.dernierOrdre.agenda = z._agenda;
@@ -1094,7 +1095,17 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const piecesGagnees = z.enquete && z.enquete.n === av.n ? Math.max(0, piecesPropres(z) - (av.pieces || 0)) : 0;
       const gains = gainsDuJour({ revenu, investi: !!z._investi, ratio: incidents ? traites / incidents : 1, satisfaction: z.satisfaction, piecesGagnees, agenda: z._agenda, croise: z._croise, d });
       const par = z.chef.parrain && z.chef.parrain.fin >= T ? z.chef.parrain : null;
-      const r = progresser(z.chef, gains, { rattrapage: totalNiveaux(z.chef) < moyChef - 1, parrain: par });
+      // Mini-jeux et énigmes du jour : chaque réussite entraîne une compétence (plafond à part).
+      const jeux = { gestion: 0, commandement: 0, flair: 0, diplomatie: 0, proximite: 0 };
+      for (const sv of z._incOk || []) if (JEUX_COMP[sv]) jeux[JEUX_COMP[sv]] += 1;
+      jeux.flair += Math.min(3, (Array.isArray(q) ? q : []).filter((x, k) => x && x.statut === 'ok' && (x.slot ?? k) !== 3).length);
+      { const vus = (z.chef.defisVus ||= {}), defis = (players[uid] && players[uid].defis) || {};
+        for (const [jeu, niv] of Object.entries(defis)) { const n = Math.floor(Number(niv) || 0); if (!JEUX_COMP[jeu]) continue;
+          if (n > (vus[jeu] || 0)) jeux[JEUX_COMP[jeu]] += Math.min(3, Math.ceil((n - (vus[jeu] || 0)) / 2));
+          vus[jeu] = Math.max(vus[jeu] || 0, n); } }
+      const jeuxTxt = Object.entries(jeux).filter(([, v]) => v > 0).map(([c, v]) => `${COMPETENCES[c].nom} +${Math.min(CHEF.plafondJeux, v)}`).join(', ');
+      if (jeuxTxt) noterChef(z, 'jeux', `Entraînement du jour (mini-jeux et énigmes) : ${jeuxTxt}.`);
+      const r = progresser(z.chef, gains, { rattrapage: totalNiveaux(z.chef) < moyChef - 1, parrain: par, jeux });
       for (const m of r.montees) {
         z.rapport.push(`Chef de corps : ${COMPETENCES[m.comp].nom} niveau ${m.niveau}.`);
         if (m.niveau >= 5) push(3, 'Chef de corps', `Le chef de ${zoneLabel(z)} passe ${COMPETENCES[m.comp].nom.toLowerCase()} ${m.niveau}`, 'Son expérience se fait sentir dans tout le district.', uid);
@@ -1243,7 +1254,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
-    delete z._joue; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._chefFaits; delete z._croise; delete z._chefAvant; delete z._investi; delete z._interpelle;
+    delete z._joue; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._chefFaits; delete z._incOk; delete z._croise; delete z._chefAvant; delete z._investi; delete z._interpelle;
   }
 
   // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).

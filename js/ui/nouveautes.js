@@ -8,7 +8,7 @@ export const NOTE_MAJ = {
   saison2: true,
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🎖️', 'Ton chef de corps et son bureau', 'choisis son portrait et son parcours. Touche-le en haut de l’HP : son bureau se remplit à mesure qu’il progresse (objets, médailles, certificats, et l’humeur du bourgmestre, du procureur, du syndicat et de la presse).'],
+    ['🎖️', 'Ton chef de corps et son bureau', 'choisis son portrait et son parcours. Tes jeux et ta gestion le font progresser. Touche-le en haut de l’HP : son bureau se remplit à mesure qu’il progresse (objets, médailles, certificats, et l’humeur du bourgmestre, du procureur, du syndicat et de la presse).'],
     ['🏗️', 'Quatre nouvelles annexes', 'cachots (un interpellé balance une pièce d’enquête), cellule drone, salle de crise et assistance aux victimes.'],
     ['🔨', 'La vente aux enchères des saisies', 'trois lots tous les deux jours : relances visibles, puis une offre finale secrète. Expertise, tuyau du priseur, et des gros lots à acheter à deux.'],
   ],
@@ -17,6 +17,7 @@ export const NOTE_MAJ = {
   sections: [
     ['Saison 2 : le chef de corps', [
       ['Bureau du chef', 'touche ton portrait en haut de l’HP : un bureau illustré qui se remplit avec ses compétences (un objet aux niveaux 2, 5 et 8 de chacune), ses médailles et certificats de fin de saison, ses talents cousus sur la veste et les affiches de tes arrestations. Au mur, le bourgmestre, le procureur, le délégué syndical et la presse font la tête qui correspond à ta zone (satisfaction, réputation et enquête, moral, presse). On peut visiter le bureau des voisins depuis la carte.'],
+      ['Jouer entraîne ton chef', 'en plus de ta façon de gérer ta zone, chaque réussite aux jeux fait progresser une compétence (jusqu’à +4 par compétence et par jour, en plus) : énigmes du jour, crochetage, empreintes et ADN → Flair ; colis suspect, maintien de l’ordre, urgences au bitonal → Commandement ; embouteillage et dossier à relire → Gestion ; réseau et interception (RCCU) → Diplomatie ; incidents de Proximité → Proximité. Au Challenge, chaque nouveau palier atteint compte aussi.'],
       ['Ton chef cette nuit', 'en tête de l’HP, ce que ton chef a fait la différence pendant la nuit : un talent qui s’est déclenché (son insigne s’allume aussi sur sa veste dans le bureau), une option de dilemme trouvée grâce à une compétence, une réunion avec un autre chef, une montée de niveau.'],
       ['Promotions', 'au premier talent et aux niveaux 2, 5, 8 et 10 d’une compétence, une petite scène montre ce qui change dans ton bureau.'],
       ['Signature', 'ton style de chef (« Fin limier », « Meneur de terrain », « Bâtisseur de ponts »…), calculé d’après tes compétences ; il change si ton profil évolue.'],
