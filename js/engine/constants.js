@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 108;
+export const APP_VERSION = 109;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -49,7 +49,7 @@ export const COUTS = {
   equipementBase: 5,  // k€ pour passer du niveau 1 au niveau 2, puis +2 k€ par niveau
 };
 /** Coût du matériel pour passer du niveau n au niveau n+1 : 5, 7, 9, 11 k€. */
-export const coutEquipement = (n) => COUTS.equipementBase + 2 * (n - 1);
+export const coutEquipement = (n) => (REGLES.v2 ? INVEST_V2.equipementBase : COUTS.equipementBase) + 2 * (n - 1);
 /** Multiplicateurs d'efficacité : formation (+20 % par niveau) et matériel (+15 % par niveau). */
 export const FORMATION = { parNiveau: 0.2 };
 export const multNiveau = (n) => 1 - FORMATION.parNiveau + FORMATION.parNiveau * n;
@@ -217,9 +217,11 @@ export const INFRAS = {
 /** Formation au stand de tir : seulement pour l'Intervention, et si le stand est construit. */
 const auStand = (z, service) => service === 'intervention' && !!(z && z.infra && z.infra.tir);
 /** Coût d'une formation (k€) pour ce service. */
-export const coutFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.cout : COUTS.formation);
+// Règles v2 : former et équiper coûtent moins et immobilisent moins (simulation test/regles-v2-sim.mjs, mode builder).
+export const INVEST_V2 = { formation: 3, agentsFormation: 1, equipementBase: 4 };
+export const coutFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.cout : REGLES.v2 ? INVEST_V2.formation : COUTS.formation);
 /** Agents absents pendant une formation de ce service. */
-export const agentsFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.agents : AGENTS_EN_FORMATION);
+export const agentsFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.agents : REGLES.v2 ? INVEST_V2.agentsFormation : AGENTS_EN_FORMATION);
 /** Multiplicateur du risque de blessure d'une zone (stand de tir). */
 // Fourgons d'intervention : −10 % de risque chacun, −20 % au plus (voir engine/flotte.js, MODELES.fourgon).
 export const risqueBlessure = (z) => (z && z.infra && z.infra.tir ? INFRAS.tir.blessure : 1) * Math.max(0.2, 1 - bonusEquip(z, 'intervention', 'blessure')) * (1 - Math.min(0.2, 0.1 * ((z && z.flotte) || []).filter((v) => v.m === 'fourgon').length));
@@ -439,9 +441,9 @@ export const REGLES = { v2: false };
  */
 export const DOCTRINES = {
   routiere: { nom: 'Routière', ico: '🚓', force: 'amendes +20 %, « chasse aux PV » repoussée de 15 points d’effectifs', prix: 'satisfaction −0,3 par jour (les automobilistes râlent)', brille: 'opérations de contrôle, besoin d’argent pour bâtir', amendes: 0.2, chasse: 0.15, satJour: -0.3 },
-  quartier: { nom: 'De quartier', ico: '🏘️', force: 'Proximité +10 %, la satisfaction redescend bien moins vite, vagues de délinquance reçues atténuées de moitié', prix: 'Intervention −5 % de capacité', brille: 'fêtes, tensions de quartier, vagues venues des voisins', derive: 0.4, vagues: 0.5, cap: { proximite: 1.1, intervention: 0.95 } },
+  quartier: { nom: 'De quartier', ico: '🏘️', force: 'Proximité +15 %, la satisfaction redescend bien moins vite, vagues de délinquance reçues atténuées de moitié', prix: 'Intervention −5 % de capacité', brille: 'fêtes, tensions de quartier, vagues venues des voisins', derive: 0.4, vagues: 0.5, cap: { proximite: 1.15, intervention: 0.95 } },
   judiciaire: { nom: 'Judiciaire', ico: '🔎', force: 'chances de pièce d’enquête +25 %, Recherche +15 %', prix: 'Intervention −8 % (patrouilles plus minces)', brille: 'semaines d’affaire, appuis PJF, traques', enquete: 0.25, cap: { recherche: 1.15, intervention: 0.92 } },
-  intervention: { nom: 'D’intervention', ico: '🚨', force: 'Intervention +12 %, flagrants délits 30 % plus fréquents', prix: 'usure des véhicules +50 %, −1 de moral de plus en rythme renforcé', brille: 'urgences, zone de non-droit, émeutes, nuits d’orage', flagrant: 0.3, usure: 1.5, renforce: -1, cap: { intervention: 1.12 } },
+  intervention: { nom: 'D’intervention', ico: '🚨', force: 'Intervention +10 %, flagrants délits 30 % plus fréquents', prix: 'usure des véhicules +50 %, −1 de moral de plus en rythme renforcé', brille: 'urgences, zone de non-droit, émeutes, nuits d’orage', flagrant: 0.3, usure: 1.5, renforce: -1, cap: { intervention: 1.10 } },
   partenaire: { nom: 'Partenaire', ico: '🤝', force: 'un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 %', prix: 'capacité −3 % dans tous les services', brille: 'crises de district, assauts de la zone de non-droit, grandes parties', renfort: 1, entraide: 0.5, cap: { '*': 0.97 } },
 };
 export const IDS_DOCTRINES = Object.keys(DOCTRINES);

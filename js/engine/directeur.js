@@ -235,7 +235,33 @@ const initQuartier = (state, z, rng) => { const cell = quartierTendu(state, z, r
 export const FANTOMES = ['le Fantôme du Delta', 'la Fouine', 'le Renard des Glacis', 'l’Horloger', 'le Funambule', 'la Couleuvre'];
 const nomFantome = (state) => (state && state.dir && state.dir.fantome && state.dir.fantome.nom) || FANTOMES[0];
 
+// Révision d'oct. 2026 (règles v2) : soirées chargées. Deux demandes le même soir, dont la somme dépasse ce qu'une zone
+// peut couvrir sans dégarnir le reste : il faut choisir, et la Gazette raconte ce qui a été laissé de côté.
+export const CONFLITS = [
+  { titre: 'Soirée chargée : bagarres et fête de quartier', a: { s: 'intervention', min: 9, txt: 'des bagarres annoncées à la sortie des bars', rate: 'les bagarres de la sortie des bars ont dégénéré' }, b: { s: 'proximite', min: 6, txt: 'une fête de quartier qui menace de déborder', rate: 'la fête de quartier a débordé, les riverains sont furieux' } },
+  { titre: 'Soirée chargée : course de rue et perquisition', a: { s: 'roulage', min: 5, txt: 'une course de voitures annoncée sur la nationale', rate: 'la course de rue a eu lieu, un abribus fauché' }, b: { s: 'recherche', min: 7, txt: 'une perquisition qui ne peut pas attendre', rate: 'la perquisition a été reportée, les preuves ont disparu' } },
+  { titre: 'Soirée chargée : match à risque et contrôle de la commune', a: { s: 'intervention', min: 9, txt: 'un match à risque au stade', rate: 'des échauffourées ont éclaté après le match' }, b: { s: 'admin', min: 6, txt: 'un contrôle de l’Inspection sur les registres', rate: 'l’Inspection a trouvé des registres en retard' } },
+  { titre: 'Soirée chargée : marché de nuit et contrôles de vitesse', a: { s: 'proximite', min: 6, txt: 'le marché de nuit sur la grand-place', rate: 'des pickpockets ont écumé le marché de nuit' }, b: { s: 'roulage', min: 5, txt: 'une campagne de contrôles de vitesse promise au bourgmestre', rate: 'la campagne de contrôles promise au bourgmestre n’a pas eu lieu' } },
+];
+const SVC = (s) => SERVICE_LABELS[s] || s;
+
 export const FEUILLETONS = {
+  conflit: {
+    titre: 'Soirée chargée',
+    poids: (z) => (REGLES.v2 ? 0.9 : 0),
+    init: (state, z, rng) => ({ k: rng.int(0, CONFLITS.length - 1) }),
+    etapes: {
+      debut: {
+        signe: (s, d) => { const x = CONFLITS[d.k]; return { titre: x.titre, texte: `Le même soir : ${x.a.txt} (${x.a.min} agents en ${SVC(x.a.s)}) et ${x.b.txt} (${x.b.min} en ${SVC(x.b.s)}). Tout couvrir dégarnit le reste : à toi de choisir.`, service: x.a.s, min: x.a.min, service2: x.b.s, min2: x.b.min }; },
+        resoudre: (c, d) => {
+          const x = CONFLITS[d.k], okA = (c.alloc[x.a.s] || 0) >= x.a.min, okB = (c.alloc[x.b.s] || 0) >= x.b.min;
+          if (okA && okB) return { ok: true, fx: { pts: 8, sat: 4, rep: 2 }, texte: 'tout a été couvert, un tour de force', une: [7, 'District', `${c.label} tient sur les deux fronts`] };
+          if (okA || okB) { const ok = okA ? x.a : x.b, ko = okA ? x.b : x.a; return { ok: true, fx: { pts: 4, sat: 1, rep: -1 }, texte: `${ok.txt} : sous contrôle ; mais ${ko.rate}`, une: [5, 'District', `${c.label} a choisi : ${ko.rate}`] }; }
+          return { ok: false, fx: { sat: -4, rep: -2 }, texte: `ni l’un ni l’autre : ${x.a.rate}, et ${x.b.rate}`, une: [6, 'District', `Soirée noire pour ${c.label}`] };
+        },
+      },
+    },
+  },
   cambrioleur: {
     titre: 'Le cambrioleur des toits', besoin: 'proximite', min: 2,
     poids: (z, x) => (x.quartiers ? 1 + ((z.dir.neg.proximite || 0) >= 2 ? 2 : 0) + (x.tensionMax >= 60 ? 1 : 0) : 0),

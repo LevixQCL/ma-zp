@@ -42,4 +42,13 @@ assert.ok(moyenneIpz(zB) > 0, 'une zone en pilote automatique a une moyenne');
 // Fin de saison : la saison suivante passe en v2.
 const sv1 = createGame({ seed: 'bascule' });
 assert.equal(sv1.regles, 1);
+// Soirée chargée : deux demandes le même soir ; ne couvrir que la première = réussite partielle racontée.
+{
+  let c = createGame({ seed: 'conflit', regles: 2 });
+  c = resolveTurn(c, { players }).state;
+  const T = c.turn;
+  c.zones.A.dir = c.zones.A.dir || {}; c.zones.A.dir.fe = { id: 'conflit', e: 'debut', tour: T, d: { k: 0 } };
+  const r2 = resolveTurn(c, { players, orders: { A: { ...base, alloc: { intervention: 10, proximite: 2, recherche: 3, roulage: 2, admin: 3 } }, B: base } });
+  assert.ok(r2.state.zones.A.rapport.some((l) => /fête de quartier a débordé/.test(l)), 'ce qui a été laissé de côté est raconté');
+}
 console.log('OK : règles v2 (poids, doctrine, dépenses, prime, classement).');

@@ -3,19 +3,30 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-09-enquete-vivante',
+  id: '2026-10-09-vols-variantes',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🧩', 'L’énigme d’enquête', 'pendant un vol, ta 3e énigme du jour se joue sur l’affaire : réussie, elle te donne une pièce sur ta piste prioritaire.'],
-    ['🗞️', 'Une affaire qui vit', 'le coupable sent qu’on s’approche et peut effacer ses traces ; la Gazette révèle les secrets des innocents qui ont menti.'],
-    ['🤝', 'Donnant-donnant', 'deux zones qui s’échangent une pièce le même soir la reçoivent toujours. Et qui enquête seul a droit à une 3e démarche.'],
+    ['🕵️', 'Des vols qui sortent du moule', 'deux complices à démasquer ensemble, un témoin qui ment, une plainte qui sent la fraude à l’assurance. La particularité est annoncée dès l’ouverture de l’affaire.'],
+    ['🎭', 'Des affaires écrites rejouables', 'chaque partie tire sa propre version : même décor, mêmes suspects… mais pas forcément le même coupable. Ce que tu sais d’une autre partie ne vaut plus rien.'],
+    ['🧩', 'L’énigme d’enquête', 'pendant un vol, ta 3e énigme du jour se joue sur l’affaire et te rapporte une pièce sur ta piste prioritaire.'],
     ['🕵️', 'Les pistes', 'dans tes ordres : indic, filature, dialogue avec un quartier tendu. Le résultat tombe une à trois nuits plus tard.'],
-    ['📈', 'Ton IPZ de ce soir, en direct', 'en haut des ordres : déplace un agent, la prévision bouge.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Enquêtes : variantes (9 octobre)', [
+      ['Vols : deux complices', 'les deux ont le mobile ; l’un a fourni le moyen sans être sur place, l’autre a fait le coup. Il faut les accuser tous les deux (un seul nom est refusé, sans pénalité). Un suspect est hors de cause s’il n’a pas le mobile, ou s’il n’a ni le moyen ni l’occasion. Le complice est arrêté tout de suite, l’exécutant part en traque.'],
+      ['Vols : faux témoin', 'l’alibi du coupable ne repose que sur une parole. Un autre suspect, ou un proche, jure qu’il était ailleurs ; ses propres traces (téléphone, horaires) le trahissent. Un innocent peut aussi avoir un témoin… honnête, lui.'],
+      ['Vols : fraude à l’assurance', 'la « victime » fait partie des cinq suspects, et les pièces peuvent la désigner.'],
+      ['Fréquence', 'environ une affaire de vol sur trois prend une particularité, jamais deux de suite ; elle est annoncée dès l’ouverture (encadré « Particularité », note du magistrat au PV).'],
+      ['Affaires écrites', 'la rue de la Clef, la Rampe et le corbeau de la rue d’Havré tirent leur version à l’ouverture : celle d’origine ou une autre où quelqu’un d’autre a fait le coup. Journal, PV et scène sont les mêmes au départ : seule l’enquête fait la différence. Une affaire déjà ouverte ne change pas.'],
+    ]],
+    ['À la prochaine saison : compléments (9 octobre)', [
+      ['Investir paie', 'former un service coûte 3 000 € (au lieu de 4 000 €) et n’immobilise plus qu’un agent ; le matériel démarre à 4 000 € (au lieu de 5 000 €).'],
+      ['Soirée chargée', 'le Directeur peut annoncer deux demandes le même soir (par exemple 9 agents en Intervention pour des bagarres et 6 en Proximité pour une fête de quartier) : tout couvrir est un tour de force, n’en couvrir qu’une est une réussite partielle, et la Gazette raconte ce qui a été laissé de côté.'],
+      ['Doctrines', 'De quartier : Proximité +15 % (au lieu de +10 %) ; D’intervention : Intervention +10 % (au lieu de +12 %).'],
+    ]],
     ['À la prochaine saison : nouvelles règles (révision d’octobre)', [
       ['Quand ?', 'au début de la prochaine saison (jamais en cours de saison : le classement en cours garde ses règles). Les nouvelles parties les ont tout de suite.'],
       ['Doctrine de zone', 'au début de la saison, chaque chef de zone choisit une doctrine : Routière (amendes +20 %, satisfaction −0,3 par jour), De quartier (Proximité +10 %, satisfaction qui redescend bien moins vite, vagues reçues atténuées ; Intervention −5 %), Judiciaire (pièces d’enquête +25 %, Recherche +15 % ; Intervention −8 %), D’intervention (Intervention +12 %, flagrants délits +30 % ; usure des véhicules +50 %), Partenaire (un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 % ; capacité −3 %). Garder la même d’une saison à l’autre la fait monter en maîtrise (force +15 % par cran, jusqu’à 3 étoiles). Le Directeur met deux fois plus de temps à remarquer la routine d’une zone qui a une doctrine.'],

@@ -109,6 +109,13 @@ export function botOrders(zone, state, style = 'equilibre') {
     for (const sg of (zone.pressions || []).filter((p) => (p.feuilleton || p.coop) && (p.quartier != null || p.service))) {
       if (!rng.chance(style === 'agressif' ? 0.5 : 0.75)) continue;
       if (sg.quartier != null && alloc.proximite >= (sg.patrouilles || 2)) patrouilles[sg.quartier] = sg.patrouilles || 2;
+      // Soirée chargée (deux demandes) : les robots couvrent la première, et la seconde s'il reste de quoi.
+      if (sg.service2 && alloc[sg.service2] < sg.min2 && rng.chance(0.5)) {
+        const manque2 = sg.min2 - alloc[sg.service2];
+        const donneur2 = Object.keys(alloc).filter((k) => k !== sg.service2 && k !== sg.service).sort((a2, b2) => alloc[b2] - alloc[a2])[0];
+        const n2 = Math.min(manque2, Math.max(0, alloc[donneur2] - 1));
+        alloc[donneur2] -= n2; alloc[sg.service2] += n2;
+      }
       if (sg.service && alloc[sg.service] < sg.min) {
         const manque = sg.min - alloc[sg.service];
         const donneur = Object.keys(alloc).filter((k) => k !== sg.service).sort((a2, b2) => alloc[b2] - alloc[a2])[0];

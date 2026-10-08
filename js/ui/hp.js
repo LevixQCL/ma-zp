@@ -258,7 +258,7 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue }) {
   for (const sg of (z.pressions || []).filter((p) => (p.feuilleton || p.coop) && (p.quartier != null || p.service))) {
     if (sg.feuilleton && !(fe && fe.tour === st.turn)) continue; // audit annoncé plusieurs jours à l'avance : pas encore ce soir
     const al = d.alloc || {};
-    const ok = sg.quartier != null ? ((d.patrouilles || {})[sg.quartier] || 0) >= (sg.patrouilles || 2) : (al[sg.service] || 0) >= sg.min;
+    const ok = sg.quartier != null ? ((d.patrouilles || {})[sg.quartier] || 0) >= (sg.patrouilles || 2) : (al[sg.service] || 0) >= sg.min && (!sg.service2 || (al[sg.service2] || 0) >= sg.min2);
     items.unshift({ ok, href: sg.quartier != null ? '#carte' : '#ordres', t: esc(sg.titre), s: esc(sg.texte) });
   }
   { let vt = null; try { vt = vagueTodo(estimations()); } catch (e) { /* pas de brouillon */ } if (vt) items.unshift(vt); }

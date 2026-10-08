@@ -34,7 +34,8 @@ function adaptatif(z, state, opt = {}) {
       { type: 'former', service: 'proximite' }, { type: 'former', service: 'intervention' }, { type: 'former', service: 'recherche' },
       { type: 'equiper', cible: 'proximite' }, { type: 'equiper', cible: 'intervention' },
     ];
-    decision = essais.find((d) => !decisionImpossible(z, d, T) && z.budget - coutDecision(z, d) >= 5) || null;
+    const filtre = opt.builder === true ? essais : essais.filter((d) => d.type === opt.builder);
+    decision = (opt.tot && T > opt.tot) ? null : filtre.find((d) => !decisionImpossible(z, d, T) && z.budget - coutDecision(z, d) >= 5) || null;
   }
   const depenses = {};
   let budget = z.budget - (opt.garde ?? 10) - (decision ? coutDecision(z, decision) : 0);
@@ -53,7 +54,7 @@ const ENIG = [{ statut: 'ok', bonus: 'budget' }, { statut: 'ok' }, { statut: 'ok
 
 const MODE = process.argv[3] || 'v2';
 const V = MODE === 'v1' ? 1 : 2;
-const STRATS = MODE === 'builder' ? { 'Adaptatif (réf.)': {}, 'Adaptatif + builder (1 grande décision/jour)': { builder: true } } : MODE === 'doctrines' ? {
+const STRATS = MODE === 'builder' ? { 'Adaptatif (réf.)': {}, 'Builder tout': { builder: true }, 'Builder annexes': { builder: 'construire' }, 'Builder formations': { builder: 'former' }, 'Builder matériel': { builder: 'equiper' }, 'Builder tout, J1-J6': { builder: true, tot: 6 } } : MODE === 'doctrines' ? {
   'Adaptatif sans doctrine': {},
   'Routière (surplus Roulage)': { doctrine: 'routiere', surplus: 'roulage' },
   'De quartier (surplus Proximité)': { doctrine: 'quartier', surplus: 'proximite', reserveService: 'proximite' },
