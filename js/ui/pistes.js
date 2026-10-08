@@ -54,7 +54,7 @@ export function basculerPiste(k) {
 export function cibler(k, v) { const p = (S.draft.pistesNew || []).find((x) => x.type === k); if (p) p.cible = Number(v); }
 
 // Lignes du rapport qui méritent la carte « Cette nuit » (en plus des résultats de pistes).
-const MARQUANTS = [/^Coup dur/, /^Héros du jour/, /^Traque : .*arrêté/, /^Enquête : bien vu/, /^Enquête : .* passe aux aveux/, /^Trophée débloqué/, /^Jauge des skins pleine/, /vague de délinquance/i, /^Incident technique/];
+const MARQUANTS = [/^Coup dur/, /^Héros du jour/, /^Traque : .*arrêté/, /^Enquête : bien vu/, /^Enquête : .* passe aux aveux/, /^Trophée débloqué/, /^Jauge des skins pleine/, /vague de délinquance/i, /^Incident technique/, /^Salle des ventes : /];
 
 /** Carte « Cette nuit » : trois faits au plus, ceux qui te concernent vraiment ; le rapport complet reste plus bas. */
 export function cetteNuitHtml(z) {
