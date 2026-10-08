@@ -532,6 +532,10 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .seg.cinq button { padding-left: 4px; padding-right: 4px; }
 .seg.cinq button .t { font-size: 12px; white-space: nowrap; }
 .seg.cinq button .d { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+/* 5 onglets sur téléphone : chaque case reste dans sa colonne (texte coupé par « … » au lieu de déborder sur la voisine). */
+.seg.cinq button { min-width: 0; overflow: hidden; }
+.seg.cinq button .t, .seg.cinq button .d { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.seg.cinq button.noir .t { white-space: normal; line-height: 1.15; text-align: center; }
 .palier-enig { display: grid; gap: 4px; margin: -4px 2px 0; color: var(--text2); }
 .palier-barre { height: 4px; border-radius: 3px; background: var(--line, rgba(255,255,255,.08)); overflow: hidden; }
 .palier-barre i { display: block; height: 100%; background: var(--amber, #E6C36A); border-radius: 3px; }
