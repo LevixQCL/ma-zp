@@ -14,6 +14,11 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Maintien de l’ordre : un début plus doux (merci Luc)', [
+      ['Premiers niveaux', 'niveau 1 : quelques émeutiers lents pour commencer (2, puis 5, 8, 12), et plus aucun autre type. Un seul nouveau venu par niveau : casseurs au 2, bloc compact au 3, meneur et tracteur au 4. Les vagues complètes arrivent au niveau 5.'],
+      ['Plus d’agents au départ', '28 agents au niveau 1 (de quoi essayer chaque moyen), puis 26, 24, 22 et 21 jusqu’au niveau 5.'],
+      ['Le commandant expliqué en jeu', 'à ta première vague, une fiche le présente en quatre gestes, puis une bulle au-dessus de sa tête te dit quoi faire : « Glisse-moi près de tes moyens », puis « Touche-moi : mégaphone ! » quand le cortège arrive sur lui.'],
+    ]],
     ['Le corbeau de la rue d’Havré (après la Rampe)', [
       ['Une enquête sans meurtre', 'dès que le notaire de la Rampe est élucidé (ou classé), un corbeau s’abat sur la rue d’Havré : dix lettres anonymes, puis six vitrines couvertes d’affiches pendant la réunion du comité de quartier. Cinq suspects, chacun cache quelque chose ; un seul a écrit.'],
       ['Mêmes outils', 'scène à fouiller, recoupements, hypothèse au juge, réauditions, coups de pouce et confrontation avec le vrai mobile, comme pour la Rampe.'],

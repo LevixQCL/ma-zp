@@ -52,6 +52,11 @@
 .btn.go:disabled{background:var(--surface);color:var(--mute);box-shadow:none;border-color:var(--stroke)}
 .panel{position:absolute;left:8px;right:8px;top:50%;transform:translateY(-50%);z-index:3;background:rgba(18,24,40,.97);border:1px solid var(--stroke-2);border-radius:18px;padding:16px;display:grid;gap:10px;box-shadow:0 20px 50px rgba(0,0,0,.55);max-height:calc(100% - 16px);overflow:auto}
 .panel .hd{display:flex;gap:12px;align-items:center}
+.panel img.ic{width:64px;height:64px;border-radius:14px;background:#2a2f3b;flex:0 0 auto;object-fit:contain;padding:4px;box-sizing:border-box}
+.panel .cmdl{display:grid;gap:8px;margin:0}
+.panel .cmdl div{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.4;color:#d5dce8}
+.panel .cmdl i{font-style:normal;font-size:20px;width:26px;text-align:center;flex:0 0 auto}
+.panel .cmdl b{color:var(--ink)}
 .panel canvas.ic{width:64px;height:64px;border-radius:14px;background:#2a2f3b;flex:0 0 auto}
 .panel .ey{font-size:12px;font-weight:700;color:var(--bad);text-transform:uppercase;letter-spacing:.06em}
 .panel h3{margin:2px 0 0;font-family:var(--f-disp);font-size:22px}
@@ -234,6 +239,23 @@ const WAVES=[
   [['casseur',10],['manif',10],['meneur',1],['bloc',1],['casseur',4]],
   [['manif',12],['bloc',2],['meneur',2],['casseur',8],['manif',8],['bloc',2],['meneur',1]]];
 const WAVE_NOM=['Prise de contact','Pression','Groupes compacts','Meneurs','Casseurs','Nuit tendue'];
+/* Début du Challenge (niveaux 1 à 4, premier passage seulement) : on apprend le jeu. Premières vagues anecdotiques
+   (2 émeutiers lents), un seul nouveau type d'émeutier par niveau (1 : émeutiers · 2 : casseurs · 3 : blocs ·
+   4 : meneurs et premier tracteur), plus d'agents au départ pour essayer chaque moyen (niveau 5 : vagues normales,
+   un peu plus d'agents). Ensuite : WAVES.
+   Équilibrage : test/bouclage-sim.mjs 1 8. */
+const WAVES_DEBUT={
+  1:[[['manif',2]],[['manif',5]],[['manif',8]],[['manif',12]]],
+  2:[[['manif',4]],[['manif',8]],[['manif',6],['casseur',2],['manif',4]],[['manif',10],['casseur',4]]],
+  3:[[['manif',5]],[['manif',8],['casseur',3]],[['manif',5],['bloc',1],['manif',5]],[['manif',8],['bloc',1],['casseur',3],['manif',4]],[['manif',8],['bloc',2],['casseur',4],['manif',6]]],
+  4:[[['manif',6]],[['manif',8],['casseur',3]],[['manif',6],['meneur',1],['manif',6]],[['manif',8],['meneur',1],['bloc',1],['casseur',3],['manif',4]],[['manif',10],['meneur',2],['bloc',1],['casseur',4],['manif',6]]]};
+const WAVE_NOM_DEBUT={1:['Premiers manifestants','Le cortège grossit','Pression','Gros cortège'],2:['Prise de contact','Le cortège grossit','Premiers casseurs','Pression'],
+  3:['Prise de contact','Casseurs','Premier bloc','Pression','Groupes compacts'],4:['Prise de contact','Casseurs','Un meneur','Pression','Le tracteur']};
+// agents au départ et vitesse des émeutiers (×) pour ces niveaux
+const DEBUT={1:{eff:28,vit:.75},2:{eff:26,vit:.85},3:{eff:24,vit:.95},4:{eff:22,vit:1},5:{eff:21,vit:1}};
+const debut=()=>!R.tuto&&R.cfg&&R.cfg.defi&&R.cfg.niveau<=4&&WAVES_DEBUT[R.cfg.niveau]?R.cfg.niveau:0;
+const vagues=()=>debut()?WAVES_DEBUT[debut()]:WAVES;
+const nomVague=n=>{ const L=debut()?WAVE_NOM_DEBUT[debut()]:WAVE_NOM; return L[Math.min(L.length-1,n-1)]; };
 /* Économie : les agents engagés sont immobilisés ; repousser rapporte de moins en moins au fil des vagues. */
 const REND=[.85,.52,.37,.29,.24,.2,.18,.16], RETOUR=6, COMBO={n:4,dt:1.2,r:1.6,gain:1}, BLOC_ECLATE={seuil:.6,n:3,gain:3};
 const DIR={tient:{nom:'On tient',c:'+2 cordon',ds:'+2 au cordon'},renfort:{nom:'Renfort',c:'+6 agents · vague +30 %',ds:'+6 agents tout de suite, mais la vague suivante est 30 % plus nombreuse'},
@@ -378,6 +400,7 @@ function resetGame(cfg,tuto,mapIdx){ ficheOff();
   const inc=Q2.get('mode')==='incident';
   // En incident, l'effectif Intervention réel de la zone fixe les agents de départ.
   R.agents=tuto?12:(inc?Math.max(12,Math.round(qn('agents',cfg.agents)*2.2)):cfg.eff);
+  { const d=!tuto&&cfg.defi&&DEBUT[cfg.niveau]; if(d&&!inc) R.agents=Math.max(R.agents,d.eff); R.vit=d&&!inc?d.vit:1; }
   // Véhicules disponibles : autopompes et combis selon la zone (la cavalerie vient en appui fédéral).
   R.bonus=tuto?{}:bonusZone();
   R.dispo={barrage:inc?qn('combi',cfg.combi):(R.bonus.combis??cfg.combi), autopompe:cfg.autopompe, cavalerie:cfg.cavalerie};
@@ -391,7 +414,7 @@ function resetGame(cfg,tuto,mapIdx){ ficheOff();
 }
 /* Composition d'une vague (aussi utilisée pour l'aperçu de la vague suivante). */
 function groupesVague(n,dir){
-  let groups=R.tuto?TUTO_WAVE:WAVES[Math.min(WAVES.length-1,n-1)];
+  const WV=vagues(); let groups=R.tuto?TUTO_WAVE:WV[Math.min(WV.length-1,n-1)];
   if(dir==='renfort') groups=groups.map(([t,k])=>[t,Math.round(k*1.3)]);
   // Au-delà de la 6e vague (Challenge), la dernière vague revient, plus fournie.
   if(!R.tuto&&n>WAVES.length) groups=groups.map(([t,k])=>[t,Math.round(k*(1+.15*(n-WAVES.length)))]);
@@ -416,6 +439,7 @@ function launchWave(){
   bilanVague();
   R.dirOffer=false; const dir=R.dir&&R.dir.wave===R.wave+1?R.dir.k:null;
   R.wave++; R.phase='run'; R.nextIn=null; R.waveLoss=0;
+  if(R.wave===1&&R.cmd&&!R.sim&&!cmdEtape()) introCmd();
   R.vHp=dir==='pousse'?1.15:1;
   let groups=groupesVague(R.wave,dir);
   const boss=!R.tuto&&R.wave===R.waves?(R.cfg.boss||[]):[];
@@ -429,7 +453,7 @@ function launchWave(){
     W.forEach((w,j)=>acc[j]+=w); let pi=0; acc.forEach((a,j)=>{ if(a>acc[pi]) pi=j; }); acc[pi]-=sum;
     R.spawnQ.push({type,pi,at:tc[pi]}); tc[pi]+=gap*fac[type]*W.length/sum*W[pi]; }
   R.spawnQ.sort((a,b)=>a.at-b.at); R.waveEnd=Math.max(...tc);
-  Shell.blip(520,.12,'triangle',.06); Shell.toast(`Vague ${R.wave}${R.tuto?'':' · '+WAVE_NOM[Math.min(WAVE_NOM.length-1,R.wave-1)]}`,'info'); ui(); if(!R.sel) tip();
+  Shell.blip(520,.12,'triangle',.06); Shell.toast(`Vague ${R.wave}${R.tuto?'':' · '+nomVague(R.wave)}`,'info'); ui(); if(!R.sel) tip();
 }
 const earlyBonus=()=>R.nextIn!==null&&R.wave>0?(R.nextIn>R.cfg.pause/2?2:R.nextIn>0?1:0):0;
 /* Fin de vague : maîtrise (vagues sans perte d'affilée) et pari du Directeur. */
@@ -541,7 +565,7 @@ function step(dt){
   for(const u of R.units){ const F=FOES[u.type];
     if(u.state==='flee'){ u.d-=F.v*1.6*R.M.P[u.pi].k*dt; continue; }
     if(u.held) continue;                                   // retenu par un agent MO
-    let nd=u.d+F.v*R.M.P[u.pi].k*(R.mods.rapides?1.15:1)*(1-u.slow)*(u.boost?1.3:1)*dt;
+    let nd=u.d+F.v*(R.vit||1)*R.M.P[u.pi].k*(R.mods.rapides?1.15:1)*(1-u.slow)*(u.boost?1.3:1)*dt;
     for(const [id,tw] of towers){ if(tw.type!=='barrage'||!tw.bar.up) continue; const db=blockOn(tw,u.pi); if(db===null||db<u.d-.05) continue;
       const stop=veh(u)?db-vDemi(u.type)*.8:db-.24-u.jit*.45; if(nd>=stop){ nd=Math.max(u.d,stop); u.atBar=id; } }
     if(!veh(u)&&u.state==='go') for(const t of vehs) if(t.pi===u.pi&&t.d>u.d+.1) nd=Math.min(nd,Math.max(u.d,t.d-vDemi(t.type)-TRACT.suite*.5-u.jit*.3));
@@ -787,6 +811,22 @@ function introFoe(type){
   if(VEH.has(type)){ const z=100/(VIMG[type].h*VIMG[type].r); g.setTransform(z,0,0,z,64,64+VIMG[type].h*z/2); vehImg(g,type,-1,VIMG[type].h); } else drawRioter(g,{type,id:1,f:1,col:'#c0392b',flare:type==='casseur',bob:0,ban:'#c0392b',state:'go'},.3);
   $('nfOk').onclick=()=>{ el.hidden=true; R.pause=false; R.introOuverte=false; const q=R.introQ&&R.introQ.shift(); if(q) introFoe(q); };
 }
+/* Découverte du commandant (une fois par appareil) : fiche au lancement de la 1re vague, puis bulles au-dessus de sa tête
+   (« Glisse-moi » jusqu'au premier déplacement, puis « Touche-moi » jusqu'au premier mégaphone). */
+const cmdEtape=()=>store.get('cmdAppris',0);
+function introCmd(){
+  if(R.introOuverte) return; R.introOuverte=true; const el=$('panel'); R.pause=true;
+  el.innerHTML=`<div class="hd"><img class="ic" src="img/bouclage/cmd-repos.webp" alt=""><div><div class="ey" style="color:#ffd166">Ton atout</div><h3>Le commandant</h3></div></div>
+    <p>Le policier au <b>brassard rouge</b>, en bas près de ${LIEU}. Gratuit, mais il ne fait rien tout seul : <b>c’est toi qui le places</b>.</p>
+    <div class="cmdl">
+      <div><i>✋</i><span><b>Fais-le glisser</b> sur la rue, près de tes moyens : dans son <b>cercle jaune</b>, ils repoussent mieux.</span></div>
+      <div><i>📢</i><span><b>Touche-le</b> quand le cortège arrive sur lui : mégaphone, les émeutiers autour reculent.</span></div>
+      <div><i>💨</i><span>Un émeutier <b>seul</b> passe à côté de lui ? Il le <b>gaze</b> tout seul. Envoie-le chercher les fuyards.</span></div>
+      <div><i>⚠️</i><span>Trop d’émeutiers sur lui et il <b>recule</b> quelques secondes. Il gagne des ★ en repoussant : plus il en a, plus il tient.</span></div></div>
+    <button class="btn primary" id="nfOk">Je le place</button>`;
+  el.hidden=false;
+  $('nfOk').onclick=()=>{ el.hidden=true; R.pause=false; R.introOuverte=false; const q=R.introQ&&R.introQ.shift(); if(q) introFoe(q); };
+}
 function chooseMap(cfg){
   const el=$('panel'), c=store.get('campagne',{});
   el.innerHTML=`<div><div class="ey" style="color:var(--accent)">Campagne</div><h3>Choisis le quartier</h3></div><button class="btn" id="toDefi">🏆 Challenge : niveaux sans fin, de plus en plus durs</button><div class="levels">${MAPS.map((m,i)=>{ const open=i===0||c[i-1]>0, st=c[i]||0;
@@ -929,7 +969,8 @@ function onMove(e){ const D=C.drag; if(!D) return; const {x,y}=pos(e); D.x=x; D.
   if(!D.on&&Math.hypot(x-D.x0,y-D.y0)>.3){ const tw=R.towers[D.id]; if(!tw) { C.drag=null; return; }
     D.on=true; R.sel=null; if(tw.type==='cavalerie') R.dragCav=D.id; else R.rally=D.id; tip(); Shell.blip(600,.04,'square',.03); } }
 function onUp(e){ const D=C.drag; C.drag=null; if(!D) return;
-  if(D.id==='cmd'){ R.dragCmd=false; if(!D.on){ if(ordreCmd()) Shell.good(); else if(R.cmd&&R.cmd.cd>0) tip(`<span>Mégaphone prêt dans <b>${Math.ceil(R.cmd.cd)} s</b>.</span>`); return; }
+  if(D.id==='cmd'){ R.dragCmd=false; if(!D.on){ if(ordreCmd()){ Shell.good(); if(cmdEtape()<2&&!R.sim) store.set('cmdAppris',2); } else if(R.cmd&&R.cmd.cd>0) tip(`<span>Mégaphone prêt dans <b>${Math.ceil(R.cmd.cd)} s</b>.</span>`); return; }
+    if(cmdEtape()<1&&!R.sim) store.set('cmdAppris',1);
     const c=R.cmd; c.tx=Math.max(.3,Math.min(MW-.3,D.x)); c.ty=Math.max(.6,Math.min(MH-.4,D.y)); if(c.repli>R.t){ tip('<span>Le commandant se replie : il repartira dans quelques secondes.</span>'); } else tip(); return; }
   if(!D.on){ onTap(D.e); return; }
   const tw=R.towers[D.id];
@@ -1536,6 +1577,9 @@ function render(){
         pill(g,0,0,'★'.repeat(lv),mx?'#1a1300':'#ffd166',.15,mx?'#ffd166':'rgba(20,16,4,.82)');
         if(!mx){ g.fillStyle='rgba(0,0,0,.6)'; g.fillRect(-.2,.16,.4,.05); g.fillStyle='#ffd166'; g.fillRect(-.2,.16,.4*Math.max(0,Math.min(1,pr)),.05); }
         g.restore(); if(up&&!R.sim){ g.strokeStyle=`rgba(255,209,102,${1-(R.t-c.lvlT)/1.5})`; g.lineWidth=.05; g.beginPath(); g.ellipse(0,.01,.3+(R.t-c.lvlT)*.9,.1+(R.t-c.lvlT)*.3,0,0,7); g.stroke(); } }
+      if(!R.sim&&!rep2&&R.phase==='run'&&!R.pause){ const et=cmdEtape(), b=Math.abs(Math.sin(rt*4))*.08;
+        if(et<1&&!c.walk) pill(g,0,-1.5-b,'✋ Glisse-moi près de tes moyens','#1a1300',.22,'#ffd166');
+        else if(et===1&&c.cd<=0&&R.units.some(u=>u.state==='go'&&u.p&&Math.hypot(u.p.x-c.x,u.p.y-c.y)<=cn().r)) pill(g,0,-1.5-b,'📢 Touche-moi : mégaphone !','#1a1300',.22,'#ffd166'); }
       g.restore(); }}); }
   for(const u of R.units){ if(!u.p) u.p=upos(u); items.push({y:u.p.y,d:()=>drawUnit(g,u,rt)}); }
   // les lampadaires sont peints dans le décor : quand quelqu'un passe derrière, on redessine le fût par-dessus
