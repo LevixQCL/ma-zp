@@ -7,6 +7,42 @@ import { nextResolutionAfter } from '../engine/time.js';
 import { makeRng } from '../engine/rng.js';
 import { MAX_ZONES, partieComplete } from '../engine/constants.js';
 import { codeDejaPris, MSG_CODE_PRIS } from './codes.js';
+import { creerChef, XP_CUMUL, signatureChef } from '../engine/chef.js';
+
+/** « ?demo=chef » : un chef déjà bien avancé (saison 3), pour voir le bureau, les talents et « Ton chef cette nuit ». */
+const demoChef = () => typeof location !== 'undefined' && /(^|[?&])demo=chef\b/.test(location.search || '');
+function chefAvance(niv, parcours, talents) {
+  const c = creerChef({ parcours });
+  for (const [k, n] of Object.entries(niv)) c.xp[k] = XP_CUMUL[n] + 3;
+  c.talents = talents; c.talentsT = null;
+  return c;
+}
+function preparerDemoChef(st, players, uid) {
+  const z = st.zones[uid], T = st.turn;
+  z.chef = chefAvance({ gestion: 5, commandement: 3, flair: 6, diplomatie: 5, proximite: 2 }, 'enqueteur', ['carnet', 'intuition', 'meneur']);
+  z.chef.medailles = [{ season: 1, comp: 'flair', nom: 'Médaille du mérite judiciaire' }, { season: 2, comp: 'diplomatie', nom: 'Médaille de la coopération' }];
+  z.chef.etats = [
+    { season: 1, rang: 3, sur: 6, moyenne: 58.4, affaires: 2, trophees: 3, faits: ['a identifié 2 auteurs', 'a pris 3 relèves pour ses voisins', 'a réussi 9 incidents du jour'] },
+    { season: 2, rang: 1, sur: 6, moyenne: 64.1, affaires: 3, trophees: 2, faits: ['a identifié 3 auteurs', 'a repris 2 secteurs au milieu', 'a tenu 2 pactes jusqu’au bout'] },
+  ];
+  z.chef.souvenirs = [{ u: 'bot-canal', s: 2, t: 6 }, { u: 'bot-vallee', s: 3, t: 1 }];
+  z.chef.nouveauxTalents = ['marches'];
+  z.chefNuit = { tour: T - 1, signature: signatureChef(z.chef), montees: [{ comp: 'flair', niveau: 8 }], nouveaux: ['renard'], faits: [
+    { id: 'meneur', t: 'Meneur d’hommes : le rythme renforcé a moins pesé sur le moral.' },
+    { id: 'jeux', t: 'Entraînement du jour (mini-jeux et énigmes) : Flair +3, Commandement +1.' },
+    { id: 'visite', t: 'Réunion avec le chef de ZP 5301 Canal : une photo souvenir rejoint ton bureau.' } ] };
+  z.chef.xp.flair = XP_CUMUL[6] + 1;
+  z.ps = 1350; z.affiches = [{ nom: 'Kevin Dumont', titre: 'Vol rue de la Clef', season: 2 }, { nom: 'Sarah Lenoir', titre: 'Cambriolage', season: 2 }];
+  z.satisfaction = 72; z.moral = 48; z.reputation = 63; z.dir = { ...(z.dir || {}), mem: { ...((z.dir && z.dir.mem) || {}), journaliste: 'amie' } };
+  players[uid] = { ...(players[uid] || {}), chef: { portrait: 'p02', parcours: 'enqueteur', devise: 'Toujours un coup d’avance' } };
+  const portraits = ['p05', 'p04', 'p09', 'p12', 'p17', 'p20'];
+  Object.keys(st.zones).filter((u) => u.startsWith('bot')).forEach((u, i) => {
+    st.zones[u].chef = chefAvance({ gestion: 2 + (i % 3), commandement: 4 - (i % 2), flair: 1 + i % 4, diplomatie: 3, proximite: 2 + (i % 3) }, ['intervention', 'gestionnaire', 'ilotier', 'negociateur', 'enqueteur', 'intervention'][i % 6], ['meneur', 'gestionnaire'].slice(0, 1 + (i % 2)));
+    if (players[u]) players[u].chef = { portrait: portraits[i % portraits.length], parcours: st.zones[u].chef.parcours, devise: '' };
+  });
+  players['bot-canal'] = { ...(players['bot-canal'] || {}), felicite: { [uid]: st.season } };
+  players['bot-vallee'] = { ...(players['bot-vallee'] || {}), felicite: { [uid]: st.season } };
+}
 
 const KEY = 'mazp-demo-v3';
 const ME = 'moi';
@@ -128,6 +164,7 @@ export function createLocalBackend(config) {
       if (partieComplete(self.state, uid)) throw new Error(`Cette partie est complète (${MAX_ZONES} zones).`);
       if (profile && codeDejaPris(self.state, profile.code, uid)) throw new Error(MSG_CODE_PRIS(profile.code));
       self.state.zones[uid] = buildJoinZone(self.state, uid, profile, self.state.turn);
+      if (db.current === 'demo' && demoChef()) { self.players[uid] = { ...(self.players[uid] || {}), ...(profile || {}) }; preparerDemoChef(self.state, self.players, uid); }
       persist(); emit('state', JSON.parse(JSON.stringify(self.state)));
     },
 
