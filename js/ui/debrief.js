@@ -4,7 +4,7 @@ import { S, esc, icon, tabbar, myZone } from './common.js';
 import { affaire, texteFait } from '../engine/enquete.js';
 import { portraitSuspect } from './portrait.js';
 
-const ICO = { Mobile: '💰', Moyen: '🔑', Occasion: '🕘', Décisive: '🔎', Planque: '📍' };
+const ICO = { Mobile: '💰', Moyen: '🔑', Occasion: '🕘', Décisive: '🔎', Planque: '📍', 'Faux témoin': '🤥' };
 const TAMPON = {
   arrestation: ['Élucidée', 'vert'],
   aveux: ['Aveux', 'vert'],
@@ -72,7 +72,7 @@ function sousTitre(db) {
   const par = (l) => l.join(' et ');
   if (db.issue === 'classee') return db.meurtre ? `Personne ne l’a confondu${e} en ${db.jours || 7} jours.` : `Personne ne l’a démasqué${e} en ${db.jours || 7} jours. ${c.f ? 'Elle' : 'Il'} se cachait à « ${db.planque ? db.planque.nom : '?'} ».`;
   if (db.issue === 'aveux') return `Aveux au jour ${db.jours}, obtenus par ${par(db.decouvreurs)}.`;
-  const dem = `Démasqué${e} au jour ${db.jours} par ${par(db.decouvreurs)}`;
+  const dem = db.complice ? `Démasqués, ${c.nom} et ${db.complice.nom}, au jour ${db.jours} par ${par(db.decouvreurs)}` : `Démasqué${e} au jour ${db.jours} par ${par(db.decouvreurs)}`;
   if (db.issue === 'arrestation') return `${dem}, arrêté${e} à « ${db.planque ? db.planque.nom : '?'} » par ${par(db.arreteurs)}.`;
   return `${dem}. Personne n’est venu à « ${db.planque ? db.planque.nom : '?'} » à temps : ${c.f ? 'elle' : 'il'} a filé.`;
 }
@@ -150,14 +150,23 @@ export function renderDebrief() {
           </div>
         </header>
 
+        ${db.variante ? `<p class="db-aide">📌 ${esc(db.variante.nom)} : ${esc(db.variante.regle || '')}</p>` : ''}
         <section class="db-auteur">
           <div class="db-photo">${portraitSuspect(sc, c.i, 'db-face')}</div>
-          <div class="db-id"><span class="db-k">L’auteur</span><h2>${esc(c.nom)}</h2><span class="db-role">${esc(c.role || '')}</span>
+          <div class="db-id"><span class="db-k">${db.complice ? 'L’auteur, sur place' : db.variante && db.variante.k === 'fraude' ? 'L’auteur, la victime elle-même' : 'L’auteur'}</span><h2>${esc(c.nom)}</h2><span class="db-role">${esc(c.role || '')}</span>
             <p>${esc(sousTitre(db))}</p></div>
         </section>
+        ${db.complice ? `<section class="db-auteur">
+          <div class="db-photo">${portraitSuspect(suspectDe(aff, db.complice.i, db.complice), db.complice.i, 'db-face')}</div>
+          <div class="db-id"><span class="db-k">${db.complice.f ? 'Sa complice' : 'Son complice'}, qui a fourni le moyen</span><h2>${esc(db.complice.nom)}</h2><span class="db-role">${esc(db.complice.role || '')}</span>
+            <p>Pas sur place ce soir-là : un alibi solide, et c’est ce qui l’a longtemps protégé${db.complice.f ? 'e' : ''}.</p></div>
+        </section>` : ''}
+        ${db.mensonge ? `<section class="db-sec"><h3 class="db-h">Le faux témoin</h3>
+          <p class="db-aide">${db.mensonge.menteur.proche ? `${esc(db.mensonge.menteur.nom.charAt(0).toUpperCase() + db.mensonge.menteur.nom.slice(1))} avait juré lui avoir tenu compagnie toute la soirée, loin des faits.` : `${esc(db.mensonge.menteur.nom)} avait juré avoir passé la soirée avec ${esc(db.mensonge.couvert)}.`} La pièce qui démentait ce témoignage :</p>
+          <div class="db-cles">${piece(aff, { ...db.mensonge.piece, role: 'Faux témoin' }, db, me)}</div></section>` : ''}
 
-        <section class="db-sec"><h3 class="db-h">${db.meurtre ? `Les pièces qui ${c.f ? 'la' : 'le'} faisaient craquer` : `Ce qui ${c.f ? 'la' : 'le'} désignait`}</h3>
-          <p class="db-aide">${db.meurtre ? 'Il fallait en opposer au moins deux à la confrontation.' : 'Le mobile, le moyen et l’occasion : seul l’auteur réunissait les trois.'} Touche une pièce pour la relire.</p>
+        <section class="db-sec"><h3 class="db-h">${db.meurtre ? `Les pièces qui ${c.f ? 'la' : 'le'} faisaient craquer` : `Ce qui ${db.complice ? 'les' : c.f ? 'la' : 'le'} désignait`}</h3>
+          <p class="db-aide">${db.meurtre ? 'Il fallait en opposer au moins deux à la confrontation.' : db.complice ? 'Tous deux avaient le mobile ; l’un le moyen, l’autre l’occasion.' : 'Le mobile, le moyen et l’occasion : seul l’auteur réunissait les trois.'} Touche une pièce pour la relire.</p>
           <div class="db-cles">${auteur.map((k) => piece(aff, k, db, me)).join('')}</div>
         </section>
         ${db.mobile ? `<section class="db-sec"><h3 class="db-h">Le vrai mobile</h3><p class="db-mobile">« ${esc(db.mobile.vrai)} »</p><p class="db-aide">${db.mobile.trouve.length ? `Compris par ${esc(db.mobile.trouve.join(', '))}.` : 'Personne ne l’avait deviné.'}</p></section>` : ''}

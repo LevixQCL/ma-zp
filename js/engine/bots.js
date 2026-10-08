@@ -153,7 +153,7 @@ function botNonDroit(zone, state, style, rng, reste) {
 
 /** Enquête : constatations d'abord, puis vérifications ciblées ; accusation quand un seul suspect reste. */
 function botEnquete(zone, state, style, rng, alloc) {
-  const out = { demarches: [], accusation: null, traque: null, partages: [], piste: null };
+  const out = { demarches: [], accusation: null, accusation2: null, traque: null, partages: [], piste: null };
   if (!state.enquete) return out;
   const aff = affaire(state, state.enquete.n);
   const d = dossierDe(state, zone);
@@ -193,8 +193,10 @@ function botEnquete(zone, state, style, rng, alloc) {
       if (confrontationOk(aff, c.suspects[0], choix)) { out.accusation = c.suspects[0]; out.confront = choix; }
     }
   } else if (!d.exclu && d.accuse === null) {
-    if (c.suspects.length === 1 && rng.chance(style === 'distrait' ? 0.5 : 0.85)) out.accusation = c.suspects[0];
-    else if (style === 'agressif' && c.suspects.length === 2 && rng.chance(0.25)) out.accusation = rng.pick(c.suspects);
+    // Deux complices : le robot accuse la paire quand il ne reste qu'elle (l'agressif tente parfois à trois).
+    const nA = aff.variante === 'complices' ? 2 : 1;
+    if (c.suspects.length === nA && rng.chance(style === 'distrait' ? 0.5 : 0.85)) { out.accusation = c.suspects[0]; if (nA === 2) out.accusation2 = c.suspects[1]; }
+    else if (style === 'agressif' && c.suspects.length === nA + 1 && rng.chance(0.25)) { if (nA === 1) out.accusation = rng.pick(c.suspects); else { const p = rng.shuffle(c.suspects); out.accusation = p[0]; out.accusation2 = p[1]; } }
   }
   // Partage : les zones coopératives transmettent les pièces de leur cellule.
   // (avec parcimonie : le joueur doit garder de quoi raisonner lui-même).

@@ -811,13 +811,15 @@ async function onClick(e) {
       case 'accuser': {
         const aff = affaire(S.state, S.state.enquete.n);
         const s = aff.suspects[Number(el.dataset.i)];
-        if (await askConfirm(`Accuser ${s.nom} ? L’accusation part au parquet à 20:00. Une seule accusation par affaire : si tu te trompes, tu es écarté de l’affaire.`, 'Accuser')) {
-          S.draft.accusation = Number(el.dataset.i); S.ordersDirty = true; rerender();
+        // Deux complices : le bouton porte les deux noms (data-j).
+        const j = el.dataset.j !== undefined ? Number(el.dataset.j) : null, s2 = j !== null ? aff.suspects[j] : null;
+        if (await askConfirm(s2 ? `Accuser ${s.nom} et ${s2.nom}, ensemble ? L’accusation part au parquet à 20:00. Une seule accusation par affaire : si tu te trompes, tu es écarté de l’affaire.` : `Accuser ${s.nom} ? L’accusation part au parquet à 20:00. Une seule accusation par affaire : si tu te trompes, tu es écarté de l’affaire.`, 'Accuser')) {
+          S.draft.accusation = Number(el.dataset.i); S.draft.accusation2 = s2 ? j : null; S.ordersDirty = true; rerender();
         }
         break;
       }
       case 'piste': { const i = Number(el.dataset.i); S.draft.piste = S.draft.piste === i ? null : i; S.ordersDirty = true; rerender(); break; }
-      case 'accuser-annuler': S.draft.accusation = null; S.draft.confront = []; S.draft.mobile = null; S.ordersDirty = true; rerender(); break;
+      case 'accuser-annuler': S.draft.accusation = null; S.draft.accusation2 = null; S.draft.confront = []; S.draft.mobile = null; S.ordersDirty = true; rerender(); break;
       case 'partage': {
         const p = (S.draft.partages ||= []);
         if (p.length < 3) p.push({ f: el.dataset.f, a: el.dataset.a });

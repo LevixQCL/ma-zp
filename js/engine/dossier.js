@@ -66,6 +66,7 @@ const REACTIONS = {
 };
 const LIEN = (s, aff) => {
   const lieu = aff.lieu;
+  if (s.victime) return `C’est chez moi : je suis ${aff.vic}, c’est moi qui ai déposé plainte. Je ne vois pas ce que je fais ici.`;
   const r = s.role.replace(/^./, (c) => c.toLowerCase());
   if (/ancien employé|ancienne employée/.test(r)) return `J’ai travaillé pour ${aff.vic} pendant des années, à ${lieu}. Je suis parti${s.f ? 'e' : ''} il y a six mois.`;
   if (/entretien/.test(r)) return `Je fais le ménage à ${lieu}, trois soirs par semaine.`;
@@ -91,6 +92,7 @@ function declarationJe(s) {
     return `J’étais ${t}, toute la soirée. Personne ne peut le confirmer, je suppose.`;
   }
   const lieu = JE_ALIBI[a.pos] ? (a.pos === 'parents' && /Haut-Delta/.test(a.lieu) ? 'chez mes parents, à Haut-Delta' : JE_ALIBI[a.pos]) : a.lieu;
+  if (a.avecJe) return `J’étais ${lieu} avec ${a.avecJe}, de ${hm(a.ditDe)} à ${hm(a.ditA)}. ${/^[A-ZÀ-Ý]/.test(a.avecJe) ? 'Demandez-lui' : 'Vous pouvez vérifier'}. Ensuite, je suis rentré${e} directement chez moi.`;
   return `J’étais ${lieu}, de ${hm(a.ditDe)} à ${hm(a.ditA)}. Ensuite, je suis rentré${e} directement chez moi.`;
 }
 
@@ -142,7 +144,9 @@ export function dossierAffaire3(seed, aff) {
     ],
     second: {
       titre: 'Cinq noms dans le carnet des enquêteurs',
-      texte: `D’après nos sources, la police a dressé la liste des personnes qui gravitent autour ${aff.pres} : ${roles.slice(0, -1).join(', ')} et ${roles[roles.length - 1]}. Toutes seront entendues. « Chacun a une explication pour sa soirée ; à nous de vérifier », résume un enquêteur.`,
+      texte: aff.variante === 'fraude'
+        ? `D’après nos sources, la police entendra aussi ${aff.vic} : l’assureur trouve la plainte un peu trop commode. Sur la liste figurent encore ${roles.filter((r, i) => !aff.suspects[i].victime).join(', ').replace(/, ([^,]*)$/, ' et $1')}. « Chacun a une explication pour sa soirée ; à nous de vérifier », résume un enquêteur.`
+        : `D’après nos sources, la police a dressé la liste des personnes qui gravitent autour ${aff.pres} : ${roles.slice(0, -1).join(', ')} et ${roles[roles.length - 1]}. Toutes seront entendues. « Chacun a une explication pour sa soirée ; à nous de vérifier », résume un enquêteur.`,
     },
     breve: travaux
       ? ['Circulation', `Travaux : le ${travaux.nom.replace(/^Pont/, 'pont')} reste fermé aux voitures et aux deux-roues motorisés toute la semaine. Déviation par les autres ponts. Cyclistes et piétons peuvent passer.`]
@@ -159,7 +163,10 @@ export function dossierAffaire3(seed, aff) {
       `Arrivés sur place à ${hm(hArrivee)}, constatons que ${rc.plainte ? rc.plainte.lignes[1].replace(/^En arrivant, j’ai constaté que /, '').replace(/\. Il manque.*$/, '') : 'les lieux ont été visités'}. Les lieux sont déserts. Nous ne touchons à rien et sécurisons le périmètre.`,
       `${rc.victime}, ${vF ? 'prévenue' : 'prévenu'} par nos soins, arrive à ${hm(hVictime)} et dresse la liste de ce qui manque : ${rc.plainte.lignes[1].split('Il manque ')[1].replace(/\.$/, '')}.`,
       'Aucun témoin direct n’est identifié à ce stade. Le laboratoire de police technique est requis pour les relevés ; les images des caméras de la rue sont demandées au service communal.',
-      `L’entourage de la victime compte cinq personnes à entendre : ${aff.suspects.map((s) => s.nom).join(', ')}.`,
+      aff.variante === 'fraude'
+        ? `Cinq personnes à entendre, dont ${vF ? 'la plaignante elle-même' : 'le plaignant lui-même'}, à la demande de l’assureur : ${aff.suspects.map((s) => s.nom).join(', ')}.`
+        : `L’entourage de la victime compte cinq personnes à entendre : ${aff.suspects.map((s) => s.nom).join(', ')}.`,
+      ...(aff.regle ? [`Note du magistrat : ${aff.regle}`] : []),
       'Le magistrat de garde est avisé. Dont procès-verbal.',
     ],
   };

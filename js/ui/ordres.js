@@ -31,7 +31,7 @@ import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enForma
 function enqueteDraft() {
   const o = S.savedOrders || {};
   return {
-    dilemme: Number.isInteger(o.dilemme) ? o.dilemme : null, demarches: o.demarches || [], appui: o.appui || null, prime: o.prime || null, piste: o.piste ?? null, accusation: o.accusation ?? null, confront: o.confront || [], reaud: o.reaud || null, recoup: o.recoup || null, hypo: o.hypo || null, mobile: Number.isInteger(o.mobile) ? o.mobile : null, traque: o.traque || null, partages: o.partages || [],
+    dilemme: Number.isInteger(o.dilemme) ? o.dilemme : null, demarches: o.demarches || [], appui: o.appui || null, prime: o.prime || null, piste: o.piste ?? null, accusation: o.accusation ?? null, accusation2: o.accusation2 ?? null, confront: o.confront || [], reaud: o.reaud || null, recoup: o.recoup || null, hypo: o.hypo || null, mobile: Number.isInteger(o.mobile) ? o.mobile : null, traque: o.traque || null, partages: o.partages || [],
     fipa: o.fipa || null, fipaReponse: o.fipaReponse || null, fipaChoix: o.fipaChoix || null,
     renfort: o.renfort || null, aide: o.aide || null, pacte: o.pacte || null, pacteReponse: o.pacteReponse || null, pacteAccepte: o.pacteAccepte || [], defiAccepte: o.defiAccepte || [], pacteRompre: o.pacteRompre || null, fragment: o.fragment || null, defi: o.defi || null, defiReponse: o.defiReponse || null, votes: o.votes || {}, motionChef: o.motionChef || null, offre: o.offre || null,
     releve: o.releve || null, releveAppui: o.releveAppui || [], saisie: o.saisie || null, crise: Number.isInteger(o.crise) ? o.crise : null, criseC: o.criseC || null, bilan: o.bilan || {},

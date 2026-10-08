@@ -22,7 +22,8 @@ export function recitAffaire(seed, aff) {
   const d = DECOR[aff.pos] || DECOR.tanneurs;
   const rng = makeRng(`${seed}:recit:${aff.n}`);
   const f = /^la /.test(aff.vic);
-  const victime = `${rng.pick(PRENOMS_V[f ? 'f' : 'm'])} ${rng.pick(NOMS_V)}`;
+  const tire = `${rng.pick(PRENOMS_V[f ? 'f' : 'm'])} ${rng.pick(NOMS_V)}`;
+  const victime = aff.victimeNom || tire; // fraude : la victime est l'un des suspects (tirage gardé pour ne rien décaler)
   const e = f ? 'e' : '';
   const lieuMaj = aff.lieu.charAt(0).toUpperCase() + aff.lieu.slice(1);
   const titreUne = rng.pick([

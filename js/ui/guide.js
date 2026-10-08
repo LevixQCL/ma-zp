@@ -228,6 +228,13 @@ export function sections() {
           'Fausse accusation : −3 de réputation, et tu ne peux plus accuser sur cette affaire. Tu peux encore partager et participer à la traque.',
           `Personne n’a trouvé après ${ENQ.dureeMax} jours : l’affaire est classée, la Gazette publie la solution.`,
         ])}
+        <h3>Les vols qui sortent du moule</h3>
+        <p>Environ un vol sur trois a une particularité, annoncée dès l'ouverture (encadré « Particularité » et PV de constatations). La règle de preuve ne change pas : le parquet n'accepte l'accusation que si ton dossier écarte tous les autres.</p>
+        ${ul([
+          '<strong>Deux complices</strong> : tous deux avaient le mobile ; l’un a fourni le moyen sans être sur place, l’autre a fait le coup. Un suspect est hors de cause sans le mobile, ou sans le moyen ni l’occasion. On accuse les deux ensemble ; celui qui était sur place se cache, l’autre est cueilli tout de suite.',
+          '<strong>Un témoin ment</strong> : un alibi qui ne repose que sur une parole ne prouve rien tant qu’une trace ne le confirme pas. Compare les heures, les lieux et les traces : une autre pièce trahit le menteur, qui n’est pas forcément le coupable.',
+          '<strong>La plainte de trop</strong> : l’assureur doute, la victime fait partie des cinq suspects. Une seule personne réunit toujours le mobile, le moyen et l’occasion.',
+        ])}
         <h3>La traque</h3>
         ${ul([
           `Après la découverte, le suspect se cache dans l’une des six planques. <strong>Toutes les zones</strong> ont ${delaiTraque(ENQ.traqueTours).replace(/,$/, '')} pour l’arrêter : mettez-vous d’accord sur la radio pour fouiller des planques différentes.`,

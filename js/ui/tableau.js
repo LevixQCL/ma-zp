@@ -12,7 +12,7 @@ import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, SOURCES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
   ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect, celluleDe,
 } from '../engine/enquete.js';
-import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal, banniereTraque } from './enquete.js';
+import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal, banniereTraque, etatSuspect, accuserHtml, nomsAccuses, regleHtml } from './enquete.js';
 import { engagementsDuJour } from './engagements.js';
 import { LIEUX as LIEUX3, MODES, itineraire, fmtDist, nomTroncon } from '../engine/carte3.js';
 import { dossierAffaire3, numeroPv } from '../engine/dossier.js';
@@ -25,7 +25,7 @@ import { sceneFouilleHtml, sceneZoomHtml } from './scene-fouille.js';
 import { friseSvg, friseVolet } from './frise.js';
 import { opposables, pieceReaudition, REAUD } from '../engine/enquete.js';
 import { lienItineraire, lieuxMons, MODES_GMAPS } from '../engine/meurtre-mons.js';
-import { demarcheDe, mandatOk, accusationRecevable, maxDemarchesDe } from '../engine/enquete.js';
+import { demarcheDe, mandatOk, maxDemarchesDe } from '../engine/enquete.js';
 import { relecturesHtml, recoupBoutons, voletRecoup, voletHypo, voletPouces, mobileHtml, soirPlusHtml } from './enquete-plus.js';
 
 // ───── Dimensions du tableau ─────
@@ -303,8 +303,8 @@ function elementsHtml(aff, dos, et) {
   // Photos des suspects.
   aff.suspects.forEach((s, i) => {
     const marks = ELEMENTS.map((e) => carnet.g[`${i}:${e}`] || 0);
-    const exclu = marks.includes(2);
-    const accuse = d.accusation === i || dos.accuse === i;
+    const exclu = etatSuspect(carnet, i, aff) === 'exclu';
+    const accuse = d.accusation === i || d.accusation2 === i || dos.accuse === i || dos.accuse2 === i;
     const soir = (d.demarches || []).some((x) => x.endsWith(`:${i}`)) || d.piste === i;
     const past = ELEMENTS.map((e, k) => `<span class="tb-past" style="--c:${COL[e]}" data-v="${marks[k]}">${['', '✓', '✕'][marks[k]]}</span>`).join('');
     out.push(wrap(`s${i}`, 90, 1.9, `<div class="tb-obj tb-polo">${portraitSuspect(s, i)}<span class="tb-prenom">${esc(s.prenom)}</span><span class="tb-role">${esc(s.role)} · ${s.age} ans</span><span class="tb-pasts">${past}</span>
@@ -368,14 +368,13 @@ function voletSuspect(aff, dos, i, et) {
     </div>`;
   }).join('');
   const surPiste = d.piste === i;
-  const accuse = d.accusation === i;
+  const accuse = d.accusation === i || d.accusation2 === i;
   let acc = '';
   if (dos.exclu) acc = '<span class="tiny muted">Ton accusation a été rejetée : tu ne peux plus accuser sur cette affaire.</span>';
   else if (dos.accuse !== null && dos.accuse !== undefined) acc = '<span class="tiny muted">Accusation transmise au parquet.</span>';
   else if (aff.meurtre) acc = accuse ? '<button type="button" class="btn ghost small" data-action="accuser-annuler">Annuler la confrontation</button>' : `<button type="button" class="btn outline small" data-action="tab-ouvrir" data-tid="X:${i}" style="border-color:var(--red-line);color:var(--red-soft)">Confronter ${esc(s.prenom)}</button>`;
   else if (accuse) acc = '<button type="button" class="btn ghost small" data-action="accuser-annuler">Retirer l’accusation</button>';
-  else if (!accusationRecevable(aff, dos, i)) acc = `<span class="tiny muted">Le parquet n’acceptera d’accuser ${esc(s.prenom)} que si ton dossier écarte tous les autres suspects (pièces à l’appui, les tiennes ou celles reçues).</span>`;
-  else acc = `<button type="button" class="btn outline small" data-action="accuser" data-i="${i}" style="border-color:var(--red-line);color:var(--red-soft)">Accuser ${esc(s.prenom)}</button>`;
+  else acc = accuserHtml(aff, dos, i, { cls: 'btn outline small', style: 'border-color:var(--red-line);color:var(--red-soft)' });
   const suivi = zonesDuSuspect(st, i).filter((u) => u !== S.user.uid && st.zones[u]);
   return `<div class="tb-tete">${portraitSuspect(s, i, 'tb-face tb-mini')}
       <div class="col" style="gap:2px;min-width:0"><span class="tb-titre">${esc(s.nom)}</span><span class="tiny muted">${esc(fiche.lien)}</span>
@@ -534,6 +533,7 @@ function voletDoc(aff, id) {
   if (aff.prof && id === 'recit') {
     const d3 = dossierAffaire3(S.state.seed, aff);
     return `<span class="tb-ligne-k" style="color:var(--amber)">PV n° ${esc(d3.pvc.numero)}</span><span class="tb-titre">${esc(d3.pvc.titre)}</span>${d3.pvc.lignes.map((x) => `<p class="small" style="margin:0;line-height:1.5">${esc(x)}</p>`).join('')}
+      ${regleHtml(aff)}
       <span class="pill amber" style="align-self:flex-start">Jour ${S.state.enquete.jour} sur ${ENQ.dureeMax} · découverte ce soir : ${pointsDecouverte(S.state.enquete.jour)} pts</span>
       <button type="button" class="btn small" data-action="journal-ouvrir">📰 Relire le journal</button>
       <a class="small" href="#guide-enquete">Comment fonctionne l’enquête ?</a>`;
@@ -548,6 +548,7 @@ function voletFaits(aff) {
   const j = S.state.enquete.jour;
   return `<span class="tb-ligne-k" style="color:var(--amber)">Affaire n° ${aff.n} · jour ${j} sur ${ENQ.dureeMax}</span><span class="tb-titre">${esc(aff.titre)}</span>
     <p class="small" style="margin:0;color:var(--text2);line-height:1.5">${esc(aff.recit)}</p>
+    ${regleHtml(aff)}
     <span class="pill amber" style="align-self:flex-start">Découverte ce soir : ${pointsDecouverte(j)} pts</span>
     ${rebondsPublies(S.state).map((r) => `<div class="card amber tight"><span class="kicker">Jour ${r.j} · rebondissement</span><span style="font-weight:700">${esc(r.titre)}</span><span class="small" style="color:var(--amber-soft)">${esc(r.texte)}</span></div>`).join('')}
     <span class="tb-ligne-k">Main courante</span>
@@ -633,6 +634,7 @@ function voletSoir(aff, dos) {
   const v = voisinageInfo(aff);
   const nomDem = (x) => { const [k, i] = x.split(':'); const dm = demarcheDe(aff, k); return i !== undefined ? `${dm.nom} · ${aff.suspects[Number(i)].prenom}` : dm.nom; };
   return `<div class="between" style="padding-right:44px"><span class="tb-titre" style="padding-right:0">Ce soir</span><span class="small muted">reste ${Math.round((z.budget - engagementsDuJour(d, z).total) * 10) / 10} k€</span></div>
+    ${regleHtml(aff)}
     ${celluleHtml(aff)}
     <span class="tb-ligne-k">Démarches · ${dem.length} / ${maxDemarchesDe(S.state, myZone())}</span>
     ${dem.map((x) => `<div class="tb-boite-l"><span class="small grow" style="font-weight:600">${esc(nomDem(x))}</span><button type="button" class="btn small ghost" data-action="dem-toggle" data-k="${esc(x)}" aria-label="Retirer ${esc(nomDem(x))}">✕</button></div>`).join('') || '<p class="tiny muted" style="margin:0">Touche une photo ou une fiche du tableau pour choisir une démarche.</p>'}
@@ -640,7 +642,7 @@ function voletSoir(aff, dos) {
     ${appuiHtml()}
     ${aff.meurtre && d.reaud ? `<div class="tb-boite-l"><span class="small grow" style="font-weight:600">Réaudition · ${esc(aff.suspects[d.reaud.i].prenom)}, face à « ${esc(nomElement(aff, d.reaud.f))} »</span><button type="button" class="btn small ghost" data-action="reaud-annuler" aria-label="Annuler la réaudition">✕</button></div>` : ''}
     ${aff.recoupements || aff.hypothese ? soirPlusHtml(aff) : ''}
-    ${d.accusation !== null && d.accusation !== undefined ? `<p class="small" style="margin:0;color:var(--red-soft)">${aff.meurtre ? `Confrontation prête : ${esc(aff.suspects[d.accusation].nom)}, avec ${(d.confront || []).map((f) => `« ${esc(nomElement(aff, f))} »`).join(', ')}.` : `Accusation prête contre ${esc(aff.suspects[d.accusation].nom)}.`}</p>` : ''}
+    ${d.accusation !== null && d.accusation !== undefined ? `<p class="small" style="margin:0;color:var(--red-soft)">${aff.meurtre ? `Confrontation prête : ${esc(aff.suspects[d.accusation].nom)}, avec ${(d.confront || []).map((f) => `« ${esc(nomElement(aff, f))} »`).join(', ')}.` : `Accusation prête contre ${esc(nomsAccuses(aff, d))}.`}</p>` : ''}
     <span class="tb-ligne-k">Partages · ${(d.partages || []).length} / ${ENQ.maxPartages}</span>
     ${(d.partages || []).map((x) => `<div class="tb-boite-l"><div class="col grow" style="gap:2px;min-width:0"><button type="button" class="tb-lien" data-action="tab-ouvrir" data-tid="${esc(x.f)}">${esc(titrePiece(aff, x.f))}</button><span class="tiny muted">vers ${x.a === '*' ? 'toutes les zones' : esc(S.state.zones[x.a] ? zoneName(S.state.zones[x.a]) : '?')}</span></div><button type="button" class="btn small ghost" data-action="partage-annuler" data-f="${esc(x.f)}" aria-label="Annuler ce partage">✕</button></div>`).join('') || '<p class="tiny muted" style="margin:0">Aucun partage prévu. Touche une pièce (sur le tableau ou dans la boîte) pour la partager.</p>'}
     <p class="tiny muted" style="margin:0">Tout part avec tes ordres : pense à valider. Résultats à 20:00, dans ta boîte à pièces.</p>`;

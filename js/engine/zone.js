@@ -305,6 +305,8 @@ export function sanitizeOrders(zone, raw, state) {
   const cible = (v) => (zoneExiste(v) ? v : '');
   const demarches = Array.isArray(o.demarches) ? [...new Set(o.demarches.filter((x) => typeof x === 'string' && lireDemarche(x)))].slice(0, ENQ.maxDemarches + ENQ.demarcheSolo) : [];
   const accusation = Number.isInteger(o.accusation) && o.accusation >= 0 && o.accusation < ENQ.nbSuspects ? o.accusation : null;
+  // Deux complices : le second nom de l'accusation (ignoré dans les autres affaires).
+  const accusation2 = accusation !== null && Number.isInteger(o.accusation2) && o.accusation2 >= 0 && o.accusation2 < ENQ.nbSuspects && o.accusation2 !== accusation ? o.accusation2 : null;
   // Confrontation (affaire de meurtre) : trois pièces opposées au suspect accusé.
   const reaud = o.reaud && typeof o.reaud === 'object' && Number.isInteger(o.reaud.i) && o.reaud.i >= 0 && o.reaud.i < 8 && typeof o.reaud.f === 'string' && /^[a-zA-Z]{1,8}:[a-z0-9]{1,12}$/.test(o.reaud.f) ? { i: o.reaud.i, f: o.reaud.f } : null;
   const confront = Array.isArray(o.confront) ? [...new Set(o.confront.filter((x) => typeof x === 'string' && /^[a-zA-Z]{1,8}:[a-z0-9]{1,12}$/.test(x)))].slice(0, 3) : [];
@@ -355,7 +357,7 @@ export function sanitizeOrders(zone, raw, state) {
   const nv = (zone.flotte || []).length || zone.vehicules || 0;
   const repris = decision && decision.reprise != null ? decision.reprise : -1; // le véhicule repris n'est pas revendu une deuxième fois
   const ventes = Array.isArray(o.ventes) ? [...new Set(o.ventes.map((x) => Math.floor(Number(x))).filter((x) => Number.isInteger(x) && x >= 0 && x < nv && x !== repris))].slice(0, Math.max(0, nv - 1)) : [];
-  return { ventes, dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteAccepte, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, defiAccepte: tutelle ? [] : defiAccepte, votes, motionChef, offre };
+  return { ventes, dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, accusation2, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteAccepte, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, defiAccepte: tutelle ? [] : defiAccepte, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */

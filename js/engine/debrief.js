@@ -1,7 +1,7 @@
 // Débrief d'affaire (« Dossier clos ») : à la fin d'une affaire, ce qui désignait l'auteur, ce qui écartait
 // chaque innocent, qui a trouvé quoi et quand. Calculé une fois, à la clôture, à partir des dossiers des zones,
 // puis publié dans la Gazette (state ne grossit pas).
-import { dossierAffaire, faitsConnus, titrePiece, ELEMENTS } from './enquete.js';
+import { dossierAffaire, faitsConnus, titrePiece, ELEMENTS, estAuteur, VARIANTE_INFO } from './enquete.js';
 
 // Pièces qui ne doivent rien au travail de la zone (données à tous, reçues ou offertes).
 const NON_PROPRES = new Set(['ouverture', 'partage', 'pacte', 'rebond', 'rattrapage', 'tardif']);
@@ -15,6 +15,15 @@ const titre = (aff, f) => (f.startsWith('p:') && PLANQUE_NOM[f.slice(2)]) || tit
 export function piecesCles(aff) {
   const c = aff.coupable;
   if (aff.meurtre) return (aff.confront.decisives || []).map((f) => ({ f, role: 'Décisive' }));
+  if (aff.variante === 'complices') {
+    // L'exécutant : mobile et occasion ; le complice : mobile et moyen.
+    const a = aff.complice;
+    return [
+      { f: `mob:${c}`, role: ROLE.mob, constat: 'c:mob' }, { f: `occ:${c}`, role: ROLE.occ, constat: 'c:occ' },
+      { f: `mob:${a}`, role: ROLE.mob, constat: 'c:mob', complice: true }, { f: `moy:${a}`, role: ROLE.moy, constat: 'c:moy', complice: true },
+      ...['humidite', 'temperature', 'rive', 'acces'].map((x) => ({ f: `p:${x}`, role: 'Planque', planque: true })),
+    ];
+  }
   return [
     ...ELEMENTS.map((el) => ({ f: `${el}:${c}`, role: ROLE[el], constat: `c:${el}` })),
     ...['humidite', 'temperature', 'rive', 'acces'].map((a) => ({ f: `p:${a}`, role: 'Planque', planque: true })),
@@ -25,7 +34,13 @@ export function piecesCles(aff) {
 export function piecesDisculpantes(aff) {
   const out = [];
   aff.suspects.forEach((s, i) => {
-    if (i === aff.coupable) return;
+    if (estAuteur(aff, i)) return;
+    if (aff.variante === 'complices') {
+      // Sans le mobile, ou sans le moyen ni l'occasion.
+      if (!s.statut.mob) out.push({ i, fs: [`mob:${i}`], manque: 'mob', constat: 'c:mob' });
+      else out.push({ i, fs: [`moy:${i}`, `occ:${i}`], manque: 'moy+occ', constat: 'c:moy' });
+      return;
+    }
     if (aff.meurtre) {
       const l = (aff.innocente && aff.innocente[i]) || [];
       const g = l.length ? (Array.isArray(l[0]) ? l[0] : [l[0]]) : [];
@@ -75,7 +90,8 @@ export function construireDebrief(state, aff, issue, fin = {}) {
 
   const cles = piecesCles(aff).map((k) => ({ ...k, titre: titre(aff, k.f), constatTitre: k.constat ? titre(aff, k.constat) : null, ...trouve(k.f) }));
   const accusations = {};
-  for (const u of uids) { const a = dossiers[u].accuse; if (a != null && a !== aff.coupable) (accusations[a] ||= []).push(u); }
+  const juste = (d) => d.accuse === aff.coupable && !d.exclu;
+  for (const u of uids) { const d = dossiers[u]; if (d.accuse != null && !juste(d)) for (const a of [d.accuse, d.accuse2].filter((x) => x != null && !estAuteur(aff, x))) (accusations[a] ||= []).push(u); }
   const pistes = piecesDisculpantes(aff).map((p) => {
     const s = aff.suspects[p.i];
     const parts = p.fs.map((f) => ({ f, titre: titre(aff, f), ...trouve(f) }));
@@ -87,7 +103,7 @@ export function construireDebrief(state, aff, issue, fin = {}) {
   const r3 = aff.rebonds && aff.rebonds[3];
   if (r3 && (fin.jour || 0) >= 3) {
     const i = Number(String(r3.f).split(':')[1]);
-    if (Number.isInteger(i) && aff.suspects[i]) theatre = { i, nom: aff.suspects[i].nom, juste: i === aff.coupable, titre: r3.titre };
+    if (Number.isInteger(i) && aff.suspects[i]) theatre = { i, nom: aff.suspects[i].nom, juste: estAuteur(aff, i), titre: r3.titre };
   }
 
   const parZone = uids.map((u) => {
@@ -102,7 +118,7 @@ export function construireDebrief(state, aff, issue, fin = {}) {
       cles: cles.map((k, x) => (faitsConnus(d).includes(k.f) ? x : -1)).filter((x) => x >= 0),
       clesTrouvees: cles.filter((k) => k.par.includes(u)).length,
       accuse: d.accuse == null ? null : d.accuse, accuseJ: d.accuseJ || null,
-      juste: d.accuse === aff.coupable && !d.exclu,
+      juste: juste(d),
       arrete: (fin.arreteurs || []).includes(u),
     };
   }).sort((a, b) => (b.juste - a.juste) || (b.propres + b.donnees) - (a.propres + a.donnees));
@@ -112,7 +128,8 @@ export function construireDebrief(state, aff, issue, fin = {}) {
   for (const k of cles) if (k.j && k.par.length) chrono.push({ j: k.j, t: 'cle', txt: `${k.role} : « ${k.titre} »`, zones: k.par.map(nom) });
   for (const [j, r] of Object.entries(aff.rebonds || {})) if (Number(j) <= (fin.jour || 0)) chrono.push({ j: Number(j), t: 'rebond', txt: r.titre });
   for (const z of parZone) if (z.accuse != null && !z.juste) chrono.push({ j: z.accuseJ, t: 'faux', txt: `Fausse piste : ${aff.suspects[z.accuse] ? aff.suspects[z.accuse].nom : '?'}`, zones: [z.nom] });
-  if (fin.decouvreurs && fin.decouvreurs.length) chrono.push({ j: fin.jour, t: 'decouverte', txt: `${aff.suspects[aff.coupable].nom} démasqué${aff.suspects[aff.coupable].f ? 'e' : ''}`, zones: fin.decouvreurs.map(nom) });
+  const comp = aff.complice != null ? aff.suspects[aff.complice] : null;
+  if (fin.decouvreurs && fin.decouvreurs.length) chrono.push({ j: fin.jour, t: 'decouverte', txt: comp ? `${aff.suspects[aff.coupable].nom} et ${comp.nom} démasqués` : `${aff.suspects[aff.coupable].nom} démasqué${aff.suspects[aff.coupable].f ? 'e' : ''}`, zones: fin.decouvreurs.map(nom) });
   chrono.sort((a, b) => (a.j || 99) - (b.j || 99));
 
   const s = aff.suspects[aff.coupable];
@@ -120,6 +137,12 @@ export function construireDebrief(state, aff, issue, fin = {}) {
     v: 1, n, titre: aff.titre, meurtre: !!aff.meurtre, genre: aff.genre || null, cas: aff.cas || (aff.meurtre ? 'clef' : null), issue,
     jours: fin.jour || null,
     coupable: { i: aff.coupable, nom: s.nom, f: !!s.f, role: s.role },
+    ...(aff.variante ? { variante: { k: aff.variante, nom: VARIANTE_INFO[aff.variante].nom, regle: aff.regle } } : {}),
+    ...(comp ? { complice: { i: aff.complice, nom: comp.nom, f: !!comp.f, role: comp.role } } : {}),
+    ...(aff.mensonge ? { mensonge: {
+      menteur: aff.mensonge.menteur != null ? { i: aff.mensonge.menteur, nom: aff.suspects[aff.mensonge.menteur].nom, f: !!aff.suspects[aff.mensonge.menteur].f } : { nom: `${aff.suspects[aff.coupable].alibi.avec.replace(/^sa /, 'la ').replace(/^son /, 'le ')} ${/^[aeiouéèêh]/i.test(s.nom) ? 'd’' : 'de '}${s.nom}`, proche: true },
+      couvert: s.nom, piece: { f: aff.mensonge.piece, titre: titre(aff, aff.mensonge.piece), ...trouve(aff.mensonge.piece) },
+    } } : {}),
     planque: aff.meurtre ? null : (aff.planques[aff.planque] ? { nom: aff.planques[aff.planque].nom, lieu: aff.planques[aff.planque].lieu } : null),
     mobile: aff.mobiles ? { vrai: aff.mobiles[aff.mobileVrai], trouve: fin.mobileTrouve || [] } : null,
     cles, pistes, theatre, zones: parZone, chrono,

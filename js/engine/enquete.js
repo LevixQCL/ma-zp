@@ -399,6 +399,49 @@ const ATTRS_P = ['humidite', 'temperature', 'rive', 'acces'];
 const MOY = ['cle', 'code', 'volume'];
 const MOB = ['argent', 'vengeance', 'commande'];
 
+// ─────────────────────────────── Variantes ───────────────────────────────
+// Depuis l'affaire `state.varianteDes`, environ une affaire de vol sur trois sort du moule « un seul réunit les trois » :
+//  - complices : deux suspects ont fait le coup ensemble. Tous deux avaient le mobile ; l'un a fourni le moyen sans être
+//    sur place (alibi solide), l'autre était sur place sans avoir le moyen lui-même. Un suspect est hors de cause s'il n'a
+//    pas le mobile, ou s'il n'a ni le moyen ni l'occasion. Il faut accuser les deux.
+//  - faux témoin : l'alibi du coupable repose sur un témoignage mensonger ; une autre pièce (l'alibi du témoin, ou la
+//    téléphonie du coupable) le trahit. Le menteur n'est pas forcément le coupable.
+//  - fraude : la « victime » a monté le vol pour toucher l'assurance ; elle fait partie des cinq suspects.
+// Tirage par graine, jamais deux variantes de suite, jamais la première affaire d'une partie.
+export const VARIANTES = { part: 0.6, liste: ['complices', 'fauxTemoin', 'fraude'], force: null };
+export const VARIANTE_INFO = {
+  complices: { nom: 'Deux complices', court: 'deux complices',
+    regle: 'Coup à deux : tous deux avaient le mobile ; l’un a fourni le moyen sans être sur place, l’autre a fait le coup. Est hors de cause qui n’a pas le mobile, ou qui n’a ni le moyen ni l’occasion. Il faut accuser les deux.',
+    accroche: 'Cinq suspects, deux complices : l’un a fourni le moyen, l’autre a fait le coup.' },
+  fauxTemoin: { nom: 'Un témoin ment', court: 'un faux témoin',
+    regle: 'Un témoignage de ce dossier est faux. Un alibi qui ne repose que sur la parole de quelqu’un ne vaut que si rien ne le contredit : confronte les heures, les lieux et les traces.',
+    accroche: 'Cinq suspects, un seul coupable… et un témoin qui ment.' },
+  fraude: { nom: 'La plainte de trop', court: 'une plainte douteuse',
+    regle: 'L’assureur doute de la plainte : la victime figure parmi les cinq suspects. Comme toujours, une seule personne réunit le mobile, le moyen et l’occasion.',
+    accroche: 'Cinq suspects, dont la victime elle-même : l’assureur n’y croit pas.' },
+};
+// Décors où la victime est propriétaire ou gérante de ce qui a été volé (une fraude à l'assurance y tient debout).
+const FRAUDE_OK = new Set(['tanneurs', 'bijouterie', 'portesud', 'beguinage', 'filatures', 'petitpont', 'ventes', 'gare']);
+const memoVariante = new Map();
+/** Variante tirée pour l'affaire n (null : moule classique). `vd` : première affaire où une variante est possible. */
+export function varianteTiree(seed, n, vd) {
+  if (vd == null || n < vd || n < 2) return null;
+  const k = `${seed}#${n}#${vd}#${VARIANTES.force}`;
+  if (memoVariante.has(k)) return memoVariante.get(k);
+  let v = null;
+  if (VARIANTES.force) v = VARIANTES.force === 'classique' ? null : VARIANTES.force;
+  else if (!varianteTiree(seed, n - 1, vd)) { const r = makeRng(`${seed}:variante:${n}`); if (r.chance(VARIANTES.part)) v = r.pick(VARIANTES.liste); }
+  memoVariante.set(k, v);
+  return v;
+}
+/** Auteurs d'une affaire : le coupable, et son complice s'il y en a un. */
+export const auteurs = (aff) => (aff && aff.complice != null ? [aff.coupable, aff.complice] : [aff.coupable]);
+export const estAuteur = (aff, i) => auteurs(aff).includes(i);
+const COMPAGNONS = [['un ami', 'un ami'], ['un collègue', 'un collègue'], ['une amie', 'une amie']];
+const PROCHES = [['sa sœur', 'ma sœur', 'elle'], ['son frère', 'mon frère', 'lui'], ['sa mère', 'ma mère', 'elle'], ['un ami d’enfance', 'un ami d’enfance', 'lui']];
+// Lieux où un faux témoin « était avec » le coupable (un lieu public, où le personnel se souvient des clients).
+const LIEUX_COMPLAISANTS = ['palace', 'relais', 'bowling', 'minifoot'];
+
 function pairs(arr) { const out = []; for (let i = 0; i < arr.length; i++) for (let j = i + 1; j < arr.length; j++) out.push([arr[i], arr[j]]); return out; }
 function nbCompatibles(items, cible, attrs) { return items.filter((x) => attrs.every((a) => x[a] === cible[a])).length; }
 function bonneDifficulte(items, cible, attrs, strict = true) {
@@ -435,10 +478,12 @@ function indexModele(seed, n, dd) {
  * `dd` : à partir de cette affaire, une affaire ne reprend pas le décor de la précédente
  * (avant, pour les affaires déjà ouvertes, seul le titre change).
  */
-export function genererAffaire(seed, n, carte = false, prof = false, dd = null) {
+export function genererAffaire(seed, n, carte = false, prof = false, dd = null, vd = null) {
   if (prof) carte = true;
   const distinct = dd != null && n >= dd;
-  const key = `${seed}#${n}${carte ? '#c' : ''}${prof ? '#p' : ''}${distinct ? `#d${dd}` : ''}`;
+  // Variante (voir VARIANTES) : null pour le moule classique, qui reste tiré exactement comme avant.
+  let variante = varianteTiree(seed, n, vd);
+  const key = `${seed}#${n}${carte ? '#c' : ''}${prof ? '#p' : ''}${distinct ? `#d${dd}` : ''}${variante ? `#v${variante}` : ''}`;
   if (cache.has(key)) return cache.get(key);
   const rng = makeRng(`${seed}:enquete2:${n}`);
   rng.int(0, AFFAIRES.length - 1); // tirage du décor (le même que dans indexBrut)
@@ -446,12 +491,15 @@ export function genererAffaire(seed, n, carte = false, prof = false, dd = null) 
   const memeQuAvant = !distinct && n > 1 && im === indexBrut(seed, n - 1);
   const modele = memeQuAvant && !distinct ? { ...AFFAIRES[im], titre: `${AFFAIRES[im].titre}, le retour` } : AFFAIRES[im];
   const [vic, aVic, deVic] = modele.vic;
+  if (variante === 'fraude' && !FRAUDE_OK.has(modele.pos)) variante = hashString(`${seed}:${n}:fraude`) % 2 ? 'complices' : 'fauxTemoin';
+  const vicF = /^la /.test(vic);
 
   // Ce qu'il fallait pour commettre les faits.
   const req = {
     moy: rng.pick(modele.gros ? MOY : ['cle', 'code']),
     mob: rng.pick(MOB),
   };
+  if (variante === 'fraude') req.mob = 'argent'; // la fraude à l'assurance : toujours pour l'argent
   const heure = 21 * 60 + 40 + 5 * rng.int(0, 8);           // entrée
   const fin = heure + 5 * rng.int(3, 6);                    // sortie
   const annonce = Math.round(heure / 30) * 30;              // « vers 22:00 » à l'ouverture
@@ -462,13 +510,26 @@ export function genererAffaire(seed, n, carte = false, prof = false, dd = null) 
   // Suspects : le coupable a les trois ; chaque innocent en rate un, et un seul.
   const prenoms = rng.shuffle(PRENOMS), noms = rng.shuffle(NOMS), roles = rng.shuffle(ROLES);
   const manques = rng.shuffle(['mob', 'moy', 'occ', rng.pick(ELEMENTS)]);
+  // Complices : l'exécutant (0) n'a pas le moyen, le complice (1) pas l'occasion ; chaque innocent n'a pas le mobile,
+  // ou n'a ni le moyen ni l'occasion. Le complice a un lien étroit avec les lieux (clés, code, camionnette).
+  const genresC = variante === 'complices' ? rng.shuffle(['mob', 'duo', rng.chance(0.5) ? 'mob' : 'duo']) : null;
+  if (variante === 'complices') { const k = roles.findIndex((r, j) => j >= 1 && r.proche); if (k > 1) [roles[1], roles[k]] = [roles[k], roles[1]]; }
+  // Fraude : le suspect 0 est la victime (même genre que dans le décor).
+  if (variante === 'fraude') { const k = prenoms.findIndex(([, g]) => !!g === vicF); if (k > 0) [prenoms[0], prenoms[k]] = [prenoms[k], prenoms[0]]; }
+  const vicNu = vic.replace(/^(le|la) /, '');
+  const roleVictime = { m: vicNu, f: vicNu, detail: (f) => `${f ? 'la plaignante' : 'le plaignant'} : a déposé plainte au petit matin`, proche: true };
   let suspects = [];
   for (let i = 0; i < ENQ.nbSuspects; i++) {
     const [prenom, fem] = prenoms[i];
     const f = !!fem;
     const coupable = i === 0;
     const statut = { mob: true, moy: true, occ: true };
-    if (!coupable) statut[manques[i - 1]] = false;
+    if (variante === 'complices') {
+      if (i === 0) statut.moy = false;
+      else if (i === 1) statut.occ = false;
+      else if (genresC[i - 2] === 'mob') statut.mob = false;
+      else { statut.moy = false; statut.occ = false; }
+    } else if (!coupable) statut[manques[i - 1]] = false;
     // Profil complet : l'attribut requis suit le statut, les autres servent de fausses pistes.
     const moy = {}, mob = {};
     for (const a of MOY) moy[a] = a === req.moy ? statut.moy : rng.chance(0.45);
@@ -476,7 +537,9 @@ export function genererAffaire(seed, n, carte = false, prof = false, dd = null) 
     // Un innocent sans le bon mobile (ou moyen) en a souvent un autre : le piège.
     if (!statut.moy) moy[rng.pick(MOY.filter((a) => a !== req.moy))] = true;
     if (!statut.mob) mob[rng.pick(MOB.filter((a) => a !== req.mob))] = true;
-    const role = roles[i];
+    const victime = variante === 'fraude' && i === 0;
+    if (victime) { moy.cle = true; moy.code = true; mob.vengeance = false; } // le patron a les clés et le code ; il ne s'en veut pas à lui-même
+    const role = victime ? roleVictime : roles[i];
     // Dossier complet : la camionnette de l'employeur est toujours disponible (sinon on ne saurait plus comment il roulait).
     const vehicule = rng.pick(prof ? VEHICULES3.filter((v) => !v.gros || moy.volume) : VEHICULES);
     // Occasion : même loi pour tous ceux qui n'ont pas d'alibi pendant les faits.
@@ -484,7 +547,31 @@ export function genererAffaire(seed, n, carte = false, prof = false, dd = null) 
     if (prof && ALIBI3[alibi.pos]) alibi.lieu = ALIBI3[alibi.pos].lieu;
     const voiture = /citadine|break|camionnette/.test(vehicule.t);
     if (alibi.type === 'seul') alibi.solitaire = rng.pick(SOLITAIRES.filter((x) => voiture || !x.voiture)).t(f);
-    suspects.push({ nom: `${prenom} ${noms[i]}`, prenom, f, coupable, statut, moy, mob, role: f ? role.f : role.m, roleDetail: role.detail(f), proche: !!role.proche, tech: !!role.tech, vehicule, alibi, rumeur: rng.pick(MOB), age: rng.int(24, 58) });
+    suspects.push({ nom: `${prenom} ${noms[i]}`, prenom, f, coupable, statut, moy, mob, role: f ? role.f : role.m, roleDetail: role.detail(f), proche: !!role.proche, tech: !!role.tech, vehicule, alibi, rumeur: rng.pick(MOB), age: rng.int(24, 58),
+      ...(variante === 'complices' && i === 1 ? { complice: true } : {}), ...(victime ? { victime: true } : {}) });
+  }
+  if (variante === 'fraude' && suspects[0].rumeur === 'vengeance') suspects[0].rumeur = 'argent'; // on ne se brouille pas avec soi-même
+  // Faux témoin : l'alibi du coupable ne repose que sur une parole. Soit un autre suspect le couvre (« complaisant ») et ses
+  // propres traces le trahissent ; soit un proche jure l'avoir vu ailleurs, et la téléphonie du coupable le dément.
+  // Un innocent à l'alibi solide a lui aussi un témoin (honnête, et confirmé par une preuve).
+  let mensonge = null;
+  if (variante === 'fauxTemoin') {
+    const C = suspects[0];
+    const xs = suspects.filter((x, k) => k > 0 && x.statut.occ);
+    if (xs.length && rng.chance(0.6)) {
+      const X = rng.pick(xs);
+      const lieu = rng.pick(ALIBIS.filter((a) => LIEUX_COMPLAISANTS.includes(a.pos)));
+      C.alibi = { type: 'temoin', ...lieu, avec: X.nom, avecJe: X.nom };
+      X.alibi = { type: 'temoinX', ...lieu, avec: C.nom, avecJe: C.nom };
+      mensonge = { forme: 'complaisant', X, C };
+    } else {
+      const [sa, ma] = rng.pick(PROCHES);
+      C.alibi = { type: 'temoin', ...rng.pick(ALIBIS.filter((a) => trajet(modele.pos, a.pos) >= 12)), avec: sa, avecJe: ma };
+      mensonge = { forme: 'proche', C };
+    }
+    for (const x of [C, mensonge.X]) if (x && prof && ALIBI3[x.alibi.pos]) x.alibi.lieu = ALIBI3[x.alibi.pos].lieu;
+    const honnetes = suspects.filter((x) => !x.statut.occ);
+    if (honnetes.length) { const h = rng.pick(honnetes); const [c1, c2] = rng.pick(COMPAGNONS); h.alibi.avec = c1; h.alibi.avecJe = c2; }
   }
   // Heures des alibis.
   for (const s of suspects) {
@@ -510,10 +597,17 @@ export function genererAffaire(seed, n, carte = false, prof = false, dd = null) 
       if (rng.chance(0.5)) { a.de = a.ditDe; a.a = fin + 5 * rng.int(1, 5); } else { a.de = heure - 5 * rng.int(1, 5); a.a = a.ditA; }
     } else if (a.type === 'partiel') {
       if (rng.chance(0.5)) { a.de = a.ditDe; a.a = heure - 5 * rng.int(1, 5); } else { a.de = fin + 5 * rng.int(1, 5); a.a = a.ditA; }
-    }
+    } else if (a.type === 'temoin') { a.de = a.ditDe; a.a = a.ditA; }
   }
+  if (mensonge && mensonge.X) {
+    // Le faux témoin déclare la même soirée que le coupable ; ses traces s'arrêtent avant les faits.
+    const a = mensonge.X.alibi, b = mensonge.C.alibi;
+    a.ditDe = b.ditDe; a.ditA = b.ditA; a.de = b.ditDe; a.a = heure - 5 * rng.int(3, 8);
+  }
+  const borne = mensonge && mensonge.forme === 'proche' ? heure - 5 * rng.int(1, 3) : null;
   suspects = rng.shuffle(suspects);
   const coupable = suspects.findIndex((s) => s.coupable);
+  const complice = variante === 'complices' ? suspects.findIndex((s) => s.complice) : null;
 
   // Planques.
   let planques = null;
@@ -531,8 +625,24 @@ export function genererAffaire(seed, n, carte = false, prof = false, dd = null) 
     vic, aVic, deVic, req, heure, fin, annonce, jourSemaine: rng.pick(JOURS),
     suspects, coupable, planques, planque: planques.findIndex((p) => p.nom === planqueNom),
   };
+  if (variante) {
+    aff.variante = variante;
+    aff.regle = VARIANTE_INFO[variante].regle;
+    aff.accroche = VARIANTE_INFO[variante].accroche;
+    if (variante === 'complices') aff.complice = complice;
+    if (variante === 'fraude') aff.victimeNom = suspects[coupable].nom;
+    if (mensonge) {
+      const iX = mensonge.X ? suspects.indexOf(mensonge.X) : null;
+      aff.mensonge = { forme: mensonge.forme, couvert: coupable, menteur: iX, piece: iX != null ? `occ:${iX}` : `mob:${coupable}`, ...(borne != null ? { borne } : {}) };
+    }
+  }
   const alerte = rng.pick(['le gardien de nuit', `${vic}, ${vic.startsWith('la') ? 'prévenue' : 'prévenu'} par un voisin,`, 'une patrouille de passage', 'un voisin insomniaque']);
   aff.recit = `${modele.texte} Les faits remontent à ${aff.jourSemaine} soir, quelque part entre 21:00 et 23:00 ; c’est ${alerte} qui a donné l’alerte. Butin : ${modele.butin}. Cinq personnes gravitent autour ${modele.pres}, et chacune pourrait avoir fait le coup.`;
+  if (variante) aff.recit += ` ${{
+    complices: 'Les premières constatations laissent penser à un coup à deux : quelqu’un a pu fournir le moyen à celui qui est entré.',
+    fauxTemoin: 'Le magistrat prévient : au moins un des témoignages recueillis ne tiendra pas.',
+    fraude: `L’assureur trouve la plainte un peu trop commode : ${aff.suspects[coupable].nom}, ${vic} en personne, figure parmi les cinq personnes à vérifier.`,
+  }[variante]}`;
   aff.faits = [...ELEMENTS.map((e) => `c:${e}`), ...suspects.flatMap((_, i) => ELEMENTS.map((e) => `${e}:${i}`)), ...ATTRS_P.map((a) => `p:${a}`)];
   aff.textes = {};
   const r2 = makeRng(`${seed}:enquete2:${n}:textes`);
@@ -596,7 +706,13 @@ function ecrirePiece(aff, f, rng) {
   const s = aff.suspects[Number(x)];
   if (k === 'occ') return verifAlibi(aff, s);
   if (k === 'moy') return verifTrois(aff, s, rng, MOY, s.moy, phraseMoyen);
-  if (k === 'mob') return verifTrois(aff, s, rng, MOB, s.mob, phraseMobile);
+  if (k === 'mob') {
+    const t = verifTrois(aff, s, rng, MOB, s.mob, phraseMobile);
+    // Faux témoin (un proche) : la téléphonie du coupable dément l'alibi juré par ce proche.
+    const m = aff.mensonge;
+    if (m && m.forme === 'proche' && Number(x) === m.couvert) return `${t}\nTéléphonie : le ${aff.jourSemaine} soir, le GSM ${deN(s.nom)} a borné à ${hm(m.borne)} sur l’antenne relais qui couvre ${aff.lieu}.`;
+    return t;
+  }
   return '';
 }
 
@@ -614,6 +730,7 @@ function constat(aff, e, rng) {
       volume: `Le butin (${aff.butin}) pèse près de 300 kg et a été emporté en un seul voyage, portes forcées au pied-de-biche : il fallait un véhicule utilitaire.`,
     }[aff.req.moy];
   }
+  if (aff.variante === 'fraude') return 'D’après l’expert de l’assurance, seules les pièces les mieux assurées ont disparu ; d’autres, plus chères mais mal couvertes, sont restées en place. L’auteur voulait de l’argent, et vite.';
   return {
     argent: `D’après ${aff.vic}, seuls les objets faciles à revendre ont disparu ; des pièces plus chères mais encombrantes sont restées. L’auteur voulait de l’argent, et vite.`,
     vengeance: `Le bureau ${aff.deVic} a été saccagé, sa photo lacérée et des dossiers jetés par terre, sans aucune utilité pour le vol : l’auteur lui en voulait personnellement.`,
@@ -639,13 +756,23 @@ function piecePlanque(aff, a) {
 export function declaration(s) {
   const a = s.alibi;
   if (a.type === 'seul') return `dit avoir été ${a.solitaire}, toute la soirée`;
+  if (a.avec) return `dit avoir été ${a.lieu} avec ${a.avec}, de ${hm(a.ditDe)} à ${hm(a.ditA)}`;
   return `dit avoir été ${a.lieu}, de ${hm(a.ditDe)} à ${hm(a.ditA)}`;
 }
 
 function verifAlibi(aff, s) {
   const a = s.alibi, e = s.f ? 'e' : '', il = s.f ? 'elle' : 'il';
   switch (a.type) {
+    case 'temoin': {
+      // Un alibi qui ne tient qu'à une parole : rien ne le confirme ni ne le dément ici.
+      const q = /^(un|une) /.test(a.avec) ? `${a.avec} ${deN(s.nom)}` : a.avec;
+      return `Alibi confirmé par un témoin : ${q} affirme avoir passé toute la soirée avec ${s.nom}, ${a.lieu}, de ${hm(a.ditDe)} à ${hm(a.ditA)}. Ni paiement, ni caméra, ni badge à son nom : c’est sa parole.`;
+    }
+    case 'temoinX':
+      // Le faux témoin : ses propres traces disent qu'il était seul, et parti avant les faits.
+      return `Alibi vérifié en partie : d’après ${a.preuve}, ${s.nom} était bien ${a.lieu}, de ${hm(a.de)} à ${hm(a.a)}, mais seul${e} : personne ne se souvient de l’avoir vu${e} accompagné${e}. Ensuite, plus aucune trace.`;
     case 'couvre': case 'partiel': {
+      if (a.avec) return `Alibi vérifié en partie : ${a.avec} le confirme, et d’après ${a.preuve}, ${s.nom} était bien ${a.lieu}, de ${hm(a.de)} à ${hm(a.a)}.${a.de === a.ditDe && a.a === a.ditA ? '' : ` Pour le reste de la soirée, seul ce témoin confirme ce qu’${il} dit.`}`;
       const reste = a.de === a.ditDe && a.a === a.ditA ? '' : ` Pour le reste de la soirée, personne ne peut confirmer ce qu’${il} dit.`;
       return `Alibi vérifié en partie : d’après ${a.preuve}, ${s.nom} était bien ${a.lieu}, de ${hm(a.de)} à ${hm(a.a)}.${reste}`;
     }
@@ -663,6 +790,12 @@ function phraseMoyen(aff, s, a, v, rng) {
   const il = s.f ? 'elle' : 'il', e = s.f ? 'e' : '';
   const gros = s.vehicule.gros, veh = s.vehicule.rien ? (s.vehicule.mode === 'pied' ? null : s.vehicule.v || 'un vélo') : s.vehicule.t;
   const nAQue = veh ? `n’a qu’${veh}` : 'n’a aucun véhicule';
+  if (s.victime && v) {
+    // Fraude : la victime a évidemment les clés et le code ; le véhicule seulement si l'affaire en demandait un.
+    if (a === 'cle') return `Clés : ${s.nom} est ${aff.vic} ; ${il} a toutes les clés ${aff.pres}, évidemment.`;
+    if (a === 'code') return `Alarme : ${s.nom} connaît le code, c’est le sien ; ${il} est seul${e} à pouvoir le changer.`;
+    return `Véhicule : l’utilitaire de la société est à la disposition ${deN(s.nom)}, garé derrière ${aff.lieu}.`;
+  }
   if (a === 'cle') {
     if (v) return rng.pick([s.proche ? `Clés : ${s.nom} possède un jeu de clés ${aff.pres} et ne l’a jamais rendu.` : `Clés : un double des clés ${aff.pres} a été retrouvé chez ${s.nom}, qui ne sait pas l’expliquer.`, `Clés : un double des clés ${aff.pres} pendait au tableau de l’entrée, chez ${s.nom}.`, ...(s.proche ? [`Clés : ${aff.vic} avait confié un jeu de clés à ${s.nom}, « pour dépanner ».`] : [])]);
     return s.proche ? `Clés : ${s.nom} a rendu son jeu de clés contre signature ; le registre des clés le confirme, aucun double n’a été fait.` : `Clés : ${s.nom} n’a jamais eu de clés ${aff.pres}, ni accès au trousseau.`;
@@ -679,6 +812,10 @@ function phraseMoyen(aff, s, a, v, rng) {
 function phraseMobile(aff, s, a, v, rng) {
   const e = s.f ? 'e' : '', il = s.f ? 'elle' : 'il';
   const ils = s.f && aff.vic.startsWith('la ') ? 'elles' : 'ils';
+  if (s.victime) {
+    if (a === 'argent') return `Argent : ${aff.lieu} perd de l’argent depuis deux ans ; ${s.nom} a fait relever son assurance vol il y a deux mois, et sa banque ${s.f ? 'lui' : 'lui'} refuse tout nouveau crédit.`;
+    if (a === 'vengeance') return `Rancune : on ne connaît pas d’ennemi à ${s.nom}, ni de dispute récente.`;
+  }
   if (a === 'argent') {
     return v ? rng.pick([`Argent : ${s.nom} est criblé${e} de dettes, avec trois crédits en retard et une saisie sur salaire annoncée.`, `Argent : le compte ${deN(s.nom)} est à découvert depuis huit mois ; un huissier est passé la semaine dernière.`])
       : rng.pick([`Argent : les comptes ${deN(s.nom)} sont sains, sans aucune dette et avec une épargne confortable.`, `Argent : ${s.nom} vient d’hériter d’une somme importante ; l’argent n’est pas un souci.`]);
@@ -739,8 +876,12 @@ export function candidats(aff, faits) {
   if (aff.meurtre) return { suspects: aff.suspects.map((s, i) => i).filter((i) => !(aff.innocente[i] || []).some((f) => (Array.isArray(f) ? f.every((g) => connus.has(g)) : connus.has(f)))), planques: [] };
   const p0 = aff.planques[aff.planque];
   const aP = ATTRS_P.filter((a) => connus.has(`p:${a}`));
+  // Élément établi comme manquant : la constatation dit ce qu'il fallait, la vérification que le suspect ne l'avait pas.
+  const manque = (i, e) => connus.has(`c:${e}`) && connus.has(`${e}:${i}`) && !aff.suspects[i].statut[e];
+  // Complices : hors de cause sans le mobile, ou sans le moyen ni l'occasion.
+  const ecarte = aff.variante === 'complices' ? (i) => manque(i, 'mob') || (manque(i, 'moy') && manque(i, 'occ')) : (i) => ELEMENTS.some((e) => manque(i, e));
   return {
-    suspects: aff.suspects.map((s, i) => i).filter((i) => ELEMENTS.every((e) => !(connus.has(`c:${e}`) && connus.has(`${e}:${i}`) && !aff.suspects[i].statut[e]))),
+    suspects: aff.suspects.map((s, i) => i).filter((i) => !ecarte(i)),
     planques: aff.planques.map((p, i) => i).filter((i) => aP.every((a) => aff.planques[i][a] === p0[a])),
   };
 }
@@ -930,7 +1071,9 @@ function recitInnocent(aff, x, k) {
   const moyVrai = MOY.filter((m) => x.moy[m]);
   if (mobVrai.length) soupcons.push(MOBILE_RECIT[mobVrai.includes(aff.req.mob) ? aff.req.mob : r.pick(mobVrai)][(k + 1) % 3](x, aff));
   if (moyVrai.length) soupcons.push(MOYEN_RECIT[moyVrai.includes(aff.req.moy) ? aff.req.moy : r.pick(moyVrai)][k % 3](x, aff));
+  const couvert = a.type === 'temoinX' && aff.mensonge ? aff.suspects[aff.mensonge.couvert] : null;
   if (a.type === 'mensonge') soupcons.push(`${il} avait menti sur sa soirée`);
+  else if (couvert) soupcons.unshift(`${il} avait menti pour couvrir ${couvert.prenom}`);
   else if (a.type === 'seul') soupcons.push(`personne ne pouvait confirmer sa soirée`);
   const ouverture = [
     `${x.nom}, ${x.role}, avait tout ${x.f ? 'de la suspecte idéale' : 'du suspect idéal'}`,
@@ -950,6 +1093,8 @@ function recitInnocent(aff, x, k) {
       code: ` Mais ${il} n’avait aucun code d’alarme valide, et l’alarme avait été coupée du premier coup.`,
       volume: ` Mais sans utilitaire, impossible d’emporter ${aff.butin} en un seul voyage.`,
     }[aff.req.moy];
+    // Complices : sans le moyen, il aurait fallu être sur place.
+    if (aff.variante === 'complices' && !x.statut.occ) t += ` Et ${il} n’était même pas sur place : d’après ${a.preuve}, ${il} était ${a.lieu} à l’heure des faits.`;
   } else {
     t += {
       argent: ` Mais l’auteur voulait de l’argent vite, et ${il} n’en manquait pas.`,
@@ -958,6 +1103,7 @@ function recitInnocent(aff, x, k) {
     }[aff.req.mob];
   }
   if (a.type === 'mensonge') t += ` Son mensonge ? ${Il} ${secretDe(aff, x)}.`;
+  else if (couvert) t += ` ${Il} avait juré avoir passé la soirée avec ${couvert.nom}, par complaisance, et parce qu’${il} avait ${x.f ? 'elle' : 'lui'}-même quelque chose à cacher : ce soir-là, ${il} ${secretDe(aff, x)}.`;
   else if (a.type === 'seul' && manque !== 'occ') t += ` Ce soir-là, ${il} était vraiment ${a.solitaire}, et c’est tout.`;
   else if (manque !== 'occ' && r.chance(0.5)) t += ` ${Il} est sorti${e} de l’enquête soulagé${e}, mais pas indemne : tout le quartier en parle.`;
   return t;
@@ -969,9 +1115,24 @@ export function recitFinal(aff, avecPlanque = true) {
   const il = s.f ? 'elle' : 'il', e = s.f ? 'e' : '';
   const mobile = { argent: `criblé${e} de dettes`, vengeance: `rongé${e} de rancune envers ${aff.vic}`, commande: `payé${e} par un receleur` }[aff.req.mob];
   const moyen = { cle: `est entré${e} avec une clé qu’${il} n’aurait jamais dû avoir`, code: `a coupé l’alarme avec le code qu’${il} connaissait`, volume: 'a tout emporté en un voyage grâce à un utilitaire' }[aff.req.moy];
-  const occ = { partiel: 'son alibi avait un trou pile au moment des faits', seul: 'personne ne pouvait confirmer son alibi', mensonge: 'son alibi était un mensonge' }[s.alibi.type] || '';
+  const m = aff.mensonge;
+  const occ = { partiel: 'son alibi avait un trou pile au moment des faits', seul: 'personne ne pouvait confirmer son alibi', mensonge: 'son alibi était un mensonge',
+    temoin: !m ? '' : m.menteur != null ? `son alibi ne tenait qu’au faux témoignage ${deN(aff.suspects[m.menteur].nom)}, reparti${aff.suspects[m.menteur].f ? 'e' : ''} seul${aff.suspects[m.menteur].f ? 'e' : ''} bien avant les faits`
+      : `son alibi ne tenait qu’au serment de ${s.alibi.avec}, que son propre téléphone a démenti` }[s.alibi.type] || '';
   const cache = avecPlanque ? ` ${cap(il)} a caché le butin dans la planque « ${p.nom} » (${p.lieu}).` : ` Où ${il} se cache avec le butin reste à trouver : c’est l’enjeu de la traque.`;
-  const innocents = aff.suspects.filter((x) => !x.coupable).map((x, k) => recitInnocent(aff, x, k));
+  const innocents = aff.suspects.filter((x, k) => !estAuteur(aff, k)).map((x, k) => recitInnocent(aff, x, k));
+  if (aff.variante === 'complices') {
+    const A = aff.suspects[aff.complice], eA = A.f ? 'e' : '';
+    const entre = { cle: `est entré${e} dans ${aff.lieu} avec la clé que lui avait remise ${A.prenom}`, code: `est entré${e} dans ${aff.lieu} et a coupé l’alarme avec le code que lui avait donné ${A.prenom}`, volume: `a tout emporté dans l’utilitaire que lui avait prêté ${A.prenom}` }[aff.req.moy];
+    const objet = { cle: 'la clé', code: 'le code de l’alarme', volume: 'l’utilitaire' }[aff.req.moy];
+    const ff = s.f && A.f;
+    const tous = { argent: `étaient criblé${ff ? 'e' : ''}s de dettes`, vengeance: `en voulaient à ${aff.vic}`, commande: 'travaillaient pour le même receleur' }[aff.req.mob];
+    return `À ${hm(aff.heure)}, ${s.nom}, ${s.role}, ${entre} ; ${occ}. ${A.nom}, ${A.role}, avait fourni ${objet} sans mettre les pieds sur place : ce soir-là, ${A.f ? 'elle' : 'il'} s’était assuré${eA} un alibi en béton. ${ff ? 'Toutes' : 'Tous'} deux ${tous}.${cache}\n${innocents.join('\n')}`;
+  }
+  if (aff.variante === 'fraude') {
+    const moyenV = { cle: 'avec ses propres clés', code: 'en coupant l’alarme avec son propre code', volume: 'avec l’utilitaire de la société' }[aff.req.moy];
+    return `À ${hm(aff.heure)}, ${s.nom}, ${aff.vic} en personne, criblé${e} de dettes, a « cambriolé » ${aff.lieu} ${moyenV} ; ${occ}. La plainte déposée au petit matin devait lui rapporter l’argent de l’assurance.${cache}\n${innocents.join('\n')}`;
+  }
   return `À ${hm(aff.heure)}, ${s.nom}, ${s.role} ${mobile}, ${moyen} ; ${occ}. ${cap(il)} ${s.roleDetail} : personne ne se méfiait.${cache}\n${innocents.join('\n')}`;
 }
 
@@ -993,6 +1154,7 @@ export function nouvelleAffaire(state) {
   if (state.carteDes == null) state.carteDes = n; // les affaires ouvertes depuis cette version se jouent avec le plan
   if (state.profDes == null) state.profDes = n; // … et en dossier complet (plan routier, journal, PV) depuis la suivante
   if (state.distinctDes == null) state.distinctDes = n; // deux affaires de suite n'ont plus le même décor
+  if (state.varianteDes == null) state.varianteDes = n; // … et une sur trois environ sort du moule (complices, faux témoin, fraude)
   const choisie = state.enquetePause && state.enquetePause.suivante && state.enquetePause.suivante !== 'rampe' && AFFAIRES_ECRITES.find((a) => a.cas === state.enquetePause.suivante && a.dispo(state));
   const rampeProgrammee = MEURTRE2.actif && state.meurtre2Des == null && ((state.enquetePause && state.enquetePause.suivante === 'rampe') || state.meurtre2Suivante);
   if (choisie) choisie.programmer(state, n); // affaire écrite choisie par le maître du jeu
@@ -1017,7 +1179,7 @@ export function affaire(state, n) {
   if (state.meurtreDes != null && n === state.meurtreDes) return affaireMeurtre(n);
   if (state.meurtre2Des != null && n === state.meurtre2Des) return affaireMeurtreRampe(n);
   if (state.corbeauDes != null && n === state.corbeauDes) return affaireCorbeau(n);
-  return genererAffaire(state.seed, n, state.carteDes != null && n >= state.carteDes, state.profDes != null && n >= state.profDes, state.distinctDes);
+  return genererAffaire(state.seed, n, state.carteDes != null && n >= state.carteDes, state.profDes != null && n >= state.profDes, state.distinctDes, state.varianteDes);
 }
 
 const nomZone = (z) => `ZP ${z.code} ${z.nom}`;
@@ -1145,6 +1307,22 @@ export function enquetePre(state, uids, ord, push) {
     }
     // Vol : le parquet exige un dossier qui écarte tous les autres suspects (un nom soufflé ou deviné ne suffit pas).
     const restants = candidats(aff, faitsConnus(d)).suspects;
+    if (aff.variante === 'complices') {
+      // Deux complices : deux noms, et un dossier qui écarte les trois autres.
+      const a2 = ord[u].accusation2;
+      const paire = Number.isInteger(a2) && a2 !== a && a2 >= 0 && a2 < aff.suspects.length ? [a, a2] : null;
+      if (!paire || !(restants.length === 2 && paire.every((k) => restants.includes(k)))) {
+        z.rapport.push(!paire
+          ? `Enquête : le parquet refuse ton accusation ${deN(aff.suspects[a].nom)} : dans cette affaire, il attend les deux complices, et ton dossier doit écarter les trois autres suspects. Aucune pénalité.`
+          : `Enquête : le parquet refuse ton accusation ${deN(aff.suspects[a].nom)} et ${deN(aff.suspects[a2].nom)} : ton dossier n’écarte pas encore tous les autres suspects. Aucune pénalité : reviens avec les pièces qui le démontrent.`);
+        continue;
+      }
+      d.accuseJ = e.jour;
+      if (paire.every((k) => estAuteur(aff, k))) { d.accuse = aff.coupable; d.accuse2 = aff.complice; justes.push(u); continue; }
+      d.accuse = a; d.accuse2 = a2; d.exclu = true; z.reputation -= 3;
+      z.rapport.push(`Enquête : accusation rejetée par le parquet. Plus d’accusation possible sur cette affaire (−3 de réputation).`);
+      continue;
+    }
     if (!(restants.length === 1 && restants[0] === a)) {
       const autres = restants.filter((k) => k !== a).length;
       z.rapport.push(`Enquête : le parquet refuse ton accusation ${deN(aff.suspects[a].nom)} : ton dossier ${restants.includes(a) ? `n’écarte pas encore ${autres} autre${autres > 1 ? 's' : ''} suspect${autres > 1 ? 's' : ''}` : 'ne tient pas contre ce suspect'}. Aucune pénalité : reviens avec les pièces qui le démontrent.`);
@@ -1163,10 +1341,13 @@ export function enquetePre(state, uids, ord, push) {
     const pts = pointsDecouverte(e.jour);
     const contributeurs = new Set();
     const cs = aff.suspects[aff.coupable];
+    const ca = aff.complice != null ? aff.suspects[aff.complice] : null;
     for (const u of justes) {
       const z = state.zones[u];
       z.stats.limier += pts; z.stats.decouvertes += 1; z._decouverteJour = true; z._points += 8; z._ps += 15; z.satisfaction += 3;
-      z.rapport.push(`Enquête : bien vu, ${cs.nom} est l’auteur des faits (+${pts} pts d’enquête).`);
+      z.rapport.push(ca ? `Enquête : bien vu, ${cs.nom} et ${ca.nom} ont fait le coup ensemble (+${pts} pts d’enquête). ${ca.nom} est interpellé${ca.f ? 'e' : ''} chez ${ca.f ? 'elle' : 'lui'} ; ${cs.prenom} se cache.`
+        : aff.variante === 'fraude' ? `Enquête : bien vu, la plainte était un mensonge : ${cs.nom} a monté le vol pour toucher l’assurance (+${pts} pts d’enquête).`
+          : `Enquête : bien vu, ${cs.nom} est l’auteur des faits (+${pts} pts d’enquête).`);
       for (const p of z.enquete.pieces) if (p.de && !justes.includes(p.de)) contributeurs.add(p.de);
     }
     for (const c of contributeurs) {
@@ -1176,7 +1357,7 @@ export function enquetePre(state, uids, ord, push) {
       z.rapport.push(`Enquête : tes pièces ont aidé à identifier l’auteur (+${POINTS.contribution} pts d’enquête).`);
     }
     res.recit = recitFinal(aff, !!aff.meurtre);
-    res.decouverte = { suspect: cs.nom, zones: justes.map((u) => nomZone(state.zones[u])), uids: justes, pts, contributeurs: [...contributeurs].map((u) => nomZone(state.zones[u])), contribUids: [...contributeurs] };
+    res.decouverte = { suspect: cs.nom, ...(ca ? { complice: ca.nom } : {}), zones: justes.map((u) => nomZone(state.zones[u])), uids: justes, pts, contributeurs: [...contributeurs].map((u) => nomZone(state.zones[u])), contribUids: [...contributeurs] };
     if (aff.meurtre) {
       // Pas de traque : les aveux valent arrestation.
       for (const u of justes) { const z = state.zones[u]; z.stats.limier += POINTS.arrestation; z.stats.arrestations += 1; z.reputation += 3; z.rapport.push(`Enquête : ${cs.nom} passe aux aveux (+${POINTS.arrestation} pts d’enquête).`); ouvrirPrime(state, z, aff, cs.nom); }
@@ -1194,8 +1375,10 @@ export function enquetePre(state, uids, ord, push) {
       res.arrestations.push({ titre: aff.titre, suspect: cs.nom, planque: '', zones: res.decouverte.zones });
       ajouterDebrief(res, () => construireDebrief(state, aff, 'aveux', { jour: e.jour, decouvreurs: justes, arreteurs: justes, mobileTrouve: res.mobileTrouve }));
       push(15, 'Aveux', `${aff.titre} : ${cs.nom} passe aux aveux`, `Confronté${cs.f ? 'e' : ''} à ses contradictions par ${res.decouverte.zones.join(' et ')}.${res.decouverte.contributeurs.length ? ` Avec les pièces de ${res.decouverte.contributeurs.join(', ')}.` : ''}`);
-    } else push(14, 'Enquête', `${aff.titre} : ${cs.nom} identifié${cs.f ? 'e' : ''} par ${res.decouverte.zones.join(' et ')}`,
-      `Mandat d’arrêt délivré. ${cs.f ? 'Elle' : 'Il'} se cache : la traque commence : une seule nuit pour l’arrêter, jusqu’à demain 20:00.${res.decouverte.contributeurs.length ? ` Avec les pièces de ${res.decouverte.contributeurs.join(', ')}.` : ''}`);
+    } else if (ca) push(14, 'Enquête', `${aff.titre} : ${cs.nom} et ${ca.nom} identifiés par ${res.decouverte.zones.join(' et ')}`,
+      `Un coup à deux. ${ca.nom}, ${ca.role}, qui avait fourni le moyen, est cueilli${ca.f ? 'e' : ''} chez ${ca.f ? 'elle' : 'lui'}. ${cs.nom} se cache : la traque commence, une seule nuit pour l’arrêter, jusqu’à demain 20:00.${res.decouverte.contributeurs.length ? ` Avec les pièces de ${res.decouverte.contributeurs.join(', ')}.` : ''}`);
+    else push(14, 'Enquête', aff.variante === 'fraude' ? `${aff.titre} : la plainte était un mensonge, ${cs.nom} identifié${cs.f ? 'e' : ''}` : `${aff.titre} : ${cs.nom} identifié${cs.f ? 'e' : ''} par ${res.decouverte.zones.join(' et ')}`,
+      `${aff.variante === 'fraude' ? `${cap(aff.vic)} avait monté le vol pour toucher l’assurance ; démasqué${cs.f ? 'e' : ''} par ${res.decouverte.zones.join(' et ')}. ` : ''}Mandat d’arrêt délivré. ${cs.f ? 'Elle' : 'Il'} se cache : la traque commence : une seule nuit pour l’arrêter, jusqu’à demain 20:00.${res.decouverte.contributeurs.length ? ` Avec les pièces de ${res.decouverte.contributeurs.join(', ')}.` : ''}`);
   }
 
   traquesDuSoir(state, uids, ord, push, prendre, res);
@@ -1212,8 +1395,16 @@ export function traqueAutorisee(aff, dossier, planque, requis = ENQ.attrsTraque)
 /** Vrai si le parquet accepterait d'accuser ce suspect (vol) : le dossier écarte tous les autres. */
 export function accusationRecevable(aff, dossier, i) {
   if (!aff || aff.meurtre) return true;
+  return !!(accusesPrets(aff, dossier) || []).includes(i);
+}
+/**
+ * Vol : les suspects que le parquet accepterait d'accuser ensemble ([i], ou les deux complices), ou null
+ * tant que le dossier n'écarte pas tous les autres.
+ */
+export function accusesPrets(aff, dossier) {
+  if (!aff || aff.meurtre) return null;
   const r = candidats(aff, faitsConnus(dossier)).suspects;
-  return r.length === 1 && r[0] === i;
+  return r.length === auteurs(aff).length ? r : null;
 }
 
 /** Tours qui restent à une traque (celles ouvertes avant le passage à une nuit comptent comme les nouvelles). */
@@ -1269,7 +1460,8 @@ function traquesDuSoir(state, uids, ord, push, prendre, res) {
       const pr = makeRng(`${state.seed}:proces:${tr.n}`);
       const peine = pr.pick(PEINES).replace('condamné·e', s.f ? 'condamnée' : 'condamné');
       (res.proces ||= []).push({ titre: a.titre, suspect: s.nom, peine, temoins, arrestation: noms, mobile: a.suspects[a.coupable].rumeur || '' });
-      push(13, 'Au tribunal', `${s.nom} ${peine}`, `Affaire « ${a.titre} ». ${temoins.length ? `À la barre, les enquêteurs de ${temoins.join(', ')}.` : ''} Interpellation par ${noms.join(' et ')}.`);
+      const comp = a.complice != null ? a.suspects[a.complice] : null;
+      push(13, 'Au tribunal', `${s.nom} ${peine}`, `Affaire « ${a.titre} ». ${comp ? `${comp.nom}, qui avait fourni le moyen, est jugé${comp.f ? 'e' : ''} avec ${s.f ? 'elle' : 'lui'}. ` : ''}${temoins.length ? `À la barre, les enquêteurs de ${temoins.join(', ')}.` : ''} Interpellation par ${noms.join(' et ')}.`);
       push(15, 'Arrestation', `${s.nom} arrêté${s.f ? 'e' : ''} à ${a.planques[a.planque].nom}`, `Interpellation menée par ${noms.join(' et ')}. Affaire « ${a.titre} » bouclée.`);
       tr.fini = true;
       ajouterDebrief(res, () => construireDebrief(state, a, 'arrestation', { jour: tr.jour, decouvreurs: tr.decouvreurs || [], arreteurs: gagnants.map((g) => g.u) }));
@@ -1431,7 +1623,7 @@ function pieceHasard(state, z, aff, rng) {
 export function pieceCoupDePouce(state, z, aff, rng) {
   const connus = [...new Set(faitsConnus(z.enquete))];
   const avant = candidats(aff, connus).suspects.length;
-  if (avant <= 2) return null;
+  if (avant <= auteurs(aff).length + 1) return null;
   const pool = (aff.faits || []).filter((f) => !connus.includes(f) && !f.startsWith('p:'))
     .filter((f) => avant - candidats(aff, [...connus, f]).suspects.length === 1);
   return pool.length ? rng.pick(pool) : null;
@@ -1489,9 +1681,10 @@ export function enquetePost(state, pre, push) {
     const s = a.suspects[a.coupable];
     pre.res.classee = true;
     pre.res.recit = recitFinal(a);
-    pre.res.solution = { suspect: s.nom, planque: a.meurtre ? '' : a.planques[a.planque].nom };
+    const comp = a.complice != null ? a.suspects[a.complice] : null;
+    pre.res.solution = { suspect: s.nom, ...(comp ? { complice: comp.nom } : {}), planque: a.meurtre ? '' : a.planques[a.planque].nom };
     ajouterDebrief(pre.res, () => construireDebrief(state, a, 'classee', { jour: e.jour }));
-    push(8, 'Affaire classée', `« ${a.titre} » classée sans suite`, a.meurtre ? `Personne n’a obtenu d’aveux : c’était ${s.nom}.` : `Personne n’a trouvé : c’était ${s.nom}, caché${s.f ? 'e' : ''} à ${a.planques[a.planque].nom}.`);
+    push(8, 'Affaire classée', `« ${a.titre} » classée sans suite`, a.meurtre ? `Personne n’a obtenu d’aveux : c’était ${s.nom}.` : comp ? `Personne n’a trouvé : c’étaient ${s.nom} et ${comp.nom}, son complice ; ${s.prenom} se cachait à ${a.planques[a.planque].nom}.` : `Personne n’a trouvé : c’était ${s.nom}, caché${s.f ? 'e' : ''} à ${a.planques[a.planque].nom}.`);
     const b = nouvelleAffaire(state);
     pre.res.nouvelle = b.titre;
     push(5, 'Nouvelle affaire', b.titre, `${b.texte} ${b.accroche || accroche}`);
@@ -1524,7 +1717,7 @@ export function enquetePost(state, pre, push) {
  *  - à partir du jour 4, la Gazette révèle chaque jour ce que cachait un innocent qui a menti sur sa soirée.
  */
 function reactionsAffaire(state, e, aff, push) {
-  const c = aff.coupable, re = new RegExp(`^(mob|moy|occ):${c}$`);
+  const c = aff.coupable, re = new RegExp(`^(mob|moy|occ):(${auteurs(aff).join('|')})$`);
   const vise = Object.values(state.zones).some((z) => z.enquete && z.enquete.n === e.n && z.enquete.pieces.some((p) => re.test(p.f) && p.src !== 'ouverture' && p.src !== 'rebond'));
   if (vise && !e.alerte) {
     e.alerte = e.jour;
@@ -1534,7 +1727,7 @@ function reactionsAffaire(state, e, aff, push) {
     push(7, 'Enquête', 'Des traces effacées', `Un garde-meuble vidé en pleine nuit, un téléphone qui ne répond plus : dans « ${aff.titre} », l’auteur prépare sa fuite. Pour trouver sa planque, il faudra désormais ${ENQ.attrsTraque + 1} caractéristiques du lieu au dossier.`);
   }
   if (e.jour >= 4) {
-    const menteurs = aff.suspects.map((x, i) => ({ x, i })).filter(({ x, i }) => i !== c && x.alibi && x.alibi.type === 'mensonge' && !(e.secrets || []).includes(i));
+    const menteurs = aff.suspects.map((x, i) => ({ x, i })).filter(({ x, i }) => !estAuteur(aff, i) && x.alibi && x.alibi.type === 'mensonge' && !(e.secrets || []).includes(i));
     if (menteurs.length) {
       const { x, i } = menteurs[0];
       e.secrets = [...(e.secrets || []), i];
