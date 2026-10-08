@@ -1134,7 +1134,7 @@ function step(dt){
   for(const [id,tw] of towers){ const M=MEANS[tw.type], P=padOf(id), rg=rangeOf(tw), k=LV.dmg[tw.lvl-1]*spX(tw,'dmg')*((tw.type==='autopompe'||tw.type==='barrage')?1-.25*R.usure:1)*(auraOk&&Math.hypot(P.x-R.cmd.x,P.y-R.cmd.y)<=cn().aura?1+cn().bonus:1);
     tw.tgt=null; if(tw.cd>0) tw.cd-=dt;
     if(tw.transit){ if(R.t>=tw.transit.t0+tw.transit.dur) tw.transit=null; else continue; }
-    if(tw.stun>R.t&&tw.type!=='barrage'&&tw.type!=='peloton') continue;
+    if(tw.stun>R.t&&tw.type!=='barrage'&&tw.type!=='peloton'&&!tw.charge) continue; // une charge lancée va toujours au bout (désorganisée, la cavalerie ne relance simplement pas)
     if(tw.type==='peloton'){
       tw.agents.forEach((a,i)=>{ const sl=slotOf(tw,i), mv=(tx,ty,sp)=>{ const dx=tx-a.x, dy=ty-a.y, L=Math.hypot(dx,dy); if(L>.01){ const s=Math.min(L,sp*dt); a.x+=dx/L*s; a.y+=dy/L*s; } return L; };
         if(a.u&&(a.u.state!=='go'||a.u.alive===false)){ a.u.held=null; a.u=null; a.st='ready'; }
@@ -1984,7 +1984,7 @@ function horseRider(g,f,ph){
 }
 function drawHorses(g,tw,f,t,galop){ const pos=tw.lvl===1?[[0,0]]:tw.lvl===2?[[-.2,-.06],[.2,.06]]:[[-.24,-.1],[.24,-.06],[0,.1]];
   pos.forEach(([x,y],i)=>{ g.save(); g.translate(x,y); if(!(galop&&sprite(g,'gal',Math.floor(t*7+i)%2,.95,f<0))&&!sprite(g,'cav',galop?Math.floor(t*7+i)%2:0,.95,f<0)) horseRider(g,f,t*(galop?9:2)+i); g.restore(); }); }
-function chargePos(tw,P){ const c=tw.charge, k=(R.t-c.t0)/c.dur, e=x=>x*x*(3-2*x);
+function chargePos(tw,P){ const c=tw.charge, k=Math.max(0,Math.min(1,(R.t-c.t0)/c.dur)), e=x=>x*x*(3-2*x);
   const u=k<.42?e(k/.42):1-e((k-.42)/.58), x=P.x+(c.x-P.x)*u, y=P.y+(c.y-P.y)*u; return {x,y,f:(k<.42?c.x-P.x:P.x-c.x)>=0?1:-1}; }
 function frise(g,cx,cy,ang,down,rt,L=.5){ // cheval de frise : croisillons métalliques et barbelés, en travers de la rue
   const px=-Math.sin(ang), py=Math.cos(ang);
