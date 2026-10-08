@@ -66,7 +66,7 @@ export function cetteNuitHtml(z) {
   return `<section class="card" aria-label="Cette nuit" style="gap:6px">
     <span class="kicker">Cette nuit</span>
     ${l.slice(0, 3).map((t) => `<p class="small" style="margin:0;line-height:1.45">${esc(court(t))}</p>`).join('')}
-    <button type="button" class="lien tiny" data-action="toggle-rapport" style="align-self:flex-start;background:none;border:0;padding:0;color:var(--amber-soft);text-decoration:underline;cursor:pointer">Tout le rapport ↓</button></section>`;
+    <button type="button" class="lien tiny" data-action="voir-rapport" style="align-self:flex-start;background:none;border:0;padding:0;color:var(--amber-soft);text-decoration:underline;cursor:pointer">Tout le rapport ↓</button></section>`;
 }
 
 /** Carte des pistes en cours (HP), seulement s'il y en a. */
