@@ -13,6 +13,7 @@ import {
 import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
 import { pistesDuSoir, lireOrdresPistes } from './pistes.js';
+import { enquetePourTour, SLOT_QUATRE } from '../quests/quests.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
@@ -22,7 +23,7 @@ import {
   forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, pointsIpz, moyenneIpz, moralMult, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles,
 } from './zone.js';
 import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
-import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus, appliquerPrime } from './enquete.js';
+import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus, appliquerPrime, pieceSurSuspect, affaire } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
 import { creerNonDroit, nonDroitResoudre } from './nondroit.js';
 import { encheresResoudre, annoncerLot } from './encheres.js';
@@ -516,7 +517,19 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     let bonusService = null;
     const tous = (Array.isArray(q) ? q : q ? [q] : []);
     const ALT = ['delegue', 'quiz'];
-    const qs = tous.filter((x, k) => x && (x.slot ?? k) !== 3 && !ALT.includes(x.statut));
+    const qsTous = tous.filter((x, k) => x && (x.slot ?? k) !== 3 && !ALT.includes(x.statut));
+    // Révision d'oct. 2026 : seules les 3 premières comptent ; la 4e est « pour le plaisir » (PS seulement).
+    const troisComptent = enquetePourTour(state.nextDeadline);
+    const qs = troisComptent ? qsTous.filter((x) => x.slot !== SLOT_QUATRE) : qsTous;
+    const plaisir = troisComptent ? qsTous.filter((x) => x.slot === SLOT_QUATRE && x.statut === 'ok').length : 0;
+    if (plaisir) { z._ps += PS.queteOk; z.rapport.push(`4e énigme (pour le plaisir) réussie : +${PS.queteOk} PS.`); }
+    // Énigme d'enquête réussie : une pièce sur la piste prioritaire (ou sur un suspect encore possible).
+    for (const x of qs) if (x.enquete && x.statut === 'ok') {
+      const pc = pieceSurSuspect(state, z, o.piste, makeRng(`${state.seed}:s${state.season}:t${T}:enigme-enq:${uid}`), 'enigme');
+      const aff0 = pc && affaire(state, state.enquete.n);
+      z.rapport.push(pc ? `Énigme d’enquête réussie : une pièce de plus sur ${aff0.suspects[pc.i].nom}, dans ton dossier.` : 'Énigme d’enquête réussie, mais il n’y avait plus rien à trouver sur tes suspects.');
+      if (pc) (z.cetteNuit ||= []).push({ ico: '🧩', t: `Ton énigme d’enquête a payé : une pièce de plus sur ${aff0.suspects[pc.i].nom}.` });
+    }
     const noir = tous.find((x, k) => x && (x.slot ?? k) === 3);
     if (noir && noir.statut === 'ok') { paliersEnigmes(z, 1); z.stats.noirs = (z.stats.noirs || 0) + 1; z._ps += PS.noir; z.rapport.push(`Dossier noir résolu : chapeau (+${PS.noir} PS).`); }
     else if (noir && noir.statut === 'rate') z.rapport.push('Dossier noir : raté cette fois, sans conséquence.');

@@ -301,7 +301,7 @@ export function sanitizeOrders(zone, raw, state) {
   const int = (v, a, b) => clamp(Math.floor(fini(v)), a, b);
   const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
   const cible = (v) => (zoneExiste(v) ? v : '');
-  const demarches = Array.isArray(o.demarches) ? [...new Set(o.demarches.filter((x) => typeof x === 'string' && lireDemarche(x)))].slice(0, 2) : [];
+  const demarches = Array.isArray(o.demarches) ? [...new Set(o.demarches.filter((x) => typeof x === 'string' && lireDemarche(x)))].slice(0, ENQ.maxDemarches + ENQ.demarcheSolo) : [];
   const accusation = Number.isInteger(o.accusation) && o.accusation >= 0 && o.accusation < ENQ.nbSuspects ? o.accusation : null;
   // Confrontation (affaire de meurtre) : trois pièces opposées au suspect accusé.
   const reaud = o.reaud && typeof o.reaud === 'object' && Number.isInteger(o.reaud.i) && o.reaud.i >= 0 && o.reaud.i < 8 && typeof o.reaud.f === 'string' && /^[a-zA-Z]{1,8}:[a-z0-9]{1,12}$/.test(o.reaud.f) ? { i: o.reaud.i, f: o.reaud.f } : null;

@@ -3,7 +3,7 @@ import { laureatsProvisoires, enTeteSemaine, recordDefi, monRecordDefi } from '.
 import { CHALLENGE } from '../engine/challenge.js';
 import { euros } from './euros.js';
 import { recordBitonal, monScoreBitonal } from './bitonal.js';
-import { S, esc, icon, tabbar, myZone, questDuSlot } from './common.js';
+import { S, esc, icon, tabbar, myZone, questDuSlot, slotsCompte } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS, FORMES, FORMES_EN_JEU } from '../quests/quests.js';
 import { digicodeHtml, digicodeResultat } from './digicode.js';
 import { vignetteEnigme, couleurEnigme } from './vignettes-enigmes.js';
@@ -276,7 +276,7 @@ export function renderQuete() {
     : noir ? (S.noirResult || { statut: null, tentatives: 0 }) : (results[i] || { statut: null, tentatives: 0 });
   const fini = r.statut === 'ok' || r.statut === 'rate';
   const picked = S.questPick;
-  const ok = results.filter((x) => x && x.statut === 'ok').length;
+  const ok = slotsCompte().filter((k) => results[k] && results[k].statut === 'ok').length;
   const bonusPris = results.find((x) => x && x.bonus);
   const icone = (x) => (!x || !x.statut ? '' : x.statut === 'ok' ? ' ✓' : x.statut === 'delegue' ? ' ⇢' : x.statut === 'quiz' ? ' ⏱' : ' ✗');
 
@@ -345,6 +345,8 @@ export function renderQuete() {
     </header>
     ${noir && !fini ? '<p class="small" style="margin:0;color:var(--red-soft)">Le dossier que personne n’a su boucler. Pas de coup de pouce, une seule réponse. Une erreur ne coûte rien ; une réussite rapporte des PS et compte pour le titre « Cerveau du district ».</p>' : ''}
     ${actionsQuete}
+    ${!train && !noir && q.enquete ? `<p class="small" style="margin:0;color:var(--amber-soft)">🧩 ${esc(q.gain || '')} Choisis ta piste prioritaire dans l’Enquête (fiche du suspect).</p>` : ''}
+    ${!train && !noir && q.slot === 4 && !slotsCompte().includes(4) ? '<p class="small muted" style="margin:0">4e énigme, pour le plaisir : +5 PS si elle est réussie, sans compter pour le bonus, la prime ni le classement.</p>' : ''}
     ${q.variante ? '<p class="tiny muted" style="margin:0">Énigme changée : c’est ton changement du jour.</p>' : ''}
     <p style="margin:0;font-size:14px;line-height:1.45;color:var(--text2)">${esc(q.contexte)}</p>
     ${q.figures ? renderFigures(q, fini) : ''}

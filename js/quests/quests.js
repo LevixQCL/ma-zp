@@ -32,6 +32,13 @@ export const QUESTS_PAR_JOUR = 3;
 export const SLOT_QUATRE = 4;
 export const QUATRE_DEPUIS = Date.parse('2026-10-08T18:30:00Z');
 export const quatrePourTour = (fin) => Number(fin) > QUATRE_DEPUIS;
+// Révision d'oct. 2026 : 3 énigmes comptent (bonus dès 2, prime à 3) ; la 2e place (emplacement 2) devient l'énigme
+// d'enquête quand un vol est en cours (réussie : une pièce sur ta piste prioritaire) ; la 4e reste « pour le plaisir » (PS seulement).
+export const ENQUETE_DEPUIS = Date.parse('2026-10-09T18:30:00Z');
+export const enquetePourTour = (fin) => Number(fin) > ENQUETE_DEPUIS;
+/** Emplacements qui comptent pour le bonus, la prime et le classement des énigmes. */
+export const slotsComptes = (fin) => (enquetePourTour(fin) || !quatrePourTour(fin) ? [0, 1, 2] : [0, 1, 2, SLOT_QUATRE]);
+export const SLOT_ENQUETE = 2;
 /** Emplacements des énigmes du jour (sans le dossier noir). */
 export const slotsDuJour = (fin) => (quatrePourTour(fin) ? [0, 1, 2, SLOT_QUATRE] : [0, 1, 2]);
 
@@ -43,7 +50,7 @@ const DIFF_PAR_JOUR = [2, 3, 3, 4, 4, 5, 5];
  * `ajust` : décalage de niveau décidé par le Directeur (forme du joueur aux énigmes).
  * `rerolls` : emplacements que le joueur a changés (une autre énigme, d'un type absent du jour).
  */
-export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], ajust = 0, formes = false, quatre = false }) {
+export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], ajust = 0, formes = false, quatre = false, enquete = null }) {
   const order = makeRng(`${seed}:qorder:${uid}:${season}`).shuffle(QUEST_TYPES);
   // `ajust` : décalage du Directeur selon la forme du joueur (−2 à +1).
   const a = Number.isFinite(ajust) ? Math.max(-2, Math.min(1, Math.round(ajust))) : 0;
@@ -57,6 +64,15 @@ export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], 
     // Chaque passage d'un type dans la rotation prend la forme suivante : jamais deux fois la même d'affilée.
     const forme = formes ? formeDe(`${seed}:forme:${uid}:${season}:${type}`, type, Math.floor(idx / order.length)) : 'classique';
     out.push({ ...fabriquer(type, rng, diffs[slot], forme), slot, id: `${season}-${turn}-${slot}` });
+  }
+  // Énigme d'enquête (vol en cours) : un « Qui ment ? » sur les témoins de la soirée, à la place de la 3e énigme.
+  if (enquete && enquete.titre) {
+    const i = out.findIndex((q) => q.slot === SLOT_ENQUETE);
+    const rng = makeRng(`${seed}:questenq:${uid}:${season}:${turn}`);
+    const q = quiment(rng, diffs[SLOT_ENQUETE]);
+    out[i] = { ...q, type: 'quiment', typeLabel: 'Énigme d’enquête', difficulte: diffs[SLOT_ENQUETE], enquete: 1, slot: SLOT_ENQUETE, id: `${season}-${turn}-${SLOT_ENQUETE}e`,
+      contexte: `Affaire « ${enquete.titre} » : tes enquêteurs refont l’enquête de voisinage autour de ta piste prioritaire. ${q.contexte.replace(/^[^.]*\. /, '')}`,
+      gain: 'Réussie : une pièce de plus sur ta piste prioritaire (ou sur un suspect encore possible), dans ton dossier à 20:00.' };
   }
   // 4e énigme : un type absent des trois autres, difficulté du jour.
   if (quatre) {

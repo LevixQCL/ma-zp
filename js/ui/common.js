@@ -10,9 +10,11 @@ export function bonusEnigme(service) {
   return b && b.service === service ? ENIGMES.bonusCapacite : 1;
 }
 import { moyenneIpz } from '../engine/zone.js';
-import { slotsDuJour } from '../quests/quests.js';
+import { slotsDuJour, slotsComptes } from '../quests/quests.js';
 /** Emplacements des énigmes du jour en cours (3 ou 4, sans le dossier noir). */
 export const slotsJour = () => slotsDuJour(S.state && S.state.nextDeadline);
+/** Emplacements qui comptent (bonus, prime, « à faire ») : la 4e énigme est pour le plaisir. */
+export const slotsCompte = () => slotsComptes(S.state && S.state.nextDeadline);
 /** Énigme du jour à l'emplacement `i` (0, 1, 2 ou 4). */
 export const questDuSlot = (i) => (S.quests ? S.quests.find((q) => q.slot === i) || S.quests[0] : null);
 
@@ -118,8 +120,8 @@ function ecrirePastillesVues(v) { try { localStorage.setItem(clePastilles(), JSO
 export function tabbar(active, { questBadge = false, radioBadge = false } = {}) {
   const tabs = [['hp', 'HP'], ['ordres', 'Ordres'], ['terrain', 'Terrain'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['carte', 'Carte'], ['radio', 'Radio']];
   const st = S.state, me = S.user && st && st.zones ? st.zones[S.user.uid] : null;
-  const nbJour = slotsJour().length;
-  const faites = (S.questResults || []).some((r) => r && (r.statut === 'delegue' || r.statut === 'quiz')) ? nbJour : (S.questResults || []).filter((r) => r && (r.statut === 'ok' || r.statut === 'rate')).length;
+  const nbJour = slotsCompte().length;
+  const faites = (S.questResults || []).some((r) => r && (r.statut === 'delegue' || r.statut === 'quiz')) ? nbJour : slotsCompte().filter((k) => { const r = (S.questResults || [])[k]; return r && (r.statut === 'ok' || r.statut === 'rate'); }).length;
   const dots = {
     ordres: !S.savedOrders || S.ordersDirty,
     enquete: !!(st && (st.traques || []).length && !(S.draft && S.draft.traque)),

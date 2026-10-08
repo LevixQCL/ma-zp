@@ -3,18 +3,27 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-09-pistes',
+  id: '2026-10-09-enquete-vivante',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🕵️', 'Les pistes', 'dans tes ordres : approche un indic, fais filer un suspect, ouvre le dialogue avec un quartier tendu. Le résultat tombe une à trois nuits plus tard… et réserve des surprises.'],
-    ['📈', 'Ton IPZ de ce soir, en direct', 'en haut des ordres : déplace un agent, la prévision bouge. Tu vois l’effet de tes choix avant 20:00.'],
-    ['🛡️', 'Maintien de l’ordre au quotidien', 'l’incident de la Proximité devient une version courte (3 vagues) du tower defense : un rassemblement qui dégénère marche sur ton hôtel de police.'],
-    ['😌', 'Rater ne coûte plus rien', 'une énigme ratée ne coûte plus de moral, et un mini-jeu raté n’est jamais pire que si tu n’y étais pas allé.'],
+    ['🧩', 'L’énigme d’enquête', 'pendant un vol, ta 3e énigme du jour se joue sur l’affaire : réussie, elle te donne une pièce sur ta piste prioritaire.'],
+    ['🗞️', 'Une affaire qui vit', 'le coupable sent qu’on s’approche et peut effacer ses traces ; la Gazette révèle les secrets des innocents qui ont menti.'],
+    ['🤝', 'Donnant-donnant', 'deux zones qui s’échangent une pièce le même soir la reçoivent toujours. Et qui enquête seul a droit à une 3e démarche.'],
+    ['🕵️', 'Les pistes', 'dans tes ordres : indic, filature, dialogue avec un quartier tendu. Le résultat tombe une à trois nuits plus tard.'],
+    ['📈', 'Ton IPZ de ce soir, en direct', 'en haut des ordres : déplace un agent, la prévision bouge.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Une enquête plus vivante (9 octobre)', [
+      ['Énigme d’enquête', 'dès le tour du 9 octobre au soir, pendant un vol, la 3e énigme du jour devient l’énigme d’enquête (un « Qui ment ? » sur les témoins de la soirée). Réussie : une pièce de plus sur ta piste prioritaire (bouton sur la fiche du suspect), ou sur un suspect encore possible.'],
+      ['3 énigmes qui comptent', 'bonus dès 2 bonnes réponses, prime à 3 sur 3 ; la 4e énigme reste là pour le plaisir (+5 PS si réussie), sans compter pour le bonus, la prime ni le classement.'],
+      ['Le coupable réagit', 'dès qu’une vérification le touche, la Gazette remarque que « quelqu’un s’agite ». Deux jours plus tard, s’il court toujours, il efface ses traces : il faudra 3 caractéristiques de sa planque au dossier (au lieu de 2) pour que le juge signe la perquisition.'],
+      ['Secrets des innocents', 'à partir du jour 4, la Gazette révèle chaque jour ce que cachait un innocent qui a menti sur sa soirée.'],
+      ['Partage', 'une zone ne reçoit plus qu’une pièce partagée par soir, sauf en donnant-donnant : deux zones qui s’envoient chacune une pièce le même soir reçoivent toujours celle de l’autre.'],
+      ['Enquêter seul', 'une zone qui n’a reçu aucune pièce la veille a droit à une 3e démarche.'],
+    ]],
     ['Pistes, prévision et moins de corvée (9 octobre)', [
       ['Pistes', 'nouvelle section des ordres. Indic (1 500 €, 1 à 3 nuits) : une pièce pour l’affaire en cours, ou un tuyau qui fait baisser la criminalité… ou rien. Filature (1 enquêteur absent 2 jours) : une pièce sur le suspect choisi, s’il ne sème pas ton agent (vols seulement). Dialogue (1 agent de Proximité, 2 à 3 nuits) : la tension du quartier choisi retombe de 12, ou une manifestation s’organise. Trois pistes au plus en même temps, une de chaque sorte. Le résultat tombe même si tu ne viens pas.'],
       ['Cette nuit', 'en tête de l’HP, les trois faits de la nuit qui te concernent vraiment (résultats de pistes, coup dur, héros, arrestation, trophée…). Le rapport complet est toujours plus bas.'],

@@ -38,14 +38,14 @@ import { PACTES, PACTE, DEFI, DEFI_INDICATEURS } from './engine/pactes.js';
 import { ongletsRadio } from './ui/prive.js';
 import { renderParties } from './ui/parties.js';
 import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet, synchroCarnetMaintenant, restaurerCarnet } from './ui/enquete.js';
-import { affaire, dossierDe } from './engine/enquete.js';
+import { affaire, dossierDe, maxDemarchesDe } from './engine/enquete.js';
 import { choisirRecoup, retournerPouce } from './ui/enquete-plus.js';
 import { marquerJournalVu } from './ui/journal.js';
 import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, basculerFrise, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { renderDebrief } from './ui/debrief.js';
-import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES, FORMES, formesPourTour, quatrePourTour } from './quests/quests.js';
+import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES, FORMES, formesPourTour, quatrePourTour, enquetePourTour } from './quests/quests.js';
 import { niveauEnigmes } from './engine/directeur.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
 import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND } from './engine/constants.js';
@@ -226,7 +226,7 @@ function loadQuest() {
   // Énigme changée : mémorisée sur l'appareil, et dans la réponse une fois donnée (pour les autres appareils).
   const rerolls = new Set((S.questResults || []).map((r, k) => (r && r.variante ? k : -1)).filter((k) => k >= 0));
   try { const v = localStorage.getItem(cleReroll()); if (v !== null && !(S.questResults || []).some((r) => r && r.variante)) rerolls.add(Number(v)); } catch (e) { /* pas de stockage */ }
-  S.quests = questsFor({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn, weekday: weekdayBe(st.nextDeadline), rerolls: [...rerolls].slice(0, 1), ajust: niveauEnigmes(st.zones && st.zones[S.user.uid]), formes: formesPourTour(st.nextDeadline), quatre: quatrePourTour(st.nextDeadline) });
+  S.quests = questsFor({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn, weekday: weekdayBe(st.nextDeadline), rerolls: [...rerolls].slice(0, 1), ajust: niveauEnigmes(st.zones && st.zones[S.user.uid]), formes: formesPourTour(st.nextDeadline), quatre: quatrePourTour(st.nextDeadline), enquete: enigmeEnquete(st) });
   S.noir = dossierNoir({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn, exclure: S.quests.map((q) => q.type), garder: S.noirResult && S.noirResult.type, formes: formesPourTour(st.nextDeadline) });
 }
 
@@ -803,7 +803,7 @@ async function onClick(e) {
       }
       case 'dem-toggle': {
         const k = el.dataset.k, dm = (S.draft.demarches ||= []);
-        S.draft.demarches = dm.includes(k) ? dm.filter((x) => x !== k) : [...dm, k].slice(0, 2);
+        S.draft.demarches = dm.includes(k) ? dm.filter((x) => x !== k) : [...dm, k].slice(0, maxDemarchesDe(S.state, myZone()));
         S.ordersDirty = true; rerender(); break;
       }
       case 'accuser': {
@@ -1063,6 +1063,13 @@ async function onClick(e) {
   }
 }
 
+/** Énigme d'enquête du jour : seulement pendant un vol (les affaires écrites ont leurs propres outils). */
+function enigmeEnquete(st) {
+  if (!enquetePourTour(st.nextDeadline) || !st.enquete || st.enquetePause) return null;
+  const a = affaire(st, st.enquete.n);
+  return a && !a.meurtre ? { titre: a.titre } : null;
+}
+
 /** Anciens numéros de la Gazette (rapports archivés) : lus seulement quand on remonte le temps, une fois. */
 function chargerArchivesGazette() {
   if (S.gazettesArchives || !S.backend.listGazettes) return;
@@ -1214,7 +1221,7 @@ async function submitQuest(reponse) {
   // Une seule réponse possible : on demande confirmation, puis c'est définitif.
   if (!(await askConfirm('Valider cette réponse ? Tu n\u2019as qu\u2019une seule chance.', 'Valider'))) return;
   const ok = checkAnswer(q, reponse);
-  S.questResults[i] = { ...r, tentatives: 1, statut: ok ? 'ok' : 'rate', type: q.type, reponse: String(reponse).slice(0, 60), ...(q.variante ? { variante: 1 } : {}) };
+  S.questResults[i] = { ...r, tentatives: 1, statut: ok ? 'ok' : 'rate', type: q.type, reponse: String(reponse).slice(0, 60), ...(q.variante ? { variante: 1 } : {}), ...(q.enquete ? { enquete: 1 } : {}) };
   S.questPick = null;
   await S.backend.saveQuest(S.user.uid, st.season, st.turn, i, S.questResults[i]);
   toast(ok ? 'Bonne réponse !' : 'Mauvaise réponse.');

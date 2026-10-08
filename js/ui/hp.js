@@ -1,10 +1,11 @@
 import { titresDefi } from './defis.js';
+import { maxDemarchesDe } from '../engine/enquete.js';
 import { cetteNuitHtml, pistesHpHtml } from './pistes.js';
 import { noteVue } from './nouveautes.js';
 import { actuHtml, actuLigne } from './actu.js';
 // Écran HP (Hôtel de police) : l'accueil.
 import { cabossesChoisis } from '../engine/parc.js';
-import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone, skyline, cielStyle, slotsJour } from './common.js';
+import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone, skyline, cielStyle, slotsJour, slotsCompte } from './common.js';
 import { agentsDisponibles, blessesActifs, enFormation, vehiculesDisponibles } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { formatCountdown, formatDateBe } from '../engine/time.js';
@@ -247,7 +248,7 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue }) {
     const a = (d.patrouilles || {})[pc.cell] || 0;
     items.push({ ok: a >= 2, href: '#carte', t: a >= 2 ? `Point chaud : ${a} agents envoyés` : `Point chaud : ${pc.titre.toLowerCase()}`, s: a >= 2 ? 'désamorcé à 20:00 si tes ordres sont validés' : 'envoie 2 patrouilles depuis la Carte' });
   }
-  if (st.enquete) items.push({ ok: nbDem >= 1 || (d.accusation !== null && d.accusation !== undefined), href: '#enquete', t: `Enquête : ${nbDem} démarche${nbDem > 1 ? 's' : ''} sur 2`, s: (st.traques || []).length ? 'une traque est en cours !' : 'constatations, vérifications, partage, accusation' });
+  if (st.enquete) items.push({ ok: nbDem >= 1 || (d.accusation !== null && d.accusation !== undefined), href: '#enquete', t: `Enquête : ${nbDem} démarche${nbDem > 1 ? 's' : ''} sur ${maxDemarchesDe(st, z)}`, s: (st.traques || []).length ? 'une traque est en cours !' : 'constatations, vérifications, partage, accusation' });
   // Le Directeur : dilemme à trancher, feuilleton à préparer pour ce soir.
   const dl = dilemmeDuJour(st, z);
   if (dl) items.unshift({ ok: Number.isInteger(d.dilemme), href: '#hp-dilemme', t: `Dilemme : ${esc(dl.titre.toLowerCase())}`, s: Number.isInteger(d.dilemme) ? `« ${esc(dl.choix[d.dilemme].l)} »` : 'deux choix, à trancher avant 20:00' });
@@ -264,7 +265,7 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue }) {
   { const bt = bilanTodo(); if (bt) items.unshift(bt); }
   { const ct = criseTodo(); if (ct) items.unshift(ct); }
   // Un incident ouvert a déjà sa carte (avec son compte à rebours) juste sous la liste : pas de ligne en double ici.
-  items.push(delegue ? { ok: true, href: '#quete', t: delegue.statut === 'quiz' ? `Quiz express : ${Number(delegue.tentatives) || 0} sur 5` : 'Énigmes confiées à un agent', s: delegue.statut === 'quiz' ? ((Number(delegue.tentatives) || 0) >= 3 ? (delegue.bonus ? 'bonus choisi' : 'choisis ton bonus') : 'pas de bonus') : 'résultat ce soir' } : { ok: faites >= slotsJour().length, href: '#quete', t: `Énigmes : ${faites} sur ${slotsJour().length}`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
+  items.push(delegue ? { ok: true, href: '#quete', t: delegue.statut === 'quiz' ? `Quiz express : ${Number(delegue.tentatives) || 0} sur 5` : 'Énigmes confiées à un agent', s: delegue.statut === 'quiz' ? ((Number(delegue.tentatives) || 0) >= 3 ? (delegue.bonus ? 'bonus choisi' : 'choisis ton bonus') : 'pas de bonus') : 'résultat ce soir' } : { ok: faites >= slotsCompte().length, href: '#quete', t: `Énigmes : ${faites} sur ${slotsCompte().length}`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
   const fipa = (st.fipas || []).filter((f) => (f.demandeur === z.uid && f.etape === 'demande' && f.tourDecision === st.turn) || (f.partenaire === z.uid && f.etape === 'invite' && f.tourReponse === st.turn) || (f.etape === 'accepte' && f.tourJ === st.turn && (f.demandeur === z.uid || f.partenaire === z.uid)));
   if (fipa.length) items.push({ ok: !!(d.fipa || d.fipaReponse || d.fipaChoix), href: '#hp-fipa', t: 'FIPA : une décision t’attend', s: 'voir la carte FIPA ci-dessous' });
   for (const x of aFairePactes()) items.push({ ok: x.fait, href: '#pactes', t: esc(x.titre), s: esc(x.texte) });
@@ -296,10 +297,11 @@ export function renderHP() {
   const vDispo = vehiculesDisponibles(z, T);
   const ordresOk = !!S.savedOrders && !S.ordersDirty;
   const qr = S.questResults || [];
-  const faites = qr.filter((r) => r && (r.statut === 'ok' || r.statut === 'rate')).length;
-  const reussies = qr.filter((r) => r && r.statut === 'ok').length;
+  const compte = slotsCompte().map((k) => qr[k]);
+  const faites = compte.filter((r) => r && (r.statut === 'ok' || r.statut === 'rate')).length;
+  const reussies = compte.filter((r) => r && r.statut === 'ok').length;
   const delegue = qr.find((r) => r && (r.statut === 'delegue' || r.statut === 'quiz'));
-  const questDone = faites >= slotsJour().length || !!delegue;
+  const questDone = faites >= slotsCompte().length || !!delegue;
 
   const alertes = [];
   const bless = z.blesses.filter((b) => b.retour > T);

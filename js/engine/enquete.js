@@ -110,13 +110,27 @@ export const ENQ = {
   traqueTours: 1,       // tours pour l'arrêter ensuite (une seule nuit : les indices sur la planque s'accumulent pendant l'enquête)
   agentsTraque: 2,      // agents d'Intervention minimum pour une interpellation (4 coûtaient plus que l'arrestation ne rapportait : voir l'historique)
   maxDemarches: 2,      // démarches par tour
+  demarcheSolo: 1,      // démarche en plus pour une zone qui n'a reçu aucune pièce hier ni aujourd'hui (voir maxDemarchesDe)
   maxPartages: 3,       // pièces partagées par tour
-  maxRecus: 2,          // pièces partagées qu'une zone peut recevoir par soir (les grandes parties restent équitables)
+  maxRecus: 1,          // pièces partagées reçues « gratuitement » par soir (révision d'oct. 2026 : 2 → 1 ; voir donnant-donnant)
+  // Donnant-donnant : deux zones qui s'envoient chacune une pièce le même soir reçoivent toujours celle de l'autre, en plus.
   nbSuspects: 5,
   maxCellules: 3,
   attrsTraque: 2,        // caractéristiques de la planque à avoir au dossier pour que le juge autorise la perquisition
   surcoutHorsCellule: 2, // multiplicateur de coût pour un suspect d'une autre cellule
 };
+
+/**
+ * Démarches permises ce soir : une 3e pour une zone qui enquête seule (aucune pièce reçue d'une autre zone hier ou aujourd'hui).
+ * Révision d'oct. 2026 : seul, 30 % des vols n'étaient jamais résolus ; une cellule active, elle, reçoit jusqu'à 2 pièces par soir.
+ */
+export function maxDemarchesDe(state, z) {
+  const e = state && state.enquete;
+  const d = e && z && z.enquete && z.enquete.n === e.n ? z.enquete : null;
+  // Pièces reçues la veille (celles qui arrivent ce soir ne comptent pas : le joueur ne les connaissait pas en choisissant).
+  const recu = d && d.pieces.some((p) => p.de && (p.j || 0) >= (e.jour || 1) - 1 && (p.j || 0) < (e.jour || 1));
+  return ENQ.maxDemarches + (recu ? 0 : ENQ.demarcheSolo);
+}
 
 /** Points d'enquête pour une découverte au jour `j`. */
 export const pointsDecouverte = (j) => Math.max(40, 110 - 10 * j);
@@ -902,6 +916,9 @@ const MOYEN_RECIT = {
   volume: [(s) => `${s.f ? 'elle' : 'il'} avait une camionnette à disposition`, () => `un utilitaire dormait devant sa porte`, () => `un contrat de location de camionnette portait son nom`],
 };
 
+/** Ce que cachait un innocent qui a menti (le même dans la Gazette et dans le récit final). */
+export const secretDe = (aff, x) => makeRng(`${aff.titre}:${aff.n || ''}:${x.nom}:secret`).pick(SECRETS)(x);
+
 function recitInnocent(aff, x, k) {
   const il = x.f ? 'elle' : 'il', Il = cap(il), e = x.f ? 'e' : '';
   const r = makeRng(`${aff.titre}:${aff.n || ''}:${x.nom}:recit`);
@@ -940,7 +957,7 @@ function recitInnocent(aff, x, k) {
       commande: ` Mais le vol avait été fait sur commande, et ${il} n’avait aucun lien avec le milieu du recel.`,
     }[aff.req.mob];
   }
-  if (a.type === 'mensonge') t += ` Son mensonge ? ${Il} ${r.pick(SECRETS)(x)}.`;
+  if (a.type === 'mensonge') t += ` Son mensonge ? ${Il} ${secretDe(aff, x)}.`;
   else if (a.type === 'seul' && manque !== 'occ') t += ` Ce soir-là, ${il} était vraiment ${a.solitaire}, et c’est tout.`;
   else if (manque !== 'occ' && r.chance(0.5)) t += ` ${Il} est sorti${e} de l’enquête soulagé${e}, mais pas indemne : tout le quartier en parle.`;
   return t;
@@ -1068,8 +1085,16 @@ export function enquetePre(state, uids, ord, push) {
       if (!parPiece.has(x.f)) parPiece.set(x.f, []);
       parPiece.get(x.f).push(x);
     }
+    // Donnant-donnant : la pièce d'une zone à qui `d` envoie aussi une pièce ce soir passe toujours (hors quota).
+    const reciproque = (x) => x.direct && envois.some((y) => y.u === d && y.d === x.u && y.direct);
     let k = 0, debord = 0;
     for (const [f, l] of parPiece) {
+      if (l.some(reciproque)) {
+        dz.enquete.pieces.push({ f, j: e.jour, src: 'partage', de: l[0].u, ech: 1 });
+        dz.rapport.push(`Enquête : échange donnant-donnant avec ${l.filter(reciproque).map((x) => nomZone(state.zones[x.u])).join(' et ')} : tu reçois « ${titrePiece(aff, f)} ».`);
+        for (const x of l) livrees.push({ u: x.u, d, f });
+        continue;
+      }
       if (k >= ENQ.maxRecus) { debord += 1; for (const x of l) if (x.direct) (nonEnvoyees[x.u] ||= []).push(`« ${titrePiece(aff, f)} » (${nomZone(dz)} a déjà reçu ${ENQ.maxRecus} pièces ce soir)`); continue; }
       k += 1;
       dz.enquete.pieces.push({ f, j: e.jour, src: 'partage', de: l[0].u });
@@ -1178,11 +1203,11 @@ export function enquetePre(state, uids, ord, push) {
 }
 
 /** Vrai si le dossier de la zone désigne ce lieu : au moins `ENQ.attrsTraque` caractéristiques de la planque connues, et le lieu y correspond. */
-export function traqueAutorisee(aff, dossier, planque) {
+export function traqueAutorisee(aff, dossier, planque, requis = ENQ.attrsTraque) {
   if (!aff || !aff.planques || !aff.planques[planque]) return false;
   const faits = faitsConnus(dossier);
   const n = ATTRS_P.filter((x) => faits.includes(`p:${x}`)).length;
-  return n >= ENQ.attrsTraque && candidats(aff, faits).planques.includes(planque);
+  return n >= requis && candidats(aff, faits).planques.includes(planque);
 }
 /** Vrai si le parquet accepterait d'accuser ce suspect (vol) : le dossier écarte tous les autres. */
 export function accusationRecevable(aff, dossier, i) {
@@ -1208,9 +1233,9 @@ function traquesDuSoir(state, uids, ord, push, prendre, res) {
       // Perquisition : le juge veut un dossier qui désigne ce lieu (au moins 2 caractéristiques de la planque connues).
       const zd = state.zones[u];
       const dosT = zd ? dossierAffaire(state, zd, tr.n) : null;
-      const mandat1 = traqueAutorisee(a, dosT, t.planque);
-      const mandat2 = t.planque2 != null && t.planque2 !== t.planque && traqueAutorisee(a, dosT, t.planque2) && enService(zd, 'anonyme', state.turn) > 0;
-      if (!mandat1 && !mandat2) { if (zd) zd.rapport.push(`Traque : le juge refuse la perquisition à ${a.planques[t.planque] ? a.planques[t.planque].nom : 'ce lieu'} : ton dossier ne désigne pas encore ce lieu (il faut au moins ${ENQ.attrsTraque} caractéristiques de la planque qui lui correspondent). Tes agents restent en service.`); continue; }
+      const mandat1 = traqueAutorisee(a, dosT, t.planque, tr.attrs || ENQ.attrsTraque);
+      const mandat2 = t.planque2 != null && t.planque2 !== t.planque && traqueAutorisee(a, dosT, t.planque2, tr.attrs || ENQ.attrsTraque) && enService(zd, 'anonyme', state.turn) > 0;
+      if (!mandat1 && !mandat2) { if (zd) zd.rapport.push(`Traque : le juge refuse la perquisition à ${a.planques[t.planque] ? a.planques[t.planque].nom : 'ce lieu'} : ton dossier ne désigne pas encore ce lieu (il faut au moins ${tr.attrs || ENQ.attrsTraque} caractéristiques de la planque qui lui correspondent). Tes agents restent en service.`); continue; }
       const dispo = ((ord[u].alloc && ord[u].alloc.intervention) || 0) + (ord[u]._libres || 0); // agents sans affectation d'abord
       const n = Math.min(t.agents, dispo);
       if (n <= 0) continue;
@@ -1279,7 +1304,7 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
     z.enqueteDiffere = [];
   }
   const faites = [];
-  for (const x of (o.demarches || []).slice(0, ENQ.maxDemarches)) {
+  for (const x of (o.demarches || []).slice(0, maxDemarchesDe(state, z))) {
     const dm = lireDemarche(x);
     const f = dm && pieceDemarche(aff, d, x);
     if (!f) { if (dm && dm.k === 'moyens' && aff.meurtre && !mandatOk(aff, d, dm.i)) faites.push(`perquisition chez ${aff.suspects[dm.i].nom} refusée par le juge (aucune pièce sérieuse contre ${aff.suspects[dm.i].f ? 'elle' : 'lui'} au dossier)`); continue; }
@@ -1412,6 +1437,24 @@ export function pieceCoupDePouce(state, z, aff, rng) {
   return pool.length ? rng.pick(pool) : null;
 }
 
+/**
+ * Une pièce encore inconnue sur un suspect (vol en cours) : sur `cible` si elle reste à trouver, sinon sur un suspect
+ * encore possible d'après le dossier. Renvoie { f, i } ajoutée au dossier, ou null s'il n'y a plus rien à trouver.
+ */
+export function pieceSurSuspect(state, z, cible, rng, src) {
+  if (!state.enquete || state.enquetePause || !z.enquete) return null;
+  const aff = affaire(state, state.enquete.n);
+  if (aff.meurtre) return null;
+  const connus = new Set(faitsConnus(z.enquete));
+  const libres = (i) => (aff.faits || []).filter((f) => !connus.has(f) && !f.startsWith('p:') && !f.startsWith('c:') && Number(f.split(':')[1]) === i);
+  const ordre = [cible, ...candidats(aff, [...connus]).suspects].filter((i) => Number.isInteger(i) && i >= 0 && i < aff.suspects.length);
+  const i = ordre.find((k) => libres(k).length);
+  if (i === undefined) return null;
+  const f = rng.pick(libres(i));
+  z.enquete.pieces.push({ f, j: state.enquete.jour, src });
+  return { f, i };
+}
+
 /** Bonus d’énigme : une pièce de l'affaire en cours. */
 export function indiceBonus(state, z, rng) {
   if (!state.enquete || !z.enquete) return false;
@@ -1437,7 +1480,7 @@ export function enquetePost(state, pre, push) {
   state.traques = (state.traques || []).filter((t) => !t.fini).map((t) => ({ ...t, tours: t.tours - 1 }));
   const accroche = 'Cinq suspects : une seule personne réunit le mobile, le moyen et l’occasion.';
   if (pre.res.decouverte) {
-    if (!affaire(state, e.n).meurtre) state.traques.push({ n: e.n, jour: e.jour, tours: ENQ.traqueTours, decouvreurs: pre.res.decouverte.uids, contributeurs: pre.res.decouverte.contribUids || [] });
+    if (!affaire(state, e.n).meurtre) state.traques.push({ n: e.n, jour: e.jour, tours: ENQ.traqueTours, attrs: ENQ.attrsTraque + (e.trace ? 1 : 0), decouvreurs: pre.res.decouverte.uids, contributeurs: pre.res.decouverte.contribUids || [] });
     const a = nouvelleAffaire(state);
     pre.res.nouvelle = a.titre;
     push(5, 'Nouvelle affaire', a.titre, `${a.texte} ${a.accroche || accroche}`);
@@ -1459,6 +1502,7 @@ export function enquetePost(state, pre, push) {
     e.jour += 1;
     // Rebondissement du jour : publié à toutes les zones.
     const aff = affaire(state, e.n);
+    if (!aff.meurtre) reactionsAffaire(state, e, aff, push);
     const r = aff.rebonds[e.jour];
     if (r) {
       e.rebonds = [...(e.rebonds || []), { j: e.jour, f: r.f }];
@@ -1468,6 +1512,33 @@ export function enquetePost(state, pre, push) {
       }
       pre.res.rebond = { titre: r.titre, texte: r.texte, piece: titrePiece(aff, r.f) };
       push(7, 'Enquête', r.titre, `${r.texte} (« ${titrePiece(aff, r.f)} »)`);
+    }
+  }
+}
+
+/**
+ * L'affaire vit pendant la semaine (vols) :
+ *  - le coupable se sent visé dès qu'une vérification le concerne : la Gazette le remarque le lendemain ;
+ *  - deux jours plus tard, s'il court toujours, il efface ses traces : il faudra une caractéristique de plus de sa planque
+ *    pour que le juge signe la perquisition ;
+ *  - à partir du jour 4, la Gazette révèle chaque jour ce que cachait un innocent qui a menti sur sa soirée.
+ */
+function reactionsAffaire(state, e, aff, push) {
+  const c = aff.coupable, re = new RegExp(`^(mob|moy|occ):${c}$`);
+  const vise = Object.values(state.zones).some((z) => z.enquete && z.enquete.n === e.n && z.enquete.pieces.some((p) => re.test(p.f) && p.src !== 'ouverture' && p.src !== 'rebond'));
+  if (vise && !e.alerte) {
+    e.alerte = e.jour;
+    push(6, 'Enquête', 'Quelqu’un s’agite', `Dans « ${aff.titre} », un des suspects a été vu passer des coups de fil nerveux et éviter ses voisins depuis hier. Les enquêteurs ont touché un point sensible.`);
+  } else if (e.alerte && !e.trace && e.jour >= e.alerte + 2) {
+    e.trace = true;
+    push(7, 'Enquête', 'Des traces effacées', `Un garde-meuble vidé en pleine nuit, un téléphone qui ne répond plus : dans « ${aff.titre} », l’auteur prépare sa fuite. Pour trouver sa planque, il faudra désormais ${ENQ.attrsTraque + 1} caractéristiques du lieu au dossier.`);
+  }
+  if (e.jour >= 4) {
+    const menteurs = aff.suspects.map((x, i) => ({ x, i })).filter(({ x, i }) => i !== c && x.alibi && x.alibi.type === 'mensonge' && !(e.secrets || []).includes(i));
+    if (menteurs.length) {
+      const { x, i } = menteurs[0];
+      e.secrets = [...(e.secrets || []), i];
+      push(6, 'Le fil de l’affaire', `Ce que cachait ${x.nom}`, `${x.nom} avait menti sur sa soirée. Selon nos informations, ${x.f ? 'elle' : 'il'} ${secretDe(aff, x)}.`);
     }
   }
 }

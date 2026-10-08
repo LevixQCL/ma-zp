@@ -25,7 +25,7 @@ import { sceneFouilleHtml, sceneZoomHtml } from './scene-fouille.js';
 import { friseSvg, friseVolet } from './frise.js';
 import { opposables, pieceReaudition, REAUD } from '../engine/enquete.js';
 import { lienItineraire, lieuxMons, MODES_GMAPS } from '../engine/meurtre-mons.js';
-import { demarcheDe, mandatOk, accusationRecevable } from '../engine/enquete.js';
+import { demarcheDe, mandatOk, accusationRecevable, maxDemarchesDe } from '../engine/enquete.js';
 import { relecturesHtml, recoupBoutons, voletRecoup, voletHypo, voletPouces, mobileHtml, soirPlusHtml } from './enquete-plus.js';
 
 // ───── Dimensions du tableau ─────
@@ -427,7 +427,7 @@ function voletPiece(aff, dos, f) {
       <span class="tb-ligne-k">Partage</span>
       <span class="small" style="font-weight:600">${esc(statutPartage(p).txt)}</span>
       ${statutPartage(p).k === 'tous' ? '' : `${partageCtl(p)}
-      <span class="tiny muted">Partager rapporte des PS et de la réputation, et des points d’enquête si ta pièce aide une zone à trouver l’auteur. ${ENQ.maxPartages} partages par soir au plus.</span>`}
+      <span class="tiny muted">Partager rapporte des PS et de la réputation, et des points d’enquête si ta pièce aide une zone à trouver l’auteur. ${ENQ.maxPartages} partages par soir au plus. Une zone ne reçoit qu’une pièce par soir, sauf en <strong>donnant-donnant</strong> : si vous vous envoyez chacune une pièce le même soir, les deux passent toujours.</span>`}
     </div>`;
   return `${S.tabSheet && S.tabSheet.partage ? partageBloc : ''}<span class="tb-ligne-k" style="color:var(--amber)">${esc(titrePiece(aff, f))}</span>
     <span class="tiny muted">J${p.j} · ${sourceDe(p)}</span>
@@ -634,7 +634,7 @@ function voletSoir(aff, dos) {
   const nomDem = (x) => { const [k, i] = x.split(':'); const dm = demarcheDe(aff, k); return i !== undefined ? `${dm.nom} · ${aff.suspects[Number(i)].prenom}` : dm.nom; };
   return `<div class="between" style="padding-right:44px"><span class="tb-titre" style="padding-right:0">Ce soir</span><span class="small muted">reste ${Math.round((z.budget - engagementsDuJour(d, z).total) * 10) / 10} k€</span></div>
     ${celluleHtml(aff)}
-    <span class="tb-ligne-k">Démarches · ${dem.length} / ${ENQ.maxDemarches}</span>
+    <span class="tb-ligne-k">Démarches · ${dem.length} / ${maxDemarchesDe(S.state, myZone())}</span>
     ${dem.map((x) => `<div class="tb-boite-l"><span class="small grow" style="font-weight:600">${esc(nomDem(x))}</span><button type="button" class="btn small ghost" data-action="dem-toggle" data-k="${esc(x)}" aria-label="Retirer ${esc(nomDem(x))}">✕</button></div>`).join('') || '<p class="tiny muted" style="margin:0">Touche une photo ou une fiche du tableau pour choisir une démarche.</p>'}
     <div class="voisinage"><span class="small"><strong>Voisinage</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? ` · piste : <strong>${esc(v.nom)}</strong>` : ''} : ${esc(v.txt)}</span></div>
     ${appuiHtml()}
@@ -756,7 +756,7 @@ export function renderTableau() {
       <button type="button" class="tb-chip ${sp('boite')}" data-action="tab-volet" data-k="boite" aria-label="Boîte à pièces, ${nbBoite} à ranger">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l2-5h14l2 5"/><rect x="3" y="9" width="18" height="11" rx="1.5"/><path d="M9 13h6"/></svg>${nbBoite}${neuf ? '<span class="tb-dot"></span>' : ''}</button>
       ${aff.coupsDePouce ? '<button type="button" class="tb-rond" data-action="tab-ouvrir" data-tid="pouce" aria-label="Coups de pouce" title="Coups de pouce">💡</button>' : ''}
-      <button type="button" class="tb-chip ambre ${sp('soir')}" data-action="tab-volet" data-k="soir"><span class="tb-soir-l">Ce soir </span><span class="tb-compte">${(d.demarches || []).length}/${ENQ.maxDemarches}</span></button>
+      <button type="button" class="tb-chip ambre ${sp('soir')}" data-action="tab-volet" data-k="soir"><span class="tb-soir-l">Ce soir </span><span class="tb-compte">${(d.demarches || []).length}/${maxDemarchesDe(S.state, myZone())}</span></button>
     </div>
     ${traque && S.banTraqueVue !== st.turn ? `<div class="tb-banniere">${banniereTraque(st, { tableau: true })}<button type="button" class="tb-rond tb-ban-x" data-action="tb-ban-fermer" aria-label="Fermer">✕</button></div>` : ''}
     <div id="tb-aide" class="tb-aide" ${fil ? '' : 'hidden'}>${S.tabFrom ? 'Touche l’élément à relier' : 'Glisse d’un élément à l’autre · touche une ficelle pour la couper'}</div>

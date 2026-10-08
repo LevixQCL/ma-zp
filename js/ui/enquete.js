@@ -14,7 +14,7 @@ import { tutoActif } from './tutoriel.js';
 import { dossierAffaire3 } from '../engine/dossier.js';
 import { minutes, MODES } from '../engine/carte3.js';
 import { planifierEnvoi, synchroniser, synchroniserMaintenant, contenuChange, carnetVide } from './carnet-sync.js';
-import { accusationRecevable, traqueAutorisee,
+import { accusationRecevable, traqueAutorisee, maxDemarchesDe,
   ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece,
   chanceVoisinage, VOISINAGE,
   ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee,
@@ -87,7 +87,7 @@ export function partageCtl(piece) {
   const dejaTxt = deja.size ? `<span class="tiny muted" style="text-align:right">Déjà chez : ${[...deja].filter((u) => S.state.zones[u]).map((u) => zoneName(S.state.zones[u])).join(', ')}</span>` : '';
   const restantes = autresZones().filter((z) => !deja.has(z.uid));
   if (!restantes.length) return `<span class="col" style="gap:2px;align-items:flex-end"><span class="tag" style="background:rgba(60,198,184,.14);color:var(--green)">Partagée avec toutes les zones</span>${dejaTxt}</span>`;
-  if ((d.partages || []).length >= ENQ.maxPartages) return `<span class="col" style="gap:2px;align-items:flex-end"><span class="tiny muted">${ENQ.maxPartages} partages maximum par tour · chaque zone en reçoit ${ENQ.maxRecus} par soir au plus</span>${dejaTxt}</span>`;
+  if ((d.partages || []).length >= ENQ.maxPartages) return `<span class="col" style="gap:2px;align-items:flex-end"><span class="tiny muted">${ENQ.maxPartages} partages maximum par tour · chaque zone n’en reçoit qu’${ENQ.maxRecus === 1 ? 'une' : ENQ.maxRecus} par soir, sauf en donnant-donnant (deux zones qui s’envoient une pièce l’une à l’autre le même soir)</span>${dejaTxt}</span>`;
   const id = `pz-${piece.f.replace(':', '-')}`;
   return `<span class="col" style="gap:4px;align-items:flex-end"><span class="row" style="gap:6px;flex-wrap:wrap;justify-content:flex-end">
     <label class="sr" for="${id}">Partager à une zone</label>
@@ -123,7 +123,7 @@ export function demBtn(aff, dos, x, label, { compact = false } = {}) {
   if (!on) {
     if (aff.meurtre && ld && ld.k === 'moyens' && !mandatOk(aff, dos, ld.i) && !faitsDe(dos).has(x.replace('moyens', 'moy'))) raison = 'pas de mandat';
     else if (!pieceDemarche(aff, dos, x)) raison = 'au dossier';
-    else if (dem.length >= ENQ.maxDemarches) raison = `${ENQ.maxDemarches} par jour`;
+    else if (dem.length >= maxDemarchesDe(S.state, myZone())) raison = `${maxDemarchesDe(S.state, myZone())} par jour`;
     else if (prix > z.budget - engagementsDuJour(d, z).total) raison = 'budget';
   }
   const prixTxt = prix ? `${prix} k€` : `${dm.agents} agents`;
@@ -164,13 +164,13 @@ export function traqueHtml(tr) {
   return `<section id="traque" class="card red" aria-label="Traque en cours">
     <div class="between"><span class="kicker" style="color:var(--red-soft)">Traque · ${toursTraque(tr) > 1 ? `${toursTraque(tr)} tours restants` : 'jusqu’au prochain 20:00'}</span><span class="tiny muted">${esc(a.titre)}</span></div>
     <h2 class="card-title" style="margin:0">${esc(s.nom)} est en fuite</h2>
-    <p class="small" style="margin:0">Choisis une planque et envoie au moins ${ENQ.agentsTraque} agents d’Intervention${anonymes ? ' ; ta voiture anonymisée peut en surveiller une deuxième' : ''}. Le juge ne signe la perquisition que pour un lieu que ton dossier désigne (au moins ${ENQ.attrsTraque} caractéristiques de la planque qui lui correspondent : badge « mandat »). Ce que tu sais de la planque${indices.length ? '' : ' : rien. Les indices sur la planque viennent de ton dossier sur cette affaire (constatations, butin retrouvé)'}.</p>
+    <p class="small" style="margin:0">Choisis une planque et envoie au moins ${ENQ.agentsTraque} agents d’Intervention${anonymes ? ' ; ta voiture anonymisée peut en surveiller une deuxième' : ''}. Le juge ne signe la perquisition que pour un lieu que ton dossier désigne (au moins ${tr.attrs || ENQ.attrsTraque} caractéristiques de la planque qui lui correspondent : badge « mandat »). Ce que tu sais de la planque${indices.length ? '' : ' : rien. Les indices sur la planque viennent de ton dossier sur cette affaire (constatations, butin retrouvé)'}.</p>
     ${indices.length ? `<ul class="small" style="margin:0;padding-left:18px">${indices.map((x) => `<li>${x}</li>`).join('')}</ul>` : ''}
     <div class="col" style="gap:6px">${a.planques.map((p, i) => {
       const m = MARQUES[carnet.p[i] || 0];
       return `<button type="button" class="choice" data-action="traque-planque" data-n="${tr.n}" data-i="${i}" aria-pressed="${!!t && t.planque === i}" style="flex-direction:row;justify-content:space-between;text-align:left;align-items:center;gap:10px">
         <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(p.nom)}</span><span class="s">${esc(fichePlanque(p))}</span></span>
-        <span class="row" style="gap:6px;align-items:center">${traqueAutorisee(a, dos, i) ? '<span class="tag" style="background:var(--green-bg,#1d3a2c);color:var(--green,#3DD39A)">mandat</span>' : ''}<span class="mark ${m.cls}" aria-label="${m.nom} dans ton carnet">${m.sym}</span></span></button>`;
+        <span class="row" style="gap:6px;align-items:center">${traqueAutorisee(a, dos, i, tr.attrs) ? '<span class="tag" style="background:var(--green-bg,#1d3a2c);color:var(--green,#3DD39A)">mandat</span>' : ''}<span class="mark ${m.cls}" aria-label="${m.nom} dans ton carnet">${m.sym}</span></span></button>`;
     }).join('')}</div>
     ${t && anonymes ? `<div class="col" style="gap:4px"><span class="small" style="font-weight:600">🕶️ Voiture anonymisée en planque</span>
       <span class="tiny muted">Elle surveille une deuxième planque : si ${esc(s.nom)} y est, tes agents y foncent et l’interpellent.</span>
@@ -314,7 +314,7 @@ function aujourdhui(aff, dos) {
   const vCourt = v.x <= 0 ? 'aucune chance' : v.x < 1 ? `${Math.round(v.x * 100)} %` : `1 pièce${v.x % 1 > 0.05 ? ` + ${Math.round((v.x % 1) * 100)} %` : ''}`;
   const reste = z.budget - engagementsDuJour(d, z).total;
   return `<section class="card tight aujourdhui" aria-label="Aujourd’hui" style="gap:8px">
-    <div class="between"><span style="font-weight:700">Aujourd’hui · ${dem.length}/${ENQ.maxDemarches} démarche${ENQ.maxDemarches > 1 ? 's' : ''}</span><span class="small mono" style="white-space:nowrap">${fmt1(coutTotal(d))} k€</span></div>
+    <div class="between"><span style="font-weight:700">Aujourd’hui · ${dem.length}/${maxDemarchesDe(S.state, myZone())} démarches${maxDemarchesDe(S.state, myZone()) > ENQ.maxDemarches ? ' (une de plus : tu enquêtes seul)' : ''}</span><span class="small mono" style="white-space:nowrap">${fmt1(coutTotal(d))} k€</span></div>
     ${dem.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${dem.map((x) => `<button type="button" class="chip on" data-action="dem-toggle" data-k="${x}" aria-label="Annuler : ${esc(nomDem(x))}">${esc(nomDem(x))} ✕</button>`).join('')}</div>` : ''}
     <p class="small" style="margin:0;line-height:1.5">${etape}</p>
     <div class="row enq-pastilles" style="gap:6px;flex-wrap:wrap">

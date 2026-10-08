@@ -1,7 +1,7 @@
 // Pistes en cours : une action facultative dont le résultat tombe une à trois nuits plus tard, sans savoir d'avance ce qu'il sera.
 // Rien n'est perdu si le joueur ne vient pas : le résultat l'attend dans son rapport et sur l'HP (« Cette nuit »).
 // Révision d'oct. 2026 (Lot 4) : une raison de revenir par curiosité, pas par obligation.
-import { affaire, faitsConnus, indiceBonus, candidats } from './enquete.js';
+import { affaire, faitsConnus, indiceBonus, candidats, pieceSurSuspect } from './enquete.js';
 import { carteQuartiers } from './quartiers.js';
 import { clamp, round1 } from './zone.js';
 
@@ -97,14 +97,13 @@ function resultatPiste(state, z, p, rng) {
     if (!enCours) return '🚶 Filature terminée : l’affaire est close entre-temps, ton enquêteur reprend son service.';
     const aff = affaire(state, state.enquete.n), s = aff.suspects[p.cible];
     const connus = new Set(faitsConnus(z.enquete));
-    const pool = (aff.faits || []).filter((f) => !connus.has(f) && !f.startsWith('p:') && !f.startsWith('c:') && Number(f.split(':')[1]) === p.cible);
-    if (pool.length && rng.chance(P.chances.piece)) {
-      const f = rng.pick(pool);
-      z.enquete.pieces.push({ f, j: state.enquete.jour, src: 'filature' });
-      const reste = candidats(aff, [...connus, f]).suspects.length;
-      return `🚶 Filature de ${s ? s.nom : 'ton suspect'} : ton enquêteur a vu quelque chose, une pièce de plus à son sujet (${reste} suspect${reste > 1 ? 's' : ''} encore possible${reste > 1 ? 's' : ''} d’après ton dossier).`;
+    const reste = (aff.faits || []).some((f) => !connus.has(f) && !f.startsWith('p:') && !f.startsWith('c:') && Number(f.split(':')[1]) === p.cible);
+    if (reste && rng.chance(P.chances.piece)) {
+      pieceSurSuspect(state, z, p.cible, rng, 'filature');
+      const n = candidats(aff, faitsConnus(z.enquete)).suspects.length;
+      return `🚶 Filature de ${s ? s.nom : 'ton suspect'} : ton enquêteur a vu quelque chose, une pièce de plus à son sujet (${n} suspect${n > 1 ? 's' : ''} encore possible${n > 1 ? 's' : ''} d’après ton dossier).`;
     }
-    return pool.length ? `🚶 Filature de ${s ? s.nom : 'ton suspect'} : il a semé ton enquêteur dans la foule. Rien de neuf.` : `🚶 Filature de ${s ? s.nom : 'ton suspect'} : rien que tu ne saches déjà.`;
+    return reste ? `🚶 Filature de ${s ? s.nom : 'ton suspect'} : il a semé ton enquêteur dans la foule. Rien de neuf.` : `🚶 Filature de ${s ? s.nom : 'ton suspect'} : rien que tu ne saches déjà.`;
   }
   if (p.type === 'dialogue') {
     const q = z.quartiers || {};

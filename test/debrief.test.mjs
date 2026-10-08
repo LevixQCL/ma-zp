@@ -18,7 +18,7 @@ const c = aff.coupable;
 let r = resolveTurn(state, { players, orders: { A: { ...base, demarches: ['labo', `alibi:${c}`] }, B: { ...base, accusation: faux }, C: base } });
 state = r.state;
 assert.ok(!r.gazette.enquete.debriefs, 'pas de débrief tant que l’affaire court');
-const aPieces = state.zones.A.enquete.pieces.filter((p) => p.src !== 'ouverture').map((p) => p.f).slice(0, 2);
+const aPieces = state.zones.A.enquete.pieces.filter((p) => p.src !== 'ouverture').map((p) => p.f).slice(0, ENQ.maxRecus);
 state = resolveTurn(state, { players, orders: { A: { ...base, partages: aPieces.map((f) => ({ f, a: 'C' })) }, B: base, C: base } }).state;
 // Le parquet exige un dossier qui écarte les autres suspects (et le juge, des caractéristiques de la planque) : on les donne à C.
 { const d = state.zones.C.enquete, add = (f) => { if (!d.pieces.some((p) => p.f === f)) d.pieces.push({ f, j: state.enquete.jour, src: 'test' }); };
