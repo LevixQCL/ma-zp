@@ -35,7 +35,9 @@ await page.waitForSelector('[data-action="alloc"][data-s="intervention"][data-d=
 await page.click('[data-action="alloc"][data-s="intervention"][data-d="1"]');
 await page.click('[data-action="alloc"][data-s="intervention"][data-d="1"]');
 await page.click('[data-action="rythme"][data-v="renforce"]');
-await page.click('[data-action="ord-open"][data-k="nondroit"]');
+// Prise en main : la zone de non-droit ne s'ouvre qu'au jour 5 pour une nouvelle zone.
+if (await page.locator('[data-action="ord-open"][data-k="nondroit"]').count()) await page.click('[data-action="ord-open"][data-k="nondroit"]');
+if (!(await page.locator('#prev-ipz').count())) errors.push('Ordres : pas de prévision de l’IPZ');
 const engBtn = page.locator('[data-action="eng"][data-d="1"]').first();
 if (await engBtn.count()) { await engBtn.click(); await engBtn.click(); await engBtn.click(); }
 await page.click('[data-action="ord-open"][data-k="decision"]');

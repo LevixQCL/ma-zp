@@ -3,16 +3,29 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-08-preuves',
+  id: '2026-10-09-pistes',
   titre: 'Quoi de neuf à la ZP ?',
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['⚖️', 'Le parquet veut des preuves', 'pour accuser dans un vol, ton dossier doit écarter tous les autres suspects ; pour la traque, le juge signe la perquisition des lieux que ton dossier désigne (badge « mandat »). Un nom soufflé ne suffit plus : c’est ton enquête qui gagne. Et un refus ne coûte rien.'],
-    ['🕗', 'Le tour tombe à 20:00, même si personne n’ouvre le jeu', 'dès que le maître du jeu l’a activé : la Gazette et ton rapport t’attendent.'],
+    ['🕵️', 'Les pistes', 'dans tes ordres : approche un indic, fais filer un suspect, ouvre le dialogue avec un quartier tendu. Le résultat tombe une à trois nuits plus tard… et réserve des surprises.'],
+    ['📈', 'Ton IPZ de ce soir, en direct', 'en haut des ordres : déplace un agent, la prévision bouge. Tu vois l’effet de tes choix avant 20:00.'],
+    ['🛡️', 'Maintien de l’ordre au quotidien', 'l’incident de la Proximité devient une version courte (3 vagues) du tower defense : un rassemblement qui dégénère marche sur ton hôtel de police.'],
+    ['😌', 'Rater ne coûte plus rien', 'une énigme ratée ne coûte plus de moral, et un mini-jeu raté n’est jamais pire que si tu n’y étais pas allé.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Pistes, prévision et moins de corvée (9 octobre)', [
+      ['Pistes', 'nouvelle section des ordres. Indic (1 500 €, 1 à 3 nuits) : une pièce pour l’affaire en cours, ou un tuyau qui fait baisser la criminalité… ou rien. Filature (1 enquêteur absent 2 jours) : une pièce sur le suspect choisi, s’il ne sème pas ton agent (vols seulement). Dialogue (1 agent de Proximité, 2 à 3 nuits) : la tension du quartier choisi retombe de 12, ou une manifestation s’organise. Trois pistes au plus en même temps, une de chaque sorte. Le résultat tombe même si tu ne viens pas.'],
+      ['Cette nuit', 'en tête de l’HP, les trois faits de la nuit qui te concernent vraiment (résultats de pistes, coup dur, héros, arrestation, trophée…). Le rapport complet est toujours plus bas.'],
+      ['Prévision de l’IPZ', 'en haut des ordres, le moteur calcule ton IPZ de ce soir avec tes ordres du moment (fourchette de ±2, sans énigmes ni incidents, sur un autre hasard que celui de 20:00).'],
+      ['Prise en main', 'une nouvelle zone découvre ses ordres par étapes : dépenses du jour au jour 3, zone de non-droit et affaires disputées au jour 5, missions des figures au jour 7. Les zones déjà en place gardent tout.'],
+      ['Incidents', 'raté ou abandonné : ton équipe reprend la main avec la même chance que si personne n’était venu ; si elle échoue aussi, le petit malus « équipe seule ». Les incidents « en plus » (IPZ élevé) deviennent facultatifs (aucun malus) et doublent les points de jauge.'],
+      ['Proximité', 'le mini-jeu « Dossier à relire » quitte les incidents du jour (il reste au Challenge) : il est remplacé par le Maintien de l’ordre en 3 vagues, avec tes agents de Proximité.'],
+      ['Énigmes', 'une mauvaise réponse ne coûte plus de moral.'],
+      ['PS au-delà du plafond', 'au-delà de 40 PS dans la journée, le surplus passe dans la jauge des skins (1 point par tranche de 5 PS) au lieu d’être perdu.'],
+      ['Lisibilité', 'les textes les plus petits de l’interface sont agrandis.'],
+    ]],
     ['Preuves et fiabilité (8 octobre, nuit)', [
       ['Accusation (vols)', 'le parquet n’accepte l’accusation que si ton dossier (tes pièces et celles reçues) écarte les quatre autres suspects. Sinon, refus expliqué dans ton rapport, sans pénalité : tu reviens avec les pièces. Le bouton « Accuser » n’apparaît que quand c’est le cas.'],
       ['Traque', 'le juge ne signe la perquisition que pour un lieu que ton dossier désigne : au moins 2 caractéristiques de la planque connues, et le lieu y correspond (badge « mandat » dans la liste des planques). La voiture anonymisée suit la même règle.'],

@@ -12,6 +12,7 @@ import {
   MIN_TOURS_CLASSEMENT, BUDGET_IPZ, HORS_REVENU, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue , PREPA } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
+import { pistesDuSoir, lireOrdresPistes } from './pistes.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
@@ -218,7 +219,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.rapport = [];
     if (orders[uid]) {
       ord[uid] = sanitizeOrders(z, orders[uid], state);
-      Object.assign(ord[uid], lireOrdresReleve(orders[uid]), lireOrdresCrise(orders[uid]), lireOrdresBilan(orders[uid]));
+      Object.assign(ord[uid], lireOrdresReleve(orders[uid]), lireOrdresCrise(orders[uid]), lireOrdresBilan(orders[uid]), lireOrdresPistes(orders[uid]));
       if (z.toursSansOrdres >= 3) z._retour = z.toursSansOrdres; // retour d'absence (accueilli par le Directeur)
       z.toursSansOrdres = 0;
       z.dernierOrdre = { alloc: ord[uid].alloc, rythme: ord[uid].rythme, patrouilles: ord[uid].patrouilles || {}, secteurs: ord[uid].secteurs || {} };
@@ -421,6 +422,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     try {
     const z = state.zones[uid];
     const o = ord[uid];
+    z.cetteNuit = []; // faits marquants de la nuit pour la carte « Cette nuit » de l'HP
     const zr = makeRng(`${state.seed}:s${state.season}:t${T}:${uid}`);
     const q = quests[uid];
 
@@ -556,10 +558,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (qs.length) {
       z.stats.quetesOk += ok;
       z._ps += ok * PS.queteOk + faux * PS.queteTentee;
-      if (faux) z.moral -= faux * ENIGMES.rateeMoral;
-      jalon(z, `Énigmes : ${faux} mauvaise${faux > 1 ? 's' : ''} réponse${faux > 1 ? 's' : ''} (−${ENIGMES.rateeMoral} de moral chacune)`);
+      if (faux && ENIGMES.rateeMoral) { z.moral -= faux * ENIGMES.rateeMoral; jalon(z, `Énigmes : ${faux} mauvaise${faux > 1 ? 's' : ''} réponse${faux > 1 ? 's' : ''} (−${ENIGMES.rateeMoral} de moral chacune)`); }
       const b = qs.find((x) => x.bonus);
-      let txt = `Énigmes du jour : ${ok} bonne${ok > 1 ? 's' : ''} réponse${ok > 1 ? 's' : ''} sur ${qs.length}${faux ? ` (−${faux} de moral)` : ''}`;
+      let txt = `Énigmes du jour : ${ok} bonne${ok > 1 ? 's' : ''} réponse${ok > 1 ? 's' : ''} sur ${qs.length}${faux && ENIGMES.rateeMoral ? ` (−${faux * ENIGMES.rateeMoral} de moral)` : ''}`;
       if (ok >= 2 && b) { const t = appliquerBonus(b); if (t) txt += `, ${t}`; }
       jalon(z, 'Énigmes : bonus choisi');
       if (ok >= ENIGMES.primeSeuil) { const sf = ENIGMES.sansFaute, g = gainMoral(sf.moral, z.moral); z._ps += sf.ps; z.budget += sf.budget; z.moral += g; z._compta.push({ k: 'bonus', l: 'Prime « sans faute » (énigmes)', v: sf.budget }); txt += `, prime des ${ENIGMES.primeSeuil} réussies : +${sf.budget} k€, +${g} de moral, +${sf.ps} PS`; }
@@ -568,6 +569,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
     // Le Directeur ajuste le niveau des énigmes de demain (réussites récentes et classement aux énigmes).
     adapterEnigmes(z, ok, ok + faux, rangEnig[uid]);
+    // Pistes en cours : résultats arrivés à terme, puis pistes lancées ce soir.
+    z.rapport.push(...pistesDuSoir(state, z, o.pistesNew, T, makeRng(`${state.seed}:s${state.season}:t${T}:pistes:${uid}`)));
 
     jalon(z, 'Énigmes : sans faute (+2 de moral)');
     // Incidents du jour (mini-jeux) : réussite, échec, ou équipe livrée à elle-même.
@@ -982,7 +985,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (z.ipzHist.length > 30) z.ipzHist.shift();
     const psSolo = Math.min(PS.plafondJour, z._ps), psEntr = Math.min(PS.plafondEntraide, z._psEntraide || 0);
     z.ps += psSolo + psEntr;
-    z.psJour = { solo: psSolo, entraide: psEntr, tour: T };
+    // Au-delà du plafond du jour, les PS ne sont plus perdus : 1 point de jauge des skins par tranche de 5.
+    const psTrop = Math.max(0, (z._ps || 0) - PS.plafondJour), jaugeSurplus = Math.floor(psTrop / 5);
+    if (jaugeSurplus) { z.jaugeIncidents = (z.jaugeIncidents || 0) + jaugeSurplus; z.rapport.push(`Plafond de ${PS.plafondJour} PS atteint : les ${psTrop} PS en plus passent dans la jauge des skins (+${jaugeSurplus}).`); }
+    z.psJour = { solo: psSolo, entraide: psEntr, tour: T, plafond: psTrop > 0 };
     z.budget = round1(z.budget);
     z.criminalite = round1(z.criminalite);
     z.paperasse = round1(z.paperasse);

@@ -28,7 +28,7 @@ for (let t = 1; t <= 300; t++) {
       assert.ok(i.ouvre >= debut + 10 * H && i.ouvre <= debut + 16 * H, 'ouvre entre 6 h et 12 h');
       assert.equal(i.ferme, s2.nextDeadline, 'ouvert jusqu’à 20:00');
       assert.ok(i.ferme - i.ouvre >= 8 * H, 'au moins 8 heures pour jouer');
-      assert.ok(['colis', 'crochetage', 'depanneuse', 'dossier'].includes(i.jeu));
+      assert.ok(['colis', 'crochetage', 'depanneuse', 'bouclage'].includes(i.jeu));
     }
   }
 }
@@ -52,9 +52,9 @@ z.moral = 60; // sous 70 : plein effet des bonus de moral
 const moral0 = z.moral, budget0 = z.budget;
 z.jaugeIncidents = 49;
 const r = appliquerIncidents(z, { incidents: incs, resultats: { x0: { statut: 'ok', fautes: 0 }, x1: { statut: 'rate', fautes: 2 } }, alloc: { intervention: 7, roulage: 2 }, T: 5, rng: makeRng('t') });
-assert.equal(z.moral, moral0 + 3 - 1, 'Intervention réussie +3, Roulage raté −1');
+assert.ok(z.moral === moral0 + 3 || z.moral === moral0 + 3, 'Intervention réussie +3 ; Roulage raté : l’équipe reprend la main (malus léger éventuel en budget, jamais pire que sans jouer)');
 { const z2 = structuredClone(st.zones.a); z2._compta = []; z2.moral = 90; appliquerIncidents(z2, { incidents: [incs[0]], resultats: { x0: { statut: 'ok', fautes: 0 } }, alloc: {}, T: 5, rng: makeRng('t') }); assert.equal(z2.moral, 91, 'au-delà de 85 de moral, un bonus ne donne plus que +1'); }
-assert.equal(z.budget, budget0, 'un échec ne coûte pas de budget');
+assert.ok(z.budget === budget0 || z.budget === budget0 - 1, 'un échec ne coûte au pire que le malus léger (comme sans jouer)');
 assert.equal(z.jaugeIncidents, 1, 'jauge 49 + 2 = 51 → skin et reste 1');
 assert.ok(r.skin && (z.skins || []).length === 1, 'skin gagné');
 assert.equal(z._ps, 5 + 2, '+5 PS réussi, +2 PS tenté');

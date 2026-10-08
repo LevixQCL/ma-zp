@@ -11,6 +11,8 @@ import { coutBilan } from '../engine/bilan.js';
 import { participeCommune, agentsCommune } from '../engine/crise.js';
 import { engagementsDuJour } from './engagements.js';
 import { primeHtml } from './prime.js';
+import { previsionHtml, suivrePrevision } from './prevision.js';
+import { pistesOrdresHtml, resumePistes } from './pistes.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
 import { effectifPrevu, capaciteAgents, capaciteAgentsPrevue, capaciteVehicules, coutRecrue, sousTutelle, moralMult, bonusLots } from '../engine/zone.js';
@@ -39,7 +41,7 @@ export function initDraft() {
   const st = S.state;
   const dispo = agentsDisponibles(z, st.turn);
   const base = S.savedOrders || (z.dernierOrdre ? { alloc: z.dernierOrdre.alloc, rythme: z.dernierOrdre.rythme, patrouilles: z.dernierOrdre.patrouilles } : { alloc: DEFAULT_ALLOC, rythme: 'normal' });
-  const d = JSON.parse(JSON.stringify({ secteurs: base.secteurs || (!S.savedOrders && z.dernierOrdre && z.dernierOrdre.secteurs) || {}, alloc: { ...DEFAULT_ALLOC, ...(base.alloc || {}) }, rythme: base.rythme || 'normal', decision: base.decision || null, engagements: base.engagements || {}, evenement: base.evenement || 0, operation: base.operation || 'complet', patrouilles: base.patrouilles || {}, sansDecision: !!(S.savedOrders && S.savedOrders.sansDecision), depenses: (S.savedOrders && S.savedOrders.depenses) || { reserve: 0, reserveService: 'intervention' }, missions: (S.savedOrders && (S.savedOrders.missions || (S.savedOrders.mission ? [S.savedOrders.mission] : []))) || [], postes: (S.savedOrders && S.savedOrders.postes) || {}, ventes: (S.savedOrders && S.savedOrders.ventes) || [], ...enqueteDraft() }));
+  const d = JSON.parse(JSON.stringify({ secteurs: base.secteurs || (!S.savedOrders && z.dernierOrdre && z.dernierOrdre.secteurs) || {}, alloc: { ...DEFAULT_ALLOC, ...(base.alloc || {}) }, rythme: base.rythme || 'normal', decision: base.decision || null, engagements: base.engagements || {}, evenement: base.evenement || 0, operation: base.operation || 'complet', patrouilles: base.patrouilles || {}, sansDecision: !!(S.savedOrders && S.savedOrders.sansDecision), depenses: (S.savedOrders && S.savedOrders.depenses) || { reserve: 0, reserveService: 'intervention' }, missions: (S.savedOrders && (S.savedOrders.missions || (S.savedOrders.mission ? [S.savedOrders.mission] : []))) || [], postes: (S.savedOrders && S.savedOrders.postes) || {}, ventes: (S.savedOrders && S.savedOrders.ventes) || [], pistesNew: (S.savedOrders && S.savedOrders.pistesNew) || [], ...enqueteDraft() }));
   // Patrouilles : seulement dans mes quartiers.
   const mesQ = new Set((carteQuartiers(st).deZone[z.uid] || []).map(String));
   for (const k of Object.keys(d.patrouilles)) if (!mesQ.has(k)) delete d.patrouilles[k];
@@ -803,6 +805,17 @@ export function carteAffaire(a) {
     </div>`;
 }
 
+// Prise en main : un nouveau chef de zone découvre les ordres par étapes (les zones arrivées avant cette règle gardent tout).
+const OUVERTURE_DEPUIS = Date.parse('2026-10-09T00:00:00Z');
+const PALIERS_ORDRES = [['depenses', 3, 'Dépenses du jour'], ['nondroit', 5, 'Zone de non-droit'], ['affaires', 5, 'Affaires disputées'], ['equipe', 7, 'Mon équipe (missions des figures)']];
+export function ouvertureOrdres(z) {
+  const jour = ((z && z.toursJoues) || 0) + 1;
+  const ancien = !z || !(z.arrivee > OUVERTURE_DEPUIS);
+  const out = { jour, nouveau: [] };
+  for (const [k, j, nom] of PALIERS_ORDRES) { out[k] = ancien || jour >= j; if (!ancien && jour === j) out.nouveau.push(nom); }
+  out.prochain = ancien ? null : PALIERS_ORDRES.find(([, j]) => jour < j) || null;
+  return out;
+}
 export function renderOrdres() {
   const z = myZone(), st = S.state, d = S.draft, T = st.turn;
   const e = estimations();
@@ -837,6 +850,7 @@ export function renderOrdres() {
       <p class="sub">${e.dispo} agents disponibles${e.enquete ? `, dont ${e.enquete} en mission (enquête, FIPA, relève ou opération commune) : ${e.dispo - e.enquete} à répartir` : ''}${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p></div>
       <span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} Validés` : S.savedOrders ? 'Modifiés' : 'Pas validés'}</span></header>
 
+    <div id="prev-ipz" class="col prev-ipz" style="gap:2px;padding:10px 12px;border-radius:12px;background:var(--card, rgba(255,255,255,.04));border:1px solid var(--line)" aria-live="polite">${previsionHtml()}</div>${(() => { setTimeout(suivrePrevision, 0); return ''; })()}
     ${saved ? '<p class="tiny muted" style="margin:-6px 0 0">Tes ordres sont validés ; tu peux encore les modifier jusqu’à 20:00.</p>'
       : !S.savedOrders && !S.ordersDirty && z.dernierOrdre ? `<button class="btn primary block" data-action="save-orders">Reprendre les ordres d’hier et valider</button>
         <p class="tiny muted" style="margin:-4px 0 0;text-align:center">Ou ajuste ci-dessous, puis valide.</p>` : ''}
@@ -888,13 +902,15 @@ export function renderOrdres() {
     </section>
 
     ${prisesHtml()}
-    ${pliGroupe([pliItem('nondroit', 'Zone de non-droit', (() => { const n = agentsND(d); const sects = Object.keys(d.secteurs || {}).filter((k) => d.secteurs[k]); return n ? `${n} agent${n > 1 ? 's' : ''} sur ${sects.map((k) => esc(nomSecteur(k))).join(', ')}` : 'Aucun agent ce soir'; })(), `<div class="col" style="gap:6px">${Object.entries(d.secteurs || {}).filter(([, n]) => n).map(([k, n]) => `<div class="between"><span class="small" style="font-weight:600">${esc(nomSecteur(k))}</span><span class="tiny ok">${n} agent${n > 1 ? 's' : ''}</span></div>`).join('')}
+    ${(() => { const ov = ouvertureOrdres(z); return ov.nouveau.length ? `<p class="small" style="margin:0;color:var(--amber)">Nouveau dans tes ordres : ${ov.nouveau.map(esc).join(', ')}.</p>` : ov.prochain ? `<p class="tiny muted" style="margin:0">Jour ${ov.jour} de ta prise de fonction : ${esc(ov.prochain[2])} s’ouvre au jour ${ov.prochain[1]}.</p>` : ''; })()}
+    ${pliGroupe([ouvertureOrdres(z).nondroit ? pliItem('nondroit', 'Zone de non-droit', (() => { const n = agentsND(d); const sects = Object.keys(d.secteurs || {}).filter((k) => d.secteurs[k]); return n ? `${n} agent${n > 1 ? 's' : ''} sur ${sects.map((k) => esc(nomSecteur(k))).join(', ')}` : 'Aucun agent ce soir'; })(), `<div class="col" style="gap:6px">${Object.entries(d.secteurs || {}).filter(([, n]) => n).map(([k, n]) => `<div class="between"><span class="small" style="font-weight:600">${esc(nomSecteur(k))}</span><span class="tiny ok">${n} agent${n > 1 ? 's' : ''}</span></div>`).join('')}
       <p class="tiny muted" style="margin:0">Les agents envoyés sont pris sur tes services pour la journée. Qui y va et où : sur le Terrain.</p>
-      <a class="btn small primary block" href="#terrain">Choisir les secteurs sur le Terrain</a></div>`),
-    pliItem('equipe', 'Mon équipe', (() => { const ms = missionsValides(d); const m = ms.length === 1 && (z.equipe || []).find((x) => x.role === ms[0].role); const nbP = Object.keys(d.postes || {}).length; if (!ms.length && nbP) return `${nbP} figure${nbP > 1 ? 's changent' : ' change'} de service ce soir`; return ms.length > 1 ? `${ms.length} figures en mission` : m ? `${esc(m.prenom)} en mission ${ms[0].type === 'nondroit' ? 'en zone de non-droit' : 'en renfort'}` : 'Chacun encadre son service'; })(), equipeOrdres(z, d)),
-    st.affaires.length ? pliItem('affaires', 'Affaires disputées', nbEng ? `${nbEng} affaire${nbEng > 1 ? 's' : ''} engagée${nbEng > 1 ? 's' : ''} sur ${st.affaires.length}` : `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} ouverte${st.affaires.length > 1 ? 's' : ''} · aucun agent engagé`, `<div class="col" style="gap:8px">${affairesHtml}</div>`) : null,
+      <a class="btn small primary block" href="#terrain">Choisir les secteurs sur le Terrain</a></div>`) : null,
+    !ouvertureOrdres(z).equipe ? null : pliItem('equipe', 'Mon équipe', (() => { const ms = missionsValides(d); const m = ms.length === 1 && (z.equipe || []).find((x) => x.role === ms[0].role); const nbP = Object.keys(d.postes || {}).length; if (!ms.length && nbP) return `${nbP} figure${nbP > 1 ? 's changent' : ' change'} de service ce soir`; return ms.length > 1 ? `${ms.length} figures en mission` : m ? `${esc(m.prenom)} en mission ${ms[0].type === 'nondroit' ? 'en zone de non-droit' : 'en renfort'}` : 'Chacun encadre son service'; })(), equipeOrdres(z, d)),
+    st.affaires.length && ouvertureOrdres(z).affaires ? pliItem('affaires', 'Affaires disputées', nbEng ? `${nbEng} affaire${nbEng > 1 ? 's' : ''} engagée${nbEng > 1 ? 's' : ''} sur ${st.affaires.length}` : `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} ouverte${st.affaires.length > 1 ? 's' : ''} · aucun agent engagé`, `<div class="col" style="gap:8px">${affairesHtml}</div>`) : null,
     pliItem('decision', 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'Pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, decisionHtml, !d.decision && !d.sansDecision, !d.decision && !d.sansDecision ? 'à choisir' : null),
-    pliItem('depenses', 'Dépenses du jour', cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune', depensesHtml, cab > 0 && !dep.carrosserie, cab > 0 && !dep.carrosserie ? 'à réparer' : null)])}
+    pliItem('pistes', 'Pistes', resumePistes(z, d), pistesOrdresHtml(z, d)),
+    !ouvertureOrdres(z).depenses ? null : pliItem('depenses', 'Dépenses du jour', cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune', depensesHtml, cab > 0 && !dep.carrosserie, cab > 0 && !dep.carrosserie ? 'à réparer' : null)])}
 
     <a class="small" href="#guide-ordres" style="text-align:center;padding:10px">Comment fonctionnent les ordres ?</a>
   </main>${tabbar('ordres')}`;

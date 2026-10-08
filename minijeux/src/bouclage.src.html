@@ -395,11 +395,12 @@ function resetGame(cfg,tuto,mapIdx){ ficheOff();
   R.mods={}; R.fire=null; const nv=cfg.seed||0;
   if(!tuto&&nv>=6){ const L=Object.keys(MODS); R.mods[L[nv%4]]=true; if(nv>=15) R.mods[L[(nv+1)%4]]=true; }
   if(R.mods.barricade){ const cand=R.M.pads.slice(1,8); R.fire=cand[nv%cand.length].id; }
-  R.waves=tuto?1:cfg.waves; R.lives=R.lives0=tuto?15:cfg.lives;
   const qn=(k,d)=>{ const v=Q2.get(k); return v!==null&&v!==''&&Number.isFinite(Number(v))?Number(v):d; };
   const inc=Q2.get('mode')==='incident';
-  // En incident, l'effectif Intervention réel de la zone fixe les agents de départ.
-  R.agents=tuto?12:(inc?Math.max(12,Math.round(qn('agents',cfg.agents)*2.2)):cfg.eff);
+  // Incident du jour (Proximité) : version courte, 3 vagues (environ 2 minutes). La version longue reste dans le Challenge.
+  R.waves=tuto?1:(inc?Math.min(3,cfg.waves):cfg.waves); R.lives=R.lives0=tuto?15:cfg.lives;
+  // En incident, l'effectif réel du service (Proximité) fixe les agents de départ.
+  R.agents=tuto?12:(inc?Math.max(13,Math.round(qn('agents',cfg.agents)*3)):cfg.eff);
   { const d=!tuto&&cfg.defi&&DEBUT[cfg.niveau]; if(d&&!inc) R.agents=Math.max(R.agents,d.eff); R.vit=d&&!inc?d.vit:1; }
   // Véhicules disponibles : autopompes et combis selon la zone (la cavalerie vient en appui fédéral).
   R.bonus=tuto?{}:bonusZone();

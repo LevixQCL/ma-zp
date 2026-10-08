@@ -15,7 +15,8 @@ export const INCIDENTS = {
   intervention: { jeu: 'colis', titre: 'Colis suspect', texte: 'Un sac abandonné bipe devant la gare. Le SEDEE est retenu ailleurs.' },
   recherche: { jeu: 'crochetage', titre: 'Porte verrouillée', texte: 'Perquisition sous mandat : personne n’ouvre et le serrurier ne répond pas.' },
   roulage: { jeu: 'depanneuse', titre: 'Accident sur le parking', texte: 'Une voiture accidentée est coincée : la dépanneuse attend à la sortie.' },
-  proximite: { jeu: 'dossier', titre: 'Dossier à relire', texte: 'Un rapport de domiciliation doit partir à la commune : 3 erreurs s’y sont glissées.' },
+  // Proximité : la version courte du Maintien de l'ordre (3 vagues) remplace « Dossier à relire » (révision d'oct. 2026).
+  proximite: { jeu: 'bouclage', titre: 'Rassemblement qui dégénère', texte: 'Une fête de quartier tourne mal : un cortège marche sur ton hôtel de police. Encadre-le avant qu’il n’arrive.' },
 };
 export const SERVICES_INCIDENTS = Object.keys(INCIDENTS);
 
@@ -113,7 +114,7 @@ export const INC = {
   jauge: 50,              // points de jauge pour un skin
   deuxiemeChance: 0.5,    // probabilité d'un second incident dans la journée
   // Retour de Luc (oct. 2026) : plus l'IPZ de la veille est haut, plus il tombe d'incidents (zone très en vue).
-  // Ces incidents « en plus » ne rapportent que les PS et la jauge des skins ; ratés ou laissés, ils coûtent comme les autres.
+  // Ces incidents « en plus » ne rapportent que les PS et la jauge des skins (doublée) ; facultatifs : ratés ou laissés, ils ne coûtent rien.
   pression: { depuis: Date.parse('2026-10-08T18:30:00Z'), deuxieme: [[75, 0.75], [85, 1]], troisieme: { ipz: 90, chance: 0.5 } },
 };
 /** Chance d'un second incident selon l'IPZ de la veille. */
@@ -135,6 +136,7 @@ export const GAIN = {
   roulage: { budget: 2 },
   proximite: { satisfaction: 2 },
 };
+// `plein` n'est plus appliqué (un échec en jouant tire la même chance que l'équipe seule, puis `leger`) : gardé pour l'affichage.
 export const MALUS = {
   intervention: { plein: { moral: -1 }, leger: { moral: -1 } },
   recherche: { plein: { moral: -1 }, leger: { reputation: -1 } },
@@ -344,7 +346,8 @@ export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng, ind
     if (inc.urgence) { lignes.push(...appliquerUrgence(z, inc, res, { alloc, T, rng })); continue; }
     z.stats.incidentsJeu = (z.stats.incidentsJeu || 0) + 1;
     if (res && res.statut === 'ok') {
-      const pts = pointsJauge(res);
+      // Incident « en plus » réussi : jauge des skins doublée (facultatif, donc mieux payé).
+      const pts = pointsJauge(res) * (inc.pression ? 2 : 1);
       z.jaugeIncidents = (z.jaugeIncidents || 0) + pts;
       z._ps = (z._ps || 0) + PS.queteOk;
       z.stats.incidentsOk = (z.stats.incidentsOk || 0) + 1;
@@ -359,11 +362,16 @@ export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng, ind
         else { z.budget += 2; (z._compta ||= []).push({ k: 'incident', l: 'Incident réussi', v: 2 }); gains.push('+2 k€ (rien de neuf à trouver pour l’enquête)'); }
       }
       lignes.push(`Incident · ${nom} : réussi${res.fautes ? '' : ' sans faute'}. ${gains.join(', ')}, +${PS.queteOk} PS, +${pts} sur la jauge des skins.`);
+    } else if (inc.pression) {
+      // Incident « en plus » (zone très en vue) : facultatif, jamais de malus.
+      if (res) z._ps = (z._ps || 0) + PS.queteTentee;
+      lignes.push(`Incident en plus · ${nom} : ${res ? `${res.statut === 'abandon' ? 'abandonné' : 'raté'}, sans conséquence (+${PS.queteTentee} PS pour avoir essayé)` : 'laissé de côté, sans conséquence (il était facultatif)'}.`);
     } else if (res) {
-      const m = MALUS[inc.service].plein;
-      appliquerMalus(z, m, T);
+      // Raté en jouant : jamais pire que ne pas jouer. L'équipe reprend la main avec la même chance que si personne n'était venu.
       z._ps = (z._ps || 0) + PS.queteTentee;
-      lignes.push(`Incident · ${nom} : ${res.statut === 'abandon' ? 'abandonné' : 'raté'}. ${texteMalus(m)} (+${PS.queteTentee} PS pour avoir essayé).`);
+      const n = Number.isFinite(inc.agents) ? inc.agents : alloc[inc.service];
+      if (rng.chance(chanceSeule(inc.service, n))) lignes.push(`Incident · ${nom} : ${res.statut === 'abandon' ? 'abandonné' : 'raté'}, mais ton équipe a repris la main et l’a réglé (+${PS.queteTentee} PS pour avoir essayé).`);
+      else { const m = MALUS[inc.service].leger; appliquerMalus(z, m, T); lignes.push(`Incident · ${nom} : ${res.statut === 'abandon' ? 'abandonné' : 'raté'}, et ton équipe n’y est pas arrivée non plus. ${texteMalus(m)} (+${PS.queteTentee} PS pour avoir essayé).`); }
     } else if (rng.chance(chanceSeule(inc.service, Number.isFinite(inc.agents) ? inc.agents : alloc[inc.service]))) {
       lignes.push(`Incident · ${nom} : personne n’est venu, ton équipe l’a réglé seule.`);
     } else {

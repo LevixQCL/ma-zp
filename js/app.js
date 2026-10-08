@@ -1,4 +1,5 @@
 // Point d'entrée de l'application « Ma ZP ».
+import { basculerPiste, cibler } from './ui/pistes.js';
 import { CONFIG } from './config.js';
 import { installerCadenas } from './ui/cadenas.js';
 import { installerEnigmes } from './ui/enigmes.js';
@@ -695,6 +696,7 @@ async function onClick(e) {
         S.draft.alloc[s2] -= n;
         S.ordersDirty = true; toast(`${n} agent${n > 1 ? 's' : ''} libéré${n > 1 ? 's' : ''} : place-les dans la zone de non-droit (Terrain) ou dans un autre service.`); rerender(); break;
       }
+      case 'piste-toggle': basculerPiste(el.dataset.k); S.ordersDirty = true; rerender(); break;
       case 'dep-toggle': {
         const dd = (S.draft.depenses ||= { reserve: 0, reserveService: 'intervention' });
         const zk = S.state.zones[S.user.uid];
@@ -1409,6 +1411,7 @@ async function onChange(e) {
     if (eg) eg.partenaire = el.value || null;
     S.ordersDirty = true; rerender();
   }
+  if (el.dataset.change === 'piste-cible') { cibler(el.dataset.k, el.value); S.ordersDirty = true; rerender(); }
   if (el.dataset.change === 'train-type') { S.trainType = el.value; nouvelEntrainement(); rerender(); }
   if (el.dataset.change === 'quest-capacite' && el.value) await saveQuestBonus('capacite', el.value);
   if (el.dataset.change === 'quest-delegue-capacite' && el.value) await saveDelegue('capacite', el.value);

@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 105;
+export const APP_VERSION = 106;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -140,7 +140,8 @@ export const ROLE_SERVICE = { inter: 'intervention', rech: 'recherche', prox: 'p
 /** Bonus d'une figure de niveau `niveau`. */
 export const bonusChef = (niveau) => CHEFS.bonus[Math.max(0, Math.min(3, niveau || 0))];
 // Énigmes du jour : bonus au choix dès 2 bonnes réponses, prime « sans faute » à 3 sur 3.
-export const ENIGMES = { rateeMoral: 1, bonusMoral: 3, bonusBudget: 2, bonusCapacite: 1.1, sansFaute: { budget: 3, moral: 2, ps: 5 },
+// Une énigme ratée ne coûte plus rien (révision d'oct. 2026) : seule la réussite compte.
+export const ENIGMES = { rateeMoral: 0, bonusMoral: 3, bonusBudget: 2, bonusCapacite: 1.1, sansFaute: { budget: 3, moral: 2, ps: 5 },
   // Retour de Luc (oct. 2026) : 4 énigmes par jour. Bonus dès 2 bonnes réponses, prime dès 3 (rien de plus à 4).
   primeSeuil: 3,
   // Paliers de carrière (toutes saisons confondues) : toutes les `pas` énigmes réussies, une récompense.

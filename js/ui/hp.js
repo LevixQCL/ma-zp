@@ -1,4 +1,5 @@
 import { titresDefi } from './defis.js';
+import { cetteNuitHtml, pistesHpHtml } from './pistes.js';
 import { noteVue } from './nouveautes.js';
 import { actuHtml, actuLigne } from './actu.js';
 // Écran HP (Hôtel de police) : l'accueil.
@@ -373,7 +374,9 @@ export function renderHP() {
       ${S.backend.isMaster(S.user) ? `<a class="list-row" href="#admin">${icon('shield', 18)}<span>Maître du jeu</span></a>` : ''}
     </nav>` : ''}
 
+    ${cetteNuitHtml(z)}
     ${ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue })}
+    ${pistesHpHtml(z)}
     ${bilanHtml()}
     ${dilemmeHtml(st, z)}
     ${criseHtml()}

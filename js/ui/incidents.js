@@ -20,10 +20,11 @@ import { ANNEXES_AILE } from './scene-aile.js';
 export const MINI_JEUX = [
   { jeu: 'colis', service: 'intervention', nom: 'Colis suspect' },
   { jeu: 'bitonal', service: 'intervention', nom: 'Bitonal (urgence)' },
-  // Challenge uniquement pour l'instant (pas d'incident du jour, pas de prime de la semaine) : tower defense de l'Intervention.
-  { jeu: 'bouclage', service: 'intervention', nom: 'Maintien de l’ordre' },
+  // Tower defense : incident du jour de la Proximité en version courte (3 vagues), version longue au Challenge.
+  { jeu: 'bouclage', service: 'proximite', nom: 'Maintien de l’ordre' },
   { jeu: 'crochetage', service: 'recherche', nom: 'Crochetage' },
   { jeu: 'depanneuse', service: 'roulage', nom: 'Dépanneuse' },
+  // Plus d'incident du jour (remplacé par le Maintien de l'ordre court) : Challenge seulement.
   { jeu: 'dossier', service: 'proximite', nom: 'Dossier à relire' },
   // Appui fédéral à l'enquête (labo, RCCU) : joués quand une équipe PJF est accordée (voir engine/appui.js), et à l'entraînement.
   { jeu: 'empreintes', service: 'labo', nom: 'Empreintes', label: 'Appui PJF · Labo' },
@@ -208,7 +209,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, e
     p.set('pourquoi', pourquoiIncident(inc.service, n, aj));
     p.set('jauge', String(base + plus));
     if (inc.urgence) { p.set('malus', texteRisqueUrgence()); p.set('gain', `+${URGENCE.gain.moral} de moral, +${PS.queteOk} PS, jauge des skins`); }
-    else { p.set('malus', texteMalus(MALUS[inc.service].plein)); p.set('gain', inc.pression ? `+${PS.queteOk} PS et la jauge des skins (incident en plus : ta zone est très en vue)` : `${gainAffiche(inc.service)}, +${PS.queteOk} PS`); }
+    else { p.set('malus', inc.pression ? 'aucun : incident en plus, facultatif' : `au pire ${texteMalus(MALUS[inc.service].leger)}, et jamais plus que si tu n’y vas pas : ton équipe peut encore rattraper le coup`); p.set('gain', inc.pression ? `+${PS.queteOk} PS et la jauge des skins doublée (incident en plus : ta zone est très en vue)` : `${gainAffiche(inc.service)}, +${PS.queteOk} PS`); }
   }
   if (mode === 'renfort' && appui) {
     const u = APPUI.unites[appui.unite];

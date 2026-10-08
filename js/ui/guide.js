@@ -361,7 +361,7 @@ export function sections() {
       id: 'quetes', titre: 'Les énigmes du jour', html: `
         <p>Quatre énigmes par jour, de difficultés différentes, publiées à 20:00. Elles se corsent au fil de la semaine. Pas besoin de toutes les réussir : le bonus arrive dès 2 bonnes réponses, la prime dès 3.</p>
         ${ul([
-          '<strong>Une seule réponse par énigme</strong>, confirmée avant envoi : une erreur est définitive et coûte 1 point de moral.',
+          '<strong>Une seule réponse par énigme</strong>, confirmée avant envoi : une erreur est définitive, mais ne coûte rien.',
           'Chaque joueur reçoit ses propres données : on peut en discuter, mais la réponse d’un collègue ne marche pas chez toi.',
           `Chaque bonne réponse : +${PS.queteOk} PS (une tentative ratée : +${PS.queteTentee}). Trois réussies : +5 PS en plus (rien de plus à quatre).
         <h3>Le dossier noir</h3>
@@ -400,12 +400,12 @@ export function sections() {
           '<strong>Un seul essai</strong> par incident. Quitter en cours de partie compte comme un échec.',
           'La difficulté suit l’effectif du service en service le jour où l’incident tombe (tes ordres validés la veille à 20:00) : plus d’agents que la répartition de base, c’est plus facile ; moins, c’est plus dur. Elle est fixée dès que l’incident tombe : changer tes ordres ensuite n’y change rien.',
           `<strong>Réussi</strong> : +${PS.queteOk} PS, un bonus propre au service (voir le tableau) et des points sur la <strong>jauge des skins</strong> (+2 sans faute, +1 sinon). À ${INC.jauge} points, un nouveau skin pour ton commissariat (ou +5 k€ si tu les as tous).`,
-          `<strong>Raté ou abandonné</strong> : −1 de moral, comme une énigme ratée (+${PS.queteTentee} PS pour avoir essayé).`,
+          `<strong>Raté ou abandonné</strong> : jamais pire que ne pas jouer. Ton équipe reprend la main avec la même chance que si personne n’était venu ; si elle échoue aussi, petit malus (+${PS.queteTentee} PS pour avoir essayé). Les incidents « en plus » (IPZ élevé) sont facultatifs : aucun malus.`,
           '<strong>Pas joué</strong> : ton équipe se débrouille seule. Elle réussit d’autant plus souvent que le service est fourni ; sinon, un petit malus. Rien à gagner sans jouer.',
           'Chaque mini-jeu a son tuto. Pour t’exercer sans enjeu sur ta zone : écran Énigmes, onglet « Challenge ».',
           `<strong>Challenge</strong> (Énigmes › Challenge) : chaque dimanche à 20:00, le meilleur niveau de la semaine sur chaque mini-jeu (dès le niveau ${CHALLENGE.niveauMin}) rapporte ${CHALLENGE.prime} k€ et +${CHALLENGE.jauge} sur la jauge des skins. Une seule prime par joueur et par semaine : en tête sur plusieurs mini-jeux, les autres primes passent au suivant.`,
         ])}
-        ${table(['Service', 'Incident', 'Réussi', 'Raté', 'Pas joué et raté'], Object.entries(INCIDENTS).map(([k, x]) => [SERVICE_LABELS[k], esc(x.titre), esc(texteGain(GAIN[k])), esc(texteMalus(MALUS[k].plein)), esc(texteMalus(MALUS[k].leger))]))}
+        ${table(['Service', 'Incident', 'Réussi', 'Raté ou pas joué, et l’équipe n’y arrive pas'], Object.entries(INCIDENTS).map(([k, x]) => [SERVICE_LABELS[k], esc(x.titre), esc(texteGain(GAIN[k])), esc(texteMalus(MALUS[k].leger))]))}
         <h3 class="kicker" style="margin:10px 0 0">🚨 L’urgence du jour : « ${esc(URGENCE.titre)} »</h3>
         <p>Une fois par jour, en plus des incidents, des collègues pris à partie demandent du renfort (même horaire, ouvert jusqu’à 20:00). Mini-jeu <strong>Bitonal</strong> : rejoindre l’adresse au plus vite, en feu bleu, sur une rue à double sens. Les voitures devant toi s’écartent tard, celles d’en face serrent (pas toutes), des îlots bloquent l’axe, des voitures traversent aux feux rouges : passe sous 30 km/h et elles s’arrêtent.</p>
         ${ul([
