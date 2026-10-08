@@ -29,35 +29,35 @@ export const LIEUX_CORBEAU = {
 
 const SUSPECTS = [
   {
-    nom: 'Bernard Vanderhaegen', prenom: 'Bernard', f: false, age: 63, role: 'président du comité de quartier, la cible des affiches', roleDetail: 'ancien comptable, il fait les courses de quatre personnes âgées de la rue', proche: true,
+    nom: 'Bernard Vanderhaegen', photo: 'img/corbeau/p0.webp', prenom: 'Bernard', f: false, age: 63, role: 'président du comité de quartier, la cible des affiches', roleDetail: 'ancien comptable, il fait les courses de quatre personnes âgées de la rue', proche: true,
     vehicule: { t: 'à pied (habite la rue d’Havré)', mode: 'pied', rien: true },
     alibi: { type: 'couvre', pos: 'comptoir', lieu: 'à la réunion du comité, au Comptoir d’Havré, qu’il présidait', ditDe: hm(19, 45), ditA: hm(22, 45) },
     rumeur: 'vengeance',
     fiche: { declaration: 'Dit avoir présidé la réunion du comité, au Comptoir d’Havré, de 20:00 à la fin.', rumeur: 'Rumeur : le corbeau, ce serait lui. Il garde les archives du comité, voit Odile Hautecœur tous les jours, et s’accuse lui-même pour passer pour une victime.' },
   },
   {
-    nom: 'Maxime Delcourt', prenom: 'Maxime', f: false, age: 34, role: 'imprimeur, rue d’Havré', roleDetail: 'tient Imprim’Havré et habite au-dessus ; pas membre du comité', proche: false,
+    nom: 'Maxime Delcourt', photo: 'img/corbeau/p1.webp', prenom: 'Maxime', f: false, age: 34, role: 'imprimeur, rue d’Havré', roleDetail: 'tient Imprim’Havré et habite au-dessus ; pas membre du comité', proche: false,
     vehicule: { t: 'une camionnette blanche', mode: 'moteur' },
     alibi: { type: 'mensonge', pos: 'imprimerie', lieu: 'chez lui, au-dessus de l’imprimerie, seul', ditDe: hm(19, 0), ditA: hm(24, 30) },
     rumeur: 'argent',
     fiche: { declaration: 'Dit avoir passé la soirée chez lui, au-dessus de l’imprimerie, seul.', rumeur: 'Rumeur : seul à savoir imprimer de grandes affiches dans la rue. Au comptoir, il a lancé : « Ce corbeau, je lui imprime son affiche en A0. »' },
   },
   {
-    nom: 'Nathalie Brasseur', prenom: 'Nathalie', f: true, age: 47, role: 'fleuriste, rue d’Havré', roleDetail: 'tient Le Jardin d’Havré ; membre du comité, venue avec son mari', proche: true,
+    nom: 'Nathalie Brasseur', photo: 'img/corbeau/p2.webp', prenom: 'Nathalie', f: true, age: 47, role: 'fleuriste, rue d’Havré', roleDetail: 'tient Le Jardin d’Havré ; membre du comité, venue avec son mari', proche: true,
     vehicule: { t: 'une camionnette de livraison', mode: 'moteur' },
     alibi: { type: 'couvre', pos: 'comptoir', lieu: 'à la réunion du comité, sans quitter sa chaise', ditDe: hm(19, 45), ditA: hm(22, 45) },
     rumeur: 'vengeance',
     fiche: { declaration: 'Dit avoir assisté à toute la réunion du comité, avec son mari, sans quitter sa chaise.', rumeur: 'Rumeur : elle a acheté une étiqueteuse en septembre, et elle accuse partout le président d’être lui-même le corbeau.' },
   },
   {
-    nom: 'Jordan Lambotte', prenom: 'Jordan', f: false, age: 24, role: 'étudiant en architecture, petit-neveu d’Odile Hautecœur', roleDetail: 'appelle sa grand-tante tous les soirs ; habite Jemappes', proche: true,
+    nom: 'Jordan Lambotte', photo: 'img/corbeau/p3.webp', prenom: 'Jordan', f: false, age: 24, role: 'étudiant en architecture, petit-neveu d’Odile Hautecœur', roleDetail: 'appelle sa grand-tante tous les soirs ; habite Jemappes', proche: true,
     vehicule: { t: 'un vélo', mode: 'pied' },
     alibi: { type: 'mensonge', pos: 'jemappes', lieu: 'chez lui, à Jemappes, sur une maquette', ditDe: hm(19, 0), ditA: hm(24, 30) },
     rumeur: 'vengeance',
     fiche: { declaration: 'Dit avoir passé la soirée chez lui, à Jemappes, à finir une maquette.', rumeur: 'Rumeur : le président l’a écarté de sa tante, « il vient pour son argent ». Il a juré de le lui faire payer.' },
   },
   {
-    nom: 'Hélène Dufrasne', prenom: 'Hélène', f: true, age: 52, role: 'libraire, secrétaire du comité, la plaignante', roleDetail: 'tient la Librairie Dufrasne, à côté du café, point relais colis', proche: true,
+    nom: 'Hélène Dufrasne', photo: 'img/corbeau/p4.webp', prenom: 'Hélène', f: true, age: 52, role: 'libraire, secrétaire du comité, la plaignante', roleDetail: 'tient la Librairie Dufrasne, à côté du café, point relais colis', proche: true,
     vehicule: { t: 'à pied (habite au-dessus de la librairie)', mode: 'pied', rien: true },
     alibi: { type: 'couvre', pos: 'comptoir', lieu: 'à la réunion du comité, à la table du bureau', ditDe: hm(19, 45), ditA: hm(22, 45) },
     rumeur: 'argent',
@@ -326,7 +326,7 @@ const PVC = {
   titre: 'Premières constatations',
   lignes: [
     'Le jeudi, à 22:41, nous, INP Cordier et INP Baetens, sommes requis par le dispatching : affiches injurieuses sur des vitrines, rue d’Havré. Arrivés à 22:52.',
-    'Une trentaine de personnes, sorties d’une réunion du comité de quartier au Comptoir d’Havré, sont rassemblées sur le trottoir. Nous constatons six affiches identiques, format A2, sur six vitrines : Le Jardin d’Havré (fleuriste), Imprim’Havré, la boulangerie Delbecq, la pharmacie d’Havré, l’agence de voyages Évasion et le local du comité, en face du café. Texte : « LE PRÉSIDENT SE SERT DANS LA CAISSE DES COLIS DE NOËL. ET DANS LES COMPTES DE CEUX QU’IL “AIDE”. — LE CORBEAU D’HAVRÉ »',
+    'Une trentaine de personnes, sorties d’une réunion du comité de quartier au Comptoir d’Havré, sont rassemblées sur le trottoir. Nous constatons six affiches identiques, format A2, sur six vitrines : Imprim’Havré, la Librairie Dufrasne, la boulangerie Delbecq, la pharmacie d’Havré, l’agence de voyages Évasion et le local du comité, en face du café. Texte : « LE PRÉSIDENT SE SERT DANS LA CAISSE DES COLIS DE NOËL. ET DANS LES COMPTES DE CEUX QU’IL “AIDE”. — LE CORBEAU D’HAVRÉ »',
     'Les affiches sont parfaitement lisses, sans bulle ni coulure. Elles se retirent d’un geste. Saisies pour le labo. Aucun témoin de la pose.',
     'M. Bernard Vanderhaegen, président du comité, très éprouvé, déclare être la cible d’un « corbeau » qui adresse depuis trois semaines des lettres anonymes aux habitants de la rue. Plusieurs personnes présentes confirment en avoir reçu.',
     'Le vendredi, à 08:15, se présente au commissariat Mme Hélène Dufrasne, 52 ans, libraire, secrétaire du comité, qui dépose plainte pour harcèlement au nom du comité et en son nom propre : « Trois semaines de lettres, et maintenant les sept affiches. Toute la rue a honte. » Elle remet la lettre anonyme qu’elle a reçue.',
