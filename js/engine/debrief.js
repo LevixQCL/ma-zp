@@ -137,7 +137,7 @@ export function construireDebrief(state, aff, issue, fin = {}) {
     v: 1, n, titre: aff.titre, meurtre: !!aff.meurtre, genre: aff.genre || null, cas: aff.cas || (aff.meurtre ? 'clef' : null), issue,
     jours: fin.jour || null,
     coupable: { i: aff.coupable, nom: s.nom, f: !!s.f, role: s.role },
-    ...(aff.variante ? { variante: { k: aff.variante, nom: VARIANTE_INFO[aff.variante].nom, regle: aff.regle } } : {}),
+    ...(aff.variante && VARIANTE_INFO[aff.variante] ? { variante: { k: aff.variante, nom: VARIANTE_INFO[aff.variante].nom, regle: aff.regle } } : {}),
     ...(comp ? { complice: { i: aff.complice, nom: comp.nom, f: !!comp.f, role: comp.role } } : {}),
     ...(aff.mensonge ? { mensonge: {
       menteur: aff.mensonge.menteur != null ? { i: aff.mensonge.menteur, nom: aff.suspects[aff.mensonge.menteur].nom, f: !!aff.suspects[aff.mensonge.menteur].f } : { nom: `${aff.suspects[aff.coupable].alibi.avec.replace(/^sa /, 'la ').replace(/^son /, 'le ')} ${/^[aeiouéèêh]/i.test(s.nom) ? 'd’' : 'de '}${s.nom}`, proche: true },

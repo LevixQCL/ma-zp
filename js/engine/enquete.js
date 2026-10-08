@@ -67,8 +67,8 @@ export const casDe = (st, n) => (st.meurtreDes != null && n === st.meurtreDes ? 
  * partie + n° de l'affaire). Elle est gardée dans state.variantes[n] pour toute la partie (le débrief d'une affaire
  * close la relit). Sans entrée : l'affaire d'origine, à l'identique (les affaires ouvertes avant les variantes).
  */
-export const VARIANTES = { clef: VARIANTES_MEURTRE, rampe: VARIANTES_RAMPE, corbeau: VARIANTES_CORBEAU };
-export const tirerVariante = (seed, n, cas) => makeRng(`${seed}:variante:${cas}:${n}`).pick(VARIANTES[cas]);
+export const VARIANTES_ECRITES = { clef: VARIANTES_MEURTRE, rampe: VARIANTES_RAMPE, corbeau: VARIANTES_CORBEAU };
+export const tirerVariante = (seed, n, cas) => makeRng(`${seed}:variante:${cas}:${n}`).pick(VARIANTES_ECRITES[cas]);
 /** Variante de l'affaire n dans cette partie ('a' : l'histoire d'origine). */
 export const varianteDe = (state, n) => (state.variantes && state.variantes[n]) || 'a';
 /** Affaires écrites que le maître du jeu peut ouvrir maintenant dans cette partie. */

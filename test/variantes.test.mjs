@@ -3,7 +3,7 @@
 // du premier jour sont ceux de l'histoire d'origine (on ne la reconnaît qu'en enquêtant).
 import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
-import { affaire, candidats, confrontationOk, mandatOk, pieceDemarche, pieceReaudition, pieceRecoupement, texteFait, titrePiece, opposables, nouvelleAffaire, tirerVariante, varianteDe, VARIANTES, ouvrirAffaireMaintenant } from '../js/engine/enquete.js';
+import { affaire, candidats, confrontationOk, mandatOk, pieceDemarche, pieceReaudition, pieceRecoupement, texteFait, titrePiece, opposables, nouvelleAffaire, tirerVariante, varianteDe, VARIANTES_ECRITES, ouvrirAffaireMaintenant } from '../js/engine/enquete.js';
 import { affaireMeurtre } from '../js/engine/meurtre-mons.js';
 import { affaireMeurtreRampe, evaluerHypothese } from '../js/engine/meurtre-rampe.js';
 import { affaireCorbeau } from '../js/engine/corbeau-havre.js';
@@ -49,7 +49,7 @@ assert.equal(varianteDe(st0, 4), 'a');
 // ── 2. Tirage à l'ouverture, gardé dans l'état. ──
 for (const cas of ['clef', 'rampe', 'corbeau']) {
   const vus = new Set(Array.from({ length: 40 }, (_, k) => tirerVariante(`graine${k}`, 3, cas)));
-  assert.deepEqual([...vus].sort(), VARIANTES[cas], `${cas} : les deux variantes sortent`);
+  assert.deepEqual([...vus].sort(), VARIANTES_ECRITES[cas], `${cas} : les deux variantes sortent`);
   assert.equal(tirerVariante('x', 3, cas), tirerVariante('x', 3, cas), 'tirage déterministe');
 }
 {
