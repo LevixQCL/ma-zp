@@ -229,6 +229,7 @@ export function createLocalBackend(config) {
       }
     },
     subscribeRadio(cb) { listeners.radio.add(cb); cb(self.radio.slice(-100)); return () => listeners.radio.delete(cb); },
+    async listEncheres(venteId) { return self.radio.filter((m) => m.enchere && m.enchere.vente === venteId).map((m) => ({ uid: m.uid, at: m.at, ...m.enchere })); },
     async sendRadio(uid, texte, extra = {}) {
       self.radio.push({ ...extra, id: `r${Date.now()}`, uid, texte: String(texte).slice(0, 280), at: Date.now() });
       persist(); emit('radio', self.radio.slice(-100));

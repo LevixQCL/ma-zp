@@ -29,6 +29,7 @@ import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus, app
 import { fipaPre, fipaGenerer } from './fipa.js';
 import { creerNonDroit, nonDroitResoudre } from './nondroit.js';
 import { encheresResoudre, annoncerLot } from './encheres.js';
+import { venteResoudre, annoncerVente } from './ventes.js';
 import { rivalitesPre, rivalitesPost, themeActif, appliquerConsignes } from './rivalites.js';
 import { pactesPre, pactesPost, lies, PACTE } from './pactes.js';
 import { FLAGRANTS } from './contenu.js';
@@ -137,7 +138,7 @@ export function createGame({ seed = 'delta', turnDeadline = 0, regles = 1 } = {}
   };
   state.nonDroit = creerNonDroit(seed, 1);
   nouvelleAffaire(state);
-  annoncerLot(state);
+  if (regles >= 2) annoncerVente(state, 1); else annoncerLot(state);
   return state;
 }
 
@@ -167,7 +168,7 @@ function genererAffaires(state, rng) {
  * @param {object} input  { orders: {uid: ordres}, quests: {uid: énigme}, players: {uid: profil} }
  * @returns {{ state: object, gazette: object }}
  */
-export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, nextWeekday = null, historiqueEnigmes = null } = {}) {
+export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, nextWeekday = null, historiqueEnigmes = null, encheres = [] } = {}) {
   // Incidents du jour : tirés sur l'état d'avant la résolution, comme les joueurs les ont vus.
   // Ceux encore ouverts après 20:00 et pas encore joués sont reportés à la résolution de demain.
   const coursesUrgence = []; // temps des urgences jouées cette nuit : ajustent le temps cible de demain
@@ -306,7 +307,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   jalonTous('Pactes, défis, Conseil');
   const theme = themeActif(state, T);
   // Salle des ventes : le lot gagné sert dès ce soir.
-  const ench = encheresResoudre(state, uids, ord, push, T);
+  // Saison 2 : vente aux enchères des saisies (deux jours, trois lots) à la place du lot du jour.
+  const ench = reglesV2(state) ? venteResoudre(state, uids, orders, encheres, push, T) : encheresResoudre(state, uids, ord, push, T);
   jalonTous('Salle des ventes');
 
   // Enquête (partages, accusations, traques) et FIPA : avant la simulation des zones.
@@ -1258,8 +1260,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Les événements collectifs sont remplacés par les FIPA (plus de nouvel événement).
   }
   genererAffaires(state, makeRng(`${state.seed}:s${state.season}:t${state.turn}:affaires`));
-  const prochain = annoncerLot(state);
-  gazette.prochainLot = prochain;
+  if (reglesV2(state)) { state.enchere = null; gazette.vente = annoncerVente(state, state.turn); }
+  else gazette.prochainLot = annoncerLot(state);
   return { state, gazette };
 }
 
@@ -1362,6 +1364,7 @@ function finDeSaison(state, classement, opts = {}) {
   state.affaires = [];
   state.evenement = null;
   state.nonDroit = creerNonDroit(state.seed, state.season);
+  state.vente = null; state.enchere = null;
   state.fipas = []; state.traques = []; state.fipaPaires = {}; state.duels = []; state.postes = []; state.pactes = []; state.defis = []; state.conseil = null; state.theme = null; state.motionsChef = [];
   // Bilan de saison : les pertes dépendent de ce que chaque zone a gagné et de la moyenne du district.
   const moy = moyennesDistrict(zones);

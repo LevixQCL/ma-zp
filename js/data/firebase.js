@@ -255,8 +255,12 @@ export async function createFirebaseBackend(config) {
       const lire = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       const u1 = F.onSnapshot(F.query(col('radio'), F.orderBy('at', 'desc'), F.limit(80)), (snap) => { recents = lire(snap); envoyer(); }, (e) => console.error(e));
       const u2 = F.onSnapshot(F.query(col('radio'), F.where('at', '>=', Date.now() - 30 * 3600 * 1000)),
-        (snap) => { jour = lire(snap).filter((m) => m.nd || m.renfort); envoyer(); }, (e) => console.error(e));
+        (snap) => { jour = lire(snap).filter((m) => m.nd || m.renfort || m.enchere); envoyer(); }, (e) => console.error(e));
       return () => { u1(); u2(); };
+    },
+    async listEncheres(venteId) {
+      const snap = await F.getDocs(F.query(col('radio'), F.where('enchere.vente', '==', venteId)));
+      return snap.docs.map((d) => { const v = d.data(); return { uid: v.uid, at: v.at, ...v.enchere }; });
     },
     async sendRadio(uid, texte, extra = {}) {
       await F.addDoc(col('radio'), { ...extra, uid, texte: String(texte).slice(0, 280), at: Date.now() });

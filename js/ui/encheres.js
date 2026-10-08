@@ -28,7 +28,9 @@ function resultatHtml(st) {
 }
 
 import { vignetteVentes } from './vignettes-hp.js';
+import { ventesHtml } from './ventes.js';
 export function encheresHtml() {
+  if (S.state && (Number(S.state.regles) || 1) >= 2) return ventesHtml();
   const z = myZone(), st = S.state;
   const e = st.enchere && st.enchere.tour === st.turn ? st.enchere : null;
   const lot = e && LOTS[e.lot];

@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 111;
+export const APP_VERSION = 112;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -416,6 +416,10 @@ export const LOTS = {
   // Lots réservés aux zones qui ont bonne réputation.
   parquet:   { nom: 'Convention avec le parquet', texte: 'Le parquet accepte de traiter tes dossiers en priorité.', effet: 'Recherche +20 % jusqu’à la fin de la saison', prix: 7, bonus: { recherche: 1.2 }, reserve: true },
   quartier:  { nom: 'Bureau de quartier prêté par la commune', texte: 'Un rez-de-chaussée en plein centre, gratuit pour la saison.', effet: 'Proximité +20 % jusqu’à la fin de la saison', prix: 6, bonus: { proximite: 1.2 }, reserve: true },
+  // Saison 2 : gros lots de la vente aux enchères (trop chers pour une zone seule, achetables à deux zones liées par un pacte).
+  helico:    { nom: 'Prêt d’un hélicoptère fédéral', texte: 'La police fédérale prête son hélicoptère et son équipage pour la saison.', effet: 'Intervention +10 % et force d’assaut en non-droit +15 % jusqu’à la fin de la saison', prix: 28, bonus: { intervention: 1.1 }, nd: { force: 0.15 }, gros: true },
+  blinde:    { nom: 'Véhicule blindé saisi', texte: 'Un blindé de transport saisi à un réseau, remis aux normes de la police.', effet: 'Non-droit : force +10 %, blessures divisées par deux jusqu’à la fin de la saison', prix: 24, bonus: {}, nd: { force: 0.1, blessure: 0.5 }, gros: true },
+  cellulef:  { nom: 'Cellule d’appui fédérale (renforcée)', texte: 'Quatre spécialistes fédéraux détachés auprès des zones acheteuses.', effet: '+2 agents tout de suite (salaire à ta charge), même si l’hôtel de police est plein', prix: 22, immediat: 'agents', gros: true },
   cellule:   { nom: 'Cellule d’appui de la police fédérale', texte: 'Deux spécialistes détachés pour épauler ta zone.', effet: '+2 agents tout de suite (salaire à ta charge), même si l’hôtel de police est plein', prix: 7, immediat: 'agents', reserve: true },
 };
 

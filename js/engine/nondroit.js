@@ -6,7 +6,7 @@
 // Une zone qui ne joue plus ne bloque personne : son influence s'efface, les autres continuent.
 import { CONFIG } from '../config.js';
 import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
-import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND, INFRAS, aAnnexe } from './constants.js';
+import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND, INFRAS, aAnnexe, LOTS } from './constants.js';
 import { talentVal } from './chef.js';
 import { makeRng } from './rng.js';
 import { clamp, round1, forceEngagement, jalon, noter } from './zone.js';
@@ -122,8 +122,11 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
       const zz = state.zones[u];
       const drone = aAnnexe(zz, 'drone') && n >= INFRAS.drone.minAgents;
       const f0 = forceEngagement(zz, n, T) * (drone ? INFRAS.drone.force : 1);
-      return { u, n, f: f0 * (1 + bonus) * (1 + talentVal(zz, 'tacticien', 'force', 0)), chef: mi, drone,
-        risque: (mi ? CHEFS.nd.blessure : 1) * (drone ? INFRAS.drone.blessure : 1) * talentVal(zz, 'tacticien', 'blessure', 1) };
+      // Gros lots de la vente aux enchères (hélicoptère, blindé).
+      const ndLots = (zz.lots || []).map((l) => LOTS[l.id] && LOTS[l.id].nd).filter(Boolean);
+      const fLots = ndLots.reduce((a, x) => a * (1 + (x.force || 0)), 1), bLots = ndLots.reduce((a, x) => a * (x.blessure || 1), 1);
+      return { u, n, f: f0 * fLots * (1 + bonus) * (1 + talentVal(zz, 'tacticien', 'force', 0)), chef: mi, drone,
+        risque: (mi ? CHEFS.nd.blessure : 1) * (drone ? INFRAS.drone.blessure : 1) * talentVal(zz, 'tacticien', 'blessure', 1) * bLots };
     }) : [];
     // Salle de crise : +15 % de force quand au moins deux zones attaquent ensemble.
     if (engages.length >= 2) for (const e of engages) if (aAnnexe(state.zones[e.u], 'crise')) { e.f *= 1 + INFRAS.crise.coop; state.zones[e.u].rapport.push(`Salle de crise : coordination avec les autres zones sur ${nomSecteur(k)}, force +${Math.round(INFRAS.crise.coop * 100)} %.`); }

@@ -26,7 +26,7 @@ export function annoncerLot(state) {
   const T = state.turn;
   const rng = makeRng(`${state.seed}:s${state.season}:t${T}:enchere`);
   const recents = (state.lotsRecents || []).slice(-3);
-  const ids = Object.keys(LOTS).filter((id) => !recents.includes(id));
+  const ids = Object.keys(LOTS).filter((id) => !recents.includes(id) && !LOTS[id].gros);
   const reserves = ids.filter((id) => LOTS[id].reserve), ouverts = ids.filter((id) => !LOTS[id].reserve);
   const pool = reserves.length && rng.chance(ENCHERE.partReserve) ? reserves : ouverts;
   const lot = rng.pick(pool);

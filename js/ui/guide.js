@@ -362,7 +362,28 @@ export function sections() {
           `Environ un lot sur quatre est réservé aux zones de réputation ${ENCHERE.repReserve} ou plus.`,
           'Les bonus « jusqu’à la fin de la saison » disparaissent à la nouvelle saison ; les effets immédiats (véhicule, formation, agents…) suivent les règles habituelles.',
         ])}
-        ${table(['Lot', 'Effet', 'Mise à prix'], Object.values(LOTS).map((l) => [`${l.nom}${l.reserve ? ` <span class="tiny muted">(réputation ${ENCHERE.repReserve}+)</span>` : ''}`, esc(l.effet), `environ ${l.prix} k€`]))}`,
+        <p><strong>Saison 2 : la vente aux enchères des saisies.</strong> À partir de la saison 2, la salle des ventes change :</p>
+        ${ul([
+          'Une vente <strong>tous les deux jours</strong>, avec <strong>trois lots</strong> dont un gros lot (hélicoptère fédéral, véhicule blindé, cellule d’appui renforcée).',
+          '<strong>Jour 1</strong> : enchères visibles. Chaque relance (par paliers de 500 €, 5 par jour au plus) est publiée sur la Radio et compte comme offre.',
+          '<strong>Jour 2</strong> : une seule <strong>offre finale secrète</strong> par lot, dévoilée au coup de marteau de 20:00. Pas besoin d’être en ligne à 19:59.',
+          '<strong>État caché</strong> : le matériel et les véhicules peuvent être comme neufs (effet +50 %), usés ou défectueux (effet −50 %). Une <strong>expertise</strong> (1 agent immobilisé le lendemain) le révèle, plus sûrement avec le Flair de ton chef.',
+          '<strong>Tuyau du priseur</strong> : une fois par vente, ton chef apprend combien d’autres zones s’intéressent à un lot. À offre égale, la <strong>Diplomatie</strong> du chef départage.',
+          '<strong>Gros lot à deux</strong> : deux zones liées par un pacte peuvent mettre leurs offres en commun. Chacune paie sa part, les deux profitent de l’effet.',
+        ])}
+        ${table(['Lot', 'Effet', 'Mise à prix'], Object.values(LOTS).map((l) => [`${l.nom}${l.gros ? ' <span class="tiny muted">(gros lot, saison 2)</span>' : l.reserve ? ` <span class="tiny muted">(réputation ${ENCHERE.repReserve}+)</span>` : ''}`, esc(l.effet), `environ ${l.prix} k€`]))}`,
+    },
+    {
+      id: 'chef', titre: 'Le chef de corps (saison 2)', html: `
+        <p>Depuis la saison 2, tu incarnes le chef de ta zone. Son portrait apparaît sur la carte, au classement et dans ta fiche (Profil).</p>
+        ${ul([
+          '<strong>Parcours</strong> : choisi une fois, il donne +2 niveaux dans une compétence.',
+          '<strong>Cinq compétences</strong> (0 à 10) : Gestion, Commandement, Flair, Diplomatie, Proximité. Elles montent par l’usage, selon ce que tu fais chaque jour, avec un plafond quotidien. Elles te suivent de saison en saison.',
+          '<strong>Talents</strong> : 15 à débloquer (niveaux 2, 5 et 8), 3 équipés au plus. Ajouter dans un emplacement vide est libre, remplacer un talent est possible une fois par semaine. Les effets sont petits et situationnels : un vétéran a plus de choix, pas plus de puissance.',
+          '<strong>Agenda</strong> : dans les ordres, où passe le chef aujourd’hui (bureau, commune, terrain, parquet, quartier ou chez un voisin). C’est ce qui nourrit le plus ses compétences.',
+          '<strong>Directeur</strong> : avec une compétence à 4, certains dilemmes proposent une option de plus.',
+          '<strong>Carrière</strong> : états de service, médaille de la plus forte progression de la saison, parrainage des nouveaux chefs.',
+        ])}`,
     },
     {
       id: 'quetes', titre: 'Les énigmes du jour', html: `

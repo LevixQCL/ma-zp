@@ -75,7 +75,7 @@ export const TALENTS = [
   { id: 'adresses', comp: 'diplomatie', niv: 2, nom: 'Carnet d’adresses', texte: 'Un pacte de plus en même temps' },
   { id: 'bonvoisin', comp: 'diplomatie', niv: 5, nom: 'Bon voisin', texte: 'Un renfort prêté ou une relève prise rapporte +1 de réputation', rep: 1 },
   { id: 'porteparole', comp: 'diplomatie', niv: 8, nom: 'Porte-parole', texte: 'Ta voix compte double dans les votes de crise du district' },
-  { id: 'visage', comp: 'proximite', niv: 2, nom: 'Visage connu', texte: 'La satisfaction retombe 25 % moins vite', derive: 0.75 },
+  { id: 'visage', comp: 'proximite', niv: 2, nom: 'Visage connu', texte: 'La satisfaction retombe 20 % moins vite', derive: 0.8 },
   { id: 'communicant', comp: 'proximite', niv: 5, nom: 'Communicant', texte: 'Plaintes médiatisées et mauvaise presse : effets réduits de moitié', presse: 0.5 },
   { id: 'mediateur', comp: 'proximite', niv: 8, nom: 'Médiateur', texte: 'Vagues de délinquance reçues −25 %', vagues: 0.75 },
 ];

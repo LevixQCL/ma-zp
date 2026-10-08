@@ -200,7 +200,7 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
 /** Multiplicateur apporté par les lots gagnés aux enchères pour un service. */
 export function bonusLots(zone, service) {
   let m = 1;
-  for (const l of zone.lots || []) { const b = LOTS[l.id] && LOTS[l.id].bonus; if (b && b[service]) m *= b[service]; }
+  for (const l of zone.lots || []) { const b = LOTS[l.id] && LOTS[l.id].bonus; if (b && b[service]) m *= l.etat === 'neuf' ? 1 + (b[service] - 1) * 1.5 : l.etat === 'defectueux' ? 1 + (b[service] - 1) * 0.5 : b[service]; }
   return m;
 }
 

@@ -3,17 +3,43 @@
 import { S, esc } from './common.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-09-vols-variantes',
-  titre: 'Quoi de neuf à la ZP ?',
+  id: '2026-10-09-saison-2',
+  titre: 'Saison 2 : ton chef de corps',
+  saison2: true,
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🕵️', 'Des vols qui sortent du moule', 'deux complices à démasquer ensemble, un témoin qui ment, une plainte qui sent la fraude à l’assurance. La particularité est annoncée dès l’ouverture de l’affaire.'],
-    ['🧩', 'L’énigme d’enquête', 'pendant un vol, ta 3e énigme du jour se joue sur l’affaire et te rapporte une pièce sur ta piste prioritaire.'],
-    ['🕵️', 'Les pistes', 'dans tes ordres : indic, filature, dialogue avec un quartier tendu. Le résultat tombe une à trois nuits plus tard.'],
+    ['🎖️', 'Ton chef de corps', 'choisis son portrait et son parcours. Ses compétences montent selon ta façon de jouer, il débloque des talents et te suit de saison en saison.'],
+    ['🏗️', 'Quatre nouvelles annexes', 'cachots (un interpellé balance une pièce d’enquête), cellule drone, salle de crise et assistance aux victimes.'],
+    ['🔨', 'La vente aux enchères des saisies', 'trois lots tous les deux jours : relances visibles, puis une offre finale secrète. Expertise, tuyau du priseur, et des gros lots à acheter à deux.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Saison 2 : le chef de corps', [
+      ['Création', 'à la première ouverture de la saison 2 : un portrait, un parcours (+2 niveaux dans une compétence) et une devise. On peut changer le portrait et la devise depuis le Profil.'],
+      ['Cinq compétences', 'Gestion, Commandement, Flair, Diplomatie, Proximité, de 0 à 10. Elles montent par l’usage, selon ce que tu fais chaque jour (revenu, investissements, incidents, assauts, pièces d’enquête, renforts, relèves, satisfaction…), avec un plafond par jour : impossible de « farmer ». Elles sont gardées de saison en saison.'],
+      ['Talents', '15 talents (niveaux 2, 5 et 8 de chaque compétence), 3 équipés au plus. Ajouter un talent dans un emplacement vide est libre ; en remplacer un, une fois par semaine. Aucun talent ne donne d’information sur la solution d’une enquête.'],
+      ['Agenda du chef', 'une ligne dans les ordres : au bureau (paperasse −1 au-delà de 8), à la commune (+1 500 €), sur le terrain avec un service (+10 %), au parquet (chance de pièce +10 %), en réunion de quartier (satisfaction +1) ou chez un voisin (si son chef vient chez toi le même jour : +3 PS d’entraide et +1 de réputation chacun).'],
+      ['Le Directeur parle au chef', 'certains dilemmes proposent une option de plus quand une compétence atteint 4 (grève, indic, journaliste, sponsor).'],
+      ['Carrière', 'états de service de chaque saison, une médaille par compétence pour la plus forte progression de la saison, parrainage d’un nouveau chef (7 jours, progression +50 %, PS d’entraide pour le parrain), progression doublée pour une arrivée tardive jusqu’au niveau moyen de la partie.'],
+    ]],
+    ['Saison 2 : nouvelles annexes', [
+      ['Emplacements', '3 + le niveau des bureaux de l’hôtel de police (4 au départ, 8 au niveau 5). On peut démolir une annexe (gratuit, sans remboursement). Une zone qui en a déjà plus garde tout.'],
+      ['Complexe cellulaire (10 000 €)', 'interpellations (affaires, flagrants délits) +25 % de points, une relève se prend avec un agent de moins, garde à vue : le premier interpellé de chaque affaire balance une pièce d’enquête (un agent de garde le lendemain).'],
+      ['Cellule drone (12 000 €)', 'non-droit : dès 3 agents engagés, force +20 % et blessures −30 % ; traque : un survol ajoute un indice sur la planque.'],
+      ['Salle de crise (10 000 €)', 'non-droit : force +15 % quand au moins deux zones attaquent le même secteur ; opération commune du district : un agent de moins à envoyer.'],
+      ['Assistance aux victimes (10 000 €)', 'Accueil +20 %, la satisfaction retombe 20 % moins vite, plaintes et audits de l’Inspection deux fois moins fréquents.'],
+    ]],
+    ['Saison 2 : la vente aux enchères des saisies', [
+      ['Rythme', 'une vente tous les deux jours, trois lots dont un gros lot. Jour 1 : relances visibles par tous (publiées sur la Radio, 5 par jour au plus, par paliers de 500 €). Jour 2 : une seule offre finale secrète par lot, dévoilée au coup de marteau de 20:00. Ta relance compte déjà comme offre.'],
+      ['État caché', 'le matériel et les véhicules peuvent être comme neufs (effet +50 %), usés ou défectueux (effet −50 %). Une expertise (1 agent immobilisé le lendemain) le révèle, plus sûrement avec du Flair.'],
+      ['Tuyau du priseur', 'une fois par vente, ton chef apprend combien d’autres zones s’intéressent à un lot.'],
+      ['Égalité', 'à offre égale, la Diplomatie du chef départage, puis la réputation.'],
+      ['Gros lots', 'hélicoptère fédéral, véhicule blindé, cellule d’appui renforcée : deux zones liées par un pacte peuvent mettre leurs offres en commun, chacune paie sa part et les deux profitent de l’effet.'],
+    ]],
+    ['Fin de saison anticipée', [
+      ['Bilan allégé', 'quand le maître du jeu avance la fin de saison, le bilan est allégé : peu de pertes, jamais plus d’un niveau par élément. L’affaire qui s’ouvre ce soir-là continue dans la nouvelle saison.'],
+    ]],
     ['Le corbeau écrit à la police (8 octobre, soir)', [
       ['Trois lettres au commissariat', 'dans « Le corbeau de la rue d’Havré », le corbeau écrit aussi à la police : aux jours 2, 4 et 6, une lettre en ruban d’étiqueteuse arrive au commissariat, publiée pour toutes les zones. Que veut-il qu’on regarde ? Que sait-il, et comment le sait-il ? Chaque lettre se relit autrement quand ton dossier avance (relectures sous la pièce).'],
       ['Nouveau coup de pouce', '« Les lettres du corbeau à la police », trois niveaux.'],
@@ -451,6 +477,8 @@ export function ouvrirNouveautes({ complet = true } = {}) {
 /** À appeler après l'affichage de l'HP : montre la note une fois par appareil. */
 export function nouveautesAuBesoin() {
   if (S.majMontree || noteVue() || S.tuto != null || document.querySelector('.aide-wrap')) return;
+  // La note de la saison 2 ne s'ouvre d'elle-même qu'une fois la partie passée en saison 2 (sinon elle annoncerait ce qu'on ne voit pas encore).
+  if (NOTE_MAJ.saison2 && !(S.state && (Number(S.state.regles) || 1) >= 2)) return;
   S.majMontree = true;
   // Nouveau joueur : les « nouveautés » ne le concernent pas, il découvre tout en même temps.
   const z = S.state && S.user && S.state.zones[S.user.uid];

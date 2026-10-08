@@ -30,6 +30,8 @@ import { operationActive, effetsOperation } from './engine/zone.js';
 import { carteQuartiers } from './engine/quartiers.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations, agentsHorsServices } from './ui/ordres.js';
+import { prochaineRelance, mesRelances } from './ui/ventes.js';
+import { VENTE } from './engine/ventes.js';
 import { renderQuete, formesVisibles } from './ui/quete.js';
 import { demarrerQuiz, repondreQuiz, suivanteQuiz, quizLocal, bonnesReponses, arreterMinuteur } from './ui/quiz.js';
 import { renderGuide } from './ui/guide.js';
@@ -49,7 +51,7 @@ import { renderDebrief } from './ui/debrief.js';
 import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES, FORMES, formesPourTour, quatrePourTour, enquetePourTour } from './quests/quests.js';
 import { niveauEnigmes } from './engine/directeur.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
-import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND } from './engine/constants.js';
+import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND, LOTS } from './engine/constants.js';
 import { nomSecteur } from './engine/nondroit.js';
 import { agentsND, monAnnonceND, suggestionND, placeND } from './ui/nondroit.js';
 import { lancerIncident, lancerAppui, ouvrirMiniJeu, majComptesIncidents, signatureIncidents, ouvrirJaugeSkins } from './ui/incidents.js';
@@ -335,7 +337,7 @@ async function openParty(id) {
     }, (e) => { S.lastError = e; if (S.state === undefined) bloque(e); });
   }
   if (!unsubRadio) unsubRadio = S.backend.subscribeRadio((msgs) => {
-    S.radio = msgs; if (S.route === 'radio' && !champActif('radio-msg')) rerender(); else majPastilles();
+    S.radio = msgs; if ((S.route === 'radio' && !champActif('radio-msg')) || (S.route === 'hp' && S.ouverts && S.ouverts.encheres && msgs.some((m) => m.enchere))) rerender(); else majPastilles();
     // Rattrapage, une fois : des agents déjà validés dans la zone de non-droit mais jamais annoncés à la radio.
     if (!rattrapageND) { rattrapageND = true; setTimeout(() => { if (S.savedOrders && !S.ordersDirty) annoncerNDAuto(true).catch((e) => console.warn(e)); }, 5000); }
   });
@@ -696,6 +698,26 @@ async function onClick(e) {
         if (!n) break;
         S.draft.alloc[s2] -= n;
         S.ordersDirty = true; toast(`${n} agent${n > 1 ? 's' : ''} libéré${n > 1 ? 's' : ''} : place-les dans la zone de non-droit (Terrain) ou dans un autre service.`); rerender(); break;
+      }
+      case 'vente-relance': {
+        const v = S.state.vente, lot = v && v.lots.find((x) => x.k === el.dataset.k);
+        if (!lot) break;
+        const m = prochaineRelance(lot.k), z0 = myZone();
+        if (mesRelances() >= VENTE.relancesJour) { toast('Plus de relance possible aujourd’hui.'); break; }
+        if (m > z0.budget) { toast('Ton budget ne couvre pas cette relance.'); break; }
+        await b.sendRadio(S.user.uid, `🔨 ZP ${z0.code} ${z0.nom} relance à ${String(Math.round(m * 1000)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')} € sur « ${LOTS[lot.id].nom} »`, { enchere: { vente: v.id, lot: lot.k, montant: m } });
+        toast('Relance publiée : tout le district la voit.'); break;
+      }
+      case 'vente-expertise': S.draft.expertise = S.draft.expertise === el.dataset.k ? null : el.dataset.k; S.ordersDirty = true; rerender(); break;
+      case 'vente-tuyau': S.draft.tuyau = S.draft.tuyau === el.dataset.k ? null : el.dataset.k; S.ordersDirty = true; rerender(); break;
+      case 'vente-finale': {
+        const k = el.dataset.k, f = { ...((S.draft.finales || {})[k] || {}) }, d0 = Number(el.dataset.d), p0 = Number(el.dataset.p || 0);
+        let m = f.montant ? f.montant + d0 : d0 > 0 ? p0 : 0;
+        if (f.montant && m < Number(p0 || 0)) m = 0;
+        m = Math.round(Math.min(VENTE.max, Math.max(0, m)) * 10) / 10;
+        S.draft.finales = { ...(S.draft.finales || {}) };
+        if (m > 0) S.draft.finales[k] = { ...f, montant: m }; else delete S.draft.finales[k];
+        S.ordersDirty = true; rerender(); break;
       }
       case 'chef-modifier': S.chefEdit = true; S.chefBrouillon = { ...((S.player && S.player.chef) || {}) }; rerender(); break;
       case 'chef-portrait': S.chefBrouillon = { ...(S.chefBrouillon || {}), portrait: el.dataset.v }; rerender(); break;
@@ -1441,6 +1463,7 @@ async function onChange(e) {
     if (eg) eg.partenaire = el.value || null;
     S.ordersDirty = true; rerender();
   }
+  if (el.dataset.change === 'vente-partenaire' && S.draft) { const k = el.dataset.k; S.draft.finales = { ...(S.draft.finales || {}) }; const f = { ...(S.draft.finales[k] || {}) }; if (el.value) f.partenaire = el.value; else delete f.partenaire; if (f.montant) S.draft.finales[k] = f; else toast('Fixe d’abord ton offre, puis choisis ton partenaire.'); S.ordersDirty = true; rerender(); }
   if (el.dataset.change === 'chef-service' && S.draft) { S.draft.agenda = { type: 'terrain', service: el.value }; S.ordersDirty = true; rerender(); }
   if (el.dataset.change === 'chef-voisin' && S.draft) { S.draft.agenda = { type: 'voisin', zone: el.value || null }; S.ordersDirty = true; rerender(); }
   if (el.dataset.change === 'chef-parrainer' && S.draft) { S.draft.parrainer = el.value || null; S.ordersDirty = true; rerender(); }

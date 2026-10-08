@@ -269,6 +269,13 @@ function botRivalites(zone, state, style, rng) {
     const montant = Math.min(Math.floor(zone.budget - 25), e.prixMin + rng.int(0, style === 'agressif' ? 6 : 3));
     if (montant >= e.prixMin) out.offre = { id: e.id, montant };
   }
+  // Saison 2 : vente aux enchères, offre finale secrète sur un lot (et parfois une expertise le premier jour).
+  const v = state.vente;
+  if (v && v.cloture === state.turn && zone.budget > 25 && rng.chance(style === 'agressif' ? 0.5 : style === 'prudent' ? 0.2 : 0.35)) {
+    const lot = rng.pick(v.lots), cur = (v.meneurs && v.meneurs[lot.k] && v.meneurs[lot.k].montant) || lot.prixMin;
+    const montant = Math.min(Math.floor(zone.budget - 20), Math.ceil(cur + rng.int(0, style === 'agressif' ? 5 : 2)));
+    if (montant >= lot.prixMin) out.finales = { [lot.k]: { montant } };
+  } else if (v && v.ouverture === state.turn && zone.agents > 18 && rng.chance(0.15)) out.expertise = rng.pick(v.lots).k;
   // Conseil.
   if (state.conseil && state.conseil.tour === state.turn) {
     out.votes = {};

@@ -40,6 +40,10 @@ function backendAdmin(gid) {
       const snap = await col('players').get();
       const out = {}; snap.forEach((d) => { out[d.id] = d.data(); }); return out;
     },
+    async listEncheres(venteId) {
+      const snap = await col('radio').where('enchere.vente', '==', venteId).get();
+      return snap.docs.map((d) => { const v = d.data(); return { uid: v.uid, at: v.at, ...v.enchere }; });
+    },
     async listQuestResults() {
       const snap = await col('quests').get();
       return snap.docs.map((d) => { const v = d.data(); return { uid: v.uid, season: v.season, turn: v.turn, statut: v.statut, type: v.type, slot: v.slot ?? 0 }; });
