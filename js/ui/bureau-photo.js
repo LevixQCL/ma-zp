@@ -29,7 +29,8 @@ export function bureauPhotoSvg(o = {}) {
   if (et.length) s += grp('etats', et.map((e, i) => { const y = 150 + i * 36; const c = e.rang === 1 ? '#E6B84A' : e.rang === 2 ? '#C9CED8' : e.rang === 3 ? '#C98A54' : null; return `${pose('certificat', 118, y, 44, om)}${c ? `<rect x="96" y="${y - 33}" width="44" height="33" fill="none" stroke="${c}" stroke-width="2"/>` : ''}`; }).join(''), 'États de service');
   // ── Veste : talents cousus.
   const tal = (o.talents || []).filter((t) => TALENT[t]).slice(0, 3);
-  s += grp('talents', tal.map((t, i) => `<circle cx="${40 + i * 10}" cy="160" r="4.2" fill="${COULEURS_COMP[TALENT[t].comp]}" stroke="#F4EFE3" stroke-width=".9" stroke-dasharray="1.2 .8"/>`).join('') + '<rect x="14" y="125" width="70" height="95" fill="transparent"/>', tal.length ? `Talents : ${tal.map((t) => TALENT[t].nom).join(', ')}` : 'Veste du chef (les talents s’y cousent)');
+  const actifs = new Set(o.actifs || []);
+  s += grp('talents', tal.map((t, i) => `${actifs.has(t) ? `<circle cx="${40 + i * 10}" cy="160" r="7" fill="#FFD98A" opacity=".55"><animate attributeName="opacity" values=".2;.75;.2" dur="1.6s" repeatCount="indefinite"/></circle>` : ''}<circle cx="${40 + i * 10}" cy="160" r="4.2" fill="${COULEURS_COMP[TALENT[t].comp]}" stroke="#F4EFE3" stroke-width=".9" stroke-dasharray="1.2 .8"/>`).join('') + '<rect x="14" y="125" width="70" height="95" fill="transparent"/>', tal.length ? `Talents : ${tal.map((t) => TALENT[t].nom).join(', ')}` : 'Veste du chef (les talents s’y cousent)');
   // ── Mur de droite : le réseau, le tableau d'enquête, les affiches, le plan du quartier.
   const hum = Object.fromEntries((o.reseau || []).map((r) => [r.id, Math.max(-1, Math.min(1, Math.round(Number(r.humeur) || 0)))]));
   RESEAU.forEach(([id, nom], i) => {
@@ -47,6 +48,12 @@ export function bureauPhotoSvg(o = {}) {
   if (L('flair') >= 8) s += grp('flair', pose('archives', 578, 375, 62, om), 'Dossiers classés');
   // ── Rebord de fenêtre : bouquet.
   if (L('proximite') >= 8) s += grp('proximite', pose('bouquet', 212, 218, 44, om), 'Fleurs et dessins d’enfants');
+  // ── Rebord de fenêtre : photos souvenirs des réunions avec d'autres chefs.
+  (o.souvenirs || []).slice(-2).forEach((sv, i) => {
+    const x = i ? 238 : 160, y = 194;
+    const ph = (id, dx) => (id ? `<image href="img/chefs/${esc(id)}.webp" x="${x + dx}" y="${y + 3}" width="12" height="16" preserveAspectRatio="xMidYMid slice"/>` : `<rect x="${x + dx}" y="${y + 3}" width="12" height="16" fill="#24324d"/>`);
+    s += grp('souvenirs', `<rect x="${x}" y="${y}" width="30" height="22" rx="1.5" fill="#C9A26B" ${om}/>${ph(sv.a, 2.5)}${ph(sv.b, 15.5)}`, `Souvenir de réunion${sv.nom ? ` avec ${sv.nom}` : ''}`);
+  });
   // ── Bureau : objets posés (bas à y = 242).
   const D = 243;
   if (L('gestion') >= 2) s += grp('gestion', pose('classeurs', 158, D, 34, om), 'Classeurs');

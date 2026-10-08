@@ -15,7 +15,7 @@
 
 import { makeRng } from './rng.js';
 import { SEASON_LENGTH, aAnnexe } from './constants.js';
-import { talent } from './chef.js';
+import { talent, noterChef } from './chef.js';
 import { clamp, agentsDisponibles } from './zone.js';
 
 export const CRISE = {
@@ -122,7 +122,7 @@ export function crisePre(state, uids, ord, push, T, zoneLabel) {
     const votants = uids.filter((u) => actif(state.zones[u]));
     const compte = [0, 0, 0];
     const participants = {};
-    for (const u of votants) { const v = ord[u] && ord[u].crise; if (Number.isInteger(v)) { compte[v] += talent(state.zones[u], 'porteparole') ? 2 : 1; if (v === 2) participants[u] = true; } }
+    for (const u of votants) { const v = ord[u] && ord[u].crise; if (Number.isInteger(v)) { compte[v] += talent(state.zones[u], 'porteparole') ? 2 : 1; if (talent(state.zones[u], 'porteparole')) noterChef(state.zones[u], 'porteparole', 'Porte-parole : ta voix a compté double au Conseil.'); if (v === 2) participants[u] = true; } }
     const total = compte.reduce((a, b) => a + b, 0);
     const max = Math.max(...compte);
     const gagnants = [0, 1, 2].filter((i) => compte[i] === max);

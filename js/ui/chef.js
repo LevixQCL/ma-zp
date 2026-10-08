@@ -5,7 +5,8 @@ import { reglesV2 } from '../engine/regles.js';
 import { bureauPhotoSvg as bureauSvg } from './bureau-photo.js';
 import { tabbar } from './common.js';
 import { COMPETENCES, IDS_COMPETENCES, PARCOURS, IDS_PARCOURS, TALENTS, TALENT, AGENDA, IDS_AGENDA, CHEF,
-  niveauChef, progresChef, talentsDebloques, totalNiveaux } from '../engine/chef.js';
+  niveauChef, progresChef, talentsDebloques, totalNiveaux, signatureChef } from '../engine/chef.js';
+import { COULEURS_COMP } from './bureau-scene.js';
 
 // ───── Portraits (images générées avec Gemini, img/chefs/pNN.webp) ─────
 // Tant qu'une image manque, un portrait dessiné (silhouette en uniforme, initiales) la remplace.
@@ -106,7 +107,7 @@ export function ficheChefHtml(uid, { moi = false } = {}) {
       <div class="col" style="gap:4px;margin-top:6px">${IDS_COMPETENCES.map((c) => TALENTS.filter((t) => t.comp === c).map((t) => `<span class="tiny ${deb.has(t.id) ? '' : 'muted'}">${deb.has(t.id) ? '🔓' : '🔒'} <b>${esc(t.nom)}</b> (${esc(COMPETENCES[c].nom)} ${t.niv}) · ${esc(t.texte)}</span>`).join('')).join('')}</div></details>` : ''}
     ${(chef.medailles || []).length ? `<div class="pc-titres">${chef.medailles.map((m) => `<span class="pc-plaque">🎖️ ${esc(m.nom)} <small>saison ${m.season}</small></span>`).join('')}</div>` : ''}
     ${(chef.etats || []).length ? `<span class="tiny muted" style="font-weight:700">États de service</span>
-      <div class="col" style="gap:2px">${chef.etats.slice().reverse().map((e) => `<span class="tiny">Saison ${e.season} · ${e.rang ? `${e.rang}${e.rang === 1 ? 'er' : 'e'} sur ${e.sur}` : 'non classé'}${e.moyenne != null ? ` · IPZ moyen ${String(e.moyenne).replace('.', ',')}` : ''} · ${e.affaires} affaire${e.affaires > 1 ? 's' : ''} · ${e.trophees} trophée${e.trophees > 1 ? 's' : ''}${e.anticipee ? ' · saison écourtée' : ''}</span>`).join('')}</div>` : ''}
+      <div class="col" style="gap:2px">${chef.etats.slice().reverse().map((e) => `<span class="tiny">Saison ${e.season} · ${e.rang ? `${e.rang}${e.rang === 1 ? 'er' : 'e'} sur ${e.sur}` : 'non classé'}${e.moyenne != null ? ` · IPZ moyen ${String(e.moyenne).replace('.', ',')}` : ''} · ${e.affaires} affaire${e.affaires > 1 ? 's' : ''} · ${e.trophees} trophée${e.trophees > 1 ? 's' : ''}${e.anticipee ? ' · saison écourtée' : ''}${(e.faits || []).length ? `<br><span class="muted">${esc(e.faits.join(' · '))}</span>` : ''}</span>`).join('')}</div>` : ''}
     ${chef.parrain && chef.parrain.fin >= st.turn && st.zones[chef.parrain.uid] ? `<span class="tiny">Parrainé par ${zoneName(st.zones[chef.parrain.uid])} jusqu’au jour ${chef.parrain.fin} (${esc(COMPETENCES[chef.parrain.comp].nom)} +50 %).</span>` : ''}
   </section>`;
 }
@@ -187,7 +188,7 @@ export function renderBureau() {
   const h = new Date().getHours();
   const svg = bureauSvg({ uid: `b${uid.slice(0, 4)}`, niveaux, portrait: p.chef && p.chef.portrait, grade: g.nom, etoiles: Math.max(0, ets), nom: p.pseudo || z.nom, devise: (p.chef && p.chef.devise) || '', couleur: z.couleur,
     medailles: chef.medailles || [], etats: chef.etats || [], talents: chef.talents || [],
-    reseau: Object.entries(RESEAU).map(([id, R]) => ({ id, humeur: R.humeur(z) })), moment: h >= 8 && h < 18 ? 'jour' : h >= 18 && h < 20 ? 'crepuscule' : 'nuit', affiches: (z.affiches || []).length });
+    reseau: Object.entries(RESEAU).map(([id, R]) => ({ id, humeur: R.humeur(z) })), souvenirs: (chef.souvenirs || []).slice(-2).map((x) => ({ a: p.chef && p.chef.portrait, b: S.players && S.players[x.u] && S.players[x.u].chef && S.players[x.u].chef.portrait, nom: st.zones[x.u] ? st.zones[x.u].nom : '' })), actifs: ((z.chefNuit && z.chefNuit.tour === st.turn - 1 && z.chefNuit.faits) || []).map((f) => f.id), moment: h >= 8 && h < 18 ? 'jour' : h >= 18 && h < 20 ? 'crepuscule' : 'nuit', affiches: (z.affiches || []).length });
   const o = S.bureauObj || null;
   let info = '<p class="small muted" style="margin:0">Touche un objet du bureau pour voir ce qu’il raconte. Le bureau se remplit à mesure que ton chef progresse.</p>';
   if (o && COMPETENCES[o]) {
@@ -202,12 +203,57 @@ export function renderBureau() {
   } else if (o === 'medailles') info = (chef.medailles || []).length ? chef.medailles.map((m) => `<span class="small">🎖️ ${esc(m.nom)} · saison ${m.season}</span>`).join('') : '<span class="small muted">Une médaille par compétence récompense, à chaque fin de saison, la plus forte progression du district.</span>';
   else if (o === 'etats') info = (chef.etats || []).length ? chef.etats.slice().reverse().map((e) => `<span class="small">Saison ${e.season} · ${e.rang ? `${e.rang}${e.rang === 1 ? 'er' : 'e'} sur ${e.sur}` : 'non classé'}${e.moyenne != null ? ` · IPZ moyen ${String(e.moyenne).replace('.', ',')}` : ''}</span>`).join('') : '<span class="small muted">Chaque saison terminée accroche un certificat au mur.</span>';
   else if (o === 'talents') info = (chef.talents || []).length ? chef.talents.map((t) => `<span class="small"><b>${esc(TALENT[t].nom)}</b> · ${esc(TALENT[t].texte)}</span>`).join('') : '<span class="small muted">Les talents équipés sont cousus sur la veste. Le premier se débloque au niveau 2 d’une compétence.</span>';
+  else if (o === 'souvenirs') info = (chef.souvenirs || []).length ? chef.souvenirs.slice().reverse().map((x) => `<span class="small">📸 Réunion avec ${st.zones[x.u] ? zoneName(st.zones[x.u]) : 'une zone'} · saison ${x.s}, jour ${x.t}</span>`).join('') : '<span class="small muted">Quand deux chefs se rendent visite le même jour (agenda), une photo souvenir rejoint les deux bureaux.</span>';
   else if (o === 'affiches') info = `<span class="small">${(z.affiches || []).length} suspect${(z.affiches || []).length > 1 ? 's' : ''} arrêté${(z.affiches || []).length > 1 ? 's' : ''}.</span>`;
   else if (o === 'portrait' || o === 'nom') info = `<span style="font-weight:700">${esc(p.pseudo || z.nom)} · ${esc(g.nom)}</span><span class="small">${chef.parcours && PARCOURS[chef.parcours] ? esc(PARCOURS[chef.parcours].nom) : ''}${p.chef && p.chef.devise ? ` · « ${esc(p.chef.devise)} »` : ''}</span>`;
   return `<main class="screen">${back}
-    <div class="col" style="gap:2px"><span class="kicker">Bureau du chef</span><h1 class="big" style="margin:0">${moi ? 'Ton bureau' : `Le bureau de ${esc(p.pseudo || z.nom)}`}</h1><span class="small muted">${zoneName(z)}</span></div>
+    <div class="col" style="gap:2px"><span class="kicker">Bureau du chef</span><h1 class="big" style="margin:0">${moi ? 'Ton bureau' : `Le bureau de ${esc(p.pseudo || z.nom)}`}</h1><span class="small muted">${zoneName(z)} · <span style="color:var(--amber-soft);font-weight:700">${esc(signatureChef(chef) || '')}</span></span></div>
     <section class="card bureau-scene" style="padding:0;overflow:hidden" data-bureau>${svg}</section>
     <section class="card" style="gap:6px" aria-live="polite">${info}</section>
+    ${(() => { const f = felicitationsDe(uid), deja = !moi && S.player && S.player.felicite && S.player.felicite[uid] === st.season;
+      return `<section class="card" style="gap:6px"><span class="tiny muted" style="font-weight:700">👏 Félicitations cette saison</span>
+        <span class="small">${f.length ? f.map((u) => esc((S.players[u] && S.players[u].pseudo) || (st.zones[u] && st.zones[u].nom) || '?')).join(', ') : 'Aucune pour l’instant.'}</span>
+        ${moi ? '<span class="tiny muted">Tes collègues peuvent te féliciter depuis ton bureau (une fois par saison).</span>' : `<button type="button" class="btn small ${deja ? 'ghost' : 'primary'} block" data-action="feliciter" data-u="${esc(uid)}" ${deja ? 'disabled' : ''}>${deja ? '✓ Tu l’as félicité cette saison' : `Féliciter ${esc(p.pseudo || 'ce chef')}`}</button>`}</section>`; })()}
     ${ficheChefHtml(uid, { moi })}
   </main>${tabbar('hp')}`;
+}
+
+// ───── Le chef se voit agir : bloc « Ton chef cette nuit », moment de promotion, félicitations ─────
+const OBJ_PALIER = (c, L) => (L >= 8 ? PALIERS[c][2] : L >= 5 ? PALIERS[c][1] : L >= 2 ? PALIERS[c][0] : null);
+export function chefNuitHtml(z) {
+  const cn = z && z.chefNuit;
+  if (!cn || cn.tour !== S.state.turn - 1 || !(cn.faits || []).length && !(cn.montees || []).length) return '';
+  const l = [...(cn.montees || []).map((m) => `<b>${esc(COMPETENCES[m.comp].nom)} ${m.niveau}</b>${[2, 5, 8].includes(m.niveau) ? ` · nouveau sur ton bureau : ${esc(OBJ_PALIER(m.comp, m.niveau))}` : ''}`),
+    ...(cn.faits || []).map((f) => `${TALENT[f.id] ? `<span class="chef-insigne" style="--c:${COULEURS_COMP[TALENT[f.id].comp]}"></span>` : ''}${esc(f.t)}`)].slice(0, 3);
+  return `<button type="button" class="chef-nuit" data-action="bureau-ouvrir">${portraitChef(z.uid, 36, { galons: false })}
+    <span class="col" style="gap:2px;min-width:0;text-align:left"><span class="tiny muted" style="font-weight:700">Ton chef cette nuit${cn.signature ? ` · ${esc(cn.signature)}` : ''}</span>${l.map((x) => `<span class="small" style="line-height:1.35">${x}</span>`).join('')}</span></button>`;
+}
+
+/** Moment de promotion : une seule fois par soirée, à la première ouverture de l'HP. */
+export function promotionAuBesoin() {
+  const z = myZone(), cn = z && z.chefNuit;
+  if (!cn || cn.tour !== S.state.turn - 1 || !((cn.montees || []).some((m) => [2, 5, 8, 10].includes(m.niveau)) || (cn.nouveaux || []).length)) return false;
+  const cle = `mazp-promo-${S.state.season}-${cn.tour}-${z.uid}`;
+  try { if (localStorage.getItem(cle)) return false; localStorage.setItem(cle, '1'); } catch (e) { return false; }
+  const m = (cn.montees || []).filter((x) => [2, 5, 8, 10].includes(x.niveau)).sort((a, b) => b.niveau - a.niveau)[0];
+  const t = (cn.nouveaux || [])[0];
+  const chef = z.chef, niveaux = Object.fromEntries(IDS_COMPETENCES.map((c) => [c, niveauChef(chef, c)]));
+  const p = S.player || {};
+  S.bureauUid = null; S.bureauObj = null;
+  setTimeout(() => ouvrirPanneauChef(`<span class="kicker" style="color:var(--amber)">Promotion</span>
+    <h2 id="aide-titre" class="aide-titre" style="margin:0">${m ? `${COMPETENCES[m.comp].ico} ${esc(COMPETENCES[m.comp].nom)} niveau ${m.niveau} !` : 'Nouveau talent !'}</h2>
+    <div class="bureau-scene promo" style="border-radius:12px;overflow:hidden">${bureauSvg({ uid: 'promo', niveaux, portrait: p.chef && p.chef.portrait, grade: gradeFor(z.ps || 0).nom, nom: p.pseudo || z.nom, couleur: z.couleur, medailles: chef.medailles || [], etats: chef.etats || [], talents: chef.talents || [], reseau: [], moment: 'nuit', affiches: (z.affiches || []).length, souvenirs: [] })}</div>
+    ${m && OBJ_PALIER(m.comp, m.niveau) ? `<p class="small" style="margin:0">Nouveau sur ton bureau : <b>${esc(OBJ_PALIER(m.comp, m.niveau))}</b>.</p>` : ''}
+    ${t ? `<p class="small" style="margin:0">Talent débloqué : <b>${esc(TALENT[t].nom)}</b> · ${esc(TALENT[t].texte)}. Équipe-le dans tes ordres (Chef de corps).</p>` : ''}
+    ${cn.signature ? `<p class="tiny muted" style="margin:0">Ton style : ${esc(cn.signature)}.</p>` : ''}
+    <div class="row" style="gap:8px"><a class="btn primary grow" href="#bureau" data-close>Voir mon bureau</a><button type="button" class="btn ghost grow" data-close>Plus tard</button></div>`), 500);
+  return true;
+}
+let ouvrirPanneauChef = () => {};
+export function brancherPanneauChef(fn) { ouvrirPanneauChef = fn; }
+
+/** Félicitations : qui a félicité ce chef cette saison (une par joueur et par saison, sans aucun effet de jeu). */
+export function felicitationsDe(uid) {
+  const s = S.state.season;
+  return Object.entries(S.players || {}).filter(([u, p]) => u !== uid && p && p.felicite && p.felicite[uid] === s).map(([u]) => u);
 }

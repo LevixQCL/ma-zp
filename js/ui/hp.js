@@ -1,4 +1,4 @@
-import { chefACreer, creationChefHtml, portraitChef, ficheChefHtml } from './chef.js';
+import { chefACreer, creationChefHtml, portraitChef, ficheChefHtml, chefNuitHtml } from './chef.js';
 import { titresDefi } from './defis.js';
 import { DOCTRINES } from '../engine/constants.js';
 import { maxDemarchesDe } from '../engine/enquete.js';
@@ -380,6 +380,7 @@ export function renderHP() {
     </nav>` : ''}
 
     ${chefACreer() ? creationChefHtml() : ''}
+    ${chefNuitHtml(z)}
     ${cetteNuitHtml(z)}
     ${ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue })}
     ${pistesHpHtml(z)}

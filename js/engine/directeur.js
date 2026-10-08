@@ -20,7 +20,7 @@ import { clamp, round1, moyenneIpz } from './zone.js';
 import { assurerQuartiers, carteQuartiers, lirePatrouilles } from './quartiers.js';
 import { ALEAS, COUPS_DURS, OPERATIONS, PRESSIONS } from './contenu.js';
 import { siteDe } from './sites.js';
-import { niveauChef, COMPETENCES } from './chef.js';
+import { niveauChef, COMPETENCES, noterChef } from './chef.js';
 import { SEASON_LENGTH, BUDGET_IPZ, NIVEAU_MAX, SERVICES, SERVICE_LABELS, coutEquipement, REGLES, aAnnexe } from './constants.js';
 import { affaire, candidats, faitsConnus, pieceCoupDePouce } from './enquete.js';
 
@@ -971,6 +971,7 @@ export function directeurSoir(state, z, c) {
       if (v === null) lignes.push(`${def.titre} : sans réponse de ta part, ton adjoint a choisi « ${choix[ch].l} ».`);
     }
     const r = et.resoudre({ ...c, z }, fe.d || {}, ch);
+    if (choix && choix[ch] && choix[ch].chef) noterChef(z, `dir-${fe.id}`, `${COMPETENCES[choix[ch].chef].nom} : ton chef a trouvé une autre sortie (« ${choix[ch].l} »).`);
     const eff = appliquer(z, r.fx || {}, { T: c.T, cell: fe.d && fe.d.cell, indice: c.indice, compta: def.titre });
     lignes.push(`${def.titre}${ch !== null ? ` (« ${choix[ch].l} »)` : ''} : ${r.texte}${eff ? ` (${eff})` : ''}.`);
     if (r.une) c.push(r.une[0], r.une[1], r.une[2], r.une[3] || `${def.titre} : ${r.texte}.`, z.uid);

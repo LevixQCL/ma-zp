@@ -37,7 +37,7 @@ import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
 import { primeChallenge, CHALLENGE } from './challenge.js';
-import { creerChef, lireAgenda, lireTalents, changerTalents, gainsDuJour, progresser, totalNiveaux, niveauChef, talent, TALENT, AGENDA, COMPETENCES, IDS_COMPETENCES, PARCOURS, CHEF } from './chef.js';
+import { creerChef, lireAgenda, lireTalents, changerTalents, gainsDuJour, progresser, totalNiveaux, niveauChef, talent, TALENT, AGENDA, COMPETENCES, IDS_COMPETENCES, PARCOURS, CHEF, noterChef, signatureChef, faitsDArmes } from './chef.js';
 import { separerIncidents, appliquerIncidents, remplirJauge, resultatsIncidents, incidentsVisibles, adapterCibleUrgence, NIVEAUX_URGENCE } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND } from './contenu.js';
@@ -448,7 +448,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     let { rep, ps } = gainRenfort(r.agents);
     const appel = op.appel ? DIR.appel : 1;
     if (op.appel) { rep += 1; ps = Math.round(ps * appel); }
-    if (talent(z, 'bonvoisin')) rep += TALENT.bonvoisin.rep;
+    if (talent(z, 'bonvoisin')) { rep += TALENT.bonvoisin.rep; noterChef(z, 'bonvoisin', `Bon voisin : ton renfort chez ${zoneLabel(c)} te vaut +1 de réputation.`); }
     z.reputation += rep; z._psEntraide += ps; z.stats.renfortsPretes = (z.stats.renfortsPretes || 0) + 1;
     const ptsR = round1(r.agents * RENFORT.pointsParAgent * appel);
     if (ptsR > 0) { z._points += ptsR; jalon(z, `Renfort prêté à ${zoneLabel(c)}`); }
@@ -491,7 +491,10 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (a.type === 'terrain') fx = `${SERVICE_LABELS[a.service]} +${Math.round((A.cap - 1) * 100)} % aujourd’hui`;
       if (a.type === 'voisin') {
         const v = state.zones[a.zone];
-        if (z._croise) { z._psEntraide += A.ps; z.reputation += A.rep; fx = `réunion avec le chef de ${zoneLabel(v)}, venu chez toi le même jour : +${A.ps} PS d’entraide, +${A.rep} de réputation`; }
+        if (z._croise) { z._psEntraide += A.ps; z.reputation += A.rep;
+          { const sv = (z.chef.souvenirs ||= []); const neuf = !sv.some((x) => x.u === a.zone && x.s === state.season); if (neuf) { sv.push({ u: a.zone, s: state.season, t: T }); z.chef.souvenirs = sv.slice(-6); }
+            noterChef(z, 'visite', `Réunion avec le chef de ${zoneLabel(v)}${neuf ? ' : une photo souvenir rejoint ton bureau' : ''}.`); }
+          fx = `réunion avec le chef de ${zoneLabel(v)}, venu chez toi le même jour : +${A.ps} PS d’entraide, +${A.rep} de réputation`; }
         else fx = `visite à ${v ? zoneLabel(v) : 'une zone voisine'} (son chef n’est pas venu chez toi : pas de réunion)`;
       }
       z.rapport.push(`Agenda du chef : ${A.nom.toLowerCase()}, ${fx}.`);
@@ -568,6 +571,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         case 'plainte': {
           const presse = memoirePlainte(z);
           const perte = Math.round((6 - presse.sat) * (talent(z, 'communicant') ? TALENT.communicant.presse : 1));
+          if (talent(z, 'communicant')) noterChef(z, 'communicant', 'Communicant : la plainte médiatisée fait deux fois moins de dégâts.');
           z.satisfaction -= perte; z.blesses.push({ n: 1, retour: T + 3, motif: 'enquête interne' });
           texte = `−${perte} de satisfaction, un agent bloqué en administration 2 tours.${presse.texte}${talent(z, 'communicant') ? ' Ton talent de communicant a limité les dégâts.' : ''}`; break;
         }
@@ -746,7 +750,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         // Talent « Rallonge budgétaire » : une 3e dépense, une fois par semaine.
         const rallonge = talent(z, 'rallonge') && !(z.chef.rallongeT != null && T < z.chef.rallongeT + CHEF.semaine);
         if (compte && REGLES.v2 && nbDep >= MAX_DEPENSES + (rallonge ? 1 : 0)) { achats.push(`${k} (refusé : ${MAX_DEPENSES} dépenses par jour au plus)`); return false; }
-        if (compte && REGLES.v2 && nbDep >= MAX_DEPENSES && rallonge && z.budget >= cout) { z.chef.rallongeT = T; achats.push('rallonge budgétaire utilisée'); }
+        if (compte && REGLES.v2 && nbDep >= MAX_DEPENSES && rallonge && z.budget >= cout) { z.chef.rallongeT = T; achats.push('rallonge budgétaire utilisée'); noterChef(z, 'rallonge', 'Rallonge budgétaire : une 3e dépense acceptée aujourd’hui.'); }
         if (z.budget >= cout) { z.budget -= cout; paye += cout; fn(); achats.push(k); if (compte) nbDep += 1; return true; }
         achats.push(`${k} (refusé : budget insuffisant)`); return false;
       };
@@ -926,6 +930,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       else {
         const cd = coutDecision(z, dec);
         if (dec.type !== 'recruter') z._investi = true;
+        if (dec.type === 'equiper' && talent(z, 'marches')) noterChef(z, 'marches', 'Marchés publics : ton achat t’a coûté 10 % de moins.');
         z.budget -= cd;
         z._compta.push({ k: 'decision', l: 'Grande décision', v: -cd });
         if (dec.type === 'agrandir') { z.travaux = { batiment: dec.batiment, fin: T + TRAVAUX_TOURS }; z.rapport.push(`Travaux lancés : ${BATIMENTS[dec.batiment].nom}, niveau ${z.batiments[dec.batiment] + 1} dans ${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''}.`); }
@@ -992,6 +997,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.moral += (MORAL.cible - z.moral) * tr;
     jalon(z, `Retour naturel vers ${MORAL.cible} : ${Math.round(tr * 100)} % de l’écart (${fmt1(m0)} → ${MORAL.cible})`);
     z.moral += RYTHMES[o.rythme].moral + (o.rythme === 'renforce' ? forceDoctrine(z, 'renforce') + (talent(z, 'meneur') ? TALENT.meneur.moral : 0) : 0);
+    if (o.rythme === 'renforce' && talent(z, 'meneur')) noterChef(z, 'meneur', 'Meneur d’hommes : le rythme renforcé a moins pesé sur le moral.');
     jalon(z, `Rythme ${RYTHMES[o.rythme].label.toLowerCase()}`);
     if (z.infra.sport) z.moral += 1;
     jalon(z, 'Salle de sport');
@@ -1093,6 +1099,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         z.rapport.push(`Chef de corps : ${COMPETENCES[m.comp].nom} niveau ${m.niveau}.`);
         if (m.niveau >= 5) push(3, 'Chef de corps', `Le chef de ${zoneLabel(z)} passe ${COMPETENCES[m.comp].nom.toLowerCase()} ${m.niveau}`, 'Son expérience se fait sentir dans tout le district.', uid);
       }
+      if ((o.demarches || []).length && talent(z, 'intuition') && z._agenda && z._agenda.type === 'parquet') noterChef(z, 'intuition', 'Intuition : une démarche d’enquête de plus aujourd’hui.');
+      z.chefNuit = { tour: T, faits: (z._chefFaits || []).slice(0, 4), montees: r.montees, nouveaux: r.nouveaux, signature: signatureChef(z.chef) };
       for (const t of r.nouveaux) z.rapport.push(`Nouveau talent débloqué : « ${TALENT[t].nom} » (${TALENT[t].texte.toLowerCase()}). Équipe-le dans tes ordres.`);
       if (r.nouveaux.length) z.chef.nouveauxTalents = [...new Set([...(z.chef.nouveauxTalents || []), ...r.nouveaux])];
     }
@@ -1235,7 +1243,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
-    delete z._joue; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._croise; delete z._chefAvant; delete z._investi; delete z._interpelle;
+    delete z._joue; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._chefFaits; delete z._croise; delete z._chefAvant; delete z._investi; delete z._interpelle;
   }
 
   // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).
@@ -1389,7 +1397,7 @@ function finDeSaison(state, classement, opts = {}) {
     nz.chef = z.chef ? { ...z.chef, saison: Object.fromEntries(IDS_COMPETENCES.map((c) => [c, 0])) } : creerChef(null);
     delete nz.chef.parrain;
     { const ci = classes.findIndex((c) => c.uid === uid), cl = classes[ci];
-      nz.chef.etats = [...(nz.chef.etats || []), { season: oldSeason, rang: cl ? ci + 1 : null, sur: classes.length, moyenne: cl ? round1(cl.moyenne) : null, affaires: (z.stats.decouvertes || 0) + (z.stats.arrestations || 0), trophees: (z.trophees || []).filter((t) => t.s === oldSeason).length, anticipee: !!opts.leger }].slice(-20); }
+      nz.chef.etats = [...(nz.chef.etats || []), { season: oldSeason, rang: cl ? ci + 1 : null, sur: classes.length, moyenne: cl ? round1(cl.moyenne) : null, affaires: (z.stats.decouvertes || 0) + (z.stats.arrestations || 0), trophees: (z.trophees || []).filter((t) => t.s === oldSeason).length, anticipee: !!opts.leger, faits: faitsDArmes(z.stats), signature: z.chef ? signatureChef(z.chef) : null }].slice(-20); }
     if (z.dir) nz.dir = dirHeritage(z); // niveau des énigmes et des mini-jeux, souvenirs du Directeur
     // Le parc suit la zone : les véhicules gardent leur modèle et passent au contrôle technique (usure divisée par deux).
     // Si le garage a perdu un niveau et manque de places, les plus usés sont revendus et le produit s'ajoute au budget.

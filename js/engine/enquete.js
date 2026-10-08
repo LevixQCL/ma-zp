@@ -10,7 +10,7 @@ import { enService } from './flotte.js';
 // Tout est déterministe : une affaire se recalcule à partir de la graine et de son numéro.
 import { makeRng, hashString } from './rng.js';
 import { bonusEquip, SERVICE_LABELS, forceDoctrine, REGLES, aAnnexe } from './constants.js';
-import { talent, AGENDA } from './chef.js';
+import { talent, AGENDA, noterChef } from './chef.js';
 import { LIEUX as LIEUX3, minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
 import { affaireMeurtre, VARIANTES_MEURTRE } from './meurtre-mons.js';
 import { affaireMeurtreRampe, evaluerHypothese, VARIANTES_RAMPE } from './meurtre-rampe.js';
@@ -1337,7 +1337,7 @@ export function enquetePre(state, uids, ord, push) {
       }
       d.accuseJ = e.jour;
       if (paire.every((k) => estAuteur(aff, k))) { d.accuse = aff.coupable; d.accuse2 = aff.complice; justes.push(u); continue; }
-      d.accuse = a; d.accuse2 = a2; d.exclu = true; if (!talent(z, 'renard')) z.reputation -= 3;
+      d.accuse = a; d.accuse2 = a2; d.exclu = true; if (!talent(z, 'renard')) z.reputation -= 3; else noterChef(z, 'renard', 'Vieux renard : accusation rejetée, mais ta réputation n’en souffre pas.');
       z.rapport.push(`Enquête : accusation rejetée par le parquet. Plus d’accusation possible sur cette affaire (${talent(z, 'renard') ? 'vieux renard : ta réputation n’en souffre pas' : '−3 de réputation'}).`);
       continue;
     }
@@ -1349,7 +1349,7 @@ export function enquetePre(state, uids, ord, push) {
     d.accuse = a; d.accuseJ = e.jour;
     if (a === aff.coupable) justes.push(u);
     else {
-      d.exclu = true; if (!talent(z, 'renard')) z.reputation -= 3;
+      d.exclu = true; if (!talent(z, 'renard')) z.reputation -= 3; else noterChef(z, 'renard', 'Vieux renard : accusation rejetée, mais ta réputation n’en souffre pas.');
       z.rapport.push(`Enquête : accusation ${deN(aff.suspects[a].nom)} rejetée par le parquet. Plus d’accusation possible sur cette affaire (${talent(z, 'renard') ? 'vieux renard : ta réputation n’en souffre pas' : '−3 de réputation'}). Tu peux encore aider les autres en partageant tes pièces.`);
       // La Gazette ne dit pas qui a été accusé : le nom d'un innocent serait un indice gratuit pour toutes les zones.
       push(6, 'Enquête', `Fausse piste pour ${nomZone(z)}`, `Son accusation dans « ${aff.titre} » est rejetée par le parquet. L’enquête continue pour les autres zones.`, u);

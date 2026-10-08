@@ -11,7 +11,7 @@
 // l'une prend l'argent, l'autre la voiture).
 
 import { aAnnexe } from './constants.js';
-import { talent, TALENT } from './chef.js';
+import { talent, TALENT, noterChef } from './chef.js';
 import { makeRng } from './rng.js';
 import { zonesVoisines, peutRecevoir } from './vagues.js';
 import { carteQuartiers } from './quartiers.js';
@@ -143,7 +143,7 @@ export function releveResoudre(state, uids, ord, push, T, zoneLabel) {
         const fxA = { ...RELEVE.gain.depart, points: RELEVE.gain.depart.points + nAp * RELEVE.gain.appui.points, ps: RELEVE.gain.depart.ps + nAp * RELEVE.gain.appui.ps };
         const gA = gagner(za, fxA);
         zb.stats.releves = (zb.stats.releves || 0) + 1;
-        if (talent(zb, 'bonvoisin')) { zb.reputation += TALENT.bonvoisin.rep; zb.rapport.push('Bon voisin : +1 de réputation pour cette relève.'); }
+        if (talent(zb, 'bonvoisin')) { zb.reputation += TALENT.bonvoisin.rep; zb.rapport.push('Bon voisin : +1 de réputation pour cette relève.'); noterChef(zb, 'bonvoisin', 'Bon voisin : ta relève te vaut +1 de réputation.'); }
         zb.rapport.push(`Relève réussie à ${lieu} : ${r.suspect} interpellé${r.suspect.startsWith('la ') ? 'e' : ''} (${equipe}) : ${gB}.`);
         if (za) za.rapport.push(`Ta relève a payé : ${zoneLabel(zb)} a interpellé ${r.suspect} à ${lieu}. Ta part du mérite : ${gA}.`);
         if (r.par && Z(r.par)) Z(r.par).rapport.push(`Bien vu : ${zoneLabel(zb)} a interpellé ${r.suspect}, que tu lui avais transmis (${gagner(Z(r.par), RELEVE.gain.transmis)}).`);

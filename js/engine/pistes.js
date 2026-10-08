@@ -1,7 +1,7 @@
 // Pistes en cours : une action facultative dont le résultat tombe une à trois nuits plus tard, sans savoir d'avance ce qu'il sera.
 // Rien n'est perdu si le joueur ne vient pas : le résultat l'attend dans son rapport et sur l'HP (« Cette nuit »).
 // Révision d'oct. 2026 (Lot 4) : une raison de revenir par curiosité, pas par obligation.
-import { talent, talentVal } from './chef.js';
+import { talent, talentVal, noterChef } from './chef.js';
 import { affaire, faitsConnus, indiceBonus, candidats, pieceSurSuspect } from './enquete.js';
 import { carteQuartiers } from './quartiers.js';
 import { clamp, round1 } from './zone.js';
@@ -72,6 +72,7 @@ export function pistesDuSoir(state, z, demandes, T, rng) {
     if (raison) { lignes.push(`Piste « ${P ? P.nom : d.type} » non lancée : ${raison}.`); continue; }
     const nuits = P.nuits[0] + Math.floor(rng.next() * (P.nuits[1] - P.nuits[0] + 1));
     const coutP = round1((P.cout || 0) * talentVal(z, 'carnet', 'cout', 1));
+    if (talent(z, 'carnet') && (P.cout || P.agents)) noterChef(z, 'carnet', `Carnet noir : ${P.nom.toLowerCase()} lancé${P.cout ? ` pour ${String(coutP).replace('.', ',')} k€ au lieu de ${String(P.cout).replace('.', ',')}` : ', ton agent reviendra une nuit plus tôt'}.`);
     if (coutP) { z.budget = round1(z.budget - coutP); (z._compta ||= []).push({ k: 'piste', l: P.nom, v: -coutP }); }
     if (P.agents) z.blesses.push({ n: P.agents, retour: T + nuits + (talent(z, 'carnet') ? 0 : 1), motif: d.type === 'filature' ? 'en filature' : 'en mission de dialogue' });
     const p = { type: d.type, lance: T, retour: T + nuits, ...(d.cible != null ? { cible: d.cible } : {}), ...(state.enquete ? { n: state.enquete.n } : {}) };

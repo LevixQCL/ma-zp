@@ -188,3 +188,42 @@ export function changerTalents(chef, voulus, T) {
 
 /** Plafond de PS d'entraide (pour l'agenda « chez un voisin »). */
 export const psEntraideMax = () => PS.plafondEntraide;
+
+// ───── Le chef se voit agir (saison 2) ─────
+/** Note qu'un talent ou une compétence du chef a fait la différence ce soir (une fois par talent et par soir). */
+export function noterChef(z, id, texte) {
+  if (!z || !z.chef || !REGLES.v2) return;
+  const l = (z._chefFaits ||= []);
+  if (!l.some((x) => x.id === id)) l.push({ id, t: texte });
+}
+
+/** Signature du chef : son style, d'après sa compétence dominante (descriptif, change si le profil évolue). */
+const SIGNATURES = { gestion: 'Gestionnaire avisé', commandement: 'Meneur de terrain', flair: 'Fin limier', diplomatie: 'Bâtisseur de ponts', proximite: 'Visage du quartier' };
+const DUOS = { 'commandement+flair': 'Chasseur de terrain', 'flair+gestion': 'Stratège du parquet', 'diplomatie+proximite': 'Rassembleur', 'commandement+diplomatie': 'Chef de file du district', 'commandement+proximite': 'Shérif du quartier', 'gestion+proximite': 'Bourgmestre en uniforme', 'diplomatie+flair': 'Fin négociateur', 'commandement+gestion': 'Commandant méthodique', 'diplomatie+gestion': 'Grand argentier du district', 'flair+proximite': 'L’oreille du quartier' };
+export function signatureChef(chef) {
+  if (!chef) return null;
+  const l = IDS_COMPETENCES.map((c) => ({ c, n: niveauChef(chef, c), xp: (chef.xp && chef.xp[c]) || 0 })).sort((a, b) => b.n - a.n || b.xp - a.xp);
+  if (l[0].n < 2) return 'Jeune chef';
+  if (l[1].n >= 4 && l[0].n - l[1].n <= 1) return DUOS[[l[0].c, l[1].c].sort().join('+')] || SIGNATURES[l[0].c];
+  return SIGNATURES[l[0].c];
+}
+
+/** Trois faits d'armes de la saison, tirés des statistiques de la zone. */
+const FAITS = [
+  ['decouvertes', 6, (n) => `a identifié ${n} auteur${n > 1 ? 's' : ''}`],
+  ['arrestations', 6, (n) => `a arrêté ${n} suspect${n > 1 ? 's' : ''} en fuite`],
+  ['noirs', 5, (n) => `a résolu ${n} dossier${n > 1 ? 's' : ''} noir${n > 1 ? 's' : ''}`],
+  ['releves', 4, (n) => `a pris ${n} relève${n > 1 ? 's' : ''} pour ses voisins`],
+  ['renfortsPretes', 3, (n) => `a prêté ${n} renfort${n > 1 ? 's' : ''}`],
+  ['secteursRepris', 4, (n) => `a repris ${n} secteur${n > 1 ? 's' : ''} au milieu`],
+  ['gangsRepousses', 4, (n) => `a repoussé ${n} gang${n > 1 ? 's' : ''}`],
+  ['pactesTenus', 3, (n) => `a tenu ${n} pacte${n > 1 ? 's' : ''} jusqu’au bout`],
+  ['vaguesAbsorbees', 2, (n) => `a absorbé ${n} vague${n > 1 ? 's' : ''} de délinquance`],
+  ['urgencesOk', 2, (n) => `a réussi ${n} urgence${n > 1 ? 's' : ''} au bitonal`],
+  ['flagrants', 1.5, (n) => `a pris ${n} auteur${n > 1 ? 's' : ''} en flagrant délit`],
+  ['incidentsOk', 1, (n) => `a réussi ${n} incident${n > 1 ? 's' : ''} du jour`],
+  ['affairesGagnees', 1.5, (n) => `a bouclé ${n} affaire${n > 1 ? 's' : ''} disputée${n > 1 ? 's' : ''}`],
+];
+export function faitsDArmes(stats) {
+  return FAITS.map(([k, w, f]) => ({ v: Number((stats || {})[k]) || 0, w, f })).filter((x) => x.v > 0).sort((a, b) => b.v * b.w - a.v * a.w).slice(0, 3).map((x) => x.f(x.v));
+}

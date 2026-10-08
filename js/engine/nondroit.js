@@ -7,7 +7,7 @@
 import { CONFIG } from '../config.js';
 import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
 import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND, INFRAS, aAnnexe, LOTS } from './constants.js';
-import { talentVal } from './chef.js';
+import { talentVal, talent, noterChef } from './chef.js';
 import { makeRng } from './rng.js';
 import { clamp, round1, forceEngagement, jalon, noter } from './zone.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
@@ -130,6 +130,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
     }) : [];
     // Salle de crise : +15 % de force quand au moins deux zones attaquent ensemble.
     if (engages.length >= 2) for (const e of engages) if (aAnnexe(state.zones[e.u], 'crise')) { e.f *= 1 + INFRAS.crise.coop; state.zones[e.u].rapport.push(`Salle de crise : coordination avec les autres zones sur ${nomSecteur(k)}, force +${Math.round(INFRAS.crise.coop * 100)} %.`); }
+    for (const e of engages) if (talent(state.zones[e.u], 'tacticien')) noterChef(state.zones[e.u], 'tacticien', `Tacticien : ton assaut sur ${nomSecteur(k)} frappe plus fort (+8 %), avec moins de blessés.`);
     for (const e of engages) if (e.drone) state.zones[e.u].rapport.push(`Cellule drone : le drone survole ${nomSecteur(k)} et guide tes ${e.n} agents (force +${Math.round((INFRAS.drone.force - 1) * 100)} %, moins de blessés).`);
     // Jumelage terrain : +20 % de force pour deux zones jumelées sur le même secteur.
     for (const e of engages) {

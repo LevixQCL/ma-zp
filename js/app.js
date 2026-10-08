@@ -11,7 +11,9 @@ import { resolvePending, completerDepuisGazette, etatResolution } from './data/r
 import { S, toast, myZone, esc, cielDuMoment, tabbar, pseudoParDefaut, slotsJour, questDuSlot } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil } from './ui/hp.js';
-import { renderBureau } from './ui/chef.js';
+import { renderBureau, promotionAuBesoin, brancherPanneauChef } from './ui/chef.js';
+import { ouvrirPanneau as ouvrirPanneauL } from './ui/logistique.js';
+brancherPanneauChef(ouvrirPanneauL);
 import { ouvrirAide } from './ui/aide.js';
 import { monAppel } from './ui/renfort.js';
 import { maCandidature } from './ui/affaires.js';
@@ -179,7 +181,7 @@ function render() {
   app.innerHTML = banner + html;
   // La roulette « Early birds » n'est plus proposée (les skins déjà gagnés restent acquis).
   // Événement d'actualité (une fois par appareil) avant la note de nouveautés.
-  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin() && !actuAuBesoin(lancerActu)) nouveautesAuBesoin();
+  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin() && !actuAuBesoin(lancerActu) && !promotionAuBesoin()) nouveautesAuBesoin();
   if (S.route === 'ordres' && S.ordAncre) {
     const cible = document.querySelector(`[data-action="ord-open"][data-k="${S.ordAncre}"]`);
     S.ordAncre = null;
@@ -722,6 +724,12 @@ async function onClick(e) {
         S.ordersDirty = true; rerender(); break;
       }
       case 'bureau-ouvrir': S.bureauUid = el.dataset.u || null; S.bureauObj = null; if (document.querySelector('.aide-wrap')) document.querySelectorAll('.aide-wrap').forEach((x) => x.remove()); location.hash = '#bureau'; break;
+      case 'feliciter': {
+        const u = el.dataset.u, sn = S.state.season;
+        S.player = { ...(S.player || {}), felicite: { ...((S.player && S.player.felicite) || {}), [u]: sn } };
+        await b.savePlayer(S.user.uid, S.player); S.players = await b.getPlayers();
+        toast('Félicitations envoyées : elles s’affichent dans son bureau.'); rerender(); break;
+      }
       case 'chef-modifier': S.chefEdit = true; S.chefBrouillon = { ...((S.player && S.player.chef) || {}) }; rerender(); break;
       case 'chef-portrait': S.chefBrouillon = { ...(S.chefBrouillon || {}), portrait: el.dataset.v }; rerender(); break;
       case 'chef-parcours': S.chefBrouillon = { ...(S.chefBrouillon || {}), parcours: el.dataset.v }; rerender(); break;
