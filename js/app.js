@@ -11,7 +11,9 @@ import { resolvePending, completerDepuisGazette, etatResolution } from './data/r
 import { S, toast, myZone, esc, cielDuMoment, tabbar, pseudoParDefaut, slotsJour, questDuSlot } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil, mesTuiles, MAX_TUILES } from './ui/hp.js';
-import { renderBureau, promotionAuBesoin, brancherPanneauChef } from './ui/chef.js';
+import { renderBureau, renderChef, chefAFaire, promotionAuBesoin, brancherPanneauChef } from './ui/chef.js';
+import { brancherChefTab } from './ui/common.js';
+brancherChefTab(chefAFaire);
 import { ouvrirPanneau as ouvrirPanneauL } from './ui/logistique.js';
 brancherPanneauChef(ouvrirPanneauL);
 import { ouvrirAide } from './ui/aide.js';
@@ -49,6 +51,8 @@ import { choisirRecoup, retournerPouce } from './ui/enquete-plus.js';
 import { marquerJournalVu } from './ui/journal.js';
 import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, basculerFrise, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
+import { reglesV2 } from './engine/regles.js';
+import { renderCarteV2, calqueTerrain } from './ui/carte-v2.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { renderDebrief } from './ui/debrief.js';
 import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES, FORMES, formesPourTour, quatrePourTour, enquetePourTour } from './quests/quests.js';
@@ -65,7 +69,7 @@ import { actionCrise } from './ui/crise.js';
 import { chargeurHtml, avancerChargeur, sortirChargeur } from './ui/chargeur.js';
 
 const app = document.getElementById('app');
-const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief', 'bureau'];
+const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief', 'bureau', 'chef'];
 let unsubState = null, unsubRadio = null, unsubPrive = null, lastTurnKey = null;
 
 function route() {
@@ -75,6 +79,8 @@ function route() {
   if (h.startsWith('hp-')) { S.ancre = h; return 'hp'; }
   // Ancien écran Diplomatie : ses liens mènent aux Pactes de la Carte.
   if (h === 'diplomatie') return 'pactes';
+  // Saison 2 : le Terrain est un calque de la Carte.
+  if (h === 'terrain' && S.state && reglesV2(S.state) && S.draft) { S.carteCalque = calqueTerrain(); history.replaceState(null, '', '#carte'); return 'carte'; }
   // Lien vers un bloc des ordres (ex. #ordres-decision) : on ouvre ce bloc.
   if (h.startsWith('ordres-')) { S.ordOpen = { ...(S.ordOpen || {}), [h.slice(7)]: true }; S.ordAncre = h.slice(7); return 'ordres'; }
   return ROUTES.includes(h) ? h : 'hp';
@@ -140,16 +146,17 @@ function render() {
       case 'enquete': html = renderEnquete(); break;
       case 'guide': html = renderGuide(); if (S.guideSection === 'debut') { S.premiersPasVus = true; try { localStorage.setItem('mazp-premiers-pas-vus', '1'); } catch (e) { /* pas de stockage */ } } break;
       case 'pactes': html = renderPactes(); break;
-      case 'carte': html = renderCarte(); break;
+      case 'carte': html = reglesV2(S.state) ? renderCarteV2() : renderCarte(); break;
       case 'radio': html = renderRadio(); break;
       case 'prive': html = renderPrive(); break;
-      case 'terrain': html = renderTerrain(); break;
+      case 'terrain': html = reglesV2(S.state) ? renderCarteV2(calqueTerrain()) : renderTerrain(); break;
       case 'gazette': html = renderGazette(); if (S.gazetteIndex === 0) marquerGazetteLue(); break;
       case 'debrief': html = renderDebrief(); break;
       case 'classement':
         html = renderClassement(); break;
       case 'profil': html = renderProfil(); break;
       case 'bureau': html = renderBureau(); break;
+      case 'chef': html = renderChef(); break;
       case 'admin': html = S.backend.isMaster(S.user) ? renderAdmin() : renderHP(); break;
       default:
         // Première ouverture : tant que les Gazettes ne sont pas lues, on n'affiche pas l'HP (ni ses pop-up),
@@ -606,6 +613,7 @@ async function onClick(e) {
         if (repris.length) { const cq = carteQuartiers(S.state); toast(`Agent repris à ${[...new Set(repris)].map((x) => cq.nomDe(Number(x))).join(', ')}.`); }
         S.quartierSel = k; S.ordersDirty = true; rerender(); break;
       }
+      case 'carte-calque': S.carteCalque = el.dataset.v; if (S.route !== 'carte') location.hash = '#carte'; else { rerender(); } break;
       case 'carte-zoom': S.carteZoom = el.dataset.v === '1'; rerender(); break;
       case 'renfort-n': {
         const cible = el.dataset.uid, dd = Number(el.dataset.d);
@@ -747,7 +755,7 @@ async function onClick(e) {
         if (m > 0) S.draft.finales[k] = { ...f, montant: m }; else delete S.draft.finales[k];
         S.ordersDirty = true; rerender(); break;
       }
-      case 'bureau-ouvrir': S.bureauUid = el.dataset.u || null; S.bureauObj = null; if (document.querySelector('.aide-wrap')) document.querySelectorAll('.aide-wrap').forEach((x) => x.remove()); location.hash = '#bureau'; break;
+      case 'bureau-ouvrir': S.bureauUid = el.dataset.u || null; S.bureauObj = null; if (document.querySelector('.aide-wrap')) document.querySelectorAll('.aide-wrap').forEach((x) => x.remove()); location.hash = !S.bureauUid && reglesV2(S.state) ? '#chef' : '#bureau'; break;
       case 'chef-front': S.draft.chefFront = el.dataset.v || null; S.ordersDirty = true; rerender(); break;
       case 'chef-reseau': S.draft.reseau = S.draft.reseau === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;
       case 'chef-brevet': S.draft.brevet = S.draft.brevet === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;

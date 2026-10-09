@@ -7,7 +7,7 @@ import { COMPETENCES, IDS_COMPETENCES, PARCOURS, IDS_PARCOURS, TALENTS, TALENT, 
   niveauChef, progresChef, talentsDebloques, totalNiveaux, signatureChef, niveauXp, XP_CUMUL, NIVEAU_MAX_CHEF, JEUX_COMP,
   FRONT, IDS_FRONT, RISQUE_FRONT, RESEAU as RESEAU_E, IDS_RESEAU, servicePossible, VOIES, brevetPossible, BREVET_NIVEAUX, maxTalentsDe, humeurReseau, estimeDe } from '../engine/chef.js';
 import { cadreDe, rubansDe, RUBANS } from '../engine/chef-semaine.js';
-import { adjointFicheHtml, honneursHtml, COUL_CADRE } from './chef-semaine.js';
+import { adjointFicheHtml, honneursHtml, COUL_CADRE, semaineHtml } from './chef-semaine.js';
 
 // ───── Portraits (images générées avec Gemini, img/chefs/pNN.webp) ─────
 // Tant qu'une image manque, un portrait dessiné (silhouette en uniforme, initiales) la remplace.
@@ -185,12 +185,9 @@ const MONTE = {
   proximite: 'satisfaction haute, vagues absorbées, imprévus évités, réunion de quartier · jeux : incidents de Proximité',
 };
 const xpTxt = (chef, c) => { const xp = (chef.xp && chef.xp[c]) || 0, L = niveauXp(xp); return L >= NIVEAU_MAX_CHEF ? 'niveau maximum' : `${Math.floor(xp - XP_CUMUL[L])} / ${XP_CUMUL[L + 1] - XP_CUMUL[L]} XP`; };
-export function renderBureau() {
-  const st = S.state, me = myZone();
-  const uid = S.bureauUid && st.zones[S.bureauUid] ? S.bureauUid : me && me.uid;
-  const z = st.zones[uid], moi = me && uid === me.uid;
-  const back = `<a href="${moi ? '#hp' : '#carte'}" class="backlink">${icon('back', 20)}<span>${moi ? 'Retour à l’HP' : 'Retour à la carte'}</span></a>`;
-  if (!z || !z.chef) return `<main class="screen">${back}<section class="card"><p class="small muted" style="margin:0">Le chef de corps arrive avec la saison 2.</p></section></main>${tabbar('hp')}`;
+/** Les blocs de la fiche d'un chef (le sien ou celui d'un collègue). */
+function sectionsChef(uid, moi) {
+  const st = S.state, z = st.zones[uid];
   const p = (S.players && S.players[uid]) || (moi ? S.player : {}) || {};
   const chef = z.chef, g = gradeFor(z.ps || 0), pc = chef.parcours && PARCOURS[chef.parcours];
   const deb = new Set(talentsDebloques(chef)), eq = chef.talents || [];
@@ -225,7 +222,7 @@ export function renderBureau() {
   // Talents : tableau compétences × paliers.
   const tal = `<section class="card" style="gap:10px"><div class="between"><h2 class="card-title">Talents</h2><span class="tiny muted">${eq.length}/${maxTalentsDe(chef)} équipés</span></div>
     <div class="chef-slots" style="grid-template-columns:repeat(${maxTalentsDe(chef)},minmax(0,1fr))">${Array.from({ length: maxTalentsDe(chef) }, (_, i) => i).map((i) => { const t = eq[i]; return t ? `<div class="chef-slot on${actifs.has(t) ? ' actif' : ''}" style="--c:${COUL_COMP[TALENT[t].comp]}"><img src="img/talents/${t}.webp" alt=""><span class="tiny" style="font-weight:700">${esc(TALENT[t].nom)}</span><span class="tiny muted">${esc(TALENT[t].texte)}</span></div>` : '<div class="chef-slot"><span class="tiny muted">Emplacement libre</span></div>'; }).join('')}</div>
-    ${moi ? '<a class="tiny" href="#ordres" data-action="ord-chef">Changer mes talents dans les Ordres →</a>' : ''}
+    ${moi && !reglesV2(st) ? '<a class="tiny" href="#ordres" data-action="ord-chef">Changer mes talents dans les Ordres →</a>' : ''}
     <div class="chef-grille-tal">${IDS_COMPETENCES.map((c) => `<span class="tiny chef-gt-h" style="color:${COUL_COMP[c]}">${COMPETENCES[c].ico}</span>`).join('')}
       ${[2, 5, 8].map((n) => IDS_COMPETENCES.map((c) => { const t = TALENTS.find((x) => x.comp === c && x.niv === n), ok = deb.has(t.id), on = eq.includes(t.id);
         return `<button type="button" class="chef-gt${ok ? '' : ' verr'}${on ? ' on' : ''}" data-action="chef-detail" data-k="t:${t.id}" title="${esc(t.nom)}"><img src="img/talents/${t.id}.webp" alt="${esc(t.nom)}"><span class="chef-gt-n">${ok ? '' : n}</span></button>`; }).join('')).join('')}
@@ -248,7 +245,62 @@ export function renderBureau() {
     <span class="small">${f.length ? f.map((u) => esc((S.players[u] && S.players[u].pseudo) || (st.zones[u] && st.zones[u].nom) || '?')).join(', ') : 'Aucune pour l’instant.'}</span>
     ${moi ? '' : `<button type="button" class="btn small ${deja ? 'ghost' : 'primary'} block" data-action="feliciter" data-u="${esc(uid)}" ${deja ? 'disabled' : ''}>${deja ? '✓ Tu l’as félicité cette saison' : `Féliciter ${esc(p.pseudo || 'ce chef')}`}</button>`}
   </section>`;
-  return `<main class="screen">${back}${hero}${comp}${tal}${honneursHtml(z, moi)}${res}${adjointFicheHtml(z, moi)}${car}</main>${tabbar('hp')}`;
+  return { hero, comp, tal, honneurs: honneursHtml(z, moi), res, adjoint: adjointFicheHtml(z, moi), car };
+}
+
+export function renderBureau() {
+  const st = S.state, me = myZone();
+  const uid = S.bureauUid && st.zones[S.bureauUid] ? S.bureauUid : me && me.uid;
+  const z = st.zones[uid], moi = me && uid === me.uid;
+  const back = `<a href="${moi ? '#hp' : '#carte'}" class="backlink">${icon('back', 20)}<span>${moi ? 'Retour à l’HP' : 'Retour à la carte'}</span></a>`;
+  if (!z || !z.chef) return `<main class="screen">${back}<section class="card"><p class="small muted" style="margin:0">Le chef de corps arrive avec la saison 2.</p></section></main>${tabbar('hp')}`;
+  const x = sectionsChef(uid, moi);
+  return `<main class="screen">${back}${x.hero}${x.comp}${x.tal}${x.honneurs}${x.res}${x.adjoint}${x.car}</main>${tabbar(moi && reglesV2(st) ? 'chef' : 'hp')}`;
+}
+
+/**
+ * Onglet « Chef » (saison 2) : d'abord ce que ton chef fait AUJOURD'HUI (agenda, première ligne, service du réseau,
+ * talents, brevet : envoyés avec tes ordres de 20:00), puis sa semaine (objectifs, duel), ce qu'il a fait cette nuit,
+ * et sa fiche (compétences, talents, honneurs, réseau, adjoint, carrière) repliée en lignes.
+ */
+export function renderChef() {
+  const st = S.state, z = myZone(), d = S.draft;
+  if (!z || !reglesV2(st)) return renderBureau();
+  if (chefACreer() || !z.chef) return `<main class="screen chef-accueil"><div class="ca-tete"><h1 class="big">Ton chef de corps</h1>
+      <p class="small muted" style="margin:0">Choisis qui dirige ta zone : un portrait, un parcours. Ça prend une minute, une seule fois.</p></div>${creationChefHtml()}</main>${tabbar('chef')}`;
+  const x = sectionsChef(z.uid, true);
+  const saved = !!S.savedOrders && !S.ordersDirty;
+  const repli = (k, titre, sous, corps) => `<details class="ajd" data-k="${k}" ${S.ouverts && S.ouverts[k] ? 'open' : ''}><summary><span class="ajd-txt"><b>${titre}</b><span>${sous}</span></span><span class="ajd-chev" aria-hidden="true">${icon('chevron', 16)}</span></summary><div class="ajd-corps">${corps}</div></details>`;
+  const eq = (d && d.talents) || z.chef.talents || [];
+  return `<main class="screen chef-onglet">
+    ${x.hero}
+    <section class="card chef-jour" aria-label="Ton chef aujourd’hui">
+      <div class="between" style="gap:8px;align-items:baseline"><h2 class="card-title" style="margin:0">Aujourd’hui</h2>
+        <span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} envoyé avec tes ordres` : 'part avec tes ordres de 20:00'}</span></div>
+      ${d ? chefOrdresHtml(z, d) : ''}
+    </section>
+    ${chefNuitHtml(z)}
+    ${semaineHtml(z, { ouvert: true })}
+    <section class="hp-ajd" aria-label="Sa fiche">
+      <h2 class="section">Sa fiche</h2>
+      ${repli('ch-comp', 'Compétences', IDS_COMPETENCES.map((c) => `${COMPETENCES[c].ico} ${niveauChef(z.chef, c)}`).join(' · '), x.comp)}
+      ${repli('ch-tal', 'Talents', `${eq.length}/${maxTalentsDe(z.chef)} équipés · ${talentsDebloques(z.chef).length}/15 débloqués`, x.tal)}
+      ${repli('ch-res', 'Le réseau', 'humeur et estime du bourgmestre, du procureur, du syndicat et de la presse', x.res)}
+      ${repli('ch-hon', 'Honneurs', 'cadre et rubans', x.honneurs)}
+      ${x.adjoint ? repli('ch-adj', z.adjoint && z.adjoint.f ? 'L’adjointe' : 'L’adjoint', 'ta consigne les jours sans ordres', x.adjoint) : ''}
+      ${repli('ch-car', 'Carrière', `${(z.chef.medailles || []).length} médaille${(z.chef.medailles || []).length > 1 ? 's' : ''} · états de service`, x.car)}
+    </section>
+  </main>${tabbar('chef')}`;
+}
+
+/** Pastille de l'onglet Chef : un talent neuf à équiper, un brevet à choisir ou un service du réseau à demander. */
+export function chefAFaire() {
+  const st = S.state, z = myZone(), d = S.draft;
+  if (!z || !z.chef || !reglesV2(st)) return false;
+  const eq = (d && d.talents) || z.chef.talents || [];
+  if ((z.chef.nouveauxTalents || []).some((t) => !eq.includes(t))) return true;
+  if (brevetPossible(z.chef) && !(d && d.brevet)) return true;
+  return false;
 }
 
 // ───── Le chef se voit agir : bloc « Ton chef cette nuit », moment de promotion, félicitations ─────

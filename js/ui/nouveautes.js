@@ -9,6 +9,8 @@ export const NOTE_MAJ = {
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
     ['🏢', 'Un nouvel HP', 'ton commissariat en grand, un seul bouton pour la suite, et tes raccourcis au choix.'],
+    ['🗺️', 'Une nouvelle carte', 'plus belle, en trois calques : ta zone, le district et le non-droit (le Terrain est dedans).'],
+    ['🎖️', 'L’onglet Chef', 'ce que ton chef fait aujourd’hui, sa semaine et sa carrière, à un toucher.'],
     ['🎖️', 'Ton chef de corps', 'choisis son visage : il progresse avec tes jeux et ta gestion, et le suit de saison en saison.'],
     ['⚔️', 'Ta semaine de chef', 'trois objectifs et un rival à battre chaque semaine, des rubans et un cadre doré à gagner.'],
     ['🧑‍✈️', 'Ton adjoint', 'un jour sans ordres, il tient la zone et te raconte tout à ton retour.'],
@@ -18,6 +20,13 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['La nouvelle carte et l’onglet Chef (9 octobre)', [
+      ['Carte en trois calques', 'Ma zone (tension des quartiers, patrouilles, point chaud), District (renforts, affaires disputées, grands événements, les commissariats des autres) et Non-droit. L’ancien onglet Terrain est dedans ; ses liens y mènent.'],
+      ['Nouvelle allure', 'carte plus sombre et plus lisible : rues et axes discrets, noms en pastilles, ta zone soulignée d’un liseré lumineux, légende repliée.'],
+      ['Onglet Chef', 'à la place de Terrain dans la barre du bas. En haut, ce que ton chef fait aujourd’hui (agenda, première ligne, service du réseau, talents), envoyé avec tes ordres ; puis ce qu’il a fait cette nuit, sa semaine (objectifs, duel) et sa fiche. Le portrait sur l’HP y mène aussi.'],
+      ['Ordres et Énigmes', 'en-têtes plus courts ; les aides de l’affectation se replient après tes 3 premiers jours.'],
+      ['Création du chef', 'à la première ouverture de la saison, en plein écran ; « Plus tard » ramène à l’HP.'],
+    ]],
     ['Le nouvel HP (9 octobre)', [
       ['Ton commissariat en grand', 'tout en haut, on le fait glisser pour voir le garage et les annexes. Le pinceau le personnalise ; le ciel peut suivre l’heure réelle ou rester au jour, au soir ou à la nuit.'],
       ['Un seul gros bouton', 'il t’emmène à la prochaine chose à faire avant 20:00. Les petites icônes au-dessus se cochent au fur et à mesure ; « la liste » les montre en entier.'],

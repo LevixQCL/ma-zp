@@ -25,7 +25,8 @@ function bloc(titre, contenu, { kicker = '', cls = '', couleur = '' } = {}) {
   return `<section class="card ${cls}" style="gap:8px">${kicker ? `<span class="kicker" ${couleur ? `style="color:${couleur}"` : ''}>${kicker}</span>` : ''}${titre ? `<h2 class="card-title" style="font-size:15px">${titre}</h2>` : ''}${contenu}</section>`;
 }
 
-export function renderTerrain() {
+/** Ce qui se joue avec les autres zones : chez moi, chez les voisins, dans le district (cartes prêtes à afficher). */
+export function terrainBlocs() {
   const st = S.state, z = myZone(), T = st.turn, d = S.draft;
   const nom = (uid) => (st.zones[uid] ? zoneName(st.zones[uid]) : 'Une zone');
   const chezMoi = [], voisins = [], district = [];
@@ -67,6 +68,11 @@ export function renderTerrain() {
       { kicker: 'Grand événement du district' }));
   }
 
+  return { chezMoi, voisins, district };
+}
+
+export function renderTerrain() {
+  const { chezMoi, voisins, district } = terrainBlocs();
   const section = (titre, items, vide) => `<section class="col" aria-label="${titre}" style="gap:8px"><h2 class="section">${titre}</h2>${items.length ? items.join('') : `<p class="small muted" style="margin:0">${vide}</p>`}</section>`;
   return `<main class="screen">
     <header class="col" style="gap:3px"><h1 class="big">Terrain</h1><p class="sub">La zone de non-droit à reprendre ensemble et là où tu peux aider. Tout se joue à 20:00.</p></header>

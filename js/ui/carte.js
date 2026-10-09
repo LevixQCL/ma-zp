@@ -13,7 +13,7 @@ import { ongletsCarte } from './pactes.js';
 import { appelsRenfort, renfortCtrl } from './renfort.js';
 import { annoncesND, suggestionND, placeND, prevoirRejoindre } from './nondroit.js';
 import { nomSecteur } from '../engine/nondroit.js';
-import { secteurOuvert } from '../engine/constants.js';
+import { secteurOuvert, REGLES } from '../engine/constants.js';
 import { GRADES, gradeFor, AFFAIRE, ND } from '../engine/constants.js';
 import { blasonSvg, insigne } from './blasons.js';
 import { tensionsDe, quartiersFrontaliers, niveauTension, prevoirTensions, carteQuartiers, QUARTIERS } from '../engine/quartiers.js';
@@ -22,7 +22,7 @@ const gradeIdx = (ps) => GRADES.indexOf(gradeFor(ps));
 const pseudoDe = (uid) => (S.players && S.players[uid] && S.players[uid].pseudo) || '';
 
 /** Mes quartiers : zones chaudes, point chaud du jour et patrouilles ciblées. */
-function quartiersHtml(st, me) {
+export function quartiersHtml(st, me) {
   const d = S.draft;
   if (!d) return '';
   const c = carteQuartiers(st);
@@ -73,13 +73,34 @@ function quartiersHtml(st, me) {
         ${prox >= QUARTIERS.agentsDesamorcer ? `<button type="button" class="btn small outline block" data-action="point-chaud">Envoyer ${QUARTIERS.agentsDesamorcer} agents à ${esc(c.nomDe(Number(pc.cell)))}</button>` : ''}
         ${prox < QUARTIERS.agentsDesamorcer ? `<span class="tiny bad">Il te faut au moins ${QUARTIERS.agentsDesamorcer} agents en Proximité (tu en as ${prox}) : <a href="#ordres">renforce la Proximité dans tes ordres</a>.</span>` : cibles - (pat[pc.cell] || 0) + QUARTIERS.agentsDesamorcer > prox ? '<span class="tiny muted">Les agents seront repris sur tes autres patrouilles.</span>' : ''}`}
     </section>` : ''}
-    <p class="tiny muted" style="margin:0">${prox ? `Touche un quartier sur la carte ou ici. ${cibles >= prox ? 'Tous tes agents sont affectés : « + » en déplace un depuis un autre quartier.' : `Les agents non ciblés (${prox - cibles}) patrouillent partout.`} Plus tu concentres, plus la tension baisse à cet endroit ; au-delà de ${QUARTIERS.seuilDeplacement - 1} agents, la délinquance se déplace vers les voisins.` : 'Aucun agent en Proximité aujourd’hui : <a href="#ordres">règle-le dans tes ordres</a> pour envoyer des patrouilles.'}</p>
+    ${REGLES.v2 && prox ? `<details class="prev-pq"><summary class="tiny muted">Comment marchent les patrouilles ?</summary><p class="tiny muted" style="margin:4px 0 0">${prox ? `Touche un quartier sur la carte ou ici. ${cibles >= prox ? 'Tous tes agents sont affectés : « + » en déplace un depuis un autre quartier.' : `Les agents non ciblés (${prox - cibles}) patrouillent partout.`} Plus tu concentres, plus la tension baisse à cet endroit ; au-delà de ${QUARTIERS.seuilDeplacement - 1} agents, la délinquance se déplace vers les voisins.` : 'Aucun agent en Proximité aujourd’hui : <a href="#ordres">règle-le dans tes ordres</a> pour envoyer des patrouilles.'}</p></details>` : `<p class="tiny muted" style="margin:0">${prox ? `Touche un quartier sur la carte ou ici. ${cibles >= prox ? 'Tous tes agents sont affectés : « + » en déplace un depuis un autre quartier.' : `Les agents non ciblés (${prox - cibles}) patrouillent partout.`} Plus tu concentres, plus la tension baisse à cet endroit ; au-delà de ${QUARTIERS.seuilDeplacement - 1} agents, la délinquance se déplace vers les voisins.` : 'Aucun agent en Proximité aujourd’hui : <a href="#ordres">règle-le dans tes ordres</a> pour envoyer des patrouilles.'}</p>`}
     ${pris ? `<p class="tiny" style="margin:0;color:var(--amber)">L’opération en cours réquisitionne ${pris} agent${pris > 1 ? 's' : ''} de Proximité : il en reste ${prox} pour les patrouilles.</p>` : ''}
     ${cibles > prox ? `<p class="tiny bad" style="margin:0">Plus assez d’agents pour toutes ces patrouilles : à 20:00, les moins utiles seront annulées (le point chaud reste prioritaire).</p>` : ''}
     ${deplace.length ? `<p class="tiny bad" style="margin:0">⚠ ${deplace.map((k) => esc(c.nomDe(Number(k)))).join(', ')} : trop de monde, la délinquance ira chez les voisins.</p>` : ''}
     <div class="card tight" style="gap:0;padding:4px 12px">${ordre.map(ligne).join('')}</div>
     ${frontHtml}
   </section>`;
+}
+
+/** Les commissariats de toutes les zones, à faire défiler (le sien d'abord). */
+export function vitrineHtml(st, me, zones = Object.values(st.zones).sort((a, b) => a.code.localeCompare(b.code))) {
+  return `<div class="vitrine">${[me, ...zones.filter((z) => z.uid !== me.uid)].map((z) => `<button type="button" class="vitrine-item" data-action="voir-hp" data-uid="${esc(z.uid)}" aria-label="Voir le commissariat de ${esc(z.nom)}">
+        ${sceneVignette(z)}
+        <span class="vitrine-info">
+          <span class="between" style="gap:6px"><span class="row" style="gap:6px;min-width:0">${S.players[z.uid] && S.players[z.uid].blason && gradeIdx(z.ps) >= 4 ? blasonSvg(S.players[z.uid].blason, z.couleur, 18) : `<span class="bullet" style="background:${esc(z.couleur)}"></span>`}<span class="vitrine-nom">${estChampion(z, st) ? '<span style="color:var(--amber)">★</span> ' : ''}${zoneName(z)} ${insigne(z.ps)}</span></span><span class="col" style="gap:0;align-items:flex-end;flex-shrink:0"><span class="mono small">IPZ ${fmt1(z.ipz)}</span><span class="tiny muted">moy. ${z.toursJoues ? fmt1(moyenneIpz(z)) : "—"}</span></span></span>
+          <span class="tiny muted">${z.uid === me.uid ? 'toi · ' : pseudoDe(z.uid) ? `${esc(pseudoDe(z.uid))} · ` : ''}${gradeInfo(z.ps).g.nom}${(z.trophees || []).length ? ` · <span style="color:var(--amber-soft)">${(z.trophees || []).length} trophée${(z.trophees || []).length > 1 ? 's' : ''}</span>` : ''}${z.peril ? ' · <span class="bad">en péril</span>' : z.tutelle ? ' · <span class="bad">sous tutelle</span>' : z.toursSansOrdres >= 3 ? ' · en veille' : ''}</span>
+          ${siteDe(z) ? `<span class="tiny row" style="gap:4px;color:${siteDe(z).couleur}">${iconeSite(siteDe(z).id, siteDe(z).couleur, 13)}${esc(siteDe(z).nom)}</span>` : ''}
+        </span></button>`).join('')}</div>`;
+}
+
+/** Le site sensible de ma zone, replié. */
+export function siteHtml(monSite) {
+  if (!monSite) return '';
+  return `<details class="card repli" data-k="site" ${S.ouverts && S.ouverts.site ? 'open' : ''}><summary><span class="row grow" style="gap:8px">${iconeSite(monSite.id, monSite.couleur, 22)}<span class="col" style="gap:0"><span style="font-weight:600">Ton site sensible</span><span class="tiny muted">${esc(monSite.nom)} · ${esc(monSite.type)}</span></span></span>${icon('chevron', 16)}</summary>
+
+      <p class="small muted" style="margin:0">Il peut provoquer des imprévus dans ta zone (environ un jour sur quatre), et plus rarement une opération d’envergure :</p>
+      <ul class="aide-liste">${monSite.evenements.map((e) => `<li>${esc(e.titre)} <span class="muted">· ${esc(e.texte)}</span></li>`).join('')}<li><strong>${esc(monSite.operation.titre)}</strong> <span class="muted">· opération d’envergure</span></li></ul>
+    </details>`;
 }
 
 export function renderCarte() {
@@ -123,18 +144,8 @@ export function renderCarte() {
 
     </section>
     <section class="col" aria-label="Les zones du district" style="gap:8px"><div class="between"><h2 class="section" style="margin:0">Les zones du district</h2><span class="tiny muted">${n} · touche pour visiter</span></div>
-      <div class="vitrine">${[me, ...zones.filter((z) => z.uid !== me.uid)].map((z) => `<button type="button" class="vitrine-item" data-action="voir-hp" data-uid="${esc(z.uid)}" aria-label="Voir le commissariat de ${esc(z.nom)}">
-        ${sceneVignette(z)}
-        <span class="vitrine-info">
-          <span class="between" style="gap:6px"><span class="row" style="gap:6px;min-width:0">${S.players[z.uid] && S.players[z.uid].blason && gradeIdx(z.ps) >= 4 ? blasonSvg(S.players[z.uid].blason, z.couleur, 18) : `<span class="bullet" style="background:${esc(z.couleur)}"></span>`}<span class="vitrine-nom">${estChampion(z, st) ? '<span style="color:var(--amber)">★</span> ' : ''}${zoneName(z)} ${insigne(z.ps)}</span></span><span class="col" style="gap:0;align-items:flex-end;flex-shrink:0"><span class="mono small">IPZ ${fmt1(z.ipz)}</span><span class="tiny muted">moy. ${z.toursJoues ? fmt1(moyenneIpz(z)) : "—"}</span></span></span>
-          <span class="tiny muted">${z.uid === me.uid ? 'toi · ' : pseudoDe(z.uid) ? `${esc(pseudoDe(z.uid))} · ` : ''}${gradeInfo(z.ps).g.nom}${(z.trophees || []).length ? ` · <span style="color:var(--amber-soft)">${(z.trophees || []).length} trophée${(z.trophees || []).length > 1 ? 's' : ''}</span>` : ''}${z.peril ? ' · <span class="bad">en péril</span>' : z.tutelle ? ' · <span class="bad">sous tutelle</span>' : z.toursSansOrdres >= 3 ? ' · en veille' : ''}</span>
-          ${siteDe(z) ? `<span class="tiny row" style="gap:4px;color:${siteDe(z).couleur}">${iconeSite(siteDe(z).id, siteDe(z).couleur, 13)}${esc(siteDe(z).nom)}</span>` : ''}
-        </span></button>`).join('')}</div></section>
-    ${monSite ? `<details class="card repli" data-k="site" ${S.ouverts && S.ouverts.site ? 'open' : ''}><summary><span class="row grow" style="gap:8px">${iconeSite(monSite.id, monSite.couleur, 22)}<span class="col" style="gap:0"><span style="font-weight:600">Ton site sensible</span><span class="tiny muted">${esc(monSite.nom)} · ${esc(monSite.type)}</span></span></span>${icon('chevron', 16)}</summary>
-
-      <p class="small muted" style="margin:0">Il peut provoquer des imprévus dans ta zone (environ un jour sur quatre), et plus rarement une opération d’envergure :</p>
-      <ul class="aide-liste">${monSite.evenements.map((e) => `<li>${esc(e.titre)} <span class="muted">· ${esc(e.texte)}</span></li>`).join('')}<li><strong>${esc(monSite.operation.titre)}</strong> <span class="muted">· opération d’envergure</span></li></ul>
-    </details>` : ''}
+      ${vitrineHtml(st, me, zones)}</section>
+    ${siteHtml(monSite)}
   </main>${tabbar('carte')}`;
 }
 

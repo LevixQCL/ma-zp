@@ -91,6 +91,7 @@ const PATHS = {
   back: '<path d="M15 6l-6 6 6 6"/>',
   pencil: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/>',
   shield: '<path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/>',
+  chef: '<path d="M4 13.5c0-4.4 3.6-7.5 8-7.5s8 3.1 8 7.5"/><path d="M2.5 13.5h19l-2.2 3.5H4.7z"/><path d="M10 9.6h4M12 6v-.5"/>',
   gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   send: '<path d="M4 12l16-8-6 16-2-6z"/>',
   enquete: '<circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/>',
@@ -117,9 +118,15 @@ function pastillesVues() {
 }
 function ecrirePastillesVues(v) { try { localStorage.setItem(clePastilles(), JSON.stringify(v)); } catch (e) { /* pas de stockage : la mémoire suffit pour la session */ } }
 
+let chefAFaireTab = () => false;
+export function brancherChefTab(fn) { chefAFaireTab = fn; }
 export function tabbar(active, { questBadge = false, radioBadge = false } = {}) {
-  const tabs = [['hp', 'HP'], ['ordres', 'Ordres'], ['terrain', 'Terrain'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['carte', 'Carte'], ['radio', 'Radio']];
   const st = S.state, me = S.user && st && st.zones ? st.zones[S.user.uid] : null;
+  // Saison 2 : le Terrain devient un calque de la Carte (6 onglets).
+  const v2 = !!st && (Number(st.regles) || 1) >= 2;
+  const tabs = v2 ? [['hp', 'HP'], ['ordres', 'Ordres'], ['carte', 'Carte'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['chef', 'Chef'], ['radio', 'Radio']]
+    : [['hp', 'HP'], ['ordres', 'Ordres'], ['terrain', 'Terrain'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['carte', 'Carte'], ['radio', 'Radio']];
+  if (v2 && active === 'terrain') active = 'carte';
   const nbJour = slotsCompte().length;
   const faites = (S.questResults || []).some((r) => r && (r.statut === 'delegue' || r.statut === 'quiz')) ? nbJour : slotsCompte().filter((k) => { const r = (S.questResults || [])[k]; return r && (r.statut === 'ok' || r.statut === 'rate'); }).length;
   const dots = {
@@ -128,7 +135,8 @@ export function tabbar(active, { questBadge = false, radioBadge = false } = {}) 
     quete: questBadge || faites < nbJour,
     terrain: terrainAFaire() > 0,
     radio: radioBadge || (() => { const n = nonLus(); return n.radio + n.prive > 0 || invitations().some((i) => !i.fait && i.href !== '#pactes'); })(),
-    carte: aFairePactes().some((x) => !x.fait),
+    carte: aFairePactes().some((x) => !x.fait) || (v2 && terrainAFaire() > 0),
+    chef: v2 && chefAFaireTab(),
   };
   // Pastille = « du nouveau depuis ta dernière visite » : elle s'éteint quand tu ouvres la page et ne se rallume
   // que si ce qu'elle signale change (nouveau tour, nouvelle demande…). Exception : des ordres modifiés mais
@@ -138,8 +146,9 @@ export function tabbar(active, { questBadge = false, radioBadge = false } = {}) 
     ordres: T,
     quete: `${T}:${faites}`,
     terrain: `${T}:${dots.terrain ? terrainAFaire() : 0}`,
-    carte: `${T}:${dots.carte ? aFairePactes().filter((x) => !x.fait).map((x) => x.titre).join('|') : ''}`,
+    carte: `${T}:${dots.carte ? aFairePactes().filter((x) => !x.fait).map((x) => x.titre).join('|') : ''}${v2 ? `:${terrainAFaire()}` : ''}`,
     enquete: `${T}:${st ? (st.traques || []).length : 0}`,
+    chef: `${T}:${dots.chef ? 1 : 0}`,
   };
   const vus = pastillesVues();
   if (sig[active] !== undefined && vus[active] !== sig[active]) { vus[active] = sig[active]; ecrirePastillesVues(vus); }

@@ -58,12 +58,6 @@ export const ETAPES = [
       <p>Surveille la <strong>satisfaction</strong> (le plus gros poids) et le <strong>moral</strong>, qui règle l’efficacité de tous tes agents. Chaque <strong>?</strong> détaille le calcul avec tes chiffres. Touche ton commissariat pour voir ce que te rapportent tes bâtiments.</p>`),
   },
   {
-    id: 'chef', route: 'hp', v2: true, // le chef n'existe qu'en règles v2 (saison 2) cible: ['.hp-chef', '.chef-creation', 'h1.brand'],
-    titre: 'Ton chef de corps',
-    texte: `<p>C’est toi. Son <strong>portrait</strong>, en haut, ouvre sa fiche : 5 compétences (Gestion, Commandement, Flair, Diplomatie, Proximité) qui montent selon ta façon de gérer ta zone <strong>et</strong> quand tu réussis tes énigmes et tes mini-jeux.</p>
-      <p>Elles débloquent des <strong>talents</strong> (3 équipés au plus, dans tes ordres). Chaque nuit, la carte « Ton chef cette nuit » te dit ce qu’il a changé.</p>`,
-  },
-  {
     id: 'rapport', route: 'hp', cible: ['section[aria-label="Mes raccourcis"]', '[data-action="toggle-rapport"]'],
     titre: 'Chaque soir : rapport et Gazette',
     texte: () => (reglesV2(S.state) ? `<p>Après 20:00, ton adjoint te résume la nuit dans une bulle. Ton <strong>rapport</strong> dit tout ce qui s’est passé chez toi, la <strong>Gazette</strong> raconte la soirée du district.</p>
@@ -103,7 +97,7 @@ export const ETAPES = [
     geste: { consigne: 'Touche <strong>Valider</strong>.', fait: () => !!S.savedOrders && !S.ordersDirty },
   },
   {
-    id: 'terrain', route: 'terrain', onglet: 'Ce qui se joue avec les autres zones.', cible: ['section[aria-label="Zone de non-droit"]', 'section[aria-label="Chez les voisins"]'], union: true,
+    id: 'terrain', route: 'terrain', v1: true, /* saison 2 : le Terrain est un calque de la Carte */ onglet: 'Ce qui se joue avec les autres zones.', cible: ['section[aria-label="Zone de non-droit"]', 'section[aria-label="Chez les voisins"]'], union: true,
     titre: 'Terrain : à plusieurs',
     texte: `<p><strong>Zone de non-droit</strong> : le centre de la ville, à reprendre avec les autres zones. Plus on est nombreux sur un secteur le même soir, plus il tombe vite, et il rapporte chaque nuit où on le tient. Un assaut trop léger peut échouer et coûter des blessés.</p>
       <p><strong>Chez les voisins</strong> : appels à renfort et zones en difficulté. Prêter des agents rapporte des PS et de la réputation.</p>`,
@@ -137,10 +131,17 @@ export const ETAPES = [
       <p>Pas le temps ou pas l’envie ? Un <strong>quiz express</strong> ou un <strong>agent</strong> qui planche à ta place peuvent aussi décrocher le bonus. L’<strong>Entraînement</strong> permet de s’exercer aux énigmes sans enjeu, et le <strong>Challenge</strong> aux mini-jeux d’incident.</p>`,
   },
   {
-    id: 'carte', route: 'carte', onglet: 'Tes quartiers et tout le district.', cible: '#mes-quartiers',
-    titre: 'La carte et tes quartiers',
-    texte: `<p>Chaque quartier a sa <strong>tension</strong>. Envoie des patrouilles de <strong>Proximité</strong> là où ça chauffe, surtout sur le <strong>point chaud</strong> annoncé la veille.</p>
-      <p>Au centre, hachurée de rouge : la zone de non-droit. L’onglet <strong>Pactes</strong>, en haut, sert à t’allier avec une autre zone (jumelage, enquête, achats) et à voter au Conseil.</p>`,
+    id: 'chef', route: 'chef', v2: true, onglet: 'Ton chef de corps : ce qu’il fait aujourd’hui, sa semaine, sa carrière.', cible: ['section[aria-label="Ton chef aujourd’hui"]', '.chef-creation'],
+    titre: 'Ton chef de corps',
+    texte: `<p>C’est toi. Chaque jour, choisis <strong>où il passe sa journée</strong>, s’il monte <strong>en première ligne</strong> et quel <strong>service</strong> demander au réseau : ça part avec tes ordres de 20:00.</p>
+      <p>Ses 5 compétences montent selon ta façon de gérer ta zone <strong>et</strong> quand tu réussis tes énigmes et tes mini-jeux. Elles débloquent des <strong>talents</strong>. Plus bas : sa semaine (objectifs, duel) et sa fiche.</p>`,
+  },
+  {
+    id: 'carte', route: 'carte', onglet: 'Tes quartiers et tout le district.', cible: '#mes-quartiers', avant: () => { S.carteCalque = 'mazone'; },
+    titre: () => (reglesV2(S.state) ? 'La carte : ta zone, le district, le non-droit' : 'La carte et tes quartiers'),
+    texte: () => (reglesV2(S.state) ? `<p>Trois calques en haut de la carte. <strong>Ma zone</strong> : la tension de chaque quartier ; envoie des patrouilles de Proximité là où ça chauffe, surtout sur le <strong>point chaud</strong>.</p>
+      <p><strong>District</strong> : appels à renfort, affaires disputées, grands événements et les commissariats des autres. <strong>Non-droit</strong> : le centre de la ville à reprendre ensemble. L’onglet <strong>Pactes</strong>, tout en haut, sert à t’allier avec une autre zone.</p>` : `<p>Chaque quartier a sa <strong>tension</strong>. Envoie des patrouilles de <strong>Proximité</strong> là où ça chauffe, surtout sur le <strong>point chaud</strong> annoncé la veille.</p>
+      <p>Au centre, hachurée de rouge : la zone de non-droit. L’onglet <strong>Pactes</strong>, en haut, sert à t’allier avec une autre zone (jumelage, enquête, achats) et à voter au Conseil.</p>`),
   },
   {
     id: 'radio', route: 'radio', onglet: 'Pour parler avec les autres chefs de zone.', cible: '[aria-label="Radio et messages privés"]',
@@ -197,7 +198,7 @@ function quitter(v = 'fait') {
 
 /** Étape suivante (ou précédente) qui existe dans cette partie : le chef de corps n'est pas montré en règles v1. */
 function sauterAbsentes(i, sens) {
-  while (i >= 0 && i < ETAPES.length && ETAPES[i].v2 && !reglesV2(S.state)) i += sens;
+  while (i >= 0 && i < ETAPES.length && ((ETAPES[i].v2 && !reglesV2(S.state)) || (ETAPES[i].v1 && reglesV2(S.state)))) i += sens;
   return i;
 }
 
