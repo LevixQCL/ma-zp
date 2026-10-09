@@ -2116,3 +2116,9 @@ button.hz-s:hover { color: var(--text); }
   .hp.v3 .hp-bulle { margin-top: 0; }
   .hp-tuiles { gap: 12px; }
 }
+.prev-pq > summary { list-style: none; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px; width: max-content; min-height: 24px; }
+.prev-pq > summary::-webkit-details-marker { display: none; }
+.chef-accueil { gap: 16px; }
+.ca-tete { display: flex; flex-direction: column; gap: 4px; }
+.chef-accueil .chef-creation { border-color: var(--amber-line); }
+.chef-accueil .chef-creation > .kicker:first-child, .chef-accueil .chef-creation > p:nth-child(2) { display: none; }

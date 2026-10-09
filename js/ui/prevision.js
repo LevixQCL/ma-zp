@@ -1,3 +1,4 @@
+import { REGLES } from '../engine/constants.js';
 // Prévision en direct de l'IPZ du soir, dans l'écran des ordres.
 // Le moteur calcule le tour avec tes ordres du moment (les autres zones en pilote automatique, sans énigmes ni incidents),
 // sur un hasard différent de celui de 20:00 : c'est une tendance (une fourchette), pas le résultat exact.
@@ -30,7 +31,7 @@ export function previsionHtml() {
   const hier = z && Number.isFinite(z.ipz) ? z.ipz : null;
   const d = hier == null ? null : Math.round(v.ipz - hier);
   return `<span class="small"><strong>Ce soir, avec ces ordres :</strong> IPZ entre ${bas} et ${haut}${d == null ? '' : ` <span class="${d > 0 ? 'ok' : d < 0 ? 'bad' : 'muted'}">(${d > 0 ? '▲' : d < 0 ? '▼' : '='} ${Math.abs(d)} sur hier)</span>`}</span>
-    <span class="tiny muted">Tendance calculée par le moteur, sans tes énigmes ni tes incidents du jour ; le hasard de 20:00 peut la faire varier.</span>`;
+    ${REGLES.v2 ? '<details class="prev-pq"><summary class="tiny muted">Pourquoi une fourchette ?</summary><span class="tiny muted">Tendance calculée par le moteur, sans tes énigmes ni tes incidents du jour ; le hasard de 20:00 peut la faire varier.</span></details>' : '<span class="tiny muted">Tendance calculée par le moteur, sans tes énigmes ni tes incidents du jour ; le hasard de 20:00 peut la faire varier.</span>'}`;
 }
 
 /** Recalcule (après un court délai) quand les ordres changent, et met la bande à jour sans redessiner l'écran. */

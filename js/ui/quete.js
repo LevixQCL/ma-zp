@@ -1,3 +1,4 @@
+import { REGLES } from '../engine/constants.js';
 // Écran de l’énigme du jour.
 import { chipEntraine } from './chef.js';
 import { laureatsProvisoires, enTeteSemaine, recordDefi, monRecordDefi } from './defis.js';
@@ -340,9 +341,9 @@ export function renderQuete() {
     ${bonusCard}
     ${propositionDelegue}
     <header class="between" style="align-items:flex-start">
-      <div class="col" style="gap:3px"><span class="kicker" ${noir ? 'style="color:#E0625A"' : ''}>${train ? 'Entraînement · ne compte pas' : noir ? 'Dossier noir · niveau hardcore' : `Énigme ${S.quests.indexOf(q) + 1} sur ${nbJour}`}</span><h1 class="big">${esc(q.typeLabel)}</h1>${q.formeNom ? `<span class="forme-nom">${esc(q.formeNom)}</span>` : ''}${!train && !noir ? chipEntraine('flair', 'Réussie : Flair +1 pour ton chef') : ''}</div>
-      <div class="col" style="gap:4px;align-items:flex-end"><span class="pill" ${q.difficulte >= 6 ? 'style="background:#2A1414;border-color:#6B2E2A;color:#F59A92"' : ''}>${q.difficulte >= 6 ? 'Hardcore' : `Difficulté ${q.difficulte}/5`}</span>
-        <span class="tiny muted">${fini ? 'terminée' : train ? 'correction immédiate' : 'une seule réponse'}</span></div>
+      <div class="col" style="gap:3px">${REGLES.v2 && !train && !noir ? '' : `<span class="kicker" ${noir ? 'style="color:#E0625A"' : ''}>${train ? 'Entraînement · ne compte pas' : noir ? 'Dossier noir · niveau hardcore' : `Énigme ${S.quests.indexOf(q) + 1} sur ${nbJour}`}</span>`}<h1 class="big">${esc(q.typeLabel)}</h1>${q.formeNom ? `<span class="forme-nom">${esc(q.formeNom)}</span>` : ''}${!train && !noir ? chipEntraine('flair', 'Réussie : Flair +1 pour ton chef') : ''}</div>
+      ${REGLES.v2 ? `<span class="pill" style="flex-shrink:0;${q.difficulte >= 6 ? 'background:#2A1414;border-color:#6B2E2A;color:#F59A92' : ''}" title="${fini ? 'terminée' : train ? 'correction immédiate' : 'une seule réponse'}">${q.difficulte >= 6 ? 'Hardcore' : `Difficulté ${q.difficulte}/5`} · ${fini ? 'terminée' : train ? 'corrigée' : '1 réponse'}</span>` : `<div class="col" style="gap:4px;align-items:flex-end"><span class="pill" ${q.difficulte >= 6 ? 'style="background:#2A1414;border-color:#6B2E2A;color:#F59A92"' : ''}>${q.difficulte >= 6 ? 'Hardcore' : `Difficulté ${q.difficulte}/5`}</span>
+        <span class="tiny muted">${fini ? 'terminée' : train ? 'correction immédiate' : 'une seule réponse'}</span></div>`}
     </header>
     ${noir && !fini ? '<p class="small" style="margin:0;color:var(--red-soft)">Le dossier que personne n’a su boucler. Pas de coup de pouce, une seule réponse. Une erreur ne coûte rien ; une réussite rapporte des PS et compte pour le titre « Cerveau du district ».</p>' : ''}
     ${actionsQuete}

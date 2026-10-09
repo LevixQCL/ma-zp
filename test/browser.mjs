@@ -28,6 +28,7 @@ await page.fill('[name="nom"]', 'Horizon');
 await shot('02-inscription');
 await page.click('[data-form="signup"] button[type="submit"]');
 await page.waitForSelector('#countdown');
+{ const pt = page.locator('[data-action="chef-plus-tard"]'); if (await pt.count()) { await pt.click(); await page.waitForSelector('#countdown'); } }
 await shot('03-hp');
 
 await page.click('a[href="#ordres"] >> nth=-1');
@@ -48,7 +49,7 @@ await page.waitForSelector('.statut-ordres.ok');
 await shot('05-ordres-valides');
 
 await page.goto(`${BASE}#quete`);
-await page.waitForSelector('.kicker');
+await page.waitForSelector('main.quete');
 await shot('06-quete');
 
 await page.goto(`${BASE}#carte`);
@@ -256,6 +257,7 @@ await page.fill('[name="code"]', '7777');
 await page.fill('[name="nom"]', 'Nuit');
 await page.click('[data-form="signup"] button[type="submit"]');
 await page.waitForSelector('#countdown');
+{ const pt = page.locator('[data-action="chef-plus-tard"]'); if (await pt.count()) { await pt.click(); await page.waitForSelector('#countdown'); } }
 if (!(await page.locator('text=Brigade de nuit').count())) errors.push('Nom de la nouvelle partie absent de l’HP');
 await shot('30-hp-nouvelle-partie');
 await page.goto(`${BASE}#parties`);

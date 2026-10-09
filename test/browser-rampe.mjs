@@ -28,6 +28,7 @@ await page.fill('[name="code"]', '5324');
 await page.fill('[name="nom"]', 'Horizon');
 await page.click('[data-form="signup"] button[type="submit"]');
 await page.waitForSelector('#countdown');
+{ const pt = page.locator('[data-action="chef-plus-tard"]'); if (await pt.count()) { await pt.click(); await page.waitForSelector('#countdown'); } }
 // Premier tour : l'affaire s'ouvre.
 await page.waitForSelector('[data-action="demo-next"]');
 await page.click('[data-action="demo-next"]');

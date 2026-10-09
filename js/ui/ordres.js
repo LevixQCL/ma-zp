@@ -864,7 +864,7 @@ export function renderOrdres() {
 
   return `<main class="screen">
     <header class="between" style="align-items:flex-start;gap:10px"><div class="col" style="gap:3px;min-width:0"><h1 class="big">Ordres du tour ${T}</h1>
-      <p class="sub">${e.dispo} agents disponibles${e.enquete ? `, dont ${e.enquete} en mission (enquête, FIPA, relève ou opération commune) : ${e.dispo - e.enquete} à répartir` : ''}${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p></div>
+      ${REGLES.v2 ? `<p class="sub">${e.dispo} agents${e.enquete ? ` · ${e.enquete} en mission` : ''}${bl || fo || z.absents ? ` · ${bl + fo + (z.absents || 0)} absent${bl + fo + (z.absents || 0) > 1 ? 's' : ''}` : ''} · secrets jusqu’à 20:00</p>` : `<p class="sub">${e.dispo} agents disponibles${e.enquete ? `, dont ${e.enquete} en mission (enquête, FIPA, relève ou opération commune) : ${e.dispo - e.enquete} à répartir` : ''}${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p>`}</div>
       <span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} Validés` : S.savedOrders ? 'Modifiés' : 'Pas validés'}</span></header>
 
     <div id="prev-ipz" class="col prev-ipz" style="gap:2px;padding:10px 12px;border-radius:12px;background:var(--card, rgba(255,255,255,.04));border:1px solid var(--line)" aria-live="polite">${previsionHtml()}</div>${(() => { setTimeout(suivrePrevision, 0); return ''; })()}
@@ -896,7 +896,7 @@ export function renderOrdres() {
         <button type="button" class="lien-statut" data-action="ventilation" aria-expanded="${!!S.ventilation}"><span id="alloc-status">${statusHtml(e)}</span><span class="tiny muted"> · ${S.ventilation ? 'masquer' : 'détail'}</span>${agentsHorsServices().some((h) => h.bloque) ? ' <span class="small bad">· agents bloqués</span>' : ''}</button></div>
       ${S.ventilation ? ventilationHtml(z, e) : ''}
       <div class="barre-aff" id="barre-aff" aria-hidden="true">${barreAffectation(e)}</div>
-      <div class="legende-cases tiny muted"><span><span class="case pleine mini" style="--c:var(--faint)"></span>au service</span><span><span class="case vide mini"></span>manquant</span><span><span class="case plus mini" style="--c:var(--faint)"></span>en plus</span>${Object.values(e.prises || {}).some((l) => l.some(([k]) => k > 0)) ? '<span><span class="case mission mini" style="--c:var(--faint)"></span>en mission</span>' : ''}</div>
+      ${REGLES.v2 && z.toursJoues >= 3 ? '' : `<div class="legende-cases tiny muted"><span><span class="case pleine mini" style="--c:var(--faint)"></span>au service</span><span><span class="case vide mini"></span>manquant</span><span><span class="case plus mini" style="--c:var(--faint)"></span>en plus</span>${Object.values(e.prises || {}).some((l) => l.some(([k]) => k > 0)) ? '<span><span class="case mission mini" style="--c:var(--faint)"></span>en mission</span>' : ''}</div>`}
       ${(() => { S._bs = besoinsServices(e); return ''; })()}
       ${SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc svc-${b.st}${ouvert ? ' ouvert' : ''}">
         <div class="svc-l"><i class="svc-c" style="background:${COUL_SVC[s2]}"></i>
@@ -910,7 +910,7 @@ export function renderOrdres() {
         ${ouvert ? `<div class="svc-det">${s2 === 'recherche' ? `<div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}<p class="tiny" style="margin:0;color:var(--text2);line-height:1.45">${esc(aide(s2, z))}</p></div>` : ''}
       </div>`; }).join('')}
       ${reserveHtml(z, d, e)}
-      <p class="tiny muted" style="margin:6px 0 0">Touche + : si aucun agent n’est libre, il est pris dans ton service le plus fourni. Résultats estimés : le hasard du tour peut les faire varier.</p>
+      ${REGLES.v2 && z.toursJoues >= 3 ? '' : `<p class="tiny muted" style="margin:6px 0 0">Touche + : si aucun agent n’est libre, il est pris dans ton service le plus fourni. Résultats estimés : le hasard du tour peut les faire varier.</p>`}
     </section>
 
     <section class="col" aria-label="Rythme" style="gap:8px"><h2 class="section" style="margin:0">Rythme de travail</h2>

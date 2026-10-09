@@ -18,6 +18,7 @@ await page.waitForSelector('[data-form="signup"]');
 await page.fill('[name="pseudo"]', 'Bryan'); await page.fill('[name="code"]', '5324'); await page.fill('[name="nom"]', 'Horizon');
 await page.click('[data-form="signup"] button[type="submit"]');
 await page.waitForSelector('#countdown');
+{ const pt = page.locator('[data-action="chef-plus-tard"]'); if (await pt.count()) { await pt.click(); await page.waitForSelector('#countdown'); } }
 await page.evaluate(async () => {
   const { zonesVoisines } = await import('./js/engine/vagues.js');
   const db = JSON.parse(localStorage.getItem('mazp-demo-v3'));

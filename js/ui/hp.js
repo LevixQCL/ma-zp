@@ -369,6 +369,7 @@ function aujourdhuiHtml(st, z, T, items) {
   if (z.peril) L.push({ prio: 0, html: ligneAjd({ k: 'ajd-peril', label: 'Zone en péril', cls: 'rouge', ico: '🚨', titre: `Zone en péril · ${z.tutelleSaison ? 'faillite' : 'tutelle'} dans ${z.peril.fin - T + 1} résolution${z.peril.fin - T + 1 > 1 ? 's' : ''}`, sous: esc((z.peril.raisons || []).join(', ')), ouvert: true,
     corps: `<p class="small" style="margin:0">Pour t’en sortir : budget au-dessus de ${fmtK(PERIL.budget)}, au moins ${PERIL.agents} agents disponibles, moral au-dessus de ${PERIL.moral}. Rythme allégé, prime, moins de dépenses ; tes collègues peuvent t’aider.</p><a class="small" href="#guide-faillite">${z.tutelleSaison ? 'Ce qui se passe en cas de faillite' : `Tutelle (${TUTELLE.tours} tours sous contrôle) puis faillite`}</a>` }) });
   for (const a of alertes.filter((x) => x.cls === 'red')) L.push({ prio: 0, html: ligneAlerte(a) });
+  if (chefACreer()) L.push({ prio: 0, html: `<button type="button" class="ajd-alerte amber" data-action="chef-maintenant" style="width:100%;text-align:left;font:inherit;cursor:pointer"><span class="ajd-point" aria-hidden="true"></span><span class="ajd-txt"><b>Crée ton chef de corps</b><span>un portrait et un parcours : une minute, une seule fois</span></span><span class="ajd-chev" aria-hidden="true">${icon('chevron', 16)}</span></button>` });
 
   const d = S.draft || {};
   const dl = dilemmeDuJour(st, z);
@@ -489,6 +490,17 @@ export function renderHP() {
   const delegue = qr.find((r) => r && (r.statut === 'delegue' || r.statut === 'quiz'));
   const questDone = faites >= slotsCompte().length || !!delegue;
   const items = itemsDuSoir(st, z, { ordresOk, faites, reussies, delegue });
+  // Première ouverture de la saison 2 : la création du chef prend tout l'écran (une minute, une fois).
+  // « Plus tard » ramène à l'HP, où une ligne rappelle de le faire.
+  let plusTard = !!S.chefPlusTard; try { plusTard = plusTard || !!sessionStorage.getItem('mazp-chef-plus-tard'); } catch (e) { /* pas de stockage */ }
+  if (chefACreer() && !plusTard) {
+    return `<main class="screen chef-accueil">
+      <div class="ca-tete"><span class="kicker">Saison ${st.season} · tour ${T} · 20:00 dans <b id="countdown" class="hs-cd">${formatCountdown(st.nextDeadline - Date.now())}</b></span><h1 class="big">Ton chef de corps</h1>
+        <p class="small muted" style="margin:0">Avant de reprendre ta zone : choisis qui la dirige. Ça prend une minute, une seule fois.</p></div>
+      ${creationChefHtml()}
+      <button type="button" class="btn ghost block" data-action="chef-plus-tard">Plus tard</button>
+    </main>${tabbar('hp', { questBadge: !questDone })}`;
+  }
 
   return `<main class="screen hp v3">
     ${heroHtml(st, z)}
@@ -499,7 +511,6 @@ export function renderHP() {
       <a class="list-row" href="#profil">${icon('gear', 18)}<span>Profil</span></a>
       ${S.backend.isMaster(S.user) ? `<a class="list-row" href="#admin">${icon('shield', 18)}<span>Maître du jeu</span></a>` : ''}
     </nav>` : ''}
-    ${chefACreer() ? creationChefHtml() : ''}
     <div class="hp-cols">
       <div class="hp-col">
         ${bulleNuitHtml(z)}

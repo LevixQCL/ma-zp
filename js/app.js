@@ -664,6 +664,8 @@ async function onClick(e) {
       case 'toggle-rapport': S.showRapport = !S.showRapport; S.rapportIdx = 0; rerender(); break;
       // HP : raccourcis épinglés (une carte se déplie sous les tuiles) et leur choix.
       case 'hp-tuile': { const k = el.dataset.k; S.hpTuile = S.hpTuile === k ? null : k; if (S.hpTuile) S.ouverts = { ...(S.ouverts || {}), [k]: true }; rerender(); break; }
+      case 'chef-plus-tard': S.chefPlusTard = true; try { sessionStorage.setItem('mazp-chef-plus-tard', '1'); } catch (e2) { /* rien */ } rerender(); window.scrollTo(0, 0); break;
+      case 'chef-maintenant': S.chefPlusTard = false; try { sessionStorage.removeItem('mazp-chef-plus-tard'); } catch (e2) { /* rien */ } rerender(); window.scrollTo(0, 0); break;
       case 'hp-tuiles-edit': S.hpEdit = !S.hpEdit; rerender(); break;
       case 'hp-tuile-choix': {
         const k = el.dataset.k, l = mesTuiles().slice();

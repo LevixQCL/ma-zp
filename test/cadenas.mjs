@@ -14,6 +14,7 @@ const errs = []; p.on('pageerror', (e) => errs.push(e.message));
 await p.goto(BASE); await p.click('[data-action="demo-start"]');
 await p.fill('[name="pseudo"]', 'Bryan'); await p.fill('[name="code"]', '5324'); await p.fill('[name="nom"]', 'Horizon');
 await p.click('[data-form="signup"] button[type="submit"]'); await p.waitForSelector('#countdown');
+{ const pt = p.locator('[data-action="chef-plus-tard"]'); if (await pt.count()) { await pt.click(); await p.waitForSelector('#countdown'); } }
 await p.evaluate(() => document.querySelectorAll('.aide-wrap,.tuto').forEach((x) => x.remove()));
 await p.goto(`${BASE}#quete`); await p.waitForTimeout(300);
 await p.evaluate(() => document.querySelectorAll('.aide-wrap,.tuto').forEach((x) => x.remove()));
