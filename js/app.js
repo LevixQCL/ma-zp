@@ -12,6 +12,9 @@ import { S, toast, myZone, esc, cielDuMoment, tabbar, pseudoParDefaut, slotsJour
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil, mesTuiles, MAX_TUILES } from './ui/hp.js';
 import { renderBureau, renderChef, chefAFaire, promotionAuBesoin, brancherPanneauChef } from './ui/chef.js';
+import { paraSuivant } from './ui/chef-onglet.js';
+import { courriersDuJour } from './engine/parapheur.js';
+import { creerChef } from './engine/chef.js';
 import { brancherChefTab } from './ui/common.js';
 brancherChefTab(chefAFaire);
 import { ouvrirPanneau as ouvrirPanneauL } from './ui/logistique.js';
@@ -822,6 +825,21 @@ async function onClick(e) {
         toast('Ton chef prend ses fonctions. Son parcours compte dès ce soir.'); rerender(); break;
       }
       case 'chef-agenda': { const v = el.dataset.v; const cur = S.draft.agenda || {}; S.draft.agenda = v === 'terrain' ? { type: 'terrain', service: cur.service || 'intervention' } : v === 'voisin' ? { type: 'voisin', zone: cur.zone || null } : { type: v }; S.ordersDirty = true; rerender(); break; }
+      case 'chef-agenda-svc': S.draft.agenda = { type: 'terrain', service: el.dataset.v }; S.ordersDirty = true; rerender(); break;
+      case 'chef-agenda-voisin': S.draft.agenda = { type: 'voisin', zone: el.dataset.v }; S.ordersDirty = true; rerender(); break;
+      case 'para-revoir': S.paraIdx = Number(el.dataset.v) || 0; S.paraAnim = null; rerender(); break;
+      case 'para-choix': {
+        const id = el.dataset.id, k = Number(el.dataset.v);
+        S.draft.parapheur = { ...(S.draft.parapheur || {}), [id]: k }; S.ordersDirty = true;
+        const liste = courriersDuJour(S.state, myZone().chef ? myZone() : { ...myZone(), chef: creerChef(S.player && S.player.chef) });
+        const i = liste.indexOf(id); S.paraIdx = i; S.paraAnim = id; rerender();
+        // Coup de tampon, puis la feuille s'en va et le courrier suivant arrive.
+        setTimeout(() => {
+          const f = document.querySelector(`.co-feuille[data-para="${id}"]`); if (f) f.classList.add('sort');
+          setTimeout(() => { if (S.paraAnim !== id) return; S.paraAnim = null; S.paraIdx = paraSuivant(liste, S.draft && S.draft.parapheur, i); rerender(); }, 320);
+        }, 650);
+        break;
+      }
       case 'chef-talent': {
         const z0 = myZone(); const cur = [...(S.draft.talents || (z0.chef && z0.chef.talents) || [])]; const v = el.dataset.v;
         S.draft.talents = cur.includes(v) ? cur.filter((t) => t !== v) : [...cur, v].slice(0, 4); S.ordersDirty = true; rerender(); break;

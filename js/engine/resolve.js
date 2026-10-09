@@ -37,6 +37,7 @@ import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
 import { primeChallenge, CHALLENGE } from './challenge.js';
+import { courriersDuJour, appliquerParapheur, jourPrise } from './parapheur.js';
 import { creerChef, lireAgenda, lireTalents, changerTalents, gainsDuJour, progresser, totalNiveaux, niveauChef, talentsDebloques, talent, TALENT, AGENDA, COMPETENCES, IDS_COMPETENCES, PARCOURS, CHEF, noterChef, signatureChef, faitsDArmes, JEUX_COMP, FRONT, RISQUE_FRONT, lireFront, RESEAU, IDS_RESEAU, RESEAU_REGLES, servicePossible, VOIES, brevetPossible, humeurReseau, tasserEstime } from './chef.js';
 import { creerAdjoint, consigneDe, ordresAdjoint, noterJournal, ADJOINT, CONSIGNES } from './adjoint.js';
 import { cleSemaine, semaineDe, tirerObjectifs, avancerObjectifs, texteObjectif, OBJECTIFS, apparier, scoreDuel, DUEL } from './chef-semaine.js';
@@ -285,6 +286,11 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (!z.chef.defisVus) z.chef.defisVus = Object.fromEntries(Object.entries((players[uid] && players[uid].defis) || {}).map(([k, v]) => [k, Math.floor(Number(v) || 0)]));
       // Parcours : choisi une fois, il compte dès le soir où il est choisi.
       if (!z.chef.parcours && pf && Object.hasOwn(PARCOURS, pf.parcours)) z.chef.parcours = pf.parcours;
+      // Parapheur du jour (calculé avant toute modification : le même qu'à l'écran) et prise de fonctions.
+      z._para = courriersDuJour(state, z);
+      z._paraRep = orders[uid] && orders[uid].parapheur && typeof orders[uid].parapheur === 'object' ? orders[uid].parapheur : null;
+      if (z.chef.priseT == null && !z.chef.priseFaite) z.chef.priseT = T;
+      if (jourPrise(z.chef, T + 1) === 99) z.chef.priseFaite = true;
       // Chef blessé (première ligne) : à l'hôpital, talents coupés, agenda au bureau.
       z.chef.hs = z.chef.blesse != null && T <= z.chef.blesse;
       z._agenda = z.chef.hs ? { type: 'bureau' } : lireAgenda(orders[uid], state, uid);
@@ -578,6 +584,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       }
       z.rapport.push(`Agenda du chef : ${A.nom.toLowerCase()}, ${fx}.`);
     }
+    // Parapheur du chef : les réponses aux courriers du jour (sans ordres, l'adjoint les classe sans effet).
+    if (z.chef && z._para) z._paraGains = z._joue ? appliquerParapheur(state, z, z._paraRep, T, z._para) : appliquerParapheur(state, z, null, T, []);
 
 
     // Fins de formation, arrivées de l'académie.
@@ -1176,6 +1184,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const piecesGagnees = z.enquete && z.enquete.n === av.n ? Math.max(0, piecesPropres(z) - (av.pieces || 0)) : 0;
       const gains = gainsDuJour({ revenu, investi: !!z._investi, ratio: incidents ? traites / incidents : 1, satisfaction: z.satisfaction, piecesGagnees, agenda: z._agenda, croise: z._croise, d });
       const par = z.chef.parrain && z.chef.parrain.fin >= T ? z.chef.parrain : null;
+      for (const [c, v] of Object.entries(z._paraGains || {})) gains[c] = (gains[c] || 0) + v;
       // Mini-jeux et énigmes du jour : chaque réussite entraîne une compétence (plafond à part).
       const jeux = { gestion: 0, commandement: 0, flair: 0, diplomatie: 0, proximite: 0 };
       for (const sv of z._incOk || []) if (JEUX_COMP[sv]) jeux[JEUX_COMP[sv]] += 1;
@@ -1358,7 +1367,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
-    delete z._joue; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._chefFaits; delete z._front; delete z._frontUtilise; delete z._service; delete z._incOk; delete z._croise; delete z._chefAvant; delete z._investi; delete z._interpelle;
+    delete z._joue; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._para; delete z._paraRep; delete z._paraGains; delete z._chefFaits; delete z._front; delete z._frontUtilise; delete z._service; delete z._incOk; delete z._croise; delete z._chefAvant; delete z._investi; delete z._interpelle;
   }
 
   // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).
@@ -1557,7 +1566,8 @@ function finDeSaison(state, classement, opts = {}) {
     delete nz.chef.parrain;
     // Les jours du chef sont ceux de l'ancienne saison (le compteur repart à 1) : blessure, délais du réseau,
     // changement de talents, rallonge et remise en route repartent à zéro.
-    for (const k of ['blesse', 'hs', 'services', 'talentsT', 'rallongeT', 'remise']) delete nz.chef[k];
+    for (const k of ['blesse', 'hs', 'services', 'talentsT', 'rallongeT', 'remise', 'paraSuite']) delete nz.chef[k];
+    if (!nz.chef.priseFaite) delete nz.chef.priseT; // prise de fonctions pas finie : elle reprend au jour 1
     if (z.adjoint) nz.adjoint = { ...z.adjoint, journal: [] };
     { const ci = classes.findIndex((c) => c.uid === uid), cl = classes[ci];
       nz.chef.etats = [...(nz.chef.etats || []), { season: oldSeason, rang: cl ? ci + 1 : null, sur: classes.length, moyenne: cl ? round1(cl.moyenne) : null, affaires: (z.stats.decouvertes || 0) + (z.stats.arrestations || 0), trophees: (z.trophees || []).filter((t) => t.s === oldSeason).length, anticipee: !!opts.leger, faits: faitsDArmes(z.stats), signature: z.chef ? signatureChef(z.chef) : null }].slice(-20); }

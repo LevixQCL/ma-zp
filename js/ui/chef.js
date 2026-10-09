@@ -7,6 +7,9 @@ import { COMPETENCES, IDS_COMPETENCES, PARCOURS, IDS_PARCOURS, TALENTS, TALENT, 
   niveauChef, progresChef, talentsDebloques, totalNiveaux, signatureChef, niveauXp, XP_CUMUL, NIVEAU_MAX_CHEF, JEUX_COMP,
   FRONT, IDS_FRONT, RISQUE_FRONT, RESEAU as RESEAU_E, IDS_RESEAU, servicePossible, VOIES, brevetPossible, BREVET_NIVEAUX, maxTalentsDe, humeurReseau, estimeDe } from '../engine/chef.js';
 import { cadreDe, rubansDe, RUBANS } from '../engine/chef-semaine.js';
+import { ongletChefHtml } from './chef-onglet.js';
+import { creerChef } from '../engine/chef.js';
+import { jourPrise, courriersDuJour } from '../engine/parapheur.js';
 import { adjointFicheHtml, honneursHtml, COUL_CADRE, semaineHtml } from './chef-semaine.js';
 
 // ───── Portraits (images générées avec Gemini, img/chefs/pNN.webp) ─────
@@ -267,31 +270,23 @@ export function renderBureau() {
 export function renderChef() {
   const st = S.state, z = myZone(), d = S.draft;
   if (!z || !reglesV2(st)) return renderBureau();
-  if (chefACreer() || !z.chef) return `<main class="screen chef-accueil"><div class="ca-tete"><h1 class="big">Ton chef de corps</h1>
+  if (chefACreer()) return `<main class="screen chef-accueil"><div class="ca-tete"><h1 class="big">Ton chef de corps</h1>
       <p class="small muted" style="margin:0">Choisis qui dirige ta zone : un portrait, un parcours. Ça prend une minute, une seule fois.</p></div>${creationChefHtml()}</main>${tabbar('chef')}`;
-  const x = sectionsChef(z.uid, true);
-  const saved = !!S.savedOrders && !S.ordersDirty;
+  const p = S.player || {};
+  // Chef pas encore créé par le tour de 20:00 (nouvelle zone) : on montre déjà celui que le joueur a choisi.
+  const chef = z.chef || creerChef(p.chef), zv = z.chef ? z : { ...z, chef };
   const repli = (k, titre, sous, corps) => `<details class="ajd" data-k="${k}" ${S.ouverts && S.ouverts[k] ? 'open' : ''}><summary><span class="ajd-txt"><b>${titre}</b><span>${sous}</span></span><span class="ajd-chev" aria-hidden="true">${icon('chevron', 16)}</span></summary><div class="ajd-corps">${corps}</div></details>`;
-  const eq = (d && d.talents) || z.chef.talents || [];
-  return `<main class="screen chef-onglet">
-    ${x.hero}
-    <section class="card chef-jour" aria-label="Ton chef aujourd’hui">
-      <div class="between" style="gap:8px;align-items:baseline"><h2 class="card-title" style="margin:0">Aujourd’hui</h2>
-        <span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} envoyé avec tes ordres` : 'part avec tes ordres de 20:00'}</span></div>
-      ${d ? chefOrdresHtml(z, d) : ''}
-    </section>
-    ${chefNuitHtml(z)}
-    ${semaineHtml(z, { ouvert: true })}
-    <section class="hp-ajd" aria-label="Sa fiche">
-      <h2 class="section">Sa fiche</h2>
-      ${repli('ch-comp', 'Compétences', IDS_COMPETENCES.map((c) => `${COMPETENCES[c].ico} ${niveauChef(z.chef, c)}`).join(' · '), x.comp)}
-      ${repli('ch-tal', 'Talents', `${eq.length}/${maxTalentsDe(z.chef)} équipés · ${talentsDebloques(z.chef).length}/15 débloqués`, x.tal)}
-      ${repli('ch-res', 'Le réseau', 'humeur et estime du bourgmestre, du procureur, du syndicat et de la presse', x.res)}
+  let fiche = '';
+  if (z.chef) {
+    const x = sectionsChef(z.uid, true);
+    fiche = `<section class="hp-ajd" aria-label="Sa fiche"><h2 class="section">Sa fiche</h2>
+      ${repli('ch-comp', 'Compétences', 'ce qui fait monter chacune', x.comp)}
       ${repli('ch-hon', 'Honneurs', 'cadre et rubans', x.honneurs)}
       ${x.adjoint ? repli('ch-adj', z.adjoint && z.adjoint.f ? 'L’adjointe' : 'L’adjoint', 'ta consigne les jours sans ordres', x.adjoint) : ''}
-      ${repli('ch-car', 'Carrière', `${(z.chef.medailles || []).length} médaille${(z.chef.medailles || []).length > 1 ? 's' : ''} · états de service`, x.car)}
-    </section>
-  </main>${tabbar('chef')}`;
+      ${repli('ch-car', 'Carrière', `${(z.chef.medailles || []).length} médaille${(z.chef.medailles || []).length > 1 ? 's' : ''} · états de service`, x.car)}</section>`;
+  }
+  const dd = d || {};
+  return `${ongletChefHtml(zv, p, chef, dd, { nuit: z.chef ? chefNuitHtml(z) : '<p class="tiny muted" style="margin:0;text-align:center">Ton chef prend officiellement ses fonctions ce soir à 20:00. Tes choix d’aujourd’hui comptent déjà.</p>', semaine: (duelOk) => (z.chef ? semaineHtml(z, { ouvert: true, duelOk }) : ''), fiche })}${tabbar('chef')}`;
 }
 
 /** Pastille de l'onglet Chef : un talent neuf à équiper, un brevet à choisir ou un service du réseau à demander. */
@@ -299,7 +294,10 @@ export function chefAFaire() {
   const st = S.state, z = myZone(), d = S.draft;
   if (!z || !z.chef || !reglesV2(st)) return false;
   const eq = (d && d.talents) || z.chef.talents || [];
-  if ((z.chef.nouveauxTalents || []).some((t) => !eq.includes(t))) return true;
+  const j = jourPrise(z.chef, st.turn);
+  if (j >= 3 && (z.chef.nouveauxTalents || []).some((t) => !eq.includes(t))) return true;
+  const rep = (d && d.parapheur) || (S.savedOrders && S.savedOrders.parapheur) || {};
+  if (courriersDuJour(st, z).some((id) => !Object.hasOwn(rep, id))) return true;
   if (brevetPossible(z.chef) && !(d && d.brevet)) return true;
   return false;
 }
