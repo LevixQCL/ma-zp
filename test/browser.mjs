@@ -314,7 +314,9 @@ for (let i = 0; i < 7; i++) {
     await page.locator('.dq-carte [data-action="roue"][data-d="1"]').click(); await page.waitForTimeout(150);
     { const r = await page.locator('.dq-ks').textContent(); if (r !== 'décalage 1') errors.push(`Disque : le décalage ne change pas (${JSON.stringify(r)})`); }
   }
+  if (await page.locator('.carnet-q:not([open]) > summary').count()) await page.click('.carnet-q > summary'); // saison 2 : le brouillon est dans le carnet
   if (await page.locator('[data-qnote]').count()) await page.fill('[data-qnote]', 'essai');
+  if (await page.locator('.carnet-q[open] > summary').count()) await page.click('.carnet-q > summary');
   // Répond au hasard pour vérifier le flux
   const choice = page.locator('[data-action="quest-pick"]').first();
   if (await choice.count()) { await choice.click(); await page.click('[data-action="quest-submit"]'); }

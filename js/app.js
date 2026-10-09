@@ -1165,6 +1165,7 @@ async function onClick(e) {
       }
       case 'quest-bonus': await saveQuestBonus(el.dataset.v); break;
       case 'bonus-changer': S.bonusChanger = true; rerender(); break;
+      case 'bonus-sheet': S.bonusChanger = false; S.bonusSheetFerme = true; rerender(); break;
       case 'alt-vue': S.altVue = el.dataset.v || null; rerender(); break;
       case 'quiz-start': {
         if ((S.questResults || []).some((r) => r && r.statut)) break;

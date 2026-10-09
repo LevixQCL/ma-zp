@@ -295,7 +295,9 @@ export function renderQuete() {
   const mz = myZone(), moralZ = mz ? mz.moral : 50;
   const enqueteOuverte = !!(S.state && S.state.enquete && !S.state.enquetePause);
   const gBonus = gainMoral(ENIGMES.bonusMoral, moralZ), sf = ENIGMES.sansFaute, gSf = gainMoral(sf.moral, moralZ);
-  const primeSf = `+${sf.budget} k€, +${gSf} de moral${gSf < sf.moral ? ' (moral déjà haut)' : ''} et +${sf.ps} PS`;
+  // Seulement ce que la prime donne vraiment (en saison 2 : PS et jauge des skins, plus d'argent ni de moral).
+  const partsSf = [sf.budget ? `+${sf.budget} k€` : '', sf.moral ? `+${gSf} de moral${gSf < sf.moral ? ' (moral déjà haut)' : ''}` : '', sf.ps ? `+${sf.ps} PS` : '', sf.jauge ? `+${sf.jauge} sur la jauge des skins` : ''].filter(Boolean);
+  const primeSf = partsSf.length > 1 ? `${partsSf.slice(0, -1).join(', ')} et ${partsSf[partsSf.length - 1]}` : partsSf.join('');
   const bonusCard = !train && !noir && ok >= 2 ? `<section class="card green">
       ${bonusPris && !S.bonusChanger ? `<div class="between" style="gap:8px"><p class="small" style="margin:0;font-weight:600">Bonus du jour : ${esc(bonusLabel(bonusPris, gBonus, enqueteOuverte))}. Il sera appliqué à 20:00.</p><button type="button" class="btn small ghost" data-action="bonus-changer">Changer</button></div><span class="tiny muted">Tu peux changer d’avis jusqu’à 20:00.</span>`
         : `<span class="ok" style="font-weight:700">${bonusPris ? 'Change ton bonus du jour (jusqu’à 20:00)' : `${ok} bonnes réponses : choisis ton bonus du jour`}</span>
@@ -303,7 +305,8 @@ export function renderQuete() {
       ${ok >= P ? `<p class="small ok" style="margin:0;font-weight:700">🏅 ${nbJour > P ? `${P} réussies` : 'Sans faute'} ! Prime en plus de ton bonus : ${primeSf} ce soir.</p>` : `<p class="tiny muted" style="margin:0">${nbJour > P ? `Réussis ${P} énigmes sur ${nbJour}` : `Réussis les ${P} énigmes`} pour une prime : ${primeSf}.</p>`}
     </section>` : '';
 
-  const onglets = train ? entrainementBarre() : `<div class="seg ${S.quests.length > 3 ? 'cinq' : 'quatre'}" role="tablist" aria-label="Énigmes du jour">${S.quests.map((x, k) => `
+  const v2 = !!REGLES.v2;
+  const onglets = train ? entrainementBarre() : v2 ? `${routeBonus(ok, bonusPris, gBonus, enqueteOuverte)}${ongletsClasseur(i, noir, results)}` : `<div class="seg ${S.quests.length > 3 ? 'cinq' : 'quatre'}" role="tablist" aria-label="Énigmes du jour">${S.quests.map((x, k) => `
       <button type="button" role="tab" data-action="quest-tab" data-i="${x.slot}" aria-selected="${x.slot === i}"><span class="t">${S.quests.length > 3 ? 'n°' : 'Énigme '}${k + 1}${icone(results[x.slot])}</span><span class="d">${esc(x.typeLabel)}</span></button>`).join('')}
       <button type="button" role="tab" class="noir" data-action="quest-tab" data-i="3" aria-selected="${noir}"><span class="t">Dossier noir${icone(S.noirResult)}</span><span class="d">facultatif</span></button></div>`;
   const delegue = !train ? results.find((x) => x && x.statut === 'delegue') : null;
@@ -333,6 +336,9 @@ export function renderQuete() {
       ${peutChanger ? `<button type="button" class="chip" data-action="quest-reroll" title="Une fois par jour">${icon('refresh', 14)} Changer d’énigme</button>` : ''}
       ${altPossible && !S.altVue ? `<button type="button" class="chip" data-action="alt-vue" data-v="choix" title="Quiz express ou agent qui planche à ta place">${icon('send', 14)} Bonus autrement</button>` : ''}
     </div>` : '';
+  if (v2) {
+    return feuilleV2({ q, r, fini, train, noir, picked, modes, onglets, propositionDelegue, peutChanger, altPossible, choixHtml, results, ok, bonusPris, gBonus, enqueteOuverte, primeSf, nbJour, P, mz });
+  }
   return `<main class="screen quete ${noir ? 'mode-noir' : ''} ${train ? '' : 'sans-copie'}">
     ${modes}
     ${sousOnglets}
@@ -384,5 +390,125 @@ export function renderQuete() {
     ${!train && fini && results.some((x) => !x || !x.statut) ? `<button class="btn outline block" data-action="quest-tab" data-i="${results.findIndex((x) => !x || !x.statut)}">Énigme suivante</button>` : ''}
     ${train ? '' : `<p class="tiny muted" style="margin:0">Chaque joueur reçoit ses propres variantes : on peut en discuter, mais la réponse d’un collègue ne marchera pas chez toi. 2 bonnes réponses sur 3 débloquent un bonus.</p>`}
     <a class="small" href="#guide-quetes" style="text-align:center">Règles des énigmes</a>
+  </main>${tabbar('quete', { questBadge: false })}`;
+}
+
+// ───────────────────────────── Saison 2 : le dossier ouvert ─────────────────────────────
+// L'énigme est posée sur une feuille de dossier, sous les onglets du classeur. On répond sur l'objet,
+// la barre « Valider » reste sous le pouce avec le carnet, le bonus se choisit dans une feuille qui monte du bas.
+
+/** Route du bonus : réussites du jour, bonus à 2, prime au seuil, et le bonus choisi. */
+function routeBonus(ok, bonusPris, gBonus, enqueteOuverte) {
+  const n = Math.max(slotsCompte().length, ENIGMES.primeSeuil), P = ENIGMES.primeSeuil;
+  const pct = (x) => Math.round(100 * Math.min(x, n) / n);
+  const droite = ok < 2 ? `bonus à 2 · prime à ${P}` : ok < P ? `prime à ${P}` : 'prime gagnée 🏅';
+  const choix = ok < 2 ? '' : bonusPris && !S.bonusChanger
+    ? `<div class="rb-bonus"><span class="tiny">Bonus du jour : <strong>${esc(bonusLabel(bonusPris, gBonus, enqueteOuverte))}</strong></span><button type="button" class="chip" data-action="bonus-changer">Changer</button></div>`
+    : `<button type="button" class="btn small primary block" data-action="bonus-changer">Choisis ton bonus du jour</button>`;
+  return `<div class="rb" aria-label="Route du bonus"><div class="rb-l"><span class="${ok >= 2 ? 'ok' : ''}">${ok} réussie${ok > 1 ? 's' : ''}</span>
+    <span class="rb-barre" aria-hidden="true"><i style="width:${pct(ok)}%"></i><u style="left:${pct(2)}%"></u><u style="left:${pct(P)}%"></u></span><span>${droite}</span></div>${choix}</div>`;
+}
+
+/** Onglets du classeur : une pastille par énigme (à faire, réussie, ratée, confiée), puis le dossier noir. */
+function ongletsClasseur(i, noir, results) {
+  const pt = (x) => (!x || !x.statut ? '' : x.statut === 'ok' ? 'ok' : x.statut === 'rate' ? 'ko' : 'al');
+  const lib = (x) => ({ ok: ' (réussie)', ko: ' (ratée)', al: ' (confiée)' }[pt(x)] || '');
+  return `<div class="classeur" role="tablist" style="--n:${S.quests.length + 1}" aria-label="Énigmes du jour">${S.quests.map((x, k) => `<button type="button" role="tab" class="ong" data-action="quest-tab" data-i="${x.slot}" aria-selected="${!noir && x.slot === i}" aria-label="Énigme ${k + 1}, ${esc(x.typeLabel)}${lib(results[x.slot])}">
+      <span class="t"><span class="pt ${pt(results[x.slot])}"></span>n°${k + 1}</span><span class="d">${esc(String(x.typeLabel).replace(/^(la |le |les |l’)/i, ''))}</span></button>`).join('')}
+    <button type="button" role="tab" class="ong noir" data-action="quest-tab" data-i="3" aria-selected="${noir}" aria-label="Dossier noir, facultatif${lib(S.noirResult)}"><span class="t"><span class="pt ${pt(S.noirResult)}"></span>Noir</span><span class="d">facultatif</span></button></div>`;
+}
+
+/** Libellé de la réponse choisie (pour la barre Valider). */
+function libelleChoix(q, picked) {
+  if (picked == null) return '';
+  const c = (q.choix || []).find((x) => x.id === picked);
+  return c ? c.label : String(picked);
+}
+
+/** Feuille du bas pour choisir le bonus (dès 2 réussites, ou « Changer »). */
+function feuilleBonus(ok, bonusPris, gBonus, enqueteOuverte, primeSf) {
+  const P = ENIGMES.primeSeuil;
+  return `<div class="bs-voile" data-action="bonus-sheet" aria-hidden="true"></div>
+    <section class="bs" role="dialog" aria-modal="true" aria-label="Bonus du jour">
+      <span class="bs-poignee" aria-hidden="true"></span>
+      <h2 class="bs-titre">${bonusPris ? 'Change ton bonus du jour' : `${ok} réussies : choisis ton bonus`}</h2>
+      ${choixBonus(bonusPris, gBonus, enqueteOuverte)}
+      <div class="bs-prime"><span aria-hidden="true">🏅</span><span class="small">${ok >= P ? `<strong>Prime gagnée</strong> en plus du bonus : ${primeSf} ce soir.` : `<strong>Encore ${P - ok} réussie${P - ok > 1 ? 's' : ''} pour la prime</strong> : ${primeSf}, en plus du bonus.`}</span></div>
+      <button type="button" class="btn ghost block" data-action="bonus-sheet">${bonusPris ? 'Fermer' : 'Plus tard'}</button>
+      <span class="tiny muted" style="text-align:center">Tu peux changer d’avis jusqu’à 20:00.${bonusPris ? '' : ` Sans choix, ce sera +${ENIGMES.bonusBudget} k€.`}</span>
+    </section>`;
+}
+
+function feuilleV2(o) {
+  const { q, r, fini, train, noir, picked, modes, onglets, propositionDelegue, peutChanger, altPossible, choixHtml, results, ok, bonusPris, gBonus, enqueteOuverte, primeSf, mz } = o;
+  const objetForm = q.forme === 'digicode' || q.type === 'cadenas' || q.type === 'chronologie' || (q.type === 'butin' && q.objets);
+  const texteForm = !objetForm && (q.mode === 'texte' || q.mode === 'exact');
+  // La filature se répond sur le plan : la liste des lieux en double disparaît.
+  const surPlan = q.type === 'filature' && q.mode === 'choix';
+  const choix = surPlan ? '' : choixHtml;
+  const st = S.state || {};
+  const num = train ? 'entraînement' : noir ? 'dossier noir' : `énigme n°${S.quests.indexOf(q) + 1}`;
+  const ref = `PV ${esc((mz && mz.code) || '0000')}/${String(st.turn || 1).padStart(3, '0')} · ${num}`;
+  const niveau = q.difficulte >= 6 ? 'Hardcore' : `Niveau ${q.difficulte}/5`;
+  const essai = fini ? 'terminée' : train ? 'correction immédiate' : '1 essai';
+  const menu = `<details class="fe-menu"><summary class="fe-ico" aria-label="Outils de l’énigme">⋯</summary><div class="fe-menu-l">
+      ${peutChanger ? `<button type="button" data-action="quest-reroll">${icon('refresh', 15)}<span>Changer d’énigme <small>une fois par jour</small></span></button>` : ''}
+      ${altPossible && !S.altVue ? `<button type="button" data-action="alt-vue" data-v="choix">${icon('send', 15)}<span>Gagner le bonus autrement <small>quiz express ou agent</small></span></button>` : ''}
+      ${q.astuce && !fini ? `<details class="fe-astuce"><summary>💡<span>Un coup de pouce</span></summary><p class="small">${esc(q.astuce)}</p></details>` : ''}
+      <a href="#guide-quetes">📖<span>Règles des énigmes</span></a>
+    </div></details>`;
+  const tampon = r.statut === 'ok' ? '<span class="fe-tampon ok" aria-hidden="true">Résolu</span>' : r.statut === 'rate' ? '<span class="fe-tampon ko" aria-hidden="true">Classé</span>' : '';
+  const note = lire(`mazp-qnote-${q.id}`) || '';
+  const carnet = `<details class="carnet-q"><summary class="carnet-b${note ? ' plein' : ''}" aria-label="Carnet (brouillon)">✎</summary><div class="carnet-p">
+      <div class="between"><strong>Carnet</strong><span class="tiny muted">pour toi seul, gardé sur cet appareil</span></div>
+      <textarea class="text notes" rows="7" data-qnote="${esc(q.id || '')}" placeholder="Tes hypothèses, tes calculs…">${esc(note)}</textarea></div></details>`;
+  const indice = { digicode: 'Tape le code, puis ✓', cadenas: 'Règle les roues, puis ouvre', chronologie: 'Range les faits, puis valide l’ordre', butin: 'Estime le scellé, puis envoie' };
+  const barre = fini ? '' : `<div class="repbar-q">${carnet}
+      ${texteForm ? `<form data-form="quest-text" class="repbar-f"><label class="sr" for="qtext">Ta réponse</label><input id="qtext" class="text grow ${q.mode === 'exact' ? 'mono' : ''}" name="reponse" autocomplete="off" ${q.inputmode ? `inputmode="${q.inputmode}"` : 'autocapitalize="characters"'} placeholder="${esc(q.placeholder || 'Ta réponse')}"><button class="btn primary" type="submit">Valider</button></form>`
+        : objetForm ? `<span class="repbar-i">${esc(indice[q.forme === 'digicode' ? 'digicode' : q.type] || 'Réponds sur le document')}</span>`
+        : `<button type="button" class="btn primary repbar-v" data-action="quest-submit" ${picked == null ? 'disabled' : ''}>${picked == null ? 'Choisis ta réponse' : `Valider <small>· ${esc(libelleChoix(q, picked))}</small>`}</button>`}
+    </div>`;
+  const suivante = !train && fini ? S.quests.find((x) => !results[x.slot] || !results[x.slot].statut) : null;
+  const sheet = !train && !noir && ok >= 2 && ((!bonusPris && !S.bonusSheetFerme) || S.bonusChanger) ? feuilleBonus(ok, bonusPris, gBonus, enqueteOuverte, primeSf) : '';
+  return `<main class="screen quete v2 ${noir ? 'mode-noir' : ''} ${train ? '' : 'sans-copie'}">
+    ${modes}
+    ${onglets}
+    ${propositionDelegue}
+    <article class="feuille${noir ? ' noir' : ''}${train ? ' train' : ''}" aria-label="Énigme">
+      ${tampon}
+      <header class="fe-tete"><div class="col grow" style="gap:4px;min-width:0"><span class="fe-ref">${ref}</span><h1 class="big">${esc(q.typeLabel)}</h1>
+        <div class="row fe-chips">${q.formeNom ? `<span class="forme-nom">${esc(q.formeNom)}</span>` : ''}<span class="fe-niv${q.difficulte >= 6 ? ' hc' : ''}">${niveau} · ${essai}</span>${!train && !noir ? chipEntraine('flair', 'Réussie : Flair +1 pour ton chef') : ''}</div></div>
+        ${menu}</header>
+      ${noir && !fini ? '<p class="small fe-alerte">Le dossier que personne n’a su boucler. Pas de coup de pouce, une seule réponse. Une erreur ne coûte rien ; une réussite rapporte des PS et compte pour le titre « Cerveau du district ».</p>' : ''}
+      ${!train && !noir && q.enquete ? `<p class="small fe-enq">🧩 ${esc(q.gain || '')} Choisis ta piste prioritaire dans l’Enquête (fiche du suspect).</p>` : ''}
+      ${!train && !noir && q.slot === 4 && !slotsCompte().includes(4) ? '<p class="tiny muted" style="margin:0">Pour le plaisir : +5 PS si elle est réussie, sans compter pour le bonus, la prime ni le classement.</p>' : ''}
+      ${q.variante ? '<p class="tiny muted" style="margin:0">Énigme changée : c’est ton changement du jour.</p>' : ''}
+      <p class="fe-contexte">${esc(q.contexte)}</p>
+      ${q.figures ? renderFigures(q, fini) : ''}
+      ${q.ligne ? ligneHtml(q) : q.tableau ? `<section class="card tight" aria-label="${esc(q.titreTableau || 'Fiche horaire')}">${q.titreTableau ? `<h2 class="section">${esc(q.titreTableau)}</h2>` : ''}${q.tableau}</section>` : ''}
+      ${q.type === 'filature' && !fini ? filatureOutils(q) : ''}
+      ${q.elements && q.elements.length && !((q.type === 'chronologie' && !fini) || (q.type === 'horaires' && q.trajets)) ? (q.type === 'cadenas' ? essaisHtml(q) : q.type === 'quiment' ? temoignagesHtml(q, { marques: !fini && q.forme !== 'demi' }) : q.type === 'plaque' ? temoignagesHtml(q) : `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who">${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>`) : ''}
+      ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${esc(q.titreIndices || (q.type === 'grille' ? 'Auditions' : 'Indices'))}</h2>${q.indices.map((t) => `<p class="small" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
+      ${q.mode === 'texte' ? `<div class="codebox" aria-label="Message codé">${codeHtml(q.code)}</div>
+        <p class="small muted" style="margin:0">${esc(q.aide)}</p>` : ''}
+      ${q.grille && !fini ? renderGrille(q) : ''}
+      ${q.mode === 'texte' && !fini ? disqueHtml(q) : ''}
+      ${!fini ? `<section class="col fe-rep" aria-label="Ta réponse"><h2 class="section">${esc(q.question)}</h2>
+        ${q.consigne && q.type !== 'chronologie' ? `<p class="small muted" style="margin:0">${esc(q.consigne)}</p>` : ''}
+        ${surPlan ? `<p class="small ${picked ? '' : 'muted'}" style="margin:0">${picked ? `Lieu choisi : <strong>${esc(libelleChoix(q, picked))}</strong>` : 'Touche le lieu sur le plan.'}</p>` : choix}
+        ${q.forme === 'digicode' ? digicodeHtml(q) : q.type === 'cadenas' ? cadenasHtml(q) : q.type === 'chronologie' ? chronoHtml(q) : q.type === 'butin' && q.objets ? butinHtml(q, false) : ''}
+      </section>` : ''}
+      ${q.forme === 'digicode' && fini ? digicodeResultat(q, r) : q.type === 'cadenas' && fini ? cadenasResultat(q, r) : ''}
+      ${q.type === 'butin' && q.objets && fini ? butinHtml(q, true, r) : ''}
+    </article>
+    ${barre}
+    ${r.statut === 'ok' ? `<section class="card green"><span class="ok" style="font-size:15px;font-weight:700">Bien vu !</span>
+      <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p></section>` : ''}
+    ${r.statut === 'rate' ? `<section class="card"><span style="font-size:15px;font-weight:700">Mauvaise réponse${r.reponse ? ` : ${esc(r.reponse)}` : ''}</span>
+      <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p>
+      <p class="tiny muted" style="margin:0">${train ? 'Aucune conséquence : c’était pour s’entraîner.' : noir ? 'Aucune conséquence. Un nouveau dossier noir demain après 20:00.' : 'Sans conséquence. De nouvelles énigmes demain après 20:00.'}</p></section>` : ''}
+    ${train && fini ? '<button class="btn primary block" data-action="train-new">Une autre énigme</button>' : ''}
+    ${suivante ? `<button class="btn outline block" data-action="quest-tab" data-i="${suivante.slot}">Énigme suivante</button>` : ''}
+    ${sheet}
   </main>${tabbar('quete', { questBadge: false })}`;
 }

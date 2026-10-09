@@ -1,6 +1,6 @@
 // Le chef de corps (saison 2) : portrait, création, fiche, agenda et talents dans les Ordres.
 import { S, esc, icon, myZone, zoneName } from './common.js';
-import { gradeFor, INFRAS, SERVICE_LABELS } from '../engine/constants.js';
+import { gradeFor, INFRAS, SERVICE_LABELS, ENIGMES } from '../engine/constants.js';
 import { reglesV2 } from '../engine/regles.js';
 import { tabbar } from './common.js';
 import { COMPETENCES, IDS_COMPETENCES, PARCOURS, IDS_PARCOURS, TALENTS, TALENT, AGENDA, IDS_AGENDA, CHEF,
@@ -241,6 +241,7 @@ function sectionsChef(uid, moi) {
     ${(chef.etats || []).length ? chef.etats.slice().reverse().map((e) => `<div class="chef-etat"><span class="chef-rang${e.rang === 1 ? ' or' : e.rang === 2 ? ' ar' : e.rang === 3 ? ' br' : ''}">${e.rang ? `${e.rang}<small>${e.rang === 1 ? 'er' : 'e'}</small>` : '–'}</span>
       <span class="col" style="gap:1px"><span class="small" style="font-weight:700">Saison ${e.season}${e.moyenne != null ? ` · IPZ ${String(e.moyenne).replace('.', ',')}` : ''}${e.anticipee ? ' · écourtée' : ''}</span>${(e.faits || []).length ? `<span class="tiny muted">${esc(e.faits.join(' · '))}</span>` : ''}</span></div>`).join('') : ''}
     ${(chef.souvenirs || []).length ? `<span class="tiny muted" style="font-weight:700">Réunions avec d’autres chefs</span><div class="row" style="gap:8px;flex-wrap:wrap">${chef.souvenirs.slice().reverse().map((x) => `<span class="row" style="gap:4px;align-items:center">${portraitChef(x.u, 24, { galons: false })}<span class="tiny">${st.zones[x.u] ? esc(st.zones[x.u].nom) : '?'} · s${x.s}</span></span>`).join('')}</div>` : ''}
+    ${moi ? palierEnigmesHtml(z) : ''}
     <span class="tiny muted" style="font-weight:700">👏 Félicitations cette saison</span>
     <span class="small">${f.length ? f.map((u) => esc((S.players[u] && S.players[u].pseudo) || (st.zones[u] && st.zones[u].nom) || '?')).join(', ') : 'Aucune pour l’instant.'}</span>
     ${moi ? '' : `<button type="button" class="btn small ${deja ? 'ghost' : 'primary'} block" data-action="feliciter" data-u="${esc(uid)}" ${deja ? 'disabled' : ''}>${deja ? '✓ Tu l’as félicité cette saison' : `Féliciter ${esc(p.pseudo || 'ce chef')}`}</button>`}
@@ -349,4 +350,12 @@ export function chipEntraine(cle, texte = null) {
   const z = myZone(), c = JEUX_COMP[cle] || (COMPETENCES[cle] ? cle : null);
   if (!z || !z.chef || !reglesV2(S.state) || !c) return '';
   return `<span class="chip-chef" style="--c:${COUL_COMP[c]}" title="Entraîne la compétence ${esc(COMPETENCES[c].nom)} de ton chef">${COMPETENCES[c].ico} ${texte === '' ? esc(COMPETENCES[c].nom) : texte || `${esc(COMPETENCES[c].nom)} +1`}</span>`;
+}
+
+/** Paliers de carrière des énigmes (toutes saisons) : en saison 2, ils quittent l'écran Énigmes pour la Carrière du chef. */
+function palierEnigmesHtml(z) {
+  if (!z) return '';
+  const n = (z.carriere && Number.isFinite(z.carriere.enigmes)) ? z.carriere.enigmes : (z.stats && z.stats.quetesOk) || 0;
+  const P = ENIGMES.paliers, prochain = (Math.floor(n / P.pas) + 1) * P.pas, pct = Math.round(100 * (n % P.pas) / P.pas);
+  return `<div class="palier-enig" style="margin:0" title="Toutes les ${P.pas} énigmes réussies (dossier noir compris)"><span class="tiny"><strong>🧩 ${n}</strong> énigme${n > 1 ? 's' : ''} réussie${n > 1 ? 's' : ''} depuis ton arrivée · palier à ${prochain} : +${P.budget} k€ et +${P.jauge} jauge des skins</span><span class="palier-barre"><i style="width:${pct}%"></i></span></div>`;
 }

@@ -10,6 +10,7 @@ export const NOTE_MAJ = {
   essentiel: [
     ['🏢', 'Un nouvel HP', 'ton commissariat en grand, un seul bouton pour la suite, et tes raccourcis au choix.'],
     ['🗺️', 'Une nouvelle carte', 'ta ville en maquette 3D : touche un quartier, envoie tes patrouilles et regarde-les rouler. Deux boutons : Non-droit (qui s’ouvre d’abord, avec le reste du district dessous) et Ma zone.'],
+    ['🗂️', 'Des énigmes en dossier', 'chaque énigme sur sa feuille de dossier, tu réponds directement sur le plan ou la plaque, et le tampon « Résolu » tombe.'],
     ['🎖️', 'L’onglet Chef', 'ce que ton chef fait aujourd’hui, sa semaine et sa carrière, à un toucher.'],
     ['🎖️', 'Ton chef de corps', 'choisis son visage : il progresse avec tes jeux et ta gestion, et le suit de saison en saison.'],
     ['⚔️', 'Ta semaine de chef', 'trois objectifs et un rival à battre chaque semaine, des rubans et un cadre doré à gagner.'],
@@ -35,6 +36,14 @@ export const NOTE_MAJ = {
       ['Onglet Chef', 'dans la barre du bas, juste avant la Radio (la Carte reste après les Ordres ; Terrain est rangé dans la Carte). En haut, ce que ton chef fait aujourd’hui (agenda, première ligne, service du réseau, talents), envoyé avec tes ordres ; puis ce qu’il a fait cette nuit, sa semaine (objectifs, duel) et sa fiche. Le portrait sur l’HP y mène aussi.'],
       ['Ordres et Énigmes', 'en-têtes plus courts ; les aides de l’affectation se replient après tes 3 premiers jours.'],
       ['Création du chef', 'à la première ouverture de la saison, en plein écran ; « Plus tard » ramène à l’HP.'],
+    ]],
+    ['Les énigmes en dossier (9 octobre)', [
+      ['La feuille de dossier', 'chaque énigme est posée sur sa feuille, sous les onglets du classeur. Une pastille par onglet : verte réussie, rouge ratée, bleue confiée. Une énigme terminée reçoit son tampon « Résolu » ou « Classé ».'],
+      ['La route du bonus', 'en haut, une barre montre tes réussites du jour : le bonus à 2, la prime à 3. Le bonus choisi s’y affiche, avec « Changer ».'],
+      ['Répondre sur l’objet', 'sur la filature, on touche le lieu sur le plan (la liste en double a disparu). Le bouton « Valider » reste en bas de l’écran et rappelle ton choix ; pour les messages codés, la réponse se tape au même endroit.'],
+      ['Le carnet', 'le brouillon se range dans un carnet, le bouton papier à gauche de « Valider ». Un point orange signale qu’il contient des notes.'],
+      ['Le bonus du jour', 'à la 2e réussite, le choix du bonus monte du bas de l’écran. « Plus tard » le referme ; tu peux toujours le choisir ou le changer jusqu’à 20:00.'],
+      ['Le menu ⋯', 'changer d’énigme, gagner le bonus autrement, le coup de pouce et les règles sont réunis à côté du titre. Les paliers de carrière des énigmes passent dans la carrière du chef.'],
     ]],
     ['Le nouvel HP (9 octobre)', [
       ['Ton commissariat en grand', 'tout en haut, on le fait glisser pour voir le garage et les annexes. Le pinceau le personnalise ; le ciel peut suivre l’heure réelle ou rester au jour, au soir ou à la nuit.'],
