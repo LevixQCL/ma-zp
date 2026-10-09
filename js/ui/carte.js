@@ -82,6 +82,32 @@ export function quartiersHtml(st, me) {
   </section>`;
 }
 
+/** Saison 2 : la fiche du quartier touché sur la carte, juste sous elle (tension, ce soir, patrouilles). */
+export function ficheQuartierHtml(st, me, k) {
+  const d = S.draft;
+  const mesT = tensionsDe(st, me);
+  if (!d || k == null || !(k in mesT)) return '';
+  const c = carteQuartiers(st), pat = d.patrouilles || {};
+  const opx = effetsOperation(me, d.alloc || {}, d.operation, st.turn);
+  const prox = opx.eff.proximite || 0;
+  const capProx = capacite(me, 'proximite', prox, { rythme: d.rythme, turn: st.turn, bonus: bonusEnigme('proximite'), alloc: opx.eff });
+  const prev = prevoirTensions(st, me, { patrouilles: pat, agentsProx: prox, capProx });
+  const t = mesT[k], n = niveauTension(t), a = pat[k] || 0, nom = esc(c.nomDe(Number(k)));
+  const cibles = Object.values(pat).reduce((s2, x) => s2 + x, 0), libres = Math.max(0, prox - cibles);
+  const dlt = prev[k] - t;
+  const soir = dlt <= -4 ? `<span class="good">baisse vers ${Math.round(prev[k])}</span>` : dlt >= 4 ? `<span class="bad">monte vers ${Math.round(prev[k])}</span>` : `<span class="muted">stable, vers ${Math.round(prev[k])}</span>`;
+  const pc = me.pointChaud && String(me.pointChaud.cell) === String(k) ? me.pointChaud : null;
+  const hp = c.capitale[me.uid] === Number(k);
+  return `<section class="cv-fiche" aria-label="Quartier choisi" aria-live="polite">
+    <div class="cv-fiche-t"><span class="cv-pastille" style="background:${n.couleur}">${Math.round(t)}</span>
+      <span class="col grow" style="gap:0;min-width:0"><b>${nom}${hp ? ' · ton HP' : ''}${pc ? ' 🔥' : ''}</b><span class="tiny muted">${n.nom} · ce soir ${soir}</span></span></div>
+    ${pc ? `<p class="small" style="margin:0;color:var(--red-soft)"><b>Point chaud :</b> ${esc(pc.titre)}. ${a >= QUARTIERS.agentsDesamorcer ? 'Assez d’agents pour le désamorcer.' : `Il faut ${QUARTIERS.agentsDesamorcer} patrouilles pour le désamorcer.`}</p>` : ''}
+    <div class="cv-fiche-p"><span class="col" style="gap:0"><span style="font-weight:600">Patrouilles ce soir</span><span class="tiny muted">${prox ? `${libres} agent${libres > 1 ? 's' : ''} de Proximité libre${libres > 1 ? 's' : ''} sur ${prox}` : '<a href="#ordres">Aucun agent en Proximité : règle-le dans tes ordres</a>'}</span></span>
+      <span class="stepper grand"><button type="button" data-action="patrouille" data-c="${k}" data-d="-1" aria-label="Une patrouille de moins à ${nom}" ${a <= 0 ? 'disabled' : ''}>−</button><span class="n">${a}</span><button type="button" data-action="patrouille" data-c="${k}" data-d="1" aria-label="Une patrouille de plus à ${nom}" ${prox <= a ? 'disabled' : ''}>+</button></span></div>
+    ${a >= QUARTIERS.seuilDeplacement ? '<p class="tiny bad" style="margin:0">Trop de monde ici : la délinquance ira chez les voisins.</p>' : ''}
+  </section>`;
+}
+
 /** Les commissariats de toutes les zones, à faire défiler (le sien d'abord). */
 export function vitrineHtml(st, me, zones = Object.values(st.zones).sort((a, b) => a.code.localeCompare(b.code))) {
   return `<div class="vitrine">${[me, ...zones.filter((z) => z.uid !== me.uid)].map((z) => `<button type="button" class="vitrine-item" data-action="voir-hp" data-uid="${esc(z.uid)}" aria-label="Voir le commissariat de ${esc(z.nom)}">

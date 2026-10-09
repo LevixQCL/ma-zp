@@ -1,47 +1,27 @@
-// Carte de la saison 2 : Carte et Terrain réunis, en trois calques (Ma zone, District, Non-droit).
-// La carte en grand, d'un bord à l'autre ; en dessous, ce qu'on peut faire sur le calque choisi, une ligne par sujet.
+// Carte de la saison 2 : Carte, Terrain, Non-droit et Pactes réunis sous deux boutons seulement (Ma zone, District).
+// La maquette isométrique en grand ; en dessous, la fiche du quartier touché (Ma zone) ou une ligne par sujet (District).
 import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
-import { planPlateau } from './plan-plateau.js';
+import { planIso } from './plan-iso.js';
 import { siteDe } from '../engine/sites.js';
-import { quartiersHtml, vitrineHtml, siteHtml } from './carte.js';
-import { ongletsCarte } from './pactes.js';
+import { quartiersHtml, vitrineHtml, siteHtml, ficheQuartierHtml } from './carte.js';
+import { aFairePactes } from './pactes.js';
 import { terrainBlocs, terrainAFaire } from './terrain.js';
 import { nonDroitHtml, secteursEnDanger } from './nondroit.js';
-import { operationActive } from '../engine/zone.js';
 import { tensionsDe } from '../engine/quartiers.js';
 
-export const CALQUES = [['mazone', 'Ma zone'], ['district', 'District'], ['nondroit', 'Non-droit']];
+export const CALQUES = [['mazone', 'Ma zone'], ['district', 'District']];
 
-/** Calque ouvert en arrivant par l'ancien lien « Terrain » : le district s'il y a une demande, sinon le non-droit. */
+/** Calque ouvert en arrivant par l'ancien lien « Terrain » : le district (avec le non-droit déplié s'il n'y a pas d'autre demande). */
 export function calqueTerrain() {
   const { chezMoi, voisins, district } = terrainBlocs();
-  return chezMoi.length || voisins.length || district.length ? 'district' : 'nondroit';
+  if (!(chezMoi.length || voisins.length || district.length)) S.ouverts = { ...(S.ouverts || {}), 'cv-nd': true };
+  return 'district';
 }
 
-/** Petits compteurs sur les boutons de calque : ce qui attend une action. */
+/** Petits compteurs sur les deux boutons : ce qui attend une action. */
 function badges(st, me) {
   const pc = me.pointChaud && (S.draft && ((S.draft.patrouilles || {})[me.pointChaud.cell] || 0) < 2) ? 1 : 0;
-  const nd = st.nonDroit ? Object.values(st.nonDroit.secteurs) : [];
-  return {
-    mazone: pc,
-    district: Math.max(0, terrainAFaire() - secteursEnDanger().length),
-    nondroit: secteursEnDanger().length,
-    ndTxt: nd.length ? `${nd.filter((x) => x.statut === 'repris').length}/${nd.length}` : '',
-  };
-}
-
-/** Légende repliée : seulement ce qui est à l'écran sur ce calque. */
-function legende(st, me, calque) {
-  const items = [];
-  if (calque === 'mazone') {
-    items.push(...['calme', 'à surveiller', 'tendu', 'chaud'].map((l, k) => `<span><i style="background:${['#4FBF8A', '#E2C04A', '#E8913A', '#E0625A'][k]}"></i>${l}</span>`));
-    items.push('<span><i style="background:#63B0FF"></i>patrouille</span>', '<span><i class="pointille"></i>chez le voisin</span>');
-  }
-  items.push('<span><i class="hach"></i>non-droit</span>', '<span><i style="background:#FFB23F;border-radius:2px;height:3px"></i>ta zone</span>');
-  if (st.affaires.length) items.push('<span><i style="background:#FFB23F;border-radius:50% 50% 50% 0"></i>affaire disputée</span>');
-  if (st.evenement) items.push('<span>☆ événement</span>');
-  if (operationActive(me, st.turn)) items.push('<span class="bad">◎ opération</span>');
-  return `<details class="cv-leg" data-k="cv-legende" ${S.ouverts && S.ouverts['cv-legende'] ? 'open' : ''}><summary>Légende</summary><div class="cv-leg-l">${items.join('')}</div></details>`;
+  return { mazone: pc, district: terrainAFaire() + aFairePactes().filter((x) => !x.fait).length };
 }
 
 /** Une ligne de « Ce soir dans le district », dépliable, sur le modèle de l'HP. */
@@ -67,6 +47,19 @@ function districtHtml(st, me) {
     L.push(ligne(`cv-vois-${T}-${i}`, renfort ? '🚨' : '🤝', titreDe(h), sousDe(h), h, { cls: renfort ? 'rouge' : '', ouvert: renfort, badge: renfort ? '<span class="ajd-badge">!</span>' : '' }));
   });
   district.forEach((h, i) => L.push(ligne(`cv-dist-${T}-${i}`, '⭐', titreDe(h), st.evenement && st.evenement.tour === T ? 'ce soir : envoie des agents' : `dans ${st.evenement ? st.evenement.tour - T : '?'} tours`, h, { ouvert: !!(st.evenement && st.evenement.tour === T) })));
+  // Zone de non-droit : tout l'ancien calque, replié dans une ligne (on l'ouvre aussi en touchant la tache rouge).
+  const nd = st.nonDroit ? Object.values(st.nonDroit.secteurs) : [];
+  const ndCorps = nonDroitHtml();
+  if (ndCorps) {
+    const danger = secteursEnDanger().length;
+    L.push(ligne('cv-nd', '🏚️', 'Zone de non-droit', `${nd.filter((x) => x.statut === 'repris').length}/${nd.length} secteurs repris${danger ? ` · <span class="bad">${danger} en danger</span>` : ''}`, ndCorps, { badge: danger ? `<span class="ajd-badge">${danger}</span>` : '' }));
+  }
+  // Pactes, défis et Conseil : ce qui attend une réponse, puis l'accès à l'écran complet.
+  const af = aFairePactes(), reste = af.filter((x) => !x.fait);
+  const actifs = (st.pactes || []).filter((p) => (p.a === me.uid || p.b === me.uid) && p.etape === 'actif').length;
+  L.push(ligne('cv-pactes', '🤝', 'Pactes et Conseil', reste.length ? esc(reste[0].titre) : actifs ? `${actifs} pacte${actifs > 1 ? 's' : ''} actif${actifs > 1 ? 's' : ''}` : 'aucun pacte en cours · propose-en un',
+    `${af.map((x) => `<a class="ajd-alerte ${x.fait ? '' : 'amber'}" href="#pactes"><b>${x.fait ? '✓ ' : ''}${esc(x.titre)}</b><span>${esc(x.texte)}</span></a>`).join('')}
+     <a class="btn small outline block" href="#pactes">Ouvrir les pactes, défis et le Conseil</a>`, { badge: reste.length ? `<span class="ajd-badge">${reste.length}</span>` : '', ouvert: !!reste.length }));
   return `<section class="hp-ajd" aria-label="Ce soir dans le district">
       <h2 class="section">Ce soir dans le district</h2>
       ${L.length ? L.join('') : '<p class="small muted" style="margin:0">Aucune demande d’aide pour l’instant. Les appels à renfort, les affaires disputées et les grands événements arrivent ici.</p>'}
@@ -75,24 +68,31 @@ function districtHtml(st, me) {
       ${vitrineHtml(st, me)}</section>`;
 }
 
+/** Quartier montré dans la fiche : celui touché, sinon le point chaud, sinon le plus tendu. */
+function quartierChoisi(st, me) {
+  const mesT = tensionsDe(st, me);
+  if (S.quartierSel != null && String(S.quartierSel) in mesT) return String(S.quartierSel);
+  if (me.pointChaud && String(me.pointChaud.cell) in mesT) return String(me.pointChaud.cell);
+  return Object.keys(mesT).sort((a, b) => mesT[b] - mesT[a])[0] ?? null;
+}
+
 export function renderCarteV2(calque = S.carteCalque || 'mazone') {
   const st = S.state, me = myZone();
+  if (calque === 'nondroit') { calque = 'district'; S.ouverts = { ...(S.ouverts || {}), 'cv-nd': true }; }
   if (!CALQUES.some(([k]) => k === calque)) calque = 'mazone';
   const n = Object.keys(st.zones).length;
   const b = badges(st, me);
   const boutons = CALQUES.map(([k, l]) => `<button type="button" role="tab" data-action="carte-calque" data-v="${k}" aria-selected="${calque === k}">
-    <span>${l}</span>${k === 'nondroit' && b.ndTxt ? `<small>${b.ndTxt}</small>` : ''}${b[k] ? `<i class="cv-badge" aria-label="${b[k]} à faire">${b[k]}</i>` : ''}</button>`).join('');
-  const carte = calque === 'nondroit' ? '' : `<div class="cv-carte">${planPlateau(st, me, { zoom: calque === 'mazone' })}${legende(st, me, calque)}</div>`;
+    <span>${l}</span>${b[k] ? `<i class="cv-badge" aria-label="${b[k]} à faire">${b[k]}</i>` : ''}</button>`).join('');
+  const sel = quartierChoisi(st, me);
   const mesT = tensionsDe(st, me), nbChauds = Object.values(mesT).filter((t) => t >= 60).length;
-  const sousTitre = calque === 'mazone' ? `${Object.keys(mesT).length} quartiers${nbChauds ? ` · <span class="bad">${nbChauds} chaud${nbChauds > 1 ? 's' : ''}</span>` : ''}` : calque === 'district' ? `${n} zones · tour ${st.turn}` : 'à reprendre ensemble';
-  let corps = '';
-  if (calque === 'mazone') corps = `${quartiersHtml(st, me)}${siteHtml(siteDe(me))}`;
-  else if (calque === 'district') corps = districtHtml(st, me);
-  else corps = nonDroitHtml() || '<p class="small muted">La zone de non-droit n’est pas encore ouverte dans cette partie.</p>';
+  const sousTitre = calque === 'mazone' ? `${Object.keys(mesT).length} quartiers${nbChauds ? ` · <span class="bad">${nbChauds} chaud${nbChauds > 1 ? 's' : ''}</span>` : ''}` : `${n} zones · tour ${st.turn}`;
+  const astuce = calque === 'mazone' ? 'Touche un quartier' : 'Touche ta zone ou le non-droit';
+  const carte = `<div class="cv-carte">${planIso(st, me, { vue: calque, sel })}<span class="cv-astuce" aria-hidden="true">${astuce}</span></div>`;
+  const corps = calque === 'mazone' ? `${ficheQuartierHtml(st, me, sel)}${quartiersHtml(st, me)}${siteHtml(siteDe(me))}` : districtHtml(st, me);
   return `<main class="screen carte-v3">
-    ${ongletsCarte('carte')}
-    <header class="cv-tete"><h1 class="big">${calque === 'mazone' ? esc(me.nom) : calque === 'district' ? 'District Delta' : 'Non-droit'}</h1><span class="small muted">${sousTitre}</span></header>
-    <div class="cv-calques" role="tablist" aria-label="Calques de la carte">${boutons}</div>
+    <header class="cv-tete"><h1 class="big">${calque === 'mazone' ? esc(me.nom) : 'District Delta'}</h1><span class="small muted">${sousTitre}</span></header>
+    <div class="cv-calques deux" role="tablist" aria-label="Vue de la carte">${boutons}</div>
     ${carte}
     <div class="cv-corps">${corps}</div>
   </main>${tabbar('carte')}`;

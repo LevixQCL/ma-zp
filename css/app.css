@@ -2149,6 +2149,16 @@ button.hz-s:hover { color: var(--text); }
 .cv-leg-l i.pointille { border: 1.5px dashed var(--muted); background: none; }
 .cv-leg-l i.hach { border-radius: 2px; background: repeating-linear-gradient(45deg, #3A1416 0 2px, #B3363A 2px 4px); }
 .cv-corps { display: flex; flex-direction: column; gap: 12px; }
+.cv-calques.deux { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.cv-carte > svg.iso { width: 100%; height: auto; -webkit-tap-highlight-color: transparent; }
+.cv-astuce { position: absolute; left: 12px; bottom: 10px; line-height: 1.3; padding: 5px 10px; border-radius: 999px; background: rgba(10, 15, 34, .82); border: 1px solid rgba(255, 255, 255, .14); color: var(--text2); font: 600 12px var(--body); pointer-events: none; }
+.cv-fiche { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--amber-line, rgba(255, 178, 63, .45)); box-shadow: var(--lift); }
+.cv-fiche-t { display: flex; align-items: center; gap: 12px; }
+.cv-fiche-t b { font: 700 17px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cv-pastille { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; color: #0B1124; font: 800 15px var(--display); }
+.cv-fiche-p { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.stepper.grand button { width: 46px; height: 46px; font-size: 22px; }
+.stepper.grand .n { font-size: 20px; min-width: 32px; }
 /* Mes quartiers, plus aérés : une carte par quartier dans la liste */
 .carte-v3 #mes-quartiers > .card.tight { padding: 0; background: none; border: 0; box-shadow: none; display: flex; flex-direction: column; gap: 8px; }
 .carte-v3 .qrow { padding: 10px 12px; border: 1px solid var(--hair); border-radius: 16px; background: var(--surface); }
@@ -2173,3 +2183,4 @@ button.hz-s:hover { color: var(--text); }
 .chef-jour .choice[data-action="chef-agenda"][aria-pressed="false"] .s { display: none; }
 .chef-jour .choice[data-action="chef-agenda"][aria-pressed="true"] { grid-column: 1 / -1; }
 .chef-onglet .chef-hero .pc-stats { margin-top: 2px; }
+.retour-carte { align-self: flex-start; color: var(--amber); font-weight: 600; text-decoration: none; padding: 6px 0; }

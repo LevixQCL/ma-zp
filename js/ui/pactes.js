@@ -2,6 +2,7 @@
 // Remplace l'ancien écran Diplomatie (duels, manœuvres, entraide libre).
 import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
 import { gradeFor } from '../engine/constants.js';
+import { reglesV2 } from '../engine/regles.js';
 import { planVille } from './plan.js';
 import { AIDE, gainEntraide, MOTIONS_CHEF, themeActif, THEMES } from '../engine/rivalites.js';
 import {
@@ -237,7 +238,7 @@ export function renderPactes() {
   const conseil = conseilHtml();
   const voteCeSoir = !!(S.state.conseil && S.state.conseil.tour === S.state.turn);
   return `<main class="screen">
-    ${ongletsCarte('pactes')}
+    ${reglesV2(S.state) ? '<a class="retour-carte small" href="#carte" data-action="carte-calque" data-v="district">‹ District</a>' : ongletsCarte('pactes')}
     <header class="col" style="gap:3px"><h1 class="big">Pactes</h1>
       <p class="sub">Des accords à deux pendant ${PACTE.duree} tours, avec un avantage concret pour chacun. Accepté avant 20:00, signé le soir même.</p></header>
     ${rem ? `<p class="tiny ok" style="margin:0">Centrale d’achat : formations et équipement −${Math.round(rem * 100)} % aujourd’hui.</p>` : ''}

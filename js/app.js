@@ -588,7 +588,9 @@ async function onClick(e) {
         S.quartierSel = el.dataset.c;
         const dansCarte = !!el.closest('svg');
         rerender();
-        if (dansCarte) document.getElementById(`q-${el.dataset.c}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        // Saison 2 : la fiche du quartier est juste sous la carte, on la montre sans quitter la carte des yeux.
+        if (dansCarte && reglesV2(S.state)) document.querySelector('.cv-fiche')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        else if (dansCarte) document.getElementById(`q-${el.dataset.c}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
         break;
       }
       case 'patrouille': case 'point-chaud': {
@@ -613,6 +615,7 @@ async function onClick(e) {
         if (repris.length) { const cq = carteQuartiers(S.state); toast(`Agent repris à ${[...new Set(repris)].map((x) => cq.nomDe(Number(x))).join(', ')}.`); }
         S.quartierSel = k; S.ordersDirty = true; rerender(); break;
       }
+      case 'cv-nd': S.carteCalque = 'district'; S.ouverts = { ...(S.ouverts || {}), 'cv-nd': true }; rerender(); document.querySelector('[data-k="cv-nd"]')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); break;
       case 'carte-calque': S.carteCalque = el.dataset.v; if (S.route !== 'carte') location.hash = '#carte'; else { rerender(); } break;
       case 'carte-zoom': S.carteZoom = el.dataset.v === '1'; rerender(); break;
       case 'renfort-n': {
