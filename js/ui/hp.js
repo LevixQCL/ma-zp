@@ -341,7 +341,7 @@ function jaugesHtml(z, T) {
       ${rond('Réputation', z.reputation, '#3DD39A', 'reputation', h.reputation)}
     </div>
     <div class="hz-stats">
-      <span class="hz-s"><b>${dispo}</b><span>/${z.agents} agents</span>${blesses ? ` <span class="bad">· ${blesses} absent${blesses > 1 ? 's' : ''}</span>` : ''}</span>
+      <span class="hz-s"><b>${dispo}</b><span>/${z.agents} agents dispo</span>${blesses ? ` <span class="bad">· ${blesses} absent${blesses > 1 ? 's' : ''}</span>` : ''}</span>
       <button type="button" class="hz-s" data-action="budget" aria-label="Budget ${attr(fmtK(z.budget))}, détail du budget"><b class="${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</b><span class="${ff < 0 ? 'bad' : 'ok'}">${ff >= 0 ? '+' : '−'}${fmtK(Math.abs(ff))}/j</span></button>
       <button type="button" class="hz-s" data-action="parc" aria-label="Parc automobile : ${vDispo} véhicules disponibles sur ${z.vehicules}"><b>${vDispo}</b><span>/${z.vehicules} véhicules</span>${cab ? ` <span class="bad">· ${cab} cabossé${cab > 1 ? 's' : ''}</span>` : ''}</button>
     </div>

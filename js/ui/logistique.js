@@ -292,10 +292,10 @@ function logistiqueV2() {
     const trophee = !max && id === 'bureaux' && n + 1 === 4 && !(z.trophees || []).some((t) => t.id === 'batisseur');
     const piste = Array.from({ length: BATIMENT_MAX }, (_, i) => `<i class="${i < n ? 'ok' : i === n && !max ? (enTravaux || choisi ? 'prochain prevu' : 'prochain') : ''}">${i + 1}</i>`).join('');
     return `<div class="chantier">
-      <div class="between"><b>${ic} ${nom}</b><span class="tiny muted"><span class="mono ${occ >= cap ? 'warn' : ''}">${occ}</span> / ${cap} ${unite}</span></div>
+      <div class="between"><b>${ic} ${nom}</b><span class="tiny muted" title="effectif actuel · places dans le bâtiment"><span class="mono ${occ >= cap ? 'warn' : ''}">${occ}</span> ${unite} · ${cap} places</span></div>
       <div class="chantier-niv" aria-label="Niveau ${n} sur ${BATIMENT_MAX}">${piste}</div>
       ${max ? '<span class="tiny ok" style="font-weight:600">Niveau maximum</span>'
-        : `<span class="small">Niveau ${n + 1} : <span class="ok" style="font-weight:700">+${B.capacite(n + 1) - cap} ${unite}</span> · entretien +${fmt1(B.entretien(n + 1) - B.entretien(n))} k€/tour${trophee ? ' · <span class="ok">trophée Bâtisseur</span>' : ''}</span>`}
+        : `<span class="small">Niveau ${n + 1} : <span class="ok" style="font-weight:700">+${B.capacite(n + 1) - cap} places</span> (${B.capacite(n + 1)} ${unite} max) · entretien +${fmt1(B.entretien(n + 1) - B.entretien(n))} k€/tour${trophee ? ' · <span class="ok">trophée Bâtisseur</span>' : ''}</span>`}
       ${enTravaux ? `<span class="tiny warn" style="font-weight:600">Travaux : niveau ${n + 1} au tour ${z.travaux.fin}</span>`
         : max ? '' : `<button type="button" class="btn small block ${choisi ? 'primary' : 'agr'}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''}>${choisi ? '✓ Prévu ce soir' : `Agrandir · ${fmt1(B.coutAgrandir(n))} k€`}</button>${refus && !choisi ? `<span class="tiny muted">${esc(refus)}</span>` : ''}`}
     </div>`;
@@ -356,7 +356,7 @@ function logistiqueCorps() {
     return `<div class="bat">
       <div class="between"><span style="font-weight:700;font-size:13px">${id === 'bureaux' ? 'Bâtiment' : 'Garage'}</span>${pips(n)}</div>
       <div class="bat-niv"><span class="tiny muted">Niveau ${n}${plus('+1')}</span>
-        <span class="small"><span class="mono ${occ >= cap ? 'warn' : ''}">${occ}</span><span class="muted"> / </span>${cap} ${unite}${plus(`+${B.capacite(n + 1) - cap}`)}</span>
+        <span class="small"><span class="mono ${occ >= cap ? 'warn' : ''}">${occ}</span> ${unite}<span class="muted"> · </span>${cap} places${plus(`+${B.capacite(n + 1) - cap}`)}</span>
         <span class="tiny muted">entretien ${fmt1(B.entretien(n))} k€${plus(`+${fmt1(B.entretien(n + 1) - B.entretien(n))}`, 'muted')}</span>
         ${trophee ? '<span class="tiny ok" style="font-weight:600">+ trophée Bâtisseur</span>' : ''}</div>
       ${enTravaux ? `<span class="tiny warn" style="font-weight:600">Travaux : niveau ${n + 1} au tour ${z.travaux.fin}</span>`
