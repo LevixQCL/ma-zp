@@ -64,7 +64,8 @@ export function planPlateau(st, me, { zoom = false } = {}) {
     return `<polygon points="${pts(g)}" fill="${fill}" fill-opacity="${op}" stroke="${trait}" stroke-opacity="${op}" stroke-width="${f1((tirets ? 1.6 : 4) * ech)}" stroke-linejoin="round" ${tirets ? `stroke-dasharray="${f1(3 * ech)} ${f1(3 * ech)}"` : ''} ${glow ? `filter="url(#${glow})"` : ''} ${action}>${titre ? `<title>${esc(titre)}</title>` : ''}</polygon>`;
   };
   const tuiles = [], textes = [], badges = [];
-  for (const c of T.cells) {
+  // Mes quartiers d'abord (ils sont les premiers à toucher), puis le reste.
+  for (const c of [...T.cells].sort((a, b) => mesQ.has(b.i) - mesQ.has(a.i))) {
     const i = c.i, z = zoneOf(i);
     if (ndSet.has(i)) {
       const s = st.nonDroit && st.nonDroit.secteurs[i];
