@@ -443,6 +443,8 @@ export function affaireMeurtreRampe(n, variante = 'a') {
     },
     // Confrontation : trois pièces accablantes, dont au moins deux décisives (obtenues par l'enquête).
     confront: {
+      // Phrase d'ambiance après une confrontation ratée : oriente sans donner la solution.
+      echec: 'Son alibi tient toujours : quelqu’un le couvre.',
       decisives: ['x:wifi', 'moy:1', 'Rb:4', 'Ra:1'],
       accablantes: ['A:1', 'x:wifi', 'moy:1', 'Rb:4', 'x:liste', 'Ra:1', 'Rd:1', 'Rb:1', 'Rc:1', 'Re:1', 'Rf:1',
         'occ:4', 'mob:4', 'occ:1', 'mob:1', 'c:cam', 'x:heure', 'mob:2', 'Ra:2', 'Rb:2', 'Rc:2', 'mob:0', 'Rb:0', 'c:agenda', 'c:lettres',
