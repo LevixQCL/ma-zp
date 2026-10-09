@@ -564,6 +564,7 @@ export function renderHP() {
         ${bulleNuitHtml(z)}
         ${avantHtml(st, z, items)}
         ${jaugesHtml(z, T)}
+        ${boutonClassement(z)}
       </div>
       <div class="hp-col">
         ${aujourdhuiHtml(st, z, T, items)}
@@ -575,6 +576,14 @@ export function renderHP() {
   </main>${tabbar('hp', { questBadge: !questDone })}`;
 }
 
+/** Bouton bien visible vers les classements, avec le rang du joueur. */
+function boutonClassement(z) {
+  const { rang, total } = rangDe(z.uid);
+  const s = z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total}` : 'non classé';
+  return `<a class="btn block hp-classement" href="#classement" style="justify-content:space-between;gap:10px;min-height:52px;text-decoration:none">
+    <span class="row" style="gap:10px;align-items:center">${icon('trophy', 20)}<span style="font-weight:700">Classements</span></span>
+    <span class="row" style="gap:6px;align-items:center"><span class="small muted">${s}</span>${icon('chevron', 16)}</span></a>`;
+}
 
 function recompensesGrade(z) {
   const gi = GRADES.indexOf(gradeFor(z.ps));
