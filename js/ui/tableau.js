@@ -33,7 +33,7 @@ import { relecturesHtml, recoupBoutons, voletRecoup, voletHypo, voletPouces, mob
 // Version 2 : tableau élargi (2 800 de large) ; les dispositions de la version 1 sont décalées de 600 vers la droite.
 const BW = 2800, BH_MIN = 2200, DECALAGE_V2 = 600;
 let BH = BH_MIN; // le tableau s'allonge vers le bas quand on y range beaucoup de pièces
-const MAP = { x: 960, y: 400, w: 880, h: 900 };
+export const MAP = { x: 960, y: 400, w: 880, h: 900 };
 // Planques : placées sur la bonne rive du canal (nord au-dessus, sud en dessous), d'après leur fiche.
 const PLANQUE_POS = {
   'Cave du bistrot': [600, 505], 'Entrepôt frigorifique': [780, 110], 'Grenier d’une ferme': [115, 70], 'Parking souterrain': [335, 420],
@@ -41,8 +41,8 @@ const PLANQUE_POS = {
   'Péniche amarrée': [495, 665], 'Box de garage n° 12': [300, 705], 'Lavoir couvert': [450, 785], 'Ancien cinéma': [740, 725],
   'Serre abandonnée': [135, 815], 'Local de chaufferie': [620, 840], 'Cabanon de jardin': [300, 860], 'Laverie fermée': [790, 850],
 };
-const planquePos = (p, aff) => (aff && aff.prof ? PLANQUE_POS3[p.nom] : PLANQUE_POS[p.nom]) || (p.rive === 'sud' ? [440, 760] : [440, 470]);
-const COL = { occ: '#2F6FD3', moy: '#C88A12', mob: '#C2302B' };
+export const planquePos = (p, aff) => (aff && aff.prof ? PLANQUE_POS3[p.nom] : PLANQUE_POS[p.nom]) || (p.rive === 'sud' ? [440, 760] : [440, 470]);
+export const COL = { occ: '#2F6FD3', moy: '#C88A12', mob: '#C2302B' };
 const PINS = { r: ['#FF9A93', '#D32F2F', '#7A1010'], b: ['#9CC8FF', '#2F6FD3', '#123B7A'], y: ['#FFE59A', '#E8A800', '#7A5600'], g: ['#A8F0C6', '#2E9E62', '#11502E'], w: ['#FFFFFF', '#D8D2C4', '#7D7566'] };
 const PIN_EL = { occ: 'b', moy: 'y', mob: 'r' };
 const DEF_POS = {
@@ -57,7 +57,7 @@ let CONNUS = new Set(); // pièces opposables du dossier affiché (relectures su
 const TUTO_KEY = 'mazp-tuto-tableau';
 
 // ───── Disposition gardée sur l'appareil (dans le carnet de l'affaire) ─────
-function dispo(n) {
+export function dispo(n) {
   const c = lireCarnet(n);
   const t = c.tab || {};
   let pos = t.pos || {}, vue = t.vue || null;
@@ -73,16 +73,16 @@ function ecrireDispo(n, t) { const c = lireCarnet(n); c.tab = t; ecrireCarnet(n,
 const posDe = (t, id) => t.pos[id] || (PROF && DEF_POS3[id]) || DEF_POS[id] || [BW / 2, BH / 2];
 const rotDe = (id) => ((hashString(id) % 9) - 4) * 0.8;
 // Dossier complet : le plan routier (lieux à d'autres endroits, Haut-Delta au bord est).
-const lieuxDe = (aff) => (aff.ville === 'mons' ? lieuxMons(aff) : aff.prof ? LIEUX3 : CARTE.lieux);
-const lieuPos = (aff, k) => { if (aff.ville === 'mons') { const l = lieuxMons(aff)[k]; return l ? [MAP.x + l.x, MAP.y + l.y] : null; } if (aff.prof) { const q = posLieu3(k); return q ? [MAP.x + q[0], MAP.y + q[1]] : null; } const l = CARTE.lieux[k]; return [MAP.x + l.x, MAP.y + l.y]; };
+export const lieuxDe = (aff) => (aff.ville === 'mons' ? lieuxMons(aff) : aff.prof ? LIEUX3 : CARTE.lieux);
+export const lieuPos = (aff, k) => { if (aff.ville === 'mons') { const l = lieuxMons(aff)[k]; return l ? [MAP.x + l.x, MAP.y + l.y] : null; } if (aff.prof) { const q = posLieu3(k); return q ? [MAP.x + q[0], MAP.y + q[1]] : null; } const l = CARTE.lieux[k]; return [MAP.x + l.x, MAP.y + l.y]; };
 /** Documents du dossier d'ouverture (dossier complet) : un PV d'audition par suspect, rangés d'abord dans la boîte. */
-function docsOuverture(aff) { return aff.prof ? aff.suspects.map((_, i) => ({ f: `A:${i}`, j: 1, src: 'audition', doc: true })) : []; }
+export function docsOuverture(aff) { return aff.prof ? aff.suspects.map((_, i) => ({ f: `A:${i}`, j: 1, src: 'audition', doc: true })) : []; }
 /** Couleur d'un mode de transport (tracé sur le plan). */
 /** « à le musée » → « au musée ». */
 const aLieu = (l) => (/^le /.test(l) ? `au ${l.slice(3)}` : /^les /.test(l) ? `aux ${l.slice(4)}` : `à ${l}`);
 const cap1 = (x) => x.charAt(0).toUpperCase() + x.slice(1);
 const COL_MODE = { moteur: '#D9480F', velo: '#1B7F4B', pied: '#5B3FA8' };
-const pieceSuspect = (f) => (/^(occ|moy|mob|A|R[a-z]):\d$/.test(f) ? Number(f.split(':')[1]) : null);
+export const pieceSuspect = (f) => (/^(occ|moy|mob|A|R[a-z]):\d$/.test(f) ? Number(f.split(':')[1]) : null);
 
 /** Point d'accroche (la punaise) d'un élément du tableau. */
 function ancre(aff, t, id) {
@@ -92,16 +92,16 @@ function ancre(aff, t, id) {
 }
 
 // ───── Résumés des constatations (titres des fiches) ─────
-function resumeConstat(aff, e) {
+export function resumeConstat(aff, e) {
   if (e === 'occ') return `Entrée ${hm(aff.heure)} · sortie ${hm(aff.fin)}`;
   if (e === 'moy') return { cle: 'Une vraie clé, sans effraction', code: 'Le bon code d’alarme, du premier coup', volume: 'Un utilitaire : 300 kg en un voyage' }[aff.req.moy];
   return { argent: 'L’argent, et vite', vengeance: 'La rancune envers la victime', commande: 'Une commande pour un receleur' }[aff.req.mob];
 }
-const CONSTAT_DEM = { occ: 'cam', moy: 'labo', mob: 'temoin' };
-const CONSTAT_TITRE = { occ: 'L’heure exacte', moy: 'Comment on est entré', mob: 'Pourquoi on a volé' };
+export const CONSTAT_DEM = { occ: 'cam', moy: 'labo', mob: 'temoin' };
+export const CONSTAT_TITRE = { occ: 'L’heure exacte', moy: 'Comment on est entré', mob: 'Pourquoi on a volé' };
 
 // ───── Objets : chaque pièce a son support ─────
-function typePiece(p, aff) {
+export function typePiece(p, aff) {
   if (p.doc) return 'au';
   if (p.src === 'rebond') return 'jn';
   if (aff && aff.prof) return 'pv';
@@ -114,14 +114,14 @@ const ENTETE = { tk: 'Vérification d’alibi', sc: 'Scellé · moyens', rv: 'Co
 const PV_OBJET = { occ: 'Vérification d’alibi', moy: 'Vérification des moyens', mob: 'Comptes, téléphonie, entourage', p: 'Rapport du labo · planque', c: 'Constatations' };
 const PV_COL = { occ: '#2F6FD3', moy: '#C88A12', mob: '#C2302B', p: '#6B4FB8', c: '#3E6B4F' };
 /** Meurtre : la dernière pièce connue d'une série de la scène (fiche « Heure de la mort », etc.). */
-function derniereScene(aff, connus, e) {
+export function derniereScene(aff, connus, e) {
   const seq = aff.sceneSeq[aff.fiches[e].dem];
   return seq.filter((f) => connus.has(f)).pop() || null;
 }
 /** Numéro de PV d'une pièce (stable). */
-const numPv = (aff, f) => numeroPv(S.state.seed, aff.n, f);
+export const numPv = (aff, f) => numeroPv(S.state.seed, aff.n, f);
 /** Qui a rédigé la pièce : ta zone, la zone qui l'a partagée, le labo… */
-function redacteur(p) {
+export function redacteur(p) {
   const st = S.state, z = myZone();
   if (p.src === 'partage' && p.de && st.zones[p.de]) return zoneName(st.zones[p.de]);
   if (p.src === 'pjf') return 'Appui PJF';
@@ -132,7 +132,7 @@ function redacteur(p) {
 }
 
 /** Où en est le partage d'une pièce : reçue, connue de tous, prévue ce soir, déjà partagée ou gardée pour soi. */
-function statutPartage(p) {
+export function statutPartage(p) {
   const st = S.state, d = S.draft || {};
   const nom = (u) => (st.zones[u] ? zoneName(st.zones[u]) : 'une zone');
   if (p.src === 'partage') return { k: 'recue', txt: `Reçue de ${p.de ? nom(p.de) : 'une zone'}` };
@@ -145,7 +145,7 @@ function statutPartage(p) {
 }
 
 /** Main courante de l'affaire : ce qui s'est passé, jour après jour. */
-function chronologie(aff, dos) {
+export function chronologie(aff, dos) {
   const rebonds = rebondsPublies(S.state);
   const lignes = [{ j: 1, t: `Ouverture du dossier : ${aff.titre}`, k: 'ouv' }];
   for (const r of rebonds) lignes.push({ j: r.j, t: r.titre, k: 'rebond' });
@@ -159,7 +159,7 @@ function chronologie(aff, dos) {
 }
 
 /** Les questions-réponses d'une audition, en petit (au tableau) ou en grand (volet). */
-function auditionHtml(aff, i, grand = false) {
+export function auditionHtml(aff, i, grand = false) {
   const a = dossierAffaire3(S.state.seed, aff).auditions[i];
   if (!a) return '';
   if (grand) return `<p class="tiny muted" style="margin:0">PV n° ${esc(a.numero)} · entendu${aff.suspects[i].f ? 'e' : ''} le ${esc(a.heure.toLowerCase())}</p>${a.qr.map(([q, r]) => `<div class="pv-qr"><p class="pv-q">Q : ${esc(q)}</p><p class="pv-r">R : ${esc(r)}</p></div>`).join('')}<p class="tiny muted" style="margin:0">Lecture faite, persiste et signe.</p>`;
@@ -198,7 +198,7 @@ function pinHtml(c) {
 }
 
 // ───── Plan du district ─────
-function planSvg(aff, connusOcc) {
+export function planSvg(aff, connusOcc) {
   if (aff.ville === 'mons') return planMons(aff, { heures: connusOcc });
   if (aff.prof) return planSvg3(aff, { route: S.tabRoute && S.tabRoute.n === aff.n ? S.tabRoute : null, heures: connusOcc });
   const [fx, fy] = [CARTE.lieux[aff.pos].x, CARTE.lieux[aff.pos].y];
@@ -256,7 +256,7 @@ function planSvg(aff, connusOcc) {
 }
 
 // ───── Le tableau ─────
-function etatTab(aff, dos) {
+export function etatTab(aff, dos) {
   const t = dispo(aff.n);
   const pieces = [...dos.pieces.filter((p) => aff.meurtre || !p.f.startsWith('c:')), ...docsOuverture(aff)];
   const connus = new Set(dos.pieces.map((p) => p.f));
@@ -560,7 +560,7 @@ function voletFaits(aff) {
 }
 
 /** Pièces opposables (dossier + documents publics), en ensemble. */
-const opposablesSet = (aff, dos) => new Set(opposables(aff, dos));
+export const opposablesSet = (aff, dos) => new Set(opposables(aff, dos));
 
 /** Nom d'un élément opposable en confrontation. */
 export function nomElement(aff, f) {
@@ -651,7 +651,7 @@ function voletSoir(aff, dos) {
     <p class="tiny muted" style="margin:0">Tout part avec tes ordres : pense à valider. Résultats à 20:00, dans ta boîte à pièces.</p>`;
 }
 
-function volet(aff, dos, et) {
+export function volet(aff, dos, et) {
   const sh = S.tabSheet;
   if (!sh) return '';
   let corps = '';
@@ -671,10 +671,11 @@ function volet(aff, dos, et) {
   else if (sh.k === 'recoup') corps = voletRecoup(aff, dos, sh.id.slice(4));
   else if (sh.k === 'hypo') corps = voletHypo(aff, dos);
   else if (sh.k === 'pouce') corps = voletPouces(aff);
+  else if (sh.k === 'choix') corps = voletChoix(aff, dos, et);
   return `<section class="tb-volet tb-ui" aria-label="Détail">
     <div class="tb-poignee"></div>
     <button type="button" class="tb-fermer" data-action="tab-fermer" aria-label="Fermer">${icon('x', 18)}</button>
-    <div class="tb-volet-corps">${fixable(sh.id) ? boutonFixer(sh.id) : ''}${corps}</div></section>`;
+    <div class="tb-volet-corps">${fixable(sh.id) && !S.e2Rendu ? boutonFixer(sh.id) : ''}${corps}</div></section>`;
 }
 
 const fixable = (id) => /^(s\d|c:|recit$|chrono$|une$|scene$|plainte$)/.test(id) || dispo(S.state.enquete.n).places.includes(id);
@@ -719,8 +720,44 @@ function hauteurTableau(aff, t) {
   return Math.max(BH_MIN, ...ids.map((id) => posDe(t, id)[1] + tailleDe(id)[1] + 80));
 }
 
+/** Prépare l'état partagé du tableau (dossier complet, pièces opposables) pour un affichage hors liège. */
+export function preparerTableau(aff, dos) {
+  PROF = !!aff.prof;
+  CONNUS = opposablesSet(aff, dos);
+  return etatTab(aff, dos);
+}
+
+/** Choisir une démarche pour ce soir : la scène d'abord, puis chaque suspect (ta cellule et ceux encore en lice d'abord). */
+function voletChoix(aff, dos, et) {
+  const st = S.state, d = S.draft, carnet = lireCarnet(aff.n);
+  const dem = d.demarches || [], max = maxDemarchesDe(st, zoneAvecAgenda());
+  let scene = '';
+  if (aff.meurtre) {
+    scene = ELEMENTS.map((e) => { const fi = aff.fiches[e], dm = demarcheDe(aff, fi.dem), seq = aff.sceneSeq[fi.dem]; const kn = seq.filter((f) => et.connus.has(f)).length;
+      return kn < seq.length ? `<div class="e2-ch-l" style="--c:${COL[e]}"><span class="e2-ch-k">${esc(fi.titre)} · ${kn}/${seq.length}</span>${demBtn(aff, dos, fi.dem, dm.nom)}</div>` : ''; }).join('');
+  } else {
+    scene = ELEMENTS.filter((e) => !et.connus.has(`c:${e}`)).map((e) => { const dm = DEMARCHES[CONSTAT_DEM[e]];
+      return `<div class="e2-ch-l" style="--c:${COL[e]}"><span class="e2-ch-k">${ELEMENT_NOM[e]} · ${esc(CONSTAT_TITRE[e])}</span>${demBtn(aff, dos, CONSTAT_DEM[e], dm.nom)}</div>`; }).join('');
+  }
+  const rang = (i) => (etatSuspect(carnet, i, aff) === 'exclu' ? 2 : 0) + (dansMaCellule(st, S.user.uid, i) ? 0 : 1);
+  const ordre = aff.suspects.map((_, i) => i).sort((x, y) => rang(x) - rang(y) || x - y);
+  const multi = st.enquete.nbCellules > 1;
+  const sus = ordre.map((i) => {
+    const s = aff.suspects[i], exclu = etatSuspect(carnet, i, aff) === 'exclu', mien = dansMaCellule(st, S.user.uid, i);
+    return `<div class="e2-ch-s ${exclu ? 'exclu' : ''}">
+      <div class="e2-ch-qui">${portraitSuspect(s, i, 'tb-face e2-mini')}<span class="col" style="gap:0;min-width:0"><strong>${esc(s.nom)}</strong><span class="tiny muted">${exclu ? 'exclu dans ton carnet' : multi && !mien ? 'autre cellule : prix double' : esc(s.role)}</span></span></div>
+      <div class="dem-row">${demBtn(aff, dos, `alibi:${i}`, aff.meurtre ? 'Alibi' : 'Son alibi', { compact: true })}${demBtn(aff, dos, `moyens:${i}`, aff.meurtre ? 'Perquisition' : 'Ses moyens', { compact: true })}${demBtn(aff, dos, `banque:${i}`, aff.meurtre ? 'Tél., comptes' : 'Son mobile', { compact: true })}</div></div>`;
+  }).join('');
+  return `<div class="between" style="padding-right:44px"><span class="tb-titre" style="padding-right:0">Démarches de ce soir</span><span class="small muted">${dem.length} / ${max}</span></div>
+    <p class="tiny muted" style="margin:0">Chaque démarche rapporte une pièce à 20:00. ${aff.meurtre ? 'La scène d’abord : elle dit ce qui compte.' : 'Les constatations d’abord : sans elles, une vérification ne prouve rien.'}</p>
+    ${scene ? `<span class="tb-ligne-k">${aff.meurtre ? 'La scène' : 'Constatations'}</span>${scene}` : ''}
+    <span class="tb-ligne-k">Les suspects</span>${sus}
+    ${dem.length >= max ? '<p class="small" style="margin:0;color:var(--amber-soft)">Toutes tes démarches du jour sont choisies. Touche « demandé ✓ » pour en retirer une.</p>' : ''}`;
+}
+
 // ───── Écran ─────
 export function renderTableau() {
+  S.e2Rendu = false;
   const st = S.state, z = myZone();
   const aff = affaire(st, st.enquete.n);
   const dos = dossierDe(st, z);
@@ -829,6 +866,7 @@ export function tableauEnsemble() { S.tabV = vueEnsemble(); appliquer(S.tabV, tr
 
 /** Cadre la vue sur un élément avant d'ouvrir son volet (l'élément reste visible au-dessus). */
 function cadrer(id) {
+  if (!document.getElementById('tb-vp')) return; // écran Enquête en dossier (saison 2) : pas de liège à cadrer
   const st = S.state, aff = affaire(st, st.enquete.n), t = dispo(aff.n);
   const [w0] = vpTaille();
   // Sur ordinateur, le volet s'ouvre à droite : on cadre dans la partie gauche.
@@ -850,6 +888,7 @@ export function ouvrirVolet(id, rerender, { partage = false } = {}) {
   const k = id.startsWith('rec|') ? 'recoup' : id === 'hypo' ? 'hypo' : id === 'pouce' ? 'pouce' : id === 'frise' ? 'frise' : id.startsWith('Q:') ? 'reaud' : id.startsWith('X:') ? 'confront' : aff.prof && id === 'recit' ? 'doc' : id === 'titre' || id === 'recit' || id === 'chrono' ? 'faits' : id === 'une' || id === 'scene' || id === 'plainte' ? 'doc' : id === 'plan' ? 'plan' : id.startsWith('L:') ? 'lieu' : id.startsWith('P:') ? 'planque' : /^c:(occ|moy|mob)$/.test(id) ? 'c' : /^s\d$/.test(id) ? 's' : 'p';
   cadrer(id);
   S.tabSheet = { k, id, partage };
+  if (!document.getElementById('tb-vp')) { rerender(); return; } // dossier (saison 2) : rien à cadrer
   setTimeout(rerender, id === 'titre' ? 0 : 280);
 }
 

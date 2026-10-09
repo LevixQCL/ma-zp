@@ -10,6 +10,7 @@ export const NOTE_MAJ = {
   essentiel: [
     ['🏢', 'Un nouvel HP', 'ton commissariat en grand, un seul bouton pour la suite, et tes raccourcis au choix.'],
     ['🗺️', 'Une nouvelle carte', 'ta ville en maquette 3D : touche un quartier, envoie tes patrouilles et regarde-les rouler. Deux boutons : Non-droit (qui s’ouvre d’abord, avec le reste du district dessous) et Ma zone.'],
+    ['🔎', 'Une enquête qui se lit', 'l’affaire en grand, les suspects en polaroïds sur ton mur, les nouvelles pièces sous enveloppe à ouvrir, et « Ce soir » en cases à remplir.'],
     ['🗂️', 'Des énigmes en dossier', 'chaque énigme sur sa feuille de dossier, tu réponds directement sur le plan ou la plaque, et le tampon « Résolu » tombe.'],
     ['🎖️', 'L’onglet Chef', 'ce que ton chef fait aujourd’hui, sa semaine et sa carrière, à un toucher.'],
     ['🎖️', 'Ton chef de corps', 'choisis son visage : il progresse avec tes jeux et ta gestion, et le suit de saison en saison.'],
@@ -22,6 +23,14 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['L’enquête en dossier (9 octobre)', [
+      ['L’affaire en grand', 'en haut, la photo de l’affaire, le jour sur 7 et les points en jeu ce soir. Un seul gros bouton dit quoi faire ensuite : ouvrir les nouvelles pièces, choisir tes démarches, accuser.'],
+      ['Les pièces sous enveloppe', 'ce qui arrive à 20:00 s’ouvre une pièce à la fois, en grand. Pour une vérification sur un suspect, tu dis ce que tu en conclus (✓ ou ✕) d’un toucher : ton carnet le retient.'],
+      ['Le mur', 'les trois constatations en fiches, les suspects en polaroïds sur une ficelle, avec tes ✓ et ✕ en tampons. Un exclu est barré, l’accusé entouré. Touche un visage pour ouvrir son dossier.'],
+      ['Ce soir', 'tes démarches en cases à remplir (« + » ouvre la liste, la scène d’abord puis chaque suspect, prix compris), la piste du voisinage d’un toucher, l’appui fédéral et tes partages.'],
+      ['Le classeur', 'Pièces (lisibles en entier, à partager), Faits ou Scène, Plan (lieux numérotés, temps de trajet), Planques et Notes, sur une feuille de papier.'],
+      ['Le liège reste là', 'ton grand tableau en liège et l’affichage en liste sont dans le menu ⋯ : l’enquête rouvre sur celui que tu as choisi.'],
+    ]],
     ['La zone de non-droit en rôles (9 octobre)', [
       ['Trois rôles', 'sur chaque secteur, trois rangées de cases : 🔍 repérage (tes agents de Recherche), 🚔 descente (Intervention) et 🚧 bouclage (Roulage, Proximité). Les pions des collègues annoncés à la radio s’y placent ; complète ce qui manque.'],
       ['Le repérage', 'il révèle la faille du secteur à toutes les zones et le rend « repéré » les 4 soirs suivants : la descente frappe plus fort et ne tombe plus dans un piège. Qui a repéré touche 35 % des saisies des descentes qui en profitent, même sans y aller.'],

@@ -48,7 +48,8 @@ import { renderPactes } from './ui/pactes.js';
 import { PACTES, PACTE, DEFI, DEFI_INDICATEURS } from './engine/pactes.js';
 import { ongletsRadio } from './ui/prive.js';
 import { renderParties } from './ui/parties.js';
-import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet, synchroCarnetMaintenant, restaurerCarnet } from './ui/enquete.js';
+import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet, synchroCarnetMaintenant, restaurerCarnet, choisirVueEnquete, vueEnquete } from './ui/enquete.js';
+import { piecesNonLues, marquerLues } from './ui/enquete-dossier.js';
 import { affaire, dossierDe, maxDemarchesDe } from './engine/enquete.js';
 import { choisirRecoup, retournerPouce } from './ui/enquete-plus.js';
 import { marquerJournalVu } from './ui/journal.js';
@@ -893,8 +894,28 @@ async function onClick(e) {
       case 'tb-ban-fermer': S.banTraqueVue = S.state.turn; render(); break;
       case 'tb-prime-fermer': S.banPrimeVue = S.state.turn; render(); break;
       case 'tb-prime-ouvrir': S.banPrimeVue = null; render(); break;
-      case 'traque-voir': S.enqVue = 'liste'; S.tabSheet = null; try { localStorage.setItem('mazp-enq-vue', 'liste'); } catch (err) { /* pas de stockage */ } render(); requestAnimationFrame(() => { const t = document.getElementById('traque'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); break;
-      case 'tab-vue': S.enqVue = el.dataset.v; S.tabSheet = null; try { localStorage.setItem('mazp-enq-vue', S.enqVue); } catch (err) { /* pas de stockage */ } window.scrollTo(0, 0); render(); break;
+      case 'traque-voir': if (reglesV2(S.state) && vueEnquete() === 'dossier') { S.tabSheet = null; S.banTraqueVue = S.state.turn; render(); requestAnimationFrame(() => { const t = document.getElementById('traque'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); break; }
+        S.enqVue = 'liste'; S.tabSheet = null; try { localStorage.setItem('mazp-enq-vue', 'liste'); } catch (err) { /* pas de stockage */ } render(); requestAnimationFrame(() => { const t = document.getElementById('traque'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); break;
+      case 'tab-vue': choisirVueEnquete(el.dataset.v); S.tabSheet = null; S.e2Lire = false; window.scrollTo(0, 0); render(); break;
+      // Saison 2 : écran Enquête en dossier.
+      case 'e2-onglet': S.e2Onglet = el.dataset.t; S.tabSheet = null; rerender(); break;
+      case 'e2-choix': S.tabSheet = { k: 'choix', id: 'choix' }; rerender(); break;
+      case 'e2-ancre': { const t = document.getElementById(el.dataset.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); break; }
+      case 'e2-lire': { const aff = affaire(S.state, S.state.enquete.n); S.e2LireTotal = piecesNonLues(aff, dossierDe(S.state, myZone())).length; S.e2Lire = true; S.tabSheet = null; rerender(); break; }
+      case 'e2-lire-fin': S.e2Lire = false; rerender(); break;
+      case 'e2-suivante': {
+        const n = S.state.enquete.n; marquerLues(n, [el.dataset.f]);
+        const reste = piecesNonLues(affaire(S.state, n), dossierDe(S.state, myZone())).length;
+        if (!reste) { S.e2Lire = false; S.e2Onglet = 'pieces'; toast('Tout est classé au dossier.'); }
+        rerender(); break;
+      }
+      case 'e2-tout-classer': { const n = S.state.enquete.n; marquerLues(n, piecesNonLues(affaire(S.state, n), dossierDe(S.state, myZone())).map((p) => p.f)); S.e2Lire = false; S.e2Onglet = 'pieces'; rerender(); break; }
+      case 'e2-lire-partager': { const n = S.state.enquete.n; marquerLues(n, [el.dataset.f]); S.e2Lire = false; ouvrirVolet(el.dataset.f, rerender, { partage: true }); break; }
+      case 'tab-partager': ouvrirVolet(el.dataset.f, rerender, { partage: true }); break;
+      case 'e2-marque': {
+        const n = S.state.enquete.n, c = lireCarnet(n), k = `${el.dataset.i}:${el.dataset.e}`;
+        c.g = { ...(c.g || {}), [k]: Number(el.dataset.v) || 0 }; ecrireCarnet(n, c); rerender(); break;
+      }
       case 'tab-volet': S.tabSheet = S.tabSheet && S.tabSheet.k === el.dataset.k ? null : { k: el.dataset.k, id: el.dataset.k }; S.tabMode = 'main'; S.tabFrom = null; rerender(); break;
       case 'tab-ouvrir': S.tabMode = 'main'; S.tabFrom = null; ouvrirVolet(el.dataset.tid, rerender); break;
       case 'tab-fermer': S.tabSheet = null; rerender(); break;

@@ -109,20 +109,40 @@ export const ETAPES = [
       <p><strong>Chez les voisins</strong> : appels à renfort et zones en difficulté. Prêter des agents rapporte des PS et de la réputation.</p>`,
   },
   {
-    id: 'enquete', route: 'enquete', onglet: 'L’affaire de la semaine, commune à toutes les zones.',
+    id: 'enquete2', route: 'enquete', v2: true, onglet: 'L’affaire de la semaine, commune à toutes les zones.', cible: ['.e2-hero', '.e2-cta'], union: true,
+    avant: () => { S.tabTuto = null; marquerTutoVu(); },
+    titre: 'Ton enquête',
+    texte: () => `<p>Une affaire par semaine (<strong>${ENQ.dureeMax} jours</strong> au plus), la même pour toutes les zones. Le gros bouton te dit quoi faire ensuite.</p>
+      <p>Chaque soir à 20:00, tes nouvelles pièces arrivent <strong>sous enveloppe</strong> : ouvre-les une à une.</p>`,
+  },
+  {
+    id: 'mur2', route: 'enquete', v2: true, cible: ['.e2-mur'],
+    titre: 'Le mur des suspects',
+    texte: () => (meurtre()
+      ? `<p>En haut, ce que dit la scène. Dessous, les suspects : touche un visage pour lire ce qu’on sait, vérifier son alibi ou le réentendre. Note tes ✓ et ✕ : ils s’affichent en tampons.</p><p>${corbeau() ? 'Un seul suspect est le corbeau' : 'Un seul suspect a tué'} : quand tu es sûr, <strong>confronte-le</strong> avec trois éléments du dossier.</p>`
+      : `<p>En haut, les trois constatations : quelle heure, quel moyen, quel mobile comptent. Dessous, les suspects : touche un visage pour vérifier son alibi, ses moyens ou son mobile.</p><p>Le coupable est le <strong>seul</strong> à réunir les trois ✓. Une seule accusation par affaire ; ensuite, toutes les zones le traquent.</p>`),
+  },
+  {
+    id: 'soir2', route: 'enquete', v2: true, cible: ['.e2-soir'],
+    titre: 'Ce soir',
+    texte: `<p>Tes <strong>démarches</strong> en cases : « + » ouvre la liste, prix compris. La <strong>piste</strong> oriente l’enquête de voisinage de tes agents de Recherche, l’<strong>appui fédéral</strong> (labo ou RCCU) arrive le lendemain.</p>
+      <p>Tout part avec tes ordres à 20:00. Le grand liège et l’affichage en liste sont dans le menu <strong>⋯</strong>.</p>`,
+  },
+  {
+    id: 'enquete', route: 'enquete', v1: true, onglet: 'L’affaire de la semaine, commune à toutes les zones.',
     avant: () => { S.tabTuto = null; marquerTutoVu(); },
     titre: 'Ton tableau d’enquête',
     texte: () => `<p>Une affaire par semaine (<strong>${ENQ.dureeMax} jours</strong> au plus), la même pour toutes les zones. Tout ce que tu apprends est punaisé sur ce grand liège : suspects, plan de la ville, pièces, et le journal qui ouvre l’affaire.</p>
       <p>Glisse pour te déplacer, pince (ou molette) pour zoomer. Pour relier deux éléments, tire une <strong>ficelle</strong> d’une punaise à l’autre.</p>`,
   },
   {
-    id: 'demarches', route: 'enquete', cible: ['.tb-haut [data-action="tab-volet"][data-k="boite"]', '.tb-haut [data-action="tab-volet"][data-k="soir"]', 'section[aria-label="Aujourd’hui"]'], union: true,
+    id: 'demarches', route: 'enquete', v1: true, cible: ['.tb-haut [data-action="tab-volet"][data-k="boite"]', '.tb-haut [data-action="tab-volet"][data-k="soir"]', 'section[aria-label="Aujourd’hui"]'], union: true,
     titre: 'La boîte et «\u00a0Ce soir\u00a0»',
     texte: `<p>Les pièces arrivent chaque soir dans la <strong>boîte</strong>. C’est toi qui les sors et les punaises où tu veux : le jeu ne trie rien pour toi.</p>
       <p>Touche un suspect ou une pièce pour lancer une <strong>démarche</strong> (deux par jour), demander l’<strong>appui fédéral</strong> (labo ou RCCU, une fois par jour) ou <strong>partager</strong> une pièce avec une autre zone. «\u00a0Ce soir\u00a0» récapitule tout ce qui part à 20:00.</p>`,
   },
   {
-    id: 'conclure', route: 'enquete', cible: ['.tb-outils [data-action="tab-tuto"]', '.synthese'], parent: '.tb-outils',
+    id: 'conclure', route: 'enquete', v1: true, cible: ['.tb-outils [data-action="tab-tuto"]', '.synthese'], parent: '.tb-outils',
     titre: 'Démasquer le coupable',
     texte: () => (meurtre()
       ? `<p>${corbeau() ? 'Un seul suspect est le corbeau' : 'Un seul suspect a tué'} ; les autres mentent pour d’autres raisons. Quand tu es sûr de toi, <strong>confronte-le</strong> avec trois éléments de ton dossier. Si tu as visé juste, il avoue. Sinon, il nie et repart, et tu perds de la réputation. Si tu t’es trompé de personne, le parquet te retire l’affaire.</p>

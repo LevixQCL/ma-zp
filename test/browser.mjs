@@ -93,14 +93,37 @@ await shot('12-profil');
 await page.goto(`${BASE}#admin`);
 await shot('13-admin');
 
-// Tableau d'enquête : tuto, boîte à pièces, volets, ficelle, puis la vue liste.
+// Saison 2 : l'enquête en dossier (mur, ce soir, classeur), puis le grand liège depuis le menu ⋯.
 await page.goto(`${BASE}#enquete`);
-await page.waitForSelector('#tb-vp');
 // Dossier complet : le journal du lendemain s'ouvre d'abord.
 await page.waitForSelector('.jr-wrap');
 await page.waitForTimeout(1300);
 await shot('14z-journal');
 await page.click('[data-action="journal-fermer"]');
+await page.waitForSelector('.enq2 .e2-mur');
+if ((await page.locator('.e2-polo').count()) < 3) errors.push('Dossier : les suspects ne sont pas au mur');
+await shot('14a-dossier');
+await page.click('.e2-case.vide');
+await page.waitForSelector('.e2-volet .tb-volet');
+await page.locator('.e2-volet .dem:not([disabled])').first().click();
+if (!(await page.locator('.e2-volet .dem[aria-pressed="true"]').count())) errors.push('Dossier : la démarche ne se choisit pas');
+await page.click('.e2-volet .tb-fermer');
+if ((await page.locator('.e2-case:not(.vide)').count()) !== 1) errors.push('Dossier : la case de démarche ne se remplit pas');
+await page.click('.e2-polo >> nth=0');
+await page.waitForSelector('.e2-volet .tb-mark');
+await page.click('.e2-volet .tb-mark >> nth=0');
+await page.click('.e2-volet .tb-fermer');
+if (!(await page.locator('.e2-polo >> nth=0').locator('.e2-sceaux i.v1').count())) errors.push('Dossier : le ✓ ne s’affiche pas sur le polaroïd');
+// On remet la case à vide (✓ → ✕ → ·) pour la suite du parcours.
+await page.click('.e2-polo >> nth=0'); await page.waitForSelector('.e2-volet .tb-mark');
+await page.click('.e2-volet .tb-mark >> nth=0'); await page.click('.e2-volet .tb-mark >> nth=0'); await page.click('.e2-volet .tb-fermer');
+for (const t of ['scene', 'plan', 'notes', 'pieces']) { await page.click(`[data-action="e2-onglet"][data-t="${t}"]`); await page.waitForSelector(`.ong[aria-selected="true"][data-t="${t}"]`); }
+await shot('14b-dossier-classeur');
+await page.click('.savebar [data-action="save-orders"]');
+await page.waitForTimeout(400);
+await page.click('.e2-menu > summary');
+await page.click('.e2-menu [data-action="tab-vue"][data-v="tableau"]');
+await page.waitForSelector('#tb-vp');
 await page.waitForSelector('.tb-tuto');
 await shot('15a-tableau-tuto');
 while (await page.locator('[data-action="tab-tuto-suite"]').count()) await page.click('[data-action="tab-tuto-suite"]');

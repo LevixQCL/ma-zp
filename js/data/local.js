@@ -93,7 +93,8 @@ export function createLocalBackend(config) {
       // Avec « ?demo=corbeau », sur la troisième (« Le corbeau de la rue d'Havré »).
       const q = typeof location !== 'undefined' ? (location.search || '') : '';
       const rampe = /(^|[?&])demo=rampe\b/.test(q), corbeau = /(^|[?&])demo=corbeau\b/.test(q);
-      if (corbeau) { state.meurtreDes = -1; state.meurtre2Des = 0; state.corbeauDes = 1; } else if (rampe) { state.meurtreDes = 0; state.meurtre2Des = 1; } else state.meurtreDes = 1;
+      // « ?demo=vol » : une affaire de vol générée (constatations, planques, traque).
+      if (/(^|[?&])demo=vol\b/.test(q)) { state.meurtreDes = -1; state.meurtre2Des = -2; state.corbeauDes = -3; } else if (corbeau) { state.meurtreDes = -1; state.meurtre2Des = 0; state.corbeauDes = 1; } else if (rampe) { state.meurtreDes = 0; state.meurtre2Des = 1; } else state.meurtreDes = 1;
       // L'histoire d'origine par défaut ; « &variante=b » pour jouer la variante (voir state.variantes, enquete.js).
       state.variantes = { 1: (/[?&]variante=b\b/.test(q) ? 'b' : 'a') };
     }

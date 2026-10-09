@@ -11,6 +11,8 @@ const errors = [];
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: LARGE ? { width: 1440, height: 900 } : { width: 390, height: 844 }, deviceScaleFactor: 2 });
 const page = await ctx.newPage();
+// Saison 2 : l'enquête s'ouvre en dossier ; ce parcours teste le grand liège (choisi dans le menu ⋯).
+await page.addInitScript(() => { try { localStorage.setItem('mazp-enq-vue2', 'tableau'); } catch (e) { /* rien */ } });
 page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g|Failed to load resource/.test(m.text())) errors.push(`console: ${m.text()}`); });
 await page.addLocatorHandler(page.locator('.aide-wrap'), async () => { await page.evaluate(() => document.querySelectorAll('.aide-wrap').forEach((x) => x.remove())); });
