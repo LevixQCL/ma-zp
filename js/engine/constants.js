@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 118;
+export const APP_VERSION = 119;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -349,6 +349,22 @@ export const ND = {
   // Chaque gang est annoncé la veille (Gazette, carte) sur un secteur tenu : il ajoute sa force à l'emprise ce soir-là.
   // Force : `base` + `parZone` par zone active (plafond `max`). Le repousser rapporte à chaque zone de garde.
   gangs: { seuil: 2, base: 10, parZone: 2, max: 40, coeur: 20, ps: 5, rep: 1 },
+  // Rôles (oct. 2026, en test : actifs seulement si `nonDroit.roles`). Repérage (Recherche) la veille, descente (Intervention),
+  // bouclage (Roulage / Proximité). Chaque milieu a sa faille (voir FAILLES dans nondroit.js).
+  roles: {
+    repSeuil: 1.5,      // force de repérage nécessaire pour qu'un secteur soit repéré
+    repDuree: 4,        // soirs repérés après le repérage (à partir du lendemain)
+    sansRep: 0.6,       // force de la descente sans repérage
+    repAvec: 1.3,       // force de la descente sur un secteur repéré
+    piegeSeul: 0.35, piegeGroupe: 0.15,   // risque de piège sans repérage (zone seule / à plusieurs)
+    ratio: 0.5,         // bouclage nécessaire par point de descente (sinon fuite)
+    perteFuite: 0.4,    // à 100 % de fuite, la descente perd 40 % de son effet
+    reflux: 0.3,        // part de l'effet perdu qui va renforcer un secteur voisin
+    butin: 0.11,        // k€ de saisies par point d'emprise retiré (sans fuite)
+    tuyau: 0.35,        // part du butin pour les zones qui ont repéré
+    tuyauPts: 2,        // points de résultats pour chaque zone dont le repérage sert à une descente réussie
+    poidsRep: 1,        // poids d'un agent de repérage dans le partage et l'influence
+  },
 };
 /** Nombre maximum de zones par partie (le document d'état de Firestore est limité à 1 Mo : ~800 Ko à 100 zones, trop près ;
  *  40 garde de la marge). La même valeur est dans firestore.rules. */

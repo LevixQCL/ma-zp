@@ -244,7 +244,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       Object.assign(ord[uid], lireOrdresReleve(orders[uid]), lireOrdresCrise(orders[uid]), lireOrdresBilan(orders[uid]), lireOrdresPistes(orders[uid]));
       if (z.toursSansOrdres >= 3) z._retour = z.toursSansOrdres; // retour d'absence (accueilli par le Directeur)
       z.toursSansOrdres = 0;
-      z.dernierOrdre = { alloc: ord[uid].alloc, rythme: ord[uid].rythme, patrouilles: ord[uid].patrouilles || {}, secteurs: ord[uid].secteurs || {} };
+      z.dernierOrdre = { alloc: ord[uid].alloc, rythme: ord[uid].rythme, patrouilles: ord[uid].patrouilles || {}, secteurs: ord[uid].secteurs || {}, roles: ord[uid].roles || {} };
       z._joue = true;
     } else {
       // Saison 2 : l'adjoint du chef tient la zone (selon la consigne laissée et le Commandement du chef).

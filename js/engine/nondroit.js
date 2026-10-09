@@ -9,10 +9,13 @@ import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
 import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND, INFRAS, aAnnexe, LOTS } from './constants.js';
 import { talentVal, talent, noterChef, FRONT, niveauChef } from './chef.js';
 import { makeRng } from './rng.js';
-import { clamp, round1, forceEngagement, jalon, noter } from './zone.js';
+import { clamp, round1, forceEngagement, forceRole, jalon, noter } from './zone.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
 import { donnerTrophee, TROPHEE, figure, nomComplet } from './equipe.js';
 import { lies, PACTE } from './pactes.js';
+
+/** Rôles dans la zone de non-droit : pas encore en jeu (simulations en cours). */
+export const ND_ROLES = false;
 
 export const MILIEUX = [
   { id: 'deal', titre: 'Point de deal', texte: 'Des guetteurs à chaque coin de rue, un trafic jour et nuit.' },
@@ -24,6 +27,29 @@ export const MILIEUX = [
   { id: 'sommeil', titre: 'Marchands de sommeil', texte: 'Des caves louées à prix d’or, sans eau ni électricité.' },
   { id: 'contrefacon', titre: 'Marché de contrefaçon', texte: 'Faux sacs, fausses cigarettes et faux médicaments, à même le trottoir.' },
 ];
+/**
+ * Rôles : la faille de chaque milieu (connue de tous après un premier repérage).
+ * repSans / repAvec : force de la descente sans / avec repérage ; ratio : bouclage par point de descente ;
+ * butin : multiplicateur des saisies ; piege : multiplicateur du risque de piège sans repérage ;
+ * boucForce : le bouclage compte aussi dans la descente ; regen : le milieu se refait plus vite ; soirs : soirs d'ouverture.
+ */
+export const FAILLES = {
+  deal:        { titre: 'Guetteurs à chaque coin', texte: 'Sans repérage, la descente est vue de loin (force ×0,4, piège deux fois plus probable). Repéré : ×1,5.', repSans: 0.4, repAvec: 1.5, piege: 2, interp: true },
+  recel:       { titre: 'Un entrepôt plein', texte: 'Saisies ×1,5 si le secteur est bien bouclé.', butin: 1.5, interp: true },
+  squat:       { titre: 'Il faut un mandat', texte: 'Sans repérage, pas de mandat : la descente ne peut pas entrer. Repéré : ×1,5.', repSans: 0, repAvec: 1.5, butin: 0.6 },
+  garage:      { titre: 'Un butin énorme', texte: 'Saisies ×2, à condition que le secteur soit bouclé.', butin: 2, interp: true },
+  rodeos:      { titre: 'Ils filent', texte: 'Il faut autant de bouclage que de descente, sinon les motos s’échappent.', ratio: 1, butin: 0.8 },
+  jeux:        { titre: 'Ouvert 2 soirs sur 7', texte: 'Un soir fermé, la descente ne trouve personne (×0,3). Un soir ouvert : ×1,5 et la caisse de la nuit.', soirs: 2, butin: 1.2 },
+  sommeil:     { titre: 'Des victimes à protéger', texte: 'Le bouclage (Proximité) met les locataires à l’abri : il compte aussi pour moitié dans la descente.', boucForce: 0.5, butin: 0.6 },
+  contrefacon: { titre: 'Le marché se reforme', texte: 'Pas de violence (pas de blessé), mais le milieu se refait 30 % plus vite.', regen: 1.3, sansBlesse: true },
+  qg:          { titre: 'Le cœur du réseau', texte: 'Sans repérage, impossible d’y entrer. Il faut aussi autant de bouclage que de descente.', repSans: 0, ratio: 1, butin: 2, interp: true },
+};
+export const faille = (s) => FAILLES[s.coeur ? 'qg' : s.milieu] || FAILLES.deal;
+/** Le secteur est-il repéré ce soir ? */
+export const repere = (s, T) => !!(s && s.repere && s.repere.de <= T && T <= s.repere.a);
+/** Jour de la semaine (0 = premier jour) et soirs d'ouverture d'un tripot. */
+export const ouvertCeSoir = (s, T) => { const f = faille(s); return !f.soirs || (s.soirs || []).includes((T - 1) % 7); };
+
 export const QG = { id: 'qg', titre: 'Le QG du milieu', texte: 'Le cœur du réseau : c’est d’ici que tout s’organise. Il ne tombera qu’une fois ses abords repris.' };
 
 const fmt1 = (v) => String(round1(v)).replace('.', ',');
@@ -42,7 +68,8 @@ export function creerNonDroit(seed, season = 1) {
     secteurs[c] = { cell: c, coeur: false, milieu: milieux[k % milieux.length].id, statut: 'milieu', emprise: e, max: e, influence: {}, chef: null };
   });
   secteurs[g.coeur] = { cell: g.coeur, coeur: true, milieu: QG.id, statut: 'milieu', emprise: ND.empriseCoeur, max: ND.empriseCoeur, influence: {}, chef: null };
-  return { season, secteurs };
+  for (const s of Object.values(secteurs)) if (s.milieu === 'jeux') { const a = rng.int(0, 6); s.soirs = [a, (a + 2 + rng.int(0, 2)) % 7].sort(); }
+  return { season, secteurs, ...(ND_ROLES ? { roles: true } : {}) };
 }
 
 /** Description du milieu installé dans un secteur. */
@@ -125,7 +152,11 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
       // Gros lots de la vente aux enchères (hélicoptère, blindé).
       const ndLots = (zz.lots || []).map((l) => LOTS[l.id] && LOTS[l.id].nd).filter(Boolean);
       const fLots = ndLots.reduce((a, x) => a * (1 + (x.force || 0)), 1), bLots = ndLots.reduce((a, x) => a * (x.blessure || 1), 1);
-      return { u, n, f: f0 * fLots * (1 + bonus) * (1 + talentVal(zz, 'tacticien', 'force', 0)), chef: mi, drone,
+      const mz = (drone ? INFRAS.drone.force : 1) * fLots * (1 + bonus) * (1 + talentVal(zz, 'tacticien', 'force', 0));
+      const r = nd.roles ? ((ord[u].roles && ord[u].roles[k]) || { rep: 0, desc: n, bouc: 0 }) : null;
+      const fr = r ? { rep: forceRole(zz, 'rep', r.rep, T) * mz, desc: forceRole(zz, 'desc', r.desc, T) * mz, bouc: forceRole(zz, 'bouc', r.bouc, T) * mz } : null;
+      const f = fr ? fr.rep * ND.roles.poidsRep + fr.desc + fr.bouc : f0 * fLots * (1 + bonus) * (1 + talentVal(zz, 'tacticien', 'force', 0));
+      return { u, n, f, f0: f, r, fr, chef: mi, drone,
         risque: (mi ? CHEFS.nd.blessure : 1) * (drone ? INFRAS.drone.blessure : 1) * talentVal(zz, 'tacticien', 'blessure', 1) * bLots };
     }) : [];
     // Chef en première ligne : sur le secteur où la zone engage le plus d'agents.
@@ -146,6 +177,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
     const F = engages.reduce((a, e) => a + e.f, 0) * coop;
     const avant = s.emprise;
     const nomS = nomSecteur(k);
+    if (s.statut === 'milieu' && nd.roles) { assautRoles(state, nd, s, k, engages, regen[k], T, push, res, nom); continue; }
     if (s.statut === 'milieu') {
       // Assaut repoussé : pas assez de force pour faire reculer le milieu, ou une zone seule qui tombe dans un piège.
       const seuil = regen[k] / ND.efficacite;
@@ -226,6 +258,16 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
     const z = state.zones[u]; if (!z) continue;
     const mes = new Set(Object.keys((ord[u] && ord[u].secteurs) || {}).filter((k) => ord[u].secteurs[k] > 0));
     z.stats.serieAssauts = [...assauts].every((k) => mes.has(k)) ? (z.stats.serieAssauts || 0) + 1 : 0;
+  }
+  if (nd._reflux) {
+    for (const [k, v] of Object.entries(nd._reflux)) {
+      const s = nd.secteurs[k];
+      if (!s || s.statut !== 'milieu' || v < 0.5) continue;
+      s.emprise = round1(clamp(s.emprise + v, 0, 100)); s.max = Math.max(s.max || 0, s.emprise);
+      (res.reflux ||= []).push({ cell: Number(k), v: round1(v) });
+      if (v >= 2) push(4, 'Zone de non-droit', `Le milieu se replie sur ${nomSecteur(k)}`, `Faute de bouclage, ceux qui ont filé s’y installent (emprise +${Math.round(v)}).`);
+    }
+    delete nd._reflux;
   }
   planifierGangs(state, nd, T, push, res);
   for (const u of uids) if (state.zones[u]) delete state.zones[u]._ndSatisf;
@@ -364,3 +406,118 @@ export function secteursVoisins(state, uid) {
   return Object.keys((state.nonDroit && state.nonDroit.secteurs) || {}).filter((k) => c.adj[Number(k)].some((nb) => mes.has(nb)));
 }
 
+
+/** Secteurs de l'anneau voisins d'un secteur (pour le repli du milieu quand ça file). */
+function voisinsND(nd, k) {
+  const adj = ville(CONFIG.seed).adj[Number(k)] || [];
+  return adj.map(String).filter((x) => nd.secteurs[x] && !nd.secteurs[x].coeur);
+}
+
+/**
+ * Rôles : un secteur du milieu ce soir. Repérage (la faille, puis 2 soirs « repéré »), descente (emprise),
+ * bouclage (fuite). Saisies à chaque descente réussie, partagées selon la force engagée (une part au repérage).
+ */
+function assautRoles(state, nd, s, k, engages, regen0, T, push, res, nom) {
+  const R0 = ND.roles, F = faille(s), nomS = nomSecteur(k);
+  const sc = (e) => (e.f0 ? e.f / e.f0 : 1);
+  const fR = (e) => (e.fr ? e.fr.rep * sc(e) : 0), fD = (e) => (e.fr ? e.fr.desc * sc(e) : 0), fB = (e) => (e.fr ? e.fr.bouc * sc(e) : 0);
+  const R = engages.reduce((a, e) => a + fR(e), 0), D = engages.reduce((a, e) => a + fD(e), 0), B = engages.reduce((a, e) => a + fB(e), 0);
+  const nz = engages.length, coop = multCoop(nz);
+  const rep0 = s.repere || null, repOK = repere(s, T);
+  const regen = regen0 * (F.regen || 1);
+  const haut = Math.min(s.emprise + regen, Math.max(s.emprise, s.max || 100));
+  const stat = (u, c, v = 1) => { const z = state.zones[u]; if (z) z.stats[c] = (z.stats[c] || 0) + v; };
+  // 1. Repérage : la faille devient publique, le secteur est repéré à partir de demain.
+  if (R >= R0.repSeuil) {
+    const neuf = !s.connue;
+    s.connue = true;
+    const par = engages.filter((e) => fR(e) > 0).map((e) => e.u);
+    s.repere = { de: T + 1, a: T + R0.repDuree, par: [...new Set([...(rep0 && rep0.a >= T + 1 ? rep0.par : []), ...par])] };
+    for (const u of par) { stat(u, 'reperages'); state.zones[u].rapport.push(`Zone de non-droit · ${nomS} : repérage fait${neuf ? `, faille trouvée : ${F.titre.toLowerCase()}` : ''}. Secteur repéré les ${R0.repDuree} prochains soirs ; tu toucheras ${Math.round(R0.tuyau * 100)} % des saisies des descentes qui en profitent.`); }
+    if (neuf) push(5, 'Zone de non-droit', `${nomS} : la faille est trouvée`, `${par.map(nom).join(', ')} : ${F.titre.toLowerCase()}. ${F.texte}`);
+  } else if (R > 0) {
+    for (const e of engages) if (fR(e) > 0) state.zones[e.u].rapport.push(`Zone de non-droit · ${nomS} : repérage trop léger (il faut au moins 2 agents de Recherche, à plusieurs zones si besoin).`);
+  }
+  for (const e of engages) s.influence[e.u] = round1((s.influence[e.u] || 0) + e.f);
+  if (D <= 0) {
+    // Personne en descente : le milieu se refait.
+    s.emprise = round1(clamp(haut, 0, 100));
+    return;
+  }
+  // 2. Descente.
+  let mult = repOK ? (F.repAvec ?? R0.repAvec) : (F.repSans ?? R0.sansRep);
+  const ouvert = ouvertCeSoir(s, T);
+  if (F.soirs) mult *= ouvert ? 1.5 : 0.3;
+  const Deff = (D + B * (F.boucForce || 0)) * mult * coop;
+  const fuite = clamp(1 - B / (D * (F.ratio ?? R0.ratio)), 0, 1);
+  const piegeP = repOK ? 0 : Math.min(0.9, (nz === 1 ? R0.piegeSeul : R0.piegeGroupe) * (F.piege || 1));
+  const piege = piegeP > 0 && makeRng(`${state.seed}:s${state.season}:t${T}:ndpiege:${k}`).chance(piegeP);
+  const tropFaible = Deff * ND.efficacite <= regen;
+  const nDesc = (e) => (e.r ? e.r.desc : e.n);
+  if (piege || tropFaible) {
+    s.emprise = round1(clamp(haut, 0, 100));
+    (res.repousses ||= []).push({ cell: Number(k), zones: engages.map((e) => e.u) });
+    let tot = 0;
+    for (const e of engages) {
+      const z = state.zones[e.u];
+      let b = 0;
+      if (!F.sansBlesse) { const br = makeRng(`${state.seed}:s${state.season}:t${T}:ndrepousse:${k}:${e.u}`); for (let i = 0; i < nDesc(e); i++) if (br.chance(ND.blesseRepousse * risqueBlessure(z) * e.risque)) b += 1; }
+      tot += b;
+      if (b) { z.blesses.push({ n: b, retour: T + 1 + ND.absenceRepousse, motif: 'blessé' }); z.moral -= 2; jalon(z, `Assaut repoussé à ${nomS} (blessés)`); stat(e.u, 'ndBlesses', b); }
+      const pourquoi = piege ? (s.milieu === 'deal' ? 'sans repérage, les guetteurs ont donné l’alerte : piège' : 'sans repérage, ton équipe est tombée dans un piège')
+        : mult === 0 ? (s.coeur ? 'sans repérage, impossible d’entrer au QG' : 'sans repérage, pas de mandat : impossible d’entrer')
+        : F.soirs && !ouvert ? 'le tripot était fermé ce soir' : `pas assez de force (${fmt1(Deff)} pour plus de ${fmt1(regen / ND.efficacite)})`;
+      z.rapport.push(`Zone de non-droit · ${nomS} : assaut repoussé, ${pourquoi}.${b ? ` ${b} agent${b > 1 ? 's' : ''} blessé${b > 1 ? 's' : ''}, absent${b > 1 ? 's' : ''} ${ND.absenceRepousse} tours (−2 de moral).` : ''}`);
+    }
+    push(tot ? 6 : 3, 'Zone de non-droit', `Assaut repoussé à ${nomS}`, `${engages.map((e) => nom(e.u)).join(', ')} : ${piege ? 'piège' : mult === 0 ? 'porte close' : 'pas assez de monde'}${tot ? `, ${tot} policier${tot > 1 ? 's' : ''} blessé${tot > 1 ? 's' : ''}` : ''}.`);
+    return;
+  }
+  const avant = s.emprise;
+  const effet = Deff * ND.efficacite;
+  s.emprise = round1(clamp(haut - effet * (1 - R0.perteFuite * fuite), 0, 100));
+  // Repli : ceux qui ont filé renforcent un secteur voisin encore aux mains du milieu.
+  if (fuite > 0.05) {
+    const v = voisinsND(nd, k).filter((x) => nd.secteurs[x].statut === 'milieu');
+    if (v.length) { const c = v.sort((a, b) => nd.secteurs[a].emprise - nd.secteurs[b].emprise || Number(a) - Number(b))[0]; (nd._reflux ||= {})[c] = (nd._reflux[c] || 0) + R0.reflux * fuite * effet; }
+  }
+  // Saisies, partagées : une part au repérage qui a ouvert la voie, le reste selon la force engagée ce soir.
+  const butin = R0.butin * effet * (1 - fuite) * (F.butin || 1) * (F.soirs && ouvert ? 2 : 1) * (s.coeur ? ND.coeurMult : 1);
+  const poids = Object.fromEntries(engages.map((e) => [e.u, fR(e) * R0.poidsRep + fD(e) + fB(e)]));
+  const totP = Object.values(poids).reduce((a, b) => a + b, 0) || 1;
+  const tuyau = repOK && rep0 ? rep0.par.filter((u) => state.zones[u]) : [];
+  const partB = {};
+  for (const [u, w] of Object.entries(poids)) partB[u] = (tuyau.length ? 1 - R0.tuyau : 1) * w / totP;
+  for (const u of tuyau) partB[u] = (partB[u] || 0) + R0.tuyau / tuyau.length;
+  const interp = F.interp ? Math.round((Deff / 4) * (1 - fuite)) : 0;
+  for (const [u, p] of Object.entries(partB)) {
+    const z = state.zones[u];
+    if (!z) continue;
+    const b = round1(butin * p);
+    if (b > 0) { z.budget += b; z._compta.push({ k: 'nondroit', l: `Saisies à ${nomS}`, v: b }); stat(u, 'ndSaisies', b); }
+    const ici = engages.some((e) => e.u === u);
+    if (tuyau.includes(u)) { stat(u, 'reperagesUtiles'); z._points += R0.tuyauPts; z.stats.pointsAffaires = (z.stats.pointsAffaires || 0) + R0.tuyauPts; }
+    if (!ici) z.rapport.push(`Zone de non-droit · ${nomS} : ton repérage a payé, la descente des autres te reverse ${fmt1(b)} k€ de saisies (+${R0.tuyauPts} pt).`);
+  }
+  if (interp) for (const e of engages) if (fD(e) > 0) stat(e.u, 'ndInterpellations', Math.max(1, Math.round(interp * partB[e.u])));
+  (res.descentes ||= []).push({ cell: Number(k), zones: engages.map((e) => e.u), butin: round1(butin), fuite: round1(fuite), interp, repere: repOK });
+  if (s.emprise <= 0) {
+    prise(state, s, k, T, push, res, nom);
+    s.repere = null;
+  } else {
+    for (const e of engages) {
+      if (!(fD(e) > 0 || fB(e) > 0)) continue;
+      const z = state.zones[e.u];
+      z.rapport.push(`Zone de non-droit · ${nomS} : ${repOK ? 'descente sur un secteur repéré' : 'descente sans repérage'}${nz > 1 ? ` à ${nz} zones (+${Math.round((coop - 1) * 100)} %)` : ''}. Emprise ${Math.round(avant)} → ${Math.round(s.emprise)} · saisies ${fmt1(butin)} k€ (ta part ${Math.round((partB[e.u] || 0) * 100)} %)${interp ? ` · ${interp} interpellé${interp > 1 ? 's' : ''}` : ''}${fuite > 0.15 ? ` · ${Math.round(fuite * 100)} % ont filé faute de bouclage` : ''}.`);
+    }
+  }
+  // Risque de blessure d'une grosse descente (comme avant).
+  if (!F.sansBlesse) for (const e of engages) {
+    const risque = Math.min(ND.risqueMax, Math.max(0, (nDesc(e) - 3) * ND.risqueParAgent)) * risqueBlessure(state.zones[e.u]) * e.risque;
+    if (risque && makeRng(`${state.seed}:s${state.season}:t${T}:ndblesse:${k}:${e.u}`).chance(risque)) {
+      const z = state.zones[e.u];
+      z.blesses.push({ n: 1, retour: T + 4, motif: 'blessé' }); z.moral -= 2; stat(e.u, 'ndBlesses');
+      jalon(z, `Agent blessé à ${nomS}`);
+      z.rapport.push(`${nomS} : un agent blessé pendant la descente, absent 3 tours (−2 de moral).`);
+    }
+  }
+}

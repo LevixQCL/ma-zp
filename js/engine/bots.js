@@ -8,7 +8,7 @@ import { fipaPour, invitationImpossible, FIPA } from './fipa.js';
 import { pactesDe, pacteImpossible, defiImpossible, PACTES, DEFI_INDICATEURS } from './pactes.js';
 import { encherePossible } from './encheres.js';
 import { ND, secteurOuvert } from './constants.js';
-import { partsDe, secteursVoisins } from './nondroit.js';
+import { partsDe, secteursVoisins, faille, repere, ouvertCeSoir } from './nondroit.js';
 
 export const BOT_PROFILES = [
   { uid: 'bot-canal', code: '5301', nom: 'Canal', pseudo: 'Sam', couleur: '#3CC6B8', style: 'equilibre' },
@@ -42,7 +42,7 @@ export function botOrders(zone, state, style = 'equilibre') {
       if (n > 0) { engagements[a.id] = { agents: n, acceptes: [] }; reste -= n; }
     }
   }
-  const secteurs = botNonDroit(zone, state, style, rng, reste);
+  const { secteurs, roles } = state.nonDroit && state.nonDroit.roles ? botNonDroitRoles(zone, state, style, rng, reste) : { secteurs: botNonDroit(zone, state, style, rng, reste), roles: undefined };
   reste -= Object.values(secteurs).reduce((a, b) => a + b, 0);
   const poids = { intervention: 0.36, proximite: 0.18, recherche: 0.18, roulage: 0.12, admin: 0.16 };
   if (zone.paperasse > 12) poids.admin += 0.08;
@@ -125,7 +125,7 @@ export function botOrders(zone, state, style = 'equilibre') {
     }
     if (dilemmeDuJour(state, zone)) dilemme = rng.int(0, 1);
   }
-  return { dilemme, patrouilles, alloc, rythme, engagements, secteurs, evenement, decision, operation, depenses, ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
+  return { dilemme, patrouilles, alloc, rythme, engagements, secteurs, ...(roles ? { roles } : {}), evenement, decision, operation, depenses, ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
 }
 
 /**
@@ -156,6 +156,67 @@ function botNonDroit(zone, state, style, rng, reste) {
     out[cibles[0]] = (out[cibles[0]] || 0) + n;
   }
   return out;
+}
+
+/**
+ * Zone de non-droit avec rôles. Les robots lisent la « radio » (ce que les robots précédents ont annoncé ce soir) :
+ * ils complètent le repérage, le bouclage ou la descente qui manque, selon leur point fort.
+ * Une partie d'entre eux (distraits, agressifs) fonce en descente sans regarder.
+ */
+const radioBots = { cle: null, ann: {} };
+function botNonDroitRoles(zone, state, style, rng, reste) {
+  const secteurs = {}, roles = {};
+  const nd = state.nonDroit, T = state.turn, R0 = ND.roles;
+  const cle = `${state.seed}:${state.season}:${T}`;
+  if (radioBots.cle !== cle) { radioBots.cle = cle; radioBots.ann = {}; }
+  const ann = radioBots.ann;
+  let dispo = Math.min(ND.maxTotal, Math.max(0, reste - 13));
+  if (dispo <= 0 || (style === 'distrait' && rng.chance(0.6))) return { secteurs, roles };
+  const mettre = (k, role, n) => {
+    n = Math.min(n, dispo, ND.maxParSecteur - (secteurs[k] || 0));
+    if (n <= 0) return 0;
+    (roles[k] ||= { rep: 0, desc: 0, bouc: 0 })[role] += n; secteurs[k] = (secteurs[k] || 0) + n; dispo -= n;
+    ((ann[k] ||= { rep: 0, desc: 0, bouc: 0 })[role] += n);
+    return n;
+  };
+  const cles = Object.keys(nd.secteurs).filter((k) => secteurOuvert(nd, k));
+  // Garde.
+  for (const k of cles) {
+    const s = nd.secteurs[k];
+    if (s.statut !== 'repris' || dispo <= 0) continue;
+    const p = partsDe(s).find((x) => x.uid === zone.uid);
+    if (!p || p.part < ND.partMin) continue;
+    if (s.emprise >= 20 && rng.chance(style === 'prudent' ? 0.9 : 0.75)) mettre(k, 'desc', s.emprise >= 40 ? 3 : 2);
+  }
+  const envie = { agressif: 0.8, equilibre: 0.7, prudent: 0.5, distrait: 0.6 }[style] || 0.6;
+  if (dispo <= 0 || !rng.chance(envie)) return { secteurs, roles };
+  const milieu = cles.filter((k) => nd.secteurs[k].statut === 'milieu');
+  if (!milieu.length) return { secteurs, roles };
+  const parEmprise = (a, b) => (nd.secteurs[b].coeur - nd.secteurs[a].coeur) || nd.secteurs[a].emprise - nd.secteurs[b].emprise || Number(a) - Number(b);
+  const ok = (k) => { const s = nd.secteurs[k]; return repere(s, T) && !(faille(s).soirs && s.connue && !ouvertCeSoir(s, T)); };
+    // Cible : le secteur repéré le plus entamé (tout le monde frappe au même endroit, sinon le milieu se refait partout).
+  const A = milieu.filter(ok).sort(parEmprise)[0] || null;
+  const aReperer = milieu.filter((k) => !(nd.secteurs[k].repere && nd.secteurs[k].repere.a > T)).sort(parEmprise);
+  // Point fort : le service le mieux formé (avec une petite préférence propre à chaque zone).
+  const h = [...zone.uid].reduce((a, c) => a + c.charCodeAt(0), 0);
+  const niv = { rep: zone.niveaux.recherche + (h % 3 === 0 ? 0.5 : 0), desc: zone.niveaux.intervention + (h % 3 === 1 ? 0.5 : 0), bouc: Math.max(zone.niveaux.roulage, zone.niveaux.proximite) + (h % 3 === 2 ? 0.5 : 0) };
+  const fort = Object.entries(niv).sort((a, b) => b[1] - a[1])[0][0];
+  const lit = style === 'prudent' || style === 'equilibre' ? rng.chance(0.85) : rng.chance(0.4);
+  if (!lit) { mettre(A || milieu.sort(parEmprise)[0], 'desc', { agressif: 4, equilibre: 3, prudent: 2, distrait: 3 }[style] || 3); return { secteurs, roles }; }
+  const a = A ? (ann[A] || { rep: 0, desc: 0, bouc: 0 }) : null;
+  const ratio = A ? (faille(nd.secteurs[A]).ratio ?? R0.ratio) : R0.ratio;
+  const manqueBouc = a ? Math.max(0, Math.ceil(a.desc * ratio) - a.bouc) : 0;
+  const B = aReperer.find((k) => (ann[k] || {}).rep < 2 || !ann[k]);
+  // Ce qui manque, en commençant par son point fort.
+  const besoins = [];
+  if (B) besoins.push(['rep', B, 2 - ((ann[B] || {}).rep || 0)]);
+  if (A) besoins.push(['desc', A, a.desc < 6 ? 3 : 0]);
+  if (A && manqueBouc) besoins.push(['bouc', A, manqueBouc]);
+  besoins.sort((x, y) => (y[0] === fort) - (x[0] === fort));
+  for (const [role, k, n] of besoins) { if (n > 0) mettre(k, role, n); if (dispo <= 2) break; }
+  // Après une descente, compléter son propre bouclage si personne ne l'a fait.
+  if (A && roles[A] && roles[A].desc) { const aa = ann[A]; const m = Math.max(0, Math.ceil(aa.desc * ratio) - aa.bouc); if (m) mettre(A, 'bouc', m); }
+  return { secteurs, roles };
 }
 
 /** Enquête : constatations d'abord, puis vérifications ciblées ; accusation quand un seul suspect reste. */

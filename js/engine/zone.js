@@ -219,6 +219,14 @@ export function multAffaire(aff, force) {
   return 1 + 0.3 * Math.min(1, (force - c) / (c * 0.5));
 }
 
+/** Force d'un rôle dans la zone de non-droit : le niveau du service qu'il représente compte. */
+export const SERVICE_ROLE = { rep: 'recherche', desc: 'intervention', bouc: 'roulage' };
+export function forceRole(zone, role, n, T) {
+  if (!n) return 0;
+  const niv = role === 'bouc' ? Math.max(zone.niveaux.roulage || 1, zone.niveaux.proximite || 1) : (zone.niveaux[SERVICE_ROLE[role]] || 1);
+  return n * (0.8 + 0.2 * niv) * moralMult(zone.moral) * bonusOrdre(zone, T);
+}
+
 export function forceEngagement(zone, n, T) {
   // Les fourgons transportent un peloton entier : force majorée (voir RENDEMENT.ordre).
   return n * (0.8 + 0.2 * Math.max(zone.niveaux.recherche, zone.niveaux.intervention)) * moralMult(zone.moral) * bonusOrdre(zone, T);
@@ -268,9 +276,25 @@ export function sanitizeOrders(zone, raw, state) {
       if (n > 0) secteurs[k] = n;
     }
   }
+  // Rôles (repérage, descente, bouclage) : { secteur: { rep, desc, bouc } }. Sans rôles, tout est en descente.
+  // `secteurs[k]` reste le total d'agents du secteur (ce que lit le reste du jeu).
+  const roles = {};
+  if (o.roles && typeof o.roles === 'object' && state.nonDroit) {
+    for (const [k, v] of Object.entries(o.roles)) {
+      if (!v || typeof v !== 'object' || !secteurOuvert(state.nonDroit, k)) continue;
+      const r = { rep: clamp(Math.floor(fini(v.rep)), 0, ND.maxParSecteur), desc: clamp(Math.floor(fini(v.desc)), 0, ND.maxParSecteur), bouc: clamp(Math.floor(fini(v.bouc)), 0, ND.maxParSecteur) };
+      while (r.rep + r.desc + r.bouc > ND.maxParSecteur) { if (r.bouc) r.bouc--; else if (r.rep) r.rep--; else r.desc--; }
+      if (r.rep + r.desc + r.bouc > 0) { roles[k] = r; secteurs[k] = r.rep + r.desc + r.bouc; }
+    }
+  }
+  for (const [k, n] of Object.entries(secteurs)) if (!roles[k]) roles[k] = { rep: 0, desc: n, bouc: 0 };
   const sumSect = () => Object.values(secteurs).reduce((s, n) => s + n, 0);
   const maxSect = Math.min(ND.maxTotal, Math.max(0, dispo - evenement0 - (renfort ? renfort.agents : 0)));
-  while (sumSect() > maxSect) { const k = Object.keys(secteurs).sort((a, b) => secteurs[b] - secteurs[a])[0]; secteurs[k]--; if (!secteurs[k]) delete secteurs[k]; }
+  while (sumSect() > maxSect) {
+    const k = Object.keys(secteurs).sort((a, b) => secteurs[b] - secteurs[a])[0], r = roles[k];
+    secteurs[k]--; if (r.bouc) r.bouc--; else if (r.rep) r.rep--; else r.desc--;
+    if (!secteurs[k]) { delete secteurs[k]; delete roles[k]; }
+  }
   const evenement = evenement0 + (renfort ? renfort.agents : 0) + sumSect(); // agents réservés hors services
   const sumEng = () => Object.values(engagements).reduce((s, e) => s + e.agents, 0);
   if (sumEng() + evenement > dispo) {
@@ -363,7 +387,7 @@ export function sanitizeOrders(zone, raw, state) {
   const nv = (zone.flotte || []).length || zone.vehicules || 0;
   const repris = decision && decision.reprise != null ? decision.reprise : -1; // le véhicule repris n'est pas revendu une deuxième fois
   const ventes = Array.isArray(o.ventes) ? [...new Set(o.ventes.map((x) => Math.floor(Number(x))).filter((x) => Number.isInteger(x) && x >= 0 && x < nv && x !== repris))].slice(0, Math.max(0, nv - 1)) : [];
-  return { ventes, dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, decision, operation, depenses, demarches, accusation, accusation2, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteAccepte, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, defiAccepte: tutelle ? [] : defiAccepte, votes, motionChef, offre };
+  return { ventes, dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, roles, decision, operation, depenses, demarches, accusation, accusation2, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteAccepte, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, defiAccepte: tutelle ? [] : defiAccepte, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */
@@ -410,7 +434,7 @@ export function effetsOperation(zone, alloc, niveau, turn) {
 export function autopilotOrders(zone, state) {
   const base = zone.dernierOrdre ? { alloc: zone.dernierOrdre.alloc, rythme: 'normal', operation: 'reduit', patrouilles: zone.dernierOrdre.patrouilles } : { alloc: DEFAULT_ALLOC, rythme: 'normal', operation: 'reduit' };
   // Un oubli d'un jour : les agents restent sur place dans la zone de non-droit. Au-delà, ils rentrent.
-  if (zone.dernierOrdre && zone.dernierOrdre.secteurs && (zone.toursSansOrdres || 0) === 0) base.secteurs = zone.dernierOrdre.secteurs;
+  if (zone.dernierOrdre && zone.dernierOrdre.secteurs && (zone.toursSansOrdres || 0) === 0) { base.secteurs = zone.dernierOrdre.secteurs; if (zone.dernierOrdre.roles) base.roles = zone.dernierOrdre.roles; }
   return sanitizeOrders(zone, base, state);
 }
 

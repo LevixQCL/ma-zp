@@ -102,16 +102,16 @@ const a = (nom) => nom.replace(/^Les /, 'aux ').replace(/^La /, 'à la ').replac
 const eur = (v) => Math.round(v).toLocaleString('fr-BE') + ' €';
 
 const ROLES = {
-  rep:  { ico: '🔍', nom: 'Repérage', svc: 'recherche', svcL: 'Recherche', eff: 'Révèle la faille. Repéré les 2 soirs suivants : pleine force, presque plus de piège.' },
+  rep:  { ico: '🔍', nom: 'Repérage', svc: 'recherche', svcL: 'Recherche', eff: 'Révèle la faille. Repéré les 4 soirs suivants : force ×1,3, plus de piège.' },
   desc: { ico: '🚔', nom: 'Descente', svc: 'intervention', svcL: 'Intervention', eff: 'Fait tomber l’emprise. C’est elle qui reprend le secteur.' },
   bouc: { ico: '🚧', nom: 'Bouclage', svc: 'roulage', svcL: 'Roulage · Proximité', eff: 'Ferme les sorties : moins de fuite, plus de saisies.' },
 };
 const FAILLES = {
-  deal:   { ico: '👀', titre: 'Guetteurs à chaque coin', texte: 'Sans repérage, la descente est vue de loin : force ×0,4 et piège bien plus probable. Repéré : force ×1,2.', repSans: 0.4, repAvec: 1.2, piege: 2, butin: 1, interp: true },
+  deal:   { ico: '👀', titre: 'Guetteurs à chaque coin', texte: 'Sans repérage, la descente est vue de loin : force ×0,4 et piège bien plus probable. Repéré : force ×1,5.', repSans: 0.4, repAvec: 1.5, piege: 2, butin: 1, interp: true },
   rodeos: { ico: '🏍', titre: 'Ils filent', texte: 'Il faut autant de bouclage que de descente, sinon les motos s’échappent par les ruelles.', ratio: 1, butin: 0.8 },
   garage: { ico: '🔧', titre: 'Un butin énorme', texte: 'Saisies ×2 et une chance de récupérer un véhicule pour ta flotte… si le secteur est bien bouclé.', butin: 2, vehicule: true, interp: true },
   jeux:   { ico: '🎲', titre: 'Ouvert 2 soirs sur 7', texte: 'Le tripot n’ouvre que certains soirs. Un soir fermé, la descente ne trouve personne (×0,3). Un soir ouvert : ×1,5 et la caisse de la nuit.', soirs: [2, 4], butin: 1.2 },
-  squat:  { ico: '📜', titre: 'Il faut un mandat', texte: 'Sans repérage, pas de mandat : la descente ne peut pas entrer (×0). Repéré : ×1,2.', repSans: 0, repAvec: 1.2, butin: 0.6 },
+  squat:  { ico: '📜', titre: 'Il faut un mandat', texte: 'Sans repérage, pas de mandat : la descente ne peut pas entrer (×0). Repéré : ×1,5.', repSans: 0, repAvec: 1.5, butin: 0.6 },
 };
 const MILIEUX = {
   deal: 'Point de deal', rodeos: 'Rodéos urbains', garage: 'Garage clandestin', jeux: 'Tripot clandestin', squat: 'Squat organisé',
@@ -198,7 +198,7 @@ function prevoir(k, e = engages(k)) {
     return { repris: true, apres, D, zones };
   }
   const rep = repere(s);
-  let mult = rep ? (f.repAvec ?? 1) : (f.repSans ?? 0.6);
+  let mult = rep ? (f.repAvec ?? 1.3) : (f.repSans ?? 0.6);
   let ouvert = true;
   if (f.soirs) { ouvert = ouvertCeSoir(s); mult *= ouvert ? 1.5 : 0.3; }
   const Deff = D * mult * coop;
@@ -218,14 +218,14 @@ function prevoir(k, e = engages(k)) {
 function parts(k, e, p, rep0) {
   const s = G.secteurs[k];
   const w = {};
-  for (const x of e) w[x.u] = force(x.u, 'rep', x.rep) * 0.8 + force(x.u, 'desc', x.desc) + force(x.u, 'bouc', x.bouc);
+  for (const x of e) w[x.u] = force(x.u, 'rep', x.rep) + force(x.u, 'desc', x.desc) + force(x.u, 'bouc', x.bouc);
   const tot = Object.values(w).reduce((a, b) => a + b, 0) || 1;
   const out = {};
   const r0 = rep0 === undefined ? s.repere : rep0;
   const tuyau = p.rep && r0 ? r0.par : [];
-  const resteK = tuyau.length ? 0.85 : 1;
+  const resteK = tuyau.length ? 0.65 : 1;
   for (const [u, v] of Object.entries(w)) out[u] = (out[u] || 0) + resteK * v / tot;
-  for (const u of tuyau) out[u] = (out[u] || 0) + 0.15 / tuyau.length;
+  for (const u of tuyau) out[u] = (out[u] || 0) + 0.35 / tuyau.length;
   return out;
 }
 
@@ -243,9 +243,9 @@ function nuit() {
     if (p.R >= 1.5 && s.statut === 'milieu') {
       const neuf = !s.connue;
       s.connue = true;
-      s.repere = { de: T + 1, a: T + 2, par: [...new Set([...(rep0 && rep0.a >= T + 1 ? rep0.par : []), ...e.filter((x) => x.rep).map((x) => x.u)])] };
-      arts.push({ h: `${s.nom} : ${neuf ? 'la faille est trouvée' : 'nouveau repérage'}`, p: `${e.filter((x) => x.rep).map((x) => x.u === 'moi' ? 'Ta zone' : ZONES[x.u].nom).join(' et ')} ${neuf ? `a repéré le secteur : ${FAILLES[s.milieu].titre.toLowerCase()}.` : 'a mis le secteur sous surveillance.'} Secteur repéré ${JOURS_L[jourDe(T + 1)]} et ${JOURS_L[jourDe(T + 2)]} soir${f.soirs ? ` · le tripot ouvre le ${f.soirs.map((j) => JOURS_L[j]).join(' et le ')}` : ''}.` });
-      if (e.some((x) => x.u === 'moi' && x.rep)) moi.lignes.push(`🔍 ${s.nom} repéré : la descente de demain frappera à pleine force. Tu toucheras 15 % du butin des descentes qui en profitent.`);
+      s.repere = { de: T + 1, a: T + 4, par: [...new Set([...(rep0 && rep0.a >= T + 1 ? rep0.par : []), ...e.filter((x) => x.rep).map((x) => x.u)])] };
+      arts.push({ h: `${s.nom} : ${neuf ? 'la faille est trouvée' : 'nouveau repérage'}`, p: `${e.filter((x) => x.rep).map((x) => x.u === 'moi' ? 'Ta zone' : ZONES[x.u].nom).join(' et ')} ${neuf ? `a repéré le secteur : ${FAILLES[s.milieu].titre.toLowerCase()}.` : 'a mis le secteur sous surveillance.'} Secteur repéré de ${JOURS_L[jourDe(T + 1)]} à ${JOURS_L[jourDe(T + 4)]} soir${f.soirs ? ` · le tripot ouvre le ${f.soirs.map((j) => JOURS_L[j]).join(' et le ')}` : ''}.` });
+      if (e.some((x) => x.u === 'moi' && x.rep)) moi.lignes.push(`🔍 ${s.nom} repéré : la descente de demain frappera à pleine force. Tu toucheras 35 % du butin des descentes qui en profitent.`);
     }
     if (s.statut === 'repris') {
       s.emprise = p.apres;
@@ -391,7 +391,7 @@ function rendre() {
     <header><h1>Zone de non-droit</h1><p class="sub">Démo des rôles · rien n’est enregistré · ${repris} secteur${repris > 1 ? 's' : ''} repris sur 5</p></header>
     <div class="jour">${JOURS.map((j, i) => `<span class="${i === jourDe(G.T) ? 'on' : i < jourDe(G.T) ? 'passe' : ''}">${j}</span>`).join('')}</div>
     <details class="aide card"><summary>Comment ça marche (30 secondes)</summary>
-      <p><b>🔍 Repérage</b> (Recherche) : la veille. Révèle la faille et rend le secteur « repéré » 2 soirs. <b>🚔 Descente</b> (Intervention) : fait tomber l’emprise ; sans repérage, elle perd de sa force et risque le piège. <b>🚧 Bouclage</b> (Roulage, Proximité) : 1 pour 2 en descente, sinon ça file, il y a moins de saisies et le secteur voisin se renforce.</p>
+      <p><b>🔍 Repérage</b> (Recherche) : la veille. Révèle la faille et rend le secteur « repéré » 4 soirs, et touche 35 % des saisies des descentes qui en profitent. <b>🚔 Descente</b> (Intervention) : fait tomber l’emprise ; sans repérage, elle perd de sa force et risque le piège. <b>🚧 Bouclage</b> (Roulage, Proximité) : 1 pour 2 en descente, sinon ça file, il y a moins de saisies et le secteur voisin se renforce.</p>
       <p>Les autres zones jouent leur point fort : <b style="color:#63B0FF">Les Hauts</b> repère, <b style="color:#3DD39A">Val-Sambre</b> descend, <b style="color:#C792EA">Bois-Fleuri</b> boucle. Complète ce qui manque. Personne n’a rien à accepter : tout se règle à 20:00.</p>
     </details>
     <div class="secteurs">${Object.entries(S).map(([k, s]) => {
