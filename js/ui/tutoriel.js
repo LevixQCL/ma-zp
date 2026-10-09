@@ -58,6 +58,12 @@ export const ETAPES = [
       <p>Surveille la <strong>satisfaction</strong> (le plus gros poids) et le <strong>moral</strong>, qui règle l’efficacité de tous tes agents. Chaque <strong>?</strong> détaille le calcul avec tes chiffres. Touche ton commissariat pour voir ce que te rapportent tes bâtiments.</p>`),
   },
   {
+    id: 'classement', route: 'hp', v2: true, cible: '.hp-classement',
+    titre: 'Les classements',
+    texte: `<p>Ce bouton ouvre les <strong>classements</strong> du district : IPZ de la saison, enquête, énigmes et grades. Ton rang s’affiche à droite.</p>
+      <p>On n’est classé qu’après <strong>5 soirs joués</strong> dans la saison : c’est la régularité qui paie.</p>`,
+  },
+  {
     id: 'rapport', route: 'hp', cible: ['section[aria-label="Mes raccourcis"]', '[data-action="toggle-rapport"]'],
     titre: 'Chaque soir : rapport et Gazette',
     texte: () => (reglesV2(S.state) ? `<p>Après 20:00, ton adjoint te résume la nuit dans une bulle. Ton <strong>rapport</strong> dit tout ce qui s’est passé chez toi, la <strong>Gazette</strong> raconte la soirée du district.</p>
@@ -68,8 +74,15 @@ export const ETAPES = [
     id: 'affectation', route: 'ordres', onglet: 'L’onglet le plus important de la journée : c’est là que tu décides où travaillent tes agents.',
     cible: 'section[aria-label="Affectation des agents"]',
     titre: 'Cinq services à équilibrer',
-    texte: `<p><strong>Intervention</strong> traite les incidents · <strong>Proximité</strong> calme les quartiers · <strong>Recherche</strong> élucide les dossiers et nourrit l’enquête · <strong>Roulage</strong> rapporte des amendes · <strong>Accueil</strong> vide la paperasse.</p>
-      <p>Sous chaque service, son résultat estimé pour ce soir. Aucun ne suffit seul : un incident raté ou une pile de dossiers se paie vite.</p>`,
+    texte: () => (reglesV2(S.state) ? `<p>Chaque ligne est un service, avec <strong>une case par agent</strong> dont il a besoin : une case vide en pointillé, c’est un manque. Le badge à droite dit si le service est couvert.</p>
+      <p><strong>Intervention</strong> traite les incidents · <strong>Proximité</strong> calme les quartiers · <strong>Recherche</strong> élucide les dossiers et nourrit l’enquête · <strong>Roulage</strong> rapporte des amendes · <strong>Accueil</strong> vide la paperasse. Aucun ne suffit seul.</p>` : `<p><strong>Intervention</strong> traite les incidents · <strong>Proximité</strong> calme les quartiers · <strong>Recherche</strong> élucide les dossiers et nourrit l’enquête · <strong>Roulage</strong> rapporte des amendes · <strong>Accueil</strong> vide la paperasse.</p>
+      <p>Sous chaque service, son résultat estimé pour ce soir. Aucun ne suffit seul : un incident raté ou une pile de dossiers se paie vite.</p>`),
+  },
+  {
+    id: 'doctrine', route: 'ordres', v2: true, cible: 'section[aria-label="Doctrine de la saison"]',
+    titre: 'Saison 2 : la doctrine de ta zone',
+    texte: `<p>Les <strong>trois premiers jours</strong> de la saison, tu choisis une <strong>doctrine</strong> : une vraie force, et un vrai prix. Elle vaut pour toute la saison.</p>
+      <p>Garde la même d’une saison à l’autre et ta <strong>maîtrise</strong> monte. Sans choix au soir du jour 3, ta zone reste « sans doctrine ».</p>`,
   },
   {
     id: 'proxi', route: 'ordres', cible: '[data-action="alloc"][data-s="proximite"][data-d="1"]', parent: '.between',
@@ -86,8 +99,9 @@ export const ETAPES = [
   {
     id: 'decision', route: 'ordres', cible: ['section[aria-label="Ce soir aussi"]', '[data-action="ord-open"][data-k="decision"]'],
     titre: 'Ce soir aussi',
-    texte: `<p>La <strong>grande décision</strong> : recruter, former, équiper, acheter un véhicule, construire ou agrandir. <strong>Une seule par tour</strong>, alors choisis bien.</p>
-      <p>Dans la même carte : les <strong>dépenses du jour</strong>, les agents envoyés dans la <strong>zone de non-droit</strong> et la figure de <strong>ton équipe</strong> que tu envoies en mission. Touche une ligne pour l’ouvrir.</p>`,
+    texte: () => (reglesV2(S.state) ? `<p>Quatre cases pour le reste de la soirée : ton <strong>chef de corps</strong> (sa journée, ses talents), la <strong>grande décision</strong> (recruter, former, équiper, acheter un véhicule, construire : <strong>une seule par tour</strong>), les <strong>pistes</strong> en cours et les <strong>agents de réserve</strong>.</p>
+      <p>Touche une case pour l’ouvrir. Celles qui n’attendent plus rien se replient sur une ligne.</p>` : `<p>La <strong>grande décision</strong> : recruter, former, équiper, acheter un véhicule, construire ou agrandir. <strong>Une seule par tour</strong>, alors choisis bien.</p>
+      <p>Dans la même carte : les <strong>dépenses du jour</strong>, les agents envoyés dans la <strong>zone de non-droit</strong> et la figure de <strong>ton équipe</strong> que tu envoies en mission. Touche une ligne pour l’ouvrir.</p>`),
   },
   {
     id: 'valider', route: 'ordres', cible: ['.savebar [data-action="save-orders"]', 'main .card.green', 'main [data-action="save-orders"]'],
@@ -97,10 +111,10 @@ export const ETAPES = [
     geste: { consigne: 'Touche <strong>Valider</strong>.', fait: () => !!S.savedOrders && !S.ordersDirty },
   },
   {
-    id: 'carte-v2', route: 'carte', v2: true, onglet: 'Ta ville en maquette : tes quartiers et tout le district.', cible: '#mes-quartiers', avant: () => { S.carteCalque = 'mazone'; },
-    titre: 'La carte : Non-droit et Ma zone',
-    texte: `<p><strong>Non-droit</strong> (l’écran qui s’ouvre d’abord) : le centre de la ville à reprendre ensemble. Touche un secteur rouge, engage des agents : tes fourgons partent de ton HP sur la carte. En dessous : renforts, affaires disputées, pactes et Conseil.</p>
-      <p><strong>Ma zone</strong> : touche un quartier, puis remplis ses cases : une case, une patrouille de Proximité, et une voiture qui part tourner dans le quartier. Vise d’abord le <strong>point chaud</strong> 🔥.</p>`,
+    id: 'chef', route: 'chef', v2: true, onglet: 'Ton chef de corps : ce qu’il fait aujourd’hui, sa semaine, sa carrière.', cible: ['section[aria-label="Ton chef aujourd’hui"]', '.chef-creation'],
+    titre: 'Ton chef de corps',
+    texte: `<p>C’est toi. Chaque jour, choisis <strong>où il passe sa journée</strong>, s’il monte <strong>en première ligne</strong> et quel <strong>service</strong> demander au réseau : ça part avec tes ordres de 20:00.</p>
+      <p>Ses 5 compétences montent selon ta façon de gérer ta zone <strong>et</strong> quand tu réussis tes énigmes et tes mini-jeux. Elles débloquent des <strong>talents</strong>. Plus bas : sa semaine (objectifs, duel) et sa fiche.</p>`,
   },
   {
     id: 'terrain', route: 'terrain', v1: true, /* saison 2 : le Terrain est un calque de la Carte */ onglet: 'Ce qui se joue avec les autres zones.', cible: ['section[aria-label="Zone de non-droit"]', 'section[aria-label="Chez les voisins"]'], union: true,
@@ -157,33 +171,53 @@ export const ETAPES = [
       <p>Pas le temps ou pas l’envie ? Un <strong>quiz express</strong> ou un <strong>agent</strong> qui planche à ta place peuvent aussi décrocher le bonus. L’<strong>Entraînement</strong> permet de s’exercer aux énigmes sans enjeu, et le <strong>Challenge</strong> aux mini-jeux d’incident.</p>`,
   },
   {
+    id: 'carte-v2', route: 'carte', v2: true, onglet: 'Ta ville en maquette : la zone de non-droit, tes quartiers et tout le district.', cible: '#mes-quartiers', avant: () => { S.carteCalque = 'mazone'; },
+    titre: 'La carte : Non-droit et Ma zone',
+    texte: `<p><strong>Non-droit</strong> (l’écran qui s’ouvre d’abord) : le centre de la ville, à reprendre ensemble. Touche un secteur rouge et place tes agents dans un rôle : <strong>repérage</strong> (Recherche, révèle la faille du milieu), <strong>descente</strong> (Intervention, fait tomber l’emprise) ou <strong>bouclage</strong> (Roulage et Proximité, plus de saisies). À plusieurs le même soir, c’est bien plus fort ; seul et trop léger, gare aux blessés.</p>
+      <p><strong>Ma zone</strong> : touche un quartier, puis remplis ses cases : une case, une patrouille de Proximité, et une voiture qui part tourner dans le quartier. Vise d’abord le <strong>point chaud</strong> 🔥.</p>`,
+  },
+  {
     id: 'carte', route: 'carte', v1: true, /* saison 2 : la Carte vient juste après les Ordres (étape carte-v2) */ onglet: 'Tes quartiers et tout le district.', cible: '#mes-quartiers',
     titre: 'La carte et tes quartiers',
     texte: `<p>Chaque quartier a sa <strong>tension</strong>. Envoie des patrouilles de <strong>Proximité</strong> là où ça chauffe, surtout sur le <strong>point chaud</strong> annoncé la veille.</p>
       <p>Au centre, hachurée de rouge : la zone de non-droit. L’onglet <strong>Pactes</strong>, en haut, sert à t’allier avec une autre zone (jumelage, enquête, achats) et à voter au Conseil.</p>`,
   },
   {
-    id: 'chef', route: 'chef', v2: true, onglet: 'Ton chef de corps : ce qu’il fait aujourd’hui, sa semaine, sa carrière.', cible: ['section[aria-label="Ton chef aujourd’hui"]', '.chef-creation'],
-    titre: 'Ton chef de corps',
-    texte: `<p>C’est toi. Chaque jour, choisis <strong>où il passe sa journée</strong>, s’il monte <strong>en première ligne</strong> et quel <strong>service</strong> demander au réseau : ça part avec tes ordres de 20:00.</p>
-      <p>Ses 5 compétences montent selon ta façon de gérer ta zone <strong>et</strong> quand tu réussis tes énigmes et tes mini-jeux. Elles débloquent des <strong>talents</strong>. Plus bas : sa semaine (objectifs, duel) et sa fiche.</p>`,
+    id: 'radio2', route: 'radio', v2: true, onglet: 'Pour parler avec les autres chefs de zone.', cible: '[aria-label="Fréquences"]',
+    titre: 'La radio : deux fréquences et le privé',
+    texte: `<p><strong>F1 · Discussion</strong> : le canal commun, comme une messagerie. On y négocie, on échange des pièces, on se donne rendez-vous.</p>
+      <p><strong>F2 · Renforts &amp; ops</strong> : le tableau des appels de ce soir (renforts, non-droit, opérations), avec un bouton pour répondre présent. <strong>Privé</strong> : en tête-à-tête, pour préparer un pacte ou un défi amical.</p>`,
   },
   {
-    id: 'radio', route: 'radio', onglet: 'Pour parler avec les autres chefs de zone.', cible: '[aria-label="Radio et messages privés"]',
+    id: 'radio', route: 'radio', v1: true, onglet: 'Pour parler avec les autres chefs de zone.', cible: '[aria-label="Radio et messages privés"]',
     titre: 'Radio et messages privés',
     texte: `<p><strong>Radio</strong> : le canal commun. On s’y organise pour la zone de non-droit (bouton « Rejoindre » sous une annonce), on échange des pièces, on négocie.</p>
       <p><strong>Privé</strong> : en tête-à-tête, pour se mettre d’accord avant un pacte ou un défi amical.</p>`,
   },
   {
-    id: 'fin', route: 'hp',
+    id: 'fin', route: 'hp', v1: true,
     titre: 'Ta journée type',
     texte: `<ol class="tuto-liste">
         <li>Lis ton <strong>rapport</strong> et la <strong>Gazette</strong>.</li>
         <li>Règle et <strong>valide tes ordres</strong> (et tranche le dilemme s’il y en a un).</li>
         <li>Avance l’<strong>enquête</strong> : pièces au tableau, deux démarches.</li>
         <li>Fais tes <strong>énigmes</strong>, ou le quiz express.</li>
-        <li>Quand un <strong>incident</strong> tombe, tu as jusqu’à 20:00 (il tombe entre 6 h et 12 h).</li>
+        <li>Quand un <strong>incident</strong> tombe, tu as jusqu’à 20:00 (il tombe entre 7 h et 19 h et reste ouvert 12 heures).</li>
         <li>Coup d’œil au <strong>Terrain</strong> et à la <strong>Radio</strong> : on avance mieux à plusieurs.</li>
+      </ol>
+      <p class="tuto-note">Le détail est dans le <strong>Guide du joueur</strong> (roue dentée en haut de l’HP), d’où tu peux aussi relancer cette visite. Bon service !</p>`,
+  },
+  {
+    id: 'fin2', route: 'hp', v2: true,
+    titre: 'Ta journée type',
+    texte: `<ol class="tuto-liste">
+        <li>Lis la <strong>Gazette</strong> (touche pour avancer) et ton <strong>rapport</strong>.</li>
+        <li>Règle et <strong>valide tes ordres</strong> ; les 3 premiers jours, choisis ta <strong>doctrine</strong>.</li>
+        <li>Onglet <strong>Chef</strong> : sa journée, et les lettres du <strong>parapheur</strong>.</li>
+        <li>Avance l’<strong>enquête</strong> : ouvre tes enveloppes, lance tes démarches.</li>
+        <li>Fais tes <strong>énigmes</strong>, ou le quiz express.</li>
+        <li>Quand un <strong>incident</strong> tombe (entre 7 h et 19 h), tu as 12 heures pour le jouer.</li>
+        <li>Coup d’œil à la <strong>Carte</strong> (non-droit) et à la <strong>Radio</strong> : on avance mieux à plusieurs.</li>
       </ol>
       <p class="tuto-note">Le détail est dans le <strong>Guide du joueur</strong> (roue dentée en haut de l’HP), d’où tu peux aussi relancer cette visite. Bon service !</p>`,
   },
@@ -194,13 +228,18 @@ export const ETAPES = [
 let layer = null, raf = 0, derniereCible = null, dernierIndex = -1;
 
 export const tutoActif = () => S.tuto != null;
-export const tutoFait = () => ['fait', 'zappe'].includes(lire(CLE)) || !!(S.player && S.player.tuto);
+// Saison 2 : la visite est refaite pour les nouveaux écrans ; elle est reproposée une fois à tout le monde.
+const CLE2 = 'mazp-tuto-s2';
+export const tutoFait = () => (reglesV2(S.state)
+  ? ['fait', 'zappe'].includes(lire(CLE2)) || !!(S.player && S.player.tuto2)
+  : ['fait', 'zappe'].includes(lire(CLE)) || !!(S.player && S.player.tuto));
 
 /** Marque la visite comme terminée ou refusée, sur l'appareil et dans le profil du joueur. */
 function marquer(v) {
-  ecrire(CLE, v); ecrire(CLE_ETAPE, null);
-  if (S.player && !S.player.tuto && S.backend && S.backend.savePlayer && S.user) {
-    const p = { ...S.player, tuto: v };
+  const v2 = reglesV2(S.state);
+  ecrire(CLE, v); if (v2) ecrire(CLE2, v); ecrire(CLE_ETAPE, null);
+  if (S.player && (!S.player.tuto || (v2 && !S.player.tuto2)) && S.backend && S.backend.savePlayer && S.user) {
+    const p = { ...S.player, tuto: S.player.tuto || v, ...(v2 ? { tuto2: v } : {}) };
     S.player = p;
     Promise.resolve(S.backend.savePlayer(S.user.uid, p)).catch((e) => console.warn('tuto', e));
   }
@@ -255,8 +294,11 @@ function monter() {
 
 const valeur = (v) => (typeof v === 'function' ? v() : v);
 
-function etapeHtml(e, i) {
-  const n = ETAPES.length;
+/** Étapes présentes dans cette partie (règles v1 ou v2) : rang affiché et total. */
+const presente = (x) => !((x.v2 && !reglesV2(S.state)) || (x.v1 && reglesV2(S.state)));
+function etapeHtml(e) {
+  const vis = ETAPES.filter(presente), n = vis.length;
+  const i = Math.max(0, vis.indexOf(e));
   if (attendOnglet(e)) {
     const nom = ONGLETS[e.route] || e.route;
     return `<div class="between" style="gap:8px"><span class="kicker">Visite guidée · ${i + 1} / ${n}</span>
@@ -374,13 +416,15 @@ function boucle() {
 function inviter() {
   const z = myZone();
   const ancien = z && z.toursJoues > 0;
+  // Ancien joueur qui découvre la saison 2 : on lui présente la nouvelle visite.
+  const s2 = reglesV2(S.state) && (ancien || (S.player && S.player.tuto) || ['fait', 'zappe'].includes(lire(CLE)));
   document.querySelector('.aide-wrap')?.remove();
   const wrap = document.createElement('div');
   wrap.className = 'aide-wrap';
   wrap.innerHTML = `<div class="aide card tuto-invite" role="dialog" aria-modal="true" aria-labelledby="tuto-inv-titre">
-    <span class="kicker">${ancien ? 'Nouveau' : 'Prise de fonction'}</span>
-    <h2 id="tuto-inv-titre" class="aide-titre">${ancien ? 'Une visite guidée du jeu' : `Bienvenue à la ${zoneNom()} !`}</h2>
-    <p class="aide-intro">${ancien ? 'Les sept onglets et ce qu’il y a à faire chaque jour, en trois minutes. Utile pour revoir les bases… ou pour la montrer à un collègue.' : 'Avant de prendre ton service : une visite guidée de trois minutes pour découvrir les onglets et ce qu’il faut faire chaque jour.'}</p>
+    <span class="kicker">${s2 ? 'Saison 2' : ancien ? 'Nouveau' : 'Prise de fonction'}</span>
+    <h2 id="tuto-inv-titre" class="aide-titre">${s2 ? 'La visite guidée de la saison 2' : ancien ? 'Une visite guidée du jeu' : `Bienvenue à la ${zoneNom()} !`}</h2>
+    <p class="aide-intro">${s2 ? 'Doctrine, chef de corps, nouvelle carte, enquête sous enveloppe, radio à deux fréquences : tout ce qui a changé, écran par écran, en trois minutes.' : ancien ? 'Les sept onglets et ce qu’il y a à faire chaque jour, en trois minutes. Utile pour revoir les bases… ou pour la montrer à un collègue.' : 'Avant de prendre ton service : une visite guidée de trois minutes pour découvrir les onglets et ce qu’il faut faire chaque jour.'}</p>
     <div class="col" style="gap:8px">
       <button type="button" class="btn primary block" data-inv="go">${ancien ? 'Faire la visite' : 'Commencer la visite'}</button>
       ${ancien ? '' : '<button type="button" class="btn ghost block" data-inv="plus-tard">Plus tard</button>'}
