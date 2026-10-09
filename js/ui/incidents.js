@@ -90,7 +90,8 @@ export function incidentEnCours() {
 export const signatureIncidents = () => { const res = mesResultats(); return mesIncidents().map((i) => etat(i, res[i.id])).join(','); };
 
 /** `avant` : lignes ajoutées en tête (HP allégée : l'événement du jour) ; `titre` : titre de la carte. */
-export function incidentsHtml({ avant = '', titre = 'Incidents du jour' } = {}) {
+/** `nu` : seulement les lignes (HP : section « Aujourd'hui »), sans carte ni jauge. */
+export function incidentsHtml({ avant = '', titre = 'Incidents du jour', nu = false } = {}) {
   const liste = mesIncidents();
   const appuiRow = ligneAppuiHp();
   if (!liste.length && !appuiRow && !avant) return '';
@@ -113,15 +114,24 @@ export function incidentsHtml({ avant = '', titre = 'Incidents du jour' } = {}) 
     return `<div class="inc-row"><span class="inc-ico" aria-hidden="true">${icon('clock', 16)}</span>
       <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:600">${esc(i.titre)}</span><span class="tiny muted">${i.urgence ? 'Urgence' : SERVICE_LABELS[i.service]} · non traité : ton équipe s’en charge seule, résultat à 20:00</span></span></div>`;
   });
+  const attente = prochain ? `<div class="inc-row inc-attente"><span class="inc-ico" aria-hidden="true">${icon('clock', 16)}</span><span class="col grow" style="gap:1px"><span style="font-weight:600">${prochain.urgence ? '🚨 Une urgence va tomber aujourd’hui' : lignes.length ? 'Un autre incident va tomber' : 'Un incident va tomber aujourd’hui'}</span><span class="tiny muted">${prochain.urgence ? 'des collègues demanderont du renfort' : 'sur un de tes services'}, dans <strong class="mono" data-inc-cd="${prochain.ouvre}">${duree(prochain.ouvre - now)}</strong> · ouvert jusqu’à 20:00</span></span></div>` : '';
+  if (nu) return `${avant}${appuiRow}${lignes.join('')}${attente}`;
   return `<section class="card" id="hp-incidents" aria-label="Incidents du jour" style="gap:8px;scroll-margin-top:16px">
     <div class="between"><span class="kicker">${titre}</span><a class="tiny" href="#guide-incidents">${avant ? 'Les incidents ?' : 'Comment ça marche ?'}</a></div>
     ${avant}${appuiRow}${lignes.join('')}
-    ${prochain ? `<div class="inc-row inc-attente"><span class="inc-ico" aria-hidden="true">${icon('clock', 16)}</span><span class="col grow" style="gap:1px"><span style="font-weight:600">${prochain.urgence ? '🚨 Une urgence va tomber aujourd’hui' : lignes.length ? 'Un autre incident va tomber' : 'Un incident va tomber aujourd’hui'}</span><span class="tiny muted">${prochain.urgence ? 'des collègues demanderont du renfort' : 'sur un de tes services'}, dans <strong class="mono" data-inc-cd="${prochain.ouvre}">${duree(prochain.ouvre - now)}</strong> · ouvert jusqu’à 20:00</span></span></div>`
+    ${prochain ? attente
       : !lignes.some((l) => l.includes('inc-ouvert')) ? '<p class="tiny muted" style="margin:0">Plus d’incident aujourd’hui. Les prochains tombent demain, entre 6 h et 12 h, et restent ouverts jusqu’à 20:00.</p>' : ''}
     <button type="button" class="between small jauge-btn" data-action="jauge-skins" aria-label="Jauge des skins : voir ce que tu peux gagner"><span class="row muted" style="gap:6px">${icon('star', 14)} Jauge des skins</span>
       <span class="row" style="gap:8px"><span role="img" aria-label="${base} sur ${INC.jauge}" style="width:90px;height:5px;background:var(--line);border-radius:3px;display:inline-block;overflow:hidden"><span style="display:block;width:${Math.min(100, (base / INC.jauge) * 100)}%;height:5px;background:var(--amber)"></span></span>
       <span class="mono">${base}/${INC.jauge}${plus ? ` <span class="ok">+${plus}</span>` : ''}</span></span>${icon('chevron', 12)}</button>
   </section>`;
+}
+
+/** Jauge des skins en une ligne (HP). */
+export function jaugeSkinsLigne() {
+  const { base, plus } = jaugeDuJour();
+  return `<button type="button" class="hp-jauge" data-action="jauge-skins" aria-label="Jauge des skins : ${base} sur ${INC.jauge}, voir ce que tu peux gagner">${icon('star', 14)}<span>Jauge des skins</span>
+    <span class="hp-jauge-barre" aria-hidden="true"><i style="width:${Math.min(100, (base / INC.jauge) * 100)}%"></i></span><b class="mono">${base}/${INC.jauge}${plus ? ` <span class="ok">+${plus}</span>` : ''}</b></button>`;
 }
 
 /** Met à jour les comptes à rebours sans redessiner l'écran. */

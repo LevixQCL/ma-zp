@@ -56,6 +56,14 @@ export function cibler(k, v) { const p = (S.draft.pistesNew || []).find((x) => x
 // Lignes du rapport qui méritent la carte « Cette nuit » (en plus des résultats de pistes).
 const MARQUANTS = [/^Coup dur/, /^Héros du jour/, /^Traque : .*arrêté/, /^Enquête : bien vu/, /^Enquête : .* passe aux aveux/, /^Trophée débloqué/, /^Jauge des skins pleine/, /vague de délinquance/i, /^Incident technique/, /^Salle des ventes : /];
 
+/** Les faits marquants de la nuit (trois au plus), pour la bulle de l'adjoint sur l'HP. */
+export function faitsDeLaNuit(z) {
+  if (!z || S.state.turn <= 1) return [];
+  const l = [...(z.cetteNuit || []).map((x) => x.t)];
+  for (const r of z.rapport || []) { if (l.length >= 3) break; if (MARQUANTS.some((m) => m.test(r)) && !l.includes(r)) l.push(r); }
+  return l.slice(0, 3);
+}
+
 /** Carte « Cette nuit » : trois faits au plus, ceux qui te concernent vraiment ; le rapport complet reste plus bas. */
 export function cetteNuitHtml(z) {
   if (!z || S.state.turn <= 1) return '';

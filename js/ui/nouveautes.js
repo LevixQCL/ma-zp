@@ -8,6 +8,7 @@ export const NOTE_MAJ = {
   saison2: true,
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
+    ['🏢', 'Un nouvel HP', 'ton commissariat en grand, un seul bouton pour la suite, et tes raccourcis au choix.'],
     ['🎖️', 'Ton chef de corps', 'choisis son visage : il progresse avec tes jeux et ta gestion, et le suit de saison en saison.'],
     ['⚔️', 'Ta semaine de chef', 'trois objectifs et un rival à battre chaque semaine, des rubans et un cadre doré à gagner.'],
     ['🧑‍✈️', 'Ton adjoint', 'un jour sans ordres, il tient la zone et te raconte tout à ton retour.'],
@@ -17,6 +18,13 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Le nouvel HP (9 octobre)', [
+      ['Ton commissariat en grand', 'tout en haut, on le fait glisser pour voir le garage et les annexes. Le pinceau le personnalise ; le ciel peut suivre l’heure réelle ou rester au jour, au soir ou à la nuit.'],
+      ['Un seul gros bouton', 'il t’emmène à la prochaine chose à faire avant 20:00. Les petites icônes au-dessus se cochent au fur et à mesure ; « la liste » les montre en entier.'],
+      ['La nuit racontée par ton adjoint', 'une bulle résume la nuit (fait marquant, jauges qui ont bougé) jusqu’à ce que tu touches « Compris ».'],
+      ['Aujourd’hui', 'une ligne par sujet : incidents, dilemme, Conseil, alertes. Une décision en attente reste dépliée ; le reste se déplie d’un toucher.'],
+      ['Mes raccourcis', 'quatre tuiles au choix parmi enchères, équipe, rapport, Gazette, trophées, classement et Challenge : touche « Modifier ».'],
+    ]],
     ['Avant la saison 2 : ajustements (9 octobre)', [
       ['Changement de saison', 'l’affaire en cours, ses traques et la mise à prix à choisir continuent dans la nouvelle saison. Quand le maître du jeu programme la fin de saison, un bandeau sur l’HP prévient tout le monde de ce qui s’arrête.'],
       ['Doctrine', 'à choisir pendant les 3 premiers jours de la saison (rappel dans « Ce soir »), sinon la saison se joue sans doctrine.'],

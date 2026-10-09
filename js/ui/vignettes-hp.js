@@ -55,3 +55,43 @@ export function vignetteTrophees(nb = 0) {
     <rect x="3" y="27.5" width="16" height="1.6" fill="#8C7B62" opacity=".6"/>
   </g>`, 'Mes trophées');
 }
+
+/** Rapport du tour : bloc-notes à pince, lignes et coches. */
+export function vignetteRapport() {
+  return cadre(`
+  <rect x="30" y="7" width="36" height="44" rx="3" fill="#EFE3C4"/>
+  <rect x="40" y="4" width="16" height="7" rx="2" fill="#8A95A3"/><rect x="44" y="2" width="8" height="4" rx="2" fill="#C3CAD3"/>
+  <path d="M36 20 l2 2 4 -4 M36 30 l2 2 4 -4" stroke="#1F7A52" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M36 40 l5 5 M41 40 l-5 5" stroke="#B5342C" stroke-width="2" stroke-linecap="round"/>
+  <rect x="46" y="19" width="15" height="2.4" rx="1.2" fill="#8C7B62"/><rect x="46" y="29" width="13" height="2.4" rx="1.2" fill="#8C7B62"/><rect x="46" y="41" width="11" height="2.4" rx="1.2" fill="#8C7B62"/>`, 'Rapport du tour');
+}
+
+/** La Gazette : journal plié, gros titre et photo. */
+export function vignetteGazette() {
+  return cadre(`
+  <g transform="rotate(-6 48 30)">
+    <rect x="20" y="8" width="56" height="40" rx="2" fill="#F4EFE3"/>
+    <rect x="25" y="12" width="46" height="6" fill="#1D1A15"/>
+    <rect x="25" y="22" width="20" height="16" fill="#8A95A3"/><circle cx="35" cy="28" r="3.5" fill="#5E6B7C"/>
+    <rect x="49" y="22" width="22" height="2.2" fill="#5E574A"/><rect x="49" y="27" width="22" height="2.2" fill="#5E574A"/><rect x="49" y="32" width="18" height="2.2" fill="#5E574A"/>
+    <rect x="25" y="41" width="46" height="2.2" fill="#CFC5B0"/>
+  </g>`, 'La Gazette');
+}
+
+/** Classement : podium à trois marches, la zone en tête. */
+export function vignetteClassement(couleur = '#5AA0F0') {
+  return cadre(`
+  <rect x="18" y="32" width="20" height="18" rx="2" fill="#2C3A63"/><text x="28" y="45" text-anchor="middle" font-size="9" font-weight="800" font-family="system-ui" fill="#C9CFE6">2</text>
+  <rect x="38" y="22" width="20" height="28" rx="2" fill="${couleur}"/><text x="48" y="35" text-anchor="middle" font-size="10" font-weight="900" font-family="system-ui" fill="#141B33">1</text>
+  <rect x="58" y="37" width="20" height="13" rx="2" fill="#2C3A63"/><text x="68" y="47" text-anchor="middle" font-size="8" font-weight="800" font-family="system-ui" fill="#C9CFE6">3</text>
+  <path d="M48 6 l2.4 4.9 5.4.8 -3.9 3.8 .9 5.3 -4.8 -2.5 -4.8 2.5 .9 -5.3 -3.9 -3.8 5.4 -.8 z" fill="#FFB23F"/>`, 'Classement');
+}
+
+/** Challenge : manette et étoile de record. */
+export function vignetteChallenge() {
+  return cadre(`
+  <path d="M26 22 q0 -6 7 -6 h30 q7 0 7 6 l4 16 q1 8 -6 8 q-4 0 -7 -5 l-2 -3 h-22 l-2 3 q-3 5 -7 5 q-7 0 -6 -8 z" fill="#2E4A86"/>
+  <rect x="34" y="25" width="10" height="3" rx="1.5" fill="#C9CFE6"/><rect x="37.5" y="21.5" width="3" height="10" rx="1.5" fill="#C9CFE6"/>
+  <circle cx="58" cy="24" r="2.6" fill="#FFB23F"/><circle cx="63" cy="29" r="2.6" fill="#3DD39A"/><circle cx="53" cy="29" r="2.6" fill="#63B0FF"/><circle cx="58" cy="34" r="2.6" fill="#FF6E6A"/>
+  <path d="M78 6 l1.8 3.6 4 .6 -2.9 2.8 .7 4 -3.6 -1.9 -3.6 1.9 .7 -4 -2.9 -2.8 4 -.6 z" fill="#FFB23F"/>`, 'Challenge');
+}

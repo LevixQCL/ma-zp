@@ -146,7 +146,7 @@ export function sceneVignette(z) {
 }
 
 /** Illustration cliquable de l'HP (dans la carte « Ma zone ») : ouvre la fiche logistique. */
-export function sceneCarteHtml() {
+export function sceneCarteHtml(extra = {}) {
   const z = myZone(), T = S.state.turn;
   const parc = parcVehicules(z, T);
   const cab = parc.filter((v) => v.etat === 'cabosse').length;
@@ -157,7 +157,7 @@ export function sceneCarteHtml() {
   try { if (T > 1 && !localStorage.getItem(cle)) { localStorage.setItem(cle, '1'); S.animFin = Date.now() + 6500; } } catch (e) { /* pas de stockage */ }
   if (S.animFin && Date.now() < S.animFin) anim = true;
   return `<button type="button" class="scene-btn${anim ? ' anim-soir' : ''}" data-action="logistique" aria-label="Mon hôtel de police : bâtiments et véhicules">
-    ${sceneZone(z, S.state, monDecor(z), mesSkins(z).choix)}
+    ${sceneZone(z, S.state, monDecor(z), mesSkins(z).choix, extra)}
     <span class="scene-leg"><span>Bâtiment niv. ${b.bureaux} · Garage niv. ${b.garage}${z.travaux ? ' · travaux' : ''}</span>
       ${cab ? `<span class="scene-pastille">${cab} cabossé${cab > 1 ? 's' : ''}</span>` : ''}${icon('chevron', 14)}</span>
   </button>`;
@@ -232,7 +232,7 @@ export function ouvrirDecor() {
   ouvrirPanneau(`<div data-decor class="col" style="gap:10px">
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon commissariat</h2><span class="tiny muted">${n} élément${n > 1 ? 's' : ''} débloqué${n > 1 ? 's' : ''} sur ${total}</span></div>
       <button class="iconbtn" data-action="logistique" aria-label="Retour" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">‹</button></div>
-    <div class="scene-voisin">${sceneZone(z, S.state, d, mesSkins(z).choix)}</div>
+    <div class="scene-voisin">${sceneZone(z, S.state, d, mesSkins(z).choix, S.player && S.player.hpCiel ? { moment: S.player.hpCiel } : {})}</div>
     ${(() => {
       const { possedes, choix } = mesSkins(z);
       if (!possedes.length) return '';
@@ -241,6 +241,11 @@ export function ouvrirDecor() {
         const o = SKINS[sk.cat].options[sk.id], on = choix[sk.cat] === sk.id;
         return `<button type="button" class="decor-opt${on ? ' on' : ''}" data-action="skin-choix" data-cat="${sk.cat}" data-id="${sk.id}" aria-pressed="${on}"><span>${esc(o.nom)}</span><span class="cond">${esc(SKINS[sk.cat].titre)} · ${on ? 'équipé, touche pour l’enlever' : 'touche pour l’équiper'}</span></button>`;
       }).join('')}</div></div>`;
+    })()}
+    ${(() => {
+      const c = (S.player && S.player.hpCiel) || '';
+      const opt = (v, l) => `<button type="button" class="decor-opt${c === v ? ' on' : ''}" data-action="hp-ciel" data-v="${v}" aria-pressed="${c === v}"><span>${l}</span></button>`;
+      return `<div class="col" style="gap:6px"><span class="tiny muted">Ciel de mon HP</span><div class="decor-opts">${opt('', 'Heure réelle')}${opt('jour', 'Toujours le jour')}${opt('crepuscule', 'Toujours le soir')}${opt('nuit', 'Toujours la nuit')}</div></div>`;
     })()}
     ${groupes}
     <p class="tiny muted" style="margin:0">Les éléments se débloquent avec ton grade et tes trophées. Les autres chefs de zone voient ton commissariat depuis la Carte et le classement, à partir de 20:00.</p>

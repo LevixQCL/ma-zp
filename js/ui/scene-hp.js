@@ -135,7 +135,7 @@ function passant(x, y, habit, peau = '#E8C39E') {
  * en service à garer devant (3 au plus) ; `travaux` : 'bureaux' | 'garage' | null ;
  * `moment` : 'jour' | 'aube' | 'crepuscule' | 'nuit' (par défaut, l'heure de l'appareil).
  */
-export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = false, infra = {}, lots = [], moment = momentDuJour(), decor = null, skins = {}, drapeau = null, file = false, renforce = false, imprevu = {}, operation = false, date = new Date(), champion = false, plaques = [], affiches = [], trace = null, poste = null, isole = false }) {
+export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = false, infra = {}, lots = [], moment = momentDuJour(), decor = null, skins = {}, drapeau = null, file = false, renforce = false, imprevu = {}, operation = false, date = new Date(), champion = false, plaques = [], affiches = [], trace = null, poste = null, isole = false, grand = false }) {
   const uid = `${moment}-${++numeroScene}`;
   const H = 210, base = 172, x0 = 22, w = 160, gf = 30, fh = 24;
   // Aile des annexes entre l'hôtel de police et le garage (une travée par annexe).
@@ -171,7 +171,8 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   const top = base - gf - (b - 1) * fh;
   const vy = Math.max(0, Math.min(top - 48, 56));
   // isole : le bâtiment seul, sur fond transparent (repris dans le mini-jeu Maintien de l'ordre).
-  const vb = isole ? `${x0 - 8} ${top - 52} ${w + 16} ${base - top + 56}` : `0 ${vy} ${W} ${H - vy}`;
+  // grand : cadré sur le bâtiment avec un bandeau de ciel au-dessus (héros de l'HP, où passent le chef et le nom).
+  const vb = isole ? `${x0 - 8} ${top - 52} ${w + 16} ${base - top + 56}` : grand ? `0 ${Math.max(0, top - 84)} ${W} ${H - Math.max(0, top - 84)}` : `0 ${vy} ${W} ${H - vy}`;
   let s = `<svg class="scene-hp" viewBox="${vb}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Hôtel de police niveau ${b} sur ${BATIMENT_MAX}, garage niveau ${g} sur ${BATIMENT_MAX}">
   <defs><linearGradient id="hp-ciel-${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${P.ciel[0]}"/><stop offset="1" stop-color="${P.ciel[1]}"/></linearGradient>
   <radialGradient id="hp-bleu-${uid}"><stop offset="0" stop-color="#63B0FF" stop-opacity=".55"/><stop offset="1" stop-color="#63B0FF" stop-opacity="0"/></radialGradient>

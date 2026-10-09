@@ -10,7 +10,7 @@ import { installerEuros } from './ui/euros.js';
 import { resolvePending, completerDepuisGazette, etatResolution } from './data/resolver.js';
 import { S, toast, myZone, esc, cielDuMoment, tabbar, pseudoParDefaut, slotsJour, questDuSlot } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
-import { renderHP, renderProfil } from './ui/hp.js';
+import { renderHP, renderProfil, mesTuiles, MAX_TUILES } from './ui/hp.js';
 import { renderBureau, promotionAuBesoin, brancherPanneauChef } from './ui/chef.js';
 import { ouvrirPanneau as ouvrirPanneauL } from './ui/logistique.js';
 brancherPanneauChef(ouvrirPanneauL);
@@ -662,6 +662,27 @@ async function onClick(e) {
       case 'pick-color-profil': S.profilColor = el.dataset.color; rerender(); break;
       case 'rename': S.editingName = true; rerender(); setTimeout(() => document.getElementById('nom-zone')?.focus(), 0); break;
       case 'toggle-rapport': S.showRapport = !S.showRapport; S.rapportIdx = 0; rerender(); break;
+      // HP : raccourcis épinglés (une carte se déplie sous les tuiles) et leur choix.
+      case 'hp-tuile': { const k = el.dataset.k; S.hpTuile = S.hpTuile === k ? null : k; if (S.hpTuile) S.ouverts = { ...(S.ouverts || {}), [k]: true }; rerender(); break; }
+      case 'hp-tuiles-edit': S.hpEdit = !S.hpEdit; rerender(); break;
+      case 'hp-tuile-choix': {
+        const k = el.dataset.k, l = mesTuiles().slice();
+        const i = l.indexOf(k);
+        if (i >= 0) { if (l.length <= 1) { toast('Garde au moins un raccourci.'); break; } l.splice(i, 1); }
+        else { if (l.length >= MAX_TUILES) { toast(`${MAX_TUILES} raccourcis au plus : enlève-en un d’abord.`); break; } l.push(k); }
+        S.player = { ...(S.player || {}), hpTuiles: l };
+        rerender();
+        try { await b.savePlayer(S.user.uid, S.player); } catch (err) { console.warn(err); }
+        break;
+      }
+      case 'hp-challenge': S.questMode = 'train'; S.trainVue = 'minijeux'; S.questPick = null; location.hash = '#quete'; break;
+      case 'hp-ciel': {
+        const v = ['jour', 'crepuscule', 'nuit'].includes(el.dataset.v) ? el.dataset.v : null;
+        S.player = { ...(S.player || {}), hpCiel: v };
+        rerender(); ouvrirDecor();
+        try { await b.savePlayer(S.user.uid, S.player); } catch (err) { console.warn(err); }
+        break;
+      }
       case 'rapport-nav': if (Number(el.dataset.d) > 0) chargerArchivesGazette(); S.rapportIdx = Math.max(0, (S.rapportIdx || 0) + Number(el.dataset.d)); rerender(); break;
       case 'voir-rapport': {
         // Depuis « Résultat de la nuit » : ouvre le rapport et descend jusqu'à lui.
