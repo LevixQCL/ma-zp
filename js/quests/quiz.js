@@ -9,7 +9,7 @@ export const QUIZ = { questions: 5, secondes: 15, seuil: 3 };
 export const QUIZ_THEMES = {
   monde: { nom: 'Monde', sous: 'histoire, géo, arts', ico: '🌍' },
   sciences: { nom: 'Sciences', sous: 'nature, corps, espace', ico: '🔬' },
-  belgique: { nom: 'Belgique', sous: 'pays, police, Mons', ico: '🇧🇪' },
+  belgique: { nom: 'Belgique', sous: 'pays, police, culture', ico: '🇧🇪' },
 };
 
 export const QUIZ_BANQUE = {
@@ -132,7 +132,7 @@ export const QUIZ_BANQUE = {
     ['Quelle ville belge est surnommée « la Cité ardente » ?', 'Liège', 'Charleroi', 'Namur', 'Verviers'],
     ['Depuis quelle année la Constitution dit-elle que « la Belgique est un État fédéral » ?', '1993', '1970', '1980', '2001'],
     ['Quelle loi a organisé la police intégrée, structurée à deux niveaux ?', 'Loi du 7 décembre 1998', 'Loi du 5 août 1992', 'Loi du 26 avril 2002', 'Loi du 15 mai 2007'],
-    ['À la Ducasse de Mons, comment s’appelle le combat de saint Georges contre le dragon ?', 'Le Lumeçon', 'Le Doudou', 'La Procession', 'Le Car d’Or'],
+    ['Quel inventeur belge a mis au point la dynamo industrielle ?', 'Zénobe Gramme', 'Ernest Solvay', 'Adolphe Sax', 'Lieven Gevaert'],
     ['Combien de provinces compte la Belgique ?', '10', '9', '11', '12'],
     ['Qui fut le premier roi des Belges ?', 'Léopold Ier', 'Albert Ier', 'Léopold II', 'Guillaume Ier'],
     ['En quelle année la Belgique a-t-elle proclamé son indépendance ?', '1830', '1815', '1831', '1848'],
@@ -141,7 +141,7 @@ export const QUIZ_BANQUE = {
     ['Quel fleuve traverse Liège ?', 'La Meuse', 'L’Escaut', 'La Sambre', 'La Senne'],
     ['Quel roi a succédé à Baudouin ?', 'Albert II', 'Philippe', 'Léopold III', 'Albert Ier'],
     ['En quelle année le roi Philippe a-t-il prêté serment ?', '2013', '2011', '2015', '2009'],
-    ['En quelle année Mons a-t-elle été capitale européenne de la culture ?', '2015', '2012', '2018', '2010'],
+    ['Quelle ville abrite le plus grand port de Belgique ?', 'Anvers', 'Zeebruges', 'Gand', 'Ostende'],
     ['Qui a créé les Schtroumpfs ?', 'Peyo', 'Franquin', 'Morris', 'Hergé'],
     ['Qui a créé Lucky Luke ?', 'Morris', 'René Goscinny', 'Peyo', 'Albert Uderzo'],
     ['Qui a créé Gaston Lagaffe ?', 'André Franquin', 'Peyo', 'Jean Roba', 'Willy Vandersteen'],
@@ -159,7 +159,7 @@ export const QUIZ_BANQUE = {
     ['Combien de Régions compte la Belgique ?', '3', '2', '4', '5'],
     ['Quel fleuve traverse Anvers ?', 'L’Escaut', 'La Meuse', 'La Lys', 'La Dyle'],
     ['Quel écrivain liégeois a créé le commissaire Maigret ?', 'Georges Simenon', 'Jean Ray', 'Stanislas-André Steeman', 'Thomas Owen'],
-    ['De quel style est le beffroi de Mons ?', 'Baroque', 'Gothique', 'Roman', 'Renaissance'],
+    ['Quel écrivain belge, auteur de « L’Oiseau bleu », a reçu le prix Nobel de littérature ?', 'Maurice Maeterlinck', 'Émile Verhaeren', 'Georges Simenon', 'Michel de Ghelderode'],
     ['Qui est l’héritière du trône de Belgique ?', 'La princesse Élisabeth', 'La princesse Éléonore', 'La reine Mathilde', 'La princesse Astrid'],
     ['Quelle ville est célèbre pour son carnaval des Gilles ?', 'Binche', 'Malmedy', 'Alost', 'Eupen'],
     ['Quel Belge a conçu le World Wide Web avec Tim Berners-Lee ?', 'Robert Cailliau', 'Paul Otlet', 'Georges Lemaître', 'Ernest Solvay'],
