@@ -24,6 +24,7 @@ export const NOTE_MAJ = {
   // Liste complète, dans le menu Nouveautés.
   sections: [
     ['Saison 2 : derniers réglages (9 octobre, après-midi)', [
+      ['Agents au changement de saison', 'au passage anticipé à la saison 2, tu gardes la moitié des agents recrutés au-delà de 20 (29 agents → 24), dans la limite de tes bureaux. Le budget, lui, repart de 60 000 €.'],
       ['Repérage', 'qui a repéré touche 15 % des saisies des descentes qui en profitent (au lieu de 35 %) et 1 point de résultats par descente réussie : repérer sans risque ne rapporte plus davantage que descendre.'],
       ['Réunion chez un voisin', 'le bonus (+3 PS d’entraide, +1 de réputation) tombe une fois par semaine avec le même chef. L’onglet Chef signale les chefs déjà vus cette semaine.'],
       ['Prise de fonctions', 'elle avance avec les jours où tu donnes tes ordres : après une absence, tu reprends là où tu en étais.'],

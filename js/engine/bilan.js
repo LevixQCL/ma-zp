@@ -23,6 +23,9 @@ export const BILAN = {
 // Bilan allégé : saison écourtée par le maître du jeu (passage anticipé à la saison suivante). Peu de pertes, au plus
 // un niveau par élément, pour que personne ne se sente puni d'une décision qu'il n'a pas prise.
 export const BILAN_LEGER = { part: 0.1, surplus: 0.2, plafondCas: 0.15, maxParElement: 1 };
+// Effectifs au passage anticipé : une part des agents recrutés au-delà du départ reste (dans la limite du bâtiment).
+// Calibrage : test/agents-bascule-sim.mjs.
+export const AGENTS_BASCULE = { part: 0.5 };
 
 const round1 = (v) => Math.round(v * 10) / 10;
 

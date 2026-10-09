@@ -6,7 +6,7 @@ import { RELEVE, lireOrdresReleve, releveResoudre, releveNuit } from './releve.j
 import { lireOrdresCrise, crisePre, criseZone, crisePost } from './crise.js';
 import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
-import { BILAN, moyennesDistrict, calculerBilan, appliquerBilan, lireOrdresBilan, resoudreBilan } from './bilan.js';
+import { BILAN, AGENTS_BASCULE, moyennesDistrict, calculerBilan, appliquerBilan, lireOrdresBilan, resoudreBilan } from './bilan.js';
 import {
   APP_VERSION, NIVEAU_MAX, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
   MIN_TOURS_CLASSEMENT, BUDGET_IPZ, HORS_REVENU, horsRevenu, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue , PREPA } from './constants.js';
@@ -21,7 +21,7 @@ import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet, encadrement } from './equipe.js';
 import {
-  clone, clamp, round1, newZone, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
+  clone, clamp, round1, newZone, capaciteAgents, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
   forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, pointsIpz, moyenneIpz, moralMult, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles,
 } from './zone.js';
 import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
@@ -1563,6 +1563,10 @@ function finDeSaison(state, classement, opts = {}) {
     const bilan = calculerBilan(z, moy, `${state.seed}:bilan:${oldSeason}:${uid}`, !!opts.leger);
     const nz = newZone({ uid, code: z.code, nom: z.nom, couleur: z.couleur }, 1, { ps: z.ps, badges: z.badges, titres: z.titres, faillites: z.faillites, arrivee: z.arrivee || 0 });
     appliquerBilan(nz, z, bilan);
+    // Passage anticipé (saison écourtée) : la moitié des agents recrutés au-delà des effectifs de départ reste,
+    // dans la limite des bureaux après le bilan. Fin de saison normale : les effectifs repartent de zéro.
+    const garde = opts.leger ? Math.floor(AGENTS_BASCULE.part * Math.max(0, (Number(z.agents) || START.agents) - START.agents)) : 0;
+    if (garde) nz.agents = Math.min(capaciteAgents(nz), START.agents + garde);
     nz.bilan = { season: oldSeason, gagnes: bilan.gagnes, moyenne: bilan.moyenne, cas: bilan.cas, fin: BILAN.tours, clos: !bilan.cas.length };
     nz.infra = { ...(z.infra || {}) };
     nz.equipe = z.equipe || creerEquipe(uid);
@@ -1601,7 +1605,7 @@ function finDeSaison(state, classement, opts = {}) {
     // Si le garage a perdu un niveau et manque de places, les plus usés sont revendus et le produit s'ajoute au budget.
     const parc = heritageFlotte(z, nz);
     const n = bilan.cas.length;
-    nz.rapport = [`Nouvelle saison : tu conserves tes formations, ton matériel, tes bâtiments, tes annexes et ton parc (${parc.gardes} véhicule${parc.gardes > 1 ? 's' : ''}, passés au contrôle technique${parc.vendus ? ` ; ${parc.vendus} revendu${parc.vendus > 1 ? 's' : ''} faute de place au garage, +${fmt1(parc.produit)} k€` : ''}), ${n ? `moins ${n} imprévu${n > 1 ? 's' : ''} de fin de saison (voir le Bilan de saison sur l’HP : tu peux en remettre en état jusqu’au tour ${BILAN.tours})` : 'sans aucun imprévu de fin de saison'}. Budget et effectifs repartent des valeurs de départ.`];
+    nz.rapport = [`Nouvelle saison : tu conserves tes formations, ton matériel, tes bâtiments, tes annexes et ton parc (${parc.gardes} véhicule${parc.gardes > 1 ? 's' : ''}, passés au contrôle technique${parc.vendus ? ` ; ${parc.vendus} revendu${parc.vendus > 1 ? 's' : ''} faute de place au garage, +${fmt1(parc.produit)} k€` : ''}), ${n ? `moins ${n} imprévu${n > 1 ? 's' : ''} de fin de saison (voir le Bilan de saison sur l’HP : tu peux en remettre en état jusqu’au tour ${BILAN.tours})` : 'sans aucun imprévu de fin de saison'}. ${nz.agents > START.agents ? `Le budget repart de la valeur de départ ; tu gardes ${nz.agents} agents (la moitié de tes recrues au-delà de ${START.agents}).` : 'Budget et effectifs repartent des valeurs de départ.'}`];
     nz.heritage = { season: oldSeason, niveaux: { ...nz.niveaux }, batiments: { ...nz.batiments }, annexes: Object.keys(nz.infra).filter((k) => nz.infra[k]).length };
     state.zones[uid] = nz;
   }

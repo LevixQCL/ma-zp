@@ -29,9 +29,13 @@ assert.ok(r.gazette.finSaison && r.gazette.finSaison.anticipee);
 // « Ce soir » : bascule immédiate.
 let t = createGame({ seed: 'fin-soir' });
 t = resolveTurn(t, { players, orders: { A: base, B: base } }).state;
+// Agents recrutés : la moitié de ce qui dépasse 20 reste (A : 29 agents dans des bureaux qui en tiennent 30 → 24) ; B, à 20, reste à 20.
+t.zones.A.agents = 29; t.zones.A.batiments = { ...t.zones.A.batiments, bureaux: 3 };
 t.finSaison = 'soir';
 t = resolveTurn(t, { players, orders: { A: base, B: base } }).state;
 assert.equal(t.season, 2);
+assert.equal(t.zones.A.agents, Math.min(24, (await import('../js/engine/zone.js')).capaciteAgents(t.zones.A)), `A garde 24 agents, a ${t.zones.A.agents}`);
+assert.equal(t.zones.B.agents, 20);
 // Bilan allégé : nettement moins de pertes, au plus un niveau par élément.
 const forte = { niveaux: { intervention: 4, proximite: 4, recherche: 4, roulage: 3, admin: 3 }, equip: { intervention: 4, proximite: 3, recherche: 3, roulage: 2, admin: 2 }, batiments: { bureaux: 3, garage: 3 }, toursJoues: 10 };
 const faible = { niveaux: { intervention: 2, proximite: 1, recherche: 1, roulage: 1, admin: 1 }, equip: { intervention: 1, proximite: 1, recherche: 1, roulage: 1, admin: 1 }, batiments: { bureaux: 1, garage: 1 }, toursJoues: 10 };
