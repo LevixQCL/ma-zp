@@ -19,7 +19,8 @@ const zoneLabel = (z) => `ZP ${z.code} ${z.nom}`;
 
 // ——— Rubriques et illustrations ———
 // Illustrations Gemini déposées dans img/gazette/ (format 4:3). Tant qu'une image manque, une vignette dessinée la remplace.
-const IMAGES = new Set(['operation', 'coupdur', 'nondroit', 'enquete', 'tribunal']);
+// Nombre de versions par rubrique : « coupdur.webp », « coupdur-2.webp »… ; le numéro du soir choisit la version.
+const IMAGES = { operation: 1, coupdur: 2, nondroit: 1, enquete: 1, tribunal: 1 };
 const CATEGORIE = {
   operation: ['Opération réussie', 'Opération', 'Flagrant délit', 'Héros du jour', 'Champion', 'Performance', 'Solidarité', 'Redressement', 'Coopération', 'Félicitations du juge'],
   coupdur: ['Coup dur', 'Fiasco', 'Faillite', 'Zone en péril', 'Tutelle', 'Inspection générale', 'Ressources humaines', 'Parquet', 'Le milieu riposte', 'Pacte rompu'],
@@ -82,8 +83,9 @@ export function choisirUne(articles, me) {
 }
 
 // ——— Vignettes dessinées (en attendant les illustrations) ———
-function vignette(cat, id) {
-  if (IMAGES.has(cat)) return `<img class="gzs-img" src="img/gazette/${cat}.webp" alt="" loading="lazy">`;
+function vignette(cat, id, n = 0) {
+  const nb = IMAGES[cat] || 0;
+  if (nb) { const v = n % nb; return `<img class="gzs-img" src="img/gazette/${cat}${v ? `-${v + 1}` : ''}.webp" alt="" loading="lazy">`; }
   const fond = { coupdur: '#4A4030', nondroit: '#3B3428', enquete: '#C9B994', tribunal: '#D7C8A4', ennemi: '#2E2A24', meteo: '#D9B26A' }[cat] || '#CDBE98';
   const motifs = {
     operation: '<path d="M30 150V78l70-30 70 30v72Z" fill="#6B5B40"/><rect x="50" y="92" width="20" height="20" fill="#E9DEC4"/><rect x="90" y="92" width="20" height="20" fill="#E9DEC4"/><rect x="130" y="92" width="20" height="20" fill="#E9DEC4"/><rect x="200" y="118" width="94" height="32" rx="4" fill="#2C2418"/><rect x="208" y="106" width="46" height="16" rx="3" fill="#2C2418"/><rect x="224" y="100" width="14" height="6" rx="2" fill="#9A2B1F"/><path d="M231 100 194 70M231 100l38-30" stroke="#9A2B1F" stroke-width="2" opacity=".5"/>',
@@ -113,7 +115,7 @@ function carteFinSaison(g) {
   const f = g.finSaison;
   const v2 = reglesV2(S.state);
   return carte('saison', 'Fin de saison', `${tete(g, `Saison ${f.season}`)}
-    ${vignette('saison', 's')}
+    ${vignette('saison', 's', g.turn)}
     <div class="gzs-corps"><span class="sur">Fin de la saison ${f.season}</span>
       <h2>${v2 ? `La saison ${f.saisonSuivante} commence ce soir` : `Rideau sur la saison ${f.season}`}</h2>
       <ul class="gzs-palmares">${f.titres.map((t) => { const z = S.state.zones[t.uid]; return `<li><span>${esc(t.titre)}</span><b>${z ? esc(zoneLabel(z)) : ''}</b></li>`; }).join('')}</ul>
@@ -125,7 +127,7 @@ function carteUne(g, une) {
   const seul = une.faits.length === 1;
   const t = seul ? sansRegles(une.faits[0].texte) : '';
   return carte('une', 'À la une', `${tete(g, `n° ${g.turn}`)}
-    ${vignette(catDe(une.kicker), 'u')}
+    ${vignette(catDe(une.kicker), 'u', g.turn)}
     <div class="gzs-corps"><span class="sur">${esc(une.kicker)}</span><h2>${esc(une.titre)}</h2>
       ${seul ? (t ? `<p class="chapo">${esc(t)}</p>` : '') : `<ul class="gzs-liste">${une.faits.map((n) => `<li>${esc(n.titre)}</li>`).join('')}</ul>`}</div>`, { cat: catDe(une.kicker) });
 }
@@ -210,7 +212,7 @@ function carteDistrict(g, articles) {
 
 function carteTribunal(g) {
   return carte('tribunal', 'Au tribunal', `${tete(g, 'Au tribunal')}
-    ${vignette('tribunal', 'tr')}
+    ${vignette('tribunal', 'tr', g.turn)}
     <div class="gzs-corps">${g.tribunal.map((p) => `<span class="sur">Affaire « ${esc(p.titre)} »</span><h2>${esc(p.suspect)}</h2><p class="chapo">${esc(p.peine)}</p>
       <p>Interpellation par ${esc(p.arrestation.join(' et '))}.${p.temoins.length ? ` Cités à la barre : les enquêteurs de ${esc(p.temoins.join(', '))}.` : ''}</p>`).join('')}</div>`, { cat: 'tribunal' });
 }
