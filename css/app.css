@@ -2152,13 +2152,11 @@ button.hz-s:hover { color: var(--text); }
 .cv-calques.deux { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cv-carte > svg.iso { width: 100%; height: auto; -webkit-tap-highlight-color: transparent; }
 .cv-astuce { position: absolute; left: 12px; bottom: 10px; line-height: 1.3; padding: 5px 10px; border-radius: 999px; background: rgba(10, 15, 34, .82); border: 1px solid rgba(255, 255, 255, .14); color: var(--text2); font: 600 12px var(--body); pointer-events: none; }
-.cv-fiche { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--amber-line, rgba(255, 178, 63, .45)); box-shadow: var(--lift); }
+.cv-fiche { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--amber-line, rgba(255, 178, 63, .45)); box-shadow: var(--lift); }
 .cv-fiche-t { display: flex; align-items: center; gap: 12px; }
-.cv-fiche-t b { font: 700 17px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cv-pastille { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; color: #0B1124; font: 800 15px var(--display); }
+.cv-fiche-t .cv-nom { font: 700 16px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cv-pastille { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; color: #0B1124; font: 800 15px var(--display); }
 .cv-fiche-p { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.stepper.grand button { width: 46px; height: 46px; font-size: 22px; }
-.stepper.grand .n { font-size: 20px; min-width: 32px; }
 /* Mes quartiers, plus aérés : une carte par quartier dans la liste */
 .carte-v3 #mes-quartiers > .card.tight { padding: 0; background: none; border: 0; box-shadow: none; display: flex; flex-direction: column; gap: 8px; }
 .carte-v3 .qrow { padding: 10px 12px; border: 1px solid var(--hair); border-radius: 16px; background: var(--surface); }
@@ -2186,25 +2184,21 @@ button.hz-s:hover { color: var(--text); }
 .retour-carte { align-self: flex-start; color: var(--amber); font-weight: 600; text-decoration: none; padding: 6px 0; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-.cv-garage { display: flex; flex-direction: column; gap: 4px; padding-bottom: 10px; border-bottom: 1px solid var(--hair); }
-.cv-garage-v { display: flex; flex-wrap: wrap; gap: 4px; }
-.cv-g { display: inline-grid; place-items: center; width: 36px; height: 24px; border-radius: 8px; background: var(--bg-deep); }
-.cv-g.on { background: rgba(99, 176, 255, .14); }
-.cv-soir { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
-.cv-soir b { font: 800 18px var(--display); }
-.cv-meter { position: relative; height: 8px; border-radius: 4px; background: var(--bg-deep); }
-.cv-meter span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
-.cv-meter i { position: absolute; top: -4px; width: 0; height: 16px; border-left: 3px solid; transform: translateX(-1.5px); border-radius: 2px; }
-.cv-cases { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
-.cv-case { height: 56px; border-radius: 14px; border: 2px dashed var(--line); background: none; color: var(--muted); font: 700 24px var(--display); display: grid; place-items: center; cursor: pointer; }
-.cv-case.on { border-style: solid; border-color: #63B0FF; background: rgba(99, 176, 255, .14); }
-.cv-case.on svg { width: 40px; height: 23px; }
-.cv-case.trop:not(.on) { border-color: rgba(224, 98, 90, .45); }
-.cv-case.trop.on { border-color: var(--red); background: rgba(224, 98, 90, .14); }
-.cv-case[disabled] { opacity: .35; cursor: default; }
-.cv-chips { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 4px; scrollbar-width: none; }
-.cv-chips::-webkit-scrollbar { display: none; }
-.cv-chip { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px 0 5px; border-radius: 999px; border: 1px solid var(--hair); background: var(--surface); color: var(--text); font: 600 13px var(--body); cursor: pointer; }
-.cv-chip i { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 800 11px var(--display); font-style: normal; color: #0B1124; }
-.cv-chip b { color: #63B0FF; font-size: 12px; }
-.cv-chip[aria-pressed="true"] { border-color: var(--amber); background: rgba(255, 178, 63, .1); }
+.cv-meter { position: relative; height: 4px; border-radius: 2px; background: var(--bg-deep); }
+.cv-meter span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px; }
+.cv-meter i { position: absolute; top: -3px; width: 0; height: 10px; border-left: 2px solid; transform: translateX(-1px); }
+.cv-cases { display: flex; gap: 6px; }
+.cv-case { width: 44px; height: 34px; border-radius: 9px; border: 1px dashed var(--line); background: var(--bg-deep); color: #DDE3F2; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.cv-case.on { border: 1px solid rgba(99, 176, 255, .7); background: rgba(99, 176, 255, .12); }
+.cv-case.trop:not(.on) { border-color: rgba(224, 98, 90, .5); }
+.cv-case.trop.on { border-color: var(--red); background: rgba(224, 98, 90, .12); }
+.cv-case[disabled] { opacity: .3; cursor: default; }
+.cv-liste { display: flex; flex-direction: column; }
+.cv-ql { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto 64px; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px; border: 0; border-bottom: 1px solid var(--hair); background: none; color: var(--text); font: 500 14px var(--body); text-align: left; cursor: pointer; }
+.cv-ql:last-child { border-bottom: 0; }
+.cv-ql-d { width: 10px; height: 10px; border-radius: 50%; }
+.cv-ql-n { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cv-ql-p { display: inline-flex; align-items: center; gap: 3px; color: #9CC8FF; font-size: 12px; }
+.cv-ql-t { text-align: right; font-size: 12px; white-space: nowrap; }
+.cv-ql-t b { font: 700 14px var(--display); }
+.cv-ql[aria-pressed="true"] { background: rgba(255, 178, 63, .08); box-shadow: inset 3px 0 0 var(--amber); }

@@ -82,10 +82,10 @@ export function quartiersHtml(st, me) {
   </section>`;
 }
 
-/** Petite voiture de police vue de côté (garage et cases de patrouille). */
-const VOITURE = (on) => `<svg viewBox="0 0 32 18" width="30" height="17" aria-hidden="true"><rect x="2" y="6" width="28" height="8" rx="3" fill="${on ? '#E9EEF8' : '#3A4570'}"/><path d="M8 6l3-4h10l3 4z" fill="${on ? '#C9D1E6' : '#2E3860'}"/><rect x="13" y="0" width="6" height="2.4" rx="1" fill="${on ? '#63B0FF' : '#4A5585'}"/>${on ? '<rect x="2" y="9" width="28" height="2.4" fill="#1F4FA8"/>' : ''}<circle cx="9" cy="14.5" r="2.6" fill="#0B1124"/><circle cx="23" cy="14.5" r="2.6" fill="#0B1124"/></svg>`;
+/** Petite voiture de police vue de côté, sobre (cases de patrouille, liste des quartiers). */
+const VOITURE = (w = 22) => `<svg viewBox="0 0 24 12" width="${w}" height="${Math.round(w / 2)}" aria-hidden="true" class="cv-auto"><path d="M2 9V6.5L5 6l2.6-3h8.2L19 6l3 .6V9z" fill="currentColor"/><rect x="10" y="1.6" width="4" height="1.4" rx=".6" fill="#63B0FF"/><circle cx="6.5" cy="9.5" r="1.8" fill="#0B1124"/><circle cx="17.5" cy="9.5" r="1.8" fill="#0B1124"/></svg>`;
 
-/** Ce qu'il faut pour la fiche et le garage : agents de Proximité, patrouilles, prévision du soir. */
+/** Ce qu'il faut pour la fiche et la liste : agents de Proximité, patrouilles, prévision du soir. */
 function etatPatrouilles(st, me) {
   const d = S.draft, pat = (d && d.patrouilles) || {};
   const opx = effetsOperation(me, (d && d.alloc) || {}, d && d.operation, st.turn);
@@ -97,8 +97,8 @@ function etatPatrouilles(st, me) {
 }
 
 /**
- * Saison 2 : la fiche du quartier touché sur la carte. Le garage montre tous les agents de Proximité (voitures bleues =
- * envoyées, grises = au poste) ; les cases du quartier se remplissent d'un toucher (2 cases = 2 patrouilles).
+ * Saison 2 : la fiche du quartier touché sur la carte, compacte. Une rangée de cases : toucher la n-ième envoie
+ * n patrouilles (une voiture par patrouille sur la carte) ; toucher la dernière remplie en retire une.
  */
 export function ficheQuartierHtml(st, me, k) {
   const mesT = tensionsDe(st, me);
@@ -113,34 +113,34 @@ export function ficheQuartierHtml(st, me, k) {
   const nbCases = Math.min(QUARTIERS.seuilDeplacement, Math.max(prox, a, 1));
   const cases = Array.from({ length: nbCases }, (_, j) => {
     const on = j < a, cible = on && j === a - 1 ? j : j + 1, trop = j + 1 >= QUARTIERS.seuilDeplacement;
-    const dispo = cible <= a || cible - a <= libres + cibles - a; // on peut toujours reprendre un agent ailleurs
-    return `<button type="button" class="cv-case ${on ? 'on' : ''} ${trop ? 'trop' : ''}" data-action="patrouille-n" data-c="${k}" data-n="${cible}" ${prox && dispo ? '' : 'disabled'}
-      aria-label="${cible} patrouille${cible > 1 ? 's' : ''} à ${nom}" aria-pressed="${on}">${on ? VOITURE(true) : '<span aria-hidden="true">+</span>'}</button>`;
+    return `<button type="button" class="cv-case ${on ? 'on' : ''} ${trop ? 'trop' : ''}" data-action="patrouille-n" data-c="${k}" data-n="${cible}" ${prox && cible <= prox ? '' : 'disabled'}
+      aria-label="${cible} patrouille${cible > 1 ? 's' : ''} à ${nom}" aria-pressed="${on}">${on ? VOITURE(22) : ''}</button>`;
   }).join('');
-  const garage = prox ? Array.from({ length: prox }, (_, j) => `<span class="cv-g ${j < cibles ? 'on' : ''}">${VOITURE(j < cibles)}</span>`).join('') : '';
-  return `<section class="cv-fiche" id="mes-quartiers" aria-label="Patrouilles du soir" aria-live="polite">
-    <div class="cv-garage"><span class="cv-garage-v" aria-hidden="true">${garage}</span>
-      <span class="tiny muted">${prox ? `${cibles} envoyée${cibles > 1 ? 's' : ''} · ${libres} au poste${libres ? ' (patrouillent partout)' : ''}` : '<a href="#ordres">Aucun agent en Proximité : règle-le dans tes ordres</a>'}${pris ? ` · ${pris} pris par l’opération` : ''}</span></div>
+  return `<section class="cv-fiche" id="mes-quartiers" aria-label="Quartier choisi" aria-live="polite">
     <div class="cv-fiche-t"><span class="cv-pastille" style="background:${n.couleur}">${Math.round(t)}</span>
-      <span class="col grow" style="gap:0;min-width:0"><b>${nom}${hp ? ' · ton HP' : ''}${pc ? ' 🔥' : ''}</b><span class="tiny muted">${n.nom}</span></span>
-      <span class="cv-soir" aria-label="Ce soir : ${Math.round(ap)}"><span class="tiny muted">ce soir</span><b class="${dlt <= -4 ? 'good' : dlt >= 4 ? 'bad' : 'muted'}">${dlt <= -4 ? '↓' : dlt >= 4 ? '↑' : '→'} ${Math.round(ap)}</b></span></div>
+      <span class="col grow" style="gap:0;min-width:0"><b class="cv-nom">${nom}${hp ? ' <span class="tiny muted">HP</span>' : ''}${pc ? ' 🔥' : ''}</b>
+        <span class="tiny muted">${n.nom} · ce soir <b class="${dlt <= -4 ? 'good' : dlt >= 4 ? 'bad' : ''}">${dlt <= -4 ? '↓' : dlt >= 4 ? '↑' : '→'} ${Math.round(ap)}</b></span></span></div>
     <div class="cv-meter" aria-hidden="true"><span style="width:${Math.round(t)}%;background:${n.couleur}"></span><i style="left:${Math.round(ap)}%;border-color:${nAp.couleur}"></i></div>
-    ${pc ? `<p class="small" style="margin:0;color:${a >= QUARTIERS.agentsDesamorcer ? 'var(--green, #3DD39A)' : 'var(--red-soft)'}"><b>Point chaud :</b> ${esc(pc.titre)}. ${a >= QUARTIERS.agentsDesamorcer ? 'Assez de monde pour le désamorcer à 20:00.' : `Envoie ${QUARTIERS.agentsDesamorcer} patrouilles pour le désamorcer.`}</p>` : ''}
-    <div class="cv-cases" role="group" aria-label="Patrouilles à ${nom}">${cases}</div>
-    ${a >= QUARTIERS.seuilDeplacement ? '<p class="tiny bad" style="margin:0">Trop de monde ici : la délinquance ira chez les voisins.</p>' : ''}
+    ${pc ? `<p class="tiny" style="margin:0;color:${a >= QUARTIERS.agentsDesamorcer ? 'var(--green, #3DD39A)' : 'var(--red-soft)'}"><b>Point chaud</b> · ${esc(pc.titre)} · ${a >= QUARTIERS.agentsDesamorcer ? 'désamorcé à 20:00' : `${QUARTIERS.agentsDesamorcer} patrouilles pour le désamorcer`}</p>` : ''}
+    <div class="cv-fiche-p"><span class="small" style="font-weight:600">Patrouilles</span><span class="cv-cases" role="group" aria-label="Patrouilles à ${nom}">${cases}</span></div>
+    <span class="tiny muted">${prox ? `Proximité : ${cibles}/${prox} envoyé${cibles > 1 ? 's' : ''}${libres ? ` · ${libres} patrouille${libres > 1 ? 'nt' : ''} partout` : ''}` : '<a href="#ordres">Aucun agent en Proximité : règle-le dans tes ordres</a>'}${pris ? ` · ${pris} pris par l’opération` : ''}${a >= QUARTIERS.seuilDeplacement ? ' · <span class="bad">trop de monde ici, la délinquance ira chez les voisins</span>' : ''}</span>
   </section>`;
 }
 
-/** Saison 2 : mes quartiers en pastilles à faire défiler (aller vite sans viser sur la carte). */
+/** Saison 2 : mes quartiers en liste compacte (tension, ce soir, patrouilles), un toucher pour les choisir. */
 export function chipsQuartiersHtml(st, me, sel) {
   const mesT = tensionsDe(st, me);
-  if (!Object.keys(mesT).length) return '';
-  const c = carteQuartiers(st), pat = (S.draft && S.draft.patrouilles) || {};
+  if (!Object.keys(mesT).length || !S.draft) return '';
+  const { pat, prev } = etatPatrouilles(st, me);
+  const c = carteQuartiers(st);
   const pc = me.pointChaud ? String(me.pointChaud.cell) : null;
-  return `<div class="cv-chips" role="group" aria-label="Mes quartiers">${Object.keys(mesT).sort((x, y) => mesT[y] - mesT[x]).map((k) => {
-    const n = niveauTension(mesT[k]);
-    return `<button type="button" class="cv-chip" data-action="quartier" data-c="${k}" aria-pressed="${String(sel) === k}"><i style="background:${n.couleur}">${Math.round(mesT[k])}</i>${esc(c.nomDe(Number(k)))}${pc === k ? ' 🔥' : ''}${pat[k] ? `<b>🚓${pat[k]}</b>` : ''}</button>`;
-  }).join('')}</div>`;
+  return `<section class="cv-liste" aria-label="Mes quartiers"><h2 class="section" style="margin:0 0 4px">Mes quartiers</h2>${Object.keys(mesT).sort((x, y) => mesT[y] - mesT[x]).map((k) => {
+    const t = mesT[k], n = niveauTension(t), dlt = prev[k] - t;
+    return `<button type="button" class="cv-ql" data-action="quartier" data-c="${k}" aria-pressed="${String(sel) === k}">
+      <span class="cv-ql-d" style="background:${n.couleur}"></span><span class="cv-ql-n">${esc(c.nomDe(Number(k)))}${pc === k ? ' 🔥' : ''}</span>
+      <span class="cv-ql-p">${pat[k] ? `${VOITURE(16)}<b>${pat[k]}</b>` : ''}</span>
+      <span class="cv-ql-t"><b>${Math.round(t)}</b> <span class="${dlt <= -4 ? 'good' : dlt >= 4 ? 'bad' : 'muted'}">${dlt <= -4 ? '↓' : dlt >= 4 ? '↑' : '→'}${Math.round(prev[k])}</span></span></button>`;
+  }).join('')}</section>`;
 }
 
 /** Les commissariats de toutes les zones, à faire défiler (le sien d'abord). */
