@@ -221,6 +221,65 @@ export const ETAPES = [
       </ol>
       <p class="tuto-note">Le détail est dans le <strong>Guide du joueur</strong> (roue dentée en haut de l’HP), d’où tu peux aussi relancer cette visite. Bon service !</p>`,
   },
+  // ───── Mini-visite « ce qui change en saison 2 », pour les anciens joueurs (étapes mini: true) ─────
+  {
+    id: 'm-bienvenue', route: 'hp', v2: true, mini: true,
+    titre: 'Saison 2 : ce qui a changé',
+    texte: `<p>Une minute, écran par écran, seulement les nouveautés. Les <strong>sept onglets</strong> sont maintenant : HP · Ordres · <strong>Chef</strong> · Enquête · Énigmes · Carte · Radio.</p>
+      <p>Le <strong>Terrain</strong> a disparu : il est rangé dans la <strong>Carte</strong>.</p>`,
+  },
+  {
+    id: 'm-hp', route: 'hp', v2: true, mini: true, cible: 'section[aria-label="Prochain tour"]',
+    titre: 'L’HP allégé',
+    texte: `<p>Le <strong>gros bouton</strong> t’emmène à la prochaine chose à faire ; les petites icônes au-dessus se cochent au fil de la journée.</p>
+      <p>Plus bas, « <strong>Aujourd’hui</strong> » regroupe incidents, dilemmes et alertes, une ligne chacun.</p>`,
+  },
+  {
+    id: 'm-classement', route: 'hp', v2: true, mini: true, cible: '.hp-classement',
+    titre: 'Classements et raccourcis',
+    texte: `<p>Le bouton <strong>Classements</strong> affiche ton rang (on est classé après 5 soirs de la saison).</p>
+      <p>Tes <strong>raccourcis</strong> se choisissent avec « Modifier » : enchères des saisies, équipe, rapport, Gazette, trophées, Challenge.</p>`,
+  },
+  {
+    id: 'm-ordres', route: 'ordres', v2: true, mini: true, onglet: 'Tes ordres ont changé de tête.', cible: ['section[aria-label="Doctrine de la saison"]', 'section[aria-label="Affectation des agents"]'],
+    titre: 'Ordres : doctrine et cases',
+    texte: `<p>Les <strong>3 premiers jours</strong>, choisis la <strong>doctrine</strong> de ta zone pour toute la saison : une vraie force, un vrai prix.</p>
+      <p>Chaque service a maintenant <strong>une case par agent</strong> dont il a besoin : une case vide en pointillé, c’est un manque. En bas, « Ce soir aussi » regroupe chef, grande décision, pistes et réserve.</p>`,
+  },
+  {
+    id: 'm-chef', route: 'chef', v2: true, mini: true, onglet: 'Nouvel onglet : ton chef de corps, c’est toi.', cible: ['section[aria-label="Ton chef aujourd’hui"]', '.chef-creation'],
+    titre: 'Ton chef de corps',
+    texte: `<p>Crée-le une fois (portrait et parcours). Chaque jour, choisis <strong>où il passe sa journée</strong> et réponds aux lettres du <strong>parapheur</strong> ; de nouvelles prérogatives se débloquent jour après jour.</p>
+      <p>Ses compétences montent avec ta gestion, tes énigmes et tes mini-jeux, et <strong>restent d’une saison à l’autre</strong>.</p>`,
+  },
+  {
+    id: 'm-enquete', route: 'enquete', v2: true, mini: true, onglet: 'L’enquête n’est plus un grand liège.', cible: ['.e2-hero', '.e2-cta'], union: true,
+    avant: () => { S.tabTuto = null; marquerTutoVu(); },
+    titre: 'L’enquête en dossier',
+    texte: `<p>Un <strong>gros bouton</strong> dit quoi faire ensuite. Les nouvelles pièces arrivent <strong>sous enveloppe</strong> : ouvre-les une à une. Les suspects sont sur un <strong>mur de polaroïds</strong> ; tes démarches du soir sont dans « <strong>Ce soir</strong> ».</p>
+      <p>Le grand liège existe toujours : menu <strong>⋯</strong>.</p>`,
+  },
+  {
+    id: 'm-carte', route: 'carte', v2: true, mini: true, onglet: 'La carte remplace aussi l’ancien Terrain.', cible: '#mes-quartiers', avant: () => { S.carteCalque = 'mazone'; },
+    titre: 'Carte : non-droit et ma zone',
+    texte: `<p><strong>Non-droit</strong> : place tes agents dans un <strong>rôle</strong>, repérage (révèle la faille), descente (fait tomber l’emprise) ou bouclage (plus de saisies). À plusieurs, c’est bien plus fort.</p>
+      <p><strong>Ma zone</strong> : tes quartiers et tes patrouilles, l’ancien Terrain. Renforts, pactes et Conseil sont en bas de la carte.</p>`,
+  },
+  {
+    id: 'm-radio', route: 'radio', v2: true, mini: true, onglet: 'La radio a deux fréquences.', cible: '[aria-label="Fréquences"]',
+    titre: 'Radio : F1 et F2',
+    texte: `<p><strong>F1 · Discussion</strong> : le canal commun. <strong>F2 · Renforts &amp; ops</strong> : le tableau des appels de ce soir, avec un bouton pour répondre présent. <strong>Privé</strong> pour les tête-à-tête.</p>`,
+  },
+  {
+    id: 'm-fin', route: 'hp', v2: true, mini: true,
+    titre: 'Et aussi…',
+    texte: `<ul class="tuto-liste">
+        <li>La <strong>Gazette</strong> se lit en cartes : touche à droite pour avancer.</li>
+        <li><strong>Enchères des saisies</strong> : 3 lots tous les 2 jours, relances visibles puis une offre finale secrète.</li>
+        <li><strong>Bilan de saison</strong> sur l’HP : quelques imprévus à remettre en état les 3 premiers jours.</li>
+      </ul>
+      <p class="tuto-note">La visite complète et le Guide du joueur sont dans la roue dentée en haut de l’HP. Bon service !</p>`,
+  },
 ];
 
 // ───────────────────────── État et cycle de vie ─────────────────────────
@@ -245,7 +304,9 @@ function marquer(v) {
   }
 }
 
-export function lancerTuto(i = 0) {
+export function lancerTuto(i = 0, mini = false) {
+  S.tutoMini = !!mini;
+  ecrire('mazp-tuto-mini', mini ? '1' : null);
   document.querySelector('.aide-wrap')?.remove();
   S.tuto = Math.max(0, Math.min(ETAPES.length - 1, sauterAbsentes(i, 1)));
   ecrire(CLE_ETAPE, String(S.tuto));
@@ -262,7 +323,7 @@ function quitter(v = 'fait') {
 
 /** Étape suivante (ou précédente) qui existe dans cette partie : le chef de corps n'est pas montré en règles v1. */
 function sauterAbsentes(i, sens) {
-  while (i >= 0 && i < ETAPES.length && ((ETAPES[i].v2 && !reglesV2(S.state)) || (ETAPES[i].v1 && reglesV2(S.state)))) i += sens;
+  while (i >= 0 && i < ETAPES.length && !presente(ETAPES[i])) i += sens;
   return i;
 }
 
@@ -295,7 +356,7 @@ function monter() {
 const valeur = (v) => (typeof v === 'function' ? v() : v);
 
 /** Étapes présentes dans cette partie (règles v1 ou v2) : rang affiché et total. */
-const presente = (x) => !((x.v2 && !reglesV2(S.state)) || (x.v1 && reglesV2(S.state)));
+const presente = (x) => !((x.v2 && !reglesV2(S.state)) || (x.v1 && reglesV2(S.state)) || (!!x.mini !== !!S.tutoMini));
 function etapeHtml(e) {
   const vis = ETAPES.filter(presente), n = vis.length;
   const i = Math.max(0, vis.indexOf(e));
@@ -424,11 +485,12 @@ function inviter() {
   wrap.innerHTML = `<div class="aide card tuto-invite" role="dialog" aria-modal="true" aria-labelledby="tuto-inv-titre">
     <span class="kicker">${s2 ? 'Saison 2' : ancien ? 'Nouveau' : 'Prise de fonction'}</span>
     <h2 id="tuto-inv-titre" class="aide-titre">${s2 ? 'La visite guidée de la saison 2' : ancien ? 'Une visite guidée du jeu' : `Bienvenue à la ${zoneNom()} !`}</h2>
-    <p class="aide-intro">${s2 ? 'Doctrine, chef de corps, nouvelle carte, enquête sous enveloppe, radio à deux fréquences : tout ce qui a changé, écran par écran, en trois minutes.' : ancien ? 'Les sept onglets et ce qu’il y a à faire chaque jour, en trois minutes. Utile pour revoir les bases… ou pour la montrer à un collègue.' : 'Avant de prendre ton service : une visite guidée de trois minutes pour découvrir les onglets et ce qu’il faut faire chaque jour.'}</p>
+    <p class="aide-intro">${s2 ? 'Doctrine, chef de corps, nouvelle carte, enquête sous enveloppe, radio à deux fréquences : beaucoup de choses ont changé. La mini-visite ne montre que les nouveautés, en une minute.' : ancien ? 'Les sept onglets et ce qu’il y a à faire chaque jour, en trois minutes. Utile pour revoir les bases… ou pour la montrer à un collègue.' : 'Avant de prendre ton service : une visite guidée de trois minutes pour découvrir les onglets et ce qu’il faut faire chaque jour.'}</p>
     <div class="col" style="gap:8px">
-      <button type="button" class="btn primary block" data-inv="go">${ancien ? 'Faire la visite' : 'Commencer la visite'}</button>
-      ${ancien ? '' : '<button type="button" class="btn ghost block" data-inv="plus-tard">Plus tard</button>'}
-      <button type="button" class="btn ghost block" data-inv="non">${ancien ? 'Non merci, je connais le jeu' : 'Je connais déjà le jeu'}</button>
+      ${s2 ? '<button type="button" class="btn primary block" data-inv="mini">Ce qui a changé (1 minute)</button><button type="button" class="btn ghost block" data-inv="go">La visite complète (3 minutes)</button>'
+        : `<button type="button" class="btn primary block" data-inv="go">${ancien ? 'Faire la visite' : 'Commencer la visite'}</button>`}
+      ${ancien || s2 ? '' : '<button type="button" class="btn ghost block" data-inv="plus-tard">Plus tard</button>'}
+      <button type="button" class="btn ghost block" data-inv="non">${s2 ? 'Non merci' : ancien ? 'Non merci, je connais le jeu' : 'Je connais déjà le jeu'}</button>
     </div>
     <p class="tiny muted" style="margin:0">Tu pourras toujours la lancer depuis le Guide du joueur.</p>
   </div>`;
@@ -438,11 +500,12 @@ function inviter() {
     ev.stopPropagation();
     wrap.remove();
     if (b.dataset.inv === 'go') lancerTuto(0);
+    else if (b.dataset.inv === 'mini') lancerTuto(0, true);
     else if (b.dataset.inv === 'non') marquer('zappe');
     else { try { sessionStorage.setItem('mazp-tuto-plus-tard', '1'); } catch (e) { /* pas de stockage */ } }
   });
   document.body.appendChild(wrap);
-  wrap.querySelector('[data-inv="go"]').focus();
+  (wrap.querySelector('[data-inv="mini"]') || wrap.querySelector('[data-inv="go"]')).focus();
 }
 
 /**
@@ -454,7 +517,7 @@ export function tutoAuBesoin() {
   if (S.tutoPropose || tutoFait()) return false;
   const reprise = lire(CLE_ETAPE);
   S.tutoPropose = true;
-  if (reprise != null) { lancerTuto(Number(reprise) || 0); return true; }
+  if (reprise != null) { lancerTuto(Number(reprise) || 0, lire('mazp-tuto-mini') === '1'); return true; }
   try { if (sessionStorage.getItem('mazp-tuto-plus-tard')) return false; } catch (e) { /* pas de stockage */ }
   if (document.querySelector('.aide-wrap')) return false;
   setTimeout(inviter, 400);

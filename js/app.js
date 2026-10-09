@@ -439,6 +439,7 @@ async function onClick(e) {
         ouvrirMiniJeu(el.dataset.j, { mode: 'train', onEntrainement: noterEntrainement, onFin: () => rerender() }); break;
       }
       case 'tuto': location.hash = '#hp'; setTimeout(() => lancerTuto(0), 50); break;
+      case 'tuto-mini': location.hash = '#hp'; setTimeout(() => lancerTuto(0, true), 50); break;
       case 'post-n': { const a = S.state.affaires.find((x) => x.id === el.dataset.id); const cur = (S.postuler && S.postuler[a.id]) || Math.min(3, a.agentsMax || 3); S.postuler = { ...(S.postuler || {}), [a.id]: Math.max(1, Math.min(a.agentsMax || 10, cur + Number(el.dataset.d))) }; rerender(); break; }
       case 'postuler': {
         const a = S.state.affaires.find((x) => x.id === el.dataset.id), n = Number(el.dataset.n), st = S.state;
