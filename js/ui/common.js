@@ -124,7 +124,7 @@ export function tabbar(active, { questBadge = false, radioBadge = false } = {}) 
   const st = S.state, me = S.user && st && st.zones ? st.zones[S.user.uid] : null;
   // Saison 2 : le Terrain devient un calque de la Carte (6 onglets).
   const v2 = !!st && (Number(st.regles) || 1) >= 2;
-  const tabs = v2 ? [['hp', 'HP'], ['ordres', 'Ordres'], ['carte', 'Carte'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['chef', 'Chef'], ['radio', 'Radio']]
+  const tabs = v2 ? [['hp', 'HP'], ['ordres', 'Ordres'], ['chef', 'Chef'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['carte', 'Carte'], ['radio', 'Radio']]
     : [['hp', 'HP'], ['ordres', 'Ordres'], ['terrain', 'Terrain'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['carte', 'Carte'], ['radio', 'Radio']];
   if (v2 && active === 'terrain') active = 'carte';
   const nbJour = slotsCompte().length;

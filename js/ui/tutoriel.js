@@ -97,6 +97,12 @@ export const ETAPES = [
     geste: { consigne: 'Touche <strong>Valider</strong>.', fait: () => !!S.savedOrders && !S.ordersDirty },
   },
   {
+    id: 'chef', route: 'chef', v2: true, onglet: 'Ton chef de corps : ce qu’il fait aujourd’hui, sa semaine, sa carrière.', cible: ['section[aria-label="Ton chef aujourd’hui"]', '.chef-creation'],
+    titre: 'Ton chef de corps',
+    texte: `<p>C’est toi. Chaque jour, choisis <strong>où il passe sa journée</strong>, s’il monte <strong>en première ligne</strong> et quel <strong>service</strong> demander au réseau : ça part avec tes ordres de 20:00.</p>
+      <p>Ses 5 compétences montent selon ta façon de gérer ta zone <strong>et</strong> quand tu réussis tes énigmes et tes mini-jeux. Elles débloquent des <strong>talents</strong>. Plus bas : sa semaine (objectifs, duel) et sa fiche.</p>`,
+  },
+  {
     id: 'terrain', route: 'terrain', v1: true, /* saison 2 : le Terrain est un calque de la Carte */ onglet: 'Ce qui se joue avec les autres zones.', cible: ['section[aria-label="Zone de non-droit"]', 'section[aria-label="Chez les voisins"]'], union: true,
     titre: 'Terrain : à plusieurs',
     texte: `<p><strong>Zone de non-droit</strong> : le centre de la ville, à reprendre avec les autres zones. Plus on est nombreux sur un secteur le même soir, plus il tombe vite, et il rapporte chaque nuit où on le tient. Un assaut trop léger peut échouer et coûter des blessés.</p>
@@ -129,12 +135,6 @@ export const ETAPES = [
     titre: 'Trois énigmes par jour',
     texte: `<p>Trois casse-tête à manipuler chaque jour, <strong>une seule réponse</strong> chacun. Dès deux bonnes réponses, tu choisis un bonus (un indice, du moral, du budget…). Le <strong>dossier noir</strong> est facultatif et vraiment difficile.</p>
       <p>Pas le temps ou pas l’envie ? Un <strong>quiz express</strong> ou un <strong>agent</strong> qui planche à ta place peuvent aussi décrocher le bonus. L’<strong>Entraînement</strong> permet de s’exercer aux énigmes sans enjeu, et le <strong>Challenge</strong> aux mini-jeux d’incident.</p>`,
-  },
-  {
-    id: 'chef', route: 'chef', v2: true, onglet: 'Ton chef de corps : ce qu’il fait aujourd’hui, sa semaine, sa carrière.', cible: ['section[aria-label="Ton chef aujourd’hui"]', '.chef-creation'],
-    titre: 'Ton chef de corps',
-    texte: `<p>C’est toi. Chaque jour, choisis <strong>où il passe sa journée</strong>, s’il monte <strong>en première ligne</strong> et quel <strong>service</strong> demander au réseau : ça part avec tes ordres de 20:00.</p>
-      <p>Ses 5 compétences montent selon ta façon de gérer ta zone <strong>et</strong> quand tu réussis tes énigmes et tes mini-jeux. Elles débloquent des <strong>talents</strong>. Plus bas : sa semaine (objectifs, duel) et sa fiche.</p>`,
   },
   {
     id: 'carte', route: 'carte', onglet: 'Tes quartiers et tout le district.', cible: '#mes-quartiers', avant: () => { S.carteCalque = 'mazone'; },

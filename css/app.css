@@ -142,8 +142,8 @@ a.card { text-decoration: none; color: var(--text); }
 .iconbtn:hover { background: var(--surface2); color: var(--text); }
 .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .seg button { min-height: 54px; border-radius: var(--r-md); border: 1px solid var(--hair); background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px; }
-.seg button[aria-pressed="true"] { border-color: var(--amber-line); background: var(--amber-bg); box-shadow: inset 0 0 0 1px var(--amber-line); }
-.seg button[aria-pressed="true"] .t { color: var(--amber); }
+.seg button[aria-pressed="true"], .seg button[role="tab"][aria-selected="true"] { border-color: var(--amber-line); background: var(--amber-bg); box-shadow: inset 0 0 0 1px var(--amber-line); }
+.seg button[aria-pressed="true"] .t, .seg button[role="tab"][aria-selected="true"] .t { color: var(--amber); }
 .seg button .t { font-size: 13.5px; font-weight: 700; }
 .seg button .d { font-size: 12px; color: var(--muted); }
 .choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
@@ -541,7 +541,7 @@ table.horaire td { padding: 5px 4px; border-bottom: 1px solid var(--line); }
 .palier-barre i { display: block; height: 100%; background: var(--amber, #E6C36A); border-radius: 3px; }
 .seg button.noir { background: #1A0F10; border-color: #4A2220; }
 .seg button.noir .t { color: #F59A92; }
-.seg button.noir[aria-pressed="true"] { border: 1.5px solid #E0625A; background: #2A1414; }
+.seg button.noir[aria-pressed="true"], .seg button.noir[aria-selected="true"] { border: 1.5px solid #E0625A; background: #2A1414; }
 .mode-noir .statement, .mode-noir .card.tight { border-color: #3A2222; }
 
 /* Anti-copie des énigmes (le brouillon et la saisie restent utilisables) */
