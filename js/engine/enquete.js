@@ -278,6 +278,12 @@ export function mandatOk(aff, dossier, i) {
   const connus = new Set(faitsConnus(dossier));
   return (aff.charges[i] || []).some((f) => connus.has(f));
 }
+/**
+ * Phrase d'ambiance après une confrontation ratée (affaire écrite et variante) : oriente sans donner la solution.
+ * Gardée hors de l'objet de l'affaire, dont l'empreinte est figée (test/variantes.test.mjs).
+ */
+const ECHEC_CONFRONT = { 'rampe:a': 'Son alibi tient toujours : quelqu’un le couvre.' };
+
 /** Meurtre : la confrontation réussit-elle ? (bon suspect, trois pièces accablantes dont deux décisives) */
 export function confrontationOk(aff, i, pieces) {
   if (!aff.meurtre) return i === aff.coupable;
@@ -1318,7 +1324,7 @@ export function enquetePre(state, uids, ord, push) {
         const nomEl = (f) => (f === 'doc:journal' ? 'le journal du lendemain' : f === 'doc:pvc' ? 'le PV de premières constatations' : `« ${titrePiece(aff, f)} »`);
         const brut = (Array.isArray(ord[u].confront) ? ord[u].confront : []).filter((f) => typeof f === 'string').slice(0, 3);
         const ecartes = brut.length - pieces.length;
-        z.rapport.push(`Enquête : confronté${aff.suspects[a].f ? 'e' : ''} à tes pièces${pieces.map(nomEl).filter((x) => !/undefined/.test(x)).length ? ` (${pieces.map(nomEl).filter((x) => !/undefined/.test(x)).join(', ')})` : ''}, ${aff.suspects[a].nom} nie tout et repart libre. ${ecartes > 0 ? `${ecartes} élément${ecartes > 1 ? 's' : ''} choisi${ecartes > 1 ? 's' : ''} n’étai${ecartes > 1 ? 'ent' : 't'} plus dans ton dossier ce soir. ` : ''}${(aff.confront && aff.confront.echec) || `${aff.suspects[a].f ? 'Elle' : 'Il'} a réponse à tout : tes pièces ${aff.suspects[a].f ? 'la' : 'le'} rendent suspect${aff.suspects[a].f ? 'e' : ''}, aucune ne ${aff.suspects[a].f ? 'la' : 'le'} contredit.`} Tes pièces ne ${aff.suspects[a].f ? 'la' : 'le'} mettaient pas face à ses contradictions (−1 de réputation). Tu peux recommencer demain avec d’autres pièces.`);
+        z.rapport.push(`Enquête : confronté${aff.suspects[a].f ? 'e' : ''} à tes pièces${pieces.map(nomEl).filter((x) => !/undefined/.test(x)).length ? ` (${pieces.map(nomEl).filter((x) => !/undefined/.test(x)).join(', ')})` : ''}, ${aff.suspects[a].nom} nie tout et repart libre. ${ecartes > 0 ? `${ecartes} élément${ecartes > 1 ? 's' : ''} choisi${ecartes > 1 ? 's' : ''} n’étai${ecartes > 1 ? 'ent' : 't'} plus dans ton dossier ce soir. ` : ''}${ECHEC_CONFRONT[`${aff.cas}:${aff.variante || 'a'}`] || `${aff.suspects[a].f ? 'Elle' : 'Il'} a réponse à tout : tes pièces ${aff.suspects[a].f ? 'la' : 'le'} rendent suspect${aff.suspects[a].f ? 'e' : ''}, aucune ne ${aff.suspects[a].f ? 'la' : 'le'} contredit.`} Tes pièces ne ${aff.suspects[a].f ? 'la' : 'le'} mettaient pas face à ses contradictions (−1 de réputation). Tu peux recommencer demain avec d’autres pièces.`);
         continue;
       }
       d.accuse = a; d.accuseJ = e.jour;
