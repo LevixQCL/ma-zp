@@ -299,6 +299,8 @@ function nouvelleMission() {
 // La cible ne dépend pas du combi : un combi lent ou cabossé a moins de marge, un combi préparé en a plus.
 const cibleDe = (N) => { const k = CLE_NIV[Object.keys(NIV).find((x) => NIV[x] === N)]; const c = Number(Q.get(`c_${k}`)); return Number.isFinite(c) && c > 20 ? Math.round(c) : Math.round((N.long / 31 + N.inter * 2.8 + 4) * N.marge); };
 const fmt = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+// Délégation : le contenu de #combiInfo est réécrit (innerHTML +=), un écouteur posé sur les boutons serait perdu.
+$('combiInfo').addEventListener('click', (e) => { const b = e.target.closest('.veh'); if (!b) return; choisirVehicule(Number(b.dataset.i)); afficherIntro(); });
 function afficherIntro() {
   $('surtitre').textContent = INC ? 'Urgence du jour · Intervention' : MODE === 'train' ? 'Challenge · Intervention' : 'Ma ZP · Intervention';
   document.querySelector('.niveaux').hidden = INC;
@@ -311,7 +313,6 @@ function afficherIntro() {
       ? `<span>🚓</span><span><b>Quel véhicule part ?</b></span><span></span><div class="vehs">${VEHS.map((x, i) => `<button type="button" class="veh${VEH === x ? ' on' : ''}" data-i="${i}" aria-pressed="${VEH === x}"><span class="vi">${ICO[x.m] || '🚐'}</span><span class="vn">${escH(x.n || 'Véhicule')}</span><span class="vv">${Math.round(31 * 3.6 * lim(x.v, 0.6, 1.4, 1))} km/h · état ${Math.round(Number(x.e) || 0)} %</span><span class="va">${escH(atouts(x))}</span></button>`).join('')}</div>`
       : `<span>${VEH ? (ICO[VEH.m] || '🚐') : '🚐'}</span><span>${VEH ? `<b>${escH(VEH.n)}</b> · ` : ''}Vitesse de pointe <b>${Math.round(VMAX * 3.6)} km/h</b>${etat !== null ? ` · état <b>${escH(VEH ? VEH.e : etat)} %</b>` : ''}${cab ? ' · <b>cabossée</b>' : ''}${prepa ? ` · préparation <b>niv. ${prepa}</b>` : ''}</span>`;
     $('combiInfo').innerHTML += `<span></span><span class="tiny">${escH('L’état de chaque véhicule, la carrosserie, son modèle et la préparation des combis (Grande décision › Équiper) jouent sur la vitesse.')}</span>`;
-    $('combiInfo').querySelectorAll('.veh').forEach((b) => b.addEventListener('click', () => { choisirVehicule(Number(b.dataset.i)); afficherIntro(); }));
     const lignes = ['facile', 'normal', 'difficile'].map((k) => {
       const sc = Number(Q.get(`r_${k}`)) || 0, nom = Q.get(`rn_${k}`) || '', moi = Number(Q.get(`m_${k}`)) || 0;
       return `<div class="l${CLE_NIV[niveau] === k ? ' on' : ''}"><span>${NOM_NIV[{ normal: 'moyen' }[k] || k]}</span><span>${sc ? escH(nom) : 'pas encore de score'}${moi ? ` · toi : ${moi.toLocaleString('fr-BE')}` : ''}</span><b>${sc ? sc.toLocaleString('fr-BE') : '–'}</b></div>`;
