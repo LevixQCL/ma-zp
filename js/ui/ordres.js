@@ -12,7 +12,7 @@ import { participeCommune, agentsCommune } from '../engine/crise.js';
 import { engagementsDuJour } from './engagements.js';
 import { primeHtml } from './prime.js';
 import { previsionHtml, suivrePrevision } from './prevision.js';
-import { reglesV2, MAX_DEPENSES } from '../engine/regles.js';
+import { reglesV2, MAX_DEPENSES, doctrineOuverte, dernierJourDoctrine } from '../engine/regles.js';
 import { DOCTRINES, IDS_DOCTRINES, REGLES, coutPrime } from '../engine/constants.js';
 import { pistesOrdresHtml, resumePistes } from './pistes.js';
 import { chefOrdresHtml, resumeChefOrdres, emplacementsHtml } from './chef.js';
@@ -390,7 +390,7 @@ function decisionOptions(z, T) {
   for (const s of SERVICES) opts.push({ d: { type: 'equiper', cible: s }, sub: `${coutEquipement(z.equip[s])} k€` });
   if ((z.prepa || 0) < PREPA.max) opts.push({ d: { type: 'equiper', cible: 'prepa' }, sub: `${coutPrepa(z.prepa)} k€ · urgences plus rapides` });
   for (const [id, B] of Object.entries(BATIMENTS)) if (z.batiments[id] < BATIMENT_MAX) opts.push({ d: { type: 'agrandir', batiment: id }, sub: `${B.coutAgrandir(z.batiments[id])} k€ · ${B.capacite(z.batiments[id] + 1)} ${B.unite} · ${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux` });
-  for (const [id, inf] of Object.entries(INFRAS)) if (!z.infra[id]) opts.push({ d: { type: 'construire', infra: id }, sub: `${inf.cout} k€ · ${inf.effet} · entretien ${String(ENTRETIEN_ANNEXE).replace('.', ',')} k€/tour` });
+  for (const [id, inf] of Object.entries(INFRAS)) if (!z.infra[id] && (!inf.v2 || REGLES.v2)) opts.push({ d: { type: 'construire', infra: id }, sub: `${inf.cout} k€ · ${inf.effet} · entretien ${String(ENTRETIEN_ANNEXE).replace('.', ',')} k€/tour` });
   return opts.map((o) => ({ ...o, refus: decisionImpossible(z, o.d, T) }));
 }
 
@@ -822,10 +822,11 @@ export function ouvertureOrdres(z) {
 }
 /** Choix de la doctrine de la saison (règles v2), tant qu'elle n'est pas fixée. */
 function doctrineHtml(z, d) {
-  if (!reglesV2(S.state) || z.doctrine) return '';
+  if (!doctrineOuverte(S.state, z)) return '';
+  const reste = dernierJourDoctrine(z) - S.state.turn;
   return `<section class="card" aria-label="Doctrine de la saison" style="gap:8px;border-color:var(--amber-line)">
     <span class="kicker">Doctrine de la saison</span>
-    <p class="small" style="margin:0">Quelle zone veux-tu construire ? Ta doctrine donne une vraie force et un vrai prix, pour toute la saison (elle part avec tes ordres de ce soir). Garder la même d’une saison à l’autre la fait monter en maîtrise.${z.doctrinePrec && DOCTRINES[z.doctrinePrec] ? ` La saison dernière : ${DOCTRINES[z.doctrinePrec].ico} ${esc(DOCTRINES[z.doctrinePrec].nom)} (maîtrise ${(z.maitrisePrec || 0) + 1}).` : ''}</p>
+    <p class="small" style="margin:0">Quelle zone veux-tu construire ? Ta doctrine donne une vraie force et un vrai prix, pour toute la saison (elle part avec tes ordres de ce soir). Garder la même d’une saison à l’autre la fait monter en maîtrise. <strong>${reste <= 0 ? 'Dernier jour pour la choisir' : `Encore ${reste + 1} jours pour la choisir`}</strong>, ensuite la saison se joue sans doctrine.${z.doctrinePrec && DOCTRINES[z.doctrinePrec] ? ` La saison dernière : ${DOCTRINES[z.doctrinePrec].ico} ${esc(DOCTRINES[z.doctrinePrec].nom)} (maîtrise ${(z.maitrisePrec || 0) + 1}).` : ''}</p>
     ${IDS_DOCTRINES.map((k) => { const x = DOCTRINES[k]; return `<button type="button" class="choice" data-action="doctrine" data-k="${k}" aria-pressed="${d.doctrine === k}" style="text-align:left;align-items:flex-start">
       <span style="font-size:15px;font-weight:700">${x.ico} ${esc(x.nom)}${z.doctrinePrec === k ? ' <span class="tiny" style="color:var(--amber)">· maîtrise +1</span>' : ''}</span>
       <span class="s"><span class="ok">+ ${esc(x.force)}</span><br><span class="bad">− ${esc(x.prix)}</span><br><span class="muted">Brille : ${esc(x.brille)}</span></span></button>`; }).join('')}

@@ -26,7 +26,8 @@ export const PARTAGE = {
 
 const absTurn = (state, T) => (state.season - 1) * 100 + T;
 const paireKey = (a, b) => [a, b].sort().join('|');
-const nomZone = (z) => `ZP ${z.code} ${z.nom}`;
+// Zone retirée de la partie : jamais de plantage du tour pour un nom.
+const nomZone = (z) => (z ? `ZP ${z.code} ${z.nom}` : "une zone qui a quitté la partie");
 
 /** Peut-on inviter cette zone ? (null si oui, sinon la raison) */
 export function invitationImpossible(state, fipa, uid, T = state.turn) {

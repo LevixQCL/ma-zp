@@ -21,6 +21,7 @@ export const VENTE = {
   pas: 0.5,               // palier minimal d'une relance (k€)
   relancesJour: 5,        // relances visibles comptées par zone et par jour
   max: 60,                // offre maximale (k€)
+  bluffRep: 2,            // réputation perdue quand une relance publique n'est pas couverte au coup de marteau
   expertise: { base: 0.5, parNiveau: 0.06 }, // chance de voir l'état exact selon le Flair du chef
   etats: { neuf: 0.25, use: 0.55, defectueux: 0.2 },
 };
@@ -34,7 +35,8 @@ const A_ETAT = new Set(['chien', 'drone', 'radar', 'analyse', 'banalise', 'gilet
 export const aEtat = (id) => A_ETAT.has(id);
 const GROS = ['helico', 'blinde', 'cellulef'];
 
-const nomZone = (z) => `ZP ${z.code} ${z.nom}`;
+// Zone retirée de la partie : jamais de plantage du tour pour un nom.
+const nomZone = (z) => (z ? `ZP ${z.code} ${z.nom}` : "une zone qui a quitté la partie");
 const fmt = (v) => `${String(Math.round(v * 1000)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')} €`;
 
 /** État caché d'un lot (déterministe : graine de la partie, vente, lot). */
@@ -77,11 +79,14 @@ export function lireRelances(state, encheres) {
   const l = (encheres || []).filter((e) => e && e.vente === v.id && v.lots.some((x) => x.k === e.lot) && Number.isFinite(Number(e.montant)) && state.zones[e.uid])
     .sort((a, b) => (a.at || 0) - (b.at || 0));
   for (const e of l) {
-    compte[e.uid] = (compte[e.uid] || 0) + 1;
-    if (compte[e.uid] > VENTE.relancesJour) continue;
+    if ((compte[e.uid] || 0) >= VENTE.relancesJour) continue;
     const lot = v.lots.find((x) => x.k === e.lot), m = round1(Math.min(VENTE.max, Number(e.montant)));
     const cur = meneurs[e.lot];
-    if (m < lot.prixMin || (cur && m < cur.montant + VENTE.pas)) continue;
+    if (m < lot.prixMin || (cur && m < cur.montant + VENTE.pas)) continue; // relance refusée : elle n'entame pas le quota
+    // Une relance engage : la somme des relances d'une zone (une par lot, la dernière) ne dépasse jamais son budget.
+    const engage = Object.entries(parZone[e.uid] || {}).reduce((t, [k, x]) => t + (k === e.lot ? 0 : x), 0) + m;
+    if (engage > (Number(state.zones[e.uid].budget) || 0)) continue;
+    compte[e.uid] = (compte[e.uid] || 0) + 1;
     meneurs[e.lot] = { uid: e.uid, montant: m };
     (parZone[e.uid] ||= {})[e.lot] = m;
     n[e.lot] = (n[e.lot] || 0) + 1;
@@ -151,9 +156,10 @@ export function venteResoudre(state, uids, ordres, encheres, push, T) {
         const lot = v.lots.find((x) => x.k === o.expertise);
         (interet[o.expertise] ||= new Set()).add(u);
         const etat = etatLot(state, v, o.expertise);
+        if (!etat) { z.rapport.push(`Expertise (${LOTS[lot.id].nom}) : rien à expertiser, ce lot n’a pas d’état caché. Ton agent reste au service.`); continue; }
         z.blesses.push({ n: 1, retour: T + 2, motif: 'expertise à la salle des ventes' });
         const chance = Math.min(0.98, VENTE.expertise.base + VENTE.expertise.parNiveau * niveauChef(z.chef, 'flair'));
-        const vu = !etat ? 'rien à signaler : ce lot n’a pas d’état caché' : makeRng(`${state.seed}:${v.id}:exp:${u}`).chance(chance) ? `le lot est ${ETATS[etat].nom}` : `difficile à dire : ${etat === 'defectueux' ? 'usé ou défectueux' : etat === 'neuf' ? 'comme neuf ou usé' : 'usé, peut-être mieux, peut-être pire'}`;
+        const vu = makeRng(`${state.seed}:${v.id}:exp:${u}`).chance(chance) ? `le lot est ${ETATS[etat].nom}` : `difficile à dire : ${etat === 'defectueux' ? 'usé ou défectueux' : etat === 'neuf' ? 'comme neuf ou usé' : 'usé, peut-être mieux, peut-être pire'}`;
         z.expertises = { ...(z.expertises || {}), [`${v.id}:${o.expertise}`]: vu };
         z.rapport.push(`Expertise (${LOTS[lot.id].nom}) : ton agent a passé la journée au dépôt. Verdict : ${vu}. Il est immobilisé demain.`);
         (z.cetteNuit ||= []).push({ ico: '🔍', t: `Expertise : ${LOTS[lot.id].nom}, ${vu}` });
@@ -199,14 +205,25 @@ export function venteResoudre(state, uids, ordres, encheres, push, T) {
     const rep = (g) => Math.max(...g.membres.map((x) => state.zones[x.u].reputation));
     const tri = groupes.filter((g) => g.m >= lot.prixMin).sort((a, b) => (b.m - a.m) || (negoc(b) - negoc(a)) || (rep(b) - rep(a)) || (a.membres[0].u < b.membres[0].u ? -1 : 1));
     let gagnant = null;
+    let ecartee = false;
     for (const g of tri) if (g.membres.every((x) => state.zones[x.u].budget >= x.m)) { gagnant = g; break; }
-      else for (const x of g.membres) state.zones[x.u].rapport.push(`Salle des ventes (${L.nom}) : offre écartée, ton budget ne couvre pas ${fmt(x.m)}.`);
+      else {
+        ecartee = true;
+        for (const x of g.membres) {
+          const z = state.zones[x.u], vis = (v.engagees && v.engagees[x.u] && v.engagees[x.u][lot.k]) || 0;
+          // Une relance publique non honorée fait mauvaise impression (pas de bluff gratuit).
+          if (vis > 0 && z.budget < x.m) { z.reputation -= VENTE.bluffRep; z.rapport.push(`Salle des ventes (${L.nom}) : offre écartée, ton budget ne couvre pas ${fmt(x.m)}. Ta relance publique n’est pas honorée : −${VENTE.bluffRep} de réputation.`); }
+          else z.rapport.push(`Salle des ventes (${L.nom}) : offre écartée, ton budget ne couvre pas ${fmt(x.m)}.`);
+        }
+      }
     const etat = etatLot(state, v, lot.k);
     if (!gagnant) {
       if (tri.length || offres.length) for (const x of offres) state.zones[x.u].rapport.push(`Salle des ventes : « ${L.nom} » n’est pas adjugé (mise à prix ${fmt(lot.prixMin)}).`);
       continue;
     }
-    const egal = tri[1] && tri[1].m === gagnant.m;
+    // Égalité réellement départagée (et pas une meilleure offre écartée faute de budget) : par la négociation ou la réputation.
+    const autre = !ecartee && tri[0] === gagnant && tri[1] && tri[1].m === gagnant.m ? tri[1] : null;
+    const egal = autre ? (negoc(gagnant) !== negoc(autre) ? 'la négociation de ton chef' : 'ta réputation') : null;
     const noms = gagnant.membres.map((x) => nomZone(state.zones[x.u])).join(' et ');
     for (const x of gagnant.membres) {
       const z = state.zones[x.u];
@@ -214,7 +231,7 @@ export function venteResoudre(state, uids, ordres, encheres, push, T) {
       (z._compta ||= []).push({ k: 'enchere', l: `Salle des ventes : ${L.nom}`, v: -x.m });
       z.stats.encheres = (z.stats.encheres || 0) + 1;
       const quoi = livrer(z, lot.id, T, etat);
-      z.rapport.push(`Adjugé ! « ${L.nom} »${gagnant.membres.length > 1 ? ` acheté avec ${nomZone(state.zones[gagnant.membres.find((w) => w.u !== x.u).u])} (ta part : ${fmt(x.m)})` : ` pour ${fmt(x.m)}`}${egal ? ' (à égalité : la négociation de ton chef a fait la différence)' : ''}${etat ? `. Le lot est ${ETATS[etat].nom}` : ''} : ${quoi}.`);
+      z.rapport.push(`Adjugé ! « ${L.nom} »${gagnant.membres.length > 1 ? ` acheté avec ${nomZone(state.zones[gagnant.membres.find((w) => w.u !== x.u).u])} (ta part : ${fmt(x.m)})` : ` pour ${fmt(x.m)}`}${egal ? ` (à égalité : ${egal} a fait la différence)` : ''}${etat ? `. Le lot est ${ETATS[etat].nom}` : ''} : ${quoi}.`);
       (z.cetteNuit ||= []).push({ ico: '🔨', t: `Adjugé : ${L.nom}${etat ? ` (${ETATS[etat].nom})` : ''}` });
     }
     for (const x of offres) if (!gagnant.membres.some((w) => w.u === x.u)) {
@@ -224,7 +241,7 @@ export function venteResoudre(state, uids, ordres, encheres, push, T) {
     }
     res.adjuges.push({ k: lot.k, id: lot.id, nom: L.nom, uids: gagnant.membres.map((x) => x.u), montant: gagnant.m, offres: groupes.length, etat });
     push(lot.gros ? 7 : 5, 'Adjugé !', `${noms} ${gagnant.membres.length > 1 ? 'remportent' : 'remporte'} « ${L.nom} » pour ${fmt(gagnant.m)}`,
-      `${groupes.length} offre${groupes.length > 1 ? 's' : ''}, mise à prix ${fmt(lot.prixMin)}.${etat ? ` Le lot était ${ETATS[etat].nom}.` : ''}${egal ? ' Égalité départagée par la négociation.' : ''}`, gagnant.membres[0].u);
+      `${groupes.length} offre${groupes.length > 1 ? 's' : ''}, mise à prix ${fmt(lot.prixMin)}.${etat ? ` Le lot était ${ETATS[etat].nom}.` : ''}${egal ? ` Égalité départagée par ${egal === 'ta réputation' ? 'la réputation' : 'la négociation'}.` : ''}`, gagnant.membres[0].u);
   }
   state.venteResultat = { ...res, tour: T };
   state.vente = null;

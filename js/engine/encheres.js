@@ -6,7 +6,8 @@ import { round1, sousTutelle } from './zone.js';
 import { ajouterVehicule } from './flotte.js';
 import { absT } from './rivalites.js';
 
-const nomZone = (z) => `ZP ${z.code} ${z.nom}`;
+// Zone retirée de la partie : jamais de plantage du tour pour un nom.
+const nomZone = (z) => (z ? `ZP ${z.code} ${z.nom}` : "une zone qui a quitté la partie");
 const fmt1 = (v) => String(round1(v)).replace('.', ',');
 
 /** Raison pour laquelle une zone ne peut pas enchérir sur le lot en cours (null si elle peut). */

@@ -16,7 +16,7 @@ export function bilanTodo() {
   const ouverts = b.cas.filter((c) => !c.etat);
   const decides = ouverts.filter((c) => ch[c.id]).length;
   const dernier = st.turn >= b.fin;
-  return { ok: decides === ouverts.length, href: '#hp-bilan', t: `Bilan de saison : ${decides} sur ${ouverts.length} imprévu${ouverts.length > 1 ? 's' : ''} tranché${decides > 1 ? 's' : ''}`, s: dernier ? 'dernier soir : sans réponse, ils sont acceptés' : `remettre en état ou accepter, jusqu’au tour ${b.fin}` };
+  return { ok: decides === ouverts.length, href: '#hp-bilan', t: `Bilan de saison : ${decides} imprévu${decides > 1 ? 's' : ''} tranché${decides > 1 ? 's' : ''} sur ${ouverts.length}`, s: dernier ? 'dernier soir : sans réponse, ils sont acceptés' : `remettre en état ou accepter, jusqu’au tour ${b.fin}` };
 }
 
 /** Carte de l'HP. */
@@ -57,8 +57,9 @@ export function bilanHtml() {
       <div class="bil-jauge" role="img" aria-label="Ta zone : ${b.gagnes} niveaux, moyenne du district : ${b.moyenne}"><i style="width:${pct(b.gagnes)}%"></i><b style="left:${pct(b.moyenne)}%"></b></div>
     </div>
     <div class="between small"><span>Remises en état : <strong>${payes} sur ${max}</strong>, à moitié prix</span><span class="muted">jusqu’au tour ${b.fin}</span></div>
-    <div class="col" style="gap:10px">${cartes}</div>
-    ${ouverts.some((c) => !ch[c.id]) ? '<button type="button" class="btn ghost small" data-action="bilan-tout">Accepter tout le reste</button>' : ''}
+    ${ouverts.some((c) => !ch[c.id]) ? `<button type="button" class="btn ghost small" data-action="bilan-tout">${Object.keys(ch).length ? 'Accepter tout le reste' : 'Tout accepter'}</button>` : ''}
+    <details class="repli-mini" ${Object.keys(ch).length || S.bilanOuvert ? 'open' : ''}><summary class="small" style="font-weight:700;cursor:pointer">Voir les ${b.cas.length} imprévu${b.cas.length > 1 ? 's' : ''} et remettre en état</summary>
+      <div class="col" style="gap:10px;margin-top:8px">${cartes}</div></details>
     <p class="tiny muted" style="margin:0">Tu gardes le reste : formations, matériel, bâtiments (l’hôtel de police ne redescend jamais sous 4 une fois atteint), annexes, parc, équipe, skins et trophées. ${cout ? `Coût ce soir : ${cout} k€, payé à 20:00 si le budget le permet.` : ''} Sans réponse au tour ${b.fin}, les imprévus sont acceptés.</p>
     ${Object.keys(ch).length && S.ordersDirty ? '<button type="button" class="btn primary small" data-action="save-orders">Valider mes ordres</button>' : ''}
   </section>`;

@@ -2,7 +2,7 @@
 import { ficheChefHtml, portraitChef } from './chef.js';
 import { titresDefi } from './defis.js';
 import { S, esc, icon, fmt1, myZone } from './common.js';
-import { gradeFor, LOTS, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE, DEPENSES, USURE, PREPA } from '../engine/constants.js';
+import { gradeFor, LOTS, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE, DEPENSES, USURE, PREPA, REGLES, nbAnnexes, emplacementsAnnexes } from '../engine/constants.js';
 import { parcVehicules, cabossesChoisis } from '../engine/parc.js';
 import { DECOR, SKINS, decorValide, decorDebloque, conditionDecor, decorCompte, skinsValides, skinDe, earlyBirdEligible } from '../engine/decor.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
@@ -324,7 +324,7 @@ function logistiqueCorps() {
     <div class="bats">${bat}</div>
     ${Object.keys(BATIMENTS).some((id) => b[id] < BATIMENT_MAX) ? '<p class="tiny muted" style="margin:-4px 0 0">En vert : ce que t’apporte le niveau suivant.</p>' : ''}
     <div class="col" style="gap:6px">
-      <div class="between"><span class="tiny muted">Annexes · ${annexes.length} sur ${Object.keys(INFRAS).length}</span><span class="tiny muted">entretien ${fmt1(ENTRETIEN_ANNEXE)} k€/tour chacune</span></div>
+      <div class="between"><span class="tiny muted">Annexes · ${REGLES.v2 ? `${nbAnnexes(z)} emplacement${nbAnnexes(z) > 1 ? 's' : ''} occupé${nbAnnexes(z) > 1 ? 's' : ''} sur ${emplacementsAnnexes(z)}` : `${annexes.length} sur ${Object.keys(INFRAS).filter((k) => !INFRAS[k].v2).length}`}</span><span class="tiny muted">entretien ${fmt1(ENTRETIEN_ANNEXE)} k€/tour chacune</span></div>
       ${ann}
     </div>
     <button type="button" class="list-row" data-action="parc" style="width:100%;text-align:left"><span class="col grow" style="gap:1px"><span style="font-weight:600">Parc automobile</span>

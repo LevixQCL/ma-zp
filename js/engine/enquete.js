@@ -1200,7 +1200,8 @@ export function affaire(state, n) {
   return genererAffaire(state.seed, n, state.carteDes != null && n >= state.carteDes, state.profDes != null && n >= state.profDes, state.distinctDes, state.varianteDes);
 }
 
-const nomZone = (z) => `ZP ${z.code} ${z.nom}`;
+// Zone retirée de la partie : jamais de plantage du tour pour un nom.
+const nomZone = (z) => (z ? `ZP ${z.code} ${z.nom}` : "une zone qui a quitté la partie");
 
 /**
  * Avant la simulation des zones : partages, accusations, traques.
@@ -1366,7 +1367,8 @@ export function enquetePre(state, uids, ord, push) {
       z.rapport.push(ca ? `Enquête : bien vu, ${cs.nom} et ${ca.nom} ont fait le coup ensemble (+${pts} pts d’enquête). ${ca.nom} est interpellé${ca.f ? 'e' : ''} chez ${ca.f ? 'elle' : 'lui'} ; ${cs.prenom} se cache.`
         : aff.variante === 'fraude' ? `Enquête : bien vu, la plainte était un mensonge : ${cs.nom} a monté le vol pour toucher l’assurance (+${pts} pts d’enquête).`
           : `Enquête : bien vu, ${cs.nom} est l’auteur des faits (+${pts} pts d’enquête).`);
-      for (const p of z.enquete.pieces) if (p.de && !justes.includes(p.de)) contributeurs.add(p.de);
+      // Seulement les zones encore dans la partie (un joueur retiré peut avoir partagé une pièce).
+      for (const p of z.enquete.pieces) if (p.de && !justes.includes(p.de) && state.zones[p.de]) contributeurs.add(p.de);
     }
     for (const c of contributeurs) {
       const z = state.zones[c];

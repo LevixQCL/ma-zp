@@ -1,11 +1,12 @@
 // L'adjoint du chef de corps (saison 2) : il tient la zone les jours sans ordres, mieux que l'ancien pilote
 // automatique, selon la consigne laissée par le joueur et le Commandement du chef (« un bon chef sait déléguer »).
 // Il ne fait jamais mieux qu'un joueur présent : pas de décision d'achat, pas d'enquête, pas d'agenda, et les jours
-// tenus par l'adjoint ne comptent pas dans la moyenne d'IPZ du classement.
+// tenus par l'adjoint comptent au classement avec une décote (CLASSEMENT.decoteAbsent, voir zone.js moyenneIpz).
 // Il tient aussi un journal : au retour, le joueur voit ce qui s'est passé pendant son absence.
 import { autopilotOrders, sanitizeOrders, operationActive } from './zone.js';
 import { SERVICES } from './constants.js';
 import { niveauChef } from './chef.js';
+import { reglesV2, MAX_DEPENSES } from './regles.js';
 
 export const ADJOINT = {
   adapte: 3,        // Commandement 3 : il déplace des agents vers la pression du jour
@@ -74,10 +75,15 @@ export function ordresAdjoint(z, state, consigne = 'equilibre') {
     : consigne === 'offensif' ? (op && z.moral > 60 ? 'renforce' : z.moral < 40 ? 'allege' : 'normal')
       : (z.moral < 42 ? 'allege' : 'normal');
   const large = L >= ADJOINT.depenses;
-  if (z.moral < (large ? 55 : 45) && z.budget > 12) o.depenses.prime = true;
-  if (z.paperasse > 12 && z.budget > 10) o.depenses.soustraitance = true;
-  if (large && !o.depenses.prime && consigne !== 'prudent' && z.criminalite > 55 && z.budget > 15) o.depenses.prevention = true;
-  if (large && z.budget > 25) { o.depenses.reserve = 2; o.depenses.reserveService = op ? Object.keys(op.besoins)[0] : 'intervention'; }
+  // Par ordre d'urgence, dans la limite des dépenses du jour (règles v2 : 2) : la paperasse d'abord (l'Inspection guette),
+  // puis la prime (pas deux soirs de suite à prix doublé, sauf moral au plus bas), la prévention, les agents de réserve.
+  const max = reglesV2(state) ? MAX_DEPENSES : 9;
+  let n = 0;
+  if (z.paperasse > 12 && z.budget > 10) { o.depenses.soustraitance = true; n += 1; }
+  const primeDouble = reglesV2(state) && z.primeVeille === T - 1;
+  if (n < max && z.moral < (large ? 55 : 45) && z.budget > 12 && (!primeDouble || z.moral < 35)) { o.depenses.prime = true; n += 1; }
+  if (n < max && large && !o.depenses.prime && consigne !== 'prudent' && z.criminalite > 55 && z.budget > 15) { o.depenses.prevention = true; n += 1; }
+  if (n < max && large && z.budget > 25) { o.depenses.reserve = 2; o.depenses.reserveService = op ? Object.keys(op.besoins)[0] : 'intervention'; }
   return sanitizeOrders(z, o, state);
 }
 

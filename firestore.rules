@@ -148,9 +148,18 @@ service cloud.firestore {
       // Radio : messages de la partie.
       match /radio/{id} {
         allow read: if member(gid) || master(gid);
+        // `at` : l'heure de l'appareil, à 10 minutes près (l'ordre des relances en dépend, et rien ne reste épinglé en tête).
+        // Relance d'enchère : seulement avant 20:00, sur la vente en cours, avec un montant.
         allow create: if member(gid) && request.resource.data.uid == request.auth.uid
           && request.resource.data.texte is string
-          && request.resource.data.texte.size() > 0 && request.resource.data.texte.size() <= 280;
+          && request.resource.data.texte.size() > 0 && request.resource.data.texte.size() <= 280
+          && request.resource.data.at is number
+          && math.abs(request.resource.data.at - request.time.toMillis()) < 600000
+          && (!('enchere' in request.resource.data) || (
+            request.time.toMillis() < st(gid).nextDeadline
+            && request.resource.data.enchere.vente == st(gid).vente.id
+            && request.resource.data.enchere.montant is number
+            && request.resource.data.enchere.lot in ['a', 'b', 'c']));
         allow delete: if master(gid);
       }
 

@@ -33,7 +33,7 @@ import { operationActive, effetsOperation } from './engine/zone.js';
 import { carteQuartiers } from './engine/quartiers.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations, agentsHorsServices } from './ui/ordres.js';
-import { prochaineRelance, mesRelances } from './ui/ventes.js';
+import { prochaineRelance, mesRelances, relancesDuJour } from './ui/ventes.js';
 import { VENTE } from './engine/ventes.js';
 import { renderQuete, formesVisibles } from './ui/quete.js';
 import { demarrerQuiz, repondreQuiz, suivanteQuiz, quizLocal, bonnesReponses, arreterMinuteur } from './ui/quiz.js';
@@ -708,7 +708,8 @@ async function onClick(e) {
         if (!lot) break;
         const m = prochaineRelance(lot.k), z0 = myZone();
         if (mesRelances() >= VENTE.relancesJour) { toast('Plus de relance possible aujourd’hui.'); break; }
-        if (m > z0.budget) { toast('Ton budget ne couvre pas cette relance.'); break; }
+        { const eng = Object.entries(relancesDuJour().parZone[S.user.uid] || {}).reduce((t, [k, x]) => t + (k === lot.k ? 0 : x), 0);
+          if (m + eng > z0.budget) { toast(eng ? 'Ton budget ne couvre pas cette relance en plus de celles déjà engagées.' : 'Ton budget ne couvre pas cette relance.'); break; } }
         await b.sendRadio(S.user.uid, `🔨 ZP ${z0.code} ${z0.nom} relance à ${String(Math.round(m * 1000)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')} € sur « ${LOTS[lot.id].nom} »`, { enchere: { vente: v.id, lot: lot.k, montant: m } });
         toast('Relance publiée : tout le district la voit.'); break;
       }
@@ -751,6 +752,7 @@ async function onClick(e) {
       }
       case 'chef-modifier': S.chefEdit = true; S.chefBrouillon = { ...((S.player && S.player.chef) || {}) }; rerender(); break;
       case 'chef-portrait': S.chefBrouillon = { ...(S.chefBrouillon || {}), portrait: el.dataset.v }; rerender(); break;
+      case 'chef-tous': S.chefTous = true; rerender(); break;
       case 'chef-parcours': S.chefBrouillon = { ...(S.chefBrouillon || {}), parcours: el.dataset.v }; rerender(); break;
       case 'chef-enregistrer': {
         const dv = document.getElementById('chef-devise');

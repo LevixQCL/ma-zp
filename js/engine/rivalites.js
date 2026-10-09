@@ -7,7 +7,8 @@ import { oublierZone, absT } from './pactes.js';
 
 export { absT };
 
-const nomZone = (z) => `ZP ${z.code} ${z.nom}`;
+// Zone retirée de la partie : jamais de plantage du tour pour un nom.
+const nomZone = (z) => (z ? `ZP ${z.code} ${z.nom}` : "une zone qui a quitté la partie");
 
 // ───── Coup de main (entraide) : seulement vers une zone en péril ou sous tutelle ─────
 export const AIDE = { budgetMax: 10, agentsMax: 3, dureePret: 3, kParAgent: 2.5, effortPlein: 3, bonusMax: 1.4 };

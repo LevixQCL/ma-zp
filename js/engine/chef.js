@@ -165,8 +165,10 @@ export function gainsDuJour(f) {
 export function progresser(chef, gains, { rattrapage = false, parrain = null, jeux = null, mult = 1 } = {}) {
   const montees = [], avantT = new Set(talentsDebloques(chef));
   for (const c of IDS_COMPETENCES) {
-    let g = Math.min(CHEF.plafondJour, Math.max(0, gains[c] || 0)) + Math.min(CHEF.plafondJeux, Math.max(0, (jeux && jeux[c]) || 0));
+    const gJeux = Math.min(CHEF.plafondJeux, Math.max(0, (jeux && jeux[c]) || 0));
+    let g = Math.min(CHEF.plafondJour, Math.max(0, gains[c] || 0)) + gJeux;
     if (!g) continue;
+    const partJeux = gJeux / g;
     if (rattrapage) g *= CHEF.rattrapage;
     if (parrain && parrain.comp === c) g *= CHEF.parrainage.mult;
     g *= mult;
@@ -174,6 +176,8 @@ export function progresser(chef, gains, { rattrapage = false, parrain = null, je
     const avant = niveauChef(chef, c);
     chef.xp[c] = Math.round(((chef.xp[c] || 0) + g) * 10) / 10;
     chef.saison[c] = Math.round(((chef.saison[c] || 0) + g) * 10) / 10;
+    // Part venue des mini-jeux et énigmes : les médailles de fin de saison récompensent la gestion, pas le nombre de parties.
+    if (partJeux > 0) chef.saisonJeux = { ...(chef.saisonJeux || {}), [c]: Math.round((((chef.saisonJeux || {})[c] || 0) + g * partJeux) * 10) / 10 };
     const apres = niveauChef(chef, c);
     if (apres > avant) montees.push({ comp: c, niveau: apres });
   }

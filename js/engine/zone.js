@@ -200,7 +200,10 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
 /** Multiplicateur apporté par les lots gagnés aux enchères pour un service. */
 export function bonusLots(zone, service) {
   let m = 1;
-  for (const l of zone.lots || []) { const b = LOTS[l.id] && LOTS[l.id].bonus; if (b && b[service]) m *= l.etat === 'neuf' ? 1 + (b[service] - 1) * 1.5 : l.etat === 'defectueux' ? 1 + (b[service] - 1) * 0.5 : b[service]; }
+  // Deux exemplaires du même lot ne se cumulent pas : seul le meilleur compte (un deuxième chien pisteur n'ajoute rien).
+  const meilleur = {};
+  for (const l of zone.lots || []) { const b = LOTS[l.id] && LOTS[l.id].bonus; if (b && b[service]) { const v = l.etat === 'neuf' ? 1 + (b[service] - 1) * 1.5 : l.etat === 'defectueux' ? 1 + (b[service] - 1) * 0.5 : b[service]; meilleur[l.id] = Math.max(meilleur[l.id] || 1, v); } }
+  for (const v of Object.values(meilleur)) m *= v;
   return m;
 }
 
@@ -552,7 +555,8 @@ export function ligneIpz(comp, hier, ipz, ipzHier, det) {
 export function moyenneIpz(zone) {
   // Règles v2 : tous les jours de la saison comptent (pilote automatique compris), et une zone arrivée en cours de saison
   // compte ses jours d'avant à l'IPZ médian du district moins 5 (abandonner ou arriver tard ne rapporte plus).
-  const h = (zone.ipzHist || []).filter((x) => x && (x.joue || REGLES.v2) && Number.isFinite(x.v) && Number.isFinite(x.t));
+  const h = (zone.ipzHist || []).filter((x) => x && (x.joue || REGLES.v2) && Number.isFinite(x.v) && Number.isFinite(x.t))
+    .map((x) => (x.joue || x.faillite ? x : { t: x.t, v: Math.max(0, x.v - CLASSEMENT.decoteAbsent) }));
   if (REGLES.v2 && zone.avantArrivee && zone.avantArrivee.n > 0 && h.length) {
     const t0 = Math.min(...h.map((x) => x.t));
     for (let k = 1; k <= zone.avantArrivee.n; k++) h.push({ t: t0 - k, v: zone.avantArrivee.v });

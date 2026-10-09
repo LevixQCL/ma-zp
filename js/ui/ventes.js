@@ -34,12 +34,13 @@ function lotHtml(v, lot, ph, z, rel) {
   let action = '';
   if (ph === 'visible') {
     const n = prochaineRelance(lot.k), reste = VENTE.relancesJour - mesRelances();
+    const eng = Object.entries(rel.parZone[z.uid] || {}).reduce((t, [k, x]) => t + (k === lot.k ? 0 : x), 0);
     action = `<div class="between" style="gap:8px;flex-wrap:wrap">
-        ${meneur && meneur.uid === z.uid ? '<span class="small ok" style="font-weight:700">Tu mènes</span>' : `<button type="button" class="btn small primary" data-action="vente-relance" data-k="${lot.k}" data-m="${n}" ${reste <= 0 || n > z.budget ? 'disabled' : ''}>Relancer à ${euros(n)}</button>`}
-        <span class="tiny muted">${reste > 0 ? `${reste} relance${reste > 1 ? 's' : ''} possible${reste > 1 ? 's' : ''} aujourd’hui` : 'plus de relance aujourd’hui'}</span></div>
+        ${meneur && meneur.uid === z.uid ? '<span class="small ok" style="font-weight:700">Tu mènes</span>' : `<button type="button" class="btn small primary" data-action="vente-relance" data-k="${lot.k}" data-m="${n}" ${reste <= 0 || n + eng > z.budget ? 'disabled' : ''}>Relancer à ${euros(n)}</button>`}
+        ${n + eng > z.budget && !(meneur && meneur.uid === z.uid) ? `<span class="tiny muted">${eng ? 'budget déjà engagé sur tes autres relances' : 'budget insuffisant'}</span>` : ''}</div>
       <div class="row" style="gap:6px;flex-wrap:wrap">
         ${aEtat(lot.id) ? `<button type="button" class="choice" style="flex:1;min-width:140px" data-action="vente-expertise" data-k="${lot.k}" aria-pressed="${d.expertise === lot.k}"><span style="font-weight:600">🔍 Expertise</span><span class="s">1 agent immobilisé demain · Flair ${niveauChef(z.chef, 'flair')}</span></button>` : ''}
-        ${z.chef && !(z.tuyaux || []).includes(v.id) ? `<button type="button" class="choice" style="flex:1;min-width:140px" data-action="vente-tuyau" data-k="${lot.k}" aria-pressed="${d.tuyau === lot.k}"><span style="font-weight:600">🤫 Tuyau du priseur</span><span class="s">qui d’autre s’y intéresse (une fois par vente)</span></button>` : ''}</div>`;
+        ${z.chef && !(z.tuyaux || []).includes(v.id) ? `<button type="button" class="choice" style="flex:1;min-width:140px" data-action="vente-tuyau" data-k="${lot.k}" aria-pressed="${d.tuyau === lot.k}"><span style="font-weight:600">🤫 Tuyau du priseur</span><span class="s">qui d’autre s’y intéresse</span></button>` : ''}</div>`;
   } else if (ph === 'finale') {
     const m = fin ? fin.montant : 0, plancher = Math.max(lot.prixMin, mien || 0);
     action = `<div class="col" style="gap:6px"><div class="between"><span style="font-weight:600;font-size:14px">Ton offre finale secrète</span><span class="tiny muted">budget ${fmt1(z.budget)} k€</span></div>
@@ -53,7 +54,7 @@ function lotHtml(v, lot, ph, z, rel) {
   return `<div class="bat vente-lot${lot.gros ? ' gros' : ''}">
     <div class="row" style="gap:10px;align-items:flex-start"><span class="vente-ico" aria-hidden="true">${ICO[lot.id] || '📦'}</span>
       <span class="col grow" style="gap:2px;min-width:0"><span class="between" style="gap:6px;align-items:flex-start"><span style="font-weight:700">${esc(L.nom)}</span>${lot.gros ? '<span class="pill amber" style="flex-shrink:0">gros lot</span>' : ''}</span>
-        <span class="tiny muted">${esc(L.texte)}</span><span class="small ok" style="font-weight:600">${esc(L.effet)}</span>
+        <span class="tiny muted">${esc(L.texte)}</span><span class="small ok" style="font-weight:600">${esc(L.effet)}</span>${L.bonus && Object.keys(L.bonus).length && (z.lots || []).some((x) => x.id === lot.id) ? '<span class="tiny warn">Tu l’as déjà : un deuxième exemplaire ne se cumule pas (seul le meilleur compte).</span>' : ''}
         <span class="tiny muted">Mise à prix ${euros(lot.prixMin)}${aEtat(lot.id) ? ` · état ${exp ? `expertisé : <strong>${esc(exp)}</strong>` : 'caché (comme neuf, usé ou défectueux)'}` : ''}</span>
         <span class="tiny">${meneur ? `${meneur.uid === z.uid ? '<strong>Tu mènes</strong>' : `${zoneName(st.zones[meneur.uid])} mène`} à <strong>${euros(meneur.montant)}</strong>` : 'Aucune relance pour l’instant'}${ph === 'visible' && rel.n[lot.k] ? ` · ${rel.n[lot.k]} relance${rel.n[lot.k] > 1 ? 's' : ''}` : ''}</span></span></div>
     ${action}</div>`;
@@ -71,7 +72,7 @@ export function ventesHtml() {
     <summary><span class="vign">${vignetteVentes(!!nbFin || !!(rel.parZone[z.uid]))}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Vente aux enchères des saisies</span>
       <span class="tiny muted">${resume}</span></span>${icon('chevron', 16)}</summary>
     <div class="col" style="gap:10px">
-      ${v ? `<p class="tiny muted" style="margin:0">${ph === 'visible' ? 'Jour 1 sur 2 : les relances sont visibles de tous (sur la Radio). Demain, chaque zone dépose une seule offre finale secrète ; ta relance compte déjà comme offre.' : 'Jour 2 sur 2 : une seule offre finale secrète par lot, dévoilée au coup de marteau de 20:00. À égalité, la négociation (Diplomatie) du chef départage.'}</p>
+      ${v ? `<p class="tiny muted" style="margin:0">${ph === 'visible' ? `Jour 1 sur 2 : les relances sont visibles de tous (sur la Radio) et t’engagent : leur total ne peut pas dépasser ton budget. Demain, chaque zone dépose une seule offre finale secrète ; ta relance compte déjà comme offre. <strong>${Math.max(0, VENTE.relancesJour - mesRelances())} relance${VENTE.relancesJour - mesRelances() > 1 ? 's' : ''} possible${VENTE.relancesJour - mesRelances() > 1 ? 's' : ''} aujourd’hui</strong>${z.chef && !(z.tuyaux || []).includes(v.id) ? ', et un tuyau du priseur pour cette vente' : ''}.` : 'Jour 2 sur 2 : une seule offre finale secrète par lot, dévoilée au coup de marteau de 20:00. À égalité, la négociation (Diplomatie) du chef départage.'}</p>
         ${v.lots.map((lot) => lotHtml(v, lot, ph, z, rel)).join('')}
         ${S.ordersDirty && (nbFin || d.expertise || d.tuyau) ? '<p class="small warn" style="margin:0">Offre finale, expertise ou tuyau pas encore envoyés : valide tes ordres avant 20:00.</p>' : ''}` : '<p class="small muted" style="margin:0">La prochaine vente ouvre à 20:00 : trois lots, deux jours pour enchérir.</p>'}
       ${mesLots.length ? `<p class="small" style="margin:0"><strong>Tes lots cette saison</strong> : ${mesLots.map(esc).join(' · ')}</p>` : ''}

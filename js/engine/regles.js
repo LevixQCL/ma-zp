@@ -43,3 +43,7 @@ export const MAX_DEPENSES = 2;
 export const pressionSaison = (state, T) => (reglesV2(state) ? Math.floor(Math.max(0, T - 1) / 4) : 0);
 /** Note du terrain sans plafond dur (règles v2) : au-delà de 80, chaque point brut compte moitié. */
 export const terrainDoux = (brut) => (brut <= 80 ? Math.max(0, brut) : 80 + (brut - 80) * 0.5);
+/** Doctrine (règles v2) : à choisir pendant les 3 premiers jours de la saison (ou de la présence de la zone). */
+export const DOCTRINE_JOURS = 3;
+export const dernierJourDoctrine = (z) => Math.max(DOCTRINE_JOURS, ((z && z.joinedTurn) || 1) + DOCTRINE_JOURS - 1);
+export const doctrineOuverte = (state, z) => reglesV2(state) && !!z && !z.doctrine && (Number(state.turn) || 1) <= dernierJourDoctrine(z);

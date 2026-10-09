@@ -4,9 +4,10 @@ import { CHALLENGE } from '../engine/challenge.js';
 import { BILAN } from '../engine/bilan.js';
 import { DECOR, conditionDecor } from '../engine/decor.js';
 import { S, esc, icon, tabbar } from './common.js';
+import { reglesV2 } from '../engine/regles.js';
 import {
   AFFAIRE, SERVICES, SERVICE_LABELS, EQUIP, effetEquip, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION,
-  INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE, ND, TERRAIN, BUDGET_IPZ, ENIGMES } from '../engine/constants.js';
+  INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE, ND, TERRAIN, BUDGET_IPZ, ENIGMES } from '../engine/constants.js';
 import { SINISTRE } from '../engine/sinistres.js';
 import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
 import { ENQ, DEMARCHES, POINTS, pointsDecouverte, delaiTraque, PRIME } from '../engine/enquete.js';
@@ -515,7 +516,7 @@ export function sections() {
         <p>Les consignes du pilote et le blason se règlent dans ton Profil ; la motion du Chef de corps dans l'onglet Pactes de la Carte. Un blâme du Conseil retire 30 PS ; seule une faillite fait redescendre d'un grade.</p>
         <h3>La saison</h3>
         ${ul([
-          `Une saison dure ${SEASON_LENGTH} tours. Le classement se fait à la <strong>moyenne de l’IPZ par tour joué</strong> : une absence ne fait pas baisser ta moyenne.`,
+          S.state && reglesV2(S.state) ? `Une saison dure ${SEASON_LENGTH} tours. Le classement se fait à la <strong>moyenne de l’IPZ de tous les jours de la saison</strong>, les plus récents comptant un peu plus. Un jour sans ordres, ton adjoint tient la zone : ce jour compte avec ${CLASSEMENT.decoteAbsent} points d’IPZ de moins.` : `Une saison dure ${SEASON_LENGTH} tours. Le classement se fait à la <strong>moyenne de l’IPZ par tour joué</strong> : une absence ne fait pas baisser ta moyenne.`,
           `Il faut avoir joué au moins ${MIN_TOURS_CLASSEMENT} tours pour être classé.`,
           'En fin de saison, budget et effectifs repartent des valeurs de départ ; formations, matériel et bâtiments passent par le Bilan de saison. Grades, PS et titres sont conservés.',
         ])}

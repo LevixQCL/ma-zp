@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 117;
+export const APP_VERSION = 118;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -18,7 +18,9 @@ export const SERVICE_LABELS = {
 export const SEASON_LENGTH = 14;          // tours par saison
 export const RESOLUTION_HOUR = 20;        // heure de résolution (heure belge)
 /** Classement : poids d'un soir selon son ancienneté (voir moyenneIpz). */
-export const CLASSEMENT = { recence: 0.8 };
+// decoteAbsent (règles v2) : un soir tenu par l'adjoint (ordres non validés) compte au classement pour son IPZ moins
+// cette décote : l'absence ne fait pas chuter, mais ne rapporte jamais autant que jouer (test/adjoint-classement-sim.mjs).
+export const CLASSEMENT = { recence: 0.8, decoteAbsent: 4 };
 export const MIN_TOURS_CLASSEMENT = 5;    // tours joués pour être classé
 
 export const START = {

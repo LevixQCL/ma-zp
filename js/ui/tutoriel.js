@@ -5,6 +5,7 @@
 import { S, esc, myZone } from './common.js';
 import { ENQ, delaiTraque, affaire } from '../engine/enquete.js';
 import { marquerTutoVu } from './tableau.js';
+import { reglesV2 } from '../engine/regles.js';
 
 const CLE = 'mazp-tuto';            // 'fait' ou 'zappe' une fois terminée ou refusée
 const CLE_ETAPE = 'mazp-tuto-etape'; // étape en cours (reprise après un rechargement)
@@ -53,7 +54,7 @@ export const ETAPES = [
       <p>Surveille la <strong>satisfaction</strong> (le plus gros poids) et le <strong>moral</strong>, qui règle l’efficacité de tous tes agents. Chaque <strong>?</strong> détaille le calcul avec tes chiffres. Touche ton commissariat pour voir ce que te rapportent tes bâtiments.</p>`,
   },
   {
-    id: 'chef', route: 'hp', cible: ['.hp-chef', '.chef-creation', 'h1.brand'],
+    id: 'chef', route: 'hp', v2: true, // le chef n'existe qu'en règles v2 (saison 2) cible: ['.hp-chef', '.chef-creation', 'h1.brand'],
     titre: 'Ton chef de corps',
     texte: `<p>C’est toi. Son <strong>portrait</strong>, en haut, ouvre sa fiche : 5 compétences (Gestion, Commandement, Flair, Diplomatie, Proximité) qui montent selon ta façon de gérer ta zone <strong>et</strong> quand tu réussis tes énigmes et tes mini-jeux.</p>
       <p>Elles débloquent des <strong>talents</strong> (3 équipés au plus, dans tes ordres). Chaque nuit, la carte « Ton chef cette nuit » te dit ce qu’il a changé.</p>`,
@@ -176,7 +177,7 @@ function marquer(v) {
 
 export function lancerTuto(i = 0) {
   document.querySelector('.aide-wrap')?.remove();
-  S.tuto = Math.max(0, Math.min(ETAPES.length - 1, i));
+  S.tuto = Math.max(0, Math.min(ETAPES.length - 1, sauterAbsentes(i, 1)));
   ecrire(CLE_ETAPE, String(S.tuto));
   dernierIndex = -1;
   monter();
@@ -189,7 +190,14 @@ function quitter(v = 'fait') {
   document.removeEventListener('keydown', clavier);
 }
 
+/** Étape suivante (ou précédente) qui existe dans cette partie : le chef de corps n'est pas montré en règles v1. */
+function sauterAbsentes(i, sens) {
+  while (i >= 0 && i < ETAPES.length && ETAPES[i].v2 && !reglesV2(S.state)) i += sens;
+  return i;
+}
+
 function aller(i) {
+  i = sauterAbsentes(i, i >= (S.tuto ?? 0) ? 1 : -1);
   if (i >= ETAPES.length) { quitter('fait'); if (S.route !== 'hp') location.hash = '#hp'; return; }
   S.tuto = Math.max(0, i);
   ecrire(CLE_ETAPE, String(S.tuto));

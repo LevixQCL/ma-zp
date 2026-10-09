@@ -5,7 +5,7 @@ import { COMPETENCES, niveauChef, niveauxChef, totalNiveaux, signatureChef, TALE
 import { OBJECTIFS, texteObjectif, RECOMPENSE, semaineDe, joursSemaine, scoreDuel, DUEL, CADRES, cadreDe, cadreSuivant, RUBANS, IDS_RUBANS, rubansDe } from '../engine/chef-semaine.js';
 import { CONSIGNES, IDS_CONSIGNES, savoirFaire, ADJOINT } from '../engine/adjoint.js';
 import { portraitChef, COUL_COMP } from './chef.js';
-import { gradeFor } from '../engine/constants.js';
+import { gradeFor, CLASSEMENT } from '../engine/constants.js';
 
 const fmt = (v) => String(Math.round(v * 10) / 10).replace('.', ',');
 const actif = (z) => !!(z && z.chef && S.state && reglesV2(S.state));
@@ -82,7 +82,7 @@ export function adjointFicheHtml(z, moi) {
     <span class="small">${esc(CONSIGNES[cons].texte)}.</span>` : ''}
     <span class="tiny muted" style="font-weight:700">Ce qu’${a.f ? 'elle' : 'il'} sait faire (Commandement de ton chef : ${L})</span>
     <div class="col" style="gap:3px">${savoirFaire(z.chef).map((x) => `<span class="tiny ${x.ok ? '' : 'muted'}">${x.ok ? '✅' : '🔒'} ${esc(x.t)}${x.niv && !x.ok ? ` (Commandement ${x.niv})` : ''}</span>`).join('')}</div>
-    <span class="tiny muted">Les jours tenus par ${esc(a.prenom)} ne comptent pas dans ta moyenne du classement. ${ADJOINT.tient} jours sans malus d’absence, ensuite la zone s’use.</span>
+    <span class="tiny muted">Les jours tenus par ${esc(a.prenom)} comptent au classement avec ${CLASSEMENT.decoteAbsent} points d’IPZ de moins : ça limite la casse, sans valoir un jour joué. ${ADJOINT.tient} jours sans malus d’absence, ensuite la zone s’use.</span>
   </section>`;
 }
 

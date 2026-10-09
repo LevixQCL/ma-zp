@@ -22,7 +22,8 @@ import { affaire, piecesLibres, faitsConnus, titrePiece, texteFait, dossierDe } 
 import { enDifficulte } from './zone.js';
 
 export const absT = (state, T = state.turn) => (state.season - 1) * 100 + T;
-const nomZone = (z) => `ZP ${z.code} ${z.nom}`;
+// Zone retirée de la partie : jamais de plantage du tour pour un nom.
+const nomZone = (z) => (z ? `ZP ${z.code} ${z.nom}` : "une zone qui a quitté la partie");
 
 export const PACTES = {
   terrain: {

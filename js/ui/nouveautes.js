@@ -8,15 +8,22 @@ export const NOTE_MAJ = {
   saison2: true,
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🎖️', 'Ton chef de corps', 'choisis son portrait et son parcours. Tes jeux et ta gestion font monter ses compétences. Envoie-le en première ligne, demande des services à ton réseau, vise le brevet de carrière.'],
-    ['⚔️', 'Ta semaine de chef', 'trois objectifs taillés pour ton chef et un rival à battre chaque semaine. Gagne des rubans, un cadre doré pour ton portrait, et partage la carte de ton chef dans le groupe.'],
-    ['🧑‍✈️', 'Ton adjoint tient la zone', 'un jour sans ordres ? Ton adjoint prend le relais selon ta consigne, et te raconte tout à ton retour.'],
-    ['🏗️', 'Quatre nouvelles annexes', 'cachots (un interpellé balance une pièce d’enquête), cellule drone, salle de crise et assistance aux victimes.'],
-    ['🔨', 'La vente aux enchères des saisies', 'trois lots tous les deux jours : relances visibles, puis une offre finale secrète. Expertise, tuyau du priseur, et des gros lots à acheter à deux.'],
+    ['🎖️', 'Ton chef de corps', 'choisis son visage : il progresse avec tes jeux et ta gestion, et le suit de saison en saison.'],
+    ['⚔️', 'Ta semaine de chef', 'trois objectifs et un rival à battre chaque semaine, des rubans et un cadre doré à gagner.'],
+    ['🧑‍✈️', 'Ton adjoint', 'un jour sans ordres, il tient la zone et te raconte tout à ton retour.'],
+    ['🔨', 'Les enchères des saisies', 'trois lots tous les deux jours, une offre finale secrète, des gros lots à deux.'],
+    ['🏗️', 'Quatre nouvelles annexes', 'dont le complexe cellulaire : un interpellé balance une pièce d’enquête.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Avant la saison 2 : ajustements (9 octobre)', [
+      ['Changement de saison', 'l’affaire en cours, ses traques et la mise à prix à choisir continuent dans la nouvelle saison. Quand le maître du jeu programme la fin de saison, un bandeau sur l’HP prévient tout le monde de ce qui s’arrête.'],
+      ['Doctrine', 'à choisir pendant les 3 premiers jours de la saison (rappel dans « Ce soir »), sinon la saison se joue sans doctrine.'],
+      ['Adjoint et classement', 'un jour tenu par l’adjoint compte au classement avec 4 points d’IPZ de moins : ça limite la casse, sans valoir un jour joué.'],
+      ['Enchères', 'tes relances visibles t’engagent : leur total ne peut pas dépasser ton budget, et une relance non couverte au coup de marteau coûte 2 de réputation. Deux exemplaires du même lot ne se cumulent plus (seul le meilleur compte). Une expertise sur un lot sans état caché n’immobilise plus d’agent.'],
+      ['Chef de corps', 'le parcours compte dès le soir où il est choisi, et reste fixé pour toute la carrière. Les médailles de fin de saison récompensent la progression par la gestion (pas le nombre de mini-jeux joués). Un talent débloqué par un objectif ou un duel est annoncé. Le ruban « Régulier » compte les semaines d’une saison à l’autre.'],
+    ]],
     ['Saison 2 : le chef de corps', [
       ['Fiche du chef', 'touche ton portrait en haut de l’HP : ses 5 compétences (niveau, progression, prochain talent), le tableau de ses 15 talents (une colonne par compétence), l’humeur du bourgmestre, du procureur, du syndicat et de la presse, et sa carrière (médailles, états de service, réunions, félicitations). On peut voir le chef des voisins depuis la carte.'],
       ['Jouer entraîne ton chef', 'en plus de ta façon de gérer ta zone, chaque réussite aux jeux fait progresser une compétence (jusqu’à +4 par compétence et par jour, en plus) : énigmes du jour, crochetage, empreintes et ADN → Flair ; colis suspect, maintien de l’ordre, urgences au bitonal → Commandement ; embouteillage et dossier à relire → Gestion ; réseau et interception (RCCU) → Diplomatie ; incidents de Proximité → Proximité. Au Challenge, chaque nouveau palier atteint compte aussi.'],
@@ -24,19 +31,19 @@ export const NOTE_MAJ = {
       ['Le réseau rend service', 'quand le bourgmestre, le procureur, le délégué syndical ou la presse est satisfait, tu peux lui demander un service (une fois par semaine chacun) : subside exceptionnel (2 000 à 4 000 €), enquête accélérée (+15 % de chance de pièce), effort des équipes (+3 de moral et renforcé sans perte de moral), article flatteur (+2 de satisfaction, +1 de réputation). Mécontent, il peut te mettre des bâtons dans les roues.'],
       ['Brevet de carrière', 'à 15 niveaux de compétence au total, choisis une voie (direction judiciaire, commandement opérationnel, management de zone) : un titre affiché sur ta fiche et un 4e emplacement de talent, réservé aux compétences de la voie.'],
       ['Le chef partout', 'son portrait accompagne tes messages sur la Radio et au classement ; chaque incident, chaque énigme et chaque mini-jeu du Challenge indique la compétence qu’il entraîne ; une option de dilemme trouvée grâce à une compétence porte son portrait ; la démarche de plus du talent « Intuition » s’affiche dans l’enquête.'],
-      ['Ton chef cette nuit', 'en tête de l’HP, ce que ton chef a fait la différence pendant la nuit : un talent qui s’est déclenché (son écusson s’allume dans sa fiche), une option de dilemme trouvée grâce à une compétence, une réunion avec un autre chef, une montée de niveau.'],
+      ['Ton chef cette nuit', 'en tête de l’HP, là où ton chef a fait la différence pendant la nuit : un talent qui s’est déclenché (son écusson s’allume dans sa fiche), une option de dilemme trouvée grâce à une compétence, une réunion avec un autre chef, une montée de niveau.'],
       ['Promotions', 'au premier talent et aux niveaux 2, 5, 8 et 10 d’une compétence, une petite scène l’annonce, avec le talent débloqué.'],
       ['Signature', 'ton style de chef (« Fin limier », « Meneur de terrain », « Bâtisseur de ponts »…), calculé d’après tes compétences ; il change si ton profil évolue.'],
       ['Souvenirs et félicitations', 'une réunion entre deux chefs s’inscrit dans leur carrière. Depuis la fiche d’un collègue, tu peux le féliciter une fois par saison : c’est affiché chez lui, sans effet de jeu.'],
       ['Faits d’armes', 'à chaque fin de saison, les états de service retiennent trois faits marquants (auteurs identifiés, relèves prises, secteurs repris…).'],
-      ['Création', 'à la première ouverture de la saison 2 : un portrait, un parcours (+2 niveaux dans une compétence) et une devise. On peut changer le portrait et la devise depuis le Profil.'],
+      ['Création', 'à la première ouverture de la saison 2 : un portrait, un parcours (+2 niveaux dans une compétence, choisi une fois pour toute la carrière) et une devise. On peut changer le portrait et la devise depuis la fiche du chef.'],
       ['Cinq compétences', 'Gestion, Commandement, Flair, Diplomatie, Proximité, de 0 à 10. Elles montent par l’usage, selon ce que tu fais chaque jour (revenu, investissements, incidents, assauts, pièces d’enquête, renforts, relèves, satisfaction…), avec un plafond par jour : impossible de « farmer ». Elles sont gardées de saison en saison.'],
       ['Talents', '15 talents (niveaux 2, 5 et 8 de chaque compétence), 3 équipés au plus. Ajouter un talent dans un emplacement vide est libre ; en remplacer un, une fois par semaine. Aucun talent ne donne d’information sur la solution d’une enquête.'],
       ['Agenda du chef', 'une ligne dans les ordres : au bureau (paperasse −1 au-delà de 8), à la commune (+1 500 €), sur le terrain avec un service (+10 %), au parquet (chance de pièce +10 %), en réunion de quartier (satisfaction +1) ou chez un voisin (si son chef vient chez toi le même jour : +3 PS d’entraide et +1 de réputation chacun).'],
       ['Le Directeur parle au chef', 'certains dilemmes proposent une option de plus quand une compétence atteint 4 (grève, indic, journaliste, sponsor).'],
       ['Objectifs de la semaine', 'sur l’HP, « Ta semaine de chef » : trois objectifs tirés pour ton chef chaque lundi (un dans sa meilleure compétence, un dans sa plus faible, un au hasard), plus durs quand il progresse. Seuls les jours où tu donnes tes ordres comptent. Chacun rapporte 4 à 8 XP dans sa compétence et +1 de réputation ; les trois réussis donnent la médaille de la semaine (+3 PS, +1 de réputation).'],
       ['Duel de la semaine', 'chaque semaine, ton rival est le chef le plus proche de toi au classement. Celui qui cumule le plus d’IPZ sur ses jours joués l’emporte : +2 de réputation, +3 XP en Commandement, et une ligne de plus au palmarès. Le score se suit en direct sur l’HP.'],
-      ['L’adjoint', 'un jour sans ordres, ton adjoint (ou ton adjointe) tient la zone, mieux que l’ancien pilote automatique : il règle le rythme selon ta consigne (prudent, équilibré, offensif, à choisir dans la fiche du chef), paie une prime si le moral s’effondre ; avec le Commandement de ton chef, il glisse un agent vers la pression du jour (niveau 3), mène les opérations en entier (5) et dépense plus volontiers (7). Pas de malus d’absence les 3 premiers jours. Ses jours ne comptent pas dans ta moyenne du classement.'],
+      ['L’adjoint', 'un jour sans ordres, ton adjoint (ou ton adjointe) tient la zone, mieux que l’ancien pilote automatique : il règle le rythme selon ta consigne (prudent, équilibré, offensif, à choisir dans la fiche du chef), paie une prime si le moral s’effondre ; avec le Commandement de ton chef, il glisse un agent vers la pression du jour (niveau 3), mène les opérations en entier (5) et dépense plus volontiers (7). Pas de malus d’absence les 3 premiers jours. Ses jours comptent au classement avec 4 points d’IPZ de moins : ça limite la casse, sans valoir un jour joué.'],
       ['Retour d’absence', 'pendant ton absence, l’HP montre le journal de ton adjoint (IPZ, incidents, moral, satisfaction jour par jour). Après 3 jours ou plus, à ton retour : tous les services du réseau sont rouverts et ton chef progresse 50 % plus vite pendant 3 jours.'],
       ['Les appels du réseau', 'de temps en temps, le bourgmestre, le procureur, le délégué ou la presse appelle ton chef avec un dilemme. Ta réponse change leur estime (de −2 à +2) : +1 suffit à rendre satisfait un personnage neutre, il faut −2 pour le fâcher. Leurs demandes se contredisent parfois. L’estime se tasse d’un cran chaque semaine.'],
       ['Honneurs', 'le cadre du portrait suit les niveaux de ton chef (bronze à 10, argent à 20, or à 30, diamant à 40) et se voit partout : HP, Radio, classement. Dix rubans à gagner (assidu, duelliste, blessé en service, homme de réseau, commissaire-priseur…) : touche-en un dans la fiche pour l’afficher sur ton portrait.'],
@@ -71,15 +78,12 @@ export const NOTE_MAJ = {
       ['Fréquence', 'environ une affaire de vol sur trois prend une particularité, jamais deux de suite ; elle est annoncée dès l’ouverture (encadré « Particularité », note du magistrat au PV).'],
       ['Affaires écrites', 'la rue de la Clef, la Rampe et le corbeau de la rue d’Havré se jouent dans leur scénario d’origine. Le maître du jeu peut, pour une partie dont les joueurs connaissent déjà l’histoire, permettre une autre version où quelqu’un d’autre a fait le coup (journal, PV et scène identiques au départ).'],
     ]],
-    ['À la prochaine saison : compléments (9 octobre)', [
-      ['Investir paie', 'former un service coûte 3 000 € (au lieu de 4 000 €) et n’immobilise plus qu’un agent ; le matériel démarre à 4 000 € (au lieu de 5 000 €).'],
+    ['Saison 2 : nouvelles règles', [
+      ['Quand ?', 'dès la saison 2 (jamais en cours de saison : un classement en cours garde ses règles). Les nouvelles parties les ont tout de suite.'],
+      ['Doctrine de zone', 'pendant les 3 premiers jours de la saison, chaque chef de zone choisit une doctrine dans ses ordres : Routière (amendes +20 %, satisfaction −0,3 par jour), De quartier (Proximité +15 %, satisfaction qui redescend bien moins vite, vagues reçues atténuées ; Intervention −5 %), Judiciaire (pièces d’enquête +25 %, Recherche +15 % ; Intervention −8 %), D’intervention (Intervention +10 %, flagrants délits +30 % ; usure des véhicules +50 %, −1 de moral de plus en rythme renforcé), Partenaire (un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 % ; capacité −3 %). Garder la même d’une saison à l’autre la fait monter en maîtrise (force +15 % par cran, jusqu’à 3 étoiles). Le Directeur met deux fois plus de temps à remarquer la routine d’une zone qui a une doctrine.'],
+      ['Investir paie', 'former un service coûte 3 000 € (au lieu de 4 000 €) et n’immobilise qu’un agent ; le matériel démarre à 4 000 € (au lieu de 5 000 €).'],
       ['Soirée chargée', 'le Directeur peut annoncer deux demandes le même soir (par exemple 9 agents en Intervention pour des bagarres et 6 en Proximité pour une fête de quartier) : tout couvrir est un tour de force, n’en couvrir qu’une est une réussite partielle, et la Gazette raconte ce qui a été laissé de côté.'],
-      ['Doctrines', 'De quartier : Proximité +15 % (au lieu de +10 %) ; D’intervention : Intervention +10 % (au lieu de +12 %).'],
-    ]],
-    ['À la prochaine saison : nouvelles règles (révision d’octobre)', [
-      ['Quand ?', 'au début de la prochaine saison (jamais en cours de saison : le classement en cours garde ses règles). Les nouvelles parties les ont tout de suite.'],
-      ['Doctrine de zone', 'au début de la saison, chaque chef de zone choisit une doctrine : Routière (amendes +20 %, satisfaction −0,3 par jour), De quartier (Proximité +10 %, satisfaction qui redescend bien moins vite, vagues reçues atténuées ; Intervention −5 %), Judiciaire (pièces d’enquête +25 %, Recherche +15 % ; Intervention −8 %), D’intervention (Intervention +12 %, flagrants délits +30 % ; usure des véhicules +50 %), Partenaire (un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 % ; capacité −3 %). Garder la même d’une saison à l’autre la fait monter en maîtrise (force +15 % par cran, jusqu’à 3 étoiles). Le Directeur met deux fois plus de temps à remarquer la routine d’une zone qui a une doctrine.'],
-      ['Classement', 'tous les jours de la saison comptent (pilote automatique compris), avec un poids d’ancienneté de 0,93 par jour (au lieu de 0,8). Une zone qui arrive en cours de saison compte ses jours d’avant à l’IPZ médian du district moins 5.'],
+      ['Classement', 'tous les jours de la saison comptent (les jours tenus par l’adjoint avec 4 points d’IPZ de moins), avec un poids d’ancienneté de 0,93 par jour (au lieu de 0,8). Une zone qui arrive en cours de saison compte ses jours d’avant à l’IPZ médian du district moins 5.'],
       ['Poids de l’IPZ', 'satisfaction 25 %, résultats terrain 35 %, moral 10 %, budget 10 %, réputation 20 %. Le moral agit déjà sur l’efficacité de tous les agents : il ne compte plus deux fois. Le terrain n’a plus de plafond dur : au-delà de 80, chaque point compte moitié.'],
       ['Pression', 'un incident de base de plus tous les 4 jours de la saison : en fin de saison, la capacité construite fait la différence.'],
       ['Choix qui coûtent', 'deux dépenses du jour au plus (les agents de réserve comptent pour une, la carrosserie ne compte pas) ; la prime au personnel coûte le double si elle a déjà été versée la veille ; rythme allégé +2 de moral (au lieu de +5), rythme renforcé −3 (au lieu de −6) ; un dispositif complet d’opération met un agent en récupération le lendemain ; la grève se règle par un jour de récupération (des agents) au lieu d’une prime.'],
@@ -457,7 +461,7 @@ export const NOTE_MAJ = {
 
 /** Version courte (moins de 500 caractères) pour un message privé. */
 export function noteCourte() {
-  return `📣 Du neuf à la ZP ! L’enquête se joue maintenant sur un grand tableau en liège : photos des suspects, pièces à punaiser toi-même, ficelles rouges et plan du district avec les temps de trajet. Un petit tuto te le présente à l’ouverture de l’écran Enquête.`;
+  return `📣 Saison 2 à la ZP ! Ton chef de corps prend ses fonctions : choisis son visage, fais-le progresser, défie un rival chaque semaine. Ton adjoint tient la zone les jours où tu ne passes pas. Et nouvelle vente aux enchères des saisies, tous les deux jours.`;
 }
 
 
@@ -502,6 +506,7 @@ export function nouveautesAuBesoin() {
   S.majMontree = true;
   // Nouveau joueur : les « nouveautés » ne le concernent pas, il découvre tout en même temps.
   const z = S.state && S.user && S.state.zones[S.user.uid];
-  if (z && !z.toursJoues) { try { localStorage.setItem(cle(), '1'); } catch (e) { /* pas de stockage */ } return; }
+  // (au changement de saison, toursJoues repart à 0 : un ancien joueur a alors un héritage ou un bilan de saison.)
+  if (z && !z.toursJoues && !z.heritage && !z.bilan) { try { localStorage.setItem(cle(), '1'); } catch (e) { /* pas de stockage */ } return; }
   setTimeout(() => ouvrirNouveautes({ complet: false }), 400);
 }

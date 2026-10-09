@@ -7,9 +7,12 @@
 //  • Honneurs : le cadre du portrait (selon les niveaux) et des rubans gagnés au fil de la carrière, à afficher.
 import { makeRng } from './rng.js';
 import { IDS_COMPETENCES, COMPETENCES, niveauChef, totalNiveaux, XP_CUMUL } from './chef.js';
+import { SEASON_LENGTH } from './constants.js';
 
 export const SEMAINE = 7;
 export const semaineDe = (T) => Math.ceil(T / SEMAINE);
+/** Numéro de semaine sur toute la carrière (les semaines de la saison repartent à 1) : pour les séries d'une saison à l'autre. */
+export const semaineCarriere = (season, w) => ((Number(season) || 1) - 1) * Math.ceil(SEASON_LENGTH / SEMAINE) + w;
 export const joursSemaine = (w) => [(w - 1) * SEMAINE + 1, w * SEMAINE];
 export const cleSemaine = (state, T) => `${state.season}:${semaineDe(T)}`;
 
@@ -49,7 +52,7 @@ export function tirerObjectifs(state, z, T) {
     const p = palierDe(niveauChef(z.chef, c));
     return { id, cible: OBJECTIFS[id].cibles[p], palier: p, prog: 0, fait: false };
   });
-  return { cle: cleSemaine(state, T), w, liste, finie: false };
+  return { cle: cleSemaine(state, T), w, wc: semaineCarriere(state.season, w), liste, finie: false };
 }
 
 /**
@@ -77,8 +80,9 @@ export function avancerObjectifs(z, j) {
     o.finie = true; parfaite = true;
     z.ps += RECOMPENSE.medaille.ps; z.reputation += RECOMPENSE.medaille.rep;
     const h = (z.chef.hebdo ||= { semaines: 0, serie: 0, derniere: null });
-    h.serie = h.derniere === o.w - 1 ? h.serie + 1 : 1;
-    h.semaines += 1; h.derniere = o.w;
+    const wc = o.wc ?? o.w;
+    h.serie = h.derniere === wc - 1 ? h.serie + 1 : 1;
+    h.semaines += 1; h.derniere = wc;
   }
   return { reussis, parfaite };
 }

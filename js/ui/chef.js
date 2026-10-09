@@ -65,16 +65,18 @@ export function chefACreer() {
   return !(p.chef && p.chef.parcours && p.chef.portrait);
 }
 export function creationChefHtml() {
-  const p = S.player || {}, c = { ...(p.chef || {}), ...(S.chefBrouillon || {}) };
+  const p = S.player || {}, zc = myZone(), fige = zc && zc.chef && PARCOURS[zc.chef.parcours] ? zc.chef.parcours : null;
+  const c = { ...(p.chef || {}), ...(S.chefBrouillon || {}), ...(fige ? { parcours: fige } : {}) };
   return `<section class="card chef-creation" aria-label="Ton chef de corps" style="gap:12px;border-color:var(--amber-line)">
     <span class="kicker">Saison 2 · ton chef de corps</span>
     <p class="small" style="margin:0">Tu n’es plus seulement une zone : tu es son chef. Ses compétences montent selon ta façon de jouer et le suivent de saison en saison. Choisis son visage et son parcours (une minute, une seule fois).</p>
     <span class="tiny muted" style="font-weight:700">Portrait</span>
-    <div class="chef-grille">${PORTRAITS.map((x) => `<button type="button" class="chef-choix" data-action="chef-portrait" data-v="${x.id}" aria-pressed="${c.portrait === x.id}" aria-label="Portrait ${x.id}">
+    <div class="chef-grille">${(S.chefTous ? PORTRAITS : PORTRAITS.filter((x, i) => i % 3 === 0 || x.id === c.portrait)).map((x) => `<button type="button" class="chef-choix" data-action="chef-portrait" data-v="${x.id}" aria-pressed="${c.portrait === x.id}" aria-label="Portrait ${x.id}">
       <img src="img/chefs/${x.id}.webp" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span class="chef-choix-svg" style="display:none">${portraitDessine(p, myZone(), 56, x.id)}</span></button>`).join('')}</div>
-    <span class="tiny muted" style="font-weight:700">Parcours (+2 niveaux dans une compétence)</span>
+    ${S.chefTous ? '' : `<button type="button" class="btn ghost small" data-action="chef-tous">Voir les ${PORTRAITS.length} portraits</button>`}
+    ${fige ? `<span class="tiny muted" style="font-weight:700">Parcours : ${COMPETENCES[PARCOURS[fige].comp].ico} ${esc(PARCOURS[fige].nom)} (choisi une fois pour toute la carrière)</span>` : `<span class="tiny muted" style="font-weight:700">Parcours (+2 niveaux dans une compétence, une seule fois)</span>
     ${IDS_PARCOURS.map((k) => { const x = PARCOURS[k]; return `<button type="button" class="choice" data-action="chef-parcours" data-v="${k}" aria-pressed="${c.parcours === k}" style="text-align:left;align-items:flex-start">
-      <span style="font-weight:700">${COMPETENCES[x.comp].ico} ${esc(x.nom)} <span class="tiny muted">· ${esc(COMPETENCES[x.comp].nom)} +2</span></span><span class="s">${esc(x.texte)}</span></button>`; }).join('')}
+      <span style="font-weight:700">${COMPETENCES[x.comp].ico} ${esc(x.nom)} <span class="tiny muted">· ${esc(COMPETENCES[x.comp].nom)} +2</span></span><span class="s">${esc(x.texte)}</span></button>`; }).join('')}`}
     <label class="field">Devise (facultatif)<input class="text" id="chef-devise" maxlength="60" value="${esc(c.devise || '')}" placeholder="Ex. : Toujours un coup d’avance"></label>
     <button type="button" class="btn primary block" data-action="chef-enregistrer" ${c.portrait && c.parcours ? '' : 'disabled'}>${c.portrait && c.parcours ? 'Prendre mes fonctions' : 'Choisis un portrait et un parcours'}</button>
   </section>`;

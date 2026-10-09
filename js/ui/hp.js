@@ -3,6 +3,7 @@ import { absenceHtml, semaineHtml } from './chef-semaine.js';
 import { humeurReseau } from '../engine/chef.js';
 import { titresDefi } from './defis.js';
 import { DOCTRINES } from '../engine/constants.js';
+import { doctrineOuverte, dernierJourDoctrine } from '../engine/regles.js';
 import { maxDemarchesDe } from '../engine/enquete.js';
 import { cetteNuitHtml, pistesHpHtml } from './pistes.js';
 import { noteVue } from './nouveautes.js';
@@ -268,6 +269,8 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue }) {
   { let vt = null; try { vt = vagueTodo(estimations()); } catch (e) { /* pas de brouillon */ } if (vt) items.unshift(vt); }
   for (const x of releveTodos()) items.unshift(x);
   { const bt = bilanTodo(); if (bt) items.unshift(bt); }
+  // Doctrine de la saison (règles v2) : le seul choix nouveau des premiers jours.
+  if (doctrineOuverte(st, z)) { const dc = d.doctrine && DOCTRINES[d.doctrine]; const r = dernierJourDoctrine(z) - st.turn; items.unshift({ ok: !!dc, href: '#ordres', t: dc ? `Doctrine : ${dc.ico} ${esc(dc.nom)}` : 'Choisis la doctrine de ta zone', s: dc ? 'fixée pour la saison avec tes ordres de ce soir' : r <= 0 ? 'dernier jour, ensuite la saison se joue sans doctrine' : `dans tes ordres, encore ${r + 1} jours` }); }
   { const ct = criseTodo(); if (ct) items.unshift(ct); }
   // Un incident ouvert a déjà sa carte (avec son compte à rebours) juste sous la liste : pas de ligne en double ici.
   items.push(delegue ? { ok: true, href: '#quete', t: delegue.statut === 'quiz' ? `Quiz express : ${Number(delegue.tentatives) || 0} sur 5` : 'Énigmes confiées à un agent', s: delegue.statut === 'quiz' ? ((Number(delegue.tentatives) || 0) >= 3 ? (delegue.bonus ? 'bonus choisi' : 'choisis ton bonus') : 'pas de bonus') : 'résultat ce soir' } : { ok: faites >= slotsCompte().length, href: '#quete', t: `Énigmes : ${faites} sur ${slotsCompte().length}`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });
@@ -344,6 +347,8 @@ export function renderHP() {
   if (st.nonDroit && S.draft && !agentsND()) { const sc = Object.values(st.nonDroit.secteurs); const hier = sc.reduce((n, x) => n + ((x.hier || []).length ? 1 : 0), 0); alertes.push({ cls: 'blue', titre: `Zone de non-droit : ${sc.filter((x) => x.statut === 'repris').length} secteur${sc.filter((x) => x.statut === 'repris').length > 1 ? 's' : ''} repris sur ${sc.length}`, texte: hier ? `des zones y étaient hier sur ${hier} secteur${hier > 1 ? 's' : ''} : rejoins-les, à plusieurs ça tombe plus vite` : 'personne n’y était hier : lance le mouvement sur la radio', href: '#terrain' }); }
   if (st.affaires.length) alertes.push({ cls: 'blue', titre: `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} disputée${st.affaires.length > 1 ? 's' : ''} sur la carte`, texte: st.affaires.map((a) => esc(a.titre)).join(' · '), href: '#carte' });
 
+  // Fin de saison programmée par le maître du jeu : prévenir tout le monde de ce qui s'arrête.
+  if (st.finSaison) alertes.unshift({ cls: 'amber', titre: st.finSaison === 'enquete' ? 'Fin de saison : le soir où l’affaire en cours se clôt' : 'Fin de saison ce soir à 20:00', texte: 'L’affaire et ses traques continuent dans la saison suivante. S’arrêtent : formations et travaux en cours, pactes, défis et crise du Conseil. Bilan de saison allégé.', href: '#hp' });
   for (const x of aFairePactes()) if (!x.fait) alertes.unshift({ cls: 'amber', titre: esc(x.titre), texte: esc(x.texte), href: '#pactes' });
   for (const a of appelsRenfort()) if (!renfortPrevu(a.uid)) alertes.unshift({ cls: 'amber', titre: `${esc(a.zone.nom)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » · ${a.op.appel ? 'appel du district : renfort payé ×1,5' : 'prête des agents contre de la réputation'}`, href: '#prive' });
   const perils = Object.values(st.zones).filter((x) => (x.peril || x.tutelle) && x.uid !== z.uid);
