@@ -11,6 +11,7 @@ export const NOTE_MAJ = {
     ['🏢', 'Un nouvel HP', 'ton commissariat en grand, un seul bouton pour la suite, et tes raccourcis au choix.'],
     ['🗺️', 'Une nouvelle carte', 'ta ville en maquette 3D : touche un quartier, envoie tes patrouilles et regarde-les rouler. Deux boutons : Non-droit (qui s’ouvre d’abord, avec le reste du district dessous) et Ma zone.'],
     ['🔎', 'Une enquête qui se lit', 'l’affaire en grand, les suspects en polaroïds sur ton mur, les nouvelles pièces sous enveloppe à ouvrir, et « Ce soir » en cases à remplir.'],
+    ['📰', 'La Gazette en cartes', 'comme des stories : la une, toi cette nuit, l’enquête, le district. Touche pour avancer.'],
     ['🗂️', 'Des énigmes en dossier', 'chaque énigme sur sa feuille de dossier, tu réponds directement sur le plan ou la plaque, et le tampon « Résolu » tombe.'],
     ['🎖️', 'L’onglet Chef', 'ce que ton chef fait aujourd’hui, sa semaine et sa carrière, à un toucher.'],
     ['🎖️', 'Ton chef de corps', 'choisis son visage : il progresse avec tes jeux et ta gestion, et le suit de saison en saison.'],
@@ -40,6 +41,12 @@ export const NOTE_MAJ = {
       ['Pactes', 'les trois pactes en une ligne avec leur effet et un bouton « Proposer » ; un pacte signé devient un contrat avec vos deux signatures. Défi amical et Conseil passent en tuiles.'],
       ['Mon hôtel de police', 'bâtiment et garage en barres de niveaux (le prochain en pointillé, avec ce qu’il apporte), les annexes en tuiles : touche-en une pour son effet et « Construire ce soir ».'],
       ['Profil', 'une carte de service (grade, IPZ, trophées, arrestations) et tes parties juste dessous.'],
+    ]],
+    ['La Gazette en cartes (9 octobre)', [
+      ['Comme des stories', 'la Gazette se lit en cartes plein écran : touche à droite pour avancer, à gauche pour revenir, ou glisse du doigt. La une, toi cette nuit, l’enquête, le district, les services, les petites annonces, puis le sommaire.'],
+      ['Toi cette nuit', 'ton IPZ, ta place et ce qui a bougé (moral, satisfaction, réputation, budget), avec ton commissariat, et les nouvelles où ta zone est citée.'],
+      ['Plus court', 'les faits d’une même rubrique sont regroupés, la une est choisie pour toi, les chiffres de règles restent dans le rapport de la nuit.'],
+      ['Petites annonces', 'les échos du district, toujours en entier. Lis-les bien.'],
     ]],
     ['L’enquête en dossier (9 octobre)', [
       ['L’affaire en grand', 'en haut, la photo de l’affaire, le jour sur 7 et les points en jeu ce soir. Un seul gros bouton dit quoi faire ensuite : ouvrir les nouvelles pièces, choisir tes démarches, accuser.'],
@@ -532,7 +539,7 @@ const cle = () => `mazp-maj-vue-${NOTE_MAJ.id}`;
 // pas de sections de la saison 2 dans la liste, et elle n'est pas marquée « vue » (elle s'ouvrira à la bascule).
 const enV2 = () => !!(S.state && (Number(S.state.regles) || 1) >= 2);
 const avantSaison2 = () => NOTE_MAJ.saison2 && !enV2();
-const SECTION_S2 = /^(Saison 2|L’enquête en dossier|La zone de non-droit en rôles|La nouvelle carte et l’onglet Chef|Les énigmes en dossier|Le nouvel HP)/;
+const SECTION_S2 = /^(Saison 2|La Gazette en cartes|L’enquête en dossier|La zone de non-droit en rôles|La nouvelle carte et l’onglet Chef|Les énigmes en dossier|Le nouvel HP)/;
 export function noteVue() { if (avantSaison2()) return true; try { return !!localStorage.getItem(cle()); } catch (e) { return true; } }
 
 /** Fenêtre « Nouveautés » : l'essentiel (à l'ouverture du jeu) ou la liste complète (menu de l'HP). */

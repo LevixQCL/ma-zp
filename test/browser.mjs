@@ -84,7 +84,7 @@ await page.waitForSelector('#countdown');
 await page.click('[data-action="toggle-rapport"]');
 await shot('09-hp-apres-tours');
 await page.goto(`${BASE}#gazette`);
-await page.waitForSelector('.paper');
+await page.waitForSelector('.paper, .gzs-carte');
 await shot('10-gazette');
 await page.goto(`${BASE}#classement`);
 await shot('11-classement');
@@ -218,7 +218,7 @@ for (let i = 0; i < 12 && !(vuTraque && vuFipa); i++) {
 }
 console.log('Traque vue :', vuTraque, '· FIPA vue :', vuFipa);
 await page.goto(`${BASE}#gazette`);
-await page.waitForSelector('.paper');
+await page.waitForSelector('.paper, .gzs-carte');
 await shot('22-gazette-enquete');
 
 // Pactes (onglet de la Carte) : proposer un pacte d'enquête, lancer un défi amical.
@@ -280,7 +280,7 @@ const nouvelleSaison = await page.evaluate(() => { const db = JSON.parse(localSt
 if (!nouvelleSaison && !(await page.locator('[aria-label="Zone en péril"]').count())) errors.push('Bandeau de péril absent');
 await shot('27-hp-peril');
 await page.goto(`${BASE}#gazette`);
-await page.waitForSelector('.chantier');
+await page.waitForSelector('.chantier, .gzs-extra', { state: 'attached' });
 await shot('28-gazette-compteur');
 
 // Plusieurs parties : créer, ouvrir, revenir.

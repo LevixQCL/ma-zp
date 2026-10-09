@@ -11,6 +11,8 @@ import { apercuDirecteur, REGLAGES, DISTRICT } from '../engine/directeur.js';
 import { affaire, texteMisePrix, affairesOuvrables } from '../engine/enquete.js';
 import { formatDateBe, formatHeureBe } from '../engine/time.js';
 import { debriefsRecents, lienDebrief } from './debrief.js';
+import { reglesV2 } from '../engine/regles.js';
+import { renderGazetteStories } from './gazette-stories.js';
 
 export function renderGazette() {
   const list = S.gazettes;
@@ -19,6 +21,8 @@ export function renderGazette() {
     return `<main class="screen"><a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
       <div class="paper"><div class="mast"><h1>La Gazette du Delta</h1></div><p>Le premier numéro paraîtra ce soir à 20:00. Passe tes ordres d’ici là !</p></div></main>${tabbar('hp')}`;
   }
+  // Saison 2 : la Gazette en cartes à toucher (« stories »).
+  if (reglesV2(S.state)) return renderGazetteStories();
   const i = Math.min(S.gazetteIndex, list.length - 1);
   const g = list[i];
   const sansFaillite = null;

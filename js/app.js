@@ -7,6 +7,7 @@ import { installerEnigmes } from './ui/enigmes.js';
 import { createBackend } from './data/backend.js';
 import { codeDejaPris, MSG_CODE_PRIS } from './data/codes.js';
 import { installerEuros } from './ui/euros.js';
+import { installerGazetteStories } from './ui/gazette-stories.js';
 import { resolvePending, completerDepuisGazette, etatResolution } from './data/resolver.js';
 import { S, toast, myZone, esc, cielDuMoment, tabbar, pseudoParDefaut, slotsJour, questDuSlot } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
@@ -1235,6 +1236,7 @@ async function onClick(e) {
       case 'quiz-bonus': await saveQuizBonus(el.dataset.v); break;
       case 'delegue-changer': S.delegueChanger = true; rerender(); break;
       case 'quest-delegue': await saveDelegue(el.dataset.v); break;
+      case 'gazette-rapport': S.showRapport = true; S.rapportIdx = 0; location.hash = '#hp'; break;
       case 'gazette-nav': if (Number(el.dataset.d) > 0) chargerArchivesGazette();
         S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
       case 'admin-create': await b.adminCreateGame(); toast('Partie lancée !'); break;
@@ -1710,6 +1712,7 @@ function messageErreur(err, contexte = '') {
 // ───────── Démarrage ─────────
 async function boot() {
   window.__mazpBoot = true; // les modules sont chargés : le filet de sécurité de index.html se retire
+  installerGazetteStories();
   installerEuros(document.body); // le moteur compte en k€ : tout ce qui s'affiche est converti en euros
   installerInvitationAppli(); // bandeau « installe Ma ZP » (iPhone et Android), seulement hors appli installée
   loading('Connexion au central…', 18);
