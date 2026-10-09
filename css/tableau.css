@@ -406,13 +406,16 @@ body:has(.demo-banner) .jr-wrap { top: 44px; }
    ═══════════════════════════════════════════════════════════════ */
 .enq2 { gap: 14px; }
 /* Héros : la photo de l'affaire, le titre, les jours */
-.e2-hero { position: relative; margin: -20px -16px 0; height: 250px; overflow: hidden; background: #0B0F1E; }
+.e2-hero { position: relative; margin: -20px -16px 0; height: 250px; background: #0B0F1E; }
+/* Pas d'overflow sur le héros : le menu ⋯ doit pouvoir déborder dessous. C'est la photo qui est rognée. */
 .e2-photo, .e2-photo > svg, .e2-photo > img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.e2-photo { overflow: hidden; border-radius: inherit; }
+.e2-hero::before { border-radius: inherit; }
 .e2-photo > svg, .e2-photo svg image { object-fit: cover; }
 .e2-photo > svg { transform: scale(1.06); }
 .e2-photo > svg[viewBox] { width: 100%; height: 100%; }
 .e2-hero::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, rgba(8,12,27,.78) 0, rgba(8,12,27,.15) 34%, rgba(8,12,27,.25) 55%, var(--bg) 100%); }
-.e2-hud { position: absolute; z-index: 2; top: 12px; left: 16px; right: 12px; display: flex; align-items: center; gap: 8px; }
+.e2-hud { position: absolute; z-index: 4; top: 12px; left: 16px; right: 12px; display: flex; align-items: center; gap: 8px; }
 .e2-k { font-size: 11.5px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--amber-soft); text-shadow: 0 1px 6px rgba(0,0,0,.8); }
 .e2-hbtn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.18); background: rgba(12,17,36,.62); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); color: #fff; display: grid; place-items: center; font: 800 17px var(--body); cursor: pointer; list-style: none; flex-shrink: 0; }
 .e2-hbtn::-webkit-details-marker { display: none; }

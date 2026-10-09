@@ -426,6 +426,16 @@ function trouverCible(e) {
   return null;
 }
 
+/** Referme les voiles plein écran de l'enquête ; renvoie true si quelque chose a été refermé. */
+function fermerVoiles() {
+  let ferme = false;
+  if (S.journalOuvert != null) { S.journalOuvert = undefined; ferme = true; }
+  if (S.e2Lire) { S.e2Lire = false; ferme = true; }
+  if (S.sceneOuverte != null) { S.sceneOuverte = null; S.sceneZoom = null; ferme = true; }
+  if (S.tabSheet != null) { S.tabSheet = null; ferme = true; }
+  return ferme;
+}
+
 let signature = '';
 function boucle() {
   raf = requestAnimationFrame(boucle);
@@ -439,6 +449,9 @@ function boucle() {
     if (e.geste && e.geste.avant) e.geste.avant();
   }
   const attente = attendOnglet(e);
+  // L'onglet à toucher doit rester touchable : on referme les voiles plein écran ouverts pendant la visite
+  // (journal de l'affaire, lecture des pièces, scène, volet). Le journal jamais lu se rouvrira après la visite.
+  if (attente && fermerVoiles()) document.dispatchEvent(new CustomEvent('mazp:rerender'));
   const surPlace = !e.route || S.route === e.route;
   const cible = attente ? document.querySelector(`nav.tabs a[href="#${e.route}"]`) : surPlace ? trouverCible(e) : null;
   if (cible && cible !== derniereCible) {
