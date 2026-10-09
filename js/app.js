@@ -1258,6 +1258,22 @@ async function onClick(e) {
       case 'admin-fin-saison': { const m = el.dataset.mode || null; await b.adminFinSaison(m); toast(m === 'enquete' ? 'La saison se terminera le soir où l’affaire en cours se clôt.' : m === 'soir' ? 'La saison se termine ce soir à 20:00.' : 'Fin anticipée annulée.'); break; }
       case 'admin-variantes': await b.adminVariantesEcrites(!S.state.variantesEcrites); toast(!S.state.variantesEcrites ? 'Les prochaines affaires écrites pourront tirer une autre version.' : 'Retour au scénario d’origine pour les prochaines affaires écrites.'); break;
       case 'admin-passer-tour': if (await askConfirm(`Passer le tour ${S.state.turn} sans le calculer ? Aucune zone n’avance ce soir.`)) { await b.adminPasserTour(); toast('Tour passé.'); } break;
+      case 'admin-aveux': {
+        const uids = String(el.dataset.uids || '').split(',').filter(Boolean);
+        if (!uids.length || !S.state || !S.state.enquete) break;
+        if (!(await askConfirm(`Accorder les aveux à ${uids.length} zone${uids.length > 1 ? 's' : ''} et calculer le tour maintenant ? L’affaire se clôt et la saison ${S.state.season + 1} commence. Une journée de jeu passe ce soir.`, 'Accorder et calculer'))) break;
+        const n = S.state.enquete.n;
+        await b.adminModifierEtat((cur) => {
+          if (!cur.enquete || cur.enquete.n !== n) return null;
+          cur.aveuxAccordes = { n, uids };
+          if (cur.finSaison !== 'soir') cur.finSaison = 'enquete';
+          cur.nextDeadline = Date.now() - 1000;
+          return true;
+        });
+        await tick(true);
+        toast(etatResolution.erreur ? 'Le tour n’a pas pu être calculé (détail en haut de l’écran).' : 'Aveux accordés : le tour est calculé, ouvre la Gazette.');
+        rerender(); break;
+      }
       case 'admin-force': await b.adminForceResolution(); await tick(true); toast(etatResolution.erreur ? 'Le tour n’a pas pu être résolu (détail en haut de l’écran).' : 'Tour résolu.'); break;
       case 'admin-remove': if (await askConfirm('Retirer ce joueur de la partie ?', 'Retirer')) { await b.adminRemovePlayer(el.dataset.uid); toast('Joueur retiré.'); } break;
       case 'admin-reset': if (await askConfirm('Recommencer la partie ? Toutes les zones repartent de zéro.', 'Recommencer')) { await b.adminReset(); lastTurnKey = null; toast('Nouvelle partie lancée.'); location.hash = '#hp'; } break;

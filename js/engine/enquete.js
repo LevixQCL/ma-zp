@@ -1309,16 +1309,21 @@ export function enquetePre(state, uids, ord, push) {
 
   // Accusations (une seule par affaire et par zone).
   const justes = [];
+  // Aveux accordés par le maître du jeu (affaire écrite) : ces zones avaient confronté le bon suspect, la confrontation compte comme réussie.
+  const AV = state.aveuxAccordes && state.aveuxAccordes.n === e.n && aff.meurtre ? new Set(state.aveuxAccordes.uids || []) : null;
+  delete state.aveuxAccordes;
   for (const u of uids) {
     const z = state.zones[u], d = z.enquete;
-    const a = ord[u].accusation;
+    const accorde = !!(AV && AV.has(u) && !d.exclu && d.accuse === null);
+    const a = accorde ? aff.coupable : (ord[u] || {}).accusation;
     if (a === null || a === undefined || d.exclu || d.accuse !== null) continue;
     if (!(a >= 0 && a < aff.suspects.length)) continue;
     if (aff.meurtre) {
       // Confrontation : trois pièces que la zone a (ou connues de tous) opposées au suspect.
       const connus = new Set([...faitsConnus(d), 'doc:journal', 'doc:pvc', ...aff.suspects.map((_, k) => `A:${k}`)]);
       const pieces = (Array.isArray(ord[u].confront) ? ord[u].confront : []).filter((f) => typeof f === 'string' && connus.has(f)).slice(0, 3);
-      if (a === aff.coupable && !confrontationOk(aff, a, pieces)) {
+      if (accorde) z.rapport.push(`Enquête : le parquet a revu ta confrontation ${deN(aff.suspects[a].nom)}. Tu tenais le bon suspect : les aveux te sont accordés.`);
+      if (!accorde && a === aff.coupable && !confrontationOk(aff, a, pieces)) {
         z.reputation -= 1;
         // On rappelle les éléments opposés (et ceux qui n'ont pas pu l'être), pour que le joueur sache ce qui a été joué.
         const nomEl = (f) => (f === 'doc:journal' ? 'le journal du lendemain' : f === 'doc:pvc' ? 'le PV de premières constatations' : `« ${titrePiece(aff, f)} »`);

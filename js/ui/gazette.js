@@ -285,6 +285,29 @@ function directeurAdminHtml(st) {
   </section>`;
 }
 
+/** Zones qui ont confronté le bon suspect au dernier tour sans obtenir d'aveux (lu dans leur rapport du soir). */
+export function confrontationsRatees(st) {
+  if (!st || !st.enquete) return [];
+  const aff = affaire(st, st.enquete.n);
+  if (!aff || !aff.meurtre) return [];
+  const nom = aff.suspects[aff.coupable].nom, g = S.gazettes && S.gazettes[0];
+  return Object.values(st.zones).filter((z) => {
+    const d = z.enquete;
+    if (d && d.n === st.enquete.n && (d.exclu || (d.accuse !== null && d.accuse !== undefined))) return false;
+    const lignes = (g && g.rapports && g.rapports[z.uid]) || z.rapport || [];
+    return lignes.some((l) => typeof l === 'string' && l.includes('nie tout et repart libre') && l.includes(nom));
+  });
+}
+function aveuxAdminHtml(st) {
+  const L = confrontationsRatees(st);
+  if (!L.length) return '';
+  const aff = affaire(st, st.enquete.n);
+  return `<section class="card amber"><h2 class="card-title">Confrontations du bon suspect ce soir</h2>
+    <p class="small" style="margin:0">Ces zones ont confronté ${esc(aff.suspects[aff.coupable].nom)}, le bon suspect, mais sans les pièces décisives : ${L.map((z) => `<b>${esc(zoneName(z))}</b>`).join(', ')}.</p>
+    <p class="small muted" style="margin:0">Tu peux leur accorder les aveux : le tour est recalculé tout de suite, leur confrontation compte comme réussie (points, prime, débrief), l’affaire se clôt et la saison ${st.season + 1} commence. Une journée de jeu passe ce soir : les ordres déjà donnés pour demain sont joués maintenant.</p>
+    <button class="btn block primary" data-action="admin-aveux" data-uids="${esc(L.map((z) => z.uid).join(','))}">Accorder les aveux et calculer le tour maintenant</button></section>`;
+}
+
 export function renderAdmin() {
   // (note de mise à jour : voir ui/nouveautes.js)
   const st = S.state;
@@ -306,6 +329,7 @@ export function renderAdmin() {
       <p class="small" style="margin:0;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);line-height:1.45">${esc(noteCourte())}</p>
       <div class="row"><button class="btn small grow" data-action="maj-voir">Voir la note complète</button>
         <button class="btn small primary grow" data-action="maj-envoyer" ${S.majEnvoyee ? 'disabled' : ''}>${S.majEnvoyee ? `Envoyée à ${S.majEnvoyee} joueur${S.majEnvoyee > 1 ? 's' : ''}` : 'Envoyer à tous en privé'}</button></div></section>
+    ${aveuxAdminHtml(st)}
     <section class="card"><h2 class="card-title">Enquête</h2>
       ${st.enquetePause ? `<p class="small" style="margin:0">Enquête en pause : l’affaire « ${esc(st.enquetePause.titre)} » a été retirée. La nouvelle affaire s’ouvrira à la prochaine résolution (${esc(formatDateBe(st.nextDeadline))} à 20:00). Les traques continuent.</p>`
         : st.enquete ? `<p class="small muted" style="margin:0">Retire l’affaire en cours (par exemple si elle s’est ouverte en même temps qu’une traque). Les traques continuent, une édition spéciale de la Gazette s’affiche chez tout le monde, et la nouvelle affaire s’ouvre au prochain 20:00.</p>
