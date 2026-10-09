@@ -19,7 +19,7 @@ const zoneLabel = (z) => `ZP ${z.code} ${z.nom}`;
 
 // ——— Rubriques et illustrations ———
 // Illustrations Gemini déposées dans img/gazette/ (format 4:3). Tant qu'une image manque, une vignette dessinée la remplace.
-const IMAGES = new Set(['operation']);
+const IMAGES = new Set(['operation', 'coupdur', 'nondroit', 'enquete', 'tribunal']);
 const CATEGORIE = {
   operation: ['Opération réussie', 'Opération', 'Flagrant délit', 'Héros du jour', 'Champion', 'Performance', 'Solidarité', 'Redressement', 'Coopération', 'Félicitations du juge'],
   coupdur: ['Coup dur', 'Fiasco', 'Faillite', 'Zone en péril', 'Tutelle', 'Inspection générale', 'Ressources humaines', 'Parquet', 'Le milieu riposte', 'Pacte rompu'],
