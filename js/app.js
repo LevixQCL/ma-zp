@@ -790,7 +790,8 @@ async function onClick(e) {
       case 'vente-finale': {
         const k = el.dataset.k, f = { ...((S.draft.finales || {})[k] || {}) }, d0 = Number(el.dataset.d), p0 = Number(el.dataset.p || 0);
         let m = f.montant ? f.montant + d0 : d0 > 0 ? p0 : 0;
-        if (f.montant && m < Number(p0 || 0)) m = 0;
+        // On ne descend jamais sous le plancher (mise à prix, ou sa relance d'hier) : au plancher, « − » retire l'offre.
+        if (f.montant && m < p0) m = f.montant > p0 ? p0 : 0;
         m = Math.round(Math.min(VENTE.max, Math.max(0, m)) * 10) / 10;
         S.draft.finales = { ...(S.draft.finales || {}) };
         if (m > 0) S.draft.finales[k] = { ...f, montant: m }; else delete S.draft.finales[k];
@@ -830,7 +831,9 @@ async function onClick(e) {
       case 'chef-enregistrer': {
         const dv = document.getElementById('chef-devise');
         const chef = { ...((S.player && S.player.chef) || {}), ...(S.chefBrouillon || {}), devise: dv ? String(dv.value || '').trim().slice(0, 60) : '' };
-        if (!chef.portrait || !chef.parcours) break;
+        // Parcours déjà fixé sur la zone (nouvel appareil, profil sans parcours) : on le reprend.
+        { const zc = myZone() && myZone().chef; if (!chef.parcours && zc && zc.parcours) chef.parcours = zc.parcours; }
+        if (!chef.portrait || !chef.parcours) { toast(chef.portrait ? 'Choisis d’abord le parcours de ton chef.' : 'Choisis d’abord un portrait.'); break; }
         S.player = { ...(S.player || {}), chef };
         await b.savePlayer(S.user.uid, S.player);
         S.chefBrouillon = null; S.chefEdit = false; S.players = await b.getPlayers();

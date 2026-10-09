@@ -183,7 +183,7 @@ export function affichesHtml(z, { moi = false } = {}) {
       <span class="affiche-photo">${portraitSuspect({ nom: a.nom, f: a.f, age: a.age, role: a.role, photo: a.photo }, a.i, 'affiche-face')}</span>
       <strong class="affiche-nom">${esc(a.nom)}</strong>
       <span class="affiche-aff">« ${esc(a.titre)} »</span>
-      <span class="affiche-pied">Saison ${a.season} · jour ${a.tour}${a.prime !== undefined ? ` · ${esc(primeTxt(a.prime))}` : ''}</span>
+      <span class="affiche-pied">Saison ${a.season}${a.tour != null ? ` · jour ${a.tour}` : ''}${a.prime !== undefined ? ` · ${esc(primeTxt(a.prime))}` : ''}</span>
       <span class="affiche-tampon" aria-label="Arrêté${a.f ? 'e' : ''}">Arrêté${a.f ? 'e' : ''}</span>
     </figure>`).join('')}</div>
   </section>`;

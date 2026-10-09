@@ -2443,7 +2443,7 @@ body:has(.savebar) main.rv { padding-bottom: 220px; }
 .co-effet { padding: 9px 11px; border-radius: 12px; background: var(--bg); font-size: 13px; color: var(--text2); display: flex; gap: 8px; align-items: flex-start; line-height: 1.4; }
 .co-effet b { color: var(--text); }
 .co-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-.co-pile { position: relative; padding-top: 8px; }
+.co-pile { position: relative; padding-top: 8px; overflow-x: clip; }
 .co-derriere { position: absolute; left: 10px; right: 10px; top: 0; height: 40px; border-radius: 6px; background: var(--paper2); opacity: .45; transform: rotate(-1.2deg); }
 .co-feuille { position: relative; background: var(--paper); color: var(--ink); border-radius: 6px; padding: 14px 14px 12px; box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .7); background-image: repeating-linear-gradient(transparent 0 25px, rgba(150, 130, 100, .13) 25px 26px); transition: transform .32s, opacity .32s; overflow: hidden; }
 .co-feuille.sort { transform: translateX(110%) rotate(8deg); opacity: 0; }

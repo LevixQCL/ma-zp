@@ -46,7 +46,7 @@ function districtHtml(st, me) {
     const renfort = /renfort/i.test(h);
     L.push(ligne(`cv-vois-${T}-${i}`, renfort ? '🚨' : '🤝', titreDe(h), sousDe(h), h, { cls: renfort ? 'rouge' : '', ouvert: renfort, badge: renfort ? '<span class="ajd-badge">!</span>' : '' }));
   });
-  district.forEach((h, i) => L.push(ligne(`cv-dist-${T}-${i}`, '⭐', titreDe(h), st.evenement && st.evenement.tour === T ? 'ce soir : envoie des agents' : `dans ${st.evenement ? st.evenement.tour - T : '?'} tours`, h, { ouvert: !!(st.evenement && st.evenement.tour === T) })));
+  district.forEach((h, i) => L.push(ligne(`cv-dist-${T}-${i}`, '⭐', titreDe(h), st.evenement && st.evenement.tour === T ? 'ce soir : envoie des agents' : (st.evenement && st.evenement.tour > T ? `dans ${st.evenement.tour - T} tour${st.evenement.tour - T > 1 ? 's' : ''}` : 'bientôt'), h, { ouvert: !!(st.evenement && st.evenement.tour === T) })));
   // Pactes, défis et Conseil : ce qui attend une réponse, puis l'accès à l'écran complet.
   const af = aFairePactes(), reste = af.filter((x) => !x.fait);
   const actifs = (st.pactes || []).filter((p) => (p.a === me.uid || p.b === me.uid) && p.etape === 'actif').length;

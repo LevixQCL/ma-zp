@@ -248,6 +248,7 @@ function carteSommaire(g, cartes, i, list) {
       <div class="gzs-actions">
         <a class="gzs-btn" href="#ordres">Mes ordres ${icon('chevron', 16)}</a>
         <button type="button" class="gzs-btn ghost" data-action="gazette-nav" data-d="1" ${i >= list.length - 1 ? 'disabled' : ''}>Numéro précédent</button>
+        ${i > 0 ? `<button type="button" class="gzs-btn ghost" data-action="gazette-nav" data-d="-${i}">Dernier numéro</button>` : ''}
         <a class="gzs-btn ghost" href="#classement">Classements</a></div></div>`);
 }
 

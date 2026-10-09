@@ -44,7 +44,7 @@ function lotHtml(v, lot, ph, z, rel) {
   } else if (ph === 'finale') {
     const m = fin ? fin.montant : 0, plancher = Math.max(lot.prixMin, mien || 0);
     action = `<div class="col" style="gap:6px"><div class="between"><span style="font-weight:600;font-size:14px">Ton offre finale secrète</span><span class="tiny muted">budget ${fmt1(z.budget)} k€</span></div>
-      <span class="stepper" style="align-self:center"><button type="button" data-action="vente-finale" data-k="${lot.k}" data-d="-1" ${m ? '' : 'disabled'}>−1</button><button type="button" data-action="vente-finale" data-k="${lot.k}" data-d="-0.5" ${m ? '' : 'disabled'}>−</button>
+      <span class="stepper" style="align-self:center"><button type="button" data-action="vente-finale" data-k="${lot.k}" data-d="-1" data-p="${plancher}" ${m ? '' : 'disabled'}>−1</button><button type="button" data-action="vente-finale" data-k="${lot.k}" data-d="-0.5" data-p="${plancher}" ${m ? '' : 'disabled'}>−</button>
         <span class="n" style="min-width:84px">${m ? euros(m) : '—'}</span>
         <button type="button" data-action="vente-finale" data-k="${lot.k}" data-d="0.5" data-p="${plancher}">+</button><button type="button" data-action="vente-finale" data-k="${lot.k}" data-d="1" data-p="${plancher}">+1</button></span>
       <span class="tiny muted" style="text-align:center">${mien ? `Ta relance d’hier (${euros(mien)}) compte déjà comme offre : tu ne peux que monter.` : 'Débitée seulement si tu l’emportes.'}</span>
