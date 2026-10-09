@@ -1146,13 +1146,13 @@ async function onClick(e) {
         // Pastilles des ordres (saison 2) : ouvre la section et descend jusqu'à elle.
         const k = el.dataset.k;
         if (k === 'chef') { location.hash = '#chef'; break; }
-        if (['decision', 'pistes', 'depenses', 'equipe', 'nondroit', 'affaires'].includes(k)) S.ordOpen = { ...(S.ordOpen || {}), [k]: true };
+        if (['decision', 'pistes', 'depenses', 'equipe', 'nondroit', 'affaires', 'reserve'].includes(k)) S.ordOpen = { [k]: true };
         rerender();
         const c = document.getElementById(`ord-${k}`) || document.querySelector(`[data-action="ord-open"][data-k="${k}"]`);
         if (c) { c.scrollIntoView({ behavior: 'smooth', block: 'start' }); c.classList.add('surligne-bloc'); setTimeout(() => c.classList.remove('surligne-bloc'), 1600); }
         break;
       }
-      case 'ord-open': S.ordOpen = { ...(S.ordOpen || {}), [el.dataset.k]: !(S.ordOpen && S.ordOpen[el.dataset.k]) }; rerender(); break;
+      case 'ord-open': { const k = el.dataset.k, was = !!(S.ordOpen && S.ordOpen[k]); S.ordOpen = reglesV2(S.state) && el.closest('.ord-tuiles') ? { [k]: !was } : { ...(S.ordOpen || {}), [k]: !was }; rerender(); if (!was && reglesV2(S.state) && el.closest('.ord-tuiles')) requestAnimationFrame(() => { const c = document.getElementById(`ord-${k}`); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }); break; };
       case 'toggle-decision': S.decisionOpen = !S.decisionOpen; rerender(); break;
       case 'decision': S.draft.decision = JSON.parse(el.dataset.json); S.draft.sansDecision = el.dataset.aucune === '1'; S.ordersDirty = true; rerender(); break;
       case 'dec-cat': S.decCat = el.dataset.v; rerender(); break;

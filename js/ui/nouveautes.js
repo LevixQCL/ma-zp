@@ -33,7 +33,7 @@ export const NOTE_MAJ = {
       ['Non-droit', 'deux hélicoptères ou deux blindés ne se cumulent pas : seul le meilleur compte.'],
     ]],
     ['Ordres, rapport, privé, pactes, hôtel de police, profil (9 octobre)', [
-      ['Ordres', 'en haut, l’IPZ prévu ce soir en jauge et une pastille par chose à régler (affectation, rythme, décision, chef, doctrine les 3 premiers jours) : elle se coche quand c’est fait, un toucher y mène. La doctrine se choisit dans un bandeau qui défile ; la barre « Valider » rappelle la prévision.'],
+      ['Ordres', 'en haut, l’IPZ prévu ce soir en jauge et une pastille par chose à régler (affectation, rythme, décision, chef, doctrine les 3 premiers jours) : elle se coche quand c’est fait, un toucher y mène. Chaque service tient sur une ligne (cases, résultat, + et −). Décision, chef, pistes, agents de réserve et le reste passent en tuiles « Ce soir aussi » : celle qu’on touche s’ouvre en dessous. La doctrine se choisit dans un bandeau qui défile ; la barre « Valider » rappelle la prévision.'],
       ['Rapport de la nuit', 'l’IPZ en grand et sa composition en couleurs, puis ce qui a aidé et ce qui a coûté. Le journal complet, les jauges et le calcul restent à un toucher.'],
       ['Messages privés', 'ils deviennent la troisième fréquence de la Radio, avec les mêmes bulles et les invitations à traiter en haut.'],
       ['Pactes', 'les trois pactes en une ligne avec leur effet et un bouton « Proposer » ; un pacte signé devient un contrat avec vos deux signatures. Défi amical et Conseil passent en tuiles.'],
