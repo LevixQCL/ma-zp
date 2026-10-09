@@ -50,12 +50,12 @@ import { renderPactes } from './ui/pactes.js';
 import { PACTES, PACTE, DEFI, DEFI_INDICATEURS } from './engine/pactes.js';
 import { ongletsRadio } from './ui/prive.js';
 import { renderParties } from './ui/parties.js';
-import { renderEnquete, lireCarnet, ecrireCarnet, synchroCarnet, synchroCarnetMaintenant, restaurerCarnet, choisirVueEnquete, vueEnquete } from './ui/enquete.js';
+import { renderEnquete, lireCarnet, ecrireCarnet, etatSuspect, synchroCarnet, synchroCarnetMaintenant, restaurerCarnet, choisirVueEnquete, vueEnquete } from './ui/enquete.js';
 import { piecesNonLues, marquerLues } from './ui/enquete-dossier.js';
-import { affaire, dossierDe, maxDemarchesDe } from './engine/enquete.js';
+import { affaire, dossierDe, maxDemarchesDe, ELEMENTS } from './engine/enquete.js';
 import { choisirRecoup, retournerPouce } from './ui/enquete-plus.js';
 import { marquerJournalVu } from './ui/journal.js';
-import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, basculerFrise, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
+import { nomElement, monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, basculerFrise, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderRadioV2 } from './ui/radio-v2.js';
 import { reglesV2 } from './engine/regles.js';
@@ -956,8 +956,8 @@ async function onClick(e) {
       case 'pouce-voir': retournerPouce(affaire(S.state, S.state.enquete.n), el.dataset.k); rerender(); break;
       case 'confront-piece': { const c = S.draft.confront || []; const f = el.dataset.f; S.draft.confront = c.includes(f) ? c.filter((x) => x !== f) : [...c, f].slice(0, 3); S.ordersDirty = true; rerender(); break; }
       case 'confront-valider': {
-        const s = affaire(S.state, S.state.enquete.n).suspects[Number(el.dataset.i)];
-        if (await askConfirm(`Confronter ${s.nom} à 20:00 avec ces trois éléments ? Si c’est la mauvaise personne, le parquet te retire l’affaire.`, 'Confronter')) { S.draft.accusation = Number(el.dataset.i); S.ordersDirty = true; S.tabSheet = null; rerender(); }
+        const aff = affaire(S.state, S.state.enquete.n), s = aff.suspects[Number(el.dataset.i)];
+        if (await askConfirmHtml(avantConfrontation(aff, s, S.draft.confront || []), 'Je suis sûr : confronter', 'Je vérifie encore')) { S.draft.accusation = Number(el.dataset.i); S.ordersDirty = true; S.tabSheet = null; rerender(); }
         break;
       }
       case 'tab-confront': S.enqVue = 'tableau'; S.tabSheet = { k: 'confront', id: `X:${el.dataset.i}` }; render(); break;
@@ -996,7 +996,7 @@ async function onClick(e) {
         const s = aff.suspects[Number(el.dataset.i)];
         // Deux complices : le bouton porte les deux noms (data-j).
         const j = el.dataset.j !== undefined ? Number(el.dataset.j) : null, s2 = j !== null ? aff.suspects[j] : null;
-        if (await askConfirm(s2 ? `Accuser ${s.nom} et ${s2.nom}, ensemble ? L’accusation part au parquet à 20:00. Une seule accusation par affaire : si tu te trompes, tu es écarté de l’affaire.` : `Accuser ${s.nom} ? L’accusation part au parquet à 20:00. Une seule accusation par affaire : si tu te trompes, tu es écarté de l’affaire.`, 'Accuser')) {
+        if (await askConfirmHtml(avantAccusation(aff, Number(el.dataset.i), j), 'Je suis sûr : accuser', 'Je vérifie encore')) {
           S.draft.accusation = Number(el.dataset.i); S.draft.accusation2 = s2 ? j : null; S.ordersDirty = true; rerender();
         }
         break;
@@ -1308,6 +1308,54 @@ function chargerArchivesGazette() {
 }
 
 /** Fenêtre de confirmation intégrée à la page (confirm() n'est pas disponible partout). */
+/**
+ * Avant une confrontation : on rappelle qu'il faut des preuves solides, on montre d'où vient chaque élément
+ * (connu de tous ou trouvé par ton enquête) et on prévient si la règle des deux preuves propres n'est pas remplie.
+ * Rien sur la solution : seulement la règle et ce que le joueur a choisi.
+ */
+function avantConfrontation(aff, s, choix) {
+  const publics = (f) => f === 'doc:journal' || f === 'doc:pvc' || /^A:\d+$/.test(f);
+  const propres = choix.filter((f) => !publics(f)).length;
+  const lignes = choix.map((f) => `<li><span>${esc(nomElement(aff, f))}</span><em class="${publics(f) ? 'pub' : 'moi'}">${publics(f) ? 'connu de tous' : 'ton enquête'}</em></li>`).join('');
+  return `<h3 class="cf-t">Confronter ${esc(s.nom)} ?</h3>
+    <p class="cf-p">Une confrontation se gagne avec des <strong>preuves solides et irréfutables</strong>, pas avec une intuition. Chaque élément doit le contredire directement : un alibi qui tombe, une trace qui le place sur les lieux, un mensonge prouvé.</p>
+    <ul class="cf-l">${lignes}</ul>
+    ${propres < 2 ? `<p class="cf-alerte">${propres ? 'Un seul élément trouvé' : 'Aucun élément trouvé'} par ton enquête : il en faut <strong>au moins deux</strong>. Le journal, le PV de constatations et les auditions ne suffisent pas : avec ça, il niera.</p>` : ''}
+    <p class="cf-p muted">S’il nie : −1 de réputation, et tu pourras recommencer un autre jour. Si ce n’est pas la bonne personne : le parquet te retire l’affaire.</p>`;
+}
+/** Avant une accusation (vols) : le carnet du joueur dit-il vraiment que c'est lui ? */
+function avantAccusation(aff, i, j) {
+  const carnet = lireCarnet(aff.n), noms = { mob: 'mobile', moy: 'moyen', occ: 'occasion' };
+  const vise = [i, ...(j !== null ? [j] : [])];
+  const nA = aff.variante === 'complices' ? 2 : 1;
+  const enLice = aff.suspects.map((_, k) => k).filter((k) => !vise.includes(k) && etatSuspect(carnet, k, aff) !== 'exclu').length;
+  const bilan = vise.map((k) => {
+    const v = ELEMENTS.map((e) => carnet.g[`${k}:${e}`] || 0);
+    const manque = ELEMENTS.filter((e, x) => v[x] !== 1).map((e) => noms[e]);
+    return `<li><span>${esc(aff.suspects[k].nom)}</span><em class="${manque.length ? 'pub long' : 'moi'}">${manque.length ? `sans ✓ : ${manque.join(', ')}` : '3 ✓ dans ton carnet'}</em></li>`;
+  }).join('');
+  const doute = vise.some((k) => ELEMENTS.some((e) => (carnet.g[`${k}:${e}`] || 0) !== 1)) || enLice > 0;
+  return `<h3 class="cf-t">Accuser ${esc(vise.map((k) => aff.suspects[k].nom).join(' et '))} ?</h3>
+    <p class="cf-p">L’accusation part au parquet à 20:00 et il n’y en a <strong>qu’une par affaire</strong>. Le parquet veut des <strong>preuves solides et irréfutables</strong> : ${nA > 1 ? 'les deux complices réunissent' : 'le coupable est le seul à réunir'} mobile, moyen et occasion.</p>
+    <ul class="cf-l">${bilan}</ul>
+    ${enLice ? `<p class="cf-alerte">${enLice} autre${enLice > 1 ? 's' : ''} suspect${enLice > 1 ? 's ne sont' : ' n’est'} pas écarté${enLice > 1 ? 's' : ''} dans ton carnet (aucun ✕).</p>` : ''}
+    ${doute ? '' : '<p class="cf-p ok">Ton carnet est cohérent. Vérifie quand même que chaque ✓ repose sur une pièce, pas sur une supposition.</p>'}
+    <p class="cf-p muted">Si tu te trompes, tu es écarté de l’affaire.</p>`;
+}
+/** Comme askConfirm, avec un contenu mis en forme (échappé par l'appelant). */
+function askConfirmHtml(html, okLabel = 'Confirmer', koLabel = 'Annuler') {
+  return new Promise((resolve) => {
+    const wrap = document.createElement('div');
+    wrap.setAttribute('role', 'dialog');
+    wrap.setAttribute('aria-modal', 'true');
+    wrap.className = 'cf-wrap';
+    wrap.innerHTML = `<div class="card cf">${html}<div class="row"><button class="btn grow" data-c="0">${esc(koLabel)}</button><button class="btn primary grow" data-c="1">${esc(okLabel)}</button></div></div>`;
+    const done = (v) => { wrap.remove(); resolve(v); };
+    wrap.addEventListener('click', (e) => { const b = e.target.closest('[data-c]'); if (b) { e.stopPropagation(); done(b.dataset.c === '1'); } else if (e.target === wrap) done(false); });
+    document.body.appendChild(wrap);
+    wrap.querySelector('[data-c="0"]').focus();
+  });
+}
 function askConfirm(message, okLabel = 'Confirmer', koLabel = 'Annuler') {
   return new Promise((resolve) => {
     const wrap = document.createElement('div');
