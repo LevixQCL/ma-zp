@@ -20,7 +20,7 @@ import { clamp, round1, moyenneIpz } from './zone.js';
 import { assurerQuartiers, carteQuartiers, lirePatrouilles } from './quartiers.js';
 import { ALEAS, COUPS_DURS, OPERATIONS, PRESSIONS } from './contenu.js';
 import { siteDe } from './sites.js';
-import { niveauChef, COMPETENCES, noterChef } from './chef.js';
+import { niveauChef, COMPETENCES, noterChef, RESEAU, changerEstime } from './chef.js';
 import { SEASON_LENGTH, BUDGET_IPZ, NIVEAU_MAX, SERVICES, SERVICE_LABELS, coutEquipement, REGLES, aAnnexe } from './constants.js';
 import { affaire, candidats, faitsConnus, pieceCoupDePouce } from './enquete.js';
 
@@ -510,6 +510,97 @@ export const FEUILLETONS = {
       },
     },
   },
+  // ── Appels du réseau (saison 2, chef de corps) : un personnage appelle le chef ; l'estime gagnée ou perdue change son humeur. ──
+  appelBourgmestre: {
+    titre: 'Le bourgmestre au téléphone', dilemme: true,
+    poids: (z) => (REGLES.v2 && z.chef ? 0.7 : 0),
+    etapes: {
+      debut: {
+        signe: () => ({ titre: '📞 Le bourgmestre au téléphone', texte: 'Il attend ta réponse avant 20:00.' }),
+        question: 'L’échevin des fêtes voudrait deux agents en grande tenue à la kermesse de demain, « pour l’image ». Le bourgmestre appuie la demande.',
+        choix: (z) => avecChef(z, [
+          { l: 'Envoyer deux agents', s: '2 agents pris demain ; le bourgmestre apprécie, le syndicat grince' },
+          { l: 'Refuser poliment', s: 'aucun agent pris, mais le bourgmestre s’en souviendra' },
+        ], 'diplomatie', { l: 'Proposer les gardiens de la paix communaux', s: 'la commune fournit les gilets, le bourgmestre apprécie' }),
+        defaut: 1,
+        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { estime: { bourgmestre: 1 } }, texte: 'les gardiens de la paix font très bien l’affaire' }
+          : ch === 0 ? { ok: true, fx: { corvee: 2, estime: { bourgmestre: 1, syndicat: -1 } }, texte: 'belle photo dans le bulletin communal' }
+            : { ok: true, fx: { estime: { bourgmestre: -1 } }, texte: 'le bourgmestre raccroche un peu sèchement' }),
+      },
+    },
+  },
+  appelMarche: {
+    titre: 'Les camionnettes du marché', dilemme: true,
+    poids: (z) => (REGLES.v2 && z.chef ? 0.5 : 0),
+    etapes: {
+      debut: {
+        signe: () => ({ titre: '📞 Le bourgmestre et les commerçants', texte: 'Décide avant 20:00.' }),
+        question: 'Le bourgmestre veut qu’on verbalise les camionnettes garées sur la place du marché. Les commerçants menacent d’appeler la presse.',
+        choix: (z) => avecChef(z, [
+          { l: 'Faire verbaliser', s: 'le bourgmestre apprécie, la presse s’en mêle (−1 de satisfaction)' },
+          { l: 'Fermer les yeux', s: '+1 de satisfaction, le bourgmestre est déçu' },
+        ], 'proximite', { l: 'Réunir commerçants et échevin', s: 'un accord sur les horaires de livraison : tout le monde y gagne' }),
+        defaut: 1,
+        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { sat: 1, estime: { bourgmestre: 1 } }, texte: 'un accord signé autour d’un café' }
+          : ch === 0 ? { ok: true, fx: { sat: -1, estime: { bourgmestre: 1, journaliste: -1 } }, texte: 'la place est dégagée, les commerçants ruminent dans le journal' }
+            : { ok: true, fx: { sat: 1, estime: { bourgmestre: -1 } }, texte: 'les commerçants te remercient, le bourgmestre beaucoup moins' }),
+      },
+    },
+  },
+  appelProcureur: {
+    titre: 'Le procureur est pressé', dilemme: true,
+    poids: (z) => (REGLES.v2 && z.chef ? 0.7 : 0),
+    etapes: {
+      debut: {
+        signe: () => ({ titre: '📞 Le procureur au téléphone', texte: 'Réponds avant 20:00.' }),
+        question: 'Le procureur veut un rapport complet sur un trafic de stupéfiants pour demain matin. « Je compte sur vous. »',
+        choix: (z) => avecChef(z, [
+          { l: 'Mettre la Recherche dessus', s: '4 agents en Recherche ce soir : le procureur apprécie ; sinon, il est déçu' },
+          { l: 'Demander un délai', s: 'rien à mobiliser, mais le procureur s’impatiente' },
+        ], 'flair', { l: 'Rédiger toi-même la synthèse', s: 'le procureur apprécie, +1 de réputation' }),
+        defaut: 1,
+        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { rep: 1, estime: { procureur: 1 } }, texte: 'une synthèse limpide, le parquet est conquis' }
+          : ch === 0 ? ((c.alloc.recherche || 0) >= 4 ? { ok: true, fx: { pap: -2, estime: { procureur: 1 } }, texte: 'rapport bouclé dans la nuit' } : { ok: false, fx: { estime: { procureur: -1 } }, texte: 'pas assez d’enquêteurs : le rapport arrive incomplet' })
+            : { ok: true, fx: { estime: { procureur: -1 } }, texte: '« Je vous laisse jusqu’à lundi, mais c’est la dernière fois »' }),
+      },
+    },
+  },
+  appelSyndicat: {
+    titre: 'Le repas de corps', dilemme: true,
+    poids: (z) => (REGLES.v2 && z.chef ? 0.7 : 0),
+    etapes: {
+      debut: {
+        signe: () => ({ titre: '📞 Le délégué syndical', texte: 'Réponds avant 20:00.' }),
+        question: 'Le délégué t’invite au repas de corps de vendredi. Les équipes regardent si le chef viendra.',
+        choix: (z) => avecChef(z, [
+          { l: 'Y aller et payer la tournée', s: '−1 k€, +3 de moral, le délégué apprécie' },
+          { l: 'Décliner, trop de travail', s: 'le délégué le prend mal' },
+        ], 'commandement', { l: 'Y aller et faire un discours', s: '+3 de moral, le délégué apprécie, sans rien payer' }),
+        defaut: 1,
+        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { moral: 3, estime: { syndicat: 1 } }, texte: 'un discours qui a fait lever les verres' }
+          : ch === 0 ? { ok: true, fx: { budget: -1, moral: 3, estime: { syndicat: 1 } }, texte: 'une soirée dont on parlera longtemps' }
+            : { ok: true, fx: { estime: { syndicat: -1 } }, texte: 'ta chaise vide a été remarquée' }),
+      },
+    },
+  },
+  appelPresse: {
+    titre: 'Un « off » avec la presse', dilemme: true,
+    poids: (z) => (REGLES.v2 && z.chef ? 0.6 : 0),
+    etapes: {
+      debut: {
+        signe: () => ({ titre: '📞 La Voix du Delta', texte: 'Réponds avant 20:00.' }),
+        question: 'Une journaliste te propose un échange « off » : elle enquête sur une affaire du parquet et voudrait ton éclairage.',
+        choix: (z) => avecChef(z, [
+          { l: 'Jouer le jeu', s: 'la presse apprécie, le procureur beaucoup moins' },
+          { l: 'Refuser', s: 'le procureur apprécie, la presse est vexée' },
+        ], 'diplomatie', { l: 'Lui offrir un autre sujet', s: 'reportage sur la journée portes ouvertes : la presse apprécie, +1 de satisfaction' }),
+        defaut: 1,
+        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { sat: 1, estime: { journaliste: 1 } }, texte: 'un joli reportage sur les portes ouvertes' }
+          : ch === 0 ? { ok: true, fx: { estime: { journaliste: 1, procureur: -1 } }, texte: 'l’article sort, le parquet reconnaît ta patte' }
+            : { ok: true, fx: { estime: { journaliste: -1, procureur: 1 } }, texte: 'la journaliste raccroche, le parquet te félicite de ta discrétion' }),
+      },
+    },
+  },
   occasion: {
     titre: 'Vente de matériel fédéral', dilemme: true,
     poids: (z) => (z.budget > BUDGET_IPZ.dormant ? 4 : z.budget > 60 ? 1 : 0),
@@ -595,6 +686,11 @@ function appliquer(z, fx, c) {
   if (fx.pap) { z.paperasse = Math.max(0, z.paperasse + fx.pap); t.push(`${plus(fx.pap)} dossiers`); }
   if (fx.quartier && c.cell != null && z.quartiers && c.cell in z.quartiers) { z.quartiers[c.cell] = clamp(z.quartiers[c.cell] + fx.quartier, 10, 95); resync(); t.push(`tension du quartier ${plus(fx.quartier)}`); }
   if (fx.bloques) { z.blesses.push({ n: fx.bloques, retour: c.T + 3, motif: 'grève' }); }
+  if (fx.corvee) { z.blesses.push({ n: fx.corvee, retour: c.T + 2, motif: 'service d’honneur' }); t.push(`${fx.corvee} agents pris demain`); }
+  if (fx.estime && z.chef) for (const [id, v] of Object.entries(fx.estime)) {
+    changerEstime(z, id, v);
+    t.push(`${RESEAU[id].nom.toLowerCase()} ${v > 0 ? 't’en sait gré' : 't’en veut'}`);
+  }
   if (fx.vhs) { z.vehiculesHS.push({ retour: c.T + 2 }); }
   if (fx.indice) {
     let n = 0;
@@ -941,7 +1037,7 @@ export function directeurSoir(state, z, c) {
     const hist = (z.ipzHist || []).filter((h) => h.joue);
     const avant = hist.length ? hist[hist.length - 1].v : null;
     const fx = { moral: 3 };
-    lignes.push(`Bon retour aux commandes après ${n} jours ! Ton adjoint a tenu la boutique${avant !== null ? ` (IPZ ${String(round1(avant)).replace('.', ',')} à ton départ, ${String(round1(z.ipz)).replace('.', ',')} hier)` : ''}. L’équipe est contente de te revoir (${appliquer(z, fx, c)}). Deux jours d’éclaircie pour reprendre la main.`);
+    lignes.push(`Bon retour aux commandes après ${n} jours ! Ton adjoint${z.adjoint ? `${z.adjoint.f ? 'e' : ''} ${z.adjoint.prenom}` : ''} a tenu la boutique${avant !== null ? ` (IPZ ${String(round1(avant)).replace('.', ',')} à ton départ, ${String(round1(z.ipz)).replace('.', ',')} hier)` : ''}. L’équipe est contente de te revoir (${appliquer(z, fx, c)}). Deux jours d’éclaircie pour reprendre la main.`);
     c.push(3, 'Retour', `${c.label} reprend les commandes`, 'Les collègues peuvent à nouveau compter sur elle : renforts, enquête, zone de non-droit.', z.uid);
     d.retour = c.T;
     delete z._retour;

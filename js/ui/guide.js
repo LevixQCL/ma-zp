@@ -387,6 +387,10 @@ export function sections() {
           '<strong>Réseau</strong> : bourgmestre, procureur, délégué syndical et presse. Satisfait, chacun peut te rendre un service par semaine ; mécontent, il peut te gêner.',
           '<strong>Brevet de carrière</strong> : à 15 niveaux au total, une voie, un titre et un 4e emplacement de talent.',
           '<strong>Carrière</strong> : états de service, médaille de la plus forte progression de la saison, parrainage des nouveaux chefs.',
+          '<strong>Ta semaine</strong> : trois objectifs par semaine (sa meilleure compétence, sa plus faible, une au hasard), seuls les jours joués comptent ; les trois réussis donnent la médaille de la semaine. Un rival, le chef le plus proche au classement : le meilleur cumul d’IPZ de la semaine gagne le duel.',
+          '<strong>Adjoint</strong> : un jour sans ordres, il tient la zone selon ta consigne (prudent, équilibré, offensif) et mieux encore avec le Commandement du chef. 3 jours sans malus d’absence. À ton retour après 3 jours ou plus : services du réseau rouverts et progression +50 % pendant 3 jours.',
+          '<strong>Appels du réseau</strong> : des dilemmes où un personnage appelle ton chef. Ta réponse change son estime, donc son humeur.',
+          '<strong>Honneurs</strong> : cadre du portrait selon les niveaux (bronze, argent, or, diamant), dix rubans à gagner et à afficher, carte du chef à partager.',
         ])}`,
     },
     {

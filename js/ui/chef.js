@@ -5,7 +5,9 @@ import { reglesV2 } from '../engine/regles.js';
 import { tabbar } from './common.js';
 import { COMPETENCES, IDS_COMPETENCES, PARCOURS, IDS_PARCOURS, TALENTS, TALENT, AGENDA, IDS_AGENDA, CHEF,
   niveauChef, progresChef, talentsDebloques, totalNiveaux, signatureChef, niveauXp, XP_CUMUL, NIVEAU_MAX_CHEF, JEUX_COMP,
-  FRONT, IDS_FRONT, RISQUE_FRONT, RESEAU as RESEAU_E, IDS_RESEAU, servicePossible, VOIES, brevetPossible, BREVET_NIVEAUX, maxTalentsDe } from '../engine/chef.js';
+  FRONT, IDS_FRONT, RISQUE_FRONT, RESEAU as RESEAU_E, IDS_RESEAU, servicePossible, VOIES, brevetPossible, BREVET_NIVEAUX, maxTalentsDe, humeurReseau, estimeDe } from '../engine/chef.js';
+import { cadreDe, rubansDe, RUBANS } from '../engine/chef-semaine.js';
+import { adjointFicheHtml, honneursHtml, COUL_CADRE } from './chef-semaine.js';
 
 // ───── Portraits (images générées avec Gemini, img/chefs/pNN.webp) ─────
 // Tant qu'une image manque, un portrait dessiné (silhouette en uniforme, initiales) la remplace.
@@ -49,7 +51,10 @@ export function portraitChef(uid, taille = 48, { galons = true } = {}) {
   const pr = p.chef && PORTRAIT[p.chef.portrait];
   const n = galons && z ? etoiles(z.ps) : 0;
   const img = pr ? `<img src="img/chefs/${pr.id}.webp" alt="" width="${taille}" height="${taille}" loading="lazy" style="display:block;width:${taille}px;height:${taille}px;object-fit:cover" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${portraitDessine(p, z, taille)}</span>` : portraitDessine(p, z, taille);
-  return `<span class="chef-portrait" style="--t:${taille}px;--zc:${esc((z && z.couleur) || '#5AB0F0')}">${img}${n > 0 ? `<span class="chef-galons" aria-label="${n} étoile${n > 1 ? 's' : ''}">${'★'.repeat(n)}</span>` : ''}</span>`;
+  // Honneurs : cadre selon les niveaux, ruban choisi par le joueur (s'il l'a gagné).
+  const cad = z && z.chef ? cadreDe(z.chef) : null, cc = cad && COUL_CADRE[cad.id];
+  const rb = z && z.chef && p.chef && p.chef.ruban && RUBANS[p.chef.ruban] && rubansDe(z.chef).includes(p.chef.ruban) ? RUBANS[p.chef.ruban] : null;
+  return `<span class="chef-portrait${cc ? ` cadre-${cad.id}` : ''}" style="--t:${taille}px;--zc:${esc((z && z.couleur) || '#5AB0F0')}${cc ? `;--cadre:${cc}` : ''}" ${cad && cc ? `title="${esc(cad.nom)}"` : ''}>${img}${n > 0 ? `<span class="chef-galons" aria-label="${n} étoile${n > 1 ? 's' : ''}">${'★'.repeat(n)}</span>` : ''}${rb && taille >= 30 ? `<span class="chef-ruban" title="${esc(rb.nom)}">${rb.ico}</span>` : ''}</span>`;
 }
 
 // ───── Création (première ouverture de la saison 2) ─────
@@ -138,7 +143,7 @@ export function chefOrdresHtml(z, d) {
     <div class="chef-chips"><button type="button" class="chef-chip" data-action="chef-front" data-v="" aria-pressed="${!d.chefFront}">🪑 Non</button>${IDS_FRONT.map((k) => `<button type="button" class="chef-chip" data-action="chef-front" data-v="${k}" aria-pressed="${d.chefFront === k}">${COMPETENCES[FRONT[k].comp].ico} ${esc(FRONT[k].court)}</button>`).join('')}</div>
     ${d.chefFront ? `<span class="small ok">${esc(FRONT[d.chefFront].nom)} : ${esc(FRONT[d.chefFront].effet(niveauChef(chef, FRONT[d.chefFront].comp)))} (${esc(COMPETENCES[FRONT[d.chefFront].comp].nom)} ${niveauChef(chef, FRONT[d.chefFront].comp)}), seulement si l’action a lieu ce soir.</span>` : ''}`}
     <span class="tiny muted" style="font-weight:700">Demander un service au réseau (si la personne est satisfaite, une fois par semaine chacune)</span>
-    <div class="chef-reseau">${IDS_RESEAU.map((id) => { const R = RESEAU_E[id], refus = servicePossible(z, id, T), h = R.humeur(z); return `<button type="button" class="chef-pers ${h > 0 ? 'ok' : h < 0 ? 'ko' : ''}${d.reseau === id ? ' choisi' : ''}" data-action="chef-reseau" data-v="${id}" ${refus ? 'disabled' : ''} aria-pressed="${d.reseau === id}" style="background:none;border:0;padding:0;cursor:pointer;color:var(--text)"><img src="img/bureau/${id}-${h > 0 ? 1 : h < 0 ? '-1' : 0}.webp" alt=""><span class="tiny" style="font-weight:700">${esc(R.nom.replace(/^(Le|La) /, ''))}</span><span class="tiny ${refus ? 'muted' : 'ok'}">${refus ? esc(refus) : esc(R.geste(niveauChef(chef, 'diplomatie')))}</span></button>`; }).join('')}</div>
+    <div class="chef-reseau">${IDS_RESEAU.map((id) => { const R = RESEAU_E[id], refus = servicePossible(z, id, T), h = humeurReseau(z, id); return `<button type="button" class="chef-pers ${h > 0 ? 'ok' : h < 0 ? 'ko' : ''}${d.reseau === id ? ' choisi' : ''}" data-action="chef-reseau" data-v="${id}" ${refus ? 'disabled' : ''} aria-pressed="${d.reseau === id}" style="background:none;border:0;padding:0;cursor:pointer;color:var(--text)"><img src="img/bureau/${id}-${h > 0 ? 1 : h < 0 ? '-1' : 0}.webp" alt=""><span class="tiny" style="font-weight:700">${esc(R.nom.replace(/^(Le|La) /, ''))}</span><span class="tiny ${refus ? 'muted' : 'ok'}">${refus ? esc(refus) : esc(R.geste(niveauChef(chef, 'diplomatie')))}</span></button>`; }).join('')}</div>
     ${brevetPossible(chef) ? `<span class="tiny muted" style="font-weight:700">🎓 Brevet de carrière disponible (une fois, définitif) : un titre et un 4e emplacement de talent</span>
     <div class="col" style="gap:6px">${Object.entries(VOIES).map(([k, V]) => `<button type="button" class="choice" data-action="chef-brevet" data-v="${k}" aria-pressed="${d.brevet === k}" style="text-align:left;align-items:flex-start"><span style="font-weight:700">${esc(V.nom)} · ${esc(V.titre)}</span><span class="s">${esc(V.texte)}</span></button>`).join('')}</div>` : chef.brevet ? `<span class="tiny muted">🎓 ${esc(VOIES[chef.brevet].titre)} : 4e emplacement pour un talent de ${VOIES[chef.brevet].comps.map((c) => esc(COMPETENCES[c].nom)).join(' ou ')}.</span>` : `<span class="tiny muted">🎓 Brevet de carrière à ${BREVET_NIVEAUX} niveaux au total (tu en as ${totalNiveaux(chef)}).</span>`}
     <details class="repli-mini" ${(chef.nouveauxTalents || []).some((t) => !eq.includes(t)) ? 'open' : ''}><summary class="tiny" style="font-weight:700">Talents équipés (${eq.length}/${maxTalentsDe(chef)}) · ${eq.map((t) => esc(TALENT[t].nom)).join(', ') || 'aucun'} · changer</summary>
@@ -202,7 +207,8 @@ export function renderBureau() {
       <div class="pc-stat"><span class="v">${total}<small>/50</small></span><span class="l">niveaux</span></div>
       <div class="pc-stat"><span class="v">${deb.size}<small>/15</small></span><span class="l">talents</span></div>
       <div class="pc-stat"><span class="v">${(chef.medailles || []).length}</span><span class="l">médaille${(chef.medailles || []).length > 1 ? 's' : ''}</span></div>
-    </div></section>`;
+    </div>
+    ${moi ? '<button type="button" class="btn small outline block" data-action="chef-carte">📤 Partager la carte de mon chef</button>' : ''}</section>`;
   // Compétences.
   const comp = `<section class="card" style="gap:10px"><h2 class="card-title">Compétences</h2>
     ${IDS_COMPETENCES.map((c) => { const L = niveauChef(chef, c), suiv = TALENTS.find((t) => t.comp === c && t.niv > L), o = ouvert === c;
@@ -226,8 +232,9 @@ export function renderBureau() {
   </section>`;
   // Réseau.
   const res = `<section class="card" style="gap:10px"><h2 class="card-title">Le réseau</h2>
-    <div class="chef-reseau">${Object.entries(RESEAU).map(([id, R]) => { const h = R.humeur(z); return `<div class="chef-pers ${h > 0 ? 'ok' : h < 0 ? 'ko' : ''}">
-      <img src="img/bureau/${id}-${h > 0 ? 1 : h < 0 ? '-1' : 0}.webp" alt=""><span class="tiny" style="font-weight:700">${R.nom}</span><span class="chef-humeur">${h > 0 ? 'Satisfait' : h < 0 ? 'Mécontent' : 'Neutre'}</span><span class="tiny muted">${esc(R.suit(z))}</span></div>`; }).join('')}</div></section>`;
+    <div class="chef-reseau">${Object.entries(RESEAU).map(([id, R]) => { const h = humeurReseau(z, id), e = estimeDe(z, id); return `<div class="chef-pers ${h > 0 ? 'ok' : h < 0 ? 'ko' : ''}">
+      <img src="img/bureau/${id}-${h > 0 ? 1 : h < 0 ? '-1' : 0}.webp" alt=""><span class="tiny" style="font-weight:700">${R.nom}</span><span class="chef-humeur">${h > 0 ? 'Satisfait' : h < 0 ? 'Mécontent' : 'Neutre'}</span><span class="tiny muted">${esc(R.suit(z))}</span>${e ? `<span class="tiny ${e > 0 ? 'ok' : 'bad'}">estime ${e > 0 ? '+' : '−'}${Math.abs(e)}</span>` : ''}</div>`; }).join('')}</div>
+    <span class="tiny muted">Leur humeur suit ta zone, et leur estime : elle se gagne (ou se perd) quand ils t’appellent. Elle se tasse un peu chaque semaine.</span></section>`;
   // Carrière.
   const f = felicitationsDe(uid), deja = !moi && S.player && S.player.felicite && S.player.felicite[uid] === st.season;
   const car = `<section class="card" style="gap:10px"><h2 class="card-title">Carrière</h2>
@@ -239,7 +246,7 @@ export function renderBureau() {
     <span class="small">${f.length ? f.map((u) => esc((S.players[u] && S.players[u].pseudo) || (st.zones[u] && st.zones[u].nom) || '?')).join(', ') : 'Aucune pour l’instant.'}</span>
     ${moi ? '' : `<button type="button" class="btn small ${deja ? 'ghost' : 'primary'} block" data-action="feliciter" data-u="${esc(uid)}" ${deja ? 'disabled' : ''}>${deja ? '✓ Tu l’as félicité cette saison' : `Féliciter ${esc(p.pseudo || 'ce chef')}`}</button>`}
   </section>`;
-  return `<main class="screen">${back}${hero}${comp}${tal}${res}${car}</main>${tabbar('hp')}`;
+  return `<main class="screen">${back}${hero}${comp}${tal}${honneursHtml(z, moi)}${res}${adjointFicheHtml(z, moi)}${car}</main>${tabbar('hp')}`;
 }
 
 // ───── Le chef se voit agir : bloc « Ton chef cette nuit », moment de promotion, félicitations ─────

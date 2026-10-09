@@ -735,6 +735,20 @@ async function onClick(e) {
         await b.savePlayer(S.user.uid, S.player); S.players = await b.getPlayers();
         toast('Félicitations envoyées : elles s’affichent dans son bureau.'); rerender(); break;
       }
+      case 'adjoint-consigne': case 'chef-ruban': {
+        const cle = el.dataset.action === 'adjoint-consigne' ? 'consigne' : 'ruban';
+        const cur = (S.player && S.player.chef) || {};
+        const v = cle === 'ruban' && cur.ruban === el.dataset.v ? null : el.dataset.v;
+        S.player = { ...(S.player || {}), chef: { ...cur, [cle]: v } };
+        await b.savePlayer(S.user.uid, S.player); S.players = await b.getPlayers();
+        toast(cle === 'consigne' ? 'Consigne laissée à ton adjoint : elle compte dès ce soir si tu ne donnes pas d’ordres.' : v ? 'Ruban affiché sur ton portrait.' : 'Ruban retiré de ton portrait.'); rerender(); break;
+      }
+      case 'chef-carte': {
+        const { partagerCarte } = await import('./ui/chef-semaine.js');
+        toast('Préparation de la carte…');
+        try { await partagerCarte(S.bureauUid || S.user.uid); } catch (e) { toast('Impossible de créer l’image sur cet appareil.'); }
+        break;
+      }
       case 'chef-modifier': S.chefEdit = true; S.chefBrouillon = { ...((S.player && S.player.chef) || {}) }; rerender(); break;
       case 'chef-portrait': S.chefBrouillon = { ...(S.chefBrouillon || {}), portrait: el.dataset.v }; rerender(); break;
       case 'chef-parcours': S.chefBrouillon = { ...(S.chefBrouillon || {}), parcours: el.dataset.v }; rerender(); break;

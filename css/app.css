@@ -1913,3 +1913,28 @@ details.pli-ordres[open] .pli-resume, details.pli-ordres[open] .pli-resume-s { d
 .chef-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chef-chip { padding: 7px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; }
 .chef-chip[aria-pressed="true"] { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 18%, transparent); }
+
+/* ───── La semaine du chef : objectifs, duel, adjoint, honneurs ───── */
+.chef-portrait[class*="cadre-"] { box-shadow: 0 0 0 2px var(--zc, var(--amber)), 0 0 0 4px var(--cadre); }
+.chef-portrait.cadre-diamant { box-shadow: 0 0 0 2px var(--zc, var(--amber)), 0 0 0 4px var(--cadre), 0 0 12px 2px rgba(143, 227, 255, .55); }
+.chef-portrait.adj { box-shadow: 0 0 0 2px var(--line); }
+.chef-ruban { position: absolute; top: 1px; right: 1px; font-size: calc(var(--t) * .26); line-height: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,.7)); }
+.semaine summary { cursor: pointer; }
+.obj { display: flex; gap: 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--surface2); border-left: 3px solid var(--c); }
+.obj.fait { opacity: .75; }
+.obj .chef-barre > span { background: var(--c); }
+.obj-ico { font-size: 20px; width: 26px; text-align: center; flex-shrink: 0; }
+.duel { display: flex; flex-direction: column; gap: 8px; width: 100%; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); cursor: pointer; }
+.duel-face { display: flex; gap: 10px; align-items: center; }
+.duel-barre { display: flex; height: 9px; border-radius: 5px; overflow: hidden; background: var(--line); gap: 2px; }
+.duel-barre > span { display: block; height: 100%; }
+.adj-carte { border-color: var(--line); background: linear-gradient(135deg, rgba(90, 176, 240, .08), transparent 60%), var(--surface); }
+.adj-journal { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+.adj-journal th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 2px 4px; }
+.adj-journal td { padding: 3px 4px; border-top: 1px solid var(--line); }
+.rubans { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.ruban { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); text-align: left; opacity: .5; }
+.ruban .ruban-ico { font-size: 22px; filter: grayscale(1); }
+.ruban.gagne { opacity: 1; cursor: pointer; border-color: var(--amber-line); }
+.ruban.gagne .ruban-ico { filter: none; }
+.ruban.choisi { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 16%, var(--surface2)); }

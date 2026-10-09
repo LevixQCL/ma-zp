@@ -162,13 +162,14 @@ export function gainsDuJour(f) {
  * Applique les gains du jour au chef (plafond par jour, rattrapage, parrainage). Retourne les niveaux gagnés
  * [{ comp, niveau }] et les talents débloqués ce soir.
  */
-export function progresser(chef, gains, { rattrapage = false, parrain = null, jeux = null } = {}) {
+export function progresser(chef, gains, { rattrapage = false, parrain = null, jeux = null, mult = 1 } = {}) {
   const montees = [], avantT = new Set(talentsDebloques(chef));
   for (const c of IDS_COMPETENCES) {
     let g = Math.min(CHEF.plafondJour, Math.max(0, gains[c] || 0)) + Math.min(CHEF.plafondJeux, Math.max(0, (jeux && jeux[c]) || 0));
     if (!g) continue;
     if (rattrapage) g *= CHEF.rattrapage;
     if (parrain && parrain.comp === c) g *= CHEF.parrainage.mult;
+    g *= mult;
     g = Math.round(g * 10) / 10;
     const avant = niveauChef(chef, c);
     chef.xp[c] = Math.round(((chef.xp[c] || 0) + g) * 10) / 10;
@@ -266,11 +267,31 @@ export const RESEAU = {
 };
 export const IDS_RESEAU = Object.keys(RESEAU);
 export const RESEAU_REGLES = { delai: 7, colere: 0.08 };
+/**
+ * Estime de chaque personnage pour le chef (−2 à +2), gagnée ou perdue lors des appels (dilemmes du réseau). Elle
+ * corrige l'humeur tirée de la zone : +1 d'estime suffit à rendre satisfait un personnage neutre, il faut −2 pour le
+ * fâcher. Elle se tasse d'un cran chaque semaine.
+ */
+export const estimeDe = (z, id) => Math.max(-2, Math.min(2, Number(z && z.chef && z.chef.estime && z.chef.estime[id]) || 0));
+export function humeurReseau(z, id) {
+  const R = RESEAU[id];
+  if (!R) return 0;
+  const v = Math.round(R.humeur(z) + estimeDe(z, id) / 2);
+  return v > 0 ? 1 : v < 0 ? -1 : 0;
+}
+export function changerEstime(z, id, d) {
+  if (!z || !z.chef || !RESEAU[id] || !d) return;
+  z.chef.estime = { ...(z.chef.estime || {}), [id]: Math.max(-2, Math.min(2, estimeDe(z, id) + d)) };
+}
+export function tasserEstime(chef) {
+  if (!chef || !chef.estime) return;
+  for (const [k, v] of Object.entries(chef.estime)) chef.estime[k] = v > 0 ? v - 1 : v < 0 ? v + 1 : 0;
+}
 /** Service demandé au réseau : possible ? (satisfait, et pas déjà demandé à ce personnage depuis 7 jours). */
 export function servicePossible(z, id, T) {
   const R = RESEAU[id];
   if (!R || !z || !z.chef) return 'inconnu';
-  if (R.humeur(z) < 1) return 'il n’est pas satisfait';
+  if (humeurReseau(z, id) < 1) return 'il n’est pas satisfait';
   const der = z.chef.services && z.chef.services[id];
   if (der != null && T < der + RESEAU_REGLES.delai) return `déjà demandé (de nouveau au jour ${der + RESEAU_REGLES.delai})`;
   return null;

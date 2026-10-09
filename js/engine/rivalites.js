@@ -263,7 +263,7 @@ function faillite(state, z, push, T, players) {
   nz.faillites = (z.faillites || 0) + 1; nz.failliteSaison = true;
   nz.motionSaison = z.motionSaison;
   // Ce qui survit aussi à une fin de saison : décor, skins, trophées, plaques, équipe, jauge des incidents.
-  for (const k of ['equipe', 'trophees', 'plaques', 'decor', 'skins', 'skinsChoix', 'jaugeIncidents', 'carriere']) if (z[k] !== undefined) nz[k] = z[k];
+  for (const k of ['equipe', 'trophees', 'plaques', 'decor', 'skins', 'skinsChoix', 'jaugeIncidents', 'carriere', 'chef', 'adjoint']) if (z[k] !== undefined) nz[k] = z[k];
   nz.rapport = [`Faillite : ta zone est dissoute. Tu repars avec une nouvelle zone et les ressources de départ (${START.agents} agents, ${START.budget} k€).${g > 0 ? ` Rétrogradation : ${GRADES[g - 1].nom}.` : ''}`];
   state.zones[uid] = nz;
   state.toursSansFaillite = 0;

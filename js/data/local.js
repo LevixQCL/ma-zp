@@ -8,6 +8,8 @@ import { makeRng } from '../engine/rng.js';
 import { MAX_ZONES, partieComplete } from '../engine/constants.js';
 import { codeDejaPris, MSG_CODE_PRIS } from './codes.js';
 import { creerChef, XP_CUMUL, signatureChef } from '../engine/chef.js';
+import { creerAdjoint } from '../engine/adjoint.js';
+import { tirerObjectifs, cleSemaine, semaineDe } from '../engine/chef-semaine.js';
 
 /** « ?demo=chef » : un chef déjà bien avancé (saison 3), pour voir le bureau, les talents et « Ton chef cette nuit ». */
 const demoChef = () => typeof location !== 'undefined' && /(^|[?&])demo=chef\b/.test(location.search || '');
@@ -40,6 +42,18 @@ function preparerDemoChef(st, players, uid) {
     st.zones[u].chef = chefAvance({ gestion: 2 + (i % 3), commandement: 4 - (i % 2), flair: 1 + i % 4, diplomatie: 3, proximite: 2 + (i % 3) }, ['intervention', 'gestionnaire', 'ilotier', 'negociateur', 'enqueteur', 'intervention'][i % 6], ['meneur', 'gestionnaire'].slice(0, 1 + (i % 2)));
     if (players[u]) players[u].chef = { portrait: portraits[i % portraits.length], parcours: st.zones[u].chef.parcours, devise: '' };
   });
+  // La semaine du chef : objectifs entamés, un duel serré, un adjoint qui vient de rendre les clés.
+  z.chef.objectifs = tirerObjectifs(st, z, T);
+  z.chef.objectifs.liste.forEach((x, i) => { x.prog = i === 0 ? x.cible : Math.max(0, x.cible - 1 - i); x.fait = i === 0; });
+  z.chef.duels = { v: 3, d: 1, serie: 2, serieMax: 3 }; z.chef.hebdo = { semaines: 2, serie: 1, derniere: semaineDe(T) - 1 };
+  z.chef.blessures = 1; z.chef.nbServices = 4; z.chef.lotsGagnes = 1; z.chef.estime = { procureur: 1, syndicat: -1 };
+  z.adjoint = { ...creerAdjoint(uid, 'p02'), jours: 5 };
+  z.retourChef = { tour: T - 1, jours: 3, journal: [{ t: T - 4, ipz: 58.2, inc: '7/8', budget: 41.5, moral: 61, sat: 66 }, { t: T - 3, ipz: 55.9, inc: '6/9', budget: 44.0, moral: 58, sat: 63 }, { t: T - 2, ipz: 56.4, inc: '8/9', budget: 47.2, moral: 57, sat: 62 }] };
+  const w = semaineDe(T), deb = (w - 1) * 7 + 1;
+  z.ipzHist = [...(z.ipzHist || []).filter((h) => h.t < deb), ...Array.from({ length: Math.max(0, T - deb) }, (_, i) => ({ t: deb + i, v: 60 + (i % 3), joue: true }))];
+  st.zones['bot-canal'].ipzHist = Array.from({ length: Math.max(0, T - deb) }, (_, i) => ({ t: deb + i, v: 59 + (i % 4), joue: true }));
+  st.rivaux = { cle: cleSemaine(st, T), w, paires: { [uid]: 'bot-canal', 'bot-canal': uid } };
+  players[uid].chef.ruban = 'duelliste';
   players['bot-canal'] = { ...(players['bot-canal'] || {}), felicite: { [uid]: st.season } };
   players['bot-vallee'] = { ...(players['bot-vallee'] || {}), felicite: { [uid]: st.season } };
 }

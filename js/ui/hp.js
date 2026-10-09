@@ -1,4 +1,6 @@
 import { chefACreer, creationChefHtml, portraitChef, ficheChefHtml, chefNuitHtml, zoneAvecAgenda } from './chef.js';
+import { absenceHtml, semaineHtml } from './chef-semaine.js';
+import { humeurReseau } from '../engine/chef.js';
 import { titresDefi } from './defis.js';
 import { DOCTRINES } from '../engine/constants.js';
 import { maxDemarchesDe } from '../engine/enquete.js';
@@ -226,12 +228,13 @@ function meteoHtml(c) {
 function dilemmeHtml(st, z) {
   const dl = dilemmeDuJour(st, z);
   if (!dl) return '';
+  const perso = { appelBourgmestre: 'bourgmestre', appelMarche: 'bourgmestre', appelProcureur: 'procureur', appelSyndicat: 'syndicat', appelPresse: 'journaliste' }[dl.id] || null;
   const d = S.draft || {};
   const pris = Number.isInteger(d.dilemme) ? d.dilemme : null;
   const enregistre = pris !== null && S.savedOrders && S.savedOrders.dilemme === pris && !S.ordersDirty;
   return `<section class="card dilemme" id="hp-dilemme" aria-label="Dilemme du jour">
-    <span class="kicker">Dilemme du jour · ${esc(dl.titre)}</span>
-    <p class="dil-q">${esc(dl.question)}</p>
+    <span class="kicker">${perso ? 'Appel pour ton chef' : 'Dilemme du jour'} · ${esc(dl.titre)}</span>
+    ${perso ? `<div class="row" style="gap:10px;align-items:center"><img src="img/bureau/${perso}-${humeurReseau(z, perso) > 0 ? 1 : humeurReseau(z, perso) < 0 ? '-1' : 0}.webp" alt="" width="56" height="56" style="border-radius:12px;flex-shrink:0"><p class="dil-q" style="margin:0">${esc(dl.question)}</p></div>` : `<p class="dil-q">${esc(dl.question)}</p>`}
     <div class="dil-choix">${dl.choix.map((c, i) => `<button type="button" class="dil-btn${c.chef ? ' dil-chef' : ''}" data-action="dilemme" data-i="${i}" aria-pressed="${pris === i}"><span class="t">${c.chef ? `${portraitChef(z.uid, 20, { galons: false })} ` : ''}${esc(c.l)}</span><span class="s">${esc(c.s)}</span></button>`).join('')}</div>
     <p class="tiny muted" style="margin:0">${pris === null ? `Sans réponse à 20:00, ton adjoint choisira « ${esc(dl.choix[dl.defaut].l)} ».` : enregistre ? 'Choix enregistré avec tes ordres. Tu peux encore changer d’avis.' : 'Valide tes ordres pour l’envoyer.'}</p>
     ${pris !== null && !enregistre ? '<button type="button" class="btn primary small" data-action="save-orders">Valider mes ordres</button>' : ''}
@@ -380,12 +383,14 @@ export function renderHP() {
     </nav>` : ''}
 
     ${chefACreer() ? creationChefHtml() : ''}
+    ${absenceHtml(z)}
     ${chefNuitHtml(z)}
     ${cetteNuitHtml(z)}
     ${ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue })}
     ${pistesHpHtml(z)}
     ${bilanHtml()}
     ${dilemmeHtml(st, z)}
+    ${semaineHtml(z)}
     ${criseHtml()}
     ${releveHtml()}
     ${compacte ? incidentsHtml({ avant: actuLigne(), titre: 'Aujourd’hui' }) : `${actuHtml()}${incidentsHtml()}`}
