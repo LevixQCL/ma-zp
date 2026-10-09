@@ -9,6 +9,24 @@ import { ANNEXES_AILE, aileSvg, largeurAile, HAUT_AILE } from './scene-aile.js';
 
 const LIT = '#FFB23F', DIM = '#223041', EDGE = '#2C3D51';
 
+/** Plaque de bronze « Zone fondatrice » (saison 1) : laurier, « S1 », vis aux coins ; une applique l'éclaire le soir. */
+export function plaqueFondatrice(x0, gy, P, uid) {
+  const x = x0 + 1.5, y = gy + 5, w = 13, h = 16, g = `hp-bronze-${uid}`;
+  const feuilles = (sx) => [0, 1, 2, 3].map((i) => { const a = (sx < 0 ? 200 : -20) + sx * i * 26, rad = (a * Math.PI) / 180, cx = x + w / 2 + Math.cos(rad) * 4.2, cy = y + 9.6 + Math.sin(rad) * 3.6; return `<ellipse cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" rx="1.25" ry=".55" transform="rotate(${(a + 90 * sx).toFixed(0)} ${cx.toFixed(2)} ${cy.toFixed(2)})" fill="#5E3F12"/>`; }).join('');
+  return `<g class="hp-fondateur"><title>Zone fondatrice : présente depuis la saison 1</title>
+    <defs><linearGradient id="${g}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3D58C"/><stop offset=".55" stop-color="#C99A45"/><stop offset="1" stop-color="#8E6224"/></linearGradient></defs>
+    ${P.neon ? `<ellipse cx="${x + w / 2}" cy="${y + h / 2}" rx="11" ry="12" fill="url(#hp-ambre-${uid})" opacity=".9"/><path d="M${x + w / 2 - 2.5} ${y - 2.6} h5 l-1 1.6 h-3 Z" fill="#2A3547"/><path d="M${x + w / 2 - 2} ${y - 1} L${x - 1} ${y + h * 0.7} H${x + w + 1} Z" fill="#FFD98A" opacity=".1"/>` : `<path d="M${x + w / 2 - 2.5} ${y - 2.6} h5 l-1 1.6 h-3 Z" fill="#5A6678"/>`}
+    <rect x="${x + 0.6}" y="${y + 0.8}" width="${w}" height="${h}" rx="1.3" fill="#000" opacity=".28"/>
+    <rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1.3" fill="url(#${g})" stroke="#6E4B17" stroke-width=".6"/>
+    <rect x="${x + 1.3}" y="${y + 1.3}" width="${w - 2.6}" height="${h - 2.6}" rx=".8" fill="none" stroke="#7A5418" stroke-width=".35" opacity=".8"/>
+    ${[[1.4, 1.4], [w - 1.4, 1.4], [1.4, h - 1.4], [w - 1.4, h - 1.4]].map(([dx, dy]) => `<circle cx="${x + dx}" cy="${y + dy}" r=".45" fill="#6E4B17"/>`).join('')}
+    <path d="M${x + w / 2} ${y + 2.4} l.55 1.15 l1.25 .15 l-.92 .85 l.25 1.25 l-1.13 -.63 l-1.13 .63 l.25 -1.25 l-.92 -.85 l1.25 -.15 Z" fill="#6E4B17"/>
+    <text x="${x + w / 2}" y="${y + 11.3}" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="5.6" fill="#4A3010" letter-spacing=".2">S1</text>
+    ${feuilles(1)}${feuilles(-1)}
+    <rect x="${x + 2.6}" y="${y + h - 3.2}" width="${w - 5.2}" height=".5" fill="#6E4B17" opacity=".7"/>
+    <path d="M${x + 1} ${y + 1} L${x + 4} ${y + 1} L${x + 1} ${y + 6} Z" fill="#FFF4D0" opacity=".35"/></g>`;
+}
+
 /** Petit générateur pseudo-aléatoire stable (mêmes fenêtres allumées d'un affichage à l'autre). */
 function rnd(seed) { let s = seed % 233280; return () => { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
 const graine = (txt) => [...String(txt)].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 233280, 7);
@@ -135,7 +153,7 @@ function passant(x, y, habit, peau = '#E8C39E') {
  * en service à garer devant (3 au plus) ; `travaux` : 'bureaux' | 'garage' | null ;
  * `moment` : 'jour' | 'aube' | 'crepuscule' | 'nuit' (par défaut, l'heure de l'appareil).
  */
-export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = false, infra = {}, lots = [], moment = momentDuJour(), decor = null, skins = {}, drapeau = null, file = false, renforce = false, imprevu = {}, operation = false, date = new Date(), champion = false, plaques = [], affiches = [], trace = null, poste = null, isole = false, grand = false }) {
+export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = false, infra = {}, lots = [], moment = momentDuJour(), decor = null, skins = {}, drapeau = null, file = false, renforce = false, imprevu = {}, operation = false, date = new Date(), champion = false, plaques = [], fondateur = false, affiches = [], trace = null, poste = null, isole = false, grand = false }) {
   const uid = `${moment}-${++numeroScene}`;
   const H = 210, base = 172, x0 = 22, w = 160, gf = 30, fh = 24;
   // Aile des annexes entre l'hôtel de police et le garage (une travée par annexe).
@@ -398,7 +416,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   }
   // Devant l'entrée : arbres, mât et drapeau de la zone, file de citoyens, imprévus du jour.
   const porte = x0 + w / 2;
-  if (D.abords === 'arbres') for (const tx of [x0 + 12, x0 + w - 10]) s += `<rect x="${tx - 5}" y="${base - 5}" width="10" height="5" rx="1" fill="#8A6A4A"/><rect x="${tx - 0.8}" y="${base - 14}" width="1.6" height="9" fill="#6B4420"/><circle cx="${tx}" cy="${base - 17}" r="6" fill="${moment === 'jour' ? '#4E9A5E' : '#2F5E3E'}"/><circle cx="${tx - 3}" cy="${base - 14}" r="3.5" fill="${moment === 'jour' ? '#3E7D4F' : '#264C33'}"/>`;
+  if (D.abords === 'arbres') for (const tx of [fondateur ? x0 + 30 : x0 + 12, x0 + w - 10]) s += `<rect x="${tx - 5}" y="${base - 5}" width="10" height="5" rx="1" fill="#8A6A4A"/><rect x="${tx - 0.8}" y="${base - 14}" width="1.6" height="9" fill="#6B4420"/><circle cx="${tx}" cy="${base - 17}" r="6" fill="${moment === 'jour' ? '#4E9A5E' : '#2F5E3E'}"/><circle cx="${tx - 3}" cy="${base - 14}" r="3.5" fill="${moment === 'jour' ? '#3E7D4F' : '#264C33'}"/>`;
   if (drapeau) {
     const fx = x0 + w - 26, haut = base - 46, fy = drapeau.berne ? base - 30 : haut;
     const couleurs = meteo.fete === 'nationale' ? ['#1D1A15', '#F2D02E', '#E1332B'] : null;
@@ -429,6 +447,8 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
     vx += 48;
   }
   s += '</g>';
+  // Zone fondatrice (présente depuis la saison 1) : plaque de bronze scellée sur la tour, à hauteur d'homme.
+  if (fondateur) s += plaqueFondatrice(x0, gy, P, uid);
   // Plaques du podium de fin de saison, à droite de l'entrée (les trois plus récentes).
   (plaques || []).slice(-3).forEach((pl, i) => { const c = ['#FFB23F', '#C8D3DD', '#C98A5A'][pl.rang - 1] || '#C8D3DD'; s += `<rect x="${x0 + w / 2 + 28 + i * 8}" y="${gy + 13}" width="6" height="8" rx="1" fill="${c}" stroke="${mix(c, '#000000', 0.35)}" stroke-width=".5"/><text x="${x0 + w / 2 + 31 + i * 8}" y="${gy + 19}" text-anchor="middle" font-size="4.5" font-weight="700" fill="#1D1A15" font-family="Barlow Condensed, Arial Narrow, sans-serif">${pl.rang}</text>`; });
   // Avis de recherche des malfrats arrêtés (mise à prix) : panneau d'affichage devant l'entrée, trois au plus.

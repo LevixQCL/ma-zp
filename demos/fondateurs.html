@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Zones fondatrices (démo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..700&family=Barlow+Condensed:wght@600;700&family=Special+Elite&display=swap">
+<link rel="stylesheet" href="../css/app.css">
+<style>
+  body { font-family: var(--body); color: var(--text); margin: 0; background: var(--bg); }
+  .wrap { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; padding: 12px 16px 120px; display: flex; flex-direction: column; gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r-lg); padding: 14px; display: flex; flex-direction: column; gap: 10px; position: relative; }
+  .between { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tiny { font-size: 12.5px; } .small { font-size: 13.5px; } .muted { color: var(--muted); }
+  h2 { font-family: var(--display); font-size: 18px; margin: 0; letter-spacing: -.2px; }
+  .kick { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .num { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--amber); color: var(--amber-ink); font-weight: 800; font-size: 12px; margin-right: 6px; flex-shrink: 0; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  p { margin: 0; }
+
+  .demo { position: sticky; top: 0; z-index: 5; background: rgba(8,12,27,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--hair); padding: 8px 16px; }
+  .demo .in { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 6px; }
+  .demo .t { font-size: 11.5px; color: var(--amber-soft); font-weight: 700; }
+  .seg { display: flex; gap: 4px; flex-wrap: wrap; }
+  .seg button { padding: 6px 10px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); font-size: 12px; font-weight: 700; color: var(--muted); }
+  .seg button[aria-pressed="true"] { background: var(--amber-bg); border-color: var(--amber-line); color: var(--amber); }
+
+  .scene { border-radius: 16px; overflow: hidden; background: #000; }
+  .scene svg { display: block; width: 100%; height: auto; }
+  .loupe-l { display: flex; gap: 12px; align-items: center; }
+  .loupe { width: 104px; height: 104px; border-radius: 50%; overflow: hidden; flex-shrink: 0; box-shadow: 0 0 0 2px var(--amber), 0 10px 24px -8px rgba(0,0,0,.7); background: #000; }
+  .loupe svg { width: 100%; height: 100%; display: block; }
+
+  /* Carte : étiquettes de zone */
+  .iso { border-radius: 16px; background: radial-gradient(ellipse at 50% 40%, #121A3A, #05081A 75%); }
+  .iso svg { display: block; width: 100%; height: auto; }
+
+  /* Onglet Chef */
+  .hero { display: flex; gap: 12px; align-items: center; padding-right: 64px; }
+  .por { width: 60px; height: 60px; border-radius: 22%; overflow: hidden; box-shadow: 0 0 0 2px var(--blue), 0 0 0 4px #C88A4A; flex-shrink: 0; }
+  .por img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .nom { font-family: var(--display); font-weight: 800; font-size: 19px; line-height: 1.1; }
+  .sig { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; color: #2A1E08; background: linear-gradient(180deg, #FFD98A, #E6A93A); }
+  .cadre { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: none; padding: 0; }
+  .cadre .f { width: 54px; height: 42px; padding: 3px; border-radius: 3px; background: linear-gradient(135deg, #F3D58C, #B98A3E 55%, #7E5520); box-shadow: 0 6px 14px -4px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.25); transform: rotate(-5deg); transition: transform .2s; }
+  .cadre:hover .f, .cadre:focus-visible .f { transform: rotate(0) scale(1.06); }
+  .cadre .f > div { width: 100%; height: 100%; background: #EFE6D0; padding: 2px; box-sizing: border-box; }
+  .cadre .f svg { display: block; width: 100%; height: 100%; }
+  .cadre .l { font-size: 9.5px; font-weight: 700; color: var(--amber-soft); letter-spacing: .03em; }
+  .comps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .cp { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px 7px; border-radius: 12px; background: var(--surface2); }
+  .cp .n { font-weight: 800; font-size: 16px; color: var(--c); line-height: 1; } .cp .l { font-size: 10px; color: var(--muted); font-weight: 600; }
+
+  /* Feuille : la photo en grand */
+  .voile { position: fixed; inset: 0; z-index: 20; background: rgba(4,6,14,.72); backdrop-filter: blur(3px); display: none; align-items: flex-end; justify-content: center; }
+  .voile.on { display: flex; }
+  .feuille { width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; background: var(--surface); border-radius: 22px 22px 0 0; padding: 18px 16px 26px; display: flex; flex-direction: column; gap: 12px; animation: monte .25s ease-out; box-sizing: border-box; }
+  @keyframes monte { from { transform: translateY(30px); opacity: 0; } }
+  .photo { background: #EFE6D0; padding: 10px 10px 34px; border-radius: 3px; box-shadow: 0 14px 30px -10px rgba(0,0,0,.8); transform: rotate(-1.2deg); position: relative; }
+  .photo svg { display: block; width: 100%; height: auto; }
+  .photo .leg { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-family: 'Special Elite', monospace; font-size: 14px; color: #3A2C1A; }
+  .noms { display: flex; flex-wrap: wrap; gap: 6px; }
+  .noms span { padding: 4px 10px; border-radius: 999px; background: var(--surface2); font-size: 12.5px; font-weight: 600; }
+  .noms span.moi { background: var(--amber-bg); color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber-line); }
+  .fermer { align-self: stretch; padding: 11px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface2); font-weight: 700; }
+
+  /* Pop-up de bascule */
+  .pop { background: linear-gradient(180deg, #1E2650, #141B33); border: 1px solid var(--amber-line); border-radius: 20px; padding: 18px 16px; display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; }
+  .pop .ico { width: 64px; height: 76px; }
+  .pop h3 { font-family: var(--display); font-size: 20px; margin: 0; }
+  .pop .btn { padding: 10px 22px; border-radius: 12px; border: 0; background: var(--amber); color: var(--amber-ink); font-weight: 800; }
+  .regle { display: flex; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--bg); font-size: 13px; color: var(--text2); }
+  .regle b { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="demo"><div class="in">
+  <span class="t">DÉMO · récompense « Zone fondatrice » (saison 1) · rien n’est encore en jeu</span>
+  <div class="seg" id="moments"></div>
+</div></div>
+
+<main class="wrap">
+  <section class="card">
+    <div class="between"><h2><span class="num">1</span>La plaque sur le commissariat</h2></div>
+    <p class="small muted">Plaque de bronze scellée sur la tour, à côté de l’entrée. Elle s’éclaire le soir, et tous ceux qui visitent ton commissariat la voient. Elle reste quel que soit le skin.</p>
+    <div class="scene" id="scene"></div>
+    <div class="loupe-l">
+      <div class="loupe" id="loupe"></div>
+      <p class="small"><b>Vue de près.</b> Laurier, étoile et « S1 ». Au toucher (ou au survol sur PC) : <i>« Zone fondatrice : présente depuis la saison 1 »</i>.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">2</span>Sur la carte du district</h2>
+    <p class="small muted">Un petit médaillon de bronze devant le nom des zones fondatrices. Ça donne une raison de regarder les zones des autres, sans rien changer à la carte.</p>
+    <div class="iso" id="iso"></div>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">3</span>La photo de promo dans l’onglet Chef</h2>
+    <p class="small muted">En attendant le bureau, le cadre est posé à côté du portrait. Touche-le.</p>
+    <div class="card" style="background:var(--surface2);border-color:var(--line)">
+      <div class="hero">
+        <div class="por"><img src="../img/chefs/p05.webp" alt=""></div>
+        <div style="display:flex;flex-direction:column;gap:3px;min-width:0">
+          <span class="kick">Mon chef de corps</span>
+          <span class="nom">Commissaire Ravel</span>
+          <span class="tiny muted">Commissaire · ZP Val-de-Brume</span>
+          <span><span class="sig">Fin limier</span></span>
+        </div>
+      </div>
+      <button type="button" class="cadre" id="ouvrir" aria-label="Voir la photo de promotion de la saison 1"><span class="f"><div id="mini"></div></span><span class="l">Promo S1</span></button>
+      <div class="comps">
+        <div class="cp" style="--c:#E8B530"><span class="n">4</span><span class="l">Gest.</span></div>
+        <div class="cp" style="--c:#E1453A"><span class="n">3</span><span class="l">Cdt</span></div>
+        <div class="cp" style="--c:#A78BFA"><span class="n">5</span><span class="l">Flair</span></div>
+        <div class="cp" style="--c:#5AB0F0"><span class="n">2</span><span class="l">Diplo.</span></div>
+        <div class="cp" style="--c:#3DD39A"><span class="n">3</span><span class="l">Prox.</span></div>
+      </div>
+    </div>
+    <p class="tiny muted">Quand le bureau du chef existera, la photo y sera accrochée d’office : ce sera son premier objet.</p>
+  </section>
+
+  <section class="card">
+    <h2><span class="num">4</span>L’annonce, le soir de la bascule</h2>
+    <p class="small muted">Une seule fois, à 20:00, pour les fondateurs uniquement. Court, comme les autres pop-ups.</p>
+    <div class="pop">
+      <svg class="ico" viewBox="0 0 16 19" id="popPlaque"></svg>
+      <h3>Zone fondatrice</h3>
+      <p class="small" style="color:var(--text2)">Merci d’être là depuis le premier soir.<br>Ta plaque est scellée sur le commissariat, et la photo de la promo t’attend dans l’onglet Chef.</p>
+      <button type="button" class="btn">Merci !</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Qui la reçoit ?</h2>
+    <div class="regle"><span>📅</span><span><b>Au moins 7 soirs joués en saison 1</b> (le compteur existe déjà dans le jeu). Celui qui s’est inscrit puis a arrêté au bout de deux jours ne l’a pas.</span></div>
+    <div class="regle"><span>🔒</span><span><b>Plus jamais obtenable ensuite.</b> Purement honorifique : aucun bonus de jeu, donc rien d’injuste pour les nouveaux de la saison 2.</span></div>
+  </section>
+</main>
+
+<div class="voile" id="voile" role="dialog" aria-modal="true" aria-label="Photo de promotion de la saison 1">
+  <div class="feuille">
+    <span class="kick">Bureau du chef</span>
+    <h2>Promotion fondatrice</h2>
+    <div class="photo"><div id="grande"></div><span class="leg">Ma ZP · Saison 1 · 2026</span></div>
+    <p class="small muted">Ils étaient là dès la saison 1 :</p>
+    <div class="noms" id="noms"></div>
+    <button type="button" class="fermer" id="fermer">Fermer</button>
+  </div>
+</div>
+
+<script type="module">
+import { sceneHp, plaqueFondatrice } from '../js/ui/scene-hp.js';
+
+const NOMS = ['Val-de-Brume', 'Kodiak', 'Haute-Sûre', 'Lynx 12', 'Néon', 'Brigade du Nord', 'Pétrus', 'Côte-Grise', 'Hibou', 'Fort-Ardent', 'Marquise'];
+const MOI = 'Val-de-Brume';
+let moment = 'crepuscule';
+
+const MOMENTS = [['jour', 'Jour'], ['crepuscule', 'Soir'], ['nuit', 'Nuit']];
+const seg = document.getElementById('moments');
+function boutons() {
+  seg.innerHTML = MOMENTS.map(([k, l]) => `<button type="button" data-m="${k}" aria-pressed="${k === moment}">${l}</button>`).join('');
+}
+seg.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; moment = b.dataset.m; boutons(); rendre(); });
+
+function rendre() {
+  const svg = sceneHp({ nom: 'Val-de-Brume', b: 3, g: 2, devant: ['combi', 'anonyme'], infra: { tir: 1 }, moment, drapeau: { couleur: '#3C7DB8' }, decor: { abords: 'arbres' }, fondateur: true, plaques: [{ rang: 2, season: 1 }], date: new Date('2026-10-12T19:00:00') });
+  document.getElementById('scene').innerHTML = svg;
+  // Loupe : le même dessin, cadré sur la plaque (x0 = 22, rez-de-chaussée à y = 142).
+  document.getElementById('loupe').innerHTML = svg.replace(/viewBox="[^"]*"/, 'viewBox="11 137 34 34"').replace('class="scene-hp"', 'class="scene-hp" preserveAspectRatio="xMidYMid slice"');
+  document.getElementById('popPlaque').innerHTML = plaqueFondatrice(-1.5, -5, { neon: false }, 'pop').replace(/<title>.*?<\/title>/, '').replace(/<path d="M[^"]*h5 l-1 1.6 h-3 Z"[^>]*\/>/, '');
+}
+
+// Carte : étiquettes de zone comme sur la maquette, avec le médaillon devant le nom.
+function etiquette(x, y, nom, moi, fondateur) {
+  const lw = 14 + nom.length * 4.3 + (fondateur ? 10 : 0);
+  const med = fondateur ? `<g transform="translate(${-lw / 2 + 7.5} -.5)"><circle r="5.2" fill="url(#bz)" stroke="#6E4B17" stroke-width=".6"/><text y="2" text-anchor="middle" style="font:700 5px 'Barlow Condensed',sans-serif;fill:#4A3010">S1</text></g>` : '';
+  return `<g transform="translate(${x} ${y})"><rect x="${-lw / 2}" y="-8" width="${lw}" height="15" rx="7.5" fill="${moi ? '#FFB23F' : '#0B1124'}" fill-opacity="${moi ? 1 : 0.88}" stroke="${fondateur ? '#C99A45' : moi ? '#FFB23F' : '#5A6699'}" stroke-width="${fondateur ? 1 : 0.7}"/>${med}<text x="${fondateur ? 5 : 0}" y="2.6" text-anchor="middle" style="font:700 8px 'Instrument Sans',sans-serif;fill:${moi ? '#0B1124' : '#EDF0FA'}">${nom}</text></g>`;
+}
+function bloc(x, y, c) { return `<g transform="translate(${x} ${y})"><path d="M0 0 L22 -11 L44 0 L22 11 Z" fill="${c}" opacity=".35"/><path d="M8 -2 L22 -9 L36 -2 L36 -14 L22 -21 L8 -14 Z" fill="${c}" opacity=".9"/><path d="M8 -2 L22 5 L36 -2 L36 -14 L22 -7 L8 -14 Z" fill="${c}"/><path d="M22 5 L36 -2 L36 -14 L22 -7 Z" fill="#000" opacity=".25"/></g>`; }
+document.getElementById('iso').innerHTML = `<svg viewBox="0 0 320 150" role="img" aria-label="Aperçu des étiquettes de zones sur la carte">
+  <defs><linearGradient id="bz" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3D58C"/><stop offset=".55" stop-color="#C99A45"/><stop offset="1" stop-color="#8E6224"/></linearGradient></defs>
+  ${bloc(40, 70, '#3C7DB8')}${bloc(150, 50, '#A78BFA')}${bloc(240, 95, '#3DD39A')}${bloc(110, 120, '#E1453A')}
+  ${etiquette(62, 34, 'Ma zone', true, true)}${etiquette(172, 14, 'Kodiak', false, true)}${etiquette(262, 60, 'Haute-Sûre', false, false)}${etiquette(132, 86, 'Brigade du Nord', false, true)}
+</svg>`;
+
+// Photo de promotion : deux rangs d'agents devant l'hôtel de police, en sépia.
+function photo(n) {
+  const W = 240, H = 150, r = (k) => { const x = Math.sin(k * 99.7) * 43758.5; return x - Math.floor(x); };
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Photo de groupe des ${n} zones fondatrices"><defs>
+    <radialGradient id="vg" cx=".5" cy=".45" r=".75"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#2A1B0C" stop-opacity=".55"/></radialGradient>
+    <linearGradient id="ciel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D9C7A2"/><stop offset="1" stop-color="#C4AE84"/></linearGradient></defs>
+    <rect width="${W}" height="${H}" fill="url(#ciel)"/>
+    <rect x="30" y="18" width="180" height="96" fill="#A98F66"/><rect x="30" y="18" width="18" height="96" fill="#9A8059"/>`;
+  for (let f = 0; f < 3; f++) for (let k = 0; k < 6; k++) s += `<rect x="${58 + k * 25}" y="${26 + f * 22}" width="16" height="12" fill="#7A6447"/>`;
+  s += `<rect x="30" y="88" width="180" height="5" fill="#6F5A3E"/><text x="120" y="92.3" text-anchor="middle" style="font:700 5px 'Barlow Condensed',sans-serif;fill:#E9DCC0;letter-spacing:1px">POLICE</text>
+    <rect x="0" y="112" width="${W}" height="${H - 112}" fill="#B7A07A"/>`;
+  const rangs = [Math.ceil(n / 2), Math.floor(n / 2)];
+  rangs.forEach((nb, ri) => {
+    const y = ri === 0 ? 112 : 132, k = ri === 0 ? 0.92 : 1.05, pas = Math.min(28, 200 / Math.max(nb, 1));
+    for (let i = 0; i < nb; i++) {
+      const x = W / 2 + (i - (nb - 1) / 2) * pas + (ri === 0 ? 0 : pas / 2 * 0), dh = r(i + ri * 7) * 3;
+      const peau = ['#D8C3A0', '#C9AD86', '#B8976E'][Math.floor(r(i * 3 + ri) * 3)];
+      s += `<g transform="translate(${x.toFixed(1)} ${y}) scale(${k})">
+        <path d="M-9 0 L-8 ${-17 - dh} Q0 ${-21 - dh} 8 ${-17 - dh} L9 0 Z" fill="#3F3120"/>
+        <path d="M-2 ${-19 - dh} L0 ${-13 - dh} L2 ${-19 - dh} Z" fill="#E9DCC0" opacity=".7"/>
+        <rect x="-2" y="${-22 - dh}" width="4" height="3" fill="${peau}"/>
+        <ellipse cx="0" cy="${-26 - dh}" rx="4.4" ry="5" fill="${peau}"/>
+        <path d="M-5.2 ${-28.5 - dh} Q0 ${-35 - dh} 5.2 ${-28.5 - dh} Z" fill="#2E2416"/><rect x="-5.6" y="${-29 - dh}" width="11.2" height="1.6" rx=".6" fill="#2E2416"/><rect x="-1.3" y="${-32.4 - dh}" width="2.6" height="1.8" fill="#C9B07A"/>
+        <rect x="-6" y="${-14 - dh}" width="2" height="1.2" fill="#C9B07A" opacity=".8"/><rect x="4" y="${-14 - dh}" width="2" height="1.2" fill="#C9B07A" opacity=".8"/></g>`;
+    }
+  });
+  for (let i = 0; i < 260; i++) s += `<rect x="${(r(i + 0.3) * W).toFixed(1)}" y="${(r(i + 0.7) * H).toFixed(1)}" width=".7" height=".7" fill="${i % 2 ? '#fff' : '#3A2C1A'}" opacity=".18"/>`;
+  return `${s}<rect width="${W}" height="${H}" fill="url(#vg)"/><rect width="${W}" height="${H}" fill="#704214" opacity=".1"/></svg>`;
+}
+document.getElementById('mini').innerHTML = photo(NOMS.length);
+document.getElementById('grande').innerHTML = photo(NOMS.length);
+document.getElementById('noms').innerHTML = NOMS.map((n) => `<span class="${n === MOI ? 'moi' : ''}">${n}</span>`).join('');
+const voile = document.getElementById('voile');
+document.getElementById('ouvrir').addEventListener('click', () => voile.classList.add('on'));
+document.getElementById('fermer').addEventListener('click', () => voile.classList.remove('on'));
+voile.addEventListener('click', (e) => { if (e.target === voile) voile.classList.remove('on'); });
+
+boutons(); rendre();
+</script>
+</body>
+</html>
