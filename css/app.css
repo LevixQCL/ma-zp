@@ -2641,7 +2641,7 @@ main.screen.gzs { height: 100dvh; box-sizing: border-box; padding: 10px 12px 100
 @media (prefers-reduced-motion: reduce) { .gzs-carte.on { animation: none; } }
 .gzs-tete { display: flex; justify-content: space-between; gap: 10px; padding: 12px 16px 8px; font: 700 11px var(--body); letter-spacing: .1em; text-transform: uppercase; color: var(--ink3); border-bottom: 3px double var(--ink); margin: 0 12px; padding-inline: 4px; }
 .gzs-tete span:first-child { font-family: var(--serif); font-size: 15px; letter-spacing: -.2px; text-transform: none; color: var(--ink); font-weight: 800; }
-.gzs-img { display: block; width: calc(100% - 24px); margin: 12px 12px 0; aspect-ratio: 4 / 3; max-height: 34dvh; object-fit: cover; border: 1px solid rgba(0,0,0,.35); filter: sepia(.15); }
+.gzs-img { display: block; width: calc(100% - 24px); margin: 12px 12px 0; aspect-ratio: 16 / 10; max-height: 34dvh; object-fit: cover; border: 1px solid rgba(0,0,0,.35); filter: sepia(.15); }
 .gzs-scene { margin: 12px 12px 0; border-radius: 6px; overflow: hidden; max-height: 30dvh; display: flex; align-items: flex-end; }
 .gzs-scene svg { display: block; width: 100%; height: auto; }
 .gzs-corps { padding: 12px 16px 18px; display: flex; flex-direction: column; gap: 10px; }
