@@ -256,7 +256,7 @@ function avantHtml(st, z, items) {
   const p = reste[0];
   return `<section class="card hp-soir" aria-label="Prochain tour">
     <div class="hs-tete"><span class="kicker">20:00 dans <b id="countdown" class="hs-cd">${formatCountdown(st.nextDeadline - Date.now())}</b></span>${situationPastilles(z, cielDe(z))}</div>
-    <div class="hs-pips" aria-label="${fait} étape${fait > 1 ? 's' : ''} faite${fait > 1 ? 's' : ''} sur ${items.length}">${items.map((i) => `<a class="hs-pip${i.ok ? ' ok' : ''}" href="${i.href}" title="${attr(i.t)}" aria-label="${attr(i.t)} : ${i.ok ? 'fait' : 'à faire'}">${icon(icoEtape(i.href), 18)}${i.ok ? `<i aria-hidden="true">${icon('check', 10)}</i>` : ''}</a>`).join('')}</div>
+    <div class="hs-pips" aria-label="${fait} étape${fait > 1 ? 's' : ''} faite${fait > 1 ? 's' : ''} sur ${items.length}">${items.map((i) => `<a class="hs-pip${i.ok ? ' ok' : i === p ? ' suiv' : ''}" href="${i.href}" title="${attr(i.t)}" aria-label="${attr(i.t)} : ${i.ok ? 'fait' : 'à faire'}">${icon(icoEtape(i.href), 18)}${i.ok ? `<i aria-hidden="true">${icon('check', 10)}</i>` : ''}</a>`).join('')}</div>
     <a class="hs-cta${p ? '' : ' fini'}" href="${p ? p.href : '#ordres'}">
       <span class="hs-cta-t">${p ? p.t : `${icon('check', 18)} Tout est prêt pour ce soir`}</span>
       <span class="hs-cta-s">${p ? p.s : 'tu peux encore tout modifier jusqu’à 20:00'}</span></a>
@@ -289,15 +289,17 @@ function jaugesHtml(z, T) {
       ${rond('Réputation', z.reputation, '#3DD39A', 'reputation', h.reputation)}
     </div>
     <div class="hz-stats">
-      <span class="hz-s"><b>${dispo}</b>/${z.agents} agents${blesses ? ` <span class="bad">· ${blesses} absent${blesses > 1 ? 's' : ''}</span>` : ''}</span>
-      <button type="button" class="hz-s" data-action="budget" aria-label="Budget ${attr(fmtK(z.budget))}, détail du budget"><b class="${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</b> <span class="${ff < 0 ? 'bad' : 'ok'}">${ff >= 0 ? '+' : '−'}${fmtK(Math.abs(ff))}/j</span></button>
-      <button type="button" class="hz-s" data-action="parc" aria-label="Parc automobile : ${vDispo} véhicules disponibles sur ${z.vehicules}"><b>${vDispo}</b>/${z.vehicules} véhicules${cab ? ` <span class="bad">· ${cab} cabossé${cab > 1 ? 's' : ''}</span>` : ''}</button>
+      <span class="hz-s"><b>${dispo}</b><span>/${z.agents} agents</span>${blesses ? ` <span class="bad">· ${blesses} absent${blesses > 1 ? 's' : ''}</span>` : ''}</span>
+      <button type="button" class="hz-s" data-action="budget" aria-label="Budget ${attr(fmtK(z.budget))}, détail du budget"><b class="${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</b><span class="${ff < 0 ? 'bad' : 'ok'}">${ff >= 0 ? '+' : '−'}${fmtK(Math.abs(ff))}/j</span></button>
+      <button type="button" class="hz-s" data-action="parc" aria-label="Parc automobile : ${vDispo} véhicules disponibles sur ${z.vehicules}"><b>${vDispo}</b><span>/${z.vehicules} véhicules</span>${cab ? ` <span class="bad">· ${cab} cabossé${cab > 1 ? 's' : ''}</span>` : ''}</button>
     </div>
   </section>`;
 }
 
 /** Une ligne repliable de « Aujourd'hui » : icône, titre, une phrase ; le détail (la carte d'avant) se déplie. */
 function ligneAjd({ k, ico, titre, sous, badge = '', cls = '', corps, ouvert = false, label = '' }) {
+  // Carte qui sait déjà se replier sur une ligne (plan du district, vote déjà donné…) : on ne l'emballe pas une 2e fois.
+  if (/^\s*<(details|button)/.test(corps)) return corps;
   const force = S.ancre && corps.includes(`id="${S.ancre}"`);
   const o = force || (S.ouverts && S.ouverts[k] !== undefined ? S.ouverts[k] : ouvert);
   // Une ligne dépliée d'office (décision en attente) le reste jusqu'à ce que le joueur la replie :
@@ -463,10 +465,12 @@ function heroHtml(st, z) {
       ${chef}
       <div class="hud-id"><span class="hud-nom">${esc(z.nom)}</span>
         <a class="hud-sous" href="#parties">ZP ${esc(z.code)}${doc ? ` · <span title="Doctrine : ${esc(doc.force)}">${doc.ico}</span>` : ''} · ${esc((S.partie && S.partie.nom) || 'District Delta')}</a></div>
-      <button type="button" class="hud-btn roue" data-action="menu-hp" aria-expanded="${!!S.menuHp}" aria-label="Guide, nouveautés, partie et profil">${icon('gear', 20)}${noteVue() ? '' : '<i class="roue-pastille" aria-hidden="true"></i>'}</button>
+      <button type="button" class="hud-ipz" data-action="aide" data-k="ipz" aria-label="IPZ ${fmt1(z.ipz)}${z.hier && z.hier.ipz != null ? `, ${z.ipz >= z.hier.ipz ? 'en hausse' : 'en baisse'} de ${fmt1(Math.abs(z.ipz - z.hier.ipz))}` : ''}, ${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total}` : 'non classé'} : qu’est-ce que l’IPZ ?"><span class="hud-ipz-l">IPZ</span><span class="hud-ipz-v">${fmt1(z.ipz)}</span>${pastilleDelta(z.ipz, z.hier && z.hier.ipz)}${z.toursJoues >= 5 ? `<span class="hud-rang">${rang}<sup>${rang === 1 ? 'er' : 'e'}</sup>/${total}</span>` : ''}</button>
     </div>
-    <button type="button" class="hud-ipz" data-action="aide" data-k="ipz" aria-label="IPZ ${fmt1(z.ipz)}${z.hier && z.hier.ipz != null ? `, ${z.ipz >= z.hier.ipz ? 'en hausse' : 'en baisse'} de ${fmt1(Math.abs(z.ipz - z.hier.ipz))}` : ''}, ${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total}` : 'non classé'} : qu’est-ce que l’IPZ ?"><span class="hud-ipz-l">IPZ</span><span class="hud-ipz-v">${fmt1(z.ipz)}</span>${pastilleDelta(z.ipz, z.hier && z.hier.ipz)}<span class="hud-rang">${z.toursJoues >= 5 ? `${rang}<sup>${rang === 1 ? 'er' : 'e'}</sup>/${total}` : 'non classé'}</span></button>
-    <button type="button" class="hud-btn hud-perso" data-action="decor" aria-label="Personnaliser mon commissariat">${icon('pencil', 18)}</button>
+    <div class="hud-bas">
+      <button type="button" class="hud-btn roue" data-action="menu-hp" aria-expanded="${!!S.menuHp}" aria-label="Guide, nouveautés, partie et profil">${icon('gear', 20)}${noteVue() ? '' : '<i class="roue-pastille" aria-hidden="true"></i>'}</button>
+      <button type="button" class="hud-btn hud-perso" data-action="decor" aria-label="Personnaliser mon commissariat">${icon('pencil', 18)}</button>
+    </div>
   </section>`;
 }
 
