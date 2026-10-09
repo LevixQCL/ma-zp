@@ -99,7 +99,43 @@ export function disqueHtml(q) {
     <div class="dq-wrap"><div class="dq-boite">${disque}<div class="dq-prise" aria-hidden="true"></div><div class="dq-libre" aria-hidden="true"></div></div></div>
     <p class="tiny muted" style="margin:0;text-align:center">Tourne l’anneau orange du doigt (le centre et le bord laissent défiler la page). Dehors, la lettre du message codé ; dedans, la lettre claire.</p>
     ${lecture}
+    ${modeEmploiDisque(q, n)}
   </section>`;
+}
+
+/** Mode d’emploi du disque, replié sous le disque (beaucoup de joueurs ne savaient pas s’en servir). */
+function modeEmploiDisque(q, n) {
+  const miroir = /miroir/i.test(q.aide || '');
+  const li = (t) => `<li>${t}</li>`;
+  const base = [
+    li('<b>Le bord extérieur (fixe)</b> porte les lettres <b>du message codé</b>. <b>L’anneau orange</b> porte les lettres <b>en clair</b>.'),
+    li('<b>Pour lire une lettre :</b> trouve-la sur le bord extérieur, puis regarde la lettre <b>juste en dessous</b>, sur l’anneau orange : c’est la vraie lettre. Fais pareil pour chaque lettre du message.'),
+    li('<b>Le réglage :</b> tourne l’anneau (ou les boutons − / +). La grosse lettre au centre indique le décalage choisi ; le petit triangle orange montre où se trouve le A en clair.'),
+  ];
+  const exemple = `<p class="small" style="margin:6px 0 0"><b>Exemple :</b> réglé sur <b>D</b> (décalage 3), sous le D extérieur on lit A, sous le F on lit C… Le message « FDYH » se lit alors « CAVE ».</p>`;
+  const trous = /_/.test(q.code || '') ? li('<b>Les taches d’encre</b> sont des lettres perdues : décode le reste, puis devine le mot comme dans un mot croisé.') : '';
+  let etapes;
+  if (n > 1) {
+    etapes = [
+      ...base,
+      li(`<b>Ici, il y a ${n} roues</b> (une par lettre du mot-clé). Chaque lettre du message a <b>la couleur de sa roue</b> : la 1re lettre se lit avec la roue 1, la 2e avec la roue 2${n > 2 ? ', etc.' : ''}, puis on recommence avec la roue 1. Choisis la roue à régler avec les onglets « Roue 1 », « Roue 2 »…`),
+      li('<b>Trouver la clé :</b> fais une supposition sur le premier mot (l’aide au-dessus donne les débuts possibles). Exemple avec « PLANQUE » : règle la roue 1 jusqu’à ce que la 1re lettre codée tombe <b>au-dessus du P</b> orange, puis la roue 2 pour que la 2e lettre codée tombe au-dessus du L, et ainsi de suite.'),
+      li('<b>Vérifie :</b> la ligne « Lecture avec ces clés » se décode en direct. Si la suite devient lisible, c’est gagné ; si c’est du charabia, essaie un autre premier mot.'),
+      trous,
+    ];
+  } else {
+    etapes = [
+      ...base,
+      li('<b>Trouver le bon réglage :</b> pars d’un mot que tu connais (l’aide au-dessus te donne le début du message ou les débuts possibles). Tourne jusqu’à ce que la 1re lettre codée tombe <b>au-dessus de la 1re lettre de ce mot</b>. Si les lettres suivantes collent aussi, tu as le bon réglage : lis tout le message.'),
+      miroir ? li('<b>Si aucun réglage ne donne rien</b>, c’est peut-être l’alphabet miroir : là, le disque ne sert pas, on remplace simplement A par Z, B par Y, C par X…') : '',
+      trous,
+      li('<b>La réponse</b> est le lieu cité dans le message : un seul mot suffit.'),
+    ];
+  }
+  return `<details class="astuce dq-aide"><summary>📖 Comment se servir du disque ?</summary>
+    <ol class="small" style="margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px">${etapes.join('')}</ol>
+    ${exemple}
+  </details>`;
 }
 
 function lireAvec(code, cles) {
