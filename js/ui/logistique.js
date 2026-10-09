@@ -1,4 +1,5 @@
 // Logistique (bâtiments de la zone) et détail du budget : ce qui coûte, ce qui rapporte.
+import { reglesV2 } from '../engine/regles.js';
 import { ficheChefHtml, portraitChef } from './chef.js';
 import { titresDefi } from './defis.js';
 import { S, esc, icon, fmt1, myZone } from './common.js';
@@ -242,7 +243,7 @@ export function ouvrirDecor() {
         return `<button type="button" class="decor-opt${on ? ' on' : ''}" data-action="skin-choix" data-cat="${sk.cat}" data-id="${sk.id}" aria-pressed="${on}"><span>${esc(o.nom)}</span><span class="cond">${esc(SKINS[sk.cat].titre)} · ${on ? 'équipé, touche pour l’enlever' : 'touche pour l’équiper'}</span></button>`;
       }).join('')}</div></div>`;
     })()}
-    ${(() => {
+    ${!reglesV2(S.state) ? '' : (() => {
       const c = (S.player && S.player.hpCiel) || '';
       const opt = (v, l) => `<button type="button" class="decor-opt${c === v ? ' on' : ''}" data-action="hp-ciel" data-v="${v}" aria-pressed="${c === v}"><span>${l}</span></button>`;
       return `<div class="col" style="gap:6px"><span class="tiny muted">Ciel de mon HP</span><div class="decor-opts">${opt('', 'Heure réelle')}${opt('jour', 'Toujours le jour')}${opt('crepuscule', 'Toujours le soir')}${opt('nuit', 'Toujours la nuit')}</div></div>`;

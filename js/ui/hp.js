@@ -45,6 +45,8 @@ import { nomSecteur } from '../engine/nondroit.js';
 import { incidentsHtml, jaugeSkinsLigne } from './incidents.js';
 import { vignetteVentes, vignetteEquipe, vignetteTrophees, vignetteRapport, vignetteGazette, vignetteClassement, vignetteChallenge } from './vignettes-hp.js';
 import { phaseVente } from '../engine/ventes.js';
+import { reglesV2 } from '../engine/regles.js';
+import { renderHPAncien } from './hp-ancien.js';
 
 /** Variation depuis la veille, en petite pastille colorée. */
 function pastilleDelta(v, avant) {
@@ -475,6 +477,8 @@ function heroHtml(st, z) {
 }
 
 export function renderHP() {
+  // Le nouvel HP arrive avec la saison 2 (bascule à 20:00) : avant, l'ancien reste affiché.
+  if (!reglesV2(S.state)) return renderHPAncien();
   const st = S.state, z = myZone();
   const T = st.turn;
   const ordresOk = !!S.savedOrders && !S.ordersDirty;

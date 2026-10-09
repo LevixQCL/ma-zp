@@ -38,21 +38,24 @@ export const ETAPES = [
   {
     id: 'fil-rouge', route: 'hp', cible: 'section[aria-label="Prochain tour"]',
     titre: 'Le fil rouge de ta journée',
-    texte: `<p><strong>Tout se joue à 20:00</strong>, pour toutes les zones en même temps : jouer tôt ne donne aucun avantage. Le <strong>gros bouton</strong> t’emmène à la prochaine chose à faire ; les petites icônes au-dessus se cochent au fur et à mesure.</p>
-      <p>Le <strong>ciel</strong> annonce ta journée : clair, chargé, orage ou éclaircie. Touche sa pastille pour comprendre.</p>`,
+    texte: () => (reglesV2(S.state) ? `<p><strong>Tout se joue à 20:00</strong>, pour toutes les zones en même temps : jouer tôt ne donne aucun avantage. Le <strong>gros bouton</strong> t’emmène à la prochaine chose à faire ; les petites icônes au-dessus se cochent au fur et à mesure.</p>
+      <p>Le <strong>ciel</strong> annonce ta journée : clair, chargé, orage ou éclaircie. Touche sa pastille pour comprendre.</p>` : `<p><strong>Tout se joue à 20:00</strong>, pour toutes les zones en même temps : jouer tôt ne donne aucun avantage. Cette liste dit ce qu’il te reste à faire avant ce soir.</p>
+      <p>Le <strong>ciel</strong> annonce ta journée : clair, chargé, orage ou éclaircie. Touche sa pastille pour comprendre. Certains jours, un <strong>dilemme</strong> apparaît juste en dessous : deux choix, à trancher avant 20:00.</p>`),
   },
   {
     id: 'incidents', route: 'hp', cible: ['section[aria-label="Aujourd’hui"]', '#hp-incidents'],
-    titre: 'Aujourd’hui : incidents et décisions',
-    texte: `<p>Une ou deux fois par jour, à une heure imprévue, un <strong>incident</strong> tombe sur un de tes services : colis suspect, porte à crocheter, parking à débloquer, rapport à corriger.</p>
+    titre: () => (reglesV2(S.state) ? 'Aujourd’hui : incidents et décisions' : 'Les incidents du jour'),
+    texte: () => (reglesV2(S.state) ? `<p>Une ou deux fois par jour, à une heure imprévue, un <strong>incident</strong> tombe sur un de tes services : colis suspect, porte à crocheter, parking à débloquer, rapport à corriger.</p>
       <p>Tu as <strong>12 heures</strong> pour jouer le mini-jeu, avec <strong>un seul essai</strong>. Si tu réussis : des PS, un bonus, et ta jauge de skins monte. Si tu rates : jamais pire que si tu n’y étais pas allé.</p>
-      <p>Les dilemmes, le Conseil et les alertes arrivent ici aussi, une ligne chacun : touche une ligne pour la déplier.</p>`,
+      <p>Les dilemmes, le Conseil et les alertes arrivent ici aussi, une ligne chacun : touche une ligne pour la déplier.</p>` : `<p>Une ou deux fois par jour, à une heure imprévue, un <strong>incident</strong> tombe sur un de tes services : colis suspect, porte à crocheter, parking à débloquer, rapport à corriger.</p>
+      <p>Tu as <strong>12 heures</strong> pour jouer le mini-jeu, avec <strong>un seul essai</strong>. Si tu réussis : des PS, un bonus, et ta jauge de skins monte. Si tu rates : jamais pire que si tu n’y étais pas allé, ton équipe peut encore rattraper le coup. Chaque mini-jeu a son propre tuto.</p>`),
   },
   {
     id: 'zone', route: 'hp', cible: 'section[aria-label="Ma zone"]',
     titre: 'Ta zone en un coup d’œil',
-    texte: `<p>L’<strong>IPZ</strong> est ta note du jour, sur 100 ; c’est la moyenne de la saison qui compte au classement (les derniers jours comptent plus).</p>
-      <p>Surveille la <strong>satisfaction</strong> (le plus gros poids) et le <strong>moral</strong>, qui règle l’efficacité de tous tes agents. Touche une jauge pour voir le calcul avec tes chiffres. Touche ton commissariat, en haut, pour voir ce que te rapportent tes bâtiments, et le pinceau pour le personnaliser.</p>`,
+    texte: () => (reglesV2(S.state) ? `<p>L’<strong>IPZ</strong> est ta note du jour, sur 100 ; c’est la moyenne de la saison qui compte au classement (les derniers jours comptent plus).</p>
+      <p>Surveille la <strong>satisfaction</strong> (le plus gros poids) et le <strong>moral</strong>, qui règle l’efficacité de tous tes agents. Touche une jauge pour voir le calcul avec tes chiffres. Touche ton commissariat, en haut, pour voir ce que te rapportent tes bâtiments, et le pinceau pour le personnaliser.</p>` : `<p>L’<strong>IPZ</strong> est ta note du jour, sur 100 ; c’est la moyenne de la saison qui compte au classement (les derniers jours comptent plus).</p>
+      <p>Surveille la <strong>satisfaction</strong> (le plus gros poids) et le <strong>moral</strong>, qui règle l’efficacité de tous tes agents. Chaque <strong>?</strong> détaille le calcul avec tes chiffres. Touche ton commissariat pour voir ce que te rapportent tes bâtiments.</p>`),
   },
   {
     id: 'chef', route: 'hp', v2: true, // le chef n'existe qu'en règles v2 (saison 2) cible: ['.hp-chef', '.chef-creation', 'h1.brand'],
@@ -63,8 +66,9 @@ export const ETAPES = [
   {
     id: 'rapport', route: 'hp', cible: ['section[aria-label="Mes raccourcis"]', '[data-action="toggle-rapport"]'],
     titre: 'Chaque soir : rapport et Gazette',
-    texte: `<p>Après 20:00, ton adjoint te résume la nuit dans une bulle. Ton <strong>rapport</strong> dit tout ce qui s’est passé chez toi, la <strong>Gazette</strong> raconte la soirée du district.</p>
-      <p>Tes <strong>raccourcis</strong> sont à toi : touche « Modifier » pour choisir les quatre que tu veux voir (enchères, équipe, rapport, Gazette, trophées, classement, Challenge).</p>`,
+    texte: () => (reglesV2(S.state) ? `<p>Après 20:00, ton adjoint te résume la nuit dans une bulle. Ton <strong>rapport</strong> dit tout ce qui s’est passé chez toi, la <strong>Gazette</strong> raconte la soirée du district.</p>
+      <p>Tes <strong>raccourcis</strong> sont à toi : touche « Modifier » pour choisir les quatre que tu veux voir (enchères, équipe, rapport, Gazette, trophées, classement, Challenge).</p>` : `<p>Après 20:00, ton <strong>rapport</strong> dit ce qui s’est passé chez toi et pourquoi. La <strong>Gazette</strong> raconte la soirée du district.</p>
+      <p>Plus bas sur l’HP : <strong>Mon équipe</strong>, cinq figures qui encadrent chacune un service et gagnent des surnoms (et du bonus) avec l’expérience.</p>`),
   },
   {
     id: 'affectation', route: 'ordres', onglet: 'L’onglet le plus important de la journée : c’est là que tu décides où travaillent tes agents.',
