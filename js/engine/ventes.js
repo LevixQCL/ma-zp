@@ -200,7 +200,7 @@ export function venteResoudre(state, uids, ordres, encheres, push, T) {
     const groupes = [], pris = new Set();
     for (const x of offres) {
       if (pris.has(x.u)) continue;
-      const y = x.partenaire && offres.find((w) => w.u === x.partenaire && w.partenaire === x.u && !pris.has(w.u));
+      const y = x.partenaire && x.partenaire !== x.u && offres.find((w) => w.u !== x.u && w.u === x.partenaire && w.partenaire === x.u && !pris.has(w.u));
       const partOk = (w) => w.m >= VENTE.partMin * lot.prixMin - 1e-9;
       if (y && liees(state, x.u, y.u, T) && partOk(x) && partOk(y)) { groupes.push({ membres: [x, y], m: round1(x.m + y.m) }); pris.add(x.u); pris.add(y.u); }
       else if (y && liees(state, x.u, y.u, T)) {

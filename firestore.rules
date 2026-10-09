@@ -147,7 +147,8 @@ service cloud.firestore {
         // personne ne peut la créer à l'avance pour bloquer la résolution.
         allow create, update: if master(gid) || (member(gid) && secours(gid)
           && id == string(st(gid).season) + '_' + string(st(gid).turn)
-          && getAfter(/databases/$(database)/documents/parties/$(gid)/state/current).data.turn != st(gid).turn);
+          && (getAfter(/databases/$(database)/documents/parties/$(gid)/state/current).data.turn != st(gid).turn
+              || getAfter(/databases/$(database)/documents/parties/$(gid)/state/current).data.season != st(gid).season));
         allow delete: if master(gid);
       }
 

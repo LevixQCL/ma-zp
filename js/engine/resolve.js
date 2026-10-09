@@ -66,7 +66,8 @@ export function buildJoinZone(state, uid, profile, turn = state.turn, arrivee = 
   const existants = Object.values(state.zones).filter((z) => isActive(z) && z.uid !== uid);
   const base = {};
   if (existants.length) {
-    base.agents = Math.round(median(existants.map((z) => z.agents)));
+    // Au plus 40 agents : c'est aussi le plafond des règles Firestore pour une zone qui rejoint la partie.
+    base.agents = Math.min(40, Math.round(median(existants.map((z) => z.agents))));
     // Jamais plus que le budget de départ : arriver en cours de saison ne doit pas rapporter une caisse déjà pleine.
     base.budget = Math.min(START.budget, round1(median(existants.map((z) => z.budget))));
     base.moral = Math.round(median(existants.map((z) => z.moral)));
@@ -260,7 +261,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(adj ? `Pas d’ordres ce tour : ton adjoint${adj.f ? 'e' : ''} ${adj.prenom} ${adj.nom} a tenu la zone (consigne « ${CONSIGNES[consigne].nom.toLowerCase()} »).` : 'Pas d’ordres ce tour : le pilote automatique a repris la dernière répartition.');
     }
     // Doctrine de la saison (règles v2) : choisie une fois, au plus tard en fin de 3e jour (sinon « sans doctrine »).
-    if (doctrineOuverte(state, z) && orders[uid] && DOCTRINES[orders[uid].doctrine]) {
+    if (doctrineOuverte(state, z) && orders[uid] && typeof orders[uid].doctrine === 'string' && Object.hasOwn(DOCTRINES, orders[uid].doctrine)) {
       z.doctrine = orders[uid].doctrine;
       z.maitrise = z.doctrinePrec === z.doctrine ? Math.min(2, (z.maitrisePrec || 0) + 1) : 0;
       z.rapport.push(`Doctrine de la saison : ${DOCTRINES[z.doctrine].nom}${z.maitrise ? ` (maîtrise ${z.maitrise + 1})` : ''}. Force : ${DOCTRINES[z.doctrine].force}. Prix : ${DOCTRINES[z.doctrine].prix}.`);
@@ -372,7 +373,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Un chef qui revient ou arrive en cours de semaine reçoit le rival le plus proche (sans le lui retirer).
     else if (T % 7 !== 0) for (const u of uids) {
       const bot = (x) => String(x).startsWith('bot-'), humains = Object.keys(state.rivaux.paires).some((x) => !bot(x));
-      if (state.rivaux.paires[u] || !orders[u] || !state.zones[u].chef || (bot(u) && humains)) continue;
+      if ((state.rivaux.paires[u] && state.zones[state.rivaux.paires[u]]) || !orders[u] || !state.zones[u].chef || (bot(u) && humains)) continue;
       const m = (z) => (z.toursJoues ? z.ipzSomme / z.toursJoues : 0), mz = m(state.zones[u]);
       const r = Object.keys(state.rivaux.paires).filter((x) => x !== u && state.zones[x] && !(humains && bot(x))).sort((a, b) => Math.abs(m(state.zones[a]) - mz) - Math.abs(m(state.zones[b]) - mz))[0];
       if (r) state.rivaux.paires[u] = r;
@@ -1601,7 +1602,7 @@ function finDeSaison(state, classement, opts = {}) {
     delete nz.chef.parrain;
     // Les jours du chef sont ceux de l'ancienne saison (le compteur repart à 1) : blessure, délais du réseau,
     // changement de talents, rallonge et remise en route repartent à zéro.
-    for (const k of ['blesse', 'hs', 'services', 'talentsT', 'rallongeT', 'remise', 'paraSuite']) delete nz.chef[k];
+    for (const k of ['blesse', 'hs', 'services', 'talentsT', 'rallongeT', 'remise', 'paraSuite', 'visites']) delete nz.chef[k];
     delete nz.chef.priseT; // la prise de fonctions se compte en jours joués (priseJ) : elle reprend là où elle en était
     if (z.adjoint) nz.adjoint = { ...z.adjoint, journal: [] };
     { const ci = classes.findIndex((c) => c.uid === uid), cl = classes[ci];

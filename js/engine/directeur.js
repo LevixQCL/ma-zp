@@ -91,7 +91,13 @@ export function assurerDir(z) {
   return d;
 }
 /** Ce que le Directeur garde d'une saison à l'autre (niveau des énigmes et des mini-jeux, souvenirs). */
-export const dirHeritage = (z) => JSON.parse(JSON.stringify({ enig: (z.dir && z.dir.enig) ? { ...z.dir.enig, h: enObjets(z.dir.enig.h) } : null, inc: (z.dir && z.dir.inc) ? { ...z.dir.inc, h: enObjets(z.dir.inc.h) } : null, mem: (z.dir && z.dir.mem) || {} }));
+export const dirHeritage = (z) => {
+  const mem = { ...((z.dir && z.dir.mem) || {}) };
+  // Sponsor accepté en fin de saison : le jour noté est celui de l'ancienne saison (le compteur repart à 1) ;
+  // on le recule d'une saison pour que la suite (la polémique) puisse encore arriver.
+  if (typeof mem.sponsor === 'number') mem.sponsor -= 14;
+  return JSON.parse(JSON.stringify({ enig: (z.dir && z.dir.enig) ? { ...z.dir.enig, h: enObjets(z.dir.enig.h) } : null, inc: (z.dir && z.dir.inc) ? { ...z.dir.inc, h: enObjets(z.dir.inc.h) } : null, mem }));
+};
 
 /** Ciel du jour d'une zone (pour l'affichage). */
 export function cielDe(z) {
