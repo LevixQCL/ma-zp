@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Non-droit : les rôles (démo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..700&family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap">
+<link rel="stylesheet" href="../css/app.css">
+<style>
+  body { font-family: var(--body); color: var(--text); margin: 0; }
+  .wrap { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; padding: 16px 16px 120px; display: flex; flex-direction: column; gap: 12px; }
+  h1 { font-family: var(--display); font-size: 24px; margin: 0; letter-spacing: -.4px; }
+  .sub { color: var(--muted); font-size: 13px; margin: 2px 0 0; }
+  .card { background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r-lg); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .between { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tiny { font-size: 12.5px; } .small { font-size: 13.5px; } .muted { color: var(--muted); }
+  .ok { color: var(--green-soft); } .bad { color: var(--red-soft); } .warn { color: var(--amber-soft); }
+  .jour { display: flex; gap: 4px; }
+  .jour span { flex: 1; text-align: center; font-size: 11.5px; padding: 5px 0; border-radius: 8px; background: var(--bg); color: var(--faint); font-weight: 600; }
+  .jour span.on { background: var(--amber-bg); color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber-line); }
+  .jour span.passe { color: var(--muted); }
+
+  /* Secteurs */
+  .secteurs { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .sect { text-align: left; background: var(--bg); border: 1px solid var(--hair); border-radius: var(--r-md); padding: 9px 10px; display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .sect[aria-pressed="true"] { border-color: var(--amber-line); box-shadow: inset 0 0 0 1px var(--amber-line); background: var(--amber-bg); }
+  .sect .n { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sect .m { font-size: 11.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .barre { height: 6px; background: var(--surface3); border-radius: 4px; position: relative; overflow: hidden; }
+  .barre i { position: absolute; inset: 0 auto 0 0; border-radius: 4px; background: var(--red); transition: width .5s; }
+  .barre.repris i { background: var(--green); }
+  .badges { display: flex; gap: 4px; flex-wrap: wrap; min-height: 16px; }
+  .bdg { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 999px; background: var(--surface2); color: var(--text2); }
+  .bdg.rep { background: var(--blue-bg); color: var(--blue-soft); }
+  .bdg.moi { background: var(--amber-bg); color: var(--amber); }
+  .bdg.ok { background: rgba(61,211,154,.12); color: var(--green-soft); }
+
+  /* Fiche */
+  .titre { font-family: var(--display); font-size: 21px; font-weight: 700; margin: 0; letter-spacing: -.3px; }
+  .grosse { height: 12px; }
+  .faille { border-radius: var(--r-md); padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start; }
+  .faille.connue { background: var(--blue-bg); border: 1px solid rgba(99,176,255,.35); }
+  .faille.inconnue { background: var(--bg); border: 1.5px dashed var(--line); }
+  .faille .ico { font-size: 22px; line-height: 1; }
+  .faille b { display: block; font-size: 14px; margin-bottom: 2px; }
+
+  .role { background: var(--bg); border: 1px solid var(--hair); border-radius: var(--r-md); padding: 10px 11px; display: flex; flex-direction: column; gap: 7px; }
+  .role.alerte { border-color: var(--red-line); }
+  .role .nom { font-weight: 700; font-size: 15px; }
+  .role .svc { font-size: 11.5px; color: var(--muted); font-weight: 600; }
+  .role .eff { font-size: 12.5px; color: var(--text2); }
+  .cases { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .case { width: 26px; height: 26px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: #0C1124; box-sizing: border-box; }
+  .case.pleine { background: var(--c); }
+  .case.vide { border: 1.5px dashed var(--faint); }
+  .manque { font-size: 12px; font-weight: 700; color: var(--red-soft); margin-left: 4px; }
+  .assez { font-size: 12px; font-weight: 700; color: var(--green-soft); margin-left: 4px; }
+
+  .prev { border-radius: var(--r-md); background: var(--surface2); padding: 11px 12px; display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; font-size: 13px; align-items: baseline; }
+  .prev dt { color: var(--muted); font-size: 12px; } .prev dd { margin: 0; font-weight: 600; }
+  .legende { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--muted); }
+  .legende i { display: inline-block; width: 11px; height: 11px; border-radius: 4px; background: var(--c); vertical-align: -1px; margin-right: 4px; }
+
+  .barre-bas { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; background: var(--nav); backdrop-filter: blur(12px); border-top: 1px solid var(--hair); padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); }
+  .barre-bas .in { max-width: 560px; margin: 0 auto; display: flex; gap: 10px; align-items: center; }
+  .barre-bas .info { flex: 1; font-size: 12.5px; color: var(--muted); min-width: 0; }
+  .barre-bas .info b { color: var(--text); }
+
+  /* Rapport de nuit */
+  .voile { position: fixed; inset: 0; z-index: 10; background: rgba(5,8,18,.72); display: none; align-items: flex-end; justify-content: center; }
+  .voile.on { display: flex; }
+  .rapport { background: var(--paper); color: var(--ink); width: 100%; max-width: 560px; max-height: 88vh; overflow: auto; border-radius: 22px 22px 0 0; padding: 18px 16px 22px; display: flex; flex-direction: column; gap: 10px; }
+  .rapport h2 { font-family: var(--serif); font-size: 24px; margin: 0; }
+  .rapport .kick { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--press); font-weight: 700; }
+  .art { border-top: 1px solid var(--paper-rule); padding-top: 9px; }
+  .art h3 { font-family: var(--serif); font-size: 17px; margin: 0 0 3px; }
+  .art p { margin: 0; font-size: 13.5px; color: var(--ink2); line-height: 1.4; }
+  .gains { background: var(--paper2); border-radius: 12px; padding: 10px 12px; font-size: 13.5px; }
+  .gains b { color: var(--ink); }
+  .rapport .btn { margin-top: 6px; }
+  details.aide summary { cursor: pointer; font-weight: 600; font-size: 13.5px; }
+  details.aide p { font-size: 13px; color: var(--text2); margin: 6px 0 0; line-height: 1.45; }
+  .toast { position: fixed; left: 50%; bottom: 92px; transform: translateX(-50%); background: var(--surface3); border: 1px solid var(--hair); padding: 10px 14px; border-radius: 12px; font-size: 13px; z-index: 20; opacity: 0; transition: opacity .2s; pointer-events: none; max-width: 90vw; }
+  .toast.on { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<div class="barre-bas"><div class="in"><div class="info" id="info"></div><button class="btn primary" id="nuit" type="button">Passer à 20:00 ▶</button></div></div>
+<div class="voile" id="voile"><div class="rapport" id="rapport"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+'use strict';
+// ───────── Démo autonome : rien n'est enregistré, rien ne touche à la vraie partie. ─────────
+const JOURS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+const JOURS_L = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+const EFF = 3, REGEN = 9, MAX_TOT = 8, MAX_SECT = 6, COOP = 0.2;
+const a = (nom) => nom.replace(/^Les /, 'aux ').replace(/^La /, 'à la ').replace(/^Le /, 'au ').replace(/^(?!aux |à la |au )/, 'à ');
+const eur = (v) => Math.round(v).toLocaleString('fr-BE') + ' €';
+
+const ROLES = {
+  rep:  { ico: '🔍', nom: 'Repérage', svc: 'recherche', svcL: 'Recherche', eff: 'Révèle la faille. Repéré les 2 soirs suivants : pleine force, presque plus de piège.' },
+  desc: { ico: '🚔', nom: 'Descente', svc: 'intervention', svcL: 'Intervention', eff: 'Fait tomber l’emprise. C’est elle qui reprend le secteur.' },
+  bouc: { ico: '🚧', nom: 'Bouclage', svc: 'roulage', svcL: 'Roulage · Proximité', eff: 'Ferme les sorties : moins de fuite, plus de saisies.' },
+};
+const FAILLES = {
+  deal:   { ico: '👀', titre: 'Guetteurs à chaque coin', texte: 'Sans repérage, la descente est vue de loin : force ×0,4 et piège bien plus probable. Repéré : force ×1,2.', repSans: 0.4, repAvec: 1.2, piege: 2, butin: 1, interp: true },
+  rodeos: { ico: '🏍', titre: 'Ils filent', texte: 'Il faut autant de bouclage que de descente, sinon les motos s’échappent par les ruelles.', ratio: 1, butin: 0.8 },
+  garage: { ico: '🔧', titre: 'Un butin énorme', texte: 'Saisies ×2 et une chance de récupérer un véhicule pour ta flotte… si le secteur est bien bouclé.', butin: 2, vehicule: true, interp: true },
+  jeux:   { ico: '🎲', titre: 'Ouvert 2 soirs sur 7', texte: 'Le tripot n’ouvre que certains soirs. Un soir fermé, la descente ne trouve personne (×0,3). Un soir ouvert : ×1,5 et la caisse de la nuit.', soirs: [2, 4], butin: 1.2 },
+  squat:  { ico: '📜', titre: 'Il faut un mandat', texte: 'Sans repérage, pas de mandat : la descente ne peut pas entrer (×0). Repéré : ×1,2.', repSans: 0, repAvec: 1.2, butin: 0.6 },
+};
+const MILIEUX = {
+  deal: 'Point de deal', rodeos: 'Rodéos urbains', garage: 'Garage clandestin', jeux: 'Tripot clandestin', squat: 'Squat organisé',
+};
+
+const ZONES = {
+  moi: { nom: 'Ta zone', ini: 'toi', couleur: '#FFB23F', niv: { recherche: 3, intervention: 2, roulage: 2 }, services: { intervention: 7, recherche: 4, roulage: 2, proximite: 4 } },
+  b1:  { nom: 'ZP Les Hauts', ini: 'LH', couleur: '#63B0FF', niv: { recherche: 4, intervention: 2, roulage: 1 }, profil: 'rep' },
+  b2:  { nom: 'ZP Val-Sambre', ini: 'VS', couleur: '#3DD39A', niv: { recherche: 1, intervention: 4, roulage: 2 }, profil: 'desc' },
+  b3:  { nom: 'ZP Bois-Fleuri', ini: 'BF', couleur: '#C792EA', niv: { recherche: 2, intervention: 3, roulage: 3 }, profil: 'bouc' },
+};
+// Force d'un agent selon le niveau du service qu'il représente.
+const force = (u, role, n) => n * (0.8 + 0.2 * ZONES[u].niv[ROLES[role].svc]);
+
+function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+
+let G;
+function nouvellePartie() {
+  G = {
+    T: 1, // lundi
+    rnd: rng(5324),
+    total: { budget: 0, blesses: 0, interp: 0, vehicules: 0 },
+    sel: 'aulnes',
+    secteurs: {
+      aulnes: { nom: 'Les Aulnes', milieu: 'deal', emprise: 52, max: 62, voisin: 'gare' },
+      gare:   { nom: 'La Gare', milieu: 'rodeos', emprise: 58, max: 58, voisin: 'quai' },
+      quai:   { nom: 'Quai des Péniches', milieu: 'garage', emprise: 70, max: 70, voisin: 'haute' },
+      haute:  { nom: 'Rue Haute', milieu: 'jeux', emprise: 55, max: 55, voisin: 'marais' },
+      marais: { nom: 'Le Marais', milieu: 'squat', emprise: 66, max: 66, voisin: 'aulnes' },
+    },
+  };
+  for (const s of Object.values(G.secteurs)) Object.assign(s, { statut: 'milieu', connue: false, repere: null, infl: {} });
+  // Les Aulnes ont déjà été repérés hier par Les Hauts : on voit tout de suite l'effet.
+  Object.assign(G.secteurs.aulnes, { connue: true, repere: { de: 1, a: 2, par: ['b1'] } });
+  G.draft = {};
+  planBots();
+}
+
+const jourDe = (T) => (T - 1) % 7;
+const repere = (s, T = G.T) => !!(s.repere && s.repere.de <= T && T <= s.repere.a);
+const ouvertCeSoir = (s, T = G.T) => !FAILLES[s.milieu].soirs || FAILLES[s.milieu].soirs.includes(jourDe(T));
+
+// ───────── Bots : chacun joue son point fort, ils se calent sur ce que les autres annoncent. ─────────
+function planBots() {
+  G.bots = {};
+  const milieu = Object.entries(G.secteurs).filter(([, s]) => s.statut === 'milieu');
+  if (!milieu.length) return;
+  const cible = milieu.filter(([, s]) => repere(s) && !(s.connue && !ouvertCeSoir(s))).sort((a, b) => a[1].emprise - b[1].emprise)[0] || null;
+  const aReperer = milieu.filter(([, s]) => !(s.repere && s.repere.a > G.T)).sort((a, b) => a[1].emprise - b[1].emprise);
+  const r = G.rnd;
+  // Les Hauts (Recherche forte) : repère le secteur suivant, pour demain.
+  if (aReperer.length) G.bots.b1 = { [aReperer[0][0]]: { rep: 2 } };
+  if (cible) {
+    G.bots.b2 = { [cible[0]]: { desc: 3 + Math.floor(r() * 2) } };
+    if (r() < 0.75) G.bots.b3 = { [cible[0]]: { desc: 1, bouc: 2 } };
+  } else if (r() < 0.5) {
+    G.bots.b2 = { [milieu[0][0]]: { desc: 2 } };
+  }
+  // Secteurs repris : un peu de garde.
+  for (const [k, s] of Object.entries(G.secteurs)) if (s.statut === 'repris' && s.emprise > 25) ((G.bots.b3 ||= {})[k] ||= {}).desc = 2;
+}
+
+// ───────── Ce qui est engagé ce soir sur un secteur ─────────
+function engages(k) {
+  const out = [];
+  for (const [u, plan] of Object.entries(G.bots)) if (plan[k]) out.push({ u, ...plan[k] });
+  if (G.draft[k] && (G.draft[k].rep || G.draft[k].desc || G.draft[k].bouc)) out.push({ u: 'moi', ...G.draft[k] });
+  return out.map((e) => ({ rep: 0, desc: 0, bouc: 0, ...e }));
+}
+const mesAgents = () => Object.values(G.draft).reduce((t, d) => t + (d.rep || 0) + (d.desc || 0) + (d.bouc || 0), 0);
+const dansSecteur = (k) => { const d = G.draft[k] || {}; return (d.rep || 0) + (d.desc || 0) + (d.bouc || 0); };
+
+/** Calcul déterministe d'une nuit sur un secteur (sans tirage : le piège est une probabilité). */
+function prevoir(k, e = engages(k)) {
+  const s = G.secteurs[k], f = FAILLES[s.milieu];
+  const zones = e.length;
+  const coop = 1 + COOP * (Math.min(zones, 4) - 1);
+  const R = e.reduce((t, x) => t + force(x.u, 'rep', x.rep), 0);
+  const D = e.reduce((t, x) => t + force(x.u, 'desc', x.desc), 0);
+  const B = e.reduce((t, x) => t + force(x.u, 'bouc', x.bouc), 0);
+  const nD = e.reduce((t, x) => t + x.desc, 0);
+  if (s.statut === 'repris') {
+    const apres = Math.max(0, s.emprise + 8 - D * coop * EFF);
+    return { repris: true, apres, D, zones };
+  }
+  const rep = repere(s);
+  let mult = rep ? (f.repAvec ?? 1) : (f.repSans ?? 0.6);
+  let ouvert = true;
+  if (f.soirs) { ouvert = ouvertCeSoir(s); mult *= ouvert ? 1.5 : 0.3; }
+  const Deff = D * mult * coop;
+  const ratio = f.ratio ?? 0.5;
+  const fuite = D > 0 ? Math.max(0, Math.min(1, 1 - B / (D * ratio))) : 0;
+  const piege = D > 0 && !rep ? Math.min(0.9, (zones === 1 ? 0.35 : 0.15) * (f.piege || 1)) : 0;
+  const haut = Math.min(s.emprise + REGEN, Math.max(s.emprise, s.max));
+  const baisse = Deff * EFF * (1 - 0.4 * fuite);
+  const tropFaible = D > 0 && Deff * EFF <= REGEN;
+  const apres = tropFaible ? haut : Math.max(0, haut - baisse);
+  const butin = tropFaible ? 0 : 110 * Deff * EFF * (1 - fuite) * (f.butin || 1) * (f.soirs && ouvert ? 2 : 1);
+  const reflux = tropFaible ? 0 : 0.3 * fuite * baisse;
+  return { R, D, B, nD, Deff, mult, coop, fuite, piege, apres, butin, reflux, tropFaible, rep, ouvert, zones, haut, ratio };
+}
+
+/** Part de chacun dans le butin : 15 % au repérage qui a ouvert la voie, le reste selon la force engagée ce soir. */
+function parts(k, e, p, rep0) {
+  const s = G.secteurs[k];
+  const w = {};
+  for (const x of e) w[x.u] = force(x.u, 'rep', x.rep) * 0.8 + force(x.u, 'desc', x.desc) + force(x.u, 'bouc', x.bouc);
+  const tot = Object.values(w).reduce((a, b) => a + b, 0) || 1;
+  const out = {};
+  const r0 = rep0 === undefined ? s.repere : rep0;
+  const tuyau = p.rep && r0 ? r0.par : [];
+  const resteK = tuyau.length ? 0.85 : 1;
+  for (const [u, v] of Object.entries(w)) out[u] = (out[u] || 0) + resteK * v / tot;
+  for (const u of tuyau) out[u] = (out[u] || 0) + 0.15 / tuyau.length;
+  return out;
+}
+
+// ───────── Résolution de 20:00 ─────────
+function nuit() {
+  const T = G.T, r = G.rnd, arts = [], moi = { budget: 0, blesses: 0, interp: 0, vehicule: false, lignes: [] };
+  const refluxVers = {};
+  for (const [k, s] of Object.entries(G.secteurs)) {
+    const e = engages(k), f = FAILLES[s.milieu];
+    const p = prevoir(k, e);
+    const rep0 = s.repere;
+    const noms = e.map((x) => x.u === 'moi' ? 'ta zone' : ZONES[x.u].nom);
+    const liste = noms.length > 1 ? noms.slice(0, -1).join(', ') + ' et ' + noms[noms.length - 1] : noms[0];
+    // Repérage de ce soir : faille connue tout de suite, secteur repéré demain et après-demain.
+    if (p.R >= 1.5 && s.statut === 'milieu') {
+      const neuf = !s.connue;
+      s.connue = true;
+      s.repere = { de: T + 1, a: T + 2, par: [...new Set([...(rep0 && rep0.a >= T + 1 ? rep0.par : []), ...e.filter((x) => x.rep).map((x) => x.u)])] };
+      arts.push({ h: `${s.nom} : ${neuf ? 'la faille est trouvée' : 'nouveau repérage'}`, p: `${e.filter((x) => x.rep).map((x) => x.u === 'moi' ? 'Ta zone' : ZONES[x.u].nom).join(' et ')} ${neuf ? `a repéré le secteur : ${FAILLES[s.milieu].titre.toLowerCase()}.` : 'a mis le secteur sous surveillance.'} Secteur repéré ${JOURS_L[jourDe(T + 1)]} et ${JOURS_L[jourDe(T + 2)]} soir${f.soirs ? ` · le tripot ouvre le ${f.soirs.map((j) => JOURS_L[j]).join(' et le ')}` : ''}.` });
+      if (e.some((x) => x.u === 'moi' && x.rep)) moi.lignes.push(`🔍 ${s.nom} repéré : la descente de demain frappera à pleine force. Tu toucheras 15 % du butin des descentes qui en profitent.`);
+    }
+    if (s.statut === 'repris') {
+      s.emprise = p.apres;
+      if (s.emprise >= 60) { s.statut = 'milieu'; s.emprise = 65; s.max = 65; s.repere = null; arts.push({ h: `${s.nom} retombe`, p: 'Personne de garde : le milieu se réinstalle.' }); }
+      continue;
+    }
+    if (!p.D) { s.emprise = p.haut; if (!p.R) continue; else continue; }
+    const piege = r() < p.piege;
+    if (piege || p.tropFaible) {
+      s.emprise = p.haut;
+      let bl = 0;
+      for (const x of e) for (let i = 0; i < x.desc; i++) if (r() < 0.15) { bl++; if (x.u === 'moi') moi.blesses++; }
+      arts.push({ h: `Assaut repoussé ${a(s.nom)}`, p: `${liste[0].toUpperCase() + liste.slice(1)} ${piege ? `${p.rep ? '' : 'sont arrivés sans repérage : '}${s.milieu === 'deal' ? 'les guetteurs ont donné l’alerte, l’équipe est tombée dans un piège' : 'l’équipe est tombée dans un piège'}` : (p.mult === 0 ? 'n’ont pas pu entrer : pas de mandat sans repérage' : 'n’étaient pas assez nombreux')}.${bl ? ` ${bl} policier${bl > 1 ? 's' : ''} blessé${bl > 1 ? 's' : ''}.` : ''}` });
+      if (e.some((x) => x.u === 'moi')) moi.lignes.push(`⚠️ ${s.nom} : assaut repoussé${piege ? ' (piège)' : ''}.`);
+      continue;
+    }
+    const avant = s.emprise;
+    s.emprise = p.apres;
+    for (const x of e) s.infl[x.u] = (s.infl[x.u] || 0) + force(x.u, 'rep', x.rep) * 0.8 + force(x.u, 'desc', x.desc) + force(x.u, 'bouc', x.bouc);
+    const pt = parts(k, e, p, rep0);
+    if (pt.moi) moi.budget += p.butin * pt.moi;
+    const tuyauMoi = p.rep && rep0 && rep0.par.includes('moi') && !e.some((x) => x.u === 'moi');
+    const interp = f.interp ? Math.round(p.Deff / 4 * (1 - p.fuite)) : 0;
+    const veh = f.vehicule && p.fuite < 0.25 && p.Deff >= 5 && r() < 0.4;
+    if (pt.moi && interp) moi.interp += Math.max(1, Math.round(interp * pt.moi));
+    if (veh && pt.moi && pt.moi === Math.max(...Object.values(pt))) moi.vehicule = true;
+    if (p.reflux > 2) refluxVers[s.voisin] = (refluxVers[s.voisin] || 0) + p.reflux;
+    const det = [`saisies : ${eur(p.butin)}`];
+    if (interp) det.push(`${interp} interpellé${interp > 1 ? 's' : ''}`);
+    if (veh) det.push('un utilitaire récupéré');
+    if (p.fuite > 0.15) det.push(`${Math.round(p.fuite * 100)} % ont filé vers ${G.secteurs[s.voisin].nom}`);
+    let prise = false;
+    if (s.emprise <= 0) {
+      prise = true; s.statut = 'repris'; s.emprise = 15; s.repere = null;
+      const tot = Object.values(s.infl).reduce((a, b) => a + b, 0) || 1;
+      if (s.infl.moi) { const pr = 7500 * s.infl.moi / tot; moi.budget += pr; moi.lignes.push(`🏁 ${s.nom} repris ! Prime de reprise : ${eur(pr)} (ta part ${Math.round(100 * s.infl.moi / tot)} %).`); }
+    }
+    arts.push({ h: prise ? `${s.nom} repris au milieu !` : `Descente ${a(s.nom)}`, p: `${liste[0].toUpperCase() + liste.slice(1)} : emprise ${Math.round(avant)} → ${prise ? 0 : Math.round(s.emprise)}. ${det.join(' · ')}.` });
+    if (tuyauMoi && pt.moi) moi.lignes.push(`🔍 ${s.nom} : ton repérage a payé, la descente des autres te reverse ${eur(p.butin * pt.moi)}.`);
+    else if (pt.moi) moi.lignes.push(`🚔 ${s.nom} : ta part ${Math.round(pt.moi * 100)} % du butin, ${eur(p.butin * pt.moi)}${interp ? ` · ${Math.max(1, Math.round(interp * pt.moi))} interpellé(s) vers tes cachots` : ''}.`);
+  }
+  for (const [k, v] of Object.entries(refluxVers)) {
+    const s = G.secteurs[k];
+    if (s.statut !== 'milieu') continue;
+    s.emprise = Math.min(100, s.emprise + v); s.max = Math.max(s.max, s.emprise);
+    arts.push({ h: `Le milieu se replie sur ${s.nom}`, p: `Faute de bouclage, ceux qui ont filé s’y installent : emprise +${Math.round(v)}.` });
+  }
+  if (moi.vehicule) moi.lignes.push('🚐 Un utilitaire saisi au garage rejoint ta flotte.');
+  G.total.budget += moi.budget; G.total.blesses += moi.blesses; G.total.interp += moi.interp; if (moi.vehicule) G.total.vehicules++;
+  montrerRapport(T, arts, moi);
+  G.T++; G.draft = {};
+  planBots();
+}
+
+function montrerRapport(T, arts, moi) {
+  const el = document.getElementById('rapport');
+  el.innerHTML = `<span class="kick">La Gazette · ${JOURS_L[jourDe(T)]} soir</span>
+    <h2>Zone de non-droit</h2>
+    <div class="gains"><b>Pour ta zone :</b> ${moi.lignes.length ? '<br>' + moi.lignes.join('<br>') : ' tu n’étais engagé nulle part ce soir.'}${moi.blesses ? `<br>🩹 ${moi.blesses} de tes agents blessé${moi.blesses > 1 ? 's' : ''}.` : ''}</div>
+    ${arts.length ? arts.map((a) => `<div class="art"><h3>${a.h}</h3><p>${a.p}</p></div>`).join('') : '<div class="art"><p>Nuit calme au centre-ville.</p></div>'}
+    <button type="button" class="btn primary block" id="fermer">Au lendemain ▶</button>`;
+  document.getElementById('voile').classList.add('on');
+  document.getElementById('fermer').onclick = () => { document.getElementById('voile').classList.remove('on'); rendre(); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+}
+
+// ───────── Affichage ─────────
+function cases(e, role, cible) {
+  const pions = [];
+  for (const x of e) for (let i = 0; i < x[role]; i++) pions.push(`<span class="case pleine" style="--c:${ZONES[x.u].couleur}" title="${ZONES[x.u].nom}">${ZONES[x.u].ini === 'toi' ? '' : ZONES[x.u].ini}</span>`);
+  const vides = Math.max(0, cible - pions.length);
+  for (let i = 0; i < vides; i++) pions.push('<span class="case vide"></span>');
+  return pions.join('');
+}
+
+function role(k, nomRole, e, p, s) {
+  const R = ROLES[nomRole], f = FAILLES[s.milieu];
+  const n = e.reduce((t, x) => t + x[nomRole], 0);
+  const mien = (G.draft[k] || {})[nomRole] || 0;
+  let cible = 0, note = '', alerte = false;
+  if (nomRole === 'rep') {
+    const dejaDemain = s.repere && s.repere.a > G.T;
+    cible = dejaDemain ? 0 : 2;
+    note = dejaDemain ? `<span class="assez">✓ déjà repéré jusqu’à ${JOURS_L[jourDe(s.repere.a)]}</span>` : n >= 2 ? '<span class="assez">✓ repéré demain</span>' : `<span class="manque">il manque ${2 - n}</span>`;
+  } else if (nomRole === 'desc') {
+    cible = Math.max(4, n);
+    note = n ? (p.tropFaible ? '<span class="manque">trop faible</span>' : '') : '';
+  } else {
+    const nD = p.nD || 0;
+    cible = Math.ceil(nD * (p.ratio ?? 0.5));
+    const manque = Math.max(0, cible - n);
+    alerte = nD > 0 && p.fuite > 0.3;
+    note = nD ? (manque ? `<span class="manque">il manque ${manque}</span>` : '<span class="assez">✓ bouclé</span>') : '';
+  }
+  const place = Math.min(MAX_SECT - dansSecteur(k), MAX_TOT - mesAgents());
+  return `<div class="role ${alerte ? 'alerte' : ''}">
+    <div class="between"><div class="row" style="gap:9px"><span style="font-size:20px">${R.ico}</span><div><div class="nom">${R.nom}</div><div class="svc">${R.svcL}</div></div></div>
+      <span class="stepper"><button type="button" data-k="${k}" data-r="${nomRole}" data-d="-1" ${mien <= 0 ? 'disabled' : ''} aria-label="Un agent de moins en ${R.nom}">−</button><span class="n">${mien}</span><button type="button" data-k="${k}" data-r="${nomRole}" data-d="1" ${place <= 0 ? 'disabled' : ''} aria-label="Un agent de plus en ${R.nom}">+</button></span></div>
+    <div class="cases">${cases(e, nomRole, cible)}${note}</div>
+    <div class="eff">${R.eff}${nomRole === 'bouc' ? ` Ici : 1 pour ${(p.ratio ?? 0.5) === 1 ? '1' : '2'} en descente.` : ''}</div>
+  </div>`;
+}
+
+function fiche(k) {
+  const s = G.secteurs[k], f = FAILLES[s.milieu], e = engages(k), p = prevoir(k, e);
+  const moiPart = (() => { if (!e.some((x) => x.u === 'moi') || p.repris || !p.D) return null; const pt = parts(k, e, p); return pt.moi || 0; })();
+  const etatRep = repere(s) ? `<span class="bdg rep">🔍 repéré ce soir</span>` : (s.repere && s.repere.de > G.T ? `<span class="bdg rep">🔍 repéré dès demain</span>` : '<span class="bdg">pas repéré</span>');
+  if (s.statut === 'repris') {
+    return `<div class="card">
+      <div class="between"><h2 class="titre">${s.nom}</h2><span class="pill green">Repris</span></div>
+      <div class="barre grosse repris"><i style="width:${Math.max(2, s.emprise)}%"></i></div>
+      <p class="small" style="margin:0">Le milieu revient de 8 chaque nuit ; à 60, il reprend le secteur. Ce soir : emprise ${Math.round(s.emprise)} → <b>${Math.round(p.apres)}</b>.</p>
+      <p class="tiny muted" style="margin:0">Dans le vrai jeu, c’est ici qu’arriverait l’aménagement à plusieurs (caméras, éclairage, antenne de quartier). Pas dans cette démo.</p>
+      ${role(k, 'desc', e, p, s).replace('Descente', 'Garde')}
+    </div>`;
+  }
+  const faille = s.connue
+    ? `<div class="faille connue"><span class="ico">${f.ico}</span><div><b>Faille : ${f.titre}</b><span class="tiny">${f.texte}${f.soirs ? ` <b style="display:inline">Ouvert le ${f.soirs.map((j) => JOURS_L[j]).join(' et le ')}</b> (ce soir : ${p.ouvert ? '<span class="ok">ouvert</span>' : '<span class="bad">fermé</span>'}).` : ''}</span></div></div>`
+    : `<div class="faille inconnue"><span class="ico">❔</span><div><b>Faille inconnue</b><span class="tiny muted">Chaque milieu a sa faiblesse. Un repérage la révèle à toutes les zones.</span></div></div>`;
+  const flech = (a, b) => `${Math.round(a)} → <span class="${b < a - .5 ? 'ok' : b > a + .5 ? 'bad' : ''}">${Math.round(b)}</span>`;
+  return `<div class="card">
+    <div class="between"><div><h2 class="titre">${s.nom}</h2><span class="tiny muted">${MILIEUX[s.milieu]}</span></div>${etatRep}</div>
+    <div><div class="between tiny muted" style="margin-bottom:4px"><span>Emprise du milieu</span><b style="color:var(--text)">${Math.round(s.emprise)} / 100</b></div><div class="barre grosse"><i style="width:${Math.max(2, s.emprise)}%"></i></div></div>
+    ${faille}
+    ${role(k, 'rep', e, p, s)}
+    ${role(k, 'desc', e, p, s)}
+    ${role(k, 'bouc', e, p, s)}
+    <div class="legende">${e.map((x) => `<span><i style="--c:${ZONES[x.u].couleur}"></i>${ZONES[x.u].nom}</span>`).join('') || '<span>Personne d’annoncé ce soir.</span>'}</div>
+    ${p.D ? `<dl class="prev">
+      <dt>Emprise</dt><dd>${p.tropFaible ? `<span class="bad">${p.mult === 0 ? 'pas de mandat : impossible d’entrer' : 'trop faible, le milieu tient'}</span>` : flech(s.emprise, p.apres) + (p.apres <= 0 ? ' <span class="ok">· repris ce soir</span>' : '')}</dd>
+      <dt>Force</dt><dd>×${String(Math.round(p.mult * 100) / 100).replace('.', ',')} ${p.rep ? 'repéré' : 'sans repérage'}${f.soirs ? (p.ouvert ? ', soir ouvert' : ', soir fermé') : ''} · +${Math.round((p.coop - 1) * 100)} % à ${p.zones}</dd>
+      <dt>Piège</dt><dd class="${p.piege > 0.2 ? 'bad' : p.piege > 0 ? 'warn' : 'ok'}">${p.piege ? Math.round(p.piege * 100) + ' %' : 'non'}</dd>
+      <dt>Fuite</dt><dd class="${p.fuite > 0.3 ? 'bad' : p.fuite > 0 ? 'warn' : 'ok'}">${Math.round(p.fuite * 100)} %${p.fuite > 0.15 ? ` → vers ${G.secteurs[s.voisin].nom}` : ''}</dd>
+      <dt>Saisies</dt><dd>~${eur(p.butin)}${moiPart !== null ? ` · <span class="warn">toi ~${eur(p.butin * moiPart)}</span>` : ''}</dd>
+    </dl>` : `<p class="tiny muted" style="margin:0">Personne en descente ce soir : le milieu se refait (+${REGEN}).</p>`}
+    ${dansSecteur(k) ? `<button type="button" class="btn small outline block" id="radio">📻 Prévenir la radio</button>` : ''}
+  </div>`;
+}
+
+function rendre() {
+  const S = G.secteurs;
+  const repris = Object.values(S).filter((s) => s.statut === 'repris').length;
+  document.getElementById('app').innerHTML = `
+    <header><h1>Zone de non-droit</h1><p class="sub">Démo des rôles · rien n’est enregistré · ${repris} secteur${repris > 1 ? 's' : ''} repris sur 5</p></header>
+    <div class="jour">${JOURS.map((j, i) => `<span class="${i === jourDe(G.T) ? 'on' : i < jourDe(G.T) ? 'passe' : ''}">${j}</span>`).join('')}</div>
+    <details class="aide card"><summary>Comment ça marche (30 secondes)</summary>
+      <p><b>🔍 Repérage</b> (Recherche) : la veille. Révèle la faille et rend le secteur « repéré » 2 soirs. <b>🚔 Descente</b> (Intervention) : fait tomber l’emprise ; sans repérage, elle perd de sa force et risque le piège. <b>🚧 Bouclage</b> (Roulage, Proximité) : 1 pour 2 en descente, sinon ça file, il y a moins de saisies et le secteur voisin se renforce.</p>
+      <p>Les autres zones jouent leur point fort : <b style="color:#63B0FF">Les Hauts</b> repère, <b style="color:#3DD39A">Val-Sambre</b> descend, <b style="color:#C792EA">Bois-Fleuri</b> boucle. Complète ce qui manque. Personne n’a rien à accepter : tout se règle à 20:00.</p>
+    </details>
+    <div class="secteurs">${Object.entries(S).map(([k, s]) => {
+      const e = engages(k), mien = dansSecteur(k);
+      return `<button type="button" class="sect" data-sel="${k}" aria-pressed="${G.sel === k}">
+        <span class="n">${s.nom}</span><span class="m">${MILIEUX[s.milieu]}</span>
+        <span class="barre ${s.statut === 'repris' ? 'repris' : ''}"><i style="width:${Math.max(2, s.emprise)}%"></i></span>
+        <span class="badges">${s.statut === 'repris' ? '<span class="bdg ok">repris</span>' : ''}${repere(s) ? '<span class="bdg rep">🔍 repéré</span>' : ''}${e.filter((x) => x.u !== 'moi').length ? `<span class="bdg">📻 ${e.filter((x) => x.u !== 'moi').length}</span>` : ''}${mien ? `<span class="bdg moi">toi ${mien}</span>` : ''}</span>
+      </button>`;
+    }).join('')}</div>
+    ${fiche(G.sel)}
+    <p class="tiny muted" style="text-align:center;margin:4px 0 0"><button type="button" class="btn ghost small" id="reset">↺ Recommencer la démo</button></p>`;
+  const n = mesAgents();
+  const svc = { recherche: 0, intervention: 0, roulage: 0 };
+  for (const d of Object.values(G.draft)) { svc.recherche += d.rep || 0; svc.intervention += d.desc || 0; svc.roulage += d.bouc || 0; }
+  const Z = ZONES.moi.services;
+  document.getElementById('info').innerHTML = `Tes agents au centre : <b>${n}/${MAX_TOT}</b><br>${n ? `Retirés de : ${[svc.recherche && `Recherche ${Z.recherche}→${Z.recherche - svc.recherche}`, svc.intervention && `Interv. ${Z.intervention}→${Z.intervention - svc.intervention}`, svc.roulage && `Roulage ${Z.roulage}→${Math.max(0, Z.roulage - svc.roulage)}${svc.roulage > Z.roulage ? ` · Prox. ${Z.proximite}→${Z.proximite - (svc.roulage - Z.roulage)}` : ''}`].filter(Boolean).join(' · ')}` : `Total gagné : <b>${eur(G.total.budget)}</b>${G.total.interp ? ` · ${G.total.interp} interpellés` : ''}`}`;
+}
+
+document.addEventListener('click', (ev) => {
+  const b = ev.target.closest('button');
+  if (!b) return;
+  if (b.dataset.sel) { G.sel = b.dataset.sel; rendre(); return; }
+  if (b.dataset.r) {
+    const k = b.dataset.k, r = b.dataset.r, d = Number(b.dataset.d);
+    const cur = ((G.draft[k] ||= {})[r] || 0);
+    if (d > 0 && (dansSecteur(k) >= MAX_SECT || mesAgents() >= MAX_TOT)) return;
+    G.draft[k][r] = Math.max(0, cur + d);
+    rendre(); return;
+  }
+  if (b.id === 'radio') { toast('📻 Annoncé : les autres zones voient tes pions dans les cases.'); return; }
+  if (b.id === 'reset') { nouvellePartie(); rendre(); return; }
+});
+document.getElementById('nuit').onclick = nuit;
+function toast(t) { const el = document.getElementById('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.h); toast.h = setTimeout(() => el.classList.remove('on'), 2600); }
+
+nouvellePartie();
+rendre();
+</script>
+</body>
+</html>
