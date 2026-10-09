@@ -533,6 +533,7 @@ function heroHtml(st, z) {
       <a class="hud-ipz" href="#classement" aria-label="Classements · IPZ ${fmt1(z.ipz)}${z.hier && z.hier.ipz != null ? `, ${z.ipz >= z.hier.ipz ? 'en hausse' : 'en baisse'} de ${fmt1(Math.abs(z.ipz - z.hier.ipz))}` : ''}, ${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total}` : 'non classé'}"><span class="hud-ipz-l">IPZ</span><span class="hud-ipz-v">${fmt1(z.ipz)}</span>${pastilleDelta(z.ipz, z.hier && z.hier.ipz)}${z.toursJoues >= 5 ? `<span class="hud-rang">${rang}<sup>${rang === 1 ? 'er' : 'e'}</sup>/${total}</span>` : ''}</a>
     </div>
     <div class="hud-bas">
+      ${S.backend.isMaster(S.user) ? `<a class="hud-btn" href="#admin" aria-label="Maître du jeu" title="Maître du jeu">${icon('shield', 19)}</a>` : ''}
       <button type="button" class="hud-btn roue" data-action="menu-hp" aria-expanded="${!!S.menuHp}" aria-label="Guide, nouveautés, partie et profil">${icon('gear', 20)}${noteVue() ? '' : '<i class="roue-pastille" aria-hidden="true"></i>'}</button>
       <button type="button" class="hud-btn hud-perso" data-action="decor" aria-label="Personnaliser mon commissariat">${icon('pencil', 18)}</button>
     </div>
