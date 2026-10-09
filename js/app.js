@@ -51,6 +51,7 @@ import { choisirRecoup, retournerPouce } from './ui/enquete-plus.js';
 import { marquerJournalVu } from './ui/journal.js';
 import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, basculerFrise, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderCarte, renderRadio } from './ui/carte.js';
+import { renderRadioV2 } from './ui/radio-v2.js';
 import { reglesV2 } from './engine/regles.js';
 import { renderCarteV2, calqueTerrain } from './ui/carte-v2.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
@@ -147,7 +148,7 @@ function render() {
       case 'guide': html = renderGuide(); if (S.guideSection === 'debut') { S.premiersPasVus = true; try { localStorage.setItem('mazp-premiers-pas-vus', '1'); } catch (e) { /* pas de stockage */ } } break;
       case 'pactes': html = renderPactes(); break;
       case 'carte': html = reglesV2(S.state) ? renderCarteV2() : renderCarte(); break;
-      case 'radio': html = renderRadio(); break;
+      case 'radio': html = reglesV2(S.state) ? renderRadioV2() : renderRadio(); break;
       case 'prive': html = renderPrive(); break;
       case 'terrain': html = reglesV2(S.state) ? renderCarteV2(calqueTerrain()) : renderTerrain(); break;
       case 'gazette': html = renderGazette(); if (S.gazetteIndex === 0) marquerGazetteLue(); break;
@@ -1052,6 +1053,13 @@ async function onClick(e) {
         S.ordersDirty = true; rerender(); break;
       }
       case 'radio-canal': S.radioCanal = el.dataset.v === 'ops' ? 'ops' : 'parole'; rerender(); break;
+      case 'radio-echanges': S.radioEchanges = !S.radioEchanges; rerender(); break;
+      case 'radio-rapide': {
+        const t = String(el.dataset.t || '').slice(0, 280);
+        if (!t || !b.sendRadio) break;
+        await b.sendRadio(S.user.uid, t, { canal: 'ops' });
+        S.radioEchanges = true; rerender(); break;
+      }
       case 'ventilation': S.ventilation = !S.ventilation; rerender(); break;
       case 'rapatrier': {
         const k = el.dataset.k, d = S.draft;
@@ -1249,6 +1257,24 @@ async function validerOrdres() {
   await S.backend.saveOrders(S.user.uid, st.season, st.turn, S.draft);
   S.savedOrders = JSON.parse(JSON.stringify(S.draft)); S.ordersDirty = false;
   await annoncerNDAuto();
+  await annoncerRenfortAuto();
+}
+
+/** Saison 2 — à la validation : la radio F2 annonce les agents prêtés en renfort, pour que la zone qui appelle
+ *  (et les autres) voient les places se remplir sur le tableau des appels. Un message seulement si ça change. */
+async function annoncerRenfortAuto() {
+  const st = S.state, z = myZone(), d = S.draft;
+  if (!st || !z || !d || !reglesV2(st) || !S.backend.sendRadio) return;
+  let der = null;
+  for (const m of S.radio || []) if (m.renfortRep && m.uid === z.uid && m.renfortRep.season === st.season && m.renfortRep.turn === st.turn && (!der || der.at < m.at)) der = m;
+  const avant = der ? der.renfortRep : null;
+  const cible = d.renfort && d.renfort.agents > 0 ? d.renfort.cible : null, n = cible ? d.renfort.agents : 0;
+  if ((avant ? avant.cible : null) === cible && (avant ? avant.agents : 0) === n) return;
+  if (!cible && (!avant || !avant.agents)) return;
+  const zc = st.zones[cible || avant.cible];
+  if (!zc) return;
+  const texte = n ? `🤝 ${z.nom} (ZP ${z.code}) prête ${n} agent${n > 1 ? 's' : ''} à ${zc.nom} ce soir.` : `📻 ${z.nom} (ZP ${z.code}) ne prête finalement pas d’agents à ${zc.nom}.`;
+  try { await S.backend.sendRadio(S.user.uid, texte, { renfortRep: { season: st.season, turn: st.turn, cible: zc.uid, agents: n } }); } catch (e) { console.warn('Annonce renfort non envoyée', e); }
 }
 
 /** À la validation : la radio suit les agents réellement envoyés dans la zone de non-droit, sans bouton à toucher.

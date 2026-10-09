@@ -2202,3 +2202,82 @@ button.hz-s:hover { color: var(--text); }
 .cv-ql-t { text-align: right; font-size: 12px; white-space: nowrap; }
 .cv-ql-t b { font: 700 14px var(--display); }
 .cv-ql[aria-pressed="true"] { background: rgba(255, 178, 63, .08); box-shadow: inset 3px 0 0 var(--amber); }
+
+/* ═══ Radio Delta — saison 2 : F1 messagerie, F2 tableau des appels ═══ */
+.rv { gap: 12px; }
+.rv-tete { position: sticky; top: 0; z-index: 12; margin: -18px -16px 0; padding: calc(10px + env(safe-area-inset-top)) 16px 10px; display: flex; flex-direction: column; gap: 10px;
+  background: rgba(12, 17, 36, .86); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-bottom: 1px solid var(--hair); }
+.rv-titre { margin: 0; font: 800 26px/1 var(--display); letter-spacing: -.5px; }
+.rv-seg { display: flex; gap: 6px; }
+.rv-seg a { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--line); color: var(--text2); font-size: 13px; font-weight: 600; text-decoration: none; }
+.rv-seg a[aria-current] { background: var(--surface3); border-color: transparent; color: var(--text); }
+.rv-freqs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.rv-freq { display: flex; flex-direction: column; gap: 2px; text-align: left; padding: 9px 12px; min-height: 52px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+.rv-freq.on { border: 1.5px solid var(--amber); background: var(--amber-bg); }
+.rv-freq.ops.on { border-color: var(--red); background: var(--red-bg); }
+.rv-k { display: flex; align-items: center; gap: 6px; font: 600 11px var(--code); letter-spacing: .8px; color: var(--amber-soft); }
+.rv-freq.ops .rv-k { color: var(--red-soft); }
+.rv-led { width: 7px; height: 7px; border-radius: 50%; background: var(--faint); flex-shrink: 0; }
+.rv-freq.on .rv-led { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
+.rv-freq.ops.on .rv-led, .rv-led.vive { background: var(--red); box-shadow: 0 0 6px var(--red); }
+.rv-ft { font-weight: 700; font-size: 15px; }
+
+/* F1 : bulles */
+.rv-fil { display: flex; flex-direction: column; gap: 4px; }
+.rv-jour { align-self: center; font-size: 11.5px; font-weight: 600; color: var(--faint); padding: 8px 0 4px; }
+.rv-jour::first-letter { text-transform: uppercase; }
+.rv-l { display: flex; gap: 8px; align-items: flex-end; }
+.rv-l.deb { margin-top: 8px; }
+.rv-col { display: flex; flex-direction: column; gap: 3px; max-width: 82%; min-width: 0; }
+.rv-qui { font-size: 12px; color: var(--muted); padding-left: 4px; }
+.rv-av { width: 32px; height: 32px; flex-shrink: 0; border-radius: 50%; overflow: hidden; display: inline-flex; }
+.rv-av .chef-portrait { border-radius: 50%; }
+.rv-av.vide { visibility: hidden; }
+.rv-ini { align-items: center; justify-content: center; background: var(--zc); color: var(--bg); font-weight: 700; font-size: 13px; }
+.rv-b { padding: 8px 12px; border-radius: 18px 18px 18px 6px; background: var(--surface2); font-size: 14.5px; line-height: 1.4; overflow-wrap: anywhere; }
+.rv-b time { font-size: 10.5px; color: var(--faint); margin-left: 6px; white-space: nowrap; }
+.rv-b.moi { align-self: flex-end; max-width: 78%; border-radius: 18px 18px 6px 18px; background: var(--amber); color: var(--amber-ink); }
+.rv-b.moi.deb { margin-top: 8px; }
+.rv-b.moi time { color: #6b4a10; }
+
+/* F2 : tableau des appels */
+.rv-cd { font-size: 12.5px; color: var(--amber-hi); font-family: var(--code); }
+.rv-appel { display: flex; flex-direction: column; gap: 10px; padding: 12px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); }
+.rv-appel.mien { border-color: var(--amber-line); }
+.rv-a-tete { display: flex; gap: 10px; align-items: center; }
+.rv-a-t { font-weight: 700; font-size: 15px; }
+.rv-ico { width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0; display: grid; place-items: center; }
+.rv-ico.rouge { background: var(--red-bg); color: var(--red-soft); }
+.rv-ico.ambre { background: var(--amber-bg); color: var(--amber-hi); }
+.rv-cases { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; }
+.rv-case { height: 34px; border-radius: 8px; display: grid; place-items: center; font-size: 11px; font-weight: 600; }
+.rv-case.pleine { font-family: var(--code); color: var(--zc); border: 1px solid var(--zc); background: color-mix(in srgb, var(--zc) 16%, transparent); }
+.rv-case.toi { background: var(--amber); color: var(--amber-ink); }
+.rv-case.vide { border: 1.5px dashed var(--line); color: var(--faint); }
+.rv-case.vide:first-of-type, .rv-case.toi + .rv-case.vide { border-color: var(--amber-line); color: var(--amber-soft); }
+.rv-a-pied { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rv-emprise { height: 10px; border-radius: 5px; background: var(--surface3); overflow: hidden; display: flex; }
+.rv-emprise span { background: var(--red); }
+.rv-emprise span.perdu { background: repeating-linear-gradient(90deg, rgba(255, 110, 106, .45) 0 6px, rgba(255, 110, 106, .2) 6px 9px); }
+.rv-complet { display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--hair); color: var(--muted); font-size: 13px; text-decoration: none; }
+.rv-complet svg { color: var(--green); flex-shrink: 0; }
+a.rv-complet svg { color: var(--amber); }
+.rv-vide { display: flex; flex-direction: column; gap: 2px; padding: 14px; border-radius: 14px; border: 1px dashed var(--line); text-align: center; }
+.rv-echanges { border-radius: 14px; border: 1px solid var(--hair); background: var(--bg-deep); overflow: hidden; }
+.rv-ech-t { width: 100%; display: flex; flex-direction: column; gap: 3px; text-align: left; padding: 10px 12px; min-height: 44px; background: none; border: 0; color: var(--text2); font: inherit; font-size: 12.5px; cursor: pointer; }
+.rv-ech-d { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rv-mc { display: grid; grid-template-columns: 42px 3px 1fr; column-gap: 10px; padding: 9px 12px; border-top: 1px solid var(--hair); }
+.rv-mc time { font: 500 11.5px var(--code); color: var(--muted); padding-top: 1px; }
+.rv-trait { border-radius: 2px; }
+.rv-mc.moi { background: rgba(255, 178, 63, .05); }
+.rv-mc.auto .rv-mc-t { color: var(--text2); }
+.rv-mc-q { font-size: 12px; font-weight: 700; }
+.rv-mc-t { font-size: 14px; line-height: 1.4; overflow-wrap: anywhere; }
+
+/* Saisie */
+.rv-bas { position: sticky; bottom: 96px; display: flex; flex-direction: column; gap: 8px; padding-top: 8px; background: linear-gradient(180deg, rgba(12, 17, 36, 0), var(--bg) 24%); }
+.rv-rapides { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.rv-rapides button { flex-shrink: 0; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; }
+.rv-form { display: flex; gap: 8px; }
+body:has(.savebar) .rv-bas { bottom: 150px; }
+body:has(.savebar) main.rv { padding-bottom: 220px; }

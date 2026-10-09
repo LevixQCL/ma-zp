@@ -22,7 +22,7 @@ function ecrireVu() { try { localStorage.setItem(cleVu(), JSON.stringify({ radio
  * zone de non-droit, annonces automatiques, et les réponses envoyées sur cette fréquence).
  */
 export function canalRadio(m) {
-  if (m.canal === 'ops' || m.renfort || m.nd || m.enchere) return 'ops';
+  if (m.canal === 'ops' || m.renfort || m.renfortRep || m.nd || m.enchere) return 'ops';
   if (m.canal === 'parole') return 'parole';
   return /^(🚨|🚔|🤝|📻)/u.test(m.texte || '') ? 'ops' : 'parole';
 }
