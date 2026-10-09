@@ -1225,7 +1225,7 @@ function step(dt){
     const grp=R.recent.filter(r=>Math.hypot(r.x-u.p.x,r.y-u.p.y)<COMBO.r);
     if(grp.length>=COMBO.n){ R.recent=R.recent.filter(r=>!grp.includes(r)); R.stats.combos++; gagne(COMBO.gain,u.p.x,u.p.y,'Intervention maîtrisée',true); } } }
   R.units=R.units.filter(u=>u.alive!==false&&!(u.state==='flee'&&u.d<=0));
-  R.fx=R.fx.filter(f=>R.t-f.t<1.2); R.jets=R.jets.filter(j=>R.t-j.t<.45); R.somm.fx=R.somm.fx.filter(f=>R.t-f.t<1);
+  R.fx=R.fx.filter(f=>R.t-f.t<1.2); R.jets=R.jets.filter(j=>R.t-j.t<JET_DUREE); R.somm.fx=R.somm.fx.filter(f=>R.t-f.t<1);
   if(R.wave>=R.waves&&!R.spawnQ.length&&!R.units.some(u=>u.state==='go')) endGame();
 }
 /* Barrières à terre (poussée du cortège, ou projectile d'un casseur) : le combi les relèvera quand la place sera libre. */
@@ -1978,6 +1978,7 @@ function sprite(g,n,frame,h,flip){ const S=SETS[n]; if(!setOk(n)) return false; 
 // autopompe : image tournée vers la gauche ; position relative de la lance (bout du canon) dans l'image
 const AUTOPOMPE={w:1.6,lance:[.01,.3]};
 // niveaux 1 et 2 : agents à la lance à eau (image tournée vers la droite, bout de lance à 98 % / 45 %), niveau 3 : le camion
+const JET_DUREE=.6; // durée d'affichage d'un jet d'eau (visuel seulement)
 const LANCIER={h:.84,bout:[[.957,.262],[.963,.262],[.932,.545],[.951,.308]],pos:[[[0,0]],[[-.2,-.06],[.22,.06]]]};
 function lanciers(tw){ return tw.lvl<3&&setOk('lanceN'); }
 // visée, jet court, jet puissant (recul), jet qui faiblit
@@ -2193,15 +2194,41 @@ function render(){
     g.save(); g.translate(x,y); g.rotate(pj.rot+k*12); g.fillStyle='#8a8f99'; g.beginPath(); g.moveTo(-.05,-.03); g.lineTo(.04,-.05); g.lineTo(.06,.02); g.lineTo(-.02,.05); g.closePath(); g.fill(); g.strokeStyle='#2b2f36'; g.lineWidth=.015; g.stroke(); g.restore(); }
   // jets d'eau
   // jet d'eau : il part de la lance, file jusqu'au groupe (gouttes qui courent le long), puis retombe en pluie
-  for(const j of R.jets){ const k=(R.t-j.t)/.45, tw=R.towers[j.id], P=padOf(j.id); if(!tw||!P) continue; const nz=nozzle(tw,P), x0=nz.x, y0=nz.y, x1=j.x1, y1=j.y1-.3, dx=x1-x0, dy=y1-y0;
-    const cx=x0+dx*.5, cy=y0+dy*.5-.5, Q=t2=>{ const u=1-t2; return [u*u*x0+2*u*t2*cx+t2*t2*x1,u*u*y0+2*u*t2*cy+t2*t2*y1]; };
-    const tete=Math.min(1,k/.22), queue=Math.max(0,(k-.55)/.45), w=.07+.03*(j.lvl-1);
-    g.save(); g.lineCap='round';
-    const trace=(a,b2,lw,col)=>{ g.strokeStyle=col; g.lineWidth=lw; g.beginPath(); for(let i=0;i<=14;i++){ const [x,y]=Q(a+(b2-a)*i/14); i?g.lineTo(x,y):g.moveTo(x,y); } g.stroke(); };
-    trace(queue,tete,w*2.2,'rgba(120,180,255,.22)'); trace(queue,tete,w,'rgba(200,230,255,.85)'); trace(queue,tete,w*.35,'rgba(255,255,255,.95)');
-    g.fillStyle='rgba(235,247,255,.95)'; for(let i=0;i<8;i++){ const tt=((R.t*3.2+i/8)%1)*(tete-queue)+queue, [x,y]=Q(tt); g.beginPath(); g.arc(x+Math.sin(i*7)*.03,y,.022,0,7); g.fill(); }
-    if(tete>=1){ const kk=(k-.22)/.78; g.strokeStyle=`rgba(185,222,255,${.6*(1-kk)})`; g.lineWidth=.035; g.beginPath(); g.ellipse(j.x1,j.y1,.2+kk*.65,(.2+kk*.65)*.6,0,0,7); g.stroke();
-      g.globalCompositeOperation='lighter'; halo(g,x1,y1,.45,.45,'170,215,255',.35*(1-kk)); }
+  for(const j of R.jets){ const D=JET_DUREE, k=(R.t-j.t)/D, tw=R.towers[j.id], P=padOf(j.id); if(!tw||!P) continue; const nz=nozzle(tw,P), x0=nz.x, y0=nz.y, x1=j.x1, y1=j.y1-.3, dx=x1-x0, dy=y1-y0;
+    // eau sous pression : trajet presque tendu qui retombe un peu (gravité), s'élargit et se brise en gouttes vers la cible
+    const L=Math.hypot(dx,dy)||1, cx=x0+dx*.45, cy=y0+dy*.45-.12-L*.06, Q=t2=>{ const u=1-t2; return [u*u*x0+2*u*t2*cx+t2*t2*x1,u*u*y0+2*u*t2*cy+t2*t2*y1]; };
+    const nx=-dy/L, ny=dx/L, sd=(j.t*977)%7, tete=Math.min(1,k/.16), queue=Math.max(0,(k-.72)/.28), w=.06+.025*(j.lvl-1), T=R.t;
+    if(tete<=queue){ continue; }
+    g.save();
+    const pt=(s2,off)=>{ const [x,y]=Q(s2), tu=Math.sin(T*38+s2*26+sd)*w*.28*s2+(off||0); return [x+nx*tu,y+ny*tu]; };
+    // corps d'eau translucide qui s'évase avec la distance
+    const N=26; g.fillStyle='rgba(140,195,255,.14)';
+    for(let i=0;i<=N;i++){ const s2=queue+(tete-queue)*i/N, [x,y]=pt(s2), r=w*(.28+.95*s2)*(.85+.3*Math.sin(T*55+i*2.3+sd)); g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+    // filets d'eau : plusieurs veines qui s'écartent et ondulent (lecture « eau sous pression », pas un trait lumineux)
+    g.lineCap='round';
+    for(let v=0;v<4;v++){ const o=v-1.5; g.strokeStyle=v%2?'rgba(245,250,255,.78)':'rgba(200,228,255,.7)'; g.lineWidth=w*(v%2?.17:.22);
+      const a=Math.max(queue,.0), b=Math.min(tete,.92-v*.06); if(b<=a) continue; g.beginPath();
+      for(let i=0;i<=12;i++){ const s2=a+(b-a)*i/12, off=o*w*.38*s2*(1+.35*Math.sin(T*31+v*1.9+s2*9)); const [x,y]=pt(s2,off); i?g.lineTo(x,y):g.moveTo(x,y); } g.stroke(); }
+    // cœur compact à la sortie de la lance
+    const c1=Math.min(tete,.3); if(c1>queue){ g.strokeStyle='rgba(255,255,255,.95)'; g.lineWidth=w*.3;
+      g.beginPath(); for(let i=0;i<=6;i++){ const [x,y]=pt(queue+(c1-queue)*i/6); i?g.lineTo(x,y):g.moveTo(x,y); } g.stroke(); }
+    // gouttes et traînées qui se détachent dans la seconde moitié du jet
+    const ang=Math.atan2(dy,dx);
+    for(let i=0;i<30;i++){ const f=((i*.618+T*2.8+sd)%1), s2=.35+.65*f; if(s2<queue||s2>tete+.04) continue;
+      const sp=(((i*1.37+sd)%1)-.5)*w*5.5*s2, [x,y]=pt(s2,sp), r=.007+.013*((i*.53)%1), yy=y+f*f*.08;
+      g.fillStyle=`rgba(235,246,255,${.8-.45*f})`;
+      if(i%3===0){ g.strokeStyle=g.fillStyle; g.lineWidth=r*.9; g.beginPath(); g.moveTo(x-Math.cos(ang)*.05,yy-Math.sin(ang)*.05); g.lineTo(x,yy); g.stroke(); }
+      else { g.beginPath(); g.ellipse(x,yy,r*1.5,r,ang,0,7); g.fill(); } }
+    // brumisation à la sortie de la lance
+    for(let i=0;i<3;i++){ const f=((T*3+i/3)%1), [x,y]=Q(Math.max(queue,.02)); g.fillStyle=`rgba(225,238,255,${.22*(1-f)})`; g.beginPath(); g.arc(x+nx*(i-1)*.03,y-f*.06,.03+f*.06,0,7); g.fill(); }
+    // impact : gerbe d'éclaboussures qui retombent, écume et brume
+    if(tete>=1){ const kk=Math.min(1,(k-.16)/.84), fade=1-queue;
+      for(let i=0;i<16;i++){ const a0=-Math.PI*(.12+.76*((i*.71+sd)%1)), f=((T*2.4+i/16+sd)%1), v=.35+.3*((i*.37)%1);
+        const x=x1+Math.cos(a0)*v*f*.9+dx/L*f*.18, y=y1+Math.sin(a0)*v*f*.75+f*f*.42, r=.018*(1-f)+.006;
+        g.fillStyle=`rgba(235,248,255,${.9*(1-f)*fade})`; g.beginPath(); g.arc(x,y,r,0,7); g.fill(); }
+      g.fillStyle=`rgba(225,242,255,${.35*fade})`; for(let i=0;i<5;i++){ const a=i/5*Math.PI*2+T*3; g.beginPath(); g.arc(x1+Math.cos(a)*.1,y1+.22+Math.sin(a)*.05,.07+.03*Math.sin(T*20+i),0,7); g.fill(); }
+      g.strokeStyle=`rgba(200,230,255,${.5*(1-kk)})`; g.lineWidth=.025; g.beginPath(); g.ellipse(j.x1,j.y1,.15+kk*.55,(.15+kk*.55)*.55,0,0,7); g.stroke();
+      }
     g.restore(); }
   // panneaux
   R.M.P.forEach(P=>{ const a=P.pts[0], b=P.pts[1], x=Math.max(.35,Math.min(MW-.35,a[0])), y=Math.max(.35,Math.min(MH-.35,a[1]));
