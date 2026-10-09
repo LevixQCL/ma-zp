@@ -45,7 +45,7 @@ function adaptatif(z, state, opt = {}) {
   { const n = Math.min(4, Math.floor(budget / 1.5)); if (n > 0) { depenses.reserve = n; depenses.reserveService = op ? Object.keys(op.besoins)[0] : 'intervention'; } }
   const rythme = opt.rythme || (op && z.moral > 60 ? 'renforce' : z.moral < 45 ? 'allege' : 'normal');
   const agenda = typeof opt.agenda === 'function' ? opt.agenda(z, state) : opt.agenda ? { type: opt.agenda, service: opt.service || 'intervention' } : undefined;
-  return { alloc: a, rythme, operation: 'complet', depenses, decision, doctrine: 'quartier', ...(agenda ? { agenda } : {}), ...(opt.talents ? { talents: opt.talents } : {}) };
+  return { alloc: a, rythme, operation: 'complet', depenses, decision, doctrine: 'quartier', ...(agenda ? { agenda } : {}), ...(opt.talents ? { talents: opt.talents } : {}), ...(opt.front ? { chefFront: opt.front } : {}), ...(opt.reseau ? { reseau: ['bourgmestre', 'syndicat', 'journaliste', 'procureur'][T % 4] } : {}) };
 }
 
 // Agenda « malin » : la commune si la caisse est basse, le quartier si la satisfaction baisse, sinon le terrain.
@@ -85,6 +85,10 @@ const STRATS = MODE === 'agenda' ? {
   'Combo proximité (visage, communicant, médiateur)': { talents: ['visage', 'communicant', 'mediateur'] },
   'Combo mixte (visage, gestionnaire, meneur) + agenda malin': { talents: ['visage', 'gestionnaire', 'meneur'], agenda: malin },
   'Combo mixte (visage, sangfroid, marchés) + agenda malin': { talents: ['visage', 'sangfroid', 'marches'], agenda: malin },
+  'Première ligne : quartier tous les jours': { front: 'quartier' },
+  'Première ligne : enquête tous les jours': { front: 'enquete' },
+  'Réseau : un service par jour (rotation)': { reseau: true },
+  'Tout : combo + agenda malin + quartier + réseau': { talents: ['visage', 'gestionnaire', 'meneur'], agenda: malin, front: 'quartier', reseau: true },
 };
 
 const rows = [];

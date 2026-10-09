@@ -7,7 +7,7 @@
 import { CONFIG } from '../config.js';
 import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
 import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND, INFRAS, aAnnexe, LOTS } from './constants.js';
-import { talentVal, talent, noterChef } from './chef.js';
+import { talentVal, talent, noterChef, FRONT, niveauChef } from './chef.js';
 import { makeRng } from './rng.js';
 import { clamp, round1, forceEngagement, jalon, noter } from './zone.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
@@ -128,6 +128,8 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
       return { u, n, f: f0 * fLots * (1 + bonus) * (1 + talentVal(zz, 'tacticien', 'force', 0)), chef: mi, drone,
         risque: (mi ? CHEFS.nd.blessure : 1) * (drone ? INFRAS.drone.blessure : 1) * talentVal(zz, 'tacticien', 'blessure', 1) * bLots };
     }) : [];
+    // Chef en première ligne : sur le secteur où la zone engage le plus d'agents.
+    for (const e of engages) { const zz = state.zones[e.u]; if (zz._front === 'nondroit' && zz.chef && !zz._frontUtilise) { const ks = Object.entries((ord[e.u] && ord[e.u].secteurs) || {}).sort((a, b) => b[1] - a[1]); if (ks.length && ks[0][0] === k) { e.f *= 1 + FRONT.nondroit.force * niveauChef(zz.chef, 'commandement'); zz._frontUtilise = `il a mené l’assaut sur ${nomSecteur(k)}`; } } }
     // Salle de crise : +15 % de force quand au moins deux zones attaquent ensemble.
     if (engages.length >= 2) for (const e of engages) if (aAnnexe(state.zones[e.u], 'crise')) { e.f *= 1 + INFRAS.crise.coop; state.zones[e.u].rapport.push(`Salle de crise : coordination avec les autres zones sur ${nomSecteur(k)}, force +${Math.round(INFRAS.crise.coop * 100)} %.`); }
     for (const e of engages) if (talent(state.zones[e.u], 'tacticien')) noterChef(state.zones[e.u], 'tacticien', `Tacticien : ton assaut sur ${nomSecteur(k)} frappe plus fort (+8 %), avec moins de blessés.`);

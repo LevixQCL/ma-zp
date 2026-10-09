@@ -724,6 +724,9 @@ async function onClick(e) {
         S.ordersDirty = true; rerender(); break;
       }
       case 'bureau-ouvrir': S.bureauUid = el.dataset.u || null; S.bureauObj = null; if (document.querySelector('.aide-wrap')) document.querySelectorAll('.aide-wrap').forEach((x) => x.remove()); location.hash = '#bureau'; break;
+      case 'chef-front': S.draft.chefFront = el.dataset.v || null; S.ordersDirty = true; rerender(); break;
+      case 'chef-reseau': S.draft.reseau = S.draft.reseau === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;
+      case 'chef-brevet': S.draft.brevet = S.draft.brevet === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;
       case 'chef-detail': S.bureauObj = S.bureauObj === el.dataset.k ? null : el.dataset.k; rerender(); break;
       case 'ord-chef': S.ordOpen = { ...(S.ordOpen || {}), chef: true }; location.hash = '#ordres'; break;
       case 'feliciter': {
@@ -747,7 +750,7 @@ async function onClick(e) {
       case 'chef-agenda': { const v = el.dataset.v; const cur = S.draft.agenda || {}; S.draft.agenda = v === 'terrain' ? { type: 'terrain', service: cur.service || 'intervention' } : v === 'voisin' ? { type: 'voisin', zone: cur.zone || null } : { type: v }; S.ordersDirty = true; rerender(); break; }
       case 'chef-talent': {
         const z0 = myZone(); const cur = [...(S.draft.talents || (z0.chef && z0.chef.talents) || [])]; const v = el.dataset.v;
-        S.draft.talents = cur.includes(v) ? cur.filter((t) => t !== v) : [...cur, v].slice(0, 3); S.ordersDirty = true; rerender(); break;
+        S.draft.talents = cur.includes(v) ? cur.filter((t) => t !== v) : [...cur, v].slice(0, 4); S.ordersDirty = true; rerender(); break;
       }
       case 'doctrine': S.draft.doctrine = S.draft.doctrine === el.dataset.k ? null : el.dataset.k; S.ordersDirty = true; rerender(); break;
       case 'piste-toggle': basculerPiste(el.dataset.k); S.ordersDirty = true; rerender(); break;

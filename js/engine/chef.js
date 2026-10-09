@@ -92,7 +92,7 @@ export const TALENT = Object.fromEntries(TALENTS.map((t) => [t.id, t]));
 /** Talents débloqués par ce chef. */
 export const talentsDebloques = (chef) => TALENTS.filter((t) => niveauChef(chef, t.comp) >= t.niv).map((t) => t.id);
 /** Vrai si la zone a ce talent équipé (et que la partie suit les règles v2). */
-export const talent = (z, id) => !!(REGLES.v2 && z && z.chef && Array.isArray(z.chef.talents) && z.chef.talents.includes(id));
+export const talent = (z, id) => !!(REGLES.v2 && z && z.chef && !z.chef.hs && Array.isArray(z.chef.talents) && z.chef.talents.includes(id));
 /** Valeur d'un talent équipé (ou `defaut`). */
 export const talentVal = (z, id, cle, defaut) => (talent(z, id) ? TALENT[id][cle] : defaut);
 
@@ -119,7 +119,7 @@ export function lireAgenda(o, state, uid) {
 /** Talents demandés dans des ordres (sans doublon, au plus 3, ids connus). */
 export function lireTalents(o) {
   if (!o || !Array.isArray(o.talents)) return null;
-  return [...new Set(o.talents.filter((t) => typeof t === 'string' && Object.hasOwn(TALENT, t)))].slice(0, CHEF.maxTalents);
+  return [...new Set(o.talents.filter((t) => typeof t === 'string' && Object.hasOwn(TALENT, t)))].slice(0, CHEF.maxTalents + 1);
 }
 
 /** Crée le chef d'une zone (première résolution en règles v2). `profil` : fiche du joueur ({ parcours }). */
@@ -184,7 +184,14 @@ export function progresser(chef, gains, { rattrapage = false, parrain = null, je
 export function changerTalents(chef, voulus, T) {
   if (!voulus) return null;
   const ok = talentsDebloques(chef);
-  const l = voulus.filter((t) => ok.includes(t)).slice(0, CHEF.maxTalents);
+  // Brevet de carrière : un 4e emplacement ; au plus 3 talents hors des compétences de la voie choisie.
+  const V = chef.brevet && VOIES[chef.brevet];
+  const l = [];
+  for (const t of voulus.filter((x) => ok.includes(x))) {
+    if (l.length >= (V ? CHEF.maxTalents + 1 : CHEF.maxTalents)) break;
+    const horsVoie = l.filter((x) => !(V && V.comps.includes(TALENT[x].comp))).length;
+    if (V && V.comps.includes(TALENT[t].comp)) l.push(t); else if (horsVoie < CHEF.maxTalents) l.push(t);
+  }
   const pareil = l.length === (chef.talents || []).length && l.every((t) => chef.talents.includes(t));
   if (pareil) return null;
   // Ajouter un talent dans un emplacement vide est toujours permis ; retirer ou remplacer, une fois par semaine.
@@ -236,3 +243,45 @@ const FAITS = [
 export function faitsDArmes(stats) {
   return FAITS.map(([k, w, f]) => ({ v: Number((stats || {})[k]) || 0, w, f })).filter((x) => x.v > 0).sort((a, b) => b.v * b.w - a.v * a.w).slice(0, 3).map((x) => x.f(x.v));
 }
+
+// ───── Gameplay du chef (saison 2) ─────
+/** Le chef en première ligne : une fois par jour, sur une action ; bonus selon la compétence, risque de blessure. */
+export const FRONT = {
+  nondroit: { court: 'Assaut', nom: 'Assaut en zone de non-droit', comp: 'commandement', effet: (L) => `force de ton plus gros assaut +${Math.round(3 * L)} %`, force: 0.03 },
+  affaire: { court: 'Affaires', nom: 'Affaires disputées', comp: 'commandement', effet: (L) => `force de ton équipe +${Math.round(3 * L)} %`, force: 0.03 },
+  releve: { court: 'Relève', nom: 'Relève', comp: 'diplomatie', effet: () => 'le chef compte pour un agent de plus', agent: 1 },
+  enquete: { court: 'Enquête', nom: 'Enquête (interrogatoires)', comp: 'flair', effet: (L) => `chance de pièce +${Math.round(4 * L)} %`, enquete: 0.04 },
+  quartier: { court: 'Quartier', nom: 'Point chaud du quartier', comp: 'proximite', effet: (L) => `tension du quartier le plus chaud −${2 + L}`, tension: 1 },
+};
+export const IDS_FRONT = Object.keys(FRONT);
+export const RISQUE_FRONT = { base: 0.1, jours: 2 };
+export const lireFront = (o) => (o && typeof o.chefFront === 'string' && Object.hasOwn(FRONT, o.chefFront) ? o.chefFront : null);
+
+/** Le réseau : humeur de chaque personnage d'après la zone (1 satisfait, 0 neutre, −1 mécontent). */
+export const RESEAU = {
+  bourgmestre: { nom: 'Le bourgmestre', humeur: (z) => (z.satisfaction >= 65 ? 1 : z.satisfaction < 45 ? -1 : 0), service: 'subside exceptionnel', geste: (L) => `+${String(Math.round((2 + 0.2 * L) * 10) / 10).replace('.', ',')} k€`, colere: 'gèle une ligne de subside (−1,5 k€)' },
+  procureur: { nom: 'Le procureur', humeur: (z) => ((z.dir && z.dir.parquet && z.dir.parquet.stade) || z.reputation < 40 ? -1 : z.reputation >= 60 ? 1 : 0), service: 'le parquet accélère ton enquête', geste: () => 'chance de pièce d’enquête +15 % ce soir', colere: 'fait traîner tes dossiers (−1 de réputation)' },
+  syndicat: { nom: 'Le délégué syndical', humeur: (z) => ((z.dir && z.dir.mem && z.dir.mem.greve === 'arret') || z.moral < 45 ? -1 : z.moral >= 65 ? 1 : 0), service: 'les équipes font un effort', geste: () => '+3 de moral, et le rythme renforcé ne coûte pas de moral ce soir', colere: 'fait courir la grogne (−2 de moral)' },
+  journaliste: { nom: 'La presse', humeur: (z) => { const j = z.dir && z.dir.mem && z.dir.mem.journaliste; return j === 'amie' ? 1 : j === 'hostile' ? -1 : 0; }, service: 'un article flatteur', geste: () => '+2 de satisfaction et +1 de réputation', colere: 'publie un billet acide (−2 de satisfaction)' },
+};
+export const IDS_RESEAU = Object.keys(RESEAU);
+export const RESEAU_REGLES = { delai: 7, colere: 0.08 };
+/** Service demandé au réseau : possible ? (satisfait, et pas déjà demandé à ce personnage depuis 7 jours). */
+export function servicePossible(z, id, T) {
+  const R = RESEAU[id];
+  if (!R || !z || !z.chef) return 'inconnu';
+  if (R.humeur(z) < 1) return 'il n’est pas satisfait';
+  const der = z.chef.services && z.chef.services[id];
+  if (der != null && T < der + RESEAU_REGLES.delai) return `déjà demandé (de nouveau au jour ${der + RESEAU_REGLES.delai})`;
+  return null;
+}
+
+/** Brevet de carrière : à 15 niveaux au total, une voie, un titre et un 4e emplacement de talent réservé à ses compétences. */
+export const VOIES = {
+  judiciaire: { nom: 'Direction judiciaire', titre: 'Directeur judiciaire', comps: ['flair', 'diplomatie'], texte: 'Flair et Diplomatie : l’enquête, le parquet, les partenaires.' },
+  operationnel: { nom: 'Commandement opérationnel', titre: 'Commandant opérationnel', comps: ['commandement', 'proximite'], texte: 'Commandement et Proximité : le terrain, les quartiers, les assauts.' },
+  management: { nom: 'Management de zone', titre: 'Manager de zone', comps: ['gestion', 'diplomatie'], texte: 'Gestion et Diplomatie : le budget, les achats, la coopération.' },
+};
+export const BREVET_NIVEAUX = 15;
+export const brevetPossible = (chef) => !!chef && !chef.brevet && totalNiveaux(chef) >= BREVET_NIVEAUX;
+export const maxTalentsDe = (chef) => CHEF.maxTalents + (chef && chef.brevet ? 1 : 0);

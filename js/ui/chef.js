@@ -4,7 +4,8 @@ import { gradeFor, INFRAS, SERVICE_LABELS } from '../engine/constants.js';
 import { reglesV2 } from '../engine/regles.js';
 import { tabbar } from './common.js';
 import { COMPETENCES, IDS_COMPETENCES, PARCOURS, IDS_PARCOURS, TALENTS, TALENT, AGENDA, IDS_AGENDA, CHEF,
-  niveauChef, progresChef, talentsDebloques, totalNiveaux, signatureChef, niveauXp, XP_CUMUL, NIVEAU_MAX_CHEF, JEUX_COMP } from '../engine/chef.js';
+  niveauChef, progresChef, talentsDebloques, totalNiveaux, signatureChef, niveauXp, XP_CUMUL, NIVEAU_MAX_CHEF, JEUX_COMP,
+  FRONT, IDS_FRONT, RISQUE_FRONT, RESEAU as RESEAU_E, IDS_RESEAU, servicePossible, VOIES, brevetPossible, BREVET_NIVEAUX, maxTalentsDe } from '../engine/chef.js';
 
 // ───── Portraits (images générées avec Gemini, img/chefs/pNN.webp) ─────
 // Tant qu'une image manque, un portrait dessiné (silhouette en uniforme, initiales) la remplace.
@@ -112,9 +113,10 @@ export function ficheChefHtml(uid, { moi = false } = {}) {
 
 // ───── Ordres : agenda, talents, parrainage ─────
 export function resumeChefOrdres(z, d) {
+  if (z.chef.blesse != null && S.state.turn <= z.chef.blesse) return `🏥 À l’hôpital jusqu’au jour ${z.chef.blesse}`;
   const a = d.agenda || { type: 'bureau' }, A = AGENDA[a.type] || AGENDA.bureau;
   const l = a.type === 'terrain' ? `${A.nom} (${SERVICE_LABELS[a.service || 'intervention']})` : a.type === 'voisin' && S.state.zones[a.zone] ? `Chez ${S.state.zones[a.zone].nom}` : A.nom;
-  return `${A.ico} ${esc(l)} · talents ${((d.talents || z.chef.talents) || []).length}/${CHEF.maxTalents}`;
+  return `${A.ico} ${esc(l)}${d.chefFront ? ` · ⚔️ ${esc(FRONT[d.chefFront].nom.toLowerCase())}` : ''}${d.reseau ? ' · service demandé' : ''} · talents ${((d.talents || z.chef.talents) || []).length}/${maxTalentsDe(z.chef)}`;
 }
 export function chefOrdresHtml(z, d) {
   const st = S.state, T = st.turn, chef = z.chef;
@@ -131,10 +133,19 @@ export function chefOrdresHtml(z, d) {
     ${a.type === 'terrain' ? `<label class="field tiny">Avec quel service ?<select class="text" data-change="chef-service">${['intervention', 'proximite', 'recherche', 'roulage', 'admin'].map((s2) => `<option value="${s2}" ${(a.service || 'intervention') === s2 ? 'selected' : ''}>${esc(s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2])}</option>`).join('')}</select></label>` : ''}
     ${a.type === 'voisin' ? `<label class="field tiny">Chez quelle zone ?<select class="text" data-change="chef-voisin"><option value="">—</option>${voisins.map((x) => `<option value="${esc(x.uid)}" ${a.zone === x.uid ? 'selected' : ''}>${zoneName(x)}</option>`).join('')}</select></label>
       <p class="tiny muted" style="margin:0">La réunion n’a lieu que si ce chef vient aussi chez toi ce soir : convenez-en sur la Radio.</p>` : ''}
-    <span class="tiny muted" style="font-weight:700">Talents équipés (${eq.length}/${CHEF.maxTalents})${verrou ? ` · remplacer un talent : à partir du jour ${chef.talentsT + CHEF.semaine}` : ' · tu peux en changer une fois par semaine'}</span>
-    ${deb.length ? `<div class="col" style="gap:6px">${deb.map((id) => { const t = TALENT[id], on = eq.includes(id); const bloque = !on && eq.length >= CHEF.maxTalents; return `<button type="button" class="choice" data-action="chef-talent" data-v="${id}" aria-pressed="${on}" ${bloque ? 'disabled' : ''} style="text-align:left;align-items:flex-start">
+    ${chef.blesse != null && st.turn <= chef.blesse ? `<p class="small bad" style="margin:0">🏥 Ton chef est à l’hôpital jusqu’au jour ${chef.blesse} : talents coupés, agenda au bureau, pas de première ligne.</p>` : `
+    <span class="tiny muted" style="font-weight:700">En première ligne ce soir ? (une action, ${Math.round(RISQUE_FRONT.base * 100)} % de risque d’être blessé : 2 jours d’hôpital)</span>
+    <div class="chef-chips"><button type="button" class="chef-chip" data-action="chef-front" data-v="" aria-pressed="${!d.chefFront}">🪑 Non</button>${IDS_FRONT.map((k) => `<button type="button" class="chef-chip" data-action="chef-front" data-v="${k}" aria-pressed="${d.chefFront === k}">${COMPETENCES[FRONT[k].comp].ico} ${esc(FRONT[k].court)}</button>`).join('')}</div>
+    ${d.chefFront ? `<span class="small ok">${esc(FRONT[d.chefFront].nom)} : ${esc(FRONT[d.chefFront].effet(niveauChef(chef, FRONT[d.chefFront].comp)))} (${esc(COMPETENCES[FRONT[d.chefFront].comp].nom)} ${niveauChef(chef, FRONT[d.chefFront].comp)}), seulement si l’action a lieu ce soir.</span>` : ''}`}
+    <span class="tiny muted" style="font-weight:700">Demander un service au réseau (si la personne est satisfaite, une fois par semaine chacune)</span>
+    <div class="chef-reseau">${IDS_RESEAU.map((id) => { const R = RESEAU_E[id], refus = servicePossible(z, id, T), h = R.humeur(z); return `<button type="button" class="chef-pers ${h > 0 ? 'ok' : h < 0 ? 'ko' : ''}${d.reseau === id ? ' choisi' : ''}" data-action="chef-reseau" data-v="${id}" ${refus ? 'disabled' : ''} aria-pressed="${d.reseau === id}" style="background:none;border:0;padding:0;cursor:pointer;color:var(--text)"><img src="img/bureau/${id}-${h > 0 ? 1 : h < 0 ? '-1' : 0}.webp" alt=""><span class="tiny" style="font-weight:700">${esc(R.nom.replace(/^(Le|La) /, ''))}</span><span class="tiny ${refus ? 'muted' : 'ok'}">${refus ? esc(refus) : esc(R.geste(niveauChef(chef, 'diplomatie')))}</span></button>`; }).join('')}</div>
+    ${brevetPossible(chef) ? `<span class="tiny muted" style="font-weight:700">🎓 Brevet de carrière disponible (une fois, définitif) : un titre et un 4e emplacement de talent</span>
+    <div class="col" style="gap:6px">${Object.entries(VOIES).map(([k, V]) => `<button type="button" class="choice" data-action="chef-brevet" data-v="${k}" aria-pressed="${d.brevet === k}" style="text-align:left;align-items:flex-start"><span style="font-weight:700">${esc(V.nom)} · ${esc(V.titre)}</span><span class="s">${esc(V.texte)}</span></button>`).join('')}</div>` : chef.brevet ? `<span class="tiny muted">🎓 ${esc(VOIES[chef.brevet].titre)} : 4e emplacement pour un talent de ${VOIES[chef.brevet].comps.map((c) => esc(COMPETENCES[c].nom)).join(' ou ')}.</span>` : `<span class="tiny muted">🎓 Brevet de carrière à ${BREVET_NIVEAUX} niveaux au total (tu en as ${totalNiveaux(chef)}).</span>`}
+    <details class="repli-mini" ${(chef.nouveauxTalents || []).some((t) => !eq.includes(t)) ? 'open' : ''}><summary class="tiny" style="font-weight:700">Talents équipés (${eq.length}/${maxTalentsDe(chef)}) · ${eq.map((t) => esc(TALENT[t].nom)).join(', ') || 'aucun'} · changer</summary>
+    <span class="tiny muted">${verrou ? `Remplacer un talent : à partir du jour ${chef.talentsT + CHEF.semaine}` : 'Ajouter est libre ; remplacer un talent, une fois par semaine.'}</span>
+    ${deb.length ? `<div class="col" style="gap:6px">${deb.map((id) => { const t = TALENT[id], on = eq.includes(id); const V = chef.brevet && VOIES[chef.brevet], horsVoie = eq.filter((x) => !(V && V.comps.includes(TALENT[x].comp))).length; const bloque = !on && (eq.length >= maxTalentsDe(chef) || (!(V && V.comps.includes(t.comp)) && horsVoie >= CHEF.maxTalents)); return `<button type="button" class="choice" data-action="chef-talent" data-v="${id}" aria-pressed="${on}" ${bloque ? 'disabled' : ''} style="text-align:left;align-items:flex-start">
       <span style="font-weight:700;display:flex;align-items:center;gap:6px"><img src="img/talents/${t.id}.webp" alt="" width="26" height="26">${esc(t.nom)} <span class="tiny muted">· ${esc(COMPETENCES[t.comp].nom)} ${t.niv}</span>${(chef.nouveauxTalents || []).includes(id) ? ' <span class="pill amber">nouveau</span>' : ''}</span><span class="s">${esc(t.texte)}</span></button>`; }).join('')}</div>`
-      : `<p class="tiny muted" style="margin:0">Aucun talent débloqué : le premier arrive au niveau 2 d’une compétence.</p>`}
+      : `<p class="tiny muted" style="margin:0">Aucun talent débloqué : le premier arrive au niveau 2 d’une compétence.</p>`}</details>
     ${filleuls.length ? `<label class="field tiny">Parrainer un nouveau chef (7 jours, sa meilleure progression +50 %, des PS d’entraide pour toi)<select class="text" data-change="chef-parrainer"><option value="">Personne</option>${filleuls.map((x) => `<option value="${esc(x.uid)}" ${d.parrainer === x.uid ? 'selected' : ''}>${zoneName(x)}</option>`).join('')}</select></label>` : ''}
   </div>`;
 }
@@ -185,7 +196,7 @@ export function renderBureau() {
       <span class="col" style="gap:3px;min-width:0"><span class="kicker">${moi ? 'Mon chef de corps' : 'Chef de corps'}</span>
         <span style="font-weight:800;font-size:20px;line-height:1.1">${esc(p.pseudo || z.nom)}</span>
         <span class="small">${esc(g.nom)} · ${zoneName(z)}</span>
-        <span class="chef-sig">${esc(signatureChef(chef) || '')}</span></span></div>
+        <span class="row" style="gap:6px;flex-wrap:wrap"><span class="chef-sig">${esc(signatureChef(chef) || '')}</span>${chef.brevet ? `<span class="chef-sig" style="background:linear-gradient(180deg,#CFE3FF,#7FA8E6)">🎓 ${esc(VOIES[chef.brevet].titre)}</span>` : ''}${chef.blesse != null && st.turn <= chef.blesse ? '<span class="chef-sig" style="background:linear-gradient(180deg,#FFC9C4,#E1453A);color:#fff">🏥 à l’hôpital</span>' : ''}</span></span></div>
     <span class="small muted">${pc ? esc(pc.nom) : 'Parcours à choisir'}${p.chef && p.chef.devise ? ` · « ${esc(p.chef.devise)} »` : ''}</span>
     <div class="pc-stats" style="grid-template-columns:repeat(3,1fr)">
       <div class="pc-stat"><span class="v">${total}<small>/50</small></span><span class="l">niveaux</span></div>
@@ -204,8 +215,8 @@ export function renderBureau() {
         <span class="chef-niv">${L}</span></button>`; }).join('')}
   </section>`;
   // Talents : tableau compétences × paliers.
-  const tal = `<section class="card" style="gap:10px"><div class="between"><h2 class="card-title">Talents</h2><span class="tiny muted">${eq.length}/${CHEF.maxTalents} équipés</span></div>
-    <div class="chef-slots">${[0, 1, 2].map((i) => { const t = eq[i]; return t ? `<div class="chef-slot on${actifs.has(t) ? ' actif' : ''}" style="--c:${COUL_COMP[TALENT[t].comp]}"><img src="img/talents/${t}.webp" alt=""><span class="tiny" style="font-weight:700">${esc(TALENT[t].nom)}</span><span class="tiny muted">${esc(TALENT[t].texte)}</span></div>` : '<div class="chef-slot"><span class="tiny muted">Emplacement libre</span></div>'; }).join('')}</div>
+  const tal = `<section class="card" style="gap:10px"><div class="between"><h2 class="card-title">Talents</h2><span class="tiny muted">${eq.length}/${maxTalentsDe(chef)} équipés</span></div>
+    <div class="chef-slots" style="grid-template-columns:repeat(${maxTalentsDe(chef)},minmax(0,1fr))">${Array.from({ length: maxTalentsDe(chef) }, (_, i) => i).map((i) => { const t = eq[i]; return t ? `<div class="chef-slot on${actifs.has(t) ? ' actif' : ''}" style="--c:${COUL_COMP[TALENT[t].comp]}"><img src="img/talents/${t}.webp" alt=""><span class="tiny" style="font-weight:700">${esc(TALENT[t].nom)}</span><span class="tiny muted">${esc(TALENT[t].texte)}</span></div>` : '<div class="chef-slot"><span class="tiny muted">Emplacement libre</span></div>'; }).join('')}</div>
     ${moi ? '<a class="tiny" href="#ordres" data-action="ord-chef">Changer mes talents dans les Ordres →</a>' : ''}
     <div class="chef-grille-tal">${IDS_COMPETENCES.map((c) => `<span class="tiny chef-gt-h" style="color:${COUL_COMP[c]}">${COMPETENCES[c].ico}</span>`).join('')}
       ${[2, 5, 8].map((n) => IDS_COMPETENCES.map((c) => { const t = TALENTS.find((x) => x.comp === c && x.niv === n), ok = deb.has(t.id), on = eq.includes(t.id);

@@ -11,7 +11,7 @@
 // l'une prend l'argent, l'autre la voiture).
 
 import { aAnnexe } from './constants.js';
-import { talent, TALENT, noterChef } from './chef.js';
+import { talent, TALENT, noterChef, FRONT } from './chef.js';
 import { makeRng } from './rng.js';
 import { zonesVoisines, peutRecevoir } from './vagues.js';
 import { carteQuartiers } from './quartiers.js';
@@ -134,7 +134,9 @@ export function releveResoudre(state, uids, ord, push, T, zoneLabel) {
       const nAp = za && ap && uids.includes(r.origine) ? Math.min(ap.agents, RELEVE.appuiMax) : 0;
       prendre(r.vers, n); prendre(r.origine, nAp);
       // Complexe cellulaire (saison 2) : la zone qui prend la relève a les cellules pour garder l'interpellé, un agent de moins suffit.
-      const force = n + nAp + (aAnnexe(zb, 'cachots') ? 1 : 0);
+      const front = zb._front === 'releve' && zb.chef ? FRONT.releve.agent : 0;
+      if (front) zb._frontUtilise = `il a pris la relève avec tes agents à ${lieu}`;
+      const force = n + nAp + (aAnnexe(zb, 'cachots') ? 1 : 0) + front;
       const rng = makeRng(`${state.seed}:s${state.season}:t${T}:releve:${r.id}`);
       const pris = force >= RELEVE.requis || (force === RELEVE.requis - 1 && rng.chance(0.5));
       const equipe = `${n} agent${n > 1 ? 's' : ''}${nAp ? ` + ${nAp} d’appui de ${zoneLabel(za)}` : ''}`;

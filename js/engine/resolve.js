@@ -37,7 +37,7 @@ import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
 import { primeChallenge, CHALLENGE } from './challenge.js';
-import { creerChef, lireAgenda, lireTalents, changerTalents, gainsDuJour, progresser, totalNiveaux, niveauChef, talent, TALENT, AGENDA, COMPETENCES, IDS_COMPETENCES, PARCOURS, CHEF, noterChef, signatureChef, faitsDArmes, JEUX_COMP } from './chef.js';
+import { creerChef, lireAgenda, lireTalents, changerTalents, gainsDuJour, progresser, totalNiveaux, niveauChef, talent, TALENT, AGENDA, COMPETENCES, IDS_COMPETENCES, PARCOURS, CHEF, noterChef, signatureChef, faitsDArmes, JEUX_COMP, FRONT, RISQUE_FRONT, lireFront, RESEAU, IDS_RESEAU, RESEAU_REGLES, servicePossible, VOIES, brevetPossible } from './chef.js';
 import { separerIncidents, appliquerIncidents, remplirJauge, resultatsIncidents, incidentsVisibles, adapterCibleUrgence, NIVEAUX_URGENCE } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND } from './contenu.js';
@@ -252,8 +252,18 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (!z.chef) z.chef = creerChef(pf);
       if (!z.chef.defisVus) z.chef.defisVus = Object.fromEntries(Object.entries((players[uid] && players[uid].defis) || {}).map(([k, v]) => [k, Math.floor(Number(v) || 0)]));
       else if (!z.chef.parcours && pf && Object.hasOwn(PARCOURS, pf.parcours)) z.chef.parcours = pf.parcours;
-      z._agenda = lireAgenda(orders[uid], state, uid);
+      // Chef blessé (première ligne) : à l'hôpital, talents coupés, agenda au bureau.
+      z.chef.hs = z.chef.blesse != null && T <= z.chef.blesse;
+      z._agenda = z.chef.hs ? { type: 'bureau' } : lireAgenda(orders[uid], state, uid);
+      if (z.chef.hs) z.rapport.push(`Ton chef est à l’hôpital jusqu’au jour ${z.chef.blesse} : ses talents sont coupés et son agenda reste au bureau.`);
       if (orders[uid] && z.dernierOrdre) z.dernierOrdre.agenda = z._agenda;
+      z._front = z.chef.hs ? null : lireFront(orders[uid]);
+      // Service demandé au réseau (une fois par semaine et par personnage, s'il est satisfait).
+      { const sv = orders[uid] && orders[uid].reseau;
+        if (typeof sv === 'string' && Object.hasOwn(RESEAU, sv) && !z.chef.hs) { const refus = servicePossible(z, sv, T); if (refus) z.rapport.push(`Réseau : ${RESEAU[sv].nom.toLowerCase()} ne peut pas t’aider (${refus}).`); else { z._service = sv; z.chef.services = { ...(z.chef.services || {}), [sv]: T }; } } }
+      // Brevet de carrière (une fois, à 15 niveaux au total).
+      { const br = orders[uid] && orders[uid].brevet;
+        if (typeof br === 'string' && Object.hasOwn(VOIES, br) && brevetPossible(z.chef)) { z.chef.brevet = br; z.rapport.push(`Brevet de carrière : ${VOIES[br].nom}. Ton chef devient ${VOIES[br].titre.toLowerCase()} et gagne un 4e emplacement de talent (${VOIES[br].comps.map((c) => COMPETENCES[c].nom).join(' ou ')}).`); push(5, 'Carrière', `Le chef de ${zoneLabel(z)} obtient son brevet : ${VOIES[br].titre.toLowerCase()}`, VOIES[br].texte, uid); noterChef(z, 'brevet', `Brevet obtenu : ${VOIES[br].titre}.`); } }
       const lt = changerTalents(z.chef, lireTalents(orders[uid]), T);
       if (lt) z.rapport.push(lt);
       z._chefAvant = { stats: { ...z.stats }, n: z.enquete && z.enquete.n, pieces: piecesPropres(z) };
@@ -358,7 +368,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
     for (const u of candidats) if (!acceptes.includes(u)) rendre(u, ord[u].engagements[aff.id].agents, 'candidature non retenue.');
 
-    const force = equipe.reduce((s, x) => s + forceEngagement(state.zones[x.u], x.n, T), 0);
+    const force = equipe.reduce((s, x) => { const zx = state.zones[x.u], fr = zx._front === 'affaire' && zx.chef ? 1 + FRONT.affaire.force * niveauChef(zx.chef, 'commandement') : 1; if (fr > 1) zx._frontUtilise = `il a mené ton équipe sur « ${aff.titre} »`; return s + forceEngagement(zx, x.n, T) * fr; }, 0);
     if (force < aff.forceMin) {
       for (const x of equipe) state.zones[x.u].rapport.push(`${aff.titre} : force insuffisante (${fmt1(force)} sur ${aff.forceMin}), l’affaire reste ouverte.`);
       continue;
@@ -483,6 +493,28 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const zr = makeRng(`${state.seed}:s${state.season}:t${T}:${uid}`);
     const q = quests[uid];
     // Agenda du chef (saison 2).
+    // Réseau : le service demandé ce soir, et la mauvaise humeur de ceux qui sont mécontents.
+    if (z.chef && REGLES.v2) {
+      const sv = z._service, Ld = niveauChef(z.chef, 'diplomatie');
+      if (sv === 'bourgmestre') { const v = round1(2 + 0.2 * Ld); z.budget += v; z._compta.push({ k: 'agenda', l: 'Subside exceptionnel du bourgmestre', v }); }
+      if (sv === 'syndicat') z.moral += 3;
+      if (sv === 'journaliste') { z.satisfaction += 2; z.reputation += 1; }
+      if (sv) { z.rapport.push(`Réseau : ${RESEAU[sv].nom.toLowerCase()} te rend service, ${RESEAU[sv].service} (${RESEAU[sv].geste(Ld)}).`); noterChef(z, `svc-${sv}`, `${RESEAU[sv].nom} te rend service : ${RESEAU[sv].geste(Ld)}.`); }
+      const cr = makeRng(`${state.seed}:s${state.season}:t${T}:colere:${uid}`);
+      for (const id of IDS_RESEAU) if (RESEAU[id].humeur(z) < 0 && cr.chance(RESEAU_REGLES.colere)) {
+        if (id === 'bourgmestre') { z.budget -= 1.5; z._compta.push({ k: 'alea', l: 'Subside gelé par le bourgmestre', v: -1.5 }); }
+        if (id === 'procureur') z.reputation -= 1;
+        if (id === 'syndicat') z.moral -= 2;
+        if (id === 'journaliste') z.satisfaction -= 2;
+        z.rapport.push(`Réseau : ${RESEAU[id].nom.toLowerCase()}, mécontent, ${RESEAU[id].colere}.`);
+        (z.cetteNuit ||= []).push({ ico: '😠', t: `${RESEAU[id].nom}, mécontent, ${RESEAU[id].colere}.` });
+      }
+    }
+    // Chef en première ligne au point chaud du quartier.
+    if (z.chef && z._front === 'quartier') {
+      const qq = assurerQuartiers(state, z), k = Object.keys(qq).sort((a, b) => qq[b] - qq[a])[0];
+      if (k) { const d = 2 + niveauChef(z.chef, 'proximite'); qq[k] = clamp(qq[k] - d, 10, 95); z._frontUtilise = `il a passé la journée au point chaud du quartier (tension −${d})`; }
+    }
     if (z.chef && z._agenda) {
       const a = z._agenda, A = AGENDA[a.type];
       let fx = A.effet;
@@ -997,7 +1029,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const tr = tauxRetourMoral(z.moral);
     z.moral += (MORAL.cible - z.moral) * tr;
     jalon(z, `Retour naturel vers ${MORAL.cible} : ${Math.round(tr * 100)} % de l’écart (${fmt1(m0)} → ${MORAL.cible})`);
-    z.moral += RYTHMES[o.rythme].moral + (o.rythme === 'renforce' ? forceDoctrine(z, 'renforce') + (talent(z, 'meneur') ? TALENT.meneur.moral : 0) : 0);
+    z.moral += (o.rythme === 'renforce' && z._service === 'syndicat' ? 0 : RYTHMES[o.rythme].moral + (o.rythme === 'renforce' ? forceDoctrine(z, 'renforce') + (talent(z, 'meneur') ? TALENT.meneur.moral : 0) : 0));
     if (o.rythme === 'renforce' && talent(z, 'meneur')) noterChef(z, 'meneur', 'Meneur d’hommes : le rythme renforcé a moins pesé sur le moral.');
     jalon(z, `Rythme ${RYTHMES[o.rythme].label.toLowerCase()}`);
     if (z.infra.sport) z.moral += 1;
@@ -1105,6 +1137,15 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
           vus[jeu] = Math.max(vus[jeu] || 0, n); } }
       const jeuxTxt = Object.entries(jeux).filter(([, v]) => v > 0).map(([c, v]) => `${COMPETENCES[c].nom} +${Math.min(CHEF.plafondJeux, v)}`).join(', ');
       if (jeuxTxt) noterChef(z, 'jeux', `Entraînement du jour (mini-jeux et énigmes) : ${jeuxTxt}.`);
+      // Chef en première ligne : expérience, et le risque d'être blessé.
+      if (z._front && FRONT[z._front]) {
+        if (z._frontUtilise) {
+          gains[FRONT[z._front].comp] = (gains[FRONT[z._front].comp] || 0) + 2;
+          const blesse = makeRng(`${state.seed}:s${state.season}:t${T}:front:${uid}`).chance(RISQUE_FRONT.base);
+          if (blesse) { z.chef.blesse = T + RISQUE_FRONT.jours; z.rapport.push(`Chef en première ligne : ${z._frontUtilise}, mais il est blessé. Hôpital jusqu’au jour ${z.chef.blesse} (talents coupés).`); push(4, 'Chef de corps', `Le chef de ${zoneLabel(z)} blessé en première ligne`, 'Il a payé de sa personne : quelques jours d’hôpital.', uid); noterChef(z, 'front', 'En première ligne, ton chef a été blessé : hôpital pour deux jours.'); }
+          else { z.rapport.push(`Chef en première ligne : ${z._frontUtilise}.`); noterChef(z, 'front', `En première ligne : ${z._frontUtilise}.`); }
+        } else z.rapport.push(`Chef en première ligne (${FRONT[z._front].nom.toLowerCase()}) : pas d’occasion ce soir, il est resté au bureau.`);
+      }
       const r = progresser(z.chef, gains, { rattrapage: totalNiveaux(z.chef) < moyChef - 1, parrain: par, jeux });
       for (const m of r.montees) {
         z.rapport.push(`Chef de corps : ${COMPETENCES[m.comp].nom} niveau ${m.niveau}.`);
@@ -1254,7 +1295,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
-    delete z._joue; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._chefFaits; delete z._incOk; delete z._croise; delete z._chefAvant; delete z._investi; delete z._interpelle;
+    delete z._joue; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._chefFaits; delete z._front; delete z._frontUtilise; delete z._service; delete z._incOk; delete z._croise; delete z._chefAvant; delete z._investi; delete z._interpelle;
   }
 
   // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).
