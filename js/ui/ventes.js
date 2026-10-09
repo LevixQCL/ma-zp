@@ -49,7 +49,7 @@ function lotHtml(v, lot, ph, z, rel) {
         <button type="button" data-action="vente-finale" data-k="${lot.k}" data-d="0.5" data-p="${plancher}">+</button><button type="button" data-action="vente-finale" data-k="${lot.k}" data-d="1" data-p="${plancher}">+1</button></span>
       <span class="tiny muted" style="text-align:center">${mien ? `Ta relance d’hier (${euros(mien)}) compte déjà comme offre : tu ne peux que monter.` : 'Débitée seulement si tu l’emportes.'}</span>
       ${lot.gros && partners.length ? `<label class="field tiny">Acheter à deux (vous mettez vos offres en commun)<select class="text" data-change="vente-partenaire" data-k="${lot.k}"><option value="">Seul</option>${partners.map((u) => `<option value="${esc(u)}" ${fin && fin.partenaire === u ? 'selected' : ''}>avec ${zoneName(st.zones[u])}</option>`).join('')}</select></label>
-        <span class="tiny muted">Ton partenaire doit te désigner aussi : le lot vous profite à tous les deux, chacun paie sa part.</span>` : lot.gros ? '<span class="tiny muted">Gros lot : avec un pacte, deux zones peuvent l’acheter ensemble.</span>' : ''}</div>`;
+        <span class="tiny muted">Ton partenaire doit te désigner aussi : le lot vous profite à tous les deux, chacun paie sa part (au moins ${euros(VENTE.partMin * lot.prixMin)}).</span>` : lot.gros ? '<span class="tiny muted">Gros lot : avec un pacte, deux zones peuvent l’acheter ensemble.</span>' : ''}</div>`;
   }
   return `<div class="bat vente-lot${lot.gros ? ' gros' : ''}">
     <div class="row" style="gap:10px;align-items:flex-start"><span class="vente-ico" aria-hidden="true">${ICO[lot.id] || '📦'}</span>

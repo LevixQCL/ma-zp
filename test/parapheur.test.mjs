@@ -27,7 +27,7 @@ const r1 = resolveTurn(st, { players, orders: { A: { alloc, rythme: 'normal', pa
 const zA = r1.zones.A, C = COURRIERS[vu[0]];
 assert.ok(zA.rapport.some((l) => l.startsWith(`Parapheur : « ${C.obj} »`)), 'réponse au rapport');
 assert.ok((zA.chef.xp[C.o[0].comp] || 0) > xpAvant, 'expérience dans la compétence de la réponse');
-assert.equal(zA.chef.priseT, 1);
+assert.equal(zA.chef.priseJ, 1, 'un jour de prise de fonctions joué');
 assert.equal(jourPrise(zA.chef, r1.turn), 2);
 assert.equal(courriersDuJour(r1, zA).length, 2, 'deux courriers à partir du jour 2');
 assert.ok(!courriersDuJour(r1, zA).includes(vu[0]) || C.o[0].suite, 'pas le même courrier le lendemain');
@@ -42,5 +42,13 @@ let s = r1;
 for (let i = 0; i < 6; i++) s = resolveTurn(s, { players, orders: { A: { alloc, rythme: 'normal' }, B: { alloc, rythme: 'normal' } } }).state;
 assert.equal(jourPrise(s.zones.A.chef, s.turn), 99);
 assert.ok(s.zones.A.chef.priseFaite);
+// Audit du 9 octobre : la prise de fonctions avance avec les jours joués, pas pendant une absence.
+{ let a = r1;
+  for (let i = 0; i < 5; i++) a = resolveTurn(a, { players, orders: { B: { alloc, rythme: 'normal' } } }).state;
+  assert.equal(jourPrise(a.zones.A.chef, a.turn), 2, 'absent 5 jours : toujours au jour 2 de sa prise de fonctions');
+  // Un ordre forgé ne débloque pas une prérogative avant son jour (réunion chez un voisin : jour 6, première ligne : jour 4).
+  const f = resolveTurn(a, { players, orders: { A: { alloc, rythme: 'normal', agenda: { type: 'voisin', zone: 'B' }, chefFront: 'quartier' }, B: { alloc, rythme: 'normal' } } }).state;
+  assert.notEqual(f.zones.A.dernierOrdre.agenda && f.zones.A.dernierOrdre.agenda.type, 'voisin', 'agenda voisin refusé au jour 2');
+}
 // Sans réponse : rien ne change, pas d'expérience du parapheur (courrier classé).
 console.log('OK : parapheur et prise de fonctions vérifiés.');

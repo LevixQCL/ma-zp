@@ -76,7 +76,10 @@ service cloud.firestore {
               // Zone de départ : pas plus que les ressources de départ (60 000 € de budget, 40 agents au plus).
               && request.resource.data.zones[request.auth.uid].budget <= 60
               && request.resource.data.zones[request.auth.uid].agents <= 40
-              && request.resource.data.zones[request.auth.uid].uid == request.auth.uid);
+              && request.resource.data.zones[request.auth.uid].uid == request.auth.uid
+              // Couleur affichée chez tout le monde avant le tour de 20:00 : une vraie couleur (#RRGGBB).
+              && request.resource.data.zones[request.auth.uid].couleur is string
+              && request.resource.data.zones[request.auth.uid].couleur.matches('^#[0-9A-Fa-f]{6}$'));
       }
 
       // Profils des joueurs de cette partie (code, nom et couleur de zone).
@@ -88,6 +91,9 @@ service cloud.firestore {
           && request.resource.data.code is string && request.resource.data.code.matches('^[0-9]{4}$')
           && (!('pseudo' in request.resource.data) || (request.resource.data.pseudo is string && request.resource.data.pseudo.size() <= 24))
           && (!('couleur' in request.resource.data) || (request.resource.data.couleur is string && request.resource.data.couleur.matches('^#[0-9A-Fa-f]{6}$')))
+          // Portrait du chef : un identifiant de portrait (p01 à p99), affiché chez tout le monde.
+          && (!('chef' in request.resource.data) || (request.resource.data.chef is map
+              && (!('portrait' in request.resource.data.chef) || (request.resource.data.chef.portrait is string && request.resource.data.chef.portrait.matches('^p[0-9]{2}$')))))
           && request.resource.data.get('retire', false) == (resource == null ? false : resource.data.get('retire', false)));
         allow delete: if master(gid);
       }

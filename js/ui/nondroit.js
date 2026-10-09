@@ -221,7 +221,7 @@ function carteRoles(k, s, me, d) {
     const manque = Math.max(0, Math.ceil(n.desc * p.ratio) - n.bouc);
     return n.desc ? (manque ? `<span class="tiny bad">il manque ${manque}</span>` : '<span class="tiny ok">✓ bouclé</span>') : '';
   };
-  const effet = { rep: 'Révèle la faille. Repéré les 4 soirs suivants : descente plus forte, sans piège. 35 % des saisies qui en profitent.',
+  const effet = { rep: 'Révèle la faille. Repéré les 4 soirs suivants : descente plus forte, sans piège. 15 % des saisies qui en profitent.',
     desc: 'Fait tomber l’emprise. C’est elle qui reprend le secteur.',
     bouc: `Ferme les sorties : moins de fuite, plus de saisies. Ici : 1 pour ${p.ratio >= 1 ? '1' : '2'} en descente.` };
   const rangee = (role) => `<div class="nd-role ${role === 'bouc' && n.desc && p.fuite > 0.3 ? 'alerte' : ''}">

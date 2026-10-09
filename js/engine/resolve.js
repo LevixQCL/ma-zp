@@ -9,7 +9,7 @@ import { appuiResolution } from './appui.js';
 import { BILAN, moyennesDistrict, calculerBilan, appliquerBilan, lireOrdresBilan, resoudreBilan } from './bilan.js';
 import {
   APP_VERSION, NIVEAU_MAX, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, BUDGET_IPZ, HORS_REVENU, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue , PREPA } from './constants.js';
+  MIN_TOURS_CLASSEMENT, BUDGET_IPZ, HORS_REVENU, horsRevenu, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue , PREPA } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
 import { pistesDuSoir, lireOrdresPistes } from './pistes.js';
@@ -37,7 +37,7 @@ import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
 import { primeChallenge, CHALLENGE } from './challenge.js';
-import { courriersDuJour, appliquerParapheur, jourPrise } from './parapheur.js';
+import { courriersDuJour, appliquerParapheur, jourPrise, PRISE, PRISE_JOURS, AGENDA_JOUR } from './parapheur.js';
 import { creerChef, lireAgenda, lireTalents, changerTalents, gainsDuJour, progresser, totalNiveaux, niveauChef, talentsDebloques, talent, TALENT, AGENDA, COMPETENCES, IDS_COMPETENCES, PARCOURS, CHEF, noterChef, signatureChef, faitsDArmes, JEUX_COMP, FRONT, RISQUE_FRONT, lireFront, RESEAU, IDS_RESEAU, RESEAU_REGLES, servicePossible, VOIES, brevetPossible, humeurReseau, tasserEstime } from './chef.js';
 import { creerAdjoint, consigneDe, ordresAdjoint, noterJournal, ADJOINT, CONSIGNES } from './adjoint.js';
 import { cleSemaine, semaineDe, tirerObjectifs, avancerObjectifs, texteObjectif, OBJECTIFS, apparier, scoreDuel, DUEL } from './chef-semaine.js';
@@ -240,6 +240,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   for (const uid of uids) {
     const z = state.zones[uid];
     z.rapport = [];
+    // Premier soir de la saison 2 : l'adjoint existe déjà pour tenir une zone sans ordres (pas l'ancien pilote automatique).
+    if (reglesV2(state) && z.chef && !z.adjoint) z.adjoint = creerAdjoint(uid, players[uid] && players[uid].chef && players[uid].chef.portrait);
     if (orders[uid]) {
       ord[uid] = sanitizeOrders(z, orders[uid], state);
       Object.assign(ord[uid], lireOrdresReleve(orders[uid]), lireOrdresCrise(orders[uid]), lireOrdresBilan(orders[uid]), lireOrdresPistes(orders[uid]));
@@ -289,26 +291,31 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       // Parapheur du jour (calculé avant toute modification : le même qu'à l'écran) et prise de fonctions.
       z._para = courriersDuJour(state, z);
       z._paraRep = orders[uid] && orders[uid].parapheur && typeof orders[uid].parapheur === 'object' ? orders[uid].parapheur : null;
-      if (z.chef.priseT == null && !z.chef.priseFaite) z.chef.priseT = T;
-      if (jourPrise(z.chef, T + 1) === 99) z.chef.priseFaite = true;
+      // Prise de fonctions (jours joués) : ce qui n'est pas encore ouvert est ignoré, même dans un ordre forgé.
+      if (z.chef.priseJ == null && !z.chef.priseFaite) z.chef.priseJ = z.chef.priseT != null ? Math.max(0, Math.min(PRISE_JOURS, T - z.chef.priseT)) : 0;
+      const jp = jourPrise(z.chef, T);
+      const ouvert = (k) => jp >= ((PRISE.find((x) => x.k === k) || { j: 0 }).j);
       // Chef blessé (première ligne) : à l'hôpital, talents coupés, agenda au bureau.
       z.chef.hs = z.chef.blesse != null && T <= z.chef.blesse;
       z._agenda = z.chef.hs ? { type: 'bureau' } : lireAgenda(orders[uid], state, uid);
+      if (z._agenda && (AGENDA_JOUR[z._agenda.type] || 1) > jp) z._agenda = { type: 'bureau' };
       if (z.chef.hs) z.rapport.push(`Ton chef est à l’hôpital jusqu’au jour ${z.chef.blesse} : ses talents sont coupés et son agenda reste au bureau.`);
       if (orders[uid] && z.dernierOrdre) z.dernierOrdre.agenda = z._agenda;
-      z._front = z.chef.hs ? null : lireFront(orders[uid]);
+      z._front = z.chef.hs || !ouvert('front') ? null : lireFront(orders[uid]);
       // Service demandé au réseau (une fois par semaine et par personnage, s'il est satisfait).
       { const sv = orders[uid] && orders[uid].reseau;
-        if (typeof sv === 'string' && Object.hasOwn(RESEAU, sv) && !z.chef.hs) { const refus = servicePossible(z, sv, T); if (refus) z.rapport.push(`Réseau : ${RESEAU[sv].nom.toLowerCase()} ne peut pas t’aider (${refus}).`); else { z._service = sv; z.chef.services = { ...(z.chef.services || {}), [sv]: T }; z.chef.nbServices = (z.chef.nbServices || 0) + 1; } } }
+        if (typeof sv === 'string' && Object.hasOwn(RESEAU, sv) && !z.chef.hs && ouvert('reseau')) { const refus = servicePossible(z, sv, T); if (refus) z.rapport.push(`Réseau : ${RESEAU[sv].nom.toLowerCase()} ne peut pas t’aider (${refus}).`); else { z._service = sv; z.chef.services = { ...(z.chef.services || {}), [sv]: T }; z.chef.nbServices = (z.chef.nbServices || 0) + 1; } } }
       // Brevet de carrière (une fois, à 15 niveaux au total).
       { const br = orders[uid] && orders[uid].brevet;
         if (typeof br === 'string' && Object.hasOwn(VOIES, br) && brevetPossible(z.chef)) { z.chef.brevet = br; z.rapport.push(`Brevet de carrière : ${VOIES[br].nom}. Ton chef devient ${VOIES[br].titre.toLowerCase()} et gagne un 4e emplacement de talent (${VOIES[br].comps.map((c) => COMPETENCES[c].nom).join(' ou ')}).`); push(5, 'Carrière', `Le chef de ${zoneLabel(z)} obtient son brevet : ${VOIES[br].titre.toLowerCase()}`, VOIES[br].texte, uid); noterChef(z, 'brevet', `Brevet obtenu : ${VOIES[br].titre}.`); } }
-      const lt = changerTalents(z.chef, lireTalents(orders[uid]), T);
+      const lt = ouvert('talents') ? changerTalents(z.chef, lireTalents(orders[uid]), T) : null;
       if (lt) z.rapport.push(lt);
       z._chefAvant = { stats: { ...z.stats }, n: z.enquete && z.enquete.n, pieces: piecesPropres(z), lots: (z.lots || []).length };
       // Démolition d'une annexe (gratuite, sans remboursement) : libère un emplacement dès ce soir.
       const dm = orders[uid] && orders[uid].demolir;
       if (typeof dm === 'string' && Object.hasOwn(INFRAS, dm) && z.infra[dm]) { delete z.infra[dm]; z.rapport.push(`Annexe démolie : ${INFRAS[dm].nom}. Un emplacement est libre.`); }
+      // Un jour de prise de fonctions de plus, seulement si le joueur a donné ses ordres.
+      if (orders[uid] && !z.chef.priseFaite) { z.chef.priseJ = (z.chef.priseJ || 0) + 1; if (z.chef.priseJ >= PRISE_JOURS) z.chef.priseFaite = true; }
     } else delete z._agenda;
     // Mise à prix de l'enquête : le choix fait aujourd'hui (ou la confiscation par défaut).
     { const lp = appliquerPrime(z, ord[uid].prime, T, { services: SERVICES, niveauMax: NIVEAU_MAX }); if (lp) z.rapport.push(lp); }
@@ -330,6 +337,20 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     for (const u of uids) {
       const z = state.zones[u], a = z._agenda;
       z._croise = !!(a && a.type === 'voisin' && state.zones[a.zone] && state.zones[a.zone]._agenda && state.zones[a.zone]._agenda.type === 'voisin' && state.zones[a.zone]._agenda.zone === u);
+    }
+    // Audit du 9 octobre : une réunion « chez un voisin » ne rapporte qu'une fois par semaine avec le même chef
+    // (deux amis qui se reçoivent chaque jour prenaient +1,5 d'IPZ, trois à quatre fois tout autre agenda).
+    for (const u of uids) {
+      const z = state.zones[u];
+      if (!z._croise || !z.chef) continue;
+      const vis = (z.chef.visites ||= {}), der = vis[z._agenda.zone];
+      if (der != null && T - der < CHEF.semaine) { z._croise = false; z._croiseDeja = der; }
+    }
+    for (const u of uids) {
+      const z = state.zones[u];
+      if (!z._croise || !z.chef) continue;
+      z.chef.visites[z._agenda.zone] = T;
+      for (const [k, t] of Object.entries(z.chef.visites)) if (T - t >= CHEF.semaine) delete z.chef.visites[k];
     }
     for (const u of uids) {
       const z = state.zones[u], fu = orders[u] && orders[u].parrainer, f = typeof fu === 'string' && Object.hasOwn(state.zones, fu) && fu !== u ? state.zones[fu] : null;
@@ -580,6 +601,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
           { const sv = (z.chef.souvenirs ||= []); const neuf = !sv.some((x) => x.u === a.zone && x.s === state.season); if (neuf) { sv.push({ u: a.zone, s: state.season, t: T }); z.chef.souvenirs = sv.slice(-6); }
             noterChef(z, 'visite', `Réunion avec le chef de ${zoneLabel(v)}${neuf ? ' : une photo souvenir rejoint ton bureau' : ''}.`); }
           fx = `réunion avec le chef de ${zoneLabel(v)}, venu chez toi le même jour : +${A.ps} PS d’entraide, +${A.rep} de réputation`; }
+        else if (z._croiseDeja != null) fx = `réunion avec le chef de ${zoneLabel(v)}, mais vous vous êtes déjà réunis cette semaine (jour ${z._croiseDeja}) : pas de bonus avant le jour ${z._croiseDeja + CHEF.semaine}`;
         else fx = `visite à ${v ? zoneLabel(v) : 'une zone voisine'} (son chef n’est pas venu chez toi : pas de réunion)`;
       }
       z.rapport.push(`Agenda du chef : ${A.nom.toLowerCase()}, ${fx}.`);
@@ -1140,7 +1162,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.bilanTerrain = round1(bilanHier * TERRAIN.report + z._points);
     // Revenu du jour (composante Budget) : ce que la zone gagne ou perd en fonctionnant, sans ses achats
     // (grandes décisions, dépenses du jour), reventes ni bilan de saison : investir ne fait pas baisser l'IPZ.
-    const revenu = round1(z.budget - budget0[uid] - (z._compta || []).filter((x) => HORS_REVENU.has(x.k)).reduce((a2, x) => a2 + x.v, 0));
+    const revenu = round1(z.budget - budget0[uid] - (z._compta || []).filter((x) => horsRevenu(x.k)).reduce((a2, x) => a2 + x.v, 0));
     z.revenus = [...(z.revenus || []), revenu].slice(-BUDGET_IPZ.jours);
     if (revenu > (z.stats.revenuMax || 0)) z.stats.revenuMax = revenu;
     const comp = ipzComposantes(z, { ratio: incidents ? traites / incidents : 1, bilan: z.bilanTerrain, revenus: z.revenus });
@@ -1182,7 +1204,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const av = z._chefAvant || { stats: {} };
       const d = {}; for (const k of Object.keys(z.stats)) d[k] = (Number(z.stats[k]) || 0) - (Number(av.stats[k]) || 0);
       const piecesGagnees = z.enquete && z.enquete.n === av.n ? Math.max(0, piecesPropres(z) - (av.pieces || 0)) : 0;
-      const gains = gainsDuJour({ revenu, investi: !!z._investi, ratio: incidents ? traites / incidents : 1, satisfaction: z.satisfaction, piecesGagnees, agenda: z._agenda, croise: z._croise, d });
+      // Audit du 9 octobre : un jour tenu par l'adjoint ne fait pas progresser le chef par la gestion (il n'a rien décidé) ;
+      // seuls comptent les jeux réellement joués (mini-jeux, énigmes). Pas de rattrapage non plus ce jour-là.
+      const gains = z._joue ? gainsDuJour({ revenu, investi: !!z._investi, ratio: incidents ? traites / incidents : 1, satisfaction: z.satisfaction, piecesGagnees, agenda: z._agenda, croise: z._croise, d }) : {};
       const par = z.chef.parrain && z.chef.parrain.fin >= T ? z.chef.parrain : null;
       for (const [c, v] of Object.entries(z._paraGains || {})) gains[c] = (gains[c] || 0) + v;
       // Mini-jeux et énigmes du jour : chaque réussite entraîne une compétence (plafond à part).
@@ -1190,7 +1214,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       for (const sv of z._incOk || []) if (JEUX_COMP[sv]) jeux[JEUX_COMP[sv]] += 1;
       jeux.flair += Math.min(3, (Array.isArray(q) ? q : []).filter((x, k) => x && x.statut === 'ok' && (x.slot ?? k) !== 3).length);
       { const vus = (z.chef.defisVus ||= {}), defis = (players[uid] && players[uid].defis) || {};
-        for (const [jeu, niv] of Object.entries(defis)) { const n = Math.floor(Number(niv) || 0); if (!JEUX_COMP[jeu]) continue;
+        for (const [jeu, niv] of Object.entries(defis)) { const n = Math.min(CHALLENGE.niveauMax, Math.floor(Number(niv) || 0)); if (!JEUX_COMP[jeu]) continue;
           if (n > (vus[jeu] || 0)) jeux[JEUX_COMP[jeu]] += Math.min(3, Math.ceil((n - (vus[jeu] || 0)) / 2));
           vus[jeu] = Math.max(vus[jeu] || 0, n); } }
       const jeuxTxt = Object.entries(jeux).filter(([, v]) => v > 0).map(([c, v]) => `${COMPETENCES[c].nom} +${Math.min(CHEF.plafondJeux, v)}`).join(', ');
@@ -1208,7 +1232,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (lotsJour) z.chef.lotsGagnes = (z.chef.lotsGagnes || 0) + lotsJour;
       // Niveaux et talents d'avant la nuit : les objectifs de la semaine ajoutent de l'XP après progresser(), on compare donc à la fin.
       const nivAvant = Object.fromEntries(IDS_COMPETENCES.map((c) => [c, niveauChef(z.chef, c)])), talAvant = new Set(talentsDebloques(z.chef));
-      const r = progresser(z.chef, gains, { rattrapage: totalNiveaux(z.chef) < moyChef - 1, parrain: par, jeux, mult: z.chef.remise != null && T <= z.chef.remise ? ADJOINT.retour.remise : 1 });
+      const r = progresser(z.chef, gains, { rattrapage: !!z._joue && totalNiveaux(z.chef) < moyChef - 1, parrain: par, jeux, mult: z.chef.remise != null && T <= z.chef.remise ? ADJOINT.retour.remise : 1 });
       // Objectifs de la semaine (jours joués seulement).
       if (z._joue && z.chef.objectifs) {
         const ob = avancerObjectifs(z, { z, d: new Proxy(d, { get: (o, k) => Math.max(0, Number(o[k]) || 0) }), ratio: incidents ? traites / incidents : 1, revenu, pieces: piecesGagnees, jeux, investi: !!z._investi, lots: lotsJour, service: !!z._service, front: !!z._frontUtilise, agenda: z._agenda });
@@ -1367,7 +1391,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
-    delete z._joue; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._para; delete z._paraRep; delete z._paraGains; delete z._chefFaits; delete z._front; delete z._frontUtilise; delete z._service; delete z._incOk; delete z._croise; delete z._chefAvant; delete z._investi; delete z._interpelle;
+    delete z._joue; delete z._croiseDeja; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._para; delete z._paraRep; delete z._paraGains; delete z._chefFaits; delete z._front; delete z._frontUtilise; delete z._service; delete z._incOk; delete z._croise; delete z._chefAvant; delete z._investi; delete z._interpelle;
   }
 
   // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).
@@ -1516,7 +1540,7 @@ function finDeSaison(state, classement, opts = {}) {
   if (state.palmares.length > 12) state.palmares = state.palmares.slice(-12);
 
   // Remise à zéro des zones, on garde l'identité, les PS, badges et titres.
-  const oldSeason = state.season;
+  const oldSeason = state.season, tourFin = Number(state.turn) || 1;
   state.season += 1;
   state.turn = 1;
   // Révision d'oct. 2026 : la nouvelle saison passe aux règles v2 (classement, doctrines, choix qui coûtent).
@@ -1559,7 +1583,8 @@ function finDeSaison(state, classement, opts = {}) {
     if (z.enquete) nz.enquete = { ...z.enquete, ratt: true }; // pas de dossier de rattrapage : la zone était là
     if (z.enquetePrecedente) nz.enquetePrecedente = z.enquetePrecedente;
     if (z.enqueteDiffere && z.enqueteDiffere.length) nz.enqueteDiffere = z.enqueteDiffere;
-    if (z.pistes) nz.pistes = z.pistes;
+    // Pistes en cours : leurs dates sont celles de l'ancienne saison, on les recale sur le nouveau compteur (jour 1).
+    if (z.pistes) nz.pistes = z.pistes.map((p) => ({ ...p, retour: Math.max(1, (Number(p.retour) || 0) - tourFin), ...(p.lance != null ? { lance: Number(p.lance) - tourFin } : {}) }));
     if (z.primeAChoisir) nz.primeAChoisir = { ...z.primeAChoisir, tour: 0 };
     // Chef de corps : gardé de saison en saison (compétences, talents, médailles), avec une ligne d'états de service.
     nz.chef = z.chef ? { ...z.chef, saison: Object.fromEntries(IDS_COMPETENCES.map((c) => [c, 0])), saisonJeux: {} } : creerChef(null);
@@ -1567,7 +1592,7 @@ function finDeSaison(state, classement, opts = {}) {
     // Les jours du chef sont ceux de l'ancienne saison (le compteur repart à 1) : blessure, délais du réseau,
     // changement de talents, rallonge et remise en route repartent à zéro.
     for (const k of ['blesse', 'hs', 'services', 'talentsT', 'rallongeT', 'remise', 'paraSuite']) delete nz.chef[k];
-    if (!nz.chef.priseFaite) delete nz.chef.priseT; // prise de fonctions pas finie : elle reprend au jour 1
+    delete nz.chef.priseT; // la prise de fonctions se compte en jours joués (priseJ) : elle reprend là où elle en était
     if (z.adjoint) nz.adjoint = { ...z.adjoint, journal: [] };
     { const ci = classes.findIndex((c) => c.uid === uid), cl = classes[ci];
       nz.chef.etats = [...(nz.chef.etats || []), { season: oldSeason, rang: cl ? ci + 1 : null, sur: classes.length, moyenne: cl ? round1(cl.moyenne) : null, affaires: (z.stats.decouvertes || 0) + (z.stats.arrestations || 0), trophees: (z.trophees || []).filter((t) => t.s === oldSeason).length, anticipee: !!opts.leger, faits: faitsDArmes(z.stats), signature: z.chef ? signatureChef(z.chef) : null }].slice(-20); }

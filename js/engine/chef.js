@@ -2,7 +2,7 @@
 // Cinq compétences qui montent par l'usage (plafond d'expérience par jour : on ne « farme » pas), quinze talents
 // à débloquer dont trois seulement équipés (un vétéran a plus de choix, pas plus de puissance), un agenda
 // (une décision par jour), une carrière gardée de saison en saison.
-// Calibrage : test/chef-sim.mjs (aucun chef optimisé à plus d'un point d'IPZ d'un chef laissé par défaut).
+// Calibrage : test/saison2-sim.mjs (aucun chef optimisé à plus d'un point d'IPZ d'un chef laissé par défaut).
 import { REGLES, PS } from './constants.js';
 
 export const COMPETENCES = {
@@ -103,7 +103,7 @@ export const AGENDA = {
   terrain: { nom: 'Sur le terrain', ico: '🚓', comp: 'commandement', effet: 'le service choisi +10 %', cap: 1.1 },
   parquet: { nom: 'Au parquet', ico: '⚖️', comp: 'flair', effet: 'chance de pièce d’enquête +10 %', enquete: 0.1 },
   quartier: { nom: 'En réunion de quartier', ico: '🏘️', comp: 'proximite', effet: 'satisfaction +1', satisfaction: 1 },
-  voisin: { nom: 'Chez un voisin', ico: '🤝', comp: 'diplomatie', effet: 'si ce chef vient chez toi le même jour : +3 PS d’entraide et +1 de réputation chacun', ps: 3, rep: 1 },
+  voisin: { nom: 'Chez un voisin', ico: '🤝', comp: 'diplomatie', effet: 'si ce chef vient chez toi le même jour : +3 PS d’entraide et +1 de réputation chacun (une fois par semaine avec le même chef)', ps: 3, rep: 1 },
 };
 export const IDS_AGENDA = Object.keys(AGENDA);
 const SERVICES_A = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];

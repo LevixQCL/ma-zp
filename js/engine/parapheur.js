@@ -106,11 +106,16 @@ export const PRISE_JOURS = PRISE.length;
 /** Lieux de l'agenda ouverts à partir de quel jour de prise de fonctions. */
 export const AGENDA_JOUR = { bureau: 1, terrain: 1, quartier: 1, commune: 2, parquet: 2, voisin: 6 };
 
-/** Jour de prise de fonctions du chef (1 à 6), ou 99 quand tout est ouvert (vétéran, ou les six jours passés). */
+/**
+ * Jour de prise de fonctions du chef (1 à 6), ou 99 quand tout est ouvert (vétéran, ou six jours joués).
+ * Audit du 9 octobre : la prise avance avec les jours JOUÉS (`priseJ`, compté au tour de 20:00), pas avec le calendrier :
+ * un joueur qui revient après une absence découvre ses prérogatives une à une, comme prévu.
+ * (`priseT`, l'ancien compteur au calendrier, n'est plus lu que pour un chef créé avant ce changement.)
+ */
 export function jourPrise(chef, T) {
   if (!chef || chef.priseFaite) return 99;
-  if (chef.priseT == null) return 1;
-  const j = (Number(T) || 1) - chef.priseT + 1;
+  const fait = chef.priseJ != null ? chef.priseJ : chef.priseT != null ? Math.max(0, (Number(T) || 1) - chef.priseT) : 0;
+  const j = fait + 1;
   return j > PRISE_JOURS ? 99 : Math.max(1, j);
 }
 export const priseOuverte = (chef, T, k) => { const p = PRISE.find((x) => x.k === k); return !p || jourPrise(chef, T) >= p.j; };

@@ -187,7 +187,8 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
       const drone = aAnnexe(zz, 'drone') && n >= INFRAS.drone.minAgents;
       const f0 = forceEngagement(zz, n, T) * (drone ? INFRAS.drone.force : 1);
       // Gros lots de la vente aux enchères (hélicoptère, blindé).
-      const ndLots = (zz.lots || []).map((l) => LOTS[l.id] && LOTS[l.id].nd).filter(Boolean);
+      // Deux exemplaires du même lot ne se cumulent pas (comme bonusLots) : un seul hélicoptère, un seul blindé comptent.
+      const ndLots = [...new Set((zz.lots || []).map((l) => l.id))].map((id) => LOTS[id] && LOTS[id].nd).filter(Boolean);
       const fLots = ndLots.reduce((a, x) => a * (1 + (x.force || 0)), 1), bLots = ndLots.reduce((a, x) => a * (x.blessure || 1), 1);
       const mz = (drone ? INFRAS.drone.force : 1) * fLots * (1 + bonus) * (1 + talentVal(zz, 'tacticien', 'force', 0));
       const r = nd.roles ? ((ord[u].roles && ord[u].roles[k]) || { rep: 0, desc: n, bouc: 0 }) : null;

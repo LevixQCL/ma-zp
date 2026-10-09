@@ -20,6 +20,10 @@ export const PORTRAITS = [
   ['p17', 'h'], ['p18', 'f'], ['p19', 'h'], ['p20', 'h'], ['p21', 'f'], ['p22', 'f'], ['p23', 'h'], ['p24', 'f'],
 ].map(([id, g]) => ({ id, g }));
 const PORTRAIT = Object.fromEntries(PORTRAITS.map((p) => [p.id, p]));
+/** Portrait connu (le profil n'est pas validé par les règles : un id inconnu ou non textuel retombe sur le dessin par défaut). */
+const portraitConnu = (id) => (typeof id === 'string' && Object.prototype.hasOwnProperty.call(PORTRAIT, id) ? id : null);
+/** Couleur de zone sûre à insérer dans un SVG ou un style (la zone n'est nettoyée par le moteur qu'au tour de 20:00). */
+const couleurSure = (c) => (typeof c === 'string' && /^#[0-9A-Fa-f]{6}$/.test(c) ? c : '#5AB0F0');
 
 /** Étoiles de grade (0 à 5) d'après les PS : Aspirant 0 … Chef de corps 5. */
 const etoiles = (ps) => ['Aspirant', 'Inspecteur', 'Inspecteur principal', 'Commissaire', 'Commissaire divisionnaire', 'Chef de corps'].indexOf(gradeFor(ps || 0).nom);
@@ -32,8 +36,8 @@ function initialesDe(p, z) {
 const PEAUX = ['#F1C9A5', '#E0AC86', '#C68B62', '#9C6644', '#7A4B2E', '#F5D6BA'];
 const CHEVEUX = ['#2B2118', '#5A3B22', '#8C6A43', '#C9A26B', '#9A9A9A', '#1A1A1A', '#6B3A2A'];
 function portraitDessine(p, z, taille, id = null) {
-  const c = (z && z.couleur) || '#5AB0F0';
-  const pid = id || (p && p.chef && p.chef.portrait) || null;
+  const c = couleurSure(z && z.couleur);
+  const pid = portraitConnu(id) || portraitConnu(p && p.chef && p.chef.portrait);
   const k = pid ? Number(pid.slice(1)) - 1 : 0;
   const peau = PEAUX[k % PEAUX.length], ch = CHEVEUX[(k * 3) % CHEVEUX.length], f = pid && PORTRAIT[pid] && PORTRAIT[pid].g === 'f';
   const txt = id ? '' : esc(initialesDe(p, z));
@@ -51,13 +55,13 @@ function portraitDessine(p, z, taille, id = null) {
 export function portraitChef(uid, taille = 48, { galons = true } = {}) {
   const st = S.state, z = st && st.zones && st.zones[uid];
   const p = (S.players && S.players[uid]) || (S.user && uid === S.user.uid ? S.player : null) || {};
-  const pr = p.chef && PORTRAIT[p.chef.portrait];
+  const pr = p.chef && portraitConnu(p.chef.portrait) ? PORTRAIT[p.chef.portrait] : null;
   const n = galons && z ? etoiles(z.ps) : 0;
   const img = pr ? `<img src="img/chefs/${pr.id}.webp" alt="" width="${taille}" height="${taille}" loading="lazy" style="display:block;width:${taille}px;height:${taille}px;object-fit:cover" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none">${portraitDessine(p, z, taille)}</span>` : portraitDessine(p, z, taille);
   // Honneurs : cadre selon les niveaux, ruban choisi par le joueur (s'il l'a gagné).
   const cad = z && z.chef ? cadreDe(z.chef) : null, cc = cad && COUL_CADRE[cad.id];
   const rb = z && z.chef && p.chef && p.chef.ruban && RUBANS[p.chef.ruban] && rubansDe(z.chef).includes(p.chef.ruban) ? RUBANS[p.chef.ruban] : null;
-  return `<span class="chef-portrait${cc ? ` cadre-${cad.id}` : ''}" style="--t:${taille}px;--zc:${esc((z && z.couleur) || '#5AB0F0')}${cc ? `;--cadre:${cc}` : ''}" ${cad && cc ? `title="${esc(cad.nom)}"` : ''}>${img}${n > 0 ? `<span class="chef-galons" aria-label="${n} étoile${n > 1 ? 's' : ''}">${'★'.repeat(n)}</span>` : ''}${rb && taille >= 30 ? `<span class="chef-ruban" title="${esc(rb.nom)}">${rb.ico}</span>` : ''}</span>`;
+  return `<span class="chef-portrait${cc ? ` cadre-${cad.id}` : ''}" style="--t:${taille}px;--zc:${couleurSure(z && z.couleur)}${cc ? `;--cadre:${cc}` : ''}" ${cad && cc ? `title="${esc(cad.nom)}"` : ''}>${img}${n > 0 ? `<span class="chef-galons" aria-label="${n} étoile${n > 1 ? 's' : ''}">${'★'.repeat(n)}</span>` : ''}${rb && taille >= 30 ? `<span class="chef-ruban" title="${esc(rb.nom)}">${rb.ico}</span>` : ''}</span>`;
 }
 
 // ───── Création (première ouverture de la saison 2) ─────

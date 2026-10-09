@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 121;
+export const APP_VERSION = 122;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -269,6 +269,8 @@ export const BUDGET_IPZ = { base: 50, parK: 1.5, dormant: 75, pente: 1, plancher
 // Revenu moyen de 0 → 40 ; 10 k€ par jour → 80 ; 100 dès 15 k€ par jour (simulation : 100 atteint 3 à 8 % des soirs, contre 50 à 90 % avant).
 /** Mouvements qui ne comptent pas dans le revenu du jour : achats, dépenses choisies, reventes, bilan de saison. */
 export const HORS_REVENU = new Set(['decision', 'depenses', 'vente', 'bilan']);
+/** Mouvement hors revenu du jour ? Règles v2 (audit du 9 octobre) : un achat aux enchères est un investissement, il ne fait plus baisser l'IPZ. */
+export const horsRevenu = (k) => HORS_REVENU.has(k) || (REGLES.v2 && k === 'enchere');
 /** Composante Budget selon le revenu moyen des derniers jours (k€ par jour). */
 export function scoreRevenu(revenus) {
   const l = (revenus || []).filter(Number.isFinite);
@@ -361,9 +363,9 @@ export const ND = {
     perteFuite: 0.4,    // à 100 % de fuite, la descente perd 40 % de son effet
     reflux: 0.3,        // part de l'effet perdu qui va renforcer un secteur voisin
     butin: 0.11,        // k€ de saisies par point d'emprise retiré (sans fuite)
-    tuyau: 0.35,        // part du butin pour les zones qui ont repéré
-    tuyauPts: 2,        // points de résultats pour chaque zone dont le repérage sert à une descente réussie
-    poidsRep: 1,        // poids d'un agent de repérage dans le partage et l'influence
+    tuyau: 0.15,        // part du butin pour les zones qui ont repéré (0,35 avant l'audit du 9 octobre : repérer sans risque rapportait 2,7 fois plus par agent que descendre)
+    tuyauPts: 1,        // points de résultats pour chaque zone dont le repérage sert à une descente réussie
+    poidsRep: 0.5,      // poids d'un agent de repérage dans le partage et l'influence
   },
 };
 /** Nombre maximum de zones par partie (le document d'état de Firestore est limité à 1 Mo : ~800 Ko à 100 zones, trop près ;

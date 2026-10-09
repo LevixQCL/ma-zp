@@ -22,6 +22,7 @@ export const VENTE = {
   relancesJour: 5,        // relances visibles comptées par zone et par jour
   max: 60,                // offre maximale (k€)
   bluffRep: 2,            // réputation perdue quand une relance publique n'est pas couverte au coup de marteau
+  partMin: 0.4,           // gros lot à deux : chaque part doit atteindre 40 % de la mise à prix (audit du 9 octobre)
   expertise: { base: 0.5, parNiveau: 0.06 }, // chance de voir l'état exact selon le Flair du chef
   etats: { neuf: 0.25, use: 0.55, defectueux: 0.2 },
 };
@@ -189,7 +190,9 @@ export function venteResoudre(state, uids, ordres, encheres, push, T) {
       if (sousTutelle(z, T)) continue;
       const vis = (v.engagees && v.engagees[u] && v.engagees[u][lot.k]) || 0;
       const fin = O[u].finales && O[u].finales[lot.k];
-      const m = Math.max(vis, fin ? fin.montant : 0);
+      let m = Math.max(vis, fin ? fin.montant : 0);
+      // Offre finale au-delà du budget : la relance visible, elle, reste valable si le budget la couvre.
+      if (fin && fin.montant > z.budget && vis > 0 && vis <= z.budget) m = vis;
       if (m <= 0) continue;
       offres.push({ u, m, partenaire: lot.gros && fin && fin.partenaire && state.zones[fin.partenaire] ? fin.partenaire : null });
     }
@@ -198,7 +201,13 @@ export function venteResoudre(state, uids, ordres, encheres, push, T) {
     for (const x of offres) {
       if (pris.has(x.u)) continue;
       const y = x.partenaire && offres.find((w) => w.u === x.partenaire && w.partenaire === x.u && !pris.has(w.u));
-      if (y && liees(state, x.u, y.u, T)) { groupes.push({ membres: [x, y], m: round1(x.m + y.m) }); pris.add(x.u); pris.add(y.u); }
+      const partOk = (w) => w.m >= VENTE.partMin * lot.prixMin - 1e-9;
+      if (y && liees(state, x.u, y.u, T) && partOk(x) && partOk(y)) { groupes.push({ membres: [x, y], m: round1(x.m + y.m) }); pris.add(x.u); pris.add(y.u); }
+      else if (y && liees(state, x.u, y.u, T)) {
+        // Achat à deux refusé : une part trop petite. Chacun reste sur son offre propre.
+        for (const w of [x, y]) state.zones[w.u].rapport.push(`Salle des ventes (${L.nom}) : achat à deux refusé, chaque part doit atteindre ${fmt(VENTE.partMin * lot.prixMin)} (40 % de la mise à prix). Ton offre compte seule.`);
+        groupes.push({ membres: [x], m: x.m }); pris.add(x.u);
+      }
       else { groupes.push({ membres: [x], m: x.m }); pris.add(x.u); }
     }
     const negoc = (g) => Math.max(...g.membres.map((x) => niveauChef(state.zones[x.u].chef, 'diplomatie')));

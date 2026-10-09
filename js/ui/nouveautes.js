@@ -23,6 +23,15 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Saison 2 : derniers réglages (9 octobre, après-midi)', [
+      ['Repérage', 'qui a repéré touche 15 % des saisies des descentes qui en profitent (au lieu de 35 %) et 1 point de résultats par descente réussie : repérer sans risque ne rapporte plus davantage que descendre.'],
+      ['Réunion chez un voisin', 'le bonus (+3 PS d’entraide, +1 de réputation) tombe une fois par semaine avec le même chef. L’onglet Chef signale les chefs déjà vus cette semaine.'],
+      ['Prise de fonctions', 'elle avance avec les jours où tu donnes tes ordres : après une absence, tu reprends là où tu en étais.'],
+      ['Jours de l’adjoint', 'ton chef ne progresse que par les jeux que tu as joués ce jour-là (mini-jeux, énigmes), pas par la gestion de la zone.'],
+      ['Rallonge budgétaire', 'le talent ouvre bien une 3e dépense dans les ordres, une fois par semaine.'],
+      ['Enchères', 'un achat ne fait plus baisser la note de budget de l’IPZ (c’est un investissement). Gros lot à deux : chaque part doit atteindre 40 % de la mise à prix. Une offre finale au-delà de ton budget n’annule plus ta relance visible si celle-ci reste couverte.'],
+      ['Non-droit', 'deux hélicoptères ou deux blindés ne se cumulent pas : seul le meilleur compte.'],
+    ]],
     ['L’enquête en dossier (9 octobre)', [
       ['L’affaire en grand', 'en haut, la photo de l’affaire, le jour sur 7 et les points en jeu ce soir. Un seul gros bouton dit quoi faire ensuite : ouvrir les nouvelles pièces, choisir tes démarches, accuser.'],
       ['Les pièces sous enveloppe', 'ce qui arrive à 20:00 s’ouvre une pièce à la fois, en grand. Pour une vérification sur un suspect, tu dis ce que tu en conclus (✓ ou ✕) d’un toucher : ton carnet le retient.'],
@@ -33,7 +42,7 @@ export const NOTE_MAJ = {
     ]],
     ['La zone de non-droit en rôles (9 octobre)', [
       ['Trois rôles', 'sur chaque secteur, trois rangées de cases : 🔍 repérage (tes agents de Recherche), 🚔 descente (Intervention) et 🚧 bouclage (Roulage, Proximité). Les pions des collègues annoncés à la radio s’y placent ; complète ce qui manque.'],
-      ['Le repérage', 'il révèle la faille du secteur à toutes les zones et le rend « repéré » les 4 soirs suivants : la descente frappe plus fort et ne tombe plus dans un piège. Qui a repéré touche 35 % des saisies des descentes qui en profitent, même sans y aller.'],
+      ['Le repérage', 'il révèle la faille du secteur à toutes les zones et le rend « repéré » les 4 soirs suivants : la descente frappe plus fort et ne tombe plus dans un piège. Qui a repéré touche 15 % des saisies des descentes qui en profitent, même sans y aller.'],
       ['Les failles', 'guetteurs du point de deal, mandat du squat, motos des rodéos qui filent, tripot ouvert 2 soirs sur 7, entrepôts pleins du recel et du garage… Chaque milieu se prend autrement.'],
       ['Le bouclage', 'sans lui, une partie du milieu file (moins de saisies) et va renforcer le secteur voisin.'],
       ['Les saisies', 'chaque descente réussie rapporte des saisies, partagées selon les agents engagés ; la reprise et les retombées de chaque nuit ne changent pas.'],
@@ -83,7 +92,7 @@ export const NOTE_MAJ = {
       ['Création', 'à la première ouverture de la saison 2 : un portrait, un parcours (+2 niveaux dans une compétence, choisi une fois pour toute la carrière) et une devise. On peut changer le portrait et la devise depuis la fiche du chef.'],
       ['Cinq compétences', 'Gestion, Commandement, Flair, Diplomatie, Proximité, de 0 à 10. Elles montent par l’usage, selon ce que tu fais chaque jour (revenu, investissements, incidents, assauts, pièces d’enquête, renforts, relèves, satisfaction…), avec un plafond par jour : impossible de « farmer ». Elles sont gardées de saison en saison.'],
       ['Talents', '15 talents (niveaux 2, 5 et 8 de chaque compétence), 3 équipés au plus. Ajouter un talent dans un emplacement vide est libre ; en remplacer un, une fois par semaine. Aucun talent ne donne d’information sur la solution d’une enquête.'],
-      ['Agenda du chef', 'une ligne dans les ordres : au bureau (paperasse −1 au-delà de 8), à la commune (+1 500 €), sur le terrain avec un service (+10 %), au parquet (chance de pièce +10 %), en réunion de quartier (satisfaction +1) ou chez un voisin (si son chef vient chez toi le même jour : +3 PS d’entraide et +1 de réputation chacun).'],
+      ['Agenda du chef', 'une ligne dans les ordres : au bureau (paperasse −1 au-delà de 8), à la commune (+1 500 €), sur le terrain avec un service (+10 %), au parquet (chance de pièce +10 %), en réunion de quartier (satisfaction +1) ou chez un voisin (si son chef vient chez toi le même jour : +3 PS d’entraide et +1 de réputation chacun, une fois par semaine avec le même chef).'],
       ['Le Directeur parle au chef', 'certains dilemmes proposent une option de plus quand une compétence atteint 4 (grève, indic, journaliste, sponsor).'],
       ['Objectifs de la semaine', 'sur l’HP, « Ta semaine de chef » : trois objectifs tirés pour ton chef chaque lundi (un dans sa meilleure compétence, un dans sa plus faible, un au hasard), plus durs quand il progresse. Seuls les jours où tu donnes tes ordres comptent. Chacun rapporte 4 à 8 XP dans sa compétence et +1 de réputation ; les trois réussis donnent la médaille de la semaine (+3 PS, +1 de réputation).'],
       ['Duel de la semaine', 'chaque semaine, ton rival est le chef le plus proche de toi au classement. Celui qui cumule le plus d’IPZ sur ses jours joués l’emporte : +2 de réputation, +3 XP en Commandement, et une ligne de plus au palmarès. Le score se suit en direct sur l’HP.'],
@@ -510,16 +519,23 @@ export function noteCourte() {
 
 
 const cle = () => `mazp-maj-vue-${NOTE_MAJ.id}`;
-export function noteVue() { try { return !!localStorage.getItem(cle()); } catch (e) { return true; } }
+// Tant que la partie n'est pas passée en saison 2, la note de la saison 2 reste fermée : pas de pastille,
+// pas de sections de la saison 2 dans la liste, et elle n'est pas marquée « vue » (elle s'ouvrira à la bascule).
+const enV2 = () => !!(S.state && (Number(S.state.regles) || 1) >= 2);
+const avantSaison2 = () => NOTE_MAJ.saison2 && !enV2();
+const SECTION_S2 = /^(Saison 2|L’enquête en dossier|La zone de non-droit en rôles|La nouvelle carte et l’onglet Chef|Les énigmes en dossier|Le nouvel HP)/;
+export function noteVue() { if (avantSaison2()) return true; try { return !!localStorage.getItem(cle()); } catch (e) { return true; } }
 
 /** Fenêtre « Nouveautés » : l'essentiel (à l'ouverture du jeu) ou la liste complète (menu de l'HP). */
 export function ouvrirNouveautes({ complet = true } = {}) {
-  try { localStorage.setItem(cle(), '1'); } catch (e) { /* pas de stockage */ }
+  const avant = avantSaison2();
+  if (avant) complet = true;
+  else try { localStorage.setItem(cle(), '1'); } catch (e) { /* pas de stockage */ }
   document.querySelector('.aide-wrap')?.remove();
   const wrap = document.createElement('div');
   wrap.className = 'aide-wrap';
   const corps = complet
-    ? NOTE_MAJ.sections.map(([titre, pts]) => `<h3 class="kicker" style="margin:6px 0 0">${esc(titre)}</h3>
+    ? NOTE_MAJ.sections.filter(([titre]) => !avant || !SECTION_S2.test(titre)).map(([titre, pts]) => `<h3 class="kicker" style="margin:6px 0 0">${esc(titre)}</h3>
       <ul class="aide-liste">${pts.map(([t, x]) => `<li><strong>${esc(t)}</strong> : ${esc(x)}</li>`).join('')}</ul>`).join('')
     : `<div class="col" style="gap:10px">${NOTE_MAJ.essentiel.map(([ico, t, x]) => `<div class="row" style="gap:10px;align-items:flex-start">
         <span aria-hidden="true" style="font-size:22px;line-height:1.1">${ico}</span>

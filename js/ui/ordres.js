@@ -16,6 +16,7 @@ import { reglesV2, MAX_DEPENSES, doctrineOuverte, dernierJourDoctrine } from '..
 import { DOCTRINES, IDS_DOCTRINES, REGLES, coutPrime } from '../engine/constants.js';
 import { pistesOrdresHtml, resumePistes } from './pistes.js';
 import { chefOrdresHtml, resumeChefOrdres, emplacementsHtml } from './chef.js';
+import { CHEF } from '../engine/chef.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
 import { effectifPrevu, capaciteAgents, capaciteAgentsPrevue, capaciteVehicules, coutRecrue, sousTutelle, moralMult, bonusLots } from '../engine/zone.js';
@@ -846,6 +847,10 @@ export function renderOrdres() {
   const cab = (z.cabosses || []).length;
   const depKeys = [...(cab ? ['carrosserie'] : []), 'prime', 'prevention', 'soustraitance', 'enqueteurs', 'revision'];
   const nbDep = (dep.reserve ? 1 : 0) + depKeys.filter((k) => dep[k]).length;
+  // Talent « Rallonge budgétaire » (équipé, chef pas à l'hôpital, pas utilisé depuis 7 jours) : une 3e dépense.
+  const talentsEq = d.talents || (z.chef && z.chef.talents) || [];
+  const rallonge = !!(REGLES.v2 && z.chef && !z.chef.hs && talentsEq.includes('rallonge') && !(z.chef.rallongeT != null && T < z.chef.rallongeT + CHEF.semaine));
+  const maxDep = MAX_DEPENSES + (rallonge ? 1 : 0);
 
   const nbAgentsAff = Object.values(d.engagements).reduce((s2, x) => s2 + (x.agents || 0), 0);
   const affairesHtml = `<div class="col" style="gap:8px">${st.affaires.map((a) => { const eg = d.engagements[a.id]; return `<div class="between"><span class="small" style="font-weight:600">${esc(a.titre)}</span><span class="tiny ${eg && eg.agents ? 'ok' : 'muted'}" style="white-space:nowrap">${eg && eg.agents ? `${eg.agents} agent${eg.agents > 1 ? 's' : ''}` : a.zone === z.uid ? 'à lancer' : '—'}</span></div>`; }).join('')}
@@ -857,9 +862,9 @@ export function renderOrdres() {
   const depensesHtml = `<div class="col" style="gap:6px">
       <p class="tiny muted" style="margin:0">Agents de réserve : ${dep.reserve ? `<strong>${dep.reserve}</strong> en ${SERVICE_LABELS[dep.reserveService]} (${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€)` : 'aucun'} · ils se règlent dans l’Affectation, plus haut.</p>
     </div>
-    ${REGLES.v2 ? `<p class="tiny ${nbDep >= MAX_DEPENSES ? 'warn' : 'muted'}" style="margin:0">${MAX_DEPENSES} dépenses par jour au plus (les agents de réserve comptent pour une, la carrosserie ne compte pas) : ${nbDep - (dep.carrosserie ? 1 : 0)} sur ${MAX_DEPENSES}.</p>` : ''}
+    ${REGLES.v2 ? `<p class="tiny ${nbDep >= maxDep ? 'warn' : 'muted'}" style="margin:0">${MAX_DEPENSES} dépenses par jour au plus${rallonge ? ' (3 aujourd’hui : ta rallonge budgétaire est disponible)' : ''} (les agents de réserve comptent pour une, la carrosserie ne compte pas) : ${nbDep - (dep.carrosserie ? 1 : 0)} sur ${maxDep}.</p>` : ''}
     <div class="col" style="gap:6px">${depKeys.map((k) => `
-      <button type="button" class="choice" data-action="dep-toggle" data-k="${k}" aria-pressed="${!!dep[k]}" ${REGLES.v2 && !dep[k] && k !== 'carrosserie' && nbDep - (dep.carrosserie ? 1 : 0) >= MAX_DEPENSES ? 'disabled' : ''} style="flex-direction:row;justify-content:space-between;text-align:left">
+      <button type="button" class="choice" data-action="dep-toggle" data-k="${k}" aria-pressed="${!!dep[k]}" ${REGLES.v2 && !dep[k] && k !== 'carrosserie' && nbDep - (dep.carrosserie ? 1 : 0) >= maxDep ? 'disabled' : ''} style="flex-direction:row;justify-content:space-between;text-align:left">
         <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(DEPENSES[k].nom)}</span><span class="s">${esc(DEPENSES[k].texte)}${k === 'carrosserie' && Array.isArray(dep.carrosserie) && dep.carrosserie.length < cab ? ` · ${dep.carrosserie.length} sur ${cab} choisi${dep.carrosserie.length > 1 ? 's' : ''} depuis l’HP` : ''}${k === 'revision' ? ` · état actuel ${Math.round(100 - z.usure)} %${z.stats && z.stats.risqueAccident != null ? ` · risque d’accident hier ${fmt1(z.stats.risqueAccident)} %` : ''}` : ''}${k === 'carrosserie' ? ` · ${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} : sans réparation, −${Math.min(3, cab)} de satisfaction et de réputation par tour` : ''}</span></span><span class="mono small">${fmt1(k === 'carrosserie' ? coutCarrosserie(z, dep.carrosserie || true) : k === 'prime' ? coutPrime(z, T) : DEPENSES[k].cout)} k€${k === 'prime' && coutPrime(z, T) > DEPENSES.prime.cout ? ' (déjà versée hier)' : ''}</span></button>`).join('')}
     </div>
     <p class="tiny muted" style="margin:0">Payées à 20:00 si le budget le permet (${fmt1(z.budget)} k€). Elles ne sont pas reconduites le lendemain.</p>`;
