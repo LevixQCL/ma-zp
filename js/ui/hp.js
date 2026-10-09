@@ -516,7 +516,7 @@ function heroHtml(st, z) {
       ${chef}
       <div class="hud-id"><span class="hud-nom">${esc(z.nom)}</span>
         <a class="hud-sous" href="#parties">ZP ${esc(z.code)}${doc ? ` · <span title="Doctrine : ${esc(doc.force)}">${doc.ico}</span>` : ''} · ${esc((S.partie && S.partie.nom) || 'District Delta')}</a></div>
-      <button type="button" class="hud-ipz" data-action="aide" data-k="ipz" aria-label="IPZ ${fmt1(z.ipz)}${z.hier && z.hier.ipz != null ? `, ${z.ipz >= z.hier.ipz ? 'en hausse' : 'en baisse'} de ${fmt1(Math.abs(z.ipz - z.hier.ipz))}` : ''}, ${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total}` : 'non classé'} : qu’est-ce que l’IPZ ?"><span class="hud-ipz-l">IPZ</span><span class="hud-ipz-v">${fmt1(z.ipz)}</span>${pastilleDelta(z.ipz, z.hier && z.hier.ipz)}${z.toursJoues >= 5 ? `<span class="hud-rang">${rang}<sup>${rang === 1 ? 'er' : 'e'}</sup>/${total}</span>` : ''}</button>
+      <a class="hud-ipz" href="#classement" aria-label="Classements · IPZ ${fmt1(z.ipz)}${z.hier && z.hier.ipz != null ? `, ${z.ipz >= z.hier.ipz ? 'en hausse' : 'en baisse'} de ${fmt1(Math.abs(z.ipz - z.hier.ipz))}` : ''}, ${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total}` : 'non classé'}"><span class="hud-ipz-l">IPZ</span><span class="hud-ipz-v">${fmt1(z.ipz)}</span>${pastilleDelta(z.ipz, z.hier && z.hier.ipz)}${z.toursJoues >= 5 ? `<span class="hud-rang">${rang}<sup>${rang === 1 ? 'er' : 'e'}</sup>/${total}</span>` : ''}</a>
     </div>
     <div class="hud-bas">
       <button type="button" class="hud-btn roue" data-action="menu-hp" aria-expanded="${!!S.menuHp}" aria-label="Guide, nouveautés, partie et profil">${icon('gear', 20)}${noteVue() ? '' : '<i class="roue-pastille" aria-hidden="true"></i>'}</button>

@@ -56,6 +56,7 @@ function districtHtml(st, me) {
   return `<section class="hp-ajd" aria-label="Ce soir dans le district">
       <h2 class="section">Aussi dans le district</h2>
       ${L.length ? L.join('') : '<p class="small muted" style="margin:0">Aucune demande d’aide pour l’instant. Les appels à renfort, les affaires disputées et les grands événements arrivent ici.</p>'}
+      <a class="btn small outline block" href="#classement">🏆 Classements du district</a>
       <p class="tiny muted" style="margin:0">Touche la zone d’un collègue sur la carte pour voir son commissariat.</p>
       <div class="sr-only">${Object.values(st.zones).filter((z) => z.uid !== me.uid).map((z) => `<button type="button" data-action="voir-hp" data-uid="${esc(z.uid)}">Commissariat de ${esc(z.nom)}</button>`).join('')}</div>
     </section>`;
