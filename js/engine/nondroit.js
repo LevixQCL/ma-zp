@@ -9,13 +9,16 @@ import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
 import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND, INFRAS, aAnnexe, LOTS } from './constants.js';
 import { talentVal, talent, noterChef, FRONT, niveauChef } from './chef.js';
 import { makeRng } from './rng.js';
+import { reglesV2 } from './regles.js';
 import { clamp, round1, forceEngagement, forceRole, jalon, noter } from './zone.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
 import { donnerTrophee, TROPHEE, figure, nomComplet } from './equipe.js';
 import { lies, PACTE } from './pactes.js';
 
-/** Rôles dans la zone de non-droit : pas encore en jeu (simulations en cours). */
-export const ND_ROLES = false;
+/** Rôles dans la zone de non-droit : actifs avec les règles de la saison 2 (state.regles >= 2). */
+export const ND_ROLES = true;
+/** Les rôles sont-ils en jeu dans cette partie ? */
+export const rolesND = (state) => !!(state && state.nonDroit && (state.nonDroit.roles || (ND_ROLES && reglesV2(state))));
 
 export const MILIEUX = [
   { id: 'deal', titre: 'Point de deal', texte: 'Des guetteurs à chaque coin de rue, un trafic jour et nuit.' },
@@ -69,7 +72,7 @@ export function creerNonDroit(seed, season = 1) {
   });
   secteurs[g.coeur] = { cell: g.coeur, coeur: true, milieu: QG.id, statut: 'milieu', emprise: ND.empriseCoeur, max: ND.empriseCoeur, influence: {}, chef: null };
   for (const s of Object.values(secteurs)) if (s.milieu === 'jeux') { const a = rng.int(0, 6); s.soirs = [a, (a + 2 + rng.int(0, 2)) % 7].sort(); }
-  return { season, secteurs, ...(ND_ROLES ? { roles: true } : {}) };
+  return { season, secteurs };
 }
 
 /** Description du milieu installé dans un secteur. */
@@ -104,6 +107,39 @@ export function prevoirSecteur(state, s, forces) {
   return { force: round1(F), emprise: round1(clamp(haut - F * ND.efficacite, 0, 100)), regen, coop: multCoop(f.length) };
 }
 
+/**
+ * Rôles : prévision d'un secteur du milieu pour ce soir (affichage). `liste` : [{ zone, r: { rep, desc, bouc } }].
+ * Sans tirage : le piège est donné en probabilité. Les bonus d'annexes et de chef ne sont pas comptés.
+ */
+export function prevoirRoles(state, s, liste) {
+  const R0 = ND.roles, F = faille(s), T = state.turn;
+  const l = liste.filter((x) => x.zone && x.r && (x.r.rep || x.r.desc || x.r.bouc));
+  const R = l.reduce((a, x) => a + forceRole(x.zone, 'rep', x.r.rep || 0, T), 0);
+  const D = l.reduce((a, x) => a + forceRole(x.zone, 'desc', x.r.desc || 0, T), 0);
+  const B = l.reduce((a, x) => a + forceRole(x.zone, 'bouc', x.r.bouc || 0, T), 0);
+  const nD = l.reduce((a, x) => a + (x.r.desc || 0), 0), nB = l.reduce((a, x) => a + (x.r.bouc || 0), 0), nR = l.reduce((a, x) => a + (x.r.rep || 0), 0);
+  const coop = multCoop(l.length), rep = repere(s, T), ouvert = ouvertCeSoir(s, T);
+  const regen = regenSecteur(state, s) * (F.regen || 1);
+  const haut = Math.min(s.emprise + regen, Math.max(s.emprise, s.max || 100));
+  let mult = rep ? (F.repAvec ?? R0.repAvec) : (F.repSans ?? R0.sansRep);
+  if (F.soirs) mult *= ouvert ? 1.5 : 0.3;
+  const ratio = F.ratio ?? R0.ratio;
+  const Deff = (D + B * (F.boucForce || 0)) * mult * coop;
+  const fuite = D > 0 ? clamp(1 - B / (D * ratio), 0, 1) : 0;
+  const piege = D > 0 && !rep ? Math.min(0.9, (l.length === 1 ? R0.piegeSeul : R0.piegeGroupe) * (F.piege || 1)) : 0;
+  const tropFaible = D > 0 && Deff * ND.efficacite <= regen;
+  const effet = Deff * ND.efficacite;
+  const apres = D > 0 && !tropFaible ? Math.max(0, haut - effet * (1 - R0.perteFuite * fuite)) : haut;
+  const butin = D > 0 && !tropFaible ? R0.butin * effet * (1 - fuite) * (F.butin || 1) * (F.soirs && ouvert ? 2 : 1) * (s.coeur ? ND.coeurMult : 1) : 0;
+  // Agents à prévoir : 2 au repérage, assez de descente pour faire reculer, le bouclage qui va avec.
+  const parAgent = forceRole(l[0] ? l[0].zone : { niveaux: {}, moral: 60 }, 'desc', 1, T) || 1;
+  // Estimé comme si le secteur était repéré (c'est ainsi qu'il faut l'attaquer), à 3 zones.
+  const multRep = (F.repAvec ?? R0.repAvec) * (F.soirs ? 1.5 : 1) * multCoop(Math.max(3, l.length));
+  const besoinDesc = Math.min(12, Math.max(3, Math.ceil(regen / ND.efficacite / multRep / parAgent) + 2));
+  return { R, D, B, nR, nD, nB, coop, rep, ouvert, mult, fuite, piege, tropFaible, apres: round1(apres), haut, butin: round1(butin), ratio, repFait: R >= R0.repSeuil,
+    besoin: { rep: R >= R0.repSeuil || (s.repere && s.repere.a > T) ? 0 : 2, desc: besoinDesc, bouc: Math.ceil(Math.max(nD, besoinDesc) * ratio) } };
+}
+
 /** Force nécessaire pour faire baisser l'emprise d'un secteur (au-delà, elle baisse). */
 export const forceTenue = (state, s) => regenSecteur(state, s) / ND.efficacite;
 
@@ -114,6 +150,7 @@ export const forceTenue = (state, s) => regenSecteur(state, s) / ND.efficacite;
 export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
   if (!state.nonDroit || state.nonDroit.season !== state.season) state.nonDroit = creerNonDroit(state.seed, state.season);
   const nd = state.nonDroit;
+  if (ND_ROLES && reglesV2(state) && !nd.roles) nd.roles = true;
   const rng = makeRng(`${state.seed}:s${state.season}:t${T}:nondroit`);
   const res = { prises: [], rechutes: [], ripostes: [] };
   const nom = (u) => (state.zones[u] ? zoneLabel(state.zones[u]) : 'une zone');

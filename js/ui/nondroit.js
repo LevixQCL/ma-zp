@@ -3,7 +3,7 @@
 import { S, esc, fmt1, icon, myZone } from './common.js';
 import { ND, secteurOuvert, regenSecteur } from '../engine/constants.js';
 import { forceEngagement } from '../engine/zone.js';
-import { milieuDe, nomSecteur, partsDe, prevoirSecteur, secteursVoisins, gangCeSoir } from '../engine/nondroit.js';
+import { milieuDe, nomSecteur, partsDe, prevoirSecteur, secteursVoisins, gangCeSoir, faille, repere, ouvertCeSoir, prevoirRoles, rolesND } from '../engine/nondroit.js';
 import { planNonDroit } from './plan.js';
 
 const nd = () => (S.state && S.state.nonDroit) || null;
@@ -23,12 +23,52 @@ export function annoncesND() {
     const a = m.nd;
     if (!a || a.season !== st.season || a.turn !== st.turn || !st.zones[m.uid] || (me && m.uid === me.uid) || !n0.secteurs[a.secteur]) continue;
     const cle = `${m.uid}|${a.secteur}`;
-    if (!vu[cle] || vu[cle].at < m.at) vu[cle] = { uid: m.uid, secteur: String(a.secteur), n: a.agents || 0, at: m.at };
+    if (!vu[cle] || vu[cle].at < m.at) vu[cle] = { uid: m.uid, secteur: String(a.secteur), n: a.agents || 0, at: m.at, r: rolesPropres(a.roles, a.agents || 0) };
   }
   for (const v of Object.values(vu)) if (v.n > 0) (out[v.secteur] ||= []).push(v);
   for (const k of Object.keys(out)) out[k].sort((a, b) => b.n - a.n);
-  if (me && S.draft) for (const [k, n] of Object.entries(S.draft.secteurs || {})) if (n) (out[k] ||= []).unshift({ uid: me.uid, n, moi: true });
+  if (me && S.draft) for (const [k, n] of Object.entries(S.draft.secteurs || {})) if (n) (out[k] ||= []).unshift({ uid: me.uid, n, moi: true, r: rolesDe(k) });
   return out;
+}
+
+/** Rôles en jeu (saison 2) ? */
+export const rolesActifs = () => rolesND(S.state);
+const rolesPropres = (r, n) => (r && typeof r === 'object' ? { rep: Number(r.rep) || 0, desc: Number(r.desc) || 0, bouc: Number(r.bouc) || 0 } : { rep: 0, desc: n || 0, bouc: 0 });
+/** Mes agents par rôle sur un secteur (brouillon). Sans rôles enregistrés, tout est en descente. */
+export function rolesDe(k, d = S.draft) {
+  const n = ((d && d.secteurs) || {})[k] || 0;
+  const r = d && d.roles && d.roles[k];
+  if (r && r.rep + r.desc + r.bouc === n) return { ...r };
+  return { rep: 0, desc: n, bouc: 0 };
+}
+export const ROLES_ND = {
+  rep: { ico: '🔍', nom: 'Repérage', svc: 'Recherche', court: 'repérage' },
+  desc: { ico: '🚔', nom: 'Descente', svc: 'Intervention', court: 'descente' },
+  bouc: { ico: '🚧', nom: 'Bouclage', svc: 'Roulage · Proximité', court: 'bouclage' },
+};
+/** « 2 au repérage, 3 en descente » pour la radio. */
+export function texteRoles(r) {
+  const t = [];
+  if (r.rep) t.push(`${r.rep} au repérage`);
+  if (r.desc) t.push(`${r.desc} en descente`);
+  if (r.bouc) t.push(`${r.bouc} au bouclage`);
+  return t.length > 1 ? `${t.slice(0, -1).join(', ')} et ${t[t.length - 1]}` : t[0] || '';
+}
+/** Rôle le plus utile pour rejoindre un secteur ce soir (ce qui manque d'abord). */
+export function roleManquant(k) {
+  const n = nd(); const s = n && n.secteurs[k];
+  if (!s || s.statut === 'repris' || !rolesActifs()) return 'desc';
+  const p = prevoirRolesSecteur(k);
+  if (p.besoin.rep > p.nR && !repere(s, S.state.turn)) return 'rep';
+  if (p.nD && p.nB < Math.ceil(p.nD * p.ratio)) return 'bouc';
+  return 'desc';
+}
+/** Prévision d'un secteur avec les zones annoncées ce soir et mon brouillon. */
+export function prevoirRolesSecteur(k, ajout = null) {
+  const s = nd().secteurs[k], me = myZone();
+  const liste = (annoncesND()[k] || []).map((x) => ({ zone: S.state.zones[x.uid], r: x.moi ? rolesDe(k) : x.r }));
+  if (ajout) { const mien = liste.find((x) => x.zone === me); const r0 = mien ? mien.r : { rep: 0, desc: 0, bouc: 0 }; const r = { rep: r0.rep + (ajout.rep || 0), desc: r0.desc + (ajout.desc || 0), bouc: r0.bouc + (ajout.bouc || 0) }; if (mien) mien.r = r; else liste.push({ zone: me, r }); }
+  return prevoirRoles(S.state, s, liste);
 }
 
 /** Ma dernière annonce radio de ce soir sur un secteur (nombre d'agents annoncés, 0 si aucune). */
@@ -48,6 +88,18 @@ export function placeND(k, d = S.draft) {
 /** Prévision d'un secteur si je rejoins avec n agents, en plus des zones annoncées ce soir. */
 export function prevoirRejoindre(k, n) {
   const s = nd().secteurs[k], me = myZone();
+  if (rolesActifs() && s.statut !== 'repris') {
+    // Avec les rôles : on rejoint d'abord là où il manque du monde (repérage, bouclage, sinon descente).
+    const aj = { rep: 0, desc: 0, bouc: 0 };
+    const base = prevoirRolesSecteur(k);
+    for (let i = 0; i < n; i++) {
+      const p = prevoirRolesSecteur(k, aj);
+      const r = !repere(s, S.state.turn) && p.nR < 2 && base.besoin.rep ? 'rep' : p.nD && p.nB < Math.ceil(p.nD * p.ratio) ? 'bouc' : 'desc';
+      aj[r] += 1;
+    }
+    const p = prevoirRolesSecteur(k, aj);
+    return { force: p.D, emprise: p.apres, regen: regenSecteur(S.state, s), coop: p.coop };
+  }
   const autres = (annoncesND()[k] || []).filter((x) => !x.moi).map((x) => forceEngagement(S.state.zones[x.uid], x.n, S.state.turn));
   return prevoirSecteur(S.state, s, [...autres, n ? forceEngagement(me, n, S.state.turn) : 0]);
 }
@@ -83,7 +135,7 @@ function ceSoirHtml(n, me, ann) {
     const s = n.secteurs[k];
     const repris = s.statut === 'repris';
     const forces = l.map((x) => forceEngagement(S.state.zones[x.uid], x.n, S.state.turn));
-    const p = prevoirSecteur(S.state, s, forces);
+    const p = rolesActifs() && !repris ? { emprise: prevoirRolesSecteur(k).apres } : prevoirSecteur(S.state, s, forces);
     const tombe = !repris && p.emprise <= 0;
     const moiDedans = l.some((x) => x.moi);
     // Mes agents ne sont visibles des autres que s'ils sont annoncés à la radio (à jour).
@@ -139,7 +191,69 @@ function gainsHtml(s, moi) {
     </div></details>`;
 }
 
+const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+const soirs = (s) => (s.soirs || []).map((j) => JOURS[j]).join(' et ');
+const eurosK = (v) => `${Math.round(v * 1000).toLocaleString('fr-BE')} €`;
+
+/** Fiche d'un secteur du milieu avec les rôles (saison 2) : la faille, trois rangées de cases, la prévision du soir. */
+function carteRoles(k, s, me, d) {
+  const T = S.state.turn, F = faille(s), m = milieuDe(s);
+  const ouvert = secteurOuvert(nd(), k);
+  const ann = annoncesND()[k] || [];
+  const mes = rolesDe(k, d);
+  const p = prevoirRolesSecteur(k);
+  const rep = repere(s, T);
+  const repDemain = s.repere && s.repere.a > T;
+  const total = (x) => x.rep + x.desc + x.bouc;
+  const place = Math.min(ND.maxParSecteur - total(mes), ND.maxTotal - agentsND(d));
+  const cases = (role, cible) => {
+    const pions = [];
+    for (const x of ann) { const z = S.state.zones[x.uid]; const n = (x.moi ? mes : x.r)[role] || 0;
+      for (let i = 0; i < n; i++) pions.push(`<span class="nd-case pleine ${x.moi ? 'moi' : ''}" style="--c:${x.moi ? 'var(--amber)' : esc((z && z.couleur) || '#9FB0C0')}" title="${x.moi ? 'toi' : nomZ(x.uid)}"></span>`); }
+    for (let i = pions.length; i < cible; i++) pions.push('<span class="nd-case vide"></span>');
+    return pions.join('');
+  };
+  const n = { rep: p.nR, desc: p.nD, bouc: p.nB };
+  const cible = { rep: repDemain ? 0 : 2, desc: Math.max(n.desc, p.besoin.desc), bouc: Math.ceil(Math.max(n.desc, p.besoin.desc) * p.ratio) };
+  const note = (role) => {
+    if (role === 'rep') return repDemain ? `<span class="tiny ok">✓ repéré jusqu’à ${JOURS[(s.repere.a - 1) % 7]}</span>` : n.rep >= 2 ? '<span class="tiny ok">✓ repéré dès demain</span>' : `<span class="tiny bad">il manque ${2 - n.rep}</span>`;
+    if (role === 'desc') return n.desc ? (p.tropFaible ? '<span class="tiny bad">trop faible</span>' : n.desc < cible.desc ? `<span class="tiny warn">${cible.desc - n.desc} de plus pour bien avancer</span>` : '') : '';
+    const manque = Math.max(0, Math.ceil(n.desc * p.ratio) - n.bouc);
+    return n.desc ? (manque ? `<span class="tiny bad">il manque ${manque}</span>` : '<span class="tiny ok">✓ bouclé</span>') : '';
+  };
+  const effet = { rep: 'Révèle la faille. Repéré les 4 soirs suivants : descente plus forte, sans piège. 35 % des saisies qui en profitent.',
+    desc: 'Fait tomber l’emprise. C’est elle qui reprend le secteur.',
+    bouc: `Ferme les sorties : moins de fuite, plus de saisies. Ici : 1 pour ${p.ratio >= 1 ? '1' : '2'} en descente.` };
+  const rangee = (role) => `<div class="nd-role ${role === 'bouc' && n.desc && p.fuite > 0.3 ? 'alerte' : ''}">
+      <div class="between"><div class="row" style="gap:8px"><span class="nd-role-ico" aria-hidden="true">${ROLES_ND[role].ico}</span><div class="col" style="gap:0"><strong class="small">${ROLES_ND[role].nom}</strong><span class="tiny muted">${ROLES_ND[role].svc}</span></div></div>
+        ${ouvert ? `<span class="stepper"><button type="button" data-action="nd-role" data-c="${k}" data-r="${role}" data-d="-1" aria-label="Un agent de moins en ${ROLES_ND[role].court} à ${esc(nomSecteur(k))}" ${mes[role] <= 0 ? 'disabled' : ''}>−</button><span class="n">${mes[role]}</span><button type="button" data-action="nd-role" data-c="${k}" data-r="${role}" data-d="1" aria-label="Un agent de plus en ${ROLES_ND[role].court} à ${esc(nomSecteur(k))}" ${place <= 0 ? 'disabled' : ''}>+</button></span>` : ''}</div>
+      <div class="nd-cases">${cases(role, cible[role])} ${note(role)}</div>
+      <p class="tiny muted" style="margin:0">${effet[role]}</p>
+    </div>`;
+  const fl = (a, b) => `${Math.round(a)} → <span class="${b < a - 0.5 ? 'good' : b > a + 0.5 ? 'bad' : ''}">${Math.round(b)}</span>`;
+  const partMoi = (() => { if (!total(mes) || !p.butin) return 0; const w = (x) => (x.rep * ND.roles.poidsRep + x.desc + x.bouc); const tot = ann.reduce((a, x) => a + w(x.moi ? mes : x.r), 0) || 1; return w(mes) / tot * (rep && s.repere && s.repere.par.length ? 1 - ND.roles.tuyau : 1) + (rep && s.repere && s.repere.par.includes(me.uid) ? ND.roles.tuyau / s.repere.par.length : 0); })();
+  const annonce = monAnnonceND(k), monN = total(mes);
+  return `<div class="nd-detail" style="gap:8px">
+    <div class="row" style="gap:6px;flex-wrap:wrap"><span class="tiny muted">${esc(m.texte)}</span>${rep ? '<span class="pill nd-rep">🔍 repéré ce soir</span>' : repDemain ? '<span class="pill nd-rep">🔍 repéré dès demain</span>' : '<span class="pill">pas repéré</span>'}</div>
+    ${s.connue ? `<div class="nd-faille connue"><strong class="small">Faille : ${esc(F.titre)}</strong><span class="tiny">${esc(F.texte)}${F.soirs ? ` <strong>Ouvert le ${soirs(s)}</strong> (ce soir : ${ouvertCeSoir(s, T) ? '<span class="ok">ouvert</span>' : '<span class="bad">fermé</span>'}).` : ''}</span></div>`
+      : '<div class="nd-faille"><strong class="small">❔ Faille inconnue</strong><span class="tiny muted">Chaque milieu a sa faiblesse. Un repérage la révèle à toutes les zones.</span></div>'}
+    ${!ouvert ? `<p class="tiny muted" style="margin:0">Il faut tenir ${ND.coeurSeuil} secteurs de l’anneau en même temps (${Object.values(nd().secteurs).filter((x) => !x.coeur && x.statut === 'repris').length} aujourd’hui).</p>` : ''}
+    ${ouvert ? `${rangee('rep')}${rangee('desc')}${rangee('bouc')}` : ''}
+    ${!ouvert ? '' : ann.length ? `<div class="nd-quis">${pastillesCeSoir(ann.map((x) => (x.moi ? { moi: true, n: monN } : x)))}</div>` : '<p class="tiny muted" style="margin:0">Personne d’annoncé ce soir sur ce secteur.</p>'}
+    ${!ouvert ? '' : p.nD ? `<dl class="nd-prev">
+      <dt>Emprise</dt><dd>${p.tropFaible ? `<span class="bad">${p.mult === 0 ? 'impossible d’entrer sans repérage' : F.soirs && !p.ouvert ? 'fermé ce soir : personne à cueillir' : 'trop faible, le milieu tient'}</span>` : fl(s.emprise, p.apres) + (p.apres <= 0 ? ' <span class="good">· repris ce soir</span>' : '')}</dd>
+      <dt>Piège</dt><dd class="${p.piege > 0.2 ? 'bad' : p.piege ? 'warn' : 'ok'}">${p.piege ? `${Math.round(p.piege * 100)} %` : 'non'}</dd>
+      <dt>Fuite</dt><dd class="${p.fuite > 0.3 ? 'bad' : p.fuite > 0 ? 'warn' : 'ok'}">${Math.round(p.fuite * 100)} %</dd>
+      <dt>Saisies</dt><dd>~${eurosK(p.butin)}${partMoi ? ` · <span class="warn">toi ~${eurosK(p.butin * partMoi)}</span>` : ''}</dd>
+    </dl>` : `<p class="tiny muted" style="margin:0">Personne en descente ce soir : le milieu se refait.</p>`}
+    ${gainsHtml(s, partsDe(s).find((x) => x.uid === me.uid))}
+    ${monN ? (annonce === monN ? `<p class="tiny ok" style="margin:0;text-align:center">✓ Annoncé à la radio.</p>`
+      : `<button type="button" class="btn small ${annonce ? 'ghost' : 'primary'} block" data-action="nd-appel" data-c="${k}">📻 ${annonce ? 'Mettre à jour la radio' : 'Prévenir la radio'} : ${esc(texteRoles(mes))}</button>`) : ''}
+  </div>`;
+}
+
 function carteSecteur(k, s, me, d) {
+  if (rolesActifs() && s.statut !== 'repris') return carteRoles(k, s, me, d);
   const m = milieuDe(s);
   const ouvert = secteurOuvert(nd(), k);
   const n = (d.secteurs || {})[k] || 0;

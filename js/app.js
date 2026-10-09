@@ -61,7 +61,7 @@ import { niveauEnigmes } from './engine/directeur.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
 import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND, LOTS } from './engine/constants.js';
 import { nomSecteur } from './engine/nondroit.js';
-import { agentsND, monAnnonceND, suggestionND, placeND } from './ui/nondroit.js';
+import { agentsND, monAnnonceND, suggestionND, placeND, rolesActifs, rolesDe, texteRoles, roleManquant } from './ui/nondroit.js';
 import { lancerIncident, lancerAppui, ouvrirMiniJeu, majComptesIncidents, signatureIncidents, ouvrirJaugeSkins } from './ui/incidents.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
 import { actionReleve } from './ui/releve.js';
@@ -542,8 +542,16 @@ async function onClick(e) {
         if (cible) { cible.scrollIntoView({ block: 'center', behavior: 'smooth' }); cible.classList.add('surligne-bloc'); setTimeout(() => cible.classList.remove('surligne-bloc'), 1600); }
         break;
       }
+      case 'nd-role': {
+        // Saison 2 : un agent de plus ou de moins dans un rôle ; il vient du service qui va avec (et y retourne).
+        const k = el.dataset.c, r = el.dataset.r, dd = Number(el.dataset.d);
+        if (!['rep', 'desc', 'bouc'].includes(r)) break;
+        if (dd > 0 ? ajouterRoleND(k, r) : retirerRoleND(k, r)) { S.secteurSel = k; S.ordersDirty = true; }
+        rerender(); break;
+      }
       case 'nd': {
         const k = el.dataset.c, dd = Number(el.dataset.d);
+        if (rolesActifs()) { if (dd > 0 ? ajouterRoleND(k, 'desc') : retirerRoleND(k, rolesDe(k).desc ? 'desc' : rolesDe(k).bouc ? 'bouc' : 'rep')) { S.secteurSel = k; S.ordersDirty = true; } rerender(); break; }
         const sect = (S.draft.secteurs ||= {});
         const cur = sect[k] || 0;
         if (dd > 0) {
@@ -561,10 +569,12 @@ async function onClick(e) {
         if (!n) break;
         el.disabled = true;
         const deja = monAnnonceND(k);
-        await b.sendRadio(S.user.uid, deja
+        await b.sendRadio(S.user.uid, rolesActifs()
+          ? `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) ${deja ? 'sera finalement' : 'sera ce soir'} à ${nomSecteur(k)} : ${texteRoles(rolesDe(k))}.${deja ? '' : ' Complétez ce qui manque !'}`
+          : deja
           ? `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) sera finalement à ${nomSecteur(k)} avec ${n} agent${n > 1 ? 's' : ''} ce soir.`
           : `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) envoie ${n} agent${n > 1 ? 's' : ''} à ${nomSecteur(k)} ce soir. Plus on est nombreux, plus ça tombe vite : qui vient ?`,
-        { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n } });
+        { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n, ...(rolesActifs() ? { roles: rolesDe(k) } : {}) } });
         toast('Annoncé sur la radio : les autres zones peuvent te rejoindre.'); rerender(); break;
       }
       case 'nd-rej-n': {
@@ -578,6 +588,7 @@ async function onClick(e) {
         const sect = (S.draft.secteurs ||= {});
         let ajoutes = 0;
         for (let i = 0; i < voulu; i++) {
+          if (rolesActifs()) { if (!ajouterRoleND(k, roleManquant(k))) break; ajoutes++; continue; }
           if ((sect[k] || 0) >= ND.maxParSecteur || agentsND() >= ND.maxTotal || !takeAgent()) break;
           sect[k] = (sect[k] || 0) + 1; ajoutes++;
         }
@@ -586,8 +597,8 @@ async function onClick(e) {
         el.disabled = true;
         const n = sect[k];
         try {
-          await b.sendRadio(S.user.uid, `🤝 ${z.nom} (ZP ${z.code}) rejoint ${nomSecteur(k)} avec ${n} agent${n > 1 ? 's' : ''} ce soir.`,
-            { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n } });
+          await b.sendRadio(S.user.uid, rolesActifs() ? `🤝 ${z.nom} (ZP ${z.code}) rejoint ${nomSecteur(k)} : ${texteRoles(rolesDe(k))}.` : `🤝 ${z.nom} (ZP ${z.code}) rejoint ${nomSecteur(k)} avec ${n} agent${n > 1 ? 's' : ''} ce soir.`,
+            { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n, ...(rolesActifs() ? { roles: rolesDe(k) } : {}) } });
         } catch (e2) { console.warn(e2); }
         toast(`${ajoutes} agent${ajoutes > 1 ? 's' : ''} pour ${nomSecteur(k)} ce soir. Valide tes ordres.`);
         rerender(); break;
@@ -1067,7 +1078,7 @@ async function onClick(e) {
           if (key.startsWith('eng:')) {
             const id = key.slice(4), eg = d.engagements[id];
             if (eg && eg.acceptes && eg.acceptes.length) eg.agents = 0; else delete d.engagements[id];
-          } else if (key.startsWith('nd:')) { if (d.secteurs) delete d.secteurs[key.slice(3)]; }
+          } else if (key.startsWith('nd:')) { if (d.secteurs) delete d.secteurs[key.slice(3)]; if (d.roles) delete d.roles[key.slice(3)]; }
           else if (key === 'ev') d.evenement = 0;
           else if (key === 'renfort') d.renfort = null;
         };
@@ -1229,6 +1240,30 @@ function askConfirm(message, okLabel = 'Confirmer', koLabel = 'Annuler') {
 }
 
 /** Libère un agent pour un engagement : pris dans le service le plus fourni si personne n'est libre. */
+/** Rôles (saison 2) : le service d'où vient un agent selon son rôle, dans l'ordre de préférence. */
+const SOURCES_ROLE = { rep: ['recherche'], desc: ['intervention'], bouc: ['roulage', 'proximite'] };
+function ajouterRoleND(k, r) {
+  const d = S.draft, sect = (d.secteurs ||= {}), roles = (d.roles ||= {});
+  const cur = rolesDe(k);
+  if ((sect[k] || 0) >= ND.maxParSecteur || agentsND() >= ND.maxTotal) { toast(`Au plus ${ND.maxParSecteur} agents par secteur et ${ND.maxTotal} en tout.`); return false; }
+  if (estimations().reste <= 0) {
+    const src = SOURCES_ROLE[r].find((x) => d.alloc[x] > 0);
+    if (src) d.alloc[src] -= 1; else if (!takeAgent()) return false;
+  }
+  cur[r] += 1; roles[k] = cur; sect[k] = cur.rep + cur.desc + cur.bouc;
+  return true;
+}
+function retirerRoleND(k, r) {
+  const d = S.draft, cur = rolesDe(k);
+  if (!cur[r]) return false;
+  cur[r] -= 1;
+  const n = cur.rep + cur.desc + cur.bouc;
+  (d.roles ||= {})[k] = cur; (d.secteurs ||= {})[k] = n;
+  if (!n) { delete d.secteurs[k]; delete d.roles[k]; }
+  d.alloc[SOURCES_ROLE[r][0]] += 1; // l'agent retourne dans son service
+  return true;
+}
+
 function takeAgent() {
   if (estimations().reste > 0) return true;
   // On ne vide pas un service sous le minimum demandé ce soir (évasion : 8 en Intervention…) s'il y a une autre source.
@@ -1294,7 +1329,9 @@ async function annoncerNDAuto(rattrapage = false) {
       : deja
         ? `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) sera finalement à ${nomSecteur(k)} avec ${n} agent${n > 1 ? 's' : ''} ce soir.`
         : `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) envoie ${n} agent${n > 1 ? 's' : ''} à ${nomSecteur(k)} ce soir.`;
-    try { await S.backend.sendRadio(S.user.uid, texte, { nd: { season: st.season, turn: st.turn, secteur: String(k), agents: n } }); } catch (e) { console.warn('Annonce radio non envoyée', e); }
+    const roles = n && rolesActifs() ? rolesDe(k, ordres) : null;
+    const texte2 = roles ? `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) ${deja ? 'sera finalement' : 'sera ce soir'} à ${nomSecteur(k)} : ${texteRoles(roles)}.` : texte;
+    try { await S.backend.sendRadio(S.user.uid, texte2, { nd: { season: st.season, turn: st.turn, secteur: String(k), agents: n, ...(roles ? { roles } : {}) } }); } catch (e) { console.warn('Annonce radio non envoyée', e); }
   }
 }
 

@@ -2281,3 +2281,19 @@ a.rv-complet svg { color: var(--amber); }
 .rv-form { display: flex; gap: 8px; }
 body:has(.savebar) .rv-bas { bottom: 150px; }
 body:has(.savebar) main.rv { padding-bottom: 220px; }
+
+/* Zone de non-droit, saison 2 : rôles (repérage, descente, bouclage) */
+.nd-role { display: flex; flex-direction: column; gap: 6px; padding: 9px 10px; border: 1px solid var(--hair); border-radius: 12px; background: var(--bg); }
+.nd-role.alerte { border-color: var(--red-line); }
+.nd-role-ico { font-size: 19px; width: 24px; text-align: center; }
+.nd-cases { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-height: 22px; }
+.nd-case { width: 20px; height: 20px; border-radius: 6px; box-sizing: border-box; }
+.nd-case.pleine { background: var(--c); }
+.nd-case.pleine.moi { box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--amber); }
+.nd-case.vide { border: 1.5px dashed var(--faint); }
+.nd-cases .tiny { margin-left: 4px; font-weight: 700; }
+.nd-faille { display: flex; flex-direction: column; gap: 2px; padding: 9px 11px; border-radius: 12px; border: 1.5px dashed var(--line); }
+.nd-faille.connue { border: 1px solid rgba(99,176,255,.35); background: var(--blue-bg); }
+.pill.nd-rep { background: var(--blue-bg); border-color: rgba(99,176,255,.4); color: var(--blue-soft); }
+.nd-prev { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; padding: 9px 11px; border-radius: 12px; background: var(--surface2); font-size: 13px; }
+.nd-prev dt { color: var(--muted); font-size: 12px; } .nd-prev dd { margin: 0; font-weight: 600; }

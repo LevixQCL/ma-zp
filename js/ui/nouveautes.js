@@ -14,12 +14,20 @@ export const NOTE_MAJ = {
     ['🎖️', 'Ton chef de corps', 'choisis son visage : il progresse avec tes jeux et ta gestion, et le suit de saison en saison.'],
     ['⚔️', 'Ta semaine de chef', 'trois objectifs et un rival à battre chaque semaine, des rubans et un cadre doré à gagner.'],
     ['🧑‍✈️', 'Ton adjoint', 'un jour sans ordres, il tient la zone et te raconte tout à ton retour.'],
+    ['🚔', 'Le non-droit en équipe', 'repérage, descente et bouclage : chaque secteur a sa faille, complétez ce qui manque et partagez les saisies.'],
     ['🔨', 'Les enchères des saisies', 'trois lots tous les deux jours, une offre finale secrète, des gros lots à deux.'],
     ['🏗️', 'Quatre nouvelles annexes', 'dont le complexe cellulaire : un interpellé balance une pièce d’enquête.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['La zone de non-droit en rôles (9 octobre)', [
+      ['Trois rôles', 'sur chaque secteur, trois rangées de cases : 🔍 repérage (tes agents de Recherche), 🚔 descente (Intervention) et 🚧 bouclage (Roulage, Proximité). Les pions des collègues annoncés à la radio s’y placent ; complète ce qui manque.'],
+      ['Le repérage', 'il révèle la faille du secteur à toutes les zones et le rend « repéré » les 4 soirs suivants : la descente frappe plus fort et ne tombe plus dans un piège. Qui a repéré touche 35 % des saisies des descentes qui en profitent, même sans y aller.'],
+      ['Les failles', 'guetteurs du point de deal, mandat du squat, motos des rodéos qui filent, tripot ouvert 2 soirs sur 7, entrepôts pleins du recel et du garage… Chaque milieu se prend autrement.'],
+      ['Le bouclage', 'sans lui, une partie du milieu file (moins de saisies) et va renforcer le secteur voisin.'],
+      ['Les saisies', 'chaque descente réussie rapporte des saisies, partagées selon les agents engagés ; la reprise et les retombées de chaque nuit ne changent pas.'],
+    ]],
     ['La nouvelle carte et l’onglet Chef (9 octobre)', [
       ['Carte en maquette', 'la ville en vue 3/4 : immeubles, maisons, commerces et tours ; les fenêtres s’allument selon la tension, les quartiers chauds fument, ton HP a son parking et son héliport. Touche n’importe où sur un quartier : sa fiche s’ouvre sous la carte avec ses patrouilles (− / +). Chaque patrouille envoyée devient une voiture qui tourne dans le quartier.'],
       ['Carte en deux boutons', 'Non-droit, qui s’ouvre d’abord : la ville entière, touche un secteur rouge pour l’ouvrir et y engager des agents ; tes fourgons partent de ton HP sur la carte, ceux des collègues annoncés à la radio aussi. Dessous : renforts, affaires disputées, grand événement, pactes et Conseil. Touche la zone d’un collègue pour voir son commissariat. Puis Ma zone : fiche du quartier, liste de tes quartiers, site sensible. L’ancien onglet Terrain et l’onglet Pactes sont dedans ; leurs liens y mènent.'],
