@@ -1314,7 +1314,7 @@ function drawUnit(g,u,t){
   if(coup<.18&&u.p){ const k=1-coup/.18, a=u.p.ang; g.translate(-Math.cos(a)*.09*k,-Math.sin(a)*.09*k); }
   if(tourne<.28&&!(u.type==='casseur'&&setOk('casR'))){ const k=tourne/.28; g.scale(Math.abs(Math.cos(k*Math.PI))*.9+.1,1); g.translate(0,-Math.sin(k*Math.PI)*.12); }
   if(veh(u)){ drawVeh(g,u,t); g.restore(); return; }
-  const vit=u.state==='flee'?9:u.type==='casseur'?7:u.type==='bloc'?3:4.5, fr=Math.floor(t*vit*(u.type==='manif'?2:1)+u.bob)%4; let flip=(u.f||1)<0;
+  const vit=u.state==='flee'?9:u.type==='casseur'?7:u.type==='bloc'?4.5:4.5, fr=Math.floor(t*vit*(u.type==='manif'?2:1)+u.bob)%4; let flip=(u.f||1)<0;
   const dl=R.t-(u.throwT??-9), arme=u.type==='casseur'&&u.state==='go'&&!(u.held||u.atBar)&&(u.lance??9)<.28, lance=u.type==='casseur'&&u.state==='go'&&(dl<.45||arme)&&setOk('casL'), repousse=u.type==='casseur'&&u.state==='flee'&&tourne<.5&&setOk('casR'), fuit=u.type==='manif'&&u.state==='flee'&&setOk('fuite-'+EMC[(u.id||0)%EMC.length]);
   let nm=u.type==='manif'?(fuit?'fuite-':'em-')+EMC[(u.id||0)%EMC.length]:u.type, hh={manif:.84,casseur:.84,meneur:.88,bloc:1.3}[u.type];
   let pose=-1;
@@ -1324,7 +1324,7 @@ function drawUnit(g,u,t){
   if(bloque){ g.translate(Math.sin(t*26+u.bob)*.018,0); }
   if(setOk(nm)){ g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(.02,.01,(u.type==='bloc'?.42:.16)*(1-bob*2),u.type==='bloc'?.12:.05,0,0,7); g.fill();
     g.save(); g.translate(0,-bob);
-    if(u.type==='bloc'&&!bloque) g.rotate(Math.sin(t*2.5+u.bob)*.025);
+    if(u.type==='bloc'&&!bloque) g.rotate(Math.sin(t*2.5+u.bob)*.012);
     else if(!bloque) g.rotate((u.f||1)*(u.state==='flee'?-.1:u.type==='casseur'?.09:.05)+Math.sin(t*vit*Math.PI+u.bob)*.025);
     else g.rotate((u.f||1)*.14); // penchés en avant, ils poussent
     const sq=1+Math.sin(t*vit*Math.PI*2+u.bob)*.025; g.scale(1/sq,sq);
@@ -1410,7 +1410,7 @@ function halo(g,x,y,rx,ry,rgb,a,mid){ if(!(a>.003)) return; const o=g.globalAlph
 const SPR={};
 function spr(n){ if(SPR[n]) return SPR[n]; const d=SPR[n]={ok:false,img:new Image()}; d.img.onload=()=>{ d.ok=true; }; d.img.src=`img/bouclage/${n}.webp`; return d; }
 /* jeux d'images : poses (animation de marche), hauteur de référence en pixels (même échelle pour toutes les poses) */
-const SETS={mo:{f:['mo1','mo2'],ref:342}, cav:{f:['cav1','cav2'],ref:304}, combi:{f:['combi']}, heras:{f:['heras']}, bloc:{f:['bloc']},
+const SETS={mo:{f:['mo1','mo2'],ref:342}, cav:{f:['cav1','cav2'],ref:304}, combi:{f:['combi']}, heras:{f:['heras']}, bloc:{f:['bloc-m1','bloc-m2','bloc-m3','bloc-m4'],ref:254},
   casseur:{f:['cas-m3','cas-m1','cas-m4','cas-m2'],ref:213}, meneur:{f:['meneur-1','meneur-2'],ref:300}};
 // marche en 4 poses (2 d'origine + 2 générées), fuite, poussée au bouclier, lancer de pavé, galop
 ['rouge','bleu','vert','jaune','violet','gris'].forEach(c=>{ SETS['em-'+c]={f:[`em-${c}-1`,`marche-${c}-a`,`em-${c}-2`,`marche-${c}-b`],ref:300}; SETS['fuite-'+c]={f:[`fuite-${c}-1`],ref:300}; });
