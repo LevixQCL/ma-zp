@@ -103,7 +103,7 @@ export function createLocalBackend(config) {
       players[b.uid] = { code: b.code, nom: b.nom, couleur: b.couleur, pseudo: b.pseudo, bot: true, style: b.style };
       state.zones[b.uid] = newZone({ uid: b.uid, code: b.code, nom: b.nom, couleur: b.couleur }, 1);
     }
-    return { meta: { id, nom, code, owner: ME, createdAt: now }, state, players, orders: {}, quests: {}, gazettes: {}, radio: [
+    return { meta: { id, nom, code, owner: ME, createdAt: now, variante: id === 'demo' ? ((typeof location !== 'undefined' && (location.search || '').match(/[?&]demo=([a-z]+)/)) || [])[1] || 'clef' : undefined }, state, players, orders: {}, quests: {}, gazettes: {}, radio: [
       { id: 'r1', uid: 'bot-canal', texte: 'Bienvenue au District Delta. Ici, la Gazette ne pardonne rien.', at: now - 3600e3 },
     ] };
   }
@@ -111,6 +111,21 @@ export function createLocalBackend(config) {
     return { parties: { demo: freshPartie('demo', 'Partie de démonstration', 'DEMO24') }, mesParties: ['demo'], current: 'demo', signedIn: false };
   }
   if (!db || !db.parties) { db = fresh(); save(db); }
+  // La démo suit le lien : « ?demo=vol », « ?demo=corbeau »… repartent sur une partie neuve quand on change d'affaire,
+  // et « &neuf » remet la démo à zéro (le paramètre est retiré de l'adresse pour ne pas tout effacer à chaque rechargement).
+  {
+    const q = typeof location !== 'undefined' ? (location.search || '') : '';
+    const variante = (q.match(/[?&]demo=([a-z]+)/) || [])[1] || 'clef';
+    const neuf = /[?&]neuf\b/.test(q);
+    const d0 = db.parties.demo;
+    if (neuf || (d0 && (d0.meta.variante || 'clef') !== variante)) {
+      db.parties.demo = freshPartie('demo', 'Partie de démonstration', 'DEMO24');
+      db.parties.demo.meta.variante = variante;
+      if (neuf) { db.signedIn = false; db.current = 'demo'; }
+      save(db);
+      if (neuf && typeof history !== 'undefined' && history.replaceState) history.replaceState(null, '', location.pathname + q.replace(/[?&]neuf\b/, '').replace(/^&/, '?') + location.hash);
+    }
+  }
   // Raccourcis vers la partie ouverte.
   const P = () => db.parties[db.current];
   const self = { get state() { return P().state; }, set state(v) { P().state = v; }, get players() { return P().players; }, set players(v) { P().players = v; }, get orders() { return P().orders; }, get quests() { return P().quests; }, get gazettes() { return P().gazettes; }, get radio() { return P().radio; }, get prives() { return (P().prives ||= []); } };
