@@ -20,7 +20,7 @@ const zoneLabel = (z) => `ZP ${z.code} ${z.nom}`;
 // ——— Rubriques et illustrations ———
 // Illustrations Gemini déposées dans img/gazette/ (format 4:3). Tant qu'une image manque, une vignette dessinée la remplace.
 // Nombre de versions par rubrique : « coupdur.webp », « coupdur-2.webp »… ; le numéro du soir choisit la version.
-const IMAGES = { operation: 1, coupdur: 2, nondroit: 1, enquete: 1, tribunal: 1 };
+const IMAGES = { operation: 1, coupdur: 2, nondroit: 1, enquete: 1, tribunal: 2, district: 1, ennemi: 1, ventes: 1, meteo: 1, calme: 1, saison: 1, honneur: 1 };
 const CATEGORIE = {
   operation: ['Opération réussie', 'Opération', 'Flagrant délit', 'Héros du jour', 'Champion', 'Performance', 'Solidarité', 'Redressement', 'Coopération', 'Félicitations du juge'],
   coupdur: ['Coup dur', 'Fiasco', 'Faillite', 'Zone en péril', 'Tutelle', 'Inspection générale', 'Ressources humaines', 'Parquet', 'Le milieu riposte', 'Pacte rompu'],
@@ -226,6 +226,7 @@ function carteServices(g, me) {
   const autres = h.filter((n) => !surnoms.includes(n));
   const surnom = (n) => { const [, zl, qui, sn] = n.titre.match(RE_SURNOM); const moi = toucheMoi(n, me); return `<li class="${moi ? 'moi' : ''}"><b>« ${esc(sn)} »</b> ${esc(qui)} <span class="gris">· ${esc(zl.replace(/^ZP \d+ /, ''))}</span>${moi ? ' <span class="gzs-toi">toi</span>' : ''}</li>`; };
   return carte('services', 'Dans les services', `${tete(g, 'Dans les services')}
+    ${h.length ? vignette('honneur', 'h', g.turn) : ''}
     <div class="gzs-corps">${autres.length ? `<span class="sur">Tableau d’honneur</span><ul class="gzs-honneur">${autres.map((n) => ligne(n, 'h')).join('')}</ul>` : ''}
       ${surnoms.length ? `<span class="sur">Nouveaux surnoms · ${surnoms.length}</span><ul class="gzs-honneur gzs-surnoms">${surnoms.map(surnom).join('')}</ul>` : ''}
       ${b.length ? `<span class="sur">Le bêtisier</span><ul class="gzs-honneur">${b.map((n) => ligne(n, 'b')).join('')}</ul>` : ''}</div>`);
