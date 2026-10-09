@@ -34,7 +34,12 @@ function trouverEsbuild() {
 export async function indexAvecChargeur() {
   const { chargeurHtml } = await import(new URL('../js/ui/chargeur.js', import.meta.url).href);
   const index = readFileSync(join(racine, 'index.html'), 'utf8');
-  return index.replace(/(<!-- chargeur[^>]*-->\n\s*<div id="app">)[\s\S]*?(<\/div>\n\s*<!-- \/chargeur -->)/, (_, a, b) => a + chargeurHtml() + b);
+  // Adresses versionnées : GitHub Pages et son CDN gardent chaque fichier ~10 min ; sans ?v=, un téléphone pouvait
+  // recevoir le nouveau code avec l'ancienne feuille de style (écran à moitié mis en forme juste après une mise à jour).
+  const v = (f) => createHash('sha256').update(readFileSync(join(racine, f))).digest('hex').slice(0, 10);
+  return index.replace(/(<!-- chargeur[^>]*-->\n\s*<div id="app">)[\s\S]*?(<\/div>\n\s*<!-- \/chargeur -->)/, (_, a, b) => a + chargeurHtml() + b)
+    .replace(/href="css\/(app|tableau)\.css(\?v=[0-9a-f]*)?"/g, (_, n) => `href="css/${n}.css?v=${v(`css/${n}.css`)}"`)
+    .replace(/src="js\/app\.min\.js(\?v=[0-9a-f]*)?"/, `src="js/app.min.js?v=${empreinteSources().slice(0, 10)}"`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
