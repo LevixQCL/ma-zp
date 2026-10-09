@@ -637,7 +637,7 @@ function step(dt){
       for(const o of live) if(o.alive!==false&&Math.hypot(o.p.x-best.p.x,o.p.y-best.p.y)<=spl){ hit(o,M.dmg*k*M.mult[o.type]*(R.meteo==='pluie'?.85:1),true); o.dispUntil=R.t+4; if(!o.held&&!veh(o)) o.d=Math.max(0,o.d-M.recul*(o.type==='bloc'?.35:1));
         if(o.type==='bloc'&&o.hp>0&&o.hp<o.max*BLOC_ECLATE.seuil) eclate(o); }
       R.flaques.push({x:best.p.x,y:best.p.y+.05,r:.5+.1*tw.lvl,until:R.t+(R.meteo==='pluie'?9:6),t:R.t});
-      tw.cd=M.cd; tw.tgt=[best]; R.jets.push({id,x1:best.p.x,y1:best.p.y,t:R.t,lvl:tw.lvl}); Shell.blip(180,.15,'sawtooth',.02);
+      tw.cd=M.cd; tw.tgt=[best]; tw.jetT=R.t; R.jets.push({id,x1:best.p.x,y1:best.p.y,t:R.t,lvl:tw.lvl}); Shell.blip(180,.15,'sawtooth',.02);
       puff(best.p.x,best.p.y-.25,18+6*tw.lvl,{v:1.3,r:.035,life:.55,grav:2.2,col:'rgba(200,230,255,',flat:1,a:-Math.PI/2,spread:Math.PI*1.4}); }
   }
   // casseurs : jets de projectiles sur les barrières et les agents MO
@@ -1312,12 +1312,14 @@ function drawUnit(g,u,t){
   const vie=R.t-(u.born??-9), tourne=R.t-(u.turnT??-9), coup=R.t-(u.hitT??-9);
   g.globalAlpha=Math.min(1,vie/.35)*(u.state==='flee'?Math.max(.4,1-tourne*.35):1);
   if(coup<.18&&u.p){ const k=1-coup/.18, a=u.p.ang; g.translate(-Math.cos(a)*.09*k,-Math.sin(a)*.09*k); }
-  if(tourne<.28){ const k=tourne/.28; g.scale(Math.abs(Math.cos(k*Math.PI))*.9+.1,1); g.translate(0,-Math.sin(k*Math.PI)*.12); }
+  if(tourne<.28&&!(u.type==='casseur'&&setOk('casR'))){ const k=tourne/.28; g.scale(Math.abs(Math.cos(k*Math.PI))*.9+.1,1); g.translate(0,-Math.sin(k*Math.PI)*.12); }
   if(veh(u)){ drawVeh(g,u,t); g.restore(); return; }
   const vit=u.state==='flee'?9:u.type==='casseur'?7:u.type==='bloc'?3:4.5, fr=Math.floor(t*vit*(u.type==='manif'?2:1)+u.bob)%4; let flip=(u.f||1)<0;
-  const lance=u.type==='casseur'&&u.state==='go'&&R.t-(u.throwT??-9)<.4&&setOk('casL'), fuit=u.type==='manif'&&u.state==='flee'&&setOk('fuite-'+EMC[(u.id||0)%EMC.length]);
+  const dl=R.t-(u.throwT??-9), arme=u.type==='casseur'&&u.state==='go'&&!(u.held||u.atBar)&&(u.lance??9)<.28, lance=u.type==='casseur'&&u.state==='go'&&(dl<.45||arme)&&setOk('casL'), repousse=u.type==='casseur'&&u.state==='flee'&&tourne<.5&&setOk('casR'), fuit=u.type==='manif'&&u.state==='flee'&&setOk('fuite-'+EMC[(u.id||0)%EMC.length]);
   let nm=u.type==='manif'?(fuit?'fuite-':'em-')+EMC[(u.id||0)%EMC.length]:u.type, hh={manif:.84,casseur:.84,meneur:.88,bloc:1.3}[u.type];
-  if(lance){ nm='casL'; flip=(u.throwF||1)<0; }
+  let pose=-1;
+  if(lance){ nm='casL'; pose=dl<.45?(dl<.13?1:2):0; if(dl<.45) flip=(u.throwF||1)<0; }
+  if(repousse){ nm='casR'; pose=Math.min(2,Math.floor(tourne/.17)); flip=(u.f||1)>0; } // il encaisse face aux policiers, puis tourne le dos
   const bloque=u.held||u.atBar, bob=u.state==='go'&&!bloque?Math.abs(Math.sin(t*(u.type==='bloc'?5:7)+u.bob))*.035:0;
   if(bloque){ g.translate(Math.sin(t*26+u.bob)*.018,0); }
   if(setOk(nm)){ g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(.02,.01,(u.type==='bloc'?.42:.16)*(1-bob*2),u.type==='bloc'?.12:.05,0,0,7); g.fill();
@@ -1326,8 +1328,9 @@ function drawUnit(g,u,t){
     else if(!bloque) g.rotate((u.f||1)*(u.state==='flee'?-.1:u.type==='casseur'?.09:.05)+Math.sin(t*vit*Math.PI+u.bob)*.025);
     else g.rotate((u.f||1)*.14); // penchés en avant, ils poussent
     const sq=1+Math.sin(t*vit*Math.PI*2+u.bob)*.025; g.scale(1/sq,sq);
-    sprite(g,nm,bloque?Math.floor(t*3+u.bob)%2:fr,hh,flip);
-    if(coup<.15){ g.globalCompositeOperation='lighter'; g.globalAlpha*=.7*(1-coup/.15); sprite(g,nm,bloque?0:fr,hh,flip); sprite(g,nm,bloque?0:fr,hh,flip); }
+    const po=pose>=0?pose:bloque?Math.floor(t*3+u.bob)%2:fr;
+    sprite(g,nm,po,hh,flip);
+    if(coup<.15){ g.globalCompositeOperation='lighter'; g.globalAlpha*=.7*(1-coup/.15); sprite(g,nm,pose>=0?pose:bloque?0:fr,hh,flip); sprite(g,nm,pose>=0?pose:bloque?0:fr,hh,flip); }
     g.restore(); }
   else { const z=u.type==='bloc'?1:1.2; g.scale(z,z); drawRioter(g,u,t); g.scale(1/z,1/z); }
   if(u.state==='go'){
@@ -1408,12 +1411,12 @@ const SPR={};
 function spr(n){ if(SPR[n]) return SPR[n]; const d=SPR[n]={ok:false,img:new Image()}; d.img.onload=()=>{ d.ok=true; }; d.img.src=`img/bouclage/${n}.webp`; return d; }
 /* jeux d'images : poses (animation de marche), hauteur de référence en pixels (même échelle pour toutes les poses) */
 const SETS={mo:{f:['mo1','mo2'],ref:342}, cav:{f:['cav1','cav2'],ref:304}, combi:{f:['combi']}, heras:{f:['heras']}, bloc:{f:['bloc']},
-  casseur:{f:['casseur-1','casseur-2'],ref:300}, meneur:{f:['meneur-1','meneur-2'],ref:300}};
+  casseur:{f:['cas-m3','cas-m1','cas-m4','cas-m2'],ref:213}, meneur:{f:['meneur-1','meneur-2'],ref:300}};
 // marche en 4 poses (2 d'origine + 2 générées), fuite, poussée au bouclier, lancer de pavé, galop
 ['rouge','bleu','vert','jaune','violet','gris'].forEach(c=>{ SETS['em-'+c]={f:[`em-${c}-1`,`marche-${c}-a`,`em-${c}-2`,`marche-${c}-b`],ref:300}; SETS['fuite-'+c]={f:[`fuite-${c}-1`],ref:300}; });
-Object.assign(SETS,{cmd:{f:['cmd-repos','cmd-repos2'],ref:300},cmdM:{f:['cmd-marche1'],ref:300},cmdO:{f:['cmd-ordre'],ref:300},cmdO2:{f:['cmd-ordre2'],ref:300},cmdR:{f:['cmd-radio'],ref:300},mop:{f:['mo-pousse'],ref:375},casL:{f:['casseur-lance'],ref:320},gal:{f:['galop1','galop2'],ref:335}});
+Object.assign(SETS,{cmd:{f:['cmd-repos','cmd-repos2'],ref:300},cmdM:{f:['cmd-marche1'],ref:300},cmdO:{f:['cmd-ordre'],ref:300},cmdO2:{f:['cmd-ordre2'],ref:300},cmdR:{f:['cmd-radio'],ref:300},mop:{f:['mo-pousse'],ref:375},casL:{f:['cas-l2','cas-l3','cas-l4'],ref:210},casR:{f:['cas-r1','cas-r2','cas-r3'],ref:213},moN:{f:['mo-g1','mo-g2','mo-g3','mo-g4'],ref:199},lanceN:{f:['lance-1','lance-2','lance-3','lance-4'],ref:200},cavT:{f:['cav-t1','cav-t2','cav-t3'],ref:223},cmdG:{f:['cmd-gaz'],ref:213},gal:{f:['galop1','galop2'],ref:335}});
 const EMC=['rouge','bleu','vert','jaune','violet','gris'];
-['cmd','cmdM','cmdO','cmdO2','cmdR'].forEach(n=>SETS[n].f.forEach(spr)); // poses du commandant préchargées (sinon la 1re apparition passe en dessin de secours)
+['cmd','cmdM','cmdO','cmdO2','cmdR','cmdG','casL','casR','moN','lanceN','cavT'].forEach(n=>SETS[n].f.forEach(spr)); // poses du commandant préchargées (sinon la 1re apparition passe en dessin de secours)
 function sprite1(g,n,h,flip){ const S=spr(n); if(!S.ok) return false; const w=h*S.img.width/S.img.height; if(flip) g.scale(-1,1); imgReduite(g,S.img,n,-w/2,-h,w,h); if(flip) g.scale(-1,1); return true; }
 function setOk(n){ const S=SETS[n]; return S&&S.f.every(x=>spr(x).ok); }
 /* dessine la pose « frame » d'un jeu d'images, pieds en (0,0), tournée vers la droite (flip = vers la gauche) */
@@ -1422,22 +1425,25 @@ function sprite(g,n,frame,h,flip){ const S=SETS[n]; if(!setOk(n)) return false; 
 // autopompe : image tournée vers la gauche ; position relative de la lance (bout du canon) dans l'image
 const AUTOPOMPE={w:1.6,lance:[.01,.3]};
 // niveaux 1 et 2 : agents à la lance à eau (image tournée vers la droite, bout de lance à 98 % / 45 %), niveau 3 : le camion
-const LANCIER={h:.84,bout:[.98,.455],pos:[[[0,0]],[[-.2,-.06],[.22,.06]]]};
-function lanciers(tw){ return tw.lvl<3&&spr('lance').ok; }
+const LANCIER={h:.84,bout:[[.957,.262],[.963,.262],[.932,.545],[.951,.308]],pos:[[[0,0]],[[-.2,-.06],[.22,.06]]]};
+function lanciers(tw){ return tw.lvl<3&&setOk('lanceN'); }
+// visée, jet court, jet puissant (recul), jet qui faiblit
+function poseLance(tw){ const d=R.t-(tw.jetT??-9); return d<.1?1:d<.42?2:d<.65?3:0; }
 function nozzle(tw,P){ const S=spr('autopompe');
-  if(lanciers(tw)){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, im=spr('lance').img, h=LANCIER.h, w=h*im.width/im.height, [ox,oy]=LANCIER.pos[tw.lvl-1][0];
-    const lx=-w/2+LANCIER.bout[0]*w, ly=-h+LANCIER.bout[1]*h; return {x:P.x+ox+(f>0?lx:-lx),y:P.y+.1+oy+ly,f}; }
+  if(lanciers(tw)){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, po=poseLance(tw), im=spr(SETS.lanceN.f[po]).img, h=LANCIER.h, w=h*im.width/im.height, [ox,oy]=LANCIER.pos[tw.lvl-1][0];
+    const lx=-w/2+LANCIER.bout[po][0]*w, ly=-h+LANCIER.bout[po][1]*h; return {x:P.x+ox+(f>0?lx:-lx),y:P.y+.1+oy+ly,f}; }
   if(S.ok){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, W=AUTOPOMPE.w, h=W*S.img.height/S.img.width, lx=-W/2+AUTOPOMPE.lance[0]*W, ly=.22-h+AUTOPOMPE.lance[1]*h;
     return {x:P.x+(f>0?-lx:lx),y:P.y+.1+ly,f}; }
   return nozzle0(tw,P); }
 function nozzle0(tw,P){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, L=1.05; return {x:P.x+f*(-L/2+.12+L*.25),y:P.y-.4-.12,f}; }
 function drawAutopompe(g,tw,P,t){
   if(lanciers(tw)){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1;
-    LANCIER.pos[tw.lvl-1].forEach(([x,y])=>{ g.save(); g.translate(x,y); g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(0,.01,.2,.06,0,0,7); g.fill(); sprite1(g,'lance',LANCIER.h,f<0); g.restore(); });
+    LANCIER.pos[tw.lvl-1].forEach(([x,y])=>{ g.save(); g.translate(x,y); g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(0,.01,.2,.06,0,0,7); g.fill(); sprite(g,'lanceN',poseLance(tw),LANCIER.h,f<0); g.restore(); });
     return; }
   const S=spr('autopompe');
   if(S.ok){ const f=Math.cos(tw.aim??tw.face)>=0?1:-1, W=AUTOPOMPE.w, h=W*S.img.height/S.img.width;
-    g.save(); if(f>0) g.scale(-1,1); g.drawImage(S.img,-W/2,.22-h,W,h); g.restore();
+    const dj=R.t-(tw.jetT??-9), rc=dj<.35?Math.sin(Math.min(1,dj/.35)*Math.PI)*(1-dj/.35):0;
+    g.save(); g.translate(-f*.05*rc,-.015*rc); if(f>0) g.scale(-1,1); g.drawImage(S.img,-W/2,.22-h,W,h); g.restore();
     const on=Math.floor(t*6)%2; g.globalCompositeOperation='lighter'; halo(g,0,-h*.55,.7,.7,'70,140,255',on?.28:.1); g.globalCompositeOperation='source-over';
     return; }
   const f=nozzle(tw,P).f; van(g,f,t,1.05,true);
@@ -1471,8 +1477,8 @@ function horseRider(g,f,ph){
   g.fillStyle='#eef2f8'; g.beginPath(); g.arc(.005,-.76,.065,0,7); g.fill(); g.fillStyle='#0b1220'; g.fillRect(-.06,-.77,.13,.02);
   g.restore();
 }
-function drawHorses(g,tw,f,t,galop){ const pos=tw.lvl===1?[[0,0]]:tw.lvl===2?[[-.2,-.06],[.2,.06]]:[[-.24,-.1],[.24,-.06],[0,.1]];
-  pos.forEach(([x,y],i)=>{ g.save(); g.translate(x,y); if(!(galop&&sprite(g,'gal',Math.floor(t*7+i)%2,.95,f<0))&&!sprite(g,'cav',galop?Math.floor(t*7+i)%2:0,.95,f<0)) horseRider(g,f,t*(galop?9:2)+i); g.restore(); }); }
+function drawHorses(g,tw,f,t,galop,trot){ const pos=tw.lvl===1?[[0,0]]:tw.lvl===2?[[-.2,-.06],[.2,.06]]:[[-.24,-.1],[.24,-.06],[0,.1]];
+  pos.forEach(([x,y],i)=>{ g.save(); g.translate(x,y); if(!(trot&&sprite(g,'cavT',Math.floor(t*8+i)%3,.88,f<0))&&!(galop&&sprite(g,'gal',Math.floor(t*7+i)%2,.95,f<0))&&!sprite(g,'cav',galop?Math.floor(t*7+i)%2:0,.95,f<0)) horseRider(g,f,t*(galop?9:2)+i); g.restore(); }); }
 function chargePos(tw,P){ const c=tw.charge, k=Math.max(0,Math.min(1,(R.t-c.t0)/c.dur)), e=x=>x*x*(3-2*x);
   const u=k<.42?e(k/.42):1-e((k-.42)/.58), x=P.x+(c.x-P.x)*u, y=P.y+(c.y-P.y)*u; return {x,y,f:(k<.42?c.x-P.x:P.x-c.x)>=0?1:-1}; }
 function frise(g,cx,cy,ang,down,rt,L=.5){ // cheval de frise : croisillons métalliques et barbelés, en travers de la rue
@@ -1514,7 +1520,9 @@ function drawAgentMO(g,tw,a,rt){
   let lx=0, ly=0; if(pushing&&a.u&&a.u.p){ const dx=a.u.p.x-a.x, dy=a.u.p.y-a.y, L=Math.hypot(dx,dy)||1, k=Math.max(0,Math.sin(rt*7+tw.agents.indexOf(a)*1.7))**3*.07; lx=dx/L*k; ly=dy/L*k; }
   g.save(); g.translate(a.x+lx,a.y+ly); if(a.st==='back') g.globalAlpha=.55; if(pushing) g.rotate(f*.08); else if(moving) g.rotate(Math.sin(rt*10)*.04);
   g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(.02,.01,.16,.05,0,0,7); g.fill();
-  if(!(pushing&&sprite(g,'mop',0,.72,f<0))&&!sprite(g,'mo',moving?Math.floor(rt*5)%2:0,.72,f<0)) cop(g,f,rt*5,true);
+  const ia=tw.agents.indexOf(a), elan=pushing?Math.max(0,Math.sin(rt*7+ia*1.7))**3:0;
+  const pm=pushing?(elan>.35?2:0):moving?Math.floor(rt*6+ia)%2:a.st==='eng'?0:3;
+  if(!sprite(g,'moN',pm,.69,f<0)&&!(pushing&&sprite(g,'mop',0,.72,f<0))&&!sprite(g,'mo',moving?Math.floor(rt*5)%2:0,.72,f<0)) cop(g,f,rt*5,true);
   if(a.e<a.max){ const w=.3,k=a.e/a.max; g.fillStyle='rgba(0,0,0,.7)'; rr(g,-w/2-.02,-.84,w+.04,.08,.03); g.fill(); g.fillStyle=k>.4?'#62b0ff':'#ff9f43'; rr(g,-w/2,-.82,w*k,.04,.02); g.fill(); }
   g.restore(); }
 function aimOf(tw,P){ const u=tw.tgt&&tw.tgt[0]; return u&&u.px!==undefined?Math.atan2(u.py-P.y,u.px-P.x):tw.face; }
@@ -1566,11 +1574,12 @@ function render(){
       if(!rep2&&c.cd<=0&&R.phase==='run'){ g.strokeStyle=`rgba(255,209,102,${.6+.4*pu})`; g.lineWidth=.04; g.beginPath(); g.ellipse(0,.01,.26,.09,0,0,7); g.stroke(); }
       else if(c.cd>0){ g.strokeStyle='rgba(255,209,102,.8)'; g.lineWidth=.035; g.beginPath(); g.ellipse(0,.01,.26,.09,0,-Math.PI/2,-Math.PI/2+Math.PI*2*(1-c.cd/(c.cdMax||cn().cd))); g.stroke(); }
       const crie=R.t-c.shoutT<1.2, bob=c.walk?Math.abs(Math.sin(rt*9))*.04:0; g.translate(0,-bob); if(c.walk) g.rotate(c.f*.05+Math.sin(rt*9)*.03);
-      const st=crie?(R.t-c.shoutT>.55&&setOk('cmdO2')?'cmdO2':'cmdO'):c.walk&&setOk('cmdM')?'cmdM':!rep2&&R.t-c.cheerT<1.4&&setOk('cmdR')?'cmdR':'cmd';
+      const gaze=c.gaz&&R.t-c.gaz.t0<1.1&&setOk('cmdG'), st=gaze?'cmdG':crie?(R.t-c.shoutT>.55&&setOk('cmdO2')?'cmdO2':'cmdO'):c.walk&&setOk('cmdM')?'cmdM':!rep2&&R.t-c.cheerT<1.4&&setOk('cmdR')?'cmdR':'cmd';
       if(!sprite(g,st,c.walk?0:Math.floor(rt*.7)%2,.8,st==='cmdO2'||st==='cmdR'?c.f>0:c.f<0)) cop(g,c.f,rt*5,false);
       if(crie){ for(let i=0;i<3;i++){ const k=((R.t-c.shoutT)*1.6+i*.3)%1; g.strokeStyle=`rgba(255,209,102,${(1-k)*.9})`; g.lineWidth=.03; g.beginPath(); g.arc(c.f*.42,-.62,.1+k*.35,-.7,.7); g.stroke(); } }
       if(c.gaz&&R.t-c.gaz.t0<1.1&&c.gaz.cible.p){ const u=c.gaz.cible, k=(R.t-c.gaz.t0)/1.1; g.save(); g.strokeStyle=`rgba(240,230,180,${.75*(1-k)})`; g.lineWidth=.05; g.setLineDash([.06,.05]); g.lineDashOffset=-rt*2;
-        g.beginPath(); g.moveTo(c.f*.18,-.45); g.lineTo(u.p.x-c.x,u.p.y-c.y-.4); g.stroke(); g.restore(); }
+        g.beginPath(); g.moveTo(c.f*(gaze?.34:.18),gaze?-.62:-.45); g.lineTo(u.p.x-c.x,u.p.y-c.y-.4); g.stroke(); g.restore(); 
+        if(gaze){ g.save(); g.setLineDash([]); for(let i=0;i<4;i++){ const q=((R.t-c.gaz.t0)*2.2+i/4)%1; g.fillStyle=`rgba(240,236,215,${.55*(1-q)*(1-k)})`; g.beginPath(); g.arc(c.f*(.38+q*.28),-.63-q*.06+Math.sin(i*5)*.03,.04+q*.11,0,7); g.fill(); } g.restore(); } }
       if(rep2){ pill(g,0,-.95,'repli','#fff',.14,'#c0392b'); }
       else if(R.phase!=='idle'){ // niveau + barre d'expérience au-dessus de la tête
         const lv=c.lvl, mx=lv>=CMDN.length, pr=mx?1:(c.xp-CMDN[lv-1].xp)/(CMDN[lv].xp-CMDN[lv-1].xp), up=R.t-c.lvlT<1.5, sc=up?1+.35*Math.sin(Math.min(1,(R.t-c.lvlT)/1.5)*Math.PI):1;
@@ -1591,7 +1600,7 @@ function render(){
     if(tw.type==='barrage') items.push({y:tw.ry+.06,d:()=>drawBarrier(g,tw,rt)});
     if(tw.type==='peloton') tw.agents.forEach(a=>items.push({y:a.y,d:()=>drawAgentMO(g,tw,a,rt)}));
     if(tw.type==='cavalerie'&&tw.transit){ const c=tw.transit, k=Math.min(1,(R.t-c.t0)/c.dur), x=c.x0+(c.x1-c.x0)*k, y=c.y0+(c.y1-c.y0)*k, f=c.x1>=c.x0?1:-1;
-      items.push({y,d:()=>{ g.save(); g.translate(x,y+.1); g.scale(1.2,1.2); drawHorses(g,tw,f,rt,true); g.restore(); }}); }
+      items.push({y,d:()=>{ g.save(); g.translate(x,y+.1); g.scale(1.2,1.2); drawHorses(g,tw,f,rt,true,true); g.restore(); }}); }
     if(tw.type==='cavalerie'&&tw.charge){ const c=chargePos(tw,P); items.push({y:c.y,d:()=>{ g.save(); g.translate(c.x,c.y+.1); g.scale(1.2,1.2); drawHorses(g,tw,c.f,rt,true); g.restore(); }}); } }
   for(const id in R.towers){ const tw=R.towers[id]; if(tw.type==='cavalerie'&&(tw.charge||tw.transit)&&Math.random()<.5){ const P=padOf(id), c=tw.charge?chargePos(tw,P):null;
       const x=c?c.x:tw.transit.x0+(tw.transit.x1-tw.transit.x0)*Math.min(1,(R.t-tw.transit.t0)/tw.transit.dur), y=c?c.y:tw.transit.y0+(tw.transit.y1-tw.transit.y0)*Math.min(1,(R.t-tw.transit.t0)/tw.transit.dur);
