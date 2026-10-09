@@ -1314,7 +1314,11 @@ export function enquetePre(state, uids, ord, push) {
       const pieces = (Array.isArray(ord[u].confront) ? ord[u].confront : []).filter((f) => typeof f === 'string' && connus.has(f)).slice(0, 3);
       if (a === aff.coupable && !confrontationOk(aff, a, pieces)) {
         z.reputation -= 1;
-        z.rapport.push(`Enquête : confronté${aff.suspects[a].f ? 'e' : ''} à tes pièces, ${aff.suspects[a].nom} nie tout et repart libre. Tes pièces ne le mettaient pas face à ses contradictions (−1 de réputation). Tu peux recommencer demain avec d’autres pièces.`);
+        // On rappelle les éléments opposés (et ceux qui n'ont pas pu l'être), pour que le joueur sache ce qui a été joué.
+        const nomEl = (f) => (f === 'doc:journal' ? 'le journal du lendemain' : f === 'doc:pvc' ? 'le PV de premières constatations' : `« ${titrePiece(aff, f)} »`);
+        const brut = (Array.isArray(ord[u].confront) ? ord[u].confront : []).filter((f) => typeof f === 'string').slice(0, 3);
+        const ecartes = brut.length - pieces.length;
+        z.rapport.push(`Enquête : confronté${aff.suspects[a].f ? 'e' : ''} à tes pièces${pieces.length ? ` (${pieces.map(nomEl).join(', ')})` : ''}, ${aff.suspects[a].nom} nie tout et repart libre. ${ecartes > 0 ? `${ecartes} élément${ecartes > 1 ? 's' : ''} choisi${ecartes > 1 ? 's' : ''} n’étai${ecartes > 1 ? 'ent' : 't'} plus dans ton dossier ce soir. ` : ''}Tes pièces ne le mettaient pas face à ses contradictions (−1 de réputation). Tu peux recommencer demain avec d’autres pièces.`);
         continue;
       }
       d.accuse = a; d.accuseJ = e.jour;
