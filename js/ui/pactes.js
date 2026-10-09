@@ -238,7 +238,7 @@ export function renderPactes() {
   const conseil = conseilHtml();
   const voteCeSoir = !!(S.state.conseil && S.state.conseil.tour === S.state.turn);
   return `<main class="screen">
-    ${reglesV2(S.state) ? '<a class="retour-carte small" href="#carte" data-action="carte-calque" data-v="district">‹ District</a>' : ongletsCarte('pactes')}
+    ${reglesV2(S.state) ? '<a class="retour-carte small" href="#carte" data-action="carte-calque" data-v="nondroit">‹ Carte</a>' : ongletsCarte('pactes')}
     <header class="col" style="gap:3px"><h1 class="big">Pactes</h1>
       <p class="sub">Des accords à deux pendant ${PACTE.duree} tours, avec un avantage concret pour chacun. Accepté avant 20:00, signé le soir même.</p></header>
     ${rem ? `<p class="tiny ok" style="margin:0">Centrale d’achat : formations et équipement −${Math.round(rem * 100)} % aujourd’hui.</p>` : ''}

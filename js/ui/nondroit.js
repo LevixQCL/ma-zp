@@ -216,7 +216,7 @@ function ligneSecteur(k, s, me, d) {
 }
 
 /** Bloc complet pour le Terrain. */
-export function nonDroitHtml() {
+export function nonDroitHtml({ sansPlan = false } = {}) {
   const n = nd(), me = myZone(), d = S.draft;
   if (!n || !me || !d) return '';
   const cles = Object.keys(n.secteurs).sort((a, b) => (n.secteurs[a].coeur - n.secteurs[b].coeur) || Number(a) - Number(b));
@@ -237,7 +237,7 @@ export function nonDroitHtml() {
   return `<section class="col" aria-label="Zone de non-droit" style="gap:8px" id="non-droit">
     <div class="between"><h2 class="section" style="margin:0">Zone de non-droit</h2><span class="tiny muted">${repris} repris sur ${cles.length} · tes agents ${mesAgents}/${ND.maxTotal}</span></div>
     ${ceSoirHtml(n, me, ann)}
-    <div class="plan-cadre">${planNonDroit(S.state, me, S.secteurSel)}</div>
+    ${sansPlan ? '' : `<div class="plan-cadre">${planNonDroit(S.state, me, S.secteurSel)}</div>`}
     <p class="tiny muted" style="margin:0">À plusieurs, <strong>+${Math.round(ND.coop * 100)} % par zone</strong> ; seul ou trop faible, blessés possibles.${bordent ? ` ${bordent} secteur${bordent > 1 ? 's' : ''} du milieu touche${bordent > 1 ? 'nt' : ''} ta zone.` : ''} <a href="#guide-affaires">Règles</a></p>
     ${danger.length ? `<p class="small bad" style="margin:0">⚠ ${danger.map((k) => esc(nomSecteur(k))).join(', ')} : le milieu remonte et personne de garde de ta part.</p>` : ''}
     ${(() => {
@@ -248,7 +248,7 @@ export function nonDroitHtml() {
       const miens = tries.filter((k) => k !== sel && utile(k));
       const autres = tries.filter((k) => k !== sel && !utile(k));
       const ouvertAutres = S.ouverts && S.ouverts['nd-autres'];
-      return `${sel ? `<div class="card tight nd-liste nd-fiche">${ligneSecteur(sel, n.secteurs[sel], me, d)}</div>` : '<p class="tiny muted nd-astuce" style="margin:0;text-align:center">👆 Touche un secteur sur le plan pour l’ouvrir.</p>'}
+      return `${sel ? `<div class="card tight nd-liste nd-fiche">${ligneSecteur(sel, n.secteurs[sel], me, d)}</div>` : `<p class="tiny muted nd-astuce" style="margin:0;text-align:center">👆 Touche un secteur sur ${sansPlan ? 'la carte' : 'le plan'} pour l’ouvrir.</p>`}
         ${miens.length ? `<div class="card tight nd-liste">${miens.map((k) => ligneSecteur(k, n.secteurs[k], me, d)).join('')}</div>` : ''}
         ${autres.length ? `<details class="nd-autres" data-k="nd-autres" ${ouvertAutres ? 'open' : ''}><summary class="small">${miens.length || sel ? 'Les' : 'Tous les'} ${autres.length} autre${autres.length > 1 ? 's' : ''} secteur${autres.length > 1 ? 's' : ''} ${icon('chevron', 14)}</summary>
           <div class="card tight nd-liste" style="margin-top:8px">${autres.map((k) => ligneSecteur(k, n.secteurs[k], me, d)).join('')}</div></details>` : ''}`;

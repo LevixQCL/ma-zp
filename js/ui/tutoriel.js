@@ -98,9 +98,9 @@ export const ETAPES = [
   },
   {
     id: 'carte-v2', route: 'carte', v2: true, onglet: 'Ta ville en maquette : tes quartiers et tout le district.', cible: '#mes-quartiers', avant: () => { S.carteCalque = 'mazone'; },
-    titre: 'La carte : Ma zone et District',
-    texte: `<p><strong>Ma zone</strong> : touche un quartier, puis remplis ses cases : une case, une patrouille de Proximité, et une voiture qui part tourner dans le quartier. Vise d’abord le <strong>point chaud</strong> 🔥.</p>
-      <p><strong>District</strong> : renforts, affaires disputées, zone de non-droit, pactes et Conseil, une ligne chacun. Touche la zone d’un collègue sur la carte pour voir son commissariat.</p>`,
+    titre: 'La carte : Non-droit et Ma zone',
+    texte: `<p><strong>Non-droit</strong> (l’écran qui s’ouvre d’abord) : le centre de la ville à reprendre ensemble. Touche un secteur rouge, engage des agents : tes fourgons partent de ton HP sur la carte. En dessous : renforts, affaires disputées, pactes et Conseil.</p>
+      <p><strong>Ma zone</strong> : touche un quartier, puis remplis ses cases : une case, une patrouille de Proximité, et une voiture qui part tourner dans le quartier. Vise d’abord le <strong>point chaud</strong> 🔥.</p>`,
   },
   {
     id: 'terrain', route: 'terrain', v1: true, /* saison 2 : le Terrain est un calque de la Carte */ onglet: 'Ce qui se joue avec les autres zones.', cible: ['section[aria-label="Zone de non-droit"]', 'section[aria-label="Chez les voisins"]'], union: true,

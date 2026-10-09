@@ -9,14 +9,42 @@ import { makeRng } from '../engine/rng.js';
 import { tensionsDe, niveauTension } from '../engine/quartiers.js';
 
 let cache = null;
+/** Vue « non-droit » : cadrée sur le centre et sa couronne de quartiers ; sans non-droit, tout le district. */
+const T_VUE = (st) => (st.nonDroit && Object.keys(st.nonDroit.secteurs || {}).length ? 'nondroit' : 'district');
 const calme = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
 
 export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
   const seed = S.config.seed, reduit = calme();
   const mesT0 = tensionsDe(st, me);
-  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, Object.values(st.zones).map((z) => `${z.uid}:${z.nom}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
-  if (!cache || cache.cle !== cle) cache = { cle, svg: dessiner(st, me, seed, vue === 'mazone' ? 'zone' : 'district', reduit) };
+  const ndS = (st.nonDroit && st.nonDroit.secteurs) || {};
+  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, Object.entries(ndS).map(([k, x]) => `${k}:${x.statut}:${Math.round(x.emprise)}`).join(','), Object.values(st.zones).map((z) => `${z.uid}:${z.nom}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
+  if (!cache || cache.cle !== cle) cache = { cle, ...dessiner(st, me, seed, vue === 'mazone' ? 'zone' : T_VUE(st), reduit) };
   let svg = cache.svg;
+  // Non-droit : mes fourgons partent de mon HP vers les secteurs où j'engage des agents ce soir ; ceux des collègues
+  // annoncés à la radio aussi (gris), avec le total sur place.
+  const dyn = [];
+  const sect = (S.draft && S.draft.secteurs) || {}, ann = annonces();
+  for (const k of new Set([...Object.keys(sect).filter((x) => sect[x] > 0), ...Object.keys(ann)])) {
+    const b = cache.pos(Number(k), 4);
+    if (!b) continue;
+    const venus = [...(sect[k] ? [{ uid: me.uid, n: sect[k] }] : []), ...(ann[k] || [])];
+    venus.forEach((v, j) => {
+      const a = cache.pos(cache.capitale[v.uid], 4);
+      if (!a) return;
+      const moi = v.uid === me.uid, dur = Math.max(3, Math.hypot(b[0] - a[0], b[1] - a[1]) / 22);
+      const d = `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
+      if (moi) dyn.push(`<path d="${d}" stroke="#63B0FF" stroke-width=".8" stroke-dasharray="2 2.5" fill="none" opacity=".7"/>`);
+      for (let q = 0; q < Math.min(4, v.n); q++) {
+        const corps = moi ? '<rect x="-3" y="-1.5" width="6" height="3" rx=".9" fill="#E9EEF8"/><rect x="-.7" y="-1.5" width="1.6" height="3" fill="#1F4FA8"/><rect x="-.3" y="-1" width=".9" height="2" rx=".3" fill="#63B0FF"/>'
+          : '<rect x="-2.6" y="-1.3" width="5.2" height="2.6" rx=".8" fill="#9AA3C4"/>';
+        dyn.push(reduit ? `<g transform="translate(${((a[0] + b[0]) / 2 + q * 3).toFixed(1)} ${((a[1] + b[1]) / 2).toFixed(1)})">${corps}</g>`
+          : `<g opacity="0">${corps}<animateMotion dur="${dur.toFixed(1)}s" begin="${(q * 0.7 + j * 0.4).toFixed(1)}s" repeatCount="indefinite" rotate="auto" path="${d}"/><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;.1;.85;1" dur="${dur.toFixed(1)}s" begin="${(q * 0.7 + j * 0.4).toFixed(1)}s" repeatCount="indefinite"/></g>`);
+      }
+    });
+    const total = venus.reduce((t, v) => t + v.n, 0);
+    dyn.push(`<g transform="translate(${b[0].toFixed(1)} ${(b[1] - 30).toFixed(1)})"><rect x="-13" y="-6.5" width="26" height="13" rx="6.5" fill="#1F4FA8" stroke="#0B1124" stroke-width=".8"/><text x="0" y="2.6" text-anchor="middle" class="iso-pbt" style="font-size:7px">${total} ag.</text></g>`);
+  }
+  svg = svg.replace('<!--dyn-->', dyn.join(''));
   // Patrouilles du soir : une voiture visible par agent (3 au plus), pastille bleue avec le nombre.
   const pat = (S.draft && S.draft.patrouilles) || {};
   for (const [q, n0] of Object.entries(pat)) {
@@ -28,6 +56,10 @@ export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
   return svg;
 }
 
+/** Annonces des collègues pour le non-droit (radio) : branché par la Carte pour éviter un import circulaire. */
+let annonces = () => ({});
+export function brancherAnnoncesND(f) { annonces = f; }
+
 function dessiner(st, me, seed, vue, reduit) {
   const patrouilles = {};
   const T = territoires(seed, Object.values(st.zones));
@@ -37,7 +69,8 @@ function dessiner(st, me, seed, vue, reduit) {
   const voisins = new Set(moi.quartiers.flatMap((i) => T.adj[i]).filter((i) => !mes.has(i)));
   const ndSet = new Set(T.nd.cells);
   const zoomZone = vue === 'zone';
-  const cellsVue = zoomZone ? [...mes, ...voisins] : T.cells.map((c) => c.i).filter((i) => T.owner[i] >= 0 || ndSet.has(i));
+  const couronne = [...new Set(T.nd.cells.flatMap((i) => [i, ...T.adj[i]]))].filter((i) => T.owner[i] >= 0 || ndSet.has(i));
+  const cellsVue = zoomZone ? [...mes, ...voisins] : vue === 'nondroit' ? couronne : T.cells.map((c) => c.i).filter((i) => T.owner[i] >= 0 || ndSet.has(i));
   const C = 0.866, S = 0.5;
   const P = (x, y, z = 0) => [(x - y) * C, (x + y) * S - z];
   const f = (v) => v.toFixed(1);
@@ -62,15 +95,18 @@ function dessiner(st, me, seed, vue, reduit) {
   const xs = ptsVue.map((p) => p[0]), ys = ptsVue.map((p) => p[1]);
   const x0 = Math.min(...xs) - 6, x1 = Math.max(...xs) + 6, y0 = Math.min(...ys) - 46, y1 = Math.max(...ys) + 10;
 
+  const etiqND = [];
   const routes = [], sol = [], lueurs = [], objets = [], etiq = [], fumees = [], voitures = [], cibles = [], selections = [];
   for (const i of cellsVue) {
-    const c = T.cells[i], mien = mes.has(i), nd = ndSet.has(i);
+    const sND = ndSet.has(i) && st.nonDroit && st.nonDroit.secteurs[i];
+    const repris = !!(sND && sND.statut === 'repris');
+    const c = T.cells[i], mien = mes.has(i), nd = ndSet.has(i) && !repris;
     const t = mien ? mesT[i] : null, n = mien ? niveauTension(t) : null;
     const rng = makeRng(`${seed}:iso:${i}`);
     routes.push(`<polygon points="${poly(c.poly.map(([x, y]) => P(x, y)))}" fill="#0C1128" stroke="#3A4470" stroke-opacity=".35" stroke-width=".35" stroke-dasharray="1.5 2"/>`);
     const ilot = inset(c.poly, c.c, 0.9);
     const top = ilot.map(([x, y]) => P(x, y, 1.2));
-    sol.push(`<polygon points="${poly(ilot.map(([x, y]) => P(x, y)))}" fill="#090D20"/><polygon points="${poly(top)}" fill="${nd ? '#26141B' : mien ? '#1E2A4C' : '#151C36'}" stroke="${mien ? '#33447A' : '#1D2547'}" stroke-width=".5"/>`);
+    sol.push(`<polygon points="${poly(ilot.map(([x, y]) => P(x, y)))}" fill="#090D20"/><polygon points="${poly(top)}" fill="${nd ? '#26141B' : repris ? '#16322B' : mien ? '#1E2A4C' : '#151C36'}" stroke="${repris ? '#2E6B55' : mien ? '#33447A' : '#1D2547'}" stroke-width=".5"/>`);
     if (mien || (!zoomZone && rng.next() < 0.3)) for (const [k, v] of c.poly.entries()) { if (k % (zoomZone ? 1 : 2)) continue; const [lx, ly] = P(v[0], v[1], 3); lueurs.push(`<circle cx="${f(lx)}" cy="${f(ly + 3)}" r="${zoomZone ? 5 : 3}" fill="url(#${id('lampe')})"/><circle cx="${f(lx)}" cy="${f(ly)}" r=".7" fill="#FFE2A8"/>`); }
     if (mien) { const [cx, cy] = P(c.c[0], c.c[1]); lueurs.push(`<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="40" ry="22" fill="${LUM[n.id]}" opacity="${0.1 + (t / 100) * 0.28}" filter="url(#${id('flou')})"/>`); }
 
@@ -118,7 +154,13 @@ function dessiner(st, me, seed, vue, reduit) {
       if (z) cibles.push({ prof: -1, h: mien ? `<polygon class="hit-zone" data-action="carte-calque" data-v="mazone" points="${poly(top)}" fill="transparent"><title>Ouvrir ma zone</title></polygon>`
         : `<polygon class="hit-autre" data-action="voir-hp" data-uid="${uid}" points="${poly(top)}" fill="transparent"><title>Commissariat de ${String(z.nom).replace(/[<&"]/g, '')}</title></polygon>` });
     }
-    if (!zoomZone && nd) cibles.push({ prof: -1, h: `<polygon class="hit-nd" data-action="cv-nd" points="${poly(top)}" fill="transparent"><title>Zone de non-droit</title></polygon>` });
+    // Secteurs de non-droit (repris ou non) : touchables partout ; repère avec l'emprise, contour quand il est choisi.
+    if (sND) {
+      cibles.push({ prof: -1, h: `<polygon class="hit-nd" data-action="secteur" data-c="${i}" points="${poly(top)}" fill="transparent"><title>${c.nom} · ${repris ? 'repris' : `emprise ${Math.round(sND.emprise)}`}</title></polygon>` });
+      selections.push(`<polygon class="sel" data-q="${i}" visibility="hidden" points="${poly(top)}" fill="#FFFFFF" fill-opacity=".1" stroke="#FFFFFF" stroke-width="1.2"/>`);
+      const [px, py] = P(c.c[0], c.c[1], 18);
+      etiqND.push(`<g data-action="secteur" data-c="${i}" style="cursor:pointer" transform="translate(${f(px)} ${f(py)})"><path d="M0 8L-3 4H3Z" fill="${repris ? '#3DD39A' : '#E0625A'}"/><circle r="6.5" fill="${repris ? '#3DD39A' : '#E0625A'}" stroke="#0B1124" stroke-width="1"/><text y="2.4" text-anchor="middle" class="iso-tn" style="fill:${repris ? '#0B1124' : '#fff'}">${repris ? '✓' : Math.round(sND.emprise)}</text></g>`);
+    }
     // Zone cliquable : l'îlot et le volume au-dessus (là où sont les immeubles), triée par profondeur.
     if (mien && zoomZone) {
       const hull = enveloppe([...ilot.map(([x, y]) => P(x, y)), ...inset(c.poly, c.c, 0.7).map(([x, y]) => P(x, y, 16))]);
@@ -232,7 +274,12 @@ function dessiner(st, me, seed, vue, reduit) {
   const cibleDistrict = zoomZone ? '' : `<polygon points="${poly(enveloppe([...mes].flatMap((i) => T.cells[i].poly.map(([x, y]) => P(x, y)))))}" fill="#FFB23F" fill-opacity=".05" stroke="#FFB23F" stroke-width="1" stroke-dasharray="3 2" pointer-events="none"/>`;
   // District : le nom de chaque zone sur son quartier principal (touche → son commissariat).
   const nomsZones = zoomZone ? '' : T.zones.filter((tz) => st.zones[tz.uid]).map((tz) => {
-    const c = T.cells[tz.capitale], moiZ = tz.uid === me.uid, z = st.zones[tz.uid];
+    // Le nom se pose sur le quartier de la zone visible le plus proche du centre (sa capitale en vue district).
+    const vus = vue === 'nondroit' ? tz.quartiers.filter((i) => cellsVue.includes(i)) : [tz.capitale];
+    if (!vus.length) return '';
+    const ndC = T.nd.cells.length ? T.nd.cells.reduce((a, i) => [a[0] + T.cells[i].c[0] / T.nd.cells.length, a[1] + T.cells[i].c[1] / T.nd.cells.length], [0, 0]) : [WW / 2, HH / 2];
+    const ci = vus.slice().sort((a, b) => Math.hypot(T.cells[b].c[0] - ndC[0], T.cells[b].c[1] - ndC[1]) - Math.hypot(T.cells[a].c[0] - ndC[0], T.cells[a].c[1] - ndC[1]))[vue === 'nondroit' ? vus.length - 1 : 0];
+    const c = T.cells[ci], moiZ = tz.uid === me.uid, z = st.zones[tz.uid];
     const nom = moiZ ? 'Ma zone' : (z.nom.length > 12 ? `${z.nom.slice(0, 11)}…` : z.nom), lw = 14 + nom.length * 4.3;
     const [lx, ly] = P(c.c[0], c.c[1], 30);
     const attrs = moiZ ? 'data-action="carte-calque" data-v="mazone"' : `data-action="voir-hp" data-uid="${tz.uid}"`;
@@ -245,7 +292,9 @@ function dessiner(st, me, seed, vue, reduit) {
       <radialGradient id="${id('feu')}"><stop offset="0" stop-color="#FF7A3C" stop-opacity=".6"/><stop offset="1" stop-color="#FF7A3C" stop-opacity="0"/></radialGradient>
       <clipPath id="${id('vue')}"><rect x="${f(x0)}" y="${f(y0)}" width="${f(x1 - x0)}" height="${f(y1 - y0)}"/></clipPath></defs>
     <style>.iso-tn{font:800 7px 'Bricolage Grotesque',sans-serif;fill:#0B1124}.iso-nmq{font:800 7px 'Instrument Sans',sans-serif;fill:#0B1124}.iso-pbt{font:800 6px 'Bricolage Grotesque',sans-serif;fill:#fff}.iso-zn{font:700 7.5px 'Instrument Sans',sans-serif;fill:#EDF0FA}.iso .hit,.iso .hit-zone,.iso .hit-nd,.iso .hit-autre{cursor:pointer}</style>
-    <g clip-path="url(#${id('vue')})">${routes.join('')}${fleuve}${sol.join('')}${selections.join('')}${lueurs.join('')}${voitures.join('')}${objets.map(dessin).join('')}${fumees.join('')}${cibles.map((c) => c.h).join('')}${cibleDistrict}${etiqHtml}${nomsZones}</g>
+    <g clip-path="url(#${id('vue')})">${routes.join('')}${fleuve}${sol.join('')}${selections.join('')}${lueurs.join('')}${voitures.join('')}${objets.map(dessin).join('')}${fumees.join('')}<!--dyn-->${cibles.map((c) => c.h).join('')}${cibleDistrict}${etiqND.join('')}${etiqHtml}${nomsZones}</g>
   </svg>`;
-  return reduit ? out.replace(/<animate[^>]*\/>|<animateTransform[^>]*\/>/g, '') : out;
+  const pos = (i, z = 0) => (T.cells[i] ? P(T.cells[i].c[0], T.cells[i].c[1], z) : null);
+  const capitale = Object.fromEntries(T.zones.map((tz) => [tz.uid, tz.capitale]));
+  return { svg: reduit ? out.replace(/<animate[^>]*\/>|<animateTransform[^>]*\/>/g, '') : out, pos, capitale };
 }

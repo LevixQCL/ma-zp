@@ -9,7 +9,7 @@ export const NOTE_MAJ = {
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
     ['🏢', 'Un nouvel HP', 'ton commissariat en grand, un seul bouton pour la suite, et tes raccourcis au choix.'],
-    ['🗺️', 'Une nouvelle carte', 'ta ville en maquette 3D : touche un quartier, envoie tes patrouilles et regarde-les rouler. Deux boutons seulement : Ma zone et District (Terrain, non-droit et pactes sont dedans).'],
+    ['🗺️', 'Une nouvelle carte', 'ta ville en maquette 3D : touche un quartier, envoie tes patrouilles et regarde-les rouler. Deux boutons : Non-droit (qui s’ouvre d’abord, avec le reste du district dessous) et Ma zone.'],
     ['🎖️', 'L’onglet Chef', 'ce que ton chef fait aujourd’hui, sa semaine et sa carrière, à un toucher.'],
     ['🎖️', 'Ton chef de corps', 'choisis son visage : il progresse avec tes jeux et ta gestion, et le suit de saison en saison.'],
     ['⚔️', 'Ta semaine de chef', 'trois objectifs et un rival à battre chaque semaine, des rubans et un cadre doré à gagner.'],
@@ -22,7 +22,7 @@ export const NOTE_MAJ = {
   sections: [
     ['La nouvelle carte et l’onglet Chef (9 octobre)', [
       ['Carte en maquette', 'la ville en vue 3/4 : immeubles, maisons, commerces et tours ; les fenêtres s’allument selon la tension, les quartiers chauds fument, ton HP a son parking et son héliport. Touche n’importe où sur un quartier : sa fiche s’ouvre sous la carte avec ses patrouilles (− / +). Chaque patrouille envoyée devient une voiture qui tourne dans le quartier.'],
-      ['Carte en deux boutons', 'Ma zone (fiche du quartier, liste de tes quartiers, site sensible) et District (renforts, affaires disputées, grand événement, zone de non-droit, pactes et Conseil, commissariats des autres), chacun en une ligne à déplier. Touche la tache rouge pour ouvrir le non-droit, ta zone pour y revenir. L’ancien onglet Terrain et l’onglet Pactes sont dedans ; leurs liens y mènent.'],
+      ['Carte en deux boutons', 'Non-droit, qui s’ouvre d’abord : la ville entière, touche un secteur rouge pour l’ouvrir et y engager des agents ; tes fourgons partent de ton HP sur la carte, ceux des collègues annoncés à la radio aussi. Dessous : renforts, affaires disputées, grand événement, pactes et Conseil. Touche la zone d’un collègue pour voir son commissariat. Puis Ma zone : fiche du quartier, liste de tes quartiers, site sensible. L’ancien onglet Terrain et l’onglet Pactes sont dedans ; leurs liens y mènent.'],
       ['Nouvelle allure', 'carte plus sombre et plus lisible : rues et axes discrets, noms en pastilles, ta zone soulignée d’un liseré lumineux, légende repliée.'],
       ['Onglet Chef', 'dans la barre du bas, juste avant la Radio (la Carte reste après les Ordres ; Terrain est rangé dans la Carte). En haut, ce que ton chef fait aujourd’hui (agenda, première ligne, service du réseau, talents), envoyé avec tes ordres ; puis ce qu’il a fait cette nuit, sa semaine (objectifs, duel) et sa fiche. Le portrait sur l’HP y mène aussi.'],
       ['Ordres et Énigmes', 'en-têtes plus courts ; les aides de l’affectation se replient après tes 3 premiers jours.'],

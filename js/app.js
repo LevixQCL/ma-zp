@@ -529,6 +529,13 @@ async function onClick(e) {
         // Secteur de la zone de non-droit : une ligne de la liste s'ouvre ou se referme ; un secteur touché sur une carte s'ouvre sur le Terrain.
         if (el.classList.contains('nd-row')) { S.secteurSel = S.secteurSel === el.dataset.c ? null : el.dataset.c; rerender(); break; }
         S.secteurSel = el.dataset.c;
+        // Saison 2 : le non-droit est le premier écran de la Carte ; la fiche du secteur s'ouvre sous la carte.
+        if (reglesV2(S.state)) {
+          S.carteCalque = 'nondroit';
+          if (S.route !== 'carte') { location.hash = '#carte'; await new Promise((ok) => setTimeout(ok, 60)); } else rerender();
+          document.querySelector('.nd-fiche')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          break;
+        }
         if (location.hash !== '#terrain') { location.hash = '#terrain'; await new Promise((ok) => setTimeout(ok, 60)); } else rerender();
         const cible = document.getElementById(`nd-${el.dataset.c}`);
         if (cible) { cible.scrollIntoView({ block: 'center', behavior: 'smooth' }); cible.classList.add('surligne-bloc'); setTimeout(() => cible.classList.remove('surligne-bloc'), 1600); }
@@ -620,7 +627,7 @@ async function onClick(e) {
         if (repris.length) { const cq = carteQuartiers(S.state); toast(`Agent repris à ${[...new Set(repris)].map((x) => cq.nomDe(Number(x))).join(', ')}.`); }
         S.quartierSel = k; S.ordersDirty = true; rerender(); break;
       }
-      case 'cv-nd': S.carteCalque = 'district'; S.ouverts = { ...(S.ouverts || {}), 'cv-nd': true }; rerender(); document.querySelector('[data-k="cv-nd"]')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); break;
+      case 'cv-nd': S.carteCalque = 'nondroit'; rerender(); document.getElementById('non-droit')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); break;
       case 'carte-calque': S.carteCalque = el.dataset.v; if (S.route !== 'carte') location.hash = '#carte'; else { rerender(); } break;
       case 'carte-zoom': S.carteZoom = el.dataset.v === '1'; rerender(); break;
       case 'renfort-n': {

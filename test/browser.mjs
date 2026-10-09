@@ -56,6 +56,7 @@ await page.goto(`${BASE}#carte`);
 await page.waitForSelector('svg[role="img"]');
 await shot('07-carte');
 // Quartiers : toucher un quartier, envoyer une patrouille, la déplacer.
+if (await page.locator('[data-action="carte-calque"][data-v="mazone"]').count()) { await page.click('[data-action="carte-calque"][data-v="mazone"]'); await page.waitForTimeout(200); } // saison 2 : la Carte s'ouvre sur le non-droit
 await page.locator('polygon[data-action="quartier"]').first().click({ force: true });
 if (await page.locator('.cv-fiche').count()) { // saison 2 : fiche sous la carte, cases de patrouille
   await page.locator('.cv-case:not([disabled])').first().click();
@@ -202,7 +203,7 @@ await page.goto(`${BASE}#carte`);
 // Saison 2 : les pactes sont une ligne du District ; saison 1 : un onglet de la Carte.
 if (await page.locator('a.segl[href="#pactes"]').count()) await page.click('a.segl[href="#pactes"]');
 else {
-  await page.click('[data-action="carte-calque"][data-v="district"]');
+  await page.click('[data-action="carte-calque"][data-v="nondroit"]');
   const pl = page.locator('details[data-k="cv-pactes"]');
   if (!(await pl.evaluate((e) => e.open))) await pl.locator('summary').click();
   await page.click('details[data-k="cv-pactes"] a.btn[href="#pactes"]');
