@@ -230,6 +230,10 @@ export function renderClassement() {
 }
 
 /** « vu il y a 12 min », « vu hier à 21:04 »… */
+/** Date d'inscription : l'heure d'arrivée de la zone dans la partie (gardée d'une saison à l'autre). */
+function inscritTexte(t) {
+  return Number(t) > 1e12 ? `inscrit le ${new Intl.DateTimeFormat('fr-BE', { timeZone: 'Europe/Brussels', day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(Number(t)))}` : 'inscrit avant le suivi des dates';
+}
 function vuTexte(t) {
   if (!t) return 'jamais vu depuis la mise à jour';
   const m = Math.round((Date.now() - t) / 60000);
@@ -363,7 +367,7 @@ export function renderAdmin() {
       <p class="small muted" style="margin:8px 0 0">Si le calcul du tour échoue pour tout le monde (message d’erreur en haut de l’écran), tu peux passer ce tour sans le calculer : rien ne change dans les zones, la partie repart au tour suivant.</p>
       <button class="btn block danger" data-action="admin-passer-tour" ${st.turn >= SEASON_LENGTH ? 'disabled' : ''}>Passer le tour ${st.turn} sans calcul</button></section>
     <section class="card"><div class="between"><h2 class="card-title">Joueurs (${zones.length})</h2><button class="btn small ghost" data-action="admin-vus">Actualiser</button></div>
-      ${zones.slice().sort((a, b) => (((S.players || {})[b.uid] || {}).vuLe || 0) - (((S.players || {})[a.uid] || {}).vuLe || 0)).map((z) => { const p = (S.players || {})[z.uid] || {}; return `<div class="between" style="gap:8px"><span class="small">${zoneName(z)}${p.pseudo ? ` <span class="muted">(${esc(p.pseudo)})</span>` : ''}<br><span class="tiny ${vuClasse(p.vuLe)}">${vuTexte(p.vuLe)}</span><span class="tiny muted"> · ${z.toursJoues} tours joués${z.toursSansOrdres ? ` · ${z.toursSansOrdres} sans ordres` : ''}</span></span>
+      ${zones.slice().sort((a, b) => (((S.players || {})[b.uid] || {}).vuLe || 0) - (((S.players || {})[a.uid] || {}).vuLe || 0)).map((z) => { const p = (S.players || {})[z.uid] || {}; return `<div class="between" style="gap:8px"><span class="small">${zoneName(z)}${p.pseudo ? ` <span class="muted">(${esc(p.pseudo)})</span>` : ''}<br><span class="tiny muted">${inscritTexte(z.arrivee)} · </span><span class="tiny ${vuClasse(p.vuLe)}">${vuTexte(p.vuLe)}</span><span class="tiny muted"> · ${z.toursJoues} tours joués${z.toursSansOrdres ? ` · ${z.toursSansOrdres} sans ordres` : ''}</span></span>
         ${z.uid !== S.user.uid ? `<button class="btn small danger" data-action="admin-remove" data-uid="${esc(z.uid)}">Retirer</button>` : ''}</div>`; }).join('')}
       <p class="tiny muted" style="margin:0">Dernière connexion : mise à jour quand le joueur a le jeu ouvert (au plus toutes les 5 minutes). « Jamais vu » : pas revenu depuis cette mise à jour.</p>
     </section>
