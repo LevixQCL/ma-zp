@@ -2,7 +2,7 @@ import { chefACreer, creationChefHtml, portraitChef, ficheChefHtml, chefNuitHtml
 import { absenceHtml, semaineHtml, portraitAdjoint } from './chef-semaine.js';
 import { humeurReseau } from '../engine/chef.js';
 import { titresDefi } from './defis.js';
-import { DOCTRINES } from '../engine/constants.js';
+import { DOCTRINES, SERVICE_LABELS } from '../engine/constants.js';
 import { doctrineOuverte, dernierJourDoctrine } from '../engine/regles.js';
 import { maxDemarchesDe } from '../engine/enquete.js';
 import { pistesHpHtml, faitsDeLaNuit } from './pistes.js';
@@ -16,7 +16,7 @@ import { coutCarrosserie } from '../engine/sinistres.js';
 import { formatCountdown, formatDateBe } from '../engine/time.js';
 import { QUEST_LABELS } from '../quests/quests.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
-import { estimations } from './ordres.js';
+import { estimations, besoinService } from './ordres.js';
 import { vagueTodo, vagueEnvoyeeAlerte } from './vagues.js';
 import { releveTodos, releveHtml } from './releve.js';
 import { bilanTodo, bilanHtml } from './bilan.js';
@@ -224,9 +224,16 @@ function itemsDuSoir(st, z, { ordresOk, faites, reussies, delegue }) {
   const fe = feuilletonEnCours(st, z);
   for (const sg of (z.pressions || []).filter((p) => (p.feuilleton || p.coop) && (p.quartier != null || p.service))) {
     if (sg.feuilleton && !(fe && fe.tour === st.turn)) continue; // audit annoncé plusieurs jours à l'avance : pas encore ce soir
-    const al = d.alloc || {};
-    const ok = sg.quartier != null ? ((d.patrouilles || {})[sg.quartier] || 0) >= (sg.patrouilles || 2) : (al[sg.service] || 0) >= sg.min && (!sg.service2 || (al[sg.service2] || 0) >= sg.min2);
-    items.unshift({ ok, href: sg.quartier != null ? '#carte' : '#ordres', t: esc(sg.titre), s: esc(sg.texte) });
+    let ok;
+    let s = esc(sg.texte);
+    if (sg.quartier != null) ok = ((d.patrouilles || {})[sg.quartier] || 0) >= (sg.patrouilles || 2);
+    else {
+      const b = besoinService(sg);
+      ok = b.ok;
+      const manque = b.l.find((x) => x.n < x.min);
+      if (manque) s = `${manque.n} sur ${manque.min} en ${esc(SERVICE_LABELS[manque.s] || manque.s)} comptés à 20:00${manque.brut > manque.n ? ` (${manque.brut - manque.n} partent en relève, opération ou FIPA)` : ''} : ajoutes-en dans tes Ordres`;
+    }
+    items.unshift({ ok, href: sg.quartier != null ? '#carte' : '#ordres', t: esc(sg.titre), s });
   }
   { let vt = null; try { vt = vagueTodo(estimations()); } catch (e) { /* pas de brouillon */ } if (vt) items.unshift(vt); }
   for (const x of releveTodos()) items.unshift(x);

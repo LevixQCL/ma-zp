@@ -163,7 +163,7 @@ export function estimations() {
   // Criminalité prévue ce soir : quartiers (patrouilles, point chaud) + pressions du jour et prévention.
   const prev = Object.values(prevoirTensions(st, z, { patrouilles: d.patrouilles || {}, agentsProx: eff.proximite || 0, capProx: cap.proximite || 0 }));
   const crimSoir = Math.max(10, Math.min(95, (prev.length ? prev.reduce((a, b) => a + b, 0) / prev.length : z.criminalite) + (crim - z.criminalite)));
-  return { crimSoir, attendus, couverts, pap, papV, capAdmin1, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, coutTotal, prises, crim, cap };
+  return { crimSoir, attendus, couverts, pap, papV, capAdmin1, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, coutTotal, prises, crim, cap, eff };
 }
 
 // ───── Remplissage des services : une case par agent dont le service a besoin ce soir ─────
@@ -933,4 +933,27 @@ export function renderOrdres() {
 
     <a class="small" href="#guide-ordres" style="text-align:center;padding:10px">Comment fonctionnent les ordres ?</a>
   </main>${tabbar('ordres')}`;
+}
+
+/**
+ * Situation du jour qui demande des agents dans un service (évasion, conflit…) : combien seront vraiment
+ * comptés à 20:00, après l'opération, la relève, l'audition, la FIPA et l'opération commune (comme la résolution).
+ */
+export function besoinService(sg) {
+  const d = S.draft || {};
+  let eff = d.alloc || {};
+  try { eff = estimations().eff || eff; } catch (e) { /* pas de brouillon complet */ }
+  const brut = d.alloc || {};
+  const l = [[sg.service, sg.min], ...(sg.service2 ? [[sg.service2, sg.min2]] : [])].map(([s, min]) => ({ s, min, n: eff[s] || 0, brut: brut[s] || 0 }));
+  return { ok: l.every((x) => x.n >= x.min), l };
+}
+
+/** Minimums demandés ce soir par service (situation du jour), à ne pas vider quand on libère un agent. */
+export function minimumsDuSoir(z) {
+  const m = {};
+  for (const p of (z && z.pressions) || []) {
+    if (p.service && p.min) m[p.service] = Math.max(m[p.service] || 0, p.min);
+    if (p.service2 && p.min2) m[p.service2] = Math.max(m[p.service2] || 0, p.min2);
+  }
+  return m;
 }

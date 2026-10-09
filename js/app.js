@@ -34,7 +34,7 @@ import { editionHtml, marquerEditionVue, editionVue } from './ui/edition.js';
 import { operationActive, effetsOperation } from './engine/zone.js';
 import { carteQuartiers } from './engine/quartiers.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
-import { renderOrdres, initDraft, updateOrdresLive, estimations, agentsHorsServices } from './ui/ordres.js';
+import { renderOrdres, initDraft, updateOrdresLive, estimations, agentsHorsServices, minimumsDuSoir } from './ui/ordres.js';
 import { prochaineRelance, mesRelances, relancesDuJour } from './ui/ventes.js';
 import { VENTE } from './engine/ventes.js';
 import { renderQuete, formesVisibles } from './ui/quete.js';
@@ -1211,7 +1211,9 @@ function askConfirm(message, okLabel = 'Confirmer', koLabel = 'Annuler') {
 /** Libère un agent pour un engagement : pris dans le service le plus fourni si personne n'est libre. */
 function takeAgent() {
   if (estimations().reste > 0) return true;
-  const s = SERVICES.slice().sort((x, y) => S.draft.alloc[y] - S.draft.alloc[x])[0];
+  // On ne vide pas un service sous le minimum demandé ce soir (évasion : 8 en Intervention…) s'il y a une autre source.
+  const mins = minimumsDuSoir(myZone()), marge = (x) => S.draft.alloc[x] - (mins[x] || 0);
+  const s = SERVICES.slice().sort((x, y) => (marge(y) > 0) - (marge(x) > 0) || S.draft.alloc[y] - S.draft.alloc[x])[0];
   if (S.draft.alloc[s] <= 0) { toast('Plus aucun agent disponible.'); return false; }
   S.draft.alloc[s] -= 1;
   return true;
