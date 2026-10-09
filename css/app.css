@@ -2018,6 +2018,15 @@ details.pli-ordres[open] .pli-resume, details.pli-ordres[open] .pli-resume-s { d
 .hs-liste > summary svg { margin-left: auto; color: var(--muted); transition: transform .15s; }
 .hs-liste[open] > summary { margin-bottom: 8px; }
 .hs-liste[open] > summary svg { transform: rotate(90deg); }
+/* « Avant 20:00 » replié quand tout est fait */
+.hp-soir-fini { gap: 8px; padding-top: 12px; padding-bottom: 6px; }
+.hs-fini > summary { gap: 10px; color: var(--green-soft); }
+.hs-mini { display: flex; gap: 4px; flex-shrink: 0; }
+.hs-mini i { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: rgba(61, 211, 154, .14); border: 1px solid rgba(61, 211, 154, .45); color: var(--green-soft); }
+.hs-mini i svg { margin: 0 !important; color: inherit !important; transform: none !important; }
+.hs-fini-t { display: flex; flex-direction: column; gap: 0; font-size: 14px; font-weight: 700; line-height: 1.2; min-width: 0; }
+.hs-fini-t svg { display: none; }
+.hs-fini-t small { font-size: 11.5px; font-weight: 500; color: var(--muted); }
 
 /* Ma zone : quatre jauges rondes, puis agents, budget, véhicules */
 .hp-zone { gap: 10px; padding: 12px 10px; }

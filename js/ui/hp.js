@@ -306,6 +306,20 @@ function icoEtape(href) {
 function avantHtml(st, z, items) {
   const reste = items.filter((i) => !i.ok), fait = items.length - reste.length;
   const p = reste[0];
+  const liste = () => items.map((i) => `<a class="todo ${i.ok ? 'done' : ''}" href="${i.href}"><span class="box" aria-hidden="true">${i.ok ? icon('check', 14) : ''}</span>
+        <span class="col grow" style="gap:0;min-width:0"><span style="font-weight:600">${i.t}</span><span class="tiny muted">${i.s}</span></span>${icon('chevron', 16)}</a>`).join('');
+  // Tout est fait : la carte se replie sur une ligne, une petite pastille verte par étape (la liste reste à un toucher).
+  if (items.length && !reste.length) {
+    return `<section class="card hp-soir hp-soir-fini" aria-label="Prochain tour">
+    <div class="hs-tete"><span class="kicker">20:00 dans <b id="countdown" class="hs-cd">${formatCountdown(st.nextDeadline - Date.now())}</b></span>${situationPastilles(z, cielDe(z))}</div>
+    <details class="hs-liste hs-fini" data-k="soir-liste" ${S.ouverts && S.ouverts['soir-liste'] ? 'open' : ''}>
+      <summary aria-label="Tout est prêt pour ce soir : ${items.length} étape${items.length > 1 ? 's' : ''} faite${items.length > 1 ? 's' : ''}, la liste">
+        <span class="hs-mini" aria-hidden="true">${items.map((i) => { const [nom, ico] = etiquetteEtape(i); return `<i title="${attr(nom)}">${icon(ico, 13)}</i>`; }).join('')}</span>
+        <span class="hs-fini-t">${icon('check', 15)} Tout est prêt<small>modifiable jusqu’à 20:00</small></span>${icon('chevron', 14)}</summary>
+      <div class="col" style="gap:6px">${liste()}</div>
+    </details>
+  </section>`;
+  }
   return `<section class="card hp-soir" aria-label="Prochain tour">
     <div class="hs-tete"><span class="kicker">20:00 dans <b id="countdown" class="hs-cd">${formatCountdown(st.nextDeadline - Date.now())}</b></span>${situationPastilles(z, cielDe(z))}</div>
     <div class="hs-pips" aria-label="${fait} étape${fait > 1 ? 's' : ''} faite${fait > 1 ? 's' : ''} sur ${items.length}">${items.map((i) => { const [nom, ico] = etiquetteEtape(i); return `<a class="hs-pip${i.ok ? ' ok' : i === p ? ' suiv' : ''}" href="${i.href}" title="${attr(i.t)}" aria-label="${attr(i.t)} : ${i.ok ? 'fait' : 'à faire'}">${i.ok ? icon('check', 14) : icon(ico, 15)}<span>${nom}</span></a>`; }).join('')}</div>
