@@ -6,6 +6,7 @@ import { COMPETENCES, IDS_COMPETENCES, AGENDA, IDS_AGENDA, TALENTS, TALENT, CHEF
   VOIES, BREVET_NIVEAUX, niveauChef, progresChef, talentsDebloques, totalNiveaux, signatureChef, maxTalentsDe, brevetPossible,
   servicePossible, humeurReseau, estimeDe, niveauXp, XP_CUMUL, NIVEAU_MAX_CHEF } from '../engine/chef.js';
 import { portraitChef } from './chef.js';
+import { cadrePromoHtml } from './fondateurs.js';
 import { COURRIERS, PRISE, AGENDA_JOUR, jourPrise, courriersDuJour, texteFx, XP_COURRIER } from '../engine/parapheur.js';
 
 const COUL = { gestion: '#E8B530', commandement: '#E1453A', flair: '#A78BFA', diplomatie: '#5AB0F0', proximite: '#3DD39A' };
@@ -27,7 +28,7 @@ function priseHtml(j, chef) {
 }
 
 function heroHtml(z, p, chef) {
-  return `<section class="card co-hero" style="--zc:${esc(z.couleur || '#5AB0F0')}">
+  return `<section class="card co-hero${z.fondateur ? ' fd' : ''}" style="--zc:${esc(z.couleur || '#5AB0F0')}">${cadrePromoHtml(z)}
     <a class="co-hero-l" href="#bureau" data-action="bureau-ouvrir" aria-label="Voir la fiche complète du chef">${portraitChef(z.uid, 60)}
       <span class="col" style="gap:2px;min-width:0"><span class="kicker">Mon chef de corps</span>
         <span class="co-nom">${esc(p.pseudo || z.nom)}</span>

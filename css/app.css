@@ -2700,3 +2700,21 @@ main.screen.gzs { height: 100dvh; box-sizing: border-box; padding: 10px 12px 100
 .gzs-jauges b { font: 800 17px var(--body); color: var(--ink); font-variant-numeric: tabular-nums; }
 .gzs-jauges i { font-style: normal; font-weight: 700; font-size: 12.5px; }
 .gzs-surnoms li { font-family: var(--body); font-size: 14px; }
+
+/* Zones fondatrices (saison 1) : cadre de la photo de promo dans l'onglet Chef, photo en grand, annonce. */
+.co-hero.fd { position: relative; }
+.co-hero.fd .co-hero-l { padding-right: 60px; }
+.fd-cadre { position: absolute; top: 12px; right: 10px; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: none; padding: 0; cursor: pointer; }
+.fd-cadre .f { display: block; width: 52px; height: 40px; padding: 3px; border-radius: 3px; background: linear-gradient(135deg, #F3D58C, #B98A3E 55%, #7E5520); box-shadow: 0 6px 14px -4px rgba(0,0,0,.7), inset 0 0 0 1px rgba(255,255,255,.25); transform: rotate(-5deg); transition: transform .2s; box-sizing: border-box; }
+.fd-cadre:hover .f, .fd-cadre:focus-visible .f { transform: rotate(0) scale(1.06); }
+.fd-cadre .f > span { display: block; width: 100%; height: 100%; background: #EFE6D0; padding: 2px; box-sizing: border-box; }
+.fd-cadre .f svg { display: block; width: 100%; height: 100%; }
+.fd-cadre .l { font-size: 9.5px; font-weight: 700; color: var(--amber-soft); letter-spacing: .03em; }
+.fd-photo { position: relative; background: #EFE6D0; padding: 10px 10px 34px; border-radius: 3px; box-shadow: 0 14px 30px -10px rgba(0,0,0,.8); transform: rotate(-1.2deg); }
+.fd-photo svg { display: block; width: 100%; height: auto; }
+.fd-photo .leg { position: absolute; left: 0; right: 0; bottom: 8px; text-align: center; font-family: 'Special Elite', var(--code); font-size: 14px; color: #3A2C1A; }
+.fd-noms { display: flex; flex-wrap: wrap; gap: 6px; }
+.fd-noms span { padding: 4px 10px; border-radius: 999px; background: var(--surface2); font-size: 12.5px; font-weight: 600; }
+.fd-noms span.moi { background: var(--amber-bg); color: var(--amber); box-shadow: inset 0 0 0 1px var(--amber-line); }
+.fd-annonce { align-items: center; text-align: center; border-color: var(--amber-line); }
+.fd-annonce .fd-plaque { width: 64px; height: 76px; }

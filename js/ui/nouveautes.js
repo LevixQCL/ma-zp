@@ -1,6 +1,7 @@
 // Note de mise à jour : affichée une fois sur chaque appareil après une nouvelle version,
 // et consultable ensuite depuis l'HP. Le maître du jeu peut aussi l'envoyer en message privé.
 import { S, esc } from './common.js';
+import { fondateurAVoir, ouvrirFondateur } from './fondateurs.js';
 
 export const NOTE_MAJ = {
   id: '2026-10-09-saison-2',
@@ -25,6 +26,7 @@ export const NOTE_MAJ = {
   // Liste complète, dans le menu Nouveautés.
   sections: [
     ['Saison 2 : derniers réglages (9 octobre, après-midi)', [
+      ['Zones fondatrices', 'les zones qui ont joué au moins 7 soirs en saison 1 reçoivent une plaque de bronze « S1 » sur leur commissariat, un médaillon devant leur nom sur la carte et la photo de la promotion fondatrice dans l’onglet Chef. Honorifique, sans bonus de jeu, et plus jamais attribué ensuite.'],
       ['Agents au changement de saison', 'au passage anticipé à la saison 2, tu gardes la moitié des agents recrutés au-delà de 20 (29 agents → 24), dans la limite de tes bureaux. Le budget, lui, repart de 60 000 €.'],
       ['Repérage', 'qui a repéré touche 15 % des saisies des descentes qui en profitent (au lieu de 35 %) et 1 point de résultats par descente réussie : repérer sans risque ne rapporte plus davantage que descendre.'],
       ['Réunion chez un voisin', 'le bonus (+3 PS d’entraide, +1 de réputation) tombe une fois par semaine avec le même chef. L’onglet Chef signale les chefs déjà vus cette semaine.'],
@@ -576,6 +578,12 @@ export function ouvrirNouveautes({ complet = true } = {}) {
 
 /** À appeler après l'affichage de l'HP : montre la note une fois par appareil. */
 export function nouveautesAuBesoin() {
+  // Zone fondatrice : l'annonce passe d'abord (une seule fois), puis les nouveautés s'enchaînent.
+  if (!S.majMontree && S.tuto == null && !document.querySelector('.aide-wrap') && fondateurAVoir()) {
+    S.majMontree = true;
+    setTimeout(() => ouvrirFondateur(() => { S.majMontree = false; nouveautesAuBesoin(); }), 400);
+    return;
+  }
   if (S.majMontree || noteVue() || S.tuto != null || document.querySelector('.aide-wrap')) return;
   // La note de la saison 2 ne s'ouvre d'elle-même qu'une fois la partie passée en saison 2 (sinon elle annoncerait ce qu'on ne voit pas encore).
   if (NOTE_MAJ.saison2 && !(S.state && (Number(S.state.regles) || 1) >= 2)) return;

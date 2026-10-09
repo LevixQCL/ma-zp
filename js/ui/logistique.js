@@ -115,6 +115,7 @@ export function sceneZone(z, st, decor = z.decor, skins = skinsValides(z, z.skin
     operation: !!operationActive(z, T),
     champion: estChampion(z, st),
     plaques: z.plaques || [],
+    fondateur: !!z.fondateur,
     affiches: z.affiches || [],
     trace: z.trace && z.trace.tour >= T - 1 && st.zones[z.trace.auteur] ? { type: z.trace.type, couleur: st.zones[z.trace.auteur].couleur } : null,
     poste: (() => { const p = (st.postes || []).find((x) => x.cible === z.uid && x.jusqua >= absT(st)); return p && st.zones[p.auteur] ? { couleur: st.zones[p.auteur].couleur } : null; })(),

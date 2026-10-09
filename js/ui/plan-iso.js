@@ -17,7 +17,7 @@ export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
   const seed = S.config.seed, reduit = calme();
   const mesT0 = tensionsDe(st, me);
   const ndS = (st.nonDroit && st.nonDroit.secteurs) || {};
-  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, Object.entries(ndS).map(([k, x]) => `${k}:${x.statut}:${Math.round(x.emprise)}`).join(','), Object.values(st.zones).map((z) => `${z.uid}:${z.nom}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
+  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, Object.entries(ndS).map(([k, x]) => `${k}:${x.statut}:${Math.round(x.emprise)}`).join(','), Object.values(st.zones).map((z) => `${z.uid}:${z.nom}:${z.fondateur ? 1 : 0}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
   if (!cache || cache.cle !== cle) cache = { cle, ...dessiner(st, me, seed, vue === 'mazone' ? 'zone' : T_VUE(st), reduit) };
   let svg = cache.svg;
   // Non-droit : mes fourgons partent de mon HP vers les secteurs où j'engage des agents ce soir ; ceux des collègues
@@ -280,14 +280,17 @@ function dessiner(st, me, seed, vue, reduit) {
     const ndC = T.nd.cells.length ? T.nd.cells.reduce((a, i) => [a[0] + T.cells[i].c[0] / T.nd.cells.length, a[1] + T.cells[i].c[1] / T.nd.cells.length], [0, 0]) : [WW / 2, HH / 2];
     const ci = vus.slice().sort((a, b) => Math.hypot(T.cells[b].c[0] - ndC[0], T.cells[b].c[1] - ndC[1]) - Math.hypot(T.cells[a].c[0] - ndC[0], T.cells[a].c[1] - ndC[1]))[vue === 'nondroit' ? vus.length - 1 : 0];
     const c = T.cells[ci], moiZ = tz.uid === me.uid, z = st.zones[tz.uid];
-    const nom = moiZ ? 'Ma zone' : (z.nom.length > 12 ? `${z.nom.slice(0, 11)}…` : z.nom), lw = 14 + nom.length * 4.3;
+    const nom = moiZ ? 'Ma zone' : (z.nom.length > 12 ? `${z.nom.slice(0, 11)}…` : z.nom), fd = !!z.fondateur, lw = 14 + nom.length * 4.3 + (fd ? 10 : 0);
+    // Zone fondatrice (saison 1) : médaillon de bronze « S1 » devant le nom, liseré bronze.
+    const med = fd ? `<g transform="translate(${f(-lw / 2 + 7.5)} -.5)"><title>Zone fondatrice (saison 1)</title><circle r="5.2" fill="url(#${id('bronze')})" stroke="#6E4B17" stroke-width=".6"/><text y="2" text-anchor="middle" style="font:700 5px 'Barlow Condensed',sans-serif;fill:#4A3010">S1</text></g>` : '';
     const [lx, ly] = P(c.c[0], c.c[1], 30);
     const attrs = moiZ ? 'data-action="carte-calque" data-v="mazone"' : `data-action="voir-hp" data-uid="${tz.uid}"`;
-    return `<g ${attrs} style="cursor:pointer" transform="translate(${f(lx)} ${f(ly)})"><rect x="${f(-lw / 2)}" y="-8" width="${f(lw)}" height="15" rx="7.5" fill="${moiZ ? '#FFB23F' : '#0B1124'}" fill-opacity="${moiZ ? 1 : 0.88}" stroke="${moiZ ? '#FFB23F' : '#5A6699'}" stroke-width=".7"/><text y="2.6" text-anchor="middle" class="iso-zn" ${moiZ ? 'style="fill:#0B1124"' : ''}>${nom.replace(/[<&]/g, '')}</text></g>`;
+    return `<g ${attrs} style="cursor:pointer" transform="translate(${f(lx)} ${f(ly)})"><rect x="${f(-lw / 2)}" y="-8" width="${f(lw)}" height="15" rx="7.5" fill="${moiZ ? '#FFB23F' : '#0B1124'}" fill-opacity="${moiZ ? 1 : 0.88}" stroke="${fd ? '#C99A45' : moiZ ? '#FFB23F' : '#5A6699'}" stroke-width="${fd ? 1 : 0.7}"/>${med}<text ${fd ? 'x="5" ' : ''}y="2.6" text-anchor="middle" class="iso-zn" ${moiZ ? 'style="fill:#0B1124"' : ''}>${nom.replace(/[<&]/g, '')}</text></g>`;
   }).join('');
 
   const out = `<svg viewBox="${f(x0)} ${f(y0)} ${f(x1 - x0)} ${f(y1 - y0)}" width="100%" style="display:block;background:radial-gradient(ellipse at 50% 40%, #121A3A, #05081A 75%)" class="iso" role="img" aria-label="Maquette de ${zoomZone ? 'ta zone : touche un quartier pour le choisir, la liste en dessous fait la même chose' : 'tout le district : touche ta zone pour y entrer, ou celle d’un collègue pour voir son commissariat'}">
     <defs><filter id="${id('flou')}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
+      <linearGradient id="${id('bronze')}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3D58C"/><stop offset=".55" stop-color="#C99A45"/><stop offset="1" stop-color="#8E6224"/></linearGradient>
       <radialGradient id="${id('lampe')}"><stop offset="0" stop-color="#FFD58A" stop-opacity=".45"/><stop offset="1" stop-color="#FFD58A" stop-opacity="0"/></radialGradient>
       <radialGradient id="${id('feu')}"><stop offset="0" stop-color="#FF7A3C" stop-opacity=".6"/><stop offset="1" stop-color="#FF7A3C" stop-opacity="0"/></radialGradient>
       <clipPath id="${id('vue')}"><rect x="${f(x0)}" y="${f(y0)}" width="${f(x1 - x0)}" height="${f(y1 - y0)}"/></clipPath></defs>

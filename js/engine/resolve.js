@@ -1494,6 +1494,9 @@ function resoudreDuels(state, push, T) {
   }
 }
 
+/** Soirs joués en saison 1 pour devenir « Zone fondatrice ». */
+export const FONDATEUR_SOIRS = 7;
+
 function finDeSaison(state, classement, opts = {}) {
   const zones = Object.values(state.zones);
   const classes = classement.filter((c) => c.classe);
@@ -1575,6 +1578,9 @@ function finDeSaison(state, classement, opts = {}) {
     nz.trophees = z.trophees || [];
     if (z.affiches) nz.affiches = z.affiches;
     if (z.plaques) nz.plaques = z.plaques;
+    // Zone fondatrice : présente depuis la saison 1 (au moins FONDATEUR_SOIRS soirs joués), gardé à vie, plus jamais attribué ensuite.
+    if (z.fondateur) nz.fondateur = z.fondateur;
+    else if (oldSeason === 1 && (Number(z.toursJoues) || 0) >= FONDATEUR_SOIRS) nz.fondateur = { season: 1 };
     if (z.decor) nz.decor = z.decor;
     if (z.skins) nz.skins = z.skins;
     if (z.skinsChoix) nz.skinsChoix = z.skinsChoix;

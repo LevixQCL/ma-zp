@@ -14,6 +14,7 @@ import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil, mesTuiles, MAX_TUILES } from './ui/hp.js';
 import { renderBureau, renderChef, chefAFaire, promotionAuBesoin, brancherPanneauChef } from './ui/chef.js';
 import { paraSuivant } from './ui/chef-onglet.js';
+import { ouvrirPromo } from './ui/fondateurs.js';
 import { courriersDuJour } from './engine/parapheur.js';
 import { creerChef } from './engine/chef.js';
 import { brancherChefTab } from './ui/common.js';
@@ -795,6 +796,7 @@ async function onClick(e) {
         if (m > 0) S.draft.finales[k] = { ...f, montant: m }; else delete S.draft.finales[k];
         S.ordersDirty = true; rerender(); break;
       }
+      case 'promo-photo': ouvrirPromo(); break;
       case 'bureau-ouvrir': S.bureauUid = el.dataset.u || null; S.bureauObj = null; if (document.querySelector('.aide-wrap')) document.querySelectorAll('.aide-wrap').forEach((x) => x.remove()); location.hash = !S.bureauUid && reglesV2(S.state) ? '#chef' : '#bureau'; break;
       case 'chef-front': S.draft.chefFront = el.dataset.v || null; S.ordersDirty = true; rerender(); break;
       case 'chef-reseau': S.draft.reseau = S.draft.reseau === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;
