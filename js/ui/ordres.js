@@ -827,16 +827,33 @@ export function ouvertureOrdres(z) {
 function doctrineHtml(z, d) {
   if (!doctrineOuverte(S.state, z)) return '';
   const reste = dernierJourDoctrine(z) - S.state.turn;
-  return `<section class="card" aria-label="Doctrine de la saison" style="gap:8px;border-color:var(--amber-line)">
+  return `<section class="card doctrine" id="ord-doctrine" aria-label="Doctrine de la saison" style="gap:8px;border-color:var(--amber-line)">
     <span class="kicker">Doctrine de la saison</span>
-    <p class="small" style="margin:0">Quelle zone veux-tu construire ? Ta doctrine donne une vraie force et un vrai prix, pour toute la saison (elle part avec tes ordres de ce soir). Garder la même d’une saison à l’autre la fait monter en maîtrise. <strong>${reste <= 0 ? 'Dernier jour pour la choisir' : `Encore ${reste + 1} jours pour la choisir`}</strong>, ensuite la saison se joue sans doctrine.${z.doctrinePrec && DOCTRINES[z.doctrinePrec] ? ` La saison dernière : ${DOCTRINES[z.doctrinePrec].ico} ${esc(DOCTRINES[z.doctrinePrec].nom)} (maîtrise ${(z.maitrisePrec || 0) + 1}).` : ''}</p>
-    ${IDS_DOCTRINES.map((k) => { const x = DOCTRINES[k]; return `<button type="button" class="choice" data-action="doctrine" data-k="${k}" aria-pressed="${d.doctrine === k}" style="text-align:left;align-items:flex-start">
+    ${REGLES.v2 ? `<p class="small" style="margin:0">Pour toute la saison : une vraie force, un vrai prix. <strong>${reste <= 0 ? 'Dernier jour' : `Encore ${reste + 1} jours`}</strong>${z.doctrinePrec && DOCTRINES[z.doctrinePrec] ? ` · la saison dernière : ${DOCTRINES[z.doctrinePrec].ico} ${esc(DOCTRINES[z.doctrinePrec].nom)}` : ''}. Fais défiler →</p>` : ''}
+    <p class="small doc-long" style="margin:0">Quelle zone veux-tu construire ? Ta doctrine donne une vraie force et un vrai prix, pour toute la saison (elle part avec tes ordres de ce soir). Garder la même d’une saison à l’autre la fait monter en maîtrise. <strong>${reste <= 0 ? 'Dernier jour pour la choisir' : `Encore ${reste + 1} jours pour la choisir`}</strong>, ensuite la saison se joue sans doctrine.${z.doctrinePrec && DOCTRINES[z.doctrinePrec] ? ` La saison dernière : ${DOCTRINES[z.doctrinePrec].ico} ${esc(DOCTRINES[z.doctrinePrec].nom)} (maîtrise ${(z.maitrisePrec || 0) + 1}).` : ''}</p>
+    <div class="doc-l">${IDS_DOCTRINES.map((k) => { const x = DOCTRINES[k]; return `<button type="button" class="choice" data-action="doctrine" data-k="${k}" aria-pressed="${d.doctrine === k}" style="text-align:left;align-items:flex-start">
       <span style="font-size:15px;font-weight:700">${x.ico} ${esc(x.nom)}${z.doctrinePrec === k ? ' <span class="tiny" style="color:var(--amber)">· maîtrise +1</span>' : ''}</span>
-      <span class="s"><span class="ok">+ ${esc(x.force)}</span><br><span class="bad">− ${esc(x.prix)}</span><br><span class="muted">Brille : ${esc(x.brille)}</span></span></button>`; }).join('')}
+      <span class="s"><span class="ok">+ ${esc(x.force)}</span><br><span class="bad">− ${esc(x.prix)}</span><br><span class="muted">Brille : ${esc(x.brille)}</span></span></button>`; }).join('')}</div>
   </section>`;
 }
+/** Saison 2 : une pastille par chose à régler ce soir ; elle se coche quand c'est fait, un toucher y mène. */
+function pastillesOrdres(z, d, e) {
+  const bs = besoinsServices(e);
+  const manque = SERVICES.filter((s2) => bs[s2] && (bs[s2].st === 'manque' || bs[s2].st === 'juste')).length;
+  const l = [];
+  if (doctrineOuverte(S.state, z)) l.push(['doctrine', '🧭', 'Doctrine', !!d.doctrine, d.doctrine ? '' : 'à choisir']);
+  l.push(['affect', '👮', 'Affectation', !manque, manque ? `${manque} service${manque > 1 ? 's' : ''} court${manque > 1 ? 's' : ''}` : '']);
+  l.push(['rythme', '⏱', 'Rythme', true, '']);
+  l.push(['decision', '⭐', 'Décision', !!(d.decision || d.sansDecision), d.decision || d.sansDecision ? '' : 'à choisir']);
+  if (z.chef) l.push(['chef', '🎖', 'Chef', !(z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)), '']);
+  const reste = l.filter((x) => !x[3]);
+  return `<div class="ord-pips">${l.map(([k, ic, nom, ok]) => `<button type="button" class="hs-pip ${ok ? 'ok' : ''}" data-action="ord-aller" data-k="${k}" aria-label="${nom}${ok ? ' : réglé' : ' : à faire'}" title="${nom}">${ok ? icon('check', 15) : `<span aria-hidden="true">${ic}</span>`}${nom}</button>`).join('')}
+    <span class="ord-reste">${reste.length ? `Reste : ${reste.map((x) => `${x[2].toLowerCase()}${x[4] ? ` <small>(${x[4]})</small>` : ''}`).join(', ')}` : 'Tout est réglé : il ne reste qu’à valider.'}</span></div>`;
+}
+
 export function renderOrdres() {
   const z = myZone(), st = S.state, d = S.draft, T = st.turn;
+  S.ordresV2 = !!REGLES.v2;
   const e = estimations();
   const bl = blessesActifs(z, T), fo = enFormation(z, T);
   const others = Object.values(st.zones).filter((x) => x.uid !== z.uid);
@@ -874,7 +891,9 @@ export function renderOrdres() {
       ${REGLES.v2 ? `<p class="sub">${e.dispo} agents${e.enquete ? ` · ${e.enquete} en mission` : ''}${bl || fo || z.absents ? ` · ${bl + fo + (z.absents || 0)} absent${bl + fo + (z.absents || 0) > 1 ? 's' : ''}` : ''} · secrets jusqu’à 20:00</p>` : `<p class="sub">${e.dispo} agents disponibles${e.enquete ? `, dont ${e.enquete} en mission (enquête, FIPA, relève ou opération commune) : ${e.dispo - e.enquete} à répartir` : ''}${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p>`}</div>
       <span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} Validés` : S.savedOrders ? 'Modifiés' : 'Pas validés'}</span></header>
 
-    <div id="prev-ipz" class="col prev-ipz" style="gap:2px;padding:10px 12px;border-radius:12px;background:var(--card, rgba(255,255,255,.04));border:1px solid var(--line)" aria-live="polite">${previsionHtml()}</div>${(() => { setTimeout(suivrePrevision, 0); return ''; })()}
+    ${REGLES.v2 ? `<section class="card ord-fiche" aria-label="Ce soir">
+      <div id="prev-ipz" class="pv2" aria-live="polite">${previsionHtml()}</div>
+      ${pastillesOrdres(z, d, e)}</section>` : `<div id="prev-ipz" class="col prev-ipz" style="gap:2px;padding:10px 12px;border-radius:12px;background:var(--card, rgba(255,255,255,.04));border:1px solid var(--line)" aria-live="polite">${previsionHtml()}</div>`}${(() => { setTimeout(suivrePrevision, 0); return ''; })()}
     ${saved ? '<p class="tiny muted" style="margin:-6px 0 0">Tes ordres sont validés ; tu peux encore les modifier jusqu’à 20:00.</p>'
       : !S.savedOrders && !S.ordersDirty && z.dernierOrdre ? `<button class="btn primary block" data-action="save-orders">Reprendre les ordres d’hier et valider</button>
         <p class="tiny muted" style="margin:-4px 0 0;text-align:center">Ou ajuste ci-dessous, puis valide.</p>` : ''}
@@ -898,7 +917,7 @@ export function renderOrdres() {
       </div>
     </details>`; })() : ''}
 
-    <section class="card affect" aria-label="Affectation des agents">
+    <section class="card affect" id="ord-affect" aria-label="Affectation des agents">
       <div class="between" style="align-items:baseline;margin-bottom:2px"><h2 class="card-title">Affectation</h2>
         <button type="button" class="lien-statut" data-action="ventilation" aria-expanded="${!!S.ventilation}"><span id="alloc-status">${statusHtml(e)}</span><span class="tiny muted"> · ${S.ventilation ? 'masquer' : 'détail'}</span>${agentsHorsServices().some((h) => h.bloque) ? ' <span class="small bad">· agents bloqués</span>' : ''}</button></div>
       ${S.ventilation ? ventilationHtml(z, e) : ''}
@@ -920,7 +939,7 @@ export function renderOrdres() {
       ${REGLES.v2 && z.toursJoues >= 3 ? '' : `<p class="tiny muted" style="margin:6px 0 0">Touche + : si aucun agent n’est libre, il est pris dans ton service le plus fourni. Résultats estimés : le hasard du tour peut les faire varier.</p>`}
     </section>
 
-    <section class="col" aria-label="Rythme" style="gap:8px"><h2 class="section" style="margin:0">Rythme de travail</h2>
+    <section class="col" id="ord-rythme" aria-label="Rythme" style="gap:8px"><h2 class="section" style="margin:0">Rythme de travail</h2>
       <div class="seg creux" role="group" aria-label="Rythme de travail">${Object.entries(RYTHMES).map(([k, r]) => `
         <button type="button" data-action="rythme" data-v="${k}" aria-pressed="${d.rythme === k}" ${k === 'renforce' && sousTutelle(z, T) ? 'disabled' : ''}><span class="t">${r.label}</span><span class="d">${k === 'renforce' && sousTutelle(z, T) ? 'interdit sous tutelle' : r.sub}</span></button>`).join('')}</div>
       ${z.renforceSuite >= 2 && d.rythme === 'renforce' ? '<p class="small bad" style="margin:0">Attention : plus de 3 tours renforcés d’affilée exposent à l’épuisement.</p>' : ''}

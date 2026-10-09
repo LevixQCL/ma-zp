@@ -4,7 +4,7 @@
 // les échanges de la fréquence repliés en dessous.
 import { S, esc, icon, tabbar, myZone } from './common.js';
 import { portraitChef } from './chef.js';
-import { marquerRadioLue, canalRadio, nonLus, invitations } from './prive.js';
+import { marquerRadioLue, canalRadio, nonLus, invitations, marquerPriveLu } from './prive.js';
 import { appelsRenfort, monAppel } from './renfort.js';
 import { annoncesND, suggestionND, placeND, prevoirRejoindre } from './nondroit.js';
 import { nomSecteur } from '../engine/nondroit.js';
@@ -128,13 +128,14 @@ function enTete(canal, nl) {
   const appels = appelsRenfort().length;
   const priveAFaire = nl.prive > 0 || invitations().some((i) => !i.fait && i.href !== '#pactes');
   return `<div class="rv-tete">
-    <div class="between"><h1 class="rv-titre">Radio Delta</h1>
-      <nav class="rv-seg" aria-label="Radio et messages privés"><a href="#radio" aria-current="page">Radio</a><a href="#prive">Privé${priveAFaire ? '<span class="pastille" aria-label="nouveau"></span>' : ''}</a></nav></div>
-    <div class="rv-freqs" role="tablist" aria-label="Fréquences">
+    <h1 class="rv-titre">Radio Delta</h1>
+    <div class="rv-freqs trois" role="tablist" aria-label="Fréquences">
       <button type="button" role="tab" class="rv-freq ${canal === 'parole' ? 'on' : ''}" data-action="radio-canal" data-v="parole" aria-selected="${canal === 'parole'}">
         <span class="rv-k"><span class="rv-led"></span>F1 · ${canal === 'parole' ? 'EN ÉCOUTE' : nl.radio ? `${nl.radio} NON LU${nl.radio > 1 ? 'S' : ''}` : 'À JOUR'}</span><span class="rv-ft">Discussion</span></button>
       <button type="button" role="tab" class="rv-freq ops ${canal === 'ops' ? 'on' : ''}" data-action="radio-canal" data-v="ops" aria-selected="${canal === 'ops'}">
         <span class="rv-k"><span class="rv-led ${appels ? 'vive' : ''}"></span>F2 · ${appels ? `${appels} APPEL${appels > 1 ? 'S' : ''}` : canal === 'ops' ? 'EN ÉCOUTE' : nl.ops ? `${nl.ops} NON LU${nl.ops > 1 ? 'S' : ''}` : 'À JOUR'}</span><span class="rv-ft">Renforts &amp; ops</span></button>
+      <a role="tab" href="#prive" class="rv-freq prive ${canal === 'prive' ? 'on' : ''}" aria-selected="${canal === 'prive'}">
+        <span class="rv-k"><span class="rv-led ${priveAFaire ? 'vive' : ''}"></span>${nl.prive ? `${nl.prive} NON LU${nl.prive > 1 ? 'S' : ''}` : priveAFaire ? 'À RÉPONDRE' : canal === 'prive' ? 'OUVERT' : 'À JOUR'}</span><span class="rv-ft">✉ Privé</span></a>
     </div>
   </div>`;
 }
@@ -177,10 +178,45 @@ function courante(msgs, me) {
   }).join('');
 }
 
+/** Fréquence privée : invitations à traiter, conversations, et le fil d'une conversation en bulles. */
+function corpsPrive(me) {
+  const st = S.state;
+  const avec = S.priveAvec && st.zones[S.priveAvec] ? st.zones[S.priveAvec] : null;
+  if (avec) {
+    marquerPriveLu(avec.uid);
+    const w = zoneDe(avec.uid);
+    const msgs = (S.prives || []).filter((m) => (m.de === me.uid && m.a === avec.uid) || (m.de === avec.uid && m.a === me.uid)).map((m) => ({ ...m, uid: m.de }));
+    return { corps: `<div class="rv-conv-t"><button type="button" class="backlink" data-action="prive-fermer">${icon('back', 18)}<span>Conversations</span></button>
+        <span class="row" style="gap:8px;min-width:0">${avatar(avec.uid, w, 30)}<span class="col" style="gap:0;min-width:0"><b>${esc(w.nom)}</b><span class="tiny muted">ZP ${esc(w.code)} · vous deux seulement</span></span></span></div>
+      <section class="rv-fil" id="prive-list" aria-label="Messages privés">${msgs.length ? fil(msgs, me) : '<p class="small muted" style="text-align:center;margin:24px 0">Aucun message. Propose un pacte, une FIPA, un échange de pièces…</p>'}</section>`,
+      form: `<form data-form="prive" class="rv-form"><label class="sr" for="prive-msg">Message privé</label>
+        <input id="prive-msg" class="text grow" name="texte" maxlength="500" placeholder="Message privé à ${esc(w.nom)}…" autocomplete="off">
+        <button class="btn primary" type="submit" aria-label="Envoyer" style="width:48px;padding:0">${icon('send', 18)}</button></form>` };
+  }
+  const inv = invitations();
+  const n = nonLus();
+  const dernier = (uid) => (S.prives || []).filter((m) => m.de === uid || m.a === uid).slice(-1)[0];
+  const autres = Object.values(st.zones).filter((z) => z.uid !== me.uid)
+    .sort((a, b) => ((dernier(b.uid) || {}).at || 0) - ((dernier(a.uid) || {}).at || 0) || a.code.localeCompare(b.code));
+  const invHtml = inv.length ? `<section class="col" style="gap:8px" aria-label="Invitations"><h2 class="section" style="margin:0">À répondre</h2>
+    ${inv.map((i) => i.ctrl ? `<div class="rv-inv"><div class="col" style="gap:1px"><b>${i.titre}</b><span class="small muted">${i.texte}</span></div>${i.ctrl}</div>`
+      : `<a class="rv-inv ${i.fait ? 'fait' : ''}" href="${i.href}"><div class="col grow" style="gap:1px;min-width:0"><b>${i.titre}</b><span class="small muted">${i.texte}</span></div><span class="pill ${i.fait ? '' : 'amber'}">${i.fait ? '✓ Modifier' : i.action}</span></a>`).join('')}</section>` : '';
+  return { corps: `${invHtml}<section class="col" style="gap:6px" aria-label="Conversations"><h2 class="section" style="margin:0">Conversations</h2>
+    ${autres.length ? autres.map((z) => { const w = zoneDe(z.uid), m = dernier(z.uid), k = n.parZone[z.uid] || 0;
+      return `<button type="button" class="rv-c" data-action="prive-ouvrir" data-uid="${esc(z.uid)}">${avatar(z.uid, w, 38)}
+        <span class="col grow" style="gap:1px;min-width:0"><b style="font-weight:${k ? 800 : 650}">ZP ${esc(w.code)} ${esc(w.nom)}</b><span class="small muted rv-c-d">${m ? `${m.de === me.uid ? 'Toi : ' : ''}${esc(m.texte)}` : 'Écrire un premier message'}</span></span>
+        ${k ? `<span class="compteur" aria-label="${k} non lu${k > 1 ? 's' : ''}">${k}</span>` : `<span class="tiny muted">${m ? hm(m.at) : ''}</span>`}</button>`; }).join('')
+      : '<p class="small muted">Aucune autre zone dans la partie pour l’instant.</p>'}</section>`, form: '' };
+}
+
 export function renderRadioV2() {
   const st = S.state, me = myZone();
-  const canal = S.radioCanal === 'ops' ? 'ops' : 'parole';
+  const canal = S.route === 'prive' ? 'prive' : S.radioCanal === 'ops' ? 'ops' : 'parole';
   const nl = nonLus();
+  if (canal === 'prive') {
+    const x = corpsPrive(me);
+    return `<main class="screen rv">${enTete(canal, nl)}${x.corps}${x.form ? `<div class="rv-bas">${x.form}</div>` : ''}</main>${tabbar('radio')}`;
+  }
   const msgs = (S.radio || []).filter((m) => canalRadio(m) === canal).slice(-60);
   marquerRadioLue(canal);
   let corps;

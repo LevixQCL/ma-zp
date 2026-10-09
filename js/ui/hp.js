@@ -112,13 +112,37 @@ function rapportHtml(z) {
   const nav = entrees.length > 1 ? `<span class="row" style="gap:4px">
       <button type="button" class="iconbtn" data-action="rapport-nav" data-d="1" ${idx >= entrees.length - 1 ? 'disabled' : ''} aria-label="Tour précédent" style="width:34px;height:34px">${icon('back', 16)}</button>
       <button type="button" class="iconbtn" data-action="rapport-nav" data-d="-1" ${idx === 0 ? 'disabled' : ''} aria-label="Tour suivant" style="width:34px;height:34px">${icon('chevron', 16)}</button></span>` : '';
-  return `<div class="card tight" id="rapport-complet" style="scroll-margin-top:16px">
-    <div class="between"><span class="kicker">Rapport du tour ${d.tour || ''}${d.saison && d.saison !== saisonLive ? ` (saison ${d.saison})` : ''}${d.date ? ` · soir du ${formatDateBe(d.date)}` : ''}${idx === 0 ? ' · le dernier' : ''}</span>${nav}</div>
-    ${ipzDetailHtml(d)}
-    ${journalHtml(d.journal)}
+  // Saison 2 : la nuit en un coup d'œil — l'IPZ et sa composition, ce qui a aidé, ce qui a coûté ; le reste à un toucher.
+  const tons = lignes.map((l) => ({ l, t: tonFait(l) }));
+  const fort = (l) => (/élucidé|interpellé|arrêt|repris|gagn|réussi/i.test(l) ? 2 : /\+\d/.test(l) ? 1 : 0);
+  const bons = tons.filter((x) => x.t === 'bon').sort((x, y) => fort(y.l) - fort(x.l)).slice(0, 3), mauvais = tons.filter((x) => x.t === 'mauvais' || x.t === 'alerte').sort((x, y) => (y.t === 'alerte') - (x.t === 'alerte')).slice(0, 3);
+  const delta = d.hierIpz !== null && d.hierIpz !== undefined && Number.isFinite(d.ipz) ? Math.round((d.ipz - d.hierIpz) * 10) / 10 : null;
+  const pts = d.ipzComp ? pointsIpz(d.ipzComp) : null;
+  const COUL = { satisfaction: '#3DD39A', affaires: '#63B0FF', moral: '#FFB23F', budget: '#B79BFF', reputation: '#FF8F6B' };
+  const tot = pts ? Object.values(pts).reduce((a2, b2) => a2 + b2, 0) || 1 : 1;
+  const ouvert = (k) => (S.ouverts && S.ouverts[k] ? 'open' : '');
+  return `<div class="card tight rap2" id="rapport-complet" style="scroll-margin-top:16px">
+    <div class="between"><span class="kicker">Nuit du tour ${d.tour || ''}${d.saison && d.saison !== saisonLive ? ` (saison ${d.saison})` : ''}${d.date ? ` · ${formatDateBe(d.date)}` : ''}</span>${nav}</div>
+    ${Number.isFinite(d.ipz) ? `<div class="rap2-ipz"><span class="rap2-k">IPZ</span><span class="rap2-v">${fmt1(d.ipz)}</span>${delta !== null ? `<span class="rap2-d">${evol(delta)}</span>` : ''}</div>` : ''}
+    ${pts ? `<div class="rap2-compo" role="img" aria-label="Composition de l’IPZ">${Object.keys(IPZ_POIDS).map((k) => `<i style="flex:${Math.max(0.5, pts[k] / tot * 100)};background:${COUL[k]}" title="${IPZ_LABELS[k]} : ${fmt1(pts[k])} pts"></i>`).join('')}</div>
+      <div class="rap2-leg">${Object.keys(IPZ_POIDS).map((k) => `<span><i style="background:${COUL[k]}"></i>${IPZ_LABELS[k]} <b>${fmt1(pts[k])}</b></span>`).join('')}</div>` : ''}
+    ${bons.length ? `<span class="rap2-t ok">Ce qui a aidé</span><div class="faits">${bons.map((x) => faitHtml(x.l)).join('')}</div>` : ''}
+    ${mauvais.length ? `<span class="rap2-t bad">Ce qui a coûté</span><div class="faits">${mauvais.map((x) => faitHtml(x.l)).join('')}</div>` : ''}
+    ${!bons.length && !mauvais.length ? `<div class="faits">${lignes.slice(0, 3).map(faitHtml).join('')}</div>` : ''}
+    <details class="rap2-pli" data-k="rap-journal" ${ouvert('rap-journal')}><summary><span>Tout le journal · ${lignes.length} ligne${lignes.length > 1 ? 's' : ''}</span>${icon('chevron', 16)}</summary><div class="faits">${lignes.map(faitHtml).join('')}</div></details>
+    ${d.journal ? `<details class="rap2-pli" data-k="rap-jauges" ${ouvert('rap-jauges')}><summary><span>Pourquoi tes jauges ont bougé</span>${icon('chevron', 16)}</summary>${journalHtml(d.journal)}</details>` : ''}
     ${!d.journal && idx > 0 ? '<p class="tiny muted" style="margin:0">Détail des jauges indisponible pour les tours d’avant la mise à jour.</p>' : ''}
-    <span class="kicker" style="margin-top:6px">Tout ce qui s’est passé</span>
-    <div class="faits">${lignes.map(faitHtml).join('')}</div></div>`;
+    ${d.ipzComp ? `<details class="rap2-pli" data-k="rap-calcul" ${ouvert('rap-calcul')}><summary><span>Le calcul de l’IPZ</span>${icon('chevron', 16)}</summary>${ipzDetailHtml(d)}</details>` : ''}
+  </div>`;
+}
+/** Ton d'une ligne du rapport : 'bon', 'mauvais', 'alerte' ou ''. */
+function tonFait(l) {
+  if (/^Décision refusée/.test(l)) return 'alerte';
+  // Un « −1 dossier » de paperasse ou une usure ne sont pas des coups durs ; un échec ou un blessé, si.
+  const dur = /personne n’est venu|n’a rien donné|refusée|bless|manqu|échou|raté|perdu/i.test(l);
+  const moins = /−\d|-\d/.test(l) && !/paperasse|dossiers? quand|usure/i.test(l);
+  if (dur || moins) return 'mauvais';
+  return /\+\d|réussi|élucidé|interpellé|repris|gagn|traités sur|(\d+) sur \1/i.test(l) ? 'bon' : '';
 }
 
 /** Une ligne du rapport : icône du service, intitulé en gras, ton (bon / mauvais / neutre) en liseré. */
@@ -131,8 +155,7 @@ const FAITS_ICO = [
 ];
 function faitHtml(l) {
   const ico = (FAITS_ICO.find(([re]) => re.test(l)) || [null, '•'])[1];
-  const mauvais = /^Décision refusée|personne n’est venu|n’a rien donné|refusée|bless|−\d|-\d|manqu|échou|raté|perdu/i.test(l);
-  const bon = !mauvais && /\+\d|réussi|élucidé|interpellé|repris|gagn/i.test(l);
+  const ton = tonFait(l), mauvais = ton === 'mauvais' || ton === 'alerte', bon = ton === 'bon';
   const m = l.match(/^([^:·]{2,48}?)\s*[:·]\s+(.*)$/s);
   const corps = m ? `<strong>${esc(m[1])}</strong> · ${esc(m[2])}` : esc(l);
   return `<div class="fait ${mauvais ? 'mauvais' : bon ? 'bon' : ''}${/^Décision refusée/.test(l) ? ' alerte' : ''}"><span class="fait-i" aria-hidden="true">${ico}</span><span class="small">${corps}</span></div>`;
@@ -586,6 +609,56 @@ export function renderProfil() {
   const nbTro = (z.trophees || []).length;
   const stat = (v, l) => `<div class="pc-stat"><span class="v">${v}</span><span class="l">${l}</span></div>`;
   const editer = S.editingName || S.profilColor || !(p.pseudo);
+  if (reglesV2(S.state)) {
+    // Saison 2 : une carte de service (sans le commissariat, déjà à l'HP) et tes parties juste dessous.
+    const cur = S.backend.gameId && S.backend.gameId();
+    const parties = (S.parties || []).slice().sort((a2, b2) => (b2.id === cur) - (a2.id === cur));
+    const titres = [...records.map((t) => `<span class="pc-plaque">🏆 ${esc(t.titre)} <small>niv. ${t.niveau}</small></span>`), ...(z.titres || []).map((t) => `<span class="pc-plaque">${icon('trophy', 12)} ${esc(t)}</span>`), ...(z.badges || []).map((b) => `<span class="pc-plaque argent">${esc(b)}</span>`)];
+    return `<main class="screen profil2">
+    <a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
+    <section class="carte-service" style="--zc:${esc(z.couleur || '#5AA0F0')}" aria-label="Carte de service">
+      <span class="cs-k">Police · District Delta · carte de service</span>
+      <div class="pc-id">
+        <span class="pc-insigne">${p.blason ? blasonSvg(p.blason, z.couleur, 44, '') : `<span class="pc-ecu">${icon('shield', 26)}</span>`}</span>
+        <span class="col" style="gap:1px;min-width:0"><span class="pc-pseudo">${esc(p.pseudo || 'Sans pseudo')}</span>
+          <span class="small">Chef de la <strong style="color:var(--zc)">ZP ${esc(z.code)} ${esc(z.nom)}</strong></span></span>
+      </div>
+      <div class="pc-grade">
+        <div class="between"><span style="font-weight:700">${esc(g.nom)}</span><span class="tiny mono" style="opacity:.75">${z.ps} PS${n ? ` · ${esc(n.nom)} à ${n.ps}` : ' · grade maximal'}</span></div>
+        <span class="pc-barre"><span style="width:${Math.max(3, pct)}%"></span></span>
+      </div>
+      <div class="cs-stats">${stat(z.ipz !== undefined && z.ipz !== null ? fmt1(z.ipz) : '—', 'IPZ')}${stat(`${nbTro}<small>/${TROPHEES.length}</small>`, 'Trophées')}${stat(affiches.length, `Arrestation${affiches.length > 1 ? 's' : ''}`)}</div>
+      <span class="cs-plus">${records.length} record${records.length > 1 ? 's' : ''} · ${z.toursJoues || 0} tours joués${z.faillites ? ` · ${z.faillites} faillite${z.faillites > 1 ? 's' : ''}` : ''}</span>
+      ${titres.length ? `<div class="pc-titres">${titres.join('')}</div>` : ''}
+      ${affiches.length ? `<div class="pc-affiches" aria-label="Suspects arrêtés">${affiches.slice(0, 6).map((a2) => `<span class="pc-affiche" title="${esc(a2.titre)} · saison ${a2.season}"><b>ARRÊTÉ</b><span>${esc(String(a2.nom).split(' ')[0])}</span></span>`).join('')}</div>` : ''}
+    </section>
+    ${z.chef ? `<button type="button" class="btn primary block" data-action="bureau-ouvrir">${portraitChef(z.uid, 22, { galons: false })} Voir mon chef de corps</button>` : ''}
+    <section class="col" style="gap:8px" aria-label="Mes parties"><h2 class="section" style="margin:0">Mes parties</h2>
+      ${parties.map((x) => `<div class="partie2 ${x.id === cur ? 'ici' : ''}" style="--zc:${esc(x.id === cur ? (z.couleur || '#FFB23F') : '#4A5788')}">
+        <span class="col grow" style="gap:1px;min-width:0"><b>${esc(x.nom)}</b><span class="tiny muted">${x.id === cur ? `ZP ${esc(z.code)} ${esc(z.nom)} · saison ${S.state.season}, jour ${S.state.turn}` : `code ${esc(x.code || '')}`}${x.owner === S.user.uid ? ' · maître du jeu' : ''}</span></span>
+        ${x.id === cur ? '<span class="pill amber">ici</span>' : `<button class="btn small" data-action="party-open" data-id="${esc(x.id)}">Ouvrir</button>`}</div>`).join('')}
+      <div class="tuiles2"><a class="card tuile2-l" href="#parties" data-action="parties-ouvrir" data-k="parties-rejoindre"><span class="tuile2-i">＋</span><span class="col" style="gap:0"><b>Rejoindre</b><span class="tiny muted">avec un code</span></span></a>
+        <a class="card tuile2-l" href="#parties" data-action="parties-ouvrir" data-k="parties-creer"><span class="tuile2-i">＋</span><span class="col" style="gap:0"><b>Créer</b><span class="tiny muted">ta partie</span></span></a></div>
+    </section>
+    ${z.chef && !chefACreer() ? (S.chefEdit ? creationChefHtml() : '<button type="button" class="btn small outline block" data-action="chef-modifier">Changer le portrait ou la devise de mon chef</button>') : ''}
+    <details class="card repli" data-k="profil-edit" ${editer ? 'open' : ''}>
+      <summary><span style="color:var(--amber)">${icon('pencil', 18)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Modifier ma zone</span><span class="tiny muted">pseudo, nom, code et couleur</span></span>${icon('chevron', 16)}</summary>
+    <form class="col" data-form="profil" style="gap:12px">
+      <label class="field">Ton prénom ou pseudo<input class="text" name="pseudo" maxlength="24" required value="${esc(p.pseudo || '')}"></label>
+      <label class="field">Nom de la zone<input class="text" name="nom" maxlength="24" required value="${esc(z.nom)}"></label>
+      <label class="field">Code de zone (4 chiffres)<input class="text mono" name="code" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required value="${esc(z.code)}"></label>
+      <fieldset style="border:none;padding:0;margin:0" class="col"><legend class="small muted" style="font-weight:600;margin-bottom:6px">Couleur</legend>
+        <div class="swatches">${COULEURS_ZONE.map((c, i) => `<button type="button" class="swatch" style="background:${c}" data-action="pick-color-profil" data-color="${c}" aria-pressed="${(S.profilColor || z.couleur) === c}" ${i >= 6 && !etendue ? 'disabled title="Grade Inspecteur requis"' : ''} aria-label="Couleur ${i + 1}"></button>`).join('')}</div>
+      </fieldset>
+      <button class="btn primary block" type="submit">Enregistrer</button>
+    </form></details>
+    ${recompensesGrade(z)}
+    <details class="card repli" data-k="profil-install"><summary><span style="color:var(--amber)">📱</span><span class="col grow" style="gap:0"><span style="font-weight:600">Installer sur ton téléphone</span><span class="tiny muted">une icône comme une vraie appli</span></span>${icon('chevron', 16)}</summary>
+      <p class="small muted" style="margin:0">Android (Chrome) : menu ⋮ puis « Installer l’application ». iPhone (Safari) : bouton Partager puis « Sur l’écran d’accueil ».</p></details>
+    <p class="tiny muted" style="margin:0">Connecté${S.user.email ? ` : ${esc(S.user.email)}` : ''}</p>
+    <button class="btn danger block" data-action="logout">Se déconnecter</button>
+  </main>${tabbar('hp')}`;
+  }
   return `<main class="screen">
     <a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
     <section class="card profil-carte" style="--zc:${esc(z.couleur || '#5AA0F0')}">

@@ -122,6 +122,19 @@ function mesPactesHtml() {
     const reste = toursRestants(st, p);
     const joue = pacteJoue(st, p);
     const rompre = d.pacteRompre === p.id;
+    if (reglesV2(st)) {
+      // Saison 2 : un pacte signé est un contrat, avec les deux signatures et les jours qui restent.
+      const sig = (uid) => esc((S.players && S.players[uid] && S.players[uid].pseudo) || (st.zones[uid] && st.zones[uid].nom) || '');
+      return `<div class="contrat2"><span class="contrat2-sceau" aria-hidden="true">✦</span>
+        <span class="contrat2-k">${esc(v.nom)} · ${joue ? 'en vigueur' : 'dès demain'}</span>
+        <strong class="contrat2-t">${esc(myZone().nom)} × ${esc(st.zones[lui] ? st.zones[lui].nom : 'zone partie')}</strong>
+        <span class="contrat2-e">${esc(v.court)}</span>
+        <span class="jours" role="img" aria-label="${reste} tour${reste > 1 ? 's' : ''} restant${reste > 1 ? 's' : ''}">${Array.from({ length: PACTE.duree }, (_, i) => `<i class="${i < reste ? 'f' : ''}"></i>`).join('')}</span>
+        <span class="contrat2-sig"><span>${sig(me)}</span><span>${sig(lui)}</span></span></div>
+      ${p.type === 'enquete' ? demiPiece(p) : ''}
+      ${rompre ? `<p class="tiny warn" style="margin:0">Rupture prévue ce soir : annoncée dans la Gazette, pas de nouveau pacte pendant ${PACTE.blocage} tours. <button type="button" class="lien" data-action="pacte-rompre" data-id="${esc(p.id)}">Garder le pacte</button></p>`
+        : `<button type="button" class="lien" data-action="pacte-rompre" data-id="${esc(p.id)}" style="align-self:flex-end;color:var(--faint);font-size:12px">Rompre ce pacte</button>`}`;
+    }
     return `<div class="pacte-ligne">${ico(p.type)}<span class="col grow" style="gap:2px;min-width:0"><strong class="small">${esc(v.nom)} · ${puce(lui)}${nomCourt(lui)}</strong><span class="tiny muted">${esc(v.court)}</span></span>
         <span class="col" style="gap:4px;align-items:flex-end;flex-shrink:0"><span class="pill ${joue ? 'green' : 'amber'}">${joue ? 'actif' : 'dès demain'}</span>
         <span class="jours" role="img" aria-label="${reste} tour${reste > 1 ? 's' : ''} restant${reste > 1 ? 's' : ''}">${Array.from({ length: PACTE.duree }, (_, i) => `<i class="${i < reste ? 'f' : ''}"></i>`).join('')}</span></span></div>
@@ -138,8 +151,8 @@ function mesPactesHtml() {
       ${x.reponse === true ? '<span class="tiny ok">Signé ce soir à 20:00 (ta réponse lui a été envoyée).</span>' : ''}`).join('<hr class="sep">');
   return `<section class="card" aria-label="Mes pactes"><div class="between"><h2 class="card-title">Mes pactes</h2><span class="tiny muted">${Math.min(PACTE.max, liste.length + (brouillon ? 1 : 0))} sur ${PACTE.max}</span></div>
     ${recus ? `${recus}${lignes.length || brouillon ? '<hr class="sep">' : ''}` : ''}
-    ${lignes.length || brouillon || recus ? `${lignes.join('<hr class="sep">')}${brouillon ? `${lignes.length ? '<hr class="sep">' : ''}${brouillon}` : ''}` : '<p class="small muted" style="margin:0">Aucun pacte pour l’instant. Un pacte lie deux zones pendant 7 tours, avec un avantage concret pour les deux.</p>'}
-    ${bloque ? `<p class="tiny warn" style="margin:0">Tu as rompu un pacte récemment : pas de nouveau pacte avant quelques tours.</p>` : max ? '' : S.pacteForm ? proposerHtml() : '<button type="button" class="btn primary" data-action="pacte-form">Proposer un pacte</button>'}
+    ${lignes.length || brouillon || recus ? `${lignes.join('<hr class="sep">')}${brouillon ? `${lignes.length ? '<hr class="sep">' : ''}${brouillon}` : ''}` : (reglesV2(st) ? '<p class="small muted" style="margin:0">Aucun pacte pour l’instant : choisis-en un juste en dessous.</p>' : '<p class="small muted" style="margin:0">Aucun pacte pour l’instant. Un pacte lie deux zones pendant 7 tours, avec un avantage concret pour les deux.</p>')}
+    ${bloque ? `<p class="tiny warn" style="margin:0">Tu as rompu un pacte récemment : pas de nouveau pacte avant quelques tours.</p>` : max ? '' : S.pacteForm ? proposerHtml() : reglesV2(st) ? '' : '<button type="button" class="btn primary" data-action="pacte-form">Proposer un pacte</button>'}
   </section>`;
 }
 
@@ -233,7 +246,19 @@ function conseilHtml() {
   return html;
 }
 
+/** Saison 2 : les trois pactes en une ligne chacun, avec leur effet et un bouton qui ouvre la proposition. */
+function typesPactesHtml() {
+  const st = S.state, me = S.user.uid;
+  const liste = pactesDe(st, me);
+  const plein = liste.length >= PACTE.max || ((myZone().pacteBloque || 0) >= (st.season - 1) * 100 + st.turn);
+  return `<section class="col" style="gap:8px" aria-label="Pactes possibles"><span class="kicker">Trois pactes possibles · ${PACTE.duree} jours</span>
+    ${Object.entries(PACTES).map(([k, v]) => `<div class="typ2">${ico(k, 24)}<span class="col grow" style="gap:1px;min-width:0"><b>${esc(v.nom)}</b><span class="small muted">${esc(v.court)}</span></span>
+      <button type="button" class="btn small ${plein ? 'ghost' : 'primary'}" data-action="pacte-form" data-type="${k}" ${plein ? 'disabled' : ''}>Proposer</button></div>`).join('')}
+  </section>`;
+}
+
 export function renderPactes() {
+  if (reglesV2(S.state)) return renderPactesV2();
   const rem = myZone().remiseAchat;
   const conseil = conseilHtml();
   const voteCeSoir = !!(S.state.conseil && S.state.conseil.tour === S.state.turn);
@@ -254,3 +279,29 @@ export function renderPactes() {
   </main>${tabbar('carte')}`;
 }
 
+function renderPactesV2() {
+  const st = S.state, rem = myZone().remiseAchat;
+  const conseil = conseilHtml();
+  const voteCeSoir = !!(st.conseil && st.conseil.tour === st.turn);
+  const mien = (st.defis || []).find((x) => x.a === S.user.uid || x.b === S.user.uid);
+  const defiActif = !!(mien || defisRecus().length || (S.draft && S.draft.defi && S.draft.defi.cible) || S.defiForm);
+  const tuile = (k, ic, titre, sous, corps, ouvert) => `<details class="card tuile2" data-k="${k}" ${ouvert ? 'open' : ''}><summary><span class="tuile2-i" aria-hidden="true">${ic}</span><span class="col grow" style="gap:0;min-width:0"><b>${titre}</b><span class="tiny muted">${sous}</span></span>${icon('chevron', 16)}</summary>${corps}</details>`;
+  const o = (k) => !!(S.ouverts && S.ouverts[k]);
+  return `<main class="screen pactes2">
+    <a class="retour-carte small" href="#carte" data-action="carte-calque" data-v="nondroit">‹ Carte</a>
+    <header class="col" style="gap:3px"><h1 class="big">Pactes</h1><p class="sub">À deux, pendant ${PACTE.duree} jours. Accepté avant 20:00, signé le soir même.</p></header>
+    ${rem ? `<p class="tiny ok" style="margin:0">Centrale d’achat : formations et équipement −${Math.round(rem * 100)} % aujourd’hui.</p>` : ''}
+    ${voteCeSoir ? conseil : ''}
+    ${mesPactesHtml()}
+    ${S.pacteForm ? "" : typesPactesHtml()}
+    ${coupDeMainHtml()}
+    <div class="tuiles2">
+      ${tuile('pactes-defi', '🏆', 'Défi amical', mien && mien.etape === 'encours' ? 'en cours' : `${DEFI.duree} tours · ${DEFI.prime} k€ du district`, defiHtml(), defiActif || o('pactes-defi'))}
+      ${voteCeSoir ? '' : tuile('pactes-conseil', '🏛', 'Conseil de police', 'chaque dimanche', conseil, o('pactes-conseil'))}
+    </div>
+    <details class="card repli" data-k="pactes-carte" ${o('pactes-carte') ? 'open' : ''}>
+      <summary><span style="color:var(--amber)">${icon('carte', 18)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Les pactes sur la carte</span><span class="tiny muted">qui est lié à qui dans le district</span></span>${icon('chevron', 16)}</summary>
+      <div class="col" style="gap:8px">${carteHtml()}</div></details>
+    <a class="small" href="#guide-pactes" style="text-align:center">Règles des pactes, des défis et du Conseil</a>
+  </main>${tabbar('carte')}`;
+}

@@ -32,6 +32,14 @@ export const NOTE_MAJ = {
       ['Enchères', 'un achat ne fait plus baisser la note de budget de l’IPZ (c’est un investissement). Gros lot à deux : chaque part doit atteindre 40 % de la mise à prix. Une offre finale au-delà de ton budget n’annule plus ta relance visible si celle-ci reste couverte.'],
       ['Non-droit', 'deux hélicoptères ou deux blindés ne se cumulent pas : seul le meilleur compte.'],
     ]],
+    ['Ordres, rapport, privé, pactes, hôtel de police, profil (9 octobre)', [
+      ['Ordres', 'en haut, l’IPZ prévu ce soir en jauge et une pastille par chose à régler (affectation, rythme, décision, chef, doctrine les 3 premiers jours) : elle se coche quand c’est fait, un toucher y mène. La doctrine se choisit dans un bandeau qui défile ; la barre « Valider » rappelle la prévision.'],
+      ['Rapport de la nuit', 'l’IPZ en grand et sa composition en couleurs, puis ce qui a aidé et ce qui a coûté. Le journal complet, les jauges et le calcul restent à un toucher.'],
+      ['Messages privés', 'ils deviennent la troisième fréquence de la Radio, avec les mêmes bulles et les invitations à traiter en haut.'],
+      ['Pactes', 'les trois pactes en une ligne avec leur effet et un bouton « Proposer » ; un pacte signé devient un contrat avec vos deux signatures. Défi amical et Conseil passent en tuiles.'],
+      ['Mon hôtel de police', 'bâtiment et garage en barres de niveaux (le prochain en pointillé, avec ce qu’il apporte), les annexes en tuiles : touche-en une pour son effet et « Construire ce soir ».'],
+      ['Profil', 'une carte de service (grade, IPZ, trophées, arrestations) et tes parties juste dessous.'],
+    ]],
     ['L’enquête en dossier (9 octobre)', [
       ['L’affaire en grand', 'en haut, la photo de l’affaire, le jour sur 7 et les points en jeu ce soir. Un seul gros bouton dit quoi faire ensuite : ouvrir les nouvelles pièces, choisir tes démarches, accuser.'],
       ['Les pièces sous enveloppe', 'ce qui arrive à 20:00 s’ouvre une pièce à la fois, en grand. Pour une vérification sur un suspect, tu dis ce que tu en conclus (✓ ou ✕) d’un toucher : ton carnet le retient.'],

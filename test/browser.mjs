@@ -238,6 +238,8 @@ await page.click('[data-action="pacte-cible"]:not([disabled])');
 await page.click('[data-action="pacte-type"][data-v="enquete"]');
 await page.click('[data-action="pacte-proposer"]');
 if (!(await page.locator('[data-action="pacte-annuler"]').count())) errors.push('Proposition de pacte absente');
+// Saison 2 : le défi amical est dans une tuile repliée.
+if (await page.locator('details[data-k="pactes-defi"]:not([open]) > summary').count()) await page.click('details[data-k="pactes-defi"] > summary');
 if (await page.locator('[data-action="defi-form"]:not([disabled])').count()) {
   await page.click('[data-action="defi-form"]');
   await page.click('[data-action="defi-cible"]:not([disabled])');
@@ -283,8 +285,10 @@ await shot('28-gazette-compteur');
 
 // Plusieurs parties : créer, ouvrir, revenir.
 await page.goto(`${BASE}#parties`);
-await page.waitForSelector('[data-form="party-create"]');
+await page.waitForSelector('[data-form="party-create"]', { state: 'attached' });
 await shot('29-parties');
+// Saison 2 : le formulaire de création est dans un volet replié.
+if (await page.locator('details[data-k="parties-creer"]:not([open]) > summary').count()) await page.click('details[data-k="parties-creer"] > summary');
 await page.fill('[data-form="party-create"] [name="nom"]', 'Brigade de nuit');
 await page.click('[data-form="party-create"] button[type="submit"]');
 await page.waitForSelector('[data-form="signup"]');

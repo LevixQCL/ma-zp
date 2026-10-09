@@ -57,6 +57,7 @@ import { monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, bas
 import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderRadioV2 } from './ui/radio-v2.js';
 import { reglesV2 } from './engine/regles.js';
+import { previsionCourte } from './ui/prevision.js';
 import { renderCarteV2, calqueTerrain } from './ui/carte-v2.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { renderDebrief } from './ui/debrief.js';
@@ -186,7 +187,7 @@ function render() {
     // Écran Ordres pas encore validés : le bouton reste à portée de main, avec le coût de la soirée.
     let cout = 0;
     try { cout = estimations().coutTotal; } catch (e) { /* brouillon incomplet */ }
-    html += `<div class="savebar calme" role="status"><span class="col" style="gap:1px"><span class="small" style="font-weight:700">Ordres pas encore validés</span><span class="tiny muted">coût ce soir : ${String(Math.round(cout * 10) / 10).replace('.', ',')} k€</span></span><button class="btn primary small" data-action="save-orders">Valider</button></div>`;
+    html += `<div class="savebar calme" role="status"><span class="col" style="gap:1px"><span class="small" style="font-weight:700">Ordres pas encore validés</span><span class="tiny muted">${reglesV2(S.state) ? `<span id="prev-court">${previsionCourte()}</span> · ` : ''}coût ce soir : ${String(Math.round(cout * 10) / 10).replace('.', ',')} k€</span></span><button class="btn primary small" data-action="save-orders">Valider</button></div>`;
   }
   const scroll = window.scrollY;
   sortirChargeur(app.querySelector('main.loader')); // le logo remonte et s'efface par-dessus le jeu
@@ -517,6 +518,13 @@ async function onClick(e) {
         for (const x of autres) { try { await b.sendPrive(S.user.uid, x.uid, noteCourte()); ok++; } catch (e) { console.warn(e); } }
         S.majEnvoyee = ok;
         toast(`Note envoyée à ${ok} joueur${ok > 1 ? 's' : ''}.`); rerender(); break;
+      }
+      case 'parties-ouvrir': S.ouverts = { ...(S.ouverts || {}), [el.dataset.k]: true }; location.hash = '#parties'; break;
+      case 'annexe-voir': S.annexeSel = S.annexeSel === el.dataset.id ? null : el.dataset.id; rafraichirLogistique(); break;
+      case 'annexe-construire': {
+        const d0 = S.draft.decision, id = el.dataset.id;
+        S.draft.decision = d0 && d0.type === 'construire' && d0.infra === id ? null : { type: 'construire', infra: id };
+        S.draft.sansDecision = false; S.ordersDirty = true; rerender(); rafraichirLogistique(); break;
       }
       case 'agrandir': {
         const d0 = S.draft.decision;
@@ -1022,7 +1030,7 @@ async function onClick(e) {
       case 'vote': S.draft.votes = { ...(S.draft.votes || {}), [el.dataset.m]: Number(el.dataset.i) }; S.ordersDirty = true; rerender(); break;
       case 'motion-chef': S.draft.motionChef = S.draft.motionChef === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;
       // Pactes et défis amicaux (onglet Pactes de la Carte).
-      case 'pacte-form': S.pacteForm = {}; rerender(); break;
+      case 'pacte-form': S.pacteForm = el.dataset.type ? { type: el.dataset.type } : {}; rerender(); if (el.dataset.type) requestAnimationFrame(() => { const f = document.querySelector('.pacte-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); break;
       case 'pacte-form-fermer': S.pacteForm = null; rerender(); break;
       case 'pacte-cible': S.pacteForm = { ...(S.pacteForm || {}), cible: el.dataset.v }; rerender(); break;
       case 'pacte-type': S.pacteForm = { ...(S.pacteForm || {}), type: el.dataset.v }; rerender(); break;
@@ -1102,7 +1110,7 @@ async function onClick(e) {
         }
         S.ordersDirty = true; rerender(); break;
       }
-      case 'radio-canal': S.radioCanal = el.dataset.v === 'ops' ? 'ops' : 'parole'; rerender(); break;
+      case 'radio-canal': S.radioCanal = el.dataset.v === 'ops' ? 'ops' : 'parole'; if (location.hash === '#prive') location.hash = '#radio'; else rerender(); break;
       case 'radio-echanges': S.radioEchanges = !S.radioEchanges; rerender(); break;
       case 'radio-rapide': {
         const t = String(el.dataset.t || '').slice(0, 280);
@@ -1133,6 +1141,16 @@ async function onClick(e) {
         let reste = n - parts.reduce((s2, x) => s2 + x.n, 0);
         parts.sort((x, y) => y.r - x.r).forEach((x) => { if (reste > 0) { x.n++; reste--; } al[x.s] += x.n; });
         S.ordersDirty = true; toast(`${n} agent${n > 1 ? 's' : ''} réparti${n > 1 ? 's' : ''} dans les services.`); rerender(); break;
+      }
+      case 'ord-aller': {
+        // Pastilles des ordres (saison 2) : ouvre la section et descend jusqu'à elle.
+        const k = el.dataset.k;
+        if (k === 'chef') { location.hash = '#chef'; break; }
+        if (['decision', 'pistes', 'depenses', 'equipe', 'nondroit', 'affaires'].includes(k)) S.ordOpen = { ...(S.ordOpen || {}), [k]: true };
+        rerender();
+        const c = document.getElementById(`ord-${k}`) || document.querySelector(`[data-action="ord-open"][data-k="${k}"]`);
+        if (c) { c.scrollIntoView({ behavior: 'smooth', block: 'start' }); c.classList.add('surligne-bloc'); setTimeout(() => c.classList.remove('surligne-bloc'), 1600); }
+        break;
       }
       case 'ord-open': S.ordOpen = { ...(S.ordOpen || {}), [el.dataset.k]: !(S.ordOpen && S.ordOpen[el.dataset.k]) }; rerender(); break;
       case 'toggle-decision': S.decisionOpen = !S.decisionOpen; rerender(); break;

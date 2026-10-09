@@ -3,6 +3,8 @@ import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
 import { aFairePactes } from './pactes.js';
 import { appelsRenfort, renfortPrevu, renfortCtrl } from './renfort.js';
 import { candidaturesRecues, candidatureCtrl, maCandidature, statutLabel } from './affaires.js';
+import { reglesV2 } from '../engine/regles.js';
+import { renderRadioV2 } from './radio-v2.js';
 
 // ───────── « Déjà lu » : mémorisé sur l'appareil, par partie ─────────
 function cleVu() { return `mazp-vu-${S.backend && S.backend.gameId ? S.backend.gameId() : ''}-${S.user ? S.user.uid : ''}`; }
@@ -98,6 +100,8 @@ function heure(at) {
 }
 
 export function renderPrive() {
+  // Saison 2 : le privé est la troisième fréquence de la Radio.
+  if (reglesV2(S.state)) return renderRadioV2();
   const st = S.state, me = myZone();
   const autres = Object.values(st.zones).filter((z) => z.uid !== me.uid);
   const avec = S.priveAvec && st.zones[S.priveAvec] ? st.zones[S.priveAvec] : null;

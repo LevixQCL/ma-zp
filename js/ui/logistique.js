@@ -271,7 +271,71 @@ export function rafraichirLogistique() {
 
 const pips = (n) => `<span class="niv" aria-label="Niveau ${n} sur ${BATIMENT_MAX}">${Array.from({ length: BATIMENT_MAX }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
 
+const ICO_ANNEXE = { sport: '🏋️', logiciel: '💻', anpr: '📷', antenne: '🏘️', garage: '🔧', audition: '🎙️', tir: '🎯', cachots: '🔐', drone: '🛸', crise: '🚨', sapv: '🤝' };
+const COURT_ANNEXE = { sport: 'sport', logiciel: 'logiciel', anpr: 'plaques', antenne: 'antenne', garage: 'atelier', audition: 'audition', tir: 'tir', cachots: 'cellules', drone: 'drone', crise: 'crise', sapv: 'victimes' };
+
+/** Saison 2 : le chantier — niveaux en barres (le prochain en pointillé), annexes en tuiles à toucher. */
+function logistiqueV2() {
+  const z = myZone(), st = S.state, T = st.turn, d = S.draft || {};
+  const b = z.batiments;
+  const annexes = Object.entries(INFRAS).filter(([id]) => z.infra[id]);
+  const entretienTotal = Object.entries(BATIMENTS).reduce((s2, [id, B]) => s2 + B.entretien(b[id]), 0) + annexes.length * ENTRETIEN_ANNEXE;
+  const occupation = { bureaux: [effectifPrevu(z), capaciteAgents(z), 'agents', '🏢', 'Bâtiment'], garage: [z.vehicules, capaciteVehicules(z), 'véhicules', '🚓', 'Garage'] };
+  const bat = Object.entries(BATIMENTS).map(([id, B]) => {
+    const n = b[id], [occ, cap, unite, ic, nom] = occupation[id];
+    const dec = { type: 'agrandir', batiment: id };
+    const choisi = d.decision && d.decision.type === 'agrandir' && d.decision.batiment === id;
+    const refus = decisionImpossible(z, dec, T);
+    const enTravaux = z.travaux && z.travaux.batiment === id;
+    const max = n >= BATIMENT_MAX;
+    const trophee = !max && id === 'bureaux' && n + 1 === 4 && !(z.trophees || []).some((t) => t.id === 'batisseur');
+    const piste = Array.from({ length: BATIMENT_MAX }, (_, i) => `<i class="${i < n ? 'ok' : i === n && !max ? (enTravaux || choisi ? 'prochain prevu' : 'prochain') : ''}">${i + 1}</i>`).join('');
+    return `<div class="chantier">
+      <div class="between"><b>${ic} ${nom}</b><span class="tiny muted"><span class="mono ${occ >= cap ? 'warn' : ''}">${occ}</span> / ${cap} ${unite}</span></div>
+      <div class="chantier-niv" aria-label="Niveau ${n} sur ${BATIMENT_MAX}">${piste}</div>
+      ${max ? '<span class="tiny ok" style="font-weight:600">Niveau maximum</span>'
+        : `<span class="small">Niveau ${n + 1} : <span class="ok" style="font-weight:700">+${B.capacite(n + 1) - cap} ${unite}</span> · entretien +${fmt1(B.entretien(n + 1) - B.entretien(n))} k€/tour${trophee ? ' · <span class="ok">trophée Bâtisseur</span>' : ''}</span>`}
+      ${enTravaux ? `<span class="tiny warn" style="font-weight:600">Travaux : niveau ${n + 1} au tour ${z.travaux.fin}</span>`
+        : max ? '' : `<button type="button" class="btn small block ${choisi ? 'primary' : 'agr'}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''}>${choisi ? '✓ Prévu ce soir' : `Agrandir · ${fmt1(B.coutAgrandir(n))} k€`}</button>${refus && !choisi ? `<span class="tiny muted">${esc(refus)}</span>` : ''}`}
+    </div>`;
+  }).join('');
+  const choixDec = d.decision && d.decision.type === 'construire' ? d.decision.infra : null;
+  const ids = Object.keys(INFRAS).filter((id) => !INFRAS[id].v2 || REGLES.v2);
+  const sel = ids.includes(S.annexeSel) ? S.annexeSel : null;
+  const tuiles = ids.map((id) => { const fait = !!z.infra[id], prevu = choixDec === id;
+    return `<button type="button" class="annexe2 ${fait ? 'faite' : ''} ${prevu ? 'prevue' : ''} ${sel === id ? 'sel' : ''}" data-action="annexe-voir" data-id="${id}" aria-pressed="${sel === id}" aria-label="${esc(INFRAS[id].nom)}${fait ? ', construite' : prevu ? ', prévue ce soir' : ''}"><span aria-hidden="true">${ICO_ANNEXE[id] || '🏗️'}</span><small>${esc(COURT_ANNEXE[id] || id)}</small>${fait ? '<i>✓</i>' : ''}</button>`; }).join('');
+  let fiche = '';
+  if (sel) {
+    const i = INFRAS[sel], fait = !!z.infra[sel], prevu = choixDec === sel;
+    const refus = fait ? null : decisionImpossible(z, { type: 'construire', infra: sel }, T);
+    fiche = `<div class="annexe2-fiche"><div class="between" style="gap:8px"><b>${ICO_ANNEXE[sel] || ''} ${esc(i.nom)}</b><span class="tiny ${fait ? 'ok' : 'muted'}">${fait ? '✓ construite' : `${i.cout} k€`}</span></div>
+      <span class="small">${fait ? 'Te donne : ' : 'Donnerait : '}${esc(i.effet)}</span>
+      ${fait ? '' : `<button type="button" class="btn small block ${prevu ? 'primary' : 'agr'}" data-action="annexe-construire" data-id="${sel}" ${refus && !prevu ? 'disabled' : ''}>${prevu ? '✓ Prévue ce soir (grande décision)' : `Construire ce soir · ${i.cout} k€`}</button>${refus && !prevu ? `<span class="tiny muted">${esc(refus)}</span>` : ''}`}</div>`;
+  }
+  const parc = parcVehicules(z, T);
+  const enService = parc.filter((v) => v.etat === 'service').length;
+  const cab = parc.filter((v) => v.etat === 'cabosse').length;
+  const peq = perequation(z, st);
+  return `<div class="col hp-logis logis2" style="gap:12px">
+    <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon hôtel de police</h2>
+      <span class="mono tiny muted">entretien ${fmt1(entretienTotal)} k€ par tour</span></div>
+      <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
+    ${bat}
+    <div class="between"><span class="logis2-k">Annexes · ${nbAnnexes(z)} sur ${emplacementsAnnexes(z)} places</span><span class="tiny muted">touche pour le détail</span></div>
+    <div class="annexes2">${tuiles}</div>
+    ${fiche}
+    <button type="button" class="list-row" data-action="parc" style="width:100%;text-align:left"><span class="col grow" style="gap:1px"><span style="font-weight:600">🚗 Parc automobile</span>
+      <span class="tiny muted">${enService} sur ${z.vehicules} en service · état ${Math.round(100 - z.usure)} %${cab ? ` · ${cab} cabossé${cab > 1 ? 's' : ''}` : ''}</span></span>${icon('chevron', 16)}</button>
+    <button type="button" class="btn small block decor-btn" data-action="decor">${icon('star', 16)} Personnaliser mon commissariat <span class="tiny muted">${decorCompte(z).n} / ${decorCompte(z).total}</span></button>
+    ${affichesHtml(z, { moi: true })}
+    ${z.agents > SUBSIDE.seuil ? `<p class="tiny ok" style="margin:0">Subside communal : +${fmt1(subsideAgents(z))} k€ par tour pour tes ${z.agents - SUBSIDE.seuil} agents au-delà de ${SUBSIDE.seuil}.</p>` : ''}
+    ${peq ? `<p class="tiny ok" style="margin:0">Péréquation : +${fmt1(PEREQUATION.montant)} k€ par tour (zone moins équipée que la moyenne).</p>` : ''}
+    <p class="tiny muted" style="margin:0">Agrandir et construire sont la grande décision du jour : payés à 20:00, pense à valider tes ordres.</p>
+  </div>`;
+}
+
 function logistiqueCorps() {
+  if (REGLES.v2) return logistiqueV2();
   const z = myZone(), st = S.state, T = st.turn, d = S.draft || {};
   const b = z.batiments;
   const annexes = Object.entries(INFRAS).filter(([id]) => z.infra[id]);
