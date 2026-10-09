@@ -1320,14 +1320,17 @@ function drawUnit(g,u,t){
   let pose=-1;
   if(lance){ nm='casL'; pose=dl<.45?(dl<.13?1:2):0; if(dl<.45) flip=(u.throwF||1)<0; }
   if(repousse){ nm='casR'; pose=Math.min(2,Math.floor(tourne/.17)); flip=(u.f||1)>0; } // il encaisse face aux policiers, puis tourne le dos
-  const bloque=u.held||u.atBar, bob=u.state==='go'&&!bloque?Math.abs(Math.sin(t*(u.type==='bloc'?5:7)+u.bob))*.035:0;
+  const bloque=u.held||u.atBar, bob=u.state==='go'&&!bloque&&u.type!=='bloc'?Math.abs(Math.sin(t*7+u.bob))*.014:0, gr=u.type==='bloc'; // pas de rebond : les pieds restent au sol
   if(bloque){ g.translate(Math.sin(t*26+u.bob)*.018,0); }
-  if(setOk(nm)){ g.fillStyle='rgba(0,0,0,.45)'; g.beginPath(); g.ellipse(.02,.01,(u.type==='bloc'?.42:.16)*(1-bob*2),u.type==='bloc'?.12:.05,0,0,7); g.fill();
-    g.save(); g.translate(0,-bob);
-    if(u.type==='bloc'&&!bloque) g.rotate(Math.sin(t*2.5+u.bob)*.012);
+  if(setOk(nm)){ g.fillStyle='rgba(0,0,0,.45)';
+    // groupe vu de trois quarts : les pieds forment une diagonale (avant-gauche → arrière-droit), l'ombre la suit
+    if(gr){ g.save(); if(flip) g.scale(-1,1); g.fillStyle='rgba(0,0,0,.34)'; g.beginPath(); g.ellipse(-.03,-.14,.56,.12,-.29,0,7); g.fill(); g.restore(); }
+    else { g.beginPath(); g.ellipse(.02,.01,.16*(1-bob*2),.05,0,0,7); g.fill(); }
+    g.save(); g.translate(0,-bob+(gr?.06:0)); // l'image du groupe a sa marge sous le pied le plus bas
+    if(gr&&!bloque){}
     else if(!bloque) g.rotate((u.f||1)*(u.state==='flee'?-.1:u.type==='casseur'?.09:.05)+Math.sin(t*vit*Math.PI+u.bob)*.025);
-    else g.rotate((u.f||1)*.14); // penchés en avant, ils poussent
-    const sq=1+Math.sin(t*vit*Math.PI*2+u.bob)*.025; g.scale(1/sq,sq);
+    else g.rotate((u.f||1)*(gr?.04:.14)); // penchés en avant, ils poussent
+    if(!gr){ const sq=1+Math.sin(t*vit*Math.PI*2+u.bob)*.012; g.scale(1/sq,sq); }
     const po=pose>=0?pose:bloque?Math.floor(t*3+u.bob)%2:fr;
     sprite(g,nm,po,hh,flip);
     if(coup<.15){ g.globalCompositeOperation='lighter'; g.globalAlpha*=.7*(1-coup/.15); sprite(g,nm,pose>=0?pose:bloque?0:fr,hh,flip); sprite(g,nm,pose>=0?pose:bloque?0:fr,hh,flip); }
