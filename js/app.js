@@ -1258,6 +1258,7 @@ async function onClick(e) {
       case 'admin-fin-saison': { const m = el.dataset.mode || null; await b.adminFinSaison(m); toast(m === 'enquete' ? 'La saison se terminera le soir où l’affaire en cours se clôt.' : m === 'soir' ? 'La saison se termine ce soir à 20:00.' : 'Fin anticipée annulée.'); break; }
       case 'admin-variantes': await b.adminVariantesEcrites(!S.state.variantesEcrites); toast(!S.state.variantesEcrites ? 'Les prochaines affaires écrites pourront tirer une autre version.' : 'Retour au scénario d’origine pour les prochaines affaires écrites.'); break;
       case 'admin-passer-tour': if (await askConfirm(`Passer le tour ${S.state.turn} sans le calculer ? Aucune zone n’avance ce soir.`)) { await b.adminPasserTour(); toast('Tour passé.'); } break;
+      case 'admin-aveux-sel': { const u = el.dataset.uid; const L = (S.aveuxSel && S.aveuxSel.uids) || []; S.aveuxSel = { ...(S.aveuxSel || {}), uids: L.includes(u) ? L.filter((x) => x !== u) : [...L, u] }; rerender(); break; }
       case 'admin-aveux': {
         const uids = String(el.dataset.uids || '').split(',').filter(Boolean);
         if (!uids.length || !S.state || !S.state.enquete) break;
@@ -1270,6 +1271,7 @@ async function onClick(e) {
           cur.nextDeadline = Date.now() - 1000;
           return true;
         });
+        S.aveuxSel = null;
         await tick(true);
         toast(etatResolution.erreur ? 'Le tour n’a pas pu être calculé (détail en haut de l’écran).' : 'Aveux accordés : le tour est calculé, ouvre la Gazette.');
         rerender(); break;

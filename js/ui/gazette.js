@@ -299,14 +299,22 @@ export function confrontationsRatees(st) {
   });
 }
 function aveuxAdminHtml(st) {
-  const L = confrontationsRatees(st);
-  if (!L.length) return '';
+  if (!st || !st.enquete) return '';
   const aff = affaire(st, st.enquete.n);
-  return `<section class="card amber"><h2 class="card-title">Confrontations du bon suspect ce soir</h2>
-    <p class="small" style="margin:0">Ces zones ont confronté ${esc(aff.suspects[aff.coupable].nom)}, le bon suspect, mais sans les pièces décisives : ${L.map((z) => `<b>${esc(zoneName(z))}</b>`).join(', ')}.</p>
-    <p class="small muted" style="margin:0">Tu peux leur accorder les aveux : le tour est recalculé tout de suite, leur confrontation compte comme réussie (points, prime, débrief), l’affaire se clôt et la saison ${st.season + 1} commence. Une journée de jeu passe ce soir : les ordres déjà donnés pour demain sont joués maintenant.</p>
-    <button class="btn block primary" data-action="admin-aveux" data-uids="${esc(L.map((z) => z.uid).join(','))}">Accorder les aveux et calculer le tour maintenant</button></section>`;
+  if (!aff || !aff.meurtre) return '';
+  const auto = confrontationsRatees(st).map((z) => z.uid);
+  // Sélection : par défaut les zones repérées dans les rapports de ce soir ; le maître du jeu peut en ajouter ou en retirer.
+  if (!S.aveuxSel || S.aveuxSel.n !== st.enquete.n) S.aveuxSel = { n: st.enquete.n, uids: auto.slice() };
+  const sel = new Set(S.aveuxSel.uids);
+  const zones = Object.values(st.zones).filter((z) => !(z.enquete && z.enquete.n === st.enquete.n && (z.enquete.exclu || (z.enquete.accuse !== null && z.enquete.accuse !== undefined))))
+    .sort((a, b) => (auto.includes(b.uid) - auto.includes(a.uid)) || String(a.code).localeCompare(String(b.code)));
+  return `<section class="card amber"><h2 class="card-title">Accorder les aveux · ${esc(aff.titre)}</h2>
+    <p class="small" style="margin:0">${auto.length ? `Repérées dans les rapports de ce soir (confrontation ${deNom(aff.suspects[aff.coupable].nom)}, le bon suspect, sans les pièces décisives) : ${auto.map((u) => `<b>${esc(zoneName(st.zones[u]))}</b>`).join(', ')}.` : `Aucune confrontation ${deNom(aff.suspects[aff.coupable].nom)} repérée dans les rapports de ce soir. Coche à la main les zones qui l’ont confronté${aff.suspects[aff.coupable].f ? 'e' : ''}.`}</p>
+    <div class="col" style="gap:6px">${zones.map((z) => `<button type="button" class="choice" data-action="admin-aveux-sel" data-uid="${esc(z.uid)}" aria-pressed="${sel.has(z.uid)}"><span style="font-weight:600">${sel.has(z.uid) ? '✓ ' : ''}${esc(zoneName(z))}</span>${auto.includes(z.uid) ? '<span class="s">confrontation ratée ce soir</span>' : ''}</button>`).join('')}</div>
+    <p class="small muted" style="margin:0">Le tour est recalculé tout de suite : la confrontation des zones cochées compte comme réussie (points, prime, débrief), l’affaire se clôt et la saison ${st.season + 1} commence. Une journée de jeu passe ce soir : les ordres déjà donnés pour demain sont joués maintenant.</p>
+    <button class="btn block primary" data-action="admin-aveux" data-uids="${esc([...sel].join(','))}" ${sel.size ? '' : 'disabled'}>Accorder les aveux (${sel.size}) et calculer le tour maintenant</button></section>`;
 }
+const deNom = (n) => (/^[aeiouyhéèêàâîôû]/i.test(n) ? `d’${n}` : `de ${n}`);
 
 export function renderAdmin() {
   // (note de mise à jour : voir ui/nouveautes.js)
