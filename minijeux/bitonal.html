@@ -646,6 +646,8 @@ function preparerSkyline() {
 // Virages : la route a un tracé fixe dans le monde (axeL = décalage latéral de l'axe à la distance z).
 // Avant, la courbure dépendait de la position du joueur : tout le décor lointain (feux, panneaux,
 // immeubles) glissait de gauche à droite tout seul. Ici, chaque objet reste collé à son bout de route.
+// Tests automatiques (?debug) : ensemble des obstacles réellement dessinés pendant l'image en cours.
+let TRACE = null;
 const KC = 0.0044;
 const axeL = (z) => -KC * (14450 * Math.sin(z / 170) + 744.2 * Math.sin(z / 61 + 1));
 const axeD = (z) => -KC * (85 * Math.cos(z / 170) + 12.2 * Math.cos(z / 61 + 1));
@@ -830,6 +832,7 @@ function ilot(e) {
   // Refuge central : bordure surélevée, hachures, panneau bleu « contournement obligatoire » aux deux bouts.
   const z0 = Math.max(e.z, camZ + .8), z1 = e.z + e.len;
   if (z1 < camZ + .8) return;
+  if (TRACE) TRACE.add(e);
   const hw = e.w / 2;
   quad(proj(-hw - .25, z0), proj(hw + .25, z0), proj(hw + .25, z1), proj(-hw - .25, z1), '#C9CCD4');
   quad(proj(-hw, z0, .22), proj(hw, z0, .22), proj(hw, z1, .22), proj(-hw, z1, .22), '#3E4352');
@@ -876,8 +879,11 @@ function caisse(p, e, w, h, x, y) {
   ctx.fillStyle = '#121828'; rrect(x + w * (grand ? .1 : .19), y + h * (grand ? .08 : .08), w * (grand ? .8 : .62), h * .27, w * .05); ctx.fill();
   ctx.fillStyle = 'rgba(160,190,240,.12)'; ctx.fillRect(x + w * (grand ? .12 : .22), y + h * .1, w * .25, h * .05);
 }
+// Un véhicule long dont l'arrière est déjà derrière la caméra (bus à côté de toi) reste dessiné à sa partie visible.
+const zVu = (e) => Math.max(e.z, camZ + 0.7);
 function vehicule(e, temps) {
-  const p = proj(e.x, e.z, 0); if (!p) return;
+  const p = proj(e.x, zVu(e), 0); if (!p) return;
+  if (TRACE) TRACE.add(e);
   const w = e.w * p.s, h = e.h * p.s, x = p.x - w / 2, y = p.y - h;
   const clign = e.feux && Math.floor(temps / 350) % 2;
   if (e.type === 'cycliste') {
@@ -909,7 +915,8 @@ function vehicule(e, temps) {
 }
 function enFace(e, temps) {
   // Vue de face : phares allumés, qui grossissent en approchant.
-  const p = proj(e.x, e.z, 0); if (!p) return;
+  const p = proj(e.x, zVu(e), 0); if (!p) return;
+  if (TRACE) TRACE.add(e);
   const w = e.w * p.s, h = e.h * p.s, x = p.x - w / 2, y = p.y - h;
   ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.beginPath(); ctx.ellipse(p.x, p.y, w * .6, Math.max(2, h * .08), 0, 0, 7); ctx.fill();
   if (e.type === 'bus') {
@@ -926,6 +933,7 @@ function enFace(e, temps) {
 }
 function croiseur(c) {
   const p0 = proj(c.x - c.w / 2, c.z, 0), p1 = proj(c.x + c.w / 2, c.z, 0); if (!p0 || !p1) return;
+  if (TRACE) TRACE.add(c);
   const s = p0.s, h = c.h * s, x0 = Math.min(p0.x, p1.x), w = Math.abs(p1.x - p0.x), y = p0.y - h;
   ctx.fillStyle = c.coul; rrect(x0, y + h * .38, w, h * .5, h * .15); ctx.fill();
   rrect(x0 + w * .22, y + h * .04, w * .52, h * .42, h * .14); ctx.fill();
@@ -1218,7 +1226,7 @@ $('continuer').addEventListener('click', () => { $('abandon').hidden = true; S.p
 $('confAband').addEventListener('click', () => { $('abandon').hidden = true; S.pause = false; terminer(false, 'abandon'); });
 $('quitter').hidden = true; // dans Ma ZP, la barre du haut a son bouton « Retour » ; hors du jeu, rien à quitter
 
-if (Q.has('debug')) window.__bt = { S: () => S, pas: (dt) => pas(dt), proj, regleCamera, dims: () => ({ W, H }), voie: changerVoie, frein: (b) => { S.frein = b; }, nouvelle: (n, seed) => { niveau = n; mission = { titre: 't', lieu: 'l', seed }; creer(); S.enCours = true; }, LENT };
+if (Q.has('debug')) window.__bt = { dessiner: (t) => { TRACE = new Set(); dessiner(t); const d = TRACE; TRACE = null; return d; }, S: () => S, pas: (dt) => pas(dt), proj, regleCamera, dims: () => ({ W, H }), voie: changerVoie, frein: (b) => { S.frein = b; }, nouvelle: (n, seed) => { niveau = n; mission = { titre: 't', lieu: 'l', seed }; creer(); S.enCours = true; }, LENT };
 if (VEHS.length) choisirVehicule(0);
 taille(); nouvelleMission(); afficherDispatch(); afficherIntro(); creer(); S.enCours = false;
 requestAnimationFrame(boucle);

@@ -1,0 +1,21 @@
+# Contrôle automatique des mini-jeux à chaque modification : si un test échoue, GitHub envoie un e-mail
+# et la croix rouge apparaît à côté du commit. Bitonal : aucun accrochage contre un obstacle que le joueur n'a pas vu.
+name: Tests des mini-jeux
+on:
+  push:
+    branches: [main]
+    paths: ['minijeux/**', 'test/bitonal-*.mjs', '.github/workflows/tests-minijeux.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bitonal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i --no-save playwright@1.56.0
+      - run: npx playwright install --with-deps chromium
+      - run: node test/bitonal-collisions.test.mjs 25
