@@ -19,14 +19,14 @@ const pseudoDe = (uid) => (S.players && S.players[uid] && S.players[uid].pseudo)
 const f1 = (v) => v.toFixed(1);
 const pts = (poly) => poly.map((p) => `${f1(p[0])},${f1(p[1])}`).join(' ');
 
-function bezier(t, p0, p1, p2, p3) {
+export function bezier(t, p0, p1, p2, p3) {
   const u = 1 - t;
   return [0, 1].map((k) => u * u * u * p0[k] + 3 * u * u * t * p1[k] + 3 * u * t * t * p2[k] + t * t * t * p3[k]);
 }
 function retrecir(poly, c, f) { return poly.map(([x, y]) => [c[0] + (x - c[0]) * f, c[1] + (y - c[1]) * f]); }
 
 /** Pictogrammes des sites (dessinés en blanc dans un cercle de couleur). */
-const ICONES = {
+export const ICONES = {
   seveso: '<path d="M0 -5.5L5.5 4.5H-5.5Z" fill="none" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/><path d="M0 -2v3M0 2.6v.2" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/>',
   stade: '<ellipse rx="5.5" ry="3.8" fill="none" stroke="#fff" stroke-width="1.4"/><path d="M0 -3.8v7.6" stroke="#fff" stroke-width="1"/><circle r="1.3" fill="none" stroke="#fff" stroke-width="1"/>',
   gare: '<rect x="-4" y="-5" width="8" height="8" rx="2" fill="none" stroke="#fff" stroke-width="1.4"/><path d="M-4 -1h8M-2.5 5.5l1-2.5M2.5 5.5l-1-2.5" stroke="#fff" stroke-width="1.3" stroke-linecap="round"/>',

@@ -240,6 +240,26 @@ function itemsDuSoir(st, z, { ordresOk, faites, reussies, delegue }) {
   return items;
 }
 
+/** Nom court et icône d'une étape du soir : chaque pastille doit se comprendre sans la liste. */
+function etiquetteEtape(i) {
+  const t = String(i.t).replace(/<[^>]*>/g, '');
+  if (i.href.startsWith('#ordres-decision')) return ['Décision', 'star'];
+  if (/doctrine/i.test(t)) return ['Doctrine', 'shield'];
+  if (/^(Valider|Ordres)/.test(t)) return ['Ordres', 'ordres'];
+  if (/^Enquête/.test(t)) return ['Enquête', 'enquete'];
+  if (/^(Énigmes|Quiz)/.test(t)) return ['Énigmes', 'quete'];
+  if (/^Point chaud/.test(t)) return ['Point chaud', 'carte'];
+  if (/^Dilemme/.test(t)) return ['Dilemme', 'alert'];
+  if (/^Vague/.test(t)) return ['Vague', 'carte'];
+  if (i.href === '#hp-releve') return ['Relève', 'carte'];
+  if (i.href === '#hp-bilan') return ['Bilan', 'ordres'];
+  if (i.href === '#hp-crise') return ['Conseil', 'shield'];
+  if (i.href === '#hp-fipa') return ['FIPA', 'radio'];
+  if (i.href === '#pactes') return ['Pacte', 'radio'];
+  const mot = t.split(/[\s:]/)[0];
+  return [mot.length > 11 ? `${mot.slice(0, 10)}…` : mot, icoEtape(i.href)];
+}
+
 /** Icône d'une étape du soir, d'après l'endroit où elle se règle. */
 function icoEtape(href) {
   if (href.startsWith('#ordres-decision')) return 'star';
@@ -258,7 +278,7 @@ function avantHtml(st, z, items) {
   const p = reste[0];
   return `<section class="card hp-soir" aria-label="Prochain tour">
     <div class="hs-tete"><span class="kicker">20:00 dans <b id="countdown" class="hs-cd">${formatCountdown(st.nextDeadline - Date.now())}</b></span>${situationPastilles(z, cielDe(z))}</div>
-    <div class="hs-pips" aria-label="${fait} étape${fait > 1 ? 's' : ''} faite${fait > 1 ? 's' : ''} sur ${items.length}">${items.map((i) => `<a class="hs-pip${i.ok ? ' ok' : i === p ? ' suiv' : ''}" href="${i.href}" title="${attr(i.t)}" aria-label="${attr(i.t)} : ${i.ok ? 'fait' : 'à faire'}">${icon(icoEtape(i.href), 18)}${i.ok ? `<i aria-hidden="true">${icon('check', 10)}</i>` : ''}</a>`).join('')}</div>
+    <div class="hs-pips" aria-label="${fait} étape${fait > 1 ? 's' : ''} faite${fait > 1 ? 's' : ''} sur ${items.length}">${items.map((i) => { const [nom, ico] = etiquetteEtape(i); return `<a class="hs-pip${i.ok ? ' ok' : i === p ? ' suiv' : ''}" href="${i.href}" title="${attr(i.t)}" aria-label="${attr(i.t)} : ${i.ok ? 'fait' : 'à faire'}">${i.ok ? icon('check', 14) : icon(ico, 15)}<span>${nom}</span></a>`; }).join('')}</div>
     <a class="hs-cta${p ? '' : ' fini'}" href="${p ? p.href : '#ordres'}">
       <span class="hs-cta-t">${p ? p.t : `${icon('check', 18)} Tout est prêt pour ce soir`}</span>
       <span class="hs-cta-s">${p ? p.s : 'tu peux encore tout modifier jusqu’à 20:00'}</span></a>

@@ -1,7 +1,7 @@
 // Carte de la saison 2 : Carte et Terrain réunis, en trois calques (Ma zone, District, Non-droit).
 // La carte en grand, d'un bord à l'autre ; en dessous, ce qu'on peut faire sur le calque choisi, une ligne par sujet.
 import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
-import { planVille } from './plan.js';
+import { planPlateau } from './plan-plateau.js';
 import { siteDe } from '../engine/sites.js';
 import { quartiersHtml, vitrineHtml, siteHtml } from './carte.js';
 import { ongletsCarte } from './pactes.js';
@@ -82,7 +82,7 @@ export function renderCarteV2(calque = S.carteCalque || 'mazone') {
   const b = badges(st, me);
   const boutons = CALQUES.map(([k, l]) => `<button type="button" role="tab" data-action="carte-calque" data-v="${k}" aria-selected="${calque === k}">
     <span>${l}</span>${k === 'nondroit' && b.ndTxt ? `<small>${b.ndTxt}</small>` : ''}${b[k] ? `<i class="cv-badge" aria-label="${b[k]} à faire">${b[k]}</i>` : ''}</button>`).join('');
-  const carte = calque === 'nondroit' ? '' : `<div class="cv-carte">${planVille(st, me, { zoom: calque === 'mazone', moderne: true })}${legende(st, me, calque)}</div>`;
+  const carte = calque === 'nondroit' ? '' : `<div class="cv-carte">${planPlateau(st, me, { zoom: calque === 'mazone' })}${legende(st, me, calque)}</div>`;
   const mesT = tensionsDe(st, me), nbChauds = Object.values(mesT).filter((t) => t >= 60).length;
   const sousTitre = calque === 'mazone' ? `${Object.keys(mesT).length} quartiers${nbChauds ? ` · <span class="bad">${nbChauds} chaud${nbChauds > 1 ? 's' : ''}</span>` : ''}` : calque === 'district' ? `${n} zones · tour ${st.turn}` : 'à reprendre ensemble';
   let corps = '';
