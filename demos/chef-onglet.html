@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Onglet Chef (démo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..700&family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Special+Elite&display=swap">
+<link rel="stylesheet" href="../css/app.css">
+<style>
+  body { font-family: var(--body); color: var(--text); margin: 0; }
+  .wrap { position: relative; z-index: 1; max-width: 560px; margin: 0 auto; padding: 12px 16px 120px; display: flex; flex-direction: column; gap: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--hair); border-radius: var(--r-lg); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .between { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tiny { font-size: 12.5px; } .small { font-size: 13.5px; } .muted { color: var(--muted); }
+  .ok { color: var(--green-soft); } .bad { color: var(--red-soft); }
+  h2 { font-family: var(--display); font-size: 18px; margin: 0; letter-spacing: -.2px; }
+  .kick { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  button { font: inherit; color: inherit; cursor: pointer; }
+
+  /* Barre de démo */
+  .demo { position: sticky; top: 0; z-index: 5; background: rgba(8,12,27,.92); backdrop-filter: blur(8px); border-bottom: 1px solid var(--hair); padding: 8px 16px; }
+  .demo .in { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 6px; }
+  .demo .t { font-size: 11.5px; color: var(--amber-soft); font-weight: 700; }
+  .jours { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  .jours button { flex: 1 0 auto; padding: 6px 9px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); font-size: 12px; font-weight: 700; color: var(--muted); }
+  .jours button[aria-pressed="true"] { background: var(--amber-bg); border-color: var(--amber-line); color: var(--amber); }
+
+  /* En-tête du chef */
+  .hero { display: flex; gap: 12px; align-items: center; }
+  .por { width: 64px; height: 64px; border-radius: 22%; overflow: hidden; box-shadow: 0 0 0 2px var(--blue), 0 0 0 4px #C88A4A; flex-shrink: 0; position: relative; }
+  .por img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .por .gal { position: absolute; inset: auto 0 0; text-align: center; font-size: 9px; color: #FFD98A; background: rgba(10,14,24,.72); }
+  .nom { font-family: var(--display); font-weight: 800; font-size: 20px; line-height: 1.1; }
+  .sig { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 700; color: #2A1E08; background: linear-gradient(180deg, #FFD98A, #E6A93A); }
+  .comps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .cp { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px 7px; border-radius: 12px; background: var(--surface2); }
+  .cp .i { font-size: 16px; line-height: 1; } .cp .n { font-weight: 800; font-size: 17px; color: var(--c); line-height: 1; }
+  .cp .b { width: 78%; height: 4px; border-radius: 3px; background: var(--line); overflow: hidden; } .cp .b i { display: block; height: 100%; background: var(--c); }
+  .cp .l { font-size: 10px; color: var(--muted); font-weight: 600; }
+  .cp.up { box-shadow: inset 0 0 0 1.5px var(--c); }
+
+  /* Prise de fonctions */
+  .prise { display: flex; gap: 0; position: relative; }
+  .pas { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; text-align: center; min-width: 0; }
+  .pas::before { content: ''; position: absolute; top: 15px; left: -50%; right: 50%; height: 2px; background: var(--line); z-index: 0; }
+  .pas:first-child::before { display: none; }
+  .pas.fait::before, .pas.auj::before { background: var(--amber); }
+  .pas .o { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-size: 15px; background: var(--surface2); border: 2px solid var(--line); position: relative; z-index: 1; }
+  .pas.fait .o { background: var(--amber); border-color: var(--amber); color: var(--amber-ink); font-weight: 800; font-size: 14px; }
+  .pas.auj .o { border-color: var(--amber); box-shadow: 0 0 0 4px var(--amber-bg); animation: pouls 1.8s infinite; }
+  .pas .lb { font-size: 10.5px; font-weight: 700; color: var(--faint); line-height: 1.2; }
+  .pas.fait .lb { color: var(--muted); } .pas.auj .lb { color: var(--amber); }
+  @keyframes pouls { 50% { box-shadow: 0 0 0 7px rgba(255,178,63,.05); } }
+  .teaser { display: flex; gap: 8px; align-items: center; padding: 8px 10px; border-radius: 12px; background: var(--bg); border: 1px dashed var(--line); font-size: 12.5px; color: var(--text2); }
+
+  .nouveau { font-size: 10.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; background: var(--amber); color: var(--amber-ink); }
+  .neuf { border-color: var(--amber-line); box-shadow: 0 0 0 1px var(--amber-line), 0 10px 30px -14px rgba(255,178,63,.35); }
+
+  /* Agenda : tuiles */
+  .agenda { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .lieu { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 6px 9px; border-radius: 14px; background: var(--surface2); border: 1.5px solid transparent; text-align: center; min-height: 92px; }
+  .lieu .ico { font-size: 26px; line-height: 1; margin-top: 2px; }
+  .lieu .n { font-size: 12.5px; font-weight: 700; line-height: 1.15; }
+  .lieu .c { font-size: 10px; font-weight: 700; color: var(--c); }
+  .lieu[aria-pressed="true"] { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 13%, var(--surface2)); }
+  .lieu[aria-pressed="true"]::after { content: ''; position: absolute; top: -9px; right: -6px; width: 30px; height: 30px; border-radius: 50%; background: url(../img/chefs/p05.webp) center/cover; box-shadow: 0 0 0 2px var(--amber), 0 4px 10px rgba(0,0,0,.5); }
+  .lieu.verr { opacity: .42; cursor: default; }
+  .lieu.verr .c { color: var(--faint); }
+  .effet { padding: 9px 11px; border-radius: 12px; background: var(--bg); font-size: 13px; color: var(--text2); display: flex; gap: 8px; align-items: flex-start; }
+  .effet b { color: var(--text); }
+  .svc { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { padding: 6px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface2); font-size: 12.5px; font-weight: 600; }
+  .chip[aria-pressed="true"] { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 18%, transparent); }
+  .cc { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; padding: 1px 7px; border-radius: 999px; color: var(--c); background: color-mix(in srgb, var(--c) 15%, transparent); white-space: nowrap; }
+
+  /* Parapheur */
+  .pile { position: relative; padding-top: 10px; }
+  .pile .derriere { position: absolute; left: 10px; right: 10px; top: 0; height: 40px; border-radius: 6px; background: var(--paper2); opacity: .5; transform: rotate(-1.2deg); }
+  .pile .derriere.d2 { left: 18px; right: 18px; top: -5px; opacity: .3; transform: rotate(1deg); }
+  .feuille { position: relative; background: var(--paper); color: var(--ink); border-radius: 6px; padding: 14px 14px 12px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.7); background-image: repeating-linear-gradient(transparent 0 25px, rgba(150,130,100,.13) 25px 26px); transition: transform .35s, opacity .35s; }
+  .feuille.sort { transform: translateX(110%) rotate(8deg); opacity: 0; }
+  .ent { display: flex; gap: 10px; align-items: center; border-bottom: 1.5px solid var(--paper-rule); padding-bottom: 9px; margin-bottom: 9px; }
+  .ent img, .ent .av { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .ent .av { display: grid; place-items: center; background: #3B4A6B; color: #fff; font-weight: 800; font-size: 14px; }
+  .ent .de { font-size: 11px; color: var(--ink3); font-weight: 600; }
+  .ent .objet { font-family: var(--display); font-weight: 800; font-size: 15.5px; line-height: 1.15; color: var(--ink); }
+  .feuille .txt { font-family: var(--serif); font-size: 14.5px; line-height: 1.45; color: var(--ink2); margin: 0 0 11px; }
+  .feuille .suite { font-size: 11px; font-weight: 800; color: var(--press); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 4px; }
+  .rep { display: flex; flex-direction: column; gap: 7px; }
+  .opt { text-align: left; display: flex; flex-direction: column; gap: 3px; padding: 9px 11px; border-radius: 9px; border: 1.5px solid var(--paper-rule); background: rgba(255,255,255,.55); color: var(--ink); }
+  .opt .l { font-weight: 800; font-size: 14px; display: flex; justify-content: space-between; gap: 6px; align-items: center; }
+  .opt .s { font-size: 12.5px; color: var(--ink3); }
+  .opt .cc { background: rgba(0,0,0,.06); }
+  .opt[aria-pressed="true"] { border-color: var(--ink); background: #fff; }
+  .tampon { position: absolute; right: 14px; top: 46px; font-family: 'Special Elite', var(--code); font-size: 22px; letter-spacing: 2px; padding: 4px 10px; border: 3px solid currentColor; border-radius: 6px; transform: rotate(-12deg) scale(2.2); opacity: 0; pointer-events: none; mix-blend-mode: multiply; }
+  .tampon.on { animation: tamp .28s cubic-bezier(.2,1.6,.4,1) forwards; }
+  @keyframes tamp { to { transform: rotate(-12deg) scale(1); opacity: .85; } }
+  .signes { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .mini { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px 3px 3px; border-radius: 999px; background: var(--surface2); font-size: 11.5px; font-weight: 600; }
+  .mini .p { width: 20px; height: 20px; border-radius: 4px; background: var(--paper); color: var(--press); font-size: 11px; display: grid; place-items: center; font-weight: 900; }
+  .fin { text-align: center; padding: 16px 10px; border-radius: 14px; background: var(--bg); border: 1px dashed var(--line); }
+
+  /* Première ligne */
+  .fronts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .front { display: flex; flex-direction: column; gap: 3px; padding: 9px; border-radius: 12px; background: var(--surface2); border: 1.5px solid transparent; text-align: left; }
+  .front .n { font-weight: 700; font-size: 13px; } .front .s { font-size: 11.5px; color: var(--muted); line-height: 1.3; }
+  .front[aria-pressed="true"] { border-color: var(--red); background: color-mix(in srgb, var(--red) 12%, var(--surface2)); }
+  .risque { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .risque .j { flex: 1; height: 8px; border-radius: 5px; background: var(--line); overflow: hidden; } .risque .j i { display: block; height: 100%; background: linear-gradient(90deg, var(--amber), var(--red)); }
+
+  /* Talents */
+  .slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .slot { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 9px 6px; border-radius: 14px; border: 1.5px dashed var(--line); text-align: center; min-height: 104px; justify-content: center; }
+  .slot img { width: 46px; height: 46px; }
+  .slot.on { border-style: solid; border-color: var(--c); background: color-mix(in srgb, var(--c) 10%, transparent); }
+  .slot .n { font-size: 12px; font-weight: 700; line-height: 1.15; } .slot .s { font-size: 10.5px; color: var(--muted); line-height: 1.25; }
+  .slot.offre { border-color: var(--amber); border-style: solid; animation: pouls 1.8s infinite; }
+
+  /* Réseau */
+  .reseau { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .pers { display: flex; flex-direction: column; align-items: center; gap: 3px; text-align: center; background: none; border: 0; padding: 0; }
+  .pers img { width: 100%; max-width: 74px; aspect-ratio: 1; object-fit: cover; border-radius: 14px; border: 2px solid var(--line); }
+  .pers.okk img { border-color: var(--green); } .pers.ko img { border-color: var(--red); }
+  .pers[aria-pressed="true"] img { box-shadow: 0 0 0 3px var(--amber); }
+  .pers .n { font-size: 12px; font-weight: 700; } .pers .h { font-size: 11px; font-weight: 700; }
+  .pers.okk .h { color: var(--green-soft); } .pers.ko .h { color: var(--red-soft); } .pers .h { color: var(--muted); }
+  .pers[disabled] { opacity: .6; cursor: default; }
+  .est { display: flex; gap: 2px; justify-content: center; } .est i { width: 7px; height: 7px; border-radius: 50%; background: var(--line); } .est i.p { background: var(--green); } .est i.m { background: var(--red); }
+
+  /* Semaine */
+  .objx { display: flex; gap: 10px; align-items: center; }
+  .objx .i { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 18%, transparent); font-size: 17px; flex-shrink: 0; }
+  .objx .bb { height: 6px; border-radius: 4px; background: var(--line); overflow: hidden; } .objx .bb i { display: block; height: 100%; background: var(--c); }
+  .duel { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 14px; background: var(--bg); }
+  .duel .vs { font-family: var(--display); font-weight: 800; color: var(--muted); }
+  .duel .sc { font-weight: 800; font-size: 18px; }
+  .duel .p2 { width: 40px; height: 40px; border-radius: 22%; overflow: hidden; } .duel .p2 img { width: 100%; height: 100%; object-fit: cover; }
+
+  .envoi { position: sticky; bottom: 12px; z-index: 4; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; background: rgba(20,27,51,.95); border: 1px solid var(--amber-line); box-shadow: var(--float); }
+  .envoi .t { flex: 1; font-size: 12.5px; color: var(--text2); }
+  .envoi .t b { color: var(--text); }
+  .btnp { padding: 10px 16px; border-radius: 12px; border: 0; background: linear-gradient(180deg, var(--amber-hi), var(--amber)); color: var(--amber-ink); font-weight: 800; }
+  .lien { text-decoration: none; color: var(--text); display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--hair); font-size: 13.5px; font-weight: 600; }
+  .note { font-size: 12px; color: var(--amber-soft); background: var(--amber-bg); border: 1px dashed var(--amber-line); border-radius: 12px; padding: 8px 10px; }
+  .cache { display: none !important; }
+  @media (min-width: 900px) { .wrap { max-width: 980px; display: grid; grid-template-columns: 1fr 1fr; align-items: start; } .wrap > .pleine { grid-column: 1 / -1; } .demo .in { max-width: 980px; } }
+</style>
+</head>
+<body>
+<div class="demo"><div class="in">
+  <span class="t">DÉMO · onglet Chef, saison 2 — choisis un jour pour voir ce qui s’ouvre</span>
+  <div class="jours" id="jours"></div>
+</div></div>
+<main class="wrap" id="app"></main>
+
+<script>
+const COMP = {
+  gestion: { n: 'Gestion', i: '📊', c: '#E8B530' },
+  commandement: { n: 'Commandement', i: '🎖️', c: '#E1453A' },
+  flair: { n: 'Flair', i: '🔎', c: '#A78BFA' },
+  diplomatie: { n: 'Diplomatie', i: '🤝', c: '#5AB0F0' },
+  proximite: { n: 'Proximité', i: '🏘️', c: '#3DD39A' },
+};
+const cc = (k, t) => `<span class="cc" style="--c:${COMP[k].c}">${COMP[k].i} ${t || COMP[k].n}</span>`;
+
+// Les six jours de prise de fonctions : une prérogative de plus chaque jour.
+const PRISE = [
+  { j: 1, ico: '🗓️', lb: 'Agenda', titre: 'L’agenda et le parapheur', tease: '' },
+  { j: 2, ico: '🎯', lb: 'Objectifs', titre: 'Les objectifs de la semaine', tease: 'Demain : tes trois objectifs de la semaine (de l’expérience et de la réputation à la clé).' },
+  { j: 3, ico: '🏅', lb: 'Talents', titre: 'Ton premier talent', tease: 'Demain : tu équipes ton premier talent (ton parcours en a déjà débloqué un).' },
+  { j: 4, ico: '⚔️', lb: '1re ligne', titre: 'La première ligne', tease: 'Demain : ton chef peut monter en première ligne (un bonus, un risque).' },
+  { j: 5, ico: '📞', lb: 'Réseau', titre: 'Le réseau', tease: 'Demain : le bourgmestre, le procureur, le syndicat et la presse peuvent te rendre service.' },
+  { j: 6, ico: '🤺', lb: 'Rival', titre: 'Ton rival et tes voisins', tease: 'Demain : un rival pour la semaine et les réunions chez les chefs voisins.' },
+];
+
+const AGENDA = [
+  { k: 'bureau', ico: '🗂️', n: 'Au bureau', comp: 'gestion', effet: 'La paperasse descend d’un dossier quand elle dépasse 8.', j: 1 },
+  { k: 'terrain', ico: '🚓', n: 'Sur le terrain', comp: 'commandement', effet: 'Le service que tu accompagnes travaille 10 % mieux ce soir.', j: 1 },
+  { k: 'quartier', ico: '🏘️', n: 'Réunion de quartier', comp: 'proximite', effet: '+1 de satisfaction.', j: 1 },
+  { k: 'commune', ico: '🏛️', n: 'À la commune', comp: 'gestion', effet: 'Réunion budgétaire : +1 500 € de subside.', j: 2 },
+  { k: 'parquet', ico: '⚖️', n: 'Au parquet', comp: 'flair', effet: 'Chance de pièce d’enquête +10 % ce soir.', j: 2 },
+  { k: 'voisin', ico: '🤝', n: 'Chez un voisin', comp: 'diplomatie', effet: 'Si ce chef vient aussi chez toi : +3 PS d’entraide et +1 de réputation chacun.', j: 6 },
+];
+
+// Le parapheur : de courts courriers, deux réponses qui se valent (chacune entraîne une compétence et coûte quelque chose).
+const COURRIERS = [
+  { id: 'gilets', de: 'Le délégué syndical', img: '../img/bureau/syndicat-0.webp', obj: 'Gilets pare-balles en fin de garantie',
+    txt: 'Douze gilets arrivent en fin de garantie le mois prochain. Les équipes de nuit demandent qu’on les remplace avant l’hiver.',
+    o: [{ l: 'Commander tout de suite', s: '−1 200 € · +2 de moral', comp: 'commandement', tampon: 'ACCORDÉ', col: '#1F7A4D' },
+        { l: 'Faire prolonger d’un an', s: 'le syndicat t’en veut un peu (estime −1)', comp: 'gestion', tampon: 'REPORTÉ', col: '#9A2B1F', suite: true }] },
+  { id: 'braderie', de: 'Le bourgmestre', img: '../img/bureau/bourgmestre-1.webp', obj: 'Braderie de dimanche',
+    txt: '« Chef, la braderie du centre attire 20 000 personnes. J’aimerais quatre agents en tenue, bien visibles, de 9 h à 17 h. »',
+    o: [{ l: 'Envoyer quatre agents', s: '2 agents pris demain · +2 de satisfaction', comp: 'proximite', tampon: 'ACCORDÉ', col: '#1F7A4D' },
+        { l: 'Proposer des stewards communaux', s: 'aucun agent pris · bourgmestre estime −1', comp: 'diplomatie', tampon: 'CONTRE-PROPOSITION', col: '#2B4A9A' }] },
+  { id: 'conge', de: 'Inspecteur Danneels, Intervention', av: 'ID', obj: 'Demande de congé',
+    txt: 'La communion de ma fille tombe samedi. Je sais que c’est un soir chargé, mais je n’ai pas pris un jour depuis août.',
+    o: [{ l: 'Accorder', s: '1 agent de moins ce soir · +2 de moral', comp: 'commandement', tampon: 'ACCORDÉ', col: '#1F7A4D' },
+        { l: 'Refuser, avec un mot', s: '−1 de moral · effectif complet', comp: 'gestion', tampon: 'REFUSÉ', col: '#9A2B1F' }] },
+  { id: 'radar', de: 'Pétition de 84 riverains', av: '✍️', obj: 'Vitesse rue des Tanneurs',
+    txt: 'Des voitures à 70 km/h devant l’école. Les parents demandent une action « avant qu’il n’y ait un drame ».',
+    o: [{ l: 'Contrôle radar cette semaine', s: '+600 € d’amendes · +1 de satisfaction', comp: 'gestion', tampon: 'ACCORDÉ', col: '#1F7A4D' },
+        { l: 'Réunion avec les parents', s: '+2 de satisfaction · rien pour la caisse', comp: 'proximite', tampon: 'RÉUNION', col: '#2B4A9A' }] },
+  { id: 'rapport', de: 'Le procureur', img: '../img/bureau/procureur-0.webp', obj: 'Rapport sur l’affaire en cours',
+    txt: '« Je souhaite un état précis de vos devoirs d’enquête avant vendredi. Pas un résumé : un vrai rapport. »',
+    o: [{ l: 'Y mettre un enquêteur', s: '1 agent de Recherche de moins ce soir · procureur estime +1', comp: 'flair', tampon: 'TRANSMIS', col: '#1F7A4D' },
+        { l: 'Rapport court', s: '+1 dossier de paperasse évité · procureur estime −1', comp: 'gestion', tampon: 'CLASSÉ', col: '#9A2B1F' }] },
+];
+// Suite d'un courrier (le lendemain), selon la réponse.
+const SUITE_GILETS = { id: 'gilets2', suite: 'Suite de « Gilets pare-balles »', de: 'Le délégué syndical', img: '../img/bureau/syndicat--1.webp', obj: 'Le syndicat revient à la charge',
+  txt: '« Un collègue a déchiré son gilet sur une intervention hier. Il était encore sous garantie, heureusement. La prochaine fois ? »',
+  o: [{ l: 'Commander la moitié', s: '−600 € · le syndicat se calme (estime +1)', comp: 'diplomatie', tampon: 'ACCORDÉ', col: '#1F7A4D' },
+      { l: 'Maintenir la décision', s: 'risque de grogne : −2 de moral si un agent est blessé cette semaine', comp: 'gestion', tampon: 'MAINTENU', col: '#9A2B1F' }] };
+
+const FRONT = [
+  { k: 'nondroit', ico: '🎖️', n: 'Assaut', s: 'force du plus gros assaut +9 %', comp: 'commandement' },
+  { k: 'affaire', ico: '🎖️', n: 'Affaires', s: 'force de l’équipe +9 %', comp: 'commandement' },
+  { k: 'releve', ico: '🤝', n: 'Relève', s: 'compte pour un agent de plus', comp: 'diplomatie' },
+  { k: 'enquete', ico: '🔎', n: 'Enquête', s: 'chance de pièce +4 %', comp: 'flair' },
+  { k: 'quartier', ico: '🏘️', n: 'Quartier', s: 'tension du quartier chaud −2', comp: 'proximite' },
+];
+const RESEAU = [
+  { k: 'bourgmestre', n: 'Bourgmestre', h: 1, e: 1, geste: '+2 000 € de subside' },
+  { k: 'procureur', n: 'Procureur', h: 0, e: 0, geste: 'pièce d’enquête +15 %', refus: 'il est neutre' },
+  { k: 'syndicat', n: 'Syndicat', h: -1, e: -1, geste: '+3 de moral', refus: 'mécontent' },
+  { k: 'journaliste', n: 'Presse', h: 1, e: 0, geste: '+2 de satisfaction, +1 réputation' },
+];
+
+const JOURS = [1, 2, 3, 4, 5, 6, 9, 'v'];
+const st = { jour: 1, agenda: 'terrain', service: 'intervention', front: null, reseau: null, choix: {}, idx: 0, talent: null };
+
+function etat(j) {
+  // niveaux simulés au fil des jours (parcours « Ancien de l’intervention » : Commandement +2)
+  const v = j === 'v';
+  const d = v ? 30 : j;
+  return {
+    v, d,
+    niv: v ? { gestion: 5, commandement: 8, flair: 4, diplomatie: 3, proximite: 4 } : { gestion: d >= 4 ? 1 : 0, commandement: 2 + (d >= 5 ? 1 : 0), flair: d >= 6 ? 1 : 0, diplomatie: 0, proximite: d >= 3 ? 1 : 0 },
+    prog: v ? { gestion: .4, commandement: .7, flair: .2, diplomatie: .9, proximite: .1 } : { gestion: Math.min(.95, .15 * d), commandement: (.22 * d) % 1, flair: (.18 * d) % 1, diplomatie: .08 * d, proximite: (.2 * d) % 1 },
+    ouvert: (n) => v || d >= n,
+    courriers: v ? 3 : d >= 2 ? 2 : 1,
+  };
+}
+
+function hero(E) {
+  const ks = Object.keys(COMP);
+  return `<section class="card pleine">
+    <div class="hero"><span class="por"><img src="../img/chefs/p05.webp" alt=""><span class="gal">${E.v ? '★★★' : '★'}</span></span>
+      <span style="display:flex;flex-direction:column;gap:3px;min-width:0"><span class="kick">Mon chef de corps</span>
+        <span class="nom">Bryan</span><span class="tiny muted">${E.v ? 'Commissaire' : 'Inspecteur'} · Horizon (5324) · Ancien de l’intervention</span>
+        <span><span class="sig">${E.v ? 'Chasseur de terrain' : 'Jeune chef'}</span></span></span></div>
+    <div class="comps">${ks.map((k) => `<div class="cp${!E.v && st.jour === 3 && k === 'proximite' ? ' up' : ''}" style="--c:${COMP[k].c}"><span class="i">${COMP[k].i}</span><span class="n">${E.niv[k]}</span><span class="b"><i style="width:${Math.round(E.prog[k] * 100)}%"></i></span><span class="l">${COMP[k].n.slice(0, k === 'commandement' ? 3 : 5)}${k === 'commandement' ? '.' : ''}</span></div>`).join('')}</div>
+  </section>`;
+}
+
+function prise(E) {
+  if (E.v) return '';
+  const d = E.d, suiv = PRISE.find((p) => p.j === d + 1);
+  if (d > 6) return `<section class="card pleine" style="gap:6px"><div class="between"><h2>Prise de fonctions</h2><span class="tiny ok" style="font-weight:700">✓ terminée</span></div>
+    <span class="tiny muted">Toutes tes prérogatives sont ouvertes. Prochaine étape de carrière : le <b>brevet</b>, à 15 niveaux au total (tu en as 6).</span></section>`;
+  return `<section class="card pleine"><div class="between"><h2>Prise de fonctions</h2><span class="tiny muted">jour ${d} sur 6</span></div>
+    <div class="prise">${PRISE.map((p) => `<div class="pas ${p.j < d ? 'fait' : p.j === d ? 'auj' : ''}"><span class="o">${p.j < d ? '✓' : p.ico}</span><span class="lb">${p.lb}</span></div>`).join('')}</div>
+    ${suiv ? `<div class="teaser">🔒 <span>${suiv.tease}</span></div>` : '<div class="teaser">🎓 <span>Dernière étape ! Ensuite, la carrière continue avec le brevet (15 niveaux au total).</span></div>'}
+  </section>`;
+}
+
+const estNeuf = (E, j) => !E.v && E.d === j;
+
+function agenda(E) {
+  const a = AGENDA.find((x) => x.k === st.agenda);
+  return `<section class="card ${estNeuf(E, 1) ? 'neuf' : ''}">
+    <div class="between"><h2>Où passe ton chef aujourd’hui ?</h2>${estNeuf(E, 1) ? '<span class="nouveau">nouveau</span>' : ''}</div>
+    <div class="agenda">${AGENDA.map((x) => { const ok = E.ouvert(x.j); return `<button class="lieu ${ok ? '' : 'verr'}" data-a="agenda" data-v="${x.k}" aria-pressed="${st.agenda === x.k && ok}" ${ok ? '' : 'disabled'} style="--c:${COMP[x.comp].c}">
+      <span class="ico">${ok ? x.ico : '🔒'}</span><span class="n">${x.n}</span><span class="c">${ok ? `${COMP[x.comp].i} ${COMP[x.comp].n}` : `jour ${x.j}`}</span></button>`; }).join('')}</div>
+    <div class="effet"><span>${a.ico}</span><span><b>${a.n}</b> · ${a.effet} <span style="white-space:nowrap">${cc(a.comp, `+2 XP ${COMP[a.comp].n}`)}</span></span></div>
+    ${st.agenda === 'terrain' ? `<div class="svc">${['Intervention', 'Proximité', 'Recherche', 'Roulage', 'Accueil'].map((s) => `<button class="chip" data-a="service" data-v="${s.toLowerCase()}" aria-pressed="${st.service === s.toLowerCase()}">${s}</button>`).join('')}</div>` : ''}
+    ${st.agenda === 'voisin' ? `<div class="svc">${['Les Coteaux', 'Val d’Haine', 'Bois-Brûlé'].map((s, i) => `<button class="chip" aria-pressed="${i === 0}">${s}${i === 0 ? ' · vient chez toi ✓' : ''}</button>`).join('')}</div>` : ''}
+  </section>`;
+}
+
+function listeCourriers(E) {
+  const l = COURRIERS.slice(0, E.courriers);
+  if (E.d === 2 && !E.v) l[0] = SUITE_GILETS; // le lendemain, la suite d'un courrier d'hier
+  return l;
+}
+
+function parapheur(E) {
+  const l = listeCourriers(E), n = l.length;
+  const faits = l.filter((c) => st.choix[c.id] != null).length;
+  const i = Math.min(st.idx, n);
+  const reste = n - i;
+  let corps;
+  if (i >= n) {
+    corps = `<div class="fin"><div style="font-size:30px">🖋️</div><div style="font-weight:700;margin-top:4px">Parapheur vidé</div><div class="tiny muted" style="margin-top:3px">Tes réponses partent avec les ordres de 20:00. Tu peux encore revenir sur un courrier.</div></div>`;
+  } else {
+    const c = l[i], ch = st.choix[c.id];
+    corps = `<div class="pile">${reste > 2 ? '<div class="derriere d2"></div>' : ''}${reste > 1 ? '<div class="derriere"></div>' : ''}
+      <article class="feuille" id="feuille">
+        ${c.suite ? `<div class="suite">↻ ${c.suite}</div>` : ''}
+        <div class="ent">${c.img ? `<img src="${c.img}" alt="">` : `<span class="av">${c.av}</span>`}<span style="min-width:0"><div class="de">De : ${c.de}</div><div class="objet">${c.obj}</div></span></div>
+        <p class="txt">${c.txt}</p>
+        <div class="rep">${c.o.map((o, k) => `<button class="opt" data-a="choix" data-id="${c.id}" data-v="${k}" aria-pressed="${ch === k}"><span class="l"><span>${o.l}</span>${cc(o.comp, `+2 ${COMP[o.comp].n}`)}</span><span class="s">${o.s}${o.suite ? ' · <i>il y aura une suite</i>' : ''}</span></button>`).join('')}</div>
+        <span class="tampon ${ch != null ? 'on' : ''}" style="color:${ch != null ? c.o[ch].col : '#000'}">${ch != null ? c.o[ch].tampon : ''}</span>
+      </article></div>`;
+  }
+  const signes = l.filter((c) => st.choix[c.id] != null);
+  return `<section class="card ${estNeuf(E, 1) ? 'neuf' : ''}">
+    <div class="between"><h2>Le parapheur</h2><span class="tiny muted">${faits}/${n} signé${faits > 1 ? 's' : ''}</span></div>
+    <span class="tiny muted" style="margin-top:-4px">${n > 1 ? `${n} courriers` : 'Un courrier'} sur ton bureau. Deux réponses possibles, chacune entraîne une compétence. Sans réponse, ton adjoint classe le courrier (sans effet, sans expérience).</span>
+    ${corps}
+    ${signes.length ? `<div class="signes">${signes.map((c) => `<button class="mini" data-a="revoir" data-v="${l.indexOf(c)}"><span class="p">✓</span>${c.obj.length > 26 ? c.obj.slice(0, 25) + '…' : c.obj}</button>`).join('')}</div>` : ''}
+  </section>`;
+}
+
+function semaine(E) {
+  if (!E.ouvert(2)) return '';
+  return `<section class="card ${estNeuf(E, 2) ? 'neuf' : ''}">
+    <div class="between"><h2>Ta semaine</h2>${estNeuf(E, 2) ? '<span class="nouveau">nouveau</span>' : '<span class="tiny muted">jusqu’au jour 7</span>'}</div>
+    ${[['🚨', 'Réussir 3 incidents du jour', 1, 3, 'commandement'], ['😊', 'Finir 3 soirs à 70 de satisfaction', E.d >= 4 ? 2 : 0, 3, 'proximite'], ['🔎', 'Réussir 3 énigmes ou jeux d’enquête', E.d >= 3 ? 1 : 0, 3, 'flair']].map(([i, t, p, c, k]) => `<div class="objx" style="--c:${COMP[k].c}"><span class="i">${i}</span><span style="flex:1;display:flex;flex-direction:column;gap:4px"><span class="between small"><span>${t}</span><b>${p}/${c}</b></span><span class="bb"><i style="width:${p / c * 100}%"></i></span></span></div>`).join('')}
+    <span class="tiny muted">Chacun : +4 XP et +1 de réputation. Les trois : la médaille de la semaine (+3 PS).</span>
+    ${E.ouvert(6) ? `<div class="duel ${estNeuf(E, 6) ? 'neuf' : ''}" style="border:1px solid var(--hair)"><span class="por" style="width:40px;height:40px"><img src="../img/chefs/p05.webp" alt=""></span><span class="sc">412</span><span class="vs">VS</span><span class="sc" style="color:var(--muted)">398</span><span class="p2"><img src="../img/chefs/p12.webp" alt=""></span><span class="tiny" style="flex:1">Rival : <b>Les Coteaux</b><br><span class="muted">IPZ cumulé, jours joués</span></span>${estNeuf(E, 6) ? '<span class="nouveau">nouveau</span>' : ''}</div>` : ''}
+  </section>`;
+}
+
+function talents(E) {
+  if (!E.ouvert(3)) return '';
+  const T = [{ id: 'meneur', n: 'Meneur d’hommes', s: 'le rythme renforcé coûte 1 moral de moins', comp: 'commandement' }];
+  if (E.v) T.push({ id: 'tacticien', n: 'Tacticien', s: 'non-droit : force +8 %', comp: 'commandement' }, { id: 'marches', n: 'Marchés publics', s: 'véhicules −10 %', comp: 'gestion' });
+  const pris = E.v ? T.map((t) => t.id) : st.talent ? [st.talent] : [];
+  const offre = !E.v && !st.talent;
+  return `<section class="card ${estNeuf(E, 3) ? 'neuf' : ''}">
+    <div class="between"><h2>Talents</h2>${estNeuf(E, 3) ? '<span class="nouveau">nouveau</span>' : `<span class="tiny muted">${pris.length}/3 · 4/15 débloqués</span>`}</div>
+    <div class="slots">${[0, 1, 2].map((i) => { const t = T.find((x) => x.id === pris[i]); if (t) return `<div class="slot on" style="--c:${COMP[t.comp].c}"><img src="../img/talents/${t.id}.webp" alt=""><span class="n">${t.n}</span><span class="s">${t.s}</span></div>`;
+      if (i === 0 && offre) return `<button class="slot offre" data-a="talent" data-v="meneur"><img src="../img/talents/meneur.webp" alt=""><span class="n">Meneur d’hommes</span><span class="s" style="color:var(--amber)">Touche pour l’équiper</span></button>`;
+      const pro = [['🏘️', 'Proximité 2 : Visage connu', 'encore 9 XP'], ['📊', 'Gestion 2 : Bon gestionnaire', 'encore 14 XP']][i - 1] || ['', '', ''];
+      return `<div class="slot"><span style="font-size:20px;opacity:.6">${pro[0] || '＋'}</span><span class="s">${E.v ? 'libre' : pro[1]}</span><span class="s" style="color:var(--amber-soft)">${E.v ? '' : pro[2]}</span></div>`; }).join('')}</div>
+    ${!E.v ? '<span class="tiny muted">Ton parcours t’a donné Commandement 2 : un talent t’attend. Les suivants arrivent aux niveaux 2, 5 et 8 de chaque compétence.</span>' : ''}
+  </section>`;
+}
+
+function premiereLigne(E) {
+  if (!E.ouvert(4)) return '';
+  const L = E.niv.commandement;
+  return `<section class="card ${estNeuf(E, 4) ? 'neuf' : ''}">
+    <div class="between"><h2>En première ligne ce soir ?</h2>${estNeuf(E, 4) ? '<span class="nouveau">nouveau</span>' : ''}</div>
+    <div class="fronts"><button class="front" data-a="front" data-v="" aria-pressed="${!st.front}"><span class="n">🪑 Rester au QG</span><span class="s">aucun risque</span></button>
+      ${FRONT.map((f) => `<button class="front" data-a="front" data-v="${f.k}" aria-pressed="${st.front === f.k}"><span class="n">${f.ico} ${f.n}</span><span class="s">${f.s.replace('9', String(3 * L))}</span></button>`).join('')}</div>
+    ${st.front ? `<div class="risque"><span>Risque de blessure</span><span class="j"><i style="width:10%"></i></span><b>10 %</b></div><span class="tiny muted">Blessé : 2 jours d’hôpital, talents coupés. Le bonus ne compte que si l’action a lieu ce soir.</span>` : ''}
+  </section>`;
+}
+
+function reseau(E) {
+  if (!E.ouvert(5)) return '';
+  return `<section class="card ${estNeuf(E, 5) ? 'neuf' : ''}">
+    <div class="between"><h2>Le réseau</h2>${estNeuf(E, 5) ? '<span class="nouveau">nouveau</span>' : '<span class="tiny muted">un service par personne et par semaine</span>'}</div>
+    <div class="reseau">${RESEAU.map((r) => `<button class="pers ${r.h > 0 ? 'okk' : r.h < 0 ? 'ko' : ''}" data-a="reseau" data-v="${r.k}" aria-pressed="${st.reseau === r.k}" ${r.refus ? 'disabled' : ''}>
+      <img src="../img/bureau/${r.k}-${r.h}.webp" alt=""><span class="n">${r.n}</span><span class="h">${r.h > 0 ? 'Satisfait' : r.h < 0 ? 'Mécontent' : 'Neutre'}</span>
+      <span class="est">${[-2, -1, 1, 2].map((x) => `<i class="${x < 0 && r.e <= x ? 'm' : x > 0 && r.e >= x ? 'p' : ''}"></i>`).join('')}</span></button>`).join('')}</div>
+    <div class="effet">${st.reseau ? `<span>📞</span><span><b>${RESEAU.find((r) => r.k === st.reseau).n}</b> : ${RESEAU.find((r) => r.k === st.reseau).geste} ce soir.</span>` : '<span>💡</span><span>Seuls les satisfaits rendent service. Leur estime (les points) se gagne aussi au parapheur.</span>'}</div>
+  </section>`;
+}
+
+function render() {
+  const E = etat(st.jour);
+  document.getElementById('jours').innerHTML = JOURS.map((j) => `<button data-a="jour" data-v="${j}" aria-pressed="${st.jour === j}">${j === 'v' ? 'Saison 3 (vétéran)' : `Jour ${j}`}</button>`).join('');
+  const nb = listeCourriers(E).filter((c) => st.choix[c.id] != null).length, tot = listeCourriers(E).length;
+  document.getElementById('app').innerHTML = `
+    ${hero(E)}
+    ${prise(E)}
+    ${agenda(E)}
+    ${parapheur(E)}
+    ${talents(E)}
+    ${premiereLigne(E)}
+    ${reseau(E)}
+    ${semaine(E)}
+    <a class="lien pleine" href="#" onclick="return false"><span>📋 Fiche complète · compétences, honneurs, adjoint, carrière</span><span class="muted">›</span></a>
+    ${st.jour === 1 ? '<div class="note pleine">Jour 1 : deux gestes (agenda + un courrier), 30 secondes. Chaque jour, une prérogative de plus s’ouvre, avec un « Demain : … » pour donner envie de revenir. Un vétéran (saison 3) a tout dès le premier jour.</div>' : ''}
+    <div class="envoi pleine"><span class="t"><b>${AGENDA.find((a) => a.k === st.agenda).ico} ${AGENDA.find((a) => a.k === st.agenda).n}</b> · parapheur ${nb}/${tot}${st.front ? ' · ⚔️ 1re ligne' : ''}${st.reseau ? ' · 📞 service' : ''}<br><span class="muted">part avec tes ordres de 20:00</span></span><button class="btnp">Valider</button></div>`;
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-a]'); if (!b || b.disabled) return;
+  const a = b.dataset.a, v = b.dataset.v;
+  if (a === 'jour') { st.jour = v === 'v' ? 'v' : Number(v); st.idx = 0; st.choix = {}; st.front = null; st.reseau = null; st.talent = null; if (!etat(st.jour).ouvert(2) && !['bureau', 'terrain', 'quartier'].includes(st.agenda)) st.agenda = 'terrain'; }
+  if (a === 'agenda') st.agenda = v;
+  if (a === 'service') st.service = v;
+  if (a === 'front') st.front = v || null;
+  if (a === 'reseau') st.reseau = st.reseau === v ? null : v;
+  if (a === 'talent') st.talent = v;
+  if (a === 'revoir') st.idx = Number(v);
+  if (a === 'choix') {
+    const deja = st.choix[b.dataset.id] != null;
+    st.choix[b.dataset.id] = Number(v);
+    render();
+    if (!deja || true) setTimeout(() => { const f = document.getElementById('feuille'); if (f) f.classList.add('sort'); setTimeout(() => { const l = listeCourriers(etat(st.jour)); let n = st.idx + 1; while (n < l.length && st.choix[l[n].id] != null) n++; st.idx = n; render(); }, 340); }, 650);
+    return;
+  }
+  render();
+});
+render();
+</script>
+</body>
+</html>
