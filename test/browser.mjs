@@ -57,9 +57,15 @@ await page.waitForSelector('svg[role="img"]');
 await shot('07-carte');
 // Quartiers : toucher un quartier, envoyer une patrouille, la déplacer.
 await page.locator('polygon[data-action="quartier"]').first().click({ force: true });
-await page.waitForSelector('.qrow.sel');
-await page.locator('.qrow [data-action="patrouille"][data-d="1"]:not([disabled])').first().click();
-if ((await page.locator('.qrow .stepper .n', { hasText: /^[1-9]/ }).count()) < 1) errors.push('Quartiers : la patrouille n’est pas affectée');
+if (await page.locator('.cv-fiche').count()) { // saison 2 : fiche sous la carte, cases de patrouille
+  await page.locator('.cv-case:not([disabled])').first().click();
+  await page.waitForTimeout(200);
+  if ((await page.locator('.cv-case.on').count()) < 1 || (await page.locator('svg.iso g.pv:not([visibility])').count()) < 1) errors.push('Quartiers : la patrouille n’est pas affectée (case ou voiture absente)');
+} else {
+  await page.waitForSelector('.qrow.sel');
+  await page.locator('.qrow [data-action="patrouille"][data-d="1"]:not([disabled])').first().click();
+  if ((await page.locator('.qrow .stepper .n', { hasText: /^[1-9]/ }).count()) < 1) errors.push('Quartiers : la patrouille n’est pas affectée');
+}
 await shot('07b-carte-patrouille');
 await page.goto(`${BASE}#radio`);
 await page.fill('#radio-msg', 'Salut le district, qui fait équipe sur le trafic ?');

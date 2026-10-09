@@ -3,7 +3,7 @@
 import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
 import { planIso } from './plan-iso.js';
 import { siteDe } from '../engine/sites.js';
-import { quartiersHtml, vitrineHtml, siteHtml, ficheQuartierHtml } from './carte.js';
+import { siteHtml, ficheQuartierHtml, chipsQuartiersHtml } from './carte.js';
 import { aFairePactes } from './pactes.js';
 import { terrainBlocs, terrainAFaire } from './terrain.js';
 import { nonDroitHtml, secteursEnDanger } from './nondroit.js';
@@ -63,9 +63,9 @@ function districtHtml(st, me) {
   return `<section class="hp-ajd" aria-label="Ce soir dans le district">
       <h2 class="section">Ce soir dans le district</h2>
       ${L.length ? L.join('') : '<p class="small muted" style="margin:0">Aucune demande d’aide pour l’instant. Les appels à renfort, les affaires disputées et les grands événements arrivent ici.</p>'}
-    </section>
-    <section class="col" aria-label="Les zones du district" style="gap:8px"><div class="between"><h2 class="section" style="margin:0">Les commissariats</h2><span class="tiny muted">touche pour visiter</span></div>
-      ${vitrineHtml(st, me)}</section>`;
+      <p class="tiny muted" style="margin:0">Touche la zone d’un collègue sur la carte pour voir son commissariat.</p>
+      <div class="sr-only">${Object.values(st.zones).filter((z) => z.uid !== me.uid).map((z) => `<button type="button" data-action="voir-hp" data-uid="${esc(z.uid)}">Commissariat de ${esc(z.nom)}</button>`).join('')}</div>
+    </section>`;
 }
 
 /** Quartier montré dans la fiche : celui touché, sinon le point chaud, sinon le plus tendu. */
@@ -87,9 +87,9 @@ export function renderCarteV2(calque = S.carteCalque || 'mazone') {
   const sel = quartierChoisi(st, me);
   const mesT = tensionsDe(st, me), nbChauds = Object.values(mesT).filter((t) => t >= 60).length;
   const sousTitre = calque === 'mazone' ? `${Object.keys(mesT).length} quartiers${nbChauds ? ` · <span class="bad">${nbChauds} chaud${nbChauds > 1 ? 's' : ''}</span>` : ''}` : `${n} zones · tour ${st.turn}`;
-  const astuce = calque === 'mazone' ? 'Touche un quartier' : 'Touche ta zone ou le non-droit';
+  const astuce = calque === 'mazone' ? 'Touche un quartier' : 'Touche une zone ou le non-droit';
   const carte = `<div class="cv-carte">${planIso(st, me, { vue: calque, sel })}<span class="cv-astuce" aria-hidden="true">${astuce}</span></div>`;
-  const corps = calque === 'mazone' ? `${ficheQuartierHtml(st, me, sel)}${quartiersHtml(st, me)}${siteHtml(siteDe(me))}` : districtHtml(st, me);
+  const corps = calque === 'mazone' ? `${ficheQuartierHtml(st, me, sel)}${chipsQuartiersHtml(st, me, sel)}${siteHtml(siteDe(me))}` : districtHtml(st, me);
   return `<main class="screen carte-v3">
     <header class="cv-tete"><h1 class="big">${calque === 'mazone' ? esc(me.nom) : 'District Delta'}</h1><span class="small muted">${sousTitre}</span></header>
     <div class="cv-calques deux" role="tablist" aria-label="Vue de la carte">${boutons}</div>

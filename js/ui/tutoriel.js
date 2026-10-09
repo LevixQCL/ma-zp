@@ -97,10 +97,10 @@ export const ETAPES = [
     geste: { consigne: 'Touche <strong>Valider</strong>.', fait: () => !!S.savedOrders && !S.ordersDirty },
   },
   {
-    id: 'chef', route: 'chef', v2: true, onglet: 'Ton chef de corps : ce qu’il fait aujourd’hui, sa semaine, sa carrière.', cible: ['section[aria-label="Ton chef aujourd’hui"]', '.chef-creation'],
-    titre: 'Ton chef de corps',
-    texte: `<p>C’est toi. Chaque jour, choisis <strong>où il passe sa journée</strong>, s’il monte <strong>en première ligne</strong> et quel <strong>service</strong> demander au réseau : ça part avec tes ordres de 20:00.</p>
-      <p>Ses 5 compétences montent selon ta façon de gérer ta zone <strong>et</strong> quand tu réussis tes énigmes et tes mini-jeux. Elles débloquent des <strong>talents</strong>. Plus bas : sa semaine (objectifs, duel) et sa fiche.</p>`,
+    id: 'carte-v2', route: 'carte', v2: true, onglet: 'Ta ville en maquette : tes quartiers et tout le district.', cible: '#mes-quartiers', avant: () => { S.carteCalque = 'mazone'; },
+    titre: 'La carte : Ma zone et District',
+    texte: `<p><strong>Ma zone</strong> : touche un quartier, puis remplis ses cases : une case, une patrouille de Proximité, et une voiture qui part tourner dans le quartier. Vise d’abord le <strong>point chaud</strong> 🔥.</p>
+      <p><strong>District</strong> : renforts, affaires disputées, zone de non-droit, pactes et Conseil, une ligne chacun. Touche la zone d’un collègue sur la carte pour voir son commissariat.</p>`,
   },
   {
     id: 'terrain', route: 'terrain', v1: true, /* saison 2 : le Terrain est un calque de la Carte */ onglet: 'Ce qui se joue avec les autres zones.', cible: ['section[aria-label="Zone de non-droit"]', 'section[aria-label="Chez les voisins"]'], union: true,
@@ -137,11 +137,16 @@ export const ETAPES = [
       <p>Pas le temps ou pas l’envie ? Un <strong>quiz express</strong> ou un <strong>agent</strong> qui planche à ta place peuvent aussi décrocher le bonus. L’<strong>Entraînement</strong> permet de s’exercer aux énigmes sans enjeu, et le <strong>Challenge</strong> aux mini-jeux d’incident.</p>`,
   },
   {
-    id: 'carte', route: 'carte', onglet: 'Tes quartiers et tout le district.', cible: '#mes-quartiers', avant: () => { S.carteCalque = 'mazone'; },
-    titre: () => (reglesV2(S.state) ? 'La carte : ta zone, le district, le non-droit' : 'La carte et tes quartiers'),
-    texte: () => (reglesV2(S.state) ? `<p>Trois calques en haut de la carte. <strong>Ma zone</strong> : la tension de chaque quartier ; envoie des patrouilles de Proximité là où ça chauffe, surtout sur le <strong>point chaud</strong>.</p>
-      <p><strong>District</strong> : appels à renfort, affaires disputées, grands événements et les commissariats des autres. <strong>Non-droit</strong> : le centre de la ville à reprendre ensemble. L’onglet <strong>Pactes</strong>, tout en haut, sert à t’allier avec une autre zone.</p>` : `<p>Chaque quartier a sa <strong>tension</strong>. Envoie des patrouilles de <strong>Proximité</strong> là où ça chauffe, surtout sur le <strong>point chaud</strong> annoncé la veille.</p>
-      <p>Au centre, hachurée de rouge : la zone de non-droit. L’onglet <strong>Pactes</strong>, en haut, sert à t’allier avec une autre zone (jumelage, enquête, achats) et à voter au Conseil.</p>`),
+    id: 'carte', route: 'carte', v1: true, /* saison 2 : la Carte vient juste après les Ordres (étape carte-v2) */ onglet: 'Tes quartiers et tout le district.', cible: '#mes-quartiers',
+    titre: 'La carte et tes quartiers',
+    texte: `<p>Chaque quartier a sa <strong>tension</strong>. Envoie des patrouilles de <strong>Proximité</strong> là où ça chauffe, surtout sur le <strong>point chaud</strong> annoncé la veille.</p>
+      <p>Au centre, hachurée de rouge : la zone de non-droit. L’onglet <strong>Pactes</strong>, en haut, sert à t’allier avec une autre zone (jumelage, enquête, achats) et à voter au Conseil.</p>`,
+  },
+  {
+    id: 'chef', route: 'chef', v2: true, onglet: 'Ton chef de corps : ce qu’il fait aujourd’hui, sa semaine, sa carrière.', cible: ['section[aria-label="Ton chef aujourd’hui"]', '.chef-creation'],
+    titre: 'Ton chef de corps',
+    texte: `<p>C’est toi. Chaque jour, choisis <strong>où il passe sa journée</strong>, s’il monte <strong>en première ligne</strong> et quel <strong>service</strong> demander au réseau : ça part avec tes ordres de 20:00.</p>
+      <p>Ses 5 compétences montent selon ta façon de gérer ta zone <strong>et</strong> quand tu réussis tes énigmes et tes mini-jeux. Elles débloquent des <strong>talents</strong>. Plus bas : sa semaine (objectifs, duel) et sa fiche.</p>`,
   },
   {
     id: 'radio', route: 'radio', onglet: 'Pour parler avec les autres chefs de zone.', cible: '[aria-label="Radio et messages privés"]',

@@ -14,7 +14,7 @@ const calme = () => { try { return matchMedia('(prefers-reduced-motion: reduce)'
 export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
   const seed = S.config.seed, reduit = calme();
   const mesT0 = tensionsDe(st, me);
-  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, Object.values(st.zones).map((z) => z.uid).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
+  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, Object.values(st.zones).map((z) => `${z.uid}:${z.nom}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
   if (!cache || cache.cle !== cle) cache = { cle, svg: dessiner(st, me, seed, vue === 'mazone' ? 'zone' : 'district', reduit) };
   let svg = cache.svg;
   // Patrouilles du soir : une voiture visible par agent (3 au plus), pastille bleue avec le nombre.
@@ -112,9 +112,15 @@ function dessiner(st, me, seed, vue, reduit) {
       if (!reduit) voitures.push(`<g><rect x="-2.2" y="-1.1" width="4.4" height="2.2" rx=".7" fill="${['#3C4466', '#5A3A3A', '#2F4B4A'][Math.floor(rng.next() * 3)]}"/><circle cx="-2.2" cy="0" r=".5" fill="#FF4E4E" opacity=".8"/><path d="M2.4 -1L9 -3.2V3.2L2.4 1Z" fill="#FFE9B0" opacity=".16"/>${mvt(dur, -rng.float(0, dur), rng.next() < 0.5)}</g>`);
     }
 
+    // District : chaque quartier d'une zone se touche. Le mien ouvre « Ma zone », celui d'un collègue ouvre son commissariat.
+    if (!zoomZone && T.owner[i] >= 0) {
+      const uid = T.order[T.owner[i]], z = st.zones[uid];
+      if (z) cibles.push({ prof: -1, h: mien ? `<polygon class="hit-zone" data-action="carte-calque" data-v="mazone" points="${poly(top)}" fill="transparent"><title>Ouvrir ma zone</title></polygon>`
+        : `<polygon class="hit-autre" data-action="voir-hp" data-uid="${uid}" points="${poly(top)}" fill="transparent"><title>Commissariat de ${String(z.nom).replace(/[<&"]/g, '')}</title></polygon>` });
+    }
     if (!zoomZone && nd) cibles.push({ prof: -1, h: `<polygon class="hit-nd" data-action="cv-nd" points="${poly(top)}" fill="transparent"><title>Zone de non-droit</title></polygon>` });
     // Zone cliquable : l'îlot et le volume au-dessus (là où sont les immeubles), triée par profondeur.
-    if (mien) {
+    if (mien && zoomZone) {
       const hull = enveloppe([...ilot.map(([x, y]) => P(x, y)), ...inset(c.poly, c.c, 0.7).map(([x, y]) => P(x, y, 16))]);
       cibles.push({ prof: c.c[0] + c.c[1], h: `<polygon class="hit" data-action="quartier" data-c="${i}" points="${poly(hull)}" fill="transparent"><title>${c.nom} · tension ${Math.round(t)}</title></polygon>` });
       selections.push(`<polygon class="sel" data-q="${i}" visibility="hidden" points="${poly(top)}" fill="#FFB23F" fill-opacity=".14" stroke="#FFB23F" stroke-width="1.2"/>`);
@@ -223,15 +229,23 @@ function dessiner(st, me, seed, vue, reduit) {
   const reflets = [0.2, 0.45, 0.7].map((k, j) => { const pts = axe.slice(Math.floor(k * 50), Math.floor(k * 50) + 10).map(([c]) => P(c[0], c[1])); return `<polyline points="${poly(pts)}" fill="none" stroke="#6FA0E8" stroke-opacity=".35" stroke-width=".6" stroke-dasharray="2 6"><animate attributeName="stroke-dashoffset" values="0;-16" dur="${3 + j}s" repeatCount="indefinite"/></polyline>`; }).join('');
   const fleuve = `<polygon points="${poly(fleuveP)}" fill="#0E2550" stroke="#3E6BB0" stroke-opacity=".5" stroke-width=".6"/>${reflets}`;
   // En vue district, ma zone entière est une seule cible : on y « zoome ».
-  const cibleDistrict = zoomZone ? '' : `<polygon class="hit-zone" data-action="carte-calque" data-v="mazone" points="${poly(enveloppe([...mes].flatMap((i) => T.cells[i].poly.map(([x, y]) => P(x, y)))))}" fill="#FFB23F" fill-opacity=".05" stroke="#FFB23F" stroke-width="1" stroke-dasharray="3 2"><title>Ouvrir ma zone</title></polygon>`;
+  const cibleDistrict = zoomZone ? '' : `<polygon points="${poly(enveloppe([...mes].flatMap((i) => T.cells[i].poly.map(([x, y]) => P(x, y)))))}" fill="#FFB23F" fill-opacity=".05" stroke="#FFB23F" stroke-width="1" stroke-dasharray="3 2" pointer-events="none"/>`;
+  // District : le nom de chaque zone sur son quartier principal (touche → son commissariat).
+  const nomsZones = zoomZone ? '' : T.zones.filter((tz) => st.zones[tz.uid]).map((tz) => {
+    const c = T.cells[tz.capitale], moiZ = tz.uid === me.uid, z = st.zones[tz.uid];
+    const nom = moiZ ? 'Ma zone' : (z.nom.length > 12 ? `${z.nom.slice(0, 11)}…` : z.nom), lw = 14 + nom.length * 4.3;
+    const [lx, ly] = P(c.c[0], c.c[1], 30);
+    const attrs = moiZ ? 'data-action="carte-calque" data-v="mazone"' : `data-action="voir-hp" data-uid="${tz.uid}"`;
+    return `<g ${attrs} style="cursor:pointer" transform="translate(${f(lx)} ${f(ly)})"><rect x="${f(-lw / 2)}" y="-8" width="${f(lw)}" height="15" rx="7.5" fill="${moiZ ? '#FFB23F' : '#0B1124'}" fill-opacity="${moiZ ? 1 : 0.88}" stroke="${moiZ ? '#FFB23F' : '#5A6699'}" stroke-width=".7"/><text y="2.6" text-anchor="middle" class="iso-zn" ${moiZ ? 'style="fill:#0B1124"' : ''}>${nom.replace(/[<&]/g, '')}</text></g>`;
+  }).join('');
 
-  const out = `<svg viewBox="${f(x0)} ${f(y0)} ${f(x1 - x0)} ${f(y1 - y0)}" width="100%" style="display:block;background:radial-gradient(ellipse at 50% 40%, #121A3A, #05081A 75%)" class="iso" role="img" aria-label="Maquette de ${zoomZone ? 'ta zone : touche un quartier pour le choisir, la liste en dessous fait la même chose' : 'tout le district : touche ta zone pour y entrer'}">
+  const out = `<svg viewBox="${f(x0)} ${f(y0)} ${f(x1 - x0)} ${f(y1 - y0)}" width="100%" style="display:block;background:radial-gradient(ellipse at 50% 40%, #121A3A, #05081A 75%)" class="iso" role="img" aria-label="Maquette de ${zoomZone ? 'ta zone : touche un quartier pour le choisir, la liste en dessous fait la même chose' : 'tout le district : touche ta zone pour y entrer, ou celle d’un collègue pour voir son commissariat'}">
     <defs><filter id="${id('flou')}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
       <radialGradient id="${id('lampe')}"><stop offset="0" stop-color="#FFD58A" stop-opacity=".45"/><stop offset="1" stop-color="#FFD58A" stop-opacity="0"/></radialGradient>
       <radialGradient id="${id('feu')}"><stop offset="0" stop-color="#FF7A3C" stop-opacity=".6"/><stop offset="1" stop-color="#FF7A3C" stop-opacity="0"/></radialGradient>
       <clipPath id="${id('vue')}"><rect x="${f(x0)}" y="${f(y0)}" width="${f(x1 - x0)}" height="${f(y1 - y0)}"/></clipPath></defs>
-    <style>.iso-tn{font:800 7px 'Bricolage Grotesque',sans-serif;fill:#0B1124}.iso-nmq{font:800 7px 'Instrument Sans',sans-serif;fill:#0B1124}.iso-pbt{font:800 6px 'Bricolage Grotesque',sans-serif;fill:#fff}.iso .hit,.iso .hit-zone,.iso .hit-nd{cursor:pointer}</style>
-    <g clip-path="url(#${id('vue')})">${routes.join('')}${fleuve}${sol.join('')}${selections.join('')}${lueurs.join('')}${voitures.join('')}${objets.map(dessin).join('')}${fumees.join('')}${cibles.map((c) => c.h).join('')}${cibleDistrict}${etiqHtml}</g>
+    <style>.iso-tn{font:800 7px 'Bricolage Grotesque',sans-serif;fill:#0B1124}.iso-nmq{font:800 7px 'Instrument Sans',sans-serif;fill:#0B1124}.iso-pbt{font:800 6px 'Bricolage Grotesque',sans-serif;fill:#fff}.iso-zn{font:700 7.5px 'Instrument Sans',sans-serif;fill:#EDF0FA}.iso .hit,.iso .hit-zone,.iso .hit-nd,.iso .hit-autre{cursor:pointer}</style>
+    <g clip-path="url(#${id('vue')})">${routes.join('')}${fleuve}${sol.join('')}${selections.join('')}${lueurs.join('')}${voitures.join('')}${objets.map(dessin).join('')}${fumees.join('')}${cibles.map((c) => c.h).join('')}${cibleDistrict}${etiqHtml}${nomsZones}</g>
   </svg>`;
   return reduit ? out.replace(/<animate[^>]*\/>|<animateTransform[^>]*\/>/g, '') : out;
 }

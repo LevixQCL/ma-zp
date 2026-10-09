@@ -2184,3 +2184,27 @@ button.hz-s:hover { color: var(--text); }
 .chef-jour .choice[data-action="chef-agenda"][aria-pressed="true"] { grid-column: 1 / -1; }
 .chef-onglet .chef-hero .pc-stats { margin-top: 2px; }
 .retour-carte { align-self: flex-start; color: var(--amber); font-weight: 600; text-decoration: none; padding: 6px 0; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.cv-garage { display: flex; flex-direction: column; gap: 4px; padding-bottom: 10px; border-bottom: 1px solid var(--hair); }
+.cv-garage-v { display: flex; flex-wrap: wrap; gap: 4px; }
+.cv-g { display: inline-grid; place-items: center; width: 36px; height: 24px; border-radius: 8px; background: var(--bg-deep); }
+.cv-g.on { background: rgba(99, 176, 255, .14); }
+.cv-soir { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+.cv-soir b { font: 800 18px var(--display); }
+.cv-meter { position: relative; height: 8px; border-radius: 4px; background: var(--bg-deep); }
+.cv-meter span { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+.cv-meter i { position: absolute; top: -4px; width: 0; height: 16px; border-left: 3px solid; transform: translateX(-1.5px); border-radius: 2px; }
+.cv-cases { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.cv-case { height: 56px; border-radius: 14px; border: 2px dashed var(--line); background: none; color: var(--muted); font: 700 24px var(--display); display: grid; place-items: center; cursor: pointer; }
+.cv-case.on { border-style: solid; border-color: #63B0FF; background: rgba(99, 176, 255, .14); }
+.cv-case.on svg { width: 40px; height: 23px; }
+.cv-case.trop:not(.on) { border-color: rgba(224, 98, 90, .45); }
+.cv-case.trop.on { border-color: var(--red); background: rgba(224, 98, 90, .14); }
+.cv-case[disabled] { opacity: .35; cursor: default; }
+.cv-chips { display: flex; gap: 6px; overflow-x: auto; margin: 0 -16px; padding: 2px 16px 4px; scrollbar-width: none; }
+.cv-chips::-webkit-scrollbar { display: none; }
+.cv-chip { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px 0 5px; border-radius: 999px; border: 1px solid var(--hair); background: var(--surface); color: var(--text); font: 600 13px var(--body); cursor: pointer; }
+.cv-chip i { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 800 11px var(--display); font-style: normal; color: #0B1124; }
+.cv-chip b { color: #63B0FF; font-size: 12px; }
+.cv-chip[aria-pressed="true"] { border-color: var(--amber); background: rgba(255, 178, 63, .1); }

@@ -593,6 +593,11 @@ async function onClick(e) {
         else if (dansCarte) document.getElementById(`q-${el.dataset.c}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
         break;
       }
+      case 'patrouille-n': { // saison 2 : toucher la n-ième case = n patrouilles (on passe par le même calcul que + / −)
+        const cur = ((S.draft && S.draft.patrouilles) || {})[el.dataset.c] || 0;
+        el.dataset.d = String(Number(el.dataset.n) - cur);
+      }
+      // falls through
       case 'patrouille': case 'point-chaud': {
         const d = S.draft; if (!d) break;
         const p = (d.patrouilles ||= {});
