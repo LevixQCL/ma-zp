@@ -189,8 +189,20 @@ function ceSoirHtml(aff, dos) {
   const parts = d.partages || [];
   const extras = [];
   if (aff.meurtre && d.reaud) extras.push(`<div class="tb-boite-l"><span class="small grow" style="font-weight:600">Réaudition · ${esc(aff.suspects[d.reaud.i].prenom)}</span><button type="button" class="btn small ghost" data-action="reaud-annuler" aria-label="Annuler la réaudition">✕</button></div>`);
+  // Démarches toutes choisies : la carte se replie sur un résumé (on la rouvre pour changer, régler la piste ou l'appui).
+  const ouvert = S.ouverts && S.ouverts['e2-soir'];
+  if (dem.length >= max && !ouvert && !(S.tuto != null)) {
+    const resume = dem.map((x) => { const [nom, qui] = nomDem(x); return `${esc(nom)} <span class="muted">· ${esc(qui)}</span>`; }).join('<br>');
+    return `<section class="card e2-soir e2-soir-pli" aria-label="Ce soir">
+      <button type="button" class="pli-ligne" data-action="e2-soir-ouvrir" aria-expanded="false">
+        <span class="col grow" style="gap:3px;min-width:0;text-align:left"><span class="kicker">Ce soir à 20:00 · ${dem.length}/${max} démarches</span>
+          <span class="small" style="font-weight:600;line-height:1.35">${resume}</span>
+          <span class="tiny muted">${d.piste !== null && d.piste !== undefined && aff.suspects[d.piste] ? `piste : ${esc(aff.suspects[d.piste].prenom)} · ` : ''}${parts.length ? `${parts.length} partage${parts.length > 1 ? 's' : ''} · ` : ''}reste ${fmt1(reste)} k€ · touche pour modifier, piste, appui</span></span>
+        <span class="pli-ok">${icon('check', 14)}</span>${icon('chevron', 16)}</button>
+    </section>`;
+  }
   return `<section class="card e2-soir" aria-label="Ce soir">
-    <div class="between"><h2 class="e2-h2">Ce soir à 20:00</h2><span class="small muted">reste ${fmt1(reste)} k€</span></div>
+    <div class="between"><h2 class="e2-h2">Ce soir à 20:00</h2><span class="small muted">reste ${fmt1(reste)} k€${dem.length >= max ? ' · <button type="button" class="lien tiny" data-action="e2-soir-replier">replier</button>' : ''}</span></div>
     <div class="e2-cases">${cases}</div>
     <div class="e2-ligne"><span class="e2-li">🏘</span><span class="col grow" style="gap:4px;min-width:0"><span class="small"><strong>Voisinage</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche · <span class="${v.x >= 0.5 ? 'ok' : v.x > 0 ? '' : 'bad'}">${vCourt}</span></span>
       <span class="e2-pistes"><span class="tiny muted" style="white-space:nowrap">Piste :</span>${pistes}</span></span></div>

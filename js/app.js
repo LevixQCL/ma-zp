@@ -860,6 +860,10 @@ async function onClick(e) {
         const z0 = myZone(); const cur = [...(S.draft.talents || (z0.chef && z0.chef.talents) || [])]; const v = el.dataset.v;
         S.draft.talents = cur.includes(v) ? cur.filter((t) => t !== v) : [...cur, v].slice(0, 4); S.ordersDirty = true; rerender(); break;
       }
+      case 'e2-soir-ouvrir': S.ouverts = { ...(S.ouverts || {}), 'e2-soir': true }; rerender(); break;
+      case 'e2-soir-replier': S.ouverts = { ...(S.ouverts || {}), 'e2-soir': false }; rerender(); break;
+      case 'doctrine-ouvrir': S.ouverts = { ...(S.ouverts || {}), 'ord-doctrine': true }; rerender(); break;
+      case 'doctrine-replier': S.ouverts = { ...(S.ouverts || {}), 'ord-doctrine': false }; rerender(); break;
       case 'doctrine': S.draft.doctrine = S.draft.doctrine === el.dataset.k ? null : el.dataset.k; S.ordersDirty = true; rerender(); break;
       case 'piste-toggle': basculerPiste(el.dataset.k); S.ordersDirty = true; rerender(); break;
       case 'dep-toggle': {
@@ -1153,6 +1157,7 @@ async function onClick(e) {
         // Pastilles des ordres (saison 2) : ouvre la section et descend jusqu'à elle.
         const k = el.dataset.k;
         if (k === 'chef') { location.hash = '#chef'; break; }
+        if (k === 'doctrine') S.ouverts = { ...(S.ouverts || {}), 'ord-doctrine': true };
         if (['decision', 'pistes', 'depenses', 'equipe', 'nondroit', 'affaires', 'reserve'].includes(k)) S.ordOpen = { [k]: true };
         rerender();
         const c = document.getElementById(`ord-${k}`) || document.querySelector(`[data-action="ord-open"][data-k="${k}"]`);

@@ -839,8 +839,15 @@ export function ouvertureOrdres(z) {
 function doctrineHtml(z, d) {
   if (!doctrineOuverte(S.state, z)) return '';
   const reste = dernierJourDoctrine(z) - S.state.turn;
+  const choisie = d.doctrine && DOCTRINES[d.doctrine];
+  // Doctrine choisie : la carte se replie sur une ligne (on peut encore en changer en la rouvrant).
+  if (choisie && !(S.ouverts && S.ouverts['ord-doctrine'])) {
+    return `<section class="card doctrine-pli" id="ord-doctrine" aria-label="Doctrine de la saison">
+      <button type="button" class="pli-ligne" data-action="doctrine-ouvrir" aria-expanded="false"><span class="col grow" style="gap:1px;min-width:0;text-align:left"><span class="kicker">Doctrine de la saison</span><span class="pli-resume">${choisie.ico} ${esc(choisie.nom)} · <span class="muted">modifiable ${reste <= 0 ? 'jusqu’à 20:00' : `encore ${reste + 1} jours`}</span></span></span><span class="pli-ok">${icon('check', 14)}</span>${icon('chevron', 16)}</button>
+    </section>`;
+  }
   return `<section class="card doctrine" id="ord-doctrine" aria-label="Doctrine de la saison" style="gap:8px;border-color:var(--amber-line)">
-    <span class="kicker">Doctrine de la saison</span>
+    <div class="between"><span class="kicker">Doctrine de la saison</span>${choisie ? '<button type="button" class="lien tiny" data-action="doctrine-replier">replier</button>' : ''}</div>
     ${REGLES.v2 ? `<p class="small" style="margin:0">Pour toute la saison : une vraie force, un vrai prix. <strong>${reste <= 0 ? 'Dernier jour' : `Encore ${reste + 1} jours`}</strong>${z.doctrinePrec && DOCTRINES[z.doctrinePrec] ? ` · la saison dernière : ${DOCTRINES[z.doctrinePrec].ico} ${esc(DOCTRINES[z.doctrinePrec].nom)}` : ''}. Fais défiler →</p>` : ''}
     <p class="small doc-long" style="margin:0">Quelle zone veux-tu construire ? Ta doctrine donne une vraie force et un vrai prix, pour toute la saison (elle part avec tes ordres de ce soir). Garder la même d’une saison à l’autre la fait monter en maîtrise. <strong>${reste <= 0 ? 'Dernier jour pour la choisir' : `Encore ${reste + 1} jours pour la choisir`}</strong>, ensuite la saison se joue sans doctrine.${z.doctrinePrec && DOCTRINES[z.doctrinePrec] ? ` La saison dernière : ${DOCTRINES[z.doctrinePrec].ico} ${esc(DOCTRINES[z.doctrinePrec].nom)} (maîtrise ${(z.maitrisePrec || 0) + 1}).` : ''}</p>
     <div class="doc-l">${IDS_DOCTRINES.map((k) => { const x = DOCTRINES[k]; return `<button type="button" class="choice" data-action="doctrine" data-k="${k}" aria-pressed="${d.doctrine === k}" style="text-align:left;align-items:flex-start">
@@ -859,6 +866,11 @@ function pastillesOrdres(z, d, e) {
   l.push(['decision', '⭐', 'Décision', !!(d.decision || d.sansDecision), d.decision || d.sansDecision ? '' : 'à choisir']);
   if (z.chef) l.push(['chef', '🎖', 'Chef', !(z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)), '']);
   const reste = l.filter((x) => !x[3]);
+  // Tout est réglé : les pastilles se réduisent à de petites icônes vertes sur une ligne.
+  if (!reste.length) {
+    return `<div class="ord-pips ord-pips-fini"><span class="hs-mini">${l.map(([k, ic, nom]) => `<button type="button" data-action="ord-aller" data-k="${k}" aria-label="${nom} : réglé" title="${nom}"><span aria-hidden="true">${ic}</span></button>`).join('')}</span>
+      <span class="ord-reste ok">${icon('check', 14)} ${S.savedOrders && !S.ordersDirty ? 'Tout est réglé et validé' : 'Tout est réglé : il ne reste qu’à valider.'}</span></div>`;
+  }
   return `<div class="ord-pips">${l.map(([k, ic, nom, ok]) => `<button type="button" class="hs-pip ${ok ? 'ok' : ''}" data-action="ord-aller" data-k="${k}" aria-label="${nom}${ok ? ' : réglé' : ' : à faire'}" title="${nom}">${ok ? icon('check', 15) : `<span aria-hidden="true">${ic}</span>`}${nom}</button>`).join('')}
     <span class="ord-reste">${reste.length ? `Reste : ${reste.map((x) => `${x[2].toLowerCase()}${x[4] ? ` <small>(${x[4]})</small>` : ''}`).join(', ')}` : 'Tout est réglé : il ne reste qu’à valider.'}</span></div>`;
 }
@@ -906,7 +918,7 @@ export function renderOrdres() {
     ${REGLES.v2 ? `<section class="card ord-fiche" aria-label="Ce soir">
       <div id="prev-ipz" class="pv2" aria-live="polite">${previsionHtml()}</div>
       ${pastillesOrdres(z, d, e)}</section>` : `<div id="prev-ipz" class="col prev-ipz" style="gap:2px;padding:10px 12px;border-radius:12px;background:var(--card, rgba(255,255,255,.04));border:1px solid var(--line)" aria-live="polite">${previsionHtml()}</div>`}${(() => { setTimeout(suivrePrevision, 0); return ''; })()}
-    ${saved ? '<p class="tiny muted" style="margin:-6px 0 0">Tes ordres sont validés ; tu peux encore les modifier jusqu’à 20:00.</p>'
+    ${saved ? (REGLES.v2 ? '' : '<p class="tiny muted" style="margin:-6px 0 0">Tes ordres sont validés ; tu peux encore les modifier jusqu’à 20:00.</p>')
       : !S.savedOrders && !S.ordersDirty && z.dernierOrdre ? `<button class="btn primary block" data-action="save-orders">Reprendre les ordres d’hier et valider</button>
         <p class="tiny muted" style="margin:-4px 0 0;text-align:center">Ou ajuste ci-dessous, puis valide.</p>` : ''}
 

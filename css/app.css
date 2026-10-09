@@ -2023,7 +2023,13 @@ details.pli-ordres[open] .pli-resume, details.pli-ordres[open] .pli-resume-s { d
 .hs-fini > summary { gap: 10px; color: var(--green-soft); }
 .hs-mini { display: flex; gap: 4px; flex-shrink: 0; }
 .hs-mini i { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: rgba(61, 211, 154, .14); border: 1px solid rgba(61, 211, 154, .45); color: var(--green-soft); }
-.hs-mini i svg { margin: 0 !important; color: inherit !important; transform: none !important; }
+.hs-mini button { width: 26px; height: 26px; padding: 0; border-radius: 50%; display: grid; place-items: center; background: rgba(61, 211, 154, .14); border: 1px solid rgba(61, 211, 154, .45); color: var(--green-soft); cursor: pointer; }
+.ord-pips-fini { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ord-pips-fini .ord-reste.ok { color: var(--green-soft); font-weight: 600; font-size: 13px; }
+.ord-pips-fini .ord-reste.ok svg { vertical-align: -2px; }
+.hs-mini button span { font-size: 13px; line-height: 1; filter: saturate(.85); }
+.pli-ok { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex-shrink: 0; background: rgba(61, 211, 154, .14); border: 1px solid rgba(61, 211, 154, .45); color: var(--green-soft); }
+.hs-mini i svg, .hs-mini button svg { margin: 0 !important; color: inherit !important; transform: none !important; }
 .hs-fini-t { display: flex; flex-direction: column; gap: 0; font-size: 14px; font-weight: 700; line-height: 1.2; min-width: 0; }
 .hs-fini-t svg { display: none; }
 .hs-fini-t small { font-size: 11.5px; font-weight: 500; color: var(--muted); }
@@ -2744,3 +2750,6 @@ main.screen.gzs { height: 100dvh; box-sizing: border-box; padding: 10px 12px 100
 .cf-l em.pub { color: var(--amber-soft); background: rgba(255,178,63,.12); }
 .cf-l em.long { flex-shrink: 1; white-space: normal; text-align: right; }
 .cf-alerte { margin: 0; padding: 9px 11px; border-radius: 12px; font-size: 13.5px; line-height: 1.4; color: #FFD0D0; background: rgba(255,107,107,.12); border: 1px solid rgba(255,107,107,.4); }
+
+.pli-ligne { display: flex; align-items: center; gap: 10px; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+.pli-ligne > svg:last-child { color: var(--muted); flex-shrink: 0; }
