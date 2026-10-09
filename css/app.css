@@ -2624,17 +2624,28 @@ main.rv #prive-list, main.rv .rv-fil { flex: 1; }
 .affect .svc2.svc-manque { background: linear-gradient(90deg, var(--red-bg), transparent 70%); }
 .affect .svc2 .svc-det { margin: 6px 0 4px; }
 .ord-tuiles { display: flex; flex-direction: column; gap: 8px; }
-.ord-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.ord-tuile { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 86px; padding: 10px 12px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); color: var(--text); text-align: left; font: inherit; cursor: pointer; }
-.ord-tuile:hover { border-color: var(--amber-line); }
-.ord-tuile.on { border-color: var(--amber); background: var(--amber-bg); }
+.ord-grille { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.ord-grille.impair > .ord-tuile:last-child { grid-column: 1 / -1; }
+.ord-tuile { position: relative; display: flex; align-items: center; gap: 10px; min-height: 64px; padding: 10px 12px 10px 10px; border-radius: 14px; border: 1px solid var(--line); background: linear-gradient(135deg, color-mix(in srgb, var(--t) 9%, var(--surface)), var(--surface) 60%); min-width: 0; color: var(--text); text-align: left; font: inherit; cursor: pointer; overflow: hidden; transition: border-color .15s, transform .1s; }
+.ord-tuile::before { content: ''; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--t); opacity: .85; }
+.ord-tuile:hover { border-color: color-mix(in srgb, var(--t) 55%, var(--line)); }
+.ord-tuile:active { transform: scale(.985); }
+.ord-tuile:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.ord-tuile.on { border-color: var(--t); background: color-mix(in srgb, var(--t) 14%, var(--surface)); }
 .ord-tuile.alerte { border-color: var(--amber-line); }
-.ord-t-i { font-size: 20px; line-height: 1; margin-bottom: 2px; }
-.ord-t-n { font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-.ord-t-r { font-size: 13.5px; font-weight: 600; line-height: 1.25; }
-.ord-tuile .pli-chip { position: absolute; top: 8px; right: 8px; font-size: 11px; font-weight: 700; color: var(--amber); background: var(--amber-bg); border-radius: 999px; padding: 2px 8px; }
-.ord-ouvert { gap: 10px; border-color: var(--amber-line); scroll-margin-top: 16px; }
-@media (min-width: 1000px) and (hover: hover) and (pointer: fine) { .ord-grille { grid-template-columns: repeat(4, 1fr); } }
+.ord-t-i { flex: 0 0 auto; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 11px; color: var(--t); background: color-mix(in srgb, var(--t) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--t) 28%, transparent); }
+.ord-t-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ord-t-n { display: flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.ord-t-n > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.ord-t-r { font-size: 13.5px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ord-tuile.vide .ord-t-r { color: var(--faint); font-weight: 500; }
+.ord-tuile.vide .ord-t-i { filter: saturate(.35); opacity: .75; }
+.ord-tuile.alerte { border-color: var(--amber-line); background: linear-gradient(135deg, var(--amber-bg), var(--surface) 70%); }
+.ord-tuile.alerte .ord-t-r { color: var(--amber-hi); }
+.ord-t-i { position: relative; }
+.ord-tuile.alerte .ord-t-i::after { content: ''; position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 2px var(--surface), 0 0 10px var(--amber); }
+.ord-ouvert { gap: 10px; border-color: color-mix(in srgb, var(--t, var(--amber)) 45%, var(--line)); scroll-margin-top: 16px; }
+@media (min-width: 1000px) and (hover: hover) and (pointer: fine) { .ord-grille { grid-template-columns: repeat(4, minmax(0, 1fr)); } .ord-grille.impair > .ord-tuile:last-child { grid-column: auto; } }
 
 /* ——— Gazette saison 2 : cartes à toucher (« stories ») ——— */
 main.screen.gzs { height: 100dvh; box-sizing: border-box; padding: 10px 12px 100px; gap: 8px; overflow: hidden; }

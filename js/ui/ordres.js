@@ -752,17 +752,26 @@ function equipeOrdres(z, d) {
 /** Une ligne repliable de la carte « Ce soir aussi » (même arguments que `pli`, plus une pastille). */
 function pliItem(key, titre, resume, contenu, alerte = false, pastille = null) { return { key, titre, resume, contenu, alerte, pastille }; }
 /** Les sections repliables regroupées dans une seule carte, une ligne chacune. */
-const ICO_PLI = { chef: '🎖️', nondroit: '🧱', equipe: '👥', affaires: '🤝', decision: '⭐', pistes: '🔎', depenses: '💶', reserve: '➕' };
+const ICO_PLI = { chef: 'chef', nondroit: 'mur', equipe: 'equipe', affaires: 'poignee', decision: 'star', pistes: 'loupe', depenses: 'euro', reserve: 'renfort' };
+/** Titres courts des tuiles (le titre complet reste dans le panneau ouvert). */
+const COURT_PLI = { chef: 'Chef', nondroit: 'Non-droit', equipe: 'Équipe', affaires: 'Affaires', decision: 'Décision', pistes: 'Pistes', depenses: 'Dépenses', reserve: 'Réserve' };
+/** Teinte de chaque tuile (icône et liseré). */
+const TEINTE_PLI = { chef: '#FFB23F', nondroit: '#FF8A65', equipe: '#63B0FF', affaires: '#B892FF', decision: '#FFD166', pistes: '#3DD39A', depenses: '#7BD3C8', reserve: '#9DB4FF' };
+/** Résumé de tuile : sans emoji (l'icône suffit), et « vide » si rien n'est engagé ce soir. */
+const sansEmoji = (s) => String(s).replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').replace(/\s{2,}/g, ' ').trim();
+const resumeVide = (s) => /^(aucun|aucune|pas encore)\b/i.test(sansEmoji(s).replace(/<[^>]+>/g, ''));
 function pliGroupe(items) {
   if (REGLES.v2) {
     // Saison 2 : une tuile par sujet ; celle qu'on touche s'ouvre en dessous, sur toute la largeur.
     const l = items.filter(Boolean);
     const ouv = l.find((x) => S.ordOpen && S.ordOpen[x.key]);
+    const ico = (k, t = 18) => `<span class="ord-t-i" style="--t:${TEINTE_PLI[k] || 'var(--amber)'}" aria-hidden="true">${icon(ICO_PLI[k] || 'star', t)}</span>`;
     return `<section class="ord-tuiles" aria-label="Ce soir aussi"><h2 class="section" style="margin:0">Ce soir aussi</h2>
-      <div class="ord-grille">${l.map((x) => { const chip = x.pastille || (x.alerte ? 'à voir' : ''); const on = ouv && ouv.key === x.key;
-        return `<button type="button" class="ord-tuile ${on ? 'on' : ''} ${chip ? 'alerte' : ''}" data-action="ord-open" data-k="${x.key}" aria-expanded="${on}">
-          <span class="ord-t-i" aria-hidden="true">${ICO_PLI[x.key] || '•'}</span><span class="ord-t-n">${esc(x.titre)}</span><span class="ord-t-r">${x.resume}</span>${chip ? `<span class="pli-chip">${esc(chip)}</span>` : ''}</button>`; }).join('')}</div>
-      ${ouv ? `<div class="card ord-ouvert" id="ord-${ouv.key}"><div class="between"><b>${ICO_PLI[ouv.key] || ''} ${esc(ouv.titre)}</b><button type="button" class="iconbtn" data-action="ord-open" data-k="${ouv.key}" aria-label="Fermer" style="width:32px;height:32px">✕</button></div>${ouv.contenu}</div>` : ''}
+      <div class="ord-grille${l.length % 2 ? ' impair' : ''}">${l.map((x) => { const chip = x.pastille || (x.alerte ? 'à voir' : ''); const on = ouv && ouv.key === x.key;
+        const r = sansEmoji(x.resume), vide = !chip && resumeVide(x.resume);
+        return `<button type="button" class="ord-tuile ${on ? 'on' : ''} ${chip ? 'alerte' : ''} ${vide ? 'vide' : ''}" style="--t:${TEINTE_PLI[x.key] || 'var(--amber)'}" data-action="ord-open" data-k="${x.key}" aria-expanded="${on}"${chip ? ` title="${esc(chip)}"` : ''}>
+          ${ico(x.key)}<span class="ord-t-txt"><span class="ord-t-n"><span>${esc(COURT_PLI[x.key] || x.titre)}</span></span><span class="ord-t-r">${r}</span>${chip ? `<span class="sr-only"> (${esc(chip)})</span>` : ''}</span></button>`; }).join('')}</div>
+      ${ouv ? `<div class="card ord-ouvert" id="ord-${ouv.key}" style="--t:${TEINTE_PLI[ouv.key] || 'var(--amber)'}"><div class="between"><span class="row" style="gap:10px;align-items:center">${ico(ouv.key)}<b>${esc(ouv.titre)}</b></span><button type="button" class="iconbtn" data-action="ord-open" data-k="${ouv.key}" aria-label="Fermer" style="width:32px;height:32px">✕</button></div>${ouv.contenu}</div>` : ''}
     </section>`;
   }
   return `<section class="card plis" aria-label="Ce soir aussi">${items.filter(Boolean).map((x) => {
