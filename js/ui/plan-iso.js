@@ -111,7 +111,7 @@ function dessiner(st, me, seed, vue, reduit) {
     const top = ilot.map(([x, y]) => P(x, y, 1.2));
     sol.push(`<polygon points="${poly(ilot.map(([x, y]) => P(x, y)))}" fill="#090D20"/><polygon points="${poly(top)}" fill="${nd ? '#26141B' : repris ? '#16322B' : mien ? '#1E2A4C' : '#151C36'}" stroke="${repris ? '#2E6B55' : mien ? '#33447A' : '#1D2547'}" stroke-width=".5"/>`);
     if (mien || (!zoomZone && rng.next() < 0.3)) for (const [k, v] of c.poly.entries()) { if (k % (zoomZone ? 1 : 2)) continue; const [lx, ly] = P(v[0], v[1], 3); lueurs.push(`<circle cx="${f(lx)}" cy="${f(ly + 3)}" r="${zoomZone ? 5 : 3}" fill="url(#${id('lampe')})"/><circle cx="${f(lx)}" cy="${f(ly)}" r=".7" fill="#FFE2A8"/>`); }
-    if (nd) { const [cx, cy] = P(c.c[0], c.c[1]); lueurs.push(`<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="34" ry="18" fill="#FF5A2A" opacity="${f(0.1 + kND * 0.16)}" filter="url(#${id('flou')})"><animate attributeName="opacity" values="${f(0.08 + kND * 0.12)};${f(0.14 + kND * 0.2)};${f(0.08 + kND * 0.12)}" dur="${f(1.6 + rng.next())}s" repeatCount="indefinite"/></ellipse>`); }
+    if (nd) { const [cx, cy] = P(c.c[0], c.c[1]); lueurs.push(`<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="34" ry="18" fill="#FF5A2A" opacity="${f(0.06 + kND * 0.1)}" filter="url(#${id('flou')})"><animate attributeName="opacity" values="${f(0.05 + kND * 0.07)};${f(0.08 + kND * 0.12)};${f(0.05 + kND * 0.07)}" dur="${f(1.6 + rng.next())}s" repeatCount="indefinite"/></ellipse>`); }
     if (mien) { const [cx, cy] = P(c.c[0], c.c[1]); lueurs.push(`<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="40" ry="22" fill="${LUM[n.id]}" opacity="${0.1 + (t / 100) * 0.28}" filter="url(#${id('flou')})"/>`); }
 
     const u = urb(c.c), capitale = moi.capitale === i;
@@ -131,17 +131,17 @@ function dessiner(st, me, seed, vue, reduit) {
       if (capitale && k === 0) { objets.push({ x: p[0], y: p[1], type: 'hp', n, mien, rng: r2 }); continue; }
       const roll = r2.next();
       let type;
-      if (nd) type = roll < 0.3 ? 'entrepot' : roll < 0.55 ? 'ruine' : roll < 0.75 ? 'immeuble' : roll < 0.9 ? 'feu' : 'arbre';
+      if (nd) type = roll < 0.3 ? 'entrepot' : roll < 0.55 ? 'ruine' : roll < 0.8 ? 'immeuble' : roll < 0.86 ? 'feu' : 'arbre';
       else if (u > 0.55) type = roll < 0.22 ? 'tour' : roll < 0.6 ? 'immeuble' : roll < 0.8 ? 'commerce' : 'arbre';
       else if (u > 0.3) type = roll < 0.35 ? 'immeuble' : roll < 0.7 ? 'maison' : roll < 0.82 ? 'commerce' : 'arbre';
       else type = roll < 0.6 ? 'maison' : roll < 0.72 ? 'immeuble' : 'arbre';
-      objets.push({ x: p[0], y: p[1], type, n, mien, nd, u, rng: r2, brule: nd && type !== 'arbre' && type !== 'feu' && r2.next() < 0.2 + 0.6 * kND });
+      objets.push({ x: p[0], y: p[1], type, n, mien, nd, u, rng: r2, brule: nd && type !== 'arbre' && type !== 'feu' && r2.next() < 0.06 + 0.22 * kND });
     }
     // Non-droit : carcasses de voitures en feu et fusillades entre bandes rivales, d'autant plus que l'emprise est forte.
     if (nd) {
       const libre = (p, m) => dedans(p, zoneInt) && !dansFleuve(p, 2) && !poses.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < m);
       const placer = (m) => { for (let e = 0; e < 120; e++) { const p = [rng.float(bx[0], bx[1]), rng.float(by[0], by[1])]; if (libre(p, m)) { poses.push([...p, m]); return p; } } return null; };
-      for (let k = 0; k < 1 + Math.round(kND * 2); k++) { const p = placer(4); if (p) objets.push({ x: p[0], y: p[1], type: 'carcasse', rng: makeRng(`${seed}:car:${i}:${k}`) }); }
+      for (let k = 0; k < Math.round(kND * 1.4); k++) { const p = placer(4); if (p) objets.push({ x: p[0], y: p[1], type: 'carcasse', rng: makeRng(`${seed}:car:${i}:${k}`) }); }
       const nbFus = kND >= 0.6 ? 2 : kND >= 0.15 ? 1 : 0;
       for (let k = 0; k < nbFus; k++) {
         const r3 = makeRng(`${seed}:fus:${i}:${k}`), p = placer(6);
@@ -271,7 +271,7 @@ function dessiner(st, me, seed, vue, reduit) {
       const w = rng.float(8, 10), d = rng.float(6, 7), h = rng.float(4, 6), X0 = x - w / 2, X1 = x + w / 2, Y0 = y - d / 2, Y1 = y + d / 2;
       s += ombre(X0, X1, Y0, Y1) + boite(X0, X1, Y0, Y1, h, pal);
       for (let k = 0; k < 3; k++) { const a = X0 + (w * k) / 3, bb = a + w / 3; s += face([[a, Y1, h], [bb, Y1, h], [bb, Y1, h + 2.2]], '#2A1E26'); }
-      if (rng.next() < 0.5 || b.brule) s += face([[X0 + 2, Y1, 1.2], [X0 + 4, Y1, 1.2], [X0 + 4, Y1, 3.4], [X0 + 2, Y1, 3.4]], '#FF6B3C', ` opacity="${b.brule ? 0.85 : 0.35}"`);
+      if (rng.next() < 0.3 || b.brule) s += face([[X0 + 2, Y1, 1.2], [X0 + 4, Y1, 1.2], [X0 + 4, Y1, 3.4], [X0 + 2, Y1, 3.4]], '#FF6B3C', ` opacity="${b.brule ? 0.85 : 0.35}"`);
       if (b.brule) { const [gx, gy] = P(x + 1, y, h + 1); s += flammes(gx, gy, 1, rng); fumee(gx, gy - 6, 1, rng); }
       return s;
     }
@@ -281,7 +281,7 @@ function dessiner(st, me, seed, vue, reduit) {
       s += boite(X0, X0 + w * 0.45, Y0, Y1, h1, pal) + boite(X0 + w * 0.5, X1, Y0 + 1, Y1, rng.float(2.5, 4), pal);
       // Façade noircie, fenêtre éventrée qui rougeoie.
       s += face([[X0 + 0.6, Y1, h1 - 3], [X0 + w * 0.4, Y1, h1 - 3], [X0 + w * 0.4, Y1, h1 - 1], [X0 + 0.6, Y1, h1 - 1]], '#FF6B3C', ' opacity=".55"');
-      if (b.brule) { const [gx, gy] = P(X0 + w * 0.25, y, h1); s += flammes(gx, gy, 0.9, rng); fumee(gx, gy - 5, 0.9, rng); const [hx, hy] = P(X0 + w * 0.75, y + 0.5, 3); s += flammes(hx, hy, 0.7, rng); }
+      if (b.brule) { const [gx, gy] = P(X0 + w * 0.25, y, h1); s += flammes(gx, gy, 0.9, rng); fumee(gx, gy - 5, 0.9, rng); }
       return s;
     }
     if (b.type === 'feu') {
