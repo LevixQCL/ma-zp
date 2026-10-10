@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 131;
+export const APP_VERSION = 132;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -479,7 +479,7 @@ export const DOCTRINES = {
   routiere: { nom: 'Routière', ico: '🚓', force: 'amendes +20 %, « chasse aux PV » repoussée de 15 points d’effectifs, la sécurité routière rapporte deux fois plus de satisfaction', prix: 'satisfaction −0,15 par jour (les automobilistes râlent) ; au-delà de 30 % des effectifs au Roulage, chaque agent de plus rapporte moitié moins (les contrôles sont connus)', brille: 'opérations de contrôle, besoin d’argent pour bâtir', amendes: 0.2, chasse: 0.15, securite: 1, satJour: -0.15, rendement: 0.3 },
   quartier: { nom: 'De quartier', ico: '🏘️', force: 'Proximité +15 %, la satisfaction redescend bien moins vite, vagues de délinquance reçues atténuées de moitié', prix: 'Intervention −5 % de capacité', brille: 'fêtes, tensions de quartier, vagues venues des voisins', derive: 0.4, vagues: 0.5, cap: { proximite: 1.15, intervention: 0.95 } },
   judiciaire: { nom: 'Judiciaire', ico: '🔎', force: 'chances de pièce d’enquête +30 %, Recherche +20 %', prix: 'Intervention −5 % (patrouilles plus minces)', brille: 'semaines d’affaire, appuis PJF, traques', enquete: 0.3, cap: { recherche: 1.20, intervention: 0.95 } },
-  intervention: { nom: 'D’intervention', ico: '🚨', force: 'Intervention +10 %, flagrants délits 30 % plus fréquents, et des saisies : chaque incident traité remplit une jauge de 10 % ; à 100 %, 2 000 à 4 000 € d’argent liquide', prix: 'paperasse : chaque incident traité laisse 25 % de PV en plus', brille: 'urgences, zone de non-droit, émeutes, nuits d’orage', flagrant: 0.3, saisie: 2, saisieMax: 4, saisieJauge: 0.1, paperasse: 1.25, cap: { intervention: 1.10 } },
+  intervention: { nom: 'D’intervention', ico: '🚨', force: 'Intervention +10 %, flagrants délits 30 % plus fréquents (chacun : +3 pts, +3 PS, +1 de satisfaction), et des saisies : chaque incident traité remplit une jauge de 10 % ; à 100 %, 2 000 à 4 000 € d’argent liquide', prix: 'paperasse : chaque incident traité laisse 25 % de PV en plus', brille: 'urgences, zone de non-droit, émeutes, nuits d’orage', flagrant: 0.3, saisie: 2, saisieMax: 4, saisieJauge: 0.1, paperasse: 1.25, cap: { intervention: 1.10 } },
   partenaire: { nom: 'Partenaire', ico: '🤝', force: 'un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 %, réputation +0,25 par jour (les partenaires parlent de toi)', prix: 'capacité −2 % dans tous les services', brille: 'crises de district, assauts de la zone de non-droit, grandes parties', renfort: 1, entraide: 0.5, repJour: 0.25, cap: { '*': 0.98 } },
 };
 export const IDS_DOCTRINES = Object.keys(DOCTRINES);

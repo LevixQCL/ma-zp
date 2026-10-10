@@ -14,7 +14,7 @@ import { ENQ, DEMARCHES, POINTS, pointsDecouverte, delaiTraque, PRIME } from '..
 import { PARTAGE, FIPA } from '../engine/fipa.js';
 import { QUEST_LABELS } from '../quests/quests.js';
 import { INCIDENTS, INC, MALUS, GAIN, texteMalus, texteGain, URGENCE } from '../engine/incidents.js';
-import { PREPA, coutPrepa } from '../engine/constants.js';
+import { PREPA, coutPrepa, DOCTRINES, IDS_DOCTRINES, MAITRISE, FLAGRANT } from '../engine/constants.js';
 import { MODELES, RENDEMENT } from '../engine/flotte.js';
 import { AIDE, THEMES, MOTIONS_CHEF, PERIL, SOLIDARITE } from '../engine/rivalites.js';
 import { PACTES, PACTE, DEFI, DEFI_INDICATEURS } from '../engine/pactes.js';
@@ -110,6 +110,17 @@ export function sections() {
         <p>L'Indice de performance de zone est calculé à chaque tour :</p>
         ${table(['Composante', 'Poids'], Object.entries(IPZ_POIDS).map(([c, w]) => [{ satisfaction: 'Satisfaction', affaires: 'Résultats (incidents traités et points gagnés)', moral: 'Moral', budget: 'Budget', reputation: 'Réputation' }[c], pc(w)]))}
         <p>La composante « Résultats terrain » vaut ${TERRAIN.incidents} × la part d'incidents traités, plus ${TERRAIN.parPoint} × ton <strong>bilan</strong> de points, plafonnée à 100. Le bilan = les points du jour + ${Math.round(TERRAIN.report * 100)} % du bilan de la veille : un gros coup compte encore le lendemain, et un jour creux ne fait pas tout tomber. La composante « Budget » suit ton <strong>revenu</strong> moyen des ${BUDGET_IPZ.jours} derniers jours (${BUDGET_IPZ.revenu.base} + ${BUDGET_IPZ.revenu.parK} par tranche de 1 000 € par jour, 100 dès 15 000 €), sans compter tes achats. Le <strong>classement</strong> de la saison est la moyenne de tes IPZ, les derniers jours comptant plus (hier 1, il y a 5 jours 0,33, il y a 10 jours 0,11) : une avance se garde en continuant à bien jouer. Les points viennent de la Recherche (+0,5 par unité de travail sur les dossiers, chaque jour), des flagrants délits (+3), de la zone de non-droit, des opérations d'envergure, des pièces de voisinage (+2), d'une découverte (+8) ou d'une arrestation (+6).</p>`,
+    },
+    {
+      id: 'doctrines', titre: 'La doctrine de ta zone', html: `
+        <p>Pendant les <strong>3 premiers jours de la saison</strong>, tu choisis une doctrine dans tes ordres. Elle tient toute la saison : une vraie force, un vrai prix. Sans choix au soir du 3e jour, la saison se joue sans doctrine. Garder la même d’une saison à l’autre la fait monter en <strong>maîtrise</strong> : la force grandit de ${Math.round(MAITRISE * 100)} % par cran (jusqu’à 3 étoiles), le prix ne bouge pas.</p>
+        ${table(['Doctrine', 'Force', 'Prix', 'Brille surtout'], IDS_DOCTRINES.map((k) => { const d = DOCTRINES[k]; return [`${d.ico} ${esc(d.nom)}`, esc(d.force), esc(d.prix), esc(d.brille)]; }))}
+        <h3>Ce que rapporte un flagrant délit</h3>
+        <p>Les patrouilles d’Intervention qui ne sont pas prises par les incidents du soir remplissent la <strong>jauge de flagrant délit</strong> : +${Math.round(FLAGRANT.parUnite * 100)} % par unité de capacité libre, ${Math.round(FLAGRANT.max * 100)} % au plus par soir (les voitures anonymisées en filature la remplissent aussi). À 100 %, un auteur est pris sur le fait : <strong>+${FLAGRANT.points} points de résultats, +${FLAGRANT.ps} PS, +1 de satisfaction</strong>, et la tension d’un quartier chaud baisse de ${FLAGRANT.tension}. Avec le complexe cellulaire, les points montent encore. La doctrine d’intervention remplit cette jauge ${Math.round(DOCTRINES.intervention.flagrant * 100)} % plus vite.</p>
+        <h3>Les saisies (doctrine d’intervention)</h3>
+        <p>Chaque incident traité remplit la <strong>jauge de saisie</strong> de ${Math.round(DOCTRINES.intervention.saisieJauge * 100)} %. À 100 %, une saisie d’argent liquide de ${DOCTRINES.intervention.saisie} 000 à ${DOCTRINES.intervention.saisieMax} 000 € (plus avec la maîtrise) tombe dans ton budget, au plus une par soir. Avec 5 incidents traités par soir, c’est une saisie tous les deux jours. Le rapport de nuit indique où en est la jauge.</p>
+        <h3>Le rendement de la Routière</h3>
+        <p>La doctrine routière repousse l’effet « chasse aux PV » de ${Math.round(DOCTRINES.routiere.chasse * 100)} points d’effectifs, mais au-delà de ${Math.round(DOCTRINES.routiere.rendement * 100)} % de tes agents au Roulage, chaque agent de plus rapporte moitié moins d’amendes.</p>`,
     },
     {
       id: 'ordres', titre: 'Les ordres et les cinq services', html: `

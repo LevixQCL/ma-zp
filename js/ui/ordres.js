@@ -864,6 +864,7 @@ function doctrineHtml(z, d) {
     <div class="doc-l">${IDS_DOCTRINES.map((k) => { const x = DOCTRINES[k]; return `<button type="button" class="choice" data-action="doctrine" data-k="${k}" aria-pressed="${(d.doctrine || z.doctrine) === k}" style="text-align:left;align-items:flex-start">
       <span style="font-size:15px;font-weight:700">${x.ico} ${esc(x.nom)}${z.doctrinePrec === k ? ' <span class="tiny" style="color:var(--amber)">· maîtrise +1</span>' : ''}</span>
       <span class="s"><span class="ok">+ ${esc(x.force)}</span><br><span class="bad">− ${esc(x.prix)}</span><br><span class="muted">Brille : ${esc(x.brille)}</span></span></button>`; }).join('')}</div>
+    <a class="small" href="#guide-doctrines" style="text-align:center">❔ Tout comprendre : flagrants délits, saisies, maîtrise</a>
   </section>`;
 }
 /** Saison 2 : une pastille par chose à régler ce soir ; elle se coche quand c'est fait, un toucher y mène. */
