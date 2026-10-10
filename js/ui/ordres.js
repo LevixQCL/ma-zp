@@ -848,18 +848,20 @@ export function ouvertureOrdres(z) {
 function doctrineHtml(z, d) {
   if (!doctrineOuverte(S.state, z)) return '';
   const reste = dernierJourDoctrine(z) - S.state.turn;
-  const choisie = d.doctrine && DOCTRINES[d.doctrine];
+  const revue = !!z.doctrine;
+  const choisie = DOCTRINES[d.doctrine || z.doctrine];
   // Doctrine choisie : la carte se replie sur une ligne (on peut encore en changer en la rouvrant).
   if (choisie && !(S.ouverts && S.ouverts['ord-doctrine'])) {
     return `<section class="card doctrine-pli" id="ord-doctrine" aria-label="Doctrine de la saison">
-      <button type="button" class="pli-ligne" data-action="doctrine-ouvrir" aria-expanded="false"><span class="col grow" style="gap:1px;min-width:0;text-align:left"><span class="kicker">Doctrine de la saison</span><span class="pli-resume">${choisie.ico} ${esc(choisie.nom)} · <span class="muted">modifiable ${reste <= 0 ? 'jusqu’à 20:00' : `encore ${reste + 1} jours`}</span></span></span><span class="pli-ok">${icon('check', 14)}</span>${icon('chevron', 16)}</button>
+      <button type="button" class="pli-ligne" data-action="doctrine-ouvrir" aria-expanded="false"><span class="col grow" style="gap:1px;min-width:0;text-align:left"><span class="kicker">Doctrine de la saison</span><span class="pli-resume">${choisie.ico} ${esc(choisie.nom)} · <span class="muted">${revue ? 'doctrines rééquilibrées : tu peux en changer une fois' : `modifiable ${reste <= 0 ? 'jusqu’à 20:00' : `encore ${reste + 1} jours`}`}</span></span></span><span class="pli-ok">${icon('check', 14)}</span>${icon('chevron', 16)}</button>
     </section>`;
   }
   return `<section class="card doctrine" id="ord-doctrine" aria-label="Doctrine de la saison" style="gap:8px;border-color:var(--amber-line)">
     <div class="between"><span class="kicker">Doctrine de la saison</span>${choisie ? '<button type="button" class="lien tiny" data-action="doctrine-replier">replier</button>' : ''}</div>
     ${REGLES.v2 ? `<p class="small" style="margin:0">Pour toute la saison : une vraie force, un vrai prix. <strong>${reste <= 0 ? 'Dernier jour' : `Encore ${reste + 1} jours`}</strong>${z.doctrinePrec && DOCTRINES[z.doctrinePrec] ? ` · la saison dernière : ${DOCTRINES[z.doctrinePrec].ico} ${esc(DOCTRINES[z.doctrinePrec].nom)}` : ''}. Fais défiler →</p>` : ''}
+    ${revue ? `<p class="small" style="margin:0;color:var(--amber)"><strong>Doctrines rééquilibrées.</strong> Tu as choisi ${DOCTRINES[z.doctrine].ico} ${esc(DOCTRINES[z.doctrine].nom)} : tu peux la garder ou en changer <strong>une seule fois</strong> (${reste <= 0 ? 'jusqu’à 20:00' : `encore ${reste + 1} jours`}).</p>` : ''}
     <p class="small doc-long" style="margin:0">Quelle zone veux-tu construire ? Ta doctrine donne une vraie force et un vrai prix, pour toute la saison (elle part avec tes ordres de ce soir). Garder la même d’une saison à l’autre la fait monter en maîtrise. <strong>${reste <= 0 ? 'Dernier jour pour la choisir' : `Encore ${reste + 1} jours pour la choisir`}</strong>, ensuite la saison se joue sans doctrine.${z.doctrinePrec && DOCTRINES[z.doctrinePrec] ? ` La saison dernière : ${DOCTRINES[z.doctrinePrec].ico} ${esc(DOCTRINES[z.doctrinePrec].nom)} (maîtrise ${(z.maitrisePrec || 0) + 1}).` : ''}</p>
-    <div class="doc-l">${IDS_DOCTRINES.map((k) => { const x = DOCTRINES[k]; return `<button type="button" class="choice" data-action="doctrine" data-k="${k}" aria-pressed="${d.doctrine === k}" style="text-align:left;align-items:flex-start">
+    <div class="doc-l">${IDS_DOCTRINES.map((k) => { const x = DOCTRINES[k]; return `<button type="button" class="choice" data-action="doctrine" data-k="${k}" aria-pressed="${(d.doctrine || z.doctrine) === k}" style="text-align:left;align-items:flex-start">
       <span style="font-size:15px;font-weight:700">${x.ico} ${esc(x.nom)}${z.doctrinePrec === k ? ' <span class="tiny" style="color:var(--amber)">· maîtrise +1</span>' : ''}</span>
       <span class="s"><span class="ok">+ ${esc(x.force)}</span><br><span class="bad">− ${esc(x.prix)}</span><br><span class="muted">Brille : ${esc(x.brille)}</span></span></button>`; }).join('')}</div>
   </section>`;
@@ -869,7 +871,7 @@ function pastillesOrdres(z, d, e) {
   const bs = besoinsServices(e);
   const manque = SERVICES.filter((s2) => bs[s2] && (bs[s2].st === 'manque' || bs[s2].st === 'juste')).length;
   const l = [];
-  if (doctrineOuverte(S.state, z)) l.push(['doctrine', '🧭', 'Doctrine', !!d.doctrine, d.doctrine ? '' : 'à choisir']);
+  if (doctrineOuverte(S.state, z)) l.push(['doctrine', '🧭', 'Doctrine', !!(d.doctrine || z.doctrine), d.doctrine || z.doctrine ? '' : 'à choisir']);
   l.push(['affect', '👮', 'Affectation', !manque, manque ? `${manque} service${manque > 1 ? 's' : ''} court${manque > 1 ? 's' : ''}` : '']);
   l.push(['rythme', '⏱', 'Rythme', true, '']);
   l.push(['decision', '⭐', 'Décision', !!(d.decision || d.sansDecision), d.decision || d.sansDecision ? '' : 'à choisir']);

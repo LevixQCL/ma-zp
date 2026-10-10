@@ -46,4 +46,7 @@ export const terrainDoux = (brut) => (brut <= 80 ? Math.max(0, brut) : 80 + (bru
 /** Doctrine (règles v2) : à choisir pendant les 3 premiers jours de la saison (ou de la présence de la zone). */
 export const DOCTRINE_JOURS = 3;
 export const dernierJourDoctrine = (z) => Math.max(DOCTRINE_JOURS, ((z && z.joinedTurn) || 1) + DOCTRINE_JOURS - 1);
-export const doctrineOuverte = (state, z) => reglesV2(state) && !!z && !z.doctrine && (Number(state.turn) || 1) <= dernierJourDoctrine(z);
+/** Rééquilibrage des doctrines (10 oct. 2026) : pendant la saison 2, une zone qui en a déjà choisi une peut en changer une fois. */
+export const REVUE_DOCTRINES = { saison: 2 };
+export const doctrineRevisable = (state, z) => !!z && !!z.doctrine && !z.doctrineRevue && Number(state && state.season) === REVUE_DOCTRINES.saison;
+export const doctrineOuverte = (state, z) => reglesV2(state) && !!z && (!z.doctrine || doctrineRevisable(state, z)) && (Number(state.turn) || 1) <= dernierJourDoctrine(z);

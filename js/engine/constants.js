@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 130;
+export const APP_VERSION = 131;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -476,20 +476,22 @@ export const REGLES = { v2: false };
  * la force grandit de `MAITRISE` par cran (le prix ne bouge pas).
  */
 export const DOCTRINES = {
-  routiere: { nom: 'Routière', ico: '🚓', force: 'amendes +20 %, « chasse aux PV » repoussée de 15 points d’effectifs', prix: 'satisfaction −0,3 par jour (les automobilistes râlent)', brille: 'opérations de contrôle, besoin d’argent pour bâtir', amendes: 0.2, chasse: 0.15, satJour: -0.3 },
+  routiere: { nom: 'Routière', ico: '🚓', force: 'amendes +20 %, « chasse aux PV » repoussée de 15 points d’effectifs, la sécurité routière rapporte deux fois plus de satisfaction', prix: 'satisfaction −0,15 par jour (les automobilistes râlent) ; au-delà de 30 % des effectifs au Roulage, chaque agent de plus rapporte moitié moins (les contrôles sont connus)', brille: 'opérations de contrôle, besoin d’argent pour bâtir', amendes: 0.2, chasse: 0.15, securite: 1, satJour: -0.15, rendement: 0.3 },
   quartier: { nom: 'De quartier', ico: '🏘️', force: 'Proximité +15 %, la satisfaction redescend bien moins vite, vagues de délinquance reçues atténuées de moitié', prix: 'Intervention −5 % de capacité', brille: 'fêtes, tensions de quartier, vagues venues des voisins', derive: 0.4, vagues: 0.5, cap: { proximite: 1.15, intervention: 0.95 } },
-  judiciaire: { nom: 'Judiciaire', ico: '🔎', force: 'chances de pièce d’enquête +25 %, Recherche +15 %', prix: 'Intervention −8 % (patrouilles plus minces)', brille: 'semaines d’affaire, appuis PJF, traques', enquete: 0.25, cap: { recherche: 1.15, intervention: 0.92 } },
-  intervention: { nom: 'D’intervention', ico: '🚨', force: 'Intervention +10 %, flagrants délits 30 % plus fréquents', prix: 'usure des véhicules +50 %, −1 de moral de plus en rythme renforcé', brille: 'urgences, zone de non-droit, émeutes, nuits d’orage', flagrant: 0.3, usure: 1.5, renforce: -1, cap: { intervention: 1.10 } },
-  partenaire: { nom: 'Partenaire', ico: '🤝', force: 'un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 %', prix: 'capacité −3 % dans tous les services', brille: 'crises de district, assauts de la zone de non-droit, grandes parties', renfort: 1, entraide: 0.5, cap: { '*': 0.97 } },
+  judiciaire: { nom: 'Judiciaire', ico: '🔎', force: 'chances de pièce d’enquête +30 %, Recherche +20 %', prix: 'Intervention −5 % (patrouilles plus minces)', brille: 'semaines d’affaire, appuis PJF, traques', enquete: 0.3, cap: { recherche: 1.20, intervention: 0.95 } },
+  intervention: { nom: 'D’intervention', ico: '🚨', force: 'Intervention +10 %, flagrants délits 30 % plus fréquents, et des saisies : chaque incident traité remplit une jauge de 10 % ; à 100 %, 2 000 à 4 000 € d’argent liquide', prix: 'paperasse : chaque incident traité laisse 25 % de PV en plus', brille: 'urgences, zone de non-droit, émeutes, nuits d’orage', flagrant: 0.3, saisie: 2, saisieMax: 4, saisieJauge: 0.1, paperasse: 1.25, cap: { intervention: 1.10 } },
+  partenaire: { nom: 'Partenaire', ico: '🤝', force: 'un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 %, réputation +0,25 par jour (les partenaires parlent de toi)', prix: 'capacité −2 % dans tous les services', brille: 'crises de district, assauts de la zone de non-droit, grandes parties', renfort: 1, entraide: 0.5, repJour: 0.25, cap: { '*': 0.98 } },
 };
 export const IDS_DOCTRINES = Object.keys(DOCTRINES);
 export const MAITRISE = 0.15;
+/** Clés de doctrine qui sont un prix ou un seuil : la maîtrise ne les fait pas grandir. */
+const PRIX_DOCTRINE = new Set(['derive', 'vagues', 'usure', 'renforce', 'satJour', 'paperasse', 'rendement']);
 /** Force d'une doctrine pour la clé `cle` (0 si la zone n'a pas cette doctrine), maîtrise comprise. */
 export function forceDoctrine(z, cle) {
   const d = z && z.doctrine && DOCTRINES[z.doctrine];
   if (!d || d[cle] == null) return 0;
   const v = d[cle];
-  return typeof v === 'number' && cle !== 'derive' && cle !== 'vagues' && cle !== 'usure' && cle !== 'renforce' && cle !== 'satJour' ? v * (1 + MAITRISE * (z.maitrise || 0)) : v;
+  return typeof v === 'number' && !PRIX_DOCTRINE.has(cle) ? v * (1 + MAITRISE * (z.maitrise || 0)) : v;
 }
 /** Multiplicateur de capacité de la doctrine pour un service (bonus grandi par la maîtrise, malus fixe). */
 export function multDoctrine(z, service) {

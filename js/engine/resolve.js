@@ -14,7 +14,7 @@ import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
 import { pistesDuSoir, lireOrdresPistes } from './pistes.js';
 import { appliquerRegles, reglesV2, MAX_DEPENSES, pressionSaison, doctrineOuverte } from './regles.js';
-import { REGLES, forceDoctrine, DOCTRINES, coutPrime, aAnnexe } from './constants.js';
+import { REGLES, forceDoctrine, DOCTRINES, MAITRISE, coutPrime, aAnnexe } from './constants.js';
 import { enquetePourTour, SLOT_QUATRE } from '../quests/quests.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
@@ -33,6 +33,7 @@ import { venteResoudre, annoncerVente } from './ventes.js';
 import { rivalitesPre, rivalitesPost, themeActif, appliquerConsignes } from './rivalites.js';
 import { pactesPre, pactesPost, lies, PACTE } from './pactes.js';
 import { FLAGRANTS } from './contenu.js';
+const SAISIES = ['une liasse de billets trouvée lors d’une fouille de véhicule', 'l’argent d’un point de deal démantelé pendant une intervention', 'une caisse noire découverte lors d’un différend familial', 'le butin d’un cambrioleur interpellé à la sortie', 'des billets cachés dans une voiture contrôlée', 'la recette d’un trafic de cigarettes saisie sur un marché'];
 import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
@@ -261,7 +262,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(adj ? `Pas d’ordres ce tour : ton adjoint${adj.f ? 'e' : ''} ${adj.prenom} ${adj.nom} a tenu la zone (consigne « ${CONSIGNES[consigne].nom.toLowerCase()} »).` : 'Pas d’ordres ce tour : le pilote automatique a repris la dernière répartition.');
     }
     // Doctrine de la saison (règles v2) : choisie une fois, au plus tard en fin de 3e jour (sinon « sans doctrine »).
-    if (doctrineOuverte(state, z) && orders[uid] && typeof orders[uid].doctrine === 'string' && Object.hasOwn(DOCTRINES, orders[uid].doctrine)) {
+    if (doctrineOuverte(state, z) && orders[uid] && typeof orders[uid].doctrine === 'string' && Object.hasOwn(DOCTRINES, orders[uid].doctrine) && orders[uid].doctrine !== z.doctrine) {
+      if (z.doctrine) z.doctrineRevue = true;
       z.doctrine = orders[uid].doctrine;
       z.maitrise = z.doctrinePrec === z.doctrine ? Math.min(2, (z.maitrisePrec || 0) + 1) : 0;
       z.rapport.push(`Doctrine de la saison : ${DOCTRINES[z.doctrine].nom}${z.maitrise ? ` (maîtrise ${z.maitrise + 1})` : ''}. Force : ${DOCTRINES[z.doctrine].force}. Prix : ${DOCTRINES[z.doctrine].prix}.`);
@@ -929,6 +931,20 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     noter(z, 'satisfaction', `Incidents traités : ${traites} × +0,5`, traites * 0.5);
     noter(z, 'satisfaction', `Incidents ratés : ${rates} × −1,8`, -rates * 1.8);
     jalon(z, 'Incidents');
+    // Doctrine d'intervention : chaque incident traité (fouilles, contrôles d'identité) remplit la jauge de saisie ;
+    // à 100 %, une saisie d'argent liquide de 2 à 4 k€ (plus avec la maîtrise). Au plus une saisie par soir.
+    if (REGLES.v2 && z.doctrine === 'intervention' && traites > 0) {
+      const D = DOCTRINES.intervention;
+      z.jaugeSaisie = round1(Math.min(1.5, (z.jaugeSaisie || 0) + traites * D.saisieJauge) * 100) / 100;
+      if (z.jaugeSaisie >= 0.995) {
+        z.jaugeSaisie = Math.max(0, round1((z.jaugeSaisie - 1) * 100) / 100);
+        const saisie = round1(zr.float(D.saisie, D.saisieMax) * (1 + MAITRISE * (z.maitrise || 0)));
+        z.budget += saisie; z.stats.saisies = round1((z.stats.saisies || 0) + saisie); z.stats.nbSaisies = (z.stats.nbSaisies || 0) + 1;
+        z.rapport.push(`Saisie (doctrine d’intervention) : ${zr.pick(SAISIES)}, +${fmt1(saisie)} k€.`);
+        push(2, 'Saisie', `${zoneLabel(z)} : ${fmt1(saisie)} k€ saisis en intervention`, 'Doctrine d’intervention.', uid);
+      } else z.rapport.push(`Doctrine d’intervention : jauge de saisie ${Math.round(z.jaugeSaisie * 100)} % (+${Math.round(traites * D.saisieJauge * 100)} % ce soir, ${traites} incident${traites > 1 ? 's' : ''} traité${traites > 1 ? 's' : ''} ; à 100 %, saisie d’argent liquide).`);
+    }
+    jalon(z, 'Doctrine d’intervention : saisie');
     if (rates >= 3) z.moral -= 2;
     jalon(z, '3 incidents ratés ou plus : −2 de moral');
     z.rapport.push(`Intervention : ${traites} incident${traites > 1 ? 's' : ''} traité${traites > 1 ? 's' : ''} sur ${incidents}.`);
@@ -1015,8 +1031,11 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     jalon(z, 'Le parquet réclame les dossiers en retard');
 
     // Roulage : amendes et sécurité routière.
-    const recettes = cap.roulage * ECONOMIE.amendeParCapacite * (1 + bonusEquip(z, 'roulage', 'amendes') + forceDoctrine(z, 'amendes'));
     const totalAlloc = SERVICES.reduce((s, k) => s + alloc[k], 0) || 1;
+    // Doctrine routière : au-delà d'une part des effectifs au Roulage, les agents en plus rapportent moitié moins.
+    const rendR = forceDoctrine(z, 'rendement'), partR = alloc.roulage / totalAlloc;
+    const capAmendes = rendR && partR > rendR ? cap.roulage * (1 - 0.5 * (partR - rendR) / partR) : cap.roulage;
+    const recettes = capAmendes * ECONOMIE.amendeParCapacite * (1 + bonusEquip(z, 'roulage', 'amendes') + forceDoctrine(z, 'amendes'));
     if (pr.roulageMin) {
       if (alloc.roulage >= pr.roulageMin) { z.satisfaction += 2; z.rapport.push('Contrôles de vitesse demandés par les riverains : assurés (+2 de satisfaction).'); }
       else { z.satisfaction -= 3; z.rapport.push('Contrôles de vitesse demandés par les riverains : pas assez d\u2019agents (−3 de satisfaction).'); }
@@ -1025,9 +1044,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (alloc.roulage / totalAlloc > seuilChasse(z) && !(theme && theme.id === 'routiere')) {
       z.satisfaction -= 2; z.rapport.push(`Roulage : plus de ${Math.round(seuilChasse(z) * 100)} % des effectifs, effet « chasse aux PV » (−2 de satisfaction).`);
       jalon(z, 'Roulage : effet « chasse aux PV »');
-    } else { z.satisfaction += cap.roulage * 0.1; jalon(z, `Sécurité routière : capacité Roulage ${fmt1(cap.roulage)} × 0,1`); }
+    } else { const fs = 0.1 * (1 + forceDoctrine(z, 'securite')); z.satisfaction += cap.roulage * fs; jalon(z, `Sécurité routière : capacité Roulage ${fmt1(cap.roulage)} × ${String(round1(fs * 100) / 100).replace('.', ',')}`); }
     // Administration : la pile de paperasse.
-    z.paperasse = Math.max(0, z.paperasse + traites * 0.4 + nouveauDossier * 0.6 + 1.2 - cap.admin * 1.2);
+    z.paperasse = Math.max(0, z.paperasse + traites * 0.4 * (forceDoctrine(z, 'paperasse') || 1) + nouveauDossier * 0.6 + 1.2 - cap.admin * 1.2);
     z.paperassePic = Math.max(z.paperassePic || 0, z.paperasse);
     if (z.paperasse > 14) { z.moral -= 2; z.satisfaction -= 1; z.rapport.push(`Paperasse : ${Math.round(z.paperasse)} dossiers en attente (−2 de moral).`); }
 
@@ -1110,6 +1129,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (o.rythme === 'renforce' && talent(z, 'meneur')) noterChef(z, 'meneur', 'Meneur d’hommes : le rythme renforcé a moins pesé sur le moral.');
     jalon(z, `Rythme ${RYTHMES[o.rythme].label.toLowerCase()}`);
     if (z.infra.sport) z.moral += 1;
+    if (forceDoctrine(z, 'repJour')) z.reputation += forceDoctrine(z, 'repJour');
+    jalon(z, 'Doctrine partenaire : réputation');
     jalon(z, 'Salle de sport');
     if (z.budget < 0) z.moral -= 3;
     jalon(z, 'Budget négatif : −3');

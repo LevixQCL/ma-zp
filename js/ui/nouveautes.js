@@ -25,6 +25,14 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Doctrines rééquilibrées (10 octobre)', [
+      ['D’intervention', 'nouvelle force : les saisies. Chaque incident traité remplit une jauge de 10 % ; à 100 %, 2 000 à 4 000 € d’argent liquide (environ une saisie tous les deux jours). Le prix change : plus d’usure des véhicules ni de moral en rythme renforcé, mais chaque incident traité laisse 25 % de paperasse en plus.'],
+      ['Routière', 'toujours la doctrine de l’argent, mais au-delà de 30 % des effectifs au Roulage, chaque agent de plus rapporte moitié moins. En échange, la sécurité routière rapporte deux fois plus de satisfaction et les automobilistes râlent moitié moins (−0,15 par jour).'],
+      ['Judiciaire', 'pièces d’enquête +30 % (au lieu de +25 %), Recherche +20 % (au lieu de +15 %), Intervention −5 % seulement (au lieu de −8 %).'],
+      ['Partenaire', 'capacité −2 % (au lieu de −3 %) et réputation +0,25 par jour.'],
+      ['De quartier', 'inchangée.'],
+      ['Changer une fois', 'si tu as déjà choisi ta doctrine, tu peux la garder ou en changer une seule fois pendant les 3 premiers jours de la saison, dans tes ordres.'],
+    ]],
     ['Saison 2 : derniers réglages (9 octobre, après-midi)', [
       ['Zones fondatrices', 'les zones qui ont joué au moins 7 soirs en saison 1 reçoivent une plaque de bronze « S1 » sur leur commissariat, un médaillon devant leur nom sur la carte et la photo de la promotion fondatrice dans l’onglet Chef. Honorifique, sans bonus de jeu, et plus jamais attribué ensuite.'],
       ['Agents au changement de saison', 'au passage anticipé à la saison 2, tu gardes la moitié des agents recrutés au-delà de 20 (29 agents → 24), dans la limite de tes bureaux. Le budget, lui, repart de 60 000 €.'],
@@ -151,7 +159,7 @@ export const NOTE_MAJ = {
     ]],
     ['Saison 2 : nouvelles règles', [
       ['Quand ?', 'dès la saison 2 (jamais en cours de saison : un classement en cours garde ses règles). Les nouvelles parties les ont tout de suite.'],
-      ['Doctrine de zone', 'pendant les 3 premiers jours de la saison, chaque chef de zone choisit une doctrine dans ses ordres : Routière (amendes +20 %, satisfaction −0,3 par jour), De quartier (Proximité +15 %, satisfaction qui redescend bien moins vite, vagues reçues atténuées ; Intervention −5 %), Judiciaire (pièces d’enquête +25 %, Recherche +15 % ; Intervention −8 %), D’intervention (Intervention +10 %, flagrants délits +30 % ; usure des véhicules +50 %, −1 de moral de plus en rythme renforcé), Partenaire (un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 % ; capacité −3 %). Garder la même d’une saison à l’autre la fait monter en maîtrise (force +15 % par cran, jusqu’à 3 étoiles). Le Directeur met deux fois plus de temps à remarquer la routine d’une zone qui a une doctrine.'],
+      ['Doctrine de zone', 'pendant les 3 premiers jours de la saison, chaque chef de zone choisit une doctrine dans ses ordres : Routière (amendes +20 %, sécurité routière ×2 ; satisfaction −0,15 par jour, rendement moitié au-delà de 30 % des effectifs au Roulage), De quartier (Proximité +15 %, satisfaction qui redescend bien moins vite, vagues reçues atténuées ; Intervention −5 %), Judiciaire (pièces d’enquête +30 %, Recherche +20 % ; Intervention −5 %), D’intervention (Intervention +10 %, flagrants délits +30 %, saisies d’argent liquide ; paperasse +25 % par incident traité), Partenaire (un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 %, réputation +0,25 par jour ; capacité −2 %). Garder la même d’une saison à l’autre la fait monter en maîtrise (force +15 % par cran, jusqu’à 3 étoiles). Le Directeur met deux fois plus de temps à remarquer la routine d’une zone qui a une doctrine.'],
       ['Investir paie', 'former un service coûte 3 000 € (au lieu de 4 000 €) et n’immobilise qu’un agent ; le matériel démarre à 4 000 € (au lieu de 5 000 €).'],
       ['Soirée chargée', 'le Directeur peut annoncer deux demandes le même soir (par exemple 9 agents en Intervention pour des bagarres et 6 en Proximité pour une fête de quartier) : tout couvrir est un tour de force, n’en couvrir qu’une est une réussite partielle, et la Gazette raconte ce qui a été laissé de côté.'],
       ['Classement', 'tous les jours de la saison comptent (les jours tenus par l’adjoint avec 4 points d’IPZ de moins), avec un poids d’ancienneté de 0,93 par jour (au lieu de 0,8). Une zone qui arrive en cours de saison compte ses jours d’avant à l’IPZ médian du district moins 5.'],
