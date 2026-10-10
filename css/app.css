@@ -2775,3 +2775,10 @@ main.screen.gzs { height: 100dvh; box-sizing: border-box; padding: 10px 12px 100
 
 .pli-ligne { display: flex; align-items: center; gap: 10px; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
 .pli-ligne > svg:last-child { color: var(--muted); flex-shrink: 0; }
+
+/* Jauges de l'Intervention (flagrant délit, saisie) sous le service, dans les ordres */
+.jg-inter { display: flex; flex-direction: column; gap: 3px; padding: 2px 0 4px 0; }
+.jg-i { display: grid; grid-template-columns: 8.5em 1fr 2.6em; white-space: nowrap; padding-right: 6px; align-items: center; gap: 8px; font-size: 11px; color: var(--text2); text-decoration: none; }
+.jg-b { display: block; height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
+.jg-b b { display: block; height: 100%; border-radius: 3px; background: var(--c, var(--amber)); }
+.jg-v { text-align: right; font-variant-numeric: tabular-nums; }

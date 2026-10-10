@@ -844,6 +844,13 @@ export function ouvertureOrdres(z) {
   out.prochain = ancien ? null : PALIERS_ORDRES.find(([, j]) => jour < j) || null;
   return out;
 }
+/** Jauges de l'Intervention (flagrant délit, saisie avec la doctrine d'intervention), toujours visibles sous le service. */
+function jaugesInter(z) {
+  const barre = (ico, nom, v, titre) => { const p = Math.max(0, Math.min(100, Math.round((v || 0) * 100))); return `<a class="jg-i" href="#guide-doctrines" title="${esc(titre)}"><span class="jg-n">${ico} ${nom}</span><i class="jg-b"><b style="width:${p}%"></b></i><span class="jg-v">${p} %</span></a>`; };
+  const l = [barre('🚨', 'Flagrant délit', z.jaugeFlagrant, 'Remplie par tes patrouilles libres après les incidents. À 100 % : +3 pts, +3 PS, +1 de satisfaction.')];
+  if (z.doctrine === 'intervention') l.push(barre('💰', 'Saisie', z.jaugeSaisie, 'Doctrine d’intervention : +10 % par incident traité. À 100 % : 2 000 à 4 000 € en liquide.'));
+  return `<div class="jg-inter">${l.join('')}</div>`;
+}
 /** Choix de la doctrine de la saison (règles v2), tant qu'elle n'est pas fixée. */
 function doctrineHtml(z, d) {
   if (!doctrineOuverte(S.state, z)) return '';
@@ -966,6 +973,7 @@ export function renderOrdres() {
           <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
         <div class="svc2-s"><span class="svc-r" id="res-${s2}">${resultatService(e, s2)}</span><span id="badge-${s2}">${badgeService(s2, b, d.alloc[s2])}</span></div>
         <span id="pris-${s2}" class="svc-plus">${prisHtml(e, s2)}</span>
+        ${s2 === 'intervention' ? jaugesInter(z) : ''}
         ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} de réserve en renfort</span>` : ''}
         ${ouvert ? `<div class="svc-det">${s2 === 'recherche' ? `<div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}<p class="tiny" style="margin:0;color:var(--text2);line-height:1.45">Niveau ${z.niveaux[s2]}. ${esc(aide(s2, z))}</p></div>` : ''}
       </div>`; }).join('') : SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc svc-${b.st}${ouvert ? ' ouvert' : ''}">
