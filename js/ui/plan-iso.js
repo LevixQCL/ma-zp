@@ -29,10 +29,12 @@ export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
     if (!b) continue;
     const venus = [...(sect[k] ? [{ uid: me.uid, n: sect[k] }] : []), ...(ann[k] || [])];
     venus.forEach((v, j) => {
-      const a = cache.pos(cache.capitale[v.uid], 4);
-      if (!a) return;
-      const moi = v.uid === me.uid, dur = Math.max(3, Math.hypot(b[0] - a[0], b[1] - a[1]) / 22);
-      const d = `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
+      // Les fourgons suivent les rues et contournent le non-droit (pas de ligne droite à travers les secteurs tenus).
+      const pts = cache.route(cache.capitale[v.uid], Number(k)) || [cache.pos(cache.capitale[v.uid], 4), b];
+      if (!pts[0]) return;
+      const long = pts.reduce((t, p, m) => (m ? t + Math.hypot(p[0] - pts[m - 1][0], p[1] - pts[m - 1][1]) : 0), 0);
+      const moi = v.uid === me.uid, dur = Math.max(3, Math.min(14, long / 22)), a = pts[0];
+      const d = `M${pts.map((p) => `${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('L')}`;
       if (moi) dyn.push(`<path d="${d}" stroke="#63B0FF" stroke-width=".8" stroke-dasharray="2 2.5" fill="none" opacity=".7"/>`);
       for (let q = 0; q < Math.min(4, v.n); q++) {
         const corps = moi ? '<rect x="-3" y="-1.5" width="6" height="3" rx=".9" fill="#E9EEF8"/><rect x="-.7" y="-1.5" width="1.6" height="3" fill="#1F4FA8"/><rect x="-.3" y="-1" width=".9" height="2" rx=".3" fill="#63B0FF"/>'
@@ -101,6 +103,7 @@ function dessiner(st, me, seed, vue, reduit) {
     const sND = ndSet.has(i) && st.nonDroit && st.nonDroit.secteurs[i];
     const repris = !!(sND && sND.statut === 'repris');
     const c = T.cells[i], mien = mes.has(i), nd = ndSet.has(i) && !repris;
+    const kND = nd ? Math.min(1, Math.max(0.1, ((sND && sND.emprise) ?? 60) / 100)) : 0;
     const t = mien ? mesT[i] : null, n = mien ? niveauTension(t) : null;
     const rng = makeRng(`${seed}:iso:${i}`);
     routes.push(`<polygon points="${poly(c.poly.map(([x, y]) => P(x, y)))}" fill="#0C1128" stroke="#3A4470" stroke-opacity=".35" stroke-width=".35" stroke-dasharray="1.5 2"/>`);
@@ -108,6 +111,7 @@ function dessiner(st, me, seed, vue, reduit) {
     const top = ilot.map(([x, y]) => P(x, y, 1.2));
     sol.push(`<polygon points="${poly(ilot.map(([x, y]) => P(x, y)))}" fill="#090D20"/><polygon points="${poly(top)}" fill="${nd ? '#26141B' : repris ? '#16322B' : mien ? '#1E2A4C' : '#151C36'}" stroke="${repris ? '#2E6B55' : mien ? '#33447A' : '#1D2547'}" stroke-width=".5"/>`);
     if (mien || (!zoomZone && rng.next() < 0.3)) for (const [k, v] of c.poly.entries()) { if (k % (zoomZone ? 1 : 2)) continue; const [lx, ly] = P(v[0], v[1], 3); lueurs.push(`<circle cx="${f(lx)}" cy="${f(ly + 3)}" r="${zoomZone ? 5 : 3}" fill="url(#${id('lampe')})"/><circle cx="${f(lx)}" cy="${f(ly)}" r=".7" fill="#FFE2A8"/>`); }
+    if (nd) { const [cx, cy] = P(c.c[0], c.c[1]); lueurs.push(`<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="34" ry="18" fill="#FF5A2A" opacity="${f(0.1 + kND * 0.16)}" filter="url(#${id('flou')})"><animate attributeName="opacity" values="${f(0.08 + kND * 0.12)};${f(0.14 + kND * 0.2)};${f(0.08 + kND * 0.12)}" dur="${f(1.6 + rng.next())}s" repeatCount="indefinite"/></ellipse>`); }
     if (mien) { const [cx, cy] = P(c.c[0], c.c[1]); lueurs.push(`<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="40" ry="22" fill="${LUM[n.id]}" opacity="${0.1 + (t / 100) * 0.28}" filter="url(#${id('flou')})"/>`); }
 
     const u = urb(c.c), capitale = moi.capitale === i;
@@ -127,11 +131,28 @@ function dessiner(st, me, seed, vue, reduit) {
       if (capitale && k === 0) { objets.push({ x: p[0], y: p[1], type: 'hp', n, mien, rng: r2 }); continue; }
       const roll = r2.next();
       let type;
-      if (nd) type = roll < 0.45 ? 'entrepot' : roll < 0.7 ? 'ruine' : roll < 0.85 ? 'feu' : 'arbre';
+      if (nd) type = roll < 0.3 ? 'entrepot' : roll < 0.55 ? 'ruine' : roll < 0.75 ? 'immeuble' : roll < 0.9 ? 'feu' : 'arbre';
       else if (u > 0.55) type = roll < 0.22 ? 'tour' : roll < 0.6 ? 'immeuble' : roll < 0.8 ? 'commerce' : 'arbre';
       else if (u > 0.3) type = roll < 0.35 ? 'immeuble' : roll < 0.7 ? 'maison' : roll < 0.82 ? 'commerce' : 'arbre';
       else type = roll < 0.6 ? 'maison' : roll < 0.72 ? 'immeuble' : 'arbre';
-      objets.push({ x: p[0], y: p[1], type, n, mien, nd, u, rng: r2 });
+      objets.push({ x: p[0], y: p[1], type, n, mien, nd, u, rng: r2, brule: nd && type !== 'arbre' && type !== 'feu' && r2.next() < 0.2 + 0.6 * kND });
+    }
+    // Non-droit : carcasses de voitures en feu et fusillades entre bandes rivales, d'autant plus que l'emprise est forte.
+    if (nd) {
+      const libre = (p, m) => dedans(p, zoneInt) && !dansFleuve(p, 2) && !poses.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < m);
+      const placer = (m) => { for (let e = 0; e < 120; e++) { const p = [rng.float(bx[0], bx[1]), rng.float(by[0], by[1])]; if (libre(p, m)) { poses.push([...p, m]); return p; } } return null; };
+      for (let k = 0; k < 1 + Math.round(kND * 2); k++) { const p = placer(4); if (p) objets.push({ x: p[0], y: p[1], type: 'carcasse', rng: makeRng(`${seed}:car:${i}:${k}`) }); }
+      const nbFus = kND >= 0.6 ? 2 : kND >= 0.15 ? 1 : 0;
+      for (let k = 0; k < nbFus; k++) {
+        const r3 = makeRng(`${seed}:fus:${i}:${k}`), p = placer(6);
+        if (!p) continue;
+        const a = r3.float(0, Math.PI * 2), dx = Math.cos(a) * 5.5, dy = Math.sin(a) * 5.5, px = -dy / 5.5, py = dx / 5.5;
+        const camps = [[p[0] - dx, p[1] - dy, p[0] + dx, p[1] + dy, '#C94A3A'], [p[0] + dx, p[1] + dy, p[0] - dx, p[1] - dy, '#D9B44A']];
+        for (const [ax, ay, cx2, cy2, coul] of camps) for (let m = 0; m < 2; m++) {
+          const o = (m - 0.5) * 2.4;
+          objets.push({ x: ax + px * o, y: ay + py * o, type: 'tireur', cible: [cx2 - px * o, cy2 - py * o], coul, accroupi: r3.next() < 0.35, rng: makeRng(`${seed}:t:${i}:${k}:${coul}:${m}`) });
+        }
+      }
     }
     if (mien && t >= 55) { const [sx, sy] = P(c.c[0] + 6, c.c[1] - 4, 14); for (let k = 0; k < 3; k++) fumees.push(`<circle cx="${f(sx)}" cy="${f(sy)}" r="3" fill="#8A8FA8" opacity="0"><animate attributeName="cy" values="${f(sy)};${f(sy - 26)}" dur="4.5s" begin="${k * 1.5}s" repeatCount="indefinite"/><animate attributeName="r" values="2.5;8" dur="4.5s" begin="${k * 1.5}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.45;0" dur="4.5s" begin="${k * 1.5}s" repeatCount="indefinite"/><animate attributeName="cx" values="${f(sx)};${f(sx + 7)}" dur="4.5s" begin="${k * 1.5}s" repeatCount="indefinite"/></circle>`); }
 
@@ -192,6 +213,17 @@ function dessiner(st, me, seed, vue, reduit) {
   const ombre = (X0, X1, Y0, Y1) => face([[X0 - 0.8, Y0 - 0.8, 1.2], [X1 + 2.5, Y0 - 0.8, 1.2], [X1 + 2.5, Y1 + 2.5, 1.2], [X0 - 0.8, Y1 + 2.5, 1.2]], '#050816', ' opacity=".45"');
   const PAL = { mien: ['#4A5A86', '#334068', '#283255'], autre: ['#2C3558', '#222A48', '#1B223D'], nd: ['#3B2A33', '#2A1E26', '#22181F'] };
 
+  // Flammes animées (3 langues superposées) et colonne de fumée noire, pour le non-droit.
+  const flammes = (fx, fy, k, r) => {
+    const lg = (w, h, dx) => { const a = `M${f(fx + dx - w)} ${f(fy)}Q${f(fx + dx - w * 0.6)} ${f(fy - h * 0.55)} ${f(fx + dx)} ${f(fy - h)}Q${f(fx + dx + w * 0.6)} ${f(fy - h * 0.55)} ${f(fx + dx + w)} ${f(fy)}Z`; const b2 = `M${f(fx + dx - w)} ${f(fy)}Q${f(fx + dx - w * 0.9)} ${f(fy - h * 0.5)} ${f(fx + dx + w * 0.4)} ${f(fy - h * 0.8)}Q${f(fx + dx + w * 0.5)} ${f(fy - h * 0.45)} ${f(fx + dx + w)} ${f(fy)}Z`; return [a, b2]; };
+    const d = r.float(0.45, 0.75);
+    return `<circle cx="${f(fx)}" cy="${f(fy - 2 * k)}" r="${f(8 * k)}" fill="url(#${id('feu')})"/>` + [[2.2, 7, 0, '#E8401E'], [1.6, 5.5, -1.1, '#FF8A2A'], [1.1, 4, 0.8, '#FFD86A']].map(([w, h, dx, col], j) => {
+      const [a, b2] = lg(w * k, h * k, dx * k);
+      return `<path d="${a}" fill="${col}"><animate attributeName="d" values="${a};${b2};${a}" dur="${f(d + j * 0.12)}s" begin="${f(-r.next())}s" repeatCount="indefinite"/></path>`;
+    }).join('');
+  };
+  const fumee = (sx, sy, k, r) => { for (let j = 0; j < 3; j++) { const du = r.float(4, 6), dx = r.float(4, 10); fumees.push(`<circle cx="${f(sx)}" cy="${f(sy)}" r="3" fill="url(#${id('fumee')})" opacity="0"><animate attributeName="cy" values="${f(sy)};${f(sy - 34 * k)}" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/><animate attributeName="r" values="${f(2 * k)};${f(9 * k)}" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.7;0" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/><animate attributeName="cx" values="${f(sx)};${f(sx + dx)}" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/></circle>`); } };
+  const tirs = [];
   const dessin = (b) => {
     const { x, y, rng } = b, pal = b.nd ? PAL.nd : b.mien ? PAL.mien : PAL.autre;
     const lum = b.mien && b.n ? LUM[b.n.id] : b.nd ? '#FF6B5E' : '#C9B37A';
@@ -227,10 +259,11 @@ function dessiner(st, me, seed, vue, reduit) {
     }
     if (b.type === 'immeuble' || b.type === 'tour') {
       const tourL = b.type === 'tour', w = tourL ? rng.float(6.5, 8) : rng.float(6, 8.5), d = tourL ? rng.float(6.5, 8) : rng.float(5.5, 7.5);
-      const h = tourL ? rng.float(28, 42) : rng.float(10, b.mien ? 22 : 18), X0 = x - w / 2, X1 = x + w / 2, Y0 = y - d / 2, Y1 = y + d / 2;
+      const h = tourL ? rng.float(28, 42) : b.nd ? rng.float(8, 14) : rng.float(10, b.mien ? 22 : 18), X0 = x - w / 2, X1 = x + w / 2, Y0 = y - d / 2, Y1 = y + d / 2;
       s += ombre(X0, X1, Y0, Y1) + boite(X0, X1, Y0, Y1, h, pal) + fenetres(b, X0, X1, Y0, Y1, h, lum, b.mien ? 0.5 : 0.28);
       if (!tourL && rng.next() < 0.6) s += boite(x - 1.2, x + 1.2, y - 1, y + 1, h + 2, pal, h);
       if (tourL) { const [ax, ay] = P(x, y, h); s += `<line x1="${f(ax)}" y1="${f(ay)}" x2="${f(ax)}" y2="${f(ay - 8)}" stroke="#9AA3C4" stroke-width=".5"/><circle cx="${f(ax)}" cy="${f(ay - 8)}" r=".9" fill="#FF4E4E"><animate attributeName="opacity" values="1;.15;1" dur="2s" repeatCount="indefinite"/></circle>`; }
+      if (b.brule) { const [gx, gy] = P(x + rng.float(-1.5, 1.5), y + rng.float(-1.5, 1.5), h); s += flammes(gx, gy, 1.1, rng); fumee(gx, gy - 6, 1.1, rng); }
       if (tendu && rng.next() < 0.3) { const [gx, gy] = P(x, y, h + 1); s += `<circle cx="${f(gx)}" cy="${f(gy)}" r="1.5" fill="#63B0FF"><animate attributeName="fill" values="#63B0FF;#FF5A4E;#63B0FF" dur=".8s" repeatCount="indefinite"/></circle>`; }
       return s;
     }
@@ -238,17 +271,51 @@ function dessiner(st, me, seed, vue, reduit) {
       const w = rng.float(8, 10), d = rng.float(6, 7), h = rng.float(4, 6), X0 = x - w / 2, X1 = x + w / 2, Y0 = y - d / 2, Y1 = y + d / 2;
       s += ombre(X0, X1, Y0, Y1) + boite(X0, X1, Y0, Y1, h, pal);
       for (let k = 0; k < 3; k++) { const a = X0 + (w * k) / 3, bb = a + w / 3; s += face([[a, Y1, h], [bb, Y1, h], [bb, Y1, h + 2.2]], '#2A1E26'); }
-      if (rng.next() < 0.5) s += face([[X0 + 2, Y1, 1.2], [X0 + 4, Y1, 1.2], [X0 + 4, Y1, 3.4], [X0 + 2, Y1, 3.4]], '#FF6B5E', ' opacity=".35"');
+      if (rng.next() < 0.5 || b.brule) s += face([[X0 + 2, Y1, 1.2], [X0 + 4, Y1, 1.2], [X0 + 4, Y1, 3.4], [X0 + 2, Y1, 3.4]], '#FF6B3C', ` opacity="${b.brule ? 0.85 : 0.35}"`);
+      if (b.brule) { const [gx, gy] = P(x + 1, y, h + 1); s += flammes(gx, gy, 1, rng); fumee(gx, gy - 6, 1, rng); }
       return s;
     }
     if (b.type === 'ruine') {
       const w = rng.float(5, 7), d = rng.float(4.5, 6), X0 = x - w / 2, X1 = x + w / 2, Y0 = y - d / 2, Y1 = y + d / 2;
-      return boite(X0, X0 + w * 0.45, Y0, Y1, rng.float(5, 9), pal) + boite(X0 + w * 0.5, X1, Y0 + 1, Y1, rng.float(2.5, 4), pal);
+      const h1 = rng.float(5, 9);
+      s += boite(X0, X0 + w * 0.45, Y0, Y1, h1, pal) + boite(X0 + w * 0.5, X1, Y0 + 1, Y1, rng.float(2.5, 4), pal);
+      // Façade noircie, fenêtre éventrée qui rougeoie.
+      s += face([[X0 + 0.6, Y1, h1 - 3], [X0 + w * 0.4, Y1, h1 - 3], [X0 + w * 0.4, Y1, h1 - 1], [X0 + 0.6, Y1, h1 - 1]], '#FF6B3C', ' opacity=".55"');
+      if (b.brule) { const [gx, gy] = P(X0 + w * 0.25, y, h1); s += flammes(gx, gy, 0.9, rng); fumee(gx, gy - 5, 0.9, rng); const [hx, hy] = P(X0 + w * 0.75, y + 0.5, 3); s += flammes(hx, hy, 0.7, rng); }
+      return s;
     }
     if (b.type === 'feu') {
       const [fx, fy] = P(x, y, 1.2);
+      if (b.nd) {
+        let p = `<ellipse cx="${f(fx + 1)}" cy="${f(fy + 0.6)}" rx="5" ry="2" fill="#050816" opacity=".5"/>`;
+        for (const [ox, oy] of [[-2.4, 0.6], [0, 1.1], [2.4, 0.6], [-1.2, -0.5], [1.2, -0.5]]) p += `<ellipse cx="${f(fx + ox)}" cy="${f(fy + oy)}" rx="1.6" ry="1" fill="#16141A" stroke="#2C2A33" stroke-width=".35"/>`;
+        p += `<path d="M${f(fx - 4)} ${f(fy - 0.5)}l2.5 -2.2l1.8 1.6l2.2 -2l2.6 2.4" fill="none" stroke="#5A3F2E" stroke-width=".7"/>`;
+        fumee(fx, fy - 7, 1, rng);
+        return p + flammes(fx, fy - 0.5, 1.15, rng);
+      }
       const fl = (q) => `M${f(fx - 1)} ${f(fy - 3)}Q${f(fx + q[0])} ${f(fy - q[1])} ${f(fx + 1)} ${f(fy - 3)}Z`;
       return `<circle cx="${f(fx)}" cy="${f(fy - 1)}" r="7" fill="url(#${id('feu')})"/><rect x="${f(fx - 1.2)}" y="${f(fy - 3)}" width="2.4" height="3" fill="#3A2A2A"/><path d="${fl([0, 7])}" fill="#FF9A3C"><animate attributeName="d" values="${fl([0, 7])};${fl([0.6, 5.5])};${fl([0, 7])}" dur=".6s" repeatCount="indefinite"/></path>`;
+    }
+    if (b.type === 'carcasse') {
+      const r = rng.next() < 0.5, w = r ? 4.6 : 2.2, d = r ? 2.2 : 4.6, X0 = x - w / 2, X1 = x + w / 2, Y0 = y - d / 2, Y1 = y + d / 2;
+      s += ombre(X0, X1, Y0, Y1) + boite(X0, X1, Y0, Y1, 2.6, ['#2A2326', '#1C1719', '#151113']) + boite(X0 + (r ? 1 : 0.3), X1 - (r ? 1 : 0.3), Y0 + (r ? 0.3 : 1), Y1 - (r ? 0.3 : 1), 3.8, ['#241D20', '#181315', '#120E10'], 2.6);
+      const [gx, gy] = P(x, y, 3.8); s += flammes(gx, gy, 0.8, rng); fumee(gx, gy - 5, 0.8, rng);
+      return s;
+    }
+    if (b.type === 'tireur') {
+      const [bx2, by2] = P(x, y, 1.2), [cx2, cy2] = P(b.cible[0], b.cible[1], 1.2), sens = cx2 >= bx2 ? 1 : -1, hb = b.accroupi ? 1.8 : 3, E = 1.35;
+      const ax0 = bx2 + sens * 1.9, ay0 = by2 - hb + 0.3, ax = bx2 + sens * 1.9 * E, ay = by2 + (-hb + 0.3) * E;
+      s += `<g transform="translate(${f(bx2)} ${f(by2)}) scale(${E}) translate(${f(-bx2)} ${f(-by2)})">`;
+      s += `<ellipse cx="${f(bx2 + 0.4)}" cy="${f(by2 + 0.2)}" rx="1.3" ry=".5" fill="#050816" opacity=".5"/>`;
+      s += b.accroupi ? `<path d="M${f(bx2 - 0.7)} ${f(by2)}L${f(bx2 + 0.3)} ${f(by2 - 0.9)}L${f(bx2)} ${f(by2 - 1.2)}" fill="none" stroke="#14121A" stroke-width=".55" stroke-linecap="round"/>`
+        : `<path d="M${f(bx2 - 0.6)} ${f(by2)}L${f(bx2)} ${f(by2 - 1.5)}L${f(bx2 + 0.6)} ${f(by2)}" fill="none" stroke="#14121A" stroke-width=".55" stroke-linecap="round"/>`;
+      s += `<line x1="${f(bx2)}" y1="${f(by2 - hb + 1.5)}" x2="${f(bx2)}" y2="${f(by2 - hb)}" stroke="${b.coul}" stroke-width="1.2" stroke-linecap="round"/><circle cx="${f(bx2)}" cy="${f(by2 - hb - 0.7)}" r=".62" fill="#1A1820"/>`;
+      s += `<line x1="${f(bx2)}" y1="${f(by2 - hb + 0.3)}" x2="${f(ax0)}" y2="${f(ay0)}" stroke="#0E0C12" stroke-width=".45" stroke-linecap="round"/></g>`;
+      const du = rng.float(0.9, 1.7), deb = -rng.float(0, du), kt = 'keyTimes="0;.06;.12;1"';
+      s += `<circle cx="${f(ax + sens * 0.5)}" cy="${f(ay)}" r="1.25" fill="#FFE59A" opacity="0"><animate attributeName="opacity" values="0;1;0;0" ${kt} dur="${f(du)}s" begin="${f(deb)}s" repeatCount="indefinite"/></circle>`;
+      const tx = cx2 - sens * 1.4, ty = cy2 - 3, L = Math.hypot(tx - ax, ty - ay);
+      tirs.push(`<line x1="${f(ax)}" y1="${f(ay)}" x2="${f(tx)}" y2="${f(ty)}" stroke="#FFE59A" stroke-width=".35" stroke-linecap="round" stroke-dasharray="1.8 ${f(L + 4)}" stroke-dashoffset="0" opacity="0"><animate attributeName="stroke-dashoffset" values="0;${f(-L)};${f(-L)}" keyTimes="0;.14;1" dur="${f(du)}s" begin="${f(deb)}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;1;0;0" keyTimes="0;.02;.15;1" dur="${f(du)}s" begin="${f(deb)}s" repeatCount="indefinite"/></line>`);
+      return s;
     }
     if (b.type === 'hp') {
       const X0 = x - 7, X1 = x + 7, Y0 = y - 5.5, Y1 = y + 5.5, h = 20;
@@ -295,12 +362,58 @@ function dessiner(st, me, seed, vue, reduit) {
     <defs><filter id="${id('flou')}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9"/></filter>
       <linearGradient id="${id('bronze')}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F3D58C"/><stop offset=".55" stop-color="#C99A45"/><stop offset="1" stop-color="#8E6224"/></linearGradient>
       <radialGradient id="${id('lampe')}"><stop offset="0" stop-color="#FFD58A" stop-opacity=".45"/><stop offset="1" stop-color="#FFD58A" stop-opacity="0"/></radialGradient>
+      <radialGradient id="${id('fumee')}"><stop offset="0" stop-color="#2A2630" stop-opacity=".95"/><stop offset=".6" stop-color="#2A2630" stop-opacity=".6"/><stop offset="1" stop-color="#2A2630" stop-opacity="0"/></radialGradient>
       <radialGradient id="${id('feu')}"><stop offset="0" stop-color="#FF7A3C" stop-opacity=".6"/><stop offset="1" stop-color="#FF7A3C" stop-opacity="0"/></radialGradient>
       <clipPath id="${id('vue')}"><rect x="${f(x0)}" y="${f(y0)}" width="${f(x1 - x0)}" height="${f(y1 - y0)}"/></clipPath></defs>
     <style>.iso-tn{font:800 7px 'Bricolage Grotesque',sans-serif;fill:#0B1124}.iso-nmq{font:800 7px 'Instrument Sans',sans-serif;fill:#0B1124}.iso-pbt{font:800 6px 'Bricolage Grotesque',sans-serif;fill:#fff}.iso-zn{font:700 7.5px 'Instrument Sans',sans-serif;fill:#EDF0FA}.iso .hit,.iso .hit-zone,.iso .hit-nd,.iso .hit-autre{cursor:pointer}</style>
-    <g clip-path="url(#${id('vue')})">${routes.join('')}${fleuve}${sol.join('')}${selections.join('')}${lueurs.join('')}${voitures.join('')}${objets.map(dessin).join('')}${fumees.join('')}<!--dyn-->${cibles.map((c) => c.h).join('')}${cibleDistrict}${etiqND.join('')}${etiqHtml}${nomsZones}</g>
+    <g clip-path="url(#${id('vue')})">${routes.join('')}${fleuve}${sol.join('')}${selections.join('')}${lueurs.join('')}${voitures.join('')}${objets.map(dessin).join('')}${tirs.join('')}${fumees.join('')}<!--dyn-->${cibles.map((c) => c.h).join('')}${cibleDistrict}${etiqND.join('')}${etiqHtml}${nomsZones}</g>
   </svg>`;
   const pos = (i, z = 0) => (T.cells[i] ? P(T.cells[i].c[0], T.cells[i].c[1], z) : null);
+  const route = itineraire(T, ndSet, st, P);
   const capitale = Object.fromEntries(T.zones.map((tz) => [tz.uid, tz.capitale]));
-  return { svg: reduit ? out.replace(/<animate[^>]*\/>|<animateTransform[^>]*\/>/g, '') : out, pos, capitale };
+  return { svg: reduit ? out.replace(/<animate[^>]*\/>|<animateTransform[^>]*\/>/g, '') : out, pos, capitale, route };
+}
+
+/**
+ * Itinéraire des fourgons par les rues (les bords des quartiers) : les rues qui traversent le non-droit
+ * (entre deux secteurs tenus par le milieu) sont évitées ; on n'y entre qu'au dernier moment, par le bord du secteur visé.
+ * Rend une fonction (de, vers) → points à l'écran.
+ */
+export function itineraire(T, ndSet, st, P) {
+  const tenu = (i) => ndSet.has(i) && !(st.nonDroit && st.nonDroit.secteurs[i] && st.nonDroit.secteurs[i].statut === 'repris');
+  const sommets = [], cle = (p) => { for (let k = 0; k < sommets.length; k++) if (Math.abs(sommets[k][0] - p[0]) < 0.6 && Math.abs(sommets[k][1] - p[1]) < 0.6) return k; sommets.push(p); return sommets.length - 1; };
+  const parCellule = T.cells.map((c) => c.poly.map(cle));
+  const aretes = new Map();
+  parCellule.forEach((ks, i) => ks.forEach((a, j) => { const b = ks[(j + 1) % ks.length]; if (a === b) return; const k = a < b ? `${a}-${b}` : `${b}-${a}`; if (!aretes.has(k)) aretes.set(k, { a, b, cells: [] }); aretes.get(k).cells.push(i); }));
+  const vois = sommets.map(() => []);
+  for (const e of aretes.values()) {
+    const L = Math.hypot(sommets[e.a][0] - sommets[e.b][0], sommets[e.a][1] - sommets[e.b][1]);
+    const dedansND = e.cells.length > 1 && e.cells.every(tenu);
+    vois[e.a].push([e.b, L, dedansND]); vois[e.b].push([e.a, L, dedansND]);
+  }
+  const memo = new Map();
+  return (de, vers, z = 0.6) => {
+    const k0 = `${de}>${vers}`;
+    if (memo.has(k0)) return memo.get(k0);
+    if (!T.cells[de] || !T.cells[vers]) return null;
+    const N = sommets.length, SRC = N, DST = N + 1, dist = new Array(N + 2).fill(Infinity), prec = new Array(N + 2).fill(-1), fait = new Array(N + 2).fill(false);
+    const cD = T.cells[de].c, cV = T.cells[vers].c, depart = new Set(parCellule[de]), arrivee = new Set(parCellule[vers]);
+    dist[SRC] = 0;
+    for (;;) {
+      let u = -1;
+      for (let k = 0; k < N + 2; k++) if (!fait[k] && dist[k] < Infinity && (u < 0 || dist[k] < dist[u])) u = k;
+      if (u < 0 || u === DST) break;
+      fait[u] = true;
+      const pu = u === SRC ? cD : sommets[u];
+      const suiv = u === SRC ? [...depart].map((v) => [v, Math.hypot(sommets[v][0] - cD[0], sommets[v][1] - cD[1]), false]) : vois[u];
+      for (const [v, L, nd] of suiv) { const c = dist[u] + L * (nd ? 12 : 1); if (c < dist[v]) { dist[v] = c; prec[v] = u; } }
+      if (u !== SRC && arrivee.has(u)) { const c = dist[u] + Math.hypot(cV[0] - pu[0], cV[1] - pu[1]); if (c < dist[DST]) { dist[DST] = c; prec[DST] = u; } }
+    }
+    if (prec[DST] < 0) { memo.set(k0, null); return null; }
+    const pts = [];
+    for (let u = DST; u >= 0; u = prec[u]) pts.unshift(u === SRC ? cD : u === DST ? cV : sommets[u]);
+    const res = pts.map(([x, y]) => P(x, y, z));
+    memo.set(k0, res);
+    return res;
+  };
 }
