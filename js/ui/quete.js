@@ -28,7 +28,7 @@ import { MINI_JEUX } from './incidents.js';
 import { quizLocal, quizEnregistre, quizQuestionHtml, bonnesReponses } from './quiz.js';
 import { QUIZ, QUIZ_THEMES } from '../quests/quiz.js';
 import { cadenasHtml, cadenasResultat, essaisHtml } from './cadenas.js';
-import { chronoHtml, disqueHtml, plaquesHtml, temoignagesHtml, figureInteractive, filatureOutils, butinHtml, ligneHtml, trajetsHtml, icoGrille, ecritureHtml, avatar, codeHtml } from './enigmes.js';
+import { chronoHtml, disqueHtml, plaquesHtml, temoignagesHtml, figureInteractive, habillerFilature, filatureOutils, butinHtml, ligneHtml, trajetsHtml, icoGrille, ecritureHtml, avatar, codeHtml } from './enigmes.js';
 
 /** Le joueur a-t-il déjà changé une énigme aujourd'hui ? */
 function rerollUtilise() { return (S.quests || []).some((q) => q.variante); }
@@ -40,7 +40,7 @@ const lire = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null')
 function renderFigures(q, fini) {
   if (q.type === 'ecriture') return ecritureHtml(q, S.questPick, fini);
   const tactile = (q.type === 'photos' || q.type === 'filature') && !fini;
-  const fig = (f) => `<figure class="fig ${tactile ? 'tactile' : ''}"><figcaption>${esc(f.titre)}</figcaption>${tactile ? figureInteractive(q, f.svg, S.questPick) : f.svg}</figure>`;
+  const fig = (f) => `<figure class="fig ${tactile ? 'tactile' : ''}"><figcaption>${esc(f.titre)}</figcaption>${tactile ? figureInteractive(q, f.svg, S.questPick) : q.type === 'filature' ? habillerFilature(f.svg) : f.svg}</figure>`;
   // Photos à comparer : côte à côte pour les voir sur le même écran (sauf pendant la mémorisation, une seule à la fois).
   const cote = q.type === 'photos' && q.figures.length === 2 && (!q.memo || fini);
   const cls = cote ? 'figs cote' : 'figs';
@@ -451,7 +451,7 @@ function feuilleV2(o) {
   const ref = `PV ${esc((mz && mz.code) || '0000')}/${String(st.turn || 1).padStart(3, '0')} · ${num}`;
   const niveau = q.difficulte >= 6 ? 'Hardcore' : `Niveau ${q.difficulte}/5`;
   const essai = fini ? 'terminée' : train ? 'correction immédiate' : '1 essai';
-  const menu = `<details class="fe-menu"><summary class="fe-ico" aria-label="Outils de l’énigme">⋯</summary><div class="fe-menu-l">
+  const menu = `<details class="fe-menu"><summary class="fe-ico fe-ico-txt" aria-label="Aide et options de l’énigme : coup de pouce, changer d’énigme, règles"><span aria-hidden="true">💡</span>Aide &amp; options<span class="fe-ico-v" aria-hidden="true">▾</span></summary><div class="fe-menu-l">
       ${peutChanger ? `<button type="button" data-action="quest-reroll">${icon('refresh', 15)}<span>Changer d’énigme <small>une fois par jour</small></span></button>` : ''}
       ${altPossible && !S.altVue ? `<button type="button" data-action="alt-vue" data-v="choix">${icon('send', 15)}<span>Gagner le bonus autrement <small>quiz express ou agent</small></span></button>` : ''}
       ${q.astuce && !fini ? `<details class="fe-astuce"><summary>💡<span>Un coup de pouce</span></summary><p class="small">${esc(q.astuce)}</p></details>` : ''}

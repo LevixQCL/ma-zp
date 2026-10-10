@@ -190,7 +190,7 @@ export function temoignagesHtml(q, { marques = false } = {}) {
 
 /** Met en évidence la place ou le lieu choisi, et redessine le tracé de la filature. */
 export function figureInteractive(q, svg, picked) {
-  let s = svg;
+  let s = q.type === 'filature' ? habillerFilature(svg) : svg;
   if (picked) s = s.replace(`data-v="${picked}"`, `data-v="${picked}" data-sel="1"`);
   if (q.type === 'filature') {
     const m = s.match(/data-depart="([\d.]+),([\d.]+)"/);
@@ -432,4 +432,89 @@ export function installerEnigmes() {
   };
   document.addEventListener('pointerup', fin);
   document.addEventListener('pointercancel', fin);
+}
+
+/**
+ * Plan de filature « carte papier » : relit le plan généré (carrefours, lieux, point de départ) et le redessine
+ * comme un plan de quartier griffonné, épinglé au dossier. Purement visuel : mêmes cercles cliquables
+ * (.fi-x, .fi-lieu avec cx/cy et data-v), même tracé (.fi-trace) et même data-depart.
+ */
+export function habillerFilature(svg) {
+  if (!svg || svg.includes('fi-papier')) return svg;
+  const vb = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/), dep = svg.match(/data-depart="([\d.,]+)"/);
+  const mk = svg.match(/<g transform="translate\(([\d.]+) ([\d.]+)\) rotate\((\d+)\)"><circle r="9" fill="(#[0-9A-Fa-f]+)"/);
+  if (!vb || !dep || !mk) return svg;
+  const W = Number(vb[1]);
+  const xs = [...svg.matchAll(/<circle class="fi-x" cx="([\d.]+)" cy="([\d.]+)"/g)].map((m) => [Number(m[1]), Number(m[2])]);
+  const lieux = [...svg.matchAll(/<circle class="fi-lieu" data-action="quest-pick" data-v="([^"]+)" cx="([\d.]+)" cy="([\d.]+)"[^>]*\/><text[^>]*>([^<]*)<\/text>/g)].map((m) => ({ v: m[1], x: Number(m[2]), y: Number(m[3]), nom: m[4] }));
+  const col = [...new Set(xs.map((p) => p[0]))].sort((a, b) => a - b);
+  if (col.length < 2 || !lieux.length) return svg;
+  const pas = col[1] - col[0], g0 = col[0], g1 = col[col.length - 1];
+  const P = 16, X0 = -P, L = W + 2 * P; // marge de papier autour du plan
+  // Pseudo-hasard stable (même dessin à chaque affichage).
+  let h = 0; for (const c of lieux.map((l) => l.v).join('')) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const rnd = () => { h = (h * 1664525 + 1013904223) >>> 0; return h / 4294967296; };
+  const f = (v) => Math.round(v * 10) / 10;
+  const ink = '#4A3B2A', rue = 7; // demi-largeur de rue
+  // Îlots : entre les rues, y compris ceux coupés par le bord du papier.
+  const bords = [X0 + 2, ...col, X0 + L - 2];
+  let ilots = '';
+  for (let i = 0; i < bords.length - 1; i++) for (let j = 0; j < bords.length - 1; j++) {
+    const ax = bords[i] + (i ? rue : 0), bx = bords[i + 1] - (i < bords.length - 2 ? rue : 0);
+    const ay = bords[j] + (j ? rue : 0), by = bords[j + 1] - (j < bords.length - 2 ? rue : 0);
+    const w = bx - ax, hh = by - ay; if (w < 4 || hh < 4) continue;
+    const r = rnd();
+    if (r < 0.09 && w > 18 && hh > 18) { // square
+      ilots += `<rect x="${f(ax)}" y="${f(ay)}" width="${f(w)}" height="${f(hh)}" rx="2" fill="#D9DDBA" stroke="${ink}" stroke-width=".5" stroke-opacity=".55"/>`;
+      for (let t = 0; t < 4; t++) ilots += `<circle cx="${f(ax + 5 + rnd() * (w - 10))}" cy="${f(ay + 5 + rnd() * (hh - 10))}" r="${f(2.2 + rnd() * 1.6)}" fill="#B9C394" stroke="${ink}" stroke-width=".4" stroke-opacity=".6"/>`;
+      continue;
+    }
+    ilots += `<rect x="${f(ax)}" y="${f(ay)}" width="${f(w)}" height="${f(hh)}" rx="1.5" fill="#DFCDA6" stroke="${ink}" stroke-width=".7" stroke-opacity=".75"/>`;
+    if (r < 0.3) ilots += `<rect x="${f(ax + 1.5)}" y="${f(ay + 1.5)}" width="${f(w - 3)}" height="${f(hh - 3)}" fill="url(#fiHach)" opacity=".45"/>`;
+    // Bâtiments esquissés le long des façades.
+    const n = 1 + Math.floor(rnd() * 2);
+    for (let k = 0; k < n; k++) {
+      const bw = Math.min(w - 4, 5 + rnd() * (w / 2.4)), bh = Math.min(hh - 4, 5 + rnd() * (hh / 2.4));
+      const bxx = ax + 2 + rnd() * Math.max(0, w - bw - 4), byy = ay + 2 + rnd() * Math.max(0, hh - bh - 4);
+      ilots += `<rect x="${f(bxx)}" y="${f(byy)}" width="${f(bw)}" height="${f(bh)}" fill="none" stroke="${ink}" stroke-width=".45" stroke-opacity=".38"/>`;
+    }
+  }
+  // Bords des rues (double trait d'encre) et carrefours.
+  let rues = '';
+  for (const c of col) rues += `<path d="M${f(c - rue)} ${X0}V${X0 + L}M${f(c + rue)} ${X0}V${X0 + L}M${X0} ${f(c - rue)}H${X0 + L}M${X0} ${f(c + rue)}H${X0 + L}" stroke="${ink}" stroke-width=".5" stroke-opacity=".35" fill="none"/>`;
+  const carrefours = xs.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.3" fill="${ink}" opacity=".35"/>`).join('');
+  // Lieux : punaises orange et noms à la main.
+  const nomsL = lieux.map((l) => `<text x="${l.x}" y="${f(l.y - 9.5)}" text-anchor="middle" class="fi-nom">${l.nom}</text>`).join('');
+  const punaises = lieux.map((l) => `<ellipse cx="${f(l.x + 1.6)}" cy="${f(l.y + 2.4)}" rx="5.4" ry="3.6" fill="#2A1E10" opacity=".28"/><circle class="fi-lieu" data-action="quest-pick" data-v="${l.v}" cx="${l.x}" cy="${l.y}" r="5.6"/><circle cx="${f(l.x - 1.7)}" cy="${f(l.y - 1.8)}" r="1.5" fill="#fff" opacity=".7" pointer-events="none"/>`).join('');
+  // Point de départ (café, bleu) ou d'interpellation (rouge) : triangle orienté vers où il regarde.
+  const [mx, my, ang, coul] = [Number(mk[1]), Number(mk[2]), Number(mk[3]), mk[4].toUpperCase()];
+  const rouge = coul !== '#63B0FF';
+  const fond = rouge ? '#B3261E' : '#2D5E9E';
+  const ico = rouge
+    ? '<path d="M-2.4 -2.4L2.4 2.4M2.4 -2.4L-2.4 2.4" stroke="#FFF6E6" stroke-width="1.4" stroke-linecap="round"/>'
+    : '<path d="M-2.6 -1.4h4.2v2.1a2.1 2.1 0 0 1-2.1 2.1a2.1 2.1 0 0 1-2.1-2.1z" fill="#FFF6E6"/><path d="M1.6 -.6h.6a1 1 0 0 1 0 2h-.6" fill="none" stroke="#FFF6E6" stroke-width=".7"/><path d="M-1.6 -2.6q.5 -.7 0 -1.4M.1 -2.6q.5 -.7 0 -1.4" fill="none" stroke="#FFF6E6" stroke-width=".55" stroke-linecap="round"/>';
+  const depart = `<g transform="translate(${mx} ${my}) scale(1.25)" pointer-events="none"><ellipse cx="1.5" cy="3" rx="9" ry="5" fill="#2A1E10" opacity=".25"/>
+    <g transform="rotate(${ang})"><path d="M0 -12.5L10 6.5Q10.5 8.5 8.5 8.5H-8.5Q-10.5 8.5 -10 6.5Z" fill="${fond}" stroke="#F6EEDA" stroke-width="1.6" stroke-linejoin="round"/></g>
+    <g transform="translate(0 1)">${ico}</g></g>`;
+  // Boussole (coin haut droit, dans la marge).
+  const bx2 = X0 + L - 13, by2 = X0 + 15;
+  const rose = `<g transform="translate(${f(bx2)} ${f(by2)})" pointer-events="none" opacity=".85"><circle r="7.5" fill="none" stroke="${ink}" stroke-width=".5"/><path d="M0 -9L1.8 -1.8L9 0L1.8 1.8L0 9L-1.8 1.8L-9 0L-1.8 -1.8Z" fill="#EFE4C8" stroke="${ink}" stroke-width=".55"/><path d="M0 -9L1.8 -1.8L0 0L-1.8 -1.8Z" fill="${ink}"/><text x="-13" y="-4" text-anchor="middle" class="fi-nom" style="font-size:11px">N</text><path d="M-13 -1.5v-12M-15 -11l2 -3l2 3" fill="none" stroke="${ink}" stroke-width=".8" stroke-linecap="round" transform="translate(0 3)"/></g>`;
+  // Taches de café, pli, trombone.
+  const taches = `<circle cx="${f(X0 + L * 0.78)}" cy="${f(X0 + L * 0.82)}" r="16" fill="none" stroke="#9A6A32" stroke-width="2.2" opacity=".14"/><circle cx="${f(X0 + L * 0.2)}" cy="${f(X0 + L * 0.3)}" r="26" fill="url(#fiTache)"/><circle cx="${f(X0 + L * 0.66)}" cy="${f(X0 + L * 0.12)}" r="18" fill="url(#fiTache)"/>
+    <path d="M${f(X0 + L * 0.44)} ${X0}V${X0 + L}" stroke="#7A5F3D" stroke-width=".7" opacity=".12"/>`;
+  const trombone = `<path transform="translate(${f(X0 + 12)} ${f(X0 + 1)}) rotate(-12)" d="M2 18V4a3 3 0 0 1 6 0v17a4.5 4.5 0 0 1-9 0V7" fill="none" stroke="#8C9198" stroke-width="1.4" stroke-linecap="round" pointer-events="none"/>`;
+  const defs = `<defs>
+    <radialGradient id="fiPapier" cx="50%" cy="45%" r="75%"><stop offset="0" stop-color="#FAF4E4"/><stop offset=".75" stop-color="#F3EAD3"/><stop offset="1" stop-color="#E2D0A8"/></radialGradient>
+    <radialGradient id="fiTache"><stop offset="0" stop-color="#B98A4E" stop-opacity="0"/><stop offset=".8" stop-color="#B98A4E" stop-opacity=".07"/><stop offset="1" stop-color="#B98A4E" stop-opacity="0"/></radialGradient>
+    <radialGradient id="fiPinO" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#FFD08A"/><stop offset=".45" stop-color="#F29A2E"/><stop offset="1" stop-color="#B85A12"/></radialGradient>
+    <radialGradient id="fiPinR" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#FF9C8C"/><stop offset=".45" stop-color="#D9362B"/><stop offset="1" stop-color="#8E1810"/></radialGradient>
+    <pattern id="fiHach" width="3.2" height="3.2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 0V3.2" stroke="${ink}" stroke-width=".35" stroke-opacity=".5"/></pattern>
+    <filter id="fiCrayon" x="-2%" y="-2%" width="104%" height="104%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="1" seed="4"/><feDisplacementMap in="SourceGraphic" scale="1.1"/></filter>
+  </defs>`;
+  return `<svg class="fi-plan fi-papier" viewBox="${X0} ${X0} ${L} ${L}" width="100%" role="img" aria-label="Plan du quartier" data-depart="${dep[1]}">${defs}
+    <rect x="${X0}" y="${X0}" width="${L}" height="${L}" fill="url(#fiPapier)"/>
+    <g filter="url(#fiCrayon)">${ilots}${rues}</g>${taches}${carrefours}
+    <polyline class="fi-trace" points="" fill="none"/>
+    ${xs.map(([x, y]) => `<circle class="fi-x" cx="${x}" cy="${y}" r="15"/>`).join('')}
+    ${nomsL}${punaises}${depart}${rose}${trombone}</svg>`;
 }

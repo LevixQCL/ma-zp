@@ -1016,6 +1016,13 @@ body.mj-ouvert { overflow: hidden; }
 .fi-trace { stroke: #63B0FF; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1 7; pointer-events: none; }
 .fi-lieu { cursor: pointer; }
 .fi-lieu[data-sel] { stroke: #fff; stroke-width: 3; r: 9; }
+/* Filature : plan papier */
+.fi-plan.fi-papier { max-width: 560px; margin: 0 auto; border-radius: 3px; box-shadow: 0 1px 0 rgba(60, 40, 15, .25), 0 10px 22px -10px rgba(40, 25, 5, .55); overflow: visible; }
+.fi-papier .fi-nom { font: 700 12.5px Caveat, 'Segoe Print', cursive; fill: #2B2015; paint-order: stroke; stroke: #F1E7CF; stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
+.fi-papier .fi-lieu { fill: url(#fiPinO); stroke: #5A2E08; stroke-width: .7; }
+.fi-papier .fi-lieu[data-sel] { fill: url(#fiPinR); stroke: #4E0C06; stroke-width: .9; r: 7; }
+.fi-papier .fi-trace { stroke: #B3261E; stroke-width: 2.6; stroke-dasharray: 5 3.5; opacity: .9; }
+.fi-papier .fi-x:hover { fill: rgba(179, 38, 30, .1); }
 .fi-outils { gap: 6px; align-items: center; }
 .fi-outils .btn { min-height: 38px; }
 
@@ -2390,6 +2397,10 @@ body:has(.savebar) main.rv { padding-bottom: 220px; }
 .fe-menu > summary::-webkit-details-marker { display: none; }
 .fe-ico { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; border: 1px solid var(--line); background: rgba(29, 26, 21, .04); color: var(--text2); font-weight: 800; cursor: pointer; }
 .fe-menu[open] > .fe-ico { background: var(--surface3); }
+.fe-ico.fe-ico-txt { width: auto; height: 36px; padding: 0 11px; gap: 6px; display: inline-flex; align-items: center; font: 700 13px var(--body); color: var(--ink, var(--text)); white-space: nowrap; border-color: color-mix(in srgb, var(--ink, #1D1A15) 22%, transparent); background: rgba(255, 249, 235, .7); box-shadow: 0 1px 0 rgba(29, 26, 21, .08); }
+.fe-ico-txt .fe-ico-v { font-size: 10px; opacity: .6; transition: transform .15s; }
+.fe-menu[open] .fe-ico-v { transform: rotate(180deg); }
+@media (max-width: 360px) { .fe-ico.fe-ico-txt { padding: 0 9px; font-size: 12px; } }
 .fe-menu-l { position: absolute; right: 0; top: 42px; z-index: 5; width: 250px; display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 14px; background: #141B33; border: 1px solid #29345A; box-shadow: 0 16px 34px -10px rgba(0, 0, 0, .8); color: #EDF0FA; }
 .fe-menu-l > button, .fe-menu-l > a, .fe-astuce > summary { display: flex; gap: 10px; align-items: flex-start; padding: 9px 10px; border-radius: 10px; border: 0; background: none; color: #EDF0FA; font: 600 14px var(--body); text-align: left; text-decoration: none; cursor: pointer; }
 .fe-menu-l > button:hover, .fe-menu-l > a:hover, .fe-astuce > summary:hover { background: #1C2442; }
