@@ -17,7 +17,7 @@ import { coutCarrosserie } from '../engine/sinistres.js';
 import { formatCountdown, formatDateBe } from '../engine/time.js';
 import { QUEST_LABELS } from '../quests/quests.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
-import { estimations, besoinService } from './ordres.js';
+import { estimations, besoinService, ouvertureOrdres } from './ordres.js';
 import { vagueTodo, vagueEnvoyeeAlerte } from './vagues.js';
 import { releveTodos, releveHtml } from './releve.js';
 import { bilanTodo, bilanHtml } from './bilan.js';
@@ -395,7 +395,7 @@ function alertesDe(st, z, T) {
   const cab = (z.cabosses || []).length;
   if (cab) {
     const choix = cabossesChoisis(z, S.draft && S.draft.depenses && S.draft.depenses.carrosserie), prevu = choix.length;
-    alertes.push({ cls: prevu ? 'blue' : 'red', titre: `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''}`, texte: prevu ? `${prevu < cab ? `${prevu} sur ${cab} ` : ''}en carrosserie ce soir (${fmtK(coutCarrosserie(z, choix))})` : `carrosserie dans tes dépenses (${fmtK(coutCarrosserie(z))}), sinon ton image en prend un coup chaque tour`, href: '#ordres' });
+    alertes.push({ cls: prevu ? 'blue' : 'red', titre: `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''}`, texte: prevu ? `${prevu < cab ? `${prevu} sur ${cab} ` : ''}en carrosserie ce soir (${fmtK(coutCarrosserie(z, choix))})` : `carrosserie dans tes dépenses (${fmtK(coutCarrosserie(z))}), sinon ton image en prend un coup chaque tour`, href: ouvertureOrdres(z).depenses ? '#ordres-depenses' : '#ordres' });
   }
   if (z.primeAChoisir) {
     const ch = S.draft && S.draft.prime, lab = ch && PRIME_LABELS[String(ch).split(':')[0]];
@@ -405,7 +405,7 @@ function alertesDe(st, z, T) {
   for (const x of z.indemnites || []) alertes.push({ cls: 'blue', titre: `Assurance : +${fmtK(x.montant)} attendus`, texte: `remboursement du véhicule sinistré, ${x.tour - T <= 0 ? 'ce soir' : `dans ${x.tour - T} tour${x.tour - T > 1 ? 's' : ''}`}`, href: '#ordres' });
   { const ds = z.dossiers || [], retard = ds.filter((d) => d.age > 6).length, vieux = ds.filter((d) => d.age >= 5).length;
     if (vieux) alertes.push({ cls: retard ? 'red' : 'amber', titre: retard ? `${retard} dossier${retard > 1 ? 's' : ''} en retard` : `${vieux} dossier${vieux > 1 ? 's' : ''} de 5 jours ou plus`, texte: retard ? '−0,4 de satisfaction chacun par jour : renforce la Recherche' : 'renforce la Recherche avant qu’ils coûtent de la satisfaction', href: '#ordres' }); }
-  if (z.paperasse > 14) alertes.push({ cls: 'red', titre: `Paperasse : ${Math.round(z.paperasse)} dossiers en attente`, texte: '−2 de moral chaque soir tant qu’elle dépasse 14, et l’Inspection au-delà de 20 · renforce l’Accueil ou paie la sous-traitance (−5 dossiers, 3 000 €)', href: '#ordres' });
+  if (z.paperasse > 14) alertes.push({ cls: 'red', titre: `Paperasse : ${Math.round(z.paperasse)} dossiers en attente`, texte: '−2 de moral chaque soir tant qu’elle dépasse 14, et l’Inspection au-delà de 20 · renforce l’Accueil ou paie la sous-traitance (−5 dossiers, 3 000 €)', href: ouvertureOrdres(z).depenses ? '#ordres-depenses' : '#ordres' });
   if (z.budget < 0) alertes.push({ cls: 'red', titre: 'Budget dans le rouge', texte: 'deux tours de suite et c’est l’Inspection', href: '#ordres' });
   { const dg = S.draft ? secteursEnDanger() : []; if (dg.length) alertes.unshift({ cls: 'red', titre: `Zone de non-droit : ${dg.map((k) => esc(nomSecteur(k))).join(', ')} menacé${dg.length > 1 ? 's' : ''}`, texte: 'le milieu remonte : mets 2 ou 3 agents de garde ce soir', href: '#terrain' }); }
   if (st.nonDroit && S.draft && !agentsND()) { const sc = Object.values(st.nonDroit.secteurs); const hier = sc.reduce((n, x) => n + ((x.hier || []).length ? 1 : 0), 0); const rep = sc.filter((x) => x.statut === 'repris').length; alertes.push({ cls: 'blue', titre: `Zone de non-droit : ${rep} secteur${rep > 1 ? 's' : ''} repris sur ${sc.length}`, texte: hier ? `des zones y étaient hier sur ${hier} secteur${hier > 1 ? 's' : ''} : rejoins-les, à plusieurs ça tombe plus vite` : 'personne n’y était hier : lance le mouvement sur la radio', href: '#terrain' }); }

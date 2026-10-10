@@ -91,7 +91,8 @@ function route() {
   // Saison 2 : le Terrain est un calque de la Carte.
   if (h === 'terrain' && S.state && reglesV2(S.state) && S.draft) { S.carteCalque = calqueTerrain(); history.replaceState(null, '', '#carte'); return 'carte'; }
   // Lien vers un bloc des ordres (ex. #ordres-decision) : on ouvre ce bloc.
-  if (h.startsWith('ordres-')) { S.ordOpen = { ...(S.ordOpen || {}), [h.slice(7)]: true }; S.ordAncre = h.slice(7); return 'ordres'; }
+  // Saison 2 : une seule tuile ouverte à la fois, sinon une autre déjà ouverte masquerait celle demandée.
+  if (h.startsWith('ordres-')) { S.ordOpen = reglesV2(S.state) ? { [h.slice(7)]: true } : { ...(S.ordOpen || {}), [h.slice(7)]: true }; S.ordAncre = h.slice(7); return 'ordres'; }
   return ROUTES.includes(h) ? h : 'hp';
 }
 
@@ -199,7 +200,7 @@ function render() {
   // Événement d'actualité (une fois par appareil) avant la note de nouveautés.
   if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin() && !actuAuBesoin(lancerActu) && !promotionAuBesoin() && !lucAuBesoin(lancerLuc)) nouveautesAuBesoin();
   if (S.route === 'ordres' && S.ordAncre) {
-    const cible = document.querySelector(`[data-action="ord-open"][data-k="${S.ordAncre}"]`);
+    const cible = document.getElementById(`ord-${S.ordAncre}`) || document.querySelector(`[data-action="ord-open"][data-k="${S.ordAncre}"]`);
     S.ordAncre = null;
     if (cible) { cible.scrollIntoView({ block: 'start' }); S.keepScroll = false; }
   }
