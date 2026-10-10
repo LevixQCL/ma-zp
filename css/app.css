@@ -1768,7 +1768,10 @@ details.formule[open] > summary { margin-bottom: 4px; }
   nav.tabs a.centre .rond { margin-top: 0; width: 52px; height: 52px; }
   nav.tabs a.centre .dot { top: 2px; right: 6px; }
   nav.tabs .dot { right: 14px; }
-  .savebar { bottom: 20px; margin-left: 54px; }
+  /* La barre de validation suit le contenu (juste sous l'écran) au lieu de rester collée au bas d'un grand écran ;
+     sur un écran long, elle reste accrochée en bas de la fenêtre pendant le défilement. */
+  body:has(.savebar) main.screen { flex: none; padding-bottom: 20px; }
+  .savebar { position: sticky; left: auto; transform: none; bottom: 20px; margin: 4px auto 28px; width: calc(100% - 56px); max-width: 600px; }
   .inst-barre { bottom: 20px; margin-left: 54px; }
 }
 /* Tuiles Agents / Budget / Véhicules : le texte se replie au lieu de déborder sur petit écran */
