@@ -200,6 +200,7 @@ const hexRgb = (hx) => [1, 3, 5].map((k) => Math.round(parseInt(hx.slice(k, k + 
 const PHOTO_DEFS = `<defs>
   ${COULEURS_AUTO.map(([, hx], k) => { const [r, g, b] = hexRgb(hx); return `<filter id="phT${k}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${r} 0 0 0 0  ${g} 0 0 0 0  ${b} 0 0 0 0  0 0 0 1 0"/></filter>`; }).join('')}
   <filter id="phFlou" x="-30%" y="-20%" width="160%" height="140%"><feGaussianBlur stdDeviation="1.6"/></filter>
+  <radialGradient id="phLampe" cx="30%" cy="18%" r="85%"><stop offset="0" stop-color="#FFD9A0" stop-opacity=".16"/><stop offset=".55" stop-color="#FFD9A0" stop-opacity=".04"/><stop offset="1" stop-color="#FFD9A0" stop-opacity="0"/></radialGradient>
   <radialGradient id="phVignette" cx="50%" cy="50%" r="72%"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient>
 </defs>`;
 
@@ -216,13 +217,15 @@ function photoSvg(places, cols, miroir, heure, nuit) {
     const r = Math.floor(i / cols), c0 = i % cols, c = miroir ? cols - 1 - c0 : c0;
     const rr = miroir ? rows - 1 - r : r;
     const x = 10 + c * cw + cw / 2, y = 10 + rr * rh + rh / 2;
-    lignes += `<rect x="${x - cw / 2 + 1}" y="${y - rh / 2 + 2}" width="${cw - 2}" height="${rh - 6}" fill="none" stroke="#EDEFE8" stroke-opacity=".78" stroke-width="1.5"/>`;
+    lignes += `<rect x="${x - cw / 2 + 1}" y="${y - rh / 2 + 2}" width="${cw - 2}" height="${rh - 6}" fill="none" stroke="#F1EFE4" stroke-opacity=".9" stroke-width="1.7"/>`;
     // Numéros peints au sol : toujours lisibles, même de nuit.
     num += `<text x="${x}" y="${y + rh / 2 - 6}" text-anchor="middle" font-family="Barlow Condensed,IBM Plex Mono,sans-serif" font-size="11" font-weight="700" fill="#EDEFE8" fill-opacity=".88" letter-spacing=".3">P${i + 1}</text>`;
     autos += dessinerAuto(x, y - 7, places[i], miroir);
     hits += `<rect class="ph-hit" data-action="quest-pick" data-v="P${i + 1}" x="${x - cw / 2 + 1}" y="${y - rh / 2 + 2}" width="${cw - 2}" height="${rh - 6}" rx="3"/>`;
   }
-  s += lignes + autos;
+  // Lignes peintes, patinées par le sol repassé par-dessus (sans effet sur l'asphalte nu), puis lumière de lampadaire.
+  s += lignes + `<rect width="${W}" height="${H}" fill="url(#phSol${miroir ? 'M' : ''})" opacity=".3"/>`
+    + `<rect width="${W}" height="${H}" fill="url(#phLampe)"/>` + autos;
   // De nuit : éclairage orangé des lampadaires, les teintes se ressemblent davantage.
   if (nuit) s += `<rect width="${W}" height="${H}" fill="#0B1426" fill-opacity=".42"/><rect width="${W}" height="${H}" fill="#F2A33A" fill-opacity=".10"/>`;
   s += `<rect width="${W}" height="${H}" fill="url(#phVignette)" pointer-events="none"/>`;
