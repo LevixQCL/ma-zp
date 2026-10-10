@@ -139,7 +139,10 @@ function dessiner(st, me, seed, vue, reduit) {
     const tour = c.poly.map(([x, y]) => P(x, y, 0.3));
     const d = `M${tour.map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}Z`;
     const perim = tour.reduce((s, p, k) => s + Math.hypot(p[0] - tour[(k + 1) % tour.length][0], p[1] - tour[(k + 1) % tour.length][1]), 0);
-    const mvt = (dur, deb, sens) => reduit ? '' : `<animateMotion dur="${f(dur)}s" begin="${f(deb)}s" repeatCount="indefinite" rotate="auto" keyPoints="${sens ? '0;1' : '1;0'}" keyTimes="0;1" calcMode="linear" path="${d}"/>`;
+    // Sens inverse : on parcourt le tracé à l'envers plutôt que keyPoints="1;0" (avec rotate="auto",
+    // l'orientation suit le tracé d'origine → la voiture reculait, phares à l'arrière).
+    const dInv = `M${tour.slice().reverse().map(([x, y]) => `${f(x)} ${f(y)}`).join('L')}Z`;
+    const mvt = (dur, deb, sens) => reduit ? '' : `<animateMotion dur="${f(dur)}s" begin="${f(deb)}s" repeatCount="indefinite" rotate="auto" calcMode="linear" path="${sens ? d : dInv}"/>`;
     if (mien) {
       const nbP = patrouilles[i] || 0, dur = perim / 9;
       for (let k = 0; k < 3; k++) voitures.push(`<g class="pv" data-q="${i}" data-k="${k}" ${k < nbP ? '' : 'visibility="hidden"'}${reduit ? ` transform="translate(${f(tour[k][0])} ${f(tour[k][1])})"` : ''}><rect x="-2.6" y="-1.3" width="5.2" height="2.6" rx=".8" fill="#E9EEF8"/><rect x="-.6" y="-1.3" width="1.6" height="2.6" fill="#1F4FA8"/><circle r="5" fill="#63B0FF" opacity=".28"><animate attributeName="fill" values="#63B0FF;#FF4E4E;#63B0FF" dur=".5s" repeatCount="indefinite"/></circle><rect x="-.3" y="-.9" width=".9" height="1.8" rx=".3" fill="#63B0FF"><animate attributeName="fill" values="#63B0FF;#FF4E4E;#63B0FF" dur=".5s" repeatCount="indefinite"/></rect><path d="M2.4 -1L9 -3.2V3.2L2.4 1Z" fill="#FFE9B0" opacity=".28"/>${mvt(dur, -(dur * k) / 3, k % 2 === 0)}</g>`);
