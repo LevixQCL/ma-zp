@@ -202,7 +202,7 @@ export function figureInteractive(q, svg, picked) {
 
 export function filatureOutils(q) {
   const n = (((S.trace || {})[q.id]) || []).length;
-  return `<div class="row fi-outils" data-q="${esc(q.id)}"><span class="tiny muted grow">${q.forme === 'rebours' ? 'Touche les carrefours pour remonter son chemin depuis le point rouge, puis touche le lieu de départ.' : 'Touche les carrefours pour tracer son chemin, puis touche le lieu d’arrivée.'}</span>
+  return `<div class="row fi-outils" data-q="${esc(q.id)}"><span class="tiny muted grow">${q.forme === 'rebours' ? 'Touche les carrefours pour remonter son chemin depuis le point rouge, puis touche le lieu de départ. Un lieu sur le chemin se touche comme un carrefour : la réponse est le dernier lieu touché.' : 'Touche les carrefours pour tracer son chemin, puis touche le lieu d’arrivée. Un lieu sur le chemin se touche comme un carrefour : la réponse est le dernier lieu touché.'}</span>
     <button type="button" class="btn small" data-fi="annuler" ${n ? '' : 'disabled'}>Annuler</button><button type="button" class="btn small" data-fi="effacer" ${n ? '' : 'disabled'}>Effacer</button></div>`;
 }
 
@@ -360,8 +360,9 @@ export function installerEnigmes() {
       if (fi.dataset.fi === 'annuler') tr.pop(); else tr.length = 0;
       S.trace = { ...(S.trace || {}), [q.id]: tr }; rerender(); return;
     }
-    const x = t.closest('.fi-x');
-    if (x) {
+    // Un lieu est aussi un carrefour : le toucher prolonge le tracé (et le propose comme réponse, à valider).
+    const x = t.closest('.fi-x, .fi-lieu');
+    if (x && x.closest('.fi-plan')) {
       const q = questCourante(); const tr = ((S.trace || {})[q.id] || []).slice();
       const p = `${x.getAttribute('cx')},${x.getAttribute('cy')}`;
       if (tr[tr.length - 1] !== p) tr.push(p);
