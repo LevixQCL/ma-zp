@@ -1008,6 +1008,12 @@ body.mj-ouvert { overflow: hidden; }
 
 /* Photos et plan : on touche directement l'image */
 .fig.tactile svg { cursor: pointer; }
+/* Les deux photos : tirages de caméra pincés au dossier */
+.fig:has(.ph-photo) { position: relative; padding-top: 6px; }
+.fig:has(.ph-photo) figcaption { align-self: flex-start; padding: 3px 10px 4px; border-radius: 7px 7px 0 0; background: #E4D5B2; color: #3A2C18; font: 700 12px var(--body); box-shadow: inset 0 -1px 0 rgba(58, 44, 24, .15); }
+.fig .ph-photo { border: 5px solid #F7F4EC; border-bottom-width: 9px; border-radius: 2px; box-shadow: 0 1px 0 rgba(0, 0, 0, .15), 0 10px 20px -8px rgba(30, 20, 5, .6); box-sizing: border-box; }
+.fig:has(.ph-photo)::after { content: ''; position: absolute; top: 18px; left: 78%; width: 26px; height: 15px; margin-left: -13px; border-radius: 3px 3px 2px 2px; background: linear-gradient(#3A3D42, #16181B); box-shadow: 0 2px 3px rgba(0, 0, 0, .4); pointer-events: none; }
+.fig:has(.ph-photo)::before { content: ''; position: absolute; top: 4px; left: 78%; width: 16px; height: 18px; margin-left: -8px; border: 2px solid #9AA0A7; border-bottom: 0; border-radius: 8px 8px 0 0; pointer-events: none; z-index: 1; }
 .ph-hit { fill: transparent; stroke: transparent; stroke-width: 2.5; cursor: pointer; }
 .ph-hit:hover { fill: rgba(255, 178, 63, .12); }
 .ph-hit[data-sel] { fill: rgba(255, 178, 63, .2); stroke: #FFB23F; }

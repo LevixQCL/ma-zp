@@ -174,42 +174,78 @@ const COULEURS_AUTO = [
 const PROCHE = (c) => (c + 7) % 14;
 const TYPES_AUTO = { citadine: { w: 20, h: 34 }, berline: { w: 22, h: 42 }, suv: { w: 26, h: 44 }, camionnette: { w: 26, h: 52 } };
 
-/** `a.sens` : 0 = capot vers le haut de l'image, 1 = vers le bas. */
+/** `a.sens` : 0 = capot vers le haut de l'image, 1 = vers le bas. Vue du dessus, façon photo de caméra. */
 function dessinerAuto(x, y, a, retourne) {
   if (!a) return '';
   const t = TYPES_AUTO[a.type];
   const c = COULEURS_AUTO[a.col][1];
-  const ox = x - t.w / 2, oy = y - t.h / 2;
+  const w = t.w, h = t.h, hw = w / 2, hh = h / 2;
   const bas = (a.sens ? 1 : 0) ^ (retourne ? 1 : 0);
-  const toit = a.type === 'camionnette'
-    ? `<rect x="${ox + 3}" y="${oy + 14}" width="${t.w - 6}" height="${t.h - 18}" rx="2" fill="#000" fill-opacity=".12"/>`
-    : `<rect x="${ox + 3}" y="${oy + t.h * 0.38}" width="${t.w - 6}" height="${t.h * 0.34}" rx="3" fill="#000" fill-opacity=".14"/>`;
-  // Lunette arrière (petite) : permet de voir dans quel sens la voiture est garée.
-  const lunette = a.type === 'camionnette' ? '' : `<rect x="${ox + 5}" y="${oy + t.h * 0.8}" width="${t.w - 10}" height="${t.h * 0.1}" rx="1.5" fill="#1B2A3A" fill-opacity=".85"/>`;
-  return `<g${bas ? ` transform="rotate(180 ${x} ${y})"` : ''}><rect x="${ox}" y="${oy}" width="${t.w}" height="${t.h}" rx="${a.type === 'camionnette' ? 3 : 6}" fill="${c}" stroke="#0C1124" stroke-width="1.2"/>
-    <rect x="${ox + 3}" y="${oy + 5}" width="${t.w - 6}" height="${a.type === 'camionnette' ? 7 : t.h * 0.2}" rx="2" fill="#1B2A3A"/>${toit}${lunette}
-    ${a.barres ? `<path d="M${ox + 4} ${oy + t.h * 0.42}h${t.w - 8}M${ox + 4} ${oy + t.h * 0.6}h${t.w - 8}" stroke="#0C1124" stroke-width="1.4"/>` : ''}</g>`;
+  const van = a.type === 'camionnette';
+  const r = van ? 3.5 : a.type === 'citadine' ? 7 : 6.5;
+  // Carrosserie : ombre portée, teinte, modelé (bords plus sombres, arête centrale claire).
+  let g = `<rect x="${-hw + 1.6}" y="${-hh + 2.4}" width="${w}" height="${h}" rx="${r}" fill="#000" opacity=".38"/>`
+    + `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="${r}" fill="${c}"/>`
+    + `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="${r}" fill="url(#phModele)"/>`;
+  // Rétroviseurs.
+  const ry = van ? -hh + 9 : -hh + h * 0.3;
+  g += `<rect x="${-hw - 2.6}" y="${ry}" width="3.2" height="2.4" rx="1" fill="${c}" stroke="#000" stroke-opacity=".35" stroke-width=".5"/><rect x="${hw - .6}" y="${ry}" width="3.2" height="2.4" rx="1" fill="${c}" stroke="#000" stroke-opacity=".35" stroke-width=".5"/>`;
+  // Phares (avant, en haut) et feux (arrière) : le sens de la voiture se lit tout de suite.
+  g += `<rect x="${-hw + 2}" y="${-hh + .6}" width="${w * 0.24}" height="2" rx="1" fill="#FFF4C9"/><rect x="${hw - 2 - w * 0.24}" y="${-hh + .6}" width="${w * 0.24}" height="2" rx="1" fill="#FFF4C9"/>`
+    + `<rect x="${-hw + 1.6}" y="${hh - 2.4}" width="${w * 0.22}" height="1.8" rx=".9" fill="#D2302A"/><rect x="${hw - 1.6 - w * 0.22}" y="${hh - 2.4}" width="${w * 0.22}" height="1.8" rx=".9" fill="#D2302A"/>`;
+  if (van) {
+    // Cabine (pare-brise) puis caisse avec nervures.
+    g += `<path d="M${-hw + 2.4} ${-hh + 5}Q0 ${-hh + 3} ${hw - 2.4} ${-hh + 5}L${hw - 2.8} ${-hh + 12}H${-hw + 2.8}Z" fill="url(#phVitre)"/>`
+      + `<rect x="${-hw + 2.4}" y="${-hh + 14}" width="${w - 4.8}" height="${h - 18}" rx="1.5" fill="#000" fill-opacity=".1"/>`;
+    for (let k = 1; k <= 4; k++) g += `<path d="M${-hw + 3.5} ${-hh + 14 + k * (h - 18) / 5}H${hw - 3.5}" stroke="#000" stroke-opacity=".16" stroke-width=".7"/>`;
+  } else {
+    // Pare-brise, toit, lunette arrière.
+    const pb0 = -hh + h * 0.2, pb1 = -hh + h * 0.37, lu0 = hh - h * 0.27, lu1 = hh - h * 0.14;
+    g += `<path d="M${-hw + 3.2} ${pb1}L${-hw + 4.6} ${pb0}Q0 ${pb0 - 2} ${hw - 4.6} ${pb0}L${hw - 3.2} ${pb1}Q0 ${pb1 + 1.2} ${-hw + 3.2} ${pb1}Z" fill="url(#phVitre)"/>`
+      + `<rect x="${-hw + 3.4}" y="${pb1 + 1}" width="${w - 6.8}" height="${lu0 - pb1 - 2}" rx="2.5" fill="#fff" fill-opacity=".1" stroke="#000" stroke-opacity=".18" stroke-width=".5"/>`
+      + `<path d="M${-hw + 3.6} ${lu0}Q0 ${lu0 - 1.2} ${hw - 3.6} ${lu0}L${hw - 4.8} ${lu1}Q0 ${lu1 + 1.4} ${-hw + 4.8} ${lu1}Z" fill="url(#phVitre)"/>`;
+  }
+  if (a.barres) {
+    const b0 = van ? -hh + 18 : -hh + h * 0.42, b1 = van ? hh - 8 : -hh + h * 0.62;
+    g += `<path d="M${-hw + 3.4} ${b0}H${hw - 3.4}M${-hw + 3.4} ${b1}H${hw - 3.4}" stroke="#15181C" stroke-width="2" stroke-linecap="round"/><path d="M${-hw + 3.8} ${b0 - .5}H${hw - 3.8}M${-hw + 3.8} ${b1 - .5}H${hw - 3.8}" stroke="#C9CED4" stroke-width=".6" stroke-linecap="round"/>`;
+  }
+  return `<g transform="translate(${x} ${y})${bas ? ' rotate(180)' : ''}">${g}</g>`;
 }
+
+/** Définitions communes (identiques sur les deux photos). */
+const PHOTO_DEFS = `<defs>
+  <linearGradient id="phModele" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".34"/><stop offset=".18" stop-color="#000" stop-opacity=".05"/><stop offset=".5" stop-color="#fff" stop-opacity=".2"/><stop offset=".82" stop-color="#000" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity=".34"/></linearGradient>
+  <linearGradient id="phVitre" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E5266"/><stop offset=".45" stop-color="#18222D"/><stop offset="1" stop-color="#0E141B"/></linearGradient>
+  <radialGradient id="phVignette" cx="50%" cy="50%" r="72%"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient>
+  <filter id="phGrain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .5 -.18"/></filter>
+</defs>`;
 
 function photoSvg(places, cols, miroir, heure, nuit) {
   const cw = 44, rh = 70, W = cols * cw + 20, rows = Math.ceil(places.length / cols), H = rows * rh + 30;
-  let s = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Photo du parking à ${heure}" style="display:block;border-radius:8px;background:#3B4148">`;
-  s += `<rect width="${W}" height="${H}" fill="#3B4148"/>`;
-  let num = ''; // numéros peints au sol : toujours lisibles, même de nuit
+  let s = `<svg class="ph-photo" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Photo du parking à ${heure}" style="display:block;background:#33373B">${PHOTO_DEFS}`;
+  // Asphalte : teinte, grain, légères traces d'usure dans les allées (identiques sur les deux photos, hors des places).
+  s += `<rect width="${W}" height="${H}" fill="#35393D"/><rect width="${W}" height="${H}" filter="url(#phGrain)" opacity=".55"/>`;
+  let lignes = '', num = '', autos = '';
   let hits = ''; // zones à toucher pour désigner une place
   for (let i = 0; i < places.length; i++) {
     const r = Math.floor(i / cols), c0 = i % cols, c = miroir ? cols - 1 - c0 : c0;
     const rr = miroir ? rows - 1 - r : r;
     const x = 10 + c * cw + cw / 2, y = 10 + rr * rh + rh / 2;
-    s += `<rect x="${x - cw / 2 + 1}" y="${y - rh / 2 + 2}" width="${cw - 2}" height="${rh - 6}" fill="none" stroke="#E8ECEF" stroke-opacity=".55" stroke-width="1"/>`;
-    num += `<text x="${x}" y="${y + rh / 2 - 7}" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="10.5" font-weight="600" fill="#E8ECEF" fill-opacity=".9">P${i + 1}</text>`;
-    s += dessinerAuto(x, y - 5, places[i], miroir);
+    lignes += `<rect x="${x - cw / 2 + 1}" y="${y - rh / 2 + 2}" width="${cw - 2}" height="${rh - 6}" fill="none" stroke="#EDEFE8" stroke-opacity=".78" stroke-width="1.5"/>`;
+    // Numéros peints au sol : toujours lisibles, même de nuit.
+    num += `<text x="${x}" y="${y + rh / 2 - 6}" text-anchor="middle" font-family="Barlow Condensed,IBM Plex Mono,sans-serif" font-size="11" font-weight="700" fill="#EDEFE8" fill-opacity=".88" letter-spacing=".3">P${i + 1}</text>`;
+    autos += dessinerAuto(x, y - 7, places[i], miroir);
     hits += `<rect class="ph-hit" data-action="quest-pick" data-v="P${i + 1}" x="${x - cw / 2 + 1}" y="${y - rh / 2 + 2}" width="${cw - 2}" height="${rh - 6}" rx="3"/>`;
   }
+  s += lignes + autos;
   // De nuit : éclairage orangé des lampadaires, les teintes se ressemblent davantage.
   if (nuit) s += `<rect width="${W}" height="${H}" fill="#0B1426" fill-opacity=".42"/><rect width="${W}" height="${H}" fill="#F2A33A" fill-opacity=".10"/>`;
-  s += num + hits;
-  s += `<text x="${W - 6}" y="${H - 6}" text-anchor="end" font-family="IBM Plex Mono,monospace" font-size="9" fill="#FFB23F">${heure}</text></svg>`;
+  s += `<rect width="${W}" height="${H}" fill="url(#phVignette)" pointer-events="none"/>`;
+  s += num;
+  // Incrustations de la caméra.
+  s += `<g font-family="IBM Plex Mono,monospace" font-weight="600" pointer-events="none"><circle cx="9" cy="8" r="2.2" fill="#E5483D"/><text x="14" y="10.4" font-size="7" fill="#EDEFE8" fill-opacity=".85">CAM ${miroir ? '02' : '01'}</text>`
+    + `<text x="${W - 6}" y="${H - 6}" text-anchor="end" font-size="10" fill="#FFB23F">${heure}</text></g>`;
+  s += hits + '</svg>';
   return s;
 }
 
