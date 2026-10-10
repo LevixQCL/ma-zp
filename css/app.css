@@ -2785,6 +2785,10 @@ main.screen.gzs { height: 100dvh; box-sizing: border-box; padding: 10px 12px 100
 .jg-b { display: block; height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
 .jg-b b { display: block; height: 100%; border-radius: 3px; background: var(--c, var(--amber)); }
 .jg-v { text-align: right; font-variant-numeric: tabular-nums; }
-.jg-i.jg-doc .jg-n { color: var(--amber-soft, #FFC873); font-weight: 600; }
-.jg-i.jg-doc .jg-b b { background: linear-gradient(90deg, var(--amber, #FFB23F), #FFD27A); }
+.jg-d > summary { list-style: none; cursor: pointer; }
+.jg-d > summary::-webkit-details-marker { display: none; }
+.jg-x { margin: 3px 0 4px; font-size: 11.5px; line-height: 1.4; color: var(--text2); }
+.jg-x a { color: var(--amber); margin-left: 4px; }
+.jg-d.jg-doc .jg-n { color: var(--amber-soft, #FFC873); font-weight: 600; }
+.jg-d.jg-doc .jg-b b { background: linear-gradient(90deg, var(--amber, #FFB23F), #FFD27A); }
 .jg-solo { padding: 4px 2px 8px; }

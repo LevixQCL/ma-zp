@@ -844,26 +844,27 @@ export function ouvertureOrdres(z) {
   out.prochain = ancien ? null : PALIERS_ORDRES.find(([, j]) => jour < j) || null;
   return out;
 }
-/** Une barre de jauge (touchée : la page du Guide sur les doctrines). */
-function barreJauge(ico, nom, v, titre, cls = '') {
+/** Une barre de jauge : seule la barre est visible ; un toucher déplie ce qui la remplit et ce qu'elle rapporte. */
+function barreJauge(ico, nom, v, remplit, gain, cls = '') {
   const p = Math.max(0, Math.min(100, Math.round((v || 0) * 100)));
-  return `<a class="jg-i${cls}" href="#guide-doctrines" title="${esc(titre)}"><span class="jg-n">${ico} ${esc(nom)}</span><i class="jg-b"><b style="width:${p}%"></b></i><span class="jg-v">${p} %</span></a>`;
+  return `<details class="jg-d${cls}"><summary class="jg-i"><span class="jg-n">${ico} ${esc(nom)}</span><i class="jg-b"><b style="width:${p}%"></b></i><span class="jg-v">${p} %</span></summary>
+    <p class="jg-x"><span>Se remplit : ${esc(remplit)}.</span> <span>À 100 % : ${esc(gain)}.</span> <a href="#guide-doctrines">Guide</a></p></details>`;
 }
 /** Valeur de la jauge de doctrine (avec la reprise de l'ancienne jauge de saisie). */
 const valJauge = (z) => (z.jaugeDoc != null ? z.jaugeDoc : z.doctrine === 'intervention' ? z.jaugeSaisie : 0) || 0;
 /** Jauges sous un service : flagrant délit sous l'Intervention, et la jauge de la doctrine sous son service. */
 function jaugesService(z, s2) {
   const l = [];
-  if (s2 === 'intervention') l.push(barreJauge('🚨', 'Flagrant délit', z.jaugeFlagrant, 'Remplie par tes patrouilles libres après les incidents. À 100 % : +3 pts, +3 PS, +1 de satisfaction.'));
+  if (s2 === 'intervention') l.push(barreJauge('🚨', 'Flagrant délit', z.jaugeFlagrant, 'tes patrouilles d’Intervention libres après les incidents du soir', '+3 points, +3 PS, +1 de satisfaction, tension d’un quartier chaud −5'));
   const D = REGLES.v2 && z.doctrine && DOCTRINES[z.doctrine];
-  if (D && D.jauge && D.jauge.service === s2) l.push(barreJauge(D.jauge.ico, D.jauge.nom, valJauge(z), `Doctrine ${D.nom.toLowerCase()} : ${D.jauge.remplit}. À 100 % : ${D.jauge.gain}.`, ' jg-doc'));
+  if (D && D.jauge && D.jauge.service === s2) l.push(barreJauge(D.jauge.ico, D.jauge.nom, valJauge(z), D.jauge.remplit, D.jauge.gain, ' jg-doc'));
   return l.length ? `<div class="jg-inter">${l.join('')}</div>` : '';
 }
 /** Jauge d'une doctrine sans service propre (Partenaire) : en tête de l'affectation. */
 function jaugeSansService(z) {
   const D = REGLES.v2 && z.doctrine && DOCTRINES[z.doctrine];
   if (!D || !D.jauge || D.jauge.service) return '';
-  return `<div class="jg-inter jg-solo">${barreJauge(D.jauge.ico, D.jauge.nom, valJauge(z), `Doctrine ${D.nom.toLowerCase()} : ${D.jauge.remplit}. À 100 % : ${D.jauge.gain}.`, ' jg-doc')}</div>`;
+  return `<div class="jg-inter jg-solo">${barreJauge(D.jauge.ico, D.jauge.nom, valJauge(z), D.jauge.remplit, D.jauge.gain, ' jg-doc')}</div>`;
 }
 /** Choix de la doctrine (règles v2) : les 3 premiers jours de la saison, puis les jours 8 et 9 pour la 2e semaine. */
 function doctrineHtml(z, d) {
