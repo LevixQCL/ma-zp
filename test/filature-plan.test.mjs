@@ -22,3 +22,15 @@ for (const forme of ['classique', 'rebours']) for (let d = 1; d <= 6; d++) for (
   n++;
 }
 console.log(`OK : plan de filature papier (${n} plans, mêmes zones cliquables).`);
+
+// Le tracé ne coupe jamais à travers les pâtés : chaque segment est horizontal ou vertical.
+{
+  const { figureInteractive } = await import('../js/ui/enigmes.js');
+  const { S } = await import('../js/ui/common.js');
+  const q = { ...generateQuest('filature', 'trace-rues', 3), id: 'tr' };
+  const [dx, dy] = q.figures[0].svg.match(/data-depart="([\d.]+),([\d.]+)"/).slice(1).map(Number);
+  S.trace = { tr: [`${dx + 92},${dy + 46}`, `${dx + 46},${dy}`, `${dx + 46},${dy + 46}`] };
+  const pts = figureInteractive(q, q.figures[0].svg, null).match(/class="fi-trace" points="([^"]*)"/)[1].split(' ').map((p) => p.split(',').map(Number));
+  for (let k = 1; k < pts.length; k++) assert.ok(pts[k][0] === pts[k - 1][0] || pts[k][1] === pts[k - 1][1], `segment en diagonale : ${pts[k - 1]} → ${pts[k]}`);
+  console.log('OK : le tracé de filature suit les rues.');
+}

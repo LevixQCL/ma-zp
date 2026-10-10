@@ -195,7 +195,15 @@ export function figureInteractive(q, svg, picked) {
   if (q.type === 'filature') {
     const m = s.match(/data-depart="([\d.]+),([\d.]+)"/);
     const pts = m ? [`${m[1]},${m[2]}`, ...(((S.trace || {})[q.id]) || [])] : [];
-    s = s.replace('<polyline class="fi-trace" points=""', `<polyline class="fi-trace" points="${pts.join(' ')}"`);
+    // Le tracé suit les rues : entre deux carrefours qui ne sont pas sur la même rue, on passe par le coin
+    // (d'abord à l'horizontale, puis à la verticale) au lieu de couper à travers les pâtés de maisons.
+    const rues = [];
+    for (const p of pts) {
+      const prec = rues[rues.length - 1];
+      if (prec) { const [ax, ay] = prec.split(',').map(Number), [bx, by] = p.split(',').map(Number); if (ax !== bx && ay !== by) rues.push(`${bx},${ay}`); }
+      rues.push(p);
+    }
+    s = s.replace('<polyline class="fi-trace" points=""', `<polyline class="fi-trace" points="${rues.join(' ')}"`);
   }
   return s;
 }
