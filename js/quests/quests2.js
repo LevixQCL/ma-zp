@@ -201,14 +201,15 @@ const PHOTO_DEFS = `<defs>
   ${COULEURS_AUTO.map(([, hx], k) => { const [r, g, b] = hexRgb(hx); return `<filter id="phT${k}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${r} 0 0 0 0  ${g} 0 0 0 0  ${b} 0 0 0 0  0 0 0 1 0"/></filter>`; }).join('')}
   <filter id="phFlou" x="-30%" y="-20%" width="160%" height="140%"><feGaussianBlur stdDeviation="1.6"/></filter>
   <radialGradient id="phVignette" cx="50%" cy="50%" r="72%"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient>
-  <filter id="phGrain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .5 -.18"/></filter>
 </defs>`;
 
 function photoSvg(places, cols, miroir, heure, nuit) {
   const cw = 44, rh = 70, W = cols * cw + 20, rows = Math.ceil(places.length / cols), H = rows * rh + 30;
   let s = `<svg class="ph-photo" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Photo du parking à ${heure}" style="display:block;background:#33373B">${PHOTO_DEFS}`;
   // Asphalte : teinte, grain, légères traces d'usure dans les allées (identiques sur les deux photos, hors des places).
-  s += `<rect width="${W}" height="${H}" fill="#35393D"/><rect width="${W}" height="${H}" filter="url(#phGrain)" opacity=".55"/>`;
+  // Sol : texture d'asphalte qui se répète (retournée avec l'image sur la photo de la caméra d'en face).
+  s += `<pattern id="phSol${miroir ? 'M' : ''}" patternUnits="userSpaceOnUse" width="96" height="96"${miroir ? ` patternTransform="rotate(180 ${W / 2} ${H / 2})"` : ''}><image href="img/autos/asphalte.webp" width="96" height="96"/></pattern>`
+    + `<rect width="${W}" height="${H}" fill="#35393D"/><rect width="${W}" height="${H}" fill="url(#phSol${miroir ? 'M' : ''})"/>`;
   let lignes = '', num = '', autos = '';
   let hits = ''; // zones à toucher pour désigner une place
   for (let i = 0; i < places.length; i++) {
