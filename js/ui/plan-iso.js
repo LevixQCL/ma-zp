@@ -237,9 +237,9 @@ function dessiner(st, me, seed, vue, reduit) {
   const fumee = (sx, sy, k, r) => { for (let j = 0; j < 3; j++) { const du = r.float(4, 6), dx = r.float(4, 10); fumees.push(`<circle cx="${f(sx)}" cy="${f(sy)}" r="3" fill="url(#${id('fumee')})" opacity="0"><animate attributeName="cy" values="${f(sy)};${f(sy - 34 * k)}" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/><animate attributeName="r" values="${f(2 * k)};${f(9 * k)}" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.7;0" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/><animate attributeName="cx" values="${f(sx)};${f(sx + dx)}" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/></circle>`); } };
   const tirs = [];
   // Petit personnage (1,35 × la taille de base) : jambes, buste à la couleur de la bande, tête ; bras selon le geste.
-  const perso = (wx, wy, coul, { geste = null, sens = 1, accroupi = false, anim = '', z = 1.2 } = {}) => {
+  const perso = (wx, wy, coul, { geste = null, sens = 1, accroupi = false, anim = '', z = 1.2, k = 1 } = {}) => {
     const [x, y] = P(wx, wy, z), hb = accroupi ? 1.8 : 3;
-    let s = `<g transform="translate(${f(x)} ${f(y)}) scale(1.5)">${anim}<ellipse cx=".4" cy=".2" rx="1.3" ry=".5" fill="#050816" opacity=".5"/>`;
+    let s = `<g transform="translate(${f(x)} ${f(y)}) scale(${f(1.05 * k)})">${anim}<ellipse cx=".4" cy=".2" rx="1.3" ry=".5" fill="#050816" opacity=".5"/>`;
     s += accroupi ? '<path d="M-.7 0L.3 -.9L0 -1.2" fill="none" stroke="#14121A" stroke-width=".55" stroke-linecap="round"/>' : '<path d="M-.6 0L0 -1.5L.6 0" fill="none" stroke="#14121A" stroke-width=".55" stroke-linecap="round"/>';
     s += `<line x1="0" y1="${f(-hb + 1.5)}" x2="0" y2="${f(-hb)}" stroke="${coul}" stroke-width="1.2" stroke-linecap="round"/><circle cy="${f(-hb - 0.7)}" r=".62" fill="#1A1820"/>`;
     if (geste === 'leve') s += `<line x1="0" y1="${f(-hb + 0.2)}" x2="${f(sens * 0.8)}" y2="${f(-hb - 1.4)}" stroke="${coul}" stroke-width=".45" stroke-linecap="round"/>`;
@@ -321,7 +321,7 @@ function dessiner(st, me, seed, vue, reduit) {
         return s;
       }
       case 'qg': { // QG du boss : forteresse murée, miradors, tour du chef éclairée, cour gardée, convoi de SUV.
-        const M = 7.5, hm = 3.4, mur = ['#4A4048', '#33292F', '#2A2228'], ep = 0.7;
+        const pk = 0.72, M = 7.5, hm = 3.4, mur = ['#4A4048', '#33292F', '#2A2228'], ep = 0.7;
         const barbele = (pts) => `<polyline points="${poly(pts.map(([a, b2]) => P(x + a, y + b2, hm + 0.7)))}" fill="none" stroke="#9AA3C4" stroke-width=".25" stroke-dasharray=".6 .4"/>`;
         const zig = (a0, b0, a1, b1) => { const n = 14, pts = []; for (let k = 0; k <= n; k++) pts.push([a0 + (a1 - a0) * k / n, b0 + (b1 - b0) * k / n]); return barbele(pts); };
         const mirador = (a, b2, phase) => {
@@ -329,7 +329,7 @@ function dessiner(st, me, seed, vue, reduit) {
           for (const [dx, dy] of [[-0.6, -0.6], [0.6, -0.6], [-0.6, 0.6], [0.6, 0.6]]) { const [l1x, l1y] = P(x + a + dx, y + b2 + dy, 1.2), [l2x, l2y] = P(x + a + dx * 0.7, y + b2 + dy * 0.7, 8); m += `<line x1="${f(l1x)}" y1="${f(l1y)}" x2="${f(l2x)}" y2="${f(l2y)}" stroke="#3A3238" stroke-width=".5"/>`; }
           m += boite(x + a - 1.1, x + a + 1.1, y + b2 - 1.1, y + b2 + 1.1, 9.5, ['#3A3238', '#2A2428', '#1E1A1D'], 8);
           m += boite(x + a - 1.3, x + a + 1.3, y + b2 - 1.3, y + b2 + 1.3, 10.4, ['#5A3A3A', '#3E2828', '#2E1E1E'], 9.9);
-          m += perso(x + a, y + b2, '#14121A', { geste: 'arme', sens: -1, z: 9.5 });
+          m += perso(x + a, y + b2, '#14121A', { geste: 'arme', sens: -1, z: 9.5, k: pk });
           const [sx2, sy2] = P(x + a, y + b2, 10);
           m += `<g transform="translate(${f(sx2)} ${f(sy2)})"><path d="M0 0L20 -4L20 4Z" fill="#FFF2C0" opacity=".16"><animateTransform attributeName="transform" type="rotate" values="${phase};${phase + 70};${phase}" dur="${f(6 + phase / 40)}s" repeatCount="indefinite"/></path><circle r=".9" fill="#FFF2C0"/></g>`;
           return m;
@@ -347,7 +347,7 @@ function dessiner(st, me, seed, vue, reduit) {
         for (const [a, b2, h] of [[-5.5, -4.5, 2.6], [-4.3, -4.5, 2.6], [-5.5, -3.3, 2.6], [-4.9, -3.9, 3.9]]) s += boite(x + a - 0.6, x + a + 0.6, y + b2 - 0.6, y + b2 + 0.6, h, ['#4A5A3A', '#36422A', '#2A3420'], h - 1.3);
         s += boite(x + 2.5, x + 5, y - 5.5, y - 4, 2.3, ['#5A4A3A', '#4A3C2E', '#3A2E22']);
         for (let k = 0; k < 4; k++) { const [bx3, by3] = P(x + 2.9 + k * 0.55, y - 4.8, 2.4); s += `<rect x="${f(bx3 - 0.45)}" y="${f(by3 - 0.3)}" width=".9" height=".5" fill="#4FA35A"/>`; }
-        s += perso(x + 3.7, y - 6.5, '#D9B44A', {}) + perso(x + 5.8, y - 4.6, '#14121A', { geste: 'arme', sens: -1 });
+        s += perso(x + 3.7, y - 6.5, '#D9B44A', { k: pk }) + perso(x + 5.8, y - 4.6, '#14121A', { geste: 'arme', sens: -1, k: pk });
         // La tour du boss : béton sombre, fenêtres rouges, penthouse doré, antenne et drapeau.
         const H = 28, T0 = -2.8, T1 = 2.8;
         s += ombre(x + T0, x + T1, y + T0, y + T1) + boite(x + T0, x + T1, y + T0, y + T1, H, ['#2A2028', '#1E171C', '#171215']);
@@ -360,22 +360,22 @@ function dessiner(st, me, seed, vue, reduit) {
         s += boite(x + T0 + 0.6, x + T1 - 0.6, y + T0 + 0.6, y + T1 - 0.6, H + 4.4, ['#2A2028', '#1E171C', '#171215'], H + 0.6);
         s += face([[x + T0 + 0.8, y + T1 - 0.6, H + 1.4], [x + T1 - 0.8, y + T1 - 0.6, H + 1.4], [x + T1 - 0.8, y + T1 - 0.6, H + 3.8], [x + T0 + 0.8, y + T1 - 0.6, H + 3.8]], '#F3C84B', ' opacity=".9"');
         s += face([[x + T1 - 0.6, y + T0 + 0.8, H + 1.4], [x + T1 - 0.6, y + T1 - 0.8, H + 1.4], [x + T1 - 0.6, y + T1 - 0.8, H + 3.8], [x + T1 - 0.6, y + T0 + 0.8, H + 3.8]], '#D9A83A', ' opacity=".8"');
-        s += perso(x + 1.2, y + T1 + 0.1, '#F3C84B', { geste: 'cigare', sens: 1, z: H + 0.6 }) + perso(x - 0.8, y + T1 + 0.1, '#14121A', { geste: 'arme', sens: -1, z: H + 0.6 });
+        s += perso(x + 1.2, y + T1 + 0.1, '#F3C84B', { geste: 'cigare', sens: 1, z: H + 0.6, k: pk }) + perso(x - 0.8, y + T1 + 0.1, '#14121A', { geste: 'arme', sens: -1, z: H + 0.6, k: pk });
         { const [ax, ay] = P(x - 1.5, y - 1.5, H + 4.4); s += `<line x1="${f(ax)}" y1="${f(ay)}" x2="${f(ax)}" y2="${f(ay - 9)}" stroke="#9AA3C4" stroke-width=".5"/><circle cx="${f(ax)}" cy="${f(ay - 9)}" r=".9" fill="#FF4E4E"><animate attributeName="opacity" values="1;.15;1" dur="1.4s" repeatCount="indefinite"/></circle>`; }
         { const [mx, my] = P(x + 1.6, y + 1.6, H + 4.4); s += `<line x1="${f(mx)}" y1="${f(my)}" x2="${f(mx)}" y2="${f(my - 8)}" stroke="#C9CFE6" stroke-width=".5"/><path d="M${f(mx)} ${f(my - 8)}h6v3.6h-6z" fill="#14121A"><animateTransform attributeName="transform" type="skewY" values="0;-5;0;4;0" dur="2.6s" additive="sum" repeatCount="indefinite"/></path><text x="${f(mx + 3)}" y="${f(my - 5.3)}" text-anchor="middle" style="font:700 2.8px sans-serif;fill:#EDE6D6">☠</text>`; }
         // Cour avant : convoi de SUV noirs, gardes qui patrouillent.
         s += voiture(x + 4.6, y + 1, ['#1A1A20', '#111116', '#0B0B10'], false) + voiture(x + 4.6, y + 5, ['#1A1A20', '#111116', '#0B0B10'], false);
         for (const [a, b2] of [[4.2, 6.9], [5, 6.9]]) { const [hx, hy] = P(x + a, y + b2, 1.8); s += `<circle cx="${f(hx)}" cy="${f(hy)}" r=".35" fill="#FFF2C0"/>`; }
-        s += perso(x - 4.5, y + 3, '#14121A', { geste: 'arme', sens: 1, anim: marche(5, 0, 6) });
-        s += perso(x + 3, y + 3.5, '#14121A', { geste: 'arme', sens: -1, anim: marche(0, -4, 5, 2) });
-        s += perso(x - 1.5, y + 4.6, '#C94A3A', { geste: 'tel' });
+        s += perso(x - 4.5, y + 3, '#14121A', { geste: 'arme', sens: 1, anim: marche(5, 0, 6), k: pk });
+        s += perso(x + 3, y + 3.5, '#14121A', { geste: 'arme', sens: -1, anim: marche(0, -4, 5, 2), k: pk });
+        s += perso(x - 1.5, y + 4.6, '#C94A3A', { geste: 'tel', k: pk });
         // Murs de devant avec portail et barrière, mirador avant, gardes à l'entrée.
         s += boite(x + M - ep, x + M, y - M, y + M, hm, mur) + zig(M, -M, M, M);
         s += boite(x - M, x - 1.6, y + M - ep, y + M, hm, mur) + boite(x + 1.6, x + M, y + M - ep, y + M, hm, mur) + zig(-M, M, -1.6, M) + zig(1.6, M, M, M);
         s += boite(x - 1.9, x - 1.3, y + M - 0.9, y + M + 0.2, hm + 1.4, ['#5A4A4A', '#3E3030', '#2E2424']) + boite(x + 1.3, x + 1.9, y + M - 0.9, y + M + 0.2, hm + 1.4, ['#5A4A4A', '#3E3030', '#2E2424']);
         { const [g1x, g1y] = P(x - 1.3, y + M - 0.3, 2), [g2x, g2y] = P(x + 1.3, y + M - 0.3, 2); s += `<line x1="${f(g1x)}" y1="${f(g1y)}" x2="${f(g2x)}" y2="${f(g2y)}" stroke="#E0625A" stroke-width=".7" stroke-dasharray="1 1"/>`; }
         s += mirador(M, M, 100);
-        s += perso(x - 2.6, y + M + 1.3, '#14121A', { geste: 'arme', sens: 1 }) + perso(x + 2.6, y + M + 1.3, '#14121A', { geste: 'arme', sens: -1 });
+        s += perso(x - 2.6, y + M + 1.3, '#14121A', { geste: 'arme', sens: 1, k: pk }) + perso(x + 2.6, y + M + 1.3, '#14121A', { geste: 'arme', sens: -1, k: pk });
         // Toute la forteresse est agrandie autour de son pied (l'isométrie est affine : l'échelle à l'écran reste juste).
         const [qx, qy] = P(x, y, 1.2);
         return `<g transform="translate(${f(qx)} ${f(qy)}) scale(1.4) translate(${f(-qx)} ${f(-qy)})">${s}</g>`;
@@ -478,7 +478,7 @@ function dessiner(st, me, seed, vue, reduit) {
       return s;
     }
     if (b.type === 'tireur') {
-      const [bx2, by2] = P(x, y, 1.2), [cx2, cy2] = P(b.cible[0], b.cible[1], 1.2), sens = cx2 >= bx2 ? 1 : -1, hb = b.accroupi ? 1.8 : 3, E = 1.35;
+      const [bx2, by2] = P(x, y, 1.2), [cx2, cy2] = P(b.cible[0], b.cible[1], 1.2), sens = cx2 >= bx2 ? 1 : -1, hb = b.accroupi ? 1.8 : 3, E = 1;
       const ax0 = bx2 + sens * 1.9, ay0 = by2 - hb + 0.3, ax = bx2 + sens * 1.9 * E, ay = by2 + (-hb + 0.3) * E;
       s += `<g transform="translate(${f(bx2)} ${f(by2)}) scale(${E}) translate(${f(-bx2)} ${f(-by2)})">`;
       s += `<ellipse cx="${f(bx2 + 0.4)}" cy="${f(by2 + 0.2)}" rx="1.3" ry=".5" fill="#050816" opacity=".5"/>`;
