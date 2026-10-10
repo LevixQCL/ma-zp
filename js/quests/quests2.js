@@ -174,48 +174,32 @@ const COULEURS_AUTO = [
 const PROCHE = (c) => (c + 7) % 14;
 const TYPES_AUTO = { citadine: { w: 20, h: 34 }, berline: { w: 22, h: 42 }, suv: { w: 26, h: 44 }, camionnette: { w: 26, h: 52 } };
 
+/** Images des modèles (vue du dessus, avant vers le haut) : `ratio` = largeur / hauteur de l'image, rétros compris.
+ *  Chaque modèle a une image de base et un calque « peinture » en niveaux de gris, teinté par un filtre de couleur. */
+const IMAGES_AUTO = { citadine: 0.57, berline: 0.423, suv: 0.454, camionnette: 0.453 };
+
 /** `a.sens` : 0 = capot vers le haut de l'image, 1 = vers le bas. Vue du dessus, façon photo de caméra. */
 function dessinerAuto(x, y, a, retourne) {
   if (!a) return '';
   const t = TYPES_AUTO[a.type];
-  const c = COULEURS_AUTO[a.col][1];
-  const w = t.w, h = t.h, hw = w / 2, hh = h / 2;
   const bas = (a.sens ? 1 : 0) ^ (retourne ? 1 : 0);
-  const van = a.type === 'camionnette';
-  const r = van ? 3.5 : a.type === 'citadine' ? 7 : 6.5;
-  // Carrosserie : ombre portée, teinte, modelé (bords plus sombres, arête centrale claire).
-  let g = `<rect x="${-hw + 1.6}" y="${-hh + 2.4}" width="${w}" height="${h}" rx="${r}" fill="#000" opacity=".38"/>`
-    + `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="${r}" fill="${c}"/>`
-    + `<rect x="${-hw}" y="${-hh}" width="${w}" height="${h}" rx="${r}" fill="url(#phModele)"/>`;
-  // Rétroviseurs.
-  const ry = van ? -hh + 9 : -hh + h * 0.3;
-  g += `<rect x="${-hw - 2.6}" y="${ry}" width="3.2" height="2.4" rx="1" fill="${c}" stroke="#000" stroke-opacity=".35" stroke-width=".5"/><rect x="${hw - .6}" y="${ry}" width="3.2" height="2.4" rx="1" fill="${c}" stroke="#000" stroke-opacity=".35" stroke-width=".5"/>`;
-  // Phares (avant, en haut) et feux (arrière) : le sens de la voiture se lit tout de suite.
-  g += `<rect x="${-hw + 2}" y="${-hh + .6}" width="${w * 0.24}" height="2" rx="1" fill="#FFF4C9"/><rect x="${hw - 2 - w * 0.24}" y="${-hh + .6}" width="${w * 0.24}" height="2" rx="1" fill="#FFF4C9"/>`
-    + `<rect x="${-hw + 1.6}" y="${hh - 2.4}" width="${w * 0.22}" height="1.8" rx=".9" fill="#D2302A"/><rect x="${hw - 1.6 - w * 0.22}" y="${hh - 2.4}" width="${w * 0.22}" height="1.8" rx=".9" fill="#D2302A"/>`;
-  if (van) {
-    // Cabine (pare-brise) puis caisse avec nervures.
-    g += `<path d="M${-hw + 2.4} ${-hh + 5}Q0 ${-hh + 3} ${hw - 2.4} ${-hh + 5}L${hw - 2.8} ${-hh + 12}H${-hw + 2.8}Z" fill="url(#phVitre)"/>`
-      + `<rect x="${-hw + 2.4}" y="${-hh + 14}" width="${w - 4.8}" height="${h - 18}" rx="1.5" fill="#000" fill-opacity=".1"/>`;
-    for (let k = 1; k <= 4; k++) g += `<path d="M${-hw + 3.5} ${-hh + 14 + k * (h - 18) / 5}H${hw - 3.5}" stroke="#000" stroke-opacity=".16" stroke-width=".7"/>`;
-  } else {
-    // Pare-brise, toit, lunette arrière.
-    const pb0 = -hh + h * 0.2, pb1 = -hh + h * 0.37, lu0 = hh - h * 0.27, lu1 = hh - h * 0.14;
-    g += `<path d="M${-hw + 3.2} ${pb1}L${-hw + 4.6} ${pb0}Q0 ${pb0 - 2} ${hw - 4.6} ${pb0}L${hw - 3.2} ${pb1}Q0 ${pb1 + 1.2} ${-hw + 3.2} ${pb1}Z" fill="url(#phVitre)"/>`
-      + `<rect x="${-hw + 3.4}" y="${pb1 + 1}" width="${w - 6.8}" height="${lu0 - pb1 - 2}" rx="2.5" fill="#fff" fill-opacity=".1" stroke="#000" stroke-opacity=".18" stroke-width=".5"/>`
-      + `<path d="M${-hw + 3.6} ${lu0}Q0 ${lu0 - 1.2} ${hw - 3.6} ${lu0}L${hw - 4.8} ${lu1}Q0 ${lu1 + 1.4} ${-hw + 4.8} ${lu1}Z" fill="url(#phVitre)"/>`;
-  }
+  const h = t.h * (a.type === 'camionnette' ? 1.06 : 1.16), w = h * IMAGES_AUTO[a.type], f = (v) => Math.round(v * 100) / 100;
+  const src = `img/autos/${a.type}`;
+  let g = `<rect x="${f(-w * 0.4 + 1.4)}" y="${f(-h / 2 + 2.2)}" width="${f(w * 0.8)}" height="${f(h * 0.97)}" rx="${f(w * 0.3)}" fill="#000" opacity=".42" filter="url(#phFlou)"/>`
+    + `<image href="${src}.webp" x="${f(-w / 2)}" y="${f(-h / 2)}" width="${f(w)}" height="${f(h)}" preserveAspectRatio="none"/>`
+    + `<image href="${src}-peinture.webp" x="${f(-w / 2)}" y="${f(-h / 2)}" width="${f(w)}" height="${f(h)}" preserveAspectRatio="none" filter="url(#phT${a.col})"/>`;
   if (a.barres) {
-    const b0 = van ? -hh + 18 : -hh + h * 0.42, b1 = van ? hh - 8 : -hh + h * 0.62;
-    g += `<path d="M${-hw + 3.4} ${b0}H${hw - 3.4}M${-hw + 3.4} ${b1}H${hw - 3.4}" stroke="#15181C" stroke-width="2" stroke-linecap="round"/><path d="M${-hw + 3.8} ${b0 - .5}H${hw - 3.8}M${-hw + 3.8} ${b1 - .5}H${hw - 3.8}" stroke="#C9CED4" stroke-width=".6" stroke-linecap="round"/>`;
+    const bw = t.w * 0.66, y0 = -h / 2 + h * (a.type === 'camionnette' ? 0.45 : 0.43), y1 = -h / 2 + h * (a.type === 'camionnette' ? 0.75 : 0.62);
+    g += `<path d="M${f(-bw / 2)} ${f(y0)}H${f(bw / 2)}M${f(-bw / 2)} ${f(y1)}H${f(bw / 2)}" stroke="#121417" stroke-width="2.2" stroke-linecap="round"/><path d="M${f(-bw / 2 + .5)} ${f(y0 - .55)}H${f(bw / 2 - .5)}M${f(-bw / 2 + .5)} ${f(y1 - .55)}H${f(bw / 2 - .5)}" stroke="#D5DAE0" stroke-width=".7" stroke-linecap="round"/>`;
   }
   return `<g transform="translate(${x} ${y})${bas ? ' rotate(180)' : ''}">${g}</g>`;
 }
 
-/** Définitions communes (identiques sur les deux photos). */
+const hexRgb = (hx) => [1, 3, 5].map((k) => Math.round(parseInt(hx.slice(k, k + 2), 16) / 255 * 1000) / 1000);
+/** Définitions communes (identiques sur les deux photos) : un filtre de teinte par couleur de carrosserie. */
 const PHOTO_DEFS = `<defs>
-  <linearGradient id="phModele" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".34"/><stop offset=".18" stop-color="#000" stop-opacity=".05"/><stop offset=".5" stop-color="#fff" stop-opacity=".2"/><stop offset=".82" stop-color="#000" stop-opacity=".05"/><stop offset="1" stop-color="#000" stop-opacity=".34"/></linearGradient>
-  <linearGradient id="phVitre" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3E5266"/><stop offset=".45" stop-color="#18222D"/><stop offset="1" stop-color="#0E141B"/></linearGradient>
+  ${COULEURS_AUTO.map(([, hx], k) => { const [r, g, b] = hexRgb(hx); return `<filter id="phT${k}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${r} 0 0 0 0  ${g} 0 0 0 0  ${b} 0 0 0 0  0 0 0 1 0"/></filter>`; }).join('')}
+  <filter id="phFlou" x="-30%" y="-20%" width="160%" height="140%"><feGaussianBlur stdDeviation="1.6"/></filter>
   <radialGradient id="phVignette" cx="50%" cy="50%" r="72%"><stop offset=".62" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".45"/></radialGradient>
   <filter id="phGrain" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency="1.1" numOctaves="2" seed="7" result="n"/><feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .5 -.18"/></filter>
 </defs>`;
