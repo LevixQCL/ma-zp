@@ -15,7 +15,7 @@ import { QUIZ } from '../quests/quiz.js';
 import { pistesDuSoir, lireOrdresPistes } from './pistes.js';
 import { appliquerRegles, reglesV2, MAX_DEPENSES, pressionSaison, doctrineOuverte } from './regles.js';
 import { REGLES, forceDoctrine, DOCTRINES, MAITRISE, coutPrime, aAnnexe } from './constants.js';
-import { enquetePourTour, SLOT_QUATRE } from '../quests/quests.js';
+import { enquetePourTour, quatreComptePourTour, SLOT_QUATRE } from '../quests/quests.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
@@ -706,7 +706,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const ALT = ['delegue', 'quiz'];
     const qsTous = tous.filter((x, k) => x && (x.slot ?? k) !== 3 && !ALT.includes(x.statut));
     // Révision d'oct. 2026 : seules les 3 premières comptent ; la 4e est « pour le plaisir » (PS seulement).
-    const troisComptent = enquetePourTour(state.nextDeadline);
+    // Depuis le 10 oct. 2026 au soir, les 4 comptent de nouveau (3 au choix sur 4 pour la prime).
+    const troisComptent = enquetePourTour(state.nextDeadline) && !quatreComptePourTour(state.nextDeadline);
     const qs = troisComptent ? qsTous.filter((x) => x.slot !== SLOT_QUATRE) : qsTous;
     const plaisir = troisComptent ? qsTous.filter((x) => x.slot === SLOT_QUATRE && x.statut === 'ok').length : 0;
     if (plaisir) { z._ps += PS.queteOk; z.rapport.push(`4e énigme (pour le plaisir) réussie : +${PS.queteOk} PS.`); }

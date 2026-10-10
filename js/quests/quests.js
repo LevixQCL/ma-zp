@@ -37,7 +37,11 @@ export const quatrePourTour = (fin) => Number(fin) > QUATRE_DEPUIS;
 export const ENQUETE_DEPUIS = Date.parse('2026-10-09T18:30:00Z');
 export const enquetePourTour = (fin) => Number(fin) > ENQUETE_DEPUIS;
 /** Emplacements qui comptent pour le bonus, la prime et le classement des énigmes. */
-export const slotsComptes = (fin) => (enquetePourTour(fin) || !quatrePourTour(fin) ? [0, 1, 2] : [0, 1, 2, SLOT_QUATRE]);
+// Retour joueurs (10 oct. 2026) : l'écran montrait 4 énigmes et « prime à 3 », mais la 4e ne comptait pas (piège).
+// À partir du tour qui se termine après QUATRE_COMPTE_DEPUIS, les 4 comptent : 3 réussites au choix sur 4 = prime.
+export const QUATRE_COMPTE_DEPUIS = Date.parse('2026-10-10T18:30:00Z');
+export const quatreComptePourTour = (fin) => Number(fin) > QUATRE_COMPTE_DEPUIS;
+export const slotsComptes = (fin) => (!quatrePourTour(fin) || (enquetePourTour(fin) && !quatreComptePourTour(fin)) ? [0, 1, 2] : [0, 1, 2, SLOT_QUATRE]);
 export const SLOT_ENQUETE = 2;
 /** Emplacements des énigmes du jour (sans le dossier noir). */
 export const slotsDuJour = (fin) => (quatrePourTour(fin) ? [0, 1, 2, SLOT_QUATRE] : [0, 1, 2]);

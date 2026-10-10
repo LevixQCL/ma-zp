@@ -25,6 +25,9 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Énigmes : 3 au choix sur 4 (11 octobre)', [
+      ['Prime', 'les 4 énigmes du jour comptent : 2 réussies au choix pour le bonus, 3 au choix pour la prime (la 4e n’est plus « pour le plaisir »). Elles comptent aussi pour le classement.'],
+    ]],
     ['Rattrape Luc (10 octobre)', [
       ['Événement surprise', 'de temps en temps, Luc est flashé sur l’E19 : rattrape-le au grappin avant la frontière, puis tiens tête à ses excuses au contrôle. L’alerte tombe à la connexion, jamais en même temps que l’urgence du jour, et reste sur l’HP jusqu’à 20:00. Pour le plaisir : aucun effet sur ta zone, mais un record de la partie et le titre « Chasseur de chauffards ».'],
     ]],
