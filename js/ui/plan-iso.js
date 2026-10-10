@@ -117,7 +117,7 @@ function dessiner(st, me, seed, vue, reduit) {
     const u = urb(c.c), capitale = moi.capitale === i;
     const zoneInt = inset(c.poly, c.c, 0.76);
     const bx = [Math.min(...zoneInt.map((q) => q[0])), Math.max(...zoneInt.map((q) => q[0]))], by = [Math.min(...zoneInt.map((q) => q[1])), Math.max(...zoneInt.map((q) => q[1]))];
-    const nb = zoomZone ? (mien ? 16 : 12) : 7;
+    const nb = zoomZone ? (mien ? 16 : 12) : sND && sND.coeur && nd ? 5 : 7;
     const poses = capitale ? [[c.c[0], c.c[1], 12]] : [];
     // Non-droit : une scène propre au milieu du secteur (deal, recel, rodéos…), et une émeute quand l'emprise est forte.
     const scenes = [];
@@ -125,7 +125,7 @@ function dessiner(st, me, seed, vue, reduit) {
       const milieu = sND && sND.coeur ? 'qg' : (sND && sND.milieu) || 'deal', centre = inset(c.poly, c.c, 0.5);
       const reserver = (r) => { for (let e = 0; e < 200; e++) { const p = [rng.float(bx[0], bx[1]), rng.float(by[0], by[1])]; const [sx, sy] = P(p[0], p[1], 1.2), [ex, ey] = P(c.c[0], c.c[1], 18), sousPastille = Math.abs(sx - ex) < 13 && sy > ey - 10 && sy < ey + 16;
           if (!sousPastille && dedans(p, inset(c.poly, c.c, 0.62)) && !dansFleuve(p, 4) && !poses.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < (q[2] || 7.5) + 1)) { poses.push([p[0], p[1], r]); return p; } } return null; };
-      const a = reserver(10);
+      const a = milieu === 'qg' ? (poses.push([c.c[0], c.c[1], 17]), c.c) : reserver(10);
       if (a) scenes.push({ x: a[0], y: a[1], type: 'scene', milieu, rng: makeRng(`${seed}:sc:${i}`) });
       if (milieu !== 'qg' && milieu !== 'contrefacon' && kND >= 0.68) { const b = reserver(9); if (b) scenes.push({ x: b[0], y: b[1], type: 'scene', milieu: 'emeute', rng: makeRng(`${seed}:em:${i}`) }); }
     }
@@ -150,7 +150,7 @@ function dessiner(st, me, seed, vue, reduit) {
     // Non-droit : carcasses de voitures en feu et fusillades entre bandes rivales (milieux armés), selon l'emprise.
     if (nd) {
       objets.push(...scenes);
-      const libre = (p, m) => dedans(p, zoneInt) && !dansFleuve(p, 2) && !poses.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < m);
+      const libre = (p, m) => dedans(p, zoneInt) && !dansFleuve(p, 2) && !poses.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < Math.max(m, q[2] || 0));
       const placer = (m) => { for (let e = 0; e < 120; e++) { const p = [rng.float(bx[0], bx[1]), rng.float(by[0], by[1])]; if (libre(p, m)) { poses.push([...p, m]); return p; } } return null; };
       for (let k = 0; k < Math.round(kND * 1.4); k++) { const p = placer(4); if (p) objets.push({ x: p[0], y: p[1], type: 'carcasse', rng: makeRng(`${seed}:car:${i}:${k}`) }); }
       const arme = sND && (sND.coeur || ['deal', 'recel', 'garage'].includes(sND.milieu));
@@ -194,8 +194,8 @@ function dessiner(st, me, seed, vue, reduit) {
     if (sND) {
       cibles.push({ prof: -1, h: `<polygon class="hit-nd" data-action="secteur" data-c="${i}" points="${poly(top)}" fill="transparent"><title>${c.nom} · ${repris ? 'repris' : `emprise ${Math.round(sND.emprise)}`}</title></polygon>` });
       selections.push(`<polygon class="sel" data-q="${i}" visibility="hidden" points="${poly(top)}" fill="#FFFFFF" fill-opacity=".1" stroke="#FFFFFF" stroke-width="1.2"/>`);
-      const [px, py] = P(c.c[0], c.c[1], 18);
-      etiqND.push(`<g data-action="secteur" data-c="${i}" style="cursor:pointer" transform="translate(${f(px)} ${f(py)})"><path d="M0 8L-3 4H3Z" fill="${repris ? '#3DD39A' : '#E0625A'}"/><circle r="6.5" fill="${repris ? '#3DD39A' : '#E0625A'}" stroke="#0B1124" stroke-width="1"/><text y="2.4" text-anchor="middle" class="iso-tn" style="fill:${repris ? '#0B1124' : '#fff'}">${repris ? '✓' : Math.round(sND.emprise)}</text></g>`);
+      const [px, py] = P(c.c[0], c.c[1], sND.coeur && !repris ? 68 : 18);
+      etiqND.push(`<g data-action="secteur" data-c="${i}" style="cursor:pointer" transform="translate(${f(px)} ${f(py)})">${sND.coeur && !repris ? '<path d="M-5 -7L-5 -12.5L-2.5 -9.5L0 -13.5L2.5 -9.5L5 -12.5L5 -7Z" fill="#F3C84B" stroke="#0B1124" stroke-width=".7"/>' : ''}<path d="M0 8L-3 4H3Z" fill="${repris ? '#3DD39A' : '#E0625A'}"/><circle r="6.5" fill="${repris ? '#3DD39A' : '#E0625A'}" stroke="#0B1124" stroke-width="1"/><text y="2.4" text-anchor="middle" class="iso-tn" style="fill:${repris ? '#0B1124' : '#fff'}">${repris ? '✓' : Math.round(sND.emprise)}</text></g>`);
     }
     // Zone cliquable : l'îlot et le volume au-dessus (là où sont les immeubles), triée par profondeur.
     if (mien && zoomZone) {
@@ -237,13 +237,15 @@ function dessiner(st, me, seed, vue, reduit) {
   const fumee = (sx, sy, k, r) => { for (let j = 0; j < 3; j++) { const du = r.float(4, 6), dx = r.float(4, 10); fumees.push(`<circle cx="${f(sx)}" cy="${f(sy)}" r="3" fill="url(#${id('fumee')})" opacity="0"><animate attributeName="cy" values="${f(sy)};${f(sy - 34 * k)}" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/><animate attributeName="r" values="${f(2 * k)};${f(9 * k)}" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.7;0" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/><animate attributeName="cx" values="${f(sx)};${f(sx + dx)}" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/></circle>`); } };
   const tirs = [];
   // Petit personnage (1,35 × la taille de base) : jambes, buste à la couleur de la bande, tête ; bras selon le geste.
-  const perso = (wx, wy, coul, { geste = null, sens = 1, accroupi = false, anim = '' } = {}) => {
-    const [x, y] = P(wx, wy, 1.2), hb = accroupi ? 1.8 : 3;
+  const perso = (wx, wy, coul, { geste = null, sens = 1, accroupi = false, anim = '', z = 1.2 } = {}) => {
+    const [x, y] = P(wx, wy, z), hb = accroupi ? 1.8 : 3;
     let s = `<g transform="translate(${f(x)} ${f(y)}) scale(1.5)">${anim}<ellipse cx=".4" cy=".2" rx="1.3" ry=".5" fill="#050816" opacity=".5"/>`;
     s += accroupi ? '<path d="M-.7 0L.3 -.9L0 -1.2" fill="none" stroke="#14121A" stroke-width=".55" stroke-linecap="round"/>' : '<path d="M-.6 0L0 -1.5L.6 0" fill="none" stroke="#14121A" stroke-width=".55" stroke-linecap="round"/>';
     s += `<line x1="0" y1="${f(-hb + 1.5)}" x2="0" y2="${f(-hb)}" stroke="${coul}" stroke-width="1.2" stroke-linecap="round"/><circle cy="${f(-hb - 0.7)}" r=".62" fill="#1A1820"/>`;
     if (geste === 'leve') s += `<line x1="0" y1="${f(-hb + 0.2)}" x2="${f(sens * 0.8)}" y2="${f(-hb - 1.4)}" stroke="${coul}" stroke-width=".45" stroke-linecap="round"/>`;
     if (geste === 'porte') s += `<rect x="${f(sens * 0.3)}" y="${f(-hb - 0.1)}" width="1.4" height="1.2" fill="#A97A4A" stroke="#6E4E2E" stroke-width=".2"/>`;
+    if (geste === 'arme') s += `<line x1="0" y1="${f(-hb + 0.4)}" x2="${f(sens * 1.8)}" y2="${f(-hb + 0.2)}" stroke="#0E0C12" stroke-width=".5" stroke-linecap="round"/>`;
+    if (geste === 'cigare') s += `<circle cx="${f(sens * 0.7)}" cy="${f(-hb - 0.5)}" r=".28" fill="#FF7A2A"><animate attributeName="opacity" values=".3;1;.3" dur="2.4s" repeatCount="indefinite"/></circle>`;
     if (geste === 'tel') s += `<circle cx="${f(sens * 0.6)}" cy="${f(-hb - 0.2)}" r=".35" fill="#8FD3FF"><animate attributeName="opacity" values="1;.2;1" dur="${f(0.8 + Math.abs(wx * 7 % 1))}s" repeatCount="indefinite"/></circle>`;
     return s + '</g>';
   };
@@ -318,14 +320,65 @@ function dessiner(st, me, seed, vue, reduit) {
         for (let k = 0; k < 4; k++) s += perso(x - 3 + k * 2.2 + R(0.5), y + 3 + R(0.6), '#6C7393', { anim: marche(R(2), R(1.5), 2.5 + rng.next() * 2, rng.next() * 2), geste: k === 1 ? 'porte' : null });
         return s;
       }
-      case 'qg': { // QG : enceinte de fortune, gardes armés, projecteur qui balaie la nuit.
-        for (const [a0, a1, b0, b1] of [[-5, 5, -5, -4.4], [-5, -4.4, -5, 5], [4.4, 5, -5, 1.5]]) s += boite(x + a0, x + a1, y + b0, y + b1, 3.2, ['#4A4048', '#33292F', '#2A2228']);
-        s += boite(x - 5, x - 1, y + 4.4, y + 5, 3.2, ['#4A4048', '#33292F', '#2A2228']);
-        const [px, py] = P(x - 4.6, y - 4.6, 7.5);
-        s += `<line x1="${f(px)}" y1="${f(py + 6)}" x2="${f(px)}" y2="${f(py)}" stroke="#5A5F78" stroke-width=".6"/><g transform="translate(${f(px)} ${f(py)})"><path d="M0 0L34 -6L34 6Z" fill="#FFF2C0" opacity=".14"><animateTransform attributeName="transform" type="rotate" values="10;80;10" dur="7s" repeatCount="indefinite"/></path><circle r="1" fill="#FFF2C0"/></g>`;
-        for (const [dx, dy, se] of [[1.5, 5.8, 1], [3.8, 5.2, -1]]) { const [gx, gy] = pied(dx, dy); s += perso(x + dx, y + dy, '#14121A', {}) + `<line x1="${f(gx)}" y1="${f(gy - 3.4)}" x2="${f(gx + se * 2.4)}" y2="${f(gy - 3.6)}" stroke="#0E0C12" stroke-width=".6"/>`; }
-        s += perso(x, y, '#D9B44A', { geste: 'tel' }) + perso(x - 1.6, y + 1, '#14121A', {});
-        return s;
+      case 'qg': { // QG du boss : forteresse murée, miradors, tour du chef éclairée, cour gardée, convoi de SUV.
+        const M = 7.5, hm = 3.4, mur = ['#4A4048', '#33292F', '#2A2228'], ep = 0.7;
+        const barbele = (pts) => `<polyline points="${poly(pts.map(([a, b2]) => P(x + a, y + b2, hm + 0.7)))}" fill="none" stroke="#9AA3C4" stroke-width=".25" stroke-dasharray=".6 .4"/>`;
+        const zig = (a0, b0, a1, b1) => { const n = 14, pts = []; for (let k = 0; k <= n; k++) pts.push([a0 + (a1 - a0) * k / n, b0 + (b1 - b0) * k / n]); return barbele(pts); };
+        const mirador = (a, b2, phase) => {
+          let m = '';
+          for (const [dx, dy] of [[-0.6, -0.6], [0.6, -0.6], [-0.6, 0.6], [0.6, 0.6]]) { const [l1x, l1y] = P(x + a + dx, y + b2 + dy, 1.2), [l2x, l2y] = P(x + a + dx * 0.7, y + b2 + dy * 0.7, 8); m += `<line x1="${f(l1x)}" y1="${f(l1y)}" x2="${f(l2x)}" y2="${f(l2y)}" stroke="#3A3238" stroke-width=".5"/>`; }
+          m += boite(x + a - 1.1, x + a + 1.1, y + b2 - 1.1, y + b2 + 1.1, 9.5, ['#3A3238', '#2A2428', '#1E1A1D'], 8);
+          m += boite(x + a - 1.3, x + a + 1.3, y + b2 - 1.3, y + b2 + 1.3, 10.4, ['#5A3A3A', '#3E2828', '#2E1E1E'], 9.9);
+          m += perso(x + a, y + b2, '#14121A', { geste: 'arme', sens: -1, z: 9.5 });
+          const [sx2, sy2] = P(x + a, y + b2, 10);
+          m += `<g transform="translate(${f(sx2)} ${f(sy2)})"><path d="M0 0L20 -4L20 4Z" fill="#FFF2C0" opacity=".16"><animateTransform attributeName="transform" type="rotate" values="${phase};${phase + 70};${phase}" dur="${f(6 + phase / 40)}s" repeatCount="indefinite"/></path><circle r=".9" fill="#FFF2C0"/></g>`;
+          return m;
+        };
+        // Sol de la cour : dalle sombre, lueur rouge.
+        s += face([[x - M, y - M, 1.25], [x + M, y - M, 1.25], [x + M, y + M, 1.25], [x - M, y + M, 1.25]], '#1E1418');
+        { const [gx, gy] = P(x, y, 1.3); s += `<ellipse cx="${f(gx)}" cy="${f(gy)}" rx="18" ry="9" fill="#FF2A2A" opacity=".12"><animate attributeName="opacity" values=".08;.18;.08" dur="2.6s" repeatCount="indefinite"/></ellipse>`; }
+        // Murs du fond, barbelés et mirador arrière.
+        s += mirador(-M, -M, 200);
+        s += boite(x - M, x + M, y - M, y - M + ep, hm, mur) + boite(x - M, x - M + ep, y - M, y + M, hm, mur);
+        s += zig(-M, -M, M, -M) + zig(-M, -M, -M, M);
+        s += mirador(M, -M, 250) + mirador(-M, M, 150);
+        // Tags rouges sur le mur du fond.
+        // Cour arrière : caisses d'armes, table où l'on compte les billets.
+        for (const [a, b2, h] of [[-5.5, -4.5, 2.6], [-4.3, -4.5, 2.6], [-5.5, -3.3, 2.6], [-4.9, -3.9, 3.9]]) s += boite(x + a - 0.6, x + a + 0.6, y + b2 - 0.6, y + b2 + 0.6, h, ['#4A5A3A', '#36422A', '#2A3420'], h - 1.3);
+        s += boite(x + 2.5, x + 5, y - 5.5, y - 4, 2.3, ['#5A4A3A', '#4A3C2E', '#3A2E22']);
+        for (let k = 0; k < 4; k++) { const [bx3, by3] = P(x + 2.9 + k * 0.55, y - 4.8, 2.4); s += `<rect x="${f(bx3 - 0.45)}" y="${f(by3 - 0.3)}" width=".9" height=".5" fill="#4FA35A"/>`; }
+        s += perso(x + 3.7, y - 6.5, '#D9B44A', {}) + perso(x + 5.8, y - 4.6, '#14121A', { geste: 'arme', sens: -1 });
+        // La tour du boss : béton sombre, fenêtres rouges, penthouse doré, antenne et drapeau.
+        const H = 28, T0 = -2.8, T1 = 2.8;
+        s += ombre(x + T0, x + T1, y + T0, y + T1) + boite(x + T0, x + T1, y + T0, y + T1, H, ['#2A2028', '#1E171C', '#171215']);
+        for (let zz = 4; zz < H - 6; zz += 3.4) for (let u = 0; u < 3; u++) {
+          const r = rng.next();
+          if (r < 0.45) { const fx = x + T0 + 1 + u * 1.8; s += face([[fx - 0.5, y + T1, zz], [fx + 0.5, y + T1, zz], [fx + 0.5, y + T1, zz + 1.6], [fx - 0.5, y + T1, zz + 1.6]], '#FF4E4E', ' opacity=".7"'); }
+          if (rng.next() < 0.4) { const fy = y + T0 + 1 + u * 1.8; s += face([[x + T1, fy - 0.5, zz], [x + T1, fy + 0.5, zz], [x + T1, fy + 0.5, zz + 1.6], [x + T1, fy - 0.5, zz + 1.6]], '#FF4E4E', ' opacity=".55"'); }
+        }
+        s += boite(x + T0 - 0.4, x + T1 + 0.4, y + T0 - 0.4, y + T1 + 0.4, H + 0.6, ['#3A2A30', '#2A1E24', '#22181D'], H);
+        s += boite(x + T0 + 0.6, x + T1 - 0.6, y + T0 + 0.6, y + T1 - 0.6, H + 4.4, ['#2A2028', '#1E171C', '#171215'], H + 0.6);
+        s += face([[x + T0 + 0.8, y + T1 - 0.6, H + 1.4], [x + T1 - 0.8, y + T1 - 0.6, H + 1.4], [x + T1 - 0.8, y + T1 - 0.6, H + 3.8], [x + T0 + 0.8, y + T1 - 0.6, H + 3.8]], '#F3C84B', ' opacity=".9"');
+        s += face([[x + T1 - 0.6, y + T0 + 0.8, H + 1.4], [x + T1 - 0.6, y + T1 - 0.8, H + 1.4], [x + T1 - 0.6, y + T1 - 0.8, H + 3.8], [x + T1 - 0.6, y + T0 + 0.8, H + 3.8]], '#D9A83A', ' opacity=".8"');
+        s += perso(x + 1.2, y + T1 + 0.1, '#F3C84B', { geste: 'cigare', sens: 1, z: H + 0.6 }) + perso(x - 0.8, y + T1 + 0.1, '#14121A', { geste: 'arme', sens: -1, z: H + 0.6 });
+        { const [ax, ay] = P(x - 1.5, y - 1.5, H + 4.4); s += `<line x1="${f(ax)}" y1="${f(ay)}" x2="${f(ax)}" y2="${f(ay - 9)}" stroke="#9AA3C4" stroke-width=".5"/><circle cx="${f(ax)}" cy="${f(ay - 9)}" r=".9" fill="#FF4E4E"><animate attributeName="opacity" values="1;.15;1" dur="1.4s" repeatCount="indefinite"/></circle>`; }
+        { const [mx, my] = P(x + 1.6, y + 1.6, H + 4.4); s += `<line x1="${f(mx)}" y1="${f(my)}" x2="${f(mx)}" y2="${f(my - 8)}" stroke="#C9CFE6" stroke-width=".5"/><path d="M${f(mx)} ${f(my - 8)}h6v3.6h-6z" fill="#14121A"><animateTransform attributeName="transform" type="skewY" values="0;-5;0;4;0" dur="2.6s" additive="sum" repeatCount="indefinite"/></path><text x="${f(mx + 3)}" y="${f(my - 5.3)}" text-anchor="middle" style="font:700 2.8px sans-serif;fill:#EDE6D6">☠</text>`; }
+        // Cour avant : convoi de SUV noirs, gardes qui patrouillent.
+        s += voiture(x + 4.6, y + 1, ['#1A1A20', '#111116', '#0B0B10'], false) + voiture(x + 4.6, y + 5, ['#1A1A20', '#111116', '#0B0B10'], false);
+        for (const [a, b2] of [[4.2, 6.9], [5, 6.9]]) { const [hx, hy] = P(x + a, y + b2, 1.8); s += `<circle cx="${f(hx)}" cy="${f(hy)}" r=".35" fill="#FFF2C0"/>`; }
+        s += perso(x - 4.5, y + 3, '#14121A', { geste: 'arme', sens: 1, anim: marche(5, 0, 6) });
+        s += perso(x + 3, y + 3.5, '#14121A', { geste: 'arme', sens: -1, anim: marche(0, -4, 5, 2) });
+        s += perso(x - 1.5, y + 4.6, '#C94A3A', { geste: 'tel' });
+        // Murs de devant avec portail et barrière, mirador avant, gardes à l'entrée.
+        s += boite(x + M - ep, x + M, y - M, y + M, hm, mur) + zig(M, -M, M, M);
+        s += boite(x - M, x - 1.6, y + M - ep, y + M, hm, mur) + boite(x + 1.6, x + M, y + M - ep, y + M, hm, mur) + zig(-M, M, -1.6, M) + zig(1.6, M, M, M);
+        s += boite(x - 1.9, x - 1.3, y + M - 0.9, y + M + 0.2, hm + 1.4, ['#5A4A4A', '#3E3030', '#2E2424']) + boite(x + 1.3, x + 1.9, y + M - 0.9, y + M + 0.2, hm + 1.4, ['#5A4A4A', '#3E3030', '#2E2424']);
+        { const [g1x, g1y] = P(x - 1.3, y + M - 0.3, 2), [g2x, g2y] = P(x + 1.3, y + M - 0.3, 2); s += `<line x1="${f(g1x)}" y1="${f(g1y)}" x2="${f(g2x)}" y2="${f(g2y)}" stroke="#E0625A" stroke-width=".7" stroke-dasharray="1 1"/>`; }
+        s += mirador(M, M, 100);
+        s += perso(x - 2.6, y + M + 1.3, '#14121A', { geste: 'arme', sens: 1 }) + perso(x + 2.6, y + M + 1.3, '#14121A', { geste: 'arme', sens: -1 });
+        // Toute la forteresse est agrandie autour de son pied (l'isométrie est affine : l'échelle à l'écran reste juste).
+        const [qx, qy] = P(x, y, 1.2);
+        return `<g transform="translate(${f(qx)} ${f(qy)}) scale(1.4) translate(${f(-qx)} ${f(-qy)})">${s}</g>`;
       }
       case 'emeute': { // Émeute : foule massée derrière une banderole, cocktails Molotov lancés, pavés au sol.
         const coul = ['#C94A3A', '#6C7393', '#14121A', '#8A6A4A', '#4A4A5A'];
