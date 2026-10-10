@@ -1,5 +1,6 @@
 // Logistique (bâtiments de la zone) et détail du budget : ce qui coûte, ce qui rapporte.
 import { reglesV2 } from '../engine/regles.js';
+import { PACTES, pactesDe, partenaire, pacteImpossible } from '../engine/pactes.js';
 import { ficheChefHtml, portraitChef } from './chef.js';
 import { titresDefi } from './defis.js';
 import { S, esc, icon, fmt1, myZone } from './common.js';
@@ -190,6 +191,15 @@ export function affichesHtml(z, { moi = false } = {}) {
 }
 
 /** Hôtel de police d'une autre zone (depuis la Carte ou le classement). */
+/** Dans la fiche d'un collègue : le pacte en cours avec lui, ou un raccourci pour lui en proposer un. */
+function pacteVoisinHtml(st, uid) {
+  const me = S.user && S.user.uid;
+  const p = pactesDe(st, me).find((x) => partenaire(x, me) === uid);
+  if (p) return `<a class="pacte-voisin" href="#pactes" data-close><span aria-hidden="true">🤝</span><span class="col grow" style="gap:0"><b>${esc(PACTES[p.type].nom)}</b><span class="tiny muted">${p.etape === 'actif' ? 'pacte en cours avec cette zone' : 'proposé, en attente'}</span></span>${icon('chevron', 16)}</a>`;
+  const r = pacteImpossible(st, me, uid);
+  return `<button type="button" class="btn small primary block" data-action="pacte-avec" data-u="${esc(uid)}" ${r ? 'disabled' : ''}>🤝 Proposer un pacte${r ? ` · ${esc(r)}` : ''}</button>`;
+}
+
 export function ouvrirHpVoisin(uid) {
   const st = S.state, z = st.zones[uid];
   if (!z) return;
@@ -203,6 +213,7 @@ export function ouvrirHpVoisin(uid) {
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="scene-voisin">${moi ? sceneZone(z, st, d, mesSkins(z).choix) : sceneZone(z, st, d)}</div>
     ${affichesHtml(z, { moi })}
+    ${!moi && reglesV2(st) ? pacteVoisinHtml(st, uid) : ''}
     ${z.chef ? `<button type="button" class="btn small outline block" data-action="bureau-ouvrir" data-u="${esc(uid)}">${portraitChef(uid, 22, { galons: false })} Voir son chef de corps</button>` : ''}
     ${titresDefi(uid).length ? `<p class="small" style="margin:0">${titresDefi(uid).map((t) => `🏆 <strong>${esc(t.titre)}</strong> <span class="muted">(défi, niv. ${t.niveau})</span>`).join(' · ')}</p>` : ''}
     <div class="bats hp-logis">

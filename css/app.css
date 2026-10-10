@@ -2166,6 +2166,13 @@ button.hz-s:hover { color: var(--text); }
 .cv-corps { display: flex; flex-direction: column; gap: 12px; }
 .cv-calques.deux { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .cv-carte > svg.iso { width: 100%; height: auto; -webkit-tap-highlight-color: transparent; }
+.cv-pactes { position: absolute; top: 10px; right: 12px; display: inline-flex; align-items: center; gap: 6px; line-height: 1; min-height: 36px; padding: 0 12px; border-radius: 999px; background: rgba(10, 15, 34, .86); border: 1px solid rgba(255, 255, 255, .16); color: var(--text); font: 700 13px var(--body); text-decoration: none; box-shadow: 0 6px 16px -6px rgba(0, 0, 0, .6); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.cv-pactes:hover { border-color: var(--amber-line); }
+.cv-pactes:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.cv-pactes small { font-size: 11px; color: var(--muted); font-weight: 700; }
+.cv-pactes i { font-style: normal; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--amber); color: var(--amber-ink); font-size: 11px; font-weight: 800; display: grid; place-items: center; }
+.cv-pactes.alerte { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-bg), 0 6px 16px -6px rgba(0, 0, 0, .6); }
+.pacte-voisin { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--amber-bg); border: 1px solid var(--amber-line); color: var(--text); text-decoration: none; }
 .cv-astuce { position: absolute; left: 12px; bottom: 10px; line-height: 1.3; padding: 5px 10px; border-radius: 999px; background: rgba(10, 15, 34, .82); border: 1px solid rgba(255, 255, 255, .14); color: var(--text2); font: 600 12px var(--body); pointer-events: none; }
 .cv-fiche { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--amber-line, rgba(255, 178, 63, .45)); box-shadow: var(--lift); }
 .cv-fiche-t { display: flex; align-items: center; gap: 12px; }

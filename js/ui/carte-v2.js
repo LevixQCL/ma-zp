@@ -21,7 +21,7 @@ export function calqueTerrain() { return 'nondroit'; }
 /** Petits compteurs sur les deux boutons : ce qui attend une action. */
 function badges(st, me) {
   const pc = me.pointChaud && (S.draft && ((S.draft.patrouilles || {})[me.pointChaud.cell] || 0) < 2) ? 1 : 0;
-  return { mazone: pc, nondroit: terrainAFaire() + aFairePactes().filter((x) => !x.fait).length };
+  return { mazone: pc, nondroit: terrainAFaire() };
 }
 
 /** Une ligne de « Ce soir dans le district », dépliable, sur le modèle de l'HP. */
@@ -50,7 +50,7 @@ function districtHtml(st, me) {
   // Pactes, défis et Conseil : ce qui attend une réponse, puis l'accès à l'écran complet.
   const af = aFairePactes(), reste = af.filter((x) => !x.fait);
   const actifs = (st.pactes || []).filter((p) => (p.a === me.uid || p.b === me.uid) && p.etape === 'actif').length;
-  L.push(ligne('cv-pactes', '🤝', 'Pactes et Conseil', reste.length ? esc(reste[0].titre) : actifs ? `${actifs} pacte${actifs > 1 ? 's' : ''} actif${actifs > 1 ? 's' : ''}` : 'aucun pacte en cours · propose-en un',
+  if (reste.length) L.push(ligne('cv-pactes', '🤝', 'Pactes et Conseil', reste.length ? esc(reste[0].titre) : actifs ? `${actifs} pacte${actifs > 1 ? 's' : ''} actif${actifs > 1 ? 's' : ''}` : 'aucun pacte en cours · propose-en un',
     `${af.map((x) => `<a class="ajd-alerte ${x.fait ? '' : 'amber'}" href="#pactes"><b>${x.fait ? '✓ ' : ''}${esc(x.titre)}</b><span>${esc(x.texte)}</span></a>`).join('')}
      <a class="btn small outline block" href="#pactes">Ouvrir les pactes, défis et le Conseil</a>`, { badge: reste.length ? `<span class="ajd-badge">${reste.length}</span>` : '', ouvert: !!reste.length }));
   return `<section class="hp-ajd" aria-label="Ce soir dans le district">
@@ -85,7 +85,11 @@ export function renderCarteV2(calque = S.carteCalque || 'nondroit') {
   const sousTitre = calque === 'mazone' ? `${Object.keys(mesT).length} quartiers${nbChauds ? ` · <span class="bad">${nbChauds} chaud${nbChauds > 1 ? 's' : ''}</span>` : ''}`
     : nd.length ? `${nd.filter((x) => x.statut === 'repris').length}/${nd.length} repris${danger ? ` · <span class="bad">${danger} en danger</span>` : ''}` : `${Object.keys(st.zones).length} zones`;
   const astuce = calque === 'mazone' ? 'Touche un quartier' : nd.length ? 'Touche un secteur rouge · ou une zone' : 'Touche une zone';
-  const carte = `<div class="cv-carte">${planIso(st, me, { vue: calque, sel })}<span class="cv-astuce" aria-hidden="true">${astuce}</span></div>`;
+  // Pactes : un bouton posé sur la carte (visible sans défiler, sans onglet de plus), avec ce qui attend une réponse.
+  const aRepondre = aFairePactes().filter((x) => !x.fait).length;
+  const nbPactes = (st.pactes || []).filter((p) => (p.a === me.uid || p.b === me.uid) && p.etape === 'actif').length;
+  const btnPactes = Object.keys(st.zones).length > 1 ? `<a class="cv-pactes ${aRepondre ? 'alerte' : ''}" href="#pactes" aria-label="Pactes${aRepondre ? ` : ${aRepondre} à répondre` : ''}"><span aria-hidden="true">🤝</span>Pactes${aRepondre ? `<i>${aRepondre}</i>` : nbPactes ? `<small>${nbPactes}</small>` : ''}</a>` : '';
+  const carte = `<div class="cv-carte">${planIso(st, me, { vue: calque, sel })}${btnPactes}<span class="cv-astuce" aria-hidden="true">${astuce}</span></div>`;
   const ndCorps = calque === 'nondroit' ? nonDroitHtml({ sansPlan: true }) : '';
   const corps = calque === 'mazone' ? `${ficheQuartierHtml(st, me, sel)}${chipsQuartiersHtml(st, me, sel)}${siteHtml(siteDe(me))}`
     : `${ndCorps || '<p class="small muted" style="margin:0">La zone de non-droit n’est pas encore ouverte dans cette partie.</p>'}${districtHtml(st, me)}`;

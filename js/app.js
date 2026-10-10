@@ -1048,6 +1048,13 @@ async function onClick(e) {
       case 'motion-chef': S.draft.motionChef = S.draft.motionChef === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;
       // Pactes et défis amicaux (onglet Pactes de la Carte).
       case 'pacte-form': S.pacteForm = el.dataset.type ? { type: el.dataset.type } : {}; rerender(); if (el.dataset.type) requestAnimationFrame(() => { const f = document.querySelector('.pacte-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); break;
+      case 'pacte-avec': { // depuis la fiche d'un collègue : formulaire prérempli avec sa zone
+        document.querySelector('.aide-wrap')?.remove();
+        S.pacteForm = { cible: el.dataset.u };
+        if (location.hash !== '#pactes') location.hash = '#pactes'; else rerender();
+        setTimeout(() => { const f = document.querySelector('.pacte-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 250);
+        break;
+      }
       case 'pacte-form-fermer': S.pacteForm = null; rerender(); break;
       case 'pacte-cible': S.pacteForm = { ...(S.pacteForm || {}), cible: el.dataset.v }; rerender(); break;
       case 'pacte-type': S.pacteForm = { ...(S.pacteForm || {}), type: el.dataset.v }; rerender(); break;
