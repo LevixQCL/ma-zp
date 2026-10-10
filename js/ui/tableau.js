@@ -382,7 +382,7 @@ function voletSuspect(aff, dos, i, et) {
   const suivi = zonesDuSuspect(st, i).filter((u) => u !== S.user.uid && st.zones[u]);
   return `<div class="tb-tete">${portraitSuspect(s, i, 'tb-face tb-mini')}
       <div class="col" style="gap:2px;min-width:0"><span class="tb-titre">${esc(s.nom)}</span><span class="tiny muted">${esc(fiche.lien)}</span>
-      ${multi ? `<span class="tiny ${mien ? 'good' : 'muted'}">${mien ? 'ta cellule' : 'autre cellule : vérifications au double'}</span>` : ''}</div></div>
+      ${multi ? `<span class="tiny ${mien ? 'good' : 'muted'}">${mien ? 'ta zone enquête sur lui' : 'autre groupe d’enquête : vérifications au double'}</span>` : ''}</div></div>
     <p class="small tb-fiche-pub">${esc(fiche.declaration)}<br>${fiche.trajet ? `<strong>${esc(fiche.trajet)}</strong><br>` : ''}${aff.prof ? `<strong>${esc(fiche.vehicule)}</strong>` : esc(fiche.vehicule)}<br><span class="muted">${esc(fiche.rumeur)}</span></p>
     ${aff.meurtre && !dos.exclu ? `<button type="button" class="btn small ${d.reaud && d.reaud.i === i ? 'primary' : 'outline'}" data-action="tab-ouvrir" data-tid="Q:${i}">${d.reaud && d.reaud.i === i ? `✓ Réaudition prévue ce soir (face à « ${esc(nomElement(aff, d.reaud.f))} »)` : `🗣️ Le réentendre en lui opposant une pièce (${REAUD.cout} k€)`}</button>` : ''}
     ${aff.prof ? `<div class="tb-duo"><button type="button" class="btn small" data-action="tab-ouvrir" data-tid="A:${i}">📄 Lire son audition</button>${s.alibi.type !== 'seul' ? `<button type="button" class="btn small" data-action="tab-ouvrir" data-tid="L:${esc(s.alibi.pos)}">🗺️ Son trajet</button>` : ''}</div>` : ''}
@@ -626,7 +626,7 @@ function celluleHtml(aff) {
   const moi = S.user.uid, c = celluleDe(st, moi);
   const zones = Object.values(st.zones).filter((x) => x.uid !== moi && (x.toursSansOrdres || 0) < 3 && celluleDe(st, x.uid) === c);
   const suspects = aff.suspects.map((s2, i) => (dansMaCellule(st, moi, i) ? s2.prenom : null)).filter(Boolean);
-  return `<div class="tb-cellule"><span class="tb-ligne-k">🕵️ Ta cellule · ${e.nbCellules} cellules dans le district</span>
+  return `<div class="tb-cellule"><span class="tb-ligne-k">🔎 Ton groupe d’enquête · ${e.nbCellules} groupes dans le district</span>
     <span class="small"><strong>Avec toi :</strong> ${zones.length ? zones.map((x) => esc(zoneName(x))).join(', ') : '<span class="muted">personne d’autre pour l’instant</span>'}</span>
     <span class="small"><strong>Vos suspects :</strong> ${esc(suspects.join(', '))} <span class="tiny muted">(les autres coûtent le double)</span></span>
     <span class="tiny muted">Partagez-vous les démarches sur la radio pour ne pas payer deux fois la même.</span></div>`;
@@ -728,7 +728,7 @@ export function preparerTableau(aff, dos) {
   return etatTab(aff, dos);
 }
 
-/** Choisir une démarche pour ce soir : la scène d'abord, puis chaque suspect (ta cellule et ceux encore en lice d'abord). */
+/** Choisir une démarche pour ce soir : la scène d'abord, puis chaque suspect (les miens et ceux encore en lice d'abord). */
 function voletChoix(aff, dos, et) {
   const st = S.state, d = S.draft, carnet = lireCarnet(aff.n);
   const dem = d.demarches || [], max = maxDemarchesDe(st, zoneAvecAgenda());
@@ -746,7 +746,7 @@ function voletChoix(aff, dos, et) {
   const sus = ordre.map((i) => {
     const s = aff.suspects[i], exclu = etatSuspect(carnet, i, aff) === 'exclu', mien = dansMaCellule(st, S.user.uid, i);
     return `<div class="e2-ch-s ${exclu ? 'exclu' : ''}">
-      <div class="e2-ch-qui">${portraitSuspect(s, i, 'tb-face e2-mini')}<span class="col" style="gap:0;min-width:0"><strong>${esc(s.nom)}</strong><span class="tiny muted">${exclu ? 'exclu dans ton carnet' : multi && !mien ? 'autre cellule : prix double' : esc(s.role)}</span></span></div>
+      <div class="e2-ch-qui">${portraitSuspect(s, i, 'tb-face e2-mini')}<span class="col" style="gap:0;min-width:0"><strong>${esc(s.nom)}</strong><span class="tiny muted">${exclu ? 'exclu dans ton carnet' : multi && !mien ? 'autre groupe : prix double' : esc(s.role)}</span></span></div>
       <div class="dem-row">${demBtn(aff, dos, `alibi:${i}`, aff.meurtre ? 'Alibi' : 'Son alibi', { compact: true })}${demBtn(aff, dos, `moyens:${i}`, aff.meurtre ? 'Perquisition' : 'Ses moyens', { compact: true })}${demBtn(aff, dos, `banque:${i}`, aff.meurtre ? 'Tél., comptes' : 'Son mobile', { compact: true })}</div></div>`;
   }).join('');
   return `<div class="between" style="padding-right:44px"><span class="tb-titre" style="padding-right:0">Démarches de ce soir</span><span class="small muted">${dem.length} / ${max}</span></div>

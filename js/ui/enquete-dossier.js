@@ -139,19 +139,22 @@ function murHtml(aff, dos, et, nonLues) {
     }
     return `<button type="button" class="e2-fiche ${vide ? 'vide' : ''}" style="--c:${COL[e]}" data-action="tab-ouvrir" data-tid="c:${e}"><span class="e2-fk">${NOM_EL[e]}</span><span class="e2-ft">${esc(titre)}</span><span class="e2-fv">${esc(txt)}</span></button>`;
   }).join('');
+  // Plusieurs groupes d'enquête : les suspects sur qui ma zone enquête directement portent un ruban « ma zone » (les autres coûtent le double).
+  const cellules = !!(st.enquete && st.enquete.nbCellules > 1);
   const polo = (i) => {
     const s = aff.suspects[i];
     const etat = etatSuspect(carnet, i, aff);
     const accuse = d.accusation === i || d.accusation2 === i || dos.accuse === i || dos.accuse2 === i;
     const soir = dem.filter((x) => x.endsWith(`:${i}`)).length + (d.piste === i ? 1 : 0);
     const neuf = nonLues.filter((p) => pieceSuspect(p.f) === i).length;
+    const mien = cellules && dansMaCellule(st, S.user.uid, i);
     const sceaux = ELEMENTS.map((e) => { const v = carnet.g[`${i}:${e}`] || 0; return `<i class="v${v}" style="--c:${COL[e]}" title="${NOM_EL[e]} : ${['pas encore établi', 'établi', 'exclu'][v]}">${['', '✓', '✕'][v]}</i>`; }).join('');
-    return `<button type="button" class="e2-polo ${etat} ${accuse ? 'accuse' : ''}" style="--r:${((i * 37) % 7) - 3}deg" data-action="tab-ouvrir" data-tid="s${i}" aria-label="${esc(s.nom)}, ${etat === 'exclu' ? 'exclu' : etat === 'complet' ? 'trois éléments établis' : 'en lice'}">
+    return `<button type="button" class="e2-polo ${etat} ${accuse ? 'accuse' : ''}" style="--r:${((i * 37) % 7) - 3}deg" data-action="tab-ouvrir" data-tid="s${i}" aria-label="${esc(s.nom)}, ${etat === 'exclu' ? 'exclu' : etat === 'complet' ? 'trois éléments établis' : 'en lice'}${mien ? ', ta zone enquête sur lui' : ''}">
       <span class="e2-pince" aria-hidden="true"></span>
       <span class="e2-ph">${portraitSuspect(s, i, 'tb-face')}${etat === 'exclu' ? '<svg class="e2-croix" viewBox="0 0 100 100" aria-hidden="true"><path d="M14 18 L86 84 M84 14 L18 86"/></svg>' : ''}${accuse ? '<svg class="e2-cercle" viewBox="0 0 120 120" aria-hidden="true"><path d="M60 8 C 100 6 116 40 112 66 C 106 104 60 116 30 102 C 4 88 2 46 22 24 C 34 12 52 8 70 10"/></svg>' : ''}</span>
       <span class="e2-pn">${esc(s.prenom)}</span><span class="e2-pr">${esc(s.role)}</span>
       <span class="e2-sceaux">${sceaux}</span>
-      ${neuf ? `<span class="e2-neuf">${neuf}</span>` : ''}${soir ? '<span class="e2-cesoir">ce soir</span>' : ''}
+      ${mien ? '<span class="e2-cel" title="Ta zone enquête directement sur ce suspect : démarches au prix normal">🔎 ma zone</span>' : ''}${neuf ? `<span class="e2-neuf">${neuf}</span>` : ''}${soir ? '<span class="e2-cesoir">ce soir</span>' : ''}
     </button>`;
   };
   // Une ficelle par rangée de trois (cinq sur ordinateur) : la photo du milieu descend avec le creux de la ficelle.
@@ -164,7 +167,17 @@ function murHtml(aff, dos, et, nonLues) {
     <div class="e2-rangs mobile">${rangs.map((r) => `<div class="e2-rang n${r.length}">${ficelle}${r.map(polo).join('')}</div>`).join('')}</div>
     <div class="e2-rangs pc"><div class="e2-rang n${n}">${ficelle}${aff.suspects.map((_, i) => polo(i)).join('')}</div></div>
     <p class="e2-leg">${ELEMENTS.map((e) => `<span><i style="--c:${COL[e]}"></i>${NOM_EL[e]}</span>`).join('')}<span class="e2-leg-t">· touche un visage</span></p>
+    ${cellules ? celluleLigne(aff) : ''}
   </section>`;
+}
+
+/** Sous le mur : les suspects sur qui ma zone enquête directement, avec quelles zones, et la règle du prix. */
+function celluleLigne(aff) {
+  const st = S.state, moi = S.user.uid, c = celluleDe(st, moi);
+  const zones = Object.values(st.zones).filter((x) => x.uid !== moi && (x.toursSansOrdres || 0) < 3 && celluleDe(st, x.uid) === c);
+  const miens = aff.suspects.map((s2, i) => (dansMaCellule(st, moi, i) ? s2.prenom : null)).filter(Boolean);
+  return `<p class="e2-cel-l"><span>🔎 <strong>Ta zone enquête sur ${esc(miens.length > 1 ? `${miens.slice(0, -1).join(', ')} et ${miens[miens.length - 1]}` : miens.join(''))}</strong>${zones.length ? `, avec ${zones.map((x) => esc(zoneName(x))).join(', ')}` : ''}.</span>
+    <span class="muted">Les démarches sur les autres suspects coûtent le double. Répartissez-vous le travail sur la radio.</span></p>`;
 }
 
 /** Ce soir : les démarches en cases à remplir, la piste du voisinage, l'appui fédéral, les partages. */

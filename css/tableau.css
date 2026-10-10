@@ -482,6 +482,12 @@ div.e2-cta { cursor: default; }
 .e2-cercle path { fill: none; stroke: #E8341C; stroke-width: 5; stroke-linecap: round; }
 .e2-polo.complet { box-shadow: 0 0 0 3px rgba(61,211,154,.75), 0 10px 16px -4px rgba(40,20,5,.55); }
 .e2-neuf { position: absolute; top: 2px; right: -7px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; background: #D32F2F; color: #fff; font: 800 12px/22px var(--body); box-shadow: 0 2px 4px rgba(0,0,0,.4); z-index: 3; }
+.e2-cel { position: absolute; top: 10px; left: -6px; padding: 2px 7px; border-radius: 3px; background: #2F6FD6; color: #fff; font: 700 10.5px/1.2 var(--body); letter-spacing: .02em; transform: rotate(-6deg); box-shadow: 0 2px 4px rgba(0,0,0,.4); z-index: 3; white-space: nowrap; }
+.e2-cel-l { margin: 4px 0 0; padding: 8px 10px; border-radius: 10px; background: rgba(14,18,34,.82); display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 1.4; color: #EDF0FA; }
+.e2-cel-l .muted { font-size: 12px; color: #A9B2CC; }
+.e2-cel { position: absolute; top: 10px; left: -6px; padding: 2px 7px; border-radius: 3px; background: #2F6FD6; color: #fff; font: 700 10.5px/1.2 var(--body); letter-spacing: .02em; transform: rotate(-6deg); box-shadow: 0 2px 4px rgba(0,0,0,.4); z-index: 3; white-space: nowrap; }
+.e2-cel-l { margin: 4px 0 0; padding: 8px 10px; border-radius: 10px; background: rgba(14,18,34,.82); display: flex; flex-direction: column; gap: 2px; font-size: 13px; line-height: 1.4; color: #EDF0FA; }
+.e2-cel-l .muted { font-size: 12px; color: #A9B2CC; }
 .e2-cesoir { position: absolute; bottom: 30px; left: -6px; padding: 1px 6px; background: #FFE27A; color: #4A3A08; font: 700 13px/1.2 'Caveat', cursive; transform: rotate(-8deg); box-shadow: 0 2px 3px rgba(0,0,0,.35); }
 .e2-leg { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px 12px; margin: 4px 0 0; font-size: 12px; font-weight: 600; color: #FFF3DE; text-shadow: 0 1px 3px rgba(0,0,0,.8); }
 .e2-leg span { display: inline-flex; align-items: center; gap: 1px; }

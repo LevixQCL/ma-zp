@@ -251,7 +251,7 @@ function suspectCard(aff, dos, s, i, carnet) {
     <button type="button" class="suspect-tete" data-action="enq-open" data-i="${i}" aria-expanded="${open}">
       <span class="col grow" style="gap:2px;align-items:flex-start;min-width:0"><span class="nom">${esc(s.nom)}${accuse ? ` <span class="tag" style="background:var(--amber-bg);color:var(--amber)">accusé${s.f ? 'e' : ''}</span>` : ''}</span>
         <span class="tiny muted">${esc(fiche.lien)}</span></span>
-      <span class="col" style="gap:2px;align-items:flex-end;flex-shrink:0">${multi ? `<span class="tiny ${mien ? 'good' : 'muted'}">${mien ? 'ta cellule' : 'autre cellule'}</span>` : ''}<span class="tiny muted">${pieces.length} pièce${pieces.length > 1 ? 's' : ''} ${open ? '▴' : '▾'}</span></span>
+      <span class="col" style="gap:2px;align-items:flex-end;flex-shrink:0">${multi ? `<span class="tiny ${mien ? 'good' : 'muted'}">${mien ? 'ta zone enquête' : 'autre groupe'}</span>` : ''}<span class="tiny muted">${pieces.length} pièce${pieces.length > 1 ? 's' : ''} ${open ? '▴' : '▾'}</span></span>
     </button>
     ${open ? `<div class="mmo-row">${cases}</div>` : ''}
     ${open ? `<div class="col" style="gap:8px">
@@ -261,10 +261,10 @@ function suspectCard(aff, dos, s, i, carnet) {
       ${aff.prof ? (() => { const a = dossierAffaire3(st.seed, aff).auditions[i]; return `<details class="piece"><summary class="kicker" style="cursor:pointer">PV d’audition · ${esc(a.heure)}</summary>${a.qr.map(([q, r]) => `<p class="small" style="margin:6px 0 0"><strong>Q :</strong> ${esc(q)}<br><strong>R :</strong> ${esc(r)}</p>`).join('')}</details>`; })() : ''}
       ${pieces.map((p) => pieceHtml(aff, p)).join('')}
       ${(() => { const surPiste = d.piste === i; return `<button type="button" class="btn small ${surPiste ? 'primary' : 'outline'} block" data-action="piste" data-i="${i}" aria-pressed="${surPiste}">${surPiste ? `✓ Piste prioritaire des enquêteurs (retirer)` : `Mettre les enquêteurs de Recherche sur ${esc(s.prenom)}`}</button>
-        <span class="tiny muted" style="margin-top:-4px">${surPiste ? 'L’enquête de voisinage de ce soir cherche d’abord de ce côté.' : `Gratuit : l’enquête de voisinage cherchera ses pièces en priorité${mien ? '' : ' (hors de ta cellule : deux fois moins efficace)'}.`}</span>`; })()}
+        <span class="tiny muted" style="margin-top:-4px">${surPiste ? 'L’enquête de voisinage de ce soir cherche d’abord de ce côté.' : `Gratuit : l’enquête de voisinage cherchera ses pièces en priorité${mien ? '' : ' (pas un de tes suspects : deux fois moins efficace)'}.`}</span>`; })()}
       <span class="tiny muted">Faire vérifier :</span>
       <div class="dem-row">${demBtn(aff, dos, `alibi:${i}`, 'Son alibi', { compact: true })}${demBtn(aff, dos, `moyens:${i}`, aff.meurtre ? 'Perquisition' : 'Ses moyens', { compact: true })}${demBtn(aff, dos, `banque:${i}`, aff.meurtre ? 'Téléphone, comptes' : 'Son mobile', { compact: true })}</div>
-      ${mien ? '' : `<div class="col" style="gap:6px"><p class="tiny muted" style="margin:0">Suspect suivi par ${suivi.length ? esc(suivi.join(', ')) : 'une autre cellule'} : tes vérifications coûtent le double. Demande-leur leurs pièces :</p>
+      ${mien ? '' : `<div class="col" style="gap:6px"><p class="tiny muted" style="margin:0">Suspect suivi par ${suivi.length ? esc(suivi.join(', ')) : 'un autre groupe d’enquête'} : tes vérifications coûtent le double. Demande-leur leurs pièces :</p>
         <div class="row" style="gap:6px;flex-wrap:wrap">${zonesDuSuspect(st, i).filter((u) => u !== S.user.uid && st.zones[u]).map((u) => `<button type="button" class="btn small" data-action="ecrire-a" data-uid="${esc(u)}">✉ ${esc(st.zones[u].nom)}</button>`).join('')}<a class="btn small ghost" href="#radio">Radio</a></div></div>`}
       ${!dos.exclu && dos.accuse === null ? (accuse ? '<button class="btn small ghost" data-action="accuser-annuler">Retirer l’accusation</button>' : aff.meurtre ? `<button class="btn small outline" data-action="tab-confront" data-i="${i}">Confronter ${esc(s.prenom)}</button>` : accuserHtml(aff, dos, i)) : ''}
     </div>` : ''}
@@ -339,7 +339,7 @@ function aujourdhui(aff, dos) {
   else if (dos.accuse !== null) etape = 'Accusation transmise au parquet. Résultat ce soir à 20:00.';
   else if (d.accusation !== null && d.accusation !== undefined) etape = `Accusation prête contre ${esc(nomsAccuses(aff, d, 'prenom'))} : elle part à 20:00 avec tes ordres.`;
   else if (constatsFaites + constatsPrevues < 3) etape = `<strong>Étape 1 · la scène.</strong> Il manque ${3 - constatsFaites} constatation${3 - constatsFaites > 1 ? 's' : ''} : elles disent quelle heure, quel moyen et quel mobile comptent. <button type="button" class="lien" data-action="enq-tab" data-t="scene">Voir la scène</button>`;
-  else if (enLice.length > nA) etape = `<strong>Étape 2 · les suspects.</strong> Vérifie l’alibi, les moyens ou le mobile des suspects de ta cellule, et coche ✕ dès qu’un élément ne colle pas${nA === 2 ? ' (ici : pas de mobile, ou ni moyen ni occasion)' : ''}. Encore ${enLice.length} en lice.`;
+  else if (enLice.length > nA) etape = `<strong>Étape 2 · les suspects.</strong> Vérifie l’alibi, les moyens ou le mobile des suspects sur qui ta zone enquête, et coche ✕ dès qu’un élément ne colle pas${nA === 2 ? ' (ici : pas de mobile, ou ni moyen ni occasion)' : ''}. Encore ${enLice.length} en lice.`;
   else if (enLice.length === nA) etape = nA === 2 ? `<strong>Étape 3 · l’accusation.</strong> Il ne reste que ${esc(aff.suspects[enLice[0]].prenom)} et ${esc(aff.suspects[enLice[1]].prenom)} dans ton tableau : les deux complices ? Accuse-les ensemble si tu es sûr : une seule chance.` : `<strong>Étape 3 · l’accusation.</strong> Il ne reste que ${aff.suspects[enLice[0]].prenom} dans ton tableau. Accuse si tu es sûr : une seule chance.`;
   else etape = 'Tous les suspects sont exclus dans ton tableau : une coche est sans doute fausse. Relis les pièces.';
   const miens = aff.suspects.map((s2, i) => (dansMaCellule(st, S.user.uid, i) ? s2.prenom : null)).filter(Boolean);
@@ -353,7 +353,7 @@ function aujourdhui(aff, dos) {
     <div class="row enq-pastilles" style="gap:6px;flex-wrap:wrap">
       <span class="pill ${v.x >= 0.5 ? 'green' : v.x > 0 ? 'blue' : 'red'}" title="Voisinage ce soir : ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? `, piste ${esc(v.nom)}` : ''} · ${esc(v.txt)}">🏘 Voisinage ${vCourt}${v.nom ? ` · ${esc(v.nom)}` : ''}</span>
       <span class="pill" title="Budget restant après tes engagements du jour">💶 reste ${fmt1(reste)} k€</span>
-      ${st.enquete.nbCellules > 1 ? `<span class="pill violet" title="Ta cellule : les autres suspects coûtent le double">● ${esc(miens.join(', '))}</span>` : ''}
+      ${st.enquete.nbCellules > 1 ? `<span class="pill violet" title="Ta zone enquête sur eux : les autres suspects coûtent le double">● ${esc(miens.join(', '))}</span>` : ''}
       ${aideBtn('voisinage')}
     </div>
     ${appuiHtml({ compact: true })}
@@ -393,13 +393,13 @@ function synthese(aff, carnet, ordre) {
     <div class="syn-l syn-h" role="row"><span role="columnheader">Suspect</span>${ELEMENTS.map((e) => `<span role="columnheader">${ELEMENT_NOM[e]}</span>`).join('')}</div>
     ${ordre.map((i) => {
       const s2 = aff.suspects[i], etat = etatSuspect(carnet, i, aff), mien = dansMaCellule(st, S.user.uid, i);
-      return `<div class="syn-l ${etat}" role="row"><span role="rowheader" class="syn-nom">${S.draft && S.draft.piste === i ? '<i title="piste prioritaire" aria-label="piste prioritaire">🔎</i> ' : ''}${esc(s2.prenom)}${st.enquete.nbCellules > 1 && mien ? ' <i class="cel" title="ta cellule">●</i>' : ''}</span>${ELEMENTS.map((e) => {
+      return `<div class="syn-l ${etat}" role="row"><span role="rowheader" class="syn-nom">${S.draft && S.draft.piste === i ? '<i title="piste prioritaire" aria-label="piste prioritaire">🔎</i> ' : ''}${esc(s2.prenom)}${st.enquete.nbCellules > 1 && mien ? ' <i class="cel" title="ta zone enquête sur ce suspect">●</i>' : ''}</span>${ELEMENTS.map((e) => {
         const m = CASES[carnet.g[`${i}:${e}`] || 0];
         return `<button type="button" role="cell" class="syn-c ${m.cls}" data-action="mmo-mark" data-i="${i}" data-e="${e}" aria-label="${ELEMENT_NOM[e]} de ${esc(s2.prenom)} : ${m.nom}. Changer">${m.sym}</button>`;
       }).join('')}</div>`;
     }).join('')}
   </div>
-  <p class="tiny muted" style="margin:0">Touche une case : ✓ établi, puis ✕ exclu, puis vide. ${aff.variante === 'complices' ? 'Ici, deux complices : tous deux ont le mobile, l’un le moyen, l’autre l’occasion.' : 'Le coupable est le seul à avoir les trois ✓.'} ${st.enquete.nbCellules > 1 ? '● = suspect de ta cellule.' : ''}</p>`;
+  <p class="tiny muted" style="margin:0">Touche une case : ✓ établi, puis ✕ exclu, puis vide. ${aff.variante === 'complices' ? 'Ici, deux complices : tous deux ont le mobile, l’un le moyen, l’autre l’occasion.' : 'Le coupable est le seul à avoir les trois ✓.'} ${st.enquete.nbCellules > 1 ? '● = ta zone enquête sur ce suspect.' : ''}</p>`;
 }
 
 function vueSuspects(aff, dos) {
@@ -413,7 +413,7 @@ function vueSuspects(aff, dos) {
   const visibles = ordre.filter((i) => filtre === 'tous' || (filtre === 'cellule' ? dansMaCellule(st, S.user.uid, i) : etatSuspect(carnet, i, aff) !== 'exclu'));
   const f = (k, l) => `<button type="button" class="chip ${filtre === k ? 'on' : ''}" data-action="enq-filtre" data-v="${k}">${l}</button>`;
   return `${synthese(aff, carnet, ordre)}
-    <div class="row" style="gap:6px;flex-wrap:wrap">${f('tous', 'Tous')}${st.enquete.nbCellules > 1 ? f('cellule', 'Ma cellule') : ''}${f('lice', 'Encore en lice')}</div>
+    <div class="row" style="gap:6px;flex-wrap:wrap">${f('tous', 'Tous')}${st.enquete.nbCellules > 1 ? f('cellule', 'Mes suspects') : ''}${f('lice', 'Encore en lice')}</div>
     ${visibles.map((i) => suspectCard(aff, dos, aff.suspects[i], i, carnet)).join('') || '<p class="small muted">Aucun suspect dans ce filtre.</p>'}`;
 }
 
