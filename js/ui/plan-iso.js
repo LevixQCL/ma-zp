@@ -119,6 +119,16 @@ function dessiner(st, me, seed, vue, reduit) {
     const bx = [Math.min(...zoneInt.map((q) => q[0])), Math.max(...zoneInt.map((q) => q[0]))], by = [Math.min(...zoneInt.map((q) => q[1])), Math.max(...zoneInt.map((q) => q[1]))];
     const nb = zoomZone ? (mien ? 16 : 12) : 7;
     const poses = capitale ? [[c.c[0], c.c[1], 12]] : [];
+    // Non-droit : une scène propre au milieu du secteur (deal, recel, rodéos…), et une émeute quand l'emprise est forte.
+    const scenes = [];
+    if (nd) {
+      const milieu = sND && sND.coeur ? 'qg' : (sND && sND.milieu) || 'deal', centre = inset(c.poly, c.c, 0.5);
+      const reserver = (r) => { for (let e = 0; e < 200; e++) { const p = [rng.float(bx[0], bx[1]), rng.float(by[0], by[1])]; const [sx, sy] = P(p[0], p[1], 1.2), [ex, ey] = P(c.c[0], c.c[1], 18), sousPastille = Math.abs(sx - ex) < 13 && sy > ey - 10 && sy < ey + 16;
+          if (!sousPastille && dedans(p, inset(c.poly, c.c, 0.62)) && !dansFleuve(p, 4) && !poses.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < (q[2] || 7.5) + 1)) { poses.push([p[0], p[1], r]); return p; } } return null; };
+      const a = reserver(10);
+      if (a) scenes.push({ x: a[0], y: a[1], type: 'scene', milieu, rng: makeRng(`${seed}:sc:${i}`) });
+      if (milieu !== 'qg' && milieu !== 'contrefacon' && kND >= 0.68) { const b = reserver(9); if (b) scenes.push({ x: b[0], y: b[1], type: 'scene', milieu: 'emeute', rng: makeRng(`${seed}:em:${i}`) }); }
+    }
     let essais = 0;
     while (poses.length < nb && essais++ < 400) {
       const p = [rng.float(bx[0], bx[1]), rng.float(by[0], by[1])];
@@ -137,12 +147,14 @@ function dessiner(st, me, seed, vue, reduit) {
       else type = roll < 0.6 ? 'maison' : roll < 0.72 ? 'immeuble' : 'arbre';
       objets.push({ x: p[0], y: p[1], type, n, mien, nd, u, rng: r2, brule: nd && type !== 'arbre' && type !== 'feu' && r2.next() < 0.06 + 0.22 * kND });
     }
-    // Non-droit : carcasses de voitures en feu et fusillades entre bandes rivales, d'autant plus que l'emprise est forte.
+    // Non-droit : carcasses de voitures en feu et fusillades entre bandes rivales (milieux armés), selon l'emprise.
     if (nd) {
+      objets.push(...scenes);
       const libre = (p, m) => dedans(p, zoneInt) && !dansFleuve(p, 2) && !poses.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < m);
       const placer = (m) => { for (let e = 0; e < 120; e++) { const p = [rng.float(bx[0], bx[1]), rng.float(by[0], by[1])]; if (libre(p, m)) { poses.push([...p, m]); return p; } } return null; };
       for (let k = 0; k < Math.round(kND * 1.4); k++) { const p = placer(4); if (p) objets.push({ x: p[0], y: p[1], type: 'carcasse', rng: makeRng(`${seed}:car:${i}:${k}`) }); }
-      const nbFus = kND >= 0.6 ? 2 : kND >= 0.15 ? 1 : 0;
+      const arme = sND && (sND.coeur || ['deal', 'recel', 'garage'].includes(sND.milieu));
+      const nbFus = arme && kND >= 0.3 ? 1 : 0;
       for (let k = 0; k < nbFus; k++) {
         const r3 = makeRng(`${seed}:fus:${i}:${k}`), p = placer(6);
         if (!p) continue;
@@ -224,6 +236,115 @@ function dessiner(st, me, seed, vue, reduit) {
   };
   const fumee = (sx, sy, k, r) => { for (let j = 0; j < 3; j++) { const du = r.float(4, 6), dx = r.float(4, 10); fumees.push(`<circle cx="${f(sx)}" cy="${f(sy)}" r="3" fill="url(#${id('fumee')})" opacity="0"><animate attributeName="cy" values="${f(sy)};${f(sy - 34 * k)}" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/><animate attributeName="r" values="${f(2 * k)};${f(9 * k)}" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.7;0" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/><animate attributeName="cx" values="${f(sx)};${f(sx + dx)}" dur="${f(du)}s" begin="${f(j * du / 3)}s" repeatCount="indefinite"/></circle>`); } };
   const tirs = [];
+  // Petit personnage (1,35 × la taille de base) : jambes, buste à la couleur de la bande, tête ; bras selon le geste.
+  const perso = (wx, wy, coul, { geste = null, sens = 1, accroupi = false, anim = '' } = {}) => {
+    const [x, y] = P(wx, wy, 1.2), hb = accroupi ? 1.8 : 3;
+    let s = `<g transform="translate(${f(x)} ${f(y)}) scale(1.5)">${anim}<ellipse cx=".4" cy=".2" rx="1.3" ry=".5" fill="#050816" opacity=".5"/>`;
+    s += accroupi ? '<path d="M-.7 0L.3 -.9L0 -1.2" fill="none" stroke="#14121A" stroke-width=".55" stroke-linecap="round"/>' : '<path d="M-.6 0L0 -1.5L.6 0" fill="none" stroke="#14121A" stroke-width=".55" stroke-linecap="round"/>';
+    s += `<line x1="0" y1="${f(-hb + 1.5)}" x2="0" y2="${f(-hb)}" stroke="${coul}" stroke-width="1.2" stroke-linecap="round"/><circle cy="${f(-hb - 0.7)}" r=".62" fill="#1A1820"/>`;
+    if (geste === 'leve') s += `<line x1="0" y1="${f(-hb + 0.2)}" x2="${f(sens * 0.8)}" y2="${f(-hb - 1.4)}" stroke="${coul}" stroke-width=".45" stroke-linecap="round"/>`;
+    if (geste === 'porte') s += `<rect x="${f(sens * 0.3)}" y="${f(-hb - 0.1)}" width="1.4" height="1.2" fill="#A97A4A" stroke="#6E4E2E" stroke-width=".2"/>`;
+    if (geste === 'tel') s += `<circle cx="${f(sens * 0.6)}" cy="${f(-hb - 0.2)}" r=".35" fill="#8FD3FF"><animate attributeName="opacity" values="1;.2;1" dur="${f(0.8 + Math.abs(wx * 7 % 1))}s" repeatCount="indefinite"/></circle>`;
+    return s + '</g>';
+  };
+  const marche = (dx, dy, du, deb = 0) => `<animateTransform attributeName="transform" type="translate" additive="sum" values="0 0;${f(dx)} ${f(dy)};0 0" dur="${f(du)}s" begin="${f(-deb)}s" repeatCount="indefinite"/>`;
+  const voiture = (wx, wy, couls, rot) => { const w = rot ? 4.4 : 2.2, d = rot ? 2.2 : 4.4; return boite(wx - w / 2, wx + w / 2, wy - d / 2, wy + d / 2, 2.2, couls) + boite(wx - w / 2 + (rot ? 1 : 0.25), wx + w / 2 - (rot ? 1 : 0.25), wy - d / 2 + (rot ? 0.25 : 1), wy + d / 2 - (rot ? 0.25 : 1), 3.3, [couls[0], couls[1], couls[2]], 2.2); };
+  const scene = (b) => {
+    const { x, y, rng } = b, R = (k) => rng.float(-k, k);
+    let s = '';
+    const pied = (dx, dy) => P(x + dx, y + dy, 1.2);
+    switch (b.milieu) {
+      case 'deal': { // Point de deal : le vendeur, une file de clients, des guetteurs au téléphone aux coins.
+        s += perso(x, y, '#3FA27A', { geste: 'porte', sens: 1 });
+        for (let k = 0; k < 3; k++) s += perso(x + 1.6 + k * 1.4, y + 0.6 + k * 1.1, '#6C7393', { anim: k === 0 ? marche(-0.6, -0.4, 2.2) : '' });
+        for (const [dx, dy] of [[-5, -4], [5, -4.5], [-4.5, 4.5]]) s += perso(x + dx, y + dy, '#C94A3A', { geste: 'tel', sens: dx > 0 ? -1 : 1 });
+        return s;
+      }
+      case 'recel': { // Recel : une camionnette ouverte, on décharge des cartons vers l'entrepôt.
+        s += voiture(x - 2.5, y, ['#C9CBD6', '#9A9DAE', '#7D8092'], true);
+        s += boite(x + 1.2, x + 2.4, y - 2.5, y - 1.3, 2.4, ['#A97A4A', '#8A6038', '#6E4E2E']) + boite(x + 1.4, x + 2.2, y - 2.3, y - 1.5, 3.4, ['#B8895A', '#8A6038', '#6E4E2E'], 2.4);
+        for (let k = 0; k < 2; k++) s += perso(x + 0.4, y + 1.2 + k * 1.3, '#7A6CE0', { geste: 'porte', sens: 1, anim: marche(3, -1.5, 2.6, k * 1.3) });
+        s += perso(x - 3.5, y + 2.6, '#C94A3A', { geste: 'tel' });
+        return s;
+      }
+      case 'squat': { // Squat : matelas au sol, brasero et un groupe autour.
+        s += face([[x - 4, y + 1.5, 1.3], [x - 1.5, y + 1.5, 1.3], [x - 1.5, y + 3, 1.3], [x - 4, y + 3, 1.3]], '#8C8471') + face([[x + 2, y - 3.5, 1.3], [x + 4.2, y - 3.5, 1.3], [x + 4.2, y - 2, 1.3], [x + 2, y - 2, 1.3]], '#6F6A5C');
+        s += boite(x - 0.5, x + 0.5, y - 0.5, y + 0.5, 2.6, ['#3A3238', '#2A2428', '#1E1A1D']);
+        const [bx2, by2] = P(x, y, 2.6); s += flammes(bx2, by2, 0.55, rng);
+        for (let k = 0; k < 4; k++) { const a = k * 1.57 + 0.5; s += perso(x + Math.cos(a) * 2.2, y + Math.sin(a) * 2.2, ['#6C7393', '#8A6A4A', '#4A6A5A', '#7A4A5A'][k], { accroupi: k % 2 === 1 }); }
+        return s;
+      }
+      case 'garage': { // Garage clandestin : voiture sur cales sans roues, meuleuse qui crache des étincelles.
+        s += voiture(x, y, ['#3E5C8A', '#2C4468', '#22364F'], true);
+        for (const [dx, dy] of [[-3.5, 2.6], [-2.4, 3.3], [3.4, 2.4]]) { const [rx, ry] = P(x + dx, y + dy, 1.4); s += `<ellipse cx="${f(rx)}" cy="${f(ry)}" rx="1" ry=".55" fill="#14121A" stroke="#3A3842" stroke-width=".3"/>`; }
+        s += perso(x + 1, y + 2, '#D98A3A', { accroupi: true });
+        const [ex, ey] = P(x + 0.6, y + 1.4, 2.3);
+        for (let k = 0; k < 6; k++) { const a = -2.4 + k * 0.32, L = 2 + rng.next() * 2; s += `<line x1="${f(ex)}" y1="${f(ey)}" x2="${f(ex + Math.cos(a) * L)}" y2="${f(ey + Math.sin(a) * L)}" stroke="#FFD86A" stroke-width=".3" opacity="0"><animate attributeName="opacity" values="0;1;0" dur="${f(0.25 + rng.next() * 0.3)}s" begin="${f(rng.next())}s" repeatCount="indefinite"/></line>`; }
+        s += perso(x - 3.8, y - 2.2, '#C94A3A', { geste: 'tel' });
+        return s;
+      }
+      case 'rodeos': { // Rodéos urbains : motos qui tournent en rond, phare allumé, et des spectateurs.
+        const [cx, cy] = P(x, y, 1.4), rx = 7, ry = 3.6;
+        s += `<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="${rx}" ry="${ry}" fill="none" stroke="#3A2A2A" stroke-width="1.6" opacity=".55"/>`;
+        const tr = `M${f(cx - rx)} ${f(cy)}a${rx} ${ry} 0 1 0 ${2 * rx} 0a${rx} ${ry} 0 1 0 ${-2 * rx} 0`;
+        for (let k = 0; k < 3; k++) s += `<g><path d="M3 0L13 -3.5V3.5Z" fill="#FFF2C0" opacity=".25"/><rect x="-1.8" y="-.5" width="3.6" height="1" rx=".5" fill="#14121A"/><circle cx="1.6" r=".5" fill="#FFF2C0"/><circle cx="-1.8" r=".4" fill="#FF3B3B"/><line x1="0" y1="-.4" x2="0" y2="-2.6" stroke="#C94A3A" stroke-width="1"/><circle cy="-3.2" r=".6" fill="#1A1820"/><animateMotion dur="${f(3 + k * 0.6)}s" begin="${f(-k * 1.1)}s" repeatCount="indefinite" rotate="auto" path="${tr}"/></g>`;
+        for (const [dx, dy] of [[-6, 5], [-4.8, 5.8], [6.5, -5]]) s += perso(x + dx, y + dy, '#6C7393', { geste: 'leve', sens: 1 });
+        return s;
+      }
+      case 'jeux': { // Tripot : enseigne néon qui clignote, videur à la porte, berlines garées.
+        s += boite(x - 3, x + 1.5, y - 3, y + 1, 6, ['#3B2A33', '#2A1E26', '#22181F']);
+        const [nx, ny] = P(x - 0.7, y + 1, 7.5);
+        s += `<rect x="${f(nx - 4)}" y="${f(ny - 2)}" width="8" height="3.4" rx=".8" fill="#14121A" stroke="#FF4FD8" stroke-width=".5"><animate attributeName="stroke-opacity" values="1;.2;1;1;.1;1" dur="2.2s" repeatCount="indefinite"/></rect><text x="${f(nx)}" y="${f(ny + 0.6)}" text-anchor="middle" style="font:800 2.6px sans-serif;fill:#FF4FD8">♠ ♦</text>`;
+        const [dx2, dy2] = P(x - 0.5, y + 1, 1.2); s += face([[x - 1.2, y + 1, 1.2], [x + 0.2, y + 1, 1.2], [x + 0.2, y + 1, 3.6], [x - 1.2, y + 1, 3.6]], '#FFB23F', ' opacity=".7"');
+        s += perso(x + 0.9, y + 2.2, '#14121A', {}) + perso(x - 2.4, y + 3.4, '#6C7393', { anim: marche(1.6, -1.6, 3) });
+        s += voiture(x + 4, y - 1, ['#1A1A20', '#111116', '#0B0B10'], false) + voiture(x + 4, y + 3.5, ['#2A2A32', '#1C1C22', '#141418'], false);
+        return s;
+      }
+      case 'sommeil': { // Marchands de sommeil : file de locataires avec leurs sacs, linge tendu, matelas entassés.
+        const [l1x, l1y] = P(x - 4, y - 2, 5), [l2x, l2y] = P(x + 2, y - 4, 5);
+        s += `<line x1="${f(l1x)}" y1="${f(l1y)}" x2="${f(l1x)}" y2="${f(l1y + 3.8)}" stroke="#5A5F78" stroke-width=".4"/><line x1="${f(l2x)}" y1="${f(l2y)}" x2="${f(l2x)}" y2="${f(l2y + 3.8)}" stroke="#5A5F78" stroke-width=".4"/><path d="M${f(l1x)} ${f(l1y)}Q${f((l1x + l2x) / 2)} ${f((l1y + l2y) / 2 + 1.5)} ${f(l2x)} ${f(l2y)}" fill="none" stroke="#9AA3C4" stroke-width=".25"/>`;
+        for (let k = 1; k < 5; k++) { const t = k / 5, lx = l1x + (l2x - l1x) * t, ly = l1y + (l2y - l1y) * t + Math.sin(t * Math.PI) * 0.75; s += `<rect x="${f(lx - 0.6)}" y="${f(ly)}" width="1.2" height="1.6" fill="${['#E0625A', '#E2C04A', '#63B0FF', '#3FA27A'][k - 1]}" opacity=".85"/>`; }
+        for (let k = 0; k < 3; k++) s += boite(x + 2, x + 4.4, y + 1, y + 2.2, 1.6 + k * 0.45, ['#8C8471', '#6F6A5C', '#5A5649'], 1.2 + k * 0.45);
+        for (let k = 0; k < 4; k++) s += perso(x - 3 + k * 1.3, y + 2 + k * 0.6, ['#6C7393', '#8A6A4A', '#4A6A5A', '#7A4A5A'][k], { geste: 'porte', sens: -1 });
+        s += perso(x - 0.5, y - 0.8, '#14121A', { geste: 'leve', sens: 1 });
+        return s;
+      }
+      case 'contrefacon': { // Marché de contrefaçon : étals sur le trottoir, vendeurs et acheteurs qui circulent.
+        for (const [dx, dy] of [[-3.5, -1], [0.5, -2.5], [3.5, 1]]) {
+          s += boite(x + dx - 1.4, x + dx + 1.4, y + dy - 0.8, y + dy + 0.8, 2.2, ['#5A4A3A', '#4A3C2E', '#3A2E22']);
+          for (let k = 0; k < 3; k++) { const [ox, oy] = P(x + dx - 0.8 + k * 0.8, y + dy, 2.6); s += `<rect x="${f(ox - 0.5)}" y="${f(oy - 0.6)}" width="1" height=".9" rx=".2" fill="${['#E2C04A', '#E0625A', '#7A6CE0', '#3FA27A', '#FF9A3C'][(k + Math.round(dx)) % 5 < 0 ? 0 : (k + Math.round(dx)) % 5]}"/>`; }
+          s += perso(x + dx - 0.4, y + dy - 1.8, '#3FA27A', {});
+        }
+        for (let k = 0; k < 4; k++) s += perso(x - 3 + k * 2.2 + R(0.5), y + 3 + R(0.6), '#6C7393', { anim: marche(R(2), R(1.5), 2.5 + rng.next() * 2, rng.next() * 2), geste: k === 1 ? 'porte' : null });
+        return s;
+      }
+      case 'qg': { // QG : enceinte de fortune, gardes armés, projecteur qui balaie la nuit.
+        for (const [a0, a1, b0, b1] of [[-5, 5, -5, -4.4], [-5, -4.4, -5, 5], [4.4, 5, -5, 1.5]]) s += boite(x + a0, x + a1, y + b0, y + b1, 3.2, ['#4A4048', '#33292F', '#2A2228']);
+        s += boite(x - 5, x - 1, y + 4.4, y + 5, 3.2, ['#4A4048', '#33292F', '#2A2228']);
+        const [px, py] = P(x - 4.6, y - 4.6, 7.5);
+        s += `<line x1="${f(px)}" y1="${f(py + 6)}" x2="${f(px)}" y2="${f(py)}" stroke="#5A5F78" stroke-width=".6"/><g transform="translate(${f(px)} ${f(py)})"><path d="M0 0L34 -6L34 6Z" fill="#FFF2C0" opacity=".14"><animateTransform attributeName="transform" type="rotate" values="10;80;10" dur="7s" repeatCount="indefinite"/></path><circle r="1" fill="#FFF2C0"/></g>`;
+        for (const [dx, dy, se] of [[1.5, 5.8, 1], [3.8, 5.2, -1]]) { const [gx, gy] = pied(dx, dy); s += perso(x + dx, y + dy, '#14121A', {}) + `<line x1="${f(gx)}" y1="${f(gy - 3.4)}" x2="${f(gx + se * 2.4)}" y2="${f(gy - 3.6)}" stroke="#0E0C12" stroke-width=".6"/>`; }
+        s += perso(x, y, '#D9B44A', { geste: 'tel' }) + perso(x - 1.6, y + 1, '#14121A', {});
+        return s;
+      }
+      case 'emeute': { // Émeute : foule massée derrière une banderole, cocktails Molotov lancés, pavés au sol.
+        const coul = ['#C94A3A', '#6C7393', '#14121A', '#8A6A4A', '#4A4A5A'];
+        const [b1x, b1y] = P(x - 1.6, y + 1.6, 4.8), [b2x, b2y] = P(x + 1.6, y + 1.6, 4.8);
+        for (let k = 0; k < 8; k++) { const dx = -2.8 + (k % 4) * 1.8 + R(0.3), dy = (k < 4 ? -0.8 : -2.6) + R(0.3); s += perso(x + dx, y + dy, coul[k % 5], { geste: k % 3 === 0 ? 'leve' : null, sens: 1 }); }
+        s += `<path d="M${f(b1x)} ${f(b1y)}L${f(b2x)} ${f(b2y)}L${f(b2x)} ${f(b2y + 2.6)}L${f(b1x)} ${f(b1y + 2.6)}Z" fill="#EDE6D6"/><path d="M${f(b1x + 0.6)} ${f(b1y + 1.3)}l1 -.6l1 .7l1 -.6l1 .6l1 -.5" fill="none" stroke="#C94A3A" stroke-width=".5"/>`;
+        for (const [ax, ay] of [[b1x, b1y], [b2x, b2y]]) s += `<line x1="${f(ax)}" y1="${f(ay)}" x2="${f(ax)}" y2="${f(ay + 4.8)}" stroke="#5A3F2E" stroke-width=".35"/>`;
+        s += perso(x - 1.6, y + 2.2, '#C94A3A', {}) + perso(x + 1.6, y + 2.2, '#6C7393', {});
+        for (let k = 0; k < 5; k++) { const [qx, qy] = pied(R(4), 3.5 + rng.next() * 2.5); s += `<rect x="${f(qx)}" y="${f(qy)}" width=".8" height=".55" fill="#6A6470"/>`; }
+        // Le Molotov : arc du lanceur vers la chaussée devant la foule, puis une gerbe de flammes à l'impact.
+        const [lx, ly] = P(x + 1, y - 0.8, 6), [ix, iy] = P(x + R(2), y + 6.5, 1.2);
+        const arc = `M${f(lx)} ${f(ly)}Q${f((lx + ix) / 2)} ${f(Math.min(ly, iy) - 10)} ${f(ix)} ${f(iy)}`, du = 2.6 + rng.next();
+        s += `<circle r=".7" fill="#FF9A3C"><animateMotion dur="${f(du)}s" repeatCount="indefinite" keyPoints="0;1;1" keyTimes="0;.35;1" calcMode="linear" path="${arc}"/><animate attributeName="opacity" values="1;1;0;0" keyTimes="0;.34;.36;1" dur="${f(du)}s" repeatCount="indefinite"/></circle>`;
+        s += `<circle cx="${f(ix)}" cy="${f(iy - 1)}" r="3" fill="#FF7A2A" opacity="0"><animate attributeName="opacity" values="0;0;.9;0" keyTimes="0;.35;.42;1" dur="${f(du)}s" repeatCount="indefinite"/><animate attributeName="r" values="0;0;3.5;1" keyTimes="0;.35;.45;1" dur="${f(du)}s" repeatCount="indefinite"/></circle>`;
+        return s;
+      }
+    }
+    return s;
+  };
   const dessin = (b) => {
     const { x, y, rng } = b, pal = b.nd ? PAL.nd : b.mien ? PAL.mien : PAL.autre;
     const lum = b.mien && b.n ? LUM[b.n.id] : b.nd ? '#FF6B5E' : '#C9B37A';
@@ -296,6 +417,7 @@ function dessiner(st, me, seed, vue, reduit) {
       const fl = (q) => `M${f(fx - 1)} ${f(fy - 3)}Q${f(fx + q[0])} ${f(fy - q[1])} ${f(fx + 1)} ${f(fy - 3)}Z`;
       return `<circle cx="${f(fx)}" cy="${f(fy - 1)}" r="7" fill="url(#${id('feu')})"/><rect x="${f(fx - 1.2)}" y="${f(fy - 3)}" width="2.4" height="3" fill="#3A2A2A"/><path d="${fl([0, 7])}" fill="#FF9A3C"><animate attributeName="d" values="${fl([0, 7])};${fl([0.6, 5.5])};${fl([0, 7])}" dur=".6s" repeatCount="indefinite"/></path>`;
     }
+    if (b.type === 'scene') return scene(b);
     if (b.type === 'carcasse') {
       const r = rng.next() < 0.5, w = r ? 4.6 : 2.2, d = r ? 2.2 : 4.6, X0 = x - w / 2, X1 = x + w / 2, Y0 = y - d / 2, Y1 = y + d / 2;
       s += ombre(X0, X1, Y0, Y1) + boite(X0, X1, Y0, Y1, 2.6, ['#2A2326', '#1C1719', '#151113']) + boite(X0 + (r ? 1 : 0.3), X1 - (r ? 1 : 0.3), Y0 + (r ? 0.3 : 1), Y1 - (r ? 0.3 : 1), 3.8, ['#241D20', '#181315', '#120E10'], 2.6);
