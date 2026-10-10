@@ -327,7 +327,6 @@ const EXC = [
   { id: 'bandits', l: "Vous n’avez pas de vrais bandits à attraper ?", g: "Si. Mais aujourd’hui, le plus rapide, c’est vous.", s: "Vous avez raison, j’ai un peu honte.", h: "Continuez comme ça et vous allez en voir un de près." },
   { id: 'voiture', l: "C’est la voiture, elle accélère toute seule !", g: "Alors elle passera aussi par le contrôle technique.", s: "Ah, c’est peut-être un défaut moteur…", h: "Et le volant, il tourne tout seul aussi ?" },
   { id: 'chef', l: "Je connais très bien votre chef de corps !", g: "Parfait, il recevra une copie du PV.", s: "Ah… dans ce cas, on oublie tout.", h: "Moi aussi. Il déteste les chauffards." },
-  { id: 'collegue', l: "Entre collègues, on peut s’arranger, non ?", g: "Entre collègues, on montre l’exemple.", s: "Bon, pour un collègue, je ferme les yeux.", h: "Entre collègues, je vous mets le double." },
   { id: 'gps', l: "Mon GPS ne m’a jamais bipé, donc c’est bon !", g: "Le GPS ne remplace pas les panneaux.", s: "C’est vrai que d’habitude, ça bipe…", h: "Votre GPS, je le saisis aussi." },
   { id: 'reunion', l: "Je suis pressé, j’ai une réunion super importante !", g: "Elle commencera sans vous, et tout le monde sera entier.", s: "Une réunion ? Alors allez-y vite.", h: "Votre réunion, ce sera au tribunal." },
   { id: 'bien', l: "Je roule vite, mais je roule bien, moi !", g: "À cette vitesse, personne ne freine à temps.", s: "C’est vrai que vous avez de bons réflexes.", h: "On en reparle contre la prochaine glissière ?" },
@@ -349,6 +348,7 @@ const EXC_CTX = {
   embouti: { id: 'embouti', l: "Vous m’avez embouti ! C’est vous qui allez payer !", g: "Le constat dira qui fuyait qui, et à quelle vitesse.", s: "Bon… on fait chacun un geste ?", h: "Vous voulez que je recommence ?" }
 };
 const TOUTES = [...EXC, ...Object.values(EXC_CTX)];
+const nbCarnet = () => TOUTES.filter((e) => carnet.has(e.id)).length;
 const R_OK = ['…Mouais.', 'Bon. D’accord.', '…Touché.', 'Grmbl.', 'Hmpf. Si vous le dites.'];
 const R_MOU = ['Ah ! Vous voyez !', 'Donc je peux y aller ?', 'Je le savais !', 'Bon, on est d’accord alors.'];
 const R_DUR = ['Je vais écrire au bourgmestre !', 'C’est de l’acharnement !', 'Je filme, hein !', 'Je veux votre matricule !'];
@@ -992,7 +992,7 @@ function finPartie(cause) {
     <div><dt>Manches gagnées</dt><dd>${manche - 1}</dd></div>
     <div><dt>Luc a payé</dt><dd>${stats.paye} fois</dd></div>
     <div><dt>Pointe max flashée</dt><dd>${stats.flashMax ? stats.flashMax + ' km/h' : '—'}</dd></div>`;
-  $('recFin').innerHTML = (record && score > 0 ? '<b>Nouveau record !</b> · ' : `Record : <b>${best}</b> · `) + `Carnet ${carnet.size}/${TOUTES.length}`;
+  $('recFin').innerHTML = (record && score > 0 ? '<b>Nouveau record !</b> · ' : `Record : <b>${best}</b> · `) + `Carnet ${nbCarnet()}/${TOUTES.length}`;
   setTimeout(() => { $('ovFin').hidden = false; }, 500);
 }
 $('rejouer').addEventListener('click', () => { audio(); nouvellePartie(); });
@@ -1001,14 +1001,14 @@ $('go').addEventListener('click', () => { audio(); nouvellePartie(); });
 let carnetRetour = 'ovTitre';
 function ouvrirCarnet(from) {
   carnetRetour = from; $(from).hidden = true;
-  $('carnetSur').textContent = `Carnet d’excuses · ${carnet.size}/${TOUTES.length}`;
+  $('carnetSur').textContent = `Carnet d’excuses · ${nbCarnet()}/${TOUTES.length}`;
   $('carnetListe').innerHTML = TOUTES.map((e) => carnet.has(e.id) ? `<li class="vu">« ${e.l} »</li>` : '<li class="cache">Pas encore entendue…</li>').join('');
   $('ovCarnet').hidden = false;
 }
 $('btnCarnet').addEventListener('click', () => ouvrirCarnet('ovTitre'));
 $('finCarnet').addEventListener('click', () => ouvrirCarnet('ovFin'));
 $('carnetFermer').addEventListener('click', () => { $('ovCarnet').hidden = true; $(carnetRetour).hidden = false; });
-$('recTitre').innerHTML = (best ? `Record : <b>${best}</b> · ` : '') + `Carnet ${carnet.size}/${TOUTES.length}`;
+$('recTitre').innerHTML = (best ? `Record : <b>${best}</b> · ` : '') + `Carnet ${nbCarnet()}/${TOUTES.length}`;
 
 /* ---------- HUD ---------- */
 const hudCache = {};
