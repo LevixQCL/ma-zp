@@ -1,5 +1,5 @@
 // Aides rapides (bouton « ? ») : l'essentiel d'une jauge en quelques lignes, sans ouvrir le guide.
-import { esc, fmt1, myZone } from './common.js';
+import { S, esc, fmt1, myZone } from './common.js';
 import { IPZ_POIDS, START, ECONOMIE, SUBSIDE, TERRAIN, FLAGRANT, DOSSIER, ND, BUDGET_IPZ, scoreBudget, scoreRevenu, MORAL_PALIERS, MORAL } from '../engine/constants.js';
 import { confianceCommune, pointsIpz, IPZ_LABELS, moralMult } from '../engine/zone.js';
 import { PERIL } from '../engine/rivalites.js';
@@ -179,6 +179,19 @@ function partIpz(z, k) {
   return calc(`Dans l’IPZ : ${fmt1(z.ipzComp[c])} × ${pc(IPZ_POIDS[c])}`, `<strong>${fmt1(pts)} pts</strong>`);
 }
 
+/**
+ * Le journal décrit le dernier tour calculé ; la jauge a pu bouger depuis (passage à la nouvelle saison, qui remet
+ * les jauges aux valeurs de départ ; dilemme ou événement du jour). On l'affiche pour que le calcul retombe juste.
+ */
+function ecartDepuis(z, k, ap) {
+  const v = Number(z[k]);
+  if (ap === undefined || !Number.isFinite(v) || Math.abs(v - ap) < 0.05) return '';
+  const st = S.state || {};
+  const saison = st.season > 1 && st.turn === 1;
+  return `${ligne(saison ? `Nouvelle saison ${st.season} : remise à la valeur de départ` : 'Depuis le tour (événement, dilemme, décision du jour)', v - ap)}
+    ${calc('<strong>Maintenant</strong>', `<strong>${fmt1(v)}</strong>`)}`;
+}
+
 function tourJauge(z, k) {
   const j = z.journal;
   if (!j || !j.lignes) return null;
@@ -187,6 +200,7 @@ function tourJauge(z, k) {
   return { tour: j.tour, html: `${av !== undefined ? calc('Avant le tour', fmt1(av)) : ''}
     ${l.length ? l.map((x) => ligne(esc(x.l), x.v)).join('') : '<p class="tiny muted" style="margin:0">Aucun changement ce tour-là.</p>'}
     ${ap !== undefined ? calc('<strong>Après le tour</strong>', `<strong>${fmt1(ap)}</strong>`) : ''}
+    ${ecartDepuis(z, k, ap)}
     ${k === 'moral' && z.efficaciteMoral ? calc(`Efficacité appliquée ce tour-là (moral ${fmt1(z.efficaciteMoral.moral)} au moment du travail)`, `<strong>${Math.round(z.efficaciteMoral.mult * 100)} %</strong>`) : ''}
     ${k === 'moral' ? calc(`Efficacité pour demain (moral ${fmt1(z.moral)})`, `<strong>${Math.round(moralMult(z.moral) * 100)} %</strong>`) : ''}
     ${partIpz(z, k)}` };

@@ -65,7 +65,7 @@ export function paraSuivant(liste, rep, i) {
   return n;
 }
 
-function feuilleHtml(id, rep) {
+function feuilleHtml(id, rep, dernier = false) {
   const C = COURRIERS[id], ch = rep && Object.hasOwn(rep, id) ? rep[id] : null;
   const anim = S.paraAnim === id;
   const av = C.img ? `<img src="img/bureau/${C.img}-${C.humeur ?? 0}.webp" alt="">` : `<span class="av">${esc(C.av || '✉')}</span>`;
@@ -75,7 +75,9 @@ function feuilleHtml(id, rep) {
     <p class="co-txt">${esc(C.txt)}</p>
     <div class="co-reps">${C.o.map((o, k) => `<button type="button" class="co-opt" data-action="para-choix" data-id="${esc(id)}" data-v="${k}" aria-pressed="${ch === k}">
       <span class="l"><span>${esc(o.l)}</span>${cc(o.comp, `+${XP_COURRIER}`)}</span><span class="s">${esc(texteFx(o.fx || {}))}${o.suite ? ' · <i>il y aura une suite</i>' : ''}</span></button>`).join('')}</div>
-    ${ch != null ? `<span class="co-tampon ${anim ? 'anim' : ''} ${ch === 0 ? 'vert' : 'rouge'}">${esc(C.o[ch].tampon)}</span>` : ''}
+    ${ch != null ? `<span class="co-tampon ${anim ? 'anim' : ''} ${ch === 0 ? 'vert' : 'rouge'}">${esc(C.o[ch].tampon)}</span>
+    <div class="co-valide"><span class="tiny">Réponse retenue. Tu peux encore en changer jusqu’à 20:00.</span>
+      <button type="button" class="btn small primary" data-action="para-suivant" data-id="${esc(id)}">${dernier ? 'Ranger le parapheur' : 'Courrier suivant →'}</button></div>` : ''}
   </article>`;
 }
 
@@ -88,12 +90,12 @@ function parapheurHtml(z, d, j) {
   const reste = liste.length - i;
   const corps = i >= liste.length
     ? `<div class="co-fin"><span style="font-size:28px">🖋️</span><b>Parapheur vidé</b><span class="tiny muted">Tes réponses partent avec tes ordres de 20:00. Touche un courrier ci-dessous pour changer d’avis.</span></div>`
-    : `<div class="co-pile">${reste > 1 ? '<div class="co-derriere"></div>' : ''}${feuilleHtml(liste[i], rep)}</div>`;
+    : `<div class="co-pile">${reste > 1 ? '<div class="co-derriere"></div>' : ''}${feuilleHtml(liste[i], rep, !liste.some((x, k) => k !== i && !Object.hasOwn(rep, x)))}</div>`;
   return `<section class="card co-para ${neuf(j, 1) ? 'co-new' : ''}" aria-label="Le parapheur">
     <div class="between"><h2 class="card-title" style="margin:0">Le parapheur</h2><span class="tiny ${faits === liste.length ? 'ok' : 'muted'}" style="font-weight:700">${faits}/${liste.length} signé${faits > 1 ? 's' : ''}</span></div>
     <span class="tiny muted">${liste.length > 1 ? `${liste.length} courriers` : 'Un courrier'} sur ton bureau. Chaque réponse entraîne une compétence de ton chef. Sans réponse, ton adjoint classe le courrier (sans effet, sans expérience).</span>
     ${corps}
-    ${faits ? `<div class="co-signes">${liste.map((id, k) => Object.hasOwn(rep, id) ? `<button type="button" class="co-mini" data-action="para-revoir" data-v="${k}"><span class="p">✓</span>${esc(COURRIERS[id].obj)}</button>` : '').join('')}</div>` : ''}
+    ${faits ? `<div class="co-signes">${liste.map((id, k) => Object.hasOwn(rep, id) ? `<button type="button" class="co-mini" data-action="para-revoir" data-v="${k}" aria-label="Modifier ta réponse : ${esc(COURRIERS[id].obj)}"><span class="p">✓</span><span class="t">${esc(COURRIERS[id].obj)}</span><span class="m">${icon('pencil', 12)} modifier</span></button>` : '').join('')}</div>` : ''}
   </section>`;
 }
 

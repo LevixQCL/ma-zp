@@ -845,15 +845,21 @@ async function onClick(e) {
       case 'chef-agenda-voisin': S.draft.agenda = { type: 'voisin', zone: el.dataset.v }; S.ordersDirty = true; rerender(); break;
       case 'para-revoir': S.paraIdx = Number(el.dataset.v) || 0; S.paraAnim = null; rerender(); break;
       case 'para-choix': {
+        // La réponse est tamponnée mais la feuille reste : on peut changer d'avis, puis passer au suivant soi-même.
         const id = el.dataset.id, k = Number(el.dataset.v);
+        const avant = S.draft.parapheur && S.draft.parapheur[id];
         S.draft.parapheur = { ...(S.draft.parapheur || {}), [id]: k }; S.ordersDirty = true;
         const liste = courriersDuJour(S.state, myZone().chef ? myZone() : { ...myZone(), chef: creerChef(S.player && S.player.chef) });
-        const i = liste.indexOf(id); S.paraIdx = i; S.paraAnim = id; rerender();
-        // Coup de tampon, puis la feuille s'en va et le courrier suivant arrive.
-        setTimeout(() => {
-          const f = document.querySelector(`.co-feuille[data-para="${id}"]`); if (f) f.classList.add('sort');
-          setTimeout(() => { if (S.paraAnim !== id) return; S.paraAnim = null; S.paraIdx = paraSuivant(liste, S.draft && S.draft.parapheur, i); rerender(); }, 320);
-        }, 650);
+        S.paraIdx = liste.indexOf(id); S.paraAnim = avant === k ? null : id; rerender();
+        break;
+      }
+      case 'para-suivant': {
+        const id = el.dataset.id;
+        const liste = courriersDuJour(S.state, myZone().chef ? myZone() : { ...myZone(), chef: creerChef(S.player && S.player.chef) });
+        const i = liste.indexOf(id), rep = (S.draft && S.draft.parapheur) || {};
+        const f = document.querySelector(`.co-feuille[data-para="${id}"]`); if (f) f.classList.add('sort');
+        setTimeout(() => { S.paraAnim = null; const n = paraSuivant(liste, rep, i); const avant = liste.findIndex((x) => !Object.hasOwn(rep, x));
+          S.paraIdx = n < liste.length ? n : avant >= 0 ? avant : liste.length; rerender(); }, 320);
         break;
       }
       case 'chef-talent': {
