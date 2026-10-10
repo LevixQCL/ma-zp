@@ -12,8 +12,8 @@ import { participeCommune, agentsCommune } from '../engine/crise.js';
 import { engagementsDuJour } from './engagements.js';
 import { primeHtml } from './prime.js';
 import { previsionHtml, suivrePrevision } from './prevision.js';
-import { reglesV2, MAX_DEPENSES, doctrineOuverte, dernierJourDoctrine } from '../engine/regles.js';
-import { DOCTRINES, IDS_DOCTRINES, REGLES, coutPrime } from '../engine/constants.js';
+import { reglesV2, MAX_DEPENSES, doctrineOuverte, dernierJourDoctrine, doctrineSemaine2, finFenetreDoctrine } from '../engine/regles.js';
+import { DOCTRINES, IDS_DOCTRINES, REGLES, MAITRISE, coutPrime } from '../engine/constants.js';
 import { pistesOrdresHtml, resumePistes } from './pistes.js';
 import { chefOrdresHtml, resumeChefOrdres, emplacementsHtml } from './chef.js';
 import { CHEF } from '../engine/chef.js';
@@ -844,34 +844,52 @@ export function ouvertureOrdres(z) {
   out.prochain = ancien ? null : PALIERS_ORDRES.find(([, j]) => jour < j) || null;
   return out;
 }
-/** Jauges de l'Intervention (flagrant délit, saisie avec la doctrine d'intervention), toujours visibles sous le service. */
-function jaugesInter(z) {
-  const barre = (ico, nom, v, titre) => { const p = Math.max(0, Math.min(100, Math.round((v || 0) * 100))); return `<a class="jg-i" href="#guide-doctrines" title="${esc(titre)}"><span class="jg-n">${ico} ${nom}</span><i class="jg-b"><b style="width:${p}%"></b></i><span class="jg-v">${p} %</span></a>`; };
-  const l = [barre('🚨', 'Flagrant délit', z.jaugeFlagrant, 'Remplie par tes patrouilles libres après les incidents. À 100 % : +3 pts, +3 PS, +1 de satisfaction.')];
-  if (z.doctrine === 'intervention') l.push(barre('💰', 'Saisie', z.jaugeSaisie, 'Doctrine d’intervention : +10 % par incident traité. À 100 % : 2 000 à 4 000 € en liquide.'));
-  return `<div class="jg-inter">${l.join('')}</div>`;
+/** Une barre de jauge (touchée : la page du Guide sur les doctrines). */
+function barreJauge(ico, nom, v, titre, cls = '') {
+  const p = Math.max(0, Math.min(100, Math.round((v || 0) * 100)));
+  return `<a class="jg-i${cls}" href="#guide-doctrines" title="${esc(titre)}"><span class="jg-n">${ico} ${esc(nom)}</span><i class="jg-b"><b style="width:${p}%"></b></i><span class="jg-v">${p} %</span></a>`;
 }
-/** Choix de la doctrine de la saison (règles v2), tant qu'elle n'est pas fixée. */
+/** Valeur de la jauge de doctrine (avec la reprise de l'ancienne jauge de saisie). */
+const valJauge = (z) => (z.jaugeDoc != null ? z.jaugeDoc : z.doctrine === 'intervention' ? z.jaugeSaisie : 0) || 0;
+/** Jauges sous un service : flagrant délit sous l'Intervention, et la jauge de la doctrine sous son service. */
+function jaugesService(z, s2) {
+  const l = [];
+  if (s2 === 'intervention') l.push(barreJauge('🚨', 'Flagrant délit', z.jaugeFlagrant, 'Remplie par tes patrouilles libres après les incidents. À 100 % : +3 pts, +3 PS, +1 de satisfaction.'));
+  const D = REGLES.v2 && z.doctrine && DOCTRINES[z.doctrine];
+  if (D && D.jauge && D.jauge.service === s2) l.push(barreJauge(D.jauge.ico, D.jauge.nom, valJauge(z), `Doctrine ${D.nom.toLowerCase()} : ${D.jauge.remplit}. À 100 % : ${D.jauge.gain}.`, ' jg-doc'));
+  return l.length ? `<div class="jg-inter">${l.join('')}</div>` : '';
+}
+/** Jauge d'une doctrine sans service propre (Partenaire) : en tête de l'affectation. */
+function jaugeSansService(z) {
+  const D = REGLES.v2 && z.doctrine && DOCTRINES[z.doctrine];
+  if (!D || !D.jauge || D.jauge.service) return '';
+  return `<div class="jg-inter jg-solo">${barreJauge(D.jauge.ico, D.jauge.nom, valJauge(z), `Doctrine ${D.nom.toLowerCase()} : ${D.jauge.remplit}. À 100 % : ${D.jauge.gain}.`, ' jg-doc')}</div>`;
+}
+/** Choix de la doctrine (règles v2) : les 3 premiers jours de la saison, puis les jours 8 et 9 pour la 2e semaine. */
 function doctrineHtml(z, d) {
   if (!doctrineOuverte(S.state, z)) return '';
-  const reste = dernierJourDoctrine(z) - S.state.turn;
-  const revue = !!z.doctrine;
+  const sem2 = doctrineSemaine2(S.state, z);
+  const reste = finFenetreDoctrine(S.state, z) - S.state.turn;
+  const quand = reste <= 0 ? 'jusqu’à 20:00' : `encore ${reste + 1} jours`;
+  const actuelle = z.doctrine && DOCTRINES[z.doctrine];
+  const revue = !!actuelle && !sem2;
   const choisie = DOCTRINES[d.doctrine || z.doctrine];
-  // Doctrine choisie : la carte se replie sur une ligne (on peut encore en changer en la rouvrant).
+  const etoiles = (m) => '★'.repeat(m + 1);
+  const statut = sem2 && actuelle ? `nouvelle semaine : garde-la (maîtrise ${etoiles(Math.min(2, (z.maitrise || 0) + 1))}) ou changes-en, ${quand}` : revue ? 'doctrines rééquilibrées : tu peux en changer une fois' : `modifiable ${quand}`;
   if (choisie && !(S.ouverts && S.ouverts['ord-doctrine'])) {
-    return `<section class="card doctrine-pli" id="ord-doctrine" aria-label="Doctrine de la saison">
-      <button type="button" class="pli-ligne" data-action="doctrine-ouvrir" aria-expanded="false"><span class="col grow" style="gap:1px;min-width:0;text-align:left"><span class="kicker">Doctrine de la saison</span><span class="pli-resume">${choisie.ico} ${esc(choisie.nom)} · <span class="muted">${revue ? 'doctrines rééquilibrées : tu peux en changer une fois' : `modifiable ${reste <= 0 ? 'jusqu’à 20:00' : `encore ${reste + 1} jours`}`}</span></span></span><span class="pli-ok">${icon('check', 14)}</span>${icon('chevron', 16)}</button>
+    return `<section class="card doctrine-pli" id="ord-doctrine" aria-label="Doctrine de la semaine">
+      <button type="button" class="pli-ligne" data-action="doctrine-ouvrir" aria-expanded="false"><span class="col grow" style="gap:1px;min-width:0;text-align:left"><span class="kicker">Doctrine de la semaine</span><span class="pli-resume">${choisie.ico} ${esc(choisie.nom)} · <span class="muted">${statut}</span></span></span><span class="pli-ok">${icon('check', 14)}</span>${icon('chevron', 16)}</button>
     </section>`;
   }
-  return `<section class="card doctrine" id="ord-doctrine" aria-label="Doctrine de la saison" style="gap:8px;border-color:var(--amber-line)">
-    <div class="between"><span class="kicker">Doctrine de la saison</span>${choisie ? '<button type="button" class="lien tiny" data-action="doctrine-replier">replier</button>' : ''}</div>
-    ${REGLES.v2 ? `<p class="small" style="margin:0">Pour toute la saison : une vraie force, un vrai prix. <strong>${reste <= 0 ? 'Dernier jour' : `Encore ${reste + 1} jours`}</strong>${z.doctrinePrec && DOCTRINES[z.doctrinePrec] ? ` · la saison dernière : ${DOCTRINES[z.doctrinePrec].ico} ${esc(DOCTRINES[z.doctrinePrec].nom)}` : ''}. Fais défiler →</p>` : ''}
-    ${revue ? `<p class="small" style="margin:0;color:var(--amber)"><strong>Doctrines rééquilibrées.</strong> Tu as choisi ${DOCTRINES[z.doctrine].ico} ${esc(DOCTRINES[z.doctrine].nom)} : tu peux la garder ou en changer <strong>une seule fois</strong> (${reste <= 0 ? 'jusqu’à 20:00' : `encore ${reste + 1} jours`}).</p>` : ''}
-    <p class="small doc-long" style="margin:0">Quelle zone veux-tu construire ? Ta doctrine donne une vraie force et un vrai prix, pour toute la saison (elle part avec tes ordres de ce soir). Garder la même d’une saison à l’autre la fait monter en maîtrise. <strong>${reste <= 0 ? 'Dernier jour pour la choisir' : `Encore ${reste + 1} jours pour la choisir`}</strong>, ensuite la saison se joue sans doctrine.${z.doctrinePrec && DOCTRINES[z.doctrinePrec] ? ` La saison dernière : ${DOCTRINES[z.doctrinePrec].ico} ${esc(DOCTRINES[z.doctrinePrec].nom)} (maîtrise ${(z.maitrisePrec || 0) + 1}).` : ''}</p>
+  return `<section class="card doctrine" id="ord-doctrine" aria-label="Doctrine de la semaine" style="gap:8px;border-color:var(--amber-line)">
+    <div class="between"><span class="kicker">${sem2 ? 'Doctrine de la 2e semaine' : 'Doctrine de la semaine'}</span>${choisie ? '<button type="button" class="lien tiny" data-action="doctrine-replier">replier</button>' : ''}</div>
+    ${sem2 && actuelle ? `<p class="small" style="margin:0;color:var(--amber)"><strong>Nouvelle semaine.</strong> Garde ${actuelle.ico} ${esc(actuelle.nom)} : sa maîtrise passe à ${etoiles(Math.min(2, (z.maitrise || 0) + 1))} (force +${Math.round(MAITRISE * Math.min(2, (z.maitrise || 0) + 1) * 100)} %). Ou changes-en : maîtrise et jauge repartent de zéro. Sans choix ${quand}, tu la gardes.</p>`
+      : `<p class="small" style="margin:0">Une vraie force, un vrai prix, et une jauge qui déborde en récompense. Tu la choisis pour la semaine ; en 2e semaine (jours 8 et 9), tu peux la garder ou en changer. <strong>${reste <= 0 ? 'Dernier jour' : `Encore ${reste + 1} jours`}</strong>. Fais défiler →</p>`}
+    ${revue ? `<p class="small" style="margin:0;color:var(--amber)"><strong>Doctrines rééquilibrées.</strong> Tu as choisi ${actuelle.ico} ${esc(actuelle.nom)} : tu peux la garder ou en changer <strong>une seule fois</strong> (${quand}).</p>` : ''}
     <div class="doc-l">${IDS_DOCTRINES.map((k) => { const x = DOCTRINES[k]; return `<button type="button" class="choice" data-action="doctrine" data-k="${k}" aria-pressed="${(d.doctrine || z.doctrine) === k}" style="text-align:left;align-items:flex-start">
-      <span style="font-size:15px;font-weight:700">${x.ico} ${esc(x.nom)}${z.doctrinePrec === k ? ' <span class="tiny" style="color:var(--amber)">· maîtrise +1</span>' : ''}</span>
+      <span style="font-size:15px;font-weight:700">${x.ico} ${esc(x.nom)}${(sem2 ? z.doctrine : z.doctrinePrec) === k ? ' <span class="tiny" style="color:var(--amber)">· maîtrise +1</span>' : ''}</span>
       <span class="s"><span class="ok">+ ${esc(x.force)}</span><br><span class="bad">− ${esc(x.prix)}</span><br><span class="muted">Brille : ${esc(x.brille)}</span></span></button>`; }).join('')}</div>
-    <a class="small" href="#guide-doctrines" style="text-align:center">❔ Tout comprendre : flagrants délits, saisies, maîtrise</a>
+    <a class="small" href="#guide-doctrines" style="text-align:center">❔ Tout comprendre : jauges, flagrants délits, maîtrise</a>
   </section>`;
 }
 /** Saison 2 : une pastille par chose à régler ce soir ; elle se coche quand c'est fait, un toucher y mène. */
@@ -967,13 +985,13 @@ export function renderOrdres() {
       <div class="barre-aff" id="barre-aff" aria-hidden="true">${barreAffectation(e)}</div>
       ${REGLES.v2 ? '' : `<div class="legende-cases tiny muted"><span><span class="case pleine mini" style="--c:var(--faint)"></span>au service</span><span><span class="case vide mini"></span>manquant</span><span><span class="case plus mini" style="--c:var(--faint)"></span>en plus</span>${Object.values(e.prises || {}).some((l) => l.some(([k]) => k > 0)) ? '<span><span class="case mission mini" style="--c:var(--faint)"></span>en mission</span>' : ''}</div>`}
       ${(() => { S._bs = besoinsServices(e); return ''; })()}
-      ${REGLES.v2 ? SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc2 svc-${b.st}${ouvert ? ' ouvert' : ''}" style="--c:${COUL_SVC[s2]}">
+      ${REGLES.v2 ? jaugeSansService(z) : ""}${REGLES.v2 ? SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc2 svc-${b.st}${ouvert ? ' ouvert' : ''}" style="--c:${COUL_SVC[s2]}">
         <div class="svc2-l"><button type="button" class="svc2-n svc-tog" data-action="help" data-s="${s2}" aria-expanded="${ouvert}" aria-label="${ouvert ? 'Masquer' : 'Afficher'} le détail : ${SERVICE_LABELS[s2]}"><span>${s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2]}</span>${bonusEnigme(s2) > 1 ? `<small class="ok">+${Math.round((bonusEnigme(s2) - 1) * 100)} %</small>` : ''}</button>
           <div class="cases svc2-cases" id="cases-${s2}">${casesService(s2, b, d.alloc[s2], e)}</div>
           <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
         <div class="svc2-s"><span class="svc-r" id="res-${s2}">${resultatService(e, s2)}</span><span id="badge-${s2}">${badgeService(s2, b, d.alloc[s2])}</span></div>
         <span id="pris-${s2}" class="svc-plus">${prisHtml(e, s2)}</span>
-        ${s2 === 'intervention' ? jaugesInter(z) : ''}
+        ${jaugesService(z, s2)}
         ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} de réserve en renfort</span>` : ''}
         ${ouvert ? `<div class="svc-det">${s2 === 'recherche' ? `<div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}<p class="tiny" style="margin:0;color:var(--text2);line-height:1.45">Niveau ${z.niveaux[s2]}. ${esc(aide(s2, z))}</p></div>` : ''}
       </div>`; }).join('') : SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc svc-${b.st}${ouvert ? ' ouvert' : ''}">

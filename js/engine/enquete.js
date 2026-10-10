@@ -1693,6 +1693,16 @@ export function pieceGardeAVue(state, z, rng) {
   return f;
 }
 
+/** Jauge de doctrine (judiciaire, de quartier) : une pièce de l'affaire en cours, transmise par le parquet ou un îlotier. */
+export function pieceDoctrine(state, z, rng) {
+  if (!state.enquete || state.enquetePause || !z.enquete || z.enquete.n !== state.enquete.n) return null;
+  const aff = affaire(state, state.enquete.n);
+  const f = pieceHasard(state, z, aff, rng);
+  if (!f) return null;
+  z.enquete.pieces.push({ f, j: state.enquete.jour, src: 'doctrine' });
+  return f;
+}
+
 /** Bonus d’énigme : une pièce de l'affaire en cours. */
 export function indiceBonus(state, z, rng) {
   if (!state.enquete || !z.enquete) return false;

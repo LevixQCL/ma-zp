@@ -2781,7 +2781,10 @@ main.screen.gzs { height: 100dvh; box-sizing: border-box; padding: 10px 12px 100
 
 /* Jauges de l'Intervention (flagrant délit, saisie) sous le service, dans les ordres */
 .jg-inter { display: flex; flex-direction: column; gap: 3px; padding: 2px 0 4px 0; }
-.jg-i { display: grid; grid-template-columns: 8.5em 1fr 2.6em; white-space: nowrap; padding-right: 6px; align-items: center; gap: 8px; font-size: 11px; color: var(--text2); text-decoration: none; }
+.jg-i { display: grid; grid-template-columns: minmax(8.5em, max-content) 1fr 2.6em; white-space: nowrap; padding-right: 6px; align-items: center; gap: 8px; font-size: 11px; color: var(--text2); text-decoration: none; }
 .jg-b { display: block; height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); overflow: hidden; }
 .jg-b b { display: block; height: 100%; border-radius: 3px; background: var(--c, var(--amber)); }
 .jg-v { text-align: right; font-variant-numeric: tabular-nums; }
+.jg-i.jg-doc .jg-n { color: var(--amber-soft, #FFC873); font-weight: 600; }
+.jg-i.jg-doc .jg-b b { background: linear-gradient(90deg, var(--amber, #FFB23F), #FFD27A); }
+.jg-solo { padding: 4px 2px 8px; }

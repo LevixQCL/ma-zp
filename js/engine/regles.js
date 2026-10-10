@@ -49,4 +49,12 @@ export const dernierJourDoctrine = (z) => Math.max(DOCTRINE_JOURS, ((z && z.join
 /** Rééquilibrage des doctrines (10 oct. 2026) : pendant la saison 2, une zone qui en a déjà choisi une peut en changer une fois. */
 export const REVUE_DOCTRINES = { saison: 2 };
 export const doctrineRevisable = (state, z) => !!z && !!z.doctrine && !z.doctrineRevue && Number(state && state.season) === REVUE_DOCTRINES.saison;
-export const doctrineOuverte = (state, z) => reglesV2(state) && !!z && (!z.doctrine || doctrineRevisable(state, z)) && (Number(state.turn) || 1) <= dernierJourDoctrine(z);
+/** Deuxième semaine de la saison : on peut changer de doctrine les jours 8 et 9 (sans choix, on garde la sienne). */
+export const DOCTRINE_SEM2 = { debut: 8, fin: 9 };
+const semaine1 = (state, z) => (Number(state.turn) || 1) <= dernierJourDoctrine(z) && (!z.doctrine || doctrineRevisable(state, z));
+const semaine2 = (state, z) => { const T = Number(state.turn) || 1; return T >= DOCTRINE_SEM2.debut && T <= DOCTRINE_SEM2.fin && !z.doctrineSem2; };
+export const doctrineOuverte = (state, z) => reglesV2(state) && !!z && (semaine1(state, z) || semaine2(state, z));
+/** Vrai si la fenêtre ouverte est celle de la 2e semaine. */
+export const doctrineSemaine2 = (state, z) => reglesV2(state) && !!z && !semaine1(state, z) && semaine2(state, z);
+/** Dernier jour de la fenêtre de choix en cours. */
+export const finFenetreDoctrine = (state, z) => (doctrineSemaine2(state, z) ? DOCTRINE_SEM2.fin : dernierJourDoctrine(z));

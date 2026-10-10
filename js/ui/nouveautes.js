@@ -4,23 +4,14 @@ import { S, esc } from './common.js';
 import { fondateurAVoir, ouvrirFondateur } from './fondateurs.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-09-saison-2',
-  titre: 'Saison 2 : ton chef de corps',
+  id: '2026-10-11-doctrines',
+  titre: 'Tes doctrines prennent vie',
   saison2: true,
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🏢', 'Un nouvel HP', 'ton commissariat en grand, un seul bouton pour la suite, et tes raccourcis au choix.'],
-    ['🗺️', 'Une nouvelle carte', 'ta ville en maquette 3D : touche un quartier, envoie tes patrouilles et regarde-les rouler. Deux boutons : Non-droit (qui s’ouvre d’abord, avec le reste du district dessous) et Ma zone.'],
-    ['🔎', 'Une enquête qui se lit', 'l’affaire en grand, les suspects en polaroïds sur ton mur, les nouvelles pièces sous enveloppe à ouvrir, et « Ce soir » en cases à remplir.'],
-    ['📰', 'La Gazette en cartes', 'comme des stories : la une, toi cette nuit, l’enquête, le district. Touche pour avancer.'],
-    ['🗂️', 'Des énigmes en dossier', 'chaque énigme sur sa feuille de dossier, tu réponds directement sur le plan ou la plaque, et le tampon « Résolu » tombe.'],
-    ['🎖️', 'L’onglet Chef', 'ce que ton chef fait aujourd’hui, sa semaine et sa carrière, à un toucher.'],
-    ['🎖️', 'Ton chef de corps', 'choisis son visage : il progresse avec tes jeux et ta gestion, et le suit de saison en saison.'],
-    ['⚔️', 'Ta semaine de chef', 'trois objectifs et un rival à battre chaque semaine, des rubans et un cadre doré à gagner.'],
-    ['🧑‍✈️', 'Ton adjoint', 'un jour sans ordres, il tient la zone et te raconte tout à ton retour.'],
-    ['🚔', 'Le non-droit en équipe', 'repérage, descente et bouclage : chaque secteur a sa faille, complétez ce qui manque et partagez les saisies.'],
-    ['🔨', 'Les enchères des saisies', 'trois lots tous les deux jours, une offre finale secrète, des gros lots à deux.'],
-    ['🏗️', 'Quatre nouvelles annexes', 'dont le complexe cellulaire : un interpellé balance une pièce d’enquête.'],
+    ['🧭', 'Une jauge par doctrine', 'dans tes Ordres, sous le service concerné : 🚦 campagne de contrôles, 👂 réseau d’îlotiers, 📁 dossier au parquet, 💰 saisie, 🤝 crédit de coopération. À 100 %, la récompense tombe le soir même.'],
+    ['🔁', 'Une doctrine par semaine', 'en 2e semaine (jours 8 et 9), garde ta doctrine pour gagner une étoile de maîtrise, ou change de stratégie.'],
+    ['🚨', 'Les jauges d’intervention', 'le flagrant délit et la saisie se voient maintenant sous l’Intervention.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
@@ -30,6 +21,11 @@ export const NOTE_MAJ = {
     ]],
     ['Rattrape Luc (10 octobre)', [
       ['Événement surprise', 'de temps en temps, Luc est flashé sur l’E19 : rattrape-le au grappin avant la frontière, puis tiens tête à ses excuses au contrôle. L’alerte tombe à la connexion, jamais en même temps que l’urgence du jour, et reste sur l’HP jusqu’à 20:00. Pour le plaisir : aucun effet sur ta zone, mais un record de la partie et le titre « Chasseur de chauffards ».'],
+    ]],
+    ['Une jauge par doctrine, une doctrine par semaine (11 octobre)', [
+      ['Une jauge par doctrine', 'chaque doctrine a maintenant sa jauge, visible dans tes Ordres sous le service qui la remplit : 🚦 Campagne de contrôles (Routière), 👂 Réseau d’îlotiers (De quartier), 📁 Dossier au parquet (Judiciaire), 💰 Saisie (Intervention), 🤝 Crédit de coopération (Partenaire, en tête de l’affectation). À 100 %, une récompense tombe le soir même. Une partie du bonus permanent de chaque doctrine est passée dans sa jauge.'],
+      ['Une doctrine par semaine', 'en 2e semaine (jours 8 et 9 de la saison), tu peux garder ta doctrine ou en changer. La garder la fait monter en maîtrise (force et jauge +15 % par étoile) ; en changer remet maîtrise et jauge à zéro. Sans choix, tu la gardes.'],
+      ['Changements de chiffres', 'Routière : amendes +15 % (au lieu de +20 %), la sécurité routière ×2 est remplacée par la jauge. De quartier : Proximité +10 % (au lieu de +15 %). Judiciaire : pièces d’enquête +20 % (au lieu de +30 %). Partenaire : la réputation +0,25 par jour est remplacée par la jauge.'],
     ]],
     ['Doctrines rééquilibrées (10 octobre)', [
       ['D’intervention', 'nouvelle force : les saisies. Chaque incident traité remplit une jauge de 10 % ; à 100 %, 2 000 à 4 000 € d’argent liquide (environ une saisie tous les deux jours). Le prix change : plus d’usure des véhicules ni de moral en rythme renforcé, mais chaque incident traité laisse 25 % de paperasse en plus.'],
@@ -165,7 +161,7 @@ export const NOTE_MAJ = {
     ]],
     ['Saison 2 : nouvelles règles', [
       ['Quand ?', 'dès la saison 2 (jamais en cours de saison : un classement en cours garde ses règles). Les nouvelles parties les ont tout de suite.'],
-      ['Doctrine de zone', 'pendant les 3 premiers jours de la saison, chaque chef de zone choisit une doctrine dans ses ordres : Routière (amendes +20 %, sécurité routière ×2 ; satisfaction −0,15 par jour, rendement moitié au-delà de 30 % des effectifs au Roulage), De quartier (Proximité +15 %, satisfaction qui redescend bien moins vite, vagues reçues atténuées ; Intervention −5 %), Judiciaire (pièces d’enquête +30 %, Recherche +20 % ; Intervention −5 %), D’intervention (Intervention +10 %, flagrants délits +30 %, saisies d’argent liquide ; paperasse +25 % par incident traité), Partenaire (un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 %, réputation +0,25 par jour ; capacité −2 %). Garder la même d’une saison à l’autre la fait monter en maîtrise (force +15 % par cran, jusqu’à 3 étoiles). Le Directeur met deux fois plus de temps à remarquer la routine d’une zone qui a une doctrine.'],
+      ['Doctrine de zone', 'pendant les 3 premiers jours de la saison, chaque chef de zone choisit une doctrine dans ses ordres, puis peut la garder ou en changer en 2e semaine (jours 8 et 9). Chacune a une force, un prix et une jauge qui déborde en récompense : Routière (🚦 Campagne de contrôles), De quartier (👂 Réseau d’îlotiers), Judiciaire (📁 Dossier au parquet), D’intervention (💰 Saisie), Partenaire (🤝 Crédit de coopération). Le détail est dans le Guide, page « La doctrine de ta zone ». Garder la même d’une semaine à l’autre la fait monter en maîtrise (force +15 % par cran, jusqu’à 3 étoiles). Le Directeur met deux fois plus de temps à remarquer la routine d’une zone qui a une doctrine.'],
       ['Investir paie', 'former un service coûte 3 000 € (au lieu de 4 000 €) et n’immobilise qu’un agent ; le matériel démarre à 4 000 € (au lieu de 5 000 €).'],
       ['Soirée chargée', 'le Directeur peut annoncer deux demandes le même soir (par exemple 9 agents en Intervention pour des bagarres et 6 en Proximité pour une fête de quartier) : tout couvrir est un tour de force, n’en couvrir qu’une est une réussite partielle, et la Gazette raconte ce qui a été laissé de côté.'],
       ['Classement', 'tous les jours de la saison comptent (les jours tenus par l’adjoint avec 4 points d’IPZ de moins), avec un poids d’ancienneté de 0,93 par jour (au lieu de 0,8). Une zone qui arrive en cours de saison compte ses jours d’avant à l’IPZ médian du district moins 5.'],

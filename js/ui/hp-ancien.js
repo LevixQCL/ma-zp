@@ -3,7 +3,7 @@ import { absenceHtml, semaineHtml } from './chef-semaine.js';
 import { humeurReseau } from '../engine/chef.js';
 import { titresDefi } from './defis.js';
 import { DOCTRINES, SERVICE_LABELS } from '../engine/constants.js';
-import { doctrineOuverte, dernierJourDoctrine } from '../engine/regles.js';
+import { doctrineOuverte, dernierJourDoctrine, doctrineSemaine2, finFenetreDoctrine } from '../engine/regles.js';
 import { maxDemarchesDe } from '../engine/enquete.js';
 import { cetteNuitHtml, pistesHpHtml } from './pistes.js';
 import { noteVue } from './nouveautes.js';
@@ -277,7 +277,7 @@ function ceSoirHtml(st, z, { ordresOk, faites, reussies, delegue }) {
   for (const x of releveTodos()) items.unshift(x);
   { const bt = bilanTodo(); if (bt) items.unshift(bt); }
   // Doctrine de la saison (règles v2) : le seul choix nouveau des premiers jours.
-  if (doctrineOuverte(st, z) && z.doctrine) { const dc = DOCTRINES[d.doctrine || z.doctrine]; items.unshift({ ok: true, href: '#ordres', t: `Doctrine : ${dc.ico} ${esc(dc.nom)}`, s: 'doctrines rééquilibrées : tu peux en changer une fois' }); } else if (doctrineOuverte(st, z)) { const dc = d.doctrine && DOCTRINES[d.doctrine]; const r = dernierJourDoctrine(z) - st.turn; items.unshift({ ok: !!dc, href: '#ordres', t: dc ? `Doctrine : ${dc.ico} ${esc(dc.nom)}` : 'Choisis la doctrine de ta zone', s: dc ? 'fixée pour la saison avec tes ordres de ce soir' : r <= 0 ? 'dernier jour, ensuite la saison se joue sans doctrine' : `dans tes ordres, encore ${r + 1} jours` }); }
+  if (doctrineOuverte(st, z) && z.doctrine) { const dc = DOCTRINES[d.doctrine || z.doctrine]; items.unshift({ ok: true, href: '#ordres', t: `Doctrine : ${dc.ico} ${esc(dc.nom)}`, s: doctrineSemaine2(st, z) ? 'nouvelle semaine : la garder ou en changer' : 'doctrines rééquilibrées : tu peux en changer une fois' }); } else if (doctrineOuverte(st, z)) { const dc = d.doctrine && DOCTRINES[d.doctrine]; const r = finFenetreDoctrine(st, z) - st.turn; items.unshift({ ok: !!dc, href: '#ordres', t: dc ? `Doctrine : ${dc.ico} ${esc(dc.nom)}` : 'Choisis la doctrine de ta zone', s: dc ? 'fixée pour la semaine avec tes ordres de ce soir' : r <= 0 ? 'dernier jour, ensuite la saison se joue sans doctrine' : `dans tes ordres, encore ${r + 1} jours` }); }
   { const ct = criseTodo(); if (ct) items.unshift(ct); }
   // Un incident ouvert a déjà sa carte (avec son compte à rebours) juste sous la liste : pas de ligne en double ici.
   items.push(delegue ? { ok: true, href: '#quete', t: delegue.statut === 'quiz' ? `Quiz express : ${Number(delegue.tentatives) || 0} sur 5` : 'Énigmes confiées à un agent', s: delegue.statut === 'quiz' ? ((Number(delegue.tentatives) || 0) >= 3 ? (delegue.bonus ? 'bonus choisi' : 'choisis ton bonus') : 'pas de bonus') : 'résultat ce soir' } : { ok: faites >= slotsCompte().length, href: '#quete', t: `Énigmes : ${faites} sur ${slotsCompte().length}`, s: reussies >= 2 ? 'bonus débloqué' : 'bonus dès 2 bonnes réponses' });

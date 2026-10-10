@@ -126,6 +126,7 @@ export function redacteur(p) {
   if (p.src === 'partage' && p.de && st.zones[p.de]) return zoneName(st.zones[p.de]);
   if (p.src === 'pjf') return 'Appui PJF';
   if (p.src === 'gav') return 'Garde à vue';
+  if (p.src === 'doctrine') return 'Jauge de doctrine';
   if (p.src === 'drone') return 'Survol du drone';
   if (p.src === 'rattrapage') return 'Dossier de rattrapage';
   return z ? zoneName(z) : 'ta zone';

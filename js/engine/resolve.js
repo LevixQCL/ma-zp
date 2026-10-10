@@ -13,7 +13,7 @@ import {
 import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
 import { pistesDuSoir, lireOrdresPistes } from './pistes.js';
-import { appliquerRegles, reglesV2, MAX_DEPENSES, pressionSaison, doctrineOuverte } from './regles.js';
+import { appliquerRegles, reglesV2, MAX_DEPENSES, pressionSaison, doctrineOuverte, doctrineSemaine2, DOCTRINE_SEM2 } from './regles.js';
 import { REGLES, forceDoctrine, DOCTRINES, MAITRISE, coutPrime, aAnnexe } from './constants.js';
 import { enquetePourTour, quatreComptePourTour, SLOT_QUATRE } from '../quests/quests.js';
 import { jourBe } from './time.js';
@@ -33,7 +33,7 @@ import { venteResoudre, annoncerVente } from './ventes.js';
 import { rivalitesPre, rivalitesPost, themeActif, appliquerConsignes } from './rivalites.js';
 import { pactesPre, pactesPost, lies, PACTE } from './pactes.js';
 import { FLAGRANTS } from './contenu.js';
-const SAISIES = ['une liasse de billets trouvée lors d’une fouille de véhicule', 'l’argent d’un point de deal démantelé pendant une intervention', 'une caisse noire découverte lors d’un différend familial', 'le butin d’un cambrioleur interpellé à la sortie', 'des billets cachés dans une voiture contrôlée', 'la recette d’un trafic de cigarettes saisie sur un marché'];
+import { jaugeDoctrine } from './doctrines.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
 import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
@@ -221,6 +221,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (p.earlyBird && earlyBirdEligible(z, state) && !(z.skins || []).some((k) => SKINS[String(k).split(':')[0]] && String(k).split(':')[0] !== 'fete')) ajouterSkin(z, p.earlyBird.skin);
       if (p.skinsChoix) z.skinsChoix = skinsValides(z, p.skinsChoix); }
     if (p && p.retire) delete state.zones[uid];
+    else z._docAvant = { renforts: Number(z.stats && z.stats.renfortsPretes) || 0, releves: Number(z.stats && z.stats.releves) || 0 };
   }
 
   // Une seule fois par partie : compteurs de carrière aux énigmes repris de l'historique des réponses (tours d'avant celui-ci).
@@ -261,13 +262,25 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z._joue = false;
       z.rapport.push(adj ? `Pas d’ordres ce tour : ton adjoint${adj.f ? 'e' : ''} ${adj.prenom} ${adj.nom} a tenu la zone (consigne « ${CONSIGNES[consigne].nom.toLowerCase()} »).` : 'Pas d’ordres ce tour : le pilote automatique a repris la dernière répartition.');
     }
-    // Doctrine de la saison (règles v2) : choisie une fois, au plus tard en fin de 3e jour (sinon « sans doctrine »).
-    if (doctrineOuverte(state, z) && orders[uid] && typeof orders[uid].doctrine === 'string' && Object.hasOwn(DOCTRINES, orders[uid].doctrine) && orders[uid].doctrine !== z.doctrine) {
-      if (z.doctrine) z.doctrineRevue = true;
-      z.doctrine = orders[uid].doctrine;
-      z.maitrise = z.doctrinePrec === z.doctrine ? Math.min(2, (z.maitrisePrec || 0) + 1) : 0;
-      z.rapport.push(`Doctrine de la saison : ${DOCTRINES[z.doctrine].nom}${z.maitrise ? ` (maîtrise ${z.maitrise + 1})` : ''}. Force : ${DOCTRINES[z.doctrine].force}. Prix : ${DOCTRINES[z.doctrine].prix}.`);
-      push(3, 'Doctrine', `${zoneLabel(z)} choisit la doctrine ${DOCTRINES[z.doctrine].nom.toLowerCase()}`, `${DOCTRINES[z.doctrine].force}.`, uid);
+    // Doctrine (règles v2) : choisie les 3 premiers jours de la saison, puis révisable en 2e semaine (jours 8 et 9).
+    // Garder la même doctrine d'une semaine à l'autre la fait monter en maîtrise ; en changer remet la jauge à zéro.
+    if (doctrineOuverte(state, z)) {
+      const sem2 = doctrineSemaine2(state, z);
+      const voulue = orders[uid] && typeof orders[uid].doctrine === 'string' && Object.hasOwn(DOCTRINES, orders[uid].doctrine) ? orders[uid].doctrine : null;
+      if (voulue && voulue !== z.doctrine) {
+        if (z.doctrine && !sem2) z.doctrineRevue = true;
+        z.doctrine = voulue;
+        z.maitrise = sem2 ? 0 : (z.doctrinePrec === z.doctrine ? Math.min(2, (z.maitrisePrec || 0) + 1) : 0);
+        z.jaugeDoc = 0;
+        if (sem2) z.doctrineSem2 = true;
+        z.rapport.push(`Doctrine ${sem2 ? 'de la 2e semaine' : 'de la semaine'} : ${DOCTRINES[z.doctrine].nom}${z.maitrise ? ` (maîtrise ${z.maitrise + 1})` : ''}. Force : ${DOCTRINES[z.doctrine].force}. Prix : ${DOCTRINES[z.doctrine].prix}.`);
+        push(3, 'Doctrine', `${zoneLabel(z)} choisit la doctrine ${DOCTRINES[z.doctrine].nom.toLowerCase()}`, `${DOCTRINES[z.doctrine].force}.`, uid);
+      } else if (sem2 && z.doctrine && (voulue === z.doctrine || T >= DOCTRINE_SEM2.fin)) {
+        // Doctrine gardée pour la 2e semaine (confirmée, ou sans choix au dernier jour) : un cran de maîtrise.
+        z.doctrineSem2 = true;
+        z.maitrise = Math.min(2, (z.maitrise || 0) + 1);
+        z.rapport.push(`Doctrine gardée pour la 2e semaine : ${DOCTRINES[z.doctrine].nom}, maîtrise ${'★'.repeat(z.maitrise + 1)} (force +${Math.round(MAITRISE * z.maitrise * 100)} %).`);
+      }
     }
     // Chef de corps (saison 2) : création, parcours, talents (une fois par semaine), agenda du jour.
     if (reglesV2(state)) {
@@ -932,20 +945,6 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     noter(z, 'satisfaction', `Incidents traités : ${traites} × +0,5`, traites * 0.5);
     noter(z, 'satisfaction', `Incidents ratés : ${rates} × −1,8`, -rates * 1.8);
     jalon(z, 'Incidents');
-    // Doctrine d'intervention : chaque incident traité (fouilles, contrôles d'identité) remplit la jauge de saisie ;
-    // à 100 %, une saisie d'argent liquide de 2 à 4 k€ (plus avec la maîtrise). Au plus une saisie par soir.
-    if (REGLES.v2 && z.doctrine === 'intervention' && traites > 0) {
-      const D = DOCTRINES.intervention;
-      z.jaugeSaisie = round1(Math.min(1.5, (z.jaugeSaisie || 0) + traites * D.saisieJauge) * 100) / 100;
-      if (z.jaugeSaisie >= 0.995) {
-        z.jaugeSaisie = Math.max(0, round1((z.jaugeSaisie - 1) * 100) / 100);
-        const saisie = round1(zr.float(D.saisie, D.saisieMax) * (1 + MAITRISE * (z.maitrise || 0)));
-        z.budget += saisie; z.stats.saisies = round1((z.stats.saisies || 0) + saisie); z.stats.nbSaisies = (z.stats.nbSaisies || 0) + 1;
-        z.rapport.push(`Saisie (doctrine d’intervention) : ${zr.pick(SAISIES)}, +${fmt1(saisie)} k€.`);
-        push(2, 'Saisie', `${zoneLabel(z)} : ${fmt1(saisie)} k€ saisis en intervention`, 'Doctrine d’intervention.', uid);
-      } else z.rapport.push(`Doctrine d’intervention : jauge de saisie ${Math.round(z.jaugeSaisie * 100)} % (+${Math.round(traites * D.saisieJauge * 100)} % ce soir, ${traites} incident${traites > 1 ? 's' : ''} traité${traites > 1 ? 's' : ''} ; à 100 %, saisie d’argent liquide).`);
-    }
-    jalon(z, 'Doctrine d’intervention : saisie');
     if (rates >= 3) z.moral -= 2;
     jalon(z, '3 incidents ratés ou plus : −2 de moral');
     z.rapport.push(`Intervention : ${traites} incident${traites > 1 ? 's' : ''} traité${traites > 1 ? 's' : ''} sur ${incidents}.`);
@@ -1220,6 +1219,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         (z.cetteNuit ||= []).push({ ico: '🔒', t: 'Garde à vue : un interpellé a parlé (une pièce d’enquête)' });
       }
     }
+    // Jauge de la doctrine : elle se remplit avec le travail du soir et déborde en une récompense (une fois par soir au plus).
+    if (REGLES.v2 && z.doctrine) jaugeDoctrine(state, z, { traites, recettes, cap, resolus, demarches: (o.demarches || []).length }, makeRng(`${state.seed}:s${state.season}:t${T}:doc:${uid}`), push, zoneLabel, T);
+    jalon(z, 'Jauge de la doctrine');
     // Journal de l'adjoint : un jour tenu sans le chef.
     if (!z._joue && z.adjoint && reglesV2(state)) noterJournal(z, T, { ipz: round1(z.ipz), inc: `${traites}/${incidents}`, budget: round1(z.budget), moral: Math.round(z.moral), sat: Math.round(z.satisfaction) });
     // Chef de corps : expérience du jour (par l'usage), montées de niveau, talents débloqués.
@@ -1414,7 +1416,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
-    delete z._joue; delete z._croiseDeja; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._para; delete z._paraRep; delete z._paraGains; delete z._chefFaits; delete z._front; delete z._frontUtilise; delete z._service; delete z._incOk; delete z._croise; delete z._chefAvant; delete z._investi; delete z._interpelle;
+    delete z._joue; delete z._croiseDeja; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._para; delete z._paraRep; delete z._paraGains; delete z._chefFaits; delete z._front; delete z._frontUtilise; delete z._service; delete z._incOk; delete z._croise; delete z._chefAvant; delete z._docAvant; delete z._investi; delete z._interpelle;
   }
 
   // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).
