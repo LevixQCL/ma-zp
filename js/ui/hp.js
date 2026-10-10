@@ -8,6 +8,7 @@ import { maxDemarchesDe } from '../engine/enquete.js';
 import { pistesHpHtml, faitsDeLaNuit } from './pistes.js';
 import { noteVue } from './nouveautes.js';
 import { actuLigne } from './actu.js';
+import { lucLigne } from './luc.js';
 // Écran HP (Hôtel de police) : l'accueil.
 import { cabossesChoisis } from '../engine/parc.js';
 import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone, skyline, cielStyle, slotsJour, slotsCompte } from './common.js';
@@ -448,7 +449,7 @@ function aujourdhuiHtml(st, z, T, items) {
   { const h = bilanHtml(); if (h) { const bt = bilanTodo(); L.push({ prio: 1, html: ligneAjd({ k: `ajd-bilan-${T}`, ico: '📋', titre: bt ? bt.t : 'Bilan de saison', sous: bt ? bt.s : '', badge: bt ? pastilleAFaire(bt.ok) : '', ouvert: !!bt && !bt.ok, corps: h }) }); } }
   { const h = fipaCards(); if (h) { const att = items.some((i) => i.href === '#hp-fipa' && !i.ok); L.push({ prio: 1, html: ligneAjd({ k: `ajd-fipa-${T}`, ico: '🤝', titre: att ? 'FIPA : une décision t’attend' : 'FIPA', sous: 'renfort d’une zone partenaire', badge: att ? pastilleAFaire(false) : '', ouvert: att, corps: `<div id="hp-fipa">${h}</div>` }) }); } }
 
-  { const h = incidentsHtml({ avant: actuLigne(), nu: true }); if (h) L.push({ prio: 2, html: `<div class="ajd-inc" id="hp-incidents" aria-label="Incidents du jour">${h}</div>` }); }
+  { const h = incidentsHtml({ avant: actuLigne() + lucLigne(), nu: true }); if (h) L.push({ prio: 2, html: `<div class="ajd-inc" id="hp-incidents" aria-label="Incidents du jour">${h}</div>` }); }
 
   { const h = absenceHtml(z); if (h) { const a = z.adjoint, retour = /Bon retour/.test(h); L.push({ prio: 3, html: ligneAjd({ k: 'ajd-absence', ico: portraitAdjoint(a, 40), titre: retour ? 'Bon retour, chef' : 'Pendant ton absence', sous: `${esc(a.prenom)} ${esc(a.nom)} a tenu la zone`, ouvert: retour, corps: h }) }); } }
   { const h = pistesHpHtml(z); if (h) { const n = (z.pistes || []).length; L.push({ prio: 3, html: ligneAjd({ k: 'ajd-pistes', ico: '🔎', titre: 'Pistes en cours', sous: `${n} piste${n > 1 ? 's' : ''} · résultat à venir`, corps: h }) }); } }

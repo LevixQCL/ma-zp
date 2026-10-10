@@ -25,6 +25,9 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Rattrape Luc (10 octobre)', [
+      ['Événement surprise', 'de temps en temps, Luc est flashé sur l’E19 : rattrape-le au grappin avant la frontière, puis tiens tête à ses excuses au contrôle. L’alerte tombe à la connexion, jamais en même temps que l’urgence du jour, et reste sur l’HP jusqu’à 20:00. Pour le plaisir : aucun effet sur ta zone, mais un record de la partie et le titre « Chasseur de chauffards ».'],
+    ]],
     ['Doctrines rééquilibrées (10 octobre)', [
       ['D’intervention', 'nouvelle force : les saisies. Chaque incident traité remplit une jauge de 10 % ; à 100 %, 2 000 à 4 000 € d’argent liquide (environ une saisie tous les deux jours). Le prix change : plus d’usure des véhicules ni de moral en rythme renforcé, mais chaque incident traité laisse 25 % de paperasse en plus.'],
       ['Routière', 'toujours la doctrine de l’argent, mais au-delà de 30 % des effectifs au Roulage, chaque agent de plus rapporte moitié moins. En échange, la sécurité routière rapporte deux fois plus de satisfaction et les automobilistes râlent moitié moins (−0,15 par jour).'],

@@ -194,7 +194,7 @@ async function noterQuartier(jeu, m, score) {
   await S.backend.savePlayer(S.user.uid, p);
 }
 
-export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, evt = null, onFin = () => {}, onEntrainement = () => {} } = {}) {
+export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, evt = null, onFin = () => {}, onEntrainement = () => {}, onDefi = () => {} } = {}) {
   document.querySelector('.mj-wrap')?.remove();
   if (jeu === 'tracage') jeu = 'interception'; // appui accordé avant le remplacement du traçage d'IP
   const p = new URLSearchParams({ mode });
@@ -236,7 +236,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, e
   const wrap = document.createElement('div');
   wrap.className = 'mj-wrap';
   wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-modal', 'true');
-  const nomJeu = (MINI_JEUX.find((m) => m.jeu === jeu) || {}).nom || '';
+  const nomJeu = (MINI_JEUX.find((m) => m.jeu === jeu) || {}).nom || (jeu === 'luc' ? 'Rattrape Luc' : '');
   const enjeu = mode === 'incident' || mode === 'renfort';
   // Barre du haut : un gros bouton « Retour » toujours visible, commun à tous les mini-jeux.
   wrap.innerHTML = `<div class="mj-barre"><button type="button" class="mj-retour" aria-label="Quitter le mini-jeu et revenir à ma zone"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>Retour à ma zone</button><span class="mj-nom">${esc(nomJeu)}</span></div>
@@ -290,7 +290,7 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, e
         if (niv && d.score > 0 && await noterScoreBitonal(niv, d.score)) toast(`Nouveau meilleur score de la partie en ${NOM_NIVEAU[niv].toLowerCase()} : ${Math.floor(d.score).toLocaleString('fr-BE')} !`);
       }
       // Défi d'endurance : chaque niveau réussi peut battre le record personnel (et celui de la partie).
-      if (mode === 'train' && d.type === 'defi' && d.jeu === jeu) { const rec = await noterNiveauDefi(jeu, d.niveau); if (rec) toast(`Nouveau record de la partie : ${(MINI_JEUX.find((m) => m.jeu === jeu) || {}).nom || jeu}, niveau ${d.niveau} !`); }
+      if (mode === 'train' && d.type === 'defi' && d.jeu === jeu) { onDefi(d.niveau); const rec = await noterNiveauDefi(jeu, d.niveau); if (rec) toast(jeu === 'luc' ? `Nouveau record de la partie : Luc rattrapé ${d.niveau} fois de suite !` : `Nouveau record de la partie : ${nomJeu || jeu}, niveau ${d.niveau} !`); }
       if (mode === 'renfort' && appui && d.id === appui.id) {
         if (d.type === 'start') await enregistrerAppui(appui.id, 'abandon');
         if (d.type === 'result') await enregistrerAppui(appui.id, d.ok ? 'ok' : d.abandon ? 'abandon' : 'rate');

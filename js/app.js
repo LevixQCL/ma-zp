@@ -33,6 +33,7 @@ import { DECOR, decorDebloque, conditionDecor, decorValide } from './engine/deco
 import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { actuAuBesoin, ouvrirActu, EVT_ACTU, marquerEvtJoue } from './ui/actu.js';
+import { lucAuBesoin, ouvrirLuc, noterLuc, LUC } from './ui/luc.js';
 import { tutoAuBesoin, lancerTuto, tutoFait } from './ui/tutoriel.js';
 import { lancerRoulette } from './ui/roulette.js';
 import { editionHtml, marquerEditionVue, editionVue } from './ui/edition.js';
@@ -196,7 +197,7 @@ function render() {
   app.innerHTML = banner + html;
   // La roulette « Early birds » n'est plus proposée (les skins déjà gagnés restent acquis).
   // Événement d'actualité (une fois par appareil) avant la note de nouveautés.
-  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin() && !actuAuBesoin(lancerActu) && !promotionAuBesoin()) nouveautesAuBesoin();
+  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin() && !actuAuBesoin(lancerActu) && !promotionAuBesoin() && !lucAuBesoin(lancerLuc)) nouveautesAuBesoin();
   if (S.route === 'ordres' && S.ordAncre) {
     const cible = document.querySelector(`[data-action="ord-open"][data-k="${S.ordAncre}"]`);
     S.ordAncre = null;
@@ -430,6 +431,8 @@ async function onClick(e) {
       case 'prime-choix': { const v = el.dataset.v; S.draft.prime = S.draft.prime === v ? null : v; S.ordersDirty = true; rerender(); break; }
       case 'actu-voir': ouvrirActu(lancerActu); break;
       case 'actu-jouer': lancerActu(); break;
+      case 'luc-jouer': lancerLuc(); break;
+      case 'luc-voir': ouvrirLuc(lancerLuc); break;
       case 'jauge-skins': ouvrirJaugeSkins(); break;
       case 'jauge-apercu': ouvrirJaugeSkins(el.dataset.k); break;
       case 'appui-demande': { const k = el.dataset.k; S.draft.appui = S.draft.appui === k ? null : k; S.ordersDirty = true; rerender(); break; }
@@ -1490,6 +1493,11 @@ async function annoncerNDAuto(rattrapage = false) {
 async function lancerActu() {
   try { S.players = await S.backend.getPlayers(); } catch (e) { /* hors ligne */ }
   ouvrirMiniJeu(EVT_ACTU.jeu, { mode: 'train', evt: EVT_ACTU.id, onEntrainement: (x) => { noterEntrainement(x); marquerEvtJoue(); }, onFin: () => rerender() });
+}
+/** Événement « Rattrape Luc » : mini-jeu pour le fun (records de la partie, aucun effet sur la zone). */
+async function lancerLuc() {
+  try { S.players = await S.backend.getPlayers(); } catch (e) { /* hors ligne */ }
+  ouvrirMiniJeu(LUC.jeu, { mode: 'train', onEntrainement: noterEntrainement, onDefi: (n) => noterLuc(n), onFin: () => { noterLuc(0); rerender(); } });
 }
 function noterEntrainement(plus) {
   if (!S.user || !S.backend || !S.backend.compterEntrainement) return;
