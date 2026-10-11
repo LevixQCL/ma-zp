@@ -28,6 +28,7 @@ export const NOTE_MAJ = {
     ]],
     ['Boutique de skins (11 octobre, 20:00)', [
       ['Boutique', 'dans « Mon commissariat » : achète le skin de ton choix avec tes PS (250 PS), livré et équipé à 20:00. Ton grade suit tous les PS gagnés, il ne baisse pas. La jauge offre toujours un skin surprise.'],
+      ['Relancer une énigme', 'une énigme du jour ratée peut être relancée une fois par jour pour 30 PS : une nouvelle énigme du même type, un niveau plus dure. Réussie, elle compte comme une bonne réponse (bonus, prime et classement).'],
       ['Manoir hanté', 'édition Halloween : manoir de pierres moussues, fenêtres à la bougie, fantôme, chauves-souris, chaudron et grande lune, avec la remise à calèches pour le garage. 300 PS au lieu de 600 jusqu’au 2 novembre.'],
     ]],
     ['Le Parrain du milieu (11 octobre)', [

@@ -54,7 +54,7 @@ const DIFF_PAR_JOUR = [2, 3, 3, 4, 4, 5, 5];
  * `ajust` : décalage de niveau décidé par le Directeur (forme du joueur aux énigmes).
  * `rerolls` : emplacements que le joueur a changés (une autre énigme, d'un type absent du jour).
  */
-export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], ajust = 0, formes = false, quatre = false, enquete = null }) {
+export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], ajust = 0, formes = false, quatre = false, enquete = null, relance = null }) {
   const order = makeRng(`${seed}:qorder:${uid}:${season}`).shuffle(QUEST_TYPES);
   // `ajust` : décalage du Directeur selon la forme du joueur (−2 à +1).
   const a = Number.isFinite(ajust) ? Math.max(-2, Math.min(1, Math.round(ajust))) : 0;
@@ -97,8 +97,20 @@ export function questsFor({ seed, uid, season, turn, weekday = 0, rerolls = [], 
     const forme = formes && FORMES[type] ? rng.pick(FORMES[type]).id : 'classique';
     out[i] = { ...fabriquer(type, rng, slot === SLOT_QUATRE ? base : diffs[slot], forme), slot, id: `${season}-${turn}-${slot}r`, variante: 1 };
   }
+  // Relance payée en PS (octobre 2026) : une nouvelle énigme du même type, un niveau plus dure (hardcore au plus).
+  if (Number.isInteger(relance)) {
+    const i = out.findIndex((q) => q.slot === relance && !q.enquete);
+    if (i >= 0) {
+      const q0 = out[i], rng = makeRng(`${seed}:relance:${uid}:${season}:${turn}:${relance}`);
+      const forme = formes && FORMES[q0.type] ? rng.pick(FORMES[q0.type]).id : 'classique';
+      out[i] = { ...fabriquer(q0.type, rng, Math.min(DIFF_NOIR, (q0.difficulte || 3) + 1), forme), slot: relance, id: `${season}-${turn}-${relance}R`, relance: 1, ...(q0.variante ? { variante: 1 } : {}) };
+    }
+  }
   return out;
 }
+
+/** Prix d'une relance d'énigme ratée (une par jour, payée au tour de 20:00). */
+export const RELANCE_PS = 30;
 
 export function questFor(args) { return questsFor(args)[0]; }
 

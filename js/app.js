@@ -64,7 +64,7 @@ import { previsionCourte } from './ui/prevision.js';
 import { renderCarteV2, calqueTerrain } from './ui/carte-v2.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { renderDebrief } from './ui/debrief.js';
-import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES, FORMES, formesPourTour, quatrePourTour, enquetePourTour } from './quests/quests.js';
+import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES, FORMES, formesPourTour, quatrePourTour, enquetePourTour, RELANCE_PS } from './quests/quests.js';
 import { niveauEnigmes, niveauIncidents } from './engine/directeur.js';
 import { scenesDuSoir, SERVICE_SCENE, SCENES } from './engine/milieu.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
@@ -246,13 +246,23 @@ async function ensureZone() {
   finally { S.joining = false; }
 }
 
+/** Relance d'énigme du soir (dans les ordres) : { slot, statut, reponse, type } ou null. */
+const relanceActive = () => (S.draft && S.draft.relance) || (S.savedOrders && S.savedOrders.relance) || null;
+/** Les résultats affichés suivent la relance : l'énigme ratée laisse place à la nouvelle. */
+function appliquerRelance() {
+  const rl = relanceActive();
+  if (!rl || !Number.isInteger(rl.slot) || !S.questResults) return;
+  const brut = (S.questBruts || [])[rl.slot] || S.questResults[rl.slot] || {};
+  S.questResults[rl.slot] = { ...brut, statut: rl.statut || null, tentatives: rl.statut ? 1 : 0, reponse: rl.reponse || '', relance: 1, ...(rl.type ? { type: rl.type } : {}) };
+}
 const cleReroll = () => `mazp-reroll-${S.backend.gameId ? S.backend.gameId() : ''}-${S.user.uid}-${S.state.season}-${S.state.turn}`;
 function loadQuest() {
   const st = S.state;
   // Énigme changée : mémorisée sur l'appareil, et dans la réponse une fois donnée (pour les autres appareils).
   const rerolls = new Set((S.questResults || []).map((r, k) => (r && r.variante ? k : -1)).filter((k) => k >= 0));
   try { const v = localStorage.getItem(cleReroll()); if (v !== null && !(S.questResults || []).some((r) => r && r.variante)) rerolls.add(Number(v)); } catch (e) { /* pas de stockage */ }
-  S.quests = questsFor({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn, weekday: weekdayBe(st.nextDeadline), rerolls: [...rerolls].slice(0, 1), ajust: niveauEnigmes(st.zones && st.zones[S.user.uid]), formes: formesPourTour(st.nextDeadline), quatre: quatrePourTour(st.nextDeadline), enquete: enigmeEnquete(st) });
+  const rl = relanceActive();
+  S.quests = questsFor({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn, weekday: weekdayBe(st.nextDeadline), rerolls: [...rerolls].slice(0, 1), relance: rl && Number.isInteger(rl.slot) ? rl.slot : null, ajust: niveauEnigmes(st.zones && st.zones[S.user.uid]), formes: formesPourTour(st.nextDeadline), quatre: quatrePourTour(st.nextDeadline), enquete: enigmeEnquete(st) });
   S.noir = dossierNoir({ seed: CONFIG.seed, uid: S.user.uid, season: st.season, turn: st.turn, exclure: S.quests.map((q) => q.type), garder: S.noirResult && S.noirResult.type, formes: formesPourTour(st.nextDeadline) });
 }
 
@@ -273,6 +283,7 @@ async function loadTurnData() {
   S.savedOrders = orders; S.ordersDirty = false; S.draft = null; S.decisionOpen = false;
   // Réponses rangées par emplacement : 0, 1, 2 (et 4 avec la 4e énigme) ; le 3 est le dossier noir, gardé à part.
   S.questResults = [0, 1, 2, 3, 4].map((k) => (k === 3 ? null : (quest && quest[k]) || null)); S.noirResult = (quest && quest[3]) || null; S.quests = null; S.questPick = null;
+  S.questBruts = S.questResults.slice(); appliquerRelance();
   S.questIdx = slotsJour().find((k) => { const r = S.questResults[k]; return !r || (r.statut !== 'ok' && r.statut !== 'rate'); }) ?? 0;
   // Tri par saison et tour : l'ordre d'écriture dépend de l'horloge de l'appareil qui a calculé le tour.
   S.gazettes = (gazettes || []).slice().sort((x, y) => (y.season - x.season) || (y.turn - x.turn)); S.gazetteIndex = 0; S.rapportIdx = 0; S.gazettesArchives = false;
@@ -1281,6 +1292,15 @@ async function onClick(e) {
         try { localStorage.setItem(cleReroll(), String(i)); } catch (e) { /* pas de stockage */ }
         loadQuest(); S.questPick = null; rerender(); break;
       }
+      case 'quest-relance': {
+        const i = Number(el.dataset.i), r = (S.questResults || [])[i];
+        if (!r || r.statut !== 'rate' || r.relance || relanceActive()) break;
+        if (!(await askConfirm(`Relancer cette énigme pour ${RELANCE_PS} PS ? Une nouvelle énigme du même type, un niveau plus dure. Réussie, elle compte comme une bonne réponse. Une seule relance par jour, payée à 20:00.`, 'Relancer'))) break;
+        if (!S.draft) initDraft();
+        S.draft.relance = { slot: i, statut: null };
+        try { await validerOrdres(); } catch (err) { console.warn(err); S.draft.relance = null; toast('Impossible d’enregistrer la relance, réessaie.'); break; }
+        appliquerRelance(); loadQuest(); S.questIdx = i; S.questPick = null; rerender(); window.scrollTo(0, 0); break;
+      }
       case 'quest-bonus': await saveQuestBonus(el.dataset.v); break;
       case 'bonus-changer': S.bonusChanger = true; rerender(); break;
       case 'bonus-sheet': S.bonusChanger = false; S.bonusSheetFerme = true; rerender(); break;
@@ -1599,6 +1619,17 @@ async function submitQuest(reponse) {
   const q = questDuSlot(i);
   const r = S.questResults[i] || { statut: null, tentatives: 0 };
   if (r.statut === 'ok' || r.statut === 'rate') return;
+  if (r.relance) {
+    if (!(await askConfirm('Valider cette réponse ? C’est ta relance : une seule chance.', 'Valider'))) return;
+    const ok = checkAnswer(q, reponse);
+    if (!S.draft) initDraft();
+    S.draft.relance = { slot: i, statut: ok ? 'ok' : 'rate', reponse: String(reponse).slice(0, 60), type: q.type };
+    S.questPick = null;
+    try { await validerOrdres(); } catch (err) { console.warn(err); toast('Impossible d’enregistrer la réponse, réessaie.'); S.draft.relance = { slot: i, statut: null, type: q.type }; return; }
+    appliquerRelance();
+    toast(ok ? 'Bonne réponse ! Elle compte (30 PS payés à 20:00).' : 'Raté encore… (30 PS payés à 20:00).');
+    rerender(); return;
+  }
   // Une seule réponse possible : on demande confirmation, puis c'est définitif.
   if (!(await askConfirm('Valider cette réponse ? Tu n\u2019as qu\u2019une seule chance.', 'Valider'))) return;
   const ok = checkAnswer(q, reponse);
@@ -1646,7 +1677,7 @@ async function saveQuizBonus(bonus, service) {
 async function saveQuestBonus(bonus, service) {
   const st = S.state;
   // Le bonus est enregistré sur la dernière énigme réussie.
-  const i = S.questResults.map((r, k) => (r && r.statut === 'ok' ? k : -1)).filter((k) => k >= 0).pop();
+  const i = S.questResults.map((r, k) => (r && r.statut === 'ok' && !r.relance ? k : -1)).filter((k) => k >= 0).pop();
   if (i === undefined) return;
   // Un seul bonus par jour : on retire un éventuel choix précédent posé sur une autre énigme.
   for (let k = 0; k < S.questResults.length; k++) {

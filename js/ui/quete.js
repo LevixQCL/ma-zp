@@ -6,7 +6,9 @@ import { CHALLENGE } from '../engine/challenge.js';
 import { euros } from './euros.js';
 import { recordBitonal, monScoreBitonal } from './bitonal.js';
 import { S, esc, icon, tabbar, myZone, questDuSlot, slotsCompte } from './common.js';
-import { QUEST_TYPES, QUEST_LABELS, FORMES, FORMES_EN_JEU } from '../quests/quests.js';
+import { QUEST_TYPES, QUEST_LABELS, FORMES, FORMES_EN_JEU, RELANCE_PS, DIFF_NOIR } from '../quests/quests.js';
+import { psDispo } from '../engine/decor.js';
+import { achatEnAttente } from './logistique.js';
 import { digicodeHtml, digicodeResultat } from './digicode.js';
 import { vignetteEnigme, couleurEnigme } from './vignettes-enigmes.js';
 
@@ -385,7 +387,7 @@ export function renderQuete() {
       <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p></section>` : ''}
     ${r.statut === 'rate' ? `<section class="card"><span style="font-size:15px;font-weight:700">Mauvaise réponse${r.reponse ? ` : ${esc(r.reponse)}` : ''}</span>
       <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p>
-      <p class="tiny muted" style="margin:0">${train ? 'Aucune conséquence : c’était pour s’entraîner.' : noir ? 'Aucune conséquence. Un nouveau dossier noir demain après 20:00.' : 'Sans conséquence. De nouvelles énigmes demain après 20:00.'}</p></section>` : ''}
+      <p class="tiny muted" style="margin:0">${train ? 'Aucune conséquence : c’était pour s’entraîner.' : noir ? 'Aucune conséquence. Un nouveau dossier noir demain après 20:00.' : 'Sans conséquence. De nouvelles énigmes demain après 20:00.'}</p>${relanceHtml(q, r, train, noir)}</section>` : ''}
     ${train && fini ? '<button class="btn primary block" data-action="train-new">Une autre énigme</button>' : ''}
     ${!train && fini && results.some((x) => !x || !x.statut) ? `<button class="btn outline block" data-action="quest-tab" data-i="${results.findIndex((x) => !x || !x.statut)}">Énigme suivante</button>` : ''}
     ${train ? '' : `<p class="tiny muted" style="margin:0">Chaque joueur reçoit ses propres variantes : on peut en discuter, mais la réponse d’un collègue ne marchera pas chez toi. 2 bonnes réponses sur 3 débloquent un bonus.</p>`}
@@ -439,6 +441,18 @@ function feuilleBonus(ok, bonusPris, gBonus, enqueteOuverte, primeSf) {
     </section>`;
 }
 
+/** Bouton « Relancer » sous une énigme du jour ratée (PS, une fois par jour, niveau +1). */
+function relanceHtml(q, r, train, noir) {
+  if (train || noir || !q || q.enquete || !r || r.statut !== 'rate') return '';
+  if (r.relance) return '<p class="tiny muted" style="margin:0">C’était ta relance du jour : 30 PS payés à 20:00.</p>';
+  const rl = (S.draft && S.draft.relance) || (S.savedOrders && S.savedOrders.relance);
+  if (rl || !slotsCompte().includes(q.slot)) return rl ? '<p class="tiny muted" style="margin:0">Relance du jour déjà utilisée.</p>' : '';
+  const z = myZone(), att = achatEnAttente(z), dispo = psDispo(z) - (att ? att.prix : 0), ok = dispo >= RELANCE_PS;
+  const niv = Math.min(DIFF_NOIR, (q.difficulte || 3) + 1);
+  return `<button type="button" class="btn primary block relance-btn" data-action="quest-relance" data-i="${q.slot}" ${ok ? '' : 'disabled'}>↻ Relancer · ${RELANCE_PS} PS · niveau ${niv >= DIFF_NOIR ? 'hardcore' : niv}</button>
+    <p class="tiny muted" style="margin:0">${ok ? 'Une nouvelle énigme du même type, un cran plus dure. Réussie, elle compte comme une bonne réponse (bonus, prime et classement). Une relance par jour, payée à 20:00.' : `Il te faut ${RELANCE_PS} PS à dépenser (tu en as ${Math.max(0, dispo)}).`}</p>`;
+}
+
 function feuilleV2(o) {
   const { q, r, fini, train, noir, picked, modes, onglets, propositionDelegue, peutChanger, altPossible, choixHtml, results, ok, bonusPris, gBonus, enqueteOuverte, primeSf, mz } = o;
   const objetForm = q.forme === 'digicode' || q.type === 'cadenas' || q.type === 'chronologie' || (q.type === 'butin' && q.objets);
@@ -477,7 +491,7 @@ function feuilleV2(o) {
     <article class="feuille${noir ? ' noir' : ''}${train ? ' train' : ''}" aria-label="Énigme">
       ${tampon}
       <header class="fe-tete"><div class="col grow" style="gap:4px;min-width:0"><span class="fe-ref">${ref}</span><h1 class="big">${esc(q.typeLabel)}</h1>
-        <div class="row fe-chips">${q.formeNom ? `<span class="forme-nom">${esc(q.formeNom)}</span>` : ''}<span class="fe-niv${q.difficulte >= 6 ? ' hc' : ''}">${niveau} · ${essai}</span>${!train && !noir ? chipEntraine('flair', 'Réussie : Flair +1 pour ton chef') : ''}</div></div>
+        <div class="row fe-chips">${q.relance ? '<span class="forme-nom">↻ Relance</span>' : ''}${q.formeNom ? `<span class="forme-nom">${esc(q.formeNom)}</span>` : ''}<span class="fe-niv${q.difficulte >= 6 ? ' hc' : ''}">${niveau} · ${essai}</span>${!train && !noir ? chipEntraine('flair', 'Réussie : Flair +1 pour ton chef') : ''}</div></div>
         ${menu}</header>
       ${noir && !fini ? '<p class="small fe-alerte">Le dossier que personne n’a su boucler. Pas de coup de pouce, une seule réponse. Une erreur ne coûte rien ; une réussite rapporte des PS et compte pour le titre « Cerveau du district ».</p>' : ''}
       ${!train && !noir && q.enquete ? `<p class="small fe-enq">🧩 ${esc(q.gain || '')} Choisis ta piste prioritaire dans l’Enquête (fiche du suspect).</p>` : ''}
@@ -506,7 +520,7 @@ function feuilleV2(o) {
       <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p></section>` : ''}
     ${r.statut === 'rate' ? `<section class="card"><span style="font-size:15px;font-weight:700">Mauvaise réponse${r.reponse ? ` : ${esc(r.reponse)}` : ''}</span>
       <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p>
-      <p class="tiny muted" style="margin:0">${train ? 'Aucune conséquence : c’était pour s’entraîner.' : noir ? 'Aucune conséquence. Un nouveau dossier noir demain après 20:00.' : 'Sans conséquence. De nouvelles énigmes demain après 20:00.'}</p></section>` : ''}
+      <p class="tiny muted" style="margin:0">${train ? 'Aucune conséquence : c’était pour s’entraîner.' : noir ? 'Aucune conséquence. Un nouveau dossier noir demain après 20:00.' : 'Sans conséquence. De nouvelles énigmes demain après 20:00.'}</p>${relanceHtml(q, r, train, noir)}</section>` : ''}
     ${train && fini ? '<button class="btn primary block" data-action="train-new">Une autre énigme</button>' : ''}
     ${suivante ? `<button class="btn outline block" data-action="quest-tab" data-i="${suivante.slot}">Énigme suivante</button>` : ''}
     ${sheet}

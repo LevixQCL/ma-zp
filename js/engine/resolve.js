@@ -15,7 +15,7 @@ import { QUIZ } from '../quests/quiz.js';
 import { pistesDuSoir, lireOrdresPistes } from './pistes.js';
 import { appliquerRegles, reglesV2, MAX_DEPENSES, pressionSaison, doctrineOuverte, doctrineSemaine2, DOCTRINE_SEM2 } from './regles.js';
 import { REGLES, forceDoctrine, DOCTRINES, MAITRISE, coutPrime, aAnnexe } from './constants.js';
-import { enquetePourTour, quatreComptePourTour, SLOT_QUATRE } from '../quests/quests.js';
+import { enquetePourTour, quatreComptePourTour, SLOT_QUATRE, RELANCE_PS } from '../quests/quests.js';
 import { jourBe } from './time.js';
 import { attribuerSites, siteDe } from './sites.js';
 import { genererEchos } from './gazette.js';
@@ -36,7 +36,7 @@ import { FLAGRANTS } from './contenu.js';
 import { jaugeDoctrine } from './doctrines.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
-import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin, acheterSkin } from './decor.js';
+import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin, acheterSkin, psDispo } from './decor.js';
 import { primeChallenge, CHALLENGE } from './challenge.js';
 import { courriersDuJour, appliquerParapheur, jourPrise, PRISE, PRISE_JOURS, AGENDA_JOUR } from './parapheur.js';
 import { creerChef, lireAgenda, lireTalents, changerTalents, gainsDuJour, progresser, totalNiveaux, niveauChef, talentsDebloques, talent, TALENT, AGENDA, COMPETENCES, IDS_COMPETENCES, PARCOURS, CHEF, noterChef, signatureChef, faitsDArmes, JEUX_COMP, FRONT, RISQUE_FRONT, lireFront, RESEAU, IDS_RESEAU, RESEAU_REGLES, servicePossible, VOIES, brevetPossible, humeurReseau, tasserEstime } from './chef.js';
@@ -720,6 +720,16 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const tous = (Array.isArray(q) ? q : q ? [q] : []);
     const ALT = ['delegue', 'quiz'];
     const qsTous = tous.filter((x, k) => x && (x.slot ?? k) !== 3 && !ALT.includes(x.statut));
+    // Relance payée en PS (ordre « relance ») : la nouvelle réponse remplace l'énigme ratée, si elle était bien ratée et payable.
+    { const rl = orders[uid] && orders[uid].relance;
+      const x = rl && Number.isInteger(rl.slot) ? qsTous.find((y) => y.slot === rl.slot) : null;
+      if (x && x.statut === 'rate' && !x.enquete && (rl.statut === 'ok' || rl.statut === 'rate')) {
+        if (psDispo(z) >= RELANCE_PS) {
+          z.psDepense = Math.round(z.psDepense || 0) + RELANCE_PS;
+          if (rl.statut === 'ok') x.statut = 'ok';
+          z.rapport.push(`Énigme relancée (−${RELANCE_PS} PS à dépenser) : ${rl.statut === 'ok' ? 'réussie cette fois, elle compte comme une bonne réponse' : 'ratée encore, sans autre conséquence'}.`);
+        } else z.rapport.push(`Énigme relancée mais pas payée : il ne restait que ${psDispo(z)} PS à dépenser (il en fallait ${RELANCE_PS}). La première réponse compte.`);
+      } }
     // Révision d'oct. 2026 : seules les 3 premières comptent ; la 4e est « pour le plaisir » (PS seulement).
     // Depuis le 10 oct. 2026 au soir, les 4 comptent de nouveau (3 au choix sur 4 pour la prime).
     const troisComptent = enquetePourTour(state.nextDeadline) && !quatreComptePourTour(state.nextDeadline);
