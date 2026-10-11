@@ -1,29 +1,26 @@
 // Événement « Rattrape Luc » : un mini-jeu clin d'œil (poursuite au grappin sur l'E19, puis contrôle routier).
-// Il ne revient que de temps en temps (en moyenne une fois par semaine, jamais deux jours de suite), et jamais en même
-// temps que l'urgence Bitonal du jour : tant que l'urgence est tombée et pas encore traitée, Luc ne se montre pas.
-// La première fois, il apparaît dès la connexion. Pour le fun : aucun effet sur la zone, seulement un record de la
+// Il ne revient que de temps en temps (engine/luc.js : en moyenne une fois par semaine, jamais deux jours de suite) et
+// prend alors la place de l'urgence Bitonal, qui ne tombe pas ce jour-là. Sinon, tant qu'une urgence est tombée et pas
+// encore traitée, Luc ne se montre pas.
+// Tant qu'un joueur n'a pas fait sa première partie, Luc reste disponible tous les jours (sinon, connecté sans jouer
+// le premier jour, il le ratait : la première apparition était liée à ce jour-là). Pour le fun : aucun effet sur la zone, seulement un record de la
 // partie (défi « luc », sans prime de la semaine) et un titre.
 import { S, esc } from './common.js';
 import { mesIncidents } from './incidents.js';
 import { recordDefi, monRecordDefi } from './defis.js';
+import { jourDeLuc } from '../engine/luc.js';
+export { jourDeLuc };
 
-export const LUC = { jeu: 'luc', nom: 'Rattrape Luc', chance: 16, ouvre: 7 };
+export const LUC = { jeu: 'luc', nom: 'Rattrape Luc', ouvre: 7 };
 const H = 3600e3;
 
-function h32(str) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
-  return h >>> 0;
-}
-const tire = (st, T) => h32(`${st.seed}:s${st.season}:t${T}:luc`) % 100 < LUC.chance;
-/** Jour de Luc pour toute la partie : tiré au sort, jamais deux jours de suite. */
-export const jourDeLuc = (st, T) => tire(st, T) && !tire(st, T - 1);
 
 const uid = () => (S.user && S.user.uid) || 'anon';
 const jourCle = (st) => `s${st.season}t${st.turn}`;
 const lire = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const ecrire = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* pas de stockage */ } };
-const clePremier = () => `mazp-luc-premier-${uid()}`;
+const clePremiere = () => `mazp-luc-premiere-partie-${uid()}`;
+const cleRappels = () => `mazp-luc-rappels-${uid()}`;
 const clePop = (st) => `mazp-luc-pop-${uid()}-${jourCle(st)}`;
 const cleJoue = (st) => `mazp-luc-joue-${uid()}-${jourCle(st)}`;
 
@@ -42,14 +39,23 @@ export function lucVisible(now = Date.now()) {
   const st = S.state;
   if (!st || !S.user || !st.zones || !st.zones[S.user.uid] || !st.nextDeadline) return false;
   if (now > st.nextDeadline) return false;
-  const premier = lire(clePremier());
-  const aujourdhui = premier === jourCle(st) || (!premier) || jourDeLuc(st, st.turn);
-  if (!aujourdhui) return false;
-  // Jour tiré au sort : à partir de 7 h ; première apparition : tout de suite.
-  if (premier && premier !== jourCle(st) && now < st.nextDeadline - 24 * H + LUC.ouvre * H) return false;
+  const premiere = !dejaJoue();
+  if (!premiere && !jourDeLuc(st, st.turn)) return false;
+  // Jour tiré au sort : à partir de 7 h ; tant qu'il n'a jamais joué : à toute heure.
+  if (!premiere && now < st.nextDeadline - 24 * H + LUC.ouvre * H) return false;
   if (urgenceEnCours(st, now)) return false;
-  if (!premier) ecrire(clePremier(), jourCle(st));
   return true;
+}
+
+/** Le joueur a déjà fini au moins une partie (profil synchronisé entre ses appareils, ou cet appareil). */
+export const dejaJoue = () => !!(S.player && S.player.lucJoue) || lire(clePremiere()) != null;
+/** Première partie terminée : Luc ne revient plus que les jours tirés au sort. */
+export async function marquerLucJoue() {
+  if (dejaJoue()) return;
+  ecrire(clePremiere(), '1');
+  if (!S.user || !S.backend) return;
+  S.player = { ...(S.player || {}), lucJoue: Date.now() };
+  try { await S.backend.savePlayer(S.user.uid, S.player); } catch (e) { /* hors ligne : l'appareil s'en souvient */ }
 }
 
 const meilleurDuJour = () => { const st = S.state; return st ? Math.floor(Number(lire(cleJoue(st))) || 0) : 0; };
@@ -100,6 +106,9 @@ export function ouvrirLuc(lancer) {
 export function lucAuBesoin(lancer) {
   const st = S.state;
   if (S.lucMontre || S.tuto != null || document.querySelector('.aide-wrap, .mj-wrap') || !lucVisible() || lire(clePop(st))) return false;
+  const rappels = Math.floor(Number(lire(cleRappels())) || 0);
+  if (!dejaJoue() && rappels >= 3) return false;
+  if (!dejaJoue()) ecrire(cleRappels(), String(rappels + 1));
   S.lucMontre = true;
   setTimeout(() => ouvrirLuc(lancer), 400);
   return true;
@@ -109,7 +118,7 @@ export function lucAuBesoin(lancer) {
 export function lucLigne() {
   if (!lucVisible()) return '';
   const fait = meilleurDuJour(), joue = lire(cleJoue(S.state)) != null, perso = monRecordDefi(LUC.jeu);
-  const sous = joue ? `Ton meilleur aujourd’hui : ${fait} manche${fait > 1 ? 's' : ''}${perso ? ` · ton record : ${perso}` : ''}` : 'Événement · flashé bien au-dessus des 120, jusqu’à 20:00';
+  const sous = joue ? `Ton meilleur aujourd’hui : ${fait} manche${fait > 1 ? 's' : ''}${perso ? ` · ton record : ${perso}` : ''}` : dejaJoue() ? 'Événement · flashé bien au-dessus des 120, jusqu’à 20:00' : 'Événement · flashé bien au-dessus des 120';
   return `<div class="inc-row inc-actu"><span class="inc-ico" aria-hidden="true" style="font-size:18px">🏎️</span>
     <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:700">Luc sur l’E19</span><span class="tiny muted">${sous}</span></span>
     <button class="btn ${joue ? 'ghost' : 'primary'} small" data-action="luc-jouer">${joue ? 'Rejouer' : 'Prendre la chasse'}</button></div>`;

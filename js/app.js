@@ -33,7 +33,7 @@ import { DECOR, decorDebloque, conditionDecor, decorValide } from './engine/deco
 import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { actuAuBesoin, ouvrirActu, EVT_ACTU, marquerEvtJoue } from './ui/actu.js';
-import { lucAuBesoin, ouvrirLuc, noterLuc, LUC } from './ui/luc.js';
+import { lucAuBesoin, ouvrirLuc, noterLuc, marquerLucJoue, LUC } from './ui/luc.js';
 import { tutoAuBesoin, lancerTuto, tutoFait } from './ui/tutoriel.js';
 import { lancerRoulette } from './ui/roulette.js';
 import { editionHtml, marquerEditionVue, editionVue } from './ui/edition.js';
@@ -1518,7 +1518,7 @@ async function lancerActu() {
 /** Événement « Rattrape Luc » : mini-jeu pour le fun (records de la partie, aucun effet sur la zone). */
 async function lancerLuc() {
   try { S.players = await S.backend.getPlayers(); } catch (e) { /* hors ligne */ }
-  ouvrirMiniJeu(LUC.jeu, { mode: 'train', onEntrainement: noterEntrainement, onDefi: (n) => noterLuc(n), onFin: () => { noterLuc(0); rerender(); } });
+  ouvrirMiniJeu(LUC.jeu, { mode: 'train', onEntrainement: (x) => { noterEntrainement(x); marquerLucJoue(); }, onDefi: (n) => noterLuc(n), onFin: () => { noterLuc(0); rerender(); } });
 }
 function noterEntrainement(plus) {
   if (!S.user || !S.backend || !S.backend.compterEntrainement) return;

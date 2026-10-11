@@ -32,7 +32,8 @@ export const NOTE_MAJ = {
       ['Prime', 'les 4 énigmes du jour comptent : 2 réussies au choix pour le bonus, 3 au choix pour la prime (la 4e n’est plus « pour le plaisir »). Elles comptent aussi pour le classement.'],
     ]],
     ['Rattrape Luc (10 octobre)', [
-      ['Événement surprise', 'de temps en temps, Luc est flashé sur l’E19 : rattrape-le au grappin avant la frontière, puis tiens tête à ses excuses au contrôle. L’alerte tombe à la connexion, jamais en même temps que l’urgence du jour, et reste sur l’HP jusqu’à 20:00. Pour le plaisir : aucun effet sur ta zone, mais un record de la partie et le titre « Chasseur de chauffards ».'],
+      ['Urgence moins fréquente (11 octobre)', 'l’urgence Bitonal ne tombe plus tous les jours : environ 4 jours sur 7, et jamais un jour de Luc, qui prend sa place. Ses gains et ses risques ne changent pas.'],
+      ['Événement surprise', 'de temps en temps, Luc est flashé sur l’E19 : rattrape-le au grappin avant la frontière, puis tiens tête à ses excuses au contrôle. L’alerte tombe à la connexion et reste sur l’HP jusqu’à 20:00. Tant que tu n’as pas fait ta première partie, il t’attend tous les jours. Pour le plaisir : aucun effet sur ta zone, mais un record de la partie et le titre « Chasseur de chauffards ».'],
     ]],
     ['Une jauge par doctrine, une doctrine par semaine (11 octobre)', [
       ['Une jauge par doctrine', 'chaque doctrine a maintenant sa jauge, visible dans tes Ordres sous le service qui la remplit : 🚦 Campagne de contrôles (Routière), 👂 Réseau d’îlotiers (De quartier), 📁 Dossier au parquet (Judiciaire), 💰 Saisie (Intervention), 🤝 Crédit de coopération (Partenaire, en tête de l’affectation). À 100 %, une récompense tombe le soir même. Une partie du bonus permanent de chaque doctrine est passée dans sa jauge.'],

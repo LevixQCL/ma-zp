@@ -8,6 +8,7 @@ import { DEFAULT_ALLOC, SERVICE_LABELS, PS, gainMoral, risqueBlessure, USURE } f
 import { vitesseCombi, vehiculesUrgence, user, modeleDe } from './flotte.js';
 import { TOUS_SKINS, ajouterSkin } from './decor.js';
 import { placeLibre } from './parc.js';
+import { jourDeLuc } from './luc.js';
 
 const H = 3600 * 1000;
 
@@ -22,7 +23,7 @@ export const INCIDENTS = {
 export const SERVICES_INCIDENTS = Object.keys(INCIDENTS);
 
 /**
- * L'urgence du jour (une par jour, en plus des incidents) : des collègues pris à partie demandent du renfort.
+ * L'urgence du jour (environ 4 jours sur 7, voir URGENCE.chanceJour ; en plus des incidents) : des collègues pris à partie demandent du renfort.
  * Mini-jeu « Bitonal » : rejoindre l'adresse au plus vite, en feu bleu. La vitesse du combi dépend du parc
  * (état, véhicules cabossés) et de la préparation des combis ; elle est figée quand l'urgence tombe, comme la difficulté.
  * Issues :
@@ -42,7 +43,16 @@ export const URGENCE = {
   blessure: 0.25, absence: 2, moralRetard: -1,
   usureParAccrochage: 2, usureHS: 8,
   seule: { blessure: 0.45, moral: -1 },
+  // Plus tous les jours (à partir du tour qui se clôt le 12 octobre 2026) : environ 4 jours sur 7, tirés pour chaque zone,
+  // et jamais un jour de Luc (l'événement « Rattrape Luc » prend sa place). Simulation : test/urgence-sim.mjs.
+  chanceJour: 0.57, rareDepuis: Date.parse('2026-10-11T21:00:00+02:00'),
 };
+/** L'urgence tombe-t-elle aujourd'hui pour cette zone ? (tirage à part : ne change rien aux autres tirages) */
+export function urgenceCeJour(state, uid) {
+  if (!(state.nextDeadline > URGENCE.rareDepuis)) return true;
+  if (jourDeLuc(state, state.turn)) return false;
+  return makeRng(`${state.seed}:s${state.season}:t${state.turn}:urgence-jour:${uid}`).next() < URGENCE.chanceJour;
+}
 /**
  * Temps cible de l'urgence, par niveau. Parcours (identiques au mini-jeu) : longueur et carrefours.
  * Référence = trajet parfait d'un combi neuf ; cible = référence × marge.
@@ -245,12 +255,13 @@ export function incidentsDuTour(state, uid) {
     seed: Math.floor(ru.next() * 1e9),
   };
   { const c = cibleUrgence(state, urgence.diff); urgence.cible = c.cible; urgence.courses = c.courses; }
+  const urgences = urgenceCeJour(state, uid) ? [urgence] : [];
   return [...liste.map((x, k) => ({
     id: `s${state.season}t${state.turn}-${k}`,
     service: x.service, jeu: INCIDENTS[x.service].jeu, titre: INCIDENTS[x.service].titre,
     ouvre: x.ouvre, ferme: fin,
     agents: al[x.service] || 0, ajust: niv, ...(x.pression ? { pression: true } : {}),
-  })), urgence].sort((a, b) => a.ouvre - b.ouvre);
+  })), ...urgences].sort((a, b) => a.ouvre - b.ouvre);
 }
 
 /** Incidents visibles par le joueur : ceux du jour, plus ceux d'hier encore ouverts ce matin (reportés). */

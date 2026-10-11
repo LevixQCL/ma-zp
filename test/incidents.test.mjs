@@ -1,6 +1,8 @@
 // Incidents du jour : tirage déterministe, horaires, effets à la résolution.
 import assert from 'node:assert/strict';
 import { createGame, buildJoinZone, resolveTurn } from '../js/engine/resolve.js';
+import { urgenceCeJour } from '../js/engine/incidents.js';
+import { jourDeLuc } from '../js/engine/luc.js';
 import { incidentsDuTour as tousIncidents, incidentsVisibles, separerIncidents, appliquerIncidents, MALUS, INC, difficulte, chanceSeule, pointsJauge, URGENCE, CIBLE, refUrgence, cibleUrgence, adapterCibleUrgence } from '../js/engine/incidents.js';
 import { readFileSync } from 'node:fs';
 import { PREPA } from '../js/engine/constants.js';
@@ -91,11 +93,26 @@ const { state: apres2 } = resolveTurn(structuredClone(st), { players: players2 }
 assert.ok(!apres2.zones.a.jaugeIncidents);
 assert.equal(INC.jauge, 50);
 
-// 6. L'urgence du jour : une par jour, entre 6 h et 12 h, sans changer le tirage des autres incidents.
+// 6. L'urgence : environ 4 jours sur 7 (jamais un jour de Luc), une par jour au plus, sans changer le tirage des autres incidents.
+//    Avant le 12 octobre 2026 : tous les jours (les tours déjà commencés ne changent pas).
+{
+  let jours = 0, avec = 0;
+  for (let t = 1; t <= 300; t++) {
+    const s6 = { ...st, turn: t, nextDeadline: URGENCE.rareDepuis + 23 * H + (t - 1) * 24 * H };
+    const n = tousIncidents(s6, 'a').filter((i) => i.urgence).length;
+    assert.equal(n, urgenceCeJour(s6, 'a') ? 1 : 0);
+    if (jourDeLuc(s6, t)) assert.equal(n, 0, 'pas d’urgence un jour de Luc');
+    jours++; avec += n;
+  }
+  assert.ok(avec / jours > 0.42 && avec / jours < 0.6, `urgence ${Math.round(avec / jours * 100)} % des jours`);
+  const ancien = { ...st, turn: 5, nextDeadline: URGENCE.rareDepuis - H };
+  assert.equal(tousIncidents(ancien, 'a').filter((i) => i.urgence).length, 1, 'avant le changement : tous les jours');
+}
 for (let t = 1; t <= 120; t++) {
   const s6 = { ...st, turn: t, nextDeadline: deadline + (t - 1) * 24 * H };
   const tous = tousIncidents(s6, 'a'), u = tous.filter((i) => i.urgence);
-  assert.equal(u.length, 1, 'une urgence par jour');
+  if (!urgenceCeJour(s6, 'a')) { assert.equal(u.length, 0); continue; }
+  assert.equal(u.length, 1, 'une urgence ce jour-là');
   const debut = s6.nextDeadline - 24 * H;
   assert.ok(u[0].ouvre >= debut + 10 * H && u[0].ouvre <= debut + 16 * H && u[0].ferme === s6.nextDeadline);
   assert.equal(u[0].jeu, 'bitonal'); assert.ok(u[0].id.endsWith('-u'));
