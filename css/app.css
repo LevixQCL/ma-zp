@@ -2875,3 +2875,48 @@ main.screen.gzs { height: 100dvh; box-sizing: border-box; padding: 10px 12px 100
 .ml-carre { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 14px; border: 1px solid var(--amber-line); background: var(--amber-bg); }
 .ml-tac { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; width: 100%; }
 .ml-tac-t { font-weight: 700; font-size: 14px; }
+/* Boutique de PS (Mon commissariat) */
+.bq { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 14px; background: linear-gradient(160deg, rgba(242, 140, 40, .14), rgba(107, 63, 160, .14)); border: 1px solid rgba(242, 140, 40, .35); }
+.bq-tete { align-items: baseline; }
+.bq-titre { font-weight: 800; font-size: 14px; }
+.bq-solde { font: 700 12px var(--mono); color: var(--amber); background: rgba(255, 178, 63, .12); border: 1px solid rgba(255, 178, 63, .35); padding: 2px 8px; border-radius: 99px; white-space: nowrap; }
+.bq-carte { display: flex; flex-direction: column; gap: 8px; border-radius: 12px; overflow: hidden; background: var(--surface2, #161E3C); border: 1px solid var(--line); }
+.bq-carte.a { border-color: var(--green); }
+.bq-apercu svg { display: block; width: 100%; height: auto; }
+.bq-corps { gap: 4px; padding: 0 10px 10px; }
+.bq-nom { font-size: 16px; }
+.bq-limite { font: 700 11px var(--mono); color: #F2A64A; white-space: nowrap; }
+.bq-act { gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+.bq-ok { font-size: 12px; font-weight: 700; color: var(--green); }
+/* Manoir hanté */
+.mn-bougie, .mn-halo { animation: mnBougie 2.6s ease-in-out infinite; }
+@keyframes mnBougie { 0%, 100% { opacity: 1; } 18% { opacity: .82; } 22% { opacity: .96; } 47% { opacity: .78; } 52% { opacity: 1; } 76% { opacity: .88; } }
+.mn-fantome { animation: mnFantome 9s ease-in-out infinite; }
+@keyframes mnFantome { 0% { transform: translate(0, 0); opacity: .9; } 25% { transform: translate(-28px, -6px); opacity: .55; } 50% { transform: translate(-46px, 2px); opacity: .95; } 75% { transform: translate(-18px, -9px); opacity: .5; } 100% { transform: translate(0, 0); opacity: .9; } }
+.mn-chauve { animation: mnBat 7s linear infinite; }
+.mn-c2 { animation-duration: 9.5s; animation-direction: reverse; }
+@keyframes mnBat { 0% { transform: translate(0, 0) scaleY(1); } 10% { transform: translate(12px, -5px) scaleY(.6); } 20% { transform: translate(24px, 0) scaleY(1); } 35% { transform: translate(36px, 6px) scaleY(.6); } 50% { transform: translate(28px, 12px) scaleY(1); } 65% { transform: translate(12px, 8px) scaleY(.6); } 80% { transform: translate(-6px, 4px) scaleY(1); } 100% { transform: translate(0, 0) scaleY(1); } }
+.mn-chauve, .mn-fantome { transform-box: fill-box; transform-origin: center; }
+.mn-brume { animation: mnBrume 12s ease-in-out infinite alternate; }
+@keyframes mnBrume { from { transform: translateX(-8px); } to { transform: translateX(10px); } }
+.mn-bulles circle { animation: mnBulle 2.1s ease-in infinite; transform-box: fill-box; }
+@keyframes mnBulle { 0% { transform: translateY(0); opacity: 0; } 20% { opacity: .9; } 100% { transform: translateY(-9px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .mn-bougie, .mn-halo, .mn-fantome, .mn-chauve, .mn-brume, .mn-bulles circle { animation: none; } }
+.mn-ailes > :nth-child(1) { animation: mnAileA .36s steps(1) infinite; }
+.mn-ailes > :nth-child(2) { animation: mnAileB .36s steps(1) infinite; }
+@keyframes mnAileA { 0% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes mnAileB { 0% { opacity: 0; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .mn-ailes > :nth-child(1) { animation: none; } .mn-ailes > :nth-child(2) { animation: none; opacity: 0; } }
+.bq-carte.vedette { position: relative; border-color: rgba(242, 140, 40, .6); box-shadow: 0 8px 22px -12px rgba(242, 140, 40, .6); }
+.bq-promo { position: absolute; top: 8px; left: 8px; z-index: 1; font: 800 11.5px var(--body); color: #2B1300; background: linear-gradient(90deg, #FFB347, #F28C28); padding: 3px 9px; border-radius: 99px; box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+.bq-act s, .bq-ligne s { opacity: .6; font-weight: 500; }
+.bq-cat { border-radius: 12px; background: var(--surface2, #161E3C); border: 1px solid var(--line); }
+.bq-cat > summary { cursor: pointer; padding: 10px 12px; font-weight: 700; font-size: 13.5px; list-style: none; }
+.bq-cat > summary::after { content: ' ▾'; opacity: .6; }
+.bq-cat[open] > summary::after { content: ' ▴'; }
+.bq-groupe { display: flex; flex-direction: column; gap: 6px; padding: 4px 10px 10px; }
+.bq-ligne { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line); }
+.bq-ligne.a { opacity: .6; }
+.bq-droite { gap: 6px; align-items: flex-end; flex-shrink: 0; }
+.bq-apercu.petit { margin-top: 6px; border-radius: 8px; overflow: hidden; }
+button.ajd-alerte { width: 100%; text-align: left; font: inherit; cursor: pointer; }

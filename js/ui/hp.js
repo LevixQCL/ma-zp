@@ -1,3 +1,4 @@
+import { skinsEnVente, psDispo } from '../engine/decor.js';
 import { chefACreer, creationChefHtml, portraitChef, ficheChefHtml, chefNuitHtml, zoneAvecAgenda } from './chef.js';
 import { absenceHtml, semaineHtml, portraitAdjoint } from './chef-semaine.js';
 import { humeurReseau } from '../engine/chef.js';
@@ -409,6 +410,8 @@ function alertesDe(st, z, T) {
   { const ds = z.dossiers || [], retard = ds.filter((d) => d.age > 6).length, vieux = ds.filter((d) => d.age >= 5).length;
     if (vieux) alertes.push({ cls: retard ? 'red' : 'amber', titre: retard ? `${retard} dossier${retard > 1 ? 's' : ''} en retard` : `${vieux} dossier${vieux > 1 ? 's' : ''} de 5 jours ou plus`, texte: retard ? '−0,4 de satisfaction chacun par jour : renforce la Recherche' : 'renforce la Recherche avant qu’ils coûtent de la satisfaction', href: '#ordres' }); }
   if (z.paperasse > 14) alertes.push({ cls: 'red', titre: `Paperasse : ${Math.round(z.paperasse)} dossiers en attente`, texte: '−2 de moral chaque soir tant qu’elle dépasse 14, et l’Inspection au-delà de 20 · renforce l’Accueil ou paie la sous-traitance (−5 dossiers, 3 000 €)', href: ouvertureOrdres(z).depenses ? '#ordres-depenses' : '#ordres' });
+  { const v = skinsEnVente(st.nextDeadline).find((x) => x.vedette && x.promo && !(z.skins || []).includes(x.cle));
+    if (v) alertes.push({ cls: 'amber', titre: `🎃 Boutique : ${esc(v.nom)} à −${Math.round(100 - (100 * v.prix) / v.prixBase)} %`, texte: `${v.prix} PS au lieu de ${v.prixBase}, avec la remise assortie · jusqu’au ${new Date(v.promo.jusqua).toLocaleDateString('fr-BE', { day: 'numeric', month: 'long' })} · tu as ${psDispo(z)} PS à dépenser`, action: 'decor' }); }
   if (z.budget < 0) alertes.push({ cls: 'red', titre: 'Budget dans le rouge', texte: 'deux tours de suite et c’est l’Inspection', href: '#ordres' });
   { const dg = S.draft ? secteursEnDanger() : []; if (dg.length) alertes.unshift({ cls: 'red', titre: `Zone de non-droit : ${dg.map((k) => esc(nomSecteur(k))).join(', ')} menacé${dg.length > 1 ? 's' : ''}`, texte: 'le milieu remonte : mets 2 ou 3 agents de garde ce soir', href: '#terrain' }); }
   if (st.nonDroit && S.draft && !agentsND()) { const sc = Object.values(st.nonDroit.secteurs); const hier = sc.reduce((n, x) => n + ((x.hier || []).length ? 1 : 0), 0); const rep = sc.filter((x) => x.statut === 'repris').length; alertes.push({ cls: 'blue', titre: `Zone de non-droit : ${rep} secteur${rep > 1 ? 's' : ''} repris sur ${sc.length}`, texte: hier ? `des zones y étaient hier sur ${hier} secteur${hier > 1 ? 's' : ''} : rejoins-les, à plusieurs ça tombe plus vite` : 'personne n’y était hier : lance le mouvement sur la radio', href: '#terrain' }); }
@@ -425,8 +428,8 @@ function alertesDe(st, z, T) {
   { const ve = vagueEnvoyeeAlerte(); if (ve) alertes.push(ve); }
   return alertes.slice().sort((x, y) => (x.cls === 'red' ? 0 : 1) - (y.cls === 'red' ? 0 : 1));
 }
-const ligneAlerte = (a) => `<a class="ajd-alerte ${a.cls}" href="${a.href}"><span class="ajd-point" aria-hidden="true"></span>
-  <span class="ajd-txt"><b>${a.titre}</b><span>${a.texte}</span></span><span class="ajd-chev" aria-hidden="true">${icon('chevron', 16)}</span></a>`;
+const ligneAlerte = (a) => `<${a.action ? `button type="button" data-action="${a.action}"` : `a href="${a.href}"`} class="ajd-alerte ${a.cls}"><span class="ajd-point" aria-hidden="true"></span>
+  <span class="ajd-txt"><b>${a.titre}</b><span>${a.texte}</span></span><span class="ajd-chev" aria-hidden="true">${icon('chevron', 16)}</span></${a.action ? 'button' : 'a'}>`;
 
 /** « Aujourd'hui » : une ligne par sujet, l'urgent d'abord ; au-delà de 6, le reste se déplie. */
 function aujourdhuiHtml(st, z, T, items) {

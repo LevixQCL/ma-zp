@@ -6,7 +6,7 @@ import { titresDefi } from './defis.js';
 import { S, esc, icon, fmt1, myZone } from './common.js';
 import { gradeFor, LOTS, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE, DEPENSES, USURE, PREPA, REGLES, nbAnnexes, emplacementsAnnexes } from '../engine/constants.js';
 import { parcVehicules, cabossesChoisis } from '../engine/parc.js';
-import { DECOR, SKINS, decorValide, decorDebloque, conditionDecor, decorCompte, skinsValides, skinDe, earlyBirdEligible } from '../engine/decor.js';
+import { DECOR, SKINS, decorValide, decorDebloque, conditionDecor, decorCompte, skinsValides, skinDe, earlyBirdEligible, skinsEnVente, psDispo, BOUTIQUE } from '../engine/decor.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { sceneHp, vehiculeSvg } from './scene-hp.js';
 import { fiabilite } from '../engine/fipa.js';
@@ -246,6 +246,7 @@ export function ouvrirDecor() {
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon commissariat</h2><span class="tiny muted">${n} élément${n > 1 ? 's' : ''} débloqué${n > 1 ? 's' : ''} sur ${total}</span></div>
       <button class="iconbtn" data-action="logistique" aria-label="Retour" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">‹</button></div>
     <div class="scene-voisin">${sceneZone(z, S.state, d, mesSkins(z).choix, S.player && S.player.hpCiel ? { moment: S.player.hpCiel } : {})}</div>
+    ${boutiqueSkins(z, d)}
     ${(() => {
       const { possedes, choix } = mesSkins(z);
       if (!possedes.length) return '';
@@ -263,6 +264,39 @@ export function ouvrirDecor() {
     ${groupes}
     <p class="tiny muted" style="margin:0">Les éléments se débloquent avec ton grade et tes trophées. Les autres chefs de zone voient ton commissariat depuis la Carte et le classement, à partir de 20:00.</p>
   </div>`);
+}
+
+/** Boutique de skins : achetés avec les PS, livrés et équipés à 20:00 (avec les ordres). Le grade ne bouge pas. */
+function boutiqueSkins(z, d) {
+  const quand = (S.state && S.state.nextDeadline) || Date.now();
+  const vente = skinsEnVente(quand);
+  if (!vente.length) return '';
+  const own = new Set(mesSkins(z).possedes), dispo = psDispo(z), cmd = S.draft && S.draft.achat;
+  const date = (t) => new Date(t).toLocaleDateString('fr-BE', { day: 'numeric', month: 'long' });
+  const apercu = (v) => sceneZone(z, S.state, d, { ...mesSkins(z).choix, [v.cat]: v.id, ...Object.fromEntries(v.pack.map((k) => k.split(':'))) }, { moment: 'nuit' });
+  const prix = (v) => (v.promo ? `<s>${v.prixBase}</s> ${v.prix} PS` : `${v.prix} PS`);
+  const action = (v, grand) => {
+    if (own.has(v.cle)) return '<span class="bq-ok">✓ À toi</span>';
+    if (cmd === v.cle) return `<span class="bq-ok">🕗 Livré et équipé à 20:00</span><button type="button" class="btn small ghost" data-action="skin-acheter" data-cle="${v.cle}">Annuler</button>`;
+    if (cmd) return `<span class="tiny muted">Un achat par soir</span>`;
+    const ok = dispo >= v.prix;
+    return `<button type="button" class="btn ${grand ? 'primary' : ''} small" data-action="skin-acheter" data-cle="${v.cle}" ${ok ? '' : 'disabled'}>Acheter · ${prix(v)}</button>${ok ? '' : `<span class="tiny muted">encore ${v.prix - dispo} PS</span>`}`;
+  };
+  const vedettes = vente.filter((v) => v.vedette);
+  const autres = vente.filter((v) => !v.vedette);
+  const cats = [...new Set(autres.map((v) => v.categorie))];
+  return `<section class="bq" aria-label="Boutique de skins">
+    <div class="between bq-tete"><span class="bq-titre">🛍️ Boutique de skins</span><span class="bq-solde">${dispo} PS à dépenser</span></div>
+    ${vedettes.map((v) => `<article class="bq-carte vedette${own.has(v.cle) ? ' a' : ''}">${v.promo ? `<span class="bq-promo">−${Math.round(100 - (100 * v.prix) / v.prixBase)} % ${esc(v.promo.nom || '')} · jusqu’au ${date(v.promo.jusqua)}</span>` : ''}<div class="bq-apercu">${apercu(v)}</div>
+      <div class="col bq-corps"><b class="bq-nom">${esc(v.nom)}</b><span class="small muted">${esc(v.texte)}</span><div class="row bq-act">${action(v, true)}</div></div></article>`).join('')}
+    <details class="bq-cat"${S.bqOuvert ? ' open' : ''}><summary data-action="bq-ouvrir">Tous les skins · ${autres.length} au choix, ${BOUTIQUE.prix} PS</summary>
+      ${cats.map((c) => `<div class="bq-groupe"><span class="tiny muted">${esc(c)}</span>${autres.filter((v) => v.categorie === c).map((v) => `<div class="bq-ligne${own.has(v.cle) ? ' a' : ''}">
+        <div class="col grow" style="gap:1px;min-width:0"><b>${esc(v.nom)}</b><span class="tiny muted">${esc(v.texte)}</span>
+        ${S.bqApercu === v.cle ? `<div class="bq-apercu petit">${apercu(v)}</div>` : ''}</div>
+        <div class="col bq-droite">${own.has(v.cle) ? '' : `<button type="button" class="btn small ghost" data-action="bq-apercu" data-cle="${v.cle}">${S.bqApercu === v.cle ? 'Fermer' : 'Aperçu'}</button>`}${action(v, false)}</div></div>`).join('')}</div>`).join('')}
+    </details>
+    <p class="tiny muted" style="margin:0">Payé en PS, livré et équipé à 20:00. Ton grade suit tous les PS gagnés : il ne baisse pas. La jauge des skins continue d’offrir un skin surprise.</p>
+  </section>`;
 }
 
 /** Fiche « Mon hôtel de police » : bâtiments et annexes, avec ce qu'ils donnent aujourd'hui et au niveau suivant. */

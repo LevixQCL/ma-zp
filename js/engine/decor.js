@@ -93,6 +93,7 @@ export const SKINS = {
       moulin:   { nom: 'Moulin à café', texte: 'Bois patiné, cerclages de laiton, grains sculptés et manivelle géante sur le toit.', jour: ['#9C6B45', '#86593A', '#5C3A26'] },
       ampli:    { nom: 'Caisse résonnante', texte: 'Toile de haut-parleur bordeaux, coins chromés et tête d’ampli au voyant rouge.', jour: ['#7A1E1E', '#661616', '#1E1A1A'] },
       ruche:    { nom: 'Ruche d’intervention', texte: 'Alvéoles dorées, rayures d’abeille, miel qui coule et ruche de paille sur le toit.', jour: ['#FFC23D', '#F5A300', '#B86A00'] },
+      manoir:   { nom: 'Manoir hanté', texte: 'Pierres moussues, fenêtres gothiques à la bougie, tourelle, citrouilles, fantôme et chauves-souris. Avec la remise à calèches assortie pour le garage.', jour: ['#4A3F5C', '#3B3150', '#2A2238'], achat: { ps: 600, promo: { ps: 300, jusqua: Date.parse('2026-11-02T19:00:00Z'), nom: 'Halloween' }, pack: ['garage:remise'], vedette: true } },
     },
   },
   garage: {
@@ -104,6 +105,7 @@ export const SKINS = {
       lavage:  { nom: 'Car-wash à bulles', texte: 'Carrelage bleu et bulles de savon qui s’envolent.', jour: ['#8CC8F5', '#5AB0F0'] },
       cartons: { nom: 'Caisses en carton', texte: 'Cartons empilés, rabats ouverts, scotch orange et pointillés « découper ici ».', jour: ['#C99A5B', '#B0844A'] },
       coffre:  { nom: 'Coffre-fort géant', texte: 'Acier brossé, rivets et portes blindées à volant qui tourne.', jour: ['#C3CAD3', '#8A95A3'] },
+      remise:  { nom: 'Remise à calèches', texte: 'Pierres moussues, toit d’ardoises et portes gothiques ferrées. Offerte avec le Manoir hanté.', jour: ['#4A3F5C', '#3B3150'], pack: true },
     },
   },
   fete: {
@@ -142,7 +144,7 @@ export function skinsValides(z, choix) {
 }
 
 /** Tous les skins, à plat : [{ cat, id, nom, texte }]. */
-export const TOUS_SKINS = Object.entries(SKINS).filter(([cat]) => cat !== 'fete').flatMap(([cat, C]) => Object.entries(C.options).map(([id, o]) => ({ cat, id, nom: o.nom, texte: o.texte, categorie: C.titre })));
+export const TOUS_SKINS = Object.entries(SKINS).filter(([cat]) => cat !== 'fete').flatMap(([cat, C]) => Object.entries(C.options).filter(([, o]) => !o.achat && !o.pack).map(([id, o]) => ({ cat, id, nom: o.nom, texte: o.texte, categorie: C.titre })));
 
 /**
  * Early birds : les zones présentes au lancement des skins. La liste est figée à la première
@@ -195,4 +197,41 @@ export function ajouterSkin(z, cle) {
   if (z.skins.includes(cle)) return false;
   z.skins.push(cle);
   return true;
+}
+
+// ───── Boutique de skins (PS, octobre 2026) ─────
+// Les PS gagnés restent comptés pour le grade (z.ps, ne baisse jamais) ; les achats s'ajoutent à z.psDepense.
+// La jauge des skins continue d'offrir un skin au hasard ; la boutique laisse choisir. Les décors d'événement
+// (édition limitée) ne se vendent pas.
+export const BOUTIQUE = { depuis: Date.parse('2026-10-11T18:00:00Z'), prix: 250 };
+/** PS que la zone peut encore dépenser. */
+export const psDispo = (z) => Math.max(0, Math.round((z && z.ps) || 0) - Math.round((z && z.psDepense) || 0));
+/** Catalogue à la date `quand` (ms, l'heure limite du tour) : [{ cle, cat, id, nom, texte, prix, prixBase, promo, pack, vedette }]. */
+export function skinsEnVente(quand) {
+  if (!(quand > BOUTIQUE.depuis)) return [];
+  const out = [];
+  for (const [cat, C] of Object.entries(SKINS)) {
+    if (cat === 'fete') continue;
+    for (const [id, o] of Object.entries(C.options)) {
+      if (o.pack) continue;
+      const a = o.achat || {};
+      const base = a.ps || BOUTIQUE.prix, promo = a.promo && quand <= a.promo.jusqua ? a.promo : null;
+      out.push({ cle: `${cat}:${id}`, cat, id, nom: o.nom, texte: o.texte, categorie: C.titre, prix: promo ? promo.ps : base, prixBase: base, promo, pack: a.pack || [], vedette: !!a.vedette });
+    }
+  }
+  return out;
+}
+/** Achat d'un skin (ordre `achat` validé avant 20:00) : payé en PS, ajouté et équipé. Renvoie une ligne de rapport, ou null. */
+export function acheterSkin(z, cle, quand) {
+  if (typeof cle !== 'string') return null;
+  const v = skinsEnVente(quand).find((x) => x.cle === cle);
+  if (!v || skinsPossedes(z).has(cle)) return null;
+  if (psDispo(z) < v.prix) return `Achat impossible : ${v.nom} coûte ${v.prix} PS, il ne t’en reste que ${psDispo(z)} à dépenser.`;
+  z.psDepense = Math.round(z.psDepense || 0) + v.prix;
+  ajouterSkin(z, cle);
+  const pack = v.pack.filter((k) => ajouterSkin(z, k));
+  z.skinsChoix = { ...(z.skinsChoix || {}), [v.cat]: v.id };
+  for (const k of v.pack) { const d = skinDe(k); if (d) z.skinsChoix[d.cat] = d.id; }
+  const noms = pack.map((k) => { const d = skinDe(k); return d && SKINS[d.cat].options[d.id].nom; }).filter(Boolean);
+  return `Boutique : ${v.nom}${noms.length ? ` et ${noms.join(', ')}` : ''}, achetés et équipés (−${v.prix} PS à dépenser ; ton grade ne bouge pas).`;
 }

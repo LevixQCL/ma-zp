@@ -36,7 +36,7 @@ import { FLAGRANTS } from './contenu.js';
 import { jaugeDoctrine } from './doctrines.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
-import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin } from './decor.js';
+import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin, acheterSkin } from './decor.js';
 import { primeChallenge, CHALLENGE } from './challenge.js';
 import { courriersDuJour, appliquerParapheur, jourPrise, PRISE, PRISE_JOURS, AGENDA_JOUR } from './parapheur.js';
 import { creerChef, lireAgenda, lireTalents, changerTalents, gainsDuJour, progresser, totalNiveaux, niveauChef, talentsDebloques, talent, TALENT, AGENDA, COMPETENCES, IDS_COMPETENCES, PARCOURS, CHEF, noterChef, signatureChef, faitsDArmes, JEUX_COMP, FRONT, RISQUE_FRONT, lireFront, RESEAU, IDS_RESEAU, RESEAU_REGLES, servicePossible, VOIES, brevetPossible, humeurReseau, tasserEstime } from './chef.js';
@@ -282,6 +282,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         z.rapport.push(`Doctrine gardée pour la 2e semaine : ${DOCTRINES[z.doctrine].nom}, maîtrise ${'★'.repeat(z.maitrise + 1)} (force +${Math.round(MAITRISE * z.maitrise * 100)} %).`);
       }
     }
+    // Achat d'un skin avec les PS (boutique de « Mon commissariat »).
+    { const ach = orders[uid] && orders[uid].achat; const l = ach ? acheterSkin(z, ach, state.nextDeadline) : null; if (l) z.rapport.push(l); }
     // Chef de corps (saison 2) : création, parcours, talents (une fois par semaine), agenda du jour.
     if (reglesV2(state)) {
       const pf = players[uid] && players[uid].chef;

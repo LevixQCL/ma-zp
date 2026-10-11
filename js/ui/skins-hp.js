@@ -18,7 +18,7 @@ function trumeaux(c) {
 }
 
 /** Skins d'hôtel de police gérés ici (le toit standard s'efface devant leur objet). */
-export const SKINS_BATIMENT_NEUFS = ['canard', 'aquarium', 'moulin', 'ampli', 'ruche'];
+export const SKINS_BATIMENT_NEUFS = ['canard', 'aquarium', 'moulin', 'ampli', 'ruche', 'manoir'];
 
 /** Fond de façade, dessiné sous les fenêtres. */
 export function fondBatiment(SB, c) {
@@ -215,4 +215,128 @@ export function porteGarage(SG, dx, c, d) {
       <g class="hp-volant" style="animation-delay:${-d * 2.3}s;transform-origin:${cx}px ${f1(cy)}px"><circle cx="${cx}" cy="${f1(cy)}" r="4.6" fill="none" stroke="${fonce}" stroke-width="1.2"/><path d="M${cx - 4.6} ${f1(cy)} H${cx + 4.6} M${cx} ${f1(cy - 4.6)} V${f1(cy + 4.6)}" stroke="${fonce}" stroke-width="1"/><circle cx="${cx}" cy="${f1(cy)}" r="1.4" fill="${teinte('#C9A13B')}"/></g>`;
   }
   return null;
+}
+
+// ───── Manoir hanté (Halloween 2026, acheté avec les PS) : pièces dessinées par Gemini, posées sur le bâtiment ─────
+// Les étages restent ceux du jeu (une rangée de fenêtres gothiques par niveau) : le skin ne cache jamais le niveau.
+const RACINE_IMG = (typeof location !== 'undefined' && /\/minijeux\//.test(location.pathname)) ? '../' : '';
+const MANOIR = `${RACINE_IMG}img/skins/manoir/`;
+const RATIO = { toit: 642 / 326, fenetre: 141 / 227, porte: 214 / 316, corniche: 318 / 62, lanterne: 34 / 67, c1: 105 / 102, c2: 87 / 88, c3: 73 / 71,
+  fantome: 82 / 86, chauve1: 86 / 37, chauve2: 64 / 33, chaudron: 111 / 93, tombeCorbeau: 86 / 174, tombe: 85 / 101, grille: 184 / 106 };
+const img = (n, x, y, w, h, extra = '') => `<image href="${MANOIR}${n}.webp" x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" preserveAspectRatio="none"${extra}/>`;
+/** Voile de nuit posé sur les images (elles sont dessinées « de jour »). */
+const voile = (c) => (c.moment === 'jour' ? 0 : c.moment === 'nuit' ? 0.5 : 0.32);
+const voileCouleur = (c) => (c.moment === 'nuit' ? '#0C1124' : '#1A2330');
+
+/** Mur de pierres moussues sur tout le bâtiment, et fenêtres gothiques à la place des fenêtres d'étage. */
+function murManoir(c, y0, y1, x0 = c.x0, x1 = c.x0 + c.w) {
+  if (y1 <= y0) return '';
+  return `<rect x="${x0}" y="${f1(y0)}" width="${f1(x1 - x0)}" height="${f1(y1 - y0)}" fill="url(#hp-mur-${c.uid})"/>${voile(c) ? `<rect x="${x0}" y="${f1(y0)}" width="${f1(x1 - x0)}" height="${f1(y1 - y0)}" fill="${voileCouleur(c)}" opacity="${voile(c)}"/>` : ''}`;
+}
+function fenetreManoir(c, x, y, h, on, k) {
+  const w = h * RATIO.fenetre;
+  const halo = on && c.moment !== 'jour' ? `<ellipse cx="${f1(x + w / 2)}" cy="${f1(y + h * 0.55)}" rx="${f1(w * 1.1)}" ry="${f1(h * 0.75)}" fill="url(#hp-bougie-${c.uid})" class="mn-halo" style="animation-delay:${(-k * 0.37).toFixed(2)}s"/>` : '';
+  const sombre = !on && voile(c) ? `<rect x="${f1(x + w * 0.2)}" y="${f1(y + h * 0.3)}" width="${f1(w * 0.6)}" height="${f1(h * 0.6)}" fill="${voileCouleur(c)}" opacity="${voile(c) * 0.6}"/>` : '';
+  return `${halo}${img(on ? 'fenetre-on' : 'fenetre-off', x, y, w, h, on ? ` class="mn-bougie" style="animation-delay:${(-k * 0.53).toFixed(2)}s"` : '')}${sombre}`;
+}
+export function manoirDefs(c) {
+  return `<pattern id="hp-mur-${c.uid}" width="34" height="34" patternUnits="userSpaceOnUse"><image href="${MANOIR}mur.webp" width="34" height="34"/></pattern>
+    <radialGradient id="hp-bougie-${c.uid}"><stop offset="0" stop-color="#FFB347" stop-opacity=".55"/><stop offset=".6" stop-color="#FF8A1E" stop-opacity=".16"/><stop offset="1" stop-color="#FF8A1E" stop-opacity="0"/></radialGradient>
+    <radialGradient id="hp-chaudron-${c.uid}"><stop offset="0" stop-color="#7DFF6A" stop-opacity=".55"/><stop offset="1" stop-color="#7DFF6A" stop-opacity="0"/></radialGradient>
+    <linearGradient id="hp-brume-${c.uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B9A7E0" stop-opacity="0"/><stop offset="1" stop-color="#B9A7E0" stop-opacity=".35"/></linearGradient>`;
+}
+/** Étages : mur, corniches et fenêtres gothiques (même tirage allumé/éteint que le jeu). */
+export function etagesManoir(c) {
+  const { x0, w, base, gf, fh, b, P, top } = c;
+  const rr = c.rnd(c.graine(c.nom) + 77);
+  const gy = base - gf;
+  let s = manoirDefs(c) + murManoir(c, top, gy);
+  for (let f = 0; f < b - 1; f++) {
+    const y = gy - (f + 1) * fh;
+    for (let k = 0; k < 6; k++) s += fenetreManoir(c, x0 + 24 + k * 22 + 1, y + 2, fh - 4, rr() < P.allume, f * 6 + k);
+    // Meurtrière dans la tour, et corniche sculptée sous chaque étage.
+    s += fenetreManoir(c, x0 + 3.5, y + 5, fh - 10, rr() < P.allume * 0.8, 40 + f);
+    s += img('corniche', x0 - 2, y + fh - 3, w + 4, 4.2);
+  }
+  if (b >= 2) s += toile(x0 + 16, top, 8) + toile(x0 + w, top, 9, true);
+  return s;
+}
+/** Rez-de-chaussée : mur, porte gothique, lanternes, fenêtres ; devant : citrouilles, chaudron, grille, tombe et corbeau. */
+export function rezManoir(c) {
+  const { x0, w, base, gf } = c;
+  const gy = base - gf, cx = x0 + w / 2;
+  let s = '';
+  // On couvre les vitrines et la porte vitrée du jeu (l'enseigne POLICE reste au-dessus).
+  s += murManoir(c, gy + 2, base, x0 + 16, cx - 24) + murManoir(c, gy + 2, base, cx + 24, x0 + w) + murManoir(c, gy + 10, base, cx - 24, cx + 24);
+  s += murManoir(c, gy, base, x0, x0 + 16);
+  s += fenetreManoir(c, x0 + 26, gy + 9, gf - 11, c.P.allume > 0.3, 60) + fenetreManoir(c, x0 + 42, gy + 9, gf - 11, c.P.allume > 0.5, 61);
+  s += fenetreManoir(c, x0 + w - 39, gy + 9, gf - 11, c.P.allume > 0.4, 62) + fenetreManoir(c, x0 + w - 23, gy + 9, gf - 11, c.P.allume > 0.2, 63);
+  const ph = gf - 9, pw = ph * RATIO.porte;
+  s += img('porte', cx - pw / 2, base - ph, pw, ph);
+  if (voile(c)) s += `<rect x="${f1(cx - pw / 2)}" y="${f1(base - ph)}" width="${f1(pw)}" height="${f1(ph)}" fill="${voileCouleur(c)}" opacity="${voile(c) * 0.55}"/>`;
+  for (const lx of [cx - pw / 2 - 5.5, cx + pw / 2 + 1.5]) {
+    if (c.moment !== 'jour') s += `<circle cx="${f1(lx + 2)}" cy="${f1(base - ph + 6)}" r="7" fill="url(#hp-bougie-${c.uid})" class="mn-halo"/>`;
+    s += img('lanterne', lx, base - ph + 2, 4, 4 / RATIO.lanterne);
+  }
+  s += toile(x0, gy + 2.5, 9);
+  // Brume au ras du sol (la nuit et au crépuscule).
+  if (c.moment !== 'jour') s += `<g class="mn-brume"><ellipse cx="${f1(x0 + w * 0.3)}" cy="${base - 1}" rx="${f1(w * 0.45)}" ry="7" fill="url(#hp-brume-${c.uid})"/><ellipse cx="${f1(x0 + w * 0.78)}" cy="${base}" rx="${f1(w * 0.4)}" ry="6" fill="url(#hp-brume-${c.uid})"/></g>`;
+  // Devant le manoir.
+  const pied = base + 1.5;
+  s += img('grille', x0 - 9, pied - 11, 11 * RATIO.grille, 11);
+  s += `<circle cx="${f1(x0 + 33)}" cy="${f1(pied - 7)}" r="9" fill="url(#hp-chaudron-${c.uid})" class="mn-halo"/>` + img('chaudron', x0 + 27, pied - 10, 10 * RATIO.chaudron, 10);
+  s += `<g class="mn-bulles">${[0, 1, 2].map((j) => `<circle cx="${f1(x0 + 32 + j * 2.2)}" cy="${f1(pied - 10)}" r="${(0.7 + j * 0.25).toFixed(2)}" fill="#8CFF7A" style="animation-delay:${-j * 0.7}s"/>`).join('')}</g>`;
+  s += img('citrouille-1', cx - pw / 2 - 13, pied - 9.5, 9.5 * RATIO.c1, 9.5) + img('citrouille-3', cx - pw / 2 - 19, pied - 6, 6 * RATIO.c3, 6);
+  s += img('citrouille-2', cx + pw / 2 + 4, pied - 8, 8 * RATIO.c2, 8);
+  s += img('tombe', x0 + w - 36, pied - 11, 11 * RATIO.tombe, 11) + img('tombe-corbeau', x0 + w - 22, pied - 20, 20 * RATIO.tombeCorbeau, 20);
+  return s;
+}
+/** Chauve-souris qui bat des ailes (deux dessins en alternance). */
+function chauveSouris(x, y, w, cls) {
+  return `<g class="mn-chauve ${cls}"><g class="mn-ailes">${img('chauve-haut', x, y - w * 0.12, w, w * 168 / 239)}${img('chauve-bas', x + w * 0.02, y + w * 0.08, w * 0.95, w * 0.95 * 130 / 227)}</g></g>`;
+}
+/** Grande lune orange de la nuit d'Halloween (remplace le croissant). */
+export function luneManoir(W, vy) {
+  return `<radialGradient id="hp-lune-${vy}-${W}"><stop offset=".35" stop-color="#FFC27A" stop-opacity=".28"/><stop offset="1" stop-color="#FFC27A" stop-opacity="0"/></radialGradient><circle cx="${W - 42}" cy="${vy + 26}" r="30" fill="url(#hp-lune-${vy}-${W})"/><circle cx="${W - 42}" cy="${vy + 26}" r="12.5" fill="#0E1822"/>${img('lune', W - 64, vy + 8, 44, 44 * 203 / 264)}`;
+}
+/** Toile d'araignée d'angle (miroir pour l'angle droit). */
+function toile(x, y, t, droite = false, araignee = false) {
+  return `<g${droite ? ` transform="translate(${f1(2 * x)} 0) scale(-1 1)"` : ''} opacity=".85" pointer-events="none">${img('toile', x, y, t, t * 253 / 258)}${araignee ? '' : ''}</g>`;
+}
+/** Remise à calèches (garage offert avec le manoir) : mur, toit d'ardoises, lanternes, toile et citrouille. */
+export function remiseCorps(c) {
+  const { gx, gw, gtop, base, uid } = c;
+  const cv = { uid, moment: c.moment };
+  let s = `<pattern id="hp-murg-${uid}" width="34" height="34" patternUnits="userSpaceOnUse"><image href="${MANOIR}mur.webp" width="34" height="34"/></pattern>
+    <radialGradient id="hp-bougieg-${uid}"><stop offset="0" stop-color="#FFB347" stop-opacity=".5"/><stop offset="1" stop-color="#FF8A1E" stop-opacity="0"/></radialGradient>`;
+  s += `<rect x="${gx}" y="${gtop}" width="${gw}" height="${base - gtop}" fill="url(#hp-murg-${uid})"/>`;
+  if (voile(cv)) s += `<rect x="${gx}" y="${gtop}" width="${gw}" height="${base - gtop}" fill="${voileCouleur(cv)}" opacity="${voile(cv)}"/>`;
+  s += img('remise-toit', gx - 5, gtop - 15, gw + 10, 19);
+  if (voile(cv)) s += `<image href="${MANOIR}remise-toit.webp" x="${gx - 5}" y="${gtop - 15}" width="${gw + 10}" height="19" preserveAspectRatio="none" style="filter:brightness(0)" opacity="${(voile(cv) * 0.5).toFixed(2)}"/>`;
+  if (c.moment !== 'jour') s += `<circle cx="${f1(gx + gw / 2)}" cy="${gtop - 6}" r="6" fill="url(#hp-bougieg-${uid})" class="mn-halo"/>`;
+  s += toile(gx + gw - 1, gtop + 1, 9, true);
+  return s;
+}
+export function remisePorte(c, dx, d, n) {
+  const { gtop, base, uid } = c;
+  let s = img('remise-porte', dx - 2, gtop + 15, 26, base - gtop - 15);
+  if (voile({ moment: c.moment })) s += `<rect x="${dx + 2}" y="${gtop + 20}" width="18" height="${base - gtop - 20}" fill="${voileCouleur({ moment: c.moment })}" opacity="${(voile({ moment: c.moment }) * 0.5).toFixed(2)}"/>`;
+  if (d < n - 1) {
+    if (c.moment !== 'jour') s += `<circle cx="${dx + 26}" cy="${gtop + 22}" r="6" fill="url(#hp-bougieg-${uid})" class="mn-halo"/>`;
+    s += img('lanterne', dx + 24.2, gtop + 18, 3.6, 3.6 / RATIO.lanterne);
+  }
+  return s;
+}
+/** Toit mansardé avec tourelle, fantôme qui rôde et chauves-souris. */
+export function toitManoir(c, vy) {
+  const { x0, w, top } = c;
+  const L = w + 14, H = Math.min(L / RATIO.toit, Math.max(30, top - vy - 2), 24 + (c.base - top) * 0.55);
+  let s = img('toit', x0 - 7, top - 1 - H, L, H);
+  if (voile(c)) s += `<image href="${MANOIR}toit.webp" x="${x0 - 7}" y="${f1(top - 1 - H)}" width="${L}" height="${f1(H)}" preserveAspectRatio="none" style="filter:brightness(0)" opacity="${(voile(c) * 0.55).toFixed(2)}"/>`;
+  // Lueur des lucarnes et de la tourelle (au-dessus du voile).
+  if (c.moment !== 'jour') for (const [fx, fy] of [[0.198, 0.71], [0.598, 0.73], [0.79, 0.73]]) s += `<circle cx="${f1(x0 - 7 + L * fx)}" cy="${f1(top - 1 - H + H * fy)}" r="${f1(H * 0.13)}" fill="url(#hp-bougie-${c.uid})" class="mn-halo"/>`;
+  // Fantôme qui flotte autour du toit, chauves-souris qui tournent.
+  s += `<g class="mn-fantome">${img('fantome', x0 + w * 0.42, top - H * 0.55, 12 * RATIO.fantome, 12, ' opacity=".92"')}</g>`;
+  s += chauveSouris(x0 + w * 0.15, top - H - 6, 13, 'mn-c1') + chauveSouris(x0 + w * 0.82, top - H * 0.8, 10, 'mn-c2');
+  return s;
 }

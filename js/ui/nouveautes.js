@@ -19,6 +19,10 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Boutique de skins (11 octobre, 20:00)', [
+      ['Boutique', 'dans « Mon commissariat » : achète le skin de ton choix avec tes PS (250 PS), livré et équipé à 20:00. Ton grade suit tous les PS gagnés, il ne baisse pas. La jauge offre toujours un skin surprise.'],
+      ['Manoir hanté', 'édition Halloween : manoir de pierres moussues, fenêtres à la bougie, fantôme, chauves-souris, chaudron et grande lune, avec la remise à calèches pour le garage. 300 PS au lieu de 600 jusqu’au 2 novembre.'],
+    ]],
     ['Le Parrain du milieu (11 octobre)', [
       ['Le Parrain et ses lieutenants', 'le milieu a un Parrain et chaque secteur de l’anneau un lieutenant (bande « réseau du Parrain » dans la Carte). Repris avec un bon bouclage (moins de 50 % de fuite), le lieutenant est arrêté ; interrogé la nuit suivante, il donne un renseignement sur le QG à la zone qui l’a arrêté. Mal bouclé, il file chez un voisin (emprise +8) et y lâchera deux renseignements.'],
       ['L’assaut du QG', 'chaque renseignement différent apporté par une zone présente ce soir-là : +12 % de force, 10 % de blessés en moins. Le QG tombé, le coffre du Parrain (12 000 €) est partagé selon l’influence et son blindé part aux enchères.'],

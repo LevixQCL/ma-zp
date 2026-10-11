@@ -29,7 +29,7 @@ import { installerAntiTriche } from './ui/antitriche.js';
 import { installerInvitationAppli } from './ui/installer.js';
 import { lireInvitationUrl, oublierInvitation, partager, copier, afficherQr } from './ui/invitation.js';
 import { ouvrirBudget, ouvrirVehicule, ouvrirLogistique, ouvrirParc, rafraichirLogistique, ouvrirDecor, ouvrirHpVoisin } from './ui/logistique.js';
-import { DECOR, decorDebloque, conditionDecor, decorValide } from './engine/decor.js';
+import { DECOR, decorDebloque, conditionDecor, decorValide, skinsEnVente } from './engine/decor.js';
 import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
 import { actuAuBesoin, ouvrirActu, EVT_ACTU, marquerEvtJoue } from './ui/actu.js';
@@ -493,6 +493,20 @@ async function onClick(e) {
         try { await b.savePlayer(S.user.uid, S.player); } catch (err) { console.warn(err); }
         rerender(); ouvrirDecor(); break;
       }
+      case 'skin-acheter': {
+        if (!S.draft) initDraft();
+        const cle = el.dataset.cle, annule = S.draft.achat === cle;
+        const v = skinsEnVente(S.state.nextDeadline).find((x) => x.cle === cle);
+        const zz = S.state.zones[S.user.uid];
+        // Équipé d'office : le choix est enregistré tout de suite, il prend effet dès que le skin est livré (20:00).
+        if (annule) { if (S.bqAvantChoix) S.player = { ...(S.player || {}), skinsChoix: S.bqAvantChoix }; S.bqAvantChoix = null; }
+        else if (v) { const avant = { ...((S.player && S.player.skinsChoix) || zz.skinsChoix || {}) }; S.bqAvantChoix = avant; const ch = { ...avant, [v.cat]: v.id }; for (const k of v.pack) { const [c2, i2] = k.split(':'); ch[c2] = i2; } S.player = { ...(S.player || {}), skinsChoix: ch }; }
+        S.draft.achat = annule ? null : cle;
+        try { await b.savePlayer(S.user.uid, S.player); await validerOrdres(); toast(annule ? 'Achat annulé.' : 'Acheté ! Livré et équipé à 20:00.'); } catch (err) { console.warn(err); toast('Impossible d’enregistrer l’achat, réessaie.'); }
+        rerender(); ouvrirDecor(); break;
+      }
+      case 'bq-apercu': S.bqApercu = S.bqApercu === el.dataset.cle ? null : el.dataset.cle; S.bqOuvert = true; ouvrirDecor(); break;
+      case 'bq-ouvrir': S.bqOuvert = !S.bqOuvert; break;
       case 'voir-hp': ouvrirHpVoisin(el.dataset.uid); break;
       case 'decor-choix': {
         const z = S.state.zones[S.user.uid], o = DECOR[el.dataset.cat] && DECOR[el.dataset.cat].options[el.dataset.id];

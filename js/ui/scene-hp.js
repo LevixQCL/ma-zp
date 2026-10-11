@@ -4,7 +4,7 @@
 import { esc } from './common.js';
 import { BATIMENT_MAX } from '../engine/constants.js';
 import { DECOR, DECOR_DEFAUT, SKINS } from '../engine/decor.js';
-import { SKINS_BATIMENT_NEUFS, fondBatiment, habillageBatiment, toitBatiment, corpsGarage, porteGarage } from './skins-hp.js';
+import { SKINS_BATIMENT_NEUFS, fondBatiment, habillageBatiment, toitBatiment, corpsGarage, porteGarage, etagesManoir, rezManoir, toitManoir, luneManoir, remiseCorps, remisePorte } from './skins-hp.js';
 import { ANNEXES_AILE, aileSvg, largeurAile, HAUT_AILE } from './scene-aile.js';
 
 const LIT = '#FFB23F', DIM = '#223041', EDGE = '#2C3D51';
@@ -214,6 +214,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
     for (let i = 0; i < 22; i++) s += `<circle cx="${(r() * W).toFixed(1)}" cy="${(vy + r() * 70).toFixed(1)}" r="${(r() * 0.9 + 0.3).toFixed(2)}" fill="#C8D3DD" opacity="${(r() * 0.4 + 0.15).toFixed(2)}"/>`;
     s += `<circle cx="${W - 42}" cy="${vy + 26}" r="11" fill="#EDF0FA" opacity=".9"/><circle cx="${W - 37}" cy="${vy + 22}" r="10" fill="#0E1822"/>`;
   }
+  if (SB === 'manoir' && moment === 'nuit' && !isole && !gris) s += luneManoir(W, vy);
   // Ville en arrière-plan.
   const sk = rnd(3);
   if (!isole) for (let sx = 0; sx < W;) { const ww = 18 + sk() * 26, hh = 30 + sk() * 50; s += `<rect x="${sx.toFixed(1)}" y="${(base - hh).toFixed(1)}" width="${ww.toFixed(1)}" height="${hh.toFixed(1)}" fill="${P.ville}"/>`; sx += ww + 2; }
@@ -283,21 +284,23 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
     if (b > 1) for (let i = 0; i < 12; i++) s += `<rect x="${(x0 + 41 + Math.floor(lr() * 5) * 22 + lr() * 3).toFixed(1)}" y="${(top + 12 + lr() * (base - top - gf - 16)).toFixed(1)}" width="2.2" height="1.8" rx=".6" fill="${teinte('#FFF8EA')}" opacity=".85"/>`;
   }
   if (SB) s += habillageBatiment(SB, ctxSkin);
+  if (SB === 'manoir') s += etagesManoir(ctxSkin);
   // Abords accrochés à la façade.
   if (D.abords === 'fresque') s += `<g opacity=".95"><rect x="${x0}" y="${top}" width="16" height="${base - top}" fill="#2A3A4D"/>${[['#FFB23F', 0.1], ['#FF6E6A', 0.3], ['#63B0FF', 0.5], ['#3DD39A', 0.7], ['#A78BFA', 0.88]].map(([c, k]) => `<circle cx="${x0 + 8}" cy="${(top + (base - top) * k).toFixed(1)}" r="${(3.5 + (k * 10) % 2).toFixed(1)}" fill="${c}"/>`).join('')}<path d="M${x0} ${base - 8} Q${x0 + 8} ${top + 20} ${x0 + 16} ${top + 6}" stroke="#EDF0FA" stroke-width="1.4" fill="none"/></g>`;
   if (D.abords === 'horloge') s += `<circle cx="${x0 + 8}" cy="${top + 11}" r="5.5" fill="#F4EFE3" stroke="#C9A13B" stroke-width="1"/><path d="M${x0 + 8} ${top + 11} V${top + 7.5} M${x0 + 8} ${top + 11} H${x0 + 10.6}" stroke="#1D1A15" stroke-width=".8"/>`;
   if (D.abords === 'mat' && b >= 2) for (const bx of [x0 + 19, x0 + w - 11]) s += `<rect x="${bx}" y="${top + 3}" width="8" height="${Math.min(40, base - top - gf - 6)}" fill="${drapeau ? drapeau.couleur : '#63B0FF'}"/><rect x="${bx + 3}" y="${top + 3}" width="2" height="${Math.min(40, base - top - gf - 6)}" fill="#FFFFFF" opacity=".6"/><path d="M${bx} ${top + 3 + Math.min(40, base - top - gf - 6)} l4 4 l4 -4 Z" fill="${drapeau ? drapeau.couleur : '#63B0FF'}"/>`;
   const gy = base - gf;
-  s += `<rect x="${x0}" y="${gy}" width="${w}" height="3" fill="#2F6FB5"/>
+  s += `${SB === 'manoir' ? `<image href="${(typeof location !== 'undefined' && /\/minijeux\//.test(location.pathname)) ? '../' : ''}img/skins/manoir/corniche.webp" x="${x0 - 2}" y="${gy - 1}" width="${w + 4}" height="4.4" preserveAspectRatio="none"/>` : `<rect x="${x0}" y="${gy}" width="${w}" height="3" fill="#2F6FB5"/>`}
   <rect x="${x0 + 24}" y="${gy + 11}" width="30" height="14" rx="1.5" fill="#8CC8F5" opacity="${moment === 'jour' ? 0.55 : 0.22}"/><rect x="${x0 + w - 54}" y="${gy + 11}" width="30" height="14" rx="1.5" fill="#8CC8F5" opacity="${moment === 'jour' ? 0.55 : 0.22}"/>
   <rect x="${x0 + w / 2 - 14}" y="${gy + 12}" width="28" height="${gf - 12}" fill="#8CC8F5" opacity="${moment === 'jour' ? 0.6 : 0.35}"/><rect x="${x0 + w / 2 - 0.5}" y="${gy + 12}" width="1" height="${gf - 12}" fill="#1A2531"/>
-  ${P.neon ? `<ellipse cx="${x0 + w / 2}" cy="${gy + 2}" rx="40" ry="16" fill="url(#hp-bleu-${uid})"/>` : ''}
-  <rect x="${x0 + w / 2 - 24}" y="${gy - 1}" width="48" height="11" rx="2" fill="${D.abords === 'plaque' ? '#7A5A12' : '#1B4C80'}" stroke="${D.abords === 'plaque' ? '#FFB23F' : '#2F6FB5'}" stroke-width=".8"/>
+  ${P.neon && SB !== 'manoir' ? `<ellipse cx="${x0 + w / 2}" cy="${gy + 2}" rx="40" ry="16" fill="url(#hp-bleu-${uid})"/>` : ''}
+  <rect x="${x0 + w / 2 - 24}" y="${gy - 1}" width="48" height="11" rx="2" fill="${SB === 'manoir' ? '#2A1A24' : D.abords === 'plaque' ? '#7A5A12' : '#1B4C80'}" stroke="${SB === 'manoir' ? '#F28C28' : D.abords === 'plaque' ? '#FFB23F' : '#2F6FB5'}" stroke-width=".8"/>
   ${D.abords === 'plaque' ? `<rect x="${x0 + w / 2 + 17}" y="${gy + 14}" width="7" height="9" rx="1" fill="#C9A13B" stroke="#F2D27A" stroke-width=".5"/>` : ''}
-  <text x="${x0 + w / 2}" y="${gy + 7.6}" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="10" letter-spacing="1.5" fill="#fff">POLICE</text>`;
+  <text x="${x0 + w / 2}" y="${gy + 7.6}" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="10" letter-spacing="1.5" fill="${SB === 'manoir' ? '#FFD9A0' : '#fff'}">POLICE</text>`;
   if (SB === 'friterie') for (const [xa, xb] of [[x0 + 16, x0 + w / 2 - 26], [x0 + w / 2 + 26, x0 + w]]) {
     for (let x = xa, i = 0; x < xb; x += 6, i++) s += `<path d="M${x} ${gy + 3} h6 v4 q-3 3 -6 0 Z" fill="${i % 2 ? teinte('#FFFFFF') : teinte('#D8453A')}"/>`;
   }
+  if (SB === 'manoir') s += rezManoir(ctxSkin);
   if (SB === 'chateau') s += `<path d="M${x0 + w / 2 - 14} ${base} V${gy + 18} Q${x0 + w / 2} ${gy + 6} ${x0 + w / 2 + 14} ${gy + 18} V${base} Z" fill="${teinte('#4A3524')}"/><path d="M${x0 + w / 2} ${gy + 11} V${base}" stroke="${teinte('#2A1F16')}"/>`;
   // Toit : les équipements s'ajoutent avec les niveaux, à droite de l'enseigne.
   s += `<rect x="${x0 - 3}" y="${top - 4}" width="${w + 6}" height="4" rx="1" fill="${P.arete}"/>`;
@@ -305,7 +308,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   if (D.abords === 'toitvert') { s += `<rect x="${x0 - 3}" y="${top - 6}" width="${w + 6}" height="3" rx="1.5" fill="#3E7D4F"/>`; for (let i = 0; i < 9; i++) s += `<circle cx="${x0 + 4 + i * 11}" cy="${top - 6.5}" r="${2.2 + (i % 3) * 0.6}" fill="${i % 2 ? '#4E9A5E' : '#3E7D4F'}"/>`; }
   const toitLibre = ['chalet', 'friterie', 'gateau', 'gaufre', ...SKINS_BATIMENT_NEUFS].includes(SB);
   if (b >= 2 && !toitLibre && SF !== 'carnaval') s += `<rect x="${x0 + w - 30}" y="${top - 11}" width="20" height="7" rx="1" fill="${P.toit}"/><rect x="${x0 + w - 27}" y="${top - 9}" width="14" height="1" fill="${P.toit2}"/>`;
-  if (b >= 3) s += `<line x1="${x0 + w - 6}" y1="${top - 4}" x2="${x0 + w - 6}" y2="${top - 30}" stroke="${P.mat}" stroke-width="1.4"/><line x1="${x0 + w - 10}" y1="${top - 20}" x2="${x0 + w - 2}" y2="${top - 20}" stroke="${P.mat}"/><circle cx="${x0 + w - 6}" cy="${top - 32}" r="4" fill="#FF6E6A" opacity=".22"/><circle class="hp-balise" cx="${x0 + w - 6}" cy="${top - 32}" r="1.7" fill="#FF6E6A"/>`;
+  if (b >= 3 && SB !== 'manoir') s += `<line x1="${x0 + w - 6}" y1="${top - 4}" x2="${x0 + w - 6}" y2="${top - 30}" stroke="${P.mat}" stroke-width="1.4"/><line x1="${x0 + w - 10}" y1="${top - 20}" x2="${x0 + w - 2}" y2="${top - 20}" stroke="${P.mat}"/><circle cx="${x0 + w - 6}" cy="${top - 32}" r="4" fill="#FF6E6A" opacity=".22"/><circle class="hp-balise" cx="${x0 + w - 6}" cy="${top - 32}" r="1.7" fill="#FF6E6A"/>`;
   if (b >= 4 && !toitLibre) s += `<g transform="translate(${x0 + w - 22},${top - 11})"><path d="M0 0 L2 -6" stroke="${P.mat}" stroke-width="1.3"/><path d="M-5 -6 Q2 -14 9 -6 Z" fill="${P.toit2}"/></g>`;
   if (b >= 5 && SB !== 'chalet' && !toitLibre) s += `<rect x="${x0 + w - 44}" y="${top - 12}" width="12" height="8" rx="1" fill="${P.toit}"/>`;
   if (SB === 'chateau') {
@@ -335,6 +338,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
       ${P.neon ? `<circle cx="0" cy="-12" r="9" fill="#FF3B5C" opacity=".18"/>` : ''}<circle cx="0" cy="-12" r="5.2" fill="${teinte('#E01E3C')}"/><circle cx="-1.8" cy="-13.8" r="1.5" fill="#FFFFFF" opacity=".7"/></g>`;
   }
   if (SB) s += toitBatiment(SB, ctxSkin);
+  if (SB === 'manoir') s += toitManoir(ctxSkin, isole ? top - 60 : grand ? Math.max(0, top - 84) : vy);
   // Enseigne « ZP + nom de la zone » : néon allumé le soir et la nuit, lettres bleues éteintes le jour.
   const texte = `ZP ${nom}`;
   const nx = x0 + 8, nw = Math.min(112, 14 + texte.length * 5.2), ny = top - 9;
@@ -353,8 +357,9 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   if (SG === 'grange') s += `<path d="M${gx - 4} ${gtop + 2} L${gx + gw / 2} ${gtop - 18} L${gx + gw + 4} ${gtop + 2} Z" fill="${GC[1]}"/><path d="M${gx - 4} ${gtop + 2} L${gx + gw / 2} ${gtop - 18} L${gx + gw + 4} ${gtop + 2}" stroke="${teinte('#F4EFE3')}" stroke-width="1.6" fill="none"/><rect x="${gx + gw / 2 - 5}" y="${gtop - 8}" width="10" height="8" fill="${teinte('#F4EFE3')}"/><rect x="${gx + gw / 2 - 3.5}" y="${gtop - 6.5}" width="7" height="5" fill="${mix(GC[1], '#000000', 0.3)}"/>`;
   s += `<rect x="${gx}" y="${gtop}" width="${gw}" height="${gh}" fill="${GC ? GC[0] : P.garage}"/>${SG === 'hangar' || SG === 'grange' || SG === 'cartons' ? '' : `<rect x="${gx - 2}" y="${gtop - 4}" width="${gw + 4}" height="5" rx="1" fill="${SG === 'retro' ? teinte('#F08BB4') : P.arete}"/>`}
   <text x="${gx + 8}" y="${gtop + 11}" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="9" letter-spacing="1.2" fill="${SG === 'retro' ? '#F08BB4' : SG === 'grange' ? teinte('#F4EFE3') : SG === 'cartons' ? teinte('#3A2A1A') : SG === 'coffre' ? teinte('#2A3340') : P.texteGarage}">GARAGE</text>`;
-  const ctxG = { gx, gw, gtop, gh, base, teinte, mix, GC };
+  const ctxG = { gx, gw, gtop, gh, base, teinte, mix, GC, uid, moment };
   if (SG) s += corpsGarage(SG, ctxG);
+  if (SG === 'remise') s += remiseCorps(ctxG);
   if (SG === 'grange') for (let x = gx + 3; x < gx + gw; x += 5) s += `<rect x="${x}" y="${gtop + 13}" width=".6" height="${gh - 13}" fill="${mix(GC[0], '#000000', 0.3)}" opacity=".6"/>`;
   if (SG === 'retro') { s += `<rect x="${gx}" y="${gtop + 14}" width="${gw}" height="1.4" fill="#5CE1E6"/><rect x="${gx}" y="${base - 5}" width="${gw}" height="1.4" fill="#F08BB4"/>`; for (let x = gx, i = 0; x < gx + gw; x += 4, i++) s += `<rect x="${x}" y="${base - 3.6}" width="4" height="3.6" fill="${i % 2 ? '#C8D3DD' : '#1D1A2A'}"/>`; if (P.neon) s += `<ellipse cx="${gx + gw / 2}" cy="${gtop + 14}" rx="${gw / 2}" ry="6" fill="url(#hp-halo-${uid})" opacity=".4"/>`; }
   if (SG === 'lavage') { for (let y = gtop + 2; y < base; y += 5) s += `<rect x="${gx}" y="${y}" width="${gw}" height=".5" fill="#FFFFFF" opacity=".35"/>`; for (let x = gx + 2; x < gx + gw; x += 5) s += `<rect x="${x}" y="${gtop}" width=".5" height="${gh}" fill="#FFFFFF" opacity=".25"/>`; }
@@ -363,6 +368,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
     const dx = gx + 12 + d * 26, ouverte = (atelier || infra.garage) && d === 0;
     s += `<circle cx="${dx + 11}" cy="${gtop + 17}" r="1.3" fill="${P.lueur ? LIT : P.lamelle}"/>${P.lueur ? `<ellipse cx="${dx + 11}" cy="${gtop + 26}" rx="12" ry="8" fill="url(#hp-ambre-${uid})" opacity="${P.lueur}"/>` : ''}`;
     if (SG === 'grange' && !ouverte) { s += `<rect x="${dx}" y="${gtop + 20}" width="22" height="${gh - 20}" fill="${mix(GC[0], '#000000', 0.15)}" stroke="${teinte('#F4EFE3')}" stroke-width="1.2"/><path d="M${dx} ${gtop + 20} L${dx + 22} ${base} M${dx + 22} ${gtop + 20} L${dx} ${base}" stroke="${teinte('#F4EFE3')}" stroke-width="1.2"/>`; continue; }
+    if (SG === 'remise' && !ouverte) { s += remisePorte(ctxG, dx, d, g); continue; }
     if (SG && !ouverte) { const pg = porteGarage(SG, dx, ctxG, d); if (pg) { s += pg; continue; } }
     if (SG === 'retro' && !ouverte) { s += `<rect x="${dx}" y="${gtop + 20}" width="22" height="${gh - 26}" rx="1" fill="${teinte('#4A3A6A')}" stroke="#5CE1E6" stroke-width=".8"/>`; continue; }
     if (SG === 'lavage' && !ouverte) { s += `<rect x="${dx}" y="${gtop + 20}" width="22" height="${gh - 20}" fill="${teinte('#2F6FB5')}"/>${[4, 11, 18].map((bx) => `<rect x="${dx + bx - 1.5}" y="${gtop + 22}" width="3" height="${gh - 24}" rx="1.5" fill="${['#FF6E6A', '#F2D02E', '#3DD39A'][bx % 3]}" opacity=".85"/>`).join('')}`; continue; }
