@@ -71,7 +71,7 @@ export const ETAPES = [
 ];
 
 /** Portraits (images Gemini dans img/milieu/) : un par Parrain, un par milieu pour les lieutenants. Silhouettes tant qu'ils ne sont pas livrés. */
-export const PORTRAITS_PRETS = false;
+export const PORTRAITS_PRETS = true;
 export const portraitParrain = (nom) => `img/milieu/parrain-${Math.max(0, PARRAINS.indexOf(nom)) + 1}.webp`;
 export const portraitLieutenant = (milieu) => `img/milieu/lt-${milieu}.webp`;
 /** Scènes de ce soir (celles qui se règlent à la prochaine résolution). */
