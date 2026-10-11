@@ -1040,7 +1040,9 @@ body.mj-ouvert { overflow: hidden; }
 .fi-etape-s { font-size: 12.5px; color: #6B5A43; }
 .fi-ind { padding: 3px 6px; margin: 0 -6px !important; border-radius: 6px; transition: background .15s, opacity .15s; }
 .fi-ind.fait { opacity: .45; text-decoration: line-through; text-decoration-color: rgba(43, 32, 21, .35); }
-.fi-ind.encours { background: #FFE7B0; box-shadow: inset 3px 0 0 #D98A1F; font-weight: 700; }
+.fi-ind.encours { background: #FFE7B0; box-shadow: inset 3px 0 0 #D98A1F; font-weight: 700; color: #2B2015; }
+.mode-noir .fi-ind.encours { background: rgba(217, 138, 31, .22); color: #FFE3B0; box-shadow: inset 3px 0 0 #E8A13A; }
+.mode-noir .fi-ind.fait { text-decoration-color: rgba(255, 240, 220, .4); }
 .fi-outils { gap: 6px; align-items: center; }
 .fi-outils .btn { min-height: 38px; }
 
