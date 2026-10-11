@@ -2,19 +2,23 @@
 // et consultable ensuite depuis l'HP. Le maître du jeu peut aussi l'envoyer en message privé.
 import { S, esc } from './common.js';
 import { fondateurAVoir, ouvrirFondateur } from './fondateurs.js';
+import { skinsEnVente } from '../engine/decor.js';
+import { ouvrirDecor } from './logistique.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-11-parrain',
-  titre: 'Le Parrain du milieu',
+  id: '2026-10-11-boutique',
+  titre: '🎃 Halloween à la ZP',
   saison2: true,
-  // Pas avant le tour de 20:00 qui installe le Parrain : la note et sa section restent cachées jusque-là.
-  pret: (st) => !!(st && st.nonDroit && st.nonDroit.parrain),
-  sectionPret: /^Le Parrain du milieu/,
+  // Pas avant le tour de 20:00 qui ouvre la boutique : la note et sa section restent cachées jusque-là.
+  pret: (st) => !!(st && skinsEnVente(st.nextDeadline).length),
+  sectionPret: /^Boutique de skins/,
+  // Bouton d'action sous l'essentiel : ouvre directement la boutique.
+  action: { label: 'Voir la boutique', ouvrir: () => ouvrirDecor() },
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🎩', 'Le Parrain et ses lieutenants', 'chaque secteur du non-droit a un visage. Fais tomber un lieutenant avec un bon bouclage : interrogé, il donne un renseignement pour l’assaut du QG.'],
-    ['🔥', 'Une scène chaque soir', 'émeute, rodéo, livraison, perquisition : envoie des agents, ou joue le mini-jeu (facultatif, il compte comme 3 agents).'],
-    ['🏮', 'Le centre revit', 'un secteur repris se rallume, puis ses commerces rouvrent : mets de la Proximité en présence.'],
+    ['🏚️', 'Le Manoir hanté', 'fantôme, chauves-souris, citrouilles et grande lune : 300 PS au lieu de 600 jusqu’au 2 novembre, remise à calèches offerte.'],
+    ['🛍️', 'La boutique de skins', 'choisis le skin que tu veux avec tes PS (250 PS), équipé tout de suite. Ton grade ne baisse pas.'],
+    ['↻', 'Une énigme ratée ?', 'relance-la pour 30 PS, un cran plus dure : réussie, elle compte.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
@@ -27,7 +31,7 @@ export const NOTE_MAJ = {
       ['Interrupteurs', 'trois étapes à faire toutes, dans l’ordre : position selon la LED, puis inversion des 4 si l’étiquette le dit, puis l’interrupteur imposé par la lettre du n° de série passe avant tout. Les règles du jeu ne changent pas, seule la fiche est réécrite.'],
     ]],
     ['Boutique de skins (11 octobre, 20:00)', [
-      ['Boutique', 'dans « Mon commissariat » : achète le skin de ton choix avec tes PS (250 PS), livré et équipé à 20:00. Ton grade suit tous les PS gagnés, il ne baisse pas. La jauge offre toujours un skin surprise.'],
+      ['Boutique', 'dans « Mon commissariat » : achète le skin de ton choix avec tes PS (250 PS), équipé tout de suite chez toi (payé et visible des autres au tour de 20:00). Ton grade suit tous les PS gagnés, il ne baisse pas. La jauge offre toujours un skin surprise.'],
       ['Relancer une énigme', 'une énigme du jour ratée peut être relancée une fois par jour pour 30 PS : une nouvelle énigme du même type, un niveau plus dure. Réussie, elle compte comme une bonne réponse (bonus, prime et classement).'],
       ['Manoir hanté', 'édition Halloween : manoir de pierres moussues, fenêtres à la bougie, fantôme, chauves-souris, chaudron et grande lune, avec la remise à calèches pour le garage. 300 PS au lieu de 600 jusqu’au 2 novembre.'],
     ]],
@@ -599,12 +603,14 @@ export function ouvrirNouveautes({ complet = true } = {}) {
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     ${corps}
     ${complet ? '<p class="tiny muted" style="margin:0">Le guide du joueur est à jour. Bon jeu !</p>' : ''}
-    <button class="btn primary block" data-close>C’est parti</button>
+    ${!complet && NOTE_MAJ.action ? `<button class="btn primary block" data-go>${esc(NOTE_MAJ.action.label)}</button>` : ''}
+    <button class="btn ${!complet && NOTE_MAJ.action ? 'ghost' : 'primary'} block" data-close>C’est parti</button>
     ${complet ? '' : '<button class="btn ghost small block" data-tout>Voir toutes les nouveautés</button>'}
   </div>`;
   const fermer = () => { wrap.remove(); document.removeEventListener('keydown', echap); };
   const echap = (e) => { if (e.key === 'Escape') fermer(); };
   wrap.addEventListener('click', (e) => {
+    if (e.target.closest('[data-go]')) { e.stopPropagation(); fermer(); NOTE_MAJ.action.ouvrir(); return; }
     if (e.target.closest('[data-tout]')) { e.stopPropagation(); fermer(); ouvrirNouveautes({ complet: true }); return; }
     if (e.target === wrap || e.target.closest('[data-close]')) { e.stopPropagation(); fermer(); }
   });

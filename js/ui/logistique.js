@@ -6,6 +6,7 @@ import { titresDefi } from './defis.js';
 import { S, esc, icon, fmt1, myZone } from './common.js';
 import { gradeFor, LOTS, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE, DEPENSES, USURE, PREPA, REGLES, nbAnnexes, emplacementsAnnexes } from '../engine/constants.js';
 import { parcVehicules, cabossesChoisis } from '../engine/parc.js';
+import { RELANCE_PS } from '../quests/quests.js';
 import { DECOR, SKINS, decorValide, decorDebloque, conditionDecor, decorCompte, skinsValides, skinDe, earlyBirdEligible, skinsEnVente, psDispo, BOUTIQUE } from '../engine/decor.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { sceneHp, vehiculeSvg } from './scene-hp.js';
@@ -140,9 +141,16 @@ export function mesSkins(z) {
   if (enAttente) for (const k of [enAttente.cle, ...enAttente.pack]) own.add(k);
   return { possedes: [...own], choix: skinsValides({ skins: [...own] }, (S.player && S.player.skinsChoix) || z.skinsChoix), enAttente };
 }
+/** PS déjà engagés ce soir (payés au tour de 20:00) : achat de skin et relance d'énigme. */
+export function psEngages(z) {
+  const att = achatEnAttente(z);
+  const rl = (S.draft && S.draft.relance) || (S.savedOrders && S.savedOrders.relance);
+  return { achat: att ? att.prix : 0, relance: rl ? RELANCE_PS : 0, total: (att ? att.prix : 0) + (rl ? RELANCE_PS : 0) };
+}
 /** Achat enregistré avec les ordres du soir et payable : [vente] ou null. */
 export function achatEnAttente(z) {
-  const cle = S.savedOrders && S.savedOrders.achat;
+  // Le brouillon des ordres (achat pas encore enregistré, ou annulé) passe avant les ordres enregistrés.
+  const cle = S.draft && 'achat' in S.draft ? S.draft.achat : S.savedOrders && S.savedOrders.achat;
   if (!cle || !S.state || (z.skins || []).includes(cle)) return null;
   const v = skinsEnVente(S.state.nextDeadline).find((x) => x.cle === cle);
   return v && psDispo(z) >= v.prix ? v : null;
@@ -281,13 +289,13 @@ function boutiqueSkins(z, d) {
   const quand = (S.state && S.state.nextDeadline) || Date.now();
   const vente = skinsEnVente(quand);
   if (!vente.length) return '';
-  const own = new Set(z.skins || []), att = achatEnAttente(z), dispo = psDispo(z) - (att ? att.prix : 0), cmd = S.draft && S.draft.achat;
+  const own = new Set(z.skins || []), att = achatEnAttente(z), eng = psEngages(z), dispo = psDispo(z) - eng.total, cmd = S.draft && S.draft.achat;
   const date = (t) => new Date(t).toLocaleDateString('fr-BE', { day: 'numeric', month: 'long' });
   const apercu = (v) => sceneZone(z, S.state, d, { ...mesSkins(z).choix, [v.cat]: v.id, ...Object.fromEntries(v.pack.map((k) => k.split(':'))) }, { moment: 'nuit' });
   const prix = (v) => (v.promo ? `<s>${v.prixBase}</s> ${v.prix} PS` : `${v.prix} PS`);
   const action = (v, grand) => {
     if (own.has(v.cle)) return '<span class="bq-ok">✓ À toi</span>';
-    if (cmd === v.cle) return `<span class="bq-ok">✓ Équipé ! Payé à 20:00, les autres le verront à ce moment-là</span><button type="button" class="btn small ghost" data-action="skin-acheter" data-cle="${v.cle}">Annuler</button>`;
+    if (cmd === v.cle) return `<span class="bq-ok">✓ Équipé ! Il te restera ${dispo} PS. Payé à 20:00, les autres le verront à ce moment-là</span><button type="button" class="btn small ghost" data-action="skin-acheter" data-cle="${v.cle}">Annuler</button>`;
     if (cmd) return `<span class="tiny muted">Un achat par soir</span>`;
     const ok = dispo >= v.prix;
     return `<button type="button" class="btn ${grand ? 'primary' : ''} small" data-action="skin-acheter" data-cle="${v.cle}" ${ok ? '' : 'disabled'}>Acheter · ${prix(v)}</button>${ok ? '' : `<span class="tiny muted">encore ${v.prix - dispo} PS</span>`}`;
@@ -296,7 +304,7 @@ function boutiqueSkins(z, d) {
   const autres = vente.filter((v) => !v.vedette);
   const cats = [...new Set(autres.map((v) => v.categorie))];
   return `<section class="bq" aria-label="Boutique de skins">
-    <div class="between bq-tete"><span class="bq-titre">🛍️ Boutique de skins</span><span class="bq-solde">${dispo} PS à dépenser</span></div>
+    <div class="between bq-tete"><span class="bq-titre">🛍️ Boutique de skins</span><span class="bq-solde">${eng.total ? `${psDispo(z)} − ${eng.total} = <b>${dispo} PS</b> restants` : `${dispo} PS à dépenser`}</span></div>
     ${vedettes.map((v) => `<article class="bq-carte vedette${own.has(v.cle) ? ' a' : ''}">${v.promo ? `<span class="bq-promo">−${Math.round(100 - (100 * v.prix) / v.prixBase)} % ${esc(v.promo.nom || '')} · jusqu’au ${date(v.promo.jusqua)}</span>` : ''}<div class="bq-apercu">${apercu(v)}</div>
       <div class="col bq-corps"><b class="bq-nom">${esc(v.nom)}</b><span class="small muted">${esc(v.texte)}</span><div class="row bq-act">${action(v, true)}</div></div></article>`).join('')}
     <details class="bq-cat"${S.bqOuvert ? ' open' : ''}><summary data-action="bq-ouvrir">Tous les skins · ${autres.length} au choix, ${BOUTIQUE.prix} PS</summary>
