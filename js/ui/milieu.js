@@ -54,7 +54,7 @@ export function ligneLieutenant(k, s) {
 }
 
 /** Carte « Ce soir : émeute » dans la fiche du secteur : compteur, agents à la scène, mini-jeu facultatif ; les gains se déplient. */
-export function sceneHtml(k, s, mes, place, annonces) {
+export function sceneHtml(k, s, mes, place, annonces, { hp = false } = {}) {
   const sc = scenesDuSoir(S.state).find((x) => String(x.cell) === String(k));
   if (!sc) return '';
   const def = SCENES[sc.type], seuil = seuilScene(S.state, sc.type);
@@ -65,10 +65,13 @@ export function sceneHtml(k, s, mes, place, annonces) {
   const total = autres + (mes.sc || 0) + valJeu;
   const ok = total >= seuil;
   const verbe = { emeute: 'Encadrer l’émeute', rodeo: 'Rattraper le rodéo', livraison: 'Intercepter les téléphones', perquisition: 'Ouvrir la porte' }[sc.type];
-  return `<div class="ml-scene ${ok ? 'ok' : ''}">
-    <div class="row" style="gap:8px"><span class="ml-scene-ico" aria-hidden="true">${ICO_SCENE[sc.type]}</span>
+  // Sur l'HP, la ligne dépliée porte déjà le titre : seulement le compteur.
+  const tete = hp ? `<div class="between"><span class="tiny muted">${ok ? 'assez de monde, elle sera réglée' : `il faut ${seuil} agents, toutes zones confondues`}</span><span class="pill ${ok ? 'green' : ''}">${Math.min(total, 99)}/${seuil}</span></div>`
+    : `<div class="row" style="gap:8px"><span class="ml-scene-ico" aria-hidden="true">${ICO_SCENE[sc.type]}</span>
       <span class="col" style="gap:0;flex:1;min-width:0"><strong class="small ml-scene-t">Ce soir : ${esc(def.titre.toLowerCase())}</strong><span class="tiny muted">${ok ? 'assez de monde, elle sera réglée' : `il faut ${seuil} agents, toutes zones confondues`}</span></span>
-      <span class="pill ${ok ? 'green' : ''}">${Math.min(total, 99)}/${seuil}</span></div>
+      <span class="pill ${ok ? 'green' : ''}">${Math.min(total, 99)}/${seuil}</span></div>`;
+  return `<div class="ml-scene ${ok ? 'ok' : ''}${hp ? ' hp' : ''}">
+    ${tete}
     <div class="between"><span class="col" style="gap:0"><span class="small">Agents à la scène</span><span class="tiny muted">à part de l’assaut, sans piège</span></span>
       <span class="stepper"><button type="button" data-action="nd-role" data-c="${k}" data-r="sc" data-d="-1" aria-label="Un agent de moins à la scène" ${(mes.sc || 0) <= 0 ? 'disabled' : ''}>−</button><span class="n">${mes.sc || 0}</span><button type="button" data-action="nd-role" data-c="${k}" data-r="sc" data-d="1" aria-label="Un agent de plus à la scène" ${place <= 0 ? 'disabled' : ''}>+</button></span></div>
     ${joue ? `<p class="tiny ${jeuOk ? 'ok' : 'muted'}" style="margin:0">${jeuOk ? `✓ Mini-jeu réussi : compte comme ${valJeu} agents.` : 'Mini-jeu raté : seuls les agents comptent.'}</p>`

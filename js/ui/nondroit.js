@@ -239,7 +239,7 @@ function carteRoles(k, s, me, d) {
     ${p.guetteurs && !rep ? '<p class="tiny bad" style="margin:0">👁 Le milieu a doublé ses guetteurs : sans repérage, piège plus probable et descente plus faible.</p>' : ''}
     <div class="row" style="gap:6px;flex-wrap:wrap"><span class="tiny muted">${esc(m.texte)}</span>${rep ? '<span class="pill nd-rep">🔍 repéré ce soir</span>' : repDemain ? '<span class="pill nd-rep">🔍 repéré dès demain</span>' : '<span class="pill">pas repéré</span>'}</div>
     ${ligneLieutenant(k, s)}
-    ${ouvert ? sceneHtml(k, s, mes, place, ann) : ''}
+    ${ouvert && sceneCarte(k) ? `<a class="ml-chip" href="#hp">${ICO_SCENE[sceneCarte(k).type]} Scène ce soir sur ce secteur · à régler sur l’HP, dans « Aujourd’hui » ›</a>` : ''}
     ${s.connue ? `<div class="nd-faille connue"><strong class="small">Faille : ${esc(F.titre)}</strong><span class="tiny">${esc(F.texte)}${F.soirs ? ` <strong>Ouvert le ${soirs(s)}</strong> (ce soir : ${ouvertCeSoir(s, T) ? '<span class="ok">ouvert</span>' : '<span class="bad">fermé</span>'}).` : ''}</span></div>`
       : '<div class="nd-faille"><strong class="small">❔ Faille inconnue</strong><span class="tiny muted">Chaque milieu a sa faiblesse. Un repérage la révèle à toutes les zones.</span></div>'}
     ${!ouvert ? `<p class="tiny muted" style="margin:0">Il faut tenir ${ND.coeurSeuil} secteurs de l’anneau en même temps (${Object.values(nd().secteurs).filter((x) => !x.coeur && x.statut === 'repris').length} aujourd’hui).</p>` : ''}

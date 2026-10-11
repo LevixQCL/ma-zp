@@ -44,7 +44,8 @@ import { appelsRenfort, renfortPrevu } from './renfort.js';
 import { secteursEnDanger, agentsND } from './nondroit.js';
 import { nomSecteur } from '../engine/nondroit.js';
 import { scenesDuSoir, seuilScene, SCENES } from '../engine/milieu.js';
-import { ICO_SCENE } from './milieu.js';
+import { ICO_SCENE, sceneHtml } from './milieu.js';
+import { rolesDe, annoncesND, placeND } from './nondroit.js';
 import { incidentsHtml, jaugeSkinsLigne } from './incidents.js';
 import { vignetteVentes, vignetteEquipe, vignetteTrophees, vignetteRapport, vignetteGazette, vignetteClassement, vignetteChallenge } from './vignettes-hp.js';
 import { phaseVente } from '../engine/ventes.js';
@@ -456,8 +457,8 @@ function aujourdhuiHtml(st, z, T, items) {
   for (const sc of scenesDuSoir(st)) {
     const r = ((d.roles || {})[String(sc.cell)] || {}).sc || 0, res = S.player && S.player.incidents && S.player.incidents.r && S.player.incidents.r[sc.id];
     const fait = r > 0 || (res && res.statut === 'ok');
-    L.push({ prio: 2, html: `<button type="button" class="ajd-alerte amber" data-action="secteur" data-c="${sc.cell}" style="width:100%;text-align:left;font:inherit;cursor:pointer"><span class="ajd-point" aria-hidden="true"></span>
-      <span class="ajd-txt"><b>${ICO_SCENE[sc.type]} ${esc(SCENES[sc.type].titre)} ce soir à ${esc(nomSecteur(sc.cell))}</b><span>${fait ? `✓ ${r ? `${r} agent${r > 1 ? 's' : ''} envoyé${r > 1 ? 's' : ''}` : 'mini-jeu réussi'}` : `il faut ${seuilScene(st, sc.type)} agents, toutes zones confondues · ou le mini-jeu, facultatif`}</span></span>${fait ? pastilleAFaire(true) : ''}</button>` });
+    const k = String(sc.cell);
+    L.push({ prio: 2, html: ligneAjd({ k: `ajd-scene-${sc.id}`, ico: ICO_SCENE[sc.type], titre: `${esc(SCENES[sc.type].titre)} ce soir à ${esc(nomSecteur(sc.cell))}`, sous: fait ? `✓ ${r ? `${r} agent${r > 1 ? 's' : ''} envoyé${r > 1 ? 's' : ''}` : 'mini-jeu réussi'}` : 'facultatif · des agents ou le mini-jeu', badge: fait ? pastilleAFaire(true) : '', corps: sceneHtml(k, st.nonDroit.secteurs[k], rolesDe(k), placeND(k), annoncesND()[k] || [], { hp: true }) }) });
   }
 
   { const h = absenceHtml(z); if (h) { const a = z.adjoint, retour = /Bon retour/.test(h); L.push({ prio: 3, html: ligneAjd({ k: 'ajd-absence', ico: portraitAdjoint(a, 40), titre: retour ? 'Bon retour, chef' : 'Pendant ton absence', sous: `${esc(a.prenom)} ${esc(a.nom)} a tenu la zone`, ouvert: retour, corps: h }) }); } }
