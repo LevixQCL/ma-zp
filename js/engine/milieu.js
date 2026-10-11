@@ -133,9 +133,11 @@ export function aLaPrise(state, nd, s, k, T, parts, push, nomS) {
   if (!lt || lt.etat !== 'libre') return;
   if (d.fuite < M3.fuiteArret) {
     // Arrêté : il passe la nuit en garde à vue ; l'interrogatoire a lieu à la prochaine résolution.
+    // Arrêté, puis interrogé dans la nuit (le renseignement est au dossier dès la Gazette du soir).
     const garde = parts.find((p) => state.zones[p.uid] && aAnnexe(state.zones[p.uid], 'cachots')) || parts[0];
-    lt.etat = 'garde'; lt.par = garde ? garde.uid : null; lt.le = T;
-    push(6, 'Le milieu', `${cap(lt.nom)} arrêté à ${nomS}`, `Le lieutenant du Parrain passe la nuit en garde à vue${garde ? ` chez ${nomZ(state, garde.uid)}` : ''}. Interrogatoire demain.`);
+    lt.etat = 'garde'; lt.par = garde ? garde.uid : null; lt.le = T - 1;
+    push(6, 'Le milieu', `${cap(lt.nom)} arrêté à ${nomS}`, `Le lieutenant du Parrain est passé aux aveux dans la nuit${garde ? `, dans les locaux de ${nomZ(state, garde.uid)}` : ''}.`);
+    interrogatoires(state, nd, T, push);
   } else {
     // Il file : il se replie sur un secteur voisin encore tenu par le milieu.
     const v = (ville(CONFIG.seed).adj[Number(k)] || []).map(String).filter((x) => nd.secteurs[x] && !nd.secteurs[x].coeur && nd.secteurs[x].statut === 'milieu');

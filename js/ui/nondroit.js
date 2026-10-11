@@ -236,6 +236,7 @@ function carteRoles(k, s, me, d) {
   const partMoi = (() => { if (!total(mes) || !p.butin) return 0; const w = (x) => (x.rep * ND.roles.poidsRep + x.desc + x.bouc); const tot = ann.reduce((a, x) => a + w(x.moi ? mes : x.r), 0) || 1; return w(mes) / tot * (rep && s.repere && s.repere.par.length ? 1 - ND.roles.tuyau : 1) + (rep && s.repere && s.repere.par.includes(me.uid) ? ND.roles.tuyau / s.repere.par.length : 0); })();
   const annonce = monAnnonceND(k), monN = total(mes);
   return `<div class="nd-detail" style="gap:8px">
+    ${p.guetteurs && !rep ? '<p class="tiny bad" style="margin:0">👁 Le milieu a doublé ses guetteurs : sans repérage, piège plus probable et descente plus faible.</p>' : ''}
     <div class="row" style="gap:6px;flex-wrap:wrap"><span class="tiny muted">${esc(m.texte)}</span>${rep ? '<span class="pill nd-rep">🔍 repéré ce soir</span>' : repDemain ? '<span class="pill nd-rep">🔍 repéré dès demain</span>' : '<span class="pill">pas repéré</span>'}</div>
     ${ligneLieutenant(k, s)}
     ${ouvert ? sceneHtml(k, s, mes, place, ann) : ''}
@@ -247,7 +248,8 @@ function carteRoles(k, s, me, d) {
     ${!ouvert ? '' : p.nD ? `<dl class="nd-prev">
       <dt>Emprise</dt><dd>${p.tropFaible ? `<span class="bad">${p.mult === 0 ? 'impossible d’entrer sans repérage' : F.soirs && !p.ouvert ? 'fermé ce soir : personne à cueillir' : 'trop faible, le milieu tient'}</span>` : fl(s.emprise, p.apres) + (p.apres <= 0 ? ' <span class="good">· repris ce soir</span>' : '')}</dd>
       <dt>Piège</dt><dd class="${p.piege > 0.2 ? 'bad' : p.piege ? 'warn' : 'ok'}">${p.piege ? `${Math.round(p.piege * 100)} %` : 'non'}</dd>
-      <dt>Fuite</dt><dd class="${p.fuite > 0.3 ? 'bad' : p.fuite > 0 ? 'warn' : 'ok'}">${Math.round(p.fuite * 100)} %</dd>
+      <dt>Fuite</dt><dd class="${p.fuite > 0.3 ? 'bad' : p.fuite > 0 ? 'warn' : 'ok'}">${Math.round(p.fuite * 100)} %${v3Actif() && s.lieutenant && s.lieutenant.etat === 'libre' && p.apres <= 0 ? (p.fuite >= 0.5 ? ` · <span class="bad">${esc(s.lieutenant.nom)} filerait</span>` : ` · <span class="ok">${esc(s.lieutenant.nom)} arrêté</span>`) : ''}</dd>
+      ${p.rens && p.rens.length ? `<dt>Dossier</dt><dd class="ok">${p.rens.length} renseignement${p.rens.length > 1 ? 's' : ''} apporté${p.rens.length > 1 ? 's' : ''} ce soir (+${p.rens.length * 12} %)</dd>` : ''}
       <dt>Saisies</dt><dd>~${eurosK(p.butin)}${partMoi ? ` · <span class="warn">toi ~${eurosK(p.butin * partMoi)}</span>` : ''}</dd>
     </dl>` : `<p class="tiny muted" style="margin:0">Personne en descente ce soir : le milieu se refait.</p>`}
     ${gainsHtml(s, partsDe(s).find((x) => x.uid === me.uid))}

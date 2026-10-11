@@ -125,12 +125,14 @@ export function prevoirRoles(state, s, liste) {
   const coop = multCoop(l.length), rep = repere(s, T), ouvert = ouvertCeSoir(s, T);
   const regen = regenSecteur(state, s) * (F.regen || 1);
   const haut = Math.min(s.emprise + regen, Math.max(s.emprise, s.max || 100));
-  let mult = rep ? (F.repAvec ?? R0.repAvec) : (F.repSans ?? R0.sansRep);
+  // Non-droit profond : guetteurs doublés, renseignements apportés au QG par les zones annoncées.
+  const mods = modsAssaut(state, state.nonDroit || {}, s, l.map((x) => ({ u: x.zone.uid })), T);
+  let mult = rep ? (F.repAvec ?? R0.repAvec) : (F.repSans ?? R0.sansRep) * mods.sansRep;
   if (F.soirs) mult *= ouvert ? 1.5 : 0.3;
   const ratio = F.ratio ?? R0.ratio;
-  const Deff = (D + B * (F.boucForce || 0)) * mult * coop;
+  const Deff = (D + B * (F.boucForce || 0)) * mult * coop * mods.force;
   const fuite = D > 0 ? clamp(1 - B / (D * ratio), 0, 1) : 0;
-  const piege = D > 0 && !rep ? Math.min(0.9, (l.length === 1 ? R0.piegeSeul : R0.piegeGroupe) * (F.piege || 1)) : 0;
+  const piege = D > 0 && !rep ? Math.min(0.9, (l.length === 1 ? R0.piegeSeul : R0.piegeGroupe) * (F.piege || 1) * mods.piege) : 0;
   const tropFaible = D > 0 && Deff * ND.efficacite <= regen;
   const effet = Deff * ND.efficacite;
   const apres = D > 0 && !tropFaible ? Math.max(0, haut - effet * (1 - R0.perteFuite * fuite)) : haut;
@@ -140,7 +142,7 @@ export function prevoirRoles(state, s, liste) {
   // Estimé comme si le secteur était repéré (c'est ainsi qu'il faut l'attaquer), à 3 zones.
   const multRep = (F.repAvec ?? R0.repAvec) * (F.soirs ? 1.5 : 1) * multCoop(Math.max(3, l.length));
   const besoinDesc = Math.min(12, Math.max(3, Math.ceil(regen / ND.efficacite / multRep / parAgent) + 2));
-  return { R, D, B, nR, nD, nB, coop, rep, ouvert, mult, fuite, piege, tropFaible, apres: round1(apres), haut, butin: round1(butin), ratio, repFait: R >= R0.repSeuil,
+  return { R, D, B, nR, nD, nB, coop, rep, ouvert, mult, fuite, piege, tropFaible, rens: mods.rens, guetteurs: mods.piege > 1, apres: round1(apres), haut, butin: round1(butin), ratio, repFait: R >= R0.repSeuil,
     besoin: { rep: R >= R0.repSeuil || (s.repere && s.repere.a > T) ? 0 : 2, desc: besoinDesc, bouc: Math.ceil(Math.max(nD, besoinDesc) * ratio) } };
 }
 

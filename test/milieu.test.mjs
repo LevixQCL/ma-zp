@@ -51,11 +51,9 @@ assert.equal(st.nonDroit.scenes[0].nuit, st.turn, 'la scène est pour la prochai
   const res = tour(s2, { a: r, b: r });
   s2 = res.state;
   assert.equal(s2.nonDroit.secteurs[k].statut, 'repris', 'secteur repris');
-  assert.equal(s2.nonDroit.secteurs[k].lieutenant.etat, 'garde', 'lieutenant en garde à vue');
+  assert.equal(s2.nonDroit.secteurs[k].lieutenant.etat, 'tombe', 'arrêté et interrogé le soir même');
   assert.ok(Number.isFinite(s2.nonDroit.secteurs[k].confiance), 'confiance de départ');
   assert.equal(s2.nonDroit.secteurs[k].confiance, M3.confiance.depart + M3.confiance.repere, 'confiance : départ + repérage');
-  s2 = tour(s2).state;
-  assert.equal(s2.nonDroit.secteurs[k].lieutenant.etat, 'tombe', 'interrogé');
   assert.equal(Object.keys(s2.nonDroit.dossier).length, 1, 'un renseignement au dossier');
   assert.ok(Object.values(s2.nonDroit.dossier).every((u) => ['a', 'b'].includes(u)), 'détenu par une zone qui a repris');
 }

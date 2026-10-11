@@ -1,5 +1,6 @@
 // Vente aux enchères des saisies (saison 2) : catalogue de trois lots, relances visibles le premier jour (publiées sur
 // la Radio), offre finale secrète le second, expertise et tuyau du chef.
+import { nomSecteur as nomSecteurND } from '../engine/nondroit.js';
 import { S, esc, icon, fmt1, myZone, zoneName } from './common.js';
 import { LOTS } from '../engine/constants.js';
 import { VENTE, ETATS, aEtat, lireRelances, phaseVente, liees } from '../engine/ventes.js';
@@ -54,7 +55,7 @@ function lotHtml(v, lot, ph, z, rel) {
   return `<div class="bat vente-lot${lot.gros ? ' gros' : ''}">
     <div class="row" style="gap:10px;align-items:flex-start"><span class="vente-ico" aria-hidden="true">${ICO[lot.id] || '📦'}</span>
       <span class="col grow" style="gap:2px;min-width:0"><span class="between" style="gap:6px;align-items:flex-start"><span style="font-weight:700">${esc(L.nom)}</span>${lot.gros ? '<span class="pill amber" style="flex-shrink:0">gros lot</span>' : ''}</span>
-        <span class="tiny muted">${esc(L.texte)}</span><span class="small ok" style="font-weight:600">${esc(L.effet)}</span>${L.bonus && Object.keys(L.bonus).length && (z.lots || []).some((x) => x.id === lot.id) ? '<span class="tiny warn">Tu l’as déjà : un deuxième exemplaire ne se cumule pas (seul le meilleur compte).</span>' : ''}
+        <span class="tiny muted">${esc(L.texte)}</span>${lot.saisie ? `<span class="tiny warn">Saisi dans le non-droit (${esc(nomSecteurND(lot.saisie.cell))}) : la moitié du prix revient à ${Object.keys(lot.saisie.parts || {}).map((u) => (u === z.uid ? 'toi' : st.zones[u] ? esc(st.zones[u].nom) : '?')).join(', ')}.</span>` : ''}<span class="small ok" style="font-weight:600">${esc(L.effet)}</span>${L.bonus && Object.keys(L.bonus).length && (z.lots || []).some((x) => x.id === lot.id) ? '<span class="tiny warn">Tu l’as déjà : un deuxième exemplaire ne se cumule pas (seul le meilleur compte).</span>' : ''}
         <span class="tiny muted">Mise à prix ${euros(lot.prixMin)}${aEtat(lot.id) ? ` · état ${exp ? `expertisé : <strong>${esc(exp)}</strong>` : 'caché (comme neuf, usé ou défectueux)'}` : ''}</span>
         <span class="tiny">${meneur ? `${meneur.uid === z.uid ? '<strong>Tu mènes</strong>' : `${zoneName(st.zones[meneur.uid])} mène`} à <strong>${euros(meneur.montant)}</strong>` : 'Aucune relance pour l’instant'}${ph === 'visible' && rel.n[lot.k] ? ` · ${rel.n[lot.k]} relance${rel.n[lot.k] > 1 ? 's' : ''}` : ''}</span></span></div>
     ${action}</div>`;

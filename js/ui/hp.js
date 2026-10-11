@@ -43,6 +43,8 @@ const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations()
 import { appelsRenfort, renfortPrevu } from './renfort.js';
 import { secteursEnDanger, agentsND } from './nondroit.js';
 import { nomSecteur } from '../engine/nondroit.js';
+import { scenesDuSoir, seuilScene, SCENES } from '../engine/milieu.js';
+import { ICO_SCENE } from './milieu.js';
 import { incidentsHtml, jaugeSkinsLigne } from './incidents.js';
 import { vignetteVentes, vignetteEquipe, vignetteTrophees, vignetteRapport, vignetteGazette, vignetteClassement, vignetteChallenge } from './vignettes-hp.js';
 import { phaseVente } from '../engine/ventes.js';
@@ -450,6 +452,13 @@ function aujourdhuiHtml(st, z, T, items) {
   { const h = fipaCards(); if (h) { const att = items.some((i) => i.href === '#hp-fipa' && !i.ok); L.push({ prio: 1, html: ligneAjd({ k: `ajd-fipa-${T}`, ico: '🤝', titre: att ? 'FIPA : une décision t’attend' : 'FIPA', sous: 'renfort d’une zone partenaire', badge: att ? pastilleAFaire(false) : '', ouvert: att, corps: `<div id="hp-fipa">${h}</div>` }) }); } }
 
   { const h = incidentsHtml({ avant: actuLigne() + lucLigne(), nu: true }); if (h) L.push({ prio: 2, html: `<div class="ajd-inc" id="hp-incidents" aria-label="Incidents du jour">${h}</div>` }); }
+  // Non-droit : la scène du soir (émeute, rodéo…), à régler avec des agents ou en jouant le mini-jeu.
+  for (const sc of scenesDuSoir(st)) {
+    const r = ((d.roles || {})[String(sc.cell)] || {}).sc || 0, res = S.player && S.player.incidents && S.player.incidents.r && S.player.incidents.r[sc.id];
+    const fait = r > 0 || (res && res.statut === 'ok');
+    L.push({ prio: 2, html: `<button type="button" class="ajd-alerte amber" data-action="secteur" data-c="${sc.cell}" style="width:100%;text-align:left;font:inherit;cursor:pointer"><span class="ajd-point" aria-hidden="true"></span>
+      <span class="ajd-txt"><b>${ICO_SCENE[sc.type]} ${esc(SCENES[sc.type].titre)} ce soir à ${esc(nomSecteur(sc.cell))}</b><span>${fait ? `✓ ${r ? `${r} agent${r > 1 ? 's' : ''} envoyé${r > 1 ? 's' : ''}` : 'mini-jeu réussi'}` : `il faut ${seuilScene(st, sc.type)} agents, toutes zones confondues · ou le mini-jeu, facultatif`}</span></span>${fait ? pastilleAFaire(true) : ''}</button>` });
+  }
 
   { const h = absenceHtml(z); if (h) { const a = z.adjoint, retour = /Bon retour/.test(h); L.push({ prio: 3, html: ligneAjd({ k: 'ajd-absence', ico: portraitAdjoint(a, 40), titre: retour ? 'Bon retour, chef' : 'Pendant ton absence', sous: `${esc(a.prenom)} ${esc(a.nom)} a tenu la zone`, ouvert: retour, corps: h }) }); } }
   { const h = pistesHpHtml(z); if (h) { const n = (z.pistes || []).length; L.push({ prio: 3, html: ligneAjd({ k: 'ajd-pistes', ico: '🔎', titre: 'Pistes en cours', sous: `${n} piste${n > 1 ? 's' : ''} · résultat à venir`, corps: h }) }); } }
