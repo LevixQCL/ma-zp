@@ -378,7 +378,8 @@ export const partieComplete = (state, uid = null) => !!state && !(uid && state.z
 export const zonesActivesND = (state) => Object.values((state && state.zones) || {}).filter((z) => (z.toursSansOrdres || 0) < 2).length;
 /** Emprise que le milieu regagne cette nuit sur un secteur. */
 export function regenSecteur(state, s) {
-  if (s.statut === 'repris') return ND.remontee;
+  // Non-droit profond : la confiance des habitants freine le retour du milieu (sécurisé ×0,7, rendu à la vie ×0,4).
+  if (s.statut === 'repris') return Number.isFinite(s.confiance) ? Math.round(ND.remontee * (s.confiance >= 60 ? 0.4 : s.confiance >= 30 ? 0.7 : 1) * 10) / 10 : ND.remontee;
   const r = Math.min(ND.regenMax, ND.regenBase + ND.regenParZone * zonesActivesND(state));
   return Math.round(r * (s.coeur ? ND.regenCoeur : 1) * 10) / 10;
 }
@@ -440,6 +441,8 @@ export const LOTS = {
   helico:    { nom: 'Prêt d’un hélicoptère fédéral', texte: 'La police fédérale prête son hélicoptère et son équipage pour la saison.', effet: 'Intervention +10 % et force d’assaut en non-droit +15 % jusqu’à la fin de la saison', prix: 28, bonus: { intervention: 1.1 }, nd: { force: 0.15 }, gros: true },
   blinde:    { nom: 'Véhicule blindé saisi', texte: 'Un blindé de transport saisi à un réseau, remis aux normes de la police.', effet: 'Non-droit : force +10 %, blessures divisées par deux jusqu’à la fin de la saison', prix: 24, bonus: {}, nd: { force: 0.1, blessure: 0.5 }, gros: true },
   cellulef:  { nom: 'Cellule d’appui fédérale (renforcée)', texte: 'Quatre spécialistes fédéraux détachés auprès des zones acheteuses.', effet: '+2 agents tout de suite (salaire à ta charge), même si l’hôtel de police est plein', prix: 22, immediat: 'agents', gros: true },
+  // Non-droit profond : lot saisi dans un atelier de recel (jamais tiré au hasard, seulement mis en vente après une saisie).
+  informatique: { nom: 'Matériel informatique saisi', texte: 'Ordinateurs et téléphones saisis dans un atelier de recel, effacés et remis au service.', effet: 'Recherche +10 % jusqu’à la fin de la saison', prix: 4, bonus: { recherche: 1.1 }, saisie: true },
   cellule:   { nom: 'Cellule d’appui de la police fédérale', texte: 'Deux spécialistes détachés pour épauler ta zone.', effet: '+2 agents tout de suite (salaire à ta charge), même si l’hôtel de police est plein', prix: 7, immediat: 'agents', reserve: true },
 };
 

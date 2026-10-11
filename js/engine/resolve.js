@@ -493,7 +493,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
   jalonTous('Affaires disputées');
   // 3 bis. Zone de non-droit : assauts, gardes, reprises, rechutes, débordement sur les quartiers voisins.
-  const ndRes = nonDroitResoudre(state, uids, ord, push, T, zoneLabel);
+  const ndRes = nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players);
   jalonTous('Zone de non-droit');
   // 4. Événement collectif.
   let evResultat = null;

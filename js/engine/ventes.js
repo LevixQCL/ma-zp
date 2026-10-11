@@ -53,12 +53,15 @@ export function annoncerVente(state, T = state.turn) {
   if (state.vente && state.vente.cloture >= T) return state.vente;
   const rng = makeRng(`${state.seed}:s${state.season}:t${T}:vente`);
   const recents = (state.lotsRecents || []).slice(-4);
-  const petits = Object.keys(LOTS).filter((id) => !GROS.includes(id) && !recents.includes(id));
+  const petits = Object.keys(LOTS).filter((id) => !GROS.includes(id) && !recents.includes(id) && !LOTS[id].saisie);
   const ch = rng.shuffle(petits).slice(0, VENTE.nbLots - 1);
   const gros = rng.pick(GROS.filter((id) => !recents.includes(id)).length ? GROS.filter((id) => !recents.includes(id)) : GROS);
   const ids = [...ch, gros];
   state.lotsRecents = [...recents, ...ids].slice(-6);
   const lots = ids.map((id, i) => ({ k: 'abc'[i], id, prixMin: Math.max(2, LOTS[id].prix + rng.int(-1, 1)), ...(GROS.includes(id) ? { gros: true } : {}) }));
+  // Non-droit profond : la plus ancienne saisie du milieu prend la place d'un lot (petit ou gros selon sa taille).
+  const nd = state.nonDroit, sz = nd && nd.v3 && Array.isArray(nd.saisies) ? nd.saisies.shift() : null;
+  if (sz && LOTS[sz.id]) { const i = GROS.includes(sz.id) ? lots.length - 1 : 0; lots[i] = { ...lots[i], id: sz.id, prixMin: Math.max(2, LOTS[sz.id].prix), saisie: { cell: sz.cell, parts: sz.parts } }; }
   state.vente = { id: `v${state.season}-${T}`, ouverture: T, cloture: T + 1, lots, meneurs: {} };
   return state.vente;
 }
@@ -247,6 +250,13 @@ export function venteResoudre(state, uids, ordres, encheres, push, T) {
       const z = state.zones[x.u];
       z.rapport.push(`Salle des ventes : « ${L.nom} » part chez ${noms} pour ${fmt(gagnant.m)} (ton offre : ${fmt(x.m)}). Rien n’est débité.`);
       (z.cetteNuit ||= []).push({ ico: '🔨', t: `${L.nom} : adjugé à ${noms}` });
+    }
+    // Lot saisi dans le non-droit : la moitié du prix revient aux zones qui ont fait la saisie.
+    if (lot.saisie && lot.saisie.parts) for (const [u, p] of Object.entries(lot.saisie.parts)) {
+      const z = state.zones[u], b = round1(gagnant.m * 0.5 * p);
+      if (!z || b <= 0) continue;
+      z.budget = round1(z.budget + b); (z._compta ||= []).push({ k: 'nondroit', l: `Vente de la saisie : ${L.nom}`, v: b });
+      z.rapport.push(`Salle des ventes : « ${L.nom} », saisi par ta zone dans le non-droit, est vendu ${fmt(gagnant.m)}. Ta part du produit : ${fmt(b)}.`);
     }
     res.adjuges.push({ k: lot.k, id: lot.id, nom: L.nom, uids: gagnant.membres.map((x) => x.u), montant: gagnant.m, offres: groupes.length, etat });
     push(lot.gros ? 7 : 5, 'Adjugé !', `${noms} ${gagnant.membres.length > 1 ? 'remportent' : 'remporte'} « ${L.nom} » pour ${fmt(gagnant.m)}`,

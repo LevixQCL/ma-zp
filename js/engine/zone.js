@@ -283,8 +283,13 @@ export function sanitizeOrders(zone, raw, state) {
     for (const [k, v] of Object.entries(o.roles)) {
       if (!v || typeof v !== 'object' || !secteurOuvert(state.nonDroit, k)) continue;
       const r = { rep: clamp(Math.floor(fini(v.rep)), 0, ND.maxParSecteur), desc: clamp(Math.floor(fini(v.desc)), 0, ND.maxParSecteur), bouc: clamp(Math.floor(fini(v.bouc)), 0, ND.maxParSecteur) };
-      while (r.rep + r.desc + r.bouc > ND.maxParSecteur) { if (r.bouc) r.bouc--; else if (r.rep) r.rep--; else r.desc--; }
-      if (r.rep + r.desc + r.bouc > 0) { roles[k] = r; secteurs[k] = r.rep + r.desc + r.bouc; }
+      // Non-droit profond : agents envoyés à la scène du soir sur ce secteur (ne comptent pas dans l'assaut).
+      const scene = state.nonDroit.v3 && (state.nonDroit.scenes || []).some((x) => x.nuit === turn && String(x.cell) === String(k));
+      if (scene) r.sc = clamp(Math.floor(fini(v.sc)), 0, ND.maxParSecteur);
+      const tot = () => r.rep + r.desc + r.bouc + (r.sc || 0);
+      while (tot() > ND.maxParSecteur) { if (r.sc) r.sc--; else if (r.bouc) r.bouc--; else if (r.rep) r.rep--; else r.desc--; }
+      if (r.sc === 0) delete r.sc;
+      if (tot() > 0) { roles[k] = r; secteurs[k] = tot(); }
     }
   }
   for (const [k, n] of Object.entries(secteurs)) if (!roles[k]) roles[k] = { rep: 0, desc: n, bouc: 0 };
@@ -292,7 +297,7 @@ export function sanitizeOrders(zone, raw, state) {
   const maxSect = Math.min(ND.maxTotal, Math.max(0, dispo - evenement0 - (renfort ? renfort.agents : 0)));
   while (sumSect() > maxSect) {
     const k = Object.keys(secteurs).sort((a, b) => secteurs[b] - secteurs[a])[0], r = roles[k];
-    secteurs[k]--; if (r.bouc) r.bouc--; else if (r.rep) r.rep--; else r.desc--;
+    secteurs[k]--; if (r.sc) { r.sc--; if (!r.sc) delete r.sc; } else if (r.bouc) r.bouc--; else if (r.rep) r.rep--; else r.desc--;
     if (!secteurs[k]) { delete secteurs[k]; delete roles[k]; }
   }
   const evenement = evenement0 + (renfort ? renfort.agents : 0) + sumSect(); // agents réservés hors services

@@ -9,6 +9,7 @@ import { pactesDe, pacteImpossible, defiImpossible, PACTES, DEFI_INDICATEURS } f
 import { encherePossible } from './encheres.js';
 import { ND, secteurOuvert } from './constants.js';
 import { partsDe, secteursVoisins, faille, repere, ouvertCeSoir } from './nondroit.js';
+import { seuilScene } from './milieu.js';
 
 export const BOT_PROFILES = [
   { uid: 'bot-canal', code: '5301', nom: 'Canal', pseudo: 'Sam', couleur: '#3CC6B8', style: 'equilibre' },
@@ -175,8 +176,8 @@ function botNonDroitRoles(zone, state, style, rng, reste) {
   const mettre = (k, role, n) => {
     n = Math.min(n, dispo, ND.maxParSecteur - (secteurs[k] || 0));
     if (n <= 0) return 0;
-    (roles[k] ||= { rep: 0, desc: 0, bouc: 0 })[role] += n; secteurs[k] = (secteurs[k] || 0) + n; dispo -= n;
-    ((ann[k] ||= { rep: 0, desc: 0, bouc: 0 })[role] += n);
+    (roles[k] ||= { rep: 0, desc: 0, bouc: 0 })[role] = (roles[k][role] || 0) + n; secteurs[k] = (secteurs[k] || 0) + n; dispo -= n;
+    ((ann[k] ||= { rep: 0, desc: 0, bouc: 0 })[role] = (ann[k][role] || 0) + n);
     return n;
   };
   const cles = Object.keys(nd.secteurs).filter((k) => secteurOuvert(nd, k));
@@ -186,8 +187,15 @@ function botNonDroitRoles(zone, state, style, rng, reste) {
     if (s.statut !== 'repris' || dispo <= 0) continue;
     const p = partsDe(s).find((x) => x.uid === zone.uid);
     if (!p || p.part < ND.partMin) continue;
-    if (s.emprise >= 20 && rng.chance(style === 'prudent' ? 0.9 : 0.75)) mettre(k, 'desc', s.emprise >= 40 ? 3 : 2);
+    if (s.emprise >= 20 && rng.chance(style === 'prudent' ? 0.9 : 0.75)) {
+      const n = s.emprise >= 40 ? 3 : 2;
+      // Non-droit profond : les robots posés laissent un agent de Proximité pour la confiance des habitants.
+      if (nd.v3 && (style === 'prudent' || style === 'equilibre') && rng.chance(0.7)) { mettre(k, 'bouc', 1); mettre(k, 'desc', n - 1); } else mettre(k, 'desc', n);
+    } else if (nd.v3 && style === 'prudent' && rng.chance(0.5)) mettre(k, 'bouc', 1);
   }
+  // Non-droit profond : une scène annoncée pour ce soir (émeute, rodéo, livraison, perquisition).
+  // Ils lisent la radio : inutile d'y aller si la scène a déjà assez de monde annoncé.
+  if (nd.v3) for (const sc of nd.scenes || []) if (sc.nuit === T && dispo >= 5 && ((ann[String(sc.cell)] || {}).sc || 0) < seuilScene(state, sc.type) && rng.chance({ prudent: 0.5, equilibre: 0.45, agressif: 0.35, distrait: 0.2 }[style] || 0.4) ) mettre(String(sc.cell), 'sc', 2);
   const envie = { agressif: 0.8, equilibre: 0.7, prudent: 0.5, distrait: 0.6 }[style] || 0.6;
   if (dispo <= 0 || !rng.chance(envie)) return { secteurs, roles };
   const milieu = cles.filter((k) => nd.secteurs[k].statut === 'milieu');

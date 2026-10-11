@@ -14,6 +14,10 @@ import { clamp, round1, forceEngagement, forceRole, jalon, noter } from './zone.
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
 import { donnerTrophee, TROPHEE, figure, nomComplet } from './equipe.js';
 import { lies, PACTE } from './pactes.js';
+import { assurerMilieu, interrogatoires, modsAssaut, noterDescente, aLaPrise, confianceNuit, finDeNuit, scenesResoudre, saisieDescente, etape, M3, LIEUTENANTS } from './milieu.js';
+
+/** Non-droit « profond » (Parrain, lieutenants, confiance, milieu adaptatif, scènes) : pas encore en jeu (démo et simulations). */
+export const ND_V3 = false;
 
 /** Rôles dans la zone de non-droit : actifs avec les règles de la saison 2 (state.regles >= 2). */
 export const ND_ROLES = true;
@@ -147,10 +151,13 @@ export const forceTenue = (state, s) => regenSecteur(state, s) / ND.efficacite;
  * Résolution du soir. `ord[uid].secteurs` : agents envoyés par secteur (déjà validés).
  * Renvoie un résumé pour la Gazette.
  */
-export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
+export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players = {}) {
   if (!state.nonDroit || state.nonDroit.season !== state.season) state.nonDroit = creerNonDroit(state.seed, state.season);
   const nd = state.nonDroit;
   if (ND_ROLES && reglesV2(state) && !nd.roles) nd.roles = true;
+  if (ND_V3 && reglesV2(state) && !nd.v3) nd.v3 = true;
+  assurerMilieu(state, nd);
+  interrogatoires(state, nd, T, push);
   const rng = makeRng(`${state.seed}:s${state.season}:t${T}:nondroit`);
   const res = { prises: [], rechutes: [], ripostes: [] };
   const nom = (u) => (state.zones[u] ? zoneLabel(state.zones[u]) : 'une zone');
@@ -209,7 +216,9 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
       if (jum.length) { e.f *= 1 + PACTE.ndBonus; state.zones[e.u].rapport.push(`Jumelage : avec ${jum.map((x) => state.zones[x.u].nom).join(', ')} sur ${nomSecteur(k)}, ta force est majorée de ${Math.round(PACTE.ndBonus * 100)} %.`); }
     }
     for (const e of engages) if (e.chef) state.zones[e.u].rapport.push(`Mission : ${nomComplet(e.chef)} mène tes agents à ${nomSecteur(k)} (force +${Math.round(bonusChef(e.chef.niveau) * 100)} %, deux fois moins de risque de blessure).`);
-    s.hier = engages.map((e) => ({ u: e.u, n: e.n })); // public après 20:00 : qui y était hier soir
+    s.hier = engages.map((e) => ({ u: e.u, n: e.n, ...(e.r ? { r: e.r } : {}) })); // public après 20:00 : qui y était hier soir (et dans quel rôle)
+    // Non-droit profond : les agents venus seulement pour la scène du soir ne prennent pas part à l'assaut ni à la garde.
+    if (nd.v3) { for (let i = engages.length - 1; i >= 0; i--) { const r = engages[i].r; if (r && r.rep + r.desc + r.bouc === 0) engages.splice(i, 1); else if (r && r.sc) engages[i].n -= r.sc; } }
     if (s.statut === 'milieu' && engages.length) assauts.add(k);
     const coop = multCoop(engages.length);
     const F = engages.reduce((a, e) => a + e.f, 0) * coop;
@@ -267,7 +276,9 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
     } else {
       // Secteur tenu : le milieu revient, la garde le repousse ; l'influence suit la garde.
       const gang = gangs[k];
-      s.emprise = round1(clamp(s.emprise + ND.remontee + (gang ? gang.force : 0) - F * ND.efficacite, 0, 100));
+      s.emprise = round1(clamp(s.emprise + regen[k] + (gang ? gang.force : 0) - F * ND.efficacite, 0, 100));
+      // Confiance des habitants : présence de la Proximité (bouclage en garde), calme ou coup dur.
+      confianceNuit(nd, s, engages.reduce((a, e) => a + ((e.r && e.r.bouc) || 0), 0), !!gang || res.ripostes.some((x) => String(x.cell) === k), avant);
       for (const u of Object.keys(s.influence)) { s.influence[u] = round1(s.influence[u] * ND.usure); if (s.influence[u] < 0.2) delete s.influence[u]; }
       for (const e of engages) s.influence[e.u] = round1((s.influence[e.u] || 0) + e.f);
       const ancienChef = s.chef;
@@ -277,6 +288,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
         // Rechute : le secteur retombe aux mains du milieu.
         const anciens = parts.map((p) => p.uid);
         s.statut = 'milieu'; s.emprise = s.coeur ? ND.empriseCoeur : ND.rechute; s.max = Math.max(s.max || 0, s.emprise); s.influence = {}; s.chef = null; s.reprisLe = null;
+        if (nd.v3) { delete s.confiance; if (!s.coeur) { const r = makeRng(`${state.seed}:s${nd.season}:t${T}:lt:${k}`); s.lieutenant = { nom: r.pick(LIEUTENANTS[s.milieu] || LIEUTENANTS.deal), etat: 'libre', pieces: 1, remplacant: true }; } }
         res.rechutes.push({ cell: Number(k), anciens, gang: !!gang });
         if (gang) push(8, 'Zone de non-droit', `Le gang reprend ${nomS}`, `Pas assez d’agents de garde face au gang annoncé (force ${gang.force}).`);
         push(7, 'Zone de non-droit', `${nomS} retombe aux mains du milieu`, `Faute d’agents sur place, ${m.titre.toLowerCase()} se réinstalle. Il faudra tout recommencer.`);
@@ -307,10 +319,13 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel) {
     }
     delete nd._reflux;
   }
+  scenesResoudre(state, nd, T, push, res, players);
   planifierGangs(state, nd, T, push, res);
+  finDeNuit(state, nd, T, res, push, players);
+  delete nd._desc;
   for (const u of uids) if (state.zones[u]) delete state.zones[u]._ndSatisf;
   // Zone de non-droit dans les quartiers voisins : le milieu déborde, un secteur repris apaise.
-  contagion(state, nd);
+  contagion(state, nd, res.contagionPlus);
   res.etat = cles.map((k) => ({ cell: Number(k), statut: nd.secteurs[k].statut, emprise: Math.round(nd.secteurs[k].emprise), chef: nd.secteurs[k].chef }));
   return res;
 }
@@ -382,6 +397,7 @@ function prise(state, s, k, T, push, res, nom) {
     if (s.coeur) { z.stats.coeur = (z.stats.coeur || 0) + 1; if (donnerTrophee(z, 'liberateur', state.season, T)) z.rapport.push(`Trophée débloqué : « ${TROPHEE.liberateur.nom} » (${TROPHEE.liberateur.texte.toLowerCase()}).`); }
     z.rapport.push(`Zone de non-droit : ${nomS} est repris ! ${m.titre} démantelé${parts.length > 1 ? ` avec ${parts.filter((x) => x.uid !== p.uid).map((x) => nom(x.uid)).join(', ')}` : ''}. Ta part : ${Math.round(p.part * 100)} % (+${fmt1(pts)} pts, +${fmt1(prime)} k€${plein ? `, +${fmt1(ND.prise.satisfaction * mult)} de satisfaction, +${rep} de réputation, +${ND.prise.moral} de moral` : ` ; sous ${Math.round(ND.partMin * 100)} %, pas de part fixe`}). Laisse un peu de monde sur place pour le garder.`);
   }
+  aLaPrise(state, state.nonDroit, s, k, T, parts, push, nomS);
   const noms = parts.map((p) => nom(p.uid));
   push(s.coeur ? 12 : 9, s.coeur ? 'Le Cœur est tombé' : 'Reconquête', s.coeur ? `Le QG du milieu tombe à ${nomS} !` : `${nomS} repris au milieu`,
     `${m.titre} démantelé par ${noms.length > 1 ? `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}` : noms[0] || 'les zones du district'}.`, s.chef);
@@ -389,7 +405,7 @@ function prise(state, s, k, T, push, res, nom) {
 
 function retombees(state, s, k, parts, engages, avant, nom) {
   const nomS = nomSecteur(k);
-  const mult = s.coeur ? ND.coeurMult : 1;
+  const mult = (s.coeur ? ND.coeurMult : 1) * (state.nonDroit.v3 && etape(s) === 2 ? M3.retombeesVivant : 1);
   const ayants = parts.filter((p) => p.part >= ND.partMin);
   const tot = ayants.reduce((a, p) => a + p.part, 0) || 1;
   for (const p of ayants) {
@@ -414,11 +430,12 @@ function retombees(state, s, k, parts, engages, avant, nom) {
 }
 
 /** Les quartiers qui touchent la zone de non-droit : le milieu y déborde, un secteur repris les apaise. */
-function contagion(state, nd) {
+function contagion(state, nd, plus = {}) {
   const c = carteQuartiers(state);
   const parZone = {};
   for (const [k, s] of Object.entries(nd.secteurs)) {
-    const d = s.statut === 'repris' ? -ND.apaisement : ND.contagion;
+    // Non-droit profond : un secteur sécurisé apaise 1,5 fois plus ; une émeute ratée déborde bien plus.
+    const d = s.statut === 'repris' ? -ND.apaisement * (nd.v3 && etape(s) >= 1 ? 1.5 : 1) : ND.contagion * ((plus && plus[k]) ? 1 + plus[k] : 1);
     for (const nb of c.adj[Number(k)]) {
       const u = c.proprio(nb);
       if (!u || !state.zones[u]) continue;
@@ -462,6 +479,7 @@ function assautRoles(state, nd, s, k, engages, regen0, T, push, res, nom) {
   const R = engages.reduce((a, e) => a + fR(e), 0), D = engages.reduce((a, e) => a + fD(e), 0), B = engages.reduce((a, e) => a + fB(e), 0);
   const nz = engages.length, coop = multCoop(nz);
   const rep0 = s.repere || null, repOK = repere(s, T);
+  const mods = modsAssaut(state, nd, s, engages, T);
   const regen = regen0 * (F.regen || 1);
   const haut = Math.min(s.emprise + regen, Math.max(s.emprise, s.max || 100));
   const stat = (u, c, v = 1) => { const z = state.zones[u]; if (z) z.stats[c] = (z.stats[c] || 0) + v; };
@@ -483,23 +501,25 @@ function assautRoles(state, nd, s, k, engages, regen0, T, push, res, nom) {
     return;
   }
   // 2. Descente.
-  let mult = repOK ? (F.repAvec ?? R0.repAvec) : (F.repSans ?? R0.sansRep);
+  let mult = repOK ? (F.repAvec ?? R0.repAvec) : (F.repSans ?? R0.sansRep) * mods.sansRep;
   const ouvert = ouvertCeSoir(s, T);
   if (F.soirs) mult *= ouvert ? 1.5 : 0.3;
-  const Deff = (D + B * (F.boucForce || 0)) * mult * coop;
+  const Deff = (D + B * (F.boucForce || 0)) * mult * coop * mods.force;
+  if (mods.rens.length) for (const e of engages) state.zones[e.u].rapport.push(`Assaut du QG : ${mods.rens.length} renseignement${mods.rens.length > 1 ? 's' : ''} sur le Parrain apporté${mods.rens.length > 1 ? 's' : ''} par les zones présentes (force +${Math.round((mods.force - 1) * 100)} %).`);
   const fuite = clamp(1 - B / (D * (F.ratio ?? R0.ratio)), 0, 1);
-  const piegeP = repOK ? 0 : Math.min(0.9, (nz === 1 ? R0.piegeSeul : R0.piegeGroupe) * (F.piege || 1));
+  const piegeP = repOK ? 0 : Math.min(0.9, (nz === 1 ? R0.piegeSeul : R0.piegeGroupe) * (F.piege || 1) * mods.piege);
   const piege = piegeP > 0 && makeRng(`${state.seed}:s${state.season}:t${T}:ndpiege:${k}`).chance(piegeP);
   const tropFaible = Deff * ND.efficacite <= regen;
   const nDesc = (e) => (e.r ? e.r.desc : e.n);
   if (piege || tropFaible) {
     s.emprise = round1(clamp(haut, 0, 100));
-    (res.repousses ||= []).push({ cell: Number(k), zones: engages.map((e) => e.u) });
+    (res.repousses ||= []).push({ cell: Number(k), zones: engages.map((e) => e.u), raison: piege ? 'piege' : mult === 0 ? 'porte' : F.soirs && !ouvert ? 'ferme' : 'faible', coeur: !!s.coeur });
+    if (!repOK) res.repoussesSansRep = (res.repoussesSansRep || 0) + 1;
     let tot = 0;
     for (const e of engages) {
       const z = state.zones[e.u];
       let b = 0;
-      if (!F.sansBlesse) { const br = makeRng(`${state.seed}:s${state.season}:t${T}:ndrepousse:${k}:${e.u}`); for (let i = 0; i < nDesc(e); i++) if (br.chance(ND.blesseRepousse * risqueBlessure(z) * e.risque)) b += 1; }
+      if (!F.sansBlesse) { const br = makeRng(`${state.seed}:s${state.season}:t${T}:ndrepousse:${k}:${e.u}`); for (let i = 0; i < nDesc(e); i++) if (br.chance(ND.blesseRepousse * risqueBlessure(z) * e.risque * mods.blessure)) b += 1; }
       tot += b;
       if (b) { z.blesses.push({ n: b, retour: T + 1 + ND.absenceRepousse, motif: 'blessé' }); z.moral -= 2; jalon(z, `Assaut repoussé à ${nomS} (blessés)`); stat(e.u, 'ndBlesses', b); }
       const pourquoi = piege ? (s.milieu === 'deal' ? 'sans repérage, les guetteurs ont donné l’alerte : piège' : 'sans repérage, ton équipe est tombée dans un piège')
@@ -537,6 +557,8 @@ function assautRoles(state, nd, s, k, engages, regen0, T, push, res, nom) {
     if (!ici) z.rapport.push(`Zone de non-droit · ${nomS} : ton repérage a payé, la descente des autres te reverse ${fmt1(b)} k€ de saisies (+${R0.tuyauPts} pt).`);
   }
   if (interp) for (const e of engages) if (fD(e) > 0) stat(e.u, 'ndInterpellations', Math.max(1, Math.round(interp * partB[e.u])));
+  noterDescente(nd, k, { fuite, repere: repOK, blesses: 0 });
+  saisieDescente(nd, s, k, butin, fuite, Object.fromEntries(Object.entries(partB).map(([u, p]) => [u, round1(p)])), T);
   (res.descentes ||= []).push({ cell: Number(k), zones: engages.map((e) => e.u), butin: round1(butin), fuite: round1(fuite), interp, repere: repOK });
   if (s.emprise <= 0) {
     prise(state, s, k, T, push, res, nom);
@@ -550,10 +572,12 @@ function assautRoles(state, nd, s, k, engages, regen0, T, push, res, nom) {
   }
   // Risque de blessure d'une grosse descente (comme avant).
   if (!F.sansBlesse) for (const e of engages) {
-    const risque = Math.min(ND.risqueMax, Math.max(0, (nDesc(e) - 3) * ND.risqueParAgent)) * risqueBlessure(state.zones[e.u]) * e.risque;
+    const risque = Math.min(ND.risqueMax, Math.max(0, (nDesc(e) - 3) * ND.risqueParAgent)) * risqueBlessure(state.zones[e.u]) * e.risque * mods.blessure;
     if (risque && makeRng(`${state.seed}:s${state.season}:t${T}:ndblesse:${k}:${e.u}`).chance(risque)) {
       const z = state.zones[e.u];
       z.blesses.push({ n: 1, retour: T + 4, motif: 'blessé' }); z.moral -= 2; stat(e.u, 'ndBlesses');
+      // Une reprise qui coûte des blessés : les habitants s'en souviennent.
+      if (nd.v3 && s.statut === 'repris' && s.reprisLe === T && Number.isFinite(s.confiance)) s.confiance = Math.max(0, s.confiance + M3.confiance.blesses);
       jalon(z, `Agent blessé à ${nomS}`);
       z.rapport.push(`${nomS} : un agent blessé pendant la descente, absent 3 tours (−2 de moral).`);
     }
