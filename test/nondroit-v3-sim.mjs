@@ -48,10 +48,10 @@ const STRATS = {
   },
 };
 
-function partie(seed, strat, { v3 = true, extra = 0, jeuMoi = 0, jeuBots = 0.25 } = {}) {
-  let state = createGame({ seed });
+function partie(seed, strat, { v3 = true, extra = 0, jeuMoi = 0, jeuBots = 0.25, regles = 1, des = 1 } = {}) {
+  let state = createGame({ seed, regles });
   state.nonDroit.roles = true;
-  if (v3) state.nonDroit.v3 = true;
+  state.nonDroit.v3 = !!(v3 && des <= 1);
   const bots = [...BOT_PROFILES];
   for (let i = 0; i < extra; i++) bots.push({ uid: `bot-x${i}`, code: String(5400 + i), nom: `X${i}`, pseudo: `X${i}`, style: STYLES[i % STYLES.length] });
   for (const b of bots) state.zones[b.uid] = newZone(b, 1);
@@ -60,6 +60,7 @@ function partie(seed, strat, { v3 = true, extra = 0, jeuMoi = 0, jeuBots = 0.25 
   const b0 = state.zones.moi.blesses.length;
   for (let t = 1; t <= TOURS; t++) {
     const T = state.turn;
+    if (v3 && t === des) state.nonDroit.v3 = true;
     const orders = {};
     for (const b of bots) { const o = botOrders(state.zones[b.uid], state, b.style); if (o) orders[b.uid] = o; }
     const ann = {};
@@ -114,6 +115,15 @@ if (mode === 'tout' || mode === 'district') {
     rows.push(ligne(`${6 + extra} zones · non-droit profond`, run(STRATS['Coopère + présence + scènes (agents)'], { v3: true, extra })));
   }
   console.log(`\n1. Le district (${TOURS} soirs, ${SEEDS} parties)`); console.table(rows);
+}
+if (mode === 'saison2') {
+  // Comme en ligne : règles de la saison 2, non-droit profond activé au soir 4 (en cours de saison).
+  const rows = [];
+  for (const extra of [0, 6]) {
+    rows.push(ligne(`${6 + extra} zones · saison 2 sans`, run(STRATS['Coopère (6 agents), comme avant'], { v3: false, extra, regles: 2 })));
+    rows.push(ligne(`${6 + extra} zones · saison 2, activé au soir 4`, run(STRATS['Coopère + présence + scènes (agents)'], { v3: true, extra, regles: 2, des: 4 })));
+  }
+  console.log(`\nSaison 2 (${TOURS} soirs, ${SEEDS} parties)`); console.table(rows);
 }
 if (mode === 'tout' || mode === 'moi') {
   const rows = [];

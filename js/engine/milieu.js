@@ -42,13 +42,13 @@ export const M3 = {
 export const PARRAINS = ['le Baron', 'la Duchesse', 'le Marquis', 'l’Architecte', 'le Prince des Quais', 'la Reine des Docks'];
 export const LIEUTENANTS = {
   deal: ['Petit Prince', 'le Facteur', 'Sifflet'],
-  recel: ['la Brocante', 'le Chineur', 'Monsieur Carton'],
-  squat: ['le Concierge', 'la Logeuse', 'Clé-de-Douze'],
+  recel: ['la Brocante', 'la Chineuse', 'Madame Carton'],
+  squat: ['le Concierge', 'Clé-de-Douze', 'le Portier'],
   garage: ['Cric', 'le Mécano', 'Jantes-Alu'],
   rodeos: ['Wheeling', 'le Pilote', 'Kawa'],
-  jeux: ['le Croupier', 'Valet de Pique', 'la Banque'],
-  sommeil: ['le Proprio', 'Monsieur Loyer', 'la Bailleresse'],
-  contrefacon: ['le Tailleur', 'Faux-Col', 'la Griffe'],
+  jeux: ['la Croupière', 'la Dame de Pique', 'la Banque'],
+  sommeil: ['le Proprio', 'Monsieur Loyer', 'le Bailleur'],
+  contrefacon: ['la Couturière', 'la Griffe', 'Faux-Cils'],
 };
 export const RENSEIGNEMENTS = {
   plan: { nom: 'Plan du QG', texte: 'Les couloirs, les portes, la cave.' },
@@ -69,6 +69,15 @@ export const ETAPES = [
   { id: 'securise', nom: 'Sécurisé', texte: 'Les lampadaires se rallument, les gens ressortent. Le milieu revient 30 % moins vite.' },
   { id: 'vivant', nom: 'Rendu à la vie', texte: 'Les commerces rouvrent. Le milieu revient 60 % moins vite, retombées +30 %, des témoins renseignent sur les secteurs voisins.' },
 ];
+
+/** Portraits (images Gemini dans img/milieu/) : un par Parrain, un par milieu pour les lieutenants. Silhouettes tant qu'ils ne sont pas livrés. */
+export const PORTRAITS_PRETS = false;
+export const portraitParrain = (nom) => `img/milieu/parrain-${Math.max(0, PARRAINS.indexOf(nom)) + 1}.webp`;
+export const portraitLieutenant = (milieu) => `img/milieu/lt-${milieu}.webp`;
+/** Scènes de ce soir (celles qui se règlent à la prochaine résolution). */
+export const scenesDuSoir = (state) => (state && state.nonDroit && state.nonDroit.v3 ? (state.nonDroit.scenes || []).filter((x) => x.nuit === state.turn) : []);
+/** Agents « scène » : le service d'où ils viennent. */
+export const SERVICE_SCENE = { emeute: 'intervention', rodeo: 'roulage', livraison: 'recherche', perquisition: 'recherche' };
 
 export const ndV3 = (state) => !!(state && state.nonDroit && state.nonDroit.v3);
 export const etape = (s) => { const c = (s && s.confiance) || 0; return c >= M3.confiance.etapes[1] ? 2 : c >= M3.confiance.etapes[0] ? 1 : 0; };
@@ -155,7 +164,7 @@ function chuteParrain(state, nd, s, k, T, parts, push, nomS) {
     z.rapport.push(`Le milieu : ${p.nom} est tombé ! Le coffre du réseau est saisi (ta part : ${fmt(b)}).`);
   }
   (nd.saisies ||= []).push({ id: 'blinde', cell: Number(k), parts: Object.fromEntries(parts.map((x) => [x.uid, round1(x.part)])), T });
-  push(14, 'Édition spéciale', `${cap(p.nom)} est tombé`, `Le Parrain du milieu est arrêté dans son QG de ${nomS}. Son coffre est saisi, son blindé partira à la prochaine vente aux enchères.`);
+  push(14, 'La chute du Parrain', `${cap(p.nom)} est tombé`, `Le Parrain du milieu est arrêté dans son QG de ${nomS}. Son coffre est saisi, son blindé partira à la prochaine vente aux enchères.`);
 }
 
 /** Début de nuit : interrogatoires des lieutenants arrêtés la veille. */

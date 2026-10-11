@@ -1,0 +1,93 @@
+// Non-droit profond, affichage : le réseau du Parrain (au-dessus de la fiche), le lieutenant et la scène du soir
+// dans la fiche d'un secteur du milieu, la confiance des habitants dans la fiche d'un secteur repris.
+import { S, esc } from './common.js';
+import { nomSecteur, milieuDe } from '../engine/nondroit.js';
+import { M3, RENSEIGNEMENTS, SCENES, ETAPES, etape, portraitParrain, portraitLieutenant, scenesDuSoir, seuilScene, SERVICE_SCENE, PORTRAITS_PRETS } from '../engine/milieu.js';
+
+const nd = () => (S.state && S.state.nonDroit) || null;
+export const v3Actif = () => !!(nd() && nd().v3 && nd().parrain);
+const nomZ = (uid, me) => (me && uid === me.uid ? 'toi' : S.state.zones[uid] ? `ZP ${esc(S.state.zones[uid].code)} ${esc(S.state.zones[uid].nom)}` : '?');
+const cap = (t) => (t ? t[0].toUpperCase() + t.slice(1) : t);
+const ICO_R = { plan: '▦', garde: '⏱', compta: '€', armes: '⚑', issue: '⇥' };
+export const ICO_SCENE = { emeute: '🔥', rodeo: '🏍', livraison: '📦', perquisition: '🚪' };
+
+/** Portrait rond : silhouette dessinée, l'image Gemini par-dessus quand elle existe. */
+export function portrait(src, cls = '') {
+  return `<span class="ml-pt ${cls}" aria-hidden="true"><svg viewBox="0 0 40 40"><circle cx="20" cy="15" r="7" fill="#0E0B12"/><path d="M5 40c1-10 7-15 15-15s14 5 15 15z" fill="#0E0B12"/></svg>${PORTRAITS_PRETS ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`;
+}
+
+const ETAT_LT = { libre: 'libre', garde: 'en garde à vue', tombe: 'a parlé', enfui: 'en fuite' };
+
+/** Bande « le réseau du Parrain » (repliable, se replie seule une fois le Parrain tombé). */
+export function reseauHtml(me) {
+  const n = nd();
+  if (!v3Actif()) return '';
+  const p = n.parrain, dossier = n.dossier || {};
+  const types = Object.keys(RENSEIGNEMENTS);
+  const nb = types.filter((t) => dossier[t]).length;
+  const lts = Object.entries(n.secteurs).filter(([, s]) => s.lieutenant).sort((a, b) => Number(a[0]) - Number(b[0]));
+  const mesR = types.filter((t) => dossier[t] === me.uid);
+  const detenteurs = [...new Set(types.map((t) => dossier[t]).filter((u) => u && S.state.zones[u]))];
+  const ouvert = !!(S.ouverts && S.ouverts['nd-reseau']);
+  const resume = p.tombe ? 'arrêté' : `${nb}/${types.length}${mesR.length ? ` · ${mesR.length} chez toi` : ''}`;
+  return `<details class="ml-reseau card tight" data-k="nd-reseau" ${ouvert ? 'open' : ''}>
+    <summary class="row" style="gap:10px">${portrait(portraitParrain(p.nom), `boss ${p.tombe ? 'tombe' : ''}`)}
+      <span class="col" style="gap:1px;min-width:0;flex:1"><strong class="ml-boss">${esc(cap(p.nom))}</strong><span class="tiny muted">${p.tombe ? 'Le Parrain du milieu est tombé' : `Parrain du milieu · ${lts.filter(([, s]) => s.lieutenant.etat === 'libre').length} lieutenant${lts.filter(([, s]) => s.lieutenant.etat === 'libre').length > 1 ? 's' : ''} en liberté · renseignements ${nb}/${types.length}`}</span></span>
+      <span class="pill ${p.tombe ? 'green' : 'amber'}">${resume}</span></summary>
+    <div class="col" style="gap:8px;margin-top:10px">
+      <div class="ml-dossier" role="list" aria-label="Dossier du Parrain">${types.map((t) => `<span role="listitem" class="${dossier[t] ? 'ok' : ''}" title="${dossier[t] ? `${esc(RENSEIGNEMENTS[t].nom)} : ${nomZ(dossier[t], me)}` : 'Renseignement à trouver'}"><b>${dossier[t] ? ICO_R[t] : '?'}</b><i>${dossier[t] ? esc(RENSEIGNEMENTS[t].nom) : 'à trouver'}</i></span>`).join('')}</div>
+      ${nb ? `<p class="tiny" style="margin:0">${types.filter((t) => dossier[t]).map((t) => `${esc(RENSEIGNEMENTS[t].nom)} : <strong>${nomZ(dossier[t], me)}</strong>`).join(' · ')}.</p>
+        <p class="tiny muted" style="margin:0">À l’assaut du QG, chaque renseignement apporté par une zone <strong>présente ce soir-là</strong> : +${Math.round(M3.bonusRens * 100)} % de force, moins de blessés${detenteurs.length > 1 ? `. Pour tout avoir, il faut ${detenteurs.length} zones le même soir` : ''}.</p>`
+        : '<p class="tiny muted" style="margin:0">Reprendre un secteur avec un bon bouclage fait tomber son lieutenant : interrogé, il donne un renseignement sur le QG. Les livraisons interceptées aussi.</p>'}
+      <div class="ml-lts">${lts.map(([k, s]) => `<button type="button" class="ml-lt ${s.lieutenant.etat}" data-action="secteur" data-c="${k}">${portrait(portraitLieutenant(s.milieu), s.lieutenant.etat)}<span class="n">${esc(cap(s.lieutenant.nom))}</span><span class="e">${esc(nomSecteur(k))} · ${ETAT_LT[s.lieutenant.etat] || ''}</span></button>`).join('')}</div>
+    </div></details>`;
+}
+
+/** Ligne « lieutenant » dans la fiche d'un secteur du milieu. */
+export function ligneLieutenant(k, s) {
+  if (!v3Actif() || !s.lieutenant || s.coeur) return '';
+  const lt = s.lieutenant;
+  const txt = lt.etat === 'libre' ? `Tenu par <strong>${esc(cap(lt.nom))}</strong>. Repris avec un bon bouclage (moins de ${Math.round(M3.fuiteArret * 100)} % de fuite), il est arrêté et parle : ${lt.pieces > 1 ? `<strong>${lt.pieces} renseignements</strong> (un lieutenant en fuite s’y cache${lt.refugie ? ` : ${esc(lt.refugie)}` : ''})` : 'un renseignement sur le QG'}. Mal bouclé, il file.`
+    : lt.etat === 'garde' ? `<strong>${esc(cap(lt.nom))}</strong> est en garde à vue : interrogatoire ce soir.` : lt.etat === 'tombe' ? `<strong>${esc(cap(lt.nom))}</strong> est tombé et a parlé.` : `<strong>${esc(cap(lt.nom))}</strong> a filé vers un secteur voisin.`;
+  return `<div class="row ml-ltl" style="gap:10px">${portrait(portraitLieutenant(s.milieu), lt.etat)}<p class="tiny" style="margin:0;flex:1">${txt}</p></div>`;
+}
+
+/** Carte « Ce soir : émeute » dans la fiche du secteur (stepper des agents de scène, mini-jeu facultatif). */
+export function sceneHtml(k, s, mes, place, annonces) {
+  const sc = scenesDuSoir(S.state).find((x) => String(x.cell) === String(k));
+  if (!sc) return '';
+  const def = SCENES[sc.type], seuil = seuilScene(S.state, sc.type);
+  const autres = annonces.filter((x) => !x.moi).reduce((t, x) => t + ((x.r && x.r.sc) || 0), 0);
+  const res = S.player && S.player.incidents && S.player.incidents.r && S.player.incidents.r[sc.id];
+  const jeuOk = res && res.statut === 'ok', joue = res && res.statut !== 'abandon';
+  const total = autres + (mes.sc || 0) + (jeuOk ? M3.scenes.jeu + (res.fautes ? 0 : M3.scenes.sansFaute) : 0);
+  const ok = total >= seuil;
+  const effet = M3.scenes.effet[sc.type];
+  return `<div class="ml-scene ${ok ? 'ok' : ''}">
+    <div class="row" style="gap:10px;align-items:flex-start"><span class="ml-scene-ico" aria-hidden="true">${ICO_SCENE[sc.type]}</span>
+      <div class="col" style="gap:2px;flex:1;min-width:0"><strong class="small ml-scene-t">Ce soir : ${esc(def.titre.toLowerCase())}</strong>
+      <span class="tiny muted">${esc(def.texte)} Il faut <strong>${seuil} agents</strong>, toutes zones confondues${autres ? ` (${autres} déjà annoncé${autres > 1 ? 's' : ''})` : ''}.</span></div>
+      <span class="pill ${ok ? 'green' : ''}">${Math.min(total, 99)}/${seuil}</span></div>
+    <div class="between"><div class="col" style="gap:0"><strong class="small">Agents à la scène</strong><span class="tiny muted">${esc((SERVICE_SCENE[sc.type] || '').replace(/^./, (c) => c.toUpperCase()))} · hors assaut, sans piège</span></div>
+      <span class="stepper"><button type="button" data-action="nd-role" data-c="${k}" data-r="sc" data-d="-1" aria-label="Un agent de moins à la scène" ${(mes.sc || 0) <= 0 ? 'disabled' : ''}>−</button><span class="n">${mes.sc || 0}</span><button type="button" data-action="nd-role" data-c="${k}" data-r="sc" data-d="1" aria-label="Un agent de plus à la scène" ${place <= 0 ? 'disabled' : ''}>+</button></span></div>
+    ${joue ? `<p class="tiny ${jeuOk ? 'ok' : 'muted'}" style="margin:0">${jeuOk ? `✓ Joué : compte comme ${M3.scenes.jeu + (res.fautes ? 0 : M3.scenes.sansFaute)} agents.` : 'Mini-jeu raté : seuls les agents comptent.'}</p>`
+      : `<button type="button" class="btn small ghost block" data-action="nd-scene-jeu" data-c="${k}">${sc.type === 'emeute' ? 'Encadrer l’émeute' : sc.type === 'rodeo' ? 'Rattraper le rodéo' : sc.type === 'livraison' ? 'Intercepter les téléphones' : 'Ouvrir la porte'} moi-même · facultatif (= ${M3.scenes.jeu} agents)</button>`}
+    <p class="tiny muted" style="margin:0">Réglée : emprise −${effet}, secteur repéré 2 soirs, et pour chaque zone présente +${M3.scenes.rep} de réputation, +${M3.scenes.ps} PS, +${M3.scenes.pts} pts, +${Math.round(M3.scenes.budget * 1000).toLocaleString('fr-BE')} €${sc.type === 'livraison' ? ' ; intercepter les téléphones (mini-jeu) donne en plus un renseignement sur le QG' : ''}.${sc.type === 'emeute' ? ' Ratée : l’émeute déborde sur les quartiers voisins.' : sc.type === 'livraison' ? ' Ratée : emprise +8.' : ''}</p>
+  </div>`;
+}
+
+/** Confiance des habitants (secteur repris). */
+export function confianceHtml(k, s, presence) {
+  if (!v3Actif() || !Number.isFinite(s.confiance)) return '';
+  const e = etape(s), C = M3.confiance, [a, b] = C.etapes;
+  const gain = Math.min(C.presenceMax, presence * C.parPresence) + C.calme;
+  return `<div class="ml-conf">
+    <div class="between"><strong class="small">Confiance des habitants · ${Math.round(s.confiance)}</strong><span class="pill ${e ? 'green' : ''}">${ETAPES[e].nom}</span></div>
+    <span class="ml-jauge" role="img" aria-label="Confiance ${Math.round(s.confiance)} sur 100"><span style="width:${Math.max(2, Math.round(s.confiance))}%"></span><i style="left:${a}%"></i><i style="left:${b}%"></i></span>
+    <span class="tiny muted">${esc(ETAPES[e].texte)} ${e < 2 ? `Ce soir : +${gain}${presence ? ` avec ${presence} en présence` : ' au calme (mets de la Proximité en présence : +4 chacun)'} · ${e === 0 ? `${a} = sécurisé` : `${b} = rendu à la vie`}.` : ''}</span>
+  </div>`;
+}
+
+/** Bulle de carte pour la scène du soir d'un secteur (ou null). */
+export const sceneCarte = (k) => scenesDuSoir(S.state).find((x) => String(x.cell) === String(k)) || null;
+export { milieuDe };

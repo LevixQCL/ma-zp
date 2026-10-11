@@ -4,18 +4,29 @@ import { S, esc } from './common.js';
 import { fondateurAVoir, ouvrirFondateur } from './fondateurs.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-11-doctrines',
-  titre: 'Tes doctrines prennent vie',
+  id: '2026-10-11-parrain',
+  titre: 'Le Parrain du milieu',
   saison2: true,
+  // Pas avant le tour de 20:00 qui installe le Parrain : la note et sa section restent cachées jusque-là.
+  pret: (st) => !!(st && st.nonDroit && st.nonDroit.parrain),
+  sectionPret: /^Le Parrain du milieu/,
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🧭', 'Une jauge par doctrine', 'dans tes Ordres, sous le service concerné : 🚦 campagne de contrôles, 👂 réseau d’îlotiers, 📁 dossier au parquet, 💰 saisie, 🤝 crédit de coopération. À 100 %, la récompense tombe le soir même.'],
-    ['🔁', 'Une doctrine par semaine', 'en 2e semaine (jours 8 et 9), garde ta doctrine pour gagner une étoile de maîtrise, ou change de stratégie.'],
-    ['🚨', 'Les jauges d’intervention', 'le flagrant délit et la saisie se voient maintenant sous l’Intervention.'],
+    ['🎩', 'Le Parrain et ses lieutenants', 'chaque secteur du non-droit a un visage. Fais tomber un lieutenant avec un bon bouclage : interrogé, il donne un renseignement pour l’assaut du QG.'],
+    ['🔥', 'Une scène chaque soir', 'émeute, rodéo, livraison, perquisition : envoie des agents, ou joue le mini-jeu (facultatif, il compte comme 3 agents).'],
+    ['🏮', 'Le centre revit', 'un secteur repris se rallume, puis ses commerces rouvrent : mets de la Proximité en présence.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Le Parrain du milieu (11 octobre)', [
+      ['Le Parrain et ses lieutenants', 'le milieu a un Parrain et chaque secteur de l’anneau un lieutenant (bande « réseau du Parrain » dans la Carte). Repris avec un bon bouclage (moins de 50 % de fuite), le lieutenant est arrêté ; interrogé la nuit suivante, il donne un renseignement sur le QG à la zone qui l’a arrêté. Mal bouclé, il file chez un voisin (emprise +8) et y lâchera deux renseignements.'],
+      ['L’assaut du QG', 'chaque renseignement différent apporté par une zone présente ce soir-là : +12 % de force, 10 % de blessés en moins. Le QG tombé, le coffre du Parrain (12 000 €) est partagé selon l’influence et son blindé part aux enchères.'],
+      ['Le centre revit', 'un secteur repris a une confiance des habitants : +4 chaque nuit calme, +4 par agent de Proximité en présence (jusqu’à +12), −12 si un gang ou une riposte frappe. Sécurisé à 30 (le milieu revient 30 % moins vite), rendu à la vie à 60 (60 % moins vite, retombées +30 %, des témoins repèrent un secteur voisin).'],
+      ['Le milieu s’adapte', 'trop de descentes sans repérage : il double ses guetteurs 3 soirs. Une zone qui pèse 30 % du non-droit : représailles annoncées sur son secteur et ses quartiers frontaliers.'],
+      ['Les scènes du soir', 'une scène annoncée la veille (deux à partir de 10 zones). Des agents à la scène (hors assaut, sans piège) ; le mini-jeu, facultatif, compte comme 3 agents. Réglée : emprise en baisse, secteur repéré, réputation, PS, points et 1 500 € pour chaque zone présente.'],
+      ['Saisies aux enchères', 'les saisies d’un garage clandestin ou d’un atelier de recel bien bouclés passent à la vente aux enchères ; la moitié du prix revient aux zones qui ont saisi.'],
+    ]],
     ['Énigmes : 3 au choix sur 4 (11 octobre)', [
       ['Prime', 'les 4 énigmes du jour comptent : 2 réussies au choix pour le bonus, 3 au choix pour la prime (la 4e n’est plus « pour le plaisir »). Elles comptent aussi pour le classement.'],
     ]],
@@ -552,18 +563,19 @@ const cle = () => `mazp-maj-vue-${NOTE_MAJ.id}`;
 const enV2 = () => !!(S.state && (Number(S.state.regles) || 1) >= 2);
 const avantSaison2 = () => NOTE_MAJ.saison2 && !enV2();
 const SECTION_S2 = /^(Saison 2|La Gazette en cartes|L’enquête en dossier|La zone de non-droit en rôles|La nouvelle carte et l’onglet Chef|Les énigmes en dossier|Le nouvel HP)/;
-export function noteVue() { if (avantSaison2()) return true; try { return !!localStorage.getItem(cle()); } catch (e) { return true; } }
+const pasPret = () => !!(NOTE_MAJ.pret && !NOTE_MAJ.pret(S.state));
+export function noteVue() { if (avantSaison2() || pasPret()) return true; try { return !!localStorage.getItem(cle()); } catch (e) { return true; } }
 
 /** Fenêtre « Nouveautés » : l'essentiel (à l'ouverture du jeu) ou la liste complète (menu de l'HP). */
 export function ouvrirNouveautes({ complet = true } = {}) {
   const avant = avantSaison2();
-  if (avant) complet = true;
+  if (avant || pasPret()) complet = true;
   else try { localStorage.setItem(cle(), '1'); } catch (e) { /* pas de stockage */ }
   document.querySelector('.aide-wrap')?.remove();
   const wrap = document.createElement('div');
   wrap.className = 'aide-wrap';
   const corps = complet
-    ? NOTE_MAJ.sections.filter(([titre]) => !avant || !SECTION_S2.test(titre)).map(([titre, pts]) => `<h3 class="kicker" style="margin:6px 0 0">${esc(titre)}</h3>
+    ? NOTE_MAJ.sections.filter(([titre]) => (!avant || !SECTION_S2.test(titre)) && !(pasPret() && NOTE_MAJ.sectionPret && NOTE_MAJ.sectionPret.test(titre))).map(([titre, pts]) => `<h3 class="kicker" style="margin:6px 0 0">${esc(titre)}</h3>
       <ul class="aide-liste">${pts.map(([t, x]) => `<li><strong>${esc(t)}</strong> : ${esc(x)}</li>`).join('')}</ul>`).join('')
     : `<div class="col" style="gap:10px">${NOTE_MAJ.essentiel.map(([ico, t, x]) => `<div class="row" style="gap:10px;align-items:flex-start">
         <span aria-hidden="true" style="font-size:22px;line-height:1.1">${ico}</span>

@@ -9,6 +9,7 @@ import {
   AFFAIRE, SERVICES, SERVICE_LABELS, EQUIP, effetEquip, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION,
   INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, ENCHERE, LOTS, TUTELLE, ND, TERRAIN, BUDGET_IPZ, ENIGMES } from '../engine/constants.js';
 import { SINISTRE } from '../engine/sinistres.js';
+import { M3 } from '../engine/milieu.js';
 import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
 import { ENQ, DEMARCHES, POINTS, pointsDecouverte, delaiTraque, PRIME } from '../engine/enquete.js';
 import { PARTAGE, FIPA } from '../engine/fipa.js';
@@ -187,6 +188,32 @@ export function sections() {
           `<strong>Les voisins du centre</strong> : un quartier qui touche un secteur du milieu prend +${String(ND.contagion).replace('.', ',')} de tension chaque nuit ; s'il touche un secteur repris, il perd ${String(ND.apaisement).replace('.', ',')}.`,
           `<strong>Limites</strong> : ${ND.maxParSecteur} agents par secteur et ${ND.maxTotal} en tout, pris sur tes services pour la journée. Au-delà de 3 agents au même endroit, risque d'un blessé pendant l'assaut. Si tu oublies tes ordres un jour, tes agents restent sur place ; au-delà, ils rentrent.`,
           'Une zone qui ne joue plus ne bloque personne : les autres continuent sans elle. La zone de non-droit repart de zéro à chaque saison.',
+        ])}
+        <h3>Le Parrain et ses lieutenants</h3>
+        ${ul([
+          'Le milieu a un <strong>Parrain</strong>, et chaque secteur de l’anneau un <strong>lieutenant</strong>. Leur état se voit dans la bande « réseau du Parrain », au-dessus de la fiche du secteur.',
+          `Secteur repris avec un bon bouclage (moins de ${Math.round(M3.fuiteArret * 100)} % de fuite) : le lieutenant est arrêté. La nuit suivante, il est interrogé et lâche un <strong>renseignement sur le QG</strong> (plan, relève des gardes, carnet du comptable, planque des armes, issue de secours), détenu par la zone qui l’a arrêté (de préférence une zone qui a des cachots).`,
+          `Mal bouclé, il file vers un secteur voisin (emprise +${M3.renfortFuite}) ; il y lâchera deux renseignements quand il tombera.`,
+          `À l’assaut du QG, chaque renseignement différent apporté par une zone <strong>présente ce soir-là</strong> : +${Math.round(M3.bonusRens * 100)} % de force et ${Math.round(M3.blessureRens * 100)} % de blessés en moins. Il faut donc que les zones qui détiennent le dossier viennent ensemble.`,
+          `Le QG tombé, le Parrain est arrêté : son coffre (${Math.round(M3.coffre * 1000).toLocaleString('fr-BE')} €) est partagé selon l’influence et son blindé part à la vente aux enchères.`,
+        ])}
+        <h3>Le centre revit</h3>
+        ${ul([
+          `Un secteur repris a une <strong>confiance des habitants</strong> (0 à 100) : départ à ${M3.confiance.depart}, +${M3.confiance.repere} si la descente était repérée, ${M3.confiance.blesses} si elle a coûté des blessés. Chaque nuit : +${M3.confiance.calme} au calme, +${M3.confiance.parPresence} par agent en <strong>présence</strong> (Proximité, jusqu’à +${M3.confiance.presenceMax}), ${M3.confiance.coup} si un gang ou une riposte frappe, ${M3.confiance.haute} si l’emprise dépasse 40.`,
+          `<strong>Sécurisé</strong> (${M3.confiance.etapes[0]}) : le milieu revient 30 % moins vite et les quartiers voisins s’apaisent plus. <strong>Rendu à la vie</strong> (${M3.confiance.etapes[1]}) : le milieu revient 60 % moins vite, retombées +30 %, et des témoins repèrent chaque nuit un secteur voisin encore tenu par le milieu.`,
+        ])}
+        <h3>Le milieu s’adapte</h3>
+        ${ul([
+          `<strong>Guetteurs</strong> : ${M3.guetteurs.seuil} descentes sans repérage ou plus en ${M3.guetteurs.fenetre} soirs, et le milieu double ses guetteurs pendant ${M3.guetteurs.duree} soirs (une descente sans repérage tombe plus souvent dans un piège et frappe moins fort).`,
+          `<strong>Représailles</strong> : une zone qui pèse ${Math.round(M3.represailles.part * 100)} % ou plus de l’influence du non-droit devient la cible du Parrain : annoncées la veille, +${M3.represailles.force} d’emprise sur son secteur le plus fragile, ses quartiers frontaliers se tendent. Les zones de garde ce soir-là sont récompensées comme face à un gang.`,
+        ])}
+        <h3>Les scènes du soir</h3>
+        ${ul([
+          'Chaque soir, une scène est annoncée la veille sur un secteur du milieu (deux à partir de 10 zones actives) : <strong>émeute</strong>, <strong>rodéo</strong>, <strong>livraison</strong> ou <strong>perquisition</strong>, selon le milieu.',
+          `On y envoie des <strong>agents à la scène</strong> depuis la fiche du secteur : ils ne font pas d’assaut et ne risquent pas de piège. Il en faut ${M3.scenes.seuil.perquisition} à ${M3.scenes.seuil.emeute} toutes zones confondues (un peu plus dans les grandes parties).`,
+          `Le <strong>mini-jeu</strong> de la scène est facultatif : réussi, il compte comme ${M3.scenes.jeu} agents (${M3.scenes.jeu + M3.scenes.sansFaute} sans faute). Émeute : Maintien de l’ordre · rodéo : Rattrape Luc · livraison : Interception · perquisition : Crochetage.`,
+          `Réglée : l’emprise baisse, le secteur est repéré 2 soirs, et chaque zone présente gagne +${M3.scenes.rep} de réputation, +${M3.scenes.ps} PS, +${M3.scenes.pts} pts et ${Math.round(M3.scenes.budget * 1000).toLocaleString('fr-BE')} €. Une livraison interceptée par le mini-jeu donne un renseignement sur le QG. Ratée : l’émeute déborde sur les quartiers voisins, la livraison renforce le milieu.`,
+          `Les saisies d’un garage clandestin ou d’un atelier de recel bien bouclés partent à la vente aux enchères ; la moitié du prix revient aux zones qui ont saisi.`,
         ])}`,
     },
     {

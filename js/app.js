@@ -65,7 +65,8 @@ import { renderCarteV2, calqueTerrain } from './ui/carte-v2.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { renderDebrief } from './ui/debrief.js';
 import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES, FORMES, formesPourTour, quatrePourTour, enquetePourTour } from './quests/quests.js';
-import { niveauEnigmes } from './engine/directeur.js';
+import { niveauEnigmes, niveauIncidents } from './engine/directeur.js';
+import { scenesDuSoir, SERVICE_SCENE, SCENES } from './engine/milieu.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
 import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND, LOTS } from './engine/constants.js';
 import { nomSecteur } from './engine/nondroit.js';
@@ -564,9 +565,17 @@ async function onClick(e) {
       case 'nd-role': {
         // Saison 2 : un agent de plus ou de moins dans un rôle ; il vient du service qui va avec (et y retourne).
         const k = el.dataset.c, r = el.dataset.r, dd = Number(el.dataset.d);
-        if (!['rep', 'desc', 'bouc'].includes(r)) break;
+        if (!['rep', 'desc', 'bouc', 'sc'].includes(r)) break;
         if (dd > 0 ? ajouterRoleND(k, r) : retirerRoleND(k, r)) { S.secteurSel = k; S.ordersDirty = true; }
         rerender(); break;
+      }
+      case 'nd-scene-jeu': {
+        // Scène du soir : le mini-jeu facultatif (compte comme 3 agents à la scène).
+        const sc = scenesDuSoir(S.state).find((x) => String(x.cell) === String(el.dataset.c));
+        if (!sc) break;
+        const service = SERVICE_SCENE[sc.type] || 'intervention';
+        ouvrirMiniJeu(SCENES[sc.type].jeu, { mode: 'incident', inc: { id: sc.id, scene: true, service, titre: SCENES[sc.type].titre, agents: DEFAULT_ALLOC[service] || 3, ajust: niveauIncidents(myZone()) }, onFin: () => rerender() });
+        break;
       }
       case 'nd': {
         const k = el.dataset.c, dd = Number(el.dataset.d);
@@ -1395,26 +1404,28 @@ function askConfirm(message, okLabel = 'Confirmer', koLabel = 'Annuler') {
 
 /** Libère un agent pour un engagement : pris dans le service le plus fourni si personne n'est libre. */
 /** Rôles (saison 2) : le service d'où vient un agent selon son rôle, dans l'ordre de préférence. */
-const SOURCES_ROLE = { rep: ['recherche'], desc: ['intervention'], bouc: ['roulage', 'proximite'] };
+const SOURCES_ROLE = { rep: ['recherche'], desc: ['intervention'], bouc: ['roulage', 'proximite'], sc: ['intervention', 'recherche', 'roulage', 'proximite'] };
+/** Agents « scène » : ils viennent d'abord du service de la scène du soir. */
+const sourcesRole = (k, r) => { if (r !== 'sc') return SOURCES_ROLE[r]; const sc = scenesDuSoir(S.state).find((x) => String(x.cell) === String(k)); const svc = sc && SERVICE_SCENE[sc.type]; return svc ? [svc, ...SOURCES_ROLE.sc.filter((x) => x !== svc)] : SOURCES_ROLE.sc; };
 function ajouterRoleND(k, r) {
   const d = S.draft, sect = (d.secteurs ||= {}), roles = (d.roles ||= {});
   const cur = rolesDe(k);
   if ((sect[k] || 0) >= ND.maxParSecteur || agentsND() >= ND.maxTotal) { toast(`Au plus ${ND.maxParSecteur} agents par secteur et ${ND.maxTotal} en tout.`); return false; }
   if (estimations().reste <= 0) {
-    const src = SOURCES_ROLE[r].find((x) => d.alloc[x] > 0);
+    const src = sourcesRole(k, r).find((x) => d.alloc[x] > 0);
     if (src) d.alloc[src] -= 1; else if (!takeAgent()) return false;
   }
-  cur[r] += 1; roles[k] = cur; sect[k] = cur.rep + cur.desc + cur.bouc;
+  cur[r] = (cur[r] || 0) + 1; roles[k] = cur; sect[k] = cur.rep + cur.desc + cur.bouc + (cur.sc || 0);
   return true;
 }
 function retirerRoleND(k, r) {
   const d = S.draft, cur = rolesDe(k);
   if (!cur[r]) return false;
   cur[r] -= 1;
-  const n = cur.rep + cur.desc + cur.bouc;
+  const n = cur.rep + cur.desc + cur.bouc + (cur.sc || 0);
   (d.roles ||= {})[k] = cur; (d.secteurs ||= {})[k] = n;
   if (!n) { delete d.secteurs[k]; delete d.roles[k]; }
-  d.alloc[SOURCES_ROLE[r][0]] += 1; // l'agent retourne dans son service
+  d.alloc[sourcesRole(k, r)[0]] += 1; // l'agent retourne dans son service
   return true;
 }
 

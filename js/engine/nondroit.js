@@ -16,8 +16,8 @@ import { donnerTrophee, TROPHEE, figure, nomComplet } from './equipe.js';
 import { lies, PACTE } from './pactes.js';
 import { assurerMilieu, interrogatoires, modsAssaut, noterDescente, aLaPrise, confianceNuit, finDeNuit, scenesResoudre, saisieDescente, etape, M3, LIEUTENANTS } from './milieu.js';
 
-/** Non-droit « profond » (Parrain, lieutenants, confiance, milieu adaptatif, scènes) : pas encore en jeu (démo et simulations). */
-export const ND_V3 = false;
+/** Non-droit « profond » (Parrain, lieutenants, confiance, milieu adaptatif, scènes) : en jeu avec les règles de la saison 2 (oct. 2026). */
+export const ND_V3 = true;
 
 /** Rôles dans la zone de non-droit : actifs avec les règles de la saison 2 (state.regles >= 2). */
 export const ND_ROLES = true;
@@ -155,7 +155,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players =
   if (!state.nonDroit || state.nonDroit.season !== state.season) state.nonDroit = creerNonDroit(state.seed, state.season);
   const nd = state.nonDroit;
   if (ND_ROLES && reglesV2(state) && !nd.roles) nd.roles = true;
-  if (ND_V3 && reglesV2(state) && !nd.v3) nd.v3 = true;
+  if (ND_V3 && reglesV2(state) && nd.v3 === undefined) nd.v3 = true; // false : désactivé exprès (simulations)
   assurerMilieu(state, nd);
   interrogatoires(state, nd, T, push);
   const rng = makeRng(`${state.seed}:s${state.season}:t${T}:nondroit`);

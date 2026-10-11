@@ -5,6 +5,7 @@ import { ND, secteurOuvert, regenSecteur } from '../engine/constants.js';
 import { forceEngagement } from '../engine/zone.js';
 import { milieuDe, nomSecteur, partsDe, prevoirSecteur, secteursVoisins, gangCeSoir, faille, repere, ouvertCeSoir, prevoirRoles, rolesND } from '../engine/nondroit.js';
 import { planNonDroit } from './plan.js';
+import { v3Actif, reseauHtml, ligneLieutenant, sceneHtml, confianceHtml, sceneCarte, ICO_SCENE } from './milieu.js';
 
 const nd = () => (S.state && S.state.nonDroit) || null;
 const nomZ = (uid) => (S.state.zones[uid] ? esc(S.state.zones[uid].nom) : '?');
@@ -33,12 +34,12 @@ export function annoncesND() {
 
 /** Rôles en jeu (saison 2) ? */
 export const rolesActifs = () => rolesND(S.state);
-const rolesPropres = (r, n) => (r && typeof r === 'object' ? { rep: Number(r.rep) || 0, desc: Number(r.desc) || 0, bouc: Number(r.bouc) || 0 } : { rep: 0, desc: n || 0, bouc: 0 });
+const rolesPropres = (r, n) => (r && typeof r === 'object' ? { rep: Number(r.rep) || 0, desc: Number(r.desc) || 0, bouc: Number(r.bouc) || 0, ...(Number(r.sc) > 0 ? { sc: Number(r.sc) } : {}) } : { rep: 0, desc: n || 0, bouc: 0 });
 /** Mes agents par rôle sur un secteur (brouillon). Sans rôles enregistrés, tout est en descente. */
 export function rolesDe(k, d = S.draft) {
   const n = ((d && d.secteurs) || {})[k] || 0;
   const r = d && d.roles && d.roles[k];
-  if (r && r.rep + r.desc + r.bouc === n) return { ...r };
+  if (r && r.rep + r.desc + r.bouc + (r.sc || 0) === n) return { sc: 0, ...r };
   return { rep: 0, desc: n, bouc: 0 };
 }
 export const ROLES_ND = {
@@ -52,6 +53,7 @@ export function texteRoles(r) {
   if (r.rep) t.push(`${r.rep} au repérage`);
   if (r.desc) t.push(`${r.desc} en descente`);
   if (r.bouc) t.push(`${r.bouc} au bouclage`);
+  if (r.sc) t.push(`${r.sc} à la scène`);
   return t.length > 1 ? `${t.slice(0, -1).join(', ')} et ${t[t.length - 1]}` : t[0] || '';
 }
 /** Rôle le plus utile pour rejoindre un secteur ce soir (ce qui manque d'abord). */
@@ -204,7 +206,7 @@ function carteRoles(k, s, me, d) {
   const p = prevoirRolesSecteur(k);
   const rep = repere(s, T);
   const repDemain = s.repere && s.repere.a > T;
-  const total = (x) => x.rep + x.desc + x.bouc;
+  const total = (x) => x.rep + x.desc + x.bouc + (x.sc || 0);
   const place = Math.min(ND.maxParSecteur - total(mes), ND.maxTotal - agentsND(d));
   const cases = (role, cible) => {
     const pions = [];
@@ -235,6 +237,8 @@ function carteRoles(k, s, me, d) {
   const annonce = monAnnonceND(k), monN = total(mes);
   return `<div class="nd-detail" style="gap:8px">
     <div class="row" style="gap:6px;flex-wrap:wrap"><span class="tiny muted">${esc(m.texte)}</span>${rep ? '<span class="pill nd-rep">🔍 repéré ce soir</span>' : repDemain ? '<span class="pill nd-rep">🔍 repéré dès demain</span>' : '<span class="pill">pas repéré</span>'}</div>
+    ${ligneLieutenant(k, s)}
+    ${ouvert ? sceneHtml(k, s, mes, place, ann) : ''}
     ${s.connue ? `<div class="nd-faille connue"><strong class="small">Faille : ${esc(F.titre)}</strong><span class="tiny">${esc(F.texte)}${F.soirs ? ` <strong>Ouvert le ${soirs(s)}</strong> (ce soir : ${ouvertCeSoir(s, T) ? '<span class="ok">ouvert</span>' : '<span class="bad">fermé</span>'}).` : ''}</span></div>`
       : '<div class="nd-faille"><strong class="small">❔ Faille inconnue</strong><span class="tiny muted">Chaque milieu a sa faiblesse. Un repérage la révèle à toutes les zones.</span></div>'}
     ${!ouvert ? `<p class="tiny muted" style="margin:0">Il faut tenir ${ND.coeurSeuil} secteurs de l’anneau en même temps (${Object.values(nd().secteurs).filter((x) => !x.coeur && x.statut === 'repris').length} aujourd’hui).</p>` : ''}
@@ -288,7 +292,7 @@ function carteSecteur(k, s, me, d) {
     } else {
       const sansMoi = autres.length ? prevoirSecteur(S.state, s, autres) : null;
       const dejaGarde = sansMoi && sansMoi.emprise <= Math.max(s.emprise, 0) + 0.5;
-      prevision = `${gang ? `<p class="tiny bad" style="margin:0"><strong>⚠️ Un gang attaque ce soir</strong> : +${gang.force} d’emprise en plus du retour du milieu. Il faut une vraie garde, à plusieurs zones : repoussé, il rapporte +${ND.gangs.rep} de réputation et +${ND.gangs.ps} PS à chaque zone de garde.</p>` : ''}<p class="tiny" style="margin:0"><strong>Secteur déjà repris : il ne s’agit plus de l’attaquer, seulement de le garder.</strong> ${s.emprise >= ND.seuilRechute - 20 ? '<strong class="bad">Il faut de la garde.</strong> ' : ''}${n ? `Ta garde (force ${fmt1(maForce)}) : ${fleche(s.emprise, seul.emprise)}.` : `Le milieu revient de ${ND.remontee} par nuit ; à ${ND.seuilRechute}, il reprend le secteur. ${gang ? 'Face au gang, il faut bien plus que d’habitude.' : '2 ou 3 agents de garde suffisent.'}`}</p>
+      prevision = `${gang ? `<p class="tiny bad" style="margin:0"><strong>⚠️ Un gang attaque ce soir</strong> : +${gang.force} d’emprise en plus du retour du milieu. Il faut une vraie garde, à plusieurs zones : repoussé, il rapporte +${ND.gangs.rep} de réputation et +${ND.gangs.ps} PS à chaque zone de garde.</p>` : ''}<p class="tiny" style="margin:0"><strong>Secteur déjà repris : il ne s’agit plus de l’attaquer, seulement de le garder.</strong> ${s.emprise >= ND.seuilRechute - 20 ? '<strong class="bad">Il faut de la garde.</strong> ' : ''}${n ? `Ta garde (force ${fmt1(maForce)}) : ${fleche(s.emprise, seul.emprise)}.` : `Le milieu revient de ${fmt1(regen)} par nuit ; à ${ND.seuilRechute}, il reprend le secteur. ${gang ? 'Face au gang, il faut bien plus que d’habitude.' : '2 ou 3 agents de garde suffisent.'}`}</p>
         ${dejaGarde ? `<p class="tiny warn" style="margin:0">${ceSoir.length ? 'Les zones annoncées ce soir' : 'Les zones d’hier'} suffisent déjà à le garder. Tes agents seraient plus utiles à l’assaut d’un secteur encore aux mains du milieu.</p>` : ''}`;
     }
   }
@@ -301,8 +305,16 @@ function carteSecteur(k, s, me, d) {
     ${gainsHtml(s, moi)}
     ${ouvert && !repris && !n ? `<p class="tiny muted" style="margin:0">Pour le faire reculer ce soir : ≈ ${seuilAgents} agents, plutôt à plusieurs zones.</p>` : ''}
     ${prevision}
-    ${ouvert ? `<div class="between"><span class="small">${repris ? 'Agents de garde ce soir' : 'Agents à l’assaut ce soir'}</span>
-      <span class="stepper"><button type="button" data-action="nd" data-c="${k}" data-d="-1" aria-label="Un agent de moins à ${esc(nomSecteur(k))}" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="nd" data-c="${k}" data-d="1" aria-label="Un agent de plus à ${esc(nomSecteur(k))}" ${n >= ND.maxParSecteur || agentsND(d) >= ND.maxTotal ? 'disabled' : ''}>+</button></span></div>
+    ${repris ? confianceHtml(k, s, v3Actif() ? rolesDe(k, d).bouc : 0) : ''}
+    ${ouvert && repris && v3Actif() ? (() => {
+      // Non-droit profond : la garde (Intervention) repousse le milieu, la présence (Proximité) rassure les habitants.
+      const r = rolesDe(k, d), plein = n >= ND.maxParSecteur || agentsND(d) >= ND.maxTotal;
+      const st = (role, v, nom) => `<span class="stepper"><button type="button" data-action="nd-role" data-c="${k}" data-r="${role}" data-d="-1" aria-label="Un agent de moins en ${nom} à ${esc(nomSecteur(k))}" ${v <= 0 ? 'disabled' : ''}>−</button><span class="n">${v}</span><button type="button" data-action="nd-role" data-c="${k}" data-r="${role}" data-d="1" aria-label="Un agent de plus en ${nom} à ${esc(nomSecteur(k))}" ${plein ? 'disabled' : ''}>+</button></span>`;
+      return `<div class="between"><div class="col" style="gap:0"><span class="small">Garde</span><span class="tiny muted">Intervention · repousse le milieu</span></div>${st('desc', r.desc + r.rep, 'garde')}</div>
+        <div class="between"><div class="col" style="gap:0"><span class="small">Présence</span><span class="tiny muted">Proximité · garde aussi, et +${4} de confiance chacun</span></div>${st('bouc', r.bouc, 'présence')}</div>`;
+    })() : ouvert ? `<div class="between"><span class="small">${repris ? 'Agents de garde ce soir' : 'Agents à l’assaut ce soir'}</span>
+      <span class="stepper"><button type="button" data-action="nd" data-c="${k}" data-d="-1" aria-label="Un agent de moins à ${esc(nomSecteur(k))}" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="nd" data-c="${k}" data-d="1" aria-label="Un agent de plus à ${esc(nomSecteur(k))}" ${n >= ND.maxParSecteur || agentsND(d) >= ND.maxTotal ? 'disabled' : ''}>+</button></span></div>` : ''}
+    ${ouvert ? `
       ${n ? (annonce === n ? `<p class="tiny ok" style="margin:0;text-align:center">✓ Annoncé à la radio : les autres zones voient que tu y vas avec ${n}.</p>`
         : `<button type="button" class="btn small ${annonce ? 'ghost' : 'primary'} block" data-action="nd-appel" data-c="${k}">📻 ${annonce ? `Mettre à jour la radio : ${n} agents au lieu de ${annonce}` : `Prévenir la radio : « j’y vais ce soir avec ${n} »`}</button>`) : ''}` : ''}
   </div>`;
@@ -318,7 +330,8 @@ function ligneSecteur(k, s, me, d) {
   const moi = partsDe(s).some((p) => p.uid === me.uid && p.part >= ND.partMin);
   const autresCeSoir = (annoncesND()[k] || []).filter((x) => !x.moi).length;
   const gang = repris ? gangCeSoir(S.state, s) : null;
-  const etat = (gang ? ` · <span class="bad">⚠️ gang ce soir (+${gang.force})</span>` : '') + (autresCeSoir ? ` · <span class="nd-rej">📻 ${autresCeSoir} zone${autresCeSoir > 1 ? 's' : ''}</span>` : '') + (repris ? ` · <span class="ok">✓ repris${s.chef && S.state.zones[s.chef] ? ` (${nomZ(s.chef)})` : ''}</span>` : ouvert ? '' : ' · 🔒 verrouillé');
+  const sc = !repris ? sceneCarte(k) : null;
+  const etat = (sc ? ` · <span class="warn">${ICO_SCENE[sc.type]} ${sc.type === 'emeute' ? 'émeute' : sc.type === 'rodeo' ? 'rodéo' : sc.type} ce soir</span>` : '') + (v3Actif() && !repris && s.lieutenant ? ` · ${esc(s.lieutenant.nom)}` : '') + (gang ? ` · <span class="bad">⚠️ ${gang.represailles ? 'représailles' : 'gang'} ce soir (+${gang.force})</span>` : '') + (autresCeSoir ? ` · <span class="nd-rej">📻 ${autresCeSoir} zone${autresCeSoir > 1 ? 's' : ''}</span>` : '') + (repris ? ` · <span class="ok">✓ repris${s.chef && S.state.zones[s.chef] ? ` (${nomZ(s.chef)})` : ''}</span>` : ouvert ? '' : ' · 🔒 verrouillé');
   return `<div class="nd-sect ${sel ? 'sel' : ''}" id="nd-${k}">
     <button type="button" class="nd-row" data-action="secteur" data-c="${k}" aria-expanded="${sel}">
       <span class="col" style="gap:0;min-width:0;flex:1;text-align:left"><span class="nd-nom">${s.coeur ? '★ ' : ''}${esc(nomSecteur(k))}${moi ? ' <span class="nd-moi">toi</span>' : ''}</span><span class="tiny muted nd-titre">${esc(m.titre)}${etat}</span></span>
@@ -350,6 +363,7 @@ export function nonDroitHtml({ sansPlan = false } = {}) {
   }
   return `<section class="col" aria-label="Zone de non-droit" style="gap:8px" id="non-droit">
     <div class="between"><h2 class="section" style="margin:0">Zone de non-droit</h2><span class="tiny muted">${repris} repris sur ${cles.length} · tes agents ${mesAgents}/${ND.maxTotal}</span></div>
+    ${reseauHtml(me)}
     ${ceSoirHtml(n, me, ann)}
     ${sansPlan ? '' : `<div class="plan-cadre">${planNonDroit(S.state, me, S.secteurSel)}</div>`}
     <p class="tiny muted" style="margin:0">À plusieurs, <strong>+${Math.round(ND.coop * 100)} % par zone</strong> ; seul ou trop faible, blessés possibles.${bordent ? ` ${bordent} secteur${bordent > 1 ? 's' : ''} du milieu touche${bordent > 1 ? 'nt' : ''} ta zone.` : ''} <a href="#guide-affaires">Règles</a></p>

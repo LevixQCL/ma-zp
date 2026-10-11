@@ -2814,3 +2814,38 @@ main.screen.gzs { height: 100dvh; box-sizing: border-box; padding: 10px 12px 100
 .jg-d.jg-doc .jg-n { color: var(--amber-soft, #FFC873); font-weight: 600; }
 .jg-d.jg-doc .jg-b b { background: linear-gradient(90deg, var(--amber, #FFB23F), #FFD27A); }
 .jg-solo { padding: 4px 2px 8px; }
+
+/* ───── Non-droit profond : réseau du Parrain, lieutenants, scène du soir, confiance des habitants ───── */
+.ml-pt { position: relative; flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 50% 35%, #3A3240, #1A1620 70%); border: 2px solid #E0625A; }
+.ml-pt svg, .ml-pt img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.ml-pt.boss { width: 52px; height: 52px; border-color: #F3C84B; }
+.ml-pt.garde { border-color: var(--blue); }
+.ml-pt.garde::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 6px, rgba(157, 203, 255, .7) 6px 8px); }
+.ml-pt.tombe { border-color: var(--green); filter: grayscale(.85); opacity: .8; }
+.ml-pt.enfui { border-style: dashed; opacity: .6; }
+.ml-reseau { padding: 12px; border-color: rgba(243, 200, 75, .3); }
+.ml-reseau > summary { list-style: none; cursor: pointer; }
+.ml-reseau > summary::-webkit-details-marker { display: none; }
+.ml-boss { font-family: var(--display); font-weight: 800; font-size: 18px; color: #F3C84B; letter-spacing: -.2px; line-height: 1.1; }
+.ml-reseau .pill.amber { color: var(--amber); border-color: var(--amber-line); background: var(--amber-bg); }
+.ml-dossier { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 5px; }
+.ml-dossier span { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; border: 1px dashed var(--line); color: var(--faint); min-width: 0; }
+.ml-dossier span b { font-size: 15px; line-height: 1; }
+.ml-dossier span i { font-style: normal; font-size: 9.5px; line-height: 1.1; text-align: center; overflow-wrap: anywhere; }
+.ml-dossier span.ok { border-style: solid; border-color: rgba(243, 200, 75, .6); background: rgba(243, 200, 75, .09); color: #F3C84B; }
+.ml-lts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 6px; }
+.ml-lt { display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: 0; padding: 2px; color: inherit; font: inherit; cursor: pointer; min-width: 0; text-align: center; }
+.ml-lt .n { font-size: 11.5px; font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; }
+.ml-lt .e { font-size: 10px; color: var(--muted); line-height: 1.15; overflow-wrap: anywhere; }
+.ml-lt.tombe .n { color: var(--green-soft); }
+.ml-lt.garde .n { color: var(--blue-soft); }
+.ml-ltl { padding: 8px 10px; border-radius: 12px; background: var(--surface2); border: 1px solid var(--hair); }
+.ml-ltl .ml-pt { width: 34px; height: 34px; }
+.ml-scene { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(255, 122, 42, .55); background: linear-gradient(160deg, rgba(255, 122, 42, .12), transparent 70%); }
+.ml-scene.ok { border-color: rgba(61, 211, 154, .5); }
+.ml-scene-ico { font-size: 22px; line-height: 1; }
+.ml-scene-t { color: #FF9A3C; }
+.ml-conf { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(61, 211, 154, .35); background: var(--green-bg, rgba(61, 211, 154, .08)); }
+.ml-jauge { position: relative; height: 8px; border-radius: 999px; background: var(--bg); box-shadow: inset 0 0 0 1px var(--hair); overflow: hidden; }
+.ml-jauge > span { display: block; height: 100%; border-radius: 999px; background: var(--green); }
+.ml-jauge > i { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--bg); }

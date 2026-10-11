@@ -7,6 +7,7 @@ import { territoires, WW, HH } from './ville.js';
 import { bezier } from './plan.js';
 import { makeRng } from '../engine/rng.js';
 import { tensionsDe, niveauTension } from '../engine/quartiers.js';
+import { scenesDuSoir, etape, portraitLieutenant, PORTRAITS_PRETS } from '../engine/milieu.js';
 
 let cache = null;
 /** Vue « non-droit » : cadrée sur le centre et sa couronne de quartiers ; sans non-droit, tout le district. */
@@ -17,7 +18,7 @@ export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
   const seed = S.config.seed, reduit = calme();
   const mesT0 = tensionsDe(st, me);
   const ndS = (st.nonDroit && st.nonDroit.secteurs) || {};
-  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, Object.entries(ndS).map(([k, x]) => `${k}:${x.statut}:${Math.round(x.emprise)}`).join(','), Object.values(st.zones).map((z) => `${z.uid}:${z.nom}:${z.fondateur ? 1 : 0}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
+  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, Object.entries(ndS).map(([k, x]) => `${k}:${x.statut}:${Math.round(x.emprise)}:${x.lieutenant ? x.lieutenant.etat : ''}:${Number.isFinite(x.confiance) ? etape(x) : ''}`).join(','), scenesDuSoir(st).map((x) => `${x.cell}${x.type}`).join(','), Object.values(st.zones).map((z) => `${z.uid}:${z.nom}:${z.fondateur ? 1 : 0}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
   if (!cache || cache.cle !== cle) cache = { cle, ...dessiner(st, me, seed, vue === 'mazone' ? 'zone' : T_VUE(st), reduit) };
   let svg = cache.svg;
   // Non-droit : mes fourgons partent de mon HP vers les secteurs où j'engage des agents ce soir ; ceux des collègues
@@ -104,13 +105,15 @@ function dessiner(st, me, seed, vue, reduit) {
     const repris = !!(sND && sND.statut === 'repris');
     const c = T.cells[i], mien = mes.has(i), nd = ndSet.has(i) && !repris;
     const kND = nd ? Math.min(1, Math.max(0.1, ((sND && sND.emprise) ?? 60) / 100)) : 0;
+    // Non-droit profond : un secteur repris revit par étapes (confiance des habitants).
+    const eV = repris && sND && Number.isFinite(sND.confiance) ? etape(sND) : -1;
     const t = mien ? mesT[i] : null, n = mien ? niveauTension(t) : null;
     const rng = makeRng(`${seed}:iso:${i}`);
     routes.push(`<polygon points="${poly(c.poly.map(([x, y]) => P(x, y)))}" fill="#0C1128" stroke="#3A4470" stroke-opacity=".35" stroke-width=".35" stroke-dasharray="1.5 2"/>`);
     const ilot = inset(c.poly, c.c, 0.9);
     const top = ilot.map(([x, y]) => P(x, y, 1.2));
     sol.push(`<polygon points="${poly(ilot.map(([x, y]) => P(x, y)))}" fill="#090D20"/><polygon points="${poly(top)}" fill="${nd ? '#26141B' : repris ? '#16322B' : mien ? '#1E2A4C' : '#151C36'}" stroke="${repris ? '#2E6B55' : mien ? '#33447A' : '#1D2547'}" stroke-width=".5"/>`);
-    if (mien || (!zoomZone && rng.next() < 0.3)) for (const [k, v] of c.poly.entries()) { if (k % (zoomZone ? 1 : 2)) continue; const [lx, ly] = P(v[0], v[1], 3); lueurs.push(`<circle cx="${f(lx)}" cy="${f(ly + 3)}" r="${zoomZone ? 5 : 3}" fill="url(#${id('lampe')})"/><circle cx="${f(lx)}" cy="${f(ly)}" r=".7" fill="#FFE2A8"/>`); }
+    if (mien || eV >= 1 || (!zoomZone && rng.next() < 0.3)) for (const [k, v] of c.poly.entries()) { if (k % (zoomZone ? 1 : 2)) continue; const [lx, ly] = P(v[0], v[1], 3); lueurs.push(`<circle cx="${f(lx)}" cy="${f(ly + 3)}" r="${zoomZone ? 5 : 3}" fill="url(#${id('lampe')})"/><circle cx="${f(lx)}" cy="${f(ly)}" r=".7" fill="#FFE2A8"/>`); }
     if (nd) { const [cx, cy] = P(c.c[0], c.c[1]); lueurs.push(`<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="34" ry="18" fill="#FF5A2A" opacity="${f(0.06 + kND * 0.1)}" filter="url(#${id('flou')})"><animate attributeName="opacity" values="${f(0.05 + kND * 0.07)};${f(0.08 + kND * 0.12)};${f(0.05 + kND * 0.07)}" dur="${f(1.6 + rng.next())}s" repeatCount="indefinite"/></ellipse>`); }
     if (mien) { const [cx, cy] = P(c.c[0], c.c[1]); lueurs.push(`<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="40" ry="22" fill="${LUM[n.id]}" opacity="${0.1 + (t / 100) * 0.28}" filter="url(#${id('flou')})"/>`); }
 
@@ -166,6 +169,13 @@ function dessiner(st, me, seed, vue, reduit) {
         }
       }
     }
+    if (eV === 2) { const [cx, cy] = P(c.c[0], c.c[1]); lueurs.push(`<ellipse cx="${f(cx)}" cy="${f(cy)}" rx="30" ry="15" fill="#FFC970" opacity=".13" filter="url(#${id('flou')})"/>`); }
+    if (eV >= 1) {
+      // Passants (sécurisé) ; terrasses et plus de monde (rendu à la vie).
+      const lib = (m) => { for (let e = 0; e < 60; e++) { const p = [rng.float(bx[0], bx[1]), rng.float(by[0], by[1])]; if (dedans(p, zoneInt) && !dansFleuve(p, 2) && !poses.some((q) => Math.hypot(q[0] - p[0], q[1] - p[1]) < Math.max(m, q[2] || 0))) { poses.push([...p, m]); return p; } } return null; };
+      for (let k = 0; k < (eV === 2 ? 4 : 2); k++) { const p = lib(2.5); if (p) objets.push({ x: p[0], y: p[1], type: 'passant', rng: makeRng(`${seed}:pa:${i}:${k}`) }); }
+      if (eV === 2) for (let k = 0; k < 2; k++) { const p = lib(3.5); if (p) objets.push({ x: p[0], y: p[1], type: 'terrasse', rng: makeRng(`${seed}:te:${i}:${k}`) }); }
+    }
     if (mien && t >= 55) { const [sx, sy] = P(c.c[0] + 6, c.c[1] - 4, 14); for (let k = 0; k < 3; k++) fumees.push(`<circle cx="${f(sx)}" cy="${f(sy)}" r="3" fill="#8A8FA8" opacity="0"><animate attributeName="cy" values="${f(sy)};${f(sy - 26)}" dur="4.5s" begin="${k * 1.5}s" repeatCount="indefinite"/><animate attributeName="r" values="2.5;8" dur="4.5s" begin="${k * 1.5}s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;.45;0" dur="4.5s" begin="${k * 1.5}s" repeatCount="indefinite"/><animate attributeName="cx" values="${f(sx)};${f(sx + 7)}" dur="4.5s" begin="${k * 1.5}s" repeatCount="indefinite"/></circle>`); }
 
     // Voitures : jusqu'à 3 voitures de police par quartier à moi (une par patrouille), civils ailleurs.
@@ -195,7 +205,13 @@ function dessiner(st, me, seed, vue, reduit) {
       cibles.push({ prof: -1, h: `<polygon class="hit-nd" data-action="secteur" data-c="${i}" points="${poly(top)}" fill="transparent"><title>${c.nom} · ${repris ? 'repris' : `emprise ${Math.round(sND.emprise)}`}</title></polygon>` });
       selections.push(`<polygon class="sel" data-q="${i}" visibility="hidden" points="${poly(top)}" fill="#FFFFFF" fill-opacity=".1" stroke="#FFFFFF" stroke-width="1.2"/>`);
       const [px, py] = P(c.c[0], c.c[1], sND.coeur && !repris ? 68 : 18);
-      etiqND.push(`<g data-action="secteur" data-c="${i}" style="cursor:pointer" transform="translate(${f(px)} ${f(py)})">${sND.coeur && !repris ? '<path d="M-5 -7L-5 -12.5L-2.5 -9.5L0 -13.5L2.5 -9.5L5 -12.5L5 -7Z" fill="#F3C84B" stroke="#0B1124" stroke-width=".7"/>' : ''}<path d="M0 8L-3 4H3Z" fill="${repris ? '#3DD39A' : '#E0625A'}"/><circle r="6.5" fill="${repris ? '#3DD39A' : '#E0625A'}" stroke="#0B1124" stroke-width="1"/><text y="2.4" text-anchor="middle" class="iso-tn" style="fill:${repris ? '#0B1124' : '#fff'}">${repris ? '✓' : Math.round(sND.emprise)}</text></g>`);
+      const lt = !repris && !sND.coeur && sND.lieutenant && ['libre', 'garde'].includes(sND.lieutenant.etat) ? sND.lieutenant : null;
+      const scN = !repris ? scenesDuSoir(st).find((x) => String(x.cell) === String(i)) : null;
+      const ico = { emeute: '🔥', rodeo: '🏍', livraison: '📦', perquisition: '🚪' };
+      const lab = { emeute: 'Émeute', rodeo: 'Rodéo', livraison: 'Livraison', perquisition: 'Perquisition' };
+      const extra = (lt ? `<g transform="translate(10.5 -1)"><title>${lt.nom}${lt.etat === 'garde' ? ' (en garde à vue)' : ''}</title><clipPath id="${id(`lt${i}`)}"><circle r="4.6"/></clipPath><circle r="5.2" fill="${lt.etat === 'garde' ? '#63B0FF' : '#E0625A'}"/><circle r="4.6" fill="#2A2230"/><g clip-path="url(#${id(`lt${i}`)})"><circle cy="-1.2" r="1.9" fill="#0E0B12"/><path d="M-4.2 4.6c.3-2.9 2-4.2 4.2-4.2s3.9 1.3 4.2 4.2z" fill="#0E0B12"/>${PORTRAITS_PRETS ? `<image href="${portraitLieutenant(sND.milieu)}" x="-4.6" y="-4.6" width="9.2" height="9.2" preserveAspectRatio="xMidYMid slice"/>` : ''}</g>${lt.etat === 'garde' ? '<path d="M-2.4 -4.4v8.8M0 -4.6v9.2M2.4 -4.4v8.8" stroke="#9DCBFF" stroke-width=".6"/>' : ''}</g>` : '')
+        + (scN ? `<g transform="translate(0 -12)" class="nd-bulle"><rect x="-19" y="-5.5" width="38" height="10" rx="5" fill="#FF7A2A" stroke="#0B1124" stroke-width=".8"/><text y="1.8" text-anchor="middle" style="font:800 5.4px 'Instrument Sans',sans-serif;fill:#1A0A00">${ico[scN.type]} ${lab[scN.type]}</text></g>` : '');
+      etiqND.push(`<g data-action="secteur" data-c="${i}" style="cursor:pointer" transform="translate(${f(px)} ${f(py)})">${extra}${sND.coeur && !repris ? '<path d="M-5 -7L-5 -12.5L-2.5 -9.5L0 -13.5L2.5 -9.5L5 -12.5L5 -7Z" fill="#F3C84B" stroke="#0B1124" stroke-width=".7"/>' : ''}<path d="M0 8L-3 4H3Z" fill="${repris ? '#3DD39A' : '#E0625A'}"/><circle r="6.5" fill="${repris ? '#3DD39A' : '#E0625A'}" stroke="#0B1124" stroke-width="1"/><text y="2.4" text-anchor="middle" class="iso-tn" style="fill:${repris ? '#0B1124' : '#fff'}">${repris ? '✓' : Math.round(sND.emprise)}</text></g>`);
     }
     // Zone cliquable : l'îlot et le volume au-dessus (là où sont les immeubles), triée par profondeur.
     if (mien && zoomZone) {
@@ -471,6 +487,12 @@ function dessiner(st, me, seed, vue, reduit) {
       return `<circle cx="${f(fx)}" cy="${f(fy - 1)}" r="7" fill="url(#${id('feu')})"/><rect x="${f(fx - 1.2)}" y="${f(fy - 3)}" width="2.4" height="3" fill="#3A2A2A"/><path d="${fl([0, 7])}" fill="#FF9A3C"><animate attributeName="d" values="${fl([0, 7])};${fl([0.6, 5.5])};${fl([0, 7])}" dur=".6s" repeatCount="indefinite"/></path>`;
     }
     if (b.type === 'scene') return scene(b);
+    if (b.type === 'passant') return perso(x, y, ['#9DCBFF', '#E9C894', '#C3C9DE', '#78E2B8'][Math.floor(rng.next() * 4)], { k: 0.9, anim: rng.next() < 0.6 ? marche(rng.float(-2, 2), rng.float(-1.5, 1.5), rng.float(4, 7), rng.next() * 3) : '' });
+    if (b.type === 'terrasse') {
+      // Parasol et deux tables : le quartier rouvre ses terrasses.
+      const [tx, ty] = P(x, y, 1.2), col = ['#E0625A', '#3FA27A', '#E2C04A'][Math.floor(rng.next() * 3)];
+      return `<ellipse cx="${f(tx)}" cy="${f(ty + 0.4)}" rx="3.2" ry="1.3" fill="#050816" opacity=".35"/><line x1="${f(tx)}" y1="${f(ty)}" x2="${f(tx)}" y2="${f(ty - 4.2)}" stroke="#C3C9DE" stroke-width=".35"/><path d="M${f(tx - 3)} ${f(ty - 3.6)}Q${f(tx)} ${f(ty - 6.2)} ${f(tx + 3)} ${f(ty - 3.6)}Z" fill="${col}"/><circle cx="${f(tx - 1.8)}" cy="${f(ty - 0.6)}" r=".8" fill="#E9EEF8" opacity=".8"/><circle cx="${f(tx + 1.8)}" cy="${f(ty - 0.4)}" r=".8" fill="#E9EEF8" opacity=".8"/><circle cx="${f(tx)}" cy="${f(ty - 2.6)}" r="4" fill="#FFC970" opacity=".12"/>`;
+    }
     if (b.type === 'carcasse') {
       const r = rng.next() < 0.5, w = r ? 4.6 : 2.2, d = r ? 2.2 : 4.6, X0 = x - w / 2, X1 = x + w / 2, Y0 = y - d / 2, Y1 = y + d / 2;
       s += ombre(X0, X1, Y0, Y1) + boite(X0, X1, Y0, Y1, 2.6, ['#2A2326', '#1C1719', '#151113']) + boite(X0 + (r ? 1 : 0.3), X1 - (r ? 1 : 0.3), Y0 + (r ? 0.3 : 1), Y1 - (r ? 0.3 : 1), 3.8, ['#241D20', '#181315', '#120E10'], 2.6);

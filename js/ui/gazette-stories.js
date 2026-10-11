@@ -24,7 +24,7 @@ const IMAGES = { operation: 1, coupdur: 2, nondroit: 1, enquete: 1, tribunal: 2,
 const CATEGORIE = {
   operation: ['Opération réussie', 'Opération', 'Flagrant délit', 'Héros du jour', 'Champion', 'Performance', 'Solidarité', 'Redressement', 'Coopération', 'Félicitations du juge'],
   coupdur: ['Coup dur', 'Fiasco', 'Faillite', 'Zone en péril', 'Tutelle', 'Inspection générale', 'Ressources humaines', 'Parquet', 'Le milieu riposte', 'Pacte rompu'],
-  nondroit: ['Zone de non-droit', 'Reconquête', 'Vague brisée', 'Vague de délinquance'],
+  nondroit: ['Zone de non-droit', 'Reconquête', 'Vague brisée', 'Vague de délinquance', 'Le milieu', 'Le milieu s’adapte', 'Le centre revit', 'La chute du Parrain'],
   enquete: ['Enquête', 'Nouvelle affaire', 'Affaire classée', 'Traque', 'Arrestation', 'Aveux', 'Révélation', 'PJF', 'Relève'],
   tribunal: ['Au tribunal'],
   district: ['Conseil des chefs', 'Conseil de police', 'District', 'Pacte', 'Défi amical', 'Défi en duo', 'FIPA'],
@@ -50,6 +50,8 @@ const PLURIEL = {
   Chantier: (n) => `${n} chantiers dans le district`,
   Décor: (n) => `${n} commissariats changent de décor`,
   Reconquête: (n) => `${n} secteurs repris au milieu`,
+  'Le milieu': (n) => `Le milieu : ${n} nouvelles du réseau`,
+  'Le centre revit': (n) => `${n} secteurs du centre reprennent vie`,
   'Opération réussie': (n) => `${n} opérations réussies cette nuit`,
 };
 

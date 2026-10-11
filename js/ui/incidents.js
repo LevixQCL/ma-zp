@@ -16,6 +16,7 @@ import { SERVICE_LABELS, DEFAULT_ALLOC } from '../engine/constants.js';
 import { TOUS_SKINS, SKINS, DECOR, DECOR_DEFAUT } from '../engine/decor.js';
 import { ouvrirPanneau, sceneZone, monDecorPublic, mesSkins } from './logistique.js';
 import { ANNEXES_AILE } from './scene-aile.js';
+import { scenesDuSoir, M3 } from '../engine/milieu.js';
 
 /** Les mini-jeux, pour l'entraînement. */
 export const MINI_JEUX = [
@@ -147,7 +148,7 @@ async function enregistrer(id, res) {
   // Une réponse donnée ne change plus (sauf l'abandon provisoire posé au lancement).
   if (cur[id] && cur[id].statut !== 'abandon') return;
   // On ne garde que les résultats des incidents encore visibles (ceux du jour et les reportés d'hier).
-  const garder = new Set(mesIncidents().map((i) => i.id));
+  const garder = new Set([...mesIncidents().map((i) => i.id), ...scenesDuSoir(st).map((x) => x.id)]);
   const r = Object.fromEntries(Object.entries(cur).filter(([k]) => garder.has(k)));
   const incidents = { cle: `s${st.season}t${st.turn}`, r: { ...r, [id]: { ...res, at: Date.now() } } };
   S.player = { ...(S.player || {}), incidents };
@@ -219,7 +220,8 @@ export function ouvrirMiniJeu(jeu, { mode = 'train', inc = null, appui = null, e
     p.set('id', inc.id); p.set('agents', String(n)); p.set('diff', difficulte(inc.service, n, aj));
     p.set('pourquoi', pourquoiIncident(inc.service, n, aj));
     p.set('jauge', String(base + plus));
-    if (inc.urgence) { p.set('malus', texteRisqueUrgence()); p.set('gain', `+${URGENCE.gain.moral} de moral, +${PS.queteOk} PS, jauge des skins`); }
+    if (inc.scene) { p.set('malus', 'aucun : tes agents à la scène comptent quand même, le mini-jeu est un bonus'); p.set('gain', `compte comme ${M3.scenes.jeu} agents à la scène (${M3.scenes.jeu + M3.scenes.sansFaute} sans faute)`); }
+    else if (inc.urgence) { p.set('malus', texteRisqueUrgence()); p.set('gain', `+${URGENCE.gain.moral} de moral, +${PS.queteOk} PS, jauge des skins`); }
     else { p.set('malus', inc.pression ? 'aucun : incident en plus, facultatif' : `au pire ${texteMalus(MALUS[inc.service].leger)}, et jamais plus que si tu n’y vas pas : ton équipe peut encore rattraper le coup`); p.set('gain', inc.pression ? `+${PS.queteOk} PS et la jauge des skins doublée (incident en plus : ta zone est très en vue)` : `${gainAffiche(inc.service)}, +${PS.queteOk} PS`); }
   }
   if (mode === 'renfort' && appui) {
