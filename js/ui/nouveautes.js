@@ -25,6 +25,7 @@ export const NOTE_MAJ = {
       ['Le centre revit', 'un secteur repris a une confiance des habitants : +4 chaque nuit calme, +4 par agent de Proximité en présence (jusqu’à +12), −12 si un gang ou une riposte frappe. Sécurisé à 30 (le milieu revient 30 % moins vite), rendu à la vie à 60 (60 % moins vite, retombées +30 %, des témoins repèrent un secteur voisin).'],
       ['Le milieu s’adapte', 'trop de descentes sans repérage : il double ses guetteurs 3 soirs. Une zone qui pèse 30 % du non-droit : représailles annoncées sur son secteur et ses quartiers frontaliers.'],
       ['Les scènes du soir', 'une scène annoncée la veille (deux à partir de 10 zones). Des agents à la scène (hors assaut, sans piège) ; le mini-jeu, facultatif, compte comme 3 agents. Réglée : emprise en baisse, secteur repéré, réputation, PS, points et 1 500 € pour chaque zone présente.'],
+      ['Le dernier carré', 'sous 25 d’emprise, le lieutenant se barricade : le soir suivant, les zones engagées votent la tactique dans la fiche (assaut frontal, négociation selon la diplomatie des chefs, encerclement). Sur l’HP, « ⚡ … peut tomber ce soir » prévient quand il ne manque que quelques agents.'],
       ['Saisies aux enchères', 'les saisies d’un garage clandestin ou d’un atelier de recel bien bouclés passent à la vente aux enchères ; la moitié du prix revient aux zones qui ont saisi.'],
     ]],
     ['Énigmes : 3 au choix sur 4 (11 octobre)', [

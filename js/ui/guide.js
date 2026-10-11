@@ -197,6 +197,14 @@ export function sections() {
           `À l’assaut du QG, chaque renseignement différent apporté par une zone <strong>présente ce soir-là</strong> : +${Math.round(M3.bonusRens * 100)} % de force et ${Math.round(M3.blessureRens * 100)} % de blessés en moins. Il faut donc que les zones qui détiennent le dossier viennent ensemble.`,
           `Le QG tombé, le Parrain est arrêté : son coffre (${Math.round(M3.coffre * 1000).toLocaleString('fr-BE')} €) est partagé selon l’influence et son blindé part à la vente aux enchères.`,
         ])}
+        <h3>Le dernier carré</h3>
+        ${ul([
+          `Quand l’emprise d’un secteur passe sous ${M3.carre.seuil}, son lieutenant se barricade (il en sort si elle remonte au-dessus de ${M3.carre.sortie}). Le soir suivant, les zones engagées votent la tactique dans la fiche du secteur : un agent à l’assaut = une voix, égalité = assaut frontal.`,
+          `<strong>Assaut frontal</strong> : le secteur tombe à coup sûr s’il y a de la descente, mais chaque agent en descente risque d’être blessé (${Math.round(M3.carre.frontalBlessure * 100)} %).`,
+          `<strong>Négocier</strong> : ${Math.round(M3.carre.negoBase * 100)} % de chances, +${Math.round(M3.carre.negoParNiveau * 100)} % par niveau de Diplomatie du meilleur chef présent (${Math.round(M3.carre.negoMax * 100)} % au plus). Réussie : il se rend sans combat et lâche un renseignement de plus. Ratée : emprise +${M3.carre.negoEchec}.`,
+          '<strong>Encercler</strong> : avec assez de bouclage pour qu’aucun ne file, le secteur tombe et les saisies sont doublées ; sinon, assaut normal.',
+          'Sur l’HP, « ⚡ … peut tomber ce soir » prévient quand il ne manque que 1 à 4 agents aux zones déjà annoncées à la radio.',
+        ])}
         <h3>Le centre revit</h3>
         ${ul([
           `Un secteur repris a une <strong>confiance des habitants</strong> (0 à 100) : départ à ${M3.confiance.depart}, +${M3.confiance.repere} si la descente était repérée, ${M3.confiance.blesses} si elle a coûté des blessés. Chaque nuit : +${M3.confiance.calme} au calme, +${M3.confiance.parPresence} par agent en <strong>présence</strong> (Proximité, jusqu’à +${M3.confiance.presenceMax}), ${M3.confiance.coup} si un gang ou une riposte frappe, ${M3.confiance.haute} si l’emprise dépasse 40.`,
