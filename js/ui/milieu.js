@@ -46,13 +46,14 @@ export function reseauHtml(me) {
 /** Ligne « lieutenant » dans la fiche d'un secteur du milieu. */
 export function ligneLieutenant(k, s) {
   if (!v3Actif() || !s.lieutenant || s.coeur) return '';
-  const lt = s.lieutenant;
-  const txt = lt.etat === 'libre' ? `Tenu par <strong>${esc(cap(lt.nom))}</strong>. Repris avec un bon bouclage (moins de ${Math.round(M3.fuiteArret * 100)} % de fuite), il est arrêté et parle : ${lt.pieces > 1 ? `<strong>${lt.pieces} renseignements</strong> (un lieutenant en fuite s’y cache${lt.refugie ? ` : ${esc(lt.refugie)}` : ''})` : 'un renseignement sur le QG'}. Mal bouclé, il file.`
-    : lt.etat === 'garde' ? `<strong>${esc(cap(lt.nom))}</strong> est en garde à vue : interrogatoire ce soir.` : lt.etat === 'tombe' ? `<strong>${esc(cap(lt.nom))}</strong> est tombé et a parlé.` : `<strong>${esc(cap(lt.nom))}</strong> a filé vers un secteur voisin.`;
-  return `<div class="row ml-ltl" style="gap:10px">${portrait(portraitLieutenant(s.milieu), lt.etat)}<p class="tiny" style="margin:0;flex:1">${txt}</p></div>`;
+  const lt = s.lieutenant, n = esc(cap(lt.nom));
+  // Une ligne : qui tient le secteur, et ce que le bouclage change pour lui (le détail est dans la prévision et le guide).
+  const txt = lt.etat === 'libre' ? `Tenu par <strong>${n}</strong> · bien bouclé, il est arrêté et parle${lt.pieces > 1 ? ` (<strong>${lt.pieces} renseignements</strong>)` : ''}`
+    : lt.etat === 'garde' ? `<strong>${n}</strong> en garde à vue` : lt.etat === 'tombe' ? `<strong>${n}</strong> est tombé et a parlé` : `<strong>${n}</strong> a filé chez un voisin`;
+  return `<div class="row ml-ltl" style="gap:8px">${portrait(portraitLieutenant(s.milieu), lt.etat)}<span class="tiny" style="flex:1;min-width:0">${txt}</span></div>`;
 }
 
-/** Carte « Ce soir : émeute » dans la fiche du secteur (stepper des agents de scène, mini-jeu facultatif). */
+/** Carte « Ce soir : émeute » dans la fiche du secteur : compteur, agents à la scène, mini-jeu facultatif ; les gains se déplient. */
 export function sceneHtml(k, s, mes, place, annonces) {
   const sc = scenesDuSoir(S.state).find((x) => String(x.cell) === String(k));
   if (!sc) return '';
@@ -60,19 +61,19 @@ export function sceneHtml(k, s, mes, place, annonces) {
   const autres = annonces.filter((x) => !x.moi).reduce((t, x) => t + ((x.r && x.r.sc) || 0), 0);
   const res = S.player && S.player.incidents && S.player.incidents.r && S.player.incidents.r[sc.id];
   const jeuOk = res && res.statut === 'ok', joue = res && res.statut !== 'abandon';
-  const total = autres + (mes.sc || 0) + (jeuOk ? M3.scenes.jeu + (res.fautes ? 0 : M3.scenes.sansFaute) : 0);
+  const valJeu = jeuOk ? M3.scenes.jeu + (res.fautes ? 0 : M3.scenes.sansFaute) : 0;
+  const total = autres + (mes.sc || 0) + valJeu;
   const ok = total >= seuil;
-  const effet = M3.scenes.effet[sc.type];
+  const verbe = { emeute: 'Encadrer l’émeute', rodeo: 'Rattraper le rodéo', livraison: 'Intercepter les téléphones', perquisition: 'Ouvrir la porte' }[sc.type];
   return `<div class="ml-scene ${ok ? 'ok' : ''}">
-    <div class="row" style="gap:10px;align-items:flex-start"><span class="ml-scene-ico" aria-hidden="true">${ICO_SCENE[sc.type]}</span>
-      <div class="col" style="gap:2px;flex:1;min-width:0"><strong class="small ml-scene-t">Ce soir : ${esc(def.titre.toLowerCase())}</strong>
-      <span class="tiny muted">${esc(def.texte)} Il faut <strong>${seuil} agents</strong>, toutes zones confondues${autres ? ` (${autres} déjà annoncé${autres > 1 ? 's' : ''})` : ''}.</span></div>
+    <div class="row" style="gap:8px"><span class="ml-scene-ico" aria-hidden="true">${ICO_SCENE[sc.type]}</span>
+      <span class="col" style="gap:0;flex:1;min-width:0"><strong class="small ml-scene-t">Ce soir : ${esc(def.titre.toLowerCase())}</strong><span class="tiny muted">${ok ? 'assez de monde, elle sera réglée' : `il faut ${seuil} agents, toutes zones confondues`}</span></span>
       <span class="pill ${ok ? 'green' : ''}">${Math.min(total, 99)}/${seuil}</span></div>
-    <div class="between"><div class="col" style="gap:0"><strong class="small">Agents à la scène</strong><span class="tiny muted">${esc((SERVICE_SCENE[sc.type] || '').replace(/^./, (c) => c.toUpperCase()))} · hors assaut, sans piège</span></div>
+    <div class="between"><span class="col" style="gap:0"><span class="small">Agents à la scène</span><span class="tiny muted">à part de l’assaut, sans piège</span></span>
       <span class="stepper"><button type="button" data-action="nd-role" data-c="${k}" data-r="sc" data-d="-1" aria-label="Un agent de moins à la scène" ${(mes.sc || 0) <= 0 ? 'disabled' : ''}>−</button><span class="n">${mes.sc || 0}</span><button type="button" data-action="nd-role" data-c="${k}" data-r="sc" data-d="1" aria-label="Un agent de plus à la scène" ${place <= 0 ? 'disabled' : ''}>+</button></span></div>
-    ${joue ? `<p class="tiny ${jeuOk ? 'ok' : 'muted'}" style="margin:0">${jeuOk ? `✓ Joué : compte comme ${M3.scenes.jeu + (res.fautes ? 0 : M3.scenes.sansFaute)} agents.` : 'Mini-jeu raté : seuls les agents comptent.'}</p>`
-      : `<button type="button" class="btn small ghost block" data-action="nd-scene-jeu" data-c="${k}">${sc.type === 'emeute' ? 'Encadrer l’émeute' : sc.type === 'rodeo' ? 'Rattraper le rodéo' : sc.type === 'livraison' ? 'Intercepter les téléphones' : 'Ouvrir la porte'} moi-même · facultatif (= ${M3.scenes.jeu} agents)</button>`}
-    <p class="tiny muted" style="margin:0">Réglée : emprise −${effet}, secteur repéré 2 soirs, et pour chaque zone présente +${M3.scenes.rep} de réputation, +${M3.scenes.ps} PS, +${M3.scenes.pts} pts, +${Math.round(M3.scenes.budget * 1000).toLocaleString('fr-BE')} €${sc.type === 'livraison' ? ' ; intercepter les téléphones (mini-jeu) donne en plus un renseignement sur le QG' : ''}.${sc.type === 'emeute' ? ' Ratée : l’émeute déborde sur les quartiers voisins.' : sc.type === 'livraison' ? ' Ratée : emprise +8.' : ''}</p>
+    ${joue ? `<p class="tiny ${jeuOk ? 'ok' : 'muted'}" style="margin:0">${jeuOk ? `✓ Mini-jeu réussi : compte comme ${valJeu} agents.` : 'Mini-jeu raté : seuls les agents comptent.'}</p>`
+      : `<button type="button" class="btn small ghost block" data-action="nd-scene-jeu" data-c="${k}">🎮 ${verbe} moi-même · facultatif, = ${M3.scenes.jeu} agents</button>`}
+    <details class="tiny ml-scene-plus"><summary>Ce que ça rapporte</summary><p class="muted" style="margin:4px 0 0">${esc(def.texte)} Réglée : emprise −${M3.scenes.effet[sc.type]}, secteur repéré 2 soirs, et pour chaque zone présente +${M3.scenes.rep} de réputation, +${M3.scenes.ps} PS, +${M3.scenes.pts} pts, +${Math.round(M3.scenes.budget * 1000).toLocaleString('fr-BE')} €${sc.type === 'livraison' ? ' ; le mini-jeu donne en plus un renseignement sur le QG' : ''}.${sc.type === 'emeute' ? ' Ratée : l’émeute déborde sur les quartiers voisins.' : sc.type === 'livraison' ? ' Ratée : emprise +8.' : ''}</p></details>
   </div>`;
 }
 
