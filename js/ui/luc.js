@@ -1,7 +1,7 @@
 // Événement « Rattrape Luc » : un mini-jeu clin d'œil (poursuite au grappin sur l'E19, puis contrôle routier).
 // Il ne revient que de temps en temps (engine/luc.js : en moyenne une fois par semaine, jamais deux jours de suite) et
-// prend alors la place de l'urgence Bitonal, qui ne tombe pas ce jour-là. Sinon, tant qu'une urgence est tombée et pas
-// encore traitée, Luc ne se montre pas.
+// prend alors la place de l'urgence Bitonal, qui ne tombe pas ce jour-là. Un joueur qui n'y a jamais joué le garde
+// dans l'HP même quand l'urgence est tombée (seule l'alerte attend que l'urgence soit traitée).
 // Tant qu'un joueur n'a pas fait sa première partie, Luc reste disponible tous les jours (sinon, connecté sans jouer
 // le premier jour, il le ratait : la première apparition était liée à ce jour-là). Pour le fun : aucun effet sur la zone, seulement un record de la
 // partie (défi « luc », sans prime de la semaine) et un titre.
@@ -20,7 +20,8 @@ const jourCle = (st) => `s${st.season}t${st.turn}`;
 const lire = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const ecrire = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* pas de stockage */ } };
 const clePremiere = () => `mazp-luc-premiere-partie-${uid()}`;
-const cleRappels = () => `mazp-luc-rappels-${uid()}`;
+// v2 (11 oct.) : compteur remis à zéro, ceux qui n'y ont jamais joué ont de nouveau droit à l'alerte.
+const cleRappels = () => `mazp-luc-rappels2-${uid()}`;
 const clePop = (st) => `mazp-luc-pop-${uid()}-${jourCle(st)}`;
 const cleJoue = (st) => `mazp-luc-joue-${uid()}-${jourCle(st)}`;
 
@@ -34,17 +35,24 @@ function urgenceEnCours(st, now) {
   return !r;
 }
 
+/**
+ * Règle de présence de Luc (pure, testée par test/luc-visible.test.mjs).
+ * - Jamais joué : Luc reste sur l'E19 à toute heure, même quand l'urgence Bitonal est tombée
+ *   (sinon l'urgence le faisait disparaître toute la journée pour ceux qui ne l'avaient pas encore traitée).
+ * - Déjà joué : seulement les jours tirés au sort, à partir de 7 h (pas d'urgence ces jours-là).
+ */
+export function decisionLuc({ premiere, jourLuc, apres7h, urgence }) {
+  if (premiere) return true;
+  return !!jourLuc && !!apres7h && !urgence;
+}
+
 /** Luc est-il sur l'E19 maintenant pour ce joueur ? */
 export function lucVisible(now = Date.now()) {
   const st = S.state;
   if (!st || !S.user || !st.zones || !st.zones[S.user.uid] || !st.nextDeadline) return false;
   if (now > st.nextDeadline) return false;
-  const premiere = !dejaJoue();
-  if (!premiere && !jourDeLuc(st, st.turn)) return false;
-  // Jour tiré au sort : à partir de 7 h ; tant qu'il n'a jamais joué : à toute heure.
-  if (!premiere && now < st.nextDeadline - 24 * H + LUC.ouvre * H) return false;
-  if (urgenceEnCours(st, now)) return false;
-  return true;
+  return decisionLuc({ premiere: !dejaJoue(), jourLuc: jourDeLuc(st, st.turn),
+    apres7h: now >= st.nextDeadline - 24 * H + LUC.ouvre * H, urgence: urgenceEnCours(st, now) });
 }
 
 /** Le joueur a déjà fini au moins une partie (profil synchronisé entre ses appareils, ou cet appareil). */
@@ -106,6 +114,7 @@ export function ouvrirLuc(lancer) {
 export function lucAuBesoin(lancer) {
   const st = S.state;
   if (S.lucMontre || S.tuto != null || document.querySelector('.aide-wrap, .mj-wrap') || !lucVisible() || lire(clePop(st))) return false;
+  if (urgenceEnCours(st, Date.now())) return false; // l'alerte attend : pas deux alertes radio en même temps (la ligne de l'HP reste)
   const rappels = Math.floor(Number(lire(cleRappels())) || 0);
   if (!dejaJoue() && rappels >= 3) return false;
   if (!dejaJoue()) ecrire(cleRappels(), String(rappels + 1));

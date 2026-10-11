@@ -19,6 +19,9 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Rattrape Luc (11 octobre)', [
+      ['Luc revient', 'si tu n’as jamais rattrapé Luc, il reste sur l’E19 toute la journée, même quand l’urgence Bitonal est tombée (avant, elle le faisait disparaître).'],
+    ]],
     ['Colis suspect : fiche SEDEE plus claire (11 octobre)', [
       ['Fils et bouton', 'les règles se lisent en « Si… / Sinon, si… / Sinon » : quand plusieurs sont vraies, seule la première compte. En cas d’erreur, le bilan dit quelle autre règle était vraie et pourquoi elle ne comptait pas.'],
       ['Interrupteurs', 'trois étapes à faire toutes, dans l’ordre : position selon la LED, puis inversion des 4 si l’étiquette le dit, puis l’interrupteur imposé par la lettre du n° de série passe avant tout. Les règles du jeu ne changent pas, seule la fiche est réécrite.'],
