@@ -216,6 +216,7 @@ function render() {
   if (S.route === 'prive') { const l = document.getElementById('prive-list'); if (l && l.lastElementChild) l.lastElementChild.scrollIntoView({ block: 'nearest' }); }
   if (S.route === 'radio') { const l = document.getElementById('radio-list'); if (l && l.lastElementChild) l.lastElementChild.scrollIntoView({ block: 'nearest' }); }
   document.body.classList.toggle('sans-defil', !!document.getElementById('tb-vp'));
+  document.body.classList.toggle('carnet-ouvert', !!document.querySelector('.carnet-q[open]'));
   if (S.route === 'enquete') { monterTableau(rerender); if (S.state && S.state.enquete && myZone()) synchroCarnet(rerender); }
 }
 
@@ -1860,6 +1861,10 @@ async function boot() {
   let clicResume = 0;
   document.addEventListener('click', (e) => { if (e.target.closest('summary')) clicResume = Date.now(); }, true);
   document.addEventListener('toggle', (e) => { const d = e.target; if (d && d.tagName === 'DETAILS' && d.dataset.k && Date.now() - clicResume < 800) S.ouverts = { ...(S.ouverts || {}), [d.dataset.k]: d.open }; }, true);
+  // Carnet des énigmes : tant qu'il est ouvert, la barre d'onglets s'efface et sa hauteur suit l'écran
+  // réellement visible (clavier compris), pour qu'on puisse toujours remonter relire l'énoncé au-dessus.
+  document.addEventListener('toggle', (e) => { const d = e.target; if (d && d.classList && d.classList.contains('carnet-q')) document.body.classList.toggle('carnet-ouvert', d.open); }, true);
+  { const vv = window.visualViewport; const maj = () => document.documentElement.style.setProperty('--vvh', `${Math.round(vv ? vv.height : window.innerHeight)}px`); maj(); (vv || window).addEventListener('resize', maj); }
   document.addEventListener('submit', onSubmit);
   document.addEventListener('input', onInput);
   document.addEventListener('change', onChange);

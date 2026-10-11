@@ -2443,7 +2443,15 @@ body:has(.savebar) main.rv { padding-bottom: 220px; }
 .carnet-b.plein::after { content: ''; position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 2px var(--paper); }
 .carnet-q[open] > .carnet-b { background: var(--amber); }
 .carnet-p { position: absolute; left: 6px; right: 6px; bottom: calc(100% + 4px); display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 -10px 40px -10px rgba(0, 0, 0, .8); }
-.carnet-p .notes { min-height: 170px; }
+:root { --carnet-h: clamp(64px, calc(var(--vvh, 100vh) * .22), 170px); }
+.carnet-p .notes { min-height: 0; height: var(--carnet-h); resize: none; }
+/* Carnet ouvert : plus de barre d'onglets par-dessus, et une marge sous l'énoncé pour pouvoir tout relire au-dessus du carnet. */
+@media (max-width: 999px), (hover: none) {
+  body.carnet-ouvert nav.tabs { display: none; }
+  body.carnet-ouvert .repbar-q { bottom: calc(6px + env(safe-area-inset-bottom)); }
+  body.carnet-ouvert main.quete { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+}
+body.carnet-ouvert .repbar-q { margin-top: calc(var(--carnet-h) + 64px); }
 /* Feuille du bonus */
 .bs-voile { position: fixed; inset: 0; z-index: 30; background: rgba(5, 8, 18, .62); animation: bsVoile .2s both; }
 .bs { position: fixed; left: 50%; bottom: 0; transform: translateX(-50%); z-index: 31; width: 100%; max-width: 520px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; padding: 10px 16px calc(18px + env(safe-area-inset-bottom)); border-radius: 24px 24px 0 0; background: var(--surface); border: 1px solid var(--line); border-bottom: 0; box-shadow: 0 -20px 50px -10px rgba(0, 0, 0, .8); animation: bsMonte .3s cubic-bezier(.2, .9, .3, 1.05) both; }
