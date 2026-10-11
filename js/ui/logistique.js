@@ -135,7 +135,17 @@ export function estChampion(z, st) {
 export function mesSkins(z) {
   const own = new Set(z.skins || []);
   if (S.player && S.player.earlyBird && earlyBirdEligible(z, S.state) && skinDe(S.player.earlyBird.skin)) own.add(S.player.earlyBird.skin);
-  return { possedes: [...own], choix: skinsValides({ skins: [...own] }, (S.player && S.player.skinsChoix) || z.skinsChoix) };
+  // Achat de la boutique validé ce soir : visible et équipé tout de suite chez le joueur (payé et visible des autres à 20:00).
+  const enAttente = achatEnAttente(z);
+  if (enAttente) for (const k of [enAttente.cle, ...enAttente.pack]) own.add(k);
+  return { possedes: [...own], choix: skinsValides({ skins: [...own] }, (S.player && S.player.skinsChoix) || z.skinsChoix), enAttente };
+}
+/** Achat enregistré avec les ordres du soir et payable : [vente] ou null. */
+export function achatEnAttente(z) {
+  const cle = S.savedOrders && S.savedOrders.achat;
+  if (!cle || !S.state || (z.skins || []).includes(cle)) return null;
+  const v = skinsEnVente(S.state.nextDeadline).find((x) => x.cle === cle);
+  return v && psDispo(z) >= v.prix ? v : null;
 }
 
 /** Personnalisation choisie par le joueur (tout de suite visible chez lui, recopiée dans la partie à 20:00). */
@@ -271,13 +281,13 @@ function boutiqueSkins(z, d) {
   const quand = (S.state && S.state.nextDeadline) || Date.now();
   const vente = skinsEnVente(quand);
   if (!vente.length) return '';
-  const own = new Set(mesSkins(z).possedes), dispo = psDispo(z), cmd = S.draft && S.draft.achat;
+  const own = new Set(z.skins || []), att = achatEnAttente(z), dispo = psDispo(z) - (att ? att.prix : 0), cmd = S.draft && S.draft.achat;
   const date = (t) => new Date(t).toLocaleDateString('fr-BE', { day: 'numeric', month: 'long' });
   const apercu = (v) => sceneZone(z, S.state, d, { ...mesSkins(z).choix, [v.cat]: v.id, ...Object.fromEntries(v.pack.map((k) => k.split(':'))) }, { moment: 'nuit' });
   const prix = (v) => (v.promo ? `<s>${v.prixBase}</s> ${v.prix} PS` : `${v.prix} PS`);
   const action = (v, grand) => {
     if (own.has(v.cle)) return '<span class="bq-ok">✓ À toi</span>';
-    if (cmd === v.cle) return `<span class="bq-ok">🕗 Livré et équipé à 20:00</span><button type="button" class="btn small ghost" data-action="skin-acheter" data-cle="${v.cle}">Annuler</button>`;
+    if (cmd === v.cle) return `<span class="bq-ok">✓ Équipé ! Payé à 20:00, les autres le verront à ce moment-là</span><button type="button" class="btn small ghost" data-action="skin-acheter" data-cle="${v.cle}">Annuler</button>`;
     if (cmd) return `<span class="tiny muted">Un achat par soir</span>`;
     const ok = dispo >= v.prix;
     return `<button type="button" class="btn ${grand ? 'primary' : ''} small" data-action="skin-acheter" data-cle="${v.cle}" ${ok ? '' : 'disabled'}>Acheter · ${prix(v)}</button>${ok ? '' : `<span class="tiny muted">encore ${v.prix - dispo} PS</span>`}`;
@@ -295,7 +305,7 @@ function boutiqueSkins(z, d) {
         ${S.bqApercu === v.cle ? `<div class="bq-apercu petit">${apercu(v)}</div>` : ''}</div>
         <div class="col bq-droite">${own.has(v.cle) ? '' : `<button type="button" class="btn small ghost" data-action="bq-apercu" data-cle="${v.cle}">${S.bqApercu === v.cle ? 'Fermer' : 'Aperçu'}</button>`}${action(v, false)}</div></div>`).join('')}</div>`).join('')}
     </details>
-    <p class="tiny muted" style="margin:0">Payé en PS, livré et équipé à 20:00. Ton grade suit tous les PS gagnés : il ne baisse pas. La jauge des skins continue d’offrir un skin surprise.</p>
+    <p class="tiny muted" style="margin:0">Équipé tout de suite chez toi, payé en PS au tour de 20:00 (les autres le voient à partir de là). Ton grade suit tous les PS gagnés : il ne baisse pas. La jauge des skins continue d’offrir un skin surprise.</p>
   </section>`;
 }
 

@@ -502,7 +502,7 @@ async function onClick(e) {
         if (annule) { if (S.bqAvantChoix) S.player = { ...(S.player || {}), skinsChoix: S.bqAvantChoix }; S.bqAvantChoix = null; }
         else if (v) { const avant = { ...((S.player && S.player.skinsChoix) || zz.skinsChoix || {}) }; S.bqAvantChoix = avant; const ch = { ...avant, [v.cat]: v.id }; for (const k of v.pack) { const [c2, i2] = k.split(':'); ch[c2] = i2; } S.player = { ...(S.player || {}), skinsChoix: ch }; }
         S.draft.achat = annule ? null : cle;
-        try { await b.savePlayer(S.user.uid, S.player); await validerOrdres(); toast(annule ? 'Achat annulé.' : 'Acheté ! Livré et équipé à 20:00.'); } catch (err) { console.warn(err); toast('Impossible d’enregistrer l’achat, réessaie.'); }
+        try { await b.savePlayer(S.user.uid, S.player); await validerOrdres(); toast(annule ? 'Achat annulé.' : 'Acheté et équipé ! Payé au tour de 20:00, les autres le verront à ce moment-là.'); } catch (err) { console.warn(err); toast('Impossible d’enregistrer l’achat, réessaie.'); }
         rerender(); ouvrirDecor(); break;
       }
       case 'bq-apercu': S.bqApercu = S.bqApercu === el.dataset.cle ? null : el.dataset.cle; S.bqOuvert = true; ouvrirDecor(); break;
