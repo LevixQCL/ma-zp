@@ -345,8 +345,17 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   s += `<line x1="${nx + 8}" y1="${top - 4}" x2="${nx + 8}" y2="${ny}" stroke="${P.toit2}" stroke-width="1.2"/><line x1="${nx + nw - 8}" y1="${top - 4}" x2="${nx + nw - 8}" y2="${ny}" stroke="${P.toit2}" stroke-width="1.2"/>
   <rect x="${nx - 2}" y="${ny - 2}" width="${nw + 4}" height="1" fill="${P.toit2}"/>`;
   const lettres = `<text x="${nx + nw / 2}" y="${ny - 4}" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="600" font-size="14" letter-spacing=".6" textLength="${nw}" lengthAdjust="spacingAndGlyphs"`;
+  // Manoir hanté : néon fatigué, deux lettres du nom grésillent et s'éteignent de temps en temps.
+  let contenu = esc(texte);
+  if (SB === 'manoir' && P.neon) {
+    const car = [...texte], idx = car.map((c, i) => (i > 2 && c.trim() ? i : -1)).filter((i) => i >= 0);
+    let h = 7; for (const c of texte) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    const panne = new Set(idx.length ? [idx[h % idx.length], idx[(h >>> 5) % idx.length]] : []);
+    let k = 0;
+    contenu = car.map((c, i) => (panne.has(i) ? `<tspan class="neon-panne n${k++}">${esc(c)}</tspan>` : esc(c))).join('');
+  }
   s += P.neon
-    ? `<ellipse cx="${nx + nw / 2}" cy="${ny - 10}" rx="${nw * 0.62}" ry="13" fill="url(#hp-halo-${uid})" opacity=".45"/><g filter="url(#hp-neon-${uid})">${lettres} fill="${N.lettre}" stroke="${N.trait}" stroke-width=".35">${esc(texte)}</text></g>`
+    ? `<ellipse cx="${nx + nw / 2}" cy="${ny - 10}" rx="${nw * 0.62}" ry="13" fill="url(#hp-halo-${uid})" opacity=".45"/><g filter="url(#hp-neon-${uid})">${lettres} fill="${N.lettre}" stroke="${N.trait}" stroke-width=".35">${contenu}</text></g>`
     : `${lettres} fill="${N.jour}" stroke="#EDF0FA" stroke-width=".5" paint-order="stroke">${esc(texte)}</text>`;
   // Aile des annexes : un module par annexe, avec la pièce visible derrière la vitre (scene-aile.js).
   s += aileSvg({ ids: aile, ax, base, P, moment, SA, teinte, mix, uid });

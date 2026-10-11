@@ -721,7 +721,12 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 .hp-logis .chip.add { background: transparent; border: 1px dashed var(--line); color: var(--faint); }
 @keyframes hp-balise { 0%, 60% { opacity: 1; } 80% { opacity: .25; } }
 .hp-balise { animation: hp-balise 2.4s infinite; }
-@media (prefers-reduced-motion: reduce) { .hp-balise { animation: none; } }
+/* Manoir hanté : lettres de l'enseigne néon qui grésillent puis s'éteignent quelques secondes. */
+@keyframes neon-panne { 0%, 52% { fill-opacity: 1; stroke-opacity: 1; } 53% { fill-opacity: .15; stroke-opacity: .15; } 54% { fill-opacity: 1; stroke-opacity: 1; } 56% { fill-opacity: .1; stroke-opacity: .1; } 57% { fill-opacity: .9; stroke-opacity: .9; } 59%, 78% { fill-opacity: .08; stroke-opacity: .08; } 79% { fill-opacity: .7; stroke-opacity: .7; } 80% { fill-opacity: .1; stroke-opacity: .1; } 82%, 100% { fill-opacity: 1; stroke-opacity: 1; } }
+@keyframes neon-gresille { 0%, 88% { fill-opacity: 1; stroke-opacity: 1; } 89% { fill-opacity: .2; stroke-opacity: .2; } 90% { fill-opacity: 1; stroke-opacity: 1; } 92% { fill-opacity: .3; stroke-opacity: .3; } 93%, 100% { fill-opacity: 1; stroke-opacity: 1; } }
+.neon-panne.n0 { animation: neon-panne 9s infinite 1.5s; }
+.neon-panne.n1 { animation: neon-gresille 4.3s infinite .4s; }
+@media (prefers-reduced-motion: reduce) { .hp-balise, .neon-panne { animation: none; } }
 .scene-btn { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; text-align: left; font: inherit; }
 .scene-btn .scene-hp { display: block; width: 100%; height: auto; border-radius: 16px; border: 1px solid var(--hair); }
 .scene-leg { display: flex; margin-top: 6px; align-items: center; gap: 6px; justify-content: flex-end; font-size: 12px; color: var(--text2); }
