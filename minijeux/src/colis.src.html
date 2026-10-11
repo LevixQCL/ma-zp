@@ -79,6 +79,8 @@
 .fiche li{margin:4px 0}
 .fiche li::marker{font-family:var(--f-body);font-weight:700;color:var(--paper-mute)}
 .fiche .note{font-style:italic;color:var(--paper-mute);font-size:14px}
+.fiche .mode{display:block;font:700 12.5px var(--f-body);background:rgba(0,0,0,.07);border-left:3px solid var(--paper-ink);border-radius:6px;padding:5px 9px;margin:2px 0 6px;color:var(--paper-ink)}
+.fiche .so{font:700 13px var(--f-body);color:var(--paper-mute);text-transform:uppercase;letter-spacing:.03em}
 .fiche .pill{display:inline-block;font:700 12px var(--f-body);padding:1px 7px;border-radius:999px;color:#fff}
 /* ===== habillage « inox » (inspiré d'un vrai boîtier d'engin) ===== */
 .timerbar{background:linear-gradient(180deg,#2b2e33,#1b1d21);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 0 0 1px rgba(255,255,255,.05),0 8px 20px rgba(0,0,0,.4)}
@@ -153,7 +155,7 @@
     <div class="clip"><div class="fiche">
       <h2>Fiche réflexe SEDEE</h2>
       <div class="sub">À n'utiliser que si le service de déminage ne peut pas intervenir à temps.</div>
-      <p class="note">Avant tout, repère le n° de série et l'étiquette éventuelle du colis. Pour chaque module, applique la première règle qui correspond.</p>
+      <p class="note">Avant tout, repère le n° de série et l'étiquette éventuelle du colis. Chaque module indique comment lire ses règles.</p>
       <p class="note" id="ficheModele"></p>
       <div id="ficheRules"></div>
     </div></div>
@@ -198,39 +200,50 @@ function genSerial(){
 const cutTxt=c=>c==='last'?'le <b>dernier fil</b>':c==='second'?'le <b>2e fil</b>':'le <b>premier fil</b>';
 const cutIdx=(c,n)=>c==='last'?n-1:c==='second'?1:0;
 function ficheHtml(){
-  const w=R.w.map(r=>r.k==='none'?`Aucun fil ${r.col} : coupe le <b>${ORD[r.ord-1]} fil</b>.`
-    :r.k==='lastIs'?`Le dernier fil est ${r.col} : coupe ${cutTxt(r.cut)}.`
-    :r.k==='many'?`Plus d'un fil ${r.col} : coupe le <b>dernier fil ${r.col}</b>.`
-    :r.k==='serial'?`Le n° de série finit par un chiffre ${r.odd?'impair':'pair'} : coupe le <b>premier fil ${r.col}</b>.`
-    :`Sinon : coupe ${cutTxt(r.cut)}.`);
+  const so='<span class="so">Sinon, si</span> ';
+  const w=R.w.map((r,i)=>{ const si=i===0?'<span class="so">Si</span> ':so;
+    return r.k==='none'?`${si}il n'y a <b>aucun fil ${r.col}</b> → coupe le <b>${ORD[r.ord-1]} fil</b>.`
+    :r.k==='lastIs'?`${si}le <b>dernier fil est ${r.col}</b> → coupe ${cutTxt(r.cut)}.`
+    :r.k==='many'?`${si}il y a <b>plus d'un fil ${r.col}</b> → coupe le <b>dernier fil ${r.col}</b>.`
+    :r.k==='serial'?`${si}le n° de série finit par un <b>chiffre ${r.odd?'impair':'pair'}</b> → coupe le <b>premier fil ${r.col}</b>.`
+    :`<span class="so">Sinon</span> → coupe ${cutTxt(r.cut)}.`; });
   const b=R.b, pill=(c)=>`<span class="pill" style="background:${PILL[c]}">bande ${FEM[c]}</span>`;
   const [b1,b2]=b.bands, ex=b1[1];
   const sw=R.s;
-  return `<h3><span>1</span>Fils</h3><p class="note">Coupe un seul fil : glisse le doigt à travers.</p>
-      <ol>${w.map(x=>`<li>${x}</li>`).join('')}</ol><p class="note">Les fils se comptent de haut en bas.</p>
-      <h3><span>2</span>Bouton</h3><ol>
-        <li>Bouton ${b.tapA.color} marqué ${b.tapA.label} : <b>appui bref</b> (touche et lâche tout de suite).</li>
-        <li>${b.tapB.fragile?'Étiquette FRAGILE':'Pas d’étiquette'} et bouton ${b.tapB.color} : <b>appui bref</b>.</li>
-        <li>Sinon : <b>garde le doigt sur le bouton</b>. Après un instant, une bande de couleur s'allume dessous. Ne lâche pas : relâche seulement quand le <b>dernier chiffre de l'horloge</b> est :
+  return `<h3><span>1</span>Fils</h3>
+      <div class="mode">Lis de haut en bas et arrête-toi à la <u>première</u> règle vraie. Si plusieurs sont vraies, seule la première compte.</div>
+      <ol>${w.map(x=>`<li>${x}</li>`).join('')}</ol><p class="note">Un seul fil à couper : glisse le doigt à travers. Les fils se comptent de haut en bas.</p>
+      <h3><span>2</span>Bouton</h3>
+      <div class="mode">Arrête-toi à la <u>première</u> règle vraie.</div><ol>
+        <li><span class="so">Si</span> le bouton est <b>${b.tapA.color}</b> et marqué <b>${b.tapA.label}</b> → <b>appui bref</b> (touche et lâche tout de suite).</li>
+        <li><span class="so">Sinon, si</span> ${b.tapB.fragile?'le colis porte l’<b>étiquette FRAGILE</b>':'le colis n’a <b>pas d’étiquette</b>'} et le bouton est <b>${b.tapB.color}</b> → <b>appui bref</b>.</li>
+        <li><span class="so">Sinon</span> → <b>garde le doigt sur le bouton</b>. Après un instant, une bande de couleur s'allume dessous. Ne lâche pas : relâche seulement quand le <b>dernier chiffre de l'horloge</b> est :
           <br>${pill(b1[0])} <b>${b1[1]}</b> &nbsp; ${pill(b2[0])} <b>${b2[1]}</b> &nbsp; <span class="pill" style="background:#7a7f88">autre couleur</span> <b>${b.autre}</b></li></ol>
       <p class="note">Exemple, ${pill(b1[0])} : relâche à 01:2${ex} ou 00:5${ex}, pas à 00:${ex===9?'48':'4'+((ex+1)%10)}. Pendant que tu maintiens, l'horloge est recopiée sous le bouton.</p>
-      <h3><span>3</span>Interrupteurs</h3><ol>
-        <li>LED allumée : interrupteur <b>${sw.ledUp?'en haut':'en bas'}</b>. LED éteinte : <b>${sw.ledUp?'en bas':'en haut'}</b>.</li>
-        <li>${sw.invFragile?'Étiquette FRAGILE':'Pas d’étiquette'} : <b>inverse</b> tous les interrupteurs.</li>
-        <li>Lettre ${sw.letter} dans le n° de série : l'interrupteur ${sw.n} reste <b>toujours ${sw.pos==='bas'?'en bas':'en haut'}</b>.</li></ol>
-      <p class="note">Appuie ensuite sur Valider.</p>`;
+      <h3><span>3</span>Interrupteurs</h3>
+      <div class="mode">Ici, ce n'est pas « la première règle vraie » : fais les <u>3 étapes</u>, dans l'ordre. Chaque étape part du résultat de la précédente.</div><ol>
+        <li><b>Base</b> : LED allumée → interrupteur <b>${sw.ledUp?'en haut':'en bas'}</b>. LED éteinte → <b>${sw.ledUp?'en bas':'en haut'}</b>.</li>
+        <li><span class="so">Si</span> ${sw.invFragile?'le colis porte l’<b>étiquette FRAGILE</b>':'le colis n’a <b>pas d’étiquette</b>'} → <b>inverse les 4 positions trouvées à l'étape 1</b> (haut ↔ bas). Sinon, ne change rien.</li>
+        <li><span class="so">Si</span> la <b>lettre ${sw.letter}</b> est dans le n° de série → l'interrupteur <b>${sw.n}</b> va <b>${sw.pos==='bas'?'en bas':'en haut'}</b>, quoi que disent les étapes 1 et 2. Sinon, ne change rien.</li></ol>
+      <p class="note">La position de départ des interrupteurs sur l'engin ne compte pas. Règle-les puis appuie sur Valider.</p>`;
 }
+const regleTxt=r=>r.k==='none'?`aucun fil ${r.col}`:r.k==='lastIs'?`le dernier fil est ${r.col}`:r.k==='many'?`plus d’un fil ${r.col}`:r.k==='serial'?`n° de série ${r.odd?'impair':'pair'}`:'sinon';
 function wireRule(){
   const w=C.wires, n=w.length, last=C.serial.slice(-1), odd=+last%2===1;
   for(const r of R.w){
-    if(r.k==='none' && !w.includes(r.col)) return {i:r.ord-1, raison:`aucun fil ${r.col} : on coupe le ${ORD[r.ord-1]} fil`};
-    if(r.k==='lastIs' && w[n-1]===r.col) return {i:cutIdx(r.cut,n), raison:`le dernier fil est ${r.col} : on coupe le ${r.cut==='last'?'dernier':r.cut==='second'?'2e':'premier'} fil`};
-    if(r.k==='many' && w.filter(c=>c===r.col).length>1) return {i:w.lastIndexOf(r.col), raison:`il y a plus d’un fil ${r.col} : on coupe le dernier fil ${r.col}`};
-    if(r.k==='serial' && odd===r.odd) return {i:w.indexOf(r.col), raison:`le n° de série finit par ${last}, un chiffre ${odd?'impair':'pair'} : on coupe le premier fil ${r.col}`};
-    if(r.k==='else') return {i:cutIdx(r.cut,n), raison:`aucune règle ne s’applique : on coupe le ${r.cut==='last'?'dernier':r.cut==='second'?'2e':'premier'} fil`};
+    if(r.k==='none' && !w.includes(r.col)) return {r, i:r.ord-1, raison:`aucun fil ${r.col} : on coupe le ${ORD[r.ord-1]} fil`};
+    if(r.k==='lastIs' && w[n-1]===r.col) return {r, i:cutIdx(r.cut,n), raison:`le dernier fil est ${r.col} : on coupe le ${r.cut==='last'?'dernier':r.cut==='second'?'2e':'premier'} fil`};
+    if(r.k==='many' && w.filter(c=>c===r.col).length>1) return {r, i:w.lastIndexOf(r.col), raison:`il y a plus d’un fil ${r.col} : on coupe le dernier fil ${r.col}`};
+    if(r.k==='serial' && odd===r.odd) return {r, i:w.indexOf(r.col), raison:`le n° de série finit par ${last}, un chiffre ${odd?'impair':'pair'} : on coupe le premier fil ${r.col}`};
+    if(r.k==='else') return {r, i:cutIdx(r.cut,n), raison:`aucune règle ne s’applique : on coupe le ${r.cut==='last'?'dernier':r.cut==='second'?'2e':'premier'} fil`};
   }
 }
 const wireAnswer = () => wireRule().i;
+/** Toutes les règles de fils vraies pour cet engin (pour expliquer la priorité). */
+function wireVraies(){
+  const w=C.wires, odd=+C.serial.slice(-1)%2===1;
+  return R.w.filter(r=>r.k==='none'?!w.includes(r.col):r.k==='lastIs'?w[w.length-1]===r.col:r.k==='many'?w.filter(c=>c===r.col).length>1:r.k==='serial'?odd===r.odd:false);
+}
 const NOMC = FEM;
 function btnRaison(){
   const b=C.btn, A=R.b.tapA, B=R.b.tapB;
@@ -318,7 +331,8 @@ function cutWire(i,x){
   C.cut[i]=x; drawWires(); Shell.blip(2200,.04,'square',.04);
   const r=wireRule();
   if(i===r.i){ solve('w','Fil coupé'); return; }
-  expliquer(`Fils : tu as coupé le fil ${i+1} (${C.wires[i]}). Il fallait couper le fil ${r.i+1} (${C.wires[r.i]}) : ${r.raison}.`);
+  const aussi=wireVraies().filter(x=>x.k!=='else'&&x!==r.r).map(x=>`« ${regleTxt(x)} »`);
+  expliquer(`Fils : tu as coupé le fil ${i+1} (${C.wires[i]}). Il fallait couper le fil ${r.i+1} (${C.wires[r.i]}) : ${r.raison}.`+(aussi.length?` La règle ${aussi.join(' et ')} était vraie aussi, mais elle vient après : seule la première règle vraie compte.`:''));
   if(Shell.st.mode==='tuto'){ Shell.toast('Pas ce fil','bad'); Shell.bad(); setTimeout(()=>{C.cut[i]=false; drawWires();},500); }
   else strike('Mauvais fil');
 }
@@ -354,9 +368,9 @@ $('validate').onclick=()=>{
   const tg=swTarget();
   if(tg.every((u,i)=>!!C.togs[i]===u)){ solve('s','Circuit coupé'); return; }
   const faux=tg.map((u,i)=>!!C.togs[i]===u?null:`le n° ${i+1} devait être ${u?'en haut':'en bas'}`).filter(Boolean);
-  const regle=[R.s.ledUp?'LED allumée = en haut, éteinte = en bas':'LED allumée = en bas, éteinte = en haut'];
-  if(C.fragile===R.s.invFragile) regle.push(`puis tout inverser (${R.s.invFragile?'étiquette FRAGILE':'pas d’étiquette'})`);
-  if(C.serial.includes(R.s.letter)) regle.push(`et le n° ${R.s.n} toujours ${R.s.pos==='bas'?'en bas':'en haut'} (lettre ${R.s.letter} dans ${C.serial})`);
+  const regle=[R.s.ledUp?'étape 1, LED allumée = en haut, éteinte = en bas':'étape 1, LED allumée = en bas, éteinte = en haut'];
+  if(C.fragile===R.s.invFragile) regle.push(`étape 2, inverser les 4 (${R.s.invFragile?'étiquette FRAGILE':'pas d’étiquette'})`);
+  if(C.serial.includes(R.s.letter)) regle.push(`étape 3, le n° ${R.s.n} ${R.s.pos==='bas'?'en bas':'en haut'} quoi qu’il arrive (lettre ${R.s.letter} dans ${C.serial})`);
   expliquer(`Interrupteurs : ${faux.join(', ')}. Règle : ${regle.join(', ')}.`);
   miss('s','Mauvaise position');
 };
@@ -417,7 +431,7 @@ Shell.init({
   niveau(n,cfg){ cfg.filsMin = n>=16?6:n>=12?5:4; cfg.piege = n>10 ? Math.min(.4,.15+.025*(n-10)) : .15; return cfg; },
   diffHint:"Plus d'agents : plus de temps et plus d'erreurs tolérées avant l'explosion.",
   desktopHint:'Sur ordinateur : coupe un fil en glissant la souris à travers, bouton gauche enfoncé.',
-  rules:['Trois modules à neutraliser : <b>fils</b>, <b>bouton</b>, <b>interrupteurs</b>, dans l\'ordre que tu veux.','La <b>fiche SEDEE</b> (onglet du bas) donne les règles. <b>Elles changent à chaque engin</b> et dépendent du n° de série et de l\'étiquette.','Chaque erreur <b>accélère le compte à rebours</b>. Trop d\'erreurs : explosion.','Sans erreur : <b>+2</b> sur la jauge skins. Avec erreurs : <b>+1</b>.'],
+  rules:['Trois modules à neutraliser : <b>fils</b>, <b>bouton</b>, <b>interrupteurs</b>, dans l\'ordre que tu veux.','La <b>fiche SEDEE</b> (onglet du bas) donne les règles. <b>Elles changent à chaque engin</b> et dépendent du n° de série et de l\'étiquette.','Fils et bouton : seule la <b>première règle vraie</b> compte. Interrupteurs : les <b>3 étapes</b> s\'appliquent l\'une après l\'autre.','Chaque erreur <b>accélère le compte à rebours</b>. Trop d\'erreurs : explosion.','Sans erreur : <b>+2</b> sur la jauge skins. Avec erreurs : <b>+1</b>.'],
   winTitle:'Engin neutralisé', loseTitle:"L'engin a explosé", skin:'Robot démineur',
   malus:"explosion dans le périmètre de sécurité. 2 agents de l'Intervention, légèrement blessés, sont indisponibles 2 jours.",
   onMenu(){ C.over=true; ['mWires','mBtn','mSw'].forEach(id=>$(id).classList.remove('focus')); $('tFiche').classList.remove('focus'); },
