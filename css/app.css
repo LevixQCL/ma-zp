@@ -2925,3 +2925,11 @@ main.screen.gzs { height: 100dvh; box-sizing: border-box; padding: 10px 12px 100
 .bq-droite { gap: 6px; align-items: flex-end; flex-shrink: 0; }
 .bq-apercu.petit { margin-top: 6px; border-radius: 8px; overflow: hidden; }
 button.ajd-alerte { width: 100%; text-align: left; font: inherit; cursor: pointer; }
+/* Ta semaine de chef : objectif dépliable (comment le remplir, et où aller) */
+.obj-pli > summary { list-style: none; cursor: pointer; }
+.obj-pli > summary::-webkit-details-marker { display: none; }
+.obj-q { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--muted, #9FB0C8); flex-shrink: 0; }
+.obj-pli[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.obj-pli[open] .obj-q { background: var(--c); color: #0E1524; border-color: var(--c); }
+.obj-aide { display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 10px 46px; background: var(--surface2); border-left: 3px solid var(--c); border-radius: 0 0 12px 12px; margin-top: -1px; }
+.obj-go { align-self: flex-start; }

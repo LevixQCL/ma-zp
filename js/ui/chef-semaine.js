@@ -7,6 +7,26 @@ import { CONSIGNES, IDS_CONSIGNES, savoirFaire, ADJOINT } from '../engine/adjoin
 import { portraitChef, COUL_COMP } from './chef.js';
 import { gradeFor, CLASSEMENT } from '../engine/constants.js';
 
+// Comment remplir chaque objectif, et où aller (r : écran, x : précision — tuile des ordres, fréquence radio, tuile de l'HP).
+const AIDE_OBJ = {
+  incidents: { t: 'Les incidents du jour (colis suspect, accident, crochetage…) tombent sur l’HP, dans la carte <b>Aujourd’hui</b>. Joue-les et réussis-les avant qu’ils ne ferment.', r: 'hp', b: 'Voir les incidents' },
+  tenir: { t: 'Le soir, ta zone doit traiter au moins 90 % de ses incidents : dans les <b>Ordres</b>, remplis tous tes services (aucune case vide en pointillé), surtout l’Intervention.', r: 'ordres', b: 'Ouvrir les Ordres' },
+  moral: { t: 'Le moral doit finir à 65 ou plus : dans les <b>Ordres</b>, évite le rythme renforcé plusieurs jours de suite et regarde les <b>dépenses</b> qui le remontent.', r: 'ordres', x: 'depenses', b: 'Ouvrir les dépenses' },
+  front: { t: 'Onglet <b>Chef</b>, carte « En première ligne ce soir ? » (elle s’ouvre au 4<sup>e</sup> jour de prise de fonctions). Plus de résultat, mais un risque de blessure.', r: 'chef', b: 'Aller au Chef' },
+  pieces: { t: 'Les pièces d’enquête arrivent le soir : agents en <b>Recherche</b>, démarches lancées depuis l’<b>Enquête</b>, appuis PJF réussis.', r: 'enquete', b: 'Ouvrir l’Enquête' },
+  jeux: { t: 'Réussis les <b>énigmes du jour</b> (onglet Énigmes) ou les mini-jeux d’appui PJF de l’enquête (empreintes, ADN, réseau…).', r: 'quete', b: 'Ouvrir les Énigmes' },
+  vert: { t: 'Finis le tour avec un revenu positif : la prévision de budget est dans les <b>Ordres</b> ; allège les dépenses ou le rythme si elle passe au rouge.', r: 'ordres', b: 'Ouvrir les Ordres' },
+  paperasse: { t: 'Garde moins de 8 dossiers en attente : mets assez d’agents à l’<b>Accueil</b> dans les Ordres (la prévision de paperasse s’affiche sur la ligne Accueil).', r: 'ordres', b: 'Ouvrir les Ordres' },
+  investir: { t: 'Dans les <b>Ordres</b>, grande décision du jour : lance une formation, un équipement ou une annexe.', r: 'ordres', x: 'decision', b: 'Ouvrir la grande décision' },
+  enchere: { t: 'Sur l’HP, tuile <b>Enchères</b> : mise sur un lot de saisies puis fais la meilleure offre finale.', r: 'hp', x: 'encheres', b: 'Ouvrir les Enchères' },
+  entraide: { t: '<b>Radio, F2 · Renforts &amp; ops</b> : réponds à un appel de renfort en prêtant des agents. Ou, quand un suspect fuit chez toi, accepte la <b>relève</b> (« Je prends ») : elle apparaît sur l’HP.', r: 'radio', x: 'ops', b: 'Voir les appels (F2)' },
+  reseau: { t: 'Onglet <b>Chef</b>, carte Réseau (ouverte au 5<sup>e</sup> jour de prise de fonctions) : demande un service à un contact satisfait.', r: 'chef', b: 'Aller au Chef' },
+  partage: { t: 'Avec une zone liée par un <b>pacte d’enquête</b>, partage une pièce ou un indice. Pas encore de pacte ? Propose-le dans les Pactes.', r: 'pactes', b: 'Ouvrir les Pactes' },
+  satisfaction: { t: 'Satisfaction à 70 ou plus : envoie des patrouilles de <b>Proximité</b> dans tes quartiers (Carte, calque Ma zone), d’abord sur le point chaud 🔥.', r: 'carte', b: 'Ouvrir la Carte' },
+  vagues: { t: 'Une <b>vague de délinquance</b> venue d’un voisin est annoncée la veille (alerte sur l’HP et dans les Ordres) : renforce le service indiqué pour l’absorber. Sinon, garde plus de 2 agents à l’<b>Accueil</b> : ils évitent des imprévus.', r: 'ordres', b: 'Ouvrir les Ordres' },
+  quartier: { t: 'Onglet <b>Chef</b>, agenda du jour : choisis <b>Quartier</b> (réunion) ou <b>Terrain</b> en Proximité.', r: 'chef', b: 'Choisir l’agenda' },
+};
+
 const fmt = (v) => String(Math.round(v * 10) / 10).replace('.', ',');
 const actif = (z) => !!(z && z.chef && S.state && reglesV2(S.state));
 
@@ -38,11 +58,16 @@ export function semaineHtml(z, { ouvert = false, duelOk = true } = {}) {
   const st = S.state, o = z.chef.objectifs, T = st.turn, w = semaineDe(T), [, fin] = joursSemaine(w);
   if (o.w !== w) return '';
   const reste = fin - T + 1;
-  const obj = o.liste.map((x) => { const O = OBJECTIFS[x.id]; if (!O) return ''; const c = COUL_COMP[O.comp];
-    return `<div class="obj${x.fait ? ' fait' : ''}" style="--c:${c}"><span class="obj-ico">${x.fait ? '✅' : O.ico}</span>
+  const obj = o.liste.map((x) => { const O = OBJECTIFS[x.id]; if (!O) return ''; const c = COUL_COMP[O.comp], a = AIDE_OBJ[x.id];
+    const ligne = `<span class="obj-ico">${x.fait ? '✅' : O.ico}</span>
       <span class="col grow" style="gap:3px;min-width:0"><span class="small" style="font-weight:600;line-height:1.25">${esc(texteObjectif(x))}</span>
         <span class="chef-barre"><span style="width:${Math.max(4, Math.round(x.prog / x.cible * 100))}%"></span></span></span>
-      <span class="col" style="gap:0;align-items:flex-end;flex-shrink:0"><b class="mono">${x.prog}/${x.cible}</b><span class="tiny muted">${COMPETENCES[O.comp].ico} +${RECOMPENSE.xp[x.palier]} XP</span></span></div>`; }).join('');
+      <span class="col" style="gap:0;align-items:flex-end;flex-shrink:0"><b class="mono">${x.prog}/${x.cible}</b><span class="tiny muted">${COMPETENCES[O.comp].ico} +${RECOMPENSE.xp[x.palier]} XP</span></span>`;
+    if (!a || x.fait) return `<div class="obj${x.fait ? ' fait' : ''}" style="--c:${c}">${ligne}</div>`;
+    const k = `obj-${x.id}`, ouv = S.ouverts && S.ouverts[k];
+    return `<details class="obj-pli" data-k="${k}" style="--c:${c}" ${ouv ? 'open' : ''}><summary class="obj">${ligne}<span class="obj-q" aria-hidden="true">?</span></summary>
+      <div class="obj-aide"><span class="small">${a.t}</span>
+        <button type="button" class="btn small obj-go" data-action="obj-aller" data-r="${a.r}" data-x="${a.x || ''}">${esc(a.b)} →</button></div></details>`; }).join('');
   const nb = o.liste.filter((x) => x.fait).length, h = z.chef.hebdo;
   // Rival.
   const r = st.rivaux && st.rivaux.w === w && st.rivaux.cle === `${st.season}:${w}` && st.rivaux.paires[z.uid], zr = r && st.zones[r];
@@ -64,7 +89,7 @@ export function semaineHtml(z, { ouvert = false, duelOk = true } = {}) {
     <summary><span class="col grow" style="gap:0"><span style="font-weight:700">Ta semaine de chef</span>
       <span class="tiny muted">Objectifs ${nb}/3${nb === 3 ? ' · <b class="ok">semaine parfaite</b>' : ` · ${reste} jour${reste > 1 ? 's' : ''} restant${reste > 1 ? 's' : ''}`}${zr && duelOk ? ` · duel contre ${esc(zr.nom)}` : ''}</span></span><span class="tiny muted">▾</span></summary>
     <div class="col" style="gap:8px">${obj}
-      <span class="tiny muted">Seuls les jours où tu donnes tes ordres comptent. Chaque objectif : expérience et +1 de réputation. Les trois : médaille de la semaine (+${RECOMPENSE.medaille.ps} PS)${h && h.serie > 1 ? `, série en cours : ${h.serie} semaines` : ''}.</span>
+      <span class="tiny muted">Touche un objectif pour savoir où et comment le remplir. Seuls les jours où tu donnes tes ordres comptent. Chaque objectif : expérience et +1 de réputation. Les trois : médaille de la semaine (+${RECOMPENSE.medaille.ps} PS)${h && h.serie > 1 ? `, série en cours : ${h.serie} semaines` : ''}.</span>
       ${dd ? `<p class="small ${dd.res === 'v' ? 'ok' : dd.res === 'd' ? 'warn' : 'muted'}" style="margin:0">Duel de la semaine passée contre ${st.zones[dd.rival] ? esc(st.zones[dd.rival].nom) : '?'} : ${dd.res === 'v' ? 'gagné' : dd.res === 'd' ? 'perdu' : 'égalité'} (${fmt(dd.moi)} à ${fmt(dd.lui)}).</p>` : ''}
       ${duel}</div></details>`;
 }

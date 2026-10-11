@@ -760,6 +760,14 @@ async function onClick(e) {
       case 'rename': S.editingName = true; rerender(); setTimeout(() => document.getElementById('nom-zone')?.focus(), 0); break;
       case 'toggle-rapport': S.showRapport = !S.showRapport; S.rapportIdx = 0; rerender(); break;
       // HP : raccourcis épinglés (une carte se déplie sous les tuiles) et leur choix.
+      case 'obj-aller': { // « Ta semaine de chef » : aller là où se remplit l'objectif
+        const r = el.dataset.r, x = el.dataset.x || '';
+        if (r === 'radio' && x) S.radioCanal = x === 'ops' ? 'ops' : 'parole';
+        if (r === 'hp' && x) { S.hpTuile = x; S.ouverts = { ...(S.ouverts || {}), [x]: true }; }
+        const h = r === 'ordres' && x ? `#ordres-${x}` : `#${r}`;
+        if (location.hash === h) rerender(); else location.hash = h;
+        break;
+      }
       case 'hp-tuile': { const k = el.dataset.k; S.hpTuile = S.hpTuile === k ? null : k; if (S.hpTuile) S.ouverts = { ...(S.ouverts || {}), [k]: true }; rerender(); break; }
       case 'chef-plus-tard': S.chefPlusTard = true; try { sessionStorage.setItem('mazp-chef-plus-tard', '1'); } catch (e2) { /* rien */ } rerender(); window.scrollTo(0, 0); break;
       case 'chef-maintenant': S.chefPlusTard = false; try { sessionStorage.removeItem('mazp-chef-plus-tard'); } catch (e2) { /* rien */ } rerender(); window.scrollTo(0, 0); break;
