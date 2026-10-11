@@ -28,7 +28,7 @@ import { MINI_JEUX } from './incidents.js';
 import { quizLocal, quizEnregistre, quizQuestionHtml, bonnesReponses } from './quiz.js';
 import { QUIZ, QUIZ_THEMES } from '../quests/quiz.js';
 import { cadenasHtml, cadenasResultat, essaisHtml } from './cadenas.js';
-import { chronoHtml, disqueHtml, plaquesHtml, temoignagesHtml, figureInteractive, habillerFilature, filatureOutils, butinHtml, ligneHtml, trajetsHtml, icoGrille, ecritureHtml, avatar, codeHtml } from './enigmes.js';
+import { chronoHtml, disqueHtml, plaquesHtml, temoignagesHtml, figureInteractive, habillerFilature, filatureOutils, classeEtape, butinHtml, ligneHtml, trajetsHtml, icoGrille, ecritureHtml, avatar, codeHtml } from './enigmes.js';
 
 /** Le joueur a-t-il déjà changé une énigme aujourd'hui ? */
 function rerollUtilise() { return (S.quests || []).some((q) => q.variante); }
@@ -362,7 +362,7 @@ export function renderQuete() {
     ${q.type === 'filature' && !fini ? filatureOutils(q) : ''}
 
     ${q.elements && q.elements.length && !((q.type === 'chronologie' && !fini) || (q.type === 'horaires' && q.trajets)) ? (q.type === 'cadenas' ? essaisHtml(q) : q.type === 'quiment' ? temoignagesHtml(q, { marques: !fini && q.forme !== 'demi' }) : q.type === 'plaque' ? temoignagesHtml(q) : `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who">${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>`) : ''}
-    ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${esc(q.titreIndices || (q.type === 'grille' ? 'Auditions' : 'Indices'))}</h2>${q.indices.map((t) => `<p class="small" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
+    ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${esc(q.titreIndices || (q.type === 'grille' ? 'Auditions' : 'Indices'))}</h2>${q.indices.map((t, k) => `<p class="small ${q.type === 'filature' && !fini ? `fi-ind ${classeEtape(q, k)}` : ''}" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
     ${q.mode === 'texte' ? `<div class="codebox" aria-label="Message codé">${codeHtml(q.code)}</div>
       <p class="small muted" style="margin:0">${esc(q.aide)}</p>` : ''}
     ${q.grille && !fini ? renderGrille(q) : ''}
@@ -488,7 +488,7 @@ function feuilleV2(o) {
       ${q.ligne ? ligneHtml(q) : q.tableau ? `<section class="card tight" aria-label="${esc(q.titreTableau || 'Fiche horaire')}">${q.titreTableau ? `<h2 class="section">${esc(q.titreTableau)}</h2>` : ''}${q.tableau}</section>` : ''}
       ${q.type === 'filature' && !fini ? filatureOutils(q) : ''}
       ${q.elements && q.elements.length && !((q.type === 'chronologie' && !fini) || (q.type === 'horaires' && q.trajets)) ? (q.type === 'cadenas' ? essaisHtml(q) : q.type === 'quiment' ? temoignagesHtml(q, { marques: !fini && q.forme !== 'demi' }) : q.type === 'plaque' ? temoignagesHtml(q) : `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who">${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>`) : ''}
-      ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${esc(q.titreIndices || (q.type === 'grille' ? 'Auditions' : 'Indices'))}</h2>${q.indices.map((t) => `<p class="small" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
+      ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${esc(q.titreIndices || (q.type === 'grille' ? 'Auditions' : 'Indices'))}</h2>${q.indices.map((t, k) => `<p class="small ${q.type === 'filature' && !fini ? `fi-ind ${classeEtape(q, k)}` : ''}" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
       ${q.mode === 'texte' ? `<div class="codebox" aria-label="Message codé">${codeHtml(q.code)}</div>
         <p class="small muted" style="margin:0">${esc(q.aide)}</p>` : ''}
       ${q.grille && !fini ? renderGrille(q) : ''}

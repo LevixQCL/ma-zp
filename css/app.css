@@ -1034,6 +1034,13 @@ body.mj-ouvert { overflow: hidden; }
 .fi-papier .fi-lieu[data-sel] { fill: url(#fiPinR); stroke: #4E0C06; stroke-width: .9; r: 7; }
 .fi-papier .fi-trace { stroke: #B3261E; stroke-width: 2.6; stroke-dasharray: 5 3.5; opacity: .9; }
 .fi-papier .fi-x:hover { fill: rgba(179, 38, 30, .1); }
+.fi-etape { display: flex; flex-direction: column; gap: 2px; padding: 8px 11px; border-radius: 10px; background: #FFF3D6; border: 1px solid #E8C77E; border-left: 4px solid #D98A1F; color: #2B2015; }
+.fi-etape-n { font: 700 11px var(--mono); letter-spacing: .3px; text-transform: uppercase; color: #9A5B0C; }
+.fi-etape-t { font-weight: 700; font-size: 15px; line-height: 1.3; }
+.fi-etape-s { font-size: 12.5px; color: #6B5A43; }
+.fi-ind { padding: 3px 6px; margin: 0 -6px !important; border-radius: 6px; transition: background .15s, opacity .15s; }
+.fi-ind.fait { opacity: .45; text-decoration: line-through; text-decoration-color: rgba(43, 32, 21, .35); }
+.fi-ind.encours { background: #FFE7B0; box-shadow: inset 3px 0 0 #D98A1F; font-weight: 700; }
 .fi-outils { gap: 6px; align-items: center; }
 .fi-outils .btn { min-height: 38px; }
 

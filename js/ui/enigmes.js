@@ -189,6 +189,48 @@ export function temoignagesHtml(q, { marques = false } = {}) {
 // ───────────────────────────── Les deux photos, la filature ─────────────────────────────
 
 /** Met en évidence la place ou le lieu choisi, et redessine le tracé de la filature. */
+/** Tracé « par les rues » : entre deux carrefours qui ne sont pas sur la même rue, on passe par le coin. */
+function cheminRues(pts) {
+  const rues = [];
+  for (const p of pts) {
+    const prec = rues[rues.length - 1];
+    if (prec) { const [ax, ay] = prec.split(',').map(Number), [bx, by] = p.split(',').map(Number); if (ax !== bx && ay !== by) rues.push(`${bx},${ay}`); }
+    rues.push(p);
+  }
+  return rues;
+}
+
+/**
+ * Où en est le joueur dans le compte rendu de filature : nombre de tronçons tracés (un tronçon = une ligne droite,
+ * un changement de direction en commence un nouveau) et indice de la phrase correspondante.
+ * À rebours, le tracé part de la fin : le 1er tronçon correspond à la dernière phrase.
+ * Purement indicatif : ne dit rien de la justesse du tracé.
+ */
+export function etapeFilature(q) {
+  const n = (q.indices || []).length;
+  const m = String((q.figures && q.figures[0] && q.figures[0].svg) || '').match(/data-depart="([\d.]+),([\d.]+)"/);
+  const tr = ((S.trace || {})[q.id]) || [];
+  if (!m || !n) return { troncons: 0, n, phrase: -1, suite: -1 };
+  const pts = cheminRues([`${m[1]},${m[2]}`, ...tr]).map((p) => p.split(',').map(Number));
+  let troncons = 0, dir = null;
+  for (let k = 1; k < pts.length; k++) {
+    const d = `${Math.sign(pts[k][0] - pts[k - 1][0])},${Math.sign(pts[k][1] - pts[k - 1][1])}`;
+    if (d === '0,0') continue;
+    if (d !== dir) { troncons++; dir = d; }
+  }
+  const rebours = q.forme === 'rebours';
+  const rang = Math.max(0, troncons - 1); // tronçon en cours (le premier tant que rien n'est tracé)
+  const idx = (r) => (r < 0 || r >= n ? -1 : rebours ? n - 1 - r : r);
+  return { troncons, n, rang, phrase: idx(rang), suite: troncons ? idx(rang + 1) : -1, rebours };
+}
+
+/** Classe d'une phrase du compte rendu : déjà tracée, en cours, ou à venir. */
+export function classeEtape(q, i, e = etapeFilature(q)) {
+  if (e.phrase < 0) return e.troncons > e.n ? 'fait' : '';
+  const ordre = e.rebours ? e.n - 1 - i : i; // position dans l'ordre du tracé
+  return ordre < e.rang ? 'fait' : ordre === e.rang ? 'encours' : '';
+}
+
 export function figureInteractive(q, svg, picked) {
   let s = q.type === 'filature' ? habillerFilature(svg) : svg;
   if (picked) s = s.replace(`data-v="${picked}"`, `data-v="${picked}" data-sel="1"`);
@@ -197,12 +239,7 @@ export function figureInteractive(q, svg, picked) {
     const pts = m ? [`${m[1]},${m[2]}`, ...(((S.trace || {})[q.id]) || [])] : [];
     // Le tracé suit les rues : entre deux carrefours qui ne sont pas sur la même rue, on passe par le coin
     // (d'abord à l'horizontale, puis à la verticale) au lieu de couper à travers les pâtés de maisons.
-    const rues = [];
-    for (const p of pts) {
-      const prec = rues[rues.length - 1];
-      if (prec) { const [ax, ay] = prec.split(',').map(Number), [bx, by] = p.split(',').map(Number); if (ax !== bx && ay !== by) rues.push(`${bx},${ay}`); }
-      rues.push(p);
-    }
+    const rues = cheminRues(pts);
     s = s.replace('<polyline class="fi-trace" points=""', `<polyline class="fi-trace" points="${rues.join(' ')}"`);
   }
   return s;
@@ -210,7 +247,12 @@ export function figureInteractive(q, svg, picked) {
 
 export function filatureOutils(q) {
   const n = (((S.trace || {})[q.id]) || []).length;
-  return `<div class="row fi-outils" data-q="${esc(q.id)}"><span class="tiny muted grow">${q.forme === 'rebours' ? 'Touche les carrefours pour remonter son chemin depuis le point rouge, puis touche le lieu de départ. Un lieu sur le chemin se touche comme un carrefour : la réponse est le dernier lieu touché.' : 'Touche les carrefours pour tracer son chemin, puis touche le lieu d’arrivée. Un lieu sur le chemin se touche comme un carrefour : la réponse est le dernier lieu touché.'}</span>
+  const e = etapeFilature(q);
+  // Étape en cours, juste sous le plan : plus besoin de descendre jusqu'au compte rendu à chaque carrefour.
+  const etape = !e.n ? '' : e.phrase >= 0
+    ? `<div class="fi-etape" aria-live="polite"><span class="fi-etape-n">${e.rebours ? 'En remontant · ' : ''}Étape ${e.phrase + 1}/${e.n}</span><span class="fi-etape-t">${esc(q.indices[e.phrase])}</span>${e.suite >= 0 ? `<span class="fi-etape-s">Ensuite : ${esc(q.indices[e.suite])}</span>` : ''}</div>`
+    : `<div class="fi-etape" aria-live="polite"><span class="fi-etape-n">${e.n} étapes tracées</span><span class="fi-etape-s">Le compte rendu n’en compte que ${e.n} : vérifie ton tracé, ou touche le lieu ${e.rebours ? 'de départ' : 'd’arrivée'}.</span></div>`;
+  return `${etape}<div class="row fi-outils" data-q="${esc(q.id)}"><span class="tiny muted grow">${q.forme === 'rebours' ? 'Touche les carrefours pour remonter son chemin depuis le point rouge, puis touche le lieu de départ. Un lieu sur le chemin se touche comme un carrefour : la réponse est le dernier lieu touché.' : 'Touche les carrefours pour tracer son chemin, puis touche le lieu d’arrivée. Un lieu sur le chemin se touche comme un carrefour : la réponse est le dernier lieu touché.'}</span>
     <button type="button" class="btn small" data-fi="annuler" ${n ? '' : 'disabled'}>Annuler</button><button type="button" class="btn small" data-fi="effacer" ${n ? '' : 'disabled'}>Effacer</button></div>`;
 }
 

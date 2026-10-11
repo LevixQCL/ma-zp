@@ -34,3 +34,24 @@ console.log(`OK : plan de filature papier (${n} plans, mêmes zones cliquables).
   for (let k = 1; k < pts.length; k++) assert.ok(pts[k][0] === pts[k - 1][0] || pts[k][1] === pts[k - 1][1], `segment en diagonale : ${pts[k - 1]} → ${pts[k]}`);
   console.log('OK : le tracé de filature suit les rues.');
 }
+
+// Étape en cours (surlignée sous le plan et dans le compte rendu) : un tronçon = une ligne droite.
+{
+  const { etapeFilature, classeEtape } = await import('../js/ui/enigmes.js');
+  const { S } = await import('../js/ui/common.js');
+  const svg = '<svg data-depart="26,26"></svg>';
+  const q = { id: 'et', type: 'filature', figures: [{ svg }], indices: ['a', 'b', 'c', 'd'] };
+  const vu = (tr, forme) => { S.trace = { et: tr }; return etapeFilature({ ...q, forme }); };
+  assert.equal(vu([]).phrase, 0, 'rien tracé : 1re phrase');
+  assert.equal(vu(['72,26']).phrase, 0);
+  assert.equal(vu(['72,26', '118,26']).phrase, 0, 'deux carrefours tout droit : toujours la 1re');
+  assert.equal(vu(['72,26', '118,26', '118,72']).phrase, 1, 'virage : 2e phrase');
+  assert.equal(vu(['72,26', '118,72']).phrase, 1, 'tap en diagonale : passe par le coin (est puis sud = 2 tronçons)');
+  assert.equal(vu(['72,26', '26,26']).phrase, 1, 'demi-tour : nouvelle phrase');
+  assert.equal(vu(['72,26', '72,72', '118,72', '118,118', '164,118']).phrase, -1, 'plus de tronçons que de phrases');
+  assert.equal(vu([], 'rebours').phrase, 3, 'à rebours : on part de la dernière phrase');
+  assert.equal(vu(['72,26', '72,72'], 'rebours').phrase, 2);
+  S.trace = { et: ['72,26', '72,72'] };
+  assert.deepEqual([0, 1, 2, 3].map((i) => classeEtape(q, i)), ['fait', 'encours', '', '']);
+  console.log('OK : étape en cours de la filature.');
+}
