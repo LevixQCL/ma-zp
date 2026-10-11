@@ -99,10 +99,12 @@ export function assurerMilieu(state, nd) {
   }
 }
 
-/** Renseignements détenus par une liste de zones (types distincts). */
-export function rensDe(nd, uids) {
+/** Renseignements détenus par une liste de zones (types distincts). Ceux d'une zone qui ne joue plus (2 soirs sans ordres)
+ *  ont été transmis au parquet : ils comptent pour tout le monde, pour qu'un joueur parti ne bloque pas le QG. */
+export function rensDe(nd, uids, state = null) {
   const set = new Set(uids);
-  return TYPES_R.filter((t) => nd.dossier && set.has(nd.dossier[t]));
+  const parti = (u) => !!(state && (!state.zones[u] || (state.zones[u].toursSansOrdres || 0) >= 2));
+  return TYPES_R.filter((t) => nd.dossier && nd.dossier[t] && (set.has(nd.dossier[t]) || parti(nd.dossier[t])));
 }
 
 /** Modificateurs du soir pour un assaut (guetteurs, renseignements au QG). */
@@ -112,7 +114,7 @@ export function modsAssaut(state, nd, s, engages, T) {
   const g = nd.memoire && nd.memoire.guetteurs;
   if (g && g.de <= T && T <= g.a && !s.coeur) { out.piege = M3.guetteurs.piege; out.sansRep = M3.guetteurs.sansRep; }
   if (s.coeur) {
-    out.rens = rensDe(nd, engages.map((e) => e.u));
+    out.rens = rensDe(nd, engages.map((e) => e.u), state);
     out.force = 1 + M3.bonusRens * out.rens.length;
     out.blessure = Math.max(0.4, 1 - M3.blessureRens * out.rens.length);
   }

@@ -6,7 +6,7 @@ import { M3, RENSEIGNEMENTS, SCENES, ETAPES, etape, portraitParrain, portraitLie
 
 const nd = () => (S.state && S.state.nonDroit) || null;
 export const v3Actif = () => !!(nd() && nd().v3 && nd().parrain);
-const nomZ = (uid, me) => (me && uid === me.uid ? 'toi' : S.state.zones[uid] ? `ZP ${esc(S.state.zones[uid].code)} ${esc(S.state.zones[uid].nom)}` : '?');
+const nomZ = (uid, me) => (me && uid === me.uid ? 'toi' : !S.state.zones[uid] || (S.state.zones[uid].toursSansOrdres || 0) >= 2 ? 'le parquet (compte pour tous)' : `ZP ${esc(S.state.zones[uid].code)} ${esc(S.state.zones[uid].nom)}`);
 const cap = (t) => (t ? t[0].toUpperCase() + t.slice(1) : t);
 const ICO_R = { plan: '▦', garde: '⏱', compta: '€', armes: '⚑', issue: '⇥' };
 export const ICO_SCENE = { emeute: '🔥', rodeo: '🏍', livraison: '📦', perquisition: '🚪' };

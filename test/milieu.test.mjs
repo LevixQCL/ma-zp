@@ -118,4 +118,13 @@ assert.equal(st.nonDroit.scenes[0].nuit, st.turn, 'la scène est pour la prochai
   assert.ok(v.lots.some((l) => l.id === 'banalise' && l.saisie), 'lot saisi en vente');
 }
 assert.equal(Object.keys(RENSEIGNEMENTS).length, 5);
+// 8. Renseignement d'une zone qui ne joue plus : compte pour tout le monde au QG.
+{
+  const { rensDe } = await import('../js/engine/milieu.js');
+  const s2 = JSON.parse(JSON.stringify(st));
+  s2.nonDroit.dossier = { plan: 'c', garde: 'b' };
+  s2.zones.c.toursSansOrdres = 3;
+  assert.deepEqual(rensDe(s2.nonDroit, ['a'], s2), ['plan'], 'le renseignement de la zone partie compte');
+  assert.deepEqual(rensDe(s2.nonDroit, ['a', 'b'], s2).sort(), ['garde', 'plan'], 'avec la zone qui détient l’autre');
+}
 console.log('milieu : ok');
