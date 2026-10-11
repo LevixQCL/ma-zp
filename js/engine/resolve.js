@@ -44,7 +44,7 @@ import { creerAdjoint, consigneDe, ordresAdjoint, noterJournal, ADJOINT, CONSIGN
 import { cleSemaine, semaineDe, tirerObjectifs, avancerObjectifs, texteObjectif, OBJECTIFS, apparier, scoreDuel, DUEL } from './chef-semaine.js';
 import { separerIncidents, appliquerIncidents, remplirJauge, resultatsIncidents, incidentsVisibles, adapterCibleUrgence, NIVEAUX_URGENCE } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
-import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND } from './contenu.js';
+import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND, effetsPressions } from './contenu.js';
 import { imprevusDuJour, directeurNuit, directeurSoir, districtNuit, districtBilan, duoBilan, coopResoudre, enqueteDirecteur, memoirePlainte, formes, rangsEnigmes, adapterEnigmes, adapterIncidents, dirHeritage, parquetSoir, parquetDecouverte, DIR } from './directeur.js';
 
 const fmt1 = (v) => String(round1(v)).replace('.', ',');
@@ -812,8 +812,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
     jalon(z, 'Incidents du jour');
     // Situation du jour (annoncée au début du tour).
-    const pr = {};
-    for (const p of z.pressions || []) Object.assign(pr, p.effet);
+    // Les situations se cumulent : deux « +2 incidents » font +4 (avant, la dernière écrasait l'autre).
+    const pr = effetsPressions(z.pressions);
     if (pr.criminalite) z.criminalite = clamp(z.criminalite + pr.criminalite, 10, 95);
     if (pr.paperasse) z.paperasse += pr.paperasse;
 

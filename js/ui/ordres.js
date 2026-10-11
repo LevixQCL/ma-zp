@@ -1,4 +1,5 @@
 // Écran des ordres du tour.
+import { effetsPressions } from '../engine/contenu.js';
 import { comparatifModeles } from './modeles.js';
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
@@ -141,8 +142,7 @@ export function estimations() {
   const prises = prisesDuJour(z, d, opx, resteBase);
   const eff = { ...opx.eff };
   for (const [s, l] of Object.entries(prises)) for (const [n, motif] of l) if (motif !== 'l’opération') eff[s] = Math.max(0, (eff[s] || 0) - n);
-  const pr = {};
-  for (const p of z.pressions || []) Object.assign(pr, p.effet);
+  const pr = effetsPressions(z.pressions);
   const dep = d.depenses || {};
   const cap = {};
   for (const s of SERVICES) cap[s] = capacite(z, s, eff[s] + (dep.reserve && dep.reserveService === s ? dep.reserve * DEPENSES.reserve.efficacite : 0), { ...opts, bonus: bonusEnigme(s), alloc: eff });

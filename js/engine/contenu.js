@@ -216,3 +216,18 @@ export const SITES = [
     ],
     operation: { titre: 'Accident grave sur une attraction de Deltaland', texte: 'Secours, évacuation du parc, constatations avec le parquet.', besoins: { intervention: 3, proximite: 3, admin: 2 }, duree: 1, recompense: 9 } },
 ];
+
+/**
+ * Effets cumulés des situations du jour : les nombres s'additionnent (deux « +2 incidents » font +4),
+ * les multiplicateurs se multiplient, une exigence minimale garde la plus forte, les marqueurs restent posés.
+ */
+export function effetsPressions(pressions) {
+  const pr = {};
+  for (const p of pressions || []) for (const [k, v] of Object.entries((p && p.effet) || {})) {
+    if (typeof v !== 'number') pr[k] = v;
+    else if (k === 'adminMult') pr[k] = (pr[k] ?? 1) * v;
+    else if (k === 'roulageMin') pr[k] = Math.max(pr[k] || 0, v);
+    else pr[k] = (pr[k] || 0) + v;
+  }
+  return pr;
+}
