@@ -126,7 +126,14 @@ export function botOrders(zone, state, style = 'equilibre') {
     }
     if (dilemmeDuJour(state, zone)) dilemme = rng.int(0, 1);
   }
-  return { dilemme, patrouilles, alloc, rythme, engagements, secteurs, ...(roles ? { roles } : {}), evenement, decision, operation, depenses, ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
+  // Dernier carré : chaque robot vote une tactique selon son style sur les secteurs barricadés où il engage des agents.
+  const tactiques = {};
+  if (state.nonDroit && state.nonDroit.v3) for (const k of Object.keys(secteurs)) {
+    const sct = state.nonDroit.secteurs[k];
+    if (!sct || !sct.barricade || !roles || !roles[k] || !(roles[k].rep + roles[k].desc + roles[k].bouc)) continue;
+    tactiques[k] = style === 'prudent' ? 'encercler' : style === 'equilibre' ? (rng.chance(0.4) ? 'negocier' : 'encercler') : 'frontal';
+  }
+  return { tactiques, dilemme, patrouilles, alloc, rythme, engagements, secteurs, ...(roles ? { roles } : {}), evenement, decision, operation, depenses, ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
 }
 
 /**

@@ -34,6 +34,8 @@ export const M3 = {
   // Scènes
   scenes: { seuil: { emeute: 5, rodeo: 4, livraison: 4, perquisition: 4 }, jeu: 3, sansFaute: 1, rep: 1, ps: 3, pts: 2, ptsJeu: 1, budget: 1.5,
     effet: { emeute: 15, rodeo: 15, perquisition: 12, livraison: 12 }, rate: { emeute: 6, livraison: 8 }, contagionRatee: 2 },
+  // Dernier carré : sous ce seuil d'emprise, le lieutenant se barricade ; les zones votent une tactique.
+  carre: { seuil: 25, sortie: 40, negoBase: 0.4, negoParNiveau: 0.06, negoMax: 0.85, negoEchec: 10, frontalBlessure: 0.1 },
   // Chute du Parrain
   coffre: 12,                 // k€ partagés selon l'influence quand le QG tombe
   venteSaisie: 0.5,           // part du prix de vente reversée aux zones qui ont saisi
@@ -119,6 +121,38 @@ export function modsAssaut(state, nd, s, engages, T) {
     out.blessure = Math.max(0.4, 1 - M3.blessureRens * out.rens.length);
   }
   return out;
+}
+
+export const TACTIQUES = {
+  frontal: { nom: 'Assaut frontal', ico: '💥', texte: 'Le secteur tombe à coup sûr s’il y a de la descente, mais chaque agent en descente risque d’être blessé (10 %).' },
+  negocier: { nom: 'Négocier sa reddition', ico: '🤝', texte: 'Selon la diplomatie des chefs : réussie, il se rend sans combat et lâche un renseignement de plus ; ratée, il gagne une nuit (emprise +10).' },
+  encercler: { nom: 'Encercler', ico: '⭕', texte: 'Avec assez de bouclage (aucune fuite) : le secteur tombe, saisies doublées, il ne peut pas filer. Sinon, assaut normal.' },
+};
+
+/** Tactique retenue ce soir sur un secteur barricadé : vote pondéré par les agents engagés (assaut), égalité → assaut frontal. */
+export function tactiqueDuSoir(nd, k, engages, ord) {
+  const s = nd.secteurs[k];
+  if (!nd.v3 || !s || !s.barricade) return null;
+  const poids = {};
+  for (const e of engages) { const v = ord[e.u] && ord[e.u].tactiques && ord[e.u].tactiques[k]; if (v) poids[v] = (poids[v] || 0) + Math.max(1, e.n); }
+  const l = Object.entries(poids).sort((a, b) => b[1] - a[1] || (a[0] === 'frontal' ? -1 : b[0] === 'frontal' ? 1 : 0));
+  return l.length ? { choix: l[0][0], poids } : null;
+}
+
+/** Fin de nuit : les lieutenants qui se barricadent (emprise basse), ceux qui sortent du dernier carré. */
+export function barricades(state, nd, T, push, res) {
+  if (!nd.v3 || nd.carre === false) return; // false : désactivé exprès (simulations)
+  const C = M3.carre;
+  for (const [k, s] of Object.entries(nd.secteurs)) {
+    if (s.statut !== 'milieu' || s.coeur || !s.lieutenant || s.lieutenant.etat !== 'libre') { delete s.barricade; continue; }
+    if (s.barricade && s.emprise > C.sortie) { delete s.barricade; continue; }
+    if (!s.barricade && s.emprise > 0 && s.emprise < C.seuil) {
+      s.barricade = { de: T + 1 };
+      (res.barricades ||= []).push(Number(k));
+      push(7, 'Le milieu', `${cap(s.lieutenant.nom)} se barricade à ${nomSect(k)}`, `Dernier carré : demain soir, les zones engagées votent la tactique (assaut frontal, négociation ou encerclement).`);
+      for (const p of Object.keys(s.influence || {})) if (state.zones[p] && Array.isArray(state.zones[p].rapport)) state.zones[p].rapport.push(`Le milieu : ${s.lieutenant.nom} s’est barricadé à ${nomSect(k)}. Dernier carré demain soir : engage des agents et vote ta tactique dans la fiche du secteur.`);
+    }
+  }
 }
 
 /** Retient ce qu'a été la descente du soir (pour le sort du lieutenant et la confiance de départ). */

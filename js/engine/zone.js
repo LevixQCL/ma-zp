@@ -392,7 +392,13 @@ export function sanitizeOrders(zone, raw, state) {
   const nv = (zone.flotte || []).length || zone.vehicules || 0;
   const repris = decision && decision.reprise != null ? decision.reprise : -1; // le véhicule repris n'est pas revendu une deuxième fois
   const ventes = Array.isArray(o.ventes) ? [...new Set(o.ventes.map((x) => Math.floor(Number(x))).filter((x) => Number.isInteger(x) && x >= 0 && x < nv && x !== repris))].slice(0, Math.max(0, nv - 1)) : [];
-  return { ventes, dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, roles, decision, operation, depenses, demarches, accusation, accusation2, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteAccepte, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, defiAccepte: tutelle ? [] : defiAccepte, votes, motionChef, offre };
+  // Non-droit profond : tactique votée sur un secteur où le lieutenant s'est barricadé (dernier carré).
+  const tactiques = {};
+  if (o.tactiques && typeof o.tactiques === 'object' && state.nonDroit && state.nonDroit.v3) for (const [k, v] of Object.entries(o.tactiques)) {
+    const s = Object.hasOwn(state.nonDroit.secteurs, k) ? state.nonDroit.secteurs[k] : null;
+    if (s && s.barricade && ['frontal', 'negocier', 'encercler'].includes(v)) tactiques[k] = v;
+  }
+  return { tactiques, ventes, dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, roles, decision, operation, depenses, demarches, accusation, accusation2, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteAccepte, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, defiAccepte: tutelle ? [] : defiAccepte, votes, motionChef, offre };
 }
 
 /** Coût total des dépenses du jour. */

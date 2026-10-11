@@ -48,8 +48,9 @@ const STRATS = {
   },
 };
 
-function partie(seed, strat, { v3 = true, extra = 0, jeuMoi = 0, jeuBots = 0.25, regles = 1, des = 1 } = {}) {
+function partie(seed, strat, { v3 = true, extra = 0, jeuMoi = 0, jeuBots = 0.25, regles = 1, des = 1, carre = true } = {}) {
   let state = createGame({ seed, regles });
+  if (!carre) state.nonDroit.carre = false;
   state.nonDroit.roles = true;
   state.nonDroit.v3 = !!(v3 && des <= 1);
   const bots = [...BOT_PROFILES];
@@ -85,7 +86,7 @@ function partie(seed, strat, { v3 = true, extra = 0, jeuMoi = 0, jeuBots = 0.25,
     st.prises += g.prises.length; st.rechutes += g.rechutes.length; st.coeur += g.prises.filter((p) => p.coeur).length;
     st.repousses += (g.repousses || []).length;
     st.scenes += (g.scenesRes || []).length; st.scenesOk += (g.scenesRes || []).filter((x) => x.ok).length;
-    st.represailles += g.represailles ? 1 : 0; st.guetteurs += g.guetteurs ? 1 : 0;
+    st.represailles += g.represailles ? 1 : 0; st.barricades = (st.barricades || 0) + (g.barricades || []).length; for (const t of g.tactiques || []) st['tac_' + t.choix] = (st['tac_' + t.choix] || 0) + 1; st.guetteurs += g.guetteurs ? 1 : 0;
     st.maxTenus = Math.max(st.maxTenus, g.etat.filter((x) => x.statut === 'repris').length);
     state = r.state;
     const nd = state.nonDroit;
@@ -124,6 +125,14 @@ if (mode === 'saison2') {
     rows.push(ligne(`${6 + extra} zones · saison 2, activé au soir 4`, run(STRATS['Coopère + présence + scènes (agents)'], { v3: true, extra, regles: 2, des: 4 })));
   }
   console.log(`\nSaison 2 (${TOURS} soirs, ${SEEDS} parties)`); console.table(rows);
+}
+if (mode === 'carre') {
+  const rows = [];
+  for (const extra of [0, 6]) for (const carre of [false, true]) {
+    const l = run(STRATS['Coopère + présence + scènes (agents)'], { v3: true, extra, regles: 2, carre });
+    rows.push({ ...ligne(`${6 + extra} zones · ${carre ? 'avec' : 'sans'} dernier carré`, l), barricades: moy(l, 'barricades'), frontal: moy(l, 'tac_frontal'), négo: moy(l, 'tac_negocier'), encercler: moy(l, 'tac_encercler') });
+  }
+  console.log(`\nDernier carré (${TOURS} soirs, ${SEEDS} parties)`); console.table(rows);
 }
 if (mode === 'tout' || mode === 'moi') {
   const rows = [];

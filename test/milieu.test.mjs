@@ -15,11 +15,11 @@ function partie(v3 = true) {
   return st;
 }
 const anneau = (st) => Object.keys(st.nonDroit.secteurs).filter((k) => !st.nonDroit.secteurs[k].coeur).sort((a, b) => Number(a) - Number(b));
-const tour = (st, roles = {}, players = {}) => {
+const tour = (st, roles = {}, players = {}, tactiques = {}) => {
   const orders = {};
   for (const u of Object.keys(st.zones)) {
     const r = roles[u] || {};
-    orders[u] = { alloc: ALLOC, rythme: 'normal', roles: r, secteurs: Object.fromEntries(Object.entries(r).map(([k, v]) => [k, (v.rep || 0) + (v.desc || 0) + (v.bouc || 0) + (v.sc || 0)])) };
+    orders[u] = { alloc: ALLOC, rythme: 'normal', roles: r, tactiques: tactiques[u] || {}, secteurs: Object.fromEntries(Object.entries(r).map(([k, v]) => [k, (v.rep || 0) + (v.desc || 0) + (v.bouc || 0) + (v.sc || 0)])) };
   }
   return resolveTurn(st, { orders, players, nextWeekday: 1 });
 };
@@ -126,5 +126,25 @@ assert.equal(Object.keys(RENSEIGNEMENTS).length, 5);
   s2.zones.c.toursSansOrdres = 3;
   assert.deepEqual(rensDe(s2.nonDroit, ['a'], s2), ['plan'], 'le renseignement de la zone partie compte');
   assert.deepEqual(rensDe(s2.nonDroit, ['a', 'b'], s2).sort(), ['garde', 'plan'], 'avec la zone qui détient l’autre');
+}
+// 9. Dernier carré : barricade sous 25 d'emprise, puis assaut frontal qui fait tomber le secteur même trop faible.
+{
+  const { barricades } = await import('../js/engine/milieu.js');
+  let s2 = JSON.parse(JSON.stringify(st));
+  const k = anneau(s2).find((x) => !['squat', 'jeux'].includes(s2.nonDroit.secteurs[x].milieu));
+  s2.nonDroit.secteurs[k].emprise = 20;
+  const res = {};
+  barricades(s2, s2.nonDroit, s2.turn - 1, () => {}, res);
+  assert.ok(s2.nonDroit.secteurs[k].barricade, 'le lieutenant se barricade');
+  const fr = JSON.parse(JSON.stringify(s2));
+  fr.nonDroit.secteurs[k].repere = { de: fr.turn, a: fr.turn + 2, par: [] };
+  const r1 = tour(fr, { a: { [k]: { rep: 0, desc: 1, bouc: 1 } } }, {}, { a: { [k]: 'frontal' } });
+  assert.equal(r1.state.nonDroit.secteurs[k].statut, 'repris', 'assaut frontal : il tombe');
+  // Négociation : soit il se rend, soit il gagne une nuit (+10).
+  const ng = JSON.parse(JSON.stringify(s2));
+  const r2 = tour(ng, { a: { [k]: { rep: 0, desc: 1, bouc: 0 } } }, {}, { a: { [k]: 'negocier' } });
+  const s3 = r2.state.nonDroit.secteurs[k];
+  assert.ok(s3.statut === 'repris' || s3.emprise === 30, `négociation : repris ou +10 (${s3.statut} ${s3.emprise})`);
+  assert.equal(r2.gazette.nonDroit.tactiques[0].choix, 'negocier');
 }
 console.log('milieu : ok');

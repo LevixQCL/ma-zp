@@ -14,7 +14,7 @@ import { clamp, round1, forceEngagement, forceRole, jalon, noter } from './zone.
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
 import { donnerTrophee, TROPHEE, figure, nomComplet } from './equipe.js';
 import { lies, PACTE } from './pactes.js';
-import { assurerMilieu, interrogatoires, modsAssaut, noterDescente, aLaPrise, confianceNuit, finDeNuit, scenesResoudre, saisieDescente, etape, M3, LIEUTENANTS } from './milieu.js';
+import { assurerMilieu, interrogatoires, modsAssaut, noterDescente, aLaPrise, confianceNuit, finDeNuit, scenesResoudre, saisieDescente, etape, M3, LIEUTENANTS, tactiqueDuSoir, barricades } from './milieu.js';
 
 /** Non-droit « profond » (Parrain, lieutenants, confiance, milieu adaptatif, scènes) : en jeu avec les règles de la saison 2 (oct. 2026). */
 export const ND_V3 = true;
@@ -226,7 +226,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players =
     const F = engages.reduce((a, e) => a + e.f, 0) * coop;
     const avant = s.emprise;
     const nomS = nomSecteur(k);
-    if (s.statut === 'milieu' && nd.roles) { assautRoles(state, nd, s, k, engages, regen[k], T, push, res, nom); continue; }
+    if (s.statut === 'milieu' && nd.roles) { assautRoles(state, nd, s, k, engages, regen[k], T, push, res, nom, ord); continue; }
     if (s.statut === 'milieu') {
       // Assaut repoussé : pas assez de force pour faire reculer le milieu, ou une zone seule qui tombe dans un piège.
       const seuil = regen[k] / ND.efficacite;
@@ -324,6 +324,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players =
   scenesResoudre(state, nd, T, push, res, players);
   planifierGangs(state, nd, T, push, res);
   finDeNuit(state, nd, T, res, push, players);
+  barricades(state, nd, T, push, res);
   delete nd._desc;
   for (const u of uids) if (state.zones[u]) delete state.zones[u]._ndSatisf;
   // Zone de non-droit dans les quartiers voisins : le milieu déborde, un secteur repris apaise.
@@ -474,7 +475,7 @@ function voisinsND(nd, k) {
  * Rôles : un secteur du milieu ce soir. Repérage (la faille, puis 2 soirs « repéré »), descente (emprise),
  * bouclage (fuite). Saisies à chaque descente réussie, partagées selon la force engagée (une part au repérage).
  */
-function assautRoles(state, nd, s, k, engages, regen0, T, push, res, nom) {
+function assautRoles(state, nd, s, k, engages, regen0, T, push, res, nom, ord = {}) {
   const R0 = ND.roles, F = faille(s), nomS = nomSecteur(k);
   const sc = (e) => (e.f0 ? e.f / e.f0 : 1);
   const fR = (e) => (e.fr ? e.fr.rep * sc(e) : 0), fD = (e) => (e.fr ? e.fr.desc * sc(e) : 0), fB = (e) => (e.fr ? e.fr.bouc * sc(e) : 0);
@@ -497,6 +498,27 @@ function assautRoles(state, nd, s, k, engages, regen0, T, push, res, nom) {
     for (const e of engages) if (fR(e) > 0) state.zones[e.u].rapport.push(`Zone de non-droit · ${nomS} : repérage trop léger (il faut au moins 2 agents de Recherche, à plusieurs zones si besoin).`);
   }
   for (const e of engages) s.influence[e.u] = round1((s.influence[e.u] || 0) + e.f);
+  // Non-droit profond : dernier carré, la tactique votée par les zones engagées ce soir.
+  const tac = tactiqueDuSoir(nd, k, engages, ord);
+  if (tac) (res.tactiques ||= []).push({ cell: Number(k), ...tac });
+  if (tac && tac.choix === 'negocier') {
+    const C = M3.carre, lt = s.lieutenant;
+    const niv = Math.max(0, ...engages.map((e) => (state.zones[e.u].chef ? niveauChef(state.zones[e.u].chef, 'diplomatie') || 0 : 0)));
+    const p = Math.min(C.negoMax, C.negoBase + C.negoParNiveau * niv);
+    const ok = makeRng(`${state.seed}:s${state.season}:t${T}:nego:${k}`).chance(p);
+    if (ok) {
+      lt.pieces = (lt.pieces || 1) + 1;
+      noterDescente(nd, k, { fuite: 0, repere: repOK, blesses: 0 });
+      for (const e of engages) state.zones[e.u].rapport.push(`Dernier carré à ${nomS} : la négociation réussit (${Math.round(p * 100)} % de chances). ${lt.nom} se rend sans combat.`);
+      s.emprise = 0; delete s.barricade;
+      prise(state, s, k, T, push, res, nom); s.repere = null;
+    } else {
+      s.emprise = round1(clamp(s.emprise + C.negoEchec, 0, 100));
+      for (const e of engages) state.zones[e.u].rapport.push(`Dernier carré à ${nomS} : la négociation échoue (${Math.round(p * 100)} % de chances). ${lt.nom} gagne une nuit (emprise +${C.negoEchec}).`);
+      push(5, 'Le milieu', `${lt.nom} refuse de se rendre à ${nomS}`, 'La négociation a échoué : il faudra revenir.');
+    }
+    return;
+  }
   if (D <= 0) {
     // Personne en descente : le milieu se refait.
     s.emprise = round1(clamp(haut, 0, 100));
@@ -511,9 +533,11 @@ function assautRoles(state, nd, s, k, engages, regen0, T, push, res, nom) {
   const fuite = clamp(1 - B / (D * (F.ratio ?? R0.ratio)), 0, 1);
   const piegeP = repOK ? 0 : Math.min(0.9, (nz === 1 ? R0.piegeSeul : R0.piegeGroupe) * (F.piege || 1) * mods.piege);
   const piege = piegeP > 0 && makeRng(`${state.seed}:s${state.season}:t${T}:ndpiege:${k}`).chance(piegeP);
-  const tropFaible = Deff * ND.efficacite <= regen;
+  // Assaut frontal : il tombe à coup sûr ; encerclement réussi (aucune fuite) : il tombe aussi, saisies doublées.
+  const force = tac && mult > 0 && ((tac.choix === 'frontal') || (tac.choix === 'encercler' && fuite <= 0));
+  const tropFaible = !force && Deff * ND.efficacite <= regen;
   const nDesc = (e) => (e.r ? e.r.desc : e.n);
-  if (piege || tropFaible) {
+  if ((piege && !force) || tropFaible) {
     s.emprise = round1(clamp(haut, 0, 100));
     (res.repousses ||= []).push({ cell: Number(k), zones: engages.map((e) => e.u), raison: piege ? 'piege' : mult === 0 ? 'porte' : F.soirs && !ouvert ? 'ferme' : 'faible', coeur: !!s.coeur });
     if (!repOK) res.repoussesSansRep = (res.repoussesSansRep || 0) + 1;
@@ -534,14 +558,22 @@ function assautRoles(state, nd, s, k, engages, regen0, T, push, res, nom) {
   }
   const avant = s.emprise;
   const effet = Deff * ND.efficacite;
-  s.emprise = round1(clamp(haut - effet * (1 - R0.perteFuite * fuite), 0, 100));
+  s.emprise = force ? 0 : round1(clamp(haut - effet * (1 - R0.perteFuite * fuite), 0, 100));
+  if (force) delete s.barricade;
+  if (force && tac.choix === 'frontal') for (const e of engages) {
+    const z = state.zones[e.u], br = makeRng(`${state.seed}:s${state.season}:t${T}:frontal:${k}:${e.u}`);
+    let b = 0; for (let i = 0; i < nDesc(e); i++) if (br.chance(M3.carre.frontalBlessure * risqueBlessure(z) * e.risque)) b += 1;
+    if (b) { z.blesses.push({ n: b, retour: T + 1 + ND.absenceRepousse, motif: 'blessé' }); z.moral -= 2; stat(e.u, 'ndBlesses', b); }
+    z.rapport.push(`Dernier carré à ${nomS} : assaut frontal, le secteur tombe.${b ? ` ${b} agent${b > 1 ? 's' : ''} blessé${b > 1 ? 's' : ''}.` : ' Personne de blessé.'}`);
+  }
+  if (force && tac.choix === 'encercler') for (const e of engages) state.zones[e.u].rapport.push(`Dernier carré à ${nomS} : encerclement réussi, personne ne file. Saisies doublées.`);
   // Repli : ceux qui ont filé renforcent un secteur voisin encore aux mains du milieu.
   if (fuite > 0.05) {
     const v = voisinsND(nd, k).filter((x) => nd.secteurs[x].statut === 'milieu');
     if (v.length) { const c = v.sort((a, b) => nd.secteurs[a].emprise - nd.secteurs[b].emprise || Number(a) - Number(b))[0]; (nd._reflux ||= {})[c] = (nd._reflux[c] || 0) + R0.reflux * fuite * effet; }
   }
   // Saisies, partagées : une part au repérage qui a ouvert la voie, le reste selon la force engagée ce soir.
-  const butin = R0.butin * effet * (1 - fuite) * (F.butin || 1) * (F.soirs && ouvert ? 2 : 1) * (s.coeur ? ND.coeurMult : 1);
+  const butin = R0.butin * effet * (1 - fuite) * (F.butin || 1) * (F.soirs && ouvert ? 2 : 1) * (s.coeur ? ND.coeurMult : 1) * (force && tac.choix === 'encercler' ? 2 : 1);
   const poids = Object.fromEntries(engages.map((e) => [e.u, fR(e) * R0.poidsRep + fD(e) + fB(e)]));
   const totP = Object.values(poids).reduce((a, b) => a + b, 0) || 1;
   const tuyau = repOK && rep0 ? rep0.par.filter((u) => state.zones[u]) : [];

@@ -569,6 +569,14 @@ async function onClick(e) {
         if (dd > 0 ? ajouterRoleND(k, r) : retirerRoleND(k, r)) { S.secteurSel = k; S.ordersDirty = true; }
         rerender(); break;
       }
+      case 'nd-tactique': {
+        // Dernier carré : la tactique que je vote sur ce secteur (un second toucher la retire).
+        const k = el.dataset.c, v = el.dataset.v;
+        if (!['frontal', 'negocier', 'encercler'].includes(v)) break;
+        const t = (S.draft.tactiques ||= {});
+        if (t[k] === v) delete t[k]; else t[k] = v;
+        S.ordersDirty = true; rerender(); break;
+      }
       case 'nd-scene-jeu': {
         // Scène du soir : le mini-jeu facultatif (compte comme 3 agents à la scène).
         const sc = scenesDuSoir(S.state).find((x) => String(x.cell) === String(el.dataset.c));
@@ -602,7 +610,7 @@ async function onClick(e) {
           : deja
           ? `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) sera finalement à ${nomSecteur(k)} avec ${n} agent${n > 1 ? 's' : ''} ce soir.`
           : `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) envoie ${n} agent${n > 1 ? 's' : ''} à ${nomSecteur(k)} ce soir. Plus on est nombreux, plus ça tombe vite : qui vient ?`,
-        { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n, ...(rolesActifs() ? { roles: rolesDe(k) } : {}) } });
+        { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n, ...(rolesActifs() ? { roles: rolesDe(k) } : {}), ...(S.draft.tactiques && S.draft.tactiques[k] ? { tactique: S.draft.tactiques[k] } : {}) } });
         toast('Annoncé sur la radio : les autres zones peuvent te rejoindre.'); rerender(); break;
       }
       case 'nd-rej-n': {
@@ -626,7 +634,7 @@ async function onClick(e) {
         const n = sect[k];
         try {
           await b.sendRadio(S.user.uid, rolesActifs() ? `🤝 ${z.nom} (ZP ${z.code}) rejoint ${nomSecteur(k)} : ${texteRoles(rolesDe(k))}.` : `🤝 ${z.nom} (ZP ${z.code}) rejoint ${nomSecteur(k)} avec ${n} agent${n > 1 ? 's' : ''} ce soir.`,
-            { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n, ...(rolesActifs() ? { roles: rolesDe(k) } : {}) } });
+            { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n, ...(rolesActifs() ? { roles: rolesDe(k) } : {}), ...(S.draft.tactiques && S.draft.tactiques[k] ? { tactique: S.draft.tactiques[k] } : {}) } });
         } catch (e2) { console.warn(e2); }
         toast(`${ajoutes} agent${ajoutes > 1 ? 's' : ''} pour ${nomSecteur(k)} ce soir. Valide tes ordres.`);
         rerender(); break;

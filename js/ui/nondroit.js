@@ -5,7 +5,7 @@ import { ND, secteurOuvert, regenSecteur } from '../engine/constants.js';
 import { forceEngagement } from '../engine/zone.js';
 import { milieuDe, nomSecteur, partsDe, prevoirSecteur, secteursVoisins, gangCeSoir, faille, repere, ouvertCeSoir, prevoirRoles, rolesND } from '../engine/nondroit.js';
 import { planNonDroit } from './plan.js';
-import { v3Actif, reseauHtml, ligneLieutenant, sceneHtml, confianceHtml, sceneCarte, ICO_SCENE } from './milieu.js';
+import { v3Actif, reseauHtml, ligneLieutenant, sceneHtml, confianceHtml, sceneCarte, ICO_SCENE, dernierCarreHtml, tactiqueEnTete } from './milieu.js';
 
 const nd = () => (S.state && S.state.nonDroit) || null;
 const nomZ = (uid) => (S.state.zones[uid] ? esc(S.state.zones[uid].nom) : '?');
@@ -24,7 +24,7 @@ export function annoncesND() {
     const a = m.nd;
     if (!a || a.season !== st.season || a.turn !== st.turn || !st.zones[m.uid] || (me && m.uid === me.uid) || !n0.secteurs[a.secteur]) continue;
     const cle = `${m.uid}|${a.secteur}`;
-    if (!vu[cle] || vu[cle].at < m.at) vu[cle] = { uid: m.uid, secteur: String(a.secteur), n: a.agents || 0, at: m.at, r: rolesPropres(a.roles, a.agents || 0) };
+    if (!vu[cle] || vu[cle].at < m.at) vu[cle] = { uid: m.uid, secteur: String(a.secteur), n: a.agents || 0, at: m.at, r: rolesPropres(a.roles, a.agents || 0), ...(a.tactique ? { tac: String(a.tactique) } : {}) };
   }
   for (const v of Object.values(vu)) if (v.n > 0) (out[v.secteur] ||= []).push(v);
   for (const k of Object.keys(out)) out[k].sort((a, b) => b.n - a.n);
@@ -167,6 +167,20 @@ function ceSoirHtml(n, me, ann) {
   </div>`;
 }
 
+/** Secteurs du milieu qui tombent ce soir avec 1 à 4 agents de plus (zones déjà annoncées à la radio) : { k, n }. */
+export function presqueTombes() {
+  const n0 = nd(), me = myZone();
+  if (!n0 || !me || !S.draft || !rolesActifs()) return [];
+  const ann = annoncesND(), out = [];
+  for (const [k, s] of Object.entries(n0.secteurs)) {
+    if (s.statut !== 'milieu' || s.barricade || !secteurOuvert(n0, k) || !(ann[k] || []).some((x) => !x.moi)) continue;
+    if (prevoirRejoindre(k, 0).emprise <= 0) continue; // tombe déjà avec ce qui est annoncé
+    const place = placeND(k);
+    for (let i = 1; i <= Math.min(4, place); i++) if (prevoirRejoindre(k, i).emprise <= 0) { out.push({ k, n: i }); break; }
+  }
+  return out.sort((a, b) => a.n - b.n);
+}
+
 /** Secteurs tenus avec mon influence qui risquent de retomber sans garde ce soir (pour les alertes). */
 export function secteursEnDanger() {
   const n = nd(), me = myZone();
@@ -239,6 +253,7 @@ function carteRoles(k, s, me, d) {
     ${p.guetteurs && !rep ? '<p class="tiny bad" style="margin:0">👁 Le milieu a doublé ses guetteurs : sans repérage, piège plus probable et descente plus faible.</p>' : ''}
     <div class="row" style="gap:6px;flex-wrap:wrap"><span class="tiny muted">${esc(m.texte)}</span>${rep ? '<span class="pill nd-rep">🔍 repéré ce soir</span>' : repDemain ? '<span class="pill nd-rep">🔍 repéré dès demain</span>' : '<span class="pill">pas repéré</span>'}</div>
     ${ligneLieutenant(k, s)}
+    ${dernierCarreHtml(k, s, ann, total(mes) - (mes.sc || 0))}
     ${ouvert && sceneCarte(k) ? `<a class="ml-chip" href="#hp">${ICO_SCENE[sceneCarte(k).type]} Scène ce soir sur ce secteur · à régler sur l’HP, dans « Aujourd’hui » ›</a>` : ''}
     ${s.connue ? `<div class="nd-faille connue"><strong class="small">Faille : ${esc(F.titre)}</strong><span class="tiny">${esc(F.texte)}${F.soirs ? ` <strong>Ouvert le ${soirs(s)}</strong> (ce soir : ${ouvertCeSoir(s, T) ? '<span class="ok">ouvert</span>' : '<span class="bad">fermé</span>'}).` : ''}</span></div>`
       : '<div class="nd-faille"><strong class="small">❔ Faille inconnue</strong><span class="tiny muted">Chaque milieu a sa faiblesse. Un repérage la révèle à toutes les zones.</span></div>'}
@@ -246,6 +261,7 @@ function carteRoles(k, s, me, d) {
     ${ouvert ? `${rangee('rep')}${rangee('desc')}${rangee('bouc')}` : ''}
     ${!ouvert ? '' : ann.length ? `<div class="nd-quis">${pastillesCeSoir(ann.map((x) => (x.moi ? { moi: true, n: monN } : x)))}</div>` : '<p class="tiny muted" style="margin:0">Personne d’annoncé ce soir sur ce secteur.</p>'}
     ${!ouvert ? '' : p.nD ? `<dl class="nd-prev">
+      ${(() => { const tt = tactiqueEnTete(k, ann, total(mes) - (mes.sc || 0)); return tt === 'frontal' || (tt === 'encercler' && p.fuite <= 0) ? `<dt>Dernier carré</dt><dd class="good">${tt === 'frontal' ? 'assaut frontal : il tombe ce soir' : 'encerclé sans fuite : il tombe ce soir, saisies ×2'}</dd>` : ''; })()}
       <dt>Emprise</dt><dd>${p.tropFaible ? `<span class="bad">${p.mult === 0 ? 'impossible d’entrer sans repérage' : F.soirs && !p.ouvert ? 'fermé ce soir : personne à cueillir' : 'trop faible, le milieu tient'}</span>` : fl(s.emprise, p.apres) + (p.apres <= 0 ? ' <span class="good">· repris ce soir</span>' : '')}</dd>
       <dt>Piège</dt><dd class="${p.piege > 0.2 ? 'bad' : p.piege ? 'warn' : 'ok'}">${p.piege ? `${Math.round(p.piege * 100)} %` : 'non'}</dd>
       <dt>Fuite</dt><dd class="${p.fuite > 0.3 ? 'bad' : p.fuite > 0 ? 'warn' : 'ok'}">${Math.round(p.fuite * 100)} %${v3Actif() && s.lieutenant && s.lieutenant.etat === 'libre' && p.apres <= 0 ? (p.fuite >= 0.5 ? ` · <span class="bad">${esc(s.lieutenant.nom)} filerait</span>` : ` · <span class="ok">${esc(s.lieutenant.nom)} arrêté</span>`) : ''}</dd>

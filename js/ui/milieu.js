@@ -2,7 +2,8 @@
 // dans la fiche d'un secteur du milieu, la confiance des habitants dans la fiche d'un secteur repris.
 import { S, esc } from './common.js';
 import { nomSecteur, milieuDe } from '../engine/nondroit.js';
-import { M3, RENSEIGNEMENTS, SCENES, ETAPES, etape, portraitParrain, portraitLieutenant, scenesDuSoir, seuilScene, SERVICE_SCENE, PORTRAITS_PRETS } from '../engine/milieu.js';
+import { niveauChef } from '../engine/chef.js';
+import { TACTIQUES, M3, RENSEIGNEMENTS, SCENES, ETAPES, etape, portraitParrain, portraitLieutenant, scenesDuSoir, seuilScene, SERVICE_SCENE, PORTRAITS_PRETS } from '../engine/milieu.js';
 
 const nd = () => (S.state && S.state.nonDroit) || null;
 export const v3Actif = () => !!(nd() && nd().v3 && nd().parrain);
@@ -95,3 +96,36 @@ export function confianceHtml(k, s, presence) {
 /** Bulle de carte pour la scène du soir d'un secteur (ou null). */
 export const sceneCarte = (k) => scenesDuSoir(S.state).find((x) => String(x.cell) === String(k)) || null;
 export { milieuDe };
+
+/** Dernier carré : le lieutenant barricadé, trois tactiques à voter (le vote compte si on engage des agents à l'assaut). */
+/** Tactique en tête ce soir sur un secteur barricadé (votes annoncés à la radio et le mien), ou null. */
+export function tactiqueEnTete(k, annonces, mesAgents) {
+  const s = nd() && nd().secteurs[k];
+  if (!s || !s.barricade) return null;
+  const mien = (S.draft && S.draft.tactiques && S.draft.tactiques[k]) || null, votes = {};
+  for (const x of annonces) { const v = x.moi ? mien : x.tac; const n = x.moi ? mesAgents : x.n; if (v && n > 0) votes[v] = (votes[v] || 0) + n; }
+  const l = Object.entries(votes).sort((a, b) => b[1] - a[1] || (a[0] === 'frontal' ? -1 : b[0] === 'frontal' ? 1 : 0));
+  return l.length ? l[0][0] : null;
+}
+
+export function dernierCarreHtml(k, s, annonces, mesAgents) {
+  if (!v3Actif() || !s.barricade || !s.lieutenant) return '';
+  const C = M3.carre, mien = (S.draft && S.draft.tactiques && S.draft.tactiques[k]) || null;
+  const votes = {};
+  for (const x of annonces) { const v = x.moi ? mien : x.tac; const n = x.moi ? mesAgents : x.n; if (v && n > 0) votes[v] = (votes[v] || 0) + n; }
+  const chefs = annonces.map((x) => S.state.zones[x.uid]).filter(Boolean).map((z) => (z.chef ? niveauChef(z.chef, 'diplomatie') || 0 : 0));
+  const nego = Math.min(C.negoMax, C.negoBase + C.negoParNiveau * Math.max(0, ...chefs));
+  const tete = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
+  const choix = (v) => {
+    const t = TACTIQUES[v];
+    return `<button type="button" class="choice ml-tac" data-action="nd-tactique" data-c="${k}" data-v="${v}" aria-pressed="${mien === v}">
+      <span class="ml-tac-t">${t.ico} ${esc(t.nom)}${votes[v] ? ` <span class="pill">${votes[v]} ag.</span>` : ''}</span>
+      <span class="tiny muted">${{ frontal: `tombe à coup sûr · risque de blessé (${Math.round(C.frontalBlessure * 100)} % par agent en descente)`, negocier: `${Math.round(nego * 100)} % (diplomatie des chefs) : il se rend, +1 renseignement · sinon emprise +${C.negoEchec}`, encercler: 'sans fuite : tombe, saisies ×2 · sinon assaut normal' }[v]}</span></button>`;
+  };
+  return `<div class="ml-carre">
+    <div class="row" style="gap:8px"><span class="ml-scene-ico" aria-hidden="true">🧱</span><span class="col" style="gap:0;flex:1;min-width:0"><strong class="small" style="color:var(--amber)">Dernier carré : ${esc(cap(s.lieutenant.nom))} s’est barricadé</strong>
+      <span class="tiny muted">Vote des zones engagées (1 agent à l’assaut = 1 voix)${tete ? ` · en tête : <strong>${esc(TACTIQUES[tete[0]].nom.toLowerCase())}</strong>` : ''}</span></span></div>
+    ${['frontal', 'negocier', 'encercler'].map(choix).join('')}
+    ${mesAgents ? '' : '<p class="tiny warn" style="margin:0">Engage au moins un agent à l’assaut de ce secteur pour que ton vote compte.</p>'}
+  </div>`;
+}

@@ -45,7 +45,7 @@ import { secteursEnDanger, agentsND } from './nondroit.js';
 import { nomSecteur } from '../engine/nondroit.js';
 import { scenesDuSoir, seuilScene, SCENES } from '../engine/milieu.js';
 import { ICO_SCENE, sceneHtml } from './milieu.js';
-import { rolesDe, annoncesND, placeND } from './nondroit.js';
+import { rolesDe, annoncesND, placeND, presqueTombes } from './nondroit.js';
 import { incidentsHtml, jaugeSkinsLigne } from './incidents.js';
 import { vignetteVentes, vignetteEquipe, vignetteTrophees, vignetteRapport, vignetteGazette, vignetteClassement, vignetteChallenge } from './vignettes-hp.js';
 import { phaseVente } from '../engine/ventes.js';
@@ -453,6 +453,15 @@ function aujourdhuiHtml(st, z, T, items) {
   { const h = fipaCards(); if (h) { const att = items.some((i) => i.href === '#hp-fipa' && !i.ok); L.push({ prio: 1, html: ligneAjd({ k: `ajd-fipa-${T}`, ico: '🤝', titre: att ? 'FIPA : une décision t’attend' : 'FIPA', sous: 'renfort d’une zone partenaire', badge: att ? pastilleAFaire(false) : '', ouvert: att, corps: `<div id="hp-fipa">${h}</div>` }) }); } }
 
   { const h = incidentsHtml({ avant: actuLigne() + lucLigne(), nu: true }); if (h) L.push({ prio: 2, html: `<div class="ajd-inc" id="hp-incidents" aria-label="Incidents du jour">${h}</div>` }); }
+  // Non-droit : un secteur qui tombe ce soir avec quelques agents de plus (zones déjà annoncées à la radio).
+  for (const x of presqueTombes().slice(0, 2)) L.push({ prio: 1, html: `<button type="button" class="ajd-alerte amber" data-action="secteur" data-c="${x.k}" style="width:100%;text-align:left;font:inherit;cursor:pointer"><span class="ajd-point" aria-hidden="true"></span>
+    <span class="ajd-txt"><b>⚡ ${esc(nomSecteur(x.k))} peut tomber ce soir</b><span>il manque ${x.n} agent${x.n > 1 ? 's' : ''} aux zones déjà annoncées · rejoindre</span></span><span class="ajd-chev" aria-hidden="true">${icon('chevron', 16)}</span></button>` });
+  // Dernier carré : un lieutenant barricadé, la tactique se vote dans la fiche du secteur.
+  for (const [k, sb] of Object.entries((st.nonDroit && st.nonDroit.secteurs) || {})) if (sb.barricade && sb.lieutenant && st.nonDroit.v3) {
+    const vote = d.tactiques && d.tactiques[k];
+    L.push({ prio: 1, html: `<button type="button" class="ajd-alerte amber" data-action="secteur" data-c="${k}" style="width:100%;text-align:left;font:inherit;cursor:pointer"><span class="ajd-point" aria-hidden="true"></span>
+      <span class="ajd-txt"><b>🧱 Dernier carré à ${esc(nomSecteur(k))}</b><span>${esc(sb.lieutenant.nom)} s’est barricadé · ${vote ? `ton vote : ${vote === 'frontal' ? 'assaut frontal' : vote === 'negocier' ? 'négocier' : 'encercler'}` : 'vote ta tactique ce soir'}</span></span>${vote ? pastilleAFaire(true) : `<span class="ajd-chev" aria-hidden="true">${icon('chevron', 16)}</span>`}</button>` });
+  }
   // Non-droit : la scène du soir (émeute, rodéo…), à régler avec des agents ou en jouant le mini-jeu.
   for (const sc of scenesDuSoir(st)) {
     const r = ((d.roles || {})[String(sc.cell)] || {}).sc || 0, res = S.player && S.player.incidents && S.player.incidents.r && S.player.incidents.r[sc.id];
