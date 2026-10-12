@@ -1,0 +1,18 @@
+# Pousse la mise à jour du jeu à tous les joueurs tout de suite (bandeau « Mettre à jour »), sans attendre 20:00.
+name: Pousser la mise à jour
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  maj:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i --no-save firebase-admin@12.7.0
+      - run: node outils/serveur/maj.mjs
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
