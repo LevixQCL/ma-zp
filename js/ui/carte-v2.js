@@ -15,6 +15,17 @@ import { tensionsDe } from '../engine/quartiers.js';
 // « district » (anciens liens) mène au même écran que « nondroit ».
 export const CALQUES = [['nondroit', 'Non-droit'], ['mazone', 'Ma zone']];
 
+/** Cadrage de la carte au calque Non-droit, retenu par appareil : « nondroit » (zoom) ou « district » (tout). */
+let vueND = null;
+export function vueCarteND() {
+  if (vueND === null) { try { vueND = localStorage.getItem('mazp-carte-vue') === 'district' ? 'district' : 'nondroit'; } catch (e) { vueND = 'nondroit'; } }
+  return vueND;
+}
+export function basculerVueCarteND() {
+  vueND = vueCarteND() === 'district' ? 'nondroit' : 'district';
+  try { localStorage.setItem('mazp-carte-vue', vueND); } catch (e) { /* stockage indisponible : on garde le choix pour la session */ }
+}
+
 /** Calque ouvert en arrivant par l'ancien lien « Terrain » : le non-droit et le district. */
 export function calqueTerrain() { return 'nondroit'; }
 
@@ -89,7 +100,11 @@ export function renderCarteV2(calque = S.carteCalque || 'nondroit') {
   const aRepondre = aFairePactes().filter((x) => !x.fait).length;
   const nbPactes = (st.pactes || []).filter((p) => (p.a === me.uid || p.b === me.uid) && p.etape === 'actif').length;
   const btnPactes = Object.keys(st.zones).length > 1 ? `<a class="cv-pactes ${aRepondre ? 'alerte' : ''}" href="#pactes" aria-label="Pactes${aRepondre ? ` : ${aRepondre} à répondre` : ''}"><span aria-hidden="true">🤝</span>Pactes${aRepondre ? `<i>${aRepondre}</i>` : nbPactes ? `<small>${nbPactes}</small>` : ''}</a>` : '';
-  const carte = `<div class="cv-carte">${planIso(st, me, { vue: calque, sel })}${btnPactes}<span class="cv-astuce" aria-hidden="true">${astuce}</span></div>`;
+  // Non-droit : cadrage serré sur la zone de non-droit (pour jouer) ou tout le district avec les zones des joueurs (pour regarder).
+  const vueDist = calque === 'nondroit' && nd.length && vueCarteND() === 'district';
+  const btnVue = calque === 'nondroit' && nd.length ? `<button type="button" class="cv-vue" data-action="carte-vue" aria-pressed="${vueDist}" title="${vueDist ? 'Revenir au zoom sur le non-droit' : 'Voir tout le district et les zones des joueurs'}"><span aria-hidden="true">${vueDist ? '🎯' : '🗺️'}</span>${vueDist ? 'Non-droit' : 'District'}</button>` : '';
+  const astuceV = vueDist ? 'Touche une zone · ou un secteur rouge' : astuce;
+  const carte = `<div class="cv-carte">${planIso(st, me, { vue: vueDist ? 'district' : calque, sel })}${btnVue}${btnPactes}<span class="cv-astuce" aria-hidden="true">${astuceV}</span></div>`;
   const ndCorps = calque === 'nondroit' ? nonDroitHtml({ sansPlan: true }) : '';
   const corps = calque === 'mazone' ? `${ficheQuartierHtml(st, me, sel)}${chipsQuartiersHtml(st, me, sel)}${siteHtml(siteDe(me))}`
     : `${ndCorps || '<p class="small muted" style="margin:0">La zone de non-droit n’est pas encore ouverte dans cette partie.</p>'}${districtHtml(st, me)}`;

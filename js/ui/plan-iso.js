@@ -2,7 +2,7 @@
 // maisons, commerces, tours, arbres, rues et lampadaires ; voitures de police animées (une par patrouille envoyée).
 // Chaque quartier se touche sur toute sa surface (îlot + volume des immeubles) : data-action="quartier".
 // Le dessin fixe est mis en cache par tour ; seuls la sélection et les patrouilles changent à chaque toucher.
-import { S } from './common.js';
+import { S, pseudoJoueur } from './common.js';
 import { territoires, WW, HH } from './ville.js';
 import { bezier } from './plan.js';
 import { makeRng } from '../engine/rng.js';
@@ -18,8 +18,8 @@ export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
   const seed = S.config.seed, reduit = calme();
   const mesT0 = tensionsDe(st, me);
   const ndS = (st.nonDroit && st.nonDroit.secteurs) || {};
-  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, Object.entries(ndS).map(([k, x]) => `${k}:${x.statut}:${Math.round(x.emprise)}:${x.lieutenant ? x.lieutenant.etat : ''}:${Number.isFinite(x.confiance) ? etape(x) : ''}`).join(','), scenesDuSoir(st).map((x) => `${x.cell}${x.type}`).join(','), Object.values(st.zones).map((z) => `${z.uid}:${z.nom}:${z.fondateur ? 1 : 0}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
-  if (!cache || cache.cle !== cle) cache = { cle, ...dessiner(st, me, seed, vue === 'mazone' ? 'zone' : T_VUE(st), reduit) };
+  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, Object.keys(S.players || {}).length, Object.entries(ndS).map(([k, x]) => `${k}:${x.statut}:${Math.round(x.emprise)}:${x.lieutenant ? x.lieutenant.etat : ''}:${Number.isFinite(x.confiance) ? etape(x) : ''}`).join(','), scenesDuSoir(st).map((x) => `${x.cell}${x.type}`).join(','), Object.values(st.zones).map((z) => `${z.uid}:${z.nom}:${z.fondateur ? 1 : 0}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
+  if (!cache || cache.cle !== cle) cache = { cle, ...dessiner(st, me, seed, vue === 'mazone' ? 'zone' : vue === 'district' ? 'district' : T_VUE(st), reduit) };
   let svg = cache.svg;
   // Non-droit : mes fourgons partent de mon HP vers les secteurs où j'engage des agents ce soir ; ceux des collègues
   // annoncés à la radio aussi (gris), avec le total sur place.
@@ -539,6 +539,14 @@ function dessiner(st, me, seed, vue, reduit) {
   const fleuve = `<polygon points="${poly(fleuveP)}" fill="#0E2550" stroke="#3E6BB0" stroke-opacity=".5" stroke-width=".6"/>${reflets}`;
   // En vue district, ma zone entière est une seule cible : on y « zoome ».
   const cibleDistrict = zoomZone ? '' : `<polygon points="${poly(enveloppe([...mes].flatMap((i) => T.cells[i].poly.map(([x, y]) => P(x, y)))))}" fill="#FFB23F" fill-opacity=".05" stroke="#FFB23F" stroke-width="1" stroke-dasharray="3 2" pointer-events="none"/>`;
+  // Vue district : la frontière de chaque zone d'un collègue, en fin pointillé discret (les arêtes que ses quartiers
+  // ne partagent pas entre eux), pour voir les territoires sans couleur criarde.
+  const frontieres = vue !== 'district' ? '' : T.zones.filter((tz) => tz.uid !== me.uid && st.zones[tz.uid]).map((tz) => {
+    const n = {}, k = (a, b) => { const u = `${a[0].toFixed(2)},${a[1].toFixed(2)}`, v = `${b[0].toFixed(2)},${b[1].toFixed(2)}`; return u < v ? u + '|' + v : v + '|' + u; };
+    const segs = [];
+    for (const i of tz.quartiers.filter((q) => !ndSet.has(q))) { const pp = T.cells[i].poly; pp.forEach((a2, j) => { const b2 = pp[(j + 1) % pp.length], kk = k(a2, b2); n[kk] = (n[kk] || 0) + 1; segs.push([kk, a2, b2]); }); }
+    return segs.filter(([kk]) => n[kk] === 1).map(([, a2, b2]) => { const [x1, y1] = P(a2[0], a2[1]), [x2, y2] = P(b2[0], b2[1]); return `M${f(x1)} ${f(y1)}L${f(x2)} ${f(y2)}`; }).join('');
+  }).map((d) => d ? `<path d="${d}" fill="none" stroke="#B9C4EA" stroke-opacity=".38" stroke-width=".7" stroke-dasharray="2.2 1.8" stroke-linecap="round"/>` : '').join('');
   // District : le nom de chaque zone sur son quartier principal (touche → son commissariat).
   const nomsZones = zoomZone ? '' : T.zones.filter((tz) => st.zones[tz.uid]).map((tz) => {
     // Le nom se pose sur le quartier de la zone visible le plus proche du centre (sa capitale en vue district).
@@ -546,12 +554,33 @@ function dessiner(st, me, seed, vue, reduit) {
     if (!vus.length) return '';
     const ndC = T.nd.cells.length ? T.nd.cells.reduce((a, i) => [a[0] + T.cells[i].c[0] / T.nd.cells.length, a[1] + T.cells[i].c[1] / T.nd.cells.length], [0, 0]) : [WW / 2, HH / 2];
     const ci = vus.slice().sort((a, b) => Math.hypot(T.cells[b].c[0] - ndC[0], T.cells[b].c[1] - ndC[1]) - Math.hypot(T.cells[a].c[0] - ndC[0], T.cells[a].c[1] - ndC[1]))[vue === 'nondroit' ? vus.length - 1 : 0];
-    const c = T.cells[ci], moiZ = tz.uid === me.uid, z = st.zones[tz.uid];
+    // Vue district : le nom au cœur du territoire (le quartier le plus proche de son centre), pas sur l'HP, souvent
+    // collé au non-droit où il chevauchait les pastilles.
+    let ciD = ci;
+    const horsND0 = tz.quartiers.filter((i) => !ndSet.has(i));
+    // Une zone qui enveloppe le non-droit a son centre dedans : on écarte les quartiers qui le touchent, si elle en a d'autres.
+    const loinND = horsND0.filter((i) => !T.adj[i].some((j) => ndSet.has(j)));
+    const horsND = loinND.length ? loinND : horsND0;
+    if (vue === 'district' && horsND.length) {
+      const g = horsND.reduce((acc, i) => [acc[0] + T.cells[i].c[0] / horsND.length, acc[1] + T.cells[i].c[1] / horsND.length], [0, 0]);
+      const gC = horsND.slice().sort((a2, b2) => Math.hypot(T.cells[a2].c[0] - g[0], T.cells[a2].c[1] - g[1]) - Math.hypot(T.cells[b2].c[0] - g[0], T.cells[b2].c[1] - g[1]));
+      ciD = gC[0];
+    }
+    const c = T.cells[ciD], moiZ = tz.uid === me.uid, z = st.zones[tz.uid];
     const nom = moiZ ? 'Ma zone' : (z.nom.length > 12 ? `${z.nom.slice(0, 11)}…` : z.nom), fd = !!z.fondateur, lw = 14 + nom.length * 4.3 + (fd ? 10 : 0);
     // Zone fondatrice (saison 1) : médaillon de bronze « S1 » devant le nom, liseré bronze.
     const med = fd ? `<g transform="translate(${f(-lw / 2 + 7.5)} -.5)"><title>Zone fondatrice (saison 1)</title><circle r="5.2" fill="url(#${id('bronze')})" stroke="#6E4B17" stroke-width=".6"/><text y="2" text-anchor="middle" style="font:700 5px 'Barlow Condensed',sans-serif;fill:#4A3010">S1</text></g>` : '';
     const [lx, ly] = P(c.c[0], c.c[1], 30);
     const attrs = moiZ ? 'data-action="carte-calque" data-v="mazone"' : `data-action="voir-hp" data-uid="${tz.uid}"`;
+    // Vue district : le nom de la zone et, dessous, le pseudo du joueur, en petit, sans pastille : un halo sombre suffit
+    // à les lire sur les toits (pas de grosse étiquette colorée par zone).
+    if (vue === 'district') {
+      const pseudo = moiZ ? 'toi' : pseudoJoueur(tz.uid);
+      const nomZ = z.nom.length > 16 ? `${z.nom.slice(0, 15)}…` : z.nom;
+      const ps = pseudo.length > 16 ? `${pseudo.slice(0, 15)}…` : pseudo;
+      const s1 = fd ? `<circle cx="${f(-nomZ.length * 2.2 - 6)}" cy="-2.2" r="2.8" fill="url(#${id('bronze')})" stroke="#6E4B17" stroke-width=".4"><title>Zone fondatrice (saison 1)</title></circle>` : '';
+      return `<g ${attrs} class="iso-dz${moiZ ? ' moi' : ''}" style="cursor:pointer" transform="translate(${f(lx)} ${f(ly)})"><g class="iso-dz-i"><rect x="-26" y="-9" width="52" height="18" fill="transparent"/>${s1}<text y="0" text-anchor="middle" class="iso-dzn">${nomZ.replace(/[<&]/g, '')}</text><text y="7.4" text-anchor="middle" class="iso-dzp">${ps.replace(/[<&]/g, '')}</text></g></g>`;
+    }
     return `<g ${attrs} style="cursor:pointer" transform="translate(${f(lx)} ${f(ly)})"><rect x="${f(-lw / 2)}" y="-8" width="${f(lw)}" height="15" rx="7.5" fill="${moiZ ? '#FFB23F' : '#0B1124'}" fill-opacity="${moiZ ? 1 : 0.88}" stroke="${fd ? '#C99A45' : moiZ ? '#FFB23F' : '#5A6699'}" stroke-width="${fd ? 1 : 0.7}"/>${med}<text ${fd ? 'x="5" ' : ''}y="2.6" text-anchor="middle" class="iso-zn" ${moiZ ? 'style="fill:#0B1124"' : ''}>${nom.replace(/[<&]/g, '')}</text></g>`;
   }).join('');
 
@@ -562,8 +591,8 @@ function dessiner(st, me, seed, vue, reduit) {
       <radialGradient id="${id('fumee')}"><stop offset="0" stop-color="#2A2630" stop-opacity=".95"/><stop offset=".6" stop-color="#2A2630" stop-opacity=".6"/><stop offset="1" stop-color="#2A2630" stop-opacity="0"/></radialGradient>
       <radialGradient id="${id('feu')}"><stop offset="0" stop-color="#FF7A3C" stop-opacity=".6"/><stop offset="1" stop-color="#FF7A3C" stop-opacity="0"/></radialGradient>
       <clipPath id="${id('vue')}"><rect x="${f(x0)}" y="${f(y0)}" width="${f(x1 - x0)}" height="${f(y1 - y0)}"/></clipPath></defs>
-    <style>.iso-tn{font:800 7px 'Bricolage Grotesque',sans-serif;fill:#0B1124}.iso-nmq{font:800 7px 'Instrument Sans',sans-serif;fill:#0B1124}.iso-pbt{font:800 6px 'Bricolage Grotesque',sans-serif;fill:#fff}.iso-zn{font:700 7.5px 'Instrument Sans',sans-serif;fill:#EDF0FA}.iso .hit,.iso .hit-zone,.iso .hit-nd,.iso .hit-autre{cursor:pointer}</style>
-    <g clip-path="url(#${id('vue')})">${routes.join('')}${fleuve}${sol.join('')}${selections.join('')}${lueurs.join('')}${voitures.join('')}${objets.map(dessin).join('')}${tirs.join('')}${fumees.join('')}<!--dyn-->${cibles.map((c) => c.h).join('')}${cibleDistrict}${etiqND.join('')}${etiqHtml}${nomsZones}</g>
+    <style>.iso-tn{font:800 7px 'Bricolage Grotesque',sans-serif;fill:#0B1124}.iso-nmq{font:800 7px 'Instrument Sans',sans-serif;fill:#0B1124}.iso-pbt{font:800 6px 'Bricolage Grotesque',sans-serif;fill:#fff}.iso-zn{font:700 7.5px 'Instrument Sans',sans-serif;fill:#EDF0FA}.iso-dz text{paint-order:stroke;stroke:#070B19;stroke-opacity:.85;stroke-linejoin:round}.iso-dzn{font:700 7.4px 'Instrument Sans',sans-serif;fill:#E3E8F7;stroke-width:2.2px;letter-spacing:.02em}.iso-dzp{font:600 5.6px 'Instrument Sans',sans-serif;fill:#9AA8D0;stroke-width:1.8px}.iso-dz.moi .iso-dzn{fill:#FFC970}.iso-dz:hover .iso-dzn{fill:#fff}.iso .hit,.iso .hit-zone,.iso .hit-nd,.iso .hit-autre{cursor:pointer}</style>
+    <g clip-path="url(#${id('vue')})">${routes.join('')}${fleuve}${sol.join('')}${selections.join('')}${lueurs.join('')}${voitures.join('')}${objets.map(dessin).join('')}${tirs.join('')}${fumees.join('')}<!--dyn-->${cibles.map((c) => c.h).join('')}${frontieres}${cibleDistrict}${etiqND.join('')}${etiqHtml}${nomsZones}</g>
   </svg>`;
   const pos = (i, z = 0) => (T.cells[i] ? P(T.cells[i].c[0], T.cells[i].c[1], z) : null);
   const route = itineraire(T, ndSet, st, P);

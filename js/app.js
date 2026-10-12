@@ -61,7 +61,7 @@ import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderRadioV2 } from './ui/radio-v2.js';
 import { reglesV2 } from './engine/regles.js';
 import { previsionCourte } from './ui/prevision.js';
-import { renderCarteV2, calqueTerrain } from './ui/carte-v2.js';
+import { renderCarteV2, calqueTerrain, basculerVueCarteND } from './ui/carte-v2.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { renderDebrief } from './ui/debrief.js';
 import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES, FORMES, formesPourTour, quatrePourTour, enquetePourTour, RELANCE_PS } from './quests/quests.js';
@@ -709,6 +709,7 @@ async function onClick(e) {
         S.quartierSel = k; S.ordersDirty = true; rerender(); break;
       }
       case 'cv-nd': S.carteCalque = 'nondroit'; rerender(); document.getElementById('non-droit')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); break;
+      case 'carte-vue': basculerVueCarteND(); rerender(); break;
       case 'carte-calque': S.carteCalque = el.dataset.v; if (S.route !== 'carte') location.hash = '#carte'; else { rerender(); } break;
       case 'carte-zoom': S.carteZoom = el.dataset.v === '1'; rerender(); break;
       case 'renfort-n': {
