@@ -1140,9 +1140,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z.moral += (o.rythme === 'renforce' && z._service === 'syndicat' ? 0 : RYTHMES[o.rythme].moral + (o.rythme === 'renforce' ? forceDoctrine(z, 'renforce') + (talent(z, 'meneur') ? TALENT.meneur.moral : 0) : 0));
     if (o.rythme === 'renforce' && talent(z, 'meneur')) noterChef(z, 'meneur', 'Meneur d’hommes : le rythme renforcé a moins pesé sur le moral.');
     jalon(z, `Rythme ${RYTHMES[o.rythme].label.toLowerCase()}`);
+    // (L'ancienne réputation quotidienne de la doctrine Partenaire, remplacée le 10 oct. par sa jauge, n'existe plus :
+    // sa ligne « Doctrine partenaire : réputation » ramassait à tort le +1 de moral de la salle de sport.)
     if (z.infra.sport) z.moral += 1;
-    if (forceDoctrine(z, 'repJour')) z.reputation += forceDoctrine(z, 'repJour');
-    jalon(z, 'Doctrine partenaire : réputation');
     jalon(z, 'Salle de sport');
     if (z.budget < 0) z.moral -= 3;
     jalon(z, 'Budget négatif : −3');

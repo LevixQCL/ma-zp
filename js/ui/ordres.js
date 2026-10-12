@@ -13,7 +13,7 @@ import { participeCommune, agentsCommune } from '../engine/crise.js';
 import { engagementsDuJour } from './engagements.js';
 import { primeHtml } from './prime.js';
 import { previsionHtml, suivrePrevision } from './prevision.js';
-import { reglesV2, MAX_DEPENSES, doctrineOuverte, dernierJourDoctrine, doctrineSemaine2, finFenetreDoctrine } from '../engine/regles.js';
+import { reglesV2, MAX_DEPENSES, doctrineOuverte, dernierJourDoctrine, doctrineSemaine2, finFenetreDoctrine, DOCTRINE_SEM2 } from '../engine/regles.js';
 import { DOCTRINES, IDS_DOCTRINES, REGLES, MAITRISE, coutPrime } from '../engine/constants.js';
 import { pistesOrdresHtml, resumePistes } from './pistes.js';
 import { chefOrdresHtml, resumeChefOrdres, emplacementsHtml } from './chef.js';
@@ -866,9 +866,24 @@ function jaugeSansService(z) {
   if (!D || !D.jauge || D.jauge.service) return '';
   return `<div class="jg-inter jg-solo">${barreJauge(D.jauge.ico, D.jauge.nom, valJauge(z), D.jauge.remplit, D.jauge.gain, ' jg-doc')}</div>`;
 }
+/** Fenêtre de choix fermée : rappel de la doctrine en vigueur (une ligne ; un toucher déplie force, prix et jauge). */
+function doctrineFixeeHtml(z) {
+  if (!REGLES.v2 || !reglesV2(S.state)) return '';
+  const D = z.doctrine && DOCTRINES[z.doctrine], T = S.state.turn;
+  const k = 'ord-doc-info', ouv = !!(S.ouverts && S.ouverts[k]);
+  const prochain = T < DOCTRINE_SEM2.debut && !z.doctrineSem2 ? `modifiable les jours ${DOCTRINE_SEM2.debut} et ${DOCTRINE_SEM2.fin}` : 'fixée jusqu’à la fin de la saison';
+  if (!D) return `<section class="card" id="ord-doctrine" aria-label="Doctrine de la zone" style="gap:2px"><span class="kicker">Doctrine de la zone</span><span class="small muted">Aucune doctrine en vigueur (${T < DOCTRINE_SEM2.debut ? `prochain choix les jours ${DOCTRINE_SEM2.debut} et ${DOCTRINE_SEM2.fin}` : 'pas choisie à temps'}).</span></section>`;
+  const m = z.maitrise || 0;
+  return `<details class="card doctrine-pli" id="ord-doctrine" data-k="${k}" aria-label="Doctrine de la zone" ${ouv ? 'open' : ''}>
+    <summary class="pli-ligne" style="list-style:none"><span class="col grow" style="gap:1px;min-width:0;text-align:left"><span class="kicker">Doctrine en vigueur</span><span class="pli-resume">${D.ico} ${esc(D.nom)}${m ? ` · ${'★'.repeat(m + 1)}` : ''} · <span class="muted">${prochain}</span></span></span>${icon('chevron', 16)}</summary>
+    <div class="col" style="gap:6px;margin-top:8px"><span class="small ok">+ ${esc(D.force)}</span><span class="small bad">− ${esc(D.prix)}</span>
+      ${D.jauge ? `<span class="small">${D.jauge.ico} Jauge « ${esc(D.jauge.nom)} » : ${Math.round(valJauge(z) * 100)} %. Se remplit : ${esc(D.jauge.remplit)}. À 100 % : ${esc(D.jauge.gain)}.</span>` : ''}
+      ${m ? `<span class="tiny muted">Maîtrise ${'★'.repeat(m + 1)} : force +${Math.round(MAITRISE * m * 100)} %.</span>` : ''}
+      <a class="small" href="#guide-doctrines">❔ Le guide des doctrines</a></div></details>`;
+}
 /** Choix de la doctrine (règles v2) : les 3 premiers jours de la saison, puis les jours 8 et 9 pour la 2e semaine. */
 function doctrineHtml(z, d) {
-  if (!doctrineOuverte(S.state, z)) return '';
+  if (!doctrineOuverte(S.state, z)) return doctrineFixeeHtml(z);
   const sem2 = doctrineSemaine2(S.state, z);
   const reste = finFenetreDoctrine(S.state, z) - S.state.turn;
   const quand = reste <= 0 ? 'jusqu’à 20:00' : `encore ${reste + 1} jours`;
