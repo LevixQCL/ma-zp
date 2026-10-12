@@ -1,0 +1,417 @@
+<title>Carte du non-droit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Maquette : la zone de non-droit jouée directement sur une carte commune (Ma ZP). Monde sombre unique, celui du jeu.
+   Mise en page : la carte en grand ; à droite (PC) ou dessous (téléphone) la fiche du secteur touché et tes policiers. */
+:root {
+  color-scheme: dark;
+  --bg: #0C1124; --bg-deep: #080C1B; --surface: #141B33; --surface2: #1C2442; --surface3: #243050;
+  --line: #29345A; --hair: rgba(190, 205, 255, .08);
+  --text: #EDF0FA; --text2: #C3C9DE; --muted: #96A0BF;
+  --amber: #FFB23F; --amber-hi: #FFC970; --amber-ink: #241400; --amber-bg: rgba(255, 178, 63, .11); --amber-line: rgba(255, 178, 63, .40);
+  --blue: #63B0FF; --green: #3DD39A; --green-bg: rgba(61, 211, 154, .12); --red: #FF6E6A; --red-bg: rgba(255, 110, 106, .10); --red-line: rgba(255, 110, 106, .45);
+  --display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --body: 'Instrument Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg-deep); color: var(--text); font: 15px/1.45 var(--body); margin: 0; }
+button { font: inherit; color: inherit; }
+.page { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 48px; display: flex; flex-direction: column; gap: 14px; }
+.kicker { font: 600 12px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(24px, 4vw, 34px)/1.05 var(--display); margin: 2px 0 0; }
+.tete { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; }
+.horloge { font: 500 13px var(--mono); padding: 6px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); color: var(--text2); }
+.demo { font-size: 12.5px; color: var(--amber-hi); background: var(--amber-bg); border: 1px solid var(--amber-line); border-radius: 12px; padding: 7px 12px; }
+.jeu { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (min-width: 980px) { .jeu { grid-template-columns: minmax(0, 1fr) 360px; } .cote { position: sticky; top: 12px; } }
+.carte { position: relative; width: 100%; aspect-ratio: 680 / 400; border-radius: 20px; overflow: hidden; border: 1px solid var(--hair); background: radial-gradient(ellipse at 50% 40%, #18224A, #060918 78%); touch-action: none; user-select: none; -webkit-user-select: none; }
+@media (max-width: 600px) { .astuce { display: none; } .carte { margin-inline: -16px; width: calc(100% + 32px); border-radius: 0; border-inline: 0; } }
+#plan { width: 100%; height: 100%; display: block; }
+.astuce { position: absolute; left: 12px; bottom: 10px; font: 600 12px var(--body); color: var(--text2); background: rgba(10, 15, 34, .85); border: 1px solid rgba(255,255,255,.14); border-radius: 999px; padding: 5px 10px; pointer-events: none; }
+.cote { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.bloc { padding: 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--hair); display: flex; flex-direction: column; gap: 10px; }
+.bloc h2 { font: 700 17px var(--display); margin: 0; }
+.bloc p { margin: 0; font-size: 13.5px; color: var(--text2); }
+.bloc p b { color: var(--text); }
+.pions { display: flex; gap: 6px; flex-wrap: wrap; min-height: 64px; align-items: center; }
+.pions:empty::after { content: 'Tous tes policiers sont sur la carte. Tire-en un pour le déplacer.'; font-size: 13px; color: var(--muted); }
+.pion { width: 48px; border: 0; background: none; padding: 0; cursor: grab; touch-action: none; border-radius: 12px; display: flex; flex-direction: column; align-items: center; }
+.pion svg { width: 44px; height: 52px; display: block; filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+.pion.choisi { outline: 3px solid #fff; }
+.pion:focus-visible { outline: 3px solid var(--amber); }
+.fantome { position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -70%) scale(1.15); }
+.fantome svg { width: 48px; height: 56px; display: block; filter: drop-shadow(0 10px 14px rgba(0,0,0,.6)); }
+.legende { display: flex; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--text2); }
+.legende span { display: inline-flex; align-items: center; gap: 5px; }
+.legende i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.jauge { height: 10px; border-radius: 6px; background: var(--surface3); overflow: hidden; position: relative; }
+.jauge i { display: block; height: 100%; border-radius: 6px; transition: width .25s; }
+.jauge b { position: absolute; top: -2px; bottom: -2px; width: 2px; background: #fff; }
+.ligne { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: 14px; }
+.ligne .v { font: 700 18px var(--display); font-variant-numeric: tabular-nums; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font: 600 12px var(--body); padding: 4px 9px; border-radius: 999px; background: var(--surface2); display: inline-flex; align-items: center; gap: 6px; }
+.chip i { width: 9px; height: 9px; border-radius: 50%; }
+.etat { font-size: 13.5px; padding: 9px 11px; border-radius: 12px; }
+.etat.r { background: var(--red-bg); border: 1px solid var(--red-line); color: #FFC9C6; }
+.etat.a { background: var(--amber-bg); border: 1px solid var(--amber-line); color: var(--amber-hi); }
+.etat.v { background: var(--green-bg); border: 1px solid rgba(61,211,154,.35); color: #BDF1DB; }
+.etat b { color: var(--text); }
+.lt { display: flex; gap: 10px; align-items: center; }
+.lt svg { width: 42px; height: 42px; border-radius: 50%; background: #20294D; flex: none; }
+.lt b { font: 700 15px var(--display); display: block; }
+.lt span { font-size: 12.5px; color: var(--muted); }
+button.btn { font: 600 14px var(--body); border-radius: 12px; padding: 10px 14px; min-height: 44px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); cursor: pointer; }
+button.btn:hover { border-color: var(--amber-line); }
+button.btn.primaire { background: linear-gradient(160deg, var(--amber-hi), var(--amber)); color: var(--amber-ink); border-color: transparent; }
+button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.actions .btn { flex: 1 1 140px; }
+.constat { display: flex; flex-direction: column; gap: 8px; }
+.cs { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: 12px; background: var(--bg); font-size: 13.5px; color: var(--text2); }
+.cs .ico { font-size: 20px; line-height: 1; }
+.cs b { color: var(--text); }
+.affiche { padding: 12px; border-radius: 14px; background: #F4EFE3; color: #1D1A15; display: flex; gap: 12px; align-items: center; transform: rotate(-.6deg); box-shadow: 0 12px 26px -10px rgba(0,0,0,.7); }
+.affiche .cadre { width: 58px; flex: none; border: 2px solid #1D1A15; padding: 3px; text-align: center; font: 800 9px var(--display); letter-spacing: .08em; background: #FFF8E8; }
+.affiche .cadre svg { width: 100%; height: auto; display: block; background: #E7DCC2; margin: 3px 0; }
+.affiche b { font: 800 15px var(--display); display: block; }
+.affiche span { font-size: 12.5px; color: #4A4234; }
+.regles { font-size: 13.5px; color: var(--text2); }
+.regles summary { cursor: pointer; font: 700 14px var(--display); color: var(--text); }
+.regles ul { margin: 8px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="page">
+  <div class="tete">
+    <div>
+      <div class="kicker">Ma ZP · zone de non-droit · maquette</div>
+      <h1>Ce soir, on y va ensemble</h1>
+    </div>
+    <span class="horloge" id="horloge">Lundi · 18:42</span>
+  </div>
+  <div class="demo">Maquette isolée : tes collègues sont simulés et rien n'est relié à la partie. Les chiffres sont à régler par simulation.</div>
+
+  <div class="jeu">
+    <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+      <div class="carte" id="cadre">
+        <svg id="plan" viewBox="0 58 680 400" aria-label="Carte de la zone de non-droit"></svg>
+        <span class="astuce" id="astuce">Glisse tes policiers sur un secteur rouge</span>
+      </div>
+      <div class="legende">
+        <span><i style="background:#FFB23F"></i>toi (Horizon)</span>
+        <span><i style="background:#3DD39A"></i>Ananas</span>
+        <span><i style="background:#63B0FF"></i>Police Acad.</span>
+        <span><i style="background:#C38BFF"></i>Djoumap City</span>
+        <span><i style="background:#FF8FB1"></i>Les Hauts</span>
+      </div>
+    </div>
+    <aside class="cote">
+      <div class="bloc" id="fiche"></div>
+      <div class="bloc">
+        <h2>Tes policiers ce soir</h2>
+        <p>Les 6 agents que tu as mis au non-droit dans tes Ordres. Glisse-les sur un secteur, ou touche un policier puis un secteur.</p>
+        <div class="pions" id="reserve"></div>
+        <div class="actions">
+          <button class="btn" type="button" id="auto">Rejoindre le plus urgent</button>
+          <button class="btn primaire" type="button" id="lancer">Passer à 20:00</button>
+        </div>
+      </div>
+      <details class="bloc regles">
+        <summary>Comment ça marche</summary>
+        <ul>
+          <li><b>Chaque policier apporte de la force</b> au secteur où il est posé : Intervention 3 (la descente), Proximité 2 (le bouclage), Recherche 1, mais le premier repérage d'un secteur ajoute +25 % à tout le monde.</li>
+          <li><b>À plusieurs, c'est plus fort</b> : +20 % par zone en plus de la première.</li>
+          <li><b>Le contour du secteur</b> et sa petite jauge montrent la force posée face à ce qu'il faut pour le reprendre. Rouge : trop faible, blessés possibles. Ambre : on fait reculer le milieu. Vert : le secteur tombe ce soir.</li>
+          <li><b>Le lendemain matin</b>, la carte a changé. Pour chaque secteur repris, la prime se partage selon la force que chacun a posée, et l'affiche « ARRÊTÉ » du lieutenant est tirée au sort au prorata.</li>
+        </ul>
+      </details>
+    </aside>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ───── Le petit policier (socle à la couleur de sa zone) ─────
+  const SERV = { R: { nom: 'Recherche', c: '#63B0FF' }, I: { nom: 'Intervention', c: '#FF6E6A' }, P: { nom: 'Proximité', c: '#3DD39A' } };
+  let nF = 0;
+  const flic = (s, socle, attrs = '', texte = '#241400') => {
+    const id = 'dam' + (nF++);
+    return `<svg viewBox="0 0 40 48" aria-hidden="true" ${attrs}><defs><pattern id="${id}" width="3" height="2" patternUnits="userSpaceOnUse"><rect width="1.5" height="2" fill="#F2F4FA"/><rect x="1.5" width="1.5" height="2" fill="#2B4A9A"/></pattern></defs>
+      <ellipse cx="20" cy="43.5" rx="14" ry="4" fill="${socle}"/>
+      <path d="M10 42c0-9 4-14 10-14s10 5 10 14z" fill="#1E3570"/>
+      <path d="M17 28.5l3 4 3-4" fill="none" stroke="#DCE4FF" stroke-width="1.2"/>
+      <rect x="10.5" y="36.5" width="19" height="2.4" rx="1" fill="#0E1430"/>
+      <rect x="10.2" y="31" width="3.6" height="3.4" rx=".8" fill="${SERV[s].c}"/>
+      <circle cx="24.5" cy="32.5" r="1.4" fill="#FFC970"/>
+      <circle cx="20" cy="21" r="6.6" fill="#F0C7A2"/>
+      <circle cx="17.7" cy="21.6" r=".8" fill="#2A1F17"/><circle cx="22.3" cy="21.6" r=".8" fill="#2A1F17"/>
+      <path d="M18 24.4q2 1.2 4 0" fill="none" stroke="#B5765A" stroke-width=".8" stroke-linecap="round"/>
+      <path d="M12.6 17.6q7.4-10 14.8 0z" fill="#1A2A5C"/><rect x="12.6" y="15.4" width="14.8" height="2.4" fill="url(#${id})"/>
+      <path d="M11.4 18.2h17.2q-.4 1.6-2 1.6h-13.2q-1.6 0-2-1.6z" fill="#0B1230"/><circle cx="20" cy="13.3" r="1.3" fill="#FFC970"/>
+      <text x="20" y="46.6" text-anchor="middle" style="font:800 5.5px sans-serif;fill:${texte}">${s}</text></svg>`;
+  };
+  const portrait = (c, cap) => `<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="19" r="9" fill="${c}"/><path d="M8 46c2-10 9-15 16-15s14 5 16 15z" fill="${c}" opacity=".85"/>${cap ? '<path d="M14 15c2-7 18-7 20 0z" fill="#11152A"/>' : ''}</svg>`;
+
+  // ───── Données de la maquette ─────
+  const ZONES = { moi: { nom: 'toi', c: '#FFB23F' }, KA: { nom: 'Ananas', c: '#3DD39A' }, LE: { nom: 'Police Acad.', c: '#63B0FF' }, CO: { nom: 'Djoumap City', c: '#C38BFF' }, HA: { nom: 'Les Hauts', c: '#FF8FB1' } };
+  const FORCE = { I: 3, P: 2, R: 1 };
+  // 3 × 3 blocs de 3 × 3 cases ; le bloc du centre est le QG du Parrain.
+  const SECTEURS = [
+    { bx: 0, by: 0, nom: 'Les Tours', lt: 'Grand Teddy', role: 'gros bras', c: '#B86A6A', emprise: 74 },
+    { bx: 1, by: 0, nom: 'L\'Écluse', lt: 'La Fouine', role: 'guetteuse', c: '#8C7BD6', emprise: 57 },
+    { bx: 2, by: 0, nom: 'Rive Canal', lt: 'Bibi', role: 'comptable', c: '#6F8FC9', emprise: 48 },
+    { bx: 0, by: 1, nom: 'Le Marché', lt: 'Mo Vélo', role: 'livreur', c: '#5BA88F', cap: true, emprise: 66 },
+    { bx: 2, by: 1, nom: 'Le Béguinage', lt: 'Nounours', role: 'recruteur', c: '#C9A35B', emprise: 39 },
+    { bx: 0, by: 2, nom: 'Les Glacis', lt: 'Sifflet', role: 'chef de rue', c: '#C98A5B', cap: true, emprise: 62 },
+    { bx: 1, by: 2, nom: 'Gare Basse', lt: 'La Puce', role: 'passeuse', c: '#D46FA0', emprise: 81 },
+    { bx: 2, by: 2, nom: 'Les Caves', lt: 'Tonton', role: 'stock', c: '#7FA35B', cap: true, emprise: 55 },
+  ];
+  const QG = { bx: 1, by: 1 };
+  const COLLEGUES = [ // annoncés plus tôt dans la journée
+    ['KA', 'I', 1], ['KA', 'I', 1], ['KA', 'P', 1], ['LE', 'I', 1], ['LE', 'R', 1],
+    ['CO', 'P', 5], ['CO', 'I', 5], ['HA', 'R', 3], ['HA', 'I', 3], ['HA', 'P', 3],
+  ];
+  const MOI = [{ id: 'm1', s: 'R' }, { id: 'm2', s: 'I' }, { id: 'm3', s: 'I' }, { id: 'm4', s: 'P' }, { id: 'm5', s: 'P' }, { id: 'm6', s: 'R' }];
+  let place = {}, choisi = null, sel = 1, matin = null, jour = 0, rnd = mulberry(7);
+  function mulberry(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  SECTEURS.forEach((s) => { s.repris = false; s.vu = false; });
+  let colleguesPoses = COLLEGUES.map(([z, s, i]) => ({ z, s, i }));
+
+  const pionsDe = (i) => [...colleguesPoses.filter((p) => p.i === i), ...MOI.filter((m) => place[m.id] === i).map((m) => ({ z: 'moi', s: m.s, id: m.id }))];
+  function bilanSecteur(i) {
+    const S = SECTEURS[i], ps = pionsDe(i);
+    const zones = new Set(ps.map((p) => p.z));
+    const brut = ps.reduce((t, p) => t + FORCE[p.s], 0);
+    const repere = ps.some((p) => p.s === 'R') || S.vu;
+    const force = Math.round(brut * (1 + 0.2 * Math.max(0, zones.size - 1)) * (repere ? 1.25 : 1));
+    const besoin = Math.round(S.emprise / 3);
+    const parZone = {}; ps.forEach((p) => { parZone[p.z] = (parZone[p.z] || 0) + FORCE[p.s]; });
+    const statut = !ps.length ? 'vide' : force >= besoin ? 'tombe' : force >= besoin * 0.6 ? 'recule' : 'faible';
+    return { ps, zones, brut, repere, force, besoin, parZone, statut, frac: Math.min(1, force / besoin) };
+  }
+
+  // ───── Projection isométrique ─────
+  const W = 72, H = 36, OX = 340, OY = 104;
+  const I = (x, y, z = 0) => [OX + (x - y) * W / 2, OY + (x + y) * H / 2 - z];
+  const f1 = (v) => v.toFixed(1);
+  const pts = (a) => a.map((p) => p.map(f1).join(',')).join(' ');
+  const losange = (x, y, m = 0, z = 0, w = 1) => pts([I(x + m, y + m, z), I(x + w - m, y + m, z), I(x + w - m, y + w - m, z), I(x + m, y + w - m, z)]);
+  const hash = (x, y) => ((x * 73856093) ^ (y * 19349663)) >>> 0;
+  const secDe = (x, y) => { const bx = Math.floor(x / 3), by = Math.floor(y / 3); if (bx === 1 && by === 1) return 'qg'; const i = SECTEURS.findIndex((s) => s.bx === bx && s.by === by); return i; };
+  function immeuble(x, y, hz, teinte, eteint) {
+    const m = 0.1, c = [I(x + m, y + m), I(x + 1 - m, y + m), I(x + 1 - m, y + 1 - m), I(x + m, y + 1 - m)], hc = c.map(([a, b]) => [a, b - hz]);
+    let s = `<polygon points="${pts([c[1], c[2], hc[2], hc[1]])}" fill="${teinte[1]}"/><polygon points="${pts([c[3], c[2], hc[2], hc[3]])}" fill="${teinte[2]}"/><polygon points="${pts(hc)}" fill="${teinte[0]}"/>`;
+    for (let z = 10; z < hz - 6; z += 11) for (let t = 0.22; t < 0.9; t += 0.3) {
+      if ((hash(x, y) >> ((z + t * 10) | 0)) % 3 === 0) continue;
+      const a = I(x + 1 - m, y + m + (1 - 2 * m) * t, z), b = I(x + m + (1 - 2 * m) * t, y + 1 - m, z);
+      const col = eteint ? '#2A3155' : '#F7C76A';
+      s += `<rect x="${f1(a[0] - 1.8)}" y="${f1(a[1] - 4)}" width="3.6" height="4.5" fill="${col}" opacity=".85"/><rect x="${f1(b[0] - 1.8)}" y="${f1(b[1] - 4)}" width="3.6" height="4.5" fill="${col}" opacity=".6"/>`;
+    }
+    return s;
+  }
+  const flamme = (x, y, k) => { const p = I(x, y); return `<g transform="translate(${f1(p[0])} ${f1(p[1])})"><ellipse rx="10" ry="5" fill="#FF7A2E" opacity=".25"/><path d="M0 0c-6 -2 -6 -10 -1 -16c0 5 4 5 4 9c2 -2 3 -4 2 -7c5 5 3 13 -5 14z" fill="#FF8A3C"><animate attributeName="opacity" values="1;.6;1" dur="${0.8 + k * 0.17}s" repeatCount="indefinite"/></path><path d="M0 -2c-3 -1 -3 -5 0 -8c1 3 3 3 2 6z" fill="#FFE08A"/></g>`; };
+  const habitant = (x, y, c) => { const p = I(x, y); return `<g transform="translate(${f1(p[0])} ${f1(p[1])})"><ellipse rx="5" ry="2" fill="#000" opacity=".3"/><path d="M-3 0c0-5 1-8 3-8s3 3 3 8z" fill="${c}"/><circle cy="-10" r="2.6" fill="#F0C7A2"/></g>`; };
+
+  // ───── Dessin de la carte ─────
+  function dessiner() {
+    const Z = (document.getElementById('cadre').clientWidth || 800) < 560 ? 1.25 : 1; // étiquettes et policiers lisibles sur téléphone
+    const tel = Z > 1; // sur téléphone, étiquettes sans portrait pour qu'elles ne se chevauchent pas
+    let h = `<defs><radialGradient id="lueurR" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FF5A3C" stop-opacity=".4"/><stop offset="1" stop-color="#FF5A3C" stop-opacity="0"/></radialGradient>
+      <radialGradient id="lueurB" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#7FC4FF" stop-opacity=".35"/><stop offset="1" stop-color="#7FC4FF" stop-opacity="0"/></radialGradient>
+      <radialGradient id="lampe" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFD58A" stop-opacity=".35"/><stop offset="1" stop-color="#FFD58A" stop-opacity="0"/></radialGradient></defs>`;
+    const socle = [I(-0.2, -0.2), I(9.2, -0.2), I(9.2, 9.2), I(-0.2, 9.2)];
+    h += `<polygon points="${pts(socle)}" fill="#1A1630" stroke="#3A2A4A" stroke-width="2"/><polygon points="${pts([socle[1], socle[2], [socle[2][0], socle[2][1] + 16], [socle[1][0], socle[1][1] + 16]])}" fill="#120E20"/><polygon points="${pts([socle[3], socle[2], [socle[2][0], socle[2][1] + 16], [socle[3][0], socle[3][1] + 16]])}" fill="#0D0A18"/>`;
+    // sol des secteurs
+    for (let y = 0; y < 9; y++) for (let x = 0; x < 9; x++) {
+      const si = secDe(x, y), lx = x % 3, ly = y % 3, rue = lx === 1 || ly === 1;
+      let fond;
+      if (si === 'qg') fond = '#2B1220';
+      else { const S = SECTEURS[si]; fond = S.repris ? '#16294A' : `rgb(${Math.round(30 + S.emprise * 0.9)},${Math.round(18 + (100 - S.emprise) * 0.1)},${Math.round(30 + (100 - S.emprise) * 0.15)})`; }
+      h += `<polygon points="${losange(x, y, 0.015)}" fill="${rue ? fond : '#120F22'}" stroke="#262447" stroke-width="1"/>`;
+    }
+    // sélection, survol
+    if (sel != null) { const S = SECTEURS[sel]; h += `<polygon points="${losange(S.bx * 3, S.by * 3, 0.04, 0, 3)}" fill="#FFB23F" fill-opacity=".07" stroke="#FFB23F" stroke-width="2.5"/>`; }
+    h += '<polygon id="survol" points="" fill="#FFB23F" fill-opacity=".14" stroke="#FFB23F" stroke-width="3" pointer-events="none"/>';
+    // lueurs
+    SECTEURS.forEach((S) => { const c = I(S.bx * 3 + 1.5, S.by * 3 + 1.5); h += `<ellipse cx="${f1(c[0])}" cy="${f1(c[1])}" rx="110" ry="56" fill="url(#${S.repris ? 'lueurB' : 'lueurR'})" opacity="${S.repris ? .9 : S.emprise / 110}"/>`; });
+    // objets, de l'arrière vers l'avant
+    const obj = [];
+    for (let y = 0; y < 9; y++) for (let x = 0; x < 9; x++) {
+      const si = secDe(x, y), lx = x % 3, ly = y % 3;
+      if (si === 'qg') {
+        if (lx === 1 && ly === 1) obj.push({ k: x + y, d: () => immeuble(x, y, 66, ['#3A2A3E', '#22182A', '#18101F'], false) + (() => { const t = I(x + 0.5, y + 0.5, 66); return `<line x1="${f1(t[0])}" y1="${f1(t[1])}" x2="${f1(t[0])}" y2="${f1(t[1] - 22)}" stroke="#C3C9DE" stroke-width="1.5"/><path d="M${f1(t[0])} ${f1(t[1] - 22)}l14 4l-14 4z" fill="#FF6E6A"/><text x="${f1(t[0])}" y="${f1(t[1] - 30)}" text-anchor="middle" style="font:18px sans-serif">👑</text>`; })() });
+        else if (lx !== 1 && ly !== 1) obj.push({ k: x + y, d: () => immeuble(x, y, 18 + hash(x, y) % 3 * 5, ['#4A2A38', '#30192A', '#24121F'], false) });
+        continue;
+      }
+      const S = SECTEURS[si];
+      if (lx !== 1 && ly !== 1) {
+        const hz = 14 + hash(x, y) % 4 * 6;
+        const teinte = hash(x, y) % 3 === 0 ? ['#5A3A44', '#3D2730', '#2E1D24'] : ['#3A4880', '#252F5C', '#1C2449'];
+        obj.push({ k: x + y, d: () => immeuble(x, y, hz, teinte, !S.repris && S.emprise > 70 && hash(x, y) % 2) });
+      } else if (!(lx === 1 && ly === 1)) {
+        if (!S.repris && hash(x, y) % 140 < S.emprise) obj.push({ k: x + y + 0.3, d: () => flamme(x + 0.5, y + 0.5, hash(x, y) % 5) });
+        if (S.repris) obj.push({ k: x + y + 0.3, d: () => habitant(x + 0.4, y + 0.6, ['#D9A066', '#8CB4E8', '#E88CA6'][hash(x, y) % 3]) + `<ellipse cx="${f1(I(x + 0.5, y + 0.5)[0])}" cy="${f1(I(x + 0.5, y + 0.5)[1])}" rx="22" ry="11" fill="url(#lampe)"/>` });
+      }
+    }
+    obj.sort((a, b) => a.k - b.k).forEach((o) => { h += o.d(); });
+    // Premier plan : contour de chaque secteur à la couleur de son état, puis les policiers et les étiquettes (jamais cachés par un immeuble).
+    SECTEURS.forEach((S, i) => {
+      if (S.repris) { h += `<polygon points="${losange(S.bx * 3, S.by * 3, 0.06, 0, 3)}" fill="none" stroke="#7FC4FF" stroke-opacity=".7" stroke-width="2.5"/>`; return; }
+      const b = bilanSecteur(i);
+      if (!b.ps.length) return;
+      const col = b.statut === 'tombe' ? '#3DD39A' : b.statut === 'recule' ? '#FFB23F' : '#FF6E6A';
+      h += `<polygon points="${losange(S.bx * 3, S.by * 3, 0.06, 0, 3)}" fill="${col}" fill-opacity=".1" stroke="${col}" stroke-width="3.5" stroke-linejoin="round"/>`;
+    });
+    SECTEURS.forEach((S, i) => {
+      const b = bilanSecteur(i), cx = S.bx * 3 + 1.5, cy = S.by * 3 + 1.5, c = I(cx, cy);
+      const n = b.ps.length, cols = Math.min(5, Math.max(1, Math.ceil(Math.sqrt(n * 1.6))));
+      b.ps.forEach((p, j) => {
+        const r = Math.floor(j / cols), q = j % cols, rowN = Math.min(cols, n - r * cols);
+        const px = c[0] + ((q - (rowN - 1) / 2) * 18 - r * 5) * Z, py = c[1] - 8 + r * 10 * Z;
+        const moi = p.z === 'moi';
+        h += `<g ${moi ? `class="pose" data-id="${p.id}" style="cursor:grab"` : ''} transform="translate(${f1(px - 14 * Z)} ${f1(py - 33 * Z)}) scale(${Z})">${flic(p.s, ZONES[p.z].c, 'width="28" height="34"', moi ? '#241400' : '#0B1124')}</g>`;
+      });
+      const col = S.repris ? '#7FC4FF' : b.statut === 'tombe' ? '#3DD39A' : b.statut === 'recule' ? '#FFB23F' : b.statut === 'faible' ? '#FF6E6A' : '#C3C9DE';
+      const ligne2 = S.repris ? 'repris ✓' : n ? `force ${b.force} / ${b.besoin}` : `emprise ${S.emprise}`;
+      const pad = tel ? 10 : 34, larg = Math.max(S.nom.length * 6.6, ligne2.length * 6) + pad + 10, x0 = -larg / 2;
+      const barre = !S.repris && n ? `<rect x="${f1(x0 + pad)}" y="13" width="${f1(larg - pad - 10)}" height="4" rx="2" fill="#243050"/><rect x="${f1(x0 + pad)}" y="13" width="${f1((larg - pad - 10) * b.frac)}" height="4" rx="2" fill="${col}"/>` : '';
+      const por = S.repris ? '<circle r="12" fill="#16294A" stroke="#7FC4FF" stroke-width="2"/><text y="4.5" text-anchor="middle" style="font:12px sans-serif">🏠</text>' : `<circle r="12" fill="#20294D" stroke="${col}" stroke-width="2"/><g transform="translate(-10.5 -10.5) scale(.44)">${portrait(S.c, S.cap).replace('<svg viewBox="0 0 48 48" aria-hidden="true">', '').replace('</svg>', '')}</g>`;
+      h += `<g transform="translate(${f1(c[0])} ${f1(c[1] + (n ? 30 * Z : 6))}) scale(${Z})" style="cursor:pointer"><rect x="${f1(x0)}" y="-14" width="${f1(larg)}" height="${n && !S.repris ? 36 : 30}" rx="10" fill="#0A0F22" fill-opacity=".92" stroke="${col}" stroke-width="${i === sel ? 2.5 : 1.3}"/>${tel ? '' : `<g transform="translate(${f1(x0 + 17)} 1)">${por}</g>`}<text x="${f1(x0 + pad)}" y="-1" style="font:700 11px var(--body);fill:#EDF0FA">${S.nom}</text><text x="${f1(x0 + pad)}" y="10" style="font:700 10px var(--body);fill:${col}">${ligne2}</text>${barre}</g>`;
+    });
+
+    { const t = I(4.5, 4.5); h += `<g transform="translate(${f1(t[0])} ${f1(t[1] + 46)})"><rect x="-52" y="-11" width="104" height="22" rx="11" fill="#0A0F22" stroke="#FF6E6A" stroke-width="1.5"/><text y="4" text-anchor="middle" style="font:700 11px var(--body);fill:#FFC9C6">QG du Parrain · ${SECTEURS.filter((s) => s.repris).length}/8</text></g>`; }
+    document.getElementById('plan').innerHTML = h;
+  }
+
+  // ───── Fiche du secteur et constat ─────
+  function fiche() {
+    const el = document.getElementById('fiche');
+    if (matin) { el.innerHTML = matin; return; }
+    if (sel == null) { el.innerHTML = '<h2>Touche un secteur</h2><p>Sa fiche s\'affiche ici : qui y va, la force posée et ce qu\'il manque.</p>'; return; }
+    const S = SECTEURS[sel], b = bilanSecteur(sel);
+    if (S.repris) { el.innerHTML = `<h2>${S.nom}</h2><div class="etat v">Secteur repris. Les habitants reviennent, les rues sont rallumées.</div>`; return; }
+    const manque = Math.max(0, b.besoin - b.force);
+    const col = b.statut === 'tombe' ? 'var(--green)' : b.statut === 'recule' ? 'var(--amber)' : 'var(--red)';
+    const etat = !b.ps.length ? '<div class="etat a">Personne ce soir. Le milieu s\'y renforce.</div>'
+      : b.statut === 'tombe' ? `<div class="etat v"><b>Le secteur tombe ce soir.</b> ${S.lt} sera arrêté et sa prime partagée entre les zones présentes.</div>`
+      : b.statut === 'recule' ? `<div class="etat a"><b>Le milieu recule, mais tient encore.</b> Il manque ${manque} de force : ${Math.ceil(manque / 3)} Intervention ou ${Math.ceil(manque / 2)} Proximité.</div>`
+      : `<div class="etat r"><b>Trop faible : blessés possibles.</b> Il manque ${manque} de force. ${b.zones.size === 1 ? 'Seul, c\'est risqué : attends du renfort ou va ailleurs.' : ''}</div>`;
+    el.innerHTML = `
+      <div class="lt">${portrait(S.c, S.cap)}<div><b>${S.nom}</b><span>Tenu par ${S.lt}, ${S.role}</span></div></div>
+      <div class="ligne"><span>Force posée</span><span class="v" style="color:${col}">${b.force} <span style="font-size:13px;color:var(--muted)">/ ${b.besoin} pour le reprendre</span></span></div>
+      <div class="jauge"><i style="width:${(b.frac * 100).toFixed(0)}%;background:${col}"></i></div>
+      ${b.ps.length ? `<div class="chips">${Object.entries(b.parZone).map(([z, v]) => `<span class="chip"><i style="background:${ZONES[z].c}"></i>${ZONES[z].nom} ${v}</span>`).join('')}${b.zones.size > 1 ? `<span class="chip">+${(b.zones.size - 1) * 20} % à plusieurs</span>` : ''}${b.repere ? '<span class="chip">+25 % repéré</span>' : ''}</div>` : ''}
+      ${etat}
+      <p>Emprise du milieu : <b>${S.emprise}</b>. Il faut une force d'un tiers de l'emprise pour reprendre le secteur.</p>`;
+  }
+  function rendre() {
+    dessiner(); fiche();
+    document.getElementById('reserve').innerHTML = matin ? '<span style="font-size:13px;color:var(--muted)">Tes policiers sont rentrés. Passe à la nouvelle journée pour les renvoyer.</span>' : MOI.filter((m) => place[m.id] == null).map((m) => `<button type="button" class="pion ${choisi === m.id ? 'choisi' : ''}" data-id="${m.id}" aria-label="Policier ${SERV[m.s].nom}, force ${FORCE[m.s]}">${flic(m.s, '#FFB23F')}</button>`).join('');
+    document.getElementById('lancer').textContent = matin ? 'Nouvelle journée' : 'Passer à 20:00';
+    document.getElementById('auto').hidden = !!matin;
+    document.getElementById('astuce').textContent = matin ? 'Le matin : la carte a changé' : choisi ? 'Touche un secteur pour y poster ce policier' : 'Glisse tes policiers sur un secteur rouge';
+    document.getElementById('horloge').textContent = matin ? `${['Mardi', 'Mercredi', 'Jeudi', 'Vendredi'][jour % 4]} · 07:30` : `${['Lundi', 'Mardi', 'Mercredi', 'Jeudi'][jour % 4]} · 18:42`;
+  }
+
+  // ───── 20:00 : résolution et constat du matin ─────
+  function vingtHeures() {
+    const lignes = []; let affiches = [], prime = 0;
+    SECTEURS.forEach((S, i) => {
+      if (S.repris) return;
+      const b = bilanSecteur(i);
+      if (!b.ps.length) { S.emprise = Math.min(95, S.emprise + 3); return; }
+      if (b.statut === 'tombe') {
+        S.repris = true; S.emprise = 0;
+        const tot = Object.values(b.parZone).reduce((a, c) => a + c, 0), part = Math.round(6000 * (b.parZone.moi || 0) / tot / 50) * 50;
+        prime += part;
+        let u = rnd() * tot, gagnant = Object.keys(b.parZone)[0]; for (const [z, v] of Object.entries(b.parZone)) { u -= v; if (u <= 0) { gagnant = z; break; } }
+        if (gagnant === 'moi') affiches.push(S);
+        lignes.push(`<div class="cs"><span class="ico">🚔</span><span><b>${S.nom} est repris.</b> ${S.lt} est arrêté. ${b.parZone.moi ? `Ta part de la prime : <b>${part.toLocaleString('fr-BE')} €</b> (${Math.round(100 * b.parZone.moi / tot)} % de la force).` : 'Tu n\'y étais pas.'} Affiche tirée au sort : <b>${ZONES[gagnant].nom}</b>.</span></div>`);
+      } else {
+        const avant = S.emprise; S.emprise = Math.max(5, Math.round(S.emprise - b.force * (b.statut === 'recule' ? 1.6 : 0.8)));
+        if (b.repere) S.vu = true;
+        const blesse = b.statut === 'faible' && (b.parZone.moi || 0) > 0;
+        lignes.push(`<div class="cs"><span class="ico">${b.statut === 'recule' ? '📉' : '🩹'}</span><span><b>${S.nom}</b> : emprise ${avant} → ${S.emprise}.${blesse ? ' <b>Un de tes agents est blessé</b> (indisponible demain).' : b.statut === 'faible' ? ' Trop peu de monde.' : ''}</span></div>`);
+      }
+    });
+    matin = `<span class="kicker">Constat · 07:30</span><h2>Ce qui a changé cette nuit</h2>
+      <div class="constat">${lignes.join('') || '<div class="cs">Personne n\'est allé au non-droit.</div>'}</div>
+      ${affiches.length ? `<div class="affiche"><div class="cadre">ARRÊTÉ${portrait(affiches[0].c, affiches[0].cap)}${affiches[0].lt.toUpperCase()}</div><div><b>Affiche gagnée au tirage</b><span>${affiches.map((s) => s.lt).join(' et ')} rejoint le mur de ton commissariat.</span></div></div>` : ''}
+      <p>Total de tes primes : <b>${prime.toLocaleString('fr-BE')} €</b>. Le QG du Parrain s'ouvre quand 6 secteurs sur 8 sont repris.</p>`;
+    // le matin, les policiers sont rentrés : la carte ne montre plus que ce qui a changé
+    colleguesPoses = []; place = {};
+    sel = null; choisi = null;
+    rendre();
+  }
+  function nouvelleJournee() {
+    matin = null; jour += 1; place = {};
+    // les collègues reviennent : sur les secteurs encore tenus, un peu au hasard, en préférant ceux déjà entamés
+    const ouverts = SECTEURS.map((s, i) => i).filter((i) => !SECTEURS[i].repris);
+    colleguesPoses = [];
+    Object.keys(ZONES).filter((z) => z !== 'moi').forEach((z) => {
+      const cible = ouverts.sort((a, b) => SECTEURS[a].emprise - SECTEURS[b].emprise)[Math.floor(rnd() * Math.min(3, ouverts.length))];
+      const n = 1 + Math.floor(rnd() * 3);
+      for (let j = 0; j < n; j++) colleguesPoses.push({ z, s: ['I', 'P', 'R', 'I'][Math.floor(rnd() * 4)], i: cible });
+    });
+    sel = ouverts[0] ?? null; rendre();
+  }
+
+  // ───── Gestes : glisser ou toucher-toucher ─────
+  const cadre = document.getElementById('cadre');
+  function secteurSous(cx, cy) {
+    const svg = document.getElementById('plan'), m = svg.getScreenCTM(); if (!m) return null;
+    const p = new DOMPoint(cx, cy).matrixTransform(m.inverse());
+    const u = (p.x - OX) / (W / 2), v = (p.y - OY) / (H / 2), x = Math.floor((u + v) / 2), y = Math.floor((v - u) / 2);
+    if (x < 0 || y < 0 || x > 8 || y > 8) return null;
+    const s = secDe(x, y); return s === 'qg' ? null : s;
+  }
+  function survoler(i) { const el = document.getElementById('survol'); if (!el) return; if (i == null || SECTEURS[i].repris) { el.setAttribute('points', ''); return; } const S = SECTEURS[i]; el.setAttribute('points', losange(S.bx * 3, S.by * 3, 0.04, 0, 3)); }
+  function poser(id, i) { if (i != null && !SECTEURS[i].repris) { place[id] = i; sel = i; } else if (i == null) delete place[id]; choisi = null; rendre(); }
+  let drag = null;
+  document.addEventListener('pointerdown', (e) => {
+    if (matin) return;
+    const b = e.target.closest('.pion[data-id]'), g = choisi ? null : e.target.closest('.pose');
+    const id = b ? b.dataset.id : g ? g.dataset.id : null;
+    if (!id) return;
+    e.preventDefault();
+    drag = { id, x: e.clientX, y: e.clientY, bouge: false, depuis: b ? 'reserve' : 'carte' };
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    if (!drag.bouge && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) {
+      drag.bouge = true;
+      drag.g = Object.assign(document.createElement('div'), { className: 'fantome', innerHTML: flic(MOI.find((m) => m.id === drag.id).s, '#FFB23F') });
+      document.body.appendChild(drag.g);
+    }
+    if (drag.bouge) { drag.g.style.left = e.clientX + 'px'; drag.g.style.top = e.clientY + 'px'; survoler(secteurSous(e.clientX, e.clientY)); }
+  });
+  window.addEventListener('pointerup', (e) => {
+    if (!drag) return; const d = drag; drag = null;
+    if (d.g) d.g.remove();
+    if (!d.bouge) { if (d.depuis === 'reserve') { choisi = choisi === d.id ? null : d.id; rendre(); } else { sel = place[d.id]; rendre(); } return; }
+    poser(d.id, secteurSous(e.clientX, e.clientY));
+  });
+  window.addEventListener('pointercancel', () => { if (drag && drag.g) drag.g.remove(); drag = null; });
+  cadre.addEventListener('click', (e) => {
+    if (e.target.closest('.pose') && !choisi) return;
+    const i = secteurSous(e.clientX, e.clientY);
+    if (choisi && i != null) { poser(choisi, i); return; }
+    if (i != null) { sel = i; if (!matin) rendre(); else { matin = null; rendre(); } }
+  });
+
+  document.getElementById('auto').addEventListener('click', () => {
+    // va renforcer le secteur où il manque le moins pour tomber (celui où ta force fait la différence)
+    MOI.forEach((m) => { delete place[m.id]; });
+    const cand = SECTEURS.map((s, i) => i).filter((i) => !SECTEURS[i].repris && bilanSecteur(i).ps.length).sort((a, b) => (bilanSecteur(a).besoin - bilanSecteur(a).force) - (bilanSecteur(b).besoin - bilanSecteur(b).force));
+    const cible = cand.find((i) => bilanSecteur(i).force < bilanSecteur(i).besoin) ?? cand[0] ?? 0;
+    MOI.forEach((m) => { place[m.id] = cible; });
+    sel = cible; choisi = null; rendre();
+  });
+  document.getElementById('lancer').addEventListener('click', () => { if (matin) nouvelleJournee(); else vingtHeures(); });
+  window.addEventListener('resize', () => dessiner());
+  rendre();
+})();
+</script>
