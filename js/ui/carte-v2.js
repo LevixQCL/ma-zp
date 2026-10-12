@@ -7,6 +7,7 @@ import { siteHtml, ficheQuartierHtml, chipsQuartiersHtml } from './carte.js';
 import { aFairePactes } from './pactes.js';
 import { terrainBlocs, terrainAFaire } from './terrain.js';
 import { nonDroitHtml, secteursEnDanger, annoncesND } from './nondroit.js';
+import { quartierActif, plateauQHtml } from './quartier.js';
 
 brancherAnnoncesND(annoncesND);
 import { tensionsDe } from '../engine/quartiers.js';
@@ -104,7 +105,9 @@ export function renderCarteV2(calque = S.carteCalque || 'nondroit') {
   const vueDist = calque === 'nondroit' && nd.length && vueCarteND() === 'district';
   const btnVue = calque === 'nondroit' && nd.length ? `<button type="button" class="cv-vue" data-action="carte-vue" aria-pressed="${vueDist}" title="${vueDist ? 'Revenir au zoom sur le non-droit' : 'Voir tout le district et les zones des joueurs'}"><span aria-hidden="true">${vueDist ? '🎯' : '🗺️'}</span>${vueDist ? 'Non-droit' : 'District'}</button>` : '';
   const astuceV = vueDist ? 'Touche une zone · ou un secteur rouge' : astuce;
-  const carte = `<div class="cv-carte">${planIso(st, me, { vue: vueDist ? 'district' : calque, sel })}${btnVue}${btnPactes}<span class="cv-astuce" aria-hidden="true">${astuceV}</span></div>`;
+  // « Le Quartier » : le plateau 3 × 3 remplace la maquette (la vue District reste la maquette de toute la ville).
+  const plateau = calque === 'nondroit' && nd.length && !vueDist && quartierActif(st);
+  const carte = `<div class="cv-carte${plateau ? ' cv-plateau' : ''}">${plateau ? plateauQHtml() : planIso(st, me, { vue: vueDist ? 'district' : calque, sel })}${btnVue}${btnPactes}${plateau ? '' : `<span class="cv-astuce" aria-hidden="true">${astuceV}</span>`}</div>`;
   const ndCorps = calque === 'nondroit' ? nonDroitHtml({ sansPlan: true }) : '';
   const corps = calque === 'mazone' ? `${ficheQuartierHtml(st, me, sel)}${chipsQuartiersHtml(st, me, sel)}${siteHtml(siteDe(me))}`
     : `${ndCorps || '<p class="small muted" style="margin:0">La zone de non-droit n’est pas encore ouverte dans cette partie.</p>'}${districtHtml(st, me)}`;

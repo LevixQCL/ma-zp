@@ -70,6 +70,8 @@ import { scenesDuSoir, SERVICE_SCENE, SCENES } from './engine/milieu.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
 import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND, LOTS } from './engine/constants.js';
 import { nomSecteur } from './engine/nondroit.js';
+import { QUARTIER, quartierActif } from './engine/quartier.js';
+import { planPourMoi } from './ui/quartier.js';
 import { agentsND, monAnnonceND, suggestionND, placeND, rolesActifs, rolesDe, texteRoles, roleManquant } from './ui/nondroit.js';
 import { lancerIncident, lancerAppui, ouvrirMiniJeu, majComptesIncidents, signatureIncidents, ouvrirJaugeSkins } from './ui/incidents.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
@@ -601,6 +603,27 @@ async function onClick(e) {
         if (!['rep', 'desc', 'bouc', 'sc'].includes(r)) break;
         if (dd > 0 ? ajouterRoleND(k, r) : retirerRoleND(k, r)) { S.secteurSel = k; S.ordersDirty = true; }
         rerender(); break;
+      }
+      case 'qz-sel': {
+        // « Le Quartier » : une tuile du plateau ; sa fiche s'ouvre juste en dessous.
+        S.secteurSel = el.dataset.c; rerender();
+        document.querySelector('.qz-fiche')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        break;
+      }
+      case 'qz-vider': {
+        for (const k of Object.keys(S.draft.secteurs || {})) for (const r of ['desc', 'rep', 'bouc', 'sc']) while (rolesDe(k)[r] && retirerRoleND(k, r));
+        S.ordersDirty = true; rerender(); break;
+      }
+      case 'qz-auto': {
+        // « Placer pour moi » : on reprend tout, puis le placement de l'adjoint (à partir des annonces des autres zones).
+        for (const k of Object.keys(S.draft.secteurs || {})) for (const r of ['desc', 'rep', 'bouc', 'sc']) while (rolesDe(k)[r] && retirerRoleND(k, r));
+        const plan = planPourMoi(6);
+        let n = 0;
+        for (const [k, rr] of Object.entries(plan)) for (const r of ['bouc', 'rep', 'desc']) for (let i = 0; i < (rr[r] || 0); i++) if (ajouterRoleND(k, r)) n++;
+        const premier = Object.keys(plan)[0];
+        if (premier) S.secteurSel = premier;
+        toast(n ? `${n} agent${n > 1 ? 's' : ''} placé${n > 1 ? 's' : ''}. Touche une tuile pour ajuster.` : 'Rien d’utile à faire ce soir dans le non-droit.');
+        S.ordersDirty = true; rerender(); break;
       }
       case 'nd-tactique': {
         // Dernier carré : la tactique que je vote sur ce secteur (un second toucher la retire).
@@ -1465,7 +1488,7 @@ function askConfirm(message, okLabel = 'Confirmer', koLabel = 'Annuler') {
 /** Rôles (saison 2) : le service d'où vient un agent selon son rôle, dans l'ordre de préférence. */
 const SOURCES_ROLE = { rep: ['recherche'], desc: ['intervention'], bouc: ['roulage', 'proximite'], sc: ['intervention', 'recherche', 'roulage', 'proximite'] };
 /** Agents « scène » : ils viennent d'abord du service de la scène du soir. */
-const sourcesRole = (k, r) => { if (r !== 'sc') return SOURCES_ROLE[r]; const sc = scenesDuSoir(S.state).find((x) => String(x.cell) === String(k)); const svc = sc && SERVICE_SCENE[sc.type]; return svc ? [svc, ...SOURCES_ROLE.sc.filter((x) => x !== svc)] : SOURCES_ROLE.sc; };
+const sourcesRole = (k, r) => { if (r === 'bouc' && quartierActif(S.state)) return ['proximite', 'roulage']; if (r !== 'sc') return SOURCES_ROLE[r]; const sc = scenesDuSoir(S.state).find((x) => String(x.cell) === String(k)); const svc = sc && SERVICE_SCENE[sc.type]; return svc ? [svc, ...SOURCES_ROLE.sc.filter((x) => x !== svc)] : SOURCES_ROLE.sc; };
 function ajouterRoleND(k, r) {
   const d = S.draft, sect = (d.secteurs ||= {}), roles = (d.roles ||= {});
   const cur = rolesDe(k);
@@ -1901,6 +1924,8 @@ async function boot() {
   S.route = route();
   try {
     S.backend = await createBackend(CONFIG);
+    // « Le Quartier » : en démo, la nouvelle règle du non-droit tourne déjà (la vraie partie bascule à un 20:00 choisi).
+    QUARTIER.force = S.backend.mode === 'demo';
   } catch (e) {
     console.error(e);
     app.innerHTML = `<main class="center-screen"><h1 class="brand">Ma ZP</h1><div class="card red"><h2 class="card-title">Connexion impossible</h2><p class="small" style="margin:0">Le jeu n’a pas pu joindre le serveur. Vérifie ta connexion puis recharge la page.</p></div></main>`;

@@ -44,6 +44,7 @@ import { IPZ_POIDS, TERRAIN, BUDGET_IPZ } from '../engine/constants.js';
 const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations().amendes; } catch (e) { /* pas de brouillon */ } return fraisFixes(z, S.state, { amendes, rythme: (S.draft && S.draft.rythme) || 'normal' }).total; };
 import { appelsRenfort, renfortPrevu } from './renfort.js';
 import { secteursEnDanger, agentsND } from './nondroit.js';
+import { quartierActif } from '../engine/quartier.js';
 import { nomSecteur } from '../engine/nondroit.js';
 import { scenesDuSoir, seuilScene, SCENES } from '../engine/milieu.js';
 import { ICO_SCENE, sceneHtml } from './milieu.js';
@@ -425,7 +426,7 @@ function alertesDe(st, z, T) {
     if (att) alertes.push({ cls: 'blue', titre: `✓ Boutique : ${esc(att.nom)} acheté`, texte: `−${att.prix} PS payés à 20:00 · il te restera ${psDispo(z) - psEngages(z).total} PS à dépenser`, action: 'decor' });
     if (v) alertes.unshift({ cls: 'amber', titre: `🎃 Boutique : ${esc(v.nom)} à −${Math.round(100 - (100 * v.prix) / v.prixBase)} %`, texte: `${v.prix} PS au lieu de ${v.prixBase}, avec la remise assortie · jusqu’au ${new Date(v.promo.jusqua).toLocaleDateString('fr-BE', { day: 'numeric', month: 'long' })} · tu as ${psDispo(z) - psEngages(z).total} PS à dépenser`, action: 'decor' }); }
   if (z.budget < 0) alertes.push({ cls: 'red', titre: 'Budget dans le rouge', texte: 'deux tours de suite et c’est l’Inspection', href: '#ordres' });
-  { const dg = S.draft ? secteursEnDanger() : []; if (dg.length) alertes.unshift({ cls: 'red', titre: `Zone de non-droit : ${dg.map((k) => esc(nomSecteur(k))).join(', ')} menacé${dg.length > 1 ? 's' : ''}`, texte: 'le milieu remonte : mets 2 ou 3 agents de garde ce soir', href: '#terrain' }); }
+  { const dg = S.draft ? secteursEnDanger() : []; if (dg.length) alertes.unshift({ cls: 'red', titre: `Zone de non-droit : ${dg.map((k) => esc(nomSecteur(k))).join(', ')} menacé${dg.length > 1 ? 's' : ''}`, texte: quartierActif(st) ? 'attaque annoncée ce soir : il manque des Proximité 🛡 pour le tenir' : 'le milieu remonte : mets 2 ou 3 agents de garde ce soir', href: quartierActif(st) ? '#carte' : '#terrain' }); }
   if (st.nonDroit && S.draft && !agentsND()) { const sc = Object.values(st.nonDroit.secteurs); const hier = sc.reduce((n, x) => n + ((x.hier || []).length ? 1 : 0), 0); const rep = sc.filter((x) => x.statut === 'repris').length; alertes.push({ cls: 'blue', titre: `Zone de non-droit : ${rep} secteur${rep > 1 ? 's' : ''} repris sur ${sc.length}`, texte: hier ? `des zones y étaient hier sur ${hier} secteur${hier > 1 ? 's' : ''} : rejoins-les, à plusieurs ça tombe plus vite` : 'personne n’y était hier : lance le mouvement sur la radio', href: '#terrain' }); }
   if (st.affaires.length) alertes.push({ cls: 'blue', titre: `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} disputée${st.affaires.length > 1 ? 's' : ''} sur la carte`, texte: st.affaires.map((a) => esc(a.titre)).join(' · '), href: '#carte' });
   if (st.finSaison) alertes.unshift({ cls: 'amber', titre: st.finSaison === 'enquete' ? 'Fin de saison : le soir où l’affaire en cours se clôt' : 'Fin de saison ce soir à 20:00', texte: 'L’affaire et ses traques continuent dans la saison suivante. S’arrêtent : formations et travaux en cours, pactes, défis et crise du Conseil. Bilan de saison allégé.', href: '#guide' });
@@ -470,7 +471,7 @@ function aujourdhuiHtml(st, z, T, items) {
   { const h = incidentsHtml({ avant: actuLigne() + lucLigne(), nu: true }); if (h) L.push({ prio: 2, html: `<div class="ajd-inc" id="hp-incidents" aria-label="Incidents du jour">${h}</div>` }); }
   // Non-droit : un secteur qui tombe ce soir avec quelques agents de plus (zones déjà annoncées à la radio).
   for (const x of presqueTombes().slice(0, 2)) L.push({ prio: 1, html: `<button type="button" class="ajd-alerte amber" data-action="secteur" data-c="${x.k}" style="width:100%;text-align:left;font:inherit;cursor:pointer"><span class="ajd-point" aria-hidden="true"></span>
-    <span class="ajd-txt"><b>⚡ ${esc(nomSecteur(x.k))} peut tomber ce soir</b><span>il manque ${x.n} agent${x.n > 1 ? 's' : ''} aux zones déjà annoncées · rejoindre</span></span><span class="ajd-chev" aria-hidden="true">${icon('chevron', 16)}</span></button>` });
+    <span class="ajd-txt"><b>⚡ ${esc(nomSecteur(x.k))} peut tomber ce soir</b><span>${quartierActif(st) ? `il manque ${x.n} coup${x.n > 1 ? 's' : ''} 🔨 · rejoindre` : `il manque ${x.n} agent${x.n > 1 ? 's' : ''} aux zones déjà annoncées · rejoindre`}</span></span><span class="ajd-chev" aria-hidden="true">${icon('chevron', 16)}</span></button>` });
   // Dernier carré : un lieutenant barricadé, la tactique se vote dans la fiche du secteur.
   for (const [k, sb] of Object.entries((st.nonDroit && st.nonDroit.secteurs) || {})) if (sb.barricade && sb.lieutenant && st.nonDroit.v3) {
     const vote = d.tactiques && d.tactiques[k];

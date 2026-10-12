@@ -2960,3 +2960,83 @@ button.ajd-alerte { width: 100%; text-align: left; font: inherit; cursor: pointe
 /* Gazette : une sortie claire à tout moment (avant, une flèche « ‹ » en haut à gauche qu'on prenait pour « carte précédente ») */
 .gzs-fermer { flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--text); font-size: 12.5px; font-weight: 700; text-decoration: none; background: var(--surface2); }
 .gzs-fermer:hover { border-color: var(--amber-line, var(--line)); }
+
+/* ───── « Le Quartier » : plateau 3 × 3 du non-droit ───── */
+.cv-carte.cv-plateau { line-height: 1.35; background: none; border: 0; box-shadow: none; padding: 50px 12px 4px; height: auto; aspect-ratio: auto; overflow: visible; }
+.qz { display: flex; flex-direction: column; gap: 8px; min-width: 0; width: 100%; }
+.qz-haut { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.qz-progres { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text2); font-weight: 600; }
+.qz-progres i { width: 12px; height: 12px; border-radius: 4px; background: var(--surface3); display: inline-block; }
+.qz-progres i.on { background: var(--blue); }
+.qz-annonce { font-size: 13px; padding: 8px 10px; border-radius: 12px; background: var(--red-bg); color: #FFC9C6; border: 1px solid var(--red-line); }
+.qz-annonce b { color: var(--text); }
+.qz-plateau { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; width: 100%; max-width: 640px; margin: 0 auto; aspect-ratio: 1; }
+.qz-tuile { position: relative; border-radius: 15px; overflow: hidden; border: 2px solid transparent; cursor: pointer; display: flex; flex-direction: column; padding: 7px; gap: 4px; text-align: left; min-width: 0; color: var(--text); font: inherit; background: #2A121C; }
+.qz-tuile.tenu { background: linear-gradient(180deg, #3A1620, #1E0C14); border-color: rgba(255,110,106,.35); }
+.qz-tuile.repris { background: linear-gradient(180deg, #17305A, #0D1A33); border-color: rgba(99,176,255,.5); }
+.qz-tuile.qg { background: linear-gradient(180deg, #2E1030, #170818); border-color: rgba(183,156,255,.45); }
+.qz-tuile.loin { filter: saturate(.6); }
+.qz-tuile.parrain, .qz-tuile.vide { cursor: default; background: linear-gradient(180deg, #1A1B2E, #10111F); border-color: #232745; align-items: center; justify-content: center; text-align: center; }
+.qz-tuile.parrain.tombe { filter: grayscale(1); opacity: .7; }
+.qz-tuile.sel { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-bg); }
+.qz-tuile:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+.qz-nom { font: 800 clamp(11px, 2.4vw, 15px)/1.1 var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 26px; max-width: 100%; }
+.qz-tuile.parrain .qz-nom { padding: 0; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.qz-pt { position: relative; display: inline-block; width: 26px; height: 26px; border-radius: 50%; overflow: hidden; background: #20294D; flex: none; }
+.qz-pt svg, .qz-pt img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.qz-lt { position: absolute; top: 5px; right: 5px; }
+.qz-lt .qz-pt { border: 1.5px solid var(--red); }
+.qz-tuile.parrain .qz-pt { width: clamp(36px, 9vw, 56px); height: clamp(36px, 9vw, 56px); border: 2px solid #D9B44A; }
+.qz-p-nom { font: 700 12px var(--body); }
+.qz-p-dos { font-size: 10.5px; color: var(--muted); }
+.qz-bars { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+.qz-bar { width: clamp(11px, 2.5vw, 18px); height: clamp(10px, 2.1vw, 14px); border-radius: 3px; background: linear-gradient(180deg, #C97A4A, #8E4A2A); box-shadow: inset 0 -2px 0 rgba(0,0,0,.3); position: relative; }
+.qz-bar.cassee { background: #3A2A30; box-shadow: none; opacity: .55; }
+.qz-bar.cassee::before { content: '✕'; position: absolute; inset: 0; display: grid; place-items: center; font: 800 9px var(--body); color: var(--green); }
+.qz-bar.cachee { background: transparent; border: 1.5px dashed #B79CFF; box-shadow: none; display: grid; place-items: center; font: 800 9px var(--body); color: #B79CFF; }
+.qz-bar.revelee { background: linear-gradient(180deg, #9A7AE0, #5E46A8); }
+.qz-nb { font: 800 clamp(13px, 3vw, 18px) var(--display); font-variant-numeric: tabular-nums; }
+.qz-sur { font-size: 11px; color: var(--muted); }
+.qz-pions { display: flex; flex-wrap: wrap; gap: 1px; margin-top: auto; min-height: 20px; }
+.qz-mini { width: clamp(14px, 3.2vw, 22px); height: clamp(17px, 3.8vw, 26px); }
+.qz-mini svg { width: 100%; height: 100%; display: block; }
+.qz-mini.moi svg { filter: drop-shadow(0 0 3px rgba(255,178,63,.8)); }
+.qz-etat { font: 700 clamp(9px, 2vw, 12px)/1.2 var(--body); padding: 3px 6px; border-radius: 7px; align-self: flex-start; max-width: 100%; background: rgba(8,12,27,.9); border: 1px solid currentColor; }
+.qz-etat.v { color: var(--green); } .qz-etat.a { color: var(--amber-hi); } .qz-etat.r { color: #FFB3B0; } .qz-etat.b { color: #A9D3FF; } .qz-etat.g { color: var(--muted); }
+.qz-menace { position: absolute; top: 34px; right: 5px; font: 800 clamp(10px, 2.2vw, 13px) var(--body); padding: 2px 7px; border-radius: 999px; background: #4A121A; color: #FFC9C6; border: 1.5px solid var(--red); box-shadow: 0 0 12px rgba(255,110,106,.5); animation: halo 1.6s ease-in-out infinite; white-space: nowrap; }
+.qz-menace.renfort { background: #3A2A10; color: var(--amber-hi); border-color: var(--amber); box-shadow: none; animation: none; }
+.qz-tuile.repris .qz-menace { top: 6px; }
+.qz-cadenas { position: absolute; inset: 0; display: grid; place-items: center; font-size: 24px; opacity: .45; pointer-events: none; }
+.qz-moi { padding: 10px 12px; border-radius: var(--r-md); background: var(--surface); border: 1px solid var(--line); }
+.qz-fiche { display: flex; flex-direction: column; gap: 8px; }
+.qz-f-tete { display: flex; gap: 10px; align-items: center; }
+.qz-f-tete h3 { margin: 0; font: 800 18px var(--display); }
+.qz-f-tete .qz-pt { width: 42px; height: 42px; border: 2px solid var(--red); }
+.qz-f-ico { font-size: 28px; }
+.qz-compte { display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: 12px; background: var(--bg); font-size: 14px; color: var(--text2); }
+.qz-compte b { color: var(--text); font: 800 19px var(--display); font-variant-numeric: tabular-nums; }
+.qz-compte .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none; font-size: 15px; }
+.qz-compte .ic.rd { background: var(--red-bg); } .qz-compte .ic.vi { background: rgba(183,156,255,.16); } .qz-compte .ic.bl { background: var(--blue-bg); }
+.qz-msg { font-size: 14px; padding: 9px 11px; border-radius: 12px; }
+.qz-msg b { color: var(--text); }
+.qz-msg.v { background: var(--green-bg, rgba(61,211,154,.12)); color: #BDF1DB; border: 1px solid rgba(61,211,154,.35); }
+.qz-msg.a { background: var(--amber-bg); color: var(--amber-hi); border: 1px solid var(--amber-line); }
+.qz-msg.r { background: var(--red-bg); color: #FFC9C6; border: 1px solid var(--red-line); }
+.qz-msg.g { background: var(--surface2); color: var(--text2); }
+.qz-qui { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: var(--text2); }
+.qz-qui span { display: inline-flex; align-items: center; gap: 5px; }
+.qz-qui i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.qz-steps { display: flex; flex-direction: column; gap: 6px; }
+.qz-step { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 4px; border-radius: 14px; background: var(--surface2); border: 1px solid var(--line); }
+.qz-step-ic svg { width: 32px; height: 38px; display: block; }
+.qz-step-t { display: flex; flex-direction: column; line-height: 1.2; flex: 1; min-width: 0; }
+.qz-step-t b { font: 700 14px var(--body); }
+.qz-step-t span { font-size: 11.5px; color: var(--muted); }
+.qz-step-n { display: inline-flex; align-items: center; gap: 6px; }
+.qz-step-n b { min-width: 18px; text-align: center; font: 800 17px var(--display); font-variant-numeric: tabular-nums; }
+.qz-step-n .btn { min-width: 36px; min-height: 36px; }
+.qz-regles summary { cursor: pointer; color: var(--text2); }
+.qz-regles p { margin: 6px 0 0; color: var(--text2); }
+@media (min-width: 1280px) and (hover: hover) and (pointer: fine) {
+  body:has(main.carte-v3) .cv-carte.cv-plateau .qz-plateau { max-width: min(640px, calc(100vh - 150px)); }
+}

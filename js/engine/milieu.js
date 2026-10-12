@@ -170,7 +170,8 @@ export function aLaPrise(state, nd, s, k, T, parts, push, nomS) {
   if (d.fuite < M3.fuiteArret) {
     // Arrêté : il passe la nuit en garde à vue ; l'interrogatoire a lieu à la prochaine résolution.
     // Arrêté, puis interrogé dans la nuit (le renseignement est au dossier dès la Gazette du soir).
-    const garde = parts.find((p) => state.zones[p.uid] && aAnnexe(state.zones[p.uid], 'cachots')) || parts[0];
+    // « Le Quartier » : la zone qui garde le lieutenant (et gagne l'affiche) est tirée au sort selon les parts.
+    const garde = (d.par && parts.find((p) => p.uid === d.par)) || parts.find((p) => state.zones[p.uid] && aAnnexe(state.zones[p.uid], 'cachots')) || parts[0];
     lt.etat = 'garde'; lt.par = garde ? garde.uid : null; lt.le = T - 1;
     push(6, 'Le milieu', `${cap(lt.nom)} arrêté à ${nomS}`, `Le lieutenant du Parrain est passé aux aveux dans la nuit${garde ? `, dans les locaux de ${nomZ(state, garde.uid)}` : ''}.`);
     interrogatoires(state, nd, T, push);

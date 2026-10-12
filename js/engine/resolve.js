@@ -28,6 +28,7 @@ import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, c
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus, appliquerPrime, pieceSurSuspect, affaire, dossierDe, pieceGardeAVue } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
 import { creerNonDroit, nonDroitResoudre } from './nondroit.js';
+import { quartierActif, assurerQuartier, planQuartier, radioQuartier } from './quartier.js';
 import { encheresResoudre, annoncerLot } from './encheres.js';
 import { venteResoudre, annoncerVente } from './ventes.js';
 import { rivalitesPre, rivalitesPost, themeActif, appliquerConsignes } from './rivalites.js';
@@ -258,6 +259,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const consigne = adj ? consigneDe(z, players[uid] && players[uid].chef) : null;
       ord[uid] = adj ? ordresAdjoint(z, state, consigne) : autopilotOrders(z, state);
       if (players[uid] && players[uid].consignes) ord[uid] = sanitizeOrders(z, appliquerConsignes(z, ord[uid], players[uid].consignes, state), state);
+      // « Le Quartier » : l'adjoint n'enchaîne pas les ordres d'hier dans le non-droit, il pose 1 à 3 agents là où ça sert ce soir.
+      if (quartierActif(state) && state.nonDroit && z.toursSansOrdres < 3) {
+        assurerQuartier(state);
+        const nAdj = adj && consigne === 'offensif' ? 2 : 1;
+        ord[uid] = sanitizeOrders(z, { ...ord[uid], ...planQuartier(z, state, Math.min(nAdj, Math.max(0, agentsDisponibles(z, T) - 12)), radioQuartier(state)) }, state);
+      }
       z.toursSansOrdres += 1;
       z._joue = false;
       z.rapport.push(adj ? `Pas d’ordres ce tour : ton adjoint${adj.f ? 'e' : ''} ${adj.prenom} ${adj.nom} a tenu la zone (consigne « ${CONSIGNES[consigne].nom.toLowerCase()} »).` : 'Pas d’ordres ce tour : le pilote automatique a repris la dernière répartition.');

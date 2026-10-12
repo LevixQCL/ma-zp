@@ -8,6 +8,7 @@ import { fipaPour, invitationImpossible, FIPA } from './fipa.js';
 import { pactesDe, pacteImpossible, defiImpossible, PACTES, DEFI_INDICATEURS } from './pactes.js';
 import { encherePossible } from './encheres.js';
 import { ND, secteurOuvert } from './constants.js';
+import { quartierActif, assurerQuartier, planQuartier, radioQuartier } from './quartier.js';
 import { partsDe, secteursVoisins, faille, repere, ouvertCeSoir } from './nondroit.js';
 import { seuilScene } from './milieu.js';
 
@@ -43,7 +44,7 @@ export function botOrders(zone, state, style = 'equilibre') {
       if (n > 0) { engagements[a.id] = { agents: n, acceptes: [] }; reste -= n; }
     }
   }
-  const { secteurs, roles } = state.nonDroit && state.nonDroit.roles ? botNonDroitRoles(zone, state, style, rng, reste) : { secteurs: botNonDroit(zone, state, style, rng, reste), roles: undefined };
+  const { secteurs, roles } = quartierActif(state) && state.nonDroit ? botQuartier(zone, state, style, rng, reste) : state.nonDroit && state.nonDroit.roles ? botNonDroitRoles(zone, state, style, rng, reste) : { secteurs: botNonDroit(zone, state, style, rng, reste), roles: undefined };
   reste -= Object.values(secteurs).reduce((a, b) => a + b, 0);
   const poids = { intervention: 0.36, proximite: 0.18, recherche: 0.18, roulage: 0.12, admin: 0.16 };
   if (zone.paperasse > 12) poids.admin += 0.08;
@@ -171,6 +172,14 @@ function botNonDroit(zone, state, style, rng, reste) {
  * ils complètent le repérage, le bouclage ou la descente qui manque, selon leur point fort.
  * Une partie d'entre eux (distraits, agressifs) fonce en descente sans regarder.
  */
+/** « Le Quartier » : les robots placent comme le bouton « Placer pour moi », plus ou moins souvent selon leur style. */
+function botQuartier(zone, state, style, rng, reste) {
+  assurerQuartier(state);
+  if (style === 'distrait' && rng.chance(0.6)) return { secteurs: {}, roles: {} };
+  if (!rng.chance({ agressif: 0.75, equilibre: 0.65, prudent: 0.5, distrait: 0.5 }[style] || 0.6)) return { secteurs: {}, roles: {} };
+  const n = Math.min(ND.maxTotal, Math.max(0, reste - 13), { agressif: 5, equilibre: 4, prudent: 3, distrait: 3 }[style] || 4);
+  return planQuartier(zone, state, n, radioQuartier(state));
+}
 const radioBots = { cle: null, ann: {} };
 function botNonDroitRoles(zone, state, style, rng, reste) {
   const secteurs = {}, roles = {};

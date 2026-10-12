@@ -14,6 +14,7 @@ import { clamp, round1, forceEngagement, forceRole, jalon, noter } from './zone.
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
 import { donnerTrophee, TROPHEE, figure, nomComplet } from './equipe.js';
 import { lies, PACTE } from './pactes.js';
+import { quartierActif, quartierResoudre } from './quartier.js';
 import { assurerMilieu, interrogatoires, modsAssaut, noterDescente, aLaPrise, confianceNuit, finDeNuit, scenesResoudre, saisieDescente, etape, M3, LIEUTENANTS, tactiqueDuSoir, barricades } from './milieu.js';
 
 /** Non-droit « profond » (Parrain, lieutenants, confiance, milieu adaptatif, scènes) : en jeu avec les règles de la saison 2 (oct. 2026). */
@@ -158,6 +159,12 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players =
   const nd = state.nonDroit;
   if (ND_ROLES && reglesV2(state) && !nd.roles) nd.roles = true;
   if (ND_V3 && reglesV2(state) && nd.v3 === undefined) nd.v3 = true; // false : désactivé exprès (simulations)
+  // « Le Quartier » (barricades, trois verbes, intentions du milieu) : remplace la règle d'emprise une fois l'interrupteur passé.
+  if (quartierActif(state)) return quartierResoudre(state, uids, ord, push, T, zoneLabel, {
+    prise,
+    retombees: (st, s, k) => retombees(st, s, k, partsDe(s), (s.hier || []).filter((h) => h.r && h.r.bouc).map((h) => ({ u: h.u, n: h.r.bouc })), 0, null),
+    contagion,
+  });
   assurerMilieu(state, nd);
   interrogatoires(state, nd, T, push);
   const rng = makeRng(`${state.seed}:s${state.season}:t${T}:nondroit`);
@@ -372,7 +379,7 @@ function planifierGangs(state, nd, T, push, res) {
   }
 }
 
-function prise(state, s, k, T, push, res, nom) {
+function prise(state, s, k, T, push, res, nom, par = null) {
   const nomS = nomSecteur(k);
   const m = milieuDe(s);
   const mult = s.coeur ? ND.coeurMult : 1;
@@ -400,6 +407,7 @@ function prise(state, s, k, T, push, res, nom) {
     if (s.coeur) { z.stats.coeur = (z.stats.coeur || 0) + 1; if (donnerTrophee(z, 'liberateur', state.season, T)) z.rapport.push(`Trophée débloqué : « ${TROPHEE.liberateur.nom} » (${TROPHEE.liberateur.texte.toLowerCase()}).`); }
     z.rapport.push(`Zone de non-droit : ${nomS} est repris ! ${m.titre} démantelé${parts.length > 1 ? ` avec ${parts.filter((x) => x.uid !== p.uid).map((x) => nom(x.uid)).join(', ')}` : ''}. Ta part : ${Math.round(p.part * 100)} % (+${fmt1(pts)} pts, +${fmt1(prime)} k€${plein ? `, +${fmt1(ND.prise.satisfaction * mult)} de satisfaction, +${rep} de réputation, +${ND.prise.moral} de moral` : ` ; sous ${Math.round(ND.partMin * 100)} %, pas de part fixe`}). Laisse un peu de monde sur place pour le garder.`);
   }
+  if (par) ((state.nonDroit._desc ||= {})[k] ||= { fuite: 0, repere: false, blesses: 0 }).par = par;
   aLaPrise(state, state.nonDroit, s, k, T, parts, push, nomS);
   const noms = parts.map((p) => nom(p.uid));
   push(s.coeur ? 12 : 9, s.coeur ? 'Le Cœur est tombé' : 'Reconquête', s.coeur ? `Le QG du milieu tombe à ${nomS} !` : `${nomS} repris au milieu`,
@@ -424,10 +432,10 @@ function retombees(state, s, k, parts, engages, avant, nom) {
     if (sat > 0) { z.satisfaction += sat; noter(z, 'satisfaction', `${nomS} tenu`, sat); }
     z._psEntraide = (z._psEntraide || 0) + ps;
     const e = engages.find((x) => x.u === p.uid);
-    z.rapport.push(`Zone de non-droit · ${nomS} tenu (${Math.round(p.part * 100)} % d’influence${s.chef === p.uid ? ', zone de référence' : ''}) : +${fmt1(pts)} pts, +${fmt1(b)} k€${sat ? `, +${fmt1(sat)} de satisfaction` : ''}, +${ps} PS.${e ? ` ${e.n} agent${e.n > 1 ? 's' : ''} de garde.` : ''} Emprise ${Math.round(avant)} → ${Math.round(s.emprise)}${s.emprise >= ND.seuilRechute - 15 ? ` : attention, à ${ND.seuilRechute} il retombe` : ''}.`);
+    z.rapport.push(`Zone de non-droit · ${nomS} tenu (${Math.round(p.part * 100)} % d’influence${s.chef === p.uid ? ', zone de référence' : ''}) : +${fmt1(pts)} pts, +${fmt1(b)} k€${sat ? `, +${fmt1(sat)} de satisfaction` : ''}, +${ps} PS.${e ? ` ${e.n} agent${e.n > 1 ? 's' : ''} de garde.` : ''}${state.nonDroit.quartier ? '' : ` Emprise ${Math.round(avant)} → ${Math.round(s.emprise)}${s.emprise >= ND.seuilRechute - 15 ? ` : attention, à ${ND.seuilRechute} il retombe` : ''}.`}`);
   }
   for (const e of engages) {
-    if (ayants.some((p) => p.uid === e.u)) continue;
+    if (ayants.some((p) => p.uid === e.u) || !state.zones[e.u]) continue;
     state.zones[e.u].rapport.push(`Zone de non-droit · ${nomS} : ${e.n} agent${e.n > 1 ? 's' : ''} de garde. Ton influence monte (${Math.round(((parts.find((p) => p.uid === e.u) || {}).part || 0) * 100)} % ; retombées dès ${Math.round(ND.partMin * 100)} %).`);
   }
 }
