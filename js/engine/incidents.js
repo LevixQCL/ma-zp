@@ -5,6 +5,7 @@
 import { talentVal, noterChef } from './chef.js';
 import { makeRng } from './rng.js';
 import { DEFAULT_ALLOC, SERVICE_LABELS, PS, gainMoral, risqueBlessure, USURE } from './constants.js';
+import { jalon } from './zone.js';
 import { vitesseCombi, vehiculesUrgence, user, modeleDe } from './flotte.js';
 import { TOUS_SKINS, ajouterSkin } from './decor.js';
 import { placeLibre } from './parc.js';
@@ -352,10 +353,21 @@ function appliquerMalus(z, m, T) {
 export function appliquerIncidents(z, { incidents, resultats, alloc, T, rng, indice = () => false }) {
   const lignes = [];
   let skin = null;
+  // Une ligne par incident dans le détail du moral, de la satisfaction, etc. (avant : une seule ligne « Incidents du jour »
+  // qui additionnait réussites et échecs, si bien qu'un malus pouvait disparaître derrière un gain).
+  const etiquette = (inc, res) => {
+    const issue = !res ? 'pas joué' : res.statut === 'ok' ? 'réussi' : res.statut === 'passe' ? 'pas le temps' : res.statut === 'abandon' ? 'abandonné' : 'raté';
+    return `${inc.urgence ? 'Urgence Bitonal' : `Incident ${inc.titre.charAt(0).toLowerCase()}${inc.titre.slice(1)}`} : ${issue}`;
+  };
   for (const inc of incidents) {
     const res = resultats[inc.id];
+    jalon(z, 'Incidents du jour');
+    appliquerUn(inc, res);
+    jalon(z, etiquette(inc, res));
+  }
+  function appliquerUn(inc, res) {
     const nom = `${inc.titre} (${SERVICE_LABELS[inc.service]})`;
-    if (inc.urgence) { lignes.push(...appliquerUrgence(z, inc, res, { alloc, T, rng })); continue; }
+    if (inc.urgence) { lignes.push(...appliquerUrgence(z, inc, res, { alloc, T, rng })); return; }
     z.stats.incidentsJeu = (z.stats.incidentsJeu || 0) + 1;
     if (res && res.statut === 'ok') {
       // Incident « en plus » réussi : jauge des skins doublée (facultatif, donc mieux payé).

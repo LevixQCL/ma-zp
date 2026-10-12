@@ -189,4 +189,17 @@ for (let t = 1; t <= 120; t++) {
   assert.equal(ap2.urgenceCible.normal.h.length, 1);
   assert.ok(Number.isFinite(tousIncidents(ap2, 'a').find((i) => i.urgence).cible));
 }
+// 7. Détail des jauges : une ligne par incident (un échec ne disparaît plus derrière une réussite du même soir).
+{
+  const { ouvrirJournal, jalon } = await import('../js/engine/zone.js');
+  const z = buildJoinZone(st, 'j', { code: '9999', nom: 'Zone J', couleur: '#fff' }, 1); z.moral = 60; z.satisfaction = 60;
+  ouvrirJournal(z);
+  const incs = [{ id: 'i1', service: 'intervention', titre: 'Colis suspect', jeu: 'colis' }, { id: 'i2', service: 'proximite', titre: 'Dossier à boucler', jeu: 'x' }];
+  const rngKo = { next: () => 0.99, chance: () => false, pick: (a) => a[0] };
+  appliquerIncidents(z, { incidents: incs, resultats: { i1: { statut: 'ok', fautes: 0 }, i2: { statut: 'rate', fautes: 1 } }, alloc: {}, T: 2, rng: rngKo });
+  jalon(z, 'Incidents du jour');
+  assert.ok(z._journal.moral.some((l) => /colis suspect : réussi/.test(l.l) && l.v === 3), 'réussite sur sa propre ligne');
+  assert.ok(z._journal.satisfaction.some((l) => /dossier à boucler : raté/.test(l.l) && l.v === -1), 'malus sur sa propre ligne');
+  assert.ok(!Object.values(z._journal).flat().some((l) => l.l === 'Incidents du jour'), 'plus de ligne globale');
+}
 console.log('OK : incidents du jour (tirage, horaires, difficulté, effets, jauge, résolution).');
