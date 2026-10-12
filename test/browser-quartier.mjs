@@ -19,12 +19,13 @@ await page.click('[data-form="signup"] button[type="submit"]');
 await page.waitForSelector('#countdown');
 { const pt = page.locator('[data-action="chef-plus-tard"]'); if (await pt.count()) { await pt.click(); await page.waitForSelector('#countdown'); } }
 await page.goto(BASE.replace(/\?.*/, '') + '?demo#carte');
-await page.waitForSelector('.qz-plateau');
+await page.waitForSelector('.qz-fiche');
 await page.waitForTimeout(400);
-await page.screenshot({ path: `${OUT}/01-plateau.png`, fullPage: true });
-// Une tuile du milieu, deux casseurs.
-const k = await page.locator('.qz-tuile.tenu').first().getAttribute('data-c');
-await page.click(`.qz-tuile[data-c="${k}"]`);
+await page.screenshot({ path: `${OUT}/01-carte.png`, fullPage: true });
+// Un secteur touché sur la carte, deux casseurs.
+const k = await page.evaluate(() => { const db = JSON.parse(localStorage.getItem('mazp-demo-v3')); const s = db.parties.demo.state.nonDroit.secteurs; return Object.keys(s).find((x) => !s[x].coeur && s[x].statut !== 'repris'); });
+await page.evaluate((k) => document.querySelector(`svg.iso polygon.hit-nd[data-c="${k}"]`).dispatchEvent(new MouseEvent("click", { bubbles: true })), k);
+await page.waitForTimeout(300);
 await page.click(`[data-action="nd-role"][data-c="${k}"][data-r="desc"][data-d="1"]`);
 await page.click(`[data-action="nd-role"][data-c="${k}"][data-r="desc"][data-d="1"]`);
 await page.waitForTimeout(300);
@@ -32,7 +33,7 @@ await page.screenshot({ path: `${OUT}/02-fiche.png`, fullPage: true });
 await page.click('[data-action="qz-auto"]');
 await page.waitForTimeout(400);
 await page.screenshot({ path: `${OUT}/03-auto.png`, fullPage: true });
-const etat = await page.evaluate(() => ({ tuiles: document.querySelectorAll('.qz-tuile').length, mesPions: document.querySelectorAll('.qz-mini.moi').length }));
+const etat = await page.evaluate(() => ({ marqueurs: document.querySelectorAll('svg.iso g[data-action="secteur"] text').length, fiche: document.querySelector('.qz-fiche h3')?.textContent }));
 console.log(JSON.stringify(etat));
 // 20:00 (démo) puis le plateau du lendemain.
 for (let i = 0; i < 3; i++) {
@@ -41,7 +42,7 @@ for (let i = 0; i < 3; i++) {
   if (await nx.count()) { await nx.click(); await page.waitForTimeout(1500); }
 }
 await page.goto(BASE.replace(/\?.*/, '') + '?demo#carte');
-await page.waitForSelector('.qz-plateau');
+await page.waitForSelector('.qz-fiche');
 await page.waitForTimeout(400);
 await page.screenshot({ path: `${OUT}/04-apres.png`, fullPage: true });
 const nd = await page.evaluate(() => { const db = JSON.parse(localStorage.getItem('mazp-demo-v3')); const n = db.parties.demo.state.nonDroit; return { turn: db.parties.demo.state.turn, quartier: n.quartier, sect: Object.values(n.secteurs).map((s) => `${s.statut === 'repris' ? 'R' : (s.bar || 0) + (s.cache || 0)}`).join(' '), int: n.intentions }; });

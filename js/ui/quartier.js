@@ -3,8 +3,6 @@
 import { S, esc, myZone } from './common.js';
 import { ND } from '../engine/constants.js';
 import { nomSecteur } from '../engine/nondroit.js';
-import { ville } from './ville.js';
-import { CONFIG } from '../config.js';
 import { quartierActif, assurerQuartier, bilanQuartier, attaquable, coupsDe, experts, totalBar, planQuartier, Q } from '../engine/quartier.js';
 import { portraitLieutenant, portraitParrain, PORTRAITS_PRETS, RENSEIGNEMENTS } from '../engine/milieu.js';
 import { annoncesND, rolesDe, agentsND } from './nondroit.js';
@@ -26,27 +24,6 @@ export function vueQ() {
   return cache.v;
 }
 
-// Plateau : chaque secteur de l'anneau prend la case la plus proche de sa direction depuis le QG ; la case qui reste montre le Parrain.
-const CASES = [[-1, -1], [0, -1], [1, -1], [-1, 0], [0, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
-let dispo = null;
-export function dispositionQ(nd) {
-  const cles = Object.keys(nd.secteurs).sort((a, b) => Number(a) - Number(b)).join(',');
-  if (dispo && dispo.cles === cles) return dispo.cases;
-  const v = ville(CONFIG.seed), qg = Object.keys(nd.secteurs).find((k) => nd.secteurs[k].coeur);
-  const c0 = v.cells[Number(qg)].c, cases = new Array(9).fill(null);
-  cases[4] = qg;
-  const ang = (dx, dy) => Math.atan2(dy, dx);
-  const anneau = Object.keys(nd.secteurs).filter((k) => k !== qg).map((k) => { const c = v.cells[Number(k)].c; return { k, a: ang(c[0] - c0[0], c[1] - c0[1]) }; });
-  const libres = CASES.map((d, i) => ({ i, a: ang(d[0], d[1]) })).filter((x) => x.i !== 4);
-  const diff = (a, b) => { const d = Math.abs(a - b) % (2 * Math.PI); return d > Math.PI ? 2 * Math.PI - d : d; };
-  // Glouton : la paire (secteur, case) la plus proche d'abord.
-  const paires = anneau.flatMap((s) => libres.map((c) => ({ s, c, d: diff(s.a, c.a) }))).sort((x, y) => x.d - y.d);
-  const pris = new Set(), places = new Set();
-  for (const p of paires) if (!pris.has(p.s.k) && !places.has(p.c.i)) { cases[p.c.i] = p.s.k; pris.add(p.s.k); places.add(p.c.i); }
-  dispo = { cles, cases };
-  return cases;
-}
-
 /** Qui est sur chaque secteur ce soir : moi (brouillon) et les zones annoncées à la radio. [{ u, zone, r, moi }] */
 export function presencesQ(k) {
   const st = S.state;
@@ -63,51 +40,6 @@ const flic = (role, socle, cls = '') => {
 const portrait = (src) => `<span class="qz-pt" aria-hidden="true"><svg viewBox="0 0 40 40"><circle cx="20" cy="15" r="7" fill="#0E0B12"/><path d="M5 40c1-10 7-15 15-15s14 5 15 15z" fill="#0E0B12"/></svg>${PORTRAITS_PRETS ? `<img src="${esc(src)}" alt="" loading="lazy" onerror="this.remove()">` : ''}</span>`;
 const couleur = (z) => (z && z.couleur) || '#9AA3C7';
 const pl = (n) => (n > 1 ? 's' : '');
-
-function barricadesHtml(s, b) {
-  if (s.statut === 'repris') return '';
-  const n = s.bar || 0, cassees = Math.min(b.coups, b.vu ? b.total : n);
-  const tot = b.vu ? b.total : n, MAXI = 14;
-  let h = '';
-  if (tot <= MAXI) {
-    for (let i = 0; i < n; i++) h += `<span class="qz-bar ${i < cassees ? 'cassee' : ''}"></span>`;
-    if (s.cache && b.vu) for (let i = 0; i < s.cache; i++) h += `<span class="qz-bar revelee ${n + i < cassees ? 'cassee' : ''}"></span>`;
-  } else h += `<span class="qz-bar"></span><b class="qz-nb">${Math.max(0, tot - cassees)}</b><span class="qz-sur">/${tot}</span>`;
-  if (!b.vu) h += '<span class="qz-bar cachee" title="0, 1 ou 2 barricades cachées">?</span>';
-  return `<span class="qz-bars" aria-label="${tot} barricade${pl(tot)}${b.vu ? '' : ' visibles, plus peut-être 1 ou 2 cachées'}">${h}</span>`;
-}
-
-function tuileHtml(st, k, sel) {
-  const nd = st.nonDroit, s = nd.secteurs[k], ps = presencesQ(k), b = bilanQuartier(st, k, ps.map((x) => ({ ...x, zone: x.zone })));
-  const ferme = s.statut === 'milieu' && !attaquable(nd, k);
-  const cls = s.coeur ? `qg${ferme ? ' loin' : ''}` : s.statut === 'repris' ? 'repris' : 'tenu';
-  const it = nd.intentions || {}, att = (it.attaques || {})[k], renf = (it.renforts || {})[k];
-  const menace = att ? `<span class="qz-menace" title="Attaque annoncée ce soir">⚔ ${att}</span>` : renf && s.statut === 'milieu' ? `<span class="qz-menace renfort" title="Barricades ajoutées cette nuit s'il ne tombe pas">+${renf} 🧱</span>` : '';
-  let etat;
-  if (s.statut === 'repris') etat = att ? (b.manque ? `<span class="qz-etat r">🛡 ${b.bouc}/${att} · il en manque ${b.manque}</span>` : `<span class="qz-etat v">🛡 ${b.bouc}/${att} · tiendra</span>`) : '<span class="qz-etat b">repris ✓</span>';
-  else if (ferme) etat = `<span class="qz-etat g">🔒 ${ND.coeurSeuil} secteurs repris pour ouvrir</span>`;
-  else if (b.statut === 'tombe') etat = '<span class="qz-etat v">tombe ce soir ✓</span>';
-  else if (b.statut === 'peutetre') etat = '<span class="qz-etat a">tombe… sauf si « ? »</span>';
-  else if (b.statut === 'manque') etat = `<span class="qz-etat a">il manque ${b.manque} 🔨${b.vu ? '' : ' + ?'}</span>`;
-  else etat = `<span class="qz-etat g">${b.sait} 🔨 pour tomber${b.vu ? '' : ' + ?'}</span>`;
-  const pions = ps.flatMap((x) => ['bouc', 'rep', 'desc'].flatMap((r) => Array.from({ length: Math.min(6, x.r[r] || 0) }, () => `<span class="qz-mini${x.moi ? ' moi' : ''}" title="${esc(x.zone.nom)} · ${SERV_Q[r].nom}">${flic(r, couleur(x.zone))}</span>`))).slice(0, 12).join('');
-  const lt = s.lieutenant, pt = s.coeur ? portraitParrain(nd.parrain && nd.parrain.nom) : portraitLieutenant(s.milieu);
-  return `<button type="button" class="qz-tuile ${cls} ${sel === k ? 'sel' : ''}" data-action="qz-sel" data-c="${k}" aria-pressed="${sel === k}" aria-label="${esc(nomSecteur(k))}">
-    <span class="qz-nom">${esc(nomSecteur(k))}</span>
-    ${s.statut === 'milieu' && (s.coeur || (lt && lt.etat === 'libre')) ? `<span class="qz-lt">${portrait(pt)}</span>` : ''}
-    ${menace}${ferme ? '<span class="qz-cadenas" aria-hidden="true">🔒</span>' : ''}
-    ${barricadesHtml(s, b)}
-    <span class="qz-pions">${pions}</span>
-    ${etat}
-  </button>`;
-}
-
-function tuileParrain(st) {
-  const nd = st.nonDroit, p = nd.parrain, n = Object.keys(nd.dossier || {}).length, NR = Object.keys(RENSEIGNEMENTS).length;
-  if (!p) return '<div class="qz-tuile vide" aria-hidden="true"></div>';
-  return `<div class="qz-tuile parrain ${p.tombe ? 'tombe' : ''}"><span class="qz-nom">${p.tombe ? 'Tombé' : 'Le Parrain'}</span>${portrait(portraitParrain(p.nom))}
-    <span class="qz-p-nom">${esc(p.nom)}</span><span class="qz-p-dos" title="Chaque renseignement retire ${Q.parRens} barricade au QG">📁 ${n}/${NR} · −${n * Q.parRens} 🧱 au QG</span></div>`;
-}
 
 /** La fiche du secteur choisi : ce qui arrivera ce soir, et mes agents (un stepper par verbe). */
 function ficheHtml(st, k, me) {
@@ -157,32 +89,29 @@ function ficheHtml(st, k, me) {
   return `<section class="card qz-fiche nd-fiche" id="nd-${k}" aria-label="Fiche du secteur">${tete}${corps}${qui}${steppers ? `<div class="qz-steps">${steppers}</div>` : ''}${radio}${hierL}</section>`;
 }
 
-/** Le plateau complet (carte du non-droit en mode « Le Quartier »). */
-export function plateauQHtml() {
-  const st = vueQ(), me = myZone();
-  if (!st || !me) return '';
-  const nd = st.nonDroit, cases = dispositionQ(nd);
-  const sel = S.secteurSel != null && nd.secteurs[S.secteurSel] ? String(S.secteurSel) : cases.find((k) => k && attaquable(nd, k)) || cases.find(Boolean);
-  const tuiles = cases.map((k) => (k ? tuileHtml(st, k, sel) : tuileParrain(st))).join('');
-  const r = Object.values(nd.secteurs).filter((x) => !x.coeur && x.statut === 'repris').length, NA = Object.values(nd.secteurs).filter((x) => !x.coeur).length;
-  const it = nd.intentions || {}, att = Object.entries(it.attaques || {}), renf = Object.entries(it.renforts || {}).filter(([k]) => nd.secteurs[k].statut === 'milieu');
-  const annonce = att.length || renf.length ? `<div class="qz-annonce"><b>Ce soir, le milieu annonce :</b> ${[...att.map(([k, n]) => `⚔ ${n} sur ${esc(nomSecteur(k))}`), ...renf.map(([k, n]) => `+${n} 🧱 sur ${esc(nomSecteur(k))}`)].join(' · ')}</div>` : '';
-  return `<div class="qz">
-    <div class="qz-haut"><span class="qz-progres" aria-label="${r} secteurs repris sur ${NA}">Repris ${Array.from({ length: NA }, (_, i) => `<i class="${i < r ? 'on' : ''}"></i>`).join('')} ${r}/${NA}</span><span class="tiny muted">20:00 · tout se règle d’un coup</span></div>
-    ${annonce}
-    <div class="qz-plateau">${tuiles}</div>
-  </div>`;
+/** Secteur ouvert par défaut : là où j'ai des agents, sinon une attaque à couvrir, sinon le secteur ouvert qui tombe le plus vite. */
+function secteurParDefaut(st) {
+  const nd = st.nonDroit, cles = Object.keys(nd.secteurs).sort((a, b) => Number(a) - Number(b)), it = nd.intentions || {};
+  return cles.find((k) => ((S.draft && S.draft.secteurs) || {})[k]) || cles.find((k) => (it.attaques || {})[k])
+    || cles.filter((k) => attaquable(nd, k)).sort((a, b) => totalBar(nd.secteurs[a]) - totalBar(nd.secteurs[b]))[0] || cles[0];
 }
 
-/** Sous le plateau : la fiche du secteur choisi et mes agents. */
+/** Sous la carte : où en est le non-droit, ce que le milieu annonce, mes agents, la fiche du secteur touché. */
 export function corpsQHtml() {
   const st = vueQ(), me = myZone();
   if (!st || !me || !S.draft) return '';
-  const nd = st.nonDroit, cases = dispositionQ(nd);
-  const sel = S.secteurSel != null && nd.secteurs[S.secteurSel] ? String(S.secteurSel) : cases.find((k) => k && attaquable(nd, k)) || cases.find(Boolean);
+  const nd = st.nonDroit;
+  if (S.secteurSel == null || !nd.secteurs[S.secteurSel]) S.secteurSel = secteurParDefaut(st);
+  const sel = String(S.secteurSel);
   const n = agentsND();
   const mes = Object.entries(S.draft.secteurs || {}).filter(([, v]) => v > 0);
-  return `<div class="qz-moi">
+  const r = Object.values(nd.secteurs).filter((x) => !x.coeur && x.statut === 'repris').length, NA = Object.values(nd.secteurs).filter((x) => !x.coeur).length;
+  const it = nd.intentions || {}, att = Object.entries(it.attaques || {}), renf = Object.entries(it.renforts || {}).filter(([k]) => nd.secteurs[k].statut === 'milieu');
+  const p = nd.parrain, nR = Object.keys(nd.dossier || {}).length, NR = Object.keys(RENSEIGNEMENTS).length;
+  return `<div class="qz-haut"><span class="qz-progres" aria-label="${r} secteurs repris sur ${NA}">Repris ${Array.from({ length: NA }, (_, i) => `<i class="${i < r ? 'on' : ''}"></i>`).join('')} ${r}/${NA}</span>
+      ${p ? `<span class="qz-parrain">${portrait(portraitParrain(p.nom))}<span>${p.tombe ? `${esc(p.nom)} est tombé` : `${esc(p.nom)} · 📁 ${nR}/${NR}`}</span></span>` : ''}</div>
+    ${att.length || renf.length ? `<div class="qz-annonce"><b>Ce soir, le milieu annonce :</b> ${[...att.map(([k, x]) => `⚔ ${x} sur ${esc(nomSecteur(k))}`), ...renf.map(([k, x]) => `+${x} 🧱 sur ${esc(nomSecteur(k))}`)].join(' · ')}</div>` : ''}
+    <div class="qz-moi">
       <div class="between" style="gap:8px;flex-wrap:wrap"><span class="small"><b>Tes agents ce soir : ${n}/${ND.maxTotal}</b>${mes.length ? ` · ${mes.map(([k]) => esc(nomSecteur(k))).join(', ')}` : ''}</span>
       <span class="row" style="gap:6px"><button type="button" class="btn small" data-action="qz-auto">✨ Placer pour moi</button>${n ? '<button type="button" class="btn small ghost" data-action="qz-vider">Tout reprendre</button>' : ''}</span></div>
     </div>
@@ -220,5 +149,40 @@ export function alertesQ() {
     else if (s.statut === 'milieu' && attaquable(nd, k) && b.statut !== 'tombe' && b.coups > 0 && b.manque <= 4) tombent.push({ k, n: b.manque });
   }
   return { tombent: tombent.sort((a, b) => a.n - b.n), danger };
+}
+
+// ───── Sur la carte ─────
+const pastille = (x, y, txt, fond, encre = '#fff', bord = '#0B1124', cls = '') => {
+  const lg = [...txt].reduce((t, c) => t + (/[\u{1F300}-\u{1FAFF}☀-➿]/u.test(c) ? 7.4 : c === ' ' ? 2.2 : 4.3), 0) + 7;
+  return { w: lg, svg: `<g class="${cls}" transform="translate(${(x - lg / 2).toFixed(1)} ${y})"><rect width="${lg.toFixed(1)}" height="11" rx="5.5" fill="${fond}" stroke="${bord}" stroke-width=".8"/><text x="${(lg / 2).toFixed(1)}" y="8" text-anchor="middle" style="font:800 7px 'Bricolage Grotesque',sans-serif;fill:${encre}">${txt}</text></g>` };
+};
+/**
+ * Un repère par secteur, posé sur la maquette : 🧱 à casser (+ « ? »), 🔨 posés ce soir, ⚔ attaque annoncée et 🛡 boucliers,
+ * +🧱 renfort annoncé, 🔒 pour le QG fermé, ✓ pour un secteur repris tranquille. [{ k, svg }]
+ */
+export function marqueursQ() {
+  if (!S.state || !quartierActif(S.state)) return [];
+  const st = vueQ();
+  if (!st) return [];
+  const nd = st.nonDroit, it = nd.intentions || {}, out = [];
+  for (const k of Object.keys(nd.secteurs)) {
+    const s = nd.secteurs[k], b = bilanQuartier(st, k, presencesQ(k)), att = (it.attaques || {})[k], renf = (it.renforts || {})[k];
+    const lt = s.statut === 'milieu' && !s.coeur && s.lieutenant && ['libre', 'garde'].includes(s.lieutenant.etat);
+    const dx = (w) => (lt ? 4 - w / 2 : 0); // la pastille s'écarte du portrait du lieutenant (à droite)
+    const g = [];
+    const poser = (y, txt, fond, encre, cls) => { const p0 = pastille(0, 0, txt, fond, encre, '#0B1124', cls); const p = pastille(dx(p0.w), y, txt, fond, encre, '#0B1124', cls); g.push(p.svg); };
+    if (s.statut === 'repris') {
+      if (att) { poser(-6, `⚔ ${att}`, '#C2343A', '#fff', 'qz-pulse'); poser(7, `🛡 ${b.bouc}/${att}`, b.manque ? '#3A1218' : '#1E6B4E', b.manque ? '#FFB3B0' : '#DFF8EC'); }
+      else g.push('<path d="M0 8L-3 4H3Z" fill="#3DD39A"/><circle r="6.5" fill="#3DD39A" stroke="#0B1124" stroke-width="1"/><text y="2.4" text-anchor="middle" class="iso-tn">✓</text>');
+    } else if (!attaquable(nd, k)) poser(-5.5, `🔒 🧱${totalBar(s)}`, '#2A2D45', '#C9CDE6');
+    else {
+      if (b.statut === 'tombe') poser(-5.5, '✓ tombe', '#1E6B4E', '#DFF8EC');
+      else poser(-5.5, `🧱 ${b.vu ? b.total : b.visibles}${b.vu ? '' : ' ?'}`, '#B5322E', '#fff');
+      if (b.coups && b.statut !== 'tombe') poser(7, `🔨 ${b.coups}${b.statut === 'peutetre' ? ' · ?' : ''}`, b.statut === 'peutetre' ? '#7A5A12' : '#2B3358', '#FFE3A8');
+      if (renf) { const p = pastille(lt ? 14 : 16, -17, `+${renf}🧱`, '#3A2A10', '#FFC970', '#FFB23F'); g.push(p.svg); }
+    }
+    out.push({ k, svg: g.join('') });
+  }
+  return out;
 }
 export { totalBar };

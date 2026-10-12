@@ -2,6 +2,7 @@
 // maisons, commerces, tours, arbres, rues et lampadaires ; voitures de police animées (une par patrouille envoyée).
 // Chaque quartier se touche sur toute sa surface (îlot + volume des immeubles) : data-action="quartier".
 // Le dessin fixe est mis en cache par tour ; seuls la sélection et les patrouilles changent à chaque toucher.
+import { quartierActif } from '../engine/quartier.js';
 import { S, pseudoJoueur } from './common.js';
 import { territoires, WW, HH } from './ville.js';
 import { bezier } from './plan.js';
@@ -18,7 +19,7 @@ export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
   const seed = S.config.seed, reduit = calme();
   const mesT0 = tensionsDe(st, me);
   const ndS = (st.nonDroit && st.nonDroit.secteurs) || {};
-  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, Object.keys(S.players || {}).length, Object.entries(ndS).map(([k, x]) => `${k}:${x.statut}:${Math.round(x.emprise)}:${x.lieutenant ? x.lieutenant.etat : ''}:${Number.isFinite(x.confiance) ? etape(x) : ''}`).join(','), scenesDuSoir(st).map((x) => `${x.cell}${x.type}`).join(','), Object.values(st.zones).map((z) => `${z.uid}:${z.nom}:${z.fondateur ? 1 : 0}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
+  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, quartierActif(st) ? 'Q' : '', Object.keys(S.players || {}).length, Object.entries(ndS).map(([k, x]) => `${k}:${x.statut}:${Math.round(x.emprise)}:${x.lieutenant ? x.lieutenant.etat : ''}:${Number.isFinite(x.confiance) ? etape(x) : ''}`).join(','), scenesDuSoir(st).map((x) => `${x.cell}${x.type}`).join(','), Object.values(st.zones).map((z) => `${z.uid}:${z.nom}:${z.fondateur ? 1 : 0}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
   if (!cache || cache.cle !== cle) cache = { cle, ...dessiner(st, me, seed, vue === 'mazone' ? 'zone' : vue === 'district' ? 'district' : T_VUE(st), reduit) };
   let svg = cache.svg;
   // Non-droit : mes fourgons partent de mon HP vers les secteurs où j'engage des agents ce soir ; ceux des collègues
@@ -45,8 +46,10 @@ export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
       }
     });
     const total = venus.reduce((t, v) => t + v.n, 0);
-    dyn.push(`<g transform="translate(${b[0].toFixed(1)} ${(b[1] - 30).toFixed(1)})"><rect x="-13" y="-6.5" width="26" height="13" rx="6.5" fill="#1F4FA8" stroke="#0B1124" stroke-width=".8"/><text x="0" y="2.6" text-anchor="middle" class="iso-pbt" style="font-size:7px">${total} ag.</text></g>`);
+    if (!marqueurs().length) dyn.push(`<g transform="translate(${b[0].toFixed(1)} ${(b[1] - 30).toFixed(1)})"><rect x="-13" y="-6.5" width="26" height="13" rx="6.5" fill="#1F4FA8" stroke="#0B1124" stroke-width=".8"/><text x="0" y="2.6" text-anchor="middle" class="iso-pbt" style="font-size:7px">${total} ag.</text></g>`);
   }
+  // « Le Quartier » : sur chaque secteur, ce qu'il faut casser ce soir, l'attaque annoncée et les boucliers.
+  for (const m of marqueurs()) { const p = cache.pos(Number(m.k), 18); if (p) dyn.push(`<g data-action="secteur" data-c="${m.k}" style="cursor:pointer" transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})">${m.svg}</g>`); }
   svg = svg.replace('<!--dyn-->', dyn.join(''));
   // Patrouilles du soir : une voiture visible par agent (3 au plus), pastille bleue avec le nombre.
   const pat = (S.draft && S.draft.patrouilles) || {};
@@ -62,6 +65,9 @@ export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
 /** Annonces des collègues pour le non-droit (radio) : branché par la Carte pour éviter un import circulaire. */
 let annonces = () => ({});
 export function brancherAnnoncesND(f) { annonces = f; }
+/** Marqueurs de « Le Quartier » ([{ k, svg }]) : branchés par la Carte. */
+let marqueurs = () => [];
+export function brancherMarqueursQ(f) { marqueurs = f; }
 
 function dessiner(st, me, seed, vue, reduit) {
   const patrouilles = {};
@@ -211,7 +217,7 @@ function dessiner(st, me, seed, vue, reduit) {
       const lab = { emeute: 'Émeute', rodeo: 'Rodéo', livraison: 'Livraison', perquisition: 'Perquisition' };
       const extra = (lt ? `<g transform="translate(10.5 -1)"><title>${lt.nom}${lt.etat === 'garde' ? ' (en garde à vue)' : ''}</title><clipPath id="${id(`lt${i}`)}"><circle r="4.6"/></clipPath><circle r="5.2" fill="${lt.etat === 'garde' ? '#63B0FF' : '#E0625A'}"/><circle r="4.6" fill="#2A2230"/><g clip-path="url(#${id(`lt${i}`)})"><circle cy="-1.2" r="1.9" fill="#0E0B12"/><path d="M-4.2 4.6c.3-2.9 2-4.2 4.2-4.2s3.9 1.3 4.2 4.2z" fill="#0E0B12"/>${PORTRAITS_PRETS ? `<image href="${portraitLieutenant(sND.milieu)}" x="-4.6" y="-4.6" width="9.2" height="9.2" preserveAspectRatio="xMidYMid slice"/>` : ''}</g>${lt.etat === 'garde' ? '<path d="M-2.4 -4.4v8.8M0 -4.6v9.2M2.4 -4.4v8.8" stroke="#9DCBFF" stroke-width=".6"/>' : ''}</g>` : '')
         + (scN ? `<g transform="translate(0 -12)" class="nd-bulle"><rect x="-19" y="-5.5" width="38" height="10" rx="5" fill="#FF7A2A" stroke="#0B1124" stroke-width=".8"/><text y="1.8" text-anchor="middle" style="font:800 5.4px 'Instrument Sans',sans-serif;fill:#1A0A00">${ico[scN.type]} ${lab[scN.type]}</text></g>` : '');
-      etiqND.push(`<g data-action="secteur" data-c="${i}" style="cursor:pointer" transform="translate(${f(px)} ${f(py)})">${extra}${sND.coeur && !repris ? '<path d="M-5 -7L-5 -12.5L-2.5 -9.5L0 -13.5L2.5 -9.5L5 -12.5L5 -7Z" fill="#F3C84B" stroke="#0B1124" stroke-width=".7"/>' : ''}<path d="M0 8L-3 4H3Z" fill="${repris ? '#3DD39A' : '#E0625A'}"/><circle r="6.5" fill="${repris ? '#3DD39A' : '#E0625A'}" stroke="#0B1124" stroke-width="1"/><text y="2.4" text-anchor="middle" class="iso-tn" style="fill:${repris ? '#0B1124' : '#fff'}">${repris ? '✓' : Math.round(sND.emprise)}</text></g>`);
+      etiqND.push(`<g data-action="secteur" data-c="${i}" style="cursor:pointer" transform="translate(${f(px)} ${f(py)})">${extra}${sND.coeur && !repris ? '<path d="M-5 -7L-5 -12.5L-2.5 -9.5L0 -13.5L2.5 -9.5L5 -12.5L5 -7Z" fill="#F3C84B" stroke="#0B1124" stroke-width=".7"/>' : ''}${quartierActif(st) ? '' : `<path d="M0 8L-3 4H3Z" fill="${repris ? '#3DD39A' : '#E0625A'}"/><circle r="6.5" fill="${repris ? '#3DD39A' : '#E0625A'}" stroke="#0B1124" stroke-width="1"/><text y="2.4" text-anchor="middle" class="iso-tn" style="fill:${repris ? '#0B1124' : '#fff'}">${repris ? '✓' : Math.round(sND.emprise)}</text>`}</g>`);
     }
     // Zone cliquable : l'îlot et le volume au-dessus (là où sont les immeubles), triée par profondeur.
     if (mien && zoomZone) {

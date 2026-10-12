@@ -585,6 +585,13 @@ async function onClick(e) {
         // Secteur de la zone de non-droit : une ligne de la liste s'ouvre ou se referme ; un secteur touché sur une carte s'ouvre sur le Terrain.
         if (el.classList.contains('nd-row')) { S.secteurSel = S.secteurSel === el.dataset.c ? null : el.dataset.c; rerender(); break; }
         S.secteurSel = el.dataset.c;
+        // « Le Quartier » : la fiche du secteur s'ouvre sous la carte.
+        if (quartierActif(S.state)) {
+          S.carteCalque = 'nondroit';
+          if (S.route !== 'carte') { location.hash = '#carte'; await new Promise((ok) => setTimeout(ok, 60)); } else rerender();
+          document.querySelector('.qz-fiche')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+          break;
+        }
         // Saison 2 : le non-droit est le premier écran de la Carte ; la fiche du secteur s'ouvre sous la carte.
         if (reglesV2(S.state)) {
           S.carteCalque = 'nondroit';
@@ -622,7 +629,7 @@ async function onClick(e) {
         for (const [k, rr] of Object.entries(plan)) for (const r of ['bouc', 'rep', 'desc']) for (let i = 0; i < (rr[r] || 0); i++) if (ajouterRoleND(k, r)) n++;
         const premier = Object.keys(plan)[0];
         if (premier) S.secteurSel = premier;
-        toast(n ? `${n} agent${n > 1 ? 's' : ''} placé${n > 1 ? 's' : ''}. Touche une tuile pour ajuster.` : 'Rien d’utile à faire ce soir dans le non-droit.');
+        toast(n ? `${n} agent${n > 1 ? 's' : ''} placé${n > 1 ? 's' : ''}. Touche un secteur pour ajuster.` : 'Rien d’utile à faire ce soir dans le non-droit.');
         S.ordersDirty = true; rerender(); break;
       }
       case 'nd-tactique': {
