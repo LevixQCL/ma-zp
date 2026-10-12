@@ -88,7 +88,7 @@ button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px;
   <div class="tete">
     <div>
       <div class="kicker">Ma ZP · zone de non-droit · maquette</div>
-      <h1>Ce soir, on y va ensemble</h1>
+      <h1>Percer ou tenir ?</h1>
     </div>
     <span class="horloge" id="horloge">Lundi · 18:42</span>
   </div>
@@ -124,6 +124,8 @@ button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px;
         <ul>
           <li><b>Chaque policier apporte de la force</b> au secteur où il est posé : Intervention 3 (la descente), Proximité 2 (le bouclage), Recherche 1, mais le premier repérage d'un secteur ajoute +25 % à tout le monde.</li>
           <li><b>À plusieurs, c'est plus fort</b> : +20 % par zone en plus de la première.</li>
+          <li><b>Le front</b> : on ne peut attaquer qu'un secteur qui touche vos commissariats (en bas) ou un secteur déjà repris. Les autres sont assombris, hors d'atteinte.</li>
+          <li><b>La riposte</b> : chaque matin, le milieu annonce où il va contre-attaquer et avec quelle force (flèches rouges). Des policiers posés sur ce secteur repris forment la garde. Si elle est trop faible, le secteur est reperdu.</li>
           <li><b>Le contour du secteur</b> et sa petite jauge montrent la force posée face à ce qu'il faut pour le reprendre. Rouge : trop faible, blessés possibles. Ambre : on fait reculer le milieu. Vert : le secteur tombe ce soir.</li>
           <li><b>Le lendemain matin</b>, la carte a changé. Pour chaque secteur repris, la prime se partage selon la force que chacun a posée, et l'affiche « ARRÊTÉ » du lieutenant est tirée au sort au prorata.</li>
         </ul>
@@ -166,22 +168,35 @@ button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px;
     { bx: 0, by: 1, nom: 'Le Marché', lt: 'Mo Vélo', role: 'livreur', c: '#5BA88F', cap: true, emprise: 66 },
     { bx: 2, by: 1, nom: 'Le Béguinage', lt: 'Nounours', role: 'recruteur', c: '#C9A35B', emprise: 39 },
     { bx: 0, by: 2, nom: 'Les Glacis', lt: 'Sifflet', role: 'chef de rue', c: '#C98A5B', cap: true, emprise: 62 },
-    { bx: 1, by: 2, nom: 'Gare Basse', lt: 'La Puce', role: 'passeuse', c: '#D46FA0', emprise: 81 },
+    { bx: 1, by: 2, nom: 'Gare Basse', lt: 'La Puce', role: 'passeuse', c: '#D46FA0', emprise: 75 },
     { bx: 2, by: 2, nom: 'Les Caves', lt: 'Tonton', role: 'stock', c: '#7FA35B', cap: true, emprise: 55 },
   ];
   const QG = { bx: 1, by: 1 };
-  const COLLEGUES = [ // annoncés plus tôt dans la journée
-    ['KA', 'I', 1], ['KA', 'I', 1], ['KA', 'P', 1], ['LE', 'I', 1], ['LE', 'R', 1],
-    ['CO', 'P', 5], ['CO', 'I', 5], ['HA', 'R', 3], ['HA', 'I', 3], ['HA', 'P', 3],
+  const COLLEGUES = [ // annoncés plus tôt dans la journée : deux zones attaquent Gare Basse, une Les Caves, une garde Les Glacis
+    ['KA', 'I', 6], ['KA', 'I', 6], ['KA', 'P', 6], ['LE', 'I', 6], ['LE', 'R', 6],
+    ['CO', 'P', 7], ['CO', 'I', 7], ['HA', 'I', 5], ['HA', 'P', 5],
   ];
   const MOI = [{ id: 'm1', s: 'R' }, { id: 'm2', s: 'I' }, { id: 'm3', s: 'I' }, { id: 'm4', s: 'P' }, { id: 'm5', s: 'P' }, { id: 'm6', s: 'R' }];
-  let place = {}, choisi = null, sel = 1, matin = null, jour = 0, rnd = mulberry(7);
+  let place = {}, choisi = null, sel = 5, matin = null, jour = 0, rnd = mulberry(7);
   function mulberry(a) { return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
   SECTEURS.forEach((s) => { s.repris = false; s.vu = false; });
+  SECTEURS[5].repris = true; SECTEURS[5].emprise = 0; // Les Glacis, repris la veille
+  let riposte = { cible: 5, force: 18, depuis: [3, 6] }; // annoncée le matin : le milieu se masse au Marché et à Gare Basse
   let colleguesPoses = COLLEGUES.map(([z, s, i]) => ({ z, s, i }));
 
   const pionsDe = (i) => [...colleguesPoses.filter((p) => p.i === i), ...MOI.filter((m) => place[m.id] === i).map((m) => ({ z: 'moi', s: m.s, id: m.id }))];
+  const voisins = (i) => SECTEURS.map((t, j) => j).filter((j) => Math.abs(SECTEURS[j].bx - SECTEURS[i].bx) + Math.abs(SECTEURS[j].by - SECTEURS[i].by) === 1);
+  const attaquable = (i) => !SECTEURS[i].repris && (SECTEURS[i].by === 2 || voisins(i).some((j) => SECTEURS[j].repris));
+  const jouable = (i) => i != null && (SECTEURS[i].repris || attaquable(i));
+  function bilanGarde(i) {
+    const ps = pionsDe(i), zones = new Set(ps.map((p) => p.z)), brut = ps.reduce((t, p) => t + FORCE[p.s], 0);
+    const force = Math.round(brut * (1 + 0.2 * Math.max(0, zones.size - 1)));
+    const menace = !!riposte && riposte.cible === i, besoin = menace ? riposte.force : 0;
+    const parZone = {}; ps.forEach((p) => { parZone[p.z] = (parZone[p.z] || 0) + FORCE[p.s]; });
+    return { ps, zones, brut, force, besoin, menace, parZone, statut: !menace ? 'calme' : force >= besoin ? 'tient' : 'perd', frac: menace ? Math.min(1, force / besoin) : 1 };
+  }
   function bilanSecteur(i) {
+    if (SECTEURS[i].repris) return bilanGarde(i);
     const S = SECTEURS[i], ps = pionsDe(i);
     const zones = new Set(ps.map((p) => p.z));
     const brut = ps.reduce((t, p) => t + FORCE[p.s], 0);
@@ -232,6 +247,10 @@ button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px;
       else { const S = SECTEURS[si]; fond = S.repris ? '#16294A' : `rgb(${Math.round(30 + S.emprise * 0.9)},${Math.round(18 + (100 - S.emprise) * 0.1)},${Math.round(30 + (100 - S.emprise) * 0.15)})`; }
       h += `<polygon points="${losange(x, y, 0.015)}" fill="${rue ? fond : '#120F22'}" stroke="#262447" stroke-width="1"/>`;
     }
+    // secteurs hors d'atteinte : assombris
+    SECTEURS.forEach((S, i) => { if (!S.repris && !attaquable(i)) h += `<polygon points="${losange(S.bx * 3, S.by * 3, 0.03, 0, 3)}" fill="#05060F" fill-opacity=".5"/>`; });
+    // vos commissariats, le long du bord sud : c'est de là que part le front
+    [1.5, 4.5, 7.5].forEach((x, j) => { const p = I(x, 9.55); h += `<g transform="translate(${f1(p[0])} ${f1(p[1])})"><path d="M-14 0l14 -7l14 7l-14 7z" fill="#1D3A6E" stroke="#63B0FF" stroke-width="1.5"/><rect x="-6" y="-16" width="12" height="12" fill="#2B4A9A"/><path d="M-7 -16l7 -5l7 5z" fill="#63B0FF"/><text y="22" text-anchor="middle" style="font:700 9.5px var(--body);fill:#9DCBFF">${['Ananas', 'Horizon', 'Police Acad.'][j]}</text></g>`; });
     // sélection, survol
     if (sel != null) { const S = SECTEURS[sel]; h += `<polygon points="${losange(S.bx * 3, S.by * 3, 0.04, 0, 3)}" fill="#FFB23F" fill-opacity=".07" stroke="#FFB23F" stroke-width="2.5"/>`; }
     h += '<polygon id="survol" points="" fill="#FFB23F" fill-opacity=".14" stroke="#FFB23F" stroke-width="3" pointer-events="none"/>';
@@ -259,12 +278,23 @@ button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px;
     obj.sort((a, b) => a.k - b.k).forEach((o) => { h += o.d(); });
     // Premier plan : contour de chaque secteur à la couleur de son état, puis les policiers et les étiquettes (jamais cachés par un immeuble).
     SECTEURS.forEach((S, i) => {
-      if (S.repris) { h += `<polygon points="${losange(S.bx * 3, S.by * 3, 0.06, 0, 3)}" fill="none" stroke="#7FC4FF" stroke-opacity=".7" stroke-width="2.5"/>`; return; }
+      if (S.repris) {
+        const g = bilanGarde(i);
+        const col = !g.menace ? '#7FC4FF' : g.statut === 'tient' ? '#3DD39A' : '#FF6E6A';
+        h += `<polygon points="${losange(S.bx * 3, S.by * 3, 0.06, 0, 3)}" fill="${col}" fill-opacity="${g.menace ? .12 : 0}" stroke="${col}" stroke-opacity="${g.menace ? 1 : .7}" stroke-width="${g.menace ? 4 : 2.5}" ${g.menace && g.statut === 'perd' ? 'stroke-dasharray="10 6"' : ''}/>`;
+        return;
+      }
       const b = bilanSecteur(i);
       if (!b.ps.length) return;
       const col = b.statut === 'tombe' ? '#3DD39A' : b.statut === 'recule' ? '#FFB23F' : '#FF6E6A';
       h += `<polygon points="${losange(S.bx * 3, S.by * 3, 0.06, 0, 3)}" fill="${col}" fill-opacity=".1" stroke="${col}" stroke-width="3.5" stroke-linejoin="round"/>`;
     });
+    if (riposte && !matin) {
+      const T = SECTEURS[riposte.cible], c2 = I(T.bx * 3 + 1.5, T.by * 3 + 1.5);
+      h += '<defs><marker id="fr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#FF6E6A"/></marker></defs>';
+      riposte.depuis.forEach((j) => { const D = SECTEURS[j], c1 = I(D.bx * 3 + 1.5, D.by * 3 + 1.5), mx = (c1[0] + c2[0]) / 2, my = (c1[1] + c2[1]) / 2 - 40; h += `<path d="M${f1(c1[0])} ${f1(c1[1] - 20)} Q ${f1(mx)} ${f1(my)} ${f1(c2[0])} ${f1(c2[1] - 26)}" fill="none" stroke="#FF6E6A" stroke-width="5" stroke-dasharray="10 7" stroke-linecap="round" marker-end="url(#fr)"><animate attributeName="stroke-dashoffset" values="34;0" dur="1.2s" repeatCount="indefinite"/></path>`; });
+      h += `<g transform="translate(${f1(c2[0])} ${f1(c2[1] - 64 * Z)}) scale(${Z})"><rect x="-58" y="-12" width="116" height="24" rx="12" fill="#3A1218" stroke="#FF6E6A" stroke-width="2"/><text y="4.5" text-anchor="middle" style="font:800 11.5px var(--body);fill:#FFC9C6">⚠ riposte ce soir · ${riposte.force}</text></g>`;
+    }
     SECTEURS.forEach((S, i) => {
       const b = bilanSecteur(i), cx = S.bx * 3 + 1.5, cy = S.by * 3 + 1.5, c = I(cx, cy);
       const n = b.ps.length, cols = Math.min(5, Math.max(1, Math.ceil(Math.sqrt(n * 1.6))));
@@ -274,12 +304,14 @@ button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px;
         const moi = p.z === 'moi';
         h += `<g ${moi ? `class="pose" data-id="${p.id}" style="cursor:grab"` : ''} transform="translate(${f1(px - 14 * Z)} ${f1(py - 33 * Z)}) scale(${Z})">${flic(p.s, ZONES[p.z].c, 'width="28" height="34"', moi ? '#241400' : '#0B1124')}</g>`;
       });
-      const col = S.repris ? '#7FC4FF' : b.statut === 'tombe' ? '#3DD39A' : b.statut === 'recule' ? '#FFB23F' : b.statut === 'faible' ? '#FF6E6A' : '#C3C9DE';
-      const ligne2 = S.repris ? 'repris ✓' : n ? `force ${b.force} / ${b.besoin}` : `emprise ${S.emprise}`;
+      const horsFront = !S.repris && !attaquable(i);
+      const col = S.repris ? (b.menace ? (b.statut === 'tient' ? '#3DD39A' : '#FF6E6A') : '#7FC4FF') : horsFront ? '#67719A' : b.statut === 'tombe' ? '#3DD39A' : b.statut === 'recule' ? '#FFB23F' : b.statut === 'faible' ? '#FF6E6A' : '#C3C9DE';
+      const ligne2 = S.repris ? (b.menace ? `garde ${b.force} / ${b.besoin}` : n ? `garde ${b.force}` : 'repris ✓') : horsFront ? 'hors d\'atteinte 🔒' : n ? `force ${b.force} / ${b.besoin}` : `attaquable · ${S.emprise}`;
       const pad = tel ? 10 : 34, larg = Math.max(S.nom.length * 6.6, ligne2.length * 6) + pad + 10, x0 = -larg / 2;
-      const barre = !S.repris && n ? `<rect x="${f1(x0 + pad)}" y="13" width="${f1(larg - pad - 10)}" height="4" rx="2" fill="#243050"/><rect x="${f1(x0 + pad)}" y="13" width="${f1((larg - pad - 10) * b.frac)}" height="4" rx="2" fill="${col}"/>` : '';
+      const barre = (!S.repris || b.menace) && n ? `<rect x="${f1(x0 + pad)}" y="13" width="${f1(larg - pad - 10)}" height="4" rx="2" fill="#243050"/><rect x="${f1(x0 + pad)}" y="13" width="${f1((larg - pad - 10) * b.frac)}" height="4" rx="2" fill="${col}"/>` : '';
       const por = S.repris ? '<circle r="12" fill="#16294A" stroke="#7FC4FF" stroke-width="2"/><text y="4.5" text-anchor="middle" style="font:12px sans-serif">🏠</text>' : `<circle r="12" fill="#20294D" stroke="${col}" stroke-width="2"/><g transform="translate(-10.5 -10.5) scale(.44)">${portrait(S.c, S.cap).replace('<svg viewBox="0 0 48 48" aria-hidden="true">', '').replace('</svg>', '')}</g>`;
-      h += `<g transform="translate(${f1(c[0])} ${f1(c[1] + (n ? 30 * Z : 6))}) scale(${Z})" style="cursor:pointer"><rect x="${f1(x0)}" y="-14" width="${f1(larg)}" height="${n && !S.repris ? 36 : 30}" rx="10" fill="#0A0F22" fill-opacity=".92" stroke="${col}" stroke-width="${i === sel ? 2.5 : 1.3}"/>${tel ? '' : `<g transform="translate(${f1(x0 + 17)} 1)">${por}</g>`}<text x="${f1(x0 + pad)}" y="-1" style="font:700 11px var(--body);fill:#EDF0FA">${S.nom}</text><text x="${f1(x0 + pad)}" y="10" style="font:700 10px var(--body);fill:${col}">${ligne2}</text>${barre}</g>`;
+      if (horsFront) { const lw = S.nom.length * 6.2 + 30; h += `<g transform="translate(${f1(c[0])} ${f1(c[1] + 6)}) scale(${Z})" opacity=".75"><rect x="${f1(-lw / 2)}" y="-10" width="${f1(lw)}" height="20" rx="10" fill="#0A0F22" fill-opacity=".85" stroke="#3A4470" stroke-width="1.2"/><text y="4" text-anchor="middle" style="font:700 10.5px var(--body);fill:#96A0BF">🔒 ${S.nom}</text></g>`; return; }
+      h += `<g transform="translate(${f1(c[0])} ${f1(c[1] + (n ? 30 * Z : 6))}) scale(${Z})" style="cursor:pointer"><rect x="${f1(x0)}" y="-14" width="${f1(larg)}" height="${n && (!S.repris || b.menace) ? 36 : 30}" rx="10" fill="#0A0F22" fill-opacity=".92" stroke="${col}" stroke-width="${i === sel ? 2.5 : 1.3}"/>${tel ? '' : `<g transform="translate(${f1(x0 + 17)} 1)">${por}</g>`}<text x="${f1(x0 + pad)}" y="-1" style="font:700 11px var(--body);fill:#EDF0FA">${S.nom}</text><text x="${f1(x0 + pad)}" y="10" style="font:700 10px var(--body);fill:${col}">${ligne2}</text>${barre}</g>`;
     });
 
     { const t = I(4.5, 4.5); h += `<g transform="translate(${f1(t[0])} ${f1(t[1] + 46)})"><rect x="-52" y="-11" width="104" height="22" rx="11" fill="#0A0F22" stroke="#FF6E6A" stroke-width="1.5"/><text y="4" text-anchor="middle" style="font:700 11px var(--body);fill:#FFC9C6">QG du Parrain · ${SECTEURS.filter((s) => s.repris).length}/8</text></g>`; }
@@ -292,7 +324,19 @@ button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px;
     if (matin) { el.innerHTML = matin; return; }
     if (sel == null) { el.innerHTML = '<h2>Touche un secteur</h2><p>Sa fiche s\'affiche ici : qui y va, la force posée et ce qu\'il manque.</p>'; return; }
     const S = SECTEURS[sel], b = bilanSecteur(sel);
-    if (S.repris) { el.innerHTML = `<h2>${S.nom}</h2><div class="etat v">Secteur repris. Les habitants reviennent, les rues sont rallumées.</div>`; return; }
+    if (S.repris) {
+      const g = bilanGarde(sel), manqueG = Math.max(0, g.besoin - g.force);
+      const colG = !g.menace ? 'var(--blue)' : g.statut === 'tient' ? 'var(--green)' : 'var(--red)';
+      el.innerHTML = `<div class="lt"><svg viewBox="0 0 48 48" aria-hidden="true"><text x="24" y="32" text-anchor="middle" style="font:22px sans-serif">🏠</text></svg><div><b>${S.nom}</b><span>Repris · les habitants sont revenus</span></div></div>
+        ${g.menace ? `<div class="etat r"><b>Le milieu prépare une riposte ce soir</b> depuis ${riposte.depuis.map((j) => SECTEURS[j].nom).join(' et ')}. Force annoncée : <b>${riposte.force}</b>. Sans garde suffisante, le secteur est reperdu.</div>
+        <div class="ligne"><span>Garde posée</span><span class="v" style="color:${colG}">${g.force} <span style="font-size:13px;color:var(--muted)">/ ${g.besoin} pour tenir</span></span></div>
+        <div class="jauge"><i style="width:${(g.frac * 100).toFixed(0)}%;background:${colG}"></i></div>
+        ${g.ps.length ? `<div class="chips">${Object.entries(g.parZone).map(([z, v]) => `<span class="chip"><i style="background:${ZONES[z].c}"></i>${ZONES[z].nom} ${v}</span>`).join('')}${g.zones.size > 1 ? `<span class="chip">+${(g.zones.size - 1) * 20} % à plusieurs</span>` : ''}</div>` : ''}
+        <div class="etat ${g.statut === 'tient' ? 'v' : 'a'}">${g.statut === 'tient' ? '<b>La garde tient.</b> La riposte sera repoussée.' : `Il manque <b>${manqueG}</b> de force pour tenir.`}</div>`
+        : '<div class="etat v">Pas de menace annoncée ce soir. Ses voisins deviennent attaquables : c\'est par ici que le front avance.</div>'}`;
+      return;
+    }
+    if (!attaquable(sel)) { el.innerHTML = `<div class="lt">${portrait(S.c, S.cap)}<div><b>${S.nom}</b><span>Tenu par ${S.lt}, ${S.role}</span></div></div><div class="etat a"><b>Hors d'atteinte.</b> On ne peut l'attaquer qu'une fois un secteur voisin repris. Emprise : ${S.emprise}.</div>`; return; }
     const manque = Math.max(0, b.besoin - b.force);
     const col = b.statut === 'tombe' ? 'var(--green)' : b.statut === 'recule' ? 'var(--amber)' : 'var(--red)';
     const etat = !b.ps.length ? '<div class="etat a">Personne ce soir. Le milieu s\'y renforce.</div>'
@@ -312,15 +356,21 @@ button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px;
     document.getElementById('reserve').innerHTML = matin ? '<span style="font-size:13px;color:var(--muted)">Tes policiers sont rentrés. Passe à la nouvelle journée pour les renvoyer.</span>' : MOI.filter((m) => place[m.id] == null).map((m) => `<button type="button" class="pion ${choisi === m.id ? 'choisi' : ''}" data-id="${m.id}" aria-label="Policier ${SERV[m.s].nom}, force ${FORCE[m.s]}">${flic(m.s, '#FFB23F')}</button>`).join('');
     document.getElementById('lancer').textContent = matin ? 'Nouvelle journée' : 'Passer à 20:00';
     document.getElementById('auto').hidden = !!matin;
-    document.getElementById('astuce').textContent = matin ? 'Le matin : la carte a changé' : choisi ? 'Touche un secteur pour y poster ce policier' : 'Glisse tes policiers sur un secteur rouge';
+    document.getElementById('astuce').textContent = matin ? 'Le matin : la carte a changé' : choisi ? 'Touche un secteur pour y poster ce policier' : riposte ? `Attaquer le front, ou garder ${SECTEURS[riposte.cible].nom} ?` : 'Glisse tes policiers sur un secteur attaquable';
     document.getElementById('horloge').textContent = matin ? `${['Mardi', 'Mercredi', 'Jeudi', 'Vendredi'][jour % 4]} · 07:30` : `${['Lundi', 'Mardi', 'Mercredi', 'Jeudi'][jour % 4]} · 18:42`;
   }
 
   // ───── 20:00 : résolution et constat du matin ─────
   function vingtHeures() {
     const lignes = []; let affiches = [], prime = 0;
+    const front0 = SECTEURS.map((t, i) => i).filter((i) => attaquable(i)); // le front de ce soir, avant la riposte
+    if (riposte) {
+      const S = SECTEURS[riposte.cible], g = bilanGarde(riposte.cible);
+      if (g.statut === 'tient') lignes.push(`<div class="cs"><span class="ico">🛡️</span><span><b>Riposte repoussée à ${S.nom}.</b> Garde ${g.force} contre ${riposte.force}.${g.parZone.moi ? ' Ta garde a compté.' : ''}</span></div>`);
+      else { S.repris = false; S.emprise = 45; lignes.push(`<div class="cs"><span class="ico">🔥</span><span><b>${S.nom} est reperdu.</b> Garde ${g.force} contre ${riposte.force} : le milieu y revient (emprise 45).</span></div>`); }
+    }
     SECTEURS.forEach((S, i) => {
-      if (S.repris) return;
+      if (S.repris || !front0.includes(i)) return;
       const b = bilanSecteur(i);
       if (!b.ps.length) { S.emprise = Math.min(95, S.emprise + 3); return; }
       if (b.statut === 'tombe') {
@@ -341,6 +391,7 @@ button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px;
       <div class="constat">${lignes.join('') || '<div class="cs">Personne n\'est allé au non-droit.</div>'}</div>
       ${affiches.length ? `<div class="affiche"><div class="cadre">ARRÊTÉ${portrait(affiches[0].c, affiches[0].cap)}${affiches[0].lt.toUpperCase()}</div><div><b>Affiche gagnée au tirage</b><span>${affiches.map((s) => s.lt).join(' et ')} rejoint le mur de ton commissariat.</span></div></div>` : ''}
       <p>Total de tes primes : <b>${prime.toLocaleString('fr-BE')} €</b>. Le QG du Parrain s'ouvre quand 6 secteurs sur 8 sont repris.</p>`;
+    riposte = null;
     // le matin, les policiers sont rentrés : la carte ne montre plus que ce qui a changé
     colleguesPoses = []; place = {};
     sel = null; choisi = null;
@@ -348,15 +399,23 @@ button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px;
   }
   function nouvelleJournee() {
     matin = null; jour += 1; place = {};
-    // les collègues reviennent : sur les secteurs encore tenus, un peu au hasard, en préférant ceux déjà entamés
-    const ouverts = SECTEURS.map((s, i) => i).filter((i) => !SECTEURS[i].repris);
+    const repris = SECTEURS.map((s, i) => i).filter((i) => SECTEURS[i].repris);
+    const front = SECTEURS.map((s, i) => i).filter((i) => attaquable(i));
+    // le milieu annonce sa riposte sur le secteur repris qui touche le plus de secteurs encore tenus
+    riposte = null;
+    if (repris.length) {
+      const cible = repris.map((i) => [voisins(i).filter((j) => !SECTEURS[j].repris), i]).sort((a, b) => b[0].length - a[0].length)[0];
+      if (cible[0].length) riposte = { cible: cible[1], force: 12 + 3 * repris.length, depuis: cible[0].slice(0, 2) };
+    }
     colleguesPoses = [];
     Object.keys(ZONES).filter((z) => z !== 'moi').forEach((z) => {
-      const cible = ouverts.sort((a, b) => SECTEURS[a].emprise - SECTEURS[b].emprise)[Math.floor(rnd() * Math.min(3, ouverts.length))];
-      const n = 1 + Math.floor(rnd() * 3);
-      for (let j = 0; j < n; j++) colleguesPoses.push({ z, s: ['I', 'P', 'R', 'I'][Math.floor(rnd() * 4)], i: cible });
+      const garde = riposte && rnd() < 0.3;
+      const cible = garde ? riposte.cible : front.slice().sort((a, b) => SECTEURS[a].emprise - SECTEURS[b].emprise)[Math.floor(rnd() * Math.min(2, front.length))];
+      if (cible == null) return;
+      const n = 2 + Math.floor(rnd() * 2);
+      for (let j = 0; j < n; j++) colleguesPoses.push({ z, s: ['I', 'P', 'I', 'R'][Math.floor(rnd() * 4)], i: cible });
     });
-    sel = ouverts[0] ?? null; rendre();
+    sel = riposte ? riposte.cible : front[0] ?? null; rendre();
   }
 
   // ───── Gestes : glisser ou toucher-toucher ─────
@@ -368,8 +427,8 @@ button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px;
     if (x < 0 || y < 0 || x > 8 || y > 8) return null;
     const s = secDe(x, y); return s === 'qg' ? null : s;
   }
-  function survoler(i) { const el = document.getElementById('survol'); if (!el) return; if (i == null || SECTEURS[i].repris) { el.setAttribute('points', ''); return; } const S = SECTEURS[i]; el.setAttribute('points', losange(S.bx * 3, S.by * 3, 0.04, 0, 3)); }
-  function poser(id, i) { if (i != null && !SECTEURS[i].repris) { place[id] = i; sel = i; } else if (i == null) delete place[id]; choisi = null; rendre(); }
+  function survoler(i) { const el = document.getElementById('survol'); if (!el) return; if (i == null) { el.setAttribute('points', ''); return; } const S = SECTEURS[i], ok = jouable(i); el.setAttribute('points', losange(S.bx * 3, S.by * 3, 0.04, 0, 3)); el.setAttribute('stroke', ok ? '#FFB23F' : '#FF6E6A'); el.setAttribute('fill', ok ? '#FFB23F' : '#FF6E6A'); }
+  function poser(id, i) { if (jouable(i)) { place[id] = i; sel = i; } else if (i != null) { sel = i; } else if (i == null) delete place[id]; choisi = null; rendre(); }
   let drag = null;
   document.addEventListener('pointerdown', (e) => {
     if (matin) return;
@@ -399,14 +458,15 @@ button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px;
     if (e.target.closest('.pose') && !choisi) return;
     const i = secteurSous(e.clientX, e.clientY);
     if (choisi && i != null) { poser(choisi, i); return; }
-    if (i != null) { sel = i; if (!matin) rendre(); else { matin = null; rendre(); } }
+    if (i != null && !matin) { sel = i; rendre(); }
   });
 
   document.getElementById('auto').addEventListener('click', () => {
-    // va renforcer le secteur où il manque le moins pour tomber (celui où ta force fait la différence)
+    // Va là où il manque le moins pour basculer : un secteur à faire tomber, ou une garde menacée.
     MOI.forEach((m) => { delete place[m.id]; });
-    const cand = SECTEURS.map((s, i) => i).filter((i) => !SECTEURS[i].repris && bilanSecteur(i).ps.length).sort((a, b) => (bilanSecteur(a).besoin - bilanSecteur(a).force) - (bilanSecteur(b).besoin - bilanSecteur(b).force));
-    const cible = cand.find((i) => bilanSecteur(i).force < bilanSecteur(i).besoin) ?? cand[0] ?? 0;
+    const ecart = (i) => { const b = bilanSecteur(i); return b.besoin - b.force; };
+    const cand = SECTEURS.map((s, i) => i).filter((i) => (attaquable(i) && bilanSecteur(i).ps.length) || (riposte && riposte.cible === i)).filter((i) => ecart(i) > 0).sort((a, b) => ecart(a) - ecart(b));
+    const cible = cand[0] ?? SECTEURS.findIndex((s, i) => attaquable(i));
     MOI.forEach((m) => { place[m.id] = cible; });
     sel = cible; choisi = null; rendre();
   });
