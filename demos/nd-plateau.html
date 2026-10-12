@@ -1,0 +1,549 @@
+<title>Le Quartier</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Ma ZP · zone de non-droit · audit + refonte « Le Quartier » (plateau 3 × 3).
+   Monde sombre unique, celui du jeu. Le plateau est fait de grandes tuiles HTML (lisibles au doigt), une par secteur. */
+:root {
+  color-scheme: dark;
+  --bg: #0C1124; --bg-deep: #080C1B; --surface: #141B33; --surface2: #1C2442; --surface3: #243050;
+  --line: #29345A; --hair: rgba(190, 205, 255, .08);
+  --text: #EDF0FA; --text2: #C3C9DE; --muted: #96A0BF; --faint: #67719A;
+  --amber: #FFB23F; --amber-hi: #FFC970; --amber-ink: #241400; --amber-bg: rgba(255, 178, 63, .12); --amber-line: rgba(255, 178, 63, .45);
+  --blue: #63B0FF; --blue-bg: rgba(99, 176, 255, .14); --green: #3DD39A; --green-bg: rgba(61, 211, 154, .13);
+  --red: #FF6E6A; --red-bg: rgba(255, 110, 106, .13); --red-line: rgba(255, 110, 106, .5);
+  --violet: #B79CFF;
+  --display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --body: 'Instrument Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg-deep); color: var(--text); font: 15px/1.45 var(--body); margin: 0; }
+button { font: inherit; color: inherit; }
+.page { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 56px; display: flex; flex-direction: column; gap: 16px; }
+.kicker { font: 600 12px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(26px, 4.2vw, 40px)/1.05 var(--display); margin: 2px 0 0; text-wrap: balance; }
+h2 { font: 800 21px/1.15 var(--display); margin: 0; text-wrap: balance; }
+h3 { font: 700 16px/1.25 var(--display); margin: 0; }
+p { margin: 0; }
+.onglets { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 16px; background: var(--bg); border: 1px solid var(--hair); align-self: flex-start; }
+.onglets button { border: 0; background: none; color: var(--muted); font-weight: 600; padding: 10px 20px; border-radius: 12px; cursor: pointer; min-height: 44px; }
+.onglets button[aria-selected="true"] { background: var(--surface3); color: var(--text); }
+.onglets button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+button.btn { font: 600 14px var(--body); border-radius: 12px; padding: 10px 14px; min-height: 44px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); cursor: pointer; }
+button.btn:hover { border-color: var(--amber-line); }
+button.btn.primaire { background: linear-gradient(160deg, var(--amber-hi), var(--amber)); color: var(--amber-ink); border-color: transparent; }
+button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+/* ───── Audit ───── */
+.audit { display: flex; flex-direction: column; gap: 20px; }
+.lead { color: var(--text2); font-size: 16px; max-width: 70ch; }
+.bloc { padding: 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--hair); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.bloc ul, .bloc ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 7px; color: var(--text2); font-size: 14.5px; }
+.bloc li b { color: var(--text); }
+.bloc p { color: var(--text2); font-size: 14.5px; }
+.mesure { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.mesure div { padding: 12px; border-radius: 14px; background: var(--surface2); display: flex; flex-direction: column; gap: 2px; }
+.mesure b { font: 800 24px var(--display); font-variant-numeric: tabular-nums; }
+.mesure span { font-size: 13px; color: var(--muted); }
+.grille2 { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+@media (min-width: 820px) { .grille2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .grille3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.verbes { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.verbe { padding: 14px; border-radius: 16px; background: var(--surface2); display: flex; gap: 12px; align-items: flex-start; }
+.verbe .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+.verbe b { font: 700 15px var(--display); display: block; }
+.verbe span { font-size: 13.5px; color: var(--text2); }
+.tableau { overflow-x: auto; border-radius: 14px; border: 1px solid var(--hair); }
+table { border-collapse: collapse; width: 100%; min-width: 620px; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+th { font: 600 12px var(--body); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--surface); }
+td { color: var(--text2); background: rgba(20, 27, 51, .5); }
+td b { color: var(--text); }
+
+/* ───── Plateau ───── */
+.jeu { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (min-width: 960px) { .jeu { grid-template-columns: minmax(0, 620px) minmax(0, 1fr); } .cote { position: sticky; top: 12px; } }
+.plateau-zone { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.barre-haut { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.horloge { font: 500 13px var(--mono); padding: 6px 10px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); color: var(--text2); }
+.progres { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text2); }
+.progres i { width: 14px; height: 14px; border-radius: 4px; background: var(--surface3); display: inline-block; }
+.progres i.on { background: var(--blue); }
+.plateau { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; aspect-ratio: 1; width: 100%; user-select: none; -webkit-user-select: none; }
+.tuile { position: relative; border-radius: 16px; overflow: hidden; border: 2px solid transparent; cursor: pointer; display: flex; flex-direction: column; padding: 8px; gap: 4px; text-align: left; background: #2A121C; min-width: 0; color: var(--text); }
+.tuile .decor { position: absolute; inset: 0; pointer-events: none; }
+.tuile .decor svg { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 48%; opacity: .55; }
+.tuile > :not(.decor) { position: relative; }
+.tuile.tenu { background: linear-gradient(180deg, #3A1620, #1E0C14); border-color: rgba(255,110,106,.35); }
+.tuile.loin { background: linear-gradient(180deg, #171A2C, #0E1020); border-color: #20253F; }
+.tuile.loin .decor { opacity: .35; }
+.tuile.repris { background: linear-gradient(180deg, #17305A, #0D1A33); border-color: rgba(99,176,255,.5); }
+.tuile.qg { background: linear-gradient(180deg, #2E1030, #170818); border-color: rgba(183,156,255,.45); }
+.tuile.sel { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-bg); }
+.tuile.cible { border-color: var(--amber); transform: scale(1.02); }
+.tuile:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+.t-nom { font: 800 clamp(11px, 2.4vw, 15px)/1.1 var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 20px; }
+.t-lt { position: absolute !important; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; background: #20294D; border: 1.5px solid var(--red); overflow: hidden; }
+.t-lt svg { width: 100%; height: 100%; display: block; }
+.barricades { display: flex; flex-wrap: wrap; gap: 3px; }
+.bar { width: clamp(13px, 2.8vw, 20px); height: clamp(11px, 2.3vw, 16px); border-radius: 3px; background: linear-gradient(180deg, #C97A4A, #8E4A2A); box-shadow: inset 0 -2px 0 rgba(0,0,0,.3); position: relative; }
+.bar::after { content: ''; position: absolute; left: 0; right: 0; top: 45%; height: 1.5px; background: rgba(0,0,0,.35); }
+.bar.cassee { background: #3A2A30; box-shadow: none; opacity: .55; }
+.bar.cassee::before { content: '✕'; position: absolute; inset: 0; display: grid; place-items: center; font: 800 10px var(--body); color: var(--green); z-index: 1; }
+.bar.cachee { background: transparent; border: 1.5px dashed var(--violet); box-shadow: none; display: grid; place-items: center; font: 800 9px var(--body); color: var(--violet); }
+.bar.cachee::after { display: none; }
+.bar.revelee { background: linear-gradient(180deg, #9A7AE0, #5E46A8); }
+.t-pions { display: flex; flex-wrap: wrap; gap: 1px; margin-top: auto; min-height: 22px; }
+.mini { width: clamp(16px, 3.4vw, 24px); height: clamp(19px, 4vw, 28px); }
+.mini svg { width: 100%; height: 100%; display: block; }
+.t-etat { font: 700 clamp(9.5px, 2vw, 12px)/1.2 var(--body); padding: 3px 6px; border-radius: 7px; align-self: flex-start; max-width: 100%; background: rgba(8, 12, 27, .9) !important; border: 1px solid currentColor; }
+.t-etat.v { background: var(--green-bg); color: var(--green); }
+.t-etat.a { background: var(--amber-bg); color: var(--amber-hi); }
+.t-etat.r { background: var(--red-bg); color: #FFB3B0; }
+.t-etat.b { background: var(--blue-bg); color: #A9D3FF; }
+.t-etat.g { background: rgba(255,255,255,.06); color: var(--muted); }
+.intention { position: absolute !important; left: 6px; top: -1px; transform: translateY(0); display: none; }
+.menace { position: absolute !important; top: 32px; right: 6px; font: 800 clamp(10px, 2.2vw, 13px) var(--body); padding: 3px 7px; border-radius: 999px; background: #4A121A; color: #FFC9C6; border: 1.5px solid var(--red); box-shadow: 0 0 12px rgba(255,110,106,.5); animation: pouls 1.6s ease-in-out infinite; white-space: nowrap; }
+.menace.renfort { background: #3A2A10; color: var(--amber-hi); border-color: var(--amber); box-shadow: none; animation: none; }
+@keyframes pouls { 50% { box-shadow: 0 0 2px rgba(255,110,106,.2); } }
+.cadenas { position: absolute !important; inset: 0; display: grid; place-items: center; font-size: 22px; opacity: .55; }
+.commissariats { display: flex; justify-content: space-around; padding: 8px 10px; border-radius: 12px; background: var(--blue-bg); border: 1px dashed rgba(99,176,255,.45); font: 600 12.5px var(--body); color: #A9D3FF; text-align: center; }
+.legende { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: var(--text2); }
+.legende span { display: inline-flex; align-items: center; gap: 5px; }
+.legende i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+.cote { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.carte { padding: 14px; border-radius: 18px; background: var(--surface); border: 1px solid var(--hair); display: flex; flex-direction: column; gap: 10px; }
+.carte h3 { font: 800 18px var(--display); }
+.carte .sous { font-size: 13px; color: var(--muted); }
+.compte { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--bg); font-size: 14px; color: var(--text2); }
+.compte b { color: var(--text); font: 800 20px var(--display); font-variant-numeric: tabular-nums; }
+.compte .ic { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; flex: none; font-size: 15px; }
+.message { font-size: 14px; padding: 10px 12px; border-radius: 12px; }
+.message.v { background: var(--green-bg); color: #BDF1DB; border: 1px solid rgba(61,211,154,.35); }
+.message.a { background: var(--amber-bg); color: var(--amber-hi); border: 1px solid var(--amber-line); }
+.message.r { background: var(--red-bg); color: #FFC9C6; border: 1px solid var(--red-line); }
+.message.g { background: var(--surface2); color: var(--text2); }
+.message b { color: var(--text); }
+.reserve { display: flex; flex-wrap: wrap; gap: 8px; }
+.pion { border: 1px solid var(--line); background: var(--surface2); border-radius: 14px; padding: 6px 8px 6px 4px; display: flex; align-items: center; gap: 6px; cursor: pointer; min-height: 52px; touch-action: none; text-align: left; }
+.pion:hover { border-color: var(--amber-line); }
+.pion svg.flic { width: 34px; height: 40px; flex: none; }
+.pion .t { display: flex; flex-direction: column; line-height: 1.15; }
+.pion .t b { font: 700 13px var(--body); }
+.pion .t span { font-size: 11.5px; color: var(--muted); }
+.pion.pose { border-style: dashed; opacity: .9; }
+.pion:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.pion.grise { opacity: .45; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.actions .btn { flex: 1 1 150px; }
+.constat { display: flex; flex-direction: column; gap: 8px; }
+.cs { display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: 12px; background: var(--bg); font-size: 13.5px; color: var(--text2); }
+.cs .ico { font-size: 19px; line-height: 1.1; }
+.cs b { color: var(--text); }
+.affiche { padding: 12px; border-radius: 14px; background: #F4EFE3; color: #1D1A15; display: flex; gap: 12px; align-items: center; transform: rotate(-.6deg); box-shadow: 0 12px 26px -10px rgba(0,0,0,.7); }
+.affiche .cadre { width: 58px; flex: none; border: 2px solid #1D1A15; padding: 3px; text-align: center; font: 800 9px var(--display); letter-spacing: .08em; background: #FFF8E8; }
+.affiche .cadre svg { width: 100%; height: auto; display: block; background: #E7DCC2; margin: 3px 0; }
+.affiche b { font: 800 15px var(--display); display: block; }
+.affiche span { font-size: 12.5px; color: #4A4234; }
+.fantome { position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -60%) scale(1.1); }
+.fantome svg { width: 44px; height: 52px; display: block; filter: drop-shadow(0 10px 14px rgba(0,0,0,.6)); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="page">
+  <div>
+    <div class="kicker">Ma ZP · zone de non-droit · audit et refonte</div>
+    <h1>Le Quartier</h1>
+  </div>
+  <div class="onglets" role="tablist" aria-label="Contenu">
+    <button type="button" role="tab" aria-selected="true" data-onglet="audit">L'audit</button>
+    <button type="button" role="tab" aria-selected="false" data-onglet="jouer">Jouer la refonte</button>
+  </div>
+
+  <!-- ═════════ AUDIT ═════════ -->
+  <section class="audit" id="v-audit">
+    <p class="lead">Relecture de la zone de non-droit et des quatre maquettes de la journée, comme on le ferait pour un jeu en production : ce qui empêche de comprendre, ce qui empêche de s'amuser, puis la refonte que je recommande.</p>
+
+    <div class="mesure">
+      <div><b>9 notions</b><span>à comprendre en même temps dans la dernière maquette (emprise, force, besoin, +20 %, +25 %, front, garde, riposte, statuts)</span></div>
+      <div><b>1 formule</b><span>cachée derrière chaque nombre : force = agents × 1,4 × 1,25, comparée à emprise ÷ 3</span></div>
+      <div><b>81 cases</b><span>pour 8 secteurs sur la carte : on ne voit pas où un secteur commence</span></div>
+      <div><b>28 px</b><span>la taille d'un policier sur la carte, 11 px de texte sur téléphone</span></div>
+    </div>
+
+    <div class="bloc">
+      <h2>Pourquoi ce n'est pas clair</h2>
+      <ol>
+        <li><b>On calcule au lieu de compter.</b> « Force 26 / 25 » vient d'une multiplication invisible. Le joueur ne peut ni prévoir ni comprendre un résultat : il obéit à une jauge.</li>
+        <li><b>Tous les services font la même chose.</b> Recherche, Intervention et Proximité ne sont que des « quantités de force ». Il n'y a pas de choix de rôle, donc pas de stratégie.</li>
+        <li><b>La carte est un décor, pas un plateau.</b> 81 cases, des immeubles, des feux partout, des contours qui se chevauchent : l'information importante (ce qui tombe, ce qui est menacé) est noyée dans l'ambiance.</li>
+        <li><b>Tout est rouge.</b> Le rouge veut dire à la fois « secteur tenu », « trop faible », « riposte », « repéré » et « feu ». Une couleur ne peut porter qu'un sens.</li>
+        <li><b>Les intentions du milieu sont du texte.</b> Une riposte annoncée en flèches pointillées et en chiffre dans une bulle, c'est lu après coup, pas vu d'un coup d'œil.</li>
+        <li><b>Pensé pour PC, joué sur téléphone.</b> Une carte isométrique de 680 px réduite à 390 px rend tout minuscule ; on vise mal et on lit mal.</li>
+      </ol>
+    </div>
+
+    <div class="bloc">
+      <h2>Pourquoi ce n'est pas encore fun</h2>
+      <ul>
+        <li><b>Pas de vraie information cachée</b> : tout est connu, il suffit de remplir une jauge.</li>
+        <li><b>Pas de verbe</b> : on « met des agents », on ne fait rien de précis avec eux.</li>
+        <li><b>Pas de menace qu'on voit venir</b> : le milieu agit dans l'ombre, puis on lit le résultat.</li>
+        <li><b>Le progrès s'efface</b> : la reprise nocturne en pourcentages donne l'impression de travailler pour rien.</li>
+      </ul>
+    </div>
+
+    <h2>Les principes de la refonte</h2>
+    <div class="grille2">
+      <div class="bloc"><h3>Compter, jamais calculer</h3><p>Chaque obstacle est un objet qu'on voit : une barricade. Chaque policier en casse une. Le joueur compte sur ses doigts et sait exactement ce qui va se passer.</p></div>
+      <div class="bloc"><h3>Un service, un verbe</h3><p>Intervention casse, Recherche révèle, Proximité protège. Le choix du service devient le choix de l'action. C'est la base de la stratégie.</p></div>
+      <div class="bloc"><h3>L'adversaire montre ses intentions</h3><p>Comme dans <i>Into the Breach</i> : chaque matin, le milieu affiche ce qu'il va faire ce soir (« ⚔ 2 » sur un secteur repris, « +1 barricade » ailleurs). On réagit à une menace visible.</p></div>
+      <div class="bloc"><h3>Un hasard qu'on peut acheter</h3><p>Le seul inconnu : des barricades cachées (0, 1 ou 2) dans certains secteurs. On peut y aller à l'aveugle, ou envoyer une Recherche pour savoir. Le risque est un choix.</p></div>
+      <div class="bloc"><h3>Le progrès reste</h3><p>Une barricade cassée l'est pour de bon. Le milieu ne reconstruit qu'à l'endroit qu'il annonce. On voit le quartier avancer soir après soir.</p></div>
+      <div class="bloc"><h3>Le téléphone d'abord</h3><p>Un plateau 3 × 3 de grandes tuiles : il tient dans l'écran, chaque secteur se touche du pouce, et l'état se lit sans zoomer.</p></div>
+    </div>
+
+    <h2>Les trois verbes</h2>
+    <div class="verbes">
+      <div class="verbe"><span class="ic" style="background:var(--red-bg)">🔨</span><div><b>Intervention · casse</b><span>Chaque Intervention casse 1 barricade. Un agent bien formé (×2) en casse 2. Toutes les barricades cassées : le secteur tombe, le lieutenant est arrêté.</span></div></div>
+      <div class="verbe"><span class="ic" style="background:rgba(183,156,255,.16)">🔦</span><div><b>Recherche · révèle</b><span>Montre les barricades cachées du secteur, tout de suite. On sait alors exactement combien d'Interventions il faut.</span></div></div>
+      <div class="verbe"><span class="ic" style="background:var(--blue-bg)">🛡️</span><div><b>Proximité · protège</b><span>Sur un secteur repris, chaque Proximité arrête 1 attaque du milieu. Une attaque non arrêtée, et le secteur est reperdu.</span></div></div>
+    </div>
+
+    <div class="bloc">
+      <h2>Une soirée type</h2>
+      <ol>
+        <li><b>Le matin</b>, le plateau montre ce qui a changé et les intentions du milieu pour ce soir.</li>
+        <li><b>Dans la journée</b>, chacun envoie ses agents sur les tuiles, en voyant ceux des collègues déjà posés. La tuile dit en clair : « tombe ce soir », « il manque 2 coups », « 🛡 il manque 1 ».</li>
+        <li><b>À 19:55</b>, l'adjoint place les agents des zones inactives là où il manque le moins.</li>
+        <li><b>À 20:00</b>, on compte : barricades cassées, attaques arrêtées, secteurs tombés.</li>
+        <li><b>Récompenses</b> : la prime d'un secteur se partage au prorata des barricades cassées ; l'affiche « ARRÊTÉ » est tirée au sort au même prorata. Un bouclier qui a sauvé un secteur rapporte aussi une part.</li>
+      </ol>
+    </div>
+
+    <div class="tableau">
+      <table>
+        <thead><tr><th>Avant</th><th>Avec « Le Quartier »</th></tr></thead>
+        <tbody>
+          <tr><td>Emprise 0–100, force calculée, besoin = emprise ÷ 3</td><td><b>Des barricades</b> qu'on compte, une par policier Intervention</td></tr>
+          <tr><td>Tous les services = de la « force »</td><td><b>Trois verbes</b> : casser, révéler, protéger</td></tr>
+          <tr><td>+20 % par zone, +25 % repéré</td><td><b>Aucun bonus caché</b> : la coopération, c'est additionner ses barricades cassées</td></tr>
+          <tr><td>Riposte en flèches pointillées</td><td><b>Un badge « ⚔ 2 »</b> sur la tuile menacée, comme une intention d'ennemi</td></tr>
+          <tr><td>Reprise nocturne en % qui efface le travail</td><td><b>+1 barricade</b> seulement là où le milieu l'annonce</td></tr>
+          <tr><td>Carte isométrique de 81 cases</td><td><b>9 grandes tuiles</b>, lisibles au pouce</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc">
+      <h2>À régler avant de coder pour de vrai</h2>
+      <ul>
+        <li>Le nombre de barricades par secteur selon le nombre de joueurs actifs (simulation avec bots, comme d'habitude).</li>
+        <li>Comment la formation des services donne des agents « ×2 », sans écraser les petites zones.</li>
+        <li>La carte du jeu (Carte → Non-droit) peut garder sa belle maquette isométrique en décor ; le plateau 3 × 3 s'ouvre en touchant la zone de non-droit.</li>
+      </ul>
+    </div>
+    <button class="btn primaire" type="button" data-onglet="jouer" style="align-self:flex-start">Jouer la refonte</button>
+  </section>
+
+  <!-- ═════════ JOUER ═════════ -->
+  <section id="v-jouer" hidden>
+    <div class="jeu">
+      <div class="plateau-zone">
+        <div class="barre-haut"><span class="horloge" id="horloge">Lundi · 18:42</span><span class="progres" id="progres"></span></div>
+        <div class="plateau" id="plateau" role="grid" aria-label="Le quartier : 8 secteurs autour du QG du Parrain"></div>
+        <div class="commissariats">▲ Vos commissariats · le front part d'ici</div>
+        <div class="legende">
+          <span><i style="background:#FFB23F"></i>toi</span><span><i style="background:#3DD39A"></i>Ananas</span><span><i style="background:#63B0FF"></i>Police Acad.</span><span><i style="background:#C38BFF"></i>Djoumap City</span><span><i style="background:#FF8FB1"></i>Les Hauts</span>
+        </div>
+      </div>
+      <aside class="cote">
+        <div class="carte" id="fiche"></div>
+        <div class="carte">
+          <h3>Tes 6 agents</h3>
+          <p class="sous" id="aide-reserve">Touche un secteur, puis un agent pour l'y envoyer. Ou fais-le glisser sur une tuile.</p>
+          <div class="reserve" id="reserve"></div>
+          <div class="actions">
+            <button class="btn" type="button" id="auto">Placer pour moi</button>
+            <button class="btn primaire" type="button" id="lancer">Passer à 20:00</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ───── Onglets ─────
+  const montrer = (o) => {
+    document.getElementById('v-audit').hidden = o !== 'audit';
+    document.getElementById('v-jouer').hidden = o !== 'jouer';
+    document.querySelectorAll('[role="tab"]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.onglet === o)));
+    window.scrollTo({ top: 0 });
+  };
+  document.querySelectorAll('[data-onglet]').forEach((b) => b.addEventListener('click', () => montrer(b.dataset.onglet)));
+
+  // ───── Petits personnages ─────
+  const SERV = { I: { nom: 'Intervention', verbe: 'casse', ic: '🔨', c: '#FF6E6A' }, R: { nom: 'Recherche', verbe: 'révèle', ic: '🔦', c: '#B79CFF' }, P: { nom: 'Proximité', verbe: 'protège', ic: '🛡️', c: '#63B0FF' } };
+  let nF = 0;
+  const flic = (s, socle, cls = 'flic') => {
+    const id = 'dam' + (nF++);
+    return `<svg class="${cls}" viewBox="0 0 40 48" aria-hidden="true"><defs><pattern id="${id}" width="3" height="2" patternUnits="userSpaceOnUse"><rect width="1.5" height="2" fill="#F2F4FA"/><rect x="1.5" width="1.5" height="2" fill="#2B4A9A"/></pattern></defs>
+      <ellipse cx="20" cy="43.5" rx="14" ry="4" fill="${socle}"/><path d="M10 42c0-9 4-14 10-14s10 5 10 14z" fill="#1E3570"/>
+      <rect x="10.2" y="31" width="5" height="5" rx="1.2" fill="${SERV[s].c}"/><rect x="10.5" y="37" width="19" height="2.4" rx="1" fill="#0E1430"/>
+      <circle cx="20" cy="21" r="6.6" fill="#F0C7A2"/><circle cx="17.7" cy="21.6" r=".8" fill="#2A1F17"/><circle cx="22.3" cy="21.6" r=".8" fill="#2A1F17"/>
+      <path d="M12.6 17.6q7.4-10 14.8 0z" fill="#1A2A5C"/><rect x="12.6" y="15.4" width="14.8" height="2.4" fill="url(#${id})"/>
+      <path d="M11.4 18.2h17.2q-.4 1.6-2 1.6h-13.2q-1.6 0-2-1.6z" fill="#0B1230"/><circle cx="20" cy="13.3" r="1.3" fill="#FFC970"/></svg>`;
+  };
+  const portrait = (c, cap) => `<svg viewBox="0 0 48 48" aria-hidden="true"><rect width="48" height="48" fill="#20294D"/><circle cx="24" cy="21" r="9" fill="${c}"/><path d="M8 48c2-10 9-15 16-15s14 5 16 15z" fill="${c}" opacity=".85"/>${cap ? '<path d="M14 17c2-7 18-7 20 0z" fill="#11152A"/>' : ''}</svg>`;
+  const skyline = (seed, allume) => {
+    let r = seed, s = '', x = 0;
+    const rnd = () => { r = (r * 9301 + 49297) % 233280; return r / 233280; };
+    while (x < 100) { const w = 10 + rnd() * 14, h = 25 + rnd() * 55; s += `<rect x="${x.toFixed(1)}" y="${(100 - h).toFixed(1)}" width="${(w - 2).toFixed(1)}" height="${h.toFixed(1)}" fill="${allume ? '#1D3566' : '#2A1626'}"/>`; for (let wy = 100 - h + 6; wy < 96; wy += 9) for (let wx = x + 3; wx < x + w - 5; wx += 6) if (rnd() < (allume ? .55 : .25)) s += `<rect x="${wx.toFixed(1)}" y="${wy.toFixed(1)}" width="2.6" height="3.4" fill="${allume ? '#FFD58A' : '#C9784A'}" opacity=".8"/>`; x += w; }
+    return `<svg viewBox="0 0 100 100" preserveAspectRatio="none">${s}</svg>`;
+  };
+
+  // ───── État de la partie ─────
+  const ZONES = { moi: { nom: 'toi', c: '#FFB23F' }, KA: { nom: 'Ananas', c: '#3DD39A' }, LE: { nom: 'Police Acad.', c: '#63B0FF' }, CO: { nom: 'Djoumap City', c: '#C38BFF' }, HA: { nom: 'Les Hauts', c: '#FF8FB1' } };
+  // Plateau 3 × 3 : 0 1 2 / 3 4 5 / 6 7 8 ; 4 = QG du Parrain ; la rangée du bas touche vos commissariats.
+  const T = [
+    { nom: 'Les Tours', lt: 'Grand Teddy', c: '#B86A6A', bar: 5, cache: 1 },
+    { nom: 'L\'Écluse', lt: 'La Fouine', c: '#8C7BD6', bar: 4, cache: 2 },
+    { nom: 'Rive Canal', lt: 'Bibi', c: '#6F8FC9', bar: 3, cache: 0 },
+    { nom: 'Le Marché', lt: 'Mo Vélo', c: '#5BA88F', cap: true, bar: 4, cache: 1 },
+    { nom: 'QG du Parrain', lt: 'Le Parrain', c: '#D9B44A', cap: true, bar: 7, cache: 0, qg: true },
+    { nom: 'Le Béguinage', lt: 'Nounours', c: '#C9A35B', bar: 3, cache: 1 },
+    { nom: 'Les Glacis', lt: 'Sifflet', c: '#C98A5B', cap: true, bar: 0, cache: 0, repris: true },
+    { nom: 'Gare Basse', lt: 'La Puce', c: '#D46FA0', bar: 4, cache: 1 },
+    { nom: 'Les Caves', lt: 'Tonton', c: '#7FA35B', cap: true, bar: 2, cache: 2 },
+  ];
+  T.forEach((t) => { t.vu = t.cache === 0; t.repris = !!t.repris; });
+  // Intentions du milieu pour ce soir, affichées dès le matin.
+  let intentions = { 6: { attaque: 2 }, 8: { renfort: 1 } };
+  const MOI = [{ id: 'm1', s: 'I', x2: true }, { id: 'm2', s: 'I' }, { id: 'm3', s: 'R' }, { id: 'm4', s: 'P' }, { id: 'm5', s: 'P' }, { id: 'm6', s: 'I' }];
+  let collegues = [
+    { z: 'KA', s: 'I', t: 7 }, { z: 'KA', s: 'I', t: 7 }, { z: 'LE', s: 'I', t: 7 },
+    { z: 'HA', s: 'P', t: 6 }, { z: 'CO', s: 'I', t: 8 }, { z: 'CO', s: 'R', t: 8 },
+  ];
+  let place = {}, sel = 7, matin = null, jour = 0, choisi = null, graine = 11;
+  const rnd = () => { graine = (graine * 9301 + 49297) % 233280; return graine / 233280; };
+
+  const voisins = (i) => [i - 3, i + 3, i % 3 ? i - 1 : -1, i % 3 < 2 ? i + 1 : -1].filter((j) => j >= 0 && j < 9);
+  const repris = () => T.filter((t, i) => i !== 4 && t.repris).length;
+  const qgOuvert = () => voisins(4).every((j) => T[j].repris);
+  const atteignable = (i) => !T[i].repris && (T[i].qg ? qgOuvert() : (i >= 6 || voisins(i).some((j) => j !== 4 && T[j].repris)));
+  const sur = (i) => [...collegues.filter((p) => p.t === i), ...MOI.filter((m) => place[m.id] === i).map((m) => ({ z: 'moi', s: m.s, x2: m.x2, id: m.id }))];
+  const coups = (p) => (p.s === 'I' ? (p.x2 ? 2 : 1) : 0);
+
+  function bilan(i) {
+    const t = T[i], ps = sur(i);
+    if (t.repris) {
+      const att = intentions[i] && intentions[i].attaque || 0, bouc = ps.filter((p) => p.s === 'P').length;
+      return { type: 'garde', ps, att, bouc, manque: Math.max(0, att - bouc), inutiles: ps.filter((p) => p.s !== 'P').length };
+    }
+    const vu = t.vu || ps.some((p) => p.s === 'R');
+    const c = ps.reduce((s, p) => s + coups(p), 0);
+    const visibles = t.bar, total = t.bar + t.cache;
+    const sur_ = vu ? total : visibles; // ce que le joueur sait
+    // sans repérage, on ne juge que sur ce qu'on voit : le « ? » peut cacher jusqu'à 2 barricades
+    const statut = !ps.length ? 'vide' : vu ? (c >= total ? 'tombe' : 'manque') : (c >= visibles + (t.cache ? 2 : 0) ? 'tombe' : c >= visibles ? 'peutetre' : 'manque');
+    return { type: 'attaque', ps, coups: c, vu, visibles, total, sait: sur_, manque: Math.max(0, sur_ - c), statut, inutiles: ps.filter((p) => p.s === 'P').length };
+  }
+
+  // ───── Rendu du plateau ─────
+  function tuileHtml(i) {
+    const t = T[i], b = bilan(i), loin = !t.repris && !atteignable(i);
+    const cls = t.qg && !qgOuvert() ? 'qg loin' : t.qg ? 'qg' : t.repris ? 'repris' : loin ? 'loin' : 'tenu';
+    let bars = '';
+    if (!t.repris) {
+      const n = b.visibles, cassees = Math.min(b.coups, b.vu ? b.total : n);
+      for (let k = 0; k < n; k++) bars += `<span class="bar ${k < cassees ? 'cassee' : ''}"></span>`;
+      if (t.cache) { if (b.vu) for (let k = 0; k < t.cache; k++) bars += `<span class="bar revelee ${n + k < cassees ? 'cassee' : ''}"></span>`; else bars += '<span class="bar cachee" title="0 à 2 barricades cachées">?</span>'; }
+    }
+    const pions = b.ps.map((p) => `<span class="mini" title="${ZONES[p.z].nom} · ${SERV[p.s].nom}">${flic(p.s, ZONES[p.z].c, '')}</span>`).join('');
+    let etat = '';
+    if (t.repris) {
+      etat = b.att ? (b.manque ? `<span class="t-etat r">🛡 ${b.bouc}/${b.att} · il en manque ${b.manque}</span>` : `<span class="t-etat v">🛡 ${b.bouc}/${b.att} · tiendra</span>`) : '<span class="t-etat b">repris ✓</span>';
+    } else if (loin) etat = `<span class="t-etat g">${t.qg ? 'ouvre quand ses 4 voisins sont repris' : 'hors d\'atteinte'}</span>`;
+    else if (b.statut === 'tombe') etat = '<span class="t-etat v">tombe ce soir ✓</span>';
+    else if (b.statut === 'peutetre') etat = '<span class="t-etat a">tombe… sauf si « ? »</span>';
+    else if (b.statut === 'manque') etat = `<span class="t-etat a">il manque ${b.manque} 🔨</span>`;
+    else etat = `<span class="t-etat g">${b.sait} 🔨 pour tomber${!b.vu && t.cache ? ' (+ ?)' : ''}</span>`;
+    const it = intentions[i];
+    const menace = it && it.attaque ? `<span class="menace">⚔ ${it.attaque}</span>` : it && it.renfort ? `<span class="menace renfort">+${it.renfort} 🧱</span>` : '';
+    return `<button type="button" class="tuile ${cls} ${sel === i ? 'sel' : ''}" data-t="${i}" aria-label="${t.nom}">
+      <span class="decor">${skyline(i * 977 + 13, t.repris)}</span>
+      <span class="t-nom">${t.nom}</span>
+      ${t.repris ? '' : `<span class="t-lt">${portrait(t.c, t.cap)}</span>`}
+      ${menace}
+      ${loin ? '<span class="cadenas">🔒</span>' : ''}
+      <span class="barricades">${bars}</span>
+      <span class="t-pions">${pions}</span>
+      ${etat}
+    </button>`;
+  }
+  function fiche() {
+    const el = document.getElementById('fiche');
+    if (matin) { el.innerHTML = matin; return; }
+    const t = T[sel], b = bilan(sel), loin = !t.repris && !atteignable(sel);
+    const parZone = {}; b.ps.forEach((p) => { parZone[p.z] = (parZone[p.z] || 0) + 1; });
+    const qui = b.ps.length ? `<div class="legende">${Object.entries(parZone).map(([z, n]) => `<span><i style="background:${ZONES[z].c}"></i>${ZONES[z].nom} · ${n}</span>`).join('')}</div>` : '';
+    let corps = '';
+    if (t.repris) {
+      corps = b.att
+        ? `<div class="message r">⚔ <b>Le milieu attaque ici ce soir avec ${b.att}.</b> Chaque Proximité 🛡 arrête une attaque.</div>
+           <div class="compte"><span class="ic" style="background:var(--blue-bg)">🛡️</span><span><b>${b.bouc}</b> / ${b.att} boucliers</span></div>
+           ${b.manque ? `<div class="message a">Il manque <b>${b.manque} Proximité</b>, sinon ${t.nom} est reperdu.</div>` : '<div class="message v"><b>Ça tiendra.</b> L\'attaque sera repoussée.</div>'}`
+        : '<div class="message g">Repris. Aucune attaque annoncée ce soir : inutile d\'y laisser du monde.</div>';
+      if (b.inutiles) corps += `<div class="message a">${b.inutiles} agent${b.inutiles > 1 ? 's' : ''} ici ne protège${b.inutiles > 1 ? 'nt' : ''} pas : seule la Proximité tient un secteur.</div>`;
+    } else if (loin) {
+      corps = `<div class="message g">🔒 <b>Hors d'atteinte.</b> ${t.qg ? 'Le QG s\'ouvre quand les 4 secteurs qui le touchent sont repris.' : 'On ne peut l\'attaquer qu\'une fois un secteur voisin repris (ou s\'il touche vos commissariats).'}</div>`;
+    } else {
+      const cache = t.cache && !b.vu ? `<div class="compte"><span class="ic" style="background:rgba(183,156,255,.16)">🔦</span><span><b>?</b> 0, 1 ou 2 barricades cachées. Une Recherche te le dit tout de suite.</span></div>` : t.cache ? `<div class="compte"><span class="ic" style="background:rgba(183,156,255,.16)">🔦</span><span>Repéré : <b>${t.cache}</b> barricade${t.cache > 1 ? 's' : ''} cachée${t.cache > 1 ? 's' : ''} en plus.</span></div>` : '';
+      const msg = b.statut === 'tombe' ? `<div class="message v"><b>Le secteur tombe ce soir.</b> ${t.lt} sera arrêté.</div>`
+        : b.statut === 'peutetre' ? '<div class="message a"><b>Ça tombe… si le « ? » est vide.</b> Envoie une Recherche pour en être sûr, ou une Intervention de plus.</div>'
+        : b.statut === 'manque' ? `<div class="message a">Il manque <b>${b.manque} coup${b.manque > 1 ? 's' : ''} 🔨</b>${!b.vu && t.cache ? ', et peut-être plus (« ? »)' : ''}.</div>`
+        : `<div class="message g">Personne ce soir. Il faut <b>${b.sait} coup${b.sait > 1 ? 's' : ''} 🔨</b>${!b.vu && t.cache ? ' + le « ? »' : ''}.</div>`;
+      corps = `<div class="compte"><span class="ic" style="background:var(--red-bg)">🧱</span><span><b>${b.vu ? b.total : b.visibles}</b> barricade${(b.vu ? b.total : b.visibles) > 1 ? 's' : ''}${!b.vu && t.cache ? ' visibles' : ''} · <b>${b.coups}</b> coup${b.coups > 1 ? 's' : ''} 🔨 posé${b.coups > 1 ? 's' : ''}</span></div>${cache}${msg}`;
+      if (intentions[sel] && intentions[sel].renfort) corps += `<div class="message a">Le milieu ajoutera <b>+${intentions[sel].renfort} barricade</b> cette nuit s'il ne tombe pas.</div>`;
+      if (b.inutiles) corps += `<div class="message a">${b.inutiles} Proximité ici ne casse${b.inutiles > 1 ? 'nt' : ''} rien : elle sert à protéger un secteur repris.</div>`;
+    }
+    el.innerHTML = `<div style="display:flex;gap:10px;align-items:center">${t.repris ? '<span style="font-size:26px">🏠</span>' : `<span style="width:40px;height:40px;border-radius:50%;overflow:hidden;flex:none;border:2px solid var(--red)">${portrait(t.c, t.cap)}</span>`}<div><h3>${t.nom}</h3><span class="sous">${t.repris ? 'Repris · les habitants sont revenus' : `Tenu par ${t.lt}`}</span></div></div>${corps}${qui}`;
+  }
+  function rendre() {
+    document.getElementById('plateau').innerHTML = [0, 1, 2, 3, 4, 5, 6, 7, 8].map(tuileHtml).join('');
+    fiche();
+    const r = repris();
+    document.getElementById('progres').innerHTML = `<span>Secteurs repris</span>${[0, 1, 2, 3, 4, 5, 6, 7].map((k) => `<i class="${k < r ? 'on' : ''}"></i>`).join('')}<span>${r}/8</span>`;
+    document.getElementById('horloge').textContent = matin ? `${['Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][jour % 5]} · 07:30` : `${['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'][jour % 5]} · 18:42`;
+    document.getElementById('reserve').innerHTML = MOI.map((m) => {
+      const ou = place[m.id];
+      return `<button type="button" class="pion ${ou != null ? 'pose' : ''} ${choisi === m.id ? 'sel' : ''} ${matin ? 'grise' : ''}" data-id="${m.id}" ${matin ? 'disabled' : ''}>${flic(m.s, '#FFB23F')}<span class="t"><b>${SERV[m.s].ic} ${SERV[m.s].verbe}${m.x2 ? ' ×2' : ''}</b><span>${ou != null ? `→ ${T[ou].nom}` : SERV[m.s].nom}</span></span></button>`;
+    }).join('');
+    document.getElementById('aide-reserve').textContent = matin ? 'Le matin : regarde ce qui a changé et les intentions du milieu.' : `Touche un agent pour l'envoyer sur « ${T[sel].nom} ». Touche-le à nouveau pour le reprendre. Ou fais-le glisser sur une tuile.`;
+    document.getElementById('lancer').textContent = matin ? 'Nouvelle journée' : 'Passer à 20:00';
+    document.getElementById('auto').hidden = !!matin;
+  }
+
+  // ───── Gestes ─────
+  const plateau = document.getElementById('plateau');
+  const jouable = (i) => i != null && !matin && (T[i].repris || atteignable(i));
+  function envoyer(id, i) { if (!jouable(i)) { sel = i; rendre(); return; } place[id] = i; sel = i; rendre(); }
+  plateau.addEventListener('click', (e) => { const t = e.target.closest('.tuile'); if (!t || drag) return; sel = Number(t.dataset.t); if (matin) { rendre(); return; } rendre(); });
+  let drag = null;
+  document.getElementById('reserve').addEventListener('pointerdown', (e) => {
+    const b = e.target.closest('.pion'); if (!b || matin) return;
+    drag = { id: b.dataset.id, x: e.clientX, y: e.clientY, bouge: false };
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    if (!drag.bouge && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 8) {
+      drag.bouge = true;
+      drag.g = Object.assign(document.createElement('div'), { className: 'fantome', innerHTML: flic(MOI.find((m) => m.id === drag.id).s, '#FFB23F', '') });
+      document.body.appendChild(drag.g);
+    }
+    if (drag.bouge) {
+      e.preventDefault();
+      drag.g.style.left = e.clientX + 'px'; drag.g.style.top = e.clientY + 'px';
+      document.querySelectorAll('.tuile').forEach((x) => x.classList.remove('cible'));
+      const sous = document.elementFromPoint(e.clientX, e.clientY), t = sous && sous.closest('.tuile');
+      if (t && jouable(Number(t.dataset.t))) t.classList.add('cible');
+    }
+  }, { passive: false });
+  window.addEventListener('pointerup', (e) => {
+    if (!drag) return; const d = drag;
+    if (d.g) d.g.remove();
+    if (d.bouge) {
+      const sous = document.elementFromPoint(e.clientX, e.clientY), t = sous && sous.closest('.tuile');
+      if (t) envoyer(d.id, Number(t.dataset.t)); else rendre();
+      setTimeout(() => { drag = null; }, 0);
+    } else {
+      drag = null;
+      if (place[d.id] === sel) delete place[d.id]; else envoyer(d.id, sel);
+      rendre();
+    }
+  });
+  window.addEventListener('pointercancel', () => { if (drag && drag.g) drag.g.remove(); drag = null; });
+
+  document.getElementById('auto').addEventListener('click', () => {
+    // L'adjoint : des boucliers là où une attaque n'est pas couverte, une Recherche sur le « ? » le plus utile, puis les Interventions là où il manque le moins.
+    place = {};
+    const libres = MOI.slice();
+    const prendre = (s) => { const k = libres.findIndex((m) => m.s === s); return k < 0 ? null : libres.splice(k, 1)[0]; };
+    Object.keys(intentions).map(Number).filter((i) => T[i].repris && intentions[i].attaque).forEach((i) => { while (bilan(i).manque > 0) { const m = prendre('P'); if (!m) break; place[m.id] = i; } });
+    const cibles = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter((i) => atteignable(i) && !T[i].repris);
+    const aVoir = cibles.filter((i) => T[i].cache && !bilan(i).vu).sort((a, b) => bilan(a).manque - bilan(b).manque)[0];
+    if (aVoir != null) { const m = prendre('R'); if (m) place[m.id] = aVoir; }
+    for (;;) {
+      const m = libres.find((x) => x.s === 'I'); if (!m) break;
+      const c = cibles.filter((i) => bilan(i).statut !== 'tombe').sort((a, b) => bilan(a).manque - bilan(b).manque)[0];
+      if (c == null) break; libres.splice(libres.indexOf(m), 1); place[m.id] = c;
+    }
+    rendre();
+  });
+
+  // ───── 20:00 ─────
+  function vingtHeures() {
+    const lignes = []; let prime = 0, affiches = [];
+    [0, 1, 2, 3, 4, 5, 6, 7, 8].forEach((i) => {
+      const t = T[i], b = bilan(i), it = intentions[i];
+      if (t.repris) {
+        if (it && it.attaque) {
+          if (b.manque) { t.repris = false; t.bar = 2; t.cache = 0; t.vu = true; lignes.push(`<div class="cs"><span class="ico">🔥</span><span><b>${t.nom} est reperdu.</b> ${b.att} attaques, ${b.bouc} bouclier${b.bouc > 1 ? 's' : ''}. Le milieu y remonte 2 barricades.</span></div>`); }
+          else { const mien = b.ps.filter((p) => p.z === 'moi' && p.s === 'P').length; prime += mien * 300; lignes.push(`<div class="cs"><span class="ico">🛡️</span><span><b>Attaque repoussée à ${t.nom}.</b>${mien ? ` ${mien > 1 ? `Tes ${mien} boucliers` : 'Ton bouclier'} : +${(mien * 300).toLocaleString('fr-BE')} €.` : ''}</span></div>`); }
+        }
+        return;
+      }
+      if (!atteignable(i)) return;
+      const total = t.bar + t.cache;
+      if (b.coups >= total && b.ps.length) {
+        t.repris = true; t.bar = 0; t.cache = 0;
+        const parZone = {}; b.ps.forEach((p) => { if (coups(p)) parZone[p.z] = (parZone[p.z] || 0) + coups(p); });
+        const tot = Object.values(parZone).reduce((a, c) => a + c, 0) || 1, part = Math.round(1500 * (parZone.moi || 0) / tot / 50) * 50;
+        prime += part;
+        let u = rnd() * tot, g = Object.keys(parZone)[0]; for (const [z, v] of Object.entries(parZone)) { u -= v; if (u <= 0) { g = z; break; } }
+        if (g === 'moi') affiches.push(t);
+        lignes.push(`<div class="cs"><span class="ico">🚔</span><span><b>${t.nom} est repris</b>, ${t.lt} arrêté. ${parZone.moi ? `Tu as cassé ${parZone.moi} barricade${parZone.moi > 1 ? 's' : ''} sur ${tot} : <b>+${part.toLocaleString('fr-BE')} €</b>.` : 'Tu n\'y étais pas.'} Affiche tirée au sort : <b>${ZONES[g].nom}</b>.</span></div>`);
+      } else if (b.ps.length) {
+        const avant = total, rest = Math.max(1, total - b.coups);
+        const decouverte = !b.vu && t.cache ? ` On a découvert ${t.cache} barricade${t.cache > 1 ? 's' : ''} cachée${t.cache > 1 ? 's' : ''}.` : '';
+        t.bar = rest; t.cache = 0; t.vu = true;
+        lignes.push(`<div class="cs"><span class="ico">🔨</span><span><b>${t.nom}</b> : ${avant - rest} barricade${avant - rest > 1 ? 's' : ''} cassée${avant - rest > 1 ? 's' : ''}, il en reste ${rest}.${decouverte}</span></div>`);
+      }
+      if (!t.repris && it && it.renfort) { t.bar += it.renfort; lignes.push(`<div class="cs"><span class="ico">🧱</span><span>Le milieu a remonté <b>+${it.renfort} barricade</b> sur ${t.nom}.</span></div>`); }
+    });
+    matin = `<span class="kicker">Constat · 07:30</span><h3>Ce qui a changé cette nuit</h3>
+      <div class="constat">${lignes.join('') || '<div class="cs">Rien n\'a bougé.</div>'}</div>
+      ${affiches.length ? `<div class="affiche"><div class="cadre">ARRÊTÉ${portrait(affiches[0].c, affiches[0].cap)}${affiches[0].lt.toUpperCase()}</div><div><b>Affiche gagnée au tirage</b><span>${affiches.map((t) => t.lt).join(' et ')} rejoint le mur de ton commissariat.</span></div></div>` : ''}
+      <div class="compte"><span class="ic" style="background:var(--amber-bg)">💶</span><span>Tes primes cette nuit : <b>${prime.toLocaleString('fr-BE')} €</b></span></div>`;
+    collegues = []; place = {};
+    // intentions de demain, annoncées dès ce matin
+    intentions = {};
+    const menaces = [0, 1, 2, 3, 5, 6, 7, 8].filter((i) => T[i].repris).map((i) => [voisins(i).filter((j) => !T[j].repris).length, i]).filter(([n]) => n).sort((a, b) => b[0] - a[0]);
+    if (menaces[0]) intentions[menaces[0][1]] = { attaque: Math.min(3, menaces[0][0] + 1) };
+    const renf = [0, 1, 2, 3, 5, 6, 7, 8].filter((i) => !T[i].repris && atteignable(i)).sort((a, b) => (T[a].bar + T[a].cache) - (T[b].bar + T[b].cache))[0];
+    if (renf != null) intentions[renf] = { renfort: 1 };
+    if (Object.keys(intentions).length) matin += `<div class="message r"><b>Ce soir, le milieu annonce :</b> ${Object.entries(intentions).map(([i, v]) => v.attaque ? `⚔ ${v.attaque} sur ${T[i].nom}` : `+1 🧱 sur ${T[i].nom}`).join(' · ')}. Les badges sont sur le plateau.</div>`;
+    rendre();
+  }
+  function nouvelleJournee() {
+    matin = null; jour += 1;
+    // les collègues reviennent : boucliers d'abord là où une attaque est annoncée, puis attaque des secteurs du front
+    const front = [0, 1, 2, 3, 4, 5, 6, 7, 8].filter((i) => atteignable(i));
+    const att = Object.keys(intentions).map(Number).find((i) => intentions[i].attaque);
+    ['KA', 'LE', 'CO', 'HA'].forEach((z, k) => {
+      if (att != null && k === 3) { collegues.push({ z, s: 'P', t: att }); return; }
+      const cible = front.sort((a, b) => (T[a].bar + T[a].cache) - (T[b].bar + T[b].cache))[k % Math.max(1, front.length)];
+      if (cible == null) return;
+      const n = 1 + Math.floor(rnd() * 2);
+      for (let j = 0; j < n; j++) collegues.push({ z, s: 'I', t: cible });
+      if (rnd() < 0.4 && T[cible].cache && !T[cible].vu) collegues.push({ z, s: 'R', t: cible });
+    });
+    sel = att ?? front[0] ?? 7; rendre();
+  }
+  document.getElementById('lancer').addEventListener('click', () => { if (matin) nouvelleJournee(); else vingtHeures(); });
+  rendre();
+})();
+</script>
