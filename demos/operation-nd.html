@@ -1,0 +1,662 @@
+<title>Salle d'opération</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Ma ZP · zone de non-droit · concept « Salle d'opération » + maquette jouable.
+   Monde sombre unique, celui du jeu. Deux onglets : le concept (lecture), la maquette (un téléphone, plein écran sur mobile). */
+:root {
+  color-scheme: dark;
+  --bg: #0C1124; --bg-deep: #080C1B; --surface: #141B33; --surface2: #1C2442; --surface3: #243050;
+  --line: #29345A; --hair: rgba(190, 205, 255, .08);
+  --text: #EDF0FA; --text2: #C3C9DE; --muted: #96A0BF; --faint: #67719A;
+  --amber: #FFB23F; --amber-hi: #FFC970; --amber-ink: #241400; --amber-bg: rgba(255, 178, 63, .11); --amber-line: rgba(255, 178, 63, .40);
+  --blue: #63B0FF; --blue-bg: rgba(99, 176, 255, .12); --green: #3DD39A; --green-bg: rgba(61, 211, 154, .12);
+  --red: #FF6E6A; --red-bg: rgba(255, 110, 106, .10); --red-line: rgba(255, 110, 106, .40);
+  --paper: #F4EFE3; --ink: #1D1A15;
+  --display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --body: 'Instrument Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--bg-deep); color: var(--text); font: 15px/1.45 var(--body); margin: 0; }
+button { font: inherit; color: inherit; }
+.page { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 18px 60px; display: flex; flex-direction: column; gap: 18px; }
+.onglets { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 16px; background: var(--bg); border: 1px solid var(--hair); align-self: flex-start; }
+.onglets button { border: 0; background: none; color: var(--muted); font-weight: 600; padding: 10px 18px; border-radius: 12px; cursor: pointer; min-height: 44px; }
+.onglets button[aria-selected="true"] { background: var(--surface3); color: var(--text); }
+.onglets button:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.kicker { font: 600 12px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(28px, 4.4vw, 42px)/1.05 var(--display); margin: 4px 0 0; text-wrap: balance; }
+h2 { font: 800 21px/1.15 var(--display); margin: 0; text-wrap: balance; }
+h3 { font: 700 16px/1.2 var(--display); margin: 0; }
+p { margin: 0; }
+.lead { color: var(--text2); max-width: 68ch; font-size: 16px; }
+
+/* ───── Concept ───── */
+.concept { display: flex; flex-direction: column; gap: 22px; }
+.boucle { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; }
+.etape { padding: 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--hair); display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.etape .quand { font: 500 11.5px var(--mono); color: var(--amber-hi); letter-spacing: .03em; }
+.etape p { color: var(--text2); font-size: 14px; }
+.duo { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+@media (min-width: 820px) { .duo { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.bloc { padding: 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--hair); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.bloc ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px; color: var(--text2); font-size: 14.5px; }
+.bloc li b { color: var(--text); }
+.mesure { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.mesure div { padding: 12px; border-radius: 14px; background: var(--surface2); display: flex; flex-direction: column; gap: 2px; }
+.mesure b { font: 800 22px var(--display); font-variant-numeric: tabular-nums; }
+.mesure span { font-size: 13px; color: var(--muted); }
+.options { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+@media (min-width: 820px) { .options { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.option { padding: 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--hair); display: flex; flex-direction: column; gap: 8px; }
+.option.reco { border-color: var(--amber-line); background: linear-gradient(180deg, rgba(255,178,63,.06), var(--surface) 40%); }
+.option .tag { align-self: flex-start; font: 700 11px var(--body); letter-spacing: .06em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; background: var(--amber); color: var(--amber-ink); }
+.option p { color: var(--text2); font-size: 14px; }
+.tableau { overflow-x: auto; border-radius: 14px; border: 1px solid var(--hair); }
+table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14px; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--hair); vertical-align: top; }
+th { font: 600 12px var(--body); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); background: var(--surface); }
+td { color: var(--text2); background: rgba(20, 27, 51, .5); }
+td b { color: var(--text); }
+.cta { align-self: flex-start; }
+button.btn { font: 600 15px var(--body); border-radius: 14px; padding: 11px 16px; min-height: 46px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); cursor: pointer; }
+button.btn:hover { border-color: var(--amber-line); }
+button.btn.primaire { background: linear-gradient(160deg, var(--amber-hi), var(--amber)); color: var(--amber-ink); border-color: transparent; }
+button.btn.fin { min-height: 38px; padding: 7px 12px; font-size: 13.5px; border-radius: 12px; }
+button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+button.btn:disabled { opacity: .45; cursor: default; }
+
+/* ───── Maquette : un téléphone ───── */
+.scene-demo { display: flex; gap: 22px; align-items: flex-start; flex-wrap: wrap; }
+.legende-demo { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.legende-demo ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; color: var(--text2); font-size: 14.5px; }
+.tel { position: relative; width: 390px; max-width: 100%; height: 800px; border-radius: 34px; overflow: hidden; background: var(--bg); border: 1px solid #2B3666; box-shadow: 0 30px 60px -20px rgba(0,0,0,.8), 0 0 0 8px #0A0E1F; display: flex; flex-direction: column; user-select: none; -webkit-user-select: none; }
+@media (max-width: 520px) { .tel { width: 100%; height: calc(100dvh - 120px); min-height: 640px; border-radius: 22px; box-shadow: none; } .scene-demo { gap: 14px; } }
+.ecran { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.ecran[hidden] { display: none !important; }
+
+/* Barre du haut de la page d'opération */
+.op-haut { display: flex; align-items: center; gap: 10px; padding: 12px 14px 10px; border-bottom: 1px solid var(--hair); background: var(--bg); position: relative; z-index: 3; }
+.op-x { width: 38px; height: 38px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; cursor: pointer; flex: none; }
+.op-titre { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.op-titre b { font: 800 17px var(--display); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-titre span { font-size: 12px; color: var(--muted); }
+.pas { display: flex; gap: 5px; }
+.pas i { width: 22px; height: 5px; border-radius: 3px; background: var(--surface3); }
+.pas i.on { background: var(--amber); }
+.op-corps { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+.op-bas { padding: 12px 14px 14px; border-top: 1px solid var(--hair); background: var(--bg); display: flex; gap: 8px; }
+.op-bas .btn { flex: 1; }
+
+/* Briefing */
+.carte-secteur { position: relative; border-radius: 18px; overflow: hidden; background: radial-gradient(ellipse at 50% 40%, #2A1830, #0B0E20 75%); border: 1px solid var(--hair); padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.carte-secteur h2 { font-size: 24px; }
+.emprise { display: flex; align-items: center; gap: 8px; font: 700 14px var(--display); }
+.jauge { flex: 1; height: 8px; border-radius: 6px; background: rgba(255,255,255,.08); overflow: hidden; }
+.jauge i { display: block; height: 100%; background: var(--red); }
+.cesoir { display: flex; flex-direction: column; gap: 8px; }
+.evt { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--hair); }
+.evt .ico { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: none; font-size: 17px; background: var(--surface2); }
+.evt b { display: block; font-size: 14px; }
+.evt span { font-size: 13px; color: var(--text2); }
+.evt.neuf { border-color: var(--amber-line); }
+.evt.neuf .badge { font: 700 10px var(--body); text-transform: uppercase; letter-spacing: .06em; color: var(--amber-ink); background: var(--amber); padding: 2px 6px; border-radius: 999px; margin-left: 6px; vertical-align: 2px; }
+.lieutenants { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.lt { flex: none; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px; border-radius: 14px; background: var(--surface); border: 1px solid var(--hair); text-align: center; }
+.lt svg { width: 48px; height: 48px; border-radius: 50%; background: #20294D; }
+.lt b { font-size: 12.5px; line-height: 1.15; }
+.lt span { font-size: 11px; color: var(--muted); line-height: 1.2; }
+.lt.connu span { color: var(--red); }
+.qui { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: var(--text2); }
+.av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 10.5px var(--body); background: #2E3A63; color: #D5DCF5; border: 1px solid #45538A; flex: none; }
+
+/* Plan */
+.plan { position: relative; flex: 1; min-height: 0; background: radial-gradient(ellipse at 50% 38%, #18224A, #060918 80%); overflow: hidden; }
+.plan > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.prono { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 2; display: flex; gap: 6px; flex-wrap: wrap; pointer-events: none; }
+.prono span { font: 600 12px var(--body); padding: 5px 9px; border-radius: 999px; background: rgba(10, 15, 34, .88); border: 1px solid rgba(255,255,255,.14); white-space: nowrap; }
+.prono .bon { color: var(--green); } .prono .moyen { color: var(--amber-hi); } .prono .mauvais { color: var(--red); }
+.pt { position: absolute; transform: translate(-50%, -50%); width: 60px; display: flex; flex-direction: column; align-items: center; gap: 3px; border: 0; background: none; padding: 0; cursor: pointer; z-index: 1; }
+.pt .rond { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; position: relative; background: rgba(10, 15, 34, .9); border: 2px solid var(--c); box-shadow: 0 0 0 5px rgba(10,15,34,.35), 0 8px 18px -6px rgba(0,0,0,.8); transition: transform .12s, box-shadow .12s; }
+.pt .rond .ic { font-size: 19px; line-height: 1; }
+.pt .rond .n { position: absolute; bottom: -7px; font: 700 11px var(--body); background: var(--c); color: #0B1124; border-radius: 999px; padding: 1px 6px; font-variant-numeric: tabular-nums; }
+.pt .lbl { font: 700 11.5px var(--body); color: var(--text); background: rgba(10,15,34,.85); padding: 2px 7px; border-radius: 999px; white-space: nowrap; margin-top: 5px; }
+.pt .mini { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 76px; }
+.pt .mini i { width: 13px; height: 13px; border-radius: 50%; font: 700 7.5px/13px var(--body); text-align: center; font-style: normal; }
+.pt .mini i.moi { background: var(--amber); color: var(--amber-ink); }
+.pt .mini i.autre { background: #3A4777; color: #DDE3F8; }
+.pt[data-role="reperage"] { --c: var(--blue); }
+.pt[data-role="descente"] { --c: var(--red); }
+.pt[data-role="bouclage"] { --c: var(--green); }
+.pt.cible .rond { transform: scale(1.14); box-shadow: 0 0 0 6px var(--amber-line), 0 8px 18px -6px rgba(0,0,0,.8); }
+.pt.ouvert .rond { border-style: dashed; }
+.pt.faille .lbl { color: #FFC2BF; box-shadow: 0 0 0 1px var(--red-line); }
+.pt.neuf .lbl::before { content: 'NOUVEAU · '; color: var(--amber-hi); font-size: 9.5px; }
+.pt.mure { opacity: .75; }
+.pt.mure .rond { border-color: #5A6699; border-style: solid; }
+.pt:focus-visible .rond { outline: 2px solid var(--amber); outline-offset: 3px; }
+.bulle { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 2; padding: 9px 12px; border-radius: 14px; background: rgba(10, 15, 34, .94); border: 1px solid var(--line); font-size: 13px; color: var(--text2); display: flex; gap: 8px; align-items: flex-start; }
+.bulle b { color: var(--text); }
+.bulle.r { border-color: var(--red-line); }
+.bulle.v { border-color: rgba(61,211,154,.4); }
+.plateau { padding: 10px 12px 12px; border-top: 1px solid var(--hair); background: var(--bg); display: flex; flex-direction: column; gap: 10px; z-index: 3; }
+.plateau .ligne { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.plateau .ligne b { font: 700 14px var(--display); }
+.plateau .ligne span { font-size: 12px; color: var(--muted); }
+.reserve { display: flex; gap: 8px; min-height: 46px; align-items: center; flex-wrap: wrap; }
+.reserve:empty::after { content: 'Tous tes agents sont placés. Glisse un pion ici pour le reprendre.'; font-size: 12.5px; color: var(--muted); }
+.pion { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font: 800 15px var(--display); background: linear-gradient(160deg, var(--amber-hi), var(--amber)); color: var(--amber-ink); cursor: grab; touch-action: none; box-shadow: 0 3px 8px rgba(0,0,0,.5); flex: none; border: 0; }
+.pion small { display: block; font: 600 8px var(--body); margin-top: -3px; }
+.pion.choisi { outline: 3px solid #fff; outline-offset: 2px; }
+.pion:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.fantome { position: fixed; z-index: 99; pointer-events: none; transform: translate(-50%, -60%) scale(1.15); box-shadow: 0 12px 26px rgba(0,0,0,.6); }
+.raccourcis { display: flex; gap: 8px; }
+.raccourcis .btn { flex: 1; }
+
+/* Envoi */
+.resume { display: flex; flex-direction: column; gap: 8px; }
+.rl { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--hair); font-size: 14px; }
+.rl .v { font: 700 15px var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bon { color: var(--green); } .moyen { color: var(--amber-hi); } .mauvais { color: var(--red); }
+.interrupteur { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--hair); font-size: 14px; cursor: pointer; }
+.interrupteur input { width: 20px; height: 20px; accent-color: var(--amber); }
+.ok { padding: 18px 14px; border-radius: 16px; background: var(--green-bg); border: 1px solid rgba(61,211,154,.35); text-align: center; display: flex; flex-direction: column; gap: 6px; }
+.ok b { font: 800 19px var(--display); }
+.ok span { font-size: 13.5px; color: #BDF1DB; }
+
+/* Constat */
+.constat-tete { padding: 14px; border-radius: 18px; background: linear-gradient(160deg, #1A3A2E, #101A2E 70%); border: 1px solid rgba(61,211,154,.3); display: flex; flex-direction: column; gap: 6px; }
+.constat-tete .tampon { align-self: flex-start; font: 500 11px var(--mono); letter-spacing: .06em; color: #BDF1DB; border: 1px solid rgba(189,241,219,.5); border-radius: 6px; padding: 3px 7px; }
+.constat-tete b { font: 800 20px var(--display); }
+.constat-tete span { font-size: 13.5px; color: var(--text2); }
+.mini-carte { position: relative; height: 170px; border-radius: 16px; overflow: hidden; border: 1px solid var(--hair); background: radial-gradient(ellipse at 50% 40%, #18224A, #060918 80%); }
+.mini-carte svg { width: 100%; height: 100%; display: block; }
+.tirage { display: flex; flex-direction: column; gap: 8px; }
+.fiche { display: flex; gap: 10px; align-items: center; padding: 10px; border-radius: 14px; background: var(--surface); border: 1px solid var(--hair); }
+.fiche svg { width: 44px; height: 44px; border-radius: 50%; background: #20294D; flex: none; }
+.fiche .t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.fiche .t b { font-size: 14px; }
+.fiche .t span { font-size: 12.5px; color: var(--muted); }
+.fiche .res { font: 700 12px var(--body); padding: 6px 9px; border-radius: 10px; white-space: nowrap; text-align: center; min-width: 92px; }
+.fiche .res.attente { background: var(--surface2); color: var(--muted); }
+.fiche .res.fuite { background: var(--red-bg); color: #FFC2BF; }
+.fiche .res.autre { background: var(--surface3); color: #D5DCF5; }
+.fiche .res.moi { background: var(--amber); color: var(--amber-ink); }
+.fiche.gagne { border-color: var(--amber); box-shadow: 0 0 0 3px var(--amber-bg); }
+.fiche.tourne { animation: tourne .5s ease; }
+@keyframes tourne { 0% { transform: rotateX(0); } 50% { transform: rotateX(80deg); } 100% { transform: rotateX(0); } }
+.recompense { padding: 14px; border-radius: 16px; background: var(--paper); color: var(--ink); display: flex; gap: 12px; align-items: center; transform: rotate(-.6deg); box-shadow: 0 12px 26px -10px rgba(0,0,0,.7); }
+.recompense .affiche { width: 62px; flex: none; border: 2px solid var(--ink); padding: 4px; text-align: center; font: 800 9px var(--display); letter-spacing: .08em; background: #FFF8E8; }
+.recompense .affiche svg { width: 100%; height: auto; display: block; background: #E7DCC2; margin: 3px 0; }
+.recompense b { font: 800 16px var(--display); display: block; }
+.recompense span { font-size: 13px; color: #4A4234; }
+
+/* Point d'entrée (HP / Carte) */
+.entree { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 16px; background: var(--surface); border: 1px solid var(--amber-line); cursor: pointer; text-align: left; width: 100%; }
+.entree .ico { width: 42px; height: 42px; border-radius: 12px; background: var(--red-bg); display: grid; place-items: center; font-size: 20px; flex: none; }
+.entree .t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.entree .t b { font: 700 15px var(--display); }
+.entree .t span { font-size: 12.5px; color: var(--muted); }
+.entree .chev { color: var(--amber); font-weight: 800; }
+.faux-hp { display: flex; flex-direction: column; gap: 10px; }
+.faux-hp .titre-hp { font: 800 26px var(--display); }
+.faux-hp .fantomes div { height: 64px; border-radius: 16px; background: var(--surface); border: 1px solid var(--hair); opacity: .5; }
+.faux-hp .fantomes { display: flex; flex-direction: column; gap: 10px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="page">
+  <div class="onglets" role="tablist" aria-label="Contenu">
+    <button type="button" role="tab" id="t-concept" aria-selected="true" data-onglet="concept">Le concept</button>
+    <button type="button" role="tab" id="t-maquette" aria-selected="false" data-onglet="maquette">La maquette</button>
+  </div>
+
+  <!-- ═════════════ CONCEPT ═════════════ -->
+  <section class="concept" id="v-concept">
+    <header>
+      <div class="kicker">Zone de non-droit · refonte du soir</div>
+      <h1>La salle d'opération</h1>
+      <p class="lead" style="margin-top:8px">Aujourd'hui, la zone de non-droit se joue en touchant + et − sur trois rôles. La maquette précédente posait les agents sur la carte, mais dans un morceau d'écran. Ici, chaque assaut s'ouvre en <b>page entière</b>, comme un mini-jeu : briefing, plan, envoi. Le lendemain matin, un constat avec un <b>tirage au sort</b> désigne qui a passé les menottes à chaque lieutenant.</p>
+    </header>
+
+    <div class="mesure" aria-label="Ce que coûte l'écran actuel">
+      <div><b>~ 25 %</b><span>de l'écran du téléphone pour la maquette du secteur aujourd'hui</span></div>
+      <div><b>5 lieux</b><span>à viser sur la maquette précédente, en partie cachés par leurs étiquettes</span></div>
+      <div><b>54 px</b><span>taille d'un point d'accès dans la page d'opération (au moins 44 px recommandés pour un doigt)</span></div>
+      <div><b>1 geste</b><span>pour rejouer le plan de la veille quand rien n'a changé</span></div>
+    </div>
+
+    <h2>Une soirée, de bout en bout</h2>
+    <div class="boucle">
+      <div class="etape"><span class="quand">JOURNÉE · HP</span><h3>Une ligne d'appel</h3><p>Dans « Aujourd'hui » : « Opération Les Glacis · 3 zones y vont · livraison ce soir ». Elle passe au vert quand ton plan est prêt.</p></div>
+      <div class="etape"><span class="quand">1 · BRIEFING</span><h3>Ce qui change ce soir</h3><p>Un ou deux événements du soir, les lieutenants et ce qu'on sait d'eux, qui y va. Se lit en dix secondes.</p></div>
+      <div class="etape"><span class="quand">2 · LE PLAN</span><h3>Le secteur en grand</h3><p>La maquette prend l'écran. Gros points d'accès, tes pions en bas, pronostic en haut qui bouge à chaque geste.</p></div>
+      <div class="etape"><span class="quand">3 · ENVOI</span><h3>Un résumé, un bouton</h3><p>Chances, sorties tenues, la radio prévenue d'office. Modifiable jusqu'à 20:00.</p></div>
+      <div class="etape"><span class="quand">LENDEMAIN · 1RE OUVERTURE</span><h3>Le constat et le tirage</h3><p>Par où ils ont fui, et une fiche par lieutenant qui se retourne : arrêté par quelle zone, ou en fuite.</p></div>
+    </div>
+
+    <div class="duo">
+      <div class="bloc">
+        <h2>Pour que ce ne soit pas redondant</h2>
+        <ul>
+          <li><b>« Comme hier »</b> : un geste reprend le plan de la veille. Personne ne refait tout chaque soir.</li>
+          <li><b>Un événement du soir</b> tiré dans une pioche par secteur (livraison, pluie sur la berge, fête de quartier, guetteurs doublés…). Il change un détail, pas tout le plan.</li>
+          <li><b>Le milieu s'adapte</b> : la sortie la mieux tenue la veille est murée, une nouvelle s'ouvre ailleurs. Le plan d'hier a donc souvent un trou.</li>
+          <li><b>Des lieutenants avec des habitudes</b> qu'on découvre au fil des repérages (« Sifflet fuit par l'eau »). Ce qu'on apprend reste acquis jusqu'à la chute du secteur.</li>
+          <li>Le constat s'affiche <b>une seule fois</b>, puis se replie en une ligne.</li>
+        </ul>
+      </div>
+      <div class="bloc">
+        <h2>Le tirage de l'arrestation</h2>
+        <ul>
+          <li>Chaque lieutenant arrêté l'est à un endroit précis : à la porte si la descente passe, à une sortie s'il tombe sur un bouclage.</li>
+          <li>On tire au sort <b>un agent parmi ceux postés à cet endroit</b>. Le bon service compte double (Intervention à la porte, Proximité ou Roulage à une sortie).</li>
+          <li>La zone gagnante reçoit une <b>prime d'interpellation</b>, l'affiche « ARRÊTÉ » du lieutenant au commissariat et des points de jauge de skin.</li>
+          <li>Le Parrain, lui, rapporte une affiche dorée et un objet de bureau pour le chef.</li>
+          <li>Pour ne pas gonfler l'argent du jeu, la prime est prise sur les saisies du secteur (environ 20 %) au lieu de s'y ajouter. À régler par simulation.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>Deux façons de l'ouvrir</h2>
+    <div class="options">
+      <div class="option reco">
+        <span class="tag">Recommandé</span>
+        <h3>A · Page plein écran en trois étapes</h3>
+        <p>S'ouvre comme un mini-jeu depuis l'HP ou en touchant un secteur rouge sur la Carte. Tout l'écran sert le plan ; le reste du jeu ne bouge pas. Sur PC, la même page centrée, avec le briefing à gauche du plan.</p>
+        <p><b>Pour</b> : place maximale, se joue au doigt, aucun écran existant alourdi. <b>Contre</b> : une page de plus à ouvrir.</p>
+      </div>
+      <div class="option">
+        <h3>B · Feuille qui monte sur la Carte</h3>
+        <p>Toucher un secteur fait monter une feuille aux trois quarts de l'écran avec le plan. On reste « dans » la Carte.</p>
+        <p><b>Pour</b> : pas de nouvelle page. <b>Contre</b> : le plan reste plus petit, le briefing et le constat n'y trouvent pas leur place, et c'est une forme de sous-menu.</p>
+      </div>
+    </div>
+
+    <h2>Ce qui change dans les règles</h2>
+    <div class="tableau">
+      <table>
+        <thead><tr><th>Aujourd'hui</th><th>Avec la salle d'opération</th></tr></thead>
+        <tbody>
+          <tr><td>+ / − sur Repérage, Descente, Bouclage</td><td>Pions posés sur des lieux : <b>toit</b> (repérage), <b>porte du QG</b> (descente), <b>sorties</b> (bouclage).</td></tr>
+          <tr><td>Bouclage : un total</td><td>Chaque sortie a son poids de fuite ; une sortie vide laisse filer ceux qui l'empruntent.</td></tr>
+          <tr><td>Faille : un effet général</td><td>La faille désigne un lieu (la berge, les toits, les caves) et l'habitude d'un lieutenant.</td></tr>
+          <tr><td>Saisies partagées au prorata</td><td>Même partage, moins la prime d'interpellation tirée au sort par lieutenant.</td></tr>
+          <tr><td>—</td><td>Un événement par soir et par secteur, et une sortie qui se déplace après chaque soir tenu.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="bloc">
+      <h2>À trancher avant de coder</h2>
+      <ul>
+        <li>Montant de la prime d'interpellation, et part des saisies prise pour la financer.</li>
+        <li>Combien d'événements dans la pioche de chaque secteur (6 à 8 me semblent assez).</li>
+        <li>Le plan s'ouvre-t-il aussi pour un joueur qui n'engage qu'un ou deux agents, ou ceux-là gardent-ils le + et − ?</li>
+        <li>L'affiche « ARRÊTÉ » d'un lieutenant : au mur du commissariat avec les suspects d'enquête, ou dans un cadre à part ?</li>
+      </ul>
+    </div>
+    <button class="btn primaire cta" type="button" data-onglet="maquette">Essayer la maquette</button>
+  </section>
+
+  <!-- ═════════════ MAQUETTE ═════════════ -->
+  <section id="v-maquette" hidden>
+    <div class="scene-demo">
+      <div class="tel" id="tel">
+        <!-- 0 · Entrée depuis l'HP -->
+        <div class="ecran" data-e="hp">
+          <div class="op-corps" style="padding-top:22px">
+            <div class="faux-hp">
+              <span class="kicker">HP · aujourd'hui</span>
+              <div class="titre-hp">Horizon</div>
+              <button class="entree" type="button" data-aller="briefing">
+                <span class="ico" aria-hidden="true">🚨</span>
+                <span class="t"><b>Opération Les Glacis</b><span>3 zones y vont · livraison ce soir · plan à faire</span></span>
+                <span class="chev" aria-hidden="true">›</span>
+              </button>
+              <div class="fantomes" aria-hidden="true"><div></div><div></div><div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1 · Briefing -->
+        <div class="ecran" data-e="briefing" hidden>
+          <div class="op-haut"><button class="op-x" type="button" data-aller="hp" aria-label="Fermer">✕</button>
+            <div class="op-titre"><b>Briefing</b><span>Les Glacis · ce soir 20:00</span></div><div class="pas"><i class="on"></i><i></i><i></i></div></div>
+          <div class="op-corps">
+            <div class="carte-secteur">
+              <span class="kicker">Point de deal · tenu par Sifflet</span>
+              <h2>Les Glacis</h2>
+              <div class="emprise"><span>Emprise</span><span class="jauge"><i style="width:62%"></i></span><span>62</span></div>
+            </div>
+            <div class="cesoir">
+              <span class="kicker">Ce soir</span>
+              <div class="evt neuf"><span class="ico" aria-hidden="true">📦</span><div><b>Livraison au parking<span class="badge">ce soir</span></b><span>Une camionnette décharge vers 21 h. Tenir le parking saisit la marchandise.</span></div></div>
+              <div class="evt neuf"><span class="ico" aria-hidden="true">🧱</span><div><b>La ruelle est murée<span class="badge">nouveau</span></b><span>Hier, Corentin la tenait. Ils ont ouvert un passage par les caves, juste à côté.</span></div></div>
+            </div>
+            <span class="kicker">Les lieutenants · 2 habitudes connues sur 5</span>
+            <div class="lieutenants" id="lts"></div>
+            <span class="kicker">Qui y va</span>
+            <div class="qui"><span class="av">KA</span><span class="av">LE</span><span class="av">CO</span><span>Kassim, Léa et Corentin sont annoncés à la radio.</span></div>
+          </div>
+          <div class="op-bas"><button class="btn primaire" type="button" data-aller="plan">Préparer le plan</button></div>
+        </div>
+
+        <!-- 2 · Le plan -->
+        <div class="ecran" data-e="plan" hidden>
+          <div class="op-haut"><button class="op-x" type="button" data-aller="briefing" aria-label="Retour au briefing">‹</button>
+            <div class="op-titre"><b>Le plan</b><span>Glisse tes agents sur les lieux</span></div><div class="pas"><i class="on"></i><i class="on"></i><i></i></div></div>
+          <div class="plan" id="plan">
+            <svg id="scene" viewBox="200 10 440 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true"></svg>
+            <div class="prono" id="prono"></div>
+            <div id="points"></div>
+            <div class="bulle" id="bulle"></div>
+          </div>
+          <div class="plateau">
+            <div class="ligne"><b>Tes agents</b><span id="compte">6 à placer</span></div>
+            <div class="reserve" id="reserve"></div>
+            <div class="raccourcis">
+              <button class="btn fin" type="button" id="hier">Comme hier</button>
+              <button class="btn fin" type="button" id="auto">Placer pour moi</button>
+              <button class="btn fin primaire" type="button" data-aller="envoi">Suivant</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3 · Envoi -->
+        <div class="ecran" data-e="envoi" hidden>
+          <div class="op-haut"><button class="op-x" type="button" data-aller="plan" aria-label="Retour au plan">‹</button>
+            <div class="op-titre"><b>Envoi</b><span>Modifiable jusqu'à 20:00</span></div><div class="pas"><i class="on"></i><i class="on"></i><i class="on"></i></div></div>
+          <div class="op-corps" id="envoi-corps"></div>
+          <div class="op-bas" id="envoi-bas"></div>
+        </div>
+
+        <!-- 4 · Constat du lendemain -->
+        <div class="ecran" data-e="constat" hidden>
+          <div class="op-haut"><button class="op-x" type="button" data-aller="hp" aria-label="Fermer">✕</button>
+            <div class="op-titre"><b>Constat de la nuit</b><span>Les Glacis · mardi 13 octobre</span></div></div>
+          <div class="op-corps" id="constat-corps"></div>
+          <div class="op-bas" id="constat-bas"></div>
+        </div>
+      </div>
+
+      <div class="legende-demo">
+        <span class="kicker">Mode d'emploi de la maquette</span>
+        <ol>
+          <li>Touche la ligne « Opération Les Glacis » de l'HP.</li>
+          <li>Lis le briefing : la livraison au parking et la ruelle murée sont les deux nouveautés du soir.</li>
+          <li>Glisse tes pions sur les lieux, ou touche un pion puis un lieu. Pour reprendre un pion, glisse-le vers le bas. Essaie « Comme hier » : le plan d'hier avait un agent dans la ruelle, qui est murée.</li>
+          <li>Envoie, puis ouvre le constat du lendemain et retourne les fiches des lieutenants.</li>
+        </ol>
+        <p class="kicker" style="margin-top:6px">Chiffres de démonstration</p>
+        <p style="color:var(--text2);font-size:14px">Les pourcentages, primes et tirages ne sont pas encore équilibrés : il faudra les régler par simulation avant toute mise en ligne.</p>
+        <button class="btn" type="button" id="recommencer">Recommencer la maquette</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  // ───── Onglets ─────
+  const montrer = (o) => {
+    document.getElementById('v-concept').hidden = o !== 'concept';
+    document.getElementById('v-maquette').hidden = o !== 'maquette';
+    document.querySelectorAll('[role="tab"]').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.onglet === o)));
+    if (o === 'maquette') { rendrePlan(); }
+  };
+  document.querySelectorAll('[data-onglet]').forEach((b) => b.addEventListener('click', () => { montrer(b.dataset.onglet); window.scrollTo({ top: 0 }); }));
+
+  // ───── Portraits simples de lieutenants (silhouettes, une couleur par personnage) ─────
+  const portrait = (c, cap) => `<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="19" r="9" fill="${c}"/><path d="M8 46c2-10 9-15 16-15s14 5 16 15z" fill="${c}" opacity=".85"/>${cap ? `<path d="M14 15c2-7 18-7 20 0z" fill="#11152A"/>` : ''}</svg>`;
+  const LTS = [
+    { nom: 'Sifflet', role: 'chef du secteur', hab: 'fuit par l\'eau', connu: true, c: '#C98A5B', cap: true, sortie: 'berge' },
+    { nom: 'La Fouine', role: 'guetteuse', hab: 'connue : passe par les caves', connu: true, c: '#8C7BD6', sortie: 'caves' },
+    { nom: 'Mo Vélo', role: 'livreur', hab: 'habitude inconnue', c: '#5BA88F', cap: true, sortie: 'parking' },
+    { nom: 'Grand Teddy', role: 'gros bras', hab: 'habitude inconnue', c: '#B86A6A', sortie: 'porte' },
+    { nom: 'Bibi', role: 'comptable', hab: 'habitude inconnue', c: '#6F8FC9', sortie: 'parking' },
+  ];
+  document.getElementById('lts').innerHTML = LTS.map((l) => `<div class="lt ${l.connu ? 'connu' : ''}">${portrait(l.c, l.cap)}<b>${l.nom}</b><span>${l.connu ? l.hab.replace('connue : ', '') : l.role}</span></div>`).join('');
+
+  // ───── Navigation entre écrans du téléphone ─────
+  let envoye = false;
+  const aller = (e) => {
+    document.querySelectorAll('#tel .ecran').forEach((x) => { x.hidden = x.dataset.e !== e; });
+    if (e === 'plan') rendrePlan();
+    if (e === 'envoi') rendreEnvoi();
+    if (e === 'constat') rendreConstat();
+    if (e === 'hp') rendreHp();
+  };
+  document.getElementById('tel').addEventListener('click', (ev) => { const b = ev.target.closest('[data-aller]'); if (b) aller(b.dataset.aller); });
+
+  // ───── Le secteur en demi-vue ─────
+  const S = 34, OX = 400, OY = 96;
+  const P = (x, y, z = 0) => [OX + (x - y) * 0.866 * S, OY + (x + y) * 0.5 * S - z];
+  const pts = (arr) => arr.map(([x, y, z]) => P(x, y, z).map((v) => v.toFixed(1)).join(',')).join(' ');
+  function dessinerScene() {
+    let h = `<defs><radialGradient id="lueur" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FF5A3C" stop-opacity=".45"/><stop offset="1" stop-color="#FF5A3C" stop-opacity="0"/></radialGradient>
+      <marker id="fl" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#FF6E6A"/></marker></defs>`;
+    h += `<polygon points="${pts([[10, -1, 0], [12.5, -1, 0], [12.5, 12, 0], [10, 12, 0]])}" fill="#0E2550" stroke="#3E6BB0" stroke-opacity=".5"/>`;
+    h += `<polygon points="${pts([[0, 0, 0], [10, 0, 0], [10, 10, 0], [0, 10, 0]])}" fill="#2A1418" stroke="#5A2A30"/>`;
+    const rue = (a, c = '#171B33') => { h += `<polygon points="${pts(a)}" fill="${c}" stroke="#262C4F" stroke-width=".8"/>`; };
+    rue([[4.6, 0, 0], [5.4, 0, 0], [5.4, 4, 0], [4.6, 4, 0]]);
+    rue([[6.5, 4.8, 0], [10, 4.8, 0], [10, 5.6, 0], [6.5, 5.6, 0]]);
+    rue([[5.6, 6.5, 0], [6.4, 6.5, 0], [6.4, 10, 0], [5.6, 10, 0]]);
+    rue([[2.4, 0, 0], [3.0, 0, 0], [3.0, 4, 0], [2.4, 4, 0]], '#1B1A2E');
+    // mur de la ruelle
+    h += `<polygon points="${pts([[4.6, 0.9, 0], [5.4, 0.9, 0], [5.4, 0.9, 16], [4.6, 0.9, 16]])}" fill="#6B5B52"/>`;
+    h += `<polygon points="${pts([[4.6, 8.2, 0], [7.6, 8.2, 0], [7.6, 10, 0], [4.6, 10, 0]])}" fill="#1D2240" stroke="#2F3760"/>`;
+    const caisse = (x, y, c, hz = 10) => { h += `<polygon points="${pts([[x, y, hz], [x + .7, y, hz], [x + .7, y + 1.1, hz], [x, y + 1.1, hz]])}" fill="${c}"/><polygon points="${pts([[x + .7, y, 0], [x + .7, y + 1.1, 0], [x + .7, y + 1.1, hz], [x + .7, y, hz]])}" fill="#11152A"/><polygon points="${pts([[x, y + 1.1, 0], [x + .7, y + 1.1, 0], [x + .7, y + 1.1, hz], [x, y + 1.1, hz]])}" fill="#1A1F3A"/>`; };
+    caisse(5.0, 8.5, '#E8E4D6', 16); caisse(6.6, 8.6, '#3E8E7E', 7);
+    const fen = (x0, y0, x1, y1, hz, coul, sens) => { let s = ''; for (let z = 14; z < hz - 8; z += 14) for (let t = 0.25; t < 0.95; t += 0.32) { if (((x0 * 7 + y0 * 3 + z + t * 10) | 0) % 3 === 0) continue; const [x, y] = sens === 'e' ? [x1, y0 + (y1 - y0) * t] : [x0 + (x1 - x0) * t, y1]; const p = P(x, y, z); s += `<rect x="${(p[0] - 2).toFixed(1)}" y="${(p[1] - 4).toFixed(1)}" width="4" height="5" fill="${coul}" opacity=".85"/>`; } return s; };
+    const boite = (x0, y0, x1, y1, hz, c, f = '#F7C76A') => {
+      h += `<polygon points="${pts([[x1, y0, 0], [x1, y1, 0], [x1, y1, hz], [x1, y0, hz]])}" fill="${c[1]}"/><polygon points="${pts([[x0, y1, 0], [x1, y1, 0], [x1, y1, hz], [x0, y1, hz]])}" fill="${c[2]}"/><polygon points="${pts([[x0, y0, hz], [x1, y0, hz], [x1, y1, hz], [x0, y1, hz]])}" fill="${c[0]}"/>${fen(x0, y0, x1, y1, hz, f, 'e')}${fen(x0, y0, x1, y1, hz, f, 's')}`;
+    };
+    const BLEU = ['#3A4880', '#252F5C', '#1C2449'], BRIQUE = ['#5A3A44', '#3D2730', '#2E1D24'];
+    boite(0.4, 0.4, 2.1, 2.4, 60, BLEU); boite(3.3, 0.5, 4.4, 2.2, 48, BRIQUE); boite(5.8, 0.4, 7.6, 2.0, 56, BLEU);
+    boite(8.0, 0.5, 9.6, 2.6, 80, BLEU); boite(0.5, 2.4, 2.8, 4.1, 36, BRIQUE); boite(7.0, 2.6, 9.6, 4.3, 50, BRIQUE);
+    boite(1.0, 5.4, 2.6, 7.0, 118, BLEU);
+    const g = P(5.3, 5.3); h += `<ellipse cx="${g[0]}" cy="${g[1]}" rx="120" ry="64" fill="url(#lueur)"/>`;
+    boite(4.0, 4.0, 6.4, 6.4, 112, ['#2B2335', '#1C1626', '#150F1C'], '#FF6E58');
+    const po = P(5.2, 6.4); h += `<rect x="${po[0] - 7}" y="${po[1] - 20}" width="14" height="20" fill="#FF8A4C" opacity=".9"/>`;
+    boite(7.0, 6.2, 9.6, 7.8, 46, BRIQUE); boite(0.6, 7.8, 2.4, 9.6, 50, BRIQUE); boite(2.9, 7.6, 4.2, 9.4, 36, BRIQUE); boite(8.0, 8.2, 9.6, 9.7, 58, BLEU);
+    const bq = P(10.7, 5.3); h += `<g><ellipse cx="${bq[0]}" cy="${bq[1]}" rx="15" ry="5" fill="#5B3A22"/><ellipse cx="${bq[0]}" cy="${bq[1] - 2}" rx="11" ry="3" fill="#7A5232"/></g>`;
+    h += `<g id="fleches"></g>`;
+    return h;
+  }
+  document.getElementById('scene').innerHTML = dessinerScene();
+
+  // ───── Lieux, pions et règles de la démo ─────
+  const VB = { x: 200, y: 10, w: 440, h: 560 };
+  const LIEUX = [
+    { id: 'toit', court: 'Toit', role: 'reperage', ic: '🔭', cap: 2, xy: P(1.8, 6.2, 118), service: 'R' },
+    { id: 'porte', court: 'Porte du QG', role: 'descente', ic: '🚪', cap: 8, xy: P(5.2, 6.7, 6), service: 'I' },
+    { id: 'caves', court: 'Caves', role: 'bouclage', ic: '🕳️', cap: 2, xy: P(2.7, 0.3), service: 'P', poids: .25, neuf: true },
+    { id: 'berge', court: 'Berge', role: 'bouclage', ic: '⚓', cap: 2, xy: P(9.9, 5.2), service: 'P', poids: .3 },
+    { id: 'parking', court: 'Parking', role: 'bouclage', ic: '📦', cap: 2, xy: P(6.1, 9.4), service: 'P', poids: .25 },
+    { id: 'ruelle', court: 'Ruelle murée', role: 'bouclage', ic: '🧱', cap: 0, xy: P(5.0, 0.6), mure: true },
+  ];
+  const AUTRES = [
+    { qui: 'KA', service: 'I', ou: 'porte' }, { qui: 'KA', service: 'I', ou: 'porte' }, { qui: 'KA', service: 'I', ou: 'porte' },
+    { qui: 'LE', service: 'I', ou: 'porte' }, { qui: 'LE', service: 'I', ou: 'porte' },
+    { qui: 'CO', service: 'P', ou: 'caves' },
+  ];
+  const NOMS = { KA: 'Ananas', LE: 'Police Acad.', CO: 'Djoumap City', toi: 'Horizon' };
+  const MOI = [{ id: 'm1', s: 'R' }, { id: 'm2', s: 'R' }, { id: 'm3', s: 'I' }, { id: 'm4', s: 'I' }, { id: 'm5', s: 'P' }, { id: 'm6', s: 'P' }];
+  const NOM_S = { R: 'Recherche', I: 'Intervention', P: 'Proximité' };
+  const HIER = { m1: 'toit', m2: 'porte', m3: 'porte', m4: 'porte', m5: 'ruelle', m6: 'berge' };
+  let place = {}, choisi = null;
+
+  const lieu = (id) => LIEUX.find((l) => l.id === id);
+  const ici = (id) => [...AUTRES.filter((a) => a.ou === id), ...MOI.filter((m) => place[m.id] === id).map((m) => ({ qui: 'toi', service: m.s, id: m.id }))];
+  const val = (a, l) => (a.service === l.service ? 1 : 0.5);
+  const force = (id) => ici(id).reduce((s, a) => s + val(a, lieu(id)), 0);
+  const sorties = () => LIEUX.filter((l) => l.role === 'bouclage' && !l.mure);
+
+  function calc() {
+    const zones = new Set(AUTRES.map((a) => a.qui)); if (MOI.some((m) => place[m.id] && !lieu(place[m.id]).mure)) zones.add('toi');
+    const rep = force('toit'), repere = rep >= 2;
+    const f = force('porte') * 9 * (1 + 0.2 * (zones.size - 1)) * (repere ? 1.25 : 1);
+    const chance = Math.max(5, Math.min(95, Math.round(100 * f / (62 * 2.4))));
+    const so = sorties().map((l) => ({ l, ferme: Math.min(1, force(l.id) / 2) }));
+    // Chaque lieutenant prend sa sortie habituelle ; si elle est tenue, il est pris (proportion de fermeture).
+    const fuient = LTS.filter((t) => t.sortie !== 'porte').reduce((s, t) => s + (1 - so.find((x) => x.l.id === t.sortie).ferme), 0);
+    return { zones, rep, repere, chance, so, fuient: Math.round(fuient), livraison: force('parking') >= 1 };
+  }
+  const cls = (v, a, b) => (v >= a ? 'bon' : v >= b ? 'moyen' : 'mauvais');
+
+  // ───── Rendu du plan ─────
+  function rendrePlan() {
+    const r = calc();
+    // Le dessin est recadré (« slice ») : on place les points avec la même échelle que lui.
+    const pl = document.getElementById('plan'), W = pl.clientWidth || 390, H = pl.clientHeight || 480;
+    const k = Math.max(W / VB.w, H / VB.h), dx = (W - VB.w * k) / 2, dy = (H - VB.h * k) / 2;
+    const pc = (xy) => [((dx + (xy[0] - VB.x) * k) / W * 100).toFixed(2), ((dy + (xy[1] - VB.y) * k) / H * 100).toFixed(2)];
+    document.getElementById('points').innerHTML = LIEUX.map((l) => {
+      const occ = ici(l.id), [x, y] = pc(l.xy), s = r.so.find((q) => q.l.id === l.id);
+      const etat = l.mure ? 'mure' : s && s.ferme < 1 ? 'ouvert' : '';
+      const faille = r.repere && l.id === 'berge' ? 'faille' : '';
+      const n = l.mure ? '✕' : l.role === 'descente' ? occ.length : `${occ.length}/${l.cap}`;
+      return `<button type="button" class="pt ${etat} ${faille} ${l.neuf ? 'neuf' : ''}" data-pt="${l.id}" data-role="${l.role}" style="left:${x}%;top:${y}%" aria-label="${l.court} : ${occ.length} agent(s)">
+        <span class="rond"><span class="ic" aria-hidden="true">${l.ic}</span><span class="n">${n}</span></span>
+        <span class="lbl">${l.court}</span>
+        <span class="mini">${occ.map((a) => `<i class="${a.qui === 'toi' ? 'moi' : 'autre'}">${a.qui === 'toi' ? a.service : a.qui}</i>`).join('')}</span></button>`;
+    }).join('');
+    document.getElementById('reserve').innerHTML = MOI.filter((m) => !place[m.id]).map((m) => `<button type="button" class="pion ${choisi === m.id ? 'choisi' : ''}" data-id="${m.id}" aria-label="Agent ${NOM_S[m.s]}">${m.s}<small>${NOM_S[m.s].slice(0, 5)}.</small></button>`).join('');
+    const reste = MOI.filter((m) => !place[m.id]).length;
+    document.getElementById('compte').textContent = reste ? `${reste} à placer` : 'tous placés';
+    document.getElementById('prono').innerHTML = `<span>Descente <b class="${cls(r.chance, 65, 40)}">${r.chance} %</b></span><span>Zones <b>${r.zones.size}</b> · +${(r.zones.size - 1) * 20} %</span><span>Fuite <b class="${cls(5 - r.fuient, 4, 2)}">${r.fuient}/5</b></span>`;
+    const murs = MOI.filter((m) => place[m.id] === 'ruelle').length;
+    const bulle = document.getElementById('bulle');
+    if (murs) { bulle.className = 'bulle r'; bulle.innerHTML = `<span aria-hidden="true">🧱</span><span><b>${murs} agent${murs > 1 ? 's' : ''} devant un mur.</b> La ruelle est murée depuis hier : glisse-${murs > 1 ? 'les' : 'le'} vers les caves.</span>`; }
+    else if (!r.repere) { bulle.className = 'bulle'; bulle.innerHTML = `<span aria-hidden="true">🔭</span><span><b>Repérage ${String(r.rep).replace('.', ',')}/2.</b> Deux Recherche sur le toit révèlent les habitudes de deux lieutenants de plus.</span>`; }
+    else if (!r.livraison) { bulle.className = 'bulle'; bulle.innerHTML = `<span aria-hidden="true">📦</span><span><b>Livraison ce soir.</b> Un agent au parking saisit la marchandise (+4 000 € à partager).</span>`; }
+    else if (r.fuient) { bulle.className = 'bulle'; bulle.innerHTML = `<span aria-hidden="true">⚓</span><span><b>Sifflet fuit par l'eau.</b> ${r.so.filter((s) => s.ferme < 1).map((s) => s.l.court).join(', ')} : encore ouvert${r.so.filter((s) => s.ferme < 1).length > 1 ? 's' : ''}.</span>`; }
+    else { bulle.className = 'bulle v'; bulle.innerHTML = '<span aria-hidden="true">✅</span><span><b>Toutes les sorties sont tenues.</b> Les fuyards tomberont sur un bouclage.</span>'; }
+    const fl = document.getElementById('fleches');
+    fl.innerHTML = r.so.filter((s) => s.ferme < 1).map((s) => { const a = P(5.2, 5.2, 10), b = s.l.xy; return `<path d="M${a[0]} ${a[1]} Q ${(a[0] + b[0]) / 2} ${(a[1] + b[1]) / 2 - 40} ${b[0]} ${b[1] - 6}" fill="none" stroke="#FF6E6A" stroke-opacity=".6" stroke-width="${(2 + (1 - s.ferme) * 4).toFixed(1)}" stroke-dasharray="6 6" marker-end="url(#fl)"/>`; }).join('');
+  }
+
+  // ───── Glisser-déposer (souris et doigt) + toucher-toucher ─────
+  let drag = null;
+  const tel = document.getElementById('tel');
+  function deposer(id, pid) {
+    if (pid) { const l = lieu(pid); if (l.mure || (l.role !== 'descente' && ici(pid).filter((a) => a.id !== id).length >= l.cap)) { secouer(pid); choisi = null; rendrePlan(); return; } place[id] = pid; }
+    else delete place[id];
+    choisi = null; rendrePlan();
+  }
+  function secouer(pid) { const el = document.querySelector(`[data-pt="${pid}"] .rond`); if (el) { el.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(5px)' }, { transform: 'translateX(0)' }], { duration: 260 }); } }
+  // Un pion déjà posé se reprend en le tirant depuis son lieu : on prend le dernier de mes pions sur ce lieu.
+  tel.addEventListener('pointerdown', (e) => {
+    const pion = e.target.closest('.pion[data-id]'); const pt = e.target.closest('.pt');
+    let id = pion ? pion.dataset.id : null;
+    if (!id && pt) { const miens = MOI.filter((m) => place[m.id] === pt.dataset.pt); if (miens.length && !choisi) id = miens[miens.length - 1].id; }
+    if (!id) return;
+    e.preventDefault();
+    drag = { id, x: e.clientX, y: e.clientY, bouge: false, depuis: pion ? 'reserve' : 'lieu', pt: pt && pt.dataset.pt };
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    if (!drag.bouge && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 7) {
+      drag.bouge = true; const m = MOI.find((x) => x.id === drag.id);
+      drag.g = Object.assign(document.createElement('div'), { className: 'pion fantome', innerHTML: `${m.s}<small>${NOM_S[m.s].slice(0, 5)}.</small>` }); document.body.appendChild(drag.g);
+    }
+    if (drag.bouge) {
+      drag.g.style.left = e.clientX + 'px'; drag.g.style.top = e.clientY + 'px';
+      document.querySelectorAll('.pt').forEach((x) => x.classList.remove('cible'));
+      const sous = document.elementFromPoint(e.clientX, e.clientY); const pt = sous && sous.closest('.pt'); if (pt) pt.classList.add('cible');
+    }
+  });
+  window.addEventListener('pointerup', (e) => {
+    if (!drag) return; const d = drag; drag = null;
+    if (d.g) d.g.remove(); document.querySelectorAll('.pt').forEach((x) => x.classList.remove('cible'));
+    if (!d.bouge) {
+      if (d.depuis === 'reserve') { choisi = choisi === d.id ? null : d.id; rendrePlan(); }
+      else if (choisi) deposer(choisi, d.pt);
+      return;
+    }
+    const sous = document.elementFromPoint(e.clientX, e.clientY); const pt = sous && sous.closest('.pt');
+    deposer(d.id, pt ? pt.dataset.pt : null);
+  });
+  window.addEventListener('pointercancel', () => { if (drag && drag.g) drag.g.remove(); drag = null; });
+  document.getElementById('points').addEventListener('click', (e) => { const pt = e.target.closest('.pt'); if (pt && choisi) deposer(choisi, pt.dataset.pt); });
+  document.getElementById('hier').addEventListener('click', () => { place = { ...HIER }; choisi = null; rendrePlan(); });
+  document.getElementById('auto').addEventListener('click', () => {
+    place = {};
+    const libre = (id) => lieu(id).cap - ici(id).length;
+    MOI.forEach((m) => { if (m.s === 'R' && libre('toit') > 0) place[m.id] = 'toit'; else if (m.s === 'I') place[m.id] = 'porte'; });
+    MOI.filter((m) => !place[m.id]).forEach((m) => { const s = sorties().filter((l) => libre(l.id) > 0).sort((a, b) => force(a.id) - force(b.id) || b.poids - a.poids)[0]; place[m.id] = s ? s.id : 'porte'; });
+    choisi = null; rendrePlan();
+  });
+
+  // ───── Envoi ─────
+  function rendreEnvoi() {
+    const r = calc(), murs = MOI.filter((m) => place[m.id] === 'ruelle').length, reste = MOI.filter((m) => !place[m.id]).length;
+    const corps = document.getElementById('envoi-corps'), bas = document.getElementById('envoi-bas');
+    if (envoye) {
+      corps.innerHTML = `<div class="ok"><b>Équipes prêtes</b><span>Ton plan part à 20:00. Kassim, Léa et Corentin voient tes pions sur leur plan.</span></div>
+        <div class="rl"><span>Sur l'HP</span><span class="v bon">Opération Les Glacis · plan prêt ✓</span></div>
+        <p style="font-size:13px;color:var(--muted)">Pour la démo, on passe directement au lendemain matin.</p>`;
+      bas.innerHTML = '<button class="btn" type="button" data-aller="plan">Modifier</button><button class="btn primaire" type="button" data-aller="constat">Voir le constat de demain</button>';
+      return;
+    }
+    corps.innerHTML = `<div class="resume">
+        <div class="rl"><span>Descente qui fait tomber l'emprise</span><span class="v ${cls(r.chance, 65, 40)}">${r.chance} %</span></div>
+        <div class="rl"><span>Faille</span><span class="v ${r.repere ? 'bon' : 'mauvais'}">${r.repere ? 'repérée · 4 habitudes' : 'pas repérée'}</span></div>
+        <div class="rl"><span>Lieutenants qui risquent de filer</span><span class="v ${cls(5 - r.fuient, 4, 2)}">${r.fuient} sur 5</span></div>
+        <div class="rl"><span>Livraison du parking</span><span class="v ${r.livraison ? 'bon' : 'mauvais'}">${r.livraison ? 'tenue' : 'personne'}</span></div>
+        <div class="rl"><span>Tes agents engagés</span><span class="v">${6 - reste - murs} / 6</span></div>
+      </div>
+      ${murs ? `<div class="bulle r" style="position:static">🧱 <span><b>${murs} agent${murs > 1 ? 's' : ''} devant la ruelle murée</b> ne servira${murs > 1 ? 'ont' : ''} à rien.</span></div>` : ''}
+      ${r.zones.size === 1 ? '<div class="bulle r" style="position:static">⚠️ <span><b>Seul sur le secteur :</b> blessés possibles.</span></div>' : ''}
+      <label class="interrupteur" for="radio-auto"><span>Prévenir la radio (tes pions s'affichent chez les autres)</span><input type="checkbox" id="radio-auto" checked></label>`;
+    bas.innerHTML = '<button class="btn" type="button" data-aller="plan">Retour</button><button class="btn primaire" type="button" id="envoyer">Envoyer les équipes</button>';
+    document.getElementById('envoyer').addEventListener('click', () => { envoye = true; rendreEnvoi(); });
+  }
+
+  // ───── Constat et tirage au sort ─────
+  let tirage = null, revele = 0;
+  function preparerTirage() {
+    const r = calc(), ok = r.chance >= 50;
+    // Déterministe pour la démo : un lieutenant est pris si sa sortie est tenue à au moins 50 % (ou à la porte si la descente passe).
+    let graine = Object.values(place).join('').length * 7 + 3;
+    const hasard = () => { graine = (graine * 9301 + 49297) % 233280; return graine / 233280; };
+    return LTS.map((t) => {
+      const ou = t.sortie === 'porte' ? 'porte' : t.sortie;
+      const pris = ou === 'porte' ? ok : (r.so.find((s) => s.l.id === ou).ferme >= 0.5 && ok) || r.so.find((s) => s.l.id === ou).ferme >= 1;
+      if (!pris) return { t, ou, pris: false };
+      const poste = ici(ou); const tot = poste.reduce((s, a) => s + (a.service === lieu(ou).service ? 2 : 1), 0);
+      let x = hasard() * tot, gagnant = poste[0];
+      for (const a of poste) { x -= a.service === lieu(ou).service ? 2 : 1; if (x <= 0) { gagnant = a; break; } }
+      return { t, ou, pris: true, qui: gagnant.qui, service: gagnant.service };
+    });
+  }
+  function rendreConstat() {
+    if (!tirage) { tirage = preparerTirage(); revele = 0; }
+    const r = calc(), ok = r.chance >= 50, arretes = tirage.filter((x) => x.pris).length;
+    const miens = tirage.filter((x, i) => i < revele && x.pris && x.qui === 'toi');
+    const corps = document.getElementById('constat-corps');
+    corps.innerHTML = `<div class="constat-tete"><span class="tampon">CONSTAT · 13/10 · 06:40</span><b>${ok ? 'Les Glacis sont tombés.' : 'La porte a tenu.'}</b><span>${arretes} lieutenant${arretes > 1 ? 's' : ''} sur 5 arrêté${arretes > 1 ? 's' : ''}${r.livraison ? ' · la livraison du parking est saisie' : ''}.</span></div>
+      <div class="mini-carte"><svg viewBox="200 10 440 560" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${document.getElementById('scene').innerHTML.replace('<g id="fleches">', '<g>')}${tirage.filter((x) => !x.pris).map((x) => { const a = P(5.2, 5.2, 10), b = lieu(x.ou).xy; return `<path d="M${a[0]} ${a[1]} Q ${(a[0] + b[0]) / 2} ${(a[1] + b[1]) / 2 - 40} ${b[0]} ${b[1] - 6}" fill="none" stroke="#FF6E6A" stroke-width="5" marker-end="url(#fl)"/>`; }).join('')}</svg></div>
+      <span class="kicker">Qui a passé les menottes · tirage au sort</span>
+      <div class="tirage">${tirage.map((x, i) => {
+        const vu = i < revele;
+        const res = !vu ? '<span class="res attente">à retourner</span>' : !x.pris ? `<span class="res fuite">en fuite · ${lieu(x.ou).court.toLowerCase()}</span>` : x.qui === 'toi' ? `<span class="res moi">TON agent ${x.service}</span>` : `<span class="res autre">${NOMS[x.qui]}</span>`;
+        return `<div class="fiche ${vu && x.pris && x.qui === 'toi' ? 'gagne' : ''} ${i === revele - 1 ? 'tourne' : ''}">${portrait(x.t.c, x.t.cap)}<div class="t"><b>${x.t.nom}</b><span>${x.t.role} · ${x.ou === 'porte' ? 'pris à la porte' : 'sortie : ' + lieu(x.ou).court.toLowerCase()}</span></div>${res}</div>`;
+      }).join('')}</div>
+      ${revele >= tirage.length ? (miens.length ? `<div class="recompense"><div class="affiche">ARRÊTÉ${portrait(miens[0].t.c, miens[0].t.cap)}${miens[0].t.nom.toUpperCase()}</div><div><b>Prime d'interpellation : ${(miens.length * 1500).toLocaleString('fr-BE')} €</b><span>${miens.map((m) => m.t.nom).join(' et ')} ${miens.length > 1 ? 'rejoignent' : 'rejoint'} le mur de ton commissariat · +${miens.length * 3} points de jauge de skin.</span></div></div>` : '<div class="bulle" style="position:static">🎲 <span><b>Pas d\'arrestation pour toi cette fois.</b> Plus tu as d\'agents du bon service au bon endroit, plus tu as de chances au tirage.</span></div>') : ''}`;
+    document.getElementById('constat-bas').innerHTML = revele < tirage.length
+      ? `<button class="btn primaire" type="button" id="retourner">Retourner la fiche suivante</button>`
+      : '<button class="btn" type="button" id="refaire">Rejouer la soirée</button><button class="btn primaire" type="button" data-aller="hp">Fermer</button>';
+    const b = document.getElementById('retourner'); if (b) b.addEventListener('click', () => { revele += 1; rendreConstat(); });
+    const rf = document.getElementById('refaire'); if (rf) rf.addEventListener('click', () => { envoye = false; tirage = null; aller('plan'); });
+  }
+  function rendreHp() {
+    const t = document.querySelector('.entree .t span');
+    t.textContent = tirage && revele >= LTS.length ? 'Constat lu · prochaine opération ce soir' : envoye ? '3 zones y vont · plan prêt ✓' : '3 zones y vont · livraison ce soir · plan à faire';
+  }
+  window.addEventListener('resize', () => { if (!document.querySelector('[data-e="plan"]').hidden) rendrePlan(); });
+  document.getElementById('recommencer').addEventListener('click', () => { place = {}; choisi = null; envoye = false; tirage = null; revele = 0; aller('hp'); });
+})();
+</script>
