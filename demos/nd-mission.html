@@ -1,0 +1,504 @@
+<title>Mission Mo Vélo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Prototype jouable : une mission d'interception de la zone de non-droit (Ma ZP). Monde sombre unique, celui du jeu.
+   Mise en page : le plateau 6×6 vu de dessus, tes policiers en dessous, la prévision à côté (PC) ou sous le plateau (téléphone). */
+:root {
+  color-scheme: dark;
+  --bg: #0C1124; --bg-deep: #080C1B; --surface: #141B33; --surface2: #1C2442; --surface3: #243050;
+  --line: #29345A; --hair: rgba(190, 205, 255, .08);
+  --text: #EDF0FA; --text2: #C3C9DE; --muted: #96A0BF;
+  --amber: #FFB23F; --amber-hi: #FFC970; --amber-ink: #241400; --amber-bg: rgba(255, 178, 63, .11); --amber-line: rgba(255, 178, 63, .40);
+  --blue: #63B0FF; --green: #3DD39A; --green-bg: rgba(61, 211, 154, .12); --red: #FF6E6A; --red-bg: rgba(255, 110, 106, .10); --red-line: rgba(255, 110, 106, .45);
+  --display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --body: 'Instrument Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg-deep); color: var(--text); font: 15px/1.45 var(--body); margin: 0; }
+button { font: inherit; color: inherit; }
+.page { max-width: 1060px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 48px; display: flex; flex-direction: column; gap: 14px; }
+.kicker { font: 600 12px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(24px, 4vw, 34px)/1.05 var(--display); margin: 2px 0 0; text-wrap: balance; }
+.sous { color: var(--text2); font-size: 14px; margin: 4px 0 0; max-width: 62ch; }
+.demo { font-size: 12.5px; color: var(--amber-hi); background: var(--amber-bg); border: 1px solid var(--amber-line); border-radius: 12px; padding: 7px 12px; }
+
+.diffs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.diff { text-align: left; padding: 10px 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--hair); cursor: pointer; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.diff b { font: 700 15px var(--display); }
+.diff span { font-size: 12px; color: var(--muted); }
+.diff[aria-pressed="true"] { border-color: var(--amber); background: linear-gradient(180deg, rgba(255,178,63,.08), var(--surface) 70%); }
+.diff:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+.jeu { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
+@media (min-width: 900px) { .jeu { grid-template-columns: minmax(0, 520px) minmax(0, 1fr); } }
+.colonne { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.plateau-cadre { position: relative; width: 100%; max-width: 520px; aspect-ratio: 1; border-radius: 18px; overflow: hidden; border: 1px solid var(--hair); background: #0A0F22; touch-action: none; user-select: none; -webkit-user-select: none; }
+#plateau { width: 100%; height: 100%; display: block; }
+.puce-chance { align-self: center; max-width: 520px; font: 700 14px var(--body); padding: 7px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); text-align: center; margin-top: -4px; }
+.puce-chance.r { border-color: var(--red-line); color: #FFC9C6; }
+.reserve { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 16px; background: var(--surface); border: 1px solid var(--hair); min-height: 74px; flex-wrap: wrap; }
+.reserve .t { display: flex; flex-direction: column; min-width: 0; flex: 1 1 140px; }
+.reserve .t b { font: 700 14px var(--display); }
+.reserve .t span { font-size: 12px; color: var(--muted); }
+.pions { display: flex; gap: 6px; flex-wrap: wrap; }
+.pion { width: 54px; height: 64px; border: 0; background: none; padding: 0; cursor: grab; touch-action: none; border-radius: 12px; }
+.pion svg { width: 54px; height: 64px; display: block; filter: drop-shadow(0 3px 4px rgba(0,0,0,.5)); }
+.pion.choisi { outline: 3px solid #fff; outline-offset: 0; }
+.pion:focus-visible { outline: 3px solid var(--amber); }
+.fantome { position: fixed; z-index: 50; pointer-events: none; transform: translate(-50%, -70%) scale(1.15); }
+.fantome svg { width: 52px; height: 60px; display: block; filter: drop-shadow(0 10px 14px rgba(0,0,0,.6)); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+button.btn { font: 600 14px var(--body); border-radius: 12px; padding: 10px 14px; min-height: 44px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); cursor: pointer; }
+button.btn:hover { border-color: var(--amber-line); }
+button.btn.primaire { background: linear-gradient(160deg, var(--amber-hi), var(--amber)); color: var(--amber-ink); border-color: transparent; flex: 1 1 200px; }
+button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+button.btn:disabled { opacity: .45; cursor: default; }
+
+.carte { padding: 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--hair); display: flex; flex-direction: column; gap: 10px; }
+.carte h2 { font: 700 16px var(--display); margin: 0; }
+.grand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.grand b { font: 800 38px/1 var(--display); font-variant-numeric: tabular-nums; }
+.grand span { color: var(--text2); font-size: 14px; }
+.barre { height: 8px; border-radius: 6px; background: var(--surface3); overflow: hidden; }
+.barre i { display: block; height: 100%; border-radius: 6px; transition: width .25s; }
+.routes { display: flex; flex-direction: column; gap: 6px; }
+.rt { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto auto; gap: 8px; align-items: center; font-size: 13.5px; }
+.rt i { width: 14px; height: 14px; border-radius: 4px; }
+.rt .nom { color: var(--text2); min-width: 0; }
+.rt .pr { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12.5px; }
+.rt .ch { font: 700 14px var(--display); font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
+.rt.exclu .nom { text-decoration: line-through; color: var(--muted); }
+.detail { display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: var(--text2); border-top: 1px solid var(--hair); padding-top: 8px; }
+.detail div { display: flex; justify-content: space-between; gap: 8px; }
+.detail .v { font-variant-numeric: tabular-nums; font-weight: 600; }
+.pos { color: var(--green); } .neg { color: var(--red); }
+.alerte { font-size: 13.5px; padding: 9px 11px; border-radius: 12px; display: flex; gap: 8px; align-items: flex-start; }
+.alerte.r { background: var(--red-bg); border: 1px solid var(--red-line); color: #FFC9C6; }
+.alerte.v { background: var(--green-bg); border: 1px solid rgba(61,211,154,.35); color: #BDF1DB; }
+.alerte.a { background: var(--amber-bg); border: 1px solid var(--amber-line); color: var(--amber-hi); }
+.alerte b { color: var(--text); }
+.regles { font-size: 13.5px; color: var(--text2); }
+.regles ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 5px; }
+.regles summary { cursor: pointer; font: 700 14px var(--display); color: var(--text); }
+.score { display: flex; gap: 8px; flex-wrap: wrap; }
+.score span { font-size: 12.5px; padding: 4px 9px; border-radius: 999px; background: var(--surface2); color: var(--text2); }
+.score b { color: var(--text); font-variant-numeric: tabular-nums; }
+
+/* Résultat de 20:00 */
+.res { padding: 16px; border-radius: 16px; display: flex; flex-direction: column; gap: 10px; border: 1px solid var(--hair); }
+.res.ok { background: linear-gradient(160deg, #173A2D, #111A2E 70%); border-color: rgba(61,211,154,.35); }
+.res.ko { background: linear-gradient(160deg, #3A1A22, #111A2E 70%); border-color: var(--red-line); }
+.res .tampon { align-self: flex-start; font: 500 11px var(--mono); letter-spacing: .06em; border: 1px solid currentColor; border-radius: 6px; padding: 3px 7px; color: var(--text2); }
+.res h2 { font: 800 22px var(--display); margin: 0; }
+.de { display: flex; align-items: center; gap: 12px; }
+.de .cube { width: 58px; height: 58px; border-radius: 14px; background: #F4EFE3; color: #1D1A15; display: grid; place-items: center; font: 800 22px var(--display); font-variant-numeric: tabular-nums; box-shadow: 0 8px 16px -6px rgba(0,0,0,.7); flex: none; }
+.de .cube.roule { animation: roule .7s ease-out; }
+@keyframes roule { 0% { transform: rotate(-200deg) scale(.6); } 100% { transform: none; } }
+.de p { margin: 0; font-size: 14px; color: var(--text2); }
+.de p b { color: var(--text); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+
+<div class="page">
+  <div>
+    <div class="kicker">Zone de non-droit · Les Glacis · prototype</div>
+    <h1>Mission : intercepter Mo Vélo</h1>
+    <p class="sous">Mo Vélo, le livreur, va quitter le quartier par une des sorties. Les flèches montrent ses itinéraires possibles et leur probabilité. Place tes policiers, puis lance 20:00.</p>
+  </div>
+  <div class="demo">Prototype isolé : rien n'est relié au jeu, les chiffres viennent de la première simulation et restent à régler.</div>
+
+  <div class="diffs" role="group" aria-label="Difficulté">
+    <button class="diff" type="button" data-diff="prudent"><b>Prudent</b><span>2 agents · 2 itinéraires · 1 succès max</span></button>
+    <button class="diff" type="button" data-diff="standard"><b>Standard</b><span>3 agents · 3 itinéraires · 2 succès</span></button>
+    <button class="diff" type="button" data-diff="ambitieux"><b>Ambitieux</b><span>4 agents · 4 itinéraires · 3 succès</span></button>
+  </div>
+
+  <div class="jeu">
+    <div class="colonne">
+      <div class="plateau-cadre" id="cadre"><svg id="plateau" viewBox="0 0 600 600" aria-label="Plateau de la mission"></svg></div>
+      <span class="puce-chance" id="puce" aria-live="polite"></span>
+      <div class="reserve" id="reserve-bloc">
+        <div class="t"><b>Tes policiers</b><span id="reserve-aide">Glisse-les sur une rue, ou touche un policier puis une case.</span></div>
+        <div class="pions" id="reserve"></div>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" id="auto">Placer pour moi</button>
+        <button class="btn" type="button" id="vider">Tout reprendre</button>
+        <button class="btn primaire" type="button" id="lancer">Lancer 20:00</button>
+      </div>
+    </div>
+    <div class="colonne" id="droite"></div>
+  </div>
+</div>
+
+<script>
+// Prototype « mission d'interception » de la zone de non-droit. Rien n'est branché au jeu.
+// Un module unique, utilisé par la simulation (simulation.mjs) et par la démo jouable (copié dans la page).
+//
+// Version 2 (après la première simulation, beaucoup trop facile) :
+// - moins d'agents que d'itinéraires à couvrir : il faut choisir ;
+// - un guetteur qui voit un agent donne l'alerte : le lieutenant change d'itinéraire pour le moins gardé ;
+// - la Recherche ne voit plus que les cases voisines (rayon 1) ;
+// - réussite partielle seulement si le lieutenant a bien croisé un agent sans alerte.
+
+const MODELES = [
+  ['E..#.E', '.#....', '.#L.#.', '...##.', '#.....', 'E.#..E'],
+  ['E.#..E', '..#.#.', '.L....', '.##.#.', '......', 'E#..#E'],
+  ['E...#E', '.##...', '...L#.', '.#....', '.#.##.', 'E....E'],
+];
+const DIFF = {
+  // Prudent : 2 agents, terrain connu (+15), fiable mais plafonné. Ambitieux : 4 agents, pas de lot de consolation.
+  prudent: { nom: 'Prudent', routes: 2, guetteurs: 1, succes: 1, partiel: 0, bonus: 15, arrestation: false, priors: [0.6, 0.4], pions: ['R', 'P'] },
+  standard: { nom: 'Standard', routes: 3, guetteurs: 1, succes: 2, partiel: 1, bonus: 0, arrestation: true, priors: [0.45, 0.33, 0.22], pions: ['R', 'I', 'P'] },
+  ambitieux: { nom: 'Ambitieux', routes: 4, guetteurs: 2, succes: 3, partiel: 0, bonus: 0, arrestation: true, priors: [0.35, 0.28, 0.22, 0.15], pions: ['R', 'I', 'P', 'P'] },
+};
+const REGLE = { base: 40, formation: 5, bonService: 10, double: 15, repere: 10, min: 15, max: 85, vueRecherche: 1, vueGuetteur: 2 };
+
+/** Les pions d'une difficulté : identifiants stables (r, i, p1, p2). */
+function pions(difficulte) {
+  let np = 0;
+  return DIFF[difficulte].pions.map((s) => ({ id: s === 'P' ? `p${++np}` : s.toLowerCase(), s }));
+}
+
+// Hasard reproductible
+function graine(n) { let s = n >>> 0 || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+
+const k = (x, y) => `${x},${y}`;
+const DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+/** Fabrique un plateau : modèle, miroirs, itinéraires (plus court chemin vers chaque sortie), guetteurs, itinéraire réel. */
+function plateau(difficulte, rnd) {
+  const d = DIFF[difficulte];
+  let lignes = MODELES[Math.floor(rnd() * MODELES.length)].map((l) => l.split(''));
+  if (rnd() < 0.5) lignes = lignes.map((l) => l.slice().reverse());
+  if (rnd() < 0.5) lignes = lignes.slice().reverse();
+  const N = 6, rue = (x, y) => x >= 0 && y >= 0 && x < N && y < N && lignes[y][x] !== '#';
+  let L = null; const sorties = [];
+  lignes.forEach((l, y) => l.forEach((c, x) => { if (c === 'L') L = [x, y]; if (c === 'E') sorties.push([x, y]); }));
+  const chemin = (but) => {
+    const prev = new Map([[k(...L), null]]), file = [L];
+    while (file.length) {
+      const [x, y] = file.shift();
+      if (x === but[0] && y === but[1]) break;
+      for (const [dx, dy] of DIRS) { const nx = x + dx, ny = y + dy; if (rue(nx, ny) && !prev.has(k(nx, ny))) { prev.set(k(nx, ny), [x, y]); file.push([nx, ny]); } }
+    }
+    if (!prev.has(k(...but))) return null;
+    const c = []; let p = but; while (p) { c.unshift(p); p = prev.get(k(...p)); }
+    return c;
+  };
+  let routes = sorties.map((s) => chemin(s)).filter(Boolean);
+  routes = routes.map((r) => [rnd(), r]).sort((a, b) => a[0] - b[0]).map(([, r]) => r).slice(0, d.routes);
+  const priors = d.priors.slice();
+  let u = rnd(), vrai = priors.length - 1;
+  for (let i = 0; i < priors.length; i++) { u -= priors[i]; if (u <= 0) { vrai = i; break; } }
+  const surRoute = new Set(routes.flat().map((c) => k(...c)));
+  const libres = [];
+  lignes.forEach((l, y) => l.forEach((c, x) => { if (c === '.' && !surRoute.has(k(x, y))) libres.push([x, y]); }));
+  const guetteurs = [];
+  for (const g of libres.map((g) => [rnd(), g]).sort((a, b) => a[0] - b[0]).map(([, g]) => g)) {
+    if (guetteurs.length >= d.guetteurs) break;
+    if (guetteurs.some((h) => Math.abs(h[0] - g[0]) + Math.abs(h[1] - g[1]) < 3)) continue;
+    if ([...vueGuetteur(g, rue)].some((c) => surRoute.has(c))) guetteurs.push(g);
+  }
+  return { lignes, L, sorties, routes, priors, vrai, guetteurs, difficulte, rue, pions: pions(difficulte) };
+}
+
+/** Cases vues par un guetteur : en ligne droite, jusqu'à 2 cases, arrêtées par les bâtiments. */
+function vueGuetteur(g, rue) {
+  const v = new Set();
+  for (const [dx, dy] of DIRS) for (let i = 1; i <= REGLE.vueGuetteur; i++) { const x = g[0] + dx * i, y = g[1] + dy * i; if (!rue(x, y)) break; v.add(k(x, y)); }
+  return v;
+}
+
+const memo = new WeakMap();
+function caches(P) {
+  let m = memo.get(P);
+  if (!m) { m = { routes: P.routes.map((r) => new Set(r.slice(1).map((c) => k(...c)))), vues: P.guetteurs.map((g) => vueGuetteur(g, P.rue)) }; memo.set(P, m); }
+  return m;
+}
+
+/** Ce que voit un agent Recherche posé en `pos` : sur chaque case voisine d'itinéraire, traces fraîches ou non. */
+function revele(P, pos) {
+  const vues = new Map();
+  if (pos) {
+    const vrai = new Set(P.routes[P.vrai].map((c) => k(...c)));
+    for (const r of P.routes) for (const c of r) {
+      if (Math.abs(c[0] - pos[0]) + Math.abs(c[1] - pos[1]) <= REGLE.vueRecherche && !(c[0] === P.L[0] && c[1] === P.L[1])) vues.set(k(...c), vrai.has(k(...c)));
+    }
+  }
+  const compatibles = P.routes.map((r, i) => i).filter((i) => {
+    const s = new Set(P.routes[i].map((c) => k(...c)));
+    for (const [c, frais] of vues) if (s.has(c) !== frais) return false;
+    return true;
+  });
+  return { vues, compatibles };
+}
+
+/** Probabilités des itinéraires, compte tenu de ce que la Recherche a vu. */
+function posterieur(P, rev) {
+  const tot = rev.compatibles.reduce((s, i) => s + P.priors[i], 0);
+  return P.routes.map((_, i) => (rev.compatibles.includes(i) ? P.priors[i] / tot : 0));
+}
+
+/** Guetteurs neutralisés : un Intervention sur une case voisine. */
+function neutralises(P, place) {
+  const i = place.i;
+  return P.guetteurs.map((g) => !!i && Math.abs(g[0] - i[0]) + Math.abs(g[1] - i[1]) === 1);
+}
+
+/** Agents vus par un guetteur encore actif (ils donnent l'alerte). */
+function reperes(P, place) {
+  const C = caches(P), neut = neutralises(P, place), vus = new Set();
+  C.vues.forEach((v, j) => { if (!neut[j]) v.forEach((c) => vus.add(c)); });
+  return P.pions.filter((p) => place[p.id] && vus.has(k(...place[p.id]))).map((p) => p.id);
+}
+
+const surRoute = (P, place, r) => { const s = caches(P).routes[r]; return P.pions.filter((p) => place[p.id] && s.has(k(...place[p.id]))); };
+
+/** En cas d'alerte, le lieutenant prend l'itinéraire le moins gardé (à égalité, le plus probable). */
+function routeAlerte(P, place) {
+  return P.routes.map((_, r) => r).sort((a, b) => surRoute(P, place, a).length - surRoute(P, place, b).length || P.priors[b] - P.priors[a])[0];
+}
+
+/** Chance (0-100) d'intercepter si le lieutenant passe par l'itinéraire r, avec le détail. */
+function chanceRoute(P, place, r, rev) {
+  const dessus = surRoute(P, place, r);
+  if (!dessus.length) return { p: 0, detail: [], dessus };
+  const detail = [['Base', REGLE.base], ['Formation de ta zone', REGLE.formation]];
+  if (DIFF[P.difficulte].bonus) detail.push(['Terrain connu (prudent)', DIFF[P.difficulte].bonus]);
+  if (dessus.some((p) => p.s === 'P')) detail.push(['Proximité sur l\'itinéraire', REGLE.bonService]);
+  if (dessus.length >= 2) detail.push(['Deux agents sur l\'itinéraire', REGLE.double]);
+  if (rev && rev.vues.size && dessus.some((p) => p.id !== 'r' && rev.vues.has(k(...place[p.id])))) detail.push(['Case vue par la Recherche', REGLE.repere]);
+  const brut = detail.reduce((s, [, v]) => s + v, 0);
+  return { p: Math.max(REGLE.min, Math.min(REGLE.max, brut)), detail, dessus };
+}
+
+/** Ce qu'on peut prévoir avant 20:00 : alerte, itinéraires possibles, chances, succès attendus. */
+function prevision(P, place) {
+  const rev = revele(P, place.r), d = DIFF[P.difficulte];
+  const alerte = reperes(P, place);
+  const post = posterieur(P, rev);
+  const parRoute = P.routes.map((_, r) => chanceRoute(P, place, r, rev));
+  const valeur = (c, sansAlerte) => c.p / 100 * d.succes + (c.dessus.length && sansAlerte ? (1 - c.p / 100) * d.partiel : 0);
+  let esperance, chance;
+  if (alerte.length) { const r = routeAlerte(P, place); chance = parRoute[r].p; esperance = valeur(parRoute[r], false); }
+  else { chance = parRoute.reduce((s, c, r) => s + post[r] * c.p, 0); esperance = parRoute.reduce((s, c, r) => s + post[r] * valeur(c, true), 0); }
+  return { rev, alerte, post, parRoute, chance, esperance };
+}
+function esperance(P, place) { return prevision(P, place).esperance; }
+
+/** Résolution à « 20:00 » : un seul dé pour l'action d'interception. */
+function resoudre(P, place, de) {
+  const pr = prevision(P, place), d = DIFF[P.difficulte];
+  const route = pr.alerte.length ? routeAlerte(P, place) : P.vrai;
+  const c = pr.parRoute[route];
+  const reussi = c.dessus.length > 0 && de < c.p;
+  const succes = reussi ? d.succes : c.dessus.length && !pr.alerte.length ? d.partiel : 0;
+  return { chance: c.p, de: Math.floor(de), reussi, couvert: c.dessus.length > 0, succes, arrestation: reussi && d.arrestation, detail: c.detail, route, alerte: pr.alerte, prevu: P.vrai };
+}
+
+
+
+
+(() => {
+  // ───── Le petit policier ─────
+  const SERV = { R: { nom: 'Recherche', c: '#63B0FF' }, I: { nom: 'Intervention', c: '#FF6E6A' }, P: { nom: 'Proximité', c: '#3DD39A' } };
+  let nF = 0;
+  const flic = (s, opts = {}) => {
+    const id = 'dam' + (nF++);
+    return `<svg viewBox="0 0 40 48" aria-hidden="true" ${opts.attrs || ''}><defs><pattern id="${id}" width="3" height="2" patternUnits="userSpaceOnUse"><rect width="1.5" height="2" fill="#F2F4FA"/><rect x="1.5" width="1.5" height="2" fill="#2B4A9A"/></pattern></defs>
+      <ellipse cx="20" cy="43.5" rx="14" ry="4" fill="#FFB23F"/>
+      <path d="M10 42c0-9 4-14 10-14s10 5 10 14z" fill="#1E3570"/>
+      <path d="M17 28.5l3 4 3-4" fill="none" stroke="#DCE4FF" stroke-width="1.2"/>
+      <rect x="10.5" y="36.5" width="19" height="2.4" rx="1" fill="#0E1430"/>
+      <rect x="10.2" y="31" width="3.6" height="3.4" rx=".8" fill="${SERV[s].c}"/>
+      <circle cx="24.5" cy="32.5" r="1.4" fill="#FFC970"/>
+      <circle cx="20" cy="21" r="6.6" fill="#F0C7A2"/>
+      <circle cx="17.7" cy="21.6" r=".8" fill="#2A1F17"/><circle cx="22.3" cy="21.6" r=".8" fill="#2A1F17"/>
+      <path d="M18 24.4q2 1.2 4 0" fill="none" stroke="#B5765A" stroke-width=".8" stroke-linecap="round"/>
+      <path d="M12.6 17.6q7.4-10 14.8 0z" fill="#1A2A5C"/><rect x="12.6" y="15.4" width="14.8" height="2.4" fill="url(#${id})"/>
+      <path d="M11.4 18.2h17.2q-.4 1.6-2 1.6h-13.2q-1.6 0-2-1.6z" fill="#0B1230"/><circle cx="20" cy="13.3" r="1.3" fill="#FFC970"/>
+      <text x="20" y="46.6" text-anchor="middle" style="font:800 5.5px sans-serif;fill:#241400">${s}</text></svg>`;
+  };
+  const COUL = ['#FFB23F', '#9D8CFF', '#5FD0E8', '#FF8FB1'];
+  const NOMS_SORTIE = (P, r) => { const e = P.routes[r][P.routes[r].length - 1]; return `sortie ${e[1] < 3 ? 'nord' : 'sud'}-${e[0] < 3 ? 'ouest' : 'est'}`; };
+
+  // ───── État ─────
+  let diff = 'standard', P = null, place = {}, choisi = null, resultat = null, numero = 0;
+  const bilan = { missions: 0, succes: 0, arrestations: 0 };
+  const C = 100, k = (x, y) => `${x},${y}`;
+  const nouveau = () => { numero += 1; P = plateau(diff, graine(4242 + numero * 9973 + diff.length * 31)); place = {}; choisi = null; resultat = null; rendre(); };
+
+  // ───── Dessin du plateau ─────
+  function dessiner() {
+    const pr = prevision(P, place), neut = neutralises(P, place);
+    const vus = new Set(); P.guetteurs.forEach((g, j) => { if (!neut[j]) vueGuetteur(g, P.rue).forEach((c) => vus.add(c)); });
+    let h = '<defs><marker id="pointe" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>';
+    P.lignes.forEach((l, y) => l.forEach((c, x) => {
+      const X = x * C, Y = y * C;
+      if (c === '#') {
+        h += `<rect x="${X + 3}" y="${Y + 3}" width="${C - 6}" height="${C - 6}" rx="8" fill="#2A3360"/><rect x="${X + 3}" y="${Y + 3}" width="${C - 6}" height="${C - 18}" rx="8" fill="#38437A"/>`;
+        for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) if ((x + y + i + j) % 3) h += `<rect x="${X + 18 + i * 24}" y="${Y + 20 + j * 26}" width="10" height="12" rx="2" fill="#F7C76A" opacity=".75"/>`;
+      } else {
+        h += `<rect x="${X}" y="${Y}" width="${C}" height="${C}" fill="${vus.has(k(x, y)) ? '#3A1C27' : '#141A33'}" stroke="#1F2747" stroke-width="2"/>`;
+        if (c === 'E') h += `<rect x="${X + 6}" y="${Y + 6}" width="${C - 12}" height="${C - 12}" rx="14" fill="none" stroke="#3DD39A" stroke-width="3" stroke-dasharray="8 6" opacity=".8"/><text x="${X + 50}" y="${Y + 92}" text-anchor="middle" style="font:700 12px var(--body);fill:#78E2B8">SORTIE</text>`;
+      }
+    }));
+    // ce que voit la Recherche
+    if (place.r) {
+      for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) if (Math.abs(x - place.r[0]) + Math.abs(y - place.r[1]) <= REGLE.vueRecherche && P.rue(x, y)) h += `<rect x="${x * C + 4}" y="${y * C + 4}" width="${C - 8}" height="${C - 8}" rx="10" fill="#63B0FF" fill-opacity=".09" stroke="#63B0FF" stroke-opacity=".5" stroke-width="2"/>`;
+      for (const [c, frais] of pr.rev.vues) { const [x, y] = c.split(',').map(Number); h += frais ? `<g transform="translate(${x * C + 72} ${y * C + 22})"><ellipse cx="0" cy="0" rx="5" ry="8" fill="#FFC970"/><ellipse cx="9" cy="10" rx="5" ry="8" fill="#FFC970"/></g>` : `<text x="${x * C + 80}" y="${y * C + 30}" text-anchor="middle" style="font:800 16px sans-serif;fill:#96A0BF">∅</text>`; }
+    }
+    // itinéraires
+    P.routes.forEach((r, i) => {
+      const possible = pr.post[i] > 0, off = (i - (P.routes.length - 1) / 2) * 7;
+      const pts = r.map(([x, y]) => `${x * C + 50 + off},${y * C + 50 + off}`).join(' ');
+      const largeur = 3 + P.priors[i] * 10;
+      h += `<polyline points="${pts}" fill="none" stroke="${COUL[i]}" stroke-width="${largeur}" stroke-linecap="round" stroke-linejoin="round" opacity="${possible ? .85 : .15}" ${possible ? '' : 'stroke-dasharray="4 10"'} marker-end="url(#pointe)"/>`;
+      const e = r[r.length - 1];
+      if (possible) h += `<g transform="translate(${e[0] * C + 50} ${e[1] * C + 38})"><rect x="-24" y="-13" width="48" height="24" rx="12" fill="#0A0F22" stroke="${COUL[i]}" stroke-width="2"/><text y="4" text-anchor="middle" style="font:700 13px var(--body);fill:${COUL[i]}">${Math.round(pr.post[i] * 100)} %</text></g>`;
+    });
+    // guetteurs
+    P.guetteurs.forEach((g, j) => {
+      const X = g[0] * C + 50, Y = g[1] * C + 50;
+      h += `<g opacity="${neut[j] ? .4 : 1}"><circle cx="${X}" cy="${Y}" r="30" fill="#2A1218" stroke="${neut[j] ? '#67719A' : '#FF6E6A'}" stroke-width="3"/><text x="${X}" y="${Y + 9}" text-anchor="middle" style="font:26px sans-serif">👁️</text>${neut[j] ? `<path d="M${X - 22} ${Y - 22}L${X + 22} ${Y + 22}M${X + 22} ${Y - 22}L${X - 22} ${Y + 22}" stroke="#C3C9DE" stroke-width="5" stroke-linecap="round"/>` : ''}</g>`;
+    });
+    // Mo Vélo
+    const [lx, ly] = P.L;
+    h += `<g transform="translate(${lx * C + 50} ${ly * C + 50})"><circle r="34" fill="#20294D" stroke="#FF6E6A" stroke-width="3"/><circle cy="-6" r="12" fill="#5BA88F"/><path d="M-22 28c3-14 12-20 22-20s19 6 22 20z" fill="#5BA88F" opacity=".85"/><path d="M-13 -11c3-11 23-11 26 0z" fill="#11152A"/><text y="52" text-anchor="middle" style="font:700 13px var(--body);fill:#FFC9C6">Mo Vélo</text></g>`;
+    // policiers posés
+    P.pions.forEach((p) => {
+      const c = place[p.id]; if (!c) return;
+      const vu = pr.alerte.includes(p.id);
+      h += `<g class="pose" data-id="${p.id}" transform="translate(${c[0] * C + 9} ${c[1] * C - 4})" style="cursor:grab">${vu ? '<circle cx="41" cy="54" r="44" fill="#FF6E6A" fill-opacity=".28"/>' : ''}${flic(p.s, { attrs: 'width="82" height="98"' })}</g>`;
+    });
+    // trajet réel après 20:00
+    if (resultat) {
+      const r = P.routes[resultat.route];
+      h += `<polyline points="${r.map(([x, y]) => `${x * C + 50},${y * C + 50}`).join(' ')}" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="2 12" stroke-linecap="round"/>`;
+      const stop = resultat.reussi ? r.find(([x, y]) => P.pions.some((p) => place[p.id] && place[p.id][0] === x && place[p.id][1] === y)) : r[r.length - 1];
+      if (stop) h += `<text x="${stop[0] * C + 50}" y="${stop[1] * C + 62}" text-anchor="middle" style="font:44px sans-serif">${resultat.reussi ? '🚔' : '💨'}</text>`;
+    }
+    document.getElementById('plateau').innerHTML = h;
+    return pr;
+  }
+
+  // ───── Panneau de droite ─────
+  function rendre() {
+    document.querySelectorAll('.diff').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.diff === diff)));
+    const pr = dessiner(), d = DIFF[diff];
+    document.getElementById('reserve').innerHTML = P.pions.filter((p) => !place[p.id]).map((p) => `<button type="button" class="pion ${choisi === p.id ? 'choisi' : ''}" data-id="${p.id}" aria-label="Policier ${SERV[p.s].nom}">${flic(p.s)}</button>`).join('');
+    const reste = P.pions.filter((p) => !place[p.id]).length;
+    document.getElementById('reserve-aide').textContent = reste ? 'Glisse-les sur une rue, ou touche un policier puis une case. R voit les cases voisines, I neutralise un guetteur voisin, P barre la rue.' : 'Tous placés. Tire un policier pour le déplacer.';
+    document.getElementById('lancer').disabled = !!resultat;
+    document.getElementById('auto').disabled = document.getElementById('vider').disabled = !!resultat;
+    const puce = document.getElementById('puce');
+    puce.hidden = !!resultat;
+    puce.className = 'puce-chance' + (pr.alerte.length ? ' r' : '');
+    puce.textContent = pr.alerte.length ? `👁️ Repéré · ${Math.round(pr.chance)} %` : `Chance ${Math.round(pr.chance)} % · ${pr.esperance.toFixed(1).replace('.', ',')} succès attendus`;
+    const droite = document.getElementById('droite');
+    if (resultat) { droite.innerHTML = vueResultat(pr); return; }
+    const couleur = pr.chance >= 65 ? 'var(--green)' : pr.chance >= 40 ? 'var(--amber)' : 'var(--red)';
+    const alerteRoute = pr.alerte.length ? routeAlerte(P, place) : null;
+    const top = pr.alerte.length ? alerteRoute : pr.post.indexOf(Math.max(...pr.post));
+    const det = pr.parRoute[top];
+    droite.innerHTML = `
+      <div class="carte">
+        <h2>Si on lançait 20:00 maintenant</h2>
+        <div class="grand"><b style="color:${couleur}">${Math.round(pr.chance)} %</b><span>de chances d'intercepter Mo Vélo · ${pr.esperance.toFixed(1).replace('.', ',')} succès attendus sur ${d.succes}</span></div>
+        <div class="barre"><i style="width:${pr.chance}%;background:${couleur}"></i></div>
+        ${pr.alerte.length ? `<div class="alerte r">👁️ <span><b>Un guetteur voit ${pr.alerte.length > 1 ? 'tes agents' : 'ton agent ' + P.pions.find((p) => p.id === pr.alerte[0]).s}.</b> Mo Vélo sera prévenu et prendra l'itinéraire le moins gardé : ${NOMS_SORTIE(P, alerteRoute)}. Sors de la case rouge, ou neutralise le guetteur avec un I sur une case voisine.</span></div>` : ''}
+        ${!place.r ? '<div class="alerte a">🔭 <span><b>Pose ta Recherche</b> près d\'un embranchement : elle dit, sur les cases voisines, s\'il y a des traces fraîches. Les itinéraires qui ne collent pas disparaissent.</span></div>' : pr.rev.compatibles.length < P.routes.length ? `<div class="alerte v">👣 <span><b>Traces repérées :</b> ${P.routes.length - pr.rev.compatibles.length} itinéraire${P.routes.length - pr.rev.compatibles.length > 1 ? 's' : ''} écarté${P.routes.length - pr.rev.compatibles.length > 1 ? 's' : ''}.</span></div>` : '<div class="alerte a">🔭 <span><b>Rien d\'utile vu d\'ici :</b> toutes les traces mènent encore partout. Rapproche la Recherche d\'un embranchement.</span></div>'}
+        <div class="routes">${P.routes.map((r, i) => `<div class="rt ${pr.post[i] ? '' : 'exclu'}"><i style="background:${COUL[i]}"></i><span class="nom">${NOMS_SORTIE(P, i)}${alerteRoute === i ? ' · <b style="color:var(--red)">prise si alerte</b>' : ''}</span><span class="pr">${Math.round(pr.post[i] * 100)} %</span><span class="ch">${pr.parRoute[i].p ? pr.parRoute[i].p + ' %' : '<span style="color:var(--red)">libre</span>'}</span></div>`).join('')}</div>
+        <p style="margin:0;font-size:12px;color:var(--muted)">Colonnes : probabilité qu'il passe par là · chance de l'arrêter s'il y passe.</p>
+        ${det && det.detail.length ? `<div class="detail"><span class="kicker">Calcul pour ${NOMS_SORTIE(P, top)}</span>${det.detail.map(([n, v]) => `<div><span>${n}</span><span class="v ${v >= 0 ? 'pos' : 'neg'}">${v >= 0 ? '+' : ''}${v}</span></div>`).join('')}<div><span>Bornes</span><span class="v">${REGLE.min} à ${REGLE.max} %</span></div></div>` : ''}
+      </div>
+      <details class="carte regles"><summary>Les règles en bref</summary><ul>
+        <li><b>R · Recherche</b> : voit les cases voisines. Traces fraîches (👣) ou rien (∅) : les itinéraires incompatibles sont écartés. Une case qu'elle voit donne +${REGLE.repere} à l'agent qui s'y trouve.</li>
+        <li><b>I · Intervention</b> : sur une case voisine d'un guetteur, il le neutralise. Sinon, il barre la rue comme les autres.</li>
+        <li><b>P · Proximité</b> : barre la rue, +${REGLE.bonService} s'il est sur l'itinéraire. Deux agents sur le même itinéraire : +${REGLE.double}.</li>
+        <li><b>Guetteur 👁️</b> : il voit jusqu'à 2 cases en ligne droite (cases rouges). Un agent vu donne l'alerte : Mo Vélo prend alors l'itinéraire le moins gardé.</li>
+        <li>À 20:00, un seul dé de 0 à 99 pour l'interception. ${d.partiel ? `Raté mais croisé sans alerte : ${d.partiel} succès quand même.` : 'Pas de lot de consolation à cette difficulté.'} Dans tous les cas, l'itinéraire réel est connu pour la prochaine fois.</li>
+      </ul></details>
+      <div class="score"><span>Missions <b>${bilan.missions}</b></span><span>Succès <b>${bilan.succes}</b></span><span>Arrestations <b>${bilan.arrestations}</b></span></div>`;
+  }
+
+  function vueResultat(pr) {
+    const r = resultat, d = DIFF[diff];
+    const titre = r.reussi ? (d.arrestation ? 'Mo Vélo est arrêté.' : 'Livraison interceptée.') : r.couvert && r.succes ? 'Il a filé, de justesse.' : 'Mo Vélo a filé.';
+    const pourquoi = r.alerte.length ? `Un guetteur a vu ton agent : prévenu, il a pris l'itinéraire le moins gardé (${NOMS_SORTIE(P, r.route)}).` : r.couvert ? `Il est passé par la ${NOMS_SORTIE(P, r.route)}, où tu avais du monde.` : `Il est passé par la ${NOMS_SORTIE(P, r.route)}, où personne ne l'attendait.`;
+    return `<div class="res ${r.reussi ? 'ok' : 'ko'}">
+        <span class="tampon">CONSTAT · 20:00</span>
+        <h2>${titre}</h2>
+        <div class="de"><div class="cube roule">${r.couvert ? r.de : '—'}</div><p>${r.couvert ? `Chance annoncée <b>${r.chance} %</b> : il fallait un dé sous ${r.chance}. Tiré <b>${r.de}</b> → ${r.reussi ? 'réussi' : 'raté'}.` : '<b>Aucun dé :</b> personne sur son chemin.'}</p></div>
+        <p style="margin:0;color:var(--text2);font-size:14px">${pourquoi}</p>
+        <div class="score"><span>Succès gagnés <b>${r.succes}</b> / ${d.succes}</span>${r.arrestation ? '<span style="background:var(--amber);color:var(--amber-ink)"><b style="color:inherit">Affiche « ARRÊTÉ » pour toi</b></span>' : ''}</div>
+        <p style="margin:0;font-size:13px;color:var(--muted)">Ce qu'on retient : l'itinéraire de Mo Vélo par la ${NOMS_SORTIE(P, r.route)} est maintenant connu de toutes les zones.</p>
+      </div>
+      <div class="actions"><button class="btn primaire" type="button" id="suivant">Mission suivante</button></div>
+      <div class="score"><span>Missions <b>${bilan.missions}</b></span><span>Succès <b>${bilan.succes}</b></span><span>Arrestations <b>${bilan.arrestations}</b></span></div>`;
+  }
+
+  // ───── Gestes : glisser (souris et doigt) ou toucher-toucher ─────
+  const cadre = document.getElementById('cadre');
+  const caseSous = (x, y) => { const b = cadre.getBoundingClientRect(); if (x < b.left || y < b.top || x > b.right || y > b.bottom) return null; return [Math.floor((x - b.left) / b.width * 6), Math.floor((y - b.top) / b.height * 6)]; };
+  const posable = (c, id) => c && P.rue(c[0], c[1]) && P.lignes[c[1]][c[0]] !== 'L' && !P.guetteurs.some((g) => g[0] === c[0] && g[1] === c[1]) && !P.pions.some((p) => p.id !== id && place[p.id] && place[p.id][0] === c[0] && place[p.id][1] === c[1]);
+  function poser(id, c) { if (c && posable(c, id)) place[id] = c; else if (!c) delete place[id]; choisi = null; rendre(); }
+  let drag = null;
+  document.addEventListener('pointerdown', (e) => {
+    if (resultat) return;
+    const b = e.target.closest('.pion[data-id]'), g = e.target.closest('.pose');
+    const id = b ? b.dataset.id : g ? g.dataset.id : null;
+    if (!id) return;
+    e.preventDefault();
+    drag = { id, x: e.clientX, y: e.clientY, bouge: false, depuis: b ? 'reserve' : 'plateau' };
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    if (!drag.bouge && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) {
+      drag.bouge = true;
+      drag.g = Object.assign(document.createElement('div'), { className: 'fantome', innerHTML: flic(P.pions.find((p) => p.id === drag.id).s) });
+      document.body.appendChild(drag.g);
+    }
+    if (drag.bouge) { drag.g.style.left = e.clientX + 'px'; drag.g.style.top = e.clientY + 'px'; }
+  });
+  window.addEventListener('pointerup', (e) => {
+    if (!drag) return; const d = drag; drag = null;
+    if (d.g) d.g.remove();
+    if (!d.bouge) { if (d.depuis === 'reserve') { choisi = choisi === d.id ? null : d.id; rendre(); } else { choisi = d.id; rendre(); } return; }
+    const c = caseSous(e.clientX, e.clientY);
+    if (c && !posable(c, d.id)) { rendre(); return; }
+    poser(d.id, c);
+  });
+  window.addEventListener('pointercancel', () => { if (drag && drag.g) drag.g.remove(); drag = null; });
+  cadre.addEventListener('click', (e) => { if (!choisi || resultat || e.target.closest('.pose')) return; const c = caseSous(e.clientX, e.clientY); if (c && posable(c, choisi)) poser(choisi, c); });
+  document.addEventListener('keydown', (e) => { const b = e.target.closest && e.target.closest('.pion[data-id]'); if (b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); choisi = b.dataset.id; rendre(); } });
+
+  // ───── Boutons ─────
+  document.querySelectorAll('.diff').forEach((b) => b.addEventListener('click', () => { diff = b.dataset.diff; nouveau(); }));
+  document.getElementById('vider').addEventListener('click', () => { place = {}; choisi = null; rendre(); });
+  document.getElementById('auto').addEventListener('click', () => {
+    // le plan de l'adjoint de 19:55 : Recherche sur l'itinéraire le plus probable, un agent par itinéraire possible, hors de la vue des guetteurs
+    place = {};
+    const ordre = (post) => P.priors.map((p, i) => [post ? post[i] : p, i]).sort((a, b) => b[0] - a[0]).filter(([v]) => v > 0).map(([, i]) => i);
+    const r0 = P.routes[ordre()[0]]; place.r = r0[Math.min(2, r0.length - 1)];
+    const poss = ordre(posterieur(P, revele(P, place.r)));
+    const vus = new Set(); P.guetteurs.forEach((g) => vueGuetteur(g, P.rue).forEach((c) => vus.add(c)));
+    P.pions.filter((p) => p.id !== 'r').forEach((p, j) => {
+      const cs = P.routes[poss[j % poss.length]].slice(1).reverse();
+      const c = cs.find((x) => posable(x, p.id) && !vus.has(k(...x))) || cs.find((x) => posable(x, p.id));
+      if (c) place[p.id] = c;
+    });
+    choisi = null; rendre();
+  });
+  document.getElementById('lancer').addEventListener('click', () => {
+    if (!P.pions.some((p) => place[p.id])) return;
+    resultat = resoudre(P, place, Math.random() * 100);
+    bilan.missions += 1; bilan.succes += resultat.succes; bilan.arrestations += resultat.arrestation ? 1 : 0;
+    rendre();
+  });
+  document.getElementById('droite').addEventListener('click', (e) => { if (e.target.id === 'suivant') nouveau(); });
+  nouveau();
+})();
+</script>
