@@ -292,9 +292,9 @@ export function renderGazetteStories() {
   const k = Math.min(S.gzsCarte || 0, cartes.length - 1);
   return `<main class="screen gzs" data-gzs>
     <div class="gzs-haut">
-      <a href="#hp" class="iconbtn" aria-label="Retour à l’HP">${icon('back', 20)}</a>
       <div class="gzs-barres" role="tablist" aria-label="Cartes de la Gazette">${cartes.map((c, n) => `<button type="button" role="tab" aria-selected="${n === k}" aria-label="${esc(c.titre)}" data-gzs-aller="${n}" class="${n <= k ? 'vu' : ''}"><i></i></button>`).join('')}</div>
       <span class="tiny mono gzs-num">n° ${g.turn}${i ? ` · ${esc(formatDateBe(g.date || Date.now()).split(' ').slice(1, 3).join(' '))}` : ''}</span>
+      <a href="#hp" class="gzs-fermer" aria-label="Fermer la Gazette">✕ <span>Fermer</span></a>
     </div>
     <div class="gzs-pile" data-gzs-pile data-k="${k}" aria-live="polite">${cartes.map((c, n) => c.html.replace('class="gzs-carte', `class="gzs-carte${n === k ? ' on' : ''}`)).join('')}</div>
     <div class="gzs-bas"><button type="button" class="gzs-fl" data-gzs-d="-1" aria-label="Carte précédente" ${k === 0 ? 'disabled' : ''}>${icon('back', 18)}</button>
