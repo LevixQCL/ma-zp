@@ -89,6 +89,13 @@ function route() {
   if (h.startsWith('hp-')) { S.ancre = h; return 'hp'; }
   // Ancien écran Diplomatie : ses liens mènent aux Pactes de la Carte.
   if (h === 'diplomatie') return 'pactes';
+  // Lien vers mes quartiers (point chaud, patrouilles) : calque « Ma zone » de la Carte, fiche du point chaud ouverte.
+  if (h === 'carte-mazone') {
+    S.carteCalque = 'mazone';
+    const pc = S.state && myZone() && myZone().pointChaud;
+    if (pc) S.quartierSel = String(pc.cell);
+    history.replaceState(null, '', '#carte'); return 'carte';
+  }
   // Saison 2 : le Terrain est un calque de la Carte.
   if (h === 'terrain' && S.state && reglesV2(S.state) && S.draft) { S.carteCalque = calqueTerrain(); history.replaceState(null, '', '#carte'); return 'carte'; }
   // Lien vers un bloc des ordres (ex. #ordres-decision) : on ouvre ce bloc.

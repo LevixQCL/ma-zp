@@ -254,7 +254,7 @@ function itemsDuSoir(st, z, { ordresOk, faites, reussies, delegue }) {
       : a === 1 ? `1 patrouille sur 2 à ${lieu} : ajoutes-en une sur la Carte`
       : ailleurs ? `tes ${ailleurs} patrouille${ailleurs > 1 ? 's sont' : ' est'} dans d’autres quartiers : il en faut 2 à ${lieu}`
       : `envoie 2 patrouilles à ${lieu} depuis la Carte (calque Ma zone)`;
-    items.push({ ok: a >= 2, href: '#carte', t: a >= 2 ? `Point chaud : ${a} agents envoyés` : `Point chaud : ${esc(pc.titre.toLowerCase())}`, s: sous });
+    items.push({ ok: a >= 2, href: '#carte-mazone', t: a >= 2 ? `Point chaud : ${a} agents envoyés` : `Point chaud : ${esc(pc.titre.toLowerCase())}`, s: sous });
   }
   if (st.enquete) items.push({ ok: nbDem >= 1 || (d.accusation !== null && d.accusation !== undefined), href: '#enquete', t: `Enquête : ${nbDem} démarche${nbDem > 1 ? 's' : ''} sur ${maxDemarchesDe(st, zoneAvecAgenda())}`, s: (st.traques || []).length ? 'une traque est en cours !' : 'constatations, vérifications, partage, accusation' });
   const dl = dilemmeDuJour(st, z);
