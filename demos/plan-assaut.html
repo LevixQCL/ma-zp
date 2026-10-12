@@ -1,0 +1,432 @@
+<title>Plan d'assaut</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Maquette « Plan d'assaut » (zone de non-droit, Ma ZP). Monde unique sombre, celui du jeu.
+   Mise en page : la maquette du secteur en grand avec ses points d'accès ; tes agents en dessous ; le pronostic à droite (PC) ou en dessous (téléphone). */
+:root {
+  color-scheme: dark;
+  --bg: #0C1124; --bg-deep: #080C1B; --surface: #141B33; --surface2: #1C2442; --surface3: #243050;
+  --line: #29345A; --hair: rgba(190, 205, 255, .08);
+  --text: #EDF0FA; --text2: #C3C9DE; --muted: #96A0BF; --faint: #67719A;
+  --amber: #FFB23F; --amber-hi: #FFC970; --amber-ink: #241400; --amber-bg: rgba(255, 178, 63, .11); --amber-line: rgba(255, 178, 63, .40);
+  --blue: #63B0FF; --green: #3DD39A; --green-bg: rgba(61, 211, 154, .12); --red: #FF6E6A; --red-bg: rgba(255, 110, 106, .10); --red-line: rgba(255, 110, 106, .40);
+  --gris: #8E9AC4;
+  --display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --body: 'Instrument Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font: 15px/1.45 var(--body); margin: 0; }
+.page { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 60px; display: flex; flex-direction: column; gap: 18px; }
+.demo-bandeau { font-size: 12.5px; color: var(--amber-hi); background: var(--amber-bg); border: 1px solid var(--amber-line); border-radius: 12px; padding: 7px 12px; }
+header.tete { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 16px; }
+.kicker { font: 600 12px var(--body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(26px, 4vw, 38px)/1.05 var(--display); margin: 2px 0 0; text-wrap: balance; }
+h1 em { font-style: normal; color: var(--amber); }
+.sous { color: var(--text2); font-size: 14px; }
+.emprise { display: flex; align-items: center; gap: 10px; font: 700 15px var(--display); }
+.jauge { width: 120px; height: 8px; border-radius: 6px; background: var(--surface3); overflow: hidden; }
+.jauge i { display: block; height: 100%; width: 62%; background: var(--red); }
+
+.grille { display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; }
+@media (min-width: 980px) { .grille { grid-template-columns: minmax(0, 1fr) 360px; align-items: start; } .cote { position: sticky; top: 16px; } }
+
+/* La maquette */
+.carte { position: relative; aspect-ratio: 700 / 490; max-width: 100%; border-radius: 20px; overflow: hidden; border: 1px solid var(--hair);
+  background: radial-gradient(ellipse at 50% 38%, #18224A, #060918 78%); user-select: none; -webkit-user-select: none; }
+.carte > svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.astuce { position: absolute; left: 12px; bottom: 10px; font: 600 12px var(--body); color: var(--text2); background: rgba(10, 15, 34, .82); border: 1px solid rgba(255,255,255,.14); border-radius: 999px; padding: 5px 10px; pointer-events: none; }
+
+/* Points d'accès posés sur la maquette */
+.pt { position: absolute; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; border: 0; background: none; padding: 0; color: inherit; font: inherit; }
+.pt .pastille { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 5px 8px 6px; border-radius: 12px; background: rgba(10, 15, 34, .88); border: 1px solid rgba(255,255,255,.16); box-shadow: 0 8px 18px -8px rgba(0,0,0,.8); min-width: 96px; transition: border-color .15s, background-color .15s; }
+.pt .nom, .pt .court { font: 700 12.5px var(--body); white-space: nowrap; }
+.pt .court { display: none; }
+.pt.faille .court::after { content: ' · faille'; color: var(--red); font-weight: 600; }
+.pt .role { font: 600 10.5px var(--body); letter-spacing: .05em; text-transform: uppercase; }
+.pt[data-role="reperage"] .role { color: var(--blue); }
+.pt[data-role="descente"] .role { color: var(--red); }
+.pt[data-role="bouclage"] .role { color: var(--green); }
+.pt .places { display: flex; gap: 3px; flex-wrap: wrap; max-width: 140px; }
+.pt .tige { width: 2px; height: 12px; background: rgba(255,255,255,.35); }
+.pt .pied { width: 10px; height: 10px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,.15); margin-top: -4px; }
+.pt.cible .pastille { border-color: var(--amber); background: rgba(40, 30, 10, .92); }
+.pt.plein .pastille { opacity: .9; }
+.pt.ouvert .pied { background: var(--red); box-shadow: 0 0 0 4px var(--red-bg), 0 0 14px var(--red); }
+.pt.ferme .pied { background: var(--green); box-shadow: 0 0 0 4px var(--green-bg); }
+.pt.faille .pastille { border-color: var(--red-line); }
+.pt.faille .nom::after { content: ' · faille'; color: var(--red); font-weight: 600; }
+.pt:focus-visible .pastille { outline: 2px solid var(--amber); outline-offset: 2px; }
+.vide { width: 22px; height: 22px; border-radius: 50%; border: 1.5px dashed rgba(255,255,255,.28); }
+
+/* Pions */
+.pion { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 700 10.5px var(--body); flex: none; }
+.pion.moi { background: linear-gradient(160deg, var(--amber-hi), var(--amber)); color: var(--amber-ink); cursor: grab; touch-action: none; box-shadow: 0 2px 6px rgba(0,0,0,.5); }
+.pion.moi:active { cursor: grabbing; }
+.pion.moi.choisi { outline: 2px solid #fff; outline-offset: 2px; }
+.pion.moi:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.pion.autre { background: #2E3A63; color: #D5DCF5; border: 1px solid #45538A; }
+.reserve .pion { width: 40px; height: 40px; font-size: 14px; }
+.fantome { position: fixed; z-index: 50; pointer-events: none; width: 44px !important; height: 44px !important; font-size: 15px !important; transform: translate(-50%, -50%) scale(1.05); box-shadow: 0 10px 24px rgba(0,0,0,.6) !important; }
+
+/* Réserve sous la carte */
+.reserve { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; padding: 12px 14px; border-radius: 16px; background: var(--surface); border: 1px solid var(--hair); }
+.reserve .titre { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.reserve .titre b { font: 700 15px var(--display); }
+.reserve .titre span { font-size: 12.5px; color: var(--muted); }
+.reserve .pions { display: flex; gap: 8px; flex-wrap: wrap; min-height: 40px; align-items: center; }
+.reserve .pions:empty::before { content: 'Tous tes agents sont placés.'; color: var(--muted); font-size: 13px; }
+.reserve .actions { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.legende-pions { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--muted); }
+.legende-pions span { display: inline-flex; align-items: center; gap: 5px; }
+.legende-pions .pion { width: 16px; height: 16px; font-size: 9px; cursor: default; }
+
+button.btn { font: 600 14px var(--body); border-radius: 12px; padding: 9px 14px; min-height: 40px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); cursor: pointer; }
+button.btn:hover { border-color: var(--amber-line); }
+button.btn.primaire { background: linear-gradient(160deg, var(--amber-hi), var(--amber)); color: var(--amber-ink); border-color: transparent; }
+button.btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+/* Colonne de droite : pronostic */
+.cote { display: flex; flex-direction: column; gap: 12px; }
+.bloc { padding: 14px 16px; border-radius: 16px; background: var(--surface); border: 1px solid var(--hair); display: flex; flex-direction: column; gap: 10px; }
+.bloc h2 { font: 700 16px var(--display); margin: 0; }
+.ligne { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; }
+.ligne .l { color: var(--text2); min-width: 0; }
+.ligne .v { font: 700 15px var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.barre { height: 8px; border-radius: 6px; background: var(--surface3); overflow: hidden; }
+.barre i { display: block; height: 100%; border-radius: 6px; transition: width .3s; }
+.bon { color: var(--green); } .moyen { color: var(--amber); } .mauvais { color: var(--red); }
+.note { font-size: 12.5px; color: var(--muted); margin: 0; }
+.alerte { font-size: 13px; padding: 8px 10px; border-radius: 10px; }
+.alerte.r { background: var(--red-bg); color: #FFC2BF; border: 1px solid var(--red-line); }
+.alerte.v { background: var(--green-bg); color: #BDF1DB; border: 1px solid rgba(61,211,154,.35); }
+.alerte.a { background: var(--amber-bg); color: var(--amber-hi); border: 1px solid var(--amber-line); }
+.radio { display: flex; flex-direction: column; gap: 6px; }
+.radio div { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--text2); }
+
+/* Constat du lendemain */
+.constat-on .pt { pointer-events: none; }
+.constat-on .pt .pastille { opacity: .55; }
+.tampon { position: absolute; top: 14px; right: 14px; font: 700 12px var(--mono); letter-spacing: .06em; color: #FFD9A0; border: 1.5px solid #FFD9A0; border-radius: 6px; padding: 4px 8px; transform: rotate(3deg); background: rgba(20, 14, 4, .7); }
+
+/* Analyse */
+.analyse { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+@media (min-width: 760px) { .analyse { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.analyse .bloc p, .analyse .bloc li { font-size: 14px; color: var(--text2); margin: 0; }
+.analyse ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+h2.section { font: 800 22px var(--display); margin: 10px 0 0; }
+@media (max-width: 560px) {
+  .pt .pastille { min-width: 0; padding: 4px 6px 5px; border-radius: 10px; }
+  .pt .nom, .pt .role { display: none; } .pt .court { display: block; font-size: 10.5px; }
+  .pt[data-role="reperage"] .court { color: var(--blue); } .pt[data-role="descente"] .court { color: var(--red); } .pt[data-role="bouclage"] .court { color: var(--green); }
+  .pt .places { max-width: 86px; gap: 2px; }
+  .pt .pion, .pt .vide { width: 14px; height: 14px; font-size: 7.5px; }
+  .pt .tige { height: 6px; }
+  .astuce { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="page">
+  <div class="demo-bandeau">Maquette jouable · les chiffres sont indicatifs, rien n'est relié à la partie.</div>
+
+  <header class="tete">
+    <div>
+      <div class="kicker">Zone de non-droit · ce soir · plan d'assaut</div>
+      <h1>Les Glacis <em>·</em> point de deal</h1>
+      <div class="sous">Tenu par Sifflet · livraison ce soir · 5 lieutenants en liberté</div>
+    </div>
+    <div class="emprise"><span class="kicker">Emprise</span><span class="jauge"><i></i></span>62</div>
+  </header>
+
+  <div class="grille">
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <div class="carte" id="carte">
+        <svg id="scene" viewBox="90 0 700 490" aria-hidden="true"></svg>
+        <div id="points"></div>
+        <span class="astuce" id="astuce">Glisse tes agents sur un point d'accès</span>
+      </div>
+
+      <section class="reserve" id="reserve" aria-label="Tes agents">
+        <div class="titre"><b>Tes agents ce soir</b><span>6 engagés dans les Ordres · glisse-les sur la carte</span></div>
+        <div class="pions" id="pions"></div>
+        <div class="actions">
+          <button class="btn" id="auto" type="button">Placer pour moi</button>
+          <button class="btn" id="vider" type="button">Tout reprendre</button>
+        </div>
+        <div class="legende-pions" style="flex-basis:100%">
+          <span><i class="pion moi">R</i>Recherche</span>
+          <span><i class="pion moi">I</i>Intervention</span>
+          <span><i class="pion moi">P</i>Proximité</span>
+          <span><i class="pion autre">KA</i>agents d'un collègue (annoncés à la radio)</span>
+        </div>
+      </section>
+    </div>
+
+    <aside class="cote">
+      <div class="bloc" id="prono" aria-live="polite"></div>
+      <div class="bloc">
+        <h2>À la radio</h2>
+        <div class="radio">
+          <div><i class="pion autre">KA</i>Kassim (Ananas) : « J'ai 3 Intervention sur la porte. »</div>
+          <div><i class="pion autre">LE</i>Léa (Police Acad.) : « +2 sur la porte avec Kassim. »</div>
+          <div><i class="pion autre">CO</i>Corentin (Djoumap City) : « Je tiens la ruelle, il me manque du monde. »</div>
+        </div>
+      </div>
+      <button class="btn primaire" id="constat" type="button">Voir le constat de demain matin</button>
+    </aside>
+  </div>
+
+  <h2 class="section">Ce que la maquette propose</h2>
+  <div class="analyse">
+    <div class="bloc">
+      <h2>Ce qui change</h2>
+      <ul>
+        <li>On ne choisit plus un nombre par rôle avec + et −, on pose ses agents <b>sur un endroit</b> du secteur.</li>
+        <li>Le rôle vient du point : toit = repérage, porte du QG = descente, sorties = bouclage.</li>
+        <li>Le bon service au bon endroit compte en plein (Recherche sur le toit, Intervention à la porte, Proximité ou Roulage sur une sortie), un autre service compte pour moitié.</li>
+        <li>Les pions des collègues annoncés à la radio sont visibles : une sortie vide se voit tout de suite.</li>
+      </ul>
+    </div>
+    <div class="bloc">
+      <h2>Ce qui ne change pas</h2>
+      <ul>
+        <li>Le nombre d'agents se décide toujours dans les Ordres. La carte dit seulement où ils vont.</li>
+        <li>« Placer pour moi » fait le travail en un geste, un peu moins bien qu'un joueur attentif : personne n'est obligé de jouer au plan.</li>
+        <li>Faille, +20 % par zone, blessés si on y va seul ou trop faible : les règles actuelles, rattachées à un lieu.</li>
+        <li>Le lendemain, une image de constat. Pas de vidéo rejouée chaque soir.</li>
+      </ul>
+    </div>
+    <div class="bloc">
+      <h2>À trancher</h2>
+      <ul>
+        <li>Combien de points par secteur ? La maquette en a 5 ; chaque secteur aurait sa propre disposition.</li>
+        <li>Les points d'accès changent-ils d'un soir à l'autre (le milieu s'adapte) ou restent-ils fixes ?</li>
+        <li>La faille doit-elle toujours désigner une sortie précise, comme ici la berge ?</li>
+        <li>Faut-il prévenir à la radio automatiquement quand on pose ses pions ?</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ───── Le secteur en demi-vue (projection isométrique) ─────
+  const svg = document.getElementById('scene');
+  const S = 34, OX = 400, OY = 96;
+  const P = (x, y, z = 0) => [OX + (x - y) * 0.866 * S, OY + (x + y) * 0.5 * S - z];
+  const pts = (arr) => arr.map(([x, y, z]) => P(x, y, z).map((v) => v.toFixed(1)).join(',')).join(' ');
+  let h = '';
+  const defs = `<defs>
+    <radialGradient id="lueurQG" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FF5A3C" stop-opacity=".45"/><stop offset="1" stop-color="#FF5A3C" stop-opacity="0"/></radialGradient>
+    <marker id="fl" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#FF6E6A"/></marker>
+  </defs>`;
+  // Canal à l'est, sol, rues
+  h += `<polygon points="${pts([[10, -1, 0], [12, -1, 0], [12, 11, 0], [10, 11, 0]])}" fill="#0E2550" stroke="#3E6BB0" stroke-opacity=".5"/>`;
+  [2, 5, 8].forEach((y, j) => { h += `<line x1="${P(10.6, y)[0]}" y1="${P(10.6, y)[1]}" x2="${P(11.4, y + 1.2)[0]}" y2="${P(11.4, y + 1.2)[1]}" stroke="#6FA0E8" stroke-opacity=".35" stroke-dasharray="4 8"/>`; });
+  h += `<polygon points="${pts([[0, 0, 0], [10, 0, 0], [10, 10, 0], [0, 10, 0]])}" fill="#2A1418" stroke="#5A2A30"/>`;
+  const rue = (a) => { h += `<polygon points="${pts(a)}" fill="#171B33" stroke="#262C4F" stroke-width=".8"/>`; };
+  rue([[4.6, 0, 0], [5.4, 0, 0], [5.4, 4, 0], [4.6, 4, 0]]);            // ruelle nord
+  rue([[6.5, 4.8, 0], [10, 4.8, 0], [10, 5.6, 0], [6.5, 5.6, 0]]);       // vers la berge
+  rue([[5.6, 6.5, 0], [6.4, 6.5, 0], [6.4, 10, 0], [5.6, 10, 0]]);       // vers le parking
+  rue([[0, 6.5, 0], [5.6, 6.5, 0], [5.6, 7.1, 0], [0, 7.1, 0]]);
+  // Parking au sud
+  h += `<polygon points="${pts([[4.6, 8.2, 0], [7.6, 8.2, 0], [7.6, 10, 0], [4.6, 10, 0]])}" fill="#1D2240" stroke="#2F3760"/>`;
+  for (let i = 0; i < 4; i++) { const a = P(4.9 + i * 0.7, 8.4), b = P(4.9 + i * 0.7, 9.8); h += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#3A4377" stroke-width=".8"/>`; }
+  const voiture = (x, y, c) => { h += `<polygon points="${pts([[x, y, 6], [x + .45, y, 6], [x + .45, y + .8, 6], [x, y + .8, 6]])}" fill="${c}"/><polygon points="${pts([[x + .45, y, 0], [x + .45, y + .8, 0], [x + .45, y + .8, 6], [x + .45, y, 6]])}" fill="#11152A"/>`; };
+  voiture(5.05, 8.6, '#6E5BD6'); voiture(6.45, 8.7, '#3E8E7E');
+  // Bâtiments (boîte iso : dessus, face est, face sud), dessinés de l'arrière vers l'avant
+  const fen = (x0, y0, x1, y1, hz, coul, sens) => {
+    let s = '';
+    for (let z = 14; z < hz - 8; z += 14) for (let t = 0.25; t < 0.95; t += 0.32) {
+      if (((x0 * 7 + y0 * 3 + z + t * 10) | 0) % 3 === 0) continue;
+      const [x, y] = sens === 'est' ? [x1, y0 + (y1 - y0) * t] : [x0 + (x1 - x0) * t, y1];
+      const p = P(x, y, z); s += `<rect x="${(p[0] - 2).toFixed(1)}" y="${(p[1] - 4).toFixed(1)}" width="4" height="5" fill="${coul}" opacity=".85"/>`;
+    }
+    return s;
+  };
+  const boite = (x0, y0, x1, y1, hz, c, fenetres = '#F7C76A') => {
+    h += `<polygon points="${pts([[x1, y0, 0], [x1, y1, 0], [x1, y1, hz], [x1, y0, hz]])}" fill="${c[1]}"/>`;
+    h += `<polygon points="${pts([[x0, y1, 0], [x1, y1, 0], [x1, y1, hz], [x0, y1, hz]])}" fill="${c[2]}"/>`;
+    h += `<polygon points="${pts([[x0, y0, hz], [x1, y0, hz], [x1, y1, hz], [x0, y1, hz]])}" fill="${c[0]}"/>`;
+    h += fen(x0, y0, x1, y1, hz, fenetres, 'est') + fen(x0, y0, x1, y1, hz, fenetres, 'sud');
+  };
+  const BLEU = ['#3A4880', '#252F5C', '#1C2449'], BRIQUE = ['#5A3A44', '#3D2730', '#2E1D24'];
+  boite(0.4, 0.4, 2.2, 2.4, 70, BLEU); boite(2.6, 0.5, 4.2, 2.2, 48, BRIQUE); boite(5.8, 0.4, 7.6, 2.0, 60, BLEU);
+  boite(8.0, 0.5, 9.6, 2.6, 84, BLEU); boite(0.5, 3.0, 2.6, 5.6, 40, BRIQUE); boite(7.0, 2.6, 9.6, 4.3, 52, BRIQUE);
+  // Le QG de Sifflet, au centre, avec sa lueur rouge
+  const gq = P(5.3, 5.3); h += `<ellipse cx="${gq[0]}" cy="${gq[1]}" rx="120" ry="64" fill="url(#lueurQG)"/>`;
+  boite(4.0, 4.0, 6.4, 6.4, 112, ['#2B2335', '#1C1626', '#150F1C'], '#FF6E58');
+  const porte = P(5.2, 6.4); h += `<rect x="${porte[0] - 7}" y="${porte[1] - 20}" width="14" height="20" fill="#FF8A4C" opacity=".9"/>`;
+  boite(7.0, 6.2, 9.6, 7.8, 46, BRIQUE); boite(0.6, 7.6, 2.6, 9.6, 118, BLEU); boite(2.9, 7.6, 4.2, 9.4, 36, BRIQUE); boite(8.0, 8.2, 9.6, 9.7, 58, BLEU);
+  // Barque amarrée à la berge (la faille, une fois repérée)
+  const bq = P(10.7, 5.3); h += `<g id="barque" opacity=".35"><ellipse cx="${bq[0]}" cy="${bq[1]}" rx="15" ry="5" fill="#5B3A22"/><ellipse cx="${bq[0]}" cy="${bq[1] - 2}" rx="11" ry="3" fill="#7A5232"/></g>`;
+  h += `<g id="fleches"></g>`;
+  svg.innerHTML = defs + h;
+
+  // ───── Points d'accès et règles de la démo ─────
+  const POINTS = [
+    { id: 'toit', nom: 'Toit de la tour', court: 'Toit', role: 'reperage', cap: 2, xy: P(1.6, 8.6, 118), service: 'R' },
+    { id: 'porte', nom: 'Porte du QG', court: 'Porte', role: 'descente', cap: 8, xy: P(5.2, 6.6), service: 'I' },
+    { id: 'nord', nom: 'Ruelle des Glacis', court: 'Ruelle', role: 'bouclage', cap: 2, xy: P(5.0, 0.3), service: 'P', poids: .35 },
+    { id: 'berge', nom: 'Berge du canal', court: 'Berge', role: 'bouclage', cap: 2, xy: P(9.9, 5.2), service: 'P', poids: .35 },
+    { id: 'parking', nom: 'Parking du marché', court: 'Parking', role: 'bouclage', cap: 2, xy: P(6.0, 9.9), service: 'P', poids: .30 },
+  ];
+  const ROLES = { reperage: 'Repérage', descente: 'Descente', bouclage: 'Bouclage' };
+  const AUTRES = [ // collègues annoncés à la radio
+    { qui: 'KA', zone: 'Ananas', service: 'I', ou: 'porte' }, { qui: 'KA', zone: 'Ananas', service: 'I', ou: 'porte' }, { qui: 'KA', zone: 'Ananas', service: 'I', ou: 'porte' },
+    { qui: 'LE', zone: 'Police Acad.', service: 'I', ou: 'porte' }, { qui: 'LE', zone: 'Police Acad.', service: 'I', ou: 'porte' },
+    { qui: 'CO', zone: 'Djoumap City', service: 'P', ou: 'nord' },
+  ];
+  const MOI = [{ id: 'm1', service: 'R' }, { id: 'm2', service: 'R' }, { id: 'm3', service: 'I' }, { id: 'm4', service: 'I' }, { id: 'm5', service: 'P' }, { id: 'm6', service: 'P' }];
+  const place = {}; // id du pion → id du point (absent = en réserve)
+  let constat = false, choisi = null;
+
+  const ici = (pid) => [...AUTRES.filter((a) => a.ou === pid), ...MOI.filter((m) => place[m.id] === pid)];
+  const valeur = (agent, point) => (agent.service === point.service ? 1 : 0.5);
+  const force = (pid) => { const p = POINTS.find((x) => x.id === pid); return ici(pid).reduce((s, a) => s + valeur(a, p), 0); };
+
+  function pronostic() {
+    const zones = new Set(AUTRES.map((a) => a.qui)); if (MOI.some((m) => place[m.id])) zones.add('toi');
+    const rep = force('toit'), repere = rep >= 2;
+    const bonusZones = 1 + 0.2 * (zones.size - 1);
+    const fDesc = force('porte') * 9 * bonusZones * (repere ? 1.25 : 1);
+    const chance = Math.max(5, Math.min(95, Math.round(100 * fDesc / (62 * 2.2))));
+    const sorties = POINTS.filter((p) => p.role === 'bouclage').map((p) => {
+      const poids = repere ? (p.id === 'berge' ? .6 : .2) : p.poids;
+      const fermeture = Math.min(1, force(p.id) / 2);
+      return { p, poids, fermeture };
+    });
+    const fuite = sorties.reduce((s, x) => s + x.poids * (1 - x.fermeture), 0);
+    const fuyards = Math.round(5 * fuite);
+    const arretes = chance >= 50 ? 5 - fuyards : Math.max(0, 1 - fuyards);
+    const saisie = chance >= 50 ? Math.round((1 - fuite) * 14000 / 500) * 500 + 3000 : 0;
+    const seul = zones.size === 1;
+    return { zones, rep, repere, chance, sorties, fuite, fuyards, arretes, saisie, seul, mesPlaces: MOI.filter((m) => place[m.id]).length };
+  }
+  const eur = (n) => n.toLocaleString('fr-BE') + ' €';
+  const classe = (v, bon, moyen) => (v >= bon ? 'bon' : v >= moyen ? 'moyen' : 'mauvais');
+
+  // ───── Rendu ─────
+  const carte = document.getElementById('carte'), boitePoints = document.getElementById('points');
+  function rendre() {
+    const r = pronostic();
+    // Points sur la carte
+    boitePoints.innerHTML = POINTS.map((p) => {
+      const occ = ici(p.id), sortie = r.sorties.find((s) => s.p.id === p.id);
+      const etat = sortie ? (sortie.fermeture >= 1 ? 'ferme' : 'ouvert') : '';
+      const faille = r.repere && p.id === 'berge' ? 'faille' : '';
+      const libres = Math.max(0, Math.min(p.cap, p.role === 'descente' ? Math.max(occ.length + 1, 6) : p.cap) - occ.length);
+      const x = ((p.xy[0] - 90) / 700 * 100).toFixed(2), y = ((p.xy[1] - 0) / 490 * 100).toFixed(2);
+      return `<button type="button" class="pt ${etat} ${faille}" data-pt="${p.id}" data-role="${p.role}" style="left:${x}%;top:${y}%" aria-label="${p.nom}, ${ROLES[p.role]}, ${occ.length} agent(s)">
+        <span class="pastille"><span class="role">${ROLES[p.role]}</span><span class="nom">${p.nom}</span><span class="court">${p.court}</span>
+          <span class="places">${occ.map((a) => a.id ? `<i class="pion moi" data-id="${a.id}" tabindex="0" title="Ton agent ${a.service}">${a.service}</i>` : `<i class="pion autre" title="${a.zone}">${a.qui}</i>`).join('')}${'<i class="vide"></i>'.repeat(libres)}</span></span>
+        <span class="tige"></span><span class="pied"></span></button>`;
+    }).join('');
+    // Réserve
+    document.getElementById('pions').innerHTML = MOI.filter((m) => !place[m.id]).map((m) => `<i class="pion moi ${choisi === m.id ? 'choisi' : ''}" data-id="${m.id}" tabindex="0" role="button" aria-label="Agent ${m.service === 'R' ? 'Recherche' : m.service === 'I' ? 'Intervention' : 'Proximité'}">${m.service}</i>`).join('');
+    // Barque et flèches de fuite
+    document.getElementById('barque').setAttribute('opacity', r.repere ? '1' : '.35');
+    const fl = document.getElementById('fleches');
+    fl.innerHTML = r.sorties.filter((s) => s.fermeture < 1).map((s) => {
+      const a = P(5.2, 5.2, 10), b = s.p.xy, w = (1.5 + s.poids * (1 - s.fermeture) * 10).toFixed(1);
+      return `<path d="M${a[0]} ${a[1]} Q ${(a[0] + b[0]) / 2} ${(a[1] + b[1]) / 2 - 40} ${b[0]} ${b[1] - 6}" fill="none" stroke="#FF6E6A" stroke-opacity="${constat ? .95 : .55}" stroke-width="${w}" stroke-dasharray="${constat ? '0' : '6 6'}" marker-end="url(#fl)"/>`;
+    }).join('');
+    carte.classList.toggle('constat-on', constat);
+    document.getElementById('astuce').textContent = constat ? 'Constat : par où ils sont passés cette nuit' : 'Glisse tes agents sur un point d\'accès';
+    const t = carte.querySelector('.tampon'); if (t) t.remove();
+    if (constat) carte.insertAdjacentHTML('beforeend', '<span class="tampon">CONSTAT · 13/10 · 06:40</span>');
+    // Pronostic
+    const pr = document.getElementById('prono');
+    if (!constat) {
+      const ouvertes = r.sorties.filter((s) => s.fermeture < 1).map((s) => s.p.nom);
+      pr.innerHTML = `<h2>Si on y va comme ça</h2>
+        <div class="ligne"><span class="l">Descente qui fait tomber l'emprise</span><span class="v ${classe(r.chance, 65, 40)}">${r.chance} %</span></div>
+        <div class="barre"><i style="width:${r.chance}%;background:var(--${r.chance >= 65 ? 'green' : r.chance >= 40 ? 'amber' : 'red'})"></i></div>
+        <div class="ligne"><span class="l">Zones engagées</span><span class="v">${r.zones.size} · +${(r.zones.size - 1) * 20} %</span></div>
+        <div class="ligne"><span class="l">Faille</span><span class="v ${r.repere ? 'bon' : 'mauvais'}">${r.repere ? 'repérée' : `repérage ${r.rep.toString().replace('.', ',')}/2`}</span></div>
+        <div class="ligne"><span class="l">Lieutenants qui filent</span><span class="v ${classe(5 - r.fuyards, 4, 2)}">${r.fuyards} sur 5</span></div>
+        ${r.repere ? '<div class="alerte r">Faille repérée : Sifflet garde une barque à la berge du canal. Si la descente passe, la plupart fuiront par là.</div>' : '<div class="alerte a">Sans repérage, on ne sait pas par où ils fuient. Deux agents Recherche sur le toit suffisent.</div>'}
+        ${ouvertes.length ? `<p class="note">Sorties encore ouvertes : ${ouvertes.join(', ')}.</p>` : '<div class="alerte v">Toutes les sorties sont tenues.</div>'}
+        ${r.mesPlaces === 0 ? '<p class="note">Tu n\'as encore posé aucun agent.</p>' : ''}`;
+    } else {
+      const ok = r.chance >= 50;
+      pr.innerHTML = `<h2>Constat de la nuit</h2>
+        <div class="alerte ${ok ? 'v' : 'r'}">${ok ? 'La descente a fait tomber l\'emprise sur Les Glacis.' : 'La porte a tenu : le milieu garde Les Glacis ce soir.'}</div>
+        <div class="ligne"><span class="l">Lieutenants arrêtés</span><span class="v">${r.arretes}</span></div>
+        <div class="ligne"><span class="l">En fuite</span><span class="v ${r.fuyards ? 'mauvais' : 'bon'}">${r.fuyards}${r.fuyards ? ' · ' + r.sorties.filter((s) => s.fermeture < 1).sort((a, b) => b.poids * (1 - b.fermeture) - a.poids * (1 - a.fermeture)).map((s) => s.p.nom.toLowerCase()).slice(0, 2).join(', ') : ''}</span></div>
+        <div class="ligne"><span class="l">Saisies</span><span class="v">${ok ? eur(r.saisie) : '—'}</span></div>
+        <p class="note">Les flèches rouges montrent par où ils sont passés. Le constat s'affiche une fois, au premier passage du matin.</p>`;
+    }
+    document.getElementById('constat').textContent = constat ? 'Revenir au plan de ce soir' : 'Voir le constat de demain matin';
+  }
+
+  // ───── Glisser-déposer (souris et doigt), avec un toucher-toucher de secours ─────
+  let drag = null;
+  function deposer(id, pid) {
+    if (pid) {
+      const p = POINTS.find((x) => x.id === pid);
+      const cap = p.role === 'descente' ? p.cap : p.cap;
+      if (ici(pid).filter((a) => a.id !== id).length >= cap) { flash(pid); return; }
+      place[id] = pid;
+    } else delete place[id];
+    choisi = null; rendre();
+  }
+  function flash(pid) { const el = boitePoints.querySelector(`[data-pt="${pid}"] .pastille`); if (el) { el.style.borderColor = 'var(--red)'; setTimeout(() => { el.style.borderColor = ''; }, 500); } }
+  document.addEventListener('pointerdown', (e) => {
+    const pion = e.target.closest('.pion.moi[data-id]');
+    if (!pion || constat) return;
+    e.preventDefault();
+    drag = { id: pion.dataset.id, x: e.clientX, y: e.clientY, bouge: false, ghost: null };
+  });
+  document.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    if (!drag.bouge && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) > 6) {
+      drag.bouge = true;
+      const m = MOI.find((x) => x.id === drag.id);
+      drag.ghost = Object.assign(document.createElement('i'), { className: 'pion moi fantome', textContent: m.service });
+      document.body.appendChild(drag.ghost);
+    }
+    if (drag.bouge) {
+      drag.ghost.style.left = e.clientX + 'px'; drag.ghost.style.top = e.clientY + 'px';
+      boitePoints.querySelectorAll('.pt').forEach((el) => el.classList.remove('cible'));
+      const sous = document.elementFromPoint(e.clientX, e.clientY);
+      const pt = sous && sous.closest('.pt'); if (pt) pt.classList.add('cible');
+    }
+  });
+  document.addEventListener('pointerup', (e) => {
+    if (!drag) return;
+    const d = drag; drag = null;
+    if (d.ghost) d.ghost.remove();
+    boitePoints.querySelectorAll('.pt').forEach((el) => el.classList.remove('cible'));
+    if (!d.bouge) { choisi = choisi === d.id ? null : d.id; rendre(); return; }
+    const sous = document.elementFromPoint(e.clientX, e.clientY);
+    const pt = sous && sous.closest('.pt');
+    deposer(d.id, pt ? pt.dataset.pt : null);
+  });
+  document.addEventListener('pointercancel', () => { if (drag && drag.ghost) drag.ghost.remove(); drag = null; });
+  boitePoints.addEventListener('click', (e) => { const pt = e.target.closest('.pt'); if (pt && choisi && !e.target.closest('.pion')) deposer(choisi, pt.dataset.pt); });
+  document.getElementById('reserve').addEventListener('click', (e) => { if (choisi && place[choisi] && !e.target.closest('button')) deposer(choisi, null); });
+  document.addEventListener('keydown', (e) => {
+    const pion = e.target.closest && e.target.closest('.pion.moi[data-id]');
+    if (pion && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); choisi = pion.dataset.id; rendre(); }
+  });
+
+  document.getElementById('auto').addEventListener('click', () => {
+    MOI.forEach((m) => { delete place[m.id]; });
+    const libre = (pid) => POINTS.find((p) => p.id === pid).cap - ici(pid).length;
+    MOI.forEach((m) => {
+      if (m.service === 'R' && libre('toit') > 0) place[m.id] = 'toit';
+      else if (m.service === 'I') place[m.id] = 'porte';
+    });
+    MOI.filter((m) => !place[m.id]).forEach((m) => {
+      const s = POINTS.filter((p) => p.role === 'bouclage' && libre(p.id) > 0).sort((a, b) => force(a.id) - force(b.id) || b.poids - a.poids)[0];
+      place[m.id] = s ? s.id : 'porte';
+    });
+    constat = false; choisi = null; rendre();
+  });
+  document.getElementById('vider').addEventListener('click', () => { MOI.forEach((m) => { delete place[m.id]; }); constat = false; choisi = null; rendre(); });
+  document.getElementById('constat').addEventListener('click', () => { constat = !constat; choisi = null; rendre(); });
+  rendre();
+})();
+</script>
