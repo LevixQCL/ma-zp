@@ -4,6 +4,7 @@ import { absenceHtml, semaineHtml, portraitAdjoint } from './chef-semaine.js';
 import { humeurReseau } from '../engine/chef.js';
 import { titresDefi } from './defis.js';
 import { DOCTRINES, SERVICE_LABELS } from '../engine/constants.js';
+import { carteQuartiers } from '../engine/quartiers.js';
 import { doctrineOuverte, dernierJourDoctrine, doctrineSemaine2, finFenetreDoctrine } from '../engine/regles.js';
 import { maxDemarchesDe } from '../engine/enquete.js';
 import { pistesHpHtml, faitsDeLaNuit } from './pistes.js';
@@ -243,8 +244,17 @@ function itemsDuSoir(st, z, { ordresOk, faites, reussies, delegue }) {
   items.push({ ok: !!d.decision || !!d.sansDecision, href: '#ordres-decision', t: d.decision ? 'Grande décision choisie' : d.sansDecision ? 'Grande décision : aucune ce soir' : 'Grande décision', s: d.decision ? 'payée à 20:00 si le budget le permet' : d.sansDecision ? 'tu peux encore changer d’avis' : 'en choisir une, ou « Aucune ce soir »' });
   const pc = z.pointChaud;
   if (pc) {
-    const a = (d.patrouilles || {})[pc.cell] || 0;
-    items.push({ ok: a >= 2, href: '#carte', t: a >= 2 ? `Point chaud : ${a} agents envoyés` : `Point chaud : ${esc(pc.titre.toLowerCase())}`, s: a >= 2 ? 'désamorcé à 20:00 si tes ordres sont validés' : 'envoie 2 patrouilles depuis la Carte' });
+    const pat = d.patrouilles || {}, a = pat[pc.cell] || 0;
+    const ailleurs = Object.entries(pat).filter(([k, v]) => String(k) !== String(pc.cell) && v > 0).reduce((s2, [, v]) => s2 + v, 0);
+    const prox = (d.alloc && d.alloc.proximite) || 0;
+    const lieu = esc(carteQuartiers(st).nomDe(Number(pc.cell)));
+    // Pourquoi ce n'est pas encore bon : on le dit (avant, « envoie 2 patrouilles » même quand on en avait déjà envoyé ailleurs).
+    const sous = a >= 2 ? 'désamorcé à 20:00 si tes ordres sont validés'
+      : prox < 2 ? `il faut au moins 2 agents en Proximité (tu en as ${prox}), puis 2 patrouilles à ${lieu}`
+      : a === 1 ? `1 patrouille sur 2 à ${lieu} : ajoutes-en une sur la Carte`
+      : ailleurs ? `tes ${ailleurs} patrouille${ailleurs > 1 ? 's sont' : ' est'} dans d’autres quartiers : il en faut 2 à ${lieu}`
+      : `envoie 2 patrouilles à ${lieu} depuis la Carte (calque Ma zone)`;
+    items.push({ ok: a >= 2, href: '#carte', t: a >= 2 ? `Point chaud : ${a} agents envoyés` : `Point chaud : ${esc(pc.titre.toLowerCase())}`, s: sous });
   }
   if (st.enquete) items.push({ ok: nbDem >= 1 || (d.accusation !== null && d.accusation !== undefined), href: '#enquete', t: `Enquête : ${nbDem} démarche${nbDem > 1 ? 's' : ''} sur ${maxDemarchesDe(st, zoneAvecAgenda())}`, s: (st.traques || []).length ? 'une traque est en cours !' : 'constatations, vérifications, partage, accusation' });
   const dl = dilemmeDuJour(st, z);
