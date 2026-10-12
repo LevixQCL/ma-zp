@@ -2228,6 +2228,22 @@ button.hz-s:hover { color: var(--text); }
   .carte-v3 > .cv-corps { grid-column: 2; }
   .carte-v3 > .cv-calques { max-width: 520px; }
 }
+/* Carte sur grand écran PC : toute la largeur disponible. La maquette occupe la colonne de gauche sur toute la hauteur
+   de la fenêtre (elle suit le défilement) ; titre, boutons et fiches passent dans la colonne de droite, à largeur de
+   lecture. La barre d'onglets se décale pour ne pas mordre sur la carte. */
+@media (min-width: 1280px) and (hover: hover) and (pointer: fine) {
+  body:has(main.carte-v3) { --cv-l: min(1680px, calc(100vw - 220px)); }
+  body:has(main.carte-v3) #app { max-width: var(--cv-l); }
+  body:has(main.carte-v3) nav.tabs { left: max(12px, calc(50% - var(--cv-l) / 2 - 96px)); }
+  main.screen.carte-v3 { max-width: var(--cv-l); padding-top: 20px; grid-template-columns: minmax(0, 1fr) clamp(360px, 30vw, 500px); grid-template-rows: auto auto 1fr; column-gap: 28px; row-gap: 14px; }
+  .carte-v3 > .cv-tete, .carte-v3 > .cv-calques { grid-column: 2; max-width: none; }
+  .carte-v3 > .cv-carte { grid-column: 1; grid-row: 1 / span 3; top: 20px; display: flex; justify-content: center;
+    background: radial-gradient(ellipse at 50% 40%, #121A3A, #05081A 75%); }
+  .carte-v3 > .cv-carte > svg.iso { width: 100%; height: auto; max-height: calc(100vh - 48px); }
+  .carte-v3 > .cv-corps { grid-column: 2; grid-row: 3; }
+  /* « Valider » sous la colonne de droite, là où l'on vient de toucher + / −, et toujours visible en bas de la fenêtre. */
+  body:has(main.carte-v3) .savebar { width: clamp(360px, 30vw, 500px); max-width: none; margin: 4px 28px 28px auto; }
+}
 
 /* Onglet Chef (saison 2) */
 .chef-onglet { gap: 14px; }
