@@ -31,9 +31,9 @@ h1 { font: 800 clamp(24px, 4vw, 34px)/1.05 var(--display); margin: 2px 0 0; text
 .diff:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 
 .jeu { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; align-items: start; }
-@media (min-width: 900px) { .jeu { grid-template-columns: minmax(0, 520px) minmax(0, 1fr); } }
+@media (min-width: 900px) { .jeu { grid-template-columns: minmax(0, 620px) minmax(0, 1fr); } }
 .colonne { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.plateau-cadre { position: relative; width: 100%; max-width: 520px; aspect-ratio: 1; border-radius: 18px; overflow: hidden; border: 1px solid var(--hair); background: #0A0F22; touch-action: none; user-select: none; -webkit-user-select: none; }
+.plateau-cadre { position: relative; width: 100%; max-width: 620px; aspect-ratio: 680 / 396; border-radius: 18px; overflow: hidden; border: 1px solid var(--hair); background: radial-gradient(ellipse at 50% 42%, #18224A, #060918 78%); touch-action: none; user-select: none; -webkit-user-select: none; }
 #plateau { width: 100%; height: 100%; display: block; }
 .puce-chance { align-self: center; max-width: 520px; font: 700 14px var(--body); padding: 7px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--line); text-align: center; margin-top: -4px; }
 .puce-chance.r { border-color: var(--red-line); color: #FFC9C6; }
@@ -97,6 +97,7 @@ button.btn:disabled { opacity: .45; cursor: default; }
 @keyframes roule { 0% { transform: rotate(-200deg) scale(.6); } 100% { transform: none; } }
 .de p { margin: 0; font-size: 14px; color: var(--text2); }
 .de p b { color: var(--text); }
+@media (max-width: 600px) { .plateau-cadre { margin-inline: -16px; width: calc(100% + 32px); max-width: none; border-radius: 0; border-inline: 0; } }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
 </style>
 
@@ -116,7 +117,7 @@ button.btn:disabled { opacity: .45; cursor: default; }
 
   <div class="jeu">
     <div class="colonne">
-      <div class="plateau-cadre" id="cadre"><svg id="plateau" viewBox="0 0 600 600" aria-label="Plateau de la mission"></svg></div>
+      <div class="plateau-cadre" id="cadre"><svg id="plateau" viewBox="10 22 680 396" aria-label="Plateau de la mission"></svg></div>
       <span class="puce-chance" id="puce" aria-live="polite"></span>
       <div class="reserve" id="reserve-bloc">
         <div class="t"><b>Tes policiers</b><span id="reserve-aide">Glisse-les sur une rue, ou touche un policier puis une case.</span></div>
@@ -164,59 +165,114 @@ button.btn:disabled { opacity: .45; cursor: default; }
   const C = 100, k = (x, y) => `${x},${y}`;
   const nouveau = () => { numero += 1; P = plateau(diff, graine(4242 + numero * 9973 + diff.length * 31)); place = {}; choisi = null; resultat = null; rendre(); };
 
-  // ───── Dessin du plateau ─────
+  // ───── Dessin du plateau en demi-vue isométrique, dans le style de la carte du jeu ─────
+  const W = 100, H = 50, OX = 340, OY = 96;
+  const I = (x, y, z = 0) => [OX + (x - y) * W / 2, OY + (x + y) * H / 2 - z];
+  const f1 = (v) => v.toFixed(1);
+  const losange = (x, y, z = 0, m = 0) => [I(x + m, y + m, z), I(x + 1 - m, y + m, z), I(x + 1 - m, y + 1 - m, z), I(x + m, y + 1 - m, z)].map((p) => p.map(f1).join(',')).join(' ');
+  const centre = (c, z = 0) => I(c[0] + 0.5, c[1] + 0.5, z);
+  const hash = (x, y) => ((x * 73856093) ^ (y * 19349663) ^ numero * 83492791) >>> 0;
+  function immeuble(x, y) {
+    const hz = 26 + hash(x, y) % 5 * 7, m = 0.08;
+    const coins = [I(x + m, y + m), I(x + 1 - m, y + m), I(x + 1 - m, y + 1 - m), I(x + m, y + 1 - m)];
+    const haut = coins.map(([a, b]) => [a, b - hz]);
+    const pts = (a) => a.map((p) => p.map(f1).join(',')).join(' ');
+    const teinte = hash(x, y) % 3 === 0 ? ['#5A3A44', '#3D2730', '#2E1D24'] : ['#3A4880', '#252F5C', '#1C2449'];
+    let s = `<polygon points="${pts([coins[1], coins[2], haut[2], haut[1]])}" fill="${teinte[1]}"/><polygon points="${pts([coins[3], coins[2], haut[2], haut[3]])}" fill="${teinte[2]}"/><polygon points="${pts(haut)}" fill="${teinte[0]}"/>`;
+    // fenêtres allumées sur les deux faces visibles
+    for (let z = 12; z < hz - 6; z += 12) for (let t = 0.2; t < 0.9; t += 0.3) {
+      if ((hash(x, y) >> ((z + t * 10) | 0)) % 3 === 0) continue;
+      const a = I(x + 1 - m, y + m + (1 - 2 * m) * t, z), b = I(x + m + (1 - 2 * m) * t, y + 1 - m, z);
+      s += `<rect x="${f1(a[0] - 2)}" y="${f1(a[1] - 5)}" width="4" height="5" fill="#F7C76A" opacity=".85"/><rect x="${f1(b[0] - 2)}" y="${f1(b[1] - 5)}" width="4" height="5" fill="#F7C76A" opacity=".6"/>`;
+    }
+    if (hash(x, y) % 4 === 0) { const t = I(x + 0.5, y + 0.5, hz); s += `<line x1="${f1(t[0])}" y1="${f1(t[1])}" x2="${f1(t[0])}" y2="${f1(t[1] - 16)}" stroke="#8A93C0" stroke-width="1.5"/><circle cx="${f1(t[0])}" cy="${f1(t[1] - 17)}" r="2" fill="#FF6E6A"/>`; }
+    return s;
+  }
+  function silhouette(couleur, capuche) {
+    return `<ellipse cx="0" cy="0" rx="13" ry="5" fill="#000" opacity=".35"/><path d="M-9 0c0-12 4-19 9-19s9 7 9 19z" fill="${couleur}"/><circle cy="-25" r="6.5" fill="#F0C7A2"/>${capuche ? `<path d="M-8 -24c0-10 16-10 16 0v4h-16z" fill="${couleur}" opacity=".95"/>` : ''}`;
+  }
   function dessiner() {
     const pr = prevision(P, place), neut = neutralises(P, place);
     const vus = new Set(); P.guetteurs.forEach((g, j) => { if (!neut[j]) vueGuetteur(g, P.rue).forEach((c) => vus.add(c)); });
-    let h = '<defs><marker id="pointe" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker></defs>';
+    const vueR = new Set(); if (place.r) for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) if (Math.abs(x - place.r[0]) + Math.abs(y - place.r[1]) <= REGLE.vueRecherche && P.rue(x, y)) vueR.add(k(x, y));
+    let h = `<defs>
+      <marker id="pointe" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0 0L10 5L0 10z" fill="context-stroke"/></marker>
+      <radialGradient id="lueur" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FF5A3C" stop-opacity=".35"/><stop offset="1" stop-color="#FF5A3C" stop-opacity="0"/></radialGradient>
+      <radialGradient id="lampe" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#FFD58A" stop-opacity=".35"/><stop offset="1" stop-color="#FFD58A" stop-opacity="0"/></radialGradient>
+      <filter id="halo" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+    </defs>`;
+    // socle du quartier
+    h += `<polygon points="${losange(-0.25, -0.25, 0)}" fill="none"/>`;
+    const socle = [I(-0.15, -0.15), I(6.15, -0.15), I(6.15, 6.15), I(-0.15, 6.15)];
+    h += `<polygon points="${socle.map((p) => p.map(f1).join(',')).join(' ')}" fill="#2A1418" stroke="#5A2A30" stroke-width="2"/>`;
+    h += `<polygon points="${[socle[1], socle[2], [socle[2][0], socle[2][1] + 14], [socle[1][0], socle[1][1] + 14]].map((p) => p.map(f1).join(',')).join(' ')}" fill="#1A0D12"/><polygon points="${[socle[3], socle[2], [socle[2][0], socle[2][1] + 14], [socle[3][0], socle[3][1] + 14]].map((p) => p.map(f1).join(',')).join(' ')}" fill="#12090D"/>`;
+    // sol : rues, vue des guetteurs (rouge), vue de la Recherche (bleu), sorties (vert)
     P.lignes.forEach((l, y) => l.forEach((c, x) => {
-      const X = x * C, Y = y * C;
-      if (c === '#') {
-        h += `<rect x="${X + 3}" y="${Y + 3}" width="${C - 6}" height="${C - 6}" rx="8" fill="#2A3360"/><rect x="${X + 3}" y="${Y + 3}" width="${C - 6}" height="${C - 18}" rx="8" fill="#38437A"/>`;
-        for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) if ((x + y + i + j) % 3) h += `<rect x="${X + 18 + i * 24}" y="${Y + 20 + j * 26}" width="10" height="12" rx="2" fill="#F7C76A" opacity=".75"/>`;
-      } else {
-        h += `<rect x="${X}" y="${Y}" width="${C}" height="${C}" fill="${vus.has(k(x, y)) ? '#3A1C27' : '#141A33'}" stroke="#1F2747" stroke-width="2"/>`;
-        if (c === 'E') h += `<rect x="${X + 6}" y="${Y + 6}" width="${C - 12}" height="${C - 12}" rx="14" fill="none" stroke="#3DD39A" stroke-width="3" stroke-dasharray="8 6" opacity=".8"/><text x="${X + 50}" y="${Y + 92}" text-anchor="middle" style="font:700 12px var(--body);fill:#78E2B8">SORTIE</text>`;
-      }
+      if (c === '#') { h += `<polygon points="${losange(x, y, 0, 0.04)}" fill="#1B1426"/>`; return; }
+      const fond = vus.has(k(x, y)) ? '#4A1A26' : '#171B33';
+      h += `<polygon points="${losange(x, y, 0, 0.02)}" fill="${fond}" stroke="#262C4F" stroke-width="1"/>`;
+      if (vus.has(k(x, y))) h += `<polygon points="${losange(x, y, 0, 0.1)}" fill="none" stroke="#FF6E6A" stroke-opacity=".55" stroke-width="1.5" stroke-dasharray="4 4"/>`;
+      if (vueR.has(k(x, y))) h += `<polygon points="${losange(x, y, 0, 0.08)}" fill="#63B0FF" fill-opacity=".12" stroke="#63B0FF" stroke-opacity=".7" stroke-width="1.5"/>`;
+      if (c === 'E') { h += `<polygon points="${losange(x, y, 0, 0.12)}" fill="#3DD39A" fill-opacity=".14" stroke="#3DD39A" stroke-width="2" stroke-dasharray="6 4"/>`; [[0.18, 0.18], [0.82, 0.82]].forEach(([a, b]) => { const q = I(x + a, y + b); h += `<line x1="${f1(q[0])}" y1="${f1(q[1])}" x2="${f1(q[0])}" y2="${f1(q[1] - 12)}" stroke="#3DD39A" stroke-width="3" stroke-linecap="round"/><circle cx="${f1(q[0])}" cy="${f1(q[1] - 13)}" r="2.5" fill="#B8F5DC"/>`; }); }
     }));
-    // ce que voit la Recherche
-    if (place.r) {
-      for (let y = 0; y < 6; y++) for (let x = 0; x < 6; x++) if (Math.abs(x - place.r[0]) + Math.abs(y - place.r[1]) <= REGLE.vueRecherche && P.rue(x, y)) h += `<rect x="${x * C + 4}" y="${y * C + 4}" width="${C - 8}" height="${C - 8}" rx="10" fill="#63B0FF" fill-opacity=".09" stroke="#63B0FF" stroke-opacity=".5" stroke-width="2"/>`;
-      for (const [c, frais] of pr.rev.vues) { const [x, y] = c.split(',').map(Number); h += frais ? `<g transform="translate(${x * C + 72} ${y * C + 22})"><ellipse cx="0" cy="0" rx="5" ry="8" fill="#FFC970"/><ellipse cx="9" cy="10" rx="5" ry="8" fill="#FFC970"/></g>` : `<text x="${x * C + 80}" y="${y * C + 30}" text-anchor="middle" style="font:800 16px sans-serif;fill:#96A0BF">∅</text>`; }
-    }
-    // itinéraires
+    // lueur rouge autour de Mo Vélo
+    { const p = centre(P.L); h += `<ellipse cx="${f1(p[0])}" cy="${f1(p[1])}" rx="150" ry="80" fill="url(#lueur)"/>`; }
+    // itinéraires au sol
     P.routes.forEach((r, i) => {
-      const possible = pr.post[i] > 0, off = (i - (P.routes.length - 1) / 2) * 7;
-      const pts = r.map(([x, y]) => `${x * C + 50 + off},${y * C + 50 + off}`).join(' ');
-      const largeur = 3 + P.priors[i] * 10;
-      h += `<polyline points="${pts}" fill="none" stroke="${COUL[i]}" stroke-width="${largeur}" stroke-linecap="round" stroke-linejoin="round" opacity="${possible ? .85 : .15}" ${possible ? '' : 'stroke-dasharray="4 10"'} marker-end="url(#pointe)"/>`;
-      const e = r[r.length - 1];
-      if (possible) h += `<g transform="translate(${e[0] * C + 50} ${e[1] * C + 38})"><rect x="-24" y="-13" width="48" height="24" rx="12" fill="#0A0F22" stroke="${COUL[i]}" stroke-width="2"/><text y="4" text-anchor="middle" style="font:700 13px var(--body);fill:${COUL[i]}">${Math.round(pr.post[i] * 100)} %</text></g>`;
+      const possible = pr.post[i] > 0, off = (i - (P.routes.length - 1) / 2) * 0.09;
+      const pts = r.map(([x, y]) => I(x + 0.5 + off, y + 0.5 - off).map(f1).join(',')).join(' ');
+      h += `<polyline points="${pts}" fill="none" stroke="${COUL[i]}" stroke-width="${f1(2.5 + P.priors[i] * 8)}" stroke-linecap="round" stroke-linejoin="round" opacity="${possible ? .85 : .13}" ${possible ? '' : 'stroke-dasharray="3 9"'} marker-end="url(#pointe)"/>`;
     });
-    // guetteurs
-    P.guetteurs.forEach((g, j) => {
-      const X = g[0] * C + 50, Y = g[1] * C + 50;
-      h += `<g opacity="${neut[j] ? .4 : 1}"><circle cx="${X}" cy="${Y}" r="30" fill="#2A1218" stroke="${neut[j] ? '#67719A' : '#FF6E6A'}" stroke-width="3"/><text x="${X}" y="${Y + 9}" text-anchor="middle" style="font:26px sans-serif">👁️</text>${neut[j] ? `<path d="M${X - 22} ${Y - 22}L${X + 22} ${Y + 22}M${X + 22} ${Y - 22}L${X - 22} ${Y + 22}" stroke="#C3C9DE" stroke-width="5" stroke-linecap="round"/>` : ''}</g>`;
-    });
-    // Mo Vélo
-    const [lx, ly] = P.L;
-    h += `<g transform="translate(${lx * C + 50} ${ly * C + 50})"><circle r="34" fill="#20294D" stroke="#FF6E6A" stroke-width="3"/><circle cy="-6" r="12" fill="#5BA88F"/><path d="M-22 28c3-14 12-20 22-20s19 6 22 20z" fill="#5BA88F" opacity=".85"/><path d="M-13 -11c3-11 23-11 26 0z" fill="#11152A"/><text y="52" text-anchor="middle" style="font:700 13px var(--body);fill:#FFC9C6">Mo Vélo</text></g>`;
-    // policiers posés
+    // traces vues par la Recherche
+    for (const [c, frais] of pr.rev.vues) { const [x, y] = c.split(',').map(Number), p = centre([x, y]); h += frais ? `<g transform="translate(${f1(p[0] - 14)} ${f1(p[1] - 2)})"><ellipse rx="3.5" ry="2.2" fill="#FFC970"/><ellipse cx="8" cy="4" rx="3.5" ry="2.2" fill="#FFC970"/></g>` : `<text x="${f1(p[0] - 16)}" y="${f1(p[1] + 4)}" text-anchor="middle" style="font:800 12px sans-serif;fill:#96A0BF">∅</text>`; }
+    // objets du décor et personnages, de l'arrière vers l'avant
+    const objets = [];
+    P.lignes.forEach((l, y) => l.forEach((c, x) => { if (c === '#') objets.push({ x, y, z: 0, d: () => immeuble(x, y) }); }));
+    P.lignes.forEach((l, y) => l.forEach((c, x) => {
+      if (c !== '.' || hash(x, y) % 5 !== 0) return;
+      objets.push({ x, y, z: 0.1, d: () => { const p = I(x + 0.15, y + 0.15); return `<ellipse cx="${f1(p[0])}" cy="${f1(p[1])}" rx="26" ry="13" fill="url(#lampe)"/><line x1="${f1(p[0])}" y1="${f1(p[1])}" x2="${f1(p[0])}" y2="${f1(p[1] - 30)}" stroke="#4A5280" stroke-width="2"/><circle cx="${f1(p[0])}" cy="${f1(p[1] - 31)}" r="3" fill="#FFE2A8"/>`; } });
+    }));
+    P.guetteurs.forEach((g, j) => objets.push({ x: g[0], y: g[1], z: 0.5, d: () => { const p = centre(g); return `<g transform="translate(${f1(p[0])} ${f1(p[1] + 6)})" opacity="${neut[j] ? .45 : 1}">${neut[j] ? '' : '<circle cy="-24" r="22" fill="#FF6E6A" opacity=".18" filter="url(#halo)"/>'}${silhouette('#3B2A3E', true)}<circle cx="-2" cy="-25" r="1.3" fill="#FF6E6A"/><circle cx="2.5" cy="-25" r="1.3" fill="#FF6E6A"/>${neut[j] ? '<path d="M-12 -40L12 -8M12 -40L-12 -8" stroke="#C3C9DE" stroke-width="4" stroke-linecap="round"/>' : ''}<text y="-40" text-anchor="middle" style="font:700 10px var(--body);fill:${neut[j] ? '#96A0BF' : '#FF9E99'}">${neut[j] ? 'neutralisé' : 'guetteur'}</text></g>`; } }));
+    objets.push({ x: P.L[0], y: P.L[1], z: 0.5, d: () => { const p = centre(P.L); return `<g transform="translate(${f1(p[0])} ${f1(p[1] + 6)})"><ellipse cx="0" cy="0" rx="18" ry="6" fill="#000" opacity=".35"/><rect x="-16" y="-10" width="32" height="7" rx="3.5" fill="#E8E4D6"/><circle cx="-12" cy="-3" r="4" fill="#11152A"/><circle cx="12" cy="-3" r="4" fill="#11152A"/>${silhouette('#5BA88F', false).replace('<ellipse cx="0" cy="0" rx="13" ry="5" fill="#000" opacity=".35"/>', '')}<path d="M-8 -28c1-8 15-8 16 0z" fill="#11152A"/><rect x="-38" y="-58" width="76" height="17" rx="8.5" fill="#0A0F22" stroke="#FF6E6A" stroke-width="1.5"/><text y="-46" text-anchor="middle" style="font:700 11px var(--body);fill:#FFC9C6">Mo Vélo</text></g>`; } });
     P.pions.forEach((p) => {
       const c = place[p.id]; if (!c) return;
       const vu = pr.alerte.includes(p.id);
-      h += `<g class="pose" data-id="${p.id}" transform="translate(${c[0] * C + 9} ${c[1] * C - 4})" style="cursor:grab">${vu ? '<circle cx="41" cy="54" r="44" fill="#FF6E6A" fill-opacity=".28"/>' : ''}${flic(p.s, { attrs: 'width="82" height="98"' })}</g>`;
+      objets.push({ x: c[0], y: c[1], z: 0.6, d: () => { const q = centre(c); return `<g class="pose" data-id="${p.id}" transform="translate(${f1(q[0] - 30)} ${f1(q[1] - 62)})" style="cursor:grab">${vu ? '<circle cx="30" cy="52" r="30" fill="#FF6E6A" fill-opacity=".3" filter="url(#halo)"/>' : ''}<rect x="8" y="10" width="44" height="60" fill="transparent"/>${flic(p.s, { attrs: 'width="60" height="72"' })}</g>`; } });
+    });
+    objets.sort((a, b) => (a.x + a.y + a.z) - (b.x + b.y + b.z) || a.x - b.x).forEach((o) => { h += o.d(); });
+    // itinéraires « en transparence » par-dessus les immeubles, pour ne jamais les perdre de vue
+    P.routes.forEach((r, i) => {
+      if (!(pr.post[i] > 0)) return;
+      const off = (i - (P.routes.length - 1) / 2) * 0.09;
+      h += `<polyline points="${r.map(([x, y]) => I(x + 0.5 + off, y + 0.5 - off).map(f1).join(',')).join(' ')}" fill="none" stroke="${COUL[i]}" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round" opacity=".55" pointer-events="none"/>`;
+    });
+    // probabilités au-dessus des sorties
+    P.routes.forEach((r, i) => {
+      if (!(pr.post[i] > 0)) return;
+      const e = r[r.length - 1], dx = e[0] + 0.5 - 3, dy = e[1] + 0.5 - 3, n = Math.hypot(dx, dy) || 1;
+      const p = I(e[0] + 0.5 + dx / n * 0.95, e[1] + 0.5 + dy / n * 0.95, 14);
+      h += `<g transform="translate(${f1(p[0])} ${f1(p[1])})"><rect x="-22" y="-11" width="44" height="21" rx="10.5" fill="#0A0F22" stroke="${COUL[i]}" stroke-width="2"/><text y="4" text-anchor="middle" style="font:700 12px var(--body);fill:${COUL[i]}">${Math.round(pr.post[i] * 100)} %</text></g>`;
     });
     // trajet réel après 20:00
     if (resultat) {
       const r = P.routes[resultat.route];
-      h += `<polyline points="${r.map(([x, y]) => `${x * C + 50},${y * C + 50}`).join(' ')}" fill="none" stroke="#fff" stroke-width="6" stroke-dasharray="2 12" stroke-linecap="round"/>`;
+      h += `<polyline points="${r.map(([x, y]) => I(x + 0.5, y + 0.5).map(f1).join(',')).join(' ')}" fill="none" stroke="#fff" stroke-width="4" stroke-dasharray="2 9" stroke-linecap="round"/>`;
       const stop = resultat.reussi ? r.find(([x, y]) => P.pions.some((p) => place[p.id] && place[p.id][0] === x && place[p.id][1] === y)) : r[r.length - 1];
-      if (stop) h += `<text x="${stop[0] * C + 50}" y="${stop[1] * C + 62}" text-anchor="middle" style="font:44px sans-serif">${resultat.reussi ? '🚔' : '💨'}</text>`;
+      if (stop) { const p = centre(stop, 70); h += `<text x="${f1(p[0])}" y="${f1(p[1])}" text-anchor="middle" style="font:34px sans-serif">${resultat.reussi ? '🚔' : '💨'}</text>`; }
     }
+    h += '<polygon id="survol" points="" fill="#FFB23F" fill-opacity=".18" stroke="#FFB23F" stroke-width="2.5" pointer-events="none"/>';
     document.getElementById('plateau').innerHTML = h;
     return pr;
   }
+  // Case du plateau sous un point de l'écran (projection inverse)
+  function caseDe(cx, cy) {
+    const svg = document.getElementById('plateau'), m = svg.getScreenCTM(); if (!m) return null;
+    const pt = new DOMPoint(cx, cy).matrixTransform(m.inverse());
+    const u = (pt.x - OX) / (W / 2), v = (pt.y - OY) / (H / 2);
+    const x = Math.floor((u + v) / 2), y = Math.floor((v - u) / 2);
+    return x >= 0 && y >= 0 && x < 6 && y < 6 ? [x, y] : null;
+  }
+  function survoler(c, ok) { const s = document.getElementById('survol'); if (!s) return; s.setAttribute('points', c ? losange(c[0], c[1], 0, 0.06) : ''); s.setAttribute('stroke', ok ? '#FFB23F' : '#FF6E6A'); s.setAttribute('fill', ok ? '#FFB23F' : '#FF6E6A'); }
 
   // ───── Panneau de droite ─────
   function rendre() {
@@ -276,7 +332,7 @@ button.btn:disabled { opacity: .45; cursor: default; }
 
   // ───── Gestes : glisser (souris et doigt) ou toucher-toucher ─────
   const cadre = document.getElementById('cadre');
-  const caseSous = (x, y) => { const b = cadre.getBoundingClientRect(); if (x < b.left || y < b.top || x > b.right || y > b.bottom) return null; return [Math.floor((x - b.left) / b.width * 6), Math.floor((y - b.top) / b.height * 6)]; };
+  const caseSous = (x, y) => caseDe(x, y);
   const posable = (c, id) => c && P.rue(c[0], c[1]) && P.lignes[c[1]][c[0]] !== 'L' && !P.guetteurs.some((g) => g[0] === c[0] && g[1] === c[1]) && !P.pions.some((p) => p.id !== id && place[p.id] && place[p.id][0] === c[0] && place[p.id][1] === c[1]);
   function poser(id, c) { if (c && posable(c, id)) place[id] = c; else if (!c) delete place[id]; choisi = null; rendre(); }
   let drag = null;
@@ -295,7 +351,7 @@ button.btn:disabled { opacity: .45; cursor: default; }
       drag.g = Object.assign(document.createElement('div'), { className: 'fantome', innerHTML: flic(P.pions.find((p) => p.id === drag.id).s) });
       document.body.appendChild(drag.g);
     }
-    if (drag.bouge) { drag.g.style.left = e.clientX + 'px'; drag.g.style.top = e.clientY + 'px'; }
+    if (drag.bouge) { drag.g.style.left = e.clientX + 'px'; drag.g.style.top = e.clientY + 'px'; const c = caseSous(e.clientX, e.clientY); survoler(c, c && posable(c, drag.id)); }
   });
   window.addEventListener('pointerup', (e) => {
     if (!drag) return; const d = drag; drag = null;
