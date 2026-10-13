@@ -82,11 +82,17 @@ function combiElec(x, y, s = 1) {
 }
 
 /** Icône de véhicule pour les tuiles du parc. */
+/** Véhicule illustré posé dans la scène de l'HP : roues sur la ligne `sol`, même échelle pour tous (0,2 unité par pixel). */
+const LARG_IMG = { combi: 248, electrique: 247, anonyme: 239, fourgon: 267 };
+function vehiculeImage(type, x, sol, cabosse) {
+  const t = LARG_IMG[type] ? type : 'combi';
+  return `<image href="img/vehicules/${t}${cabosse ? '-cabosse' : ''}.webp?v=2" x="${x - 1.2}" y="${sol - 27.4}" width="${(LARG_IMG[t] * 0.2).toFixed(1)}" height="30" preserveAspectRatio="xMinYMax meet"/>`;
+}
 /** Image d'un véhicule du parc (illustration, cabossée si besoin) ; la scène de l'HP garde ses dessins. */
 const TYPES_IMG = ['combi', 'electrique', 'anonyme', 'fourgon'];
 export function vehiculeSvg(type, h = 18, { cabosse = false, atelier = false } = {}) {
   const t = TYPES_IMG.includes(type) ? type : 'combi';
-  return `<img class="veh-img${atelier ? ' atelier' : ''}" src="img/vehicules/${t}${cabosse ? '-cabosse' : ''}.webp" alt="" aria-hidden="true" loading="lazy" decoding="async" style="height:${h}px;width:auto">`;
+  return `<img class="veh-img${atelier ? ' atelier' : ''}" src="img/vehicules/${t}${cabosse ? '-cabosse' : ''}.webp?v=2" alt="" aria-hidden="true" loading="lazy" decoding="async" style="height:${h}px;width:auto">`;
 }
 
 // Lever et coucher du soleil en Belgique, heure locale (approximatifs, heure d'été comprise), par mois.
@@ -453,14 +459,13 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   if (cd === 'plainte') s += `<g transform="translate(${x0 + 8},${base + 22})"><rect x="0" y="-12" width="26" height="11" rx="2" fill="#EDF0FA"/><rect x="18" y="-10" width="6" height="4" fill="#0C1124" opacity=".5"/><text x="9" y="-4.5" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="5" fill="#9A2B1F">TV</text><line x1="8" y1="-12" x2="8" y2="-17" stroke="#9FB0C0"/><ellipse cx="8" cy="-18" rx="4" ry="1.4" fill="#C8D3DD"/><circle cx="5" cy="0" r="2" fill="#0C1124"/><circle cx="21" cy="0" r="2" fill="#0C1124"/></g>${passant(x0 + 40, base + 20, '#2A3547')}<rect x="${x0 + 42}" y="${base + 10}" width="5" height="3" rx=".5" fill="#1D1A15"/>`;
   if (operation) for (let i = 0; i < 4; i++) { const bx = x0 + 18 + i * 34; s += `<g transform="translate(${bx},${base + 1})"><rect x="0" y="-7" width="22" height="1.2" fill="#C8D3DD"/><rect x="0" y="-4" width="22" height="1" fill="#C8D3DD"/>${[1, 7, 13, 19].map((vx) => `<rect x="${vx}" y="-7" width=".8" height="6" fill="#C8D3DD"/>`).join('')}<path d="M1 0 l-1.5 1.5 M21 0 l1.5 1.5" stroke="#9FB0C0"/></g>`; }
   // Véhicules en service garés devant.
-  let vx = Math.min(gx - 2, W - 150);
+  let vx = Math.min(gx - 2, W - 160);
   s += '<g class="hp-vehicules">';
   for (const v of vehs.slice(0, 3)) {
-    s += v.type === 'anonyme' ? anonyme(vx, base + 10, 0.9) : v.type === 'fourgon' ? fourgon(vx - 2, base + 5, 0.92) : v.type === 'electrique' ? combiElec(vx, base + 8, 0.95) : combi(vx, base + 8, 0.95);
+    s += vehiculeImage(v.type, vx, base + 27.4, v.cabosse);
     if (v.type !== 'anonyme') s += `<g class="hp-gyro" opacity="0"><circle cx="${vx + 16}" cy="${base + 8}" r="8" fill="url(#hp-bleu-${uid})"/><circle cx="${vx + 16}" cy="${base + 8.2}" r="1.6" fill="#8CC8F5"/></g>`;
-    if (v.cabosse) s += `<path d="M${vx + 30} ${base + 18} l3 -3 l2 2 l3 -3" stroke="#0C1124" stroke-width="1" fill="none" opacity=".7"/><path d="M${vx + 34} ${base + 12} l5 5 M${vx + 39} ${base + 12} l-5 5" stroke="#C8D3DD" stroke-width="1.4" opacity=".9"/>`;
     if (operation && v.type !== 'anonyme') s += `<circle cx="${vx + 16}" cy="${base + 8}" r="7" fill="url(#hp-bleu-${uid})"/>`;
-    vx += 48;
+    vx += 53;
   }
   s += '</g>';
   // Zone fondatrice (présente depuis la saison 1) : plaque de bronze scellée sur la tour, à hauteur d'homme.
