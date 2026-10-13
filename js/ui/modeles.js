@@ -27,7 +27,7 @@ export function comparatifModeles(z, { ouvert = false } = {}) {
   const lignes = L.map(([l, f, t, haut]) => { const b = best(f, haut), tous = ids.every((m) => f(MODELES[m]) === b);
     return `<tr><th scope="row">${l}</th>${ids.map((m) => `<td class="${!tous && f(MODELES[m]) === b ? 'ok' : ''}">${t(MODELES[m])}</td>`).join('')}</tr>`; }).join('');
   return `<details class="cmp-modeles" ${ouvert ? 'open' : ''}><summary class="small" style="font-weight:600">Comparer les ${ids.length} modèles ${icon('chevron', 12)}</summary>
-    <div class="cmp-scroll"><table class="cmp-table"><thead><tr><th></th>${ids.map((m) => `<th scope="col">${vehiculeSvg(MODELES[m].type, 14)}<span>${esc(MODELES[m].court)}</span></th>`).join('')}</tr></thead>
+    <div class="cmp-scroll"><table class="cmp-table"><thead><tr><th></th>${ids.map((m) => `<th scope="col">${vehiculeSvg(MODELES[m].type, 24)}<span>${esc(MODELES[m].court)}</span></th>`).join('')}</tr></thead>
     <tbody>${lignes}<tr><th scope="row">Atout</th>${ids.map((m) => `<td class="role">${esc(MODELES[m].role)}</td>`).join('')}</tr></tbody></table></div>
     <span class="tiny muted">Vitesse en km/h sur les urgences, véhicule neuf${(z && z.prepa) ? `, avec ta préparation des combis (niv. ${z.prepa})` : ''}. En vert : le meilleur de la ligne. Accrochages : ce qu’il encaisse sur une urgence avant de devoir s’arrêter.</span></details>`;
 }

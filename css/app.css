@@ -707,6 +707,9 @@ main > a.small, main > a.tiny { padding: 12px 0; }
 .parc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
 .veh { background: var(--bg); border: 1px solid var(--hair); border-radius: 12px; padding: 8px 8px 7px; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; color: var(--text); font: inherit; text-align: left; cursor: pointer; text-decoration: none; }
 .veh:hover { border-color: var(--line); }
+.veh .veh-img { width: 100% !important; max-width: 100%; height: auto !important; aspect-ratio: 2 / 1; object-fit: contain; object-position: center bottom; margin: 0 0 2px; }
+.dtuile .t .veh-img { display: block; margin: 0 0 4px; }
+.veh-img.atelier { opacity: .45; filter: grayscale(.6); }
 .veh .n { font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .veh .s { font-size: 12px; color: var(--muted); display: flex; gap: 4px; align-items: center; white-space: nowrap; }
 .veh .s i { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }

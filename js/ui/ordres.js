@@ -1,4 +1,5 @@
 // Écran des ordres du tour.
+import { vehiculeSvg } from './scene-hp.js';
 import { effetsPressions } from '../engine/contenu.js';
 import { comparatifModeles } from './modeles.js';
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './common.js';
@@ -504,7 +505,7 @@ function vehiculesTuiles(z, T, d) {
         const plein = z.vehicules >= capaciteVehicules(z), rep = plein ? plusUse(z) : null;
         const nomRep = rep != null ? `${modeleDe(z.flotte[rep]).court.toLowerCase()} à ${Math.round(100 - z.flotte[rep].u)} %` : '';
         return `${plein ? `<p class="tiny muted" style="margin:0">Garage plein : achat <strong>avec reprise</strong> de ton véhicule le plus usé (${esc(nomRep)}, ${fmt1(prixRevente(z, rep))} k€ déduits). Pour en avoir plus, agrandis le garage (Bâtir).</p>` : ''}
-      <div class="dgrille">${IDS_MODELES.map((m) => { const M = MODELES[m], dec = { type: 'equiper', cible: 'vehicule', modele: m, ...(plein ? { reprise: rep } : {}) }; return tuile(dec, M.nom, `${M.role} · ${fmt1(M.places)} places · ${String(M.entretien).replace('.', ',')} k€/tour`, fmt1(coutDecision(z, dec))); }).join('')}</div>
+      <div class="dgrille">${IDS_MODELES.map((m) => { const M = MODELES[m], dec = { type: 'equiper', cible: 'vehicule', modele: m, ...(plein ? { reprise: rep } : {}) }; return tuile(dec, `${vehiculeSvg(M.type, 34)}${M.nom}`, `${M.role} · ${fmt1(M.places)} places · ${String(M.entretien).replace('.', ',')} k€/tour`, fmt1(coutDecision(z, dec))); }).join('')}</div>
       ${comparatifModeles(z)}`;
 }
 /** Tuile « Préparer les combis » (grande décision « Équiper »), tant que le niveau maximum n'est pas atteint. */

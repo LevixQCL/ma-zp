@@ -423,7 +423,7 @@ function parcCorps() {
     const [coul, txt] = vendu ? ['var(--red)', 'revendu ce soir'] : v.etat === 'cabosse' ? (prevu ? ['var(--blue)', 'réparé ce soir'] : ['var(--amber)', 'cabossé'])
       : v.etat === 'atelier' ? ['var(--red)', `atelier ${v.jours} j`] : ['var(--green)', v.etatPc != null ? `état ${v.etatPc} %` : 'en service'];
     return `<button type="button" class="veh ${v.etat}${prevu ? ' prevu' : ''}" data-action="vehicule" data-slot="${v.slot}" aria-label="${esc(v.nom)} : ${txt}">
-      ${vehiculeSvg(v.type, 20)}<span class="n">${esc(v.nom)}</span><span class="s"><i style="background:${coul}"></i>${txt}</span>${v.etatPc != null ? `<span class="veh-u" aria-hidden="true"><b style="width:${v.etatPc}%;background:${v.etatPc >= 80 ? 'var(--green)' : v.etatPc >= 60 ? 'var(--amber)' : 'var(--red)'}"></b></span>` : ''}</button>`;
+      ${vehiculeSvg(v.type, 46, { cabosse: v.etat === 'cabosse', atelier: v.etat === 'atelier' })}<span class="n">${esc(v.nom)}</span><span class="s"><i style="background:${coul}"></i>${txt}</span>${v.etatPc != null ? `<span class="veh-u" aria-hidden="true"><b style="width:${v.etatPc}%;background:${v.etatPc >= 80 ? 'var(--green)' : v.etatPc >= 60 ? 'var(--amber)' : 'var(--red)'}"></b></span>` : ''}</button>`;
   }).join('') + (libres ? `<button type="button" class="veh libre" data-action="parc-achat" aria-label="Acheter un véhicule (grande décision)"><span style="font-size:16px;line-height:1">+</span><span class="s">${libres} place${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''}</span></button>` : '');
   return `<div class="col hp-logis" style="gap:10px">
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon hôtel de police</h2>
@@ -480,7 +480,7 @@ export function ouvrirVehicule(slot) {
     : v.etat === 'atelier' ? `<span class="tiny bad">À l’atelier : de retour dans ${v.jours} tour${v.jours > 1 ? 's' : ''}</span>`
     : '<span class="tiny ok">En service</span>';
   const html = `
-    <div class="between" style="align-items:flex-start"><div class="row" style="gap:12px">${vehiculeSvg(v.type, 26)}<div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">${esc(v.nom)}</h2>${statut}</div></div>
+    <div class="between" style="align-items:flex-start"><div class="row" style="gap:12px">${vehiculeSvg(v.type, 40, { cabosse: v.etat === 'cabosse', atelier: v.etat === 'atelier' })}<div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">${esc(v.nom)}</h2>${statut}</div></div>
       <button class="iconbtn" data-action="parc" aria-label="Retour au parc" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">‹</button></div>
     ${v.etat === 'cabosse' ? `<div class="bat" style="gap:3px"><div class="between small"><span style="font-weight:600">Carrosserie ce soir</span><span class="mono">${fmt1(prix)} k€</span></div>
       <span class="tiny muted">${atelier ? 'Réparé à ton atelier mécanique, sans immobilisation.' : 'Immobilisé le temps de la réparation. Avec l’atelier mécanique : moitié prix et sans immobilisation.'}</span></div>

@@ -82,10 +82,11 @@ function combiElec(x, y, s = 1) {
 }
 
 /** Icône de véhicule pour les tuiles du parc. */
-export function vehiculeSvg(type, h = 18) {
-  if (type === 'anonyme') return `<svg viewBox="0 0 48 20" style="height:${h}px;width:auto" aria-hidden="true">${anonyme(0, 0, 1, '#4E5B6B')}</svg>`;
-  if (type === 'fourgon') return `<svg viewBox="0 0 54 26" style="height:${h}px;width:auto" aria-hidden="true">${fourgon(0, 0.5)}</svg>`;
-  return `<svg viewBox="0 0 48 22" style="height:${h}px;width:auto" aria-hidden="true">${type === 'electrique' ? combiElec(0, 0.5) : combi(0, 0.5)}</svg>`;
+/** Image d'un véhicule du parc (illustration, cabossée si besoin) ; la scène de l'HP garde ses dessins. */
+const TYPES_IMG = ['combi', 'electrique', 'anonyme', 'fourgon'];
+export function vehiculeSvg(type, h = 18, { cabosse = false, atelier = false } = {}) {
+  const t = TYPES_IMG.includes(type) ? type : 'combi';
+  return `<img class="veh-img${atelier ? ' atelier' : ''}" src="img/vehicules/${t}${cabosse ? '-cabosse' : ''}.webp" alt="" aria-hidden="true" loading="lazy" decoding="async" style="height:${h}px;width:auto">`;
 }
 
 // Lever et coucher du soleil en Belgique, heure locale (approximatifs, heure d'été comprise), par mois.
