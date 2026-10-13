@@ -14,7 +14,7 @@ import { lucLigne } from './luc.js';
 // Écran HP (Hôtel de police) : l'accueil.
 import { cabossesChoisis } from '../engine/parc.js';
 import { QUIZ } from '../quests/quiz.js';
-import { S, esc, icon, fmt1, fmtK, tabbar, rangDe, gradeInfo, myZone, slotsCompte } from './common.js';
+import { S, esc, icon, fmt1, fmtK, tabbar, rangDe, gradeInfo, myZone, slotsCompte, academieResume } from './common.js';
 import { agentsDisponibles, blessesActifs, vehiculesDisponibles } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { formatCountdown, formatDateBe } from '../engine/time.js';
@@ -589,6 +589,7 @@ function heroHtml(st, z) {
       ${(() => { const T = st.turn, dispo = agentsDisponibles(z, T), vDispo = vehiculesDisponibles(z, T), cab = (z.cabosses || []).length, ff = fraisFixesDuJour(z); return `<div class="hud-chips">
         <button type="button" class="hud-chip" data-action="budget" aria-label="Budget ${attr(fmtK(z.budget))}, détail du budget"><b class="${z.budget < 0 ? 'bad' : ff < 0 ? 'warn' : ''}">${fmtK(z.budget)}</b></button>
         <span class="hud-chip" aria-label="${dispo} agents disponibles sur ${z.agents}">${icon('equipe', 13)}<b>${dispo}</b>/${z.agents}</span>
+        ${(() => { const ac = academieResume(z, T); return ac ? `<a class="hud-chip" href="#ordres" title="Académie : ${ac.texte}" aria-label="${ac.n} recrue${ac.n > 1 ? 's' : ''} à l’académie : ${ac.texte}">🎓<b>${ac.n}</b></a>` : ''; })()}
         <button type="button" class="hud-chip ${cab ? 'am' : ''}" data-action="parc" aria-label="Parc automobile : ${vDispo} véhicules disponibles sur ${z.vehicules}${cab ? `, ${cab} cabossé${cab > 1 ? 's' : ''}` : ''}">🚓 <b>${vDispo}</b>/${z.vehicules}</button>
 </div>`; })()}
       ${S.backend.isMaster(S.user) ? `<a class="hud-btn" href="#admin" aria-label="Maître du jeu" title="Maître du jeu">${icon('shield', 19)}</a>` : ''}

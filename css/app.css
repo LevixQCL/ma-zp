@@ -3127,6 +3127,7 @@ details.co-pli > .co-pli-corps { gap: 12px; }
 .hud-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-right: auto; min-width: 0; }
 .hud-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 30px; padding: 0 9px; border-radius: 99px; border: 1px solid rgba(255,255,255,.16); background: rgba(12,17,36,.78); color: var(--text); font: 600 12px/1 var(--body); white-space: nowrap; backdrop-filter: blur(6px); }
 .hud-chip b { font-weight: 800; }
+a.hud-chip { text-decoration: none; }
 .hud-chip.am { border-color: var(--amber-line); color: var(--amber-hi); }
 .hud-bas .hud-btn { width: 38px; height: 38px; }
 .hp-zone { padding-block: 10px; }

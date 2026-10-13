@@ -2,7 +2,7 @@
 import { vehiculeSvg } from './scene-hp.js';
 import { effetsPressions } from '../engine/contenu.js';
 import { comparatifModeles } from './modeles.js';
-import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './common.js';
+import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme, academieResume } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
 import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier, PREPA, coutPrepa } from '../engine/constants.js';
 import { vitesseCombi, MODELES, IDS_MODELES, placesIntervention, agentsMontes, apportAchat, plusUse, prixRevente, modeleDe, RENDEMENT } from '../engine/flotte.js';
@@ -533,7 +533,8 @@ function decisionPicker(z, T, d) {
   const ent = (v) => `${fmt1(v)} k€`;
   let corps = '';
   if (cat === 'recruter') {
-    corps = `<div class="dgrille trois">${[1, 2, 3].map((n) => tuile({ type: 'recruter', n }, `+${n} agent${n > 1 ? 's' : ''}`, `au tour ${T + DELAI_ACADEMIE} · +${fmt1(n * ECONOMIE.salaire)} k€/tour de salaire`, fmt1(coutRecrue(z) * n))).join('')}</div>${coutRecrue(z) !== COUTS.recrue ? `<p class="tiny ${coutRecrue(z) < COUTS.recrue ? 'ok' : 'bad'}" style="margin:0">Réputation ${Math.round(z.reputation)} : une recrue te coûte ${fmt1(coutRecrue(z))} k€ au lieu de ${COUTS.recrue} k€.</p>` : ''}`;
+    const ac = academieResume(z, T);
+    corps = `${ac ? `<p class="tiny warn" style="margin:0 0 4px">🎓 Déjà en route : ${ac.n} recrue${ac.n > 1 ? 's' : ''} (${ac.texte}).</p>` : ''}<div class="dgrille trois">${[1, 2, 3].map((n) => tuile({ type: 'recruter', n }, `+${n} agent${n > 1 ? 's' : ''}`, `au tour ${T + DELAI_ACADEMIE} · +${fmt1(n * ECONOMIE.salaire)} k€/tour de salaire`, fmt1(coutRecrue(z) * n))).join('')}</div>${coutRecrue(z) !== COUTS.recrue ? `<p class="tiny ${coutRecrue(z) < COUTS.recrue ? 'ok' : 'bad'}" style="margin:0">Réputation ${Math.round(z.reputation)} : une recrue te coûte ${fmt1(coutRecrue(z))} k€ au lieu de ${COUTS.recrue} k€.</p>` : ''}`;
   } else if (cat === 'former') {
     corps = `<p class="tiny muted" style="margin:0"><strong>Former</strong> = le long terme : +20 % d’efficacité par niveau, <strong>gardé d’une saison à l’autre</strong> (un niveau de moins). Coûte peu, mais 2 agents sont absents pendant la formation. <strong>Équiper</strong>, à côté, c’est le coup de pouce immédiat, perdu en fin de saison.</p>
       <div class="dgrille">${SERVICES.map((sv) => tuile({ type: 'former', service: sv }, SERVICE_LABELS[sv], `niveau ${z.niveaux[sv]} → ${z.niveaux[sv] + 1} · efficacité ${pc(multNiveau(z.niveaux[sv] + 1) / multNiveau(z.niveaux[sv]) - 1)}${agentsFormation(z, sv) ? '' : ' · au stand de tir'}`, coutFormation(z, sv), niv(z.niveaux[sv]))).join('')}</div>`;
@@ -599,7 +600,7 @@ function ventilationHtml(z, e) {
     ${ligne(e.reste >= 0 ? '<strong>Sans affectation</strong>' : e.resteBase >= 0 ? '<strong>Manquent pour les missions</strong>' : '<strong>De trop</strong>', `<strong>${Math.abs(e.reste)}</strong>`, `tot ${e.reste > 0 ? 'warn' : e.reste < 0 ? 'bad' : 'ok'}`)}
     ${prises.length ? `<span class="tiny warn" style="margin-top:4px">Pris dans tes services pour la journée : ${prises.map(([t, n]) => `${t} ${n}`).join(' · ')}. Enlève des agents d’un service pour les laisser libres, sinon ces services tourneront avec moins de monde.</span>` : ''}
     ${aide ? `<span class="tiny muted">Coup de main : ${aide} agent${aide > 1 ? 's' : ''} partiront demain pour ${AIDE.dureePret} tours.</span>` : ''}
-    ${academie ? `<span class="tiny muted">À l’académie : ${academie} recrue${academie > 1 ? 's' : ''}, pas encore disponible${academie > 1 ? 's' : ''}.</span>` : ''}
+    ${academie ? `<span class="tiny muted">À l’académie : ${academie} recrue${academie > 1 ? 's' : ''}, pas encore disponible${academie > 1 ? 's' : ''} (${(academieResume(z, S.state.turn) || {}).texte || "bientôt"}).</span>` : ''}
     ${bloques.length ? `<p class="tiny bad" style="margin:2px 0 0">Des agents sont bloqués : rapatrie-les pour les réaffecter.</p>` : ''}
     <div class="row" style="gap:8px;margin-top:4px;flex-wrap:wrap">
       ${hors.length ? '<button type="button" class="btn small grow" data-action="rapatrier" data-k="tout">Tout rapatrier</button>' : ''}
@@ -991,6 +992,7 @@ export function renderOrdres() {
     ${partieOrdres('affect', 1, 'Affectation', resumeAffect(z, e), etatAffect(e), () => `${situationHtml(z)}
       <div class="between" style="align-items:baseline;margin-bottom:2px"><span></span>
         <button type="button" class="lien-statut" data-action="ventilation" aria-expanded="${!!S.ventilation}"><span id="alloc-status">${statusHtml(e)}</span><span class="tiny muted"> · ${S.ventilation ? 'masquer' : 'détail'}</span>${agentsHorsServices().some((h) => h.bloque) ? ' <span class="small bad">· agents bloqués</span>' : ''}</button></div>
+      ${(() => { const ac = academieResume(z, S.state.turn); return ac ? `<p class="tiny muted acad-l" style="margin:0 0 4px">🎓 Académie : ${ac.n} recrue${ac.n > 1 ? 's' : ''} en route (${ac.texte})</p>` : ''; })()}
       ${S.ventilation ? ventilationHtml(z, e) : ''}
       <div class="barre-aff" id="barre-aff" aria-hidden="true">${barreAffectation(e)}</div>
       ${''}

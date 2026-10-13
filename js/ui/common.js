@@ -208,3 +208,23 @@ export function cielDuMoment(date = new Date()) {
   return { crep: Math.round(crep * 100) / 100, nuit: Math.round(nuit * 100) / 100 };
 }
 export function cielStyle() { const c = cielDuMoment(); return `--crep:${c.crep};--nuit:${c.nuit}`; }
+
+/**
+ * Recrues à l'académie, regroupées par date d'arrivée (retour de joueurs : on ne voyait pas où en étaient
+ * les recrutements). Un groupe d'arrivée A est dans les ordres du tour A.
+ * Renvoie { n, texte } : « 2 demain · 1 au tour 9 », ou null s'il n'y a personne.
+ */
+export function academieResume(z, T) {
+  const par = new Map();
+  for (const a of (z && z.academie) || []) {
+    const n = Math.max(0, Math.floor(Number(a && a.n) || 0)), arr = Number(a && a.arrivee);
+    if (!n) continue;
+    const k = Number.isFinite(arr) ? Math.max(arr, T + 1) : T + 1;
+    par.set(k, (par.get(k) || 0) + n);
+  }
+  if (!par.size) return null;
+  const morceaux = [...par.entries()].sort((a, b) => a[0] - b[0])
+    .map(([t, n]) => `${n} ${t <= T + 1 ? 'demain' : `au tour ${t}`}`);
+  const n = [...par.values()].reduce((s, x) => s + x, 0);
+  return { n, texte: morceaux.join(' · ') };
+}
