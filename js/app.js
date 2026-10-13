@@ -57,7 +57,7 @@ import { marquerJournalVu } from './ui/journal.js';
 import { nomElement, monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, basculerFrise, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderRadioV2 } from './ui/radio-v2.js';
 import { previsionCourte } from './ui/prevision.js';
-import { renderCarteV2, calqueTerrain, basculerVueCarteND } from './ui/carte-v2.js';
+import { renderCarteV2, calqueTerrain, basculerVueCarteND, vueCarteND } from './ui/carte-v2.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { renderDebrief } from './ui/debrief.js';
 import { questsFor, checkAnswer, dossierNoir, generateQuest, FORMES, formesPourTour, quatrePourTour, enquetePourTour, RELANCE_PS } from './quests/quests.js';
@@ -68,7 +68,7 @@ import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND, LO
 import { nomSecteur } from './engine/nondroit.js';
 import { QUARTIER, quartierActif } from './engine/quartier.js';
 import { planPourMoi } from './ui/quartier.js';
-import { agentsND, monAnnonceND, suggestionND, placeND, rolesDe, texteRoles, roleManquant } from './ui/nondroit.js';
+import { agentsND, monAnnonceND, derniereAnnonceND, memesRoles, suggestionND, placeND, rolesDe, texteRoles, roleManquant } from './ui/nondroit.js';
 import { lancerIncident, lancerAppui, ouvrirMiniJeu, majComptesIncidents, signatureIncidents, ouvrirJaugeSkins } from './ui/incidents.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
 import { actionReleve } from './ui/releve.js';
@@ -575,8 +575,10 @@ async function onClick(e) {
       }
       case 'secteur': {
         // Secteur de la zone de non-droit : une ligne de la liste s'ouvre ou se referme ; un secteur touché sur une carte s'ouvre sur le Terrain.
-        if (el.classList.contains('nd-row')) { S.secteurSel = S.secteurSel === el.dataset.c ? null : el.dataset.c; rerender(); break; }
         S.secteurSel = el.dataset.c;
+        S.ndRepli = false;
+        // Depuis la vue « District », un secteur touché ramène au zoom du non-droit, où s'ouvre son tiroir.
+        if (!quartierActif(S.state) && vueCarteND() === 'district') basculerVueCarteND();
         // « Le Quartier » : la fiche du secteur s'ouvre sous la carte.
         if (quartierActif(S.state)) {
           S.carteCalque = 'nondroit';
@@ -589,6 +591,10 @@ async function onClick(e) {
           if (S.route !== 'carte') { location.hash = '#carte'; await new Promise((ok) => setTimeout(ok, 60)); } else rerender();
           document.querySelector('.nd-fiche')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
           break;
+      }
+      case 'nd-replier': {
+        // Tiroir du secteur sous la carte : la poignée le replie sur une ligne (la carte redevient entière), ou le rouvre.
+        S.ndRepli = !S.ndRepli; rerender(); break;
       }
       case 'nd-role': {
         // Saison 2 : un agent de plus ou de moins dans un rôle ; il vient du service qui va avec (et y retourne).
@@ -1551,7 +1557,10 @@ async function annoncerNDAuto(rattrapage = false) {
   for (const k of cles) {
     if (!st.nonDroit.secteurs[k]) continue;
     const n = sect[k] || 0, deja = monAnnonceND(k);
-    if (n === deja || (rattrapage && !n)) continue;
+    // On réannonce aussi quand seuls les rôles ou la tactique changent (même nombre d'agents) : les autres zones voient les cases se remplir.
+    const der = derniereAnnonceND(k), roles0 = n ? rolesDe(k, ordres) : null, tac = (ordres.tactiques || {})[k] || null;
+    const memes = n === deja && (!n || (der && memesRoles(der.roles, roles0) && (der.tactique || null) === tac));
+    if (memes || (rattrapage && !n)) continue;
     const texte = !n
       ? `📻 ${z.nom} (ZP ${z.code}) ne va finalement pas à ${nomSecteur(k)} ce soir.`
       : deja
@@ -1559,7 +1568,7 @@ async function annoncerNDAuto(rattrapage = false) {
         : `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) envoie ${n} agent${n > 1 ? 's' : ''} à ${nomSecteur(k)} ce soir.`;
     const roles = n ? rolesDe(k, ordres) : null;
     const texte2 = roles ? `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) ${deja ? 'sera finalement' : 'sera ce soir'} à ${nomSecteur(k)} : ${texteRoles(roles)}.` : texte;
-    try { await S.backend.sendRadio(S.user.uid, texte2, { nd: { season: st.season, turn: st.turn, secteur: String(k), agents: n, ...(roles ? { roles } : {}) } }); } catch (e) { console.warn('Annonce radio non envoyée', e); }
+    try { await S.backend.sendRadio(S.user.uid, texte2, { nd: { season: st.season, turn: st.turn, secteur: String(k), agents: n, ...(roles ? { roles } : {}), ...(n && tac ? { tactique: tac } : {}) } }); } catch (e) { console.warn('Annonce radio non envoyée', e); }
   }
 }
 

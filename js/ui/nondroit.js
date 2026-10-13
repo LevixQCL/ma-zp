@@ -1,5 +1,5 @@
-// Zone de non-droit (écran Terrain) : les secteurs du centre, qui y était hier, l'influence de chacun,
-// et un stepper pour y envoyer des agents ce soir. Personne n'a besoin d'accepter personne.
+// Zone de non-droit (Carte) : sous la maquette, le tiroir du secteur touché (verdict, rôles, détails repliés),
+// puis le Parrain et la liste des secteurs. Personne n'a besoin d'accepter personne : la validation annonce à la radio.
 import { S, esc, fmt1, icon, myZone } from './common.js';
 import { ND, secteurOuvert, regenSecteur } from '../engine/constants.js';
 import { forceEngagement } from '../engine/zone.js';
@@ -86,6 +86,16 @@ export function monAnnonceND(k) {
   return der ? der.nd.agents : 0;
 }
 
+/** Ma dernière annonce radio de ce soir sur un secteur (l'objet nd complet : agents, rôles, tactique), ou null. */
+export function derniereAnnonceND(k) {
+  const st = S.state, me = myZone();
+  let der = null;
+  for (const m of S.radio || []) if (m.nd && me && m.uid === me.uid && m.nd.season === st.season && m.nd.turn === st.turn && String(m.nd.secteur) === String(k) && (!der || der.at < m.at)) der = m;
+  return der ? der.nd : null;
+}
+/** Deux répartitions par rôle identiques ? (l'ordre des clés peut changer en passant par le serveur) */
+export const memesRoles = (a, b) => ['rep', 'desc', 'bouc', 'sc'].every((r) => (Number((a || {})[r]) || 0) === (Number((b || {})[r]) || 0));
+
 /** Place qu'il me reste sur un secteur (plafonds par secteur et pour toute la zone de non-droit). */
 export function placeND(k, d = S.draft) {
   if (!d) return 0;
@@ -128,48 +138,6 @@ function pionsCeSoir(liste) {
   const max = 5, vus = liste.slice(0, max);
   return `<span class="nd-pions">${vus.map((x) => { const z = S.state.zones[x.uid]; const nom = x.moi ? 'toi' : (z ? z.nom : '?');
     return `<span class="nd-pion ${x.moi ? 'moi' : ''}" style="--c:${x.moi ? 'var(--amber)' : esc((z && z.couleur) || '#9FB0C0')}" title="${esc(nom)} · ${x.n} agent${x.n > 1 ? 's' : ''}">${x.moi ? 'toi' : esc(ini(nom))}</span>`; }).join('')}${liste.length > max ? `<span class="nd-pion plus">+${liste.length - max}</span>` : ''}</span>`;
-}
-function pastillesCeSoir(liste) {
-  return liste.map((x) => `<span class="nd-qui ${x.moi ? 'moi' : ''}" ${!x.moi && S.state.zones[x.uid] ? `style="--c:${esc(S.state.zones[x.uid].couleur || '#9FB0C0')}"` : ''}>${x.moi ? 'toi' : nomZ(x.uid)} <b>${x.n}</b></span>`).join('');
-}
-
-/** Bandeau du Terrain : qui va où ce soir, d'après la radio. */
-function ceSoirHtml(n, me, ann) {
-  const lignes = Object.entries(ann).filter(([k]) => n.secteurs[k]).sort((a, b) => b[1].length - a[1].length || b[1].reduce((t, x) => t + x.n, 0) - a[1].reduce((t, x) => t + x.n, 0));
-  if (!lignes.length) return `<div class="nd-cesoir vide"><span class="kicker">📻 Qui y va ce soir</span>
-    <p class="tiny muted" style="margin:0">Personne ne s’est encore annoncé. Mets des agents sur un secteur puis « Prévenir la radio » : les autres verront où te rejoindre, d’un bouton.</p></div>`;
-  const ligne = ([k, l]) => {
-    const s = n.secteurs[k];
-    const repris = s.statut === 'repris';
-    const forces = l.map((x) => forceEngagement(S.state.zones[x.uid], x.n, S.state.turn));
-    const p = !repris ? { emprise: prevoirRolesSecteur(k).apres } : prevoirSecteur(S.state, s, forces);
-    const tombe = !repris && p.emprise <= 0;
-    const moiDedans = l.some((x) => x.moi);
-    // Mes agents ne sont visibles des autres que s'ils sont annoncés à la radio (à jour).
-    const moiN = (l.find((x) => x.moi) || {}).n || 0;
-    const nonAnnonce = moiDedans && monAnnonceND(k) !== moiN;
-    const moiTxt = (t) => (nonAnnonce ? `<span class="tiny bad">📻 pas encore à la radio ›</span>` : `<span class="tiny ok">${t}</span>`);
-    // Secteur déjà repris : la garde suffit dès que l'emprise ne remonte pas.
-    const assuree = repris && p.emprise <= Math.max(s.emprise, 0) + 0.5;
-    const droite = repris
-      ? `<span class="tiny ${assuree ? 'ok' : 'bad'}">${assuree ? '🛡 garde assurée' : '🛡 garde trop faible'}</span>
-        ${moiDedans ? moiTxt('✓ tu gardes') : `<span class="tiny ${assuree ? 'muted' : 'nd-rej'}">${assuree ? 'assez de monde' : 'Renforcer ›'}</span>`}`
-      : `<span class="tiny ${tombe ? 'good' : p.emprise < s.emprise ? '' : 'bad'}">${tombe ? 'repris ce soir' : `emprise ${Math.round(s.emprise)} → ${Math.round(p.emprise)}`}</span>
-        ${moiDedans ? moiTxt('✓ tu y vas') : '<span class="tiny nd-rej">Rejoindre ›</span>'}`;
-    return `<button type="button" class="nd-cs-row" data-action="secteur" data-c="${k}" aria-label="${esc(nomSecteur(k))} : ${l.map((x) => (x.moi ? 'toi' : nomZ(x.uid)) + ' ' + x.n).join(', ')}">
-        <span class="nd-cs-ico" aria-hidden="true">${repris ? '🛡' : '⚔️'}</span>
-        <span class="col" style="gap:2px;min-width:0;flex:1;text-align:left"><span class="nd-nom">${s.coeur ? '★ ' : ''}${esc(nomSecteur(k))}</span>
-          <span class="row" style="gap:6px;align-items:center">${pionsCeSoir(l)}<span class="tiny muted">${l.reduce((t, x) => t + x.n, 0)} ag.</span></span></span>
-        <span class="col" style="gap:0;align-items:flex-end;flex-shrink:0">${droite}</span>
-      </button>`;
-  };
-  const assauts = lignes.filter(([k]) => n.secteurs[k].statut !== 'repris');
-  const gardes = lignes.filter(([k]) => n.secteurs[k].statut === 'repris');
-  const trop = gardes.filter(([k, l]) => l.reduce((t, x) => t + x.n, 0) > 4);
-  return `<div class="nd-cesoir"><span class="kicker">📻 Qui y va ce soir</span>
-    ${assauts.map(ligne).join('')}${gardes.map(ligne).join('')}
-    ${trop.length ? `<p class="tiny warn" style="margin:2px 0 0">🛡 ${trop.map(([k]) => esc(nomSecteur(k))).join(', ')} : assez de garde, renforce plutôt un assaut ⚔️.</p>` : ''}
-  </div>`;
 }
 
 /** Secteurs du milieu qui tombent ce soir avec 1 à 4 agents de plus (zones déjà annoncées à la radio) : { k, n }. */
@@ -218,132 +186,199 @@ const JOURS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dim
 const soirs = (s) => (s.soirs || []).map((j) => JOURS[j]).join(' et ');
 const eurosK = (v) => `${Math.round(v * 1000).toLocaleString('fr-BE')} €`;
 
-/** Fiche d'un secteur du milieu avec les rôles (saison 2) : la faille, trois rangées de cases, la prévision du soir. */
-function carteRoles(k, s, me, d) {
+// ── Tiroir du secteur (refonte du 13 octobre) ───────────────────────────────────────────────────────────────
+// Sous la carte, un seul tiroir : le nom, la jauge avant → après, les rôles côte à côte, UN verdict en couleur.
+// Tout le reste (faille, piège, fuite, saisies, gains, explication des rôles) se déplie dans « Détails ».
+// La radio n'a plus de bouton : la validation des ordres annonce les agents (annoncerNDAuto).
+
+/** En-tête du tiroir : poignée (replier / déplier), nom, une ligne de contexte, une pastille d'état. */
+function teteTiroir(k, s, sous, pill = '') {
+  const replie = !!S.ndRepli;
+  return `<button type="button" class="ndt-tete" data-action="nd-replier" aria-expanded="${!replie}" aria-label="${replie ? 'Déplier' : 'Replier'} la fiche de ${esc(nomSecteur(k))}">
+      <span class="ndt-poignee" aria-hidden="true"></span>
+      <span class="ndt-titre"><span class="ndt-nom">${s.coeur ? '★ ' : ''}${esc(nomSecteur(k))}</span><span class="ndt-sous">${sous}</span></span>
+      ${pill}<span class="ndt-chev" aria-hidden="true">${icon('chevron', 16)}</span>
+    </button>`;
+}
+
+/** Jauge d'emprise : où en est le milieu, et où il sera après ce soir (la part qui tombe reste en clair). */
+function jauge(avant, apres, { seuil = null, libelle = 'Emprise du milieu' } = {}) {
+  const a = Math.max(0, Math.min(100, avant)), b = Math.max(0, Math.min(100, apres));
+  const monte = b > a + 0.5, baisse = b < a - 0.5;
+  return `<div class="ndt-jauge">
+      <span class="ndt-j" role="img" aria-label="${libelle} : ${Math.round(a)} aujourd’hui, ${Math.round(b)} après ce soir">
+        <span class="ndt-j-av" style="width:${Math.max(2, Math.round(Math.max(a, b)))}%"></span>
+        <span class="ndt-j-ap ${monte ? 'monte' : ''}" style="width:${Math.max(b > 0 ? 2 : 0, Math.round(b))}%"></span>
+        ${seuil != null ? `<i class="ndt-j-seuil" style="left:${seuil}%"></i>` : ''}
+      </span>
+      <span class="ndt-j-n"><b>${Math.round(a)}</b> → <b class="${baisse ? 'good' : monte ? 'bad' : ''}">${Math.round(b)}</b></span>
+    </div>`;
+}
+
+const verdict = (ton, html) => `<p class="ndt-verdict ${ton}" role="status">${html}</p>`;
+
+/** Où en sont mes ordres sur ce secteur : à valider, ou validés et annoncés à la radio. */
+function etatRadio(k, monN) {
+  if (!monN) return '';
+  const annonce = monAnnonceND(k);
+  return S.ordersDirty || annonce !== monN
+    ? `<p class="ndt-radio warn">${S.ordersDirty ? 'Pense à valider : tes agents seront annoncés à la radio en même temps.' : 'Validé · annonce à la radio en cours.'}</p>`
+    : '<p class="ndt-radio ok">✓ Validé et annoncé à la radio.</p>';
+}
+
+/** Un stepper −/+ pour un rôle. */
+function stepRole(k, role, v, plein, nom) {
+  return `<span class="stepper ndt-step"><button type="button" data-action="nd-role" data-c="${k}" data-r="${role}" data-d="-1" aria-label="Un agent de moins en ${nom} à ${esc(nomSecteur(k))}" ${v <= 0 ? 'disabled' : ''}>−</button><span class="n">${v}</span><button type="button" data-action="nd-role" data-c="${k}" data-r="${role}" data-d="1" aria-label="Un agent de plus en ${nom} à ${esc(nomSecteur(k))}" ${plein ? 'disabled' : ''}>+</button></span>`;
+}
+
+/** Tiroir d'un secteur aux mains du milieu (règle des rôles : repérage, descente, bouclage). */
+function ficheMilieu(k, s, me, d) {
   const T = S.state.turn, F = faille(s), m = milieuDe(s);
   const ouvert = secteurOuvert(nd(), k);
   const ann = annoncesND()[k] || [];
   const mes = rolesDe(k, d);
-  const p = prevoirRolesSecteur(k);
-  const rep = repere(s, T);
-  const repDemain = s.repere && s.repere.a > T;
   const total = (x) => x.rep + x.desc + x.bouc + (x.sc || 0);
-  const place = Math.min(ND.maxParSecteur - total(mes), ND.maxTotal - agentsND(d));
-  const cases = (role, cible) => {
+  const monN = total(mes);
+  const lt = v3Actif() && s.lieutenant && !s.coeur ? s.lieutenant : null;
+  const sous = `${esc(m.titre)}${lt ? ` · ${esc(lt.nom)}${lt.etat !== 'libre' ? ` (${{ garde: 'en garde à vue', tombe: 'tombé', enfui: 'en fuite' }[lt.etat] || ''})` : ''}` : ''}`;
+  if (!ouvert) {
+    const tenus = Object.values(nd().secteurs).filter((x) => !x.coeur && x.statut === 'repris').length;
+    return `<div class="ndt nd-fiche ${S.ndRepli ? 'replie' : ''}" id="nd-${k}">
+      ${teteTiroir(k, s, sous, '<span class="pill">🔒 verrouillé</span>')}
+      ${S.ndRepli ? '' : `<div class="ndt-corps">${verdict('neutre', `Le QG s’ouvre quand ${ND.coeurSeuil} secteurs de l’anneau sont tenus en même temps (${tenus} aujourd’hui). Il rapporte ${String(ND.coeurMult).replace('.', ',')} fois plus.`)}
+        <details class="ndt-det" data-k="ndt-det" ${S.ouverts && S.ouverts['ndt-det'] ? 'open' : ''}><summary>Détails : ce qu’il rapporte</summary><div class="ndt-det-c">${gainsHtml(s, partsDe(s).find((x) => x.uid === me.uid))}</div></details></div>`}
+    </div>`;
+  }
+  const p = prevoirRolesSecteur(k);
+  const rep = repere(s, T), repDemain = s.repere && s.repere.a > T;
+  const place = Math.min(ND.maxParSecteur - monN, ND.maxTotal - agentsND(d));
+  const n = { rep: p.nR, desc: p.nD, bouc: p.nB };
+  const cibleDesc = Math.max(n.desc, p.besoin.desc);
+  const cible = { rep: rep || repDemain ? 0 : 2, desc: cibleDesc, bouc: Math.ceil(cibleDesc * p.ratio) };
+  const cases = (role) => {
     const pions = [];
-    for (const x of ann) { const z = S.state.zones[x.uid]; const n = (x.moi ? mes : x.r)[role] || 0;
-      for (let i = 0; i < n; i++) pions.push(`<span class="nd-case pleine ${x.moi ? 'moi' : ''}" style="--c:${x.moi ? 'var(--amber)' : esc((z && z.couleur) || '#9FB0C0')}" title="${x.moi ? 'toi' : nomZ(x.uid)}"></span>`); }
-    for (let i = pions.length; i < cible; i++) pions.push('<span class="nd-case vide"></span>');
+    for (const x of ann) { const z = S.state.zones[x.uid]; const v = (x.moi ? mes : x.r)[role] || 0;
+      for (let i = 0; i < v; i++) pions.push(`<span class="nd-case pleine ${x.moi ? 'moi' : ''}" style="--c:${x.moi ? 'var(--amber)' : esc((z && z.couleur) || '#9FB0C0')}" title="${x.moi ? 'toi' : nomZ(x.uid)}"></span>`); }
+    for (let i = pions.length; i < Math.min(cible[role], 10); i++) pions.push('<span class="nd-case vide"></span>');
     return pions.join('');
   };
-  const n = { rep: p.nR, desc: p.nD, bouc: p.nB };
-  const cible = { rep: repDemain ? 0 : 2, desc: Math.max(n.desc, p.besoin.desc), bouc: Math.ceil(Math.max(n.desc, p.besoin.desc) * p.ratio) };
-  const note = (role) => {
-    if (role === 'rep') return repDemain ? `<span class="tiny ok">✓ repéré jusqu’à ${JOURS[(s.repere.a - 1) % 7]}</span>` : n.rep >= 2 ? '<span class="tiny ok">✓ repéré dès demain</span>' : `<span class="tiny bad">il manque ${2 - n.rep}</span>`;
-    if (role === 'desc') return n.desc ? (p.tropFaible ? '<span class="tiny bad">trop faible</span>' : n.desc < cible.desc ? `<span class="tiny warn">${cible.desc - n.desc} de plus pour bien avancer</span>` : '') : '';
-    const manque = Math.max(0, Math.ceil(n.desc * p.ratio) - n.bouc);
-    return n.desc ? (manque ? `<span class="tiny bad">il manque ${manque}</span>` : '<span class="tiny ok">✓ bouclé</span>') : '';
+  const manqueB = Math.max(0, Math.ceil(n.desc * p.ratio) - n.bouc);
+  const etat = {
+    rep: rep || repDemain ? ['ok', 'déjà repéré'] : n.rep >= 2 ? ['ok', 'repéré demain'] : ['bad', `il en manque ${2 - n.rep}`],
+    desc: !n.desc ? ['neutre', 'personne'] : p.tropFaible ? ['bad', 'trop faible'] : n.desc < cibleDesc ? ['warn', `${cibleDesc - n.desc} de plus`] : ['ok', 'assez'],
+    bouc: !n.desc ? ['neutre', 'avec la descente'] : manqueB ? ['bad', `il en manque ${manqueB}`] : ['ok', 'bouclé'],
   };
-  const effet = { rep: 'Révèle la faille. Repéré les 4 soirs suivants : descente plus forte, sans piège. 15 % des saisies qui en profitent.',
-    desc: 'Fait tomber l’emprise. C’est elle qui reprend le secteur.',
-    bouc: `Ferme les sorties : moins de fuite, plus de saisies. Ici : 1 pour ${p.ratio >= 1 ? '1' : '2'} en descente.` };
-  const rangee = (role) => `<div class="nd-role ${role === 'bouc' && n.desc && p.fuite > 0.3 ? 'alerte' : ''}">
-      <div class="between"><div class="row" style="gap:8px"><span class="nd-role-ico" aria-hidden="true">${ROLES_ND[role].ico}</span><div class="col" style="gap:0"><strong class="small">${ROLES_ND[role].nom}</strong><span class="tiny muted">${ROLES_ND[role].svc}</span></div></div>
-        ${ouvert ? `<span class="stepper"><button type="button" data-action="nd-role" data-c="${k}" data-r="${role}" data-d="-1" aria-label="Un agent de moins en ${ROLES_ND[role].court} à ${esc(nomSecteur(k))}" ${mes[role] <= 0 ? 'disabled' : ''}>−</button><span class="n">${mes[role]}</span><button type="button" data-action="nd-role" data-c="${k}" data-r="${role}" data-d="1" aria-label="Un agent de plus en ${ROLES_ND[role].court} à ${esc(nomSecteur(k))}" ${place <= 0 ? 'disabled' : ''}>+</button></span>` : ''}</div>
-      <div class="nd-cases">${cases(role, cible[role])} ${note(role)}</div>
-      <p class="tiny muted" style="margin:0">${effet[role]}</p>
+  const tuile = (role) => `<div class="ndt-role ${etat[role][0]}">
+      <span class="ndt-r-tete"><span class="ndt-r-ico" aria-hidden="true">${ROLES_ND[role].ico}</span><span class="col" style="gap:0;min-width:0"><b>${ROLES_ND[role].nom}</b><span class="ndt-r-svc">${ROLES_ND[role].svc}</span></span></span>
+      ${stepRole(k, role, mes[role], place <= 0, ROLES_ND[role].court)}
+      <span class="nd-cases">${cases(role)}</span>
+      <span class="ndt-r-etat">${etat[role][1]}</span>
     </div>`;
-  const fl = (a, b) => `${Math.round(a)} → <span class="${b < a - 0.5 ? 'good' : b > a + 0.5 ? 'bad' : ''}">${Math.round(b)}</span>`;
-  const partMoi = (() => { if (!total(mes) || !p.butin) return 0; const w = (x) => (x.rep * ND.roles.poidsRep + x.desc + x.bouc); const tot = ann.reduce((a, x) => a + w(x.moi ? mes : x.r), 0) || 1; return w(mes) / tot * (rep && s.repere && s.repere.par.length ? 1 - ND.roles.tuyau : 1) + (rep && s.repere && s.repere.par.includes(me.uid) ? ND.roles.tuyau / s.repere.par.length : 0); })();
-  const annonce = monAnnonceND(k), monN = total(mes);
-  return `<div class="nd-detail" style="gap:8px">
-    ${p.guetteurs && !rep ? '<p class="tiny bad" style="margin:0">👁 Le milieu a doublé ses guetteurs : sans repérage, piège plus probable et descente plus faible.</p>' : ''}
-    <div class="row" style="gap:6px;flex-wrap:wrap"><span class="tiny muted">${esc(m.texte)}</span>${rep ? '<span class="pill nd-rep">🔍 repéré ce soir</span>' : repDemain ? '<span class="pill nd-rep">🔍 repéré dès demain</span>' : '<span class="pill">pas repéré</span>'}</div>
-    ${ligneLieutenant(k, s)}
-    ${dernierCarreHtml(k, s, ann, total(mes) - (mes.sc || 0))}
-    ${ouvert && sceneCarte(k) ? `<a class="ml-chip" href="#hp">${ICO_SCENE[sceneCarte(k).type]} Scène ce soir sur ce secteur · à régler sur l’HP, dans « Aujourd’hui » ›</a>` : ''}
-    ${s.connue ? `<div class="nd-faille connue"><strong class="small">Faille : ${esc(F.titre)}</strong><span class="tiny">${esc(F.texte)}${F.soirs ? ` <strong>Ouvert le ${soirs(s)}</strong> (ce soir : ${ouvertCeSoir(s, T) ? '<span class="ok">ouvert</span>' : '<span class="bad">fermé</span>'}).` : ''}</span></div>`
-      : '<div class="nd-faille"><strong class="small">❔ Faille inconnue</strong><span class="tiny muted">Chaque milieu a sa faiblesse. Un repérage la révèle à toutes les zones.</span></div>'}
-    ${!ouvert ? `<p class="tiny muted" style="margin:0">Il faut tenir ${ND.coeurSeuil} secteurs de l’anneau en même temps (${Object.values(nd().secteurs).filter((x) => !x.coeur && x.statut === 'repris').length} aujourd’hui).</p>` : ''}
-    ${ouvert ? `${rangee('rep')}${rangee('desc')}${rangee('bouc')}` : ''}
-    ${!ouvert ? '' : ann.length ? `<div class="nd-quis">${pastillesCeSoir(ann.map((x) => (x.moi ? { moi: true, n: monN } : x)))}</div>` : '<p class="tiny muted" style="margin:0">Personne d’annoncé ce soir sur ce secteur.</p>'}
-    ${!ouvert ? '' : p.nD ? `<dl class="nd-prev">
-      ${(() => { const tt = tactiqueEnTete(k, ann, total(mes) - (mes.sc || 0)); return tt === 'frontal' || (tt === 'encercler' && p.fuite <= 0) ? `<dt>Dernier carré</dt><dd class="good">${tt === 'frontal' ? 'assaut frontal : il tombe ce soir' : 'encerclé sans fuite : il tombe ce soir, saisies ×2'}</dd>` : ''; })()}
-      <dt>Emprise</dt><dd>${p.tropFaible ? `<span class="bad">${p.mult === 0 ? 'impossible d’entrer sans repérage' : F.soirs && !p.ouvert ? 'fermé ce soir : personne à cueillir' : 'trop faible, le milieu tient'}</span>` : fl(s.emprise, p.apres) + (p.apres <= 0 ? ' <span class="good">· repris ce soir</span>' : '')}</dd>
-      <dt>Piège</dt><dd class="${p.piege > 0.2 ? 'bad' : p.piege ? 'warn' : 'ok'}">${p.piege ? `${Math.round(p.piege * 100)} %` : 'non'}</dd>
-      <dt>Fuite</dt><dd class="${p.fuite > 0.3 ? 'bad' : p.fuite > 0 ? 'warn' : 'ok'}">${Math.round(p.fuite * 100)} %${v3Actif() && s.lieutenant && s.lieutenant.etat === 'libre' && p.apres <= 0 ? (p.fuite >= 0.5 ? ` · <span class="bad">${esc(s.lieutenant.nom)} filerait</span>` : ` · <span class="ok">${esc(s.lieutenant.nom)} arrêté</span>`) : ''}</dd>
-      ${p.rens && p.rens.length ? `<dt>Dossier</dt><dd class="ok">${p.rens.length} renseignement${p.rens.length > 1 ? 's' : ''} apporté${p.rens.length > 1 ? 's' : ''} ce soir (+${p.rens.length * 12} %)</dd>` : ''}
-      <dt>Saisies</dt><dd>~${eurosK(p.butin)}${partMoi ? ` · <span class="warn">toi ~${eurosK(p.butin * partMoi)}</span>` : ''}</dd>
-    </dl>` : `<p class="tiny muted" style="margin:0">Personne en descente ce soir : le milieu se refait.</p>`}
-    ${gainsHtml(s, partsDe(s).find((x) => x.uid === me.uid))}
-    ${monN ? (annonce === monN ? `<p class="tiny ok" style="margin:0;text-align:center">✓ Annoncé à la radio.</p>`
-      : `<button type="button" class="btn small ${annonce ? 'ghost' : 'primary'} block" data-action="nd-appel" data-c="${k}">📻 ${annonce ? 'Mettre à jour la radio' : 'Prévenir la radio'} : ${esc(texteRoles(mes))}</button>`) : ''}
+  // Le verdict : une seule phrase qui dit ce qui va se passer ce soir, et quoi faire si ça ne suffit pas.
+  const tt = tactiqueEnTete(k, ann, monN - (mes.sc || 0));
+  const ltNom = lt && lt.etat === 'libre' ? esc(lt.nom) : '';
+  let v;
+  if (!p.nD) v = verdict('neutre', `Personne en descente ce soir : le milieu se refait. Pour le faire tomber, il faut environ <b>${p.besoin.desc} en descente</b>${cible.rep ? ' et <b>2 au repérage</b>' : ''}, à plusieurs zones.`);
+  else if (p.tropFaible) v = verdict('bad', p.mult === 0 ? 'Impossible d’entrer sans repérage : mets <b>2 agents au repérage</b>.' : F.soirs && !p.ouvert ? 'Fermé ce soir : personne à cueillir. Reviens un soir d’ouverture (voir Détails).' : `Trop faible, le milieu tient. Il faut environ <b>${p.besoin.desc} en descente</b>, toutes zones comprises.`);
+  else if (tt === 'frontal' || (tt === 'encercler' && p.fuite <= 0)) v = verdict('ok', `<b>Repris ce soir</b> : ${tt === 'frontal' ? 'assaut frontal sur le dernier carré' : 'encerclé sans fuite, saisies ×2'}.`);
+  else if (p.apres <= 0) v = ltNom && p.fuite >= 0.5 ? verdict('warn', `<b>Repris ce soir</b>, mais ${ltNom} filerait : ajoute <b>${Math.max(1, manqueB)} au bouclage</b> pour l’arrêter.`)
+    : verdict('ok', `<b>Repris ce soir</b>${ltNom ? ` · ${ltNom} arrêté, il parlera` : ''}.`);
+  else v = verdict('warn', `Pas encore repris ce soir (emprise ${Math.round(s.emprise)} → ${Math.round(p.apres)}). ${manqueB ? `Ajoute <b>${manqueB} au bouclage</b> pour limiter la fuite, puis` : 'Il faut'} plus de monde en descente.`);
+  const piege = p.nD && p.piege > 0.2 ? `<p class="ndt-note bad">⚠ ${Math.round(p.piege * 100)} % de risque de piège : sans repérage, des agents peuvent revenir blessés.</p>` : '';
+  const effet = { rep: 'Révèle la faille. Repéré les 4 soirs suivants : descente plus forte, sans piège. 15 % des saisies pour ceux qui ont repéré.',
+    desc: 'Fait tomber l’emprise : c’est elle qui reprend le secteur.',
+    bouc: `Ferme les sorties : moins de fuite, plus de saisies, le lieutenant arrêté. Ici, 1 pour ${p.ratio >= 1 ? '1' : '2'} en descente.` };
+  const partMoi = (() => { if (!monN || !p.butin) return 0; const w = (x) => (x.rep * ND.roles.poidsRep + x.desc + x.bouc); const tot = ann.reduce((a, x) => a + w(x.moi ? mes : x.r), 0) || 1; return w(mes) / tot * (rep && s.repere && s.repere.par.length ? 1 - ND.roles.tuyau : 1) + (rep && s.repere && s.repere.par.includes(me.uid) ? ND.roles.tuyau / s.repere.par.length : 0); })();
+  const pill = rep ? '<span class="pill nd-rep">🔍 repéré</span>' : repDemain ? '<span class="pill nd-rep">🔍 demain</span>' : '';
+  const sc = sceneCarte(k);
+  return `<div class="ndt nd-fiche ${S.ndRepli ? 'replie' : ''}" id="nd-${k}">
+    ${teteTiroir(k, s, sous, pill)}
+    ${S.ndRepli ? '' : `<div class="ndt-corps">
+      ${jauge(s.emprise, p.nD && !p.tropFaible ? p.apres : s.emprise)}
+      <div class="ndt-qui">${ann.length ? `${pionsCeSoir(ann.map((x) => (x.moi ? { ...x, n: monN } : x)))}<span>${ann.reduce((t, x) => t + (x.moi ? monN : x.n), 0)} agents annoncés ce soir</span>` : '<span>Personne d’annoncé ce soir.</span>'}</div>
+      ${p.guetteurs && !rep ? '<p class="ndt-note bad">👁 Le milieu a doublé ses guetteurs : sans repérage, piège plus probable.</p>' : ''}
+      ${sc ? `<a class="ml-chip" href="#hp">${ICO_SCENE[sc.type]} Scène ce soir ici · à régler sur l’HP ›</a>` : ''}
+      <div class="ndt-roles">${tuile('rep')}${tuile('desc')}${tuile('bouc')}</div>
+      ${dernierCarreHtml(k, s, ann, monN - (mes.sc || 0))}
+      ${v}${piege}
+      ${etatRadio(k, monN)}
+      <details class="ndt-det" data-k="ndt-det" ${S.ouverts && S.ouverts['ndt-det'] ? 'open' : ''}><summary>Détails : faille, prévision, gains</summary>
+        <div class="ndt-det-c">
+          ${ligneLieutenant(k, s)}
+          <p class="tiny muted" style="margin:0">${esc(m.texte)}</p>
+          ${s.connue ? `<div class="nd-faille connue"><strong class="small">Faille : ${esc(F.titre)}</strong><span class="tiny">${esc(F.texte)}${F.soirs ? ` <strong>Ouvert le ${soirs(s)}</strong> (ce soir : ${ouvertCeSoir(s, T) ? '<span class="ok">ouvert</span>' : '<span class="bad">fermé</span>'}).` : ''}</span></div>`
+            : '<div class="nd-faille"><strong class="small">❔ Faille inconnue</strong><span class="tiny muted">Un repérage la révèle à toutes les zones.</span></div>'}
+          ${p.nD ? `<dl class="nd-prev">
+            <dt>Piège</dt><dd class="${p.piege > 0.2 ? 'bad' : p.piege ? 'warn' : 'ok'}">${p.piege ? `${Math.round(p.piege * 100)} %` : 'non'}</dd>
+            <dt>Fuite</dt><dd class="${p.fuite > 0.3 ? 'bad' : p.fuite > 0 ? 'warn' : 'ok'}">${Math.round(p.fuite * 100)} %</dd>
+            ${p.rens && p.rens.length ? `<dt>Dossier</dt><dd class="ok">${p.rens.length} renseignement${p.rens.length > 1 ? 's' : ''} apporté${p.rens.length > 1 ? 's' : ''} (+${p.rens.length * 12} %)</dd>` : ''}
+            <dt>Saisies</dt><dd>~${eurosK(p.butin)}${partMoi ? ` · <span class="warn">toi ~${eurosK(p.butin * partMoi)}</span>` : ''}</dd>
+          </dl>` : ''}
+          <ul class="ndt-aide">${['rep', 'desc', 'bouc'].map((r) => `<li><b>${ROLES_ND[r].ico} ${ROLES_ND[r].nom}</b> · ${effet[r]}</li>`).join('')}
+            <li>À plusieurs zones, <b>+${Math.round(ND.coop * 100)} % par zone</b> ; seul ou trop faible, des blessés sont possibles. <a href="#guide-affaires">Règles</a></li></ul>
+          ${gainsHtml(s, partsDe(s).find((x) => x.uid === me.uid))}
+        </div></details>
+    </div>`}
+  </div>`;
+}
+
+/** Tiroir d'un secteur repris : il ne s'agit plus d'attaquer, seulement de garder (et de rassurer les habitants). */
+function ficheRepris(k, s, me, d) {
+  const m = milieuDe(s);
+  const n = (d.secteurs || {})[k] || 0;
+  const parts = partsDe(s), moi = parts.find((x) => x.uid === me.uid);
+  const hier = (s.hier || []).filter((x) => S.state.zones[x.u]);
+  const gang = gangCeSoir(S.state, s);
+  const ceSoir = (annoncesND()[k] || []).filter((x) => !x.moi);
+  const maForce = n ? forceEngagement(me, n, S.state.turn) : 0;
+  const autres = ceSoir.map((x) => forceEngagement(S.state.zones[x.uid], x.n, S.state.turn));
+  const p = prevoirSecteur(S.state, s, [maForce, ...autres]);
+  const sansMoi = autres.length ? prevoirSecteur(S.state, s, autres) : null;
+  const assuree = p.emprise <= Math.max(s.emprise, 0) + 0.5;
+  const dejaGarde = sansMoi && sansMoi.emprise <= Math.max(s.emprise, 0) + 0.5;
+  const tombe = p.emprise >= ND.seuilRechute;
+  const chef = s.chef && S.state.zones[s.chef] ? (s.chef === me.uid ? 'toi' : nomZ(s.chef)) : '';
+  const sous = `Repris${chef ? ` · ${chef}` : ''} · ${esc(m.titre)}`;
+  const plein = n >= ND.maxParSecteur || agentsND(d) >= ND.maxTotal;
+  const r = rolesDe(k, d);
+  const tuiles = v3Actif()
+    ? `<div class="ndt-roles deux">
+        <div class="ndt-role"><span class="ndt-r-tete"><span class="ndt-r-ico" aria-hidden="true">🛡</span><span class="col" style="gap:0;min-width:0"><b>Garde</b><span class="ndt-r-svc">Intervention</span></span></span>${stepRole(k, 'desc', r.desc + r.rep, plein, 'garde')}<span class="ndt-r-etat">repousse le milieu</span></div>
+        <div class="ndt-role"><span class="ndt-r-tete"><span class="ndt-r-ico" aria-hidden="true">🤝</span><span class="col" style="gap:0;min-width:0"><b>Présence</b><span class="ndt-r-svc">Proximité</span></span></span>${stepRole(k, 'bouc', r.bouc, plein, 'présence')}<span class="ndt-r-etat">garde + confiance</span></div>
+      </div>`
+    : `<div class="ndt-roles un"><div class="ndt-role"><span class="ndt-r-tete"><span class="ndt-r-ico" aria-hidden="true">🛡</span><b>Agents de garde</b></span>
+        <span class="stepper ndt-step"><button type="button" data-action="nd" data-c="${k}" data-d="-1" aria-label="Un agent de moins à ${esc(nomSecteur(k))}" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="nd" data-c="${k}" data-d="1" aria-label="Un agent de plus à ${esc(nomSecteur(k))}" ${plein ? 'disabled' : ''}>+</button></span></div></div>`;
+  let v;
+  if (n && dejaGarde && !gang) v = verdict('warn', 'Les autres zones suffisent déjà à le garder : tes agents seraient plus utiles à un assaut.');
+  else if (tombe) v = verdict('bad', `<b>Il retombe ce soir</b> sans plus de garde (milieu ${Math.round(s.emprise)} → ${Math.round(p.emprise)}, rechute à ${ND.seuilRechute}).${gang ? ' Face au gang, il faut une vraie garde à plusieurs zones.' : ''}`);
+  else if (assuree) v = verdict('ok', `<b>Garde assurée ce soir</b>${gang ? ' : le gang est repoussé' : ''}.`);
+  else if (p.emprise < ND.seuilRechute - 20) v = verdict('ok', `<b>Le secteur tient ce soir</b> : le milieu remonte un peu (${Math.round(s.emprise)} → ${Math.round(p.emprise)}), la rechute est à ${ND.seuilRechute}.${n ? '' : ' Un peu de garde le ferait redescendre.'}`);
+  else v = verdict('warn', `Le milieu remonte vite (${Math.round(s.emprise)} → ${Math.round(p.emprise)}, rechute à ${ND.seuilRechute}) : ${gang ? 'face au gang, il faut une vraie garde à plusieurs zones' : 'ajoute 2 ou 3 agents de garde'}.`);
+  return `<div class="ndt nd-fiche ${S.ndRepli ? 'replie' : ''}" id="nd-${k}">
+    ${teteTiroir(k, s, sous, '<span class="pill green">✓ repris</span>')}
+    ${S.ndRepli ? '' : `<div class="ndt-corps">
+      ${jauge(s.emprise, p.emprise, { seuil: ND.seuilRechute, libelle: 'Retour du milieu' })}
+      <div class="ndt-qui">${ceSoir.length || n ? `${pionsCeSoir([...(n ? [{ moi: true, n }] : []), ...ceSoir])}<span>${n + ceSoir.reduce((t, x) => t + x.n, 0)} agents de garde ce soir</span>` : '<span>Personne de garde annoncé ce soir.</span>'}</div>
+      ${gang ? `<p class="ndt-note bad">⚠️ <b>${gang.represailles ? 'Représailles' : 'Un gang attaque'} ce soir</b> (+${gang.force} d’emprise). Repoussé : +${ND.gangs.rep} de réputation et +${ND.gangs.ps} PS à chaque zone de garde.</p>` : ''}
+      ${tuiles}
+      ${v}
+      ${etatRadio(k, n)}
+      ${confianceHtml(k, s, v3Actif() ? r.bouc : 0)}
+      <details class="ndt-det" data-k="ndt-det" ${S.ouverts && S.ouverts['ndt-det'] ? 'open' : ''}><summary>Détails : influence, gains</summary>
+        <div class="ndt-det-c">
+          <p class="tiny muted" style="margin:0">${esc(m.texte)}</p>
+          <p class="tiny" style="margin:0">Hier soir : ${hier.length ? hier.map((x) => `${x.u === me.uid ? '<strong>toi</strong>' : nomZ(x.u)} (${x.n})`).join(', ') : 'personne'}${parts.length ? ` · influence : ${parts.slice(0, 4).map((q) => `${q.uid === me.uid ? '<strong>toi</strong>' : nomZ(q.uid)} ${Math.round(q.part * 100)} %`).join(', ')}${parts.length > 4 ? '…' : ''}` : ''}</p>
+          ${moi ? `<p class="tiny ${moi.part >= ND.partMin ? 'ok' : 'muted'}" style="margin:0">${moi.part >= ND.partMin ? `Tu touches les retombées chaque nuit (${Math.round(moi.part * 100)} % d’influence).` : `Ton influence (${Math.round(moi.part * 100)} %) est sous ${Math.round(ND.partMin * 100)} % : monte la garde pour toucher les retombées.`}</p>` : ''}
+          ${gainsHtml(s, moi)}
+        </div></details>
+    </div>`}
   </div>`;
 }
 
 function carteSecteur(k, s, me, d) {
-  if ((s.statut !== 'repris')) return carteRoles(k, s, me, d);
-  const m = milieuDe(s);
-  const ouvert = secteurOuvert(nd(), k);
-  const n = (d.secteurs || {})[k] || 0;
-  const repris = s.statut === 'repris';
-  const parts = partsDe(s);
-  const moi = parts.find((p) => p.uid === me.uid);
-  const hier = (s.hier || []).filter((x) => S.state.zones[x.u]);
-  const maForce = n ? forceEngagement(me, n, S.state.turn) : 0;
-  const gang = repris ? gangCeSoir(S.state, s) : null;
-  const seul = prevoirSecteur(S.state, s, [maForce]);
-  const ceSoir = (annoncesND()[k] || []).filter((x) => !x.moi);
-  const base = ceSoir.length ? ceSoir.map((x) => ({ u: x.uid, n: x.n })) : hier.filter((x) => x.u !== me.uid);
-  const autres = base.map((x) => forceEngagement(S.state.zones[x.u], x.n, S.state.turn));
-  const ensemble = autres.length ? prevoirSecteur(S.state, s, [maForce, ...autres]) : null;
-  const annonce = monAnnonceND(k);
-  const regen = regenSecteur(S.state, s);
-  const coul = repris ? '#E8913A' : '#E0625A';
-  const statut = repris
-    ? `<span class="pill green">Repris${s.chef && S.state.zones[s.chef] ? ` · ${nomZ(s.chef)}` : ''}</span>`
-    : ouvert ? '<span class="pill" style="color:var(--red-soft);border-color:var(--red-line)">Aux mains du milieu</span>' : '<span class="pill">Verrouillé</span>';
-  const fleche = (a, b) => (b < a - 0.5 ? `<span class="good">${Math.round(a)} → ${Math.round(b)}</span>` : b > a + 0.5 ? `<span class="bad">${Math.round(a)} → ${Math.round(b)}</span>` : `<span class="muted">${Math.round(a)} → ${Math.round(b)}</span>`);
-  const seuilAgents = Math.ceil(regen / ND.efficacite / Math.max(0.5, forceEngagement(me, 1, S.state.turn)));
-  let prevision = '';
-  if (ouvert) {
-    if (!repris) {
-      const nuits = (e) => (e.emprise <= 0 ? 'repris ce soir' : e.emprise < s.emprise ? `encore ~${Math.ceil(e.emprise / Math.max(0.1, s.emprise - e.emprise))} soirs à ce rythme` : 'le milieu tient bon');
-      const seuilF = regen / ND.efficacite;
-      prevision = `${n && !ceSoir.length ? (maForce <= seuilF
-        ? `<p class="tiny bad" style="margin:0">Toi seul : trop faible (≈ ${seuilAgents} agents). Sans autre zone, assaut repoussé, ${Math.round(ND.blesseRepousse * 100)} % de risque de blessure par agent.</p>`
-        : `<p class="tiny" style="margin:0">Toi seul : ${fleche(s.emprise, seul.emprise)} · ${nuits(seul)}. <span class="warn">Seul, ${Math.round(ND.seulEchec * 100)} % de risque de piège.</span></p>`) : ''}
-        ${ensemble ? `<p class="tiny" style="margin:0">${ceSoir.length ? 'Avec les zones annoncées ce soir' : 'Avec les zones d’hier'}${n ? ' et toi' : ''} (+${Math.round((ensemble.coop - 1) * 100)} %) : ${fleche(s.emprise, ensemble.emprise)} · ${nuits(ensemble)}.</p>` : ''}`;
-    } else {
-      const sansMoi = autres.length ? prevoirSecteur(S.state, s, autres) : null;
-      const dejaGarde = sansMoi && sansMoi.emprise <= Math.max(s.emprise, 0) + 0.5;
-      prevision = `${gang ? `<p class="tiny bad" style="margin:0"><strong>⚠️ Un gang attaque ce soir</strong> : +${gang.force} d’emprise en plus du retour du milieu. Il faut une vraie garde, à plusieurs zones : repoussé, il rapporte +${ND.gangs.rep} de réputation et +${ND.gangs.ps} PS à chaque zone de garde.</p>` : ''}<p class="tiny" style="margin:0"><strong>Secteur déjà repris : il ne s’agit plus de l’attaquer, seulement de le garder.</strong> ${s.emprise >= ND.seuilRechute - 20 ? '<strong class="bad">Il faut de la garde.</strong> ' : ''}${n ? `Ta garde (force ${fmt1(maForce)}) : ${fleche(s.emprise, seul.emprise)}.` : `Le milieu revient de ${fmt1(regen)} par nuit ; à ${ND.seuilRechute}, il reprend le secteur. ${gang ? 'Face au gang, il faut bien plus que d’habitude.' : '2 ou 3 agents de garde suffisent.'}`}</p>
-        ${dejaGarde ? `<p class="tiny warn" style="margin:0">${ceSoir.length ? 'Les zones annoncées ce soir' : 'Les zones d’hier'} suffisent déjà à le garder. Tes agents seraient plus utiles à l’assaut d’un secteur encore aux mains du milieu.</p>` : ''}`;
-    }
-  }
-  return `<div class="nd-detail" style="gap:6px">
-    <p class="tiny muted" style="margin:0">${esc(m.texte)}</p>
-    ${!ouvert ? `<p class="tiny muted" style="margin:0">Il faut tenir ${ND.coeurSeuil} secteurs de l’anneau en même temps (${Object.values(nd().secteurs).filter((x) => !x.coeur && x.statut === 'repris').length} aujourd’hui). Il rapporte ${String(ND.coeurMult).replace('.', ',')} fois plus.</p>` : ''}
-    <p class="small" style="margin:0"><strong>Ce soir :</strong> ${ceSoir.length || n ? `<span class="nd-quis" style="display:inline-flex">${pastillesCeSoir([...(n ? [{ moi: true, n }] : []), ...ceSoir])}</span>` : '<span class="muted">personne d’annoncé pour l’instant</span>'}</p>
-    <p class="tiny muted" style="margin:0">Hier soir : ${hier.length ? hier.map((x) => `${x.u === me.uid ? '<strong>toi</strong>' : nomZ(x.u)} (${x.n})`).join(', ') : 'personne'}${parts.length ? ` · influence : ${parts.slice(0, 4).map((p) => `${p.uid === me.uid ? '<strong>toi</strong>' : nomZ(p.uid)} ${Math.round(p.part * 100)} %`).join(', ')}${parts.length > 4 ? '…' : ''}` : ''}</p>
-    ${moi && repris ? `<p class="tiny ${moi.part >= ND.partMin ? 'ok' : 'muted'}" style="margin:0">${moi.part >= ND.partMin ? `Tu touches les retombées chaque nuit (${Math.round(moi.part * 100)} % d’influence).` : `Ton influence (${Math.round(moi.part * 100)} %) est sous ${Math.round(ND.partMin * 100)} % : monte la garde pour toucher les retombées.`}</p>` : ''}
-    ${gainsHtml(s, moi)}
-    ${ouvert && !repris && !n ? `<p class="tiny muted" style="margin:0">Pour le faire reculer ce soir : ≈ ${seuilAgents} agents, plutôt à plusieurs zones.</p>` : ''}
-    ${prevision}
-    ${repris ? confianceHtml(k, s, v3Actif() ? rolesDe(k, d).bouc : 0) : ''}
-    ${ouvert && repris && v3Actif() ? (() => {
-      // Non-droit profond : la garde (Intervention) repousse le milieu, la présence (Proximité) rassure les habitants.
-      const r = rolesDe(k, d), plein = n >= ND.maxParSecteur || agentsND(d) >= ND.maxTotal;
-      const st = (role, v, nom) => `<span class="stepper"><button type="button" data-action="nd-role" data-c="${k}" data-r="${role}" data-d="-1" aria-label="Un agent de moins en ${nom} à ${esc(nomSecteur(k))}" ${v <= 0 ? 'disabled' : ''}>−</button><span class="n">${v}</span><button type="button" data-action="nd-role" data-c="${k}" data-r="${role}" data-d="1" aria-label="Un agent de plus en ${nom} à ${esc(nomSecteur(k))}" ${plein ? 'disabled' : ''}>+</button></span>`;
-      return `<div class="between"><div class="col" style="gap:0"><span class="small">Garde</span><span class="tiny muted">Intervention · repousse le milieu</span></div>${st('desc', r.desc + r.rep, 'garde')}</div>
-        <div class="between"><div class="col" style="gap:0"><span class="small">Présence</span><span class="tiny muted">Proximité · garde aussi, et +${4} de confiance chacun</span></div>${st('bouc', r.bouc, 'présence')}</div>`;
-    })() : ouvert ? `<div class="between"><span class="small">${repris ? 'Agents de garde ce soir' : 'Agents à l’assaut ce soir'}</span>
-      <span class="stepper"><button type="button" data-action="nd" data-c="${k}" data-d="-1" aria-label="Un agent de moins à ${esc(nomSecteur(k))}" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="nd" data-c="${k}" data-d="1" aria-label="Un agent de plus à ${esc(nomSecteur(k))}" ${n >= ND.maxParSecteur || agentsND(d) >= ND.maxTotal ? 'disabled' : ''}>+</button></span></div>` : ''}
-    ${ouvert ? `
-      ${n ? (annonce === n ? `<p class="tiny ok" style="margin:0;text-align:center">✓ Annoncé à la radio : les autres zones voient que tu y vas avec ${n}.</p>`
-        : `<button type="button" class="btn small ${annonce ? 'ghost' : 'primary'} block" data-action="nd-appel" data-c="${k}">📻 ${annonce ? `Mettre à jour la radio : ${n} agents au lieu de ${annonce}` : `Prévenir la radio : « j’y vais ce soir avec ${n} »`}</button>`) : ''}` : ''}
-  </div>`;
+  return s.statut === 'repris' ? ficheRepris(k, s, me, d) : ficheMilieu(k, s, me, d);
 }
+
 
 /** Ligne compacte d'un secteur ; le secteur choisi s'ouvre en dessous. */
 function ligneSecteur(k, s, me, d) {
@@ -367,7 +402,7 @@ function ligneSecteur(k, s, me, d) {
   </div>`;
 }
 
-/** Bloc complet pour le Terrain. */
+/** Bloc complet : le tiroir du secteur choisi (juste sous la carte), puis le Parrain et la liste des secteurs. */
 export function nonDroitHtml({ sansPlan = false } = {}) {
   const n = nd(), me = myZone(), d = S.draft;
   if (!n || !me || !d) return '';
@@ -378,36 +413,26 @@ export function nonDroitHtml({ sansPlan = false } = {}) {
   // D'abord ce qui me concerne : mes agents de ce soir, mes secteurs tenus, ceux qui bordent ma zone.
   const rang = (k) => { const s = n.secteurs[k]; return ((d.secteurs || {})[k] ? 0 : 4) + (partsDe(s).some((p) => p.uid === me.uid) ? 0 : 2) + (voisins.has(k) ? 0 : 1); };
   const tries = cles.slice().sort((a, b) => rang(a) - rang(b) || n.secteurs[a].emprise - n.secteurs[b].emprise);
-  const repris = cles.filter((k) => n.secteurs[k].statut === 'repris').length;
-  const mesAgents = agentsND(d);
   const danger = secteursEnDanger();
-  const bordent = [...voisins].filter((k) => n.secteurs[k].statut === 'milieu').length;
-  // Secteur ouvert par défaut : là où j'ai des agents, sinon là où il y avait du monde hier, sinon le plus entamé.
+  // Secteur ouvert par défaut : là où j'ai des agents, sinon là où des zones s'annoncent, sinon le plus fréquenté hier.
   const ann = annoncesND();
   if (S.secteurSel === undefined) {
     const ouverts = tries.filter((k) => secteurOuvert(n, k));
     S.secteurSel = ouverts.find((k) => (d.secteurs || {})[k]) || ouverts.find((k) => ann[k]) || ouverts.filter((k) => n.secteurs[k].statut === 'milieu').sort((a, b) => ((n.secteurs[b].hier || []).length - (n.secteurs[a].hier || []).length) || n.secteurs[a].emprise - n.secteurs[b].emprise)[0] || null;
   }
-  return `<section class="col" aria-label="Zone de non-droit" style="gap:8px" id="non-droit">
-    <div class="between"><h2 class="section" style="margin:0">Zone de non-droit</h2><span class="tiny muted">${repris} repris sur ${cles.length} · tes agents ${mesAgents}/${ND.maxTotal}</span></div>
-    ${reseauHtml(me)}
-    ${ceSoirHtml(n, me, ann)}
+  const sel = S.secteurSel && n.secteurs[S.secteurSel] ? S.secteurSel : null;
+  // En liste, seulement ce qui te concerne (tes agents, tes secteurs tenus, ceux en danger, ceux où une zone s'annonce) ; le reste se replie.
+  const utile = (k) => (d.secteurs || {})[k] || ann[k] || danger.includes(k) || partsDe(n.secteurs[k]).some((p) => p.uid === me.uid && p.part >= ND.partMin);
+  const miens = tries.filter((k) => k !== sel && utile(k));
+  const autres = tries.filter((k) => k !== sel && !utile(k));
+  const ouvertAutres = S.ouverts && S.ouverts['nd-autres'];
+  return `<section class="col nd-v4" aria-label="Zone de non-droit" style="gap:10px" id="non-droit">
     ${sansPlan ? '' : `<div class="plan-cadre">${planNonDroit(S.state, me, S.secteurSel)}</div>`}
-    <p class="tiny muted" style="margin:0">À plusieurs, <strong>+${Math.round(ND.coop * 100)} % par zone</strong> ; seul ou trop faible, blessés possibles.${bordent ? ` ${bordent} secteur${bordent > 1 ? 's' : ''} du milieu touche${bordent > 1 ? 'nt' : ''} ta zone.` : ''} <a href="#guide-affaires">Règles</a></p>
+    ${sel ? carteSecteur(sel, n.secteurs[sel], me, d) : `<p class="ndt-astuce">👆 Touche un secteur sur ${sansPlan ? 'la carte' : 'le plan'} pour l’ouvrir.</p>`}
     ${danger.length ? `<p class="small bad" style="margin:0">⚠ ${danger.map((k) => esc(nomSecteur(k))).join(', ')} : le milieu remonte et personne de garde de ta part.</p>` : ''}
-    ${(() => {
-      // La carte sert à choisir : le secteur touché s'ouvre juste en dessous. En liste, seulement ce qui te concerne
-      // (tes agents, tes secteurs tenus, ceux en danger, ceux où une zone s'annonce) ; le reste se replie.
-      const sel = S.secteurSel && n.secteurs[S.secteurSel] ? S.secteurSel : null;
-      const utile = (k) => (d.secteurs || {})[k] || ann[k] || danger.includes(k) || partsDe(n.secteurs[k]).some((p) => p.uid === me.uid && p.part >= ND.partMin);
-      const miens = tries.filter((k) => k !== sel && utile(k));
-      const autres = tries.filter((k) => k !== sel && !utile(k));
-      const ouvertAutres = S.ouverts && S.ouverts['nd-autres'];
-      return `${sel ? `<div class="card tight nd-liste nd-fiche">${ligneSecteur(sel, n.secteurs[sel], me, d)}</div>` : `<p class="tiny muted nd-astuce" style="margin:0;text-align:center">👆 Touche un secteur sur ${sansPlan ? 'la carte' : 'le plan'} pour l’ouvrir.</p>`}
-        ${miens.length ? `<div class="card tight nd-liste">${miens.map((k) => ligneSecteur(k, n.secteurs[k], me, d)).join('')}</div>` : ''}
-        ${autres.length ? `<details class="nd-autres" data-k="nd-autres" ${ouvertAutres ? 'open' : ''}><summary class="small">${miens.length || sel ? 'Les' : 'Tous les'} ${autres.length} autre${autres.length > 1 ? 's' : ''} secteur${autres.length > 1 ? 's' : ''} ${icon('chevron', 14)}</summary>
-          <div class="card tight nd-liste" style="margin-top:8px">${autres.map((k) => ligneSecteur(k, n.secteurs[k], me, d)).join('')}</div></details>` : ''}`;
-    })()}
+    ${reseauHtml(me)}
+    ${miens.length ? `<div class="card tight nd-liste">${miens.map((k) => ligneSecteur(k, n.secteurs[k], me, d)).join('')}</div>` : ''}
+    ${autres.length ? `<details class="nd-autres" data-k="nd-autres" ${ouvertAutres ? 'open' : ''}><summary class="small">${miens.length || sel ? 'Les' : 'Tous les'} ${autres.length} autre${autres.length > 1 ? 's' : ''} secteur${autres.length > 1 ? 's' : ''} ${icon('chevron', 14)}</summary>
+      <div class="card tight nd-liste" style="margin-top:8px">${autres.map((k) => ligneSecteur(k, n.secteurs[k], me, d)).join('')}</div></details>` : ''}
   </section>`;
 }
-

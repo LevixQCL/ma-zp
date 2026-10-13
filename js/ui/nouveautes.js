@@ -23,6 +23,12 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Non-droit plus clair (13 octobre)', [
+      ['Carte en grand', 'la maquette du non-droit prend presque la moitié de l’écran ; sur chaque secteur, un pion par zone qui y va ce soir (le tien en ambre) et le total d’agents.'],
+      ['Un tiroir par secteur', 'touche un secteur : son tiroir s’ouvre sous la carte avec la jauge avant → après, les trois rôles côte à côte et une seule phrase qui dit ce qui va se passer ce soir. Faille, piège, saisies et gains sont dans « Détails ». La poignée replie le tiroir.'],
+      ['Plus de bouton radio', 'valider tes ordres annonce tes agents à la radio, rôles et tactique compris.'],
+      ['District à part', 'renforts, opérations, pactes et classements sont sous « Aussi dans le district » (ou le bouton District de la carte).'],
+    ]],
     ['Onglet Chef plus léger (13 octobre)', [
       ['Ma zone', 'sous les compétences de ton chef : la forme de ta zone, son titre (Zone de choc, Brigade des routes, Maison judiciaire…) et ce qui fait monter chaque service. Rien que pour toi.'],
       ['Cartes repliées', 'agenda, parapheur, talents, première ligne, réseau et semaine se replient en une ligne dès qu’il n’y a plus rien à y faire.'],

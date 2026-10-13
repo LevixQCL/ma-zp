@@ -46,7 +46,13 @@ export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
       }
     });
     const total = venus.reduce((t, v) => t + v.n, 0);
-    if (!marqueurs().length) dyn.push(`<g transform="translate(${b[0].toFixed(1)} ${(b[1] - 30).toFixed(1)})"><rect x="-13" y="-6.5" width="26" height="13" rx="6.5" fill="#1F4FA8" stroke="#0B1124" stroke-width=".8"/><text x="0" y="2.6" text-anchor="middle" class="iso-pbt" style="font-size:7px">${total} ag.</text></g>`);
+    // Qui y va ce soir, posé sur le secteur : un pion par zone (à sa couleur, le mien en ambre) et le total d'agents.
+    if (!marqueurs().length) {
+      const cols = venus.slice(0, 4).map((v) => (v.uid === me.uid ? '#FFB23F' : ((st.zones[v.uid] || {}).couleur || '#9FB0C0')));
+      const tw = String(total).length * 4.4 + 3, w = 7 + cols.length * 6.5 + tw, x0 = -w / 2;
+      const pions = cols.map((c, i) => `<circle cx="${(x0 + 6 + i * 6.5).toFixed(1)}" cy="0" r="2.7" fill="${c}" stroke="#0B1124" stroke-width=".7"/>`).join('');
+      dyn.push(`<g class="iso-qui" transform="translate(${b[0].toFixed(1)} ${(b[1] - 30).toFixed(1)})" pointer-events="none"><rect x="${x0.toFixed(1)}" y="-6.5" width="${w.toFixed(1)}" height="13" rx="6.5" fill="#0B1124" fill-opacity=".9" stroke="#FFB23F" stroke-opacity=".55" stroke-width=".7"/>${pions}<text x="${(x0 + w - 3.5 - tw / 2 + 1.5).toFixed(1)}" y="2.6" text-anchor="middle" class="iso-pbt" style="font-size:7px">${total}</text></g>`);
+    }
   }
   // « Le Quartier » : sur chaque secteur, ce qu'il faut casser ce soir, l'attaque annoncée et les boucliers.
   for (const m of marqueurs()) { const p = cache.pos(Number(m.k), 18); if (p) dyn.push(`<g data-action="secteur" data-c="${m.k}" style="cursor:pointer" transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})">${m.svg}</g>`); }

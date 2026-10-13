@@ -6,7 +6,8 @@ import { siteDe } from '../engine/sites.js';
 import { siteHtml, ficheQuartierHtml, chipsQuartiersHtml } from './carte.js';
 import { aFairePactes } from './pactes.js';
 import { terrainBlocs, terrainAFaire } from './terrain.js';
-import { nonDroitHtml, secteursEnDanger, annoncesND } from './nondroit.js';
+import { nonDroitHtml, secteursEnDanger, annoncesND, agentsND } from './nondroit.js';
+import { ND } from '../engine/constants.js';
 import { marqueursQ } from './quartier.js';
 
 brancherAnnoncesND(annoncesND);
@@ -96,7 +97,7 @@ export function renderCarteV2(calque = S.carteCalque || 'nondroit') {
   const mesT = tensionsDe(st, me), nbChauds = Object.values(mesT).filter((t) => t >= 60).length;
   const danger = secteursEnDanger().length;
   const sousTitre = calque === 'mazone' ? `${Object.keys(mesT).length} quartiers${nbChauds ? ` · <span class="bad">${nbChauds} chaud${nbChauds > 1 ? 's' : ''}</span>` : ''}`
-    : nd.length ? `${nd.filter((x) => x.statut === 'repris').length}/${nd.length} repris${danger ? ` · <span class="bad">${danger} en danger</span>` : ''}` : `${Object.keys(st.zones).length} zones`;
+    : nd.length ? `${nd.filter((x) => x.statut === 'repris').length}/${nd.length} repris · tes agents ${agentsND()}/${ND.maxTotal}${danger ? ` · <span class="bad">${danger} en danger</span>` : ''}` : `${Object.keys(st.zones).length} zones`;
   const astuce = calque === 'mazone' ? 'Touche un quartier' : nd.length ? 'Touche un secteur rouge · ou une zone' : 'Touche une zone';
   // Pactes : un bouton posé sur la carte (visible sans défiler, sans onglet de plus), avec ce qui attend une réponse.
   const aRepondre = aFairePactes().filter((x) => !x.fait).length;
@@ -106,11 +107,21 @@ export function renderCarteV2(calque = S.carteCalque || 'nondroit') {
   const vueDist = calque === 'nondroit' && nd.length && vueCarteND() === 'district';
   const btnVue = calque === 'nondroit' && nd.length ? `<button type="button" class="cv-vue" data-action="carte-vue" aria-pressed="${vueDist}" title="${vueDist ? 'Revenir au zoom sur le non-droit' : 'Voir tout le district et les zones des joueurs'}"><span aria-hidden="true">${vueDist ? '🎯' : '🗺️'}</span>${vueDist ? 'Non-droit' : 'District'}</button>` : '';
   const astuceV = vueDist ? 'Touche une zone · ou un secteur rouge' : astuce;
-  const carte = `<div class="cv-carte">${planIso(st, me, { vue: vueDist ? 'district' : calque, sel })}${btnVue}${btnPactes}<span class="cv-astuce" aria-hidden="true">${astuceV}</span></div>`;
-  const ndCorps = calque === 'nondroit' ? nonDroitHtml({ sansPlan: true }) : '';
+  // Zoom sur le non-droit : la maquette en grand (recadrée au centre sur téléphone), le tiroir du secteur vient mordre dessus.
+  const zoomND = calque === 'nondroit' && nd.length && !vueDist;
+  let iso = planIso(st, me, { vue: vueDist ? 'district' : calque, sel });
+  if (zoomND) iso = iso.replace('<svg ', '<svg preserveAspectRatio="xMidYMid slice" ');
+  const montrerAstuce = !(zoomND && S.secteurSel);
+  const carte = `<div class="cv-carte">${iso}${btnVue}${btnPactes}${montrerAstuce ? `<span class="cv-astuce" aria-hidden="true">${astuceV}</span>` : ''}</div>`;
+  const ndCorps = calque === 'nondroit' && !vueDist ? nonDroitHtml({ sansPlan: true }) : '';
+  // Le reste du district (renforts, opérations, pactes, classements) vit sous la vue « District » : sous le non-droit, une seule ligne y mène.
+  const dist = districtHtml(st, me);
+  const aVoir = (dist.match(/class="ajd-badge"/g) || []).length;
+  const lienDistrict = `<button type="button" class="cv-lien-dist ${aVoir ? 'alerte' : ''}" data-action="carte-vue"><span aria-hidden="true">🗺️</span><span class="col" style="gap:0;min-width:0;flex:1;text-align:left"><b>Aussi dans le district</b><span>renforts, opérations, pactes, classements</span></span>${aVoir ? `<i>${aVoir}</i>` : ''}<span aria-hidden="true">${icon('chevron', 16)}</span></button>`;
   const corps = calque === 'mazone' ? `${ficheQuartierHtml(st, me, sel)}${chipsQuartiersHtml(st, me, sel)}${siteHtml(siteDe(me))}`
-    : `${ndCorps || '<p class="small muted" style="margin:0">La zone de non-droit n’est pas encore ouverte dans cette partie.</p>'}${districtHtml(st, me)}`;
-  return `<main class="screen carte-v3">
+    : !nd.length ? `<p class="small muted" style="margin:0">La zone de non-droit n’est pas encore ouverte dans cette partie.</p>${dist}`
+      : vueDist ? dist : `${ndCorps}${lienDistrict}`;
+  return `<main class="screen carte-v3${zoomND ? ' cv-nd' : ''}">
     <header class="cv-tete"><h1 class="big">${calque === 'mazone' ? esc(me.nom) : nd.length ? 'Non-droit' : 'District Delta'}</h1><span class="small muted">${sousTitre}</span></header>
     <div class="cv-calques deux" role="tablist" aria-label="Vue de la carte">${boutons}</div>
     ${carte}
