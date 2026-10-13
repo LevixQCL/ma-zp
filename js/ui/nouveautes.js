@@ -580,10 +580,7 @@ export function noteCourte() {
 
 
 const cle = () => `mazp-maj-vue-${NOTE_MAJ.id}`;
-// Tant que la partie n'est pas passée en saison 2, la note de la saison 2 reste fermée : pas de pastille,
-// pas de sections de la saison 2 dans la liste, et elle n'est pas marquée « vue » (elle s'ouvrira à la bascule).
-const enV2 = () => !!(S.state && (Number(S.state.regles) || 1) >= 2);
-const avantSaison2 = () => NOTE_MAJ.saison2 && !enV2();
+const avantSaison2 = () => NOTE_MAJ.saison2 && false;
 const SECTION_S2 = /^(Saison 2|La Gazette en cartes|L’enquête en dossier|La zone de non-droit en rôles|La nouvelle carte et l’onglet Chef|Les énigmes en dossier|Le nouvel HP)/;
 const pasPret = () => !!(NOTE_MAJ.pret && !NOTE_MAJ.pret(S.state));
 export function noteVue() { if (avantSaison2() || pasPret()) return true; try { return !!localStorage.getItem(cle()); } catch (e) { return true; } }
@@ -632,7 +629,7 @@ export function nouveautesAuBesoin() {
   }
   if (S.majMontree || noteVue() || S.tuto != null || document.querySelector('.aide-wrap')) return;
   // La note de la saison 2 ne s'ouvre d'elle-même qu'une fois la partie passée en saison 2 (sinon elle annoncerait ce qu'on ne voit pas encore).
-  if (NOTE_MAJ.saison2 && !(S.state && (Number(S.state.regles) || 1) >= 2)) return;
+  if (NOTE_MAJ.saison2 && !(S.state)) return;
   S.majMontree = true;
   // Nouveau joueur : les « nouveautés » ne le concernent pas, il découvre tout en même temps.
   const z = S.state && S.user && S.state.zones[S.user.uid];

@@ -2,7 +2,6 @@
 // Remplace l'ancien écran Diplomatie (duels, manœuvres, entraide libre).
 import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
 import { gradeFor } from '../engine/constants.js';
-import { reglesV2 } from '../engine/regles.js';
 import { planVille } from './plan.js';
 import { AIDE, gainEntraide, MOTIONS_CHEF, themeActif, THEMES } from '../engine/rivalites.js';
 import {
@@ -71,11 +70,6 @@ export function aFairePactes() {
   return out;
 }
 
-export function ongletsCarte(actif) {
-  const pastille = actif !== 'pactes' && aFairePactes().some((x) => !x.fait);
-  const tab = (k, l, p) => `<a role="tab" href="#${k}" aria-selected="${actif === k}" class="segl">${l}${p ? '<span class="pastille" aria-label="à faire"></span>' : ''}</a>`;
-  return `<div class="onglets-flottants"><div class="seg3 deux" role="tablist" aria-label="Carte et pactes">${tab('carte', 'Carte', false)}${tab('pactes', 'Pactes', pastille)}</div></div>`;
-}
 
 // ───── Carte des pactes ─────
 function carteHtml() {
@@ -122,7 +116,7 @@ function mesPactesHtml() {
     const reste = toursRestants(st, p);
     const joue = pacteJoue(st, p);
     const rompre = d.pacteRompre === p.id;
-    if (reglesV2(st)) {
+    {
       // Saison 2 : un pacte signé est un contrat, avec les deux signatures et les jours qui restent.
       const sig = (uid) => esc((S.players && S.players[uid] && S.players[uid].pseudo) || (st.zones[uid] && st.zones[uid].nom) || '');
       return `<div class="contrat2"><span class="contrat2-sceau" aria-hidden="true">✦</span>
@@ -135,12 +129,6 @@ function mesPactesHtml() {
       ${rompre ? `<p class="tiny warn" style="margin:0">Rupture prévue ce soir : annoncée dans la Gazette, pas de nouveau pacte pendant ${PACTE.blocage} tours. <button type="button" class="lien" data-action="pacte-rompre" data-id="${esc(p.id)}">Garder le pacte</button></p>`
         : `<button type="button" class="lien" data-action="pacte-rompre" data-id="${esc(p.id)}" style="align-self:flex-end;color:var(--faint);font-size:12px">Rompre ce pacte</button>`}`;
     }
-    return `<div class="pacte-ligne">${ico(p.type)}<span class="col grow" style="gap:2px;min-width:0"><strong class="small">${esc(v.nom)} · ${puce(lui)}${nomCourt(lui)}</strong><span class="tiny muted">${esc(v.court)}</span></span>
-        <span class="col" style="gap:4px;align-items:flex-end;flex-shrink:0"><span class="pill ${joue ? 'green' : 'amber'}">${joue ? 'actif' : 'dès demain'}</span>
-        <span class="jours" role="img" aria-label="${reste} tour${reste > 1 ? 's' : ''} restant${reste > 1 ? 's' : ''}">${Array.from({ length: PACTE.duree }, (_, i) => `<i class="${i < reste ? 'f' : ''}"></i>`).join('')}</span></span></div>
-      ${p.type === 'enquete' ? demiPiece(p) : ''}
-      ${rompre ? `<p class="tiny warn" style="margin:0">Rupture prévue ce soir : annoncée dans la Gazette, pas de nouveau pacte pendant ${PACTE.blocage} tours. <button type="button" class="lien" data-action="pacte-rompre" data-id="${esc(p.id)}">Garder le pacte</button></p>`
-        : `<button type="button" class="lien" data-action="pacte-rompre" data-id="${esc(p.id)}" style="align-self:flex-end;color:var(--faint);font-size:12px">Rompre ce pacte</button>`}`;
   });
   const brouillon = d.pacte && d.pacte.cible && st.zones[d.pacte.cible]
     ? `<div class="pacte-ligne">${ico(d.pacte.type)}<span class="col grow" style="gap:2px"><strong class="small">${esc(PACTES[d.pacte.type].nom)} · ${puce(d.pacte.cible)}${nomCourt(d.pacte.cible)}</strong><span class="tiny ${liste.length >= PACTE.max ? 'warn' : 'muted'}">${liste.length >= PACTE.max ? `ne partira pas : tu as déjà ${PACTE.max} pactes` : (() => { const r = reponseA(d.pacte.cible, 'pacteRep', (x) => x.type === d.pacte.type); return r === true ? '<span class="ok">accepté : signé ce soir à 20:00</span>' : r === false ? 'refusé, pas cette fois' : 'proposition envoyée en message ; s’il accepte avant 20:00, signé ce soir (sinon il pourra répondre demain)'; })()}</span></span><button type="button" class="btn small ghost" data-action="pacte-annuler">Annuler</button></div>` : '';
@@ -151,8 +139,8 @@ function mesPactesHtml() {
       ${x.reponse === true ? '<span class="tiny ok">Signé ce soir à 20:00 (ta réponse lui a été envoyée).</span>' : ''}`).join('<hr class="sep">');
   return `<section class="card" aria-label="Mes pactes"><div class="between"><h2 class="card-title">Mes pactes</h2><span class="tiny muted">${Math.min(PACTE.max, liste.length + (brouillon ? 1 : 0))} sur ${PACTE.max}</span></div>
     ${recus ? `${recus}${lignes.length || brouillon ? '<hr class="sep">' : ''}` : ''}
-    ${lignes.length || brouillon || recus ? `${lignes.join('<hr class="sep">')}${brouillon ? `${lignes.length ? '<hr class="sep">' : ''}${brouillon}` : ''}` : (reglesV2(st) ? '<p class="small muted" style="margin:0">Aucun pacte pour l’instant : choisis-en un juste en dessous.</p>' : '<p class="small muted" style="margin:0">Aucun pacte pour l’instant. Un pacte lie deux zones pendant 7 tours, avec un avantage concret pour les deux.</p>')}
-    ${bloque ? `<p class="tiny warn" style="margin:0">Tu as rompu un pacte récemment : pas de nouveau pacte avant quelques tours.</p>` : max ? '' : S.pacteForm ? proposerHtml() : reglesV2(st) ? '' : '<button type="button" class="btn primary" data-action="pacte-form">Proposer un pacte</button>'}
+    ${lignes.length || brouillon || recus ? `${lignes.join('<hr class="sep">')}${brouillon ? `${lignes.length ? '<hr class="sep">' : ''}${brouillon}` : ''}` : ('<p class="small muted" style="margin:0">Aucun pacte pour l’instant : choisis-en un juste en dessous.</p>')}
+    ${bloque ? `<p class="tiny warn" style="margin:0">Tu as rompu un pacte récemment : pas de nouveau pacte avant quelques tours.</p>` : max ? '' : S.pacteForm ? proposerHtml() : ''}
   </section>`;
 }
 
@@ -258,25 +246,7 @@ function typesPactesHtml() {
 }
 
 export function renderPactes() {
-  if (reglesV2(S.state)) return renderPactesV2();
-  const rem = myZone().remiseAchat;
-  const conseil = conseilHtml();
-  const voteCeSoir = !!(S.state.conseil && S.state.conseil.tour === S.state.turn);
-  return `<main class="screen">
-    ${reglesV2(S.state) ? '<a class="retour-carte small" href="#carte" data-action="carte-calque" data-v="nondroit">‹ Carte</a>' : ongletsCarte('pactes')}
-    <header class="col" style="gap:3px"><h1 class="big">Pactes</h1>
-      <p class="sub">Des accords à deux pendant ${PACTE.duree} tours, avec un avantage concret pour chacun. Accepté avant 20:00, signé le soir même.</p></header>
-    ${rem ? `<p class="tiny ok" style="margin:0">Centrale d’achat : formations et équipement −${Math.round(rem * 100)} % aujourd’hui.</p>` : ''}
-    ${voteCeSoir ? conseil : ''}
-    ${mesPactesHtml()}
-    <details class="card repli" data-k="pactes-carte" ${S.ouverts && S.ouverts['pactes-carte'] ? 'open' : ''}>
-      <summary><span style="color:var(--amber)">${icon('carte', 18)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Les pactes sur la carte</span><span class="tiny muted">qui est lié à qui dans le district</span></span>${icon('chevron', 16)}</summary>
-      <div class="col" style="gap:8px">${carteHtml()}</div></details>
-    ${coupDeMainHtml()}
-    ${defiHtml()}
-    ${voteCeSoir ? '' : conseil}
-    <a class="small" href="#guide-pactes" style="text-align:center">Règles des pactes, des défis et du Conseil</a>
-  </main>${tabbar('carte')}`;
+  return renderPactesV2();
 }
 
 function renderPactesV2() {

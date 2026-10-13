@@ -1,7 +1,7 @@
 // « Bitonal » (urgence du jour) : meilleurs scores de la partie par niveau, gardés dans le profil de chaque joueur
 // (players/{uid}.bitonal = { facile, normal, difficile }, bitonalAt = { niveau: date }). Les urgences du jour
 // (un essai) et les courses du Challenge comptent toutes les deux.
-import { S, esc, pseudoJoueur } from './common.js';
+import { S, pseudoJoueur } from './common.js';
 import { vitesseCombi } from '../engine/flotte.js';
 import { cibleUrgence } from '../engine/incidents.js';
 
@@ -49,10 +49,3 @@ export async function noterScoreBitonal(niv, score) {
   return !avant || sc > avant.score;
 }
 
-/** Nominette de la tuile d'entraînement : le meilleur score de la partie (niveau le plus dur où il y en a un). */
-export function nominetteBitonal() {
-  const n = ['difficile', 'normal', 'facile'].find((k) => recordBitonal(k));
-  if (!n) return '<span class="nominette vide">🏆 aucun score</span>';
-  const r = recordBitonal(n), moi = S.user && r.uid === S.user.uid;
-  return `<span class="nominette${moi ? ' moi' : ''}" title="Meilleur score en ${NOM_NIVEAU[n].toLowerCase()}">🏆 ${esc(moi ? 'Toi' : r.nom.replace(/^ZP \d+ /, ''))} · ${r.score.toLocaleString('fr-BE')}</span>`;
-}

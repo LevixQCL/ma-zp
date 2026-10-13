@@ -26,7 +26,8 @@ assert.equal(s.pactes[0].etape, 'actif');
 assert.ok([g.une, ...g.breves].some((n) => n.kicker === 'Pacte'), 'annoncé dans la Gazette');
 assert.equal(remiseAchat(s, 'A'), PACTE.remise);
 assert.equal(s.zones.A.remiseAchat, PACTE.remise);
-assert.equal(coutDecision(s.zones.A, { type: 'former', service: 'admin' }), Math.round(4 * (1 - PACTE.remise) * 10) / 10, 'formation moins chère');
+{ const sansRemise = coutDecision({ ...s.zones.A, remiseAchat: 0 }, { type: 'former', service: 'admin' });
+  assert.equal(coutDecision(s.zones.A, { type: 'former', service: 'admin' }), Math.round(sansRemise * (1 - PACTE.remise) * 10) / 10, 'formation moins chère'); }
 assert.equal(remiseAchat(s, 'C'), 0);
 assert.equal(pacteImpossible(s, 'A', 'B'), 'déjà liée');
 for (let i = 0; i < PACTE.duree - 1; i++) tour();

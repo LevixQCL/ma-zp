@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 152;
+export const APP_VERSION = 153;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -20,7 +20,7 @@ export const RESOLUTION_HOUR = 20;        // heure de résolution (heure belge)
 /** Classement : poids d'un soir selon son ancienneté (voir moyenneIpz). */
 // decoteAbsent (règles v2) : un soir tenu par l'adjoint (ordres non validés) compte au classement pour son IPZ moins
 // cette décote : l'absence ne fait pas chuter, mais ne rapporte jamais autant que jouer (test/adjoint-classement-sim.mjs).
-export const CLASSEMENT = { recence: 0.8, decoteAbsent: 4 };
+export const CLASSEMENT = { recence: 0.93, decoteAbsent: 4 };
 export const MIN_TOURS_CLASSEMENT = 5;    // tours joués pour être classé
 
 export const START = {
@@ -51,7 +51,7 @@ export const COUTS = {
   equipementBase: 5,  // k€ pour passer du niveau 1 au niveau 2, puis +2 k€ par niveau
 };
 /** Coût du matériel pour passer du niveau n au niveau n+1 : 5, 7, 9, 11 k€. */
-export const coutEquipement = (n) => (REGLES.v2 ? INVEST_V2.equipementBase : COUTS.equipementBase) + 2 * (n - 1);
+export const coutEquipement = (n) => (INVEST_V2.equipementBase) + 2 * (n - 1);
 /** Multiplicateurs d'efficacité : formation (+20 % par niveau) et matériel (+15 % par niveau). */
 export const FORMATION = { parNiveau: 0.2 };
 export const multNiveau = (n) => 1 - FORMATION.parNiveau + FORMATION.parNiveau * n;
@@ -143,7 +143,7 @@ export const ROLE_SERVICE = { inter: 'intervention', rech: 'recherche', prox: 'p
 export const bonusChef = (niveau) => CHEFS.bonus[Math.max(0, Math.min(3, niveau || 0))];
 // Énigmes du jour : bonus au choix dès 2 bonnes réponses, prime « sans faute » à 3 sur 3.
 // Une énigme ratée ne coûte plus rien (révision d'oct. 2026) : seule la réussite compte.
-export const ENIGMES = { rateeMoral: 0, bonusMoral: 3, bonusBudget: 2, bonusCapacite: 1.1, sansFaute: { budget: 3, moral: 2, ps: 5 },
+export const ENIGMES = { rateeMoral: 0, bonusMoral: 3, bonusBudget: 2, bonusCapacite: 1.1, sansFaute: { budget: 0, moral: 0, ps: 5, jauge: 3 },
   // Retour de Luc (oct. 2026) : 4 énigmes par jour. Bonus dès 2 bonnes réponses, prime dès 3 (rien de plus à 4).
   primeSeuil: 3,
   // Paliers de carrière (toutes saisons confondues) : toutes les `pas` énigmes réussies, une récompense.
@@ -216,26 +216,26 @@ export const INFRAS = {
   // `formation` : la formation Intervention se fait au stand, moins chère et sans agents absents.
   tir:      { nom: 'Stand de tir', cout: 10, effet: 'Intervention +15 %, formation Intervention à moitié prix et sans agents absents, agents deux fois moins souvent blessés', bonus: 1.15, blessure: 0.5, formation: { cout: 2, agents: 0 } },
   // Saison 2 (règles v2) : quatre annexes de plus, dans des emplacements limités (voir emplacementsAnnexes).
-  cachots:  { nom: 'Complexe cellulaire', cout: 10, v2: true, effet: 'Interpellations (affaires, flagrants délits) +25 % de points, une relève se prend avec un agent de moins, garde à vue : le premier interpellé de chaque affaire balance une pièce d’enquête (1 agent de garde le lendemain)', points: 0.25 },
-  drone:    { nom: 'Cellule drone', cout: 12, v2: true, effet: 'Non-droit : dès 3 agents engagés, le drone les guide (force +20 %, blessures −30 %). Traque : un survol ajoute un indice sur la planque', force: 1.2, blessure: 0.7, minAgents: 3 },
-  crise:    { nom: 'Salle de crise', cout: 10, v2: true, effet: 'Non-droit : force +15 % quand au moins deux zones attaquent le même secteur ; crise du district : ta participation compte un agent de plus', coop: 0.15 },
-  sapv:     { nom: 'Assistance aux victimes', cout: 10, v2: true, effet: 'Accueil +20 %, la satisfaction retombe 20 % moins vite, plaintes et audits de l’Inspection deux fois moins fréquents', admin: 1.2, derive: 0.8 },
+  cachots:  { nom: 'Complexe cellulaire', cout: 10, effet: 'Interpellations (affaires, flagrants délits) +25 % de points, une relève se prend avec un agent de moins, garde à vue : le premier interpellé de chaque affaire balance une pièce d’enquête (1 agent de garde le lendemain)', points: 0.25 },
+  drone:    { nom: 'Cellule drone', cout: 12, effet: 'Non-droit : dès 3 agents engagés, le drone les guide (force +20 %, blessures −30 %). Traque : un survol ajoute un indice sur la planque', force: 1.2, blessure: 0.7, minAgents: 3 },
+  crise:    { nom: 'Salle de crise', cout: 10, effet: 'Non-droit : force +15 % quand au moins deux zones attaquent le même secteur ; crise du district : ta participation compte un agent de plus', coop: 0.15 },
+  sapv:     { nom: 'Assistance aux victimes', cout: 10, effet: 'Accueil +20 %, la satisfaction retombe 20 % moins vite, plaintes et audits de l’Inspection deux fois moins fréquents', admin: 1.2, derive: 0.8 },
 };
 /** Annexes de base (avant la saison 2), dessinées et proposées dans toutes les parties. */
 export const ANNEXES_V1 = ['sport', 'logiciel', 'anpr', 'antenne', 'garage', 'audition', 'tir'];
-/** Emplacements d'annexes (règles v2) : 3 + niveau des bureaux. */
+/** Emplacements d'annexes : 3 + niveau des bureaux. */
 export const emplacementsAnnexes = (z) => 3 + ((z && z.batiments && z.batiments.bureaux) || 1);
 export const nbAnnexes = (z) => Object.values((z && z.infra) || {}).filter(Boolean).length;
-/** Vrai si la zone a cette annexe (et que les règles de la partie la font jouer). */
-export const aAnnexe = (z, k) => !!(z && z.infra && z.infra[k]) && (!INFRAS[k] || !INFRAS[k].v2 || REGLES.v2);
+/** Vrai si la zone a cette annexe. */
+export const aAnnexe = (z, k) => !!(z && z.infra && z.infra[k]);
 /** Formation au stand de tir : seulement pour l'Intervention, et si le stand est construit. */
 const auStand = (z, service) => service === 'intervention' && !!(z && z.infra && z.infra.tir);
 /** Coût d'une formation (k€) pour ce service. */
 // Règles v2 : former et équiper coûtent moins et immobilisent moins (simulation test/regles-v2-sim.mjs, mode builder).
 export const INVEST_V2 = { formation: 3, agentsFormation: 1, equipementBase: 4 };
-export const coutFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.cout : REGLES.v2 ? INVEST_V2.formation : COUTS.formation);
+export const coutFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.cout : INVEST_V2.formation);
 /** Agents absents pendant une formation de ce service. */
-export const agentsFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.agents : REGLES.v2 ? INVEST_V2.agentsFormation : AGENTS_EN_FORMATION);
+export const agentsFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.agents : INVEST_V2.agentsFormation);
 /** Multiplicateur du risque de blessure d'une zone (stand de tir). */
 // Fourgons d'intervention : −10 % de risque chacun, −20 % au plus (voir engine/flotte.js, MODELES.fourgon).
 export const risqueBlessure = (z) => (z && z.infra && z.infra.tir ? INFRAS.tir.blessure : 1) * Math.max(0.2, 1 - bonusEquip(z, 'intervention', 'blessure')) * (1 - Math.min(0.2, 0.1 * ((z && z.flotte) || []).filter((v) => v.m === 'fourgon').length));
@@ -243,8 +243,8 @@ export const risqueBlessure = (z) => (z && z.infra && z.infra.tir ? INFRAS.tir.b
 export const RYTHMES = {
   normal:   { label: 'Normal', mult: 1, moral: 0, cout: 0, sub: 'aucun effet' },
   // Simulation (test/equip-sim.mjs) : à ×1,2 / ×0,8, allégé tous les jours battait le normal et renforcé ne payait jamais.
-  renforce: { label: 'Renforcé', mult: 1.35, moral: -6, cout: 2, sub: '+35 % d’efficacité · −6 moral · 2 k€' },
-  allege:   { label: 'Allégé', mult: 0.65, moral: 5, cout: 0, sub: '−35 % d’efficacité · +5 moral' },
+  renforce: { label: 'Renforcé', mult: 1.35, moral: -3, cout: 2, sub: '+35 % d’efficacité · −3 moral · 2 k€' },
+  allege:   { label: 'Allégé', mult: 0.65, moral: 2, cout: 0, sub: '−35 % d’efficacité · +2 moral' },
 };
 
 export const GRADES = [
@@ -270,7 +270,7 @@ export const BUDGET_IPZ = { base: 50, parK: 1.5, dormant: 75, pente: 1, plancher
 /** Mouvements qui ne comptent pas dans le revenu du jour : achats, dépenses choisies, reventes, bilan de saison. */
 export const HORS_REVENU = new Set(['decision', 'depenses', 'vente', 'bilan']);
 /** Mouvement hors revenu du jour ? Règles v2 (audit du 9 octobre) : un achat aux enchères est un investissement, il ne fait plus baisser l'IPZ. */
-export const horsRevenu = (k) => HORS_REVENU.has(k) || (REGLES.v2 && k === 'enchere');
+export const horsRevenu = (k) => HORS_REVENU.has(k) || ((k === 'enchere'));
 /** Composante Budget selon le revenu moyen des derniers jours (k€ par jour). */
 export function scoreRevenu(revenus) {
   const l = (revenus || []).filter(Number.isFinite);
@@ -284,7 +284,7 @@ export function scoreBudget(b) {
 }
 
 // Poids de l'IPZ en version 1 (l'enquête arrivera en version 2).
-export const IPZ_POIDS = { satisfaction: 0.30, affaires: 0.25, moral: 0.20, budget: 0.10, reputation: 0.15 };
+export const IPZ_POIDS = { satisfaction: 0.25, affaires: 0.35, moral: 0.10, budget: 0.10, reputation: 0.20 };
 
 export const COULEURS_ZONE = ['#5AB0F0', '#3CC6B8', '#A78BFA', '#F59E5B', '#F08BB4', '#E6C36A', '#7FD18B', '#F2766B', '#8FA8FF', '#D9A5F5'];
 
@@ -422,8 +422,6 @@ export const REPUTATION = {
 };
 
 // ───── Salle des ventes (enchères) ─────
-// Un lot par jour, offres secrètes dans les ordres, résolues à 20:00. Le plus offrant paie son offre.
-export const ENCHERE = { max: 30, delaiGain: 5, repReserve: 60, partReserve: 0.25 };
 export const LOTS = {
   chien:     { nom: 'Chien pisteur', texte: 'Un malinois dressé et son maître-chien rejoignent tes enquêteurs.', effet: 'Recherche +15 % jusqu’à la fin de la saison', prix: 5, bonus: { recherche: 1.15 } },
   drone:     { nom: 'Drone de surveillance', texte: 'Un drone avec caméra thermique, et un agent formé pour le piloter.', effet: 'Intervention +10 % jusqu’à la fin de la saison', prix: 6, bonus: { intervention: 1.1 } },
@@ -435,15 +433,15 @@ export const LOTS = {
   gilets:    { nom: 'Lot de gilets et de radios', texte: 'Du matériel neuf racheté à une zone qui s’est trop équipée.', effet: 'Équipement de l’Intervention +1 niveau, sans prendre ta grande décision du jour', prix: 3, immediat: 'gilets' },
   // prix 3 (mise à prix 2 à 4 k€) : toujours sous le coût normal d'un niveau (5 k€ au minimum, puis 7, 9, 11). Avant : 4 à 6 k€, pas plus intéressant qu'équiper soi-même.
   // Lots réservés aux zones qui ont bonne réputation.
-  parquet:   { nom: 'Convention avec le parquet', texte: 'Le parquet accepte de traiter tes dossiers en priorité.', effet: 'Recherche +20 % jusqu’à la fin de la saison', prix: 7, bonus: { recherche: 1.2 }, reserve: true },
-  quartier:  { nom: 'Bureau de quartier prêté par la commune', texte: 'Un rez-de-chaussée en plein centre, gratuit pour la saison.', effet: 'Proximité +20 % jusqu’à la fin de la saison', prix: 6, bonus: { proximite: 1.2 }, reserve: true },
+  parquet:   { nom: 'Convention avec le parquet', texte: 'Le parquet accepte de traiter tes dossiers en priorité.', effet: 'Recherche +20 % jusqu’à la fin de la saison', prix: 7, bonus: { recherche: 1.2 } },
+  quartier:  { nom: 'Bureau de quartier prêté par la commune', texte: 'Un rez-de-chaussée en plein centre, gratuit pour la saison.', effet: 'Proximité +20 % jusqu’à la fin de la saison', prix: 6, bonus: { proximite: 1.2 } },
   // Saison 2 : gros lots de la vente aux enchères (trop chers pour une zone seule, achetables à deux zones liées par un pacte).
   helico:    { nom: 'Prêt d’un hélicoptère fédéral', texte: 'La police fédérale prête son hélicoptère et son équipage pour la saison.', effet: 'Intervention +10 % et force d’assaut en non-droit +15 % jusqu’à la fin de la saison', prix: 28, bonus: { intervention: 1.1 }, nd: { force: 0.15 }, gros: true },
   blinde:    { nom: 'Véhicule blindé saisi', texte: 'Un blindé de transport saisi à un réseau, remis aux normes de la police.', effet: 'Non-droit : force +10 %, blessures divisées par deux jusqu’à la fin de la saison', prix: 24, bonus: {}, nd: { force: 0.1, blessure: 0.5 }, gros: true },
   cellulef:  { nom: 'Cellule d’appui fédérale (renforcée)', texte: 'Quatre spécialistes fédéraux détachés auprès des zones acheteuses.', effet: '+2 agents tout de suite (salaire à ta charge), même si l’hôtel de police est plein', prix: 22, immediat: 'agents', gros: true },
   // Non-droit profond : lot saisi dans un atelier de recel (jamais tiré au hasard, seulement mis en vente après une saisie).
   informatique: { nom: 'Matériel informatique saisi', texte: 'Ordinateurs et téléphones saisis dans un atelier de recel, effacés et remis au service.', effet: 'Recherche +10 % jusqu’à la fin de la saison', prix: 4, bonus: { recherche: 1.1 }, saisie: true },
-  cellule:   { nom: 'Cellule d’appui de la police fédérale', texte: 'Deux spécialistes détachés pour épauler ta zone.', effet: '+2 agents tout de suite (salaire à ta charge), même si l’hôtel de police est plein', prix: 7, immediat: 'agents', reserve: true },
+  cellule:   { nom: 'Cellule d’appui de la police fédérale', texte: 'Deux spécialistes détachés pour épauler ta zone.', effet: '+2 agents tout de suite (salaire à ta charge), même si l’hôtel de police est plein', prix: 7, immediat: 'agents' },
 };
 
 // ───── Tutelle : dernière chance avant la faillite ─────
@@ -471,8 +469,6 @@ export function tourEffet(decision, turn) {
 }
 
 // ───────────── Révision d'oct. 2026 : règles « v2 » (lots 1 à 3), actives à partir de la saison qui suit la mise à jour ─────────────
-/** Drapeau des règles en vigueur pour la partie en cours de calcul ou d'affichage (posé par appliquerRegles, engine/regles.js). */
-export const REGLES = { v2: false };
 /**
  * Doctrines de zone (choisies au début de chaque saison) : une vraie force, un vrai prix.
  * `cap` : multiplicateur de capacité par service ('*' = tous). Maîtrise (même doctrine d'une saison à l'autre, 0 à 2) :
@@ -510,4 +506,4 @@ export function multDoctrine(z, service) {
 }
 
 /** Prix de la prime au personnel ce soir : doublé si elle a déjà été versée la veille (règles v2). */
-export const coutPrime = (z, T) => DEPENSES.prime.cout * (REGLES.v2 && z && z.primeVeille === T - 1 ? 2 : 1);
+export const coutPrime = (z, T) => DEPENSES.prime.cout * (z && z.primeVeille === T - 1 ? 2 : 1);

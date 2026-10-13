@@ -10,7 +10,7 @@
 // arrivées depuis moins de VAGUES.protectionNouveaux tours ni vers celles sans ordres depuis 2 tours.
 
 import { talent, TALENT, noterChef } from './chef.js';
-import { REGLES, forceDoctrine } from './constants.js';
+import { forceDoctrine } from './constants.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
 import { clamp, round1 } from './zone.js';
 
@@ -164,10 +164,10 @@ export function vaguesNuit(state, uids, caps, T, { zoneLabel, push }) {
     liste.push(v);
     z.vagueEnvoyee = { tour: T, domaine: cd.d, vers: t.p, force };
     // Règles v2 : la zone qui fait fuir la délinquance y gagne aussi (PS et une ligne dans la Gazette).
-    if (REGLES.v2) { z.ps = (z.ps || 0) + 5; z.rapport.push('Vague envoyée : +5 PS, ton efficacité se remarque dans tout le district.'); }
+    z.ps = (z.ps || 0) + 5; z.rapport.push('Vague envoyée : +5 PS, ton efficacité se remarque dans tout le district.');
     z.rapport.push(`Ton ${VAGUE_TXT[cd.d].court} écrase la concurrence (${Math.round(cd.r * 10) / 10} × la médiane du district) : ${VAGUE_TXT[cd.d].depart} et part vers une zone voisine.`);
     const c = carteQuartiers(state);
-    push(3 + force, 'Vague de délinquance', `${c.nomDe(Number(t.fr.chezLui))} : ${VAGUE_TXT[t.dom].nom} attendus ce soir`, `Chassée d’une zone voisine, la délinquance se replie vers ${c.nomDe(Number(t.fr.chezLui))}. ${REGLES.v2 ? `C’est l’efficacité de ${z.nom} qui l’a fait fuir.` : 'Qui l’a fait fuir ?'}`, t.p);
+    push(3 + force, 'Vague de délinquance', `${c.nomDe(Number(t.fr.chezLui))} : ${VAGUE_TXT[t.dom].nom} attendus ce soir`, `Chassée d’une zone voisine, la délinquance se replie vers ${c.nomDe(Number(t.fr.chezLui))}. ${`C’est l’efficacité de ${z.nom} qui l’a fait fuir.`}`, t.p);
   }
   state.vagues = { liste, ref, bilan };
 }

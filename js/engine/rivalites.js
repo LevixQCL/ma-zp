@@ -162,19 +162,7 @@ export function themeActif(state, T = state.turn) {
   return state.theme && state.theme.jusqua >= absT(state, T) ? state.theme : null;
 }
 
-/** Zones qui ont un poste avancé actif chez `cible` (annulé si la cible met 6 agents ou plus en Proximité). */
-export function postesContre(state, cible, ord, T = state.turn) {
-  const A = absT(state, T);
-  if (ord[cible] && ord[cible].alloc && ord[cible].alloc.proximite >= 6) return [];
-  return [...new Set((state.postes || []).filter((p) => p.cible === cible && p.jusqua >= A).map((p) => p.auteur))];
-}
 
-/** Bonus de force d'un poste avancé contre une zone concurrente. */
-export function bonusPoste(state, auteur, concurrents, ord, T = state.turn) {
-  const A = absT(state, T);
-  return (state.postes || []).some((p) => p.auteur === auteur && p.jusqua >= A && concurrents.includes(p.cible)
-    && !((ord[p.cible] && ord[p.cible].alloc && ord[p.cible].alloc.proximite) >= 6)) ? 1.3 : 1;
-}
 
 /**
  * Après la simulation : péril et faillite, compteur du district,

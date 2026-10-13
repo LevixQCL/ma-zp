@@ -1,9 +1,8 @@
 // Messages privés entre zones, et invitations en attente (FIPA, pactes, défis, Conseil).
-import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
+import { S, esc, myZone, zoneName } from './common.js';
 import { aFairePactes } from './pactes.js';
 import { appelsRenfort, renfortPrevu, renfortCtrl } from './renfort.js';
-import { candidaturesRecues, candidatureCtrl, maCandidature, statutLabel } from './affaires.js';
-import { reglesV2 } from '../engine/regles.js';
+import { candidaturesRecues, candidatureCtrl, maCandidature } from './affaires.js';
 import { renderRadioV2 } from './radio-v2.js';
 
 // ───────── « Déjà lu » : mémorisé sur l'appareil, par partie ─────────
@@ -93,62 +92,8 @@ export function majPastilleRadio() {
   else if (!doit && dot) dot.remove();
 }
 
-function heure(at) {
-  const d = new Date(at), auj = new Date();
-  const h = d.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
-  return d.toDateString() === auj.toDateString() ? h : `${d.toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' })} ${h}`;
-}
 
 export function renderPrive() {
   // Saison 2 : le privé est la troisième fréquence de la Radio.
-  if (reglesV2(S.state)) return renderRadioV2();
-  const st = S.state, me = myZone();
-  const autres = Object.values(st.zones).filter((z) => z.uid !== me.uid);
-  const avec = S.priveAvec && st.zones[S.priveAvec] ? st.zones[S.priveAvec] : null;
-
-  if (avec) {
-    marquerPriveLu(avec.uid);
-    const fil = (S.prives || []).filter((m) => (m.de === me.uid && m.a === avec.uid) || (m.de === avec.uid && m.a === me.uid));
-    return `<main class="screen">
-      ${ongletsRadio('prive')}
-      <div class="row" style="gap:10px">
-        <button type="button" class="backlink" data-action="prive-fermer">${icon('back', 20)}<span>Conversations</span></button></div>
-      <header class="row" style="gap:10px"><span style="width:12px;height:36px;border-radius:4px;background:${esc(avec.couleur)};flex-shrink:0"></span>
-        <div class="col" style="gap:1px"><span class="mono small" style="color:var(--blue-soft)">ZP ${esc(avec.code)}</span><h1 class="big" style="font-size:26px">${esc(avec.nom)}</h1></div></header>
-      <p class="sub">Seuls vous deux voyez cette conversation.</p>
-      <section class="col" aria-label="Messages" id="prive-list" style="gap:8px">
-        ${fil.length ? fil.map((m) => { const moi = m.de === me.uid; return `<div class="bulle ${moi ? 'moi' : ''}">
-          <p style="margin:0;font-size:14px;line-height:1.4;overflow-wrap:anywhere">${esc(m.texte)}</p><span class="tiny muted mono">${heure(m.at)}</span></div>`; }).join('')
-          : '<p class="small muted">Aucun message. Propose une alliance, une FIPA, un échange d’indices…</p>'}
-      </section>
-      <form data-form="prive" class="row" style="position:sticky;bottom:96px;background:var(--bg);padding-top:6px">
-        <label class="sr" for="prive-msg">Message privé</label>
-        <input id="prive-msg" class="text grow" name="texte" maxlength="500" placeholder="Message privé à ${esc(avec.nom)}…" autocomplete="off">
-        <button class="btn primary" type="submit" aria-label="Envoyer" style="width:48px;padding:0">${icon('send', 18)}</button>
-      </form>
-    </main>${tabbar('radio')}`;
-  }
-
-  const inv = invitations();
-  const n = nonLus();
-  const dernier = (uid) => (S.prives || []).filter((m) => m.de === uid || m.a === uid).slice(-1)[0];
-  const tri = autres.slice().sort((a, b) => ((dernier(b.uid) || {}).at || 0) - ((dernier(a.uid) || {}).at || 0) || a.code.localeCompare(b.code));
-  return `<main class="screen">
-    ${ongletsRadio('prive')}
-    <header class="col" style="gap:3px"><h1 class="big">Messages privés</h1><p class="sub">Discussions entre deux zones, et les invitations qui attendent ta réponse.</p></header>
-    ${inv.length ? `<section class="col" aria-label="Invitations"><h2 class="section">Invitations et demandes</h2>
-      ${inv.map((i) => i.ctrl ? `<div class="card tight" style="border-color:var(--amber-line);background:var(--amber-bg);gap:8px"><div class="col" style="gap:1px"><span style="font-weight:600">${i.titre}</span><span class="small" style="color:var(--amber-soft)">${i.texte}</span></div>${i.ctrl}</div>` : (i.fait ? `<a class="list-row" href="${i.href}"><span class="bullet" style="background:var(--green)"></span>
-        <span class="col grow" style="gap:1px"><span style="font-weight:600">${i.titre}</span><span class="small muted">${i.texte}</span></span>
-        <span class="pill">✓ Modifier</span></a>` : `<a class="list-row" href="${i.href}" style="border-color:var(--amber-line);background:var(--amber-bg)"><span class="bullet" style="background:var(--amber)"></span>
-        <span class="col grow" style="gap:1px"><span style="font-weight:600">${i.titre}</span><span class="small" style="color:var(--amber-soft)">${i.texte}</span></span>
-        <span class="pill amber">${i.action}</span></a>`)).join('')}</section>` : ''}
-    <section class="col" aria-label="Conversations"><h2 class="section">Conversations</h2>
-      ${tri.length ? tri.map((z) => { const m = dernier(z.uid); const k = n.parZone[z.uid] || 0; return `<button type="button" class="list-row" data-action="prive-ouvrir" data-uid="${esc(z.uid)}" style="width:100%;text-align:left">
-        <span style="width:10px;height:32px;border-radius:3px;background:${esc(z.couleur)};flex-shrink:0"></span>
-        <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:${k ? 700 : 600}">${zoneName(z)}</span>
-          <span class="small muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m ? `${m.de === me.uid ? 'Toi : ' : ''}${esc(m.texte)}` : 'Écrire un premier message'}</span></span>
-        ${k ? `<span class="compteur" aria-label="${k} non lu${k > 1 ? 's' : ''}">${k}</span>` : icon('chevron', 16)}</button>`; }).join('')
-        : '<p class="small muted">Aucune autre zone dans la partie pour l’instant.</p>'}
-    </section>
-  </main>${tabbar('radio')}`;
+  return renderRadioV2();
 }

@@ -7,7 +7,6 @@ import { RESEAU } from '../js/engine/chef.js';
 
 const players = { A: { code: '1111', nom: 'A', chef: { parcours: 'intervention', portrait: 'p01' } }, B: { code: '2222', nom: 'B' } };
 let st = createGame({ seed: 'para' });
-st.regles = 2;
 st.zones.A = newZone({ uid: 'A', code: '1111', nom: 'A' }, 1);
 st.zones.B = newZone({ uid: 'B', code: '2222', nom: 'B' }, 1);
 const alloc = { intervention: 6, proximite: 4, recherche: 3, roulage: 2, admin: 3 };

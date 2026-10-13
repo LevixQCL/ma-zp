@@ -3,7 +3,7 @@
 import { S, esc } from './common.js';
 import { nomSecteur, milieuDe } from '../engine/nondroit.js';
 import { niveauChef } from '../engine/chef.js';
-import { TACTIQUES, M3, RENSEIGNEMENTS, SCENES, ETAPES, etape, portraitParrain, portraitLieutenant, scenesDuSoir, seuilScene, SERVICE_SCENE, PORTRAITS_PRETS } from '../engine/milieu.js';
+import { TACTIQUES, M3, RENSEIGNEMENTS, SCENES, ETAPES, etape, portraitParrain, portraitLieutenant, scenesDuSoir, seuilScene, PORTRAITS_PRETS } from '../engine/milieu.js';
 
 const nd = () => (S.state && S.state.nonDroit) || null;
 export const v3Actif = () => !!(nd() && nd().v3 && nd().parrain);

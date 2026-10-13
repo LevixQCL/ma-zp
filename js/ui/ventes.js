@@ -69,8 +69,8 @@ export function ventesHtml() {
   const resume = !v ? 'Prochaine vente annoncée à 20:00' : ph === 'visible' ? `3 lots · enchères visibles jusqu’à 20:00${Object.keys(rel.parZone[z.uid] || {}).length ? ' · <strong class="ok">tu as relancé</strong>' : ''}` : `Coup de marteau ce soir · offres finales secrètes${nbFin ? ` · <strong class="ok">${nbFin} offre${nbFin > 1 ? 's' : ''}</strong>` : ''}`;
   const r = st.venteResultat;
   const mesLots = (z.lots || []).map((l) => LOTS[l.id] && `${LOTS[l.id].nom}${l.etat && l.etat !== 'use' ? ` (${ETATS[l.etat].nom})` : ''}`).filter(Boolean);
-  return `<details class="card repli" aria-label="Vente aux enchères" data-k="encheres" ${S.ouverts && S.ouverts.encheres ? 'open' : ''}>
-    <summary><span class="vign">${vignetteVentes(!!nbFin || !!(rel.parZone[z.uid]))}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Vente aux enchères des saisies</span>
+  return `<details class="card repli" aria-label="Salle des ventes" data-k="encheres" ${S.ouverts && S.ouverts.encheres ? 'open' : ''}>
+    <summary><span class="vign">${vignetteVentes(!!nbFin || !!(rel.parZone[z.uid]))}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Salle des ventes · saisies aux enchères</span>
       <span class="tiny muted">${resume}</span></span>${icon('chevron', 16)}</summary>
     <div class="col" style="gap:10px">
       ${v ? `<p class="tiny muted" style="margin:0">${ph === 'visible' ? `Jour 1 sur 2 : les relances sont visibles de tous (sur la Radio) et t’engagent : leur total ne peut pas dépasser ton budget. Demain, chaque zone dépose une seule offre finale secrète ; ta relance compte déjà comme offre. <strong>${Math.max(0, VENTE.relancesJour - mesRelances())} relance${VENTE.relancesJour - mesRelances() > 1 ? 's' : ''} possible${VENTE.relancesJour - mesRelances() > 1 ? 's' : ''} aujourd’hui</strong>${z.chef && !(z.tuyaux || []).includes(v.id) ? ', et un tuyau du priseur pour cette vente' : ''}.` : 'Jour 2 sur 2 : une seule offre finale secrète par lot, dévoilée au coup de marteau de 20:00. À égalité, la négociation (Diplomatie) du chef départage.'}</p>

@@ -127,21 +127,18 @@ let chefAFaireTab = () => false;
 export function brancherChefTab(fn) { chefAFaireTab = fn; }
 export function tabbar(active, { questBadge = false, radioBadge = false } = {}) {
   const st = S.state, me = S.user && st && st.zones ? st.zones[S.user.uid] : null;
-  // Saison 2 : le Terrain devient un calque de la Carte (6 onglets).
-  const v2 = !!st && (Number(st.regles) || 1) >= 2;
-  const tabs = v2 ? [['hp', 'HP'], ['ordres', 'Ordres'], ['carte', 'Carte'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['chef', 'Chef'], ['radio', 'Radio']]
-    : [['hp', 'HP'], ['ordres', 'Ordres'], ['terrain', 'Terrain'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['carte', 'Carte'], ['radio', 'Radio']];
-  if (v2 && active === 'terrain') active = 'carte';
+  // L'ancien écran Terrain est un calque de la Carte.
+  const tabs = [['hp', 'HP'], ['ordres', 'Ordres'], ['carte', 'Carte'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['chef', 'Chef'], ['radio', 'Radio']];
+  if (active === 'terrain') active = 'carte';
   const nbJour = slotsCompte().length;
   const faites = (S.questResults || []).some((r) => r && (r.statut === 'delegue' || r.statut === 'quiz')) ? nbJour : slotsCompte().filter((k) => { const r = (S.questResults || [])[k]; return r && (r.statut === 'ok' || r.statut === 'rate'); }).length;
   const dots = {
     ordres: !S.savedOrders || S.ordersDirty,
     enquete: !!(st && (st.traques || []).length && !(S.draft && S.draft.traque)),
     quete: questBadge || faites < nbJour,
-    terrain: terrainAFaire() > 0,
     radio: radioBadge || (() => { const n = nonLus(); return n.radio + n.prive > 0 || invitations().some((i) => !i.fait && i.href !== '#pactes'); })(),
-    carte: aFairePactes().some((x) => !x.fait) || (v2 && terrainAFaire() > 0),
-    chef: v2 && chefAFaireTab(),
+    carte: aFairePactes().some((x) => !x.fait) || terrainAFaire() > 0,
+    chef: chefAFaireTab(),
   };
   // Pastille = « du nouveau depuis ta dernière visite » : elle s'éteint quand tu ouvres la page et ne se rallume
   // que si ce qu'elle signale change (nouveau tour, nouvelle demande…). Exception : des ordres modifiés mais
@@ -150,8 +147,7 @@ export function tabbar(active, { questBadge = false, radioBadge = false } = {}) 
   const sig = {
     ordres: T,
     quete: `${T}:${faites}`,
-    terrain: `${T}:${dots.terrain ? terrainAFaire() : 0}`,
-    carte: `${T}:${dots.carte ? aFairePactes().filter((x) => !x.fait).map((x) => x.titre).join('|') : ''}${v2 ? `:${terrainAFaire()}` : ''}`,
+    carte: `${T}:${dots.carte ? aFairePactes().filter((x) => !x.fait).map((x) => x.titre).join('|') : ''}:${terrainAFaire()}`,
     enquete: `${T}:${st ? (st.traques || []).length : 0}`,
     chef: `${T}:${dots.chef ? 1 : 0}`,
   };

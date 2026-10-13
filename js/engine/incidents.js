@@ -4,9 +4,9 @@
 // à 20:00). Pas joué : l'équipe se débrouille seule, avec une chance qui dépend de ses effectifs.
 import { talentVal, noterChef } from './chef.js';
 import { makeRng } from './rng.js';
-import { DEFAULT_ALLOC, SERVICE_LABELS, PS, gainMoral, risqueBlessure, USURE } from './constants.js';
+import { DEFAULT_ALLOC, SERVICE_LABELS, PS, gainMoral, risqueBlessure } from './constants.js';
 import { jalon } from './zone.js';
-import { vitesseCombi, vehiculesUrgence, user, modeleDe } from './flotte.js';
+import { vitesseCombi, vehiculesUrgence, user } from './flotte.js';
 import { TOUS_SKINS, ajouterSkin } from './decor.js';
 import { placeLibre } from './parc.js';
 import { jourDeLuc } from './luc.js';
@@ -290,8 +290,6 @@ export function resultatsIncidents(player, incidents) {
 
 /** Points de jauge d'un incident réussi en jouant : 2 sans faute, sinon 1 ; +1 si le défi bonus du mini-jeu est réussi (Maintien de l'ordre). */
 export const pointsJauge = (res) => (res && res.statut === 'ok' ? (res.fautes ? 1 : 2) + (res.bonus === true ? 1 : 0) : 0);
-/** Résultats qui comptent pour le Directeur et les statistiques (« Pas le temps » est neutre). */
-export const compte = (res) => !!res && res.statut !== 'passe';
 
 /** Conséquences de l'urgence du jour (voir URGENCE). Renvoie les lignes du rapport. */
 export function appliquerUrgence(z, inc, res, { alloc = {}, T, rng }) {

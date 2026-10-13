@@ -1,4 +1,4 @@
-// Prime du Challenge : semaine, niveau minimum, une prime par joueur, remise du dimanche dans la résolution.
+// Prime des records (ex-Challenge) : semaine, niveau minimum, une prime par joueur, remise du dimanche dans la résolution.
 import assert from 'node:assert/strict';
 import { CHALLENGE, cleSemaine, laureatsSemaine, classementSemaine, primeChallenge } from '../js/engine/challenge.js';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
@@ -55,6 +55,6 @@ const lundi = resolveTurn(s0, { players: pl, nextWeekday: 1 }).state;
 assert.ok(!lundi.challenge, 'pas de remise un autre jour');
 const r = resolveTurn(s0, { players: pl, nextWeekday: 0 });
 assert.deepEqual(r.state.challenge.laureats, [{ jeu: 'crochetage', uid: u, niveau: 11 }]);
-assert.ok(r.state.zones[u].rapport.some((x) => x.startsWith('Prime du Challenge')));
+assert.ok(r.state.zones[u].rapport.some((x) => x.startsWith('Prime des records')));
 assert.ok(r.state.zones[u].compta.lignes.some((x) => x.k === 'challenge' && x.v === CHALLENGE.prime));
 console.log('OK : prime du Challenge (semaine, minimum, une prime par joueur, remise du dimanche).');

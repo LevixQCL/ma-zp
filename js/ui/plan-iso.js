@@ -204,7 +204,7 @@ function dessiner(st, me, seed, vue, reduit) {
     if (!zoomZone && T.owner[i] >= 0) {
       const uid = T.order[T.owner[i]], z = st.zones[uid];
       if (z) cibles.push({ prof: -1, h: mien ? `<polygon class="hit-zone" data-action="carte-calque" data-v="mazone" points="${poly(top)}" fill="transparent"><title>Ouvrir ma zone</title></polygon>`
-        : `<polygon class="hit-autre" data-action="voir-hp" data-uid="${uid}" points="${poly(top)}" fill="transparent"><title>Commissariat de ${String(z.nom).replace(/[<&"]/g, '')}</title></polygon>` });
+        : `<polygon class="hit-autre" data-action="voir-hp" data-uid="${uid}" points="${poly(top)}" fill="transparent"><title>Hôtel de police de ${String(z.nom).replace(/[<&"]/g, '')}</title></polygon>` });
     }
     // Secteurs de non-droit (repris ou non) : touchables partout ; repère avec l'emprise, contour quand il est choisi.
     if (sND) {

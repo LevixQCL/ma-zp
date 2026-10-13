@@ -9,7 +9,6 @@ import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
 import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND, INFRAS, aAnnexe, LOTS } from './constants.js';
 import { talentVal, talent, noterChef, FRONT, niveauChef } from './chef.js';
 import { makeRng } from './rng.js';
-import { reglesV2 } from './regles.js';
 import { clamp, round1, forceEngagement, forceRole, jalon, noter } from './zone.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
 import { donnerTrophee, TROPHEE, figure, nomComplet } from './equipe.js';
@@ -17,13 +16,9 @@ import { lies, PACTE } from './pactes.js';
 import { quartierActif, quartierResoudre } from './quartier.js';
 import { assurerMilieu, interrogatoires, modsAssaut, noterDescente, aLaPrise, confianceNuit, finDeNuit, scenesResoudre, saisieDescente, etape, M3, LIEUTENANTS, tactiqueDuSoir, barricades } from './milieu.js';
 
-/** Non-droit « profond » (Parrain, lieutenants, confiance, milieu adaptatif, scènes) : en jeu avec les règles de la saison 2 (oct. 2026). */
+/** Non-droit « profond » (Parrain, lieutenants, confiance, milieu adaptatif, scènes), en jeu depuis oct. 2026 (les simulations peuvent le couper avec nonDroit.v3 = false). */
 export const ND_V3 = true;
 
-/** Rôles dans la zone de non-droit : actifs avec les règles de la saison 2 (state.regles >= 2). */
-export const ND_ROLES = true;
-/** Les rôles sont-ils en jeu dans cette partie ? */
-export const rolesND = (state) => !!(state && state.nonDroit && (state.nonDroit.roles || (ND_ROLES && reglesV2(state))));
 
 export const MILIEUX = [
   { id: 'deal', titre: 'Point de deal', texte: 'Des guetteurs à chaque coin de rue, un trafic jour et nuit.' },
@@ -147,8 +142,6 @@ export function prevoirRoles(state, s, liste) {
     besoin: { rep: R >= R0.repSeuil || (s.repere && s.repere.a > T) ? 0 : 2, desc: besoinDesc, bouc: Math.ceil(Math.max(nD, besoinDesc) * ratio) } };
 }
 
-/** Force nécessaire pour faire baisser l'emprise d'un secteur (au-delà, elle baisse). */
-export const forceTenue = (state, s) => regenSecteur(state, s) / ND.efficacite;
 
 /**
  * Résolution du soir. `ord[uid].secteurs` : agents envoyés par secteur (déjà validés).
@@ -157,8 +150,8 @@ export const forceTenue = (state, s) => regenSecteur(state, s) / ND.efficacite;
 export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players = {}) {
   if (!state.nonDroit || state.nonDroit.season !== state.season) state.nonDroit = creerNonDroit(state.seed, state.season);
   const nd = state.nonDroit;
-  if (ND_ROLES && reglesV2(state) && !nd.roles) nd.roles = true;
-  if (ND_V3 && reglesV2(state) && nd.v3 === undefined) nd.v3 = true; // false : désactivé exprès (simulations)
+  
+  if (ND_V3 && nd.v3 === undefined) nd.v3 = true; // false : désactivé exprès (simulations)
   // « Le Quartier » (barricades, trois verbes, intentions du milieu) : remplace la règle d'emprise une fois l'interrupteur passé.
   if (quartierActif(state)) return quartierResoudre(state, uids, ord, push, T, zoneLabel, {
     prise,
@@ -207,7 +200,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players =
       const ndLots = [...new Set((zz.lots || []).map((l) => l.id))].map((id) => LOTS[id] && LOTS[id].nd).filter(Boolean);
       const fLots = ndLots.reduce((a, x) => a * (1 + (x.force || 0)), 1), bLots = ndLots.reduce((a, x) => a * (x.blessure || 1), 1);
       const mz = (drone ? INFRAS.drone.force : 1) * fLots * (1 + bonus) * (1 + talentVal(zz, 'tacticien', 'force', 0));
-      const r = nd.roles ? ((ord[u].roles && ord[u].roles[k]) || { rep: 0, desc: n, bouc: 0 }) : null;
+      const r = (ord[u].roles && ord[u].roles[k]) || { rep: 0, desc: n, bouc: 0 };
       const fr = r ? { rep: forceRole(zz, 'rep', r.rep, T) * mz, desc: forceRole(zz, 'desc', r.desc, T) * mz, bouc: forceRole(zz, 'bouc', r.bouc, T) * mz } : null;
       const f = fr ? fr.rep * ND.roles.poidsRep + fr.desc + fr.bouc : f0 * fLots * (1 + bonus) * (1 + talentVal(zz, 'tacticien', 'force', 0));
       return { u, n, f, f0: f, r, fr, chef: mi, drone,
@@ -219,7 +212,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players =
     if (engages.length >= 2) for (const e of engages) if (aAnnexe(state.zones[e.u], 'crise')) { e.f *= 1 + INFRAS.crise.coop; state.zones[e.u].rapport.push(`Salle de crise : coordination avec les autres zones sur ${nomSecteur(k)}, force +${Math.round(INFRAS.crise.coop * 100)} %.`); }
     for (const e of engages) if (talent(state.zones[e.u], 'tacticien')) noterChef(state.zones[e.u], 'tacticien', `Tacticien : ton assaut sur ${nomSecteur(k)} frappe plus fort (+8 %), avec moins de blessés.`);
     for (const e of engages) if (e.drone) state.zones[e.u].rapport.push(`Cellule drone : le drone survole ${nomSecteur(k)} et guide tes ${e.n} agents (force +${Math.round((INFRAS.drone.force - 1) * 100)} %, moins de blessés).`);
-    // Jumelage terrain : +20 % de force pour deux zones jumelées sur le même secteur.
+    // Jumelage non-droit : +20 % de force pour deux zones jumelées sur le même secteur.
     for (const e of engages) {
       const jum = engages.filter((x) => x.u !== e.u && lies(state, e.u, x.u, 'terrain', T));
       if (jum.length) { e.f *= 1 + PACTE.ndBonus; state.zones[e.u].rapport.push(`Jumelage : avec ${jum.map((x) => state.zones[x.u].nom).join(', ')} sur ${nomSecteur(k)}, ta force est majorée de ${Math.round(PACTE.ndBonus * 100)} %.`); }
@@ -233,7 +226,7 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players =
     const F = engages.reduce((a, e) => a + e.f, 0) * coop;
     const avant = s.emprise;
     const nomS = nomSecteur(k);
-    if (s.statut === 'milieu' && nd.roles) { assautRoles(state, nd, s, k, engages, regen[k], T, push, res, nom, ord); continue; }
+    if ((s.statut === 'milieu')) { assautRoles(state, nd, s, k, engages, regen[k], T, push, res, nom, ord); continue; }
     if (s.statut === 'milieu') {
       // Assaut repoussé : pas assez de force pour faire reculer le milieu, ou une zone seule qui tombe dans un piège.
       const seuil = regen[k] / ND.efficacite;

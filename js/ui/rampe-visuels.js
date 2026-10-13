@@ -1,25 +1,7 @@
 // Visuels de l'affaire « Le notaire de la Rampe » : photos des pièces, scène à fouiller, une du journal.
 // Même règle que pour la première affaire : l'indice se lit dans l'image (une heure, un détail), sans être souligné.
-import { MONO, MAIN, TAPE, defsPhoto, finPhoto, svg, plot, echelle } from './photo-base.js';
+import { MONO, MAIN, TAPE, defsPhoto, finPhoto, svg } from './photo-base.js';
 
-// ───── Briques ─────
-/** La Rampe Sainte-Waudru dans le brouillard, vue de la caméra du cabinet voisin, trois maisons plus bas. */
-function rampeCam(id, inner = '') {
-  return `<rect width="320" height="180" fill="#3A3C3E"/>
-    <path d="M0 0H320V40L0 90Z" fill="#55585A"/>
-    <path d="M0 40L150 18H320V180H0Z" fill="#46494B"/>
-    <g fill="#2E3032"><rect x="20" y="40" width="120" height="96"/></g>
-    <rect x="62" y="74" width="34" height="62" fill="#1E1F21"/><rect x="66" y="78" width="26" height="22" fill="#6A6C64" opacity=".5"/><circle cx="88" cy="110" r="1.6" fill="#AAA"/>
-    <rect x="26" y="52" width="26" height="30" fill="#7E8078" opacity=".55"/><rect x="108" y="52" width="26" height="30" fill="#5E605A" opacity=".55"/>
-    <text x="80" y="70" text-anchor="middle" ${MONO} font-size="5" fill="#BBB" opacity=".6">ÉTUDE</text>
-    <path d="M0 136L320 104V180H0Z" fill="#5A5D5F"/>
-    <g stroke="#6C6F71" stroke-width=".8" opacity=".7">${Array.from({ length: 9 }, (_, k) => `<path d="M0 ${144 + k * 4.5}L320 ${112 + k * 7.6}"/>`).join('')}${Array.from({ length: 16 }, (_, k) => `<path d="M${k * 22} ${136 - k * 2}L${k * 24 - 20} 180"/>`).join('')}</g>
-    <g transform="translate(232 40)"><rect x="-1.5" y="0" width="3" height="80" fill="#2A2A2A"/><circle cx="0" cy="0" r="5" fill="#F2F0E0"/></g>
-    <circle cx="232" cy="40" r="26" fill="#F2F0E0" opacity=".28" filter="url(#${id}bb)"/>
-    ${inner}
-    <rect width="320" height="180" fill="#D9DCDE" opacity=".32"/>
-    <path d="M0 120Q160 90 320 110V180H0Z" fill="#E4E6E8" opacity=".18"/>`;
-}
 /** Silhouettes de la caméra : femme aux cheveux longs, homme à capuche (avec ou sans dossier), femme en ciré clair. */
 function personne(x, y, s, type, { dossier = false, dos = false } = {}) {
   const sombre = type === 'cire' ? '#9EA0A2' : '#161616';
@@ -258,47 +240,6 @@ export function sceneRampeSvg(sel, vus, esc) {
   </svg>`;
 }
 
-/** L'étude au rez-de-chaussée (ancien dessin, gardé en secours) : l'escalier à gauche, le bureau au centre, l'entrée et le salon à droite. */
-export function decorSceneRampe(id) {
-  return `<defs>
-      <linearGradient id="${id}mur" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6E5E4A"/><stop offset="1" stop-color="#54473A"/></linearGradient>
-      <linearGradient id="${id}chene" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7A5432"/><stop offset="1" stop-color="#4A3020"/></linearGradient>
-      <linearGradient id="${id}brume" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8DCDE"/><stop offset="1" stop-color="#AEB4B8"/></linearGradient>
-      <radialGradient id="${id}lampe" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#FFE9A8" stop-opacity=".55"/><stop offset="1" stop-color="#FFE9A8" stop-opacity="0"/></radialGradient>
-      <radialGradient id="${id}flash" cx="45%" cy="45%" r="75%"><stop offset="0" stop-color="#FFF6E0" stop-opacity=".18"/><stop offset=".7" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></radialGradient>
-      <filter id="${id}n"><feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="2" seed="5"/><feColorMatrix values="0 0 0 0 .5  0 0 0 0 .45  0 0 0 0 .4  0 0 0 .5 0"/></filter>
-      <filter id="${id}b"><feGaussianBlur stdDeviation="3"/></filter>
-      <pattern id="${id}parq" width="36" height="12" patternUnits="userSpaceOnUse"><rect width="36" height="12" fill="#4A3624"/><path d="M0 11.5H36M18 0V12" stroke="#36261A" stroke-width="1"/></pattern>
-      <pattern id="${id}livres" width="14" height="40" patternUnits="userSpaceOnUse"><rect width="14" height="40" fill="#3A2A1E"/><rect x="1" y="4" width="5" height="34" fill="#6A2A24"/><rect x="7" y="8" width="5" height="30" fill="#2A4A3A"/></pattern>
-    </defs>
-    <rect width="680" height="380" fill="url(#${id}mur)"/>
-    <path d="M0 290H680V380H0Z" fill="url(#${id}parq)"/><path d="M0 290H680" stroke="#2A1E14" stroke-width="3"/>
-    <rect x="236" y="40" width="70" height="200" fill="url(#${id}livres)"/><rect x="236" y="40" width="70" height="200" fill="none" stroke="#2A1E14" stroke-width="3"/>
-    <rect x="330" y="50" width="100" height="110" fill="url(#${id}brume)"/><path d="M380 50V160M330 105H430" stroke="#3A2A1E" stroke-width="4"/><rect x="330" y="50" width="100" height="110" fill="none" stroke="#2A1E14" stroke-width="5"/>
-    <rect x="404" y="62" width="10" height="6" fill="#555" opacity=".5"/>
-    <rect x="452" y="70" width="38" height="50" fill="#EFE6D0"/><rect x="452" y="70" width="38" height="12" fill="#B3261E"/><text x="471" y="79" text-anchor="middle" font-family="'Special Elite', monospace" font-size="6" fill="#FFF">1999</text>
-    <g stroke="#9A8E78" stroke-width=".5">${[0, 1, 2, 3].map((k) => `<path d="M454 ${88 + k * 8}h34"/>`).join('')}</g><circle cx="466" cy="104" r="4" fill="none" stroke="#B3261E" stroke-width="1.2"/>
-    <g>${Array.from({ length: 9 }, (_, k) => `<path d="M${40 + k * 22} ${370 - k * 26}h${48 - k * 1.5}v${26}h-${48 - k * 1.5}z" fill="url(#${id}chene)" stroke="#2A1A10" stroke-width="1.2"/>`).join('')}</g>
-    <path d="M30 376L236 140" stroke="#2A1A10" stroke-width="6"/><path d="M14 382L222 148" stroke="#3E2A1A" stroke-width="3"/>
-    <path d="M70 352q30 -10 70 4q22 8 26 22q-40 10 -78 4q-20 -4 -18 -30z" fill="none" stroke="#F2E8C8" stroke-width="2.4" stroke-dasharray="6 4" opacity=".75"/>
-    <path d="M150 360q40 -6 80 0q30 4 70 -2" stroke="#7A2E2E" stroke-width="14" opacity=".55" fill="none"/><path d="M162 356l8 8M190 354l6 10M222 356l6 9" stroke="#5A1E1E" stroke-width="2" opacity=".6"/>
-    <g transform="translate(186 247)"><circle cx="-6" cy="0" r="5" fill="none" stroke="#C9B98E" stroke-width="1.4"/><circle cx="6" cy="0" r="5" fill="none" stroke="#C9B98E" stroke-width="1.4"/><path d="M-1 0h2" stroke="#C9B98E"/></g>
-    <rect x="276" y="250" width="164" height="12" fill="#5A3A22"/><rect x="284" y="262" width="12" height="40" fill="#4A2E1A"/><rect x="420" y="262" width="12" height="40" fill="#4A2E1A"/>
-    <rect x="388" y="262" width="34" height="24" fill="#5E3E26" stroke="#2A1A10"/><rect x="392" y="282" width="28" height="10" fill="#6E4A2E" transform="translate(4 8)"/>
-    <rect x="330" y="244" width="56" height="8" fill="#2E4A2E"/><rect x="342" y="246" width="16" height="5" fill="#3E5E3E"/>
-    <rect x="306" y="240" width="22" height="10" rx="2" fill="#7A5432"/>
-    <path d="M300 250l10 -40h18l6 40" fill="#2E5A3A" opacity=".9"/><circle cx="320" cy="208" r="40" fill="url(#${id}lampe)"/>
-    <rect x="520" y="60" width="90" height="230" fill="#3E3024"/><path d="M520 60h90v230" fill="none" stroke="#2A1E14" stroke-width="4"/>
-    <rect x="490" y="160" width="40" height="80" fill="#4A3828" stroke="#2A1E14" stroke-width="2"/><circle cx="522" cy="202" r="2" fill="#C9B98E"/>
-    <rect x="548" y="226" width="62" height="10" fill="#6E4A2E"/><path d="M552 236v40M604 236v40" stroke="#4A2E1A" stroke-width="4"/>
-    <g transform="translate(578 229)"><circle r="5" fill="#E2C46A" stroke="#8A6A20"/><path d="M5 0q8 2 10 10" stroke="#C9A84A" fill="none"/><rect x="12" y="8" width="8" height="5" fill="#EDE4CF" transform="rotate(20 16 10)"/></g>
-    <path d="M626 80q12 -8 22 0v60" stroke="#2A1E14" stroke-width="4" fill="none"/><path d="M630 86q-10 40 -4 90h24q6 -50 -4 -90z" fill="#3A3A42"/>
-    <path d="M560 300q60 -30 120 0V380H560Z" fill="#2E2218" opacity=".6"/><rect x="590" y="322" width="70" height="10" fill="#6E4A2E"/>
-    <g transform="translate(608 318)"><path d="M-4 -12h8l-1 9h-6z" fill="rgba(240,240,248,.7)"/><path d="M-3 -9h6l-1 5h-4z" fill="#6A1E2A" opacity=".7"/></g>
-    <g transform="translate(634 318)"><path d="M-4 -12h8l-1 9h-6z" fill="rgba(240,240,248,.7)"/><path d="M-3 -12q2 -1 4 0" stroke="#C2302B" stroke-width="1.6"/></g>
-    <rect width="680" height="380" fill="url(#${id}flash)"/>
-    <rect width="680" height="380" filter="url(#${id}n)" opacity=".14" style="mix-blend-mode:multiply"/>`;
-}
 
 // ───── Une du journal et vignette de la scène ─────
 /** La maison de la Rampe dans le brouillard, rubalise et gyrophares (une du journal). */

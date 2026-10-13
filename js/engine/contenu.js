@@ -27,15 +27,6 @@ export const DOSSIERS_LOCAUX = [
   'Vol de scooter', 'Menaces entre voisins', 'Vol dans un vestiaire', 'Dépôt clandestin de déchets',
 ];
 
-export const EVENEMENTS_COLLECTIFS = [
-  { titre: 'Festival du Parc', texte: 'Trois scènes, 20 000 personnes attendues.' },
-  { titre: 'Match à risque au stade du Delta', texte: 'Les supporters adverses arrivent en train spécial.' },
-  { titre: 'Tempête annoncée sur le district', texte: 'Arbres tombés et routes coupées à prévoir.' },
-  { titre: 'Visite officielle au District Delta', texte: 'Cortège, fermetures de voiries et sécurité renforcée.' },
-  { titre: 'Marathon du Delta', texte: '42 km de parcours à sécuriser.' },
-  { titre: 'Braderie géante', texte: 'Tout le centre fermé à la circulation.' },
-  { titre: 'Grand feu de la Saint-Jean', texte: 'Rassemblement nocturne au bord du canal.' },
-];
 
 // Coups durs : poids de tirage, effets appliqués dans le moteur.
 export const COUPS_DURS = [
@@ -108,11 +99,6 @@ export const ECHOS = {
 export const PEINES = ['condamné·e à deux ans de prison, dont un avec sursis', 'condamné·e à dix-huit mois de prison ferme', 'condamné·e à une peine de travail de 200 heures et à indemniser la victime', 'condamné·e à trois ans de prison, assortis d’une interdiction de séjour dans le district', 'condamné·e à un an de prison avec sursis probatoire'];
 
 
-export const TITRES_UNE_AFFAIRE = [
-  (z) => `${z} démantèle le réseau`,
-  (z) => `Coup de filet réussi pour ${z}`,
-  (z) => `${z} rafle la mise`,
-];
 
 // Opérations d'envergure : elles mobilisent des agents de plusieurs services,
 // qui ne font donc plus leur travail habituel pendant la durée de l'opération.

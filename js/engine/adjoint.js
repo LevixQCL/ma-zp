@@ -6,7 +6,7 @@
 import { autopilotOrders, sanitizeOrders, operationActive } from './zone.js';
 import { SERVICES } from './constants.js';
 import { niveauChef } from './chef.js';
-import { reglesV2, MAX_DEPENSES } from './regles.js';
+import { MAX_DEPENSES } from './regles.js';
 
 export const ADJOINT = {
   adapte: 3,        // Commandement 3 : il déplace des agents vers la pression du jour
@@ -77,10 +77,10 @@ export function ordresAdjoint(z, state, consigne = 'equilibre') {
   const large = L >= ADJOINT.depenses;
   // Par ordre d'urgence, dans la limite des dépenses du jour (règles v2 : 2) : la paperasse d'abord (l'Inspection guette),
   // puis la prime (pas deux soirs de suite à prix doublé, sauf moral au plus bas), la prévention, les agents de réserve.
-  const max = reglesV2(state) ? MAX_DEPENSES : 9;
+  const max = MAX_DEPENSES;
   let n = 0;
   if (z.paperasse > 12 && z.budget > 10) { o.depenses.soustraitance = true; n += 1; }
-  const primeDouble = reglesV2(state) && z.primeVeille === T - 1;
+  const primeDouble = z.primeVeille === T - 1;
   if (n < max && z.moral < (large ? 55 : 45) && z.budget > 12 && (!primeDouble || z.moral < 35)) { o.depenses.prime = true; n += 1; }
   if (n < max && large && !o.depenses.prime && consigne !== 'prudent' && z.criminalite > 55 && z.budget > 15) { o.depenses.prevention = true; n += 1; }
   if (n < max && large && z.budget > 25) { o.depenses.reserve = 2; o.depenses.reserveService = op ? Object.keys(op.besoins)[0] : 'intervention'; }

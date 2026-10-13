@@ -9,9 +9,9 @@ import { enService } from './flotte.js';
 // siens à prix normal, ceux des autres coûtent le double, d'où l'intérêt de partager.
 // Tout est déterministe : une affaire se recalcule à partir de la graine et de son numéro.
 import { makeRng, hashString } from './rng.js';
-import { bonusEquip, SERVICE_LABELS, forceDoctrine, REGLES, aAnnexe } from './constants.js';
+import { bonusEquip, SERVICE_LABELS, forceDoctrine, aAnnexe } from './constants.js';
 import { talent, AGENDA, noterChef, FRONT, niveauChef } from './chef.js';
-import { LIEUX as LIEUX3, minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
+import { minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
 import { affaireMeurtre, VARIANTES_MEURTRE } from './meurtre-mons.js';
 import { affaireMeurtreRampe, evaluerHypothese, VARIANTES_RAMPE } from './meurtre-rampe.js';
 import { affaireCorbeau, VARIANTES_CORBEAU } from './corbeau-havre.js';
@@ -1551,7 +1551,7 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
   // Enquête de voisinage : plus on a de capacité de Recherche, plus elle rapporte ; une piste prioritaire la concentre.
   const piste = Number.isInteger(o.piste) && o.piste >= 0 && o.piste < aff.suspects.length ? o.piste : null;
   const surPiste = piste !== null && piecesLibres(aff).some((f) => !faitsConnus(d).includes(f) && Number(f.split(':')[1]) === piste);
-  const attendu = chanceVoisinage(state, z.uid, capa.recherche * (1 + bonusEquip(z, 'recherche', 'enquete') + forceDoctrine(z, 'enquete') + (REGLES.v2 && z._agenda && z._agenda.type === 'parquet' ? AGENDA.parquet.enquete : 0) + (z._service === 'procureur' ? 0.15 : 0) + (z._front === 'enquete' && z.chef ? (z._frontUtilise = 'il a mené les interrogatoires de l’enquête', FRONT.enquete.enquete * niveauChef(z.chef, 'flair')) : 0)), surPiste ? piste : null);
+  const attendu = chanceVoisinage(state, z.uid, capa.recherche * (1 + bonusEquip(z, 'recherche', 'enquete') + forceDoctrine(z, 'enquete') + (z._agenda && z._agenda.type === 'parquet' ? AGENDA.parquet.enquete : 0) + (z._service === 'procureur' ? 0.15 : 0) + (z._front === 'enquete' && z.chef ? (z._frontUtilise = 'il a mené les interrogatoires de l’enquête', FRONT.enquete.enquete * niveauChef(z.chef, 'flair')) : 0)), surPiste ? piste : null);
   const nb = Math.floor(attendu) + (zr.chance(attendu % 1) ? 1 : 0);
   const trouvees = [];
   for (let k = 0; k < nb; k++) {
@@ -1730,7 +1730,7 @@ export function enquetePost(state, pre, push) {
   if (pre.res.decouverte) {
     if (!affaire(state, e.n).meurtre) state.traques.push({ n: e.n, jour: e.jour, tours: ENQ.traqueTours, attrs: ENQ.attrsTraque + (e.trace ? 1 : 0), decouvreurs: pre.res.decouverte.uids, contributeurs: pre.res.decouverte.contribUids || [] });
     // Cellule drone (saison 2) : un survol de la zone ajoute un indice sur la planque au dossier de chaque zone équipée.
-    if (!affaire(state, e.n).meurtre && REGLES.v2) for (const z of Object.values(state.zones)) {
+    if (!affaire(state, e.n).meurtre) for (const z of Object.values(state.zones)) {
       if (!aAnnexe(z, 'drone') || !z.enquete || z.enquete.n !== e.n) continue;
       const aff = affaire(state, e.n), connus = new Set(faitsConnus(z.enquete));
       const libres = (aff.faits || []).filter((f) => f.startsWith('p:') && !connus.has(f));

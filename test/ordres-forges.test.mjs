@@ -21,7 +21,7 @@ const base = { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2,
   const players = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' }, C: { code: '3333', nom: 'Charlie' } };
   const nuit = (s, o) => { const r = resolveTurn(s, { players, orders: o }); r.state.nextDeadline += 864e5; return r; };
   const O = (a = {}) => ({ A: { ...base, ...a }, B: { ...base }, C: { ...base } });
-  let s = createGame({ seed: 'rv', regles: 2, turnDeadline: Date.parse('2026-10-05T18:00:00Z') });
+  let s = createGame({ seed: 'rv', turnDeadline: Date.parse('2026-10-05T18:00:00Z') });
   for (let i = 0; i < 8 && !(s.vente && s.vente.cloture === s.turn); i++) s = nuit(s, O()).state;
   const gros = s.vente.lots.find((l) => l.gros);
   s.zones.A.budget = 40;

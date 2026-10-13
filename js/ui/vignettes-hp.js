@@ -93,5 +93,5 @@ export function vignetteChallenge() {
   <path d="M26 22 q0 -6 7 -6 h30 q7 0 7 6 l4 16 q1 8 -6 8 q-4 0 -7 -5 l-2 -3 h-22 l-2 3 q-3 5 -7 5 q-7 0 -6 -8 z" fill="#2E4A86"/>
   <rect x="34" y="25" width="10" height="3" rx="1.5" fill="#C9CFE6"/><rect x="37.5" y="21.5" width="3" height="10" rx="1.5" fill="#C9CFE6"/>
   <circle cx="58" cy="24" r="2.6" fill="#FFB23F"/><circle cx="63" cy="29" r="2.6" fill="#3DD39A"/><circle cx="53" cy="29" r="2.6" fill="#63B0FF"/><circle cx="58" cy="34" r="2.6" fill="#FF6E6A"/>
-  <path d="M78 6 l1.8 3.6 4 .6 -2.9 2.8 .7 4 -3.6 -1.9 -3.6 1.9 .7 -4 -2.9 -2.8 4 -.6 z" fill="#FFB23F"/>`, 'Challenge');
+  <path d="M78 6 l1.8 3.6 4 .6 -2.9 2.8 .7 4 -3.6 -1.9 -3.6 1.9 .7 -4 -2.9 -2.8 4 -.6 z" fill="#FFB23F"/>`, 'Records');
 }

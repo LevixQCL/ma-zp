@@ -1,7 +1,7 @@
 // Cartes « Mon équipe » (le trombinoscope) et « Mes trophées » de l'HP.
 import { S, esc, icon, myZone } from './common.js';
 import { ROLES_EQUIPE, SEUILS_EQUIPE, TROPHEES, roleDe, intitule, surnomDe, creerEquipe, appliquerNoms } from '../engine/equipe.js';
-import { SERVICE_LABELS, ROLE_SERVICE, bonusChef } from '../engine/constants.js';
+import { SERVICE_LABELS, bonusChef } from '../engine/constants.js';
 
 export const initiales = (m) => `${m.prenom[0]}${m.nom[0]}`.toUpperCase();
 /**

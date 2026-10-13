@@ -8,7 +8,7 @@ const alloc = { intervention: 6, proximite: 4, recherche: 3, roulage: 2, admin: 
 const valeur = (fx) => (fx.sat || 0) * 1 + (fx.moral || 0) * 0.6 + (fx.rep || 0) * 1 + (fx.budget || 0) * 1.5 - (fx.demain || 0) * 1.2 - (fx.pap || 0) * 0.5;
 function saison(seed, repond) {
   const players = { A: { code: '1', nom: 'A', chef: { parcours: 'intervention', portrait: 'p01' } }, B: { code: '2', nom: 'B', chef: { parcours: 'intervention', portrait: 'p02' } } };
-  let st = createGame({ seed: `psim-${seed}` }); st.regles = 2;
+  let st = createGame({ seed: `psim-${seed}` });
   st.zones.A = newZone({ uid: 'A', code: '1', nom: 'A' }, 1); st.zones.B = newZone({ uid: 'B', code: '2', nom: 'B' }, 1);
   let somme = 0;
   for (let t = 0; t < 14; t++) {

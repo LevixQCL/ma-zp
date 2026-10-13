@@ -1,7 +1,6 @@
 import { lireDemarche, ENQ } from './enquete.js';
 import { creerEquipe } from './equipe.js';
-import {
-  SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, TRAVAUX_TOURS, SUBSIDE, REPUTATION, ENCHERE, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, scoreRevenu, BUDGET_IPZ, CLASSEMENT, coutEquipement, multNiveau, multEquip, coutFormation , PREPA, coutPrepa, REGLES, multDoctrine, emplacementsAnnexes, nbAnnexes, aAnnexe } from './constants.js';
+import { SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, SUBSIDE, REPUTATION, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, scoreRevenu, BUDGET_IPZ, CLASSEMENT, coutEquipement, multNiveau, multEquip, coutFormation, PREPA, coutPrepa, multDoctrine, emplacementsAnnexes, nbAnnexes, aAnnexe } from './constants.js';
 import { terrainDoux } from './regles.js';
 import { talent, talentVal, AGENDA } from './chef.js';
 import { coutCarrosserie } from './sinistres.js';
@@ -30,7 +29,7 @@ export function newZone({ uid, code, nom, couleur }, turn, base = {}) {
     criminalite: START.criminalite, paperasse: START.paperasse, paperassePic: START.paperasse,
     dossiers: [], dossierSeq: 0,
     operation: null, pressions: [],
-    renforts: [], peril: null, tutelle: null, tutelleSaison: false, lots: [], derniereEnchere: -99, faillites: base.faillites ?? 0, motionSaison: false, failliteSaison: false,
+    renforts: [], peril: null, tutelle: null, tutelleSaison: false, lots: [], faillites: base.faillites ?? 0, motionSaison: false, failliteSaison: false,
     dernierOrdre: null, toursSansOrdres: 0, toursJoues: 0,
     ipz: 0, ipzSomme: 0, ipzHist: [],
     ps: base.ps ?? 0, badges: base.badges ?? [], titres: base.titres ?? [],
@@ -193,7 +192,7 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
   c *= bonusLots(zone, service);
   c *= multDoctrine(zone, service);
   // Agenda du chef (règles v2) : sur le terrain avec ce service.
-  if (REGLES.v2 && zone._agenda && zone._agenda.type === 'terrain' && zone._agenda.service === service) c *= AGENDA.terrain.cap;
+  if (zone._agenda && zone._agenda.type === 'terrain' && zone._agenda.service === service) c *= AGENDA.terrain.cap;
   return c;
 }
 
@@ -371,8 +370,6 @@ export function sanitizeOrders(zone, raw, state) {
   const votes = {};
   if (o.votes && typeof o.votes === 'object') for (const [k2, v] of Object.entries(o.votes)) if (['dotation', 'theme', 'blame', 'chef', 'solidarite'].includes(k2) && Number.isInteger(v)) votes[k2] = clamp(v, 0, 5);
   const motionChef = ['prime', 'amnistie', 'subside'].includes(o.motionChef) ? o.motionChef : null;
-  const montant = o.offre && typeof o.offre === 'object' ? int(o.offre.montant, 0, ENCHERE.max) : 0;
-  const offre = montant > 0 && !tutelle ? { id: str(o.offre.id), montant } : null;
   // Patrouilles ciblées : { quartier: agents } (validées plus finement pendant la résolution).
   const patrouilles = {};
   if (o.patrouilles && typeof o.patrouilles === 'object') {
@@ -398,7 +395,7 @@ export function sanitizeOrders(zone, raw, state) {
     const s = Object.hasOwn(state.nonDroit.secteurs, k) ? state.nonDroit.secteurs[k] : null;
     if (s && s.barricade && ['frontal', 'negocier', 'encercler'].includes(v)) tactiques[k] = v;
   }
-  return { tactiques, ventes, dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, roles, decision, operation, depenses, demarches, accusation, accusation2, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteAccepte, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, defiAccepte: tutelle ? [] : defiAccepte, votes, motionChef, offre };
+  return { tactiques, ventes, dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, roles, decision, operation, depenses, demarches, accusation, accusation2, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteAccepte, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, defiAccepte: tutelle ? [] : defiAccepte, votes, motionChef };
 }
 
 /** Coût total des dépenses du jour. */
@@ -482,8 +479,8 @@ export function decisionImpossible(zone, decision, turn) {
   if (decision.type === 'equiper' && decision.cible === 'prepa' && (zone.prepa || 0) >= PREPA.max) return 'Combis déjà préparés au maximum';
   if (decision.type === 'equiper' && decision.cible !== 'vehicule' && decision.cible !== 'prepa' && zone.equip[decision.cible] >= NIVEAU_MAX) return 'Équipement au maximum';
   if (decision.type === 'construire' && zone.infra[decision.infra]) return 'Déjà construit';
-  if (decision.type === 'construire' && INFRAS[decision.infra].v2 && !REGLES.v2) return 'Annexe disponible à partir de la saison 2';
-  if (decision.type === 'construire' && REGLES.v2 && nbAnnexes(zone) >= emplacementsAnnexes(zone)) return `Plus d’emplacement libre (${emplacementsAnnexes(zone)} annexes au niveau ${zone.batiments.bureaux} des bureaux) : agrandis l’hôtel de police ou démolis une annexe`;
+  
+  if ((decision.type === 'construire') && nbAnnexes(zone) >= emplacementsAnnexes(zone)) return `Plus d’emplacement libre (${emplacementsAnnexes(zone)} annexes au niveau ${zone.batiments.bureaux} des bureaux) : agrandis l’hôtel de police ou démolis une annexe`;
   if (decision.type === 'agrandir') {
     if (zone.travaux) return 'Des travaux sont déjà en cours';
     if (zone.batiments[decision.batiment] >= BATIMENT_MAX) return 'Niveau maximum atteint';
@@ -500,7 +497,7 @@ export function ipzComposantes(zone, { ratio = 1, bilan = 0, revenus = null } = 
   return {
     satisfaction: clamp(zone.satisfaction, 0, 100),
     // Règles v2 : plus de plafond dur à 100, la capacité construite continue de payer (moitié au-delà de 80).
-    affaires: REGLES.v2 ? clamp(terrainDoux(terrainBrut(ratio, bilan)), 0, 120) : clamp(terrainBrut(ratio, bilan), 0, 100),
+    affaires: clamp(terrainDoux(terrainBrut(ratio, bilan)), 0, 120),
     moral: clamp(zone.moral, 0, 100),
     budget: BUDGET_IPZ.mode === 'revenu' ? scoreRevenu(revenus || zone.revenus) : scoreBudget(zone.budget),
     reputation: clamp(zone.reputation, 0, 100),
@@ -590,9 +587,9 @@ export function ligneIpz(comp, hier, ipz, ipzHier, det) {
 export function moyenneIpz(zone) {
   // Règles v2 : tous les jours de la saison comptent (pilote automatique compris), et une zone arrivée en cours de saison
   // compte ses jours d'avant à l'IPZ médian du district moins 5 (abandonner ou arriver tard ne rapporte plus).
-  const h = (zone.ipzHist || []).filter((x) => x && (x.joue || REGLES.v2) && Number.isFinite(x.v) && Number.isFinite(x.t))
+  const h = (zone.ipzHist || []).filter((x) => x && Number.isFinite(x.v) && Number.isFinite(x.t))
     .map((x) => (x.joue || x.faillite ? x : { t: x.t, v: Math.max(0, x.v - CLASSEMENT.decoteAbsent) }));
-  if (REGLES.v2 && zone.avantArrivee && zone.avantArrivee.n > 0 && h.length) {
+  if (zone.avantArrivee && zone.avantArrivee.n > 0 && h.length) {
     const t0 = Math.min(...h.map((x) => x.t));
     for (let k = 1; k <= zone.avantArrivee.n; k++) h.push({ t: t0 - k, v: zone.avantArrivee.v });
   }

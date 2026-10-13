@@ -7,29 +7,23 @@ import { lireOrdresCrise, crisePre, criseZone, crisePost } from './crise.js';
 import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
 import { BILAN, AGENTS_BASCULE, moyennesDistrict, calculerBilan, appliquerBilan, lireOrdresBilan, resoudreBilan } from './bilan.js';
-import {
-  APP_VERSION, NIVEAU_MAX, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS,
-  MIN_TOURS_CLASSEMENT, BUDGET_IPZ, HORS_REVENU, horsRevenu, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, USURE, ENIGMES, MORAL, CHEFS, ROLE_SERVICE, bonusChef, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue , PREPA } from './constants.js';
+import { APP_VERSION, NIVEAU_MAX, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS, MIN_TOURS_CLASSEMENT, BUDGET_IPZ, horsRevenu, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, USURE, ENIGMES, MORAL, CHEFS, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue, PREPA } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
 import { pistesDuSoir, lireOrdresPistes } from './pistes.js';
-import { appliquerRegles, reglesV2, MAX_DEPENSES, pressionSaison, doctrineOuverte, doctrineSemaine2, DOCTRINE_SEM2 } from './regles.js';
-import { REGLES, forceDoctrine, DOCTRINES, MAITRISE, coutPrime, aAnnexe } from './constants.js';
+import { MAX_DEPENSES, pressionSaison, doctrineOuverte, doctrineSemaine2, DOCTRINE_SEM2 } from './regles.js';
+import { forceDoctrine, DOCTRINES, MAITRISE, coutPrime, aAnnexe } from './constants.js';
 import { enquetePourTour, quatreComptePourTour, SLOT_QUATRE, RELANCE_PS } from '../quests/quests.js';
 import { jourBe } from './time.js';
-import { attribuerSites, siteDe } from './sites.js';
+import { attribuerSites } from './sites.js';
 import { genererEchos } from './gazette.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet, encadrement } from './equipe.js';
-import {
-  clone, clamp, round1, newZone, capaciteAgents, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite,
-  forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, pointsIpz, moyenneIpz, moralMult, blessesActifs, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles,
-} from './zone.js';
+import { clone, clamp, round1, newZone, capaciteAgents, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite, forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, pointsIpz, moyenneIpz, moralMult, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles } from './zone.js';
 import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus, appliquerPrime, pieceSurSuspect, affaire, dossierDe, pieceGardeAVue } from './enquete.js';
 import { fipaPre, fipaGenerer } from './fipa.js';
 import { creerNonDroit, nonDroitResoudre } from './nondroit.js';
 import { quartierActif, assurerQuartier, planQuartier, radioQuartier } from './quartier.js';
-import { encheresResoudre, annoncerLot } from './encheres.js';
 import { venteResoudre, annoncerVente } from './ventes.js';
 import { rivalitesPre, rivalitesPost, themeActif, appliquerConsignes } from './rivalites.js';
 import { pactesPre, pactesPost, lies, PACTE } from './pactes.js';
@@ -37,12 +31,12 @@ import { FLAGRANTS } from './contenu.js';
 import { jaugeDoctrine } from './doctrines.js';
 import { cabossesChoisis, placeLibre } from './parc.js';
 import { ajouterVehicule, remplacerVehicule, retirerVehicule, usureDuTour, reviser, prixRevente, modeleDe, MODELES, heritageFlotte, bonusFilature, agentsMontes, primeVerte, bonusOrdre, RENDEMENT } from './flotte.js';
-import { decorValide, earlyBirdEligible, skinDe, skinsValides, SKINS, periodeFete, ajouterSkin, acheterSkin, psDispo } from './decor.js';
+import { decorValide, earlyBirdEligible, skinsValides, SKINS, periodeFete, ajouterSkin, acheterSkin, psDispo } from './decor.js';
 import { primeChallenge, CHALLENGE } from './challenge.js';
 import { courriersDuJour, appliquerParapheur, jourPrise, PRISE, PRISE_JOURS, AGENDA_JOUR } from './parapheur.js';
 import { creerChef, lireAgenda, lireTalents, changerTalents, gainsDuJour, progresser, totalNiveaux, niveauChef, talentsDebloques, talent, TALENT, AGENDA, COMPETENCES, IDS_COMPETENCES, PARCOURS, CHEF, noterChef, signatureChef, faitsDArmes, JEUX_COMP, FRONT, RISQUE_FRONT, lireFront, RESEAU, IDS_RESEAU, RESEAU_REGLES, servicePossible, VOIES, brevetPossible, humeurReseau, tasserEstime } from './chef.js';
 import { creerAdjoint, consigneDe, ordresAdjoint, noterJournal, ADJOINT, CONSIGNES } from './adjoint.js';
-import { cleSemaine, semaineDe, tirerObjectifs, avancerObjectifs, texteObjectif, OBJECTIFS, apparier, scoreDuel, DUEL } from './chef-semaine.js';
+import { cleSemaine, semaineDe, tirerObjectifs, avancerObjectifs, texteObjectif, apparier, scoreDuel, DUEL } from './chef-semaine.js';
 import { separerIncidents, appliquerIncidents, remplirJauge, resultatsIncidents, incidentsVisibles, adapterCibleUrgence, NIVEAUX_URGENCE } from './incidents.js';
 import { accidentVehicule, imageCabosses, payerIndemnites, reparerCabosses, coutCarrosserie } from './sinistres.js';
 import { AFFAIRES_DISPUTEES, DOSSIERS_LOCAUX, PRESSION_WEEKEND, effetsPressions } from './contenu.js';
@@ -56,7 +50,7 @@ const median = (arr) => {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
 
-const NOMS_CHALLENGE = { colis: 'Colis suspect', crochetage: 'Crochetage', depanneuse: 'Dépanneuse', dossier: 'Dossier à relire', empreintes: 'Empreintes', adn: 'Fragment d’ADN', reseau: 'Réseau à reconnecter', interception: 'Interception', bouclage: 'Maintien de l’ordre' };
+const NOMS_CHALLENGE = { colis: 'Colis suspect', crochetage: 'Crochetage', depanneuse: 'Dépanneuse', dossier: 'PV à relire', empreintes: 'Empreintes', adn: 'Fragment d’ADN', reseau: 'Réseau à reconnecter', interception: 'Interception', bouclage: 'Maintien de l’ordre' };
 
 export function zoneLabel(z) { return `ZP ${z.code} ${z.nom}`; }
 
@@ -87,7 +81,7 @@ export function buildJoinZone(state, uid, profile, turn = state.turn, arrivee = 
   z.site = tmp.zones[uid].site;
   ajusterBatiments(z);
   // Règles v2 : les jours de la saison d'avant l'arrivée comptent à l'IPZ médian du district moins 5 (voir moyenneIpz).
-  if (reglesV2(state) && existants.length && turn > 1) z.avantArrivee = { n: turn - 1, v: round1(Math.max(0, median(existants.map((x) => Number(x.ipz) || 50)) - 5)) };
+  if (existants.length && turn > 1) z.avantArrivee = { n: turn - 1, v: round1(Math.max(0, median(existants.map((x) => Number(x.ipz) || 50)) - 5)) };
   return z;
 }
 
@@ -97,7 +91,7 @@ export function buildJoinZone(state, uid, profile, turn = state.turn, arrivee = 
  */
 export function migrateState(state) {
   if (!state) return state;
-  const defaults = { version: 1, season: 1, turn: 1, zones: {}, affaires: [], evenement: null, affaireSeq: 0, palmares: [], minClientVersion: 0, enquete: null, enqueteSeq: 0, traques: [], fipas: [], fipaSeq: 0, fipaPaires: {}, pactes: [], pacteSeq: 0, defis: [], defiSeq: 0, conseil: null, theme: null, motionsChef: [], toursSansFaillite: 0, aReveler: [], enchere: null, enchereResultat: null, lotsRecents: [] };
+  const defaults = { version: 1, season: 1, turn: 1, zones: {}, affaires: [], evenement: null, affaireSeq: 0, palmares: [], minClientVersion: 0, enquete: null, enqueteSeq: 0, traques: [], fipas: [], fipaSeq: 0, fipaPaires: {}, pactes: [], pacteSeq: 0, defis: [], defiSeq: 0, conseil: null, theme: null, motionsChef: [], toursSansFaillite: 0, aReveler: [], lotsRecents: [] };
   for (const [k, v] of Object.entries(defaults)) if (state[k] === undefined) state[k] = v;
   for (const z of Object.values(state.zones)) migrateZone(z);
   attribuerSites(state);
@@ -137,14 +131,14 @@ export function isOutdated(state) {
 export function isActive(z) { return z.toursSansOrdres < 3; }
 
 /** Crée une nouvelle partie. */
-export function createGame({ seed = 'delta', turnDeadline = 0, regles = 1 } = {}) {
+export function createGame({ seed = 'delta', turnDeadline = 0 } = {}) {
   const state = {
-    version: 1, minClientVersion: APP_VERSION, seed, season: 1, turn: 1, nextDeadline: turnDeadline, regles,
+    version: 1, minClientVersion: APP_VERSION, seed, season: 1, turn: 1, nextDeadline: turnDeadline,
     zones: {}, affaires: [], evenement: null, affaireSeq: 0, palmares: [], createdAt: turnDeadline,
   };
   state.nonDroit = creerNonDroit(seed, 1);
   nouvelleAffaire(state);
-  if (regles >= 2) annoncerVente(state, 1); else annoncerLot(state);
+  annoncerVente(state, 1);
   return state;
 }
 
@@ -180,7 +174,6 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   const coursesUrgence = []; // temps des urgences jouées cette nuit : ajustent le temps cible de demain
   const incidentsAvant = Object.fromEntries(Object.keys((stateIn && stateIn.zones) || {}).map((u) => [u, separerIncidents(stateIn, u, resultatsIncidents(players[u], incidentsVisibles(stateIn, u)))]));
   const state = migrateState(clone(stateIn));
-  appliquerRegles(state);
   state.minClientVersion = Math.max(state.minClientVersion || 0, APP_VERSION);
   const T = state.turn;
   const rng = makeRng(`${state.seed}:s${state.season}:t${T}`);
@@ -245,7 +238,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const z = state.zones[uid];
     z.rapport = [];
     // Premier soir de la saison 2 : l'adjoint existe déjà pour tenir une zone sans ordres (pas l'ancien pilote automatique).
-    if (reglesV2(state) && z.chef && !z.adjoint) z.adjoint = creerAdjoint(uid, players[uid] && players[uid].chef && players[uid].chef.portrait);
+    if (z.chef && !z.adjoint) z.adjoint = creerAdjoint(uid, players[uid] && players[uid].chef && players[uid].chef.portrait);
     if (orders[uid]) {
       ord[uid] = sanitizeOrders(z, orders[uid], state);
       Object.assign(ord[uid], lireOrdresReleve(orders[uid]), lireOrdresCrise(orders[uid]), lireOrdresBilan(orders[uid]), lireOrdresPistes(orders[uid]));
@@ -255,7 +248,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z._joue = true;
     } else {
       // Saison 2 : l'adjoint du chef tient la zone (selon la consigne laissée et le Commandement du chef).
-      const adj = reglesV2(state) && z.chef && z.adjoint ? z.adjoint : null;
+      const adj = z.chef && z.adjoint ? z.adjoint : null;
       const consigne = adj ? consigneDe(z, players[uid] && players[uid].chef) : null;
       ord[uid] = adj ? ordresAdjoint(z, state, consigne) : autopilotOrders(z, state);
       if (players[uid] && players[uid].consignes) ord[uid] = sanitizeOrders(z, appliquerConsignes(z, ord[uid], players[uid].consignes, state), state);
@@ -292,7 +285,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Achat d'un skin avec les PS (boutique de « Mon commissariat »).
     { const ach = orders[uid] && orders[uid].achat; const l = ach ? acheterSkin(z, ach, state.nextDeadline) : null; if (l) z.rapport.push(l); }
     // Chef de corps (saison 2) : création, parcours, talents (une fois par semaine), agenda du jour.
-    if (reglesV2(state)) {
+    {
       const pf = players[uid] && players[uid].chef;
       if (!z.chef) z.chef = creerChef(pf);
       if (!z.adjoint) z.adjoint = creerAdjoint(uid, pf && pf.portrait);
@@ -341,7 +334,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (typeof dm === 'string' && Object.hasOwn(INFRAS, dm) && z.infra[dm]) { delete z.infra[dm]; z.rapport.push(`Annexe démolie : ${INFRAS[dm].nom}. Un emplacement est libre.`); }
       // Un jour de prise de fonctions de plus, seulement si le joueur a donné ses ordres.
       if (orders[uid] && !z.chef.priseFaite) { z.chef.priseJ = (z.chef.priseJ || 0) + 1; if (z.chef.priseJ >= PRISE_JOURS) z.chef.priseFaite = true; }
-    } else delete z._agenda;
+    }
     // Mise à prix de l'enquête : le choix fait aujourd'hui (ou la confiscation par défaut).
     { const lp = appliquerPrime(z, ord[uid].prime, T, { services: SERVICES, niveauMax: NIVEAU_MAX }); if (lp) z.rapport.push(lp); }
     ord[uid].missions = missionsValides(ord[uid]);
@@ -358,7 +351,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   const jalonTous = (label) => { for (const u of uids) jalon(state.zones[u], label); };
   // Chef de corps : visites croisées, parrainages, niveau moyen de la partie (rattrapage des arrivées tardives).
   let moyChef = 0;
-  if (reglesV2(state)) {
+  {
     for (const u of uids) {
       const z = state.zones[u], a = z._agenda;
       z._croise = !!(a && a.type === 'voisin' && state.zones[a.zone] && state.zones[a.zone]._agenda && state.zones[a.zone]._agenda.type === 'voisin' && state.zones[a.zone]._agenda.zone === u);
@@ -414,7 +407,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   const theme = themeActif(state, T);
   // Salle des ventes : le lot gagné sert dès ce soir.
   // Saison 2 : vente aux enchères des saisies (deux jours, trois lots) à la place du lot du jour.
-  const ench = reglesV2(state) ? venteResoudre(state, uids, orders, encheres, push, T) : encheresResoudre(state, uids, ord, push, T);
+  const ench = venteResoudre(state, uids, orders, encheres, push, T);
   jalonTous('Salle des ventes');
 
   // Enquête (partages, accusations, traques) et FIPA : avant la simulation des zones.
@@ -430,7 +423,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // La relève : suspects en fuite pris en charge (ou non) par les zones voisines, saisies partagées.
   const rel = releveResoudre(state, uids, ord, push, T, zoneLabel);
   const fuites = []; // suspects qui filent ce soir : relèves proposées demain
-  // Crise du district : vote du Conseil des chefs, opération commune de ce soir.
+  // Crise du district : vote de la cellule de crise, opération commune de ce soir.
   const cri = crisePre(state, uids, ord, push, T, zoneLabel);
   jalonTous('Relève');
 
@@ -592,7 +585,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const q = quests[uid];
     // Agenda du chef (saison 2).
     // Réseau : le service demandé ce soir, et la mauvaise humeur de ceux qui sont mécontents.
-    if (z.chef && REGLES.v2) {
+    if (z.chef) {
       const sv = z._service, Ld = niveauChef(z.chef, 'diplomatie');
       if (sv === 'bourgmestre') { const v = round1(2 + 0.2 * Ld); z.budget += v; z._compta.push({ k: 'agenda', l: 'Subside exceptionnel du bourgmestre', v }); }
       if (sv === 'syndicat') z.moral += 3;
@@ -860,7 +853,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const n = Object.values(opx.pris).reduce((s2, v) => s2 + v, 0);
       z.rapport.push(`${op.titre} : ${n} agent${n > 1 ? 's' : ''} mobilisé${n > 1 ? 's' : ''} (${Math.round(opx.couverture * 100)} % du dispositif requis).`);
       // Règles v2 : un dispositif complet fatigue (un agent en récupération demain).
-      if (REGLES.v2 && (o.operation || 'complet') === 'complet' && n >= 4) { z.blesses.push({ n: 1, retour: T + 2, motif: 'en récupération' }); z.rapport.push('Dispositif complet : un agent en récupération demain.'); }
+      if (((o.operation || 'complet') === 'complet') && n >= 4) { z.blesses.push({ n: 1, retour: T + 2, motif: 'en récupération' }); z.rapport.push('Dispositif complet : un agent en récupération demain.'); }
       if (T === op.tourDebut + op.duree - 1) {
         const moy = op.couvertures.reduce((s2, v) => s2 + v, 0) / op.couvertures.length;
         if (moy >= 0.9) {
@@ -894,8 +887,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       const payer = (k, cout, fn, compte = true) => {
         // Talent « Rallonge budgétaire » : une 3e dépense, une fois par semaine.
         const rallonge = talent(z, 'rallonge') && !(z.chef.rallongeT != null && T < z.chef.rallongeT + CHEF.semaine);
-        if (compte && REGLES.v2 && nbDep >= MAX_DEPENSES + (rallonge ? 1 : 0)) { achats.push(`${k} (refusé : ${MAX_DEPENSES} dépenses par jour au plus)`); return false; }
-        if (compte && REGLES.v2 && nbDep >= MAX_DEPENSES && rallonge && z.budget >= cout) { z.chef.rallongeT = T; achats.push('rallonge budgétaire utilisée'); noterChef(z, 'rallonge', 'Rallonge budgétaire : une 3e dépense acceptée aujourd’hui.'); }
+        if (compte && nbDep >= MAX_DEPENSES + (rallonge ? 1 : 0)) { achats.push(`${k} (refusé : ${MAX_DEPENSES} dépenses par jour au plus)`); return false; }
+        if (compte && nbDep >= MAX_DEPENSES && rallonge && z.budget >= cout) { z.chef.rallongeT = T; achats.push('rallonge budgétaire utilisée'); noterChef(z, 'rallonge', 'Rallonge budgétaire : une 3e dépense acceptée aujourd’hui.'); }
         if (z.budget >= cout) { z.budget -= cout; paye += cout; fn(); achats.push(k); if (compte) nbDep += 1; return true; }
         achats.push(`${k} (refusé : budget insuffisant)`); return false;
       };
@@ -927,7 +920,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       cap[s] *= 1 + x.bonus; z.bonusChefs[s] = x.bonus;
     }
 
-    // Plan du district en vigueur (crise votée par le Conseil des chefs).
+    // Plan du district en vigueur (crise votée par la cellule de crise).
     if (criseZone(state, z, cap, T)) jalon(z, 'Plan du district');
     capsSoir[uid] = { ...cap };
     // Vague de délinquance chassée d'une zone voisine hier soir : absorbée ou subie.
@@ -1162,7 +1155,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       jalon(z, `Retour naturel vers ${DERIVE.reputation.cible} : ${Math.round(tp * 100)} % de l’écart`); }
 
     // Malus : chef absent, inspection générale.
-    { const adj = reglesV2(state) && z.adjoint, seuil = adj ? 1 + ADJOINT.tient : 2;
+    { const adj = z.adjoint, seuil = adj ? 1 + ADJOINT.tient : 2;
       if (z.toursSansOrdres >= seuil) { z.satisfaction -= 2; z.moral -= 2; z.rapport.push(adj ? `${z.adjoint.prenom} ne peut plus porter la zone seul${z.adjoint.f ? 'e' : ''} : −2 de satisfaction et de moral.` : 'Chef absent depuis plusieurs tours : −2 de satisfaction et de moral.'); } }
     jalon(z, 'Chef absent (2 tours sans ordres ou plus)');
     z.budgetNegSuite = z.budget < 0 ? z.budgetNegSuite + 1 : 0;
@@ -1239,12 +1232,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       }
     }
     // Jauge de la doctrine : elle se remplit avec le travail du soir et déborde en une récompense (une fois par soir au plus).
-    if (REGLES.v2 && z.doctrine) jaugeDoctrine(state, z, { traites, recettes, cap, resolus, demarches: (o.demarches || []).length }, makeRng(`${state.seed}:s${state.season}:t${T}:doc:${uid}`), push, zoneLabel, T);
+    if (z.doctrine) jaugeDoctrine(state, z, { traites, recettes, cap, resolus, demarches: (o.demarches || []).length }, makeRng(`${state.seed}:s${state.season}:t${T}:doc:${uid}`), push, zoneLabel, T);
     jalon(z, 'Jauge de la doctrine');
     // Journal de l'adjoint : un jour tenu sans le chef.
-    if (!z._joue && z.adjoint && reglesV2(state)) noterJournal(z, T, { ipz: round1(z.ipz), inc: `${traites}/${incidents}`, budget: round1(z.budget), moral: Math.round(z.moral), sat: Math.round(z.satisfaction) });
+    if ((!z._joue && z.adjoint)) noterJournal(z, T, { ipz: round1(z.ipz), inc: `${traites}/${incidents}`, budget: round1(z.budget), moral: Math.round(z.moral), sat: Math.round(z.satisfaction) });
     // Chef de corps : expérience du jour (par l'usage), montées de niveau, talents débloqués.
-    if (z.chef && reglesV2(state)) {
+    if (z.chef) {
       const av = z._chefAvant || { stats: {} };
       const d = {}; for (const k of Object.keys(z.stats)) d[k] = (Number(z.stats[k]) || 0) - (Number(av.stats[k]) || 0);
       const piecesGagnees = z.enquete && z.enquete.n === av.n ? Math.max(0, piecesPropres(z) - (av.pieces || 0)) : 0;
@@ -1346,7 +1339,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   if (nextWeekday === 0) {
     primeChallenge(state, uids, players, { push, zoneLabel, noms: NOMS_CHALLENGE, remplirJauge: (z) => {
       const r = remplirJauge(z, makeRng(`${state.seed}:s${state.season}:t${T}:challenge:${z.uid}`));
-      if (r.skin) push(3, 'Décor', `${zoneLabel(z)} décroche le skin « ${r.skin.nom} »`, 'Jauge des skins remplie grâce au Challenge.', z.uid);
+      if (r.skin) push(3, 'Décor', `${zoneLabel(z)} décroche le skin « ${r.skin.nom} »`, 'Jauge des skins remplie grâce aux records.', z.uid);
       return r;
     } });
   }
@@ -1432,7 +1425,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const fete = state.nextDeadline ? periodeFete(jourBe(state.nextDeadline)) : null;
     if (fete && (z._contribEvenement || z._decouverteJour) && ajouterSkin(z, `fete:${fete.id}`)) {
       z.skinsChoix = { ...(z.skinsChoix || {}), fete: fete.id };
-      z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon commissariat ».`);
+      z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon hôtel de police ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
     delete z._joue; delete z._croiseDeja; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._para; delete z._paraRep; delete z._paraGains; delete z._chefFaits; delete z._front; delete z._frontUtilise; delete z._service; delete z._incOk; delete z._croise; delete z._chefAvant; delete z._docAvant; delete z._investi; delete z._interpelle;
@@ -1453,7 +1446,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // Fin anticipée décidée par le maître du jeu : ce soir, ou le soir où l'affaire en cours se termine (et la suivante s'ouvre).
   const finAnticipee = T < SEASON_LENGTH && (state.finSaison === 'soir' || (state.finSaison === 'enquete' && !!(pre && pre.res && pre.res.nouvelle)));
   // Duels de la semaine : le dernier soir de la semaine (ou de la saison), le meilleur cumul d'IPZ l'emporte.
-  if (reglesV2(state) && state.rivaux && state.rivaux.w === semaineDe(T) && (T % 7 === 0 || T >= SEASON_LENGTH || finAnticipee)) resoudreDuels(state, push, T);
+  if (state.rivaux && state.rivaux.w === semaineDe(T) && (T % 7 === 0 || T >= SEASON_LENGTH || finAnticipee)) resoudreDuels(state, push, T);
   if (T >= SEASON_LENGTH || finAnticipee) {
     delete state.finSaison;
     gazette.finSaison = finDeSaison(state, classement, { leger: finAnticipee });
@@ -1463,8 +1456,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   }
   state.zonesConnues = Object.keys(state.zones);
   genererAffaires(state, makeRng(`${state.seed}:s${state.season}:t${state.turn}:affaires`));
-  if (reglesV2(state)) { state.enchere = null; gazette.vente = annoncerVente(state, state.turn); }
-  else gazette.prochainLot = annoncerLot(state);
+  gazette.vente = annoncerVente(state, state.turn);
   return { state, gazette };
 }
 
@@ -1590,8 +1582,6 @@ function finDeSaison(state, classement, opts = {}) {
   const oldSeason = state.season, tourFin = Number(state.turn) || 1;
   state.season += 1;
   state.turn = 1;
-  // Révision d'oct. 2026 : la nouvelle saison passe aux règles v2 (classement, doctrines, choix qui coûtent).
-  state.regles = 2;
   state.affaires = [];
   // Saison écourtée : l'Opération Filet contre l'ennemi de la saison n'a pas eu lieu, on le dit dans la Gazette.
   const filetManque = state.evenement && state.evenement.fantome && state.dir && state.dir.fantome ? state.dir.fantome.nom : null;
@@ -1601,7 +1591,7 @@ function finDeSaison(state, classement, opts = {}) {
   // Relèves en cours : datées de l'ancienne saison, elles reviendraient au mauvais jour.
   state.releves = [];
   state.nonDroit = creerNonDroit(state.seed, state.season);
-  state.vente = null; state.enchere = null;
+  state.vente = null;
   // L'enquête et ses traques continuent dans la nouvelle saison (voir plus bas) : on ne vide pas state.traques.
   state.fipas = []; state.fipaPaires = {}; state.duels = []; state.postes = []; state.pactes = []; state.defis = []; state.conseil = null; state.theme = null; state.motionsChef = [];
   // Bilan de saison : les pertes dépendent de ce que chaque zone a gagné et de la moyenne du district.

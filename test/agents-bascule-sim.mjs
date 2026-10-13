@@ -57,7 +57,7 @@ const agg = Object.fromEntries(VARIANTES.map((v) => [v, { rec: [], aut: [], agen
 let finS1 = [];
 for (let sd = 0; sd < SEEDS; sd++) {
   const seed = `bascule-${N}-${sd}`;
-  let s1 = createGame({ seed, regles: 2 });
+  let s1 = createGame({ seed });
   const prof = {};
   for (let i = 0; i < N; i++) {
     const uid = `z${String(i).padStart(2, '0')}`;

@@ -41,7 +41,7 @@ export function contributions(z, s, T = 0) {
   const lots = bonusLots(z, s);
   if (lots !== 1) {
     const noms = [...new Set((z.lots || []).filter((l) => LOTS[l.id] && LOTS[l.id].bonus && LOTS[l.id].bonus[s]).map((l) => LOTS[l.id].nom))];
-    L.push([noms.join(', ') || 'Lots des enchères', lots]);
+    L.push([noms.join(', ') || 'Lots de la salle des ventes', lots]);
   }
   // Roulage : sa vraie force, c'est ce que rapportent les amendes (même calcul que le tour de 20:00).
   if (s === 'roulage') {

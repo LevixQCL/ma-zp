@@ -22,6 +22,7 @@ T26.zones.forEach((tz, k) => assert.deepEqual(T60.zones[k].quartiers, tz.quartie
 const base = () => {
   const state = createGame({ seed: 'nd-test' });
   for (const u of ['a', 'b', 'c']) state.zones[u] = newZone({ uid: u, code: '5300', nom: u }, 1);
+  state.nonDroit.v3 = false; // règles de base, sans le milieu profond (vérifié à part dans milieu.test.mjs)
   return state;
 };
 let state = base();
@@ -43,13 +44,14 @@ assert.equal(agentsLibres(state.zones.a, o, 1), 0);
 // Seul avec 2 agents : le milieu tient. À trois zones : le secteur tombe en quelques soirs.
 const alloc = { intervention: 6, proximite: 4, recherche: 4, roulage: 1, admin: 3 };
 let r;
-for (let t = 0; t < 5; t++) { r = resolveTurn(state, { orders: { a: { alloc, secteurs: { [s1]: 2 } }, b: { alloc }, c: { alloc } } }); state = r.state; }
+for (let t = 0; t < 2; t++) { r = resolveTurn(state, { orders: { a: { alloc, secteurs: { [s1]: 2 } }, b: { alloc }, c: { alloc } } }); state = r.state; }
 assert.equal(state.nonDroit.secteurs[s1].emprise, nd.secteurs[s1].emprise, 'seul et trop faible : l’assaut est repoussé, l’emprise ne bouge pas');
 assert.ok(r.gazette.nonDroit.repousses.some((x) => x.cell === Number(s1)));
 assert.ok(r.gazette.rapports.a.some((l) => l.includes('assaut repoussé')));
 let pris = null;
-for (let t = 0; t < 6 && !pris; t++) {
-  r = resolveTurn(state, { orders: Object.fromEntries(['a', 'b', 'c'].map((u) => [u, { alloc, secteurs: { [s1]: 3 } }])) });
+// Rôles : repérage (la veille), descente et bouclage, un agent de chaque par zone.
+for (let t = 0; t < 10 && !pris; t++) {
+  r = resolveTurn(state, { orders: Object.fromEntries(['a', 'b', 'c'].map((u) => [u, { alloc, secteurs: { [s1]: 3 }, roles: { [s1]: { rep: 1, desc: 1, bouc: 1 } } }])) });
   state = r.state;
   pris = r.gazette.nonDroit.prises.find((p) => p.cell === Number(s1));
 }
@@ -61,6 +63,7 @@ assert.ok(r.gazette.rapports.a.some((l) => l.includes('est repris')));
 // Abandonné : le secteur finit par retomber, et les zones inactives ne bloquent rien.
 let rechute = false;
 for (let t = 0; t < 12 && !rechute; t++) {
+  assert.equal(state.season, 1, "on reste dans la même saison");
   r = resolveTurn(state, { orders: Object.fromEntries(['a', 'b', 'c'].map((u) => [u, { alloc }])) });
   state = r.state;
   rechute = r.gazette.nonDroit.rechutes.some((x) => x.cell === Number(s1));

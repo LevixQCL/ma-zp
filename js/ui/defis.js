@@ -2,7 +2,7 @@
 // Records sans effet sur le jeu ; la prime de la semaine est dans engine/challenge.js. Chaque joueur garde son meilleur niveau par mini-jeu dans son profil de la partie
 // (players/{uid}.defis = { jeu: niveau }, defisAt = { jeu: date }) ; le record est le plus haut niveau, le premier
 // arrivé gardant le record en cas d'égalité.
-import { S, esc, pseudoJoueur } from './common.js';
+import { S, pseudoJoueur } from './common.js';
 import { CHALLENGE, cleSemaine, classementSemaine, laureatsSemaine, niveauSemaine } from '../engine/challenge.js';
 import { CONFIG } from '../config.js';
 
@@ -30,13 +30,6 @@ export function recordDefi(jeu) {
 
 export const monRecordDefi = (jeu) => Math.floor(Number(S.player && S.player.defis && S.player.defis[jeu]) || 0);
 
-/** Nominette d'une tuile d'entraînement. */
-export function nominette(jeu) {
-  const r = recordDefi(jeu);
-  if (!r) return '<span class="nominette vide">🏆 aucun record</span>';
-  const moi = S.user && r.uid === S.user.uid;
-  return `<span class="nominette${moi ? ' moi' : ''}" title="${esc(TITRES_DEFI[jeu] || '')}">🏆 ${esc(moi ? 'Toi' : r.nom)} · niv. ${r.niveau}</span>`;
-}
 
 /** Titres de défi détenus par ce joueur (un par record qu'il détient). */
 export function titresDefi(uid) {
@@ -62,13 +55,6 @@ export function enTeteSemaine(jeu) {
 /** Lauréats si la semaine s'arrêtait maintenant (une prime par joueur). */
 export const laureatsProvisoires = () => laureatsSemaine(S.players, cleSemaineEnCours()).map((l) => ({ ...l, nom: nomJoueur(l.uid) }));
 
-/** Ligne « cette semaine » d'une tuile du Challenge. */
-export function ligneSemaine(jeu) {
-  const r = enTeteSemaine(jeu);
-  if (!r) return '<span class="tr-sem">semaine : libre</span>';
-  const moi = S.user && r.uid === S.user.uid;
-  return `<span class="tr-sem${moi ? ' moi' : ''}">semaine : ${esc(moi ? 'toi' : r.nom)} · ${r.niveau}</span>`;
-}
 
 /** Niveau réussi pendant une course : record personnel et meilleur niveau de la semaine. Renvoie true si c'est un nouveau record de la partie. */
 export async function noterNiveauDefi(jeu, niveau) {

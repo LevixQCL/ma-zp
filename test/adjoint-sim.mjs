@@ -23,7 +23,7 @@ const rows = [];
 for (const [nom, opt] of Object.entries(STRATS)) {
   const acc = { ipzAbs: [], ipz14: [], moy: [], moral: [], sat: [], budget: [] };
   for (let s = 0; s < SEEDS; s++) {
-    let state = createGame({ seed: `adj-${s}`, regles: 2 });
+    let state = createGame({ seed: `adj-${s}` });
     for (const b of BOT_PROFILES) state.zones[b.uid] = newZone(b, 1);
     state.zones.moi = newZone({ uid: 'moi', code: '5324', nom: 'Horizon' }, 1);
     const c = creerChef({}); c.xp.commandement = XP_CUMUL[opt.cdt || 0]; state.zones.moi.chef = c;

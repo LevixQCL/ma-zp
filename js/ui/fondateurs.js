@@ -89,7 +89,7 @@ export function ouvrirFondateur(apres) {
   fenetre(`<div class="aide card fd-annonce" role="dialog" aria-modal="true" aria-labelledby="fd-a-titre">
     <svg class="fd-plaque" viewBox="0 0 16 19" aria-hidden="true">${plaque}</svg>
     <h2 id="fd-a-titre" class="aide-titre">Zone fondatrice</h2>
-    <p class="small" style="margin:0;color:var(--text2)">Merci d’être là depuis le premier soir.<br>Ta plaque est scellée sur le commissariat, et la photo de la promo t’attend dans l’onglet Chef.</p>
+    <p class="small" style="margin:0;color:var(--text2)">Merci d’être là depuis le premier soir.<br>Ta plaque est scellée sur ton hôtel de police, et la photo de la promo t’attend dans l’onglet Chef.</p>
     <button class="btn primary block" data-close>Merci !</button>
   </div>`, apres);
 }

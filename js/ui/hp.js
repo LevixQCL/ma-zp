@@ -1,11 +1,11 @@
 import { skinsEnVente, psDispo } from '../engine/decor.js';
-import { chefACreer, creationChefHtml, portraitChef, ficheChefHtml, chefNuitHtml, zoneAvecAgenda } from './chef.js';
-import { absenceHtml, semaineHtml, portraitAdjoint } from './chef-semaine.js';
+import { chefACreer, creationChefHtml, portraitChef, zoneAvecAgenda } from './chef.js';
+import { absenceHtml, portraitAdjoint } from './chef-semaine.js';
 import { humeurReseau } from '../engine/chef.js';
 import { titresDefi } from './defis.js';
 import { DOCTRINES, SERVICE_LABELS } from '../engine/constants.js';
 import { carteQuartiers } from '../engine/quartiers.js';
-import { doctrineOuverte, dernierJourDoctrine, doctrineSemaine2, finFenetreDoctrine } from '../engine/regles.js';
+import { doctrineOuverte, doctrineSemaine2, finFenetreDoctrine } from '../engine/regles.js';
 import { maxDemarchesDe } from '../engine/enquete.js';
 import { pistesHpHtml, faitsDeLaNuit } from './pistes.js';
 import { noteVue } from './nouveautes.js';
@@ -13,11 +13,10 @@ import { actuLigne } from './actu.js';
 import { lucLigne } from './luc.js';
 // Écran HP (Hôtel de police) : l'accueil.
 import { cabossesChoisis } from '../engine/parc.js';
-import { S, esc, icon, fmt1, fmtK, gauge, tabbar, rangDe, gradeInfo, myZone, skyline, cielStyle, slotsJour, slotsCompte } from './common.js';
-import { agentsDisponibles, blessesActifs, enFormation, vehiculesDisponibles } from '../engine/zone.js';
+import { S, esc, icon, fmt1, fmtK, tabbar, rangDe, gradeInfo, myZone, slotsCompte } from './common.js';
+import { agentsDisponibles, blessesActifs, vehiculesDisponibles } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { formatCountdown, formatDateBe } from '../engine/time.js';
-import { QUEST_LABELS } from '../quests/quests.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
 import { estimations, besoinService, ouvertureOrdres } from './ordres.js';
 import { vagueTodo, vagueEnvoyeeAlerte } from './vagues.js';
@@ -27,18 +26,18 @@ import { criseTodo, criseHtml } from './crise.js';
 import { operationActive } from '../engine/zone.js';
 import { cielDe, dilemmeDuJour, feuilletonEnCours, pressionsVisibles } from '../engine/directeur.js';
 import { fipaCards } from './fipa.js';
-import { blasonSvg, BLASONS, insigne } from './blasons.js';
+import { blasonSvg, BLASONS } from './blasons.js';
 import { GRADES, gradeFor } from '../engine/constants.js';
 import { PERIL } from '../engine/rivalites.js';
 import { aFairePactes } from './pactes.js';
-import { affaire, dossierDe, pointsDecouverte, ENQ, toursTraque, delaiTraque, PRIME_LABELS } from '../engine/enquete.js';
+import { affaire, toursTraque, delaiTraque, PRIME_LABELS } from '../engine/enquete.js';
 import { aideBtn } from './aide.js';
-import { sceneCarteHtml, sceneZone, monDecor, mesSkins, achatEnAttente, psEngages } from './logistique.js';
-import { encheresHtml } from './encheres.js';
+import { sceneCarteHtml, achatEnAttente, psEngages } from './logistique.js';
+import { ventesHtml } from './ventes.js';
 import { TUTELLE } from '../engine/constants.js';
 import { equipeHtml, tropheesHtml } from './equipe.js';
 import { TROPHEES } from '../engine/equipe.js';
-import { fraisFixes, pointsIpz, IPZ_LABELS, confianceCommune, moralMult, moyenneIpz } from '../engine/zone.js';
+import { fraisFixes, pointsIpz, IPZ_LABELS } from '../engine/zone.js';
 const AIDE_COMP = { satisfaction: 'satisfaction', affaires: 'terrain', moral: 'moral', budget: 'budgetIpz', reputation: 'reputation' };
 import { IPZ_POIDS, TERRAIN, BUDGET_IPZ } from '../engine/constants.js';
 const fraisFixesDuJour = (z) => { let amendes = 0; try { amendes = estimations().amendes; } catch (e) { /* pas de brouillon */ } return fraisFixes(z, S.state, { amendes, rythme: (S.draft && S.draft.rythme) || 'normal' }).total; };
@@ -46,14 +45,12 @@ import { appelsRenfort, renfortPrevu } from './renfort.js';
 import { secteursEnDanger, agentsND } from './nondroit.js';
 import { quartierActif } from '../engine/quartier.js';
 import { nomSecteur } from '../engine/nondroit.js';
-import { scenesDuSoir, seuilScene, SCENES } from '../engine/milieu.js';
+import { scenesDuSoir, SCENES } from '../engine/milieu.js';
 import { ICO_SCENE, sceneHtml } from './milieu.js';
 import { rolesDe, annoncesND, placeND, presqueTombes } from './nondroit.js';
 import { incidentsHtml, jaugeSkinsLigne } from './incidents.js';
 import { vignetteVentes, vignetteEquipe, vignetteTrophees, vignetteRapport, vignetteGazette, vignetteClassement, vignetteChallenge } from './vignettes-hp.js';
 import { phaseVente } from '../engine/ventes.js';
-import { reglesV2 } from '../engine/regles.js';
-import { renderHPAncien } from './hp-ancien.js';
 
 /** Variation depuis la veille, en petite pastille colorée. */
 function pastilleDelta(v, avant) {
@@ -157,8 +154,8 @@ const FAITS_ICO = [
   [/^(Intervention|Urgence|Colis|Bitonal)/i, '🚨'], [/^(Recherche|Enquête|Appui|Voisinage|Dossier|Pièce|Traque)/i, '🔎'],
   [/^(Proximité|Patrouille|Point chaud|Flagrant|Quartier|Vague)/i, '🏘'], [/^(Roulage|Flotte|Véhicule|Garage)/i, '🚓'],
   [/^(Accueil|Paperasse)/i, '🗂'], [/^(Moral|Équipe|Chef|Agent|Formation|Recrut)/i, '👮'], [/^(Incident|Imprévu|Coup dur)/i, '⚠️'],
-  [/^(Décision|Plan|Conseil|Pacte|District|Crise|Défi|Relève)/i, '🏛'], [/^(Budget|Salle|Vente|Enchère|Subside|Prime)/i, '💶'],
-  [/^(Zone de non-droit|Non-droit|Assaut)/i, '🧱'], [/^(Pas d’ordres|Pilote)/i, '🤖'], [/^(Énigme|Challenge)/i, '🧩'],
+  [/^(Décision|Plan|Conseil|Cellule|Pacte|District|Crise|Défi|Relève)/i, '🏛'], [/^(Budget|Salle|Vente|Enchère|Subside|Prime)/i, '💶'],
+  [/^(Zone de non-droit|Non-droit|Assaut)/i, '🧱'], [/^(Pas d’ordres|Pilote)/i, '🤖'], [/^(Énigme|Records|Challenge)/i, '🧩'],
 ];
 function faitHtml(l) {
   const ico = (FAITS_ICO.find(([re]) => re.test(l)) || [null, '•'])[1];
@@ -170,10 +167,6 @@ function faitHtml(l) {
 
 function cleNuit(z) { return `mazp-nuit-${S.backend.gameId ? S.backend.gameId() : ''}-${S.state.season}-${S.state.turn}-${z.uid}`; }
 
-/** HP allégée : en service pour tous (8 oct. 2026). */
-export function hpCompacte() {
-  return true;
-}
 
 /** Texte sans balises, pour un attribut (aria-label, title). */
 const attr = (h) => String(h).replace(/<[^>]*>/g, '').replace(/"/g, '&quot;');
@@ -299,7 +292,7 @@ function etiquetteEtape(i) {
   if (/^Vague/.test(t)) return ['Vague', 'carte'];
   if (i.href === '#hp-releve') return ['Relève', 'carte'];
   if (i.href === '#hp-bilan') return ['Bilan', 'ordres'];
-  if (i.href === '#hp-crise') return ['Conseil', 'shield'];
+  if (i.href === '#hp-crise') return ['Crise', 'shield'];
   if (i.href === '#hp-fipa') return ['FIPA', 'radio'];
   if (i.href === '#pactes') return ['Pacte', 'radio'];
   const mot = t.split(/[\s:]/)[0];
@@ -366,7 +359,7 @@ function jaugesHtml(z, T) {
   return `<section class="card hp-zone" aria-label="Ma zone">
     <div class="hz-ronds">
       ${rond('Moral', z.moral, '#FFB23F', 'moral', h.moral)}
-      ${z.ipzComp ? rond('Terrain', z.ipzComp.affaires, '#9DCBFF', 'terrain', z.ipzCompHier && z.ipzCompHier.affaires) : ''}
+      ${z.ipzComp ? rond('Résultats', z.ipzComp.affaires, '#9DCBFF', 'terrain', z.ipzCompHier && z.ipzCompHier.affaires) : ''}
       ${rond('Satisfaction', z.satisfaction, '#63B0FF', 'satisfaction', h.satisfaction)}
       ${rond('Réputation', z.reputation, '#3DD39A', 'reputation', h.reputation)}
     </div>
@@ -431,9 +424,9 @@ function alertesDe(st, z, T) {
   if (st.affaires.length) alertes.push({ cls: 'blue', titre: `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} disputée${st.affaires.length > 1 ? 's' : ''} sur la carte`, texte: st.affaires.map((a) => esc(a.titre)).join(' · '), href: '#carte' });
   if (st.finSaison) alertes.unshift({ cls: 'amber', titre: st.finSaison === 'enquete' ? 'Fin de saison : le soir où l’affaire en cours se clôt' : 'Fin de saison ce soir à 20:00', texte: 'L’affaire et ses traques continuent dans la saison suivante. S’arrêtent : formations et travaux en cours, pactes, défis et crise du Conseil. Bilan de saison allégé.', href: '#guide' });
   for (const x of aFairePactes()) if (!x.fait) alertes.unshift({ cls: 'amber', titre: esc(x.titre), texte: esc(x.texte), href: '#pactes' });
-  for (const a of appelsRenfort()) if (!renfortPrevu(a.uid)) alertes.unshift({ cls: 'amber', titre: `${esc(a.zone.nom)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » · ${a.op.appel ? 'appel du district : renfort payé ×1,5' : 'prête des agents contre de la réputation'}`, href: '#prive' });
+  for (const a of appelsRenfort()) if (!renfortPrevu(a.uid)) alertes.unshift({ cls: 'amber', titre: `${esc(a.zone.nom)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » · ${a.op.appel ? 'appel du district : renfort payé ×1,5' : 'prête des agents contre de la réputation'}`, href: '#radio-ops' });
   const perils = Object.values(st.zones).filter((x) => (x.peril || x.tutelle) && x.uid !== z.uid);
-  if (perils.length) alertes.push({ cls: 'red', titre: `${perils.map((x) => esc(x.nom)).join(', ')} en difficulté`, texte: 'un coup de main (onglet Pactes de la Carte) rapporte jusqu’à +7 de réputation', href: '#pactes' });
+  if (perils.length) alertes.push({ cls: 'red', titre: `${perils.map((x) => esc(x.nom)).join(', ')} en difficulté`, texte: 'un coup de main (bouton 🤝 Pactes de la Carte) rapporte jusqu’à +7 de réputation', href: '#pactes' });
   const op = operationActive(z, T);
   if (op) alertes.unshift({ cls: 'red', titre: `Opération d’envergure : ${esc(op.titre)}`, texte: `dispositif à régler dans tes ordres${op.duree > 1 ? ` · jour ${T - op.tourDebut + 1} sur ${op.duree}` : ''}`, href: '#ordres' });
   const tr = (st.traques || [])[0];
@@ -463,7 +456,7 @@ function aujourdhuiHtml(st, z, T, items) {
     L.push({ prio: 1, html: ligneAjd({ k: `ajd-dilemme-${T}`, ico: perso ? `<img src="img/bureau/${perso}-${humeurReseau(z, perso) > 0 ? 1 : humeurReseau(z, perso) < 0 ? '-1' : 0}.webp" alt="" width="40" height="40">` : '⚖️',
       titre: `${perso ? 'Appel' : 'Dilemme'} : ${esc(dl.titre)}`, sous: pris ? `« ${esc(dl.choix[d.dilemme].l)} »` : 'deux choix, à trancher avant 20:00', badge: pastilleAFaire(pris), ouvert: !pris, corps: dilemmeHtml(st, z) }) });
   }
-  { const h = criseHtml(); if (h) { const ct = criseTodo(); L.push({ prio: 1, html: ligneAjd({ k: `ajd-crise-${T}`, ico: '🏛', titre: ct ? ct.t : 'Conseil des chefs', sous: ct ? ct.s : 'plan du district', badge: ct ? pastilleAFaire(ct.ok) : '', ouvert: !!ct && !ct.ok, corps: h }) }); } }
+  { const h = criseHtml(); if (h) { const ct = criseTodo(); L.push({ prio: 1, html: ligneAjd({ k: `ajd-crise-${T}`, ico: '🏛', titre: ct ? ct.t : 'Cellule de crise', sous: ct ? ct.s : 'plan du district', badge: ct ? pastilleAFaire(ct.ok) : '', ouvert: !!ct && !ct.ok, corps: h }) }); } }
   { const h = releveHtml(); if (h) { const r = releveTodos()[0]; L.push({ prio: 1, html: ligneAjd({ k: `ajd-releve-${T}`, ico: '🚔', titre: r ? r.t : 'Relève', sous: r ? r.s : 'suspect en fuite chez un voisin', badge: r ? pastilleAFaire(r.ok) : '', ouvert: !!r && !r.ok, corps: h }) }); } }
   { const h = bilanHtml(); if (h) { const bt = bilanTodo(); L.push({ prio: 1, html: ligneAjd({ k: `ajd-bilan-${T}`, ico: '📋', titre: bt ? bt.t : 'Bilan de saison', sous: bt ? bt.s : '', badge: bt ? pastilleAFaire(bt.ok) : '', ouvert: !!bt && !bt.ok, corps: h }) }); } }
   { const h = fipaCards(); if (h) { const att = items.some((i) => i.href === '#hp-fipa' && !i.ok); L.push({ prio: 1, html: ligneAjd({ k: `ajd-fipa-${T}`, ico: '🤝', titre: att ? 'FIPA : une décision t’attend' : 'FIPA', sous: 'renfort d’une zone partenaire', badge: att ? pastilleAFaire(false) : '', ouvert: att, corps: `<div id="hp-fipa">${h}</div>` }) }); } }
@@ -487,7 +480,7 @@ function aujourdhuiHtml(st, z, T, items) {
   }
 
   { const h = absenceHtml(z); if (h) { const a = z.adjoint, retour = /Bon retour/.test(h); L.push({ prio: 3, html: ligneAjd({ k: 'ajd-absence', ico: portraitAdjoint(a, 40), titre: retour ? 'Bon retour, chef' : 'Pendant ton absence', sous: `${esc(a.prenom)} ${esc(a.nom)} a tenu la zone`, ouvert: retour, corps: h }) }); } }
-  { const h = pistesHpHtml(z); if (h) { const n = (z.pistes || []).length; L.push({ prio: 3, html: ligneAjd({ k: 'ajd-pistes', ico: '🔎', titre: 'Pistes en cours', sous: `${n} piste${n > 1 ? 's' : ''} · résultat à venir`, corps: h }) }); } }
+  { const h = pistesHpHtml(z); if (h) { const n = (z.pistes || []).length; L.push({ prio: 3, html: ligneAjd({ k: 'ajd-pistes', ico: '🔎', titre: 'Tuyaux en cours', sous: `${n} tuyau${n > 1 ? 'x' : ''} · résultat à venir`, corps: h }) }); } }
   for (const a of alertes.filter((x) => x.cls !== 'red')) L.push({ prio: 3, html: ligneAlerte(a) });
 
   L.sort((a, b) => a.prio - b.prio);
@@ -512,16 +505,15 @@ export function mesTuiles() {
 function tuileInfo(k, st, z) {
   const T = st.turn, last = S.gazettes && S.gazettes[0];
   if (k === 'encheres') {
-    const v2 = (Number(st.regles) || 1) >= 2;
-    const s = v2 ? (!st.vente ? 'vente à 20:00' : phaseVente(st) === 'visible' ? '3 lots ouverts' : 'marteau ce soir') : (st.enchere && st.enchere.tour === T ? 'lot du jour' : 'lot à 20:00');
-    return { nom: 'Enchères', vign: vignetteVentes(!!(st.vente || (st.enchere && st.enchere.tour === T))), s, carte: true };
+    const s = !st.vente ? 'vente à 20:00' : phaseVente(st) === 'visible' ? '3 lots ouverts' : 'marteau ce soir';
+    return { nom: 'Ventes', vign: vignetteVentes(!!st.vente), s, carte: true };
   }
   if (k === 'equipe') return { nom: 'Mon équipe', vign: vignetteEquipe(z.couleur), s: `${(z.equipe || []).length || 5} figures`, carte: true };
   if (k === 'trophees') return { nom: 'Trophées', vign: vignetteTrophees((z.trophees || []).length), s: `${(z.trophees || []).length} sur ${TROPHEES.length}`, carte: true };
   if (k === 'rapport') return { nom: 'Rapport', vign: vignetteRapport(), s: T > 1 ? `tour ${T - 1}` : 'après 20:00', action: 'toggle-rapport' };
   if (k === 'gazette') return { nom: 'Gazette', vign: vignetteGazette(), s: last ? `tour ${last.turn}` : 'après 20:00', href: '#gazette' };
   if (k === 'classement') { const { rang, total } = rangDe(z.uid); return { nom: 'Classement', vign: vignetteClassement(z.couleur), s: z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total}` : 'non classé', href: '#classement' }; }
-  return { nom: 'Challenge', vign: vignetteChallenge(), s: 'mini-jeux', action: 'hp-challenge' };
+  return { nom: 'Records', vign: vignetteChallenge(), s: 'mini-jeux', action: 'hp-challenge' };
 }
 function raccourcisHtml(st, z) {
   const edit = !!S.hpEdit, mes = mesTuiles();
@@ -535,7 +527,7 @@ function raccourcisHtml(st, z) {
     const act = t.carte ? `data-action="hp-tuile" data-k="${k}"` : `data-action="${t.action}"`;
     return `<button type="button" class="hp-tuile${ouvert ? ' ouvert' : ''}" ${act} aria-expanded="${!!ouvert}">${corps}</button>`;
   };
-  const carte = !edit && mes.includes(S.hpTuile) ? ({ encheres: encheresHtml, equipe: equipeHtml, trophees: tropheesHtml }[S.hpTuile] || (() => ''))() : '';
+  const carte = !edit && mes.includes(S.hpTuile) ? ({ encheres: ventesHtml, equipe: equipeHtml, trophees: tropheesHtml }[S.hpTuile] || (() => ''))() : '';
   return `<section class="hp-racc" aria-label="Mes raccourcis">
     <div class="between"><h2 class="section">Mes raccourcis</h2><button type="button" class="btn small ghost" data-action="hp-tuiles-edit" aria-pressed="${edit}">${edit ? 'Terminé' : 'Modifier'}</button></div>
     ${edit ? `<p class="tiny muted" style="margin:0">Touche une tuile pour l’ajouter ou l’enlever : ${MAX_TUILES} au plus.</p>` : ''}
@@ -560,7 +552,7 @@ function heroHtml(st, z) {
     ? `<button type="button" class="hud-chef hp-chef" data-action="bureau-ouvrir" aria-label="Mon chef de corps · ${attr(gradeTxt)}">${anneau}${portraitChef(z.uid, 40, { galons: false })}</button>`
     : `<a class="hud-chef" href="#profil" aria-label="Mon profil · ${attr(gradeTxt)}">${anneau}<span class="hud-ecu">${S.player && S.player.blason && GRADES.indexOf(gradeFor(z.ps)) >= 4 ? blasonSvg(S.player.blason, z.couleur, 30) : icon('shield', 22)}</span></a>`;
   const doc = z.doctrine && DOCTRINES[z.doctrine];
-  return `<section class="hp-hero" aria-label="Mon commissariat">
+  return `<section class="hp-hero" aria-label="Mon hôtel de police">
     <div class="hp-scene" style="--ratio:${ratio}">${scene}</div>
     <div class="hp-hud">
       ${chef}
@@ -571,14 +563,14 @@ function heroHtml(st, z) {
     <div class="hud-bas">
       ${S.backend.isMaster(S.user) ? `<a class="hud-btn" href="#admin" aria-label="Maître du jeu" title="Maître du jeu">${icon('shield', 19)}</a>` : ''}
       <button type="button" class="hud-btn roue" data-action="menu-hp" aria-expanded="${!!S.menuHp}" aria-label="Guide, nouveautés, partie et profil">${icon('gear', 20)}${noteVue() ? '' : '<i class="roue-pastille" aria-hidden="true"></i>'}</button>
-      <button type="button" class="hud-btn hud-perso" data-action="decor" aria-label="Personnaliser mon commissariat">${icon('pencil', 18)}</button>
+      <button type="button" class="hud-btn hud-perso" data-action="decor" aria-label="Personnaliser mon hôtel de police">${icon('pencil', 18)}</button>
     </div>
   </section>`;
 }
 
 export function renderHP() {
   // Le nouvel HP arrive avec la saison 2 (bascule à 20:00) : avant, l'ancien reste affiché.
-  if (!reglesV2(S.state)) return renderHPAncien();
+  
   const st = S.state, z = myZone();
   const T = st.turn;
   const ordresOk = !!S.savedOrders && !S.ordersDirty;
@@ -615,7 +607,6 @@ export function renderHP() {
         ${bulleNuitHtml(z)}
         ${avantHtml(st, z, items)}
         ${jaugesHtml(z, T)}
-        ${boutonClassement(z)}
       </div>
       <div class="hp-col">
         ${aujourdhuiHtml(st, z, T, items)}
@@ -625,15 +616,6 @@ export function renderHP() {
       </div>
     </div>
   </main>${tabbar('hp', { questBadge: !questDone })}`;
-}
-
-/** Bouton bien visible vers les classements, avec le rang du joueur. */
-function boutonClassement(z) {
-  const { rang, total } = rangDe(z.uid);
-  const s = z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total}` : 'non classé';
-  return `<a class="btn block hp-classement" href="#classement" style="justify-content:space-between;gap:10px;min-height:52px;text-decoration:none">
-    <span class="row" style="gap:10px;align-items:center">${icon('trophy', 20)}<span style="font-weight:700">Classements</span></span>
-    <span class="row" style="gap:6px;align-items:center"><span class="small muted">${s}</span>${icon('chevron', 16)}</span></a>`;
 }
 
 function recompensesGrade(z) {
@@ -655,7 +637,7 @@ function recompensesGrade(z) {
     out.push(`<section class="card"><h2 class="card-title">Blason de la zone</h2><p class="small muted" style="margin:0">Affiché sur l’HP et sur la carte (grade Commissaire divisionnaire).</p>
       <div class="swatches">${Object.entries(BLASONS).map(([k, b]) => `<button type="button" class="swatch" style="background:transparent;width:48px;height:52px" data-action="pick-blason" data-v="${k}" aria-pressed="${S.player && S.player.blason === k}" aria-label="Blason ${b.nom}">${blasonSvg(k, z.couleur, 36, b.nom)}</button>`).join('')}</div></section>`);
   }
-  if (gi >= 5) out.push(`<section class="card tight"><span class="kicker">Chef de corps</span><span class="small">${z.motionSaison ? 'Ta motion de la saison est déposée.' : 'Tu peux proposer une motion au Conseil cette saison, depuis l’onglet Pactes de la Carte.'}</span></section>`);
+  if (gi >= 5) out.push(`<section class="card tight"><span class="kicker">Chef de corps</span><span class="small">${z.motionSaison ? 'Ta motion de la saison est déposée.' : 'Tu peux proposer une motion au Conseil cette saison, depuis les Pactes (bouton 🤝 de la Carte).'}</span></section>`);
   return out.join('');
 }
 
@@ -669,7 +651,7 @@ export function renderProfil() {
   const nbTro = (z.trophees || []).length;
   const stat = (v, l) => `<div class="pc-stat"><span class="v">${v}</span><span class="l">${l}</span></div>`;
   const editer = S.editingName || S.profilColor || !(p.pseudo);
-  if (reglesV2(S.state)) {
+  {
     // Saison 2 : une carte de service (sans le commissariat, déjà à l'HP) et tes parties juste dessous.
     const cur = S.backend.gameId && S.backend.gameId();
     const parties = (S.parties || []).slice().sort((a2, b2) => (b2.id === cur) - (a2.id === cur));
@@ -719,52 +701,4 @@ export function renderProfil() {
     <button class="btn danger block" data-action="logout">Se déconnecter</button>
   </main>${tabbar('hp')}`;
   }
-  return `<main class="screen">
-    <a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
-    <section class="card profil-carte" style="--zc:${esc(z.couleur || '#5AA0F0')}">
-      <div class="pc-scene">${sceneZone(z, S.state, monDecor(z), mesSkins(z).choix)}</div>
-      <div class="pc-id">
-        <span class="pc-insigne">${p.blason ? blasonSvg(p.blason, z.couleur, 40, '') : `<span class="pc-ecu">${icon('shield', 24)}</span>`}</span>
-        <span class="col" style="gap:1px;min-width:0"><span class="pc-pseudo">${esc(p.pseudo || 'Sans pseudo')}</span>
-          <span class="small muted">Chef de la <strong style="color:var(--zc)">ZP ${esc(z.code)} ${esc(z.nom)}</strong></span></span>
-      </div>
-      <div class="pc-grade">
-        <div class="between"><span style="font-weight:700">${esc(g.nom)}</span><span class="tiny muted mono">${z.ps} PS${n ? ` · ${esc(n.nom)} à ${n.ps}` : ' · grade maximal'}</span></div>
-        <span class="pc-barre"><span style="width:${Math.max(3, pct)}%"></span></span>
-      </div>
-      <div class="pc-stats">
-        ${stat(z.ipz !== undefined && z.ipz !== null ? fmt1(z.ipz) : '—', 'IPZ')}
-        ${stat(`${nbTro}<small>/${TROPHEES.length}</small>`, 'Trophées')}
-        ${stat(affiches.length, `Arrestation${affiches.length > 1 ? 's' : ''}`)}
-        ${stat(records.length, `Record${records.length > 1 ? 's' : ''}`)}
-        ${stat(z.toursJoues || 0, 'Tours joués')}
-        ${stat(z.faillites || 0, `Faillite${(z.faillites || 0) > 1 ? 's' : ''}`)}
-      </div>
-      ${records.length || (z.titres || []).length || (z.badges || []).length ? `<div class="pc-titres">
-        ${records.map((t) => `<span class="pc-plaque">🏆 ${esc(t.titre)} <small>niv. ${t.niveau} · ${esc(p.pseudo || '')}</small></span>`).join('')}
-        ${(z.titres || []).map((t) => `<span class="pc-plaque">${icon('trophy', 12)} ${esc(t)}</span>`).join('')}
-        ${(z.badges || []).map((b) => `<span class="pc-plaque argent">${esc(b)}</span>`).join('')}
-      </div>` : ''}
-      ${affiches.length ? `<div class="pc-affiches" aria-label="Suspects arrêtés">${affiches.slice(0, 6).map((a) => `<span class="pc-affiche" title="${esc(a.titre)} · saison ${a.season}"><b>ARRÊTÉ</b><span>${esc(String(a.nom).split(' ')[0])}</span></span>`).join('')}</div>` : ''}
-    </section>
-    ${z.chef ? `<button type="button" class="btn primary block" data-action="bureau-ouvrir">${portraitChef(z.uid, 22, { galons: false })} Voir mon chef de corps</button>` : ''}
-    ${z.chef && !chefACreer() ? (S.chefEdit ? creationChefHtml() : '<button type="button" class="btn small outline block" data-action="chef-modifier">Changer le portrait ou la devise de mon chef</button>') : ''}
-    <details class="card repli" data-k="profil-edit" ${editer ? 'open' : ''}>
-      <summary><span style="color:var(--amber)">${icon('pencil', 18)}</span><span class="col grow" style="gap:0"><span style="font-weight:600">Modifier ma zone</span><span class="tiny muted">pseudo, nom, code et couleur</span></span>${icon('chevron', 16)}</summary>
-    <form class="col" data-form="profil" style="gap:12px">
-      <label class="field">Ton prénom ou pseudo<input class="text" name="pseudo" maxlength="24" required value="${esc(p.pseudo || '')}"></label>
-      <label class="field">Nom de la zone<input class="text" name="nom" maxlength="24" required value="${esc(z.nom)}"></label>
-      <label class="field">Code de zone (4 chiffres)<input class="text mono" name="code" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" required value="${esc(z.code)}"></label>
-      <fieldset style="border:none;padding:0;margin:0" class="col"><legend class="small muted" style="font-weight:600;margin-bottom:6px">Couleur</legend>
-        <div class="swatches">${COULEURS_ZONE.map((c, i) => `<button type="button" class="swatch" style="background:${c}" data-action="pick-color-profil" data-color="${c}" aria-pressed="${(S.profilColor || z.couleur) === c}" ${i >= 6 && !etendue ? 'disabled title="Grade Inspecteur requis"' : ''} aria-label="Couleur ${c}"></button>`).join('')}</div>
-      </fieldset>
-      <button class="btn primary block" type="submit">Enregistrer</button>
-    </form></details>
-    ${recompensesGrade(z)}
-    <a class="list-row" href="#parties"><span class="col grow" style="gap:1px"><span style="font-weight:600">Changer de partie</span><span class="small muted">${esc((S.partie && S.partie.nom) || '')} · rejoindre ou créer une partie</span></span>${icon('chevron', 18)}</a>
-    <section class="card"><h2 class="card-title">Installer le jeu sur ton téléphone</h2>
-      <p class="small muted" style="margin:0">Android (Chrome) : menu ⋮ puis « Installer l’application ». iPhone (Safari) : bouton Partager puis « Sur l’écran d’accueil ».</p></section>
-    <p class="tiny muted" style="margin:0">Connecté${S.user.email ? ` : ${esc(S.user.email)}` : ''}</p>
-    <button class="btn danger block" data-action="logout">Se déconnecter</button>
-  </main>${tabbar('hp')}`;
 }

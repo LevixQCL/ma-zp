@@ -121,7 +121,7 @@ if (mode === 'saison2') {
   // Comme en ligne : règles de la saison 2, non-droit profond activé au soir 4 (en cours de saison).
   const rows = [];
   for (const extra of [0, 6]) {
-    rows.push(ligne(`${6 + extra} zones · saison 2 sans`, run(STRATS['Coopère (6 agents), comme avant'], { v3: false, extra, regles: 2 })));
+    rows.push(ligne(`${6 + extra} zones · saison 2 sans`, run(STRATS['Coopère (6 agents), comme avant'], { v3: false, extra })));
     rows.push(ligne(`${6 + extra} zones · saison 2, activé au soir 4`, run(STRATS['Coopère + présence + scènes (agents)'], { v3: true, extra, regles: 2, des: 4 })));
   }
   console.log(`\nSaison 2 (${TOURS} soirs, ${SEEDS} parties)`); console.table(rows);

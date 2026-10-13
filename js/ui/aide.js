@@ -1,6 +1,6 @@
 // Aides rapides (bouton « ? ») : l'essentiel d'une jauge en quelques lignes, sans ouvrir le guide.
 import { S, esc, fmt1, myZone } from './common.js';
-import { IPZ_POIDS, START, ECONOMIE, SUBSIDE, TERRAIN, FLAGRANT, DOSSIER, ND, BUDGET_IPZ, scoreBudget, scoreRevenu, MORAL_PALIERS, MORAL } from '../engine/constants.js';
+import { IPZ_POIDS, ECONOMIE, SUBSIDE, TERRAIN, FLAGRANT, DOSSIER, ND, BUDGET_IPZ, scoreBudget, scoreRevenu, MORAL_PALIERS, MORAL } from '../engine/constants.js';
 import { confianceCommune, pointsIpz, IPZ_LABELS, moralMult } from '../engine/zone.js';
 import { PERIL } from '../engine/rivalites.js';
 
@@ -137,7 +137,7 @@ export const AIDES = {
   },
   terrain: {
     titre: 'Résultats terrain',
-    intro: `La composante « terrain » de l’IPZ (${pc(IPZ_POIDS.affaires)}). Ce ne sont pas les PS, qui servent aux grades.`,
+    intro: `La composante « résultats » de l’IPZ (${pc(IPZ_POIDS.affaires)}). Ce ne sont pas les PS, qui servent aux grades.`,
     lignes: [
       `<strong>Calcul</strong> : ${TERRAIN.incidents} × part des incidents traités + ${TERRAIN.parPoint} × bilan, plafonné à 100`,
       `<strong>Incidents</strong> : tout traiter donne déjà ${TERRAIN.incidents} ; en rater la moitié n’en donne que ${fmt1(TERRAIN.incidents / 2)}`,

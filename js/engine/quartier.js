@@ -11,7 +11,7 @@ import { makeRng } from './rng.js';
 import { round1, clamp, jalon } from './zone.js';
 import { ville } from '../ui/ville.js';
 import { CONFIG } from '../config.js';
-import { assurerMilieu, interrogatoires, saisieDescente, LIEUTENANTS } from './milieu.js';
+import { assurerMilieu, interrogatoires, LIEUTENANTS } from './milieu.js';
 
 /**
  * Interrupteur. `depuis` : instant (ms) d'un 20:00 ; la règle s'applique aux tours dont l'échéance tombe après
@@ -43,8 +43,6 @@ const nomS = (k) => ville(CONFIG.seed).cells[Number(k)].nom;
 const adjND = (nd, k) => (ville(CONFIG.seed).adj[Number(k)] || []).map(String).filter((x) => nd.secteurs[x]);
 export const barDepart = (state, coeur) => { const P = coeur ? Q.qg : Q.anneau; return Math.round(P.base + P.parZone * nZ(state)); };
 export const totalBar = (s) => (s.bar || 0) + (s.cache || 0);
-/** Barricades à casser vues par une zone (le « ? » compte pour 0 tant qu'il n'est pas révélé). */
-export const barVues = (s, revele = false) => (s.vu || revele ? totalBar(s) : s.bar || 0);
 
 /**
  * Conversion (et création) : un secteur sans barricades en reçoit selon son emprise (proportion de son emprise de départ).

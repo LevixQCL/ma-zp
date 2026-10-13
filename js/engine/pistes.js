@@ -35,9 +35,9 @@ export function lireOrdresPistes(raw) {
 /** Une piste de ce type est-elle possible ce soir pour cette zone ? Renvoie la raison si non. */
 export function pisteImpossible(state, z, type, cible) {
   const P = PISTES[type];
-  if (!P) return 'piste inconnue';
-  if (((z.pistes || []).length) >= MAX_PISTES) return `déjà ${MAX_PISTES} pistes en cours`;
-  if ((z.pistes || []).some((p) => p.type === type)) return 'une piste de ce type est déjà en cours';
+  if (!P) return 'tuyau inconnu';
+  if (((z.pistes || []).length) >= MAX_PISTES) return `déjà ${MAX_PISTES} tuyaux en cours`;
+  if ((z.pistes || []).some((p) => p.type === type)) return 'un tuyau de ce type est déjà en cours';
   if (P.cout && z.budget < P.cout) return 'budget insuffisant';
   if (P.cible === 'suspect') {
     if (!state.enquete || state.enquetePause) return 'pas d’affaire en cours';
@@ -69,7 +69,7 @@ export function pistesDuSoir(state, z, demandes, T, rng) {
   for (const d of demandes || []) {
     const raison = pisteImpossible(state, z, d.type, d.cible);
     const P = PISTES[d.type];
-    if (raison) { lignes.push(`Piste « ${P ? P.nom : d.type} » non lancée : ${raison}.`); continue; }
+    if (raison) { lignes.push(`Tuyau « ${P ? P.nom : d.type} » non lancé : ${raison}.`); continue; }
     const nuits = P.nuits[0] + Math.floor(rng.next() * (P.nuits[1] - P.nuits[0] + 1));
     const coutP = round1((P.cout || 0) * talentVal(z, 'carnet', 'cout', 1));
     if (talent(z, 'carnet') && (P.cout || P.agents)) noterChef(z, 'carnet', `Carnet noir : ${P.nom.toLowerCase()} lancé${P.cout ? ` pour ${String(coutP).replace('.', ',')} k€ au lieu de ${String(P.cout).replace('.', ',')}` : ', ton agent reviendra une nuit plus tôt'}.`);
@@ -77,7 +77,7 @@ export function pistesDuSoir(state, z, demandes, T, rng) {
     if (P.agents) z.blesses.push({ n: P.agents, retour: T + nuits + (talent(z, 'carnet') ? 0 : 1), motif: d.type === 'filature' ? 'en filature' : 'en mission de dialogue' });
     const p = { type: d.type, lance: T, retour: T + nuits, ...(d.cible != null ? { cible: d.cible } : {}), ...(state.enquete ? { n: state.enquete.n } : {}) };
     z.pistes.push(p);
-    lignes.push(`Piste lancée : ${P.nom}${cibleTexte(state, z, p)}. Résultat d’ici ${nuits} nuit${nuits > 1 ? 's' : ''}${P.cout ? ` (${String(P.cout).replace('.', ',')} k€)` : ''}${P.agents ? ` ; ${P.agents} agent absent de ses services jusque-là` : ''}.`);
+    lignes.push(`Tuyau lancé : ${P.nom}${cibleTexte(state, z, p)}. Résultat d’ici ${nuits} nuit${nuits > 1 ? 's' : ''}${P.cout ? ` (${String(P.cout).replace('.', ',')} k€)` : ''}${P.agents ? ` ; ${P.agents} agent absent de ses services jusque-là` : ''}.`);
   }
   return lignes;
 }

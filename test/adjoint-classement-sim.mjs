@@ -24,7 +24,7 @@ const rows = [];
 for (const [nom, o] of Object.entries(S)) {
   const moy = [], rang = [], vsBot = [], classe = [];
   for (let s = 0; s < SEEDS; s++) {
-    let st = createGame({ seed: `adj2-${s}`, regles: 2 });
+    let st = createGame({ seed: `adj2-${s}` });
     for (const b of BOT_PROFILES) st.zones[b.uid] = newZone(b, 1);
     st.zones.moi = newZone({ uid: 'moi', code: '5324', nom: 'Horizon' }, 1);
     const c = creerChef({}); c.xp.commandement = XP_CUMUL[o.cdt || 0]; st.zones.moi.chef = c;

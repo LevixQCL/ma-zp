@@ -96,7 +96,7 @@ let ref = null;
 for (const [nom, opt] of Object.entries(STRATS)) {
   const ipz = [], niv = [];
   for (let s = 0; s < SEEDS; s++) {
-    let state = createGame({ seed: `s2-${s}`, regles: 2 });
+    let state = createGame({ seed: `s2-${s}` });
     for (const b of BOT_PROFILES) state.zones[b.uid] = newZone(b, 1);
     state.zones.moi = newZone({ uid: 'moi', code: '5324', nom: 'Horizon' }, 1);
     if (!opt.neuf) { const c = creerChef({}); for (const k of Object.keys(c.xp)) c.xp[k] = XP_CUMUL[10]; state.zones.moi.chef = c; }

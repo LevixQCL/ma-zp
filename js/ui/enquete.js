@@ -10,21 +10,13 @@ import { APPUI } from '../engine/appui.js';
 import { monAppui } from './incidents.js';
 import { renderTableau } from './tableau.js';
 import { renderEnqueteDossier } from './enquete-dossier.js';
-import { reglesV2 } from '../engine/regles.js';
 import { aideBtn } from './aide.js';
 import { journalHtml, journalAuto } from './journal.js';
 import { tutoActif } from './tutoriel.js';
 import { dossierAffaire3 } from '../engine/dossier.js';
 import { minutes, MODES } from '../engine/carte3.js';
 import { planifierEnvoi, synchroniser, synchroniserMaintenant, contenuChange, carnetVide } from './carnet-sync.js';
-import { accusesPrets, VARIANTE_INFO, traqueAutorisee, maxDemarchesDe,
-  ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece,
-  chanceVoisinage, VOISINAGE,
-  ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee,
-  demarcheDe, mandatOk, lireDemarche,
-  toursTraque, delaiTraque, REAUD, RECOUP, PRIME, PRIME_LABELS, texteMisePrix,
-} from '../engine/enquete.js';
-import { SERVICES, SERVICE_LABELS, NIVEAU_MAX } from '../engine/constants.js';
+import { accusesPrets, VARIANTE_INFO, traqueAutorisee, maxDemarchesDe, ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece, chanceVoisinage, ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee, demarcheDe, mandatOk, lireDemarche, toursTraque, delaiTraque, REAUD, RECOUP, texteMisePrix } from '../engine/enquete.js';
 import { lienItineraire, lieuxMons, MODES_GMAPS, modeSuspect } from '../engine/meurtre-mons.js';
 
 // ───── Carnet : marques et notes, gardées sur l'appareil ─────
@@ -456,18 +448,17 @@ function vueNotes(aff) {
 /** Affichage de l'enquête : le tableau (par défaut) ou la liste. */
 export function vueEnquete() {
   // Saison 2 : l'enquête s'ouvre en dossier (mur, ce soir, classeur) ; le liège et la liste restent au choix (menu ⋯).
-  const v2 = reglesV2(S.state);
-  if (S.enqVue && (!v2 || S.enqVueV2)) return S.enqVue;
-  const cle = v2 ? 'mazp-enq-vue2' : 'mazp-enq-vue';
-  try { S.enqVue = localStorage.getItem(cle) || (v2 ? 'dossier' : 'tableau'); } catch (e) { S.enqVue = v2 ? 'dossier' : 'tableau'; }
-  if (v2) S.enqVueV2 = true;
+  if (S.enqVue && (S.enqVueV2)) return S.enqVue;
+  const cle = 'mazp-enq-vue2';
+  try { S.enqVue = localStorage.getItem(cle) || ('dossier'); } catch (e) { S.enqVue = 'dossier'; }
+  S.enqVueV2 = true;
   return S.enqVue;
 }
 /** Change l'affichage de l'enquête et le retient sur l'appareil. */
 export function choisirVueEnquete(v) {
   S.enqVue = v;
-  if (reglesV2(S.state)) S.enqVueV2 = true;
-  try { localStorage.setItem(reglesV2(S.state) ? 'mazp-enq-vue2' : 'mazp-enq-vue', v); } catch (e) { /* pas de stockage */ }
+  S.enqVueV2 = true;
+  try { localStorage.setItem('mazp-enq-vue2', v); } catch (e) { /* pas de stockage */ }
 }
 
 export function renderEnquete() {
@@ -485,7 +476,7 @@ export function renderEnquete() {
     return `<main class="screen"><header class="col" style="gap:3px"><span class="kicker">Enquête</span><h1 class="big">Pas d’affaire en cours</h1></header>
       <p class="small muted">La première affaire s’ouvrira au prochain tour.</p></main>${tabbar('enquete')}`;
   }
-  if (vueEnquete() === 'dossier' && reglesV2(st)) return renderEnqueteDossier();
+  if ((vueEnquete() === 'dossier')) return renderEnqueteDossier();
   if (vueEnquete() === 'tableau' || vueEnquete() === 'dossier') return renderTableau();
   const aff = affaire(st, st.enquete.n);
   if (!tutoActif()) journalAuto(aff);
@@ -505,7 +496,7 @@ export function renderEnquete() {
   return `<main class="screen">
     ${primeHtml()}${banniereTraque(st)}${banniereDebrief()}
     <header class="col" style="gap:6px">
-      <div class="between"><span class="kicker">Enquête · affaire n° ${aff.n}</span><span class="row" style="gap:6px">${aff.prof ? '<button type="button" class="btn small" data-action="journal-ouvrir">📰 Journal</button>' : ''}${reglesV2(st) ? `<button type="button" class="btn small" data-action="tab-vue" data-v="dossier">${icon('tableau', 16)} Dossier</button>` : `<button type="button" class="btn small" data-action="tab-vue" data-v="tableau">${icon('tableau', 16)} Tableau</button>`}</span></div>
+      <div class="between"><span class="kicker">Enquête · affaire n° ${aff.n}</span><span class="row" style="gap:6px">${aff.prof ? '<button type="button" class="btn small" data-action="journal-ouvrir">📰 Journal</button>' : ''}${`<button type="button" class="btn small" data-action="tab-vue" data-v="dossier">${icon('tableau', 16)} Dossier</button>`}</span></div>
       <h1 class="big" style="line-height:1.05">${esc(aff.titre)}</h1>
       <details class="recit" data-k="recit" ${(S.ouverts && 'recit' in S.ouverts ? S.ouverts.recit : j <= 1) ? 'open' : ''}><summary class="small">Les faits ${icon('chevron', 14)}</summary>
         <p class="small" style="margin:6px 0 0;color:var(--text2);line-height:1.5">${esc(aff.recit)}</p></details>

@@ -10,7 +10,7 @@ const ALLOC = { intervention: 6, proximite: 4, recherche: 4, roulage: 2, admin: 
 function partie(v3 = true) {
   const st = createGame({ seed: 'milieu-test' });
   st.nonDroit.roles = true;
-  if (v3) st.nonDroit.v3 = true;
+  st.nonDroit.v3 = v3; // false : désactivé exprès
   for (const [uid, code] of [['a', '5301'], ['b', '5302'], ['c', '5303']]) st.zones[uid] = newZone({ uid, code, nom: uid.toUpperCase() }, 1);
   return st;
 }

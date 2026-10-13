@@ -1,4 +1,3 @@
-import { REGLES } from '../engine/constants.js';
 // Écran de l’énigme du jour.
 import { chipEntraine } from './chef.js';
 import { laureatsProvisoires, enTeteSemaine, recordDefi, monRecordDefi } from './defis.js';
@@ -12,14 +11,6 @@ import { achatEnAttente } from './logistique.js';
 import { digicodeHtml, digicodeResultat } from './digicode.js';
 import { vignetteEnigme, couleurEnigme } from './vignettes-enigmes.js';
 
-/** Formes d'énigmes visibles en entraînement : en jeu, ou en aperçu (?apercu dans l'adresse). */
-/** Paliers de carrière des énigmes (toutes saisons) : une ligne discrète avec la barre vers le prochain. */
-function palierHtml() {
-  const z = myZone(); if (!z) return '';
-  const n = (z.carriere && Number.isFinite(z.carriere.enigmes)) ? z.carriere.enigmes : (z.stats && z.stats.quetesOk) || 0;
-  const P = ENIGMES.paliers, prochain = (Math.floor(n / P.pas) + 1) * P.pas, pct = Math.round(100 * (n % P.pas) / P.pas);
-  return `<div class="palier-enig" title="Toutes les ${P.pas} énigmes réussies (dossier noir compris), depuis ton arrivée"><span class="tiny"><strong>${n}</strong> énigme${n > 1 ? 's' : ''} réussie${n > 1 ? 's' : ''} depuis ton arrivée · palier à ${prochain} : +${P.budget} k€ et +${P.jauge} jauge des skins</span><span class="palier-barre"><i style="width:${pct}%"></i></span></div>`;
-}
 
 export function formesVisibles() {
   if (FORMES_EN_JEU) return true;
@@ -255,7 +246,7 @@ export function renderQuete() {
   const vueMj = train && S.trainVue === 'minijeux';
   // Une seule rangée d'onglets : le Challenge a son propre onglet, l'entraînement ne garde que les énigmes.
   const onglet = (v, txt, sel) => `<button type="button" role="tab" aria-selected="${sel}" data-action="quest-mode" data-v="${v}">${txt}</button>`;
-  const modes = `<div class="seg3" role="tablist" aria-label="Énigmes">${onglet('jour', 'Énigmes du jour', !train)}${onglet('challenge', '🏆 Challenge', vueMj)}${onglet('train', 'Entraînement', train && !vueMj)}</div>`;
+  const modes = `<div class="seg3" role="tablist" aria-label="Énigmes">${onglet('jour', 'Énigmes du jour', !train)}${onglet('challenge', '🏆 Records', vueMj)}${onglet('train', 'Entraînement', train && !vueMj)}</div>`;
   const sousOnglets = '';
   if (vueMj) {
     return `<main class="screen quete">
@@ -307,10 +298,7 @@ export function renderQuete() {
       ${ok >= P ? `<p class="small ok" style="margin:0;font-weight:700">🏅 ${nbJour > P ? `${P} réussies` : 'Sans faute'} ! Prime en plus de ton bonus : ${primeSf} ce soir.</p>` : `<p class="tiny muted" style="margin:0">${nbJour > P ? `Réussis ${P} énigmes sur ${nbJour}` : `Réussis les ${P} énigmes`} pour une prime : ${primeSf}.</p>`}
     </section>` : '';
 
-  const v2 = !!REGLES.v2;
-  const onglets = train ? entrainementBarre() : v2 ? `${routeBonus(ok, bonusPris, gBonus, enqueteOuverte)}${ongletsClasseur(i, noir, results)}` : `<div class="seg ${S.quests.length > 3 ? 'cinq' : 'quatre'}" role="tablist" aria-label="Énigmes du jour">${S.quests.map((x, k) => `
-      <button type="button" role="tab" data-action="quest-tab" data-i="${x.slot}" aria-selected="${x.slot === i}"><span class="t">${S.quests.length > 3 ? 'n°' : 'Énigme '}${k + 1}${icone(results[x.slot])}</span><span class="d">${esc(x.typeLabel)}</span></button>`).join('')}
-      <button type="button" role="tab" class="noir" data-action="quest-tab" data-i="3" aria-selected="${noir}"><span class="t">Dossier noir${icone(S.noirResult)}</span><span class="d">facultatif</span></button></div>`;
+  const onglets = train ? entrainementBarre() : `${routeBonus(ok, bonusPris, gBonus, enqueteOuverte)}${ongletsClasseur(i, noir, results)}`;
   const delegue = !train ? results.find((x) => x && x.statut === 'delegue') : null;
   const aucuneReponse = !results.some((x) => x && (x.statut === 'ok' || x.statut === 'rate'));
   const qzLocal = !train ? quizLocal() : null, qzFait = !train ? quizEnregistre() : null;
@@ -338,61 +326,7 @@ export function renderQuete() {
       ${peutChanger ? `<button type="button" class="chip" data-action="quest-reroll" title="Une fois par jour">${icon('refresh', 14)} Changer d’énigme</button>` : ''}
       ${altPossible && !S.altVue ? `<button type="button" class="chip" data-action="alt-vue" data-v="choix" title="Quiz express ou agent qui planche à ta place">${icon('send', 14)} Bonus autrement</button>` : ''}
     </div>` : '';
-  if (v2) {
-    return feuilleV2({ q, r, fini, train, noir, picked, modes, onglets, propositionDelegue, peutChanger, altPossible, choixHtml, results, ok, bonusPris, gBonus, enqueteOuverte, primeSf, nbJour, P, mz });
-  }
-  return `<main class="screen quete ${noir ? 'mode-noir' : ''} ${train ? '' : 'sans-copie'}">
-    ${modes}
-    ${sousOnglets}
-    ${onglets}
-    ${!train ? palierHtml() : ''}
-    ${bonusCard}
-    ${propositionDelegue}
-    <header class="between" style="align-items:flex-start">
-      <div class="col" style="gap:3px">${REGLES.v2 && !train && !noir ? '' : `<span class="kicker" ${noir ? 'style="color:#E0625A"' : ''}>${train ? 'Entraînement · ne compte pas' : noir ? 'Dossier noir · niveau hardcore' : `Énigme ${S.quests.indexOf(q) + 1} sur ${nbJour}`}</span>`}<h1 class="big">${esc(q.typeLabel)}</h1>${q.formeNom ? `<span class="forme-nom">${esc(q.formeNom)}</span>` : ''}${!train && !noir ? chipEntraine('flair', 'Réussie : Flair +1 pour ton chef') : ''}</div>
-      ${REGLES.v2 ? `<span class="pill" style="flex-shrink:0;${q.difficulte >= 6 ? 'background:#2A1414;border-color:#6B2E2A;color:#F59A92' : ''}" title="${fini ? 'terminée' : train ? 'correction immédiate' : 'une seule réponse'}">${q.difficulte >= 6 ? 'Hardcore' : `Niveau ${q.difficulte}/5`}${fini ? ' · finie' : train ? '' : ' · 1 essai'}</span>` : `<div class="col" style="gap:4px;align-items:flex-end"><span class="pill" ${q.difficulte >= 6 ? 'style="background:#2A1414;border-color:#6B2E2A;color:#F59A92"' : ''}>${q.difficulte >= 6 ? 'Hardcore' : `Difficulté ${q.difficulte}/5`}</span>
-        <span class="tiny muted">${fini ? 'terminée' : train ? 'correction immédiate' : 'une seule réponse'}</span></div>`}
-    </header>
-    ${noir && !fini ? '<p class="small" style="margin:0;color:var(--red-soft)">Le dossier que personne n’a su boucler. Pas de coup de pouce, une seule réponse. Une erreur ne coûte rien ; une réussite rapporte des PS et compte pour le titre « Cerveau du district ».</p>' : ''}
-    ${actionsQuete}
-    ${!train && !noir && q.enquete ? `<p class="small" style="margin:0;color:var(--amber-soft)">🧩 ${esc(q.gain || '')} Choisis ta piste prioritaire dans l’Enquête (fiche du suspect).</p>` : ''}
-    ${!train && !noir && q.slot === 4 && !slotsCompte().includes(4) ? '<p class="small muted" style="margin:0">4e énigme, pour le plaisir : +5 PS si elle est réussie, sans compter pour le bonus, la prime ni le classement.</p>' : ''}
-    ${q.variante ? '<p class="tiny muted" style="margin:0">Énigme changée : c’est ton changement du jour.</p>' : ''}
-    <p style="margin:0;font-size:14px;line-height:1.45;color:var(--text2)">${esc(q.contexte)}</p>
-    ${q.figures ? renderFigures(q, fini) : ''}
-    ${q.ligne ? ligneHtml(q) : q.tableau ? `<section class="card tight" aria-label="${esc(q.titreTableau || 'Fiche horaire')}">${q.titreTableau ? `<h2 class="section">${esc(q.titreTableau)}</h2>` : ''}${q.tableau}</section>` : ''}
-    ${q.type === 'filature' && !fini ? filatureOutils(q) : ''}
-
-    ${q.elements && q.elements.length && !((q.type === 'chronologie' && !fini) || (q.type === 'horaires' && q.trajets)) ? (q.type === 'cadenas' ? essaisHtml(q) : q.type === 'quiment' ? temoignagesHtml(q, { marques: !fini && q.forme !== 'demi' }) : q.type === 'plaque' ? temoignagesHtml(q) : `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who">${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>`) : ''}
-    ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${esc(q.titreIndices || (q.type === 'grille' ? 'Auditions' : 'Indices'))}</h2>${q.indices.map((t, k) => `<p class="small ${q.type === 'filature' && !fini ? `fi-ind ${classeEtape(q, k)}` : ''}" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
-    ${q.mode === 'texte' ? `<div class="codebox" aria-label="Message codé">${codeHtml(q.code)}</div>
-      <p class="small muted" style="margin:0">${esc(q.aide)}</p>` : ''}
-    ${q.grille && !fini ? renderGrille(q) : ''}
-    ${q.mode === 'texte' && !fini ? disqueHtml(q) : ''}
-    ${q.astuce && !fini ? `<details class="astuce"><summary>Un coup de pouce ?</summary><p class="small" style="margin:6px 0 0">${esc(q.astuce)}</p></details>` : ''}
-    ${!fini ? `<label class="field">Brouillon <span class="tiny muted">(pour toi seul, gardé sur cet appareil)</span>
-      <textarea class="text notes" rows="6" data-qnote="${esc(q.id || '')}" placeholder="Tes hypothèses, tes calculs…">${esc(lire(`mazp-qnote-${q.id}`) || '')}</textarea></label>` : ''}
-
-    ${!fini ? `<section class="col" aria-label="Ta réponse"><h2 class="section">${esc(q.question)}</h2>
-      ${q.consigne && q.type !== 'chronologie' ? `<p class="small muted" style="margin:0">${esc(q.consigne)}</p>` : ''}
-      ${choixHtml}
-      ${q.forme === 'digicode' ? digicodeHtml(q) : q.type === 'cadenas' ? cadenasHtml(q) : q.type === 'chronologie' ? chronoHtml(q) : q.type === 'butin' && q.objets ? butinHtml(q, false) : q.mode === 'texte' || q.mode === 'exact' ? `<form data-form="quest-text" class="row"><label class="sr" for="qtext">Ta réponse</label><input id="qtext" class="text grow ${q.mode === 'exact' ? 'mono' : ''}" name="reponse" autocomplete="off" ${q.inputmode ? `inputmode="${q.inputmode}"` : 'autocapitalize="characters"'} placeholder="${esc(q.placeholder || 'Ta réponse')}"><button class="btn primary" type="submit">Valider</button></form>` : ''}
-      <p class="tiny muted" style="margin:0">${train ? 'Entraînement : la réponse est corrigée tout de suite, sans effet sur ta zone.' : noir ? 'Une seule réponse, sans pénalité en cas d’erreur.' : 'Une seule réponse possible, définitive. Une erreur ne coûte rien : seule la réussite rapporte.'}</p>
-      ${q.mode !== 'texte' && q.mode !== 'exact' ? `<button class="btn primary block" data-action="quest-submit" ${picked == null ? 'disabled' : ''}>Valider ma réponse</button>` : ''}
-    </section>` : ''}
-
-    ${q.forme === 'digicode' && fini ? digicodeResultat(q, r) : q.type === 'cadenas' && fini ? cadenasResultat(q, r) : ''}
-    ${q.type === 'butin' && q.objets && fini ? butinHtml(q, true, r) : ''}
-    ${r.statut === 'ok' ? `<section class="card green"><span class="ok" style="font-size:15px;font-weight:700">Bien vu !</span>
-      <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p></section>` : ''}
-    ${r.statut === 'rate' ? `<section class="card"><span style="font-size:15px;font-weight:700">Mauvaise réponse${r.reponse ? ` : ${esc(r.reponse)}` : ''}</span>
-      <p class="small" style="margin:0;line-height:1.45;color:var(--text2)">${esc(q.explication)}</p>
-      <p class="tiny muted" style="margin:0">${train ? 'Aucune conséquence : c’était pour s’entraîner.' : noir ? 'Aucune conséquence. Un nouveau dossier noir demain après 20:00.' : 'Sans conséquence. De nouvelles énigmes demain après 20:00.'}</p>${relanceHtml(q, r, train, noir)}</section>` : ''}
-    ${train && fini ? '<button class="btn primary block" data-action="train-new">Une autre énigme</button>' : ''}
-    ${!train && fini && results.some((x) => !x || !x.statut) ? `<button class="btn outline block" data-action="quest-tab" data-i="${results.findIndex((x) => !x || !x.statut)}">Énigme suivante</button>` : ''}
-    ${train ? '' : `<p class="tiny muted" style="margin:0">Chaque joueur reçoit ses propres variantes : on peut en discuter, mais la réponse d’un collègue ne marchera pas chez toi. 2 bonnes réponses sur 3 débloquent un bonus.</p>`}
-    <a class="small" href="#guide-quetes" style="text-align:center">Règles des énigmes</a>
-  </main>${tabbar('quete', { questBadge: false })}`;
+  return feuilleV2({ q, r, fini, train, noir, picked, modes, onglets, propositionDelegue, peutChanger, altPossible, choixHtml, results, ok, bonusPris, gBonus, enqueteOuverte, primeSf, nbJour, P, mz });
 }
 
 // ───────────────────────────── Saison 2 : le dossier ouvert ─────────────────────────────

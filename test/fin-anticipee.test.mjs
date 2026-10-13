@@ -20,7 +20,6 @@ const r = resolveTurn(s, { players, orders: { A: base, B: base } });
 s = r.state;
 assert.equal(s.season, 2, 'la saison bascule le soir où l’affaire se clôt');
 assert.equal(s.turn, 1);
-assert.equal(s.regles, 2);
 assert.equal(s.finSaison, undefined);
 assert.equal(s.enquete.n, n0 + 1, 'une seule nouvelle affaire');
 assert.equal(s.corbeauDes, n0 + 1, 'le corbeau suit la Rampe');

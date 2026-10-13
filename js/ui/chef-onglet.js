@@ -44,7 +44,7 @@ function priseHtml(j, chef) {
 
 function heroHtml(z, p, chef) {
   return `<section class="card co-hero${z.fondateur ? ' fd' : ''}" style="--zc:${esc(z.couleur || '#5AB0F0')}">${cadrePromoHtml(z)}
-    <a class="co-hero-l" href="#bureau" data-action="bureau-ouvrir" aria-label="Voir la fiche complète du chef">${portraitChef(z.uid, 60)}
+    <a class="co-hero-l" href="#bureau" data-action="bureau-ouvrir" data-u="${esc(z.uid)}" aria-label="Voir la fiche complète du chef">${portraitChef(z.uid, 60)}
       <span class="col" style="gap:2px;min-width:0"><span class="kicker">Mon chef de corps</span>
         <span class="co-nom">${esc(p.pseudo || z.nom)}</span>
         <span class="tiny muted">${esc(gradeFor(z.ps || 0).nom)} · ${zoneName(z)}</span>

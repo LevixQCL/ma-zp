@@ -1,5 +1,5 @@
 // Écrans de connexion et d'inscription.
-import { S, esc, icon, skyline, cielStyle } from './common.js';
+import { S, esc, skyline, cielStyle } from './common.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
 import { codesPris, codeLibre } from '../data/codes.js';
 

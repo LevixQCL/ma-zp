@@ -3,7 +3,7 @@
 import { S, esc, myZone } from './common.js';
 import { ND } from '../engine/constants.js';
 import { nomSecteur } from '../engine/nondroit.js';
-import { quartierActif, assurerQuartier, bilanQuartier, attaquable, coupsDe, experts, totalBar, planQuartier, Q } from '../engine/quartier.js';
+import { quartierActif, assurerQuartier, bilanQuartier, attaquable, coupsDe, experts, totalBar, planQuartier } from '../engine/quartier.js';
 import { portraitLieutenant, portraitParrain, PORTRAITS_PRETS, RENSEIGNEMENTS } from '../engine/milieu.js';
 import { annoncesND, rolesDe, agentsND } from './nondroit.js';
 

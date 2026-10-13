@@ -1,10 +1,9 @@
 // Logistique (bâtiments de la zone) et détail du budget : ce qui coûte, ce qui rapporte.
-import { reglesV2 } from '../engine/regles.js';
 import { PACTES, pactesDe, partenaire, pacteImpossible } from '../engine/pactes.js';
-import { ficheChefHtml, portraitChef } from './chef.js';
+import { portraitChef } from './chef.js';
 import { titresDefi } from './defis.js';
 import { S, esc, icon, fmt1, myZone } from './common.js';
-import { gradeFor, LOTS, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, TRAVAUX_TOURS, PEREQUATION, SUBSIDE, DEPENSES, USURE, PREPA, REGLES, nbAnnexes, emplacementsAnnexes } from '../engine/constants.js';
+import { gradeFor, LOTS, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, DEPENSES, USURE, nbAnnexes, emplacementsAnnexes } from '../engine/constants.js';
 import { parcVehicules, cabossesChoisis } from '../engine/parc.js';
 import { RELANCE_PS } from '../quests/quests.js';
 import { DECOR, SKINS, decorValide, decorDebloque, conditionDecor, decorCompte, skinsValides, skinDe, earlyBirdEligible, skinsEnVente, psDispo, BOUTIQUE } from '../engine/decor.js';
@@ -17,7 +16,7 @@ import { moyenneIpz, operationActive, fraisFixes, coutDepenses, coutDecision, de
 import { coutDemarche, PRIME_LABELS } from '../engine/enquete.js';
 import { portraitSuspect } from './portrait.js';
 import { SERVICE_LABELS, scoreRevenu, BUDGET_IPZ, IPZ_POIDS } from '../engine/constants.js';
-import { vitesseCombi, MODELES, modeleDe, prixRevente, vitesseVehicule, rendementFlotte, RENDEMENT } from '../engine/flotte.js';
+import { vitesseCombi, MODELES, prixRevente, vitesseVehicule, rendementFlotte, RENDEMENT } from '../engine/flotte.js';
 import { aideBtn } from './aide.js';
 import { comparatifModeles } from './modeles.js';
 import { PERIL, absT } from '../engine/rivalites.js';
@@ -38,7 +37,6 @@ export function previsionBudget() {
   const dem = (d.demarches || []).reduce((s, x) => s + coutDemarche(st, z.uid, x), 0);
   if (dem) choix.push({ l: 'Démarches d’enquête', v: -dem });
   if (d.aide && d.aide.cible && d.aide.budget) choix.push({ l: 'Coup de main envoyé', v: -d.aide.budget });
-  if (d.offre && st.enchere && d.offre.id === st.enchere.id && d.offre.montant) choix.push({ l: 'Offre à la salle des ventes (si tu l’emportes)', v: -d.offre.montant });
   const totalChoix = choix.reduce((s, x) => s + x.v, 0);
   return { fixes: ff, choix, totalChoix, solde: ff.total + totalChoix, apres: z.budget + ff.total + totalChoix };
 }
@@ -231,7 +229,7 @@ export function ouvrirHpVoisin(uid) {
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="scene-voisin">${moi ? sceneZone(z, st, d, mesSkins(z).choix) : sceneZone(z, st, d)}</div>
     ${affichesHtml(z, { moi })}
-    ${!moi && reglesV2(st) ? pacteVoisinHtml(st, uid) : ''}
+    ${!moi ? pacteVoisinHtml(st, uid) : ''}
     ${z.chef ? `<button type="button" class="btn small outline block" data-action="bureau-ouvrir" data-u="${esc(uid)}">${portraitChef(uid, 22, { galons: false })} Voir son chef de corps</button>` : ''}
     ${titresDefi(uid).length ? `<p class="small" style="margin:0">${titresDefi(uid).map((t) => `🏆 <strong>${esc(t.titre)}</strong> <span class="muted">(défi, niv. ${t.niveau})</span>`).join(' · ')}</p>` : ''}
     <div class="bats hp-logis">
@@ -249,7 +247,7 @@ export function ouvrirHpVoisin(uid) {
     ${moi ? '' : `<button type="button" class="btn block" data-action="ecrire-a" data-uid="${esc(uid)}">✉ Écrire à ${esc(z.nom)}</button>`}`);
 }
 
-/** Fenêtre « Personnaliser mon commissariat ». */
+/** Fenêtre « Personnaliser mon hôtel de police ». */
 export function ouvrirDecor() {
   const z = myZone();
   const d = monDecor(z);
@@ -261,7 +259,7 @@ export function ouvrirDecor() {
         ${cat === 'neon' ? `<i class="pastille" style="background:${o.trait}"></i>` : cat === 'facade' ? `<i class="pastille" style="background:${o.jour[0]}"></i>` : ''}<span>${esc(o.nom)}</span>${ok ? '' : `<span class="cond">${icon('lock', 11)} ${esc(conditionDecor(o))}</span>`}</button>`;
     }).join('')}</div></div>`).join('');
   ouvrirPanneau(`<div data-decor class="col" style="gap:10px">
-    <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon commissariat</h2><span class="tiny muted">${n} élément${n > 1 ? 's' : ''} débloqué${n > 1 ? 's' : ''} sur ${total}</span></div>
+    <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Décor de mon hôtel de police</h2><span class="tiny muted">${n} élément${n > 1 ? 's' : ''} débloqué${n > 1 ? 's' : ''} sur ${total}</span></div>
       <button class="iconbtn" data-action="logistique" aria-label="Retour" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">‹</button></div>
     <div class="scene-voisin">${sceneZone(z, S.state, d, mesSkins(z).choix, S.player && S.player.hpCiel ? { moment: S.player.hpCiel } : {})}</div>
     ${boutiqueSkins(z, d)}
@@ -274,13 +272,13 @@ export function ouvrirDecor() {
         return `<button type="button" class="decor-opt${on ? ' on' : ''}" data-action="skin-choix" data-cat="${sk.cat}" data-id="${sk.id}" aria-pressed="${on}"><span>${esc(o.nom)}</span><span class="cond">${esc(SKINS[sk.cat].titre)} · ${on ? 'équipé, touche pour l’enlever' : 'touche pour l’équiper'}</span></button>`;
       }).join('')}</div></div>`;
     })()}
-    ${!reglesV2(S.state) ? '' : (() => {
+    ${(() => {
       const c = (S.player && S.player.hpCiel) || '';
       const opt = (v, l) => `<button type="button" class="decor-opt${c === v ? ' on' : ''}" data-action="hp-ciel" data-v="${v}" aria-pressed="${c === v}"><span>${l}</span></button>`;
       return `<div class="col" style="gap:6px"><span class="tiny muted">Ciel de mon HP</span><div class="decor-opts">${opt('', 'Heure réelle')}${opt('jour', 'Toujours le jour')}${opt('crepuscule', 'Toujours le soir')}${opt('nuit', 'Toujours la nuit')}</div></div>`;
     })()}
     ${groupes}
-    <p class="tiny muted" style="margin:0">Les éléments se débloquent avec ton grade et tes trophées. Les autres chefs de zone voient ton commissariat depuis la Carte et le classement, à partir de 20:00.</p>
+    <p class="tiny muted" style="margin:0">Les éléments se débloquent avec ton grade et tes trophées. Les autres chefs de zone voient ton hôtel de police depuis la Carte et le classement, à partir de 20:00.</p>
   </div>`);
 }
 
@@ -333,7 +331,6 @@ export function rafraichirLogistique() {
   if (p) p.innerHTML = parcCorps();
 }
 
-const pips = (n) => `<span class="niv" aria-label="Niveau ${n} sur ${BATIMENT_MAX}">${Array.from({ length: BATIMENT_MAX }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('')}</span>`;
 
 const ICO_ANNEXE = { sport: '🏋️', logiciel: '💻', anpr: '📷', antenne: '🏘️', garage: '🔧', audition: '🎙️', tir: '🎯', cachots: '🔐', drone: '🛸', crise: '🚨', sapv: '🤝' };
 const COURT_ANNEXE = { sport: 'sport', logiciel: 'logiciel', anpr: 'plaques', antenne: 'antenne', garage: 'atelier', audition: 'audition', tir: 'tir', cachots: 'cellules', drone: 'drone', crise: 'crise', sapv: 'victimes' };
@@ -364,7 +361,7 @@ function logistiqueV2() {
     </div>`;
   }).join('');
   const choixDec = d.decision && d.decision.type === 'construire' ? d.decision.infra : null;
-  const ids = Object.keys(INFRAS).filter((id) => !INFRAS[id].v2 || REGLES.v2);
+  const ids = Object.keys(INFRAS);
   const sel = ids.includes(S.annexeSel) ? S.annexeSel : null;
   const tuiles = ids.map((id) => { const fait = !!z.infra[id], prevu = choixDec === id;
     return `<button type="button" class="annexe2 ${fait ? 'faite' : ''} ${prevu ? 'prevue' : ''} ${sel === id ? 'sel' : ''}" data-action="annexe-voir" data-id="${id}" aria-pressed="${sel === id}" aria-label="${esc(INFRAS[id].nom)}${fait ? ', construite' : prevu ? ', prévue ce soir' : ''}"><span aria-hidden="true">${ICO_ANNEXE[id] || '🏗️'}</span><small>${esc(COURT_ANNEXE[id] || id)}</small>${fait ? '<i>✓</i>' : ''}</button>`; }).join('');
@@ -390,7 +387,7 @@ function logistiqueV2() {
     ${fiche}
     <button type="button" class="list-row" data-action="parc" style="width:100%;text-align:left"><span class="col grow" style="gap:1px"><span style="font-weight:600">🚗 Parc automobile</span>
       <span class="tiny muted">${enService} sur ${z.vehicules} en service · état ${Math.round(100 - z.usure)} %${cab ? ` · ${cab} cabossé${cab > 1 ? 's' : ''}` : ''}</span></span>${icon('chevron', 16)}</button>
-    <button type="button" class="btn small block decor-btn" data-action="decor">${icon('star', 16)} Personnaliser mon commissariat <span class="tiny muted">${decorCompte(z).n} / ${decorCompte(z).total}</span></button>
+    <button type="button" class="btn small block decor-btn" data-action="decor">${icon('star', 16)} Personnaliser mon hôtel de police <span class="tiny muted">${decorCompte(z).n} / ${decorCompte(z).total}</span></button>
     ${affichesHtml(z, { moi: true })}
     ${z.agents > SUBSIDE.seuil ? `<p class="tiny ok" style="margin:0">Subside communal : +${fmt1(subsideAgents(z))} k€ par tour pour tes ${z.agents - SUBSIDE.seuil} agents au-delà de ${SUBSIDE.seuil}.</p>` : ''}
     ${peq ? `<p class="tiny ok" style="margin:0">Péréquation : +${fmt1(PEREQUATION.montant)} k€ par tour (zone moins équipée que la moyenne).</p>` : ''}
@@ -399,74 +396,7 @@ function logistiqueV2() {
 }
 
 function logistiqueCorps() {
-  if (REGLES.v2) return logistiqueV2();
-  const z = myZone(), st = S.state, T = st.turn, d = S.draft || {};
-  const b = z.batiments;
-  const annexes = Object.entries(INFRAS).filter(([id]) => z.infra[id]);
-  const entretienTotal = Object.entries(BATIMENTS).reduce((s, [id, B]) => s + B.entretien(b[id]), 0) + annexes.length * ENTRETIEN_ANNEXE;
-  const occupation = { bureaux: [effectifPrevu(z), capaciteAgents(z), 'agents'], garage: [z.vehicules, capaciteVehicules(z), 'véhicules'] };
-
-  const bat = Object.entries(BATIMENTS).map(([id, B]) => {
-    const n = b[id];
-    const dec = { type: 'agrandir', batiment: id };
-    const choisi = d.decision && d.decision.type === 'agrandir' && d.decision.batiment === id;
-    const refus = decisionImpossible(z, dec, T);
-    const enTravaux = z.travaux && z.travaux.batiment === id;
-    const [occ, cap, unite] = occupation[id];
-    const max = n >= BATIMENT_MAX;
-    const plus = (txt, cls = 'ok') => (max ? '' : ` <span class="${cls}" style="font-weight:600">${txt}</span>`);
-    const trophee = !max && id === 'bureaux' && n + 1 === 4 && !(z.trophees || []).some((t) => t.id === 'batisseur');
-    return `<div class="bat">
-      <div class="between"><span style="font-weight:700;font-size:13px">${id === 'bureaux' ? 'Bâtiment' : 'Garage'}</span>${pips(n)}</div>
-      <div class="bat-niv"><span class="tiny muted">Niveau ${n}${plus('+1')}</span>
-        <span class="small"><span class="mono ${occ >= cap ? 'warn' : ''}">${occ}</span> ${unite}<span class="muted"> · </span>${cap} places${plus(`+${B.capacite(n + 1) - cap}`)}</span>
-        <span class="tiny muted">entretien ${fmt1(B.entretien(n))} k€${plus(`+${fmt1(B.entretien(n + 1) - B.entretien(n))}`, 'muted')}</span>
-        ${trophee ? '<span class="tiny ok" style="font-weight:600">+ trophée Bâtisseur</span>' : ''}</div>
-      ${enTravaux ? `<span class="tiny warn" style="font-weight:600">Travaux : niveau ${n + 1} au tour ${z.travaux.fin}</span>`
-        : n >= BATIMENT_MAX ? '<span class="tiny ok" style="font-weight:600">Niveau maximum</span>'
-        : `<button type="button" class="btn small block ${choisi ? 'primary' : 'agr'}" data-action="agrandir" data-b="${id}" ${refus && !choisi ? 'disabled' : ''}>
-            ${choisi ? '✓ Prévu ce soir' : `Agrandir · ${fmt1(B.coutAgrandir(n))} k€`}</button>
-          ${refus && !choisi ? `<span class="tiny muted">${esc(refus)}</span>` : ''}`}
-    </div>`;
-  }).join('');
-
-  const choixDec = d.decision && d.decision.type === 'construire' ? d.decision.infra : null;
-  const carteAnnexe = ([id, i]) => {
-    const fait = !!z.infra[id], prevu = choixDec === id;
-    return `<div class="annexe${fait ? ' faite' : ''}">
-      <div class="between" style="gap:8px"><span style="font-weight:600;font-size:13px">${esc(i.nom)}</span>
-        <span class="tiny ${fait ? 'ok' : prevu ? '' : 'muted'}" style="white-space:nowrap;${prevu ? 'color:var(--amber)' : ''}">${fait ? '✓ construite' : prevu ? 'prévue ce soir' : `${i.cout} k€`}</span></div>
-      <span class="tiny ${fait ? '' : 'muted'}">${fait ? 'Te donne : ' : 'Donnerait : '}${esc(i.effet)}</span></div>`;
-  };
-  const aFaire = Object.entries(INFRAS).filter(([id]) => !z.infra[id]);
-  const ann = `${annexes.length ? `<div class="annexes">${annexes.map(carteAnnexe).join('')}</div>` : '<p class="tiny muted" style="margin:0">Aucune annexe construite pour l’instant.</p>'}
-    ${aFaire.length ? `<details class="annexes-plus"${choixDec ? ' open' : ''}><summary class="small">Annexes à construire (${aFaire.length})</summary>
-      <div class="annexes">${aFaire.map(carteAnnexe).join('')}</div>
-      <a class="small" href="#ordres" data-close>Construire : grande décision dans tes ordres</a></details>` : ''}`;
-
-  const parc = parcVehicules(z, T);
-  const enService = parc.filter((v) => v.etat === 'service').length;
-  const etat = Math.round(100 - z.usure);
-  const cab = parc.filter((v) => v.etat === 'cabosse').length;
-  const peq = perequation(z, st);
-  return `<div class="col hp-logis" style="gap:10px">
-    <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon hôtel de police</h2>
-      <span class="mono tiny muted">entretien ${fmt1(entretienTotal)} k€ par tour</span></div>
-      <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
-    <button type="button" class="btn small block decor-btn" data-action="decor">${icon('star', 16)} Personnaliser mon commissariat <span class="tiny muted">${decorCompte(z).n} / ${decorCompte(z).total}</span></button>
-    ${affichesHtml(z, { moi: true })}
-    <div class="bats">${bat}</div>
-    ${Object.keys(BATIMENTS).some((id) => b[id] < BATIMENT_MAX) ? '<p class="tiny muted" style="margin:-4px 0 0">En vert : ce que t’apporte le niveau suivant.</p>' : ''}
-    <div class="col" style="gap:6px">
-      <div class="between"><span class="tiny muted">Annexes · ${REGLES.v2 ? `${nbAnnexes(z)} emplacement${nbAnnexes(z) > 1 ? 's' : ''} occupé${nbAnnexes(z) > 1 ? 's' : ''} sur ${emplacementsAnnexes(z)}` : `${annexes.length} sur ${Object.keys(INFRAS).filter((k) => !INFRAS[k].v2).length}`}</span><span class="tiny muted">entretien ${fmt1(ENTRETIEN_ANNEXE)} k€/tour chacune</span></div>
-      ${ann}
-    </div>
-    <button type="button" class="list-row" data-action="parc" style="width:100%;text-align:left"><span class="col grow" style="gap:1px"><span style="font-weight:600">Parc automobile</span>
-      <span class="tiny muted">${enService} sur ${z.vehicules} en service · état ${etat} %${cab ? ` · ${cab} cabossé${cab > 1 ? 's' : ''}` : ''}</span></span>${icon('chevron', 16)}</button>
-    ${z.agents > SUBSIDE.seuil ? `<p class="tiny ok" style="margin:0">Subside communal : +${fmt1(subsideAgents(z))} k€ par tour pour tes ${z.agents - SUBSIDE.seuil} agents au-delà de ${SUBSIDE.seuil}.</p>` : ''}
-    ${peq ? `<p class="tiny ok" style="margin:0">Péréquation : ta zone est moins équipée que la moyenne du district, elle reçoit +${fmt1(PEREQUATION.montant)} k€ par tour.</p>` : ''}
-    <p class="tiny muted" style="margin:0">Agrandir et construire se paient à 20:00. Pense à valider tes ordres.</p>
-  </div>`;
+  return logistiqueV2();
 }
 
 function parcCorps() {

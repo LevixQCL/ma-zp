@@ -86,14 +86,3 @@ export function actuLigne() {
     <button class="btn primary small" data-action="actu-jouer">Encadrer</button></div>`;
 }
 
-/** Carte de l'HP tant que l'événement dure. */
-export function actuHtml() {
-  if (!evtActif()) return '';
-  const E = EVT_ACTU;
-  return `<section class="card" aria-label="${esc(E.titre)}" style="gap:8px;border-color:rgba(255,178,62,.45)">
-    <div class="between"><span class="kicker">${esc(E.kicker)}</span><button type="button" class="tiny linkbtn" data-action="actu-voir" style="background:none;border:0;color:var(--blue-soft);padding:0;cursor:pointer">Pourquoi ils manifestent ?</button></div>
-    <div class="row" style="gap:10px;align-items:center"><span aria-hidden="true" style="font-size:24px">${E.ico}</span>
-      <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:700">${esc(E.titre)}</span><span class="tiny muted">${esc(E.court)}</span></span>
-      <button class="btn primary small" data-action="actu-jouer">Encadrer</button></div>
-  </section>`;
-}

@@ -1,6 +1,5 @@
 // Point d'entrée de l'application « Ma ZP ».
 import { basculerPiste, cibler } from './ui/pistes.js';
-import { appliquerRegles } from './engine/regles.js';
 import { CONFIG } from './config.js';
 import { installerCadenas } from './ui/cadenas.js';
 import { installerEnigmes } from './ui/enigmes.js';
@@ -25,7 +24,6 @@ brancherPanneauChef(ouvrirPanneauL);
 import { ouvrirAide } from './ui/aide.js';
 import { monAppel } from './ui/renfort.js';
 import { maCandidature } from './ui/affaires.js';
-import { renderTerrain } from './ui/terrain.js';
 import { installerAntiTriche } from './ui/antitriche.js';
 import { installerInvitationAppli } from './ui/installer.js';
 import { lireInvitationUrl, oublierInvitation, partager, copier, afficherQr } from './ui/invitation.js';
@@ -47,7 +45,6 @@ import { VENTE } from './engine/ventes.js';
 import { renderQuete, formesVisibles } from './ui/quete.js';
 import { demarrerQuiz, repondreQuiz, suivanteQuiz, quizLocal, bonnesReponses, arreterMinuteur } from './ui/quiz.js';
 import { renderGuide } from './ui/guide.js';
-import { offreApres } from './ui/encheres.js';
 import { renderPactes } from './ui/pactes.js';
 import { PACTES, PACTE, DEFI, DEFI_INDICATEURS } from './engine/pactes.js';
 import { ongletsRadio } from './ui/prive.js';
@@ -58,14 +55,12 @@ import { affaire, dossierDe, maxDemarchesDe, ELEMENTS } from './engine/enquete.j
 import { choisirRecoup, retournerPouce } from './ui/enquete-plus.js';
 import { marquerJournalVu } from './ui/journal.js';
 import { nomElement, monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, basculerFrise, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
-import { renderCarte, renderRadio } from './ui/carte.js';
 import { renderRadioV2 } from './ui/radio-v2.js';
-import { reglesV2 } from './engine/regles.js';
 import { previsionCourte } from './ui/prevision.js';
 import { renderCarteV2, calqueTerrain, basculerVueCarteND } from './ui/carte-v2.js';
 import { renderGazette, renderClassement, renderAdmin } from './ui/gazette.js';
 import { renderDebrief } from './ui/debrief.js';
-import { questsFor, checkAnswer, dossierNoir, generateQuest, QUEST_TYPES, FORMES, formesPourTour, quatrePourTour, enquetePourTour, RELANCE_PS } from './quests/quests.js';
+import { questsFor, checkAnswer, dossierNoir, generateQuest, FORMES, formesPourTour, quatrePourTour, enquetePourTour, RELANCE_PS } from './quests/quests.js';
 import { niveauEnigmes, niveauIncidents } from './engine/directeur.js';
 import { scenesDuSoir, SERVICE_SCENE, SCENES } from './engine/milieu.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
@@ -73,7 +68,7 @@ import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND, LO
 import { nomSecteur } from './engine/nondroit.js';
 import { QUARTIER, quartierActif } from './engine/quartier.js';
 import { planPourMoi } from './ui/quartier.js';
-import { agentsND, monAnnonceND, suggestionND, placeND, rolesActifs, rolesDe, texteRoles, roleManquant } from './ui/nondroit.js';
+import { agentsND, monAnnonceND, suggestionND, placeND, rolesDe, texteRoles, roleManquant } from './ui/nondroit.js';
 import { lancerIncident, lancerAppui, ouvrirMiniJeu, majComptesIncidents, signatureIncidents, ouvrirJaugeSkins } from './ui/incidents.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
 import { actionReleve } from './ui/releve.js';
@@ -92,6 +87,8 @@ function route() {
   if (h.startsWith('hp-')) { S.ancre = h; return 'hp'; }
   // Ancien écran Diplomatie : ses liens mènent aux Pactes de la Carte.
   if (h === 'diplomatie') return 'pactes';
+  // Lien vers la fréquence des renforts et opérations (F2) de la Radio.
+  if (h === 'radio-ops') { S.radioCanal = 'ops'; history.replaceState(null, '', '#radio'); return 'radio'; }
   // Lien vers mes quartiers (point chaud, patrouilles) : calque « Ma zone » de la Carte, fiche du point chaud ouverte.
   if (h === 'carte-mazone') {
     S.carteCalque = 'mazone';
@@ -100,10 +97,10 @@ function route() {
     history.replaceState(null, '', '#carte'); return 'carte';
   }
   // Saison 2 : le Terrain est un calque de la Carte.
-  if (h === 'terrain' && S.state && reglesV2(S.state) && S.draft) { S.carteCalque = calqueTerrain(); history.replaceState(null, '', '#carte'); return 'carte'; }
+  if ((h === 'terrain' && S.state) && S.draft) { S.carteCalque = calqueTerrain(); history.replaceState(null, '', '#carte'); return 'carte'; }
   // Lien vers un bloc des ordres (ex. #ordres-decision) : on ouvre ce bloc.
   // Saison 2 : une seule tuile ouverte à la fois, sinon une autre déjà ouverte masquerait celle demandée.
-  if (h.startsWith('ordres-')) { S.ordOpen = reglesV2(S.state) ? { [h.slice(7)]: true } : { ...(S.ordOpen || {}), [h.slice(7)]: true }; S.ordAncre = h.slice(7); return 'ordres'; }
+  if (h.startsWith('ordres-')) { S.ordOpen = { [h.slice(7)]: true }; S.ordAncre = h.slice(7); return 'ordres'; }
   return ROUTES.includes(h) ? h : 'hp';
 }
 
@@ -167,10 +164,10 @@ function render() {
       case 'enquete': html = renderEnquete(); break;
       case 'guide': html = renderGuide(); if (S.guideSection === 'debut') { S.premiersPasVus = true; try { localStorage.setItem('mazp-premiers-pas-vus', '1'); } catch (e) { /* pas de stockage */ } } break;
       case 'pactes': html = renderPactes(); break;
-      case 'carte': html = reglesV2(S.state) ? renderCarteV2() : renderCarte(); break;
-      case 'radio': html = reglesV2(S.state) ? renderRadioV2() : renderRadio(); break;
+      case 'carte': html = renderCarteV2(); break;
+      case 'radio': html = renderRadioV2(); break;
       case 'prive': html = renderPrive(); break;
-      case 'terrain': html = reglesV2(S.state) ? renderCarteV2(calqueTerrain()) : renderTerrain(); break;
+      case 'terrain': html = renderCarteV2(calqueTerrain()); break;
       case 'gazette': html = renderGazette(); if (S.gazetteIndex === 0) marquerGazetteLue(); break;
       case 'debrief': html = renderDebrief(); break;
       case 'classement':
@@ -202,7 +199,7 @@ function render() {
     // Écran Ordres pas encore validés : le bouton reste à portée de main, avec le coût de la soirée.
     let cout = 0;
     try { cout = estimations().coutTotal; } catch (e) { /* brouillon incomplet */ }
-    html += `<div class="savebar calme" role="status"><span class="col" style="gap:1px"><span class="small" style="font-weight:700">Ordres pas encore validés</span><span class="tiny muted">${reglesV2(S.state) ? `<span id="prev-court">${previsionCourte()}</span> · ` : ''}coût ce soir : ${String(Math.round(cout * 10) / 10).replace('.', ',')} k€</span></span><button class="btn primary small" data-action="save-orders">Valider</button></div>`;
+    html += `<div class="savebar calme" role="status"><span class="col" style="gap:1px"><span class="small" style="font-weight:700">Ordres pas encore validés</span><span class="tiny muted">${`<span id="prev-court">${previsionCourte()}</span> · `}coût ce soir : ${String(Math.round(cout * 10) / 10).replace('.', ',')} k€</span></span><button class="btn primary small" data-action="save-orders">Valider</button></div>`;
   }
   const scroll = window.scrollY;
   sortirChargeur(app.querySelector('main.loader')); // le logo remonte et s'efface par-dessus le jeu
@@ -373,7 +370,7 @@ async function openParty(id) {
   reprendreEntrainementLocal();
   if (!unsubState) {
     unsubState = S.backend.subscribeState(async (state) => {
-      S.state = migrateState(state); appliquerRegles(S.state);
+      S.state = migrateState(state);
       recalerJourSiBesoin();
       if (state && S.user && state.zones[S.user.uid]) { etape('Lecture des PV de la nuit…', 76); try { await loadTurnData(); } catch (e) { console.error(e); S.lastError = e; } }
       if (S.state) completerDepuisGazette(S.state, S.gazettes);
@@ -575,13 +572,6 @@ async function onClick(e) {
         S.draft.decision = d0 && d0.type === 'agrandir' && d0.batiment === el.dataset.b ? null : { type: 'agrandir', batiment: el.dataset.b };
         S.ordersDirty = true; rerender(); rafraichirLogistique(); break;
       }
-      case 'offre': {
-        if (!S.state.enchere) break;
-        const n = offreApres(Number(el.dataset.d));
-        S.draft.offre = n ? { id: S.state.enchere.id, montant: n } : null;
-        S.ordersDirty = true; rerender(); break;
-      }
-      case 'offre-retirer': S.draft.offre = null; S.ordersDirty = true; rerender(); break;
       case 'secteur': {
         // Secteur de la zone de non-droit : une ligne de la liste s'ouvre ou se referme ; un secteur touché sur une carte s'ouvre sur le Terrain.
         if (el.classList.contains('nd-row')) { S.secteurSel = S.secteurSel === el.dataset.c ? null : el.dataset.c; rerender(); break; }
@@ -594,16 +584,10 @@ async function onClick(e) {
           break;
         }
         // Saison 2 : le non-droit est le premier écran de la Carte ; la fiche du secteur s'ouvre sous la carte.
-        if (reglesV2(S.state)) {
-          S.carteCalque = 'nondroit';
+        S.carteCalque = 'nondroit';
           if (S.route !== 'carte') { location.hash = '#carte'; await new Promise((ok) => setTimeout(ok, 60)); } else rerender();
           document.querySelector('.nd-fiche')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
           break;
-        }
-        if (location.hash !== '#terrain') { location.hash = '#terrain'; await new Promise((ok) => setTimeout(ok, 60)); } else rerender();
-        const cible = document.getElementById(`nd-${el.dataset.c}`);
-        if (cible) { cible.scrollIntoView({ block: 'center', behavior: 'smooth' }); cible.classList.add('surligne-bloc'); setTimeout(() => cible.classList.remove('surligne-bloc'), 1600); }
-        break;
       }
       case 'nd-role': {
         // Saison 2 : un agent de plus ou de moins dans un rôle ; il vient du service qui va avec (et y retourne).
@@ -651,30 +635,15 @@ async function onClick(e) {
       }
       case 'nd': {
         const k = el.dataset.c, dd = Number(el.dataset.d);
-        if (rolesActifs()) { if (dd > 0 ? ajouterRoleND(k, 'desc') : retirerRoleND(k, rolesDe(k).desc ? 'desc' : rolesDe(k).bouc ? 'bouc' : 'rep')) { S.secteurSel = k; S.ordersDirty = true; } rerender(); break; }
-        const sect = (S.draft.secteurs ||= {});
-        const cur = sect[k] || 0;
-        if (dd > 0) {
-          if (cur >= ND.maxParSecteur || agentsND() >= ND.maxTotal) { toast(`Au plus ${ND.maxParSecteur} agents par secteur et ${ND.maxTotal} en tout.`); break; }
-          if (!takeAgent()) break;
-          sect[k] = cur + 1;
-        } else if (cur > 0) {
-          if (cur - 1 > 0) sect[k] = cur - 1; else delete sect[k];
-          S.draft.alloc.intervention += 1; // l'agent rendu retourne en Intervention
-        }
-        S.secteurSel = k; S.ordersDirty = true; rerender(); break;
+        if (dd > 0 ? ajouterRoleND(k, 'desc') : retirerRoleND(k, rolesDe(k).desc ? 'desc' : rolesDe(k).bouc ? 'bouc' : 'rep')) { S.secteurSel = k; S.ordersDirty = true; } rerender(); break;
       }
       case 'nd-appel': {
         const k = el.dataset.c, n = (S.draft.secteurs || {})[k] || 0, z = myZone();
         if (!n) break;
         el.disabled = true;
         const deja = monAnnonceND(k);
-        await b.sendRadio(S.user.uid, rolesActifs()
-          ? `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) ${deja ? 'sera finalement' : 'sera ce soir'} à ${nomSecteur(k)} : ${texteRoles(rolesDe(k))}.${deja ? '' : ' Complétez ce qui manque !'}`
-          : deja
-          ? `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) sera finalement à ${nomSecteur(k)} avec ${n} agent${n > 1 ? 's' : ''} ce soir.`
-          : `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) envoie ${n} agent${n > 1 ? 's' : ''} à ${nomSecteur(k)} ce soir. Plus on est nombreux, plus ça tombe vite : qui vient ?`,
-        { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n, ...(rolesActifs() ? { roles: rolesDe(k) } : {}), ...(S.draft.tactiques && S.draft.tactiques[k] ? { tactique: S.draft.tactiques[k] } : {}) } });
+        await b.sendRadio(S.user.uid, `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) ${deja ? 'sera finalement' : 'sera ce soir'} à ${nomSecteur(k)} : ${texteRoles(rolesDe(k))}.${deja ? '' : ' Complétez ce qui manque !'}`,
+        { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n, ...({ roles: rolesDe(k) }), ...(S.draft.tactiques && S.draft.tactiques[k] ? { tactique: S.draft.tactiques[k] } : {}) } });
         toast('Annoncé sur la radio : les autres zones peuvent te rejoindre.'); rerender(); break;
       }
       case 'nd-rej-n': {
@@ -688,17 +657,15 @@ async function onClick(e) {
         const sect = (S.draft.secteurs ||= {});
         let ajoutes = 0;
         for (let i = 0; i < voulu; i++) {
-          if (rolesActifs()) { if (!ajouterRoleND(k, roleManquant(k))) break; ajoutes++; continue; }
-          if ((sect[k] || 0) >= ND.maxParSecteur || agentsND() >= ND.maxTotal || !takeAgent()) break;
-          sect[k] = (sect[k] || 0) + 1; ajoutes++;
+          if (!ajouterRoleND(k, roleManquant(k))) break; ajoutes++; continue;
         }
         if (!ajoutes) break;
         S.ordersDirty = true;
         el.disabled = true;
         const n = sect[k];
         try {
-          await b.sendRadio(S.user.uid, rolesActifs() ? `🤝 ${z.nom} (ZP ${z.code}) rejoint ${nomSecteur(k)} : ${texteRoles(rolesDe(k))}.` : `🤝 ${z.nom} (ZP ${z.code}) rejoint ${nomSecteur(k)} avec ${n} agent${n > 1 ? 's' : ''} ce soir.`,
-            { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n, ...(rolesActifs() ? { roles: rolesDe(k) } : {}), ...(S.draft.tactiques && S.draft.tactiques[k] ? { tactique: S.draft.tactiques[k] } : {}) } });
+          await b.sendRadio(S.user.uid, `🤝 ${z.nom} (ZP ${z.code}) rejoint ${nomSecteur(k)} : ${texteRoles(rolesDe(k))}.`,
+            { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n, ...({ roles: rolesDe(k) }), ...(S.draft.tactiques && S.draft.tactiques[k] ? { tactique: S.draft.tactiques[k] } : {}) } });
         } catch (e2) { console.warn(e2); }
         toast(`${ajoutes} agent${ajoutes > 1 ? 's' : ''} pour ${nomSecteur(k)} ce soir. Valide tes ordres.`);
         rerender(); break;
@@ -708,7 +675,7 @@ async function onClick(e) {
         const dansCarte = !!el.closest('svg');
         rerender();
         // Saison 2 : la fiche du quartier est juste sous la carte, on la montre sans quitter la carte des yeux.
-        if (dansCarte && reglesV2(S.state)) document.querySelector('.cv-fiche')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        if (dansCarte) document.querySelector('.cv-fiche')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
         else if (dansCarte) document.getElementById(`q-${el.dataset.c}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
         break;
       }
@@ -893,7 +860,7 @@ async function onClick(e) {
         S.ordersDirty = true; rerender(); break;
       }
       case 'promo-photo': ouvrirPromo(); break;
-      case 'bureau-ouvrir': S.bureauUid = el.dataset.u || null; S.bureauObj = null; if (document.querySelector('.aide-wrap')) document.querySelectorAll('.aide-wrap').forEach((x) => x.remove()); location.hash = !S.bureauUid && reglesV2(S.state) ? '#chef' : '#bureau'; break;
+      case 'bureau-ouvrir': S.bureauUid = el.dataset.u || null; S.bureauObj = null; if (document.querySelector('.aide-wrap')) document.querySelectorAll('.aide-wrap').forEach((x) => x.remove()); location.hash = !S.bureauUid ? '#chef' : '#bureau'; break;
       case 'chef-front': S.draft.chefFront = el.dataset.v || null; S.ordersDirty = true; rerender(); break;
       case 'chef-reseau': S.draft.reseau = S.draft.reseau === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;
       case 'chef-brevet': S.draft.brevet = S.draft.brevet === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;
@@ -1014,7 +981,7 @@ async function onClick(e) {
       case 'tb-ban-fermer': S.banTraqueVue = S.state.turn; render(); break;
       case 'tb-prime-fermer': S.banPrimeVue = S.state.turn; render(); break;
       case 'tb-prime-ouvrir': S.banPrimeVue = null; render(); break;
-      case 'traque-voir': if (reglesV2(S.state) && vueEnquete() === 'dossier') { S.tabSheet = null; S.banTraqueVue = S.state.turn; render(); requestAnimationFrame(() => { const t = document.getElementById('traque'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); break; }
+      case 'traque-voir': if ((vueEnquete() === 'dossier')) { S.tabSheet = null; S.banTraqueVue = S.state.turn; render(); requestAnimationFrame(() => { const t = document.getElementById('traque'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); break; }
         S.enqVue = 'liste'; S.tabSheet = null; try { localStorage.setItem('mazp-enq-vue', 'liste'); } catch (err) { /* pas de stockage */ } render(); requestAnimationFrame(() => { const t = document.getElementById('traque'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); break;
       case 'tab-vue': choisirVueEnquete(el.dataset.v); S.tabSheet = null; S.e2Lire = false; window.scrollTo(0, 0); render(); break;
       // Saison 2 : écran Enquête en dossier.
@@ -1272,7 +1239,7 @@ async function onClick(e) {
         if (c) { c.scrollIntoView({ behavior: 'smooth', block: 'start' }); c.classList.add('surligne-bloc'); setTimeout(() => c.classList.remove('surligne-bloc'), 1600); }
         break;
       }
-      case 'ord-open': { const k = el.dataset.k, was = !!(S.ordOpen && S.ordOpen[k]); S.ordOpen = reglesV2(S.state) && el.closest('.ord-tuiles') ? { [k]: !was } : { ...(S.ordOpen || {}), [k]: !was }; rerender(); if (!was && reglesV2(S.state) && el.closest('.ord-tuiles')) requestAnimationFrame(() => { const c = document.getElementById(`ord-${k}`); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }); break; };
+      case 'ord-open': { const k = el.dataset.k, was = !!(S.ordOpen && S.ordOpen[k]); S.ordOpen = el.closest('.ord-tuiles') ? { [k]: !was } : { ...(S.ordOpen || {}), [k]: !was }; rerender(); if (!was && el.closest('.ord-tuiles')) requestAnimationFrame(() => { const c = document.getElementById(`ord-${k}`); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }); break; }
       case 'toggle-decision': S.decisionOpen = !S.decisionOpen; rerender(); break;
       case 'decision': S.draft.decision = JSON.parse(el.dataset.json); S.draft.sansDecision = el.dataset.aucune === '1'; S.ordersDirty = true; rerender(); break;
       case 'dec-cat': S.decCat = el.dataset.v; rerender(); break;
@@ -1555,7 +1522,7 @@ async function validerOrdres() {
  *  (et les autres) voient les places se remplir sur le tableau des appels. Un message seulement si ça change. */
 async function annoncerRenfortAuto() {
   const st = S.state, z = myZone(), d = S.draft;
-  if (!st || !z || !d || !reglesV2(st) || !S.backend.sendRadio) return;
+  if ((!st || !z || !d) || !S.backend.sendRadio) return;
   let der = null;
   for (const m of S.radio || []) if (m.renfortRep && m.uid === z.uid && m.renfortRep.season === st.season && m.renfortRep.turn === st.turn && (!der || der.at < m.at)) der = m;
   const avant = der ? der.renfortRep : null;
@@ -1585,7 +1552,7 @@ async function annoncerNDAuto(rattrapage = false) {
       : deja
         ? `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) sera finalement à ${nomSecteur(k)} avec ${n} agent${n > 1 ? 's' : ''} ce soir.`
         : `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) envoie ${n} agent${n > 1 ? 's' : ''} à ${nomSecteur(k)} ce soir.`;
-    const roles = n && rolesActifs() ? rolesDe(k, ordres) : null;
+    const roles = n ? rolesDe(k, ordres) : null;
     const texte2 = roles ? `🚔 Zone de non-droit : ${z.nom} (ZP ${z.code}) ${deja ? 'sera finalement' : 'sera ce soir'} à ${nomSecteur(k)} : ${texteRoles(roles)}.` : texte;
     try { await S.backend.sendRadio(S.user.uid, texte2, { nd: { season: st.season, turn: st.turn, secteur: String(k), agents: n, ...(roles ? { roles } : {}) } }); } catch (e) { console.warn('Annonce radio non envoyée', e); }
   }

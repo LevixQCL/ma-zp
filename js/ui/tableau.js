@@ -13,7 +13,7 @@ import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, SOURCES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
   ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect, celluleDe,
 } from '../engine/enquete.js';
-import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, coutTotal, banniereTraque, etatSuspect, accuserHtml, nomsAccuses, regleHtml } from './enquete.js';
+import { lireCarnet, ecrireCarnet, sauvegardeCarnet, demBtn, partageCtl, sourceDe, voisinageInfo, appuiHtml, banniereTraque, etatSuspect, accuserHtml, nomsAccuses, regleHtml } from './enquete.js';
 import { engagementsDuJour } from './engagements.js';
 import { LIEUX as LIEUX3, MODES, itineraire, fmtDist, nomTroncon } from '../engine/carte3.js';
 import { dossierAffaire3, numeroPv } from '../engine/dossier.js';

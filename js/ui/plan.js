@@ -90,7 +90,6 @@ function coucheNonDroit(T, st, echelle, { sel = null, chiffres = true } = {}) {
 
 /** Gros plan sur la zone de non-droit et les zones qui la bordent (écran Terrain). */
 export function planNonDroit(st, me, sel = null) {
-  const M = (Number(st.regles) || 1) >= 2; // saison 2 : même style que la nouvelle carte
   const T = territoires(S.config.seed, Object.values(st.zones));
   const nd = T.nd.cells;
   const autour = [...new Set(nd.flatMap((i) => T.adj[i]))].filter((i) => !nd.includes(i));
@@ -108,7 +107,7 @@ export function planNonDroit(st, me, sel = null) {
   const fond = [...autour].map((i) => {
     const z = zoneOf(i);
     const mine = moi && moi.quartiers.includes(i);
-    return `<polygon points="${pts(T.cells[i].poly)}" fill="${z ? C0.ilot : C0.campagne}"/>${z ? `<polygon points="${pts(T.cells[i].poly)}" fill="${esc(z.couleur)}" fill-opacity="${M ? (mine ? 0.2 : 0.1) : mine ? 0.45 : 0.22}" stroke="${mine ? '#FFB23F' : esc(z.couleur)}" stroke-opacity="${mine ? 0.95 : M ? 0.25 : 0.4}" stroke-width="${mine ? 2 : 0.8}" vector-effect="non-scaling-stroke"/>` : ''}`;
+    return `<polygon points="${pts(T.cells[i].poly)}" fill="${z ? C0.ilot : C0.campagne}"/>${z ? `<polygon points="${pts(T.cells[i].poly)}" fill="${esc(z.couleur)}" fill-opacity="${mine ? 0.2 : 0.1}" stroke="${mine ? '#FFB23F' : esc(z.couleur)}" stroke-opacity="${mine ? 0.95 : 0.25}" stroke-width="${mine ? 2 : 0.8}" vector-effect="non-scaling-stroke"/>` : ''}`;
   }).join('');
   // Noms des zones qui bordent : une étiquette par zone, sur son quartier le plus proche du centre.
   const vus = new Set();
@@ -120,8 +119,8 @@ export function planNonDroit(st, me, sel = null) {
     return `<text x="${f1(c[0])}" y="${f1(c[1])}" text-anchor="middle" class="ndz" style="fill:${esc(z.couleur)}">${esc(z.nom.toUpperCase().slice(0, 12))}${z.uid === me.uid ? ' ·  TOI' : ''}</text>`;
   }).join('');
   const nomsND = nd.map((i) => `<text x="${f1(T.cells[i].c[0])}" y="${f1(T.cells[i].c[1] - 9 * echelle)}" text-anchor="middle" class="ndq">${esc(T.cells[i].nom.toUpperCase())}</text>`).join('');
-  return `<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(w)} ${f1(h)}" width="100%" role="img" aria-label="Zone de non-droit : secteurs du centre et zones qui la bordent" style="display:block;border-radius:12px;aspect-ratio:16/10;background:${M ? '#070B19' : C0.campagne}">
-    <defs>${ND_DEFS}${M ? `<radialGradient id="nd-vign" cx="50%" cy="50%" r="70%"><stop offset="55%" stop-color="#05081A" stop-opacity="0"/><stop offset="100%" stop-color="#05081A" stop-opacity=".8"/></radialGradient>` : ''}</defs>
+  return `<svg viewBox="${f1(x0)} ${f1(y0)} ${f1(w)} ${f1(h)}" width="100%" role="img" aria-label="Zone de non-droit : secteurs du centre et zones qui la bordent" style="display:block;border-radius:12px;aspect-ratio:16/10;background:${'#070B19'}">
+    <defs>${ND_DEFS}${`<radialGradient id="nd-vign" cx="50%" cy="50%" r="70%"><stop offset="55%" stop-color="#05081A" stop-opacity="0"/><stop offset="100%" stop-color="#05081A" stop-opacity=".8"/></radialGradient>`}</defs>
     <style>
       text{pointer-events:none}
       .ndn{font-family:'Instrument Sans',monospace;font-weight:700;font-size:9px;fill:#fff;paint-order:stroke;stroke:#0C1124;stroke-width:2.6px}
@@ -129,7 +128,7 @@ export function planNonDroit(st, me, sel = null) {
       .ndz{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-size:${f1(8 * echelle)}px;letter-spacing:.8px;paint-order:stroke;stroke:#0C1124;stroke-width:2.6px}
     </style>
     ${fond}${coucheNonDroit(T, st, echelle, { sel })}${nomsND}${noms}
-    ${M ? `<rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(w)}" height="${f1(h)}" fill="url(#nd-vign)" style="pointer-events:none"/>` : ''}
+    ${`<rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(w)}" height="${f1(h)}" fill="url(#nd-vign)" style="pointer-events:none"/>`}
   </svg>`;
 }
 

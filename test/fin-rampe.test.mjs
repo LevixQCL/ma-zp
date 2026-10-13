@@ -26,7 +26,6 @@ const r = nuit(s, O({ A: { accusation: aff.coupable, confront: pieces, mobile: a
 s = r.state;
 assert.equal(s.season, 2, 'bascule en saison 2');
 assert.equal(s.turn, 1);
-assert.equal(s.regles, 2);
 assert.equal(s.finSaison, undefined);
 assert.ok(r.gazette.enquete && r.gazette.enquete.decouverte, 'découverte publiée');
 assert.ok(r.gazette.finSaison && r.gazette.finSaison.anticipee, 'fin de saison anticipée dans la Gazette');

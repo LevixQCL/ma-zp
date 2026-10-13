@@ -3,7 +3,6 @@
 // à débloquer dont trois seulement équipés (un vétéran a plus de choix, pas plus de puissance), un agenda
 // (une décision par jour), une carrière gardée de saison en saison.
 // Calibrage : test/saison2-sim.mjs (aucun chef optimisé à plus d'un point d'IPZ d'un chef laissé par défaut).
-import { REGLES, PS } from './constants.js';
 
 export const COMPETENCES = {
   gestion: { nom: 'Gestion', ico: '📊', court: 'Gest.' },
@@ -78,7 +77,7 @@ export const TALENTS = [
   { id: 'meneur', comp: 'commandement', niv: 2, nom: 'Meneur d’hommes', texte: 'Le rythme renforcé coûte 1 point de moral de moins', moral: 1 },
   { id: 'sangfroid', comp: 'commandement', niv: 5, nom: 'Sang-froid', texte: 'Après un incident raté, chance de s’en sortir +15 points', chance: 0.15 },
   { id: 'tacticien', comp: 'commandement', niv: 8, nom: 'Tacticien', texte: 'Non-droit : force +8 %, blessures −20 %', force: 0.08, blessure: 0.8 },
-  { id: 'carnet', comp: 'flair', niv: 2, nom: 'Carnet noir', texte: 'Pistes : l’indic coûte moitié prix, l’agent en filature ou en dialogue revient une nuit plus tôt', cout: 0.5 },
+  { id: 'carnet', comp: 'flair', niv: 2, nom: 'Carnet noir', texte: 'Tuyaux : l’indic coûte moitié prix, l’agent en filature ou en dialogue revient une nuit plus tôt', cout: 0.5 },
   { id: 'intuition', comp: 'flair', niv: 5, nom: 'Intuition', texte: 'Une démarche d’enquête de plus les jours où le chef passe au parquet' },
   { id: 'renard', comp: 'flair', niv: 8, nom: 'Vieux renard', texte: 'Une accusation rejetée ne coûte aucune réputation' },
   { id: 'adresses', comp: 'diplomatie', niv: 2, nom: 'Carnet d’adresses', texte: 'Un pacte de plus en même temps' },
@@ -92,7 +91,7 @@ export const TALENT = Object.fromEntries(TALENTS.map((t) => [t.id, t]));
 /** Talents débloqués par ce chef. */
 export const talentsDebloques = (chef) => TALENTS.filter((t) => niveauChef(chef, t.comp) >= t.niv).map((t) => t.id);
 /** Vrai si la zone a ce talent équipé (et que la partie suit les règles v2). */
-export const talent = (z, id) => !!(REGLES.v2 && z && z.chef && !z.chef.hs && Array.isArray(z.chef.talents) && z.chef.talents.includes(id));
+export const talent = (z, id) => !!(z && z.chef && !z.chef.hs && Array.isArray(z.chef.talents) && z.chef.talents.includes(id));
 /** Valeur d'un talent équipé (ou `defaut`). */
 export const talentVal = (z, id, cle, defaut) => (talent(z, id) ? TALENT[id][cle] : defaut);
 
@@ -207,13 +206,11 @@ export function changerTalents(chef, voulus, T) {
   return `Talents équipés : ${l.length ? l.map((t) => TALENT[t].nom).join(', ') : 'aucun'}.`;
 }
 
-/** Plafond de PS d'entraide (pour l'agenda « chez un voisin »). */
-export const psEntraideMax = () => PS.plafondEntraide;
 
 // ───── Le chef se voit agir (saison 2) ─────
 /** Note qu'un talent ou une compétence du chef a fait la différence ce soir (une fois par talent et par soir). */
 export function noterChef(z, id, texte) {
-  if (!z || !z.chef || !REGLES.v2) return;
+  if ((!z || !z.chef)) return;
   const l = (z._chefFaits ||= []);
   if (!l.some((x) => x.id === id)) l.push({ id, t: texte });
 }

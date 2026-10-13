@@ -3,15 +3,11 @@ import { noteCourte } from './nouveautes.js';
 import { partageHtml } from './invitation.js';
 // La Gazette du Delta, le classement, l'espace maître du jeu.
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1, classementLive } from './common.js';
-import { GRADES, LOTS, ENCHERE, PS, SEASON_LENGTH, IPZ_POIDS, MIN_TOURS_CLASSEMENT, DOCTRINES } from '../engine/constants.js';
+import { GRADES, PS, SEASON_LENGTH, IPZ_POIDS, MIN_TOURS_CLASSEMENT, DOCTRINES } from '../engine/constants.js';
 import { pointsIpz, IPZ_LABELS } from '../engine/zone.js';
-import { insigne } from './blasons.js';
-import { regrouperHonneur } from '../engine/honneur.js';
 import { apercuDirecteur, REGLAGES, DISTRICT } from '../engine/directeur.js';
-import { affaire, texteMisePrix, affairesOuvrables } from '../engine/enquete.js';
+import { affaire, affairesOuvrables } from '../engine/enquete.js';
 import { formatDateBe, formatHeureBe } from '../engine/time.js';
-import { debriefsRecents, lienDebrief } from './debrief.js';
-import { reglesV2 } from '../engine/regles.js';
 import { renderGazetteStories } from './gazette-stories.js';
 
 export function renderGazette() {
@@ -22,80 +18,9 @@ export function renderGazette() {
       <div class="paper"><div class="mast"><h1>La Gazette du Delta</h1></div><p>Le premier numéro paraîtra ce soir à 20:00. Passe tes ordres d’ici là !</p></div></main>${tabbar('hp')}`;
   }
   // Saison 2 : la Gazette en cartes à toucher (« stories »).
-  if (reglesV2(S.state)) return renderGazetteStories();
-  const i = Math.min(S.gazetteIndex, list.length - 1);
-  const g = list[i];
-  const sansFaillite = null;
-  const rapport = g.rapports && g.rapports[me.uid];
-  return `<main class="screen">
-    <div class="between"><a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>
-      <div class="row" style="gap:4px">
-        <button class="iconbtn" data-action="gazette-nav" data-d="1" ${i >= list.length - 1 ? 'disabled' : ''} aria-label="Numéro précédent">${icon('back', 18)}</button>
-        <span class="tiny muted mono">n° ${g.turn} · S${g.season}</span>
-        <button class="iconbtn" data-action="gazette-nav" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Numéro suivant">${icon('chevron', 18)}</button>
-      </div></div>
-    <article class="paper journal">
-      <header class="mast">
-        <div class="meta"><span>Édition du soir · n° ${g.turn}</span><span>Saison ${g.season}</span></div>
-        <h1>La Gazette du Delta</h1>
-        <div class="devise">Le quotidien du district · ${g.date ? `${formatDateBe(g.date)}, ${formatHeureBe(g.date)}` : `tour ${g.turn}`}</div>
-        ${g.toursSansFaillite !== undefined ? `<div class="chantier">District Delta : <strong>${g.toursSansFaillite}</strong> tour${g.toursSansFaillite > 1 ? 's' : ''} sans faillite</div>` : ''}
-        ${g.prochainLot && LOTS[g.prochainLot.lot] ? `<div class="devise">Aujourd’hui à la salle des ventes : <strong>${esc(LOTS[g.prochainLot.lot].nom)}</strong>, mise à prix ${g.prochainLot.prixMin} k€${LOTS[g.prochainLot.lot].reserve ? ` (réputation ${ENCHERE.repReserve}+)` : ''}</div>` : ''}</header>
-      ${g.finSaison ? `<section class="box sombre"><span class="k" style="color:#FFB23F">Fin de la saison ${g.finSaison.season}</span>
-        ${g.finSaison.titres.map((t) => { const z = S.state.zones[t.uid]; return `<p style="color:#F4EFE3">${icon('trophy', 13)} <strong>${esc(t.titre)}</strong> : ${z ? zoneName(z) : ''}</p>`; }).join('')}
-        <p style="color:#C9B68F">La saison ${g.finSaison.saisonSuivante} commence : budgets et effectifs repartent des valeurs de départ. Chaque zone reçoit son Bilan de saison : quelques imprévus (pension, matériel cassé, entretien), à remettre en état ou à accepter dans les 3 premiers jours.</p>${(S.state.regles || 1) >= 2 ? '<p style="color:#F4EFE3"><strong>Nouveau cette saison :</strong> ton <strong>chef de corps</strong> prend ses fonctions (portrait, parcours, compétences, talents, agenda), quatre <strong>nouvelles annexes</strong> dans des emplacements limités, et la <strong>doctrine</strong> de ta zone à choisir dans tes ordres. Le classement compte désormais tous les jours de la saison.</p>' : ''}${g.finSaison.anticipee ? '<p style="color:#C9B68F">Saison écourtée par le maître du jeu : le bilan de fin de saison est allégé (au plus un niveau par élément).</p>' : ''}${g.finSaison.filetManque ? `<p style="color:#C9B68F">${esc(g.finSaison.filetManque)} a filé entre les mailles avant l’Opération Filet. On le reverra peut-être.</p>` : ''}</section>` : ''}
-      <section class="une"><span class="k">${esc(g.une.kicker)}</span><h2>${esc(g.une.titre)}</h2>${g.une.texte ? `<p class="lettrine${/^[A-Za-zÀ-ÿ]/.test(g.une.texte) ? '' : ' sans'}">${esc(g.une.texte)}</p>` : ''}</section>
-      ${g.breves && g.breves.length ? `<div class="rule double"></div>
-        <div class="colonnes">${g.breves.slice(0, 6).map((b) => `<section class="breve"><span class="k">${esc(b.kicker)}</span><h3>${esc(b.titre)}</h3>${b.texte ? `<p>${esc(b.texte)}</p>` : ''}</section>`).join('')}</div>` : ''}
-      ${(g.tribunal || []).length ? `<section class="tribunal"><span class="k">Au tribunal</span>${g.tribunal.map((p) => `<div class="proces"><h3>${esc(p.suspect)}</h3><p class="peine">${esc(p.peine)}</p>
-        <p>Affaire « ${esc(p.titre)} ».${p.temoins.length ? ` Cités à la barre : les enquêteurs de ${esc(p.temoins.join(', '))}.` : ''} Interpellation par ${esc(p.arrestation.join(' et '))}.</p></div>`).join('')}</section>` : ''}
-      ${enqueteGazette(g)}
-      ${(g.honneur || []).length ? `<div class="rule"></div><section class="col" style="gap:5px"><span class="k">Tableau d’honneur</span>${regrouperHonneur(g.honneur).map((h) => `<p><span class="etoile">★</span> <strong>${esc(h.titre)}</strong>${h.texte ? `. ${esc(h.texte)}` : ''}</p>`).join('')}</section>` : ''}
-      ${(g.echos || []).length || (g.betisier || []).length ? `<div class="rule double"></div><div class="colonnes bas">
-        ${(g.echos || []).length ? `<section class="echos"><span class="k">Échos du district</span>${g.echos.map((l) => `<p>${esc(l)}</p>`).join('')}</section>` : ''}
-        ${(g.betisier || []).length ? `<section class="betisier"><span class="k">Le bêtisier</span>${g.betisier.map((b) => `<p><strong>${esc(b.titre)}</strong>${b.texte ? ` ${esc(b.texte)}` : ''}</p>`).join('')}</section>` : ''}
-      </div>` : ''}
-      ${rapport && rapport.length ? `<details class="rapport-g"><summary><span class="k">Ton rapport de la nuit</span></summary>${rapport.map((l) => `<p style="font-size:12.5px">• ${esc(l)}</p>`).join('')}</details>` : ''}
-      <section class="box" aria-label="Classement"><div class="rank tiny" style="font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.6px"><span>Classement</span><span>Moyenne · jour</span></div>
-        ${g.classement.slice(0, 8).map((c, k) => `<div class="rank" ${c.uid === me.uid ? 'style="font-weight:700"' : ''}><span>${c.classe ? `<strong>${k + 1}.</strong>` : '<span style="color:var(--ink3)">–</span>'} ZP ${esc(c.code)} ${esc(c.nom)} ${S.state.zones[c.uid] ? insigne(S.state.zones[c.uid].ps) : ''}</span><span class="mono">${fmt1(c.moyenne)} <span style="color:var(--ink3)">· ${fmt1(c.ipz)}</span></span></div>`).join('')}
-        <p style="font-size:11px;color:var(--ink3)">Classé à partir de 5 tours joués.</p></section>
-      <p class="colophon">La rédaction salue ses lecteurs les plus attentifs.</p>
-    </article>
-  </main>${tabbar('hp')}`;
+  return renderGazetteStories();
 }
 
-function enqueteGazette(g) {
-  const e = g.enquete, f = g.fipa || [];
-  if (!e && !f.length) return '';
-  const l = [];
-  // Dossier clos : le débrief de l'affaire terminée ce soir.
-  const dbs = debriefsRecents().filter((x) => x.g === g);
-  if (e) {
-    if (e.decouverte) l.push(`<p><strong>${esc(e.titre)}</strong> : ${esc(e.decouverte.suspect)}${e.decouverte.complice ? ` et ${esc(e.decouverte.complice)}, son complice,` : ''} démasqué${e.decouverte.complice ? 's' : ''} au jour ${e.jour} par ${esc(e.decouverte.zones.join(' et '))} (${e.decouverte.pts} pts). La traque commence.</p>`);
-    for (const a of e.arrestations || []) l.push(a.planque ? `<p><strong>Arrestation</strong> : ${esc(a.suspect)}, à ${esc(a.planque)}, par ${esc(a.zones.join(' et '))}.</p>` : `<p><strong>Aveux</strong> : ${esc(a.suspect)}, confronté·e par ${esc(a.zones.join(' et '))}.</p>`);
-    for (const a of e.fuites || []) l.push(`<p><strong>Fuite</strong> : ${esc(a.suspect)} se cachait à ${esc(a.planque)}.</p>`);
-    if (e.classee && e.solution) l.push(`<p><strong>${esc(e.titre)}</strong> classée sans suite. La solution : ${esc(e.solution.suspect)}${e.solution.complice ? ` et ${esc(e.solution.complice)}, son complice` : ''}${e.solution.planque ? `, planque « ${esc(e.solution.planque)} »` : ''}.</p>`);
-    if (!e.decouverte && !e.classee && !e.pause) l.push(`<p><strong>${esc(e.titre)}</strong> : jour ${e.jour}, toujours pas d’auteur identifié.</p>`);
-    if (e.rebond) l.push(`<p><strong>${esc(e.rebond.titre)}</strong>. ${esc(e.rebond.texte)}</p>`);
-    if (dbs.length) l.push(dbs.map((x) => lienDebrief(x)).join(''));
-    // Tant que la traque court, la planque ne figure pas dans le fin mot (anciens numéros compris).
-    const traqueEnCours = (S.state.traques || []).some((t) => t.n === e.n && !t.fini);
-    let fem = false;
-    try { const af = affaire(S.state, e.n); fem = !!(af && af.suspects[af.coupable] && af.suspects[af.coupable].f); } catch (x) { /* affaire introuvable : masculin par défaut */ }
-    const recit = e.recit && traqueEnCours ? e.recit.replace(/ [^.]*a caché le butin dans la planque « [^»]*» \([^)]*\)\./, ` Où ${fem ? 'elle' : 'il'} se cache reste à trouver : c’est l’enjeu de la traque.`).replace(/ Où il ou elle se cache/, ` Où ${fem ? 'elle' : 'il'} se cache`) : e.recit;
-    if (recit) {
-      // Anciens récits : les innocents sur une ligne ; nouveaux : un paragraphe par personne.
-      const [tete, ...autres] = String(recit).split('\n');
-      l.push(`<p><em>Le fin mot de l’affaire : ${esc(tete)}</em></p>${autres.length ? `<p class="k" style="margin-top:4px">Les autres suspects</p>${autres.map((x) => `<p><em>${esc(x)}</em></p>`).join('')}` : ''}`);
-    }
-    if (e.nouvelle) l.push(`<p>Nouvelle affaire ouverte : <strong>${esc(e.nouvelle)}</strong>. ${esc(texteMisePrix())}</p>`);
-  }
-  for (const x of f) {
-    const txt = !x.mult ? 'dispositif raté' : x.choixA === 'partager' && x.choixB === 'partager' ? 'succès partagé' : x.choixA === x.choixB ? 'chacun revendique le mérite' : `${x.choixA === 'revendiquer' ? x.a : x.b} revendique seul le succès`;
-    l.push(`<p><strong>FIPA ${esc(x.titre)}</strong> (${esc(x.a)} et ${esc(x.b)}) : ${esc(txt)}.</p>`);
-  }
-  return `<div class="rule"></div><section class="col" style="gap:4px"><span class="k">Enquête et FIPA</span>${l.join('')}</section>`;
-}
 
 // Esprit vif : score aux énigmes du jour, depuis le début de la partie.
 // Le score tient compte du taux de réussite ET du nombre d'énigmes : on ajoute à chaque joueur

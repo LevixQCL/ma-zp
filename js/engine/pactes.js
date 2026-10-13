@@ -1,7 +1,7 @@
 // Pactes entre zones et défis amicaux (remplacent les duels, les manœuvres et l'entraide libre).
 //
 // Un pacte lie deux zones pendant PACTE.duree tours. On le propose un soir, l'autre répond le lendemain.
-//  · Jumelage terrain : +20 % de force les soirs où les deux zones sont sur le même secteur de la zone de non-droit,
+//  · Jumelage non-droit : +20 % de force les soirs où les deux zones sont sur le même secteur de la zone de non-droit,
 //    indemnité fédérale doublée pour les renforts prêtés de l'une à l'autre.
 //  · Pacte d'enquête : un soir sur deux, une pièce que ni l'une ni l'autre n'a (prise parmi celles des vérifications,
 //    rien d'inventé) est déchirée en deux : en-tête et début d'un côté, fin sans noms de l'autre. Si les deux la
@@ -27,7 +27,7 @@ const nomZone = (z) => (z ? `ZP ${z.code} ${z.nom}` : "une zone qui a quitté la
 
 export const PACTES = {
   terrain: {
-    nom: 'Jumelage terrain', icone: 'terrain',
+    nom: 'Jumelage non-droit', icone: 'terrain',
     court: 'Non-droit ensemble : +20 % de force · renforts entre vous payés double',
     texte: 'Les soirs où vous êtes tous les deux sur le même secteur de la zone de non-droit : +20 % de force chacun. Les renforts prêtés de l’un à l’autre rapportent une indemnité fédérale double.',
   },

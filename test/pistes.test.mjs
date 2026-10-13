@@ -15,7 +15,7 @@ let r = resolveTurn(state, { players, orders: { A: { ...base, pistesNew: [{ type
 state = r.state;
 const A = state.zones.A;
 assert.equal(A.pistes.length, 3, 'trois pistes en cours');
-assert.ok(A.rapport.filter((l) => l.startsWith('Piste lancée')).length === 3);
+assert.ok(A.rapport.filter((l) => l.startsWith('Tuyau lancé')).length === 3);
 assert.ok(A.blesses.some((b) => b.motif === 'en filature'), 'l’enquêteur en filature est absent');
 assert.ok(pisteImpossible(state, A, 'indic', null), 'pas deux indics en même temps');
 void b0; void T0; void PISTES;

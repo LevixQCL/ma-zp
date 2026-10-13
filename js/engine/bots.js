@@ -1,12 +1,11 @@
 // Zones robots : utilisées par le mode démo et par la simulation d'équilibrage.
 import { dilemmeDuJour } from './directeur.js';
-import { SERVICES, INFRAS, COUTS, BATIMENTS , REGLES, nbAnnexes, emplacementsAnnexes } from './constants.js';
+import { SERVICES, INFRAS, COUTS, BATIMENTS, nbAnnexes, emplacementsAnnexes } from './constants.js';
 import { makeRng } from './rng.js';
 import { agentsDisponibles, coutDecision, decisionImpossible, operationActive, NIVEAUX_OPERATION, capaciteVehicules } from './zone.js';
 import { affaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ, dansMaCellule, pieceDemarche, confrontationOk } from './enquete.js';
 import { fipaPour, invitationImpossible, FIPA } from './fipa.js';
 import { pactesDe, pacteImpossible, defiImpossible, PACTES, DEFI_INDICATEURS } from './pactes.js';
-import { encherePossible } from './encheres.js';
 import { ND, secteurOuvert } from './constants.js';
 import { quartierActif, assurerQuartier, planQuartier, radioQuartier } from './quartier.js';
 import { partsDe, secteursVoisins, faille, repere, ouvertCeSoir } from './nondroit.js';
@@ -44,7 +43,7 @@ export function botOrders(zone, state, style = 'equilibre') {
       if (n > 0) { engagements[a.id] = { agents: n, acceptes: [] }; reste -= n; }
     }
   }
-  const { secteurs, roles } = quartierActif(state) && state.nonDroit ? botQuartier(zone, state, style, rng, reste) : state.nonDroit && state.nonDroit.roles ? botNonDroitRoles(zone, state, style, rng, reste) : { secteurs: botNonDroit(zone, state, style, rng, reste), roles: undefined };
+  const { secteurs, roles } = quartierActif(state) && state.nonDroit ? botQuartier(zone, state, style, rng, reste) : state.nonDroit ? botNonDroitRoles(zone, state, style, rng, reste) : { secteurs: botNonDroit(zone, state, style, rng, reste), roles: undefined };
   reste -= Object.values(secteurs).reduce((a, b) => a + b, 0);
   const poids = { intervention: 0.36, proximite: 0.18, recherche: 0.18, roulage: 0.12, admin: 0.16 };
   if (zone.paperasse > 12) poids.admin += 0.08;
@@ -78,7 +77,7 @@ export function botOrders(zone, state, style = 'equilibre') {
   let decision = null;
   const options = [];
   if (zone.budget > 25) {
-    for (const [id, inf] of Object.entries(INFRAS)) if (!zone.infra[id] && zone.budget - inf.cout > 15 && !(inf.v2 && !REGLES.v2) && !(REGLES.v2 && nbAnnexes(zone) >= emplacementsAnnexes(zone))) options.push({ type: 'construire', infra: id });
+    for (const [id, inf] of Object.entries(INFRAS)) if ((!zone.infra[id] && zone.budget - inf.cout > 15) && !((nbAnnexes(zone) >= emplacementsAnnexes(zone)))) options.push({ type: 'construire', infra: id });
     options.push({ type: 'former', service: rng.pick(SERVICES) });
     if (zone.agents < 22) options.push({ type: 'recruter', n: 2 });
     if (!zone.travaux && zone.batiments && zone.agents + 2 > BATIMENTS.bureaux.capacite(zone.batiments.bureaux) && zone.batiments.bureaux < 5) options.push({ type: 'agrandir', batiment: 'bureaux' });
@@ -180,12 +179,15 @@ function botQuartier(zone, state, style, rng, reste) {
   const n = Math.min(ND.maxTotal, Math.max(0, reste - 13), { agressif: 5, equilibre: 4, prudent: 3, distrait: 3 }[style] || 4);
   return planQuartier(zone, state, n, radioQuartier(state));
 }
-const radioBots = { cle: null, ann: {} };
+// Annonces radio simulées entre robots pendant un même tour : chacun lit ce que les précédents ont annoncé.
+// Un robot qui redemande ses ordres dans le même tour ouvre une nouvelle tournée (résultat reproductible).
+const radioBots = { cle: null, ann: {}, vus: new Set() };
 function botNonDroitRoles(zone, state, style, rng, reste) {
   const secteurs = {}, roles = {};
   const nd = state.nonDroit, T = state.turn, R0 = ND.roles;
   const cle = `${state.seed}:${state.season}:${T}`;
-  if (radioBots.cle !== cle) { radioBots.cle = cle; radioBots.ann = {}; }
+  if (radioBots.cle !== cle || radioBots.vus.has(zone.uid)) { radioBots.cle = cle; radioBots.ann = {}; radioBots.vus = new Set(); }
+  radioBots.vus.add(zone.uid);
   const ann = radioBots.ann;
   let dispo = Math.min(ND.maxTotal, Math.max(0, reste - 13));
   if (dispo <= 0 || (style === 'distrait' && rng.chance(0.6))) return { secteurs, roles };
@@ -348,13 +350,7 @@ function botRivalites(zone, state, style, rng) {
   if (inv) out.defiReponse = { id: inv.id, accepte: rng.chance(style === 'prudent' ? 0.3 : 0.6) };
   const defiables = autres.filter((z) => !defiImpossible(state, zone.uid, z.uid));
   if (defiables.length && rng.chance(style === 'agressif' ? 0.08 : 0.02)) out.defi = { cible: rng.pick(defiables).uid, ind: rng.pick(Object.keys(DEFI_INDICATEURS)), mise: zone.budget > 30 ? 3 : 0 };
-  // Salle des ventes : les robots enchérissent quand ils ont de la marge.
-  const e = state.enchere;
-  if (e && !encherePossible(state, zone) && zone.budget > 30 && rng.chance(style === 'agressif' ? 0.45 : style === 'prudent' ? 0.15 : 0.3)) {
-    const montant = Math.min(Math.floor(zone.budget - 25), e.prixMin + rng.int(0, style === 'agressif' ? 6 : 3));
-    if (montant >= e.prixMin) out.offre = { id: e.id, montant };
-  }
-  // Saison 2 : vente aux enchères, offre finale secrète sur un lot (et parfois une expertise le premier jour).
+  // Salle des ventes : vente aux enchères, offre finale secrète sur un lot (et parfois une expertise le premier jour).
   const v = state.vente;
   if (v && v.cloture === state.turn && zone.budget > 25 && rng.chance(style === 'agressif' ? 0.5 : style === 'prudent' ? 0.2 : 0.35)) {
     const lot = rng.pick(v.lots), cur = (v.meneurs && v.meneurs[lot.k] && v.meneurs[lot.k].montant) || lot.prixMin;

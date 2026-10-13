@@ -131,8 +131,8 @@ export function crisePre(state, uids, ord, push, T, zoneLabel) {
     const cr = CRISES[c.id];
     const contre = total - compte[choix];
     const detail = total === 0 ? 'Aucune voix : le Directeur applique le travail discret.' : gagnants.length > 1 ? `Égalité (${compte.join('-')}) : le Directeur tranche pour le travail discret.` : `${compte[choix]} voix contre ${contre}.`;
-    for (const u of uids) state.zones[u].rapport.push(`Conseil des chefs (${cr.titre.toLowerCase()}) : plan ${c.plan}, « ${PLANS[choix].nom} », adopté pour 3 jours dès demain. ${detail}${choix === 2 ? (participants[u] ? ' Tu as voté C : tu participes d’office (tu peux te retirer).' : ' Tu peux rejoindre l’opération dans tes ordres.') : ''}`);
-    push(9, 'Conseil des chefs', `Décision du Conseil : plan ${c.plan}, ${PLANS[choix].nom.toLowerCase()}`, `${detail} « ${cr.plans[choix]} » pendant 3 jours.`);
+    for (const u of uids) state.zones[u].rapport.push(`Cellule de crise (${cr.titre.toLowerCase()}) : plan ${c.plan}, « ${PLANS[choix].nom} », adopté pour 3 jours dès demain. ${detail}${choix === 2 ? (participants[u] ? ' Tu as voté C : tu participes d’office (tu peux te retirer).' : ' Tu peux rejoindre l’opération dans tes ordres.') : ''}`);
+    push(9, 'Cellule de crise', `Décision de la cellule de crise : plan ${c.plan}, ${PLANS[choix].nom.toLowerCase()}`, `${detail} « ${cr.plans[choix]} » pendant 3 jours.`);
   }
   // 2. Opération commune de ce soir.
   if (planDuJour(state, T) === 'C') {
@@ -195,8 +195,8 @@ function bilanPlan(state, c, uids, push, zoneLabel) {
         } else if (ok) z.rapport.push(`Opération commune réussie sans toi : criminalité −${Math.abs(CRISE.C.crimDistrict)} chez toi.`);
         else if (pres) z.rapport.push(`Opération commune ratée (${reussies} soir${reussies > 1 ? 's' : ''} réussi${reussies > 1 ? 's' : ''} sur 3) : pas assez de zones au rendez-vous.`);
       }
-      push(ok ? 10 : 7, 'Conseil des chefs', ok ? 'L’opération commune porte ses fruits' : 'L’opération commune tourne court', ok ? `${recompenses.length} zones récompensées : ${recompenses.join(', ')}.` : `${reussies} soir${reussies > 1 ? 's' : ''} sur 3 avec assez de zones. Il en fallait ${CRISE.C.nuitsOk}.`);
-    } else push(5, 'Conseil des chefs', `Fin du plan ${c.plan} : ${PLANS[c.plan === 'A' ? 0 : 1].nom.toLowerCase()}`, 'Le district reprend son rythme normal.');
+      push(ok ? 10 : 7, 'Cellule de crise', ok ? 'L’opération commune porte ses fruits' : 'L’opération commune tourne court', ok ? `${recompenses.length} zones récompensées : ${recompenses.join(', ')}.` : `${reussies} soir${reussies > 1 ? 's' : ''} sur 3 avec assez de zones. Il en fallait ${CRISE.C.nuitsOk}.`);
+    } else push(5, 'Cellule de crise', `Fin du plan ${c.plan} : ${PLANS[c.plan === 'A' ? 0 : 1].nom.toLowerCase()}`, 'Le district reprend son rythme normal.');
     c.termine = true;
   }
 }
@@ -211,7 +211,7 @@ export function crisePost(state, uids, push, T, zoneLabel) {
     const id = choisirCrise(state, uids, c && c.id);
     const n = ((c && c.n) || 0) + 1;
     state.crise = { season: state.season, n, id, annonce: T, vote: T + 1, debut: T + 2, fin: T + 1 + CRISE.duree, plan: null };
-    push(8, 'Conseil des chefs', CRISES[id].titre, `${CRISES[id].texte} Le Conseil des chefs vote demain : opération visible, travail discret ou opération commune. Une voix par zone, résultat à 20:00.`);
+    push(8, 'Cellule de crise', CRISES[id].titre, `${CRISES[id].texte} La cellule de crise vote demain : opération visible, travail discret ou opération commune. Une voix par zone, résultat à 20:00.`);
   }
 }
 

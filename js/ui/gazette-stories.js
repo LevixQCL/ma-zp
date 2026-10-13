@@ -14,7 +14,6 @@ import { formatDateBe } from '../engine/time.js';
 import { debriefsRecents, lienDebrief } from './debrief.js';
 import { portraitSuspect } from './portrait.js';
 import { sceneVignette } from './logistique.js';
-import { reglesV2 } from '../engine/regles.js';
 const zoneLabel = (z) => `ZP ${z.code} ${z.nom}`;
 
 // ——— Rubriques et illustrations ———
@@ -27,7 +26,7 @@ const CATEGORIE = {
   nondroit: ['Zone de non-droit', 'Reconquête', 'Vague brisée', 'Vague de délinquance', 'Le milieu', 'Le milieu s’adapte', 'Le centre revit', 'La chute du Parrain'],
   enquete: ['Enquête', 'Nouvelle affaire', 'Affaire classée', 'Traque', 'Arrestation', 'Aveux', 'Révélation', 'PJF', 'Relève'],
   tribunal: ['Au tribunal'],
-  district: ['Conseil des chefs', 'Conseil de police', 'District', 'Pacte', 'Défi amical', 'Défi en duo', 'FIPA'],
+  district: ['Cellule de crise', 'Conseil de police', 'District', 'Pacte', 'Défi amical', 'Défi en duo', 'FIPA'],
   ennemi: ['L’ennemi du district'],
   ventes: ['Salle des ventes', 'Adjugé !'],
   meteo: ['Canicule', 'Tempête', 'Neige', 'Verglas', 'Grand froid', 'Inondations'],
@@ -39,7 +38,7 @@ const catDe = (k) => {
 };
 const ENQUETE = new Set(CATEGORIE.enquete);
 // Jamais à la une : des annonces, pas des nouvelles.
-const PAS_A_LA_UNE = new Set(['Salle des ventes', 'Adjugé !', 'Bienvenue', 'Performance', 'Chantier', 'Décor', 'Conseil de police', 'Doctrine', 'Parrainage', 'Challenge', 'Carrière', 'Chef de corps', 'Retour', 'FIPA']);
+const PAS_A_LA_UNE = new Set(['Salle des ventes', 'Adjugé !', 'Bienvenue', 'Performance', 'Chantier', 'Décor', 'Conseil de police', 'Doctrine', 'Parrainage', 'Records', 'Carrière', 'Chef de corps', 'Retour', 'FIPA']);
 
 /** Une rubrique au pluriel quand plusieurs faits sont regroupés. */
 const PLURIEL = {
@@ -48,7 +47,7 @@ const PLURIEL = {
   'Zone de non-droit': (n) => `Zone de non-droit : ${n} secteurs bougent`,
   'Adjugé !': (n) => `Salle des ventes : ${n} lots adjugés`,
   Chantier: (n) => `${n} chantiers dans le district`,
-  Décor: (n) => `${n} commissariats changent de décor`,
+  Décor: (n) => `${n} hôtels de police changent de décor`,
   Reconquête: (n) => `${n} secteurs repris au milieu`,
   'Le milieu': (n) => `Le milieu : ${n} nouvelles du réseau`,
   'Le centre revit': (n) => `${n} secteurs du centre reprennent vie`,
@@ -115,13 +114,12 @@ const fait = (n) => { const t = sansRegles(n.texte); return `<div class="gzs-fai
 
 function carteFinSaison(g) {
   const f = g.finSaison;
-  const v2 = reglesV2(S.state);
   return carte('saison', 'Fin de saison', `${tete(g, `Saison ${f.season}`)}
     ${vignette('saison', 's', g.turn)}
     <div class="gzs-corps"><span class="sur">Fin de la saison ${f.season}</span>
-      <h2>${v2 ? `La saison ${f.saisonSuivante} commence ce soir` : `Rideau sur la saison ${f.season}`}</h2>
+      <h2>${`La saison ${f.saisonSuivante} commence ce soir`}</h2>
       <ul class="gzs-palmares">${f.titres.map((t) => { const z = S.state.zones[t.uid]; return `<li><span>${esc(t.titre)}</span><b>${z ? esc(zoneLabel(z)) : ''}</b></li>`; }).join('')}</ul>
-      <p>Chaque zone reçoit son bilan de saison : quelques imprévus à remettre en état ou à accepter dans les 3 premiers jours.${v2 ? ' Nouveau : ton chef de corps prend ses fonctions, quatre annexes à bâtir et la doctrine de ta zone à choisir.' : ''}</p>
+      <p>Chaque zone reçoit son bilan de saison : quelques imprévus à remettre en état ou à accepter dans les 3 premiers jours.${' Nouveau : ton chef de corps prend ses fonctions, quatre annexes à bâtir et la doctrine de ta zone à choisir.'}</p>
       ${f.filetManque ? `<p>${esc(f.filetManque)} a filé entre les mailles avant l’Opération Filet. On le reverra peut-être.</p>` : ''}</div>`, { cat: 'saison' });
 }
 

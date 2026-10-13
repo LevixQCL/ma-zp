@@ -9,7 +9,7 @@ const nuitsTxt = (n) => (n <= 0 ? 'ce soir' : n === 1 ? 'demain soir' : `dans ${
 /** Résumé d'une ligne (pli des ordres). */
 export function resumePistes(z, d) {
   const en = (z.pistes || []).length, nv = (d.pistesNew || []).length;
-  if (!en && !nv) return 'Aucune piste en cours';
+  if (!en && !nv) return 'Aucun tuyau en cours';
   return [en ? `${en} en cours` : '', nv ? `${nv} à lancer ce soir` : ''].filter(Boolean).join(' · ');
 }
 
@@ -35,7 +35,7 @@ export function pistesOrdresHtml(z, d) {
   }).join('');
   return `<div class="col" style="gap:8px">
     ${enCours ? `<div class="col" style="gap:4px">${enCours}</div>` : ''}
-    <p class="tiny muted" style="margin:0">Une piste se lance avec tes ordres ; son résultat tombe une à trois nuits plus tard, que tu viennes ou non (rapport et HP). ${MAX_PISTES} en cours au plus, une de chaque sorte.</p>
+    <p class="tiny muted" style="margin:0">Un tuyau se lance avec tes ordres ; son résultat tombe une à trois nuits plus tard, que tu viennes ou non (rapport et HP). ${MAX_PISTES} en cours au plus, une de chaque sorte.</p>
     ${options}</div>`;
 }
 
@@ -64,24 +64,12 @@ export function faitsDeLaNuit(z) {
   return l.slice(0, 3);
 }
 
-/** Carte « Cette nuit » : trois faits au plus, ceux qui te concernent vraiment ; le rapport complet reste plus bas. */
-export function cetteNuitHtml(z) {
-  if (!z || S.state.turn <= 1) return '';
-  const l = [...(z.cetteNuit || []).map((x) => x.t)];
-  for (const r of z.rapport || []) { if (l.length >= 3) break; if (MARQUANTS.some((m) => m.test(r)) && !l.includes(r)) l.push(r); }
-  if (!l.length) return '';
-  const court = (t) => (t.length > 170 ? `${t.slice(0, 167)}…` : t);
-  return `<section class="card" aria-label="Cette nuit" style="gap:6px">
-    <span class="kicker">Cette nuit</span>
-    ${l.slice(0, 3).map((t) => `<p class="small" style="margin:0;line-height:1.45">${esc(court(t))}</p>`).join('')}
-    <button type="button" class="lien tiny" data-action="voir-rapport" style="align-self:flex-start;background:none;border:0;padding:0;color:var(--amber-soft);text-decoration:underline;cursor:pointer">Tout le rapport ↓</button></section>`;
-}
 
 /** Carte des pistes en cours (HP), seulement s'il y en a. */
 export function pistesHpHtml(z) {
   const l = z.pistes || [];
   if (!l.length) return '';
   const T = S.state.turn;
-  return `<a class="card" href="#ordres" style="gap:4px;text-decoration:none;color:var(--text)"><span class="kicker">Pistes en cours</span>
+  return `<a class="card" href="#ordres" style="gap:4px;text-decoration:none;color:var(--text)"><span class="kicker">Tuyaux en cours</span>
     ${l.map((p) => `<span class="small">${PISTES[p.type].ico} ${esc(PISTES[p.type].nom)} · résultat ${nuitsTxt(p.retour - T)}</span>`).join('')}</a>`;
 }

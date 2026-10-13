@@ -21,7 +21,7 @@ import { assurerQuartiers, carteQuartiers, lirePatrouilles } from './quartiers.j
 import { ALEAS, COUPS_DURS, OPERATIONS, PRESSIONS } from './contenu.js';
 import { siteDe } from './sites.js';
 import { niveauChef, COMPETENCES, noterChef, RESEAU, changerEstime } from './chef.js';
-import { SEASON_LENGTH, BUDGET_IPZ, NIVEAU_MAX, SERVICES, SERVICE_LABELS, coutEquipement, REGLES, aAnnexe } from './constants.js';
+import { SEASON_LENGTH, BUDGET_IPZ, NIVEAU_MAX, SERVICES, SERVICE_LABELS, coutEquipement, aAnnexe } from './constants.js';
 import { affaire, candidats, faitsConnus, pieceCoupDePouce } from './enquete.js';
 
 // ───── Réglages ─────
@@ -256,7 +256,7 @@ const SVC = (s) => SERVICE_LABELS[s] || s;
 export const FEUILLETONS = {
   conflit: {
     titre: 'Soirée chargée',
-    poids: (z) => (REGLES.v2 ? 0.9 : 0),
+    poids: (z) => (0.9),
     init: (state, z, rng) => ({ k: rng.int(0, CONFLITS.length - 1) }),
     etapes: {
       debut: {
@@ -405,12 +405,12 @@ export const FEUILLETONS = {
             : 'Heures sup’, vestiaires vétustes : le délégué syndical menace d’un arrêt de travail.'),
         choix: (z) => avecChef(z, [
           // Règles v2 : plus de réponse « gratuite » en argent : un jour de récupération coûte des agents.
-          { l: REGLES.v2 ? 'Accorder un jour de récupération' : 'Lâcher une prime', s: REGLES.v2 ? '2 agents en récupération 2 jours, +5 de moral' : '−2,5 k€, +5 de moral' },
+          { l: 'Accorder un jour de récupération', s: '2 agents en récupération 2 jours, +5 de moral' },
           { l: 'Tenir bon', s: 'si le moral est à 50 ou plus ce soir, la grogne retombe ; sinon, arrêt de travail' },
         ], 'diplomatie', { l: 'Négocier avec le délégué', s: 'la grogne retombe, +3 de moral' }),
         defaut: 1,
         resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { moral: 3 }, texte: 'le chef a trouvé les mots, accord sur les vestiaires', mem: { greve: 'tenu' } } : ch === 0
-          ? (REGLES.v2 ? { ok: true, fx: { bloques: 2, moral: 5 }, texte: 'jour de récupération accordé, la tension retombe', mem: { greve: 'prime' } } : { ok: true, fx: { budget: -2.5, moral: 5 }, texte: 'prime versée, la tension retombe', mem: { greve: 'prime' } })
+          ? ({ ok: true, fx: { bloques: 2, moral: 5 }, texte: 'jour de récupération accordé, la tension retombe', mem: { greve: 'prime' } })
           : c.z.moral >= 50
             ? { ok: true, fx: { moral: 2, rep: 1 }, texte: 'la grogne retombe d’elle-même', mem: { greve: 'tenu' } }
             : { ok: false, fx: { bloques: 2, moral: -2 }, texte: 'arrêt de travail, 2 agents absents 2 tours', une: [6, 'Social', `Arrêt de travail à ${c.label}`], mem: { greve: 'arret' } }),
@@ -519,7 +519,7 @@ export const FEUILLETONS = {
   // ── Appels du réseau (saison 2, chef de corps) : un personnage appelle le chef ; l'estime gagnée ou perdue change son humeur. ──
   appelBourgmestre: {
     titre: 'Le bourgmestre au téléphone', dilemme: true,
-    poids: (z) => (REGLES.v2 && z.chef ? 0.7 : 0),
+    poids: (z) => (z.chef ? 0.7 : 0),
     etapes: {
       debut: {
         signe: () => ({ titre: '📞 Le bourgmestre au téléphone', texte: 'Il attend ta réponse avant 20:00.' }),
@@ -537,7 +537,7 @@ export const FEUILLETONS = {
   },
   appelMarche: {
     titre: 'Les camionnettes du marché', dilemme: true,
-    poids: (z) => (REGLES.v2 && z.chef ? 0.5 : 0),
+    poids: (z) => (z.chef ? 0.5 : 0),
     etapes: {
       debut: {
         signe: () => ({ titre: '📞 Le bourgmestre et les commerçants', texte: 'Décide avant 20:00.' }),
@@ -555,7 +555,7 @@ export const FEUILLETONS = {
   },
   appelProcureur: {
     titre: 'Le procureur est pressé', dilemme: true,
-    poids: (z) => (REGLES.v2 && z.chef ? 0.7 : 0),
+    poids: (z) => (z.chef ? 0.7 : 0),
     etapes: {
       debut: {
         signe: () => ({ titre: '📞 Le procureur au téléphone', texte: 'Réponds avant 20:00.' }),
@@ -573,7 +573,7 @@ export const FEUILLETONS = {
   },
   appelSyndicat: {
     titre: 'Le repas de corps', dilemme: true,
-    poids: (z) => (REGLES.v2 && z.chef ? 0.7 : 0),
+    poids: (z) => (z.chef ? 0.7 : 0),
     etapes: {
       debut: {
         signe: () => ({ titre: '📞 Le délégué syndical', texte: 'Réponds avant 20:00.' }),
@@ -591,7 +591,7 @@ export const FEUILLETONS = {
   },
   appelPresse: {
     titre: 'Un « off » avec la presse', dilemme: true,
-    poids: (z) => (REGLES.v2 && z.chef ? 0.6 : 0),
+    poids: (z) => (z.chef ? 0.6 : 0),
     etapes: {
       debut: {
         signe: () => ({ titre: '📞 La Voix du Delta', texte: 'Réponds avant 20:00.' }),
@@ -719,7 +719,7 @@ export function memoirePlainte(z) {
  * réponse : une autre sortie, pas une victoire automatique.
  */
 function avecChef(z, base, comp, extra) {
-  const L = REGLES.v2 && z && z.chef ? niveauChef(z.chef, comp) : 0;
+  const L = z && z.chef ? niveauChef(z.chef, comp) : 0;
   return L >= 4 ? [...base, { ...extra, l: extra.l, s: `${COMPETENCES[comp].nom} ${L} : ${extra.s}`, chef: comp }] : base;
 }
 

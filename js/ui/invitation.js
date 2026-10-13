@@ -1,5 +1,5 @@
 // Invitation : lien direct avec le code, partage en un geste, QR code.
-import { S, esc, icon } from './common.js';
+import { esc, icon } from './common.js';
 
 export const lienInvitation = (code) => `${location.origin}${location.pathname}?rejoindre=${encodeURIComponent(code)}`;
 export const texteInvitation = (p) => `Rejoins ma partie de Ma ZP, « ${p.nom} » : ouvre ce lien et connecte-toi, tu arrives directement dans la partie. (Code : ${p.code})`;

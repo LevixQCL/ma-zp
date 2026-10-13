@@ -1,12 +1,12 @@
 // Écran « Terrain » : tout ce qui se passe chez moi, chez les voisins et dans le district,
 // avec de quoi agir directement.
-import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
+import { S, esc, icon, myZone, zoneName } from './common.js';
 import { operationActive } from '../engine/zone.js';
 import { appelsRenfort, renfortCtrl, renfortPrevu } from './renfort.js';
-import { candidaturesRecues, candidatureCtrl, maCandidature, postulerCtrl, placesRestantes, chefDe } from './affaires.js';
+import { candidaturesRecues, maCandidature } from './affaires.js';
 import { psEvenement } from '../engine/constants.js';
 import { carteAffaire } from './ordres.js';
-import { nonDroitHtml, secteursEnDanger } from './nondroit.js';
+import { secteursEnDanger } from './nondroit.js';
 
 /** Nombre de choses qui attendent une action sur le Terrain (pour la pastille). */
 export function terrainAFaire() {
@@ -52,7 +52,7 @@ export function terrainBlocs() {
   }
   const perils = Object.values(st.zones).filter((x) => (x.peril || x.tutelle) && x.uid !== z.uid);
   if (perils.length) voisins.push(`<a class="list-row" href="#pactes" style="background:var(--red-bg);border-color:var(--red-line)"><span class="bullet" style="background:var(--red)"></span>
-    <span class="col grow" style="gap:1px"><span style="font-weight:600">${perils.map((x) => esc(x.nom)).join(', ')} en difficulté</span><span class="small muted">Coup de main (Carte › Pactes) : budget ou agents, jusqu’à +7 de réputation</span></span>${icon('chevron', 16)}</a>`);
+    <span class="col grow" style="gap:1px"><span style="font-weight:600">${perils.map((x) => esc(x.nom)).join(', ')} en difficulté</span><span class="small muted">Coup de main (bouton 🤝 Pactes de la Carte) : budget ou agents, jusqu’à +7 de réputation</span></span>${icon('chevron', 16)}</a>`);
 
   // ───── District ─────
   const ev = st.evenement;
@@ -71,14 +71,3 @@ export function terrainBlocs() {
   return { chezMoi, voisins, district };
 }
 
-export function renderTerrain() {
-  const { chezMoi, voisins, district } = terrainBlocs();
-  const section = (titre, items, vide) => `<section class="col" aria-label="${titre}" style="gap:8px"><h2 class="section">${titre}</h2>${items.length ? items.join('') : `<p class="small muted" style="margin:0">${vide}</p>`}</section>`;
-  return `<main class="screen">
-    <header class="col" style="gap:3px"><h1 class="big">Terrain</h1><p class="sub">La zone de non-droit à reprendre ensemble et là où tu peux aider. Tout se joue à 20:00.</p></header>
-    ${chezMoi.length ? section('Chez moi', chezMoi, '') : ''}
-    ${nonDroitHtml()}
-    ${section('Chez les voisins', voisins, 'Aucune demande d’aide pour l’instant.')}
-    ${district.length ? section('District', district, '') : ''}
-  </main>${tabbar('terrain')}`;
-}

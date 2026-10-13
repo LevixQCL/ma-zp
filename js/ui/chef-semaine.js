@@ -1,6 +1,5 @@
 // La semaine du chef (saison 2) : objectifs, rival, adjoint et retour d'absence, honneurs, carte à partager.
 import { S, esc, myZone, zoneName } from './common.js';
-import { reglesV2 } from '../engine/regles.js';
 import { COMPETENCES, niveauChef, niveauxChef, totalNiveaux, signatureChef, TALENT, VOIES, IDS_COMPETENCES, faitsDArmes } from '../engine/chef.js';
 import { OBJECTIFS, texteObjectif, RECOMPENSE, semaineDe, joursSemaine, scoreDuel, DUEL, CADRES, cadreDe, cadreSuivant, RUBANS, IDS_RUBANS, rubansDe } from '../engine/chef-semaine.js';
 import { CONSIGNES, IDS_CONSIGNES, savoirFaire, ADJOINT } from '../engine/adjoint.js';
@@ -18,7 +17,7 @@ const AIDE_OBJ = {
   vert: { t: 'Finis le tour avec un revenu positif : la prévision de budget est dans les <b>Ordres</b> ; allège les dépenses ou le rythme si elle passe au rouge.', r: 'ordres', b: 'Ouvrir les Ordres' },
   paperasse: { t: 'Garde moins de 8 dossiers en attente : mets assez d’agents à l’<b>Accueil</b> dans les Ordres (la prévision de paperasse s’affiche sur la ligne Accueil).', r: 'ordres', b: 'Ouvrir les Ordres' },
   investir: { t: 'Dans les <b>Ordres</b>, grande décision du jour : lance une formation, un équipement ou une annexe.', r: 'ordres', x: 'decision', b: 'Ouvrir la grande décision' },
-  enchere: { t: 'Sur l’HP, tuile <b>Enchères</b> : mise sur un lot de saisies puis fais la meilleure offre finale.', r: 'hp', x: 'encheres', b: 'Ouvrir les Enchères' },
+  enchere: { t: 'Sur l’HP, tuile <b>Ventes</b> (salle des ventes) : mise sur un lot de saisies puis fais la meilleure offre finale.', r: 'hp', x: 'encheres', b: 'Ouvrir la salle des ventes' },
   entraide: { t: '<b>Radio, F2 · Renforts &amp; ops</b> : réponds à un appel de renfort en prêtant des agents. Ou, quand un suspect fuit chez toi, accepte la <b>relève</b> (« Je prends ») : elle apparaît sur l’HP.', r: 'radio', x: 'ops', b: 'Voir les appels (F2)' },
   reseau: { t: 'Onglet <b>Chef</b>, carte Réseau (ouverte au 5<sup>e</sup> jour de prise de fonctions) : demande un service à un contact satisfait.', r: 'chef', b: 'Aller au Chef' },
   partage: { t: 'Avec une zone liée par un <b>pacte d’enquête</b>, partage une pièce ou un indice. Pas encore de pacte ? Propose-le dans les Pactes.', r: 'pactes', b: 'Ouvrir les Pactes' },
@@ -28,7 +27,7 @@ const AIDE_OBJ = {
 };
 
 const fmt = (v) => String(Math.round(v * 10) / 10).replace('.', ',');
-const actif = (z) => !!(z && z.chef && S.state && reglesV2(S.state));
+const actif = (z) => !!((z && z.chef && S.state));
 
 /** Portrait de l'adjoint (image du jeu de portraits). */
 export function portraitAdjoint(a, taille = 40) {

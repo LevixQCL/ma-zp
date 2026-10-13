@@ -119,7 +119,7 @@ export const TROPHEES = [
   // Oct. 2026 (idées de Luc) : 8 de plus, d'autres viendront.
   { id: 'rempart', nom: 'Rempart', texte: 'Repousser un gang dans la zone de non-droit' },
   { id: 'premiereligne', nom: 'Première ligne', texte: 'Participer à tous les assauts de la zone de non-droit deux soirs d’affilée' },
-  { id: 'recordman', nom: 'Recordman', texte: 'Battre 10 records du Challenge' },
+  { id: 'recordman', nom: 'Recordman', texte: 'Battre 10 records aux mini-jeux' },
   { id: 'erudit', nom: 'Érudit', texte: 'Réussir 50 énigmes' },
   { id: 'urgentiste', nom: 'Sur tous les fronts', texte: 'Réussir 25 incidents du jour' },
   { id: 'tresorier', nom: 'Trésorier', texte: 'Dégager 20 000 € de revenu en une journée' },

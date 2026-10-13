@@ -3,10 +3,10 @@
 import { S, esc, fmt1, icon, myZone } from './common.js';
 import { ND, secteurOuvert, regenSecteur } from '../engine/constants.js';
 import { forceEngagement } from '../engine/zone.js';
-import { milieuDe, nomSecteur, partsDe, prevoirSecteur, secteursVoisins, gangCeSoir, faille, repere, ouvertCeSoir, prevoirRoles, rolesND } from '../engine/nondroit.js';
+import { milieuDe, nomSecteur, partsDe, prevoirSecteur, secteursVoisins, gangCeSoir, faille, repere, ouvertCeSoir, prevoirRoles } from '../engine/nondroit.js';
 import { planNonDroit } from './plan.js';
 import { quartierActif, corpsQHtml, alertesQ } from './quartier.js';
-import { v3Actif, reseauHtml, ligneLieutenant, sceneHtml, confianceHtml, sceneCarte, ICO_SCENE, dernierCarreHtml, tactiqueEnTete } from './milieu.js';
+import { v3Actif, reseauHtml, ligneLieutenant, confianceHtml, sceneCarte, ICO_SCENE, dernierCarreHtml, tactiqueEnTete } from './milieu.js';
 
 const nd = () => (S.state && S.state.nonDroit) || null;
 const nomZ = (uid) => (S.state.zones[uid] ? esc(S.state.zones[uid].nom) : '?');
@@ -33,8 +33,6 @@ export function annoncesND() {
   return out;
 }
 
-/** Rôles en jeu (saison 2) ? */
-export const rolesActifs = () => rolesND(S.state);
 const rolesPropres = (r, n) => (r && typeof r === 'object' ? { rep: Number(r.rep) || 0, desc: Number(r.desc) || 0, bouc: Number(r.bouc) || 0, ...(Number(r.sc) > 0 ? { sc: Number(r.sc) } : {}) } : { rep: 0, desc: n || 0, bouc: 0 });
 /** Mes agents par rôle sur un secteur (brouillon). Sans rôles enregistrés, tout est en descente. */
 export function rolesDe(k, d = S.draft) {
@@ -66,7 +64,7 @@ export function texteRoles(r) {
 /** Rôle le plus utile pour rejoindre un secteur ce soir (ce qui manque d'abord). */
 export function roleManquant(k) {
   const n = nd(); const s = n && n.secteurs[k];
-  if (!s || s.statut === 'repris' || !rolesActifs()) return 'desc';
+  if ((!s || s.statut === 'repris')) return 'desc';
   const p = prevoirRolesSecteur(k);
   if (p.besoin.rep > p.nR && !repere(s, S.state.turn)) return 'rep';
   if (p.nD && p.nB < Math.ceil(p.nD * p.ratio)) return 'bouc';
@@ -97,7 +95,7 @@ export function placeND(k, d = S.draft) {
 /** Prévision d'un secteur si je rejoins avec n agents, en plus des zones annoncées ce soir. */
 export function prevoirRejoindre(k, n) {
   const s = nd().secteurs[k], me = myZone();
-  if (rolesActifs() && s.statut !== 'repris') {
+  if ((s.statut !== 'repris')) {
     // Avec les rôles : on rejoint d'abord là où il manque du monde (repérage, bouclage, sinon descente).
     const aj = { rep: 0, desc: 0, bouc: 0 };
     const base = prevoirRolesSecteur(k);
@@ -144,7 +142,7 @@ function ceSoirHtml(n, me, ann) {
     const s = n.secteurs[k];
     const repris = s.statut === 'repris';
     const forces = l.map((x) => forceEngagement(S.state.zones[x.uid], x.n, S.state.turn));
-    const p = rolesActifs() && !repris ? { emprise: prevoirRolesSecteur(k).apres } : prevoirSecteur(S.state, s, forces);
+    const p = !repris ? { emprise: prevoirRolesSecteur(k).apres } : prevoirSecteur(S.state, s, forces);
     const tombe = !repris && p.emprise <= 0;
     const moiDedans = l.some((x) => x.moi);
     // Mes agents ne sont visibles des autres que s'ils sont annoncés à la radio (à jour).
@@ -178,7 +176,7 @@ function ceSoirHtml(n, me, ann) {
 export function presqueTombes() {
   if (quartierActif(S.state)) return alertesQ().tombent;
   const n0 = nd(), me = myZone();
-  if (!n0 || !me || !S.draft || !rolesActifs()) return [];
+  if ((!n0 || !me || !S.draft)) return [];
   const ann = annoncesND(), out = [];
   for (const [k, s] of Object.entries(n0.secteurs)) {
     if (s.statut !== 'milieu' || s.barricade || !secteurOuvert(n0, k) || !(ann[k] || []).some((x) => !x.moi)) continue;
@@ -284,7 +282,7 @@ function carteRoles(k, s, me, d) {
 }
 
 function carteSecteur(k, s, me, d) {
-  if (rolesActifs() && s.statut !== 'repris') return carteRoles(k, s, me, d);
+  if ((s.statut !== 'repris')) return carteRoles(k, s, me, d);
   const m = milieuDe(s);
   const ouvert = secteurOuvert(nd(), k);
   const n = (d.secteurs || {})[k] || 0;

@@ -1,4 +1,4 @@
-// Crise du district (Conseil des chefs), côté joueur : vote secret, plan en vigueur, opération commune.
+// Crise du district (cellule de crise), côté joueur : vote secret, plan en vigueur, opération commune.
 import { S, esc, icon, myZone } from './common.js';
 import { CRISE, CRISES, PLANS, criseCourante, planDuJour, agentsCommune, participeCommune, requisCommune } from '../engine/crise.js';
 
@@ -7,7 +7,7 @@ export function criseTodo() {
   const st = S.state, z = myZone(), d = S.draft || {};
   const c = st && criseCourante(st);
   if (!c || !z) return null;
-  if (c.vote === st.turn && !c.plan) return { ok: Number.isInteger(d.crise), href: '#hp-crise', t: 'Conseil des chefs : vote ce soir', s: Number.isInteger(d.crise) ? `plan ${PLANS[d.crise].k}, ${esc(PLANS[d.crise].nom.toLowerCase())}` : esc(CRISES[c.id].titre.toLowerCase()) };
+  if (c.vote === st.turn && !c.plan) return { ok: Number.isInteger(d.crise), href: '#hp-crise', t: 'Cellule de crise : vote ce soir', s: Number.isInteger(d.crise) ? `plan ${PLANS[d.crise].k}, ${esc(PLANS[d.crise].nom.toLowerCase())}` : esc(CRISES[c.id].titre.toLowerCase()) };
   if (planDuJour(st) === 'C') { const p = participeCommune(st, z.uid, d); return { ok: true, href: '#hp-crise', t: p ? `Opération commune : ${agentsCommune(z, st.turn)} agents engagés ce soir` : 'Opération commune : tu n’y participes pas', s: p ? 'tu peux te retirer sur l’HP' : 'tu peux la rejoindre sur l’HP' }; }
   return null;
 }
@@ -22,10 +22,10 @@ export function criseHtml() {
     const v = Number.isInteger(d.crise) ? d.crise : null;
     // Vote enregistré avec les ordres : la carte se replie sur une ligne (on peut la rouvrir pour changer d'avis).
     if (v !== null && S.savedOrders && !S.ordersDirty && !(S.ouverts && S.ouverts.crise)) {
-      return `<button type="button" class="card crise crise-ligne" id="hp-crise" data-action="crise-ouvrir" aria-label="Revoir le vote du Conseil des chefs"><span class="crise-k">${PLANS[v].k}</span><span class="col grow" style="gap:0;text-align:left"><span class="kicker">Conseil des chefs · vote secret jusqu’à 20:00</span><span style="font-weight:700">Ton vote : ${esc(PLANS[v].nom)} <span class="ok">✓</span></span></span>${icon('chevron', 16)}</button>`;
+      return `<button type="button" class="card crise crise-ligne" id="hp-crise" data-action="crise-ouvrir" aria-label="Revoir le vote de la cellule de crise"><span class="crise-k">${PLANS[v].k}</span><span class="col grow" style="gap:0;text-align:left"><span class="kicker">Cellule de crise · vote secret jusqu’à 20:00</span><span style="font-weight:700">Ton vote : ${esc(PLANS[v].nom)} <span class="ok">✓</span></span></span>${icon('chevron', 16)}</button>`;
     }
-    return `<section class="card crise" id="hp-crise" aria-label="Conseil des chefs">
-      <span class="kicker">Conseil des chefs · vote secret jusqu’à 20:00</span>
+    return `<section class="card crise" id="hp-crise" aria-label="Cellule de crise">
+      <span class="kicker">Cellule de crise · vote secret jusqu’à 20:00</span>
       <p class="dil-q">${esc(cr.titre)}</p>
       <p class="small" style="margin:0;color:var(--text2)">${esc(cr.texte)}</p>
       <div class="crise-plans">${PLANS.map((p, i) => `<button type="button" class="dil-btn" data-action="crise-vote" data-i="${i}" aria-pressed="${v === i}">

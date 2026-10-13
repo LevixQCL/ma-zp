@@ -305,5 +305,3 @@ export function remplacerVehicule(z, slot, m = 'diesel', T = 0) {
   syncFlotte(z);
   return prix;
 }
-/** Place reprise par défaut quand le garage est plein : le véhicule le plus usé. */
-export const repriseParDefaut = plusUse;

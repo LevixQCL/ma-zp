@@ -221,16 +221,9 @@ await page.goto(`${BASE}#gazette`);
 await page.waitForSelector('.paper, .gzs-carte');
 await shot('22-gazette-enquete');
 
-// Pactes (onglet de la Carte) : proposer un pacte d'enquête, lancer un défi amical.
+// Pactes : le bouton 🤝 posé sur la Carte. Proposer un pacte d'enquête, lancer un défi amical.
 await page.goto(`${BASE}#carte`);
-// Saison 2 : les pactes sont une ligne du District ; saison 1 : un onglet de la Carte.
-if (await page.locator('a.segl[href="#pactes"]').count()) await page.click('a.segl[href="#pactes"]');
-else {
-  await page.click('[data-action="carte-calque"][data-v="nondroit"]');
-  const pl = page.locator('details[data-k="cv-pactes"]');
-  if (!(await pl.evaluate((e) => e.open))) await pl.locator('summary').click();
-  await page.click('details[data-k="cv-pactes"] a.btn[href="#pactes"]');
-}
+await page.click('a.cv-pactes[href="#pactes"]');
 await page.waitForSelector('[data-action="pacte-form"]');
 await shot('26-pactes');
 await page.click('[data-action="pacte-form"]');

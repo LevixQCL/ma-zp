@@ -4,14 +4,13 @@ import { createGame, resolveTurn, buildJoinZone } from '../js/engine/resolve.js'
 import { affaire, casDe, ouvrirAffaireMaintenant } from '../js/engine/enquete.js';
 import { SEASON_LENGTH, CLASSEMENT } from '../js/engine/constants.js';
 import { moyenneIpz } from '../js/engine/zone.js';
-import { appliquerRegles } from '../js/engine/regles.js';
 import { lireRelances, annoncerVente } from '../js/engine/ventes.js';
 
 const base = { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal' };
 const players = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' }, C: { code: '3333', nom: 'Charlie' } };
 const O = (sauf = []) => Object.fromEntries(['A', 'B', 'C'].filter((u) => !sauf.includes(u)).map((u) => [u, { ...base }]));
-function partie(seed, tours, regles = 1) {
-  let s = createGame({ seed, regles, turnDeadline: Date.parse('2026-10-05T18:00:00Z') });
+function partie(seed, tours) {
+  let s = createGame({ seed, turnDeadline: Date.parse('2026-10-05T18:00:00Z') });
   for (let k = 0; k < tours; k++) { s = resolveTurn(s, { players, orders: O() }).state; s.nextDeadline += 864e5; }
   return s;
 }
@@ -47,7 +46,7 @@ const nuit = (s, orders = O()) => { const r = resolveTurn(s, { players, orders }
 
 // 3. Chef, Directeur, relèves, zones inactives : rien de daté de l'ancienne saison.
 {
-  let s = partie('bas-3', 6, 2);
+  let s = partie('bas-3', 6);
   s.zones.A.chef.blesse = 15; s.zones.A.chef.services = { procureur: 13 }; s.zones.A.chef.talentsT = 12;
   s.dir = { ...(s.dir || {}), prochain: 18, g: { id: 'x', tour: 16 } };
   s.releves = [{ tour: 15, etape: 'offre' }];
@@ -62,17 +61,15 @@ const nuit = (s, orders = O()) => { const r = resolveTurn(s, { players, orders }
   assert.ok(s.zones.C.toursSansOrdres >= 3, 'une zone partie reste inactive');
 }
 
-// 4. Classement v2 : un soir tenu par l'adjoint compte avec la décote.
+// 4. Classement : un soir tenu par l'adjoint compte avec la décote.
 {
-  appliquerRegles({ regles: 2 });
   const z = { ipzHist: [{ t: 1, v: 60, joue: true }, { t: 2, v: 60, joue: false }], toursJoues: 1 };
   assert.ok(moyenneIpz(z) < 60 && moyenneIpz(z) > 60 - CLASSEMENT.decoteAbsent, 'décote appliquée');
-  appliquerRegles({ regles: 1 });
 }
 
 // 5. Une zone écrite par un appareil à l'inscription est reconstruite par le moteur (pas de classement offert).
 {
-  let s = partie('bas-5', 3, 2);
+  let s = partie('bas-5', 3);
   const triche = buildJoinZone(s, 'D', { code: '4444', nom: 'Delta' }, s.turn);
   triche.avantArrivee = { n: 13, v: 100 }; triche.budget = 60; triche.infra = { cachots: true };
   s.zones.D = triche;
@@ -84,7 +81,7 @@ const nuit = (s, orders = O()) => { const r = resolveTurn(s, { players, orders }
 
 // 6. Enchères : une relance ne peut pas engager plus que le budget.
 {
-  const s = partie('bas-6', 2, 2);
+  const s = partie('bas-6', 2);
   const v = s.vente || annoncerVente(s, s.turn);
   s.zones.A.budget = 10;
   const [a, b] = v.lots;

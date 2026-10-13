@@ -1,7 +1,6 @@
 // Écran « Mes parties » : ouvrir, créer ou rejoindre une partie.
 import { S, esc, icon } from './common.js';
 import { partageHtml } from './invitation.js';
-import { reglesV2 } from '../engine/regles.js';
 
 export function renderParties() {
   const b = S.backend;
@@ -9,7 +8,6 @@ export function renderParties() {
   const current = b.gameId && b.gameId();
   const creees = list.filter((p) => p.owner === S.user.uid && p.id !== 'demo').length;
   const max = b.maxParties || 3;
-  const v2 = !!S.state && reglesV2(S.state);
   return `<main class="screen">
     ${S.state ? `<a href="#hp" class="backlink">${icon('back', 20)}<span>Retour à l’HP</span></a>` : ''}
     <header class="col" style="gap:3px"><span class="kicker">Ma ZP</span><h1 class="big">Mes parties</h1>
@@ -23,20 +21,20 @@ export function renderParties() {
         ${p.code && p.id !== 'demo' ? partageHtml(p, { compact: true }) : ''}
       </div>`).join('')}</section>` : `<div class="card amber"><p class="small" style="margin:0;color:var(--amber-soft)">Tu ne fais encore partie d’aucune partie. Rejoins celle d’un collègue avec son code, ou crée la tienne.</p></div>`}
 
-    ${v2 ? `<details class="card repli" data-k="parties-rejoindre" ${!list.length || (S.ouverts && S.ouverts['parties-rejoindre']) ? 'open' : ''}><summary><span style="color:var(--amber)">＋</span><span class="col grow" style="gap:0"><span style="font-weight:600">Rejoindre une partie</span><span class="tiny muted">avec le code d’un collègue</span></span>${icon('chevron', 16)}</summary>` : ''}
-    <form class="${v2 ? 'col' : 'card'}" data-form="party-join" style="gap:10px">
-      ${v2 ? '' : '<h2 class="card-title" style="margin:0">Rejoindre une partie</h2>'}
+    ${`<details class="card repli" data-k="parties-rejoindre" ${!list.length || (S.ouverts && S.ouverts['parties-rejoindre']) ? 'open' : ''}><summary><span style="color:var(--amber)">＋</span><span class="col grow" style="gap:0"><span style="font-weight:600">Rejoindre une partie</span><span class="tiny muted">avec le code d’un collègue</span></span>${icon('chevron', 16)}</summary>`}
+    <form class="${'col'}" data-form="party-join" style="gap:10px">
+      ${''}
       <label class="field">Code d’invitation (6 caractères)<input class="text mono" name="code" maxlength="6" required autocomplete="off" style="text-transform:uppercase;letter-spacing:3px" placeholder="K7PX2M"></label>
       <button class="btn primary block" type="submit">Rejoindre</button>
-    </form>${v2 ? '</details>' : ''}
+    </form>${'</details>'}
 
-    ${v2 ? `<details class="card repli" data-k="parties-creer" ${S.ouverts && S.ouverts['parties-creer'] ? 'open' : ''}><summary><span style="color:var(--amber)">＋</span><span class="col grow" style="gap:0"><span style="font-weight:600">Créer une partie</span><span class="tiny muted">${creees} sur ${max} créées · tu en es le maître du jeu</span></span>${icon('chevron', 16)}</summary>` : ''}
-    <form class="${v2 ? 'col' : 'card'}" data-form="party-create" style="gap:10px">
-      ${v2 ? '' : '<h2 class="card-title" style="margin:0">Créer une partie</h2>'}
+    ${`<details class="card repli" data-k="parties-creer" ${S.ouverts && S.ouverts['parties-creer'] ? 'open' : ''}><summary><span style="color:var(--amber)">＋</span><span class="col grow" style="gap:0"><span style="font-weight:600">Créer une partie</span><span class="tiny muted">${creees} sur ${max} créées · tu en es le maître du jeu</span></span>${icon('chevron', 16)}</summary>`}
+    <form class="${'col'}" data-form="party-create" style="gap:10px">
+      ${''}
       <p class="small muted" style="margin:0">Tu en deviens le maître du jeu : tu la lances, tu partages son code, tu peux retirer un joueur. ${creees} sur ${max} parties créées.</p>
       <label class="field">Nom de la partie<input class="text" name="nom" maxlength="40" required placeholder="Brigade de nuit"></label>
       <button class="btn block" type="submit" ${creees >= max ? 'disabled' : ''}>${creees >= max ? `Maximum de ${max} parties atteint` : 'Créer la partie'}</button>
-    </form>${v2 ? '</details>' : ''}
+    </form>${'</details>'}
     ${S.user ? `<button class="btn ghost small" data-action="logout">Se déconnecter</button>` : ''}
   </main>`;
 }

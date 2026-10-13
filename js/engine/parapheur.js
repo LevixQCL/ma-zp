@@ -118,7 +118,6 @@ export function jourPrise(chef, T) {
   const j = fait + 1;
   return j > PRISE_JOURS ? 99 : Math.max(1, j);
 }
-export const priseOuverte = (chef, T, k) => { const p = PRISE.find((x) => x.k === k); return !p || jourPrise(chef, T) >= p.j; };
 
 /** Courriers du jour pour une zone (déterministe : le même à l'écran et au tour de 20:00). */
 export function courriersDuJour(state, z) {

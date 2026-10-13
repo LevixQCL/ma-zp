@@ -3,7 +3,7 @@ import { effetsPressions } from '../engine/contenu.js';
 import { comparatifModeles } from './modeles.js';
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
-import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, AGENTS_EN_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier, PREPA, coutPrepa } from '../engine/constants.js';
+import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier, PREPA, coutPrepa } from '../engine/constants.js';
 import { vitesseCombi, MODELES, IDS_MODELES, placesIntervention, agentsMontes, apportAchat, plusUse, prixRevente, modeleDe, RENDEMENT } from '../engine/flotte.js';
 import { agentsFipaCeSoir } from './fipa.js';
 import { vagueServiceHtml } from './vagues.js';
@@ -13,10 +13,10 @@ import { participeCommune, agentsCommune } from '../engine/crise.js';
 import { engagementsDuJour } from './engagements.js';
 import { primeHtml } from './prime.js';
 import { previsionHtml, suivrePrevision } from './prevision.js';
-import { reglesV2, MAX_DEPENSES, doctrineOuverte, dernierJourDoctrine, doctrineSemaine2, finFenetreDoctrine, DOCTRINE_SEM2 } from '../engine/regles.js';
-import { DOCTRINES, IDS_DOCTRINES, REGLES, MAITRISE, coutPrime } from '../engine/constants.js';
+import { MAX_DEPENSES, doctrineOuverte, doctrineSemaine2, finFenetreDoctrine, DOCTRINE_SEM2 } from '../engine/regles.js';
+import { DOCTRINES, IDS_DOCTRINES, MAITRISE, coutPrime } from '../engine/constants.js';
 import { pistesOrdresHtml, resumePistes } from './pistes.js';
-import { chefOrdresHtml, resumeChefOrdres, emplacementsHtml } from './chef.js';
+import { resumeChefOrdres, emplacementsHtml } from './chef.js';
 import { CHEF } from '../engine/chef.js';
 import { demandeRenfortHtml } from './renfort.js';
 import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
@@ -218,8 +218,6 @@ export function besoinsServices(e = estimations()) {
 }
 const PION = (c) => `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="12" cy="7.5" r="4" fill="${c}"/><path d="M4 21c0-5 3.6-8 8-8s8 3 8 8z" fill="${c}"/></svg>`;
 const MAX_CASES = 14;
-/** Agents de ce service partis en mission aujourd'hui (opération, enquête, FIPA…). */
-function prisDe(e, s) { return ((e && e.prises && e.prises[s]) || []).reduce((t, [k]) => t + k, 0); }
 /** Badge d'état du service, en clair : ce qu'il faut encore, ou que le besoin est couvert. */
 function badgeService(s, b, n) {
   const k = b.bes - n;
@@ -385,17 +383,6 @@ function decisionLabel(z, d) {
   return '';
 }
 
-function decisionOptions(z, T) {
-  const opts = [];
-  for (const n of [1, 2, 3]) opts.push({ d: { type: 'recruter', n }, sub: `${coutRecrue(z) * n} k€ · arrivée dans ${DELAI_ACADEMIE} tour${DELAI_ACADEMIE > 1 ? 's' : ''}` });
-  for (const s of SERVICES) opts.push({ d: { type: 'former', service: s }, sub: `${coutFormation(z, s)} k€ · ${agentsFormation(z, s) ? `${agentsFormation(z, s)} agents absents ${DUREE_FORMATION} tour${DUREE_FORMATION > 1 ? 's' : ''}` : 'au stand de tir, personne d’absent'}` });
-  for (const m of IDS_MODELES) opts.push({ d: { type: 'equiper', cible: 'vehicule', modele: m }, sub: `${MODELES[m].prix} k€ · ${z.vehicules} véhicules actuellement` });
-  for (const s of SERVICES) opts.push({ d: { type: 'equiper', cible: s }, sub: `${coutEquipement(z.equip[s])} k€` });
-  if ((z.prepa || 0) < PREPA.max) opts.push({ d: { type: 'equiper', cible: 'prepa' }, sub: `${coutPrepa(z.prepa)} k€ · urgences plus rapides` });
-  for (const [id, B] of Object.entries(BATIMENTS)) if (z.batiments[id] < BATIMENT_MAX) opts.push({ d: { type: 'agrandir', batiment: id }, sub: `${B.coutAgrandir(z.batiments[id])} k€ · ${B.capacite(z.batiments[id] + 1)} ${B.unite} · ${TRAVAUX_TOURS} tour${TRAVAUX_TOURS > 1 ? 's' : ''} de travaux` });
-  for (const [id, inf] of Object.entries(INFRAS)) if (!z.infra[id] && (!inf.v2 || REGLES.v2)) opts.push({ d: { type: 'construire', infra: id }, sub: `${inf.cout} k€ · ${inf.effet} · entretien ${String(ENTRETIEN_ANNEXE).replace('.', ',')} k€/tour` });
-  return opts.map((o) => ({ ...o, refus: decisionImpossible(z, o.d, T) }));
-}
 
 const DEC_CATS = [['recruter', 'Recruter'], ['former', 'Former'], ['equiper', 'Équiper'], ['batir', 'Bâtir']];
 const catDe = (dec) => (!dec ? null : dec.type === 'construire' || dec.type === 'agrandir' ? 'batir' : dec.type);
@@ -535,7 +522,7 @@ function decisionPicker(z, T, d) {
   } else {
     const faites = Object.entries(INFRAS).filter(([id]) => z.infra[id]).map(([, i]) => i);
     corps = `<div class="dgrille">${Object.entries(BATIMENTS).map(([id, B]) => { const n = z.batiments[id]; return n >= BATIMENT_MAX ? '' : tuile({ type: 'agrandir', batiment: id }, `Agrandir : ${B.nom}`, `${B.capacite(n)} → ${B.capacite(n + 1)} ${B.unite} · entretien ${ent(B.entretien(n))} → ${ent(B.entretien(n + 1))}/tour · ⏱ ${TRAVAUX_TOURS === 1 ? 'prêt demain soir' : `prêt dans ${TRAVAUX_TOURS} tours`}`, B.coutAgrandir(n), niv(n, BATIMENT_MAX)); }).join('')}
-      ${Object.entries(INFRAS).filter(([id, inf]) => !z.infra[id] && !(inf.v2 && !REGLES.v2)).map(([id, inf]) => tuile({ type: 'construire', infra: id }, `${inf.v2 ? '🆕 ' : ''}${inf.nom}`, `${inf.effet} · entretien ${ent(ENTRETIEN_ANNEXE)}/tour · ⏱ en service ce soir`, inf.cout)).join('')}</div>
+      ${Object.entries(INFRAS).filter(([id]) => !z.infra[id]).map(([id, inf]) => tuile({ type: 'construire', infra: id }, inf.nom, `${inf.effet} · entretien ${ent(ENTRETIEN_ANNEXE)}/tour · ⏱ en service ce soir`, inf.cout)).join('')}</div>
       ${emplacementsHtml(z, d)}
       ${faites.length ? `<div class="col" style="gap:3px"><span class="tiny muted">Déjà construit :</span>${faites.map((i) => `<span class="tiny"><strong>${esc(i.nom)}</strong> <span class="muted">· ${esc(i.effet)}</span></span>`).join('')}</div>` : ''}`;
   }
@@ -754,14 +741,14 @@ function pliItem(key, titre, resume, contenu, alerte = false, pastille = null) {
 /** Les sections repliables regroupées dans une seule carte, une ligne chacune. */
 const ICO_PLI = { chef: 'chef', nondroit: 'mur', equipe: 'equipe', affaires: 'poignee', decision: 'star', pistes: 'loupe', depenses: 'euro', reserve: 'renfort' };
 /** Titres courts des tuiles (le titre complet reste dans le panneau ouvert). */
-const COURT_PLI = { chef: 'Chef', nondroit: 'Non-droit', equipe: 'Équipe', affaires: 'Affaires', decision: 'Décision', pistes: 'Pistes', depenses: 'Dépenses', reserve: 'Réserve' };
+const COURT_PLI = { chef: 'Chef', nondroit: 'Non-droit', equipe: 'Équipe', affaires: 'Affaires', decision: 'Décision', pistes: 'Tuyaux', depenses: 'Dépenses', reserve: 'Réserve' };
 /** Teinte de chaque tuile (icône et liseré). */
 const TEINTE_PLI = { chef: '#FFB23F', nondroit: '#FF8A65', equipe: '#63B0FF', affaires: '#B892FF', decision: '#FFD166', pistes: '#3DD39A', depenses: '#7BD3C8', reserve: '#9DB4FF' };
 /** Résumé de tuile : sans emoji (l'icône suffit), et « vide » si rien n'est engagé ce soir. */
 const sansEmoji = (s) => String(s).replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').replace(/\s{2,}/g, ' ').trim();
 const resumeVide = (s) => /^(aucun|aucune|pas encore)\b/i.test(sansEmoji(s).replace(/<[^>]+>/g, ''));
 function pliGroupe(items) {
-  if (REGLES.v2) {
+  {
     // Saison 2 : une tuile par sujet ; celle qu'on touche s'ouvre en dessous, sur toute la largeur.
     const l = items.filter(Boolean);
     const ouv = l.find((x) => S.ordOpen && S.ordOpen[x.key]);
@@ -774,27 +761,8 @@ function pliGroupe(items) {
       ${ouv ? `<div class="card ord-ouvert" id="ord-${ouv.key}" style="--t:${TEINTE_PLI[ouv.key] || 'var(--amber)'}"><div class="between"><span class="row" style="gap:10px;align-items:center">${ico(ouv.key)}<b>${esc(ouv.titre)}</b></span><button type="button" class="iconbtn" data-action="ord-open" data-k="${ouv.key}" aria-label="Fermer" style="width:32px;height:32px">✕</button></div>${ouv.contenu}</div>` : ''}
     </section>`;
   }
-  return `<section class="card plis" aria-label="Ce soir aussi">${items.filter(Boolean).map((x) => {
-    const ouvert = !!(S.ordOpen && S.ordOpen[x.key]);
-    const chip = x.pastille || (x.alerte ? 'à voir' : '');
-    return `<div class="pli-l${ouvert ? ' ouvert' : ''}">
-      <button type="button" class="pli" data-action="ord-open" data-k="${x.key}" aria-expanded="${ouvert}">
-        <span class="col grow" style="gap:1px;align-items:flex-start;text-align:left;min-width:0"><span class="tiny muted" style="font-weight:700">${esc(x.titre)}</span>
-        <span style="font-size:14.5px;font-weight:600">${x.resume}</span></span>${chip ? `<span class="pli-chip">${esc(chip)}</span>` : ''}${icon('chevron', 18, ouvert ? 'style="transform:rotate(90deg)"' : '')}</button>
-      ${ouvert ? `<div class="pli-c">${x.contenu}</div>` : ''}</div>`;
-  }).join('')}</section>`;
 }
 
-/** Une section repliable : une ligne résumé, ouverte à la demande. */
-function pli(key, titre, resume, contenu, alerte = false) {
-  const ouvert = !!(S.ordOpen && S.ordOpen[key]);
-  return `<section class="card ${alerte ? 'amber' : ''}" aria-label="${esc(titre)}" style="gap:8px">
-    <button type="button" class="pli" data-action="ord-open" data-k="${key}" aria-expanded="${ouvert}">
-      <span class="col" style="gap:1px;align-items:flex-start;text-align:left"><span class="tiny muted" style="font-weight:700">${esc(titre)}</span>
-      <span style="font-size:14px;font-weight:600">${resume}</span></span>${icon('chevron', 18, ouvert ? 'style="transform:rotate(90deg)"' : '')}</button>
-    ${ouvert ? contenu : ''}
-  </section>`;
-}
 
 /** Carte d'une affaire disputée, avec les agents engagés (écran Terrain). */
 export function carteAffaire(a) {
@@ -856,19 +824,19 @@ const valJauge = (z) => (z.jaugeDoc != null ? z.jaugeDoc : z.doctrine === 'inter
 function jaugesService(z, s2) {
   const l = [];
   if (s2 === 'intervention') l.push(barreJauge('🚨', 'Flagrant délit', z.jaugeFlagrant, 'tes patrouilles d’Intervention libres après les incidents du soir', '+3 points, +3 PS, +1 de satisfaction, tension d’un quartier chaud −5'));
-  const D = REGLES.v2 && z.doctrine && DOCTRINES[z.doctrine];
+  const D = z.doctrine && DOCTRINES[z.doctrine];
   if (D && D.jauge && D.jauge.service === s2) l.push(barreJauge(D.jauge.ico, D.jauge.nom, valJauge(z), D.jauge.remplit, D.jauge.gain, ' jg-doc'));
   return l.length ? `<div class="jg-inter">${l.join('')}</div>` : '';
 }
 /** Jauge d'une doctrine sans service propre (Partenaire) : en tête de l'affectation. */
 function jaugeSansService(z) {
-  const D = REGLES.v2 && z.doctrine && DOCTRINES[z.doctrine];
+  const D = z.doctrine && DOCTRINES[z.doctrine];
   if (!D || !D.jauge || D.jauge.service) return '';
   return `<div class="jg-inter jg-solo">${barreJauge(D.jauge.ico, D.jauge.nom, valJauge(z), D.jauge.remplit, D.jauge.gain, ' jg-doc')}</div>`;
 }
 /** Fenêtre de choix fermée : rappel de la doctrine en vigueur (une ligne ; un toucher déplie force, prix et jauge). */
 function doctrineFixeeHtml(z) {
-  if (!REGLES.v2 || !reglesV2(S.state)) return '';
+  
   const D = z.doctrine && DOCTRINES[z.doctrine], T = S.state.turn;
   const k = 'ord-doc-info', ouv = !!(S.ouverts && S.ouverts[k]);
   const prochain = T < DOCTRINE_SEM2.debut && !z.doctrineSem2 ? `modifiable les jours ${DOCTRINE_SEM2.debut} et ${DOCTRINE_SEM2.fin}` : 'fixée jusqu’à la fin de la saison';
@@ -930,7 +898,6 @@ function pastillesOrdres(z, d, e) {
 
 export function renderOrdres() {
   const z = myZone(), st = S.state, d = S.draft, T = st.turn;
-  S.ordresV2 = !!REGLES.v2;
   const e = estimations();
   const bl = blessesActifs(z, T), fo = enFormation(z, T);
   const others = Object.values(st.zones).filter((x) => x.uid !== z.uid);
@@ -943,35 +910,35 @@ export function renderOrdres() {
   const nbDep = (dep.reserve ? 1 : 0) + depKeys.filter((k) => dep[k]).length;
   // Talent « Rallonge budgétaire » (équipé, chef pas à l'hôpital, pas utilisé depuis 7 jours) : une 3e dépense.
   const talentsEq = d.talents || (z.chef && z.chef.talents) || [];
-  const rallonge = !!(REGLES.v2 && z.chef && !z.chef.hs && talentsEq.includes('rallonge') && !(z.chef.rallongeT != null && T < z.chef.rallongeT + CHEF.semaine));
+  const rallonge = !!(z.chef && !z.chef.hs && talentsEq.includes('rallonge') && !(z.chef.rallongeT != null && T < z.chef.rallongeT + CHEF.semaine));
   const maxDep = MAX_DEPENSES + (rallonge ? 1 : 0);
 
   const nbAgentsAff = Object.values(d.engagements).reduce((s2, x) => s2 + (x.agents || 0), 0);
   const affairesHtml = `<div class="col" style="gap:8px">${st.affaires.map((a) => { const eg = d.engagements[a.id]; return `<div class="between"><span class="small" style="font-weight:600">${esc(a.titre)}</span><span class="tiny ${eg && eg.agents ? 'ok' : 'muted'}" style="white-space:nowrap">${eg && eg.agents ? `${eg.agents} agent${eg.agents > 1 ? 's' : ''}` : a.zone === z.uid ? 'à lancer' : '—'}</span></div>`; }).join('')}
       <p class="tiny muted" style="margin:0">Les affaires disputées se gèrent au même endroit : engager tes agents, postuler chez un voisin, accepter les candidatures.${nbAgentsAff ? ` ${nbAgentsAff} agent${nbAgentsAff > 1 ? 's' : ''} engagé${nbAgentsAff > 1 ? 's' : ''}, pris sur tes services.` : ''}</p>
-      <a class="btn small primary block" href="#terrain">Gérer les affaires sur le Terrain</a></div>`;
+      <a class="btn small primary block" href="#terrain">Gérer les affaires sur la Carte</a></div>`;
 
   const decisionHtml = decisionPicker(z, T, d);
 
   const depensesHtml = `<div class="col" style="gap:6px">
-      <p class="tiny muted" style="margin:0">Agents de réserve : ${dep.reserve ? `<strong>${dep.reserve}</strong> en ${SERVICE_LABELS[dep.reserveService]} (${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€)` : 'aucun'} · ${REGLES.v2 ? 'ils se règlent dans leur tuile' : 'ils se règlent dans l’Affectation, plus haut'}.</p>
+      <p class="tiny muted" style="margin:0">Agents de réserve : ${dep.reserve ? `<strong>${dep.reserve}</strong> en ${SERVICE_LABELS[dep.reserveService]} (${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€)` : 'aucun'} · ${'ils se règlent dans leur tuile'}.</p>
     </div>
-    ${REGLES.v2 ? `<p class="tiny ${nbDep >= maxDep ? 'warn' : 'muted'}" style="margin:0">${MAX_DEPENSES} dépenses par jour au plus${rallonge ? ' (3 aujourd’hui : ta rallonge budgétaire est disponible)' : ''} (les agents de réserve comptent pour une, la carrosserie ne compte pas) : ${nbDep - (dep.carrosserie ? 1 : 0)} sur ${maxDep}.</p>` : ''}
+    ${`<p class="tiny ${nbDep >= maxDep ? 'warn' : 'muted'}" style="margin:0">${MAX_DEPENSES} dépenses par jour au plus${rallonge ? ' (3 aujourd’hui : ta rallonge budgétaire est disponible)' : ''} (les agents de réserve comptent pour une, la carrosserie ne compte pas) : ${nbDep - (dep.carrosserie ? 1 : 0)} sur ${maxDep}.</p>`}
     <div class="col" style="gap:6px">${depKeys.map((k) => `
-      <button type="button" class="choice" data-action="dep-toggle" data-k="${k}" aria-pressed="${!!dep[k]}" ${REGLES.v2 && !dep[k] && k !== 'carrosserie' && nbDep - (dep.carrosserie ? 1 : 0) >= maxDep ? 'disabled' : ''} style="flex-direction:row;justify-content:space-between;text-align:left">
+      <button type="button" class="choice" data-action="dep-toggle" data-k="${k}" aria-pressed="${!!dep[k]}" ${!dep[k] && k !== 'carrosserie' && nbDep - (dep.carrosserie ? 1 : 0) >= maxDep ? 'disabled' : ''} style="flex-direction:row;justify-content:space-between;text-align:left">
         <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(DEPENSES[k].nom)}</span><span class="s">${esc(DEPENSES[k].texte)}${k === 'carrosserie' && Array.isArray(dep.carrosserie) && dep.carrosserie.length < cab ? ` · ${dep.carrosserie.length} sur ${cab} choisi${dep.carrosserie.length > 1 ? 's' : ''} depuis l’HP` : ''}${k === 'revision' ? ` · état actuel ${Math.round(100 - z.usure)} %${z.stats && z.stats.risqueAccident != null ? ` · risque d’accident hier ${fmt1(z.stats.risqueAccident)} %` : ''}` : ''}${k === 'carrosserie' ? ` · ${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} : sans réparation, −${Math.min(3, cab)} de satisfaction et de réputation par tour` : ''}</span></span><span class="mono small">${fmt1(k === 'carrosserie' ? coutCarrosserie(z, dep.carrosserie || true) : k === 'prime' ? coutPrime(z, T) : DEPENSES[k].cout)} k€${k === 'prime' && coutPrime(z, T) > DEPENSES.prime.cout ? ' (déjà versée hier)' : ''}</span></button>`).join('')}
     </div>
     <p class="tiny muted" style="margin:0">Payées à 20:00 si le budget le permet (${fmt1(z.budget)} k€). Elles ne sont pas reconduites le lendemain.</p>`;
 
   return `<main class="screen">
     <header class="between" style="align-items:flex-start;gap:10px"><div class="col" style="gap:3px;min-width:0"><h1 class="big">Ordres du tour ${T}</h1>
-      ${REGLES.v2 ? `<p class="sub">${e.dispo} agents${e.enquete ? ` · ${e.enquete} en mission` : ''}${bl || fo || z.absents ? ` · ${bl + fo + (z.absents || 0)} absent${bl + fo + (z.absents || 0) > 1 ? 's' : ''}` : ''} · secrets jusqu’à 20:00</p>` : `<p class="sub">${e.dispo} agents disponibles${e.enquete ? `, dont ${e.enquete} en mission (enquête, FIPA, relève ou opération commune) : ${e.dispo - e.enquete} à répartir` : ''}${bl || fo || z.absents ? ` (${[bl ? `${bl} absent${bl > 1 ? 's' : ''}` : '', fo ? `${fo} en formation` : '', z.absents ? `${z.absents} en congé maladie, moral bas` : ''].filter(Boolean).join(', ')})` : ''} · secrets jusqu’à 20:00</p>`}</div>
+      ${`<p class="sub">${e.dispo} agents${e.enquete ? ` · ${e.enquete} en mission` : ''}${bl || fo || z.absents ? ` · ${bl + fo + (z.absents || 0)} absent${bl + fo + (z.absents || 0) > 1 ? 's' : ''}` : ''} · secrets jusqu’à 20:00</p>`}</div>
       <span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} Validés` : S.savedOrders ? 'Modifiés' : 'Pas validés'}</span></header>
 
-    ${REGLES.v2 ? `<section class="card ord-fiche" aria-label="Ce soir">
+    ${`<section class="card ord-fiche" aria-label="Ce soir">
       <div id="prev-ipz" class="pv2" aria-live="polite">${previsionHtml()}</div>
-      ${pastillesOrdres(z, d, e)}</section>` : `<div id="prev-ipz" class="col prev-ipz" style="gap:2px;padding:10px 12px;border-radius:12px;background:var(--card, rgba(255,255,255,.04));border:1px solid var(--line)" aria-live="polite">${previsionHtml()}</div>`}${(() => { setTimeout(suivrePrevision, 0); return ''; })()}
-    ${saved ? (REGLES.v2 ? '' : '<p class="tiny muted" style="margin:-6px 0 0">Tes ordres sont validés ; tu peux encore les modifier jusqu’à 20:00.</p>')
+      ${pastillesOrdres(z, d, e)}</section>`}${(() => { setTimeout(suivrePrevision, 0); return ''; })()}
+    ${saved ? ('')
       : !S.savedOrders && !S.ordersDirty && z.dernierOrdre ? `<button class="btn primary block" data-action="save-orders">Reprendre les ordres d’hier et valider</button>
         <p class="tiny muted" style="margin:-4px 0 0;text-align:center">Ou ajuste ci-dessous, puis valide.</p>` : ''}
 
@@ -999,9 +966,9 @@ export function renderOrdres() {
         <button type="button" class="lien-statut" data-action="ventilation" aria-expanded="${!!S.ventilation}"><span id="alloc-status">${statusHtml(e)}</span><span class="tiny muted"> · ${S.ventilation ? 'masquer' : 'détail'}</span>${agentsHorsServices().some((h) => h.bloque) ? ' <span class="small bad">· agents bloqués</span>' : ''}</button></div>
       ${S.ventilation ? ventilationHtml(z, e) : ''}
       <div class="barre-aff" id="barre-aff" aria-hidden="true">${barreAffectation(e)}</div>
-      ${REGLES.v2 ? '' : `<div class="legende-cases tiny muted"><span><span class="case pleine mini" style="--c:var(--faint)"></span>au service</span><span><span class="case vide mini"></span>manquant</span><span><span class="case plus mini" style="--c:var(--faint)"></span>en plus</span>${Object.values(e.prises || {}).some((l) => l.some(([k]) => k > 0)) ? '<span><span class="case mission mini" style="--c:var(--faint)"></span>en mission</span>' : ''}</div>`}
+      ${''}
       ${(() => { S._bs = besoinsServices(e); return ''; })()}
-      ${REGLES.v2 ? jaugeSansService(z) : ""}${REGLES.v2 ? SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc2 svc-${b.st}${ouvert ? ' ouvert' : ''}" style="--c:${COUL_SVC[s2]}">
+      ${jaugeSansService(z)}${SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc2 svc-${b.st}${ouvert ? ' ouvert' : ''}" style="--c:${COUL_SVC[s2]}">
         <div class="svc2-l"><button type="button" class="svc2-n svc-tog" data-action="help" data-s="${s2}" aria-expanded="${ouvert}" aria-label="${ouvert ? 'Masquer' : 'Afficher'} le détail : ${SERVICE_LABELS[s2]}"><span>${s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2]}</span>${bonusEnigme(s2) > 1 ? `<small class="ok">+${Math.round((bonusEnigme(s2) - 1) * 100)} %</small>` : ''}</button>
           <div class="cases svc2-cases" id="cases-${s2}">${casesService(s2, b, d.alloc[s2], e)}</div>
           <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
@@ -1010,19 +977,9 @@ export function renderOrdres() {
         ${jaugesService(z, s2)}
         ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} de réserve en renfort</span>` : ''}
         ${ouvert ? `<div class="svc-det">${s2 === 'recherche' ? `<div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}<p class="tiny" style="margin:0;color:var(--text2);line-height:1.45">Niveau ${z.niveaux[s2]}. ${esc(aide(s2, z))}</p></div>` : ''}
-      </div>`; }).join('') : SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc svc-${b.st}${ouvert ? ' ouvert' : ''}">
-        <div class="svc-l"><i class="svc-c" style="background:${COUL_SVC[s2]}"></i>
-          <button type="button" class="svc-t svc-tog" data-action="help" data-s="${s2}" aria-expanded="${ouvert}" aria-label="${ouvert ? 'Masquer' : 'Afficher'} le détail : ${SERVICE_LABELS[s2]}">
-            <span class="svc-n">${s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2]}<span class="svc-niv">niv. ${z.niveaux[s2]}</span>${bonusEnigme(s2) > 1 ? `<span class="svc-niv" style="color:var(--green, #3fbf7f)" title="Bonus d’énigme du jour">+${Math.round((bonusEnigme(s2) - 1) * 100)} % énigme</span>` : ''}${icon('chevron', 13, `class="svc-chev"${ouvert ? ' style="transform:rotate(90deg)"' : ''}`)}</span>
-            <span class="svc-r" id="res-${s2}">${resultatService(e, s2)}</span></button>
-          <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
-        <div class="cases-l"><div class="cases" id="cases-${s2}">${casesService(s2, b, d.alloc[s2], e)}</div><span id="badge-${s2}">${badgeService(s2, b, d.alloc[s2])}</span></div>
-        <span id="pris-${s2}" class="svc-plus">${prisHtml(e, s2)}</span>
-        ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} de réserve en renfort (efficacité ${Math.round(DEPENSES.reserve.efficacite * 100)} %)</span>` : ''}
-        ${ouvert ? `<div class="svc-det">${s2 === 'recherche' ? `<div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}<p class="tiny" style="margin:0;color:var(--text2);line-height:1.45">${esc(aide(s2, z))}</p></div>` : ''}
       </div>`; }).join('')}
-      ${REGLES.v2 ? (e.reste > 0 ? `<p class="small warn" style="margin:8px 0 0;font-weight:600">${e.reste} agent${e.reste > 1 ? 's' : ''} libre${e.reste > 1 ? 's' : ''} à placer</p>` : '') : reserveHtml(z, d, e)}
-      ${REGLES.v2 ? '' : `<p class="tiny muted" style="margin:6px 0 0">Touche + : si aucun agent n’est libre, il est pris dans ton service le plus fourni. Résultats estimés : le hasard du tour peut les faire varier.</p>`}
+      ${e.reste > 0 ? `<p class="small warn" style="margin:8px 0 0;font-weight:600">${e.reste} agent${e.reste > 1 ? 's' : ''} libre${e.reste > 1 ? 's' : ''} à placer</p>` : ''}
+      ${''}
     </section>
 
     <section class="col" id="ord-rythme" aria-label="Rythme" style="gap:8px"><h2 class="section" style="margin:0">Rythme de travail</h2>
@@ -1033,15 +990,15 @@ export function renderOrdres() {
 
     ${prisesHtml()}
     ${(() => { const ov = ouvertureOrdres(z); return ov.nouveau.length ? `<p class="small" style="margin:0;color:var(--amber)">Nouveau dans tes ordres : ${ov.nouveau.map(esc).join(', ')}.</p>` : ov.prochain ? `<p class="tiny muted" style="margin:0">Jour ${ov.jour} de ta prise de fonction : ${esc(ov.prochain[2])} s’ouvre au jour ${ov.prochain[1]}.</p>` : ''; })()}
-    ${pliGroupe([z.chef && REGLES.v2 ? pliItem('chef', 'Chef de corps', resumeChefOrdres(z, d), `<p class="tiny muted" style="margin:0">Agenda, première ligne, service du réseau et talents se règlent dans l’onglet Chef. Ils partent avec tes ordres de 20:00.</p><a class="btn small primary block" href="#chef">Ouvrir l’onglet Chef</a>`, (z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)), (z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)) ? 'talent' : null) : null,
+    ${pliGroupe([z.chef ? pliItem('chef', 'Chef de corps', resumeChefOrdres(z, d), `<p class="tiny muted" style="margin:0">Agenda, première ligne, service du réseau et talents se règlent dans l’onglet Chef. Ils partent avec tes ordres de 20:00.</p><a class="btn small primary block" href="#chef">Ouvrir l’onglet Chef</a>`, (z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)), (z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)) ? 'talent' : null) : null,
     ouvertureOrdres(z).nondroit ? pliItem('nondroit', 'Zone de non-droit', (() => { const n = agentsND(d); const sects = Object.keys(d.secteurs || {}).filter((k) => d.secteurs[k]); return n ? `${n} agent${n > 1 ? 's' : ''} sur ${sects.map((k) => esc(nomSecteur(k))).join(', ')}` : 'Aucun agent ce soir'; })(), `<div class="col" style="gap:6px">${Object.entries(d.secteurs || {}).filter(([, n]) => n).map(([k, n]) => `<div class="between"><span class="small" style="font-weight:600">${esc(nomSecteur(k))}</span><span class="tiny ok">${n} agent${n > 1 ? 's' : ''}</span></div>`).join('')}
-      <p class="tiny muted" style="margin:0">Les agents envoyés sont pris sur tes services pour la journée. Qui y va et où : sur le Terrain.</p>
-      <a class="btn small primary block" href="#terrain">Choisir les secteurs sur le Terrain</a></div>`) : null,
+      <p class="tiny muted" style="margin:0">Les agents envoyés sont pris sur tes services pour la journée. Qui y va et où : sur la Carte.</p>
+      <a class="btn small primary block" href="#terrain">Choisir les secteurs sur la Carte</a></div>`) : null,
     !ouvertureOrdres(z).equipe ? null : pliItem('equipe', 'Mon équipe', (() => { const ms = missionsValides(d); const m = ms.length === 1 && (z.equipe || []).find((x) => x.role === ms[0].role); const nbP = Object.keys(d.postes || {}).length; if (!ms.length && nbP) return `${nbP} figure${nbP > 1 ? 's changent' : ' change'} de service ce soir`; return ms.length > 1 ? `${ms.length} figures en mission` : m ? `${esc(m.prenom)} en mission ${ms[0].type === 'nondroit' ? 'en zone de non-droit' : 'en renfort'}` : 'Chacun encadre son service'; })(), equipeOrdres(z, d)),
     st.affaires.length && ouvertureOrdres(z).affaires ? pliItem('affaires', 'Affaires disputées', nbEng ? `${nbEng} affaire${nbEng > 1 ? 's' : ''} engagée${nbEng > 1 ? 's' : ''} sur ${st.affaires.length}` : `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} ouverte${st.affaires.length > 1 ? 's' : ''} · aucun agent engagé`, `<div class="col" style="gap:8px">${affairesHtml}</div>`) : null,
     pliItem('decision', 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'Pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, decisionHtml, !d.decision && !d.sansDecision, !d.decision && !d.sansDecision ? 'à choisir' : null),
-    pliItem('pistes', 'Pistes', resumePistes(z, d), pistesOrdresHtml(z, d)),
-    REGLES.v2 && !sousTutelle(z, T) ? pliItem('reserve', 'Agents de réserve', dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun', `<div class="affect">${reserveHtml(z, d, e)}</div>`) : null,
+    pliItem('pistes', 'Tuyaux', resumePistes(z, d), pistesOrdresHtml(z, d)),
+    !sousTutelle(z, T) ? pliItem('reserve', 'Agents de réserve', dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun', `<div class="affect">${reserveHtml(z, d, e)}</div>`) : null,
     !ouvertureOrdres(z).depenses ? null : pliItem('depenses', 'Dépenses du jour', cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune', depensesHtml, cab > 0 && !dep.carrosserie, cab > 0 && !dep.carrosserie ? 'à réparer' : null)])}
 
     <a class="small" href="#guide-ordres" style="text-align:center;padding:10px">Comment fonctionnent les ordres ?</a>

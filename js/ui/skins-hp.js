@@ -164,8 +164,6 @@ export function toitBatiment(SB, c) {
   return s;
 }
 
-// ───── Garage ─────
-export const SKINS_GARAGE_NEUFS = ['cartons', 'coffre'];
 
 /** Habillage du corps du garage (après le fond, avant les portes). */
 export function corpsGarage(SG, c) {

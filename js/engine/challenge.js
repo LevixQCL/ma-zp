@@ -74,17 +74,17 @@ export function primeChallenge(state, uids, players, { push, zoneLabel, noms = {
     const z = state.zones[l.uid];
     if (!z) continue;
     z.budget += CHALLENGE.prime;
-    (z._compta ||= []).push({ k: 'challenge', l: 'Prime du Challenge', v: CHALLENGE.prime });
+    (z._compta ||= []).push({ k: 'challenge', l: 'Prime des records', v: CHALLENGE.prime });
     z.jaugeIncidents = (z.jaugeIncidents || 0) + CHALLENGE.jauge;
     z.stats.primesChallenge = (z.stats.primesChallenge || 0) + 1;
     const nom = noms[l.jeu] || l.jeu;
-    z.rapport.push(`Prime du Challenge : meilleur niveau de la semaine en ${nom} (niveau ${l.niveau}${l.premier ? '' : ', le premier a déjà sa prime ailleurs'}). +${CHALLENGE.prime} k€, +${CHALLENGE.jauge} sur la jauge des skins.`);
+    z.rapport.push(`Prime des records : meilleur niveau de la semaine en ${nom} (niveau ${l.niveau}${l.premier ? '' : ', le premier a déjà sa prime ailleurs'}). +${CHALLENGE.prime} k€, +${CHALLENGE.jauge} sur la jauge des skins.`);
     const r = remplirJauge(z);
     if (r && r.lignes) z.rapport.push(...r.lignes);
   }
   if (laureats.length) {
     const liste = laureats.map((l) => `${noms[l.jeu] || l.jeu} : ${zoneLabel(state.zones[l.uid])} (niv. ${l.niveau})`).join(' · ');
-    push(4, 'Challenge', `Primes du Challenge : ${laureats.length} lauréat${laureats.length > 1 ? 's' : ''} cette semaine`, `${liste}. Nouvelle semaine dès maintenant : les compteurs repartent de zéro.`);
+    push(4, 'Records', `Primes des records : ${laureats.length} lauréat${laureats.length > 1 ? 's' : ''} cette semaine`, `${liste}. Nouvelle semaine dès maintenant : les compteurs repartent de zéro.`);
   }
   state.challenge = { cle, laureats: laureats.map(({ jeu, uid, niveau }) => ({ jeu, uid, niveau })) };
   return laureats;

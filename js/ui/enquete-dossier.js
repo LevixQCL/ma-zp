@@ -17,18 +17,9 @@ import { sceneFouilleHtml, sceneZoomHtml } from './scene-fouille.js';
 import { tutoActif } from './tutoriel.js';
 import { engagementsDuJour } from './engagements.js';
 import { relecturesHtml, soirPlusHtml } from './enquete-plus.js';
-import {
-  ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, affaire, dossierDe, texteFait, titrePiece, rebondsPublies, pointsDecouverte,
-  dansMaCellule, celluleDe, demarcheDe, maxDemarchesDe, coutDemarche, REAUD, RECOUP,
-} from '../engine/enquete.js';
-import {
-  lireCarnet, ecrireCarnet, sauvegardeCarnet, sourceDe, voisinageInfo, appuiHtml, banniereTraque, traqueHtml, etatSuspect,
-  nomsAccuses, regleHtml, vuePlanques, avisMisePrix,
-} from './enquete.js';
-import {
-  MAP, COL, preparerTableau, volet, dispo, completerFiche, resumeConstat, CONSTAT_TITRE, derniereScene, pieceSuspect,
-  statutPartage, typePiece, planSvg, lieuPos, lieuxDe, planquePos, numPv, redacteur, docsOuverture, chronologie,
-} from './tableau.js';
+import { ENQ, ELEMENTS, affaire, dossierDe, texteFait, titrePiece, rebondsPublies, pointsDecouverte, dansMaCellule, celluleDe, demarcheDe, maxDemarchesDe, coutDemarche } from '../engine/enquete.js';
+import { lireCarnet, ecrireCarnet, sauvegardeCarnet, sourceDe, voisinageInfo, appuiHtml, banniereTraque, traqueHtml, etatSuspect, nomsAccuses, regleHtml, vuePlanques } from './enquete.js';
+import { MAP, COL, preparerTableau, volet, dispo, completerFiche, resumeConstat, CONSTAT_TITRE, derniereScene, pieceSuspect, statutPartage, planSvg, lieuPos, lieuxDe, planquePos, numPv, docsOuverture, chronologie } from './tableau.js';
 import { lieuxMons } from '../engine/meurtre-mons.js';
 
 const NOM_EL = { occ: 'Occasion', moy: 'Moyen', mob: 'Mobile' };
