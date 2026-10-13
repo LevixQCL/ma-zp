@@ -389,6 +389,7 @@ h1.brand-xl { font-size: clamp(72px, 24vw, 112px); letter-spacing: -4px; line-he
 .aide-l > span:last-child { flex-shrink: 0; text-align: right; }
 .aide-sous { padding-left: 12px; margin: 0 0 2px; border-left: 2px solid var(--line); }
 .aide-sous .aide-l { font-size: 12px; color: var(--text2, var(--text)); }
+.aide-hier { padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px dashed var(--line); }
 .aide-det summary { cursor: pointer; color: var(--blue-soft); padding: 4px 0; }
 .ipz-table .help { margin-left: 4px; vertical-align: middle; }
 .aide-conseil { margin: 0; font-size: 13px; color: var(--amber-soft); }

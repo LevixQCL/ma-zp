@@ -2,6 +2,7 @@
 import { S, esc, fmt1, myZone } from './common.js';
 import { IPZ_POIDS, ECONOMIE, SUBSIDE, TERRAIN, FLAGRANT, DOSSIER, ND, BUDGET_IPZ, scoreBudget, scoreRevenu, MORAL_PALIERS, MORAL } from '../engine/constants.js';
 import { confianceCommune, pointsIpz, IPZ_LABELS, moralMult } from '../engine/zone.js';
+import { terrainDoux } from '../engine/regles.js';
 import { PERIL } from '../engine/rivalites.js';
 
 const pc = (w) => `${Math.round(w * 100)} %`;
@@ -139,7 +140,7 @@ export const AIDES = {
     titre: 'Résultats terrain',
     intro: `La composante « résultats » de l’IPZ (${pc(IPZ_POIDS.affaires)}). Ce ne sont pas les PS, qui servent aux grades.`,
     lignes: [
-      `<strong>Calcul</strong> : ${TERRAIN.incidents} × part des incidents traités + ${TERRAIN.parPoint} × bilan, plafonné à 100`,
+      `<strong>Calcul</strong> : ${TERRAIN.incidents} × part des incidents traités + ${TERRAIN.parPoint} × bilan ; au-delà de 80, chaque point ne compte plus que pour moitié (maximum 120)`,
       `<strong>Incidents</strong> : tout traiter donne déjà ${TERRAIN.incidents} ; en rater la moitié n’en donne que ${fmt1(TERRAIN.incidents / 2)}`,
       `<strong>Bilan</strong> = points du jour + ${pc(TERRAIN.report)} du bilan d’hier. Un gros coup compte encore les jours suivants ; en régime régulier, le bilan vaut environ 1,33 × tes points par jour`,
       `<strong>Recherche</strong> : +${String(DOSSIER.ptsParUnite).replace('.', ',')} pt par unité de travail sur les dossiers, chaque jour (un nouveau dossier arrive chaque jour, il y a toujours du travail). Repère : 4 enquêteurs ≈ +2 pts par jour. <strong>Un dossier qui traîne rapporte moins</strong> : pleine valeur le jour de son arrivée et le lendemain, puis −${Math.round(DOSSIER.decote * 100)} % par jour (minimum ${Math.round(DOSSIER.plancher * 100)} %). Mieux vaut suivre le rythme que tout rattraper d’un coup`,
@@ -206,6 +207,38 @@ function tourJauge(z, k) {
     ${partIpz(z, k)}` };
 }
 
+/**
+ * Par rapport à hier (retour de Steph : « −10 en terrain alors que j'ai gagné des points ? »). La jauge de l'accueil
+ * montre l'écart avec la veille ; on le décompose ici : la part des incidents et la part du bilan. Le score d'hier
+ * se retrouve à partir de sa composante (ipzCompHier) et du report (25 % du bilan d'hier).
+ */
+function compareHier(z, d, ratio, bilan) {
+  const h = z.ipzCompHier && z.ipzCompHier.affaires;
+  const auj = z.ipzComp && z.ipzComp.affaires;
+  if (!Number.isFinite(h) || !Number.isFinite(auj)) return '';
+  const delta = auj - h;
+  const tete = `<div class="aide-hier">${calc(`Hier ${fmt1(h)} → aujourd’hui ${fmt1(auj)}`, `<strong class="${delta < -0.05 ? 'bad' : delta > 0.05 ? 'ok' : ''}">${Math.abs(delta) < 0.05 ? '=' : `${delta > 0 ? '+' : '−'}${fmt1(Math.abs(delta))}`}</strong>`)}`;
+  if (d.report === undefined) return `${tete}</div>`;
+  const bilanHier = d.report / TERRAIN.report;
+  const brutHier = h <= 80 ? h : 80 + (h - 80) * 2;
+  const incHier = brutHier - TERRAIN.parPoint * bilanHier;
+  // Hier calculé avec une autre règle (ou plafonné) : on ne sait pas le décomposer proprement, on garde l'écart seul.
+  if (h >= 120 || incHier < -0.6 || incHier > TERRAIN.incidents + 0.6) return `${tete}</div>`;
+  const dInc = TERRAIN.incidents * ratio - Math.max(0, Math.min(TERRAIN.incidents, incHier));
+  const dBil = TERRAIN.parPoint * (bilan - bilanHier);
+  const reste = delta - dInc - dBil;
+  const pourGarder = bilanHier * (1 - TERRAIN.report);
+  const conseil = bilan < bilanHier - 0.05
+    ? `<p class="tiny muted" style="margin:2px 0 0">Ton bilan baisse même si tu gagnes des points : il ne garde que ${Math.round(TERRAIN.report * 100)} % de celui d’hier. Pour qu’il ne baisse pas, il fallait au moins ${fmt1(pourGarder)} points ce jour-là (tu en as gagné ${fmt1(d.points || 0)}).</p>`
+    : '';
+  return `${tete}
+    <div class="aide-sous">
+      ${ligne(Math.abs(dInc) < 0.05 ? 'Incidents : comme hier' : `Incidents ${dInc < 0 ? 'ratés' : 'mieux traités'} qu’hier`, Math.round(dInc * 10) / 10)}
+      ${ligne(`Bilan : ${fmt1(bilanHier)} hier → ${fmt1(bilan)}`, Math.round(dBil * 10) / 10)}
+      ${Math.abs(reste) >= 0.15 ? ligne('Adoucissement au-delà de 80, arrondis', Math.round(reste * 10) / 10) : ''}
+    </div>${conseil}</div>`;
+}
+
 function tourTerrain(z) {
   const d = z.ipzDetail;
   if (!d || !z.ipzComp) return null;
@@ -217,13 +250,14 @@ function tourTerrain(z) {
   const a = ci * ratio, b = cp * bilan, brut = a + b;
   const pts = (z.journal && z.journal.lignes && z.journal.lignes.points) || [];
   return { tour: z.journal ? z.journal.tour : null, html: `
+    ${ancien ? '' : compareHier(z, d, ratio, bilan)}
     ${ancien || ci !== TERRAIN.incidents || cp !== TERRAIN.parPoint ? `<p class="tiny muted" style="margin:0">Ce tour-là a été calculé avec l’ancienne règle (${ci} × incidents + ${String(cp).replace('.', ',')} × bilan). La règle actuelle est expliquée plus bas.</p>` : ''}
     ${calc(`Incidents traités : ${d.traites} sur ${d.incidents}`, `${ci} × ${Math.round(ratio * 100)} % = ${fmt1(a)}`)}
     ${calc(`Points gagnés ce jour-là`, `+${fmt1(d.points || 0)}`)}
     ${pts.length ? `<div class="aide-sous">${pts.slice().sort((x, y) => y.v - x.v).map((x) => ligne(esc(x.l), x.v, ' pt')).join('')}</div>` : ''}
     ${d.report !== undefined ? calc(`Reporté du bilan de la veille (${pc(TERRAIN.report)})`, `+${fmt1(d.report)}`) : ''}
     ${calc(`Bilan : ${fmt1(bilan)}`, `${String(cp).replace('.', ',')} × ${fmt1(bilan)} = ${fmt1(b)}`)}
-    ${calc('Total', `${fmt1(brut)}${brut > 100 ? ' → plafonné à 100' : ''}`)}
+    ${calc('Total', `${fmt1(brut)}${brut > 80 ? ` → ${fmt1(Math.min(120, terrainDoux(brut)))} (moitié au-delà de 80)` : ''}`)}
     ${partIpz(z, 'terrain')}
     <div class="aide-l between small" style="margin-top:4px"><span>Jauge de flagrant délit</span><span class="mono">${Math.round((z.jaugeFlagrant || 0) * 100)} %</span></div>
     <div class="aide-l between small"><span>Demain, sans nouveau point, ton bilan vaudra encore</span><span class="mono">${fmt1(bilan * TERRAIN.report)}</span></div>` };
