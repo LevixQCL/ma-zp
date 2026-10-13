@@ -38,4 +38,13 @@ const base = () => ({ uid: 'u', niveaux: { intervention: 1, proximite: 1, recher
   z.niveaux.proximite = 2; // égalité : plus de titre
   assert.equal(profilZone(z).titre, 'Zone polyvalente');
 }
+// Roulage : la doctrine routière et le matériel comptent par les amendes, comme au tour de 20:00.
+{
+  const z = base(); const avant = profilZone(z).svc.find((s) => s.k === 'roulage').v;
+  z.doctrine = 'routiere'; z.equip.roulage = 3;
+  const p = profilZone(z), r = p.svc.find((s) => s.k === 'roulage');
+  assert.ok(r.contrib.some((c) => /doctrine routière/.test(c[0])), 'la doctrine routière doit apparaître');
+  assert.ok(Math.abs(r.v - avant * (0.92 + 0.08 * 3) * 1.30 * 1.15) < 1e-9, `Roulage ${r.v}`);
+  assert.equal(p.titre, 'Brigade des routes');
+}
 console.log('OK : profil de zone conforme au moteur.');

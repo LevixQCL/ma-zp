@@ -23,6 +23,10 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Onglet Chef plus léger (13 octobre)', [
+      ['Ma zone', 'sous les compétences de ton chef : la forme de ta zone, son titre (Zone de choc, Brigade des routes, Maison judiciaire…) et ce qui fait monter chaque service. Rien que pour toi.'],
+      ['Cartes repliées', 'agenda, parapheur, talents, première ligne, réseau et semaine se replient en une ligne dès qu’il n’y a plus rien à y faire.'],
+    ]],
     ['Rattrape Luc (11 octobre)', [
       ['Luc revient', 'si tu n’as jamais rattrapé Luc, il reste sur l’E19 toute la journée, même quand l’urgence Bitonal est tombée (avant, elle le faisait disparaître).'],
     ]],

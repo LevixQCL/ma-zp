@@ -3076,3 +3076,4 @@ details.co-pli > summary { gap: 12px; }
 details.co-pli[open] .co-pli-s { white-space: normal; }
 .co-pli-ok { color: var(--green); display: inline-flex; }
 details.co-pli > .co-pli-corps { gap: 12px; }
+.pz-eff { font-size: 11.5px; color: var(--blue-soft, #9DCBFF); }

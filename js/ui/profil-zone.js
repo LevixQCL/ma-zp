@@ -3,7 +3,7 @@
 // Le moral, le rythme et le chef du jour sont laissés de côté : la forme ne bouge que quand le joueur investit.
 // Les multiplicateurs sont ceux de capacite() (engine/zone.js) : aucun calcul de règle n'est dupliqué ici.
 import { esc } from './common.js';
-import { multNiveau, multEquip, INFRAS, DOCTRINES, aAnnexe, multDoctrine, LOTS } from '../engine/constants.js';
+import { multNiveau, multEquip, INFRAS, DOCTRINES, aAnnexe, multDoctrine, LOTS, forceDoctrine, bonusEquip, risqueBlessure, seuilChasse, ROULAGE } from '../engine/constants.js';
 import { bonusLots } from '../engine/zone.js';
 import { bonusAnonymes } from '../engine/flotte.js';
 
@@ -43,9 +43,38 @@ export function contributions(z, s, T = 0) {
     const noms = [...new Set((z.lots || []).filter((l) => LOTS[l.id] && LOTS[l.id].bonus && LOTS[l.id].bonus[s]).map((l) => LOTS[l.id].nom))];
     L.push([noms.join(', ') || 'Lots des enchères', lots]);
   }
+  // Roulage : sa vraie force, c'est ce que rapportent les amendes (même calcul que le tour de 20:00).
+  if (s === 'roulage') {
+    const am = bonusEquip(z, 'roulage', 'amendes'), dr = forceDoctrine(z, 'amendes');
+    if (am > 0) L.push(['Amendes : matériel', 1 + am]);
+    if (dr > 0) L.push([`Amendes : doctrine routière${z.maitrise ? ` ${'★'.repeat(z.maitrise + 1)}` : ''}`, 1 + dr]);
+  }
   const d = multDoctrine(z, s);
   if (d !== 1 && z.doctrine && DOCTRINES[z.doctrine]) L.push([`Doctrine ${DOCTRINES[z.doctrine].nom.toLowerCase()}${z.maitrise ? ` ${'★'.repeat(z.maitrise + 1)}` : ''}`, d]);
   return L;
+}
+
+const pc0 = (v) => `${Math.round(v * 100)} %`;
+/** Effets propres à chaque service, hors capacité (affichés à part, ils n'entrent pas dans la forme). */
+export function effetsService(z, s) {
+  const E = [];
+  if (s === 'intervention') {
+    const b = risqueBlessure(z); if (b < 0.999) E.push(`blessures −${pc0(1 - b)}`);
+    const f = forceDoctrine(z, 'flagrant'); if (f > 0) E.push(`flagrants délits +${pc0(f)}`);
+    if (aAnnexe(z, 'cachots')) E.push(`points d’interpellation +${pc0(INFRAS.cachots.points)}`);
+  } else if (s === 'roulage') {
+    if (z.infra && z.infra.anpr) E.push(`radars +${INFRAS.anpr.fixe} 000 € par soir`);
+    const sc = seuilChasse(z); if (Math.abs(sc - ROULAGE.chasse) > 0.001) E.push(`« chasse aux PV » au-delà de ${pc0(sc)} des effectifs`);
+  } else if (s === 'recherche') {
+    const e = bonusEquip(z, 'recherche', 'enquete') + forceDoctrine(z, 'enquete'); if (e > 0) E.push(`pièces d’enquête +${pc0(e)}`);
+  } else if (s === 'proximite') {
+    const sat = bonusEquip(z, 'proximite', 'satisfaction'); if (sat > 0) E.push(`satisfaction +${String(Math.round(sat * 10) / 10).replace('.', ',')} par jour`);
+    const der = (z.doctrine === 'quartier' ? DOCTRINES.quartier.derive : 1) * (aAnnexe(z, 'sapv') ? INFRAS.sapv.derive : 1);
+    if (der < 0.999) E.push(`la satisfaction retombe ${pc0(1 - der)} moins vite`);
+  } else if (s === 'admin') {
+    const p = bonusEquip(z, 'admin', 'protection'); if (p > 0) E.push(`tracas internes évités +${pc0(p)}`);
+  }
+  return E;
 }
 
 /** Profil complet : valeur par service (produit des contributions), meilleur service, titre. */
@@ -98,8 +127,9 @@ export function profilLigneHtml(z, T, ouvert) {
       ${radarProfil(p)}
       <span class="pz-phrase">${esc(p.phrase)}${p.spe ? ` ${esc(p.top.nom)} ×${f2(p.top.v)}, ${Math.round((p.ecart - 1) * 100)} % devant ${esc(second.nom)}.` : ` Il faut ${Math.round((SEUIL_TITRE - 1) * 100)} % d’avance sur ton deuxième service pour un titre.`}</span>
       <div class="pz-svcs">${p.svc.map((s) => `<div class="pz-svc"><div class="pz-l1"><span><span class="pz-dot" style="background:${s.c}"></span>${esc(s.nom)}</span><b style="color:${p.spe && s.k === p.top.k ? 'var(--amber-hi)' : 'var(--text)'}">×${f2(s.v)}</b></div>
-        <div class="pz-chips">${s.contrib.map(([l, v, vide]) => `<span class="pz-c ${vide ? 'vide' : v > 1.001 ? 'up' : v < 0.999 ? 'dn' : ''}">${esc(l)}${vide ? '' : ` ${pc(v)}`}</span>`).join('')}</div></div>`).join('')}</div>
-      <span class="pz-note">Pointillés : une zone de départ. Formation, matériel, annexes, véhicules, lots et doctrine comptent ; le moral et le chef du jour, non.</span>
+        <div class="pz-chips">${s.contrib.map(([l, v, vide]) => `<span class="pz-c ${vide ? 'vide' : v > 1.001 ? 'up' : v < 0.999 ? 'dn' : ''}">${esc(l)}${vide ? '' : ` ${pc(v)}`}</span>`).join('')}</div>
+        ${effetsService(z, s.k).length ? `<span class="pz-eff">En plus : ${effetsService(z, s.k).map(esc).join(' · ')}</span>` : ''}</div>`).join('')}</div>
+      <span class="pz-note">Pointillés : une zone de départ. Formation, matériel, annexes, véhicules, lots et doctrine comptent (pour le Roulage, aussi ce que rapportent les amendes) ; le moral et le chef du jour, non.</span>
     </div>` : '';
   return `<div class="pz" data-open="${ouvert}">
     <button type="button" class="pz-l" data-action="profil-zone" aria-expanded="${ouvert}">${radarProfil(p, true)}

@@ -1935,8 +1935,8 @@ async function boot() {
     S.backend = await createBackend(CONFIG);
     // « Le Quartier » : en démo, la nouvelle règle du non-droit tourne déjà (la vraie partie bascule à un 20:00 choisi).
     QUARTIER.force = S.backend.mode === 'demo';
-    // Onglet Chef v3 (profil de zone, cartes repliées) : en démo tant qu'il n'est pas validé.
-    CHEF_V3.actif = S.backend.mode === 'demo';
+    // Onglet Chef v3 (profil de zone, cartes repliées) : validé le 13 octobre, actif partout.
+    CHEF_V3.actif = true;
   } catch (e) {
     console.error(e);
     app.innerHTML = `<main class="center-screen"><h1 class="brand">Ma ZP</h1><div class="card red"><h2 class="card-title">Connexion impossible</h2><p class="small" style="margin:0">Le jeu n’a pas pu joindre le serveur. Vérifie ta connexion puis recharge la page.</p></div></main>`;
