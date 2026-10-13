@@ -202,7 +202,7 @@ const st = { e: 'choix', d: 'enquete', r: 'ok', choix: 0, ouvert: false };
 const app = document.getElementById('app');
 const pips = (n) => '<span class="pips">' + Array.from({ length: 10 }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('') + '</span>';
 
-function top(heure, cd) {
+function enTete(heure, cd) {
   return `<div class="top"><div><span class="z">Zone 5401 · Mons-Ouest</span><h1>Bonsoir, chef</h1></div>
     <div class="cd">${cd ? `prochain tour<b>${cd}</b>` : heure}</div></div>`;
 }
@@ -255,13 +255,13 @@ function enveloppe() {
 }
 function render() {
   let h = '';
-  if (st.e === 'choix') h = top('', '1 h 30') + carte() + reste(false) +
+  if (st.e === 'choix') h = enTete('', '1 h 30') + carte() + reste(false) +
     `<p class="note">Le pari prend la place du pli « Pistes » dans les ordres. Le Directeur choisit le dilemme à partir de ce qui se passe dans ta zone : enquête, quartier tendu, non-droit, suspect en fuite…</p>`;
-  if (st.e === 'mise') h = top('', '1 h 00') + plie('réponse à 20:00') + reste(true) +
+  if (st.e === 'mise') h = enTete('', '1 h 00') + plie('réponse à 20:00') + reste(true) +
     `<p class="note">Une fois misé, la carte se plie en une ligne. Les agents engagés apparaissent dans les ordres comme « en pari » et manquent à leur service ce soir.</p>`;
   if (st.e === 'nuit') h = `<div class="nuit"><span class="lune">🌙</span><span class="h">Tour de 20:00</span><span class="small muted">Le pari est tiré avec le reste du tour. Le résultat reste caché jusqu’à ta prochaine visite, même dans le rapport de la nuit.</span></div>`;
-  if (st.e === 'matin') h = top('07:40') + enveloppe() + (st.ouvert ? '' : `<p class="note">L’enveloppe passe avant tout le reste, même la Gazette. On ne peut pas lire le résultat ailleurs avant de l’avoir ouverte : la surprise reste entière.</p>`) + reste(false);
-  if (st.e === 'absent') h = top('07:40') + `<div class="ajd" style="border-color:var(--hair)"><span class="ico">✉️</span><span class="tx"><b>Pas de pari hier</b><span>Rien de perdu. Le pari de ce soir t’attend.</span></span></div>` + carte();
+  if (st.e === 'matin') h = enTete('07:40') + enveloppe() + (st.ouvert ? '' : `<p class="note">L’enveloppe passe avant tout le reste, même la Gazette. On ne peut pas lire le résultat ailleurs avant de l’avoir ouverte : la surprise reste entière.</p>`) + reste(false);
+  if (st.e === 'absent') h = enTete('07:40') + `<div class="ajd" style="border-color:var(--hair)"><span class="ico">✉️</span><span class="tx"><b>Pas de pari hier</b><span>Rien de perdu. Le pari de ce soir t’attend.</span></span></div>` + carte();
   app.innerHTML = h;
   document.querySelectorAll('#etapes button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.e === st.e));
   document.querySelectorAll('#dilemmes [data-d]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.d === st.d));
