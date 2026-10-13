@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pari du soir (démo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..700&family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Special+Elite&display=swap">
+<style>
+/* Démo autonome aux couleurs de Ma ZP (thème sombre du jeu, volontairement unique) */
+:root{
+  color-scheme:dark;
+  --bg:#0C1124; --bg-deep:#080C1B; --surface:#141B33; --surface2:#1C2442; --surface3:#243050; --line:#29345A; --hair:rgba(190,205,255,.08);
+  --text:#EDF0FA; --text2:#C3C9DE; --muted:#96A0BF; --faint:#67719A;
+  --amber:#FFB23F; --amber-hi:#FFC970; --amber-ink:#241400; --amber-bg:rgba(255,178,63,.11); --amber-line:rgba(255,178,63,.40); --amber-soft:#E9C894;
+  --blue-soft:#9DCBFF; --green:#3DD39A; --green-soft:#78E2B8; --green-bg:rgba(61,211,154,.12); --red:#FF6E6A; --red-soft:#FF9E99; --red-bg:rgba(255,110,106,.10);
+  --paper:#F4EFE3; --paper2:#EAE3D2; --ink:#1D1A15; --ink2:#3A352C; --ink3:#5E574A; --press:#9A2B1F;
+  --display:'Bricolage Grotesque','Arial Narrow',system-ui,sans-serif; --body:'Instrument Sans',system-ui,sans-serif; --serif:'Fraunces',Georgia,serif; --type:'Special Elite','Courier New',monospace;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--text)}
+body{font-family:var(--body);margin:0;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,summary:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+/* Barre de démo */
+.demo{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:rgba(8,12,27,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--hair);padding:8px 16px}
+.demo .in{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:6px}
+.demo .t{font-size:11.5px;color:var(--amber-soft);font-weight:700}
+.seg{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}
+.seg button{flex:1 0 auto;padding:6px 9px;border-radius:9px;border:1px solid var(--line);background:var(--surface);font-size:12px;font-weight:700;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--amber-bg);border-color:var(--amber-line);color:var(--amber)}
+.seg.petit button{font-size:11px;padding:5px 8px}
+
+.wrap{max-width:560px;margin:0 auto;padding:14px 16px 110px;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:10px}
+.top h1{font-family:var(--display);font-size:24px;margin:0;letter-spacing:-.3px}
+.top .z{font-size:12.5px;color:var(--muted)}
+.cd{font-size:12px;color:var(--amber-soft);text-align:right;white-space:nowrap}
+.cd b{display:block;font-family:var(--display);font-size:20px;color:var(--amber)}
+.kicker{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--amber-soft)}
+.muted{color:var(--muted)} .tiny{font-size:12px} .small{font-size:13.5px}
+
+/* Carte du pari */
+.pari{border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:12px;border:1px solid var(--amber-line);
+  background:radial-gradient(120% 80% at 100% 0%,rgba(255,178,63,.16),transparent 60%),var(--surface)}
+.ctx{display:flex;gap:6px;flex-wrap:wrap}
+.ctx span{font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--surface2);color:var(--text2);border:1px solid var(--hair)}
+.q{font-family:var(--display);font-size:21px;line-height:1.15;margin:0;letter-spacing:-.2px}
+.sit{font-size:13.5px;color:var(--text2);margin:0;line-height:1.45}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{display:grid;grid-template-columns:1fr auto;gap:6px 10px;text-align:left;background:var(--bg-deep);border:1px solid var(--line);border-radius:14px;padding:11px 12px;transition:border-color .15s,background .15s}
+.opt[aria-pressed="true"]{border-color:var(--amber);background:#1d1a1a}
+.opt .n{font-weight:700;font-size:14.5px}
+.opt .c{font-size:12px;color:var(--muted);text-align:right;white-space:nowrap}
+.opt .g{grid-column:1/-1;font-size:12.5px;color:var(--green-soft)}
+.pips{grid-column:1/-1;display:flex;gap:3px}
+.pips i{flex:1;height:6px;border-radius:3px;background:var(--surface3)}
+.pips i.on{background:var(--amber)}
+.opt.sur .pips i.on{background:var(--muted)}
+.chance{font-size:12px;font-weight:700;color:var(--amber)}
+details.pq{border-top:1px solid var(--hair);padding-top:8px}
+details.pq summary{font-size:12.5px;color:var(--blue-soft);cursor:pointer;list-style:none}
+details.pq summary::-webkit-details-marker{display:none}
+.facteurs{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:12.5px;margin-top:8px}
+.facteurs .p{color:var(--green-soft);text-align:right} .facteurs .m{color:var(--red-soft);text-align:right}
+.miser{border:0;border-radius:14px;padding:13px;background:var(--amber);color:var(--amber-ink);font-weight:800;font-size:15px}
+.miser:disabled{opacity:.4;cursor:default}
+
+/* Pari plié */
+.plie{display:flex;align-items:center;gap:12px;border:1px solid var(--amber-line);background:var(--amber-bg);border-radius:16px;padding:10px 12px}
+.plie .ico{width:40px;height:40px;border-radius:12px;background:var(--amber);color:var(--amber-ink);display:grid;place-items:center;font-size:19px;flex-shrink:0}
+.plie .tx{flex:1;min-width:0;display:flex;flex-direction:column}
+.plie b{font-size:14px} .plie span{font-size:12.5px;color:var(--amber-soft)}
+.plie button{background:none;border:0;color:var(--muted);font-size:12px;text-decoration:underline}
+
+/* Enveloppe */
+.env{position:relative;width:100%;border:0;border-radius:20px;padding:22px 18px 18px;text-align:left;color:var(--ink);
+  background:linear-gradient(180deg,var(--paper),var(--paper2));box-shadow:0 10px 30px rgba(0,0,0,.35);overflow:hidden}
+.env::before{content:"";position:absolute;inset:0 0 auto 0;height:64px;background:linear-gradient(160deg,transparent 49.5%,rgba(0,0,0,.08) 50%),linear-gradient(200deg,transparent 49.5%,rgba(0,0,0,.08) 50%);pointer-events:none}
+.env .k{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+.env .t{display:block;font-family:var(--type);font-size:19px;margin:6px 0 4px}
+.env .s{font-size:12.5px;color:var(--ink3)}
+.sceau{position:absolute;right:18px;top:16px;width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#c4463a,var(--press) 70%);color:#f6d8a6;display:grid;place-items:center;font:800 15px var(--display);box-shadow:0 2px 0 rgba(0,0,0,.25);transition:transform .35s,opacity .35s}
+.env.ouvre .sceau{transform:rotate(-25deg) translate(10px,-6px) scale(.8);opacity:0}
+
+/* Tirage */
+.tirage{background:var(--paper);color:var(--ink);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.cases{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+.cases i{height:26px;border-radius:6px;background:#d8cfbb;position:relative}
+.cases i.v{background:#9fd8b8}
+.cases i.cur{outline:3px solid var(--ink);outline-offset:-3px}
+.res{display:flex;flex-direction:column;gap:8px}
+.res .h{font-family:var(--display);font-size:20px;line-height:1.15;margin:0}
+.res .h.ok{color:#1d7a4f} .res .h.ko{color:var(--press)}
+.res p{margin:0;font-family:var(--serif);font-size:15px;line-height:1.5;color:var(--ink2)}
+.gains{display:flex;gap:6px;flex-wrap:wrap}
+.gains span{font-size:12px;font-weight:700;padding:4px 9px;border-radius:99px}
+.gains .gp{background:#1d7a4f;color:#fff} .gains .gm{background:#e7d7c9;color:var(--press)} .gains .gn{background:#e0d8c6;color:var(--ink2)}
+.suite{border-top:1px dashed var(--paper-rule,#CFC5B0);padding-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink2)}
+.suite button{border:0;border-radius:10px;background:var(--ink);color:var(--paper);padding:8px 11px;font-size:12.5px;font-weight:700;white-space:nowrap}
+
+/* Reste de l'HP, atténué */
+.ajd{display:flex;align-items:center;gap:12px;min-height:58px;padding:10px 12px;border:1px solid var(--hair);border-radius:16px;background:var(--surface)}
+.ajd .ico{width:40px;height:40px;border-radius:12px;background:var(--surface2);display:grid;place-items:center;font-size:19px;flex-shrink:0}
+.ajd .tx{display:flex;flex-direction:column;min-width:0}
+.ajd b{font-size:14px} .ajd span{font-size:12.5px;color:var(--muted)}
+.reste{display:flex;flex-direction:column;gap:8px;opacity:.55}
+.note{font-size:12.5px;color:var(--muted);border-left:3px solid var(--amber-line);padding:4px 0 4px 10px;line-height:1.45}
+.nuit{border-radius:22px;padding:28px 18px;text-align:center;background:linear-gradient(180deg,#0a0f22,#141b33);border:1px solid var(--hair);display:flex;flex-direction:column;gap:8px;align-items:center}
+.nuit .h{font-family:var(--display);font-size:22px}
+.nuit .lune{font-size:38px}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:rgba(18,24,48,.92);backdrop-filter:blur(10px);border-top:1px solid var(--hair);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+nav.tabs .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:10.5px;color:var(--faint)}
+nav.tabs .in span{display:flex;flex-direction:column;align-items:center;gap:2px}
+nav.tabs .in span i{font-style:normal;font-size:17px}
+nav.tabs .in span.on{color:var(--amber)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="demo"><div class="in">
+  <span class="t">DÉMO · Pari du soir — rien n'est en ligne</span>
+  <div class="seg" id="etapes" role="group" aria-label="Moment de la démo">
+    <button data-e="choix" aria-pressed="true">Lundi 18:30 · choisir</button>
+    <button data-e="mise" aria-pressed="false">Lundi 19:00 · misé</button>
+    <button data-e="nuit" aria-pressed="false">20:00</button>
+    <button data-e="matin" aria-pressed="false">Mardi 07:40 · l'enveloppe</button>
+    <button data-e="absent" aria-pressed="false">Pas venu lundi</button>
+  </div>
+  <div class="seg petit" id="dilemmes" role="group" aria-label="Exemple de dilemme">
+    <button data-d="enquete" aria-pressed="true">Dilemme : enquête</button>
+    <button data-d="quartier" aria-pressed="false">quartier</button>
+    <button data-d="nd" aria-pressed="false">non-droit</button>
+    <span style="width:8px"></span>
+    <button data-r="ok" aria-pressed="true">Tirage réussi</button>
+    <button data-r="ko" aria-pressed="false">raté</button>
+  </div>
+</div></div>
+
+<main class="wrap" id="app"></main>
+
+<nav class="tabs" aria-label="Onglets du jeu"><div class="in">
+  <span class="on"><i>🏛</i>HP</span><span><i>📋</i>Ordres</span><span><i>🎖</i>Chef</span><span><i>🔎</i>Enquête</span><span><i>🧩</i>Énigmes</span><span><i>🗺</i>Carte</span><span><i>📻</i>Radio</span>
+</div></nav>
+
+<script>
+const D = {
+  enquete: {
+    ctx: ['Enquête de la semaine', 'Exemple'],
+    q: 'Un commerçant veut parler, mais pas au commissariat.',
+    sit: 'Il a vu quelque chose le soir des faits et ne l’a jamais déclaré. Il propose de te voir ce soir, à l’arrière de son magasin. Demain, il aura peut-être changé d’avis.',
+    opts: [
+      { n: 'Envoyer un enquêteur en civil ce soir', c: '1 agent Recherche', ch: 6, g: 'Gagne : une pièce d’enquête complète',
+        f: [['Base', '5'], ['Moral 74', '+1', 'p'], ['Chef : Flair (niv. 2)', '+1', 'p'], ['Recherche à 5/6 agents', '−1', 'm']] },
+      { n: 'Le convoquer officiellement demain', c: 'gratuit', ch: 9, g: 'Gagne : une déclaration prudente (demi-pièce)',
+        f: [['Base', '8'], ['Accueil niv. 3', '+1', 'p']] },
+      { n: 'Ne pas donner suite', c: '—', sur: true, ch: 10, g: 'Rien de gagné, rien de perdu', f: [] },
+    ],
+    ok: { h: 'Il a parlé.', p: 'Dans l’arrière-boutique, il sort son téléphone : une photo floue prise ce soir-là, depuis sa vitrine. On y voit une silhouette, et l’heure exacte.', g: [['gp', '+1 pièce : la photo du commerçant'], ['gp', '+2 moral Recherche']],
+      suite: 'Son voisin aurait vu la même chose.', suiteBtn: 'Pari de mardi' },
+    ko: { h: 'Il a pris peur.', p: 'Ton enquêteur l’a trouvé derrière son volet baissé. « Pas ce soir, il y avait du monde dans la rue. » Il a quand même glissé un nom dans la conversation.', g: [['gn', 'Pas de pièce'], ['gp', 'Un nom ajouté au carnet']],
+      suite: 'Il accepte de réessayer, avec plus de discrétion.', suiteBtn: 'Pari de mardi' },
+  },
+  quartier: {
+    ctx: ['Quartier Nord', 'Tension 68'],
+    q: 'Rodéos de motos chaque nuit sur le parking du stade.',
+    sit: 'Les riverains appellent depuis trois soirs. Les pilotes connaissent les patrouilles et filent par le chemin de halage dès qu’ils voient un combi.',
+    opts: [
+      { n: 'Patrouille de dissuasion', c: '2 agents Intervention', ch: 8, g: 'Gagne : tension −8',
+        f: [['Base', '7'], ['Combi en bon état', '+1', 'p']] },
+      { n: 'Planque avec voiture anonymisée', c: '3 agents · 1 véhicule', ch: 4, g: 'Gagne : 2 motos saisies (1 800 €) et tension −15',
+        f: [['Base', '4'], ['Doctrine Intervention', '+1', 'p'], ['Moral 58', '−1', 'm']] },
+      { n: 'Laisser passer la semaine', c: '—', sur: true, ch: 10, g: 'Tension +4', f: [] },
+    ],
+    ok: { h: 'Deux motos à la fourrière.', p: 'La voiture anonymisée a fermé le chemin de halage à 23:40. Les pilotes ont lâché les motos et fini à pied. Le parking est resté calme jusqu’au matin.', g: [['gp', '+1 800 € (saisies)'], ['gp', 'Tension −15']],
+      suite: 'Un des pilotes a laissé un GSM dans un blouson.', suiteBtn: 'Pari de mardi' },
+    ko: { h: 'Ils ont vu la voiture.', p: 'Un guetteur sur le pont a sifflé dès 23:15. Les motos sont parties par l’autre côté. Les riverains ont quand même remarqué la présence policière.', g: [['gn', 'Pas de saisie'], ['gp', 'Tension −3']],
+      suite: 'Le guetteur du pont, lui, a été identifié.', suiteBtn: 'Pari de mardi' },
+  },
+  nd: {
+    ctx: ['Zone de non-droit', 'Secteur Est'],
+    q: 'Un guetteur du Parrain se montre à la lisière du secteur.',
+    sit: 'Il fume au même coin de rue depuis deux soirs, comme s’il voulait être vu. Piège ou porte d’entrée ?',
+    opts: [
+      { n: 'L’interpeller', c: '2 agents', ch: 5, g: 'Gagne : un renseignement sur le QG (partagé avec le district)',
+        f: [['Base', '5'], ['Ta contribution au secteur', '+1', 'p'], ['Le milieu connaît ta tactique', '−1', 'm']] },
+      { n: 'L’observer sans bouger', c: '1 agent', ch: 8, g: 'Gagne : l’heure de la prochaine relève du milieu',
+        f: [['Base', '7'], ['Cellule drone', '+1', 'p']] },
+      { n: 'L’ignorer', c: '—', sur: true, ch: 10, g: 'Rien', f: [] },
+    ],
+    ok: { h: 'Il voulait parler.', p: 'Menotté, il a demandé à voir « le chef de la zone ». Il en a assez du Parrain et donne l’entrée du QG par les caves.', g: [['gp', 'Renseignement QG pour tout le district'], ['gp', '+5 PS']],
+      suite: 'Il propose de redevenir guetteur… pour toi.', suiteBtn: 'Pari de mardi' },
+    ko: { h: 'C’était un appât.', p: 'Pendant l’interpellation, une voiture a brûlé deux rues plus loin. Tes agents vont bien, mais le guetteur est reparti en courant.', g: [['gm', '1 agent indisponible demain'], ['gn', 'Pas de renseignement']],
+      suite: 'Tu sais maintenant qu’ils surveillent ta zone.', suiteBtn: 'Pari de mardi' },
+  },
+};
+
+const st = { e: 'choix', d: 'enquete', r: 'ok', choix: 0, ouvert: false };
+const app = document.getElementById('app');
+const pips = (n) => '<span class="pips">' + Array.from({ length: 10 }, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('') + '</span>';
+
+function top(heure, cd) {
+  return `<div class="top"><div><span class="z">Zone 5401 · Mons-Ouest</span><h1>Bonsoir, chef</h1></div>
+    <div class="cd">${cd ? `prochain tour<b>${cd}</b>` : heure}</div></div>`;
+}
+function reste(ordresOk) {
+  return `<div class="reste">
+    <div class="ajd"><span class="ico">📋</span><span class="tx"><b>${ordresOk ? 'Ordres validés' : 'Ordres à valider'}</b><span>${ordresOk ? '24 agents répartis' : 'Rien n’est perdu : les ordres d’hier sont repris'}</span></span></div>
+    <div class="ajd"><span class="ico">🧩</span><span class="tx"><b>Énigmes du jour · 1/4</b><span>Facultatif</span></span></div>
+    <div class="ajd"><span class="ico">🚨</span><span class="tx"><b>Colis suspect · ouvert jusqu’à 19:00</b><span>Incident du jour</span></span></div>
+  </div>`;
+}
+function carte() {
+  const d = D[st.d];
+  return `<section class="pari" aria-label="Pari du soir">
+    <span class="kicker">🎲 Pari du soir · réponse à 20:00</span>
+    <div class="ctx">${d.ctx.map((c) => `<span>${c}</span>`).join('')}</div>
+    <h2 class="q">${d.q}</h2>
+    <p class="sit">${d.sit}</p>
+    <div class="opts">${d.opts.map((o, i) => `
+      <button type="button" class="opt${o.sur ? ' sur' : ''}" data-o="${i}" aria-pressed="${st.choix === i}">
+        <span class="n">${o.n}</span><span class="c">${o.sur ? 'sûr' : `<span class="chance">${o.ch}/10</span>`} · ${o.c}</span>
+        ${o.sur ? '' : pips(o.ch)}<span class="g">${o.g}</span>
+      </button>`).join('')}</div>
+    ${d.opts[st.choix].f.length ? `<details class="pq"><summary>Pourquoi ${d.opts[st.choix].ch}/10 ?</summary>
+      <div class="facteurs">${d.opts[st.choix].f.map((f) => `<span>${f[0]}</span><span class="${f[2] || ''}">${f[1]}</span>`).join('')}</div></details>` : ''}
+    <button type="button" class="miser" data-go="mise">Je mise</button>
+    <span class="tiny muted" style="text-align:center">Modifiable jusqu’à 20:00 · aucun malus si tu ne mises pas</span>
+  </section>`;
+}
+function plie(sous) {
+  const o = D[st.d].opts[st.choix];
+  return `<div class="plie"><span class="ico">🎲</span><span class="tx"><b>${o.n}</b><span>${o.sur ? 'sûr' : o.ch + '/10'} · ${sous}</span></span><button type="button" data-go="choix">changer</button></div>`;
+}
+function enveloppe() {
+  const d = D[st.d], o = d.opts[st.choix], R = d[st.r];
+  if (!st.ouvert) return `<button type="button" class="env" id="env" aria-label="Décacheter l’enveloppe">
+      <span class="sceau">ZP</span>
+      <span class="k">Résultat de ton pari d’hier</span>
+      <span class="t">${o.n}</span>
+      <span class="s">${o.sur ? 'Sûr' : o.ch + ' chances sur 10'} · touche pour décacheter</span></button>`;
+  const tir = st.r === 'ok' ? Math.max(0, o.ch - 2) : Math.min(9, o.ch + 1);
+  return `<section class="tirage" aria-label="Résultat du pari">
+    <span class="k" style="font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)">Tirage de 20:00 · ${o.ch}/10</span>
+    <div class="cases" id="cases" data-tir="${tir}">${Array.from({ length: 10 }, (_, i) => `<i class="${i < o.ch ? 'v' : ''}"></i>`).join('')}</div>
+    <div class="res" id="res" hidden>
+      <h3 class="h ${st.r}">${R.h}</h3>
+      <p>${R.p}</p>
+      <div class="gains">${R.g.map((g) => `<span class="${g[0]}">${g[1]}</span>`).join('')}</div>
+      <div class="suite"><span>➜ ${R.suite}</span><button type="button" data-go="choix">${R.suiteBtn}</button></div>
+    </div></section>`;
+}
+function render() {
+  let h = '';
+  if (st.e === 'choix') h = top('', '1 h 30') + carte() + reste(false) +
+    `<p class="note">Le pari prend la place du pli « Pistes » dans les ordres. Le Directeur choisit le dilemme à partir de ce qui se passe dans ta zone : enquête, quartier tendu, non-droit, suspect en fuite…</p>`;
+  if (st.e === 'mise') h = top('', '1 h 00') + plie('réponse à 20:00') + reste(true) +
+    `<p class="note">Une fois misé, la carte se plie en une ligne. Les agents engagés apparaissent dans les ordres comme « en pari » et manquent à leur service ce soir.</p>`;
+  if (st.e === 'nuit') h = `<div class="nuit"><span class="lune">🌙</span><span class="h">Tour de 20:00</span><span class="small muted">Le pari est tiré avec le reste du tour. Le résultat reste caché jusqu’à ta prochaine visite, même dans le rapport de la nuit.</span></div>`;
+  if (st.e === 'matin') h = top('07:40') + enveloppe() + (st.ouvert ? '' : `<p class="note">L’enveloppe passe avant tout le reste, même la Gazette. On ne peut pas lire le résultat ailleurs avant de l’avoir ouverte : la surprise reste entière.</p>`) + reste(false);
+  if (st.e === 'absent') h = top('07:40') + `<div class="ajd" style="border-color:var(--hair)"><span class="ico">✉️</span><span class="tx"><b>Pas de pari hier</b><span>Rien de perdu. Le pari de ce soir t’attend.</span></span></div>` + carte();
+  app.innerHTML = h;
+  document.querySelectorAll('#etapes button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.e === st.e));
+  document.querySelectorAll('#dilemmes [data-d]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.d === st.d));
+  document.querySelectorAll('#dilemmes [data-r]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.r === st.r));
+}
+
+function tirer() {
+  const box = document.getElementById('cases'); if (!box) return;
+  const cells = [...box.children], fin = Number(box.dataset.tir);
+  const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const tours = reduit ? 0 : 20 + fin;
+  let i = 0;
+  const pas = () => {
+    cells.forEach((c) => c.classList.remove('cur'));
+    const k = reduit ? fin : i % 10; cells[k].classList.add('cur');
+    if (reduit || i >= tours) { document.getElementById('res').hidden = false; return; }
+    i++; setTimeout(pas, 45 + Math.max(0, i - tours + 8) * 35);
+  };
+  pas();
+}
+
+document.addEventListener('click', (ev) => {
+  const t = ev.target.closest('button'); if (!t) return;
+  if (t.dataset.e) { st.e = t.dataset.e; st.ouvert = false; if (st.e !== 'choix' && st.e !== 'absent' && D[st.d].opts[st.choix].sur) st.choix = 0; return render(); }
+  if (t.dataset.d) { st.d = t.dataset.d; st.choix = 0; st.ouvert = false; return render(); }
+  if (t.dataset.r) { st.r = t.dataset.r; st.ouvert = false; return render(); }
+  if (t.dataset.o) { st.choix = Number(t.dataset.o); return render(); }
+  if (t.dataset.go) { st.e = t.dataset.go; st.ouvert = false; window.scrollTo(0, 0); return render(); }
+  if (t.id === 'env') { t.classList.add('ouvre'); setTimeout(() => { st.ouvert = true; render(); tirer(); }, 380); }
+});
+render();
+</script>
+</body>
+</html>
