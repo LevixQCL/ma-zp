@@ -13,6 +13,7 @@ import { actuLigne } from './actu.js';
 import { lucLigne } from './luc.js';
 // Écran HP (Hôtel de police) : l'accueil.
 import { cabossesChoisis } from '../engine/parc.js';
+import { QUIZ } from '../quests/quiz.js';
 import { S, esc, icon, fmt1, fmtK, tabbar, rangDe, gradeInfo, myZone, slotsCompte } from './common.js';
 import { agentsDisponibles, blessesActifs, vehiculesDisponibles } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
@@ -349,6 +350,15 @@ function incidentsBlocHtml() {
     ${n > 1 ? `<button type="button" class="hp-inc-plus" data-action="hp-inc-tous" aria-expanded="${tous}">${tous ? 'Réduire' : `+ ${n - 1} autre${n > 2 ? 's' : ''} incident${n > 2 ? 's' : ''} ou événement${n > 2 ? 's' : ''}`}</button>` : ''}</section>`;
 }
 
+/** Chiffre de la tuile Énigmes : le quiz express et les énigmes confiées remplacent le compte des énigmes. */
+function enigmesTuile(faites) {
+  const qr = S.questResults || [], n = slotsCompte().length;
+  const quiz = qr.find((r) => r && r.statut === 'quiz');
+  if (quiz) return [`${Math.max(0, Math.min(QUIZ.questions, Number(quiz.tentatives) || 0))}/${QUIZ.questions}`, 'quiz express fait'];
+  if (qr.some((r) => r && r.statut === 'delegue')) return ['Confiées', 'à un agent'];
+  return [`${Math.min(faites, n)}/${n}`, 'énigmes du jour'];
+}
+
 /** Trois cartes à chiffre : l'enquête, le district, les énigmes. Le point ambre dit qu'une action t'attend. */
 function vieHtml(st, z, items, faites, questDone) {
   const d = S.draft || {}, nbDem = (d.demarches || []).length;
@@ -363,7 +373,7 @@ function vieHtml(st, z, items, faites, questDone) {
   return `<section class="hp-vie" aria-label="Ta zone aujourd’hui">
     ${tuile('#enquete', traque || (enq && !enq.ok), '🔍', st.enquete ? (traque ? 'Traque' : `${nbDem}/${maxDemarchesDe(st, zoneAvecAgenda())}`) : '—', st.enquete ? (traque ? 'un suspect en fuite' : 'démarches ce soir') : 'pas d’affaire', 'Enquête')}
     ${tuile(dist[0] ? dist[0].href : tombes ? '#carte' : '#carte', nbDist > 0, '🏛', nbDist ? (nbDist > 1 ? `${nbDist} sujets` : t1) : 'District', nbDist ? (nbDist > 1 ? dist.slice(0, 2).map((i) => etiquetteEtape(i)[0].toLowerCase()).join(' · ') || 'à voir' : 'à régler ce soir') : 'rien en attente', 'District')}
-    ${tuile('#quete', !questDone, '🧩', `${Math.min(faites, slotsCompte().length)}/${slotsCompte().length}`, 'énigmes du jour', 'Énigmes')}
+    ${tuile('#quete', !questDone, '🧩', ...enigmesTuile(faites), 'Énigmes')}
   </section>`;
 }
 
