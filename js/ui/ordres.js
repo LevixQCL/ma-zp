@@ -288,7 +288,7 @@ function opCouvHtml(e) {
  * Agents de réserve, dans l'Affectation : ils renforcent un service pour la journée. On peut alors retirer
  * autant de ses propres agents de ce service pour les envoyer ailleurs (zone de non-droit, autre service…).
  */
-function reserveHtml(z, d, e) {
+export function reserveHtml(z, d, e) {
   const dep = d.depenses || {};
   const n = dep.reserve || 0;
   if (sousTutelle(z, S.state.turn)) return '';
@@ -498,8 +498,10 @@ function formationsEnCours(z, T) {
 }
 
 /** Sélecteur de grande décision : quatre catégories, des tuiles compactes. */
-function decisionPicker(z, T, d) {
-  const cat = S.decCat || catDe(d.decision) || 'recruter';
+export function decisionPicker(z, T, d, opt = {}) {
+  // `opt.cat` : catégorie imposée (fiche d'un lieu, sans onglets) ; `opt.filtre` : une partie seulement (véhicules / matériel, garage / bâtiment).
+  const cat = opt.cat || S.decCat || catDe(d.decision) || 'recruter';
+  const f = opt.filtre || null;
   const choisi = (dec) => JSON.stringify(d.decision) === JSON.stringify(dec);
   const tuile = (dec, titre, detail0, cout, extra = '') => {
     let detail = detail0;
@@ -519,7 +521,8 @@ function decisionPicker(z, T, d) {
     corps = `<p class="tiny muted" style="margin:0"><strong>Former</strong> = le long terme : +20 % d’efficacité par niveau, <strong>gardé d’une saison à l’autre</strong> (un niveau de moins). Coûte peu, mais 2 agents sont absents pendant la formation. <strong>Équiper</strong>, à côté, c’est le coup de pouce immédiat, perdu en fin de saison.</p>
       <div class="dgrille">${SERVICES.map((sv) => tuile({ type: 'former', service: sv }, SERVICE_LABELS[sv], `niveau ${z.niveaux[sv]} → ${z.niveaux[sv] + 1} · efficacité ${pc(multNiveau(z.niveaux[sv] + 1) / multNiveau(z.niveaux[sv]) - 1)}${agentsFormation(z, sv) ? '' : ' · au stand de tir'}`, coutFormation(z, sv), niv(z.niveaux[sv]))).join('')}</div>`;
   } else if (cat === 'equiper') {
-    corps = `<p class="tiny muted" style="margin:0"><strong>Équiper</strong> = le coup de pouce immédiat : +${Math.round(EQUIP.efficacite * 100)} % d’efficacité et un effet propre au service, sans agent absent, mais <strong>perdu en fin de saison</strong>. <strong>Former</strong> (+20 %) est plus fort et se garde d’une saison à l’autre.</p>
+    const intro = `<p class="tiny muted" style="margin:0"><strong>Équiper</strong> = le coup de pouce immédiat : +${Math.round(EQUIP.efficacite * 100)} % d’efficacité et un effet propre au service, sans agent absent, mais <strong>perdu en fin de saison</strong>. <strong>Former</strong> (+20 %) est plus fort et se garde d’une saison à l’autre.</p>`;
+    const veh = `
       <p class="tiny muted" style="margin:0">🚓 <strong>Véhicules</strong> (garage : ${z.vehicules} sur ${capaciteVehicules(z)} places). Les places vont d’abord à l’Intervention ; chaque place libre met un agent de Roulage ou de Proximité en voiture (+${Math.round(RENDEMENT.monte * 100)} %). Chaque modèle a en plus son rôle. Revends les vieux depuis le parc (HP › Véhicules).</p>
       ${(() => {
         // Garage plein : l'achat se fait avec reprise du véhicule le plus usé (il cède sa place au neuf).
@@ -529,22 +532,25 @@ function decisionPicker(z, T, d) {
       <div class="dgrille">${IDS_MODELES.map((m) => { const M = MODELES[m], dec = { type: 'equiper', cible: 'vehicule', modele: m, ...(plein ? { reprise: rep } : {}) }; return tuile(dec, M.nom, `${M.role} · ${fmt1(M.places)} places · ${String(M.entretien).replace('.', ',')} k€/tour`, fmt1(coutDecision(z, dec))); }).join('')}</div>
       ${comparatifModeles(z)}`;
       })()}
-      <div class="dgrille">
+`;
+    const mat = `      <div class="dgrille">
       ${SERVICES.map((sv) => tuile({ type: 'equiper', cible: sv }, SERVICE_LABELS[sv], `matériel ${z.equip[sv]} → ${z.equip[sv] + 1} · ${effetEquip(sv, 1)} · efficacité ${pc(multEquip(z.equip[sv] + 1) / multEquip(z.equip[sv]) - 1)}`, coutEquipement(z.equip[sv]), niv(z.equip[sv]))).join('')}
-      ${(z.prepa || 0) < PREPA.max ? tuile({ type: 'equiper', cible: 'prepa' }, 'Préparer les combis', `niveau ${z.prepa || 0} → ${(z.prepa || 0) + 1} · urgences : +${Math.round(PREPA.vitesse * 100)} % de vitesse, freinage +${Math.round(PREPA.frein * 100)} %`, coutPrepa(z.prepa), niv(z.prepa || 0, PREPA.max)) : ''}</div>`;
+</div>`;
+    const prepaT = `${(z.prepa || 0) < PREPA.max ? tuile({ type: 'equiper', cible: 'prepa' }, 'Préparer les combis', `niveau ${z.prepa || 0} → ${(z.prepa || 0) + 1} · urgences : +${Math.round(PREPA.vitesse * 100)} % de vitesse, freinage +${Math.round(PREPA.frein * 100)} %`, coutPrepa(z.prepa), niv(z.prepa || 0, PREPA.max)) : ''}`;
+    corps = f === 'vehicules' ? `${veh}<div class="dgrille">${prepaT}</div>` : f === 'materiel' ? `${intro}${mat}` : `${intro}${veh}${mat.replace(/<\/div>$/, '')}${prepaT}</div>`;
   } else {
     const faites = Object.entries(INFRAS).filter(([id]) => z.infra[id]).map(([, i]) => i);
-    corps = `<div class="dgrille">${Object.entries(BATIMENTS).map(([id, B]) => { const n = z.batiments[id]; return n >= BATIMENT_MAX ? '' : tuile({ type: 'agrandir', batiment: id }, `Agrandir : ${B.nom}`, `${B.capacite(n)} → ${B.capacite(n + 1)} ${B.unite} · entretien ${ent(B.entretien(n))} → ${ent(B.entretien(n + 1))}/tour · ⏱ ${TRAVAUX_TOURS === 1 ? 'prêt demain soir' : `prêt dans ${TRAVAUX_TOURS} tours`}`, B.coutAgrandir(n), niv(n, BATIMENT_MAX)); }).join('')}
-      ${Object.entries(INFRAS).filter(([id, inf]) => !z.infra[id] && !(inf.v2 && !REGLES.v2)).map(([id, inf]) => tuile({ type: 'construire', infra: id }, `${inf.v2 ? '🆕 ' : ''}${inf.nom}`, `${inf.effet} · entretien ${ent(ENTRETIEN_ANNEXE)}/tour · ⏱ en service ce soir`, inf.cout)).join('')}</div>
-      ${emplacementsHtml(z, d)}
-      ${faites.length ? `<div class="col" style="gap:3px"><span class="tiny muted">Déjà construit :</span>${faites.map((i) => `<span class="tiny"><strong>${esc(i.nom)}</strong> <span class="muted">· ${esc(i.effet)}</span></span>`).join('')}</div>` : ''}`;
+    corps = `<div class="dgrille">${Object.entries(BATIMENTS).filter(([id]) => !f || (f === 'garage') === (id === 'garage')).map(([id, B]) => { const n = z.batiments[id]; return n >= BATIMENT_MAX ? '' : tuile({ type: 'agrandir', batiment: id }, `Agrandir : ${B.nom}`, `${B.capacite(n)} → ${B.capacite(n + 1)} ${B.unite} · entretien ${ent(B.entretien(n))} → ${ent(B.entretien(n + 1))}/tour · ⏱ ${TRAVAUX_TOURS === 1 ? 'prêt demain soir' : `prêt dans ${TRAVAUX_TOURS} tours`}`, B.coutAgrandir(n), niv(n, BATIMENT_MAX)); }).join('')}
+      ${f === 'garage' ? '' : Object.entries(INFRAS).filter(([id, inf]) => !z.infra[id] && !(inf.v2 && !REGLES.v2)).map(([id, inf]) => tuile({ type: 'construire', infra: id }, `${inf.v2 ? '🆕 ' : ''}${inf.nom}`, `${inf.effet} · entretien ${ent(ENTRETIEN_ANNEXE)}/tour · ⏱ en service ce soir`, inf.cout)).join('')}</div>
+      ${f === 'garage' ? '' : emplacementsHtml(z, d)}
+      ${f !== 'garage' && faites.length ? `<div class="col" style="gap:3px"><span class="tiny muted">Déjà construit :</span>${faites.map((i) => `<span class="tiny"><strong>${esc(i.nom)}</strong> <span class="muted">· ${esc(i.effet)}</span></span>`).join('')}</div>` : ''}`;
   }
   const det = d.decision && catDe(d.decision) === cat ? detailDecision(z, d.decision, T) : '';
   corps += det ? `<div class="ddetail">${det}</div>` : '<p class="tiny muted" style="margin:0">Touche une option : le détail de ce qu’elle change pour ta zone s’affiche ici.</p>';
   return `<div class="col" style="gap:10px">
     <div class="between dchoix"><span class="col" style="gap:1px"><span class="tiny muted">Ta grande décision de ce soir</span><strong>${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'Pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}</strong></span>
       ${d.decision || !d.sansDecision ? `<button type="button" class="btn small ghost" data-action="decision" data-json="null" data-aucune="1">${d.decision ? 'Aucune' : 'Aucune ce soir'}</button>` : ''}</div>
-    <div class="segn" role="tablist" aria-label="Type de décision" style="grid-template-columns:repeat(4,minmax(0,1fr))">${DEC_CATS.map(([k, l]) => `<button type="button" role="tab" aria-selected="${cat === k}" data-action="dec-cat" data-v="${k}">${l}${catDe(d.decision) === k ? ' ●' : ''}</button>`).join('')}</div>
+    ${opt.cat ? '' : `<div class="segn" role="tablist" aria-label="Type de décision" style="grid-template-columns:repeat(4,minmax(0,1fr))">${DEC_CATS.map(([k, l]) => `<button type="button" role="tab" aria-selected="${cat === k}" data-action="dec-cat" data-v="${k}">${l}${catDe(d.decision) === k ? ' ●' : ''}</button>`).join('')}</div>`}
     ${corps}
     ${avertBudget(z, d)}
     ${formationsEnCours(z, T)}
@@ -553,7 +559,7 @@ function decisionPicker(z, T, d) {
 }
 
 /** Panneau « Où sont mes agents ? » : le compte complet, et de quoi rapatrier. */
-function ventilationHtml(z, e) {
+export function ventilationHtml(z, e) {
   const st = S.state, d = S.draft, T = st.turn;
   const ligne = (t, n, cls = '', extra = '') => `<div class="between vent-l ${cls}"><span class="small">${t}</span><span class="row" style="gap:8px">${extra}<span class="mono small" style="min-width:28px;text-align:right">${n}</span></span></div>`;
   const signe = (n) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
@@ -645,7 +651,7 @@ function projeterDossiers(z, capRech) {
  * Dossiers locaux sous la ligne Recherche : pour chacun, son âge, ce qui est déjà fait, ce que tes enquêteurs
  * feront ce soir, et s'il sera bouclé ; puis le nombre de dossiers qu'il restera après 20:00.
  */
-function dossiersHtml(z, e) {
+export function dossiersHtml(z, e) {
   const p = projeterDossiers(z, ((e.cap && e.cap.recherche) || 0) + (S.draft && S.draft.depenses && S.draft.depenses.enqueteurs ? DEPENSES.enqueteurs.unites : 0));
   if (!p.lignes.length) return '<span class="tiny muted">Aucun dossier en cours : le dossier du soir sera entamé à 20:00.</span>';
   const n = S.draft.alloc.recherche || 0;
@@ -711,7 +717,7 @@ function ouvertOrdres(k, forcer = false) {
 }
 
 /** Mon équipe dans les ordres : bonus de chaque figure, et leurs missions du jour (une figure par destination). */
-function equipeOrdres(z, d) {
+export function equipeOrdres(z, d) {
   const equipe = appliquerNoms(JSON.parse(JSON.stringify(z.equipe || creerEquipe(z.uid))), z.uid, (S.player && S.player.equipeNoms) || null);
   const valides = missionsValides(d);
   const parRole = Object.fromEntries(valides.map((x) => [x.role, x]));
@@ -882,7 +888,7 @@ function doctrineFixeeHtml(z) {
       <a class="small" href="#guide-doctrines">❔ Le guide des doctrines</a></div></details>`;
 }
 /** Choix de la doctrine (règles v2) : les 3 premiers jours de la saison, puis les jours 8 et 9 pour la 2e semaine. */
-function doctrineHtml(z, d) {
+export function doctrineHtml(z, d) {
   if (!doctrineOuverte(S.state, z)) return doctrineFixeeHtml(z);
   const sem2 = doctrineSemaine2(S.state, z);
   const reste = finFenetreDoctrine(S.state, z) - S.state.turn;
@@ -928,6 +934,30 @@ function pastillesOrdres(z, d, e) {
     <span class="ord-reste">${reste.length ? `Reste : ${reste.map((x) => `${x[2].toLowerCase()}${x[4] ? ` <small>(${x[4]})</small>` : ''}`).join(', ')}` : 'Tout est réglé : il ne reste qu’à valider.'}</span></div>`;
 }
 
+/** Contexte des dépenses du jour (clés proposées, nombre engagé, plafond). */
+export function depCtx(z, d, T) {
+  const dep = d.depenses || {};
+  const cab = (z.cabosses || []).length;
+  const depKeys = [...(cab ? ['carrosserie'] : []), 'prime', 'prevention', 'soustraitance', 'enqueteurs', 'revision'];
+  const nbDep = (dep.reserve ? 1 : 0) + depKeys.filter((k) => dep[k]).length;
+  // Talent « Rallonge budgétaire » (équipé, chef pas à l'hôpital, pas utilisé depuis 7 jours) : une 3e dépense.
+  const talentsEq = d.talents || (z.chef && z.chef.talents) || [];
+  const rallonge = !!(REGLES.v2 && z.chef && !z.chef.hs && talentsEq.includes('rallonge') && !(z.chef.rallongeT != null && T < z.chef.rallongeT + CHEF.semaine));
+  const maxDep = MAX_DEPENSES + (rallonge ? 1 : 0);
+  return { dep, cab, depKeys, nbDep, maxDep, rallonge };
+}
+
+/** Boutons de dépenses (toutes ou une partie : `keys`), partagés par les Ordres et les fiches de lieux. */
+export function depBoutons(z, d, T, keys) {
+  const { dep, cab, depKeys, nbDep, maxDep } = depCtx(z, d, T);
+  keys = (keys || depKeys).filter((k) => depKeys.includes(k));
+  if (!keys.length) return '';
+  return `<div class="col" style="gap:6px">${keys.map((k) => `
+      <button type="button" class="choice" data-action="dep-toggle" data-k="${k}" aria-pressed="${!!dep[k]}" ${REGLES.v2 && !dep[k] && k !== 'carrosserie' && nbDep - (dep.carrosserie ? 1 : 0) >= maxDep ? 'disabled' : ''} style="flex-direction:row;justify-content:space-between;text-align:left">
+        <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(DEPENSES[k].nom)}</span><span class="s">${esc(DEPENSES[k].texte)}${k === 'carrosserie' && Array.isArray(dep.carrosserie) && dep.carrosserie.length < cab ? ` · ${dep.carrosserie.length} sur ${cab} choisi${dep.carrosserie.length > 1 ? 's' : ''} depuis l’HP` : ''}${k === 'revision' ? ` · état actuel ${Math.round(100 - z.usure)} %${z.stats && z.stats.risqueAccident != null ? ` · risque d’accident hier ${fmt1(z.stats.risqueAccident)} %` : ''}` : ''}${k === 'carrosserie' ? ` · ${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} : sans réparation, −${Math.min(3, cab)} de satisfaction et de réputation par tour` : ''}</span></span><span class="mono small">${fmt1(k === 'carrosserie' ? coutCarrosserie(z, dep.carrosserie || true) : k === 'prime' ? coutPrime(z, T) : DEPENSES[k].cout)} k€${k === 'prime' && coutPrime(z, T) > DEPENSES.prime.cout ? ' (déjà versée hier)' : ''}</span></button>`).join('')}
+    </div>`;
+}
+
 export function renderOrdres() {
   const z = myZone(), st = S.state, d = S.draft, T = st.turn;
   S.ordresV2 = !!REGLES.v2;
@@ -938,13 +968,7 @@ export function renderOrdres() {
   const pap = (v) => (v < 0 ? `−${-v}` : v > 0 ? `+${v}` : '±0');
   const nbEng = Object.values(d.engagements).filter((x) => x.agents > 0).length;
   const dep = d.depenses || {};
-  const cab = (z.cabosses || []).length;
-  const depKeys = [...(cab ? ['carrosserie'] : []), 'prime', 'prevention', 'soustraitance', 'enqueteurs', 'revision'];
-  const nbDep = (dep.reserve ? 1 : 0) + depKeys.filter((k) => dep[k]).length;
-  // Talent « Rallonge budgétaire » (équipé, chef pas à l'hôpital, pas utilisé depuis 7 jours) : une 3e dépense.
-  const talentsEq = d.talents || (z.chef && z.chef.talents) || [];
-  const rallonge = !!(REGLES.v2 && z.chef && !z.chef.hs && talentsEq.includes('rallonge') && !(z.chef.rallongeT != null && T < z.chef.rallongeT + CHEF.semaine));
-  const maxDep = MAX_DEPENSES + (rallonge ? 1 : 0);
+  const { cab, depKeys, nbDep, maxDep, rallonge } = depCtx(z, d, T);
 
   const nbAgentsAff = Object.values(d.engagements).reduce((s2, x) => s2 + (x.agents || 0), 0);
   const affairesHtml = `<div class="col" style="gap:8px">${st.affaires.map((a) => { const eg = d.engagements[a.id]; return `<div class="between"><span class="small" style="font-weight:600">${esc(a.titre)}</span><span class="tiny ${eg && eg.agents ? 'ok' : 'muted'}" style="white-space:nowrap">${eg && eg.agents ? `${eg.agents} agent${eg.agents > 1 ? 's' : ''}` : a.zone === z.uid ? 'à lancer' : '—'}</span></div>`; }).join('')}
@@ -957,10 +981,7 @@ export function renderOrdres() {
       <p class="tiny muted" style="margin:0">Agents de réserve : ${dep.reserve ? `<strong>${dep.reserve}</strong> en ${SERVICE_LABELS[dep.reserveService]} (${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€)` : 'aucun'} · ${REGLES.v2 ? 'ils se règlent dans leur tuile' : 'ils se règlent dans l’Affectation, plus haut'}.</p>
     </div>
     ${REGLES.v2 ? `<p class="tiny ${nbDep >= maxDep ? 'warn' : 'muted'}" style="margin:0">${MAX_DEPENSES} dépenses par jour au plus${rallonge ? ' (3 aujourd’hui : ta rallonge budgétaire est disponible)' : ''} (les agents de réserve comptent pour une, la carrosserie ne compte pas) : ${nbDep - (dep.carrosserie ? 1 : 0)} sur ${maxDep}.</p>` : ''}
-    <div class="col" style="gap:6px">${depKeys.map((k) => `
-      <button type="button" class="choice" data-action="dep-toggle" data-k="${k}" aria-pressed="${!!dep[k]}" ${REGLES.v2 && !dep[k] && k !== 'carrosserie' && nbDep - (dep.carrosserie ? 1 : 0) >= maxDep ? 'disabled' : ''} style="flex-direction:row;justify-content:space-between;text-align:left">
-        <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(DEPENSES[k].nom)}</span><span class="s">${esc(DEPENSES[k].texte)}${k === 'carrosserie' && Array.isArray(dep.carrosserie) && dep.carrosserie.length < cab ? ` · ${dep.carrosserie.length} sur ${cab} choisi${dep.carrosserie.length > 1 ? 's' : ''} depuis l’HP` : ''}${k === 'revision' ? ` · état actuel ${Math.round(100 - z.usure)} %${z.stats && z.stats.risqueAccident != null ? ` · risque d’accident hier ${fmt1(z.stats.risqueAccident)} %` : ''}` : ''}${k === 'carrosserie' ? ` · ${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} : sans réparation, −${Math.min(3, cab)} de satisfaction et de réputation par tour` : ''}</span></span><span class="mono small">${fmt1(k === 'carrosserie' ? coutCarrosserie(z, dep.carrosserie || true) : k === 'prime' ? coutPrime(z, T) : DEPENSES[k].cout)} k€${k === 'prime' && coutPrime(z, T) > DEPENSES.prime.cout ? ' (déjà versée hier)' : ''}</span></button>`).join('')}
-    </div>
+    ${depBoutons(z, d, T, depKeys)}
     <p class="tiny muted" style="margin:0">Payées à 20:00 si le budget le permet (${fmt1(z.budget)} k€). Elles ne sont pas reconduites le lendemain.</p>`;
 
   return `<main class="screen">
