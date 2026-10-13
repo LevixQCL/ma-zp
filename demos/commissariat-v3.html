@@ -46,9 +46,9 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .salle.ok .led{background:var(--green);box-shadow:0 0 7px var(--green)}
 .salle.manque .led{background:var(--amber);box-shadow:0 0 7px var(--amber)}
 .salle.drop::after{content:"";position:absolute;inset:0;border:3px solid var(--amber);box-shadow:inset 0 0 26px rgba(255,178,63,.35);z-index:4;pointer-events:none}
-.etiq{position:absolute;left:4px;top:4px;z-index:6;display:flex;align-items:center;gap:4px;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;background:rgba(8,11,28,.72);padding:2px 6px 2px 5px;border-radius:6px;color:#e8ecf8;pointer-events:none;white-space:nowrap}
+.etiq{position:absolute;left:3px;top:3px;z-index:6;display:flex;align-items:center;gap:3px;font-size:7.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;background:rgba(8,11,28,.72);padding:2px 6px 2px 5px;border-radius:6px;color:#e8ecf8;pointer-events:none;white-space:nowrap}
 .etiq i{width:6px;height:6px;border-radius:50%}
-.etiq .c{font-size:10px;letter-spacing:0;padding:0 5px;border-radius:99px;background:rgba(255,255,255,.14)}
+.etiq .c{font-size:8.5px;letter-spacing:0;padding:0 5px;border-radius:99px;background:rgba(255,255,255,.14)}
 .salle.ok .etiq .c{background:var(--green);color:#062417}
 .salle.manque .etiq .c{background:var(--amber);color:var(--amber-ink)}
 
@@ -83,9 +83,9 @@ button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
 .ag.radio .radio{display:block}
 .ag.tient{position:fixed;z-index:200;pointer-events:none;filter:drop-shadow(0 8px 8px rgba(0,0,0,.5))}
 .ag.tient .corps{animation:none}
-.cabine{position:absolute;left:0;top:0;width:30px;height:46px;border-radius:5px;background:linear-gradient(90deg,#4b5687,#6b78ad 50%,#4b5687);border:2px solid #9aa6d4;box-shadow:0 0 14px rgba(155,170,230,.35);will-change:transform}
+.cabine{position:absolute;left:0;top:0;width:24px;height:36px;border-radius:5px;background:linear-gradient(90deg,#4b5687,#6b78ad 50%,#4b5687);border:2px solid #9aa6d4;box-shadow:0 0 14px rgba(155,170,230,.35);will-change:transform}
 
-.bulle{position:absolute;z-index:2000;width:34px;height:34px;margin-left:-17px;border-radius:50%;display:grid;place-items:center;font-size:17px;box-shadow:0 4px 12px rgba(0,0,0,.55),0 0 0 3px rgba(255,255,255,.15);animation:flotte 1.6s ease-in-out infinite}
+.bulle{position:absolute;z-index:2000;width:28px;height:28px;margin-left:-14px;border-radius:50%;display:grid;place-items:center;font-size:14px;box-shadow:0 4px 12px rgba(0,0,0,.55),0 0 0 3px rgba(255,255,255,.15);animation:flotte 1.6s ease-in-out infinite}
 @keyframes flotte{50%{transform:translateY(-4px)}}
 .pastille{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:99px;background:#fff;color:#111;font:800 10px var(--body);display:grid;place-items:center;padding:0 3px}
 .vol{position:fixed;z-index:300;font-size:18px;pointer-events:none;transition:transform .7s cubic-bezier(.5,-0.3,.7,1),opacity .7s}
@@ -136,37 +136,36 @@ nav.tabs .badge{position:absolute;top:-2px;left:56%;background:var(--red);color:
 
 <script>
 /* ================= Géométrie ================= */
-const W = 360, PAD = 16, PUITS = 40, RW = (W - 2*PAD - PUITS) / 2, RH = 118, DALLE = 9, TOIT = 78, SOL = 30;
-const XG = PAD, XD = PAD + RW + PUITS, XP = PAD + RW + PUITS/2;
-// perspective d'une pièce : mur du fond en retrait
-const IN = 13, PL = 11, FOND = 78;          // retrait latéral, profondeur du plafond, bas du mur du fond
-const LANE = [94, 107];                       // lignes de pieds : fond, devant
+// Pièces basses et larges (à la Fallout Shelter), largeurs variables, ascenseur à droite.
+const W = 360, PAD = 14, PUITS = 34, FW = W - 2*PAD - PUITS, XS = PAD + FW, XP = XS + PUITS/2;
+const RH = 86, DALLE = 7, TOIT = 74, RUE = 38, JOINT = 3;
+const IN = 8, PL = 6, FOND = RH - 24;            // perspective : retrait latéral, plafond, bas du mur du fond
+const LANE = [RH - 13, RH - 4];                   // lignes de pieds : fond, devant
+const AG = .74;                                   // taille des agents
 
 /* ================= Couleurs ================= */
 function hex(c){ c=c.replace('#',''); return [0,2,4].map(i=>parseInt(c.slice(i,i+2),16)); }
-function mix(c, k){ // k<0 assombrit, k>0 éclaircit
-  const [r,g,b] = hex(c), t = k<0?0:255, a = Math.abs(k);
-  return '#'+[r,g,b].map(v=>Math.round(v+(t-v)*a).toString(16).padStart(2,'0')).join('');
-}
+function mix(c, k){ const [r,g,b] = hex(c), t = k<0?0:255, a = Math.abs(k); return '#'+[r,g,b].map(v=>Math.round(v+(t-v)*a).toString(16).padStart(2,'0')).join(''); }
 
 /* ================= Données ================= */
 const SERVICES = {
-  intervention:{ nom:'Intervention', coul:'#FF6E6A', besoin:6, mur:'#46506e', sol:'#3a3f52', solB:'beton' },
-  accueil:{ nom:'Accueil', coul:'#B79BFF', besoin:3, mur:'#5a5285', sol:'#6c5a49', solB:'parquet' },
-  proximite:{ nom:'Proximité', coul:'#3DD39A', besoin:3, mur:'#3d6a61', sol:'#6c5a49', solB:'parquet' },
-  roulage:{ nom:'Roulage', coul:'#F2D04B', besoin:2, mur:'#686241', sol:'#4a4a52', solB:'carrelage' },
-  recherche:{ nom:'Recherche', coul:'#63B0FF', besoin:4, mur:'#3c5784', sol:'#5e4e40', solB:'parquet' },
-  chef:{ nom:'Chef', coul:'#FFB23F', besoin:0, mur:'#6e5236', sol:'#7a4f33', solB:'parquet' },
-  repos:{ nom:'Vestiaires', coul:'#98a2c4', besoin:0, mur:'#4a4e6c', sol:'#4a4a52', solB:'carrelage' },
-  cachots:{ nom:'Cachots', coul:'#98a2c4', besoin:0, mur:'#3a3d4c', sol:'#33343c', solB:'beton' },
-  tir:{ nom:'Stand de tir', coul:'#98a2c4', besoin:0, mur:'#45465a', sol:'#35363e', solB:'beton' },
-  drone:{ nom:'Cellule drone', coul:'#98a2c4', besoin:0, mur:'#2e4a62', sol:'#3a4250', solB:'carrelage' },
-  chantier:{ nom:'À construire', coul:'#67719A', besoin:0, mur:'#45475c', sol:'#3a3b45', solB:'beton' },
+  intervention:{ nom:'Intervention', coul:'#FF6E6A', besoin:6, mur:'#4a5470', sol:'#3d4254', solB:'beton' },
+  accueil:{ nom:'Accueil', coul:'#B79BFF', besoin:3, mur:'#5c5488', sol:'#77634f', solB:'parquet' },
+  proximite:{ nom:'Proximité', coul:'#3DD39A', besoin:3, mur:'#3e6c62', sol:'#77634f', solB:'parquet' },
+  roulage:{ nom:'Roulage', coul:'#F2D04B', besoin:2, mur:'#6a6444', sol:'#4c4d56', solB:'carrelage' },
+  recherche:{ nom:'Recherche', coul:'#63B0FF', besoin:4, mur:'#3d5886', sol:'#655344', solB:'parquet' },
+  chef:{ nom:'Chef', coul:'#FFB23F', besoin:0, mur:'#70533a', sol:'#7d5236', solB:'parquet' },
+  repos:{ nom:'Vestiaires', coul:'#98a2c4', besoin:0, mur:'#4c506e', sol:'#4c4d56', solB:'carrelage' },
+  cachots:{ nom:'Cellule', coul:'#98a2c4', besoin:0, mur:'#3c3f4e', sol:'#34353d', solB:'beton' },
+  tir:{ nom:'Stand de tir', coul:'#98a2c4', besoin:0, mur:'#46475b', sol:'#36373f', solB:'beton' },
+  drone:{ nom:'Cellule drone', coul:'#98a2c4', besoin:0, mur:'#2f4b63', sol:'#3b4351', solB:'carrelage' },
+  chantier:{ nom:'Travaux', coul:'#67719A', besoin:0, mur:'#45475c', sol:'#3a3b45', solB:'beton' },
 };
+// étages du haut vers le bas ; le dernier est le rez-de-chaussée, sur la rue
 const PLANS = {
-  1:{ etages:[['recherche','chef'],['proximite','roulage'],['intervention','accueil']], cave:['repos','chantier'] },
-  2:{ etages:[['recherche','chef'],['proximite','roulage'],['intervention','accueil']], cave:['repos','cachots'] },
-  3:{ etages:[['tir','drone'],['recherche','chef'],['proximite','roulage'],['intervention','accueil']], cave:['repos','cachots'] },
+  1:[ [['recherche',.38],['repos',.30],['chef',.32]], [['proximite',.5],['roulage',.5]], [['intervention',.47],['chantier',.18],['accueil',.35]] ],
+  2:[ [['recherche',.38],['repos',.30],['chef',.32]], [['proximite',.5],['roulage',.5]], [['intervention',.47],['cachots',.18],['accueil',.35]] ],
+  3:[ [['tir',.55],['drone',.45]], [['recherche',.38],['repos',.30],['chef',.32]], [['proximite',.5],['roulage',.5]], [['intervention',.47],['cachots',.18],['accueil',.35]] ],
 };
 const PLACABLES = ['intervention','accueil','proximite','roulage','recherche','repos'];
 const S = { niv:1, budget:91900, moral:61, agents:[], bulles:[] };
@@ -174,242 +173,218 @@ const PEAUX = ['#f2cba6','#e0ae84','#9a6444','#f6d9bd','#c58a60','#6f4630'];
 const CHEVEUX = ['#2b1d14','#5a3a22','#c9a063','#1a1a1a','#7a4a2a','#d9d2c4'];
 const DEPART = { recherche:3, proximite:3, accueil:2, intervention:5, roulage:2, repos:5 };
 
-/* ================= Pièces : coque en perspective ================= */
+/* ================= Coque d'une pièce (perspective) ================= */
 let uid = 0;
-function coque(t){
-  const s = SERVICES[t], m = s.mur, f = s.sol, id = 'c'+(uid++);
-  const bx0 = IN, bx1 = RW-IN;
-  let solMotif = '';
-  if (s.solB==='parquet') {
-    for (let i=0;i<=8;i++){ const xb = bx0 + (bx1-bx0)*i/8, xf = (RW)*i/8; solMotif += `<path d="M${xb} ${FOND}L${xf} ${RH}" stroke="${mix(f,-.22)}" stroke-width=".7"/>`; }
-    solMotif += [86,97,108].map((y,i)=>`<path d="M${bx0-(y-FOND)*IN/(RH-FOND)} ${y}H${bx1+(y-FOND)*IN/(RH-FOND)}" stroke="${mix(f,-.12)}" stroke-width=".5" stroke-dasharray="${9+i*3} ${6+i*2}"/>`).join('');
-  } else if (s.solB==='carrelage') {
-    for (let i=0;i<=6;i++){ const xb = bx0 + (bx1-bx0)*i/6, xf = RW*i/6; solMotif += `<path d="M${xb} ${FOND}L${xf} ${RH}" stroke="${mix(f,.12)}" stroke-width=".6"/>`; }
-    solMotif += [84,93,105].map(y=>`<path d="M0 ${y}H${RW}" stroke="${mix(f,.12)}" stroke-width=".6"/>`).join('');
-  } else {
-    solMotif = `<path d="M${RW*.2} 96q12 3 26 0M${RW*.6} 104q14 2 24-1" stroke="${mix(f,-.18)}" stroke-width="1" fill="none"/>`;
-  }
+function coque(t, w){
+  const s = SERVICES[t], m = s.mur, f = s.sol, id = 'c'+(uid++), b0 = IN, b1 = w - IN;
+  let motif = '';
+  if (s.solB === 'parquet') {
+    const n = Math.round(w/16);
+    for (let i=0;i<=n;i++) motif += `<path d="M${b0+(b1-b0)*i/n} ${FOND}L${w*i/n} ${RH}" stroke="${mix(f,-.22)}" stroke-width=".6"/>`;
+    motif += `<path d="M0 ${FOND+12}H${w}" stroke="${mix(f,-.12)}" stroke-width=".5" stroke-dasharray="10 7"/>`;
+  } else if (s.solB === 'carrelage') {
+    const n = Math.round(w/20);
+    for (let i=0;i<=n;i++) motif += `<path d="M${b0+(b1-b0)*i/n} ${FOND}L${w*i/n} ${RH}" stroke="${mix(f,.12)}" stroke-width=".55"/>`;
+    motif += [FOND+7, FOND+16].map(y=>`<path d="M0 ${y}H${w}" stroke="${mix(f,.12)}" stroke-width=".55"/>`).join('');
+  } else motif = `<path d="M${w*.25} ${FOND+15}q10 2 20 0M${w*.62} ${FOND+19}q12 2 20-1" stroke="${mix(f,-.2)}" stroke-width=".9" fill="none"/>`;
   return `<defs>
-      <linearGradient id="${id}m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mix(m,-.1)}"/><stop offset=".75" stop-color="${m}"/><stop offset="1" stop-color="${mix(m,-.15)}"/></linearGradient>
-      <linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mix(f,-.25)}"/><stop offset="1" stop-color="${f}"/></linearGradient>
-      <radialGradient id="${id}l" cx=".5" cy="0" r=".8"><stop offset="0" stop-color="#ffe9bf" stop-opacity=".34"/><stop offset="1" stop-color="#ffe9bf" stop-opacity="0"/></radialGradient>
-      <radialGradient id="${id}p" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffe2a6" stop-opacity=".32"/><stop offset="1" stop-color="#ffe2a6" stop-opacity="0"/></radialGradient>
-      <linearGradient id="${id}o" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".28"/><stop offset="1" stop-color="#000" stop-opacity="0"/></linearGradient>
+      <linearGradient id="${id}m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mix(m,-.12)}"/><stop offset=".8" stop-color="${m}"/><stop offset="1" stop-color="${mix(m,-.12)}"/></linearGradient>
+      <linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mix(f,-.28)}"/><stop offset="1" stop-color="${f}"/></linearGradient>
+      <radialGradient id="${id}l" cx=".5" cy="0" r=".75"><stop offset="0" stop-color="#ffe9bf" stop-opacity=".32"/><stop offset="1" stop-color="#ffe9bf" stop-opacity="0"/></radialGradient>
+      <radialGradient id="${id}p" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffe2a6" stop-opacity=".3"/><stop offset="1" stop-color="#ffe2a6" stop-opacity="0"/></radialGradient>
     </defs>
-    <rect x="${bx0}" y="${PL}" width="${bx1-bx0}" height="${FOND-PL}" fill="url(#${id}m)"/>
-    <rect x="${bx0}" y="${FOND-17}" width="${bx1-bx0}" height="17" fill="${mix(m,-.14)}"/>
-    <rect x="${bx0}" y="${FOND-17}" width="${bx1-bx0}" height="1.2" fill="${mix(m,.18)}"/>
-    <rect x="${bx0}" y="${FOND-2.4}" width="${bx1-bx0}" height="2.4" fill="${mix(m,-.32)}"/>
-    <path d="M0 0H${RW}L${bx1} ${PL}H${bx0}Z" fill="${mix(m,-.55)}"/>
-    <path d="M0 0L${bx0} ${PL}V${FOND}L0 ${RH}Z" fill="${mix(m,-.3)}"/>
-    <path d="M${RW} 0L${bx1} ${PL}V${FOND}L${RW} ${RH}Z" fill="${mix(m,-.38)}"/>
-    <path d="M${bx0} ${FOND}H${bx1}L${RW} ${RH}H0Z" fill="url(#${id}s)"/>
-    ${solMotif}
-    <path d="M${bx0} ${FOND}H${bx1}L${bx1+4} ${FOND+6}H${bx0-4}Z" fill="url(#${id}o)"/>
-    <rect x="${bx0}" y="${PL}" width="${bx1-bx0}" height="${FOND-PL}" fill="url(#${id}l)"/>
-    <ellipse cx="${RW/2}" cy="${RH-12}" rx="${RW*.38}" ry="12" fill="url(#${id}p)"/>`;
+    <rect x="${b0}" y="${PL}" width="${b1-b0}" height="${FOND-PL}" fill="url(#${id}m)"/>
+    <rect x="${b0}" y="${FOND-12}" width="${b1-b0}" height="12" fill="${mix(m,-.14)}"/>
+    <rect x="${b0}" y="${FOND-12}" width="${b1-b0}" height=".9" fill="${mix(m,.2)}"/>
+    <rect x="${b0}" y="${FOND-1.8}" width="${b1-b0}" height="1.8" fill="${mix(m,-.34)}"/>
+    <path d="M0 0H${w}L${b1} ${PL}H${b0}Z" fill="${mix(m,-.55)}"/>
+    <path d="M0 0L${b0} ${PL}V${FOND}L0 ${RH}Z" fill="${mix(m,-.3)}"/>
+    <path d="M${w} 0L${b1} ${PL}V${FOND}L${w} ${RH}Z" fill="${mix(m,-.4)}"/>
+    <path d="M${b0} ${FOND}H${b1}L${w} ${RH}H0Z" fill="url(#${id}s)"/>${motif}
+    <path d="M${b0} ${FOND}H${b1}l3 4H${b0-3}Z" fill="#000" opacity=".16"/>
+    <rect x="${b0}" y="${PL}" width="${b1-b0}" height="${FOND-PL}" fill="url(#${id}l)"/>
+    <ellipse cx="${w/2}" cy="${RH-9}" rx="${w*.36}" ry="9" fill="url(#${id}p)"/>`;
 }
-function lampe(){
-  const x = RW/2;
-  return `<path d="M${x-12} ${PL}h24l-4 4h-16z" fill="#1c2035"/><rect x="${x-8}" y="${PL+4}" width="16" height="1.6" rx=".8" fill="#fff4d6"/><ellipse cx="${x}" cy="${PL+6}" rx="20" ry="3" fill="#fff1c8" opacity=".25"/>`;
-}
+const lampe = (w) => `<path d="M${w/2-9} ${PL}h18l-3 3h-12z" fill="#1c2035"/><rect x="${w/2-6}" y="${PL+3}" width="12" height="1.3" rx=".6" fill="#fff4d6"/>`;
 
-/* ================= Mobilier ================= */
-const FENETRE = (x,y,w,h) => `<rect x="${x-2}" y="${y-2}" width="${w+4}" height="${h+4}" rx="2" fill="#2a2f4d"/>
-  <rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#101538"/>
+/* ================= Petits objets ================= */
+const ombre = (cx, cy, rx) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${Math.max(1.2, rx*.09)}" fill="#000" opacity=".28"/>`;
+const FENETRE = (x,y,w,h) => `<rect x="${x-1.6}" y="${y-1.6}" width="${w+3.2}" height="${h+3.2}" rx="1.4" fill="#2a2f4d"/><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#101538"/>
   <path d="M${x} ${y+h}l${w*.3} ${-h*.35} ${w*.25} ${h*.12} ${w*.45} ${-h*.3}V${y+h}Z" fill="#1d2557"/>
-  ${[[.2,.65],[.38,.58],[.55,.7],[.75,.52],[.85,.66]].map(([a,b])=>`<rect x="${x+w*a}" y="${y+h*b}" width="1.6" height="1.6" fill="#ffd27a" opacity=".85"/>`).join('')}
-  <circle cx="${x+w*.75}" cy="${y+h*.25}" r="${Math.min(w,h)*.12}" fill="#f4ecd2" opacity=".85"/>
-  <rect x="${x+w/2-.8}" y="${y}" width="1.6" height="${h}" fill="#2a2f4d"/><rect x="${x}" y="${y+h*.45}" width="${w}" height="1.4" fill="#2a2f4d"/>
-  <path d="M${x} ${y}l${w*.3} 0 -${w*.3} ${h*.5}z" fill="#fff" opacity=".05"/>
-  <rect x="${x-4}" y="${y+h+1}" width="${w+8}" height="2.4" rx="1" fill="#6b739c"/>`;
-const PLANTE = (x,y,s=1) => `<g transform="translate(${x},${y}) scale(${s})"><ellipse cx="0" cy="0" rx="7" ry="1.6" fill="#000" opacity=".3"/>
-  <path d="M-5 -10h10l-1.6 10h-6.8z" fill="#c26b45"/><path d="M-5 -10h10v2h-10z" fill="#d98a62"/>
-  <path d="M0 -10q-10-4-9-16q6 5 9 16zM0 -10q3-14 11-17q0 10-11 17zM0 -10q-2-12 1-22q4 10-1 22z" fill="#3fae7a"/>
-  <path d="M0 -10q-2-12 1-22q1 11-1 22z" fill="#2d8a5e"/></g>`;
-const BUREAU = (x, y, w, ecran, coul='#c79a5f') => `<g>
-  <ellipse cx="${x+w/2}" cy="${y+18}" rx="${w*.55}" ry="2" fill="#000" opacity=".25"/>
-  <rect x="${x}" y="${y}" width="${w}" height="3.4" rx="1" fill="${mix(coul,.15)}"/>
-  <rect x="${x}" y="${y+3.4}" width="${w}" height="2" fill="${mix(coul,-.25)}"/>
-  <rect x="${x+2}" y="${y+5}" width="${w*.36}" height="13" fill="${mix(coul,-.12)}"/><rect x="${x+4}" y="${y+8}" width="${w*.36-4}" height="1.2" fill="${mix(coul,-.35)}"/><rect x="${x+4}" y="${y+12}" width="${w*.36-4}" height="1.2" fill="${mix(coul,-.35)}"/>
-  <rect x="${x+w-4}" y="${y+5}" width="2.4" height="13" fill="${mix(coul,-.3)}"/>
-  ${ecran?`<rect x="${x+w*.52}" y="${y-14}" width="17" height="11.5" rx="1.4" fill="#151a33"/><rect x="${x+w*.52+1.2}" y="${y-12.8}" width="14.6" height="8.6" fill="#4aa3ff"/><path d="M${x+w*.52+2} ${y-6.5}l3-3 3 2 4-4 3 2" stroke="#d7ecff" stroke-width=".8" fill="none"/><rect x="${x+w*.52+7}" y="${y-3}" width="3" height="3" fill="#151a33"/><rect x="${x+w*.52+5}" y="${y-.6}" width="7" height=".8" fill="#151a33"/>
-  <rect x="${x+w*.2}" y="${y-1.6}" width="9" height="1.6" fill="#e9e2cc"/><rect x="${x+w*.22}" y="${y-3}" width="8" height="1.4" fill="#f4efe3"/>`:''}
-</g>`;
-const CHAISE = (x, y) => `<g><rect x="${x}" y="${y}" width="11" height="3" rx="1.2" fill="#2b3664"/><rect x="${x+8.5}" y="${y-12}" width="3" height="14" rx="1.4" fill="#34407a"/><rect x="${x+4.6}" y="${y+3}" width="1.8" height="8" fill="#1b2140"/><path d="M${x-1} ${y+12}h13" stroke="#1b2140" stroke-width="1.6" stroke-linecap="round"/></g>`;
-const ARMOIRE = (x, y, w, h, c) => `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1" fill="${c}"/><rect x="${x+w-3}" y="${y}" width="3" height="${h}" fill="${mix(c,-.25)}"/>${Array.from({length:Math.floor(h/12)},(_,i)=>`<rect x="${x+2}" y="${y+3+i*12}" width="${w-7}" height="9" rx=".6" fill="${mix(c,.08)}"/><rect x="${x+w/2-4}" y="${y+6.5+i*12}" width="5" height="1.2" fill="${mix(c,-.4)}"/>`).join('')}</g>`;
+  ${[[.2,.68],[.4,.6],[.56,.72],[.78,.55]].map(([a,b])=>`<rect x="${x+w*a}" y="${y+h*b}" width="1.3" height="1.3" fill="#ffd27a" opacity=".85"/>`).join('')}
+  <rect x="${x+w/2-.6}" y="${y}" width="1.2" height="${h}" fill="#2a2f4d"/><rect x="${x-3}" y="${y+h+1}" width="${w+6}" height="1.8" rx=".8" fill="#6b739c"/>`;
+const PLANTE = (x, y, s=.75) => `<g transform="translate(${x},${y}) scale(${s})">${ombre(0,0,7)}<path d="M-5 -10h10l-1.6 10h-6.8z" fill="#c26b45"/><path d="M-5 -10h10v2h-10z" fill="#d98a62"/>
+  <path d="M0 -10q-10-4-9-16q6 5 9 16zM0 -10q3-14 11-17q0 10-11 17zM0 -10q-2-12 1-22q4 10-1 22z" fill="#3fae7a"/><path d="M0 -10q-2-12 1-22q1 11-1 22z" fill="#2d8a5e"/></g>`;
+const CADRE = (x, y, w, h, c='#c9a46b', inner='#3a4a7a') => `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${c}"/><rect x="${x+1.4}" y="${y+1.4}" width="${w-2.8}" height="${h-2.8}" fill="${inner}"/>`;
+const HORLOGE = (x, y) => `<circle cx="${x}" cy="${y}" r="4.2" fill="#e9edf8"/><circle cx="${x}" cy="${y}" r="4.2" fill="none" stroke="#2a2f4d" stroke-width="1"/><path d="M${x} ${y}v-2.6M${x} ${y}h2" stroke="#1a1a1a" stroke-width=".7"/>`;
+const ECRAN = (x, y, w=13, h=9, c='#4aa3ff') => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="1" fill="#151a33"/><rect x="${x+1}" y="${y+1}" width="${w-2}" height="${h-2}" fill="${c}"/><path d="M${x+2} ${y+h-3}l${w*.2} -2 ${w*.2} 1.4 ${w*.25} -3" stroke="#e6f2ff" stroke-width=".6" fill="none"/><rect x="${x+w/2-1.2}" y="${y+h}" width="2.4" height="2.4" fill="#151a33"/>`;
+const BUREAU = (x, y, w, coul='#c79a5f') => `<g>${ombre(x+w/2, y+11, w*.55)}<rect x="${x}" y="${y}" width="${w}" height="2.6" rx=".8" fill="${mix(coul,.15)}"/><rect x="${x}" y="${y+2.6}" width="${w}" height="1.4" fill="${mix(coul,-.25)}"/>
+  <rect x="${x+1.6}" y="${y+4}" width="${w*.36}" height="7.6" fill="${mix(coul,-.12)}"/><rect x="${x+3}" y="${y+6.6}" width="${w*.36-3}" height=".8" fill="${mix(coul,-.38)}"/><rect x="${x+w-3}" y="${y+4}" width="1.8" height="7.6" fill="${mix(coul,-.3)}"/></g>`;
+const CHAISE = (x, y) => `<g><rect x="${x}" y="${y}" width="8" height="2.2" rx="1" fill="#2b3664"/><rect x="${x+6.2}" y="${y-8}" width="2.2" height="10" rx="1" fill="#34407a"/><rect x="${x+3.3}" y="${y+2.2}" width="1.4" height="5" fill="#1b2140"/><path d="M${x-.6} ${y+7.6}h9.2" stroke="#1b2140" stroke-width="1.2" stroke-linecap="round"/></g>`;
+const CASIERS = (x, y, n, h) => `<g>${Array.from({length:n},(_,i)=>`<rect x="${x+i*9}" y="${y}" width="8.4" height="${h}" rx=".5" fill="${i%2?'#6475b8':'#5a6aab'}"/><rect x="${x+i*9}" y="${y}" width="8.4" height="1.6" fill="#8797d6"/><path d="M${x+1.6+i*9} ${y+4}h5.2M${x+1.6+i*9} ${y+5.6}h5.2" stroke="#3b4677" stroke-width=".6"/><rect x="${x+6.4+i*9}" y="${y+h*.45}" width=".9" height="3.4" fill="#e1e6ff"/>`).join('')}</g>`;
+const VELO = (x, y, c='#3DD39A', s=.8) => `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke-linecap="round">${ombre(13,0,14)}<circle cx="3" cy="-7" r="6.5" stroke="#1b2033" stroke-width="1.8"/><circle cx="23" cy="-7" r="6.5" stroke="#1b2033" stroke-width="1.8"/>
+  <path d="M3 -7l7 -9h10l3 9M10 -16l5 9h8M8 -19h5M20 -16l-1 -5h3" stroke="${c}" stroke-width="1.7"/><path d="M16 -7v-1" stroke="#1b2033" stroke-width="2"/></g>`;
+const PLOT = (x, y, s=.75) => `<g transform="translate(${x},${y}) scale(${s})"><path d="M0 0l5.5-17 5.5 17z" fill="#ff7a2e"/><path d="M2.6 -8h5.8l1 3h-7.8z" fill="#fff"/><rect x="-1" y="-1" width="13" height="2" rx=".6" fill="#2a2a33"/></g>`;
 
-function combi(alerte){
-  // dessiné tourné vers la droite, puis retourné pour sortir à gauche
+function combi(alerte, x, y, s){
   const ch = Array.from({length:14},(_,i)=>`<rect x="${i*7.7}" y="-21" width="3.85" height="3.4" fill="#f5c400"/><rect x="${i*7.7+3.85}" y="-21" width="3.85" height="3.4" fill="#1747b8"/><rect x="${i*7.7}" y="-17.6" width="3.85" height="3.4" fill="#1747b8"/><rect x="${i*7.7+3.85}" y="-17.6" width="3.85" height="3.4" fill="#f5c400"/>`).join('');
-  return `<g class="van${alerte?' alerte':''}" id="van"><g transform="translate(${RW-14},${LANE[0]-1}) scale(-1,1)">
+  return `<g class="van${alerte?' alerte':''}" id="van"><g transform="translate(${x},${y}) scale(${-s},${s})">
     <ellipse cx="54" cy="0" rx="58" ry="3" fill="#000" opacity=".35"/>
-    <ellipse class="halo" cx="54" cy="-54" rx="40" ry="10"/>
+    <ellipse class="halo" cx="54" cy="-54" rx="34" ry="8"/>
     <path d="M1 -9V-40q0-7 7-7H76q6 0 10 4l14 15q8 1 9 8l1 12z" fill="#f4f6fb"/>
-    <path d="M1 -14H110l-.5 5H1z" fill="#c9cede"/>
-    <path d="M1 -40q0-7 7-7H76q6 0 10 4l3 3H1z" fill="#fff" opacity=".6"/>
-    <rect x="1" y="-26" width="109" height="5" fill="#1747b8"/>
-    <g>${ch}</g>
-    <path d="M6 -42h18v12H6zM28 -42h22v12H28zM54 -42h16v12H54z" fill="#25305e"/>
-    <path d="M6 -42h8l-6 12H6zM28 -42h7l-6 12h-1zM54 -42h5l-5 9z" fill="#fff" opacity=".18"/>
+    <path d="M1 -14H110l-.5 5H1z" fill="#c9cede"/><path d="M1 -40q0-7 7-7H76q6 0 10 4l3 3H1z" fill="#fff" opacity=".6"/>
+    <rect x="1" y="-26" width="109" height="5" fill="#1747b8"/><g>${ch}</g>
+    <path d="M6 -42h18v12H6zM28 -42h22v12H28zM54 -42h16v12H54z" fill="#25305e"/><path d="M6 -42h8l-6 12H6zM28 -42h7l-6 12h-1z" fill="#fff" opacity=".18"/>
     <path d="M77 -43h7q4 0 7 3l11 12H77z" fill="#25305e"/><path d="M78 -43h5l-5 8z" fill="#fff" opacity=".2"/>
     <text transform="scale(-1,1)" x="-60" y="-21.8" font-family="Arial,sans-serif" font-weight="800" font-size="4.6" fill="#fff" letter-spacing=".6">POLICE</text>
     <rect x="73" y="-30" width="1.2" height="17" fill="#c9cede"/>
-    <rect class="gyro${alerte?'':'-off'}" x="40" y="-51" width="26" height="4.5" rx="2" fill="#3b7bff"/>
-    <rect x="44" y="-49.6" width="18" height="1.2" fill="#fff" opacity=".5"/>
+    <rect class="${alerte?'gyro':'gyro-off'}" x="40" y="-51" width="26" height="4.5" rx="2" fill="#3b7bff"/><rect x="44" y="-49.6" width="18" height="1.2" fill="#fff" opacity=".5"/>
     <rect x="105" y="-25" width="5" height="4" rx="1" fill="#fff6c9"/><rect x="0" y="-33" width="2" height="7" fill="#e53a3a"/>
     <path d="M10 -9a12 12 0 0 1 24 0zM76 -9a12 12 0 0 1 24 0z" fill="#1d2133"/>
-    ${[22,88].map(c=>`<circle cx="${c}" cy="-6" r="9" fill="#161925"/><circle cx="${c}" cy="-6" r="5" fill="#aeb5c8"/><circle cx="${c}" cy="-6" r="2" fill="#5b6276"/><path d="M${c-4} -9a5 5 0 0 1 5 -2" stroke="#fff" stroke-width=".8" opacity=".6" fill="none"/>`).join('')}
+    ${[22,88].map(c=>`<circle cx="${c}" cy="-6" r="9" fill="#161925"/><circle cx="${c}" cy="-6" r="5" fill="#aeb5c8"/><circle cx="${c}" cy="-6" r="2" fill="#5b6276"/>`).join('')}
   </g></g>`;
 }
-const BANALISEE = (x, y) => `<g transform="translate(${x},${y})">
-  <ellipse cx="30" cy="0" rx="32" ry="2.4" fill="#000" opacity=".35"/>
-  <path d="M1 -6v-9q0-4 4-5l9-6q4-3 9-3h14q5 0 8 3l7 6q7 1 7 6v8z" fill="#2c3149"/>
-  <path d="M15 -25h10v8H8zM28 -25h9l7 8H28z" fill="#8b9bd6" opacity=".55"/>
-  <path d="M1 -12h58" stroke="#3a4060" stroke-width="1.2"/><rect x="55" y="-14" width="4" height="2.4" fill="#ffe8a8"/>
-  ${[14,46].map(c=>`<circle cx="${c}" cy="-4" r="5.6" fill="#11131c"/><circle cx="${c}" cy="-4" r="2.6" fill="#8a91a6"/>`).join('')}</g>`;
-const VELO = (x, y, c='#3DD39A') => `<g transform="translate(${x},${y})" fill="none" stroke-linecap="round"><ellipse cx="13" cy="0" rx="15" ry="1.6" fill="#000" opacity=".25" stroke="none"/>
-  <circle cx="3" cy="-7" r="6.5" stroke="#20253a" stroke-width="1.8"/><circle cx="23" cy="-7" r="6.5" stroke="#20253a" stroke-width="1.8"/>
-  <path d="M3 -7l7 -9h10l3 9M10 -16l5 9h8M8 -19h5M20 -16l-1 -5h3" stroke="${c}" stroke-width="1.6"/></g>`;
 
-function mobilier(t, n){
-  const L = [], F = FOND;
-  if (t==='intervention'){
-    L.push(`<rect x="${IN+2}" y="${PL+6}" width="34" height="${F-PL-8}" fill="#2a3045"/>${Array.from({length:8},(_,i)=>`<rect x="${IN+2}" y="${PL+8+i*7}" width="34" height="1" fill="#3a4260"/>`).join('')}<rect x="${IN+2}" y="${PL+4}" width="34" height="3" fill="#f5c400"/>`);
-    L.push(`<path d="M${IN+38} ${F-1}h${RW-2*IN-40}" stroke="#f5c400" stroke-width="1.4" stroke-dasharray="5 4"/>`);
-    if (n>=2) L.push(`<g><rect x="${RW-IN-34}" y="${PL+10}" width="32" height="30" rx="1.5" fill="#2c3352"/>${[0,1,2].map(i=>`<circle cx="${RW-IN-28+i*10}" cy="${PL+18}" r="3.8" fill="#e9edf8"/><path d="M${RW-IN-31.8+i*10} ${PL+18}h7.6" stroke="#2b3a7a" stroke-width="1.4"/><rect x="${RW-IN-31+i*10}" y="${PL+24}" width="6" height="12" rx="2" fill="#1e2a58"/>`).join('')}</g>`);
-    if (n>=3) L.push(BANALISEE(RW-IN-58, LANE[0]-2));
-    L.push(combi(S.bulles.some(b=>b.act==='incident')));
+/* ================= Décor de chaque pièce ================= */
+function mobilier(t, n, w){
+  const F = FOND, L = [], r = w - IN;   // r : bord droit du mur du fond
+  if (t === 'intervention'){
+    // rideau métallique ouvert sur la rue, côté gauche
+    L.push(`<path d="M0 3L${IN} ${PL+2}V${F}L0 ${RH-4}Z" fill="#0e1430"/><path d="M0 3L${IN} ${PL+2}V${PL+9}L0 13Z" fill="#7d859f"/>${[0,1,2].map(i=>`<path d="M0 ${5+i*3}L${IN} ${PL+3.5+i*2}" stroke="#4d5470" stroke-width=".6"/>`).join('')}`);
+    L.push(`<rect x="${IN+4}" y="${PL+6}" width="30" height="${F-PL-20}" fill="#2e344b"/>${Array.from({length:5},(_,i)=>Array.from({length:5},(_,j)=>`<circle cx="${IN+7+j*6}" cy="${PL+9+i*5}" r=".5" fill="#4a5272"/>`).join('')).join('')}
+      <path d="M${IN+9} ${PL+10}v9M${IN+7} ${PL+10}h4" stroke="#c9cede" stroke-width="1.2"/><path d="M${IN+18} ${PL+11}l4 8" stroke="#ff7a2e" stroke-width="1.6"/><circle cx="${IN+28}" cy="${PL+15}" r="3" fill="none" stroke="#c9cede" stroke-width="1.1"/>`);
+    L.push(`<path d="M${IN+2} ${F+2}H${r-2}" stroke="#f5c400" stroke-width="1" stroke-dasharray="4 3"/><ellipse cx="${w*.42}" cy="${RH-7}" rx="9" ry="1.6" fill="#141722" opacity=".55"/>`);
+    if (n >= 2) L.push(`<g><rect x="${r-24}" y="${PL+6}" width="22" height="22" rx="1" fill="#2c3352"/>${[0,1].map(i=>`<circle cx="${r-18+i*10}" cy="${PL+11}" r="3.2" fill="#e9edf8"/><path d="M${r-21.2+i*10} ${PL+11}h6.4" stroke="#2b3a7a" stroke-width="1.1"/><rect x="${r-20.5+i*10}" y="${PL+16}" width="5" height="9" rx="1.6" fill="#1e2a58"/>`).join('')}</g>`);
+    if (n >= 3) L.push(`<g><rect x="${r-36}" y="${F-22}" width="8" height="22" rx="1.4" fill="#2a3150"/><rect x="${r-34.6}" y="${F-19}" width="5.2" height="5" fill="#7df0c1"/><path d="M${r-32} ${F-12}q-6 6 -2 12" stroke="#151a33" stroke-width="1.2" fill="none"/></g>`, PLOT(r-50, F+4, .55), PLOT(r-44, F+4, .55));
+    L.push(combi(S.bulles.some(b=>b.act==='incident'), r - 4, LANE[0] - 2, .8));
   }
-  if (t==='accueil'){
-    L.push(FENETRE(IN+8, PL+12, 28, 26));
-    L.push(`<g><rect x="${RW-IN-62}" y="${F-26}" width="60" height="28" rx="1" fill="#6a5fa6"/><rect x="${RW-IN-62}" y="${F-26}" width="60" height="3" fill="#d6cdfa"/><rect x="${RW-IN-62}" y="${F+0}" width="60" height="2" fill="#3f3770"/>
-      <rect x="${RW-IN-60}" y="${F-50}" width="56" height="24" fill="#cfe9ff" opacity=".14"/><rect x="${RW-IN-60}" y="${F-50}" width="56" height="24" fill="none" stroke="#d6cdfa" stroke-width=".8"/><path d="M${RW-IN-56} ${F-48}l10 20M${RW-IN-40} ${F-48}l6 12" stroke="#fff" stroke-width=".8" opacity=".25"/>
-      <rect x="${RW-IN-36}" y="${F-31}" width="12" height="5" fill="#2a2f50"/></g>`);
-    L.push([IN+6, IN+20].map(x=>`<g><rect x="${x}" y="${F-6}" width="11" height="3.2" rx="1" fill="#8f82d6"/><rect x="${x+8.4}" y="${F-17}" width="2.6" height="12" rx="1" fill="#8f82d6"/><rect x="${x+1}" y="${F-3}" width="1.6" height="9" fill="#4c447a"/><rect x="${x+8}" y="${F-3}" width="1.6" height="9" fill="#4c447a"/></g>`).join(''));
-    if (n>=2) L.push(PLANTE(IN+44, F+4));
-    if (n>=3) L.push(`<g><rect x="${IN+40}" y="${PL+12}" width="20" height="14" rx="1.5" fill="#151a33"/><rect x="${IN+41.5}" y="${PL+13.5}" width="17" height="11" fill="#7df0c1" opacity=".85"/><path d="M${IN+44} ${PL+19}h12M${IN+44} ${PL+22}h8" stroke="#0e3a2a" stroke-width="1"/></g>`);
+  if (t === 'accueil'){
+    L.push(HORLOGE(IN+10, PL+11), CADRE(IN+18, PL+8, 14, 10, '#c9a46b', '#5b7fc2'));
+    L.push(`<g>${ombre(r-26, F+12, 30)}<rect x="${r-50}" y="${F-14}" width="48" height="22" fill="#6a5fa6"/><rect x="${r-50}" y="${F-14}" width="48" height="2.4" fill="#d6cdfa"/><rect x="${r-50}" y="${F+6}" width="48" height="2" fill="#3f3770"/>
+      <rect x="${r-48}" y="${F-34}" width="44" height="20" fill="#cfe9ff" opacity=".13"/><rect x="${r-48}" y="${F-34}" width="44" height="20" fill="none" stroke="#d6cdfa" stroke-width=".7"/><path d="M${r-44} ${F-32}l7 16M${r-32} ${F-32}l5 10" stroke="#fff" stroke-width=".7" opacity=".25"/>
+      <rect x="${r-30}" y="${F-18}" width="9" height="4" fill="#232947"/></g>`);
+    L.push([IN+4, IN+14].map(x=>`<g><rect x="${x}" y="${F+2}" width="8.4" height="2.4" rx=".8" fill="#8f82d6"/><rect x="${x+6.4}" y="${F-6}" width="2" height="9" rx=".8" fill="#8f82d6"/><rect x="${x+.8}" y="${F+4.4}" width="1.2" height="6" fill="#4c447a"/><rect x="${x+6}" y="${F+4.4}" width="1.2" height="6" fill="#4c447a"/></g>`).join(''));
+    if (n >= 2) L.push(PLANTE(IN+30, F+8, .6));
+    if (n >= 3) L.push(`<g><rect x="${IN+36}" y="${F-24}" width="9" height="24" rx="1.4" fill="#2a2f50"/>${ECRAN(IN+37, F-22, 7, 6, '#7df0c1')}<rect x="${IN+38.4}" y="${F-10}" width="4" height="1.2" fill="#f4efe3"/></g>`);
   }
-  if (t==='proximite'){
-    L.push(`<g><rect x="${IN+6}" y="${PL+8}" width="54" height="36" rx="1" fill="#e9e1c4"/><rect x="${IN+6}" y="${PL+8}" width="54" height="36" fill="none" stroke="#8a7a52" stroke-width="1.4"/>
-      <path d="M${IN+8} ${PL+22}h50M${IN+8} ${PL+34}h50M${IN+22} ${PL+10}v32M${IN+42} ${PL+10}v32" stroke="#cfc39c" stroke-width=".8"/>
-      <path d="M${IN+10} ${PL+38}q12-20 22-10t24-16" stroke="#2bb07c" stroke-width="2" fill="none"/><path d="M${IN+14} ${PL+14}q20 4 40 20" stroke="#63B0FF" stroke-width="1.4" fill="none"/>
-      ${[[30,28,'#FF6E6A'],[46,18,'#FFB23F'],[20,34,'#3DD39A']].map(([x,y,c])=>`<circle cx="${IN+x}" cy="${PL+y}" r="2.2" fill="${c}"/>`).join('')}</g>`);
-    L.push(`<g><rect x="${RW-IN-56}" y="${F-8}" width="52" height="3.4" rx="1" fill="#9a7650"/><rect x="${RW-IN-56}" y="${F-15}" width="52" height="3" rx="1" fill="#9a7650"/><rect x="${RW-IN-53}" y="${F-5}" width="2.4" height="9" fill="#5d4730"/><rect x="${RW-IN-10}" y="${F-5}" width="2.4" height="9" fill="#5d4730"/></g>`);
-    if (n>=2) L.push(VELO(IN+6, F+5));
-    if (n>=3) L.push(VELO(IN+30, F+5, '#63B0FF'), FENETRE(RW-IN-36, PL+10, 26, 22));
+  if (t === 'cachots'){
+    L.push(`<rect x="${IN}" y="${F-6}" width="${w-2*IN}" height="3" fill="#5a5c6a"/><rect x="${IN}" y="${F-3}" width="${w-2*IN}" height="6" fill="#4a4c5a"/>
+      <g transform="translate(${w/2},${F-6}) scale(.7)"><circle cx="0" cy="-15" r="5" fill="#c99a78"/><path d="M-5 -17q5-6 10 0" fill="#2b1d14"/><rect x="-6" y="-10" width="12" height="11" rx="3.5" fill="#6d4f3a"/><path d="M-3 1v9M3 1v9" stroke="#2f3040" stroke-width="3"/></g>`);
+    L.push(Array.from({length:Math.floor(w/8)},(_,i)=>`<rect x="${3+i*8}" y="0" width="2.2" height="${RH}" fill="#8f96ad"/><rect x="${3+i*8}" y="0" width=".7" height="${RH}" fill="#c9cede"/>`).join(''), `<rect x="0" y="${PL+1}" width="${w}" height="3" fill="#8f96ad"/><rect x="0" y="${RH-10}" width="${w}" height="3" fill="#8f96ad"/><rect x="${w-12}" y="${RH/2-6}" width="6" height="9" rx="1" fill="#6e7590"/>`);
   }
-  if (t==='roulage'){
-    L.push(`<g transform="translate(${RW-IN-30},${F+4})"><ellipse cx="0" cy="0" rx="12" ry="1.6" fill="#000" opacity=".3"/><path d="M0 -26l-10 26M0 -26v26M0 -26l10 26" stroke="#9aa2b8" stroke-width="1.6"/>
-      <rect x="-11" y="-40" width="22" height="15" rx="2.4" fill="#2b2f3d"/><rect x="-11" y="-40" width="22" height="3" rx="1.4" fill="#f5c400"/><circle cx="0" cy="-31" r="4.6" fill="#0d0f17"/><circle cx="0" cy="-31" r="2.2" fill="#3b4b8a"/><circle cx="-1" cy="-32" r=".9" fill="#fff"/><circle cx="7.5" cy="-37.5" r="1" fill="#ff4d4d"/></g>`);
-    L.push([IN+6, IN+22].map(x=>`<g><path d="M${x} ${F+4}l5.5-17 5.5 17z" fill="#ff7a2e"/><path d="M${x+2.6} ${F-4}h5.8l1 3h-7.8z" fill="#fff"/><rect x="${x-1}" y="${F+3}" width="13" height="2" rx=".6" fill="#2a2a33"/></g>`).join(''));
-    if (n>=2) L.push(`<g><rect x="${IN+30}" y="${PL+10}" width="36" height="24" rx="1.5" fill="#151a33"/><rect x="${IN+31.5}" y="${PL+11.5}" width="33" height="21" fill="#1d2546"/><path d="M${IN+34} ${PL+29}l7-9 6 5 7-11 8 7" stroke="#f5c400" stroke-width="1.5" fill="none"/></g>`);
-    if (n>=3) L.push(`<g transform="translate(${IN+40},${F+6})"><ellipse cx="18" cy="0" rx="22" ry="1.8" fill="#000" opacity=".3"/><circle cx="4" cy="-7" r="7" fill="#141724"/><circle cx="4" cy="-7" r="3" fill="#8a91a6"/><circle cx="34" cy="-7" r="7" fill="#141724"/><circle cx="34" cy="-7" r="3" fill="#8a91a6"/>
+  if (t === 'chantier'){
+    L.push(`<path d="M${IN+3} ${RH-2}V${PL+4}M${w/2} ${RH-2}V${PL+4}M${r-3} ${RH-2}V${PL+4}M${IN+3} ${PL+18}H${r-3}M${IN+3} ${F-2}H${r-3}M${IN+3} ${PL+18}L${w/2} ${F-2}M${w/2} ${PL+18}L${r-3} ${F-2}" stroke="#d29b45" stroke-width="1.8" fill="none"/>
+      <rect x="${IN+2}" y="${PL+16}" width="${w-2*IN-4}" height="2" fill="#8a6a3a"/><circle cx="${r-6}" cy="${PL+9}" r="2.4" fill="#ffe8a8"/><circle cx="${r-6}" cy="${PL+9}" r="9" fill="#ffe8a8" opacity=".12"/>
+      <path d="M0 ${RH-5}H${w}" stroke="#f5c400" stroke-width="2.4" stroke-dasharray="4 4"/>`, PLOT(w/2-6, RH-8, .5));
+  }
+  if (t === 'proximite'){
+    L.push(`<g><rect x="${IN+6}" y="${PL+5}" width="46" height="30" fill="#e9e1c4"/><rect x="${IN+6}" y="${PL+5}" width="46" height="30" fill="none" stroke="#8a7a52" stroke-width="1.2"/>
+      <path d="M${IN+8} ${PL+16}h42M${IN+8} ${PL+26}h42M${IN+20} ${PL+7}v26M${IN+36} ${PL+7}v26" stroke="#cfc39c" stroke-width=".6"/>
+      <path d="M${IN+9} ${PL+31}q10-16 18-8t20-13" stroke="#2bb07c" stroke-width="1.8" fill="none"/><path d="M${IN+12} ${PL+9}q16 4 34 17" stroke="#63B0FF" stroke-width="1.2" fill="none"/>
+      ${[[26,22,'#FF6E6A'],[40,13,'#FFB23F'],[16,28,'#3DD39A']].map(([x,y,c])=>`<circle cx="${IN+x}" cy="${PL+y}" r="1.8" fill="${c}"/>`).join('')}</g>`);
+    L.push(`<g><rect x="${IN+58}" y="${PL+6}" width="20" height="24" fill="#a07a50"/>${[[2,2,'#ffe8a8'],[11,3,'#f4efe3'],[3,13,'#cfe3ff'],[11,14,'#ffcfcf']].map(([x,y,c])=>`<rect x="${IN+58+x}" y="${PL+6+y}" width="7" height="8" fill="${c}"/>`).join('')}</g>`);
+    L.push(`<g>${ombre(r-20,F+11,22)}<rect x="${r-40}" y="${F+2}" width="38" height="2.6" rx=".8" fill="#9a7650"/><rect x="${r-40}" y="${F-4}" width="38" height="2.2" rx=".8" fill="#9a7650"/><rect x="${r-38}" y="${F+4.6}" width="1.8" height="6" fill="#5d4730"/><rect x="${r-5}" y="${F+4.6}" width="1.8" height="6" fill="#5d4730"/></g>`);
+    if (n >= 2) L.push(VELO(IN+50, F+12, '#3DD39A', .7));
+    if (n >= 3) L.push(VELO(IN+70, F+12, '#63B0FF', .7), FENETRE(r-30, PL+6, 22, 18));
+  }
+  if (t === 'roulage'){
+    L.push(`<g><rect x="${IN+6}" y="${PL+10}" width="40" height="2" fill="#5d5642"/><rect x="${IN+8}" y="${PL+3}" width="9" height="7" rx="1" fill="#2b2f3d"/><rect x="${IN+15}" y="${PL+5}" width="5" height="2.4" fill="#2b2f3d"/><rect x="${IN+24}" y="${PL+2}" width="6" height="8" rx="1" fill="#e9edf8"/><rect x="${IN+25.4}" y="${PL+3.4}" width="3.2" height="2.4" fill="#3DD39A"/><rect x="${IN+34}" y="${PL+4}" width="9" height="6" rx="1" fill="#f5c400"/></g>`);
+    L.push(`<g transform="translate(${r-22},${F+10})">${ombre(0,0,10)}<path d="M0 -20l-8 20M0 -20v20M0 -20l8 20" stroke="#9aa2b8" stroke-width="1.3"/>
+      <rect x="-9" y="-31" width="18" height="12" rx="2" fill="#2b2f3d"/><rect x="-9" y="-31" width="18" height="2.4" rx="1.2" fill="#f5c400"/><circle cx="0" cy="-24" r="3.8" fill="#0d0f17"/><circle cx="0" cy="-24" r="1.8" fill="#3b4b8a"/><circle cx="6" cy="-29" r=".8" fill="#ff4d4d"/></g>`);
+    L.push(PLOT(IN+6, F+12), PLOT(IN+18, F+12));
+    if (n >= 2) L.push(`<g>${ECRAN(IN+52, PL+6, 30, 20, '#1d2546')}<path d="M${IN+55} ${PL+21}l6-7 5 4 6-9 7 6" stroke="#f5c400" stroke-width="1.2" fill="none"/></g>`);
+    if (n >= 3) L.push(`<g transform="translate(${IN+34},${F+13}) scale(.72)">${ombre(18,0,22)}<circle cx="4" cy="-7" r="7" fill="#141724"/><circle cx="4" cy="-7" r="3" fill="#8a91a6"/><circle cx="34" cy="-7" r="7" fill="#141724"/><circle cx="34" cy="-7" r="3" fill="#8a91a6"/>
       <path d="M4 -7l12 -11h12l6 11" stroke="#e9edf8" stroke-width="3.4" fill="none" stroke-linejoin="round"/><path d="M14 -18h16l3 -6h-14z" fill="#f4f6fb"/><path d="M16 -20h12" stroke="#1747b8" stroke-width="2"/><rect x="28" y="-28" width="7" height="3" rx="1" fill="#3b7bff"/></g>`);
   }
-  if (t==='recherche'){
-    L.push(`<g><rect x="${RW-IN-62}" y="${PL+6}" width="58" height="36" rx="1" fill="#b98656"/><rect x="${RW-IN-62}" y="${PL+6}" width="58" height="36" fill="none" stroke="#7a552f" stroke-width="2"/>
-      ${[[4,5,'#f4efe3'],[22,14,'#cfe3ff'],[42,6,'#f4efe3'],[12,22,'#ffe8a8'],[38,22,'#f4efe3']].map(([x,y,c])=>`<rect x="${RW-IN-62+x}" y="${PL+6+y}" width="12" height="9" fill="${c}"/><circle cx="${RW-IN-62+x+6}" cy="${PL+6+y+1}" r="1" fill="#d6453b"/>`).join('')}
-      <path d="M${RW-IN-52} ${PL+12}L${RW-IN-34} ${PL+21}L${RW-IN-14} ${PL+13}M${RW-IN-34} ${PL+21}L${RW-IN-44} ${PL+29}M${RW-IN-34} ${PL+21}L${RW-IN-18} ${PL+29}" stroke="#d6453b" stroke-width=".9" fill="none"/></g>`);
-    L.push(BUREAU(IN+4, F-12, 40, true), CHAISE(IN+30, F-4));
-    if (n>=2) L.push(BUREAU(RW-IN-48, F-12, 40, true, '#a77f50'));
-    if (n>=3) L.push(ARMOIRE(IN+2, PL+8, 16, 46, '#4b5b86'), `<g><rect x="${IN+22}" y="${PL+8}" width="26" height="18" rx="1.2" fill="#151a33"/><rect x="${IN+23.2}" y="${PL+9.2}" width="23.6" height="15.6" fill="#1b3d6a"/><path d="M${IN+26} ${PL+20}q6-8 10-2t8-6" stroke="#63B0FF" stroke-width="1.2" fill="none"/><circle cx="${IN+36}" cy="${PL+17}" r="1.6" fill="#FF6E6A"/></g>`);
+  if (t === 'recherche'){
+    L.push(`<g><rect x="${r-44}" y="${PL+4}" width="40" height="26" fill="#b98656"/><rect x="${r-44}" y="${PL+4}" width="40" height="26" fill="none" stroke="#7a552f" stroke-width="1.6"/>
+      ${[[3,3,'#f4efe3'],[15,9,'#cfe3ff'],[28,3,'#f4efe3'],[7,15,'#ffe8a8'],[26,15,'#f4efe3']].map(([x,y,c])=>`<rect x="${r-44+x}" y="${PL+4+y}" width="8" height="6.4" fill="${c}"/><circle cx="${r-40+x}" cy="${PL+5+y}" r=".8" fill="#d6453b"/>`).join('')}
+      <path d="M${r-37} ${PL+8}L${r-25} ${PL+14}L${r-12} ${PL+8}M${r-25} ${PL+14}L${r-33} ${PL+20}M${r-25} ${PL+14}L${r-14} ${PL+20}" stroke="#d6453b" stroke-width=".7" fill="none"/></g>`);
+    L.push(BUREAU(IN+3, F-2, 30), ECRAN(IN+16, F-13), CHAISE(IN+24, F+3));
+    if (n >= 2) L.push(BUREAU(IN+38, F+3, 26, '#a77f50'), ECRAN(IN+48, F-8, 12, 8, '#7df0c1'));
+    if (n >= 3) L.push(`<g><rect x="${IN+4}" y="${PL+4}" width="26" height="18" rx="1" fill="#f4f6fb"/><path d="M${IN+7} ${PL+9}h12M${IN+7} ${PL+13}h18M${IN+7} ${PL+17}h9" stroke="#63B0FF" stroke-width="1"/><circle cx="${IN+25}" cy="${PL+9}" r="2" fill="none" stroke="#FF6E6A" stroke-width=".8"/></g>`);
   }
-  if (t==='chef'){
-    L.push(FENETRE(RW/2-6, PL+8, 40, 30));
-    L.push(`<g><rect x="${IN+2}" y="${PL+4}" width="28" height="${F-PL-2}" fill="#5a3f27"/><rect x="${IN+28}" y="${PL+4}" width="2.6" height="${F-PL-2}" fill="#3f2b1a"/>
-      ${[18,32,46,60].map(y=>`<rect x="${IN+4}" y="${PL+y}" width="24" height="2" fill="#3a2716"/>`).join('')}
-      ${[[5,10,'#c0392b',8],[10,11,'#2e86de',7],[14,9,'#f5c400',9],[19,12,'#27ae60',6],[6,25,'#8e44ad',7],[12,26,'#e67e22',6],[18,24,'#c0392b',8],[6,39,'#16a085',7],[11,40,'#d35400',6]].map(([x,y,c,h])=>`<rect x="${IN+x}" y="${PL+y+ (9-h)}" width="3.6" height="${h}" fill="${c}"/>`).join('')}
-      <circle cx="${IN+16}" cy="${PL+55}" r="3" fill="#e0b84c"/></g>`);
-    L.push(`<g><ellipse cx="${RW/2+18}" cy="${F+10}" rx="34" ry="2.4" fill="#000" opacity=".3"/><rect x="${RW/2-12}" y="${F-12}" width="62" height="4" rx="1" fill="#a86a3a"/><rect x="${RW/2-12}" y="${F-8}" width="62" height="18" fill="#7d4a26"/><rect x="${RW/2-8}" y="${F-5}" width="54" height="12" fill="none" stroke="#9a5f33" stroke-width="1"/>
-      <rect x="${RW/2+30}" y="${F-21}" width="2" height="9" fill="#2d2d2d"/><path d="M${RW/2+26} ${F-24}h10l-2 4h-6z" fill="#3a8a4a"/><circle cx="${RW/2+31}" cy="${F-19}" r="5" fill="#fff3c4" opacity=".25"/>
-      <rect x="${RW/2}" y="${F-14}" width="12" height="2" fill="#f4efe3"/></g>`);
-    L.push(`<g transform="translate(${RW-IN-8},${PL+6})"><rect x="0" y="0" width="1.6" height="40" fill="#b9b9b9"/><rect x="1.6" y="2" width="5.4" height="13" fill="#141414"/><rect x="7" y="2" width="5.4" height="13" fill="#f5c400"/><rect x="12.4" y="2" width="5.4" height="13" fill="#e8343a"/></g>`);
-    if (n>=2) L.push(PLANTE(IN+40, F+6, 1.1));
-    if (n>=3) L.push(`<g>${[0,1,2].map(i=>`<path d="M${RW/2-4+i*12} ${PL+46}h7l-1 5h-5z" fill="#f5c400"/><rect x="${RW/2-1.6+i*12}" y="${PL+50.6}" width="1.6" height="2.4" fill="#c99a20"/>`).join('')}<rect x="${RW/2-8}" y="${PL+53}" width="40" height="2" fill="#5a3f27"/></g>`);
+  if (t === 'repos'){
+    L.push(CASIERS(IN+2, PL+8, 4, F-PL-8));
+    L.push(`<g><rect x="${r-11}" y="${PL+14}" width="9" height="${F-PL-14}" rx="1" fill="#2a2f45"/><rect x="${r-9.6}" y="${PL+17}" width="6.2" height="6" fill="#7df0c1"/><rect x="${r-8.6}" y="${F-11}" width="4.2" height="4.4" fill="#f4efe3"/><path d="M${r-7} ${F-13}q1-2 0-4" stroke="#fff" stroke-width=".5" opacity=".6" fill="none"/></g>`);
+    if (n < 3) L.push(n >= 2
+      ? `<g>${ombre(w/2+6,F+12,20)}<rect x="${w/2-12}" y="${F-1}" width="36" height="9" rx="4" fill="#7a5c9a"/><rect x="${w/2-14}" y="${F+5}" width="40" height="8" rx="3" fill="#6a4c8a"/><rect x="${w/2-9}" y="${F+5.4}" width="30" height="3" rx="1.5" fill="#8a6cac"/></g>`
+      : `<g>${ombre(w/2+4,F+11,16)}<rect x="${w/2-12}" y="${F+3}" width="32" height="2.4" rx=".8" fill="#9a7650"/><rect x="${w/2-10}" y="${F+5.4}" width="1.6" height="5" fill="#5d4730"/><rect x="${w/2+16}" y="${F+5.4}" width="1.6" height="5" fill="#5d4730"/></g>`);
+    if (n >= 3) L.push(`<g transform="translate(${w/2-14},${F-6})">${ombre(16,18,18)}<rect width="32" height="14" rx="2" fill="#2f8f63"/><rect x="1.6" y="1.6" width="28.8" height="10.8" fill="#3fae7a"/><rect x="1.6" y="1.6" width="28.8" height="10.8" fill="none" stroke="#e9f6ef" stroke-width=".6"/>${[6,12,18,24].map((x,i)=>`<rect x="${x}" y="-2" width=".8" height="18" fill="#c9d1ee"/><rect x="${x-1}" y="${4+(i%2)*4}" width="2.6" height="2.4" fill="${i%2?'#e8343a':'#1747b8'}"/>`).join('')}<circle cx="15" cy="7" r="1.1" fill="#fff"/><rect x="2" y="14" width="2" height="5" fill="#1f5f43"/><rect x="28" y="14" width="2" height="5" fill="#1f5f43"/></g>`);
   }
-  if (t==='repos'){
-    L.push(`<g>${[0,1,2,3].map(i=>`<rect x="${IN+2+i*13}" y="${PL+14}" width="12" height="${F-PL-14}" rx=".6" fill="${i%2?'#5f6fae':'#56659f'}"/><rect x="${IN+2+i*13}" y="${PL+14}" width="12" height="2" fill="#7f8fd0"/><path d="M${IN+4+i*13} ${PL+20}h8M${IN+4+i*13} ${PL+22}h8" stroke="#3b4677" stroke-width=".8"/><rect x="${IN+11+i*13}" y="${PL+38}" width="1.2" height="5" fill="#d9e0ff"/>`).join('')}</g>`);
-    L.push(`<g><rect x="${RW-IN-14}" y="${PL+22}" width="12" height="${F-PL-22}" rx="1.4" fill="#2a2f45"/><rect x="${RW-IN-12}" y="${PL+26}" width="8" height="8" fill="#7df0c1"/><rect x="${RW-IN-11}" y="${F-14}" width="6" height="6" fill="#f4efe3"/><path d="M${RW-IN-9} ${F-17}q1-2 0-4" stroke="#fff" stroke-width=".6" opacity=".6" fill="none"/></g>`);
-    L.push(`<g><rect x="${IN+58}" y="${F-4}" width="34" height="3" rx="1" fill="#9a7650"/><rect x="${IN+60}" y="${F-1}" width="2" height="6" fill="#5d4730"/><rect x="${IN+88}" y="${F-1}" width="2" height="6" fill="#5d4730"/></g>`);
-    if (n>=2) L.push(`<g><ellipse cx="${IN+76}" cy="${F+8}" rx="26" ry="2" fill="#000" opacity=".3"/><rect x="${IN+52}" y="${F-14}" width="48" height="12" rx="5" fill="#7a5c9a"/><rect x="${IN+50}" y="${F-6}" width="52" height="12" rx="4" fill="#6a4c8a"/><rect x="${IN+56}" y="${F-5}" width="40" height="4" rx="2" fill="#8a6cac"/></g>`);
-    if (n>=3) L.push(`<g transform="translate(${IN+56},${PL+8})"><rect width="42" height="22" rx="2" fill="#2f8f63"/><rect x="2" y="2" width="38" height="18" fill="#3fae7a"/><rect x="2" y="2" width="38" height="18" fill="none" stroke="#e9f6ef" stroke-width=".8"/>${[8,15,22,29,36].map((x,i)=>`<rect x="${x}" y="-2" width="1" height="26" fill="#c9d1ee"/><rect x="${x-1.2}" y="${6+(i%2)*6}" width="3.4" height="3" fill="${i%2?'#e8343a':'#1747b8'}"/>`).join('')}<circle cx="19" cy="11" r="1.4" fill="#fff"/></g>`);
+  if (t === 'chef'){
+    L.push(`<g><rect x="${IN+2}" y="${PL+3}" width="20" height="${F-PL+4}" fill="#5a3f27"/><rect x="${IN+20}" y="${PL+3}" width="2" height="${F-PL+4}" fill="#3f2b1a"/>
+      ${[13,24,35,46].map(y=>`<rect x="${IN+3.4}" y="${PL+y}" width="17" height="1.6" fill="#3a2716"/>`).join('')}
+      ${[[4,6,'#c0392b',7],[8,7,'#2e86de',6],[11,5,'#f5c400',8],[15,8,'#27ae60',5],[5,17,'#8e44ad',6],[10,18,'#e67e22',5],[14,16,'#c0392b',7],[5,28,'#16a085',6],[10,29,'#d35400',5]].map(([x,y,c,h])=>`<rect x="${IN+x}" y="${PL+y+(8-h)}" width="2.8" height="${h}" fill="${c}"/>`).join('')}</g>`);
+    L.push(FENETRE(IN+30, PL+6, 26, 20));
+    L.push(`<g transform="translate(${r-9},${PL+4})"><rect x="0" y="0" width="1.2" height="30" fill="#b9b9b9"/><rect x="1.2" y="1.4" width="4" height="9.6" fill="#141414"/><rect x="5.2" y="1.4" width="4" height="9.6" fill="#f5c400"/><rect x="9.2" y="1.4" width="4" height="9.6" fill="#e8343a"/></g>`);
+    L.push(`<g>${ombre(w/2+10,F+12,24)}<rect x="${w/2-12}" y="${F-1}" width="44" height="3" rx=".8" fill="#a86a3a"/><rect x="${w/2-12}" y="${F+2}" width="44" height="10" fill="#7d4a26"/><rect x="${w/2-9}" y="${F+4}" width="38" height="6" fill="none" stroke="#9a5f33" stroke-width=".7"/>
+      <rect x="${w/2+20}" y="${F-7}" width="1.4" height="6" fill="#2d2d2d"/><path d="M${w/2+17} ${F-9}h7l-1.4 3h-4.2z" fill="#3a8a4a"/><circle cx="${w/2+20.7}" cy="${F-5}" r="4" fill="#fff3c4" opacity=".25"/><rect x="${w/2-4}" y="${F-2.6}" width="9" height="1.6" fill="#f4efe3"/></g>`);
+    if (n >= 2) L.push(PLANTE(IN+26, F+10, .55));
+    if (n >= 3) L.push(`<g>${[0,1,2].map(i=>`<path d="M${IN+31+i*8} ${PL+29}h5l-.8 3.6h-3.4z" fill="#f5c400"/>`).join('')}<rect x="${IN+29}" y="${PL+32.6}" width="26" height="1.6" fill="#5a3f27"/></g>`);
   }
-  if (t==='cachots'){
-    L.push(`<g><rect x="${IN}" y="${F-14}" width="40" height="4" fill="#5a5c6a"/><rect x="${IN}" y="${F-10}" width="40" height="10" fill="#4a4c5a"/>
-      <g transform="translate(${IN+22},${F-14})"><circle cx="0" cy="-15" r="5" fill="#c99a78"/><path d="M-5 -18q5-6 10 0" fill="#2b1d14"/><rect x="-6" y="-10" width="12" height="11" rx="3.5" fill="#6d4f3a"/><rect x="-6" y="0" width="12" height="3" fill="#2f3040"/><path d="M-3 3v10M3 3v10" stroke="#2f3040" stroke-width="3"/></g></g>`);
-    L.push(Array.from({length:12},(_,i)=>`<rect x="${4+i*11.8}" y="0" width="3" height="${RH}" fill="#8f96ad"/><rect x="${4+i*11.8}" y="0" width="1" height="${RH}" fill="#c9cede"/>`).join(''), `<rect x="0" y="${PL+2}" width="${RW}" height="4" fill="#8f96ad"/><rect x="0" y="${RH-14}" width="${RW}" height="4" fill="#8f96ad"/><rect x="${RW-40}" y="${RH/2-8}" width="8" height="12" rx="1" fill="#6e7590"/>`);
+  if (t === 'tir'){
+    const nb = Math.floor((w-2*IN)/32);
+    L.push(`<g>${Array.from({length:nb},(_,i)=>`<rect x="${IN+2+i*32}" y="${PL+2}" width="30" height="${F-PL-2}" fill="${i%2?'#3c3d50':'#424358'}"/><g transform="translate(${IN+17+i*32},${PL+22})"><rect x="-.8" y="-18" width="1.6" height="10" fill="#777"/><circle r="9" fill="#f4efe3"/><circle r="6.2" fill="#d6453b"/><circle r="3.3" fill="#f4efe3"/><circle r="1.3" fill="#d6453b"/>${i===1?'<circle cx="2" cy="-1" r=".8" fill="#111"/><circle cx="-2.4" cy="2.4" r=".8" fill="#111"/>':''}</g>`).join('')}
+      <rect x="0" y="${F+7}" width="${w}" height="4" fill="#5a5c72"/><rect x="0" y="${F+7}" width="${w}" height="1" fill="#8a8ca6"/></g>`);
   }
-  if (t==='tir'){
-    L.push(`<g>${[0,1,2].map(i=>`<rect x="${IN+2+i*38}" y="${PL+2}" width="36" height="${F-PL-2}" fill="${i%2?'#3c3d50':'#424358'}"/><g transform="translate(${IN+20+i*38},${PL+30})"><rect x="-1" y="-30" width="2" height="18" fill="#777"/><circle r="11" fill="#f4efe3"/><circle r="7.6" fill="#d6453b"/><circle r="4" fill="#f4efe3"/><circle r="1.6" fill="#d6453b"/>${i===1?'<circle cx="2" cy="-1" r=".9" fill="#111"/><circle cx="-3" cy="3" r=".9" fill="#111"/>':''}</g>`).join('')}
-      <rect x="0" y="${F+8}" width="${RW}" height="6" fill="#5a5c72"/><rect x="0" y="${F+8}" width="${RW}" height="1.4" fill="#8a8ca6"/>${[0,1,2].map(i=>`<rect x="${IN+16+i*38}" y="${F+4}" width="10" height="4" fill="#2b2c38"/>`).join('')}</g>`);
-  }
-  if (t==='drone'){
-    L.push(`<g><rect x="${IN+4}" y="${PL+8}" width="52" height="30" rx="1.5" fill="#0d1420"/><rect x="${IN+5.5}" y="${PL+9.5}" width="49" height="27" fill="#0f2233"/><path d="M${IN+8} ${PL+30}l9-10 8 6 9-13 9 8 8-4" stroke="#7df0c1" stroke-width="1.3" fill="none"/><circle cx="${IN+43}" cy="${PL+21}" r="2" fill="#FF6E6A"/>
-      <rect x="${IN+60}" y="${PL+8}" width="26" height="18" rx="1.2" fill="#0d1420"/><rect x="${IN+61.2}" y="${PL+9.2}" width="23.6" height="15.6" fill="#16304a"/><circle cx="${IN+73}" cy="${PL+17}" r="5" fill="none" stroke="#7df0c1" stroke-width=".8"/><path d="M${IN+73} ${PL+12}v10M${IN+68} ${PL+17}h10" stroke="#7df0c1" stroke-width=".6"/></g>`);
-    L.push(`<g><rect x="${RW-IN-62}" y="${F-6}" width="58" height="4" rx="1" fill="#6c82a6"/><rect x="${RW-IN-60}" y="${F-2}" width="2.4" height="10" fill="#3f4f6b"/><rect x="${RW-IN-10}" y="${F-2}" width="2.4" height="10" fill="#3f4f6b"/>
-      <g transform="translate(${RW-IN-33},${F-12})"><rect x="-8" y="-3" width="16" height="6" rx="2.4" fill="#e9edf8"/><circle cx="0" cy="3.4" r="2" fill="#151a33"/><path d="M-8 -1h-9M8 -1h9" stroke="#c9d1ee" stroke-width="1.6"/><ellipse cx="-17" cy="-3" rx="7" ry="1.4" fill="#9aa2b8" opacity=".8"/><ellipse cx="17" cy="-3" rx="7" ry="1.4" fill="#9aa2b8" opacity=".8"/><circle cx="5" cy="0" r=".8" fill="#3DD39A"/></g></g>`);
-  }
-  if (t==='chantier'){
-    L.push(`<g><path d="M${IN+6} ${F+10}V${PL+6}M${RW/2} ${F+10}V${PL+6}M${RW-IN-6} ${F+10}V${PL+6}M${IN+6} ${PL+24}H${RW-IN-6}M${IN+6} ${F-12}H${RW-IN-6}M${IN+6} ${PL+24}L${RW/2} ${F-12}M${RW/2} ${PL+24}L${RW-IN-6} ${F-12}" stroke="#d29b45" stroke-width="2.6" fill="none"/>
-      <rect x="${IN+4}" y="${PL+21}" width="${RW-2*IN-8}" height="3" fill="#8a6a3a"/>
-      <g transform="translate(${RW/2-30},${F+6})"><path d="M0 0l5 -14 5 14z" fill="#ff7a2e"/><path d="M2.6 -6h4.8l1 3h-6.8z" fill="#fff"/></g>
-      <g transform="translate(${RW/2+24},${F+6})"><rect x="-6" y="-12" width="12" height="12" rx="1.4" fill="#cfd6e8"/><rect x="-6" y="-12" width="12" height="3" fill="#63B0FF"/></g>
-      <circle cx="${RW-IN-16}" cy="${PL+12}" r="3.4" fill="#ffe8a8"/><circle cx="${RW-IN-16}" cy="${PL+12}" r="12" fill="#ffe8a8" opacity=".12"/>
-      <path d="M0 ${F+16}H${RW}" stroke="#f5c400" stroke-width="3" stroke-dasharray="6 6"/></g>`);
+  if (t === 'drone'){
+    L.push(`<g>${ECRAN(IN+4, PL+5, 40, 24, '#0f2233')}<path d="M${IN+7} ${PL+23}l7-8 6 5 7-10 7 6 6-3" stroke="#7df0c1" stroke-width="1.1" fill="none"/>${ECRAN(IN+48, PL+5, 20, 14, '#16304a')}</g>`);
+    L.push(`<g>${ombre(r-22,F+12,24)}<rect x="${r-44}" y="${F}" width="42" height="3" rx=".8" fill="#6c82a6"/><rect x="${r-42}" y="${F+3}" width="1.8" height="8" fill="#3f4f6b"/><rect x="${r-6}" y="${F+3}" width="1.8" height="8" fill="#3f4f6b"/>
+      <g transform="translate(${r-23},${F-4})"><rect x="-6" y="-2.2" width="12" height="4.4" rx="1.8" fill="#e9edf8"/><circle cx="0" cy="2.6" r="1.5" fill="#151a33"/><path d="M-6 -1h-7M6 -1h7" stroke="#c9d1ee" stroke-width="1.2"/><ellipse cx="-13" cy="-2.4" rx="5.4" ry="1.1" fill="#9aa2b8" opacity=".8"/><ellipse cx="13" cy="-2.4" rx="5.4" ry="1.1" fill="#9aa2b8" opacity=".8"/><circle cx="4" cy="0" r=".6" fill="#3DD39A"/></g></g>`);
   }
   return L.join('');
 }
-function salleSvg(t, n){
-  const deco = t==='cachots' ? mobilier(t,n) : mobilier(t, n);
-  return `<svg class="fond" viewBox="0 0 ${RW} ${RH}" aria-hidden="true">${coque(t)}${t!=='cachots'?lampe():''}${deco}</svg>`;
+function salleSvg(t, n, w){
+  return `<svg class="fond" viewBox="0 0 ${w} ${RH}" aria-hidden="true">${coque(t, w)}${t !== 'cachots' ? lampe(w) : ''}${mobilier(t, n, w)}</svg>`;
 }
 
 /* ================= Bâtiment ================= */
 let G = {};
 function plan(){
-  const P = PLANS[S.niv], rows = P.etages.length, salles = [];
-  P.etages.forEach((r,i) => r.forEach((t,j) => salles.push({ t, x: j?XD:XG, y: TOIT + i*(RH+DALLE) })));
-  const rdc = TOIT + rows*(RH+DALLE) - DALLE;
-  P.cave.forEach((t,j) => salles.push({ t, x: j?XD:XG, y: rdc + DALLE + SOL }));
-  G = { rows, salles, rdc, H: rdc + DALLE + SOL + RH + 18 };
+  const P = PLANS[S.niv], salles = [];
+  P.forEach((row, i) => {
+    const y = TOIT + i*(RH + DALLE), utile = FW - JOINT*(row.length-1);
+    let x = PAD;
+    row.forEach(([t, f]) => { const w = Math.round(utile*f); salles.push({ t, x, y, w, etage:i }); x += w + JOINT; });
+  });
+  const rdc = TOIT + P.length*(RH + DALLE) - DALLE;
+  G = { salles, rdc, rows: P.length, H: rdc + RUE + 6 };
 }
-const salleDe = (t) => G.salles.find(s=>s.t===t);
+const salleDe = (t) => G.salles.find(s => s.t === t);
 function facade(){
-  const top = TOIT - 14, sol = G.rdc, H = G.H;
-  const sky = Array.from({length:30},(_,i)=>`<span class="etoile" style="left:${(i*41)%356}px;top:${(i*29)%64+4}px;animation-delay:${(i%9)*.35}s;opacity:${.35+(i%3)*.2}"></span>`).join('');
-  const fenetresVille = (x0,w,h,seed) => Array.from({length:Math.floor(w/9)*Math.floor(h/12)},(_,i)=>{ const cx = x0+3+(i%Math.floor(w/9))*9, cy = sol-h+5+Math.floor(i/Math.floor(w/9))*12; return ((i*7+seed)%5<2)?`<rect x="${cx}" y="${cy}" width="3.4" height="4.4" fill="#ffd27a" opacity=".55"/>`:''; }).join('');
-  const ville = [[0,120,36,1],[30,86,28,2],[302,140,58,3],[326,96,34,4]];
-  return `${sky}<svg style="position:absolute;left:0;top:0" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
+  const top = TOIT - 12, sol = G.rdc, H = G.H;
+  const ville = [[0,96,30,1],[26,70,22,2],[318,118,42,3],[344,80,16,4]];
+  const fen = (x0,w,h,seed) => { let o=''; const cols=Math.floor(w/8), rows=Math.floor(h/11); for (let i=0;i<cols*rows;i++){ if ((i*7+seed)%5<2) o+=`<rect x="${x0+3+(i%cols)*8}" y="${sol-h+5+Math.floor(i/cols)*11}" width="3" height="4" fill="#ffd27a" opacity=".55"/>`; } return o; };
+  const etoiles = Array.from({length:26},(_,i)=>`<span class="etoile" style="left:${(i*41)%356}px;top:${(i*29)%60+4}px;animation-delay:${(i%9)*.35}s;opacity:${.35+(i%3)*.2}"></span>`).join('');
+  return `${etoiles}<svg style="position:absolute;left:0;top:0" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-hidden="true">
     <defs>
       <linearGradient id="ciel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a0e22"/><stop offset=".7" stop-color="#1f1d55"/><stop offset="1" stop-color="#3b2a6a"/></linearGradient>
-      <radialGradient id="lune" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff6dc" stop-opacity=".5"/><stop offset="1" stop-color="#fff6dc" stop-opacity="0"/></radialGradient>
-      <pattern id="brique" width="12" height="6" patternUnits="userSpaceOnUse"><rect width="12" height="6" fill="#4a2f35"/><path d="M0 .5H12M0 3.5H12M3 .5V3.5M9 3.5V6.5" stroke="#3a2329" stroke-width=".8"/></pattern>
-      <linearGradient id="terre" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1f2e"/><stop offset="1" stop-color="#160f1c"/></linearGradient>
-      <linearGradient id="puits" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#11152c"/><stop offset=".5" stop-color="#1c2244"/><stop offset="1" stop-color="#11152c"/></linearGradient>
+      <radialGradient id="lune" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#fff6dc" stop-opacity=".45"/><stop offset="1" stop-color="#fff6dc" stop-opacity="0"/></radialGradient>
+      <pattern id="brique" width="12" height="6" patternUnits="userSpaceOnUse"><rect width="12" height="6" fill="#4d3137"/><path d="M0 .5H12M0 3.5H12M3 .5V3.5M9 3.5V6.5" stroke="#3a2329" stroke-width=".8"/></pattern>
+      <linearGradient id="puits" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#11152c"/><stop offset=".5" stop-color="#1e2448"/><stop offset="1" stop-color="#11152c"/></linearGradient>
+      <linearGradient id="route" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2d3d"/><stop offset="1" stop-color="#1b1d28"/></linearGradient>
     </defs>
-    <rect width="${W}" height="${sol}" fill="url(#ciel)"/>
-    <circle cx="316" cy="30" r="34" fill="url(#lune)"/><circle cx="316" cy="30" r="12" fill="#f6efd9"/><circle cx="311" cy="27" r="3" fill="#e6dcc0"/><circle cx="320" cy="34" r="2" fill="#e6dcc0"/>
-    <path d="M40 40q10-8 22-2q10-6 18 2q8 0 6 6h-50q-4-5 4-6z" fill="#2c2a66" opacity=".7"/>
-    ${ville.map(([x,h,w,s])=>`<rect x="${x}" y="${sol-h}" width="${w}" height="${h}" fill="#161b44"/>${fenetresVille(x,w,h,s)}`).join('')}
-    <rect x="${PAD-8}" y="${top}" width="${W-2*PAD+16}" height="${sol-top+DALLE}" rx="3" fill="url(#brique)"/>
-    <rect x="${PAD-8}" y="${top}" width="${W-2*PAD+16}" height="${sol-top+DALLE}" rx="3" fill="#000" opacity=".12"/>
-    <rect x="${PAD-12}" y="${top-8}" width="${W-2*PAD+24}" height="11" rx="2" fill="#5a3c42"/><rect x="${PAD-12}" y="${top-8}" width="${W-2*PAD+24}" height="2.4" fill="#7a5860"/>
-    ${G.salles.filter(s=>s.y<sol).map(s=>`<rect x="${s.x-2}" y="${s.y+RH}" width="${RW+4}" height="${DALLE}" fill="#5c4a52"/><rect x="${s.x-2}" y="${s.y+RH}" width="${RW+4}" height="1.6" fill="#8a7078"/>`).join('')}
-    <g><rect x="${W/2-50}" y="${top-38}" width="100" height="27" rx="6" fill="#0f2462"/><rect x="${W/2-50}" y="${top-38}" width="100" height="27" rx="6" fill="none" stroke="#6b93ff" stroke-width="2"/>
-      <rect x="${W/2-60}" y="${top-46}" width="120" height="42" rx="12" fill="#5b86ff" opacity=".1"/>
-      <text x="${W/2}" y="${top-19}" text-anchor="middle" font-family="Bricolage Grotesque,Arial Narrow,sans-serif" font-weight="800" font-size="15" letter-spacing="5" fill="#e4edff">POLICE</text>
-      <rect x="${W/2-30}" y="${top-11}" width="2" height="4" fill="#3a2a30"/><rect x="${W/2+28}" y="${top-11}" width="2" height="4" fill="#3a2a30"/></g>
-    ${S.niv>=2?`<g><rect x="${PAD+8}" y="${top-24}" width="26" height="16" rx="1" fill="#5a3c42"/><rect x="${PAD+11}" y="${top-28}" width="20" height="4" fill="#3a2a30"/></g>`:''}
-    ${S.niv>=3?`<g><rect x="${W-PAD-34}" y="${top-46}" width="2.4" height="38" fill="#9aa6d4"/><path d="M${W-PAD-40} ${top-36}l7-6 7 6" stroke="#9aa6d4" stroke-width="1.2" fill="none"/><circle cx="${W-PAD-32.8}" cy="${top-48}" r="2.6" fill="#ff4d4d" class="gyro"/><rect x="${W-PAD-78}" y="${top-22}" width="38" height="14" rx="1" fill="#2a3150"/><path d="M${W-PAD-74} ${top-15}h30" stroke="#7df0c1" stroke-width="1.4"/></g>`:''}
-    <rect x="0" y="${sol+DALLE}" width="${W}" height="${H-sol-DALLE}" fill="url(#terre)"/>
-    ${Array.from({length:18},(_,i)=>`<ellipse cx="${(i*53)%W}" cy="${sol+DALLE+16+(i*37)%(H-sol-40)}" rx="${3+(i%3)}" ry="${2+(i%2)}" fill="#3a2c3e" opacity=".7"/>`).join('')}
-    <rect x="0" y="${sol-4}" width="${W}" height="${DALLE+10}" fill="#4c4f63"/><rect x="0" y="${sol-4}" width="${W}" height="2" fill="#7a7e98"/>
-    <rect x="${PAD-8}" y="${sol+DALLE+SOL-8}" width="${W-2*PAD+16}" height="${RH+16}" rx="3" fill="#2a2433"/>
-    ${[PAD-2, W-PAD-1].map(x=>`<g><rect x="${x}" y="${sol-62}" width="3" height="60" fill="#3b4064"/><path d="M${x-5} ${sol-64}h13l-3 5h-7z" fill="#262b48"/><circle cx="${x+1.5}" cy="${sol-58}" r="2.6" fill="#ffe7b0"/><circle cx="${x+1.5}" cy="${sol-58}" r="18" fill="#ffe7b0" opacity=".1"/></g>`).join('')}
-    <rect x="${XP-PUITS/2+2}" y="${top+4}" width="${PUITS-4}" height="${H-top-22}" fill="url(#puits)"/>
-    <path d="M${XP-8} ${top+4}V${H-18}M${XP+8} ${top+4}V${H-18}" stroke="#2f3768" stroke-width="1.2"/>
-    ${G.salles.filter((s,i)=>s.x===XG).map(s=>`<g><rect x="${XP-14}" y="${s.y+RH-50}" width="28" height="48" rx="2" fill="#38427a"/><rect x="${XP-.8}" y="${s.y+RH-50}" width="1.6" height="48" fill="#171c36"/><rect x="${XP-14}" y="${s.y+RH-50}" width="28" height="2" fill="#7a86c4"/><circle cx="${XP}" cy="${s.y+RH-56}" r="2" fill="#3DD39A"/></g>`).join('')}
+    <rect width="${W}" height="${H}" fill="url(#ciel)"/>
+    <circle cx="300" cy="30" r="30" fill="url(#lune)"/><circle cx="300" cy="30" r="11" fill="#f6efd9"/><circle cx="296" cy="27" r="2.6" fill="#e6dcc0"/><circle cx="304" cy="33" r="1.8" fill="#e6dcc0"/>
+    <path d="M44 38q10-8 22-2q10-6 18 2q8 0 6 6h-50q-4-5 4-6z" fill="#2c2a66" opacity=".7"/>
+    ${ville.map(([x,h,w,s])=>`<rect x="${x}" y="${sol-h}" width="${w}" height="${h}" fill="#161b44"/>${fen(x,w,h,s)}`).join('')}
+    <rect x="${PAD-6}" y="${top}" width="${W-2*PAD+12}" height="${sol-top}" rx="2" fill="url(#brique)"/>
+    <rect x="${PAD-10}" y="${top-7}" width="${W-2*PAD+20}" height="10" rx="2" fill="#5a3c42"/><rect x="${PAD-10}" y="${top-7}" width="${W-2*PAD+20}" height="2" fill="#7a5860"/>
+    ${G.salles.filter(s=>s.etage < G.rows-1).map(s=>`<rect x="${s.x-1}" y="${s.y+RH}" width="${s.w+2}" height="${DALLE}" fill="#5c4a52"/><rect x="${s.x-1}" y="${s.y+RH}" width="${s.w+2}" height="1.4" fill="#8a7078"/>`).join('')}
+    <g><rect x="${(W-PUITS)/2-48}" y="${top-36}" width="96" height="25" rx="6" fill="#0f2462"/><rect x="${(W-PUITS)/2-48}" y="${top-36}" width="96" height="25" rx="6" fill="none" stroke="#6b93ff" stroke-width="2"/>
+      <rect x="${(W-PUITS)/2-58}" y="${top-44}" width="116" height="40" rx="12" fill="#5b86ff" opacity=".1"/>
+      <text x="${(W-PUITS)/2}" y="${top-18.5}" text-anchor="middle" font-family="Bricolage Grotesque,Arial Narrow,sans-serif" font-weight="800" font-size="14" letter-spacing="5" fill="#e4edff">POLICE</text>
+      <rect x="${(W-PUITS)/2-30}" y="${top-11}" width="2" height="4" fill="#3a2a30"/><rect x="${(W-PUITS)/2+28}" y="${top-11}" width="2" height="4" fill="#3a2a30"/></g>
+    ${S.niv>=2?`<g><rect x="${PAD+6}" y="${top-20}" width="24" height="13" rx="1" fill="#5a3c42"/><rect x="${PAD+9}" y="${top-24}" width="18" height="4" fill="#3a2a30"/><circle cx="${PAD+18}" cy="${top-13.5}" r="4" fill="none" stroke="#3a2a30" stroke-width="1.2"/></g>`:''}
+    ${S.niv>=3?`<g><rect x="${XS+8}" y="${top-44}" width="2.2" height="37" fill="#9aa6d4"/><path d="M${XS+2} ${top-34}l7-6 7 6" stroke="#9aa6d4" stroke-width="1.1" fill="none"/><circle cx="${XS+9.1}" cy="${top-46}" r="2.4" fill="#ff4d4d" class="gyro"/></g>`:''}
+    <rect x="${XS}" y="${top+3}" width="${PUITS}" height="${sol-top-3}" fill="url(#puits)"/>
+    <path d="M${XP-7} ${top+3}V${sol}M${XP+7} ${top+3}V${sol}" stroke="#2f3768" stroke-width="1"/>
+    ${[...new Set(G.salles.map(s=>s.y))].map(y=>`<g><rect x="${XP-12}" y="${y+RH-40}" width="24" height="40" rx="1.6" fill="#38427a"/><rect x="${XP-.7}" y="${y+RH-40}" width="1.4" height="40" fill="#171c36"/><rect x="${XP-12}" y="${y+RH-40}" width="24" height="1.6" fill="#7a86c4"/><circle cx="${XP}" cy="${y+RH-45}" r="1.7" fill="#3DD39A"/></g>`).join('')}
+    <rect x="0" y="${sol}" width="${W}" height="6" fill="#6a6d84"/><rect x="0" y="${sol}" width="${W}" height="1.6" fill="#9a9db6"/>
+    <rect x="0" y="${sol+6}" width="${W}" height="${RUE}" fill="url(#route)"/>
+    <path d="M0 ${sol+6+RUE/2}H${W}" stroke="#d9d2b0" stroke-width="1.4" stroke-dasharray="12 10" opacity=".7"/>
+    ${[PAD-6, W-PAD+3].map(x=>`<g><rect x="${x}" y="${top+10}" width="2.4" height="${sol-top-10}" fill="#2b3156"/><path d="M${x-4} ${top+8}h10l-2 4h-6z" fill="#262b48"/><circle cx="${x+1.2}" cy="${top+13}" r="2.2" fill="#ffe7b0"/><circle cx="${x+1.2}" cy="${top+13}" r="14" fill="#ffe7b0" opacity=".08"/></g>`).join('')}
   </svg>`;
 }
 
@@ -440,7 +415,7 @@ const AG_SVG = (c, a) => {
   <circle cx="12" cy="4.2" r="1.05" fill="${chef?'#ffd36a':'#d9b34f'}"/>
 </g></svg></div>`;
 };
-function bornes(t){ const s = salleDe(t); return [s.x+IN+8, s.x+RW-IN-8]; }
+function bornes(t){ const s = salleDe(t); return [s.x+IN+5, s.x+s.w-IN-5]; }
 function creerAgent(a){
   const el = document.createElement('div');
   el.className = 'ag'; el.dataset.id = a.id; if (a.chef) el.style.cursor='default';
@@ -492,7 +467,7 @@ function pas(a, dt){
 }
 function rendre(a){
   if (!a.el || a.tenu) return;
-  const k = a.voie===0 && !a.enAsc ? .9 : 1;
+  const k = AG * (a.voie===0 && !a.enAsc ? .9 : 1);
   a.el.style.transform = `translate(${a.x-12}px,${a.y-40}px) scale(${k})`;
   a.el.style.transformOrigin = '50% 100%';
   a.el.style.zIndex = Math.round(10 + a.y);
@@ -501,7 +476,7 @@ function rendre(a){
   a.el.classList.toggle('marche', marche);
   a.el.classList.toggle('cafe', a.mode==='cafe');
   a.el.classList.toggle('radio', a.mode==='radio');
-  if (a.enAsc) { if (!a.cab) { a.cab = document.createElement('div'); a.cab.className='cabine'; bat.appendChild(a.cab); } a.cab.style.transform = `translate(${a.x-15}px,${a.y-44}px)`; a.cab.style.zIndex = Math.round(9 + a.y); }
+  if (a.enAsc) { if (!a.cab) { a.cab = document.createElement('div'); a.cab.className='cabine'; bat.appendChild(a.cab); } a.cab.style.transform = `translate(${a.x-12}px,${a.y-34}px)`; a.cab.style.zIndex = Math.round(9 + a.y); }
   else if (a.cab) { a.cab.remove(); a.cab = null; }
 }
 let t0 = performance.now();
@@ -519,7 +494,7 @@ function dessiner(){
   plan(); echelle();
   bat.innerHTML = `<div style="position:absolute;inset:0">${facade()}</div>` + G.salles.map(s => {
     const v = SERVICES[s.t];
-    return `<div class="salle" data-t="${s.t}" style="left:${s.x}px;top:${s.y}px;width:${RW}px;height:${RH}px;z-index:1">${salleSvg(s.t, S.niv)}
+    return `<div class="salle" data-t="${s.t}" style="left:${s.x}px;top:${s.y}px;width:${s.w}px;height:${RH}px;z-index:1">${salleSvg(s.t, S.niv, s.w)}
       <span class="eteint"></span><span class="led"></span>
       <span class="etiq"><i style="background:${v.coul}"></i>${v.nom}${v.besoin?` <span class="c" data-c="${s.t}"></span>`:''}</span></div>`;
   }).join('') + `<div class="nuitvoile" id="nuitvoile"></div>`;
@@ -549,12 +524,12 @@ bat.addEventListener('pointerdown', e => {
   if (a.cab) { a.cab.remove(); a.cab=null; a.enAsc=false; }
   const k = bat.getBoundingClientRect().width / W;
   el.classList.add('tient'); el.classList.remove('marche','cafe','radio');
-  el.style.transformOrigin = '0 0'; el.style.transform = `scale(${k*1.45})`;
+  el.style.transformOrigin = '0 0'; el.style.transform = `scale(${k*1.2})`;
   document.body.appendChild(el); tenu = { a, el, k }; bouge(e);
 });
 function bouge(e){
   if (!tenu) return;
-  tenu.el.style.left = (e.clientX - 17*tenu.k)+'px'; tenu.el.style.top = (e.clientY - 46*tenu.k)+'px';
+  tenu.el.style.left = (e.clientX - 14*tenu.k)+'px'; tenu.el.style.top = (e.clientY - 38*tenu.k)+'px';
   bat.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
   const t = document.elementFromPoint(e.clientX, e.clientY), s = t && t.closest('.salle');
   tenu.cible = s && PLACABLES.includes(s.dataset.t) ? s.dataset.t : null;
@@ -573,9 +548,9 @@ window.addEventListener('pointerup', () => {
 /* ================= Bulles et nuit ================= */
 const BULLES = [
   { id:'b1', t:'roulage', fond:'#F2D04B', ico:'💶', n:3, x:.32, act:'amendes' },
-  { id:'b2', t:'accueil', fond:'#F4EFE3', ico:'✉️', x:.38, act:'courrier' },
-  { id:'b3', t:'intervention', fond:'#FF6E6A', ico:'🚨', x:.7, act:'incident' },
-  { id:'b4', t:'cachots', fond:'#B79BFF', ico:'💬', x:.62, act:'gav' },
+  { id:'b2', t:'accueil', fond:'#F4EFE3', ico:'✉️', x:.62, act:'courrier' },
+  { id:'b3', t:'intervention', fond:'#FF6E6A', ico:'🚨', x:.78, act:'incident' },
+  { id:'b4', t:'cachots', fond:'#B79BFF', ico:'💬', x:.5, act:'gav' },
   { id:'b5', t:'recherche', fond:'#63B0FF', ico:'📁', x:.3, act:'dossier' },
 ];
 function bulles(){
@@ -583,7 +558,7 @@ function bulles(){
   for (const b of S.bulles) {
     const s = salleDe(b.t); if (!s) continue;
     const el = document.createElement('button'); el.type='button'; el.className='bulle'; el.dataset.b=b.id;
-    el.style.background = b.fond; el.style.left = (s.x + RW*b.x)+'px'; el.style.top = (s.y + 24)+'px';
+    el.style.background = b.fond; el.style.left = (s.x + s.w*b.x)+'px'; el.style.top = (s.y + 18)+'px';
     el.innerHTML = b.ico + (b.n?`<span class="pastille">${b.n}</span>`:'');
     el.setAttribute('aria-label', {amendes:'Récolter les amendes',courrier:'Ouvrir le courrier',incident:'Incident',gav:'Le gardé à vue veut parler',dossier:'Dossier bouclé'}[b.act]);
     bat.appendChild(el);
