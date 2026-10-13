@@ -336,6 +336,15 @@ export function rafraichirLogistique() {
 const ICO_ANNEXE = { sport: '🏋️', logiciel: '💻', anpr: '📷', antenne: '🏘️', garage: '🔧', audition: '🎙️', tir: '🎯', cachots: '🔐', drone: '🛸', crise: '🚨', sapv: '🤝' };
 const COURT_ANNEXE = { sport: 'sport', logiciel: 'logiciel', anpr: 'plaques', antenne: 'antenne', garage: 'atelier', audition: 'audition', tir: 'tir', cachots: 'cellules', drone: 'drone', crise: 'crise', sapv: 'victimes' };
 
+/** Deux onglets en tête de la fiche de l'hôtel de police : le bâtiment et ses annexes, les véhicules. */
+function ongletsHp(actif, z, T) {
+  const parc = parcVehicules(z, T);
+  const enService = parc.filter((v) => v.etat === 'service').length;
+  const alerte = parc.some((v) => v.etat !== 'service');
+  const o = (k, action, txt) => `<button type="button" role="tab" aria-selected="${k === actif}" ${k === actif ? '' : `data-action="${action}"`}>${txt}</button>`;
+  return `<div class="seg3" role="tablist" aria-label="Mon hôtel de police" style="grid-template-columns:1fr 1fr">${o('bat', 'logistique', '🏛 Bâtiment')}${o('parc', 'parc', `🚓 Véhicules · ${enService}/${z.vehicules}${alerte ? ' <span style="color:var(--amber)">●</span>' : ''}`)}</div>`;
+}
+
 /** Saison 2 : le chantier — niveaux en barres (le prochain en pointillé), annexes en tuiles à toucher. */
 function logistiqueV2() {
   const z = myZone(), st = S.state, T = st.turn, d = S.draft || {};
@@ -384,12 +393,11 @@ function logistiqueV2() {
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon hôtel de police</h2>
       <span class="mono tiny muted">entretien ${fmt1(entretienTotal)} k€ par tour</span></div>
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
+    ${ongletsHp('bat', z, T)}
     ${bat}
     <div class="between"><span class="logis2-k">Annexes · ${nbAnnexes(z)} sur ${emplacementsAnnexes(z)} places</span><span class="tiny muted">touche pour le détail</span></div>
     <div class="annexes2">${tuiles}</div>
     ${fiche}
-    <button type="button" class="list-row" data-action="parc" style="width:100%;text-align:left"><span class="col grow" style="gap:1px"><span style="font-weight:600">🚗 Parc automobile</span>
-      <span class="tiny muted">${enService} sur ${z.vehicules} en service · état ${Math.round(100 - z.usure)} %${cab ? ` · ${cab} cabossé${cab > 1 ? 's' : ''}` : ''}</span></span>${icon('chevron', 16)}</button>
     <button type="button" class="btn small block decor-btn" data-action="decor">${icon('star', 16)} Personnaliser mon hôtel de police <span class="tiny muted">${decorCompte(z).n} / ${decorCompte(z).total}</span></button>
     ${affichesHtml(z, { moi: true })}
     ${z.agents > SUBSIDE.seuil ? `<p class="tiny ok" style="margin:0">Subside communal : +${fmt1(subsideAgents(z))} k€ par tour pour tes ${z.agents - SUBSIDE.seuil} agents au-delà de ${SUBSIDE.seuil}.</p>` : ''}
@@ -418,9 +426,10 @@ function parcCorps() {
       ${vehiculeSvg(v.type, 20)}<span class="n">${esc(v.nom)}</span><span class="s"><i style="background:${coul}"></i>${txt}</span>${v.etatPc != null ? `<span class="veh-u" aria-hidden="true"><b style="width:${v.etatPc}%;background:${v.etatPc >= 80 ? 'var(--green)' : v.etatPc >= 60 ? 'var(--amber)' : 'var(--red)'}"></b></span>` : ''}</button>`;
   }).join('') + (libres ? `<button type="button" class="veh libre" data-action="parc-achat" aria-label="Acheter un véhicule (grande décision)"><span style="font-size:16px;line-height:1">+</span><span class="s">${libres} place${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''}</span></button>` : '');
   return `<div class="col hp-logis" style="gap:10px">
-    <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Parc automobile</h2>
+    <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Mon hôtel de police</h2>
       <span class="tiny muted">${z.vehicules} véhicule${z.vehicules > 1 ? 's' : ''} · garage niv. ${z.batiments.garage} (${capaciteVehicules(z)} places)</span></div>
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
+    ${ongletsHp('parc', z, T)}
     <div class="col" style="gap:5px">
       <div class="between"><span class="tiny muted">État moyen du parc</span><span class="mono tiny ${etat < 60 ? 'bad' : etat < 80 ? 'warn' : ''}">${etat} %</span></div>
       <div class="parc-etat"><span style="width:${etat}%;background:${etat >= 80 ? 'var(--green)' : etat >= 60 ? 'var(--amber)' : 'var(--red)'}"></span></div>
@@ -431,7 +440,6 @@ function parcCorps() {
     ${(() => { const v = vitesseCombi(z); return `<div class="between small"><span class="muted">🚨 Vitesse sur les urgences</span><span class="mono">${Math.round(31 * 3.6 * v.mult)} km/h${v.prepa ? ` · préparation niv. ${v.prepa}` : ''}${v.cabosse ? ' · combi cabossé' : ''}</span></div>`; })()}
     <p class="tiny muted" style="margin:0">Touche un véhicule : son état, son modèle, la carrosserie, la revente. Combi : le moins cher par place · électrique : se rembourse (prime verte) · anonyme : flagrants et traques · fourgon : engagements et blessures.</p>
     <button type="button" class="btn block" data-action="dep-toggle" data-k="revision" data-fermer="1">${dep.revision ? '✓ Révision du parc prévue · annuler' : `Révision du parc · ${fmt1(DEPENSES.revision.cout)} k€ · +${USURE.revision} %`}</button>
-    <button type="button" class="btn small ghost block" data-action="logistique">Voir mon hôtel de police</button>
     <p class="tiny muted" style="margin:0">Réparations et révision se paient à 20:00. Pense à valider tes ordres.</p>
   </div>`;
 }
