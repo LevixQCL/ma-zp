@@ -53,6 +53,8 @@ function rafraichir() {
     if (el) el.innerHTML = previsionHtml();
     const c = document.getElementById('prev-court');
     if (c) c.textContent = previsionCourte();
+    const h = document.getElementById('prev-hp');
+    if (h) h.textContent = previsionCourte().replace(/^IPZ /, '') || '…';
   }, 350);
 }
 
@@ -60,7 +62,7 @@ function rafraichir() {
 export function suivrePrevision() {
   if (veille) return;
   veille = setInterval(() => {
-    if (S.route !== 'ordres' || !document.getElementById('prev-ipz')) { clearInterval(veille); veille = null; return; }
+    if (!document.getElementById('prev-ipz') && !document.getElementById('prev-hp')) { clearInterval(veille); veille = null; return; }
     rafraichir();
   }, 600);
   rafraichir();

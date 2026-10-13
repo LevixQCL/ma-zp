@@ -18,11 +18,12 @@ import { agentsDisponibles, blessesActifs, vehiculesDisponibles } from '../engin
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { formatCountdown, formatDateBe } from '../engine/time.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
-import { estimations, besoinService, ouvertureOrdres } from './ordres.js';
+import { estimations, besoinService, ouvertureOrdres, etatAffect } from './ordres.js';
+import { previsionCourte, suivrePrevision } from './prevision.js';
 import { vagueTodo, vagueEnvoyeeAlerte } from './vagues.js';
 import { releveTodos, releveHtml } from './releve.js';
 import { bilanTodo, bilanHtml } from './bilan.js';
-import { criseTodo, criseHtml } from './crise.js';
+import { criseTodo } from './crise.js';
 import { operationActive } from '../engine/zone.js';
 import { cielDe, dilemmeDuJour, feuilletonEnCours, pressionsVisibles } from '../engine/directeur.js';
 import { fipaCards } from './fipa.js';
@@ -292,7 +293,7 @@ function etiquetteEtape(i) {
   if (/^Vague/.test(t)) return ['Vague', 'carte'];
   if (i.href === '#hp-releve') return ['Relève', 'carte'];
   if (i.href === '#hp-bilan') return ['Bilan', 'ordres'];
-  if (i.href === '#hp-crise') return ['Crise', 'shield'];
+  if (i.href === '#ordres-crise') return ['Crise', 'shield'];
   if (i.href === '#hp-fipa') return ['FIPA', 'radio'];
   if (i.href === '#pactes') return ['Pacte', 'radio'];
   const mot = t.split(/[\s:]/)[0];
@@ -311,35 +312,58 @@ function icoEtape(href) {
   return 'alert';
 }
 
-/** « Avant 20:00 » : la situation du jour, une icône par étape, et un seul gros bouton vers la prochaine. */
-function avantHtml(st, z, items) {
-  const reste = items.filter((i) => !i.ok), fait = items.length - reste.length;
-  const p = reste[0];
-  const liste = () => items.map((i) => `<a class="todo ${i.ok ? 'done' : ''}" href="${i.href}"><span class="box" aria-hidden="true">${i.ok ? icon('check', 14) : ''}</span>
-        <span class="col grow" style="gap:0;min-width:0"><span style="font-weight:600">${i.t}</span><span class="tiny muted">${i.s}</span></span>${icon('chevron', 16)}</a>`).join('');
-  // Tout est fait : la carte se replie sur une ligne, une petite pastille verte par étape (la liste reste à un toucher).
-  if (items.length && !reste.length) {
-    return `<section class="card hp-soir hp-soir-fini" aria-label="Prochain tour">
-    <div class="hs-tete"><span class="kicker">20:00 dans <b id="countdown" class="hs-cd">${formatCountdown(st.nextDeadline - Date.now())}</b></span>${situationPastilles(z, cielDe(z))}</div>
-    <details class="hs-liste hs-fini" data-k="soir-liste" ${S.ouverts && S.ouverts['soir-liste'] ? 'open' : ''}>
-      <summary aria-label="Tout est prêt pour ce soir : ${items.length} étape${items.length > 1 ? 's' : ''} faite${items.length > 1 ? 's' : ''}, la liste">
-        <span class="hs-mini" aria-hidden="true">${items.map((i) => { const [nom, ico] = etiquetteEtape(i); return `<i title="${attr(nom)}">${icon(ico, 13)}</i>`; }).join('')}</span>
-        <span class="hs-fini-t">${icon('check', 15)} Tout est prêt<small>modifiable jusqu’à 20:00</small></span>${icon('chevron', 14)}</summary>
-      <div class="col" style="gap:6px">${liste()}</div>
-    </details>
+
+/** Carte « Ordres du soir » : le compte à rebours, un repère par partie des Ordres, la prévision et un seul bouton. */
+function ordresCarteHtml(st, z, items, ordresOk) {
+  const d = S.draft || {};
+  let e = null; try { e = estimations(); } catch (er) { /* pas de brouillon */ }
+  const et = [];
+  if (doctrineOuverte(st, z)) et.push(['doctrine', 'shield', 'Doctrine', !!(d.doctrine || (z.doctrine && !doctrineSemaine2(st, z)))]);
+  et.push(['affect', 'equipe', 'Agents', !e || etatAffect(e) === 'ok']);
+  et.push(['rythme', 'clock', 'Rythme', true]);
+  { const ct = criseTodo(); if (ct && ct.href === '#ordres-crise' && /vote/.test(ct.t)) et.push(['crise', 'shield', 'Crise', ct.ok]); }
+  et.push(['decision', 'star', 'Décision', !!(d.decision || d.sansDecision)]);
+  et.push(['', 'check', 'Valider', ordresOk]);
+  const sans = (t) => String(t).replace(/<[^>]*>/g, '');
+  const autres = items.filter((i) => !i.ok && !i.href.startsWith('#ordres') && !['#enquete', '#quete'].includes(i.href) && !/^Doctrine/.test(sans(i.t)));
+  const suivant = et.find((x) => !x[3]);
+  let prev = ''; try { prev = previsionCourte().replace(/^IPZ /, ''); } catch (er) { /* pas de brouillon */ }
+  if (!ordresOk || !prev) setTimeout(suivrePrevision, 0);
+  return `<section class="card hp-ordres ${ordresOk ? 'fini' : ''}" aria-label="Prochain tour">
+    <div class="ho-tete"><b>Ordres du soir</b><span class="kicker">20:00 dans <b id="countdown" class="hs-cd">${formatCountdown(st.nextDeadline - Date.now())}</b></span></div>
+    <div class="ho-sit">${situationPastilles(z, cielDe(z))}</div>
+    <div class="ho-pips">${et.map(([k, ic, nom, ok]) => `<a class="ho-pip ${ok ? 'ok' : 'af'}" href="#ordres${k ? `-${k}` : ''}" aria-label="${nom} : ${ok ? 'réglé' : 'à faire'}"><i aria-hidden="true">${icon(ok ? 'check' : ic, 15)}</i>${nom}</a>`).join('')}</div>
+    <div class="ho-bas"><span class="ho-prev"><span class="tiny muted">IPZ prévu ce soir</span><b id="prev-hp">${prev || '…'}</b></span>
+      <a class="btn ${ordresOk ? 'ghost' : 'primary'}" href="#ordres${suivant && suivant[0] ? `-${suivant[0]}` : ''}">${ordresOk ? 'Revoir mes ordres' : et.some((x) => x[3] && x[0] !== 'rythme') ? 'Continuer' : 'Préparer mes ordres'}</a></div>
+    ${autres.length ? `<a class="ho-autres" href="#hp-aregler"><span class="ajd-point" aria-hidden="true"></span>${autres.length} autre${autres.length > 1 ? 's' : ''} décision${autres.length > 1 ? 's' : ''} ce soir : ${autres.slice(0, 3).map((i) => esc(etiquetteEtape(i)[0].toLowerCase())).join(', ')}${icon('chevron', 14)}</a>` : ''}
   </section>`;
-  }
-  return `<section class="card hp-soir" aria-label="Prochain tour">
-    <div class="hs-tete"><span class="kicker">20:00 dans <b id="countdown" class="hs-cd">${formatCountdown(st.nextDeadline - Date.now())}</b></span>${situationPastilles(z, cielDe(z))}</div>
-    <div class="hs-pips" aria-label="${fait} étape${fait > 1 ? 's' : ''} faite${fait > 1 ? 's' : ''} sur ${items.length}">${items.map((i) => { const [nom, ico] = etiquetteEtape(i); return `<a class="hs-pip${i.ok ? ' ok' : i === p ? ' suiv' : ''}" href="${i.href}" title="${attr(i.t)}" aria-label="${attr(i.t)} : ${i.ok ? 'fait' : 'à faire'}">${i.ok ? icon('check', 14) : icon(ico, 15)}<span>${nom}</span></a>`; }).join('')}</div>
-    <a class="hs-cta${p ? '' : ' fini'}" href="${p ? p.href : '#ordres'}">
-      <span class="hs-cta-t">${p ? p.t : `${icon('check', 18)} Tout est prêt pour ce soir`}</span>
-      <span class="hs-cta-s">${p ? p.s : 'tu peux encore tout modifier jusqu’à 20:00'}</span></a>
-    <details class="hs-liste" data-k="soir-liste" ${S.ouverts && S.ouverts['soir-liste'] ? 'open' : ''}>
-      <summary>${reste.length ? `${reste.length} étape${reste.length > 1 ? 's' : ''} à faire` : 'Tout est fait'}${fait ? ` · ${fait} faite${fait > 1 ? 's' : ''}` : ''} <span class="muted">· la liste</span>${icon('chevron', 14)}</summary>
-      <div class="col" style="gap:6px">${items.map((i) => `<a class="todo ${i.ok ? 'done' : ''}" href="${i.href}"><span class="box" aria-hidden="true">${i.ok ? icon('check', 14) : ''}</span>
-        <span class="col grow" style="gap:0;min-width:0"><span style="font-weight:600">${i.t}</span><span class="tiny muted">${i.s}</span></span>${icon('chevron', 16)}</a>`).join('')}</div>
-    </details>
+}
+
+/** Les incidents et événements du jour, juste sous les ordres : le premier ouvert s'affiche en grand. */
+function incidentsBlocHtml() {
+  // Les incidents d'abord (ils ont une échéance), puis les événements (actualité, Luc).
+  const h = (incidentsHtml({ nu: true }) || '') + actuLigne() + lucLigne();
+  if (!h) return '';
+  const n = (h.match(/class="inc-row/g) || []).length, tous = !!S.hpIncTous;
+  return `<section class="hp-inc ${tous ? 'tous' : ''}" aria-label="Incidents du jour"><div class="ajd-inc" id="hp-incidents">${h}</div>
+    ${n > 1 ? `<button type="button" class="hp-inc-plus" data-action="hp-inc-tous" aria-expanded="${tous}">${tous ? 'Réduire' : `+ ${n - 1} autre${n > 2 ? 's' : ''} incident${n > 2 ? 's' : ''} ou événement${n > 2 ? 's' : ''}`}</button>` : ''}</section>`;
+}
+
+/** Trois cartes à chiffre : l'enquête, le district, les énigmes. Le point ambre dit qu'une action t'attend. */
+function vieHtml(st, z, items, faites, questDone) {
+  const d = S.draft || {}, nbDem = (d.demarches || []).length;
+  const enq = items.find((i) => i.href === '#enquete');
+  const traque = (st.traques || []).length > 0;
+  const DIST = ['#ordres-crise', '#pactes', '#hp-fipa', '#hp-releve', '#carte-mazone', '#carte'];
+  const dist = items.filter((i) => !i.ok && DIST.includes(i.href));
+  const tombes = presqueTombes().length;
+  const nbDist = dist.length + tombes;
+  const t1 = dist[0] ? etiquetteEtape(dist[0])[0] : tombes ? 'non-droit' : '';
+  const tuile = (href, am, ic, v, s, label) => `<a class="hp-vie-t ${am ? 'am' : ''}" href="${href}" aria-label="${attr(label)}"><span class="ic" aria-hidden="true">${ic}</span><b>${v}</b><span>${s}</span></a>`;
+  return `<section class="hp-vie" aria-label="Ta zone aujourd’hui">
+    ${tuile('#enquete', traque || (enq && !enq.ok), '🔍', st.enquete ? (traque ? 'Traque' : `${nbDem}/${maxDemarchesDe(st, zoneAvecAgenda())}`) : '—', st.enquete ? (traque ? 'un suspect en fuite' : 'démarches ce soir') : 'pas d’affaire', 'Enquête')}
+    ${tuile(dist[0] ? dist[0].href : tombes ? '#carte' : '#carte', nbDist > 0, '🏛', nbDist ? (nbDist > 1 ? `${nbDist} sujets` : t1) : 'District', nbDist ? (nbDist > 1 ? dist.slice(0, 2).map((i) => etiquetteEtape(i)[0].toLowerCase()).join(' · ') || 'à voir' : 'à régler ce soir') : 'rien en attente', 'District')}
+    ${tuile('#quete', !questDone, '🧩', `${Math.min(faites, slotsCompte().length)}/${slotsCompte().length}`, 'énigmes du jour', 'Énigmes')}
   </section>`;
 }
 
@@ -352,21 +376,15 @@ function rond(label, value, color, aide, avant) {
     <span class="hr-l">${esc(label)}</span><span class="hr-d ${Math.abs(d) < 0.05 ? '' : d > 0 ? 'up' : 'down'}">${Math.abs(d) < 0.05 ? '=' : `${d > 0 ? '▲' : '▼'} ${fmt1(Math.abs(d))}`}</span></button>`;
 }
 
-/** « Ma zone » : les quatre jauges toujours visibles, puis agents, budget et véhicules. */
+/** « Ma zone » : les quatre jauges (agents, budget et véhicules sont sur l'illustration). */
 function jaugesHtml(z, T) {
-  const dispo = agentsDisponibles(z, T), blesses = blessesActifs(z, T), vDispo = vehiculesDisponibles(z, T);
-  const cab = (z.cabosses || []).length, ff = fraisFixesDuJour(z), h = z.hier || {};
+  const h = z.hier || {};
   return `<section class="card hp-zone" aria-label="Ma zone">
     <div class="hz-ronds">
       ${rond('Moral', z.moral, '#FFB23F', 'moral', h.moral)}
       ${z.ipzComp ? rond('Résultats', z.ipzComp.affaires, '#9DCBFF', 'terrain', z.ipzCompHier && z.ipzCompHier.affaires) : ''}
       ${rond('Satisfaction', z.satisfaction, '#63B0FF', 'satisfaction', h.satisfaction)}
       ${rond('Réputation', z.reputation, '#3DD39A', 'reputation', h.reputation)}
-    </div>
-    <div class="hz-stats">
-      <span class="hz-s"><b>${dispo}</b><span>/${z.agents} agents dispo</span>${blesses ? ` <span class="bad">· ${blesses} absent${blesses > 1 ? 's' : ''}</span>` : ''}</span>
-      <button type="button" class="hz-s" data-action="budget" aria-label="Budget ${attr(fmtK(z.budget))}, détail du budget"><b class="${z.budget < 0 ? 'bad' : ''}">${fmtK(z.budget)}</b><span class="${ff < 0 ? 'bad' : 'ok'}">${ff >= 0 ? '+' : '−'}${fmtK(Math.abs(ff))}/j</span></button>
-      <button type="button" class="hz-s" data-action="parc" aria-label="Parc automobile : ${vDispo} véhicules disponibles sur ${z.vehicules}"><b>${vDispo}</b><span>/${z.vehicules} véhicules</span>${cab ? ` <span class="bad">· ${cab} cabossé${cab > 1 ? 's' : ''}</span>` : ''}</button>
     </div>
   </section>`;
 }
@@ -456,12 +474,10 @@ function aujourdhuiHtml(st, z, T, items) {
     L.push({ prio: 1, html: ligneAjd({ k: `ajd-dilemme-${T}`, ico: perso ? `<img src="img/bureau/${perso}-${humeurReseau(z, perso) > 0 ? 1 : humeurReseau(z, perso) < 0 ? '-1' : 0}.webp" alt="" width="40" height="40">` : '⚖️',
       titre: `${perso ? 'Appel' : 'Dilemme'} : ${esc(dl.titre)}`, sous: pris ? `« ${esc(dl.choix[d.dilemme].l)} »` : 'deux choix, à trancher avant 20:00', badge: pastilleAFaire(pris), ouvert: !pris, corps: dilemmeHtml(st, z) }) });
   }
-  { const h = criseHtml(); if (h) { const ct = criseTodo(); L.push({ prio: 1, html: ligneAjd({ k: `ajd-crise-${T}`, ico: '🏛', titre: ct ? ct.t : 'Cellule de crise', sous: ct ? ct.s : 'plan du district', badge: ct ? pastilleAFaire(ct.ok) : '', ouvert: !!ct && !ct.ok, corps: h }) }); } }
   { const h = releveHtml(); if (h) { const r = releveTodos()[0]; L.push({ prio: 1, html: ligneAjd({ k: `ajd-releve-${T}`, ico: '🚔', titre: r ? r.t : 'Relève', sous: r ? r.s : 'suspect en fuite chez un voisin', badge: r ? pastilleAFaire(r.ok) : '', ouvert: !!r && !r.ok, corps: h }) }); } }
   { const h = bilanHtml(); if (h) { const bt = bilanTodo(); L.push({ prio: 1, html: ligneAjd({ k: `ajd-bilan-${T}`, ico: '📋', titre: bt ? bt.t : 'Bilan de saison', sous: bt ? bt.s : '', badge: bt ? pastilleAFaire(bt.ok) : '', ouvert: !!bt && !bt.ok, corps: h }) }); } }
   { const h = fipaCards(); if (h) { const att = items.some((i) => i.href === '#hp-fipa' && !i.ok); L.push({ prio: 1, html: ligneAjd({ k: `ajd-fipa-${T}`, ico: '🤝', titre: att ? 'FIPA : une décision t’attend' : 'FIPA', sous: 'renfort d’une zone partenaire', badge: att ? pastilleAFaire(false) : '', ouvert: att, corps: `<div id="hp-fipa">${h}</div>` }) }); } }
 
-  { const h = incidentsHtml({ avant: actuLigne() + lucLigne(), nu: true }); if (h) L.push({ prio: 2, html: `<div class="ajd-inc" id="hp-incidents" aria-label="Incidents du jour">${h}</div>` }); }
   // Non-droit : un secteur qui tombe ce soir avec quelques agents de plus (zones déjà annoncées à la radio).
   for (const x of presqueTombes().slice(0, 2)) L.push({ prio: 1, html: `<button type="button" class="ajd-alerte amber" data-action="secteur" data-c="${x.k}" style="width:100%;text-align:left;font:inherit;cursor:pointer"><span class="ajd-point" aria-hidden="true"></span>
     <span class="ajd-txt"><b>⚡ ${esc(nomSecteur(x.k))} peut tomber ce soir</b><span>${quartierActif(st) ? `il manque ${x.n} coup${x.n > 1 ? 's' : ''} 🔨 · rejoindre` : `il manque ${x.n} agent${x.n > 1 ? 's' : ''} aux zones déjà annoncées · rejoindre`}</span></span><span class="ajd-chev" aria-hidden="true">${icon('chevron', 16)}</span></button>` });
@@ -486,8 +502,8 @@ function aujourdhuiHtml(st, z, T, items) {
   L.sort((a, b) => a.prio - b.prio);
   const MAX = 6, vus = L.slice(0, MAX), plus = L.slice(MAX);
   if (!L.length) return '';
-  return `<section class="hp-ajd" aria-label="Aujourd’hui">
-    <div class="between"><h2 class="section">Aujourd’hui</h2><a class="tiny" href="#guide-incidents">Les incidents ?</a></div>
+  return `<section class="hp-ajd" id="hp-aregler" aria-label="À régler ce soir">
+    <h2 class="section">À régler ce soir</h2>
     ${vus.map((x) => x.html).join('')}
     ${plus.length ? `<details class="ajd-plus" data-k="ajd-plus" ${S.ouverts && S.ouverts['ajd-plus'] ? 'open' : ''}><summary>${plus.length} autre${plus.length > 1 ? 's' : ''} sujet${plus.length > 1 ? 's' : ''}</summary><div class="hp-ajd-l">${plus.map((x) => x.html).join('')}</div></details>` : ''}
   </section>`;
@@ -560,6 +576,11 @@ function heroHtml(st, z) {
       <a class="hud-ipz" href="#classement" aria-label="Classements · IPZ ${fmt1(z.ipz)}${z.hier && z.hier.ipz != null ? `, ${z.ipz >= z.hier.ipz ? 'en hausse' : 'en baisse'} de ${fmt1(Math.abs(z.ipz - z.hier.ipz))}` : ''}, ${z.toursJoues >= 5 ? `${rang}${rang === 1 ? 'er' : 'e'} sur ${total}` : 'non classé'}"><span class="hud-ipz-l">IPZ</span><span class="hud-ipz-v">${fmt1(z.ipz)}</span>${pastilleDelta(z.ipz, z.hier && z.hier.ipz)}${z.toursJoues >= 5 ? `<span class="hud-rang">${rang}<sup>${rang === 1 ? 'er' : 'e'}</sup>/${total}</span>` : ''}</a>
     </div>
     <div class="hud-bas">
+      ${(() => { const T = st.turn, dispo = agentsDisponibles(z, T), vDispo = vehiculesDisponibles(z, T), cab = (z.cabosses || []).length, ff = fraisFixesDuJour(z); return `<div class="hud-chips">
+        <button type="button" class="hud-chip" data-action="budget" aria-label="Budget ${attr(fmtK(z.budget))}, détail du budget"><b class="${z.budget < 0 ? 'bad' : ff < 0 ? 'warn' : ''}">${fmtK(z.budget)}</b></button>
+        <span class="hud-chip" aria-label="${dispo} agents disponibles sur ${z.agents}">${icon('equipe', 13)}<b>${dispo}</b>/${z.agents}</span>
+        <button type="button" class="hud-chip ${cab ? 'am' : ''}" data-action="parc" aria-label="Parc automobile : ${vDispo} véhicules disponibles sur ${z.vehicules}${cab ? `, ${cab} cabossé${cab > 1 ? 's' : ''}` : ''}">🚓 <b>${vDispo}</b>/${z.vehicules}</button>
+</div>`; })()}
       ${S.backend.isMaster(S.user) ? `<a class="hud-btn" href="#admin" aria-label="Maître du jeu" title="Maître du jeu">${icon('shield', 19)}</a>` : ''}
       <button type="button" class="hud-btn roue" data-action="menu-hp" aria-expanded="${!!S.menuHp}" aria-label="Guide, nouveautés, partie et profil">${icon('gear', 20)}${noteVue() ? '' : '<i class="roue-pastille" aria-hidden="true"></i>'}</button>
       <button type="button" class="hud-btn hud-perso" data-action="decor" aria-label="Personnaliser mon hôtel de police">${icon('pencil', 18)}</button>
@@ -603,11 +624,13 @@ export function renderHP() {
     </nav>` : ''}
     <div class="hp-cols">
       <div class="hp-col">
-        ${bulleNuitHtml(z)}
-        ${avantHtml(st, z, items)}
         ${jaugesHtml(z, T)}
+        ${ordresCarteHtml(st, z, items, ordresOk)}
+        ${incidentsBlocHtml()}
+        ${vieHtml(st, z, items, faites, questDone)}
       </div>
       <div class="hp-col">
+        ${bulleNuitHtml(z)}
         ${aujourdhuiHtml(st, z, T, items)}
         ${raccourcisHtml(st, z)}
         ${S.backend.mode === 'demo' ? '<button class="btn outline block" data-action="demo-next">Démo : passer au tour suivant</button>' : ''}

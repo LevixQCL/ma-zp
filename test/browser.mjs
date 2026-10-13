@@ -35,13 +35,15 @@ await page.click('a[href="#ordres"] >> nth=-1');
 await page.waitForSelector('[data-action="alloc"][data-s="intervention"][data-d="1"]');
 await page.click('[data-action="alloc"][data-s="intervention"][data-d="1"]');
 await page.click('[data-action="alloc"][data-s="intervention"][data-d="1"]');
+// Ordres en parties : le rythme est replié (son résumé suffit), on l'ouvre pour le changer.
+await page.click('[data-action="op-part"][data-k="rythme"]');
 await page.click('[data-action="rythme"][data-v="renforce"]');
 // Prise en main : la zone de non-droit ne s'ouvre qu'au jour 5 pour une nouvelle zone.
 if (await page.locator('[data-action="ord-open"][data-k="nondroit"]').count()) await page.click('[data-action="ord-open"][data-k="nondroit"]');
 if (!(await page.locator('#prev-ipz').count())) errors.push('Ordres : pas de prévision de l’IPZ');
 const engBtn = page.locator('[data-action="eng"][data-d="1"]').first();
 if (await engBtn.count()) { await engBtn.click(); await engBtn.click(); await engBtn.click(); }
-await page.click('[data-action="ord-open"][data-k="decision"]');
+if (!(await page.locator('#ord-decision .dtuile').count())) await page.click('[data-action="op-part"][data-k="decision"]');
 await shot('04-ordres-decision');
 await page.locator('.dtuile[data-action="decision"]:not([disabled])').first().click();
 await page.click('.savebar [data-action="save-orders"]');

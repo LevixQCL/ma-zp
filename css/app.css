@@ -3078,3 +3078,60 @@ details.co-pli[open] .co-pli-s { white-space: normal; }
 .co-pli-ok { color: var(--green); display: inline-flex; }
 details.co-pli > .co-pli-corps { gap: 12px; }
 .pz-eff { font-size: 11.5px; color: var(--blue-soft, #9DCBFF); }
+
+/* Ordres en parties numérotées (oct. 2026) : un en-tête toujours visible avec son résumé, le détail à la demande. */
+.op-part { padding: 0; gap: 0; overflow: hidden; }
+.op-part.am { border-color: var(--amber-line); }
+.op-h { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 14px; text-align: left; color: var(--text); background: none; border: 0; border-radius: 0; min-height: 0; box-shadow: none; }
+.op-h > svg { flex-shrink: 0; color: var(--muted); transition: transform .2s; }
+.op-part.ouvert .op-h > svg { transform: rotate(90deg); }
+.op-n { width: 24px; height: 24px; border-radius: 99px; display: grid; place-items: center; font-size: 12px; font-weight: 800; background: var(--surface3); color: var(--text2); flex-shrink: 0; }
+.op-part.am .op-n { background: var(--amber); color: var(--amber-ink); }
+.op-part.ok .op-n { background: var(--green); color: #062417; }
+.op-t { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.op-t b { font-size: 15px; }
+.op-t span { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.op-c { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 8px; }
+
+/* HP tableau de bord (oct. 2026) : carte des ordres du soir, incidents, trois cartes à chiffre. */
+.hp-ordres { gap: 10px; border-color: var(--amber-line); background: linear-gradient(160deg, rgba(255,178,63,.14), rgba(255,178,63,.03)); }
+.hp-ordres.fini { border-color: rgba(61,211,154,.4); background: linear-gradient(160deg, rgba(61,211,154,.10), rgba(61,211,154,.02)); }
+.ho-tete { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.ho-tete > b { font-family: var(--display); font-size: 19px; }
+.ho-pips { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; }
+.ho-pip { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; color: var(--muted); text-decoration: none; }
+.ho-pip i { width: 34px; height: 34px; border-radius: 99px; display: grid; place-items: center; background: var(--surface2); border: 2px solid var(--line); color: var(--text2); }
+.ho-pip.af { color: var(--amber); }
+.ho-pip.af i { border-color: var(--amber); background: var(--amber-bg); color: var(--amber); }
+.ho-pip.ok i { border-color: var(--green); background: rgba(61,211,154,.15); color: var(--green); }
+.ho-bas { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.ho-prev { display: flex; flex-direction: column; line-height: 1.15; flex: 1; min-width: 90px; }
+.ho-prev b { font-size: 15px; }
+.ho-bas .btn { flex-shrink: 0; }
+.ho-autres { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--amber-hi); text-decoration: none; padding-top: 2px; border-top: 1px solid var(--hair); padding-top: 8px; }
+.ho-autres svg { margin-left: auto; flex-shrink: 0; }
+.hp-inc .inc-ouvert:first-child { padding-block: 12px; border-color: rgba(255,110,106,.5); background: linear-gradient(150deg, rgba(255,110,106,.14), rgba(255,110,106,.03)); }
+.hp-vie { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.hp-vie-t { position: relative; display: flex; flex-direction: column; gap: 1px; padding: 10px; border-radius: 16px; background: var(--surface); border: 1px solid var(--hair); text-decoration: none; color: var(--text); min-width: 0; }
+.hp-vie-t .ic { font-size: 19px; line-height: 1; margin-bottom: 4px; }
+.hp-vie-t b { font-family: var(--display); font-size: 19px; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hp-vie-t span:last-child { font-size: 11.5px; color: var(--muted); line-height: 1.25; }
+.hp-vie-t.am { border-color: var(--amber-line); }
+.hp-vie-t.am::after { content: ""; position: absolute; top: 10px; right: 10px; width: 9px; height: 9px; border-radius: 9px; background: var(--amber); box-shadow: 0 0 0 3px rgba(255,178,63,.2); }
+.hp-hero { height: 236px; }
+.hud-bas { left: 12px; align-items: center; }
+.hud-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-right: auto; min-width: 0; }
+.hud-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 30px; padding: 0 9px; border-radius: 99px; border: 1px solid rgba(255,255,255,.16); background: rgba(12,17,36,.78); color: var(--text); font: 600 12px/1 var(--body); white-space: nowrap; backdrop-filter: blur(6px); }
+.hud-chip b { font-weight: 800; }
+.hud-chip.am { border-color: var(--amber-line); color: var(--amber-hi); }
+.hud-bas .hud-btn { width: 38px; height: 38px; }
+.hp-zone { padding-block: 10px; }
+.ho-sit .soir-situ { margin: 0; }
+.hp-inc:not(.tous) .ajd-inc > .inc-row:nth-child(n+2) { display: none; }
+.hp-inc-plus { width: 100%; margin-top: 6px; padding: 8px; border-radius: 12px; border: 1px dashed var(--line); background: none; color: var(--text2); font: 600 13px var(--body); }
+.hp-hero { height: 222px; }
+.hp-zone .hp-rond svg { width: 48px; height: 48px; }
+.hp-ordres { padding: 12px 14px; gap: 8px; }
+.ho-pip i { width: 30px; height: 30px; }
+.ho-autres { padding-top: 6px; font-size: 12.5px; }
+.hp.v3 .hp-col { gap: 10px; }

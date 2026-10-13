@@ -32,10 +32,17 @@ const injecter = async (etat) => {
   await page.waitForSelector('#countdown');
 };
 await injecter('vote');
+// Le vote se règle dans les Ordres (partie « Cellule de crise », ouverte par le lien #ordres-crise) ; la carte des ordres de l'HP le signale.
+if (!(await page.locator('.ho-pip[href="#ordres-crise"]').count())) errors.push('HP : pas de repère « Crise » dans les ordres du soir');
+await page.goto(BASE.replace(/\?.*/, '') + '?demo#ordres-crise');
+await page.waitForSelector('[data-action="crise-vote"][data-i="2"]');
 await page.click('[data-action="crise-vote"][data-i="2"]');
 await page.evaluate(() => document.getElementById('hp-crise').scrollIntoView());
 await page.screenshot({ path: `${OUT}/01-vote.png` });
+await page.goto(BASE.replace(/\?.*/, '') + '?demo#hp'); await page.waitForSelector('#countdown');
 await injecter('plan');
+await page.goto(BASE.replace(/\?.*/, '') + '?demo#ordres-crise');
+await page.waitForSelector('#hp-crise');
 await page.evaluate(() => document.getElementById('hp-crise').scrollIntoView());
 await page.screenshot({ path: `${OUT}/02-plan-c.png` });
 await page.goto(BASE.replace(/\?.*/, '') + '?demo#ordres');

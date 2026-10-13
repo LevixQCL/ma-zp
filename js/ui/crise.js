@@ -7,8 +7,8 @@ export function criseTodo() {
   const st = S.state, z = myZone(), d = S.draft || {};
   const c = st && criseCourante(st);
   if (!c || !z) return null;
-  if (c.vote === st.turn && !c.plan) return { ok: Number.isInteger(d.crise), href: '#hp-crise', t: 'Cellule de crise : vote ce soir', s: Number.isInteger(d.crise) ? `plan ${PLANS[d.crise].k}, ${esc(PLANS[d.crise].nom.toLowerCase())}` : esc(CRISES[c.id].titre.toLowerCase()) };
-  if (planDuJour(st) === 'C') { const p = participeCommune(st, z.uid, d); return { ok: true, href: '#hp-crise', t: p ? `Opération commune : ${agentsCommune(z, st.turn)} agents engagés ce soir` : 'Opération commune : tu n’y participes pas', s: p ? 'tu peux te retirer sur l’HP' : 'tu peux la rejoindre sur l’HP' }; }
+  if (c.vote === st.turn && !c.plan) return { ok: Number.isInteger(d.crise), href: '#ordres-crise', t: 'Cellule de crise : vote ce soir', s: Number.isInteger(d.crise) ? `plan ${PLANS[d.crise].k}, ${esc(PLANS[d.crise].nom.toLowerCase())}` : esc(CRISES[c.id].titre.toLowerCase()) };
+  if (planDuJour(st) === 'C') { const p = participeCommune(st, z.uid, d); return { ok: true, href: '#ordres-crise', t: p ? `Opération commune : ${agentsCommune(z, st.turn)} agents engagés ce soir` : 'Opération commune : tu n’y participes pas', s: p ? 'tu peux te retirer sur l’HP' : 'tu peux la rejoindre sur l’HP' }; }
   return null;
 }
 

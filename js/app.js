@@ -100,7 +100,7 @@ function route() {
   if ((h === 'terrain' && S.state) && S.draft) { S.carteCalque = calqueTerrain(); history.replaceState(null, '', '#carte'); return 'carte'; }
   // Lien vers un bloc des ordres (ex. #ordres-decision) : on ouvre ce bloc.
   // Saison 2 : une seule tuile ouverte à la fois, sinon une autre déjà ouverte masquerait celle demandée.
-  if (h.startsWith('ordres-')) { S.ordOpen = { [h.slice(7)]: true }; S.ordAncre = h.slice(7); return 'ordres'; }
+  if (h.startsWith('ordres-')) { const k = h.slice(7) === 'reserve' ? 'depenses' : h.slice(7); S.ordOpen = { [k]: true }; S.ordParts = { ...(S.ordParts || {}), [k]: true }; S.ordAncre = k; return 'ordres'; }
   return ROUTES.includes(h) ? h : 'hp';
 }
 
@@ -1233,13 +1233,16 @@ async function onClick(e) {
         // Pastilles des ordres (saison 2) : ouvre la section et descend jusqu'à elle.
         const k = el.dataset.k;
         if (k === 'chef') { location.hash = '#chef'; break; }
-        if (k === 'doctrine') S.ouverts = { ...(S.ouverts || {}), 'ord-doctrine': true };
-        if (['decision', 'pistes', 'depenses', 'equipe', 'nondroit', 'affaires', 'reserve'].includes(k)) S.ordOpen = { [k]: true };
+        if (k === 'doctrine') { S.ouverts = { ...(S.ouverts || {}), 'ord-doctrine': true }; S.ordParts = { ...(S.ordParts || {}), doct: true }; }
+        if (['affect', 'rythme', 'decision', 'depenses'].includes(k)) S.ordParts = { ...(S.ordParts || {}), [k]: true };
+        else if (['pistes', 'equipe', 'nondroit', 'affaires'].includes(k)) S.ordOpen = { [k]: true };
         rerender();
         const c = document.getElementById(`ord-${k}`) || document.querySelector(`[data-action="ord-open"][data-k="${k}"]`);
         if (c) { c.scrollIntoView({ behavior: 'smooth', block: 'start' }); c.classList.add('surligne-bloc'); setTimeout(() => c.classList.remove('surligne-bloc'), 1600); }
         break;
       }
+      case 'hp-inc-tous': S.hpIncTous = !S.hpIncTous; rerender(); break;
+      case 'op-part': { const k = el.dataset.k, ouvert = el.getAttribute('aria-expanded') === 'true'; S.ordParts = { ...(S.ordParts || {}), [k]: !ouvert }; rerender(); break; }
       case 'ord-open': { const k = el.dataset.k, was = !!(S.ordOpen && S.ordOpen[k]); S.ordOpen = el.closest('.ord-tuiles') ? { [k]: !was } : { ...(S.ordOpen || {}), [k]: !was }; rerender(); if (!was && el.closest('.ord-tuiles')) requestAnimationFrame(() => { const c = document.getElementById(`ord-${k}`); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }); break; }
       case 'toggle-decision': S.decisionOpen = !S.decisionOpen; rerender(); break;
       case 'decision': S.draft.decision = JSON.parse(el.dataset.json); S.draft.sansDecision = el.dataset.aucune === '1'; S.ordersDirty = true; rerender(); rafraichirLogistique(); break;

@@ -12,6 +12,7 @@ import { coutBilan } from '../engine/bilan.js';
 import { participeCommune, agentsCommune } from '../engine/crise.js';
 import { engagementsDuJour } from './engagements.js';
 import { primeHtml } from './prime.js';
+import { criseHtml, criseTodo } from './crise.js';
 import { previsionHtml, suivrePrevision } from './prevision.js';
 import { MAX_DEPENSES, doctrineOuverte, doctrineSemaine2, finFenetreDoctrine, DOCTRINE_SEM2 } from '../engine/regles.js';
 import { DOCTRINES, IDS_DOCTRINES, MAITRISE, coutPrime } from '../engine/constants.js';
@@ -899,24 +900,27 @@ function doctrineHtml(z, d) {
     <a class="small" href="#guide-doctrines" style="text-align:center">❔ Tout comprendre : jauges, flagrants délits, maîtrise</a>
   </section>`;
 }
-/** Saison 2 : une pastille par chose à régler ce soir ; elle se coche quand c'est fait, un toucher y mène. */
-function pastillesOrdres(z, d, e) {
+
+/** Une partie des Ordres : en-tête numéroté (résumé toujours visible), corps déplié à la demande. */
+function partieOrdres(k, n, titre, resume, etat, corps, { aria = titre, cls = '', defaut = null } = {}) {
+  const force = S.ordParts && k in S.ordParts ? S.ordParts[k] : null;
+  const ouvert = force != null ? force : !!(S.ordOpen && S.ordOpen[k]) || (defaut != null ? defaut : k === 'affect');
+  return `<section class="card op-part ${cls} ${etat} ${ouvert ? 'ouvert' : ''}" id="ord-${k}" aria-label="${esc(aria)}">
+    <button type="button" class="op-h" data-action="op-part" data-k="${k}" aria-expanded="${ouvert}"><span class="op-n">${etat === 'ok' ? icon('check', 13) : n}</span><span class="op-t"><b>${esc(titre)}</b><span>${resume}</span></span>${icon('chevron', 16)}</button>
+    ${ouvert ? `<div class="op-c">${corps()}</div>` : ''}</section>`;
+}
+const COURT_SVC = { intervention: 'Int', proximite: 'Prox', recherche: 'Rech', roulage: 'Roul', admin: 'Acc' };
+/** Résumé de l'affectation : ce qui manque, sinon la répartition en une ligne. */
+function resumeAffect(z, e) {
+  const bs = besoinsServices(e), d = S.draft;
+  const courts = SERVICES.filter((s2) => bs[s2] && (bs[s2].st === 'manque' || bs[s2].st === 'juste'));
+  if (e.reste > 0) return `${e.reste} agent${e.reste > 1 ? 's' : ''} libre${e.reste > 1 ? 's' : ''} à placer`;
+  if (courts.length) return `court : ${courts.map((s2) => (s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2])).join(', ')}`;
+  return SERVICES.map((s2) => `${COURT_SVC[s2]} ${d.alloc[s2]}`).join(' · ');
+}
+export function etatAffect(e) {
   const bs = besoinsServices(e);
-  const manque = SERVICES.filter((s2) => bs[s2] && (bs[s2].st === 'manque' || bs[s2].st === 'juste')).length;
-  const l = [];
-  if (doctrineOuverte(S.state, z)) l.push(['doctrine', '🧭', 'Doctrine', !!(d.doctrine || z.doctrine), d.doctrine || z.doctrine ? '' : 'à choisir']);
-  l.push(['affect', '👮', 'Affectation', !manque, manque ? `${manque} service${manque > 1 ? 's' : ''} court${manque > 1 ? 's' : ''}` : '']);
-  l.push(['rythme', '⏱', 'Rythme', true, '']);
-  l.push(['decision', '⭐', 'Décision', !!(d.decision || d.sansDecision), d.decision || d.sansDecision ? '' : 'à choisir']);
-  if (z.chef) l.push(['chef', '🎖', 'Chef', !(z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)), '']);
-  const reste = l.filter((x) => !x[3]);
-  // Tout est réglé : les pastilles se réduisent à de petites icônes vertes sur une ligne.
-  if (!reste.length) {
-    return `<div class="ord-pips ord-pips-fini"><span class="hs-mini">${l.map(([k, ic, nom]) => `<button type="button" data-action="ord-aller" data-k="${k}" aria-label="${nom} : réglé" title="${nom}"><span aria-hidden="true">${ic}</span></button>`).join('')}</span>
-      <span class="ord-reste ok">${icon('check', 14)} ${S.savedOrders && !S.ordersDirty ? 'Tout est réglé et validé' : 'Tout est réglé : il ne reste qu’à valider.'}</span></div>`;
-  }
-  return `<div class="ord-pips">${l.map(([k, ic, nom, ok]) => `<button type="button" class="hs-pip ${ok ? 'ok' : ''}" data-action="ord-aller" data-k="${k}" aria-label="${nom}${ok ? ' : réglé' : ' : à faire'}" title="${nom}">${ok ? icon('check', 15) : `<span aria-hidden="true">${ic}</span>`}${nom}</button>`).join('')}
-    <span class="ord-reste">${reste.length ? `Reste : ${reste.map((x) => `${x[2].toLowerCase()}${x[4] ? ` <small>(${x[4]})</small>` : ''}`).join(', ')}` : 'Tout est réglé : il ne reste qu’à valider.'}</span></div>`;
+  return e.reste !== 0 || SERVICES.some((s2) => bs[s2] && (bs[s2].st === 'manque' || bs[s2].st === 'juste')) ? 'am' : 'ok';
 }
 
 export function renderOrdres() {
@@ -959,17 +963,16 @@ export function renderOrdres() {
       <span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} Validés` : S.savedOrders ? 'Modifiés' : 'Pas validés'}</span></header>
 
     ${`<section class="card ord-fiche" aria-label="Ce soir">
-      <div id="prev-ipz" class="pv2" aria-live="polite">${previsionHtml()}</div>
-      ${pastillesOrdres(z, d, e)}</section>`}${(() => { setTimeout(suivrePrevision, 0); return ''; })()}
+      <div id="prev-ipz" class="pv2" aria-live="polite">${previsionHtml()}</div></section>`}${(() => { setTimeout(suivrePrevision, 0); return ''; })()}
     ${saved ? ('')
       : !S.savedOrders && !S.ordersDirty && z.dernierOrdre ? `<button class="btn primary block" data-action="save-orders">Reprendre les ordres d’hier et valider</button>
         <p class="tiny muted" style="margin:-4px 0 0;text-align:center">Ou ajuste ci-dessous, puis valide.</p>` : ''}
 
-    ${doctrineHtml(z, d)}
+    ${(() => { const h = criseHtml(); if (!h) return ''; const t = criseTodo(); return t ? partieOrdres('crise', '🏛', 'Cellule de crise', esc(t.ok ? t.s : 'vote secret avant 20:00 · pas encore voté'), t.ok ? 'ok' : 'am', () => h, { defaut: false }) : `<div id="ord-crise">${h}</div>`; })()}
+    ${doctrineOuverte(st, z) ? partieOrdres('doct', '🧭', 'Doctrine de la semaine', (d.doctrine || z.doctrine) && DOCTRINES[d.doctrine || z.doctrine] ? `${DOCTRINES[d.doctrine || z.doctrine].ico} ${esc(DOCTRINES[d.doctrine || z.doctrine].nom)}${doctrineSemaine2(st, z) && !d.doctrine ? ' · garde-la ou changes-en' : ''}` : 'à choisir', d.doctrine || (z.doctrine && !doctrineSemaine2(st, z)) ? 'ok' : 'am', () => { const sv = S.ouverts; S.ouverts = { ...(sv || {}), 'ord-doctrine': true }; const h = doctrineHtml(z, d); S.ouverts = sv; return h; }, { aria: 'Doctrine de la semaine', defaut: false }) : doctrineHtml(z, d)}
     ${sousTutelle(z, T) ? `<section class="card red" aria-label="Zone sous tutelle"><span class="kicker" style="color:var(--red-soft)">Zone sous tutelle · jusqu’au tour ${z.tutelle.fin}</span>
       <span class="small">Pas de rythme renforcé, d’agents de réserve, de défi ni d’enchère. Grande décision : recruter seulement.</span></section>` : ''}
     ${primeHtml()}
-    ${situationHtml(z)}
     ${e.opx.op ? (() => { const op = e.opx.op; const jour = T - op.tourDebut + 1; const couv = Math.round(e.opx.couverture * 100); const niv = { complet: 'Complet', reduit: 'Réduit', aucun: 'Aucun' }[d.operation] || 'Complet'; return `<details class="card red pli-ordres" data-k="ord-op" aria-label="Opération d'envergure" ${ouvertOrdres('ord-op', e.opx.couverture < 0.9 && d.operation !== 'aucun') ? 'open' : ''}>
       <summary><span class="col grow" style="gap:1px;min-width:0"><span class="between" style="gap:8px"><span class="kicker" style="color:var(--red-soft)">Opération d’envergure${op.duree > 1 ? ` · jour ${jour} sur ${op.duree}` : ''}</span><span class="pill amber">${op.recompense} pts</span></span>
         <span class="pli-resume">${esc(op.titre)}</span><span class="tiny pli-resume-s ${couv >= 90 ? 'ok' : couv >= 50 ? 'warn' : 'bad'}">Dispositif ${niv.toLowerCase()} · couvert à ${couv} %</span></span>${icon('chevron', 16)}</summary>
@@ -984,8 +987,8 @@ export function renderOrdres() {
       </div>
     </details>`; })() : ''}
 
-    <section class="card affect" id="ord-affect" aria-label="Affectation des agents">
-      <div class="between" style="align-items:baseline;margin-bottom:2px"><h2 class="card-title">Affectation</h2>
+    ${partieOrdres('affect', 1, 'Affectation', resumeAffect(z, e), etatAffect(e), () => `${situationHtml(z)}
+      <div class="between" style="align-items:baseline;margin-bottom:2px"><span></span>
         <button type="button" class="lien-statut" data-action="ventilation" aria-expanded="${!!S.ventilation}"><span id="alloc-status">${statusHtml(e)}</span><span class="tiny muted"> · ${S.ventilation ? 'masquer' : 'détail'}</span>${agentsHorsServices().some((h) => h.bloque) ? ' <span class="small bad">· agents bloqués</span>' : ''}</button></div>
       ${S.ventilation ? ventilationHtml(z, e) : ''}
       <div class="barre-aff" id="barre-aff" aria-hidden="true">${barreAffectation(e)}</div>
@@ -1003,26 +1006,23 @@ export function renderOrdres() {
       </div>`; }).join('')}
       ${e.reste > 0 ? `<p class="small warn" style="margin:8px 0 0;font-weight:600">${e.reste} agent${e.reste > 1 ? 's' : ''} libre${e.reste > 1 ? 's' : ''} à placer</p>` : ''}
       ${''}
-    </section>
-
-    <section class="col" id="ord-rythme" aria-label="Rythme" style="gap:8px"><h2 class="section" style="margin:0">Rythme de travail</h2>
-      <div class="seg creux" role="group" aria-label="Rythme de travail">${Object.entries(RYTHMES).map(([k, r]) => `
+      ${prisesHtml()}`, { aria: 'Affectation des agents', cls: 'affect' })}
+    ${partieOrdres('rythme', 2, 'Rythme de travail', `${RYTHMES[d.rythme] ? RYTHMES[d.rythme].label : 'Normal'} · ${RYTHMES[d.rythme] ? RYTHMES[d.rythme].sub : ''}`, 'ok', () => `      <div class="seg creux" role="group" aria-label="Rythme de travail">${Object.entries(RYTHMES).map(([k, r]) => `
         <button type="button" data-action="rythme" data-v="${k}" aria-pressed="${d.rythme === k}" ${k === 'renforce' && sousTutelle(z, T) ? 'disabled' : ''}><span class="t">${r.label}</span><span class="d">${k === 'renforce' && sousTutelle(z, T) ? 'interdit sous tutelle' : r.sub}</span></button>`).join('')}</div>
       ${z.renforceSuite >= 2 && d.rythme === 'renforce' ? '<p class="small bad" style="margin:0">Attention : plus de 3 tours renforcés d’affilée exposent à l’épuisement.</p>' : ''}
-    </section>
+`, { aria: 'Rythme' })}
 
-    ${prisesHtml()}
     ${(() => { const ov = ouvertureOrdres(z); return ov.nouveau.length ? `<p class="small" style="margin:0;color:var(--amber)">Nouveau dans tes ordres : ${ov.nouveau.map(esc).join(', ')}.</p>` : ov.prochain ? `<p class="tiny muted" style="margin:0">Jour ${ov.jour} de ta prise de fonction : ${esc(ov.prochain[2])} s’ouvre au jour ${ov.prochain[1]}.</p>` : ''; })()}
+    ${partieOrdres('decision', 3, 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'une seule par soir · pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, d.decision || d.sansDecision ? 'ok' : 'am', () => decisionHtml, { defaut: !d.decision && !d.sansDecision })}
+    ${partieOrdres('depenses', 4, ouvertureOrdres(z).depenses ? 'Dépenses du jour' : 'Agents de réserve', ouvertureOrdres(z).depenses ? (dep.reserve ? `réserve : ${dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun'} · ` : '') + (cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune') : dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun', cab > 0 && !dep.carrosserie ? 'am' : nbDep ? 'ok' : '', () => `${!sousTutelle(z, T) ? `<div class="affect">${reserveHtml(z, d, e)}</div>` : ''}${ouvertureOrdres(z).depenses ? depensesHtml : ''}`)}
     ${pliGroupe([z.chef ? pliItem('chef', 'Chef de corps', resumeChefOrdres(z, d), `<p class="tiny muted" style="margin:0">Agenda, première ligne, service du réseau et talents se règlent dans l’onglet Chef. Ils partent avec tes ordres de 20:00.</p><a class="btn small primary block" href="#chef">Ouvrir l’onglet Chef</a>`, (z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)), (z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)) ? 'talent' : null) : null,
     ouvertureOrdres(z).nondroit ? pliItem('nondroit', 'Zone de non-droit', (() => { const n = agentsND(d); const sects = Object.keys(d.secteurs || {}).filter((k) => d.secteurs[k]); return n ? `${n} agent${n > 1 ? 's' : ''} sur ${sects.map((k) => esc(nomSecteur(k))).join(', ')}` : 'Aucun agent ce soir'; })(), `<div class="col" style="gap:6px">${Object.entries(d.secteurs || {}).filter(([, n]) => n).map(([k, n]) => `<div class="between"><span class="small" style="font-weight:600">${esc(nomSecteur(k))}</span><span class="tiny ok">${n} agent${n > 1 ? 's' : ''}</span></div>`).join('')}
       <p class="tiny muted" style="margin:0">Les agents envoyés sont pris sur tes services pour la journée. Qui y va et où : sur la Carte.</p>
       <a class="btn small primary block" href="#terrain">Choisir les secteurs sur la Carte</a></div>`) : null,
     !ouvertureOrdres(z).equipe ? null : pliItem('equipe', 'Mon équipe', (() => { const ms = missionsValides(d); const m = ms.length === 1 && (z.equipe || []).find((x) => x.role === ms[0].role); const nbP = Object.keys(d.postes || {}).length; if (!ms.length && nbP) return `${nbP} figure${nbP > 1 ? 's changent' : ' change'} de service ce soir`; return ms.length > 1 ? `${ms.length} figures en mission` : m ? `${esc(m.prenom)} en mission ${ms[0].type === 'nondroit' ? 'en zone de non-droit' : 'en renfort'}` : 'Chacun encadre son service'; })(), equipeOrdres(z, d)),
     st.affaires.length && ouvertureOrdres(z).affaires ? pliItem('affaires', 'Affaires disputées', nbEng ? `${nbEng} affaire${nbEng > 1 ? 's' : ''} engagée${nbEng > 1 ? 's' : ''} sur ${st.affaires.length}` : `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} ouverte${st.affaires.length > 1 ? 's' : ''} · aucun agent engagé`, `<div class="col" style="gap:8px">${affairesHtml}</div>`) : null,
-    pliItem('decision', 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'Pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, decisionHtml, !d.decision && !d.sansDecision, !d.decision && !d.sansDecision ? 'à choisir' : null),
     pliItem('pistes', 'Tuyaux', resumePistes(z, d), pistesOrdresHtml(z, d)),
-    !sousTutelle(z, T) ? pliItem('reserve', 'Agents de réserve', dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun', `<div class="affect">${reserveHtml(z, d, e)}</div>`) : null,
-    !ouvertureOrdres(z).depenses ? null : pliItem('depenses', 'Dépenses du jour', cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune', depensesHtml, cab > 0 && !dep.carrosserie, cab > 0 && !dep.carrosserie ? 'à réparer' : null)])}
+    ])}
 
     <a class="small" href="#guide-ordres" style="text-align:center;padding:10px">Comment fonctionnent les ordres ?</a>
   </main>${tabbar('ordres')}`;

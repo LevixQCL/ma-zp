@@ -36,16 +36,16 @@ export const ETAPES = [
   },
   {
     id: 'fil-rouge', route: 'hp', cible: 'section[aria-label="Prochain tour"]',
-    titre: 'Le fil rouge de ta journée',
-    texte: () => (`<p><strong>Tout se joue à 20:00</strong>, pour toutes les zones en même temps : jouer tôt ne donne aucun avantage. Le <strong>gros bouton</strong> t’emmène à la prochaine chose à faire ; les petites icônes au-dessus se cochent au fur et à mesure.</p>
+    titre: 'Les ordres du soir',
+    texte: () => (`<p><strong>Tout se joue à 20:00</strong>, pour toutes les zones en même temps : jouer tôt ne donne aucun avantage. Une icône par partie de tes ordres : elle passe au vert quand c’est réglé. Le bouton t’emmène à la prochaine.</p>
       <p>Le <strong>ciel</strong> annonce ta journée : clair, chargé, orage ou éclaircie. Touche sa pastille pour comprendre.</p>`),
   },
   {
-    id: 'incidents', route: 'hp', cible: ['section[aria-label="Aujourd’hui"]', '#hp-incidents'],
-    titre: () => ('Aujourd’hui : incidents et décisions'),
+    id: 'incidents', route: 'hp', cible: ['#hp-incidents', 'section[aria-label="À régler ce soir"]'],
+    titre: () => ('Incidents du jour'),
     texte: () => (`<p>Une ou deux fois par jour, à une heure imprévue, un <strong>incident</strong> tombe sur un de tes services : colis suspect, porte à crocheter, parking à débloquer, rapport à corriger.</p>
       <p>Tu as <strong>12 heures</strong> pour jouer le mini-jeu, avec <strong>un seul essai</strong>. Si tu réussis : des PS, un bonus, et ta jauge de skins monte. Si tu rates : jamais pire que si tu n’y étais pas allé.</p>
-      <p>Les dilemmes, le Conseil et les alertes arrivent ici aussi, une ligne chacun : touche une ligne pour la déplier.</p>`),
+      <p>Plus bas, « <strong>À régler ce soir</strong> » regroupe les dilemmes, relèves, FIPA et alertes, une ligne chacun.</p>`),
   },
   {
     id: 'zone', route: 'hp', cible: 'section[aria-label="Ma zone"]',
@@ -73,7 +73,7 @@ export const ETAPES = [
       <p><strong>Intervention</strong> traite les incidents · <strong>Proximité</strong> calme les quartiers · <strong>Recherche</strong> élucide les dossiers et nourrit l’enquête · <strong>Roulage</strong> rapporte des amendes · <strong>Accueil</strong> vide la paperasse. Aucun ne suffit seul.</p>`),
   },
   {
-    id: 'doctrine', route: 'ordres', cible: 'section[aria-label="Doctrine de la saison"]',
+    id: 'doctrine', route: 'ordres', cible: '#ord-doct',
     titre: 'Saison 2 : la doctrine de ta zone',
     texte: `<p>Les <strong>trois premiers jours</strong> de la saison, tu choisis une <strong>doctrine</strong> : une vraie force, et un vrai prix. Elle vaut pour toute la saison.</p>
       <p>Garde la même d’une saison à l’autre et ta <strong>maîtrise</strong> monte. Sans choix au soir du jour 3, ta zone reste « sans doctrine ».</p>`,
@@ -91,10 +91,10 @@ export const ETAPES = [
       <p><strong>Allégé</strong> : l’inverse, pour remonter le moral. Dans le doute, reste en <strong>Normal</strong>.</p>`,
   },
   {
-    id: 'decision', route: 'ordres', cible: ['section[aria-label="Ce soir aussi"]', '[data-action="ord-open"][data-k="decision"]'],
-    titre: 'Ce soir aussi',
-    texte: () => (`<p>Quatre cases pour le reste de la soirée : ton <strong>chef de corps</strong> (sa journée, ses talents), la <strong>grande décision</strong> (recruter, former, équiper, acheter un véhicule, construire : <strong>une seule par tour</strong>), les <strong>tuyaux</strong> en cours (indic, filature, quartier) et les <strong>agents de réserve</strong>.</p>
-      <p>Touche une case pour l’ouvrir. Celles qui n’attendent plus rien se replient sur une ligne.</p>`),
+    id: 'decision', route: 'ordres', cible: ['#ord-decision', 'section[aria-label="Ce soir aussi"]'],
+    titre: 'Décision, dépenses et le reste',
+    texte: () => (`<p>Tes ordres se lisent en parties numérotées. La <strong>grande décision</strong> (recruter, former, équiper, acheter un véhicule, construire) : <strong>une seule par tour</strong>. Puis les <strong>dépenses</strong> du jour et les agents de réserve.</p>
+      <p>« <strong>Ce soir aussi</strong> » regroupe ton chef, les tuyaux, le non-droit et ton équipe. Une partie réglée se replie sur une ligne qui la résume.</p>`),
   },
   {
     id: 'valider', route: 'ordres', cible: ['.savebar [data-action="save-orders"]', 'main .card.green', 'main [data-action="save-orders"]'],
@@ -172,7 +172,7 @@ export const ETAPES = [
     id: 'm-hp', route: 'hp', mini: true, cible: 'section[aria-label="Prochain tour"]',
     titre: 'L’HP allégé',
     texte: `<p>Le <strong>gros bouton</strong> t’emmène à la prochaine chose à faire ; les petites icônes au-dessus se cochent au fil de la journée.</p>
-      <p>Plus bas, « <strong>Aujourd’hui</strong> » regroupe incidents, dilemmes et alertes, une ligne chacun.</p>`,
+      <p>Juste dessous : l’incident du jour, puis l’enquête, le district et les énigmes. Plus bas, « <strong>À régler ce soir</strong> » regroupe dilemmes et alertes.</p>`,
   },
   {
     id: 'm-classement', route: 'hp', mini: true, cible: '.hud-ipz',
@@ -181,10 +181,10 @@ export const ETAPES = [
       <p>Tes <strong>raccourcis</strong> se choisissent avec « Modifier » : salle des ventes, équipe, rapport, Gazette, trophées, records.</p>`,
   },
   {
-    id: 'm-ordres', route: 'ordres', mini: true, onglet: 'Tes ordres ont changé de tête.', cible: ['section[aria-label="Doctrine de la saison"]', 'section[aria-label="Affectation des agents"]'],
+    id: 'm-ordres', route: 'ordres', mini: true, onglet: 'Tes ordres ont changé de tête.', cible: ['#ord-doct', 'section[aria-label="Affectation des agents"]'],
     titre: 'Ordres : doctrine et cases',
     texte: `<p>Les <strong>3 premiers jours</strong>, choisis la <strong>doctrine</strong> de ta zone pour toute la saison : une vraie force, un vrai prix.</p>
-      <p>Chaque service a maintenant <strong>une case par agent</strong> dont il a besoin : une case vide en pointillé, c’est un manque. En bas, « Ce soir aussi » regroupe chef, grande décision, tuyaux et réserve.</p>`,
+      <p>Chaque service a maintenant <strong>une case par agent</strong> dont il a besoin : une case vide en pointillé, c’est un manque. Les parties se numérotent et se replient une fois réglées.</p>`,
   },
   {
     id: 'm-chef', route: 'chef', mini: true, onglet: 'Nouvel onglet : ton chef de corps, c’est toi.', cible: ['section[aria-label="Ton chef aujourd’hui"]', '.chef-creation'],
