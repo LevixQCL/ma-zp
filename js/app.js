@@ -13,7 +13,8 @@ import { S, toast, myZone, esc, cielDuMoment, tabbar, pseudoParDefaut, slotsJour
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil, mesTuiles, MAX_TUILES } from './ui/hp.js';
 import { renderBureau, renderChef, chefAFaire, promotionAuBesoin, brancherPanneauChef } from './ui/chef.js';
-import { paraSuivant } from './ui/chef-onglet.js';
+import { paraSuivant, CHEF_V3 } from './ui/chef-onglet.js';
+import { profilZone, marquerTitreVu } from './ui/profil-zone.js';
 import { ouvrirPromo } from './ui/fondateurs.js';
 import { courriersDuJour } from './engine/parapheur.js';
 import { creerChef } from './engine/chef.js';
@@ -933,7 +934,8 @@ async function onClick(e) {
         S.chefBrouillon = null; S.chefEdit = false; S.players = await b.getPlayers();
         toast('Ton chef prend ses fonctions. Son parcours compte dès ce soir.'); rerender(); break;
       }
-      case 'chef-agenda': { const v = el.dataset.v; const cur = S.draft.agenda || {}; S.draft.agenda = v === 'terrain' ? { type: 'terrain', service: cur.service || 'intervention' } : v === 'voisin' ? { type: 'voisin', zone: cur.zone || null } : { type: v }; S.ordersDirty = true; rerender(); break; }
+      case 'profil-zone': { const o = !(S.ouverts && S.ouverts['co-profil']); S.ouverts = { ...(S.ouverts || {}), 'co-profil': o }; const z = myZone(); if (o && z) marquerTitreVu(z.uid, profilZone(z, S.state.turn).titre); rerender(); break; }
+      case 'chef-agenda': { S.ouverts = { ...(S.ouverts || {}), 'co-agenda': true }; const v = el.dataset.v; const cur = S.draft.agenda || {}; S.draft.agenda = v === 'terrain' ? { type: 'terrain', service: cur.service || 'intervention' } : v === 'voisin' ? { type: 'voisin', zone: cur.zone || null } : { type: v }; S.ordersDirty = true; rerender(); break; }
       case 'chef-agenda-svc': S.draft.agenda = { type: 'terrain', service: el.dataset.v }; S.ordersDirty = true; rerender(); break;
       case 'chef-agenda-voisin': S.draft.agenda = { type: 'voisin', zone: el.dataset.v }; S.ordersDirty = true; rerender(); break;
       case 'para-revoir': S.paraIdx = Number(el.dataset.v) || 0; S.paraAnim = null; rerender(); break;
@@ -1933,6 +1935,8 @@ async function boot() {
     S.backend = await createBackend(CONFIG);
     // « Le Quartier » : en démo, la nouvelle règle du non-droit tourne déjà (la vraie partie bascule à un 20:00 choisi).
     QUARTIER.force = S.backend.mode === 'demo';
+    // Onglet Chef v3 (profil de zone, cartes repliées) : en démo tant qu'il n'est pas validé.
+    CHEF_V3.actif = S.backend.mode === 'demo';
   } catch (e) {
     console.error(e);
     app.innerHTML = `<main class="center-screen"><h1 class="brand">Ma ZP</h1><div class="card red"><h2 class="card-title">Connexion impossible</h2><p class="small" style="margin:0">Le jeu n’a pas pu joindre le serveur. Vérifie ta connexion puis recharge la page.</p></div></main>`;

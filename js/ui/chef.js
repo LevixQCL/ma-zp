@@ -7,7 +7,7 @@ import { COMPETENCES, IDS_COMPETENCES, PARCOURS, IDS_PARCOURS, TALENTS, TALENT, 
   niveauChef, progresChef, talentsDebloques, totalNiveaux, signatureChef, niveauXp, XP_CUMUL, NIVEAU_MAX_CHEF, JEUX_COMP,
   FRONT, IDS_FRONT, RISQUE_FRONT, RESEAU as RESEAU_E, IDS_RESEAU, servicePossible, VOIES, brevetPossible, BREVET_NIVEAUX, maxTalentsDe, humeurReseau, estimeDe } from '../engine/chef.js';
 import { cadreDe, rubansDe, RUBANS } from '../engine/chef-semaine.js';
-import { ongletChefHtml } from './chef-onglet.js';
+import { ongletChefHtml, CHEF_V3 } from './chef-onglet.js';
 import { creerChef } from '../engine/chef.js';
 import { jourPrise, courriersDuJour } from '../engine/parapheur.js';
 import { adjointFicheHtml, honneursHtml, COUL_CADRE, semaineHtml } from './chef-semaine.js';
@@ -290,7 +290,7 @@ export function renderChef() {
       ${repli('ch-car', 'Carrière', `${(z.chef.medailles || []).length} médaille${(z.chef.medailles || []).length > 1 ? 's' : ''} · états de service`, x.car)}</section>`;
   }
   const dd = d || {};
-  return `${ongletChefHtml(zv, p, chef, dd, { nuit: z.chef ? chefNuitHtml(z) : '<p class="tiny muted" style="margin:0;text-align:center">Ton chef prend officiellement ses fonctions ce soir à 20:00. Tes choix d’aujourd’hui comptent déjà.</p>', semaine: (duelOk) => (z.chef ? semaineHtml(z, { ouvert: true, duelOk }) : ''), fiche })}${tabbar('chef')}`;
+  return `${ongletChefHtml(zv, p, chef, dd, { nuit: z.chef ? chefNuitHtml(z) : '<p class="tiny muted" style="margin:0;text-align:center">Ton chef prend officiellement ses fonctions ce soir à 20:00. Tes choix d’aujourd’hui comptent déjà.</p>', semaine: (duelOk, neufSem) => (z.chef ? semaineHtml(z, { ouvert: CHEF_V3.actif ? !!neufSem : true, duelOk }) : ''), fiche })}${tabbar('chef')}`;
 }
 
 /** Pastille de l'onglet Chef : un talent neuf à équiper, un brevet à choisir ou un service du réseau à demander. */

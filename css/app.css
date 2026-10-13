@@ -3043,3 +3043,36 @@ button.ajd-alerte { width: 100%; text-align: left; font: inherit; cursor: pointe
 @media (min-width: 1280px) and (hover: hover) and (pointer: fine) {
   body:has(main.carte-v3) .cv-carte.cv-plateau .qz-plateau { max-width: min(640px, calc(100vh - 150px)); }
 }
+
+/* ───── Onglet Chef v3 (audit du 13 octobre 2026) : profil de zone et cartes repliées ───── */
+.pz { border-top: 1px solid var(--hair); margin: 0 -16px -16px; padding: 0 16px; }
+.pz-l { width: 100%; display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 11px 0 13px; text-align: left; color: var(--text); font: inherit; cursor: pointer; }
+.pz-mini { width: 34px; height: 34px; flex-shrink: 0; }
+.pz-t { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.pz-t .k { font-size: 11px; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.pz-t b { font-size: 14.5px; }
+.pz-x { font-family: var(--display); font-weight: 800; font-size: 16px; color: var(--amber-hi, #FFC970); white-space: nowrap; }
+.pz-chev { color: var(--muted); font-size: 18px; transition: transform .2s; }
+.pz[data-open="true"] .pz-chev { transform: rotate(90deg); }
+.pz-corps { display: flex; flex-direction: column; gap: 10px; padding-bottom: 16px; }
+.pz-radar { display: block; width: 100%; max-width: 340px; height: auto; margin: 0 auto; }
+.pz-titre { align-self: flex-start; background: var(--amber); color: var(--amber-ink); font-weight: 800; font-size: 12.5px; border-radius: 999px; padding: 3px 11px; }
+.pz-titre.gris { background: var(--surface3); color: var(--text); }
+.pz-phrase { font-size: 13px; color: var(--text2); }
+.pz-svc { display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid var(--hair); }
+.pz-l1 { display: flex; justify-content: space-between; align-items: center; font-size: 13.5px; font-weight: 600; }
+.pz-l1 b { font-family: var(--display); font-size: 15px; }
+.pz-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 7px; }
+.pz-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.pz-c { font-size: 11.5px; border-radius: 7px; padding: 1px 7px; background: var(--surface2); color: var(--text2); border: 1px solid var(--hair); white-space: nowrap; }
+.pz-c.up { color: var(--green); border-color: rgba(61, 211, 154, .3); }
+.pz-c.dn { color: var(--red); border-color: rgba(255, 110, 106, .3); }
+.pz-c.vide { color: var(--faint); border-style: dashed; }
+.pz-note { font-size: 11.5px; color: var(--faint); }
+details.co-pli > summary { gap: 12px; }
+.co-pli-ico { font-size: 22px; line-height: 1; width: 28px; text-align: center; flex-shrink: 0; }
+.co-pli-t { font-family: var(--display); font-weight: 800; font-size: 16px; line-height: 1.15; }
+.co-pli-s { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+details.co-pli[open] .co-pli-s { white-space: normal; }
+.co-pli-ok { color: var(--green); display: inline-flex; }
+details.co-pli > .co-pli-corps { gap: 12px; }
