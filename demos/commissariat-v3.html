@@ -1,0 +1,522 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Commissariat vivant (démo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..700&display=swap">
+<style>
+/* Démo : commissariat en coupe dessiné en code, illustration plate moderne. Thème nuit unique, volontaire. */
+:root{
+  color-scheme:dark;
+  --bg:#0b0f24; --s1:#151b38; --s3:#27305a; --hair:rgba(190,205,255,.1);
+  --text:#EDF0FA; --muted:#98a2c4; --amber:#FFB23F; --amber-ink:#241400; --green:#3DD39A; --red:#FF6E6A;
+  --display:'Bricolage Grotesque','Arial Narrow',system-ui,sans-serif; --body:'Instrument Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box} [hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--text);margin:0}
+body{font-family:var(--body);font-variant-numeric:tabular-nums;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.app{max-width:470px;margin:0 auto;padding:0 0 74px}
+
+.demo{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;padding:7px 10px;background:#070a1a;border-bottom:1px solid var(--hair);font-size:11.5px;color:#E9C894;font-weight:700}
+.demo button{padding:5px 10px;border-radius:9px;border:1px solid #2b3560;background:#141a36;font-size:12px;font-weight:700;color:var(--muted)}
+.demo button[aria-pressed="true"]{border-color:rgba(255,178,63,.5);background:rgba(255,178,63,.12);color:var(--amber)}
+.demo .go{background:var(--amber);color:var(--amber-ink);border-color:var(--amber)}
+
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;gap:6px;align-items:center;padding:8px 10px;background:linear-gradient(var(--bg) 70%,rgba(11,15,36,0))}
+.pill{display:flex;align-items:center;gap:6px;background:rgba(21,27,56,.94);border:1px solid var(--hair);border-radius:99px;padding:5px 10px 5px 6px;font-size:13px;font-weight:700}
+.pill b{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:11px}
+.pill.pop{animation:pop .45s}
+@keyframes pop{40%{transform:scale(1.18);background:var(--s3)}}
+.tour{margin-left:auto;text-align:right;font-size:10.5px;color:var(--muted);line-height:1.1}
+.tour b{display:block;font:800 16px var(--display);color:var(--amber)}
+
+/* Scène */
+.scene{position:relative;width:100%;overflow:hidden}
+.bat{position:absolute;left:0;top:0;width:360px;transform-origin:0 0}
+.ciel{position:absolute;inset:0}
+.etoile{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;animation:scint 3s ease-in-out infinite}
+@keyframes scint{50%{opacity:.25}}
+.salle{position:absolute;overflow:hidden;border-radius:3px}
+.salle svg.fond{position:absolute;inset:0;width:100%;height:100%;display:block}
+.salle .eteint{position:absolute;inset:0;background:rgba(5,8,22,.55);transition:opacity .6s;pointer-events:none}
+.salle.vit .eteint{opacity:0}
+.salle .led{position:absolute;left:8px;right:8px;bottom:2px;height:3px;border-radius:2px;background:transparent;transition:background .3s,box-shadow .3s}
+.salle.ok .led{background:var(--green);box-shadow:0 0 8px var(--green)}
+.salle.manque .led{background:var(--amber);box-shadow:0 0 8px var(--amber)}
+.salle.drop{outline:3px solid var(--amber);outline-offset:-3px}
+.etiq{position:absolute;left:5px;top:5px;z-index:3;display:flex;align-items:center;gap:4px;font-size:9.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;background:rgba(8,11,28,.7);padding:2px 6px 2px 5px;border-radius:6px;color:#e8ecf8;pointer-events:none;white-space:nowrap}
+.etiq i{width:6px;height:6px;border-radius:50%}
+.etiq .c{font-size:10.5px;letter-spacing:0;padding:0 5px;border-radius:99px;background:rgba(255,255,255,.14)}
+.salle.ok .etiq .c{background:var(--green);color:#062417}
+.salle.manque .etiq .c{background:var(--amber);color:var(--amber-ink)}
+
+.gyro{animation:gyro .5s steps(1) infinite}
+@keyframes gyro{50%{fill:#ff4d6d}}
+.van{transition:transform 1.8s cubic-bezier(.55,0,.4,1)}
+.van.sort{transform:translateX(-190px)}
+
+/* Agents */
+.ag{position:absolute;left:0;top:0;width:20px;height:34px;z-index:5;touch-action:none;cursor:grab;will-change:transform}
+.ag .mir{width:100%;height:100%}
+.ag svg{width:100%;height:100%;display:block;overflow:visible}
+.ag .jg,.ag .jd,.ag .bg,.ag .bd{transform-box:fill-box;transform-origin:50% 0}
+.ag.marche .jg{animation:jambe .48s ease-in-out infinite}
+.ag.marche .jd{animation:jambe .48s ease-in-out infinite reverse}
+.ag.marche .bg{animation:bras .48s ease-in-out infinite reverse}
+.ag.marche .bd{animation:bras .48s ease-in-out infinite}
+.ag.marche .corps{animation:bob .24s ease-in-out infinite alternate}
+@keyframes jambe{0%{transform:rotate(24deg)}50%{transform:rotate(-24deg)}100%{transform:rotate(24deg)}}
+@keyframes bras{0%{transform:rotate(20deg)}50%{transform:rotate(-20deg)}100%{transform:rotate(20deg)}}
+@keyframes bob{to{transform:translateY(-1px)}}
+.ag .tasse,.ag .radio{display:none}
+.ag.cafe .tasse{display:block}
+.ag.cafe .bd{animation:boire 2.6s ease-in-out infinite}
+@keyframes boire{0%,100%{transform:rotate(-40deg)}45%,60%{transform:rotate(-150deg)}}
+.ag.radio .bg{transform:rotate(160deg)}
+.ag.radio .radio{display:block}
+.ag.tient{position:fixed;z-index:60;pointer-events:none;filter:drop-shadow(0 6px 6px rgba(0,0,0,.5))}
+.ag.tient .corps{animation:none}
+.cabine{position:absolute;left:0;top:0;width:30px;height:40px;border-radius:4px;background:linear-gradient(#59648f,#3a4470);border:2px solid #8f9bc8;z-index:4;will-change:transform}
+
+.bulle{position:absolute;z-index:8;width:34px;height:34px;margin-left:-17px;border-radius:50%;display:grid;place-items:center;font-size:17px;box-shadow:0 4px 12px rgba(0,0,0,.55);animation:flotte 1.6s ease-in-out infinite}
+@keyframes flotte{50%{transform:translateY(-4px)}}
+.pastille{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:99px;background:#fff;color:#111;font:800 10px var(--body);display:grid;place-items:center;padding:0 3px}
+.vol{position:fixed;z-index:70;font-size:18px;pointer-events:none;transition:transform .7s cubic-bezier(.5,-0.3,.7,1),opacity .7s}
+.nuitvoile{position:absolute;inset:0;z-index:15;background:rgba(3,5,18,.0);pointer-events:none;transition:background .8s}
+.nuitvoile.on{background:rgba(3,5,18,.45)}
+
+.voile{position:fixed;inset:0;z-index:80;background:rgba(3,5,12,.6);display:flex;align-items:flex-end;justify-content:center;padding:14px}
+.choix{width:100%;max-width:430px;background:#F4EFE3;color:#1D1A15;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;animation:monte .25s ease-out}
+@keyframes monte{from{transform:translateY(40px);opacity:0}}
+.choix .qui{display:flex;gap:10px;align-items:center}
+.choix .av{width:46px;height:46px;border-radius:50%;background:#2a3350;display:grid;place-items:center;font-size:24px;flex-shrink:0}
+.choix .q{font:800 18px/1.2 var(--display)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opts button{border-radius:14px;padding:12px 8px;font-weight:800;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.opts .non{background:#e3dac6} .opts .oui{background:#1D1A15;color:#F4EFE3}
+.opts small{font-weight:600;font-size:11.5px;opacity:.8}
+.toast{position:fixed;left:50%;bottom:82px;transform:translateX(-50%);z-index:90;background:var(--s3);border:1px solid #3a4680;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:600;max-width:90vw;text-align:center;animation:monte .2s}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgba(12,16,38,.95);backdrop-filter:blur(10px);border-top:1px solid var(--hair);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+nav.tabs .in{max-width:470px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);text-align:center;font-size:10.5px;color:#67719A}
+nav.tabs span{display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+nav.tabs span i{font-style:normal;font-size:18px}
+nav.tabs span.on{color:var(--amber)}
+nav.tabs .badge{position:absolute;top:-2px;left:56%;background:var(--red);color:#fff;font:800 10px var(--body);border-radius:99px;padding:0 5px}
+@media (prefers-reduced-motion:reduce){.etoile,.bulle,.gyro{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="demo" role="group" aria-label="Contrôles de la démo">
+  DÉMO · niveau du commissariat
+  <button type="button" data-niv="1" aria-pressed="true">1</button>
+  <button type="button" data-niv="2" aria-pressed="false">2</button>
+  <button type="button" data-niv="3" aria-pressed="false">3</button>
+  <button type="button" class="go" id="nuit">Passer 20:00</button>
+</div>
+<div class="app">
+  <div class="hud">
+    <span class="pill" id="p-budget"><b style="background:#2f6b4f">€</b><span id="v-budget"></span></span>
+    <span class="pill" id="p-moral"><b style="background:#6b4f2f">♥</b><span id="v-moral"></span></span>
+    <span class="pill" id="p-ipz"><b style="background:#2f4b6b">↗</b><span id="v-ipz"></span></span>
+    <span class="tour">tour de 20:00<b>5 h 12</b></span>
+  </div>
+  <div class="scene" id="scene"><div class="bat" id="bat"></div></div>
+</div>
+<nav class="tabs" aria-label="Onglets du jeu"><div class="in">
+  <span class="on"><i>🏛</i>Commissariat</span><span id="tab-enq"><i>🔎</i>Enquête</span><span><i>🧩</i>Énigmes</span><span><i>🗺</i>Carte</span><span><i>📻</i>Radio</span>
+</div></nav>
+
+<script>
+/* ---------- Données ---------- */
+const W = 360, PAD = 18, PUITS = 40, RW = (W - 2*PAD - PUITS) / 2, RH = 112, DALLE = 8, TOIT = 70, SOL = 26;
+const XG = PAD, XD = PAD + RW + PUITS, XP = PAD + RW + PUITS/2;
+const SERVICES = {
+  intervention:{ nom:'Intervention', coul:'#FF6E6A', besoin:6, mur:'#3a4460', sol:'#2a3047' },
+  accueil:{ nom:'Accueil', coul:'#B79BFF', besoin:3, mur:'#453e66', sol:'#302b49' },
+  proximite:{ nom:'Proximité', coul:'#3DD39A', besoin:3, mur:'#2f4f4a', sol:'#223a36' },
+  roulage:{ nom:'Roulage', coul:'#F2D04B', besoin:2, mur:'#4d4a33', sol:'#363424' },
+  recherche:{ nom:'Recherche', coul:'#63B0FF', besoin:4, mur:'#2e4466', sol:'#21304a' },
+  chef:{ nom:'Chef', coul:'#FFB23F', besoin:0, mur:'#55432f', sol:'#3b2f22' },
+  repos:{ nom:'Vestiaires', coul:'#98a2c4', besoin:0, mur:'#3b3e55', sol:'#2a2c3e' },
+  cachots:{ nom:'Cachots', coul:'#98a2c4', besoin:0, mur:'#2c2e3a', sol:'#202129' },
+  tir:{ nom:'Stand de tir', coul:'#98a2c4', besoin:0, mur:'#38394a', sol:'#26272f' },
+  drone:{ nom:'Cellule drone', coul:'#98a2c4', besoin:0, mur:'#243a4c', sol:'#1a2836' },
+  chantier:{ nom:'À construire', coul:'#67719A', besoin:0, mur:'#33354a', sol:'#25263a' },
+};
+const PLANS = {
+  1:{ etages:[['recherche','chef'],['proximite','roulage'],['intervention','accueil']], cave:['repos','chantier'] },
+  2:{ etages:[['recherche','chef'],['proximite','roulage'],['intervention','accueil']], cave:['repos','cachots'] },
+  3:{ etages:[['tir','drone'],['recherche','chef'],['proximite','roulage'],['intervention','accueil']], cave:['repos','cachots'] },
+};
+const PLACABLES = ['intervention','accueil','proximite','roulage','recherche','repos'];
+const S = { niv:1, budget:91900, moral:61, salles:{}, agents:[], bulles:[] };
+const PEAUX = ['#f0c8a0','#d9a77c','#8d5a3b','#f3d2b3','#b97a52'];
+const DEPART = { recherche:3, proximite:3, accueil:2, intervention:5, roulage:2, repos:5 };
+
+/* ---------- Mobilier (illustration plate) ---------- */
+const lampe = (x) => `<rect x="${x-9}" y="0" width="18" height="4" rx="1" fill="#1c2035"/><rect x="${x-6}" y="4" width="12" height="2" fill="#ffe7b0"/><path d="M${x-6} 6 L${x-34} 92 L${x+34} 92 L${x+6} 6Z" fill="url(#cone)"/>`;
+const fenetre = (x,y,w,h) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="#141a3d"/><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="url(#vitre)"/><rect x="${x+w/2-1}" y="${y}" width="2" height="${h}" fill="#2a3158"/><rect x="${x}" y="${y+h-3}" width="${w}" height="3" fill="#59628f"/><circle cx="${x+w*.72}" cy="${y+h*.32}" r="1" fill="#fff"/><circle cx="${x+w*.25}" cy="${y+h*.55}" r=".8" fill="#fff" opacity=".7"/>`;
+const plante = (x,y) => `<path d="M${x} ${y-14} q-8 -6 -3 -16 q4 6 3 16 q2 -12 9 -14 q-1 10 -9 14z" fill="#3fae7a"/><path d="M${x-5} ${y-14}h10l-2 14h-6z" fill="#c9714a"/>`;
+const bureau = (x,y,ecran) => `<rect x="${x}" y="${y}" width="40" height="4" rx="1" fill="#c9a46b"/><rect x="${x+2}" y="${y+4}" width="3" height="${90-y-4}" fill="#8a6c42"/><rect x="${x+35}" y="${y+4}" width="3" height="${90-y-4}" fill="#8a6c42"/>${ecran?`<rect x="${x+12}" y="${y-15}" width="18" height="12" rx="1.5" fill="#1b2240"/><rect x="${x+13.5}" y="${y-13.5}" width="15" height="9" fill="#5fb6ff" opacity=".85"/><rect x="${x+19}" y="${y-3}" width="4" height="3" fill="#1b2240"/>`:''}`;
+const chaise = (x) => `<rect x="${x}" y="66" width="12" height="4" rx="1" fill="#26304f"/><rect x="${x+9}" y="52" width="3" height="16" rx="1" fill="#26304f"/><rect x="${x+5}" y="70" width="2" height="14" fill="#1a2038"/><rect x="${x}" y="84" width="12" height="2" rx="1" fill="#1a2038"/>`;
+function combi(x, alerte){
+  return `<g class="van" id="van"><g transform="translate(${x},44)">
+    <path d="M4 40V14q0-7 7-8l54-3h14q7 0 10 6l7 13q4 3 4 9v9z" fill="#f4f6fb"/>
+    <path d="M10 6h20l-4 12H6z" fill="#2d3a73"/><path d="M34 5h22v13H32z" fill="#2d3a73"/><path d="M60 4h12v14H60z" fill="#2d3a73"/>
+    <rect x="4" y="25" width="96" height="6" fill="#1f4fbf"/>
+    ${Array.from({length:12},(_,i)=>`<rect x="${4+i*8}" y="31" width="4" height="3" fill="${i%2?'#1f4fbf':'#f2c230'}"/><rect x="${8+i*8}" y="31" width="4" height="3" fill="${i%2?'#f2c230':'#1f4fbf'}"/>`).join('')}
+    <rect x="${30}" y="0" width="22" height="4" rx="2" fill="#3b7bff" class="${alerte?'gyro':''}"/>
+    <circle cx="22" cy="42" r="8" fill="#151826"/><circle cx="22" cy="42" r="3.5" fill="#9aa2b8"/>
+    <circle cx="82" cy="42" r="8" fill="#151826"/><circle cx="82" cy="42" r="3.5" fill="#9aa2b8"/>
+    <rect x="0" y="34" width="6" height="4" rx="1" fill="#ffe08a"/></g></g>`;
+}
+const voitureBanalisee = (x) => `<g transform="translate(${x},62)"><path d="M2 22v-8q0-4 4-5l8-6q3-2 7-2h14q4 0 7 3l6 6q5 1 5 5v7z" fill="#2a2f45"/><path d="M15 4h11v7H11z" fill="#6c7cb8" opacity=".6"/><path d="M29 4h7l6 7H29z" fill="#6c7cb8" opacity=".6"/><circle cx="13" cy="23" r="5" fill="#111"/><circle cx="43" cy="23" r="5" fill="#111"/></g>`;
+const velo = (x) => `<g transform="translate(${x},70)" fill="none" stroke="#c9d1ee" stroke-width="1.6"><circle cx="5" cy="14" r="6"/><circle cx="25" cy="14" r="6"/><path d="M5 14l7-10h10l3 10M12 4l5 10h8M10 1h5"/></g>`;
+function mobilier(t, n){
+  const L = [];
+  if (t==='intervention'){
+    L.push(`<rect x="0" y="16" width="5" height="76" fill="#1a1f33"/><rect x="0" y="16" width="5" height="76" fill="#ffd58a" opacity=".15"/>`);
+    if (n>=2) L.push(`<rect x="100" y="22" width="36" height="34" rx="2" fill="#2a3150"/>${[0,1,2].map(i=>`<circle cx="${108+i*10}" cy="32" r="4" fill="#e9edf8"/><rect x="${105+i*10}" y="38" width="6" height="14" rx="2" fill="#1f2a55"/>`).join('')}`);
+    if (n>=3) L.push(voitureBanalisee(84));
+    L.push(combi(n>=3?6:18, S.bulles.some(b=>b.act==='incident')));
+    L.push(`<ellipse cx="60" cy="96" rx="22" ry="2" fill="#000" opacity=".25"/>`);
+  }
+  if (t==='accueil'){
+    L.push(fenetre(10,18,30,30));
+    L.push(`<rect x="62" y="56" width="70" height="34" rx="2" fill="#5b5390"/><rect x="62" y="52" width="70" height="5" rx="1" fill="#c9c1f0"/><rect x="66" y="26" width="62" height="26" fill="#bfe3ff" opacity=".18" stroke="#c9c1f0" stroke-width="1"/>`);
+    L.push(`${[10,24].map(x=>`<rect x="${x}" y="70" width="11" height="4" rx="1" fill="#7b6fb8"/><rect x="${x+1}" y="74" width="2" height="16" fill="#4c447a"/><rect x="${x+8}" y="74" width="2" height="16" fill="#4c447a"/>`).join('')}`);
+    if (n>=2) L.push(plante(48,90));
+    if (n>=3) L.push(`<rect x="44" y="24" width="12" height="20" rx="2" fill="#2a2f50"/><rect x="46" y="27" width="8" height="6" fill="#7df0c1"/>`);
+  }
+  if (t==='proximite'){
+    L.push(`<rect x="12" y="18" width="56" height="36" rx="2" fill="#e9e2c9"/><path d="M14 30h52M14 42h52M28 20v32M48 20v32" stroke="#bfb48f" stroke-width="1"/><path d="M16 46q14-20 26-8t24-14" stroke="#3DD39A" stroke-width="2" fill="none"/><circle cx="42" cy="38" r="2.5" fill="#FF6E6A"/>`);
+    L.push(`<rect x="80" y="74" width="50" height="4" rx="1" fill="#8b6b45"/><rect x="83" y="78" width="3" height="12" fill="#5d4730"/><rect x="124" y="78" width="3" height="12" fill="#5d4730"/>`);
+    if (n>=2) L.push(velo(10));
+    if (n>=3) L.push(velo(40), fenetre(100,20,30,30));
+  }
+  if (t==='roulage'){
+    L.push(`<g transform="translate(96,40)"><rect x="-2" y="0" width="22" height="14" rx="2" fill="#2b2f3d" stroke="#F2D04B" stroke-width="1.5"/><circle cx="9" cy="7" r="4" fill="#0e1018"/><circle cx="9" cy="7" r="1.6" fill="#ff6e6a"/><path d="M9 14l-10 36M9 14v36M9 14l10 36" stroke="#9aa2b8" stroke-width="1.6"/></g>`);
+    L.push(`${[16,30].map(x=>`<path d="M${x} 90l5-16 5 16z" fill="#ff8a3d"/><rect x="${x+1.5}" y="80" width="7" height="2" fill="#fff"/>`).join('')}`);
+    if (n>=2) L.push(`<rect x="44" y="30" width="34" height="22" rx="2" fill="#1b2240"/><path d="M47 47l7-8 6 5 7-10 8 6" stroke="#F2D04B" stroke-width="1.5" fill="none"/>`);
+    if (n>=3) L.push(`<g transform="translate(46,66)"><circle cx="6" cy="18" r="6" fill="#111"/><circle cx="36" cy="18" r="6" fill="#111"/><path d="M6 18l10-10h12l8 10M14 8l-4-6h6" stroke="#e9edf8" stroke-width="3" fill="none"/><rect x="16" y="4" width="12" height="6" rx="2" fill="#1f4fbf"/></g>`);
+  }
+  if (t==='recherche'){
+    L.push(`<rect x="70" y="16" width="56" height="34" rx="2" fill="#b98b5c"/>${[[76,22],[96,30],[112,20],[84,38]].map(([x,y])=>`<rect x="${x}" y="${y}" width="10" height="8" fill="#f4efe3"/>`).join('')}<path d="M81 26L101 34L117 24M101 34L89 42" stroke="#d6453b" stroke-width="1" fill="none"/>`);
+    L.push(bureau(14,62,true), chaise(36));
+    if (n>=2) L.push(bureau(84,62,true));
+    if (n>=3) L.push(`<rect x="14" y="18" width="44" height="26" rx="2" fill="#141a33"/><path d="M18 38l8-10 7 6 9-12 10 8" stroke="#63B0FF" stroke-width="1.5" fill="none"/><rect x="128" y="52" width="12" height="38" fill="#3a4466"/><path d="M130 62h8M130 72h8M130 82h8" stroke="#22283f"/>`);
+  }
+  if (t==='chef'){
+    L.push(fenetre(84,18,44,32));
+    L.push(`<rect x="10" y="22" width="30" height="68" fill="#4a3826"/>${[30,44,58,72].map(y=>`<rect x="12" y="${y}" width="26" height="2" fill="#2e2318"/>`).join('')}${[[13,24,'#d6453b'],[19,24,'#3DD39A'],[24,38,'#63B0FF'],[14,52,'#F2D04B']].map(([x,y,c])=>`<rect x="${x}" y="${y}" width="4" height="6" fill="${c}"/>`).join('')}`);
+    L.push(`<rect x="56" y="62" width="58" height="5" rx="1" fill="#8a5a33"/><rect x="58" y="67" width="54" height="23" fill="#6b4426"/><rect x="72" y="54" width="10" height="8" fill="#ffe08a" opacity=".9"/><rect x="76" y="50" width="2" height="5" fill="#333"/>`);
+    L.push(`<g transform="translate(118,22)"><rect x="0" y="0" width="2" height="34" fill="#999"/><rect x="2" y="2" width="6" height="12" fill="#111"/><rect x="8" y="2" width="6" height="12" fill="#f2c230"/><rect x="14" y="2" width="6" height="12" fill="#e5383b"/></g>`);
+    if (n>=2) L.push(plante(48,90));
+    if (n>=3) L.push(`${[60,74,88].map((x,i)=>`<path d="M${x} 44h8l-1 5h-6z" fill="#f2c230"/><rect x="${x+3}" y="48" width="2" height="3" fill="#c9a030"/>`).join('')}<rect x="56" y="51" width="44" height="2" fill="#6b4426"/>`);
+  }
+  if (t==='repos'){
+    L.push(`${[0,1,2,3].map(i=>`<rect x="${8+i*14}" y="34" width="13" height="56" rx="1" fill="${['#4d5a8a','#55639a','#4d5a8a','#55639a'][i]}"/><rect x="${18+i*14}" y="56" width="1.5" height="6" fill="#c9d1ee"/>`).join('')}`);
+    L.push(`<rect x="72" y="76" width="50" height="4" rx="1" fill="#8b6b45"/>`);
+    L.push(`<rect x="124" y="46" width="14" height="44" rx="2" fill="#2a2f45"/><rect x="127" y="50" width="8" height="8" fill="#7df0c1"/><rect x="128" y="74" width="6" height="6" fill="#f4efe3"/>`);
+    if (n>=2) L.push(`<rect x="70" y="58" width="48" height="10" rx="4" fill="#7a5c9a"/><rect x="70" y="66" width="48" height="12" rx="4" fill="#6a4c8a"/>`);
+    if (n>=3) L.push(`<g transform="translate(66,24)"><rect width="46" height="22" rx="2" fill="#3fae7a"/><rect x="2" y="2" width="42" height="18" fill="none" stroke="#e9f6ef" stroke-width="1"/>${[8,16,24,32,40].map(x=>`<rect x="${x}" y="0" width="1.2" height="22" fill="#c9d1ee"/>`).join('')}</g>`);
+  }
+  if (t==='cachots'){
+    L.push(`<rect x="0" y="14" width="142" height="78" fill="#15161d"/><rect x="20" y="64" width="40" height="5" fill="#4a4c5a"/><g transform="translate(36,44)"><circle cx="6" cy="6" r="5" fill="#c99a78"/><rect x="0" y="11" width="12" height="12" rx="3" fill="#6d4f3a"/><rect x="1" y="22" width="10" height="4" fill="#33343f"/></g>`);
+    L.push(Array.from({length:11},(_,i)=>`<rect x="${6+i*13}" y="14" width="3" height="78" fill="#8f96ad"/>`).join(''), `<rect x="0" y="14" width="142" height="4" fill="#8f96ad"/><rect x="0" y="88" width="142" height="4" fill="#8f96ad"/>`);
+  }
+  if (t==='tir'){
+    L.push(`${[0,1,2].map(i=>`<rect x="${10+i*44}" y="20" width="40" height="70" fill="${i%2?'#2f3040':'#34354a'}"/><g transform="translate(${30+i*44},40)"><circle r="10" fill="#f4efe3"/><circle r="6.5" fill="#d6453b"/><circle r="3" fill="#f4efe3"/><circle r="1.2" fill="#d6453b"/></g>`).join('')}<rect x="0" y="80" width="142" height="6" fill="#55576b"/>`);
+  }
+  if (t==='drone'){
+    L.push(`<rect x="10" y="20" width="56" height="30" rx="2" fill="#0f1726"/><path d="M14 42l10-12 8 7 10-14 10 9 10-4" stroke="#7df0c1" stroke-width="1.4" fill="none"/>`);
+    L.push(`<rect x="76" y="68" width="56" height="5" rx="1" fill="#566b8a"/><g transform="translate(104,58)"><rect x="-9" y="-3" width="18" height="6" rx="2" fill="#e9edf8"/><path d="M-9 0h-8M9 0h8" stroke="#e9edf8" stroke-width="2"/><ellipse cx="-17" cy="-3" rx="7" ry="1.5" fill="#9aa2b8"/><ellipse cx="17" cy="-3" rx="7" ry="1.5" fill="#9aa2b8"/></g>`);
+  }
+  if (t==='chantier'){
+    L.push(`<rect x="0" y="14" width="142" height="78" fill="#2b2c3c"/><path d="M14 90V24M64 90V24M114 90V24M14 40h100M14 64h100M14 40l50 24M64 40l50 24" stroke="#c49a4a" stroke-width="2.5" fill="none"/>${[0,1,2,3,4,5,6,7,8].map(i=>`<rect x="${i*16}" y="84" width="8" height="6" fill="${i%2?'#111':'#f2c230'}" transform="skewX(-20)"/>`).join('')}<circle cx="96" cy="30" r="4" fill="#ffe08a"/>`);
+  }
+  return L.join('');
+}
+function salleSvg(t, n){
+  const s = SERVICES[t];
+  return `<svg class="fond" viewBox="0 0 ${RW} ${RH}" aria-hidden="true">
+    <defs><linearGradient id="cone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe7b0" stop-opacity=".22"/><stop offset="1" stop-color="#ffe7b0" stop-opacity="0"/></linearGradient>
+    <linearGradient id="vitre" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a4f9a" stop-opacity=".5"/><stop offset="1" stop-color="#0b0f24" stop-opacity="0"/></linearGradient>
+    <linearGradient id="m-${t}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.mur}"/><stop offset="1" stop-color="${s.mur}" stop-opacity=".8"/></linearGradient></defs>
+    <rect width="${RW}" height="${RH}" fill="url(#m-${t})"/>
+    <rect y="0" width="${RW}" height="6" fill="#1a1e33"/>
+    <rect y="90" width="${RW}" height="22" fill="${s.sol}"/><rect y="90" width="${RW}" height="2" fill="#000" opacity=".25"/>
+    ${mobilier(t, n)}
+    ${t!=='cachots' && t!=='chantier' ? lampe(RW/2) : ''}
+  </svg>`;
+}
+
+/* ---------- Plan du bâtiment ---------- */
+let G = {}; // géométrie courante
+function plan(){
+  const P = PLANS[S.niv], rows = P.etages.length;
+  const H = TOIT + rows*(RH+DALLE) + SOL + (RH+DALLE) + 10;
+  const salles = [];
+  P.etages.forEach((r,i) => r.forEach((t,j) => salles.push({ t, x: j?XD:XG, y: TOIT + i*(RH+DALLE), etage:i })));
+  P.cave.forEach((t,j) => salles.push({ t, x: j?XD:XG, y: TOIT + rows*(RH+DALLE) + SOL, etage:rows }));
+  G = { H, rows, salles, rdc: TOIT + rows*(RH+DALLE) - DALLE };
+}
+const salleDe = (t) => G.salles.find(s=>s.t===t);
+const solY = (t) => { const s = salleDe(t); return s.y + 100; };
+
+/* ---------- Dessin ---------- */
+const bat = document.getElementById('bat'), scene = document.getElementById('scene');
+function decor(){
+  const rows = G.rows, top = TOIT - 12, sol = G.rdc;
+  const etoiles = Array.from({length:26},(_,i)=>`<span class="etoile" style="left:${(i*37)%360}px;top:${(i*23)%60+4}px;animation-delay:${(i%7)*.4}s;opacity:${.4+(i%3)*.2}"></span>`).join('');
+  const skyline = `<svg style="position:absolute;left:0;top:0" width="360" height="${sol}" viewBox="0 0 360 ${sol}" aria-hidden="true">
+    <defs><linearGradient id="ciel" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b0f24"/><stop offset="1" stop-color="#2a2160"/></linearGradient></defs>
+    <rect width="360" height="${sol}" fill="url(#ciel)"/><circle cx="312" cy="30" r="13" fill="#f6efd9"/><circle cx="306" cy="26" r="13" fill="#2a2a5e" opacity=".35"/>
+    ${[[0,90,40],[38,60,30],[300,110,60],[330,70,30]].map(([x,h,w])=>`<rect x="${x}" y="${sol-h}" width="${w}" height="${h}" fill="#171d45"/>`).join('')}
+  </svg>`;
+  const facade = `<svg style="position:absolute;left:0;top:0" width="360" height="${G.H}" viewBox="0 0 360 ${G.H}" aria-hidden="true">
+    <rect x="${PAD-8}" y="${top}" width="${W-2*PAD+16}" height="${sol-top+DALLE}" rx="4" fill="#232a4d"/>
+    <rect x="${PAD-12}" y="${top-6}" width="${W-2*PAD+24}" height="10" rx="2" fill="#39437a"/>
+    <rect x="${W/2-46}" y="${top-34}" width="92" height="24" rx="5" fill="#122a6b" stroke="#5b86ff" stroke-width="2"/>
+    <text x="${W/2}" y="${top-17}" text-anchor="middle" font-family="Bricolage Grotesque,Arial Narrow,sans-serif" font-weight="800" font-size="14" letter-spacing="4" fill="#d6e4ff">POLICE</text>
+    <rect x="${W/2-50}" y="${top-38}" width="100" height="32" rx="7" fill="#5b86ff" opacity=".12"/>
+    ${S.niv>=3?`<rect x="${PAD+12}" y="${top-40}" width="3" height="34" fill="#8f9bc8"/><circle cx="${PAD+13.5}" cy="${top-42}" r="3" fill="#ff6e6a" class="gyro"/><rect x="${W-PAD-60}" y="${top-22}" width="40" height="16" rx="2" fill="#39437a"/><path d="M${W-PAD-56} ${top-14}h32" stroke="#7df0c1" stroke-width="2"/>`:''}
+    <rect x="0" y="${sol+DALLE}" width="360" height="${G.H-sol}" fill="#1a1528"/>
+    <rect x="0" y="${sol}" width="360" height="${DALLE+4}" fill="#3a3550"/>
+    <rect x="${PAD-8}" y="${sol+DALLE+4}" width="${W-2*PAD+16}" height="${RH+SOL-8}" rx="4" fill="#211c32"/>
+    <rect x="${XP-PUITS/2}" y="${top+6}" width="${PUITS}" height="${G.H-top-16}" fill="#171c36"/>
+    <path d="M${XP-6} ${top+6}V${G.H-10}M${XP+6} ${top+6}V${G.H-10}" stroke="#2c3462" stroke-width="1.2"/>
+    ${G.salles.map(s=>`<rect x="${XP-14}" y="${s.y+62}" width="28" height="44" rx="2" fill="#2c3462"/><rect x="${XP-1}" y="${s.y+62}" width="2" height="44" fill="#171c36"/>`).join('')}
+    ${[50,180,310].map(x=>`<rect x="${x}" y="${sol-46}" width="3" height="46" fill="#4a5280"/><circle cx="${x+1.5}" cy="${sol-48}" r="5" fill="#ffe7b0"/><circle cx="${x+1.5}" cy="${sol-48}" r="16" fill="#ffe7b0" opacity=".08"/>`).filter((_,i)=>i!==1).join('')}
+  </svg>`;
+  return etoiles + skyline + facade;
+}
+function dessiner(){
+  plan();
+  const k = Math.min(470, scene.clientWidth || 390) / W;
+  bat.style.transform = `scale(${k})`; bat.style.height = G.H+'px'; scene.style.height = (G.H*k)+'px';
+  bat.innerHTML = `<div class="ciel">${decor()}</div>` + G.salles.map(s => {
+    const sv = SERVICES[s.t];
+    return `<div class="salle" data-t="${s.t}" style="left:${s.x}px;top:${s.y}px;width:${RW}px;height:${RH}px">${salleSvg(s.t, S.niv)}
+      <span class="eteint"></span><span class="led"></span>
+      <span class="etiq"><i style="background:${sv.coul}"></i>${sv.nom}${sv.besoin?` <span class="c" data-c="${s.t}"></span>`:''}</span></div>`;
+  }).join('') + `<div class="nuitvoile" id="nuitvoile"></div>`;
+  for (const a of S.agents) { a.el = creerAgent(a); bat.appendChild(a.el); }
+  if (S.chef) { S.chef.el = creerAgent(S.chef); bat.appendChild(S.chef.el); }
+  bulles(); etat();
+}
+
+/* ---------- Agents ---------- */
+const AG_SVG = (c, peau, chef) => `<div class="mir"><svg viewBox="0 0 20 34" aria-hidden="true"><g class="corps">
+  <ellipse cx="10" cy="33.4" rx="6" ry="1.3" fill="#000" opacity=".35"/>
+  <rect class="jg" x="6.4" y="21" width="3.4" height="11" rx="1.5" fill="#182044"/>
+  <rect class="jd" x="10.2" y="21" width="3.4" height="11" rx="1.5" fill="#1d2650"/>
+  <rect class="bg" x="4" y="12.6" width="2.8" height="9" rx="1.4" fill="#23305f"/>
+  <rect x="5" y="11.5" width="10" height="11" rx="3.4" fill="#2a3a73"/>
+  <rect x="5" y="19.6" width="10" height="1.8" fill="#0d1330"/>
+  <rect x="11.4" y="13.5" width="2.6" height="2" rx=".6" fill="#d9e1ff" opacity=".85"/>
+  <rect x="5" y="14.5" width="10" height="1.2" fill="${c}" opacity=".95"/>
+  <g class="bd"><rect x="13.2" y="12.6" width="2.8" height="9" rx="1.4" fill="#23305f"/><rect class="tasse" x="12.6" y="20.6" width="4" height="3.4" rx=".8" fill="#f4efe3"/></g>
+  <rect class="radio" x="4" y="11" width="2.6" height="3.6" rx=".6" fill="#111"/>
+  <circle cx="10" cy="7.6" r="4.3" fill="${peau}"/>
+  <path d="M5.2 6.2h9.6l-1-3.6q-3.8-2-7.6 0z" fill="${chef?'#14183a':'#1a2350'}"/>
+  <rect x="4.6" y="5.6" width="10.8" height="1.6" rx=".6" fill="${chef?'#FFB23F':'#0c1130'}"/>
+  <circle cx="11.8" cy="8" r=".55" fill="#1a1a1a"/>
+</g></svg></div>`;
+function creerAgent(a){
+  const el = document.createElement('div');
+  el.className = 'ag'; el.dataset.id = a.id; if (a.chef) el.style.cursor='default';
+  el.innerHTML = AG_SVG(SERVICES[a.salle].coul, a.peau, a.chef);
+  return el;
+}
+function bornes(t){ const s = salleDe(t); return [s.x+16, s.x+RW-16]; }
+function initAgents(){
+  let id = 0;
+  for (const [t,n] of Object.entries(DEPART)) for (let i=0;i<n;i++) {
+    const [a,b] = [PAD+16, PAD+RW-16];
+    S.agents.push({ id:id++, salle:t, x:0, y:0, face:1, mode:'pause', minuteur:Math.random()*2, chemin:[], peau:PEAUX[id%PEAUX.length] });
+  }
+  S.chef = { id:'chef', chef:true, salle:'chef', x:0, y:0, face:-1, mode:'pause', minuteur:1, chemin:[], peau:'#f0c8a0' };
+}
+function placer(a){ plan(); const [l,r] = bornes(a.salle); a.x = l + Math.random()*(r-l); a.y = solY(a.salle); a.chemin = []; a.mode='pause'; a.minuteur = Math.random()*2; }
+function cheminVers(a, t){
+  const [l,r] = bornes(t), tx = l + Math.random()*(r-l), ty = solY(t), C = [];
+  if (Math.abs(a.y - ty) > 1) {
+    if (Math.abs(a.x - XP) > 1) C.push({ x:XP, y:a.y, m:'marche' });
+    C.push({ x:XP, y:ty, m:'ascenseur' });
+  }
+  C.push({ x:tx, y:ty, m:'marche' });
+  a.chemin = C; a.mode = 'route';
+}
+const VIT = 30, VIT_ASC = 90;
+function pas(a, dt){
+  if (a.mode === 'pause' || a.mode === 'cafe' || a.mode === 'radio') {
+    a.minuteur -= dt;
+    if (a.minuteur <= 0) {
+      const r = Math.random();
+      if (r < .6) { const [l,rr] = bornes(a.salle); a.chemin = [{ x:l+Math.random()*(rr-l), y:a.y, m:'marche' }]; a.mode='route'; }
+      else if (r < .78 && !a.chef) { a.mode='cafe'; a.minuteur = 3 + Math.random()*2; }
+      else if (r < .9 && !a.chef) { a.mode='radio'; a.minuteur = 2.5; }
+      else { a.mode='pause'; a.minuteur = 1 + Math.random()*2.5; }
+    }
+    return;
+  }
+  const p = a.chemin[0];
+  if (!p) { a.mode='pause'; a.minuteur = 1 + Math.random()*3; return; }
+  if (p.m === 'ascenseur') {
+    const d = p.y - a.y, s = Math.sign(d)*Math.min(Math.abs(d), VIT_ASC*dt); a.y += s; a.enAsc = true;
+    if (Math.abs(p.y - a.y) < .5) { a.y = p.y; a.chemin.shift(); a.enAsc = false; }
+  } else {
+    const d = p.x - a.x; if (Math.abs(d) > .5) a.face = Math.sign(d);
+    a.x += Math.sign(d)*Math.min(Math.abs(d), VIT*dt);
+    if (Math.abs(p.x - a.x) < .5) { a.x = p.x; a.chemin.shift(); }
+  }
+}
+function rendre(a){
+  if (!a.el || a.el.classList.contains('tient')) return;
+  a.el.style.transform = `translate(${a.x-10}px,${a.y-34}px)`;
+  a.el.querySelector('.mir').style.transform = a.face < 0 ? 'scaleX(-1)' : '';
+  const marche = a.mode==='route' && a.chemin[0] && a.chemin[0].m==='marche';
+  a.el.classList.toggle('marche', marche);
+  a.el.classList.toggle('cafe', a.mode==='cafe');
+  a.el.classList.toggle('radio', a.mode==='radio');
+  if (a.enAsc) { if (!a.cab) { a.cab = document.createElement('div'); a.cab.className='cabine'; bat.appendChild(a.cab); } a.cab.style.transform = `translate(${a.x-15}px,${a.y-38}px)`; }
+  else if (a.cab) { a.cab.remove(); a.cab = null; }
+}
+let t0 = performance.now();
+function boucle(t){
+  const dt = Math.min(.05, (t - t0)/1000); t0 = t;
+  for (const a of S.agents) if (!a.tenu) { pas(a, dt); rendre(a); }
+  if (S.chef) { pas(S.chef, dt); rendre(S.chef); }
+  requestAnimationFrame(boucle);
+}
+
+/* ---------- État, jauges ---------- */
+const fmt = (n) => n.toLocaleString('fr-BE').replace(/ /g,' ');
+const nb = (t) => S.agents.filter(a=>a.salle===t).length;
+function ipz(){ let s=22; for (const [t,v] of Object.entries(SERVICES)) if (v.besoin) s += 7*Math.min(1,nb(t)/v.besoin)*(t==='intervention'?1.4:1); return (s*(0.8+S.moral/300)).toFixed(1).replace('.',','); }
+function hud(){ document.getElementById('v-budget').textContent = fmt(S.budget)+' €'; document.getElementById('v-moral').textContent = S.moral; document.getElementById('v-ipz').textContent = ipz(); }
+function pop(k){ const el=document.getElementById('p-'+k); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+function etat(){
+  for (const s of G.salles) {
+    const el = bat.querySelector(`.salle[data-t="${s.t}"]`), v = SERVICES[s.t], n = nb(s.t);
+    el.classList.toggle('vit', n>0 || ['chef','cachots','tir','drone','chantier'].includes(s.t));
+    if (v.besoin) { el.classList.toggle('ok', n>=v.besoin); el.classList.toggle('manque', n<v.besoin); el.querySelector('.c').textContent = `${n}/${v.besoin}`; }
+  }
+  hud();
+}
+
+/* ---------- Glisser ---------- */
+let tenu = null;
+bat.addEventListener('pointerdown', e => {
+  const el = e.target.closest('.ag'); if (!el || el.dataset.id==='chef') return; e.preventDefault();
+  const a = S.agents.find(x=>String(x.id)===el.dataset.id); a.tenu = true;
+  if (a.cab) { a.cab.remove(); a.cab=null; a.enAsc=false; }
+  const k = bat.getBoundingClientRect().width / W;
+  el.classList.add('tient'); el.classList.remove('marche','cafe','radio'); el.style.transform = `scale(${k*1.4})`; el.style.transformOrigin='0 0';
+  document.body.appendChild(el); tenu = { a, el, k }; bouge(e);
+});
+function bouge(e){
+  if (!tenu) return;
+  tenu.el.style.left = (e.clientX - 14*tenu.k)+'px'; tenu.el.style.top = (e.clientY - 40*tenu.k)+'px';
+  bat.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
+  const t = document.elementFromPoint(e.clientX, e.clientY), s = t && t.closest('.salle');
+  tenu.cible = s && PLACABLES.includes(s.dataset.t) ? s.dataset.t : null;
+  if (tenu.cible) s.classList.add('drop');
+}
+window.addEventListener('pointermove', bouge);
+window.addEventListener('pointerup', e => {
+  if (!tenu) return;
+  const { a, el, cible } = tenu; tenu = null;
+  bat.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
+  el.classList.remove('tient'); el.style.left = el.style.top = ''; el.style.transformOrigin=''; bat.appendChild(el); a.tenu = false;
+  if (cible && cible !== a.salle) {
+    const ancienne = a.salle; a.salle = cible;
+    el.innerHTML = AG_SVG(SERVICES[cible].coul, a.peau, false);
+    cheminVers(a, cible); pop('ipz');
+    if (ancienne === 'repos' || cible === 'repos') {}
+  }
+  etat();
+});
+
+/* ---------- Bulles et nuit ---------- */
+const BULLES = [
+  { id:'b1', t:'roulage', fond:'#F2D04B', ico:'💶', n:3, x:.3, act:'amendes' },
+  { id:'b2', t:'accueil', fond:'#F4EFE3', ico:'✉️', x:.45, act:'courrier' },
+  { id:'b3', t:'intervention', fond:'#FF6E6A', ico:'🚨', x:.82, act:'incident' },
+  { id:'b4', t:'cachots', fond:'#B79BFF', ico:'💬', x:.6, act:'gav' },
+  { id:'b5', t:'recherche', fond:'#63B0FF', ico:'📁', x:.25, act:'dossier' },
+];
+function bulles(){
+  bat.querySelectorAll('.bulle').forEach(b=>b.remove());
+  for (const b of S.bulles) {
+    const s = salleDe(b.t); if (!s) continue;
+    const el = document.createElement('button'); el.type='button'; el.className='bulle'; el.dataset.b=b.id;
+    el.style.background = b.fond; el.style.left = (s.x + RW*b.x)+'px'; el.style.top = (s.y + 22)+'px';
+    el.innerHTML = b.ico + (b.n?`<span class="pastille">${b.n}</span>`:'');
+    el.setAttribute('aria-label', {amendes:'Récolter les amendes',courrier:'Ouvrir le courrier',incident:'Incident',gav:'Le gardé à vue veut parler',dossier:'Dossier bouclé'}[b.act]);
+    bat.appendChild(el);
+  }
+}
+function volVers(depuis, cible, ico, n){
+  const r = depuis.getBoundingClientRect(), t = document.getElementById(cible).getBoundingClientRect();
+  for (let i=0;i<n;i++){ const s=document.createElement('span'); s.className='vol'; s.textContent=ico; s.style.left=(r.left+8)+'px'; s.style.top=(r.top+8)+'px'; document.body.appendChild(s);
+    setTimeout(()=>{ s.style.transform=`translate(${t.left-r.left+i*4}px,${t.top-r.top}px) scale(.6)`; s.style.opacity='.2'; },30+i*90); setTimeout(()=>s.remove(),900+i*90); }
+}
+function toast(t){ document.querySelectorAll('.toast').forEach(x=>x.remove()); const d=document.createElement('div'); d.className='toast'; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2600); }
+function retirer(id){ S.bulles = S.bulles.filter(b=>b.id!==id); bulles(); if (id==='b3') { const g = bat.querySelector('#van .gyro'); if (g) g.classList.remove('gyro'); } }
+function courrier(){
+  const v = document.createElement('div'); v.className='voile';
+  v.innerHTML = `<div class="choix" role="dialog" aria-label="Courrier"><div class="qui"><span class="av">🛍️</span><span class="q">La braderie de samedi : quatre agents en tenue ?</span></div>
+    <div class="opts"><button type="button" class="non" data-r="non">Une patrouille<small>Satisfaction −</small></button><button type="button" class="oui" data-r="oui">Quatre agents<small>Satisfaction + · Moral −</small></button></div></div>`;
+  v.addEventListener('click', e => { const b=e.target.closest('[data-r]'); if (!b && e.target!==v) return; v.remove(); if (!b) return;
+    if (b.dataset.r==='oui'){ S.moral-=2; pop('moral'); toast('Signé · la présidente des commerçants te remercie'); } else toast('Signé · une patrouille passera samedi'); retirer('b2'); hud(); });
+  document.body.appendChild(v);
+}
+bat.addEventListener('click', e => {
+  const el = e.target.closest('.bulle'); if (!el) return; const b = S.bulles.find(x=>x.id===el.dataset.b);
+  if (b.act==='amendes'){ volVers(el,'p-budget','💶',6); setTimeout(()=>{ S.budget+=1900; hud(); pop('budget'); },700); retirer(b.id); }
+  if (b.act==='dossier'){ volVers(el,'p-budget','💶',3); setTimeout(()=>{ S.budget+=800; S.moral+=1; hud(); pop('budget'); pop('moral'); },700); toast('Dossier bouclé par la Recherche'); retirer(b.id); }
+  if (b.act==='courrier') courrier();
+  if (b.act==='incident'){ toast('Colis suspect → le mini-jeu s’ouvre ici'); retirer(b.id); }
+  if (b.act==='gav'){ volVers(el,'tab-enq','📄',1); setTimeout(()=>{ const t=document.getElementById('tab-enq'); if(!t.querySelector('.badge')) t.insertAdjacentHTML('beforeend','<span class="badge">1</span>'); },700); toast('Le gardé à vue a parlé : nouvelle pièce d’enquête'); retirer(b.id); }
+});
+let nuitEnCours = false;
+document.getElementById('nuit').addEventListener('click', () => {
+  if (nuitEnCours) return; nuitEnCours = true;
+  S.bulles = []; bulles();
+  const voile = document.getElementById('nuitvoile'); voile.classList.add('on');
+  const van = bat.querySelector('#van'); if (van) { van.querySelector('rect.gyro, rect[class=""]'); van.querySelectorAll('rect[rx="2"][height="4"]').forEach(r=>r.classList.add('gyro')); van.classList.add('sort'); }
+  toast('20:00 · la patrouille de nuit sort');
+  setTimeout(() => { if (van) van.classList.remove('sort'); }, 2600);
+  setTimeout(() => {
+    if (van) van.querySelectorAll('.gyro').forEach(r=>r.classList.remove('gyro'));
+    voile.classList.remove('on');
+    S.bulles = BULLES.filter(b => salleDe(b.t)).map(b=>({...b})); bulles();
+    const g = bat.querySelector('#van rect[rx="2"][height="4"]'); if (g) g.classList.add('gyro');
+    toast(`Matin · ${S.bulles.length} résultats de la nuit à récolter`); nuitEnCours = false;
+  }, 4600);
+});
+
+/* ---------- Niveaux ---------- */
+document.querySelectorAll('[data-niv]').forEach(b => b.addEventListener('click', () => {
+  S.niv = +b.dataset.niv;
+  document.querySelectorAll('[data-niv]').forEach(x=>x.setAttribute('aria-pressed', x===b));
+  if (S.niv===1) S.bulles = S.bulles.filter(x=>x.t!=='cachots');
+  dessiner(); for (const a of S.agents) placer(a); placer(S.chef);
+  toast(['', 'Niveau 1 · commissariat de départ', 'Niveau 2 · cachots ouverts, services équipés', 'Niveau 3 · nouvel étage : stand de tir et cellule drone'][S.niv]);
+}));
+
+initAgents();
+S.bulles = BULLES.filter(b=>b.t!=='cachots').map(b=>({...b}));
+dessiner(); for (const a of S.agents) placer(a); placer(S.chef);
+window.addEventListener('resize', () => { const k = Math.min(470, scene.clientWidth)/W; bat.style.transform=`scale(${k})`; scene.style.height=(G.H*k)+'px'; });
+requestAnimationFrame(boucle);
+</script>
+</body>
+</html>
