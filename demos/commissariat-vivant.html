@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Commissariat vivant (démo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Instrument+Sans:wght@400..700&display=swap">
+<style>
+/* Démo autonome : le commissariat en coupe, façon Fallout Shelter. Thème sombre unique du jeu. */
+:root{
+  color-scheme:dark;
+  --bg:#0C1124; --deep:#080C1B; --s1:#141B33; --s2:#1C2442; --s3:#243050; --line:#29345A; --hair:rgba(190,205,255,.09);
+  --text:#EDF0FA; --muted:#96A0BF; --faint:#67719A;
+  --amber:#FFB23F; --amber-ink:#241400; --green:#3DD39A; --red:#FF6E6A; --blue:#63B0FF; --violet:#B79BFF; --yellow:#F2D04B;
+  --wall:#2a3350; --wall2:#222a44; --floor:#3a3f55; --brick:#5b3a35;
+  --display:'Bricolage Grotesque','Arial Narrow',system-ui,sans-serif; --body:'Instrument Sans',system-ui,sans-serif;
+}
+*{box-sizing:border-box} [hidden]{display:none!important}
+html,body{background:var(--bg);color:var(--text);margin:0}
+body{font-family:var(--body);font-variant-numeric:tabular-nums;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+
+.demo{background:rgba(8,12,27,.95);border-bottom:1px solid var(--hair);padding:7px 16px;font-size:11.5px;color:#E9C894;font-weight:700;text-align:center}
+.app{max-width:440px;margin:0 auto;padding:0 12px 90px;display:flex;flex-direction:column;gap:10px}
+
+/* HUD */
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px 4px;background:linear-gradient(var(--bg) 70%,transparent)}
+.chef{width:42px;height:42px;border-radius:12px;overflow:hidden;border:2px solid var(--amber)}
+.chef img{width:100%;height:100%;object-fit:cover;display:block}
+.res{display:flex;gap:6px;flex-wrap:wrap}
+.pill{display:flex;align-items:center;gap:5px;background:var(--s1);border:1px solid var(--hair);border-radius:99px;padding:4px 9px 4px 6px;font-size:13px;font-weight:700}
+.pill i{font-style:normal;font-size:14px}
+.pill.pop{animation:pop .4s}
+@keyframes pop{40%{transform:scale(1.18);background:var(--s3)}}
+.tour{text-align:right;font-size:11px;color:var(--muted);line-height:1.2}
+.tour b{display:block;font:800 17px var(--display);color:var(--amber)}
+
+/* Immeuble en coupe */
+.ciel{height:70px;border-radius:18px 18px 0 0;background:linear-gradient(#0b1430,#1d2a55);position:relative;overflow:hidden}
+.ciel::before{content:"";position:absolute;inset:0;background-image:radial-gradient(1px 1px at 20% 30%,#fff,transparent),radial-gradient(1px 1px at 70% 20%,#fff,transparent),radial-gradient(1px 1px at 45% 60%,#cfd8ff,transparent),radial-gradient(1px 1px at 88% 55%,#fff,transparent);opacity:.7}
+.enseigne{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);font:800 15px var(--display);letter-spacing:.2em;color:#cfe3ff;background:#18306b;border:2px solid #4b6fc4;padding:3px 12px;border-radius:6px;box-shadow:0 0 18px rgba(99,176,255,.45)}
+.immeuble{background:var(--brick);padding:6px;border-radius:0 0 8px 8px;display:grid;grid-template-columns:1fr 1fr;gap:6px;position:relative}
+.sol{height:16px;background:repeating-linear-gradient(90deg,#2b2f3d 0 30px,#33384a 30px 32px);border-radius:0 0 12px 12px}
+.piece{position:relative;height:122px;border-radius:6px;overflow:visible;background:linear-gradient(var(--wall),var(--wall2) 78%,var(--floor) 78%);border:2px solid transparent;transition:border-color .2s,box-shadow .2s}
+.piece.large{grid-column:1/-1}
+.piece.cave{background:linear-gradient(#24262f,#1b1d25 78%,#30323c 78%)}
+.piece.ok{border-color:rgba(61,211,154,.75);box-shadow:inset 0 0 18px rgba(61,211,154,.18)}
+.piece.manque{border-color:rgba(255,178,63,.55)}
+.piece.drop{border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,178,63,.35)}
+.nom{position:absolute;left:6px;top:5px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:rgba(237,240,250,.75);display:flex;gap:5px;align-items:center}
+.nom .c{font-size:11px;letter-spacing:0;padding:1px 6px;border-radius:99px;background:rgba(0,0,0,.35)}
+.piece.ok .nom .c{background:var(--green);color:#062417}
+.piece.manque .nom .c{background:var(--amber);color:var(--amber-ink)}
+.deco{position:absolute;pointer-events:none}
+.lampe{position:absolute;top:0;width:40px;height:60px;left:50%;transform:translateX(-50%);background:radial-gradient(ellipse at 50% 0,rgba(255,236,180,.22),transparent 70%);pointer-events:none}
+
+/* Agents */
+.agent{position:absolute;bottom:20%;width:22px;height:34px;margin-left:-11px;touch-action:none;cursor:grab;transition:left 2.4s linear;z-index:2}
+.agent svg{width:100%;height:100%;display:block;overflow:visible}
+.agent.marche svg{animation:pas .45s steps(2) infinite}
+@keyframes pas{50%{transform:translateY(-1.5px)}}
+.agent.tient{pointer-events:none;transition:none;position:fixed;z-index:60;bottom:auto;transform:scale(1.35);filter:drop-shadow(0 6px 6px rgba(0,0,0,.5))}
+.agent.dort svg{opacity:.85}
+
+/* Bulles */
+.bulle{position:absolute;z-index:4;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-size:20px;box-shadow:0 4px 10px rgba(0,0,0,.45);animation:flotte 1.6s ease-in-out infinite}
+.bulle::after{content:"";position:absolute;bottom:-6px;left:50%;margin-left:-6px;border:6px solid transparent;border-top-color:inherit;border-bottom:0}
+.bulle.or{background:var(--yellow);border-color:var(--yellow)}
+.bulle.rouge{background:var(--red);border-color:var(--red)}
+.bulle.bleu{background:var(--blue);border-color:var(--blue)}
+.bulle.violet{background:var(--violet);border-color:var(--violet)}
+.bulle.blanc{background:#F4EFE3;border-color:#F4EFE3}
+@keyframes flotte{50%{transform:translateY(-5px)}}
+.pastille{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:99px;background:#fff;color:#111;font:800 11px var(--body);display:grid;place-items:center;padding:0 4px}
+
+/* Pièces qui volent vers le HUD */
+.vol{position:fixed;z-index:70;font-size:18px;pointer-events:none;transition:transform .7s cubic-bezier(.5,-0.3,.7,1),opacity .7s}
+
+/* Carte de décision (pas un roman : une phrase, deux choix) */
+.voile{position:fixed;inset:0;z-index:80;background:rgba(5,8,18,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px}
+.choix{width:100%;max-width:420px;background:#F4EFE3;color:#1D1A15;border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px;animation:monte .25s ease-out}
+@keyframes monte{from{transform:translateY(40px);opacity:0}}
+.choix .qui{display:flex;gap:10px;align-items:center}
+.choix .av{width:46px;height:46px;border-radius:50%;background:#2a3350;display:grid;place-items:center;font-size:24px}
+.choix .q{font:800 18px/1.2 var(--display)}
+.choix .fx{display:flex;gap:6px;flex-wrap:wrap}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.opts button{border-radius:14px;padding:12px 8px;font-weight:800;font-size:14px;display:flex;flex-direction:column;align-items:center;gap:4px}
+.opts .non{background:#e3dac6}
+.opts .oui{background:#1D1A15;color:#F4EFE3}
+.opts small{font-weight:600;font-size:11.5px;opacity:.8}
+.choix .fx span{font-size:12px;font-weight:700;padding:3px 8px;border-radius:99px;background:#e3dac6}
+
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);z-index:90;background:var(--s3);border:1px solid var(--line);border-radius:12px;padding:9px 14px;font-size:13px;font-weight:600;max-width:90vw;text-align:center;animation:monte .2s}
+.aide{font-size:12px;color:var(--muted);text-align:center;line-height:1.45;padding:0 8px}
+.aide b{color:var(--text)}
+
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:7;background:rgba(18,24,48,.94);backdrop-filter:blur(10px);border-top:1px solid var(--hair);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+nav.tabs .in{max-width:440px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr);text-align:center;font-size:10.5px;color:var(--faint)}
+nav.tabs span{display:flex;flex-direction:column;align-items:center;gap:2px;position:relative}
+nav.tabs span i{font-style:normal;font-size:18px}
+nav.tabs span.on{color:var(--amber)}
+nav.tabs .badge{position:absolute;top:-2px;left:56%;background:var(--red);color:#fff;font:800 10px var(--body);border-radius:99px;padding:0 5px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="demo">DÉMO · Le commissariat vivant — rien n'est en ligne</div>
+<div class="app">
+  <div class="hud">
+    <div class="chef"><img src="data:image/jpeg;base64,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" alt="Ton chef de corps"></div>
+    <div class="res">
+      <span class="pill" id="p-budget"><i>💶</i><span id="v-budget"></span></span>
+      <span class="pill" id="p-moral"><i>💪</i><span id="v-moral"></span></span>
+      <span class="pill" id="p-ipz"><i>📈</i><span id="v-ipz"></span></span>
+    </div>
+    <div class="tour">tour de 20:00<b>5 h 12</b></div>
+  </div>
+
+  <div>
+    <div class="ciel"><span class="enseigne">POLICE</span></div>
+    <div class="immeuble" id="immeuble"></div>
+    <div class="sol"></div>
+  </div>
+  <p class="aide" id="aide">Touche les <b>bulles</b> pour récolter la nuit. Fais <b>glisser un agent</b> d'une pièce à l'autre pour donner tes ordres.</p>
+</div>
+
+<nav class="tabs" aria-label="Onglets du jeu"><div class="in">
+  <span class="on"><i>🏛</i>Commissariat</span><span id="tab-enq"><i>🔎</i>Enquête</span><span><i>🧩</i>Énigmes</span><span><i>🗺</i>Carte</span><span><i>📻</i>Radio</span>
+</div></nav>
+
+<script>
+const PIECES = [
+  { k:'chef', nom:'Bureau du chef', besoin:0, coul:'#FFB23F', deco:'chef' },
+  { k:'recherche', nom:'Recherche', besoin:4, coul:'#63B0FF', deco:'liege' },
+  { k:'proximite', nom:'Proximité', besoin:3, coul:'#3DD39A', deco:'banc' },
+  { k:'accueil', nom:'Accueil', besoin:3, coul:'#B79BFF', deco:'guichet' },
+  { k:'intervention', nom:'Intervention', besoin:6, coul:'#FF6E6A', deco:'combi', large:true },
+  { k:'roulage', nom:'Roulage', besoin:2, coul:'#F2D04B', deco:'radar' },
+  { k:'repos', nom:'Salle de repos', besoin:0, coul:'#96A0BF', deco:'canape' },
+  { k:'cachots', nom:'Cachots', besoin:0, coul:'#96A0BF', deco:'barreaux', cave:true, large:true },
+];
+const S = { budget:91900, moral:61, agents:[], bulles:[] };
+const DEPART = { recherche:3, proximite:3, accueil:2, intervention:5, roulage:2, repos:5 };
+let id = 0;
+for (const [k,n] of Object.entries(DEPART)) for (let i=0;i<n;i++) S.agents.push({ id:id++, p:k, x:20+Math.random()*60 });
+S.bulles = [
+  { id:'b1', p:'roulage', cl:'or', ico:'💶', n:3, x:70, act:'amendes' },
+  { id:'b2', p:'accueil', cl:'blanc', ico:'✉️', x:70, act:'courrier' },
+  { id:'b3', p:'intervention', cl:'rouge', ico:'🚨', x:84, act:'incident' },
+  { id:'b4', p:'cachots', cl:'violet', ico:'💬', x:30, act:'gav' },
+  { id:'b5', p:'recherche', cl:'bleu', ico:'📁', x:72, act:'dossier' },
+];
+
+const fmt = (n) => n.toLocaleString('fr-BE').replace(/ /g,' ');
+const nb = (k) => S.agents.filter(a=>a.p===k).length;
+function ipz(){ let s=22; for (const p of PIECES) if (p.besoin) s += 7*Math.min(1,nb(p.k)/p.besoin)*(p.k==='intervention'?1.4:1); return (s*(0.8+S.moral/300)).toFixed(1).replace('.',','); }
+function hud(){ document.getElementById('v-budget').textContent = fmt(S.budget)+' €'; document.getElementById('v-moral').textContent = S.moral; document.getElementById('v-ipz').textContent = ipz(); }
+function popPill(k){ const el=document.getElementById('p-'+k); el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+
+const AGENT_SVG = (c) => `<svg viewBox="0 0 22 34" aria-hidden="true"><ellipse cx="11" cy="33" rx="7" ry="1.6" fill="rgba(0,0,0,.35)"/><rect x="6" y="19" width="4" height="13" rx="1.5" fill="#1b2340"/><rect x="12" y="19" width="4" height="13" rx="1.5" fill="#1b2340"/><rect x="4" y="10" width="14" height="12" rx="4" fill="#24325e"/><rect x="4" y="14" width="14" height="2.4" fill="${c}"/><circle cx="11" cy="7" r="4.4" fill="#e8c4a0"/><path d="M5.6 5.4h10.8l-1-3.4H6.6z" fill="#14204a"/><rect x="5" y="5" width="12" height="1.6" fill="#0d1533"/></svg>`;
+const DECO = {
+  chef: `<svg class="deco" style="left:12%;bottom:22%;width:70%;height:46px" viewBox="0 0 120 46"><rect x="10" y="20" width="70" height="6" fill="#6b4a32"/><rect x="14" y="26" width="5" height="18" fill="#4f3624"/><rect x="71" y="26" width="5" height="18" fill="#4f3624"/><rect x="40" y="8" width="20" height="12" rx="2" fill="#2d3a5c"/><rect x="88" y="2" width="22" height="42" rx="2" fill="#3b2d24"/><rect x="91" y="6" width="16" height="3" fill="#c49a5a"/><rect x="91" y="12" width="16" height="3" fill="#9a5a5a"/></svg>`,
+  liege: `<svg class="deco" style="left:30%;top:24%;width:44%;height:40px" viewBox="0 0 90 40"><rect width="90" height="40" rx="3" fill="#b98b5c"/><rect x="8" y="6" width="16" height="12" fill="#f4efe3"/><rect x="36" y="18" width="16" height="12" fill="#f4efe3"/><rect x="64" y="8" width="16" height="12" fill="#f4efe3"/><path d="M16 12 L44 24 L72 14" stroke="#9A2B1F" stroke-width="1.5" fill="none"/></svg>`,
+  banc: `<svg class="deco" style="left:18%;bottom:22%;width:58%;height:22px" viewBox="0 0 100 22"><rect x="0" y="6" width="100" height="5" rx="2" fill="#6b5a44"/><rect x="6" y="11" width="4" height="11" fill="#4c3f30"/><rect x="90" y="11" width="4" height="11" fill="#4c3f30"/><rect x="0" y="0" width="100" height="3" rx="1" fill="#6b5a44"/></svg>`,
+  guichet: `<svg class="deco" style="left:44%;bottom:22%;width:52%;height:46px" viewBox="0 0 90 46"><rect y="18" width="90" height="28" fill="#3e4a72"/><rect y="14" width="90" height="5" fill="#8a93b8"/><rect x="10" y="0" width="70" height="14" fill="rgba(160,200,255,.18)" stroke="#8a93b8"/></svg>`,
+  combi: `<svg class="deco" style="left:52%;bottom:20%;width:42%;height:58px" viewBox="0 0 150 58"><path d="M6 46V20q0-8 8-10l70-4h22q10 0 16 10l12 16q6 4 6 12v2z" fill="#f2f4f8"/><path d="M8 34h132v6H8z" fill="#1f5fbf"/><path d="M8 40h132v3H8z" fill="#f2c230"/><path d="M92 12h14q7 0 11 8l7 10H92z" fill="#9fc3e6"/><rect x="40" y="2" width="22" height="5" rx="2" fill="#2f7bff"/><circle cx="34" cy="48" r="9" fill="#1b1d26"/><circle cx="34" cy="48" r="4" fill="#8a8f9e"/><circle cx="118" cy="48" r="9" fill="#1b1d26"/><circle cx="118" cy="48" r="4" fill="#8a8f9e"/><text x="44" y="30" font-family="Arial" font-weight="800" font-size="11" fill="#1f5fbf">POLICE</text></svg>`,
+  radar: `<svg class="deco" style="left:52%;bottom:22%;width:34%;height:52px" viewBox="0 0 50 52"><rect x="22" y="18" width="5" height="34" fill="#555b70"/><rect x="10" y="2" width="30" height="18" rx="3" fill="#2b2f3d" stroke="#f2d04b" stroke-width="2"/><circle cx="25" cy="11" r="5" fill="#111"/><circle cx="25" cy="11" r="2" fill="#ff6e6a"/></svg>`,
+  canape: `<svg class="deco" style="left:14%;bottom:21%;width:62%;height:30px" viewBox="0 0 100 30"><rect x="0" y="8" width="100" height="16" rx="6" fill="#5a4a6e"/><rect x="0" y="0" width="100" height="12" rx="6" fill="#6b5a82"/><rect x="88" y="-14" width="10" height="12" fill="#c49a5a"/><path d="M93-14v-6" stroke="#ddd"/></svg>`,
+  barreaux: `<svg class="deco" style="left:4%;top:20%;width:40%;height:62%" viewBox="0 0 80 60" preserveAspectRatio="none"><rect width="80" height="60" fill="#14151c"/>${Array.from({length:7},(_,i)=>`<rect x="${6+i*11}" y="0" width="3" height="60" fill="#7a7f90"/>`).join('')}<circle cx="40" cy="30" r="5" fill="#c9a07c"/><rect x="34" y="35" width="12" height="16" rx="3" fill="#6a6f80"/></svg>`,
+};
+
+const imm = document.getElementById('immeuble');
+function dessinerPieces(){
+  imm.innerHTML = PIECES.map(p => `<div class="piece${p.large?' large':''}${p.cave?' cave':''}" data-p="${p.k}" aria-label="${p.nom}">
+    <span class="lampe"></span>${DECO[p.deco]}
+    <span class="nom" style="color:${p.coul}">${p.nom}${p.besoin?` <span class="c" data-c="${p.k}"></span>`:''}</span></div>`).join('');
+}
+function etatPieces(){
+  for (const p of PIECES) if (p.besoin) {
+    const el = imm.querySelector(`[data-p="${p.k}"]`), n = nb(p.k);
+    el.classList.toggle('ok', n>=p.besoin); el.classList.toggle('manque', n<p.besoin);
+    el.querySelector('.c').textContent = `${n}/${p.besoin}`;
+  }
+  hud();
+}
+function dessinerAgents(){
+  imm.querySelectorAll('.agent').forEach(a=>a.remove());
+  for (const a of S.agents) {
+    const p = PIECES.find(x=>x.k===a.p);
+    const el = document.createElement('div');
+    el.className = 'agent' + (a.p==='repos'?' dort':''); el.dataset.id = a.id; el.style.left = a.x+'%';
+    el.innerHTML = AGENT_SVG(p.coul);
+    imm.querySelector(`[data-p="${a.p}"]`).appendChild(el);
+  }
+}
+function dessinerBulles(){
+  imm.querySelectorAll('.bulle').forEach(b=>b.remove());
+  for (const b of S.bulles) {
+    const el = document.createElement('button'); el.type='button';
+    el.className = 'bulle '+b.cl; el.dataset.b = b.id; el.style.left = `calc(${b.x}% - 20px)`; el.style.top = '-10px';
+    el.innerHTML = b.ico + (b.n?`<span class="pastille">${b.n}</span>`:'');
+    el.setAttribute('aria-label', {amendes:'Récolter les amendes',courrier:'Ouvrir le courrier',incident:'Incident',gav:'Le gardé à vue veut parler',dossier:'Dossier bouclé'}[b.act]);
+    imm.querySelector(`[data-p="${b.p}"]`).appendChild(el);
+  }
+}
+
+// Promenade des agents
+setInterval(() => {
+  if (drag) return;
+  for (const el of imm.querySelectorAll('.agent')) {
+    if (Math.random() < .45) continue;
+    const a = S.agents.find(x=>x.id==el.dataset.id); if (a.p==='repos' && Math.random()<.7) continue;
+    a.x = Math.max(8, Math.min(92, a.x + (Math.random()-.5)*50));
+    el.classList.add('marche'); el.style.left = a.x+'%';
+    setTimeout(()=>el.classList.remove('marche'), 2400);
+  }
+}, 2600);
+
+// Glisser un agent
+let drag = null;
+imm.addEventListener('pointerdown', e => {
+  const el = e.target.closest('.agent'); if (!el) return;
+  e.preventDefault();
+  const r = el.getBoundingClientRect();
+  drag = { el, a:S.agents.find(x=>x.id==el.dataset.id), dx:e.clientX-r.left, dy:e.clientY-r.top };
+  document.body.appendChild(el); el.classList.add('tient'); el.classList.remove('marche');
+  bouge(e);
+});
+function bouge(e){
+  if (!drag) return;
+  drag.el.style.left = (e.clientX - drag.dx + 11)+'px'; drag.el.style.top = (e.clientY - drag.dy)+'px';
+  imm.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
+  const t = document.elementFromPoint(e.clientX, e.clientY); const p = t && t.closest('.piece');
+  drag.cible = p && !['chef','cachots'].includes(p.dataset.p) ? p.dataset.p : null;
+  if (drag.cible) p.classList.add('drop');
+}
+window.addEventListener('pointermove', bouge);
+window.addEventListener('pointerup', () => {
+  if (!drag) return;
+  const { a, cible } = drag; drag.el.remove(); drag = null;
+  imm.querySelectorAll('.drop').forEach(x=>x.classList.remove('drop'));
+  if (cible && cible !== a.p) { a.p = cible; a.x = 30+Math.random()*40; popPill('ipz'); }
+  dessinerAgents(); etatPieces();
+});
+
+// Bulles
+function volVers(depuis, cible, ico, n){
+  const r = depuis.getBoundingClientRect(), t = document.getElementById(cible).getBoundingClientRect();
+  for (let i=0;i<n;i++) {
+    const v = document.createElement('span'); v.className='vol'; v.textContent=ico;
+    v.style.left = (r.left+10)+'px'; v.style.top = (r.top+10)+'px'; document.body.appendChild(v);
+    setTimeout(()=>{ v.style.transform = `translate(${t.left-r.left+(i*4)}px,${t.top-r.top}px) scale(.6)`; v.style.opacity='.2'; }, 30+i*90);
+    setTimeout(()=>v.remove(), 900+i*90);
+  }
+}
+function toast(t){ document.querySelectorAll('.toast').forEach(x=>x.remove()); const d=document.createElement('div'); d.className='toast'; d.textContent=t; document.body.appendChild(d); setTimeout(()=>d.remove(),2400); }
+function retirer(id){ S.bulles = S.bulles.filter(b=>b.id!==id); dessinerBulles(); if (!S.bulles.length) document.getElementById('aide').innerHTML = 'La nuit est récoltée. <b>Rien d’autre à lire.</b> Place tes agents et reviens après 20:00.'; }
+
+const COURRIER = { av:'🛍️', q:'La braderie de samedi : quatre agents en tenue ?', non:{l:'Une patrouille',fx:'Satisfaction −'}, oui:{l:'Quatre agents',fx:'Satisfaction + · Moral −'} };
+function ouvrirCourrier(){
+  const v = document.createElement('div'); v.className='voile';
+  v.innerHTML = `<div class="choix" role="dialog" aria-label="Courrier"><div class="qui"><span class="av">${COURRIER.av}</span><span class="q">${COURRIER.q}</span></div>
+    <div class="opts"><button type="button" class="non" data-r="non">${COURRIER.non.l}<small>${COURRIER.non.fx}</small></button><button type="button" class="oui" data-r="oui">${COURRIER.oui.l}<small>${COURRIER.oui.fx}</small></button></div></div>`;
+  v.addEventListener('click', e => {
+    const b = e.target.closest('[data-r]'); if (!b && e.target!==v) return;
+    v.remove(); if (!b) return;
+    if (b.dataset.r==='oui'){ S.moral -= 2; popPill('moral'); toast('Signé · la présidente des commerçants te remercie'); } else toast('Signé · une patrouille passera samedi');
+    retirer('b2'); hud();
+  });
+  document.body.appendChild(v);
+}
+
+imm.addEventListener('click', e => {
+  const el = e.target.closest('.bulle'); if (!el) return;
+  const b = S.bulles.find(x=>x.id===el.dataset.b);
+  if (b.act==='amendes'){ volVers(el,'p-budget','💶',6); setTimeout(()=>{ S.budget += 1900; hud(); popPill('budget'); },700); retirer(b.id); }
+  if (b.act==='dossier'){ volVers(el,'p-budget','💶',3); volVers(el,'p-moral','⭐',2); setTimeout(()=>{ S.budget += 800; S.moral += 1; hud(); popPill('budget'); popPill('moral'); },700); toast('Dossier bouclé par la Recherche'); retirer(b.id); }
+  if (b.act==='courrier') ouvrirCourrier();
+  if (b.act==='incident'){ toast('Colis suspect → le mini-jeu s’ouvre ici'); retirer(b.id); }
+  if (b.act==='gav'){ volVers(el,'tab-enq','📄',1); setTimeout(()=>{ const t=document.getElementById('tab-enq'); if(!t.querySelector('.badge')) t.insertAdjacentHTML('beforeend','<span class="badge">1</span>'); },700); toast('Le gardé à vue a parlé : nouvelle pièce d’enquête'); retirer(b.id); }
+});
+
+dessinerPieces(); dessinerAgents(); dessinerBulles(); etatPieces();
+</script>
+</body>
+</html>
