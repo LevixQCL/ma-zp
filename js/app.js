@@ -562,6 +562,7 @@ async function onClick(e) {
       }
       case 'parties-ouvrir': S.ouverts = { ...(S.ouverts || {}), [el.dataset.k]: true }; location.hash = '#parties'; break;
       case 'annexe-voir': S.annexeSel = S.annexeSel === el.dataset.id ? null : el.dataset.id; rafraichirLogistique(); break;
+      case 'annexe-demolir': { const id = el.dataset.id; S.draft.demolir = S.draft.demolir === id ? null : id; S.ordersDirty = true; rerender(); rafraichirLogistique(); break; }
       case 'annexe-construire': {
         const d0 = S.draft.decision, id = el.dataset.id;
         S.draft.decision = d0 && d0.type === 'construire' && d0.infra === id ? null : { type: 'construire', infra: id };
@@ -1241,7 +1242,8 @@ async function onClick(e) {
       }
       case 'ord-open': { const k = el.dataset.k, was = !!(S.ordOpen && S.ordOpen[k]); S.ordOpen = el.closest('.ord-tuiles') ? { [k]: !was } : { ...(S.ordOpen || {}), [k]: !was }; rerender(); if (!was && el.closest('.ord-tuiles')) requestAnimationFrame(() => { const c = document.getElementById(`ord-${k}`); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }); break; }
       case 'toggle-decision': S.decisionOpen = !S.decisionOpen; rerender(); break;
-      case 'decision': S.draft.decision = JSON.parse(el.dataset.json); S.draft.sansDecision = el.dataset.aucune === '1'; S.ordersDirty = true; rerender(); break;
+      case 'decision': S.draft.decision = JSON.parse(el.dataset.json); S.draft.sansDecision = el.dataset.aucune === '1'; S.ordersDirty = true; rerender(); rafraichirLogistique(); break;
+      case 'parc-achat': document.getElementById('parc-achat')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); break;
       case 'dec-cat': S.decCat = el.dataset.v; rerender(); break;
       case 'cancel-orders': {
         // Revient aux derniers choix validés (ou aux ordres par défaut si rien n'a encore été validé).

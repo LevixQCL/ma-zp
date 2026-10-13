@@ -18,9 +18,9 @@ import { portraitSuspect } from './portrait.js';
 import { SERVICE_LABELS, scoreRevenu, BUDGET_IPZ, IPZ_POIDS } from '../engine/constants.js';
 import { vitesseCombi, MODELES, prixRevente, vitesseVehicule, rendementFlotte, RENDEMENT } from '../engine/flotte.js';
 import { aideBtn } from './aide.js';
-import { comparatifModeles } from './modeles.js';
+import { jaugeSkinsLigne } from './incidents.js';
 import { PERIL, absT } from '../engine/rivalites.js';
-import { estimations } from './ordres.js';
+import { estimations, achatVehiculeHtml } from './ordres.js';
 
 const k = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt1(Math.abs(v))} k€`;
 
@@ -262,6 +262,7 @@ export function ouvrirDecor() {
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Décor de mon hôtel de police</h2><span class="tiny muted">${n} élément${n > 1 ? 's' : ''} débloqué${n > 1 ? 's' : ''} sur ${total}</span></div>
       <button class="iconbtn" data-action="logistique" aria-label="Retour" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">‹</button></div>
     <div class="scene-voisin">${sceneZone(z, S.state, d, mesSkins(z).choix, S.player && S.player.hpCiel ? { moment: S.player.hpCiel } : {})}</div>
+    ${jaugeSkinsLigne()}
     ${boutiqueSkins(z, d)}
     ${(() => {
       const { possedes, choix } = mesSkins(z);
@@ -364,13 +365,15 @@ function logistiqueV2() {
   const ids = Object.keys(INFRAS);
   const sel = ids.includes(S.annexeSel) ? S.annexeSel : null;
   const tuiles = ids.map((id) => { const fait = !!z.infra[id], prevu = choixDec === id;
-    return `<button type="button" class="annexe2 ${fait ? 'faite' : ''} ${prevu ? 'prevue' : ''} ${sel === id ? 'sel' : ''}" data-action="annexe-voir" data-id="${id}" aria-pressed="${sel === id}" aria-label="${esc(INFRAS[id].nom)}${fait ? ', construite' : prevu ? ', prévue ce soir' : ''}"><span aria-hidden="true">${ICO_ANNEXE[id] || '🏗️'}</span><small>${esc(COURT_ANNEXE[id] || id)}</small>${fait ? '<i>✓</i>' : ''}</button>`; }).join('');
+    return `<button type="button" class="annexe2 ${fait ? 'faite' : ''} ${prevu ? 'prevue' : ''} ${fait && d.demolir === id ? 'demolie' : ''} ${sel === id ? 'sel' : ''}" data-action="annexe-voir" data-id="${id}" aria-pressed="${sel === id}" aria-label="${esc(INFRAS[id].nom)}${fait ? (d.demolir === id ? ', démolie ce soir' : ', construite') : prevu ? ', prévue ce soir' : ''}"><span aria-hidden="true">${ICO_ANNEXE[id] || '🏗️'}</span><small>${esc(COURT_ANNEXE[id] || id)}</small>${fait ? '<i>✓</i>' : ''}</button>`; }).join('');
   let fiche = '';
   if (sel) {
     const i = INFRAS[sel], fait = !!z.infra[sel], prevu = choixDec === sel;
     const refus = fait ? null : decisionImpossible(z, { type: 'construire', infra: sel }, T);
     fiche = `<div class="annexe2-fiche"><div class="between" style="gap:8px"><b>${ICO_ANNEXE[sel] || ''} ${esc(i.nom)}</b><span class="tiny ${fait ? 'ok' : 'muted'}">${fait ? '✓ construite' : `${i.cout} k€`}</span></div>
       <span class="small">${fait ? 'Te donne : ' : 'Donnerait : '}${esc(i.effet)}</span>
+      ${fait ? `<button type="button" class="btn small block ${d.demolir === sel ? 'danger' : 'ghost'}" data-action="annexe-demolir" data-id="${sel}" aria-pressed="${d.demolir === sel}">${d.demolir === sel ? '✓ Démolie ce soir · annuler' : 'Démolir ce soir (gratuit, sans remboursement)'}</button>
+      <span class="tiny muted">Démolir libère une place d’annexe dès ce soir ; ce n’est pas ta grande décision.</span>` : ''}
       ${fait ? '' : `<button type="button" class="btn small block ${prevu ? 'primary' : 'agr'}" data-action="annexe-construire" data-id="${sel}" ${refus && !prevu ? 'disabled' : ''}>${prevu ? '✓ Prévue ce soir (grande décision)' : `Construire ce soir · ${i.cout} k€`}</button>${refus && !prevu ? `<span class="tiny muted">${esc(refus)}</span>` : ''}`}</div>`;
   }
   const parc = parcVehicules(z, T);
@@ -413,7 +416,7 @@ function parcCorps() {
       : v.etat === 'atelier' ? ['var(--red)', `atelier ${v.jours} j`] : ['var(--green)', v.etatPc != null ? `état ${v.etatPc} %` : 'en service'];
     return `<button type="button" class="veh ${v.etat}${prevu ? ' prevu' : ''}" data-action="vehicule" data-slot="${v.slot}" aria-label="${esc(v.nom)} : ${txt}">
       ${vehiculeSvg(v.type, 20)}<span class="n">${esc(v.nom)}</span><span class="s"><i style="background:${coul}"></i>${txt}</span>${v.etatPc != null ? `<span class="veh-u" aria-hidden="true"><b style="width:${v.etatPc}%;background:${v.etatPc >= 80 ? 'var(--green)' : v.etatPc >= 60 ? 'var(--amber)' : 'var(--red)'}"></b></span>` : ''}</button>`;
-  }).join('') + (libres ? `<a class="veh libre" href="#ordres" data-close aria-label="Acheter un véhicule (grande décision)"><span style="font-size:16px;line-height:1">+</span><span class="s">${libres} place${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''}</span></a>` : '');
+  }).join('') + (libres ? `<button type="button" class="veh libre" data-action="parc-achat" aria-label="Acheter un véhicule (grande décision)"><span style="font-size:16px;line-height:1">+</span><span class="s">${libres} place${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''}</span></button>` : '');
   return `<div class="col hp-logis" style="gap:10px">
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><h2 id="aide-titre" class="aide-titre" style="margin:0">Parc automobile</h2>
       <span class="tiny muted">${z.vehicules} véhicule${z.vehicules > 1 ? 's' : ''} · garage niv. ${z.batiments.garage} (${capaciteVehicules(z)} places)</span></div>
@@ -424,9 +427,9 @@ function parcCorps() {
     </div>
     <div class="parc">${tuiles}</div>
     ${rendementHtml(z, T, d)}
-    ${comparatifModeles(z)}
+    <div class="col" id="parc-achat" style="gap:6px"><span class="logis2-k">🚐 Acheter un véhicule</span>${achatVehiculeHtml(z, T, d)}</div>
     ${(() => { const v = vitesseCombi(z); return `<div class="between small"><span class="muted">🚨 Vitesse sur les urgences</span><span class="mono">${Math.round(31 * 3.6 * v.mult)} km/h${v.prepa ? ` · préparation niv. ${v.prepa}` : ''}${v.cabosse ? ' · combi cabossé' : ''}</span></div>`; })()}
-    <p class="tiny muted" style="margin:0">Touche un véhicule : son état, son modèle, la carrosserie, la revente. Acheter : Grande décision › Équiper. Combi : le moins cher par place · électrique : se rembourse (prime verte) · anonyme : flagrants et traques · fourgon : engagements et blessures.</p>
+    <p class="tiny muted" style="margin:0">Touche un véhicule : son état, son modèle, la carrosserie, la revente. Combi : le moins cher par place · électrique : se rembourse (prime verte) · anonyme : flagrants et traques · fourgon : engagements et blessures.</p>
     <button type="button" class="btn block" data-action="dep-toggle" data-k="revision" data-fermer="1">${dep.revision ? '✓ Révision du parc prévue · annuler' : `Révision du parc · ${fmt1(DEPENSES.revision.cout)} k€ · +${USURE.revision} %`}</button>
     <button type="button" class="btn small ghost block" data-action="logistique">Voir mon hôtel de police</button>
     <p class="tiny muted" style="margin:0">Réparations et révision se paient à 20:00. Pense à valider tes ordres.</p>

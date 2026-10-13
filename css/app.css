@@ -2669,6 +2669,7 @@ main.rv #prive-list, main.rv .rv-fil { flex: 1; }
 .annexe2 small { font-size: 10.5px; color: var(--muted); font-weight: 600; }
 .annexe2.faite { border-color: var(--green); background: rgba(61,211,154,.12); }
 .annexe2.prevue { border-color: var(--amber); background: var(--amber-bg); }
+.annexe2.demolie { border-color: var(--red); border-style: dashed; background: var(--red-bg); opacity: .8; }
 .annexe2.sel { box-shadow: 0 0 0 2px var(--amber); }
 .annexe2 i { position: absolute; top: 4px; right: 5px; font-size: 10px; font-style: normal; color: var(--green); font-weight: 800; }
 .annexe2-fiche { display: flex; flex-direction: column; gap: 6px; padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--amber-line); }

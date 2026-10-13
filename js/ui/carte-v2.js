@@ -60,10 +60,10 @@ function districtHtml(st, me) {
     L.push(ligne(`cv-vois-${T}-${i}`, renfort ? '🚨' : '🤝', titreDe(h), sousDe(h), h, { cls: renfort ? 'rouge' : '', ouvert: renfort, badge: renfort ? '<span class="ajd-badge">!</span>' : '' }));
   });
   district.forEach((h, i) => L.push(ligne(`cv-dist-${T}-${i}`, '⭐', titreDe(h), st.evenement && st.evenement.tour === T ? 'ce soir : envoie des agents' : (st.evenement && st.evenement.tour > T ? `dans ${st.evenement.tour - T} tour${st.evenement.tour - T > 1 ? 's' : ''}` : 'bientôt'), h, { ouvert: !!(st.evenement && st.evenement.tour === T) })));
-  // Pactes, défis et Conseil : ce qui attend une réponse, puis l'accès à l'écran complet.
+  // Pactes, défis et Conseil : toujours une ligne (ce qui attend une réponse, sinon les pactes actifs), puis l'accès à l'écran complet.
   const af = aFairePactes(), reste = af.filter((x) => !x.fait);
   const actifs = (st.pactes || []).filter((p) => (p.a === me.uid || p.b === me.uid) && p.etape === 'actif').length;
-  if (reste.length) L.push(ligne('cv-pactes', '🤝', 'Pactes et Conseil', reste.length ? esc(reste[0].titre) : actifs ? `${actifs} pacte${actifs > 1 ? 's' : ''} actif${actifs > 1 ? 's' : ''}` : 'aucun pacte en cours · propose-en un',
+  if (Object.keys(st.zones).length > 1) L.push(ligne('cv-pactes', '🤝', 'Pactes et Conseil', reste.length ? esc(reste[0].titre) : actifs ? `${actifs} pacte${actifs > 1 ? 's' : ''} actif${actifs > 1 ? 's' : ''}` : 'aucun pacte en cours · propose-en un',
     `${af.map((x) => `<a class="ajd-alerte ${x.fait ? '' : 'amber'}" href="#pactes"><b>${x.fait ? '✓ ' : ''}${esc(x.titre)}</b><span>${esc(x.texte)}</span></a>`).join('')}
      <a class="btn small outline block" href="#pactes">Ouvrir les pactes, défis et le Conseil</a>`, { badge: reste.length ? `<span class="ajd-badge">${reste.length}</span>` : '', ouvert: !!reste.length }));
   return `<section class="hp-ajd" aria-label="Ce soir dans le district">

@@ -484,19 +484,49 @@ function formationsEnCours(z, T) {
   return `<p class="small ok" style="margin:0">${f.map((x) => `🎓 Formation ${esc(SERVICE_LABELS[x.service])} en cours : niveau ${z.niveaux[x.service]} → ${z.niveaux[x.service] + 1} ${x.fin <= T + 1 ? 'ce soir à 20:00, agents de retour demain' : `au calcul du tour ${x.fin - 1}`}`).join('<br>')}</p>`;
 }
 
+/** Une tuile de grande décision (touchée : elle devient la décision du soir). */
+function tuileDecision(z, T, d, dec, titre, detail0, cout, extra = '') {
+  const choisi = (x) => JSON.stringify(d.decision) === JSON.stringify(x);
+  let detail = detail0;
+  const refus = decisionImpossible(z, dec, T);
+  const te = tourEffet(dec, T);
+  const trop = te !== null && te > SEASON_LENGTH;
+  if (trop && !refus) detail = `⚠ effet au tour ${te} : après la fin de saison, perdu`;
+  return `<button type="button" class="dtuile ${trop ? 'tard' : ''}" data-action="decision" data-json='${esc(JSON.stringify(dec))}' aria-pressed="${choisi(dec)}" ${refus && !choisi(dec) ? 'disabled' : ''}>
+    <span class="t">${titre}</span>${extra}<span class="d">${esc(refus || detail)}</span><span class="c">${cout} k€</span></button>`;
+}
+
+/** Tuiles d'achat de véhicules (grande décision « Équiper »), avec la reprise si le garage est plein. */
+function vehiculesTuiles(z, T, d) {
+  const tuile = (...a) => tuileDecision(z, T, d, ...a);
+        // Garage plein : l'achat se fait avec reprise du véhicule le plus usé (il cède sa place au neuf).
+        const plein = z.vehicules >= capaciteVehicules(z), rep = plein ? plusUse(z) : null;
+        const nomRep = rep != null ? `${modeleDe(z.flotte[rep]).court.toLowerCase()} à ${Math.round(100 - z.flotte[rep].u)} %` : '';
+        return `${plein ? `<p class="tiny muted" style="margin:0">Garage plein : achat <strong>avec reprise</strong> de ton véhicule le plus usé (${esc(nomRep)}, ${fmt1(prixRevente(z, rep))} k€ déduits). Pour en avoir plus, agrandis le garage (Bâtir).</p>` : ''}
+      <div class="dgrille">${IDS_MODELES.map((m) => { const M = MODELES[m], dec = { type: 'equiper', cible: 'vehicule', modele: m, ...(plein ? { reprise: rep } : {}) }; return tuile(dec, M.nom, `${M.role} · ${fmt1(M.places)} places · ${String(M.entretien).replace('.', ',')} k€/tour`, fmt1(coutDecision(z, dec))); }).join('')}</div>
+      ${comparatifModeles(z)}`;
+}
+/** Tuile « Préparer les combis » (grande décision « Équiper »), tant que le niveau maximum n'est pas atteint. */
+function prepaTuile(z, T, d) {
+  const tuile = (...a) => tuileDecision(z, T, d, ...a);
+  return (z.prepa || 0) < PREPA.max ? tuile({ type: 'equiper', cible: 'prepa' }, 'Préparer les combis', `niveau ${z.prepa || 0} → ${(z.prepa || 0) + 1} · urgences : +${Math.round(PREPA.vitesse * 100)} % de vitesse, freinage +${Math.round(PREPA.frein * 100)} %`, coutPrepa(z.prepa), niv(z.prepa || 0, PREPA.max)) : '';
+}
+/** Achat d'un véhicule et préparation des combis, depuis le Parc automobile : la même grande décision que dans les Ordres. */
+export function achatVehiculeHtml(z, T, d) {
+  const dv = d.decision && d.decision.type === 'equiper' && (d.decision.cible === 'vehicule' || d.decision.cible === 'prepa') ? d.decision : null;
+  const autre = d.decision && !dv;
+  return `<div class="col" style="gap:8px">
+    <span class="tiny ${autre ? 'warn' : 'muted'}">${autre ? `Ta grande décision de ce soir est déjà « ${esc(decisionLabel(z, d.decision))} » : choisir un véhicule la remplace (une seule par soir).` : 'Acheter ou préparer les combis, c’est la grande décision du soir (une seule par soir), payée à 20:00.'}</span>
+    ${vehiculesTuiles(z, T, d)}
+    <div class="dgrille">${prepaTuile(z, T, d)}</div>
+    ${dv ? `<div class="ddetail">${detailDecision(z, dv, T)}</div>` : ''}
+  </div>`;
+}
+
 /** Sélecteur de grande décision : quatre catégories, des tuiles compactes. */
 function decisionPicker(z, T, d) {
   const cat = S.decCat || catDe(d.decision) || 'recruter';
-  const choisi = (dec) => JSON.stringify(d.decision) === JSON.stringify(dec);
-  const tuile = (dec, titre, detail0, cout, extra = '') => {
-    let detail = detail0;
-    const refus = decisionImpossible(z, dec, T);
-    const te = tourEffet(dec, T);
-    const trop = te !== null && te > SEASON_LENGTH;
-    if (trop && !refus) detail = `⚠ effet au tour ${te} : après la fin de saison, perdu`;
-    return `<button type="button" class="dtuile ${trop ? 'tard' : ''}" data-action="decision" data-json='${esc(JSON.stringify(dec))}' aria-pressed="${choisi(dec)}" ${refus && !choisi(dec) ? 'disabled' : ''}>
-      <span class="t">${titre}</span>${extra}<span class="d">${esc(refus || detail)}</span><span class="c">${cout} k€</span></button>`;
-  };
+  const tuile = (...a) => tuileDecision(z, T, d, ...a);
   const pc = (x) => `${x >= 0 ? '+' : '−'}${Math.round(Math.abs(x) * 100)} %`;
   const ent = (v) => `${fmt1(v)} k€`;
   let corps = '';
@@ -508,17 +538,10 @@ function decisionPicker(z, T, d) {
   } else if (cat === 'equiper') {
     corps = `<p class="tiny muted" style="margin:0"><strong>Équiper</strong> = le coup de pouce immédiat : +${Math.round(EQUIP.efficacite * 100)} % d’efficacité et un effet propre au service, sans agent absent, mais <strong>perdu en fin de saison</strong>. <strong>Former</strong> (+20 %) est plus fort et se garde d’une saison à l’autre.</p>
       <p class="tiny muted" style="margin:0">🚓 <strong>Véhicules</strong> (garage : ${z.vehicules} sur ${capaciteVehicules(z)} places). Les places vont d’abord à l’Intervention ; chaque place libre met un agent de Roulage ou de Proximité en voiture (+${Math.round(RENDEMENT.monte * 100)} %). Chaque modèle a en plus son rôle. Revends les vieux depuis le parc (HP › Véhicules).</p>
-      ${(() => {
-        // Garage plein : l'achat se fait avec reprise du véhicule le plus usé (il cède sa place au neuf).
-        const plein = z.vehicules >= capaciteVehicules(z), rep = plein ? plusUse(z) : null;
-        const nomRep = rep != null ? `${modeleDe(z.flotte[rep]).court.toLowerCase()} à ${Math.round(100 - z.flotte[rep].u)} %` : '';
-        return `${plein ? `<p class="tiny muted" style="margin:0">Garage plein : achat <strong>avec reprise</strong> de ton véhicule le plus usé (${esc(nomRep)}, ${fmt1(prixRevente(z, rep))} k€ déduits). Pour en avoir plus, agrandis le garage (Bâtir).</p>` : ''}
-      <div class="dgrille">${IDS_MODELES.map((m) => { const M = MODELES[m], dec = { type: 'equiper', cible: 'vehicule', modele: m, ...(plein ? { reprise: rep } : {}) }; return tuile(dec, M.nom, `${M.role} · ${fmt1(M.places)} places · ${String(M.entretien).replace('.', ',')} k€/tour`, fmt1(coutDecision(z, dec))); }).join('')}</div>
-      ${comparatifModeles(z)}`;
-      })()}
+      ${vehiculesTuiles(z, T, d)}
       <div class="dgrille">
       ${SERVICES.map((sv) => tuile({ type: 'equiper', cible: sv }, SERVICE_LABELS[sv], `matériel ${z.equip[sv]} → ${z.equip[sv] + 1} · ${effetEquip(sv, 1)} · efficacité ${pc(multEquip(z.equip[sv] + 1) / multEquip(z.equip[sv]) - 1)}`, coutEquipement(z.equip[sv]), niv(z.equip[sv]))).join('')}
-      ${(z.prepa || 0) < PREPA.max ? tuile({ type: 'equiper', cible: 'prepa' }, 'Préparer les combis', `niveau ${z.prepa || 0} → ${(z.prepa || 0) + 1} · urgences : +${Math.round(PREPA.vitesse * 100)} % de vitesse, freinage +${Math.round(PREPA.frein * 100)} %`, coutPrepa(z.prepa), niv(z.prepa || 0, PREPA.max)) : ''}</div>`;
+      ${prepaTuile(z, T, d)}</div>`;
   } else {
     const faites = Object.entries(INFRAS).filter(([id]) => z.infra[id]).map(([, i]) => i);
     corps = `<div class="dgrille">${Object.entries(BATIMENTS).map(([id, B]) => { const n = z.batiments[id]; return n >= BATIMENT_MAX ? '' : tuile({ type: 'agrandir', batiment: id }, `Agrandir : ${B.nom}`, `${B.capacite(n)} → ${B.capacite(n + 1)} ${B.unite} · entretien ${ent(B.entretien(n))} → ${ent(B.entretien(n + 1))}/tour · ⏱ ${TRAVAUX_TOURS === 1 ? 'prêt demain soir' : `prêt dans ${TRAVAUX_TOURS} tours`}`, B.coutAgrandir(n), niv(n, BATIMENT_MAX)); }).join('')}

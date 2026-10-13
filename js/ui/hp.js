@@ -48,7 +48,7 @@ import { nomSecteur } from '../engine/nondroit.js';
 import { scenesDuSoir, SCENES } from '../engine/milieu.js';
 import { ICO_SCENE, sceneHtml } from './milieu.js';
 import { rolesDe, annoncesND, placeND, presqueTombes } from './nondroit.js';
-import { incidentsHtml, jaugeSkinsLigne } from './incidents.js';
+import { incidentsHtml } from './incidents.js';
 import { vignetteVentes, vignetteEquipe, vignetteTrophees, vignetteRapport, vignetteGazette, vignetteClassement, vignetteChallenge } from './vignettes-hp.js';
 import { phaseVente } from '../engine/ventes.js';
 
@@ -490,7 +490,6 @@ function aujourdhuiHtml(st, z, T, items) {
     <div class="between"><h2 class="section">Aujourd’hui</h2><a class="tiny" href="#guide-incidents">Les incidents ?</a></div>
     ${vus.map((x) => x.html).join('')}
     ${plus.length ? `<details class="ajd-plus" data-k="ajd-plus" ${S.ouverts && S.ouverts['ajd-plus'] ? 'open' : ''}><summary>${plus.length} autre${plus.length > 1 ? 's' : ''} sujet${plus.length > 1 ? 's' : ''}</summary><div class="hp-ajd-l">${plus.map((x) => x.html).join('')}</div></details>` : ''}
-    ${jaugeSkinsLigne()}
   </section>`;
 }
 
