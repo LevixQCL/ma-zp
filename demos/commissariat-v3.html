@@ -120,6 +120,7 @@ nav.tabs .badge{position:absolute;top:-2px;left:56%;background:var(--red);color:
   <button type="button" data-niv="2" aria-pressed="false">2</button>
   <button type="button" data-niv="3" aria-pressed="false">3</button>
   <button type="button" class="go" id="nuit">Passer 20:00</button>
+  <label style="display:flex;gap:5px;align-items:center">Nom <input id="nomzone" value="Horizon" maxlength="24" style="width:110px;font:inherit;font-size:12px;padding:4px 7px;border-radius:8px;border:1px solid #2b3560;background:#141a36;color:#EDF0FA"></label>
 </div>
 <div class="app">
   <div class="hud">
@@ -168,7 +169,7 @@ const PLANS = {
   3:[ [['tir',.55],['drone',.45]], [['recherche',.38],['repos',.30],['chef',.32]], [['proximite',.5],['roulage',.5]], [['intervention',.47],['cachots',.18],['accueil',.35]] ],
 };
 const PLACABLES = ['intervention','accueil','proximite','roulage','recherche','repos'];
-const S = { niv:1, budget:91900, moral:61, agents:[], bulles:[] };
+const S = { niv:1, nom:'Horizon', code:'5324', budget:91900, moral:61, agents:[], bulles:[] };
 const PEAUX = ['#f2cba6','#e0ae84','#9a6444','#f6d9bd','#c58a60','#6f4630'];
 const CHEVEUX = ['#2b1d14','#5a3a22','#c9a063','#1a1a1a','#7a4a2a','#d9d2c4'];
 const DEPART = { recherche:3, proximite:3, accueil:2, intervention:5, roulage:2, repos:5 };
@@ -352,6 +353,16 @@ function plan(){
   G = { salles, rdc, rows: P.length, H: rdc + RUE + 6 };
 }
 const salleDe = (t) => G.salles.find(s => s.t === t);
+function enseigne(top){
+  // Le nom de la zone sur le toit ; la largeur suit le nom, et un nom très long est resserré.
+  const nom = (S.nom || 'Ma zone').toUpperCase(), cx = (W-PUITS)/2;
+  const est = nom.length * 10.4, tl = Math.min(est, 190), w = tl + 34;
+  return `<g><rect x="${cx-w/2-10}" y="${top-46}" width="${w+20}" height="42" rx="12" fill="#5b86ff" opacity=".1"/>
+    <rect x="${cx-w/2}" y="${top-38}" width="${w}" height="27" rx="6" fill="#0f2462"/><rect x="${cx-w/2}" y="${top-38}" width="${w}" height="27" rx="6" fill="none" stroke="#6b93ff" stroke-width="2"/>
+    <text x="${cx}" y="${top-19.5}" text-anchor="middle" font-family="Bricolage Grotesque,Arial Narrow,sans-serif" font-weight="800" font-size="14" letter-spacing="2.4" fill="#e4edff" ${est>190?`textLength="${tl}" lengthAdjust="spacingAndGlyphs"`:''}>${nom.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</text>
+    <text x="${cx}" y="${top-41}" text-anchor="middle" font-family="Instrument Sans,sans-serif" font-weight="700" font-size="6.4" letter-spacing="1.6" fill="#9fb4ff">POLICE · ZONE ${S.code}</text>
+    <rect x="${cx-w/2+14}" y="${top-11}" width="2" height="4" fill="#3a2a30"/><rect x="${cx+w/2-16}" y="${top-11}" width="2" height="4" fill="#3a2a30"/></g>`;
+}
 function facade(){
   const top = TOIT - 12, sol = G.rdc, H = G.H;
   const ville = [[0,96,30,1],[26,70,22,2],[318,118,42,3],[344,80,16,4]];
@@ -372,10 +383,7 @@ function facade(){
     <rect x="${PAD-6}" y="${top}" width="${W-2*PAD+12}" height="${sol-top}" rx="2" fill="url(#brique)"/>
     <rect x="${PAD-10}" y="${top-7}" width="${W-2*PAD+20}" height="10" rx="2" fill="#5a3c42"/><rect x="${PAD-10}" y="${top-7}" width="${W-2*PAD+20}" height="2" fill="#7a5860"/>
     ${G.salles.filter(s=>s.etage < G.rows-1).map(s=>`<rect x="${s.x-1}" y="${s.y+RH}" width="${s.w+2}" height="${DALLE}" fill="#5c4a52"/><rect x="${s.x-1}" y="${s.y+RH}" width="${s.w+2}" height="1.4" fill="#8a7078"/>`).join('')}
-    <g><rect x="${(W-PUITS)/2-48}" y="${top-36}" width="96" height="25" rx="6" fill="#0f2462"/><rect x="${(W-PUITS)/2-48}" y="${top-36}" width="96" height="25" rx="6" fill="none" stroke="#6b93ff" stroke-width="2"/>
-      <rect x="${(W-PUITS)/2-58}" y="${top-44}" width="116" height="40" rx="12" fill="#5b86ff" opacity=".1"/>
-      <text x="${(W-PUITS)/2}" y="${top-18.5}" text-anchor="middle" font-family="Bricolage Grotesque,Arial Narrow,sans-serif" font-weight="800" font-size="14" letter-spacing="5" fill="#e4edff">POLICE</text>
-      <rect x="${(W-PUITS)/2-30}" y="${top-11}" width="2" height="4" fill="#3a2a30"/><rect x="${(W-PUITS)/2+28}" y="${top-11}" width="2" height="4" fill="#3a2a30"/></g>
+    ${enseigne(top)}
     ${S.niv>=2?`<g><rect x="${PAD+6}" y="${top-20}" width="24" height="13" rx="1" fill="#5a3c42"/><rect x="${PAD+9}" y="${top-24}" width="18" height="4" fill="#3a2a30"/><circle cx="${PAD+18}" cy="${top-13.5}" r="4" fill="none" stroke="#3a2a30" stroke-width="1.2"/></g>`:''}
     ${S.niv>=3?`<g><rect x="${XS+8}" y="${top-44}" width="2.2" height="37" fill="#9aa6d4"/><path d="M${XS+2} ${top-34}l7-6 7 6" stroke="#9aa6d4" stroke-width="1.1" fill="none"/><circle cx="${XS+9.1}" cy="${top-46}" r="2.4" fill="#ff4d4d" class="gyro"/></g>`:''}
     <rect x="${XS}" y="${top+3}" width="${PUITS}" height="${sol-top-3}" fill="url(#puits)"/>
@@ -616,6 +624,7 @@ initAgents();
 S.bulles = BULLES.filter(b=>b.t!=='cachots').map(b=>({...b}));
 plan(); dessiner(); for (const a of S.agents) placer(a); placer(S.chef);
 window.addEventListener('resize', echelle);
+document.getElementById('nomzone').addEventListener('input', e => { S.nom = e.target.value.trim() || 'Ma zone'; const f = bat.firstElementChild; if (f) f.innerHTML = facade(); });
 requestAnimationFrame(boucle);
 </script>
 </body>
