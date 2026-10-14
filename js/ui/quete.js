@@ -431,12 +431,13 @@ function feuilleV2(o) {
       ${!train && !noir && q.enquete ? `<p class="small fe-enq">🧩 ${esc(q.gain || '')} Choisis ta piste prioritaire dans l’Enquête (fiche du suspect).</p>` : ''}
       ${!train && !noir && q.slot === 4 && !slotsCompte().includes(4) ? '<p class="tiny muted" style="margin:0">Pour le plaisir : +5 PS si elle est réussie, sans compter pour le bonus, la prime ni le classement.</p>' : ''}
       ${q.variante ? '<p class="tiny muted" style="margin:0">Énigme changée : c’est ton changement du jour.</p>' : ''}
+      ${q.forme === 'rebours' && !fini ? '<p class="fe-rebours"><strong>↑ À rebours</strong><span>Pars du <b>point rouge</b> et remonte le compte rendu <b>de la dernière ligne vers la première</b>, en inversant chaque virage.</span></p>' : ''}
       <p class="fe-contexte">${esc(q.contexte)}</p>
       ${q.figures ? renderFigures(q, fini) : ''}
       ${q.ligne ? ligneHtml(q) : q.tableau ? `<section class="card tight" aria-label="${esc(q.titreTableau || 'Fiche horaire')}">${q.titreTableau ? `<h2 class="section">${esc(q.titreTableau)}</h2>` : ''}${q.tableau}</section>` : ''}
       ${q.type === 'filature' && !fini ? filatureOutils(q) : ''}
       ${q.elements && q.elements.length && !((q.type === 'chronologie' && !fini) || (q.type === 'horaires' && q.trajets)) ? (q.type === 'cadenas' ? essaisHtml(q) : q.type === 'quiment' ? temoignagesHtml(q, { marques: !fini && q.forme !== 'demi' }) : q.type === 'plaque' ? temoignagesHtml(q) : `<section class="col" aria-label="Éléments">${q.elements.map((el) => `<div class="statement"><span class="who">${esc(el.label)}</span><span class="what">${esc(el.texte)}</span></div>`).join('')}</section>`) : ''}
-      ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${esc(q.titreIndices || (q.type === 'grille' ? 'Auditions' : 'Indices'))}</h2>${q.indices.map((t, k) => `<p class="small ${q.type === 'filature' && !fini ? `fi-ind ${classeEtape(q, k)}` : ''}" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
+      ${q.indices ? `<section class="card tight" aria-label="Indices"><h2 class="section">${esc(q.forme === 'rebours' && !fini ? 'Compte rendu · ↑ à remonter de bas en haut' : q.titreIndices || (q.type === 'grille' ? 'Auditions' : 'Indices'))}</h2>${q.indices.map((t, k) => `<p class="small ${q.type === 'filature' && !fini ? `fi-ind ${classeEtape(q, k)}` : ''}" style="margin:0">• ${esc(t)}</p>`).join('')}</section>` : ''}
       ${q.mode === 'texte' ? `<div class="codebox" aria-label="Message codé">${codeHtml(q.code)}</div>
         <p class="small muted" style="margin:0">${esc(q.aide)}</p>` : ''}
       ${q.grille && !fini ? renderGrille(q) : ''}
