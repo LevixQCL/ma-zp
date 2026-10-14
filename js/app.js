@@ -722,10 +722,15 @@ async function onClick(e) {
         const ancien = S.draft.renfort && S.draft.renfort.cible !== cible ? S.draft.renfort.agents : 0;
         const cur = S.draft.renfort && S.draft.renfort.cible === cible ? S.draft.renfort.agents : 0;
         const n = Math.max(0, Math.min(RENFORT.maxParZone, cur + dd));
-        // Un seul renfort par tour : les agents d'un autre renfort prévu reviennent en Intervention.
-        if (ancien) { S.draft.renfort = null; S.draft.alloc.intervention += ancien; }
-        if (n > cur) { if (!takeAgent()) break; }
-        else if (n < cur) S.draft.alloc.intervention += cur - n; // l'agent rendu retourne en Intervention
+        // Un seul renfort par tour. Un agent retiré du renfort (ou d'un autre renfort prévu) redevient libre,
+        // comme avec « Rapatrier » : avant, il partait d'office en Intervention (retour de Luc, 14 oct. 2026).
+        if (ancien) S.draft.renfort = null;
+        if (n > cur) {
+          const avant = { ...S.draft.alloc };
+          if (!takeAgent()) { rerender(); break; }
+          const pris = Object.keys(avant).find((k) => S.draft.alloc[k] < avant[k]);
+          if (pris) toast(`Agent pris en ${SERVICE_LABELS[pris] || pris} pour le renfort.`);
+        } else if (n < cur) toast(`${cur - n > 1 ? `${cur - n} agents libres` : 'Un agent libre'} : à réaffecter dans tes services.`);
         S.draft.renfort = n ? { cible, agents: n } : null;
         S.ordersDirty = true; rerender(); break;
       }
