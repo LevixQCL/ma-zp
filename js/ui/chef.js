@@ -242,10 +242,16 @@ const talentAuNiveau = (c, L) => TALENTS.find((t) => t.comp === c && t.niv === L
 export function chefNuitHtml(z) {
   const cn = z && z.chefNuit;
   if (!cn || cn.tour !== S.state.turn - 1 || !(cn.faits || []).length && !(cn.montees || []).length) return '';
-  const l = [...(cn.montees || []).map((m) => `<b>${esc(COMPETENCES[m.comp].nom)} ${m.niveau}</b>${talentAuNiveau(m.comp, m.niveau) ? ` · talent « ${esc(talentAuNiveau(m.comp, m.niveau).nom)} » débloqué` : ''}`),
-    ...(cn.faits || []).map((f) => `${TALENT[f.id] ? `<img class="chef-insigne" src="img/talents/${f.id}.webp" alt="">` : ''}${esc(f.t)}`)].slice(0, 3);
+  // Retour de Luc : la ligne qui suit une montée de niveau (ex. un service du réseau) se lisait comme la description
+  // du talent débloqué. Chaque talent débloqué porte donc sa vraie description, et chaque fait de la nuit son étiquette.
+  const montees = (cn.montees || []).map((m) => { const t = talentAuNiveau(m.comp, m.niveau);
+    return `🎖️ <b>${esc(COMPETENCES[m.comp].nom)} ${m.niveau}</b>${t ? ` · talent « ${esc(t.nom)} » débloqué<span class="tiny muted" style="display:block">${esc(t.texte)}</span>` : ''}`; });
+  const faits = (cn.faits || []).map((f) => (TALENT[f.id] ? `<img class="chef-insigne" src="img/talents/${f.id}.webp" alt="">${esc(f.t)}`
+    : String(f.id || '').startsWith('svc-') ? `🤝 <span class="tiny muted">Réseau ·</span> ${esc(f.t)}` : esc(f.t)));
+  const l = [...montees, ...faits].slice(0, 3);
+  const nM = Math.min(montees.length, 3);
   return `<button type="button" class="chef-nuit" data-action="bureau-ouvrir">${portraitChef(z.uid, 36, { galons: false })}
-    <span class="col" style="gap:2px;min-width:0;text-align:left"><span class="tiny muted" style="font-weight:700">Ton chef cette nuit${cn.signature ? ` · ${esc(cn.signature)}` : ''}</span>${l.map((x) => `<span class="small" style="line-height:1.35">${x}</span>`).join('')}</span></button>`;
+    <span class="col" style="gap:2px;min-width:0;text-align:left"><span class="tiny muted" style="font-weight:700">Ton chef cette nuit${cn.signature ? ` · ${esc(cn.signature)}` : ''}</span>${l.map((x, k) => `<span class="small" style="line-height:1.35${k === nM && k > 0 ? ';border-top:1px solid var(--line);padding-top:4px;margin-top:2px' : ''}">${x}</span>`).join('')}</span></button>`;
 }
 
 /** Moment de promotion : une seule fois par soirée, à la première ouverture de l'HP. */
