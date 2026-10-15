@@ -465,9 +465,9 @@ function voletLieu(aff, k, et) {
       ${qui.map((s) => `<p class="small" style="margin:0"><strong>${esc(s.prenom)}</strong> · ${esc(ficheSuspect(aff, s).declaration)}</p>`).join('')}
       ${k === aff.pos ? '' : `<div class="tb-trajets">
         <span class="tb-trajets-t">⏱ Temps de trajet <span class="muted">· Google Maps</span></span>
-        <span class="small" style="font-weight:600">${esc(nomLieu)} → ${aff.genre === 'corbeau' ? 'la scène' : 'scène du crime'}</span>
+        <span class="small" style="font-weight:600">${esc(nomLieu)} → ${aff.genre === 'corbeau' || aff.genre === 'medaillon' ? 'la scène' : 'scène du crime'}</span>
         <div class="tb-trajets-l">${MODES_GMAPS.map(([m, ic, nom]) => `<a class="btn primary" href="${lienItineraire(k, aff.pos, LX, m)}" target="_blank" rel="noopener"><span class="ic">${ic}</span>${nom}</a>`).join('')}</div>
-        <span class="small" style="font-weight:600">${aff.genre === 'corbeau' ? 'La scène' : 'Scène du crime'} → ${esc(nomLieu)}</span>
+        <span class="small" style="font-weight:600">${aff.genre === 'corbeau' || aff.genre === 'medaillon' ? 'La scène' : 'Scène du crime'} → ${esc(nomLieu)}</span>
         <div class="tb-trajets-l">${MODES_GMAPS.map(([m, ic, nom]) => `<a class="btn outline" href="${lienItineraire(aff.pos, k, LX, m)}" target="_blank" rel="noopener"><span class="ic">${ic}</span>${nom}</a>`).join('')}</div>
         <p class="tiny muted" style="margin:0">Compte large : la minute près n’est jamais nécessaire. En bus, Google donne les horaires d’aujourd’hui, pas ceux du soir des faits.</p>
       </div>`}

@@ -3,11 +3,13 @@
 import { S, esc } from './common.js';
 import { POINTS_SCENE_RAMPE, sceneRampeSvg } from './rampe-visuels.js';
 import { POINTS_SCENE_CORBEAU, sceneCorbeauSvg } from './corbeau-visuels.js';
+import { POINTS_SCENE_MEDAILLON, sceneMedaillonSvg } from './medaillon-visuels.js';
 
 /** Plots et titres de la scène de chaque affaire écrite. */
 const SCENES = {
   rampe: { pts: () => POINTS_SCENE_RAMPE, kicker: 'Photo du labo · rez-de-chaussée · vendredi 10:10', titre: 'La scène, Rampe Sainte-Waudru' },
   corbeau: { pts: () => POINTS_SCENE_CORBEAU, kicker: 'Photo du labo · rue d’Havré · jeudi 23:05', titre: 'La scène, rue d’Havré' },
+  medaillon: { pts: () => POINTS_SCENE_MEDAILLON, kicker: 'Photo du labo · Salle du Cercle · jeudi 21:40', titre: 'La scène, la Salle du Cercle' },
 };
 const SCENE_CLEF = { pts: () => POINTS_SCENE, kicker: 'Photo du labo · arrière-boutique · mercredi 00:30', titre: 'La scène, rue de la Clef' };
 const sceneDe = (aff) => SCENES[aff.cas] || SCENE_CLEF;
@@ -76,6 +78,7 @@ function decorScene(id) {
 function photoScene(aff, sel, vus) {
   if (aff.cas === 'rampe') return sceneRampeSvg(sel, vus, esc);
   if (aff.cas === 'corbeau') return sceneCorbeauSvg(sel, vus, esc);
+  if (aff.cas === 'medaillon') return sceneMedaillonSvg(sel, vus, esc);
   return `<svg viewBox="0 0 680 380" aria-hidden="false" role="img" aria-label="Arrière-boutique, avec dix plots numérotés">${decorScene('sf')}
         ${POINTS_SCENE.map((p) => `<g class="sf-plot ${sel && sel.k === p.k ? 'on' : ''} ${vus.has(p.k) ? 'vu' : ''}" data-action="scene-pt" data-k="${p.k}" transform="translate(${p.x} ${p.y})" tabindex="0" role="button" aria-label="Plot ${p.n} : ${esc(p.titre)}">
           <circle r="22" fill="transparent"/><path d="M-11 0L0 -20L11 0Z" fill="#F2C230" stroke="#3A2E0A" stroke-width="1.2"/><text y="-5" text-anchor="middle" font-family="'Special Elite', monospace" font-size="11" fill="#1D1A15">${p.n}</text></g>`).join('')}

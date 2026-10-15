@@ -44,7 +44,7 @@ export function marquerLues(n, fs) {
 }
 
 // ───── Morceaux ─────
-const genreDe = (aff) => (aff.genre === 'corbeau' ? 'Lettres anonymes' : aff.meurtre ? 'Homicide' : 'Vol');
+const genreDe = (aff) => (aff.genre === 'corbeau' ? 'Lettres anonymes' : aff.genre === 'medaillon' ? 'Vol d’objet d’art' : aff.meurtre ? 'Homicide' : 'Vol');
 
 function photoHero(aff) {
   return photoHero0(aff).replace(/^<svg /, '<svg preserveAspectRatio="xMidYMid slice" ');

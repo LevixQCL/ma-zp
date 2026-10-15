@@ -22,6 +22,7 @@ function rueCam(id, pluie, foule) {
 }
 import { photosRampe } from './rampe-visuels.js';
 import { photosCorbeau } from './corbeau-visuels.js';
+import { photosMedaillon } from './medaillon-visuels.js';
 
 /** Billet de train Mons → Bruxelles, émis à 21:48. */
 const billet = (id) => svg(id, 220, 300, `${defsPhoto(id, 220, 300)}
@@ -138,7 +139,7 @@ const PHOTOS_B = {
 };
 
 // Chaque affaire écrite à la main a ses photos, dans sa variante (les codes de pièces se recoupent d'une affaire à l'autre).
-const photosDe = (aff) => (aff.cas === 'rampe' ? photosRampe(aff.variante) : aff.cas === 'corbeau' ? photosCorbeau(aff.variante) : aff.variante === 'b' ? PHOTOS_B : PHOTOS);
+const photosDe = (aff) => (aff.cas === 'rampe' ? photosRampe(aff.variante) : aff.cas === 'corbeau' ? photosCorbeau(aff.variante) : aff.cas === 'medaillon' ? photosMedaillon(aff.variante) : aff.variante === 'b' ? PHOTOS_B : PHOTOS);
 
 /** Photo d'une pièce, ou chaîne vide si la pièce n'en a pas. `id` : préfixe unique des motifs SVG. */
 export function photoIndice(aff, f, id = 'ip') {

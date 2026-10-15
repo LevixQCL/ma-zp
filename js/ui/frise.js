@@ -5,7 +5,9 @@ import { EVENEMENTS as EVENEMENTS1 } from '../engine/meurtre-mons.js';
 
 const evenementsDe = (aff) => (aff && aff.evenements) || EVENEMENTS1;
 
-const T0 = 20 * 60, T1 = 24 * 60 + 30;
+const T0D = 20 * 60, T1D = 24 * 60 + 30;
+/** Bornes de la frise : 20:00-00:30, sauf pour une affaire qui donne les siennes (aff.frise). */
+const bornes = (aff) => [(aff && aff.frise && aff.frise.de) || T0D, (aff && aff.frise && aff.frise.a) || T1D];
 const hm = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const COUL = ['#C2302B', '#C88A12', '#2F6FD3', '#2E9E62', '#6B4FB8'];
 
@@ -17,6 +19,7 @@ export function evenementsDispo(connus, aff) { return evenementsDe(aff).filter((
  */
 export function friseSvg(aff, ids, { mini = false } = {}) {
   const evs = evenementsDe(aff).filter((e) => ids.includes(e.id));
+  const [T0, T1] = bornes(aff);
   const W = 640, G = 96, L = 30, top = 26;
   const lignes = [{ nom: 'Scène', c: '#5E574A' }, ...aff.suspects.map((s, i) => ({ nom: s.prenom, c: COUL[i] }))];
   const H = top + lignes.length * L + 10;

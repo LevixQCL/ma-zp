@@ -15,6 +15,7 @@ import { minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
 import { affaireMeurtre, VARIANTES_MEURTRE } from './meurtre-mons.js';
 import { affaireMeurtreRampe, evaluerHypothese, VARIANTES_RAMPE } from './meurtre-rampe.js';
 import { affaireCorbeau, VARIANTES_CORBEAU } from './corbeau-havre.js';
+import { affaireMedaillon, VARIANTES_MEDAILLON } from './medaillon-mayeur.js';
 import { construireDebrief } from './debrief.js';
 
 /** Deuxième affaire de meurtre écrite à la main (« Le notaire de la Rampe ») : ouverte une fois par partie,
@@ -22,6 +23,9 @@ import { construireDebrief } from './debrief.js';
 export const MEURTRE2 = { actif: true, ecart: 2, lancement: Date.parse('2026-10-04T17:30:00Z') };
 /** Troisième affaire écrite (« Le corbeau de la rue d'Havré », sans meurtre) : elle suit directement la Rampe. */
 export const CORBEAU = { actif: true };
+/** Quatrième affaire écrite (« Quatre-vingt-quatorze secondes », sans meurtre) : elle suit directement le corbeau.
+ * Inactive tant que le maître du jeu ne l'a pas validée. */
+export const MEDAILLON = { actif: false };
 /**
  * Lancement programmé : au premier tour résolu après `lancement` (dimanche 4 octobre 2026, 20:00), une partie qui n'a pas
  * encore joué la Rampe retire l'affaire en cours (comme le maître du jeu le ferait) et l'ouvre le soir même.
@@ -56,19 +60,21 @@ export const AFFAIRES_ECRITES = [
     dispo: (st) => MEURTRE2.actif && st.meurtre2Des == null, programmer: (st, n) => { st.meurtre2Des = n; delete st.meurtre2Suivante; } },
   { cas: 'corbeau', titre: 'Le corbeau de la rue d’Havré', resume: 'Lettres anonymes et affiches, rue d’Havré · 5 suspects · mandat puis confrontation',
     dispo: (st) => CORBEAU.actif && st.corbeauDes == null, programmer: (st, n) => { st.corbeauDes = n; } },
+  { cas: 'medaillon', titre: 'Quatre-vingt-quatorze secondes', resume: 'Un médaillon remplacé par une copie pendant une réception · 5 suspects · mandat puis confrontation',
+    dispo: (st) => MEDAILLON.actif && st.medaillonDes == null, programmer: (st, n) => { st.medaillonDes = n; } },
   { cas: 'clef', titre: 'Meurtre rue de la Clef', resume: 'Meurtre d’un antiquaire dans sa boutique · 5 suspects · perquisition puis confrontation',
     dispo: (st) => st.meurtreDes == null, programmer: (st, n) => { st.meurtreDes = n; } },
 ];
-const casEnCours = (st) => (st.enquete ? (st.meurtre2Des === st.enquete.n ? 'rampe' : st.meurtreDes === st.enquete.n ? 'clef' : st.corbeauDes === st.enquete.n ? 'corbeau' : null) : null);
+const casEnCours = (st) => (st.enquete ? (st.meurtre2Des === st.enquete.n ? 'rampe' : st.meurtreDes === st.enquete.n ? 'clef' : st.corbeauDes === st.enquete.n ? 'corbeau' : st.medaillonDes === st.enquete.n ? 'medaillon' : null) : null);
 /** Affaire écrite que porte le numéro n dans cette partie ('clef', 'rampe' ou 'corbeau'), ou null (un vol généré). Même ordre que affaire(). */
-export const casDe = (st, n) => (st.meurtreDes != null && n === st.meurtreDes ? 'clef' : st.meurtre2Des != null && n === st.meurtre2Des ? 'rampe' : st.corbeauDes != null && n === st.corbeauDes ? 'corbeau' : null);
+export const casDe = (st, n) => (st.meurtreDes != null && n === st.meurtreDes ? 'clef' : st.meurtre2Des != null && n === st.meurtre2Des ? 'rampe' : st.corbeauDes != null && n === st.corbeauDes ? 'corbeau' : st.medaillonDes != null && n === st.medaillonDes ? 'medaillon' : null);
 /**
  * Variantes des affaires écrites : pour qu'un joueur qui connaît déjà l'histoire (ou en a entendu parler dans une
  * autre partie) n'en connaisse pas la solution, chaque affaire écrite tire une variante à son ouverture (graine de la
  * partie + n° de l'affaire). Elle est gardée dans state.variantes[n] pour toute la partie (le débrief d'une affaire
  * close la relit). Sans entrée : l'affaire d'origine, à l'identique (les affaires ouvertes avant les variantes).
  */
-export const VARIANTES_ECRITES = { clef: VARIANTES_MEURTRE, rampe: VARIANTES_RAMPE, corbeau: VARIANTES_CORBEAU };
+export const VARIANTES_ECRITES = { clef: VARIANTES_MEURTRE, rampe: VARIANTES_RAMPE, corbeau: VARIANTES_CORBEAU, medaillon: VARIANTES_MEDAILLON };
 export const tirerVariante = (seed, n, cas) => makeRng(`${seed}:variante:${cas}:${n}`).pick(VARIANTES_ECRITES[cas]);
 /** Variante de l'affaire n dans cette partie ('a' : l'histoire d'origine). */
 export const varianteDe = (state, n) => (state.variantes && state.variantes[n]) || 'a';
@@ -91,7 +97,7 @@ export function ouvrirAffaireMaintenant(state, cas = 'rampe', now = Date.now()) 
   if (state.enquete) {
     const e = state.enquete;
     retiree = affaire(state, e.n).titre;
-    if ((e.jour || 1) <= 1) { if (state.meurtreDes === e.n) delete state.meurtreDes; if (state.meurtre2Des === e.n) delete state.meurtre2Des; if (state.corbeauDes === e.n) delete state.corbeauDes; }
+    if ((e.jour || 1) <= 1) { if (state.meurtreDes === e.n) delete state.meurtreDes; if (state.meurtre2Des === e.n) delete state.meurtre2Des; if (state.corbeauDes === e.n) delete state.corbeauDes; if (state.medaillonDes === e.n) delete state.medaillonDes; }
     state.enquetePause = { id: `mj-${cas}-${state.season}-${state.turn}-${e.n}`, n: e.n, titre: retiree, tour: state.turn, reprise: state.nextDeadline };
     state.enquete = null;
   }
@@ -290,7 +296,7 @@ const ECHEC_CONFRONT = { 'rampe:a': 'Son alibi tient toujours : quelqu’un le c
  * recoupement décisif, l'affaire ne tombe donc pas plus tôt (15 oct. 2026, après test/corbeau-sim.mjs).
  * Hors de l'objet de l'affaire, dont l'empreinte est figée (test/variantes.test.mjs).
  */
-const DOUBLE_DECISIVE = { 'corbeau:a': ['moy:4'], 'corbeau:b': ['moy:3'] };
+const DOUBLE_DECISIVE = { 'corbeau:a': ['moy:4'], 'corbeau:b': ['moy:3'], 'medaillon:a': ['moy:4'], 'medaillon:b': ['moy:2'] };
 /** Poids décisif d'une pièce dans une confrontation : 0, 1, ou 2 pour une preuve matérielle. */
 export function poidsDecisif(aff, f) {
   if (!aff.confront || !aff.confront.decisives.includes(f)) return 0;
@@ -1206,6 +1212,8 @@ export function nouvelleAffaire(state) {
   else if (rampeProgrammee) { state.meurtre2Des = n; delete state.meurtre2Suivante; } // la Rampe, programmée par le lancement : elle passe avant tout
   // Le corbeau suit la Rampe (pas de meurtre : il peut venir juste après).
   else if (CORBEAU.actif && state.corbeauDes == null && state.meurtre2Des != null && n > state.meurtre2Des) state.corbeauDes = n;
+  // Le médaillon suit le corbeau (pas de meurtre : il peut venir juste après).
+  else if (MEDAILLON.actif && state.medaillonDes == null && state.corbeauDes != null && n > state.corbeauDes) state.medaillonDes = n;
   // Une affaire de meurtre écrite à la main, une fois par partie (jamais juste après la Rampe ni le corbeau : un vol entre les deux).
   else if (state.meurtreDes == null && n >= 2 && !(state.meurtre2Des != null && n < state.meurtre2Des + MEURTRE2.ecart) && !(state.corbeauDes != null && n < state.corbeauDes + MEURTRE2.ecart)) state.meurtreDes = n;
   else if (MEURTRE2.actif && state.meurtre2Des == null && state.meurtreDes != null && n >= state.meurtreDes + MEURTRE2.ecart) state.meurtre2Des = n; // … puis la seconde
@@ -1229,6 +1237,7 @@ export function affaire(state, n) {
   if (state.meurtreDes != null && n === state.meurtreDes) return affaireMeurtre(n, varianteDe(state, n));
   if (state.meurtre2Des != null && n === state.meurtre2Des) return affaireMeurtreRampe(n, varianteDe(state, n));
   if (state.corbeauDes != null && n === state.corbeauDes) return affaireCorbeau(n, varianteDe(state, n));
+  if (state.medaillonDes != null && n === state.medaillonDes) return affaireMedaillon(n, varianteDe(state, n));
   return genererAffaire(state.seed, n, state.carteDes != null && n >= state.carteDes, state.profDes != null && n >= state.profDes, state.distinctDes, state.varianteDes);
 }
 
