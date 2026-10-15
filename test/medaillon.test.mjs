@@ -1,14 +1,14 @@
 // Quatrième affaire écrite (« Quatre-vingt-quatorze secondes », sans meurtre) : cohérence, mandat jamais avant le jour 3,
 // recoupements, déclic, hypothèse au juge, confrontation (la perquisition compte double), variante b, photos.
 import assert from 'node:assert/strict';
-import { affaire, candidats, confrontationOk, mandatOk, pieceDemarche, texteFait, titrePiece, pieceRecoupement, recoupementDe, pieceReaudition, MEDAILLON, VARIANTES_ECRITES } from '../js/engine/enquete.js';
+import { nouvelleAffaire, affaire, candidats, confrontationOk, mandatOk, pieceDemarche, texteFait, titrePiece, pieceRecoupement, recoupementDe, pieceReaudition, MEDAILLON, VARIANTES_ECRITES } from '../js/engine/enquete.js';
 import { LIEUX_MEDAILLON, RECOUPEMENTS, RELECTURES, COUPS_DE_POUCE, CRENEAUX, EVENEMENTS } from '../js/engine/medaillon-mayeur.js';
 import { dossierAffaire3 } from '../js/engine/dossier.js';
 import { photoIndice } from '../js/ui/indices-photo.js';
 import { POINTS_SCENE_MEDAILLON } from '../js/ui/medaillon-visuels.js';
 import { existsSync } from 'node:fs';
 
-assert.equal(MEDAILLON.actif, false, 'inactive tant que le maître du jeu ne l’a pas validée');
+assert.equal(MEDAILLON.actif, true, 'activée le 15 octobre : suit le corbeau');
 assert.deepEqual(VARIANTES_ECRITES.medaillon, ['a', 'b']);
 const st0 = { seed: 'm', meurtreDes: 2, meurtre2Des: 4, corbeauDes: 5, medaillonDes: 6 };
 
@@ -82,4 +82,14 @@ assert.equal(POINTS_SCENE_MEDAILLON.length, 10);
 assert.equal(COUPS_DE_POUCE.length, 6);
 for (const c of COUPS_DE_POUCE) assert.deepEqual(c.niveaux.map(([j]) => j), [2, 4, 6]);
 assert.ok(EVENEMENTS.length > 10 && RECOUPEMENTS.length === 8 && Object.keys(RELECTURES).length > 4);
+// Programmation : l'affaire suivante après le corbeau est le médaillon ; jamais avant le corbeau.
+{
+  const st = { seed: 'p', enqueteSeq: 5, meurtreDes: 2, meurtre2Des: 4, corbeauDes: 5, zones: {} };
+  nouvelleAffaire(st);
+  assert.equal(st.medaillonDes, 6, 'le médaillon suit directement le corbeau');
+  assert.equal(affaire(st, 6).cas, 'medaillon');
+  const avant = { seed: 'p', enqueteSeq: 3, meurtreDes: 2, meurtre2Des: 3, zones: {} };
+  nouvelleAffaire(avant);
+  assert.equal(avant.medaillonDes, undefined, 'pas avant le corbeau');
+}
 console.log('medaillon : OK');

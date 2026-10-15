@@ -228,12 +228,12 @@ console.log('lancement programmé : OK');
   let w = createGame({ seed: 'liste' });
   w = resolveTurn(w, { players: players2 }).state;
   w.meurtreDes = undefined; w.meurtre2Des = undefined;
-  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas).sort(), ['clef', 'corbeau', 'rampe']);
+  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas).sort(), ['clef', 'corbeau', 'medaillon', 'rampe']);
   assert.ok(ouvrirAffaireMaintenant(w, 'clef') != null);
   assert.equal(affaire(w, w.enquete.n).titre, 'Meurtre rue de la Clef');
-  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas).sort(), ['corbeau', 'rampe'], 'la Clef en cours ne se rouvre pas');
+  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas).sort(), ['corbeau', 'medaillon', 'rampe'], 'la Clef en cours ne se rouvre pas');
   assert.ok(ouvrirAffaireMaintenant(w, 'rampe') != null);
-  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas).sort(), ['clef', 'corbeau'], 'la Clef retirée au jour 1 redevient disponible');
+  assert.deepEqual(affairesOuvrables(w).map((a) => a.cas).sort(), ['clef', 'corbeau', 'medaillon'], 'la Clef retirée au jour 1 redevient disponible');
   assert.equal(ouvrirAffaireMaintenant(w, 'rampe'), null);
   console.log('OK : affaires écrites ouvrables par le maître du jeu.');
 }

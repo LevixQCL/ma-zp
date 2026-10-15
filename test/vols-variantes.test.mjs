@@ -43,7 +43,7 @@ const propre = (t) => !/undefined|NaN|\{e\}|\bnull\b/.test(t);
   let st = createGame({ seed: 'en-cours' });
   st = resolveTurn(st, { players }).state;
   // Simule une partie d'avant la mise à jour : affaire n° 5 ouverte, aucune trace de varianteDes.
-  delete st.varianteDes; st.enqueteSeq = 4; st.meurtreDes = -9; st.meurtre2Des = -9; st.corbeauDes = -9;
+  delete st.varianteDes; st.enqueteSeq = 4; st.meurtreDes = -9; st.meurtre2Des = -9; st.corbeauDes = -9; st.medaillonDes = -9;
   nouvelleAffaire(st);
   delete st.varianteDes;
   const n = st.enquete.n;
@@ -143,7 +143,7 @@ VARIANTES.force = null;
 {
   const players = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' }, C: { code: '3333', nom: 'Charlie' } };
   let st = createGame({ seed: 'complices' });
-  st.meurtreDes = -9; st.meurtre2Des = -9; st.corbeauDes = -9;
+  st.meurtreDes = -9; st.meurtre2Des = -9; st.corbeauDes = -9; st.medaillonDes = -9;
   st = resolveTurn(st, { players }).state;
   VARIANTES.force = 'complices';
   st.enquete = null; nouvelleAffaire(st);
@@ -184,7 +184,7 @@ VARIANTES.force = null;
   for (const v of ['fauxTemoin', 'fraude']) {
     const players = { A: { code: '1111', nom: 'Alpha' } };
     let st = createGame({ seed: `bout-${v}` });
-    st.meurtreDes = -9; st.meurtre2Des = -9; st.corbeauDes = -9;
+    st.meurtreDes = -9; st.meurtre2Des = -9; st.corbeauDes = -9; st.medaillonDes = -9;
     st = resolveTurn(st, { players }).state;
     VARIANTES.force = v;
     st.enquete = null; nouvelleAffaire(st);

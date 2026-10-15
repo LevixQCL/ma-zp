@@ -24,8 +24,8 @@ export const MEURTRE2 = { actif: true, ecart: 2, lancement: Date.parse('2026-10-
 /** Troisième affaire écrite (« Le corbeau de la rue d'Havré », sans meurtre) : elle suit directement la Rampe. */
 export const CORBEAU = { actif: true };
 /** Quatrième affaire écrite (« Quatre-vingt-quatorze secondes », sans meurtre) : elle suit directement le corbeau.
- * Inactive tant que le maître du jeu ne l'a pas validée. */
-export const MEDAILLON = { actif: false };
+ * Activée le 15 oct. 2026 : elle s'ouvre à la clôture du corbeau. */
+export const MEDAILLON = { actif: true };
 /**
  * Lancement programmé : au premier tour résolu après `lancement` (dimanche 4 octobre 2026, 20:00), une partie qui n'a pas
  * encore joué la Rampe retire l'affaire en cours (comme le maître du jeu le ferait) et l'ouvre le soir même.

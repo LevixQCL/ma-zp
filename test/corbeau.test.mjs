@@ -137,7 +137,7 @@ assert.ok(st.zones.A.rapport.some((x) => /passe aux aveux/.test(x)));
 assert.ok(st.zones.A.rapport.some((x) => /tu avais aussi compris pourquoi/.test(x)));
 assert.ok(st.zones.A.stats.limier > avant);
 assert.ok(!st.traques.some((t) => t.n === n), 'pas de traque');
-assert.notEqual(affaire(st, st.enquete.n).meurtre, true, 'la suivante : un vol');
+assert.equal(affaire(st, st.enquete.n).cas, 'medaillon', 'la suivante : l’affaire écrite n°4');
 const db = construireDebrief(st, c, 'aveux', { jour: 4, decouvreurs: ['A'], arreteurs: ['A'] });
 assert.equal(db.genre, 'corbeau');
 

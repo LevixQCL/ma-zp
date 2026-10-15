@@ -65,7 +65,7 @@ for (const [profil, uids] of Object.entries(PROFILS)) {
     let total = 0, restants = 0, budgetFin = 0, rates = 0;
     for (let sd = 0; sd < SEEDS; sd++) {
       let st = createGame({ seed: `vv-${sd}` });
-      st.meurtreDes = -9; st.meurtre2Des = -9; st.corbeauDes = -9; // que des vols
+      st.meurtreDes = -9; st.meurtre2Des = -9; st.corbeauDes = -9; st.medaillonDes = -9; // que des vols
       const players = Object.fromEntries(uids.map((u, k) => [u, { code: String(4100 + k), nom: `Zone ${u}` }]));
       st = resolveTurn(st, { players }).state;
       const base = {};
