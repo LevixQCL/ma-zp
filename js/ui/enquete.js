@@ -366,8 +366,8 @@ function mesPieces(aff, dos) {
     const dm = DEMARCHES[p.src];
     const moyen = dm ? (dm.cout ? 'payée' : `${dm.agents} agents envoyés`) : SOURCES[p.src];
     return `<div class="between" style="gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid var(--line)">
-      <span class="col" style="gap:1px;min-width:0"><span class="small" style="font-weight:600">${esc(titrePiece(aff, p.f))}</span><span class="tiny muted">J${p.j} · ${esc(SOURCES[p.src] || p.src)} · ${esc(moyen)}</span></span>
-      <span style="flex-shrink:0;text-align:right">${etat}</span></div>`;
+      <span class="col" style="gap:1px;min-width:0;flex:1 1 55%"><span class="small" style="font-weight:600">${esc(titrePiece(aff, p.f))}</span><span class="tiny muted">J${p.j} · ${esc(SOURCES[p.src] || p.src)} · ${esc(moyen)}</span></span>
+      <span style="flex:0 1 auto;max-width:45%;min-width:0;text-align:right;overflow-wrap:anywhere">${etat}</span></div>`;
   };
   const gardees = miennes.filter((p) => !(d.partages || []).some((x) => x.f === p.f) && !dejaPartagee(st, S.user.uid, p.f).size).length;
   const ouvert = S.ouverts && 'mespieces' in S.ouverts ? S.ouverts.mespieces : false;
