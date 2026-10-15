@@ -67,12 +67,23 @@ export function lies(state, u, v, type, T = state.turn) {
 /** Remise sur les achats pour cette zone ce soir. */
 export const remiseAchat = (state, uid, T = state.turn) => (pactesDe(state, uid).some((p) => p.type === 'achat' && pacteJoue(state, p, T)) ? PACTE.remise : 0);
 
+/**
+ * Pactes en même temps pour une zone : 2, +1 avec le talent « Carnet d'adresses » (saison 2).
+ * `brouillon` : talents choisis dans les ordres du jour (côté écran), appliqués ce soir avant les pactes.
+ */
+export function maxPactes(z, brouillon = null) {
+  const chefOk = z && z.chef && !z.chef.hs;
+  // Talents changés dans les ordres du jour : ce sont eux qui compteront ce soir (appliqués avant les pactes).
+  const adr = Array.isArray(brouillon) ? !!(chefOk && brouillon.includes('adresses')) : talent(z, 'adresses');
+  return PACTE.max + (adr ? 1 : 0);
+}
+
 /** Raison pour laquelle `uid` ne peut pas proposer de pacte à `cible` (null si possible). */
-export function pacteImpossible(state, uid, cible, T = state.turn) {
+export function pacteImpossible(state, uid, cible, T = state.turn, brouillon = null) {
   const z = state.zones[uid], c = state.zones[cible];
   if (!z || !c || uid === cible) return 'zone inconnue';
   if ((z.pacteBloque || 0) >= absT(state, T)) return 'pacte rompu récemment';
-  const maxDe = (u) => PACTE.max + (talent(state.zones && state.zones[u], 'adresses') ? 1 : 0); // talent « Carnet d'adresses » (saison 2)
+  const maxDe = (u) => maxPactes(state.zones && state.zones[u], u === uid ? brouillon : null);
   if (pactesDe(state, uid).length >= maxDe(uid)) return `déjà ${maxDe(uid)} pactes`;
   if (pactesDe(state, cible).length >= maxDe(cible)) return `elle a déjà ${maxDe(cible)} pactes`;
   if (pactesDe(state, uid).some((p) => partenaire(p, uid) === cible)) return 'déjà liée';

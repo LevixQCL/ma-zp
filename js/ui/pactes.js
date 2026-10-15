@@ -5,7 +5,7 @@ import { gradeFor } from '../engine/constants.js';
 import { planVille } from './plan.js';
 import { AIDE, gainEntraide, MOTIONS_CHEF, themeActif, THEMES } from '../engine/rivalites.js';
 import {
-  PACTES, PACTE, DEFI, DEFI_INDICATEURS, pactesDe, partenaire, pacteJoue, toursRestants, pacteImpossible, defiImpossible, moitiesPiece, enDefi,
+  PACTES, PACTE, DEFI, DEFI_INDICATEURS, pactesDe, partenaire, pacteJoue, toursRestants, pacteImpossible, defiImpossible, maxPactes, moitiesPiece, enDefi,
 } from '../engine/pactes.js';
 import { affaire } from '../engine/enquete.js';
 import { enDifficulte } from '../engine/zone.js';
@@ -131,13 +131,14 @@ function mesPactesHtml() {
     }
   });
   const brouillon = d.pacte && d.pacte.cible && st.zones[d.pacte.cible]
-    ? `<div class="pacte-ligne">${ico(d.pacte.type)}<span class="col grow" style="gap:2px"><strong class="small">${esc(PACTES[d.pacte.type].nom)} · ${puce(d.pacte.cible)}${nomCourt(d.pacte.cible)}</strong><span class="tiny ${liste.length >= PACTE.max ? 'warn' : 'muted'}">${liste.length >= PACTE.max ? `ne partira pas : tu as déjà ${PACTE.max} pactes` : (() => { const r = reponseA(d.pacte.cible, 'pacteRep', (x) => x.type === d.pacte.type); return r === true ? '<span class="ok">accepté : signé ce soir à 20:00</span>' : r === false ? 'refusé, pas cette fois' : 'proposition envoyée en message ; s’il accepte avant 20:00, signé ce soir (sinon il pourra répondre demain)'; })()}</span></span><button type="button" class="btn small ghost" data-action="pacte-annuler">Annuler</button></div>` : '';
-  const max = liste.length + (brouillon ? 1 : 0) >= PACTE.max;
+    ? `<div class="pacte-ligne">${ico(d.pacte.type)}<span class="col grow" style="gap:2px"><strong class="small">${esc(PACTES[d.pacte.type].nom)} · ${puce(d.pacte.cible)}${nomCourt(d.pacte.cible)}</strong><span class="tiny ${liste.length >= maxPactes(myZone(), d.talents) ? 'warn' : 'muted'}">${liste.length >= maxPactes(myZone(), d.talents) ? `ne partira pas : tu as déjà ${liste.length} pactes` : (() => { const r = reponseA(d.pacte.cible, 'pacteRep', (x) => x.type === d.pacte.type); return r === true ? '<span class="ok">accepté : signé ce soir à 20:00</span>' : r === false ? 'refusé, pas cette fois' : 'proposition envoyée en message ; s’il accepte avant 20:00, signé ce soir (sinon il pourra répondre demain)'; })()}</span></span><button type="button" class="btn small ghost" data-action="pacte-annuler">Annuler</button></div>` : '';
+  const MAX = maxPactes(myZone(), S.draft && S.draft.talents);
+  const max = liste.length + (brouillon ? 1 : 0) >= MAX;
   const bloque = (myZone().pacteBloque || 0) >= (st.season - 1) * 100 + st.turn;
   const recus = pactesRecus().map((x) => `<div class="pacte-ligne">${ico(x.type)}<span class="col grow" style="gap:2px;min-width:0"><strong class="small">${puce(x.de)}${nomCourt(x.de)} te propose : ${esc(PACTES[x.type].nom)}</strong><span class="tiny muted">${esc(PACTES[x.type].texte)}</span></span></div>
       <div class="choices"><button type="button" class="choice" data-action="pacte-accepter" data-de="${esc(x.de)}" data-type="${x.type}" data-v="1" aria-pressed="${x.reponse === true}">${x.reponse === true ? '✓ Accepté' : 'Accepter'}</button><button type="button" class="choice" data-action="pacte-accepter" data-de="${esc(x.de)}" data-type="${x.type}" data-v="0" aria-pressed="${x.reponse === false}">${x.reponse === false ? 'Refusé' : 'Refuser'}</button></div>
       ${x.reponse === true ? '<span class="tiny ok">Signé ce soir à 20:00 (ta réponse lui a été envoyée).</span>' : ''}`).join('<hr class="sep">');
-  return `<section class="card" aria-label="Mes pactes"><div class="between"><h2 class="card-title">Mes pactes</h2><span class="tiny muted">${Math.min(PACTE.max, liste.length + (brouillon ? 1 : 0))} sur ${PACTE.max}</span></div>
+  return `<section class="card" aria-label="Mes pactes"><div class="between"><h2 class="card-title">Mes pactes</h2><span class="tiny muted">${Math.min(MAX, liste.length + (brouillon ? 1 : 0))} sur ${MAX}</span></div>
     ${recus ? `${recus}${lignes.length || brouillon ? '<hr class="sep">' : ''}` : ''}
     ${lignes.length || brouillon || recus ? `${lignes.join('<hr class="sep">')}${brouillon ? `${lignes.length ? '<hr class="sep">' : ''}${brouillon}` : ''}` : ('<p class="small muted" style="margin:0">Aucun pacte pour l’instant : choisis-en un juste en dessous.</p>')}
     ${bloque ? `<p class="tiny warn" style="margin:0">Tu as rompu un pacte récemment : pas de nouveau pacte avant quelques tours.</p>` : max ? '' : S.pacteForm ? proposerHtml() : ''}
@@ -150,12 +151,12 @@ function proposerHtml() {
   const zones = autres();
   return `<div class="col pacte-form" style="gap:10px">
     <span class="small" style="font-weight:700">Avec quelle zone ?</span>
-    <div class="zchips">${zones.map((z) => { const r = pacteImpossible(st, me, z.uid); return `<button type="button" class="zchip" data-action="pacte-cible" data-v="${esc(z.uid)}" aria-pressed="${f.cible === z.uid}" ${r ? 'disabled' : ''}>${puce(z.uid)}${esc(z.code)} ${esc(z.nom)}${r ? ` · ${esc(r)}` : ''}</button>`; }).join('')}</div>
+    <div class="zchips">${zones.map((z) => { const r = pacteImpossible(st, me, z.uid, st.turn, S.draft && S.draft.talents); return `<button type="button" class="zchip" data-action="pacte-cible" data-v="${esc(z.uid)}" aria-pressed="${f.cible === z.uid}" ${r ? 'disabled' : ''}>${puce(z.uid)}${esc(z.code)} ${esc(z.nom)}${r ? ` · ${esc(r)}` : ''}</button>`; }).join('')}</div>
     <span class="small" style="font-weight:700">Quel pacte ?</span>
     <div class="col" style="gap:6px">${Object.entries(PACTES).map(([k, v]) => `<button type="button" class="choice pacte-choix" data-action="pacte-type" data-v="${k}" aria-pressed="${f.type === k}">${ico(k)}<span class="col" style="gap:2px;text-align:left"><span>${esc(v.nom)}</span><span class="s">${esc(v.texte)}</span></span></button>`).join('')}</div>
     <div class="row" style="gap:8px"><button type="button" class="btn ghost" data-action="pacte-form-fermer">Fermer</button>
       <button type="button" class="btn primary grow" data-action="pacte-proposer" ${f.cible && f.type ? '' : 'disabled'}>${f.cible && st.zones[f.cible] ? `Proposer à ${esc(st.zones[f.cible].nom)}` : 'Proposer'}</button></div>
-    <span class="tiny muted">Ta proposition part tout de suite en message privé. Si l’autre zone accepte avant 20:00, le pacte est signé ce soir ; sinon elle pourra répondre demain. ${PACTE.max} pactes au plus, un seul par zone partenaire.</span>
+    <span class="tiny muted">Ta proposition part tout de suite en message privé. Si l’autre zone accepte avant 20:00, le pacte est signé ce soir ; sinon elle pourra répondre demain. ${maxPactes(myZone(), S.draft && S.draft.talents)} pactes au plus, un seul par zone partenaire.</span>
   </div>`;
 }
 
@@ -238,7 +239,7 @@ function conseilHtml() {
 function typesPactesHtml() {
   const st = S.state, me = S.user.uid;
   const liste = pactesDe(st, me);
-  const plein = liste.length >= PACTE.max || ((myZone().pacteBloque || 0) >= (st.season - 1) * 100 + st.turn);
+  const plein = liste.length >= maxPactes(myZone(), S.draft && S.draft.talents) || ((myZone().pacteBloque || 0) >= (st.season - 1) * 100 + st.turn);
   return `<section class="col" style="gap:8px" aria-label="Pactes possibles"><span class="kicker">Trois pactes possibles · ${PACTE.duree} jours</span>
     ${Object.entries(PACTES).map(([k, v]) => `<div class="typ2">${ico(k, 24)}<span class="col grow" style="gap:1px;min-width:0"><b>${esc(v.nom)}</b><span class="small muted">${esc(v.court)}</span></span>
       <button type="button" class="btn small ${plein ? 'ghost' : 'primary'}" data-action="pacte-form" data-type="${k}" ${plein ? 'disabled' : ''}>Proposer</button></div>`).join('')}
