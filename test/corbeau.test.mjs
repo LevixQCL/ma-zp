@@ -71,7 +71,13 @@ assert.equal(pieceReaudition(a, { pieces: [{ f: 'occ:2' }] }, 2, 'occ:2'), 'Ra:2
 // Confrontation : deux décisives au moins, sur le corbeau.
 assert.ok(confrontationOk(a, 4, ['moy:4', 'x:sept', 'occ:4']));
 assert.ok(confrontationOk(a, 4, ['x:relais', 'Rb:4', 'doc:pvc']));
-assert.ok(!confrontationOk(a, 4, ['moy:4', 'occ:4', 'A:4']), 'une seule décisive');
+assert.ok(!confrontationOk(a, 4, ['x:sept', 'occ:4', 'A:4']), 'une seule décisive');
+// 15 oct. 2026 : la perquisition (la cassette) compte double. Les deux confrontations ratées de Laura passent.
+assert.ok(confrontationOk(a, 4, ['moy:4', 'occ:4', 'A:4']), 'la cassette compte double');
+assert.ok(confrontationOk(a, 4, ['c:labo1', 'r:relais', 'moy:4']), 'Laura, 1re confrontation');
+assert.ok(confrontationOk(a, 4, ['mob:4', 'moy:4', 'occ:4']), 'Laura, 2e confrontation');
+assert.ok(!confrontationOk(a, 4, ['moy:4', 'occ:4', 'occ:2']), 'la cassette ne couvre pas un leurre');
+assert.ok(!confrontationOk(a, 4, ['moy:4', 'occ:4']), 'trois pièces, pas deux');
 assert.ok(!confrontationOk(a, 4, ['moy:4', 'x:sept', 'occ:2']), 'un leurre');
 assert.ok(!confrontationOk(a, 0, ['moy:4', 'x:sept', 'occ:4']), 'mauvaise personne');
 

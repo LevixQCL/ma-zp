@@ -3,7 +3,7 @@
 // du premier jour sont ceux de l'histoire d'origine (on ne la reconnaît qu'en enquêtant).
 import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
-import { affaire, candidats, confrontationOk, mandatOk, pieceDemarche, pieceReaudition, pieceRecoupement, texteFait, titrePiece, opposables, nouvelleAffaire, tirerVariante, varianteDe, VARIANTES_ECRITES, ouvrirAffaireMaintenant } from '../js/engine/enquete.js';
+import { affaire, candidats, confrontationOk, mandatOk, pieceDemarche, pieceReaudition, pieceRecoupement, poidsDecisif, texteFait, titrePiece, opposables, nouvelleAffaire, tirerVariante, varianteDe, VARIANTES_ECRITES, ouvrirAffaireMaintenant } from '../js/engine/enquete.js';
 import { affaireMeurtre } from '../js/engine/meurtre-mons.js';
 import { affaireMeurtreRampe, evaluerHypothese } from '../js/engine/meurtre-rampe.js';
 import { affaireCorbeau } from '../js/engine/corbeau-havre.js';
@@ -124,7 +124,9 @@ for (const { nom, A, B, reb } of CAS) {
   const [d1, d2] = B.confront.decisives;
   const [autre, autre2] = B.confront.accablantes.filter((f) => !B.confront.decisives.includes(f));
   assert.ok(confrontationOk(B, B.coupable, [d1, d2, autre]), `${nom} : deux décisives suffisent`);
-  assert.ok(!confrontationOk(B, B.coupable, [d1, autre, autre2]), `${nom} : une seule décisive`);
+  const simple = B.confront.decisives.find((f) => poidsDecisif(B, f) === 1), double = B.confront.decisives.find((f) => poidsDecisif(B, f) === 2);
+  assert.ok(!confrontationOk(B, B.coupable, [simple, autre, autre2]), `${nom} : une seule décisive`);
+  if (double) assert.ok(confrontationOk(B, B.coupable, [double, autre, autre2]), `${nom} : la preuve matérielle compte double`);
   for (const [i, l] of Object.entries(B.innocente)) for (const x of l) for (const f of [].concat(x)) if (!B.confront.accablantes.includes(f)) assert.ok(!confrontationOk(B, B.coupable, [d1, d2, f]), `${nom} : ${f} (qui blanchit ${i}) n’accable pas`);
   assert.ok(!confrontationOk(B, A.coupable, [d1, d2, autre]), `${nom} : l’ancien coupable n’avoue pas`);
   assert.ok(!confrontationOk(B, B.coupable, ['doc:journal', 'doc:pvc', `A:${B.coupable}`]), `${nom} : les documents publics ne suffisent pas`);

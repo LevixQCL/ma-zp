@@ -284,12 +284,38 @@ export function mandatOk(aff, dossier, i) {
  */
 const ECHEC_CONFRONT = { 'rampe:a': 'Son alibi tient toujours : quelqu’un le couvre.' };
 
+/**
+ * Preuves matérielles qui comptent pour deux décisives : avec elles, deux autres pièces à charge suffisent.
+ * Corbeau : la perquisition qui trouve la cassette (le texte de toutes les lettres) — le mandat exige déjà un
+ * recoupement décisif, l'affaire ne tombe donc pas plus tôt (15 oct. 2026, après test/corbeau-sim.mjs).
+ * Hors de l'objet de l'affaire, dont l'empreinte est figée (test/variantes.test.mjs).
+ */
+const DOUBLE_DECISIVE = { 'corbeau:a': ['moy:4'], 'corbeau:b': ['moy:3'] };
+/** Poids décisif d'une pièce dans une confrontation : 0, 1, ou 2 pour une preuve matérielle. */
+export function poidsDecisif(aff, f) {
+  if (!aff.confront || !aff.confront.decisives.includes(f)) return 0;
+  return (DOUBLE_DECISIVE[`${aff.cas}:${aff.variante || 'a'}`] || []).includes(f) ? 2 : 1;
+}
+/** Total décisif de pièces opposées (chaque pièce comptée une fois). */
+export function decisivesDe(aff, pieces) { return [...new Set(pieces || [])].reduce((t, f) => t + poidsDecisif(aff, f), 0); }
+
 /** Meurtre : la confrontation réussit-elle ? (bon suspect, trois pièces accablantes dont deux décisives) */
 export function confrontationOk(aff, i, pieces) {
   if (!aff.meurtre) return i === aff.coupable;
   const p = [...new Set(pieces || [])];
   if (i !== aff.coupable || p.length !== 3) return false;
-  return p.every((f) => aff.confront.accablantes.includes(f)) && p.filter((f) => aff.confront.decisives.includes(f)).length >= 2;
+  return p.every((f) => aff.confront.accablantes.includes(f)) && decisivesDe(aff, p) >= 2;
+}
+
+/** Échec d'une confrontation du bon suspect : où en est le joueur, sans dire quelles pièces manquent. */
+export function bilanConfrontation(aff, a, pieces) {
+  const p = [...new Set(pieces || [])], f = aff.suspects[a].f, la = f ? 'la' : 'le';
+  const dec = Math.min(2, decisivesDe(aff, p)), horsSujet = p.filter((x) => !aff.confront.accablantes.includes(x)).length;
+  if (dec >= 2) {
+    if (p.length < 3) return `Tu tenais de quoi ${la} faire craquer, mais il faut opposer trois pièces : tu n’en avais que ${p.length}.`;
+    return `Tu tenais de quoi ${la} faire craquer, mais ${horsSujet > 1 ? `${horsSujet} de tes pièces ne ${la} concernaient pas` : 'une de tes pièces ne ' + la + ' concernait pas'} : ${f ? 'elle' : 'il'} s’y est engouffré${f ? 'e' : ''}. Il faut trois pièces qui ${la} mettent en cause.`;
+  }
+  return `${dec ? 'Une seule de tes pièces ' + la + ' mettait' : 'Aucune de tes pièces ne ' + la + ' mettait'} face à ses contradictions : il en faut deux. Une pièce brute ne suffit pas toujours : croiser deux pièces de ton dossier peut en faire une preuve.${horsSujet ? ` Et ${horsSujet > 1 ? `${horsSujet} de tes pièces ne ${la} concernaient pas` : `une de tes pièces ne ${la} concernait pas`}.` : ''}`;
 }
 
 // ─────────────────────────────── Contenu ───────────────────────────────
@@ -1329,7 +1355,7 @@ export function enquetePre(state, uids, ord, push) {
         const nomEl = (f) => (f === 'doc:journal' ? 'le journal du lendemain' : f === 'doc:pvc' ? 'le PV de premières constatations' : `« ${titrePiece(aff, f)} »`);
         const brut = (Array.isArray(ord[u].confront) ? ord[u].confront : []).filter((f) => typeof f === 'string').slice(0, 3);
         const ecartes = brut.length - pieces.length;
-        z.rapport.push(`Enquête : confronté${aff.suspects[a].f ? 'e' : ''} à tes pièces${pieces.map(nomEl).filter((x) => !/undefined/.test(x)).length ? ` (${pieces.map(nomEl).filter((x) => !/undefined/.test(x)).join(', ')})` : ''}, ${aff.suspects[a].nom} nie tout et repart libre. ${ecartes > 0 ? `${ecartes} élément${ecartes > 1 ? 's' : ''} choisi${ecartes > 1 ? 's' : ''} n’étai${ecartes > 1 ? 'ent' : 't'} plus dans ton dossier ce soir. ` : ''}${ECHEC_CONFRONT[`${aff.cas}:${aff.variante || 'a'}`] || `${aff.suspects[a].f ? 'Elle' : 'Il'} a réponse à tout : tes pièces ${aff.suspects[a].f ? 'la' : 'le'} rendent suspect${aff.suspects[a].f ? 'e' : ''}, aucune ne ${aff.suspects[a].f ? 'la' : 'le'} contredit.`} Tes pièces ne ${aff.suspects[a].f ? 'la' : 'le'} mettaient pas face à ses contradictions (−1 de réputation). Tu peux recommencer demain avec d’autres pièces.`);
+        z.rapport.push(`Enquête : confronté${aff.suspects[a].f ? 'e' : ''} à tes pièces${pieces.map(nomEl).filter((x) => !/undefined/.test(x)).length ? ` (${pieces.map(nomEl).filter((x) => !/undefined/.test(x)).join(', ')})` : ''}, ${aff.suspects[a].nom} nie tout et repart libre. ${ecartes > 0 ? `${ecartes} élément${ecartes > 1 ? 's' : ''} choisi${ecartes > 1 ? 's' : ''} n’étai${ecartes > 1 ? 'ent' : 't'} plus dans ton dossier ce soir. ` : ''}${ECHEC_CONFRONT[`${aff.cas}:${aff.variante || 'a'}`] || `${aff.suspects[a].f ? 'Elle' : 'Il'} a réponse à tout.`} ${bilanConfrontation(aff, a, pieces)} (−1 de réputation) Tu peux recommencer demain avec d’autres pièces.`);
         continue;
       }
       d.accuse = a; d.accuseJ = e.jour;

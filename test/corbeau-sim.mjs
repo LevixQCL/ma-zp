@@ -10,7 +10,7 @@
 // Profils : parfait (soupçonne Grégoire dès son audition), moyen (suit d'abord les leurres), parieur (confronte au hasard le 1er jour),
 // prudent (ne confronte que quand un seul suspect reste ET qu'il a deux décisives).
 import { affaireCorbeau as affaireMeurtreRampe } from '../js/engine/corbeau-havre.js';
-import { pieceDemarche, confrontationOk, mandatOk, pieceReaudition, candidats, pieceRecoupement, ENQ } from '../js/engine/enquete.js';
+import { pieceDemarche, confrontationOk, decisivesDe, mandatOk, pieceReaudition, candidats, pieceRecoupement, ENQ } from '../js/engine/enquete.js';
 import { makeRng } from '../js/engine/rng.js';
 
 // « --variante=b » : Jordan (3) est le corbeau ; mêmes profils, rôles d'Hélène et de Jordan échangés.
@@ -70,7 +70,7 @@ function jouer(profil, graine, { bonus = false, equipe = 0 } = {}) {
     if (j === 3) a('r:odile', j);
     if (j === 5) a('r:relais', j);
     const restants = candidats(aff, d.pieces.map((p) => p.f)).suspects;
-    const dec = aff.confront.decisives.filter((f) => opp(d).has(f)).length;
+    const dec = decisivesDe(aff, [...opp(d)]);
     let cible = null;
     if (profil === 'parieur' && j === 1) cible = ordre[0];
     else if (profil === 'parfait' && dec >= 2) cible = aff.coupable;
