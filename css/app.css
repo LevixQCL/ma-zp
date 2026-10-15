@@ -3226,3 +3226,15 @@ a.hud-chip { text-decoration: none; }
 .qz-b-t span { font-size: 12px; color: var(--text2); }
 .qz-b-go { flex: 0 0 auto; padding: 7px 14px; border-radius: 999px; background: #2EC4D6; color: #0C1124; font-weight: 800; font-size: 13px; }
 .qz-rang { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 8px 0 0; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--text); font: inherit; font-size: 13px; cursor: pointer; text-align: left; }
+
+/* ——— iPhone (jeu installé sur l'écran d'accueil) : la barre d'état (heure, réseau, batterie) est
+   transparente et passe par-dessus la page. Tout ce qui est en haut de l'écran descend de sa hauteur
+   (--sat vaut 0 ailleurs : rien ne change sur Android, dans Safari ni sur PC). ——— */
+:root { --sat: env(safe-area-inset-top, 0px); }
+@media not all and (min-width: 1000px) and (hover: hover) and (pointer: fine) {
+  main.screen { padding-top: calc(20px + var(--sat)); }
+  main.screen.gzs { padding-top: calc(10px + var(--sat)); }
+  .hp-hero { margin-top: calc(-20px - var(--sat)); height: calc(222px + var(--sat)); }
+  .hp-hud { top: calc(12px + var(--sat)); }
+  .onglets-flottants, .rv-tete { margin-top: calc(-18px - var(--sat)); }
+}
