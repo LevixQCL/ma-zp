@@ -956,6 +956,7 @@ async function onClick(e) {
         rerender(); if (el.dataset.fermer) ouvrirParc(); break;
       }
       case 'class-tab': S.classTab = el.dataset.t; rerender(); break;
+      case 'quiz-classement': S.classTab = 'quiz'; location.hash = '#classement'; break;
       case 'enq-tab': S.enqTab = el.dataset.t; rerender(); break;
       case 'edition-fermer': marquerEditionVue(); render(); break;
       case 'edition-ouvrir': S.editionOuverte = true; render(); break;

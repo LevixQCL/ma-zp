@@ -23,6 +23,10 @@ export const NOTE_MAJ = {
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Quiz express mis en avant (15 octobre)', [
+      ['Plus caché', 'un bandeau « Plutôt quiz express ? » en haut des énigmes du jour, tant que tu n’as répondu à aucune. L’HP le rappelle aussi.'],
+      ['Son classement', 'nouvel onglet « Quiz » dans les Classements : moyenne sur 5, lissée par le nombre de quiz joués (classé dès 3), sans-faute et série de jours d’affilée. Ton rang s’affiche à la fin de chaque quiz.'],
+    ]],
     ['Non-droit plus clair (13 octobre)', [
       ['Carte en grand', 'la maquette du non-droit prend presque la moitié de l’écran ; sur chaque secteur, un pion par zone qui y va ce soir (le tien en ambre) et le total d’agents.'],
       ['Un tiroir par secteur', 'touche un secteur : son tiroir s’ouvre sous la carte avec la jauge avant → après, les trois rôles côte à côte et une seule phrase qui dit ce qui va se passer ce soir. Faille, piège, saisies et gains sont dans « Détails ». La poignée replie le tiroir.'],

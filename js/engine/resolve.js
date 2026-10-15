@@ -780,6 +780,14 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         const t = appliquerBonus(quiz.bonus ? quiz : { bonus: 'budget' });
         z.rapport.push(`Quiz express : ${bons} bonnes réponses sur ${QUIZ.questions}${t ? `, ${t}` : ''}${quiz.bonus ? '' : ' (bonus non choisi : argent par défaut)'}.`);
       } else z.rapport.push(`Quiz express : ${bons} bonne${bons > 1 ? 's' : ''} réponse${bons > 1 ? 's' : ''} sur ${QUIZ.questions}, il en fallait ${QUIZ.seuil}. Pas de bonus, sans autre conséquence.`);
+      // Compteurs de carrière du quiz (classement « Quiz ») : série = quiz joués des soirs consécutifs.
+      const c = (z.quizCarriere ||= { n: 0, bons: 0, parfaits: 0, gagnes: 0, serie: 0, record: 0, jour: 0 });
+      const jour = Math.round((Number(state.nextDeadline) || 0) / 86400000);
+      c.n += 1; c.bons += bons;
+      if (bons >= QUIZ.questions) c.parfaits += 1;
+      if (bons >= QUIZ.seuil) c.gagnes += 1;
+      c.serie = c.n > 1 && c.jour === jour - 1 ? c.serie + 1 : 1;
+      c.record = Math.max(c.record || 0, c.serie); c.jour = jour;
     }
     if (qs.length) {
       z.stats.quetesOk += ok;
@@ -1621,6 +1629,7 @@ function finDeSaison(state, classement, opts = {}) {
     if (z.jaugeIncidents) nz.jaugeIncidents = z.jaugeIncidents;
     if (z.carriere) nz.carriere = z.carriere;
     if (z.enigCarriere) nz.enigCarriere = z.enigCarriere; // classement « Esprit vif » de carrière
+    if (z.quizCarriere) nz.quizCarriere = z.quizCarriere; // classement « Quiz » de carrière
     // Une zone qui ne jouait plus reste inactive (duels, relèves, crises) jusqu'à son retour.
     nz.toursSansOrdres = z.toursSansOrdres || 0;
     // Enquête en cours : le dossier, les pièces en route et la mise à prix à choisir suivent la zone.

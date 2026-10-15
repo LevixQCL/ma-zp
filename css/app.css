@@ -3216,3 +3216,13 @@ a.hud-chip { text-decoration: none; }
 .cv-lien-dist.alerte { border-color: var(--red-line); }
 .cv-lien-dist:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .ndt-chev, .ndt-det > summary::after { transition: none; } }
+
+/* Quiz express : bandeau en haut des énigmes du jour, ligne de classement sous le résultat. */
+.qz-bandeau { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 12px; border-radius: 14px; border: 1.5px solid #2EC4D6; background: color-mix(in srgb, #2EC4D6 10%, var(--surface)); color: var(--text); text-align: left; cursor: pointer; font: inherit; }
+.qz-bandeau:active { transform: scale(0.99); }
+.qz-b-ico { font-size: 22px; line-height: 1; }
+.qz-b-t { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.qz-b-t b { font-size: 14px; }
+.qz-b-t span { font-size: 12px; color: var(--text2); }
+.qz-b-go { flex: 0 0 auto; padding: 7px 14px; border-radius: 999px; background: #2EC4D6; color: #0C1124; font-weight: 800; font-size: 13px; }
+.qz-rang { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; padding: 8px 0 0; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--text); font: inherit; font-size: 13px; cursor: pointer; text-align: left; }

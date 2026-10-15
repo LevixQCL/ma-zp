@@ -86,3 +86,49 @@ export function quizQuestionHtml() {
       <button type="button" class="btn primary block" data-action="quiz-suivante">${fini ? 'Voir le résultat' : 'Question suivante'}</button>` : ''}
   </section>`;
 }
+
+// ───────────── Classement « Quiz » ─────────────
+// Compteurs tenus par le tour de 20:00 (zone.quizCarriere). Le quiz du jour n'y est pas encore :
+// pour le joueur qui vient de le finir, on l'ajoute à l'affichage (« ce soir, tu passes 2e »).
+// Score = bonnes réponses moyennes sur 5, lissées : chacun part avec QUIZ_POIDS quiz fictifs à la
+// moyenne du district. Ex. (moyenne 3,5) : 9 quiz à 4,3 → 4,1 ; un seul 5/5 → 3,9.
+export const QUIZ_POIDS = 3, MIN_QUIZ = 3;
+
+function compteurs(z, avecDuJour) {
+  const c = z.quizCarriere || {};
+  const x = { n: c.n || 0, bons: c.bons || 0, parfaits: c.parfaits || 0, serie: c.serie || 0, record: c.record || 0, jour: c.jour || 0 };
+  // Une série s'arrête si le dernier quiz compté n'est pas celui d'hier soir.
+  const ceSoir = Math.round((Number(S.state && S.state.nextDeadline) || 0) / 86400000);
+  if (x.jour < ceSoir - 1) x.serie = 0;
+  if (avecDuJour) {
+    const r = quizEnregistre(), b = Math.max(0, Math.min(QUIZ.questions, Number(r && r.tentatives) || 0));
+    if (r) {
+      x.serie = x.n > 0 && x.jour === ceSoir - 1 ? x.serie + 1 : 1;
+      x.n += 1; x.bons += b; if (b >= QUIZ.questions) x.parfaits += 1; x.record = Math.max(x.record, x.serie);
+    }
+  }
+  return x;
+}
+
+/** Lignes du classement quiz, triées. avecDuJour : compter le quiz que je viens de finir. */
+export function classementQuiz(avecDuJour = true) {
+  const moi = S.user && S.user.uid;
+  const zs = Object.values((S.state && S.state.zones) || {});
+  const par = zs.map((z) => ({ z, ...compteurs(z, avecDuJour && z.uid === moi) })).filter((l) => l.n > 0);
+  const tot = par.reduce((t, l) => [t[0] + l.bons, t[1] + l.n], [0, 0]);
+  const moyenne = Math.min(4.5, Math.max(2.5, tot[1] ? tot[0] / tot[1] : 3.5));
+  const lignes = par.map((l) => ({ ...l, moy: l.bons / l.n, score: (l.bons + QUIZ_POIDS * moyenne) / (l.n + QUIZ_POIDS), classe: l.n >= MIN_QUIZ }))
+    .sort((a, b) => (b.classe - a.classe) || (b.score - a.score) || (b.n - a.n));
+  let r = 0;
+  for (const l of lignes) l.rang = l.classe ? ++r : 0;
+  return { lignes, moyenne };
+}
+
+/** Mon rang (0 = pas encore classé) et mes compteurs. */
+export function monRangQuiz(avecDuJour = true) {
+  const { lignes } = classementQuiz(avecDuJour);
+  const l = lignes.find((x) => S.user && x.z.uid === S.user.uid);
+  return l ? { rang: l.rang, n: l.n, serie: l.serie, total: lignes.filter((x) => x.classe).length } : { rang: 0, n: 0, serie: 0, total: lignes.filter((x) => x.classe).length };
+}
+
+export const fmtQuiz = (v) => String(Math.round(v * 10) / 10).replace('.', ',');

@@ -18,7 +18,7 @@ export function formesVisibles() {
 }
 import { SERVICES, SERVICE_LABELS, ENIGMES, gainMoral, chanceDelegue } from '../engine/constants.js';
 import { MINI_JEUX } from './incidents.js';
-import { quizLocal, quizEnregistre, quizQuestionHtml, bonnesReponses } from './quiz.js';
+import { quizLocal, quizEnregistre, quizQuestionHtml, bonnesReponses, monRangQuiz } from './quiz.js';
 import { QUIZ, QUIZ_THEMES } from '../quests/quiz.js';
 import { cadenasHtml, cadenasResultat, essaisHtml } from './cadenas.js';
 import { chronoHtml, disqueHtml, plaquesHtml, temoignagesHtml, figureInteractive, habillerFilature, filatureOutils, classeEtape, butinHtml, ligneHtml, trajetsHtml, icoGrille, ecritureHtml, avatar, codeHtml } from './enigmes.js';
@@ -228,6 +228,26 @@ function delegueHtml(delegue, moral, gBonus, enqueteOuverte) {
     </section>`;
 }
 
+/** Bandeau du quiz express, en haut des énigmes du jour tant qu'aucune n'a de réponse. */
+function bandeauQuiz() {
+  const m = monRangQuiz(false);
+  const rang = m.rang ? `${m.rang}${m.rang === 1 ? 'er' : 'e'} au classement quiz` : m.n ? `classé dès 3 quiz (${m.n} joué${m.n > 1 ? 's' : ''})` : 'classement quiz dans les Classements';
+  return `<button type="button" class="qz-bandeau" data-action="alt-vue" data-v="quiz">
+      <span class="qz-b-ico" aria-hidden="true">⏱</span>
+      <span class="qz-b-t"><b>Plutôt quiz express ?</b><span>${QUIZ.questions} questions · ~1 min · ${QUIZ.seuil}/${QUIZ.questions} = bonus · ${rang}</span></span>
+      <span class="qz-b-go">Jouer</span></button>`;
+}
+
+/** Ligne « classement quiz » sous le résultat : rang avant et après le quiz du jour, série. */
+function rangQuizHtml() {
+  const avant = monRangQuiz(false), apres = monRangQuiz(true);
+  const r = (x) => `${x}${x === 1 ? 'er' : 'e'}`;
+  const txt = !apres.rang ? `classé dès 3 quiz (${apres.n} joué${apres.n > 1 ? 's' : ''})`
+    : avant.rang && avant.rang !== apres.rang ? `${r(avant.rang)} → <strong>${r(apres.rang)}</strong> ${apres.rang < avant.rang ? '↑' : '↓'}` : `<strong>${r(apres.rang)}</strong> sur ${apres.total}`;
+  return `<button type="button" class="qz-rang" data-action="quiz-classement"><span>Classement quiz</span><span>${txt} ›</span></button>
+    ${apres.serie >= 2 ? `<span class="tiny muted">🔥 Série : ${apres.serie} jours d’affilée</span>` : ''}`;
+}
+
 /** Résultat du quiz express (enregistré), avec le choix du bonus s'il est gagné. */
 function quizResultatHtml(r, gBonus, enqueteOuverte) {
   const bons = Number(r.tentatives) || 0, gagne = bons >= QUIZ.seuil;
@@ -238,6 +258,7 @@ function quizResultatHtml(r, gBonus, enqueteOuverte) {
         ? `<div class="between" style="gap:8px"><p class="small" style="margin:0;font-weight:600">Bonus du jour : ${esc(bonusLabel(r, gBonus, enqueteOuverte))}. Il sera appliqué à 20:00.</p><button type="button" class="btn small ghost" data-action="bonus-changer">Changer</button></div>`
         : `<span class="ok" style="font-weight:700">Gagné ! Choisis ton bonus du jour</span>${choixBonus(r.bonus ? r : null, gBonus, enqueteOuverte, { action: 'quiz-bonus', change: 'quiz-capacite' })}<span class="tiny muted">Sans choix, ce sera +${ENIGMES.bonusBudget} k€.</span>`)
         : `<p class="small" style="margin:0">Il fallait ${QUIZ.seuil} bonnes réponses : pas de bonus aujourd’hui, sans autre conséquence. Nouvelles énigmes demain après 20:00.</p>`}
+      ${rangQuizHtml()}
     </section>`;
 }
 
@@ -422,6 +443,7 @@ function feuilleV2(o) {
     ${modes}
     ${onglets}
     ${propositionDelegue}
+    ${altPossible && !S.altVue ? bandeauQuiz() : ''}
     <article class="feuille${noir ? ' noir' : ''}${train ? ' train' : ''}" aria-label="Énigme">
       ${tampon}
       <header class="fe-tete"><div class="col grow" style="gap:4px;min-width:0"><span class="fe-ref">${ref}</span><h1 class="big">${esc(q.typeLabel)}</h1>

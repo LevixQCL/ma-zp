@@ -9,6 +9,8 @@ import { apercuDirecteur, REGLAGES, DISTRICT } from '../engine/directeur.js';
 import { affaire, affairesOuvrables } from '../engine/enquete.js';
 import { formatDateBe, formatHeureBe } from '../engine/time.js';
 import { renderGazetteStories } from './gazette-stories.js';
+import { classementQuiz, fmtQuiz, QUIZ_POIDS, MIN_QUIZ } from './quiz.js';
+import { QUIZ } from '../quests/quiz.js';
 
 export function renderGazette() {
   const list = S.gazettes;
@@ -64,7 +66,17 @@ function noirsHtml(noirs, me) {
     <p class="small muted" style="margin:0">Classé sur les dossiers noirs résolus cette saison : le premier reçoit le titre « Cerveau du district » en fin de saison.</p></section>`;
 }
 
-const ONGLETS_CLASSEMENT = [['ipz', 'IPZ', '#63B0FF'], ['limier', 'Enquête', '#FFB23F'], ['enigmes', 'Énigmes', '#A78BFA'], ['grade', 'Grades', '#3DD39A'], ['palmares', 'Palmarès', '#F5C64A']];
+/** Classement « Quiz express » : moyenne sur 5, lissée par le nombre de quiz joués. */
+function classementQuizHtml(me) {
+  const { lignes, moyenne } = classementQuiz(true);
+  const sous = (l) => `${l.n} quiz · moyenne ${fmtQuiz(l.moy)} / ${QUIZ.questions}${l.parfaits ? ` · ${l.parfaits} sans faute` : ''}${l.serie >= 2 ? ` · 🔥 ${l.serie} jours d’affilée` : ''}${l.classe ? '' : ` · classé dès ${MIN_QUIZ} quiz`}`;
+  return `<section class="card" style="gap:8px"><h2 class="card-title">⏱ Quiz express</h2>
+    ${lignes.length ? lignes.map((l) => couloir({ z: l.z, rang: l.rang, classe: l.classe, valeur: l.score, max: QUIZ.questions, txt: `${fmtQuiz(l.score)} / ${QUIZ.questions}`, me: l.z.uid === me.uid, sous: sous(l) })).join('')
+      : '<p class="small muted" style="margin:0">Personne n’a encore joué au quiz express. Il se lance depuis les énigmes du jour, avant de répondre à la première.</p>'}
+    <p class="small muted" style="margin:0">Score = bonnes réponses moyennes sur ${QUIZ.questions}, lissées : chacun part avec ${QUIZ_POIDS} quiz fictifs à la moyenne du district (${fmtQuiz(moyenne)}). Plus tu joues, plus c’est ta vraie moyenne qui compte. Classé dès ${MIN_QUIZ} quiz. Le quiz du jour compte dès qu’il est fini ; chez les autres, il apparaît après 20:00.</p></section>`;
+}
+
+const ONGLETS_CLASSEMENT = [['ipz', 'IPZ', '#63B0FF'], ['limier', 'Enquête', '#FFB23F'], ['enigmes', 'Énigmes', '#A78BFA'], ['quiz', 'Quiz', '#2EC4D6'], ['grade', 'Grades', '#3DD39A'], ['palmares', 'Palmarès', '#F5C64A']];
 // « La course » : chaque zone est un couloir dont la barre avance jusqu'à 100 (ou jusqu'au meilleur score).
 const COMPO = [['satisfaction', '#63B0FF'], ['affaires', '#9DCBFF'], ['moral', '#FFB23F'], ['budget', '#3DD39A'], ['reputation', '#A78BFA']];
 const MEDAILLES = ['🥇', '🥈', '🥉'];
@@ -135,6 +147,8 @@ export function renderClassement() {
       <p class="small muted" style="margin:0">Découverte : 40 à 100 pts selon le jour. Arrestation : 30. Pièce partagée qui a aidé : 25. La barre est relative au meilleur limier.</p></section>`;
   } else if (tab === 'enigmes') {
     corps = classementEnigmes(me);
+  } else if (tab === 'quiz') {
+    corps = classementQuizHtml(me);
   } else if (tab === 'grade') {
     corps = `<section class="card"><div class="between"><h2 class="card-title">Ton grade : ${g.nom}</h2><span class="mono small">${me.ps} PS</span></div>
       <div class="gauge"><div class="bar" role="img" aria-label="Progression ${pct} %"><div style="width:${pct}%;background:var(--amber)"></div></div></div>

@@ -30,3 +30,20 @@ assert.ok(/Quiz express : 3 bonnes/.test(gagne.rap), gagne.rap);
 assert.ok(/il en fallait 3/.test(perdu.rap), perdu.rap);
 assert.ok(gagne.b > perdu.b, 'le bonus k€ est versé à 3 bonnes réponses');
 console.log('quiz ok', base.b, gagne.b, perdu.b);
+
+// Compteurs du classement « Quiz » : tenus au tour de 20:00, série sur des soirs consécutifs.
+{
+  let state = createGame({ seed: 'quiz-c' });
+  state.zones.moi = newZone({ uid: 'moi', code: '5324', nom: 'Horizon' }, 1);
+  const soir = (t, q) => { const r = resolveTurn(state, { orders: {}, quests: { moi: q } }); r.state.nextDeadline = state.nextDeadline + 86400000; state = r.state; };
+  soir(1, [{ slot: 0, statut: 'quiz', tentatives: 5, bonus: 'budget' }]);
+  soir(2, [{ slot: 0, statut: 'quiz', tentatives: 2 }]);
+  soir(3, null);
+  soir(4, [{ slot: 0, statut: 'quiz', tentatives: 4, bonus: 'moral' }]);
+  const c = state.zones.moi.quizCarriere;
+  assert.deepEqual([c.n, c.bons, c.parfaits, c.gagnes, c.serie, c.record], [3, 11, 1, 2, 1, 2], JSON.stringify(c));
+  // Énigmes du jour jouées : le quiz ne compte pas.
+  soir(5, [{ slot: 0, statut: 'ok' }, { slot: 1, statut: 'quiz', tentatives: 5 }]);
+  assert.equal(state.zones.moi.quizCarriere.n, 3);
+  console.log('quiz classement ok', JSON.stringify(state.zones.moi.quizCarriere));
+}
