@@ -6,23 +6,29 @@ import { skinsEnVente } from '../engine/decor.js';
 import { ouvrirDecor } from './logistique.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-11-boutique',
-  titre: '🎃 Halloween à la ZP',
+  id: '2026-10-16-filet',
+  titre: '🕵️ Les coups de filet',
   saison2: true,
-  // Pas avant le tour de 20:00 qui ouvre la boutique : la note et sa section restent cachées jusque-là.
-  pret: (st) => !!(st && skinsEnVente(st.nextDeadline).length),
-  sectionPret: /^Boutique de skins/,
-  // Bouton d'action sous l'essentiel : ouvre directement la boutique.
-  action: { label: 'Voir la boutique', ouvrir: () => ouvrirDecor() },
+  // Pas avant le tour de 20:00 qui donne leurs premières cibles aux zones.
+  pret: (st) => !!(st && S.user && st.zones && st.zones[S.user.uid] && st.zones[S.user.uid].filet),
+  sectionPret: /^Les coups de filet/,
+  action: { label: 'Voir mes cibles', ouvrir: () => { location.hash = '#filet'; } },
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🏚️', 'Le Manoir hanté', 'fantôme, chauves-souris, citrouilles et grande lune : 300 PS au lieu de 600 jusqu’au 2 novembre, remise à calèches offerte.'],
-    ['🛍️', 'La boutique de skins', 'choisis le skin que tu veux avec tes PS (250 PS), équipé tout de suite. Ton grade ne baisse pas.'],
-    ['↻', 'Une énigme ratée ?', 'relance-la pour 30 PS, un cran plus dure : réussie, elle compte.'],
+    ['🕵️', 'Une affaire à toi', 'chaque semaine, la Recherche repère 3 cibles dans ta zone : réseau de recel, point de deal, cambrioleurs… Ouvre un dossier depuis l’HP.'],
+    ['⏱️', 'Toi qui choisis le tempo', 'filature, recoupement : 2, 6 ou 12 heures. L’étape avance seule ; reviens quand tu veux pour décider de la suite.'],
+    ['🚔', 'Jusqu’au parquet', 'interpelle quand le dossier est prêt : plus il est solide, plus le parquet suit. Attention, une cible méfiante disparaît.'],
   ],
 
   // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['Les coups de filet (16 octobre, 20:00)', [
+      ['Les cibles', 'chaque semaine, 3 cibles repérées dans ta zone (1 à 3 suspects, plus ou moins méfiantes). Tu en mènes 2 au plus jusqu’au bout. Rien à voir avec l’enquête de la semaine : ce sont des renseignements, pas des pièces.'],
+      ['Les étapes', 'filature (des renseignements, un risque d’être repéré), recoupement (la solidité du dossier, sans risque), interpellation (6 agents pendant 4 heures). Tu choisis la durée : 2, 6 ou 12 heures. L’étape avance seule, l’opération t’attend à la fin sans rien perdre.'],
+      ['Le coût', 'les agents mobilisés sont retirés de la Recherche ou de l’Intervention ce soir-là, selon les heures-agents de la journée : une filature de 2 heures ne coûte qu’un agent, une de 12 heures en coûte deux.'],
+      ['Le parquet', 'dossier solide à 70 % : poursuites (tous les points) ; à 40 % : poursuites partielles ; en dessous : classement sans suite. Plus une saisie et des PS. Deux alertes et la cible disparaît.'],
+      ['Les cellules', '2 places de garde à vue, 4 avec le complexe cellulaire. Faute de place, un interpellé est gardé par une zone voisine qui en a un (elle y gagne un point et un PS), sinon il est relâché.'],
+    ]],
     ['Quiz express mis en avant (15 octobre)', [
       ['Plus caché', 'un bandeau « Plutôt quiz express ? » en haut des énigmes du jour, tant que tu n’as répondu à aucune. L’HP le rappelle aussi.'],
       ['Son classement', 'nouvel onglet « Quiz » dans les Classements : moyenne sur 5, lissée par le nombre de quiz joués (classé dès 3), sans-faute et série de jours d’affilée. Ton rang s’affiche à la fin de chaque quiz.'],

@@ -74,10 +74,11 @@ import { migrateState, isOutdated } from './engine/resolve.js';
 import { actionReleve } from './ui/releve.js';
 import { actionBilan } from './ui/bilan.js';
 import { actionCrise } from './ui/crise.js';
+import { renderFilet, actionFilet, majFilet } from './ui/filet.js';
 import { chargeurHtml, avancerChargeur, sortirChargeur } from './ui/chargeur.js';
 
 const app = document.getElementById('app');
-const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief', 'bureau', 'chef'];
+const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief', 'bureau', 'chef', 'filet'];
 let unsubState = null, unsubRadio = null, unsubPrive = null, lastTurnKey = null;
 
 function route() {
@@ -170,6 +171,7 @@ function render() {
       case 'terrain': html = renderCarteV2(calqueTerrain()); break;
       case 'gazette': html = renderGazette(); if (S.gazetteIndex === 0) marquerGazetteLue(); break;
       case 'debrief': html = renderDebrief(); break;
+      case 'filet': html = renderFilet(); break;
       case 'classement':
         html = renderClassement(); break;
       case 'profil': html = renderProfil(); break;
@@ -448,6 +450,7 @@ async function onClick(e) {
       case 'releve': case 'releve-n': case 'releve-appui': case 'saisie': { if (actionReleve(a, el)) rerender(); break; }
       case 'bilan': case 'bilan-tout': { if (actionBilan(a, el)) rerender(); break; }
       case 'crise-vote': case 'crise-c': case 'crise-ouvrir': { if (actionCrise(a, el)) rerender(); break; }
+      case 'filet-ouvrir': case 'filet-duree': case 'filet-lancer': case 'filet-abandon': { if (await actionFilet(a, el, { confirmer: askConfirm })) rerender(); break; }
       case 'dilemme': { const i = Number(el.dataset.i); S.draft.dilemme = S.draft.dilemme === i ? null : i; S.ordersDirty = true; rerender(); break; }
       case 'prime-choix': { const v = el.dataset.v; S.draft.prime = S.draft.prime === v ? null : v; S.ordersDirty = true; rerender(); break; }
       case 'actu-voir': ouvrirActu(lancerActu); break;
@@ -1963,6 +1966,7 @@ async function boot() {
     // Incidents du jour : comptes à rebours, et HP redessinée quand un incident tombe ou se ferme.
     if (S.state && S.user && myZone()) {
       majComptesIncidents();
+      if (majFilet() && ['filet', 'hp'].includes(S.route) && !document.querySelector('.mj-wrap, .aide-wrap')) rerender();
       const sig = signatureIncidents();
       if (S.sigIncidents !== undefined && sig !== S.sigIncidents && S.route === 'hp' && !document.querySelector('.mj-wrap, .aide-wrap') && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) rerender();
       S.sigIncidents = sig;

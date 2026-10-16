@@ -1,3 +1,4 @@
+import { filetHp, dureeTxt } from './filet.js';
 import { skinsEnVente, psDispo } from '../engine/decor.js';
 import { chefACreer, creationChefHtml, portraitChef, zoneAvecAgenda } from './chef.js';
 import { absenceHtml, portraitAdjoint } from './chef-semaine.js';
@@ -505,6 +506,9 @@ function aujourdhuiHtml(st, z, T, items) {
     L.push({ prio: 2, html: ligneAjd({ k: `ajd-scene-${sc.id}`, ico: ICO_SCENE[sc.type], titre: `${esc(SCENES[sc.type].titre)} ce soir à ${esc(nomSecteur(sc.cell))}`, sous: fait ? `✓ ${r ? `${r} agent${r > 1 ? 's' : ''} envoyé${r > 1 ? 's' : ''}` : 'mini-jeu réussi'}` : 'facultatif · des agents ou le mini-jeu', badge: fait ? pastilleAFaire(true) : '', corps: sceneHtml(k, st.nonDroit.secteurs[k], rolesDe(k), placeND(k), annoncesND()[k] || [], { hp: true }) }) });
   }
 
+  // Coup de filet : une décision qui attend, une étape en cours ou des cibles à ouvrir.
+  { const f = filetHp(); if (f) L.push({ prio: f.prio, html: `<a href="#filet" class="ajd-alerte ${f.cls}"><span class="ajd-point" aria-hidden="true"></span>
+    <span class="ajd-txt"><b>${f.titre}</b><span>${f.fin ? `résultat dans <span data-filet-fin="${f.fin}">${dureeTxt(f.fin - Date.now())}</span> · ` : ''}${f.texte}</span></span><span class="ajd-chev" aria-hidden="true">${icon('chevron', 16)}</span></a>` }); }
   { const h = absenceHtml(z); if (h) { const a = z.adjoint, retour = /Bon retour/.test(h); L.push({ prio: 3, html: ligneAjd({ k: 'ajd-absence', ico: portraitAdjoint(a, 40), titre: retour ? 'Bon retour, chef' : 'Pendant ton absence', sous: `${esc(a.prenom)} ${esc(a.nom)} a tenu la zone`, ouvert: retour, corps: h }) }); } }
   { const h = pistesHpHtml(z); if (h) { const n = (z.pistes || []).length; L.push({ prio: 3, html: ligneAjd({ k: 'ajd-pistes', ico: '🔎', titre: 'Tuyaux en cours', sous: `${n} tuyau${n > 1 ? 'x' : ''} · résultat à venir`, corps: h }) }); } }
   for (const a of alertes.filter((x) => x.cls !== 'red')) L.push({ prio: 3, html: ligneAlerte(a) });

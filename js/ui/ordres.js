@@ -1,4 +1,5 @@
 // Écran des ordres du tour.
+import { ligneAgentsFilet } from './filet.js';
 import { vehiculeSvg } from './scene-hp.js';
 import { effetsPressions } from '../engine/contenu.js';
 import { comparatifModeles } from './modeles.js';
@@ -961,7 +962,7 @@ export function renderOrdres() {
 
   return `<main class="screen">
     <header class="between" style="align-items:flex-start;gap:10px"><div class="col" style="gap:3px;min-width:0"><h1 class="big">Ordres du tour ${T}</h1>
-      ${`<p class="sub">${e.dispo} agents${e.enquete ? ` · ${e.enquete} en mission` : ''}${bl || fo || z.absents ? ` · ${bl + fo + (z.absents || 0)} absent${bl + fo + (z.absents || 0) > 1 ? 's' : ''}` : ''} · secrets jusqu’à 20:00</p>`}</div>
+      ${`<p class="sub">${e.dispo} agents${e.enquete ? ` · ${e.enquete} en mission` : ''}${bl || fo || z.absents ? ` · ${bl + fo + (z.absents || 0)} absent${bl + fo + (z.absents || 0) > 1 ? 's' : ''}` : ''} · secrets jusqu’à 20:00</p>`}${(() => { const l = ligneAgentsFilet(); return l ? `<a class="tiny warn" href="#filet" style="text-decoration:none">${esc(l)}</a>` : ''; })()}</div>
       <span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} Validés` : S.savedOrders ? 'Modifiés' : 'Pas validés'}</span></header>
 
     ${`<section class="card ord-fiche" aria-label="Ce soir">

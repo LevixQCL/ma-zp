@@ -1,7 +1,8 @@
 // Résolution d'un tour. Fonction pure et déterministe :
 // mêmes données en entrée → même résultat, quel que soit l'ordinateur qui calcule.
 
-import { VAGUES, vagueVisee, appliquerVague, vaguesNuit } from './vagues.js';
+import { VAGUES, vagueVisee, appliquerVague, vaguesNuit, zonesVoisines } from './vagues.js';
+import { filetPre, filetAppliquer } from './filet.js';
 import { RELEVE, lireOrdresReleve, releveResoudre, releveNuit } from './releve.js';
 import { lireOrdresCrise, crisePre, criseZone, crisePost } from './crise.js';
 import { regrouperHonneur } from './honneur.js';
@@ -349,6 +350,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     ouvrirJournal(z);
   }
   const jalonTous = (label) => { for (const u of uids) jalon(state.zones[u], label); };
+  // Coups de filet : actions de la journée validées, agents mobilisés retirés de leur service, opérations soldées.
+  filetPre(state, uids, ord, players, T, { now: state.nextDeadline || 0, depuis: Number.isFinite(state.lastResolvedAt) ? state.lastResolvedAt : -Infinity, voisinsDe: (u) => zonesVoisines(state, u) });
+  jalonTous('Coups de filet');
   // Chef de corps : visites croisées, parrainages, niveau moyen de la partie (rattrapage des arrivées tardives).
   let moyChef = 0;
   {
@@ -581,6 +585,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const z = state.zones[uid];
     const o = ord[uid];
     z.cetteNuit = []; // faits marquants de la nuit pour la carte « Cette nuit » de l'HP
+    filetAppliquer(z);
     const zr = makeRng(`${state.seed}:s${state.season}:t${T}:${uid}`);
     const q = quests[uid];
     // Agenda du chef (saison 2).
@@ -1650,6 +1655,8 @@ function finDeSaison(state, classement, opts = {}) {
     { const ci = classes.findIndex((c) => c.uid === uid), cl = classes[ci];
       nz.chef.etats = [...(nz.chef.etats || []), { season: oldSeason, rang: cl ? ci + 1 : null, sur: classes.length, moyenne: cl ? round1(cl.moyenne) : null, affaires: (z.stats.decouvertes || 0) + (z.stats.arrestations || 0), trophees: (z.trophees || []).filter((t) => t.s === oldSeason).length, anticipee: !!opts.leger, faits: faitsDArmes(z.stats), signature: z.chef ? signatureChef(z.chef) : null }].slice(-20); }
     if (z.dir) nz.dir = dirHeritage(z); // niveau des énigmes et des mini-jeux, souvenirs du Directeur
+    // Coup de filet en cours : il continue dans la nouvelle saison (nouvelles cibles au premier soir).
+    if (z.filet) nz.filet = { ...z.filet, w: null };
     // Le parc suit la zone : les véhicules gardent leur modèle et passent au contrôle technique (usure divisée par deux).
     // Si le garage a perdu un niveau et manque de places, les plus usés sont revendus et le produit s'ajoute au budget.
     const parc = heritageFlotte(z, nz);

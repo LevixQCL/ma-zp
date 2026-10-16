@@ -1,5 +1,6 @@
 // Guide du joueur (wiki intégré). Les chiffres viennent directement du moteur,
 // pour que le guide reste exact quand l'équilibrage change.
+import { FILET, DUREES } from '../engine/filet.js';
 import { CHALLENGE } from '../engine/challenge.js';
 import { BILAN } from '../engine/bilan.js';
 import { DECOR, conditionDecor } from '../engine/decor.js';
@@ -289,6 +290,23 @@ export function sections() {
           `Arrestation : ${POINTS.arrestation} points d’enquête, prime de 4 k€, +5 de satisfaction, +3 de réputation. Plusieurs zones à la bonne planque le même soir se partagent l’arrestation.`,
           'Mauvaise planque : tes agents ont perdu leur journée. Sans arrestation après deux tours, le suspect s’enfuit.',
           'Les indices sur les planques de l’affaire précédente restent consultables pendant la traque.',
+        ])}`,
+    },
+    {
+      id: 'filet', titre: 'Les coups de filet', html: `
+        <p>Chaque semaine, la Recherche repère ${FILET.cibles} cibles dans ta zone (un réseau de recel, un point de deal, des cambrioleurs…). Tu en ouvres une depuis l’HP et tu la mènes étape par étape, dans la journée. Tu peux en mener ${FILET.maxSemaine} jusqu’au bout par semaine. Ce n’est pas l’enquête de la semaine : rien n’y passe.</p>
+        ${table(['Étape', 'Agents', 'Ce qu’elle apporte'], [
+          ['👁️ Filature (2, 6 ou 12 h)', `${FILET.etapes.filature.agents} de Recherche`, `des renseignements (1, 2 ou 3 occasions, exploitables à ${DUREES.map((d) => pc(FILET.etapes.filature.durees[d].p)).join(', ')}) ; risque d’être repéré ${DUREES.map((d) => pc(FILET.etapes.filature.durees[d].risque)).join(', ')} (plus ou moins selon la méfiance de la cible)`],
+          ['🗂️ Recoupement (2, 6 ou 12 h)', `${FILET.etapes.recoupement.agents} de Recherche`, `solidité du dossier +${DUREES.map((d) => FILET.etapes.recoupement.durees[d].sol).join(', +')} %, sans risque ; chaque renseignement permet ${FILET.etapes.recoupement.parRens} % au plus`],
+          ['🚔 Interpellation (4 h)', `${FILET.etapes.interpellation.agents} d’Intervention`, 'au moins un renseignement ; la réussite monte avec les renseignements (au-delà du nombre de suspects) et la formation et le matériel de l’Intervention, et baisse si la cible se méfie'],
+        ])}
+        ${ul([
+          'L’étape avance seule : tu peux fermer le jeu. À la fin, l’opération attend ta décision, sans rien perdre si tu ne reviens que le lendemain. Revenir plus tôt va plus vite, sans rapporter plus.',
+          `Le coût : les heures-agents de la journée (agents × heures) sont retirées ce soir de la Recherche ou de l’Intervention, ${FILET.heuresJour} heures-agents par agent. Une filature de 2 h coûte 1 agent, une de 12 h en coûte 2. Le coût s’affiche sur chaque bouton.`,
+          `Méfiance : repérée ${FILET.alerteMax} fois (filature ou interpellation ratée), la cible disparaît (${FILET.satRate} de satisfaction).`,
+          `Parquet, à 20:00 : dossier solide à 70 % ou plus, poursuites (tous les points) ; 40 %, poursuites partielles (60 %) ; en dessous, classement sans suite (25 %). En plus : ${String(FILET.saisie).replace('.', ',')} k€ saisis et +${FILET.satisfaction} de satisfaction par interpellé, +${FILET.ps} PS.`,
+          `Cellules : ${FILET.places} places de garde à vue, ${FILET.places + FILET.placesCachots} avec le complexe cellulaire, occupées ${FILET.gav} heures. Faute de place, un interpellé est gardé par une zone voisine qui a un complexe cellulaire (+${FILET.garde.points} point et +${FILET.garde.ps} PS pour elle), sinon il est relâché et ne compte pas.`,
+          'Une opération terminée est soldée à 20:00 ; tu peux déjà ouvrir la suivante.',
         ])}`,
     },
     {
