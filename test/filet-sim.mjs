@@ -4,7 +4,7 @@
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { BOT_PROFILES, botOrders } from '../js/engine/bots.js';
 import { newZone } from '../js/engine/zone.js';
-import { FILET, rejouer, etapeImpossible, solMax, placesLibres } from '../js/engine/filet.js';
+import { FILET, rejouer, etapeImpossible, solMax, placesLibres, heuresParService } from '../js/engine/filet.js';
 
 const S = Number(process.argv[2] || 24), T = 13;
 // Variantes : FILET_MULT (×valeur des cibles), FILET_HJ (heures-agents par journée d'agent).
@@ -44,7 +44,7 @@ const PROFILS = {
 const rows = [];
 const base = {};
 for (const [nom, prof] of Object.entries(PROFILS)) {
-  let ipz = 0, pts = 0, reussis = 0, perdus = 0, agentsJour = 0, nJ = 0, budget = 0, pointsTerrain = 0;
+  let pire = 0, ipz = 0, pts = 0, reussis = 0, perdus = 0, agentsJour = 0, nJ = 0, budget = 0, pointsTerrain = 0;
   for (let s = 0; s < S; s++) {
     let st = createGame({ seed: `filet-${s}` });
     for (const p of BOT_PROFILES) st.zones[p.uid] = newZone(p, 1);
@@ -57,9 +57,16 @@ for (const [nom, prof] of Object.entries(PROFILS)) {
         const v = st.nextDeadline + dv * H;
         // Plusieurs actions possibles à une même visite (ouvrir puis lancer la première étape).
         for (let k = 0; k < 3; k++) {
-          const { fil } = rejouer(st, st.zones.moi, st.zones.moi.filet, log, v, { depuis: st.lastResolvedAt });
-          const a = decider(st, st.zones.moi, fil, v, prof.dur);
+          const { fil, acceptees } = rejouer(st, st.zones.moi, st.zones.moi.filet, log, v, { depuis: st.lastResolvedAt });
+          let a = decider(st, st.zones.moi, fil, v, prof.dur);
           if (!a) break;
+          // Plafond d'agents du jour : une étape plus courte, sinon on attend.
+          if (FILET.etapes[a.k]) {
+            const hJ = heuresParService(acceptees);
+            const essais = a.k === 'interpellation' ? [a] : [a.d, 6, 2].filter((d) => d <= a.d).map((d) => ({ ...a, d }));
+            a = essais.find((x) => !etapeImpossible(fil, x.k, x.d, fil.op.cible, v, hJ)) || null;
+            if (!a) break;
+          }
           log.push({ ...a, s: fil.s + 1, at: v + k });
         }
       }
@@ -73,7 +80,7 @@ for (const [nom, prof] of Object.entries(PROFILS)) {
       st.lastResolvedAt = st.nextDeadline; st.nextDeadline += J;
       const z = st.zones.moi;
       const lignes = (z.rapport || []).filter((l) => /^Coup de filet : \d+ agent/.test(l));
-      for (const l of lignes) { agentsJour += Number(l.match(/: (\d+) agent/)[1]); }
+      { let j = 0; for (const l of lignes) { const n = Number(l.match(/: (\d+) agent/)[1]); agentsJour += n; j += n; } pire = Math.max(pire, j); }
       nJ++;
       for (const h of (z.filet.hist || []).slice(avant)) { if (h.fini === 'reussie') { reussis++; ptsS += h.points; } if (h.fini === 'perdue') perdus++; }
       if (t > 3) somme += z.ipz;
@@ -82,6 +89,6 @@ for (const [nom, prof] of Object.entries(PROFILS)) {
   }
   const m = ipz / S;
   if (!prof) base.ipz = m;
-  rows.push({ profil: nom, 'IPZ moyen': r1(m), 'écart': r1(m - base.ipz), 'filets réussis / sem.': r1(reussis / S / 2), 'cibles perdues / sem.': r1(perdus / S / 2), 'points / filet': r1(reussis ? pts / reussis : 0), 'agents retirés / jour': r1(agentsJour / nJ), 'budget fin (k€)': r1(budget / S) });
+  rows.push({ profil: nom, 'IPZ moyen': r1(m), 'écart': r1(m - base.ipz), 'filets réussis / sem.': r1(reussis / S / 2), 'cibles perdues / sem.': r1(perdus / S / 2), 'points / filet': r1(reussis ? pts / reussis : 0), 'agents retirés / jour': r1(agentsJour / nJ), 'pire jour': pire, 'budget fin (k€)': r1(budget / S) });
 }
 console.table(rows);

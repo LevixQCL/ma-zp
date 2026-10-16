@@ -25,7 +25,7 @@ export const NOTE_MAJ = {
     ['Les coups de filet (16 octobre, 20:00)', [
       ['Les cibles', 'chaque semaine, 3 cibles repérées dans ta zone (1 à 3 suspects, plus ou moins méfiantes). Tu en mènes 2 au plus jusqu’au bout. Rien à voir avec l’enquête de la semaine : ce sont des renseignements, pas des pièces.'],
       ['Les étapes', 'filature (des renseignements, un risque d’être repéré), recoupement (la solidité du dossier, sans risque), interpellation (6 agents pendant 4 heures). Tu choisis la durée : 2, 6 ou 12 heures. L’étape avance seule, l’opération t’attend à la fin sans rien perdre.'],
-      ['Le coût', 'les agents mobilisés sont retirés de la Recherche ou de l’Intervention ce soir-là, selon les heures-agents de la journée : une filature de 2 heures ne coûte qu’un agent, une de 12 heures en coûte deux.'],
+      ['Le coût', 'les agents mobilisés sont retirés de la Recherche ou de l’Intervention ce soir-là, selon les heures-agents de la journée : une filature de 2 heures ne coûte qu’un agent, une de 12 heures en coûte deux. 3 agents au plus par jour : la zone ne se vide jamais pour un coup de filet.'],
       ['Le parquet', 'dossier solide à 70 % : poursuites (tous les points) ; à 40 % : poursuites partielles ; en dessous : classement sans suite. Plus une saisie et des PS. Deux alertes et la cible disparaît.'],
       ['Les cellules', '2 places de garde à vue, 4 avec le complexe cellulaire. Faute de place, un interpellé est gardé par une zone voisine qui en a un (elle y gagne un point et un PS), sinon il est relâché.'],
     ]],

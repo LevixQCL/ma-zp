@@ -26,6 +26,7 @@ export const FILET = {
   cibles: 3,              // cibles repérées en début de semaine
   maxSemaine: 2,          // coups de filet menés à terme (réussis ou non) par semaine
   heuresJour: 12,         // une journée d'agent = 12 heures-agents
+  maxAgentsJour: 3,       // agents mobilisés au plus par jour, tous services confondus (sinon la zone se vide les jours chargés)
   places: 2,              // places de garde à vue de base
   placesCachots: 2,       // places en plus avec le complexe cellulaire
   gav: 24,                // heures en garde à vue après l'interpellation
@@ -120,8 +121,14 @@ export function chanceInterp(z, op, cible) {
 /** Plafond de solidité permis par les renseignements. */
 export const solMax = (op) => Math.min(100, op.r * FILET.etapes.recoupement.parRens);
 
-/** Pourquoi une étape ne peut pas être lancée maintenant (null : elle peut l'être). */
-export function etapeImpossible(fil, k, d, cible, t) {
+/** Agents mobilisés pour des heures-agents par service ({ recherche: 24 } → 2). */
+export const agentsTotal = (hps) => Object.values(hps || {}).reduce((a, h) => a + agentsPourHeures(h), 0);
+
+/**
+ * Pourquoi une étape ne peut pas être lancée maintenant (null : elle peut l'être).
+ * `hJour` : heures-agents déjà engagées aujourd'hui par service (plafond `maxAgentsJour`).
+ */
+export function etapeImpossible(fil, k, d, cible, t, hJour = null) {
   const op = fil && fil.op;
   if (!op || op.fini) return 'aucune opération en cours';
   if (op.en && op.en.fin > t) return 'une étape est déjà en cours';
@@ -129,6 +136,11 @@ export function etapeImpossible(fil, k, d, cible, t) {
   if (k !== 'interpellation' && !DUREES.includes(d)) return 'durée inconnue';
   if (k === 'recoupement' && op.sol >= solMax(op)) return op.r ? 'il faut plus de renseignements pour solidifier le dossier' : 'il faut d’abord un renseignement exploitable';
   if (k === 'interpellation' && op.r < 1) return 'il faut au moins un renseignement exploitable pour localiser la cible';
+  if (hJour) {
+    const E = FILET.etapes[k], h = { ...hJour };
+    h[E.service] = (h[E.service] || 0) + E.agents * heuresEtape(k, d);
+    if (agentsTotal(h) > FILET.maxAgentsJour) return `plus assez d’agents pour le coup de filet aujourd’hui (${FILET.maxAgentsJour} au plus par jour, ${agentsTotal(hJour)} déjà mobilisé${agentsTotal(hJour) > 1 ? 's' : ''}) : une étape plus courte, ou après 20:00`;
+  }
   return null;
 }
 
@@ -218,7 +230,7 @@ export function rejouer(state, z, filIn, log, t, { depuis = -Infinity } = {}) {
       if (op && !op.fini && !(op.en && op.en.fin > e.at)) { op.fini = 'abandon'; op.finA = e.at; op.en = null; ok = true; }
     } else if (FILET.etapes[e.k]) {
       const cible = op && op.cible;
-      if (!etapeImpossible(fil, e.k, e.d, cible, e.at)) {
+      if (!etapeImpossible(fil, e.k, e.d, cible, e.at, heuresParService(acceptees))) {
         const h = heuresEtape(e.k, e.d);
         const d = e.k === 'interpellation' ? h : e.d;
         op.en = { k: e.k, d, at: e.at, fin: e.at + h * H, s: e.s };

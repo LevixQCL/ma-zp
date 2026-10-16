@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { newZone } from '../js/engine/zone.js';
-import { FILET, rejouer, vueFilet, agentsPourHeures } from '../js/engine/filet.js';
+import { FILET, rejouer, vueFilet, agentsPourHeures, etapeImpossible } from '../js/engine/filet.js';
 
 const H = 3600 * 1000, J = 24 * H, T0 = Date.UTC(2026, 9, 5, 18);
 let ok = 0;
@@ -122,6 +122,24 @@ test('plafond par semaine', () => {
   const c = st.zones.moi.filet.cibles[0];
   const { acceptees } = rejouer(st, st.zones.moi, st.zones.moi.filet, [{ s: 1, k: 'ouvrir', c: c.id, at: st.nextDeadline - H }], st.nextDeadline, { depuis: st.lastResolvedAt });
   assert.equal(acceptees.length, 0);
+});
+
+test('plafond d\'agents par jour : une 2e étape de 12 h le même jour est refusée', () => {
+  let st = tour(partie('ft7'), []);
+  const c = st.zones.moi.filet.cibles[0];
+  const t1 = st.nextDeadline - 26 * H + 3 * H; // matin : deux étapes de 12 h ne tiennent pas avant 20:00, mais le jeu doit refuser la 2e
+  st.lastResolvedAt = t1 - H;
+  const log = [{ s: 1, k: 'ouvrir', c: c.id, at: t1 }, { s: 2, k: 'filature', d: 12, at: t1 + 1 }, { s: 3, k: 'recoupement', d: 12, at: t1 + 12 * H + 1 }, { s: 3, k: 'recoupement', d: 6, at: t1 + 12 * H + 2 }];
+  const { acceptees } = rejouer(st, st.zones.moi, st.zones.moi.filet, log, t1 + 23 * H, { depuis: st.lastResolvedAt });
+  const k = acceptees.map((e) => `${e.k}${e.d || ''}`);
+  // 12 h de filature (2 agents) + 12 h de recoupement (2) = 4 > 3 : refusé ; 6 h (1 de plus) : accepté, si le recoupement est possible
+  assert.ok(!k.includes('recoupement12'), k.join(','));
+  assert.equal(FILET.maxAgentsJour, 3);
+  // Directement : opération avec un renseignement, 24 heures-agents de Recherche déjà engagées.
+  const fil = { op: { cible: c, r: 2, sol: 0, alerte: 0, en: null, fini: null } };
+  assert.match(etapeImpossible(fil, 'recoupement', 12, c, t1, { recherche: 24 }) || '', /plus assez d’agents/);
+  assert.equal(etapeImpossible(fil, 'recoupement', 6, c, t1, { recherche: 24 }), null);
+  assert.match(etapeImpossible(fil, 'interpellation', 0, c, t1, { recherche: 24 }) || '', /plus assez d’agents/);
 });
 
 console.log(`${ok} tests OK`);

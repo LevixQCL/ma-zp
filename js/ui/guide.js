@@ -302,7 +302,7 @@ export function sections() {
         ])}
         ${ul([
           'L’étape avance seule : tu peux fermer le jeu. À la fin, l’opération attend ta décision, sans rien perdre si tu ne reviens que le lendemain. Revenir plus tôt va plus vite, sans rapporter plus.',
-          `Le coût : les heures-agents de la journée (agents × heures) sont retirées ce soir de la Recherche ou de l’Intervention, ${FILET.heuresJour} heures-agents par agent. Une filature de 2 h coûte 1 agent, une de 12 h en coûte 2. Le coût s’affiche sur chaque bouton.`,
+          `Le coût : les heures-agents de la journée (agents × heures) sont retirées ce soir de la Recherche ou de l’Intervention, ${FILET.heuresJour} heures-agents par agent. Une filature de 2 h coûte 1 agent, une de 12 h en coûte 2. Le coût s’affiche sur chaque bouton. Au plus ${FILET.maxAgentsJour} agents mobilisés par jour : au-delà, une étape plus courte ou le lendemain.`,
           `Méfiance : repérée ${FILET.alerteMax} fois (filature ou interpellation ratée), la cible disparaît (${FILET.satRate} de satisfaction).`,
           `Parquet, à 20:00 : dossier solide à 70 % ou plus, poursuites (tous les points) ; 40 %, poursuites partielles (60 %) ; en dessous, classement sans suite (25 %). En plus : ${String(FILET.saisie).replace('.', ',')} k€ saisis et +${FILET.satisfaction} de satisfaction par interpellé, +${FILET.ps} PS.`,
           `Cellules : ${FILET.places} places de garde à vue, ${FILET.places + FILET.placesCachots} avec le complexe cellulaire, occupées ${FILET.gav} heures. Faute de place, un interpellé est gardé par une zone voisine qui a un complexe cellulaire (+${FILET.garde.points} point et +${FILET.garde.ps} PS pour elle), sinon il est relâché et ne compte pas.`,

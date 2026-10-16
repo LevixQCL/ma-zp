@@ -113,6 +113,7 @@ function enCoursHtml(op) {
 function choixHtml(z, fil, op) {
   const c = op.cible, t = Date.now();
   const sel = (S.filetDuree && S.filetDuree[op.id]) || {};
+  const hJ = heuresParService(acceptesDuJour());
   const ligneDurees = (k) => {
     const d0 = sel[k] || 6;
     return `<div class="fi-durees" role="radiogroup" aria-label="Durée">${DUREES.map((d) => `<button type="button" class="fi-duree" role="radio" aria-checked="${d === d0}" data-action="filet-duree" data-k="${k}" data-d="${d}">${d} h</button>`).join('')}</div>`;
@@ -124,14 +125,14 @@ function choixHtml(z, fil, op) {
   </div>`;
   const dF = sel.filature || 6, F = FILET.etapes.filature.durees[dF];
   const risque = Math.min(1, F.risque * c.prudence * (op.alerte ? 1.5 : 1));
-  const filature = bloc('filature', '👁️', `Filature de ${dF} h`, `${F.n} occasion${F.n > 1 ? 's' : ''} d’observer, chacune exploitable à ${pc(F.p)} · risque d’être repéré ${pc(risque)}`, coutTxt('filature', dF), etapeImpossible(fil, 'filature', dF, c, t), dF);
+  const filature = bloc('filature', '👁️', `Filature de ${dF} h`, `${F.n} occasion${F.n > 1 ? 's' : ''} d’observer, chacune exploitable à ${pc(F.p)} · risque d’être repéré ${pc(risque)}`, coutTxt('filature', dF), etapeImpossible(fil, 'filature', dF, c, t, hJ), dF);
   const dR = sel.recoupement || 6, R = FILET.etapes.recoupement.durees[dR];
   const gainR = Math.max(0, Math.min(R.sol, solMax(op) - op.sol));
-  const recoupement = bloc('recoupement', '🗂️', `Recoupement de ${dR} h`, `auditions, fichiers, téléphonie : +${gainR} % de solidité${gainR < R.sol ? ` (plafond atteint avec ${op.r} renseignement${op.r > 1 ? 's' : ''})` : ''} · aucun risque`, coutTxt('recoupement', dR), etapeImpossible(fil, 'recoupement', dR, c, t), dR);
+  const recoupement = bloc('recoupement', '🗂️', `Recoupement de ${dR} h`, `auditions, fichiers, téléphonie : +${gainR} % de solidité${gainR < R.sol ? ` (plafond atteint avec ${op.r} renseignement${op.r > 1 ? 's' : ''})` : ''} · aucun risque`, coutTxt('recoupement', dR), etapeImpossible(fil, 'recoupement', dR, c, t, hJ), dR);
   const p = chanceInterp(z, op, c), pl = placesLibres(z, fil, t), I = FILET.etapes.interpellation;
   const sans = Math.max(0, c.suspects - pl.libres);
   const garde = sans ? voisinGarde(S.state, z.uid, zonesVoisines(S.state, z.uid)) : null;
-  const interp = bloc('interpellation', '🚔', 'Interpellation', `${I.agents} agents pendant ${I.heures} h · réussite ${pc(p)}${op.r < c.suspects + 1 ? ' (plus de renseignements = plus de chances)' : ''} · parquet : ${decisionParquet(op.sol).nom}${sans ? ` · ${sans} sans place en cellule : ${garde ? `gardé${sans > 1 ? 's' : ''} par ${esc(S.state.zones[garde].nom)}` : `relâché${sans > 1 ? 's' : ''}`}` : ''}`, coutTxt('interpellation', I.heures), etapeImpossible(fil, 'interpellation', 0, c, t), 0);
+  const interp = bloc('interpellation', '🚔', 'Interpellation', `${I.agents} agents pendant ${I.heures} h · réussite ${pc(p)}${op.r < c.suspects + 1 ? ' (plus de renseignements = plus de chances)' : ''} · parquet : ${decisionParquet(op.sol).nom}${sans ? ` · ${sans} sans place en cellule : ${garde ? `gardé${sans > 1 ? 's' : ''} par ${esc(S.state.zones[garde].nom)}` : `relâché${sans > 1 ? 's' : ''}`}` : ''}`, coutTxt('interpellation', I.heures), etapeImpossible(fil, 'interpellation', 0, c, t, hJ), 0);
   return `<section class="card fi-choix-l" aria-label="Prochaine étape"><h2 class="card-title">Prochaine étape</h2>${filature}${recoupement}${interp}
     <button type="button" class="btn small ghost" data-action="filet-abandon" style="align-self:flex-start">Abandonner ce dossier</button></section>`;
 }
@@ -231,7 +232,7 @@ export async function actionFilet(a, el, { confirmer } = {}) {
   if (a === 'filet-ouvrir') e = { k: 'ouvrir', c: el.dataset.c };
   else if (a === 'filet-lancer') {
     const k = el.dataset.k, d = Number(el.dataset.d) || 0;
-    const imp = etapeImpossible(fil, k, d, fil.op && fil.op.cible, t);
+    const imp = etapeImpossible(fil, k, d, fil.op && fil.op.cible, t, heuresParService(acceptesDuJour()));
     if (imp) { toast(imp.charAt(0).toUpperCase() + imp.slice(1)); return true; }
     e = { k, d };
   } else if (a === 'filet-abandon') {
