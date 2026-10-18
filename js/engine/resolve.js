@@ -18,9 +18,9 @@ import { enquetePourTour, quatreComptePourTour, SLOT_QUATRE, RELANCE_PS } from '
 import { jourBe } from './time.js';
 import { attribuerSites } from './sites.js';
 import { genererEchos } from './gazette.js';
-import { resoudreAppel, facteurRodage, ajouterRodage, aGalon, BRIGADE } from './brigade.js';
+import { resoudreAppel, facteurRodage, ajouterRodage, aGalon, BRIGADE, designerCandidat, sortirDuRang, releve, progresserAdjoints } from './brigade.js';
 import { psDispo as psDispoBrigade } from './decor.js';
-import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet, encadrement, lireGalons, appliquerGalons, GALONS } from './equipe.js';
+import { faireProgresser, surnomDe, intitule, verifierTrophees, SEUILS_EQUIPE, ROLES_EQUIPE, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet, encadrement, lireGalons, appliquerGalons, GALONS } from './equipe.js';
 import { clone, clamp, round1, newZone, capaciteAgents, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite, forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, pointsIpz, moyenneIpz, moralMult, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles } from './zone.js';
 import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus, appliquerPrime, pieceSurSuspect, affaire, dossierDe, pieceGardeAVue } from './enquete.js';
@@ -348,6 +348,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Réaffecter les galons d'une figure (contre des PS).
     { const rr = orders[uid] && orders[uid].galonsReset; const m = rr && (z.equipe || []).find((x) => x.role === rr);
       if (m && (m.galons || []).length && psDispoBrigade(z) >= BRIGADE.reaffecter) { z.psDepense = Math.round(z.psDepense || 0) + BRIGADE.reaffecter; m.galons = []; z.rapport.push(`Galons de ${nomComplet(m)} rendus (${BRIGADE.reaffecter} PS) : à réattribuer.`); } }
+    // Sortir du rang : la recrue candidate devient une figure (adjoint de son service).
+    if (orders[uid] && orders[uid].sortirRang) { const a = sortirDuRang(z, T);
+      if (a) z.rapport.push(`Sortie du rang : ${a.prenom} ${a.nom}, formé${a.f ? 'e' : ''} par ${a.mentor}, devient une figure de ta brigade. ${a.f ? 'Elle' : 'Il'} prendra le service quand ${a.mentor} sera en mission.`); }
     // Mise à prix de l'enquête : le choix fait aujourd'hui (ou la confiscation par défaut).
     { const lp = appliquerPrime(z, ord[uid].prime, T, { services: SERVICES, niveauMax: NIVEAU_MAX }); if (lp) z.rapport.push(lp); }
     ord[uid].missions = missionsValides(ord[uid]);
@@ -941,10 +944,13 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }
     // Figures de l'équipe : bonus dans leur service (si quelqu'un y travaille), sauf celle partie en mission.
     z.bonusChefs = {};
-    for (const [s, x] of Object.entries(encadrement(z.equipe, o.postes, z._missions || []))) {
+    const enc = encadrement(z.equipe, o.postes, z._missions || []);
+    const releves = releve(z, enc, Object.fromEntries(ROLES_EQUIPE.map((r) => [r.id, r.service])));
+    for (const [s, x] of Object.entries(enc)) {
       if (!cap[s]) continue;
       cap[s] *= 1 + x.bonus; z.bonusChefs[s] = x.bonus;
     }
+    for (const { a, s } of releves) if (cap[s]) z.rapport.push(`Relève : ${a.prenom} ${a.nom} encadre ${SERVICE_LABELS[s]} à la place de ${a.mentor ? a.mentor.split(' ')[0] : 'sa figure'} (+${Math.round(enc[s].bonus * 100)} %).`);
     // Brigade : recrues en formation (un demi-agent chacune) et galons « service » de l'Intervention.
     { const fr = facteurRodage(z, T); if (fr < 1) for (const s of SERVICES) cap[s] *= fr;
       if (cap.intervention) cap.intervention *= (aGalon(z, 'inter', 0, 'B') ? 1.04 : 1) * (aGalon(z, 'inter', 2, 'B') ? 1.06 : 1); }
@@ -1147,7 +1153,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       return { n, arrivee: Number.isFinite(arr) && arr <= T + DELAI_ACADEMIE ? arr : T + 1 };
     }).filter((a) => a.n > 0);
     const arrivees = z.academie.filter((a) => a.arrivee <= T + 1).reduce((s2, a) => s2 + a.n, 0);
-    if (arrivees) { z.agents += arrivees; const dr = ajouterRodage(z, arrivees, T); z.rapport.push(`${arrivees} recrue${arrivees > 1 ? 's' : ''} sort${arrivees > 1 ? 'ent' : ''} de l’académie : dans tes ordres dès demain, à mi-efficacité pendant ${dr} jours${dr < BRIGADE.rodage.jours ? ' (une figure les forme)' : ''}.`); }
+    if (arrivees) { z.agents += arrivees; const dr = ajouterRodage(z, arrivees, T); z.rapport.push(`${arrivees} recrue${arrivees > 1 ? 's' : ''} sort${arrivees > 1 ? 'ent' : ''} de l’académie : dans tes ordres dès demain, à mi-efficacité pendant ${dr} jours${dr < BRIGADE.rodage.jours ? ' (une figure les forme)' : ''}.`);
+      const c = designerCandidat(state, z, T, T + 1 + dr);
+      if (c) z.rapport.push(`Parmi elles, ${c.prenom} ${c.nom}, formé${c.f ? 'e' : ''} par ${c.mentor} : ${c.f ? 'elle' : 'il'} pourra sortir du rang à la fin de sa formation (onglet Brigade › Équipe).`); }
     z.academie = z.academie.filter((a) => a.arrivee > T + 1);
     // Usure : un peu chaque jour, et surtout à chaque intervention (répartie sur le parc).
     // Chaque véhicule s'use selon son modèle (électriques −40 %, fourgons −20 %).
@@ -1254,10 +1262,12 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Série sans incident raté, équipe et trophées.
     z.stats.serieSansRate = rates === 0 ? (z.stats.serieSansRate || 0) + 1 : 0;
     if (z._joue) z.stats.toursValides = (z.stats.toursValides || 0) + 1;
-    const prog = faireProgresser(z, {
+    const gainsEquipe = {
       inter: traites, rech: resolus * 3 + (o.demarches || []).length * 2 + (z._decouverteJour ? 8 : 0),
       prox: cap.proximite / 2, roul: cap.roulage / 2, admin: Math.max(0, cap.admin * 1.2 - 1.2) / 1.5,
-    }, (z._missions || []).length ? Object.fromEntries(z._missions.map((r) => [r, CHEFS.xpMission])) : null);
+    };
+    for (const a of progresserAdjoints(z, gainsEquipe, SEUILS_EQUIPE)) z.rapport.push(`Équipe : ${a.prenom} ${a.nom} gagne son surnom « ${ROLES_EQUIPE.find((r) => r.id === a.role).surnoms[Math.min(a.niveau, 3) - 1]} ».`);
+    const prog = faireProgresser(z, gainsEquipe, (z._missions || []).length ? Object.fromEntries(z._missions.map((r) => [r, CHEFS.xpMission])) : null);
     if (prog.ligne) z.rapport.push(prog.ligne);
     // Complexe cellulaire : garde à vue des interpellés de la journée (relève comprise).
     if (aAnnexe(z, 'cachots') && (z._interpelle || (z._chefAvant && (z.stats.releves || 0) > (z._chefAvant.stats.releves || 0)))) {
@@ -1644,6 +1654,10 @@ function finDeSaison(state, classement, opts = {}) {
     nz.bilan = { season: oldSeason, gagnes: bilan.gagnes, moyenne: bilan.moyenne, cas: bilan.cas, fin: BILAN.tours, clos: !bilan.cas.length };
     nz.infra = { ...(z.infra || {}) };
     nz.equipe = z.equipe || creerEquipe(uid);
+    // Brigade : le style appris, les adjoints sortis du rang et la candidate ou le candidat formé suivent la zone.
+    if (z.styleBrigade) nz.styleBrigade = z.styleBrigade;
+    if (z.adjoints) nz.adjoints = z.adjoints;
+    if (z.candidat) nz.candidat = { ...z.candidat, pret: 0 };
     // Doctrine : à rechoisir ; garder la même fait monter la maîtrise.
     if (z.doctrine) { nz.doctrinePrec = z.doctrine; nz.maitrisePrec = z.maitrise || 0; }
     nz.trophees = z.trophees || [];

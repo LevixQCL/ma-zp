@@ -4,7 +4,7 @@ import { S, esc, myZone } from './common.js';
 import { SERVICE_LABELS, bonusChef } from '../engine/constants.js';
 import { roleDe, intitule, surnomDe, creerEquipe, appliquerNoms, GALONS, galonsDe, galonsLibres } from '../engine/equipe.js';
 import { COULEUR_ROLE, initiales, echelleBonus } from './equipe.js';
-import { appelDuJour, optionsAppel, intentionBrigade, APPROCHES, CTX, enRodage, BRIGADE } from '../engine/brigade.js';
+import { appelDuJour, optionsAppel, intentionBrigade, APPROCHES, CTX, enRodage, BRIGADE, adjointsDe, placesFigures, prochainePlace, peutSortir } from '../engine/brigade.js';
 import { psDispo } from '../engine/decor.js';
 
 /** Carte « Appel du jour » : le même dans toutes les zones ; ta brigade agit seule si tu ne choisis rien. */
@@ -40,14 +40,48 @@ export function galonsAFaire() {
   const z = myZone();
   return !!(z && (z.equipe || []).some((m) => galonsLibres(m, choixDe(m).liste) > 0));
 }
+/** Une recrue formée peut sortir du rang ce soir (et ce n'est pas encore demandé). */
+export const rangAFaire = () => { const z = myZone(); return !!(z && S.state && peutSortir(z, S.state.turn) && !(S.draft && S.draft.sortirRang)); };
 
 export function segBrigadeHtml() {
   const v = S.brigadeVue === 'equipe' ? 'equipe' : 'chef';
-  const n = galonsAFaire();
+  const g = galonsAFaire(), r = rangAFaire(), n = g || r;
   return `<div class="seg seg2" role="tablist" aria-label="Vue de la brigade" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
     <button type="button" role="tab" aria-selected="${v === 'chef'}" data-action="brigade-vue" data-v="chef"><span class="t">Chef</span></button>
-    <button type="button" role="tab" aria-selected="${v === 'equipe'}" data-action="brigade-vue" data-v="equipe"><span class="t">Équipe${n ? ' ·' : ''}</span>${n ? '<span class="tiny" style="color:var(--amber)">galon à attribuer</span>' : ''}</button>
+    <button type="button" role="tab" aria-selected="${v === 'equipe'}" data-action="brigade-vue" data-v="equipe"><span class="t">Équipe${n ? ' ·' : ''}</span>${n ? `<span class="tiny" style="color:var(--amber)">${g ? 'galon à attribuer' : 'sortie du rang possible'}</span>` : ''}</button>
   </div>`;
+}
+
+/** Adjoints sortis du rang, et la place suivante avec sa candidate ou son candidat. */
+function rangHtml(z, equipe) {
+  const T = S.state.turn, adj = adjointsDe(z), places = placesFigures(z), c = z.candidat, nom = (m) => `${m.prenom} ${m.nom}`;
+  const cartes = adj.map((a) => {
+    const r = roleDe(a), col = COULEUR_ROLE[a.role], fig = equipe.find((m) => m.role === a.role);
+    const surnom = a.niveau > 0 ? r.surnoms[Math.min(a.niveau, 3) - 1] : null;
+    return `<section class="card fig-brigade" style="border-left:4px dashed ${col};gap:6px">
+      <div class="fig-h" style="cursor:default"><span class="avatar" style="background:${col};opacity:.8" aria-hidden="true">${esc(initiales(a))}</span>
+        <span class="col grow" style="gap:1px;min-width:0"><span style="font-weight:700">${esc(nom(a))}${surnom ? ` <span class="surnom">« ${esc(surnom)} »</span>` : ''}</span>
+        <span class="tiny muted">Adjoint${a.f ? 'e' : ''} · ${esc(SERVICE_LABELS[r.service])} · formé${a.f ? 'e' : ''} par ${esc(a.mentor || (fig ? nom(fig) : '?'))}</span></span>
+        <span class="tiny muted">+${Math.round(bonusChef(a.niveau) * 100)} %</span></div>
+      <span class="tiny">Prend le service quand ${esc((fig ? fig.prenom : 'sa figure'))} part en mission ou encadre ailleurs. En binôme sur l’appel du jour ${esc(CTX[Object.keys(CTX).find((k) => CTX[k].role === a.role)].nom.toLowerCase())} (+5 %).</span>
+    </section>`;
+  }).join('');
+  let place = '';
+  const libre = 5 + adj.length < places, hp = prochainePlace(z);
+  const demande = !!(S.draft && S.draft.sortirRang);
+  if (c) {
+    const pret = c.pret <= T, r = roleDe(c);
+    place = `<section class="card place-rang" style="gap:6px;border-style:dashed">
+      <b>${libre ? `${5 + adj.length + 1}e figure : place ouverte` : `${5 + adj.length + 1}e figure : place à l’hôtel de police niveau ${hp}`}</b>
+      <span class="tiny">Candidat${c.f ? 'e' : ''} : <b>${esc(nom(c))}</b>, ${esc(SERVICE_LABELS[r.service])}, formé${c.f ? 'e' : ''} par ${esc(c.mentor)}. ${pret ? `${c.f ? 'Elle' : 'Il'} a fini sa formation.` : `En formation encore ${c.pret - T} jour${c.pret - T > 1 ? 's' : ''}.`}</span>
+      ${libre && pret ? (demande ? `<span class="tiny" style="color:var(--amber)">${esc(c.prenom)} sort du rang ce soir à 20:00.</span><button type="button" class="btn small ghost" data-action="sortir-rang">Annuler</button>`
+        : `<button type="button" class="btn small" data-action="sortir-rang">Faire sortir ${esc(c.prenom)} du rang</button>`) : ''}
+    </section>`;
+  } else if (5 + adj.length < 7) {
+    place = `<section class="card place-rang" style="gap:4px;border-style:dashed"><b>${5 + adj.length + 1}e figure</b>
+      <span class="tiny muted">${libre ? 'Place ouverte.' : `Place ouverte à l’hôtel de police niveau ${hp}.`} La prochaine promotion de l’académie désignera une recrue, formée par ta figure la plus expérimentée (ton tuteur d’abord) : elle pourra sortir du rang à la fin de sa formation.</span></section>`;
+  }
+  return cartes + place;
 }
 
 export function equipeVueHtml() {
@@ -96,6 +130,7 @@ export function equipeVueHtml() {
     ${appelHtml(z)}
     <p class="tiny muted" style="margin:0">${total} agents répartis dans tes services aujourd’hui${rod ? `, dont ${rod} recrue${rod > 1 ? 's' : ''} en formation (à mi-efficacité)` : ''}. Chaque figure encadre le sien. Les galons « terrain » ouvrent des approches réservées sur l’appel du jour, les galons « service » agissent chaque soir.</p>
     ${cartes}
+    ${rangHtml(z, equipe)}
     <p class="tiny muted" style="margin:0">Renommer une figure : carte « Mon équipe » de l’HP.</p>
   </section>`;
 }

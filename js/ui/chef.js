@@ -8,7 +8,7 @@ import { ongletChefHtml, CHEF_V3 } from './chef-onglet.js';
 import { creerChef } from '../engine/chef.js';
 import { jourPrise, courriersDuJour } from '../engine/parapheur.js';
 import { adjointFicheHtml, honneursHtml, COUL_CADRE, semaineHtml } from './chef-semaine.js';
-import { segBrigadeHtml, equipeVueHtml, galonsAFaire } from './brigade.js';
+import { segBrigadeHtml, equipeVueHtml, galonsAFaire, rangAFaire } from './brigade.js';
 
 // ───── Portraits (images générées avec Gemini, img/chefs/pNN.webp) ─────
 // Tant qu'une image manque, un portrait dessiné (silhouette en uniforme, initiales) la remplace.
@@ -240,7 +240,7 @@ export function chefAFaire() {
   const rep = (d && d.parapheur) || (S.savedOrders && S.savedOrders.parapheur) || {};
   if (courriersDuJour(st, z).some((id) => !Object.hasOwn(rep, id))) return true;
   if (brevetPossible(z.chef) && !(d && d.brevet)) return true;
-  if (galonsAFaire()) return true;
+  if (galonsAFaire() || rangAFaire()) return true;
   return false;
 }
 

@@ -43,3 +43,36 @@ import { appelDuJour, intentionBrigade, facteurRodage, ajouterRodage } from '../
   assert.equal(ajouterRodage(zt, 2, 5), 2, 'deux jours avec un tuteur');
   console.log('brigade en direct : ok');
 }
+
+// Sortir du rang : candidat désigné à l'arrivée des recrues, promotion si une place est ouverte, relève en mission.
+import { designerCandidat, sortirDuRang, placesFigures, releve, adjointsDe } from '../js/engine/brigade.js';
+import { encadrement as enc2, ROLES_EQUIPE } from '../js/engine/equipe.js';
+{
+  const st3 = createGame({ seed: 'rang' });
+  const z = newZone({ uid: 'r', code: '3333', nom: 'r' }, 1); z.equipe = creerEquipe('r');
+  z.equipe.find((m) => m.role === 'inter').niveau = 2;
+  z.batiments.bureaux = 1;
+  assert.equal(placesFigures(z), 5);
+  const c = designerCandidat(st3, z, 3, 8);
+  assert.equal(c.role, 'inter', 'formé par la figure la plus expérimentée');
+  assert.ok(!z.equipe.some((m) => m.nom === c.nom), 'nom distinct des figures');
+  assert.equal(designerCandidat(st3, z, 4, 9), null, 'un seul candidat à la fois');
+  assert.equal(sortirDuRang(z, 9), null, 'pas de place au niveau 1');
+  z.batiments.bureaux = 2; assert.equal(placesFigures(z), 6);
+  assert.equal(sortirDuRang(z, 7), null, 'pas avant la fin de sa formation');
+  const a = sortirDuRang(z, 8);
+  assert.ok(a && adjointsDe(z).length === 1 && !z.candidat, 'promotion');
+  assert.equal(sortirDuRang(z, 9), null);
+  const service = Object.fromEntries(ROLES_EQUIPE.map((r) => [r.id, r.service]));
+  const sansMission = enc2(z.equipe, {}, []); assert.equal(releve(z, sansMission, service).length, 0, 'figure présente : pas de relève');
+  const enMission = enc2(z.equipe, {}, ['inter']); const rl = releve(z, enMission, service);
+  assert.equal(rl.length, 1); assert.ok(enMission.intervention && enMission.intervention.adjoint === a, 'l’adjoint prend l’Intervention');
+  // Au tour de 20:00 : ordre « sortirRang » et ligne de rapport.
+  const st4 = createGame({ seed: 'rang2' });
+  const z4 = st4.zones.q = newZone({ uid: 'q', code: '4444', nom: 'q' }, 1); z4.equipe = creerEquipe('q');
+  z4.batiments.bureaux = 2; z4.candidat = { prenom: 'Moussa', nom: 'Diallo', f: 0, role: 'rech', mentor: 'X Y', pret: 1 };
+  const r4 = resolveTurn(st4, { orders: { q: { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal', sortirRang: true } }, quests: {}, players: {}, nextWeekday: 1 });
+  assert.equal(adjointsDe(r4.state.zones.q).length, 1);
+  assert.ok(r4.state.zones.q.rapport.some((l) => l.startsWith('Sortie du rang')));
+  console.log('sortir du rang : ok');
+}

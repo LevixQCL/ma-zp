@@ -6,22 +6,27 @@ import { skinsEnVente } from '../engine/decor.js';
 import { ouvrirDecor } from './logistique.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-16-filet',
-  titre: '🕵️ Les coups de filet',
+  id: '2026-10-18-brigade',
+  titre: '🚓 Ta brigade',
   saison2: true,
-  // Pas avant le tour de 20:00 qui donne leurs premières cibles aux zones.
-  pret: (st) => !!(st && S.user && st.zones && st.zones[S.user.uid] && st.zones[S.user.uid].filet),
-  sectionPret: /^Les coups de filet/,
-  action: { label: 'Voir mes cibles', ouvrir: () => { location.hash = '#filet'; } },
+  action: { label: 'Voir ma brigade', ouvrir: () => { S.brigadeVue = 'equipe'; if (location.hash === '#chef') window.dispatchEvent(new HashChangeEvent('hashchange')); else location.hash = '#chef'; } },
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
-    ['🕵️', 'Une affaire à toi', 'chaque semaine, la Recherche repère 3 cibles dans ta zone : réseau de recel, point de deal, cambrioleurs… Ouvre un dossier depuis l’HP.'],
-    ['⏱️', 'Toi qui choisis le tempo', 'filature, recoupement : 2, 6 ou 12 heures. L’étape avance seule ; reviens quand tu veux pour décider de la suite.'],
-    ['🚔', 'Jusqu’au parquet', 'interpelle quand le dossier est prêt : plus il est solide, plus le parquet suit. Attention, une cible méfiante disparaît.'],
+    ['📻', 'L’appel du jour', 'le même dans toutes les zones. Donne ta consigne, ou laisse ta brigade faire : elle apprend ton style et s’en sert quand tu n’es pas là. Le lendemain, compare avec les autres brigades.'],
+    ['🎖️', 'Des galons à attribuer', 'à chaque surnom, une figure gagne un galon : Terrain (une approche réservée sur l’appel du jour) ou Service (un effet chaque soir). L’onglet Chef devient Brigade.'],
+    ['⭐', 'Sortir du rang', 'une recrue formée par tes figures peut devenir ta 6e figure (hôtel de police niveau 2), puis ta 7e (niveau 4).'],
   ],
 
-  // Liste complète, dans le menu Nouveautés.
   sections: [
+    ['La brigade (18 octobre, 20:00)', [
+      ['Onglet Brigade', 'l’onglet Chef s’appelle Brigade, avec deux vues : Chef (inchangée) et Équipe (tes figures, leurs agents, leurs galons). Les Ordres ne changent pas.'],
+      ['L’appel du jour', 'un appel commun à toutes les zones, résolu à 20:00. Choisis une approche ou laisse ta brigade décider : sans consigne, elle refait ce que tu as choisi dans ce genre de situation, sinon elle reste prudente. Selon le résultat : points de terrain, satisfaction, réputation ou moral, et de l’expérience pour la figure qui mène. Le lendemain, tu vois ce qu’a fait chaque brigade.'],
+      ['Les galons', 'un par surnom, trois paliers. Terrain : une approche réservée sur l’appel du jour, plus sûre ou plus payante. Service : un effet chaque soir (Intervention +4 % puis +6 %, travail en plus sur les dossiers, satisfaction, criminalité, amendes +5 %, paperasse −10 %, moral). Prendre l’un ferme l’autre ; réaffecter les galons d’une figure coûte 30 PS.'],
+      ['Les recrues', 'une recrue qui sort de l’académie compte pour un demi-agent pendant 4 jours, 2 si une figure a pris le galon Tuteur (palier 2, service).'],
+      ['Les spécialités', 'une figure qui a mené 2 renforts chez un collègue revient spécialiste : +10 % quand elle mène l’appel du jour.'],
+      ['Sortir du rang', 'chaque promotion de l’académie désigne une recrue, formée par ta figure la plus expérimentée (ton tuteur d’abord). Sa formation finie, elle peut devenir une figure : 6e place à l’hôtel de police niveau 2, 7e au niveau 4. Adjointe de son service, elle le prend quand sa figure part en mission ou encadre ailleurs, et l’accompagne sur l’appel du jour (+5 %).'],
+      ['D’une saison à l’autre', 'le style appris par ta brigade, tes adjoints et ta recrue candidate te suivent.'],
+    ]],
     ['Les coups de filet (16 octobre, 20:00)', [
       ['Les cibles', 'chaque semaine, 3 cibles repérées dans ta zone (1 à 3 suspects, plus ou moins méfiantes). Tu en mènes 2 au plus jusqu’au bout. Rien à voir avec l’enquête de la semaine : ce sont des renseignements, pas des pièces.'],
       ['Les étapes', 'filature (des renseignements, un risque d’être repéré), recoupement (la solidité du dossier, sans risque), interpellation (6 agents pendant 4 heures). Tu choisis la durée : 2, 6 ou 12 heures. L’étape avance seule, l’opération t’attend à la fin sans rien perdre.'],

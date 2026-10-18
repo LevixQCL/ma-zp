@@ -2,6 +2,7 @@
 // effets des galons des figures, rodage des recrues avec tuteur.
 // Calibrage : test/brigade-sim.mjs (un joueur attentif gagne environ +1 à +2 d'IPZ sur la saison ; l'absent ne perd rien).
 import { makeRng } from './rng.js';
+import { bonusChef } from './constants.js';
 
 export const BRIGADE = {
   rodage: { jours: 4, tuteur: 2, efficacite: 0.5 },   // recrues à 50 % pendant 4 jours (2 avec un tuteur)
@@ -140,15 +141,17 @@ export function resoudreAppel(state, z, ord, T) {
     c[op.app] = (c[op.app] || 0) + 1; g[op.app] = (g[op.app] || 0) + 1;
   }
   const meneur = figureDe(z, CTX[appel.ctx].role);
-  const p = Math.min(0.95, op.p + (meneur && meneur.spec ? BRIGADE.specBonus : 0));
+  const binome = adjointsDe(z).find((a) => a.role === CTX[appel.ctx].role) || null;
+  const p = Math.min(0.95, op.p + (meneur && meneur.spec ? BRIGADE.specBonus : 0) + (binome ? RANG.bonusAppel : 0));
   const ok = makeRng(`${state.seed}:s${state.season}:t${T}:appel-res:${z.uid}`).next() < p;
   const eff = { ...(ok ? op.ok : op.ko) };
   z._points = (z._points || 0) + (eff.pts || 0);
   z.satisfaction += eff.sat || 0; z.reputation += eff.rep || 0; z.moral += eff.moral || 0;
   if (ok && meneur) meneur.xp = (meneur.xp || 0) + BRIGADE.xpAppel;
+  if (ok && binome) binome.xp = (binome.xp || 0) + BRIGADE.xpAppel;
   z.appelHier = { t: T, i: appel.i, titre: appel.titre, app: op.app, label: op.label, ok, txt: ok ? op.tOk : op.tKo, seule: !choisi, pourquoi: choisi ? null : it.pourquoi, eff };
   const effTxt = [eff.pts ? `+${eff.pts} pts` : '', eff.sat ? `satisfaction ${eff.sat > 0 ? '+' : ''}${eff.sat}` : '', eff.rep ? `réputation ${eff.rep > 0 ? '+' : ''}${eff.rep}` : '', eff.moral ? `moral ${eff.moral}` : ''].filter(Boolean).join(', ');
-  return `Appel du jour (« ${appel.titre} ») : ${choisi ? 'ta brigade suit ta consigne' : `ta brigade décide seule (${it.pourquoi})`}, ${APPROCHES[op.app].ico} ${op.label.toLowerCase()}. ${ok ? 'Réussi' : 'Raté'} : ${ok ? op.tOk : op.tKo}${effTxt ? ` (${effTxt})` : ''}.`;
+  return `Appel du jour (« ${appel.titre} »${binome ? `, avec ${binome.prenom} ${binome.nom} en binôme` : ''}) : ${choisi ? 'ta brigade suit ta consigne' : `ta brigade décide seule (${it.pourquoi})`}, ${APPROCHES[op.app].ico} ${op.label.toLowerCase()}. ${ok ? 'Réussi' : 'Raté'} : ${ok ? op.tOk : op.tKo}${effTxt ? ` (${effTxt})` : ''}.`;
 }
 
 // ───── Rodage des recrues ─────
@@ -166,4 +169,69 @@ export function ajouterRodage(z, n, T) {
   (z.rodage ||= []).push({ n, fin: T + 1 + d });
   z.rodage = z.rodage.filter((r) => r.fin > T);
   return d;
+}
+
+// ───── Sortir du rang : 6e et 7e figures (adjoints) ─────
+// Une recrue formée sous une figure devient candidate. Places : 6e à l'hôtel de police niveau 2, 7e au niveau 4.
+// L'adjoint double la figure de son service : il prend le service quand elle part en mission ou encadre ailleurs (relève),
+// et l'accompagne sur l'appel du jour de son service (+5 %). Il progresse à mi-vitesse avec les gains de son service.
+export const RANG = { places: [[2, 6], [4, 7]], niveauDepart: 1, xpDepart: 25, bonusAppel: 0.05, xpPart: 0.5 };
+const PRENOMS_RANG = [['Moussa', 0], ['Yasmine', 1], ['Thomas', 0], ['Inès', 1], ['Bastien', 0], ['Chloé', 1], ['Mehdi', 0], ['Aurélie', 1], ['Lucas', 0], ['Fatima', 1]];
+const NOMS_RANG = ['Diallo', 'Renard', 'Collard', 'Lambert', 'Fontaine', 'Delvaux', 'Bodart', 'Hennebert', 'Masson', 'Gilson'];
+/** Nombre de places de figure de la zone (5, puis 6 et 7 avec l'hôtel de police). */
+export function placesFigures(z) {
+  const hp = (z && z.batiments && z.batiments.bureaux) || 0;
+  return 5 + RANG.places.filter(([niv]) => hp >= niv).length;
+}
+export const adjointsDe = (z) => (z && Array.isArray(z.adjoints) ? z.adjoints : []);
+/** Niveau de l'hôtel de police qui ouvre la prochaine place (ou null). */
+export function prochainePlace(z) {
+  const p = RANG.places.find(([, n]) => n > placesFigures(z));
+  return p ? p[0] : null;
+}
+/** Une promotion est-elle possible ce soir ? */
+export const peutSortir = (z, T) => !!(z && z.candidat && z.candidat.pret <= T && 5 + adjointsDe(z).length < placesFigures(z));
+
+/** Désigne la candidate ou le candidat d'une promotion de recrues (formé par la figure la plus expérimentée, le tuteur d'abord). */
+export function designerCandidat(state, z, T, finFormation) {
+  if (z.candidat || adjointsDe(z).length >= RANG.places.length || !(z.equipe || []).length) return null;
+  const pris = new Set(adjointsDe(z).map((a) => a.role));
+  const fig = (z.equipe || []).filter((m) => !pris.has(m.role))
+    .sort((a, b) => ((Array.isArray(b.galons) && b.galons[1] === 'B') - (Array.isArray(a.galons) && a.galons[1] === 'B')) || (b.niveau || 0) - (a.niveau || 0) || (b.xp || 0) - (a.xp || 0))[0];
+  if (!fig) return null;
+  const rng = makeRng(`${state.seed}:s${state.season}:t${T}:rang:${z.uid}`);
+  const deja = new Set([...(z.equipe || []), ...adjointsDe(z)].map((m) => m.nom));
+  const noms = rng.shuffle(NOMS_RANG).filter((n) => !deja.has(n)), p = rng.shuffle(PRENOMS_RANG)[0];
+  z.candidat = { prenom: p[0], f: p[1], nom: noms[0] || 'Martin', role: fig.role, mentor: `${fig.prenom} ${fig.nom}`, pret: finFormation };
+  return z.candidat;
+}
+/** Promotion demandée dans les ordres. Renvoie l'adjoint créé, ou null. */
+export function sortirDuRang(z, T) {
+  if (!peutSortir(z, T)) return null;
+  const c = z.candidat;
+  const a = { role: c.role, prenom: c.prenom, nom: c.nom, f: c.f, mentor: c.mentor, xp: RANG.xpDepart, niveau: RANG.niveauDepart, depuis: T };
+  (z.adjoints ||= []).push(a);
+  delete z.candidat;
+  return a;
+}
+/** Relève : chaque adjoint encadre le service de sa figure quand personne ne l'encadre ce soir. Modifie `out`. */
+export function releve(z, out, service) {
+  const faits = [];
+  for (const a of adjointsDe(z)) {
+    const s = service[a.role];
+    if (!s || out[s]) continue;
+    out[s] = { role: a.role, bonus: bonusChef(a.niveau), adjoint: a };
+    faits.push({ a, s });
+  }
+  return faits;
+}
+/** Expérience des adjoints : la moitié de ce qu'a gagné leur service. Renvoie les adjoints qui changent de niveau. */
+export function progresserAdjoints(z, gains, seuils) {
+  const montees = [];
+  for (const a of adjointsDe(z)) {
+    a.xp += Math.max(0, Math.round((gains[a.role] || 0) * RANG.xpPart));
+    let niv = 0; for (let k = 0; k < seuils.length; k++) if (a.xp >= seuils[k]) niv = k;
+    if (niv > a.niveau) { a.niveau = niv; montees.push(a); }
+  }
+  return montees;
 }

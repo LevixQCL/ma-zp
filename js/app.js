@@ -1358,6 +1358,7 @@ async function onClick(e) {
       case 'brigade-vue': S.brigadeVue = el.dataset.v === 'equipe' ? 'equipe' : 'chef'; rerender(); break;
       case 'figure-ouvrir': S.figureOuverte = S.figureOuverte === el.dataset.role ? null : el.dataset.role; rerender(); break;
       case 'appel-choix': { const i = Number(el.dataset.i); S.draft.appel = i >= 0 ? i : null; S.ordersDirty = true; rerender(); break; }
+      case 'sortir-rang': { S.draft.sortirRang = !S.draft.sortirRang; S.ordersDirty = true; rerender(); break; }
       case 'galon-reset': { S.draft.galonsReset = S.draft.galonsReset === el.dataset.role ? null : el.dataset.role; S.ordersDirty = true; rerender(); break; }
       case 'galon': {
         // Galon choisi : ajouté aux ordres de ce soir (appliqué à 20:00, sans retour possible ensuite).
