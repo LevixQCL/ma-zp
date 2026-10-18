@@ -6,6 +6,7 @@
 // Une zone qui ne joue plus ne bloque personne : son influence s'efface, les autres continuent.
 import { CONFIG } from '../config.js';
 import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
+import { effetCasquesND, abimer } from './materiel.js';
 import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND, INFRAS, aAnnexe, LOTS } from './constants.js';
 import { talentVal, talent, noterChef, FRONT, niveauChef } from './chef.js';
 import { makeRng } from './rng.js';
@@ -211,6 +212,13 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players =
     // Salle de crise : +15 % de force quand au moins deux zones attaquent ensemble.
     if (engages.length >= 2) for (const e of engages) if (aAnnexe(state.zones[e.u], 'crise')) { e.f *= 1 + INFRAS.crise.coop; state.zones[e.u].rapport.push(`Salle de crise : coordination avec les autres zones sur ${nomSecteur(k)}, force +${Math.round(INFRAS.crise.coop * 100)} %.`); }
     for (const e of engages) if (talent(state.zones[e.u], 'tacticien')) noterChef(state.zones[e.u], 'tacticien', `Tacticien : ton assaut sur ${nomSecteur(k)} frappe plus fort (+8 %), avec moins de blessés.`);
+    // Casques et boucliers (magasin) : plus de force et moins de blessés s'il y en a pour tout le monde ; sinon plus de risque.
+    for (const e of engages) { const zz = state.zones[e.u]; if (!zz.materiel) continue; const c = effetCasquesND(zz, e.n);
+      e.f *= c.force; e.risque *= c.risque;
+      const rc = makeRng(`${state.seed}:s${state.season}:t${T}:ndcasques:${k}:${e.u}`);
+      let casse = 0; for (let i = 0; i < Math.floor(e.n / 4); i++) if (rc.chance(0.25)) casse++;
+      const d = casse && zz.materiel.gnep ? abimer(zz, 'gnep', casse, rc) : '';
+      zz.rapport.push(c.part >= 0.5 ? `Casques et boucliers sur ${nomSecteur(k)} : force +${Math.round((c.force - 1) * 100)} %, moins de blessés.${d ? ` ${d}.` : ''}` : `Pas assez de casques et boucliers pour tes ${e.n} agents sur ${nomSecteur(k)} : plus de risque de blessure.`); }
     for (const e of engages) if (e.drone) state.zones[e.u].rapport.push(`Cellule drone : le drone survole ${nomSecteur(k)} et guide tes ${e.n} agents (force +${Math.round((INFRAS.drone.force - 1) * 100)} %, moins de blessés).`);
     // Jumelage non-droit : +20 % de force pour deux zones jumelées sur le même secteur.
     for (const e of engages) {

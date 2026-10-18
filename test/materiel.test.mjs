@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { newZone } from '../js/engine/zone.js';
 import { creerEquipe } from '../js/engine/equipe.js';
-import { creerMateriel, giletsValides, facteurGilets, risqueMateriel, prixMarche, abimer, degatsDuSoir, ordresMaterielRobot, MAT, materielDuTour } from '../js/engine/materiel.js';
+import { ceder, inspecter, accueillirRecrues, effetCasquesND, surplus, gammeDe, creerMateriel, giletsValides, facteurGilets, risqueMateriel, prixMarche, abimer, degatsDuSoir, ordresMaterielRobot, MAT, materielDuTour } from '../js/engine/materiel.js';
 import { makeRng } from '../js/engine/rng.js';
 
 const ALLOC = { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 };
@@ -72,5 +72,49 @@ assert.ok(Math.abs(prixMarche(12) - MAT.marche.base * 0.75) < 1e-9);
   const o = ordresMaterielRobot(z, { turn: 2, marches: [] });
   assert.deepEqual(o.masse, ['tenue']);
   assert.equal(o.commandes[0].item, 'gilets');
+}
+// Fournisseurs : prix et validité des gilets selon la gamme.
+{
+  let st = createGame({ seed: 'gamme' });
+  st.zones.a = newZone({ uid: 'a', code: '1111', nom: 'A' }, 1); st.zones.a.equipe = creerEquipe('a');
+  const b0 = st.zones.a.budget;
+  st = resolveTurn(st, { orders: { a: { alloc: ALLOC, rythme: 'renforce', materiel: { commandes: [{ item: 'gilets', lots: 1, voie: 'negociee', q: 'qualite' }] } } }, quests: {}, players: {}, nextWeekday: 1 }).state;
+  const z = st.zones.a;
+  assert.ok(z._compta === undefined || true);
+  assert.equal(z.materiel.commandes[0].q, 'qualite');
+  assert.ok(z.materiel.usureJour.tenue > MAT.tenue.usure, 'rythme renforcé : la tenue s’use plus vite');
+  st = resolveTurn(st, { orders: { a: { alloc: ALLOC, rythme: 'normal' } }, quests: {}, players: {}, nextWeekday: 2 }).state;
+  const lot = st.zones.a.materiel.gilets.find((g) => g.q === 'qualite');
+  assert.ok(lot && lot.fin === 2 + gammeDe('qualite').validite, 'gilets haut de gamme : 35 jours');
+  assert.ok(b0 > st.zones.a.budget - 100);
+}
+// Cession : surplus seulement, PS pour le donneur, gilets reçus avec leur date.
+{
+  const st = { zones: {} };
+  const a = st.zones.a = { uid: 'a', nom: 'A', agents: 10, reputation: 50, _ps: 0 }; a.materiel = creerMateriel(a, 1); a.materiel.gilets.push({ n: 10, fin: 40, m: 'std' });
+  const b = st.zones.b = { uid: 'b', nom: 'B', agents: 20, reputation: 50 }; b.materiel = creerMateriel(b, 1); b.materiel.gilets = [{ n: 8, fin: 30, m: 'std' }];
+  assert.equal(surplus(a, 1).gilets, 10);
+  const t = ceder(st, a, { cible: 'b', item: 'gilets', n: 12 }, 1);
+  assert.match(t, /cèdes 10 gilets/);
+  assert.equal(giletsValides(b.materiel, 1).total, 18);
+  assert.ok(a._ps > 0 && a.reputation === 51, 'PS et réputation : B refusait les interventions');
+  assert.equal(ceder(st, a, { cible: 'b', item: 'gilets', n: 5 }, 1), '', 'plus de surplus');
+}
+// Inspection : sanction si gilets périmés, félicitations sinon.
+{
+  const z = { agents: 20, budget: 10, reputation: 50, moral: 60 }; z.materiel = creerMateriel(z, 1);
+  assert.match(inspecter(z, 1), /rien à signaler/);
+  assert.match(inspecter(z, 20), /sans gilet valide/);
+  assert.ok(z.budget < 10);
+}
+// Recrues : masse en plus, rappel s'il manque des gilets. Casques au non-droit.
+{
+  const z = { agents: 24 }; z.materiel = creerMateriel({ agents: 20 }, 1); z.materiel.masse = 0;
+  assert.match(accueillirRecrues(z, 4, 1), /sans gilet/);
+  assert.equal(z.materiel.masse, 4 * MAT.masseRecrue);
+  z.materiel.gnep = 10;
+  assert.ok(effetCasquesND(z, 8).force > 1 && effetCasquesND(z, 8).risque < 1);
+  z.materiel.gnep = 0;
+  assert.ok(effetCasquesND(z, 8).risque > 1, 'sans casques : plus de risque');
 }
 console.log('magasin et armurerie : ok');

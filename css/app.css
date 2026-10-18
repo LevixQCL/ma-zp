@@ -3333,3 +3333,8 @@ main.screen.fi { max-width: 640px; margin: 0 auto; }
 .mat-step { display: flex; align-items: center; gap: 8px; font-size: .82rem; }
 .mat-marche { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; background: rgba(255,255,255,.04); border-radius: 10px; padding: 7px 8px; }
 .btn.on { border-color: var(--amber, #FFB23F); color: var(--amber, #FFB23F); }
+.mat-gamme { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+.mat-gamme button { background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.1); border-radius: 9px; padding: 5px 6px; text-align: left; color: inherit; font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 1px; }
+.mat-gamme button b { font-size: .76rem; }
+.mat-gamme button span { font-size: .66rem; color: var(--text2, #96A0BF); line-height: 1.25; }
+.mat-gamme button.on { border-color: var(--amber, #FFB23F); background: rgba(255, 178, 63, .1); }

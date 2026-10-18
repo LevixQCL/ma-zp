@@ -25,7 +25,7 @@ function entretien(z, st, voie = 'centrale', opts = {}) {
       const ouvert = (st.marches || []).some((x) => !x.clos && x.lanceur === z.uid);
       const enMarche = (st.marches || []).some((x) => !x.clos && x.part[z.uid]);
       if (!ouvert && !enMarche) om.lancer = { item: art, lots };
-    } else om.commandes.push({ item: art, lots, voie });
+    } else om.commandes.push({ item: art, lots, voie, q: opts.q || 'std' });
   }
   return om;
 }
@@ -60,7 +60,7 @@ function saison(seed, pol) {
     const z = st.zones.moi, o = adaptatif(z, st);
     o.appel = meilleurAppel(z, st);
     if (pol.fonceur) { const op = optionsAppel(z, appelDuJour(st)); const i = op.findIndex((x) => x.app === 'force' && !x.materiel); if (i >= 0) o.appel = i; }
-    if (z.materiel && pol.gerer) { o.materiel = entretien(z, st, pol.voie || 'centrale', pol); if (pol.plus) equiperPlus(z, st, o.materiel); }
+    if (z.materiel && pol.gerer) { o.materiel = entretien(z, st, pol.voie || 'centrale', pol); if (pol.plus) equiperPlus(z, st, o.materiel); if (pol.casques && (mat(z).gnep || 0) < 10 && !(mat(z).commandes || []).some((c) => c.item === 'gnep')) o.materiel.commandes.push({ item: 'gnep', lots: 2, voie: 'centrale' }); }
     const avant = (z.blesses || []).length, b0 = z.budget;
     const r = resolveTurn(st, { orders: { ...ord, moi: o }, quests: {}, players: {}, nextWeekday: (t + 1) % 7 });
     st = r.state; const z2 = st.zones.moi;
@@ -78,6 +78,9 @@ const pols = {
   'entretien en marchés groupés': { gerer: 1, voie: 'marche' },
   'gilets ajustés': { gerer: 1, ajustes: 1 },
   'entretien + taser + bodycams': { gerer: 1, plus: 1 },
+  'entretien économique': { gerer: 1, q: 'eco' },
+  'entretien haut de gamme': { gerer: 1, q: 'qualite' },
+  'entretien + casques (non-droit)': { gerer: 1, casques: 1 },
   'fonceur, matériel négligé': { fonceur: 1 },
   'fonceur, gilets entretenus': { fonceur: 1, gerer: 1 },
 };

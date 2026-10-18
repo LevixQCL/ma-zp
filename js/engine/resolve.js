@@ -18,7 +18,7 @@ import { enquetePourTour, quatreComptePourTour, SLOT_QUATRE, RELANCE_PS } from '
 import { jourBe } from './time.js';
 import { attribuerSites } from './sites.js';
 import { genererEchos } from './gazette.js';
-import { materielDuTour, facteurGilets, degatsDuSoir } from './materiel.js';
+import { materielDuTour, facteurGilets, degatsDuSoir, accueillirRecrues } from './materiel.js';
 import { resoudreAppel, facteurRodage, ajouterRodage, aGalon, BRIGADE, designerCandidat, sortirDuRang, releve, progresserAdjoints } from './brigade.js';
 import { psDispo as psDispoBrigade } from './decor.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, SEUILS_EQUIPE, ROLES_EQUIPE, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet, encadrement, lireGalons, appliquerGalons, GALONS } from './equipe.js';
@@ -349,8 +349,6 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Réaffecter les galons d'une figure (contre des PS).
     { const rr = orders[uid] && orders[uid].galonsReset; const m = rr && (z.equipe || []).find((x) => x.role === rr);
       if (m && (m.galons || []).length && psDispoBrigade(z) >= BRIGADE.reaffecter) { z.psDepense = Math.round(z.psDepense || 0) + BRIGADE.reaffecter; m.galons = []; z.rapport.push(`Galons de ${nomComplet(m)} rendus (${BRIGADE.reaffecter} PS) : à réattribuer.`); } }
-    // Magasin et armurerie (prototype) : masse d'habillement, commandes, marchés, livraisons, péremptions.
-    { const lm = materielDuTour(state, z, orders[uid], T); if (lm.length) z.rapport.push(...lm); }
     // Sortir du rang : la recrue candidate devient une figure (adjoint de son service).
     if (orders[uid] && orders[uid].sortirRang) { const a = sortirDuRang(z, T);
       if (a) z.rapport.push(`Sortie du rang : ${a.prenom} ${a.nom}, formé${a.f ? 'e' : ''} par ${a.mentor}, devient une figure de ta brigade. ${a.f ? 'Elle' : 'Il'} prendra le service quand ${a.mentor} sera en mission.`); }
@@ -363,6 +361,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     z._compta = z._compta || [];
     z._ps = 0;
     z._psEntraide = 0;
+    // Magasin et armurerie : masse d'habillement, commandes, marchés, livraisons, usure, inspection, cessions.
+    { const lm = materielDuTour(state, z, orders[uid], T); if (lm.length) z.rapport.push(...lm); }
     // Photo d'avant le tour (pour les évolutions affichées au joueur) et journal des jauges.
     z.hier = { moral: z.moral, satisfaction: z.satisfaction, reputation: z.reputation, budget: z.budget, ipz: z.ipz, turn: T };
     ouvrirJournal(z);
@@ -1159,6 +1159,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     }).filter((a) => a.n > 0);
     const arrivees = z.academie.filter((a) => a.arrivee <= T + 1).reduce((s2, a) => s2 + a.n, 0);
     if (arrivees) { z.agents += arrivees; const dr = ajouterRodage(z, arrivees, T); z.rapport.push(`${arrivees} recrue${arrivees > 1 ? 's' : ''} sort${arrivees > 1 ? 'ent' : ''} de l’académie : dans tes ordres dès demain, à mi-efficacité pendant ${dr} jours${dr < BRIGADE.rodage.jours ? ' (une figure les forme)' : ''}.`);
+      { const lm = accueillirRecrues(z, arrivees, T); if (lm) z.rapport.push(lm); }
       const c = designerCandidat(state, z, T, T + 1 + dr);
       if (c) z.rapport.push(`Parmi elles, ${c.prenom} ${c.nom}, formé${c.f ? 'e' : ''} par ${c.mentor} : ${c.f ? 'elle' : 'il'} pourra sortir du rang à la fin de sa formation (onglet Brigade › Équipe).`); }
     z.academie = z.academie.filter((a) => a.arrivee > T + 1);
