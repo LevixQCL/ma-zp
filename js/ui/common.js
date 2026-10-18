@@ -128,7 +128,7 @@ export function brancherChefTab(fn) { chefAFaireTab = fn; }
 export function tabbar(active, { questBadge = false, radioBadge = false } = {}) {
   const st = S.state, me = S.user && st && st.zones ? st.zones[S.user.uid] : null;
   // L'ancien écran Terrain est un calque de la Carte.
-  const tabs = [['hp', 'HP'], ['ordres', 'Ordres'], ['carte', 'Carte'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['chef', 'Chef'], ['radio', 'Radio']];
+  const tabs = [['hp', 'HP'], ['ordres', 'Ordres'], ['carte', 'Carte'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['chef', 'Brigade'], ['radio', 'Radio']];
   if (active === 'terrain') active = 'carte';
   const nbJour = slotsCompte().length;
   const faites = (S.questResults || []).some((r) => r && (r.statut === 'delegue' || r.statut === 'quiz')) ? nbJour : slotsCompte().filter((k) => { const r = (S.questResults || [])[k]; return r && (r.statut === 'ok' || r.statut === 'rate'); }).length;

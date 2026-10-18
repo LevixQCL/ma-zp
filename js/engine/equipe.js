@@ -102,6 +102,67 @@ export function faireProgresser(z, gains, extra = null) {
   return { montees, ligne };
 }
 
+// ───── Galons : à chaque surnom gagné, la figure reçoit un galon à attribuer (oct. 2026, onglet Brigade) ─────
+// Trois paliers ; à chacun, deux choix exclusifs : « terrain » (A, une nouvelle façon d'agir sur les appels)
+// ou « service » (B, un effet durable sur son service). Première étape : les choix sont enregistrés et affichés ;
+// leurs effets en jeu arrivent avec la brigade en direct (appels du jour), après simulation.
+const G = (nom, texte) => ({ nom, texte });
+export const GALONS = {
+  inter: [
+    [G('Interpellation coordonnée', 'Interpeller à deux sur les appels, avec moins de risque de blessure.'), G('Patrouille rodée', 'Incidents d’Intervention : meilleure chance quand l’équipe se débrouille seule.')],
+    [G('Négociation de crise', 'Face à une arme : négocier, bien plus sûr que le simple dialogue.'), G('Tuteur exigeant', 'Les recrues de l’Intervention deviennent opérationnelles plus vite.')],
+    [G('Haut risque', 'Interpellation à haut risque : gros gain, risque de blessure.'), G('Pilier', 'Une fois par semaine, l’Intervention tient comme pleine malgré des absents.')],
+  ],
+  rech: [
+    [G('Audition ciblée', 'Face à un témoin qui se tait : une question de plus.'), G('Dossiers rangés', 'Les dossiers de Recherche perdent leur valeur moins vite.')],
+    [G('Filature', 'Une démarche d’enquête de plus par semaine, sans prendre d’agent.'), G('Tutrice', 'Les recrues de la Recherche deviennent opérationnelles plus vite.')],
+    [G('Perquisition préparée', 'Après une filature réussie, une perquisition qui rapporte double.'), G('Mémoire du parquet', 'Un dossier par semaine compte comme tout neuf.')],
+  ],
+  prox: [
+    [G('Médiation', 'Les différends réglés pour de bon, sans suite.'), G('Tournée de confiance', 'Les quartiers patrouillés gagnent un peu plus de satisfaction.')],
+    [G('Désamorcer', 'Une fois par semaine, un appel évité avant de tomber.'), G('Tutrice', 'Les recrues de la Proximité deviennent opérationnelles plus vite.')],
+    [G('Grande sœur du quartier', 'Face à une foule tendue : calmer sans intervenir.'), G('Réseau d’habitants', 'Les vagues de délinquance reçues sont réduites.')],
+  ],
+  roul: [
+    [G('Contrôle ciblé', 'Face à une fuite en voiture : un contrôle préparé, peu de risque.'), G('Radar humain', 'Amendes du Roulage un peu plus élevées.')],
+    [G('Poursuite encadrée', 'Prise en chasse avec moitié moins de risque pour les passants.'), G('Tuteur', 'Les recrues du Roulage deviennent opérationnelles plus vite.')],
+    [G('Barrage coordonné', 'Avec une zone voisine : un fuyard chez toi peut être arrêté chez elle, et l’inverse.'), G('Flotte ménagée', 'L’usure des véhicules du Roulage est réduite.')],
+  ],
+  admin: [
+    [G('Plainte bien prise', 'À l’accueil, la victime revient avec un détail utile.'), G('Guichet fluide', 'La paperasse monte un peu moins vite.')],
+    [G('Témoin en confiance', 'Les témoins qui se taisent parlent plus souvent à l’accueil.'), G('Tutrice', 'Les recrues de l’Accueil deviennent opérationnelles plus vite.')],
+    [G('Dossier en béton', 'Une confrontation par semaine : une preuve de plus prise en compte.'), G('Cellule de crise', 'Les crises du district coûtent moins de moral.')],
+  ],
+};
+/** Galons attribués d'une figure (liste de 'A' / 'B', palier par palier). */
+export const galonsDe = (m) => (m && Array.isArray(m.galons) ? m.galons.filter((g) => g === 'A' || g === 'B').slice(0, 3) : []);
+/** Galons gagnés mais pas encore attribués (un par surnom). */
+export const galonsLibres = (m, liste = galonsDe(m)) => Math.max(0, Math.min(3, (m && m.niveau) || 0) - liste.length);
+/** Choix lus dans les ordres : { role: ['A', 'B', ...] }, nettoyés. */
+export function lireGalons(o) {
+  const g = o && o.galons, out = {};
+  if (!g || typeof g !== 'object') return out;
+  for (const r of Object.keys(GALONS)) if (Array.isArray(g[r])) out[r] = g[r].filter((x) => x === 'A' || x === 'B').slice(0, 3);
+  return out;
+}
+/**
+ * Attribue les galons demandés : seulement des ajouts (on ne revient pas sur un palier), dans la limite des surnoms.
+ * Renvoie les nouveaux choix ({ m, palier, choix }) pour le rapport.
+ */
+export function appliquerGalons(z, demande) {
+  const faits = [];
+  for (const m of z.equipe || []) {
+    const voulu = demande && demande[m.role];
+    if (!voulu || !GALONS[m.role]) continue;
+    const cur = galonsDe(m), max = Math.min(3, m.niveau || 0);
+    if (voulu.length <= cur.length || cur.some((g, i) => voulu[i] !== g)) continue;
+    const nv = voulu.slice(0, max);
+    for (let i = cur.length; i < nv.length; i++) faits.push({ m, palier: i, choix: nv[i] });
+    if (nv.length > cur.length) m.galons = nv;
+  }
+  return faits;
+}
+
 // ───── Trophées ─────
 export const TROPHEES = [
   { id: 'sansfaute', nom: 'Zéro raté', texte: '7 tours d’affilée sans rater un seul incident' },

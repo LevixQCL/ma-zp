@@ -1355,6 +1355,16 @@ async function onClick(e) {
       case 'gazette-nav': if (Number(el.dataset.d) > 0) chargerArchivesGazette();
         S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
       case 'admin-create': await b.adminCreateGame(); toast('Partie lancée !'); break;
+      case 'brigade-vue': S.brigadeVue = el.dataset.v === 'equipe' ? 'equipe' : 'chef'; rerender(); break;
+      case 'figure-ouvrir': S.figureOuverte = S.figureOuverte === el.dataset.role ? null : el.dataset.role; rerender(); break;
+      case 'galon': {
+        // Galon choisi : ajouté aux ordres de ce soir (appliqué à 20:00, sans retour possible ensuite).
+        const z0 = myZone(), m = (z0.equipe || []).find((x) => x.role === el.dataset.role); if (!m) break;
+        const cur = Array.isArray(m.galons) ? m.galons.slice(0, 3) : [];
+        const g = { ...(S.draft.galons || {}) }; const d0 = Array.isArray(g[m.role]) && g[m.role].length > cur.length ? g[m.role] : cur;
+        if (d0.length >= Math.min(3, m.niveau || 0)) break;
+        g[m.role] = [...d0, el.dataset.k === 'B' ? 'B' : 'A']; S.draft.galons = g; S.ordersDirty = true; rerender(); break;
+      }
       case 'equipe-edit': S.equipeEdit = el.dataset.role || null; S.ouverts = { ...(S.ouverts || {}), equipe: true }; rerender(); break;
       case 'equipe-origine': {
         const noms = { ...((S.player && S.player.equipeNoms) || {}), [el.dataset.role]: null };

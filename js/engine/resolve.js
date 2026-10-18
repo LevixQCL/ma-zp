@@ -18,7 +18,7 @@ import { enquetePourTour, quatreComptePourTour, SLOT_QUATRE, RELANCE_PS } from '
 import { jourBe } from './time.js';
 import { attribuerSites } from './sites.js';
 import { genererEchos } from './gazette.js';
-import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet, encadrement } from './equipe.js';
+import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet, encadrement, lireGalons, appliquerGalons, GALONS } from './equipe.js';
 import { clone, clamp, round1, newZone, capaciteAgents, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite, forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, pointsIpz, moyenneIpz, moralMult, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles } from './zone.js';
 import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus, appliquerPrime, pieceSurSuspect, affaire, dossierDe, pieceGardeAVue } from './enquete.js';
@@ -335,6 +335,13 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (typeof dm === 'string' && Object.hasOwn(INFRAS, dm) && z.infra[dm]) { delete z.infra[dm]; z.rapport.push(`Annexe démolie : ${INFRAS[dm].nom}. Un emplacement est libre.`); }
       // Un jour de prise de fonctions de plus, seulement si le joueur a donné ses ordres.
       if (orders[uid] && !z.chef.priseFaite) { z.chef.priseJ = (z.chef.priseJ || 0) + 1; if (z.chef.priseJ >= PRISE_JOURS) z.chef.priseFaite = true; }
+    }
+    // Galons de l'équipe (onglet Brigade) : les choix envoyés avec les ordres.
+    if (z.equipe && orders[uid] && orders[uid].galons) {
+      for (const f of appliquerGalons(z, lireGalons(orders[uid]))) {
+        const g = GALONS[f.m.role][f.palier][f.choix === 'A' ? 0 : 1];
+        z.rapport.push(`Galon : ${nomComplet(f.m)} prend « ${g.nom} » (palier ${f.palier + 1}, ${f.choix === 'A' ? 'terrain' : 'service'}).`);
+      }
     }
     // Mise à prix de l'enquête : le choix fait aujourd'hui (ou la confiscation par défaut).
     { const lp = appliquerPrime(z, ord[uid].prime, T, { services: SERVICES, niveauMax: NIVEAU_MAX }); if (lp) z.rapport.push(lp); }

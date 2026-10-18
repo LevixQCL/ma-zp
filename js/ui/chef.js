@@ -8,6 +8,7 @@ import { ongletChefHtml, CHEF_V3 } from './chef-onglet.js';
 import { creerChef } from '../engine/chef.js';
 import { jourPrise, courriersDuJour } from '../engine/parapheur.js';
 import { adjointFicheHtml, honneursHtml, COUL_CADRE, semaineHtml } from './chef-semaine.js';
+import { segBrigadeHtml, equipeVueHtml, galonsAFaire } from './brigade.js';
 
 // ───── Portraits (images générées avec Gemini, img/chefs/pNN.webp) ─────
 // Tant qu'une image manque, un portrait dessiné (silhouette en uniforme, initiales) la remplace.
@@ -205,7 +206,9 @@ export function renderBureau() {
 export function renderChef() {
   const st = S.state, z = myZone(), d = S.draft;
   if (!z) return renderBureau();
-  if (chefACreer()) return `<main class="screen chef-accueil"><div class="ca-tete"><h1 class="big">Ton chef de corps</h1>
+  // Onglet Brigade : vue Équipe (les figures et leurs galons).
+  if (S.brigadeVue === 'equipe') return `<main class="screen"><h1 class="big" style="margin:0 0 10px">Brigade</h1>${segBrigadeHtml()}${equipeVueHtml()}</main>${tabbar('chef')}`;
+  if (chefACreer()) return `<main class="screen chef-accueil">${segBrigadeHtml()}<div class="ca-tete"><h1 class="big">Ton chef de corps</h1>
       <p class="small muted" style="margin:0">Choisis qui dirige ta zone : un portrait, un parcours. Ça prend une minute, une seule fois.</p></div>${creationChefHtml()}</main>${tabbar('chef')}`;
   const p = S.player || {};
   // Chef pas encore créé par le tour de 20:00 (nouvelle zone) : on montre déjà celui que le joueur a choisi.
@@ -221,8 +224,11 @@ export function renderChef() {
       ${repli('ch-car', 'Carrière', `${(z.chef.medailles || []).length} médaille${(z.chef.medailles || []).length > 1 ? 's' : ''} · états de service`, x.car)}</section>`;
   }
   const dd = d || {};
-  return `${ongletChefHtml(zv, p, chef, dd, { nuit: z.chef ? chefNuitHtml(z) : '<p class="tiny muted" style="margin:0;text-align:center">Ton chef prend officiellement ses fonctions ce soir à 20:00. Tes choix d’aujourd’hui comptent déjà.</p>', semaine: (duelOk, neufSem) => (z.chef ? semaineHtml(z, { ouvert: CHEF_V3.actif ? !!neufSem : true, duelOk }) : ''), fiche })}${tabbar('chef')}`;
+  return `${avecSeg(ongletChefHtml(zv, p, chef, dd, { nuit: z.chef ? chefNuitHtml(z) : '<p class="tiny muted" style="margin:0;text-align:center">Ton chef prend officiellement ses fonctions ce soir à 20:00. Tes choix d’aujourd’hui comptent déjà.</p>', semaine: (duelOk, neufSem) => (z.chef ? semaineHtml(z, { ouvert: CHEF_V3.actif ? !!neufSem : true, duelOk }) : ''), fiche }))}${tabbar('chef')}`;
 }
+
+/** Insère le choix de vue (Chef / Équipe) en tête de l'écran du chef. */
+const avecSeg = (html) => html.replace(/(<main[^>]*>)/, `$1${segBrigadeHtml()}`);
 
 /** Pastille de l'onglet Chef : un talent neuf à équiper, un brevet à choisir ou un service du réseau à demander. */
 export function chefAFaire() {
@@ -234,6 +240,7 @@ export function chefAFaire() {
   const rep = (d && d.parapheur) || (S.savedOrders && S.savedOrders.parapheur) || {};
   if (courriersDuJour(st, z).some((id) => !Object.hasOwn(rep, id))) return true;
   if (brevetPossible(z.chef) && !(d && d.brevet)) return true;
+  if (galonsAFaire()) return true;
   return false;
 }
 
