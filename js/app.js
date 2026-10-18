@@ -1357,6 +1357,8 @@ async function onClick(e) {
       case 'admin-create': await b.adminCreateGame(); toast('Partie lancée !'); break;
       case 'brigade-vue': S.brigadeVue = el.dataset.v === 'equipe' ? 'equipe' : 'chef'; rerender(); break;
       case 'figure-ouvrir': S.figureOuverte = S.figureOuverte === el.dataset.role ? null : el.dataset.role; rerender(); break;
+      case 'appel-choix': { const i = Number(el.dataset.i); S.draft.appel = i >= 0 ? i : null; S.ordersDirty = true; rerender(); break; }
+      case 'galon-reset': { S.draft.galonsReset = S.draft.galonsReset === el.dataset.role ? null : el.dataset.role; S.ordersDirty = true; rerender(); break; }
       case 'galon': {
         // Galon choisi : ajouté aux ordres de ce soir (appliqué à 20:00, sans retour possible ensuite).
         const z0 = myZone(), m = (z0.equipe || []).find((x) => x.role === el.dataset.role); if (!m) break;

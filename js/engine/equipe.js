@@ -105,33 +105,33 @@ export function faireProgresser(z, gains, extra = null) {
 // ───── Galons : à chaque surnom gagné, la figure reçoit un galon à attribuer (oct. 2026, onglet Brigade) ─────
 // Trois paliers ; à chacun, deux choix exclusifs : « terrain » (A, une nouvelle façon d'agir sur les appels)
 // ou « service » (B, un effet durable sur son service). Première étape : les choix sont enregistrés et affichés ;
-// leurs effets en jeu arrivent avec la brigade en direct (appels du jour), après simulation.
+// « terrain » ouvre une approche réservée sur l'appel du jour (engine/brigade.js), « service » agit au tour de 20:00.
 const G = (nom, texte) => ({ nom, texte });
 export const GALONS = {
   inter: [
-    [G('Interpellation coordonnée', 'Interpeller à deux sur les appels, avec moins de risque de blessure.'), G('Patrouille rodée', 'Incidents d’Intervention : meilleure chance quand l’équipe se débrouille seule.')],
-    [G('Négociation de crise', 'Face à une arme : négocier, bien plus sûr que le simple dialogue.'), G('Tuteur exigeant', 'Les recrues de l’Intervention deviennent opérationnelles plus vite.')],
-    [G('Haut risque', 'Interpellation à haut risque : gros gain, risque de blessure.'), G('Pilier', 'Une fois par semaine, l’Intervention tient comme pleine malgré des absents.')],
+    [G('Interpellation coordonnée', 'Interpeller à deux sur les appels, avec moins de risque de blessure.'), G('Patrouille rodée', 'Intervention plus efficace : +4 %.')],
+    [G('Négociation de crise', 'Face à une arme : négocier, bien plus sûr que le simple dialogue.'), G('Tuteur exigeant', 'Les recrues deviennent opérationnelles en 2 jours au lieu de 4.')],
+    [G('Haut risque', 'Interpellation à haut risque : gros gain, risque de blessure.'), G('Pilier', 'Intervention encore plus solide : +6 %.')],
   ],
   rech: [
-    [G('Audition ciblée', 'Face à un témoin qui se tait : une question de plus.'), G('Dossiers rangés', 'Les dossiers de Recherche perdent leur valeur moins vite.')],
-    [G('Filature', 'Une démarche d’enquête de plus par semaine, sans prendre d’agent.'), G('Tutrice', 'Les recrues de la Recherche deviennent opérationnelles plus vite.')],
-    [G('Perquisition préparée', 'Après une filature réussie, une perquisition qui rapporte double.'), G('Mémoire du parquet', 'Un dossier par semaine compte comme tout neuf.')],
+    [G('Audition ciblée', 'Face à un témoin qui se tait : une question de plus.'), G('Dossiers rangés', 'Une unité de travail de plus chaque jour sur les dossiers.')],
+    [G('Filature', 'Une démarche d’enquête de plus par semaine, sans prendre d’agent.'), G('Tutrice', 'Les recrues deviennent opérationnelles en 2 jours au lieu de 4.')],
+    [G('Perquisition préparée', 'Après une filature réussie, une perquisition qui rapporte double.'), G('Mémoire du parquet', 'Deux unités de travail de plus chaque jour sur les dossiers.')],
   ],
   prox: [
-    [G('Médiation', 'Les différends réglés pour de bon, sans suite.'), G('Tournée de confiance', 'Les quartiers patrouillés gagnent un peu plus de satisfaction.')],
-    [G('Désamorcer', 'Une fois par semaine, un appel évité avant de tomber.'), G('Tutrice', 'Les recrues de la Proximité deviennent opérationnelles plus vite.')],
-    [G('Grande sœur du quartier', 'Face à une foule tendue : calmer sans intervenir.'), G('Réseau d’habitants', 'Les vagues de délinquance reçues sont réduites.')],
+    [G('Médiation', 'Les différends réglés pour de bon, sans suite.'), G('Tournée de confiance', 'Satisfaction +0,3 par jour avec des agents en Proximité.')],
+    [G('Désamorcer', 'Une fois par semaine, un appel évité avant de tomber.'), G('Tutrice', 'Les recrues deviennent opérationnelles en 2 jours au lieu de 4.')],
+    [G('Grande sœur du quartier', 'Face à une foule tendue : calmer sans intervenir.'), G('Réseau d’habitants', 'Criminalité −0,3 par jour.')],
   ],
   roul: [
-    [G('Contrôle ciblé', 'Face à une fuite en voiture : un contrôle préparé, peu de risque.'), G('Radar humain', 'Amendes du Roulage un peu plus élevées.')],
-    [G('Poursuite encadrée', 'Prise en chasse avec moitié moins de risque pour les passants.'), G('Tuteur', 'Les recrues du Roulage deviennent opérationnelles plus vite.')],
-    [G('Barrage coordonné', 'Avec une zone voisine : un fuyard chez toi peut être arrêté chez elle, et l’inverse.'), G('Flotte ménagée', 'L’usure des véhicules du Roulage est réduite.')],
+    [G('Contrôle ciblé', 'Face à une fuite en voiture : un contrôle préparé, peu de risque.'), G('Radar humain', 'Amendes +5 %.')],
+    [G('Poursuite encadrée', 'Prise en chasse avec moitié moins de risque pour les passants.'), G('Tuteur', 'Les recrues deviennent opérationnelles en 2 jours au lieu de 4.')],
+    [G('Barrage coordonné', 'Avec une zone voisine : un fuyard chez toi peut être arrêté chez elle, et l’inverse.'), G('Prévention routière', 'Satisfaction +0,2 par jour avec des agents au Roulage.')],
   ],
   admin: [
-    [G('Plainte bien prise', 'À l’accueil, la victime revient avec un détail utile.'), G('Guichet fluide', 'La paperasse monte un peu moins vite.')],
-    [G('Témoin en confiance', 'Les témoins qui se taisent parlent plus souvent à l’accueil.'), G('Tutrice', 'Les recrues de l’Accueil deviennent opérationnelles plus vite.')],
-    [G('Dossier en béton', 'Une confrontation par semaine : une preuve de plus prise en compte.'), G('Cellule de crise', 'Les crises du district coûtent moins de moral.')],
+    [G('Plainte bien prise', 'À l’accueil, la victime revient avec un détail utile.'), G('Guichet fluide', 'Paperasse des incidents −10 %.')],
+    [G('Témoin en confiance', 'Les témoins qui se taisent parlent plus souvent à l’accueil.'), G('Tutrice', 'Les recrues deviennent opérationnelles en 2 jours au lieu de 4.')],
+    [G('Dossier en béton', 'Une confrontation par semaine : une preuve de plus prise en compte.'), G('Cellule de crise', 'Moral +0,3 par jour.')],
   ],
 };
 /** Galons attribués d'une figure (liste de 'A' / 'B', palier par palier). */

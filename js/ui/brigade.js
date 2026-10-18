@@ -4,6 +4,29 @@ import { S, esc, myZone } from './common.js';
 import { SERVICE_LABELS, bonusChef } from '../engine/constants.js';
 import { roleDe, intitule, surnomDe, creerEquipe, appliquerNoms, GALONS, galonsDe, galonsLibres } from '../engine/equipe.js';
 import { COULEUR_ROLE, initiales, echelleBonus } from './equipe.js';
+import { appelDuJour, optionsAppel, intentionBrigade, APPROCHES, CTX, enRodage, BRIGADE } from '../engine/brigade.js';
+import { psDispo } from '../engine/decor.js';
+
+/** Carte « Appel du jour » : le même dans toutes les zones ; ta brigade agit seule si tu ne choisis rien. */
+function appelHtml(z) {
+  const st = S.state, a = appelDuJour(st), opts = optionsAppel(z, a), it = intentionBrigade(z, a);
+  const ch = S.draft && Number.isInteger(S.draft.appel) ? S.draft.appel : null;
+  const boutons = opts.map((op, i) => {
+    const prevu = ch == null ? op === it.op : ch === i;
+    return `<button type="button" class="galon${prevu ? ' pris' : ''}" data-action="appel-choix" data-i="${i}" style="--k:${op.reservee ? 'var(--amber)' : 'var(--blue, #63B0FF)'}" aria-pressed="${ch === i}">
+      <span class="galon-k">${APPROCHES[op.app].ico} ${op.reservee ? 'réservée' : esc(APPROCHES[op.app].nom)}</span><b>${esc(op.label)}</b><span>${op.p >= 0.75 ? 'plutôt sûr' : op.p >= 0.55 ? 'risqué' : 'très risqué'}</span></button>`;
+  }).join('');
+  const hier = Object.values(st.zones || {}).filter((x) => x.appelHier && x.appelHier.t === st.turn - 1);
+  const hierHtml = hier.length ? `<div class="col" style="gap:4px"><span class="tiny muted" style="font-weight:700">Hier, sur « ${esc(hier[0].appelHier.titre)} »</span>${hier.map((x) => `<span class="tiny">${x.uid === z.uid ? '<b>Ta brigade</b>' : esc(x.nom || '?')} : ${APPROCHES[x.appelHier.app].ico} ${esc(x.appelHier.label.toLowerCase())} ${x.appelHier.ok ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--red)">✗</span>'}${x.appelHier.seule ? ' <span class="muted">(seule)</span>' : ''}</span>`).join('')}</div>` : '';
+  return `<section class="card" style="gap:8px;border-color:var(--amber-line)">
+    <span class="row" style="justify-content:space-between;gap:8px"><b>Appel du jour</b><span class="tiny muted">le même dans toutes les zones · résolu à 20:00</span></span>
+    <span style="font-weight:700">${esc(a.titre)}</span><span class="tiny muted">${esc(CTX[a.ctx].nom)}</span>
+    <span class="tiny">${ch == null ? `Sans consigne, ta brigade fera : <b>${esc(it.op.label.toLowerCase())}</b> (${esc(it.pourquoi)}).` : `Ta consigne : <b>${esc(opts[ch] ? opts[ch].label.toLowerCase() : '?')}</b>. Ta brigade retient ce choix pour les fois où tu ne seras pas là.`}</span>
+    <div class="galons-choix">${boutons}</div>
+    ${ch != null ? '<button type="button" class="btn small ghost" data-action="appel-choix" data-i="-1">Laisser ma brigade décider</button>' : ''}
+    ${hierHtml}
+  </section>`;
+}
 
 /** Choix de galons d'une figure, en tenant compte de ce qui part avec les ordres de ce soir. */
 function choixDe(m) {
@@ -55,7 +78,7 @@ export function equipeVueHtml() {
         <span class="avatar" style="background:${col}" aria-hidden="true">${esc(initiales(m))}</span>
         <span class="col grow" style="gap:1px;min-width:0;text-align:left">
           <span style="font-weight:700">${esc(m.prenom)} ${esc(m.nom)}${surnomDe(m) ? ` <span class="surnom">« ${esc(surnomDe(m))} »</span>` : ''}</span>
-          <span class="tiny muted">${esc(intitule(m))} · ${esc(SERVICE_LABELS[r.service])} · ${n} agent${n > 1 ? 's' : ''}</span>
+          <span class="tiny muted">${esc(intitule(m))} · ${esc(SERVICE_LABELS[r.service])} · ${n} agent${n > 1 ? 's' : ''}${m.spec ? ' · <span style="color:var(--amber)">spécialiste</span>' : ''}</span>
         </span>
         ${libres ? `<span class="pastille-galon">${libres} galon${libres > 1 ? 's' : ''}</span>` : `<span class="tiny muted">${liste.length}/3</span>`}
       </button>
@@ -64,11 +87,14 @@ export function equipeVueHtml() {
         <div class="row" style="gap:8px;flex-wrap:wrap"><span class="tiny muted">Encadrement de son service</span>${echelleBonus(m, { xp: true })}</div>
         <p class="tiny muted" style="margin:0">Un galon par surnom gagné. À chaque palier, deux choix : <b style="color:var(--blue, #63B0FF)">Terrain</b> (une nouvelle façon d’agir sur les appels) ou <b style="color:var(--green, #3DD39A)">Service</b> (un effet durable). Prendre l’un ferme l’autre.</p>
         ${paliers}
+        ${galonsDe(m).length ? (S.draft && S.draft.galonsReset === m.role ? '<span class="tiny" style="color:var(--amber)">Galons rendus ce soir à 20:00 (' + BRIGADE.reaffecter + ' PS).</span>' : `<button type="button" class="btn small ghost" data-action="galon-reset" data-role="${m.role}" ${psDispo(z) < BRIGADE.reaffecter ? 'disabled' : ''}>Réaffecter ses galons (${BRIGADE.reaffecter} PS${psDispo(z) < BRIGADE.reaffecter ? ', pas assez' : ''})</button>`) : ''}
       </div>` : `<span class="tiny ${libres ? '' : 'muted'}" style="${libres ? 'color:var(--amber)' : ''}">${libres ? 'Touche pour attribuer son galon.' : liste.length ? `Galons : ${liste.map((g, i) => GALONS[m.role][i][g === 'A' ? 0 : 1].nom).join(' · ')}` : 'Premier galon à son premier surnom.'}</span>`}
     </section>`;
   }).join('');
+  const rod = enRodage(z, S.state.turn);
   return `<section class="col" style="gap:10px" aria-label="Ton équipe">
-    <p class="tiny muted" style="margin:0">${total} agents répartis dans tes services aujourd’hui. Chaque figure encadre le sien. Les galons sont une première étape : tes choix sont enregistrés dès ce soir, leurs effets en jeu arrivent avec la brigade en direct.</p>
+    ${appelHtml(z)}
+    <p class="tiny muted" style="margin:0">${total} agents répartis dans tes services aujourd’hui${rod ? `, dont ${rod} recrue${rod > 1 ? 's' : ''} en formation (à mi-efficacité)` : ''}. Chaque figure encadre le sien. Les galons « terrain » ouvrent des approches réservées sur l’appel du jour, les galons « service » agissent chaque soir.</p>
     ${cartes}
     <p class="tiny muted" style="margin:0">Renommer une figure : carte « Mon équipe » de l’HP.</p>
   </section>`;

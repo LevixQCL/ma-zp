@@ -1,0 +1,169 @@
+// La brigade en direct (oct. 2026) : appel du jour commun à toutes les zones, brigade qui apprend le style du joueur,
+// effets des galons des figures, rodage des recrues avec tuteur.
+// Calibrage : test/brigade-sim.mjs (un joueur attentif gagne environ +1 à +2 d'IPZ sur la saison ; l'absent ne perd rien).
+import { makeRng } from './rng.js';
+
+export const BRIGADE = {
+  rodage: { jours: 4, tuteur: 2, efficacite: 0.5 },   // recrues à 50 % pendant 4 jours (2 avec un tuteur)
+  reaffecter: 30,                                     // PS pour rendre les galons d'une figure
+  specMissions: 2,                                    // missions de renfort pour qu'une figure rapporte une spécialité
+  specBonus: 0.1,                                     // chance en plus sur l'appel du jour pour une figure spécialisée
+  xpAppel: 2,                                         // expérience de la figure qui mène l'appel réussi
+};
+
+export const CTX = {
+  arme: { nom: 'Face à une arme', role: 'inter' },
+  temoin: { nom: 'Face à un témoin qui se tait', role: 'rech' },
+  fuite: { nom: 'Face à un suspect qui fuit', role: 'roul' },
+  foule: { nom: 'Face à une foule tendue', role: 'prox' },
+  flou: { nom: 'Quand il n’y a aucune preuve', role: 'admin' },
+};
+export const APPROCHES = {
+  dialogue: { nom: 'Dialogue', ico: '🗣️' }, force: { nom: 'Intervention', ico: '✊' }, procedure: { nom: 'Procédure', ico: '📋' }, prudence: { nom: 'Prudence', ico: '🛡️' },
+};
+// Une approche réservée par galon « terrain » : role, palier (0 à 2), contexte où elle s'ouvre.
+export const RESERVEES = {
+  'inter:0': { ctx: ['arme', 'fuite'], base: 'force', nom: 'Interpellation coordonnée', p: 0.75, ok: { pts: 6 }, ko: { sat: -1 } },
+  'inter:1': { ctx: ['arme'], base: 'dialogue', nom: 'Négociation de crise', p: 0.82, ok: { pts: 6, sat: 2 }, ko: { sat: -1 } },
+  'inter:2': { ctx: ['arme', 'foule'], base: 'force', nom: 'Interpellation à haut risque', p: 0.6, ok: { pts: 10, rep: 1 }, ko: { sat: -2, moral: -2 } },
+  'rech:0': { ctx: ['temoin'], base: 'procedure', nom: 'Audition ciblée', p: 0.75, ok: { pts: 6 }, ko: {} },
+  'rech:1': { ctx: ['fuite', 'flou'], base: 'procedure', nom: 'Filature', p: 0.72, ok: { pts: 7 }, ko: {} },
+  'rech:2': { ctx: ['flou', 'temoin'], base: 'procedure', nom: 'Perquisition préparée', p: 0.65, ok: { pts: 10, rep: 1 }, ko: { rep: -1 } },
+  'prox:0': { ctx: ['flou', 'foule'], base: 'dialogue', nom: 'Médiation', p: 0.78, ok: { pts: 4, sat: 2 }, ko: {} },
+  'prox:1': { ctx: ['foule'], base: 'dialogue', nom: 'Désamorcer', p: 0.8, ok: { pts: 5, sat: 2 }, ko: { sat: -1 } },
+  'prox:2': { ctx: ['foule', 'temoin'], base: 'dialogue', nom: 'Grande sœur du quartier', p: 0.7, ok: { pts: 6, sat: 3 }, ko: { sat: -1 } },
+  'roul:0': { ctx: ['fuite'], base: 'procedure', nom: 'Contrôle ciblé', p: 0.78, ok: { pts: 6 }, ko: {} },
+  'roul:1': { ctx: ['fuite', 'arme'], base: 'force', nom: 'Poursuite encadrée', p: 0.7, ok: { pts: 7 }, ko: { sat: -1 } },
+  'roul:2': { ctx: ['fuite'], base: 'force', nom: 'Barrage coordonné', p: 0.68, ok: { pts: 10, rep: 1 }, ko: { sat: -1 } },
+  'admin:0': { ctx: ['temoin'], base: 'dialogue', nom: 'Plainte bien prise', p: 0.78, ok: { pts: 5, sat: 1 }, ko: {} },
+  'admin:1': { ctx: ['temoin', 'flou'], base: 'dialogue', nom: 'Témoin en confiance', p: 0.74, ok: { pts: 6, sat: 1 }, ko: {} },
+  'admin:2': { ctx: ['flou'], base: 'procedure', nom: 'Dossier en béton', p: 0.66, ok: { pts: 10, rep: 1 }, ko: {} },
+};
+
+const o = (app, label, p, ok, ko, tOk, tKo) => ({ app, label, p, ok, ko, tOk, tKo });
+export const APPELS = [
+  { ctx: 'arme', titre: 'Forcené retranché chez lui avec un fusil de chasse', opts: [
+    o('dialogue', 'Négocier à travers la porte', 0.55, { pts: 3, sat: 2 }, { sat: -1 }, 'Il sort sans son arme après une heure de discussion.', 'Il tire en l’air, le quartier panique.'),
+    o('force', 'Entrer par surprise', 0.5, { pts: 5 }, { sat: -2, moral: -2 }, 'Maîtrisé dans son salon avant d’avoir compris.', 'Un coup part, un agent est touché au bras.'),
+    o('prudence', 'Boucler et attendre les unités spéciales', 0.85, { pts: 2 }, { sat: -1 }, 'Les unités spéciales l’interpellent sans casse.', 'Six heures de bouclage, le quartier est excédé.')] },
+  { ctx: 'arme', titre: 'Braquage d’une bijouterie, la gérante est retenue', opts: [
+    o('dialogue', 'Parler au braqueur', 0.45, { pts: 4, sat: 2 }, { sat: -2 }, 'Il libère la gérante et se rend.', 'Il s’énerve, la gérante est bousculée.'),
+    o('force', 'Assaut éclair', 0.45, { pts: 6, rep: 1 }, { sat: -2, moral: -2 }, 'Braqueur au sol, gérante indemne.', 'La gérante est blessée pendant l’assaut.'),
+    o('prudence', 'Boucler, attendre les unités spéciales', 0.8, { pts: 2 }, { sat: -1 }, 'Les unités spéciales règlent l’affaire en trois heures.', 'Il s’échappe par les caves avant leur arrivée.')] },
+  { ctx: 'temoin', titre: 'Agression au marché : vingt témoins, aucun ne parle', opts: [
+    o('dialogue', 'Faire le tour des étals un par un', 0.6, { pts: 4, sat: 1 }, {}, 'Une marchande finit par donner un prénom.', 'Tout le monde a « regardé ailleurs ».'),
+    o('procedure', 'Convocations et vidéosurveillance', 0.6, { pts: 4 }, { sat: -1 }, 'Les caméras de la halle montrent l’agresseur.', 'Les convocations restent lettre morte.'),
+    o('prudence', 'Soigner la victime, revenir demain', 0.75, { pts: 1, sat: 1 }, {}, 'La victime, rassurée, se souvient d’un tatouage.', 'Le lendemain, plus personne ne se souvient.')] },
+  { ctx: 'temoin', titre: 'Un commerçant semble payer un racket mais nie tout', opts: [
+    o('dialogue', 'Le revoir seul, en confiance', 0.55, { pts: 4, sat: 1 }, {}, 'Il finit par raconter : 200 € par semaine.', 'Il nie de plus belle.'),
+    o('procedure', 'Surveillance du commerce', 0.6, { pts: 4 }, { sat: -1 }, 'Le collecteur est filmé en plein passage.', 'Le collecteur a repéré la surveillance.'),
+    o('prudence', 'Laisser une carte, revenir plus tard', 0.8, { sat: 1 }, {}, 'Il appelle le soir même.', 'Il ne rappelle jamais.')] },
+  { ctx: 'fuite', titre: 'Voiture-bélier dans une vitrine, les auteurs s’enfuient', opts: [
+    o('force', 'Prendre les fuyards en chasse', 0.5, { pts: 5 }, { sat: -2 }, 'Deux auteurs interpellés dans une ruelle.', 'Course-poursuite, un passant renversé légèrement.'),
+    o('procedure', 'Relever les traces, alerter les zones voisines', 0.65, { pts: 4 }, {}, 'Les zones voisines les cueillent sur l’autoroute.', 'Les traces ne mènent nulle part.'),
+    o('prudence', 'Sécuriser la vitrine et le quartier', 0.85, { pts: 1, sat: 1 }, {}, 'Aucun pillage, les commerçants remercient.', 'Les auteurs courent toujours.')] },
+  { ctx: 'fuite', titre: 'Conducteur qui refuse d’obtempérer', opts: [
+    o('force', 'Prise en chasse', 0.5, { pts: 4 }, { sat: -2 }, 'Arrêté au rond-point, permis retiré.', 'Course-poursuite dangereuse, il s’échappe.'),
+    o('procedure', 'Plaque relevée, visite à domicile', 0.75, { pts: 3 }, {}, 'Il ouvre le lendemain matin : procès-verbal et saisie.', 'Plaque volée sur une autre voiture.'),
+    o('prudence', 'Laisser filer, protéger les passants', 0.9, { sat: 1 }, {}, 'Aucun risque pris, signalement diffusé.', 'Il recommence deux rues plus loin.')] },
+  { ctx: 'foule', titre: 'Deux groupes de supporters se font face à la gare', opts: [
+    o('dialogue', 'Parler aux meneurs des deux camps', 0.55, { pts: 2, sat: 2 }, { sat: -2 }, 'Les meneurs calment leurs troupes, escorte jusqu’au stade.', 'Les palabres traînent, les bouteilles volent.'),
+    o('force', 'Séparer de force les deux groupes', 0.65, { pts: 4 }, { sat: -2 }, 'Cordon tenu, les deux groupes partent séparément.', 'La charge met le feu au quai.'),
+    o('procedure', 'Filmer et identifier les meneurs', 0.6, { pts: 4 }, { sat: -1 }, 'Six meneurs identifiés, interdits de stade.', 'On filme, mais la bagarre éclate.')] },
+  { ctx: 'foule', titre: 'Fête de quartier qui dégénère', opts: [
+    o('dialogue', 'Parler aux organisateurs', 0.7, { pts: 1, sat: 2 }, { sat: -1 }, 'Musique coupée, la fête finit calmement.', 'Les organisateurs sont débordés.'),
+    o('force', 'Faire évacuer la place', 0.65, { pts: 3, sat: -1 }, { sat: -2 }, 'Place évacuée, quelques huées.', 'Bousculade à la sortie.'),
+    o('prudence', 'Présence visible, sans intervenir', 0.75, { pts: 1, sat: 1 }, {}, 'Votre présence suffit à calmer tout le monde.', 'Deux bagarres éclatent quand même.')] },
+  { ctx: 'flou', titre: 'Plainte pour harcèlement, aucune preuve', opts: [
+    o('dialogue', 'Médiation entre les deux voisins', 0.6, { pts: 1, sat: 2 }, { sat: -1 }, 'Accord trouvé, les messages cessent.', 'La médiation tourne court.'),
+    o('procedure', 'Audition complète des deux parties', 0.65, { pts: 4 }, {}, 'Les auditions révèlent une capture d’écran décisive.', 'Parole contre parole.'),
+    o('prudence', 'Acter et surveiller', 0.85, { sat: 1 }, {}, 'Plainte actée, la victime se sent écoutée.', 'La victime trouve qu’on ne fait rien.')] },
+  { ctx: 'flou', titre: 'Série de vols dans des caves, aucun témoin', opts: [
+    o('procedure', 'Recouper les plaintes et les horaires', 0.65, { pts: 4 }, {}, 'Les vols tombent tous les mardis : planque, flagrant délit.', 'Rien ne ressort des plaintes.'),
+    o('force', 'Fouiller les caves de l’immeuble', 0.5, { pts: 4 }, { sat: -2 }, 'Le butin dort dans une cave inoccupée.', 'Les habitants n’apprécient pas la fouille.'),
+    o('prudence', 'Conseils de prévention aux habitants', 0.85, { sat: 1 }, {}, 'Les caves sont fermées, les vols cessent.', 'Les vols continuent ailleurs.')] },
+];
+
+/** L'appel du jour : le même pour toutes les zones de la partie. */
+export function appelDuJour(state, T = state.turn) {
+  const i = makeRng(`${state.seed}:s${state.season}:t${T}:appel-jour`).int(0, APPELS.length - 1);
+  return { i, ...APPELS[i] };
+}
+
+// ───── Figures et galons ─────
+export const figureDe = (z, role) => (z && z.equipe || []).find((m) => m.role === role) || null;
+/** Vrai si la figure de ce rôle a pris ce galon (palier 0 à 2, 'A' terrain ou 'B' service). */
+export function aGalon(z, role, palier, k) {
+  const m = figureDe(z, role);
+  return !!(m && Array.isArray(m.galons) && m.galons[palier] === k);
+}
+/** Le tuteur : une figure avec le galon service du palier 2. */
+export const aTuteur = (z) => (z && z.equipe || []).some((m) => Array.isArray(m.galons) && m.galons[1] === 'B');
+
+/** Options de l'appel pour cette zone : les approches de base plus celles réservées par les galons terrain. */
+export function optionsAppel(z, appel) {
+  const l = appel.opts.map((x) => ({ ...x }));
+  for (const [cle, r] of Object.entries(RESERVEES)) {
+    const [role, p] = cle.split(':');
+    if (r.ctx.includes(appel.ctx) && aGalon(z, role, Number(p), 'A')) {
+      const m = figureDe(z, role);
+      l.push(o(r.base, r.nom, r.p, r.ok, r.ko, `${m ? m.nom : 'La figure'} : « ${r.nom} » réussie.`, `« ${r.nom} » tentée, sans succès.`));
+      l[l.length - 1].reservee = cle;
+    }
+  }
+  return l;
+}
+/** Ce que ferait la brigade seule : ce que le joueur a choisi dans ce genre de situation, sinon son style, sinon la prudence. */
+export function intentionBrigade(z, appel) {
+  const opts = optionsAppel(z, appel), sb = (z && z.styleBrigade) || {}, m = sb[appel.ctx] || {}, g = sb._ || {};
+  let best = null, bs = 0;
+  for (const op of opts) { const s = (m[op.app] || 0) * 2 + (g[op.app] || 0) * 0.5 + (op.reservee ? 0.2 : 0); if (s > bs) { bs = s; best = op; } }
+  if (best) {
+    const n = m[best.app] || 0;
+    return { op: best, appris: true, pourquoi: n ? `${CTX[appel.ctx].nom.toLowerCase()}, tu as choisi « ${APPROCHES[best.app].nom.toLowerCase()} » ${n} fois` : `ton style en général : « ${APPROCHES[best.app].nom.toLowerCase()} »` };
+  }
+  return { op: opts.find((x) => x.app === 'prudence') || opts[0], appris: false, pourquoi: 'elle ne sait pas encore ce que tu ferais : prudence par défaut' };
+}
+/** Choix lu dans les ordres : l'index d'une option (ou rien : la brigade décide seule). */
+export const lireAppel = (ord) => (ord && Number.isInteger(ord.appel) && ord.appel >= 0 && ord.appel < 8 ? ord.appel : null);
+
+/**
+ * Résout l'appel du jour pour une zone (tour de 20:00). Le choix du joueur apprend son style à la brigade.
+ * Effets : points de terrain, satisfaction, réputation, moral, expérience de la figure qui mène.
+ */
+export function resoudreAppel(state, z, ord, T) {
+  const appel = appelDuJour(state, T), opts = optionsAppel(z, appel), k = lireAppel(ord);
+  const choisi = k != null && opts[k] ? opts[k] : null, it = intentionBrigade(z, appel);
+  const op = choisi || it.op;
+  if (choisi) {
+    const sb = (z.styleBrigade ||= {}), c = (sb[appel.ctx] ||= {}), g = (sb._ ||= {});
+    c[op.app] = (c[op.app] || 0) + 1; g[op.app] = (g[op.app] || 0) + 1;
+  }
+  const meneur = figureDe(z, CTX[appel.ctx].role);
+  const p = Math.min(0.95, op.p + (meneur && meneur.spec ? BRIGADE.specBonus : 0));
+  const ok = makeRng(`${state.seed}:s${state.season}:t${T}:appel-res:${z.uid}`).next() < p;
+  const eff = { ...(ok ? op.ok : op.ko) };
+  z._points = (z._points || 0) + (eff.pts || 0);
+  z.satisfaction += eff.sat || 0; z.reputation += eff.rep || 0; z.moral += eff.moral || 0;
+  if (ok && meneur) meneur.xp = (meneur.xp || 0) + BRIGADE.xpAppel;
+  z.appelHier = { t: T, i: appel.i, titre: appel.titre, app: op.app, label: op.label, ok, txt: ok ? op.tOk : op.tKo, seule: !choisi, pourquoi: choisi ? null : it.pourquoi, eff };
+  const effTxt = [eff.pts ? `+${eff.pts} pts` : '', eff.sat ? `satisfaction ${eff.sat > 0 ? '+' : ''}${eff.sat}` : '', eff.rep ? `réputation ${eff.rep > 0 ? '+' : ''}${eff.rep}` : '', eff.moral ? `moral ${eff.moral}` : ''].filter(Boolean).join(', ');
+  return `Appel du jour (« ${appel.titre} ») : ${choisi ? 'ta brigade suit ta consigne' : `ta brigade décide seule (${it.pourquoi})`}, ${APPROCHES[op.app].ico} ${op.label.toLowerCase()}. ${ok ? 'Réussi' : 'Raté'} : ${ok ? op.tOk : op.tKo}${effTxt ? ` (${effTxt})` : ''}.`;
+}
+
+// ───── Rodage des recrues ─────
+/** Recrues encore en formation ce soir. */
+export const enRodage = (z, T) => (z && z.rodage || []).filter((r) => r.fin > T).reduce((s, r) => s + r.n, 0);
+/** Multiplicateur de capacité de tous les services : une recrue en formation compte pour un demi-agent. */
+export function facteurRodage(z, T) {
+  const n = enRodage(z, T), a = Math.max(1, (z && z.agents) || 1);
+  return Math.max(0.5, 1 - (n * (1 - BRIGADE.rodage.efficacite)) / a);
+}
+/** Recrues qui sortent de l'académie ce soir : en formation jusqu'au jour indiqué. */
+export function ajouterRodage(z, n, T) {
+  if (!n) return null;
+  const d = aTuteur(z) ? BRIGADE.rodage.tuteur : BRIGADE.rodage.jours;
+  (z.rodage ||= []).push({ n, fin: T + 1 + d });
+  z.rodage = z.rodage.filter((r) => r.fin > T);
+  return d;
+}

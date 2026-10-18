@@ -18,6 +18,8 @@ import { enquetePourTour, quatreComptePourTour, SLOT_QUATRE, RELANCE_PS } from '
 import { jourBe } from './time.js';
 import { attribuerSites } from './sites.js';
 import { genererEchos } from './gazette.js';
+import { resoudreAppel, facteurRodage, ajouterRodage, aGalon, BRIGADE } from './brigade.js';
+import { psDispo as psDispoBrigade } from './decor.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet, encadrement, lireGalons, appliquerGalons, GALONS } from './equipe.js';
 import { clone, clamp, round1, newZone, capaciteAgents, sanitizeOrders, autopilotOrders, agentsDisponibles, agentsLibres, capacite, forceEngagement, multAffaire, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, pointsIpz, moyenneIpz, moralMult, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles } from './zone.js';
 import { tourQuartiers, annoncerPointChaud, lirePatrouilles, assurerQuartiers, carteQuartiers } from './quartiers.js';
@@ -343,6 +345,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
         z.rapport.push(`Galon : ${nomComplet(f.m)} prend « ${g.nom} » (palier ${f.palier + 1}, ${f.choix === 'A' ? 'terrain' : 'service'}).`);
       }
     }
+    // Réaffecter les galons d'une figure (contre des PS).
+    { const rr = orders[uid] && orders[uid].galonsReset; const m = rr && (z.equipe || []).find((x) => x.role === rr);
+      if (m && (m.galons || []).length && psDispoBrigade(z) >= BRIGADE.reaffecter) { z.psDepense = Math.round(z.psDepense || 0) + BRIGADE.reaffecter; m.galons = []; z.rapport.push(`Galons de ${nomComplet(m)} rendus (${BRIGADE.reaffecter} PS) : à réattribuer.`); } }
     // Mise à prix de l'enquête : le choix fait aujourd'hui (ou la confiscation par défaut).
     { const lp = appliquerPrime(z, ord[uid].prime, T, { services: SERVICES, niveauMax: NIVEAU_MAX }); if (lp) z.rapport.push(lp); }
     ord[uid].missions = missionsValides(ord[uid]);
@@ -552,6 +557,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const mr = (ord[u].missions || []).find((m) => m.type === 'renfort');
     const mis = mr ? figure(z, mr.role) : null;
     const nChef = mis ? CHEFS.renfort.agents : 0;
+    if (mis) { mis.missions = (mis.missions || 0) + 1; if (!mis.spec && mis.missions >= BRIGADE.specMissions) { mis.spec = true; z.rapport.push(`${nomComplet(mis)} revient de ses renforts avec une spécialité : meilleure chance quand elle mène l’appel du jour.`); } }
     if (mis) { z._missions.push(mis.role); z.rapport.push(`Mission : ${nomComplet(mis)} encadre ton renfort chez ${zoneLabel(c)} (compte pour ${nChef} agent de plus dans son dispositif).`); }
     // Doctrine Partenaire : un agent de plus ; la maîtrise (force 1,15 puis 1,3) ajoute la fraction en réserve,
     // qui donne un deuxième agent une fois cumulée.
@@ -845,7 +851,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Les situations se cumulent : deux « +2 incidents » font +4 (avant, la dernière écrasait l'autre).
     const pr = effetsPressions(z.pressions);
     if (pr.criminalite) z.criminalite = clamp(z.criminalite + pr.criminalite, 10, 95);
-    if (pr.paperasse) z.paperasse += pr.paperasse;
+    if (pr.paperasse) z.paperasse += pr.paperasse * (aGalon(z, 'admin', 0, 'B') ? 0.9 : 1);
 
     // Opération d'envergure : ses agents quittent leur service pour la journée.
     const opx = effetsOperation(z, o.alloc, o.operation, T);
@@ -939,6 +945,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       if (!cap[s]) continue;
       cap[s] *= 1 + x.bonus; z.bonusChefs[s] = x.bonus;
     }
+    // Brigade : recrues en formation (un demi-agent chacune) et galons « service » de l'Intervention.
+    { const fr = facteurRodage(z, T); if (fr < 1) for (const s of SERVICES) cap[s] *= fr;
+      if (cap.intervention) cap.intervention *= (aGalon(z, 'inter', 0, 'B') ? 1.04 : 1) * (aGalon(z, 'inter', 2, 'B') ? 1.06 : 1); }
 
     // Plan du district en vigueur (crise votée par la cellule de crise).
     if (criseZone(state, z, cap, T)) jalon(z, 'Plan du district');
@@ -1015,6 +1024,11 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     if (alloc.proximite > 0) z.satisfaction += bonusEquip(z, 'proximite', 'satisfaction');
     jalon(z, `Présence de la Proximité : capacité ${fmt1(cap.proximite)} × 0,12`);
     z.satisfaction += tourQuartiers(state, z, { patrouilles, agentsProx: alloc.proximite || 0, capProx: cap.proximite, rng: zr, zoneLabel });
+    // Galons « service » : Proximité, Roulage, Accueil.
+    if (alloc.proximite > 0 && aGalon(z, 'prox', 0, 'B')) z.satisfaction += 0.3;
+    if (aGalon(z, 'prox', 2, 'B')) z.criminalite = Math.max(10, z.criminalite - 0.3);
+    if (alloc.roulage > 0 && aGalon(z, 'roul', 2, 'B')) z.satisfaction += 0.2;
+    if (aGalon(z, 'admin', 2, 'B')) z.moral += 0.3;
     noter(z, 'satisfaction', 'Point chaud désamorcé', z._pcSatisf || 0); delete z._pcSatisf;
     jalon(z, `Quartiers inquiets (criminalité moyenne ${Math.round(z.criminalite)})`);
     // Recherche : dossiers locaux.
@@ -1029,7 +1043,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       for (const d of z.dossiers) { const tot = d.total || d.reste; if (tot > DOSSIER.tailleMax) { const k = DOSSIER.tailleMax / tot; d.reste = round1(d.reste * k); d.total = DOSSIER.tailleMax; } }
       z.dossiersV = DOSSIER.version;
     }
-    let travail = Math.max(0, cap.recherche - detaches) + (z._travailBonus || 0);
+    let travail = Math.max(0, cap.recherche - detaches) + (z._travailBonus || 0) + (aGalon(z, 'rech', 0, 'B') ? 1 : 0) + (aGalon(z, 'rech', 2, 'B') ? 2 : 0);
     const travail0 = travail;
     delete z._travailBonus;
     let resolus = 0, ptsRech = 0;
@@ -1067,7 +1081,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Doctrine routière : au-delà d'une part des effectifs au Roulage, les agents en plus rapportent moitié moins.
     const rendR = forceDoctrine(z, 'rendement'), partR = alloc.roulage / totalAlloc;
     const capAmendes = rendR && partR > rendR ? cap.roulage * (1 - 0.5 * (partR - rendR) / partR) : cap.roulage;
-    const recettes = capAmendes * ECONOMIE.amendeParCapacite * (1 + bonusEquip(z, 'roulage', 'amendes') + forceDoctrine(z, 'amendes'));
+    const recettes = capAmendes * ECONOMIE.amendeParCapacite * (1 + bonusEquip(z, 'roulage', 'amendes') + forceDoctrine(z, 'amendes') + (aGalon(z, 'roul', 0, 'B') ? 0.05 : 0));
     if (pr.roulageMin) {
       if (alloc.roulage >= pr.roulageMin) { z.satisfaction += 2; z.rapport.push('Contrôles de vitesse demandés par les riverains : assurés (+2 de satisfaction).'); }
       else { z.satisfaction -= 3; z.rapport.push('Contrôles de vitesse demandés par les riverains : pas assez d\u2019agents (−3 de satisfaction).'); }
@@ -1117,6 +1131,9 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     const dirL = directeurSoir(state, z, { state, T, o, alloc, patrouilles, rates, traites, achete, label: zoneLabel(z), push, district: districtRes, indice: () => indiceBonus(state, z, zr), rng: makeRng(`${state.seed}:s${state.season}:t${T}:dir-soir:${uid}`) });
     if (dirL.length) { z.rapport.push(...dirL); jalon(z, 'Feuilletons et événements du Directeur'); }
 
+    // Brigade : l'appel du jour, le même pour toutes les zones.
+    if (z.equipe) { try { z.rapport.push(resoudreAppel(state, z, orders[uid], T)); } catch (e) { /* jamais bloquant pour le tour */ } }
+
     // Budget du tour.
     const ff = fraisFixes(z, state, { amendes: recettes, rythme: o.rythme });
     z.budget += ff.total;
@@ -1130,7 +1147,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       return { n, arrivee: Number.isFinite(arr) && arr <= T + DELAI_ACADEMIE ? arr : T + 1 };
     }).filter((a) => a.n > 0);
     const arrivees = z.academie.filter((a) => a.arrivee <= T + 1).reduce((s2, a) => s2 + a.n, 0);
-    if (arrivees) { z.agents += arrivees; z.rapport.push(`${arrivees} recrue${arrivees > 1 ? 's' : ''} sort${arrivees > 1 ? 'ent' : ''} de l’académie : dans tes ordres dès demain.`); }
+    if (arrivees) { z.agents += arrivees; const dr = ajouterRodage(z, arrivees, T); z.rapport.push(`${arrivees} recrue${arrivees > 1 ? 's' : ''} sort${arrivees > 1 ? 'ent' : ''} de l’académie : dans tes ordres dès demain, à mi-efficacité pendant ${dr} jours${dr < BRIGADE.rodage.jours ? ' (une figure les forme)' : ''}.`); }
     z.academie = z.academie.filter((a) => a.arrivee > T + 1);
     // Usure : un peu chaque jour, et surtout à chaque intervention (répartie sur le parc).
     // Chaque véhicule s'use selon son modèle (électriques −40 %, fourgons −20 %).
