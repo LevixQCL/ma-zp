@@ -238,7 +238,7 @@ export const coutFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.f
 export const agentsFormation = (z, service) => (auStand(z, service) ? INFRAS.tir.formation.agents : INVEST_V2.agentsFormation);
 /** Multiplicateur du risque de blessure d'une zone (stand de tir). */
 // Fourgons d'intervention : −10 % de risque chacun, −20 % au plus (voir engine/flotte.js, MODELES.fourgon).
-export const risqueBlessure = (z) => (z && z.infra && z.infra.tir ? INFRAS.tir.blessure : 1) * Math.max(0.2, 1 - bonusEquip(z, 'intervention', 'blessure')) * (1 - Math.min(0.2, 0.1 * ((z && z.flotte) || []).filter((v) => v.m === 'fourgon').length));
+export const risqueBlessure = (z) => ((z && z.risqueMat) || 1) * (z && z.infra && z.infra.tir ? INFRAS.tir.blessure : 1) * Math.max(0.2, 1 - bonusEquip(z, 'intervention', 'blessure')) * (1 - Math.min(0.2, 0.1 * ((z && z.flotte) || []).filter((v) => v.m === 'fourgon').length));
 
 export const RYTHMES = {
   normal:   { label: 'Normal', mult: 1, moral: 0, cout: 0, sub: 'aucun effet' },

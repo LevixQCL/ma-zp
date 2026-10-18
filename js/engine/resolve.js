@@ -18,6 +18,7 @@ import { enquetePourTour, quatreComptePourTour, SLOT_QUATRE, RELANCE_PS } from '
 import { jourBe } from './time.js';
 import { attribuerSites } from './sites.js';
 import { genererEchos } from './gazette.js';
+import { materielDuTour, facteurGilets } from './materiel.js';
 import { resoudreAppel, facteurRodage, ajouterRodage, aGalon, BRIGADE, designerCandidat, sortirDuRang, releve, progresserAdjoints } from './brigade.js';
 import { psDispo as psDispoBrigade } from './decor.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, SEUILS_EQUIPE, ROLES_EQUIPE, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet, encadrement, lireGalons, appliquerGalons, GALONS } from './equipe.js';
@@ -348,6 +349,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     // Réaffecter les galons d'une figure (contre des PS).
     { const rr = orders[uid] && orders[uid].galonsReset; const m = rr && (z.equipe || []).find((x) => x.role === rr);
       if (m && (m.galons || []).length && psDispoBrigade(z) >= BRIGADE.reaffecter) { z.psDepense = Math.round(z.psDepense || 0) + BRIGADE.reaffecter; m.galons = []; z.rapport.push(`Galons de ${nomComplet(m)} rendus (${BRIGADE.reaffecter} PS) : à réattribuer.`); } }
+    // Magasin et armurerie (prototype) : masse d'habillement, commandes, marchés, livraisons, péremptions.
+    { const lm = materielDuTour(state, z, orders[uid], T); if (lm.length) z.rapport.push(...lm); }
     // Sortir du rang : la recrue candidate devient une figure (adjoint de son service).
     if (orders[uid] && orders[uid].sortirRang) { const a = sortirDuRang(z, T);
       if (a) z.rapport.push(`Sortie du rang : ${a.prenom} ${a.nom}, formé${a.f ? 'e' : ''} par ${a.mentor}, devient une figure de ta brigade. ${a.f ? 'Elle' : 'Il'} prendra le service quand ${a.mentor} sera en mission.`); }
@@ -953,6 +956,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     for (const { a, s } of releves) if (cap[s]) z.rapport.push(`Relève : ${a.prenom} ${a.nom} encadre ${SERVICE_LABELS[s]} à la place de ${a.mentor ? a.mentor.split(' ')[0] : 'sa figure'} (+${Math.round(enc[s].bonus * 100)} %).`);
     // Brigade : recrues en formation (un demi-agent chacune) et galons « service » de l'Intervention.
     { const fr = facteurRodage(z, T); if (fr < 1) for (const s of SERVICES) cap[s] *= fr;
+      if (cap.intervention && z.materiel) { const fg = facteurGilets(z, T); if (fg < 1) { cap.intervention *= fg; z.rapport.push(`Gilets pare-balles : des agents refusent les interventions à risque sans gilet valide (Intervention −${Math.round((1 - fg) * 100)} %).`); } }
       if (cap.intervention) cap.intervention *= (aGalon(z, 'inter', 0, 'B') ? 1.04 : 1) * (aGalon(z, 'inter', 2, 'B') ? 1.06 : 1); }
 
     // Plan du district en vigueur (crise votée par la cellule de crise).
@@ -1658,6 +1662,8 @@ function finDeSaison(state, classement, opts = {}) {
     if (z.styleBrigade) nz.styleBrigade = z.styleBrigade;
     if (z.adjoints) nz.adjoints = z.adjoints;
     if (z.candidat) nz.candidat = { ...z.candidat, pret: 0 };
+    if (z.materiel) { const d = state.turn; const m = JSON.parse(JSON.stringify(z.materiel)); m.masse = 0;
+      for (const g of m.gilets || []) g.fin -= d; for (const c of m.certifies || []) c.fin -= d; for (const c of m.commandes || []) c.arrive -= d; nz.materiel = m; }
     // Doctrine : à rechoisir ; garder la même fait monter la maîtrise.
     if (z.doctrine) { nz.doctrinePrec = z.doctrine; nz.maitrisePrec = z.maitrise || 0; }
     nz.trophees = z.trophees || [];
