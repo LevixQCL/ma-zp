@@ -231,6 +231,17 @@ function stepRole(k, role, v, plein, nom) {
   return `<span class="stepper ndt-step"><button type="button" data-action="nd-role" data-c="${k}" data-r="${role}" data-d="-1" aria-label="Un agent de moins en ${nom} à ${esc(nomSecteur(k))}" ${v <= 0 ? 'disabled' : ''}>−</button><span class="n">${v}</span><button type="button" data-action="nd-role" data-c="${k}" data-r="${role}" data-d="1" aria-label="Un agent de plus en ${nom} à ${esc(nomSecteur(k))}" ${plein ? 'disabled' : ''}>+</button></span>`;
 }
 
+/** Une seule ligne quand les « + » sont grisés : où sont déjà mes agents (touchables pour aller les reprendre). */
+function lignePlein(k, d, monN) {
+  if (agentsND(d) >= ND.maxTotal) {
+    const ail = Object.entries((d && d.secteurs) || {}).filter(([x, n]) => n && x !== k);
+    if (!ail.length) return '';
+    const liste = ail.map(([x, n]) => `<button type="button" class="lien" data-action="secteur" data-c="${x}">${esc(nomSecteur(x))} ${n}</button>`).join(' · ');
+    return `<p class="ndt-note muted">Tes ${ND.maxTotal} agents sont engagés : ${monN ? `${monN} ici · ` : ''}${liste}.${monN ? '' : ' Retires-en un pour en mettre ici.'}</p>`;
+  }
+  return monN >= ND.maxParSecteur ? `<p class="ndt-note muted">${ND.maxParSecteur} agents au plus par secteur.</p>` : '';
+}
+
 /** Tiroir d'un secteur aux mains du milieu (règle des rôles : repérage, descente, bouclage). */
 function ficheMilieu(k, s, me, d) {
   const T = S.state.turn, F = faille(s), m = milieuDe(s);
@@ -299,6 +310,7 @@ function ficheMilieu(k, s, me, d) {
       ${p.guetteurs && !rep ? '<p class="ndt-note bad">👁 Le milieu a doublé ses guetteurs : sans repérage, piège plus probable.</p>' : ''}
       ${sc ? `<a class="ml-chip" href="#hp">${ICO_SCENE[sc.type]} Scène ce soir ici · à régler sur l’HP ›</a>` : ''}
       <div class="ndt-roles">${tuile('rep')}${tuile('desc')}${tuile('bouc')}</div>
+      ${place <= 0 ? lignePlein(k, d, monN) : ''}
       ${dernierCarreHtml(k, s, ann, monN - (mes.sc || 0))}
       ${v}${piege}
       ${etatRadio(k, monN)}
@@ -361,6 +373,7 @@ function ficheRepris(k, s, me, d) {
       <div class="ndt-qui">${ceSoir.length || n ? `${pionsCeSoir([...(n ? [{ moi: true, n }] : []), ...ceSoir])}<span>${n + ceSoir.reduce((t, x) => t + x.n, 0)} agents de garde ce soir</span>` : '<span>Personne de garde annoncé ce soir.</span>'}</div>
       ${gang ? `<p class="ndt-note bad">⚠️ <b>${gang.represailles ? 'Représailles' : 'Un gang attaque'} ce soir</b> (+${gang.force} d’emprise). Repoussé : +${ND.gangs.rep} de réputation et +${ND.gangs.ps} PS à chaque zone de garde.</p>` : ''}
       ${tuiles}
+      ${plein ? lignePlein(k, d, n) : ''}
       ${v}
       ${etatRadio(k, n)}
       ${confianceHtml(k, s, v3Actif() ? r.bouc : 0)}
