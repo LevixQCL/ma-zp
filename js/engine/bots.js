@@ -1,4 +1,5 @@
 // Zones robots : utilisées par le mode démo et par la simulation d'équilibrage.
+import { ordresMaterielRobot } from './materiel.js';
 import { dilemmeDuJour } from './directeur.js';
 import { SERVICES, INFRAS, COUTS, BATIMENTS, nbAnnexes, emplacementsAnnexes } from './constants.js';
 import { makeRng } from './rng.js';
@@ -133,7 +134,8 @@ export function botOrders(zone, state, style = 'equilibre') {
     if (!sct || !sct.barricade || !roles || !roles[k] || !(roles[k].rep + roles[k].desc + roles[k].bouc)) continue;
     tactiques[k] = style === 'prudent' ? 'encercler' : style === 'equilibre' ? (rng.chance(0.4) ? 'negocier' : 'encercler') : 'frontal';
   }
-  return { tactiques, dilemme, patrouilles, alloc, rythme, engagements, secteurs, ...(roles ? { roles } : {}), evenement, decision, operation, depenses, ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
+  const materiel = ordresMaterielRobot(zone, state);
+  return { tactiques, dilemme, patrouilles, alloc, rythme, engagements, secteurs, ...(roles ? { roles } : {}), evenement, decision, operation, depenses, ...(materiel ? { materiel } : {}), ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
 }
 
 /**

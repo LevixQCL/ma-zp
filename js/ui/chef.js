@@ -9,6 +9,7 @@ import { creerChef } from '../engine/chef.js';
 import { jourPrise, courriersDuJour } from '../engine/parapheur.js';
 import { adjointFicheHtml, honneursHtml, COUL_CADRE, semaineHtml } from './chef-semaine.js';
 import { segBrigadeHtml, equipeVueHtml, galonsAFaire, rangAFaire } from './brigade.js';
+import { materielVueHtml, materielAFaire } from './materiel.js';
 
 // ───── Portraits (images générées avec Gemini, img/chefs/pNN.webp) ─────
 // Tant qu'une image manque, un portrait dessiné (silhouette en uniforme, initiales) la remplace.
@@ -207,6 +208,7 @@ export function renderChef() {
   const st = S.state, z = myZone(), d = S.draft;
   if (!z) return renderBureau();
   // Onglet Brigade : vue Équipe (les figures et leurs galons).
+  if (S.brigadeVue === 'materiel') return `<main class="screen"><h1 class="big" style="margin:0 0 10px">Brigade</h1>${segBrigadeHtml()}${materielVueHtml()}</main>${tabbar('chef')}`;
   if (S.brigadeVue === 'equipe') return `<main class="screen"><h1 class="big" style="margin:0 0 10px">Brigade</h1>${segBrigadeHtml()}${equipeVueHtml()}</main>${tabbar('chef')}`;
   if (chefACreer()) return `<main class="screen chef-accueil">${segBrigadeHtml()}<div class="ca-tete"><h1 class="big">Ton chef de corps</h1>
       <p class="small muted" style="margin:0">Choisis qui dirige ta zone : un portrait, un parcours. Ça prend une minute, une seule fois.</p></div>${creationChefHtml()}</main>${tabbar('chef')}`;
@@ -240,7 +242,7 @@ export function chefAFaire() {
   const rep = (d && d.parapheur) || (S.savedOrders && S.savedOrders.parapheur) || {};
   if (courriersDuJour(st, z).some((id) => !Object.hasOwn(rep, id))) return true;
   if (brevetPossible(z.chef) && !(d && d.brevet)) return true;
-  if (galonsAFaire() || rangAFaire()) return true;
+  if (galonsAFaire() || rangAFaire() || materielAFaire()) return true;
   return false;
 }
 

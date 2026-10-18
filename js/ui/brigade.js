@@ -6,6 +6,7 @@ import { roleDe, intitule, surnomDe, creerEquipe, appliquerNoms, GALONS, galonsD
 import { COULEUR_ROLE, initiales, echelleBonus } from './equipe.js';
 import { appelDuJour, optionsAppel, intentionBrigade, APPROCHES, CTX, enRodage, BRIGADE, adjointsDe, placesFigures, prochainePlace, peutSortir } from '../engine/brigade.js';
 import { psDispo } from '../engine/decor.js';
+import { materielAFaire } from './materiel.js';
 
 /** Carte « Appel du jour » : le même dans toutes les zones ; ta brigade agit seule si tu ne choisis rien. */
 function appelHtml(z) {
@@ -13,8 +14,8 @@ function appelHtml(z) {
   const ch = S.draft && Number.isInteger(S.draft.appel) ? S.draft.appel : null;
   const boutons = opts.map((op, i) => {
     const prevu = ch == null ? op === it.op : ch === i;
-    return `<button type="button" class="galon${prevu ? ' pris' : ''}" data-action="appel-choix" data-i="${i}" style="--k:${op.reservee ? 'var(--amber)' : 'var(--blue, #63B0FF)'}" aria-pressed="${ch === i}">
-      <span class="galon-k">${APPROCHES[op.app].ico} ${op.reservee ? 'réservée' : esc(APPROCHES[op.app].nom)}</span><b>${esc(op.label)}</b><span>${op.p >= 0.75 ? 'plutôt sûr' : op.p >= 0.55 ? 'risqué' : 'très risqué'}</span></button>`;
+    return `<button type="button" class="galon${prevu ? ' pris' : ''}" data-action="appel-choix" data-i="${i}" style="--k:${op.reservee || op.materiel ? 'var(--amber)' : 'var(--blue, #63B0FF)'}" aria-pressed="${ch === i}">
+      <span class="galon-k">${op.materiel ? `<img src="img/materiel/${op.materiel}.webp" alt="" style="width:18px;height:18px;border-radius:5px;vertical-align:-4px"> ton matériel` : `${APPROCHES[op.app].ico} ${op.reservee ? 'réservée' : esc(APPROCHES[op.app].nom)}`}</span><b>${esc(op.label)}</b><span>${op.p >= 0.75 ? 'plutôt sûr' : op.p >= 0.55 ? 'risqué' : 'très risqué'}</span></button>`;
   }).join('');
   const hier = Object.values(st.zones || {}).filter((x) => x.appelHier && x.appelHier.t === st.turn - 1);
   const hierHtml = hier.length ? `<div class="col" style="gap:4px"><span class="tiny muted" style="font-weight:700">Hier, sur « ${esc(hier[0].appelHier.titre)} »</span>${hier.map((x) => `<span class="tiny">${x.uid === z.uid ? '<b>Ta brigade</b>' : esc(x.nom || '?')} : ${APPROCHES[x.appelHier.app].ico} ${esc(x.appelHier.label.toLowerCase())} ${x.appelHier.ok ? '<span style="color:var(--green)">✓</span>' : '<span style="color:var(--red)">✗</span>'}${x.appelHier.seule ? ' <span class="muted">(seule)</span>' : ''}</span>`).join('')}</div>` : '';
@@ -44,11 +45,12 @@ export function galonsAFaire() {
 export const rangAFaire = () => { const z = myZone(); return !!(z && S.state && peutSortir(z, S.state.turn) && !(S.draft && S.draft.sortirRang)); };
 
 export function segBrigadeHtml() {
-  const v = S.brigadeVue === 'equipe' ? 'equipe' : 'chef';
-  const g = galonsAFaire(), r = rangAFaire(), n = g || r;
-  return `<div class="seg seg2" role="tablist" aria-label="Vue de la brigade" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
+  const v = ['equipe', 'materiel'].includes(S.brigadeVue) ? S.brigadeVue : 'chef';
+  const g = galonsAFaire(), r = rangAFaire(), n = g || r, mt = materielAFaire();
+  return `<div class="seg seg2" role="tablist" aria-label="Vue de la brigade" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:12px">
     <button type="button" role="tab" aria-selected="${v === 'chef'}" data-action="brigade-vue" data-v="chef"><span class="t">Chef</span></button>
     <button type="button" role="tab" aria-selected="${v === 'equipe'}" data-action="brigade-vue" data-v="equipe"><span class="t">Équipe${n ? ' ·' : ''}</span>${n ? `<span class="tiny" style="color:var(--amber)">${g ? 'galon à attribuer' : 'sortie du rang possible'}</span>` : ''}</button>
+    <button type="button" role="tab" aria-selected="${v === 'materiel'}" data-action="brigade-vue" data-v="materiel"><span class="t">Matériel${mt ? ' ·' : ''}</span>${mt ? '<span class="tiny" style="color:var(--amber)">à commander</span>' : ''}</button>
   </div>`;
 }
 

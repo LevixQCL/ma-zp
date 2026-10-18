@@ -1,4 +1,4 @@
-// Magasin et armurerie (prototype, oct. 2026) : la dotation individuelle des agents.
+// Magasin et armurerie (oct. 2026, onglet Brigade › Matériel) : la dotation individuelle des agents.
 // Tenue (polos, chaussures) payée avec la masse d'habillement, gilets pare-balles qui périment, armement collectif
 // (taser, avec agents certifiés), bodycams, équipement de maintien de l'ordre. Trois façons d'acheter, comme une vraie zone :
 // la centrale d'achat fédérale (prix normal, livraison en 3 jours), la procédure négociée (cher, le lendemain)
@@ -20,6 +20,7 @@ export const MAT = {
     centrale: { nom: 'Centrale d’achat fédérale', mult: 1, delai: 3 },
     negociee: { nom: 'Procédure négociée', mult: 1.4, delai: 1 },
   },
+  lotsMax: 8,
   marche: { duree: 2, livraison: 2, base: 0.95, remiseParZone: 0.05, remiseMax: 0.25, psLanceur: 2 },
 };
 export const ARTICLES = {
@@ -106,6 +107,7 @@ export function materielDuTour(state, z, o, T) {
   fermerMarches(state, T);
   if (!z.materiel) z.materiel = creerMateriel(z, T);
   const m = mat(z), L = (z.rapportMat || []).splice(0), om = (o && o.materiel) || {};
+  m._T = T; z._blessesAvant = (z.blesses || []).length;
   // Masse d'habillement.
   m.masse = Math.min(MAT.masse.max, m.masse + MAT.masse.parJour);
   for (const k of Array.isArray(om.masse) ? om.masse : []) {
@@ -114,7 +116,7 @@ export function materielDuTour(state, z, o, T) {
   }
   // Commandes directes.
   for (const c of Array.isArray(om.commandes) ? om.commandes.slice(0, 3) : []) {
-    const a = ARTICLES[c && c.item], v = MAT.voies[c && c.voie], lots = Math.max(1, Math.min(4, Math.round(Number(c && c.lots) || 1)));
+    const a = ARTICLES[c && c.item], v = MAT.voies[c && c.voie], lots = Math.max(1, Math.min(MAT.lotsMax, Math.round(Number(c && c.lots) || 1)));
     if (!a || !v) continue;
     const cout = Math.round(lots * a.prix * v.mult * 10) / 10;
     if (z.budget < cout) { L.push(`Commande ${a.nom.toLowerCase()} refusée : budget insuffisant (${cout} k€).`); continue; }
@@ -126,12 +128,12 @@ export function materielDuTour(state, z, o, T) {
   const ms = (state.marches ||= []);
   if (om.lancer && ARTICLES[om.lancer.item] && !ms.some((x) => !x.clos && x.lanceur === z.uid)) {
     const id = `${state.season}-${T}-${z.uid}`;
-    ms.push({ id, item: om.lancer.item, lanceur: z.uid, ouvert: T, ferme: T + MAT.marche.duree, part: { [z.uid]: Math.max(1, Math.min(4, Math.round(om.lancer.lots || 1))) } });
+    ms.push({ id, item: om.lancer.item, lanceur: z.uid, ouvert: T, ferme: T + MAT.marche.duree, part: { [z.uid]: Math.max(1, Math.min(MAT.lotsMax, Math.round(om.lancer.lots || 1))) } });
     L.push(`Marché lancé : ${ARTICLES[om.lancer.item].nom.toLowerCase()}. Les autres zones peuvent y adhérer pendant ${MAT.marche.duree} jours ; plus elles sont nombreuses, plus le prix baisse.`);
   }
   for (const ad of Array.isArray(om.adherer) ? om.adherer : []) {
     const mk = ms.find((x) => x.id === (ad && ad.id) && !x.clos && x.ferme >= T);
-    if (mk && !mk.part[z.uid]) { mk.part[z.uid] = Math.max(1, Math.min(4, Math.round(ad.lots || 1))); L.push(`Adhésion au marché ${ARTICLES[mk.item].nom.toLowerCase()} de ${(state.zones[mk.lanceur] || {}).nom || 'une zone voisine'}.`); }
+    if (mk && !mk.part[z.uid]) { mk.part[z.uid] = Math.max(1, Math.min(MAT.lotsMax, Math.round(ad.lots || 1))); L.push(`Adhésion au marché ${ARTICLES[mk.item].nom.toLowerCase()} de ${(state.zones[mk.lanceur] || {}).nom || 'une zone voisine'}.`); }
   }
   // Certification taser : 2 agents absents demain, 1 k€.
   if (om.certifier && (m.taser || 0) > 0 && z.budget >= MAT.taser.cert.prix) {
@@ -174,3 +176,60 @@ export function optionsMateriel(z, appel, T) {
 }
 /** Bonus de réussite des approches « procédure » avec des bodycams. */
 export const bonusBodycam = (z) => (z && z.materiel && z.materiel.bodycam >= MAT.bodycam.lot ? MAT.bodycam.procedure : 0);
+
+/** Gilets qui manqueront dans `jours` jours (en comptant les commandes en route). */
+export function giletsAPrevoir(z, T, jours = 3) {
+  const m = z.materiel; if (!m) return 0;
+  const dans = (m.gilets || []).filter((g) => g.fin > T + jours).reduce((s, g) => s + g.n, 0);
+  const enCmd = (m.commandes || []).filter((c) => c.item.startsWith('gilets')).reduce((s, c) => s + c.lots * MAT.gilets.lot, 0);
+  return Math.max(0, (z.agents || 0) - dans - enCmd);
+}
+/** Ordres de matériel d'un robot : tenue avec la masse, gilets remplacés à temps (en adhérant à un marché ouvert s'il y en a un). */
+export function ordresMaterielRobot(z, state) {
+  const m = z.materiel; if (!m) return null;
+  const T = state.turn, om = { masse: [], commandes: [], adherer: [] };
+  if (m.tenue < 50 && m.masse >= MAT.tenue.cout) om.masse.push('tenue');
+  else if (m.chaussures < 40 && m.masse >= MAT.chaussures.cout) om.masse.push('chaussures');
+  const deja = (state.marches || []).some((x) => !x.clos && x.part[z.uid] && x.item.startsWith('gilets'));
+  const manque = deja ? 0 : giletsAPrevoir(z, T, 4);
+  if (manque > 0) {
+    const lots = Math.min(MAT.lotsMax, Math.ceil(manque / MAT.gilets.lot));
+    const mk = (state.marches || []).find((x) => !x.clos && x.ferme >= T && x.item.startsWith('gilets'));
+    if (mk && giletsAPrevoir(z, T, 2) === 0) om.adherer.push({ id: mk.id, lots });
+    else om.commandes.push({ item: 'gilets', lots, voie: giletsAPrevoir(z, T, 1) > 0 ? 'negociee' : 'centrale' });
+  }
+  return om;
+}
+
+// ───── Matériel abîmé en intervention ─────
+const DEGATS = {
+  gilets: ['un gilet entaillé par un coup de couteau', 'un gilet déformé par un impact', 'un gilet arraché pendant une interpellation'],
+  taser: ['un taser cassé dans la lutte', 'un taser tombé et écrasé'],
+  bodycam: ['une bodycam arrachée pendant l’interpellation', 'une bodycam fendue dans la bousculade'],
+  gnep: ['un casque fendu par un pavé', 'un bouclier brisé'],
+};
+/** Retire `n` objets abîmés (le gilet le plus ancien d'abord). Renvoie la phrase du rapport, ou ''. */
+export function abimer(z, item, n, rng) {
+  const m = z.materiel; if (!m || n <= 0) return '';
+  let fait = 0;
+  if (item === 'gilets') {
+    for (const g of (m.gilets || []).slice().sort((a, b) => a.fin - b.fin)) { while (fait < n && g.n > 0 && g.fin > (m._T || 0)) { g.n--; fait++; } }
+    m.gilets = (m.gilets || []).filter((g) => g.n > 0);
+  } else { fait = Math.min(n, m[item] || 0); m[item] = (m[item] || 0) - fait; }
+  if (!fait) return '';
+  m.hs = (m.hs || 0) + fait;
+  const l = DEGATS[item]; const quoi = l[Math.floor(rng.next() * l.length)];
+  return fait > 1 ? `${fait} objets hors service, dont ${quoi}` : `${quoi[0].toUpperCase()}${quoi.slice(1)} : hors service`;
+}
+/**
+ * Fin de soirée : les blessures de la journée (non-droit, rébellions, urgences) abîment aussi des gilets.
+ * `avant` : nombre d'entrées dans z.blesses au début du tour.
+ */
+export function degatsDuSoir(state, z, T, avant) {
+  if (!z.materiel || !Array.isArray(z.blesses)) return [];
+  const rng = makeRng(`${state.seed}:s${state.season}:t${T}:degats:${z.uid}`), L = [];
+  const nouveaux = z.blesses.slice(avant).filter((b) => !/certification/.test(b.motif || '')).reduce((s, b) => s + (b.n || 0), 0);
+  let g = 0; for (let i = 0; i < nouveaux; i++) if (rng.chance(0.5)) g++;
+  const t = abimer(z, 'gilets', g, rng); if (t) L.push(`Magasin : ${t[0].toLowerCase()}${t.slice(1)} (blessés du jour).`);
+  return L;
+}

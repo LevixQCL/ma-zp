@@ -3,7 +3,7 @@
 // Calibrage : test/brigade-sim.mjs (un joueur attentif gagne environ +1 à +2 d'IPZ sur la saison ; l'absent ne perd rien).
 import { makeRng } from './rng.js';
 import { bonusChef, risqueBlessure } from './constants.js';
-import { optionsMateriel, bonusBodycam, trouGilets, MAT } from './materiel.js';
+import { optionsMateriel, bonusBodycam, trouGilets, MAT, abimer } from './materiel.js';
 
 export const BRIGADE = {
   rodage: { jours: 4, tuteur: 2, efficacite: 0.5 },   // recrues à 50 % pendant 4 jours (2 avec un tuteur)
@@ -151,19 +151,28 @@ export function resoudreAppel(state, z, ord, T) {
   z.satisfaction += eff.sat || 0; z.reputation += eff.rep || 0; z.moral += eff.moral || 0;
   if (ok && meneur) meneur.xp = (meneur.xp || 0) + BRIGADE.xpAppel;
   if (ok && binome) binome.xp = (binome.xp || 0) + BRIGADE.xpAppel;
+  let blesseMat = '';
+  // Matériel abîmé : un taser ou un cordon casqué qui échoue, une interpellation ratée avec des bodycams.
+  if (!ok && z.materiel) {
+    const rd = makeRng(`${state.seed}:s${state.season}:t${T}:appel-mat:${z.uid}`);
+    const d = op.materiel === 'taser' && rd.chance(0.4) ? abimer(z, 'taser', 1, rd)
+      : op.materiel === 'gnep' && rd.chance(0.5) ? abimer(z, 'gnep', 1 + (rd.chance(0.3) ? 1 : 0), rd)
+      : op.app === 'force' && (z.materiel.bodycam || 0) > 0 && rd.chance(0.25) ? abimer(z, 'bodycam', 1, rd) : '';
+    if (d) blesseMat = ` ${d}.`;
+  }
   // Appel raté qui tourne mal (moral en baisse) : un agent peut être touché. Un gilet valide arrête souvent le coup.
   let blesse = '';
   if (!ok && (eff.moral || 0) < 0) {
     const r = makeRng(`${state.seed}:s${state.season}:t${T}:appel-bl:${z.uid}`);
     if (r.chance(Math.min(0.9, 0.6 * risqueBlessure(z)))) {
       const couvert = z.materiel ? 1 - trouGilets(z, T) : 1;
-      if (r.chance(couvert * MAT.gilets.arrete)) { blesse = ' Un agent est touché, mais son gilet a arrêté le coup.'; z.stats = z.stats || {}; z.stats.coupsArretes = (z.stats.coupsArretes || 0) + 1; }
+      if (r.chance(couvert * MAT.gilets.arrete)) { const d = z.materiel ? abimer(z, 'gilets', 1, r) : ''; blesse = ` Un agent est touché, mais son gilet a arrêté le coup${d ? ` (${d[0].toLowerCase()}${d.slice(1)})` : ''}.`; z.stats = z.stats || {}; z.stats.coupsArretes = (z.stats.coupsArretes || 0) + 1; }
       else { (z.blesses ||= []).push({ n: 1, retour: T + 4, motif: 'appel du jour' }); z.stats = z.stats || {}; z.stats.blessesAppel = (z.stats.blessesAppel || 0) + 1; z.moral -= 1; blesse = ` Un agent est blessé${couvert < 1 ? ' (son gilet n’était plus valide)' : ''} : absent 3 jours.`; }
     }
   }
   z.appelHier = { t: T, i: appel.i, titre: appel.titre, app: op.app, label: op.label, ok, txt: ok ? op.tOk : op.tKo, seule: !choisi, pourquoi: choisi ? null : it.pourquoi, eff };
   const effTxt = [eff.pts ? `+${eff.pts} pts` : '', eff.sat ? `satisfaction ${eff.sat > 0 ? '+' : ''}${eff.sat}` : '', eff.rep ? `réputation ${eff.rep > 0 ? '+' : ''}${eff.rep}` : '', eff.moral ? `moral ${eff.moral}` : ''].filter(Boolean).join(', ');
-  return `Appel du jour (« ${appel.titre} »${binome ? `, avec ${binome.prenom} ${binome.nom} en binôme` : ''}) : ${choisi ? 'ta brigade suit ta consigne' : `ta brigade décide seule (${it.pourquoi})`}, ${APPROCHES[op.app].ico} ${op.label.toLowerCase()}. ${ok ? 'Réussi' : 'Raté'} : ${ok ? op.tOk : op.tKo}${effTxt ? ` (${effTxt})` : ''}.${blesse}`;
+  return `Appel du jour (« ${appel.titre} »${binome ? `, avec ${binome.prenom} ${binome.nom} en binôme` : ''}) : ${choisi ? 'ta brigade suit ta consigne' : `ta brigade décide seule (${it.pourquoi})`}, ${APPROCHES[op.app].ico} ${op.label.toLowerCase()}. ${ok ? 'Réussi' : 'Raté'} : ${ok ? op.tOk : op.tKo}${effTxt ? ` (${effTxt})` : ''}.${blesse}${blesseMat}`;
 }
 
 // ───── Rodage des recrues ─────

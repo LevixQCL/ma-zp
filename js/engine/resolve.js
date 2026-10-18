@@ -18,7 +18,7 @@ import { enquetePourTour, quatreComptePourTour, SLOT_QUATRE, RELANCE_PS } from '
 import { jourBe } from './time.js';
 import { attribuerSites } from './sites.js';
 import { genererEchos } from './gazette.js';
-import { materielDuTour, facteurGilets } from './materiel.js';
+import { materielDuTour, facteurGilets, degatsDuSoir } from './materiel.js';
 import { resoudreAppel, facteurRodage, ajouterRodage, aGalon, BRIGADE, designerCandidat, sortirDuRang, releve, progresserAdjoints } from './brigade.js';
 import { psDispo as psDispoBrigade } from './decor.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, SEUILS_EQUIPE, ROLES_EQUIPE, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet, encadrement, lireGalons, appliquerGalons, GALONS } from './equipe.js';
@@ -1143,6 +1143,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
 
     // Brigade : l'appel du jour, le même pour toutes les zones.
     if (z.equipe) { try { z.rapport.push(resoudreAppel(state, z, orders[uid], T)); } catch (e) { /* jamais bloquant pour le tour */ } }
+    if (z.materiel && z._blessesAvant != null) { try { z.rapport.push(...degatsDuSoir(state, z, T, z._blessesAvant)); } catch (e) { /* jamais bloquant */ } }
 
     // Budget du tour.
     const ff = fraisFixes(z, state, { amendes: recettes, rythme: o.rythme });
@@ -1479,7 +1480,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       z.rapport.push(`Décor d’événement gagné : « ${SKINS.fete.options[fete.id].nom} ». Il est équipé ; tu peux l’enlever dans « Personnaliser mon hôtel de police ».`);
       push(3, 'Décor', `${zoneLabel(z)} décroche le décor « ${SKINS.fete.options[fete.id].nom} »`, 'Une édition limitée, à gagner seulement pendant la période.', u);
     }
-    delete z._joue; delete z._croiseDeja; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._para; delete z._paraRep; delete z._paraGains; delete z._chefFaits; delete z._front; delete z._frontUtilise; delete z._service; delete z._incOk; delete z._croise; delete z._chefAvant; delete z._docAvant; delete z._investi; delete z._interpelle;
+    delete z._blessesAvant; delete z._joue; delete z._croiseDeja; delete z._nouveaux; delete z._missions; delete z._mission; delete z._points; delete z._ps; delete z._psEntraide; delete z._compta; delete z._decouverteJour; delete z._retardEnquete; delete z._contribEvenement; delete z._delegue; delete z._agenda; delete z._para; delete z._paraRep; delete z._paraGains; delete z._chefFaits; delete z._front; delete z._frontUtilise; delete z._service; delete z._incOk; delete z._croise; delete z._chefAvant; delete z._docAvant; delete z._investi; delete z._interpelle;
   }
 
   // Champion de la semaine : meilleur IPZ moyen sur les 7 derniers tours (4 tours joués au moins).

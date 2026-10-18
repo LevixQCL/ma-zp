@@ -3297,3 +3297,39 @@ main.screen.fi { max-width: 640px; margin: 0 auto; }
 .galon.pris { border-color: var(--k); background: color-mix(in srgb, var(--k) 14%, var(--surface)); }
 .galon.ecarte { opacity: .38; }
 .galon[disabled]:not(.pris):not(.ecarte) { opacity: .5; cursor: default; }
+
+/* Brigade › Matériel (magasin et armurerie) */
+.mat-banner { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--line, rgba(255,255,255,.1)); }
+.mat-banner > img { display: block; width: 100%; aspect-ratio: 1024 / 572; object-fit: cover; }
+.mat-etat { position: absolute; left: 6px; right: 6px; bottom: 6px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.mat-etat div { background: rgba(10, 15, 32, .82); backdrop-filter: blur(4px); border-radius: 9px; padding: 4px 3px; text-align: center; font-size: .66rem; color: var(--text2, #96A0BF); line-height: 1.15; }
+.mat-etat b { display: block; font-size: .98rem; color: var(--text, #fff); font-variant-numeric: tabular-nums; }
+.mat-bloc { gap: 8px; }
+.mat-bloc.alerte { border-color: rgba(255, 107, 107, .55); }
+.mat-tete { display: flex; gap: 10px; align-items: center; }
+.mat-ico { width: 52px; height: 52px; border-radius: 12px; background: #1A243F; flex: none; display: block; object-fit: cover; }
+.mat-ico.s { width: 40px; height: 40px; border-radius: 10px; }
+.mat-item { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; align-items: start; padding-top: 8px; border-top: 1px solid var(--line, rgba(255,255,255,.08)); }
+.mat-item > div { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.mat-gilets { display: grid; grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); gap: 4px; }
+.mg { position: relative; aspect-ratio: 1; border-radius: 8px; background: #1A243F; border: 2px solid transparent; overflow: hidden; }
+.mg img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.mg.ok { border-color: rgba(61, 211, 154, .7); }
+.mg.aj { border-color: #9C8CFF; }
+.mg.per { border-color: var(--amber, #FFB23F); }
+.mg.per::after { content: ""; position: absolute; right: 2px; top: 2px; width: 7px; height: 7px; border-radius: 50%; background: var(--amber, #FFB23F); box-shadow: 0 0 0 2px #1A243F; }
+.mg.sans { border: 2px dashed rgba(255, 107, 107, .75); background: transparent; }
+.mg.sans img { filter: grayscale(1) brightness(.5); opacity: .45; }
+.mat-leg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .72rem; color: var(--text2, #96A0BF); }
+.mat-leg span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; border: 2px solid; }
+.mat-leg .ok::before { border-color: rgba(61, 211, 154, .8); }
+.mat-leg .per::before { border-color: var(--amber, #FFB23F); }
+.mat-leg .sans::before { border: 2px dashed rgba(255, 107, 107, .8); }
+.mat-leg .aj::before { border-color: #9C8CFF; }
+.mat-jauge { display: grid; grid-template-columns: 96px minmax(0, 1fr) 30px; gap: 8px; align-items: center; font-size: .8rem; }
+.mat-jauge .barre { height: 8px; border-radius: 5px; background: rgba(255,255,255,.08); overflow: hidden; }
+.mat-jauge .barre i { display: block; height: 100%; border-radius: 5px; }
+.mat-jauge b { text-align: right; font-variant-numeric: tabular-nums; }
+.mat-step { display: flex; align-items: center; gap: 8px; font-size: .82rem; }
+.mat-marche { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; background: rgba(255,255,255,.04); border-radius: 10px; padding: 7px 8px; }
+.btn.on { border-color: var(--amber, #FFB23F); color: var(--amber, #FFB23F); }

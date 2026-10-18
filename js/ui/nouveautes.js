@@ -6,7 +6,7 @@ import { skinsEnVente } from '../engine/decor.js';
 import { ouvrirDecor } from './logistique.js';
 
 export const NOTE_MAJ = {
-  id: '2026-10-18-brigade',
+  id: '2026-10-18-brigade-materiel',
   titre: '🚓 Ta brigade',
   saison2: true,
   action: { label: 'Voir ma brigade', ouvrir: () => { S.brigadeVue = 'equipe'; if (location.hash === '#chef') window.dispatchEvent(new HashChangeEvent('hashchange')); else location.hash = '#chef'; } },
@@ -14,12 +14,21 @@ export const NOTE_MAJ = {
   essentiel: [
     ['📻', 'L’appel du jour', 'le même dans toutes les zones. Donne ta consigne, ou laisse ta brigade faire : elle apprend ton style et s’en sert quand tu n’es pas là. Le lendemain, compare avec les autres brigades.'],
     ['🎖️', 'Des galons à attribuer', 'à chaque surnom, une figure gagne un galon : Terrain (une approche réservée sur l’appel du jour) ou Service (un effet chaque soir). L’onglet Chef devient Brigade.'],
+    ['🦺', 'Le magasin et l’armurerie', 'polos, chaussures, gilets pare-balles qui périment, taser et bodycams : dans Brigade › Matériel. Achète seul ou en marché groupé avec les autres zones, moins cher pour tout le monde.'],
     ['⭐', 'Sortir du rang', 'une recrue formée par tes figures peut devenir ta 6e figure (hôtel de police niveau 2), puis ta 7e (niveau 4).'],
   ],
 
   sections: [
+    ['Magasin et armurerie (18 octobre, 20:00)', [
+      ['Où', 'onglet Brigade, nouvelle vue Matériel. Les commandes partent avec tes ordres du soir et sont payées à 20:00.'],
+      ['La tenue', 'polos, t-shirts et chaussures se paient avec la masse d’habillement (+1 point par jour, 12 au plus, perdus en fin de saison). Tenue neuve : moral +0,8 par jour ; usée : −1 ; en lambeaux : −1,5. Chaussures usées : plus de blessures.'],
+      ['Les gilets pare-balles', 'achetés par lots de 5, valables 28 jours. Ta dotation de départ vient de trois livraisons différentes : un tiers périme dans la semaine. Au-delà de 30 % d’agents sans gilet valide, ils refusent les interventions à risque (Intervention en baisse, moral −0,6 par jour). Un gilet valide arrête souvent le coup quand l’appel du jour tourne mal. Gilets ajustés (port discret) : moins de blessures et +0,3 de moral par jour.'],
+      ['Armement et équipements', 'taser (avec 2 agents certifiés par taser en service ; certification valable 14 jours, 2 agents absents un jour) : ouvre « Neutraliser au taser » sur l’appel du jour. Bodycams : satisfaction chaque jour et approches « procédure » +5 %, avec un petit entretien quotidien. Casques et boucliers : « Cordon casqué » face aux foules.'],
+      ['Le matériel s’abîme', 'un gilet qui arrête un coup de couteau ou un impact est hors service, un taser peut casser dans la lutte, une bodycam être arrachée, un casque fendu. Les blessés du jour (non-droit, rébellions, urgences) abîment aussi des gilets.'],
+      ['Acheter', 'centrale d’achat fédérale (prix normal, livraison en 3 jours), procédure négociée (+40 %, livrée le lendemain) ou marché groupé : une zone lance un marché, les autres y adhèrent pendant 2 jours, −5 % par zone (jusqu’à −25 %), livré 2 jours après la clôture. Celui qui lance gagne 2 PS par zone qui adhère.'],
+    ]],
     ['La brigade (18 octobre, 20:00)', [
-      ['Onglet Brigade', 'l’onglet Chef s’appelle Brigade, avec deux vues : Chef (inchangée) et Équipe (tes figures, leurs agents, leurs galons). Les Ordres ne changent pas.'],
+      ['Onglet Brigade', 'l’onglet Chef s’appelle Brigade, avec trois vues : Chef (inchangée), Équipe (tes figures, leurs agents, leurs galons) et Matériel. Les Ordres ne changent pas.'],
       ['L’appel du jour', 'un appel commun à toutes les zones, résolu à 20:00. Choisis une approche ou laisse ta brigade décider : sans consigne, elle refait ce que tu as choisi dans ce genre de situation, sinon elle reste prudente. Selon le résultat : points de terrain, satisfaction, réputation ou moral, et de l’expérience pour la figure qui mène. Le lendemain, tu vois ce qu’a fait chaque brigade.'],
       ['Les galons', 'un par surnom, trois paliers. Terrain : une approche réservée sur l’appel du jour, plus sûre ou plus payante. Service : un effet chaque soir (Intervention +4 % puis +6 %, travail en plus sur les dossiers, satisfaction, criminalité, amendes +5 %, paperasse −10 %, moral). Prendre l’un ferme l’autre ; réaffecter les galons d’une figure coûte 30 PS.'],
       ['Les recrues', 'une recrue qui sort de l’académie compte pour un demi-agent pendant 4 jours, 2 si une figure a pris le galon Tuteur (palier 2, service).'],

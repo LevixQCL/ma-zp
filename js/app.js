@@ -1,6 +1,7 @@
 // Point d'entrée de l'application « Ma ZP ».
 import { basculerPiste, cibler } from './ui/pistes.js';
 import { CONFIG } from './config.js';
+import { actionMateriel } from './ui/materiel.js';
 import { installerCadenas } from './ui/cadenas.js';
 import { installerEnigmes } from './ui/enigmes.js';
 import { createBackend } from './data/backend.js';
@@ -437,6 +438,7 @@ async function onClick(e) {
   const a = el.dataset.action;
   const b = S.backend;
   try {
+    if (a && a.startsWith('mat-')) { if (actionMateriel(a, el)) rerender(); return; }
     switch (a) {
       case 'demo-start': await b.signInDemo(); break;
       case 'admin-all-parties': S.allParties = await b.listAllParties(); rerender(); break;
@@ -1355,7 +1357,7 @@ async function onClick(e) {
       case 'gazette-nav': if (Number(el.dataset.d) > 0) chargerArchivesGazette();
         S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
       case 'admin-create': await b.adminCreateGame(); toast('Partie lancée !'); break;
-      case 'brigade-vue': S.brigadeVue = el.dataset.v === 'equipe' ? 'equipe' : 'chef'; rerender(); break;
+      case 'brigade-vue': S.brigadeVue = ['equipe', 'materiel'].includes(el.dataset.v) ? el.dataset.v : 'chef'; rerender(); break;
       case 'figure-ouvrir': S.figureOuverte = S.figureOuverte === el.dataset.role ? null : el.dataset.role; rerender(); break;
       case 'appel-choix': { const i = Number(el.dataset.i); S.draft.appel = i >= 0 ? i : null; S.ordersDirty = true; rerender(); break; }
       case 'sortir-rang': { S.draft.sortirRang = !S.draft.sortirRang; S.ordersDirty = true; rerender(); break; }
