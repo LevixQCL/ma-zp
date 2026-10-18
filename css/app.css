@@ -3348,3 +3348,29 @@ main.screen.fi { max-width: 640px; margin: 0 auto; }
 .case.tz::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 7px; height: 7px; border-radius: 2px; background: #FFD23F; box-shadow: 0 0 0 1.5px #0C1124; }
 .case.mini { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c, #FF6E6A); vertical-align: -1px; margin: 0 2px; }
 .mat-legende { display: block; grid-column: 1 / -1; margin-top: 2px; }
+/* Ordres : un petit agent par personne au service (images Gemini, img/agents), avec son équipement */
+.svc2-esp { flex: 1; }
+.ag-cases { display: flex; flex-direction: column; gap: 4px; margin: 2px 0 4px; }
+.ag-l { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.ag-bande { display: flex; flex-wrap: wrap; gap: 5px; align-items: flex-end; }
+.ag-p { position: relative; width: 30px; height: 42px; border-radius: 8px; background: #1A243F; border: 2px solid var(--c); flex: none; box-sizing: border-box; }
+.ag-p img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; display: block; }
+.ag-p.m img { transform: scaleX(-1); }
+.ag-p.plus { opacity: .55; }
+.ag-p.sg { border-color: var(--red, #FF6B6B); }
+.ag-p.sa img { filter: grayscale(1) brightness(.75); }
+.ag-p.mission { opacity: .45; border-style: dashed; }
+.ag-p.vide { background: transparent; border: 2px dashed var(--faint, #4A5580); }
+.ag-sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 3px; }
+.ag-b { position: absolute; top: -6px; right: -6px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px; font-size: 10px; font-weight: 800; display: grid; place-items: center; box-shadow: 0 0 0 2px var(--bg, #0C1124); line-height: 1; }
+.ag-b.r { background: var(--red, #FF6B6B); color: #fff; }
+.ag-b.g { background: #8A93B5; color: #0C1124; font-size: 8px; }
+.ag-b.y { background: #FFD23F; color: #0C1124; }
+.ag-b.v { background: #7BD88F; color: #0C1124; }
+.ag-resume { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; margin-top: 2px; }
+.ag-chip { font-size: 11.5px; border-radius: 7px; padding: 1px 7px; background: rgba(255,255,255,.06); color: var(--text2); }
+.ag-chip b { color: var(--text); }
+.ag-chip.mal { color: var(--red, #FF6B6B); }
+.ag-lien { font-size: 11.5px; color: var(--amber, #FFB23F); text-decoration: none; margin-left: auto; }
+.svc2-cases.ag-cases { flex: none; width: 100%; margin-left: 0; padding-left: 0; justify-content: flex-start; align-items: flex-start; }
+.ag-cases .ag-bande { justify-content: flex-start; }

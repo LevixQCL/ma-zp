@@ -1,6 +1,6 @@
 // Écran des ordres du tour.
 import { ligneAgentsFilet } from './filet.js';
-import { marquesMateriel, legendeMarques } from './materiel.js';
+import { agentsService, resumeEquipement } from './materiel.js';
 import { vehiculeSvg } from './scene-hp.js';
 import { effetsPressions } from '../engine/contenu.js';
 import { comparatifModeles } from './modeles.js';
@@ -246,19 +246,19 @@ function casesService(s, b, n, e) {
   const besoin = s === 'roulage' ? 0 : Math.max(0, b.bes - pris);
   const limite = s === 'roulage' ? Math.max(0, b.utile - pris) : besoin;
   const nb = Math.max(besoin, au), vus = Math.min(nb, MAX_CASES);
+  // Un petit agent par personne au service, dans la tenue de son service, avec son équipement (magasin).
+  const ag = agentsService(s);
   let h = '';
-  const mk = marquesMateriel(s);
   for (let i = 0; i < vus; i++) {
-    const plein = i < au, enPlus = i >= limite, mq = plein && mk ? mk(i) : '';
-    h += plein ? (enPlus ? `<span class="case plus${mq}" style="--c:${coul}">${PION(coul)}</span>` : `<span class="case pleine${mq}" style="--c:${coul}">${PION('#0C1124')}</span>`)
-      : `<span class="case vide">${PION('#67719A')}</span>`;
+    const plein = i < au, enPlus = i >= limite;
+    if (!plein) { h += '<span class="ag-p vide" title="place à pourvoir"></span>'; continue; }
+    const a = ag(i);
+    h += `<span class="ag-p${a.cls}${enPlus ? ' plus' : ''}" style="--c:${coul}"${a.titre ? ` title="${esc(a.titre)}"` : ''}><img src="${a.img}" alt="" loading="lazy">${a.bdg}</span>`;
   }
   if (nb > vus) h += `<span class="tiny muted">+${nb - vus}</span>`;
-  // Groupe « au service » (avec les places manquantes), puis un groupe par mission : on voit tous ses agents,
-  // et d'un coup d'œil lesquels travaillent vraiment au service aujourd'hui.
-  const service = `<span class="grp"><span class="grp-l">au service · ${au}</span><span class="grp-c">${h || '<span class="tiny muted">personne</span>'}</span></span>`;
-  const missions = groupes.map(([k, motif]) => `<span class="grp mission"><span class="grp-l">${motif === 'l’opération' ? 'opération' : esc(motif)} · ${k}</span><span class="grp-c">${Array.from({ length: Math.min(k, MAX_CASES) }, () => `<span class="case mission" style="--c:${coul}">${PION('#8A93B5')}</span>`).join('')}</span></span>`).join('');
-  return pris ? service + missions : `<span class="grp-c">${h || '<span class="tiny muted">aucun agent</span>'}</span>`;
+  const missions = groupes.map(([k]) => `<span class="ag-sep"></span>${Array.from({ length: Math.min(k, MAX_CASES) }, (_, i) => `<span class="ag-p mission${i % 2 ? ' m' : ''}" style="--c:${coul}"><img src="img/agents/${({ intervention: 'inter', proximite: 'prox', recherche: 'rech', roulage: 'roul', admin: 'admin' })[s]}.webp" alt="" loading="lazy"></span>`).join('')}`).join('');
+  const lab = `${au ? `au service · ${au}` : 'personne au service'}${groupes.map(([k, motif]) => ` · ${motif === 'l’opération' ? 'opération' : esc(motif)} · ${k}`).join('')}`;
+  return `${pris || !au ? `<span class="ag-l">${lab}</span>` : ''}<span class="ag-bande">${h || (pris ? '' : '<span class="tiny muted">aucun agent</span>')}${missions}</span>`;
 }
 /** Barre de toute l'affectation : un segment par agent à répartir, couleur de son service ; pointillés = encore libres. */
 function barreAffectation(e) {
@@ -1002,11 +1002,12 @@ export function renderOrdres() {
       ${(() => { S._bs = besoinsServices(e); return ''; })()}
       ${jaugeSansService(z)}${SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc2 svc-${b.st}${ouvert ? ' ouvert' : ''}" style="--c:${COUL_SVC[s2]}">
         <div class="svc2-l"><button type="button" class="svc2-n svc-tog" data-action="help" data-s="${s2}" aria-expanded="${ouvert}" aria-label="${ouvert ? 'Masquer' : 'Afficher'} le détail : ${SERVICE_LABELS[s2]}"><span>${s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2]}</span>${bonusEnigme(s2) > 1 ? `<small class="ok">+${Math.round((bonusEnigme(s2) - 1) * 100)} %</small>` : ''}</button>
-          <div class="cases svc2-cases" id="cases-${s2}">${casesService(s2, b, d.alloc[s2], e)}</div>
+          <span class="svc2-esp"></span>
           <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
+        <div class="cases svc2-cases ag-cases" id="cases-${s2}">${casesService(s2, b, d.alloc[s2], e)}</div>
         <div class="svc2-s"><span class="svc-r" id="res-${s2}">${resultatService(e, s2)}</span><span id="badge-${s2}">${badgeService(s2, b, d.alloc[s2])}</span></div>
         <span id="pris-${s2}" class="svc-plus">${prisHtml(e, s2)}</span>
-        ${s2 === 'intervention' ? legendeMarques() : ''}
+        ${s2 === 'intervention' ? resumeEquipement() : ''}
         ${jaugesService(z, s2)}
         ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} de réserve en renfort</span>` : ''}
         ${ouvert ? `<div class="svc-det">${s2 === 'recherche' ? `<div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}<p class="tiny" style="margin:0;color:var(--text2);line-height:1.45">Niveau ${z.niveaux[s2]}. ${esc(aide(s2, z))}</p></div>` : ''}

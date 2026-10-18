@@ -2,6 +2,7 @@
 // Les commandes partent avec les ordres du soir (S.draft.materiel) ; tout se règle au tour de 20:00 (engine/materiel.js).
 import { S, esc, myZone, fmtK } from './common.js';
 import { COULEUR_ROLE, initiales } from './equipe.js';
+import { enRodage } from '../engine/brigade.js';
 import { MAT, ARTICLES, creerMateriel, giletsValides, certifiesActifs, tasersActifs, trouGilets, facteurGilets, prixMarche, gammeDe, surplus, ttiValides, trouTTI, facteurTTI, fonction, ttiDepart } from '../engine/materiel.js';
 
 const IMG = (k) => `img/materiel/${k}.webp`;
@@ -209,26 +210,39 @@ export function actionMateriel(a, el) {
 }
 
 /**
- * Pions des Ordres : l'équipement se voit sur les agents de terrain (Intervention, Roulage, Proximité, dans cet ordre).
- * Renvoie une fonction (i) → classes du i-ème pion « au service » de `s`, ou null.
+ * Pions des Ordres : chaque agent au service est un petit personnage dans la tenue de son service.
+ * L'équipement se voit : sans gilet (Intervention, Roulage, Proximité), sans recyclage TTI arme, taser, recrue en formation.
+ * Renvoie une fonction (i) → { img, cls, bdg, titre } pour le i-ème agent « au service » de `s`.
  */
-export function marquesMateriel(s) {
-  const z = myZone(), ordre = ['intervention', 'roulage', 'proximite'];
-  if (!z || !z.materiel || !S.state || !S.draft || !ordre.includes(s)) return null;
-  const T = S.state.turn, m = z.materiel, n = z.agents || 0;
-  const avant = ordre.slice(0, ordre.indexOf(s)).reduce((t, k) => t + (Number(S.draft.alloc[k]) || 0), 0);
-  const sansG = Math.max(0, n - giletsValides(m, T).total), sansA = m.tti ? Math.max(0, n - ttiValides(m, T, 'af')) : 0;
-  const tz = s === 'intervention' ? tasersActifs(m, T) : 0;
-  if (!sansG && !sansA && !tz) return null;
-  return (i) => { const g = avant + i; return `${g < sansG ? ' sg' : ''}${g < sansA ? ' sa' : ''}${i < tz ? ' tz' : ''}`; };
+const SPRITE = { intervention: 'inter', proximite: 'prox', recherche: 'rech', roulage: 'roul', admin: 'admin' };
+export function agentsService(s) {
+  const z = myZone(); if (!z || !S.state || !S.draft) return () => ({ img: `img/agents/${SPRITE[s]}.webp`, cls: '', bdg: '', titre: '' });
+  const T = S.state.turn, m = z.materiel, n = z.agents || 0, alloc = S.draft.alloc || {};
+  const terrain = ['intervention', 'roulage', 'proximite'];
+  const avantT = terrain.includes(s) ? terrain.slice(0, terrain.indexOf(s)).reduce((t, k) => t + (Number(alloc[k]) || 0), 0) : 0;
+  const ordre = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
+  const total = ordre.reduce((t, k) => t + (Number(alloc[k]) || 0), 0);
+  const avantG = ordre.slice(0, ordre.indexOf(s)).reduce((t, k) => t + (Number(alloc[k]) || 0), 0);
+  const sansG = m && terrain.includes(s) ? Math.max(0, n - giletsValides(m, T).total) : 0;
+  const sansA = m && m.tti && terrain.includes(s) ? Math.max(0, n - ttiValides(m, T, 'af')) : 0;
+  const tz = m && s === 'intervention' ? tasersActifs(m, T) : 0;
+  const recr = Math.min(total, enRodage(z, T));
+  return (i) => {
+    const g = avantT + i, gl = avantG + i;
+    let img = SPRITE[s], cls = '', bdg = '', titre = [];
+    const recrue = gl >= total - recr;
+    if (recrue) { img = 'recrue'; bdg = '<span class="ag-b v">½</span>'; titre.push('recrue en formation (à mi-efficacité)'); }
+    if (s === 'intervention' && i < tz && !recrue) { img = 'inter_taser'; bdg = '<span class="ag-b y">⚡</span>'; titre.push('taser en service'); }
+    if (g < sansG) { if (s === 'intervention' && !recrue) img = 'inter_sans_gilet'; cls += ' sg'; bdg = '<span class="ag-b r">!</span>'; titre.push('sans gilet valide'); }
+    if (g < sansA) { cls += ' sa'; if (!bdg) bdg = '<span class="ag-b g">TTI</span>'; titre.push('sans recyclage TTI avec arme à feu'); }
+    return { img: `img/agents/${img}.webp`, cls: cls + (i % 2 ? ' m' : ''), bdg, titre: titre.join(', ') };
+  };
 }
-/** Légende sous l'Intervention quand des pions portent une marque. */
-export function legendeMarques() {
+/** Résumé de l'équipement sous l'Intervention : gilets, recyclage TTI, tasers, recrues. */
+export function resumeEquipement() {
   const z = myZone(); if (!z || !z.materiel || !S.state) return '';
   const T = S.state.turn, m = z.materiel, n = z.agents || 0;
-  const l = [];
-  if (n - giletsValides(m, T).total > 0) l.push('<span class="case pleine sg mini"></span> sans gilet valide');
-  if (m.tti && n - ttiValides(m, T, 'af') > 0) l.push('<span class="case pleine sa mini"></span> sans recyclage TTI arme');
-  if (tasersActifs(m, T)) l.push('<span class="case pleine tz mini"></span> taser');
-  return l.length ? `<span class="tiny muted mat-legende">${l.join(' · ')} <a href="#chef" data-action="brigade-vue" data-v="materiel">Matériel</a></span>` : '';
+  const g = Math.min(n, giletsValides(m, T).total), a = m.tti ? Math.min(n, ttiValides(m, T, 'af')) : n, tz = tasersActifs(m, T), r = enRodage(z, T);
+  const chip = (txt, mal) => `<span class="ag-chip${mal ? ' mal' : ''}">${txt}</span>`;
+  return `<div class="ag-resume">${chip(`<b>${g}/${n}</b> gilets`, g < n)}${chip(`<b>${a}/${n}</b> TTI arme`, a < n)}${tz ? chip(`<b>${tz}</b> taser${tz > 1 ? 's' : ''}`) : ''}${r ? chip(`<b>${r}</b> recrue${r > 1 ? 's' : ''} à ½`) : ''}<a href="#chef" class="ag-lien" data-action="brigade-vue" data-v="materiel">Matériel ›</a></div>`;
 }
