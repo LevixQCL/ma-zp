@@ -1,6 +1,6 @@
 // Magasin et armurerie (oct. 2026, onglet Brigade › Matériel) : la dotation individuelle des agents.
 // Tenue (polos, chaussures) payée avec la masse d'habillement, gilets pare-balles qui périment, armement collectif
-// (taser, avec agents certifiés), bodycams, équipement de maintien de l'ordre. Trois façons d'acheter, comme une vraie zone :
+// (taser, avec agents brevetés), bodycams, équipement de maintien de l'ordre. Trois façons d'acheter, comme une vraie zone :
 // la centrale d'achat fédérale (prix normal, livraison en 3 jours), la procédure négociée (cher, le lendemain)
 // et le marché lancé par une zone, auquel les autres adhèrent (moins cher pour tous, plus il y a de zones).
 // Rien ici ne touche au niveau de matériel des services (z.equip), qui reste la grande décision « Équiper ».
@@ -100,7 +100,7 @@ export function fermerMarches(state, T) {
 }
 
 /**
- * Le matériel d'une zone au tour de 20:00 : ordres (masse, commandes, marchés, certifications), livraisons, usure,
+ * Le matériel d'une zone au tour de 20:00 : ordres (masse, commandes, marchés, brevets taser), livraisons, usure,
  * péremptions. Pose z.risqueMat (lu par risqueBlessure) et applique moral et satisfaction. Renvoie les lignes du rapport.
  */
 export function materielDuTour(state, z, o, T) {
@@ -135,12 +135,12 @@ export function materielDuTour(state, z, o, T) {
     const mk = ms.find((x) => x.id === (ad && ad.id) && !x.clos && x.ferme >= T);
     if (mk && !mk.part[z.uid]) { mk.part[z.uid] = Math.max(1, Math.min(MAT.lotsMax, Math.round(ad.lots || 1))); L.push(`Adhésion au marché ${ARTICLES[mk.item].nom.toLowerCase()} de ${(state.zones[mk.lanceur] || {}).nom || 'une zone voisine'}.`); }
   }
-  // Certification taser : 2 agents absents demain, 1 k€.
+  // Brevet taser : 2 agents absents demain, 1 k€.
   if (om.certifier && (m.taser || 0) > 0 && z.budget >= MAT.taser.cert.prix) {
-    z.budget -= MAT.taser.cert.prix; (z._compta ||= []).push({ k: 'materiel', l: 'Certification taser', v: -MAT.taser.cert.prix });
+    z.budget -= MAT.taser.cert.prix; (z._compta ||= []).push({ k: 'materiel', l: 'Brevet taser', v: -MAT.taser.cert.prix });
     m.certifies.push({ n: MAT.taser.cert.agents, fin: T + 1 + MAT.taser.cert.validite });
-    (z.blesses ||= []).push({ n: MAT.taser.cert.agents, retour: T + 2, motif: 'certification taser' });
-    L.push(`Certification taser : ${MAT.taser.cert.agents} agents en formation demain, certifiés pour ${MAT.taser.cert.validite} jours.`);
+    (z.blesses ||= []).push({ n: MAT.taser.cert.agents, retour: T + 2, motif: 'brevet taser' });
+    L.push(`Brevet taser : ${MAT.taser.cert.agents} agents en formation demain, brevetés pour ${MAT.taser.cert.validite} jours.`);
   }
   // Livraisons.
   for (const c of m.commandes.filter((x) => x.arrive <= T)) livrer(z, m, c, T, L);
@@ -151,7 +151,7 @@ export function materielDuTour(state, z, o, T) {
   if (perimes) L.push(`${perimes} gilets pare-balles arrivent en fin de validité ce soir.`);
   m.gilets = (m.gilets || []).filter((g) => g.fin > T - 10); // on garde les périmés quelques jours pour l'affichage
   const dc = (m.certifies || []).filter((c) => c.fin === T).reduce((s, c) => s + c.n, 0);
-  if (dc) L.push(`${dc} certifications taser expirent : recyclage nécessaire.`);
+  if (dc) L.push(`${dc} agents perdent leur brevet taser ce soir : recyclage nécessaire.`);
   if (m.bodycam) { const e = Math.round(Math.ceil(m.bodycam / MAT.bodycam.lot) * MAT.bodycam.entretien * 100) / 100; z.budget -= e; (z._compta ||= []).push({ k: 'materiel', l: 'Maintenance des bodycams', v: -e }); }
   // Effets.
   z.risqueMat = risqueMateriel(z, T);
@@ -228,7 +228,7 @@ export function abimer(z, item, n, rng) {
 export function degatsDuSoir(state, z, T, avant) {
   if (!z.materiel || !Array.isArray(z.blesses)) return [];
   const rng = makeRng(`${state.seed}:s${state.season}:t${T}:degats:${z.uid}`), L = [];
-  const nouveaux = z.blesses.slice(avant).filter((b) => !/certification/.test(b.motif || '')).reduce((s, b) => s + (b.n || 0), 0);
+  const nouveaux = z.blesses.slice(avant).filter((b) => !/brevet|certification/.test(b.motif || '')).reduce((s, b) => s + (b.n || 0), 0);
   let g = 0; for (let i = 0; i < nouveaux; i++) if (rng.chance(0.5)) g++;
   const t = abimer(z, 'gilets', g, rng); if (t) L.push(`Magasin : ${t[0].toLowerCase()}${t.slice(1)} (blessés du jour).`);
   return L;
