@@ -37,6 +37,16 @@ export const MAT = {
   // Non-droit : casques et boucliers.
   nd: { force: 0.08, risque: 0.2, malus: 1.1, casse: 0.25 },
   masseRecrue: 1,
+  // Recyclage TTI (techniques et tactiques d'intervention) : avec arme à feu (tir) et sans arme à feu (maîtrise).
+  tti: { validite: 28, groupe: 4, af: { nom: 'TTI avec arme à feu', prix: 1 }, saf: { nom: 'TTI sans arme à feu', prix: 0.5 },
+    seuilAF: 0.1, coupAF: 0.8, risqueSAF: 0.3, seuilSAF: 0.3, satSAF: -0.2, groupesMax: 4 },
+  // Fonctions matériel des figures (dès leur premier surnom) : une figure par fonction.
+  fonctions: {
+    moniteurTTI: { nom: 'Moniteur TTI', texte: 'Recyclages TTI à moitié prix, valables 35 jours au lieu de 28.' },
+    moniteurTaser: { nom: 'Moniteur taser', texte: 'Brevets taser à moitié prix, valables 21 jours au lieu de 14.' },
+    magasinier: { nom: 'Magasinier', texte: 'Plus aucun retard de livraison, masse d’habillement jusqu’à 16 points.' },
+    acheteur: { nom: 'Acheteur', texte: 'Moitié moins de lots recalés, procédure négociée à +20 % au lieu de +40 %.' },
+  },
   marche: { duree: 2, livraison: 2, base: 0.95, remiseParZone: 0.05, remiseMax: 0.25, psLanceur: 2 },
 };
 export const ARTICLES = {
@@ -54,8 +64,46 @@ export function creerMateriel(z, T = 1) {
   return {
     masse: 6, tenue: 60, chaussures: 70,
     gilets: [{ n: a, fin: T + 5, m: 'std' }, { n: a, fin: T + 16, m: 'std' }, { n: n - 2 * a, fin: T + 30, m: 'std' }],
-    taser: 0, certifies: [], bodycam: 0, gnep: 0, commandes: [],
+    taser: 0, certifies: [], bodycam: 0, gnep: 0, commandes: [], tti: ttiDepart(n, T),
   };
+}
+/** Qualifications TTI de départ : tout le monde à jour, mais recyclé à des dates différentes. */
+export function ttiDepart(n, T) {
+  const a = Math.ceil(n / 3);
+  return { af: [{ n: a, fin: T + 6 }, { n: a, fin: T + 18 }, { n: n - 2 * a, fin: T + 31 }], saf: [{ n: a, fin: T + 9 }, { n: a, fin: T + 21 }, { n: n - 2 * a, fin: T + 33 }] };
+}
+/** Agents à jour de leur recyclage TTI (type 'af' ou 'saf'). */
+export const ttiValides = (m, T, type) => Math.min(1e9, ((m && m.tti && m.tti[type]) || []).filter((x) => x.fin > T).reduce((s, x) => s + x.n, 0));
+/** Part des agents dont le recyclage est échu. */
+export const trouTTI = (z, T, type) => { const n = Math.max(1, (z && z.agents) || 1); return Math.max(0, n - ttiValides(z && z.materiel, T, type)) / n; };
+/** Intervention : sans recyclage TTI avec arme à feu, un agent ne peut plus porter son arme (au-delà de 10 % de la zone). */
+export const facteurTTI = (z, T) => { const t = trouTTI(z, T, 'af'); return t > MAT.tti.seuilAF ? 1 - MAT.tti.coupAF * (t - MAT.tti.seuilAF) : 1; };
+/** Figure qui tient une fonction matériel (ou null). */
+export function fonction(z, k) {
+  const role = z && z.fonctions && z.fonctions[k];
+  const f = role && (z.equipe || []).find((m) => m.role === role);
+  return f && (f.niveau || 0) >= 1 ? f : null;
+}
+/** Fonctions demandées dans les ordres : { fonction: rôle | null }. Une figure ne tient qu'une fonction. */
+export function appliquerFonctions(z, dem) {
+  if (!dem || typeof dem !== 'object') return [];
+  const L = [], f = (z.fonctions ||= {});
+  for (const [k, role] of Object.entries(dem)) {
+    if (!MAT.fonctions[k] || f[k] === role) continue;
+    if (role == null) { delete f[k]; continue; }
+    const fig = (z.equipe || []).find((m) => m.role === role);
+    if (!fig || (fig.niveau || 0) < 1) continue;
+    for (const k2 of Object.keys(f)) if (f[k2] === role) delete f[k2];
+    f[k] = role; L.push(`Fonction : ${fig.prenom} ${fig.nom} devient ${MAT.fonctions[k].nom.toLowerCase()}.`);
+  }
+  return L;
+}
+/** Recyclage : les agents dont la qualification expire le plus tôt passent d'abord. */
+function recycler(m, type, n, fin) {
+  const l = (m.tti ||= { af: [], saf: [] })[type] ||= [];
+  let r = n;
+  for (const x of l.sort((a, b) => a.fin - b.fin)) { const k = Math.min(r, x.n); x.n -= k; r -= k; if (!r) break; }
+  m.tti[type] = l.filter((x) => x.n > 0); m.tti[type].push({ n, fin });
 }
 export const mat = (z) => (z.materiel ||= creerMateriel(z, 1));
 export const certifiesActifs = (m, T) => (m.certifies || []).filter((c) => c.fin > T).reduce((s, c) => s + c.n, 0);
@@ -74,6 +122,7 @@ export function risqueMateriel(z, T) {
   let r = (aj * MAT.gilets.ajuste.risque + std + trou * MAT.gilets.perime) / n;
   r *= 1 - MAT.taser.risque * tasersActifs(m, T);
   if (m.chaussures >= 50) r *= 0.97; else if (m.chaussures < 25) r *= 1.08;
+  if (m.tti) r *= 1 + MAT.tti.risqueSAF * trouTTI(z, T, 'saf');
   return r;
 }
 
@@ -89,7 +138,7 @@ function livrer(z, m, c, T, lignes, rng) {
   const a = ARTICLES[c.item], q = gammeDe(c.q);
   let lots = c.lots, recale = '';
   // Lot recalé au contrôle de réception (surtout en gamme économique) : renvoyé, remboursé à moitié.
-  if (rng && q.defaut && rng.chance(q.defaut)) {
+  if (rng && q.defaut && rng.chance(q.defaut * (fonction(z, 'acheteur') ? 0.5 : 1))) {
     lots -= 1; const r = Math.round(a.prix * q.prix * 0.5 * 10) / 10; z.budget += r; (z._compta ||= []).push({ k: 'materiel', l: `Lot recalé : ${a.nom.toLowerCase()}`, v: r });
     recale = ` Un lot est recalé au contrôle de réception (${a.lot} ${a.nom.toLowerCase()} renvoyés, ${r} k€ remboursés).`;
   }
@@ -135,8 +184,10 @@ export function materielDuTour(state, z, o, T) {
   const m = mat(z), L = (z.rapportMat || []).splice(0), om = (o && o.materiel) || {};
   m._T = T; z._blessesAvant = (z.blesses || []).length;
   if (z.psMarche) { z._ps = (z._ps || 0) + z.psMarche; delete z.psMarche; }
+  L.push(...appliquerFonctions(z, om.fonctions));
   // Masse d'habillement.
-  m.masse = Math.min(MAT.masse.max, m.masse + MAT.masse.parJour);
+  const masseMax = fonction(z, 'magasinier') ? 16 : MAT.masse.max;
+  m.masse = Math.min(masseMax, m.masse + MAT.masse.parJour);
   for (const k of Array.isArray(om.masse) ? om.masse : []) {
     const c = MAT[k] && MAT[k].cout;
     if ((k === 'tenue' || k === 'chaussures') && m.masse >= c) { m.masse -= c; m[k] = 100; L.push(k === 'tenue' ? 'Masse d’habillement : polos et t-shirts neufs pour tout le monde.' : 'Masse d’habillement : chaussures d’intervention neuves.'); }
@@ -146,7 +197,8 @@ export function materielDuTour(state, z, o, T) {
     const a = ARTICLES[c && c.item], v = MAT.voies[c && c.voie], lots = Math.max(1, Math.min(MAT.lotsMax, Math.round(Number(c && c.lots) || 1)));
     if (!a || !v) continue;
     const q = MAT.gammes[c.q] ? c.q : 'std';
-    const cout = Math.round(lots * a.prix * v.mult * gammeDe(q).prix * 10) / 10;
+    const mult = c.voie === 'negociee' && fonction(z, 'acheteur') ? 1.2 : v.mult;
+    const cout = Math.round(lots * a.prix * mult * gammeDe(q).prix * 10) / 10;
     if (z.budget < cout) { L.push(`Commande ${a.nom.toLowerCase()} refusée : budget insuffisant (${cout} k€).`); continue; }
     z.budget -= cout; (z._compta ||= []).push({ k: 'materiel', l: `${a.nom} (${v.nom.toLowerCase()})`, v: -cout });
     m.commandes.push({ item: c.item, lots, arrive: T + v.delai, voie: c.voie, q });
@@ -164,17 +216,32 @@ export function materielDuTour(state, z, o, T) {
     if (mk && !mk.part[z.uid]) { mk.part[z.uid] = Math.max(1, Math.min(MAT.lotsMax, Math.round(ad.lots || 1))); L.push(`Adhésion au marché ${ARTICLES[mk.item].nom.toLowerCase()} de ${(state.zones[mk.lanceur] || {}).nom || 'une zone voisine'}.`); }
   }
   // Brevet taser : 2 agents absents demain, 1 k€.
-  if (om.certifier && (m.taser || 0) > 0 && z.budget >= MAT.taser.cert.prix) {
-    z.budget -= MAT.taser.cert.prix; (z._compta ||= []).push({ k: 'materiel', l: 'Brevet taser', v: -MAT.taser.cert.prix });
-    m.certifies.push({ n: MAT.taser.cert.agents, fin: T + 1 + MAT.taser.cert.validite });
+  const mt = fonction(z, 'moniteurTaser'), prixB = MAT.taser.cert.prix * (mt ? 0.5 : 1), valB = mt ? 21 : MAT.taser.cert.validite;
+  if (om.certifier && (m.taser || 0) > 0 && z.budget >= prixB) {
+    z.budget -= prixB; (z._compta ||= []).push({ k: 'materiel', l: 'Brevet taser', v: -prixB });
+    m.certifies.push({ n: MAT.taser.cert.agents, fin: T + 1 + valB });
     (z.blesses ||= []).push({ n: MAT.taser.cert.agents, retour: T + 2, motif: 'brevet taser' });
-    L.push(`Brevet taser : ${MAT.taser.cert.agents} agents en formation demain, brevetés pour ${MAT.taser.cert.validite} jours.`);
+    L.push(`Brevet taser : ${MAT.taser.cert.agents} agents en formation demain${mt ? ` avec ${mt.prenom} ${mt.nom} (moniteur)` : ''}, brevetés pour ${valB} jours.`);
+  }
+  // Recyclages TTI : par groupes de 4 agents, en formation demain (au stand de tir : moitié prix et moitié moins d'absents pour le tir).
+  if (!m.tti) m.tti = ttiDepart(z.agents || 20, T);
+  for (const rc of Array.isArray(om.recyclage) ? om.recyclage.slice(0, 2) : []) {
+    const type = rc && rc.type === 'saf' ? 'saf' : rc && rc.type === 'af' ? 'af' : null; if (!type) continue;
+    const g = Math.max(1, Math.min(MAT.tti.groupesMax, Math.round(Number(rc.groupes) || 1))), n = g * MAT.tti.groupe;
+    const mo = fonction(z, 'moniteurTTI'), stand = type === 'af' && z.infra && z.infra.tir;
+    const cout = Math.round(g * MAT.tti[type].prix * (mo ? 0.5 : 1) * (stand ? 0.5 : 1) * 10) / 10;
+    if (z.budget < cout) { L.push(`Recyclage ${MAT.tti[type].nom} refusé : budget insuffisant.`); continue; }
+    z.budget -= cout; (z._compta ||= []).push({ k: 'materiel', l: `Recyclage ${MAT.tti[type].nom}`, v: -cout });
+    const abs = stand ? Math.floor(g / 2) : g; // demi-journée par roulement : un agent absent par groupe de 4
+    if (abs) (z.blesses ||= []).push({ n: abs, retour: T + 2, motif: 'recyclage TTI' });
+    recycler(m, type, n, T + 1 + MAT.tti.validite + (mo ? 7 : 0));
+    L.push(`Recyclage ${MAT.tti[type].nom} : ${n} agents demain${stand ? ' au stand de tir' : ''}${mo ? ` avec ${mo.prenom} ${mo.nom}` : ''} (${abs ? `${abs} absent${abs > 1 ? 's' : ''} demain, par roulement` : 'sans absence'}), à jour pour ${MAT.tti.validite + (mo ? 7 : 0)} jours.`);
   }
   // Livraisons.
   const rl = makeRng(`${state.seed}:s${state.season}:t${T}:livr:${z.uid}`);
   for (const c of m.commandes.filter((x) => x.arrive <= T)) {
     // Rupture chez le fournisseur : la centrale ou le marché annoncent un retard (une seule fois par commande).
-    const pr = MAT.retard[c.voie] || 0;
+    const pr = fonction(z, 'magasinier') ? 0 : MAT.retard[c.voie] || 0;
     if (!c.retard && pr && rl.chance(pr)) { c.retard = 1; c.arrive = T + MAT.retard.jours; L.push(`Retard de livraison : rupture de stock chez le fournisseur, ${ARTICLES[c.item].nom.toLowerCase()} attendus dans ${MAT.retard.jours} jours.`); continue; }
     livrer(z, m, c, T, L, rl);
     c.livre = true;
@@ -192,6 +259,8 @@ export function materielDuTour(state, z, o, T) {
   m.gilets = (m.gilets || []).filter((g) => g.fin > T - 10); // on garde les périmés quelques jours pour l'affichage
   const dc = (m.certifies || []).filter((c) => c.fin === T).reduce((s, c) => s + c.n, 0);
   if (dc) L.push(`${dc} agents perdent leur brevet taser ce soir : recyclage nécessaire.`);
+  for (const type of ['af', 'saf']) { const e = ((m.tti && m.tti[type]) || []).filter((x) => x.fin === T).reduce((s, x) => s + x.n, 0); if (e) L.push(`${e} agents arrivent au terme de leur ${MAT.tti[type].nom} ce soir : recyclage à prévoir.`); }
+  if (m.tti) for (const type of ['af', 'saf']) m.tti[type] = m.tti[type].filter((x) => x.fin > T - 10);
   if (m.bodycam) { const e = Math.round(Math.ceil(m.bodycam / MAT.bodycam.lot) * MAT.bodycam.entretien * 100) / 100; z.budget -= e; (z._compta ||= []).push({ k: 'materiel', l: 'Maintenance des bodycams', v: -e }); }
   // Céder du matériel à une autre zone (son surplus seulement).
   for (const cd of Array.isArray(om.ceder) ? om.ceder.slice(0, 2) : []) { const t = ceder(state, z, cd, T); if (t) L.push(t); }
@@ -208,6 +277,7 @@ export function materielDuTour(state, z, o, T) {
   z.moral += dm;
   const bc = Math.min(MAT.bodycam.max, Math.floor((m.bodycam || 0) / MAT.bodycam.lot));
   if (bc) z.satisfaction += MAT.bodycam.sat * bc;
+  if (trouTTI(z, T, 'saf') > MAT.tti.seuilSAF) { z.satisfaction += MAT.tti.satSAF; }
   return L;
 }
 
@@ -243,6 +313,9 @@ export function ordresMaterielRobot(z, state) {
     if (mk && giletsAPrevoir(z, T, 2) === 0) om.adherer.push({ id: mk.id, lots });
     else om.commandes.push({ item: 'gilets', lots, voie: giletsAPrevoir(z, T, 1) > 0 ? 'negociee' : 'centrale' });
   }
+  // Recyclages TTI : les agents dont la qualification échoit dans 3 jours.
+  if (m.tti) { om.recyclage = [];
+    for (const type of ['af', 'saf']) { const manque = Math.max(0, (z.agents || 0) - ttiValides(m, T + 3, type)); if (manque > 0) om.recyclage.push({ type, groupes: Math.min(MAT.tti.groupesMax, Math.ceil(manque / MAT.tti.groupe)) }); } }
   // Casques et boucliers pour le non-droit, quand le budget le permet.
   if ((m.gnep || 0) < MAT.gnep.lot && z.budget > 15 && !(m.commandes || []).some((c) => c.item === 'gnep')) om.commandes.push({ item: 'gnep', lots: 1, voie: 'centrale' });
   // Céder des gilets en trop à une zone qui en manque.
@@ -281,7 +354,7 @@ export function abimer(z, item, n, rng) {
 export function degatsDuSoir(state, z, T, avant) {
   if (!z.materiel || !Array.isArray(z.blesses)) return [];
   const rng = makeRng(`${state.seed}:s${state.season}:t${T}:degats:${z.uid}`), L = [];
-  const nouveaux = z.blesses.slice(avant).filter((b) => !/brevet|certification/.test(b.motif || '')).reduce((s, b) => s + (b.n || 0), 0);
+  const nouveaux = z.blesses.slice(avant).filter((b) => !/brevet|certification|recyclage/.test(b.motif || '')).reduce((s, b) => s + (b.n || 0), 0);
   let g = 0; for (let i = 0; i < nouveaux; i++) if (rng.chance(0.5)) g++;
   const t = abimer(z, 'gilets', g, rng); if (t) L.push(`Magasin : ${t[0].toLowerCase()}${t.slice(1)} (blessés du jour).`);
   return L;
@@ -316,6 +389,7 @@ export function ceder(state, z, cd, T) {
 export function inspecter(z, T) {
   const m = z.materiel, I = MAT.inspection, t = trouGilets(z, T), fautes = [];
   if (t > I.seuil) { z.budget -= I.amende; (z._compta ||= []).push({ k: 'materiel', l: 'Inspection : gilets non conformes', v: -I.amende }); z.reputation -= I.rep; fautes.push(`${Math.round(t * 100)} % d’agents sans gilet valide (${I.amende} k€ de mise en conformité, réputation −${I.rep})`); }
+  if (m.tti && trouTTI(z, T, 'af') > 0.2) { z.reputation -= I.rep; fautes.push(`${Math.round(trouTTI(z, T, 'af') * 100)} % d’agents armés sans recyclage TTI avec arme à feu (réputation −${I.rep})`); }
   if (m.masse >= MAT.masse.max) { m.masse -= I.masse; fautes.push(`masse d’habillement accumulée sans être utilisée (${I.masse} points retirés)`); }
   m.inspection = { t: T, ok: !fautes.length };
   if (!fautes.length) { z.moral += I.moral; return `Inspection surprise du magasin : rien à signaler (moral +${I.moral}).`; }
@@ -324,7 +398,8 @@ export function inspecter(z, T) {
 /** Recrues qui sortent de l'académie : un peu de masse pour leur tenue, et un rappel s'il manque des gilets. */
 export function accueillirRecrues(z, n, T) {
   if (!z.materiel || !n) return null;
-  const m = z.materiel; m.masse = Math.min(MAT.masse.max, m.masse + MAT.masseRecrue * n);
+  const m = z.materiel; m.masse = Math.min(fonction(z, 'magasinier') ? 16 : MAT.masse.max, m.masse + MAT.masseRecrue * n);
+  if (m.tti) for (const type of ['af', 'saf']) m.tti[type].push({ n, fin: T + MAT.tti.validite }); // sortie d'école : recyclages à jour
   const manque = Math.max(0, (z.agents || 0) - giletsValides(m, T).total);
   return manque ? `Magasin : ${manque} agent${manque > 1 ? 's' : ''} (dont tes recrues) sans gilet valide. Commande-les avant de les envoyer sur le terrain.` : null;
 }

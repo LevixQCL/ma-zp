@@ -5,7 +5,7 @@ import { newZone } from '../js/engine/zone.js';
 import { BOT_PROFILES, botOrders } from '../js/engine/bots.js';
 import { adaptatif } from './strat-adaptatif.mjs';
 import { appelDuJour, optionsAppel } from '../js/engine/brigade.js';
-import { mat, giletsValides, certifiesActifs, MAT } from '../js/engine/materiel.js';
+import { mat, giletsValides, certifiesActifs, MAT, ttiValides } from '../js/engine/materiel.js';
 const N = Number(process.argv[2] || 8), filtre = process.argv[3];
 const moy = (a) => a.reduce((s, x) => s + x, 0) / a.length;
 
@@ -27,6 +27,8 @@ function entretien(z, st, voie = 'centrale', opts = {}) {
       if (!ouvert && !enMarche) om.lancer = { item: art, lots };
     } else om.commandes.push({ item: art, lots, voie, q: opts.q || 'std' });
   }
+  if (!opts.sansTTI && m.tti) { om.recyclage = []; for (const type of ['af', 'saf']) { const manque = Math.max(0, z.agents - ttiValides(m, T + 2, type)); if (manque > 0) om.recyclage.push({ type, groupes: Math.min(4, Math.ceil(manque / 4)) }); } }
+  if (opts.fonctions) om.fonctions = opts.fonctions;
   return om;
 }
 function equiperPlus(z, st, om) {
@@ -81,6 +83,8 @@ const pols = {
   'entretien économique': { gerer: 1, q: 'eco' },
   'entretien haut de gamme': { gerer: 1, q: 'qualite' },
   'entretien + casques (non-droit)': { gerer: 1, casques: 1 },
+  'entretien sans recyclage TTI': { gerer: 1, sansTTI: 1 },
+  'entretien + fonctions (moniteur TTI, magasinier)': { gerer: 1, fonctions: { moniteurTTI: 'inter', magasinier: 'admin' } },
   'fonceur, matériel négligé': { fonceur: 1 },
   'fonceur, gilets entretenus': { fonceur: 1, gerer: 1 },
 };

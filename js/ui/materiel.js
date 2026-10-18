@@ -1,12 +1,13 @@
 // Onglet Brigade › Matériel (oct. 2026) : le magasin et l'armurerie de la zone.
 // Les commandes partent avec les ordres du soir (S.draft.materiel) ; tout se règle au tour de 20:00 (engine/materiel.js).
 import { S, esc, myZone, fmtK } from './common.js';
-import { MAT, ARTICLES, creerMateriel, giletsValides, certifiesActifs, tasersActifs, trouGilets, facteurGilets, prixMarche, gammeDe, surplus } from '../engine/materiel.js';
+import { COULEUR_ROLE, initiales } from './equipe.js';
+import { MAT, ARTICLES, creerMateriel, giletsValides, certifiesActifs, tasersActifs, trouGilets, facteurGilets, prixMarche, gammeDe, surplus, ttiValides, trouTTI, facteurTTI, fonction, ttiDepart } from '../engine/materiel.js';
 
 const IMG = (k) => `img/materiel/${k}.webp`;
 const ico = (k, c = '') => `<img class="mat-ico${c ? ` ${c}` : ''}" src="${IMG(k)}" alt="" loading="lazy">`;
 
-export const ordresMatVides = () => ({ masse: [], commandes: [], lancer: null, adherer: [], certifier: false, ceder: [] });
+export const ordresMatVides = () => ({ masse: [], commandes: [], lancer: null, adherer: [], certifier: false, ceder: [], recyclage: [], fonctions: {} });
 function om() { if (!S.draft) return ordresMatVides(); return (S.draft.materiel ||= ordresMatVides()); }
 
 /** Dotation de la zone (avant son premier tour avec le magasin : celle qu'elle recevra ce soir). */
@@ -77,6 +78,8 @@ export function materielVueHtml() {
       ${m.inspection ? `<span class="tiny ${m.inspection.ok ? 'muted' : ''}" style="${m.inspection.ok ? '' : 'color:var(--amber)'}">Dernière inspection surprise : jour ${m.inspection.t}, ${m.inspection.ok ? 'rien à signaler' : 'remarques (voir le rapport de ce soir-là)'}.</span>` : '<span class="tiny muted">Une inspection surprise peut passer : gilets périmés en service et masse inutilisée sont sanctionnés.</span>'}
     </section>
 
+    ${ttiHtml(z, m, T, o)}
+
     <section class="card mat-bloc">
       <div class="mat-tete">${ico('tenue', 's')}<div class="col grow" style="gap:1px;min-width:0"><b>Tenue</b><span class="tiny muted">masse d’habillement : ${m.masse}/${MAT.masse.max} points, +${MAT.masse.parJour} par jour</span></div>${ico('chaussures', 's')}</div>
       <div class="mat-jauge"><span>Polos, t-shirts</span><span class="barre"><i style="width:${m.tenue}%;background:${coul(m.tenue, 75, 45)}"></i></span><b>${m.tenue}</b></div>
@@ -112,11 +115,52 @@ export function materielVueHtml() {
       <span class="tiny muted">Payé à la clôture, livré ${MAT.marche.livraison} jours après. Celui qui lance gagne ${MAT.marche.psLanceur} PS par zone qui adhère.</span>
     </section>
 
+    ${fonctionsHtml(z, o)}
     ${entreZonesHtml(z, T, o)}
     ${enCmd.length ? `<section class="card mat-bloc"><div class="mat-tete">${ico('marche', 's')}<div class="col grow" style="gap:1px"><b>Livraisons attendues</b><span class="small">${esc(enCmd.join(' · '))}</span></div></div></section>` : ''}
     ${m.hs ? `<p class="tiny muted" style="margin:0">${m.hs} objet${m.hs > 1 ? 's' : ''} perdu${m.hs > 1 ? 's' : ''} en intervention depuis le début de la saison.</p>` : ''}
     <p class="tiny muted" style="margin:0">Les commandes partent avec tes ordres du soir et sont payées à 20:00 si le budget le permet.</p>
   </section>`;
+}
+
+/** Recyclage TTI avec et sans arme à feu : qui est à jour, qui arrive à échéance, groupes envoyés ce soir. */
+function ttiHtml(z, m0, T, o) {
+  const m = m0.tti ? m0 : { ...m0, tti: ttiDepart(z.agents || 20, T) }, n = z.agents || 0, zz = { ...z, materiel: m };
+  const mo = fonction(z, 'moniteurTTI'), stand = !!(z.infra && z.infra.tir);
+  const ligne = (type) => {
+    const v = Math.min(n, ttiValides(m, T, type)), bientot = (m.tti[type] || []).filter((x) => x.fin > T && x.fin <= T + 3).reduce((s, x) => s + x.n, 0);
+    const r = (o.recyclage || []).find((x) => x.type === type), g = r ? r.groupes : 0;
+    const prix = MAT.tti[type].prix * (mo ? 0.5 : 1) * (type === 'af' && stand ? 0.5 : 1);
+    const pct = n ? Math.round((v / n) * 100) : 100;
+    return `<div class="col" style="gap:5px">
+      <div class="mat-jauge"><span>${type === 'af' ? 'Avec arme à feu' : 'Sans arme à feu'}</span><span class="barre"><i style="width:${pct}%;background:${pct >= 90 ? 'var(--green)' : pct >= 70 ? 'var(--amber)' : 'var(--red)'}"></i></span><b>${v}/${n}</b></div>
+      ${bientot ? `<span class="tiny" style="color:var(--amber)">${bientot} agent${bientot > 1 ? 's' : ''} à recycler d’ici 3 jours.</span>` : ''}
+      <div class="mat-step"><button type="button" class="btn small ghost" data-action="mat-tti" data-t="${type}" data-d="-1" ${!g ? 'disabled' : ''} aria-label="Un groupe de moins">−</button>
+        <span>${g ? `<b>${g}</b> groupe${g > 1 ? 's' : ''} · ${g * MAT.tti.groupe} agents · ${fmtK(g * prix)}` : `Recycler par groupes de ${MAT.tti.groupe} · ${fmtK(prix)} le groupe`}</span>
+        <button type="button" class="btn small ghost" data-action="mat-tti" data-t="${type}" data-d="1" ${g >= MAT.tti.groupesMax ? 'disabled' : ''} aria-label="Un groupe de plus">+</button></div></div>`;
+  };
+  const ft = facteurTTI(zz, T), ts = trouTTI(zz, T, 'saf');
+  return `<section class="card mat-bloc${ft < 1 ? ' alerte' : ''}">
+    <div class="mat-tete">${ico('taser', 's')}<div class="col grow" style="gap:1px;min-width:0"><b>Recyclage TTI</b><span class="tiny muted">techniques et tactiques d’intervention, valable ${MAT.tti.validite + (mo ? 7 : 0)} jours</span></div></div>
+    ${ligne('af')}${ligne('saf')}
+    <p class="small" style="margin:0">${ft < 1 ? `<b style="color:var(--red)">Des agents ne peuvent plus porter leur arme : Intervention −${Math.round((1 - ft) * 100)} %, assauts du non-droit affaiblis.</b>` : 'Sans recyclage avec arme à feu, un agent ne porte plus son arme : moins d’Intervention et d’assauts. '}${ts > MAT.tti.seuilSAF ? ' <b>Sans arme à feu en retard : plus de blessés et de plaintes.</b>' : ''}</p>
+    <span class="tiny muted">Un agent absent par groupe de ${MAT.tti.groupe} (demi-journée par roulement)${stand ? ', tir au stand : moitié prix et moitié moins d’absents' : ''}${mo ? `. Moniteur : ${esc(mo.prenom)} ${esc(mo.nom)}` : ''}. Les recrues sortent d’école à jour.</span>
+  </section>`;
+}
+
+/** Fonctions matériel : une figure (dès son premier surnom) par fonction. */
+function fonctionsHtml(z, o) {
+  const figs = (z.equipe || []).filter((m) => (m.niveau || 0) >= 1);
+  const cur = { ...(z.fonctions || {}), ...(o.fonctions || {}) };
+  const lignes = Object.entries(MAT.fonctions).map(([k, f]) => {
+    const role = cur[k];
+    const boutons = figs.map((m) => `<button type="button" class="mat-fig${role === m.role ? ' on' : ''}" data-action="mat-fonction" data-f="${k}" data-role="${m.role}" style="--c:${COULEUR_ROLE[m.role]}" title="${esc(m.prenom)} ${esc(m.nom)}" aria-pressed="${role === m.role}">${esc(initiales(m))}</button>`).join('');
+    const tient = role && figs.find((m) => m.role === role);
+    return `<div class="mat-fonction"><div class="col" style="gap:2px;min-width:0"><span class="small"><b>${esc(f.nom)}</b>${tient ? ` · ${esc(tient.prenom)} ${esc(tient.nom)}` : ''}</span><span class="tiny muted">${esc(f.texte)}</span></div><div class="row" style="gap:4px;flex-wrap:wrap">${boutons}</div></div>`;
+  }).join('');
+  return `<section class="card mat-bloc"><b>Fonctions de tes figures</b>
+    ${figs.length ? lignes : '<p class="tiny muted" style="margin:0">Une figure peut prendre une fonction matériel dès son premier surnom (vue Équipe).</p>'}
+    ${figs.length ? '<span class="tiny muted">Une figure ne tient qu’une fonction. Le changement prend effet ce soir à 20:00.</span>' : ''}</section>`;
 }
 
 /** Entre zones : tes surplus, les zones qui manquent de gilets, ce que tu leur cèdes ce soir. */
@@ -152,6 +196,9 @@ export function actionMateriel(a, el) {
   }
   if (a === 'mat-lots') { const c = o.commandes.find((x) => x.item === el.dataset.k); if (c) c.lots = Math.max(1, Math.min(MAT.lotsMax, c.lots + Number(el.dataset.d))); }
   if (a === 'mat-cert') o.certifier = !o.certifier;
+  if (a === 'mat-tti') { o.recyclage ||= []; const t = el.dataset.t; let r = o.recyclage.find((x) => x.type === t); if (!r) { r = { type: t, groupes: 0 }; o.recyclage.push(r); } r.groupes = Math.max(0, Math.min(MAT.tti.groupesMax, r.groupes + Number(el.dataset.d))); o.recyclage = o.recyclage.filter((x) => x.groupes > 0); }
+  if (a === 'mat-fonction') { o.fonctions ||= {}; const f = el.dataset.f, role = el.dataset.role, cur = { ...(z.fonctions || {}), ...o.fonctions };
+    if (cur[f] === role) o.fonctions[f] = null; else { for (const k of Object.keys(cur)) if (cur[k] === role && k !== f) o.fonctions[k] = null; o.fonctions[f] = role; } }
   if (a === 'mat-gamme') { const c = o.commandes.find((x) => x.item === el.dataset.k); if (c) c.q = el.dataset.q; }
   if (a === 'mat-ceder') { o.ceder ||= []; const u = el.dataset.cible, i = o.ceder.findIndex((x) => x.cible === u); if (i >= 0) o.ceder.splice(i, 1); else if (o.ceder.length < 2) o.ceder.push({ cible: u, item: 'gilets', n: Number(el.dataset.n) || 0 }); }
   if (a === 'mat-adh') { const id = el.dataset.id, i = o.adherer.findIndex((x) => x.id === id); if (i >= 0) o.adherer.splice(i, 1); else o.adherer.push({ id, lots: 2 }); }
@@ -159,4 +206,29 @@ export function actionMateriel(a, el) {
   if (a === 'mat-lancer-lots' && o.lancer) o.lancer.lots = Math.max(1, Math.min(MAT.lotsMax, o.lancer.lots + Number(el.dataset.d)));
   S.ordersDirty = true;
   return true;
+}
+
+/**
+ * Pions des Ordres : l'équipement se voit sur les agents de terrain (Intervention, Roulage, Proximité, dans cet ordre).
+ * Renvoie une fonction (i) → classes du i-ème pion « au service » de `s`, ou null.
+ */
+export function marquesMateriel(s) {
+  const z = myZone(), ordre = ['intervention', 'roulage', 'proximite'];
+  if (!z || !z.materiel || !S.state || !S.draft || !ordre.includes(s)) return null;
+  const T = S.state.turn, m = z.materiel, n = z.agents || 0;
+  const avant = ordre.slice(0, ordre.indexOf(s)).reduce((t, k) => t + (Number(S.draft.alloc[k]) || 0), 0);
+  const sansG = Math.max(0, n - giletsValides(m, T).total), sansA = m.tti ? Math.max(0, n - ttiValides(m, T, 'af')) : 0;
+  const tz = s === 'intervention' ? tasersActifs(m, T) : 0;
+  if (!sansG && !sansA && !tz) return null;
+  return (i) => { const g = avant + i; return `${g < sansG ? ' sg' : ''}${g < sansA ? ' sa' : ''}${i < tz ? ' tz' : ''}`; };
+}
+/** Légende sous l'Intervention quand des pions portent une marque. */
+export function legendeMarques() {
+  const z = myZone(); if (!z || !z.materiel || !S.state) return '';
+  const T = S.state.turn, m = z.materiel, n = z.agents || 0;
+  const l = [];
+  if (n - giletsValides(m, T).total > 0) l.push('<span class="case pleine sg mini"></span> sans gilet valide');
+  if (m.tti && n - ttiValides(m, T, 'af') > 0) l.push('<span class="case pleine sa mini"></span> sans recyclage TTI arme');
+  if (tasersActifs(m, T)) l.push('<span class="case pleine tz mini"></span> taser');
+  return l.length ? `<span class="tiny muted mat-legende">${l.join(' · ')} <a href="#chef" data-action="brigade-vue" data-v="materiel">Matériel</a></span>` : '';
 }

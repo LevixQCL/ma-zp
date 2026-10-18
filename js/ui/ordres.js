@@ -1,5 +1,6 @@
 // Écran des ordres du tour.
 import { ligneAgentsFilet } from './filet.js';
+import { marquesMateriel, legendeMarques } from './materiel.js';
 import { vehiculeSvg } from './scene-hp.js';
 import { effetsPressions } from '../engine/contenu.js';
 import { comparatifModeles } from './modeles.js';
@@ -246,9 +247,10 @@ function casesService(s, b, n, e) {
   const limite = s === 'roulage' ? Math.max(0, b.utile - pris) : besoin;
   const nb = Math.max(besoin, au), vus = Math.min(nb, MAX_CASES);
   let h = '';
+  const mk = marquesMateriel(s);
   for (let i = 0; i < vus; i++) {
-    const plein = i < au, enPlus = i >= limite;
-    h += plein ? (enPlus ? `<span class="case plus" style="--c:${coul}">${PION(coul)}</span>` : `<span class="case pleine" style="--c:${coul}">${PION('#0C1124')}</span>`)
+    const plein = i < au, enPlus = i >= limite, mq = plein && mk ? mk(i) : '';
+    h += plein ? (enPlus ? `<span class="case plus${mq}" style="--c:${coul}">${PION(coul)}</span>` : `<span class="case pleine${mq}" style="--c:${coul}">${PION('#0C1124')}</span>`)
       : `<span class="case vide">${PION('#67719A')}</span>`;
   }
   if (nb > vus) h += `<span class="tiny muted">+${nb - vus}</span>`;
@@ -1004,6 +1006,7 @@ export function renderOrdres() {
           <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
         <div class="svc2-s"><span class="svc-r" id="res-${s2}">${resultatService(e, s2)}</span><span id="badge-${s2}">${badgeService(s2, b, d.alloc[s2])}</span></div>
         <span id="pris-${s2}" class="svc-plus">${prisHtml(e, s2)}</span>
+        ${s2 === 'intervention' ? legendeMarques() : ''}
         ${jaugesService(z, s2)}
         ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} de réserve en renfort</span>` : ''}
         ${ouvert ? `<div class="svc-det">${s2 === 'recherche' ? `<div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}<p class="tiny" style="margin:0;color:var(--text2);line-height:1.45">Niveau ${z.niveaux[s2]}. ${esc(aide(s2, z))}</p></div>` : ''}

@@ -18,7 +18,7 @@ import { enquetePourTour, quatreComptePourTour, SLOT_QUATRE, RELANCE_PS } from '
 import { jourBe } from './time.js';
 import { attribuerSites } from './sites.js';
 import { genererEchos } from './gazette.js';
-import { materielDuTour, facteurGilets, degatsDuSoir, accueillirRecrues } from './materiel.js';
+import { materielDuTour, facteurGilets, facteurTTI, degatsDuSoir, accueillirRecrues } from './materiel.js';
 import { resoudreAppel, facteurRodage, ajouterRodage, aGalon, BRIGADE, designerCandidat, sortirDuRang, releve, progresserAdjoints } from './brigade.js';
 import { psDispo as psDispoBrigade } from './decor.js';
 import { faireProgresser, surnomDe, intitule, verifierTrophees, SEUILS_EQUIPE, ROLES_EQUIPE, donnerTrophee, TROPHEE, creerEquipe, appliquerNoms, missionsValides, figure, nomComplet, encadrement, lireGalons, appliquerGalons, GALONS } from './equipe.js';
@@ -956,6 +956,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     for (const { a, s } of releves) if (cap[s]) z.rapport.push(`Relève : ${a.prenom} ${a.nom} encadre ${SERVICE_LABELS[s]} à la place de ${a.mentor ? a.mentor.split(' ')[0] : 'sa figure'} (+${Math.round(enc[s].bonus * 100)} %).`);
     // Brigade : recrues en formation (un demi-agent chacune) et galons « service » de l'Intervention.
     { const fr = facteurRodage(z, T); if (fr < 1) for (const s of SERVICES) cap[s] *= fr;
+      if (cap.intervention && z.materiel) { const ft = facteurTTI(z, T); if (ft < 1) { cap.intervention *= ft; z.rapport.push(`Recyclage TTI : des agents sans recyclage avec arme à feu à jour ne peuvent plus porter leur arme (Intervention −${Math.round((1 - ft) * 100)} %).`); } }
       if (cap.intervention && z.materiel) { const fg = facteurGilets(z, T); if (fg < 1) { cap.intervention *= fg; z.rapport.push(`Gilets pare-balles : des agents refusent les interventions à risque sans gilet valide (Intervention −${Math.round((1 - fg) * 100)} %).`); } }
       if (cap.intervention) cap.intervention *= (aGalon(z, 'inter', 0, 'B') ? 1.04 : 1) * (aGalon(z, 'inter', 2, 'B') ? 1.06 : 1); }
 

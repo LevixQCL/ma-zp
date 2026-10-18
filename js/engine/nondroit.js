@@ -6,7 +6,7 @@
 // Une zone qui ne joue plus ne bloque personne : son influence s'efface, les autres continuent.
 import { CONFIG } from '../config.js';
 import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
-import { effetCasquesND, abimer } from './materiel.js';
+import { effetCasquesND, abimer, trouTTI } from './materiel.js';
 import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND, INFRAS, aAnnexe, LOTS } from './constants.js';
 import { talentVal, talent, noterChef, FRONT, niveauChef } from './chef.js';
 import { makeRng } from './rng.js';
@@ -215,6 +215,9 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players =
     // Casques et boucliers (magasin) : plus de force et moins de blessés s'il y en a pour tout le monde ; sinon plus de risque.
     for (const e of engages) { const zz = state.zones[e.u]; if (!zz.materiel) continue; const c = effetCasquesND(zz, e.n);
       e.f *= c.force; e.risque *= c.risque;
+      // Agents sans recyclage TTI avec arme à feu à jour : ils ne peuvent pas partir à l'assaut armés.
+      const ta = zz.materiel.tti ? trouTTI(zz, T, 'af') : 0;
+      if (ta > 0.1) { e.f *= 1 - 0.5 * (ta - 0.1); zz.rapport.push(`Non-droit : ${Math.round(ta * 100)} % de tes agents n’ont plus leur recyclage TTI avec arme à feu, ton assaut sur ${nomSecteur(k)} perd de sa force.`); }
       const rc = makeRng(`${state.seed}:s${state.season}:t${T}:ndcasques:${k}:${e.u}`);
       let casse = 0; for (let i = 0; i < Math.floor(e.n / 4); i++) if (rc.chance(0.25)) casse++;
       const d = casse && zz.materiel.gnep ? abimer(zz, 'gnep', casse, rc) : '';

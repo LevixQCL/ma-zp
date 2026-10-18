@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { newZone } from '../js/engine/zone.js';
 import { creerEquipe } from '../js/engine/equipe.js';
-import { ceder, inspecter, accueillirRecrues, effetCasquesND, surplus, gammeDe, creerMateriel, giletsValides, facteurGilets, risqueMateriel, prixMarche, abimer, degatsDuSoir, ordresMaterielRobot, MAT, materielDuTour } from '../js/engine/materiel.js';
+import { ttiValides, trouTTI, facteurTTI, fonction, appliquerFonctions, ceder, inspecter, accueillirRecrues, effetCasquesND, surplus, gammeDe, creerMateriel, giletsValides, facteurGilets, risqueMateriel, prixMarche, abimer, degatsDuSoir, ordresMaterielRobot, MAT, materielDuTour } from '../js/engine/materiel.js';
 import { makeRng } from '../js/engine/rng.js';
 
 const ALLOC = { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 };
@@ -116,5 +116,21 @@ assert.ok(Math.abs(prixMarche(12) - MAT.marche.base * 0.75) < 1e-9);
   assert.ok(effetCasquesND(z, 8).force > 1 && effetCasquesND(z, 8).risque < 1);
   z.materiel.gnep = 0;
   assert.ok(effetCasquesND(z, 8).risque > 1, 'sans casques : plus de risque');
+}
+// Recyclage TTI : échéances, Intervention réduite, recyclage par groupes, moniteur et fonctions.
+{
+  const z = { agents: 20 }; z.materiel = creerMateriel(z, 1);
+  assert.equal(ttiValides(z.materiel, 1, 'af'), 20);
+  assert.ok(trouTTI(z, 8, 'af') > 0.3 && facteurTTI(z, 8) < 1, 'un tiers des agents à recycler : Intervention réduite');
+  let st = createGame({ seed: 'tti' });
+  st.zones.a = newZone({ uid: 'a', code: '1111', nom: 'A' }, 1); const za = st.zones.a; za.equipe = creerEquipe('a');
+  za.equipe.find((m) => m.role === 'inter').niveau = 1;
+  st = resolveTurn(st, { orders: { a: { alloc: ALLOC, rythme: 'normal', materiel: { fonctions: { moniteurTTI: 'inter' }, recyclage: [{ type: 'af', groupes: 2 }] } } }, quests: {}, players: {}, nextWeekday: 1 }).state;
+  const z2 = st.zones.a;
+  assert.ok(fonction(z2, 'moniteurTTI'), 'moniteur TTI nommé');
+  assert.ok(z2.materiel.tti.af.some((x) => x.n === 8 && x.fin === 2 + 28 + 7), 'recyclage de 8 agents, 35 jours avec le moniteur');
+  assert.ok(z2.blesses.some((b) => b.motif === 'recyclage TTI' && b.n === 2), 'un absent par groupe');
+  assert.ok(z2.rapport.some((l) => l.startsWith('Fonction :')));
+  assert.deepEqual(appliquerFonctions(z2, { magasinier: 'rech' }), [], 'figure sans surnom : pas de fonction');
 }
 console.log('magasin et armurerie : ok');

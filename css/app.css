@@ -3338,3 +3338,13 @@ main.screen.fi { max-width: 640px; margin: 0 auto; }
 .mat-gamme button b { font-size: .76rem; }
 .mat-gamme button span { font-size: .66rem; color: var(--text2, #96A0BF); line-height: 1.25; }
 .mat-gamme button.on { border-color: var(--amber, #FFB23F); background: rgba(255, 178, 63, .1); }
+.mat-fonction { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.08); }
+.mat-fig { width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; background: var(--c); color: #0C1124; font-weight: 800; font-size: .72rem; cursor: pointer; opacity: .45; }
+.mat-fig.on { opacity: 1; border-color: #fff; }
+/* Pions des Ordres : équipement visible */
+.case.sg { outline: 2px dashed rgba(255, 107, 107, .9); outline-offset: 1px; }
+.case.sa { filter: grayscale(1); opacity: .6; }
+.case { position: relative; }
+.case.tz::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 7px; height: 7px; border-radius: 2px; background: #FFD23F; box-shadow: 0 0 0 1.5px #0C1124; }
+.case.mini { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--c, #FF6E6A); vertical-align: -1px; margin: 0 2px; }
+.mat-legende { display: block; grid-column: 1 / -1; margin-top: 2px; }

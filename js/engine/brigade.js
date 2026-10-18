@@ -3,7 +3,7 @@
 // Calibrage : test/brigade-sim.mjs (un joueur attentif gagne environ +1 à +2 d'IPZ sur la saison ; l'absent ne perd rien).
 import { makeRng } from './rng.js';
 import { bonusChef, risqueBlessure } from './constants.js';
-import { optionsMateriel, bonusBodycam, trouGilets, MAT, abimer } from './materiel.js';
+import { optionsMateriel, bonusBodycam, trouGilets, trouTTI, MAT, abimer } from './materiel.js';
 
 export const BRIGADE = {
   rodage: { jours: 4, tuteur: 2, efficacite: 0.5 },   // recrues à 50 % pendant 4 jours (2 avec un tuteur)
@@ -144,7 +144,7 @@ export function resoudreAppel(state, z, ord, T) {
   }
   const meneur = figureDe(z, CTX[appel.ctx].role);
   const binome = adjointsDe(z).find((a) => a.role === CTX[appel.ctx].role) || null;
-  const p = Math.min(0.95, op.p + (meneur && meneur.spec ? BRIGADE.specBonus : 0) + (binome ? RANG.bonusAppel : 0) + (op.app === 'procedure' ? bonusBodycam(z) : 0));
+  const p = Math.min(0.95, op.p + (meneur && meneur.spec ? BRIGADE.specBonus : 0) + (binome ? RANG.bonusAppel : 0) + (op.app === 'procedure' ? bonusBodycam(z) : 0) - (op.app === 'force' && z.materiel && z.materiel.tti && trouTTI(z, T, 'af') > 0.3 ? 0.1 : 0));
   const ok = makeRng(`${state.seed}:s${state.season}:t${T}:appel-res:${z.uid}`).next() < p;
   const eff = { ...(ok ? op.ok : op.ko) };
   z._points = (z._points || 0) + (eff.pts || 0);
