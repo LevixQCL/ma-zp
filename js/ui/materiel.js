@@ -3,12 +3,12 @@
 import { S, esc, myZone, fmtK } from './common.js';
 import { COULEUR_ROLE, initiales } from './equipe.js';
 import { enRodage } from '../engine/brigade.js';
-import { MAT, ARTICLES, creerMateriel, giletsValides, certifiesActifs, tasersActifs, trouGilets, facteurGilets, prixMarche, gammeDe, surplus, ttiValides, trouTTI, facteurTTI, fonction, ttiDepart } from '../engine/materiel.js';
+import { MAT, ARTICLES, creerMateriel, giletsValides, certifiesActifs, tasersActifs, fnActifs, brevetesFN, trouGilets, facteurGilets, prixMarche, gammeDe, surplus, ttiValides, trouTTI, facteurTTI, fonction, ttiDepart } from '../engine/materiel.js';
 
 const IMG = (k) => `img/materiel/${k}.webp`;
 const ico = (k, c = '') => `<img class="mat-ico${c ? ` ${c}` : ''}" src="${IMG(k)}" alt="" loading="lazy">`;
 
-export const ordresMatVides = () => ({ masse: [], commandes: [], lancer: null, adherer: [], certifier: false, ceder: [], recyclage: [], fonctions: {} });
+export const ordresMatVides = () => ({ masse: [], commandes: [], lancer: null, adherer: [], certifier: false, brevetFN: false, ceder: [], recyclage: [], fonctions: {} });
 function om() { if (!S.draft) return ordresMatVides(); return (S.draft.materiel ||= ordresMatVides()); }
 
 /** Dotation de la zone (avant son premier tour avec le magasin : celle qu'elle recevra ce soir). */
@@ -99,6 +99,8 @@ export function materielVueHtml() {
       <div class="mat-item">${ico('taser')}<div><span class="small"><b>Taser</b> : ${m.taser || 0} en armurerie, ${certifiesActifs(m, T)} agents brevetés, ${tasersActifs(m, T)} en service. ${tasersActifs(m, T) ? 'Ouvre « Neutraliser au taser » sur l’appel du jour (arme, fuite, foule).' : (m.taser ? `Il faut ${MAT.taser.cert.agents} agents brevetés par taser en service.` : 'Ouvre une nouvelle approche sur l’appel du jour.')}</span>
         <div class="row" style="gap:6px;flex-wrap:wrap">${boutonCmd('taser', 'centrale', 'Centrale')}<button type="button" class="btn small${o.certifier ? ' on' : ' ghost'}" data-action="mat-cert" ${!m.taser ? 'disabled' : ''}>Breveter ${MAT.taser.cert.agents} agents · ${fmtK(MAT.taser.cert.prix)}</button></div>${stepper('taser')}
         <span class="tiny muted">Brevet taser : ${MAT.taser.cert.agents} agents en formation un jour, valable ${MAT.taser.cert.validite} jours (recyclage ensuite).</span></div></div>
+      <div class="mat-item">${ico('fn303')}<div><span class="small"><b>FN 303</b> : ${m.fn303 || 0} en armurerie, ${brevetesFN(m, T)} agents brevetés, ${fnActifs(m, T)} en service. Même vocation que le taser : neutraliser à distance, avec plus de portée. ${fnActifs(m, T) ? 'Ouvre « Tir FN 303 à distance » sur l’appel du jour (arme, foule).' : (m.fn303 ? `Il faut ${MAT.fn303.cert.agents} agents brevetés par FN 303 en service.` : 'Ouvre une approche à distance sur l’appel du jour (arme, foule).')}</span>
+        <div class="row" style="gap:6px;flex-wrap:wrap">${boutonCmd('fn303', 'centrale', 'Centrale')}<button type="button" class="btn small${o.brevetFN ? ' on' : ' ghost'}" data-action="mat-cert-fn" ${!m.fn303 ? 'disabled' : ''}>Breveter ${MAT.fn303.cert.agents} agents · ${fmtK(MAT.fn303.cert.prix)}</button></div>${stepper('fn303')}</div></div>
       <div class="mat-item">${ico('bodycam')}<div><span class="small"><b>Bodycams</b> : ${m.bodycam || 0}. ${(m.bodycam || 0) >= MAT.bodycam.lot ? 'Satisfaction en hausse chaque jour, approches « procédure » +5 %.' : `Moins de plaintes, approches « procédure » plus sûres. Entretien : ${fmtK(MAT.bodycam.entretien)} par jour et par lot.`}</span>
         <div class="row" style="gap:6px;flex-wrap:wrap">${boutonCmd('bodycam', 'centrale', `Lot de ${MAT.bodycam.lot}, centrale`)}</div>${stepper('bodycam')}</div></div>
       <div class="mat-item">${ico('gnep')}<div><span class="small"><b>Casques et boucliers</b> : ${m.gnep || 0}. Ouvre « Cordon casqué » face aux foules. Au non-droit : force +8 % et moins de blessés s’il y en a pour tous tes agents engagés ; pour moins de la moitié, plus de blessés.</span>
@@ -197,6 +199,7 @@ export function actionMateriel(a, el) {
   }
   if (a === 'mat-lots') { const c = o.commandes.find((x) => x.item === el.dataset.k); if (c) c.lots = Math.max(1, Math.min(MAT.lotsMax, c.lots + Number(el.dataset.d))); }
   if (a === 'mat-cert') o.certifier = !o.certifier;
+  if (a === 'mat-cert-fn') o.brevetFN = !o.brevetFN;
   if (a === 'mat-tti') { o.recyclage ||= []; const t = el.dataset.t; let r = o.recyclage.find((x) => x.type === t); if (!r) { r = { type: t, groupes: 0 }; o.recyclage.push(r); } r.groupes = Math.max(0, Math.min(MAT.tti.groupesMax, r.groupes + Number(el.dataset.d))); o.recyclage = o.recyclage.filter((x) => x.groupes > 0); }
   if (a === 'mat-fonction') { o.fonctions ||= {}; const f = el.dataset.f, role = el.dataset.role, cur = { ...(z.fonctions || {}), ...o.fonctions };
     if (cur[f] === role) o.fonctions[f] = null; else { for (const k of Object.keys(cur)) if (cur[k] === role && k !== f) o.fonctions[k] = null; o.fonctions[f] = role; } }
@@ -225,7 +228,7 @@ export function agentsService(s) {
   const avantG = ordre.slice(0, ordre.indexOf(s)).reduce((t, k) => t + (Number(alloc[k]) || 0), 0);
   const sansG = m && terrain.includes(s) ? Math.max(0, n - giletsValides(m, T).total) : 0;
   const sansA = m && m.tti && terrain.includes(s) ? Math.max(0, n - ttiValides(m, T, 'af')) : 0;
-  const tz = m && s === 'intervention' ? tasersActifs(m, T) : 0;
+  const tz = m && s === 'intervention' ? tasersActifs(m, T) : 0, fz = m && s === 'intervention' ? fnActifs(m, T) : 0;
   const recr = Math.min(total, enRodage(z, T));
   return (i) => {
     const g = avantT + i, gl = avantG + i;
@@ -233,6 +236,7 @@ export function agentsService(s) {
     const recrue = gl >= total - recr;
     if (recrue) { img = 'recrue'; bdg = '<span class="ag-b v">½</span>'; titre.push('recrue en formation (à mi-efficacité)'); }
     if (s === 'intervention' && i < tz && !recrue) { img = 'inter_taser'; bdg = '<span class="ag-b y">⚡</span>'; titre.push('taser en service'); }
+    else if (s === 'intervention' && i < tz + fz && !recrue) { bdg = '<span class="ag-b y">FN</span>'; titre.push('FN 303 en service'); }
     if (g < sansG) { if (s === 'intervention' && !recrue) img = 'inter_sans_gilet'; cls += ' sg'; bdg = '<span class="ag-b r">!</span>'; titre.push('sans gilet valide'); }
     if (g < sansA) { cls += ' sa'; if (!bdg) bdg = '<span class="ag-b g">TTI</span>'; titre.push('sans recyclage TTI avec arme à feu'); }
     return { img: `img/agents/${img}.webp`, cls: cls + (i % 2 ? ' m' : ''), bdg, titre: titre.join(', ') };
@@ -242,7 +246,7 @@ export function agentsService(s) {
 export function resumeEquipement() {
   const z = myZone(); if (!z || !z.materiel || !S.state) return '';
   const T = S.state.turn, m = z.materiel, n = z.agents || 0;
-  const g = Math.min(n, giletsValides(m, T).total), a = m.tti ? Math.min(n, ttiValides(m, T, 'af')) : n, tz = tasersActifs(m, T), r = enRodage(z, T);
+  const g = Math.min(n, giletsValides(m, T).total), a = m.tti ? Math.min(n, ttiValides(m, T, 'af')) : n, tz = tasersActifs(m, T), fz = fnActifs(m, T), r = enRodage(z, T);
   const chip = (txt, mal) => `<span class="ag-chip${mal ? ' mal' : ''}">${txt}</span>`;
-  return `<div class="ag-resume">${chip(`<b>${g}/${n}</b> gilets`, g < n)}${chip(`<b>${a}/${n}</b> TTI arme`, a < n)}${tz ? chip(`<b>${tz}</b> taser${tz > 1 ? 's' : ''}`) : ''}${r ? chip(`<b>${r}</b> recrue${r > 1 ? 's' : ''} à ½`) : ''}<a href="#chef" class="ag-lien" data-action="brigade-vue" data-v="materiel">Matériel ›</a></div>`;
+  return `<div class="ag-resume">${chip(`<b>${g}/${n}</b> gilets`, g < n)}${chip(`<b>${a}/${n}</b> TTI arme`, a < n)}${tz ? chip(`<b>${tz}</b> taser${tz > 1 ? 's' : ''}`) : ''}${fz ? chip(`<b>${fz}</b> FN 303`) : ''}${r ? chip(`<b>${r}</b> recrue${r > 1 ? 's' : ''} à ½`) : ''}<a href="#chef" class="ag-lien" data-action="brigade-vue" data-v="materiel">Matériel ›</a></div>`;
 }

@@ -5,7 +5,7 @@ import { newZone } from '../js/engine/zone.js';
 import { BOT_PROFILES, botOrders } from '../js/engine/bots.js';
 import { adaptatif } from './strat-adaptatif.mjs';
 import { appelDuJour, optionsAppel } from '../js/engine/brigade.js';
-import { mat, giletsValides, certifiesActifs, MAT, ttiValides } from '../js/engine/materiel.js';
+import { brevetesFN, mat, giletsValides, certifiesActifs, MAT, ttiValides } from '../js/engine/materiel.js';
 const N = Number(process.argv[2] || 8), filtre = process.argv[3];
 const moy = (a) => a.reduce((s, x) => s + x, 0) / a.length;
 
@@ -37,6 +37,11 @@ function equiperPlus(z, st, om) {
   if (m.taser && certifiesActifs(m, T + 1) < 2 * Math.min(2, m.taser)) om.certifier = true;
   if (!m.bodycam && !(m.commandes || []).some((c) => c.item === 'bodycam') && z.budget > 10) om.commandes.push({ item: 'bodycam', lots: 1, voie: 'centrale' });
 }
+function equiperFN(z, st, om) {
+  const m = mat(z), T = st.turn;
+  if ((m.fn303 || 0) + (m.commandes || []).filter((c) => c.item === 'fn303').length < 1 && z.budget > 12) om.commandes.push({ item: 'fn303', lots: 1, voie: 'centrale' });
+  if (m.fn303 && brevetesFN(m, T + 1) < 2) om.brevetFN = true;
+}
 function meilleurAppel(z, st) {
   const a = appelDuJour(st), op = optionsAppel(z, a); let bi = 0, bv = -1e9;
   op.forEach((x, i) => { const v = x.p * ((x.ok.pts || 0) + 2 * (x.ok.sat || 0) + 3 * (x.ok.rep || 0)) + (1 - x.p) * ((x.ko.pts || 0) + 2 * (x.ko.sat || 0) + (x.ko.moral || 0)); if (v > bv) { bv = v; bi = i; } });
@@ -62,7 +67,7 @@ function saison(seed, pol) {
     const z = st.zones.moi, o = adaptatif(z, st);
     o.appel = meilleurAppel(z, st);
     if (pol.fonceur) { const op = optionsAppel(z, appelDuJour(st)); const i = op.findIndex((x) => x.app === 'force' && !x.materiel); if (i >= 0) o.appel = i; }
-    if (z.materiel && pol.gerer) { o.materiel = entretien(z, st, pol.voie || 'centrale', pol); if (pol.plus) equiperPlus(z, st, o.materiel); if (pol.casques && (mat(z).gnep || 0) < 10 && !(mat(z).commandes || []).some((c) => c.item === 'gnep')) o.materiel.commandes.push({ item: 'gnep', lots: 2, voie: 'centrale' }); }
+    if (z.materiel && pol.gerer) { o.materiel = entretien(z, st, pol.voie || 'centrale', pol); if (pol.plus) equiperPlus(z, st, o.materiel); if (pol.fn) equiperFN(z, st, o.materiel); if (pol.casques && (mat(z).gnep || 0) < 10 && !(mat(z).commandes || []).some((c) => c.item === 'gnep')) o.materiel.commandes.push({ item: 'gnep', lots: 2, voie: 'centrale' }); }
     const avant = (z.blesses || []).length, b0 = z.budget;
     const r = resolveTurn(st, { orders: { ...ord, moi: o }, quests: {}, players: {}, nextWeekday: (t + 1) % 7 });
     st = r.state; const z2 = st.zones.moi;
@@ -80,6 +85,8 @@ const pols = {
   'entretien en marchés groupés': { gerer: 1, voie: 'marche' },
   'gilets ajustés': { gerer: 1, ajustes: 1 },
   'entretien + taser + bodycams': { gerer: 1, plus: 1 },
+  'entretien + taser + bodycams + FN 303': { gerer: 1, plus: 1, fn: 1 },
+  'entretien + FN 303': { gerer: 1, fn: 1 },
   'entretien économique': { gerer: 1, q: 'eco' },
   'entretien haut de gamme': { gerer: 1, q: 'qualite' },
   'entretien + casques (non-droit)': { gerer: 1, casques: 1 },

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { newZone } from '../js/engine/zone.js';
 import { creerEquipe } from '../js/engine/equipe.js';
-import { ttiValides, trouTTI, facteurTTI, fonction, appliquerFonctions, ceder, inspecter, accueillirRecrues, effetCasquesND, surplus, gammeDe, creerMateriel, giletsValides, facteurGilets, risqueMateriel, prixMarche, abimer, degatsDuSoir, ordresMaterielRobot, MAT, materielDuTour } from '../js/engine/materiel.js';
+import { fnActifs, brevetesFN, ttiValides, trouTTI, facteurTTI, fonction, appliquerFonctions, ceder, inspecter, accueillirRecrues, effetCasquesND, surplus, gammeDe, creerMateriel, giletsValides, facteurGilets, risqueMateriel, prixMarche, abimer, degatsDuSoir, ordresMaterielRobot, MAT, materielDuTour } from '../js/engine/materiel.js';
 import { makeRng } from '../js/engine/rng.js';
 
 const ALLOC = { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 };
@@ -132,5 +132,25 @@ assert.ok(Math.abs(prixMarche(12) - MAT.marche.base * 0.75) < 1e-9);
   assert.ok(z2.blesses.some((b) => b.motif === 'recyclage TTI' && b.n === 2), 'un absent par groupe');
   assert.ok(z2.rapport.some((l) => l.startsWith('Fonction :')));
   assert.deepEqual(appliquerFonctions(z2, { magasinier: 'rech' }), [], 'figure sans surnom : pas de fonction');
+}
+// FN 303 : même vocation que le taser, deux brevetés par lanceur, approche à distance sur l'appel.
+{
+  const z = { agents: 20 }; z.materiel = creerMateriel(z, 1); z.materiel.fn303 = 2;
+  assert.equal(fnActifs(z.materiel, 1), 0, 'sans brevetés, pas de FN en service');
+  z.materiel.brevetsFN = [{ n: 2, fin: 10 }];
+  assert.equal(fnActifs(z.materiel, 1), 1);
+  assert.equal(fnActifs(z.materiel, 10), 0, 'brevet échu');
+  assert.ok(risqueMateriel(z, 1) < risqueMateriel({ agents: 20, materiel: { ...z.materiel, fn303: 0 } }, 1), 'un FN en service réduit le risque');
+  const rng = makeRng('fn'); z.materiel._T = 1;
+  assert.match(abimer(z, 'fn303', 1, rng), /FN 303/);
+  assert.equal(z.materiel.fn303, 1);
+  let st = createGame({ seed: 'fn' });
+  st.zones.a = newZone({ uid: 'a', code: '1111', nom: 'A' }, 1); st.zones.a.equipe = creerEquipe('a');
+  st = resolveTurn(st, { orders: { a: { alloc: ALLOC, rythme: 'normal', materiel: { commandes: [{ item: 'fn303', lots: 1, voie: 'negociee' }] } } }, quests: {}, players: {}, nextWeekday: 1 }).state;
+  st = resolveTurn(st, { orders: { a: { alloc: ALLOC, rythme: 'normal' } }, quests: {}, players: {}, nextWeekday: 2 }).state;
+  assert.equal(st.zones.a.materiel.fn303, 1, 'FN 303 livré');
+  st = resolveTurn(st, { orders: { a: { alloc: ALLOC, rythme: 'normal', materiel: { brevetFN: true } } }, quests: {}, players: {}, nextWeekday: 3 }).state;
+  assert.equal(brevetesFN(st.zones.a.materiel, st.turn), 2, 'deux agents brevetés FN 303');
+  assert.ok(st.zones.a.rapport.some((l) => l.startsWith('Brevet FN 303')));
 }
 console.log('magasin et armurerie : ok');

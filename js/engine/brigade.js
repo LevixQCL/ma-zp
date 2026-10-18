@@ -156,6 +156,7 @@ export function resoudreAppel(state, z, ord, T) {
   if (!ok && z.materiel) {
     const rd = makeRng(`${state.seed}:s${state.season}:t${T}:appel-mat:${z.uid}`);
     const d = op.materiel === 'taser' && rd.chance(0.4) ? abimer(z, 'taser', 1, rd)
+      : op.materiel === 'fn303' && rd.chance(0.3) ? abimer(z, 'fn303', 1, rd)
       : op.materiel === 'gnep' && rd.chance(0.5) ? abimer(z, 'gnep', 1 + (rd.chance(0.3) ? 1 : 0), rd)
       : op.app === 'force' && (z.materiel.bodycam || 0) > 0 && rd.chance(0.25) ? abimer(z, 'bodycam', 1, rd) : '';
     if (d) blesseMat = ` ${d}.`;

@@ -1666,7 +1666,7 @@ function finDeSaison(state, classement, opts = {}) {
     if (z.adjoints) nz.adjoints = z.adjoints;
     if (z.candidat) nz.candidat = { ...z.candidat, pret: 0 };
     if (z.materiel) { const d = state.turn; const m = JSON.parse(JSON.stringify(z.materiel)); m.masse = 0;
-      for (const g of m.gilets || []) g.fin -= d; for (const c of m.certifies || []) c.fin -= d; for (const c of m.commandes || []) c.arrive -= d; nz.materiel = m; }
+      for (const g of m.gilets || []) g.fin -= d; for (const c of m.certifies || []) c.fin -= d; for (const c of m.brevetsFN || []) c.fin -= d; for (const c of m.commandes || []) c.arrive -= d; nz.materiel = m; }
     // Doctrine : à rechoisir ; garder la même fait monter la maîtrise.
     if (z.doctrine) { nz.doctrinePrec = z.doctrine; nz.maitrisePrec = z.maitrise || 0; }
     nz.trophees = z.trophees || [];
