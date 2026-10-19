@@ -12,6 +12,7 @@ export const NOTE_MAJ = {
   action: { label: 'Voir ma brigade', ouvrir: () => { S.brigadeVue = 'equipe'; if (location.hash === '#chef') window.dispatchEvent(new HashChangeEvent('hashchange')); else location.hash = '#chef'; } },
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
+    ['🏆', 'Le podium récompensé', 'la Zone de l’année gagne un skin exclusif, un imprévu du Bilan offert et +250 PS ; +150 et +100 PS pour les 2e et 3e, et un titre « Révélation » pour la plus forte remontée.'],
     ['🗺️', 'Nouveau Challenge : Filature', 'reconstitue le trajet du fuyard, de la bijouterie à la sortie : chaque tuile traversée se retourne, les chiffres disent combien de tuiles par ligne et par colonne. Du 5×5 tout doux au 9×9, sans chrono, record et prime de la semaine comme les autres.'],
     ['📻', 'L’appel du jour', 'le même dans toutes les zones. Donne ta consigne, ou laisse ta brigade faire : elle apprend ton style et s’en sert quand tu n’es pas là. Le lendemain, compare avec les autres brigades.'],
     ['🎖️', 'Des galons à attribuer', 'à chaque surnom, une figure gagne un galon : Terrain (une approche réservée sur l’appel du jour) ou Service (un effet chaque soir). L’onglet Chef devient Brigade.'],
@@ -22,6 +23,11 @@ export const NOTE_MAJ = {
   ],
 
   sections: [
+    ['Fin de saison : le podium récompensé (19 octobre)', [
+      ['Zone de l’année', 'le skin exclusif « Palais d’honneur » (jamais en boutique), l’imprévu le plus coûteux de son Bilan de saison remis en état d’office, +250 PS et la plaque d’or.'],
+      ['2e et 3e', '+150 et +100 PS, avec leur plaque d’argent ou de bronze. Les autres zones classées gardent +50 PS.'],
+      ['Révélation de la saison', 'un titre et +100 PS pour la plus forte remontée au classement entre la mi-saison et la fin (2 places au moins).'],
+    ]],
     ['Filature (19 octobre)', [
       ['Pour découvrir', 'l’événement « Braquage à la bijouterie » sur ta page d’accueil (jusqu’au 8 novembre) : une seule filature en 6×6, sans effet sur ta zone.'],
       ['Où', 'Records › mini-jeux, avec les autres Challenges. Record de la partie, titre « Fin limier » et prime de la semaine dès le niveau 5.'],

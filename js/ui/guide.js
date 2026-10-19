@@ -563,7 +563,7 @@ export function sections() {
           ['Passer ses ordres', `+${PS.ordres}`], ['Bonne réponse à une énigme', `+${PS.queteOk} (tentative ratée : +${PS.queteTentee})`], ['Trois énigmes réussies dans la journée', '+5'],
           ['Découverte d’un auteur', '+15'], ['Arrestation', '+10'], ['Participer à une FIPA', '+10'], ['Partager un indice', '+5'], ['Indice qui aide une découverte', '+5'],
           ['Agents envoyés sur un grand événement du district', `+${PS.evenement} pour 3 agents, proportionnel au nombre envoyé (max. +${PS.evenementMax})`], ['Renfort prêté sur une opération d’envergure', `+${RENFORT.psParAgent} par agent prêté`], ['Pacte conclu', `+${PACTE.psAccord}`], ['Pacte mené à son terme', `+${PACTE.psFin}`],
-          ['Finir une saison classé', `+${PS.finSaison}`],
+          ['Finir une saison classé', `+${PS.finSaison} (podium : +${PS.podium[0]}, +${PS.podium[1]}, +${PS.podium[2]})`], ['Révélation de la saison', `+${PS.revelation}`],
         ])}
         <h3>Grades</h3>
         ${table(['Grade', 'PS', 'Débloque'], GRADES.map((g) => [g.nom, g.ps, esc(g.debloque)]))}
@@ -576,7 +576,7 @@ export function sections() {
         ])}
         <h3>Titres de fin de saison</h3>
         ${table(['Titre', 'Pour'], [
-          ['Zone de l’année', 'la meilleure moyenne d’IPZ'], ['Phénix', 'finir dans le top 3 après une faillite (badge)'], ['Fin limier', 'le plus de points d’enquête'], ['Collègue en or', 'la meilleure réputation'],
+          ['Zone de l’année', 'la meilleure moyenne d’IPZ : le skin exclusif « Palais d’honneur », l’imprévu le plus coûteux du Bilan remis en état d’office, et la plaque d’or'], ['Révélation de la saison', 'la plus forte remontée au classement entre la mi-saison et la fin (2 places au moins)'], ['Phénix', 'finir dans le top 3 après une faillite (badge)'], ['Fin limier', 'le plus de points d’enquête'], ['Collègue en or', 'la meilleure réputation'],
           ['Esprit vif', 'le plus d’énigmes réussies'], ['Roi de la paperasse', 'la plus haute pile de paperasse (titre moqueur)'],
         ])}`,
     },

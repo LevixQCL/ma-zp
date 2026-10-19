@@ -7,7 +7,7 @@ import { RELEVE, lireOrdresReleve, releveResoudre, releveNuit } from './releve.j
 import { lireOrdresCrise, crisePre, criseZone, crisePost } from './crise.js';
 import { regrouperHonneur } from './honneur.js';
 import { appuiResolution } from './appui.js';
-import { BILAN, AGENTS_BASCULE, moyennesDistrict, calculerBilan, appliquerBilan, lireOrdresBilan, resoudreBilan } from './bilan.js';
+import { BILAN, AGENTS_BASCULE, moyennesDistrict, calculerBilan, appliquerBilan, lireOrdresBilan, resoudreBilan, offrirCas, libelleCas } from './bilan.js';
 import { APP_VERSION, NIVEAU_MAX, AFFAIRE, SERVICES, SERVICE_LABELS, SEASON_LENGTH, ECONOMIE, RYTHMES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, PS, MIN_TOURS_CLASSEMENT, BUDGET_IPZ, horsRevenu, START, DEPENSES, FLAGRANT, TERRAIN, DOSSIER, valeurDossier, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, USURE, ENIGMES, MORAL, CHEFS, tauxRetourMoral, tauxDerive, DERIVE, bonusEquip, malusEtat, gainPrime, gainMoral, seuilChasse, gainRenfort, psEvenement, repRenfortAffaire, partieComplete, risqueBlessure, agentsFormation, chanceDelegue, PREPA } from './constants.js';
 import { makeRng, hashString } from './rng.js';
 import { QUIZ } from '../quests/quiz.js';
@@ -1587,6 +1587,21 @@ function resoudreDuels(state, push, T) {
 /** Soirs joués en saison 1 pour devenir « Zone fondatrice ». */
 export const FONDATEUR_SOIRS = 7;
 
+/** Jour qui clôt la première moitié de la saison (classement de mi-saison). */
+export const MI_SAISON = 7;
+/**
+ * Révélation de la saison : la plus forte remontée entre le classement de mi-saison (IPZ des jours 1 à MI_SAISON,
+ * zones qui en ont au moins un) et le classement final `ordre` (uids classés). 2 places au moins ; à égalité,
+ * le mieux classé ; jamais le premier (Zone de l'année). Renvoie { uid, gain } ou null.
+ */
+export function revelation(ordre, zones) {
+  const mi = ordre.map((u) => zones[u]).filter((z) => z && (z.ipzHist || []).some((x) => x && x.t <= MI_SAISON))
+    .map((z) => ({ uid: z.uid, m: moyenneIpz({ ...z, avantArrivee: null, ipzHist: z.ipzHist.filter((x) => x && x.t <= MI_SAISON) }) }))
+    .sort((a, b) => b.m - a.m).map((x) => x.uid);
+  return ordre.map((uid, i) => ({ uid, i, gain: mi.indexOf(uid) < 0 ? -1 : mi.indexOf(uid) - i }))
+    .filter((r) => r.i > 0 && r.gain >= 2).sort((a, b) => (b.gain - a.gain) || (a.i - b.i))[0] || null;
+}
+
 function finDeSaison(state, classement, opts = {}) {
   const zones = Object.values(state.zones);
   const classes = classement.filter((c) => c.classe);
@@ -1607,7 +1622,19 @@ function finDeSaison(state, classement, opts = {}) {
   const byNoir = zones.slice().sort((a, b) => (b.stats.noirs || 0) - (a.stats.noirs || 0))[0];
   if (byNoir && (byNoir.stats.noirs || 0) > 0) give(byNoir.uid, 'Cerveau du district');
 
-  for (const c of classes) state.zones[c.uid].ps += PS.finSaison;
+  // PS de fin de saison : selon le rang (podium), sinon la part commune.
+  const recompenses = {};
+  classes.forEach((c, i) => { const v = PS.podium[i] ?? PS.finSaison; state.zones[c.uid].ps += v; recompenses[c.uid] = [`+${v} PS (${i < 3 ? `${i + 1}${i ? 'e' : 're'} place` : 'zone classée'})`]; });
+  // Zone de l'année : le skin exclusif « Palais d'honneur », équipé d'office (on peut l'enlever).
+  if (classes[0]) {
+    const z = state.zones[classes[0].uid];
+    if (ajouterSkin(z, 'batiment:honneur')) recompenses[z.uid].push('le skin exclusif « Palais d’honneur », équipé');
+    z.skinsChoix = { ...(z.skinsChoix || {}), batiment: 'honneur' };
+  }
+  // Révélation de la saison : la plus forte remontée entre le classement de mi-saison et le classement final
+  // (2 places au moins ; à égalité, le mieux classé ; jamais la Zone de l'année, déjà récompensée).
+  const rev = revelation(classes.map((c) => c.uid), state.zones);
+  if (rev) { give(rev.uid, 'Révélation de la saison'); state.zones[rev.uid].ps += PS.revelation; recompenses[rev.uid].push(`Révélation de la saison (+${rev.gain} places depuis la mi-saison) : +${PS.revelation} PS`); }
   for (const c of classes) {
     const z = state.zones[c.uid];
     if (!(z.stats.pactesRompus > 0) && donnerTrophee(z, 'incorruptible', state.season, state.turn)) z.rapport.push('Trophée débloqué : « Incorruptible » (une saison classée sans jamais rompre un pacte).');
@@ -1652,13 +1679,14 @@ function finDeSaison(state, classement, opts = {}) {
   const moy = moyennesDistrict(zones);
   for (const [uid, z] of Object.entries(state.zones)) {
     const bilan = calculerBilan(z, moy, `${state.seed}:bilan:${oldSeason}:${uid}`, !!opts.leger);
+    const offert = classes[0] && classes[0].uid === uid ? offrirCas(bilan) : null;
     const nz = newZone({ uid, code: z.code, nom: z.nom, couleur: z.couleur }, 1, { ps: z.ps, badges: z.badges, titres: z.titres, faillites: z.faillites, arrivee: z.arrivee || 0 });
     appliquerBilan(nz, z, bilan);
     // Passage anticipé (saison écourtée) : la moitié des agents recrutés au-delà des effectifs de départ reste,
     // dans la limite des bureaux après le bilan. Fin de saison normale : les effectifs repartent de zéro.
     const garde = opts.leger ? Math.floor(AGENTS_BASCULE.part * Math.max(0, (Number(z.agents) || START.agents) - START.agents)) : 0;
     if (garde) nz.agents = Math.min(capaciteAgents(nz), START.agents + garde);
-    nz.bilan = { season: oldSeason, gagnes: bilan.gagnes, moyenne: bilan.moyenne, cas: bilan.cas, fin: BILAN.tours, clos: !bilan.cas.length };
+    nz.bilan = { season: oldSeason, gagnes: bilan.gagnes, moyenne: bilan.moyenne, cas: bilan.cas, fin: BILAN.tours, clos: bilan.cas.every((c) => c.etat) };
     nz.infra = { ...(z.infra || {}) };
     nz.equipe = z.equipe || creerEquipe(uid);
     // Brigade : le style appris, les adjoints sortis du rang et la candidate ou le candidat formé suivent la zone.
@@ -1707,8 +1735,10 @@ function finDeSaison(state, classement, opts = {}) {
     // Le parc suit la zone : les véhicules gardent leur modèle et passent au contrôle technique (usure divisée par deux).
     // Si le garage a perdu un niveau et manque de places, les plus usés sont revendus et le produit s'ajoute au budget.
     const parc = heritageFlotte(z, nz);
-    const n = bilan.cas.length;
+    const n = bilan.cas.filter((c) => c.etat !== 'offert').length;
     nz.rapport = [`Nouvelle saison : tu conserves tes formations, ton matériel, tes bâtiments, tes annexes et ton parc (${parc.gardes} véhicule${parc.gardes > 1 ? 's' : ''}, passés au contrôle technique${parc.vendus ? ` ; ${parc.vendus} revendu${parc.vendus > 1 ? 's' : ''} faute de place au garage, +${fmt1(parc.produit)} k€` : ''}), ${n ? `moins ${n} imprévu${n > 1 ? 's' : ''} de fin de saison (voir le Bilan de saison sur l’HP : tu peux en remettre en état jusqu’au tour ${BILAN.tours})` : 'sans aucun imprévu de fin de saison'}. ${nz.agents > START.agents ? `Le budget repart de la valeur de départ ; tu gardes ${nz.agents} agents (la moitié de tes recrues au-delà de ${START.agents}).` : 'Budget et effectifs repartent des valeurs de départ.'}`];
+    if (offert) nz.rapport.push(`Zone de l’année : « ${offert.t} » est remis en état d’office (${libelleCas(offert).replace(/ (\d) → \d$/, ' : niveau $1 conservé')}).`);
+    if (recompenses[uid]) nz.rapport.push(`Récompenses de fin de saison : ${recompenses[uid].join(', ')}.`);
     nz.heritage = { season: oldSeason, niveaux: { ...nz.niveaux }, batiments: { ...nz.batiments }, annexes: Object.keys(nz.infra).filter((k) => nz.infra[k]).length };
     state.zones[uid] = nz;
   }

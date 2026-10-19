@@ -93,6 +93,7 @@ export const SKINS = {
       moulin:   { nom: 'Moulin à café', texte: 'Bois patiné, cerclages de laiton, grains sculptés et manivelle géante sur le toit.', jour: ['#9C6B45', '#86593A', '#5C3A26'] },
       ampli:    { nom: 'Caisse résonnante', texte: 'Toile de haut-parleur bordeaux, coins chromés et tête d’ampli au voyant rouge.', jour: ['#7A1E1E', '#661616', '#1E1A1A'] },
       ruche:    { nom: 'Ruche d’intervention', texte: 'Alvéoles dorées, rayures d’abeille, miel qui coule et ruche de paille sur le toit.', jour: ['#FFC23D', '#F5A300', '#B86A00'] },
+      honneur:  { nom: 'Palais d’honneur', texte: 'Pierre blanche, filets dorés et laurier au fronton. Réservé à la Zone de l’année : ni en boutique, ni dans la jauge.', jour: ['#F1ECE0', '#E2DAC8', '#C9A75A'], exclusif: true },
       manoir:   { nom: 'Manoir hanté', texte: 'Pierres moussues, fenêtres gothiques à la bougie, tourelle, citrouilles, fantôme et chauves-souris. Avec la remise à calèches assortie pour le garage.', jour: ['#4A3F5C', '#3B3150', '#2A2238'], achat: { ps: 600, promo: { ps: 300, jusqua: Date.parse('2026-11-02T19:00:00Z'), nom: 'Halloween' }, pack: ['garage:remise'], vedette: true } },
     },
   },
@@ -144,7 +145,7 @@ export function skinsValides(z, choix) {
 }
 
 /** Tous les skins, à plat : [{ cat, id, nom, texte }]. */
-export const TOUS_SKINS = Object.entries(SKINS).filter(([cat]) => cat !== 'fete').flatMap(([cat, C]) => Object.entries(C.options).filter(([, o]) => !o.achat && !o.pack).map(([id, o]) => ({ cat, id, nom: o.nom, texte: o.texte, categorie: C.titre })));
+export const TOUS_SKINS = Object.entries(SKINS).filter(([cat]) => cat !== 'fete').flatMap(([cat, C]) => Object.entries(C.options).filter(([, o]) => !o.achat && !o.pack && !o.exclusif).map(([id, o]) => ({ cat, id, nom: o.nom, texte: o.texte, categorie: C.titre })));
 
 /**
  * Early birds : les zones présentes au lancement des skins. La liste est figée à la première
@@ -213,7 +214,7 @@ export function skinsEnVente(quand) {
   for (const [cat, C] of Object.entries(SKINS)) {
     if (cat === 'fete') continue;
     for (const [id, o] of Object.entries(C.options)) {
-      if (o.pack) continue;
+      if (o.pack || o.exclusif) continue;
       const a = o.achat || {};
       const base = a.ps || BOUTIQUE.prix, promo = a.promo && quand <= a.promo.jusqua ? a.promo : null;
       out.push({ cle: `${cat}:${id}`, cat, id, nom: o.nom, texte: o.texte, categorie: C.titre, prix: promo ? promo.ps : base, prixBase: base, promo, pack: a.pack || [], vedette: !!a.vedette });

@@ -148,13 +148,20 @@ export function appliquerBilan(nz, ancienne, b) {
   const ab = ancienne.batiments || {};
   nz.batiments = { bureaux: ab.bureaux || 1, garage: ab.garage || 1 };
   for (const c of b.cas) {
+    if (c.etat === 'offert') continue; // remis en état d'office (Zone de l'année)
     if (c.k === 'batiments') nz.batiments[c.s] = Math.max(1, nz.batiments[c.s] - 1);
     else nz[c.k][c.s] = Math.max(1, nz[c.k][c.s] - 1);
   }
 }
 
 /** Nombre de remises en état permises. */
-export const maxRemises = (b) => (b && b.cas.length ? Math.max(1, Math.floor(b.cas.length * BILAN.plafond)) : 0);
+export const maxRemises = (b) => { const n = b ? b.cas.filter((c) => c.etat !== 'offert').length : 0; return n ? Math.max(1, Math.floor(n * BILAN.plafond)) : 0; };
+/** Zone de l'année : l'imprévu le plus coûteux de son bilan est remis en état d'office (avant appliquerBilan). */
+export function offrirCas(b) {
+  const c = b.cas.slice().sort((x, y) => y.prix - x.prix)[0];
+  if (c) c.etat = 'offert';
+  return c || null;
+}
 /** Bilan encore ouvert aux choix ce tour-ci. */
 export function bilanOuvert(z, turn) {
   const b = z && z.bilan;

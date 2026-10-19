@@ -33,7 +33,7 @@ export function bilanHtml() {
     const fige = !!c.etat;
     const eff = libelleCas(c);
     let bas;
-    if (fige) bas = `<p class="tiny muted" style="margin:0">${c.etat === 'paye' ? 'Remis en état' : 'Accepté'}</p>`;
+    if (fige) bas = `<p class="tiny muted" style="margin:0">${c.etat === 'paye' ? 'Remis en état' : c.etat === 'offert' ? '🏆 Offert à la Zone de l’année' : 'Accepté'}</p>`;
     else bas = `<div class="rel-choix">
         <button type="button" class="dil-btn" data-action="bilan" data-id="${esc(c.id)}" data-v="paye" aria-pressed="${v === 'paye'}" ${v !== 'paye' && payes >= max ? 'disabled' : ''}><span class="t">${esc(c.a)}</span><span class="s">${c.prix} k€ ce soir · niveau conservé</span></button>
         <button type="button" class="dil-btn" data-action="bilan" data-id="${esc(c.id)}" data-v="accepte" aria-pressed="${v === 'accepte'}"><span class="t">Accepter</span><span class="s">${esc(eff)}</span></button>
@@ -43,7 +43,7 @@ export function bilanHtml() {
       <div class="col" style="gap:3px;min-width:0">
         <span style="font-weight:700">${esc(c.t)}</span>
         <span class="small" style="color:var(--text2)">${esc(c.x)}</span>
-        <span class="bil-eff">${v === 'paye' ? esc(eff.replace(/ (\d) → \d$/, ' : niveau $1 conservé')) : esc(eff)}</span>
+        <span class="bil-eff">${v === 'paye' || v === 'offert' ? esc(eff.replace(/ (\d) → \d$/, ' : niveau $1 conservé')) : esc(eff)}</span>
       </div>
       ${bas}
     </article>`;

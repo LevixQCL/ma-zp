@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 170;
+export const APP_VERSION = 171;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -257,7 +257,7 @@ export const GRADES = [
   { nom: 'Chef de corps', ps: 3000, debloque: 'Proposer une motion au Conseil, une fois par saison' },
 ];
 
-export const PS = { ordres: 10, queteOk: 5, queteTentee: 2, noir: 15, evenement: 10, evenementMax: 15, finSaison: 50, plafondJour: 40, plafondEntraide: 30 };
+export const PS = { ordres: 10, queteOk: 5, queteTentee: 2, noir: 15, evenement: 10, evenementMax: 15, finSaison: 50, podium: [250, 150, 100], revelation: 100, plafondJour: 40, plafondEntraide: 30 };
 // Les PS d'entraide (renfort, pièces partagées, contribution à l'enquête, FIPA, mission collective, secteurs tenus) ont leur propre plafond, en plus des 40.
 // Événement du district : PS.evenement pour la part attendue (3 agents), proportionnel au nombre d'agents envoyés.
 export const psEvenement = (c) => (c > 0 ? Math.max(1, Math.min(PS.evenementMax, Math.round(PS.evenement * c / 3))) : 0);
