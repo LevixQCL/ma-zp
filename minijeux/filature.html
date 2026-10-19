@@ -701,13 +701,13 @@ function basculer(a,b){
 function gagne(){
   F.won=true; F.vict={t:performance.now()}; Shell.win();
   if(F.tuto){ setTimeout(Shell.endTuto,1600); return; }
-  F.over=true; Shell.stopTimer();
+  F.over=true;
   const sec=Math.round((performance.now()-F.t0)/1000);
   setTimeout(()=>Shell.result({ok:true,faults:3-F.pistes,stats:[['Temps',sec+' s'],['Grille',`${F.N} × ${F.N}`],['Fausses pistes',String(3-F.pistes)]],
     note:F.pistes===3?'Sans fausse piste : double point.':'Termine sans fausse piste pour gagner +2.'}),1700);
 }
 function perd(raison){
-  if(F.over) return; F.over=true; Shell.stopTimer();
+  if(F.over) return; F.over=true;
   F.aretes=new Set(F.sol); maj(); // on montre le vrai trajet
   setTimeout(()=>Shell.result({ok:false,faults:1,stats:[['Grille',`${F.N} × ${F.N}`],['Fausses pistes',String(3-F.pistes)]],details:[raison]}),1400);
 }
@@ -815,14 +815,12 @@ const TSTEPS=[null,
 function tutoAvance(){ if(tutoEtape===1 && F.aretes.size>=2){ tutoEtape=2; Shell.coach(2,2,TSTEPS[2]); } }
 
 /* ---------- niveaux du Challenge ---------- */
-// Taille par paliers (5×5 → 9×9), témoins de confort au début, chrono qui se resserre à chaque niveau.
+// Taille par paliers (5×5 → 9×9), trajet plus long et témoins de confort qui disparaissent. Pas de chrono.
 function reglage(n){
   const N = n<=3?5 : n<=8?6 : n<=15?7 : n<=25?8 : 9;
   const dens = Math.min(.6, .45+.015*(n-1));
   const extra = Math.max(0, 3-Math.floor((n-1)/3));
-  const base = {5:150,6:180,7:210,8:240,9:270}[N];
-  const time = Math.round(base*Math.max(.55, n<=10?1:Math.pow(.97,n-10)));
-  return {N,dens,extra,time};
+  return {N,dens,extra};
 }
 
 Shell.init({
@@ -839,8 +837,8 @@ Shell.init({
   malus:'la piste du fuyard est perdue pour aujourd’hui.',
   onMenu(){ F.over=true; F.tuto=false; },
   onInit(){ charger(filGrille(5,.45,3)); F.over=true; },
-  onPlay(cfg){ F.tuto=false; charger(filGrille(cfg.N,cfg.dens,cfg.extra)||filGrille(5,.45,3)); F.over=false;
-    Shell.startTimer(cfg.time,()=>perd('Temps écoulé : le fuyard a pris trop d’avance.')); },
+  // Pas de chrono : on prend le temps de déduire (le temps passé s'affiche seulement au bilan).
+  onPlay(cfg){ F.tuto=false; charger(filGrille(cfg.N,cfg.dens,cfg.extra)||filGrille(5,.45,3)); F.over=false; },
   onTuto(){ F.tuto=true; charger(TUTO); F.over=false; tutoEtape=1; Shell.coach(1,2,TSTEPS[1]); }
 });
 
