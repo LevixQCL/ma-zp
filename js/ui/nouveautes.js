@@ -15,6 +15,7 @@ export const NOTE_MAJ = {
     ['📻', 'L’appel du jour', 'le même dans toutes les zones. Donne ta consigne, ou laisse ta brigade faire : elle apprend ton style et s’en sert quand tu n’es pas là. Le lendemain, compare avec les autres brigades.'],
     ['🎖️', 'Des galons à attribuer', 'à chaque surnom, une figure gagne un galon : Terrain (une approche réservée sur l’appel du jour) ou Service (un effet chaque soir). L’onglet Chef devient Brigade.'],
     ['🦺', 'Le magasin et l’armurerie', 'polos, chaussures, gilets pare-balles qui périment, taser, FN 303 et bodycams : dans Brigade › Matériel. Achète seul ou en marché groupé avec les autres zones, moins cher pour tout le monde.'],
+    ['🧰', 'Matériel en un coup d’œil', 'la page tient sur un écran : des tuiles d’images (gilets, TTI, tenue, armurerie), ce qui cloche en pastilles sur la bannière, et le détail dans un tiroir quand tu touches une tuile. Ce que tu prévois s’ajoute à « Ce soir » avec le coût.'],
     ['⭐', 'Sortir du rang', 'une recrue formée par tes figures peut devenir ta 6e figure (hôtel de police niveau 2), puis ta 7e (niveau 4).'],
   ],
 

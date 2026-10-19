@@ -3374,3 +3374,72 @@ main.screen.fi { max-width: 640px; margin: 0 auto; }
 .ag-lien { font-size: 11.5px; color: var(--amber, #FFB23F); text-decoration: none; margin-left: auto; }
 .svc2-cases.ag-cases { flex: none; width: 100%; margin-left: 0; padding-left: 0; justify-content: flex-start; align-items: flex-start; }
 .ag-cases .ag-bande { justify-content: flex-start; }
+
+/* Brigade › Matériel, version compacte (oct. 2026) : état en tuiles d'images, détail dans un tiroir. */
+.mt-banniere { position: relative; height: 112px; border-radius: 16px; overflow: hidden; background: var(--surface) center 42% / cover no-repeat; border: 1px solid var(--line); display: flex; align-items: flex-end; }
+.mt-banniere::before { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(12, 17, 36, .05), rgba(12, 17, 36, .88)); }
+.mt-alertes { position: relative; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px; }
+.mt-chip { display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; font: 600 12.5px var(--body); border: 1px solid; background: rgba(10, 13, 28, .78); cursor: pointer; }
+.mt-chip.r { color: var(--red); border-color: rgba(255, 110, 106, .55); }
+.mt-chip.a { color: var(--amber); border-color: var(--amber-line); }
+.mt-chip.ok { color: var(--green); border-color: rgba(61, 211, 154, .45); cursor: default; }
+.mt-panier { display: flex; align-items: center; gap: 10px; padding: 9px 10px 9px 14px; border-radius: 14px; background: var(--amber-bg); border: 1px solid var(--amber-line); }
+.mt-panier > .col { flex: 1; }
+.mt-ellipse { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mt-h { margin: 2px 2px -4px; font: 600 12px var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.mt-etat { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.mt-arm { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.mt-tuile { position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 6px 10px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); color: var(--text); font: inherit; text-align: center; cursor: pointer; min-width: 0; }
+.mt-tuile:hover, .mt-tuile:focus-visible { border-color: var(--amber-line); outline: none; }
+.mt-tuile img { width: 64px; height: 64px; object-fit: contain; border-radius: 10px; }
+.mt-arm .mt-tuile img { width: 50px; height: 50px; }
+.mt-tuile > b { font: 800 20px/1 var(--display); font-variant-numeric: tabular-nums; }
+.mt-arm .mt-tuile > b { font-size: 17px; }
+.mt-tuile.mal { border-color: rgba(255, 110, 106, .55); }
+.mt-tuile.mal > b { color: var(--red); }
+.mt-tuile.moyen > b { color: var(--amber); }
+.mt-tuile.petit { padding: 6px 4px 8px; }
+.mt-tuile.petit img { width: 40px; height: 40px; }
+.mt-tuile.choisi { border-color: var(--amber); background: var(--amber-bg); }
+.mt-tuile:disabled { opacity: .45; cursor: default; }
+.mt-l { font-size: 11.5px; color: var(--muted); line-height: 1.2; }
+.mt-jauge { display: block; width: 100%; height: 5px; border-radius: 3px; background: var(--surface3); overflow: hidden; }
+.mt-jauge i { display: block; height: 100%; border-radius: 3px; }
+.mt-duo { display: grid; grid-template-columns: auto 1fr; gap: 3px 5px; align-items: center; width: 100%; font-size: 10px; color: var(--muted); text-align: left; }
+.mt-pts { display: flex; gap: 3px; justify-content: center; }
+.mt-pts i { width: 6px; height: 6px; border-radius: 50%; background: var(--surface3); }
+.mt-pts i.on { background: var(--amber); }
+.mt-past { position: absolute; top: 5px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px; font: 700 11.5px/20px var(--body); box-sizing: border-box; }
+.mt-past.r { right: 5px; background: var(--red); color: #2A0606; }
+.mt-past.c { left: 5px; background: var(--amber); color: var(--amber-ink); }
+.mt-lignes { display: flex; flex-direction: column; border-radius: 14px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); }
+.mt-ligne { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto 12px; gap: 10px; align-items: center; padding: 9px 12px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--text); font: 600 14px var(--body); text-align: left; cursor: pointer; }
+.mt-ligne:first-child { border-top: 0; }
+.mt-ligne:hover { background: var(--surface2); }
+.mt-ligne img, .mt-ic { width: 40px; height: 40px; border-radius: 10px; object-fit: contain; }
+.mt-ic { display: grid; place-items: center; background: var(--surface2); color: var(--blue); font-size: 18px; }
+.mt-ligne .tiny { font-weight: 400; }
+.mt-badge { font-size: 12px; font-weight: 600; color: var(--amber); }
+.mt-chev { color: var(--faint); font-size: 18px; }
+.mt-bs { max-height: 86vh; overflow-y: auto; }
+.mt-fixe { animation: none !important; }
+.mt-tete { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.mt-tete img { width: 64px; height: 64px; object-fit: contain; border-radius: 14px; background: var(--surface2); }
+.mt-fermer { background: none; border: 0; color: var(--muted); font-size: 26px; line-height: 1; padding: 4px 6px; cursor: pointer; }
+.mt-info { margin: 0; display: flex; gap: 8px; font-size: 12.5px; line-height: 1.4; color: var(--muted); }
+.mt-info::before { content: "i"; flex: none; width: 16px; height: 16px; margin-top: 1px; border-radius: 50%; border: 1px solid var(--faint); display: grid; place-items: center; font: italic 700 10px/1 var(--body); }
+.mt-choix { display: flex; flex-direction: column; gap: 6px; }
+.mt-seg { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 4px; padding: 4px; border-radius: 12px; background: var(--bg); }
+.mt-seg button { border: 1px solid transparent; background: none; color: var(--text2); border-radius: 9px; padding: 7px 4px; font: 600 13px/1.15 var(--body); cursor: pointer; }
+.mt-seg button small { display: block; font-weight: 400; font-size: 11px; color: var(--muted); }
+.mt-seg button.on { background: var(--amber-bg); border-color: var(--amber-line); color: var(--amber); }
+.mt-pas { display: flex; align-items: center; gap: 12px; }
+.mt-pas > button { width: 40px; height: 40px; flex: none; border-radius: 12px; border: 1px solid var(--line); background: var(--surface2); color: var(--text); font-size: 20px; cursor: pointer; }
+.mt-pas > button:disabled { opacity: .35; cursor: default; }
+.mt-pas > b { font: 800 22px var(--display); min-width: 26px; text-align: center; }
+.mt-action { display: flex; align-items: center; gap: 10px; }
+.mt-prix { flex: 1; font: 800 20px var(--display); }
+.mt-prix small { display: block; font: 400 11.5px var(--body); color: var(--muted); }
+.mt-rang { display: flex; align-items: center; gap: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.mt-rang > img { width: 44px; height: 44px; flex: none; object-fit: contain; border-radius: 10px; }
+.mt-seg button:focus-visible, .mt-pas > button:focus-visible, .mt-ligne:focus-visible, .mt-chip:focus-visible, .mt-fermer:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
