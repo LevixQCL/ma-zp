@@ -824,11 +824,20 @@ function reglage(n){
   return {N,dens,extra};
 }
 
+/* Mini-événement (lancé depuis Ma ZP) : une seule filature en réglage confortable, pour découvrir le jeu, puis invitation au Challenge. */
+const EVT={'2026-10-filature-bijouterie':{
+  headline:'Braquage à la bijouterie',
+  story:`<p>Ce matin, un individu a braqué la bijouterie de ta zone puis a filé à pied à travers le quartier. Le Service Recherche a récupéré les images des <b>caméras</b> et deux <b>témoins</b> l’ont vu passer.</p><p><b>Reconstitue son trajet</b> de tuile en tuile, de la bijouterie jusqu’à la sortie de la zone. Pas de chrono : prends le temps de déduire.</p>`,
+  niveau:4, go:'🗺️ Prendre la filature'}}[new URLSearchParams(location.search).get('evt')]||null;
+
 Shell.init({
   key:'filature', service:'Service Recherche', serviceShort:'Recherche',
+  evt:EVT?{go:EVT.go, finTitre:'Tu as aimé la filature ?',
+    cfg:()=>Object.assign(Shell.cfgNiveau(EVT.niveau),{label:EVT.headline,evt:true}),
+    fin:'Retrouve-la quand tu veux dans <b>Énigmes › Entraînement › 🏆 Challenge</b> : des quartiers de plus en plus grands, moins de témoins, et un record à battre.'}:null,
   unit:['enquêteur','enquêteurs'], effLabel:'Enquêteurs sur la filature',
-  headline:'Filature',
-  story:`<p>Braquage à la bijouterie : le fuyard a traversé le quartier avant de quitter la zone. Les <b>caméras</b> l’ont vu passer, et quelques <b>témoins</b> sont formels.</p><p><b>Reconstitue son trajet</b> de tuile en tuile, de la bijouterie jusqu’à la sortie.</p>`,
+  headline:EVT?EVT.headline:'Filature',
+  story:EVT?EVT.story:`<p>Braquage à la bijouterie : le fuyard a traversé le quartier avant de quitter la zone. Les <b>caméras</b> l’ont vu passer, et quelques <b>témoins</b> sont formels.</p><p><b>Reconstitue son trajet</b> de tuile en tuile, de la bijouterie jusqu’à la sortie.</p>`,
   diffs:{difficile:{agents:1,label:'Difficile',...reglage(10)},normal:{agents:2,label:'Normal',...reglage(7)},facile:{agents:3,label:'Facile',...reglage(4)}},
   niveau:(n,out)=>({...out,...reglage(n)}),
   diffHint:'Plus d’enquêteurs : une plus petite zone à fouiller.',

@@ -23,6 +23,7 @@ export const NOTE_MAJ = {
 
   sections: [
     ['Filature (19 octobre)', [
+      ['Pour découvrir', 'l’événement « Braquage à la bijouterie » sur ta page d’accueil (jusqu’au 8 novembre) : une seule filature en 6×6, sans effet sur ta zone.'],
       ['Où', 'Records › mini-jeux, avec les autres Challenges. Record de la partie, titre « Fin limier » et prime de la semaine dès le niveau 5.'],
       ['Le principe', 'glisse le doigt de tuile en tuile depuis la bijouterie (repère rouge, à gauche) jusqu’à la sortie (en bas). Chaque chiffre dit combien de tuiles de sa ligne ou de sa colonne le trajet traverse ; les tuiles dorées sont des témoignages sûrs. Une seule bonne réponse par grille.'],
       ['Les niveaux', 'grilles de 5×5 (niveaux 1 à 3), 6×6 (4 à 8), 7×7 (9 à 15), 8×8 (16 à 25) puis 9×9. Des témoins de confort au début, qui disparaissent au fil des niveaux, et un trajet de plus en plus long. Pas de chrono : prends le temps de déduire. Trois fausses pistes et le niveau est raté.'],

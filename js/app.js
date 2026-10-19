@@ -32,7 +32,7 @@ import { ouvrirBudget, ouvrirVehicule, ouvrirLogistique, ouvrirParc, rafraichirL
 import { DECOR, decorDebloque, conditionDecor, decorValide, skinsEnVente } from './engine/decor.js';
 import { cabossesChoisis } from './engine/parc.js';
 import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveautes.js';
-import { actuAuBesoin, ouvrirActu, EVT_ACTU, marquerEvtJoue } from './ui/actu.js';
+import { actuAuBesoin, ouvrirActu, evtParId, marquerEvtJoue } from './ui/actu.js';
 import { lucAuBesoin, ouvrirLuc, noterLuc, marquerLucJoue, LUC } from './ui/luc.js';
 import { tutoAuBesoin, lancerTuto, tutoFait } from './ui/tutoriel.js';
 import { lancerRoulette } from './ui/roulette.js';
@@ -455,8 +455,8 @@ async function onClick(e) {
       case 'filet-ouvrir': case 'filet-duree': case 'filet-lancer': case 'filet-abandon': { if (await actionFilet(a, el, { confirmer: askConfirm })) rerender(); break; }
       case 'dilemme': { const i = Number(el.dataset.i); S.draft.dilemme = S.draft.dilemme === i ? null : i; S.ordersDirty = true; rerender(); break; }
       case 'prime-choix': { const v = el.dataset.v; S.draft.prime = S.draft.prime === v ? null : v; S.ordersDirty = true; rerender(); break; }
-      case 'actu-voir': ouvrirActu(lancerActu); break;
-      case 'actu-jouer': lancerActu(); break;
+      case 'actu-voir': ouvrirActu(evtParId(el.dataset.id), lancerActu); break;
+      case 'actu-jouer': lancerActu(evtParId(el.dataset.id)); break;
       case 'luc-jouer': lancerLuc(); break;
       case 'luc-voir': ouvrirLuc(lancerLuc); break;
       case 'jauge-skins': ouvrirJaugeSkins(); break;
@@ -1600,9 +1600,9 @@ async function annoncerNDAuto(rattrapage = false) {
 
 /** Compteurs d'entraînement envoyés au serveur, pour le classement du maître du jeu. */
 /** Événement d'actualité : lance son mini-jeu (Challenge) avec le scénario du jour. */
-async function lancerActu() {
+async function lancerActu(E) {
   try { S.players = await S.backend.getPlayers(); } catch (e) { /* hors ligne */ }
-  ouvrirMiniJeu(EVT_ACTU.jeu, { mode: 'train', evt: EVT_ACTU.id, onEntrainement: (x) => { noterEntrainement(x); marquerEvtJoue(); }, onFin: () => rerender() });
+  ouvrirMiniJeu(E.jeu, { mode: 'train', evt: E.id, onEntrainement: (x) => { noterEntrainement(x); marquerEvtJoue(E); }, onFin: () => rerender() });
 }
 /** Événement « Rattrape Luc » : mini-jeu pour le fun (records de la partie, aucun effet sur la zone). */
 async function lancerLuc() {
