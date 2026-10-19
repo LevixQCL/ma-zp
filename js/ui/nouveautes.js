@@ -20,6 +20,15 @@ export const NOTE_MAJ = {
   ],
 
   sections: [
+    ['Des prix plus logiques (19 octobre, 20:00)', [
+      ['Pourquoi', 'tous les prix ont été comparés aux coûts réels d’une zone de police belge (budgets votés, marchés publics). Les recettes débordaient : une zone bien gérée amassait de l’argent même en achetant tout.'],
+      ['Recettes', 'dotation fédérale 9 000 € par jour (au lieu de 10 000). Confiance de la commune : 100 € par point de réputation au-dessus de 50, plafonnée à 3 000 € par jour (au lieu de 200 € par point, sans plafond). Secteur de non-droit tenu : 2 000 € par nuit (au lieu de 3 000).'],
+      ['Matériel moins cher à l’achat', 'lot de 5 gilets 1 500 €, gilets ajustés 2 000 €, taser 1 000 €, FN 303 800 €, lot de 3 bodycams 1 200 €, lot de 5 casques 1 400 €.'],
+      ['Mais il coûte chaque jour', 'licence et cartouches : 150 € par taser ; munitions : 100 € par FN 303 ; stockage des vidéos : 80 € par bodycam. Sans budget pour l’armurerie, elle reste au râtelier le lendemain (pas de dette).'],
+      ['Véhicules', 'combi diesel 6 000 €, combi électrique 6 500 €, voiture anonymisée 4 500 €, fourgon 7 000 €.'],
+      ['Annexes', 'stand de tir 32 000 €, complexe cellulaire 23 000 €, atelier mécanique et salle de crise 9 000 €, assistance aux victimes 7 500 €, salle de sport 6 500 €, salle d’audition 5 500 €, logiciel 5 000 €, cellule drone 4 500 €. Antenne de quartier et caméras : 10 000 €, inchangé.'],
+      ['Garage et recrues', 'agrandir le garage : 13 000 € puis +5 000 € par niveau. Une recrue coûte 4 500 € (une année d’école), 3 500 € si ta réputation est haute, 5 500 € si elle est basse.'],
+    ]],
     ['Magasin et armurerie (18 octobre, 20:00)', [
       ['Où', 'onglet Brigade, nouvelle vue Matériel. Les commandes partent avec tes ordres du soir et sont payées à 20:00.'],
       ['La tenue', 'polos, t-shirts et chaussures se paient avec la masse d’habillement (+1 point par jour, 12 au plus, perdus en fin de saison). Tenue neuve : moral +0,8 par jour ; usée : −1 ; en lambeaux : −1,5. Chaussures usées : plus de blessures.'],

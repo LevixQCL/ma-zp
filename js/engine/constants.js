@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 168;
+export const APP_VERSION = 169;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -37,7 +37,7 @@ export const START = {
 export const DEFAULT_ALLOC = { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 };
 
 export const ECONOMIE = {
-  dotation: 10,            // k€ par tour
+  dotation: 9,             // k€ par tour (audit des prix, oct. 2026 : 10 → 9, les recettes débordaient)
   salaire: 0.3,            // k€ par agent et par tour
   entretienVehicule: 0.2,  // k€ par véhicule et par tour
   coutRenforce: 2,         // k€ par tour en rythme renforcé
@@ -45,7 +45,7 @@ export const ECONOMIE = {
 };
 
 export const COUTS = {
-  recrue: 2,          // k€ par recrue
+  recrue: 4.5,        // k€ par recrue (audit des prix : une année d'école ; 2 → 4,5)
   formation: 4,       // k€
   vehicule: 6,        // k€
   equipementBase: 5,  // k€ pour passer du niveau 1 au niveau 2, puis +2 k€ par niveau
@@ -204,22 +204,23 @@ export const AGENTS_EN_FORMATION = 2;
 export const NIVEAU_MAX = 5;
 
 export const INFRAS = {
-  sport:    { nom: 'Salle de sport', cout: 10, effet: '+1 de moral par tour' },
-  logiciel: { nom: 'Logiciel de gestion des dossiers', cout: 10, effet: 'Paperasse traitée 50 % plus vite' },
+  // Audit des prix (oct. 2026) : prix calés sur la racine du prix réel (combi = 6 k€) ; avant, toutes à 10 k€.
+  sport:    { nom: 'Salle de sport', cout: 6.5, effet: '+1 de moral par tour' },
+  logiciel: { nom: 'Logiciel de gestion des dossiers', cout: 5, effet: 'Paperasse traitée 50 % plus vite' },
   anpr:     { nom: 'Caméras de lecture de plaques', cout: 10, effet: 'Radars automatiques +1 k€ par tour, Roulage +20 %, « chasse aux PV » seulement au-delà de 40 % des effectifs', fixe: 1 },
   antenne:  { nom: 'Antenne de quartier', cout: 10, effet: 'Proximité +30 %' },
-  garage:   { nom: 'Atelier mécanique', cout: 8, effet: 'Usure des véhicules divisée par deux' },
-  audition: { nom: "Salle d'audition moderne", cout: 10, effet: 'Recherche +20 %' },
+  garage:   { nom: 'Atelier mécanique', cout: 9, effet: 'Usure des véhicules divisée par deux' },
+  audition: { nom: "Salle d'audition moderne", cout: 5.5, effet: 'Recherche +20 %' },
   // Stand de tir : entraînement régulier au tir et aux techniques d'intervention.
   // `bonus` : multiplicateur de l'Intervention ; `blessure` : multiplicateur du risque de blessure
   // (interpellations des affaires, assauts en zone de non-droit) ; une rébellion ne blesse plus qu'un agent.
   // `formation` : la formation Intervention se fait au stand, moins chère et sans agents absents.
-  tir:      { nom: 'Stand de tir', cout: 10, effet: 'Intervention +15 %, formation Intervention à moitié prix et sans agents absents, agents deux fois moins souvent blessés', bonus: 1.15, blessure: 0.5, formation: { cout: 2, agents: 0 } },
+  tir:      { nom: 'Stand de tir', cout: 32, effet: 'Intervention +15 %, formation Intervention à moitié prix et sans agents absents, agents deux fois moins souvent blessés', bonus: 1.15, blessure: 0.5, formation: { cout: 2, agents: 0 } },
   // Saison 2 (règles v2) : quatre annexes de plus, dans des emplacements limités (voir emplacementsAnnexes).
-  cachots:  { nom: 'Complexe cellulaire', cout: 10, effet: 'Interpellations (affaires, flagrants délits) +25 % de points, une relève se prend avec un agent de moins, garde à vue : le premier interpellé de chaque affaire balance une pièce d’enquête (1 agent de garde le lendemain)', points: 0.25 },
-  drone:    { nom: 'Cellule drone', cout: 12, effet: 'Non-droit : dès 3 agents engagés, le drone les guide (force +20 %, blessures −30 %). Traque : un survol ajoute un indice sur la planque', force: 1.2, blessure: 0.7, minAgents: 3 },
-  crise:    { nom: 'Salle de crise', cout: 10, effet: 'Non-droit : force +15 % quand au moins deux zones attaquent le même secteur ; crise du district : ta participation compte un agent de plus', coop: 0.15 },
-  sapv:     { nom: 'Assistance aux victimes', cout: 10, effet: 'Accueil +20 %, la satisfaction retombe 20 % moins vite, plaintes et audits de l’Inspection deux fois moins fréquents', admin: 1.2, derive: 0.8 },
+  cachots:  { nom: 'Complexe cellulaire', cout: 23, effet: 'Interpellations (affaires, flagrants délits) +25 % de points, une relève se prend avec un agent de moins, garde à vue : le premier interpellé de chaque affaire balance une pièce d’enquête (1 agent de garde le lendemain)', points: 0.25 },
+  drone:    { nom: 'Cellule drone', cout: 4.5, effet: 'Non-droit : dès 3 agents engagés, le drone les guide (force +20 %, blessures −30 %). Traque : un survol ajoute un indice sur la planque', force: 1.2, blessure: 0.7, minAgents: 3 },
+  crise:    { nom: 'Salle de crise', cout: 9, effet: 'Non-droit : force +15 % quand au moins deux zones attaquent le même secteur ; crise du district : ta participation compte un agent de plus', coop: 0.15 },
+  sapv:     { nom: 'Assistance aux victimes', cout: 7.5, effet: 'Accueil +20 %, la satisfaction retombe 20 % moins vite, plaintes et audits de l’Inspection deux fois moins fréquents', admin: 1.2, derive: 0.8 },
 };
 /** Annexes de base (avant la saison 2), dessinées et proposées dans toutes les parties. */
 export const ANNEXES_V1 = ['sport', 'logiciel', 'anpr', 'antenne', 'garage', 'audition', 'tir'];
@@ -334,7 +335,7 @@ export const ND = {
   // ne divise pas les gains), plus une part selon l'influence.
   prise: { points: 4.5, pointsPart: 9, prime: 7.5, satisfaction: 3, rep: 3, moral: 2 },     // à la reprise, partagés selon l'influence (rep et moral : pour chacun)
   coeurMult: 2.5,
-  retombees: { points: 0.45, pointsPart: 1.2, budget: 3, satisfaction: 0.3, ps: 3, satisfactionMax: 1 },       // chaque nuit, par secteur tenu, partagés selon l'influence
+  retombees: { points: 0.45, pointsPart: 1.2, budget: 2, satisfaction: 0.3, ps: 3, satisfactionMax: 1 },       // chaque nuit, par secteur tenu, partagés selon l'influence
   contagion: 1.2,         // tension ajoutée chaque nuit aux quartiers qui touchent un secteur du milieu
   apaisement: 0.8,        // tension retirée chaque nuit aux quartiers qui touchent un secteur repris
   riposte: 0.25,          // chance, chaque nuit, que le milieu riposte sur un secteur tenu
@@ -405,19 +406,20 @@ export const BATIMENTS = {
   garage: {
     nom: 'Garage', unite: 'véhicules', texte: 'Places de parking et pont de levage : fixe le nombre de véhicules de la zone.',
     capacite: (n) => 2 + 2 * n,           // 4, 6, 8, 10, 12 véhicules
-    coutAgrandir: (n) => 6 + 4 * n,       // 10, 14, 18, 22 k€
+    coutAgrandir: (n) => 8 + 5 * n,       // 13, 18, 23, 28 k€ (audit des prix : 10, 14, 18, 22 avant)
     entretien: (n) => 0.25 * n,
   },
 };
 // Subside communal : la commune finance une partie de chaque agent au-delà de l'effectif de départ,
 // et ajoute (ou retire) un montant selon la confiance qu'elle a dans la zone (sa réputation).
-// Bonus de 0,2 k€ par point au-dessus de 50 ; malus deux fois plus doux en dessous, pour ne pas enfoncer une zone déjà en difficulté.
-export const SUBSIDE = { parAgent: 0.15, seuil: START.agents, confiance: 0.2, confianceMalus: 0.1 };
+// Bonus de 0,1 k€ par point au-dessus de 50 (plafonné à 3 k€), malus de 0,1 k€ par point en dessous.
+// Audit des prix (oct. 2026) : confiance 0,2 → 0,1 k€ par point, plafonnée à +3 k€ par jour (+6 k€ à 80 de réputation avant).
+export const SUBSIDE = { parAgent: 0.15, seuil: START.agents, confiance: 0.1, confianceMalus: 0.1, confianceMax: 3 };
 
 // Réputation : effets concrets.
 export const REPUTATION = {
-  recrueHaute: 65, coutRecrueHaute: 1.5,   // zone réputée : les candidats se bousculent
-  recrueBasse: 35, coutRecrueBasse: 2.5,   // zone mal vue : il faut payer plus pour attirer
+  recrueHaute: 65, coutRecrueHaute: 3.5,   // zone réputée : les candidats se bousculent
+  recrueBasse: 35, coutRecrueBasse: 5.5,   // zone mal vue : il faut payer plus pour attirer
   scandale: 60, scandaleMalus: 3,          // (ancien : manœuvre ratée d'une zone bien vue ; les manœuvres ont disparu)
 };
 

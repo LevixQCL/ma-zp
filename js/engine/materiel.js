@@ -12,12 +12,12 @@ export const MAT = {
   chaussures: { usure: 1, cout: 5 },
   // Moral par jour selon l'état de la tenue.
   moralTenue: [[75, 0.8], [45, 0], [25, -1], [0, -1.5]],
-  gilets: { lot: 5, prix: 3, validite: 28, perime: 1.35, refus: 0.3, coupRefus: 0.4, arrete: 0.7, ajuste: { prix: 4, risque: 0.85, moral: 0.3 }, moralTrou: -0.6 },
-  taser: { lot: 1, prix: 2.5, cert: { agents: 2, prix: 1, validite: 14 }, max: 3, risque: 0.05 },
+  gilets: { lot: 5, prix: 1.5, validite: 28, perime: 1.35, refus: 0.3, coupRefus: 0.4, arrete: 0.7, ajuste: { prix: 2, risque: 0.85, moral: 0.3 }, moralTrou: -0.6 },
+  taser: { lot: 1, prix: 1, possession: 0.15, cert: { agents: 2, prix: 1, validite: 14 }, max: 3, risque: 0.05 },
   // FN 303 : lanceur de projectiles non létaux, même vocation que le taser (neutraliser à distance), plus de portée.
-  fn303: { lot: 1, prix: 2, cert: { agents: 2, prix: 1, validite: 14 }, max: 2, risque: 0.03 },
-  bodycam: { lot: 3, prix: 2, entretien: 0.05, max: 3, sat: 0.15, procedure: 0.05 },
-  gnep: { lot: 5, prix: 2.5 },
+  fn303: { lot: 1, prix: 0.8, possession: 0.1, cert: { agents: 2, prix: 1, validite: 14 }, max: 2, risque: 0.03 },
+  bodycam: { lot: 3, prix: 1.2, entretien: 0.08, max: 3, sat: 0.15, procedure: 0.05 },
+  gnep: { lot: 5, prix: 1.4 },
   voies: {
     centrale: { nom: 'Centrale d’achat fédérale', mult: 1, delai: 3 },
     negociee: { nom: 'Procédure négociée', mult: 1.4, delai: 1 },
@@ -110,9 +110,12 @@ function recycler(m, type, n, fin) {
 }
 export const mat = (z) => (z.materiel ||= creerMateriel(z, 1));
 export const certifiesActifs = (m, T) => (m.certifies || []).filter((c) => c.fin > T).reduce((s, c) => s + c.n, 0);
-export const tasersActifs = (m, T) => Math.min(MAT.taser.max, m.taser || 0, Math.floor(certifiesActifs(m, T) / 2));
+export const auRatelier = (m, T) => !!(m && m.rangeT && m.rangeT === T);
+/** Coût de possession quotidien de l'armurerie (k€). */
+export const possession = (m) => Math.round(((m.taser || 0) * MAT.taser.possession + (m.fn303 || 0) * MAT.fn303.possession + (m.bodycam || 0) * MAT.bodycam.entretien) * 100) / 100;
+export const tasersActifs = (m, T) => auRatelier(m, T) ? 0 : Math.min(MAT.taser.max, m.taser || 0, Math.floor(certifiesActifs(m, T) / 2));
 export const brevetesFN = (m, T) => ((m && m.brevetsFN) || []).filter((c) => c.fin > T).reduce((s, c) => s + c.n, 0);
-export const fnActifs = (m, T) => Math.min(MAT.fn303.max, (m && m.fn303) || 0, Math.floor(brevetesFN(m, T) / 2));
+export const fnActifs = (m, T) => auRatelier(m, T) ? 0 : Math.min(MAT.fn303.max, (m && m.fn303) || 0, Math.floor(brevetesFN(m, T) / 2));
 /** Gilets valides ce soir : { std, ajustes, total }. */
 export function giletsValides(m, T) {
   const ok = (m.gilets || []).filter((g) => g.fin > T);
@@ -273,7 +276,13 @@ export function materielDuTour(state, z, o, T) {
   { const df = (m.brevetsFN || []).filter((c) => c.fin === T).reduce((s, c) => s + c.n, 0); if (df) L.push(`${df} agents perdent leur brevet FN 303 ce soir : recyclage nécessaire.`); }
   for (const type of ['af', 'saf']) { const e = ((m.tti && m.tti[type]) || []).filter((x) => x.fin === T).reduce((s, x) => s + x.n, 0); if (e) L.push(`${e} agents arrivent au terme de leur ${MAT.tti[type].nom} ce soir : recyclage à prévoir.`); }
   if (m.tti) for (const type of ['af', 'saf']) m.tti[type] = m.tti[type].filter((x) => x.fin > T - 10);
-  if (m.bodycam) { const e = Math.round(Math.ceil(m.bodycam / MAT.bodycam.lot) * MAT.bodycam.entretien * 100) / 100; z.budget -= e; (z._compta ||= []).push({ k: 'materiel', l: 'Maintenance des bodycams', v: -e }); }
+  // Coût de possession (audit des prix, oct. 2026) : licences et cartouches des tasers, munitions du FN 303, stockage des vidéos.
+  // Si le budget ne suit pas, l'armement reste au râtelier ce jour-là (pas de dette).
+  { const c = possession(m);
+    if (c > 0) {
+      if (z.budget >= c) { z.budget -= c; (z._compta ||= []).push({ k: 'materiel', l: 'Armurerie : licences, cartouches, stockage vidéo', v: -c }); delete m.rangeT; }
+      else { m.rangeT = T + 1; L.push('Budget insuffisant pour l’armurerie (licences, cartouches, stockage) : tasers, FN 303 et bodycams restent au râtelier demain.'); }
+    } }
   // Céder du matériel à une autre zone (son surplus seulement).
   for (const cd of Array.isArray(om.ceder) ? om.ceder.slice(0, 2) : []) { const t = ceder(state, z, cd, T); if (t) L.push(t); }
   // Inspection surprise.
@@ -287,7 +296,7 @@ export function materielDuTour(state, z, o, T) {
   const trou = Math.max(0, n - g.total) / n;
   if (trou > 0.3) { dm += MAT.gilets.moralTrou; if (makeRng(`${state.seed}:s${state.season}:t${T}:syndic:${z.uid}`).chance(0.25)) L.push(`Les syndicats s’inquiètent : ${Math.round(trou * 100)} % des agents sans gilet valide.`); }
   z.moral += dm;
-  const bc = Math.min(MAT.bodycam.max, Math.floor((m.bodycam || 0) / MAT.bodycam.lot));
+  const bc = auRatelier(m, T) ? 0 : Math.min(MAT.bodycam.max, Math.floor((m.bodycam || 0) / MAT.bodycam.lot));
   if (bc) z.satisfaction += MAT.bodycam.sat * bc;
   if (trouTTI(z, T, 'saf') > MAT.tti.seuilSAF) { z.satisfaction += MAT.tti.satSAF; }
   return L;
@@ -303,7 +312,7 @@ export function optionsMateriel(z, appel, T) {
   return o;
 }
 /** Bonus de réussite des approches « procédure » avec des bodycams. */
-export const bonusBodycam = (z) => (z && z.materiel && z.materiel.bodycam >= MAT.bodycam.lot ? MAT.bodycam.procedure : 0);
+export const bonusBodycam = (z, T) => (z && z.materiel && z.materiel.bodycam >= MAT.bodycam.lot && !auRatelier(z.materiel, T ?? z.materiel._T) ? MAT.bodycam.procedure : 0);
 
 /** Gilets qui manqueront dans `jours` jours (en comptant les commandes en route). */
 export function giletsAPrevoir(z, T, jours = 3) {

@@ -5,19 +5,8 @@ import { newZone } from '../js/engine/zone.js';
 import { BOT_PROFILES, botOrders } from '../js/engine/bots.js';
 import { adaptatif } from './strat-adaptatif.mjs';
 import { appelDuJour, optionsAppel } from '../js/engine/brigade.js';
-import { ARTICLES, brevetesFN, fnActifs, tasersActifs, mat, giletsValides, certifiesActifs, MAT, ttiValides } from '../js/engine/materiel.js';
+import { brevetesFN, mat, giletsValides, certifiesActifs, MAT, ttiValides } from '../js/engine/materiel.js';
 const N = Number(process.argv[2] || 8), filtre = process.argv[3];
-// Prototype « le matériel coûte vraiment » (PROTO=1) : prix relevés et coût de possession quotidien.
-const PROTO = process.env.PROTO === '1';
-import { HORS_REVENU } from '../js/engine/constants.js';
-if (process.env.INVEST === '1') HORS_REVENU.add('materiel');
-const PRIX = { gilets: 5, gilets_ajustes: 6.5, taser: 5, fn303: 4, bodycam: 4, gnep: 4 };
-if (PROTO) {
-  for (const [k, v] of Object.entries(PRIX)) ARTICLES[k].prix = v;
-  MAT.taser.cert.prix = 1.5; MAT.fn303.cert.prix = 1.5; MAT.tti.af.prix = 2; MAT.tti.saf.prix = 1;
-}
-/** Coût de possession du soir (cartouches, munitions, stockage vidéo, entretien) : prototype hors moteur. */
-const possession = (z, T) => { const m = z.materiel; if (!m || !PROTO) return 0; return 0.2 * (m.taser || 0) + 0.2 * (m.fn303 || 0) + 0.1 * (m.bodycam || 0) + 0.03 * (m.gnep || 0); };
 const moy = (a) => a.reduce((s, x) => s + x, 0) / a.length;
 
 /** Entretien de base : tenue et chaussures avec la masse, gilets remplacés avant le trou. */
@@ -80,7 +69,6 @@ function saison(seed, pol) {
     if (pol.fonceur) { const op = optionsAppel(z, appelDuJour(st)); const i = op.findIndex((x) => x.app === 'force' && !x.materiel); if (i >= 0) o.appel = i; }
     if (z.materiel && pol.gerer) { o.materiel = entretien(z, st, pol.voie || 'centrale', pol); if (pol.plus) equiperPlus(z, st, o.materiel); if (pol.fn) equiperFN(z, st, o.materiel); if (pol.casques && (mat(z).gnep || 0) < 10 && !(mat(z).commandes || []).some((c) => c.item === 'gnep')) o.materiel.commandes.push({ item: 'gnep', lots: 2, voie: 'centrale' }); }
     if (pol.passif) { Object.assign(o, { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal' }); for (const k of Object.keys(o)) if (!['alloc', 'rythme', 'materiel', 'appel'].includes(k)) delete o[k]; }
-    z.budget -= possession(z, st.turn); possTot += possession(z, st.turn);
     const avant = (z.blesses || []).length, b0 = z.budget;
     const r = resolveTurn(st, { orders: { ...ord, moi: o }, quests: {}, players: {}, nextWeekday: (t + 1) % 7 });
     st = r.state; const z2 = st.zones.moi;
@@ -117,5 +105,5 @@ const pols = {
 for (const [nom, pol] of Object.entries(pols)) {
   if (filtre && !nom.includes(filtre)) continue;
   const v = []; for (let s = 0; s < N; s++) v.push(saison(`mat-${s}`, pol));
-  console.log(nom.padEnd(34), 'IPZ', moy(v.map((x) => x.fin)).toFixed(2), '· blessés à l’appel', moy(v.map((x) => x.blesses)).toFixed(1), '· moral', moy(v.map((x) => x.moral)).toFixed(1), '· budget J13', moy(v.map((x) => x.budget)).toFixed(0), 'k€ (mini', Math.min(...v.map((x) => x.mini)).toFixed(0) + ')', '· matériel/jour', (moy(v.map((x) => x.depense)) + moy(v.map((x) => x.poss))).toFixed(1), 'k€ · refus', moy(v.map((x) => x.refus)).toFixed(1));
+  console.log(nom.padEnd(34), 'IPZ', moy(v.map((x) => x.fin)).toFixed(2), '· blessés à l’appel', moy(v.map((x) => x.blesses)).toFixed(1), '· moral', moy(v.map((x) => x.moral)).toFixed(1), '· budget J13', moy(v.map((x) => x.budget)).toFixed(0), 'k€ (mini', Math.min(...v.map((x) => x.mini)).toFixed(0) + ')', '· matériel/jour', moy(v.map((x) => x.depense)).toFixed(1), 'k€ · refus', moy(v.map((x) => x.refus)).toFixed(1));
 }

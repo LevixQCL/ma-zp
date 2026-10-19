@@ -47,7 +47,7 @@ import { agentsMontes, primeVerte, bonusFilature, bonusOrdre, apportAchat, herit
   assert.equal(entretienFlotte(z), 0.75);
   assert.equal(prixRevente(z, 1), Math.round(MODELES.electrique.prix * 0.6 * 10) / 10);
   z.flotte[0].u = 70; assert.equal(prixRevente(z, 0), Math.round(6 * 0.18 * 10) / 10);
-  z.cabosses = [{ slot: 2 }]; assert.equal(prixRevente(z, 2), Math.round(7 * 0.6 * 0.7 * 10) / 10);
+  z.cabosses = [{ slot: 2 }]; assert.equal(prixRevente(z, 2), Math.round(MODELES.anonyme.prix * 0.6 * 0.7 * 10) / 10);
   assert.equal(coutDecision(z, { type: 'equiper', cible: 'vehicule', modele: 'fourgon' }), MODELES.fourgon.prix);
   const l = vehiculesUrgence(z, 2);
   assert.ok(!l.some((v) => v.slot === 3) && l[0].mult >= l[l.length - 1].mult, 'urgence : véhicules en service, du plus rapide au plus lent');

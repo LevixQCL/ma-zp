@@ -81,8 +81,8 @@ export const niveauEquipement = (z) => z.batiments.bureaux + z.batiments.garage 
 
 /** Subside communal : une part du salaire de chaque agent au-delà de l'effectif de départ. */
 export const subsideAgents = (z, nouveaux = 0) => SUBSIDE.parAgent * Math.max(0, z.agents - nouveaux - SUBSIDE.seuil);
-/** Bonus (ou malus) communal selon la réputation : 0 à 50, jusqu'à ±2,5 k€ par tour aux extrêmes. */
-export const confianceCommune = (z) => { const e = clamp(z.reputation, 0, 100) - 50; return round1(e * (e >= 0 ? SUBSIDE.confiance : SUBSIDE.confianceMalus)); };
+/** Bonus (ou malus) communal selon la réputation : de −5 à +3 k€ par tour (audit des prix, oct. 2026). */
+export const confianceCommune = (z) => { const e = clamp(z.reputation, 0, 100) - 50; return round1(Math.min(SUBSIDE.confianceMax ?? Infinity, e * (e >= 0 ? SUBSIDE.confiance : SUBSIDE.confianceMalus))); };
 /** Prix d'une recrue selon la réputation de la zone. */
 export function coutRecrue(z) {
   if (z.reputation >= REPUTATION.recrueHaute) return REPUTATION.coutRecrueHaute;

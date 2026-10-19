@@ -144,7 +144,7 @@ export function resoudreAppel(state, z, ord, T) {
   }
   const meneur = figureDe(z, CTX[appel.ctx].role);
   const binome = adjointsDe(z).find((a) => a.role === CTX[appel.ctx].role) || null;
-  const p = Math.min(0.95, op.p + (meneur && meneur.spec ? BRIGADE.specBonus : 0) + (binome ? RANG.bonusAppel : 0) + (op.app === 'procedure' ? bonusBodycam(z) : 0) - (op.app === 'force' && z.materiel && z.materiel.tti && trouTTI(z, T, 'af') > 0.3 ? 0.1 : 0));
+  const p = Math.min(0.95, op.p + (meneur && meneur.spec ? BRIGADE.specBonus : 0) + (binome ? RANG.bonusAppel : 0) + (op.app === 'procedure' ? bonusBodycam(z, T) : 0) - (op.app === 'force' && z.materiel && z.materiel.tti && trouTTI(z, T, 'af') > 0.3 ? 0.1 : 0));
   const ok = makeRng(`${state.seed}:s${state.season}:t${T}:appel-res:${z.uid}`).next() < p;
   const eff = { ...(ok ? op.ok : op.ko) };
   z._points = (z._points || 0) + (eff.pts || 0);

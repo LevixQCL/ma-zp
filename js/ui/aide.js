@@ -129,8 +129,8 @@ export const AIDES = {
     titre: 'Confiance de la commune',
     intro: 'La commune verse (ou retient) un montant chaque soir selon ta réputation. C’est une ligne de ton budget, pas une jauge à part.',
     lignes: [
-      `<strong>Calcul</strong> : au-dessus de 50, (réputation − 50) × ${k2(SUBSIDE.confiance)} k€ ; en dessous, × ${k2(SUBSIDE.confianceMalus)} k€ seulement`,
-      `<strong>Exemples</strong> : réputation 80 → +${k2(30 * SUBSIDE.confiance)} k€ · 50 → 0 · 30 → −${k2(20 * SUBSIDE.confianceMalus)} k€ · 100 → +${k2(50 * SUBSIDE.confiance)} k€`,
+      `<strong>Calcul</strong> : au-dessus de 50, (réputation − 50) × ${k2(SUBSIDE.confiance)} k€, plafonné à ${k2(SUBSIDE.confianceMax)} k€ ; en dessous, × ${k2(SUBSIDE.confianceMalus)} k€`,
+      `<strong>Exemples</strong> : réputation 70 → +${k2(Math.min(SUBSIDE.confianceMax, 20 * SUBSIDE.confiance))} k€ · 50 → 0 · 30 → −${k2(20 * SUBSIDE.confianceMalus)} k€ · 80 et plus → +${k2(SUBSIDE.confianceMax)} k€`,
       '<strong>Réputation prise en compte</strong> : celle du moment où le budget est calculé à 20:00, après les affaires, l’entraide et l’enquête du soir, mais avant le retour naturel vers 50',
     ],
     conseil: 'Pour la faire monter : monter ta réputation (partages d’indices, entraide, renforts, zone de non-droit à plusieurs).',

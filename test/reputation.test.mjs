@@ -20,7 +20,8 @@ assert.equal(f0.lignes.find((l) => l.k === 'confiance').v, 0, 'confiance affich�
 z.agents = SUBSIDE.seuil + 10; z.reputation = 80;
 const f1 = fraisFixes(z, s);
 assert.equal(f1.lignes.find((l) => l.k === 'subside').v, 1.5);
-assert.equal(f1.lignes.find((l) => l.k === 'confiance').v, 6, 'réputation 80 : +6 k€');
+assert.equal(f1.lignes.find((l) => l.k === 'confiance').v, 3, 'réputation 80 : +3 k€ (plafond, audit des prix)');
+z.reputation = 70; assert.equal(fraisFixes(z, s).lignes.find((l) => l.k === 'confiance').v, 2, 'réputation 70 : +2 k€');
 z.reputation = 20;
 assert.equal(fraisFixes(z, s).lignes.find((l) => l.k === 'confiance').v, -3, 'réputation 20 : −3 k€ (malus deux fois plus doux)');
 

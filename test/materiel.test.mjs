@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { newZone } from '../js/engine/zone.js';
 import { creerEquipe } from '../js/engine/equipe.js';
-import { fnActifs, brevetesFN, ttiValides, trouTTI, facteurTTI, fonction, appliquerFonctions, ceder, inspecter, accueillirRecrues, effetCasquesND, surplus, gammeDe, creerMateriel, giletsValides, facteurGilets, risqueMateriel, prixMarche, abimer, degatsDuSoir, ordresMaterielRobot, MAT, materielDuTour } from '../js/engine/materiel.js';
+import { possession, auRatelier, tasersActifs, fnActifs, brevetesFN, ttiValides, trouTTI, facteurTTI, fonction, appliquerFonctions, ceder, inspecter, accueillirRecrues, effetCasquesND, surplus, gammeDe, creerMateriel, giletsValides, facteurGilets, risqueMateriel, prixMarche, abimer, degatsDuSoir, ordresMaterielRobot, MAT, materielDuTour } from '../js/engine/materiel.js';
 import { makeRng } from '../js/engine/rng.js';
 
 const ALLOC = { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 };
@@ -152,5 +152,18 @@ assert.ok(Math.abs(prixMarche(12) - MAT.marche.base * 0.75) < 1e-9);
   st = resolveTurn(st, { orders: { a: { alloc: ALLOC, rythme: 'normal', materiel: { brevetFN: true } } }, quests: {}, players: {}, nextWeekday: 3 }).state;
   assert.equal(brevetesFN(st.zones.a.materiel, st.turn), 2, 'deux agents brevetés FN 303');
   assert.ok(st.zones.a.rapport.some((l) => l.startsWith('Brevet FN 303')));
+}
+// Coût de possession : payé chaque soir ; sans budget, l'armurerie reste au râtelier le lendemain (pas de dette).
+{
+  const z = { uid: 'p', agents: 20, budget: 10 }; z.materiel = creerMateriel(z, 1);
+  Object.assign(z.materiel, { taser: 2, certifies: [{ n: 4, fin: 20 }], fn303: 1, bodycam: 3 });
+  assert.equal(possession(z.materiel), Math.round((2 * MAT.taser.possession + MAT.fn303.possession + 3 * MAT.bodycam.entretien) * 100) / 100);
+  const st = { seed: 'poss', season: 1, zones: { p: z }, marches: [] };
+  materielDuTour(st, z, {}, 1);
+  assert.ok(Math.abs(z.budget - (10 - possession(z.materiel))) < 1e-9, 'payé sur le budget');
+  assert.equal(tasersActifs(z.materiel, 2), 2);
+  z.budget = 0.1; materielDuTour(st, z, {}, 2);
+  assert.equal(z.budget, 0.1, 'pas de dette');
+  assert.ok(auRatelier(z.materiel, 3) && tasersActifs(z.materiel, 3) === 0, 'au râtelier le lendemain');
 }
 console.log('magasin et armurerie : ok');

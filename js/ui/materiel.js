@@ -3,7 +3,7 @@
 import { S, esc, myZone, fmtK } from './common.js';
 import { COULEUR_ROLE, initiales } from './equipe.js';
 import { enRodage } from '../engine/brigade.js';
-import { MAT, ARTICLES, creerMateriel, giletsValides, certifiesActifs, tasersActifs, fnActifs, brevetesFN, trouGilets, facteurGilets, prixMarche, gammeDe, surplus, ttiValides, trouTTI, facteurTTI, fonction, ttiDepart } from '../engine/materiel.js';
+import { MAT, ARTICLES, creerMateriel, giletsValides, certifiesActifs, tasersActifs, fnActifs, brevetesFN, possession, auRatelier, trouGilets, facteurGilets, prixMarche, gammeDe, surplus, ttiValides, trouTTI, facteurTTI, fonction, ttiDepart } from '../engine/materiel.js';
 
 const IMG = (k) => `img/materiel/${k}.webp`;
 const ico = (k, c = '') => `<img class="mat-ico${c ? ` ${c}` : ''}" src="${IMG(k)}" alt="" loading="lazy">`;
@@ -42,6 +42,7 @@ const coul = (p) => (p >= 0.9 ? 'var(--green)' : p >= 0.6 ? 'var(--amber)' : 'va
 const jauge = (p) => `<span class="mt-jauge"><i style="width:${Math.round(Math.max(0, Math.min(1, p)) * 100)}%;background:${coul(p)}"></i></span>`;
 const info = (t) => `<p class="mt-info">${t}</p>`;
 const ARM = ['taser', 'fn303', 'bodycam', 'gnep'];
+const COUT_JOUR = { taser: MAT.taser.possession, fn303: MAT.fn303.possession, bodycam: MAT.bodycam.entretien };
 const NOM_ARM = { taser: 'Taser', fn303: 'FN 303', bodycam: 'Bodycams', gnep: 'Casques' };
 
 /** Commande de gilets en cours (standard ou ajustés), ou le réglage en attente du tiroir. */
@@ -102,6 +103,7 @@ export function materielVueHtml() {
   if (m.chaussures < 50) al.push(chip('a', 'tenue', 'Chaussures usées'));
   if (m.masse >= MAT.masse.max && !o.masse.length) al.push(chip('a', 'tenue', 'Masse pleine'));
   for (const k of ['taser', 'fn303']) if ((m[k] || 0) > srv[k] && srv[k] < MAT[k].max) al.push(chip('a', k, `${NOM_ARM[k]} sans breveté`));
+  if (auRatelier(m, T)) al.unshift(chip('r', 'taser', 'Armurerie au râtelier (budget)'));
   if (!al.length) al.push('<span class="mt-chip ok">Tout le monde est équipé</span>');
 
   const tuile = (k, img, v, l, extra, etat) => `<button type="button" class="mt-tuile${etat ? ` ${etat}` : ''}" data-action="mat-ouvrir" data-k="${k}">${prevu(k) ? '<span class="mt-past c" title="prévu ce soir">+</span>' : ''}<img src="${img}" alt="" loading="lazy">${v ? `<b>${v}</b>` : ''}${extra || ''}<span class="mt-l">${l}</span></button>`;
@@ -122,7 +124,7 @@ export function materielVueHtml() {
       ${tuile('tti', 'img/agents/inter.webp', `${af}/${n}`, saf < n ? `TTI arme · sans arme ${saf}` : 'TTI à jour', jauge(pa), etat(pa))}
       ${tuile('tenue', IMG('tenue'), '', `tenue · ${m.masse} pts`, `<span class="mt-duo"><span>Polos</span>${jauge(m.tenue / 100)}<span>Chauss.</span>${jauge(m.chaussures / 100)}</span>`, m.tenue < 45 || m.chaussures < 50 ? 'moyen' : '')}
     </div>
-    <h2 class="mt-h">Armurerie</h2>
+    <h2 class="mt-h">Armurerie${possession(m) ? ` · ${fmtK(possession(m))} par jour` : ''}</h2>
     <div class="mt-arm">
       ${tuile('taser', IMG('taser'), `${srv.taser}/${m.taser || 0}`, 'Taser', points('taser'))}
       ${tuile('fn303', IMG('fn303'), `${srv.fn303}/${m.fn303 || 0}`, 'FN 303', points('fn303'))}
@@ -182,13 +184,14 @@ function tiroirTenue(z, m, T, o, tete) {
     ${info(`Tenue usée : moral en baisse. Chaussures usées : plus de blessures. Les points non utilisés sont perdus en fin de saison.`)}`;
 }
 function tiroirArme(k, z, m, T, o, tete) {
-  const EFF = { taser: 'Ouvre « Neutraliser au taser » sur l’appel du jour (arme, fuite, foule).', fn303: 'Même vocation que le taser, plus de portée : « Tir FN 303 à distance » (arme, foule).', bodycam: `Moins de plaintes, approches « procédure » +5 %. Entretien ${fmtK(MAT.bodycam.entretien)} par jour et par lot.`, gnep: 'Ouvre « Cordon casqué » face aux foules. Au non-droit : plus de force, moins de blessés.' };
+  const EFF = { taser: 'Ouvre « Neutraliser au taser » sur l’appel du jour (arme, fuite, foule).', fn303: 'Même vocation que le taser, plus de portée : « Tir FN 303 à distance » (arme, foule).', bodycam: 'Moins de plaintes, approches « procédure » +5 %.', gnep: 'Ouvre « Cordon casqué » face aux foules. Au non-droit : plus de force, moins de blessés.' };
   const brev = k === 'taser' || k === 'fn303';
   const nb = k === 'taser' ? certifiesActifs(m, T) : k === 'fn303' ? brevetesFN(m, T) : 0, srv = k === 'taser' ? tasersActifs(m, T) : k === 'fn303' ? fnActifs(m, T) : 0;
   const on = k === 'taser' ? o.certifier : o.brevetFN, mt = fonction(z, 'moniteurTaser');
   const sous = brev ? `${srv} en service · ${m[k] || 0} en armurerie · ${nb} brevetés` : `${m[k] || 0} en service`;
   return `${tete(IMG(k), ARTICLES[k].nom, sous)}
     ${info(EFF[k] + (brev ? ` Il faut ${MAT[k].cert.agents} agents brevetés par appareil en service.` : ''))}
+    ${COUT_JOUR[k] ? info(`Chaque jour : ${fmtK(COUT_JOUR[k])} par ${k === 'bodycam' ? 'caméra' : 'appareil'} (${k === 'taser' ? 'licence et cartouches' : k === 'fn303' ? 'munitions' : 'stockage des vidéos'}). Sans budget, il reste au râtelier.`) : ''}
     ${blocCommande(k, false)}
     ${brev ? `<div class="mt-rang"><img src="img/agents/inter_taser.webp" alt=""><span class="col grow" style="gap:1px;min-width:0"><span class="small"><b>Breveter ${MAT[k].cert.agents} agents</b> · ${fmtK(MAT[k].cert.prix * (mt ? 0.5 : 1))}</span><span class="tiny muted">1 jour de formation · valable ${mt ? 21 : MAT[k].cert.validite} jours</span></span><button type="button" class="btn small ${on ? 'on' : 'ghost'}" data-action="${k === 'taser' ? 'mat-cert' : 'mat-cert-fn'}" ${!m[k] ? 'disabled' : ''}>${on ? 'Prévu ✓' : 'Former'}</button></div>` : ''}`;
 }
