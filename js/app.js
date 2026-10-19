@@ -1358,7 +1358,9 @@ async function onClick(e) {
         S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
       case 'admin-create': await b.adminCreateGame(); toast('Partie lancée !'); break;
       case 'brigade-vue': S.brigadeVue = ['equipe', 'materiel'].includes(el.dataset.v) ? el.dataset.v : 'chef'; rerender(); break;
-      case 'figure-ouvrir': S.figureOuverte = S.figureOuverte === el.dataset.role ? null : el.dataset.role; rerender(); break;
+      case 'figure-ouvrir': S.figureOuverte = S.figureOuverte === el.dataset.role ? null : el.dataset.role; S.figNeuf = !!S.figureOuverte; rerender(); break;
+      case 'appel-hier': S.hierOuvert = !S.hierOuvert; rerender(); break;
+      case 'co-aller': { const c = document.getElementById(`co-${el.dataset.k}`); if (c) { if (c.tagName === 'DETAILS') c.open = true; c.scrollIntoView({ behavior: 'smooth', block: 'start' }); } break; }
       case 'appel-choix': { const i = Number(el.dataset.i); S.draft.appel = i >= 0 ? i : null; S.ordersDirty = true; rerender(); break; }
       case 'sortir-rang': { S.draft.sortirRang = !S.draft.sortirRang; S.ordersDirty = true; rerender(); break; }
       case 'galon-reset': { S.draft.galonsReset = S.draft.galonsReset === el.dataset.role ? null : el.dataset.role; S.ordersDirty = true; rerender(); break; }

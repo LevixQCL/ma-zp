@@ -83,10 +83,11 @@ export function semaineHtml(z, { ouvert = false, duelOk = true } = {}) {
         ${portraitChef(r, 40, { galons: false })}</span>
       <span class="tiny muted" style="text-align:left">Victoire : +${DUEL.rep} de réputation, +${DUEL.xp} XP en Commandement.${z.chef.duels ? ` Ton palmarès : ${z.chef.duels.v} victoire${z.chef.duels.v > 1 ? 's' : ''}, ${z.chef.duels.d} défaite${z.chef.duels.d > 1 ? 's' : ''}.` : ''}</span></button>`;
   }
+  const anneaux = `<span class="obj-anneaux" aria-hidden="true">${o.liste.map((x) => { const O = OBJECTIFS[x.id]; const pc = Math.min(100, Math.round(x.prog / x.cible * 100)); return O ? `<span class="obj-anneau" style="--c:${COUL_COMP[O.comp]};--p:${pc}%" title="${esc(texteObjectif(x))}"><span>${x.fait ? '✓' : `${x.prog}/${x.cible}`}</span></span>` : ''; }).join('')}</span>`;
   const dd = z.chef.dernierDuel && z.chef.dernierDuel.w === w - 1 && z.chef.dernierDuel.season === st.season && T <= (w - 1) * 7 + 2 ? z.chef.dernierDuel : null;
   return `<details class="card repli semaine" data-k="semaine" ${S.ouverts && S.ouverts.semaine !== undefined ? (S.ouverts.semaine ? 'open' : '') : ouvert ? 'open' : ''}>
     <summary><span class="col grow" style="gap:0"><span style="font-weight:700">Ta semaine de chef</span>
-      <span class="tiny muted">Objectifs ${nb}/3${nb === 3 ? ' · <b class="ok">semaine parfaite</b>' : ` · ${reste} jour${reste > 1 ? 's' : ''} restant${reste > 1 ? 's' : ''}`}${zr && duelOk ? ` · duel contre ${esc(zr.nom)}` : ''}</span></span><span class="tiny muted">▾</span></summary>
+      <span class="tiny muted">Objectifs ${nb}/3${nb === 3 ? ' · <b class="ok">semaine parfaite</b>' : ` · ${reste} jour${reste > 1 ? 's' : ''} restant${reste > 1 ? 's' : ''}`}${zr && duelOk ? ` · duel contre ${esc(zr.nom)}` : ''}</span></span>${anneaux}<span class="tiny muted">▾</span></summary>
     <div class="col" style="gap:8px">${obj}
       <span class="tiny muted">Touche un objectif pour savoir où et comment le remplir. Seuls les jours où tu donnes tes ordres comptent. Chaque objectif : expérience et +1 de réputation. Les trois : médaille de la semaine (+${RECOMPENSE.medaille.ps} PS)${h && h.serie > 1 ? `, série en cours : ${h.serie} semaines` : ''}.</span>
       ${dd ? `<p class="small ${dd.res === 'v' ? 'ok' : dd.res === 'd' ? 'warn' : 'muted'}" style="margin:0">Duel de la semaine passée contre ${st.zones[dd.rival] ? esc(st.zones[dd.rival].nom) : '?'} : ${dd.res === 'v' ? 'gagné' : dd.res === 'd' ? 'perdu' : 'égalité'} (${fmt(dd.moi)} à ${fmt(dd.lui)}).</p>` : ''}

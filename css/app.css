@@ -3443,3 +3443,80 @@ main.screen.fi { max-width: 640px; margin: 0 auto; }
 .mt-rang { display: flex; align-items: center; gap: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
 .mt-rang > img { width: 44px; height: 44px; flex: none; object-fit: contain; border-radius: 10px; }
 .mt-seg button:focus-visible, .mt-pas > button:focus-visible, .mt-ligne:focus-visible, .mt-chip:focus-visible, .mt-fermer:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+/* Brigade › Équipe illustrée (oct. 2026) : appel du jour en scène, approches en tuiles, figures en rangée + tiroir. */
+.ap { border-radius: 18px; overflow: hidden; background: var(--surface); border: 1px solid var(--amber-line); }
+.ap-scene { position: relative; aspect-ratio: 16 / 8; background: var(--surface2) center / cover no-repeat; display: flex; align-items: flex-end; }
+.ap-scene::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(12, 17, 36, 0) 30%, rgba(12, 17, 36, .95)); }
+.ap-scene > div { position: relative; z-index: 1; padding: 12px 14px; display: grid; gap: 5px; }
+.ap-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.ap-tag { font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: rgba(10, 13, 28, .78); border: 1px solid var(--line); color: var(--text2); }
+.ap-tag.a { color: var(--amber); border-color: var(--amber-line); }
+.ap-titre { margin: 0; font: 800 19px/1.15 var(--display); text-wrap: balance; }
+.ap-corps { padding: 12px; display: grid; gap: 10px; }
+.ap-choix { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.ap-op { position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; align-items: center; text-align: left; padding: 9px 8px 8px; border-radius: 14px; background: var(--surface2); border: 1px solid var(--line); color: var(--text); font: inherit; cursor: pointer; }
+.ap-op > img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; }
+.ap-op-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.ap-k { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--blue); }
+.ap-op.plus .ap-k { color: var(--amber); }
+.ap-op b { font-size: 13px; line-height: 1.2; }
+.ap-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 2px; }
+.ap-risque { display: inline-flex; gap: 2px; }
+.ap-risque i { width: 7px; height: 7px; border-radius: 2px; background: var(--surface3); }
+.ap-gain { font-size: 11px; font-weight: 600; color: var(--green); }
+.ap-op.on { border-color: var(--amber); background: var(--amber-bg); }
+.ap-op:focus-visible, .ap-lien:focus-visible, .fg:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.ap-badge { position: absolute; top: -8px; right: 8px; display: inline-flex; gap: 4px; align-items: center; font-size: 10.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px; background: var(--amber); color: var(--amber-ink); }
+.ap-badge img { width: 14px; height: 14px; }
+.ap-consigne { display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: var(--text2); }
+.ap-consigne > img { width: 28px; height: 28px; flex: none; }
+.ap-lien { background: none; border: 0; padding: 0; color: var(--blue); font: inherit; font-size: 12.5px; cursor: pointer; text-align: left; }
+.ap-hier { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.ap-hier-t { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.ap-barre { display: flex; height: 26px; gap: 2px; border-radius: 8px; overflow: hidden; }
+.ap-barre div { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 700; min-width: 34px; }
+.ap-barre img { width: 18px; height: 18px; }
+.ap-liste { display: grid; gap: 2px; font-size: 12.5px; color: var(--text2); }
+.fg-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.fg { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 2px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); color: var(--text); font: inherit; cursor: pointer; min-width: 0; }
+.fg.on { border-color: var(--c); }
+.fg-av { width: 52px; height: 52px; border-radius: 50%; border: 3px solid var(--c); background: var(--surface2); overflow: hidden; display: grid; place-items: end center; flex: none; }
+.fg-av img { width: 58px; height: 58px; object-fit: cover; object-position: top; margin-bottom: -6px; }
+.fg-av.grand { width: 64px; height: 64px; }
+.fg-av.grand img { width: 70px; height: 70px; }
+.fg > b { font-size: 11.5px; line-height: 1.1; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fg > small { font-size: 10px; color: var(--muted); }
+.fg-pts { display: flex; gap: 2px; }
+.fg-pts i { width: 6px; height: 6px; border-radius: 50%; background: var(--c); opacity: .85; }
+.fg-et { font-size: 10px; color: var(--amber); letter-spacing: 1px; }
+.fg-gal { position: absolute; top: -6px; right: -2px; font-size: 10.5px; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: var(--amber); color: var(--amber-ink); }
+.fg-bs { max-height: 86vh; overflow-y: auto; }
+.fg-bs.fixe, .bs.fixe { animation: none; }
+.fg-tete { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.fg-nom { font: 800 18px/1.15 var(--display); }
+.fg-fermer { background: none; border: 0; color: var(--muted); font-size: 26px; line-height: 1; padding: 4px 6px; cursor: pointer; }
+
+/* Onglet Chef illustré (oct. 2026) : bureau en bandeau, étapes du soir, tuiles en images, fiche en grille. */
+.co-hero { background: linear-gradient(90deg, rgba(12, 17, 36, .93) 35%, rgba(12, 17, 36, .45)), var(--surface) url(../img/chef/bureau.webp) center 30% / cover no-repeat; }
+.co-lieu .ico img { width: 52px; height: 52px; object-fit: contain; border-radius: 10px; display: block; }
+.co-lieu { min-height: 0; }
+.co-effet .co-effet-img { width: 28px; height: 28px; border-radius: 6px; flex: none; }
+.co-front { align-items: center; text-align: center; }
+.co-front > img { width: 48px; height: 48px; object-fit: contain; border-radius: 10px; }
+.co-front[aria-pressed="true"] { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 13%, var(--surface2)); }
+.co-front[data-v=""][aria-pressed="true"] { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 13%, var(--surface2)); }
+.co-soir { display: grid; gap: 6px; }
+.co-etape { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 12px; background: var(--surface); border: 1px solid var(--line); color: var(--text); font: 600 11.5px var(--body); cursor: pointer; text-align: center; min-width: 0; }
+.co-etape > img { width: 34px; height: 34px; object-fit: cover; border-radius: 8px; }
+.co-etape small { font-size: 10.5px; color: var(--amber); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.co-etape.ok { border-color: rgba(61, 211, 154, .4); }
+.co-etape.ok small { color: var(--green); }
+.co-etape:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.chef-onglet .hp-ajd { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.chef-onglet .hp-ajd > h2 { grid-column: 1 / -1; }
+.chef-onglet .hp-ajd > details { margin: 0; }
+.chef-onglet .hp-ajd > details[open] { grid-column: 1 / -1; }
+.obj-anneaux { display: flex; gap: 4px; margin-left: auto; margin-right: 6px; flex: none; }
+.obj-anneau { width: 34px; height: 34px; border-radius: 50%; background: conic-gradient(var(--c) var(--p), var(--surface3) 0); display: grid; place-items: center; }
+.obj-anneau span { width: 26px; height: 26px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font: 800 9.5px var(--body); }

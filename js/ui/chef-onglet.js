@@ -17,7 +17,7 @@ export const CHEF_V3 = { actif: false };
  *  `defOuvert` : état par défaut ; un toucher du joueur (S.ouverts) l'emporte ensuite pour la session. */
 function pli(k, defOuvert, { ico, titre, sous, ok = false, neufBadge = false, cls = '', label = '' }, corps) {
   const o = S.ouverts && S.ouverts[k] !== undefined ? S.ouverts[k] : defOuvert;
-  return `<details class="card repli co-pli ${cls}" data-k="${k}" aria-label="${esc(label || titre)}" ${o ? 'open' : ''}>
+  return `<details id="${k}" class="card repli co-pli ${cls}" data-k="${k}" aria-label="${esc(label || titre)}" ${o ? 'open' : ''}>
     <summary><span class="co-pli-ico" aria-hidden="true">${ico}</span><span class="col grow" style="gap:0;min-width:0"><span class="co-pli-t">${titre}</span>${sous ? `<span class="tiny muted co-pli-s">${sous}</span>` : ''}</span>${neufBadge ? badgeNeuf : ok ? `<span class="co-pli-ok">${icon('check', 14)}</span>` : ''}${icon('chevron', 16)}</summary>
     <div class="col co-pli-corps">${corps}</div></details>`;
 }
@@ -64,8 +64,8 @@ function agendaHtml(z, d, chef, j) {
   if (hs) return `<section class="card"><h2 class="card-title" style="margin:0">Où passe ton chef aujourd’hui ?</h2><p class="small bad" style="margin:0">🏥 À l’hôpital jusqu’au jour ${chef.blesse} : agenda au bureau, talents coupés, pas de première ligne.</p></section>`;
   const corpsAgenda = `<div class="co-lieux">${ORDRE_AGENDA.map((k) => { const L = AGENDA[k], ok = ouvert(k); return `<button type="button" class="co-lieu ${ok ? '' : 'verr'}" data-action="chef-agenda" data-v="${k}" aria-pressed="${cur === k && ok}" ${ok ? '' : 'disabled'} style="--c:${COUL[L.comp]}">
       ${cur === k && ok ? `<span class="co-pion">${portraitChef(z.uid, 28, { galons: false })}</span>` : ''}
-      <span class="ico">${ok ? L.ico : '🔒'}</span><span class="n">${esc(L.nom)}</span><span class="c">${ok ? `${COMPETENCES[L.comp].ico} ${esc(COMPETENCES[L.comp].nom)}` : `jour ${AGENDA_JOUR[k]}`}</span></button>`; }).join('')}</div>
-    <div class="co-effet"><span>${A.ico}</span><span><b>${esc(A.nom)}</b> · ${esc(cur === 'terrain' ? `le service choisi travaille 10 % mieux ce soir` : A.effet)}. ${cc(A.comp, `+2 XP`)}</span></div>
+      <span class="ico">${ok ? `<img src="img/chef/agenda/${k}.webp" alt="">` : '🔒'}</span><span class="n">${esc(L.nom)}</span><span class="c">${ok ? `${COMPETENCES[L.comp].ico} ${esc(COMPETENCES[L.comp].nom)}` : `jour ${AGENDA_JOUR[k]}`}</span></button>`; }).join('')}</div>
+    <div class="co-effet"><img class="co-effet-img" src="img/chef/agenda/${cur}.webp" alt=""><span><b>${esc(A.nom)}</b> · ${esc(cur === 'terrain' ? `le service choisi travaille 10 % mieux ce soir` : A.effet)}. ${cc(A.comp, `+2 XP`)}</span></div>
     ${cur === 'terrain' ? `<div class="co-chips">${['intervention', 'proximite', 'recherche', 'roulage', 'admin'].map((s2) => `<button type="button" class="chef-chip" data-action="chef-agenda-svc" data-v="${s2}" aria-pressed="${(a.service || 'intervention') === s2}">${esc(s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2])}</button>`).join('')}</div>` : ''}
     ${cur === 'voisin' ? `<div class="co-chips">${voisins.length ? voisins.map((x) => `<button type="button" class="chef-chip" data-action="chef-agenda-voisin" data-v="${esc(x.uid)}" aria-pressed="${a.zone === x.uid}">${esc(x.nom)}${z.chef && z.chef.visites && z.chef.visites[x.uid] != null && S.state.turn - z.chef.visites[x.uid] < 7 ? ' <span class="tiny muted">· déjà vu cette semaine</span>' : ''}</button>`).join('') : '<span class="tiny muted">Aucun autre chef dans la partie.</span>'}</div>
       <span class="tiny muted">La réunion n’a lieu que si ce chef vient aussi chez toi ce soir : convenez-en sur la Radio.</span>` : ''}`;
@@ -75,7 +75,7 @@ function agendaHtml(z, d, chef, j) {
     const sous = `${esc(A.nom)}${cur === 'terrain' ? ` · ${esc(a.service === 'admin' ? 'Accueil' : SERVICE_LABELS[a.service || 'intervention'])} +10 %` : ''}`;
     return pli('co-agenda', neuf(j, 1) || !choisi, { ico: A.ico, titre: 'Où passe ton chef aujourd’hui ?', sous, ok: choisi, neufBadge: neuf(j, 1), cls: `co-agenda ${neuf(j, 1) ? 'co-new' : ''}`, label: 'Agenda du chef' }, corpsAgenda);
   }
-  return `<section class="card co-agenda ${neuf(j, 1) ? 'co-new' : ''}" aria-label="Agenda du chef">
+  return `<section id="co-agenda" class="card co-agenda ${neuf(j, 1) ? 'co-new' : ''}" aria-label="Agenda du chef">
     <div class="between"><h2 class="card-title" style="margin:0">Où passe ton chef aujourd’hui ?</h2>${neuf(j, 1) ? badgeNeuf : ''}</div>
     ${corpsAgenda}
   </section>`;
@@ -122,9 +122,9 @@ function parapheurHtml(z, d, j) {
     return pli('co-para', !tout || S.paraIdx != null, { ico: '🖋️', titre: 'Le parapheur', sous: tout ? `${faits}/${liste.length} signé${faits > 1 ? 's' : ''} · rangé` : `${liste.length - faits} courrier${liste.length - faits > 1 ? 's' : ''} à signer`, ok: tout, cls: `co-para ${neuf(j, 1) ? 'co-new' : ''}`, label: 'Le parapheur' },
       `${j <= 2 ? intro : ''}${tout && S.paraIdx == null ? '' : corps}${signes}`);
   }
-  return `<section class="card co-para ${neuf(j, 1) ? 'co-new' : ''}" aria-label="Le parapheur">
+  return `<section id="co-para" class="card co-para ${neuf(j, 1) ? 'co-new' : ''}" aria-label="Le parapheur">
     <div class="between"><h2 class="card-title" style="margin:0">Le parapheur</h2><span class="tiny ${faits === liste.length ? 'ok' : 'muted'}" style="font-weight:700">${faits}/${liste.length} signé${faits > 1 ? 's' : ''}</span></div>
-    ${intro}
+    ${j <= 2 ? intro : ''}
     ${corps}
     ${signes}
   </section>`;
@@ -161,15 +161,15 @@ function talentsHtml(z, d, chef, j) {
 
 function frontHtml(z, d, chef, j) {
   if (chef.blesse != null && S.state.turn <= chef.blesse) return '';
-  const corpsFront = `<div class="co-fronts"><button type="button" class="co-front" data-action="chef-front" data-v="" aria-pressed="${!d.chefFront}"><span class="n">🪑 Rester au QG</span><span class="s">aucun risque</span></button>
-      ${IDS_FRONT.map((k) => { const F = FRONT[k]; return `<button type="button" class="co-front" data-action="chef-front" data-v="${k}" aria-pressed="${d.chefFront === k}"><span class="n">${COMPETENCES[F.comp].ico} ${esc(F.court)}</span><span class="s">${esc(F.effet(niveauChef(chef, F.comp)))}</span></button>`; }).join('')}</div>
+  const corpsFront = `<div class="co-fronts"><button type="button" class="co-front" data-action="chef-front" data-v="" aria-pressed="${!d.chefFront}"><img src="img/chef/front/qg.webp" alt=""><span class="n">Rester au QG</span><span class="s">aucun risque</span></button>
+      ${IDS_FRONT.map((k) => { const F = FRONT[k]; return `<button type="button" class="co-front" data-action="chef-front" data-v="${k}" aria-pressed="${d.chefFront === k}"><img src="img/chef/front/${k}.webp" alt=""><span class="n">${esc(F.court)}</span><span class="s">${esc(F.effet(niveauChef(chef, F.comp)))}</span></button>`; }).join('')}</div>
     ${d.chefFront ? `<div class="co-risque"><span>Risque de blessure</span><span class="j"><i style="width:${Math.round(RISQUE_FRONT.base * 100)}%"></i></span><b>${Math.round(RISQUE_FRONT.base * 100)} %</b></div><span class="tiny muted">Blessé : ${RISQUE_FRONT.jours} jours d’hôpital, talents coupés. Le bonus ne compte que si l’action a lieu ce soir. +2 XP en ${esc(COMPETENCES[FRONT[d.chefFront].comp].nom)}.</span>` : ''}`;
   if (CHEF_V3.actif) {
     // Rester au QG est un choix comme un autre : la carte se replie sur la décision du soir.
     const F = d.chefFront && FRONT[d.chefFront];
     return pli('co-front', neuf(j, 4), { ico: F ? COMPETENCES[F.comp].ico : '🪑', titre: 'En première ligne ce soir ?', sous: F ? `${esc(F.court)} · risque ${Math.round(RISQUE_FRONT.base * 100)} %` : 'Il reste au QG · aucun risque', neufBadge: neuf(j, 4), cls: neuf(j, 4) ? 'co-new' : '', label: 'Première ligne' }, corpsFront);
   }
-  return `<section class="card ${neuf(j, 4) ? 'co-new' : ''}" aria-label="Première ligne">
+  return `<section id="co-front" class="card ${neuf(j, 4) ? 'co-new' : ''}" aria-label="Première ligne">
     <div class="between"><h2 class="card-title" style="margin:0">En première ligne ce soir ?</h2>${neuf(j, 4) ? badgeNeuf : ''}</div>
     ${corpsFront}
   </section>`;
@@ -188,7 +188,7 @@ function reseauHtml(z, d, chef, j) {
     const R = d.reseau && RESEAU[d.reseau];
     return pli('co-reseau', neuf(j, 5), { ico: '📞', titre: 'Le réseau', sous: R ? `${esc(R.nom)} te rend service ce soir` : dispo ? `${dispo} contact${dispo > 1 ? 's' : ''} prêt${dispo > 1 ? 's' : ''} à te rendre service` : 'personne de disponible cette semaine', ok: !!R, neufBadge: neuf(j, 5), cls: neuf(j, 5) ? 'co-new' : '', label: 'Le réseau' }, corpsRes);
   }
-  return `<section class="card ${neuf(j, 5) ? 'co-new' : ''}" aria-label="Le réseau">
+  return `<section id="co-reseau" class="card ${neuf(j, 5) ? 'co-new' : ''}" aria-label="Le réseau">
     <div class="between"><h2 class="card-title" style="margin:0">Le réseau</h2>${neuf(j, 5) ? badgeNeuf : '<span class="tiny muted">un service par personne et par semaine</span>'}</div>
     ${corpsRes}
   </section>`;
@@ -209,6 +209,19 @@ function parrainHtml(z, d, chef) {
     <label class="field tiny"><select class="text" data-change="chef-parrainer"><option value="">Personne</option>${filleuls.map((x) => `<option value="${esc(x.uid)}" ${d.parrainer === x.uid ? 'selected' : ''}>${zoneName(x)}</option>`).join('')}</select></label></section>`;
 }
 
+/** Ce soir : les décisions du jour en étapes illustrées ; un toucher mène à la carte. */
+function soirHtml(z, d, chef, j) {
+  if (chef.blesse != null && S.state.turn <= chef.blesse) return '';
+  const T = S.state.turn, dd = d || {}, e = [];
+  const ag = (dd.agenda && dd.agenda.type) || null;
+  e.push({ k: 'agenda', n: 'Agenda', img: `img/chef/agenda/${ag || 'bureau'}.webp`, ok: !!ag || ordresEnvoyes(), s: ag ? AGENDA[ag].nom.replace(/^(Au|À la|Sur le|En|Chez un) /, '') : 'au bureau' });
+  const liste = courriersDuJour(S.state, z), rep = dd.parapheur || {};
+  if (liste.length) { const f = liste.filter((id) => Object.hasOwn(rep, id)).length; e.push({ k: 'para', n: 'Parapheur', img: 'img/brigade/procedure.webp', ok: f === liste.length, s: `${f}/${liste.length} signé${f > 1 ? 's' : ''}` }); }
+  if (j >= 4) e.push({ k: 'front', n: '1re ligne', img: `img/chef/front/${dd.chefFront || 'qg'}.webp`, ok: true, s: dd.chefFront ? FRONT[dd.chefFront].court : 'au QG' });
+  if (j >= 5) { const dispo = IDS_RESEAU.filter((id) => !servicePossible(z, id, T)).length; e.push({ k: 'reseau', n: 'Réseau', img: `img/bureau/${dd.reseau || IDS_RESEAU.find((id) => !servicePossible(z, id, T)) || 'bourgmestre'}-${dd.reseau ? 1 : 0}.webp`, ok: !!dd.reseau, s: dd.reseau ? 'service demandé' : dispo ? `${dispo} disponible${dispo > 1 ? 's' : ''}` : 'personne' }); }
+  return `<div class="co-soir" style="grid-template-columns:repeat(${e.length},minmax(0,1fr))">${e.map((x) => `<button type="button" class="co-etape${x.ok ? ' ok' : ''}" data-action="co-aller" data-k="${x.k}"><img src="${x.img}" alt=""><span>${x.n}</span><small>${x.ok ? '✓ ' : ''}${esc(x.s)}</small></button>`).join('')}</div>`;
+}
+
 /** L'onglet complet. `extra` : { nuit, semaine(duel), fiche } rendus par chef.js. */
 export function ongletChefHtml(z, p, chef, d, extra) {
   const j = jourPrise(chef, S.state.turn);
@@ -218,6 +231,7 @@ export function ongletChefHtml(z, p, chef, d, extra) {
     ${priseHtml(j, chef)}
     ${extra.nuit || ''}
     <div class="co-statut"><span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} envoyé avec tes ordres` : 'tout ce qui suit part avec tes ordres de 20:00'}</span></div>
+    ${soirHtml(z, d, chef, j)}
     ${brevetHtml(chef, d)}
     ${agendaHtml(z, d, chef, j)}
     ${parapheurHtml(z, d, j)}

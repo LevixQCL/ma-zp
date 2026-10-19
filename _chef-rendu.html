@@ -1,0 +1,217 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><link rel="stylesheet" href="css/app.css"></head><body><div id="app"><main class="screen chef-onglet co"><div class="seg seg2" role="tablist" aria-label="Vue de la brigade" style="grid-template-columns:1fr 1fr 1fr;margin-bottom:12px">
+    <button type="button" role="tab" aria-selected="true" data-action="brigade-vue" data-v="chef"><span class="t">Chef</span></button>
+    <button type="button" role="tab" aria-selected="false" data-action="brigade-vue" data-v="equipe"><span class="t">Équipe ·</span><span class="tiny" style="color:var(--amber)">galon à attribuer</span></button>
+    <button type="button" role="tab" aria-selected="false" data-action="brigade-vue" data-v="materiel"><span class="t">Matériel ·</span><span class="tiny" style="color:var(--amber)">à commander</span></button>
+  </div>
+    <section class="card co-hero" style="--zc:#5AB0F0">
+    <a class="co-hero-l" href="#bureau" data-action="bureau-ouvrir" data-u="u" aria-label="Voir la fiche complète du chef"><span class="chef-portrait" style="--t:60px;--zc:#5AB0F0" ><svg viewBox="0 0 64 64" width="60" height="60" aria-hidden="true" style="display:block">
+    <rect width="64" height="64" fill="#1B2436"/>
+    
+    <path d="M10 64 C12 48 22 42 32 42 C42 42 52 48 54 64Z" fill="#22304a" stroke="#5AB0F0" stroke-width="1.5"/>
+    <path d="M27 42 L32 52 L37 42" fill="#E8ECF5"/><circle cx="32" cy="29" r="11" fill="#F1C9A5"/>
+    <path d="M21 26 C21 17 43 17 43 26 C40 21 24 21 21 26Z" fill="#2B2118"/>
+    <path d="M19 21 C20 11 44 11 45 21Z" fill="#1A2233"/><rect x="18" y="18" width="28" height="5" rx="2" fill="#1A2233"/>
+    <rect x="29" y="16" width="6" height="4" rx="1" fill="#5AB0F0"/>
+    <text x="32" y="61" text-anchor="middle" font-size="9" font-weight="700" fill="#5AB0F0" font-family="IBM Plex Mono, monospace">B</text></svg></span>
+      <span class="col" style="gap:2px;min-width:0"><span class="kicker">Mon chef de corps</span>
+        <span class="co-nom">Bryan</span>
+        <span class="tiny muted">Aspirant · ZP 5324 Horizon</span>
+        <span><span class="chef-sig">Gestionnaire avisé</span></span></span>
+      <span class="co-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M9 6l6 6-6 6"/></svg></span></a>
+    <div class="co-comps"><div class="co-cp" style="--c:#E8B530" title="Gestion"><span class="i">📊</span><span class="n">2</span><span class="b"><i style="width:82%"></i></span><span class="l">Gest.</span></div><div class="co-cp" style="--c:#E1453A" title="Commandement"><span class="i">🎖️</span><span class="n">2</span><span class="b"><i style="width:82%"></i></span><span class="l">Cdt</span></div><div class="co-cp" style="--c:#A78BFA" title="Flair"><span class="i">🔎</span><span class="n">0</span><span class="b"><i style="width:73%"></i></span><span class="l">Flair</span></div><div class="co-cp" style="--c:#5AB0F0" title="Diplomatie"><span class="i">🤝</span><span class="n">0</span><span class="b"><i style="width:3%"></i></span><span class="l">Diplo.</span></div><div class="co-cp" style="--c:#3DD39A" title="Proximité"><span class="i">🏘️</span><span class="n">0</span><span class="b"><i style="width:9%"></i></span><span class="l">Prox.</span></div></div>
+    
+  </section>
+    
+    
+    <div class="co-statut"><span class="statut-ordres ">tout ce qui suit part avec tes ordres de 20:00</span></div>
+    <div class="co-soir" style="grid-template-columns:repeat(4,minmax(0,1fr))"><button type="button" class="co-etape" data-action="co-aller" data-k="agenda"><img src="img/chef/agenda/bureau.webp" alt=""><span>Agenda</span><small>au bureau</small></button><button type="button" class="co-etape" data-action="co-aller" data-k="para"><img src="img/brigade/procedure.webp" alt=""><span>Parapheur</span><small>0/2 signé</small></button><button type="button" class="co-etape ok" data-action="co-aller" data-k="front"><img src="img/chef/front/qg.webp" alt=""><span>1re ligne</span><small>✓ au QG</small></button><button type="button" class="co-etape" data-action="co-aller" data-k="reseau"><img src="img/bureau/bourgmestre-0.webp" alt=""><span>Réseau</span><small>personne</small></button></div>
+    
+    <section id="co-agenda" class="card co-agenda " aria-label="Agenda du chef">
+    <div class="between"><h2 class="card-title" style="margin:0">Où passe ton chef aujourd’hui ?</h2></div>
+    <div class="co-lieux"><button type="button" class="co-lieu " data-action="chef-agenda" data-v="bureau" aria-pressed="true"  style="--c:#E8B530">
+      <span class="co-pion"><span class="chef-portrait" style="--t:28px;--zc:#5AB0F0" ><svg viewBox="0 0 64 64" width="28" height="28" aria-hidden="true" style="display:block">
+    <rect width="64" height="64" fill="#1B2436"/>
+    
+    <path d="M10 64 C12 48 22 42 32 42 C42 42 52 48 54 64Z" fill="#22304a" stroke="#5AB0F0" stroke-width="1.5"/>
+    <path d="M27 42 L32 52 L37 42" fill="#E8ECF5"/><circle cx="32" cy="29" r="11" fill="#F1C9A5"/>
+    <path d="M21 26 C21 17 43 17 43 26 C40 21 24 21 21 26Z" fill="#2B2118"/>
+    <path d="M19 21 C20 11 44 11 45 21Z" fill="#1A2233"/><rect x="18" y="18" width="28" height="5" rx="2" fill="#1A2233"/>
+    <rect x="29" y="16" width="6" height="4" rx="1" fill="#5AB0F0"/>
+    <text x="32" y="61" text-anchor="middle" font-size="9" font-weight="700" fill="#5AB0F0" font-family="IBM Plex Mono, monospace">B</text></svg></span></span>
+      <span class="ico"><img src="img/chef/agenda/bureau.webp" alt=""></span><span class="n">Au bureau</span><span class="c">📊 Gestion</span></button><button type="button" class="co-lieu " data-action="chef-agenda" data-v="terrain" aria-pressed="false"  style="--c:#E1453A">
+      
+      <span class="ico"><img src="img/chef/agenda/terrain.webp" alt=""></span><span class="n">Sur le terrain</span><span class="c">🎖️ Commandement</span></button><button type="button" class="co-lieu " data-action="chef-agenda" data-v="quartier" aria-pressed="false"  style="--c:#3DD39A">
+      
+      <span class="ico"><img src="img/chef/agenda/quartier.webp" alt=""></span><span class="n">En réunion de quartier</span><span class="c">🏘️ Proximité</span></button><button type="button" class="co-lieu " data-action="chef-agenda" data-v="commune" aria-pressed="false"  style="--c:#E8B530">
+      
+      <span class="ico"><img src="img/chef/agenda/commune.webp" alt=""></span><span class="n">À la commune</span><span class="c">📊 Gestion</span></button><button type="button" class="co-lieu " data-action="chef-agenda" data-v="parquet" aria-pressed="false"  style="--c:#A78BFA">
+      
+      <span class="ico"><img src="img/chef/agenda/parquet.webp" alt=""></span><span class="n">Au parquet</span><span class="c">🔎 Flair</span></button><button type="button" class="co-lieu " data-action="chef-agenda" data-v="voisin" aria-pressed="false"  style="--c:#5AB0F0">
+      
+      <span class="ico"><img src="img/chef/agenda/voisin.webp" alt=""></span><span class="n">Chez un voisin</span><span class="c">🤝 Diplomatie</span></button></div>
+    <div class="co-effet"><img class="co-effet-img" src="img/chef/agenda/bureau.webp" alt=""><span><b>Au bureau</b> · paperasse −1 dossier quand elle dépasse 8. <span class="co-cc" style="--c:#E8B530">📊 +2 XP</span></span></div>
+    
+    
+  </section>
+    <section id="co-para" class="card co-para " aria-label="Le parapheur">
+    <div class="between"><h2 class="card-title" style="margin:0">Le parapheur</h2><span class="tiny muted" style="font-weight:700">0/2 signé</span></div>
+    
+    <div class="co-pile"><div class="co-derriere"></div><article class="co-feuille" data-para="radar">
+    
+    <div class="co-ent"><span class="av">✍</span><span style="min-width:0"><span class="de">De : Une pétition de 84 riverains</span><span class="objet">Vitesse devant l’école</span></span></div>
+    <p class="co-txt">Des voitures à 70 km/h devant l’école. Les parents demandent une action « avant qu’il n’y ait un drame ».</p>
+    <div class="co-reps"><button type="button" class="co-opt" data-action="para-choix" data-id="radar" data-v="0" aria-pressed="false">
+      <span class="l"><span>Contrôle radar cette semaine</span><span class="co-cc" style="--c:#E8B530">📊 +2</span></span><span class="s">+600 € · +1 dossier de paperasse</span></button><button type="button" class="co-opt" data-action="para-choix" data-id="radar" data-v="1" aria-pressed="false">
+      <span class="l"><span>Réunion avec les parents</span><span class="co-cc" style="--c:#3DD39A">🏘️ +2</span></span><span class="s">+1 de satisfaction · 1 agent pris demain</span></button></div>
+    
+  </article></div>
+    
+  </section>
+    <section class="card co-tal " aria-label="Talents">
+    <div class="between"><h2 class="card-title" style="margin:0">Talents</h2><span class="tiny muted">0/3 · 2/15 débloqués</span></div>
+    <div class="co-slots" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="co-slot offre"><span class="s" style="color:var(--amber);font-weight:700">Choisis ci-dessous ↓</span></div><div class="co-slot"><span style="font-size:18px;opacity:.6">＋</span><span class="s">Flair 2 : Carnet noir</span><span class="s" style="color:var(--amber-soft)">encore 17 XP</span></div><div class="co-slot"><span style="font-size:18px;opacity:.6">＋</span><span class="s">Proximité 2 : Visage connu</span><span class="s" style="color:var(--amber-soft)">encore 24 XP</span></div></div>
+    <div class="col" style="gap:6px"><button type="button" class="co-talent" data-action="chef-talent" data-v="gestionnaire"  style="--c:#E8B530"><img src="img/talents/gestionnaire.webp" alt=""><span class="col grow" style="gap:1px;min-width:0;text-align:left"><b class="small">Bon gestionnaire</b><span class="tiny muted">Entretien des bâtiments et des annexes −20 %</span></span><span class="tiny" style="font-weight:700;color:var(--amber)">Équiper</span></button><button type="button" class="co-talent" data-action="chef-talent" data-v="meneur"  style="--c:#E1453A"><img src="img/talents/meneur.webp" alt=""><span class="col grow" style="gap:1px;min-width:0;text-align:left"><b class="small">Meneur d’hommes</b><span class="tiny muted">Le rythme renforcé coûte 1 point de moral de moins</span></span><span class="tiny" style="font-weight:700;color:var(--amber)">Équiper</span></button></div>
+    <span class="tiny muted">Ajouter est libre ; remplacer un talent, une fois par semaine. Touche un talent équipé pour le retirer.</span>
+  </section>
+    <section id="co-front" class="card " aria-label="Première ligne">
+    <div class="between"><h2 class="card-title" style="margin:0">En première ligne ce soir ?</h2></div>
+    <div class="co-fronts"><button type="button" class="co-front" data-action="chef-front" data-v="" aria-pressed="true"><img src="img/chef/front/qg.webp" alt=""><span class="n">Rester au QG</span><span class="s">aucun risque</span></button>
+      <button type="button" class="co-front" data-action="chef-front" data-v="nondroit" aria-pressed="false"><img src="img/chef/front/nondroit.webp" alt=""><span class="n">Assaut</span><span class="s">force de ton plus gros assaut +6 %</span></button><button type="button" class="co-front" data-action="chef-front" data-v="affaire" aria-pressed="false"><img src="img/chef/front/affaire.webp" alt=""><span class="n">Affaires</span><span class="s">force de ton équipe +6 %</span></button><button type="button" class="co-front" data-action="chef-front" data-v="releve" aria-pressed="false"><img src="img/chef/front/releve.webp" alt=""><span class="n">Relève</span><span class="s">le chef compte pour un agent de plus</span></button><button type="button" class="co-front" data-action="chef-front" data-v="enquete" aria-pressed="false"><img src="img/chef/front/enquete.webp" alt=""><span class="n">Enquête</span><span class="s">chance de pièce +0 %</span></button><button type="button" class="co-front" data-action="chef-front" data-v="quartier" aria-pressed="false"><img src="img/chef/front/quartier.webp" alt=""><span class="n">Quartier</span><span class="s">tension du quartier le plus chaud −2</span></button></div>
+    
+  </section>
+    <section id="co-reseau" class="card " aria-label="Le réseau">
+    <div class="between"><h2 class="card-title" style="margin:0">Le réseau</h2><span class="tiny muted">un service par personne et par semaine</span></div>
+    <div class="chef-reseau"><button type="button" class="chef-pers " data-action="chef-reseau" data-v="bourgmestre" disabled aria-pressed="false" style="background:none;border:0;padding:0;cursor:pointer;color:var(--text)">
+        <img src="img/bureau/bourgmestre-0.webp" alt=""><span class="tiny" style="font-weight:700">bourgmestre</span><span class="chef-humeur">Neutre</span>
+        <span class="co-est" title="Estime 0"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></button><button type="button" class="chef-pers " data-action="chef-reseau" data-v="procureur" disabled aria-pressed="false" style="background:none;border:0;padding:0;cursor:pointer;color:var(--text)">
+        <img src="img/bureau/procureur-0.webp" alt=""><span class="tiny" style="font-weight:700">procureur</span><span class="chef-humeur">Neutre</span>
+        <span class="co-est" title="Estime 0"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></button><button type="button" class="chef-pers " data-action="chef-reseau" data-v="syndicat" disabled aria-pressed="false" style="background:none;border:0;padding:0;cursor:pointer;color:var(--text)">
+        <img src="img/bureau/syndicat-0.webp" alt=""><span class="tiny" style="font-weight:700">délégué syndical</span><span class="chef-humeur">Neutre</span>
+        <span class="co-est" title="Estime 0"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></button><button type="button" class="chef-pers " data-action="chef-reseau" data-v="journaliste" disabled aria-pressed="false" style="background:none;border:0;padding:0;cursor:pointer;color:var(--text)">
+        <img src="img/bureau/journaliste-0.webp" alt=""><span class="tiny" style="font-weight:700">presse</span><span class="chef-humeur">Neutre</span>
+        <span class="co-est" title="Estime 0"><i class=""></i><i class=""></i><i class=""></i><i class=""></i></span></button></div>
+    <div class="co-effet"><span>💡</span><span>Seuls les satisfaits rendent service. Leur humeur suit ta zone ; leur estime (les points) se gagne aussi au parapheur.</span></div>
+  </section>
+    <details class="card repli semaine" data-k="semaine" open>
+    <summary><span class="col grow" style="gap:0"><span style="font-weight:700">Ta semaine de chef</span>
+      <span class="tiny muted">Objectifs 0/3 · 5 jours restants · duel contre Vallée</span></span><span class="obj-anneaux" aria-hidden="true"><span class="obj-anneau" style="--c:#E1453A;--p:0%" title="Traiter 90 % des incidents 3 soirs"><span>0/3</span></span><span class="obj-anneau" style="--c:#A78BFA;--p:0%" title="Réussir 3 énigmes ou jeux d’enquête"><span>0/3</span></span><span class="obj-anneau" style="--c:#3DD39A;--p:0%" title="Finir 3 soirs avec 70 de satisfaction ou plus"><span>0/3</span></span></span><span class="tiny muted">▾</span></summary>
+    <div class="col" style="gap:8px"><details class="obj-pli" data-k="obj-tenir" style="--c:#E1453A" ><summary class="obj"><span class="obj-ico">🛡️</span>
+      <span class="col grow" style="gap:3px;min-width:0"><span class="small" style="font-weight:600;line-height:1.25">Traiter 90 % des incidents 3 soirs</span>
+        <span class="chef-barre"><span style="width:4%"></span></span></span>
+      <span class="col" style="gap:0;align-items:flex-end;flex-shrink:0"><b class="mono">0/3</b><span class="tiny muted">🎖️ +4 XP</span></span><span class="obj-q" aria-hidden="true">?</span></summary>
+      <div class="obj-aide"><span class="small">Le soir, ta zone doit traiter au moins 90 % de ses incidents : dans les <b>Ordres</b>, remplis tous tes services (aucune case vide en pointillé), surtout l’Intervention.</span>
+        <button type="button" class="btn small obj-go" data-action="obj-aller" data-r="ordres" data-x="">Ouvrir les Ordres →</button></div></details><details class="obj-pli" data-k="obj-jeux" style="--c:#A78BFA" ><summary class="obj"><span class="obj-ico">🔎</span>
+      <span class="col grow" style="gap:3px;min-width:0"><span class="small" style="font-weight:600;line-height:1.25">Réussir 3 énigmes ou jeux d’enquête</span>
+        <span class="chef-barre"><span style="width:4%"></span></span></span>
+      <span class="col" style="gap:0;align-items:flex-end;flex-shrink:0"><b class="mono">0/3</b><span class="tiny muted">🔎 +4 XP</span></span><span class="obj-q" aria-hidden="true">?</span></summary>
+      <div class="obj-aide"><span class="small">Réussis les <b>énigmes du jour</b> (onglet Énigmes) ou les mini-jeux d’appui PJF de l’enquête (empreintes, ADN, réseau…).</span>
+        <button type="button" class="btn small obj-go" data-action="obj-aller" data-r="quete" data-x="">Ouvrir les Énigmes →</button></div></details><details class="obj-pli" data-k="obj-satisfaction" style="--c:#3DD39A" ><summary class="obj"><span class="obj-ico">😊</span>
+      <span class="col grow" style="gap:3px;min-width:0"><span class="small" style="font-weight:600;line-height:1.25">Finir 3 soirs avec 70 de satisfaction ou plus</span>
+        <span class="chef-barre"><span style="width:4%"></span></span></span>
+      <span class="col" style="gap:0;align-items:flex-end;flex-shrink:0"><b class="mono">0/3</b><span class="tiny muted">🏘️ +4 XP</span></span><span class="obj-q" aria-hidden="true">?</span></summary>
+      <div class="obj-aide"><span class="small">Satisfaction à 70 ou plus : envoie des patrouilles de <b>Proximité</b> dans tes quartiers (Carte, calque Ma zone), d’abord sur le point chaud 🔥.</span>
+        <button type="button" class="btn small obj-go" data-action="obj-aller" data-r="carte-mazone" data-x="">Ouvrir mes quartiers →</button></div></details>
+      <span class="tiny muted">Touche un objectif pour savoir où et comment le remplir. Seuls les jours où tu donnes tes ordres comptent. Chaque objectif : expérience et +1 de réputation. Les trois : médaille de la semaine (+3 PS).</span>
+      
+      <button type="button" class="duel" data-action="bureau-ouvrir" data-u="bot-vallee">
+      <span class="tiny muted" style="font-weight:700;text-align:left">⚔️ Duel de la semaine · IPZ cumulé sur tes jours joués · 5 jours restants</span>
+      <span class="duel-face"><span class="chef-portrait" style="--t:40px;--zc:#5AB0F0" ><svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true" style="display:block">
+    <rect width="64" height="64" fill="#1B2436"/>
+    
+    <path d="M10 64 C12 48 22 42 32 42 C42 42 52 48 54 64Z" fill="#22304a" stroke="#5AB0F0" stroke-width="1.5"/>
+    <path d="M27 42 L32 52 L37 42" fill="#E8ECF5"/><circle cx="32" cy="29" r="11" fill="#F1C9A5"/>
+    <path d="M21 26 C21 17 43 17 43 26 C40 21 24 21 21 26Z" fill="#2B2118"/>
+    <path d="M19 21 C20 11 44 11 45 21Z" fill="#1A2233"/><rect x="18" y="18" width="28" height="5" rx="2" fill="#1A2233"/>
+    <rect x="29" y="16" width="6" height="4" rx="1" fill="#5AB0F0"/>
+    <text x="32" y="61" text-anchor="middle" font-size="9" font-weight="700" fill="#5AB0F0" font-family="IBM Plex Mono, monospace">B</text></svg></span>
+        <span class="col grow" style="gap:4px;min-width:0"><span class="between small"><b>100,2</b><span class="tiny muted">tu mènes</span><b>84,6</b></span>
+          <span class="duel-barre"><span style="width:54%;background:#5AB0F0"></span><span style="width:46%;background:#A78BFA"></span></span>
+          <span class="between tiny"><span>Toi</span><span class="muted" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Vallée</span></span></span>
+        <span class="chef-portrait" style="--t:40px;--zc:#A78BFA" ><svg viewBox="0 0 64 64" width="40" height="40" aria-hidden="true" style="display:block">
+    <rect width="64" height="64" fill="#1B2436"/>
+    
+    <path d="M10 64 C12 48 22 42 32 42 C42 42 52 48 54 64Z" fill="#22304a" stroke="#A78BFA" stroke-width="1.5"/>
+    <path d="M27 42 L32 52 L37 42" fill="#E8ECF5"/><circle cx="32" cy="29" r="11" fill="#F1C9A5"/>
+    <path d="M21 26 C21 17 43 17 43 26 C40 21 24 21 21 26Z" fill="#2B2118"/>
+    <path d="M19 21 C20 11 44 11 45 21Z" fill="#1A2233"/><rect x="18" y="18" width="28" height="5" rx="2" fill="#1A2233"/>
+    <rect x="29" y="16" width="6" height="4" rx="1" fill="#A78BFA"/>
+    <text x="32" y="61" text-anchor="middle" font-size="9" font-weight="700" fill="#A78BFA" font-family="IBM Plex Mono, monospace">V</text></svg></span></span>
+      <span class="tiny muted" style="text-align:left">Victoire : +2 de réputation, +3 XP en Commandement. Ton palmarès : 1 victoire, 0 défaite.</span></button></div></details>
+    
+    <section class="hp-ajd" aria-label="Sa fiche"><h2 class="section">Sa fiche</h2>
+      <details class="ajd" data-k="ch-comp" ><summary><span class="ajd-txt"><b>Compétences</b><span>ce qui fait monter chacune</span></span><span class="ajd-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M9 6l6 6-6 6"/></svg></span></summary><div class="ajd-corps"><section class="card" style="gap:10px"><h2 class="card-title">Compétences</h2>
+    <button type="button" class="chef-comp" data-action="chef-detail" data-k="gestion" style="--c:#E8B530" aria-expanded="false">
+        <span class="chef-comp-ico">📊</span>
+        <span class="col grow" style="gap:4px;min-width:0"><span class="between"><span style="font-weight:700">Gestion</span><span class="tiny muted">14 / 17 XP</span></span>
+          <span class="chef-barre"><span style="width:82%"></span></span>
+          <span class="tiny muted">Niveau 5 : talent « Marchés publics »</span>
+          </span>
+        <span class="chef-niv">2</span></button><button type="button" class="chef-comp" data-action="chef-detail" data-k="commandement" style="--c:#E1453A" aria-expanded="false">
+        <span class="chef-comp-ico">🎖️</span>
+        <span class="col grow" style="gap:4px;min-width:0"><span class="between"><span style="font-weight:700">Commandement</span><span class="tiny muted">9 / 11 XP</span></span>
+          <span class="chef-barre"><span style="width:82%"></span></span>
+          <span class="tiny muted">Niveau 5 : talent « Sang-froid »</span>
+          </span>
+        <span class="chef-niv">2</span></button><button type="button" class="chef-comp" data-action="chef-detail" data-k="flair" style="--c:#A78BFA" aria-expanded="false">
+        <span class="chef-comp-ico">🔎</span>
+        <span class="col grow" style="gap:4px;min-width:0"><span class="between"><span style="font-weight:700">Flair</span><span class="tiny muted">8 / 11 XP</span></span>
+          <span class="chef-barre"><span style="width:73%"></span></span>
+          <span class="tiny muted">Niveau 2 : talent « Carnet noir »</span>
+          </span>
+        <span class="chef-niv">0</span></button><button type="button" class="chef-comp" data-action="chef-detail" data-k="diplomatie" style="--c:#5AB0F0" aria-expanded="false">
+        <span class="chef-comp-ico">🤝</span>
+        <span class="col grow" style="gap:4px;min-width:0"><span class="between"><span style="font-weight:700">Diplomatie</span><span class="tiny muted">0 / 11 XP</span></span>
+          <span class="chef-barre"><span style="width:3%"></span></span>
+          <span class="tiny muted">Niveau 2 : talent « Carnet d’adresses »</span>
+          </span>
+        <span class="chef-niv">0</span></button><button type="button" class="chef-comp" data-action="chef-detail" data-k="proximite" style="--c:#3DD39A" aria-expanded="false">
+        <span class="chef-comp-ico">🏘️</span>
+        <span class="col grow" style="gap:4px;min-width:0"><span class="between"><span style="font-weight:700">Proximité</span><span class="tiny muted">1 / 11 XP</span></span>
+          <span class="chef-barre"><span style="width:9%"></span></span>
+          <span class="tiny muted">Niveau 2 : talent « Visage connu »</span>
+          </span>
+        <span class="chef-niv">0</span></button>
+  </section></div></details>
+      <details class="ajd" data-k="ch-hon" ><summary><span class="ajd-txt"><b>Honneurs</b><span>cadre et rubans</span></span><span class="ajd-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M9 6l6 6-6 6"/></svg></span></summary><div class="ajd-corps"><section class="card" style="gap:10px"><h2 class="card-title">Honneurs</h2>
+    <div class="row" style="gap:12px;align-items:center"><span class="chef-portrait" style="--t:56px;--zc:#5AB0F0" ><svg viewBox="0 0 64 64" width="56" height="56" aria-hidden="true" style="display:block">
+    <rect width="64" height="64" fill="#1B2436"/>
+    
+    <path d="M10 64 C12 48 22 42 32 42 C42 42 52 48 54 64Z" fill="#22304a" stroke="#5AB0F0" stroke-width="1.5"/>
+    <path d="M27 42 L32 52 L37 42" fill="#E8ECF5"/><circle cx="32" cy="29" r="11" fill="#F1C9A5"/>
+    <path d="M21 26 C21 17 43 17 43 26 C40 21 24 21 21 26Z" fill="#2B2118"/>
+    <path d="M19 21 C20 11 44 11 45 21Z" fill="#1A2233"/><rect x="18" y="18" width="28" height="5" rx="2" fill="#1A2233"/>
+    <rect x="29" y="16" width="6" height="4" rx="1" fill="#5AB0F0"/>
+    <text x="32" y="61" text-anchor="middle" font-size="9" font-weight="700" fill="#5AB0F0" font-family="IBM Plex Mono, monospace">B</text></svg></span>
+      <span class="col grow" style="gap:3px"><span style="font-weight:700">Sans cadre</span>
+        <span class="chef-barre" style="--c:var(--amber)"><span style="width:40%"></span></span><span class="tiny muted">Cadre de bronze à 10 niveaux (tu en as 4)</span></span></div>
+    <span class="tiny muted" style="font-weight:700">Rubans (0/10) · touche un ruban gagné pour l’afficher sur ton portrait</span>
+    <div class="rubans"><button type="button" class="ruban" disabled title="deux semaines parfaites (les trois objectifs)"><span class="ruban-ico">📅</span><span class="tiny" style="font-weight:700">Assidu</span><span class="tiny muted">deux semaines parfaites (les trois objectifs)</span></button><button type="button" class="ruban" disabled title="trois semaines parfaites d’affilée"><span class="ruban-ico">🔥</span><span class="tiny" style="font-weight:700">Régulier</span><span class="tiny muted">trois semaines parfaites d’affilée</span></button><button type="button" class="ruban" disabled title="trois duels de la semaine gagnés"><span class="ruban-ico">🤺</span><span class="tiny" style="font-weight:700">Duelliste</span><span class="tiny muted">trois duels de la semaine gagnés</span></button><button type="button" class="ruban" disabled title="trois duels gagnés d’affilée"><span class="ruban-ico">🏅</span><span class="tiny" style="font-weight:700">Invaincu</span><span class="tiny muted">trois duels gagnés d’affilée</span></button><button type="button" class="ruban" disabled title="blessé en première ligne"><span class="ruban-ico">🩹</span><span class="tiny" style="font-weight:700">Blessé en service</span><span class="tiny muted">blessé en première ligne</span></button><button type="button" class="ruban" disabled title="six services obtenus du réseau"><span class="ruban-ico">📞</span><span class="tiny" style="font-weight:700">Homme de réseau</span><span class="tiny muted">six services obtenus du réseau</span></button><button type="button" class="ruban" disabled title="trois lots remportés aux enchères"><span class="ruban-ico">🔨</span><span class="tiny" style="font-weight:700">Commissaire-priseur</span><span class="tiny muted">trois lots remportés aux enchères</span></button><button type="button" class="ruban" disabled title="brevet de carrière obtenu"><span class="ruban-ico">🎓</span><span class="tiny" style="font-weight:700">Breveté</span><span class="tiny muted">brevet de carrière obtenu</span></button><button type="button" class="ruban" disabled title="une médaille de compétence en fin de saison"><span class="ruban-ico">🎖️</span><span class="tiny" style="font-weight:700">Médaillé</span><span class="tiny muted">une médaille de compétence en fin de saison</span></button><button type="button" class="ruban" disabled title="une compétence au niveau 10"><span class="ruban-ico">⭐</span><span class="tiny" style="font-weight:700">Maître</span><span class="tiny muted">une compétence au niveau 10</span></button></div>
+  </section></div></details>
+      <details class="ajd" data-k="ch-adj" ><summary><span class="ajd-txt"><b>L’adjointe</b><span>ta consigne les jours sans ordres</span></span><span class="ajd-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M9 6l6 6-6 6"/></svg></span></summary><div class="ajd-corps"><section class="card" style="gap:10px"><h2 class="card-title">L’adjointe</h2>
+    <div class="row" style="gap:12px;align-items:center"><span class="chef-portrait adj" style="--t:56px;--zc:var(--line)"><img src="img/chefs/p24.webp" alt="" width="56" height="56" loading="lazy"></span>
+      <span class="col" style="gap:2px"><span style="font-weight:700">Caroline Renard</span><span class="tiny muted">Tient la zone les jours sans ordres · 0 jour tenu</span></span></div>
+    <span class="tiny muted" style="font-weight:700">Ta consigne si tu ne donnes pas d’ordres</span>
+    <div class="chef-chips"><button type="button" class="chef-chip" data-action="adjoint-consigne" data-v="prudent" aria-pressed="false">🛡️ Prudent</button><button type="button" class="chef-chip" data-action="adjoint-consigne" data-v="equilibre" aria-pressed="true">⚖️ Équilibré</button><button type="button" class="chef-chip" data-action="adjoint-consigne" data-v="offensif" aria-pressed="false">⚡ Offensif</button></div>
+    <span class="small">garde la maison comme toi : rythme normal, s’allège seulement si le moral s’effondre.</span>
+    <span class="tiny muted" style="font-weight:700">Ce qu’elle sait faire (Commandement de ton chef : 2)</span>
+    <div class="col" style="gap:3px"><span class="tiny ">✅ reprend la dernière répartition et règle le rythme selon ta consigne</span><span class="tiny muted">🔒 glisse un agent vers le service mis sous pression ce jour-là (Commandement 3)</span><span class="tiny muted">🔒 mène l’opération d’envergure en entier (Commandement 5)</span><span class="tiny ">✅ paie une prime si le moral s’effondre, sous-traite si la paperasse déborde</span><span class="tiny muted">🔒 dépense plus volontiers : prime, prévention, agents de réserve (Commandement 7)</span></div>
+    <span class="tiny muted">Les jours tenus par Caroline comptent au classement avec 4 points d’IPZ de moins : ça limite la casse, sans valoir un jour joué. 3 jours sans malus d’absence, ensuite la zone s’use.</span>
+  </section></div></details>
+      <details class="ajd" data-k="ch-car" ><summary><span class="ajd-txt"><b>Carrière</b><span>0 médaille · états de service</span></span><span class="ajd-chev" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M9 6l6 6-6 6"/></svg></span></summary><div class="ajd-corps"><section class="card" style="gap:10px"><h2 class="card-title">Carrière</h2>
+    <span class="tiny muted">À chaque fin de saison, une médaille par compétence récompense la plus forte progression du district.</span>
+    
+    
+    <div class="palier-enig" style="margin:0" title="Toutes les 10 énigmes réussies (dossier noir compris)"><span class="tiny"><strong>🧩 0</strong> énigme réussie depuis ton arrivée · palier à 10 : +2 k€ et +3 jauge des skins</span><span class="palier-barre"><i style="width:0%"></i></span></div>
+    <span class="tiny muted" style="font-weight:700">👏 Félicitations cette saison</span>
+    <span class="small">Aucune pour l’instant.</span>
+    
+  </section></div></details></section>
+  </main><nav class="tabs" aria-label="Navigation principale">
+    <a href="#hp"  ><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span>HP</span></a>
+    <a href="#ordres"  ><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/></svg><span>Ordres</span><span class="dot" aria-label="à faire"></span></a>
+    <a href="#carte"  ><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14"/></svg><span>Carte</span><span class="dot" aria-label="à faire"></span></a>
+    <a href="#enquete"  class="centre"><span class="rond"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></svg></span><span>Enquête</span></a>
+    <a href="#quete"  ><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/></svg><span>Énigmes</span><span class="dot" aria-label="à faire"></span></a>
+    <a href="#chef" aria-current="page" ><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 13.5c0-4.4 3.6-7.5 8-7.5s8 3.1 8 7.5"/><path d="M2.5 13.5h19l-2.2 3.5H4.7z"/><path d="M10 9.6h4M12 6v-.5"/></svg><span>Brigade</span></a>
+    <a href="#radio"  ><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ><path d="M4 5h16v11H9l-5 4z"/></svg><span>Radio</span><span class="dot" aria-label="à faire"></span></a>
+  </nav></div></body></html>
