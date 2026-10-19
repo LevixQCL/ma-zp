@@ -4,7 +4,7 @@ name: Tests des mini-jeux
 on:
   push:
     branches: [main]
-    paths: ['minijeux/**', 'test/bitonal-*.mjs', '.github/workflows/tests-minijeux.yml']
+    paths: ['minijeux/**', 'test/bitonal-*.mjs', 'test/filature.test.mjs', '.github/workflows/tests-minijeux.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,3 +19,4 @@ jobs:
       - run: npm i --no-save playwright@1.56.0
       - run: npx playwright install --with-deps chromium
       - run: node test/bitonal-collisions.test.mjs 25
+      - run: node test/filature.test.mjs

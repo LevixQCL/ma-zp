@@ -25,6 +25,8 @@ export const MINI_JEUX = [
   // Tower defense : incident du jour de la Proximité en version courte (3 vagues), version longue au Challenge.
   { jeu: 'bouclage', service: 'proximite', nom: 'Maintien de l’ordre' },
   { jeu: 'crochetage', service: 'recherche', nom: 'Crochetage' },
+  // Challenge seulement : reconstituer le trajet d'un fuyard, tuiles à retourner (niveaux 1 → ∞).
+  { jeu: 'filature', service: 'recherche', nom: 'Filature' },
   { jeu: 'depanneuse', service: 'roulage', nom: 'Dépanneuse' },
   // Plus d'incident du jour (remplacé par le Maintien de l'ordre court) : Challenge seulement.
   { jeu: 'dossier', service: 'proximite', nom: 'PV à relire' },

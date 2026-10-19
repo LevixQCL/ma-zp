@@ -12,6 +12,7 @@ export const NOTE_MAJ = {
   action: { label: 'Voir ma brigade', ouvrir: () => { S.brigadeVue = 'equipe'; if (location.hash === '#chef') window.dispatchEvent(new HashChangeEvent('hashchange')); else location.hash = '#chef'; } },
   // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer (pas l'équilibrage).
   essentiel: [
+    ['🗺️', 'Nouveau Challenge : Filature', 'reconstitue le trajet du fuyard, de la bijouterie à la sortie : chaque tuile traversée se retourne, les chiffres disent combien de tuiles par ligne et par colonne. Du 5×5 tout doux au 9×9, record et prime de la semaine comme les autres.'],
     ['📻', 'L’appel du jour', 'le même dans toutes les zones. Donne ta consigne, ou laisse ta brigade faire : elle apprend ton style et s’en sert quand tu n’es pas là. Le lendemain, compare avec les autres brigades.'],
     ['🎖️', 'Des galons à attribuer', 'à chaque surnom, une figure gagne un galon : Terrain (une approche réservée sur l’appel du jour) ou Service (un effet chaque soir). L’onglet Chef devient Brigade.'],
     ['🦺', 'Le magasin et l’armurerie', 'polos, chaussures, gilets pare-balles qui périment, taser, FN 303 et bodycams : dans Brigade › Matériel. Achète seul ou en marché groupé avec les autres zones, moins cher pour tout le monde.'],
@@ -21,6 +22,11 @@ export const NOTE_MAJ = {
   ],
 
   sections: [
+    ['Filature (19 octobre)', [
+      ['Où', 'Records › mini-jeux, avec les autres Challenges. Record de la partie, titre « Fin limier » et prime de la semaine dès le niveau 5.'],
+      ['Le principe', 'glisse le doigt de tuile en tuile depuis la bijouterie (repère rouge, à gauche) jusqu’à la sortie (en bas). Chaque chiffre dit combien de tuiles de sa ligne ou de sa colonne le trajet traverse ; les tuiles dorées sont des témoignages sûrs. Une seule bonne réponse par grille.'],
+      ['Les niveaux', 'grilles de 5×5 (niveaux 1 à 3), 6×6 (4 à 8), 7×7 (9 à 15), 8×8 (16 à 25) puis 9×9. Des témoins de confort au début, qui disparaissent au fil des niveaux, et un chrono qui se resserre. Trois fausses pistes et le niveau est raté.'],
+    ]],
     ['Des prix plus logiques (19 octobre, 20:00)', [
       ['Pourquoi', 'tous les prix ont été comparés aux coûts réels d’une zone de police belge (budgets votés, marchés publics). Les recettes débordaient : une zone bien gérée amassait de l’argent même en achetant tout.'],
       ['Recettes', 'dotation fédérale 9 000 € par jour (au lieu de 10 000). Confiance de la commune : 100 € par point de réputation au-dessus de 50, plafonnée à 3 000 € par jour (au lieu de 200 € par point, sans plafond). Secteur de non-droit tenu : 2 000 € par nuit (au lieu de 3 000).'],

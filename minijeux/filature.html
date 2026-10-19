@@ -1,0 +1,852 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0f17">
+<style>*,*::before,*::after{box-sizing:border-box}body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Filature</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400..700&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: one-screen thumb game. Compact header (service badge, title, timer ring), game stage, floating glass cards.
+   Identity: night shift. Deep blue-ink ground lit from above by the service colour; glass surfaces; one accent per service. */
+:root{
+  --bg:#0c1124; --bg-2:#141b33; --surface:rgba(255,255,255,.045); --surface-2:rgba(255,255,255,.08);
+  --stroke:rgba(255,255,255,.09); --stroke-2:rgba(255,255,255,.16);
+  --ink:#eef2f8; --mute:#8f9bb1; --faint:#5d6880;
+  --accent:#ffb23f; --accent-ink:#241400; --accent-soft:rgba(255,178,63,.16);
+  --ok:#46d98a; --ok-soft:rgba(70,217,138,.16); --bad:#ff5d5d; --bad-soft:rgba(255,93,93,.16);
+  --scrim:rgba(6,9,22,.74);
+  --paper:#f4f1e8; --paper-ink:#22252b; --paper-mute:#6b6f77;
+  /* compat (anciens noms) */
+  --panel:#141b33; --panel-2:#1c2442; --line:var(--stroke); --gold:var(--accent); --brass:var(--accent); --steel:#b7c1d1;
+  --f-disp:"Bricolage Grotesque","Avenir Next",system-ui,sans-serif;
+  --f-body:"Instrument Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-doc:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r-lg:22px; --r-md:14px; --r-sm:10px;
+  color-scheme:dark;
+}
+body.svc-ser{--accent:#ffb23f;--accent-ink:#241400;--accent-soft:rgba(255,178,63,.16)}
+body.svc-int{--accent:#ff7a59;--accent-ink:#260b03;--accent-soft:rgba(255,122,89,.16)}
+body.svc-rou{--accent:#c9ec4f;--accent-ink:#161d02;--accent-soft:rgba(201,236,79,.15)}
+body.svc-lab{--accent:#3fe0c8;--accent-ink:#022019;--accent-soft:rgba(63,224,200,.15)}
+body.svc-cyb{--accent:#b49bff;--accent-ink:#170a33;--accent-soft:rgba(180,155,255,.16)}
+body.svc-pro{--accent:#62b0ff;--accent-ink:#04182c;--accent-soft:rgba(98,176,255,.16)}
+html,body{height:100%}
+body{background:radial-gradient(120% 60% at 50% -10%,var(--accent-soft),transparent 60%),linear-gradient(180deg,var(--bg-2),var(--bg) 55%);background-color:var(--bg);
+  color:var(--ink);font-family:var(--f-body);overflow:hidden;-webkit-font-smoothing:antialiased;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.app{height:100%;max-width:560px;margin:0 auto;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;padding-inline:16px;padding-block:12px}
+
+/* header */
+.top{display:flex;align-items:center;gap:12px}
+.badge{flex:0 0 auto;width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 35%,transparent)}
+.badge svg{width:22px;height:22px}
+.ttl{flex:1;min-width:0}
+.eyebrow{font-size:12px;font-weight:600;color:var(--mute);letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+h1{font-family:var(--f-disp);font-weight:700;font-size:clamp(21px,6.2vw,26px);line-height:1.05;margin:1px 0 0;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hud{display:flex;align-items:center;gap:6px}
+.iconbtn{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;background:var(--surface);border:1px solid var(--stroke);color:var(--mute);cursor:pointer;padding:0}
+.iconbtn svg{width:18px;height:18px}
+.iconbtn.off{opacity:.45}
+.ring{position:relative;width:50px;height:50px;flex:0 0 auto}
+.ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.ring .trk{stroke:var(--surface-2)} .ring .val{stroke:var(--accent);transition:stroke .3s}
+.ring.warn .val{stroke:var(--bad)}
+.timer{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--f-disp);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.ring.warn .timer{color:var(--bad)}
+button:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.gauge{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+.gauge svg{width:15px;height:15px;color:var(--accent)}
+.gbar{flex:1;height:5px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.gbar i{display:block;height:100%;border-radius:3px;background:var(--accent);width:0;transition:width .7s cubic-bezier(.2,.8,.2,1)}
+.gauge b{color:var(--ink);font-weight:700}
+
+.status{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums;gap:8px}
+.status b{color:var(--ink);font-weight:700}
+.stage{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+
+/* coach */
+.coach{display:flex;gap:10px;align-items:flex-start;background:rgba(20,27,51,.82);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:var(--r-md);padding:11px 12px;font-size:14px;line-height:1.45}
+.coach .av{flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font:800 12px var(--f-disp)}
+.coach .body{flex:1;min-width:0}
+.coach b{color:var(--accent);font-weight:700}
+.coach .step{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--mute);margin-bottom:3px}
+.coach .dots{display:flex;gap:4px} .coach .dots i{width:14px;height:4px;border-radius:2px;background:var(--surface-2)} .coach .dots i.on{background:var(--accent)}
+.coach .skip{cursor:pointer;color:var(--mute);background:none;border:0;font:600 12px var(--f-body);padding:2px 0}
+
+/* toast */
+.toast{position:fixed;left:50%;top:84px;transform:translate(-50%,-6px);display:flex;align-items:center;gap:8px;font:700 15px var(--f-body);padding:9px 16px;border-radius:999px;background:rgba(20,27,51,.92);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--stroke-2);box-shadow:0 10px 30px rgba(0,0,0,.35);opacity:0;transition:opacity .15s,transform .15s;pointer-events:none;white-space:nowrap;z-index:4}
+.toast::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast{max-width:calc(100vw - 24px);white-space:normal;text-align:center;line-height:1.25}
+.toast.ok{color:var(--ok)} .toast.bad{color:var(--bad)} .toast.info{color:var(--accent)}
+
+/* overlay cards */
+.overlay{position:fixed;inset:0;background:var(--scrim);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:grid;place-items:center;padding:16px;z-index:5}
+.card{width:100%;max-width:420px;max-height:100%;overflow:auto;box-sizing:border-box;background:linear-gradient(180deg,#182133,#121a28);border:1px solid var(--stroke-2);border-radius:var(--r-lg);padding:22px 20px 20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 30px 80px rgba(0,0,0,.5);-webkit-user-select:text;user-select:text;animation:pop .28s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.97)}}
+.card .hero{display:flex;align-items:center;gap:12px}
+.card .hero .badge{width:52px;height:52px;border-radius:16px}
+.card .hero .badge svg{width:26px;height:26px}
+.card .hero .eyebrow{font-size:13px}
+.card h2{font-family:var(--f-disp);font-weight:700;font-size:28px;line-height:1.05;letter-spacing:-.015em;margin:0;text-wrap:balance}
+.card h2.ok{color:var(--ok)} .card h2.bad{color:var(--bad)}
+.card p{margin:0;line-height:1.55;font-size:15px;color:#d5dce8}
+.card p b{color:var(--ink)}
+.card .small{font-size:13px;color:var(--mute)}
+.card ul{margin:0;padding:0;list-style:none;display:grid;gap:8px;font-size:14px;line-height:1.45;color:#d5dce8}
+.card ul li{display:flex;gap:10px}
+.card ul li::before{content:"";flex:0 0 auto;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:8px}
+.lbl2{font-size:13px;font-weight:700;color:var(--ink)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;background:var(--surface);border:1px solid var(--stroke);border-radius:16px;padding:5px}
+.seg button{background:transparent;border:0;color:var(--mute);border-radius:12px;padding:9px 4px 8px;font:600 12px var(--f-body);cursor:pointer;line-height:1.2;display:grid;justify-items:center;gap:4px;transition:background .15s,color .15s}
+.seg button b{display:block;font-family:var(--f-disp);font-size:17px;color:var(--ink)}
+.seg button .ppl{display:flex;gap:2px} .seg button .ppl i{width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.8}
+.seg button[aria-pressed="true"]{background:var(--surface-2);color:var(--accent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 40%,transparent)}
+.seg.seg1{grid-template-columns:1fr}.seg.seg1 button{cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.embed .top{position:relative;z-index:6}
+/* en jeu intégré, l’en-tête reste au-dessus des cartes : elles commencent donc sous lui */
+.embed .overlay{padding-top:56px}
+/* dans Ma ZP, la barre « Retour à ma zone » affiche déjà le nom du jeu : en-tête réduit à une ligne */
+.embed .app{gap:8px;padding-block:8px}
+.embed .top{gap:8px}
+.embed .top .badge,.embed .top h1{display:none}
+.embed .top .eyebrow{font-size:13px;font-weight:700}
+.embed .top .iconbtn{width:32px;height:32px;border-radius:10px}
+.embed .top .ring{width:40px;height:40px}
+.embed .top .timer{font-size:13px}
+.btn{flex:1;min-width:120px;border-radius:14px;padding:14px 12px;font:700 15px var(--f-body);cursor:pointer;border:1px solid var(--stroke-2);background:var(--surface);color:var(--ink);transition:transform .08s,filter .15s}
+.btn:active{transform:scale(.97)}
+.confirm-fin{border:1px solid color-mix(in srgb,#E5484D 55%,transparent);background:color-mix(in srgb,#E5484D 10%,transparent);border-radius:14px;padding:10px 12px;display:grid;gap:8px}
+.confirm-fin p{margin:0}
+.btn.danger{background:transparent;border-color:#E5484D;color:#FF7A7E}
+.btn.primary{background:var(--accent);border-color:transparent;color:var(--accent-ink);box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 30%,transparent)}
+.btn.small{flex:0 0 auto;min-width:0;padding:9px 14px;font-size:13px;border-radius:12px}
+.tuto-mini{align-self:flex-end;display:inline-flex;align-items:center;gap:6px;margin:-4px 0 -6px;padding:5px 11px;border-radius:999px;border:1px solid var(--stroke);background:transparent;color:var(--mute);font:600 12.5px var(--f-body);cursor:pointer}
+.minis{align-self:flex-end;display:flex;gap:8px;margin:-4px 0 -6px}.minis .tuto-mini{margin:0}#guideBtn{color:var(--ink);border-color:var(--stroke-2)}
+.tuto-mini:hover{color:var(--ink);border-color:var(--stroke-2)}
+.tuto-mini i{font-style:normal;display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;border:1.5px solid currentColor;font-size:10px;font-weight:800}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface);border:1px solid var(--stroke);border-radius:var(--r-md);padding:10px 12px;min-width:0}
+.stat span{display:block;font-size:12px;color:var(--mute)}
+.stat b{font-family:var(--f-disp);font-size:22px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat.pts b{color:var(--accent)}
+.verdict{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;animation:pop .4s cubic-bezier(.2,.9,.3,1.4)}
+.verdict svg{width:28px;height:28px}
+.verdict.ok{background:var(--ok-soft);color:var(--ok)} .verdict.bad{background:var(--bad-soft);color:var(--bad)}
+.malus{background:var(--bad-soft);border-radius:var(--r-md);padding:12px 14px;font-size:14px;line-height:1.45;color:#ffd9d9}
+.malus b{color:var(--bad)}
+.debrief-list{background:var(--surface);border:1px solid var(--stroke);border-radius:var(--r-md);padding:12px 14px;font-size:14px;line-height:1.45;display:grid;gap:6px}
+.debrief-list ul{gap:6px}
+.debrief-list li::before{background:var(--bad)!important}
+.skin{background:var(--accent-soft);border-radius:var(--r-md);padding:12px 14px;font-size:14px;color:var(--accent);font-weight:600}
+.demo{font-size:12px;color:var(--faint);text-align:center}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.shake{animation:shake .3s}
+@media (prefers-reduced-motion:reduce){.gbar i,.toast,.btn{transition:none}.shake,.card,.verdict{animation:none}}
+/* Défi d'endurance (entraînement) */
+.defi-box{display:flex;gap:12px;align-items:center;flex-wrap:wrap;border:1px solid color-mix(in srgb,#FFB23F 45%,transparent);background:color-mix(in srgb,#FFB23F 10%,transparent);border-radius:14px;padding:12px}
+.defi-box>div{flex:1 1 200px;display:flex;flex-direction:column;gap:3px;font-size:13px;line-height:1.4}
+.defi-box b{font-family:var(--f-disp);font-size:15px}
+.btn.defi{flex:0 0 auto;background:#FFB23F;color:#241400;border-color:transparent}
+.coeurs{color:#FF6E6A;letter-spacing:2px}
+
+
+.fwrap{position:relative;flex:1;min-height:0;border-radius:22px;overflow:hidden;touch-action:none;
+  background:radial-gradient(70% 60% at 50% 45%,#1E2850,#0E1430);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.fwrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hintline{font-size:12.5px;color:var(--mute);text-align:center;flex:0 0 auto}
+.status{flex:0 0 auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+.pistes{letter-spacing:2px;color:#ff6e6a}
+
+</style>
+</head>
+<body>
+<script>document.body.classList.add('svc-ser')</script>
+<div class="app" id="app">
+  <div class="top">
+    <div class="badge" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2"/><circle cx="12" cy="7" r="2"/><circle cx="19" cy="15" r="2"/><path d="M6.2 16.3l4.6-7.6M13.4 8.6l4.3 4.8"/><path d="M19 3v4M17 5h4"/></svg></div>
+    <div class="ttl"><div class="eyebrow">Recherche · démo</div><h1>Filature</h1></div>
+    <div class="hud">
+      <button class="iconbtn" id="sound" aria-label="Couper le son"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg></button>
+      <button class="iconbtn" id="menuBtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
+      <div class="ring" id="ring"><svg viewBox="0 0 50 50"><circle class="trk" cx="25" cy="25" r="21" fill="none" stroke-width="4"/><circle class="val" id="ringval" cx="25" cy="25" r="21" fill="none" stroke-width="4" stroke-linecap="round"/></svg><div class="timer" id="timer">–</div></div>
+    </div>
+  </div>
+  <div class="gauge" id="gaugeRow"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/></svg><span>Jauge skins</span><div class="gbar"><i id="gfill"></i></div><span><b id="gtext">46</b> / 50</span></div>
+  <div class="coach" id="coach" hidden></div>
+  <div class="stage" id="stage">
+
+  <div class="fwrap" id="fwrap"><canvas id="fcan" aria-label="Plateau de Filature : tuiles à retourner"></canvas></div>
+  <div class="hintline">Glisse de tuile en tuile depuis la bijouterie · Touche une tuile : « pas par là »</div>
+  <div class="status"><span id="tuTxt">Tuiles 0/0</span><span>Pistes <b class="pistes" id="piTxt">♥♥♥</b></span></div>
+
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="overlay" id="overlay"><div class="card" id="card"></div></div>
+<script>
+/* Socle commun des mini-jeux Ma ZP (démo) : menu, tuto, résultat, jauge skins, sons, toasts. */
+const $ = id => document.getElementById(id);
+const rand = (a,b) => a + Math.random()*(b-a);
+const randi = (a,b) => Math.floor(rand(a,b+1));
+const pick = arr => arr[Math.floor(Math.random()*arr.length)];
+const shuffle = arr => { const a=arr.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+const ICONS = {
+  lock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.4" fill="currentColor"/></svg>',
+  alert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="8" width="17" height="12" rx="2.5"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3.5 13h17"/><circle cx="17" cy="16.5" r="1" fill="currentColor"/></svg>',
+  car:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 16.5h14v-4l-2-5H7l-2 5z"/><path d="M5 12.5h14"/><circle cx="8" cy="16.5" r="1.8"/><circle cx="16" cy="16.5" r="1.8"/></svg>',
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10.5a.5.5 0 0 1-.5-.5V4a.5.5 0 0 1 .5-.5z"/><path d="M14 3.5V8h4"/><path d="M9 12.5h6M9 16h4"/></svg>',
+  sound:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>',
+  menu:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 7h14M5 12h14M5 17h9"/></svg>',
+  print:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 8.5a6.5 6.5 0 0 1 11 0"/><path d="M5.5 13c0-3.6 2.9-6.5 6.5-6.5s6.5 2.9 6.5 6.5c0 1.6-.2 3.1-.6 4.5"/><path d="M8.5 19.5c-.6-1.9-1-4-1-6.5a4.5 4.5 0 0 1 9 0c0 2.2-.4 4.3-1.1 6"/><path d="M12 12.5c0 3 .5 5.7 1.4 8"/><path d="M10.6 21c-.7-1.7-1.1-3.6-1.1-5.5"/></svg>',
+  dna:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M7 3c0 6 10 6 10 12s-10 3-10 6"/><path d="M17 3c0 6-10 6-10 12s10 3 10 6"/><path d="M8.5 6.5h7M9 17.5h6M8 11.5h3M13 11.5h3"/></svg>',
+  net:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="16" width="6" height="5" rx="1"/><rect x="15" y="16" width="6" height="5" rx="1"/><path d="M12 8v4M6 16v-4h12v4"/></svg>',
+  trace:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="18" r="2"/><circle cx="12" cy="7" r="2"/><circle cx="19" cy="15" r="2"/><path d="M6.2 16.3l4.6-7.6M13.4 8.6l4.3 4.8"/><path d="M19 3v4M17 5h4"/></svg>',
+  barrage:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="6" rx="1.5"/><path d="M8 7l-3 6M13 7l-3 6M18 7l-3 6"/><path d="M6 13v6M18 13v6M4 19h4M16 19h4"/></svg>',
+  star:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.8L12 16.8l-5.2 2.8 1-5.8L3.5 9.7l5.9-.8z"/></svg>',
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  cross:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>'
+};
+
+const Shell = (() => {
+  let G = null;
+  const st = {diff:'normal', tuto:false, gauge:46, sound:true, mode:'menu', timeLeft:0, timeTotal:1, timerOn:false, timerRate:1, onTimeout:null};
+  const store = {
+    get(k,d){try{const v=localStorage.getItem(G.key+'.'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+    set(k,v){try{localStorage.setItem(G.key+'.'+k,JSON.stringify(v))}catch(e){}}
+  };
+  let ac=null;
+  function blip(freq,dur,type='square',vol=.06){
+    if(!st.sound) return;
+    try{
+      ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.type=type; o.frequency.value=freq; g.gain.value=vol;
+      g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime+dur);
+      o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime+dur);
+    }catch(e){}
+  }
+  const good = () => { blip(1200,.06,'square',.05); buzz(15); };
+  const bad  = () => { blip(130,.18,'sawtooth',.06); buzz([30,40,30]); };
+  const win  = () => { blip(660,.12,'triangle',.08); setTimeout(()=>blip(990,.25,'triangle',.08),120); buzz(60); };
+  function buzz(p){ try{ navigator.vibrate && navigator.vibrate(p) }catch(e){} }
+  let tt=0;
+  function toast(txt,kind='info'){ const t=$('toast'); t.textContent=txt; t.className='toast show '+kind; clearTimeout(tt); tt=setTimeout(()=>t.className='toast '+kind,850); }
+  function shake(el){ el=el||$('stage'); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+
+  function showCard(html){ $('card').innerHTML=html; $('overlay').hidden=false; $('card').scrollTop=0; const c=$('card'); c.style.animation='none'; void c.offsetWidth; c.style.animation=''; }
+  function hide(){ $('overlay').hidden=true; }
+  function renderGauge(){ $('gfill').style.width=(st.gauge/50*100)+'%'; $('gtext').textContent=st.gauge; }
+
+  function coach(step,total,html){
+    const c=$('coach'); c.hidden=false;
+    const dots=Array.from({length:total},(_,i)=>`<i class="${i<step?'on':''}"></i>`).join('');
+    c.innerHTML=`<div class="av">CP</div><div class="body"><div class="step"><span class="dots" aria-label="Étape ${step} sur ${total}">${dots}</span><button class="skip" id="skipTuto">Passer le tuto</button></div><div>${html}</div></div>`;
+    $('skipTuto').onclick=endTuto;
+  }
+  function hideCoach(){ $('coach').hidden=true; }
+  const hero = sub => `<div class="hero"><div class="badge">${document.querySelector('.top .badge').innerHTML}</div><div><div class="eyebrow">${sub}</div></div></div>`;
+
+  // Intégration dans Ma ZP : ?mode=incident (incident du jour, un seul essai), ?mode=renfort (renfort PJF pour
+  // l'enquête, un seul essai, sans jauge) ou ?mode=train (entraînement).
+  const Q = new URLSearchParams(location.search);
+  const MODE = ['incident','train','renfort'].includes(Q.get('mode')) ? Q.get('mode') : null;
+  const RENF = MODE==='renfort';
+  const INC = MODE==='incident' || RENF;
+  const escH = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function post(type, data={}){ try{ if(window.parent!==window) window.parent.postMessage({source:'mazp-mj', jeu:G.key, id:Q.get('id'), type, ...data}, location.origin); }catch(e){} }
+  let joue=false, fini=false;
+
+  // ───── Challenge (l'entraînement aux mini-jeux dans Ma ZP) : niveaux 1 → ∞, trois erreurs et la course s'arrête. ─────
+  // Le record de la partie (et son détenteur) arrive par l'adresse ; chaque niveau réussi est signalé à Ma ZP.
+  const DEFI = { rec: Math.max(0, Number(Q.get('rec'))||0), recNom: Q.get('recNom')||'', moi: Math.max(0, Number(Q.get('moi'))||0), erreurs: 3 };
+  let run = null; // { niveau, erreurs, reussis } pendant une course
+  /**
+   * Réglages d'un niveau : du niveau 1 (plus doux que « facile ») au niveau 10 (= « difficile »), en passant par
+   * facile (4) et normal (7) ; au-delà, chaque réglage continue de se serrer au même rythme que de normal à difficile,
+   * en multipliant (au moins 3 % par niveau). Le temps, lui, tend vers un plancher jouable par un très bon joueur. Bornes par jeu.
+   */
+  function cfgNiveau(n){
+    const F=G.diffs.facile, N=G.diffs.normal, D=G.diffs.difficile, B=G.bornes||{};
+    const out={label:`Niveau ${n}`, niveau:n, defi:true};
+    const val=(f,m,d,k)=>{
+      if(n<=10){
+        const pts=[[1,f+(f-m)*0.5],[4,f],[7,m],[10,d]];
+        for(let i=0;i<3;i++){ const [a,va]=pts[i],[b,vb]=pts[i+1]; if(n<=b) return va+(vb-va)*(n-a)/(b-a); }
+      }
+      let r = m>0&&d>0 ? Math.pow(d/m,1/3) : 1;
+      if(r===1 && k==='time') r=0.95;
+      else if(r!==1 && Math.abs(r-1)<0.03) r = r>1?1.03:0.97;
+      // Le temps s'approche de son plancher sans l'atteindre (un temps qu'un très bon joueur tient encore) :
+      // ce sont la précision et la complexité qui finissent par départager.
+      if(k==='time'){ const lo=(B.time&&B.time[0])||0; if(lo>0 && d>lo) return lo+(d-lo)*Math.pow(Math.min(r,.93),n-10); }
+      return d*Math.pow(r,n-10);
+    };
+    const borne=(v,b,k,d,ent)=>{ const [lo,hi]=b||(k==='time'?[Math.max(15,d*0.3),Infinity]:[-Infinity,Infinity]); v=Math.min(hi,Math.max(lo,v)); return ent?Math.round(v):Math.round(v*1000)/1000; };
+    const cles=new Set([...Object.keys(F),...Object.keys(N),...Object.keys(D)]);
+    for(const k of cles){
+      if(k==='agents'||k==='label') continue;
+      const f=F[k], m=N[k], d=D[k];
+      const ref = d!==undefined?d:m!==undefined?m:f;
+      if(f===undefined||m===undefined||d===undefined){ // réglage propre aux niveaux durs
+        if(d!==undefined && n>=10) out[k]=d; else if(m!==undefined && n>=7) out[k]=m; else if(f!==undefined && n<7) out[k]=f;
+        continue;
+      }
+      if(typeof ref==='number') out[k]=borne(val(f,m,d,k),B[k],k,d,[f,m,d].every(Number.isInteger));
+      else if(Array.isArray(ref)) out[k]=ref.map((_,i)=>borne(val(f[i],m[i],d[i],k),B[k]&&B[k][i],k,d[i],[f[i],m[i],d[i]].every(Number.isInteger)));
+      else out[k] = n>=10?d:n>=7?m:f;
+    }
+    return G.niveau ? G.niveau(n,out) : out;
+  }
+  const eyebrow = t => { const eb=document.querySelector('.top .eyebrow'); if(eb) eb.textContent=t; };
+  const eyebrowBase = () => (RENF?'Appui PJF · ':INC?'Incident du jour · ':G&&G.evt?'Événement · ':MODE==='train'?'Challenge · ':'')+G.serviceShort;
+  const recLigne = () => DEFI.rec ? `Record de la partie : <b>niveau ${DEFI.rec}</b>${DEFI.recNom?` par ${escH(DEFI.recNom)}`:''}.` : 'Pas encore de record dans la partie : le premier niveau réussi le crée.';
+  // Course en cours gardée sur l'appareil : on peut quitter le mini-jeu (ou être coupé) et reprendre au même niveau,
+  // avec les mêmes cœurs. Un niveau quitté en cours de route est simplement rejoué. La sauvegarde vaut pour ce joueur
+  // et pour la semaine du Challenge en cours (la prime du dimanche ne doit pas hériter d'une course de la semaine passée).
+  const CLE_RUN = `defiRun.${Q.get('u')||'anon'}`;
+  const sauverRun = () => { if(MODE==='train' && run) store.set(CLE_RUN, {...run, sem:Q.get('sem')||'', at:Date.now()}); };
+  const oublierRun = () => store.set(CLE_RUN, null);
+  function runSauvee(){
+    const r = MODE==='train' ? store.get(CLE_RUN, null) : null;
+    if(!r || !(r.niveau>1 || r.erreurs>0)) return null;
+    if((r.sem||'') !== (Q.get('sem')||'')) { oublierRun(); return null; }
+    return r;
+  }
+  function startDefi(){ oublierRun(); run={niveau:1, erreurs:0, reussis:0}; jouerNiveau(); }
+  function reprendreDefi(){ const r=runSauvee(); if(!r) return startDefi(); run={niveau:r.niveau, erreurs:r.erreurs, reussis:r.reussis||r.niveau-1}; jouerNiveau(); }
+  function jouerNiveau(){
+    sauverRun();
+    hide(); hideCoach(); st.mode='play';
+    eyebrow(`Challenge · niv. ${run.niveau} · ${'♥'.repeat(DEFI.erreurs-run.erreurs)}${'♡'.repeat(run.erreurs)}`);
+    G.onPlay(cfgNiveau(run.niveau)); toast(`Niveau ${run.niveau}`);
+  }
+  function resultDefi({ok, stats, details}){
+    st.timerOn=false; st.mode='result';
+    const n=run.niveau;
+    post('result',{ok, defi:true}); // compté comme une partie d'entraînement
+    const detailHtml = details && details.length && !ok ? `<div class="debrief-list"><b>Ce qui s’est mal passé</b><ul>${details.map(d=>`<li><span>${d}</span></li>`).join('')}</ul></div>` : '';
+    const coeurs = `${'♥'.repeat(DEFI.erreurs-run.erreurs)}${'♡'.repeat(run.erreurs)}`;
+    if(ok){
+      run.reussis=n; run.niveau=n+1; sauverRun();
+      const record = n>DEFI.rec, perso = n>DEFI.moi;
+      post('defi',{niveau:n});
+      if(record){ DEFI.rec=n; DEFI.recNom='toi'; } if(perso) DEFI.moi=n;
+      showCard(`<div class="verdict ok">${ICONS.check}</div><h2>Niveau ${n} réussi</h2>
+        <div class="stats">${stats.slice(0,2).map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')}<div class="stat"><span>Erreurs</span><b class="coeurs">${coeurs}</b></div></div>
+        ${record?'<div class="skin">Nouveau record de la partie ! Ton nom s’affiche sur la tuile du challenge.</div>':perso?'<p class="small">Nouveau record personnel.</p>':''}
+        <p class="small">Le niveau ${n+1} sera un peu plus dur.</p>
+        <div class="row"><button class="btn primary" id="suite">Niveau ${n+1}</button><button class="btn" id="stop">Terminer la course</button></div>
+        ${MODE==='train'?`<p class="small" style="opacity:.75">Besoin de partir ? Quitte le jeu : ta course reprendra au niveau ${n+1}.</p>`:''}`);
+      $('suite').onclick=jouerNiveau; $('stop').onclick=()=>confirmerFin(n+1);
+      return;
+    }
+    run.erreurs++; sauverRun();
+    if(run.erreurs>=DEFI.erreurs){ finDefi(detailHtml); return; }
+    const reste=DEFI.erreurs-run.erreurs;
+    showCard(`<div class="verdict bad">${ICONS.cross}</div><h2>Niveau ${n} raté</h2>
+      <p class="small">Encore <b>${reste} erreur${reste>1?'s':''}</b> permise${reste>1?'s':''} <span class="coeurs">${'♥'.repeat(DEFI.erreurs-run.erreurs)}${'♡'.repeat(run.erreurs)}</span>.</p>${detailHtml}
+      <div class="row"><button class="btn primary" id="suite">Retenter le niveau ${n}</button><button class="btn" id="stop">Terminer la course</button></div>
+      ${MODE==='train'?`<p class="small" style="opacity:.75">Besoin de partir ? Quitte le jeu : ta course reprendra au niveau ${n}.</p>`:''}`);
+    $('suite').onclick=jouerNiveau; $('stop').onclick=()=>confirmerFin(n);
+  }
+  // « Terminer la course » efface la progression : on demande confirmation (un clic de travers ne doit rien coûter).
+  function confirmerFin(prochain){
+    const row=$('stop') && $('stop').parentNode; if(!row) return finDefi();
+    const box=document.createElement('div'); box.className='confirm-fin'; box.setAttribute('role','alertdialog'); box.setAttribute('aria-label','Confirmer la fin de la course');
+    box.innerHTML=`<p class="small"><b>Terminer la course ?</b> Ta progression sera perdue : la prochaine course repartira du niveau 1${prochain>1?` au lieu du niveau ${prochain}`:''}.</p>
+      <div class="row"><button class="btn primary" id="garder">Non, je continue</button><button class="btn danger" id="confStop">Oui, terminer</button></div>`;
+    row.replaceWith(box);
+    $('garder').onclick=()=>{ box.replaceWith(row); };
+    $('confStop').onclick=()=>finDefi();
+    $('garder').focus();
+  }
+  function finDefi(detailHtml=''){
+    st.timerOn=false; st.mode='result';
+    const k=run?run.reussis:0; run=null; oublierRun(); eyebrow(eyebrowBase());
+    showCard(`${hero('Challenge')}<h2>Fin de la course</h2>
+      <div class="stats"><div class="stat"><span>Niveaux réussis</span><b>${k}</b></div><div class="stat"><span>Ton record</span><b>${DEFI.moi}</b></div><div class="stat"><span>Record partie</span><b>${DEFI.rec}</b></div></div>
+      ${typeof detailHtml==='string'?detailHtml:''}
+      <p class="small">${recLigne()}</p>
+      <div class="row"><button class="btn primary" id="encore">Nouvelle course</button><button class="btn" id="tomenu">Menu</button></div>`);
+    $('encore').onclick=startDefi; $('tomenu').onclick=menu;
+  }
+  const unite = n => `${n} ${G.unit ? G.unit[n>1?1:0] : (n>1?'agents':'agent')}`;
+  const effectif = () => { const d=G.diffs[st.diff]; const n=Number(Q.get('agents')); return unite(Number.isFinite(n)&&Q.get('agents')!==null?n:d.agents); };
+  const effLabel = () => G.effLabel || `Effectif ${G.serviceShort} sur place`;
+
+  function menu(){
+    if(INC && fini){ post('close'); return; }
+    st.mode='menu'; st.timerOn=false; hideCoach(); G.onMenu && G.onMenu();
+    if(run){ run=null; eyebrow(eyebrowBase()); }
+    const touch=matchMedia('(pointer:coarse)').matches;
+    // Tuto déjà vu (ou en option) : petit bouton discret au-dessus de l'action principale, pas un second gros bouton.
+    const tutoSeul = () => `<button class="tuto-mini" id="tuto" type="button"><i aria-hidden="true">?</i>${st.tuto?'Revoir le tuto':'Tuto'}</button>`;
+    // Guide illustré (si le mini-jeu en a un) : petit bouton à côté du tuto, sur tous les écrans de départ.
+    const guideMini = () => G.guide ? `<button class="tuto-mini" id="guideBtn" type="button"><i aria-hidden="true">i</i>Comment jouer</button>` : '';
+    const tutoMini = () => G.guide ? `<div class="minis">${guideMini()}${tutoSeul()}</div>` : tutoSeul();
+    const tutoBtns = (goLbl) => st.tuto
+      ? `<button class="btn primary" id="go">${goLbl}</button>`
+      : `<button class="btn primary" id="tuto">Commencer le tuto</button><button class="btn" id="go">${RENF?'Commencer sans tuto':INC?'Intervenir sans tuto':'Jouer directement'}</button>`;
+    // Événement d'actualité (lancé depuis Ma ZP) : une seule partie, réglage normal, puis invitation au Challenge.
+    if(G.evt && !INC){
+      showCard(`
+        ${hero('Événement · '+G.service)}
+        <h2>${G.headline}</h2>
+        ${G.story}
+        ${tutoMini()}<div class="row"><button class="btn primary" id="evtGo">${G.evt.go||'Jouer'}</button></div>
+        ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
+        <p class="demo">Une partie en difficulté normale, sans effet sur ta zone.</p>`);
+      $('evtGo').onclick=jouerEvt; $('tuto').onclick=startTuto; brancherGuide();
+      return;
+    }
+    if(INC){
+      const d=G.diffs[st.diff];
+      showCard(`
+        ${hero((RENF?'Appui PJF · ':'Incident du jour · ')+G.serviceShort)}
+        <h2>${G.headline}</h2>
+        ${G.story}
+        <div class="lbl2">${effLabel()}</div>
+        <div class="seg seg1"><button aria-pressed="true" tabindex="-1"><span class="ppl">${'<i></i>'.repeat(Math.max(1,Math.min(12,Number(Q.get('agents'))||d.agents)))}</span><b>${effectif()}</b>${d.label}</button></div>
+        ${Q.get('pourquoi')?`<p class="small" style="opacity:.8">${escH(Q.get('pourquoi'))}</p>`:''}
+        <p class="small">${RENF?`Un seul essai. Réussi : ${escH(Q.get('gain')||'une pièce pour ton enquête')}. Raté ou abandonné : ${escH(Q.get('malus')||'pas de pièce')}.`:`Un seul essai. Réussi : ${escH(Q.get('gain')||'un bonus')} et des points de jauge des skins. Raté ou abandonné : ${escH(Q.get('malus')||G.malus)}. Tout s’applique à 20:00.`}</p>
+        ${st.tuto?tutoMini():guideMini()?`<div class="minis">${guideMini()}</div>`:''}<div class="row">${tutoBtns(RENF?'Commencer':'Intervenir')}</div>
+        <button class="btn small" id="later" style="align-self:center">Plus tard</button>
+        ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}`);
+    } else if(MODE==='train'){
+      // Dans Ma ZP, l'entraînement aux mini-jeux, c'est le challenge : les premiers niveaux servent d'échauffement.
+      const reprise=runSauvee();
+      showCard(`
+        ${hero('Challenge · '+G.service)}
+        <h2>${G.headline}</h2>
+        ${G.story}
+        <div class="defi-box"><div><b>🏆 Challenge</b><span>Du niveau 1 (tout doux) à aussi haut que possible : chaque niveau est un peu plus dur. Trois erreurs et la course s’arrête.</span><span>${recLigne()}${DEFI.moi?` Ton record : niveau ${DEFI.moi}.`:''}</span></div></div>
+        ${tutoMini()}
+        ${reprise?`<div class="row"><button class="btn primary" id="defiReprise">Reprendre au niveau ${reprise.niveau} <span class="coeurs" style="color:inherit;opacity:.8;margin-left:6px">${'♥'.repeat(DEFI.erreurs-reprise.erreurs)}${'♡'.repeat(reprise.erreurs)}</span></button></div>
+        <div class="row"><button class="btn" id="defiGo">Recommencer au niveau 1</button></div>`
+        :`<div class="row"><button class="btn primary" id="defiGo">Lancer le challenge</button></div>`}
+        ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
+        <p class="demo">Sans effet sur ta zone : ton meilleur niveau s’affiche sur la tuile du Challenge.</p>`);
+      $('tuto').onclick=startTuto; $('defiGo').onclick=startDefi; if(reprise) $('defiReprise').onclick=reprendreDefi; brancherGuide();
+      return;
+    } else {
+      const seg=Object.entries(G.diffs).map(([k,d])=>`<button data-k="${k}" aria-pressed="${k===st.diff}"><span class="ppl">${'<i></i>'.repeat(d.agents)}</span><b>${G.unit ? unite(d.agents) : ({difficile:'Sous-effectif',normal:'Effectif de base',facile:'Renforcé'})[k]}</b>${d.label}</button>`).join('');
+      showCard(`
+        ${hero('Ma ZP · '+G.service)}
+        <h2>${G.headline}</h2>
+        ${G.story}
+        <div class="lbl2">${effLabel()}</div>
+        <div class="seg" id="seg">${seg}</div>
+        <p class="small">${G.diffHint}</p>
+        ${st.tuto?tutoMini():guideMini()?`<div class="minis">${guideMini()}</div>`:''}<div class="row">${tutoBtns('Jouer')}</div>
+        ${(!touch && G.desktopHint)?`<p class="small">${G.desktopHint}</p>`:''}
+        <p class="demo">Démo jouable, rien n'est enregistré dans ta partie Ma ZP.</p>`);
+      $('seg').onclick=e=>{const b=e.target.closest('button'); if(!b) return; st.diff=b.dataset.k; store.set('diff',st.diff);
+        [...$('seg').children].forEach(x=>x.setAttribute('aria-pressed',x.dataset.k===st.diff));};
+    }
+    $('go').onclick=play; $('tuto').onclick=startTuto;
+    if($('later')) $('later').onclick=()=>post('close');
+    brancherGuide();
+  }
+  function brancherGuide(){ if($('guideBtn')) $('guideBtn').onclick=guide; }
+  function guide(){ hideCoach(); showCard(`${hero('Comment jouer')}${G.guide()}<div class="row"><button class="btn primary" id="guideBack">Compris</button></div>`);
+    $('guideBack').onclick=menu; G.onGuide && G.onGuide(); }
+  function play(){
+    if(INC){ if(fini) return; if(!joue){ joue=true; post('start'); } }
+    hide(); hideCoach(); st.mode='play'; G.onPlay(G.diffs[st.diff]);
+  }
+  function jouerEvt(){ hide(); hideCoach(); st.mode='play'; G.onPlay(G.evt.cfg()); }
+  function resultEvt({ok, stats, details}){
+    st.timerOn=false; st.mode='result'; post('result',{ok, defi:true});
+    const detailHtml = details && details.length && !ok ? `<div class="debrief-list"><b>Ce qui s’est mal passé</b><ul>${details.map(d=>`<li><span>${d}</span></li>`).join('')}</ul></div>` : '';
+    showCard(`<div class="verdict ${ok?'ok':'bad'}">${ok?ICONS.check:ICONS.cross}</div><h2>${ok?G.winTitle:G.loseTitle}</h2>
+      <div class="stats">${stats.slice(0,3).map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')}</div>
+      ${detailHtml}
+      <div class="defi-box"><div><b>${G.evt.finTitre||'Tu as aimé ce jeu ?'}</b><span>${G.evt.fin}</span></div></div>
+      <div class="row"><button class="btn primary" id="evtFin">Retour à ma zone</button><button class="btn" id="evtAgain">${ok?'Rejouer':'Réessayer'}</button></div>`);
+    $('evtFin').onclick=()=>post('close'); $('evtAgain').onclick=jouerEvt;
+  }
+  function startTuto(){ hide(); st.mode='tuto'; st.timerOn=false; G.onTuto(); }
+  function endTuto(){
+    st.tuto=true; store.set('tuto',true); hideCoach(); st.mode='menu'; st.timerOn=false; G.onMenu && G.onMenu();
+    showCard(`${hero('Tutoriel terminé')}<h2>Les règles en bref</h2><ul>${G.rules.map(r=>`<li><span>${r}</span></li>`).join('')}</ul>
+      <div class="row"><button class="btn primary" id="go">${INC?'Intervenir':MODE==='train'?'Lancer le challenge':'Lancer une partie'}</button><button class="btn" id="tomenu">${INC?'Plus tard':'Menu'}</button></div>`);
+    $('go').onclick=G.evt&&!INC?jouerEvt:MODE==='train'?startDefi:play; $('tomenu').onclick=INC?()=>post('close'):menu;
+  }
+  function startTimer(sec,onTimeout){ st.timeLeft=sec; st.timeTotal=sec; st.timerOn=true; st.timerRate=1; st.onTimeout=onTimeout; }
+  function stopTimer(){ st.timerOn=false; }
+  function fmt(s){ s=Math.max(0,Math.ceil(s)); return s>=60? Math.floor(s/60)+':'+String(s%60).padStart(2,'0') : String(s); }
+
+  function result({ok, stats, faults, malus, note, details, bonusPts=0}){
+    if(run && !INC){ resultDefi({ok, stats, details}); return; }
+    if(G.evt && !INC){ resultEvt({ok, stats, details}); return; }
+    st.timerOn=false; st.mode='result';
+    let pts=0, skin=false;
+    if(ok) pts=(faults===0?2:1)+(bonusPts||0); // bonusPts : défi bonus réussi (Maintien de l'ordre)
+    if(INC){
+      fini=true; post('result',{ok, fautes:faults, pts, ...(bonusPts>0?{bonus:true}:{})});
+      if(ok && !RENF){ st.gauge+=pts; renderGauge(); }
+    } else if(MODE!=='train' && ok){ st.gauge+=pts; if(st.gauge>=50){st.gauge-=50; skin=true;} store.set('gauge',st.gauge); renderGauge(); }
+    const statHtml=stats.map(([a,b])=>`<div class="stat"><span>${a}</span><b>${b}</b></div>`).join('')+(MODE==='train'||RENF?'':`<div class="stat pts"><span>Jauge skins</span><b>${ok?'+'+pts:'+0'}</b></div>`);
+    const boutons = INC ? `<button class="btn primary" id="mjBack">${RENF?'Retour à l’enquête':'Retour au commissariat'}</button>`
+      : `<button class="btn primary" id="again">${ok?'Rejouer':'Réessayer'}</button><button class="btn" id="tomenu">Menu</button>`;
+    const detailHtml = details && details.length ? `<div class="debrief-list"><b>${ok?'Tes erreurs':'Ce qui s’est mal passé'}</b><ul>${details.map(d=>`<li><span>${d}</span></li>`).join('')}</ul></div>` : '';
+    const noteInc = RENF ? (ok ? 'Analyse réussie : la pièce arrivera dans ton dossier d’enquête à 20:00.' : '') : INC ? (ok ? `Résultat enregistré : ${escH(Q.get('gain')||'ton bonus')} et +${pts} sur la jauge des skins, à 20:00.${st.gauge>=50?' Ta jauge sera pleine ce soir : un nouveau skin t’attend.':''}` : '') : '';
+    showCard(ok?`
+      <div class="verdict ok">${ICONS.check}</div>
+      <h2>${G.winTitle}</h2>
+      <div class="stats">${statHtml}</div>
+      ${skin?`<div class="skin">Jauge pleine : le skin « ${G.skin} » est débloqué pour ton commissariat.</div>`:''}
+      ${detailHtml}
+      <p class="small">${INC?noteInc:MODE==='train'?'Entraînement : rien ne compte pour ta zone.':(note || (faults===0?'Sans faute : double point.':'Termine sans erreur pour gagner +2.'))}</p>
+      <div class="row">${boutons}</div>`
+    :`
+      <div class="verdict bad">${ICONS.cross}</div>
+      <h2>${G.loseTitle}</h2>
+      <div class="stats">${statHtml}</div>
+      ${detailHtml}
+      ${MODE==='train'?'<p class="small">Entraînement : aucune conséquence.</p>':RENF?'<div class="malus"><b>Pas de pièce</b> · L’analyse n’a rien donné : l’équipe repart. Tu peux redemander un appui pour demain.</div>':`<div class="malus"><b>Malus</b> · ${escH(INC&&Q.get('malus')?Q.get('malus')+' (appliqué à 20:00)':(malus||G.malus))}</div>`}
+      <div class="row">${boutons}</div>`);
+    if(INC) $("mjBack").onclick=()=>post("close"); else { $('again').onclick=play; $('tomenu').onclick=menu; }
+  }
+
+  const CIRC = 2*Math.PI*21;
+  let last=performance.now();
+  function frame(ts){
+    const dt=Math.min(.05,(ts-last)/1000); last=ts;
+    if(st.timerOn){ st.timeLeft-=dt*st.timerRate; if(st.timeLeft<=0){ st.timeLeft=0; st.timerOn=false; st.onTimeout && st.onTimeout(); } }
+    // G.ownTimer : le mini-jeu gère lui-même l'anneau du haut (Maintien de l'ordre : compte à rebours entre les vagues)
+    if(!G.ownTimer){
+      const playing = st.mode==='play';
+      $('timer').textContent = playing ? fmt(st.timeLeft) : '–';
+      const frac = playing ? Math.max(0,st.timeLeft/st.timeTotal) : 1;
+      $('ringval').style.strokeDashoffset = CIRC*(1-frac);
+      $('ring').classList.toggle('warn', playing && st.timeLeft<10);
+    }
+    if(!st.pause) G.onFrame && G.onFrame(dt, ts/1000);
+    requestAnimationFrame(frame);
+  }
+
+  function init(cfg){
+    G=cfg;
+    st.diff=store.get('diff','normal'); st.tuto=store.get('tuto',false); st.gauge=store.get('gauge',46);
+    if(INC){ if(G.diffs[Q.get('diff')]) st.diff=Q.get('diff'); st.gauge=Math.max(0,Number(Q.get('jauge'))||0); }
+    if(MODE==='train' || RENF) $('gaugeRow').hidden=true;
+    $('ringval').style.strokeDasharray=CIRC;
+    renderGauge();
+    $('sound').onclick=()=>{ st.sound=!st.sound; $('sound').classList.toggle('off',!st.sound); $('sound').setAttribute('aria-label',st.sound?'Couper le son':'Activer le son'); };
+    if(MODE){
+      document.body.classList.add('embed');
+      eyebrow(eyebrowBase());
+      // Dans Ma ZP : la barre « Retour à ma zone » ferme le mini-jeu ; le bouton du haut du jeu ferait doublon.
+      const b=$('menuBtn'); b.hidden=true; b.style.display='none';
+      window.addEventListener('message', e=>{ const d=e.data; if(e.origin!==location.origin || !d || d.source!=='mazp' || d.type!=='quitter') return;
+        if(INC && joue && !fini && st.mode==='play') askQuit(); else post('close'); });
+    } else $('menuBtn').onclick=menu;
+    document.addEventListener('contextmenu',e=>e.preventDefault());
+    G.onInit && G.onInit();
+    menu();
+    requestAnimationFrame(frame);
+  }
+  function askQuit(){
+    const was=st.timerOn; st.timerOn=false; st.pause=true;
+    showCard(RENF?`<h2>Renvoyer l’équipe ?</h2><p>Tu n’as qu’un essai : si tu quittes maintenant, pas de pièce, et l’équipe repart.</p>
+      <div class="row"><button class="btn primary" id="stay">Continuer</button><button class="btn" id="quit">Abandonner</button></div>`:`<h2>Abandonner l’incident ?</h2><p>Tu n’as qu’un essai : si tu quittes maintenant, l’incident compte comme raté et le malus tombera à 20:00.</p>
+      <div class="row"><button class="btn primary" id="stay">Continuer</button><button class="btn" id="quit">Abandonner</button></div>`);
+    $('stay').onclick=()=>{ hide(); st.timerOn=was; st.pause=false; };
+    $('quit').onclick=()=>{ fini=true; post('result',{ok:false, fautes:1, pts:0, abandon:true}); post('close'); };
+  }
+  return {init, st, blip, good, bad, win, buzz, toast, shake, coach, hideCoach, endTuto, startTimer, stopTimer, result, menu, fmt, cfgNiveau, get enDefi(){ return !!run; },
+    // Tests automatisés : lancer directement un niveau du défi (sans effet : rien n'est enregistré avant une réussite).
+    _essaiNiveau(n){ run={niveau:n, erreurs:0, reussis:0}; jouerNiveau(); }};
+})();
+
+
+/* Filature : reconstituer le trajet unique du fuyard, de la bijouterie (bord gauche) à la sortie (bord bas).
+   Les chiffres disent combien de tuiles de chaque ligne et de chaque colonne le trajet traverse ; une tuile
+   traversée se retourne et montre sa route. Témoins (tuiles dorées) : morceaux de trajet sûrs.
+   Règle des mini-jeux : la zone qu'on touche est exactement la tuile dessinée (fRect sert aux deux). */
+/* Générateur de Filature : un trajet unique de la bijouterie (bord gauche, entrée par la gauche) à la sortie (bord bas),
+   les chiffres = nombre de cases traversées par ligne et par colonne, et juste assez de témoins pour une solution unique
+   (plus `extra` témoins de confort pour les premiers niveaux). */
+const FD = [[-1, 0], [0, 1], [1, 0], [0, -1]]; // haut, droite, bas, gauche (bits 1, 2, 4, 8)
+function filChemin(N, lmin, lmax, rnd) {
+  for (let essai = 0; essai < 3000; essai++) {
+    const r0 = 1 + Math.floor(rnd() * (N - 2)), c1 = 1 + Math.floor(rnd() * (N - 2));
+    const arr = [N - 1, c1], vu = new Set([r0 * N]), ch = [[r0, 0]]; let ok = false, pas = 0;
+    (function go(r, c) {
+      if (ok || pas++ > 3000) return;
+      if (r === arr[0] && c === arr[1]) { if (ch.length >= lmin) ok = true; return; }
+      if (ch.length >= lmax) return;
+      const ds = FD.slice().sort(() => rnd() - 0.5);
+      for (const [dr, dc] of ds) { const R = r + dr, C = c + dc, k = R * N + C;
+        if (R < 0 || C < 0 || R >= N || C >= N || vu.has(k)) continue;
+        if (Math.abs(R - arr[0]) + Math.abs(C - arr[1]) > lmax - ch.length - 1) continue;
+        vu.add(k); ch.push([R, C]); go(R, C); if (ok) return; vu.delete(k); ch.pop(); }
+    })(r0, 0);
+    if (ok) return ch;
+  }
+  return null;
+}
+function filPieces(N, ch) {
+  const p = new Map();
+  ch.forEach(([r, c], i) => { let m = 0;
+    const lie = (q) => { const dr = q[0] - r, dc = q[1] - c; m |= dr === -1 ? 1 : dc === 1 ? 2 : dr === 1 ? 4 : 8; };
+    if (i === 0) m |= 8; else lie(ch[i - 1]);
+    if (i === ch.length - 1) m |= 4; else lie(ch[i + 1]);
+    p.set(r * N + c, m); });
+  return p;
+}
+/** Nombre de solutions (on s'arrête à 2), avec un budget de recherche (au-delà : « pas sûr », traité comme non unique). */
+function filCompter(N, lig, col, dep, arr, donnes, budget = 400000) {
+  const L = lig.slice(), Co = col.slice(), vu = new Uint8Array(N * N); let n = 0, nb = 0, pas = 0;
+  const total = lig.reduce((a, b) => a + b, 0), nDon = donnes.size; let vusDon = 0;
+  const ar = (arr / N) | 0, ac = arr % N;
+  function go(r, c, depuis) {
+    if (n > 1 || ++pas > budget) return;
+    const k = r * N + c;
+    if (vu[k] || L[r] === 0 || Co[c] === 0) return;
+    const g = donnes.get(k);
+    if (g !== undefined && !(g & depuis)) return;
+    vu[k] = 1; L[r]--; Co[c]--; nb++; if (g !== undefined) vusDon++;
+    if (k === arr) { if (nb === total && vusDon === nDon && (g === undefined || g === (depuis | 4))) n++; }
+    else if (Math.abs(ar - r) + Math.abs(ac - c) <= total - nb) {
+      for (let d = 0; d < 4; d++) { const bit = 1 << d; if (bit === depuis) continue; if (g !== undefined && !(g & bit)) continue;
+        const R = r + FD[d][0], C = c + FD[d][1]; if (R < 0 || C < 0 || R >= N || C >= N) continue;
+        go(R, C, 1 << ((d + 2) % 4)); }
+    }
+    vu[k] = 0; L[r]++; Co[c]++; nb--; if (g !== undefined) vusDon--;
+  }
+  go((dep / N) | 0, dep % N, 8);
+  return pas > budget ? 2 : n;
+}
+/** Grille complète : { N, lig, col, dep, arr, donnes: [[k, bits]], sol: [[k, bits]] }. */
+function filGrille(N, dens, extra = 0, rnd = Math.random) {
+  const L = Math.round(dens * N * N), lmin = Math.max(N + 2, L - 3), lmax = L + 3;
+  for (let t = 0; t < 60; t++) {
+    const ch = filChemin(N, lmin, lmax, rnd); if (!ch) continue;
+    const P = filPieces(N, ch), lig = Array(N).fill(0), col = Array(N).fill(0);
+    for (const [r, c] of ch) { lig[r]++; col[c]++; }
+    const dep = ch[0][0] * N, arr = ch[ch.length - 1][0] * N + ch[ch.length - 1][1];
+    const donnes = new Map([[dep, P.get(dep)], [arr, P.get(arr)]]);
+    const cand = ch.slice(1, -1).map(([r, c]) => r * N + c).sort(() => rnd() - 0.5);
+    while (filCompter(N, lig, col, dep, arr, donnes) > 1 && cand.length) { const k = cand.pop(); donnes.set(k, P.get(k)); }
+    if (filCompter(N, lig, col, dep, arr, donnes) !== 1) continue;
+    for (const k of [...donnes.keys()]) { if (k === dep || k === arr) continue; const v = donnes.get(k); donnes.delete(k); if (filCompter(N, lig, col, dep, arr, donnes) !== 1) donnes.set(k, v); }
+    for (let i = 0; i < extra && cand.length; i++) { const k = cand.pop(); donnes.set(k, P.get(k)); }
+    return { N, lig, col, dep, arr, donnes: [...donnes], sol: [...P] };
+  }
+  return null;
+}
+
+const F = { g:null, N:0, over:true, won:false, tuto:false, pistes:3, aretes:new Set(), x:new Set(), vu:{}, flipT:{}, flash:null, vict:null };
+const can = $('fcan'), ctx = can.getContext('2d');
+const cle = (a,b) => a<b?`${a}-${b}`:`${b}-${a}`;
+const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function charger(g){
+  const N=g.N, sol=new Set(), fixe=new Set(), don=new Map(g.donnes);
+  for(const [k,m] of g.sol){ if(m&2 && k%N<N-1) sol.add(cle(k,k+1)); if(m&4 && k+N<N*N) sol.add(cle(k,k+N)); }
+  for(const [k,m] of g.donnes){ if(m&1&&k>=N) fixe.add(cle(k,k-N)); if(m&2&&k%N<N-1) fixe.add(cle(k,k+1)); if(m&4&&k+N<N*N) fixe.add(cle(k,k+N)); if(m&8&&k%N>0) fixe.add(cle(k,k-1)); }
+  const P=new Map(g.sol), ordre=[g.dep]; let k=g.dep, prev=-1;
+  while(k!==g.arr){ const m=P.get(k); const v=[[1,k-N],[2,k+1],[4,k+N],[8,k-1]].find(([b,q])=>m&b && q!==prev && sol.has(cle(k,q))); prev=k; k=v[1]; ordre.push(k); }
+  Object.assign(F,{g,N,sol,fixe,don,ordre,aretes:new Set(fixe),x:new Set(),vu:{},flipT:{},flash:null,vict:null,won:false,pistes:3,t0:performance.now()});
+  geo(); maj();
+}
+/* ---------- géométrie : une seule fonction pour dessiner et pour toucher ---------- */
+function geo(){
+  const r=$('fwrap').getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
+  can.width=Math.round(r.width*dpr); can.height=Math.round(r.height*dpr); F.dpr=dpr; F.L=r.width; F.H=r.height;
+  if(!F.N) return;
+  const N=F.N; F.s=Math.floor(Math.min((F.L-20)/(N+1.9),(F.H-20)/(N+1.5)));
+  F.ox=Math.round((F.L-F.s*N)/2+F.s*0.75); F.oy=Math.round((F.H-F.s*N)/2+F.s*0.1);
+}
+new ResizeObserver(geo).observe($('fwrap'));
+const fRect = k => { const gap=Math.max(2,F.s*0.06); return { x:F.ox+(k%F.N)*F.s+gap/2, y:F.oy+((k/F.N)|0)*F.s+gap/2, w:F.s-gap }; };
+const ctr = k => ({ x:F.ox+(k%F.N)*F.s+F.s/2, y:F.oy+((k/F.N)|0)*F.s+F.s/2 });
+function caseA(px,py){ for(let k=0;k<F.N*F.N;k++){ const r=fRect(k); if(px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.w) return k; } return -1; }
+
+const occupe = k => k===F.g.dep || k===F.g.arr || [...F.aretes].some(a=>{ const [p,q]=a.split('-').map(Number); return p===k||q===k; });
+function comptes(){ const N=F.N, lig=Array(N).fill(0), col=Array(N).fill(0); for(let k=0;k<N*N;k++) if(occupe(k)){ lig[(k/N)|0]++; col[k%N]++; } return {lig,col}; }
+function maj(){
+  let n=0; for(let k=0;k<F.N*F.N;k++) if(occupe(k)) n++;
+  $('tuTxt').textContent=`Tuiles ${n}/${F.g.sol.length}`;
+  $('piTxt').textContent='♥'.repeat(F.pistes)+'♡'.repeat(3-F.pistes);
+}
+
+/* ---------- jeu ---------- */
+function basculer(a,b){
+  const k=cle(a,b);
+  if(F.fixe.has(k)) return;
+  if(F.aretes.has(k)){ F.aretes.delete(k); Shell.blip(420,.04,'triangle',.04); maj(); return; }
+  if(F.sol.has(k)){
+    F.aretes.add(k); F.x.delete(a); F.x.delete(b); Shell.blip(880+F.aretes.size*8,.04,'square',.03); maj();
+    if(F.tuto) tutoAvance();
+    if([...F.sol].every(s=>F.aretes.has(s))) gagne();
+    return;
+  }
+  F.pistes--; F.flash={a,b,t:performance.now()}; Shell.bad(); Shell.shake($('fwrap')); maj();
+  Shell.toast(F.pistes?'Pas par là · −1 piste':'Piste perdue','bad');
+  if(!F.pistes && !F.tuto) perd('Trois fausses pistes : le fuyard t’a semé.');
+  if(F.tuto && !F.pistes) F.pistes=3;
+}
+function gagne(){
+  F.won=true; F.vict={t:performance.now()}; Shell.win();
+  if(F.tuto){ setTimeout(Shell.endTuto,1600); return; }
+  F.over=true; Shell.stopTimer();
+  const sec=Math.round((performance.now()-F.t0)/1000);
+  setTimeout(()=>Shell.result({ok:true,faults:3-F.pistes,stats:[['Temps',sec+' s'],['Grille',`${F.N} × ${F.N}`],['Fausses pistes',String(3-F.pistes)]],
+    note:F.pistes===3?'Sans fausse piste : double point.':'Termine sans fausse piste pour gagner +2.'}),1700);
+}
+function perd(raison){
+  if(F.over) return; F.over=true; Shell.stopTimer();
+  F.aretes=new Set(F.sol); maj(); // on montre le vrai trajet
+  setTimeout(()=>Shell.result({ok:false,faults:1,stats:[['Grille',`${F.N} × ${F.N}`],['Fausses pistes',String(3-F.pistes)]],details:[raison]}),1400);
+}
+
+/* ---------- interactions : glisser = tracer, toucher = « pas par là » ---------- */
+let drag=null;
+can.addEventListener('pointerdown',e=>{
+  if(F.over && !F.tuto || F.won) return; const r=can.getBoundingClientRect(), k=caseA(e.clientX-r.left,e.clientY-r.top);
+  if(k<0) return; drag={k,bouge:false}; try{can.setPointerCapture(e.pointerId)}catch(_){}
+});
+can.addEventListener('pointermove',e=>{
+  if(!drag||F.won) return; const r=can.getBoundingClientRect(), k=caseA(e.clientX-r.left,e.clientY-r.top), a=drag.k, N=F.N;
+  if(k<0||k===a) return;
+  const adj=(Math.abs(k-a)===1 && ((k/N)|0)===((a/N)|0)) || Math.abs(k-a)===N;
+  if(adj){ basculer(a,k); drag.bouge=true; } drag.k=k;
+});
+const finDrag=()=>{ if(drag && !drag.bouge && !F.won && !(F.over&&!F.tuto)){ const k=drag.k; if(!occupe(k)){ F.x.has(k)?F.x.delete(k):F.x.add(k); Shell.blip(300,.04,'triangle',.04); } } drag=null; };
+can.addEventListener('pointerup',finDrag); can.addEventListener('pointercancel',()=>{drag=null;});
+
+/* ---------- dessin ---------- */
+function connexions(k){
+  const N=F.N, d=new Set();
+  for(const a of F.aretes){ const [p,q]=a.split('-').map(Number); if(p!==k&&q!==k) continue; const o=p===k?q:p; d.add(o===k-N?'h':o===k+N?'b':o===k-1?'g':'d'); }
+  if(k===F.g.dep) d.add('g'); if(k===F.g.arr) d.add('b');
+  return [...d];
+}
+function dos(c,x,y,w){
+  const g=c.createLinearGradient(x,y,x+w,y+w); g.addColorStop(0,'#2B3A6B'); g.addColorStop(1,'#1B2547');
+  c.fillStyle=g; c.beginPath(); c.roundRect(x,y,w,w,w*.14); c.fill();
+  c.strokeStyle='rgba(255,255,255,.14)'; c.lineWidth=1; c.beginPath(); c.roundRect(x+w*.08,y+w*.08,w*.84,w*.84,w*.1); c.stroke();
+  const cx=x+w/2, cy=y+w/2, r=w*.17; c.fillStyle='rgba(255,200,90,.30)'; c.beginPath();
+  for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r*.45:r; c.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr); } c.fill();
+}
+function face(c,x,y,w,dirs,etat){
+  c.fillStyle=etat==='vide'?'#C9CED8':'#F7F3EA'; c.beginPath(); c.roundRect(x,y,w,w,w*.14); c.fill();
+  if(etat==='vide'){ c.strokeStyle='#8A93A3'; c.lineWidth=w*.07; c.lineCap='round'; const r=w*.18, cx=x+w/2, cy=y+w/2; c.beginPath(); c.moveTo(cx-r,cy-r); c.lineTo(cx+r,cy+r); c.moveTo(cx+r,cy-r); c.lineTo(cx-r,cy+r); c.stroke(); return; }
+  const cx=x+w/2, cy=y+w/2, P={h:[cx,y],b:[cx,y+w],g:[x,cy],d:[x+w,cy]};
+  const trace=()=>{ c.beginPath(); if(dirs.length===1){ c.moveTo(...P[dirs[0]]); c.lineTo(cx,cy); } else { c.moveTo(...P[dirs[0]]); c.quadraticCurveTo(cx,cy,...P[dirs[1]]); } c.stroke(); };
+  c.save(); c.beginPath(); c.roundRect(x,y,w,w,w*.14); c.clip(); c.lineCap=dirs.length===1?'round':'butt'; c.lineJoin='round';
+  c.strokeStyle='#D8D0C0'; c.lineWidth=w*.52; trace();
+  c.strokeStyle=etat==='fini'?'#3A4A7A':'#555D6B'; c.lineWidth=w*.38; trace();
+  c.strokeStyle=etat==='fini'?'#FFD23F':'#FFFFFF'; c.lineWidth=Math.max(1.5,w*.035); c.setLineDash([w*.09,w*.08]); trace(); c.setLineDash([]);
+  c.restore();
+  c.strokeStyle=etat==='temoin'?'#F2B233':etat==='fini'?'#3DD39A':'rgba(0,0,0,.08)'; c.lineWidth=etat==='temoin'||etat==='fini'?3:1; c.beginPath(); c.roundRect(x+.5,y+.5,w-1,w-1,w*.14); c.stroke();
+  if(etat==='temoin'){ const px=x+w*.8, py=y+w*.2, r=w*.1; c.fillStyle='#F2B233'; c.beginPath(); c.arc(px,py,r,0,7); c.fill(); c.fillStyle='#fff'; c.beginPath(); c.ellipse(px,py,r*.55,r*.33,0,0,7); c.fill(); c.fillStyle='#F2B233'; c.beginPath(); c.arc(px,py,r*.18,0,7); c.fill(); }
+}
+function repere(c,x,y,r,col,glyphe){
+  c.save(); c.shadowColor='rgba(0,0,0,.35)'; c.shadowBlur=6; c.shadowOffsetY=2; c.fillStyle=col; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.restore();
+  c.strokeStyle='#fff'; c.lineWidth=Math.max(2,r*.16); c.beginPath(); c.arc(x,y,r,0,7); c.stroke(); c.fillStyle='#fff'; c.strokeStyle='#fff'; c.lineWidth=r*.14; c.lineCap='round';
+  if(glyphe==='diamant'){ c.beginPath(); c.moveTo(x-r*.5,y-r*.12); c.lineTo(x-r*.25,y-r*.42); c.lineTo(x+r*.25,y-r*.42); c.lineTo(x+r*.5,y-r*.12); c.lineTo(x,y+r*.48); c.closePath(); c.fill(); }
+  else { c.beginPath(); c.moveTo(x-r*.42,y-r*.05); c.lineTo(x,y+r*.42); c.lineTo(x+r*.42,y-r*.05); c.moveTo(x,y+r*.4); c.lineTo(x,y-r*.45); c.stroke(); }
+}
+function auto(c,x,y,ang,lg,police){
+  const w=lg*.48; c.save(); c.translate(x,y); c.rotate(ang);
+  c.save(); c.shadowColor='rgba(0,0,0,.35)'; c.shadowBlur=6; c.fillStyle=police?'#fff':'#202124'; c.beginPath(); c.roundRect(-lg/2,-w/2,lg,w,w*.32); c.fill(); c.restore();
+  c.strokeStyle=police?'#1A73E8':'#fff'; c.lineWidth=1.5; c.beginPath(); c.roundRect(-lg/2,-w/2,lg,w,w*.32); c.stroke();
+  c.fillStyle=police?'#9DC3F5':'#5F6368'; c.beginPath(); c.roundRect(lg*.08,-w*.36,lg*.18,w*.72,2); c.fill(); c.beginPath(); c.roundRect(-lg*.34,-w*.33,lg*.14,w*.66,2); c.fill();
+  if(police){ c.fillStyle='#1A73E8'; c.fillRect(-lg*.05,-w*.3,lg*.08,w*.28); c.fillStyle='#EA4335'; c.fillRect(-lg*.05,w*.02,lg*.08,w*.28); }
+  c.restore();
+}
+function dessiner(t){
+  requestAnimationFrame(dessiner);
+  if(!F.g || !F.L) return;
+  const c=ctx, N=F.N, s=F.s, W=s*N; c.setTransform(F.dpr,0,0,F.dpr,0,0); c.clearRect(0,0,F.L,F.H);
+  const dep=ctr(F.g.dep), arr=ctr(F.g.arr), fini=F.won;
+  for(const [a,b] of [[{x:F.ox-s*.45,y:dep.y},{x:F.ox,y:dep.y}],[{x:arr.x,y:F.oy+W},{x:arr.x,y:F.oy+W+s*.45}]]){
+    c.lineCap='butt'; c.strokeStyle='#D8D0C0'; c.lineWidth=s*.46; c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke();
+    c.strokeStyle='#555D6B'; c.lineWidth=s*.33; c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke(); }
+  repere(c,F.ox-s*.5,dep.y,Math.max(10,s*.2),'#EA4335','diamant');
+  repere(c,arr.x,F.oy+W+s*.5,Math.max(10,s*.2),'#3C4043','sortie');
+  for(let k=0;k<N*N;k++){
+    const etat=occupe(k)?'route':F.x.has(k)?'vide':'dos';
+    if(F.vu[k]!==undefined && F.vu[k]!==etat) F.flipT[k]={t0:t,de:F.vu[k]};
+    F.vu[k]=etat;
+    const fl=F.flipT[k], u=fl?Math.min(1,(t-fl.t0)/(reduit?1:260)):1, montre=fl&&u<.5?fl.de:etat, sx=Math.max(.02,Math.abs(Math.cos(u*Math.PI)));
+    const {x,y,w}=fRect(k);
+    c.save(); c.translate(x+w/2,y+w/2); c.scale(fl&&u<1?sx:1,1); c.translate(-(x+w/2),-(y+w/2));
+    c.fillStyle='rgba(0,0,0,.35)'; c.beginPath(); c.roundRect(x+1,y+3,w,w,w*.14); c.fill();
+    if(montre==='dos') dos(c,x,y,w);
+    else face(c,x,y,w,montre==='vide'?[]:connexions(k),montre==='vide'?'vide':fini?'fini':F.don.has(k)&&k!==F.g.dep&&k!==F.g.arr?'temoin':'route');
+    c.restore();
+  }
+  if(F.flash && t-F.flash.t<700){ const a=ctr(F.flash.a), b=ctr(F.flash.b); c.globalAlpha=1-(t-F.flash.t)/700; c.strokeStyle='#FF4D4D'; c.lineWidth=s*.22; c.lineCap='round'; c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke(); c.globalAlpha=1; }
+  // Compteurs : objectif, remplissage = tuiles retournées dans la ligne / la colonne.
+  const {lig,col}=comptes(), bw=Math.min(42,s*.8), bh=Math.min(26,s*.5), fs=Math.round(bh*.6);
+  c.textAlign='center'; c.textBaseline='middle';
+  for(let i=0;i<N;i++) for(const [n,v,x,y] of [[col[i],F.g.col[i],F.ox+i*s+s/2,F.oy-bh/2-8],[lig[i],F.g.lig[i],F.ox-bw/2-12-s*.72,F.oy+i*s+s/2]]){
+    const ok=n===v, trop=n>v, x0=x-bw/2, y0=y-bh/2;
+    c.fillStyle='#2A3356'; c.beginPath(); c.roundRect(x0,y0,bw,bh,7); c.fill();
+    if(v>0 && n>0){ c.save(); c.beginPath(); c.roundRect(x0,y0,bw,bh,7); c.clip(); c.fillStyle=trop?'#E5484D':ok?'#22B573':'#3E5BA9'; c.fillRect(x0,y0,bw*Math.min(1,n/v),bh); c.restore(); }
+    else if(v===0){ c.fillStyle=trop?'#E5484D':'#22B573'; c.beginPath(); c.roundRect(x0,y0,bw,bh,7); c.fill(); }
+    c.fillStyle='#fff'; c.font=`800 ${fs}px Bricolage Grotesque, sans-serif`; c.fillText(ok||trop?v:`${n}/${v}`,x,y+1);
+  }
+  if(F.vict){ const L2=F.ordre.length, pos=d=>{ const k=Math.max(0,Math.min(L2-1.001,((t-F.vict.t)/1600)*(L2-1)-d)), i=Math.floor(k), a=ctr(F.ordre[i]), b=ctr(F.ordre[i+1]), u=k-i; return [a.x+(b.x-a.x)*u,a.y+(b.y-a.y)*u,Math.atan2(b.y-a.y,b.x-a.x)]; };
+    const [x2,y2,a2]=pos(1.1); auto(c,x2,y2,a2,s*.46,true); const [x1,y1,a1]=pos(0); auto(c,x1,y1,a1,s*.46,false); }
+}
+requestAnimationFrame(dessiner);
+
+/* ---------- tutoriel : petite grille fixe ---------- */
+const TUTO={N:4,lig:[0,2,3,2],col:[1,2,2,2],dep:4,arr:14,donnes:[[4,10],[14,6]],sol:[[4,10],[5,12],[9,3],[10,10],[11,12],[15,9],[14,6]]};
+let tutoEtape=0;
+const TSTEPS=[null,
+  'Le fuyard sort de la <b>bijouterie</b> (repère rouge, à gauche). Pose le doigt sur la première tuile et <b>glisse vers la droite</b> : chaque tuile traversée se retourne et montre la route.',
+  'Les chiffres disent <b>combien de tuiles</b> la route traverse dans chaque ligne et chaque colonne. Ils deviennent <b>verts</b> quand c’est juste. Termine le trajet jusqu’à la <b>sortie</b> (en bas).'];
+function tutoAvance(){ if(tutoEtape===1 && F.aretes.size>=2){ tutoEtape=2; Shell.coach(2,2,TSTEPS[2]); } }
+
+/* ---------- niveaux du Challenge ---------- */
+// Taille par paliers (5×5 → 9×9), témoins de confort au début, chrono qui se resserre à chaque niveau.
+function reglage(n){
+  const N = n<=3?5 : n<=8?6 : n<=15?7 : n<=25?8 : 9;
+  const dens = Math.min(.6, .45+.015*(n-1));
+  const extra = Math.max(0, 3-Math.floor((n-1)/3));
+  const base = {5:150,6:180,7:210,8:240,9:270}[N];
+  const time = Math.round(base*Math.max(.55, n<=10?1:Math.pow(.97,n-10)));
+  return {N,dens,extra,time};
+}
+
+Shell.init({
+  key:'filature', service:'Service Recherche', serviceShort:'Recherche',
+  unit:['enquêteur','enquêteurs'], effLabel:'Enquêteurs sur la filature',
+  headline:'Filature',
+  story:`<p>Braquage à la bijouterie : le fuyard a traversé le quartier avant de quitter la zone. Les <b>caméras</b> l’ont vu passer, et quelques <b>témoins</b> sont formels.</p><p><b>Reconstitue son trajet</b> de tuile en tuile, de la bijouterie jusqu’à la sortie.</p>`,
+  diffs:{difficile:{agents:1,label:'Difficile',...reglage(10)},normal:{agents:2,label:'Normal',...reglage(7)},facile:{agents:3,label:'Facile',...reglage(4)}},
+  niveau:(n,out)=>({...out,...reglage(n)}),
+  diffHint:'Plus d’enquêteurs : une plus petite zone à fouiller.',
+  desktopHint:'Sur ordinateur : clic maintenu et glisser pour tracer, clic simple pour marquer une tuile.',
+  rules:['Glisse le doigt de tuile en tuile depuis la <b>bijouterie</b> (repère rouge) : chaque tuile traversée <b>se retourne</b> et montre la route.','Chaque <b>chiffre</b> dit combien de tuiles de sa ligne ou de sa colonne le trajet traverse : il passe au <b>vert</b> quand c’est juste.','Les tuiles <b>dorées</b> sont des témoignages sûrs : la route y passe déjà.','Repasse sur un bout de route pour l’effacer. Touche une tuile pour la marquer « pas par là ».','Une <b>fausse piste</b> coûte un cœur : trois, et le fuyard t’a semé.'],
+  winTitle:'Trajet reconstitué', loseTitle:'Le fuyard t’a semé', skin:'Plan de filature',
+  malus:'la piste du fuyard est perdue pour aujourd’hui.',
+  onMenu(){ F.over=true; F.tuto=false; },
+  onInit(){ charger(filGrille(5,.45,3)); F.over=true; },
+  onPlay(cfg){ F.tuto=false; charger(filGrille(cfg.N,cfg.dens,cfg.extra)||filGrille(5,.45,3)); F.over=false;
+    Shell.startTimer(cfg.time,()=>perd('Temps écoulé : le fuyard a pris trop d’avance.')); },
+  onTuto(){ F.tuto=true; charger(TUTO); F.over=false; tutoEtape=1; Shell.coach(1,2,TSTEPS[1]); }
+});
+
+// Accroche de test : l'état du plateau et la géométrie réellement utilisée pour dessiner et toucher.
+window.__filature = { etat:()=>({N:F.N, sol:[...F.sol], aretes:[...F.aretes], x:[...F.x], pistes:F.pistes, won:F.won, over:F.over, g:F.g}), rect:fRect, caseA };
+
+</script>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!--title:Filature-->
+<!--eyebrow:Recherche · démo-->
+<!--h1:Filature-->
+<!--svc:ser-->
+<!--icon:trace-->
+<style>
+.fwrap{position:relative;flex:1;min-height:0;border-radius:22px;overflow:hidden;touch-action:none;
+  background:radial-gradient(70% 60% at 50% 45%,#1E2850,#0E1430);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.fwrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hintline{font-size:12.5px;color:var(--mute);text-align:center;flex:0 0 auto}
+.status{flex:0 0 auto;padding-bottom:env(safe-area-inset-bottom,0px)}
+.pistes{letter-spacing:2px;color:#ff6e6a}
+</style>
+<body>
+  <div class="fwrap" id="fwrap"><canvas id="fcan" aria-label="Plateau de Filature : tuiles à retourner"></canvas></div>
+  <div class="hintline">Glisse de tuile en tuile depuis la bijouterie · Touche une tuile : « pas par là »</div>
+  <div class="status"><span id="tuTxt">Tuiles 0/0</span><span>Pistes <b class="pistes" id="piTxt">♥♥♥</b></span></div>
+</body>
+<script>
+/* Filature : reconstituer le trajet unique du fuyard, de la bijouterie (bord gauche) à la sortie (bord bas).
+   Les chiffres disent combien de tuiles de chaque ligne et de chaque colonne le trajet traverse ; une tuile
+   traversée se retourne et montre sa route. Témoins (tuiles dorées) : morceaux de trajet sûrs.
+   Règle des mini-jeux : la zone qu'on touche est exactement la tuile dessinée (fRect sert aux deux). */
+/*INCLUDE:filature-gen.js*/null
+
+const F = { g:null, N:0, over:true, won:false, tuto:false, pistes:3, aretes:new Set(), x:new Set(), vu:{}, flipT:{}, flash:null, vict:null };
+const can = $('fcan'), ctx = can.getContext('2d');
+const cle = (a,b) => a<b?`${a}-${b}`:`${b}-${a}`;
+const reduit = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function charger(g){
+  const N=g.N, sol=new Set(), fixe=new Set(), don=new Map(g.donnes);
+  for(const [k,m] of g.sol){ if(m&2 && k%N<N-1) sol.add(cle(k,k+1)); if(m&4 && k+N<N*N) sol.add(cle(k,k+N)); }
+  for(const [k,m] of g.donnes){ if(m&1&&k>=N) fixe.add(cle(k,k-N)); if(m&2&&k%N<N-1) fixe.add(cle(k,k+1)); if(m&4&&k+N<N*N) fixe.add(cle(k,k+N)); if(m&8&&k%N>0) fixe.add(cle(k,k-1)); }
+  const P=new Map(g.sol), ordre=[g.dep]; let k=g.dep, prev=-1;
+  while(k!==g.arr){ const m=P.get(k); const v=[[1,k-N],[2,k+1],[4,k+N],[8,k-1]].find(([b,q])=>m&b && q!==prev && sol.has(cle(k,q))); prev=k; k=v[1]; ordre.push(k); }
+  Object.assign(F,{g,N,sol,fixe,don,ordre,aretes:new Set(fixe),x:new Set(),vu:{},flipT:{},flash:null,vict:null,won:false,pistes:3,t0:performance.now()});
+  geo(); maj();
+}
+/* ---------- géométrie : une seule fonction pour dessiner et pour toucher ---------- */
+function geo(){
+  const r=$('fwrap').getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
+  can.width=Math.round(r.width*dpr); can.height=Math.round(r.height*dpr); F.dpr=dpr; F.L=r.width; F.H=r.height;
+  if(!F.N) return;
+  const N=F.N; F.s=Math.floor(Math.min((F.L-20)/(N+1.9),(F.H-20)/(N+1.5)));
+  F.ox=Math.round((F.L-F.s*N)/2+F.s*0.75); F.oy=Math.round((F.H-F.s*N)/2+F.s*0.1);
+}
+new ResizeObserver(geo).observe($('fwrap'));
+const fRect = k => { const gap=Math.max(2,F.s*0.06); return { x:F.ox+(k%F.N)*F.s+gap/2, y:F.oy+((k/F.N)|0)*F.s+gap/2, w:F.s-gap }; };
+const ctr = k => ({ x:F.ox+(k%F.N)*F.s+F.s/2, y:F.oy+((k/F.N)|0)*F.s+F.s/2 });
+function caseA(px,py){ for(let k=0;k<F.N*F.N;k++){ const r=fRect(k); if(px>=r.x&&px<=r.x+r.w&&py>=r.y&&py<=r.y+r.w) return k; } return -1; }
+
+const occupe = k => k===F.g.dep || k===F.g.arr || [...F.aretes].some(a=>{ const [p,q]=a.split('-').map(Number); return p===k||q===k; });
+function comptes(){ const N=F.N, lig=Array(N).fill(0), col=Array(N).fill(0); for(let k=0;k<N*N;k++) if(occupe(k)){ lig[(k/N)|0]++; col[k%N]++; } return {lig,col}; }
+function maj(){
+  let n=0; for(let k=0;k<F.N*F.N;k++) if(occupe(k)) n++;
+  $('tuTxt').textContent=`Tuiles ${n}/${F.g.sol.length}`;
+  $('piTxt').textContent='♥'.repeat(F.pistes)+'♡'.repeat(3-F.pistes);
+}
+
+/* ---------- jeu ---------- */
+function basculer(a,b){
+  const k=cle(a,b);
+  if(F.fixe.has(k)) return;
+  if(F.aretes.has(k)){ F.aretes.delete(k); Shell.blip(420,.04,'triangle',.04); maj(); return; }
+  if(F.sol.has(k)){
+    F.aretes.add(k); F.x.delete(a); F.x.delete(b); Shell.blip(880+F.aretes.size*8,.04,'square',.03); maj();
+    if(F.tuto) tutoAvance();
+    if([...F.sol].every(s=>F.aretes.has(s))) gagne();
+    return;
+  }
+  F.pistes--; F.flash={a,b,t:performance.now()}; Shell.bad(); Shell.shake($('fwrap')); maj();
+  Shell.toast(F.pistes?'Pas par là · −1 piste':'Piste perdue','bad');
+  if(!F.pistes && !F.tuto) perd('Trois fausses pistes : le fuyard t’a semé.');
+  if(F.tuto && !F.pistes) F.pistes=3;
+}
+function gagne(){
+  F.won=true; F.vict={t:performance.now()}; Shell.win();
+  if(F.tuto){ setTimeout(Shell.endTuto,1600); return; }
+  F.over=true; Shell.stopTimer();
+  const sec=Math.round((performance.now()-F.t0)/1000);
+  setTimeout(()=>Shell.result({ok:true,faults:3-F.pistes,stats:[['Temps',sec+' s'],['Grille',`${F.N} × ${F.N}`],['Fausses pistes',String(3-F.pistes)]],
+    note:F.pistes===3?'Sans fausse piste : double point.':'Termine sans fausse piste pour gagner +2.'}),1700);
+}
+function perd(raison){
+  if(F.over) return; F.over=true; Shell.stopTimer();
+  F.aretes=new Set(F.sol); maj(); // on montre le vrai trajet
+  setTimeout(()=>Shell.result({ok:false,faults:1,stats:[['Grille',`${F.N} × ${F.N}`],['Fausses pistes',String(3-F.pistes)]],details:[raison]}),1400);
+}
+
+/* ---------- interactions : glisser = tracer, toucher = « pas par là » ---------- */
+let drag=null;
+can.addEventListener('pointerdown',e=>{
+  if(F.over && !F.tuto || F.won) return; const r=can.getBoundingClientRect(), k=caseA(e.clientX-r.left,e.clientY-r.top);
+  if(k<0) return; drag={k,bouge:false}; try{can.setPointerCapture(e.pointerId)}catch(_){}
+});
+can.addEventListener('pointermove',e=>{
+  if(!drag||F.won) return; const r=can.getBoundingClientRect(), k=caseA(e.clientX-r.left,e.clientY-r.top), a=drag.k, N=F.N;
+  if(k<0||k===a) return;
+  const adj=(Math.abs(k-a)===1 && ((k/N)|0)===((a/N)|0)) || Math.abs(k-a)===N;
+  if(adj){ basculer(a,k); drag.bouge=true; } drag.k=k;
+});
+const finDrag=()=>{ if(drag && !drag.bouge && !F.won && !(F.over&&!F.tuto)){ const k=drag.k; if(!occupe(k)){ F.x.has(k)?F.x.delete(k):F.x.add(k); Shell.blip(300,.04,'triangle',.04); } } drag=null; };
+can.addEventListener('pointerup',finDrag); can.addEventListener('pointercancel',()=>{drag=null;});
+
+/* ---------- dessin ---------- */
+function connexions(k){
+  const N=F.N, d=new Set();
+  for(const a of F.aretes){ const [p,q]=a.split('-').map(Number); if(p!==k&&q!==k) continue; const o=p===k?q:p; d.add(o===k-N?'h':o===k+N?'b':o===k-1?'g':'d'); }
+  if(k===F.g.dep) d.add('g'); if(k===F.g.arr) d.add('b');
+  return [...d];
+}
+function dos(c,x,y,w){
+  const g=c.createLinearGradient(x,y,x+w,y+w); g.addColorStop(0,'#2B3A6B'); g.addColorStop(1,'#1B2547');
+  c.fillStyle=g; c.beginPath(); c.roundRect(x,y,w,w,w*.14); c.fill();
+  c.strokeStyle='rgba(255,255,255,.14)'; c.lineWidth=1; c.beginPath(); c.roundRect(x+w*.08,y+w*.08,w*.84,w*.84,w*.1); c.stroke();
+  const cx=x+w/2, cy=y+w/2, r=w*.17; c.fillStyle='rgba(255,200,90,.30)'; c.beginPath();
+  for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r*.45:r; c.lineTo(cx+Math.cos(a)*rr,cy+Math.sin(a)*rr); } c.fill();
+}
+function face(c,x,y,w,dirs,etat){
+  c.fillStyle=etat==='vide'?'#C9CED8':'#F7F3EA'; c.beginPath(); c.roundRect(x,y,w,w,w*.14); c.fill();
+  if(etat==='vide'){ c.strokeStyle='#8A93A3'; c.lineWidth=w*.07; c.lineCap='round'; const r=w*.18, cx=x+w/2, cy=y+w/2; c.beginPath(); c.moveTo(cx-r,cy-r); c.lineTo(cx+r,cy+r); c.moveTo(cx+r,cy-r); c.lineTo(cx-r,cy+r); c.stroke(); return; }
+  const cx=x+w/2, cy=y+w/2, P={h:[cx,y],b:[cx,y+w],g:[x,cy],d:[x+w,cy]};
+  const trace=()=>{ c.beginPath(); if(dirs.length===1){ c.moveTo(...P[dirs[0]]); c.lineTo(cx,cy); } else { c.moveTo(...P[dirs[0]]); c.quadraticCurveTo(cx,cy,...P[dirs[1]]); } c.stroke(); };
+  c.save(); c.beginPath(); c.roundRect(x,y,w,w,w*.14); c.clip(); c.lineCap=dirs.length===1?'round':'butt'; c.lineJoin='round';
+  c.strokeStyle='#D8D0C0'; c.lineWidth=w*.52; trace();
+  c.strokeStyle=etat==='fini'?'#3A4A7A':'#555D6B'; c.lineWidth=w*.38; trace();
+  c.strokeStyle=etat==='fini'?'#FFD23F':'#FFFFFF'; c.lineWidth=Math.max(1.5,w*.035); c.setLineDash([w*.09,w*.08]); trace(); c.setLineDash([]);
+  c.restore();
+  c.strokeStyle=etat==='temoin'?'#F2B233':etat==='fini'?'#3DD39A':'rgba(0,0,0,.08)'; c.lineWidth=etat==='temoin'||etat==='fini'?3:1; c.beginPath(); c.roundRect(x+.5,y+.5,w-1,w-1,w*.14); c.stroke();
+  if(etat==='temoin'){ const px=x+w*.8, py=y+w*.2, r=w*.1; c.fillStyle='#F2B233'; c.beginPath(); c.arc(px,py,r,0,7); c.fill(); c.fillStyle='#fff'; c.beginPath(); c.ellipse(px,py,r*.55,r*.33,0,0,7); c.fill(); c.fillStyle='#F2B233'; c.beginPath(); c.arc(px,py,r*.18,0,7); c.fill(); }
+}
+function repere(c,x,y,r,col,glyphe){
+  c.save(); c.shadowColor='rgba(0,0,0,.35)'; c.shadowBlur=6; c.shadowOffsetY=2; c.fillStyle=col; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.restore();
+  c.strokeStyle='#fff'; c.lineWidth=Math.max(2,r*.16); c.beginPath(); c.arc(x,y,r,0,7); c.stroke(); c.fillStyle='#fff'; c.strokeStyle='#fff'; c.lineWidth=r*.14; c.lineCap='round';
+  if(glyphe==='diamant'){ c.beginPath(); c.moveTo(x-r*.5,y-r*.12); c.lineTo(x-r*.25,y-r*.42); c.lineTo(x+r*.25,y-r*.42); c.lineTo(x+r*.5,y-r*.12); c.lineTo(x,y+r*.48); c.closePath(); c.fill(); }
+  else { c.beginPath(); c.moveTo(x-r*.42,y-r*.05); c.lineTo(x,y+r*.42); c.lineTo(x+r*.42,y-r*.05); c.moveTo(x,y+r*.4); c.lineTo(x,y-r*.45); c.stroke(); }
+}
+function auto(c,x,y,ang,lg,police){
+  const w=lg*.48; c.save(); c.translate(x,y); c.rotate(ang);
+  c.save(); c.shadowColor='rgba(0,0,0,.35)'; c.shadowBlur=6; c.fillStyle=police?'#fff':'#202124'; c.beginPath(); c.roundRect(-lg/2,-w/2,lg,w,w*.32); c.fill(); c.restore();
+  c.strokeStyle=police?'#1A73E8':'#fff'; c.lineWidth=1.5; c.beginPath(); c.roundRect(-lg/2,-w/2,lg,w,w*.32); c.stroke();
+  c.fillStyle=police?'#9DC3F5':'#5F6368'; c.beginPath(); c.roundRect(lg*.08,-w*.36,lg*.18,w*.72,2); c.fill(); c.beginPath(); c.roundRect(-lg*.34,-w*.33,lg*.14,w*.66,2); c.fill();
+  if(police){ c.fillStyle='#1A73E8'; c.fillRect(-lg*.05,-w*.3,lg*.08,w*.28); c.fillStyle='#EA4335'; c.fillRect(-lg*.05,w*.02,lg*.08,w*.28); }
+  c.restore();
+}
+function dessiner(t){
+  requestAnimationFrame(dessiner);
+  if(!F.g || !F.L) return;
+  const c=ctx, N=F.N, s=F.s, W=s*N; c.setTransform(F.dpr,0,0,F.dpr,0,0); c.clearRect(0,0,F.L,F.H);
+  const dep=ctr(F.g.dep), arr=ctr(F.g.arr), fini=F.won;
+  for(const [a,b] of [[{x:F.ox-s*.45,y:dep.y},{x:F.ox,y:dep.y}],[{x:arr.x,y:F.oy+W},{x:arr.x,y:F.oy+W+s*.45}]]){
+    c.lineCap='butt'; c.strokeStyle='#D8D0C0'; c.lineWidth=s*.46; c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke();
+    c.strokeStyle='#555D6B'; c.lineWidth=s*.33; c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke(); }
+  repere(c,F.ox-s*.5,dep.y,Math.max(10,s*.2),'#EA4335','diamant');
+  repere(c,arr.x,F.oy+W+s*.5,Math.max(10,s*.2),'#3C4043','sortie');
+  for(let k=0;k<N*N;k++){
+    const etat=occupe(k)?'route':F.x.has(k)?'vide':'dos';
+    if(F.vu[k]!==undefined && F.vu[k]!==etat) F.flipT[k]={t0:t,de:F.vu[k]};
+    F.vu[k]=etat;
+    const fl=F.flipT[k], u=fl?Math.min(1,(t-fl.t0)/(reduit?1:260)):1, montre=fl&&u<.5?fl.de:etat, sx=Math.max(.02,Math.abs(Math.cos(u*Math.PI)));
+    const {x,y,w}=fRect(k);
+    c.save(); c.translate(x+w/2,y+w/2); c.scale(fl&&u<1?sx:1,1); c.translate(-(x+w/2),-(y+w/2));
+    c.fillStyle='rgba(0,0,0,.35)'; c.beginPath(); c.roundRect(x+1,y+3,w,w,w*.14); c.fill();
+    if(montre==='dos') dos(c,x,y,w);
+    else face(c,x,y,w,montre==='vide'?[]:connexions(k),montre==='vide'?'vide':fini?'fini':F.don.has(k)&&k!==F.g.dep&&k!==F.g.arr?'temoin':'route');
+    c.restore();
+  }
+  if(F.flash && t-F.flash.t<700){ const a=ctr(F.flash.a), b=ctr(F.flash.b); c.globalAlpha=1-(t-F.flash.t)/700; c.strokeStyle='#FF4D4D'; c.lineWidth=s*.22; c.lineCap='round'; c.beginPath(); c.moveTo(a.x,a.y); c.lineTo(b.x,b.y); c.stroke(); c.globalAlpha=1; }
+  // Compteurs : objectif, remplissage = tuiles retournées dans la ligne / la colonne.
+  const {lig,col}=comptes(), bw=Math.min(42,s*.8), bh=Math.min(26,s*.5), fs=Math.round(bh*.6);
+  c.textAlign='center'; c.textBaseline='middle';
+  for(let i=0;i<N;i++) for(const [n,v,x,y] of [[col[i],F.g.col[i],F.ox+i*s+s/2,F.oy-bh/2-8],[lig[i],F.g.lig[i],F.ox-bw/2-12-s*.72,F.oy+i*s+s/2]]){
+    const ok=n===v, trop=n>v, x0=x-bw/2, y0=y-bh/2;
+    c.fillStyle='#2A3356'; c.beginPath(); c.roundRect(x0,y0,bw,bh,7); c.fill();
+    if(v>0 && n>0){ c.save(); c.beginPath(); c.roundRect(x0,y0,bw,bh,7); c.clip(); c.fillStyle=trop?'#E5484D':ok?'#22B573':'#3E5BA9'; c.fillRect(x0,y0,bw*Math.min(1,n/v),bh); c.restore(); }
+    else if(v===0){ c.fillStyle=trop?'#E5484D':'#22B573'; c.beginPath(); c.roundRect(x0,y0,bw,bh,7); c.fill(); }
+    c.fillStyle='#fff'; c.font=`800 ${fs}px Bricolage Grotesque, sans-serif`; c.fillText(ok||trop?v:`${n}/${v}`,x,y+1);
+  }
+  if(F.vict){ const L2=F.ordre.length, pos=d=>{ const k=Math.max(0,Math.min(L2-1.001,((t-F.vict.t)/1600)*(L2-1)-d)), i=Math.floor(k), a=ctr(F.ordre[i]), b=ctr(F.ordre[i+1]), u=k-i; return [a.x+(b.x-a.x)*u,a.y+(b.y-a.y)*u,Math.atan2(b.y-a.y,b.x-a.x)]; };
+    const [x2,y2,a2]=pos(1.1); auto(c,x2,y2,a2,s*.46,true); const [x1,y1,a1]=pos(0); auto(c,x1,y1,a1,s*.46,false); }
+}
+requestAnimationFrame(dessiner);
+
+/* ---------- tutoriel : petite grille fixe ---------- */
+const TUTO={N:4,lig:[0,2,3,2],col:[1,2,2,2],dep:4,arr:14,donnes:[[4,10],[14,6]],sol:[[4,10],[5,12],[9,3],[10,10],[11,12],[15,9],[14,6]]};
+let tutoEtape=0;
+const TSTEPS=[null,
+  'Le fuyard sort de la <b>bijouterie</b> (repère rouge, à gauche). Pose le doigt sur la première tuile et <b>glisse vers la droite</b> : chaque tuile traversée se retourne et montre la route.',
+  'Les chiffres disent <b>combien de tuiles</b> la route traverse dans chaque ligne et chaque colonne. Ils deviennent <b>verts</b> quand c’est juste. Termine le trajet jusqu’à la <b>sortie</b> (en bas).'];
+function tutoAvance(){ if(tutoEtape===1 && F.aretes.size>=2){ tutoEtape=2; Shell.coach(2,2,TSTEPS[2]); } }
+
+/* ---------- niveaux du Challenge ---------- */
+// Taille par paliers (5×5 → 9×9), témoins de confort au début, chrono qui se resserre à chaque niveau.
+function reglage(n){
+  const N = n<=3?5 : n<=8?6 : n<=15?7 : n<=25?8 : 9;
+  const dens = Math.min(.6, .45+.015*(n-1));
+  const extra = Math.max(0, 3-Math.floor((n-1)/3));
+  const base = {5:150,6:180,7:210,8:240,9:270}[N];
+  const time = Math.round(base*Math.max(.55, n<=10?1:Math.pow(.97,n-10)));
+  return {N,dens,extra,time};
+}
+
+Shell.init({
+  key:'filature', service:'Service Recherche', serviceShort:'Recherche',
+  unit:['enquêteur','enquêteurs'], effLabel:'Enquêteurs sur la filature',
+  headline:'Filature',
+  story:`<p>Braquage à la bijouterie : le fuyard a traversé le quartier avant de quitter la zone. Les <b>caméras</b> l’ont vu passer, et quelques <b>témoins</b> sont formels.</p><p><b>Reconstitue son trajet</b> de tuile en tuile, de la bijouterie jusqu’à la sortie.</p>`,
+  diffs:{difficile:{agents:1,label:'Difficile',...reglage(10)},normal:{agents:2,label:'Normal',...reglage(7)},facile:{agents:3,label:'Facile',...reglage(4)}},
+  niveau:(n,out)=>({...out,...reglage(n)}),
+  diffHint:'Plus d’enquêteurs : une plus petite zone à fouiller.',
+  desktopHint:'Sur ordinateur : clic maintenu et glisser pour tracer, clic simple pour marquer une tuile.',
+  rules:['Glisse le doigt de tuile en tuile depuis la <b>bijouterie</b> (repère rouge) : chaque tuile traversée <b>se retourne</b> et montre la route.','Chaque <b>chiffre</b> dit combien de tuiles de sa ligne ou de sa colonne le trajet traverse : il passe au <b>vert</b> quand c’est juste.','Les tuiles <b>dorées</b> sont des témoignages sûrs : la route y passe déjà.','Repasse sur un bout de route pour l’effacer. Touche une tuile pour la marquer « pas par là ».','Une <b>fausse piste</b> coûte un cœur : trois, et le fuyard t’a semé.'],
+  winTitle:'Trajet reconstitué', loseTitle:'Le fuyard t’a semé', skin:'Plan de filature',
+  malus:'la piste du fuyard est perdue pour aujourd’hui.',
+  onMenu(){ F.over=true; F.tuto=false; },
+  onInit(){ charger(filGrille(5,.45,3)); F.over=true; },
+  onPlay(cfg){ F.tuto=false; charger(filGrille(cfg.N,cfg.dens,cfg.extra)||filGrille(5,.45,3)); F.over=false;
+    Shell.startTimer(cfg.time,()=>perd('Temps écoulé : le fuyard a pris trop d’avance.')); },
+  onTuto(){ F.tuto=true; charger(TUTO); F.over=false; tutoEtape=1; Shell.coach(1,2,TSTEPS[1]); }
+});
+
+// Accroche de test : l'état du plateau et la géométrie réellement utilisée pour dessiner et toucher.
+window.__filature = { etat:()=>({N:F.N, sol:[...F.sol], aretes:[...F.aretes], x:[...F.x], pistes:F.pistes, won:F.won, over:F.over, g:F.g}), rect:fRect, caseA };
+</script>
