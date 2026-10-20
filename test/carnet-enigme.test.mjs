@@ -7,6 +7,8 @@ const BASE = process.argv[2] || 'http://127.0.0.1:8765/?demo';
 const b = await chromium.launch();
 const p = await (await b.newContext({ viewport: { width: 412, height: 860 }, deviceScaleFactor: 2, hasTouch: true, isMobile: true })).newPage();
 await p.addLocatorHandler(p.locator('.aide-wrap'), async () => { await p.evaluate(() => document.querySelectorAll('.aide-wrap').forEach((x) => x.remove())); });
+// Les alertes radio du jour (au hasard de la partie démo) peuvent couvrir l'écran : on les remet à plus tard.
+await p.addLocatorHandler(p.getByRole('button', { name: /^Plus tard/ }), async (bt) => { await bt.click(); });
 await p.goto(BASE);
 await p.click('[data-action="demo-start"]');
 await p.fill('[name="pseudo"]', 'Bryan'); await p.fill('[name="code"]', '5324'); await p.fill('[name="nom"]', 'H');
@@ -16,6 +18,7 @@ await p.waitForSelector('#countdown');
 await p.goto(BASE.replace(/#.*$/, '') + '#quete'); await p.waitForSelector('.carnet-b');
 await p.evaluate(() => document.querySelectorAll('.bs-voile,.bs,.toast').forEach((x) => x.remove()));
 await p.click('.carnet-b');
+await p.evaluate(() => { const t = document.querySelector('.carnet-p textarea'); if (t) t.scrollIntoView({ block: 'center' }); });
 await p.click('.carnet-p textarea'); await p.keyboard.type('C d e B a f');
 await p.setViewportSize({ width: 412, height: 420 }); // clavier ouvert
 await p.waitForTimeout(300);

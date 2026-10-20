@@ -598,7 +598,7 @@ function decisionPicker(z, T, d) {
       ${faites.length ? `<div class="col" style="gap:3px"><span class="tiny muted">Déjà construit :</span>${faites.map((i) => `<span class="tiny"><strong>${esc(i.nom)}</strong> <span class="muted">· ${esc(i.effet)}</span></span>`).join('')}</div>` : ''}`;
   }
   const det = d.decision && catDe(d.decision) === cat ? detailDecision(z, d.decision, T) : '';
-  corps += det ? `<div class="ddetail">${det}</div>` : '<p class="tiny muted" style="margin:0">Touche une option : le détail de ce qu’elle change pour ta zone s’affiche ici.</p>';
+  corps += det ? `<div class="ddetail">${det}</div>` : '';
   return `<div class="col" style="gap:10px">
     <div class="between dchoix"><span class="col" style="gap:1px"><span class="tiny muted">Ta grande décision de ce soir</span><strong>${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'Pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}</strong></span>
       ${d.decision || !d.sansDecision ? `<button type="button" class="btn small ghost" data-action="decision" data-json="null" data-aucune="1">${d.decision ? 'Aucune' : 'Aucune ce soir'}</button>` : ''}</div>
@@ -606,7 +606,7 @@ function decisionPicker(z, T, d) {
     ${corps}
     ${avertBudget(z, d)}
     ${formationsEnCours(z, T)}
-    <p class="tiny muted" style="margin:0">Une seule grande décision par tour, payée à 20:00 si le budget le permet (${fmt1(z.budget)} k€ aujourd’hui). Elle passe <strong>après</strong> les dépenses du jour et les démarches d’enquête.</p>
+    <details class="dec-aide"><summary>? Comment ça marche</summary><p class="tiny muted" style="margin:0">Touche une option : le détail de ce qu’elle change pour ta zone s’affiche. Une seule grande décision par tour, payée à 20:00 si le budget le permet (${fmt1(z.budget)} k€ aujourd’hui). Elle passe <strong>après</strong> les dépenses du jour et les démarches d’enquête.</p></details>
   </div>`;
 }
 
@@ -824,11 +824,15 @@ function pliGroupe(items) {
     const l = items.filter(Boolean);
     const ouv = l.find((x) => S.ordOpen && S.ordOpen[x.key]);
     const ico = (k, t = 18) => `<span class="ord-t-i" style="--t:${TEINTE_PLI[k] || 'var(--amber)'}" aria-hidden="true">${icon(ICO_PLI[k] || 'star', t)}</span>`;
+    const estVide = (x) => !(x.pastille || x.alerte) && resumeVide(x.resume) && !(ouv && ouv.key === x.key);
+    const vides = l.filter(estVide), pleins = l.filter((x) => !estVide(x));
+    const ligneVides = vides.length ? `<div class="ord-vides"><span class="tiny muted">Rien ce soir :</span>${vides.map((x) => `<button type="button" class="chip" data-action="ord-open" data-k="${x.key}" aria-expanded="false">${esc(COURT_PLI[x.key] || x.titre)}</button>`).join('')}</div>` : '';
     return `<section class="ord-tuiles" aria-label="Ce soir aussi"><h2 class="section" style="margin:0">Ce soir aussi</h2>
-      <div class="ord-grille${l.length % 2 ? ' impair' : ''}">${l.map((x) => { const chip = x.pastille || (x.alerte ? 'à voir' : ''); const on = ouv && ouv.key === x.key;
+      ${pleins.length ? `<div class="ord-grille${pleins.length % 2 ? ' impair' : ''}">${pleins.map((x) => { const chip = x.pastille || (x.alerte ? 'à voir' : ''); const on = ouv && ouv.key === x.key;
         const r = sansEmoji(x.resume), vide = !chip && resumeVide(x.resume);
         return `<button type="button" class="ord-tuile ${on ? 'on' : ''} ${chip ? 'alerte' : ''} ${vide ? 'vide' : ''}" style="--t:${TEINTE_PLI[x.key] || 'var(--amber)'}" data-action="ord-open" data-k="${x.key}" aria-expanded="${on}"${chip ? ` title="${esc(chip)}"` : ''}>
-          ${ico(x.key)}<span class="ord-t-txt"><span class="ord-t-n"><span>${esc(COURT_PLI[x.key] || x.titre)}</span></span><span class="ord-t-r">${r}</span>${chip ? `<span class="sr-only"> (${esc(chip)})</span>` : ''}</span></button>`; }).join('')}</div>
+          ${ico(x.key)}<span class="ord-t-txt"><span class="ord-t-n"><span>${esc(COURT_PLI[x.key] || x.titre)}</span></span><span class="ord-t-r">${r}</span>${chip ? `<span class="sr-only"> (${esc(chip)})</span>` : ''}</span></button>`; }).join('')}</div>` : ''}
+      ${ligneVides}
       ${ouv ? `<div class="card ord-ouvert" id="ord-${ouv.key}" style="--t:${TEINTE_PLI[ouv.key] || 'var(--amber)'}"><div class="between"><span class="row" style="gap:10px;align-items:center">${ico(ouv.key)}<b>${esc(ouv.titre)}</b></span><button type="button" class="iconbtn" data-action="ord-open" data-k="${ouv.key}" aria-label="Fermer" style="width:32px;height:32px">✕</button></div>${ouv.contenu}</div>` : ''}
     </section>`;
   }
@@ -911,7 +915,7 @@ function doctrineFixeeHtml(z) {
   const D = z.doctrine && DOCTRINES[z.doctrine], T = S.state.turn;
   const k = 'ord-doc-info', ouv = !!(S.ouverts && S.ouverts[k]);
   const prochain = T < DOCTRINE_SEM2.debut && !z.doctrineSem2 ? `modifiable les jours ${DOCTRINE_SEM2.debut} et ${DOCTRINE_SEM2.fin}` : 'fixée jusqu’à la fin de la saison';
-  if (!D) return `<section class="card" id="ord-doctrine" aria-label="Doctrine de la zone" style="gap:2px"><span class="kicker">Doctrine de la zone</span><span class="small muted">Aucune doctrine en vigueur (${T < DOCTRINE_SEM2.debut ? `prochain choix les jours ${DOCTRINE_SEM2.debut} et ${DOCTRINE_SEM2.fin}` : 'pas choisie à temps'}).</span></section>`;
+  if (!D) return ''; // rien en vigueur ni à choisir : pas de carte vide (le prochain choix s'annonce dans les Ordres le moment venu)
   const m = z.maitrise || 0;
   return `<details class="card doctrine-pli" id="ord-doctrine" data-k="${k}" aria-label="Doctrine de la zone" ${ouv ? 'open' : ''}>
     <summary class="pli-ligne" style="list-style:none"><span class="col grow" style="gap:1px;min-width:0;text-align:left"><span class="kicker">Doctrine en vigueur</span><span class="pli-resume">${D.ico} ${esc(D.nom)}${m ? ` · ${'★'.repeat(m + 1)}` : ''} · <span class="muted">${prochain}</span></span></span>${icon('chevron', 16)}</summary>
@@ -949,12 +953,12 @@ function doctrineHtml(z, d) {
 }
 
 /** Une partie des Ordres : en-tête numéroté (résumé toujours visible), corps déplié à la demande. */
-function partieOrdres(k, n, titre, resume, etat, corps, { aria = titre, cls = '', defaut = null } = {}) {
+function partieOrdres(k, n, titre, resume, etat, corps, { aria = titre, cls = '', defaut = null, pied = '' } = {}) {
   const force = S.ordParts && k in S.ordParts ? S.ordParts[k] : null;
   const ouvert = force != null ? force : !!(S.ordOpen && S.ordOpen[k]) || (defaut != null ? defaut : k === 'affect');
   return `<section class="card op-part ${cls} ${etat} ${ouvert ? 'ouvert' : ''}" id="ord-${k}" aria-label="${esc(aria)}">
     <button type="button" class="op-h" data-action="op-part" data-k="${k}" aria-expanded="${ouvert}"><span class="op-n">${etat === 'ok' ? icon('check', 13) : n}</span><span class="op-t"><b>${esc(titre)}</b><span>${resume}</span></span>${icon('chevron', 16)}</button>
-    ${ouvert ? `<div class="op-c">${corps()}</div>` : ''}</section>`;
+    ${ouvert ? `<div class="op-c">${corps()}</div>` : pied}</section>`;
 }
 const COURT_SVC = { intervention: 'Int', proximite: 'Prox', recherche: 'Rech', roulage: 'Roul', admin: 'Acc' };
 /** Résumé de l'affectation : ce qui manque, sinon la répartition en une ligne. */
@@ -964,6 +968,19 @@ function resumeAffect(z, e) {
   if (e.reste > 0) return `${e.reste} agent${e.reste > 1 ? 's' : ''} libre${e.reste > 1 ? 's' : ''} à placer`;
   if (courts.length) return `court : ${courts.map((s2) => (s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2])).join(', ')}`;
   return SERVICES.map((s2) => `${COURT_SVC[s2]} ${d.alloc[s2]}`).join(' · ');
+}
+/** L'Affectation s'ouvre repliée quand il n'y a rien à régler, ou seulement des agents libres à placer (un toucher suffit). */
+function replierAffect(e, z) {
+  if ((z.toursJoues || 0) < 1 || S.tuto != null || e.reste < 0) return false; // dès le 2e soir joué (la 1re fois, on découvre l’Affectation)
+  const bs = besoinsServices(e);
+  return !SERVICES.some((s2) => bs[s2] && bs[s2].st === 'manque');
+}
+/** Agents libres : les placer d'un toucher, sans rouvrir toute l'Affectation. Le service qui manque le plus vient en premier. */
+function placerLibresHtml(e) {
+  const bs = besoinsServices(e);
+  const rang = { manque: 0, juste: 1 };
+  const cibles = [...SERVICES.filter((s2) => bs[s2] && bs[s2].st in rang).sort((a, b) => rang[bs[a].st] - rang[bs[b].st]), 'intervention', 'proximite'].filter((v, i, t) => t.indexOf(v) === i).slice(0, 3);
+  return `<div class="op-libres"><span class="small warn" style="font-weight:600">${e.reste} agent${e.reste > 1 ? 's' : ''} libre${e.reste > 1 ? 's' : ''} :</span>${cibles.map((s2) => `<button type="button" class="chip" data-action="alloc-libre" data-s="${s2}">+ ${s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2]}</button>`).join('')}</div>`;
 }
 export function etatAffect(e) {
   const bs = besoinsServices(e);
@@ -1056,7 +1073,7 @@ export function renderOrdres() {
       </div>`; }).join('')}
       ${e.reste > 0 ? `<p class="small warn" style="margin:8px 0 0;font-weight:600">${e.reste} agent${e.reste > 1 ? 's' : ''} libre${e.reste > 1 ? 's' : ''} à placer</p>` : ''}
       ${''}
-      ${prisesHtml()}`, { aria: 'Affectation des agents', cls: 'affect', defaut: etatAffect(e) === 'ok' && (z.toursJoues || 0) >= 2 && S.tuto == null ? false : null })}
+      ${prisesHtml()}`, { aria: 'Affectation des agents', cls: 'affect', defaut: replierAffect(e, z) ? false : null, pied: e.reste > 0 ? placerLibresHtml(e) : '' })}
     ${partieOrdres('rythme', 2, 'Rythme de travail', `${RYTHMES[d.rythme] ? RYTHMES[d.rythme].label : 'Normal'} · ${RYTHMES[d.rythme] ? RYTHMES[d.rythme].sub : ''}`, 'ok', () => `      <div class="seg creux" role="group" aria-label="Rythme de travail">${Object.entries(RYTHMES).map(([k, r]) => `
         <button type="button" data-action="rythme" data-v="${k}" aria-pressed="${d.rythme === k}" ${k === 'renforce' && sousTutelle(z, T) ? 'disabled' : ''}><span class="t">${r.label}</span><span class="d">${k === 'renforce' && sousTutelle(z, T) ? 'interdit sous tutelle' : r.sub}</span></button>`).join('')}</div>
       ${z.renforceSuite >= 2 && d.rythme === 'renforce' ? '<p class="small bad" style="margin:0">Attention : plus de 3 tours renforcés d’affilée exposent à l’épuisement.</p>' : ''}

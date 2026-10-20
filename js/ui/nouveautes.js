@@ -26,7 +26,8 @@ export const NOTE_MAJ = {
     ['Plus simple à jouer (20 octobre)', [
       ['Enquête', 'quand tes démarches du soir sont choisies, la carte « Ce soir » se replie et montre ce que tu peux encore faire : hypothèse au juge, recoupement, réaudition, partage.'],
       ['Énigmes', 'touche « Compris » sous l’énoncé : il se replie sur une ligne et le plan ou les indices remontent.'],
-      ['Ordres', 'l’Affectation reste repliée quand tous les besoins sont couverts, et une carte « Tes décisions, d’un soir à l’autre » montre ce que ta décision d’hier a donné et ce qui arrive bientôt.'],
+      ['Ordres', 'l’Affectation reste repliée quand tous les besoins sont couverts ; un agent libre se place d’un toucher (+ Proximité, + Intervention…) sans tout rouvrir. Une carte « Tes décisions, d’un soir à l’autre » montre ce que ta décision d’hier a donné et ce qui arrive bientôt.'],
+      ['Ordres plus courts', 'plus de carte vide (doctrine sans choix, tuyaux sans rien en cours : un simple rappel en bas), le plan du district en vigueur reste replié, le mode d’emploi de la Grande décision passe derrière « ? Comment ça marche » et les options impossibles tiennent sur une ligne.'],
     ]],
     ['Corrections (20 octobre)', [
       ['Fin de saison et matériel', 'à la nouvelle saison, gilets et recyclages TTI gardent leur vraie date de fin (ils se renouvellent comme prévu), et une commande passée le dernier soir arrive dans les premiers jours.'],

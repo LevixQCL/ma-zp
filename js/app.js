@@ -1210,6 +1210,7 @@ async function onClick(e) {
         await b.savePlayer(S.user.uid, { ...(S.player || {}), consignes: cs }); S.player = { ...(S.player || {}), consignes: cs };
         toast('Consignes du pilote enregistrées.'); rerender(); break;
       }
+      case 'alloc-libre': { const k = el.dataset.s; if (SERVICES.includes(k) && estimations().reste > 0) { S.draft.alloc[k] = (S.draft.alloc[k] || 0) + 1; S.ordersDirty = true; } rerender(); break; }
       case 'alloc': {
         // Le joueur règle sa répartition : la carte reste ouverte même quand tout devient couvert.
         if (!(S.ordParts && 'affect' in S.ordParts)) S.ordParts = { ...(S.ordParts || {}), affect: true };

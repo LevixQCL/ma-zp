@@ -48,7 +48,8 @@ export function criseHtml() {
   }
   // Plan en vigueur : replié sur une ligne une fois les ordres validés (rien à décider), ouvert sinon.
   const etat = p === 'C' ? (participeCommune(st, z.uid, d) ? `tu engages ${agentsCommune(z, T)} agents ce soir` : 'tu n’y participes pas') : `jour ${jour} sur ${CRISE.duree}`;
-  const ouvert = S.ouverts && 'crise' in S.ouverts ? S.ouverts.crise : !(S.savedOrders && !S.ordersDirty);
+  // Plans A et B : rien à décider chaque soir, la carte reste repliée sur sa ligne. Plan C : ouverte tant que les ordres ne sont pas validés.
+  const ouvert = S.ouverts && 'crise' in S.ouverts ? S.ouverts.crise : p === 'C' && !(S.savedOrders && !S.ordersDirty);
   return `<details class="card crise crise-pli" id="hp-crise" data-k="crise" aria-label="Plan du district" ${ouvert ? 'open' : ''}>
     <summary><span class="crise-k">${p}</span><span class="col grow" style="gap:0"><span class="kicker">Plan du district · jour ${jour} sur ${CRISE.duree}${votes}</span><span style="font-weight:700">${esc(PLANS[i].nom)}<span class="tiny muted" style="font-weight:500"> · ${etat}</span></span></span>${icon('chevron', 16)}</summary>
     <div class="col" style="gap:10px">
