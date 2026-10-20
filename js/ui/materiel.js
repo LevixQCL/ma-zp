@@ -290,9 +290,16 @@ export function actionMateriel(a, el) {
  * L'équipement se voit : sans gilet (Intervention, Roulage, Proximité), sans recyclage TTI arme, taser, recrue en formation.
  * Renvoie une fonction (i) → { img, cls, bdg, titre } pour le i-ème agent « au service » de `s`.
  */
+const INFO_PION = {
+  'recrue en formation (à mi-efficacité)': '½ Recrue en formation : efficace à moitié pendant quelques jours.',
+  'taser en service': '⚡ Part avec un taser (agent breveté).',
+  'FN 303 en service': 'FN Part avec un FN 303 (agent breveté).',
+  'sans gilet valide': '! Pas de gilet pare-balles valide : risque de blessure plus élevé, moral en baisse.',
+  'sans recyclage TTI avec arme à feu': 'TTI Recyclage arme à feu périmé : trop d’agents dans ce cas freinent l’Intervention.',
+};
 const SPRITE = { intervention: 'inter', proximite: 'prox', recherche: 'rech', roulage: 'roul', admin: 'admin' };
 export function agentsService(s) {
-  const z = myZone(); if (!z || !S.state || !S.draft) return () => ({ img: `img/agents/${SPRITE[s]}.webp`, cls: '', bdg: '', titre: '' });
+  const z = myZone(); if (!z || !S.state || !S.draft) return () => ({ img: `img/agents/${SPRITE[s]}.webp`, cls: '', bdg: '', titre: '', info: '' });
   const T = S.state.turn, m = z.materiel, n = z.agents || 0, alloc = S.draft.alloc || {};
   const terrain = ['intervention', 'roulage', 'proximite'];
   const avantT = terrain.includes(s) ? terrain.slice(0, terrain.indexOf(s)).reduce((t, k) => t + (Number(alloc[k]) || 0), 0) : 0;
@@ -312,7 +319,9 @@ export function agentsService(s) {
     else if (s === 'intervention' && i < tz + fz && !recrue) { bdg = '<span class="ag-b y">FN</span>'; titre.push('FN 303 en service'); }
     if (g < sansG) { if (s === 'intervention' && !recrue) img = 'inter_sans_gilet'; cls += ' sg'; bdg = '<span class="ag-b r">!</span>'; titre.push('sans gilet valide'); }
     if (g < sansA) { cls += ' sa'; if (!bdg) bdg = '<span class="ag-b g">TTI</span>'; titre.push('sans recyclage TTI avec arme à feu'); }
-    return { img: `img/agents/${img}.webp`, cls: cls + (i % 2 ? ' m' : ''), bdg, titre: titre.join(', ') };
+    // Explication affichée en touchant le pion (téléphone : pas de survol).
+    const info = titre.map((t) => INFO_PION[t]).filter(Boolean).join('\n') + (titre.some((t) => /gilet|TTI/.test(t)) ? '\nÀ régler dans Matériel.' : '');
+    return { img: `img/agents/${img}.webp`, cls: cls + (i % 2 ? ' m' : ''), bdg, titre: titre.join(', '), info };
   };
 }
 /** Résumé de l'équipement sous l'Intervention : gilets, recyclage TTI, tasers, recrues. */

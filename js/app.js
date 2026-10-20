@@ -839,6 +839,15 @@ async function onClick(e) {
         if (cur.agents === 0) delete S.draft.engagements[id]; else S.draft.engagements[id] = cur;
         S.ordersDirty = true; rerender(); break;
       }
+      case 'ag-info': {
+        // Toucher un groupe de pions (partis ailleurs, en plus) : l'explication s'ouvre sous la rangée, retoucher la ferme.
+        const bande = el.closest('.ag-bande'); if (!bande) break;
+        const deja = bande.nextElementSibling && bande.nextElementSibling.classList.contains('ag-info') ? bande.nextElementSibling : null;
+        const meme = deja && deja.dataset.k === el.dataset.k;
+        if (deja) deja.remove();
+        if (!meme) { const i = document.createElement('span'); i.className = 'ag-info'; i.dataset.k = el.dataset.k; i.style.setProperty('--c', el.style.getPropertyValue('--c')); i.textContent = el.dataset.t; bande.after(i); }
+        break;
+      }
       case 'help': S.help = { ...(S.help || {}), [el.dataset.s]: !(S.help && S.help[el.dataset.s]) }; rerender(); break;
       case 'op-niveau': S.draft.operation = el.dataset.v; S.ordersDirty = true; rerender(); break;
       case 'dep-reserve': {

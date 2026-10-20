@@ -3365,6 +3365,11 @@ main.screen.fi { max-width: 640px; margin: 0 auto; }
 /* Groupe d'agents (en plus, ou partis ailleurs) : un bandeau unique en bas des pions dit ce qu'ils font. */
 .ag-grp { display: inline-flex; flex-direction: column; align-items: flex-start; max-width: 100%; }
 .ag-grp-p { display: flex; flex-wrap: wrap; gap: 5px; align-items: flex-end; }
+.ag-p[data-action] { cursor: pointer; }
+.ag-p[data-action]:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.ag-grp[data-action] { cursor: pointer; border-radius: 9px; }
+.ag-grp[data-action]:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+.ag-info { display: block; margin-top: 4px; padding: 7px 10px; border-radius: 8px; border-left: 3px solid var(--c); background: rgba(12, 17, 36, .7); font-size: 13px; line-height: 1.4; color: var(--text2, #C9D0E6); white-space: pre-line; }
 .ag-rub { position: relative; z-index: 1; margin: -19px 0 4px -2px; min-width: calc(100% + 4px); height: 15px; padding: 0 4px; border-radius: 3px; background: rgba(12, 17, 36, .9); border: 1px solid var(--c); color: var(--c); font-size: 9.5px; font-weight: 800; line-height: 13px; text-align: center; text-transform: uppercase; letter-spacing: .03em; white-space: nowrap; pointer-events: none; box-sizing: border-box; }
 .ag-p.vide { background: transparent; border: 2px dashed var(--faint, #4A5580); }
 .ag-sep { width: 1px; align-self: stretch; background: var(--line); margin: 0 3px; }

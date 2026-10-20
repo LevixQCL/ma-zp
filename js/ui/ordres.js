@@ -225,6 +225,14 @@ const MAX_CASES = 14;
 /** Bandeau posé sur les agents partis ailleurs pour la journée (un mot), et sa version longue (info-bulle). */
 const MOTIF_COURT = { 'l’opération': 'Opération', audition: 'Audition', traque: 'Traque', 'relève': 'Relève', 'opération commune': 'District', FIPA: 'FIPA' };
 const MOTIF_LONG = { 'l’opération': 'l’opération d’envergure', audition: 'l’audition de la victime (enquête)', traque: 'la traque du suspect (enquête)', 'relève': 'la relève d’un suspect en fuite', 'opération commune': 'l’opération commune du district', FIPA: 'le dispositif FIPA' };
+/** Explication affichée en touchant un groupe d'agents partis ailleurs. */
+function infoMission(s, k, motif) {
+  const de = /^[AEIOUÉ]/.test(SERVICE_LABELS[s]) ? `d’${SERVICE_LABELS[s]}` : `de ${SERVICE_LABELS[s]}`;
+  const qui = k > 1 ? `${k} agents ${de} sont pris` : `1 agent ${de} est pris`;
+  const suite = motif === 'l’opération' ? `${k > 1 ? 'Ils comptent' : 'Il compte'} pour l’opération, pas pour le service.`
+    : 'Ces agents partent d’abord parmi tes agents sans affectation : laisses-en de libres pour garder ce service au complet.';
+  return `${qui} aujourd’hui pour ${MOTIF_LONG[motif] || motif}. ${suite}`;
+}
 /** Badge d'état du service, en clair : ce qu'il faut encore, ou que le besoin est couvert. */
 function badgeService(s, b, n) {
   const k = b.bes - n;
@@ -256,14 +264,16 @@ function casesService(s, b, n, e) {
     const plein = i < au, enPlus = i >= limite;
     if (!plein) { h += '<span class="ag-p vide" title="place à pourvoir"></span>'; continue; }
     const a = ag(i);
-    const p = `<span class="ag-p${a.cls}${enPlus ? ' plus' : ''}" style="--c:${coul}"${a.titre ? ` title="${esc(a.titre)}"` : ''}><img src="${a.img}" alt="" loading="lazy">${a.bdg}</span>`;
+    const p = `<span class="ag-p${a.cls}${enPlus ? ' plus' : ''}" style="--c:${coul}"${a.titre ? ` title="${esc(a.titre)}"` : ''}${a.info && !enPlus ? ` role="button" tabindex="0" data-action="ag-info" data-k="${s}-p${i}" data-t="${esc(a.info)}"` : ''}><img src="${a.img}" alt="" loading="lazy">${a.bdg}</span>`;
     if (enPlus) plus += p; else h += p;
   }
   // Agents au-delà du besoin : un seul bandeau « En plus » sur le groupe.
-  if (plus) h += `<span class="ag-grp" style="--c:${coul}" title="Au service, mais au-delà de ce que le service peut utiliser aujourd’hui"><span class="ag-grp-p">${plus}</span><span class="ag-rub">En plus</span></span>`;
+  const nPlus = (plus.match(/class="ag-p/g) || []).length;
+  const infoPlus = `${nPlus > 1 ? `Ces ${nPlus} agents sont` : 'Cet agent est'} bien au service, mais au-delà de ce que le service peut utiliser aujourd’hui : ${nPlus > 1 ? 'ils rapportent' : 'il rapporte'} peu. Tu peux les placer ailleurs.`;
+  if (plus) h += `<span class="ag-grp" style="--c:${coul}" role="button" tabindex="0" data-action="ag-info" data-k="${s}-plus" data-t="${esc(infoPlus)}" aria-label="${esc(infoPlus)}"><span class="ag-grp-p">${plus}</span><span class="ag-rub">En plus</span></span>`;
   if (nb > vus) h += `<span class="tiny muted">+${nb - vus}</span>`;
   // Agents partis ailleurs pour la journée : un groupe par motif, avec un bandeau qui dit où ils sont.
-  const missions = groupes.map(([k, motif]) => `<span class="ag-sep"></span><span class="ag-grp" style="--c:${coul}" title="${esc(`${k} agent${k > 1 ? 's' : ''} de ce service ${k > 1 ? 'sont' : 'est'} pris ailleurs aujourd’hui : ${MOTIF_LONG[motif] || motif}`)}"><span class="ag-grp-p">${Array.from({ length: Math.min(k, MAX_CASES) }, (_, i) => `<span class="ag-p mission${i % 2 ? ' m' : ''}" style="--c:${coul}"><img src="img/agents/${({ intervention: 'inter', proximite: 'prox', recherche: 'rech', roulage: 'roul', admin: 'admin' })[s]}.webp" alt="" loading="lazy"></span>`).join('')}</span><span class="ag-rub">${esc(MOTIF_COURT[motif] || motif)}</span></span>`).join('');
+  const missions = groupes.map(([k, motif]) => `<span class="ag-sep"></span><span class="ag-grp" style="--c:${coul}" role="button" tabindex="0" data-action="ag-info" data-k="${s}-${esc(motif)}" data-t="${esc(infoMission(s, k, motif))}" aria-label="${esc(infoMission(s, k, motif))}"><span class="ag-grp-p">${Array.from({ length: Math.min(k, MAX_CASES) }, (_, i) => `<span class="ag-p mission${i % 2 ? ' m' : ''}" style="--c:${coul}"><img src="img/agents/${({ intervention: 'inter', proximite: 'prox', recherche: 'rech', roulage: 'roul', admin: 'admin' })[s]}.webp" alt="" loading="lazy"></span>`).join('')}</span><span class="ag-rub">${esc(MOTIF_COURT[motif] || motif)}</span></span>`).join('');
   const lab = `${au ? `au service · ${au}` : 'personne au service'}${groupes.map(([k, motif]) => ` · ${motif === 'l’opération' ? 'opération' : esc(motif)} · ${k}`).join('')}`;
   return `${pris || !au ? `<span class="ag-l">${lab}</span>` : ''}<span class="ag-bande">${h || (pris ? '' : '<span class="tiny muted">aucun agent</span>')}${missions}</span>`;
 }
