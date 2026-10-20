@@ -4,7 +4,7 @@ import { laureatsProvisoires, enTeteSemaine, recordDefi, monRecordDefi } from '.
 import { CHALLENGE } from '../engine/challenge.js';
 import { euros } from './euros.js';
 import { recordBitonal, monScoreBitonal } from './bitonal.js';
-import { S, esc, icon, tabbar, myZone, questDuSlot, slotsCompte, modeEssai } from './common.js';
+import { S, esc, icon, tabbar, myZone, questDuSlot, slotsCompte } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS, FORMES, FORMES_EN_JEU, RELANCE_PS, DIFF_NOIR } from '../quests/quests.js';
 import { psDispo } from '../engine/decor.js';
 import { achatEnAttente } from './logistique.js';
@@ -408,11 +408,11 @@ function relanceHtml(q, r, train, noir) {
     <p class="tiny muted" style="margin:0">${ok ? 'Une nouvelle énigme du même type, un cran plus dure. Réussie, elle compte comme une bonne réponse (bonus, prime et classement). Une relance par jour, payée à 20:00.' : `Il te faut ${RELANCE_PS} PS à dépenser (tu en as ${Math.max(0, dispo)}).`}</p>`;
 }
 
-/** Règle de la forme et énoncé. Mode essai : une fois lus (« Compris »), ils se replient sur une ligne et le plan remonte. */
+/** Règle de la forme et énoncé. Une fois lus (« Compris »), ils se replient sur une ligne et le plan remonte. */
 function enonceHtml(q, fini) {
   const regle = q.forme === 'rebours' && !fini ? '<p class="fe-rebours"><strong>↑ À rebours</strong><span>Pars du <b>point rouge</b> et remonte le compte rendu <b>de la dernière ligne vers la première</b>, en inversant chaque virage.</span></p>' : '';
   const ctx = `<p class="fe-contexte">${esc(q.contexte)}</p>`;
-  if (!modeEssai() || fini || !q.id) return regle + ctx;
+  if (fini || !q.id) return regle + ctx;
   if (lire(`mazp-qlu-${q.id}`)) {
     return `<details class="fe-enonce"><summary><span class="grow">📄 Relire l’énoncé${regle ? ' et la règle « à rebours »' : ''}</span>${icon('chevron', 14)}</summary>${regle}${ctx}</details>`;
   }

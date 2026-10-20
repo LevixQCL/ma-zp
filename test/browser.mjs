@@ -32,6 +32,8 @@ await page.waitForSelector('#countdown');
 await shot('03-hp');
 
 await page.click('a[href="#ordres"] >> nth=-1');
+// L'Affectation se replie quand tout est couvert (à partir du 3e jour) : on la rouvre si besoin.
+{ const pl = page.locator('[data-action="op-part"][data-k="affect"][aria-expanded="false"]'); if (await pl.count()) await pl.click(); }
 await page.waitForSelector('[data-action="alloc"][data-s="intervention"][data-d="1"]');
 await page.click('[data-action="alloc"][data-s="intervention"][data-d="1"]');
 await page.click('[data-action="alloc"][data-s="intervention"][data-d="1"]');

@@ -5,7 +5,7 @@ import { vehiculeSvg } from './scene-hp.js';
 import { effetsPressions } from '../engine/contenu.js';
 import { comparatifModeles } from './modeles.js';
 import { ARTICLES } from '../engine/materiel.js';
-import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme, academieResume, modeEssai } from './common.js';
+import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme, academieResume } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
 import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier, PREPA, coutPrepa } from '../engine/constants.js';
 import { vitesseCombi, MODELES, IDS_MODELES, placesIntervention, agentsMontes, apportAchat, plusUse, prixRevente, modeleDe, RENDEMENT } from '../engine/flotte.js';
@@ -508,7 +508,7 @@ function formationsEnCours(z, T) {
 }
 
 /**
- * Mode essai : « Tes décisions, d'un soir à l'autre ». Ce qui est arrivé cette nuit (et ce que ça change),
+ * « Tes décisions, d'un soir à l'autre ». Ce qui est arrivé cette nuit (et ce que ça change),
  * puis ce qui est en route et quand. Lecture seule de l'état : aucune règle du jeu ne change.
  */
 function suiviDecisionsHtml(z, T) {
@@ -1056,14 +1056,14 @@ export function renderOrdres() {
       </div>`; }).join('')}
       ${e.reste > 0 ? `<p class="small warn" style="margin:8px 0 0;font-weight:600">${e.reste} agent${e.reste > 1 ? 's' : ''} libre${e.reste > 1 ? 's' : ''} à placer</p>` : ''}
       ${''}
-      ${prisesHtml()}`, { aria: 'Affectation des agents', cls: 'affect', defaut: modeEssai() && etatAffect(e) === 'ok' ? false : null })}
+      ${prisesHtml()}`, { aria: 'Affectation des agents', cls: 'affect', defaut: etatAffect(e) === 'ok' && (z.toursJoues || 0) >= 2 && S.tuto == null ? false : null })}
     ${partieOrdres('rythme', 2, 'Rythme de travail', `${RYTHMES[d.rythme] ? RYTHMES[d.rythme].label : 'Normal'} · ${RYTHMES[d.rythme] ? RYTHMES[d.rythme].sub : ''}`, 'ok', () => `      <div class="seg creux" role="group" aria-label="Rythme de travail">${Object.entries(RYTHMES).map(([k, r]) => `
         <button type="button" data-action="rythme" data-v="${k}" aria-pressed="${d.rythme === k}" ${k === 'renforce' && sousTutelle(z, T) ? 'disabled' : ''}><span class="t">${r.label}</span><span class="d">${k === 'renforce' && sousTutelle(z, T) ? 'interdit sous tutelle' : r.sub}</span></button>`).join('')}</div>
       ${z.renforceSuite >= 2 && d.rythme === 'renforce' ? '<p class="small bad" style="margin:0">Attention : plus de 3 tours renforcés d’affilée exposent à l’épuisement.</p>' : ''}
 `, { aria: 'Rythme' })}
 
     ${(() => { const ov = ouvertureOrdres(z); return ov.nouveau.length ? `<p class="small" style="margin:0;color:var(--amber)">Nouveau dans tes ordres : ${ov.nouveau.map(esc).join(', ')}.</p>` : ov.prochain ? `<p class="tiny muted" style="margin:0">Jour ${ov.jour} de ta prise de fonction : ${esc(ov.prochain[2])} s’ouvre au jour ${ov.prochain[1]}.</p>` : ''; })()}
-    ${modeEssai() ? suiviDecisionsHtml(z, T) : ''}
+    ${suiviDecisionsHtml(z, T)}
     ${partieOrdres('decision', 3, 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'une seule par soir · pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, d.decision || d.sansDecision ? 'ok' : 'am', () => decisionHtml, { defaut: !d.decision && !d.sansDecision })}
     ${partieOrdres('depenses', 4, ouvertureOrdres(z).depenses ? 'Dépenses du jour' : 'Agents de réserve', ouvertureOrdres(z).depenses ? (dep.reserve ? `réserve : ${dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun'} · ` : '') + (cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune') : dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun', cab > 0 && !dep.carrosserie ? 'am' : nbDep ? 'ok' : '', () => `${!sousTutelle(z, T) ? `<div class="affect">${reserveHtml(z, d, e)}</div>` : ''}${ouvertureOrdres(z).depenses ? depensesHtml : ''}`)}
     ${pliGroupe([z.chef ? pliItem('chef', 'Chef de corps', resumeChefOrdres(z, d), `<p class="tiny muted" style="margin:0">Agenda, première ligne, service du réseau et talents se règlent dans l’onglet Chef. Ils partent avec tes ordres de 20:00.</p><a class="btn small primary block" href="#chef">Ouvrir l’onglet Chef</a>`, (z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)), (z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)) ? 'talent' : null) : null,

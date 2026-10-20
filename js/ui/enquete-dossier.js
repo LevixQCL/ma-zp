@@ -4,7 +4,7 @@
 // Enfin le classeur (pièces, scène, plan, planques, notes) sur une feuille de papier lisible.
 // Les nouvelles pièces arrivent sous enveloppe : on les ouvre une à une, et on dit ce qu'on en conclut.
 import { zoneAvecAgenda } from './chef.js';
-import { S, esc, icon, tabbar, myZone, zoneName, fmt1, modeEssai } from './common.js';
+import { S, esc, icon, tabbar, myZone, zoneName, fmt1 } from './common.js';
 import { portraitSuspect } from './portrait.js';
 import { banniereDebrief, debriefsRecents } from './debrief.js';
 import { primeHtml } from './prime.js';
@@ -203,7 +203,7 @@ function ceSoirHtml(aff, dos) {
           <span class="small" style="font-weight:600;line-height:1.35">${resume}</span>
           <span class="tiny muted">${d.piste !== null && d.piste !== undefined && aff.suspects[d.piste] ? `piste : ${esc(aff.suspects[d.piste].prenom)} · ` : ''}${parts.length ? `${parts.length} partage${parts.length > 1 ? 's' : ''} · ` : ''}reste ${fmt1(reste)} k€ · touche pour modifier, piste, appui</span></span>
         <span class="pli-ok">${icon('check', 14)}</span>${icon('chevron', 16)}</button>
-      ${modeEssai() ? encorePossible(aff, dos, d, parts) : ''}
+      ${encorePossible(aff, dos, d, parts)}
     </section>`;
   }
   return `<section class="card e2-soir" aria-label="Ce soir">
@@ -219,7 +219,7 @@ function ceSoirHtml(aff, dos) {
   </section>`;
 }
 
-/** Carte « Ce soir » repliée : ce qui reste faisable ce soir, à un geste (mode essai). */
+/** Carte « Ce soir » repliée : ce qui reste faisable ce soir, à un geste . */
 function encorePossible(aff, dos, d, parts) {
   if (dos.exclu) return '';
   const p = [];
