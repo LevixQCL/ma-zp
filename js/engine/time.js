@@ -42,6 +42,12 @@ export function nextResolutionAfter(ms, hour = 20, tz = TZ) {
   return candidate;
 }
 
+/** Compte à rebours jusqu'à 20:00 (HTML) ; après l'heure limite et jusqu'au calcul du tour : « la Gazette s'imprime… ». */
+export function compteReboursHtml(deadline, cls = 'hs-cd', now = Date.now()) {
+  const reste = deadline - now;
+  return `<span class="cd-lib"${reste > 0 ? '' : ' hidden'}>20:00 dans </span><b id="countdown"${cls ? ` class="${cls}"` : ''}>${reste > 0 ? formatCountdown(reste) : 'la Gazette s’imprime…'}</b>`;
+}
+
 export function formatCountdown(msLeft) {
   if (msLeft <= 0) return '00:00:00';
   const s = Math.floor(msLeft / 1000);

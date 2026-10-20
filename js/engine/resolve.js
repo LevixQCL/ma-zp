@@ -866,7 +866,14 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     let libres = agentsLibres(z, o, T);
     for (const pr2 of [pre.prises[uid], fp.prises[uid], rel.prises[uid], cri.prises[uid]]) {
       if (!pr2) continue;
-      for (const [s, n0] of Object.entries(pr2)) { const k = Math.min(libres, n0); libres -= k; alloc[s] = Math.max(0, (alloc[s] || 0) - (n0 - k)); }
+      for (const [s, n0] of Object.entries(pr2)) {
+        const k = Math.min(libres, n0); libres -= k;
+        let reste = n0 - k;
+        const ici = Math.min(reste, alloc[s] || 0); alloc[s] = (alloc[s] || 0) - ici; reste -= ici;
+        // Service déjà vide : les agents partent des autres services (les plus fournis d'abord), jamais « de nulle part »
+        // (avant, une relève prise avec 0 agent d'Intervention ne coûtait rien aux services).
+        while (reste > 0) { const autre = SERVICES.filter((x) => (alloc[x] || 0) > 0).sort((a2, b2) => alloc[b2] - alloc[a2])[0]; if (!autre) break; alloc[autre] -= 1; reste -= 1; }
+      }
       const n = Object.values(pr2).reduce((a2, b2) => a2 + b2, 0);
       if (n && pr2 === rel.prises[uid]) z.rapport.push(`Relève : ${n} agent${n > 1 ? 's' : ''} d’Intervention sur le suspect en fuite.`);
       if (n && pr2 === fp.prises[uid]) z.rapport.push(`FIPA : ${n} agent${n > 1 ? 's' : ''} mobilisé${n > 1 ? 's' : ''} sur le dispositif commun.`);
@@ -1501,6 +1508,8 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   const finAnticipee = T < SEASON_LENGTH && (state.finSaison === 'soir' || (state.finSaison === 'enquete' && !!(pre && pre.res && pre.res.nouvelle)));
   // Duels de la semaine : le dernier soir de la semaine (ou de la saison), le meilleur cumul d'IPZ l'emporte.
   if (state.rivaux && state.rivaux.w === semaineDe(T) && (T % 7 === 0 || T >= SEASON_LENGTH || finAnticipee)) resoudreDuels(state, push, T);
+  // Bornes finales : gains ou pertes arrivés après le bornage de chaque zone (doctrine, objectifs, parquet, duels).
+  for (const z of Object.values(state.zones)) for (const k of ['moral', 'satisfaction', 'reputation']) if (Number.isFinite(z[k])) z[k] = clamp(z[k], 0, 100);
   if (T >= SEASON_LENGTH || finAnticipee) {
     delete state.finSaison;
     gazette.finSaison = finDeSaison(state, classement, { leger: finAnticipee });
@@ -1671,6 +1680,10 @@ function finDeSaison(state, classement, opts = {}) {
   if (state.dir) { for (const k of ['g', 'prochain', 'coop', 'duo', 'coopProchain', 'duoProchain', 'forcer']) delete state.dir[k]; }
   // Relèves en cours : datées de l'ancienne saison, elles reviendraient au mauvais jour.
   state.releves = [];
+  // Marchés groupés encore ouverts : leurs dates suivent la nouvelle saison (sinon un marché lancé en fin de saison
+  // ne fermait jamais, et son lanceur ne pouvait plus en lancer d'autre).
+  for (const mk of state.marches || []) if (!mk.clos) { mk.ouvert -= tourFin; mk.ferme -= tourFin; }
+  delete state._marchesT;
   state.nonDroit = creerNonDroit(state.seed, state.season);
   state.vente = null;
   // L'enquête et ses traques continuent dans la nouvelle saison (voir plus bas) : on ne vide pas state.traques.

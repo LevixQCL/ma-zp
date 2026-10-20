@@ -175,7 +175,7 @@ export const PRIME_LABELS = {
   formation: { ico: '🎓', nom: 'Formation offerte', effet: '+1 niveau dans le service de ton choix, sans agent absent' },
 };
 /** Texte de l'avis de recherche (ouverture de l'affaire). */
-export const texteMisePrix = () => `Mise à prix : la zone qui arrête l’auteur choisit sa récompense, ${PRIME_LABELS.confiscation.effet.replace(' tout de suite', '')}, ${PRIME.renfort.agents} agents fédéraux pendant ${PRIME.renfort.tours} jours ou une formation offerte. Démasquer sans arrêter rapporte ${PRIME.partIdentification} k€, aider avec ses pièces ${PRIME.partContribution} k€.`;
+export const texteMisePrix = () => `Mise à prix : la zone qui arrête l’auteur choisit sa récompense, ${PRIME_LABELS.confiscation.effet.replace(' tout de suite', '')}, ${PRIME.renfort.agents} agents fédéraux pendant ${PRIME.renfort.tours} jours ou une formation offerte. Si l’auteur est arrêté ou avoue, démasquer sans arrêter rapporte ${PRIME.partIdentification} k€, aider avec ses pièces ${PRIME.partContribution} k€ (rien s’il s’enfuit).`;
 
 /** Ouvre le choix de la mise à prix pour une zone (arrestation ou aveux). */
 function ouvrirPrime(state, z, aff, suspect) {
@@ -1290,6 +1290,8 @@ export function enquetePre(state, uids, ord, push) {
       for (const d of dests) envois.push({ u, d, f: p.f, direct: p.a !== '*' });
     }
   }
+  // Pièces de chaque zone avant les partages de ce soir (pour juger un échange donnant-donnant).
+  const connusAvant = Object.fromEntries(uids.map((u) => [u, new Set(faitsConnus(state.zones[u].enquete))]));
   const ordreTirage = makeRng(`${state.seed}:s${state.season}:t${state.turn}:partages`);
   const aleaPos = Object.fromEntries(ordreTirage.shuffle(uids.slice()).map((x, k) => [x, k]));
   const livrees = []; // { u, d, f }
@@ -1307,8 +1309,9 @@ export function enquetePre(state, uids, ord, push) {
       if (!parPiece.has(x.f)) parPiece.set(x.f, []);
       parPiece.get(x.f).push(x);
     }
-    // Donnant-donnant : la pièce d'une zone à qui `d` envoie aussi une pièce ce soir passe toujours (hors quota).
-    const reciproque = (x) => x.direct && envois.some((y) => y.u === d && y.d === x.u && y.direct);
+    // Donnant-donnant : la pièce d'une zone à qui `d` envoie aussi une pièce ce soir passe toujours (hors quota),
+    // à condition que la pièce envoyée en retour soit vraiment nouvelle pour elle (sinon ce n'est pas un échange).
+    const reciproque = (x) => x.direct && envois.some((y) => y.u === d && y.d === x.u && y.direct && !connusAvant[x.u].has(y.f));
     let k = 0, debord = 0;
     for (const [f, l] of parPiece) {
       if (l.some(reciproque)) {
@@ -1317,13 +1320,13 @@ export function enquetePre(state, uids, ord, push) {
         for (const x of l) livrees.push({ u: x.u, d, f });
         continue;
       }
-      if (k >= ENQ.maxRecus) { debord += 1; for (const x of l) if (x.direct) (nonEnvoyees[x.u] ||= []).push(`« ${titrePiece(aff, f)} » (${nomZone(dz)} a déjà reçu ${ENQ.maxRecus} pièces ce soir)`); continue; }
+      if (k >= ENQ.maxRecus) { debord += 1; for (const x of l) if (x.direct) (nonEnvoyees[x.u] ||= []).push(`« ${titrePiece(aff, f)} » (${nomZone(dz)} a déjà reçu ${ENQ.maxRecus > 1 ? `${ENQ.maxRecus} pièces` : 'une pièce'} ce soir)`); continue; }
       k += 1;
       dz.enquete.pieces.push({ f, j: e.jour, src: 'partage', de: l[0].u });
       dz.rapport.push(`Enquête : ${l.map((x) => nomZone(state.zones[x.u])).join(' et ')} ${l.length > 1 ? 'te transmettent' : 'te transmet'} une pièce (« ${titrePiece(aff, f)} »).`);
       for (const x of l) livrees.push({ u: x.u, d, f });
     }
-    if (debord) dz.rapport.push(`Enquête : ${debord} autre${debord > 1 ? 's' : ''} pièce${debord > 1 ? 's' : ''} partagée${debord > 1 ? 's' : ''} t’attendai${debord > 1 ? 'en' : ''}t ; tes enquêteurs n’en traitent que ${ENQ.maxRecus} par soir. ${debord > 1 ? 'Elles pourront' : 'Elle pourra'} être renvoyée${debord > 1 ? 's' : ''} demain.`);
+    if (debord) dz.rapport.push(`Enquête : ${debord} autre${debord > 1 ? 's' : ''} pièce${debord > 1 ? 's' : ''} partagée${debord > 1 ? 's' : ''} t’attendai${debord > 1 ? 'en' : ''}t ; tes enquêteurs n’en traitent ${ENQ.maxRecus > 1 ? `que ${ENQ.maxRecus}` : 'qu’une'} par soir. ${debord > 1 ? 'Elles pourront' : 'Elle pourra'} être renvoyée${debord > 1 ? 's' : ''} demain.`);
   }
   // Récompense par pièce transmise (une pièce envoyée à tout le district compte une fois).
   for (const u of uids) {
@@ -1340,7 +1343,8 @@ export function enquetePre(state, uids, ord, push) {
   }
 
   // Audition de la victime : deux agents de Recherche pris pour la journée.
-  for (const u of uids) if ((ord[u].demarches || []).includes('temoin')) prendre(u, 'recherche', DEMARCHES.temoin.agents);
+  // Seulement si l'audition fait partie des démarches réellement menées ce soir (même plafond que enqueteZone).
+  for (const u of uids) if ((ord[u].demarches || []).slice(0, maxDemarchesDe(state, state.zones[u])).includes('temoin')) prendre(u, 'recherche', DEMARCHES.temoin.agents);
 
   // Accusations (une seule par affaire et par zone).
   const justes = [];
@@ -1694,7 +1698,8 @@ export function pieceCoupDePouce(state, z, aff, rng) {
   const connus = [...new Set(faitsConnus(z.enquete))];
   const avant = candidats(aff, connus).suspects.length;
   if (avant <= auteurs(aff).length + 1) return null;
-  const pool = (aff.faits || []).filter((f) => !connus.includes(f) && !f.startsWith('p:'))
+  // Affaire écrite : seulement les pièces libres (jamais une pièce qui exige un mandat, une réaudition ou un recoupement).
+  const pool = (aff.libres || (aff.faits || []).filter((f) => !f.startsWith('p:'))).filter((f) => !connus.includes(f))
     .filter((f) => avant - candidats(aff, [...connus, f]).suspects.length === 1);
   return pool.length ? rng.pick(pool) : null;
 }

@@ -3,7 +3,7 @@
 
 // Version du code. À augmenter à chaque mise à jour qui change les règles :
 // les appareils restés sur une ancienne version ne calculent alors plus les tours.
-export const APP_VERSION = 172;
+export const APP_VERSION = 173;
 
 export const SERVICES = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
 
@@ -465,7 +465,8 @@ export const HERITAGE_PERTE = 1;
 export function tourEffet(decision, turn) {
   if (!decision) return null;
   if (decision.type === 'recruter') return turn + DELAI_ACADEMIE;
-  if (decision.type === 'former') return turn + DUREE_FORMATION + 1;
+  // Le niveau monte le soir même où la formation se termine (resolve.js : f.fin === T + 1), soit DUREE_FORMATION soirs après.
+  if (decision.type === 'former') return turn + DUREE_FORMATION;
   if (decision.type === 'agrandir') return turn + TRAVAUX_TOURS;
   return null;
 }

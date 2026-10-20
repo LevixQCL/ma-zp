@@ -7,6 +7,9 @@ on:
   schedule:
     - cron: '2,9,16 18 * * *'
     - cron: '2,9,16 19 * * *'
+    # Rattrapage (oct. 2026 : GitHub lance la tâche avec 25 à 36 minutes de retard, et n'exécute souvent qu'une seule des
+    # heures ci-dessus). Sans effet si le tour est déjà calculé. Les appareils ne prennent le relais qu'à 21:00.
+    - cron: '41 19,20 * * *'
   workflow_dispatch:
 permissions:
   contents: read

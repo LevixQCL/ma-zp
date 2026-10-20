@@ -10,7 +10,7 @@ import { annoncesND, suggestionND, placeND, prevoirRejoindre } from './nondroit.
 import { nomSecteur } from '../engine/nondroit.js';
 import { operationActive } from '../engine/zone.js';
 import { secteurOuvert, ND, RENFORT, gainRenfort } from '../engine/constants.js';
-import { formatCountdown } from '../engine/time.js';
+import { formatCountdown, compteReboursHtml } from '../engine/time.js';
 
 const pseudoDe = (uid) => (S.players && S.players[uid] && S.players[uid].pseudo) || '';
 const hm = (at) => new Date(at).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' });
@@ -231,7 +231,7 @@ export function renderRadioV2() {
     const ouvert = !!S.radioEchanges;
     const der = msgs[msgs.length - 1];
     corps = `<section class="col" style="gap:10px" aria-label="Tableau des appels">
-      <div class="between" style="align-items:baseline"><h2 class="section" style="margin:0">Tableau des appels</h2><span class="rv-cd">20:00 dans <b id="countdown">${formatCountdown(st.nextDeadline - Date.now())}</b></span></div>
+      <div class="between" style="align-items:baseline"><h2 class="section" style="margin:0">Tableau des appels</h2><span class="rv-cd">${compteReboursHtml(st.nextDeadline, '')}</span></div>
       ${tuiles.length ? tuiles.join('') : '<div class="rv-vide"><span class="small">Aucun appel en cours.</span><span class="tiny muted">Les demandes de renfort et les zones annoncées en non-droit s’affichent ici.</span></div>'}
       ${st.nonDroit && !nds.length ? `<a class="rv-complet" href="#carte">${icon('alert', 14)}<span>Personne n’est annoncé en zone de non-droit ce soir · ouvrir la carte</span></a>` : ''}
     </section>

@@ -1137,7 +1137,7 @@ export function enqueteDirecteur(state, push, rng) {
   if ((dd.enqAide || []).includes(marque)) return null;
   dd.enqAide = [...(dd.enqAide || []), marque].slice(-6);
   const aff = affaire(state, e.n);
-  const zs = Object.values(state.zones).filter((z) => actif(z) && z.enquete && z.enquete.n === e.n && !z.enquete.accuse);
+  const zs = Object.values(state.zones).filter((z) => actif(z) && z.enquete && z.enquete.n === e.n && z.enquete.accuse == null && !z.enquete.exclu);
   if (!zs.length) return null;
   const nb = zs.map((z) => ({ z, n: candidats(aff, faitsConnus(z.enquete)).suspects.length })).sort((a, b) => a.n - b.n);
   const med = nb[Math.floor(nb.length / 2)].n;

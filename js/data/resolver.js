@@ -73,7 +73,7 @@ export function tableauxImbriques(o, chemin = '', dansTableau = false, out = [])
 }
 
 /** Délai de secours : quand la tâche planifiée calcule les tours, un appareil n'essaie qu'après ce délai (elle a pu tarder). */
-export const DELAI_SECOURS = 20 * 60000;
+export const DELAI_SECOURS = 60 * 60000; // la tâche GitHub passe en général entre 20:25 et 20:40
 const echeance = (st, serveur) => st.nextDeadline + (!serveur && st.tourServeur ? DELAI_SECOURS : 0);
 
 export async function resolvePending(backend, { hour = 20, now = () => Date.now(), maxTurns = 10, state: connu = null, serveur = false, sansDelai = false } = {}) {
@@ -117,6 +117,7 @@ export async function resolvePending(backend, { hour = 20, now = () => Date.now(
         break;
       }
       gazette.date = state.nextDeadline;
+      gazette.calculePar = serveur ? 'serveur' : 'appareil'; // pour le maître du jeu : qui a calculé ce tour
       // Calculé par la tâche planifiée : les appareils passent en secours (ils attendent DELAI_SECOURS avant d'essayer).
       if (serveur) next.tourServeur = true;
       next.nextDeadline = nextDeadline;

@@ -29,6 +29,10 @@ export const NOTE_MAJ = {
       ['Tour de 20:00', 'un ordre mal formé envoyé par un appareil ne peut plus bloquer le calcul du tour pour tout le district.'],
       ['Sécurité', 'les appels de renfort et les records de quartier affichent seulement ce qu’ils doivent afficher.'],
       ['Téléphone', 'le jeu garde une seule copie de ses fichiers pour jouer hors connexion, au lieu d’une par mise à jour : il libère de la place.'],
+      ['Après 20:00', 'en attendant le calcul du tour (en général vers 20:30), l’écran affiche « la Gazette s’imprime… » au lieu de 00:00:00.'],
+      ['Agents envoyés en renfort', 'relève, traque, dispositif FIPA et crise : les agents partent vraiment d’un service. Si leur service est déjà vide, ils sont pris dans les services les plus fournis (avant, ils ne coûtaient rien).'],
+      ['Enquête', 'un échange de pièces ne passe hors quota que si chacun reçoit vraiment une pièce nouvelle ; le témoin tardif n’apporte plus de pièce qui demande un mandat ; la 4e démarche du talent Intuition (agenda au parquet) s’ajoute bien ; une audition au-delà du plafond ne prend plus d’agents ; les parts de la mise à prix sont versées quand l’auteur est arrêté ou avoue (pas s’il s’enfuit), comme le dit désormais le texte.'],
+      ['Fin de saison', 'un marché groupé lancé les derniers jours se clôt normalement dans la nouvelle saison ; une formation lancée le jour 13 n’est plus annoncée « perdue » (elle aboutit le soir 14).'],
     ]],
     ['Fin de saison : le podium récompensé (19 octobre)', [
       ['Zone de l’année', 'le skin exclusif « Palais d’honneur » (jamais en boutique), l’imprévu le plus coûteux de son Bilan de saison remis en état d’office, +250 PS et la plaque d’or.'],

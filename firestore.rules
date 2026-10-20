@@ -18,8 +18,8 @@ service cloud.firestore {
     function st(gid) { return get(/databases/$(database)/documents/parties/$(gid)/state/current).data; }
     function afterDeadline(gid) { return request.time.toMillis() >= st(gid).nextDeadline; }
     // Le tour est calculé par la tâche planifiée (compte de service, hors règles). Un appareil ne peut le calculer
-    // qu'en secours, 20 minutes après l'heure limite, si la tâche n'est pas passée.
-    function secours(gid) { return request.time.toMillis() >= st(gid).nextDeadline + 20 * 60000; }
+    // qu'en secours, 60 minutes après l'heure limite, si la tâche n'est pas passée (elle passe en général entre 20:25 et 20:40).
+    function secours(gid) { return request.time.toMillis() >= st(gid).nextDeadline + 60 * 60000; }
     function currentTurn(gid, season, turn) { return season == st(gid).season && turn == st(gid).turn; }
     function pastTurn(gid, season, turn) {
       return season < st(gid).season || (season == st(gid).season && turn < st(gid).turn);
@@ -77,6 +77,12 @@ service cloud.firestore {
               && request.resource.data.zones[request.auth.uid].budget <= 60
               && request.resource.data.zones[request.auth.uid].agents <= 40
               && request.resource.data.zones[request.auth.uid].uid == request.auth.uid
+              // Nom et code affichés chez tout le monde avant le tour : mêmes contraintes que le profil, sans < ni >.
+              && request.resource.data.zones[request.auth.uid].nom is string
+              && request.resource.data.zones[request.auth.uid].nom.size() > 0 && request.resource.data.zones[request.auth.uid].nom.size() <= 24
+              && !request.resource.data.zones[request.auth.uid].nom.matches('.*[<>].*')
+              && request.resource.data.zones[request.auth.uid].code is string
+              && request.resource.data.zones[request.auth.uid].code.matches('^[0-9]{4}$')
               // Couleur affichée chez tout le monde avant le tour de 20:00 : une vraie couleur (#RRGGBB).
               && request.resource.data.zones[request.auth.uid].couleur is string
               && request.resource.data.zones[request.auth.uid].couleur.matches('^#[0-9A-Fa-f]{6}$'));
@@ -88,8 +94,11 @@ service cloud.firestore {
         // Un joueur ne peut pas annuler son retrait par le maître du jeu, et sa couleur est une vraie couleur (#RRGGBB).
         allow create, update: if master(gid) || (signedIn() && request.auth.uid == uid
           && request.resource.data.nom is string && request.resource.data.nom.size() > 0 && request.resource.data.nom.size() <= 24
+          // Sans < ni > (un nom déjà enregistré avant cette règle reste accepté tant qu'il ne change pas).
+          && (!request.resource.data.nom.matches('.*[<>].*') || (resource != null && resource.data.get('nom', '') == request.resource.data.nom))
           && request.resource.data.code is string && request.resource.data.code.matches('^[0-9]{4}$')
-          && (!('pseudo' in request.resource.data) || (request.resource.data.pseudo is string && request.resource.data.pseudo.size() <= 24))
+          && (!('pseudo' in request.resource.data) || (request.resource.data.pseudo is string && request.resource.data.pseudo.size() <= 24
+              && (!request.resource.data.pseudo.matches('.*[<>].*') || (resource != null && resource.data.get('pseudo', '') == request.resource.data.pseudo))))
           && (!('couleur' in request.resource.data) || (request.resource.data.couleur is string && request.resource.data.couleur.matches('^#[0-9A-Fa-f]{6}$')))
           // Portrait du chef : un identifiant de portrait (p01 à p99), affiché chez tout le monde.
           && (!('chef' in request.resource.data) || (request.resource.data.chef is map
@@ -162,6 +171,10 @@ service cloud.firestore {
           && request.resource.data.texte.size() > 0 && request.resource.data.texte.size() <= 280
           && request.resource.data.at is number
           && math.abs(request.resource.data.at - request.time.toMillis()) < 600000
+          // Appels et réponses de renfort, annonces de la zone de non-droit : un nombre d'agents (affiché chez les autres zones).
+          && (!('renfort' in request.resource.data) || (request.resource.data.renfort.agents is number && request.resource.data.renfort.agents >= 0 && request.resource.data.renfort.agents <= 99))
+          && (!('renfortRep' in request.resource.data) || (request.resource.data.renfortRep.agents is number && request.resource.data.renfortRep.agents >= 0 && request.resource.data.renfortRep.agents <= 99))
+          && (!('nd' in request.resource.data) || (request.resource.data.nd.agents is number && request.resource.data.nd.agents >= 0 && request.resource.data.nd.agents <= 99))
           && (!('enchere' in request.resource.data) || (
             request.time.toMillis() < st(gid).nextDeadline
             && request.resource.data.enchere.vente == st(gid).vente.id
@@ -179,7 +192,8 @@ service cloud.firestore {
           && exists(/databases/$(database)/documents/parties/$(gid)/players/$(request.resource.data.a))
           && request.resource.data.participants == [request.auth.uid, request.resource.data.a]
           && request.resource.data.texte is string
-          && request.resource.data.texte.size() > 0 && request.resource.data.texte.size() <= 500;
+          && request.resource.data.texte.size() > 0 && request.resource.data.texte.size() <= 500
+          && (!('candidature' in request.resource.data) || (request.resource.data.candidature.agents is number && request.resource.data.candidature.agents >= 0 && request.resource.data.candidature.agents <= 99));
         allow delete: if master(gid);
       }
     }

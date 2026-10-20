@@ -18,7 +18,7 @@ import { QUIZ } from '../quests/quiz.js';
 import { S, esc, icon, fmt1, fmtK, tabbar, rangDe, gradeInfo, myZone, slotsCompte, academieResume } from './common.js';
 import { agentsDisponibles, blessesActifs, vehiculesDisponibles } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
-import { formatCountdown, formatDateBe } from '../engine/time.js';
+import { formatCountdown, formatDateBe, compteReboursHtml } from '../engine/time.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
 import { estimations, besoinService, ouvertureOrdres, etatAffect } from './ordres.js';
 import { previsionCourte, suivrePrevision } from './prevision.js';
@@ -332,7 +332,7 @@ function ordresCarteHtml(st, z, items, ordresOk) {
   let prev = ''; try { prev = previsionCourte().replace(/^IPZ /, ''); } catch (er) { /* pas de brouillon */ }
   if (!ordresOk || !prev) setTimeout(suivrePrevision, 0);
   return `<section class="card hp-ordres ${ordresOk ? 'fini' : ''}" aria-label="Prochain tour">
-    <div class="ho-tete"><b>Ordres du soir</b><span class="kicker">20:00 dans <b id="countdown" class="hs-cd">${formatCountdown(st.nextDeadline - Date.now())}</b></span></div>
+    <div class="ho-tete"><b>Ordres du soir</b><span class="kicker">${compteReboursHtml(st.nextDeadline)}</span></div>
     <div class="ho-sit">${situationPastilles(z, cielDe(z))}</div>
     <div class="ho-pips">${et.map(([k, ic, nom, ok]) => `<a class="ho-pip ${ok ? 'ok' : 'af'}" href="#ordres${k ? `-${k}` : ''}" aria-label="${nom} : ${ok ? 'réglé' : 'à faire'}"><i aria-hidden="true">${icon(ok ? 'check' : ic, 15)}</i>${nom}</a>`).join('')}</div>
     <div class="ho-bas"><span class="ho-prev"><span class="tiny muted">IPZ prévu ce soir</span><b id="prev-hp">${prev || '…'}</b></span>
@@ -621,7 +621,7 @@ export function renderHP() {
   let plusTard = !!S.chefPlusTard; try { plusTard = plusTard || !!sessionStorage.getItem('mazp-chef-plus-tard'); } catch (e) { /* pas de stockage */ }
   if (chefACreer() && !plusTard) {
     return `<main class="screen chef-accueil">
-      <div class="ca-tete"><span class="kicker">Saison ${st.season} · tour ${T} · 20:00 dans <b id="countdown" class="hs-cd">${formatCountdown(st.nextDeadline - Date.now())}</b></span><h1 class="big">Ton chef de corps</h1>
+      <div class="ca-tete"><span class="kicker">Saison ${st.season} · tour ${T} · ${compteReboursHtml(st.nextDeadline)}</span><h1 class="big">Ton chef de corps</h1>
         <p class="small muted" style="margin:0">Avant de reprendre ta zone : choisis qui la dirige. Ça prend une minute, une seule fois.</p></div>
       ${creationChefHtml()}
       <button type="button" class="btn ghost block" data-action="chef-plus-tard">Plus tard</button>

@@ -12,7 +12,7 @@ import { resolvePending, completerDepuisGazette, etatResolution } from './data/r
 import { S, toast, myZone, esc, cielDuMoment, tabbar, pseudoParDefaut, slotsJour, questDuSlot } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil, mesTuiles, MAX_TUILES } from './ui/hp.js';
-import { renderBureau, renderChef, chefAFaire, promotionAuBesoin, brancherPanneauChef } from './ui/chef.js';
+import { renderBureau, renderChef, chefAFaire, promotionAuBesoin, brancherPanneauChef, zoneAvecAgenda } from './ui/chef.js';
 import { paraSuivant, CHEF_V3 } from './ui/chef-onglet.js';
 import { profilZone, marquerTitreVu } from './ui/profil-zone.js';
 import { ouvrirPromo } from './ui/fondateurs.js';
@@ -1087,7 +1087,7 @@ async function onClick(e) {
       }
       case 'dem-toggle': {
         const k = el.dataset.k, dm = (S.draft.demarches ||= []);
-        S.draft.demarches = dm.includes(k) ? dm.filter((x) => x !== k) : [...dm, k].slice(0, maxDemarchesDe(S.state, myZone()));
+        S.draft.demarches = dm.includes(k) ? dm.filter((x) => x !== k) : [...dm, k].slice(0, maxDemarchesDe(S.state, zoneAvecAgenda())); // l'agenda du jour (Parquet) compte, comme à l'écran
         S.ordersDirty = true; rerender(); break;
       }
       case 'accuser': {
@@ -1768,14 +1768,14 @@ async function onSubmit(e) {
       const email = form.email.value.trim(), pw = form.password.value;
       if (mode === 'signup') await b.signUpEmail(email, pw); else await b.signInEmail(email, pw);
     } else if (kind === 'signup') {
-      const code = form.code.value.trim(), nom = form.nom.value.trim();
+      const code = form.code.value.trim(), nom = form.nom.value.replace(/[<>]/g, '').trim();
       if (!/^\d{4}$/.test(code)) { toast('Le code doit comporter 4 chiffres.'); return; }
       if (!nom) { toast('Donne un nom à ta zone.'); return; }
       if (codeDejaPris(S.state, code, S.user.uid)) { toast(MSG_CODE_PRIS(code)); return; }
       const couleur = (S.signup && S.signup.couleur) || COULEURS_ZONE[0];
-      const pseudo = (form.pseudo ? form.pseudo.value.trim() : '').slice(0, 24);
+      const pseudo = (form.pseudo ? form.pseudo.value.replace(/[<>]/g, '').trim() : '').slice(0, 24);
       if (!pseudo) { toast('Indique ton prénom ou ton pseudo.'); return; }
-      const profile = { code, nom: nom.slice(0, 24), couleur, pseudo };
+      const profile = { code, nom: nom.replace(/[<>]/g, '').trim().slice(0, 24), couleur, pseudo };
       await b.savePlayer(S.user.uid, profile);
       S.player = profile;
       await b.joinGame(S.user.uid, profile);
@@ -1796,11 +1796,11 @@ async function onSubmit(e) {
     } else if (kind === 'rename' || kind === 'profil') {
       const z = myZone();
 	const champ = (n) => { const el = form.elements.namedItem(n); return el && typeof el.value === 'string' ? el.value : null; };
-	const nom = String(champ('nom') ?? z.nom ?? '').trim().slice(0, 24);
+	const nom = String(champ('nom') ?? z.nom ?? '').replace(/[<>]/g, '').trim().slice(0, 24);
 	const code = String(champ('code') ?? z.code ?? '').trim();
       if (!nom || !/^\d{4}$/.test(code)) { toast('Nom requis et code à 4 chiffres.'); return; }
       if (code !== String(z.code || '') && codeDejaPris(S.state, code, S.user.uid)) { toast(MSG_CODE_PRIS(code)); return; }
-      const pseudo = String(champ('pseudo') ?? (S.player && S.player.pseudo) ?? '').trim().slice(0, 24);
+      const pseudo = String(champ('pseudo') ?? (S.player && S.player.pseudo) ?? '').replace(/[<>]/g, '').trim().slice(0, 24);
       const profile = { code, nom, couleur: S.profilColor || z.couleur, pseudo };
       await b.savePlayer(S.user.uid, profile);
       S.player = { ...(S.player || {}), ...profile };
@@ -1986,7 +1986,11 @@ async function boot() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { lastTick = 0; tick(); } });
   setInterval(() => {
     const el = document.getElementById('countdown');
-    if (el && S.state) el.textContent = formatCountdown(S.state.nextDeadline - Date.now());
+    if (el && S.state) {
+      const reste = S.state.nextDeadline - Date.now(), lib = el.parentElement && el.parentElement.querySelector('.cd-lib');
+      el.textContent = reste > 0 ? formatCountdown(reste) : 'la Gazette s’imprime…';
+      if (lib) lib.hidden = reste <= 0;
+    }
     const ciel = el && el.closest('.soir');
     if (ciel && new Date().getSeconds() === 0) { const c = cielDuMoment(); ciel.style.setProperty('--crep', c.crep); ciel.style.setProperty('--nuit', c.nuit); }
     // Incidents du jour : comptes à rebours, et HP redessinée quand un incident tombe ou se ferme.
