@@ -2,6 +2,7 @@
 // Les agents affectés s'y baladent, avec les mêmes repères que les pions :
 // gilet manquant, recrue à ½, taser, places à pourvoir, agents « en plus », agents partis en mission.
 // Les agents sont les petites figurines des pions (même tenue, même équipement) ; en marche, elles se dandinent.
+// Les agents restent rangés (on les compte d'un coup d'œil) ; un ou deux par capsule flânent un peu autour de leur place.
 // Animation économe (mesurée : la carte prenait ~95 % du processeur d'un téléphone lent) : pas de boucle image par image.
 // Chaque agent reçoit de temps en temps une destination, et c'est le navigateur qui fait glisser la figurine
 // (transition CSS sur transform, gérée par la carte graphique). Rien ne bouge hors de l'écran, onglet caché
@@ -27,7 +28,7 @@ function pas(el) {
   if (!s.marche || calme()) return;
   if (document.hidden || !visible(el)) { setTimeout(() => pas(el), 2500); return; }
   const L = el.parentElement.clientWidth || 300, g0 = L * 0.1, g1 = L * 0.9 - 26;
-  const cible = g0 + s.r() * (g1 - g0), d = Math.abs(cible - s.x) / s.v;
+  const cible = Math.max(g0, Math.min(g1, s.x0 + (s.r() * 2 - 1) * 28)), d = Math.abs(cible - s.x) / s.v;
   el.classList.toggle('gauche', cible < s.x);
   el.classList.add('marche');
   s.x = cible; placer(el, s, d);
@@ -43,7 +44,8 @@ export function lancerCapsules() {
     let s = etat.get(k);
     if (!s) {
       const r = hasard(k);
-      s = { x: L * 0.1 + (el.dataset.x !== undefined && el.dataset.x !== '' ? Number(el.dataset.x) : r() * 0.8) * (L * 0.8 - 26), v: 14 + r() * 10, r, marche: !el.classList.contains('fixe') };
+      s = { x: L * 0.1 + (el.dataset.x !== undefined && el.dataset.x !== '' ? Number(el.dataset.x) : r() * 0.8) * (L * 0.8 - 26), v: 12 + r() * 8, r, marche: el.dataset.flane === '1' };
+      s.x0 = s.x;
       etat.set(k, s);
     }
     placer(el, s, 0);

@@ -298,15 +298,19 @@ function capsuleService(s, b, n, e) {
   for (let i = 0; i < vus; i++) {
     const a = ag(i), enPlus = i >= limite;
     const info = enPlus ? 'Cet agent est bien au service, mais au-delà de ce que le service peut utiliser aujourd’hui : il rapporte peu. Tu peux le placer ailleurs.' : a.info;
-    corps += `<span class="cap-ag${a.cls}${enPlus ? ' plus' : ''}${fixe ? ' fixe' : ''}" data-k="${s}-${i}" data-x="${fixe ? (0.12 + i * 0.22) % 0.9 : ((i + 0.5) / vus * 0.9).toFixed(2)}"${a.titre || enPlus ? ` title="${esc(enPlus ? 'en plus du besoin' : a.titre)}"` : ''}${info ? ` role="button" tabindex="0" data-action="ag-info" data-t="${esc(info)}"` : ''}><img src="${a.img.replace('img/agents/', 'img/capsules/ag/')}" alt="">${a.bdg}</span>`;
+    corps += `<span class="cap-ag${a.cls}${enPlus ? ' plus' : ''}${fixe ? ' fixe' : ''}" data-k="${s}-${i}" data-x="${fixe ? (0.12 + i * 0.22) % 0.9 : ((i + 0.5) / Math.max(vus, 4)).toFixed(2)}"${!fixe && (i === 1 || i === 4) ? ' data-flane="1"' : ''}${a.titre || enPlus ? ` title="${esc(enPlus ? 'en plus du besoin' : a.titre)}"` : ''}${info ? ` role="button" tabindex="0" data-action="ag-info" data-t="${esc(info)}"` : ''}><img src="${a.img.replace('img/agents/', 'img/capsules/ag/')}" alt="">${a.bdg}</span>`;
   }
   const vides = Math.max(0, Math.min(CAP_MAX - vus, besoin - au));
   const places = vides ? `<span class="cap-vides" title="place${vides > 1 ? 's' : ''} à pourvoir">${'<span class="cap-vide"></span>'.repeat(vides)}</span>` : '';
   const nPlus = Math.max(0, au - limite);
-  const etiq = [`${au} au service`, ...groupes.map(([k, motif]) => `${k} ${motif === 'l’opération' ? 'en opération' : esc(motif)}`), au > CAP_MAX ? `${au - CAP_MAX} hors champ` : '', nPlus > 0 ? `${nPlus} en plus` : ''].filter(Boolean);
+  const etiq = [...groupes.map(([k, motif]) => `${k} ${motif === 'l’opération' ? 'en opération' : esc(motif)}`), au > CAP_MAX ? `${au - CAP_MAX} hors champ` : '', nPlus > 0 ? `${nPlus} en plus` : ''].filter(Boolean);
   const fond = FONDS_CAPSULE.includes(s) ? ` style="background-image:url('img/capsules/${s}.webp')"` : '';
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(lancerCapsules);
-  return `<div class="cap cap-${s}${fond ? ' illu' : ''}" style="--c:${coul}"><span class="cap-fond"${fond}></span>${corps}${places}<span class="cap-tags">${etiq.map((t) => `<span>${t}</span>`).join('')}</span></div>`;
+  // Lumière : capsule bien éclairée si le besoin est couvert ; tamisée avec une lueur ambre s'il manque un agent ;
+  // sombre avec une alarme rouge qui pulse lentement s'il en manque plusieurs.
+  const lum = b.st === 'manque' ? ' alarme' : b.st === 'juste' ? ' tendu' : '';
+  return `<div class="cap cap-${s}${fond ? ' illu' : ''}${lum}" style="--c:${coul}"><span class="cap-fond"${fond}></span><span class="cap-lum" aria-hidden="true"></span>${corps}${places}</div>
+    ${etiq.length ? `<span class="cap-tags">${etiq.map((t) => `<span>${t}</span>`).join('')}</span>` : ''}`;
 }
 /** Barre de toute l'affectation : un segment par agent à répartir, couleur de son service ; pointillés = encore libres. */
 function barreAffectation(e) {
