@@ -1,4 +1,5 @@
-# Calcule le tour de 20:00 (heure belge) de toutes les parties, même si personne n'ouvre le jeu.
+# Calcule le tour de 20:00 (heure belge) de toutes les parties, même si personne n'ouvre le jeu. Filet de veille-20h.yml,
+# qui part en avance et calcule à 20:00 pile ; ici, la tâche ne fait rien si le tour est déjà calculé.
 # 20:00 à Bruxelles = 18:00 UTC en été, 19:00 UTC en hiver : la tâche passe aux deux heures, plusieurs fois
 # (GitHub peut retarder une tâche planifiée de quelques minutes) ; elle ne fait rien si le tour n'est pas échu.
 # Prérequis : le secret FIREBASE_SERVICE_ACCOUNT (clé JSON d'un compte de service Firebase). Sans lui, elle ne fait rien.

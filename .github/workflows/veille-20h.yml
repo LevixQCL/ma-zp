@@ -1,0 +1,28 @@
+# Tour de 20:00 à l'heure : GitHub lance ses tâches planifiées avec 25 à 35 minutes de retard. Celle-ci part donc en
+# avance (vers 18:15-18:50 heure belge), attend l'heure limite des parties, puis calcule le tour aussitôt (20:00:05).
+# 18:17 heure belge = 16:17 UTC en été, 17:17 UTC en hiver : les deux heures sont planifiées ; celle qui tombe trop tôt
+# ou trop tard (heure limite à plus de 3 h, ou tour déjà calculé) ne fait rien.
+# Filets : tour.yml (tâche habituelle, vers 20:30, et rattrapages), puis les appareils en secours à partir de 21:00.
+name: Tour de 20:00 (à l'heure)
+on:
+  schedule:
+    - cron: '17 16 * * *'
+    - cron: '17 17 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: veille-20h
+  cancel-in-progress: false
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    timeout-minutes: 200
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i --no-save firebase-admin@12.7.0
+      - run: node outils/serveur/tour.mjs --attendre
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}

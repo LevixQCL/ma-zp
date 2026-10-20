@@ -72,20 +72,25 @@ export function tableauxImbriques(o, chemin = '', dansTableau = false, out = [])
   return out;
 }
 
-/** Délai de secours : quand la tâche planifiée calcule les tours, un appareil n'essaie qu'après ce délai (elle a pu tarder). */
-export const DELAI_SECOURS = 60 * 60000; // la tâche GitHub passe en général entre 20:25 et 20:40
-const echeance = (st, serveur) => st.nextDeadline + (!serveur && st.tourServeur ? DELAI_SECOURS : 0);
+/** Délai de secours : la tâche planifiée calcule le tour à 20:00 ; un appareil n'essaie qu'après ce délai (si elle n'est pas passée). */
+export const DELAI_SECOURS = 60 * 60000;
+// Les règles Firestore n'acceptent un tour écrit par un appareil qu'en secours (DELAI_SECOURS après l'heure limite), toujours.
+// L'appareil attend donc toujours ce délai sur Firebase. Avant, il n'attendait que si la partie portait la marque tourServeur :
+// une partie qui ne l'avait jamais eue faisait essayer les téléphones dès 20:00, refusés (bandeau « permission-denied »).
+// La démo (mode local) et la tâche planifiée calculent dès l'heure limite ; le maître du jeu aussi quand il force.
+const echeance = (st, attendre) => st.nextDeadline + (attendre ? DELAI_SECOURS : 0);
 
 export async function resolvePending(backend, { hour = 20, now = () => Date.now(), maxTurns = 10, state: connu = null, serveur = false, sansDelai = false } = {}) {
   if (running) return 0;
   running = true;
   let count = 0;
+  const attendre = backend.mode === 'firebase' && !serveur && !sansDelai;
   try {
     for (let i = 0; i < maxTurns; i++) {
       // L'état déjà reçu par l'abonnement évite de retélécharger tout le document pour rien.
-      if (i === 0 && connu && now() < echeance(connu, serveur || sansDelai)) break;
+      if (i === 0 && connu && now() < echeance(connu, attendre)) break;
       const state = await backend.getState();
-      if (!state || now() < echeance(state, serveur || sansDelai)) break;
+      if (!state || now() < echeance(state, attendre)) break;
       if (isOutdated(state)) break; // ancienne version : on laisse les appareils à jour calculer
       if (!(await versionEnLigneOk())) break; // une version plus récente est en ligne : on recharge d'abord
       let orders, quests, players;
@@ -118,7 +123,7 @@ export async function resolvePending(backend, { hour = 20, now = () => Date.now(
       }
       gazette.date = state.nextDeadline;
       gazette.calculePar = serveur ? 'serveur' : 'appareil'; // pour le maître du jeu : qui a calculé ce tour
-      // Calculé par la tâche planifiée : les appareils passent en secours (ils attendent DELAI_SECOURS avant d'essayer).
+      // Marque historique, plus utilisée pour décider (les appareils attendent toujours DELAI_SECOURS).
       if (serveur) next.tourServeur = true;
       next.nextDeadline = nextDeadline;
       next.lastResolvedAt = state.nextDeadline;

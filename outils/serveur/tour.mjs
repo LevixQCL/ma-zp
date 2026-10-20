@@ -3,17 +3,20 @@
 // avec un compte de service Firebase : l'état de la partie n'est plus écrit que par ici (les appareils en secours).
 //
 // Variable d'environnement : FIREBASE_SERVICE_ACCOUNT = le contenu JSON de la clé du compte de service.
-// Option : --partie <id> pour ne traiter qu'une partie ; --essai pour lire sans rien écrire.
+// Option : --partie <id> pour ne traiter qu'une partie ; --essai pour lire sans rien écrire ;
+// --attendre : lancée en avance (veille-20h.yml), la tâche attend l'heure limite la plus proche (au plus 3 h) puis calcule.
 import { initializeApp, cert } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { resolvePending } from '../../js/data/resolver.js';
 import { CONFIG } from '../../js/config.js';
+import { attenteAvantTour } from './attente.mjs';
 
 const brut = process.env.FIREBASE_SERVICE_ACCOUNT;
 if (!brut) { console.log('FIREBASE_SERVICE_ACCOUNT absent : rien à faire (les appareils calculent le tour).'); process.exit(0); }
 const args = process.argv.slice(2);
 const seule = args.includes('--partie') ? args[args.indexOf('--partie') + 1] : null;
 const essai = args.includes('--essai');
+const attendre = args.includes('--attendre');
 
 initializeApp({ credential: cert(JSON.parse(brut)) });
 const db = getFirestore();
@@ -65,6 +68,14 @@ function backendAdmin(gid) {
 }
 
 const parties = seule ? [seule] : (await db.collection('parties').get()).docs.map((d) => d.id);
+if (attendre) {
+  const etats = await Promise.all(parties.map((gid) => db.collection('parties').doc(gid).collection('state').doc('current').get()));
+  const ms = attenteAvantTour(etats.map((s) => (s.exists ? s.data().nextDeadline : null)), Date.now());
+  if (ms > 0) {
+    console.log(`Attente de l'heure limite : ${Math.round(ms / 60000)} min (calcul à ${new Date(Date.now() + ms).toISOString()}).`);
+    await new Promise((r) => setTimeout(r, ms));
+  } else console.log('Aucune heure limite proche à attendre.');
+}
 let erreurs = 0;
 const { etatResolution } = await import('../../js/data/resolver.js');
 for (const gid of parties) {
