@@ -5,7 +5,8 @@ import { vehiculeSvg } from './scene-hp.js';
 import { effetsPressions } from '../engine/contenu.js';
 import { comparatifModeles } from './modeles.js';
 import { ARTICLES } from '../engine/materiel.js';
-import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme, academieResume } from './common.js';
+import { persoDe, lancerCapsules, FONDS_CAPSULE } from './capsules.js';
+import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme, academieResume, modeEssai } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
 import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier, PREPA, coutPrepa } from '../engine/constants.js';
 import { vitesseCombi, MODELES, IDS_MODELES, placesIntervention, agentsMontes, apportAchat, plusUse, prixRevente, modeleDe, RENDEMENT } from '../engine/flotte.js';
@@ -251,6 +252,7 @@ function badgeService(s, b, n) {
  * sont annoncés en dessous) : pleines = agents au service, pointillées = agents qui manquent, pâles = en plus.
  */
 function casesService(s, b, n, e) {
+  if (modeEssai()) return capsuleService(s, b, n, e);
   const coul = COUL_SVC[s];
   const groupes = ((e && e.prises && e.prises[s]) || []).filter(([k]) => k > 0);
   const pris = Math.min(n, groupes.reduce((t, [k]) => t + k, 0));
@@ -277,6 +279,35 @@ function casesService(s, b, n, e) {
   const missions = groupes.map(([k, motif]) => `<span class="ag-sep"></span><span class="ag-grp" style="--c:${coul}" role="button" tabindex="0" data-action="ag-info" data-k="${s}-${esc(motif)}" data-t="${esc(infoMission(s, k, motif))}" aria-label="${esc(infoMission(s, k, motif))}"><span class="ag-grp-p">${Array.from({ length: Math.min(k, MAX_CASES) }, (_, i) => `<span class="ag-p mission${i % 2 ? ' m' : ''}" style="--c:${coul}"><img src="img/agents/${({ intervention: 'inter', proximite: 'prox', recherche: 'rech', roulage: 'roul', admin: 'admin' })[s]}.webp" alt="" loading="lazy"></span>`).join('')}</span><span class="ag-rub">${esc(MOTIF_COURT[motif] || motif)}</span></span>`).join('');
   const lab = `${au ? `au service · ${au}` : 'personne au service'}${groupes.map(([k, motif]) => ` · ${motif === 'l’opération' ? 'opération' : esc(motif)} · ${k}`).join('')}`;
   return `${pris || !au ? `<span class="ag-l">${lab}</span>` : ''}<span class="ag-bande">${h || (pris ? '' : '<span class="tiny muted">aucun agent</span>')}${missions}</span>`;
+}
+/**
+ * Mode essai : la capsule du service. Mêmes calculs que les pions (au service, places à pourvoir, « en plus », missions),
+ * mais les agents marchent dans une capsule au lieu d'être alignés.
+ */
+const CAP_MAX = 8;
+function capsuleService(s, b, n, e) {
+  const coul = COUL_SVC[s];
+  const groupes = ((e && e.prises && e.prises[s]) || []).filter(([k]) => k > 0);
+  const pris = Math.min(n, groupes.reduce((t, [k]) => t + k, 0));
+  const au = n - pris;
+  const besoin = s === 'roulage' ? 0 : Math.max(0, b.bes - pris);
+  const limite = s === 'roulage' ? Math.max(0, b.utile - pris) : besoin;
+  const ag = agentsService(s);
+  const vus = Math.min(au, CAP_MAX), fixe = s === 'admin';
+  let corps = '';
+  for (let i = 0; i < vus; i++) {
+    const a = ag(i), enPlus = i >= limite;
+    const p = persoDe(s, i);
+    const info = enPlus ? 'Cet agent est bien au service, mais au-delà de ce que le service peut utiliser aujourd’hui : il rapporte peu. Tu peux le placer ailleurs.' : a.info;
+    corps += `<span class="cap-ag${a.cls}${enPlus ? ' plus' : ''}${fixe ? ' fixe' : ''}" data-k="${s}-${i}" data-p="${p}" data-x="${fixe ? (0.12 + i * 0.22) % 0.9 : ((i + 0.5) / vus * 0.9).toFixed(2)}"${a.titre || enPlus ? ` title="${esc(enPlus ? 'en plus du besoin' : a.titre)}"` : ''}${info ? ` role="button" tabindex="0" data-action="ag-info" data-t="${esc(info)}"` : ''}>${a.bdg}</span>`;
+  }
+  const vides = Math.max(0, Math.min(CAP_MAX - vus, besoin - au));
+  const places = vides ? `<span class="cap-vides" title="place${vides > 1 ? 's' : ''} à pourvoir">${'<span class="cap-vide"></span>'.repeat(vides)}</span>` : '';
+  const nPlus = Math.max(0, au - limite);
+  const etiq = [`${au} au service`, ...groupes.map(([k, motif]) => `${k} ${motif === 'l’opération' ? 'en opération' : esc(motif)}`), au > CAP_MAX ? `${au - CAP_MAX} hors champ` : '', nPlus > 0 ? `${nPlus} en plus` : ''].filter(Boolean);
+  const fond = FONDS_CAPSULE.includes(s) ? ` style="background-image:url('img/capsules/${s}.webp')"` : '';
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(lancerCapsules);
+  return `<div class="cap cap-${s}${fond ? ' illu' : ''}" style="--c:${coul}"><span class="cap-fond"${fond}></span>${corps}${places}<span class="cap-tags">${etiq.map((t) => `<span>${t}</span>`).join('')}</span></div>`;
 }
 /** Barre de toute l'affectation : un segment par agent à répartir, couleur de son service ; pointillés = encore libres. */
 function barreAffectation(e) {

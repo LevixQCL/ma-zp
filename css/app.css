@@ -3559,3 +3559,19 @@ main.screen.fi { max-width: 640px; margin: 0 auto; }
 .dgrille > .dtuile:disabled .t { font-size: 12.5px; }
 .dgrille > .dtuile:disabled .d { font-size: 11.5px; }
 .dgrille > .dtuile:disabled .veh-img { display: none; }
+/* Ordres (mode essai) : capsules de service façon Fallout Shelter, agents qui se baladent */
+.ag-cases:has(.cap) { display: block; }
+.cap { position: relative; height: 96px; margin: 4px 0 2px; border-radius: 48px; overflow: hidden; isolation: isolate;
+  background: radial-gradient(120% 90% at 50% 0%, color-mix(in srgb, var(--c) 26%, #1C2442) 0%, #141B33 70%);
+  border: 3px solid #26335C; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c) 45%, transparent), inset 0 -18px 24px -14px rgba(0,0,0,.55), 0 6px 16px -8px rgba(0,0,0,.6); }
+.cap::after { content: ''; position: absolute; left: 18px; right: 18px; bottom: 11px; height: 2px; border-radius: 1px; background: color-mix(in srgb, var(--c) 35%, #29345A); z-index: 0; }
+.cap-fond { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; }
+.cap.illu::after { display: none; }
+.cap-ag { position: absolute; left: 0; bottom: 10px; z-index: 2; background-image: url('../img/capsules/agents.webp'); background-size: 1024px 269px; background-repeat: no-repeat; transform-origin: center bottom; filter: drop-shadow(0 2px 1px rgba(0,0,0,.45)); }
+.cap-ag.plus { opacity: .55; }
+.cap-ag .ag-b { top: -4px; right: -8px; }
+.cap-vides { position: absolute; right: 22px; bottom: 11px; display: flex; gap: 6px; z-index: 1; }
+.cap-vide { width: 22px; height: 46px; border-radius: 11px 11px 4px 4px; border: 2px dashed color-mix(in srgb, var(--c) 70%, #fff); opacity: .7; }
+.cap-tags { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px; z-index: 3; white-space: nowrap; }
+.cap-tags > span { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; background: rgba(8, 12, 27, .72); color: var(--text2); }
+@media (prefers-reduced-motion: reduce) { .cap-ag { transition: none; } }
