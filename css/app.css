@@ -3580,8 +3580,9 @@ main.screen.fi { max-width: 640px; margin: 0 auto; }
 .cap.illu .cap-vides { bottom: 10%; right: 12%; }
 .cap.illu .cap-tags { top: 20%; }
 /* Capsules : petites figurines des pions, qui se dandinent en marchant */
-.cap-ag { width: 26px; height: 46px; filter: drop-shadow(0 3px 2px rgba(0,0,0,.5)); }
-.cap-ag img { display: block; width: 26px; height: 46px; object-fit: contain; transform-origin: 50% 100%; }
+.cap-ag { width: 26px; height: 46px; will-change: transform; }
+.cap-ag::before { content: ''; position: absolute; left: 3px; right: 3px; bottom: -2px; height: 5px; border-radius: 50%; background: rgba(0,0,0,.35); }
+.cap-ag img { display: block; width: 26px; height: 46px; object-fit: contain; transform-origin: 50% 100%; will-change: transform; }
 .cap-ag.gauche img { transform: scaleX(-1); }
 .cap-ag.marche img { animation: cap-pas .42s ease-in-out infinite alternate; }
 .cap-ag.gauche.marche img { animation-name: cap-pas-g; }
