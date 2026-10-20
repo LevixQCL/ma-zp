@@ -3,7 +3,7 @@
 // un appareil pouvait mélanger d'anciens et de nouveaux fichiers et rester bloqué au chargement.
 // Ici, chaque fichier du jeu est revérifié auprès du serveur (réponse « inchangé » très légère s'il n'a pas bougé) ;
 // sans réseau, on sert la dernière copie connue.
-const CACHE = 'mazp-fichiers-v2'; // v2 : purge des vérifications de version mises en cache par la v1
+const CACHE = 'mazp-fichiers-v3'; // v3 : une seule copie par fichier (la v2 gardait une copie de app.min.js par version, 2,4 Mo chacune)
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil((async () => {
@@ -18,6 +18,8 @@ self.addEventListener('fetch', (e) => {
   if (url.origin !== self.location.origin) return; // Firebase, polices : le navigateur s'en charge
   // Vérification de version horodatée (?t=…) : jamais mise en cache (une copie par seconde s'accumulait).
   if (url.searchParams.has('t')) return;
+  // Clé du cache = le fichier sans ?v=… : chaque mise à jour remplace la copie au lieu d'en ajouter une.
+  const cle = url.origin + url.pathname;
   e.respondWith((async () => {
     try {
       const frais = req.mode === 'navigate'
@@ -25,11 +27,11 @@ self.addEventListener('fetch', (e) => {
         : await fetch(new Request(req, { cache: 'no-cache' }));
       if (frais.ok && frais.type === 'basic') {
         const copie = frais.clone();
-        e.waitUntil(caches.open(CACHE).then((c) => c.put(req.mode === 'navigate' ? url.href : req, copie)).catch(() => {}));
+        e.waitUntil(caches.open(CACHE).then((c) => c.put(cle, copie)).catch(() => {}));
       }
       return frais;
     } catch (err) {
-      const secours = await caches.match(req.mode === 'navigate' ? url.href : req, { ignoreSearch: req.mode === 'navigate' });
+      const secours = await caches.match(cle);
       if (secours) return secours;
       throw err;
     }

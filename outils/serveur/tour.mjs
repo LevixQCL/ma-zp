@@ -66,12 +66,14 @@ function backendAdmin(gid) {
 
 const parties = seule ? [seule] : (await db.collection('parties').get()).docs.map((d) => d.id);
 let erreurs = 0;
+const { etatResolution } = await import('../../js/data/resolver.js');
 for (const gid of parties) {
   try {
     const n = await resolvePending(backendAdmin(gid), { hour: CONFIG.resolutionHour ?? 20, serveur: true, maxTurns: 10 });
     console.log(`Partie ${gid} : ${n} tour${n > 1 ? 's' : ''} calculé${n > 1 ? 's' : ''}.`);
   } catch (e) { erreurs++; console.error(`Partie ${gid} : erreur`, e); }
+  // Erreur de calcul ou d'enregistrement de CETTE partie : comptée tout de suite (sinon la réussite de la partie
+  // suivante la remettait à zéro, et la tâche finissait en vert sans e-mail d'alerte).
+  if (etatResolution.erreur) { console.error(`Partie ${gid} : ${etatResolution.erreur}`); erreurs++; etatResolution.erreur = null; }
 }
-const { etatResolution } = await import('../../js/data/resolver.js');
-if (etatResolution.erreur) { console.error('Dernière erreur de calcul :', etatResolution.erreur); erreurs++; }
 process.exit(erreurs ? 1 : 0);

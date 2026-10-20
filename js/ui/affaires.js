@@ -28,7 +28,7 @@ export function candidaturesRecues() {
   const par = {};
   for (const m of S.prives || []) {
     if (!m.candidature || m.a !== me || !miennes.has(m.candidature.aid) || !duTour(m.candidature)) continue;
-    par[`${m.candidature.aid}|${m.de}`] = { aid: m.candidature.aid, uid: m.de, agents: m.candidature.agents, at: m.at };
+    par[`${m.candidature.aid}|${m.de}`] = { aid: m.candidature.aid, uid: m.de, agents: Math.max(0, Math.min(99, Math.floor(Number(m.candidature.agents) || 0))), at: m.at };
   }
   return Object.values(par).map((c) => {
     const acc = ((S.draft && S.draft.engagements[c.aid] && S.draft.engagements[c.aid].acceptes) || []).includes(c.uid);

@@ -1693,11 +1693,17 @@ function finDeSaison(state, classement, opts = {}) {
     if (z.styleBrigade) nz.styleBrigade = z.styleBrigade;
     if (z.adjoints) nz.adjoints = z.adjoints;
     if (z.candidat) nz.candidat = { ...z.candidat, pret: 0 };
-    if (z.materiel) { const d = state.turn; const m = JSON.parse(JSON.stringify(z.materiel)); m.masse = 0;
-      for (const g of m.gilets || []) g.fin -= d; for (const c of m.certifies || []) c.fin -= d; for (const c of m.brevetsFN || []) c.fin -= d; for (const c of m.commandes || []) c.arrive -= d; nz.materiel = m; }
+    // Dates du matériel recalées sur la nouvelle saison : décalage du nombre de tours joués (state.turn vaut déjà 1 ici).
+    if (z.materiel) { const d = tourFin; const m = JSON.parse(JSON.stringify(z.materiel)); m.masse = 0;
+      for (const g of m.gilets || []) g.fin -= d; for (const c of m.certifies || []) c.fin -= d; for (const c of m.brevetsFN || []) c.fin -= d; for (const c of m.commandes || []) c.arrive -= d;
+      for (const t of ['af', 'saf']) for (const x of (m.tti && m.tti[t]) || []) x.fin -= d;
+      if (m.rangeT) m.rangeT -= d;
+      nz.materiel = m; }
     // Doctrine : à rechoisir ; garder la même fait monter la maîtrise.
     if (z.doctrine) { nz.doctrinePrec = z.doctrine; nz.maitrisePrec = z.maitrise || 0; }
     nz.trophees = z.trophees || [];
+    // PS déjà dépensés (skins, relances, galons) : ils restent dépensés, sinon la nouvelle saison les rendait (les achats étant gardés).
+    if (z.psDepense) nz.psDepense = z.psDepense;
     if (z.affiches) nz.affiches = z.affiches;
     if (z.plaques) nz.plaques = z.plaques;
     // Zone fondatrice : présente depuis la saison 1 (au moins FONDATEUR_SOIRS soirs joués), gardé à vie, plus jamais attribué ensuite.

@@ -1349,7 +1349,7 @@ function recordQuartier(m,score){
   try{ if(window.parent!==window) window.parent.postMessage({source:'mazp-mj',type:'quartier',jeu:'bouclage',map:m,score},location.origin); }catch(e){}
   if(score>avant) q.moi=score;
   const battu=!rec||score>rec.score; if(battu) q.rec={nom:'toi',score};
-  const html=`<div class="qrec"><b>🏙️ ${MAPS[m].nom}</b> · ton score <b>${score}</b>${score>avant&&avant?' (record perso)':''}<br>${battu?'<span class="ok">Record du quartier !</span>':`Record du quartier : <b>${rec.score}</b> (${rec.nom})`}</div>`;
+  const html=`<div class="qrec"><b>🏙️ ${MAPS[m].nom}</b> · ton score <b>${score}</b>${score>avant&&avant?' (record perso)':''}<br>${battu?'<span class="ok">Record du quartier !</span>':`Record du quartier : <b>${Math.floor(Number(rec.score)||0)}</b> (${esc2(rec.nom)})`}</div>`;
   setTimeout(()=>{ const c=$('card'), row=c&&c.querySelector('.row'); if(row) row.insertAdjacentHTML('beforebegin',html); },30);
 }
 

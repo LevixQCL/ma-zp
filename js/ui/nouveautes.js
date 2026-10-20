@@ -23,6 +23,13 @@ export const NOTE_MAJ = {
   ],
 
   sections: [
+    ['Corrections (20 octobre)', [
+      ['Fin de saison et matériel', 'à la nouvelle saison, gilets et recyclages TTI gardent leur vraie date de fin (ils se renouvellent comme prévu), et une commande passée le dernier soir arrive dans les premiers jours.'],
+      ['Points de service', 'les PS déjà dépensés (skins, relances, galons) restent dépensés à la nouvelle saison ; tout ce que tu as acheté reste à toi.'],
+      ['Tour de 20:00', 'un ordre mal formé envoyé par un appareil ne peut plus bloquer le calcul du tour pour tout le district.'],
+      ['Sécurité', 'les appels de renfort et les records de quartier affichent seulement ce qu’ils doivent afficher.'],
+      ['Téléphone', 'le jeu garde une seule copie de ses fichiers pour jouer hors connexion, au lieu d’une par mise à jour : il libère de la place.'],
+    ]],
     ['Fin de saison : le podium récompensé (19 octobre)', [
       ['Zone de l’année', 'le skin exclusif « Palais d’honneur » (jamais en boutique), l’imprévu le plus coûteux de son Bilan de saison remis en état d’office, +250 PS et la plaque d’or.'],
       ['2e et 3e', '+150 et +100 PS, avec leur plaque d’argent ou de bronze. Les autres zones classées gardent +50 PS.'],

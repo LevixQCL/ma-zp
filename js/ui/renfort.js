@@ -14,7 +14,8 @@ export function appelsRenfort() {
     if (!r || m.uid === z.uid || r.season !== st.season || r.turn !== st.turn) continue;
     const c = st.zones[m.uid];
     const op = c && operationActive(c, st.turn);
-    if (op) par[m.uid] = { uid: m.uid, zone: c, op, agents: r.agents, at: m.at };
+    // `agents` vient d'un message radio écrit par un autre joueur : un entier borné, jamais du texte inséré dans la page.
+    if (op) par[m.uid] = { uid: m.uid, zone: c, op, agents: Math.max(0, Math.min(99, Math.floor(Number(r.agents) || 0))), at: m.at };
   }
   // Appel du district (lancé par le Directeur) : visible même si la zone n'a rien demandé sur la radio.
   for (const c of Object.values(st.zones)) {

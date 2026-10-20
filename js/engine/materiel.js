@@ -60,7 +60,11 @@ export const ARTICLES = {
   gnep: { nom: 'Casques et boucliers', lot: MAT.gnep.lot, prix: MAT.gnep.prix },
 };
 
-export const gammeDe = (k) => MAT.gammes[k] || MAT.gammes.std;
+// Clés venues d'un ordre (écrit par l'appareil du joueur) : seulement les propres clés des tables, jamais « constructor »,
+// « toString » ou « __proto__ » (qui faisaient planter tout le tour de 20:00).
+const propre = (o, k) => (typeof k === 'string' && Object.hasOwn(o, k) ? o[k] : null);
+const lotsValides = (x) => Math.max(1, Math.min(MAT.lotsMax, Math.round(Number(x) || 1)));
+export const gammeDe = (k) => propre(MAT.gammes, k) || MAT.gammes.std;
 /** Dotation de départ : gilets pour tous, mais achetés à des dates différentes (un tiers périme dans la semaine). */
 export function creerMateriel(z, T = 1) {
   const n = (z && z.agents) || 20, a = Math.ceil(n / 3);
@@ -92,7 +96,7 @@ export function appliquerFonctions(z, dem) {
   if (!dem || typeof dem !== 'object') return [];
   const L = [], f = (z.fonctions ||= {});
   for (const [k, role] of Object.entries(dem)) {
-    if (!MAT.fonctions[k] || f[k] === role) continue;
+    if (!propre(MAT.fonctions, k) || f[k] === role) continue;
     if (role == null) { delete f[k]; continue; }
     const fig = (z.equipe || []).find((m) => m.role === role);
     if (!fig || (fig.niveau || 0) < 1) continue;
@@ -202,9 +206,9 @@ export function materielDuTour(state, z, o, T) {
   }
   // Commandes directes.
   for (const c of Array.isArray(om.commandes) ? om.commandes.slice(0, 3) : []) {
-    const a = ARTICLES[c && c.item], v = MAT.voies[c && c.voie], lots = Math.max(1, Math.min(MAT.lotsMax, Math.round(Number(c && c.lots) || 1)));
+    const a = propre(ARTICLES, c && c.item), v = propre(MAT.voies, c && c.voie), lots = lotsValides(c && c.lots);
     if (!a || !v) continue;
-    const q = MAT.gammes[c.q] ? c.q : 'std';
+    const q = propre(MAT.gammes, c.q) ? c.q : 'std';
     const mult = c.voie === 'negociee' && fonction(z, 'acheteur') ? 1.2 : v.mult;
     const cout = Math.round(lots * a.prix * mult * gammeDe(q).prix * 10) / 10;
     if (z.budget < cout) { L.push(`Commande ${a.nom.toLowerCase()} refusée : budget insuffisant (${cout} k€).`); continue; }
@@ -214,14 +218,14 @@ export function materielDuTour(state, z, o, T) {
   }
   // Lancer un marché, adhérer à ceux des autres.
   const ms = (state.marches ||= []);
-  if (om.lancer && ARTICLES[om.lancer.item] && !ms.some((x) => !x.clos && x.lanceur === z.uid)) {
+  if (om.lancer && propre(ARTICLES, om.lancer.item) && !ms.some((x) => !x.clos && x.lanceur === z.uid)) {
     const id = `${state.season}-${T}-${z.uid}`;
-    ms.push({ id, item: om.lancer.item, q: MAT.gammes[om.lancer.q] ? om.lancer.q : 'std', lanceur: z.uid, ouvert: T, ferme: T + MAT.marche.duree, part: { [z.uid]: Math.max(1, Math.min(MAT.lotsMax, Math.round(om.lancer.lots || 1))) } });
+    ms.push({ id, item: om.lancer.item, q: propre(MAT.gammes, om.lancer.q) ? om.lancer.q : 'std', lanceur: z.uid, ouvert: T, ferme: T + MAT.marche.duree, part: { [z.uid]: lotsValides(om.lancer.lots) } });
     L.push(`Marché lancé : ${ARTICLES[om.lancer.item].nom.toLowerCase()}. Les autres zones peuvent y adhérer pendant ${MAT.marche.duree} jours ; plus elles sont nombreuses, plus le prix baisse.`);
   }
   for (const ad of Array.isArray(om.adherer) ? om.adherer : []) {
     const mk = ms.find((x) => x.id === (ad && ad.id) && !x.clos && x.ferme >= T);
-    if (mk && !mk.part[z.uid]) { mk.part[z.uid] = Math.max(1, Math.min(MAT.lotsMax, Math.round(ad.lots || 1))); L.push(`Adhésion au marché ${ARTICLES[mk.item].nom.toLowerCase()} de ${(state.zones[mk.lanceur] || {}).nom || 'une zone voisine'}.`); }
+    if (mk && !mk.part[z.uid]) { mk.part[z.uid] = lotsValides(ad.lots); L.push(`Adhésion au marché ${ARTICLES[mk.item].nom.toLowerCase()} de ${(state.zones[mk.lanceur] || {}).nom || 'une zone voisine'}.`); }
   }
   // Brevet taser : 2 agents absents demain, 1 k€.
   const mt = fonction(z, 'moniteurTaser'), prixB = MAT.taser.cert.prix * (mt ? 0.5 : 1), valB = mt ? 21 : MAT.taser.cert.validite;
@@ -264,7 +268,8 @@ export function materielDuTour(state, z, o, T) {
   // Usure, péremptions, entretien.
   { const ry = (o && o.rythme) || 'normal', al = (o && o.alloc) || {}, ag = Math.max(1, z.agents || 1);
     const ut = MAT.tenue.usure * (ry === 'renforce' ? MAT.usure.renforce : ry === 'allege' ? MAT.usure.allege : 1);
-    const terrain = Math.min(1, ((Number(al.intervention) || 0) + (Number(al.roulage) || 0) + (Number(al.proximite) || 0)) / ag);
+    const nb = (x) => Math.max(0, Number(x) || 0); // ordre brut de l'appareil : jamais de nombre négatif (chaussures « neuves » sinon)
+    const terrain = Math.min(1, (nb(al.intervention) + nb(al.roulage) + nb(al.proximite)) / ag);
     const uc = MAT.chaussures.usure * (0.5 + MAT.usure.terrain * terrain);
     m.usureJour = { tenue: Math.round(ut * 10) / 10, chaussures: Math.round(uc * 10) / 10 };
     m.tenue = Math.max(0, Math.round((m.tenue - ut) * 10) / 10); m.chaussures = Math.max(0, Math.round((m.chaussures - uc) * 10) / 10); }
