@@ -3567,7 +3567,7 @@ main.screen.fi { max-width: 640px; margin: 0 auto; }
 .cap::after { content: ''; position: absolute; left: 18px; right: 18px; bottom: 11px; height: 2px; border-radius: 1px; background: color-mix(in srgb, var(--c) 35%, #29345A); z-index: 0; }
 .cap-fond { position: absolute; inset: 0; background-size: cover; background-position: center; z-index: 0; }
 .cap.illu::after { display: none; }
-.cap-ag { position: absolute; left: 0; bottom: 10px; z-index: 2; background-image: url('../img/capsules/agents.webp'); background-size: 1024px 269px; background-repeat: no-repeat; transform-origin: center bottom; filter: drop-shadow(0 2px 1px rgba(0,0,0,.45)); }
+.cap-ag { position: absolute; left: 0; bottom: 10px; z-index: 2; }
 .cap-ag.plus { opacity: .55; }
 .cap-ag .ag-b { top: -4px; right: -8px; }
 .cap-vides { position: absolute; right: 22px; bottom: 11px; display: flex; gap: 6px; z-index: 1; }
@@ -3579,3 +3579,12 @@ main.screen.fi { max-width: 640px; margin: 0 auto; }
 .cap.illu .cap-ag { bottom: 9.5%; }
 .cap.illu .cap-vides { bottom: 10%; right: 12%; }
 .cap.illu .cap-tags { top: 20%; }
+/* Capsules : petites figurines des pions, qui se dandinent en marchant */
+.cap-ag { width: 26px; height: 46px; filter: drop-shadow(0 3px 2px rgba(0,0,0,.5)); }
+.cap-ag img { display: block; width: 26px; height: 46px; object-fit: contain; transform-origin: 50% 100%; }
+.cap-ag.gauche img { transform: scaleX(-1); }
+.cap-ag.marche img { animation: cap-pas .42s ease-in-out infinite alternate; }
+.cap-ag.gauche.marche img { animation-name: cap-pas-g; }
+@keyframes cap-pas { from { transform: translateY(0) rotate(-5deg); } to { transform: translateY(-3px) rotate(5deg); } }
+@keyframes cap-pas-g { from { transform: scaleX(-1) translateY(0) rotate(-5deg); } to { transform: scaleX(-1) translateY(-3px) rotate(5deg); } }
+@media (prefers-reduced-motion: reduce) { .cap-ag.marche img { animation: none; } }

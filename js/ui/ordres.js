@@ -5,7 +5,7 @@ import { vehiculeSvg } from './scene-hp.js';
 import { effetsPressions } from '../engine/contenu.js';
 import { comparatifModeles } from './modeles.js';
 import { ARTICLES } from '../engine/materiel.js';
-import { persoDe, lancerCapsules, FONDS_CAPSULE } from './capsules.js';
+import { lancerCapsules, FONDS_CAPSULE } from './capsules.js';
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme, academieResume, modeEssai } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
 import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier, PREPA, coutPrepa } from '../engine/constants.js';
@@ -297,9 +297,8 @@ function capsuleService(s, b, n, e) {
   let corps = '';
   for (let i = 0; i < vus; i++) {
     const a = ag(i), enPlus = i >= limite;
-    const p = persoDe(s, i);
     const info = enPlus ? 'Cet agent est bien au service, mais au-delà de ce que le service peut utiliser aujourd’hui : il rapporte peu. Tu peux le placer ailleurs.' : a.info;
-    corps += `<span class="cap-ag${a.cls}${enPlus ? ' plus' : ''}${fixe ? ' fixe' : ''}" data-k="${s}-${i}" data-p="${p}" data-x="${fixe ? (0.12 + i * 0.22) % 0.9 : ((i + 0.5) / vus * 0.9).toFixed(2)}"${a.titre || enPlus ? ` title="${esc(enPlus ? 'en plus du besoin' : a.titre)}"` : ''}${info ? ` role="button" tabindex="0" data-action="ag-info" data-t="${esc(info)}"` : ''}>${a.bdg}</span>`;
+    corps += `<span class="cap-ag${a.cls}${enPlus ? ' plus' : ''}${fixe ? ' fixe' : ''}" data-k="${s}-${i}" data-x="${fixe ? (0.12 + i * 0.22) % 0.9 : ((i + 0.5) / vus * 0.9).toFixed(2)}"${a.titre || enPlus ? ` title="${esc(enPlus ? 'en plus du besoin' : a.titre)}"` : ''}${info ? ` role="button" tabindex="0" data-action="ag-info" data-t="${esc(info)}"` : ''}><img src="${a.img.replace('img/agents/', 'img/capsules/ag/')}" alt="">${a.bdg}</span>`;
   }
   const vides = Math.max(0, Math.min(CAP_MAX - vus, besoin - au));
   const places = vides ? `<span class="cap-vides" title="place${vides > 1 ? 's' : ''} à pourvoir">${'<span class="cap-vide"></span>'.repeat(vides)}</span>` : '';
