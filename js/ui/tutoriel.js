@@ -69,7 +69,7 @@ export const ETAPES = [
     id: 'affectation', route: 'ordres', onglet: 'L’onglet le plus important de la journée : c’est là que tu décides où travaillent tes agents.',
     cible: 'section[aria-label="Affectation des agents"]',
     titre: 'Cinq services à équilibrer',
-    texte: () => (`<p>Chaque ligne est un service, avec <strong>une case par agent</strong> dont il a besoin : une case vide en pointillé, c’est un manque. Le badge à droite dit si le service est couvert.</p>
+    texte: () => (`<p>Chaque capsule est un service, avec ses agents dedans : une silhouette en pointillé, c’est une place à pourvoir. La <strong>lumière</strong> dit l’effectif : capsule éclairée, c’est couvert ; lueur ambre, il manque un agent ; dans le noir avec l’alarme, il en manque plusieurs. Touche une capsule pour tout son détail.</p>
       <p><strong>Intervention</strong> traite les incidents · <strong>Proximité</strong> calme les quartiers · <strong>Recherche</strong> élucide les dossiers et nourrit l’enquête · <strong>Roulage</strong> rapporte des amendes · <strong>Accueil</strong> vide la paperasse. Aucun ne suffit seul.</p>`),
   },
   {
@@ -79,10 +79,10 @@ export const ETAPES = [
       <p>Garde la même d’une saison à l’autre et ta <strong>maîtrise</strong> monte. Sans choix au soir du jour 3, ta zone reste « sans doctrine ».</p>`,
   },
   {
-    id: 'proxi', route: 'ordres', cible: '[data-action="alloc"][data-s="proximite"][data-d="1"]', parent: '.between',
+    id: 'proxi', route: 'ordres', cible: '[data-action="alloc"][data-s="proximite"][data-d="1"]', parent: '.col-etage',
     titre: 'À toi : ajoute un agent en Proximité',
     texte: '<p>S’il n’y a plus d’agent libre, il est pris au service le plus fourni.</p>',
-    geste: { consigne: 'Touche le <strong>+</strong> de la ligne <strong>Proximité</strong>.', avant: () => { S.tutoAlloc = alloc(); }, fait: () => alloc() !== S.tutoAlloc },
+    geste: { consigne: 'Touche le <strong>+</strong> de la capsule <strong>Proximité</strong>.', avant: () => { S.tutoAlloc = alloc(); }, fait: () => alloc() !== S.tutoAlloc },
   },
   {
     id: 'rythme', route: 'ordres', cible: 'section[aria-label="Rythme"]',

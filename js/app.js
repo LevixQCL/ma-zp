@@ -1210,7 +1210,22 @@ async function onClick(e) {
         await b.savePlayer(S.user.uid, { ...(S.player || {}), consignes: cs }); S.player = { ...(S.player || {}), consignes: cs };
         toast('Consignes du pilote enregistrées.'); rerender(); break;
       }
-      case 'alloc-libre': { const k = el.dataset.s; if (SERVICES.includes(k) && estimations().reste > 0) { S.draft.alloc[k] = (S.draft.alloc[k] || 0) + 1; S.ordersDirty = true; } rerender(); break; }
+      case 'alloc-libre': { const k = el.dataset.s; if (SERVICES.includes(k) && estimations().reste > 0) { S.draft.alloc[k] = (S.draft.alloc[k] || 0) + 1; S.ordersDirty = true; } S.colMenu = false; rerender(); break; }
+      // Affectation « La colonne » : feuille du bas d'un service, fiche d'un agent, menu de l'ascenseur.
+      case 'col-feuille': { const k = el.dataset.s; if (!SERVICES.includes(k)) break; S.colFeuilleEntre = !S.colFeuille; S.colFeuilleHaut = true; S.colFeuille = { s: k, i: null }; S.colMenu = false; rerender(); break; }
+      case 'col-agent': { const k = el.dataset.s; if (!SERVICES.includes(k)) break; S.colFeuilleEntre = !S.colFeuille; S.colFeuilleHaut = true; S.colFeuille = { s: k, i: el.dataset.i === '' || el.dataset.i == null ? null : Number(el.dataset.i) }; S.colMenu = false; rerender(); break; }
+      case 'col-fermer': if (S.colFeuille) { S.colFeuille = null; rerender(); } break;
+      case 'col-menu': S.colMenu = !S.colMenu; rerender(); break;
+      case 'col-deplacer': {
+        // Déplacer un agent : −1 dans son service, +1 dans l'autre (ou dans l'ascenseur : « Libérer »).
+        const de = el.dataset.s, vers = el.dataset.v, al = S.draft.alloc;
+        if (!SERVICES.includes(de) || !(al[de] > 0) || (vers && !SERVICES.includes(vers))) break;
+        if (!(S.ordParts && 'affect' in S.ordParts)) S.ordParts = { ...(S.ordParts || {}), affect: true };
+        al[de]--; if (vers) al[vers] = (al[vers] || 0) + 1;
+        S.ordersDirty = true; S.colFeuille = { s: de, i: null }; S.colFeuilleHaut = true;
+        toast(vers ? `1 agent passe de ${de === 'admin' ? 'l’Accueil' : SERVICE_LABELS[de]} à ${vers === 'admin' ? 'l’Accueil' : SERVICE_LABELS[vers]}` : '1 agent attend dans l’ascenseur');
+        rerender(); break;
+      }
       case 'alloc': {
         // Le joueur règle sa répartition : la carte reste ouverte même quand tout devient couvert.
         if (!(S.ordParts && 'affect' in S.ordParts)) S.ordParts = { ...(S.ordParts || {}), affect: true };
@@ -1986,7 +2001,7 @@ async function boot() {
   document.addEventListener('input', onInput);
   document.addEventListener('change', onChange);
   window.addEventListener('mazp-quiz-temps', () => { if (S.route === 'quete') { repondreQuiz(-1); rerender(); } });
-  window.addEventListener('hashchange', () => { S.menuHp = false; S.route = route(); if (S.route !== 'prive') S.priveAvec = null; window.scrollTo(0, 0); render(); });
+  window.addEventListener('hashchange', () => { S.menuHp = false; S.colFeuille = null; S.colMenu = false; S.route = route(); if (S.route !== 'prive') S.priveAvec = null; window.scrollTo(0, 0); render(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) { lastTick = 0; tick(); } });
   setInterval(() => {
     const el = document.getElementById('countdown');

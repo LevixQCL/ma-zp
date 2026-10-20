@@ -4,9 +4,10 @@ import { agentsService, resumeEquipement } from './materiel.js';
 import { vehiculeSvg } from './scene-hp.js';
 import { effetsPressions } from '../engine/contenu.js';
 import { comparatifModeles } from './modeles.js';
-import { ARTICLES } from '../engine/materiel.js';
-import { lancerCapsules, FONDS_CAPSULE } from './capsules.js';
-import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme, academieResume, modeEssai } from './common.js';
+import { ARTICLES, giletsValides, ttiValides, tasersActifs, fnActifs } from '../engine/materiel.js';
+import { enRodage } from '../engine/brigade.js';
+import { lancerColonne } from './capsules.js';
+import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme, academieResume } from './common.js';
 import { AIDE, themeActif } from '../engine/rivalites.js';
 import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier, PREPA, coutPrepa } from '../engine/constants.js';
 import { vitesseCombi, MODELES, IDS_MODELES, placesIntervention, agentsMontes, apportAchat, plusUse, prixRevente, modeleDe, RENDEMENT } from '../engine/flotte.js';
@@ -222,8 +223,6 @@ export function besoinsServices(e = estimations()) {
   cacheBesoins = { cle, val };
   return val;
 }
-const PION = (c) => `<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><circle cx="12" cy="7.5" r="4" fill="${c}"/><path d="M4 21c0-5 3.6-8 8-8s8 3 8 8z" fill="${c}"/></svg>`;
-const MAX_CASES = 14;
 /** Bandeau posé sur les agents partis ailleurs pour la journée (un mot), et sa version longue (info-bulle). */
 const MOTIF_COURT = { 'l’opération': 'Opération', audition: 'Audition', traque: 'Traque', 'relève': 'Relève', 'opération commune': 'District', FIPA: 'FIPA' };
 const MOTIF_LONG = { 'l’opération': 'l’opération d’envergure', audition: 'l’audition de la victime (enquête)', traque: 'la traque du suspect (enquête)', 'relève': 'la relève d’un suspect en fuite', 'opération commune': 'l’opération commune du district', FIPA: 'le dispositif FIPA' };
@@ -235,82 +234,233 @@ function infoMission(s, k, motif) {
     : 'Ces agents partent d’abord parmi tes agents sans affectation : laisses-en de libres pour garder ce service au complet.';
   return `${qui} aujourd’hui pour ${MOTIF_LONG[motif] || motif}. ${suite}`;
 }
-/** Badge d'état du service, en clair : ce qu'il faut encore, ou que le besoin est couvert. */
-function badgeService(s, b, n) {
+/** État du service, en clair : ce qu'il faut encore, ou que le besoin est couvert ([texte, couleur]). */
+function etatService(s, b, n) {
   const k = b.bes - n;
-  const t = {
+  return {
     manque: [`Encore ${k} agent${k > 1 ? 's' : ''}`, 'red'],
     juste: [`Encore ${k} agent${k > 1 ? 's' : ''}`, 'amber'],
     ok: ['Besoin couvert', 'green'],
     trop: [s === 'roulage' ? 'Chasse aux PV' : 'Au-delà du besoin', 'amber'],
     libre: [s === 'roulage' ? 'Pas de besoin' : 'Rien en attente', 'blue'],
   }[b.st];
-  return `<span class="pill ${t[1]} svc-badge">${t[0]}</span>`;
 }
-/**
- * Rangée de cases, uniquement pour les agents qui travaillent AU SERVICE aujourd'hui (ceux partis en mission
- * sont annoncés en dessous) : pleines = agents au service, pointillées = agents qui manquent, pâles = en plus.
- */
-function casesService(s, b, n, e) {
-  if (modeEssai()) return capsuleService(s, b, n, e);
-  const coul = COUL_SVC[s];
-  const groupes = ((e && e.prises && e.prises[s]) || []).filter(([k]) => k > 0);
+
+// ───── Affectation « La colonne » ─────
+// Les cinq capsules empilées, reliées par un ascenseur où attendent les agents libres. Sur chaque coque, une console
+// (+, nombre, −, voyant) ; sous chaque capsule, les chiffres clés en pastilles. La lumière dit l'effectif : éclairée
+// (couvert), lueur ambre (il manque 1 agent), dans le noir avec une alarme rouge (il en manque plusieurs).
+// Toucher une capsule ouvre la feuille du service ; toucher un agent ouvre sa fiche (« Déplacer vers… »).
+// Animations : transitions CSS (capsules.js), rien hors écran, rien avec « réduire les animations ».
+const NOM_SVC = (s) => (s === 'admin' ? 'Accueil' : SERVICE_LABELS[s]);
+const LUM_SVC = { manque: 'alarme', juste: 'ambre' };
+const COL_MAX = 9;
+/** Décalage d'une animation CSS en boucle : elle reprend au même point après un rerendu au lieu de repartir de zéro. */
+const phase = (dur) => `${(-((Date.now() / 1000) % dur)).toFixed(2)}s`;
+const ICO_COL = {
+  sir: '<path d="M4 12V8a4 4 0 0 1 8 0v4M2.5 12.5h11M8 1.5v1.2M2.6 3.6l.9.9M13.4 3.6l-.9.9"/>',
+  up: '<path d="M2 12l4-4 3 3 5-6M10 5h4v4"/>',
+  dos: '<path d="M2 4.5h4l1.5 1.5H14v6.5H2z"/>',
+  pap: '<path d="M4 2h6l3 3v9H4zM6.5 8h4M6.5 10.5h4"/>',
+  out: '<path d="M6 3H3v10h3M10 5l3 3-3 3M13 8H6"/>',
+};
+const icoCol = (k) => `<span class="ic" aria-hidden="true"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICO_COL[k]}</svg></span>`;
+
+/** Gilets, recyclage TTI, tasers, FN 303 et recrues de la zone (mêmes chiffres que le résumé du Matériel). */
+function chiffresEquip(z) {
+  if (!z || !z.materiel || !S.state) return null;
+  const T = S.state.turn, m = z.materiel, n = z.agents || 0;
+  return { n, g: Math.min(n, giletsValides(m, T).total), a: m.tti ? Math.min(n, ttiValides(m, T, 'af')) : n, tz: tasersActifs(m, T), fz: fnActifs(m, T), r: enRodage(z, T) };
+}
+
+/** Les agents d'un service ce soir : au service (avec leur équipement), places à pourvoir, « en plus », partis en mission. */
+function agentsColonne(s, b, n, e) {
+  const groupes = ((e.prises || {})[s] || []).filter(([k]) => k > 0);
   const pris = Math.min(n, groupes.reduce((t, [k]) => t + k, 0));
   const au = n - pris;
   const besoin = s === 'roulage' ? 0 : Math.max(0, b.bes - pris);
   const limite = s === 'roulage' ? Math.max(0, b.utile - pris) : besoin;
-  const nb = Math.max(besoin, au), vus = Math.min(nb, MAX_CASES);
-  // Un petit agent par personne au service, dans la tenue de son service, avec son équipement (magasin).
-  const ag = agentsService(s);
-  let h = '', plus = '';
-  for (let i = 0; i < vus; i++) {
-    const plein = i < au, enPlus = i >= limite;
-    if (!plein) { h += '<span class="ag-p vide" title="place à pourvoir"></span>'; continue; }
+  const ag = agentsService(s), l = [];
+  for (let i = 0; i < au; i++) {
     const a = ag(i);
-    const p = `<span class="ag-p${a.cls}${enPlus ? ' plus' : ''}" style="--c:${coul}"${a.titre ? ` title="${esc(a.titre)}"` : ''}${a.info && !enPlus ? ` role="button" tabindex="0" data-action="ag-info" data-k="${s}-p${i}" data-t="${esc(a.info)}"` : ''}><img src="${a.img}" alt="" loading="lazy">${a.bdg}</span>`;
-    if (enPlus) plus += p; else h += p;
+    l.push({ ...a, i, plus: i >= limite, recrue: /\/recrue\./.test(a.img), sg: /\bsg\b/.test(a.cls), sa: /\bsa\b/.test(a.cls), taser: /taser/.test(a.img), fn: />FN</.test(a.bdg) });
   }
-  // Agents au-delà du besoin : un seul bandeau « En plus » sur le groupe.
-  const nPlus = (plus.match(/class="ag-p/g) || []).length;
-  const infoPlus = `${nPlus > 1 ? `Ces ${nPlus} agents sont` : 'Cet agent est'} bien au service, mais au-delà de ce que le service peut utiliser aujourd’hui : ${nPlus > 1 ? 'ils rapportent' : 'il rapporte'} peu. Tu peux les placer ailleurs.`;
-  if (plus) h += `<span class="ag-grp" style="--c:${coul}" role="button" tabindex="0" data-action="ag-info" data-k="${s}-plus" data-t="${esc(infoPlus)}" aria-label="${esc(infoPlus)}"><span class="ag-grp-p">${plus}</span><span class="ag-rub">En plus</span></span>`;
-  if (nb > vus) h += `<span class="tiny muted">+${nb - vus}</span>`;
-  // Agents partis ailleurs pour la journée : un groupe par motif, avec un bandeau qui dit où ils sont.
-  const missions = groupes.map(([k, motif]) => `<span class="ag-sep"></span><span class="ag-grp" style="--c:${coul}" role="button" tabindex="0" data-action="ag-info" data-k="${s}-${esc(motif)}" data-t="${esc(infoMission(s, k, motif))}" aria-label="${esc(infoMission(s, k, motif))}"><span class="ag-grp-p">${Array.from({ length: Math.min(k, MAX_CASES) }, (_, i) => `<span class="ag-p mission${i % 2 ? ' m' : ''}" style="--c:${coul}"><img src="img/agents/${({ intervention: 'inter', proximite: 'prox', recherche: 'rech', roulage: 'roul', admin: 'admin' })[s]}.webp" alt="" loading="lazy"></span>`).join('')}</span><span class="ag-rub">${esc(MOTIF_COURT[motif] || motif)}</span></span>`).join('');
-  const lab = `${au ? `au service · ${au}` : 'personne au service'}${groupes.map(([k, motif]) => ` · ${motif === 'l’opération' ? 'opération' : esc(motif)} · ${k}`).join('')}`;
-  return `${pris || !au ? `<span class="ag-l">${lab}</span>` : ''}<span class="ag-bande">${h || (pris ? '' : '<span class="tiny muted">aucun agent</span>')}${missions}</span>`;
+  return { groupes, pris, au, besoin, limite, l, places: Math.max(0, besoin - au), enPlus: Math.max(0, au - limite) };
 }
-/**
- * Mode essai : la capsule du service. Mêmes calculs que les pions (au service, places à pourvoir, « en plus », missions),
- * mais les agents marchent dans une capsule au lieu d'être alignés.
- */
-const CAP_MAX = 8;
-function capsuleService(s, b, n, e) {
-  const coul = COUL_SVC[s];
-  const groupes = ((e && e.prises && e.prises[s]) || []).filter(([k]) => k > 0);
-  const pris = Math.min(n, groupes.reduce((t, [k]) => t + k, 0));
-  const au = n - pris;
-  const besoin = s === 'roulage' ? 0 : Math.max(0, b.bes - pris);
-  const limite = s === 'roulage' ? Math.max(0, b.utile - pris) : besoin;
-  const ag = agentsService(s);
-  const vus = Math.min(au, CAP_MAX), fixe = s === 'admin';
-  let corps = '';
-  for (let i = 0; i < vus; i++) {
-    const a = ag(i), enPlus = i >= limite;
-    const info = enPlus ? 'Cet agent est bien au service, mais au-delà de ce que le service peut utiliser aujourd’hui : il rapporte peu. Tu peux le placer ailleurs.' : a.info;
-    corps += `<span class="cap-ag${a.cls}${enPlus ? ' plus' : ''}${fixe ? ' fixe' : ''}" data-k="${s}-${i}" data-x="${fixe ? (0.12 + i * 0.22) % 0.9 : ((i + 0.5) / Math.max(vus, 4)).toFixed(2)}"${!fixe && (i === 1 || i === 4) ? ' data-flane="1"' : ''}${a.titre || enPlus ? ` title="${esc(enPlus ? 'en plus du besoin' : a.titre)}"` : ''}${info ? ` role="button" tabindex="0" data-action="ag-info" data-t="${esc(info)}"` : ''}><img src="${a.img.replace('img/agents/', 'img/capsules/ag/')}" alt="">${a.bdg}</span>`;
+const INFO_PLUS = 'Il est bien au service, mais au-delà de ce que le service peut utiliser aujourd’hui : il rapporte peu. Tu peux le placer ailleurs.';
+/** Petites pastilles sous les pieds : sans gilet, sans recyclage TTI, recrue à ½, en plus. */
+const piedsAgent = (a) => [a.sg ? '<i class="sg"></i>' : '', a.sa ? '<i class="sa"></i>' : '', a.recrue ? '<i class="dm"></i>' : '', a.plus ? '<i class="ep"></i>' : ''].join('');
+/** Ce qu'on lit de l'agent, en clair. */
+function etiquettesAgent(a) {
+  const c = [];
+  c.push(a.sg ? '<span class="r">sans gilet valide</span>' : '<span class="v">gilet valide</span>');
+  c.push(a.sa ? '<span class="r">sans recyclage TTI arme</span>' : '<span>TTI arme à jour</span>');
+  if (a.taser) c.push('<span>taser</span>');
+  if (a.fn) c.push('<span>FN 303</span>');
+  if (a.recrue) c.push('<span class="v">recrue · compte ½</span>');
+  if (a.plus) c.push('<span class="b">en plus</span>');
+  return c.join('');
+}
+
+/** Rangée de pastilles illustrées sous la capsule : les chiffres clés du service, sans rien ouvrir. */
+function pastillesService(s, z, e, A) {
+  const d = S.draft, dep = d.depenses || {};
+  const P = (cls, ic, txt, em = '') => `<span class="pst ${cls}">${ic}<b>${txt}</b>${em ? `<em>${em}</em>` : ''}</span>`;
+  const im = (f, sp) => `<img class="${sp ? 'sp' : ''}" src="${f}" alt="" loading="lazy">`;
+  const mj = (v, c) => `<span class="mj" aria-hidden="true"><i style="width:${Math.round(Math.max(0, Math.min(1, v)) * 100)}%;background:${c}"></i></span>`;
+  const sg = A.l.filter((a) => a.sg).length;
+  const sansG = sg ? P('r', im('img/materiel/gilets.webp'), sg, 'sans gilet') : '';
+  const l = [];
+  if (s === 'intervention') {
+    const r = e.attendus - e.couverts;
+    l.push(P(r <= 0 ? 'v' : r >= 2 ? 'r' : 'a', icoCol('sir'), `${e.couverts}/${e.attendus}`, 'incid.'));
+    const q = chiffresEquip(z);
+    if (q) {
+      if (q.g >= q.n && q.a >= q.n) l.push(P('v', im('img/materiel/gilets.webp'), `${q.g}/${q.n}`, 'gilets · TTI'));
+      else { l.push(P(q.g < q.n ? 'r' : 'v', im('img/materiel/gilets.webp'), `${q.g}/${q.n}`)); l.push(P(q.a < q.n ? 'r' : '', im('img/materiel/fn303.webp'), `${q.a}/${q.n}`, 'TTI')); }
+      if (q.r) l.push(P('v', im('img/capsules/ag/recrue.webp', 1), q.r > 1 ? `${q.r}×½` : '½', 'recrue'));
+    }
+    const fd = z.jaugeFlagrant || 0;
+    l.push(`<span class="pst" title="Flagrant délit">${mj(fd, 'var(--red)')}<em>FD</em><b>${Math.round(fd * 100)} %</b></span>`);
+  } else if (s === 'proximite') {
+    const avant = Math.round(z.criminalite), apres = Math.round(e.crimSoir), nt = niveauTension(apres);
+    const cls = nt.id === 'calme' ? 'v' : nt.id === 'surveille' ? 'a' : 'r';
+    l.push(P(cls, icoCol('up'), `${avant} → ${apres}`, 'criminalité'));
+    if (nt.id !== 'calme') l.push(P(cls, '', esc(nt.nom)));
+    l.push(sansG);
+  } else if (s === 'recherche') {
+    const p = projeterDossiers(z, ((e.cap && e.cap.recherche) || 0) + (dep.enqueteurs ? DEPENSES.enqueteurs.unites : 0));
+    const retard = p.lignes.filter((x) => !x.boucle && x.d.age + 1 > 6).length;
+    if (retard) l.push(P('r', icoCol('dos'), retard, `en retard · ${p.restants} en cours`));
+    else if (p.boucles) l.push(P('v', icoCol('dos'), p.boucles, `bouclé${p.boucles > 1 ? 's' : ''} ce soir · ${p.restants} en cours`));
+    else l.push(P(p.restants ? 'a' : '', icoCol('dos'), p.restants, p.restants ? 'dossier' + (p.restants > 1 ? 's' : '') + ' en cours' : 'dossier en attente'));
+    l.push(P('', im('img/materiel/tenue.webp'), 'tenue civile'));
+  } else if (s === 'roulage') {
+    l.push(e.chasse ? P('r', icoCol('sir'), 'chasse aux PV', 'satisf. −2') : P('v', '<span class="ic">€</span>', `+${fmt1(e.amendes)} k€`, 'amendes'));
+    l.push(P('', im('img/capsules/ag/roul.webp', 1), 'gilet fluo'));
+    l.push(sansG);
+  } else if (s === 'admin') {
+    const v = e.papV, avant = Math.round(z.paperasse), apres = Math.round(Math.max(0, z.paperasse + v));
+    const cls = apres > 14 ? 'r' : v > 0.15 ? 'a' : 'v';
+    l.push(P(cls, icoCol('pap'), `${avant} → ${apres}`, 'paperasse'));
+    l.push(`<span class="pst ${cls}">${mj(apres / 14, apres > 14 ? 'var(--red)' : apres >= 11 ? 'var(--amber)' : '#C084FC')}<b>seuil 14</b></span>`);
+    const rc = A.l.filter((a) => a.recrue).length;
+    if (rc) l.push(P('v', im('img/capsules/ag/recrue.webp', 1), rc > 1 ? `${rc}×½` : '½', 'recrue'));
   }
-  const vides = Math.max(0, Math.min(CAP_MAX - vus, besoin - au));
-  const places = vides ? `<span class="cap-vides" title="place${vides > 1 ? 's' : ''} à pourvoir">${'<span class="cap-vide"></span>'.repeat(vides)}</span>` : '';
-  const nPlus = Math.max(0, au - limite);
-  const etiq = [...groupes.map(([k, motif]) => `${k} ${motif === 'l’opération' ? 'en opération' : esc(motif)}`), au > CAP_MAX ? `${au - CAP_MAX} hors champ` : '', nPlus > 0 ? `${nPlus} en plus` : ''].filter(Boolean);
-  const fond = FONDS_CAPSULE.includes(s) ? ` style="background-image:url('img/capsules/${s}.webp')"` : '';
-  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(lancerCapsules);
-  // Lumière : capsule bien éclairée si le besoin est couvert ; tamisée avec une lueur ambre s'il manque un agent ;
-  // sombre avec une alarme rouge qui pulse lentement s'il en manque plusieurs.
-  const lum = b.st === 'manque' ? ' alarme' : b.st === 'juste' ? ' tendu' : '';
-  return `<div class="cap cap-${s}${fond ? ' illu' : ''}${lum}" style="--c:${coul}"><span class="cap-fond"${fond}></span><span class="cap-lum" aria-hidden="true"></span>${corps}${places}</div>
-    ${etiq.length ? `<span class="cap-tags">${etiq.map((t) => `<span>${t}</span>`).join('')}</span>` : ''}`;
+  for (const [k, motif] of A.groupes) l.push(P('a', icoCol('out'), k, esc((MOTIF_COURT[motif] || motif).toLowerCase())));
+  if (dep.reserve && dep.reserveService === s) l.push(P('a', '', `+${dep.reserve}`, 'de réserve'));
+  if (A.au > COL_MAX) l.push(P('', '', `+${A.au - COL_MAX}`, 'hors champ'));
+  const D = z.doctrine && DOCTRINES[z.doctrine];
+  if (D && D.jauge && D.jauge.service === s) l.push(`<span class="pst" title="${esc(D.jauge.nom)}">${mj(valJauge(z), 'var(--amber)')}<em>${D.jauge.ico}</em><b>${Math.round(valJauge(z) * 100)} %</b></span>`);
+  return l.join('');
+}
+
+/** Les services triés pour placer un agent libre : celui qui manque le plus d'abord (comme « Agents libres »). */
+function ordrePlacement(bs) {
+  const rang = { manque: 0, juste: 1 };
+  return [...SERVICES.filter((s2) => bs[s2] && bs[s2].st in rang).sort((a, b) => rang[bs[a].st] - rang[bs[b].st]), 'intervention', 'proximite', ...SERVICES].filter((v, i, t) => t.indexOf(v) === i);
+}
+
+function etageHtml(s, z, e, bs, cabine) {
+  const d = S.draft, b = bs[s], n = d.alloc[s], A = agentsColonne(s, b, n, e), coul = COUL_SVC[s];
+  const lum = LUM_SVC[b.st] || 'lit';
+  const [etat] = etatService(s, b, n);
+  const slots = Math.min(COL_MAX, Math.max(A.au, A.au + A.places));
+  const xs = (i) => (slots <= 1 ? 0.5 : i / (slots - 1)).toFixed(3);
+  const vus = A.l.slice(0, COL_MAX);
+  // Un agent sur trois flâne autour de sa place (animation CSS, reprise au même point d'un rendu à l'autre).
+  const figs = vus.map((a) => { const fl = a.i % 3 === 1, dur = 7 + ((a.i * 13 + s.length) % 5), pas = (a.i % 2 ? -1 : 1) * (6 + (a.i % 3) * 2);
+    return `<span class="cap-ag${a.plus ? ' plus' : ''}${fl ? ' flane' : ''}" data-k="${s}-${a.i}" style="--x:${xs(a.i)}${fl ? `;--dur:${dur}s;--del:${phase(dur)};--pas:${pas}px` : ''}" role="button" tabindex="0" data-action="col-agent" data-s="${s}" data-i="${a.i}" aria-label="Agent ${a.i + 1} : ${esc(a.titre || 'rien à signaler')}${a.plus ? ', en plus' : ''}"><span class="col-marche"><img src="${a.img.replace('img/agents/', 'img/capsules/ag/')}" alt="" draggable="false"></span><span class="col-pied">${piedsAgent(a)}</span></span>`; }).join('');
+  const places = Array.from({ length: Math.max(0, Math.min(COL_MAX - vus.length, A.places)) }, (_, k) => `<span class="col-place" style="--x:${xs(vus.length + k)}"></span>`).join('');
+  const bonus = bonusEnigme(s) > 1 ? ` <small>+${Math.round((bonusEnigme(s) - 1) * 100)} %</small>` : '';
+  return `<div class="col-etage col-${lum}" data-s="${s}" style="--c:${coul}">
+    <span class="col-sas" aria-hidden="true"></span>
+    <div class="col-cap" role="button" tabindex="0" data-action="col-feuille" data-s="${s}" aria-label="${NOM_SVC(s)} : ${n} agent${n > 1 ? 's' : ''}, ${esc(etat)}. Ouvrir le détail">
+      <span class="col-halo"></span>
+      <span class="col-scene"><img class="col-decor" src="img/capsules/${s}.webp" alt="" width="800" height="259" decoding="async"><span class="col-figs">${figs}</span></span>
+      <span class="col-voile"${lum === 'alarme' ? ` style="animation-delay:${phase(3.2)}"` : ''}></span>
+      <span class="col-places">${places}</span>
+      <span class="col-tag nom">${NOM_SVC(s)}${bonus}</span><span class="col-tag etat ${lum}">${esc(etat)}${lum === 'lit' && A.enPlus && b.st !== 'trop' ? ` · ${A.enPlus} en plus` : ''}</span>
+    </div>
+    <div class="col-console"><button type="button" data-action="alloc" data-s="${s}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s]}">+</button><span class="col-nb"><span class="n">${n}</span>${b.bes ? `<small>/${b.bes}</small>` : ''}<i class="col-voyant"></i></span><button type="button" data-action="alloc" data-s="${s}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s]}" ${n <= 0 ? 'disabled' : ''}>−</button></div>
+    <div class="col-pst" role="button" tabindex="0" data-action="col-feuille" data-s="${s}" aria-label="Détail : ${NOM_SVC(s)}">${pastillesService(s, z, e, A)}</div>
+    ${cabine || ''}
+  </div>`;
+}
+
+/** La colonne complète : ascenseur, cabine des agents libres, les cinq capsules. */
+function colonneHtml(z, e) {
+  const bs = besoinsServices(e), libres = Math.max(0, e.reste);
+  const ordre = ordrePlacement(bs), cible = libres ? ordre[0] : null;
+  const sprite = libres ? 'img/capsules/ag/inter.webp' : '';
+  const menu = libres && S.colMenu ? `<div class="col-menu" role="menu"><span class="tiny muted">Placer ${libres > 1 ? 'un agent libre' : 'l’agent libre'} :</span>${ordre.map((s2) => { const m = bs[s2].bes - S.draft.alloc[s2]; return `<button type="button" role="menuitem" data-action="alloc-libre" data-s="${s2}"><i style="background:${COUL_SVC[s2]}"></i>+ ${NOM_SVC(s2)}${m > 0 ? `<em>il en manque ${m}</em>` : ''}</button>`; }).join('')}</div>` : '';
+  const cabine = `<button type="button" class="col-cabine${libres ? '' : ' vide'}" data-action="col-menu" aria-expanded="${!!(libres && S.colMenu)}" aria-label="${libres ? `${libres} agent${libres > 1 ? 's' : ''} libre${libres > 1 ? 's' : ''} dans l’ascenseur : placer` : 'Ascenseur vide'}" ${libres ? '' : 'disabled'}>${libres ? `<img src="${sprite}" alt="" draggable="false"><span class="x">${libres > 1 ? '×' + libres : '1'}</span>` : ''}</button><i class="col-fleche" aria-hidden="true"></i>${menu}`;
+  return `<div class="colonne${libres ? ' attend' : ''}" id="colonne">
+    <span class="col-tube" aria-hidden="true"><span class="col-flux"${libres ? ` style="animation-delay:${phase(3.2)}"` : ''}></span></span><span class="col-chapeau" aria-hidden="true"></span><span class="col-socle" aria-hidden="true"></span>
+    ${cible ? '' : `<span class="col-parking">${cabine}</span>`}
+    <div class="col-etages">${SERVICES.map((s2) => etageHtml(s2, z, e, bs, s2 === cible ? cabine : '')).join('')}</div>
+  </div>
+  <p class="col-leg tiny muted"><span><i class="sg"></i>sans gilet</span><span><i class="sa"></i>sans TTI</span><span><i class="dm"></i>recrue ½</span><span><i class="ep"></i>en plus</span></p>
+  ${libres ? '' : ''}${(() => { if (typeof requestAnimationFrame === 'function') requestAnimationFrame(lancerColonne); return ''; })()}`;
+}
+
+/** La phrase du besoin, en clair (« besoin 7 · il en manque 3 »). */
+function phraseBesoin(s, b, n, A) {
+  const pris = A.pris ? ` · dont ${A.pris} pris ailleurs aujourd’hui` : '';
+  if (s === 'roulage') return `pas de besoin minimum · utile jusqu’à ${b.utile}${n > b.utile ? ` · ${n - b.utile} en plus` : ''}${pris}`;
+  if (!b.bes) return `pas de besoin ce soir${n ? ` · ${n} en plus` : ''}${pris}`;
+  const m = b.bes - n;
+  return m > 0 ? `besoin ${b.bes} · il en manque ${m}${pris}` : `besoin ${b.bes} · couvert${A.enPlus ? ` · ${A.enPlus} en plus` : ''}${pris}`;
+}
+
+/** Feuille du bas : tout le détail d'un service, ou la fiche d'un agent. */
+function feuilleColonne(z, e) {
+  const f = S.colFeuille;
+  if (!f || !SERVICES.includes(f.s)) return '';
+  const s = f.s, d = S.draft, dep = d.depenses || {}, bs = besoinsServices(e), b = bs[s], n = d.alloc[s], A = agentsColonne(s, b, n, e);
+  const [etat, coulEtat] = etatService(s, b, n);
+  const entre = S.colFeuilleEntre ? ' entre' : '';
+  S.colFeuilleEntre = false;
+  const ancien = typeof document !== 'undefined' && document.getElementById('col-fcorps');
+  const haut = S.colFeuilleHaut || !ancien; S.colFeuilleHaut = false;
+  if (!haut && ancien) { const y = ancien.scrollTop; setTimeout(() => { const c = document.getElementById('col-fcorps'); if (c) c.scrollTop = y; }, 0); }
+  const a = f.i != null ? A.l[f.i] : null;
+  let corps;
+  if (a) {
+    const phr = [a.info ? esc(a.info).replace(/\n/g, '<br>') : 'Rien à signaler : équipé et à jour.', a.plus ? INFO_PLUS : ''].filter(Boolean).join('<br>');
+    const apres = n - 1;
+    corps = `<button type="button" class="col-retour" data-action="col-agent" data-s="${s}" data-i="">${NOM_SVC(s)} · ${A.au} au service</button>
+      <div class="col-fiche" style="--c:${COUL_SVC[s]}"><img src="${a.img}" alt=""><div><b>Agent ${a.i + 1}</b><span>${NOM_SVC(s)}</span><span class="col-chips">${etiquettesAgent(a)}</span></div></div>
+      <p class="col-fphr">${phr}</p>
+      <span class="col-fh">Déplacer vers</span>
+      <div class="col-dep">${SERVICES.filter((x) => x !== s).map((x) => { const m = bs[x].bes - d.alloc[x]; return `<button type="button" data-action="col-deplacer" data-s="${s}" data-v="${x}"><i style="background:${COUL_SVC[x]}"></i><span>${NOM_SVC(x)}${m > 0 ? `<small>il en manque ${m}</small>` : ''}</span></button>`; }).join('')}
+        <button type="button" class="lib" data-action="col-deplacer" data-s="${s}" data-v="">Libérer · l’envoyer dans l’ascenseur</button></div>
+      <p class="col-fphr">Le retirer d’ici : ${NOM_SVC(s)} passe à ${apres}${b.bes ? ` pour un besoin de ${b.bes}${apres < b.bes ? (b.bes - apres >= 2 ? ' (capsule dans le noir)' : ' (lueur ambre)') : ''}` : ''}.</p>`;
+  } else {
+    const placer = e.reste > 0 ? 'alloc-libre' : 'alloc';
+    const lignes = A.l.map((x) => `<button type="button" class="col-ligne" data-action="col-agent" data-s="${s}" data-i="${x.i}"><span class="av"><img src="${x.img.replace('img/agents/', 'img/capsules/ag/')}" alt=""></span><span class="col-lt"><b>Agent ${x.i + 1}</b><span class="col-chips">${etiquettesAgent(x)}</span></span><i class="chv"></i></button>`).join('')
+      + Array.from({ length: A.places }, () => `<div class="col-ligne place ${b.st === 'manque' ? 'r' : ''}"><span class="av"></span><span class="col-lt"><b>Place à pourvoir</b></span><button type="button" data-action="${placer}" data-s="${s}" data-d="1">+ placer</button></div>`).join('')
+      + A.groupes.map(([k, motif]) => `<div class="col-ligne mission"><span class="av">${icoCol('out')}</span><span class="col-lt"><b>${k} ${esc((MOTIF_COURT[motif] || motif).toLowerCase())}</b><span class="tiny muted">${esc(infoMission(s, k, motif))}</span></span></div>`).join('');
+    corps = `<div class="col-f1"><div class="col-fphrase"><b>${phraseBesoin(s, b, n, A)}</b><span class="svc-r">${resultatService(e, s)}</span></div>
+        <span class="stepper"><button type="button" data-action="alloc" data-s="${s}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s]}" ${n <= 0 ? 'disabled' : ''}>−</button><span class="n">${n}</span><button type="button" data-action="alloc" data-s="${s}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s]}">+</button></span></div>
+      <div class="col-pst col-pst-f">${pastillesService(s, z, e, A)}</div>
+      <span class="col-fh">Agents · ${A.au} au service${b.bes ? ` · besoin ${b.bes}` : ''}</span>
+      <div class="col-lignes">${lignes || '<span class="tiny muted">Personne au service ce soir.</span>'}</div>
+      ${A.groupes.length ? '' : '<span class="tiny muted">En mission ou en opération : personne ce soir.</span>'}
+      ${dep.reserve && dep.reserveService === s ? `<span class="tiny" style="color:var(--amber-soft)">+ ${dep.reserve} de réserve en renfort</span>` : ''}
+      ${s === 'intervention' ? `<span class="col-fh">Matériel</span>${resumeEquipement()}` : ''}
+      ${jaugesService(z, s)}
+      ${prisHtml(e, s)}
+      ${s === 'recherche' ? `<span class="col-fh">Dossiers</span><div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}
+      <span class="col-fh">Niveau ${z.niveaux[s]} · comment ça marche</span>
+      <p class="tiny" style="margin:0;color:var(--text2);line-height:1.45">${esc(aide(s, z))}</p>`;
+  }
+  return `<div class="col-fond${entre}" data-action="col-fermer" aria-hidden="true"></div>
+  <section class="col-feuille${entre}" role="dialog" aria-modal="true" aria-label="${a ? `Agent ${a.i + 1}, ${NOM_SVC(s)}` : `Détail du service : ${NOM_SVC(s)}`}" style="--c:${COUL_SVC[s]}">
+    <button type="button" class="col-poignee" data-action="col-fermer" aria-label="Fermer"><i></i></button>
+    <div class="col-ftete col-${LUM_SVC[b.st] || 'lit'}"><img src="img/capsules/${s}.webp" alt=""><span class="col-fti"><b>${NOM_SVC(s)}</b><span class="${coulEtat}">${esc(etat)}</span></span><button type="button" class="col-ferme" data-action="col-fermer" aria-label="Fermer">×</button></div>
+    <div class="col-fcorps" id="col-fcorps">${corps}</div>
+  </section>`;
 }
 /** Barre de toute l'affectation : un segment par agent à répartir, couleur de son service ; pointillés = encore libres. */
 function barreAffectation(e) {
@@ -419,9 +569,7 @@ export function updateOrdresLive() {
   for (const s of SERVICES) set(`pris-${s}`, prisHtml(e, s));
   if (e.opx.op) set('op-couv', opCouvHtml(e));
   set('alloc-status', statusHtml(e));
-  for (const s of SERVICES) set(`res-${s}`, resultatService(e, s));
-  const bs = besoinsServices(e);
-  for (const s of SERVICES) { set(`cases-${s}`, casesService(s, bs[s], S.draft.alloc[s], e)); set(`badge-${s}`, badgeService(s, bs[s], S.draft.alloc[s])); }
+  set('col-affect', colonneHtml(myZone(), e));
   set('barre-aff', barreAffectation(e));
   set('dos-recherche', dossiersHtml(myZone(), e));
   const ch = document.getElementById('est-chasse'); if (ch) ch.hidden = !e.chasse;
@@ -1092,20 +1240,9 @@ export function renderOrdres() {
       ${S.ventilation ? ventilationHtml(z, e) : ''}
       <div class="barre-aff" id="barre-aff" aria-hidden="true">${barreAffectation(e)}</div>
       ${''}
-      ${(() => { S._bs = besoinsServices(e); return ''; })()}
-      ${jaugeSansService(z)}${SERVICES.map((s2) => { const ouvert = !!(S.help && S.help[s2]); const b = S._bs[s2]; return `<div class="svc2 svc-${b.st}${ouvert ? ' ouvert' : ''}" style="--c:${COUL_SVC[s2]}">
-        <div class="svc2-l"><button type="button" class="svc2-n svc-tog" data-action="help" data-s="${s2}" aria-expanded="${ouvert}" aria-label="${ouvert ? 'Masquer' : 'Afficher'} le détail : ${SERVICE_LABELS[s2]}"><span>${s2 === 'admin' ? 'Accueil' : SERVICE_LABELS[s2]}</span>${bonusEnigme(s2) > 1 ? `<small class="ok">+${Math.round((bonusEnigme(s2) - 1) * 100)} %</small>` : ''}</button>
-          <span class="svc2-esp"></span>
-          <span class="stepper"><button type="button" data-action="alloc" data-s="${s2}" data-d="-1" aria-label="Un agent de moins en ${SERVICE_LABELS[s2]}" ${d.alloc[s2] <= 0 ? 'disabled' : ''}>−</button><span class="n">${d.alloc[s2]}</span><button type="button" data-action="alloc" data-s="${s2}" data-d="1" aria-label="Un agent de plus en ${SERVICE_LABELS[s2]}">+</button></span></div>
-        <div class="cases svc2-cases ag-cases" id="cases-${s2}">${casesService(s2, b, d.alloc[s2], e)}</div>
-        <div class="svc2-s"><span class="svc-r" id="res-${s2}">${resultatService(e, s2)}</span><span id="badge-${s2}">${badgeService(s2, b, d.alloc[s2])}</span></div>
-        <span id="pris-${s2}" class="svc-plus">${prisHtml(e, s2)}</span>
-        ${s2 === 'intervention' ? resumeEquipement() : ''}
-        ${jaugesService(z, s2)}
-        ${dep.reserve && dep.reserveService === s2 ? `<span class="tiny svc-plus" style="color:var(--amber-soft)">+ ${dep.reserve} de réserve en renfort</span>` : ''}
-        ${ouvert ? `<div class="svc-det">${s2 === 'recherche' ? `<div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}<p class="tiny" style="margin:0;color:var(--text2);line-height:1.45">Niveau ${z.niveaux[s2]}. ${esc(aide(s2, z))}</p></div>` : ''}
-      </div>`; }).join('')}
-      ${e.reste > 0 ? `<p class="small warn" style="margin:8px 0 0;font-weight:600">${e.reste} agent${e.reste > 1 ? 's' : ''} libre${e.reste > 1 ? 's' : ''} à placer</p>` : ''}
+      ${jaugeSansService(z)}
+      ${e.reste > 0 ? placerLibresHtml(e) : ''}
+      <div id="col-affect">${colonneHtml(z, e)}</div>
       ${''}
       ${prisesHtml()}`, { aria: 'Affectation des agents', cls: 'affect', defaut: replierAffect(e, z) ? false : null, pied: e.reste > 0 ? placerLibresHtml(e) : '' })}
     ${partieOrdres('rythme', 2, 'Rythme de travail', `${RYTHMES[d.rythme] ? RYTHMES[d.rythme].label : 'Normal'} · ${RYTHMES[d.rythme] ? RYTHMES[d.rythme].sub : ''}`, 'ok', () => `      <div class="seg creux" role="group" aria-label="Rythme de travail">${Object.entries(RYTHMES).map(([k, r]) => `
@@ -1127,6 +1264,7 @@ export function renderOrdres() {
     ])}
 
     <a class="small" href="#guide-ordres" style="text-align:center;padding:10px">Comment fonctionnent les ordres ?</a>
+    ${S.ordParts && S.ordParts.affect === false ? '' : feuilleColonne(z, e)}
   </main>${tabbar('ordres')}`;
 }
 

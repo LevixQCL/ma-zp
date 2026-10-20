@@ -23,6 +23,11 @@ export const NOTE_MAJ = {
   ],
 
   sections: [
+    ['L’Affectation en capsules (20 octobre)', [
+      ['La colonne', 'tes cinq services deviennent des capsules reliées par un ascenseur, tes agents s’y promènent. Une capsule sombre avec une alarme rouge : il manque du monde ; une lueur ambre : il manque un agent.'],
+      ['Agent libre', 'il attend dans la cabine de l’ascenseur : fais-le glisser sur une capsule, ou touche « + Proximité », « + Intervention »…'],
+      ['Tout en un toucher', 'touche une capsule pour son détail (besoin, agents un par un, matériel, aide) ; touche un agent pour son équipement et « Déplacer vers… ».'],
+    ]],
     ['Plus simple à jouer (20 octobre)', [
       ['Enquête', 'quand tes démarches du soir sont choisies, la carte « Ce soir » se replie et montre ce que tu peux encore faire : hypothèse au juge, recoupement, réaudition, partage.'],
       ['Énigmes', 'touche « Compris » sous l’énoncé : il se replie sur une ligne et le plan ou les indices remontent.'],
