@@ -3531,3 +3531,20 @@ main.screen.fi { max-width: 640px; margin: 0 auto; }
 .obj-anneaux { display: flex; gap: 4px; margin-left: auto; margin-right: 6px; flex: none; }
 .obj-anneau { width: 34px; height: 34px; border-radius: 50%; background: conic-gradient(var(--c) var(--p), var(--surface3) 0); display: grid; place-items: center; }
 .obj-anneau span { width: 26px; height: 26px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font: 800 9.5px var(--body); }
+/* Enquête, carte « Ce soir » repliée : ce qui reste faisable ce soir (mode essai) */
+.e2-encore { margin-top: 10px; padding-top: 9px; border-top: 1px dashed var(--line, rgba(255,255,255,.12)); display: flex; flex-direction: column; gap: 6px; }
+.e2-encore-l { display: flex; flex-wrap: wrap; gap: 6px; }
+/* Énigmes : énoncé replié une fois lu (mode essai) */
+.fe-lu { align-self: flex-end; margin-top: -4px; }
+.fe-enonce { border: 1px solid rgba(43, 32, 21, .14); border-radius: 10px; background: rgba(255, 255, 255, .45); }
+.fe-enonce > summary { display: flex; align-items: center; gap: 8px; padding: 8px 11px; cursor: pointer; list-style: none; font-size: 13.5px; font-weight: 600; color: var(--text2); }
+.fe-enonce > summary::-webkit-details-marker { display: none; }
+.fe-enonce[open] > summary svg { transform: rotate(90deg); }
+.fe-enonce > :not(summary) { margin: 0 11px 10px; }
+/* Ordres : tes décisions d'un soir à l'autre (mode essai) */
+.sd-liste { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.sd-l { display: flex; gap: 10px; align-items: baseline; font-size: 13.5px; line-height: 1.35; color: var(--text2); }
+.sd-q { flex: 0 0 74px; font: 700 11px var(--mono); letter-spacing: .3px; text-transform: uppercase; color: var(--muted); }
+.sd-ok { color: var(--text); }
+.sd-ok .sd-q { color: var(--green-soft); }
+.sd-ko { color: var(--text); } .sd-ko .sd-q { color: var(--red, #ff6b6b); }

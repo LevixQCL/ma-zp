@@ -4,7 +4,7 @@
 // Enfin le classeur (pièces, scène, plan, planques, notes) sur une feuille de papier lisible.
 // Les nouvelles pièces arrivent sous enveloppe : on les ouvre une à une, et on dit ce qu'on en conclut.
 import { zoneAvecAgenda } from './chef.js';
-import { S, esc, icon, tabbar, myZone, zoneName, fmt1 } from './common.js';
+import { S, esc, icon, tabbar, myZone, zoneName, fmt1, modeEssai } from './common.js';
 import { portraitSuspect } from './portrait.js';
 import { banniereDebrief, debriefsRecents } from './debrief.js';
 import { primeHtml } from './prime.js';
@@ -203,6 +203,7 @@ function ceSoirHtml(aff, dos) {
           <span class="small" style="font-weight:600;line-height:1.35">${resume}</span>
           <span class="tiny muted">${d.piste !== null && d.piste !== undefined && aff.suspects[d.piste] ? `piste : ${esc(aff.suspects[d.piste].prenom)} · ` : ''}${parts.length ? `${parts.length} partage${parts.length > 1 ? 's' : ''} · ` : ''}reste ${fmt1(reste)} k€ · touche pour modifier, piste, appui</span></span>
         <span class="pli-ok">${icon('check', 14)}</span>${icon('chevron', 16)}</button>
+      ${modeEssai() ? encorePossible(aff, dos, d, parts) : ''}
     </section>`;
   }
   return `<section class="card e2-soir" aria-label="Ce soir">
@@ -216,6 +217,20 @@ function ceSoirHtml(aff, dos) {
     ${extras.join('')}
     ${aff.recoupements || aff.hypothese ? soirPlusHtml(aff) : ''}
   </section>`;
+}
+
+/** Carte « Ce soir » repliée : ce qui reste faisable ce soir, à un geste (mode essai). */
+function encorePossible(aff, dos, d, parts) {
+  if (dos.exclu) return '';
+  const p = [];
+  if (aff.hypothese && !d.hypo) p.push('<button type="button" class="chip" data-action="tab-ouvrir" data-tid="hypo">⚖️ Hypothèse au juge</button>');
+  if (aff.recoupements && !d.recoup) p.push('<button type="button" class="chip" data-action="e2-onglet" data-t="pieces" data-defile="1">🔗 Recouper deux pièces</button>');
+  const pi = d.piste;
+  if (aff.meurtre && !d.reaud && dos.pieces.length && Number.isInteger(pi) && aff.suspects[pi]) p.push(`<button type="button" class="chip" data-action="tab-ouvrir" data-tid="Q:${pi}">🗣️ Réentendre ${esc(aff.suspects[pi].prenom)}</button>`);
+  if (parts.length < ENQ.maxPartages && dos.pieces.length) p.push(`<button type="button" class="chip" data-action="e2-onglet" data-t="pieces" data-defile="1">📤 Partager une pièce (${ENQ.maxPartages - parts.length})</button>`);
+  if (aff.coupsDePouce) p.push('<button type="button" class="chip" data-action="tab-ouvrir" data-tid="pouce">💡 Coups de pouce</button>');
+  if (!p.length) return '';
+  return `<div class="e2-encore"><span class="tiny muted">Encore possible ce soir</span><div class="e2-encore-l">${p.join('')}</div></div>`;
 }
 
 // ───── Le classeur ─────

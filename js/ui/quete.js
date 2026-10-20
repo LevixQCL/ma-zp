@@ -4,7 +4,7 @@ import { laureatsProvisoires, enTeteSemaine, recordDefi, monRecordDefi } from '.
 import { CHALLENGE } from '../engine/challenge.js';
 import { euros } from './euros.js';
 import { recordBitonal, monScoreBitonal } from './bitonal.js';
-import { S, esc, icon, tabbar, myZone, questDuSlot, slotsCompte } from './common.js';
+import { S, esc, icon, tabbar, myZone, questDuSlot, slotsCompte, modeEssai } from './common.js';
 import { QUEST_TYPES, QUEST_LABELS, FORMES, FORMES_EN_JEU, RELANCE_PS, DIFF_NOIR } from '../quests/quests.js';
 import { psDispo } from '../engine/decor.js';
 import { achatEnAttente } from './logistique.js';
@@ -408,6 +408,17 @@ function relanceHtml(q, r, train, noir) {
     <p class="tiny muted" style="margin:0">${ok ? 'Une nouvelle énigme du même type, un cran plus dure. Réussie, elle compte comme une bonne réponse (bonus, prime et classement). Une relance par jour, payée à 20:00.' : `Il te faut ${RELANCE_PS} PS à dépenser (tu en as ${Math.max(0, dispo)}).`}</p>`;
 }
 
+/** Règle de la forme et énoncé. Mode essai : une fois lus (« Compris »), ils se replient sur une ligne et le plan remonte. */
+function enonceHtml(q, fini) {
+  const regle = q.forme === 'rebours' && !fini ? '<p class="fe-rebours"><strong>↑ À rebours</strong><span>Pars du <b>point rouge</b> et remonte le compte rendu <b>de la dernière ligne vers la première</b>, en inversant chaque virage.</span></p>' : '';
+  const ctx = `<p class="fe-contexte">${esc(q.contexte)}</p>`;
+  if (!modeEssai() || fini || !q.id) return regle + ctx;
+  if (lire(`mazp-qlu-${q.id}`)) {
+    return `<details class="fe-enonce"><summary><span class="grow">📄 Relire l’énoncé${regle ? ' et la règle « à rebours »' : ''}</span>${icon('chevron', 14)}</summary>${regle}${ctx}</details>`;
+  }
+  return `${regle}${ctx}<button type="button" class="lien tiny fe-lu" data-action="q-lu" data-id="${esc(q.id)}">Compris ✓ · replier l’énoncé</button>`;
+}
+
 function feuilleV2(o) {
   const { q, r, fini, train, noir, picked, modes, onglets, propositionDelegue, peutChanger, altPossible, choixHtml, results, ok, bonusPris, gBonus, enqueteOuverte, primeSf, mz } = o;
   const objetForm = q.forme === 'digicode' || q.type === 'cadenas' || q.type === 'chronologie' || (q.type === 'butin' && q.objets);
@@ -453,8 +464,7 @@ function feuilleV2(o) {
       ${!train && !noir && q.enquete ? `<p class="small fe-enq">🧩 ${esc(q.gain || '')} Choisis ta piste prioritaire dans l’Enquête (fiche du suspect).</p>` : ''}
       ${!train && !noir && q.slot === 4 && !slotsCompte().includes(4) ? '<p class="tiny muted" style="margin:0">Pour le plaisir : +5 PS si elle est réussie, sans compter pour le bonus, la prime ni le classement.</p>' : ''}
       ${q.variante ? '<p class="tiny muted" style="margin:0">Énigme changée : c’est ton changement du jour.</p>' : ''}
-      ${q.forme === 'rebours' && !fini ? '<p class="fe-rebours"><strong>↑ À rebours</strong><span>Pars du <b>point rouge</b> et remonte le compte rendu <b>de la dernière ligne vers la première</b>, en inversant chaque virage.</span></p>' : ''}
-      <p class="fe-contexte">${esc(q.contexte)}</p>
+      ${enonceHtml(q, fini)}
       ${q.figures ? renderFigures(q, fini) : ''}
       ${q.ligne ? ligneHtml(q) : q.tableau ? `<section class="card tight" aria-label="${esc(q.titreTableau || 'Fiche horaire')}">${q.titreTableau ? `<h2 class="section">${esc(q.titreTableau)}</h2>` : ''}${q.tableau}</section>` : ''}
       ${q.type === 'filature' && !fini ? filatureOutils(q) : ''}

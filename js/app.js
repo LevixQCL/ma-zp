@@ -1012,7 +1012,8 @@ async function onClick(e) {
         S.enqVue = 'liste'; S.tabSheet = null; try { localStorage.setItem('mazp-enq-vue', 'liste'); } catch (err) { /* pas de stockage */ } render(); requestAnimationFrame(() => { const t = document.getElementById('traque'); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); break;
       case 'tab-vue': choisirVueEnquete(el.dataset.v); S.tabSheet = null; S.e2Lire = false; window.scrollTo(0, 0); render(); break;
       // Saison 2 : écran Enquête en dossier.
-      case 'e2-onglet': S.e2Onglet = el.dataset.t; S.tabSheet = null; rerender(); break;
+      case 'q-lu': try { localStorage.setItem(`mazp-qlu-${el.dataset.id}`, 'true'); } catch (e) { /* stockage indisponible */ } rerender(); break;
+      case 'e2-onglet': S.e2Onglet = el.dataset.t; S.tabSheet = null; rerender(); if (el.dataset.defile) { const c = document.getElementById('e2-classeur'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); } break;
       case 'e2-choix': S.tabSheet = { k: 'choix', id: 'choix' }; rerender(); break;
       case 'e2-ancre': { const t = document.getElementById(el.dataset.id); if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' }); break; }
       case 'e2-lire': { const aff = affaire(S.state, S.state.enquete.n); S.e2LireTotal = piecesNonLues(aff, dossierDe(S.state, myZone())).length; S.e2Lire = true; S.tabSheet = null; rerender(); break; }
@@ -1210,6 +1211,8 @@ async function onClick(e) {
         toast('Consignes du pilote enregistrées.'); rerender(); break;
       }
       case 'alloc': {
+        // Le joueur règle sa répartition : la carte reste ouverte même quand tout devient couvert.
+        if (!(S.ordParts && 'affect' in S.ordParts)) S.ordParts = { ...(S.ordParts || {}), affect: true };
         const k = el.dataset.s, dd = Number(el.dataset.d);
         const al = S.draft.alloc;
         if (dd < 0) { if (al[k] > 0) al[k]--; }

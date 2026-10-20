@@ -27,6 +27,11 @@ export const S = {
   editingName: false, busy: false, decisionOpen: false, showRapport: false,
 };
 
+/** Mode essai (`?essai` dans l'adresse, retenu le temps de l'onglet) : nouveautés d'interface montrées à Bryan avant les joueurs. */
+export function modeEssai() {
+  try { if (/[?&]essai\b/.test(location.search)) sessionStorage.setItem('mazp-essai', '1'); return sessionStorage.getItem('mazp-essai') === '1'; } catch (e) { return false; }
+}
+
 /** Nom affiché d'un joueur sur les badges (records, nominettes) : toujours son pseudo, jamais le nom de sa zone. */
 export function pseudoJoueur(uid) {
   const p = (S.players || {})[uid] || {};
