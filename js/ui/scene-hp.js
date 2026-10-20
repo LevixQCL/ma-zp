@@ -4,7 +4,7 @@
 import { esc } from './common.js';
 import { BATIMENT_MAX } from '../engine/constants.js';
 import { DECOR, DECOR_DEFAUT, SKINS } from '../engine/decor.js';
-import { SKINS_BATIMENT_NEUFS, fondBatiment, habillageBatiment, toitBatiment, corpsGarage, porteGarage, etagesManoir, rezManoir, toitManoir, luneManoir, remiseCorps, remisePorte } from './skins-hp.js';
+import { SKINS_BATIMENT_NEUFS, fondBatiment, habillageBatiment, toitBatiment, corpsGarage, porteGarage, etagesManoir, rezManoir, toitManoir, etagesHonneur, rezHonneur, toitHonneur, luneManoir, remiseCorps, remisePorte } from './skins-hp.js';
 import { ANNEXES_AILE, aileSvg, largeurAile, HAUT_AILE } from './scene-aile.js';
 
 const LIT = '#FFB23F', DIM = '#223041', EDGE = '#2C3D51';
@@ -292,22 +292,24 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   }
   if (SB) s += habillageBatiment(SB, ctxSkin);
   if (SB === 'manoir') s += etagesManoir(ctxSkin);
+  if (SB === 'honneur') s += etagesHonneur(ctxSkin);
   // Abords accrochés à la façade.
   if (D.abords === 'fresque') s += `<g opacity=".95"><rect x="${x0}" y="${top}" width="16" height="${base - top}" fill="#2A3A4D"/>${[['#FFB23F', 0.1], ['#FF6E6A', 0.3], ['#63B0FF', 0.5], ['#3DD39A', 0.7], ['#A78BFA', 0.88]].map(([c, k]) => `<circle cx="${x0 + 8}" cy="${(top + (base - top) * k).toFixed(1)}" r="${(3.5 + (k * 10) % 2).toFixed(1)}" fill="${c}"/>`).join('')}<path d="M${x0} ${base - 8} Q${x0 + 8} ${top + 20} ${x0 + 16} ${top + 6}" stroke="#EDF0FA" stroke-width="1.4" fill="none"/></g>`;
   if (D.abords === 'horloge') s += `<circle cx="${x0 + 8}" cy="${top + 11}" r="5.5" fill="#F4EFE3" stroke="#C9A13B" stroke-width="1"/><path d="M${x0 + 8} ${top + 11} V${top + 7.5} M${x0 + 8} ${top + 11} H${x0 + 10.6}" stroke="#1D1A15" stroke-width=".8"/>`;
   if (D.abords === 'mat' && b >= 2) for (const bx of [x0 + 19, x0 + w - 11]) s += `<rect x="${bx}" y="${top + 3}" width="8" height="${Math.min(40, base - top - gf - 6)}" fill="${drapeau ? drapeau.couleur : '#63B0FF'}"/><rect x="${bx + 3}" y="${top + 3}" width="2" height="${Math.min(40, base - top - gf - 6)}" fill="#FFFFFF" opacity=".6"/><path d="M${bx} ${top + 3 + Math.min(40, base - top - gf - 6)} l4 4 l4 -4 Z" fill="${drapeau ? drapeau.couleur : '#63B0FF'}"/>`;
   const gy = base - gf;
-  s += `${SB === 'manoir' ? `<image href="${(typeof location !== 'undefined' && /\/minijeux\//.test(location.pathname)) ? '../' : ''}img/skins/manoir/corniche.webp" x="${x0 - 2}" y="${gy - 1}" width="${w + 4}" height="4.4" preserveAspectRatio="none"/>` : `<rect x="${x0}" y="${gy}" width="${w}" height="3" fill="#2F6FB5"/>`}
+  s += `${SB === 'manoir' || SB === 'honneur' ? `<image href="${(typeof location !== 'undefined' && /\/minijeux\//.test(location.pathname)) ? '../' : ''}img/skins/${SB}/corniche.webp" x="${x0 - 2}" y="${gy - 1}" width="${w + 4}" height="4.4" preserveAspectRatio="none"/>` : `<rect x="${x0}" y="${gy}" width="${w}" height="3" fill="#2F6FB5"/>`}
   <rect x="${x0 + 24}" y="${gy + 11}" width="30" height="14" rx="1.5" fill="#8CC8F5" opacity="${moment === 'jour' ? 0.55 : 0.22}"/><rect x="${x0 + w - 54}" y="${gy + 11}" width="30" height="14" rx="1.5" fill="#8CC8F5" opacity="${moment === 'jour' ? 0.55 : 0.22}"/>
   <rect x="${x0 + w / 2 - 14}" y="${gy + 12}" width="28" height="${gf - 12}" fill="#8CC8F5" opacity="${moment === 'jour' ? 0.6 : 0.35}"/><rect x="${x0 + w / 2 - 0.5}" y="${gy + 12}" width="1" height="${gf - 12}" fill="#1A2531"/>
   ${P.neon && SB !== 'manoir' ? `<ellipse cx="${x0 + w / 2}" cy="${gy + 2}" rx="40" ry="16" fill="url(#hp-bleu-${uid})"/>` : ''}
-  <rect x="${x0 + w / 2 - 24}" y="${gy - 1}" width="48" height="11" rx="2" fill="${SB === 'manoir' ? '#2A1A24' : D.abords === 'plaque' ? '#7A5A12' : '#1B4C80'}" stroke="${SB === 'manoir' ? '#F28C28' : D.abords === 'plaque' ? '#FFB23F' : '#2F6FB5'}" stroke-width=".8"/>
+  <rect x="${x0 + w / 2 - 24}" y="${gy - 1}" width="48" height="11" rx="2" fill="${SB === 'manoir' ? '#2A1A24' : SB === 'honneur' ? '#1B2A4A' : D.abords === 'plaque' ? '#7A5A12' : '#1B4C80'}" stroke="${SB === 'manoir' ? '#F28C28' : SB === 'honneur' ? '#D9A93A' : D.abords === 'plaque' ? '#FFB23F' : '#2F6FB5'}" stroke-width=".8"/>
   ${D.abords === 'plaque' ? `<rect x="${x0 + w / 2 + 17}" y="${gy + 14}" width="7" height="9" rx="1" fill="#C9A13B" stroke="#F2D27A" stroke-width=".5"/>` : ''}
-  <text x="${x0 + w / 2}" y="${gy + 7.6}" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="10" letter-spacing="1.5" fill="${SB === 'manoir' ? '#FFD9A0' : '#fff'}">POLICE</text>`;
+  <text x="${x0 + w / 2}" y="${gy + 7.6}" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="10" letter-spacing="1.5" fill="${SB === 'manoir' ? '#FFD9A0' : SB === 'honneur' ? '#F2D27A' : '#fff'}">POLICE</text>`;
   if (SB === 'friterie') for (const [xa, xb] of [[x0 + 16, x0 + w / 2 - 26], [x0 + w / 2 + 26, x0 + w]]) {
     for (let x = xa, i = 0; x < xb; x += 6, i++) s += `<path d="M${x} ${gy + 3} h6 v4 q-3 3 -6 0 Z" fill="${i % 2 ? teinte('#FFFFFF') : teinte('#D8453A')}"/>`;
   }
   if (SB === 'manoir') s += rezManoir(ctxSkin);
+  if (SB === 'honneur') s += rezHonneur(ctxSkin);
   if (SB === 'chateau') s += `<path d="M${x0 + w / 2 - 14} ${base} V${gy + 18} Q${x0 + w / 2} ${gy + 6} ${x0 + w / 2 + 14} ${gy + 18} V${base} Z" fill="${teinte('#4A3524')}"/><path d="M${x0 + w / 2} ${gy + 11} V${base}" stroke="${teinte('#2A1F16')}"/>`;
   // Toit : les équipements s'ajoutent avec les niveaux, à droite de l'enseigne.
   s += `<rect x="${x0 - 3}" y="${top - 4}" width="${w + 6}" height="4" rx="1" fill="${P.arete}"/>`;
@@ -315,7 +317,7 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   if (D.abords === 'toitvert') { s += `<rect x="${x0 - 3}" y="${top - 6}" width="${w + 6}" height="3" rx="1.5" fill="#3E7D4F"/>`; for (let i = 0; i < 9; i++) s += `<circle cx="${x0 + 4 + i * 11}" cy="${top - 6.5}" r="${2.2 + (i % 3) * 0.6}" fill="${i % 2 ? '#4E9A5E' : '#3E7D4F'}"/>`; }
   const toitLibre = ['chalet', 'friterie', 'gateau', 'gaufre', ...SKINS_BATIMENT_NEUFS].includes(SB);
   if (b >= 2 && !toitLibre && SF !== 'carnaval') s += `<rect x="${x0 + w - 30}" y="${top - 11}" width="20" height="7" rx="1" fill="${P.toit}"/><rect x="${x0 + w - 27}" y="${top - 9}" width="14" height="1" fill="${P.toit2}"/>`;
-  if (b >= 3 && SB !== 'manoir') s += `<line x1="${x0 + w - 6}" y1="${top - 4}" x2="${x0 + w - 6}" y2="${top - 30}" stroke="${P.mat}" stroke-width="1.4"/><line x1="${x0 + w - 10}" y1="${top - 20}" x2="${x0 + w - 2}" y2="${top - 20}" stroke="${P.mat}"/><circle cx="${x0 + w - 6}" cy="${top - 32}" r="4" fill="#FF6E6A" opacity=".22"/><circle class="hp-balise" cx="${x0 + w - 6}" cy="${top - 32}" r="1.7" fill="#FF6E6A"/>`;
+  if (b >= 3 && SB !== 'manoir' && SB !== 'honneur') s += `<line x1="${x0 + w - 6}" y1="${top - 4}" x2="${x0 + w - 6}" y2="${top - 30}" stroke="${P.mat}" stroke-width="1.4"/><line x1="${x0 + w - 10}" y1="${top - 20}" x2="${x0 + w - 2}" y2="${top - 20}" stroke="${P.mat}"/><circle cx="${x0 + w - 6}" cy="${top - 32}" r="4" fill="#FF6E6A" opacity=".22"/><circle class="hp-balise" cx="${x0 + w - 6}" cy="${top - 32}" r="1.7" fill="#FF6E6A"/>`;
   if (b >= 4 && !toitLibre) s += `<g transform="translate(${x0 + w - 22},${top - 11})"><path d="M0 0 L2 -6" stroke="${P.mat}" stroke-width="1.3"/><path d="M-5 -6 Q2 -14 9 -6 Z" fill="${P.toit2}"/></g>`;
   if (b >= 5 && SB !== 'chalet' && !toitLibre) s += `<rect x="${x0 + w - 44}" y="${top - 12}" width="12" height="8" rx="1" fill="${P.toit}"/>`;
   if (SB === 'chateau') {
@@ -346,24 +348,33 @@ export function sceneHp({ nom, b, g, devant = [], travaux = null, atelier = fals
   }
   if (SB) s += toitBatiment(SB, ctxSkin);
   if (SB === 'manoir') s += toitManoir(ctxSkin, isole ? top - 60 : grand ? Math.max(0, top - 84) : vy);
+  if (SB === 'honneur') s += toitHonneur(ctxSkin, isole ? top - 60 : grand ? Math.max(0, top - 84) : vy);
   // Enseigne « ZP + nom de la zone » : néon allumé le soir et la nuit, lettres bleues éteintes le jour.
   const texte = `ZP ${nom}`;
   const nx = x0 + 8, nw = Math.min(112, 14 + texte.length * 5.2), ny = top - 9;
-  s += `<line x1="${nx + 8}" y1="${top - 4}" x2="${nx + 8}" y2="${ny}" stroke="${P.toit2}" stroke-width="1.2"/><line x1="${nx + nw - 8}" y1="${top - 4}" x2="${nx + nw - 8}" y2="${ny}" stroke="${P.toit2}" stroke-width="1.2"/>
-  <rect x="${nx - 2}" y="${ny - 2}" width="${nw + 4}" height="1" fill="${P.toit2}"/>`;
-  const lettres = `<text x="${nx + nw / 2}" y="${ny - 4}" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="600" font-size="14" letter-spacing=".6" textLength="${nw}" lengthAdjust="spacingAndGlyphs"`;
-  // Manoir hanté : néon fatigué, deux lettres du nom grésillent et s'éteignent de temps en temps.
-  let contenu = esc(texte);
-  if (SB === 'manoir' && P.neon) {
-    const car = [...texte], idx = car.map((c, i) => (i > 2 && c.trim() ? i : -1)).filter((i) => i >= 0);
-    let h = 7; for (const c of texte) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-    const panne = new Set(idx.length ? [idx[h % idx.length], idx[(h >>> 5) % idx.length]] : []);
-    let k = 0;
-    contenu = car.map((c, i) => (panne.has(i) ? `<tspan class="neon-panne n${k++}">${esc(c)}</tspan>` : esc(c))).join('');
+  if (SB === 'honneur') {
+    // Palais d'honneur : le nom de la zone est gravé en lettres d'or sur l'entablement du fronton (pas de néon sur le toit).
+    const pw2 = Math.min(w - 26, 18 + texte.length * 4.6), py = top - 7.5;
+    s += `<rect x="${x0 + w / 2 - pw2 / 2}" y="${py}" width="${pw2}" height="7" rx="1" fill="${teinte('#1B2A4A')}" stroke="#D9A93A" stroke-width=".6"/>`;
+    if (P.neon) s += `<ellipse cx="${x0 + w / 2}" cy="${py + 3.5}" rx="${pw2 * 0.6}" ry="7" fill="url(#hp-ambre-${uid})"/>`;
+    s += `<text x="${x0 + w / 2}" y="${py + 5.6}" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="6.2" letter-spacing=".8" textLength="${pw2 - 6}" lengthAdjust="spacingAndGlyphs" fill="#F2D27A">${esc(texte.toUpperCase())}</text>`;
+  } else {
+    s += `<line x1="${nx + 8}" y1="${top - 4}" x2="${nx + 8}" y2="${ny}" stroke="${P.toit2}" stroke-width="1.2"/><line x1="${nx + nw - 8}" y1="${top - 4}" x2="${nx + nw - 8}" y2="${ny}" stroke="${P.toit2}" stroke-width="1.2"/>
+    <rect x="${nx - 2}" y="${ny - 2}" width="${nw + 4}" height="1" fill="${P.toit2}"/>`;
+    const lettres = `<text x="${nx + nw / 2}" y="${ny - 4}" text-anchor="middle" font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="600" font-size="14" letter-spacing=".6" textLength="${nw}" lengthAdjust="spacingAndGlyphs"`;
+    // Manoir hanté : néon fatigué, deux lettres du nom grésillent et s'éteignent de temps en temps.
+    let contenu = esc(texte);
+    if (SB === 'manoir' && P.neon) {
+      const car = [...texte], idx = car.map((c, i) => (i > 2 && c.trim() ? i : -1)).filter((i) => i >= 0);
+      let h = 7; for (const c of texte) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      const panne = new Set(idx.length ? [idx[h % idx.length], idx[(h >>> 5) % idx.length]] : []);
+      let k = 0;
+      contenu = car.map((c, i) => (panne.has(i) ? `<tspan class="neon-panne n${k++}">${esc(c)}</tspan>` : esc(c))).join('');
+    }
+    s += P.neon
+      ? `<ellipse cx="${nx + nw / 2}" cy="${ny - 10}" rx="${nw * 0.62}" ry="13" fill="url(#hp-halo-${uid})" opacity=".45"/><g filter="url(#hp-neon-${uid})">${lettres} fill="${N.lettre}" stroke="${N.trait}" stroke-width=".35">${contenu}</text></g>`
+      : `${lettres} fill="${N.jour}" stroke="#EDF0FA" stroke-width=".5" paint-order="stroke">${esc(texte)}</text>`;
   }
-  s += P.neon
-    ? `<ellipse cx="${nx + nw / 2}" cy="${ny - 10}" rx="${nw * 0.62}" ry="13" fill="url(#hp-halo-${uid})" opacity=".45"/><g filter="url(#hp-neon-${uid})">${lettres} fill="${N.lettre}" stroke="${N.trait}" stroke-width=".35">${contenu}</text></g>`
-    : `${lettres} fill="${N.jour}" stroke="#EDF0FA" stroke-width=".5" paint-order="stroke">${esc(texte)}</text>`;
   // Aile des annexes : un module par annexe, avec la pièce visible derrière la vitre (scene-aile.js).
   s += aileSvg({ ids: aile, ax, base, P, moment, SA, teinte, mix, uid });
   // Garage : une porte par niveau ; la première est ouverte si un véhicule est à l'atelier.

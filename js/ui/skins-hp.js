@@ -18,7 +18,7 @@ function trumeaux(c) {
 }
 
 /** Skins d'hôtel de police gérés ici (le toit standard s'efface devant leur objet). */
-export const SKINS_BATIMENT_NEUFS = ['canard', 'aquarium', 'moulin', 'ampli', 'ruche', 'manoir'];
+export const SKINS_BATIMENT_NEUFS = ['canard', 'aquarium', 'moulin', 'ampli', 'ruche', 'manoir', 'honneur'];
 
 /** Fond de façade, dessiné sous les fenêtres. */
 export function fondBatiment(SB, c) {
@@ -336,5 +336,79 @@ export function toitManoir(c, vy) {
   // Fantôme qui flotte autour du toit, chauves-souris qui tournent.
   s += `<g class="mn-fantome">${img('fantome', x0 + w * 0.42, top - H * 0.55, 12 * RATIO.fantome, 12, ' opacity=".92"')}</g>`;
   s += chauveSouris(x0 + w * 0.15, top - H - 6, 13, 'mn-c1') + chauveSouris(x0 + w * 0.82, top - H * 0.8, 10, 'mn-c2');
+  return s;
+}
+
+// ───── Palais d'honneur (Zone de l'année, fin de saison) : pièces dessinées par Gemini ─────
+// Même principe que le manoir : les étages du jeu restent visibles (une rangée de fenêtres par niveau).
+const HONNEUR = `${RACINE_IMG}img/skins/honneur/`;
+const RH = { fenetre: 153 / 240, porte: 238 / 320, corniche: 478 / 90, fronton: 627 / 200, lanterne: 75 / 200, laurier: 119 / 240, oriflamme: 122 / 240, trophee: 152 / 240 };
+const imgH = (n, x, y, w, h, extra = '') => `<image href="${HONNEUR}${n}.webp" x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" preserveAspectRatio="none"${extra}/>`;
+/** Voile du soir sur la pierre blanche (un peu plus léger que sur le manoir : le palais reste lumineux). */
+const voileH = (c) => (c.moment === 'jour' ? 0 : c.moment === 'nuit' ? 0.55 : 0.3);
+function murHonneur(c, y0, y1, x0 = c.x0, x1 = c.x0 + c.w) {
+  if (y1 <= y0) return '';
+  const v = voileH(c);
+  return `<rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(x1 - x0)}" height="${f1(y1 - y0)}" fill="url(#hp-hmur-${c.uid})"/>${v ? `<rect x="${f1(x0)}" y="${f1(y0)}" width="${f1(x1 - x0)}" height="${f1(y1 - y0)}" fill="${voileCouleur(c)}" opacity="${v}"/>` : ''}`;
+}
+function fenetreHonneur(c, x, y, h, on, k) {
+  const w = h * RH.fenetre;
+  const halo = on && c.moment !== 'jour' ? `<ellipse cx="${f1(x + w / 2)}" cy="${f1(y + h * 0.55)}" rx="${f1(w * 1.1)}" ry="${f1(h * 0.7)}" fill="url(#hp-hlum-${c.uid})"/>` : '';
+  const sombre = !on && voileH(c) ? `<rect x="${f1(x + w * 0.22)}" y="${f1(y + h * 0.18)}" width="${f1(w * 0.56)}" height="${f1(h * 0.66)}" fill="${voileCouleur(c)}" opacity="${f1(voileH(c) * 0.7)}"/>` : '';
+  const pierre = voileH(c) ? `<image href="${HONNEUR}${on ? 'fenetre-on' : 'fenetre-off'}.webp" x="${f1(x)}" y="${f1(y)}" width="${f1(w)}" height="${f1(h)}" preserveAspectRatio="none" style="filter:brightness(0)" opacity="${f1(voileH(c) * (on ? 0.25 : 0.5))}"/>` : '';
+  return `${halo}${imgH(on ? 'fenetre-on' : 'fenetre-off', x, y, w, h)}${pierre}${sombre}`;
+}
+export function honneurDefs(c) {
+  return `<pattern id="hp-hmur-${c.uid}" width="26" height="26" patternUnits="userSpaceOnUse"><image href="${HONNEUR}mur.webp" width="26" height="26"/></pattern>
+    <radialGradient id="hp-hlum-${c.uid}"><stop offset="0" stop-color="#FFD27A" stop-opacity=".5"/><stop offset=".6" stop-color="#FFB547" stop-opacity=".14"/><stop offset="1" stop-color="#FFB547" stop-opacity="0"/></radialGradient>`;
+}
+/** Étages : pierre blanche, fenêtres à arc, frise de laurier sous chaque étage, oriflammes sur la tour. */
+export function etagesHonneur(c) {
+  const { x0, w, base, gf, fh, b, P, top } = c;
+  const rr = c.rnd(c.graine(c.nom) + 77);
+  const gy = base - gf;
+  let s = honneurDefs(c) + murHonneur(c, top, gy);
+  for (let f = 0; f < b - 1; f++) {
+    const y = gy - (f + 1) * fh;
+    for (let k = 0; k < 6; k++) s += fenetreHonneur(c, x0 + 24 + k * 22 + 0.5, y + 2, fh - 4, rr() < P.allume, f * 6 + k);
+    s += imgH('corniche', x0 - 2, y + fh - 3.4, w + 4, 4.6);
+    if (voileH(c)) s += `<rect x="${x0 - 2}" y="${f1(y + fh - 3.4)}" width="${w + 4}" height="4.6" fill="${voileCouleur(c)}" opacity="${f1(voileH(c) * 0.6)}"/>`;
+  }
+  // Tour : une oriflamme par étage (bleu nuit, étoile et laurier dorés).
+  for (let f = 0; f < b - 1; f++) { const y = gy - (f + 1) * fh, oh = fh - 5; s += imgH('oriflamme', x0 + 8 - oh * RH.oriflamme / 2, y + 2, oh * RH.oriflamme, oh); }
+  return s;
+}
+/** Rez-de-chaussée : porte de bronze et tapis rouge, lanternes, fenêtres ; devant : lauriers en pot et la coupe. */
+export function rezHonneur(c) {
+  const { x0, w, base, gf } = c;
+  const gy = base - gf, cx = x0 + w / 2;
+  let s = '';
+  s += murHonneur(c, gy + 2, base, x0 + 16, cx - 24) + murHonneur(c, gy + 2, base, cx + 24, x0 + w) + murHonneur(c, gy + 10, base, cx - 24, cx + 24) + murHonneur(c, gy, base, x0, x0 + 16);
+  s += fenetreHonneur(c, x0 + 25, gy + 10, gf - 12, c.P.allume > 0.3, 60) + fenetreHonneur(c, x0 + 42, gy + 10, gf - 12, c.P.allume > 0.5, 61);
+  s += fenetreHonneur(c, x0 + w - 37, gy + 10, gf - 12, c.P.allume > 0.4, 62) + fenetreHonneur(c, x0 + w - 20, gy + 10, gf - 12, c.P.allume > 0.2, 63);
+  const ph = gf - 8, pw = ph * RH.porte;
+  s += imgH('porte', cx - pw / 2, base - ph + 1.5, pw, ph);
+  if (voileH(c)) s += `<image href="${HONNEUR}porte.webp" x="${f1(cx - pw / 2)}" y="${f1(base - ph + 1.5)}" width="${f1(pw)}" height="${f1(ph)}" preserveAspectRatio="none" style="filter:brightness(0)" opacity="${f1(voileH(c) * 0.5)}"/>`;
+  const lh = 9, lw = lh * RH.lanterne;
+  for (const lx of [cx - pw / 2 - lw - 1, cx + pw / 2 + 1]) {
+    if (c.moment !== 'jour') s += `<circle cx="${f1(lx + lw / 2)}" cy="${f1(base - ph + 7)}" r="8" fill="url(#hp-hlum-${c.uid})"/>`;
+    s += imgH('lanterne', lx, base - ph + 2, lw, lh);
+  }
+  // Devant le palais.
+  const pied = base + 1.5, kh = 12, kw = kh * RH.laurier;
+  s += imgH('laurier', cx - pw / 2 - kw - 7, pied - kh, kw, kh) + imgH('laurier', cx + pw / 2 + 7, pied - kh, kw, kh);
+  const th = 13, tw = th * RH.trophee;
+  s += imgH('trophee', x0 + w - tw - 4, pied - th, tw, th);
+  if (c.moment !== 'jour') s += `<circle cx="${f1(x0 + w - tw / 2 - 4)}" cy="${f1(pied - th * 0.75)}" r="6" fill="url(#hp-hlum-${c.uid})" opacity=".6"/>`;
+  return s;
+}
+/** Fronton classique : couronne de laurier et étoile dorées. */
+export function toitHonneur(c, vy) {
+  const { x0, w, top } = c;
+  const L = w + 12, H = Math.min(L / RH.fronton, Math.max(26, top - vy - 2));
+  let s = imgH('fronton', x0 - 6, top - 1 - H, L, H);
+  if (voileH(c)) s += `<image href="${HONNEUR}fronton.webp" x="${x0 - 6}" y="${f1(top - 1 - H)}" width="${L}" height="${f1(H)}" preserveAspectRatio="none" style="filter:brightness(0)" opacity="${f1(voileH(c) * 0.55)}"/>`;
+  // L'étoile dorée garde un léger éclat le soir.
+  if (c.moment !== 'jour') s += `<circle cx="${f1(x0 + w / 2)}" cy="${f1(top - 1 - H * 0.45)}" r="${f1(H * 0.28)}" fill="url(#hp-hlum-${c.uid})"/>`;
   return s;
 }
