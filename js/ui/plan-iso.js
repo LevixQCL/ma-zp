@@ -15,7 +15,7 @@ let cache = null;
 const T_VUE = (st) => (st.nonDroit && Object.keys(st.nonDroit.secteurs || {}).length ? 'nondroit' : 'district');
 const calme = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; } };
 
-export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
+export function planIso(st, me, { vue = 'mazone', sel = null, extra = null } = {}) {
   const seed = S.config.seed, reduit = calme();
   const mesT0 = tensionsDe(st, me);
   const ndS = (st.nonDroit && st.nonDroit.secteurs) || {};
@@ -56,6 +56,8 @@ export function planIso(st, me, { vue = 'mazone', sel = null } = {}) {
   }
   // « Le Quartier » : sur chaque secteur, ce qu'il faut casser ce soir, l'attaque annoncée et les boucliers.
   for (const m of marqueurs()) { const p = cache.pos(Number(m.k), 18); if (p) dyn.push(`<g data-action="secteur" data-c="${m.k}" style="cursor:pointer" transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})">${m.svg}</g>`); }
+  // Marqueurs posés par un écran (ex. Main courante de nuit) : { k: quartier, svg, attr, dx, dy }.
+  for (const m of extra || []) { const p = cache.pos(Number(m.k), 18); if (p) dyn.push(`<g ${m.attr || ''} style="cursor:pointer" transform="translate(${(p[0] + (m.dx || 0)).toFixed(1)} ${(p[1] + (m.dy || 0)).toFixed(1)})">${m.svg}</g>`); }
   svg = svg.replace('<!--dyn-->', dyn.join(''));
   // Patrouilles du soir : une voiture visible par agent (3 au plus), pastille bleue avec le nombre.
   const pat = (S.draft && S.draft.patrouilles) || {};

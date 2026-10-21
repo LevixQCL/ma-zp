@@ -55,6 +55,7 @@ import { piecesNonLues, marquerLues } from './ui/enquete-dossier.js';
 import { affaire, dossierDe, maxDemarchesDe, ELEMENTS } from './engine/enquete.js';
 import { choisirRecoup, retournerPouce } from './ui/enquete-plus.js';
 import { marquerJournalVu } from './ui/journal.js';
+import { renderMainCourante, monterMainCourante } from './ui/main-courante.js';
 import { nomElement, monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, basculerFrise, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderRadioV2 } from './ui/radio-v2.js';
 import { previsionCourte } from './ui/prevision.js';
@@ -79,7 +80,7 @@ import { renderFilet, actionFilet, majFilet } from './ui/filet.js';
 import { chargeurHtml, avancerChargeur, sortirChargeur } from './ui/chargeur.js';
 
 const app = document.getElementById('app');
-const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief', 'bureau', 'chef', 'filet'];
+const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief', 'bureau', 'chef', 'filet', 'nuit'];
 let unsubState = null, unsubRadio = null, unsubPrive = null, lastTurnKey = null;
 
 function route() {
@@ -173,6 +174,7 @@ function render() {
       case 'gazette': html = renderGazette(); if (S.gazetteIndex === 0) marquerGazetteLue(); break;
       case 'debrief': html = renderDebrief(); break;
       case 'filet': html = renderFilet(); break;
+      case 'nuit': html = renderMainCourante(); break;
       case 'classement':
         html = renderClassement(); break;
       case 'profil': html = renderProfil(); break;
@@ -227,6 +229,7 @@ function render() {
   if (S.route === 'radio') { const l = document.getElementById('radio-list'); if (l && l.lastElementChild) l.lastElementChild.scrollIntoView({ block: 'nearest' }); }
   document.body.classList.toggle('sans-defil', !!document.getElementById('tb-vp'));
   document.body.classList.toggle('carnet-ouvert', !!document.querySelector('.carnet-q[open]'));
+  if (S.route === 'nuit') monterMainCourante(rerender);
   if (S.route === 'enquete') { monterTableau(rerender); if (S.state && S.state.enquete && myZone()) synchroCarnet(rerender); }
 }
 

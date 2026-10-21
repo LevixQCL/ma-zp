@@ -9,6 +9,7 @@ import { terrainBlocs, terrainAFaire } from './terrain.js';
 import { nonDroitHtml, secteursEnDanger, annoncesND, agentsND } from './nondroit.js';
 import { ND } from '../engine/constants.js';
 import { marqueursQ } from './quartier.js';
+import { entreeMainCourante } from './main-courante.js';
 
 brancherAnnoncesND(annoncesND);
 brancherMarqueursQ(marqueursQ);
@@ -118,7 +119,7 @@ export function renderCarteV2(calque = S.carteCalque || 'nondroit') {
   const dist = districtHtml(st, me);
   const aVoir = (dist.match(/class="ajd-badge"/g) || []).length;
   const lienDistrict = `<button type="button" class="cv-lien-dist ${aVoir ? 'alerte' : ''}" data-action="carte-vue"><span aria-hidden="true">🗺️</span><span class="col" style="gap:0;min-width:0;flex:1;text-align:left"><b>Aussi dans le district</b><span>renforts, opérations, pactes, classements</span></span>${aVoir ? `<i>${aVoir}</i>` : ''}<span aria-hidden="true">${icon('chevron', 16)}</span></button>`;
-  const corps = calque === 'mazone' ? `${ficheQuartierHtml(st, me, sel)}${chipsQuartiersHtml(st, me, sel)}${siteHtml(siteDe(me))}`
+  const corps = calque === 'mazone' ? `${entreeMainCourante()}${ficheQuartierHtml(st, me, sel)}${chipsQuartiersHtml(st, me, sel)}${siteHtml(siteDe(me))}`
     : !nd.length ? `<p class="small muted" style="margin:0">La zone de non-droit n’est pas encore ouverte dans cette partie.</p>${dist}`
       : vueDist ? dist : `${ndCorps}${lienDistrict}`;
   return `<main class="screen carte-v3${zoomND ? ' cv-nd' : ''}">
