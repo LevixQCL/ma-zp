@@ -29,6 +29,7 @@ import { fipaPre, fipaGenerer } from './fipa.js';
 import { creerNonDroit, nonDroitResoudre } from './nondroit.js';
 import { quartierActif, assurerQuartier, planQuartier, radioQuartier } from './quartier.js';
 import { venteResoudre, annoncerVente } from './ventes.js';
+import { bilanCentral, appliquerCentral, gazetteCentral } from './central.js';
 import { rivalitesPre, rivalitesPost, themeActif, appliquerConsignes } from './rivalites.js';
 import { pactesPre, pactesPost, lies, PACTE } from './pactes.js';
 import { FLAGRANTS } from './contenu.js';
@@ -172,11 +173,14 @@ function genererAffaires(state, rng) {
  * @param {object} input  { orders: {uid: ordres}, quests: {uid: énigme}, players: {uid: profil} }
  * @returns {{ state: object, gazette: object }}
  */
-export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, nextWeekday = null, historiqueEnigmes = null, encheres = [] } = {}) {
+export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, nextWeekday = null, historiqueEnigmes = null, encheres = [], graineCentral = null } = {}) {
   // Incidents du jour : tirés sur l'état d'avant la résolution, comme les joueurs les ont vus.
   // Ceux encore ouverts après 20:00 et pas encore joués sont reportés à la résolution de demain.
   const coursesUrgence = []; // temps des urgences jouées cette nuit : ajustent le temps cible de demain
   const incidentsAvant = Object.fromEntries(Object.keys((stateIn && stateIn.zones) || {}).map((u) => [u, separerIncidents(stateIn, u, resultatsIncidents(players[u], incidentsVisibles(stateIn, u)))]));
+  // Central (Carte › Ma zone) : la journée de chaque joueur, rejouée sur l'état qu'il a vu toute la journée.
+  const centralAvant = {};
+  for (const u of Object.keys((stateIn && stateIn.zones) || {})) { try { centralAvant[u] = bilanCentral(stateIn, u, players[u], graineCentral); } catch (e) { centralAvant[u] = null; } }
   const state = migrateState(clone(stateIn));
   state.minClientVersion = Math.max(state.minClientVersion || 0, APP_VERSION);
   const T = state.turn;
@@ -830,6 +834,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
     adapterEnigmes(z, ok, ok + faux, rangEnig[uid]);
     // Pistes en cours : résultats arrivés à terme, puis pistes lancées ce soir.
     z.rapport.push(...pistesDuSoir(state, z, o.pistesNew, T, makeRng(`${state.seed}:s${state.season}:t${T}:pistes:${uid}`)));
+    if (centralAvant[uid]) appliquerCentral(state, uid, centralAvant[uid], T, { indice: () => indiceBonus(state, z, makeRng(`${state.seed}:s${state.season}:t${T}:central:${uid}`)) });
 
     jalon(z, 'Énigmes : sans faute (+2 de moral)');
     // Incidents du jour (mini-jeux) : réussite, échec, ou équipe livrée à elle-même.
@@ -1396,6 +1401,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   const rivPost = rivalitesPost(state, uids, push, T, nextWeekday, players);
   // Records du Challenge battus (trophée « Recordman ») : relevés chaque soir.
   recordsBattus(state, players, push, zoneLabel);
+  gazetteCentral(state, T, push, zoneLabel);
   // Prime du Challenge : le dimanche, meilleur niveau de la semaine sur chaque mini-jeu (une prime par joueur).
   if (nextWeekday === 0) {
     primeChallenge(state, uids, players, { push, zoneLabel, noms: NOMS_CHALLENGE, remplirJauge: (z) => {

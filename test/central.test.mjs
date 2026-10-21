@@ -1,6 +1,9 @@
 // Le central : journée déterministe, rejeu des actions, adjoint, aggravation, poste, pause, reprises.
 import assert from 'node:assert/strict';
-import { genererJournee, simuler, equipesCentral, distancesCentral, prevoir, resultatC, CENTRAL } from '../js/engine/central.js';
+import { genererJournee, simuler, equipesCentral, distancesCentral, prevoir, resultatC, CENTRAL, SAISIES_C, bilanCentral, appliquerCentral, equipesValides } from '../js/engine/central.js';
+import { createGame, resolveTurn } from '../js/engine/resolve.js';
+import { carteQuartiers } from '../js/engine/quartiers.js';
+import { annoncerVente } from '../js/engine/ventes.js';
 
 const cells = [1, 2, 3, 4, 5, 6];
 const adj = { 1: [2, 3, 4, 5, 6], 2: [1, 3], 3: [1, 2, 4], 4: [1, 3, 5], 5: [1, 4, 6], 6: [1, 5] };
@@ -44,4 +47,54 @@ assert.ok(sr.appels.some((a) => a.id === 'rs' && a.t === 100 + CENTRAL.reprise))
 // 9. La prévision d'un appel flou le compte à 2 tant qu'on ne s'est pas renseigné.
 const f = { id: 'f', t: 0, cell: 1, tags: ['médiation'], g: 1, gReel: 3, flou: true };
 assert.equal(prevoir({ ...eqs[3], etat: 'libre', ou: 1, n: 0 }, f, 0, opt).statut, 'maitrise'); ok++;
+// 10. Fouiller : l'équipe reste 10 minutes de plus ; sans ordre de fouille, jamais de saisie (l'adjoint ne fouille pas).
+const jf = (g) => ({ graine: g, appels: [{ id: 'b', t: 100, cell: 4, titre: 'Bande de cambrioleurs signalée', tags: ['bande'], g: 3, gReel: 3, flou: false, suite: false, f: 'bande' }], annonces: [] });
+const poste = { t: 50, k: 'poste', e: 'K1', q: 4 };
+const sans = simuler(jf('x'), eqs, [poste], 400, opt);
+assert.equal(sans.appels[0].saisie, undefined);
+const avecF = simuler(jf('x'), eqs, [poste, { t: 101, k: 'fouille', a: 'b' }], 120, opt);
+assert.equal(avecF.equipes.find((e) => e.id === 'K1').jusqua, 100 + CENTRAL.surPlace(3) + CENTRAL.fouille); ok++;
+// 11. La fouille trouve quelque chose environ 8 fois sur 10 sur une bande arrêtée, toujours un objet prévu, compté en points.
+let trouve = 0;
+for (let i = 0; i < 200; i++) {
+  const r = simuler(jf(`g${i}`), eqs, [poste, { t: 101, k: 'fouille', a: 'b' }], 400, opt), a = r.appels[0];
+  assert.equal(r.journal.filter((j) => j.k === 'saisie' || j.k === 'fouille').length, 1);
+  if (a.saisie) { trouve++; assert.ok(['piedbiche', 'bijoux', 'telephone', 'voiture', 'carnet'].includes(a.saisie)); assert.equal(r.pts, CENTRAL.pts.arretee + (SAISIES_C[a.saisie].rare ? CENTRAL.pts.rare : CENTRAL.pts.saisie)); }
+  assert.deepEqual(r, simuler(jf(`g${i}`), eqs, [poste, { t: 101, k: 'fouille', a: 'b' }], 400, opt));
+}
+assert.ok(trouve > 140 && trouve < 185, `fouilles fructueuses : ${trouve}/200`); ok++;
+// 12. Une fouille ordonnée en route est annulée si l'équipe est détournée ; on ne fouille pas un appel non fouillable.
+const j2 = { graine: 'y', appels: [{ id: 'p', t: 10, cell: 6, titre: 'Rixe', tags: ['violence'], g: 2, gReel: 2, flou: false, suite: false, f: 'rixe' }, { id: 'q', t: 12, cell: 5, titre: 'Rixe', tags: ['violence'], g: 2, gReel: 2, flou: false, suite: false, f: 'rixe' }, { id: 'd', t: 11, cell: 1, titre: 'Personne désorientée', tags: ['médiation'], g: 1, gReel: 1, flou: false, suite: false, f: null }], annonces: [] };
+const s2 = simuler(j2, eqs, [{ t: 10, k: 'envoi', a: 'p', e: 'C1' }, { t: 10, k: 'fouille', a: 'p' }, { t: 12, k: 'envoi', a: 'q', e: 'C1' }, { t: 11, k: 'envoi', a: 'd', e: 'PA' }, { t: 11, k: 'fouille', a: 'd' }], 13, opt);
+assert.equal(s2.appels.find((a) => a.id === 'p').fouille, false);
+assert.ok(!s2.appels.find((a) => a.id === 'd').fouille); ok++;
+// 13. Actions illisibles ignorées ; équipes trafiquées ramenées au maximum possible.
+assert.deepEqual(simuler(j2, eqs, [{ t: -5, k: 'envoi', a: 'p', e: 'C1' }, { t: 3.5, k: 'envoi', a: 'p', e: 'C1' }, { t: 10, k: 'teleport' }], 13, opt).journal, simuler(j2, eqs, [], 13, opt).journal);
+assert.deepEqual(equipesValides([{ id: 'C1', comp: ['violence', 'bande', 'véhicule'], base: 99 }, { id: 'X9', comp: ['bande'] }, { id: 'C1' }], [1, 2], 1), [{ id: 'C1', nom: 'Combi 1', serv: 'Intervention', comp: ['violence'], base: 1 }]); ok++;
+// 14. Calcul de 20 h : la journée jouée est rejouée, inscrite au carnet, et compte dans le rapport ; sans central ouvert, rien.
+const pl = { a: { code: '1111', nom: 'A', couleur: '#f00' }, b: { code: '2222', nom: 'B', couleur: '#0f0' } };
+let g = resolveTurn(createGame({ seed: 'cx' }), { players: pl }).state;
+const cq = carteQuartiers(g), cellsA = cq.deZone.a, capA = cq.capitale.a ?? cellsA[0];
+const eqA = equipesCentral(g.zones.a, { capitale: capA, autre: cellsA.find((x) => x !== capA), vehicules: 4 });
+const cle = `${g.season}-${g.turn}`, jourA = genererJournee(`graine-central-${cle}-a`, cellsA);
+// Le joueur envoie le contrôle sur chaque bande et fait fouiller toutes ses interventions sur place.
+const acts = [];
+for (const a of jourA.appels.filter((x) => x.f).slice(0, 25)) { acts.push({ t: a.t, k: 'envoi', a: a.id, e: a.tags.includes('bande') ? 'K1' : 'C1' }, { t: a.t, k: 'fouille', a: a.id }); }
+const players2 = { ...pl, a: { ...pl.a, central: { cle, actions: acts, equipes: eqA } } };
+const b = bilanCentral(g, 'a', players2.a, 'graine');
+assert.ok(b && b.actions === acts.length);
+assert.equal(bilanCentral(g, 'b', players2.b, 'graine'), null);
+assert.equal(bilanCentral(g, 'a', { central: { cle: 'vieux', actions: acts, equipes: eqA } }, 'graine'), null);
+const g2 = resolveTurn(g, { players: players2, graineCentral: 'graine' }).state;
+const cx = g2.zones.a.central;
+assert.ok(cx && cx.jours === 1 && cx.dernier.T === g.turn && cx.dernier.gain === b.s.pts - b.adj.pts);
+assert.equal(Object.values(cx.saisies).reduce((t, n) => t + n, 0), b.s.appels.filter((a) => a.saisie).length);
+assert.ok(g2.zones.a.rapport.some((l) => l.startsWith('Central :')));
+assert.equal(g2.zones.b.central, undefined); ok++;
+// 15. Confiscation : une jauge pleine met un lot de la zone dans la prochaine salle des ventes.
+const g3 = JSON.parse(JSON.stringify(g)); g3.zones.a.central = { jours: 3, types: {}, saisies: {}, interp: 0, jauge: CENTRAL.confiscation - 1, gainMax: 0, gainSaison: 0, joursSaison: 0, s: g3.season };
+appliquerCentral(g3, 'a', { ...b, s: { ...b.s, appels: [{ statut: 'maitrise', par: 'toi', titre: 'Rodéo en scooter', saisie: 'scooter' }] } }, g3.turn);
+assert.equal(g3.saisiesCentral.length, 1); assert.equal(g3.saisiesCentral[0].id, 'banalise');
+g3.vente = null; const v = annoncerVente(g3, g3.turn + 1);
+assert.ok(v.lots.some((l) => l.saisie && l.saisie.src === 'central' && l.saisie.parts.a === 1)); assert.equal(g3.saisiesCentral.length, 0); ok++;
 console.log(`central : ${ok} vérifications passées`);

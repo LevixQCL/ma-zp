@@ -61,6 +61,10 @@ export function annoncerVente(state, T = state.turn) {
   const lots = ids.map((id, i) => ({ k: 'abc'[i], id, prixMin: Math.max(2, LOTS[id].prix + rng.int(-1, 1)), ...(GROS.includes(id) ? { gros: true } : {}) }));
   // Non-droit profond : la plus ancienne saisie du milieu prend la place d'un lot (petit ou gros selon sa taille).
   const nd = state.nonDroit, sz = nd && nd.v3 && Array.isArray(nd.saisies) ? nd.saisies.shift() : null;
+  // Central : les biens confisqués lors des fouilles, quand le non-droit n'a rien à vendre ce jour-là.
+  const sc = !sz && Array.isArray(state.saisiesCentral) && state.saisiesCentral.length ? state.saisiesCentral.shift() : null;
+  const ic = sc ? Math.max(0, lots.findIndex((l) => l.id === sc.id && !l.gros)) : 0;
+  if (sc && LOTS[sc.id]) lots[ic] = { ...lots[ic], id: sc.id, prixMin: Math.max(2, LOTS[sc.id].prix), saisie: { cell: sc.cell, parts: sc.parts, src: 'central' } };
   if (sz && LOTS[sz.id]) { const i = GROS.includes(sz.id) ? lots.length - 1 : 0; lots[i] = { ...lots[i], id: sz.id, prixMin: Math.max(2, LOTS[sz.id].prix), saisie: { cell: sz.cell, parts: sz.parts } }; }
   state.vente = { id: `v${state.season}-${T}`, ouverture: T, cloture: T + 1, lots, meneurs: {} };
   return state.vente;
@@ -256,7 +260,7 @@ export function venteResoudre(state, uids, ordres, encheres, push, T) {
       const z = state.zones[u], b = round1(gagnant.m * 0.5 * p);
       if (!z || b <= 0) continue;
       z.budget = round1(z.budget + b); (z._compta ||= []).push({ k: 'nondroit', l: `Vente de la saisie : ${L.nom}`, v: b });
-      z.rapport.push(`Salle des ventes : « ${L.nom} », saisi par ta zone dans le non-droit, est vendu ${fmt(gagnant.m)}. Ta part du produit : ${fmt(b)}.`);
+      z.rapport.push(`Salle des ventes : « ${L.nom} », ${lot.saisie.src === 'central' ? 'confisqué par ton central' : 'saisi par ta zone dans le non-droit'}, est vendu ${fmt(gagnant.m)}. Ta part du produit : ${fmt(b)}.`);
     }
     res.adjuges.push({ k: lot.k, id: lot.id, nom: L.nom, uids: gagnant.membres.map((x) => x.u), montant: gagnant.m, offres: groupes.length, etat });
     push(lot.gros ? 7 : 5, 'Adjugé !', `${noms} ${gagnant.membres.length > 1 ? 'remportent' : 'remporte'} « ${L.nom} » pour ${fmt(gagnant.m)}`,

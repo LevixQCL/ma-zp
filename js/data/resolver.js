@@ -2,6 +2,7 @@
 // et chaque minute : le premier joueur connecté après 20:00 calcule le tour pour tous.
 import { resolveTurn, isOutdated } from '../engine/resolve.js';
 import { APP_VERSION } from '../engine/constants.js';
+import { CONFIG } from '../config.js';
 import { nextResolutionAfter, weekdayBe } from '../engine/time.js';
 
 let running = false;
@@ -114,7 +115,7 @@ export async function resolvePending(backend, { hour = 20, now = () => Date.now(
       const nextDeadline = nextResolutionAfter(state.nextDeadline, hour);
       let next, gazette;
       try {
-        ({ state: next, gazette } = resolveTurn(state, { orders, quests, players, nextWeekday: weekdayBe(nextDeadline), historiqueEnigmes, encheres }));
+        ({ state: next, gazette } = resolveTurn(state, { orders, quests, players, nextWeekday: weekdayBe(nextDeadline), historiqueEnigmes, encheres, graineCentral: CONFIG.seed }));
       } catch (e) {
         console.error('Calcul du tour impossible :', e);
         etatResolution.erreur = `Calcul du tour ${state.turn} : ${e && e.message ? e.message : e}${e && e.stack ? ' · ' + String(e.stack).split('\n').slice(1, 3).map((l) => l.trim()).join(' · ') : ''}`;

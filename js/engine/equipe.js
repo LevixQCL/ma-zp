@@ -1,6 +1,7 @@
 // L'équipe de la zone (trombinoscope) et les trophées.
 import { makeRng } from './rng.js';
 import { ROLE_SERVICE, bonusChef } from './constants.js';
+import { CARNET_TYPES } from './central.js';
 
 // ───── Trombinoscope ─────
 export const ROLES_EQUIPE = [
@@ -186,6 +187,10 @@ export const TROPHEES = [
   { id: 'tresorier', nom: 'Trésorier', texte: 'Dégager 20 000 € de revenu en une journée' },
   { id: 'collection', nom: 'Collectionneur', texte: 'Débloquer 5 skins pour son commissariat' },
   { id: 'sommet', nom: 'Au sommet', texte: 'Atteindre 85 d’IPZ un soir' },
+  // Central (Carte › Ma zone).
+  { id: 'mainsure', nom: 'Main sûre', texte: 'Faire 50 saisies au central' },
+  { id: 'tourcontrole', nom: 'Tour de contrôle', texte: 'Faire 15 points de mieux que l’adjoint en une journée de central' },
+  { id: 'carnetcomplet', nom: 'Carnet complet', texte: 'Régler soi-même chaque type d’appel du central' },
 ];
 export const TROPHEE = Object.fromEntries(TROPHEES.map((t) => [t.id, t]));
 
@@ -219,6 +224,10 @@ export function verifierTrophees(z) {
   if ((st.revenuMax || 0) >= 20) ok.push('tresorier');
   if ((z.skins || []).length >= 5) ok.push('collection');
   if ((Number(z.ipz) || 0) >= 85) ok.push('sommet');
+  const cx = z.central;
+  if (cx && Object.values(cx.saisies || {}).reduce((t, n) => t + n, 0) >= 50) ok.push('mainsure');
+  if (cx && (cx.gainMax || 0) >= 15) ok.push('tourcontrole');
+  if (cx && CARNET_TYPES.every((t) => (cx.types || {})[t] > 0)) ok.push('carnetcomplet');
   return ok;
 }
 

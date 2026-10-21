@@ -1,13 +1,13 @@
 // Le central (calque « Ma zone » de la Carte, phase de test) : la zone tourne en temps réel toute la journée.
 // En haut ce qu'il y a à faire, la carte avec les appels et les équipes, la bande des équipes, le journal du jour.
 // Les patrouilles du soir par quartier (tour de 20 h) restent dans la fiche du quartier touché.
-import { S, esc, myZone } from './common.js';
+import { S, esc, myZone, zoneName } from './common.js';
 import { planIso } from './plan-iso.js';
 import { carteQuartiers } from '../engine/quartiers.js';
 import { vehiculesDisponibles } from '../engine/zone.js';
 import { ficheQuartierHtml, chipsQuartiersHtml, siteHtml } from './carte.js';
 import { siteDe } from '../engine/sites.js';
-import { CENTRAL, STATUTS_C, equipesCentral, genererJournee, simuler, prevoir, distancesCentral, horloge } from '../engine/central.js';
+import { CENTRAL, STATUTS_C, SAISIES_C, CARNET_TYPES, equipesCentral, genererJournee, simuler, prevoir, distancesCentral, horloge, fouillable, chanceFouille } from '../engine/central.js';
 
 const COUL = { Intervention: ['#EEF2FA', '#12306E'], Proximité: ['#1E57B8', '#E6F1FF'], Roulage: ['#E59A1F', '#2A1600'] };
 const TON = { maitrise: 'v', arretee: 'v', moyen: 'a', deborde: 'r', incident: 'r' };
@@ -55,6 +55,8 @@ function aFaire(c, s) {
     if (CENTRAL.pts[p.statut] >= 3) continue;
     if (libres.some((q) => CENTRAL.pts[prevoir(q, a, m, c).statut] > CENTRAL.pts[p.statut])) out.push({ k: 'mieux', a, titre: a.titre, sous: `${e.nom} va faire « ${STATUTS_C[p.statut]} » · une équipe libre ferait mieux`, ton: 'a' });
   }
+  // Équipe sur place sur un appel fouillable : fouiller (10 min de plus, chance de saisie). L'adjoint ne fouille jamais.
+  for (const a of s.appels.filter((x) => aFouiller(s, x)).slice(0, 2)) { const e = s.equipes.find((q) => q.id === a.eq); out.push({ k: 'fouille', a, titre: `${e.nom} sur place : ${a.titre}`, sous: `${STATUTS_C[a.statut]} · fouiller : ${CENTRAL.fouille} min de plus, ${Math.round(chanceFouille(a.statut) * 100)} % de chance de saisie`, ton: 'v', faire: `data-cxfouille="${a.id}"`, bouton: 'Fouiller' }); }
   for (const n of c.jour.annonces.filter((x) => x.ta <= m && x.t > m)) out.push({ k: 'annonce', n, titre: `${n.titre} à ${horloge(n.t)}`, sous: `${nomQ(c, n.cell)} · ${n.texte} · mets une équipe en poste`, ton: 'b' });
   for (const e of libres.filter((x) => x.n >= CENTRAL.fatigue)) out.push({ k: 'fatigue', e, titre: `${e.nom} est usée`, sous: `${e.n} missions sans pause · une pause de ${CENTRAL.pause} min la remet d’aplomb`, ton: 'a' });
   // Appels flous déjà partis : un coup de fil au requérant dit à quoi s'attendre.
@@ -69,6 +71,14 @@ function aFaire(c, s) {
   if (c.me.pointChaud) out.push({ k: 'pc', titre: `Point chaud à ${nomQ(c, c.me.pointChaud.cell)}`, sous: '2 agents en patrouille ce soir le désamorcent (fiche du quartier)', ton: 'b', q: c.me.pointChaud.cell });
   return out;
 }
+
+/** Appel où l'équipe est sur place et peut encore fouiller. */
+function aFouiller(s, a) {
+  if (!fouillable(a) || a.fouille || !a.statut || a.statut === 'incident' || !a.eq) return false;
+  const e = s.equipes.find((q) => q.id === a.eq);
+  return !!e && e.etat === 'surplace' && e.mission === a.id;
+}
+const objet = (id) => `${SAISIES_C[id].ico} ${esc(SAISIES_C[id].nom)}`;
 
 function marqueurs(c, s) {
   const out = [], parQ = {}, m = c.m;
@@ -92,14 +102,18 @@ function panneauAppel(c, s, a) {
   const opts = libres.map((e) => ({ e, p: prevoir(e, a, m, c) })).sort((x, y) => CENTRAL.pts[y.p.statut] - CENTRAL.pts[x.p.statut] || x.p.arr - y.p.arr);
   const actuelle = a.eq && s.equipes.find((e) => e.id === a.eq);
   const tete = `<div class="cx-appel"><span><b>${esc(a.titre)}</b><span class="small muted">${horloge(a.t)} · ${esc(nomQ(c, a.cell))} · ${a.flou && !a.rens ? 'gravité inconnue (1 ou 3)' : `gravité ${a.gReel}`} · ${esc(tags(a))}</span></span>${a.statut ? `<span class="cx-res ${TON[a.statut]} plein">${STATUTS_C[a.statut]}</span>` : ''}</div>`;
-  if (a.statut) return `${tete}<p class="small muted" style="margin:0">${a.eq ? `${esc(s.equipes.find((e) => e.id === a.eq).nom)}` : 'Personne n’est arrivé à temps'}${a.par === 'adjoint' ? ' (envoyée par l’adjoint)' : ''}.</p>`;
+  const fouilleTxt = a.fouilleFaite ? (a.saisie ? `<p class="small" style="margin:0;color:#3DD39A">Fouille : ${objet(a.saisie)} ${SAISIES_C[a.saisie].acc || 'saisi'}${SAISIES_C[a.saisie].piste ? ' · une piste pour ton enquête' : ''}.</p>` : '<p class="small muted" style="margin:0">Fouille : rien trouvé.</p>')
+    : a.fouille ? `<p class="small" style="margin:0;color:#9DCBFF">Fouille ${a.statut ? 'en cours' : 'demandée : l’équipe fouillera en arrivant'}.</p>` : '';
+  const btnFouille = fouillable(a) && !a.fouille && a.eq && a.statut !== 'incident' && s.equipes.some((e) => e.id === a.eq && e.mission === a.id && (e.etat === 'route' || e.etat === 'surplace'))
+    ? `<button type="button" class="cx-eq" data-cxfouille="${a.id}"><span class="cx-av" style="background:#1E6B4E;color:#E9FFF4">⌕</span><span class="cx-lb"><b>Fouiller</b><span>${CENTRAL.fouille} min de plus sur place · ${a.statut ? `${Math.round(chanceFouille(a.statut) * 100)} % de chance de saisie` : 'plus l’intervention est réussie, plus on trouve'}</span></span></button>` : '';
+  if (a.statut) return `${tete}<p class="small muted" style="margin:0">${a.eq ? `${esc(s.equipes.find((e) => e.id === a.eq).nom)}` : 'Personne n’est arrivé à temps'}${a.par === 'adjoint' ? ' (envoyée par l’adjoint)' : ''}.</p>${fouilleTxt}${btnFouille ? `<div class="cx-eqs">${btnFouille}</div>` : ''}`;
   const cur = actuelle ? `<p class="small" style="margin:0">${esc(actuelle.nom)} ${a.par === 'adjoint' ? '(adjoint)' : ''} en route · sur place ${horloge(a.arr)} · prévu : <span class="cx-res ${TON[prevoir(actuelle, a, m, c).statut]}">${STATUTS_C[prevoir(actuelle, a, m, c).statut]}</span></p>` : `<p class="small" style="margin:0;color:#FF9A92">Personne n’y va. L’adjoint enverra l’équipe la plus proche dans ${Math.max(0, CENTRAL.delaiAdjoint - (m - a.t))} min.</p>`;
   const boutons = opts.map(({ e, p }) => {
     const [col, ink] = COUL[e.serv], forme = a.tags.some((t) => e.comp.includes(t));
     return `<button type="button" class="cx-eq" data-cxenv="${e.id}"><span class="cx-av" style="background:${col};color:${ink}">${e.id}</span><span class="cx-lb"><b>${esc(e.nom)}</b><span>${forme ? 'formée · ' : ''}${e.n >= CENTRAL.fatigue ? 'usée · ' : ''}${e.etat === 'route' ? 'détournée · ' : ''}sur place ${horloge(p.arr)}</span></span><span class="cx-res ${TON[p.statut]}">${STATUTS_C[p.statut]}</span></button>`;
   }).join('');
   const rens = a.flou && !a.rens ? `<button type="button" class="cx-eq" data-cxrens="${a.id}" ${s.rensRestants <= 0 ? 'disabled' : ''}><span class="cx-av" style="background:#2A3150;color:#FFC970">?</span><span class="cx-lb"><b>Rappeler le requérant</b><span>révèle la gravité · ${s.rensRestants} restant${pl(s.rensRestants)} aujourd’hui</span></span></button>` : '';
-  return `${tete}${cur}<div class="cx-eqs">${rens}${boutons || '<p class="small muted" style="margin:0">Aucune équipe libre pour l’instant.</p>'}</div>`;
+  return `${tete}${cur}${fouilleTxt}<div class="cx-eqs">${btnFouille}${rens}${boutons || '<p class="small muted" style="margin:0">Aucune équipe libre pour l’instant.</p>'}</div>`;
 }
 function panneauEquipe(c, s, e) {
   const fin = e.etat === 'route' || e.etat === 'surplace' || e.etat === 'pause' ? ` jusqu’à ${horloge(e.jusqua)}` : '';
@@ -132,12 +146,16 @@ export function centralHtml({ surCarte = '' } = {}) {
     return `<button type="button" class="cx-chip ${e.etat} ${S.cxEq === e.id ? 'sel' : ''}" data-cxe="${e.id}"><span class="cx-av" style="background:${col};color:${ink}">${e.id}</span><span><b>${ETAT[e.etat]}</b><span>${info}</span></span>${e.n >= CENTRAL.fatigue ? '<i title="usée">●</i>' : ''}</button>`;
   }).join('');
   const regle = s.journal.slice().reverse();
-  const journal = regle.length ? regle.map((j) => { const a = s.appels.find((x) => x.id === j.id); return `<div class="cx-jl"><span class="muted">${horloge(j.m)}</span><span>${esc(a.titre)} · ${esc(nomQ(c, a.cell))}${j.eq ? ` · ${j.eq}` : ''}</span><span class="cx-res ${TON[j.statut]} plein">${STATUTS_C[j.statut]}</span></div>`; }).join('') : '<p class="small muted" style="margin:0">Rien de réglé pour l’instant.</p>';
+  const journal = regle.length ? regle.map((j) => { const a = s.appels.find((x) => x.id === j.id);
+    if (j.k === 'saisie') return `<div class="cx-jl"><span class="muted">${horloge(j.m)}</span><span>${objet(j.obj)} ${SAISIES_C[j.obj].acc || 'saisi'} · ${esc(nomQ(c, a.cell))} · ${j.eq}</span><span class="cx-res v plein">+${j.pts}</span></div>`;
+    if (j.k === 'fouille') return `<div class="cx-jl"><span class="muted">${horloge(j.m)}</span><span class="muted">Fouille sans résultat · ${esc(nomQ(c, a.cell))} · ${j.eq}</span><span></span></div>`;
+    return `<div class="cx-jl"><span class="muted">${horloge(j.m)}</span><span>${esc(a.titre)} · ${esc(nomQ(c, a.cell))}${j.eq ? ` · ${j.eq}` : ''}</span><span class="cx-res ${TON[j.statut]} plein">${STATUTS_C[j.statut]}</span></div>`; }).join('') : '<p class="small muted" style="margin:0">Rien de réglé pour l’instant.</p>';
+  const nbReg = regle.filter((j) => !j.k).length;
   const demo = S.backend && S.backend.mode === 'demo';
   const panneau = sel ? panneauAppel(c, s, sel) : eqSel ? panneauEquipe(c, s, eqSel) : '';
   return `${STYLE}
     <div class="cx-tete"><span><b>Central · ${horloge(m)}</b><span class="small muted">${s.appels.filter((a) => a.t <= m).length} appels aujourd’hui · ${s.pts >= 0 ? '+' : ''}${s.pts} points (adjoint seul : ${adj.pts >= 0 ? '+' : ''}${adj.pts})</span></span>${demo ? '<span class="cx-demo"><button type="button" data-cxtemps="10">+10 min</button><button type="button" data-cxtemps="60">+1 h</button></span>' : ''}</div>
-    <p class="cx-test">Phase de test : le central n’agit pas encore sur ta zone. Les équipes mettent de vraies minutes à arriver ; sans toi, l’adjoint dispatche au bout de ${CENTRAL.delaiAdjoint} minutes.</p>
+    <p class="cx-test">Compté à 20 h : ton carnet, tes saisies (salle des ventes, pistes d’enquête), les trophées et le classement du central. Sans toi, l’adjoint dispatche au bout de ${CENTRAL.delaiAdjoint} minutes, mais il ne fouille jamais.</p>
     <p class="cx-coach">${coach}</p>
     ${lignes ? `<div class="cx-todos">${lignes}</div>` : ''}
     <div class="cv-carte cx-carte">${iso}${surCarte}</div>
@@ -145,22 +163,49 @@ export function centralHtml({ surCarte = '' } = {}) {
     <div class="cx-bande">${bande}</div>
     ${quartier ? `${ficheQuartierHtml(c.st, c.me, quartier)}` : ''}
     <details class="cx-det"><summary><b>Quartiers et patrouilles du soir</b><span class="small muted">pour le tour de 20 h</span></summary>${chipsQuartiersHtml(c.st, c.me, quartier)}${siteHtml(siteDe(c.me))}</details>
-    <details class="cx-det"><summary><b>Journal du jour</b><span class="small muted">${regle.length} appel${pl(regle.length)} réglé${pl(regle.length)}</span></summary><div class="cx-journal">${journal}</div></details>
+    <details class="cx-det"><summary><b>Journal du jour</b><span class="small muted">${nbReg} appel${pl(nbReg)} réglé${pl(nbReg)}</span></summary><div class="cx-journal">${journal}</div></details>
+    ${carnetHtml(c, s, adj)}
     ${hier(c)}
     <details class="cx-det"><summary><b>Comment ça marche</b></summary><div class="cx-regles">
       <p><b>Les appels tombent toute la journée.</b> Envoie l’équipe la plus adaptée : formée à ce qui se passe et sur place dans le quart d’heure, elle maîtrise (+3). Sinon moyen (+1), débordé (−1) ; un appel qui attend s’aggrave d’un cran toutes les ${CENTRAL.aggravation} min, au-delà de la gravité 3 c’est l’incident (−3). Une bande n’est arrêtée que par le contrôle (+4).</p>
       <p><b>Sans toi, l’adjoint envoie l’équipe la plus proche au bout de ${CENTRAL.delaiAdjoint} min.</b> Tu peux redétourner une équipe en route vers un appel plus grave.</p>
       <p><b>Une équipe s’use</b> : à sa 4e mission sans pause, son résultat baisse d’un cran. ${CENTRAL.repos} min sans mission ou une pause la reposent. <b>En poste</b>, elle attend dans un quartier : sur place tout de suite s’il s’y passe quelque chose.</p>
+      <p><b>Fouiller</b> garde l’équipe ${CENTRAL.fouille} minutes de plus sur place, avec une chance de saisie d’autant plus grande que l’intervention est réussie (${Math.round(chanceFouille('maitrise') * 100)} % si maîtrisé, ${Math.round(chanceFouille('arretee') * 100)} % sur une bande arrêtée). Une saisie vaut +1 (+2 si rare). À 20 h, tes saisies remplissent la jauge de confiscation (un lot pour la salle des ventes, la moitié du prix pour toi) ; un téléphone, une carte ou un carnet donne une pièce de plus à ton enquête.</p>
       <p><b>Ce qui est mal réglé revient</b> une heure plus tard, plus grave. Un appel sur trois est flou : rappeler le requérant révèle sa gravité (${CENTRAL.renseignements} fois par jour). Les événements annoncés le sont une heure avant.</p>
     </div></details>`;
+}
+/** Le carnet du central : ce que la zone a réglé et saisi, la jauge de confiscation, le classement de la saison. */
+function carnetHtml(c, s, adj) {
+  const cx = c.me.central || { types: {}, saisies: {}, interp: 0, jauge: 0, jours: 0, gainSaison: 0 };
+  const parToi = (a) => a.par === 'toi' || a.par === 'poste';
+  const ajd = { saisies: s.appels.filter((a) => a.saisie).map((a) => a.saisie), regles: s.appels.filter((a) => (a.statut === 'maitrise' || a.statut === 'arretee') && parToi(a)).map((a) => a.base || a.titre) };
+  const nSz = Object.values(cx.saisies || {}).reduce((t, n) => t + n, 0);
+  const album = Object.entries(SAISIES_C).map(([id, o]) => { const n = (cx.saisies || {})[id] || 0, auj = ajd.saisies.filter((x) => x === id).length;
+    return n || auj ? `<div class="cx-obj${o.rare ? ' rare' : ''}"><span class="cx-ico">${o.ico}</span><b>${esc(o.nom)}</b><span>${n ? `×${n}` : ''}${auj ? `${n ? ' · ' : ''}+${auj} aujourd’hui` : ''}${o.piste ? ' · piste' : ''}</span></div>`
+      : `<div class="cx-obj vide"><span class="cx-ico">?</span><b>${o.rare ? 'Saisie rare' : 'À trouver'}</b><span>${o.rare ? 'très rare' : '&nbsp;'}</span></div>`; }).join('');
+  const types = CARNET_TYPES.map((t) => { const n = (cx.types || {})[t] || 0, auj = ajd.regles.filter((x) => x === t).length;
+    return `<div class="cx-typ ${n || auj ? 'ok' : ''}"><span>${n || auj ? '✓' : '·'}</span><span>${esc(t)}</span><span class="muted">${n ? `×${n}` : ''}${auj ? ` +${auj}` : ''}</span></div>`; }).join('');
+  const jauge = Math.min(CENTRAL.confiscation, cx.jauge || 0), jaugeAuj = ajd.saisies.reduce((t, id) => t + SAISIES_C[id].val, 0);
+  const st = c.st, zones = Object.entries(st.zones || {}).filter(([, z]) => z.central && z.central.s === st.season && z.central.joursSaison > 0)
+    .sort((x, y) => y[1].central.gainSaison - x[1].central.gainSaison);
+  const classement = zones.length ? zones.slice(0, 8).map(([u, z], i) => `<div class="cx-cl ${u === c.me.uid ? 'moi' : ''}"><span>${i + 1}</span><span>${zoneName(z)}</span><span class="muted">${z.central.joursSaison} j</span><b>${z.central.gainSaison >= 0 ? '+' : ''}${z.central.gainSaison}</b></div>`).join('')
+    : '<p class="small muted" style="margin:0">Personne n’est encore classé : le premier bilan tombe ce soir à 20 h.</p>';
+  const gain = s.pts - adj.pts;
+  return `<details class="cx-det" open><summary><b>Carnet du central</b><span class="small muted">${nSz} saisie${pl(nSz)} · ${cx.interp || 0} interpellation${pl(cx.interp || 0)} · ${cx.jours || 0} jour${pl(cx.jours || 0)} joué${pl(cx.jours || 0)} · aujourd’hui ${gain >= 0 ? '+' : ''}${gain} sur l’adjoint (compté à 20 h)</span></summary>
+    <h4 class="cx-h">Saisies</h4><div class="cx-album">${album}</div>
+    <h4 class="cx-h">Confiscation</h4><div class="cx-jauge"><i style="width:${Math.round(100 * jauge / CENTRAL.confiscation)}%"></i>${jaugeAuj ? `<i class="auj" style="width:${Math.round(100 * Math.min(CENTRAL.confiscation - jauge, jaugeAuj) / CENTRAL.confiscation)}%"></i>` : ''}</div>
+    <p class="small muted" style="margin:4px 0 0">${jauge}${jaugeAuj ? ` + ${jaugeAuj} aujourd’hui` : ''} / ${CENTRAL.confiscation} : à ${CENTRAL.confiscation}, un lot de biens confisqués passe à la salle des ventes et la moitié du prix revient à ta zone.</p>
+    <h4 class="cx-h">Appels réglés toi-même</h4><div class="cx-types">${types}</div>
+    <h4 class="cx-h">Classement du central · saison ${st.season}</h4><p class="small muted" style="margin:0 0 4px">Points de mieux que son propre adjoint, cumulés sur la saison.</p><div class="cx-class">${classement}</div>
+  </details>`;
 }
 function hier(c) {
   const prev = c.mem.prev;
   if (!prev || !prev.equipes) return '';
   const jour = genererJournee(c.graine(prev.cle), c.cells);
   const s = simuler(jour, prev.equipes, prev.actions, CENTRAL.jour - 1, c), adj = simuler(jour, prev.equipes, [], CENTRAL.jour - 1, c);
-  const inc = s.journal.filter((j) => j.statut === 'incident').length;
-  return `<details class="cx-det"><summary><b>Hier : ${s.pts >= 0 ? '+' : ''}${s.pts} points</b><span class="small muted">${prev.actions.length} ordre${pl(prev.actions.length)} · ${inc} incident${pl(inc)} · l’adjoint seul aurait fait ${adj.pts >= 0 ? '+' : ''}${adj.pts}</span></summary></details>`;
+  const inc = s.journal.filter((j) => j.statut === 'incident').length, sz = s.appels.filter((a) => a.saisie);
+  return `<details class="cx-det"><summary><b>Hier : ${s.pts >= 0 ? '+' : ''}${s.pts} points</b><span class="small muted">${prev.actions.length} ordre${pl(prev.actions.length)} · ${inc} incident${pl(inc)} · ${sz.length} saisie${pl(sz.length)} · l’adjoint seul aurait fait ${adj.pts >= 0 ? '+' : ''}${adj.pts}</span></summary>${sz.length ? `<p class="small" style="margin:8px 0 0">${sz.map((a) => objet(a.saisie)).join(' · ')}</p>` : ''}</details>`;
 }
 
 /** Une action du joueur, horodatée à la minute du central. */
@@ -180,7 +225,7 @@ export function monterCentral(rerender) {
   if (main.dataset.cxMonte) return;
   main.dataset.cxMonte = '1';
   main.addEventListener('click', (e) => {
-    const t = e.target.closest('[data-cxposteq],[data-cx],[data-cxe],[data-cxq],[data-cxenv],[data-cxrens],[data-cxposte],[data-cxpause],[data-cxfermer],[data-cxtemps],[data-action="quartier"]');
+    const t = e.target.closest('[data-cxposteq],[data-cxfouille],[data-cx],[data-cxe],[data-cxq],[data-cxenv],[data-cxrens],[data-cxposte],[data-cxpause],[data-cxfermer],[data-cxtemps],[data-action="quartier"]');
     if (!t) return;
     const d = t.dataset;
     // En train de poser une équipe : le quartier touché la reçoit.
@@ -192,6 +237,7 @@ export function monterCentral(rerender) {
     else if (d.cxq) { S.quartierSel = d.cxq; S.cxSel = null; S.cxEq = null; }
     else if (d.cxenv) { agir({ k: 'envoi', a: S.cxSel, e: d.cxenv }); }
     else if (d.cxrens) agir({ k: 'rens', a: d.cxrens });
+    else if (d.cxfouille) agir({ k: 'fouille', a: d.cxfouille });
     else if (d.cxposteq) { const [eq, q] = d.cxposteq.split(':'); agir({ k: 'poste', e: eq, q: Number(q) }); }
     else if (d.cxposte) S.cxPoste = S.cxPoste === d.cxposte ? null : d.cxposte;
     else if (d.cxpause) { agir({ k: 'pause', e: d.cxpause }); S.cxEq = null; }
@@ -236,4 +282,13 @@ const STYLE = `<style>
 .cx-det{border-radius:14px;background:#141B33;border:1px solid #29345A;padding:10px 12px}.cx-det summary{cursor:pointer;display:flex;flex-direction:column;min-height:36px;justify-content:center}
 .cx-journal{display:flex;flex-direction:column;gap:6px;margin-top:8px}.cx-jl{display:grid;grid-template-columns:50px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px}
 .cx-regles p{font-size:13px;color:#C3C9DE;margin:8px 0 0}
+.cx-todo.v{border-left-color:#3DD39A}
+.cx-h{margin:12px 0 6px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#96A0BF}
+.cx-album{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px}
+.cx-obj{display:flex;flex-direction:column;align-items:center;text-align:center;gap:1px;padding:7px 4px;border-radius:11px;background:#1C2442;border:1px solid #29345A;min-width:0}
+.cx-obj.rare{border-color:#FFB23F;background:linear-gradient(#2A2238,#1C2442)}.cx-obj.vide{opacity:.45;border-style:dashed}
+.cx-obj b{font-size:11.5px;line-height:1.2}.cx-obj span:last-child{font-size:10.5px;color:#96A0BF}.cx-ico{font-size:22px;line-height:1.2}
+.cx-jauge{position:relative;display:flex;height:10px;border-radius:99px;background:#1C2442;border:1px solid #29345A;overflow:hidden}.cx-jauge i{display:block;height:100%;background:#3DD39A}.cx-jauge i.auj{background:repeating-linear-gradient(45deg,#3DD39A 0 4px,#1E6B4E 4px 8px)}
+.cx-types{display:flex;flex-direction:column;gap:3px}.cx-typ{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:6px;font-size:12.5px;color:#96A0BF}.cx-typ.ok{color:#EDF0FA}.cx-typ.ok span:first-child{color:#3DD39A}
+.cx-class{display:flex;flex-direction:column;gap:3px}.cx-cl{display:grid;grid-template-columns:18px minmax(0,1fr) auto auto;gap:8px;align-items:center;font-size:13px;padding:4px 6px;border-radius:8px}.cx-cl.moi{background:rgba(255,178,63,.13)}
 </style>`;
