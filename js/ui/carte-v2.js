@@ -1,6 +1,6 @@
 // Carte de la saison 2 : Carte, Terrain, Non-droit et Pactes réunis sous deux boutons seulement (Ma zone, District).
 // La maquette isométrique en grand ; en dessous, la fiche du quartier touché (Ma zone) ou une ligne par sujet (District).
-import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
+import { S, esc, icon, tabbar, myZone, zoneName, aFaireCentralTab } from './common.js';
 import { planIso, brancherAnnoncesND, brancherMarqueursQ } from './plan-iso.js';
 
 import { aFairePactes } from './pactes.js';
@@ -8,15 +8,18 @@ import { terrainBlocs, terrainAFaire } from './terrain.js';
 import { nonDroitHtml, secteursEnDanger, annoncesND, agentsND } from './nondroit.js';
 import { ND } from '../engine/constants.js';
 import { marqueursQ } from './quartier.js';
-import { centralHtml, aFaireCentral } from './central.js';
+import { centralHtml } from './central.js';
+import { quartierChoisi, resumePatrouilles } from './carte.js';
 
 brancherAnnoncesND(annoncesND);
 brancherMarqueursQ(marqueursQ);
 import { tensionsDe } from '../engine/quartiers.js';
 
-// Le non-droit d'abord (c'est l'objectif commun de la ville, on doit le trouver sans chercher), Ma zone ensuite.
-// « district » (anciens liens) mène au même écran que « nondroit ».
-export const CALQUES = [['nondroit', 'Non-droit'], ['mazone', 'Ma zone']];
+// Ma zone d'abord : c'est le central en temps réel, ce qui bouge pendant la journée. Le non-droit et le district ensuite.
+// « district » (anciens liens) mène au même écran que « nondroit ». Calque par défaut à chaque ouverture du jeu : Ma zone
+// (le choix du joueur est gardé pendant la session dans S.carteCalque, pas au-delà).
+export const CALQUES = [['mazone', 'Ma zone'], ['nondroit', 'Non-droit']];
+export const CALQUE_DEFAUT = 'mazone';
 
 /** Cadrage de la carte au calque Non-droit, retenu par appareil : « nondroit » (zoom) ou « district » (tout). */
 let vueND = null;
@@ -33,9 +36,9 @@ export function basculerVueCarteND() {
 export function calqueTerrain() { return 'nondroit'; }
 
 /** Petits compteurs sur les deux boutons : ce qui attend une action. */
-function badges(st, me) {
-  const pc = me.pointChaud && (S.draft && ((S.draft.patrouilles || {})[me.pointChaud.cell] || 0) < 2) ? 1 : 0;
-  return { mazone: pc + aFaireCentral(), nondroit: terrainAFaire() };
+function badges() {
+  // Le point chaud et les patrouilles du soir se règlent dans les Ordres : leur pastille est là-bas.
+  return { mazone: aFaireCentralTab(), nondroit: terrainAFaire() };
 }
 
 /** Une ligne de « Ce soir dans le district », dépliable, sur le modèle de l'HP. */
@@ -70,25 +73,26 @@ function districtHtml(st, me) {
   return `<section class="hp-ajd" aria-label="Ce soir dans le district">
       <h2 class="section">Aussi dans le district</h2>
       ${L.length ? L.join('') : '<p class="small muted" style="margin:0">Aucune demande d’aide pour l’instant. Les appels à renfort, les affaires disputées et les grands événements arrivent ici.</p>'}
-      <a class="btn small outline block" href="#classement">🏆 Classements du district</a>
+      <a class="btn small outline block" href="#classement">🏆 Classements : district et central</a>
       <p class="tiny muted" style="margin:0">Touche la zone d’un collègue sur la carte pour voir son hôtel de police.</p>
       <div class="sr-only">${Object.values(st.zones).filter((z) => z.uid !== me.uid).map((z) => `<button type="button" data-action="voir-hp" data-uid="${esc(z.uid)}">Hôtel de police de ${esc(z.nom)}</button>`).join('')}</div>
     </section>`;
 }
 
-/** Quartier montré dans la fiche : celui touché, sinon le point chaud, sinon le plus tendu. */
-function quartierChoisi(st, me) {
-  const mesT = tensionsDe(st, me);
-  if (S.quartierSel != null && String(S.quartierSel) in mesT) return String(S.quartierSel);
-  if (me.pointChaud && String(me.pointChaud.cell) in mesT) return String(me.pointChaud.cell);
-  return Object.keys(mesT).sort((a, b) => mesT[b] - mesT[a])[0] ?? null;
+/** Sous le central : les deux choses qui se règlent ailleurs (patrouilles du soir dans les Ordres, classements). */
+function liensMaZone(st, me) {
+  const rp = resumePatrouilles(st, me);
+  return `<nav class="cv-liens" aria-label="Aussi pour ta zone">
+    ${rp ? `<a class="cv-lien ${rp.ok ? '' : 'alerte'}" href="#ordres-patrouilles"><span aria-hidden="true">🚓</span><span class="col" style="gap:0;min-width:0;flex:1"><b>Patrouilles du soir</b><span>${rp.resume} · dans tes Ordres</span></span>${icon('chevron', 16)}</a>` : ''}
+    <a class="cv-lien" href="#classement-central"><span aria-hidden="true">🏆</span><span class="col" style="gap:0;min-width:0;flex:1"><b>Classements</b><span>central, IPZ et district</span></span>${icon('chevron', 16)}</a>
+  </nav>`;
 }
 
-export function renderCarteV2(calque = S.carteCalque || 'nondroit') {
+export function renderCarteV2(calque = S.carteCalque || CALQUE_DEFAUT) {
   const st = S.state, me = myZone();
   if (calque === 'district') calque = 'nondroit';
-  if (!CALQUES.some(([k]) => k === calque)) calque = 'nondroit';
-  const b = badges(st, me);
+  if (!CALQUES.some(([k]) => k === calque)) calque = CALQUE_DEFAUT;
+  const b = badges();
   const nd = st.nonDroit ? Object.values(st.nonDroit.secteurs) : [];
   const nomCalque = (k, l) => (k === 'nondroit' && !nd.length ? 'District' : l);
   const boutons = CALQUES.map(([k, l]) => `<button type="button" role="tab" data-action="carte-calque" data-v="${k}" aria-selected="${calque === k}">
@@ -118,7 +122,7 @@ export function renderCarteV2(calque = S.carteCalque || 'nondroit') {
   const dist = districtHtml(st, me);
   const aVoir = (dist.match(/class="ajd-badge"/g) || []).length;
   const lienDistrict = `<button type="button" class="cv-lien-dist ${aVoir ? 'alerte' : ''}" data-action="carte-vue"><span aria-hidden="true">🗺️</span><span class="col" style="gap:0;min-width:0;flex:1;text-align:left"><b>Aussi dans le district</b><span>renforts, opérations, pactes, classements</span></span>${aVoir ? `<i>${aVoir}</i>` : ''}<span aria-hidden="true">${icon('chevron', 16)}</span></button>`;
-  const corps = calque === 'mazone' ? centralHtml({ surCarte: btnPactes })
+  const corps = calque === 'mazone' ? `${centralHtml({ surCarte: btnPactes })}${liensMaZone(st, me)}`
     : !nd.length ? `<p class="small muted" style="margin:0">La zone de non-droit n’est pas encore ouverte dans cette partie.</p>${dist}`
       : vueDist ? dist : `${ndCorps}${lienDistrict}`;
   return `<main class="screen carte-v3${zoomND ? ' cv-nd' : ''}">

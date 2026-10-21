@@ -420,7 +420,7 @@ export function nonDroitHtml({ sansPlan = false } = {}) {
   const n = nd(), me = myZone(), d = S.draft;
   if (!n || !me || !d) return '';
   // « Le Quartier » : le plateau (sauf sur la Carte, qui le montre à la place de la maquette) et la fiche du secteur.
-  if (quartierActif(S.state)) return `<section class="col" aria-label="Zone de non-droit" style="gap:8px" id="non-droit">${sansPlan ? '' : '<p class="tiny muted" style="margin:0"><a href="#carte">Voir le non-droit sur la carte</a></p>'}${corpsQHtml()}</section>`;
+  if (quartierActif(S.state)) return `<section class="col" aria-label="Zone de non-droit" style="gap:8px" id="non-droit">${sansPlan ? '' : '<p class="tiny muted" style="margin:0"><a href="#carte-nondroit">Voir le non-droit sur la carte</a></p>'}${corpsQHtml()}</section>`;
   const cles = Object.keys(n.secteurs).sort((a, b) => (n.secteurs[a].coeur - n.secteurs[b].coeur) || Number(a) - Number(b));
   const voisins = new Set(secteursVoisins(S.state, me.uid));
   // D'abord ce qui me concerne : mes agents de ce soir, mes secteurs tenus, ceux qui bordent ma zone.

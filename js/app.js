@@ -55,7 +55,10 @@ import { piecesNonLues, marquerLues } from './ui/enquete-dossier.js';
 import { affaire, dossierDe, maxDemarchesDe, ELEMENTS } from './engine/enquete.js';
 import { choisirRecoup, retournerPouce } from './ui/enquete-plus.js';
 import { marquerJournalVu } from './ui/journal.js';
-import { monterCentral } from './ui/central.js';
+import { monterCentral, aFaireCentral } from './ui/central.js';
+import { brancherCentralTab } from './ui/common.js';
+import { cleCentral } from './ui/central-direct.js';
+brancherCentralTab(aFaireCentral, cleCentral);
 import { nomElement, monterTableau, ouvrirVolet, sortirPiece, toutSortir, rangerTableau, basculerFixe, basculerFrise, completerFiche, remettrePiece, tableauZoom, tableauEnsemble, marquerTutoVu } from './ui/tableau.js';
 import { renderRadioV2 } from './ui/radio-v2.js';
 import { previsionCourte } from './ui/prevision.js';
@@ -92,8 +95,17 @@ function route() {
   if (h === 'diplomatie') return 'pactes';
   // Lien vers la fréquence des renforts et opérations (F2) de la Radio.
   if (h === 'radio-ops') { S.radioCanal = 'ops'; history.replaceState(null, '', '#radio'); return 'radio'; }
-  // Lien vers mes quartiers (point chaud, patrouilles) : calque « Ma zone » de la Carte, fiche du point chaud ouverte.
-  if (h === 'nuit') { S.carteCalque = 'mazone'; history.replaceState(null, '', '#carte'); return 'carte'; }
+  // Patrouilles du soir et point chaud (décisions du tour de 20 h) : leur place est dans les Ordres.
+  if (h === 'nuit' || h === 'patrouilles') {
+    const pc = S.state && myZone() && myZone().pointChaud;
+    if (pc) S.quartierSel = String(pc.cell);
+    S.ordOpen = { patrouilles: true }; S.ordParts = { ...(S.ordParts || {}), patrouilles: true }; S.ordAncre = 'patrouilles';
+    history.replaceState(null, '', '#ordres'); return 'ordres';
+  }
+  // Classements, onglet donné (ex. #classement-central).
+  if (h.startsWith('classement-')) { S.classTab = h.slice(11); history.replaceState(null, '', '#classement'); return 'classement'; }
+  // Calque précis de la Carte : #carte-nondroit (non-droit et district) ; #carte-mazone (le central, fiche du point chaud).
+  if (h === 'carte-nondroit') { S.carteCalque = 'nondroit'; history.replaceState(null, '', '#carte'); return 'carte'; }
   if (h === 'carte-mazone') {
     S.carteCalque = 'mazone';
     const pc = S.state && myZone() && myZone().pointChaud;
@@ -687,6 +699,7 @@ async function onClick(e) {
       }
       case 'quartier': {
         S.quartierSel = el.dataset.c;
+        if (S.route === 'ordres') S.ordParts = { ...(S.ordParts || {}), patrouilles: true }; // la partie reste ouverte
         const dansCarte = !!el.closest('svg');
         rerender();
         // Saison 2 : la fiche du quartier est juste sous la carte, on la montre sans quitter la carte des yeux.
@@ -719,7 +732,9 @@ async function onClick(e) {
         const n = Math.max(0, cible - Math.max(0, manque));
         if (n) p[k] = n; else delete p[k];
         if (repris.length) { const cq = carteQuartiers(S.state); toast(`Agent repris à ${[...new Set(repris)].map((x) => cq.nomDe(Number(x))).join(', ')}.`); }
-        S.quartierSel = k; S.ordersDirty = true; rerender(); break;
+        S.quartierSel = k; S.ordersDirty = true;
+        if (S.route === 'ordres') S.ordParts = { ...(S.ordParts || {}), patrouilles: true };
+        rerender(); break;
       }
       case 'cv-nd': S.carteCalque = 'nondroit'; rerender(); document.getElementById('non-droit')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); break;
       case 'carte-vue': basculerVueCarteND(); rerender(); break;

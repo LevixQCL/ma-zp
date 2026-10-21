@@ -11,6 +11,7 @@ import { formatDateBe, formatHeureBe } from '../engine/time.js';
 import { renderGazetteStories } from './gazette-stories.js';
 import { classementQuiz, fmtQuiz, QUIZ_POIDS, MIN_QUIZ } from './quiz.js';
 import { QUIZ } from '../quests/quiz.js';
+import { CENTRAL } from '../engine/central.js';
 
 export function renderGazette() {
   const list = S.gazettes;
@@ -76,7 +77,7 @@ function classementQuizHtml(me) {
     <p class="small muted" style="margin:0">Score = bonnes réponses moyennes sur ${QUIZ.questions}, lissées : chacun part avec ${QUIZ_POIDS} quiz fictifs à la moyenne du district (${fmtQuiz(moyenne)}). Plus tu joues, plus c’est ta vraie moyenne qui compte. Classé dès ${MIN_QUIZ} quiz. Le quiz du jour compte dès qu’il est fini ; chez les autres, il apparaît après 20:00.</p></section>`;
 }
 
-const ONGLETS_CLASSEMENT = [['ipz', 'IPZ', '#63B0FF'], ['limier', 'Enquête', '#FFB23F'], ['enigmes', 'Énigmes', '#A78BFA'], ['quiz', 'Quiz', '#2EC4D6'], ['grade', 'Grades', '#3DD39A'], ['palmares', 'Palmarès', '#F5C64A']];
+const ONGLETS_CLASSEMENT = [['ipz', 'IPZ', '#63B0FF'], ['central', 'Central', '#FF8A65'], ['limier', 'Enquête', '#FFB23F'], ['enigmes', 'Énigmes', '#A78BFA'], ['quiz', 'Quiz', '#2EC4D6'], ['grade', 'Grades', '#3DD39A'], ['palmares', 'Palmarès', '#F5C64A']];
 // « La course » : chaque zone est un couloir dont la barre avance jusqu'à 100 (ou jusqu'au meilleur score).
 const COMPO = [['satisfaction', '#63B0FF'], ['affaires', '#9DCBFF'], ['moral', '#FFB23F'], ['budget', '#3DD39A'], ['reputation', '#A78BFA']];
 const MEDAILLES = ['🥇', '🥈', '🥉'];
@@ -123,6 +124,27 @@ function pourquoiHtml(rows, me) {
     <span class="tiny muted">En points d’IPZ moyens sur la saison. Les fines barres de couleur montrent la même chose pour chaque zone.</span></section>`;
 }
 
+/**
+ * Classement du central (temps réel, calque Ma zone de la Carte) : points de classement de la saison. Chaque journée
+ * compte de 0 à +25 (les points de mieux que son propre adjoint, plafonnés), ajoutée au calcul de 20 h.
+ */
+function classementCentralHtml(me) {
+  const st = S.state, s = st.season;
+  const zs = Object.values(st.zones || {}).map((z) => ({ z, c: z.central && z.central.s === s ? z.central : null }))
+    .sort((a, b) => ((b.c && b.c.gainSaison) || 0) - ((a.c && a.c.gainSaison) || 0) || ((b.c && b.c.joursSaison) || 0) - ((a.c && a.c.joursSaison) || 0));
+  const classes = zs.filter((x) => x.c && x.c.joursSaison > 0);
+  const max = Math.max(1, ...classes.map((x) => x.c.gainSaison || 0));
+  let rang = 0;
+  return `<section class="card" style="gap:8px"><h2 class="card-title">Central · saison ${s}</h2>
+    <p class="small muted" style="margin:0">Points de classement de la saison : chaque journée compte de 0 à +${CENTRAL.plafondJour}, selon ce que tu fais de mieux que ton adjoint seul au central (calque Ma zone de la Carte). Compté à 20 h.</p>
+    ${zs.map(({ z, c }) => { const j = (c && c.joursSaison) || 0, g = (c && c.gainSaison) || 0;
+      return couloir({ z, rang: j ? ++rang : 0, classe: j > 0, valeur: g, max, txt: j ? `+${g}` : '—', me: z.uid === me.uid,
+        sous: j ? `${j} jour${j > 1 ? 's' : ''} compté${j > 1 ? 's' : ''} · ${String(Math.round((g / j) * 10) / 10).replace('.', ',')} par jour` : 'pas encore de journée comptée' }); }).join('')}
+    ${classes.length ? '' : '<p class="small muted" style="margin:0">Personne n’est encore classé : le premier bilan tombe ce soir à 20 h.</p>'}
+    <a class="btn small outline block" href="#carte-mazone">Ouvrir le central</a>
+  </section>`;
+}
+
 export function renderClassement() {
   const me = myZone();
   const { g, n, pct } = gradeInfo(me.ps);
@@ -138,6 +160,8 @@ export function renderClassement() {
         sous: r.classe ? '' : `${r.z.toursJoues || 0} tour${(r.z.toursJoues || 0) > 1 ? 's' : ''} joué${(r.z.toursJoues || 0) > 1 ? 's' : ''} sur ${MIN_TOURS_CLASSEMENT || 5} pour être classé` })).join('')}
       <div class="crs-leg">${COMPO.map(([k, c]) => `<span><i style="background:${c}"></i>${IPZ_LABELS[k]} ${Math.round(IPZ_POIDS[k] * 100)} %</span>`).join('')}</div>
     </section>${pourquoiHtml(rows, me)}`;
+  } else if (tab === 'central') {
+    corps = classementCentralHtml(me);
   } else if (tab === 'limier') {
     const zs = Object.values(S.state.zones).sort((a, b) => b.stats.limier - a.stats.limier);
     const max = Math.max(1, ...zs.map((z) => z.stats.limier));

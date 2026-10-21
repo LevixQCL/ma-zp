@@ -21,7 +21,7 @@ const AIDE_OBJ = {
   entraide: { t: '<b>Radio, F2 · Renforts &amp; ops</b> : réponds à un appel de renfort en prêtant des agents. Ou, quand un suspect fuit chez toi, accepte la <b>relève</b> (« Je prends ») : elle apparaît sur l’HP.', r: 'radio', x: 'ops', b: 'Voir les appels (F2)' },
   reseau: { t: 'Onglet <b>Chef</b>, carte Réseau (ouverte au 5<sup>e</sup> jour de prise de fonctions) : demande un service à un contact satisfait.', r: 'chef', b: 'Aller au Chef' },
   partage: { t: 'Avec une zone liée par un <b>pacte d’enquête</b>, partage une pièce ou un indice. Pas encore de pacte ? Propose-le dans les Pactes.', r: 'pactes', b: 'Ouvrir les Pactes' },
-  satisfaction: { t: 'Satisfaction à 70 ou plus : envoie des patrouilles de <b>Proximité</b> dans tes quartiers (Carte, calque Ma zone), d’abord sur le point chaud 🔥.', r: 'carte-mazone', b: 'Ouvrir mes quartiers' },
+  satisfaction: { t: 'Satisfaction à 70 ou plus : envoie des patrouilles de <b>Proximité</b> dans tes quartiers (Ordres, Patrouilles du soir), d’abord sur le point chaud 🔥.', r: 'ordres', x: 'patrouilles', b: 'Ouvrir mes patrouilles' },
   vagues: { t: 'Une <b>vague de délinquance</b> venue d’un voisin est annoncée la veille (alerte sur l’HP et dans les Ordres) : renforce le service indiqué pour l’absorber. Sinon, garde plus de 2 agents à l’<b>Accueil</b> : ils évitent des imprévus.', r: 'ordres', b: 'Ouvrir les Ordres' },
   quartier: { t: 'Onglet <b>Chef</b>, agenda du jour : choisis <b>Quartier</b> (réunion) ou <b>Terrain</b> en Proximité.', r: 'chef', b: 'Choisir l’agenda' },
 };

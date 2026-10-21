@@ -136,10 +136,11 @@ export const ETAPES = [
       <p>Pas le temps ou pas l’envie ? Un <strong>quiz express</strong> ou un <strong>agent</strong> qui planche à ta place peuvent aussi décrocher le bonus. L’<strong>Entraînement</strong> permet de s’exercer aux énigmes sans enjeu, et l’onglet <strong>Records</strong> aux mini-jeux d’incident.</p>`,
   },
   {
-    id: 'carte-v2', route: 'carte', onglet: 'Ta ville en maquette : la zone de non-droit, tes quartiers et tout le district.', cible: '#mes-quartiers', avant: () => { S.carteCalque = 'mazone'; },
-    titre: 'La carte : Non-droit et Ma zone',
-    texte: `<p><strong>Non-droit</strong> (l’écran qui s’ouvre d’abord) : le centre de la ville, à reprendre ensemble. Touche un secteur rouge et place tes agents dans un rôle : <strong>repérage</strong> (Recherche, révèle la faille du milieu), <strong>descente</strong> (Intervention, fait tomber l’emprise) ou <strong>bouclage</strong> (Roulage et Proximité, plus de saisies). À plusieurs le même soir, c’est bien plus fort ; seul et trop léger, gare aux blessés.</p>
-      <p><strong>Ma zone</strong> : touche un quartier, puis remplis ses cases : une case, une patrouille de Proximité, et une voiture qui part tourner dans le quartier. Vise d’abord le <strong>point chaud</strong> 🔥.</p>`,
+    id: 'carte-v2', route: 'carte', onglet: 'Ta ville en maquette : ta zone en direct, la zone de non-droit et tout le district.', cible: ['#mes-quartiers', '.cx-tete'], avant: () => { S.carteCalque = 'mazone'; },
+    titre: 'La carte : Ma zone et Non-droit',
+    texte: `<p><strong>Ma zone</strong> (l’écran qui s’ouvre d’abord) : le central en direct. Les appels tombent toute la journée : envoie la bonne équipe, sinon ton adjoint s’en charge au bout de 10 minutes.</p>
+      <p><strong>Non-droit</strong> : le centre de la ville, à reprendre ensemble. Touche un secteur rouge et place tes agents dans un rôle : <strong>repérage</strong> (Recherche, révèle la faille du milieu), <strong>descente</strong> (Intervention, fait tomber l’emprise) ou <strong>bouclage</strong> (Roulage et Proximité, plus de saisies). À plusieurs le même soir, c’est bien plus fort ; seul et trop léger, gare aux blessés.</p>
+      <p><strong>Patrouilles du soir</strong> : dans tes <strong>Ordres</strong>. Touche un quartier, puis remplis ses cases : une case, une patrouille de Proximité. Vise d’abord le <strong>point chaud</strong> 🔥.</p>`,
   },
   {
     id: 'radio2', route: 'radio', onglet: 'Pour parler avec les autres chefs de zone.', cible: '[aria-label="Fréquences"]',
@@ -200,10 +201,10 @@ export const ETAPES = [
       <p>Le grand liège existe toujours : menu <strong>⋯</strong>.</p>`,
   },
   {
-    id: 'm-carte', route: 'carte', mini: true, onglet: 'La carte remplace aussi l’ancien Terrain.', cible: '#mes-quartiers', avant: () => { S.carteCalque = 'mazone'; },
+    id: 'm-carte', route: 'carte', mini: true, onglet: 'La carte remplace aussi l’ancien Terrain.', cible: ['#mes-quartiers', '.cx-tete'], avant: () => { S.carteCalque = 'mazone'; },
     titre: 'Carte : non-droit et ma zone',
     texte: `<p><strong>Non-droit</strong> : place tes agents dans un <strong>rôle</strong>, repérage (révèle la faille), descente (fait tomber l’emprise) ou bouclage (plus de saisies). À plusieurs, c’est bien plus fort.</p>
-      <p><strong>Ma zone</strong> : tes quartiers et tes patrouilles, l’ancien Terrain. Renforts, pactes et Conseil sont en bas de la carte.</p>`,
+      <p><strong>Ma zone</strong> : le central en direct (appels, équipes). Les patrouilles du soir sont dans tes Ordres. Renforts, pactes et Conseil sont sous le non-droit.</p>`,
   },
   {
     id: 'm-radio', route: 'radio', mini: true, onglet: 'La radio a deux fréquences.', cible: '[aria-label="Fréquences"]',
