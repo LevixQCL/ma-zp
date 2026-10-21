@@ -194,6 +194,17 @@ export async function createFirebaseBackend(config) {
       const snap = await F.getDocs(q);
       const out = {}; snap.forEach((d) => { const v = d.data(); out[v.uid] = v.orders; }); return out;
     },
+    /** Une action du central, horodatée par le serveur (les règles refusent toute autre heure). */
+    async saveCentralAction(uid, season, turn, action) {
+      await F.addDoc(col('central'), { ...plain(action), uid, season, turn, at: F.serverTimestamp() });
+    },
+    async getCentralActions(season, turn) {
+      const snap = await F.getDocs(F.query(col('central'), F.where('season', '==', season), F.where('turn', '==', turn)));
+      const out = {};
+      snap.forEach((d) => { const v = d.data(), at = v.at && v.at.toMillis ? v.at.toMillis() : null; if (at == null) return; const { uid, season: s0, turn: t0, at: a0, ...x } = v; (out[uid] ||= []).push({ ...x, at }); });
+      for (const u of Object.keys(out)) out[u].sort((a, b) => a.at - b.at);
+      return out;
+    },
     async saveQuest(uid, season, turn, slot, data) {
       await F.setDoc(docIn('quests', `${id3(season, turn, uid)}_${slot}`), plain({ ...data, uid, season, turn, slot, at: Date.now() }));
     },

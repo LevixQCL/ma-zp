@@ -116,6 +116,21 @@ service cloud.firestore {
         allow delete: if master(gid);
       }
 
+      // Central (Carte › Ma zone) : une action par document, horodatée par le serveur, jamais modifiée.
+      // Lisibles par tous seulement après l'heure limite (calcul du tour de secours sur un appareil).
+      match /central/{id} {
+        allow list, get: if member(gid) && (afterDeadline(gid) || pastTurn(gid, resource.data.season, resource.data.turn));
+        allow create: if member(gid)
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.at == request.time
+          && request.resource.data.keys().hasOnly(['uid', 'season', 'turn', 'at', 't', 'k', 'a', 'e', 'q', 'c'])
+          && request.resource.data.k in ['envoi', 'pause', 'poste', 'rens', 'fouille', 'consigne']
+          && request.resource.data.t is int
+          && currentTurn(gid, request.resource.data.season, request.resource.data.turn)
+          && !afterDeadline(gid);
+        allow update, delete: if master(gid);
+      }
+
 	// Ordres : secrets jusqu'à l'heure limite, modifiables uniquement pendant le tour en cours.
     	  match /orders/{id} {
         // Lire un ordre précis : le sien (même pas encore créé), ou celui des autres après l'heure limite.

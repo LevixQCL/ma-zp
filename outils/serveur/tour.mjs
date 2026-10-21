@@ -43,6 +43,13 @@ function backendAdmin(gid) {
       const snap = await col('players').get();
       const out = {}; snap.forEach((d) => { out[d.id] = d.data(); }); return out;
     },
+    async getCentralActions(season, turn) {
+      const snap = await col('central').where('season', '==', season).where('turn', '==', turn).get();
+      const out = {};
+      snap.forEach((d) => { const v = d.data(), at = v.at && v.at.toMillis ? v.at.toMillis() : null; if (at == null) return; const { uid, season: s0, turn: t0, at: a0, ...x } = v; (out[uid] ||= []).push({ ...x, at }); });
+      for (const u of Object.keys(out)) out[u].sort((a, b) => a.at - b.at);
+      return out;
+    },
     async listEncheres(venteId) {
       const snap = await col('radio').where('enchere.vente', '==', venteId).get();
       return snap.docs.map((d) => { const v = d.data(); return { uid: v.uid, at: v.at, ...v.enchere }; });

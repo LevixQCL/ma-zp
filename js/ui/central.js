@@ -211,8 +211,11 @@ function hier(c) {
 /** Une action du joueur, horodatée à la minute du central. */
 function agir(x) {
   const c = contexte();
-  c.mem.actions = [...(c.mem.actions || []), { ...x, t: c.m }];
+  const act = { ...x, t: c.m };
+  c.mem.actions = [...(c.mem.actions || []), act];
   sauver(c.mem);
+  // Copie horodatée par le serveur : c'est elle qui compte au calcul de 20 h (en démo, le document joueur suffit).
+  if (S.backend && S.backend.saveCentralAction) S.backend.saveCentralAction(S.user.uid, c.st.season, c.st.turn, act).catch((e) => console.warn('Action du central non notée :', e.message));
 }
 
 let minuterie = null;

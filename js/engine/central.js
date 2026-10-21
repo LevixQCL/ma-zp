@@ -3,9 +3,11 @@
 // les équipes mettent de vraies minutes à arriver et à régler l'affaire. Le joueur passe quand il veut : il dispatche,
 // redirige, met une équipe en pause ou en poste, se renseigne. Sans lui, l'adjoint dispatche au bout de 10 minutes.
 // Tout est recalculé à partir des actions horodatées du joueur : même résultat sur tous les appareils, aucun hasard
-// à la résolution. Phase de test : rien ici ne touche encore à la zone.
+// à la résolution. À 20 h, le calcul du tour rejoue la journée (heure des actions donnée par le serveur) et l'inscrit
+// au carnet de la zone : saisies, lot de confiscation, pièce d'enquête, trophées, classement du central.
 import { makeRng } from './rng.js';
 import { carteQuartiers } from './quartiers.js';
+import { vehiculesDisponibles } from './zone.js';
 
 export const CENTRAL = {
   jour: 1440,                       // minutes dans une journée de tour (20:00 → 20:00)
@@ -17,19 +19,21 @@ export const CENTRAL = {
   pause: 20, fatigue: 3, repos: 45, // à la 4e mission sans pause, le résultat baisse d'un cran ; 45 min sans mission reposent
   reprise: 60,                      // un appel mal réglé peut reprendre une heure plus tard
   annonce: 60,                      // les événements annoncés le sont une heure avant
-  renseignements: 4,                // coups de fil au requérant par jour
+  renseignements: 6,                // coups de fil au requérant par jour
   pts: { maitrise: 3, moyen: 1, deborde: -1, incident: -3, arretee: 4, saisie: 1, rare: 2 },
   fouille: 10,                      // minutes de plus sur place pour fouiller
   chanceFouille: { maitrise: 0.6, arretee: 0.8, moyen: 0.35, deborde: 0.15, incident: 0 },
   confiscation: 10,                 // valeur de saisies qui fait un lot pour la salle des ventes
   maxActions: 600,
   // Appels par heure selon l'heure de la journée (heure de Bruxelles).
-  debit: (h) => (h >= 2 && h < 8 ? 1.1 : h < 12 && h >= 8 ? 2.8 : h < 18 && h >= 12 ? 3.5 : h >= 18 && h < 23 ? 4.2 : 2.8),
+  debit: (h) => (h >= 2 && h < 8 ? 1 : h < 12 && h >= 8 ? 2.4 : h < 18 && h >= 12 ? 3 : h >= 18 && h < 23 ? 3.6 : 2.4),
+  plafondJour: 25,                  // classement : chaque journée compte de 0 à +25 (la présence ne fait pas tout)
+  consignes: { fouille: 'non', reserve: null, pause: 3 },
 };
 export const STATUTS_C = { maitrise: 'Maîtrisé', moyen: 'Moyen', deborde: 'Débordé', incident: 'Incident', arretee: 'Bande arrêtée' };
 const PIRE = { maitrise: 'moyen', moyen: 'deborde', deborde: 'incident', incident: 'incident', arretee: 'moyen' };
 const RATE = new Set(['moyen', 'deborde', 'incident']);
-const KINDS = new Set(['envoi', 'pause', 'poste', 'rens', 'fouille']);
+const KINDS = new Set(['envoi', 'pause', 'poste', 'rens', 'fouille', 'consigne']);
 
 export const TYPES_C = [
   { titre: 'Rixe à la sortie d’un café', tags: ['violence', 'ivresse'], g: 2, suite: true, w: 3, f: 'rixe' },
@@ -59,7 +63,7 @@ export const SAISIES_C = {
   cannabis: { nom: 'Cannabis', ico: '🌿', val: 1 },
   poing: { nom: 'Poing américain', ico: '✊', val: 1 },
   sono: { nom: 'Matériel de sonorisation', ico: '🔊', val: 1 },
-  permis: { nom: 'Permis retiré', ico: '🪪', val: 0 },
+  plaques: { nom: 'Plaques volées', ico: '🔖', val: 1 },
   piedbiche: { nom: 'Pied-de-biche', ico: '🔧', val: 1 },
   bijoux: { nom: 'Bijoux volés', ico: '💍', val: 2 },
   telephone: { nom: 'Téléphone du guetteur', ico: '📱', val: 1, piste: true },
@@ -77,7 +81,7 @@ export const SAISIES_C = {
 const FOUILLE = {
   rixe: { couteau: 3, poing: 2, cannabis: 2, armefeu: 0.3 },
   tapage: { sono: 3, cannabis: 2 },
-  accident: { permis: 3, cannabis: 1, voiture: 0.5 },
+  accident: { cannabis: 2, plaques: 2, voiture: 0.5 },
   vif: { couteau: 3, armefeu: 0.5 },
   ivresse: { cannabis: 2, couteau: 1 },
   bande: { piedbiche: 3, bijoux: 2, telephone: 2, voiture: 1, carnet: 0.4 },
@@ -85,7 +89,7 @@ const FOUILLE = {
   etalage: { marchandise: 3, couteau: 1, carte: 1, fauxbillets: 0.3 },
   match: { fumigene: 3, couteau: 1, cannabis: 1 },
   fete: { sono: 2, cannabis: 2, carnet: 0.2 },
-  marche: { contrefacon: 3, permis: 1, fauxbillets: 0.4 },
+  marche: { contrefacon: 3, plaques: 1, fauxbillets: 0.4 },
 };
 /** On peut fouiller sur cet appel. */
 export const fouillable = (a) => !!(a && a.f && FOUILLE[a.f]);
@@ -158,6 +162,7 @@ export function simuler(jour, equipes, actions, fin, { dist, capitale }) {
   const parId = Object.fromEntries(A.map((a) => [a.id, a]));
   const acts = actionsValides(actions).filter((x) => x.t <= fin);
   let ia = 0, rensUtil = 0;
+  const cons = { ...CENTRAL.consignes };
   const journal = [];
   const libre = (e) => e.etat === 'libre' || e.etat === 'poste';
   const engager = (e, a, m, par) => {
@@ -170,6 +175,8 @@ export function simuler(jour, equipes, actions, fin, { dist, capitale }) {
   const arriver = (e, a, m) => {
     const g0 = a.gReel, retard = Math.max(0, m - a.t), fat = e.n >= CENTRAL.fatigue;
     const st = resultatC(e, a, retard, g0, fat);
+    // Consigne « fouiller quand c'est réussi » : l'équipe fouille d'elle-même.
+    if (!a.fouille && cons.fouille === 'reussi' && fouillable(a) && (st === 'maitrise' || st === 'arretee')) { a.fouille = true; a.fouillePar = 'consigne'; }
     a.statut = st; a.finA = m; a.fatigue = fat; a.g = g0; a.flou = false;
     e.n++; e.ou = a.cell; e.etat = 'surplace'; e.jusqua = m + CENTRAL.surPlace(g0) + (a.fouille && st !== 'incident' ? CENTRAL.fouille : 0);
     journal.push({ m, id: a.id, statut: st, eq: e.id, pts: CENTRAL.pts[st] });
@@ -202,6 +209,11 @@ export function simuler(jour, equipes, actions, fin, { dist, capitale }) {
       else if (x.k === 'pause' && e && libre(e)) { e.etat = 'pause'; e.jusqua = m + CENTRAL.pause + trajet(e, e.ou, capitale, dist); e.ou = capitale; e.poste = null; }
       else if (x.k === 'poste' && e && libre(e)) { e.etat = 'poste'; e.poste = x.q; e.ou = x.q; }
       else if (x.k === 'rens' && a && a.flou && !a.rens && a.t <= m && rensUtil < CENTRAL.renseignements) { a.rens = true; rensUtil++; }
+      else if (x.k === 'consigne' && x.c && typeof x.c === 'object') {
+        if (['non', 'reussi'].includes(x.c.fouille)) cons.fouille = x.c.fouille;
+        if (x.c.reserve === null || E.some((w) => w.id === x.c.reserve)) cons.reserve = x.c.reserve;
+        if ([2, 3, 4].includes(x.c.pause)) cons.pause = x.c.pause;
+      }
       else if (x.k === 'fouille' && a && fouillable(a) && !a.fouille && a.eq) {
         // Fouiller : ordonné en route (l'équipe fouillera en arrivant) ou sur place (10 minutes de plus).
         const q = E.find((w) => w.id === a.eq);
@@ -220,7 +232,8 @@ export function simuler(jour, equipes, actions, fin, { dist, capitale }) {
       const attente = m - a.t;
       if (a.gReel + Math.floor(attente / CENTRAL.aggravation) > 3) { a.statut = 'incident'; a.finA = m; journal.push({ m, id: a.id, statut: 'incident', eq: null, pts: CENTRAL.pts.incident }); continue; }
       if (attente >= CENTRAL.delaiAdjoint) {
-        const dispo = E.filter(libre);
+        // Équipe gardée en réserve : l'adjoint ne l'engage que sur un appel grave ou une bande.
+        const dispo = E.filter((q) => libre(q) && (q.id !== cons.reserve || a.gReel >= 3 || a.tags.includes('bande')));
         if (!dispo.length) continue;
         const arr = (e) => trajet(e, e.ou, a.cell, dist), t0 = Math.min(...dispo.map(arr)), forme = (e) => a.tags.some((t) => e.comp.includes(t));
         const e = dispo.filter((q) => arr(q) <= t0 + 5).sort((x, y) => (forme(y) - forme(x)) || ((x.n >= CENTRAL.fatigue) - (y.n >= CENTRAL.fatigue)) || arr(x) - arr(y) || x.id.localeCompare(y.id))[0];
@@ -228,10 +241,10 @@ export function simuler(jour, equipes, actions, fin, { dist, capitale }) {
       }
     }
     // 5. L'adjoint met en pause une équipe usée quand rien n'attend.
-    if (!A.some((a) => !a.statut && !a.eq && a.t <= m)) for (const e of E) if (e.etat === 'libre' && e.n >= CENTRAL.fatigue) { e.etat = 'pause'; e.jusqua = m + CENTRAL.pause + trajet(e, e.ou, capitale, dist); e.ou = capitale; }
+    if (!A.some((a) => !a.statut && !a.eq && a.t <= m)) for (const e of E) if (e.etat === 'libre' && e.n >= cons.pause) { e.etat = 'pause'; e.jusqua = m + CENTRAL.pause + trajet(e, e.ou, capitale, dist); e.ou = capitale; }
   }
   const pts = journal.reduce((s, j) => s + j.pts, 0);
-  return { appels: A, equipes: E, journal, pts, rensRestants: CENTRAL.renseignements - rensUtil };
+  return { appels: A, equipes: E, journal, pts, rensRestants: CENTRAL.renseignements - rensUtil, consignes: cons };
 }
 
 /** Actions lisibles (horodatées dans la journée, d'un type connu), triées par minute : protège le rejeu de 20 h. */
@@ -275,18 +288,31 @@ export function equipesValides(liste, cells, capitale) {
  * le calcul. `seed` : graine de la partie (CONFIG.seed, la même que sur les appareils). Rien si le joueur n'a pas ouvert
  * le central aujourd'hui.
  */
-export function bilanCentral(state, uid, player, seed) {
-  const mem = player && player.central, cle = `${state.season}-${state.turn}`;
-  if (!seed || !mem || mem.cle !== cle) return null;
+export function bilanCentral(state, uid, player, seed, serveur = null) {
+  const mem = player && player.central, cle = `${state.season}-${state.turn}`, z = state.zones && state.zones[uid];
+  if (!seed || !z || !mem || mem.cle !== cle) return null;
   const carte = carteQuartiers(state), cells = (carte.deZone[uid] || []).slice();
   if (!cells.length) return null;
   const capitale = carte.capitale[uid] ?? cells[0];
-  const equipes = equipesValides(mem.equipes, cells, capitale);
+  // Équipes : celles que l'appareil a figées au matin, mais jamais au-delà de ce que la zone a vraiment.
+  const reelles = equipesCentral(z, { capitale, autre: cells.find((c) => c !== capitale), vehicules: Math.max(vehiculesDisponibles(z, state.turn), 2) });
+  const equipes = equipesValides(mem.equipes, cells, capitale).filter((e) => reelles.some((r) => r.id === e.id))
+    .map((e) => { const r = reelles.find((x) => x.id === e.id); return { ...e, comp: e.comp.filter((t) => r.comp.includes(t)), ...(e.moto && !r.moto ? { moto: false } : {}) }; });
   if (!equipes.length) return null;
   const opt = { dist: distancesCentral(cells, carte.adj), capitale };
   const jour = genererJournee(`${seed}-central-${cle}-${uid}`, cells);
-  const actions = actionsValides(mem.actions);
+  // Heure des actions : celle du serveur quand il l'a notée (une action ne peut pas être antidatée de plus de 3 minutes).
+  const actions = actionsValides(serveur ? actionsServeur(serveur, state.nextDeadline - CENTRAL.jour * 60000) : mem.actions);
   return { s: simuler(jour, equipes, actions, CENTRAL.jour - 1, opt), adj: simuler(jour, equipes, [], CENTRAL.jour - 1, opt), actions: actions.length, capitale };
+}
+
+/** Actions notées par le serveur ({ ...action, at: ms }) ramenées à la minute de la journée de tour. */
+export function actionsServeur(liste, debut) {
+  return (Array.isArray(liste) ? liste : []).filter((x) => x && Number.isFinite(x.at)).map((x) => {
+    const tS = Math.floor((x.at - debut) / 60000), t = Number.isInteger(x.t) && x.t <= tS + 1 && x.t >= tS - 3 ? x.t : tS;
+    const { at, ...reste } = x;
+    return { ...reste, t };
+  }).filter((x) => x.t >= 0 && x.t < CENTRAL.jour);
 }
 
 /** Ce que la journée a rapporté : en points de carnet, et ce que ça vaut pour la zone. */
@@ -309,10 +335,14 @@ export function appliquerCentral(state, uid, b, T, { indice = () => false } = {}
   const r = resumeJournee(b);
   const c = (z.central ||= { jours: 0, types: {}, saisies: {}, interp: 0, jauge: 0, gainMax: 0, gainSaison: 0, joursSaison: 0, s: state.season });
   if (c.s !== state.season) Object.assign(c, { s: state.season, gainSaison: 0, joursSaison: 0 });
-  c.jours++; c.joursSaison++; c.gainSaison += r.gain; c.gainMax = Math.max(c.gainMax || 0, r.gain); c.interp = (c.interp || 0) + r.interp;
+  // Classement : chaque journée compte de 0 à +25. Record et série de journées à +15 pour les trophées.
+  const compte = Math.max(0, Math.min(CENTRAL.plafondJour, r.gain));
+  c.jours++; c.joursSaison++; c.gainSaison += compte; c.gainMax = Math.max(c.gainMax || 0, r.gain); c.interp = (c.interp || 0) + r.interp;
+  c.serie15 = r.gain >= 15 && c.dernier && c.dernier.T === T - 1 ? (c.serie15 || 0) + 1 : r.gain >= 15 ? 1 : 0;
+  r.compte = compte;
   for (const t of r.types) c.types[t] = (c.types[t] || 0) + 1;
   for (const id of r.saisies) c.saisies[id] = (c.saisies[id] || 0) + 1;
-  c.jauge = (c.jauge || 0) + r.valeur;
+  c.jauge = Math.min(CENTRAL.confiscation, (c.jauge || 0) + r.valeur);
   const lignes = [`Central : ${r.pts >= 0 ? '+' : ''}${r.pts} points, ${r.gain >= 0 ? '+' : ''}${r.gain} par rapport à l’adjoint seul${r.saisies.length ? ` · saisies : ${r.saisies.map((id) => SAISIES_C[id].nom.toLowerCase()).join(', ')}` : ''}${r.interp ? ` · ${r.interp} interpellation${r.interp > 1 ? 's' : ''}` : ''}.`];
   // Confiscation : assez de saisies pour un lot, et pas déjà un lot de la zone en attente de vente.
   const file = (state.saisiesCentral ||= []);

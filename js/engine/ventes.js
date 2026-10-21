@@ -62,9 +62,13 @@ export function annoncerVente(state, T = state.turn) {
   // Non-droit profond : la plus ancienne saisie du milieu prend la place d'un lot (petit ou gros selon sa taille).
   const nd = state.nonDroit, sz = nd && nd.v3 && Array.isArray(nd.saisies) ? nd.saisies.shift() : null;
   // Central : les biens confisqués lors des fouilles, quand le non-droit n'a rien à vendre ce jour-là.
-  const sc = !sz && Array.isArray(state.saisiesCentral) && state.saisiesCentral.length ? state.saisiesCentral.shift() : null;
-  const ic = sc ? Math.max(0, lots.findIndex((l) => l.id === sc.id && !l.gros)) : 0;
-  if (sc && LOTS[sc.id]) lots[ic] = { ...lots[ic], id: sc.id, prixMin: Math.max(2, LOTS[sc.id].prix), saisie: { cell: sc.cell, parts: sc.parts, src: 'central' } };
+  // Jusqu'à deux lots (les petits), dans l'ordre d'arrivée : une zone n'a jamais deux lots en attente.
+  const libres = lots.map((l, i) => i).filter((i) => !lots[i].gros && !(sz && i === 0));
+  for (const i of libres) {
+    const sc = Array.isArray(state.saisiesCentral) && state.saisiesCentral.length ? state.saisiesCentral.shift() : null;
+    if (!sc) break;
+    if (LOTS[sc.id]) lots[i] = { ...lots[i], id: sc.id, prixMin: Math.max(2, LOTS[sc.id].prix), saisie: { cell: sc.cell, parts: sc.parts, src: 'central' } };
+  }
   if (sz && LOTS[sz.id]) { const i = GROS.includes(sz.id) ? lots.length - 1 : 0; lots[i] = { ...lots[i], id: sz.id, prixMin: Math.max(2, LOTS[sz.id].prix), saisie: { cell: sz.cell, parts: sz.parts } }; }
   state.vente = { id: `v${state.season}-${T}`, ouverture: T, cloture: T + 1, lots, meneurs: {} };
   return state.vente;

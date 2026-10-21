@@ -1,6 +1,6 @@
 // Le central : journée déterministe, rejeu des actions, adjoint, aggravation, poste, pause, reprises.
 import assert from 'node:assert/strict';
-import { genererJournee, simuler, equipesCentral, distancesCentral, prevoir, resultatC, CENTRAL, SAISIES_C, bilanCentral, appliquerCentral, equipesValides } from '../js/engine/central.js';
+import { genererJournee, simuler, equipesCentral, distancesCentral, prevoir, resultatC, CENTRAL, SAISIES_C, bilanCentral, appliquerCentral, equipesValides, actionsServeur, fouillable } from '../js/engine/central.js';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { carteQuartiers } from '../js/engine/quartiers.js';
 import { annoncerVente } from '../js/engine/ventes.js';
@@ -97,4 +97,27 @@ appliquerCentral(g3, 'a', { ...b, s: { ...b.s, appels: [{ statut: 'maitrise', pa
 assert.equal(g3.saisiesCentral.length, 1); assert.equal(g3.saisiesCentral[0].id, 'banalise');
 g3.vente = null; const v = annoncerVente(g3, g3.turn + 1);
 assert.ok(v.lots.some((l) => l.saisie && l.saisie.src === 'central' && l.saisie.parts.a === 1)); assert.equal(g3.saisiesCentral.length, 0); ok++;
+// 16. Heure du serveur : une action antidatée de plus de 3 minutes est ramenée à l'heure où le serveur l'a reçue.
+const debut = 1_000_000_000_000;
+assert.deepEqual(actionsServeur([{ t: 100, k: 'envoi', a: 'x', e: 'C1', at: debut + 101 * 60000 }, { t: 10, k: 'envoi', a: 'y', e: 'C1', at: debut + 200 * 60000 + 5 }, { t: 5, k: 'pause', e: 'PA' }], debut),
+  [{ t: 100, k: 'envoi', a: 'x', e: 'C1' }, { t: 200, k: 'envoi', a: 'y', e: 'C1' }]);
+// Au calcul de 20 h, ce sont les actions du serveur qui comptent, pas celles du document joueur.
+const bS = bilanCentral(g, 'a', players2.a, 'graine', []);
+assert.equal(bS.actions, 0); assert.equal(bS.s.pts, bS.adj.pts); ok++;
+// 17. Équipes : jamais plus que la zone n'en a (C3 et K2 inventées ignorées).
+const bE = bilanCentral(g, 'a', { central: { cle, actions: [], equipes: [...eqA, { id: 'C3', comp: ['violence', 'ivresse'], base: capA }, { id: 'K2', comp: ['bande', 'véhicule'], base: capA }] } }, 'graine');
+assert.ok(!bE.s.equipes.some((e) => e.id === 'K2' || e.id === 'C3')); ok++;
+// 18. Consignes à l'adjoint : fouiller quand c'est réussi (sans autre ordre), garder une équipe en réserve.
+const jC = genererJournee('cons-1', cells);
+const sC = simuler(jC, eqs, [{ t: 0, k: 'consigne', c: { fouille: 'reussi' } }], 1439, opt);
+const fC = sC.appels.filter((a) => a.fouille);
+assert.ok(fC.length > 5 && fC.every((a) => a.fouillePar === 'consigne' && (a.statut === 'maitrise' || a.statut === 'arretee') && fouillable(a)));
+const sR = simuler(jC, eqs, [{ t: 0, k: 'consigne', c: { reserve: 'K1' } }], 1439, opt);
+assert.ok(sR.appels.filter((a) => a.eq === 'K1' && a.par === 'adjoint').every((a) => a.gReel >= 3 || a.tags.includes('bande'))); ok++;
+// 19. Classement : une journée compte de 0 à +25, quel que soit l'écart.
+const g4 = JSON.parse(JSON.stringify(g)); delete g4.zones.a.central;
+appliquerCentral(g4, 'a', { s: { pts: 140, appels: [] }, adj: { pts: 40, appels: [] }, actions: 3, capitale: capA }, g4.turn);
+assert.equal(g4.zones.a.central.gainSaison, CENTRAL.plafondJour);
+appliquerCentral(g4, 'a', { s: { pts: 10, appels: [] }, adj: { pts: 40, appels: [] }, actions: 3, capitale: capA }, g4.turn + 1);
+assert.equal(g4.zones.a.central.gainSaison, CENTRAL.plafondJour); ok++;
 console.log(`central : ${ok} vérifications passées`);

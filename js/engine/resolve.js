@@ -173,14 +173,14 @@ function genererAffaires(state, rng) {
  * @param {object} input  { orders: {uid: ordres}, quests: {uid: énigme}, players: {uid: profil} }
  * @returns {{ state: object, gazette: object }}
  */
-export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, nextWeekday = null, historiqueEnigmes = null, encheres = [], graineCentral = null } = {}) {
+export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, nextWeekday = null, historiqueEnigmes = null, encheres = [], graineCentral = null, centralActions = null } = {}) {
   // Incidents du jour : tirés sur l'état d'avant la résolution, comme les joueurs les ont vus.
   // Ceux encore ouverts après 20:00 et pas encore joués sont reportés à la résolution de demain.
   const coursesUrgence = []; // temps des urgences jouées cette nuit : ajustent le temps cible de demain
   const incidentsAvant = Object.fromEntries(Object.keys((stateIn && stateIn.zones) || {}).map((u) => [u, separerIncidents(stateIn, u, resultatsIncidents(players[u], incidentsVisibles(stateIn, u)))]));
   // Central (Carte › Ma zone) : la journée de chaque joueur, rejouée sur l'état qu'il a vu toute la journée.
   const centralAvant = {};
-  for (const u of Object.keys((stateIn && stateIn.zones) || {})) { try { centralAvant[u] = bilanCentral(stateIn, u, players[u], graineCentral); } catch (e) { centralAvant[u] = null; } }
+  for (const u of Object.keys((stateIn && stateIn.zones) || {})) { try { centralAvant[u] = bilanCentral(stateIn, u, players[u], graineCentral, centralActions ? (centralActions[u] || []) : null); } catch (e) { centralAvant[u] = null; } }
   const state = migrateState(clone(stateIn));
   state.minClientVersion = Math.max(state.minClientVersion || 0, APP_VERSION);
   const T = state.turn;

@@ -112,10 +112,13 @@ export async function resolvePending(backend, { hour = 20, now = () => Date.now(
       // Saison 2 : relances visibles de la vente aux enchères (publiées sur la Radio).
       let encheres = [];
       if (state.vente && backend.listEncheres) { try { encheres = await backend.listEncheres(state.vente.id); } catch (e) { console.warn('Relances illisibles :', e.message); } }
+      // Central : actions notées avec l'heure du serveur (sans elles, celles du document joueur, en démo).
+      let centralActions = null;
+      if (backend.getCentralActions) { try { centralActions = await backend.getCentralActions(state.season, state.turn); } catch (e) { console.warn('Actions du central illisibles :', e.message); } }
       const nextDeadline = nextResolutionAfter(state.nextDeadline, hour);
       let next, gazette;
       try {
-        ({ state: next, gazette } = resolveTurn(state, { orders, quests, players, nextWeekday: weekdayBe(nextDeadline), historiqueEnigmes, encheres, graineCentral: CONFIG.seed }));
+        ({ state: next, gazette } = resolveTurn(state, { orders, quests, players, nextWeekday: weekdayBe(nextDeadline), historiqueEnigmes, encheres, graineCentral: CONFIG.seed, centralActions }));
       } catch (e) {
         console.error('Calcul du tour impossible :', e);
         etatResolution.erreur = `Calcul du tour ${state.turn} : ${e && e.message ? e.message : e}${e && e.stack ? ' · ' + String(e.stack).split('\n').slice(1, 3).map((l) => l.trim()).join(' · ') : ''}`;
