@@ -59,18 +59,12 @@ await shot('06-quete');
 await page.goto(`${BASE}#carte`);
 await page.waitForSelector('svg[role="img"]');
 await shot('07-carte');
-// Quartiers : toucher un quartier, envoyer une patrouille, la déplacer.
-if (await page.locator('[data-action="carte-calque"][data-v="mazone"]').count()) { await page.click('[data-action="carte-calque"][data-v="mazone"]'); await page.waitForTimeout(200); } // saison 2 : la Carte s'ouvre sur le non-droit
-await page.locator('polygon[data-action="quartier"]').first().click({ force: true });
-if (await page.locator('.cv-fiche').count()) { // saison 2 : fiche sous la carte, cases de patrouille
-  await page.locator('.cv-case:not([disabled])').first().click();
-  await page.waitForTimeout(200);
-  if ((await page.locator('.cv-case.on').count()) < 1 || (await page.locator('svg.iso g.pv:not([visibility])').count()) < 1) errors.push('Quartiers : la patrouille n’est pas affectée (case ou voiture absente)');
-} else {
-  await page.waitForSelector('.qrow.sel');
-  await page.locator('.qrow [data-action="patrouille"][data-d="1"]:not([disabled])').first().click();
-  if ((await page.locator('.qrow .stepper .n', { hasText: /^[1-9]/ }).count()) < 1) errors.push('Quartiers : la patrouille n’est pas affectée');
-}
+// Patrouilles du soir : elles se règlent dans les Ordres (fiche du quartier, cases de patrouille).
+await page.goto(`${BASE}#ordres-patrouilles`);
+await page.waitForSelector('.cv-case', { timeout: 15000 });
+await page.locator('.cv-case:not([disabled])').first().click();
+await page.waitForTimeout(200);
+if ((await page.locator('.cv-case.on').count()) < 1) errors.push('Patrouilles : la patrouille n’est pas affectée depuis les Ordres');
 await shot('07b-carte-patrouille');
 await page.goto(`${BASE}#radio`);
 await page.fill('#radio-msg', 'Salut le district, qui fait équipe sur le trafic ?');

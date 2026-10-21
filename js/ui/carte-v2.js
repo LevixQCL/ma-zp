@@ -125,7 +125,7 @@ export function renderCarteV2(calque = S.carteCalque || CALQUE_DEFAUT) {
   const corps = calque === 'mazone' ? `${centralHtml({ surCarte: btnPactes })}${liensMaZone(st, me)}`
     : !nd.length ? `<p class="small muted" style="margin:0">La zone de non-droit n’est pas encore ouverte dans cette partie.</p>${dist}`
       : vueDist ? dist : `${ndCorps}${lienDistrict}`;
-  return `<main class="screen carte-v3${zoomND ? ' cv-nd' : ''}">
+  return `<main class="screen carte-v3${zoomND ? ' cv-nd' : ''}${calque === 'mazone' ? ' cx-mode' : ''}">
     <header class="cv-tete"><h1 class="big">${calque === 'mazone' ? esc(me.nom) : nd.length ? 'Non-droit' : 'District Delta'}</h1><span class="small muted">${sousTitre}</span></header>
     <div class="cv-calques deux" role="tablist" aria-label="Vue de la carte">${boutons}</div>
     ${calque === 'mazone' ? '' : carte}

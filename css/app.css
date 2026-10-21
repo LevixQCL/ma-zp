@@ -3701,3 +3701,18 @@ i.sg { background: var(--red); } i.sa { background: #C9A8FF; } i.dm { background
 .cv-lien .col span { font-size: 12px; color: var(--muted, #96A0BF); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cv-lien.alerte { border-color: var(--amber-line, rgba(255, 178, 63, .45)); }
 .cv-lien > svg { flex: none; color: var(--muted, #96A0BF); }
+
+/* Central (Carte › Ma zone) sur grand écran : la carte du central à gauche (fixe au défilement), tout le reste à droite. */
+@media (min-width: 1000px) and (hover: hover) and (pointer: fine) {
+  main.screen.carte-v3.cx-mode > .cv-tete, main.screen.carte-v3.cx-mode > .cv-calques { grid-column: 1 / -1; grid-row: auto; }
+  main.screen.carte-v3.cx-mode > .cv-calques { max-width: 520px; }
+  main.screen.carte-v3.cx-mode > .cv-corps { grid-column: 1 / -1; grid-row: auto; display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(360px, 1fr); column-gap: 24px; row-gap: 12px; align-items: start; }
+  .carte-v3.cx-mode > .cv-corps > * { grid-column: 2; min-width: 0; }
+  .carte-v3.cx-mode > .cv-corps > .cx-carte { grid-column: 1; grid-row: 1 / span 40; position: sticky; top: 20px; margin: 0; border-radius: 20px; overflow: hidden; border: 1px solid var(--hair); }
+  .carte-v3.cx-mode > .cv-corps > .cx-carte > svg { width: 100%; height: auto; max-height: calc(100vh - 60px); }
+  .carte-v3.cx-mode .cx-feuille, .carte-v3.cx-mode .cx-msg { left: auto; right: max(16px, calc((100vw - min(1160px, 100vw)) / 2 + 16px)); transform: none; bottom: 24px; width: min(460px, 38vw); }
+}
+@media (min-width: 1280px) and (hover: hover) and (pointer: fine) {
+  main.screen.carte-v3.cx-mode > .cv-corps { grid-template-columns: minmax(0, 1fr) clamp(380px, 32vw, 520px); column-gap: 28px; }
+  .carte-v3.cx-mode .cx-feuille, .carte-v3.cx-mode .cx-msg { right: max(16px, calc((100vw - var(--cv-l)) / 2)); width: clamp(380px, 32vw, 520px); }
+}

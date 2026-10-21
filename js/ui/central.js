@@ -1,14 +1,12 @@
 // Le central (calque « Ma zone » de la Carte) : la zone tourne en temps réel toute la journée.
 // En haut un bandeau (heure à la seconde, score du jour contre l'adjoint), puis la carte avec les appels et les équipes,
 // puis trois lignes « à faire » au plus. Un appel ou une équipe touché s'ouvre dans une feuille fixée en bas d'écran.
-// Les consignes à l'adjoint permettent de jouer en passant rarement. Les patrouilles du soir (tour de 20 h) restent
-// dans la fiche du quartier touché.
+// Les consignes à l'adjoint permettent de jouer en passant rarement. Les patrouilles du soir (tour de 20 h) se règlent
+// dans l'onglet Ordres.
 import { S, esc, myZone, zoneName } from './common.js';
 import { planIso } from './plan-iso.js';
 import { carteQuartiers } from '../engine/quartiers.js';
 import { vehiculesDisponibles } from '../engine/zone.js';
-import { ficheQuartierHtml, chipsQuartiersHtml, siteHtml } from './carte.js';
-import { siteDe } from '../engine/sites.js';
 import { CENTRAL, STATUTS_C, SAISIES_C, CARNET_TYPES, equipesCentral, genererJournee, simuler, prevoir, distancesCentral, horloge, fouillable, chanceFouille } from '../engine/central.js';
 
 const COUL = { Intervention: ['#EEF2FA', '#12306E'], Proximité: ['#1E57B8', '#E6F1FF'], Roulage: ['#E59A1F', '#2A1600'] };
@@ -96,7 +94,6 @@ function aFaire(c, s) {
     const q = ann ? ann.cell : c.cells.slice().sort((x, y) => (tens[y] || 0) - (tens[x] || 0))[0];
     if (q != null && libre.ou !== q) out.push({ k: 'poste', titre: `${libre.nom} est libre`, sous: `la poster à ${esc(nomQ(c, q))}${ann && ann.cell === q ? ` avant « ${esc(ann.titre)} »` : ', le quartier le plus tendu'}`, ton: 'b', sym: '⌖', faire: `data-cxposteq="${libre.id}:${q}"`, bouton: 'Poster' });
   }
-  if (c.me.pointChaud) out.push({ k: 'pc', titre: `Point chaud à ${nomQ(c, c.me.pointChaud.cell)}`, sous: '2 agents en patrouille ce soir le désamorcent (fiche du quartier)', ton: 'b', sym: '◉', q: c.me.pointChaud.cell });
   return out;
 }
 
@@ -172,7 +169,7 @@ function legendeHtml() {
     [ROND({ serv: 'Intervention', id: 'C1', etat: 'libre' }, false), 'Équipe (pointillé : en poste ; anneau : sur place)'],
     [`<rect x="-9" y="-8" width="18" height="16" rx="8" fill="#0B1124" stroke="#C3C9DE" stroke-width="1.2"/><text y="3.6" text-anchor="middle" class="cx-mt" style="font-size:10px">4</text>`, 'Plusieurs éléments au même endroit : touche pour la liste']];
   return `<details class="cx-leg" data-cxdet="legende" data-cxancre="legende" ${ouvert('legende', false) ? 'open' : ''}><summary>Légende de la carte</summary><div class="cx-leg-l">${l.map(([s, t]) => `<span>${mini(s)}<span>${t}</span></span>`).join('')}
-    <span><span class="cx-leg-t" aria-hidden="true">56</span><span>Nombre sur un quartier : sa tension ce soir. Plus il est haut, plus le quartier chauffe (patrouilles du soir dans sa fiche).</span></span></div></details>`;
+    <span><span class="cx-leg-t" aria-hidden="true">56</span><span>Nombre sur un quartier : sa tension ce soir. Plus il est haut, plus le quartier chauffe (les patrouilles du soir se règlent dans l’onglet Ordres).</span></span></div></details>`;
 }
 
 // ───── Feuille du bas : appel, équipe, groupe ─────
@@ -307,8 +304,6 @@ export function centralHtml({ surCarte = '' } = {}) {
     ${todos}
     <div class="cx-bande" data-cxancre="bande">${bande}</div>
     ${consignesHtml(c, s)}
-    <div data-cxancre="fiche">${quartier ? ficheQuartierHtml(c.st, c.me, quartier) : ''}</div>
-    <details class="cx-det" data-cxdet="quartiers" data-cxancre="quartiers" ${ouvert('quartiers', false) ? 'open' : ''}><summary><b>Quartiers et patrouilles du soir</b><span class="cx-sous">pour le tour de 20 h</span></summary>${chipsQuartiersHtml(c.st, c.me, quartier)}${siteHtml(siteDe(c.me))}</details>
     <details class="cx-det" data-cxdet="journal" data-cxancre="journal" ${ouvert('journal', false) ? 'open' : ''}><summary><b>Journal du jour</b><span class="cx-sous">${nbReg} appel${pl(nbReg)} réglé${pl(nbReg)}</span></summary><div class="cx-journal">${journal}</div></details>
     ${carnetHtml(c, s, adj)}
     ${hier(c)}
