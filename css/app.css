@@ -3680,3 +3680,24 @@ i.sg { background: var(--red); } i.sa { background: #C9A8FF; } i.dm { background
   .colonne *, .col-feuille, .col-fond { animation: none !important; transition: none !important; }
   .col-alarme .col-voile { opacity: .7; }
 }
+
+/* Central en direct sur l'HP : une ligne pleine largeur sous le bandeau, qui ouvre le central. */
+.hp-central { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 10px 12px; border-radius: 14px; background: var(--surface, #141B33); border: 1px solid var(--line, #29345A); color: var(--text, #EDF0FA); text-decoration: none; font-size: 14px; }
+.hp-central b { flex: none; font-weight: 700; }
+.hp-central .hc-txt { flex: 1; min-width: 0; color: var(--text2, #C3C9DE); line-height: 1.3; }
+.hp-central svg { flex: none; color: var(--muted, #96A0BF); }
+.hp-central .hc-point { flex: none; width: 10px; height: 10px; border-radius: 50%; background: #3DD39A; box-shadow: 0 0 0 3px rgba(61, 211, 154, .18); }
+.hp-central.alerte { border-color: rgba(255, 110, 106, .55); background: linear-gradient(90deg, rgba(181, 50, 46, .28), var(--surface, #141B33) 70%); }
+.hp-central.alerte .hc-point { background: #FF6E6A; box-shadow: 0 0 0 3px rgba(255, 110, 106, .22); animation: hcPouls 1.4s ease-in-out infinite; }
+.hp-central.alerte .hc-txt { color: var(--text, #EDF0FA); }
+.hp-central.avoir { border-color: var(--amber-line, rgba(255, 178, 63, .45)); }
+.hp-central.avoir .hc-point { background: #FFB23F; box-shadow: 0 0 0 3px rgba(255, 178, 63, .2); }
+@keyframes hcPouls { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .hp-central.alerte .hc-point { animation: none; } }
+/* Sous le central (Carte, Ma zone) : patrouilles du soir (Ordres) et classements. */
+.cv-liens { display: flex; flex-direction: column; gap: 6px; }
+.cv-lien { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 8px 12px; border-radius: 12px; background: var(--surface, #141B33); border: 1px solid var(--line, #29345A); color: var(--text, #EDF0FA); text-decoration: none; }
+.cv-lien b { font-size: 14px; color: var(--text, #EDF0FA); }
+.cv-lien .col span { font-size: 12px; color: var(--muted, #96A0BF); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cv-lien.alerte { border-color: var(--amber-line, rgba(255, 178, 63, .45)); }
+.cv-lien > svg { flex: none; color: var(--muted, #96A0BF); }

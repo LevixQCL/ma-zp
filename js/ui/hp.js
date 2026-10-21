@@ -38,6 +38,8 @@ import { aideBtn } from './aide.js';
 import { sceneCarteHtml, achatEnAttente, psEngages } from './logistique.js';
 import { ventesHtml } from './ventes.js';
 import { TUTELLE } from '../engine/constants.js';
+import { resumeCentral } from './central-direct.js';
+import { aFaireCentralTab } from './common.js';
 import { equipeHtml, tropheesHtml } from './equipe.js';
 import { TROPHEES } from '../engine/equipe.js';
 import { fraisFixes, pointsIpz, IPZ_LABELS } from '../engine/zone.js';
@@ -212,7 +214,7 @@ function premiersPasVus() {
 function situationPastilles(z, ciel) {
   const l = pressionsVisibles(S.state, z);
   const cielP = `<button type="button" class="pill ciel-pill ciel-p-${ciel.id}" data-action="aide" data-k="ciel" title="${esc(ciel.texte)}">${esc(ciel.nom)} ›</button>`;
-  return `<div class="soir-situ" aria-label="Situation du jour">${cielP}${l.map((p) => `<a class="pill ${p.feuilleton ? 'violet' : p.district ? 'blue' : 'amber'}" href="${p.feuilleton && p.quartier != null ? '#carte' : '#ordres'}" title="${esc(p.texte)}">${esc(p.titre)}${String(p.texte || '').length <= 32 ? ` · ${esc(p.texte.replace(/\.$/, ''))}` : ' ›'}</a>`).join('')}</div>`;
+  return `<div class="soir-situ" aria-label="Situation du jour">${cielP}${l.map((p) => `<a class="pill ${p.feuilleton ? 'violet' : p.district ? 'blue' : 'amber'}" href="${p.feuilleton && p.quartier != null ? '#ordres-patrouilles' : '#ordres'}" title="${esc(p.texte)}">${esc(p.titre)}${String(p.texte || '').length <= 32 ? ` · ${esc(p.texte.replace(/\.$/, ''))}` : ' ›'}</a>`).join('')}</div>`;
 }
 
 /** Dilemme du Directeur : une carte, deux choix, envoyés avec les ordres. */
@@ -248,10 +250,10 @@ function itemsDuSoir(st, z, { ordresOk, faites, reussies, delegue }) {
     // Pourquoi ce n'est pas encore bon : on le dit (avant, « envoie 2 patrouilles » même quand on en avait déjà envoyé ailleurs).
     const sous = a >= 2 ? 'désamorcé à 20:00 si tes ordres sont validés'
       : prox < 2 ? `il faut au moins 2 agents en Proximité (tu en as ${prox}), puis 2 patrouilles à ${lieu}`
-      : a === 1 ? `1 patrouille sur 2 à ${lieu} : ajoutes-en une sur la Carte`
+      : a === 1 ? `1 patrouille sur 2 à ${lieu} : ajoutes-en une dans tes Ordres`
       : ailleurs ? `tes ${ailleurs} patrouille${ailleurs > 1 ? 's sont' : ' est'} dans d’autres quartiers : il en faut 2 à ${lieu}`
-      : `envoie 2 patrouilles à ${lieu} depuis la Carte (calque Ma zone)`;
-    items.push({ ok: a >= 2, href: '#carte-mazone', t: a >= 2 ? `Point chaud : ${a} agents envoyés` : `Point chaud : ${esc(pc.titre.toLowerCase())}`, s: sous });
+      : `envoie 2 patrouilles à ${lieu} (Ordres, Patrouilles du soir)`;
+    items.push({ ok: a >= 2, href: '#ordres-patrouilles', t: a >= 2 ? `Point chaud : ${a} agents envoyés` : `Point chaud : ${esc(pc.titre.toLowerCase())}`, s: sous });
   }
   if (st.enquete) items.push({ ok: nbDem >= 1 || (d.accusation !== null && d.accusation !== undefined), href: '#enquete', t: `Enquête : ${nbDem} démarche${nbDem > 1 ? 's' : ''} sur ${maxDemarchesDe(st, zoneAvecAgenda())}`, s: (st.traques || []).length ? 'une traque est en cours !' : 'constatations, vérifications, partage, accusation' });
   const dl = dilemmeDuJour(st, z);
@@ -268,7 +270,7 @@ function itemsDuSoir(st, z, { ordresOk, faites, reussies, delegue }) {
       const manque = b.l.find((x) => x.n < x.min);
       if (manque) s = `${manque.n} sur ${manque.min} en ${esc(SERVICE_LABELS[manque.s] || manque.s)} comptés à 20:00${manque.brut > manque.n ? ` (${manque.brut - manque.n} partent en relève, opération ou FIPA)` : ''} : ajoutes-en dans tes Ordres`;
     }
-    items.unshift({ ok, href: sg.quartier != null ? '#carte' : '#ordres', t: esc(sg.titre), s });
+    items.unshift({ ok, href: sg.quartier != null ? '#ordres-patrouilles' : '#ordres', t: esc(sg.titre), s });
   }
   { let vt = null; try { vt = vagueTodo(estimations()); } catch (e) { /* pas de brouillon */ } if (vt) items.unshift(vt); }
   for (const x of releveTodos()) items.unshift(x);
@@ -290,7 +292,7 @@ function etiquetteEtape(i) {
   if (/^(Valider|Ordres)/.test(t)) return ['Ordres', 'ordres'];
   if (/^Enquête/.test(t)) return ['Enquête', 'enquete'];
   if (/^(Énigmes|Quiz)/.test(t)) return ['Énigmes', 'quete'];
-  if (/^Point chaud/.test(t)) return ['Point chaud', 'carte'];
+  if (/^Point chaud/.test(t)) return ['Point chaud', 'terrain'];
   if (/^Dilemme/.test(t)) return ['Dilemme', 'alert'];
   if (/^Vague/.test(t)) return ['Vague', 'carte'];
   if (i.href === '#hp-releve') return ['Relève', 'carte'];
@@ -323,6 +325,7 @@ function ordresCarteHtml(st, z, items, ordresOk) {
   if (doctrineOuverte(st, z)) et.push(['doctrine', 'shield', 'Doctrine', !!(d.doctrine || (z.doctrine && !doctrineSemaine2(st, z)))]);
   et.push(['affect', 'equipe', 'Agents', !e || etatAffect(e) === 'ok']);
   et.push(['rythme', 'clock', 'Rythme', true]);
+  if (z.pointChaud) et.push(['patrouilles', 'terrain', 'Patrouilles', ((d.patrouilles || {})[z.pointChaud.cell] || 0) >= 2]);
   { const ct = criseTodo(); if (ct && ct.href === '#ordres-crise' && /vote/.test(ct.t)) et.push(['crise', 'shield', 'Crise', ct.ok]); }
   et.push(['decision', 'star', 'Décision', !!(d.decision || d.sansDecision)]);
   et.push(['', 'check', 'Valider', ordresOk]);
@@ -365,7 +368,7 @@ function vieHtml(st, z, items, faites, questDone) {
   const d = S.draft || {}, nbDem = (d.demarches || []).length;
   const enq = items.find((i) => i.href === '#enquete');
   const traque = (st.traques || []).length > 0;
-  const DIST = ['#ordres-crise', '#pactes', '#hp-fipa', '#hp-releve', '#carte-mazone', '#carte'];
+  const DIST = ['#ordres-crise', '#pactes', '#hp-fipa', '#hp-releve', '#carte-nondroit', '#carte'];
   const dist = items.filter((i) => !i.ok && DIST.includes(i.href));
   const tombes = presqueTombes().length;
   const nbDist = dist.length + tombes;
@@ -373,7 +376,7 @@ function vieHtml(st, z, items, faites, questDone) {
   const tuile = (href, am, ic, v, s, label) => `<a class="hp-vie-t ${am ? 'am' : ''}" href="${href}" aria-label="${attr(label)}"><span class="ic" aria-hidden="true">${ic}</span><b>${v}</b><span>${s}</span></a>`;
   return `<section class="hp-vie" aria-label="Ta zone aujourd’hui">
     ${tuile('#enquete', traque || (enq && !enq.ok), '🔍', st.enquete ? (traque ? 'Traque' : `${nbDem}/${maxDemarchesDe(st, zoneAvecAgenda())}`) : '—', st.enquete ? (traque ? 'un suspect en fuite' : 'démarches ce soir') : 'pas d’affaire', 'Enquête')}
-    ${tuile(dist[0] ? dist[0].href : tombes ? '#carte' : '#carte', nbDist > 0, '🏛', nbDist ? (nbDist > 1 ? `${nbDist} sujets` : t1) : 'District', nbDist ? (nbDist > 1 ? dist.slice(0, 2).map((i) => etiquetteEtape(i)[0].toLowerCase()).join(' · ') || 'à voir' : 'à régler ce soir') : 'rien en attente', 'District')}
+    ${tuile(dist[0] ? dist[0].href : '#carte-nondroit', nbDist > 0, '🏛', nbDist ? (nbDist > 1 ? `${nbDist} sujets` : t1) : 'District', nbDist ? (nbDist > 1 ? dist.slice(0, 2).map((i) => etiquetteEtape(i)[0].toLowerCase()).join(' · ') || 'à voir' : 'à régler ce soir') : 'rien en attente', 'District')}
     ${tuile('#quete', !questDone, '🧩', ...enigmesTuile(faites), 'Énigmes')}
   </section>`;
 }
@@ -426,7 +429,7 @@ function alertesDe(st, z, T) {
   if (st.evenement && (!st.evenement.fantome || st.evenement.tour - T <= 3)) {
     const dans = st.evenement.tour - T;
     const requis = Math.max(3, Math.round((st.evenement.parZone || 3) * Object.values(st.zones).filter((x) => x.toursSansOrdres < 3).length));
-    alertes.push({ cls: 'amber', titre: dans === 0 ? `${esc(st.evenement.titre)} : ce soir !` : `${esc(st.evenement.titre)} dans ${dans} tour${dans > 1 ? 's' : ''}`, texte: `environ ${requis} agents requis pour tout le district`, href: dans === 0 ? '#ordres' : '#carte' });
+    alertes.push({ cls: 'amber', titre: dans === 0 ? `${esc(st.evenement.titre)} : ce soir !` : `${esc(st.evenement.titre)} dans ${dans} tour${dans > 1 ? 's' : ''}`, texte: `environ ${requis} agents requis pour tout le district`, href: dans === 0 ? '#ordres' : '#carte-nondroit' });
   }
   { const pq = z.dir && z.dir.parquet; if (pq && pq.stade && st.enquete && pq.n === st.enquete.n) alertes.push({ cls: pq.stade >= 2 ? 'red' : 'amber', titre: pq.stade >= 2 ? 'Parquet : subside judiciaire réduit' : 'Parquet : dossier trop dépendant', texte: `${Math.round(pq.part * 100)} % de ton dossier vient des autres zones (${pq.recues} reçues, ${pq.propres} à toi) · fais tes propres démarches`, href: '#enquete' }); }
   const cab = (z.cabosses || []).length;
@@ -448,9 +451,9 @@ function alertesDe(st, z, T) {
     if (att) alertes.push({ cls: 'blue', titre: `✓ Boutique : ${esc(att.nom)} acheté`, texte: `−${att.prix} PS payés à 20:00 · il te restera ${psDispo(z) - psEngages(z).total} PS à dépenser`, action: 'decor' });
     if (v) alertes.unshift({ cls: 'amber', titre: `🎃 Boutique : ${esc(v.nom)} à −${Math.round(100 - (100 * v.prix) / v.prixBase)} %`, texte: `${v.prix} PS au lieu de ${v.prixBase}, avec la remise assortie · jusqu’au ${new Date(v.promo.jusqua).toLocaleDateString('fr-BE', { day: 'numeric', month: 'long' })} · tu as ${psDispo(z) - psEngages(z).total} PS à dépenser`, action: 'decor' }); }
   if (z.budget < 0) alertes.push({ cls: 'red', titre: 'Budget dans le rouge', texte: 'deux tours de suite et c’est l’Inspection', href: '#ordres' });
-  { const dg = S.draft ? secteursEnDanger() : []; if (dg.length) alertes.unshift({ cls: 'red', titre: `Zone de non-droit : ${dg.map((k) => esc(nomSecteur(k))).join(', ')} menacé${dg.length > 1 ? 's' : ''}`, texte: quartierActif(st) ? 'attaque annoncée ce soir : il manque des Proximité 🛡 pour le tenir' : 'le milieu remonte : mets 2 ou 3 agents de garde ce soir', href: quartierActif(st) ? '#carte' : '#terrain' }); }
+  { const dg = S.draft ? secteursEnDanger() : []; if (dg.length) alertes.unshift({ cls: 'red', titre: `Zone de non-droit : ${dg.map((k) => esc(nomSecteur(k))).join(', ')} menacé${dg.length > 1 ? 's' : ''}`, texte: quartierActif(st) ? 'attaque annoncée ce soir : il manque des Proximité 🛡 pour le tenir' : 'le milieu remonte : mets 2 ou 3 agents de garde ce soir', href: '#carte-nondroit' }); }
   if (st.nonDroit && S.draft && !agentsND()) { const sc = Object.values(st.nonDroit.secteurs); const hier = sc.reduce((n, x) => n + ((x.hier || []).length ? 1 : 0), 0); const rep = sc.filter((x) => x.statut === 'repris').length; alertes.push({ cls: 'blue', titre: `Zone de non-droit : ${rep} secteur${rep > 1 ? 's' : ''} repris sur ${sc.length}`, texte: hier ? `des zones y étaient hier sur ${hier} secteur${hier > 1 ? 's' : ''} : rejoins-les, à plusieurs ça tombe plus vite` : 'personne n’y était hier : lance le mouvement sur la radio', href: '#terrain' }); }
-  if (st.affaires.length) alertes.push({ cls: 'blue', titre: `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} disputée${st.affaires.length > 1 ? 's' : ''} sur la carte`, texte: st.affaires.map((a) => esc(a.titre)).join(' · '), href: '#carte' });
+  if (st.affaires.length) alertes.push({ cls: 'blue', titre: `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} disputée${st.affaires.length > 1 ? 's' : ''} sur la carte`, texte: st.affaires.map((a) => esc(a.titre)).join(' · '), href: '#carte-nondroit' });
   if (st.finSaison) alertes.unshift({ cls: 'amber', titre: st.finSaison === 'enquete' ? 'Fin de saison : le soir où l’affaire en cours se clôt' : 'Fin de saison ce soir à 20:00', texte: 'L’affaire et ses traques continuent dans la saison suivante. S’arrêtent : formations et travaux en cours, pactes, défis et crise du Conseil. Bilan de saison allégé.', href: '#guide' });
   for (const x of aFairePactes()) if (!x.fait) alertes.unshift({ cls: 'amber', titre: esc(x.titre), texte: esc(x.texte), href: '#pactes' });
   for (const a of appelsRenfort()) if (!renfortPrevu(a.uid)) alertes.unshift({ cls: 'amber', titre: `${esc(a.zone.nom)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » · ${a.op.appel ? 'appel du district : renfort payé ×1,5' : 'prête des agents contre de la réputation'}`, href: '#radio-ops' });
@@ -603,6 +606,30 @@ function heroHtml(st, z) {
   </section>`;
 }
 
+/**
+ * Le central en direct, en une ligne sous le bandeau : ce qui attend maintenant (et quand l'adjoint s'en chargera),
+ * sinon « calme » et les points du jour. Touche : le central (calque Ma zone de la Carte).
+ */
+function centralLigneHtml() {
+  let r = null, n = 0;
+  try { r = resumeCentral(); n = aFaireCentralTab(); } catch (e) { return ''; }
+  if (!r) return '';
+  const pl = (k) => (k > 1 ? 's' : '');
+  let etat, txt;
+  if (r.attente) {
+    etat = 'alerte';
+    txt = `${r.attente} appel${pl(r.attente)} attend${r.attente > 1 ? 'ent' : ''} · ${!r.libres ? 'aucune équipe libre' : r.delai > 0 ? `l’adjoint s’en charge dans ${r.delai} min` : 'l’adjoint s’en charge'}`;
+  } else if (n) {
+    etat = 'avoir';
+    txt = `${n} chose${pl(n)} à voir · ${r.gain >= 0 ? '+' : ''}${r.gain} aujourd’hui`;
+  } else {
+    etat = 'calme';
+    txt = `calme · +${r.gain} aujourd’hui`;
+  }
+  return `<a class="hp-central ${etat}" href="#carte-mazone" aria-label="Central en direct : ${txt}. Ouvrir le central">
+    <span class="hc-point" aria-hidden="true"></span><b>Central</b><span class="hc-txt">${txt}</span>${icon('chevron', 16)}</a>`;
+}
+
 export function renderHP() {
   // Le nouvel HP arrive avec la saison 2 (bascule à 20:00) : avant, l'ancien reste affiché.
   
@@ -630,6 +657,7 @@ export function renderHP() {
 
   return `<main class="screen hp v3">
     ${heroHtml(st, z)}
+    ${centralLigneHtml()}
     ${S.menuHp ? `<nav class="card menu-hp" aria-label="Menu">
       <a class="list-row" href="#guide">${icon('news', 18)}<span>Guide du joueur</span></a>
       <button type="button" class="list-row" data-action="maj-voir">${icon('star', 18)}<span>Nouveautés${noteVue() ? '' : ' <span class="tiny" style="color:var(--amber)">· nouvelle version</span>'}</span></button>

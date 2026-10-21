@@ -233,7 +233,7 @@ export function renderRadioV2() {
     corps = `<section class="col" style="gap:10px" aria-label="Tableau des appels">
       <div class="between" style="align-items:baseline"><h2 class="section" style="margin:0">Tableau des appels</h2><span class="rv-cd">${compteReboursHtml(st.nextDeadline, '')}</span></div>
       ${tuiles.length ? tuiles.join('') : '<div class="rv-vide"><span class="small">Aucun appel en cours.</span><span class="tiny muted">Les demandes de renfort et les zones annoncées en non-droit s’affichent ici.</span></div>'}
-      ${st.nonDroit && !nds.length ? `<a class="rv-complet" href="#carte">${icon('alert', 14)}<span>Personne n’est annoncé en zone de non-droit ce soir · ouvrir la carte</span></a>` : ''}
+      ${st.nonDroit && !nds.length ? `<a class="rv-complet" href="#carte-nondroit">${icon('alert', 14)}<span>Personne n’est annoncé en zone de non-droit ce soir · ouvrir la carte</span></a>` : ''}
     </section>
     <section class="rv-echanges" aria-label="Échanges sur F2">
       <button type="button" class="rv-ech-t" data-action="radio-echanges" aria-expanded="${ouvert}">

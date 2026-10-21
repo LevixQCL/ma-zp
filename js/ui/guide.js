@@ -127,7 +127,7 @@ export function sections() {
         <p>Tes agents disponibles (hors blessés, malades, formations) se répartissent entre cinq services. Répartition de départ : ${Object.entries(DEFAULT_ALLOC).map(([s, n]) => `${n} ${SERVICE_LABELS[s]}`).join(', ')}.</p>
         ${table(['Service', 'Son rôle'], [
           ['Intervention', 'Traite les incidents du jour (environ 1,1 de capacité par incident). Chaque incident raté coûte 1,8 de satisfaction. Limité par les véhicules : au-delà de 2,5 agents par véhicule, les agents en plus ne comptent qu’à moitié. Les patrouilles restées libres après les incidents remplissent une jauge de flagrant délit (+10 % par unité de marge, 40 % au plus par jour) : à 100 %, flagrant délit sûr (+3 pts, +3 PS, quartier apaisé).'],
-          ['Proximité', 'Fait baisser la criminalité (0,6 par unité de capacité) et soigne la satisfaction. Ses agents peuvent patrouiller dans des quartiers précis, depuis la Carte.'],
+          ['Proximité', 'Fait baisser la criminalité (0,6 par unité de capacité) et soigne la satisfaction. Ses agents peuvent patrouiller dans des quartiers précis : Ordres, « Patrouilles du soir ».'],
           ['Recherche', 'Élucide les dossiers locaux, qui rapportent des points ; mène l’enquête de voisinage, qui rapporte des pièces pour l’enquête de la semaine (surtout avec une piste prioritaire).'],
           ['Roulage', `Rapporte des amendes (${k(ECONOMIE.amendeParCapacite)} par unité de capacité). Au-delà de 6 agents, chaque agent de plus compte pour moitié. Au-delà de 25 % des effectifs (40 % avec les caméras) : effet « chasse aux PV », −2 de satisfaction.`],
           ['Accueil et administration', 'Écluse la paperasse. Au-delà de 14 dossiers : −2 de moral par tour ; au-delà de 20 : l’Inspection. C’est aussi l’assurance de la zone : chaque agent au-delà de 2 évite 15 % des tracas internes (jusqu’à 60 %).'],
@@ -139,7 +139,7 @@ export function sections() {
         <h3>Les quartiers et les patrouilles</h3>
         <p>Ta zone compte six quartiers, chacun avec sa <strong>tension</strong> : calme (moins de 45), à surveiller, tendu (55 et plus : coûte de la satisfaction), chaud (70 et plus). La criminalité de ta zone est la moyenne de ses quartiers. Au-dessus de 55, un quartier coûte un peu de satisfaction chaque jour.</p>
         <ul class="aide-liste">
-          <li><strong>Patrouilles ciblées</strong> : sur la Carte, envoie des agents de Proximité dans un quartier précis. Les autres patrouillent partout, comme d’habitude. Là où tu concentres, la tension baisse davantage ; ailleurs, elle baisse moins.</li>
+          <li><strong>Patrouilles ciblées</strong> : dans tes Ordres (« Patrouilles du soir »), envoie des agents de Proximité dans un quartier précis. Les autres patrouillent partout, comme d’habitude. Là où tu concentres, la tension baisse davantage ; ailleurs, elle baisse moins.</li>
           <li><strong>Point chaud</strong> : presque chaque jour, un quartier est signalé la veille (deal, rodéos, cambriolages…). 2 agents sur place le désamorcent (+1 de satisfaction) ; sinon, la tension y grimpe fortement.</li>
           <li><strong>Déplacement de la délinquance</strong> : à partir de 4 agents au même endroit, une partie de la délinquance glisse vers les quartiers voisins, y compris chez la zone d’à côté.</li>
           <li><strong>Frontière</strong> : tu vois la tension des quartiers voisins qui touchent les tiens (en pointillés). La tension passe d’un quartier à l’autre : un voisin qui laisse filer finit par te coûter, d’où l’intérêt de se coordonner.</li>

@@ -193,7 +193,7 @@ export function renderBureau() {
   const st = S.state, me = myZone();
   const uid = S.bureauUid && st.zones[S.bureauUid] ? S.bureauUid : me && me.uid;
   const z = st.zones[uid], moi = me && uid === me.uid;
-  const back = `<a href="${moi ? '#hp' : '#carte'}" class="backlink">${icon('back', 20)}<span>${moi ? 'Retour à l’HP' : 'Retour à la carte'}</span></a>`;
+  const back = `<a href="${moi ? '#hp' : '#carte-nondroit'}" class="backlink">${icon('back', 20)}<span>${moi ? 'Retour à l’HP' : 'Retour à la carte'}</span></a>`;
   if (!z || !z.chef) return `<main class="screen">${back}<section class="card"><p class="small muted" style="margin:0">Pas encore de chef de corps dans cette zone.</p></section></main>${tabbar('hp')}`;
   const x = sectionsChef(uid, moi);
   return `<main class="screen">${back}${x.hero}${x.comp}${x.tal}${x.honneurs}${x.res}${x.adjoint}${x.car}</main>${tabbar(moi ? 'chef' : 'hp')}`;

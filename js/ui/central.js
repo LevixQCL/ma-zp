@@ -340,7 +340,7 @@ function carnetHtml(c, s, adj) {
   const jauge = Math.min(CENTRAL.confiscation, cx.jauge || 0), jaugeAuj = ajd.saisies.reduce((t, id) => t + SAISIES_C[id].val, 0);
   const st = c.st, zones = Object.entries(st.zones || {}).filter(([, z]) => z.central && z.central.s === st.season && z.central.joursSaison > 0)
     .sort((x, y) => y[1].central.gainSaison - x[1].central.gainSaison);
-  const classement = zones.length ? zones.slice(0, 8).map(([u, z], i) => `<div class="cx-cl ${u === c.me.uid ? 'moi' : ''}"><span>${i + 1}</span><span>${esc(zoneName(z))}</span><span class="cx-sous">${z.central.joursSaison} j</span><b>+${z.central.gainSaison}</b></div>`).join('')
+  const classement = zones.length ? zones.slice(0, 3).map(([u, z], i) => `<div class="cx-cl ${u === c.me.uid ? 'moi' : ''}"><span>${i + 1}</span><span>${esc(zoneName(z))}</span><span class="cx-sous">${z.central.joursSaison} j</span><b>+${z.central.gainSaison}</b></div>`).join('')
     : '<p class="cx-info">Personne n’est encore classé : le premier bilan tombe ce soir à 20 h.</p>';
   const gain = s.pts - adj.pts, compte = Math.max(0, Math.min(CENTRAL.plafondJour, gain));
   const troph = [['Main sûre', 'saisies au central', nSz, 150], ['Tour de contrôle', 'journées de suite à +15 sur l’adjoint', cx.serie15 || 0, 3], ['Carnet complet', 'types d’appel réglés toi-même', typesOk, CARNET_TYPES.length]]
@@ -353,7 +353,7 @@ function carnetHtml(c, s, adj) {
     <p class="cx-info">${jauge}${jaugeAuj ? ` + ${jaugeAuj} aujourd’hui` : ''} / ${CENTRAL.confiscation} : la police saisit, le juge confisque. À ${CENTRAL.confiscation}, un lot passe à la salle des ventes et la moitié du prix revient à ta zone.</p>
     <h4 class="cx-h">Trophées du central</h4><div class="cx-trs">${troph}</div>
     <h4 class="cx-h">Appels réglés toi-même · ${typesOk}/${CARNET_TYPES.length}</h4><div class="cx-types">${types}</div>
-    <h4 class="cx-h">Classement du central · saison ${st.season}</h4><p class="cx-info">Points de classement : une journée compte de 0 à +${CENTRAL.plafondJour} (ton écart sur ton propre adjoint). Aujourd’hui : ${signe(gain)}, compterait +${compte}.</p><div class="cx-class">${classement}</div>
+    <h4 class="cx-h">Classement du central · saison ${st.season}</h4><p class="cx-info">Points de classement : une journée compte de 0 à +${CENTRAL.plafondJour} (ton écart sur ton propre adjoint). Aujourd’hui : ${signe(gain)}, compterait +${compte}.</p><div class="cx-class">${classement}</div><p class="cx-info"><a href="#classement-central">Voir le classement complet dans Classements</a></p>
   </details>`;
 }
 function hier(c) {

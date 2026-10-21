@@ -25,8 +25,13 @@ export function planIso(st, me, { vue = 'mazone', sel = null, extra = null } = {
   // Non-droit : mes fourgons partent de mon HP vers les secteurs où j'engage des agents ce soir ; ceux des collègues
   // annoncés à la radio aussi (gris), avec le total sur place.
   const dyn = [];
+  // Calques du non-droit (fourgons, pions, marqueurs de « Le Quartier ») : jamais sur la maquette de ma zone, et seulement
+  // pour un secteur dessiné dans le cadre (sinon leurs étiquettes débordaient, coupées au bord de la carte).
+  const calqueND = vue !== 'mazone';
+  const dansCadre = (k) => calqueND && cache.vus.has(Number(k));
   const sect = (S.draft && S.draft.secteurs) || {}, ann = annonces();
   for (const k of new Set([...Object.keys(sect).filter((x) => sect[x] > 0), ...Object.keys(ann)])) {
+    if (!dansCadre(k)) continue;
     const b = cache.pos(Number(k), 4);
     if (!b) continue;
     const venus = [...(sect[k] ? [{ uid: me.uid, n: sect[k] }] : []), ...(ann[k] || [])];
@@ -47,7 +52,7 @@ export function planIso(st, me, { vue = 'mazone', sel = null, extra = null } = {
     });
     const total = venus.reduce((t, v) => t + v.n, 0);
     // Qui y va ce soir, posé sur le secteur : un pion par zone (à sa couleur, le mien en ambre) et le total d'agents.
-    if (!marqueurs().length) {
+    if (!(calqueND && marqueurs().length)) {
       const cols = venus.slice(0, 4).map((v) => (v.uid === me.uid ? '#FFB23F' : ((st.zones[v.uid] || {}).couleur || '#9FB0C0')));
       const tw = String(total).length * 4.4 + 3, w = 7 + cols.length * 6.5 + tw, x0 = -w / 2;
       const pions = cols.map((c, i) => `<circle cx="${(x0 + 6 + i * 6.5).toFixed(1)}" cy="0" r="2.7" fill="${c}" stroke="#0B1124" stroke-width=".7"/>`).join('');
@@ -55,7 +60,7 @@ export function planIso(st, me, { vue = 'mazone', sel = null, extra = null } = {
     }
   }
   // « Le Quartier » : sur chaque secteur, ce qu'il faut casser ce soir, l'attaque annoncée et les boucliers.
-  for (const m of marqueurs()) { const p = cache.pos(Number(m.k), 18); if (p) dyn.push(`<g data-action="secteur" data-c="${m.k}" style="cursor:pointer" transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})">${m.svg}</g>`); }
+  for (const m of marqueurs()) { if (!dansCadre(m.k)) continue; const p = cache.pos(Number(m.k), 18); if (p) dyn.push(`<g data-action="secteur" data-c="${m.k}" style="cursor:pointer" transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})">${m.svg}</g>`); }
   // Marqueurs posés par un écran (ex. Main courante de nuit) : { k: quartier, svg, attr, dx, dy }.
   for (const m of extra || []) { const p = cache.pos(Number(m.k), 18); if (p) dyn.push(`<g ${m.attr || ''} style="cursor:pointer" transform="translate(${(p[0] + (m.dx || 0)).toFixed(1)} ${(p[1] + (m.dy || 0)).toFixed(1)})">${m.svg}</g>`); }
   svg = svg.replace('<!--dyn-->', dyn.join(''));
@@ -611,7 +616,7 @@ function dessiner(st, me, seed, vue, reduit) {
   const pos = (i, z = 0) => (T.cells[i] ? P(T.cells[i].c[0], T.cells[i].c[1], z) : null);
   const route = itineraire(T, ndSet, st, P);
   const capitale = Object.fromEntries(T.zones.map((tz) => [tz.uid, tz.capitale]));
-  return { svg: reduit ? out.replace(/<animate[^>]*\/>|<animateTransform[^>]*\/>/g, '') : out, pos, capitale, route };
+  return { svg: reduit ? out.replace(/<animate[^>]*\/>|<animateTransform[^>]*\/>/g, '') : out, pos, capitale, route, vus: new Set(cellsVue) };
 }
 
 /**

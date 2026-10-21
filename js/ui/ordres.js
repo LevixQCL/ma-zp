@@ -35,6 +35,8 @@ import { creerEquipe, appliquerNoms, missionsValides, surnomDe, encadrement } fr
 import { nomSecteur } from '../engine/nondroit.js';
 import { secteurOuvert, ROLE_SERVICE, bonusChef, CHEFS } from '../engine/constants.js';
 import { carteQuartiers, prevoirTensions, niveauTension } from '../engine/quartiers.js';
+import { ficheQuartierHtml, chipsQuartiersHtml, siteHtml, quartierChoisi, resumePatrouilles } from './carte.js';
+import { siteDe } from '../engine/sites.js';
 import { pressionsVisibles } from '../engine/directeur.js';
 import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
 
@@ -1134,6 +1136,22 @@ function doctrineHtml(z, d) {
   </section>`;
 }
 
+/**
+ * Patrouilles du soir et point chaud (tour de 20 h) : la fiche du quartier choisi (une case = une patrouille de Proximité),
+ * la liste de mes quartiers pour en choisir un autre, et le site sensible. Mêmes actions que sur la Carte
+ * (data-action « quartier », « patrouille-n ») : même brouillon d'ordres, validé avec le reste.
+ */
+function patrouillesOrdres(z, st, saved) {
+  const rp = resumePatrouilles(st, z);
+  if (!rp) return '';
+  const sel = quartierChoisi(st, z);
+  return partieOrdres('patrouilles', 3, 'Patrouilles du soir', rp.resume, rp.ok ? 'ok' : 'am', () => `<div class="col ord-patrouilles" style="gap:10px">
+      <p class="tiny muted" style="margin:0">Tes agents de Proximité patrouillent partout ; ceux que tu envoies ici se concentrent sur un quartier, où la tension baisse davantage. ${z.pointChaud ? 'Le point chaud 🔥 est désamorcé avec 2 patrouilles.' : ''}</p>
+      ${ficheQuartierHtml(st, z, sel)}
+      ${chipsQuartiersHtml(st, z, sel)}
+      ${siteHtml(siteDe(z))}</div>`, { aria: 'Patrouilles du soir', defaut: !rp.ok && !saved && !S.savedOrders ? true : null });
+}
+
 /** Une partie des Ordres : en-tête numéroté (résumé toujours visible), corps déplié à la demande. */
 function partieOrdres(k, n, titre, resume, etat, corps, { aria = titre, cls = '', defaut = null, pied = '' } = {}) {
   const force = S.ordParts && k in S.ordParts ? S.ordParts[k] : null;
@@ -1252,8 +1270,9 @@ export function renderOrdres() {
 
     ${(() => { const ov = ouvertureOrdres(z); return ov.nouveau.length ? `<p class="small" style="margin:0;color:var(--amber)">Nouveau dans tes ordres : ${ov.nouveau.map(esc).join(', ')}.</p>` : ov.prochain ? `<p class="tiny muted" style="margin:0">Jour ${ov.jour} de ta prise de fonction : ${esc(ov.prochain[2])} s’ouvre au jour ${ov.prochain[1]}.</p>` : ''; })()}
     ${suiviDecisionsHtml(z, T)}
-    ${partieOrdres('decision', 3, 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'une seule par soir · pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, d.decision || d.sansDecision ? 'ok' : 'am', () => decisionHtml, { defaut: !d.decision && !d.sansDecision })}
-    ${partieOrdres('depenses', 4, ouvertureOrdres(z).depenses ? 'Dépenses du jour' : 'Agents de réserve', ouvertureOrdres(z).depenses ? (dep.reserve ? `réserve : ${dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun'} · ` : '') + (cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune') : dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun', cab > 0 && !dep.carrosserie ? 'am' : nbDep ? 'ok' : '', () => `${!sousTutelle(z, T) ? `<div class="affect">${reserveHtml(z, d, e)}</div>` : ''}${ouvertureOrdres(z).depenses ? depensesHtml : ''}`)}
+    ${patrouillesOrdres(z, st, saved)}
+    ${partieOrdres('decision', 4, 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'une seule par soir · pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, d.decision || d.sansDecision ? 'ok' : 'am', () => decisionHtml, { defaut: !d.decision && !d.sansDecision })}
+    ${partieOrdres('depenses', 5, ouvertureOrdres(z).depenses ? 'Dépenses du jour' : 'Agents de réserve', ouvertureOrdres(z).depenses ? (dep.reserve ? `réserve : ${dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun'} · ` : '') + (cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune') : dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun', cab > 0 && !dep.carrosserie ? 'am' : nbDep ? 'ok' : '', () => `${!sousTutelle(z, T) ? `<div class="affect">${reserveHtml(z, d, e)}</div>` : ''}${ouvertureOrdres(z).depenses ? depensesHtml : ''}`)}
     ${pliGroupe([z.chef ? pliItem('chef', 'Chef de corps', resumeChefOrdres(z, d), `<p class="tiny muted" style="margin:0">Agenda, première ligne, service du réseau et talents se règlent dans l’onglet Chef. Ils partent avec tes ordres de 20:00.</p><a class="btn small primary block" href="#chef">Ouvrir l’onglet Chef</a>`, (z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)), (z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)) ? 'talent' : null) : null,
     ouvertureOrdres(z).nondroit ? pliItem('nondroit', 'Zone de non-droit', (() => { const n = agentsND(d); const sects = Object.keys(d.secteurs || {}).filter((k) => d.secteurs[k]); return n ? `${n} agent${n > 1 ? 's' : ''} sur ${sects.map((k) => esc(nomSecteur(k))).join(', ')}` : 'Aucun agent ce soir'; })(), `<div class="col" style="gap:6px">${Object.entries(d.secteurs || {}).filter(([, n]) => n).map(([k, n]) => `<div class="between"><span class="small" style="font-weight:600">${esc(nomSecteur(k))}</span><span class="tiny ok">${n} agent${n > 1 ? 's' : ''}</span></div>`).join('')}
       <p class="tiny muted" style="margin:0">Les agents envoyés sont pris sur tes services pour la journée. Qui y va et où : sur la Carte.</p>

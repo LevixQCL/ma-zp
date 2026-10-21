@@ -78,3 +78,28 @@ export function siteHtml(monSite) {
 }
 
 
+
+/** Quartier montré dans la fiche : celui touché, sinon le point chaud, sinon le plus tendu. */
+export function quartierChoisi(st, me) {
+  const mesT = tensionsDe(st, me);
+  if (S.quartierSel != null && String(S.quartierSel) in mesT) return String(S.quartierSel);
+  if (me.pointChaud && String(me.pointChaud.cell) in mesT) return String(me.pointChaud.cell);
+  return Object.keys(mesT).sort((a, b) => mesT[b] - mesT[a])[0] ?? null;
+}
+
+/**
+ * Patrouilles du soir en une ligne (Ordres, HP) : { n, resume, ok } — n patrouilles envoyées, point chaud couvert ou non.
+ * null s'il n'y a pas de quartiers (ou pas de brouillon d'ordres).
+ */
+export function resumePatrouilles(st, me) {
+  const mesT = tensionsDe(st, me);
+  if (!S.draft || !Object.keys(mesT).length) return null;
+  const pat = S.draft.patrouilles || {}, n = Object.values(pat).reduce((s2, x) => s2 + x, 0);
+  const nbQ = Object.keys(pat).filter((k) => pat[k] > 0).length;
+  const pc = me.pointChaud && String(me.pointChaud.cell) in mesT ? me.pointChaud : null;
+  const aPc = pc ? pat[pc.cell] || 0 : 0;
+  const c = carteQuartiers(st);
+  const morceaux = [n ? `${n} patrouille${n > 1 ? 's' : ''} dans ${nbQ} quartier${nbQ > 1 ? 's' : ''}` : 'aucune patrouille ciblée'];
+  if (pc) morceaux.push(aPc >= QUARTIERS.agentsDesamorcer ? `point chaud ${esc(c.nomDe(Number(pc.cell)))} désamorcé 🔥` : `point chaud ${esc(c.nomDe(Number(pc.cell)))} : ${aPc}/${QUARTIERS.agentsDesamorcer} 🔥`);
+  return { n, resume: morceaux.join(' · '), ok: !pc || aPc >= QUARTIERS.agentsDesamorcer };
+}

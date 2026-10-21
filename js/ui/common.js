@@ -130,6 +130,20 @@ function ecrirePastillesVues(v) { try { localStorage.setItem(clePastilles(), JSO
 
 let chefAFaireTab = () => false;
 export function brancherChefTab(fn) { chefAFaireTab = fn; }
+// Le central (calque Ma zone de la Carte) : branché par app.js (évite un import circulaire avec central.js).
+// Le compte est gardé une minute du central (ou jusqu'à la prochaine action) : la barre est redessinée à chaque écran.
+let centralAFaire = () => 0, centralCle = () => null, centralMemo = { cle: null, n: 0 };
+export function brancherCentralTab(fn, cle) { centralAFaire = fn; centralCle = cle || (() => null); centralMemo = { cle: null, n: 0 }; }
+/** Ce qui attend le joueur au central maintenant (0 en cas de souci : la barre ne doit jamais casser). */
+export function aFaireCentralTab() {
+  try {
+    const cle = centralCle();
+    if (cle && centralMemo.cle === cle) return centralMemo.n;
+    const n = Math.max(0, Number(centralAFaire()) || 0);
+    centralMemo = { cle, n };
+    return n;
+  } catch (e) { return 0; }
+}
 export function tabbar(active, { questBadge = false, radioBadge = false } = {}) {
   const st = S.state, me = S.user && st && st.zones ? st.zones[S.user.uid] : null;
   // L'ancien écran Terrain est un calque de la Carte.
@@ -159,8 +173,11 @@ export function tabbar(active, { questBadge = false, radioBadge = false } = {}) 
   const vus = pastillesVues();
   if (sig[active] !== undefined && vus[active] !== sig[active]) { vus[active] = sig[active]; ecrirePastillesVues(vus); }
   for (const k of Object.keys(sig)) if (dots[k] && vus[k] === sig[k] && !(k === 'ordres' && S.ordersDirty)) dots[k] = false;
+  // Le central vit en temps réel : tant que quelque chose y attend, la pastille de la Carte reste allumée.
+  const nCentral = st && me ? aFaireCentralTab() : 0;
+  if (nCentral > 0 && active !== 'carte') dots.carte = true;
   return `<nav class="tabs" aria-label="Navigation principale">${tabs.map(([id, label]) => `
-    <a href="#${id}" ${active === id ? 'aria-current="page"' : ''} ${id === 'enquete' ? 'class="centre"' : ''}>${id === 'enquete' ? `<span class="rond">${icon(id, 26)}</span>` : icon(id)}<span>${id === 'radio' ? 'Radio' : label}</span>${dots[id] ? '<span class="dot" aria-label="à faire"></span>' : ''}</a>`).join('')}
+    <a href="#${id}" ${active === id ? 'aria-current="page"' : ''} ${id === 'enquete' ? 'class="centre"' : ''}>${id === 'enquete' ? `<span class="rond">${icon(id, 26)}</span>` : icon(id)}<span>${id === 'radio' ? 'Radio' : label}</span>${dots[id] ? `<span class="dot" aria-label="${id === 'carte' && nCentral ? `${nCentral} à faire au central` : 'à faire'}"></span>` : ''}</a>`).join('')}
   </nav>`;
 }
 
