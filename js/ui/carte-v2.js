@@ -2,14 +2,13 @@
 // La maquette isométrique en grand ; en dessous, la fiche du quartier touché (Ma zone) ou une ligne par sujet (District).
 import { S, esc, icon, tabbar, myZone, zoneName } from './common.js';
 import { planIso, brancherAnnoncesND, brancherMarqueursQ } from './plan-iso.js';
-import { siteDe } from '../engine/sites.js';
-import { siteHtml, ficheQuartierHtml, chipsQuartiersHtml } from './carte.js';
+
 import { aFairePactes } from './pactes.js';
 import { terrainBlocs, terrainAFaire } from './terrain.js';
 import { nonDroitHtml, secteursEnDanger, annoncesND, agentsND } from './nondroit.js';
 import { ND } from '../engine/constants.js';
 import { marqueursQ } from './quartier.js';
-import { entreeMainCourante } from './main-courante.js';
+import { centralHtml, aFaireCentral } from './central.js';
 
 brancherAnnoncesND(annoncesND);
 brancherMarqueursQ(marqueursQ);
@@ -36,7 +35,7 @@ export function calqueTerrain() { return 'nondroit'; }
 /** Petits compteurs sur les deux boutons : ce qui attend une action. */
 function badges(st, me) {
   const pc = me.pointChaud && (S.draft && ((S.draft.patrouilles || {})[me.pointChaud.cell] || 0) < 2) ? 1 : 0;
-  return { mazone: pc, nondroit: terrainAFaire() };
+  return { mazone: pc + aFaireCentral(), nondroit: terrainAFaire() };
 }
 
 /** Une ligne de « Ce soir dans le district », dépliable, sur le modèle de l'HP. */
@@ -119,13 +118,13 @@ export function renderCarteV2(calque = S.carteCalque || 'nondroit') {
   const dist = districtHtml(st, me);
   const aVoir = (dist.match(/class="ajd-badge"/g) || []).length;
   const lienDistrict = `<button type="button" class="cv-lien-dist ${aVoir ? 'alerte' : ''}" data-action="carte-vue"><span aria-hidden="true">🗺️</span><span class="col" style="gap:0;min-width:0;flex:1;text-align:left"><b>Aussi dans le district</b><span>renforts, opérations, pactes, classements</span></span>${aVoir ? `<i>${aVoir}</i>` : ''}<span aria-hidden="true">${icon('chevron', 16)}</span></button>`;
-  const corps = calque === 'mazone' ? `${entreeMainCourante()}${ficheQuartierHtml(st, me, sel)}${chipsQuartiersHtml(st, me, sel)}${siteHtml(siteDe(me))}`
+  const corps = calque === 'mazone' ? centralHtml({ surCarte: btnPactes })
     : !nd.length ? `<p class="small muted" style="margin:0">La zone de non-droit n’est pas encore ouverte dans cette partie.</p>${dist}`
       : vueDist ? dist : `${ndCorps}${lienDistrict}`;
   return `<main class="screen carte-v3${zoomND ? ' cv-nd' : ''}">
     <header class="cv-tete"><h1 class="big">${calque === 'mazone' ? esc(me.nom) : nd.length ? 'Non-droit' : 'District Delta'}</h1><span class="small muted">${sousTitre}</span></header>
     <div class="cv-calques deux" role="tablist" aria-label="Vue de la carte">${boutons}</div>
-    ${carte}
+    ${calque === 'mazone' ? '' : carte}
     <div class="cv-corps">${corps}</div>
   </main>${tabbar('carte')}`;
 }
