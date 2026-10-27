@@ -34,8 +34,9 @@ for (const p of (await db.collection('parties').get()).docs) {
     const os = orders.filter((o) => o.uid === u).sort((a, b) => (a.season - b.season) || (a.turn - b.turn));
     const cles = {}; let allocChange = 0, prev = null;
     const parTour = {};
-    for (const o of os) {
-      const t = T(o); parTour[t] = { cles: [] };
+    for (const o0 of os) {
+      const o = o0.orders && typeof o0.orders === 'object' ? { ...o0.orders, season: o0.season, turn: o0.turn } : o0;
+      const t = T(o0); parTour[t] = { cles: [] };
       for (const [k, v] of Object.entries(o)) if (!['uid', 'season', 'turn', 'at', 'id', 'maj'].includes(k) && !vide(v)) { cles[k] = (cles[k] || 0) + 1; parTour[t].cles.push(k); }
       if (o.demarches) parTour[t].dem = o.demarches.length;
       if (o.accusation != null) parTour[t].acc = 1;
@@ -60,7 +61,8 @@ for (const p of (await db.collection('parties').get()).docs) {
   res.parties.push({ p: res.parties.length + 1, saison: st.season, tour: st.turn, nZones: uids.length, ordres: orders.length, enigmes: quests.length, central: central.length, radio: radio.length, radioSansUid: radio.filter((m) => !m.uid).length, prives: prives.length, etat, joueurs });
 }
 // Sortie en annotations (lisibles par l'API GitHub), par morceaux.
-const txt = JSON.stringify(res);
+// En base64 : GitHub masque les accolades (lignes du secret JSON) dans la sortie.
+const txt = Buffer.from(JSON.stringify(res)).toString('base64');
 const n = Math.ceil(txt.length / 60000);
 console.log(`taille ${txt.length}, ${n} morceaux`);
 if (n > 40) throw new Error('trop gros');
