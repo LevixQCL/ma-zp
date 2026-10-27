@@ -21,3 +21,4 @@ jobs:
       - run: for i in $(seq 11 20); do [ -f m$i ] && cat m$i; done; true
       - run: for i in $(seq 21 30); do [ -f m$i ] && cat m$i; done; true
       - run: for i in $(seq 31 40); do [ -f m$i ] && cat m$i; done; true
+      - run: for i in $(seq 41 50); do [ -f m$i ] && cat m$i; done; true
