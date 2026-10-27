@@ -5,7 +5,6 @@ import { ND, secteurOuvert, regenSecteur } from '../engine/constants.js';
 import { forceEngagement } from '../engine/zone.js';
 import { milieuDe, nomSecteur, partsDe, prevoirSecteur, secteursVoisins, gangCeSoir, faille, repere, ouvertCeSoir, prevoirRoles } from '../engine/nondroit.js';
 import { planNonDroit } from './plan.js';
-import { quartierActif, corpsQHtml, alertesQ } from './quartier.js';
 import { v3Actif, reseauHtml, ligneLieutenant, confianceHtml, sceneCarte, ICO_SCENE, dernierCarreHtml, tactiqueEnTete } from './milieu.js';
 
 const nd = () => (S.state && S.state.nonDroit) || null;
@@ -49,12 +48,6 @@ export const ROLES_ND = {
 /** « 2 au repérage, 3 en descente » pour la radio. */
 export function texteRoles(r) {
   const t = [];
-  if (quartierActif(S.state)) {
-    if (r.desc) t.push(`${r.desc} 🔨 pour casser`);
-    if (r.rep) t.push(`${r.rep} 🔦 pour révéler`);
-    if (r.bouc) t.push(`${r.bouc} 🛡 pour protéger`);
-    return t.join(', ');
-  }
   if (r.rep) t.push(`${r.rep} au repérage`);
   if (r.desc) t.push(`${r.desc} en descente`);
   if (r.bouc) t.push(`${r.bouc} au bouclage`);
@@ -142,7 +135,6 @@ function pionsCeSoir(liste) {
 
 /** Secteurs du milieu qui tombent ce soir avec 1 à 4 agents de plus (zones déjà annoncées à la radio) : { k, n }. */
 export function presqueTombes() {
-  if (quartierActif(S.state)) return alertesQ().tombent;
   const n0 = nd(), me = myZone();
   if ((!n0 || !me || !S.draft)) return [];
   const ann = annoncesND(), out = [];
@@ -157,7 +149,6 @@ export function presqueTombes() {
 
 /** Secteurs tenus avec mon influence qui risquent de retomber sans garde ce soir (pour les alertes). */
 export function secteursEnDanger() {
-  if (quartierActif(S.state)) return alertesQ().danger.map((x) => x.k);
   const n = nd(), me = myZone();
   if (!n || !me) return [];
   return Object.entries(n.secteurs).filter(([k, s]) => s.statut === 'repris' && (s.emprise >= ND.seuilRechute - 20 || gangCeSoir(S.state, s))
@@ -419,8 +410,6 @@ function ligneSecteur(k, s, me, d) {
 export function nonDroitHtml({ sansPlan = false } = {}) {
   const n = nd(), me = myZone(), d = S.draft;
   if (!n || !me || !d) return '';
-  // « Le Quartier » : le plateau (sauf sur la Carte, qui le montre à la place de la maquette) et la fiche du secteur.
-  if (quartierActif(S.state)) return `<section class="col" aria-label="Zone de non-droit" style="gap:8px" id="non-droit">${sansPlan ? '' : '<p class="tiny muted" style="margin:0"><a href="#carte-nondroit">Voir le non-droit sur la carte</a></p>'}${corpsQHtml()}</section>`;
   const cles = Object.keys(n.secteurs).sort((a, b) => (n.secteurs[a].coeur - n.secteurs[b].coeur) || Number(a) - Number(b));
   const voisins = new Set(secteursVoisins(S.state, me.uid));
   // D'abord ce qui me concerne : mes agents de ce soir, mes secteurs tenus, ceux qui bordent ma zone.

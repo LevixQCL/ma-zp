@@ -3,7 +3,6 @@
 // F2 « Renforts & ops » : un tableau des appels de ce soir (cases à remplir, comme dans les Ordres),
 // les échanges de la fréquence repliés en dessous.
 import { S, esc, icon, tabbar, myZone } from './common.js';
-import { portraitChef } from './chef.js';
 import { marquerRadioLue, canalRadio, nonLus, invitations, marquerPriveLu } from './prive.js';
 import { appelsRenfort, monAppel } from './renfort.js';
 import { annoncesND, suggestionND, placeND, prevoirRejoindre } from './nondroit.js';
@@ -28,11 +27,10 @@ function jourDe(at) {
 
 function zoneDe(uid) {
   const z = S.state.zones[uid] || (S.players && S.players[uid]);
-  return z ? { nom: z.nom, code: z.code, couleur: z.couleur || '#9FB0C0', chef: !!(S.state.zones[uid] && S.state.zones[uid].chef) } : { nom: 'Ancienne zone', code: '', couleur: '#9FB0C0', chef: false };
+  return z ? { nom: z.nom, code: z.code, couleur: z.couleur || '#9FB0C0' } : { nom: 'Ancienne zone', code: '', couleur: '#9FB0C0', chef: false };
 }
 
 function avatar(uid, w, taille = 32) {
-  if (w.chef) return `<span class="rv-av">${portraitChef(uid, taille, { galons: false })}</span>`;
   const ini = (pseudoDe(uid) || w.nom || '?').trim().charAt(0).toUpperCase();
   return `<span class="rv-av rv-ini" style="--zc:${esc(w.couleur)};width:${taille}px;height:${taille}px">${esc(ini)}</span>`;
 }
@@ -126,7 +124,7 @@ function tuileND(k, l) {
 
 function enTete(canal, nl) {
   const appels = appelsRenfort().length;
-  const priveAFaire = nl.prive > 0 || invitations().some((i) => !i.fait && i.href !== '#pactes');
+  const priveAFaire = nl.prive > 0 || invitations().some((i) => !i.fait);
   return `<div class="rv-tete">
     <h1 class="rv-titre">Radio Delta</h1>
     <div class="rv-freqs trois" role="tablist" aria-label="Fréquences">
@@ -172,7 +170,7 @@ function fil(msgs, me) {
 
 function courante(msgs, me) {
   return msgs.map((m) => {
-    const w = zoneDe(m.uid), moi = m.uid === me.uid, auto = !!(m.renfort || m.nd || m.enchere || m.renfortRep) || /^(🚨|🚔|🤝|📻|🔨)/u.test(m.texte || '');
+    const w = zoneDe(m.uid), moi = m.uid === me.uid, auto = !!(m.renfort || m.nd || m.renfortRep) || /^(🚨|🚔|🤝|📻)/u.test(m.texte || '');
     return `<div class="rv-mc ${moi ? 'moi' : ''} ${auto ? 'auto' : ''}"><time>${hm(m.at)}</time><span class="rv-trait" style="background:${esc(moi ? 'var(--amber)' : w.couleur)}"></span>
       <div class="col" style="gap:1px;min-width:0"><span class="rv-mc-q" style="color:${esc(moi ? 'var(--amber)' : w.couleur)}">${moi ? 'Toi' : `ZP ${esc(w.code)} ${esc(w.nom)}`}</span><span class="rv-mc-t">${esc((m.texte || '').replace(/^(🚨|🚔|🤝|📻|🔨)\s*/u, ''))}</span></div></div>`;
   }).join('');

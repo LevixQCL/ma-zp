@@ -1,11 +1,11 @@
 // Écran Enquête : le tableau Mobile · Moyen · Occasion, les pièces, les planques et les notes.
-import { zoneAvecAgenda } from './chef.js';
+import { dossierVu, dossierComplet, etatDemarche, enCoursHtml, verdictRappel, relacheJusqua, verdictEnAttente, dejaUtilisees, budgetEnquete, heureBe } from './enquete-direct.js';
+import { DIRECT } from '../engine/enquete-direct.js';
 import { formatDateBe } from '../engine/time.js';
 import { enService } from '../engine/flotte.js';
 import { banniereDebrief } from './debrief.js';
 import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme } from './common.js';
 import { capacite } from '../engine/zone.js';
-import { engagementsDuJour } from './engagements.js';
 import { APPUI } from '../engine/appui.js';
 import { monAppui } from './incidents.js';
 import { renderTableau } from './tableau.js';
@@ -16,7 +16,7 @@ import { tutoActif } from './tutoriel.js';
 import { dossierAffaire3 } from '../engine/dossier.js';
 import { minutes, MODES } from '../engine/carte3.js';
 import { planifierEnvoi, synchroniser, synchroniserMaintenant, contenuChange, carnetVide } from './carnet-sync.js';
-import { accusesPrets, VARIANTE_INFO, traqueAutorisee, maxDemarchesDe, ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece, chanceVoisinage, ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee, demarcheDe, mandatOk, lireDemarche, toursTraque, delaiTraque, REAUD, RECOUP, texteMisePrix } from '../engine/enquete.js';
+import { accusesPrets, VARIANTE_INFO, traqueAutorisee, ENQ, DEMARCHES, SOURCES, ELEMENTS, ELEMENT_NOM, affaire, dossierDe, dossierAffaire, texteFait, titrePiece, chanceVoisinage, ficheSuspect, fichePlanque, pointsDecouverte, pieceDemarche, coutDemarche, dansMaCellule, zonesDuSuspect, rebondsPublies, dejaPartagee, demarcheDe, mandatOk, lireDemarche, toursTraque, delaiTraque, REAUD, RECOUP, texteMisePrix } from '../engine/enquete.js';
 import { lienItineraire, lieuxMons, MODES_GMAPS, modeSuspect } from '../engine/meurtre-mons.js';
 
 // ───── Carnet : marques et notes, gardées sur l'appareil ─────
@@ -67,7 +67,6 @@ export function synchroCarnetMaintenant(rerender) { return synchroniserMaintenan
 function autresZones() {
   return Object.values(S.state.zones).filter((z) => z.uid !== S.user.uid && z.toursSansOrdres < 3).sort((a, b) => a.code.localeCompare(b.code));
 }
-export const coutTotal = (d) => (d.demarches || []).reduce((s, x) => s + coutDemarche(S.state, S.user.uid, x), 0) + (d.reaud ? REAUD.cout : 0) + (d.recoup ? RECOUP.cout : 0);
 
 export function partageCtl(piece) {
   const d = S.draft;
@@ -105,25 +104,21 @@ function pieceHtml(aff, p, { share = true } = {}) {
   </div>`;
 }
 
-// Bouton de démarche (constatation ou vérification) : demandé, possible ou impossible, avec son prix.
+// Bouton de démarche (constatation ou vérification) : elle part tout de suite, et sa pièce arrive après son temps de recherche.
 const faitsDe = (dos) => new Set(dos.pieces.map((p) => p.f));
+const dureeTxt = (m) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? String(m % 60).padStart(2, '0') : ''}` : `${m} min`);
 export function demBtn(aff, dos, x, label, { compact = false } = {}) {
-  const d = S.draft, z = myZone();
-  const dem = d.demarches || [];
-  const on = dem.includes(x);
-  const prix = coutDemarche(S.state, S.user.uid, x);
   const dm = demarcheDe(aff, x.split(':')[0]);
   const ld = lireDemarche(x);
-  let raison = '';
-  if (!on) {
+  const e = etatDemarche(aff, x);
+  let raison = e.enRoute ? '' : e.raison;
+  if (!e.enRoute) {
     if (aff.meurtre && ld && ld.k === 'moyens' && !mandatOk(aff, dos, ld.i) && !faitsDe(dos).has(x.replace('moyens', 'moy'))) raison = 'pas de mandat';
-    else if (!pieceDemarche(aff, dos, x)) raison = 'au dossier';
-    else if (dem.length >= maxDemarchesDe(S.state, zoneAvecAgenda())) raison = `${maxDemarchesDe(S.state, zoneAvecAgenda())} par jour`;
-    else if (prix > z.budget - engagementsDuJour(d, z).total) raison = 'budget';
+    else if (!pieceDemarche(aff, dossierComplet(), x)) raison = 'au dossier';
   }
-  const prixTxt = prix ? `${prix} k€` : `${dm.agents} agents`;
-  return `<button type="button" class="dem ${compact ? 'compact' : ''}" data-action="dem-toggle" data-k="${x}" aria-pressed="${on}" ${raison ? 'disabled' : ''}>
-    <span class="l">${esc(label)}</span><span class="p">${on ? 'demandé ✓' : raison || prixTxt}</span></button>`;
+  const prixTxt = `${e.prix ? `${e.prix} k€` : `${dm.agents} agents`}${e.duree ? ` · ${dureeTxt(e.duree)}` : ''}`;
+  return `<button type="button" class="dem ${compact ? 'compact' : ''} ${e.enRoute ? 'enroute' : ''}" data-action="dem-lancer" data-k="${x}" ${raison || e.enRoute ? 'disabled' : ''}>
+    <span class="l">${esc(label)}</span><span class="p">${e.enRoute ? `en route · ${heureBe(e.enRoute.dispo)}` : raison || prixTxt}</span></button>`;
 }
 
 /** Bandeau : l'affaire précédente est résolue, son auteur identifié est en fuite. */
@@ -190,12 +185,12 @@ export function accuserHtml(aff, dos, i, { cls = 'btn small outline', style = ''
   }
   const j = prets.find((k) => k !== i);
   return j === undefined
-    ? `<button type="button" class="${cls}" data-action="accuser" data-i="${i}" ${style ? `style="${style}"` : ''}>Accuser ${esc(s.prenom)}</button>`
-    : `<button type="button" class="${cls}" data-action="accuser" data-i="${i}" data-j="${j}" ${style ? `style="${style}"` : ''}>Accuser ${esc(s.prenom)} et ${esc(aff.suspects[j].prenom)}</button>`;
+    ? `<button type="button" class="${cls}" data-action="accuser" data-i="${i}" ${verdictEnAttente() ? 'disabled' : ''} ${style ? `style="${style}"` : ''}>Accuser ${esc(s.prenom)} devant le parquet</button>`
+    : `<button type="button" class="${cls}" data-action="accuser" data-i="${i}" data-j="${j}" ${verdictEnAttente() ? 'disabled' : ''} ${style ? `style="${style}"` : ''}>Accuser ${esc(s.prenom)} et ${esc(aff.suspects[j].prenom)}</button>`;
 }
-/** Noms de l'accusation prête (un ou deux complices). */
+/** Noms des suspects d'une accusation (un ou deux complices). */
 export function nomsAccuses(aff, d, champ = 'nom') {
-  return [d.accusation, d.accusation2].filter((x) => x !== null && x !== undefined && aff.suspects[x]).map((x) => aff.suspects[x][champ]).join(' et ');
+  return [d.accuse, d.accuse2].filter((x) => x !== null && x !== undefined && aff.suspects[x]).map((x) => aff.suspects[x][champ]).join(' et ');
 }
 /** Encadré de la particularité de l'affaire (variante), ou ''. */
 export function regleHtml(aff) {
@@ -236,7 +231,7 @@ function suspectCard(aff, dos, s, i, carnet) {
     const m = CASES[carnet.g[`${i}:${e}`] || 0];
     return `<button type="button" class="mmo ${m.cls}" data-action="mmo-mark" data-i="${i}" data-e="${e}" aria-label="${ELEMENT_NOM[e]} de ${esc(s.nom)} : ${m.nom}. Changer"><span>${ELEMENT_NOM[e]}</span><span class="v">${m.sym}</span></button>`;
   }).join('');
-  const accuse = d.accusation === i || d.accusation2 === i;
+  const accuse = dos.accuse === i || dos.accuse2 === i;
   const exclu = etatSuspect(carnet, i, aff) === 'exclu';
   const multi = st.enquete.nbCellules > 1;
   return `<article class="suspect ${exclu ? 'exclu' : ''} ${accuse ? 'accuse' : ''}">
@@ -258,7 +253,7 @@ function suspectCard(aff, dos, s, i, carnet) {
       <div class="dem-row">${demBtn(aff, dos, `alibi:${i}`, 'Son alibi', { compact: true })}${demBtn(aff, dos, `moyens:${i}`, aff.meurtre ? 'Perquisition' : 'Ses moyens', { compact: true })}${demBtn(aff, dos, `banque:${i}`, aff.meurtre ? 'Téléphone, comptes' : 'Son mobile', { compact: true })}</div>
       ${mien ? '' : `<div class="col" style="gap:6px"><p class="tiny muted" style="margin:0">Suspect suivi par ${suivi.length ? esc(suivi.join(', ')) : 'un autre groupe d’enquête'} : tes vérifications coûtent le double. Demande-leur leurs pièces :</p>
         <div class="row" style="gap:6px;flex-wrap:wrap">${zonesDuSuspect(st, i).filter((u) => u !== S.user.uid && st.zones[u]).map((u) => `<button type="button" class="btn small" data-action="ecrire-a" data-uid="${esc(u)}">✉ ${esc(st.zones[u].nom)}</button>`).join('')}<a class="btn small ghost" href="#radio">Radio</a></div></div>`}
-      ${!dos.exclu && dos.accuse === null ? (accuse ? '<button class="btn small ghost" data-action="accuser-annuler">Retirer l’accusation</button>' : aff.meurtre ? `<button class="btn small outline" data-action="tab-confront" data-i="${i}">Confronter ${esc(s.prenom)}</button>` : accuserHtml(aff, dos, i)) : ''}
+      ${!dos.exclu && dos.accuse === null ? (relacheJusqua(i) ? `<span class="tiny muted">Relâché${s.f ? 'e' : ''} : nouvelle convocation possible à ${heureBe(relacheJusqua(i))}.</span>` : aff.meurtre ? `<button class="btn small outline" data-action="tab-confront" data-i="${i}" ${verdictEnAttente() ? 'disabled' : ''}>Confronter ${esc(s.prenom)}</button>` : accuserHtml(aff, dos, i)) : ''}
     </div>` : ''}
   </article>`;
 }
@@ -314,37 +309,28 @@ export function appuiHtml({ compact = false } = {}) {
 
 /** Carte « Aujourd'hui » : démarches choisies, prochaine étape conseillée, accusation. */
 function aujourdhui(aff, dos) {
-  const d = S.draft, z = myZone(), st = S.state;
+  const d = S.draft, st = S.state;
   const carnet = lireCarnet(aff.n);
-  const dem = d.demarches || [];
   const constatsFaites = aff.meurtre ? ['labo', 'cam', 'temoin'].filter((k) => aff.sceneSeq[k].some((f) => dos.pieces.some((p) => p.f === f))).length : ['occ', 'moy', 'mob'].filter((e) => dos.pieces.some((p) => p.f === `c:${e}`)).length;
-  const constatsPrevues = dem.filter((x) => ['cam', 'labo', 'temoin'].includes(x)).length;
   const enLice = aff.suspects.map((_, i) => i).filter((i) => etatSuspect(carnet, i, aff) !== 'exclu');
   const nA = aff.variante === 'complices' ? 2 : 1;
-  const nomDem = (x) => {
-    const [k, i] = x.split(':');
-    const dm = demarcheDe(aff, k);
-    return i !== undefined ? `${dm.nom} · ${aff.suspects[Number(i)].prenom}` : dm.nom;
-  };
   let etape;
-  if (dos.exclu) etape = 'Ton accusation a été rejetée : tu ne peux plus accuser, mais tes pièces partagées peuvent encore rapporter des points.';
-  else if (dos.accuse !== null) etape = 'Accusation transmise au parquet. Résultat ce soir à 20:00.';
-  else if (d.accusation !== null && d.accusation !== undefined) etape = `Accusation prête contre ${esc(nomsAccuses(aff, d, 'prenom'))} : elle part à 20:00 avec tes ordres.`;
-  else if (constatsFaites + constatsPrevues < 3) etape = `<strong>Étape 1 · la scène.</strong> Il manque ${3 - constatsFaites} constatation${3 - constatsFaites > 1 ? 's' : ''} : elles disent quelle heure, quel moyen et quel mobile comptent. <button type="button" class="lien" data-action="enq-tab" data-t="scene">Voir la scène</button>`;
-  else if (enLice.length > nA) etape = `<strong>Étape 2 · les suspects.</strong> Vérifie l’alibi, les moyens ou le mobile des suspects sur qui ta zone enquête, et coche ✕ dès qu’un élément ne colle pas${nA === 2 ? ' (ici : pas de mobile, ou ni moyen ni occasion)' : ''}. Encore ${enLice.length} en lice.`;
-  else if (enLice.length === nA) etape = nA === 2 ? `<strong>Étape 3 · l’accusation.</strong> Il ne reste que ${esc(aff.suspects[enLice[0]].prenom)} et ${esc(aff.suspects[enLice[1]].prenom)} dans ton tableau : les deux complices ? Accuse-les ensemble si tu es sûr : une seule chance.` : `<strong>Étape 3 · l’accusation.</strong> Il ne reste que ${aff.suspects[enLice[0]].prenom} dans ton tableau. Accuse si tu es sûr : une seule chance.`;
+  if (dos.exclu) etape = 'Le parquet t’a retiré l’affaire : tu ne peux plus accuser, mais tes pièces partagées peuvent encore rapporter des points.';
+  else if (dos.accuse !== null && dos.accuse !== undefined) etape = 'Affaire résolue pour toi. Points, mise à prix et Gazette à 20:00.';
+  else if (verdictEnAttente()) etape = 'Confrontation en cours : le verdict tombe bientôt.';
+  else if (constatsFaites < 3) etape = `<strong>Étape 1 · la scène.</strong> Il manque ${3 - constatsFaites} constatation${3 - constatsFaites > 1 ? 's' : ''} : elles disent quelle heure, quel moyen et quel mobile comptent. <button type="button" class="lien" data-action="enq-tab" data-t="scene">Voir la scène</button>`;
+  else if (enLice.length > nA) etape = `<strong>Étape 2 · les suspects.</strong> Vérifie l’alibi, les moyens ou le mobile des suspects, et coche ✕ dès qu’un élément ne colle pas${nA === 2 ? ' (ici : pas de mobile, ou ni moyen ni occasion)' : ''}. Encore ${enLice.length} en lice.`;
+  else if (enLice.length === nA) etape = nA === 2 ? `<strong>Étape 3 · l’accusation.</strong> Il ne reste que ${esc(aff.suspects[enLice[0]].prenom)} et ${esc(aff.suspects[enLice[1]].prenom)} dans ton tableau. Accuse-les ensemble : le verdict tombe en ${DIRECT.verdict[DIRECT.verdict.length - 1].m} minutes.` : `<strong>Étape 3 · l’accusation.</strong> Il ne reste que ${aff.suspects[enLice[0]].prenom} dans ton tableau. Accuse : le verdict tombe en ${DIRECT.verdict[DIRECT.verdict.length - 1].m} minutes.`;
   else etape = 'Tous les suspects sont exclus dans ton tableau : une coche est sans doute fausse. Relis les pièces.';
   const miens = aff.suspects.map((s2, i) => (dansMaCellule(st, S.user.uid, i) ? s2.prenom : null)).filter(Boolean);
   const v = voisinageInfo(aff);
   const vCourt = v.x <= 0 ? 'aucune chance' : v.x < 1 ? `${Math.round(v.x * 100)} %` : `1 pièce${v.x % 1 > 0.05 ? ` + ${Math.round((v.x % 1) * 100)} %` : ''}`;
-  const reste = z.budget - engagementsDuJour(d, z).total;
   return `<section class="card tight aujourdhui" aria-label="Aujourd’hui" style="gap:8px">
-    <div class="between"><span style="font-weight:700">Aujourd’hui · ${dem.length}/${maxDemarchesDe(S.state, zoneAvecAgenda())} démarches${maxDemarchesDe(S.state, zoneAvecAgenda()) > ENQ.maxDemarches ? ` (${maxDemarchesDe(S.state, myZone()) > ENQ.maxDemarches ? 'une de plus : tu enquêtes seul' : ''}${maxDemarchesDe(S.state, zoneAvecAgenda()) > maxDemarchesDe(S.state, myZone()) ? `${maxDemarchesDe(S.state, myZone()) > ENQ.maxDemarches ? ', ' : ''}une de plus : ton chef au parquet, Intuition` : ''})` : ''}</span><span class="small mono" style="white-space:nowrap">${fmt1(coutTotal(d))} k€</span></div>
-    ${dem.length ? `<div class="row" style="gap:6px;flex-wrap:wrap">${dem.map((x) => `<button type="button" class="chip on" data-action="dem-toggle" data-k="${x}" aria-label="Annuler : ${esc(nomDem(x))}">${esc(nomDem(x))} ✕</button>`).join('')}</div>` : ''}
+    ${enCoursHtml(aff, { compact: true })}
     <p class="small" style="margin:0;line-height:1.5">${etape}</p>
     <div class="row enq-pastilles" style="gap:6px;flex-wrap:wrap">
-      <span class="pill ${v.x >= 0.5 ? 'green' : v.x > 0 ? 'blue' : 'red'}" title="Voisinage ce soir : ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? `, piste ${esc(v.nom)}` : ''} · ${esc(v.txt)}">🏘 Voisinage ${vCourt}${v.nom ? ` · ${esc(v.nom)}` : ''}</span>
-      <span class="pill" title="Budget restant après tes engagements du jour">💶 reste ${fmt1(reste)} k€</span>
+      <span class="pill ${v.x >= 0.5 ? 'green' : v.x > 0 ? 'blue' : 'red'}" title="Voisinage ce soir : ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche${v.nom ? `, piste ${esc(v.nom)}` : ''} · ${esc(v.txt)}">🏘 Voisinage ce soir ${vCourt}${v.nom ? ` · ${esc(v.nom)}` : ''}</span>
+      <span class="pill" title="Budget restant après les démarches du jour">💶 reste ${fmt1(budgetEnquete())} k€</span>
       ${st.enquete.nbCellules > 1 ? `<span class="pill violet" title="Ta zone enquête sur eux : les autres suspects coûtent le double">● ${esc(miens.join(', '))}</span>` : ''}
       ${aideBtn('voisinage')}
     </div>
@@ -480,7 +466,7 @@ export function renderEnquete() {
   if (vueEnquete() === 'tableau' || vueEnquete() === 'dossier') return renderTableau();
   const aff = affaire(st, st.enquete.n);
   if (!tutoActif()) journalAuto(aff);
-  const dos = dossierDe(st, z);
+  const dos = dossierVu();
   const tab = ['suspects', 'scene', 'pieces', 'planques', 'notes'].includes(S.enqTab) ? S.enqTab : 'suspects';
   const j = st.enquete.jour;
   const rebonds = rebondsPublies(st);
@@ -504,7 +490,8 @@ export function renderEnquete() {
       ${regleHtml(aff)}
       <div class="row" style="gap:6px;flex-wrap:wrap">
         <span class="pill">Jour ${j} sur ${ENQ.dureeMax}</span>
-        <span class="pill amber">Découverte ce soir : ${pointsDecouverte(j)} pts</span>
+        <span class="pill amber">Découverte aujourd’hui : ${pointsDecouverte(j)} pts</span>
+        ${verdictRappel()}
       </div>
     </header>
     ${(() => {
@@ -519,6 +506,5 @@ export function renderEnquete() {
     <section class="col" style="gap:10px">${body}</section>
     ${mesPieces(aff, dos)}
     <a class="small" href="#guide-enquete" style="text-align:center">Comment fonctionne l’enquête ?</a>
-    ${S.savedOrders && !S.ordersDirty ? `<p class="tiny muted" style="margin:0;text-align:center">${icon('check', 14)} Choix enregistrés avec tes ordres du tour.</p>` : ''}
   </main>${journalHtml(aff)}${tabbar('enquete')}`;
 }

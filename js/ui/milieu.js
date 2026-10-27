@@ -2,7 +2,6 @@
 // dans la fiche d'un secteur du milieu, la confiance des habitants dans la fiche d'un secteur repris.
 import { S, esc } from './common.js';
 import { nomSecteur, milieuDe } from '../engine/nondroit.js';
-import { niveauChef } from '../engine/chef.js';
 import { TACTIQUES, M3, RENSEIGNEMENTS, SCENES, ETAPES, etape, portraitParrain, portraitLieutenant, scenesDuSoir, seuilScene, PORTRAITS_PRETS } from '../engine/milieu.js';
 
 const nd = () => (S.state && S.state.nonDroit) || null;
@@ -113,8 +112,7 @@ export function dernierCarreHtml(k, s, annonces, mesAgents) {
   const C = M3.carre, mien = (S.draft && S.draft.tactiques && S.draft.tactiques[k]) || null;
   const votes = {};
   for (const x of annonces) { const v = x.moi ? mien : x.tac; const n = x.moi ? mesAgents : x.n; if (v && n > 0) votes[v] = (votes[v] || 0) + n; }
-  const chefs = annonces.map((x) => S.state.zones[x.uid]).filter(Boolean).map((z) => (z.chef ? niveauChef(z.chef, 'diplomatie') || 0 : 0));
-  const nego = Math.min(C.negoMax, C.negoBase + C.negoParNiveau * Math.max(0, ...chefs));
+  const nego = Math.min(C.negoMax, C.negoBase + C.negoParNiveau * Math.min(4, annonces.length || 1));
   const tete = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
   const choix = (v) => {
     const t = TACTIQUES[v];

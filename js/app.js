@@ -1,7 +1,5 @@
 // Point d'entrée de l'application « Ma ZP ».
-import { basculerPiste, cibler } from './ui/pistes.js';
 import { CONFIG } from './config.js';
-import { actionMateriel } from './ui/materiel.js';
 import { installerCadenas } from './ui/cadenas.js';
 import { installerEnigmes } from './ui/enigmes.js';
 import { createBackend } from './data/backend.js';
@@ -12,19 +10,8 @@ import { resolvePending, completerDepuisGazette, etatResolution } from './data/r
 import { S, toast, myZone, esc, cielDuMoment, tabbar, pseudoParDefaut, slotsJour, questDuSlot } from './ui/common.js';
 import { renderLogin, renderInscription } from './ui/auth.js';
 import { renderHP, renderProfil, mesTuiles, MAX_TUILES } from './ui/hp.js';
-import { renderBureau, renderChef, chefAFaire, promotionAuBesoin, brancherPanneauChef, zoneAvecAgenda } from './ui/chef.js';
-import { paraSuivant, CHEF_V3 } from './ui/chef-onglet.js';
-import { profilZone, marquerTitreVu } from './ui/profil-zone.js';
-import { ouvrirPromo } from './ui/fondateurs.js';
-import { courriersDuJour } from './engine/parapheur.js';
-import { creerChef } from './engine/chef.js';
-import { brancherChefTab } from './ui/common.js';
-brancherChefTab(chefAFaire);
-import { ouvrirPanneau as ouvrirPanneauL } from './ui/logistique.js';
-brancherPanneauChef(ouvrirPanneauL);
 import { ouvrirAide } from './ui/aide.js';
 import { monAppel } from './ui/renfort.js';
-import { maCandidature } from './ui/affaires.js';
 import { installerAntiTriche } from './ui/antitriche.js';
 import { installerInvitationAppli } from './ui/installer.js';
 import { lireInvitationUrl, oublierInvitation, partager, copier, afficherQr } from './ui/invitation.js';
@@ -35,24 +22,22 @@ import { ouvrirNouveautes, nouveautesAuBesoin, noteCourte } from './ui/nouveaute
 import { actuAuBesoin, ouvrirActu, evtParId, marquerEvtJoue } from './ui/actu.js';
 import { lucAuBesoin, ouvrirLuc, noterLuc, marquerLucJoue, LUC } from './ui/luc.js';
 import { tutoAuBesoin, lancerTuto, tutoFait } from './ui/tutoriel.js';
-import { lancerRoulette } from './ui/roulette.js';
 import { editionHtml, marquerEditionVue, editionVue } from './ui/edition.js';
 import { operationActive, effetsOperation } from './engine/zone.js';
-import { carteQuartiers } from './engine/quartiers.js';
 import { renderPrive, majPastilleRadio } from './ui/prive.js';
 import { renderOrdres, initDraft, updateOrdresLive, estimations, agentsHorsServices, minimumsDuSoir } from './ui/ordres.js';
-import { prochaineRelance, mesRelances, relancesDuJour } from './ui/ventes.js';
-import { VENTE } from './engine/ventes.js';
 import { renderQuete, formesVisibles } from './ui/quete.js';
 import { demarrerQuiz, repondreQuiz, suivanteQuiz, quizLocal, bonnesReponses, arreterMinuteur } from './ui/quiz.js';
 import { renderGuide } from './ui/guide.js';
-import { renderPactes } from './ui/pactes.js';
-import { PACTES, PACTE, DEFI, DEFI_INDICATEURS } from './engine/pactes.js';
 import { ongletsRadio } from './ui/prive.js';
 import { renderParties } from './ui/parties.js';
 import { renderEnquete, lireCarnet, ecrireCarnet, etatSuspect, synchroCarnet, synchroCarnetMaintenant, restaurerCarnet, choisirVueEnquete, vueEnquete } from './ui/enquete.js';
 import { piecesNonLues, marquerLues } from './ui/enquete-dossier.js';
-import { affaire, dossierDe, maxDemarchesDe, ELEMENTS } from './engine/enquete.js';
+import { affaire, dossierDe, ELEMENTS } from './engine/enquete.js';
+import { brancherEnqueteTab } from './ui/common.js';
+import { signatureEnquete, chargerActionsEnquete, dossierVu, lancerDemarche, lancerReaudition, lancerRecoupement, lancerConfrontation, verdictHtml, enDirectActif } from './ui/enquete-direct.js';
+import { acheterArme } from './ui/armurerie.js';
+brancherEnqueteTab(signatureEnquete);
 import { choisirRecoup, retournerPouce } from './ui/enquete-plus.js';
 import { marquerJournalVu } from './ui/journal.js';
 import { monterCentral, aFaireCentral } from './ui/central.js';
@@ -69,49 +54,38 @@ import { questsFor, checkAnswer, dossierNoir, generateQuest, FORMES, formesPourT
 import { niveauEnigmes, niveauIncidents } from './engine/directeur.js';
 import { scenesDuSoir, SERVICE_SCENE, SCENES } from './engine/milieu.js';
 import { formatCountdown, weekdayBe } from './engine/time.js';
-import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND, LOTS } from './engine/constants.js';
+import { SERVICES, COULEURS_ZONE, SERVICE_LABELS, RENFORT, DEFAULT_ALLOC, ND, SPECIALITES } from './engine/constants.js';
+import { CONSIGNES } from './engine/adjoint.js';
+import { DIRECT, DELAI_VERDICT } from './engine/enquete-direct.js';
+import { ouvrirPromo } from './ui/fondateurs.js';
 import { nomSecteur } from './engine/nondroit.js';
-import { QUARTIER, quartierActif } from './engine/quartier.js';
-import { planPourMoi } from './ui/quartier.js';
 import { agentsND, monAnnonceND, derniereAnnonceND, memesRoles, suggestionND, placeND, rolesDe, texteRoles, roleManquant } from './ui/nondroit.js';
 import { lancerIncident, lancerAppui, ouvrirMiniJeu, majComptesIncidents, signatureIncidents, ouvrirJaugeSkins } from './ui/incidents.js';
 import { migrateState, isOutdated } from './engine/resolve.js';
-import { actionReleve } from './ui/releve.js';
 import { actionBilan } from './ui/bilan.js';
-import { actionCrise } from './ui/crise.js';
-import { renderFilet, actionFilet, majFilet } from './ui/filet.js';
 import { chargeurHtml, avancerChargeur, sortirChargeur } from './ui/chargeur.js';
 
 const app = document.getElementById('app');
-const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'pactes', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief', 'bureau', 'chef', 'filet'];
+const ROUTES = ['hp', 'ordres', 'enquete', 'guide', 'parties', 'quete', 'carte', 'radio', 'prive', 'terrain', 'gazette', 'classement', 'profil', 'admin', 'debrief'];
 let unsubState = null, unsubRadio = null, unsubPrive = null, lastTurnKey = null;
 
 function route() {
   const h = (location.hash || '#hp').slice(1);
   if (h.startsWith('guide')) { S.guideSection = h.split('-')[1] || null; return 'guide'; }
-  // Lien vers un bloc précis de l'HP (ex. #hp-fipa) : on ouvre l'HP et on y descend.
+  // Lien vers un bloc précis de l'accueil (ex. #hp-bilan) : on ouvre l'accueil et on y descend.
   if (h.startsWith('hp-')) { S.ancre = h; return 'hp'; }
-  // Ancien écran Diplomatie : ses liens mènent aux Pactes de la Carte.
-  if (h === 'diplomatie') return 'pactes';
+  // Écrans retirés en saison 4 (chef, brigade, pactes, coups de filet) : leurs anciens liens mènent à l'accueil ou à la carte.
+  if (['chef', 'bureau', 'filet'].includes(h)) { history.replaceState(null, '', '#hp'); return 'hp'; }
+  if (['pactes', 'diplomatie'].includes(h)) { history.replaceState(null, '', '#carte'); return 'carte'; }
   // Lien vers la fréquence des renforts et opérations (F2) de la Radio.
   if (h === 'radio-ops') { S.radioCanal = 'ops'; history.replaceState(null, '', '#radio'); return 'radio'; }
-  // Patrouilles du soir et point chaud (décisions du tour de 20 h) : leur place est dans les Ordres.
-  if (h === 'nuit' || h === 'patrouilles') {
-    const pc = S.state && myZone() && myZone().pointChaud;
-    if (pc) S.quartierSel = String(pc.cell);
-    S.ordOpen = { patrouilles: true }; S.ordParts = { ...(S.ordParts || {}), patrouilles: true }; S.ordAncre = 'patrouilles';
-    history.replaceState(null, '', '#ordres'); return 'ordres';
-  }
+  // Anciennes patrouilles du soir : elles n'existent plus, le lien ouvre les ordres.
+  if (h === 'nuit' || h === 'patrouilles') { history.replaceState(null, '', '#ordres'); return 'ordres'; }
   // Classements, onglet donné (ex. #classement-central).
   if (h.startsWith('classement-')) { S.classTab = h.slice(11); history.replaceState(null, '', '#classement'); return 'classement'; }
   // Calque précis de la Carte : #carte-nondroit (non-droit et district) ; #carte-mazone (le central, fiche du point chaud).
   if (h === 'carte-nondroit') { S.carteCalque = 'nondroit'; history.replaceState(null, '', '#carte'); return 'carte'; }
-  if (h === 'carte-mazone') {
-    S.carteCalque = 'mazone';
-    const pc = S.state && myZone() && myZone().pointChaud;
-    if (pc) S.quartierSel = String(pc.cell);
-    history.replaceState(null, '', '#carte'); return 'carte';
-  }
+  if (h === 'carte-mazone') { S.carteCalque = 'mazone'; history.replaceState(null, '', '#carte'); return 'carte'; }
   // Saison 2 : le Terrain est un calque de la Carte.
   if ((h === 'terrain' && S.state) && S.draft) { S.carteCalque = calqueTerrain(); history.replaceState(null, '', '#carte'); return 'carte'; }
   // Lien vers un bloc des ordres (ex. #ordres-decision) : on ouvre ce bloc.
@@ -179,19 +153,15 @@ function render() {
       case 'quete': html = renderQuete(); break;
       case 'enquete': html = renderEnquete(); break;
       case 'guide': html = renderGuide(); if (S.guideSection === 'debut') { S.premiersPasVus = true; try { localStorage.setItem('mazp-premiers-pas-vus', '1'); } catch (e) { /* pas de stockage */ } } break;
-      case 'pactes': html = renderPactes(); break;
       case 'carte': html = renderCarteV2(); break;
       case 'radio': html = renderRadioV2(); break;
       case 'prive': html = renderPrive(); break;
       case 'terrain': html = renderCarteV2(calqueTerrain()); break;
       case 'gazette': html = renderGazette(); if (S.gazetteIndex === 0) marquerGazetteLue(); break;
       case 'debrief': html = renderDebrief(); break;
-      case 'filet': html = renderFilet(); break;
       case 'classement':
         html = renderClassement(); break;
       case 'profil': html = renderProfil(); break;
-      case 'bureau': html = renderBureau(); break;
-      case 'chef': html = renderChef(); break;
       case 'admin': html = S.backend.isMaster(S.user) ? renderAdmin() : renderHP(); break;
       default:
         // Première ouverture : tant que les Gazettes ne sont pas lues, on n'affiche pas l'HP (ni ses pop-up),
@@ -209,6 +179,8 @@ function render() {
   }
   // Édition spéciale de la Gazette (enquête en pause) : une fois sur chaque appareil, puis relisible depuis l'Enquête.
   if (S.state && myZone() && S.route !== 'parties') { try { html += editionHtml(); } catch (err) { console.error(err); } }
+  // Verdict d'une confrontation (enquête en direct) : par-dessus l'écran, où qu'on soit.
+  if (S.state && S.state.enquete && myZone() && S.verdictOuvert) { try { html += verdictHtml(); } catch (err) { console.error(err); } }
   // Barre de validation commune à tous les écrans quand des choix ne sont pas encore validés.
   if (S.ordersDirty && S.state && myZone() && !['parties', 'guide'].includes(S.route)) {
     html += `<div class="savebar" role="status"><span class="small" style="font-weight:600">Modifications non validées</span><span class="row" style="gap:6px"><button class="btn ghost small" data-action="cancel-orders">Annuler</button><button class="btn primary small" data-action="save-orders">Valider</button></span></div>`;
@@ -223,7 +195,7 @@ function render() {
   app.innerHTML = banner + html;
   // La roulette « Early birds » n'est plus proposée (les skins déjà gagnés restent acquis).
   // Événement d'actualité (une fois par appareil) avant la note de nouveautés.
-  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin() && !actuAuBesoin(lancerActu) && !promotionAuBesoin() && !lucAuBesoin(lancerLuc)) nouveautesAuBesoin();
+  if (S.route === 'hp' && S.state && myZone() && !tutoAuBesoin() && !actuAuBesoin(lancerActu) && !lucAuBesoin(lancerLuc)) nouveautesAuBesoin();
   if (S.route === 'ordres' && S.ordAncre) {
     const cible = document.getElementById(`ord-${S.ordAncre}`) || document.querySelector(`[data-action="ord-open"][data-k="${S.ordAncre}"]`);
     S.ordAncre = null;
@@ -256,6 +228,7 @@ function majPastilles() {
 const champActif = (id) => document.activeElement && document.activeElement.id === id && document.activeElement.value;
 
 const rerender = () => { S.keepScroll = true; render(); };
+S.rerender = rerender;
 
 async function ensureZone() {
   if (S.joining || S.joinErreur) return;
@@ -306,6 +279,7 @@ async function loadTurnData() {
     lire(S.backend.listGazettes(3), [], 'gazettes'), // les 3 derniers soirs ; les plus anciens à la demande (chargerArchivesGazette)
   ]);
   S.savedOrders = orders; S.ordersDirty = false; S.draft = null; S.decisionOpen = false;
+  await chargerActionsEnquete(true);
   // Réponses rangées par emplacement : 0, 1, 2 (et 4 avec la 4e énigme) ; le 3 est le dossier noir, gardé à part.
   S.questResults = [0, 1, 2, 3, 4].map((k) => (k === 3 ? null : (quest && quest[k]) || null)); S.noirResult = (quest && quest[3]) || null; S.quests = null; S.questPick = null;
   S.questBruts = S.questResults.slice(); appliquerRelance();
@@ -453,7 +427,6 @@ async function onClick(e) {
   const a = el.dataset.action;
   const b = S.backend;
   try {
-    if (a && a.startsWith('mat-')) { if (actionMateriel(a, el)) rerender(); return; }
     switch (a) {
       case 'demo-start': await b.signInDemo(); break;
       case 'admin-all-parties': S.allParties = await b.listAllParties(); rerender(); break;
@@ -464,10 +437,7 @@ async function onClick(e) {
         const err = lancerIncident(el.dataset.id, () => rerender()); if (err) { toast(err); rerender(); } break;
       }
       case 'appui-jouer': { const err = lancerAppui(() => rerender()); if (err) { toast(err); rerender(); } break; }
-      case 'releve': case 'releve-n': case 'releve-appui': case 'saisie': { if (actionReleve(a, el)) rerender(); break; }
       case 'bilan': case 'bilan-tout': { if (actionBilan(a, el)) rerender(); break; }
-      case 'crise-vote': case 'crise-c': case 'crise-ouvrir': { if (actionCrise(a, el)) rerender(); break; }
-      case 'filet-ouvrir': case 'filet-duree': case 'filet-lancer': case 'filet-abandon': { if (await actionFilet(a, el, { confirmer: askConfirm })) rerender(); break; }
       case 'dilemme': { const i = Number(el.dataset.i); S.draft.dilemme = S.draft.dilemme === i ? null : i; S.ordersDirty = true; rerender(); break; }
       case 'prime-choix': { const v = el.dataset.v; S.draft.prime = S.draft.prime === v ? null : v; S.ordersDirty = true; rerender(); break; }
       case 'actu-voir': ouvrirActu(evtParId(el.dataset.id), lancerActu); break;
@@ -483,31 +453,6 @@ async function onClick(e) {
         ouvrirMiniJeu(el.dataset.j, { mode: 'train', onEntrainement: noterEntrainement, onFin: () => rerender() }); break;
       }
       case 'tuto': location.hash = '#hp'; setTimeout(() => lancerTuto(0), 50); break;
-      case 'tuto-mini': location.hash = '#hp'; setTimeout(() => lancerTuto(0, true), 50); break;
-      case 'post-n': { const a = S.state.affaires.find((x) => x.id === el.dataset.id); const cur = (S.postuler && S.postuler[a.id]) || Math.min(3, a.agentsMax || 3); S.postuler = { ...(S.postuler || {}), [a.id]: Math.max(1, Math.min(a.agentsMax || 10, cur + Number(el.dataset.d))) }; rerender(); break; }
-      case 'postuler': {
-        const a = S.state.affaires.find((x) => x.id === el.dataset.id), n = Number(el.dataset.n), st = S.state;
-        if (!a || !a.zone || maCandidature(a)) break;
-        el.disabled = true;
-        // D'abord la candidature (message privé) ; les agents ne sont réservés que si elle est bien partie.
-        await b.sendPrive(S.user.uid, a.zone, `📋 Candidature sur « ${a.titre} » : je te propose ${n} agent${n > 1 ? 's' : ''}.`, { candidature: { aid: a.id, agents: n, season: st.season, turn: st.turn } });
-        for (let k = 0; k < n; k++) if (!takeAgent()) break;
-        S.draft.engagements[a.id] = { agents: n, acceptes: [] };
-        S.ordersDirty = true;
-        toast('Candidature envoyée. Valide tes ordres pour réserver tes agents.'); rerender(); break;
-      }
-      case 'cand-ok': case 'cand-non': {
-        const a = S.state.affaires.find((x) => x.id === el.dataset.id), uid = el.dataset.uid, st = S.state, ok = el.dataset.action === 'cand-ok';
-        if (!a) break;
-        if (ok) {
-          const e = S.draft.engagements[a.id] || { agents: 0, acceptes: [] };
-          e.acceptes = [...new Set([...(e.acceptes || []), uid])];
-          S.draft.engagements[a.id] = e; S.ordersDirty = true;
-        }
-        el.disabled = true;
-        await b.sendPrive(S.user.uid, uid, ok ? `✅ Candidature acceptée sur « ${a.titre} ». Bienvenue dans l’équipe !` : `❌ Candidature refusée sur « ${a.titre} ».`, { reponse: { aid: a.id, accepte: ok, season: st.season, turn: st.turn } });
-        toast(ok ? 'Candidature acceptée. Valide tes ordres.' : 'Candidature refusée.'); rerender(); break;
-      }
       case 'budget': ouvrirBudget(); break;
       case 'vehicule': ouvrirVehicule(el.dataset.slot); break;
       case 'vente-veh': { const sl = Number(el.dataset.slot); const l = new Set(S.draft.ventes || []); if (l.has(sl)) l.delete(sl); else l.add(sl); S.draft.ventes = [...l]; S.ordersDirty = true; ouvrirVehicule(sl); rerender(); break; }
@@ -515,14 +460,8 @@ async function onClick(e) {
       case 'tab-restaurer': if (await askConfirm('Remettre ton tableau tel qu’il était sur cet appareil avant la dernière synchronisation ?', 'Restaurer')) { restaurerCarnet(S.state.enquete.n); toast('Tableau restauré.'); rerender(); } break;
       case 'tab-sync': S.carnetSync = 'encours'; rerender(); await synchroCarnetMaintenant(rerender); if (S.carnetSync === 'encours') S.carnetSync = 'ok'; rerender(); toast(S.carnetSync === 'ok' ? 'Tableau synchronisé avec tes autres appareils.' : 'Synchronisation impossible pour le moment.'); break;
       case 'ecran-reset': S.draft = null; S.help = {}; S.ordOpen = {}; S.ventilation = false; render(); break;
-      case 'mission-qui': S.missionQui = S.missionQui === el.dataset.role ? null : el.dataset.role; rerender(); break;
-      case 'mission-ou': { const m = { role: el.dataset.role, type: el.dataset.type, secteur: el.dataset.secteur || '' }; S.draft.missions = [...(S.draft.missions || []).filter((x) => x.role !== m.role), m]; S.draft.mission = S.draft.missions[0]; S.missionQui = null; S.ordersDirty = true; rerender(); break; }
-      case 'poste-qui': S.posteQui = S.posteQui === el.dataset.role ? null : el.dataset.role; rerender(); break;
-      case 'poste-choix': { const r = el.dataset.role, sv = el.dataset.s; const p = { ...(S.draft.postes || {}) }; if (sv === ({ inter: 'intervention', rech: 'recherche', prox: 'proximite', roul: 'roulage', admin: 'admin' })[r]) delete p[r]; else { for (const k of Object.keys(p)) if (p[k] === sv) delete p[k]; p[r] = sv; } S.draft.postes = p; S.posteQui = null; S.ordersDirty = true; rerender(); break; }
-      case 'mission-annuler': S.draft.missions = (S.draft.missions || []).filter((x) => x.role !== el.dataset.role); S.draft.mission = S.draft.missions[0] || null; S.ordersDirty = true; rerender(); break;
       case 'parc': ouvrirParc(); break;
       case 'decor': ouvrirDecor(); break;
-      case 'roulette-lancer': await lancerRoulette(b); rerender(); break;
       case 'skin-choix': {
         const z = S.state.zones[S.user.uid], cat = el.dataset.cat, id = el.dataset.id;
         const actuel = { ...((S.player && S.player.skinsChoix) || z.skinsChoix || {}) };
@@ -598,14 +537,7 @@ async function onClick(e) {
         S.secteurSel = el.dataset.c;
         S.ndRepli = false;
         // Depuis la vue « District », un secteur touché ramène au zoom du non-droit, où s'ouvre son tiroir.
-        if (!quartierActif(S.state) && vueCarteND() === 'district') basculerVueCarteND();
-        // « Le Quartier » : la fiche du secteur s'ouvre sous la carte.
-        if (quartierActif(S.state)) {
-          S.carteCalque = 'nondroit';
-          if (S.route !== 'carte') { location.hash = '#carte'; await new Promise((ok) => setTimeout(ok, 60)); } else rerender();
-          document.querySelector('.qz-fiche')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-          break;
-        }
+        if (vueCarteND() === 'district') basculerVueCarteND();
         // Saison 2 : le non-droit est le premier écran de la Carte ; la fiche du secteur s'ouvre sous la carte.
         S.carteCalque = 'nondroit';
           if (S.route !== 'carte') { location.hash = '#carte'; await new Promise((ok) => setTimeout(ok, 60)); } else rerender();
@@ -622,27 +554,6 @@ async function onClick(e) {
         if (!['rep', 'desc', 'bouc', 'sc'].includes(r)) break;
         if (dd > 0 ? ajouterRoleND(k, r) : retirerRoleND(k, r)) { S.secteurSel = k; S.ordersDirty = true; }
         rerender(); break;
-      }
-      case 'qz-sel': {
-        // « Le Quartier » : une tuile du plateau ; sa fiche s'ouvre juste en dessous.
-        S.secteurSel = el.dataset.c; rerender();
-        document.querySelector('.qz-fiche')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        break;
-      }
-      case 'qz-vider': {
-        for (const k of Object.keys(S.draft.secteurs || {})) for (const r of ['desc', 'rep', 'bouc', 'sc']) while (rolesDe(k)[r] && retirerRoleND(k, r));
-        S.ordersDirty = true; rerender(); break;
-      }
-      case 'qz-auto': {
-        // « Placer pour moi » : on reprend tout, puis le placement de l'adjoint (à partir des annonces des autres zones).
-        for (const k of Object.keys(S.draft.secteurs || {})) for (const r of ['desc', 'rep', 'bouc', 'sc']) while (rolesDe(k)[r] && retirerRoleND(k, r));
-        const plan = planPourMoi(6);
-        let n = 0;
-        for (const [k, rr] of Object.entries(plan)) for (const r of ['bouc', 'rep', 'desc']) for (let i = 0; i < (rr[r] || 0); i++) if (ajouterRoleND(k, r)) n++;
-        const premier = Object.keys(plan)[0];
-        if (premier) S.secteurSel = premier;
-        toast(n ? `${n} agent${n > 1 ? 's' : ''} placé${n > 1 ? 's' : ''}. Touche un secteur pour ajuster.` : 'Rien d’utile à faire ce soir dans le non-droit.');
-        S.ordersDirty = true; rerender(); break;
       }
       case 'nd-tactique': {
         // Dernier carré : la tactique que je vote sur ce secteur (un second toucher la retire).
@@ -695,45 +606,6 @@ async function onClick(e) {
             { nd: { season: S.state.season, turn: S.state.turn, secteur: String(k), agents: n, ...({ roles: rolesDe(k) }), ...(S.draft.tactiques && S.draft.tactiques[k] ? { tactique: S.draft.tactiques[k] } : {}) } });
         } catch (e2) { console.warn(e2); }
         toast(`${ajoutes} agent${ajoutes > 1 ? 's' : ''} pour ${nomSecteur(k)} ce soir. Valide tes ordres.`);
-        rerender(); break;
-      }
-      case 'quartier': {
-        S.quartierSel = el.dataset.c;
-        if (S.route === 'ordres') S.ordParts = { ...(S.ordParts || {}), patrouilles: true }; // la partie reste ouverte
-        const dansCarte = !!el.closest('svg');
-        rerender();
-        // Saison 2 : la fiche du quartier est juste sous la carte, on la montre sans quitter la carte des yeux.
-        if (dansCarte) document.querySelector('.cv-fiche')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-        else if (dansCarte) document.getElementById(`q-${el.dataset.c}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        break;
-      }
-      case 'patrouille-n': { // saison 2 : toucher la n-ième case = n patrouilles (on passe par le même calcul que + / −)
-        const cur = ((S.draft && S.draft.patrouilles) || {})[el.dataset.c] || 0;
-        el.dataset.d = String(Number(el.dataset.n) - cur);
-      }
-      // falls through
-      case 'patrouille': case 'point-chaud': {
-        const d = S.draft; if (!d) break;
-        const p = (d.patrouilles ||= {});
-        const prox = effetsOperation(myZone(), d.alloc || {}, d.operation, S.state.turn).eff.proximite || 0;
-        const total = Object.values(p).reduce((s2, x) => s2 + x, 0);
-        const k = el.dataset.action === 'point-chaud' ? myZone().pointChaud && myZone().pointChaud.cell : el.dataset.c;
-        if (k == null) break;
-        const cible = Math.max(0, Math.min(prox, el.dataset.action === 'point-chaud' ? Math.max(2, p[k] || 0) : (p[k] || 0) + Number(el.dataset.d)));
-        // Plus d'agent libre : on en reprend un sur une autre patrouille (la plus fournie, point chaud en dernier).
-        let manque = total - (p[k] || 0) + cible - prox;
-        const pcCell = myZone().pointChaud && String(myZone().pointChaud.cell);
-        const repris = [];
-        while (manque > 0) {
-          const autre = Object.keys(p).filter((x) => x !== String(k) && p[x] > 0).sort((a, b) => ((a === pcCell) - (b === pcCell)) || p[b] - p[a])[0];
-          if (!autre) break;
-          p[autre]--; if (!p[autre]) delete p[autre]; manque--; repris.push(autre);
-        }
-        const n = Math.max(0, cible - Math.max(0, manque));
-        if (n) p[k] = n; else delete p[k];
-        if (repris.length) { const cq = carteQuartiers(S.state); toast(`Agent repris à ${[...new Set(repris)].map((x) => cq.nomDe(Number(x))).join(', ')}.`); }
-        S.quartierSel = k; S.ordersDirty = true;
-        if (S.route === 'ordres') S.ordParts = { ...(S.ordParts || {}), patrouilles: true };
         rerender(); break;
       }
       case 'cv-nd': S.carteCalque = 'nondroit'; rerender(); document.getElementById('non-droit')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); break;
@@ -801,17 +673,7 @@ async function onClick(e) {
       case 'rename': S.editingName = true; rerender(); setTimeout(() => document.getElementById('nom-zone')?.focus(), 0); break;
       case 'toggle-rapport': S.showRapport = !S.showRapport; S.rapportIdx = 0; rerender(); break;
       // HP : raccourcis épinglés (une carte se déplie sous les tuiles) et leur choix.
-      case 'obj-aller': { // « Ta semaine de chef » : aller là où se remplit l'objectif
-        const r = el.dataset.r, x = el.dataset.x || '';
-        if (r === 'radio' && x) S.radioCanal = x === 'ops' ? 'ops' : 'parole';
-        if (r === 'hp' && x) { S.hpTuile = x; S.ouverts = { ...(S.ouverts || {}), [x]: true }; }
-        const h = r === 'ordres' && x ? `#ordres-${x}` : `#${r}`;
-        if (location.hash === h) rerender(); else location.hash = h;
-        break;
-      }
       case 'hp-tuile': { const k = el.dataset.k; S.hpTuile = S.hpTuile === k ? null : k; if (S.hpTuile) S.ouverts = { ...(S.ouverts || {}), [k]: true }; rerender(); break; }
-      case 'chef-plus-tard': S.chefPlusTard = true; try { sessionStorage.setItem('mazp-chef-plus-tard', '1'); } catch (e2) { /* rien */ } rerender(); window.scrollTo(0, 0); break;
-      case 'chef-maintenant': S.chefPlusTard = false; try { sessionStorage.removeItem('mazp-chef-plus-tard'); } catch (e2) { /* rien */ } rerender(); window.scrollTo(0, 0); break;
       case 'hp-tuiles-edit': S.hpEdit = !S.hpEdit; rerender(); break;
       case 'hp-tuile-choix': {
         const k = el.dataset.k, l = mesTuiles().slice();
@@ -849,14 +711,6 @@ async function onClick(e) {
         if (d > 0) takeAgent();
         S.draft.evenement = Math.max(0, (S.draft.evenement || 0) + d); S.ordersDirty = true; rerender(); break;
       }
-      case 'eng': {
-        const id = el.dataset.id, d = Number(el.dataset.d);
-        const cur = S.draft.engagements[id] || { agents: 0, acceptes: [] };
-        if (d > 0 && !takeAgent()) break;
-        cur.agents = Math.max(0, cur.agents + d);
-        if (cur.agents === 0) delete S.draft.engagements[id]; else S.draft.engagements[id] = cur;
-        S.ordersDirty = true; rerender(); break;
-      }
       case 'ag-info': {
         // Toucher un groupe de pions (partis ailleurs, en plus) : l'explication s'ouvre sous la rangée, retoucher la ferme.
         const bande = el.closest('.ag-bande'); if (!bande) break;
@@ -881,103 +735,8 @@ async function onClick(e) {
         S.draft.alloc[s2] -= n;
         S.ordersDirty = true; toast(`${n} agent${n > 1 ? 's' : ''} libéré${n > 1 ? 's' : ''} : place-les dans la zone de non-droit (Terrain) ou dans un autre service.`); rerender(); break;
       }
-      case 'vente-relance': {
-        const v = S.state.vente, lot = v && v.lots.find((x) => x.k === el.dataset.k);
-        if (!lot) break;
-        const m = prochaineRelance(lot.k), z0 = myZone();
-        if (mesRelances() >= VENTE.relancesJour) { toast('Plus de relance possible aujourd’hui.'); break; }
-        { const eng = Object.entries(relancesDuJour().parZone[S.user.uid] || {}).reduce((t, [k, x]) => t + (k === lot.k ? 0 : x), 0);
-          if (m + eng > z0.budget) { toast(eng ? 'Ton budget ne couvre pas cette relance en plus de celles déjà engagées.' : 'Ton budget ne couvre pas cette relance.'); break; } }
-        await b.sendRadio(S.user.uid, `🔨 ZP ${z0.code} ${z0.nom} relance à ${String(Math.round(m * 1000)).replace(/\B(?=(\d{3})+(?!\d))/g, '\u202f')} € sur « ${LOTS[lot.id].nom} »`, { enchere: { vente: v.id, lot: lot.k, montant: m } });
-        toast('Relance publiée : tout le district la voit.'); break;
-      }
-      case 'vente-expertise': S.draft.expertise = S.draft.expertise === el.dataset.k ? null : el.dataset.k; S.ordersDirty = true; rerender(); break;
-      case 'vente-tuyau': S.draft.tuyau = S.draft.tuyau === el.dataset.k ? null : el.dataset.k; S.ordersDirty = true; rerender(); break;
-      case 'vente-finale': {
-        const k = el.dataset.k, f = { ...((S.draft.finales || {})[k] || {}) }, d0 = Number(el.dataset.d), p0 = Number(el.dataset.p || 0);
-        let m = f.montant ? f.montant + d0 : d0 > 0 ? p0 : 0;
-        // On ne descend jamais sous le plancher (mise à prix, ou sa relance d'hier) : au plancher, « − » retire l'offre.
-        if (f.montant && m < p0) m = f.montant > p0 ? p0 : 0;
-        m = Math.round(Math.min(VENTE.max, Math.max(0, m)) * 10) / 10;
-        S.draft.finales = { ...(S.draft.finales || {}) };
-        if (m > 0) S.draft.finales[k] = { ...f, montant: m }; else delete S.draft.finales[k];
-        S.ordersDirty = true; rerender(); break;
-      }
-      case 'promo-photo': ouvrirPromo(); break;
-      case 'bureau-ouvrir': S.bureauUid = el.dataset.u || null; S.bureauObj = null; if (document.querySelector('.aide-wrap')) document.querySelectorAll('.aide-wrap').forEach((x) => x.remove()); location.hash = !S.bureauUid ? '#chef' : '#bureau'; break;
-      case 'chef-front': S.draft.chefFront = el.dataset.v || null; S.ordersDirty = true; rerender(); break;
-      case 'chef-reseau': S.draft.reseau = S.draft.reseau === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;
-      case 'chef-brevet': S.draft.brevet = S.draft.brevet === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;
-      case 'chef-detail': S.bureauObj = S.bureauObj === el.dataset.k ? null : el.dataset.k; rerender(); break;
-      case 'ord-chef': S.ordOpen = { ...(S.ordOpen || {}), chef: true }; location.hash = '#ordres'; break;
-      case 'feliciter': {
-        const u = el.dataset.u, sn = S.state.season;
-        S.player = { ...(S.player || {}), felicite: { ...((S.player && S.player.felicite) || {}), [u]: sn } };
-        await b.savePlayer(S.user.uid, S.player); S.players = await b.getPlayers();
-        toast('Félicitations envoyées : elles s’affichent dans son bureau.'); rerender(); break;
-      }
-      case 'adjoint-consigne': case 'chef-ruban': {
-        const cle = el.dataset.action === 'adjoint-consigne' ? 'consigne' : 'ruban';
-        const cur = (S.player && S.player.chef) || {};
-        const v = cle === 'ruban' && cur.ruban === el.dataset.v ? null : el.dataset.v;
-        S.player = { ...(S.player || {}), chef: { ...cur, [cle]: v } };
-        await b.savePlayer(S.user.uid, S.player); S.players = await b.getPlayers();
-        toast(cle === 'consigne' ? 'Consigne laissée à ton adjoint : elle compte dès ce soir si tu ne donnes pas d’ordres.' : v ? 'Ruban affiché sur ton portrait.' : 'Ruban retiré de ton portrait.'); rerender(); break;
-      }
-      case 'chef-carte': {
-        const { partagerCarte } = await import('./ui/chef-semaine.js');
-        toast('Préparation de la carte…');
-        try { await partagerCarte(S.bureauUid || S.user.uid); } catch (e) { toast('Impossible de créer l’image sur cet appareil.'); }
-        break;
-      }
-      case 'chef-modifier': S.chefEdit = true; S.chefBrouillon = { ...((S.player && S.player.chef) || {}) }; rerender(); break;
-      case 'chef-portrait': S.chefBrouillon = { ...(S.chefBrouillon || {}), portrait: el.dataset.v }; rerender(); break;
-      case 'chef-tous': S.chefTous = true; rerender(); break;
-      case 'chef-parcours': S.chefBrouillon = { ...(S.chefBrouillon || {}), parcours: el.dataset.v }; rerender(); break;
-      case 'chef-enregistrer': {
-        const dv = document.getElementById('chef-devise');
-        const chef = { ...((S.player && S.player.chef) || {}), ...(S.chefBrouillon || {}), devise: dv ? String(dv.value || '').trim().slice(0, 60) : '' };
-        // Parcours déjà fixé sur la zone (nouvel appareil, profil sans parcours) : on le reprend.
-        { const zc = myZone() && myZone().chef; if (!chef.parcours && zc && zc.parcours) chef.parcours = zc.parcours; }
-        if (!chef.portrait || !chef.parcours) { toast(chef.portrait ? 'Choisis d’abord le parcours de ton chef.' : 'Choisis d’abord un portrait.'); break; }
-        S.player = { ...(S.player || {}), chef };
-        await b.savePlayer(S.user.uid, S.player);
-        S.chefBrouillon = null; S.chefEdit = false; S.players = await b.getPlayers();
-        toast('Ton chef prend ses fonctions. Son parcours compte dès ce soir.'); rerender(); break;
-      }
-      case 'profil-zone': { const o = !(S.ouverts && S.ouverts['co-profil']); S.ouverts = { ...(S.ouverts || {}), 'co-profil': o }; const z = myZone(); if (o && z) marquerTitreVu(z.uid, profilZone(z, S.state.turn).titre); rerender(); break; }
-      case 'chef-agenda': { S.ouverts = { ...(S.ouverts || {}), 'co-agenda': true }; const v = el.dataset.v; const cur = S.draft.agenda || {}; S.draft.agenda = v === 'terrain' ? { type: 'terrain', service: cur.service || 'intervention' } : v === 'voisin' ? { type: 'voisin', zone: cur.zone || null } : { type: v }; S.ordersDirty = true; rerender(); break; }
-      case 'chef-agenda-svc': S.draft.agenda = { type: 'terrain', service: el.dataset.v }; S.ordersDirty = true; rerender(); break;
-      case 'chef-agenda-voisin': S.draft.agenda = { type: 'voisin', zone: el.dataset.v }; S.ordersDirty = true; rerender(); break;
-      case 'para-revoir': S.paraIdx = Number(el.dataset.v) || 0; S.paraAnim = null; rerender(); break;
-      case 'para-choix': {
-        // La réponse est tamponnée mais la feuille reste : on peut changer d'avis, puis passer au suivant soi-même.
-        const id = el.dataset.id, k = Number(el.dataset.v);
-        const avant = S.draft.parapheur && S.draft.parapheur[id];
-        S.draft.parapheur = { ...(S.draft.parapheur || {}), [id]: k }; S.ordersDirty = true;
-        const liste = courriersDuJour(S.state, myZone().chef ? myZone() : { ...myZone(), chef: creerChef(S.player && S.player.chef) });
-        S.paraIdx = liste.indexOf(id); S.paraAnim = avant === k ? null : id; rerender();
-        break;
-      }
-      case 'para-suivant': {
-        const id = el.dataset.id;
-        const liste = courriersDuJour(S.state, myZone().chef ? myZone() : { ...myZone(), chef: creerChef(S.player && S.player.chef) });
-        const i = liste.indexOf(id), rep = (S.draft && S.draft.parapheur) || {};
-        const f = document.querySelector(`.co-feuille[data-para="${id}"]`); if (f) f.classList.add('sort');
-        setTimeout(() => { S.paraAnim = null; const n = paraSuivant(liste, rep, i); const avant = liste.findIndex((x) => !Object.hasOwn(rep, x));
-          S.paraIdx = n < liste.length ? n : avant >= 0 ? avant : liste.length; rerender(); }, 320);
-        break;
-      }
-      case 'chef-talent': {
-        const z0 = myZone(); const cur = [...(S.draft.talents || (z0.chef && z0.chef.talents) || [])]; const v = el.dataset.v;
-        S.draft.talents = cur.includes(v) ? cur.filter((t) => t !== v) : [...cur, v].slice(0, 4); S.ordersDirty = true; rerender(); break;
-      }
       case 'e2-soir-ouvrir': S.ouverts = { ...(S.ouverts || {}), 'e2-soir': true }; rerender(); break;
       case 'e2-soir-replier': S.ouverts = { ...(S.ouverts || {}), 'e2-soir': false }; rerender(); break;
-      case 'doctrine-ouvrir': S.ouverts = { ...(S.ouverts || {}), 'ord-doctrine': true }; rerender(); break;
-      case 'doctrine-replier': S.ouverts = { ...(S.ouverts || {}), 'ord-doctrine': false }; rerender(); break;
-      case 'doctrine': S.draft.doctrine = S.draft.doctrine === el.dataset.k ? null : el.dataset.k; S.ordersDirty = true; rerender(); break;
-      case 'piste-toggle': basculerPiste(el.dataset.k); S.ordersDirty = true; rerender(); break;
       case 'dep-toggle': {
         const dd = (S.draft.depenses ||= { reserve: 0, reserveService: 'intervention' });
         const zk = S.state.zones[S.user.uid];
@@ -1064,19 +823,46 @@ async function onClick(e) {
       case 'scene-dezoom': S.sceneZoom = false; rerender(); break;
       case 'scene-fermer': S.sceneOuverte = null; S.sceneZoom = false; rerender(); break;
       case 'frise-ev': basculerFrise(el.dataset.id); rerender(); break;
-      case 'reaud-piece': S.draft.reaud = { i: Number(el.dataset.i), f: el.dataset.f }; S.ordersDirty = true; rerender(); break;
-      case 'reaud-annuler': S.draft.reaud = null; S.ordersDirty = true; rerender(); break;
-      case 'recoup-piece': { const aff = affaire(S.state, S.state.enquete.n); if (choisirRecoup(aff, dossierDe(S.state, myZone()), el.dataset.a, el.dataset.b)) { S.ordersDirty = true; toast('Recoupement prévu ce soir. Pense à valider tes ordres.'); } rerender(); break; }
-      case 'recoup-annuler': S.draft.recoup = null; S.ordersDirty = true; rerender(); break;
+      case 'reaud-piece': {
+        const aff = affaire(S.state, S.state.enquete.n), s = aff.suspects[Number(el.dataset.i)];
+        if (!(await askConfirm(`Reconvoquer ${s.prenom} et lui mettre « ${nomElement(aff, el.dataset.f)} » sous les yeux ? Une réaudition par jour.`, 'Reconvoquer'))) break;
+        if (await lancerReaudition(Number(el.dataset.i), el.dataset.f)) S.tabSheet = null;
+        rerender(); break;
+      }
+      case 'recoup-piece': {
+        const aff = affaire(S.state, S.state.enquete.n);
+        if (!choisirRecoup(aff, dossierVu(), el.dataset.a, el.dataset.b)) break;
+        if (!(await askConfirm(`Recouper « ${nomElement(aff, el.dataset.a)} » et « ${nomElement(aff, el.dataset.b)} » ? Un recoupement par jour.`, 'Recouper'))) break;
+        if (await lancerRecoupement(el.dataset.a, el.dataset.b)) S.tabSheet = null;
+        rerender(); break;
+      }
       case 'hypo-choix': { const h = { ...(S.draft.hypo || {}) }; if (el.dataset.i !== undefined) h.i = Number(el.dataset.i); if (el.dataset.s !== undefined) h.s = Number(el.dataset.s); S.draft.hypo = h; S.ordersDirty = true; rerender(); break; }
       case 'hypo-annuler': S.draft.hypo = null; S.ordersDirty = true; rerender(); break;
-      case 'mobile-choix': { const m = Number(el.dataset.m); S.draft.mobile = S.draft.mobile === m ? null : m; S.ordersDirty = true; rerender(); break; }
+      case 'mobile-choix': { const m = Number(el.dataset.m); S.mobileSel = S.mobileSel === m ? null : m; rerender(); break; }
       case 'pouce-voir': retournerPouce(affaire(S.state, S.state.enquete.n), el.dataset.k); rerender(); break;
-      case 'confront-piece': { const c = S.draft.confront || []; const f = el.dataset.f; S.draft.confront = c.includes(f) ? c.filter((x) => x !== f) : [...c, f].slice(0, 3); S.ordersDirty = true; rerender(); break; }
+      case 'confront-piece': { const c = S.confrontSel || []; const f = el.dataset.f; S.confrontSel = c.includes(f) ? c.filter((x) => x !== f) : [...c, f].slice(0, 3); rerender(); break; }
       case 'confront-valider': {
-        const aff = affaire(S.state, S.state.enquete.n), s = aff.suspects[Number(el.dataset.i)];
-        if (await askConfirmHtml(avantConfrontation(aff, s, S.draft.confront || []), 'Je suis sûr : confronter', 'Je vérifie encore')) { S.draft.accusation = Number(el.dataset.i); S.ordersDirty = true; S.tabSheet = null; rerender(); }
-        break;
+        const aff = affaire(S.state, S.state.enquete.n), i = Number(el.dataset.i), s = aff.suspects[i];
+        if (!(await askConfirmHtml(avantConfrontation(aff, s, S.confrontSel || []), 'Convoquer maintenant', 'Je vérifie encore'))) break;
+        if (await lancerConfrontation({ i, pieces: S.confrontSel || [], mobile: S.mobileSel })) { S.confrontSel = []; S.mobileSel = null; S.tabSheet = null; }
+        rerender(); break;
+      }
+      case 'dem-lancer': { if (await lancerDemarche(el.dataset.k)) S.tabSheet = S.tabSheet && S.tabSheet.k === 'choix' ? S.tabSheet : null; rerender(); break; }
+      case 'verdict-ouvrir': S.verdictOuvert = true; rerender(); break;
+      case 'verdict-fermer': S.verdictOuvert = false; rerender(); break;
+      case 'promo-photo': ouvrirPromo(); break;
+      case 'arm-acheter': { if (acheterArme(el.dataset.k)) { S.ordersDirty = true; } rerender(); break; }
+      case 'specialite': {
+        const k = el.dataset.k, z = myZone();
+        if (!S.draft || !Object.hasOwn(SPECIALITES, k)) break;
+        S.draft.specialite = z.specialite && z.specialite.id === k ? null : k; S.ordersDirty = true; rerender(); break;
+      }
+      case 'consigne': {
+        const v = el.dataset.v;
+        if (!Object.hasOwn(CONSIGNES, v) || !S.player) break;
+        S.player = { ...S.player, consigne: v };
+        try { await S.backend.savePlayer(S.user.uid, S.player); toast(`Consigne laissée à ton adjoint : ${CONSIGNES[v].nom.toLowerCase()}.`); } catch (err) { console.warn(err); toast('Impossible d’enregistrer la consigne, réessaie.'); }
+        rerender(); break;
       }
       case 'tab-confront': S.enqVue = 'tableau'; S.tabSheet = { k: 'confront', id: `X:${el.dataset.i}` }; render(); break;
       case 'journal-ouvrir': S.journalOuvert = S.state.enquete.n; S.tabSheet = null; rerender(); break;
@@ -1104,23 +890,17 @@ async function onClick(e) {
         const n = S.state.enquete.n, c = lireCarnet(n), t = el.dataset.t, i = el.dataset.i;
         c[t] = c[t] || {}; c[t][i] = ((c[t][i] || 0) + 1) % 4; ecrireCarnet(n, c); rerender(); break;
       }
-      case 'dem-toggle': {
-        const k = el.dataset.k, dm = (S.draft.demarches ||= []);
-        S.draft.demarches = dm.includes(k) ? dm.filter((x) => x !== k) : [...dm, k].slice(0, maxDemarchesDe(S.state, zoneAvecAgenda())); // l'agenda du jour (Parquet) compte, comme à l'écran
-        S.ordersDirty = true; rerender(); break;
-      }
       case 'accuser': {
         const aff = affaire(S.state, S.state.enquete.n);
         const s = aff.suspects[Number(el.dataset.i)];
         // Deux complices : le bouton porte les deux noms (data-j).
         const j = el.dataset.j !== undefined ? Number(el.dataset.j) : null, s2 = j !== null ? aff.suspects[j] : null;
-        if (await askConfirmHtml(avantAccusation(aff, Number(el.dataset.i), j), 'Je suis sûr : accuser', 'Je vérifie encore')) {
-          S.draft.accusation = Number(el.dataset.i); S.draft.accusation2 = s2 ? j : null; S.ordersDirty = true; rerender();
+        if (await askConfirmHtml(avantAccusation(aff, Number(el.dataset.i), j), 'Convoquer maintenant', 'Je vérifie encore')) {
+          await lancerConfrontation({ i: Number(el.dataset.i), i2: s2 ? j : null }); rerender();
         }
         break;
       }
       case 'piste': { const i = Number(el.dataset.i); S.draft.piste = S.draft.piste === i ? null : i; S.ordersDirty = true; rerender(); break; }
-      case 'accuser-annuler': S.draft.accusation = null; S.draft.accusation2 = null; S.draft.confront = []; S.draft.mobile = null; S.ordersDirty = true; rerender(); break;
       case 'partage': {
         const p = (S.draft.partages ||= []);
         if (p.length < 3) p.push({ f: el.dataset.f, a: el.dataset.a });
@@ -1144,82 +924,6 @@ async function onClick(e) {
         t.agents = Math.max(0, Math.min(S.draft.alloc.intervention || 0, t.agents + Number(el.dataset.d))); S.ordersDirty = true; rerender(); break;
       }
       case 'traque-annuler': S.draft.traque = null; S.ordersDirty = true; rerender(); break;
-      case 'fipa-n': {
-        const f = (S.state.fipas || []).find((x) => x.id === el.dataset.id); if (!f) break;
-        const o = S.draft.fipa && S.draft.fipa.id === f.id ? S.draft.fipa : { id: f.id, invite: '', moi: Math.ceil(f.besoin / 2), lui: Math.floor(f.besoin / 2) };
-        o[el.dataset.k] = Math.max(2, Math.min(8, o[el.dataset.k] + Number(el.dataset.d)));
-        S.draft.fipa = o; S.ordersDirty = true; rerender(); break;
-      }
-      case 'fipa-rep': S.draft.fipaReponse = { id: el.dataset.id, accepte: el.dataset.v === '1' }; S.ordersDirty = true; rerender(); break;
-      case 'fipa-choix': S.draft.fipaChoix = { id: el.dataset.id, choix: el.dataset.v }; S.ordersDirty = true; rerender(); break;
-      case 'vote': S.draft.votes = { ...(S.draft.votes || {}), [el.dataset.m]: Number(el.dataset.i) }; S.ordersDirty = true; rerender(); break;
-      case 'motion-chef': S.draft.motionChef = S.draft.motionChef === el.dataset.v ? null : el.dataset.v; S.ordersDirty = true; rerender(); break;
-      // Pactes et défis amicaux (onglet Pactes de la Carte).
-      case 'pacte-form': S.pacteForm = el.dataset.type ? { type: el.dataset.type } : {}; rerender(); if (el.dataset.type) requestAnimationFrame(() => { const f = document.querySelector('.pacte-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' }); }); break;
-      case 'pacte-avec': { // depuis la fiche d'un collègue : formulaire prérempli avec sa zone
-        document.querySelector('.aide-wrap')?.remove();
-        S.pacteForm = { cible: el.dataset.u };
-        if (location.hash !== '#pactes') location.hash = '#pactes'; else rerender();
-        setTimeout(() => { const f = document.querySelector('.pacte-form'); if (f) f.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 250);
-        break;
-      }
-      case 'pacte-form-fermer': S.pacteForm = null; rerender(); break;
-      case 'pacte-cible': S.pacteForm = { ...(S.pacteForm || {}), cible: el.dataset.v }; rerender(); break;
-      case 'pacte-type': S.pacteForm = { ...(S.pacteForm || {}), type: el.dataset.v }; rerender(); break;
-      case 'pacte-proposer': {
-        if (!(S.pacteForm && S.pacteForm.cible && S.pacteForm.type)) { rerender(); break; }
-        // La proposition part tout de suite en message privé (l'autre peut accepter aujourd'hui) et dans les ordres, validés d'office.
-        const { cible, type } = S.pacteForm, st = S.state;
-        S.draft.pacte = { cible, type }; S.pacteForm = null;
-        await b.sendPrive(S.user.uid, cible, `🤝 Je te propose un ${PACTES[type].nom.toLowerCase()} pour ${PACTE.duree} jours : ${PACTES[type].court.toLowerCase()}. Réponds dans Carte › Pactes ; si tu acceptes avant 20:00, il est signé ce soir.`, { pacte: { type, season: st.season, turn: st.turn } });
-        await validerOrdres();
-        toast(`Proposition envoyée à ${st.zones[cible].nom}. S’il accepte avant 20:00, le pacte est signé ce soir.`); rerender(); break;
-      }
-      case 'pacte-accepter': {
-        const de = el.dataset.de, type = el.dataset.type, ok = el.dataset.v === '1', st = S.state;
-        S.draft.pacteAccepte = (S.draft.pacteAccepte || []).filter((x) => x.de !== de);
-        if (ok) S.draft.pacteAccepte.push({ de, type });
-        await b.sendPrive(S.user.uid, de, ok ? `✅ J’accepte ton ${PACTES[type].nom.toLowerCase()} : signature ce soir à 20:00.` : `Merci pour ta proposition de ${PACTES[type].nom.toLowerCase()}, mais pas cette fois.`, { pacteRep: { type, ok, season: st.season, turn: st.turn } });
-        await validerOrdres();
-        toast(ok ? 'Accepté : le pacte sera signé ce soir à 20:00.' : 'Réponse envoyée.'); rerender(); break;
-      }
-      case 'pacte-annuler': S.draft.pacte = null; await validerOrdres(); toast('Proposition annulée.'); rerender(); break;
-      case 'pacte-rep': S.draft.pacteReponse = { id: el.dataset.id, accepte: el.dataset.v === '1' }; S.ordersDirty = true; rerender(); break;
-      case 'pacte-frag': S.draft.fragment = S.draft.fragment === el.dataset.id ? null : el.dataset.id; S.ordersDirty = true; rerender(); break;
-      case 'pacte-rompre': {
-        if (S.draft.pacteRompre === el.dataset.id) { S.draft.pacteRompre = null; S.ordersDirty = true; rerender(); break; }
-        if (!(await askConfirm('Rompre ce pacte ce soir ? La Gazette l’annoncera et tu ne pourras pas signer de nouveau pacte pendant 3 tours.', 'Rompre', 'Garder'))) break;
-        S.draft.pacteRompre = el.dataset.id; S.ordersDirty = true; rerender(); break;
-      }
-      case 'defi-form': S.defiForm = { mise: 0 }; rerender(); break;
-      case 'defi-form-fermer': S.defiForm = null; rerender(); break;
-      case 'defi-cible': S.defiForm = { ...(S.defiForm || {}), cible: el.dataset.v }; rerender(); break;
-      case 'defi-ind': S.defiForm = { ...(S.defiForm || {}), ind: el.dataset.v }; rerender(); break;
-      case 'defi-mise': S.defiForm = { ...(S.defiForm || {}), mise: Number(el.dataset.v) }; rerender(); break;
-      case 'defi-lancer': {
-        if (!(S.defiForm && S.defiForm.cible && S.defiForm.ind)) { rerender(); break; }
-        const { cible, ind } = S.defiForm, mise = S.defiForm.mise || 0, st = S.state;
-        S.draft.defi = { cible, ind, mise }; S.defiForm = null;
-        await b.sendPrive(S.user.uid, cible, `🏁 Je te lance un défi amical : ${DEFI_INDICATEURS[ind].nom.toLowerCase()} pendant ${DEFI.duree} jours${mise ? `, ${mise} k€ misés chacun` : ', sans mise'}. Réponds dans Carte › Pactes ; refuser ne coûte rien.`, { defi: { ind, mise, season: st.season, turn: st.turn } });
-        await validerOrdres();
-        toast(`Défi envoyé à ${st.zones[cible].nom}. S’il accepte avant 20:00, il démarre ce soir.`); rerender(); break;
-      }
-      case 'defi-accepter': {
-        const de = el.dataset.de, ind = el.dataset.ind, mise = Number(el.dataset.mise) || 0, ok = el.dataset.v === '1', st = S.state;
-        S.draft.defiAccepte = (S.draft.defiAccepte || []).filter((x) => x.de !== de);
-        if (ok) S.draft.defiAccepte.push({ de, ind, mise });
-        await b.sendPrive(S.user.uid, de, ok ? '✅ Défi relevé : on démarre ce soir à 20:00.' : 'Pas cette fois pour le défi, merci quand même !', { defiRep: { ind, mise, ok, season: st.season, turn: st.turn } });
-        await validerOrdres();
-        toast(ok ? 'Défi relevé : il démarre ce soir à 20:00.' : 'Réponse envoyée.'); rerender(); break;
-      }
-      case 'defi-annuler': S.draft.defi = null; await validerOrdres(); toast('Défi annulé.'); rerender(); break;
-      case 'defi-rep': S.draft.defiReponse = { id: el.dataset.id, accepte: el.dataset.v === '1' }; S.ordersDirty = true; rerender(); break;
-      case 'aide-cible': S.draft.aide = S.draft.aide && S.draft.aide.cible === el.dataset.v ? null : { budget: 0, agents: 0, cible: el.dataset.v }; S.ordersDirty = true; rerender(); break;
-      case 'aide-n': {
-        const ad = (S.draft.aide ||= { cible: '', budget: 0, agents: 0 });
-        const k = el.dataset.k, max = k === 'budget' ? 10 : 3;
-        ad[k] = Math.max(0, Math.min(max, (ad[k] || 0) + Number(el.dataset.d))); S.ordersDirty = true; rerender(); break;
-      }
       case 'pick-blason': await b.savePlayer(S.user.uid, { ...(S.player || {}), blason: el.dataset.v }); S.player = { ...(S.player || {}), blason: el.dataset.v }; S.players = await b.getPlayers(); toast('Blason enregistré.'); rerender(); break;
       case 'toggle-consigne': {
         const cs = { ...((S.player && S.player.consignes) || {}) };
@@ -1272,10 +976,7 @@ async function onClick(e) {
       case 'rapatrier': {
         const k = el.dataset.k, d = S.draft;
         const lib = (key) => {
-          if (key.startsWith('eng:')) {
-            const id = key.slice(4), eg = d.engagements[id];
-            if (eg && eg.acceptes && eg.acceptes.length) eg.agents = 0; else delete d.engagements[id];
-          } else if (key.startsWith('nd:')) { if (d.secteurs) delete d.secteurs[key.slice(3)]; if (d.roles) delete d.roles[key.slice(3)]; }
+          if (key.startsWith('nd:')) { if (d.secteurs) delete d.secteurs[key.slice(3)]; if (d.roles) delete d.roles[key.slice(3)]; }
           else if (key === 'ev') d.evenement = 0;
           else if (key === 'renfort') d.renfort = null;
         };
@@ -1295,10 +996,8 @@ async function onClick(e) {
       case 'ord-aller': {
         // Pastilles des ordres (saison 2) : ouvre la section et descend jusqu'à elle.
         const k = el.dataset.k;
-        if (k === 'chef') { location.hash = '#chef'; break; }
-        if (k === 'doctrine') { S.ouverts = { ...(S.ouverts || {}), 'ord-doctrine': true }; S.ordParts = { ...(S.ordParts || {}), doct: true }; }
-        if (['affect', 'rythme', 'decision', 'depenses'].includes(k)) S.ordParts = { ...(S.ordParts || {}), [k]: true };
-        else if (['pistes', 'equipe', 'nondroit', 'affaires'].includes(k)) S.ordOpen = { [k]: true };
+        if (['affect', 'rythme', 'decision', 'depenses', 'spe', 'arm'].includes(k)) S.ordParts = { ...(S.ordParts || {}), [k]: true };
+        else if (['nondroit'].includes(k)) S.ordOpen = { [k]: true };
         rerender();
         const c = document.getElementById(`ord-${k}`) || document.querySelector(`[data-action="ord-open"][data-k="${k}"]`);
         if (c) { c.scrollIntoView({ behavior: 'smooth', block: 'start' }); c.classList.add('surligne-bloc'); setTimeout(() => c.classList.remove('surligne-bloc'), 1600); }
@@ -1403,28 +1102,7 @@ async function onClick(e) {
       case 'gazette-nav': if (Number(el.dataset.d) > 0) chargerArchivesGazette();
         S.gazetteIndex = Math.max(0, Math.min(S.gazettes.length - 1, S.gazetteIndex + Number(el.dataset.d))); render(); break;
       case 'admin-create': await b.adminCreateGame(); toast('Partie lancée !'); break;
-      case 'brigade-vue': S.brigadeVue = ['equipe', 'materiel'].includes(el.dataset.v) ? el.dataset.v : 'chef'; rerender(); break;
-      case 'figure-ouvrir': S.figureOuverte = S.figureOuverte === el.dataset.role ? null : el.dataset.role; S.figNeuf = !!S.figureOuverte; rerender(); break;
-      case 'appel-hier': S.hierOuvert = !S.hierOuvert; rerender(); break;
       case 'co-aller': { const c = document.getElementById(`co-${el.dataset.k}`); if (c) { if (c.tagName === 'DETAILS') c.open = true; c.scrollIntoView({ behavior: 'smooth', block: 'start' }); } break; }
-      case 'appel-choix': { const i = Number(el.dataset.i); S.draft.appel = i >= 0 ? i : null; S.ordersDirty = true; rerender(); break; }
-      case 'sortir-rang': { S.draft.sortirRang = !S.draft.sortirRang; S.ordersDirty = true; rerender(); break; }
-      case 'galon-reset': { S.draft.galonsReset = S.draft.galonsReset === el.dataset.role ? null : el.dataset.role; S.ordersDirty = true; rerender(); break; }
-      case 'galon': {
-        // Galon choisi : ajouté aux ordres de ce soir (appliqué à 20:00, sans retour possible ensuite).
-        const z0 = myZone(), m = (z0.equipe || []).find((x) => x.role === el.dataset.role); if (!m) break;
-        const cur = Array.isArray(m.galons) ? m.galons.slice(0, 3) : [];
-        const g = { ...(S.draft.galons || {}) }; const d0 = Array.isArray(g[m.role]) && g[m.role].length > cur.length ? g[m.role] : cur;
-        if (d0.length >= Math.min(3, m.niveau || 0)) break;
-        g[m.role] = [...d0, el.dataset.k === 'B' ? 'B' : 'A']; S.draft.galons = g; S.ordersDirty = true; rerender(); break;
-      }
-      case 'equipe-edit': S.equipeEdit = el.dataset.role || null; S.ouverts = { ...(S.ouverts || {}), equipe: true }; rerender(); break;
-      case 'equipe-origine': {
-        const noms = { ...((S.player && S.player.equipeNoms) || {}), [el.dataset.role]: null };
-        await b.savePlayer(S.user.uid, { ...(S.player || {}), equipeNoms: noms });
-        S.player = { ...(S.player || {}), equipeNoms: noms }; S.equipeEdit = null;
-        toast('Nom d’origine rétabli.'); rerender(); break;
-      }
       case 'dir-reglage': { const r = { ...((S.state.dir && S.state.dir.reglages) || {}), [el.dataset.k]: el.dataset.v }; await b.adminDirecteur({ reglages: r }); toast('Réglage du Directeur enregistré : il s’applique dès la prochaine nuit.'); break; }
       case 'dir-forcer': await b.adminDirecteur({ forcer: el.dataset.id }); toast('Demandé : annoncé à la prochaine nuit, le district le vivra le surlendemain.'); break;
       case 'admin-vus': S.players = await b.getPlayers(); toast('Connexions actualisées.'); rerender(); break;
@@ -1456,8 +1134,8 @@ async function onClick(e) {
     }
   } catch (err) {
     console.error(err);
-    toast(['postuler', 'cand-ok', 'cand-non'].includes(a) ? messageErreur(err, 'prive') : messageErreur(err));
-    if (a === 'demo-next' || a === 'postuler') rerender();
+    toast(messageErreur(err));
+    if (a === 'demo-next') rerender();
   }
 }
 
@@ -1493,7 +1171,7 @@ function avantConfrontation(aff, s, choix) {
     <p class="cf-p">Une confrontation se gagne avec des <strong>preuves solides et irréfutables</strong>, pas avec une intuition. Chaque élément doit le contredire directement : un alibi qui tombe, une trace qui le place sur les lieux, un mensonge prouvé.</p>
     <ul class="cf-l">${lignes}</ul>
     ${propres < 2 ? `<p class="cf-alerte">${propres ? 'Un seul élément trouvé' : 'Aucun élément trouvé'} par ton enquête : il en faut <strong>au moins deux</strong>. Le journal, le PV de constatations et les auditions ne suffisent pas : avec ça, il niera.</p>` : ''}
-    <p class="cf-p muted">S’il nie : −1 de réputation, et tu pourras recommencer un autre jour. Si ce n’est pas la bonne personne : le parquet te retire l’affaire.</p>`;
+    <p class="cf-p muted">S’il nie : −1 de réputation, il est relâché, et tu pourras recommencer dans ${Math.round(DIRECT.relache / 60)} heures. Si ce n’est pas la bonne personne : le parquet te retire l’affaire.</p>`;
 }
 /** Avant une accusation (vols) : le carnet du joueur dit-il vraiment que c'est lui ? */
 function avantAccusation(aff, i, j) {
@@ -1508,11 +1186,11 @@ function avantAccusation(aff, i, j) {
   }).join('');
   const doute = vise.some((k) => ELEMENTS.some((e) => (carnet.g[`${k}:${e}`] || 0) !== 1)) || enLice > 0;
   return `<h3 class="cf-t">Accuser ${esc(vise.map((k) => aff.suspects[k].nom).join(' et '))} ?</h3>
-    <p class="cf-p">L’accusation part au parquet à 20:00 et il n’y en a <strong>qu’une par affaire</strong>. Le parquet veut des <strong>preuves solides et irréfutables</strong> : ${nA > 1 ? 'les deux complices réunissent' : 'le coupable est le seul à réunir'} mobile, moyen et occasion.</p>
+    <p class="cf-p">Le suspect est convoqué tout de suite ; le parquet rend son verdict dans ${DELAI_VERDICT} minutes. Il veut des <strong>preuves solides et irréfutables</strong> : ${nA > 1 ? 'les deux complices réunissent' : 'le coupable est le seul à réunir'} mobile, moyen et occasion.</p>
     <ul class="cf-l">${bilan}</ul>
     ${enLice ? `<p class="cf-alerte">${enLice} autre${enLice > 1 ? 's' : ''} suspect${enLice > 1 ? 's ne sont' : ' n’est'} pas écarté${enLice > 1 ? 's' : ''} dans ton carnet (aucun ✕).</p>` : ''}
     ${doute ? '' : '<p class="cf-p ok">Ton carnet est cohérent. Vérifie quand même que chaque ✓ repose sur une pièce, pas sur une supposition.</p>'}
-    <p class="cf-p muted">Si tu te trompes, tu es écarté de l’affaire.</p>`;
+    <p class="cf-p muted">Dossier incomplet : refusé, sans pénalité. Un innocent accusé : −3 de réputation, et tu es écarté de l’affaire.</p>`;
 }
 /** Comme askConfirm, avec un contenu mis en forme (échappé par l'appelant). */
 function askConfirmHtml(html, okLabel = 'Confirmer', koLabel = 'Annuler') {
@@ -1547,7 +1225,7 @@ function askConfirm(message, okLabel = 'Confirmer', koLabel = 'Annuler') {
 /** Rôles (saison 2) : le service d'où vient un agent selon son rôle, dans l'ordre de préférence. */
 const SOURCES_ROLE = { rep: ['recherche'], desc: ['intervention'], bouc: ['roulage', 'proximite'], sc: ['intervention', 'recherche', 'roulage', 'proximite'] };
 /** Agents « scène » : ils viennent d'abord du service de la scène du soir. */
-const sourcesRole = (k, r) => { if (r === 'bouc' && quartierActif(S.state)) return ['proximite', 'roulage']; if (r !== 'sc') return SOURCES_ROLE[r]; const sc = scenesDuSoir(S.state).find((x) => String(x.cell) === String(k)); const svc = sc && SERVICE_SCENE[sc.type]; return svc ? [svc, ...SOURCES_ROLE.sc.filter((x) => x !== svc)] : SOURCES_ROLE.sc; };
+const sourcesRole = (k, r) => { if (r !== 'sc') return SOURCES_ROLE[r]; const sc = scenesDuSoir(S.state).find((x) => String(x.cell) === String(k)); const svc = sc && SERVICE_SCENE[sc.type]; return svc ? [svc, ...SOURCES_ROLE.sc.filter((x) => x !== svc)] : SOURCES_ROLE.sc; };
 function ajouterRoleND(k, r) {
   const d = S.draft, sect = (d.secteurs ||= {}), roles = (d.roles ||= {});
   const cur = rolesDe(k);
@@ -1846,14 +1524,6 @@ async function onSubmit(e) {
       S.editingName = false; S.profilColor = null;
       toast(kind === 'rename' ? 'Zone renommée.' : 'Profil enregistré.');
       rerender();
-    } else if (kind === 'equipe-nom') {
-      const role = form.dataset.role;
-      const prenom = form.prenom.value.replace(/[<>]/g, '').trim().slice(0, 20), nom = form.nom.value.replace(/[<>]/g, '').trim().slice(0, 20);
-      if (!prenom || !nom) { toast('Prénom et nom requis.'); return; }
-      const noms = { ...((S.player && S.player.equipeNoms) || {}), [role]: { prenom, nom, f: form.f.value === '1' ? 1 : 0 } };
-      await b.savePlayer(S.user.uid, { ...(S.player || {}), equipeNoms: noms });
-      S.player = { ...(S.player || {}), equipeNoms: noms }; S.equipeEdit = null;
-      toast(`${prenom} ${nom} rejoint ton équipe. La Gazette et les rapports suivront dès 20:00.`); rerender();
     } else if (kind === 'quest-text') {
       await submitQuest(form.reponse.value);
     } else if (kind === 'radio') {
@@ -1926,17 +1596,7 @@ async function onChange(e) {
   }
   const el = e.target.closest('[data-change]');
   if (!el) return;
-  if (el.dataset.change === 'partner') {
-    const eg = S.draft.engagements[el.dataset.id];
-    if (eg) eg.partenaire = el.value || null;
-    S.ordersDirty = true; rerender();
-  }
-  if (el.dataset.change === 'vente-partenaire' && S.draft) { const k = el.dataset.k; S.draft.finales = { ...(S.draft.finales || {}) }; const f = { ...(S.draft.finales[k] || {}) }; if (el.value) f.partenaire = el.value; else delete f.partenaire; if (f.montant) S.draft.finales[k] = f; else toast('Fixe d’abord ton offre, puis choisis ton partenaire.'); S.ordersDirty = true; rerender(); }
-  if (el.dataset.change === 'chef-service' && S.draft) { S.draft.agenda = { type: 'terrain', service: el.value }; S.ordersDirty = true; rerender(); }
-  if (el.dataset.change === 'chef-voisin' && S.draft) { S.draft.agenda = { type: 'voisin', zone: el.value || null }; S.ordersDirty = true; rerender(); }
-  if (el.dataset.change === 'chef-parrainer' && S.draft) { S.draft.parrainer = el.value || null; S.ordersDirty = true; rerender(); }
   if (el.dataset.change === 'demolir' && S.draft) { S.draft.demolir = el.value || null; S.ordersDirty = true; rerender(); }
-  if (el.dataset.change === 'piste-cible') { cibler(el.dataset.k, el.value); S.ordersDirty = true; rerender(); }
   if (el.dataset.change === 'train-type') { S.trainType = el.value; nouvelEntrainement(); rerender(); }
   if (el.dataset.change === 'quest-capacite' && el.value) await saveQuestBonus('capacite', el.value);
   if (el.dataset.change === 'quest-delegue-capacite' && el.value) await saveDelegue('capacite', el.value);
@@ -1951,13 +1611,6 @@ async function onChange(e) {
     const p = (S.draft.partages ||= []);
     if (p.length < 3) p.push({ f: el.dataset.f, a: el.value });
     S.ordersDirty = true; rerender();
-  }
-  if (el.dataset.change === 'fipa-invite') {
-    const f = (S.state.fipas || []).find((x) => x.id === el.dataset.id);
-    if (f) {
-      const o = S.draft.fipa && S.draft.fipa.id === f.id ? S.draft.fipa : { id: f.id, invite: '', moi: Math.ceil(f.besoin / 2), lui: Math.floor(f.besoin / 2) };
-      o.invite = el.value; S.draft.fipa = o; S.ordersDirty = true; rerender();
-    }
   }
   if (el.dataset.change === 'dep-service') { S.draft.depenses.reserveService = el.value; S.ordersDirty = true; rerender(); }
 }
@@ -1986,10 +1639,6 @@ async function boot() {
   S.route = route();
   try {
     S.backend = await createBackend(CONFIG);
-    // « Le Quartier » : en démo, la nouvelle règle du non-droit tourne déjà (la vraie partie bascule à un 20:00 choisi).
-    QUARTIER.force = S.backend.mode === 'demo';
-    // Onglet Chef v3 (profil de zone, cartes repliées) : validé le 13 octobre, actif partout.
-    CHEF_V3.actif = true;
   } catch (e) {
     console.error(e);
     app.innerHTML = `<main class="center-screen"><h1 class="brand">Ma ZP</h1><div class="card red"><h2 class="card-title">Connexion impossible</h2><p class="small" style="margin:0">Le jeu n’a pas pu joindre le serveur. Vérifie ta connexion puis recharge la page.</p></div></main>`;
@@ -2033,7 +1682,8 @@ async function boot() {
     // Incidents du jour : comptes à rebours, et HP redessinée quand un incident tombe ou se ferme.
     if (S.state && S.user && myZone()) {
       majComptesIncidents();
-      if (majFilet() && ['filet', 'hp'].includes(S.route) && !document.querySelector('.mj-wrap, .aide-wrap')) rerender();
+      // Enquête en direct : barres des démarches et étapes du verdict, redessinées chaque minute.
+      if (new Date().getSeconds() === 0 && (S.route === 'enquete' || S.verdictOuvert) && enDirectActif() && !document.querySelector('.mj-wrap, .aide-wrap') && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) rerender();
       const sig = signatureIncidents();
       if (S.sigIncidents !== undefined && sig !== S.sigIncidents && S.route === 'hp' && !document.querySelector('.mj-wrap, .aide-wrap') && !(document.activeElement && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))) rerender();
       S.sigIncidents = sig;

@@ -1,8 +1,6 @@
-// Messages privés entre zones, et invitations en attente (FIPA, pactes, défis, Conseil).
+// Messages privés entre zones, et demandes en attente (appels à renfort).
 import { S, esc, myZone, zoneName } from './common.js';
-import { aFairePactes } from './pactes.js';
 import { appelsRenfort, renfortPrevu, renfortCtrl } from './renfort.js';
-import { candidaturesRecues, candidatureCtrl, maCandidature } from './affaires.js';
 import { renderRadioV2 } from './radio-v2.js';
 
 // ───────── « Déjà lu » : mémorisé sur l'appareil, par partie ─────────
@@ -23,7 +21,7 @@ function ecrireVu() { try { localStorage.setItem(cleVu(), JSON.stringify({ radio
  * zone de non-droit, annonces automatiques, et les réponses envoyées sur cette fréquence).
  */
 export function canalRadio(m) {
-  if (m.canal === 'ops' || m.renfort || m.renfortRep || m.nd || m.enchere) return 'ops';
+  if (m.canal === 'ops' || m.renfort || m.renfortRep || m.nd || m.enchere) return 'ops'; // (enchere : anciens messages de la salle des ventes)
   if (m.canal === 'parole') return 'parole';
   return /^(🚨|🚔|🤝|📻)/u.test(m.texte || '') ? 'ops' : 'parole';
 }
@@ -54,10 +52,10 @@ export function nonLus() {
   return { radio, ops, prive: Object.values(parZone).reduce((a, b) => a + b, 0), parZone };
 }
 
-/** Onglets Radio | Privé (les pactes et le Conseil sont passés dans la Carte). */
+/** Onglets Radio | Privé. */
 export function ongletsRadio(actif, extra = '') {
   const n = nonLus();
-  const priveAFaire = n.prive > 0 || invitations().some((i) => !i.fait && i.href !== '#pactes');
+  const priveAFaire = n.prive > 0 || invitations().some((i) => !i.fait);
   const tab = (k, l, pastille) => `<a role="tab" href="#${k}" aria-selected="${actif === k}" class="segl">${l}${actif !== k && pastille ? '<span class="pastille" aria-label="nouveau"></span>' : ''}</a>`;
   return `<div class="onglets-flottants"><div class="seg3 deux" role="tablist" aria-label="Radio et messages privés">
     ${tab('radio', 'Radio', n.radio > 0)}${tab('prive', 'Privé', priveAFaire)}</div>${extra}</div>`;
@@ -67,17 +65,9 @@ export function ongletsRadio(actif, extra = '') {
 export function invitations() {
   const st = S.state, z = myZone();
   if (!st || !z) return [];
-  const T = st.turn, me = z.uid, out = [], d = S.draft || {};
+  const out = [];
   const nom = (uid) => (st.zones[uid] ? zoneName(st.zones[uid]) : 'Une zone');
-  for (const f of st.fipas || []) {
-    if (f.etape === 'invite' && f.partenaire === me && f.tourReponse === T) out.push({ titre: `${nom(f.demandeur)} t’invite à la FIPA « ${esc(f.titre)} »`, texte: `${f.lui} de tes agents demandés · ${f.recompense} k€ en jeu · réponds avant 20:00`, href: '#hp-fipa', action: 'Répondre', fait: !!(d.fipaReponse && d.fipaReponse.id === f.id) });
-    else if (f.etape === 'demande' && f.demandeur === me && f.tourDecision === T) out.push({ titre: `Le bourgmestre te confie « ${esc(f.titre)} »`, texte: d.fipa && d.fipa.id === f.id && d.fipa.invite ? `invitation prévue ce soir : ${nom(d.fipa.invite)}` : 'choisis une zone partenaire à inviter', href: '#hp-fipa', action: 'Inviter', fait: !!(d.fipa && d.fipa.id === f.id && d.fipa.invite) });
-    else if (f.etape === 'accepte' && f.tourJ === T && (f.demandeur === me || f.partenaire === me)) out.push({ titre: `FIPA « ${esc(f.titre)} » ce soir avec ${nom(f.demandeur === me ? f.partenaire : f.demandeur)}`, texte: 'partager ou revendiquer le mérite ?', href: '#hp-fipa', action: 'Choisir', fait: !!(d.fipaChoix && d.fipaChoix.id === f.id) });
-  }
-  for (const c of candidaturesRecues()) out.push({ titre: `${nom(c.uid)} postule sur « ${esc(c.affaire.titre)} »`, texte: `${c.agents} agent${c.agents > 1 ? 's' : ''} proposé${c.agents > 1 ? 's' : ''} · réponds avant 20:00`, ctrl: candidatureCtrl(c), fait: c.statut !== 'attente' });
-  for (const a of st.affaires) { const c = a.zone !== me && maCandidature(a); if (c && c.statut !== 'attente') out.push({ titre: `Candidature ${c.statut === 'acceptee' ? 'acceptée' : 'refusée'} par ${nom(a.zone)}`, texte: `« ${esc(a.titre)} » · ${c.agents} agent${c.agents > 1 ? 's' : ''}${c.statut === 'acceptee' ? ' · valide tes ordres' : ''}`, href: c.statut === 'acceptee' ? '#ordres' : '#carte-nondroit', action: c.statut === 'acceptee' ? 'Ordres' : 'Voir', fait: true }); }
   for (const a of appelsRenfort()) out.push({ titre: `${nom(a.uid)} appelle du renfort`, texte: `${a.agents} agents demandés pour « ${esc(a.op.titre)} » ce soir${a.op.appel ? ' · appel du district : renfort payé ×1,5' : ''}`, ctrl: renfortCtrl(a), fait: renfortPrevu(a.uid) > 0 });
-  for (const x of aFairePactes()) if (x.k !== 'conseil' || !x.fait) out.push({ titre: esc(x.titre), texte: esc(x.texte), href: '#pactes', action: x.k === 'conseil' ? 'Voter' : x.k === 'frag' ? 'Mettre en commun' : 'Répondre', fait: x.fait });
   return out;
 }
 
@@ -86,7 +76,7 @@ export function majPastilleRadio() {
   const a = document.querySelector('nav.tabs a[href="#radio"]');
   if (!a) return;
   const n = nonLus();
-  const doit = n.radio + n.prive > 0 || invitations().some((i) => !i.fait && i.href !== '#pactes');
+  const doit = n.radio + n.prive > 0 || invitations().some((i) => !i.fait);
   const dot = a.querySelector('.dot');
   if (doit && !dot) a.insertAdjacentHTML('beforeend', '<span class="dot" aria-label="nouveau"></span>');
   else if (!doit && dot) dot.remove();

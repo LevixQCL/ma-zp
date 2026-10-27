@@ -3,7 +3,8 @@
 // et les suspects en polaroïds sur une ficelle, avec tes ✓ / ✕ en tampons. « Ce soir » en cases à remplir.
 // Enfin le classeur (pièces, scène, plan, planques, notes) sur une feuille de papier lisible.
 // Les nouvelles pièces arrivent sous enveloppe : on les ouvre une à une, et on dit ce qu'on en conclut.
-import { zoneAvecAgenda } from './chef.js';
+import { dossierVu, enCoursHtml, verdictRappel, verdictEnAttente, dejaUtilisees, enquetesEnCours, budgetEnquete, piecesEnRoute, heureBe } from './enquete-direct.js';
+import { DIRECT, enCoursMax, enqueteursDe } from '../engine/enquete-direct.js';
 import { S, esc, icon, tabbar, myZone, zoneName, fmt1 } from './common.js';
 import { portraitSuspect } from './portrait.js';
 import { banniereDebrief, debriefsRecents } from './debrief.js';
@@ -15,9 +16,8 @@ import { dossierAffaire3 } from '../engine/dossier.js';
 import { journalHtml, journalAuto } from './journal.js';
 import { sceneFouilleHtml, sceneZoomHtml } from './scene-fouille.js';
 import { tutoActif } from './tutoriel.js';
-import { engagementsDuJour } from './engagements.js';
 import { relecturesHtml, soirPlusHtml } from './enquete-plus.js';
-import { ENQ, ELEMENTS, affaire, dossierDe, texteFait, titrePiece, rebondsPublies, pointsDecouverte, dansMaCellule, celluleDe, demarcheDe, maxDemarchesDe, coutDemarche } from '../engine/enquete.js';
+import { ENQ, ELEMENTS, affaire, dossierDe, texteFait, titrePiece, rebondsPublies, pointsDecouverte, dansMaCellule, celluleDe, demarcheDe, coutDemarche } from '../engine/enquete.js';
 import { lireCarnet, ecrireCarnet, sauvegardeCarnet, sourceDe, voisinageInfo, appuiHtml, banniereTraque, traqueHtml, etatSuspect, nomsAccuses, regleHtml, vuePlanques } from './enquete.js';
 import { MAP, COL, preparerTableau, volet, dispo, completerFiche, resumeConstat, CONSTAT_TITRE, derniereScene, pieceSuspect, statutPartage, planSvg, lieuPos, lieuxDe, planquePos, numPv, docsOuverture, chronologie } from './tableau.js';
 import { lieuxMons } from '../engine/meurtre-mons.js';
@@ -84,7 +84,7 @@ function heroHtml(aff) {
     </div>
     <div class="e2-titre">
       <h1>${esc(aff.titre)}</h1>
-      <div class="e2-jours" aria-label="Jour ${j} sur ${ENQ.dureeMax}"><span class="e2-jt">Jour ${j}<small>/${ENQ.dureeMax}</small></span><span class="e2-pts">${jours}</span><span class="e2-dec" title="Points si tu trouves l’auteur ce soir">🔎 ${pointsDecouverte(j)} pts ce soir</span></div>
+      <div class="e2-jours" aria-label="Jour ${j} sur ${ENQ.dureeMax}"><span class="e2-jt">Jour ${j}<small>/${ENQ.dureeMax}</small></span><span class="e2-pts">${jours}</span><span class="e2-dec" title="Points si tu trouves l’auteur aujourd’hui">🔎 ${pointsDecouverte(j)} pts aujourd’hui</span>${verdictRappel()}</div>
     </div>
   </section>`;
 }
@@ -92,21 +92,22 @@ function heroHtml(aff) {
 /** La prochaine étape : un seul gros bouton, comme « Avant 20:00 » à l'HP. */
 function prochaineEtape(aff, dos, et, nonLues) {
   const st = S.state, d = S.draft, carnet = lireCarnet(aff.n);
-  const dem = d.demarches || [], max = maxDemarchesDe(st, zoneAvecAgenda());
+  const u = dejaUtilisees(), occ = enquetesEnCours().length, max = enCoursMax(enqueteursDe(myZone()));
   const tr = (st.traques || []).find((t) => !t.fini);
   if (tr && !(d.traque && d.traque.n === tr.n)) return { t: 'Traque : choisis la planque', s: `${affaire(st, tr.n).suspects[affaire(st, tr.n).coupable].nom} est en fuite`, a: 'data-action="e2-ancre" data-id="traque"' };
   if (nonLues.length) return { t: `Ouvrir ${nonLues.length > 1 ? `les ${nonLues.length} nouvelles pièces` : 'la nouvelle pièce'}`, s: 'arrivées au dossier · dis ce que tu en conclus', a: 'data-action="e2-lire"', env: true };
   if (dos.exclu) return { t: 'Affaire retirée', s: 'tes pièces partagées peuvent encore rapporter', a: 'data-action="e2-onglet" data-t="pieces"', fini: true };
-  if (dos.accuse !== null && dos.accuse !== undefined) return { t: 'Accusation transmise', s: 'résultat ce soir à 20:00', fini: true };
-  if (d.accusation !== null && d.accusation !== undefined) return { t: `${aff.meurtre ? 'Confrontation prête' : 'Accusation prête'} : ${nomsAccuses(aff, d, 'prenom')}`, s: 'elle part à 20:00 avec tes ordres', fini: true };
+  if (dos.accuse !== null && dos.accuse !== undefined) return { t: `Résolue : ${nomsAccuses(aff, dos, 'prenom')}`, s: 'points, mise à prix et Gazette à 20:00', fini: true };
+  if (verdictEnAttente()) return { t: 'Confrontation en cours', s: 'le verdict tombe dans quelques minutes', a: 'data-action="verdict-ouvrir"' };
   const constats = aff.meurtre ? ELEMENTS.filter((e) => derniereScene(aff, et.connus, e)).length : ELEMENTS.filter((e) => et.connus.has(`c:${e}`)).length;
-  const constatsPrevues = dem.filter((x) => !x.includes(':') && ['cam', 'labo', 'temoin', ...(aff.meurtre ? ELEMENTS.map((e) => aff.fiches[e].dem) : [])].includes(x)).length;
   const nA = aff.variante === 'complices' ? 2 : 1;
   const enLice = aff.suspects.map((_, i) => i).filter((i) => etatSuspect(carnet, i, aff) !== 'exclu');
-  if (dem.length < max && constats + constatsPrevues < 3 && !aff.meurtre) return { t: 'Établir la scène', s: `${3 - constats} constatation${3 - constats > 1 ? 's' : ''} à demander · ${dem.length}/${max} démarches`, a: 'data-action="e2-choix"' };
-  if (dem.length < max) return { t: `Choisir tes démarches · ${dem.length}/${max}`, s: dem.length ? 'encore une place pour ce soir' : 'une pièce de plus par démarche, à 20:00', a: 'data-action="e2-choix"' };
-  if (enLice.length === nA && !dos.exclu) return { t: `${aff.meurtre ? 'Confronter' : 'Accuser'} ${enLice.map((i) => aff.suspects[i].prenom).join(' et ')} ?`, s: 'il ne reste que lui dans ton carnet · une seule chance', a: `data-action="tab-ouvrir" data-tid="s${enLice[0]}"` };
-  return { t: 'Tout est prêt pour 20:00', s: 'résultats ce soir, sous enveloppe', fini: true };
+  const libre = occ < max && u.dem < DIRECT.parTour;
+  if (libre && constats < 3 && !aff.meurtre) return { t: 'Établir la scène', s: `${3 - constats} constatation${3 - constats > 1 ? 's' : ''} à lancer · ${occ}/${max} enquêteurs occupés`, a: 'data-action="e2-choix"' };
+  if (enLice.length === nA && !dos.exclu) return { t: `${aff.meurtre ? 'Confronter' : 'Accuser'} ${enLice.map((i) => aff.suspects[i].prenom).join(' et ')} ?`, s: 'il ne reste que lui dans ton carnet · verdict en 45 minutes', a: `data-action="tab-ouvrir" data-tid="s${enLice[0]}"` };
+  if (libre) return { t: 'Lancer une démarche', s: `${occ}/${max} enquêteurs occupés · la pièce arrive en une à trois heures`, a: 'data-action="e2-choix"' };
+  if (occ >= max) return { t: 'Tes enquêteurs sont sur le terrain', s: 'leurs pièces arrivent au fil de la journée', fini: true };
+  return { t: `${DIRECT.parTour} démarches lancées aujourd’hui`, s: 'reprise après le calcul de 20:00', fini: true };
 }
 
 function ctaHtml(e) {
@@ -118,15 +119,16 @@ function ctaHtml(e) {
 /** Le mur : les trois fiches de la scène, puis les suspects en polaroïds sur une ficelle. */
 function murHtml(aff, dos, et, nonLues) {
   const st = S.state, d = S.draft, carnet = lireCarnet(aff.n);
-  const dem = d.demarches || [];
+  const enRoute = piecesEnRoute();
+  const routeDe = (k) => enRoute.find((p) => p.src === k);
   const fiches = ELEMENTS.map((e) => {
     let titre, txt, vide = false;
     if (aff.meurtre) {
       const der = derniereScene(aff, et.connus, e);
-      titre = aff.fiches[e].titre; txt = der && nonLues.some((p) => p.f === der) ? 'résultat arrivé ✉' : der ? aff.resumes[der] : (dem.includes(aff.fiches[e].dem) ? 'demandé ce soir' : 'à établir'); vide = !der;
+      titre = aff.fiches[e].titre; txt = der && nonLues.some((p) => p.f === der) ? 'résultat arrivé ✉' : der ? aff.resumes[der] : (routeDe(aff.fiches[e].dem) ? `en route · ${heureBe(routeDe(aff.fiches[e].dem).dispo)}` : 'à établir'); vide = !der;
     } else {
       const ok = et.connus.has(`c:${e}`) && !nonLues.some((p) => p.f === `c:${e}`);
-      titre = CONSTAT_TITRE[e]; txt = et.connus.has(`c:${e}`) && !ok ? 'résultat arrivé ✉' : ok ? resumeConstat(aff, e) : (dem.includes({ occ: 'cam', moy: 'labo', mob: 'temoin' }[e]) ? 'demandé ce soir' : 'à établir'); vide = !ok;
+      titre = CONSTAT_TITRE[e]; txt = et.connus.has(`c:${e}`) && !ok ? 'résultat arrivé ✉' : ok ? resumeConstat(aff, e) : (routeDe({ occ: 'cam', moy: 'labo', mob: 'temoin' }[e]) ? `en route · ${heureBe(routeDe({ occ: 'cam', moy: 'labo', mob: 'temoin' }[e]).dispo)}` : 'à établir'); vide = !ok;
     }
     return `<button type="button" class="e2-fiche ${vide ? 'vide' : ''}" style="--c:${COL[e]}" data-action="tab-ouvrir" data-tid="c:${e}"><span class="e2-fk">${NOM_EL[e]}</span><span class="e2-ft">${esc(titre)}</span><span class="e2-fv">${esc(txt)}</span></button>`;
   }).join('');
@@ -135,8 +137,8 @@ function murHtml(aff, dos, et, nonLues) {
   const polo = (i) => {
     const s = aff.suspects[i];
     const etat = etatSuspect(carnet, i, aff);
-    const accuse = d.accusation === i || d.accusation2 === i || dos.accuse === i || dos.accuse2 === i;
-    const soir = dem.filter((x) => x.endsWith(`:${i}`)).length + (d.piste === i ? 1 : 0);
+    const accuse = dos.accuse === i || dos.accuse2 === i;
+    const soir = enRoute.filter((p) => pieceSuspect(p.f) === i).length;
     const neuf = nonLues.filter((p) => pieceSuspect(p.f) === i).length;
     const mien = cellules && dansMaCellule(st, S.user.uid, i);
     const sceaux = ELEMENTS.map((e) => { const v = carnet.g[`${i}:${e}`] || 0; return `<i class="v${v}" style="--c:${COL[e]}" title="${NOM_EL[e]} : ${['pas encore établi', 'établi', 'exclu'][v]}">${['', '✓', '✕'][v]}</i>`; }).join('');
@@ -145,7 +147,7 @@ function murHtml(aff, dos, et, nonLues) {
       <span class="e2-ph">${portraitSuspect(s, i, 'tb-face')}${etat === 'exclu' ? '<svg class="e2-croix" viewBox="0 0 100 100" aria-hidden="true"><path d="M14 18 L86 84 M84 14 L18 86"/></svg>' : ''}${accuse ? '<svg class="e2-cercle" viewBox="0 0 120 120" aria-hidden="true"><path d="M60 8 C 100 6 116 40 112 66 C 106 104 60 116 30 102 C 4 88 2 46 22 24 C 34 12 52 8 70 10"/></svg>' : ''}</span>
       <span class="e2-pn">${esc(s.prenom)}</span><span class="e2-pr">${esc(s.role)}</span>
       <span class="e2-sceaux">${sceaux}</span>
-      ${mien ? '<span class="e2-cel" title="Ta zone enquête directement sur ce suspect : démarches au prix normal">🔎 ma zone</span>' : ''}${neuf ? `<span class="e2-neuf">${neuf}</span>` : ''}${soir ? '<span class="e2-cesoir">ce soir</span>' : ''}
+      ${mien ? '<span class="e2-cel" title="Ta zone enquête directement sur ce suspect : démarches au prix normal">🔎 ma zone</span>' : ''}${neuf ? `<span class="e2-neuf">${neuf}</span>` : ''}${soir ? '<span class="e2-cesoir">en cours</span>' : ''}
     </button>`;
   };
   // Une ficelle par rangée de trois (cinq sur ordinateur) : la photo du milieu descend avec le creux de la ficelle.
@@ -171,51 +173,28 @@ function celluleLigne(aff) {
     <span class="muted">Les démarches sur les autres suspects coûtent le double. Répartissez-vous le travail sur la radio.</span></p>`;
 }
 
-/** Ce soir : les démarches en cases à remplir, la piste du voisinage, l'appui fédéral, les partages. */
+/** Aujourd'hui : les enquêteurs sur le terrain, le bouton pour lancer une démarche, la piste du voisinage, l'appui, les partages. */
 function ceSoirHtml(aff, dos) {
-  const st = S.state, d = S.draft, z = myZone();
-  const dem = d.demarches || [], max = maxDemarchesDe(st, zoneAvecAgenda());
-  const reste = z.budget - engagementsDuJour(d, z).total;
-  const nomDem = (x) => { const [k, i] = x.split(':'); const dm = demarcheDe(aff, k); return i !== undefined ? [dm.nom, aff.suspects[Number(i)].prenom, Number(i)] : [dm.nom, aff.meurtre ? 'la scène' : 'constatation', null]; };
-  const cases = Array.from({ length: max }, (_, k) => {
-    const x = dem[k];
-    if (!x) return `<button type="button" class="e2-case vide" data-action="e2-choix"><span class="e2-plus">+</span><span>Choisir une démarche</span></button>`;
-    const [nom, qui, i] = nomDem(x);
-    const prix = coutDemarche(st, S.user.uid, x);
-    return `<div class="e2-case"><span class="e2-ct">${i !== null ? portraitSuspect(aff.suspects[i], i, 'tb-face e2-mini') : '<span class="e2-cs">🔍</span>'}<span class="col" style="gap:0;min-width:0"><strong>${esc(nom)}</strong><span class="tiny">${esc(qui)} · ${prix ? `${fmt1(prix)} k€` : `${demarcheDe(aff, x.split(':')[0]).agents} agents`}</span></span></span>
-      <button type="button" class="e2-cx" data-action="dem-toggle" data-k="${esc(x)}" aria-label="Retirer ${esc(nom)} ${esc(qui)}">✕</button></div>`;
-  }).join('');
+  const st = S.state, d = S.draft;
   const v = voisinageInfo(aff);
   const vCourt = v.x <= 0 ? 'aucune chance' : v.x < 1 ? `${Math.round(v.x * 100)} %` : `1 pièce${v.x % 1 > 0.05 ? ` + ${Math.round((v.x % 1) * 100)} %` : ''}`;
   const carnet = lireCarnet(aff.n);
   const enLice = aff.suspects.map((_, i) => i).filter((i) => etatSuspect(carnet, i, aff) !== 'exclu');
   const pistes = enLice.map((i) => `<button type="button" class="chip ${d.piste === i ? 'on' : ''}" data-action="piste" data-i="${i}" aria-pressed="${d.piste === i}">${esc(aff.suspects[i].prenom)}${d.piste === i ? ' ✓' : ''}</button>`).join('');
   const parts = d.partages || [];
-  const extras = [];
-  if (aff.meurtre && d.reaud) extras.push(`<div class="tb-boite-l"><span class="small grow" style="font-weight:600">Réaudition · ${esc(aff.suspects[d.reaud.i].prenom)}</span><button type="button" class="btn small ghost" data-action="reaud-annuler" aria-label="Annuler la réaudition">✕</button></div>`);
-  // Démarches toutes choisies : la carte se replie sur un résumé (on la rouvre pour changer, régler la piste ou l'appui).
-  const ouvert = S.ouverts && S.ouverts['e2-soir'];
-  if (dem.length >= max && !ouvert && !(S.tuto != null)) {
-    const resume = dem.map((x) => { const [nom, qui] = nomDem(x); return `${esc(nom)} <span class="muted">· ${esc(qui)}</span>`; }).join('<br>');
-    return `<section class="card e2-soir e2-soir-pli" aria-label="Ce soir">
-      <button type="button" class="pli-ligne" data-action="e2-soir-ouvrir" aria-expanded="false">
-        <span class="col grow" style="gap:3px;min-width:0;text-align:left"><span class="kicker">Ce soir à 20:00 · ${dem.length}/${max} démarches</span>
-          <span class="small" style="font-weight:600;line-height:1.35">${resume}</span>
-          <span class="tiny muted">${d.piste !== null && d.piste !== undefined && aff.suspects[d.piste] ? `piste : ${esc(aff.suspects[d.piste].prenom)} · ` : ''}${parts.length ? `${parts.length} partage${parts.length > 1 ? 's' : ''} · ` : ''}reste ${fmt1(reste)} k€ · touche pour modifier, piste, appui</span></span>
-        <span class="pli-ok">${icon('check', 14)}</span>${icon('chevron', 16)}</button>
-      ${encorePossible(aff, dos, d, parts)}
-    </section>`;
-  }
-  return `<section class="card e2-soir" aria-label="Ce soir">
-    <div class="between"><h2 class="e2-h2">Ce soir à 20:00</h2><span class="small muted">reste ${fmt1(reste)} k€${dem.length >= max ? ' · <button type="button" class="lien tiny" data-action="e2-soir-replier">replier</button>' : ''}</span></div>
-    <div class="e2-cases">${cases}</div>
-    <div class="e2-ligne"><span class="e2-li">🏘</span><span class="col grow" style="gap:4px;min-width:0"><span class="small"><strong>Voisinage</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche · <span class="${v.x >= 0.5 ? 'ok' : v.x > 0 ? '' : 'bad'}">${vCourt}</span></span>
+  const u = dejaUtilisees(), occ = enquetesEnCours().length, max = enCoursMax(enqueteursDe(myZone()));
+  const peut = !dos.exclu && dos.accuse === null && occ < max && u.dem < DIRECT.parTour;
+  return `<section class="card e2-soir" aria-label="Aujourd’hui">
+    <div class="between"><h2 class="e2-h2">Aujourd’hui</h2><span class="small muted">reste ${fmt1(budgetEnquete())} k€</span></div>
+    ${enCoursHtml(aff)}
+    ${peut ? '<button type="button" class="btn primary block" data-action="e2-choix">Lancer une démarche</button>' : ''}
+    <div class="e2-ligne"><span class="e2-li">🏘</span><span class="col grow" style="gap:4px;min-width:0"><span class="small"><strong>Voisinage, à 20:00</strong> · ${v.n} agent${v.n > 1 ? 's' : ''} en Recherche · <span class="${v.x >= 0.5 ? 'ok' : v.x > 0 ? '' : 'bad'}">${vCourt}</span></span>
       <span class="e2-pistes"><span class="tiny muted" style="white-space:nowrap">Piste :</span>${pistes}</span></span></div>
     <div class="e2-ligne"><span class="e2-li">🧪</span><span class="col grow" style="gap:4px;min-width:0">${appuiHtml({ compact: true })}</span></div>
-    <div class="e2-ligne"><span class="e2-li">📤</span><span class="col grow" style="gap:2px;min-width:0"><span class="small"><strong>Partages</strong> · ${parts.length} / ${ENQ.maxPartages}</span>
-      <span class="tiny muted">${parts.length ? parts.map((x) => `${esc(titrePiece(aff, x.f))} → ${x.a === '*' ? 'toutes' : esc(st.zones[x.a] ? zoneName(st.zones[x.a]) : '?')}`).join(' · ') : 'Ouvre une pièce du classeur pour la partager : PS et points d’enquête si elle aide.'}</span></span></div>
-    ${extras.join('')}
+    <div class="e2-ligne"><span class="e2-li">📤</span><span class="col grow" style="gap:2px;min-width:0"><span class="small"><strong>Partages, à 20:00</strong> · ${parts.length} / ${ENQ.maxPartages}</span>
+      <span class="tiny muted">${parts.length ? parts.map((x) => `${esc(titrePiece(aff, x.f))} → ${x.a === '*' ? 'toutes' : esc(st.zones[x.a] ? zoneName(st.zones[x.a]) : '?')}`).join(' · ') : 'Partager est facultatif. Ouvre une pièce du classeur pour l’envoyer : PS et points d’enquête si elle aide.'}</span></span></div>
     ${aff.recoupements || aff.hypothese ? soirPlusHtml(aff) : ''}
+    ${encorePossible(aff, dos, d, parts)}
   </section>`;
 }
 
@@ -224,13 +203,13 @@ function encorePossible(aff, dos, d, parts) {
   if (dos.exclu) return '';
   const p = [];
   if (aff.hypothese && !d.hypo) p.push('<button type="button" class="chip" data-action="tab-ouvrir" data-tid="hypo">⚖️ Hypothèse au juge</button>');
-  if (aff.recoupements && !d.recoup) p.push('<button type="button" class="chip" data-action="e2-onglet" data-t="pieces" data-defile="1">🔗 Recouper deux pièces</button>');
+  if (aff.recoupements && !dejaUtilisees().recoup) p.push('<button type="button" class="chip" data-action="e2-onglet" data-t="pieces" data-defile="1">🔗 Recouper deux pièces</button>');
   const pi = d.piste;
-  if (aff.meurtre && !d.reaud && dos.pieces.length && Number.isInteger(pi) && aff.suspects[pi]) p.push(`<button type="button" class="chip" data-action="tab-ouvrir" data-tid="Q:${pi}">🗣️ Réentendre ${esc(aff.suspects[pi].prenom)}</button>`);
+  if (aff.meurtre && !dejaUtilisees().reaud && dos.pieces.length && Number.isInteger(pi) && aff.suspects[pi]) p.push(`<button type="button" class="chip" data-action="tab-ouvrir" data-tid="Q:${pi}">🗣️ Réentendre ${esc(aff.suspects[pi].prenom)}</button>`);
   if (parts.length < ENQ.maxPartages && dos.pieces.length) p.push(`<button type="button" class="chip" data-action="e2-onglet" data-t="pieces" data-defile="1">📤 Partager une pièce (${ENQ.maxPartages - parts.length})</button>`);
   if (aff.coupsDePouce) p.push('<button type="button" class="chip" data-action="tab-ouvrir" data-tid="pouce">💡 Coups de pouce</button>');
   if (!p.length) return '';
-  return `<div class="e2-encore"><span class="tiny muted">Encore possible ce soir</span><div class="e2-encore-l">${p.join('')}</div></div>`;
+  return `<div class="e2-encore"><span class="tiny muted">Encore possible aujourd’hui</span><div class="e2-encore-l">${p.join('')}</div></div>`;
 }
 
 // ───── Le classeur ─────
@@ -383,7 +362,7 @@ function lectureHtml(aff, dos, nonLues) {
 export function renderEnqueteDossier() {
   const st = S.state, z = myZone();
   const aff = affaire(st, st.enquete.n);
-  const dos = dossierDe(st, z);
+  const dos = dossierVu();
   const et = preparerTableau(aff, dos);
   S.e2Rendu = true;
   CONNUS2 = new Set([...et.connus, ...(aff.prof ? docsOuverture(aff).map((x) => x.f) : [])]);
@@ -403,6 +382,5 @@ export function renderEnqueteDossier() {
       <div class="e2-col">${murHtml(aff, dos, et, nonLues)}${ceSoirHtml(aff, dos)}</div>
       <div class="e2-col">${classeurHtml(aff, dos, et, nonLues)}</div>
     </div>
-    ${S.savedOrders && !S.ordersDirty ? `<p class="tiny muted" style="margin:0;text-align:center">${icon('check', 14)} Choix enregistrés avec tes ordres du tour.</p>` : ''}
   </main>${sheet}${lectureHtml(aff, dos, nonLues)}${journalHtml(aff)}${sceneFouilleHtml(aff)}${tabbar('enquete')}${sceneZoomHtml(aff)}`;
 }

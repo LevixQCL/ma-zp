@@ -1,25 +1,23 @@
 // Guide du joueur (wiki intégré). Les chiffres viennent directement du moteur,
 // pour que le guide reste exact quand l'équilibrage change.
-import { FILET, DUREES } from '../engine/filet.js';
 import { CHALLENGE } from '../engine/challenge.js';
 import { BILAN } from '../engine/bilan.js';
 import { DECOR, conditionDecor } from '../engine/decor.js';
 import { S, esc, icon, tabbar } from './common.js';
-import { SERVICES, SERVICE_LABELS, EQUIP, effetEquip, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, LOTS, TUTELLE, ND, TERRAIN, BUDGET_IPZ, ENIGMES } from '../engine/constants.js';
+import { SERVICES, SERVICE_LABELS, EQUIP, effetEquip, SEASON_LENGTH, START, DEFAULT_ALLOC, ECONOMIE, COUTS, DEPENSES, DELAI_ACADEMIE, DUREE_FORMATION, INFRAS, RYTHMES, GRADES, PS, IPZ_POIDS, MIN_TOURS_CLASSEMENT, CLASSEMENT, NIVEAU_MAX, RENFORT, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, REPUTATION, TUTELLE, ND, TERRAIN, BUDGET_IPZ, ENIGMES } from '../engine/constants.js';
 import { SINISTRE } from '../engine/sinistres.js';
 import { M3 } from '../engine/milieu.js';
 import { OPERATIONS, PRESSIONS, COUPS_DURS } from '../engine/contenu.js';
 import { ENQ, DEMARCHES, POINTS, pointsDecouverte, delaiTraque, PRIME } from '../engine/enquete.js';
-import { PARTAGE, FIPA } from '../engine/fipa.js';
+import { DIRECT, DELAI_VERDICT } from '../engine/enquete-direct.js';
+import { ARMURERIE } from '../engine/materiel.js';
+import { CONSIGNES } from '../engine/adjoint.js';
 import { QUEST_LABELS } from '../quests/quests.js';
 import { INCIDENTS, INC, MALUS, GAIN, texteMalus, texteGain, URGENCE } from '../engine/incidents.js';
-import { PREPA, coutPrepa, DOCTRINES, IDS_DOCTRINES, MAITRISE, FLAGRANT } from '../engine/constants.js';
+import { PREPA, coutPrepa, SPECIALITES, IDS_SPECIALITES, PALIERS_SPE, FLAGRANT } from '../engine/constants.js';
 import { MODELES, RENDEMENT } from '../engine/flotte.js';
-import { AIDE, MOTIONS_CHEF, PERIL, SOLIDARITE } from '../engine/rivalites.js';
-import { PACTES, PACTE, DEFI, DEFI_INDICATEURS } from '../engine/pactes.js';
+import { PERIL } from '../engine/peril.js';
 import { VAGUES } from '../engine/vagues.js';
-import { RELEVE } from '../engine/releve.js';
-import { CRISE, PLANS } from '../engine/crise.js';
 
 const k = (v) => `${String(v).replace('.', ',')} k€`;
 const pc = (v) => `${Math.round(v * 100)} %`;
@@ -34,24 +32,23 @@ export function sections() {
     {
       id: 'debut', titre: 'Premiers pas', html: `
         <button type="button" class="btn primary block" data-action="tuto" style="margin-bottom:6px">Lancer la visite guidée (3 minutes)</button>
-        ${'<button type="button" class="btn block" data-action="tuto-mini" style="margin-bottom:6px">Saison 2 : ce qui a changé (1 minute)</button>'}
         <p>Tu diriges une zone de police fictive du District Delta. Chaque jour, tu donnes tes ordres ; <strong>tous les tours sont résolus en même temps à 20:00</strong> (heure belge). Personne n'est avantagé parce qu'il a joué plus tôt ou plus vite.</p>
         <h3>Chaque jour, en cinq minutes</h3>
         ${ol([
           '<strong>Lis la Gazette</strong> de la veille et ton rapport : ce qui s’est passé chez toi et dans le district.',
-          '<strong>Passe tes ordres</strong> : répartis tes agents entre les cinq services, choisis ton rythme, éventuellement une grande décision et des dépenses du jour.',
-          '<strong>Avance l’enquête</strong> : lance jusqu’à deux démarches, partage des indices, accuse quand tu es sûr.',
+          '<strong>Passe tes ordres</strong> dans Gestion : répartis tes agents entre les cinq services, choisis ton rythme, éventuellement une grande décision et des dépenses du jour.',
+          '<strong>Avance l’enquête</strong>, quand tu veux dans la journée : lance des démarches, attends leurs pièces, convoque un suspect quand tu es sûr. Le verdict tombe en direct.',
           '<strong>Résous tes énigmes du jour</strong> : quatre petits casse-tête, une seule réponse chacun (3 réussies suffisent pour la prime).',
-          'Réponds aux <strong>FIPA</strong> et aux collègues sur la <strong>Radio</strong> si besoin.',
+          'Parle aux collègues sur la <strong>Radio</strong> : non-droit, renforts, pièces à échanger.',
         ])}
         <p>Tu peux modifier tes ordres autant de fois que tu veux jusqu'à 20:00. Si tu oublies un jour, le <strong>pilote automatique</strong> reprend ta dernière répartition (voir « Absences »).</p>
         <h3>Les écrans</h3>
         ${table(['Onglet', 'À quoi il sert'], [
-          ['HP', 'Hôtel de police : compte à rebours, état de ta zone, situation du jour, FIPA, enquête, alertes, rapport.'],
-          ['Ordres', 'Répartition des agents, rythme, opérations, zone de non-droit, grande décision, dépenses du jour.'],
-          ['Enquête', 'L’affaire en cours : démarches, pièces, carnet, accusation, traque.'],
-          ['Énigmes', 'Les quatre énigmes du jour.'],
-          ['Carte', 'Le plan de la ville, tes quartiers (zones chaudes, point chaud, patrouilles), la zone de non-droit, la liste des zones.'],
+          ['Accueil', 'Hôtel de police : compte à rebours, état de ta zone, situation du jour, enquête, alertes, rapport, Gazette.'],
+          ['Gestion', 'Répartition des agents, rythme, spécialité, armurerie, grande décision, dépenses, bâtiments et flotte.'],
+          ['Carte', 'Le plan de la ville, tes quartiers, la zone de non-droit, la liste des zones.'],
+          ['Enquête', 'L’affaire en cours : démarches en direct, pièces, tableau, confrontation, traque.'],
+          ['Énigmes', 'Les quatre énigmes du jour, les mini-jeux et le Challenge.'],
           ['Radio', 'Messagerie commune entre tous les chefs de zone.'],
         ])}`,
     },
@@ -60,8 +57,8 @@ export function sections() {
         <p>Chaque zone démarre avec ${START.agents} agents, ${k(START.budget)}, ${START.vehicules} véhicules, un moral de ${START.moral}, une satisfaction et une réputation de ${START.satisfaction}.</p>
         ${table(['Jauge', 'Ce qui la fait monter', 'Ce qui la fait baisser'], [
           ['<strong>Moral</strong> (0 à 100)', 'rythme allégé, prime, salle de sport, succès, bonnes nouvelles', 'rythme renforcé, incidents ratés en série, budget négatif, erreurs aux énigmes, coups durs'],
-          ['<strong>Satisfaction</strong> citoyenne', 'incidents traités, Proximité, dossiers élucidés, opérations et FIPA réussies', 'incidents ratés, criminalité au-dessus de 55, vieux dossiers, « chasse aux PV », fiascos'],
-          ['<strong>Réputation</strong> (collègues et autorités)', 'partager des indices, aider une zone en difficulté, secteurs repris à plusieurs, FIPA partagées, renforts, arrestations', 'fausses accusations, manœuvres (et scandale), blâme du Conseil, fiascos'],
+          ['<strong>Satisfaction</strong> citoyenne', 'incidents traités, Proximité, dossiers élucidés, opérations réussies', 'incidents ratés, criminalité au-dessus de 55, vieux dossiers, « chasse aux PV », fiascos'],
+          ['<strong>Réputation</strong> (collègues et autorités)', 'partager des indices, aider une zone en difficulté, secteurs repris à plusieurs, renforts, arrestations', 'fausses accusations, manœuvres (et scandale), blâme du Conseil, fiascos'],
           ['<strong>Budget</strong>', `dotation ${k(ECONOMIE.dotation)} par tour, subside communal (${k(SUBSIDE.parAgent)} par agent au-delà de ${SUBSIDE.seuil}), confiance de la commune, amendes du Roulage, primes`, `salaires (${k(ECONOMIE.salaire)} par agent), entretien (${k(ECONOMIE.entretienVehicule)} par véhicule), décisions, dépenses, démarches`],
           ['<strong>Criminalité</strong>', 'elle monte d’elle-même chaque jour', 'Proximité, campagne de prévention'],
           ['<strong>Paperasse</strong>', 'chaque incident traité et chaque nouveau dossier', 'Accueil et administration, sous-traitance, logiciel'],
@@ -92,7 +89,7 @@ export function sections() {
         <p>Un véhicule à l’atelier ne rapporte rien ce jour-là (sauf la prime verte, versée pour le parc). Les plafonds évitent la flotte d’un seul modèle : au-delà de 2 ou 3, un modèle ne rapporte plus que ses places.</p>
         <p>${esc(MODELES.electrique.texte)} ${esc(MODELES.anonyme.texte)} ${esc(MODELES.fourgon.texte)}</p>
         <h3>Ton hôtel de police en image</h3>
-        <p>L’illustration montre aussi la vie de ta zone : tes annexes et tes lots, le drapeau en berne quand le moral passe sous 35, une file de citoyens devant l’entrée quand la satisfaction passe sous 35, toutes les fenêtres allumées après un rythme renforcé, les imprévus de la veille (fuite d’eau, grève, pigeons, cheval sur la route, équipe de télévision…), les barrières d’une opération d’envergure et les combis cabossés. Le ciel suit l’heure, la météo change d’un jour à l’autre, et les fêtes se voient (21 juillet, fin d’année). Sur la Carte, « Les zones du district » fait défiler l’hôtel de police de chaque zone avec son grade, son site sensible et son IPZ moyen : touche-en un pour le visiter (FIPA, annexes, bouton pour écrire). Dans le classement, touche le nom d’une zone.</p>
+        <p>L’illustration montre aussi la vie de ta zone : tes annexes, le drapeau en berne quand le moral passe sous 35, une file de citoyens devant l’entrée quand la satisfaction passe sous 35, toutes les fenêtres allumées après un rythme renforcé, les imprévus de la veille (fuite d’eau, grève, pigeons, cheval sur la route, équipe de télévision…), les barrières d’une opération d’envergure et les combis cabossés. Le ciel suit l’heure, la météo change d’un jour à l’autre, et les fêtes se voient (21 juillet, fin d’année). Sur la Carte, « Les zones du district » fait défiler l’hôtel de police de chaque zone avec son grade, son site sensible et son IPZ moyen : touche-en un pour le visiter (FIPA, annexes, bouton pour écrire). Dans le classement, touche le nom d’une zone.</p>
         <p>Dans la fiche « Mon hôtel de police », <strong>Personnaliser mon hôtel de police</strong> te laisse choisir la façade, la couleur du néon et les abords. Chaque élément se débloque avec ton grade ou un trophée :</p>
         ${table(['Élément', 'Pour le débloquer'], Object.values(DECOR).flatMap((C) => Object.values(C.options).filter((o) => o.grade || o.trophee).map((o) => [`${C.titre} : ${o.nom}`, conditionDecor(o)])))}
         <p><strong>Récompenses visibles.</strong> Chaque semaine (tours 7 et 14), la zone au meilleur IPZ moyen (4 tours joués au moins) devient <strong>championne de la semaine</strong> : une étoile dorée brille sur son toit pendant 7 jours. En fin de saison, le podium reçoit une plaque (or, argent, bronze) à côté de l’entrée, conservée d’une saison à l’autre. Une manœuvre réussie contre toi laisse une trace le lendemain (affiches de recrutement, cartons de dossiers emportés, voiture de l’Inspection), et un poste avancé plante sa tente devant chez toi tant qu’il dure.</p>
@@ -100,8 +97,8 @@ export function sections() {
         <p>À la première ouverture après la résolution de 20:00, tes combis sortent en patrouille, gyrophares allumés, puis reviennent.</p>
         <p><strong>Early birds.</strong> Les zones présentes au lancement des skins ont reçu une roulette : un skin exclusif parmi douze (hôtel de police, garage ou aile des annexes), qu’on équipe ou enlève dans « Personnaliser mon hôtel de police ». Il ne peut plus être gagné par la suite.</p>
         <p>Chaque annexe (salle de sport, logiciel, caméras…) coûte ${String(ENTRETIEN_ANNEXE).replace('.', ',')} k€ d’entretien par tour. Une zone nettement moins équipée que la moyenne du district reçoit une péréquation de ${String(PEREQUATION.montant).replace('.', ',')} k€ par tour. </p>
-        <h3>Ton équipe et tes trophées</h3>
-        <p>Cinq figures incarnent ta zone (une par service). Elles gagnent de l’expérience avec le travail de leur service et reçoivent des surnoms au fil des tours ; elles restent d’une saison à l’autre. Les trophées récompensent des exploits sur la durée (zéro incident raté pendant 7 tours, aide à une zone en péril, arrestation, saison sans manœuvre…) : ils sont visibles sur l’HP (carte « Mes trophées ») et dans la liste des zones de la Carte. Chacune encadre son service et le rend plus efficace : +3 % sans surnom, +8 % au 1er, +14 % au 2e, +20 % au 3e. Chaque jour, dans les ordres (section « Mon équipe »), tu peux en envoyer une en mission : mener l’assaut sur un secteur de la zone de non-droit où tu envoies des agents (force de ta zone sur ce secteur augmentée du même pourcentage, risque de blessure divisé par deux) ou encadrer ton renfort chez un collègue (un agent de plus dans son dispositif). Son service perd alors son bonus pour la journée.</p>
+        <h3>Tes trophées</h3>
+        <p>Les trophées récompensent des exploits sur la durée (zéro incident raté pendant 7 tours, une arrestation, une saison sans manœuvre…). Ils ne se perdent jamais et sont visibles sur l’Accueil (tuile « Trophées ») et dans la liste des zones de la Carte.</p>
         <h3>D’une saison à l’autre</h3>
         <p>À la fin de la saison, ta zone garde tout : formations, matériel, bâtiments, annexes (leur entretien continue) et <strong>ton parc</strong> (chaque véhicule passe au contrôle technique, usure divisée par deux). Mais la Gazette publie ton <strong>Bilan de saison</strong> : des imprévus concrets (départs à la pension, mutations, matériel cassé, bâtiment à entretenir) qui retirent chacun un niveau. Leur nombre vaut environ un tiers des niveaux gagnés depuis le départ, plus une bonne part de ce qui dépasse la moyenne du district ; ils tombent d’abord sur ce qui est le plus au-dessus de la moyenne, jamais plus de 2 niveaux par élément, et l’hôtel de police ne redescend pas sous 4 une fois atteint. Pendant les ${BILAN.tours} premiers soirs de la nouvelle saison, tu peux <strong>remettre en état</strong> la moitié de tes imprévus, à moitié prix (ou tout accepter) ; sans réponse, ils sont acceptés. Si le garage perd une place, les véhicules les plus usés sont revendus et le produit s’ajoute au budget. Le budget, les effectifs, le moral et les jauges repartent des valeurs de départ. Une décision dont l’effet tomberait après la fin de saison est signalée dans tes ordres.</p>
         <h3>L'IPZ, ton score du jour</h3>
@@ -110,24 +107,24 @@ export function sections() {
         <p>La composante « Résultats terrain » vaut ${TERRAIN.incidents} × la part d'incidents traités, plus ${TERRAIN.parPoint} × ton <strong>bilan</strong> de points, plafonnée à 100. Le bilan = les points du jour + ${Math.round(TERRAIN.report * 100)} % du bilan de la veille : un gros coup compte encore le lendemain, et un jour creux ne fait pas tout tomber. La composante « Budget » suit ton <strong>revenu</strong> moyen des ${BUDGET_IPZ.jours} derniers jours (${BUDGET_IPZ.revenu.base} + ${BUDGET_IPZ.revenu.parK} par tranche de 1 000 € par jour, 100 dès 15 000 €), sans compter tes achats. Le <strong>classement</strong> de la saison est la moyenne de tes IPZ, les derniers jours comptant plus (hier 1, il y a 5 jours 0,33, il y a 10 jours 0,11) : une avance se garde en continuant à bien jouer. Les points viennent de la Recherche (+0,5 par unité de travail sur les dossiers, chaque jour), des flagrants délits (+3), de la zone de non-droit, des opérations d'envergure, des pièces de voisinage (+2), d'une découverte (+8) ou d'une arrestation (+6).</p>`,
     },
     {
-      id: 'doctrines', titre: 'La doctrine de ta zone', html: `
-        <p>Pendant les <strong>3 premiers jours de la saison</strong>, tu choisis une doctrine dans tes ordres : une vraie force, un vrai prix, et une <strong>jauge</strong> qui se remplit avec le travail du soir et déborde en récompense. En <strong>2e semaine (jours 8 et 9)</strong>, tu peux la garder ou en changer ; sans choix, tu la gardes.</p>
-        <p><strong>Maîtrise.</strong> Garder la même doctrine d’une semaine à l’autre (et d’une saison à l’autre) la fait monter d’un cran, jusqu’à 3 étoiles : la force et la vitesse de la jauge grandissent de ${Math.round(MAITRISE * 100)} % par cran, le prix ne bouge pas. En changer remet la maîtrise et la jauge à zéro.</p>
-        ${table(['Doctrine', 'Force', 'Prix', 'Brille surtout'], IDS_DOCTRINES.map((k) => { const d = DOCTRINES[k]; return [`${d.ico} ${esc(d.nom)}`, esc(d.force), esc(d.prix), esc(d.brille)]; }))}
-        <h3>Les jauges</h3>
-        <p>Chaque jauge est visible dans tes Ordres, sous le service qui la remplit (celle de la doctrine partenaire, en tête de l’affectation). À 100 %, la récompense tombe le soir même (une fois par soir au plus) et le surplus reste dans la jauge. Le rapport de nuit indique où elle en est.</p>
-        ${table(['Doctrine', 'Jauge', 'Se remplit', 'À 100 %'], IDS_DOCTRINES.map((k) => { const d = DOCTRINES[k], J = d.jauge; return [`${d.ico} ${esc(d.nom)}`, `${J.ico} ${esc(J.nom)}`, esc(J.remplit), esc(J.gain)]; }))}
+      id: 'specialite', titre: 'La spécialité de ta zone', html: `
+        <p>Dans Gestion, choisis la <strong>spécialité</strong> de ta zone : un service où elle excelle. Elle monte par paliers avec les jours joués : palier 1 tout de suite, palier 2 après ${PALIERS_SPE[1]} jours, palier 3 après ${PALIERS_SPE[2]} jours. Tu peux en changer quand tu veux, mais elle repart du palier 1. Elle te suit d’une saison à l’autre.</p>
+        ${table(['Spécialité', 'Palier 1', 'Palier 2', 'Palier 3'], IDS_SPECIALITES.map((k) => { const d = SPECIALITES[k]; return [`${d.ico} ${esc(d.nom)}`, ...d.paliers.map((p) => esc(p.t))]; }))}
+        <h3>La jauge du palier 3</h3>
+        <p>Au palier 3, une jauge se remplit chaque soir avec le travail du service. À 100 %, la récompense tombe le soir même et le surplus reste.</p>
+        ${table(['Jauge', 'Se remplit', 'À 100 %'], IDS_SPECIALITES.map((k) => { const J = SPECIALITES[k].jauge; return [`${J.ico} ${esc(J.nom)}`, esc(J.remplit), esc(J.gain)]; }))}
         <h3>Ce que rapporte un flagrant délit</h3>
-        <p>Les patrouilles d’Intervention qui ne sont pas prises par les incidents du soir remplissent la <strong>jauge de flagrant délit</strong> (sous l’Intervention, dans tes Ordres) : +${Math.round(FLAGRANT.parUnite * 100)} % par unité de capacité libre, ${Math.round(FLAGRANT.max * 100)} % au plus par soir (les voitures anonymisées en filature la remplissent aussi). À 100 %, un auteur est pris sur le fait : <strong>+${FLAGRANT.points} points de résultats, +${FLAGRANT.ps} PS, +1 de satisfaction</strong>, et la tension d’un quartier chaud baisse de ${FLAGRANT.tension}. Avec le complexe cellulaire, les points montent encore. La doctrine d’intervention remplit cette jauge ${Math.round(DOCTRINES.intervention.flagrant * 100)} % plus vite.</p>
-        <h3>Le rendement de la Routière</h3>
-        <p>La doctrine routière repousse l’effet « chasse aux PV » de ${Math.round(DOCTRINES.routiere.chasse * 100)} points d’effectifs, mais au-delà de ${Math.round(DOCTRINES.routiere.rendement * 100)} % de tes agents au Roulage, chaque agent de plus rapporte moitié moins d’amendes.</p>`,
+        <p>Les patrouilles d’Intervention qui ne sont pas prises par les incidents du soir remplissent la <strong>jauge de flagrant délit</strong> : +${Math.round(FLAGRANT.parUnite * 100)} % par unité de capacité libre, ${Math.round(FLAGRANT.max * 100)} % au plus par soir. À 100 %, un auteur est pris sur le fait : <strong>+${FLAGRANT.points} points de résultats, +${FLAGRANT.ps} PS, +1 de satisfaction</strong>.</p>
+        <h3>L’armurerie</h3>
+        <p>Quelques achats clairs, gardés pour de bon : un par soir au plus, livré à 20:00, utile dès le lendemain.</p>
+        ${table(['Équipement', 'Prix', 'Effet'], Object.values(ARMURERIE).map((a) => [`${a.ico} ${esc(a.nom)}`, k(a.prix) + (a.entretien ? ` (+${String(a.entretien).replace('.', ',')} k€/jour)` : ''), esc(a.effet)]))}`,
     },
     {
       id: 'ordres', titre: 'Les ordres et les cinq services', html: `
         <p>Tes agents disponibles (hors blessés, malades, formations) se répartissent entre cinq services. Répartition de départ : ${Object.entries(DEFAULT_ALLOC).map(([s, n]) => `${n} ${SERVICE_LABELS[s]}`).join(', ')}.</p>
         ${table(['Service', 'Son rôle'], [
           ['Intervention', 'Traite les incidents du jour (environ 1,1 de capacité par incident). Chaque incident raté coûte 1,8 de satisfaction. Limité par les véhicules : au-delà de 2,5 agents par véhicule, les agents en plus ne comptent qu’à moitié. Les patrouilles restées libres après les incidents remplissent une jauge de flagrant délit (+10 % par unité de marge, 40 % au plus par jour) : à 100 %, flagrant délit sûr (+3 pts, +3 PS, quartier apaisé).'],
-          ['Proximité', 'Fait baisser la criminalité (0,6 par unité de capacité) et soigne la satisfaction. Ses agents peuvent patrouiller dans des quartiers précis : Ordres, « Patrouilles du soir ».'],
+          ['Proximité', 'Fait baisser la criminalité (0,6 par unité de capacité) et soigne la satisfaction.'],
           ['Recherche', 'Élucide les dossiers locaux, qui rapportent des points ; mène l’enquête de voisinage, qui rapporte des pièces pour l’enquête de la semaine (surtout avec une piste prioritaire).'],
           ['Roulage', `Rapporte des amendes (${k(ECONOMIE.amendeParCapacite)} par unité de capacité). Au-delà de 6 agents, chaque agent de plus compte pour moitié. Au-delà de 25 % des effectifs (40 % avec les caméras) : effet « chasse aux PV », −2 de satisfaction.`],
           ['Accueil et administration', 'Écluse la paperasse. Au-delà de 14 dossiers : −2 de moral par tour ; au-delà de 20 : l’Inspection. C’est aussi l’assurance de la zone : chaque agent au-delà de 2 évite 15 % des tracas internes (jusqu’à 60 %).'],
@@ -136,11 +133,10 @@ export function sections() {
         <h3>Le rythme</h3>
         ${table(['Rythme', 'Effet'], Object.values(RYTHMES).map((r) => [r.label, `${r.mult === 1 ? 'efficacité normale' : `efficacité ${r.mult > 1 ? '+' : '−'}${Math.round(Math.abs(r.mult - 1) * 100)} %`}${r.moral ? `, ${r.moral > 0 ? '+' : ''}${r.moral} de moral` : ''}${r.cout ? `, ${k(r.cout)} d’heures supplémentaires` : ''}`]))}
         ${note('Trois tours de suite en rythme renforcé : risque d’épuisement, un agent absent 5 tours.')}
-        <h3>Les quartiers et les patrouilles</h3>
+        <h3>Les quartiers</h3>
         <p>Ta zone compte six quartiers, chacun avec sa <strong>tension</strong> : calme (moins de 45), à surveiller, tendu (55 et plus : coûte de la satisfaction), chaud (70 et plus). La criminalité de ta zone est la moyenne de ses quartiers. Au-dessus de 55, un quartier coûte un peu de satisfaction chaque jour.</p>
         <ul class="aide-liste">
-          <li><strong>Patrouilles ciblées</strong> : dans tes Ordres (« Patrouilles du soir »), envoie des agents de Proximité dans un quartier précis. Les autres patrouillent partout, comme d’habitude. Là où tu concentres, la tension baisse davantage ; ailleurs, elle baisse moins.</li>
-          <li><strong>Point chaud</strong> : presque chaque jour, un quartier est signalé la veille (deal, rodéos, cambriolages…). 2 agents sur place le désamorcent (+1 de satisfaction) ; sinon, la tension y grimpe fortement.</li>
+          <li><strong>Présence</strong> : tes agents de Proximité patrouillent dans tous tes quartiers. Plus ils sont nombreux, plus la tension baisse partout.</li>
           <li><strong>Déplacement de la délinquance</strong> : à partir de 4 agents au même endroit, une partie de la délinquance glisse vers les quartiers voisins, y compris chez la zone d’à côté.</li>
           <li><strong>Frontière</strong> : tu vois la tension des quartiers voisins qui touchent les tiens (en pointillés). La tension passe d’un quartier à l’autre : un voisin qui laisse filer finit par te coûter, d’où l’intérêt de se coordonner.</li>
         </ul>
@@ -234,13 +230,13 @@ export function sections() {
           'Six planques, chacune avec sa rive, son humidité, sa température et son accès : il faudra trouver la bonne pour l’arrestation.',
           'Une fois l’affaire bouclée, la Gazette publie « le fin mot de l’affaire », avec la raison pour laquelle chaque innocent était innocent.',
         ])}
-        <h3>Les démarches</h3>
-        <p>Deux démarches au maximum par tour, toujours fructueuses. Le résultat arrive à 20:00 dans ton dossier. Une démarche qui n'a plus rien à t'apprendre est grisée.</p>
+        <h3>Les démarches, en direct</h3>
+        <p>Tu enquêtes quand tu veux dans la journée, sans attendre 20:00. Une démarche part tout de suite et rend sa pièce après un <strong>temps de recherche</strong> (1 h à 3 h, plus court avec beaucoup d’agents de Recherche hier soir, et avec la spécialité judiciaire). ${DIRECT.parTour} démarches au plus par jour, ${DIRECT.enCours} en cours en même temps (une de plus avec 8 enquêteurs ou plus). Une réaudition et un recoupement par jour, en plus. Le coût est débité à 20:00. Une démarche qui n'a plus rien à t'apprendre est grisée.</p>
         ${table(['Démarche', 'Coût', 'Apprend'], Object.values(DEMARCHES).map((d) => [d.nom + (d.cible ? ' (sur un suspect)' : ' (constatation)'), d.cout ? k(d.cout) + (d.cible ? ', le double pour un suspect qui n’est pas le tien' : '') : `${d.agents} agents de Recherche pour la journée`, d.dit + (d.planque ? ', puis un indice sur la planque' : '')]))}
         <p><strong>Enquête de voisinage</strong> : chaque soir, tes agents de Recherche peuvent rapporter des pièces gratuites sur les suspects (jamais sur la scène ni les planques). Au-delà de 2 unités de capacité, chaque unité ajoute 7 % de chance (jusqu’à 50 %). Chaque pièce rapportée compte aussi dans tes résultats du jour.</p>
         <p><strong>Piste prioritaire</strong> : depuis la fiche d’un suspect, mets tes enquêteurs sur sa piste. Le voisinage cherche alors d’abord de ce côté, avec un taux doublé (14 % par unité, jusqu’à plus d’une pièce par soir). Sur un suspect qui n’est pas le tien, c’est deux fois moins efficace. La piste est gratuite, mais une mauvaise piste fait perdre des jours.</p>
         <p><strong>Bonus d’énigme</strong> : avec deux bonnes réponses aux énigmes du jour, tu peux choisir « +1 indice ».</p>
-        <p><strong>Appui fédéral (PJF)</strong> : une fois par jour, demande le <strong>labo</strong> (traces, empreintes, ADN) ou la <strong>RCCU</strong> (téléphones, ordinateurs, comptes en ligne) dans « Ce soir », sur l’écran Enquête. Leurs équipes sont partagées entre toutes les zones (environ une par service pour 6 zones, plus ou moins selon le jour) : réponse à 20:00. Refusé ? Tu passes en priorité la fois suivante. Accepté : l’équipe passe le lendemain et tu joues son mini-jeu (empreintes ou ADN pour le labo, réseau ou interception pour la RCCU), un seul essai, avant 20:00. Réussi : une pièce sur un suspect arrive à 20:00, plutôt sur les moyens avec le labo, plutôt sur le mobile ou l’occasion avec la RCCU. Raté ou pas joué : rien.</p>
+        <p><strong>Appui fédéral (PJF)</strong> : une fois par jour, demande le <strong>labo</strong> (traces, empreintes, ADN) ou la <strong>RCCU</strong> (téléphones, ordinateurs, comptes en ligne) dans « Aujourd’hui », sur l’écran Enquête. Leurs équipes sont partagées entre toutes les zones (environ une par service pour 6 zones, plus ou moins selon le jour) : réponse à 20:00. Refusé ? Tu passes en priorité la fois suivante. Accepté : l’équipe passe le lendemain et tu joues son mini-jeu (empreintes ou ADN pour le labo, réseau ou interception pour la RCCU), un seul essai, avant 20:00. Réussi : une pièce sur un suspect arrive à 20:00, plutôt sur les moyens avec le labo, plutôt sur le mobile ou l’occasion avec la RCCU. Raté ou pas joué : rien.</p>
         <h3>Les groupes d’enquête et le partage</h3>
         ${ul([
           `Le parquet répartit les zones en groupes d’enquête : un seul jusqu’à 3 zones, deux de 4 à 6 zones, trois à partir de 7. Chaque groupe compte au moins deux zones et enquête directement sur au moins deux suspects (avec trois groupes, un suspect est suivi par deux groupes à la fois). Sur le mur des suspects, un ruban « 🔎 ma zone » marque ceux sur qui ta zone enquête : les vérifier coûte le prix normal, les autres coûtent le double.`,
@@ -259,20 +255,21 @@ export function sections() {
           '<strong>Affaire de meurtre</strong> (une fois par partie, écrite à la main) : pas de mobile, moyen et occasion à cocher mécaniquement, ni de planque. Chacun des cinq proches ment ; les innocents pour cacher un secret, que l’on découvre (souvent par une perquisition) et qui les blanchit. La perquisition demande un mandat : une pièce sérieuse contre la personne au dossier. Pour conclure, la <strong>confrontation</strong> : un suspect et trois éléments à lui opposer (pièces, journal, PV). Le plan est celui du centre de Mons : chaque lieu ouvre son itinéraire à pied dans Google Maps.',
           '<strong>Dossier complet</strong> (nouvelles affaires) : un <strong>journal</strong> raconte l’affaire à l’ouverture (il reste punaisé au tableau), le PV de premières constatations remplace le récit, et la boîte contient les <strong>PV d’audition</strong> des cinq suspects : ce qu’ils déclarent, et comment ils se déplacent. Les vérifications arrivent sous forme de petits PV.',
           'Le <strong>plan routier</strong> est à l’échelle : de vraies rues, trois ponts routiers, deux passerelles et la zone piétonne de la Grand-Place (vélos et piétons seulement), parfois un pont fermé pour travaux (le journal l’annonce). Plus de temps écrits sur le plan : touche un lieu pour mesurer l’itinéraire le plus court jusqu’à la scène en voiture ou deux-roues (2 min/km), à vélo (4 min/km) ou à pied (12 min/km). Compte avec le moyen de transport du suspect : un trou de 15 minutes suffit en voiture, pas forcément à vélo. Une camionnette louée (vérification des moyens) compte.',
-          'Les pièces arrivent dans la <strong>boîte à pièces</strong>, chaque soir à 20:00. Sors-les une à une et punaise-les où tu veux. Rien n’est rangé d’avance.',
-          'Touche une photo, une fiche de constatation, une pièce ou un lieu du plan pour ouvrir son volet : ce qu’on sait, tes ✓ / ✕, les démarches, la piste prioritaire, l’accusation et le partage.',
+          'Les pièces arrivent dans la <strong>boîte à pièces</strong> dès que la recherche est finie. Sors-les une à une et punaise-les où tu veux. Rien n’est rangé d’avance.',
+          'Touche une photo, une fiche de constatation, une pièce ou un lieu du plan pour ouvrir son volet : ce qu’on sait, tes ✓ / ✕, les démarches, la piste prioritaire, la confrontation et le partage.',
           '<strong>Partager une pièce</strong> : touche le petit bouton de partage dans le coin de la pièce (ou son titre dans la boîte à pièces), puis choisis une zone ou « À tous ». La couleur du bouton dit où elle en est : blanc, gardée pour toi ; jaune, partage prévu ce soir ; vert, déjà partagée ; bleu, reçue d’une autre zone (touche-la pour voir avec qui). Le bouton « Ce soir » liste tes partages prévus et permet de les annuler.',
           'Pour tirer une <strong>ficelle</strong>, pose le doigt sur une punaise et glisse jusqu’à un autre élément ou un lieu du plan : elle s’accroche à la punaise la plus proche, et le tableau défile quand tu approches du bord. Pour retirer une ficelle, attrape-la et tire-la hors de sa ligne : elle se décroche (si tu la relâches près de sa ligne, elle reste). Le mode ficelle permet de partir de n’importe où sur un élément, et d’y couper une ficelle d’un simple toucher. Ta disposition, tes ficelles, tes marques et tes notes sont enregistrées en ligne quelques secondes après ton dernier geste : tu les retrouves sur ton téléphone comme sur ton ordinateur (le zoom et l’endroit où tu regardes restent propres à chaque appareil).',
-          'Le bouton <strong>Ce soir</strong> résume ce qui partira avec tes ordres : démarches, voisinage, appui fédéral, partages, accusation.',
+          'Le bouton <strong>Aujourd’hui</strong> montre tes démarches en cours, l’heure d’arrivée de chaque pièce et tes partages prévus.',
         ])}
         <h3>La vue liste</h3>
         <p>L'onglet Tableau regroupe les constatations et les cinq suspects. Sous chaque nom, trois cases <strong>Mobile · Moyen · Occasion</strong> : touche-les pour noter ✓ établi ou ✕ exclu. Le jeu ne coche rien à ta place : c'est toi qui raisonnes. Les onglets Pièces, Planques et Notes complètent le dossier ; tes marques et notes sont gardées sur ton appareil.</p>
-        <h3>L'accusation</h3>
+        <h3>La confrontation</h3>
         ${ul([
-          '<strong>Une seule accusation par affaire.</strong> Elle part au parquet à 20:00 avec tes ordres, et tu peux la retirer jusque-là.',
-          'Toutes les accusations sont ouvertes en même temps : toutes les zones qui ont vu juste le même soir partagent la découverte.',
+          `Quand tu es sûr, <strong>convoque le suspect</strong> en lui opposant tes pièces. Le verdict tombe en direct, étape par étape, en ${DELAI_VERDICT} minutes. Le parquet ferme 45 minutes avant 20:00.`,
+          'Dossier incomplet : le parquet refuse, sans pénalité. Le suspect nie : −1 de réputation, et il est relâché 6 heures avant une nouvelle convocation. Tu ne perds jamais ta journée.',
+          'Chaque zone a son propre dossier : partager reste un choix. Toutes les zones qui ont vu juste le même jour partagent la découverte, annoncée à 20:00.',
           `Découverte : ${pointsDecouverte(1)} points d’enquête le premier jour, 10 de moins chaque jour (minimum ${pointsDecouverte(9)}), +15 PS, +3 de satisfaction.`,
-          'Fausse accusation : −3 de réputation, et tu ne peux plus accuser sur cette affaire. Tu peux encore partager et participer à la traque.',
+          'Innocent accusé à tort : −3 de réputation, et tu ne peux plus accuser sur cette affaire. Tu peux encore partager et participer à la traque.',
           `Personne n’a trouvé après ${ENQ.dureeMax} jours : l’affaire est classée, la Gazette publie la solution.`,
         ])}
         <h3>Les vols qui sortent du moule</h3>
@@ -293,86 +290,7 @@ export function sections() {
         ])}`,
     },
     {
-      id: 'filet', titre: 'Les coups de filet', html: `
-        <p>Chaque semaine, la Recherche repère ${FILET.cibles} cibles dans ta zone (un réseau de recel, un point de deal, des cambrioleurs…). Tu en ouvres une depuis l’HP et tu la mènes étape par étape, dans la journée. Tu peux en mener ${FILET.maxSemaine} jusqu’au bout par semaine. Ce n’est pas l’enquête de la semaine : rien n’y passe.</p>
-        ${table(['Étape', 'Agents', 'Ce qu’elle apporte'], [
-          ['👁️ Filature (2, 6 ou 12 h)', `${FILET.etapes.filature.agents} de Recherche`, `des renseignements (1, 2 ou 3 occasions, exploitables à ${DUREES.map((d) => pc(FILET.etapes.filature.durees[d].p)).join(', ')}) ; risque d’être repéré ${DUREES.map((d) => pc(FILET.etapes.filature.durees[d].risque)).join(', ')} (plus ou moins selon la méfiance de la cible)`],
-          ['🗂️ Recoupement (2, 6 ou 12 h)', `${FILET.etapes.recoupement.agents} de Recherche`, `solidité du dossier +${DUREES.map((d) => FILET.etapes.recoupement.durees[d].sol).join(', +')} %, sans risque ; chaque renseignement permet ${FILET.etapes.recoupement.parRens} % au plus`],
-          ['🚔 Interpellation (4 h)', `${FILET.etapes.interpellation.agents} d’Intervention`, 'au moins un renseignement ; la réussite monte avec les renseignements (au-delà du nombre de suspects) et la formation et le matériel de l’Intervention, et baisse si la cible se méfie'],
-        ])}
-        ${ul([
-          'L’étape avance seule : tu peux fermer le jeu. À la fin, l’opération attend ta décision, sans rien perdre si tu ne reviens que le lendemain. Revenir plus tôt va plus vite, sans rapporter plus.',
-          `Le coût : les heures-agents de la journée (agents × heures) sont retirées ce soir de la Recherche ou de l’Intervention, ${FILET.heuresJour} heures-agents par agent. Une filature de 2 h coûte 1 agent, une de 12 h en coûte 2. Le coût s’affiche sur chaque bouton. Au plus ${FILET.maxAgentsJour} agents mobilisés par jour : au-delà, une étape plus courte ou le lendemain.`,
-          `Méfiance : repérée ${FILET.alerteMax} fois (filature ou interpellation ratée), la cible disparaît (${FILET.satRate} de satisfaction).`,
-          `Parquet, à 20:00 : dossier solide à 70 % ou plus, poursuites (tous les points) ; 40 %, poursuites partielles (60 %) ; en dessous, classement sans suite (25 %). En plus : ${String(FILET.saisie).replace('.', ',')} k€ saisis et +${FILET.satisfaction} de satisfaction par interpellé, +${FILET.ps} PS.`,
-          `Cellules : ${FILET.places} places de garde à vue, ${FILET.places + FILET.placesCachots} avec le complexe cellulaire, occupées ${FILET.gav} heures. Faute de place, un interpellé est gardé par une zone voisine qui a un complexe cellulaire (+${FILET.garde.points} point et +${FILET.garde.ps} PS pour elle), sinon il est relâché et ne compte pas.`,
-          'Une opération terminée est soldée à 20:00 ; tu peux déjà ouvrir la suivante.',
-        ])}`,
-    },
-    {
-      id: 'fipa', titre: 'FIPA : les événements à deux zones', html: `
-        <p>Le bourgmestre demande régulièrement à une zone d'organiser un événement (braderie, match à risque, visite officielle, festival…) qui demande ${'6 à 10'} agents : trop pour une seule zone.</p>
-        ${ol([
-          '<strong>Demande</strong> (écran HP) : tu choisis une zone partenaire et tu répartis les agents entre vous (au moins 2 chacun). Sans invitation : −4 de satisfaction.',
-          '<strong>Réponse</strong> : la zone invitée accepte ou refuse au tour suivant. Sans réponse, c’est un refus : −3 de satisfaction pour la demandeuse.',
-          '<strong>Jour J</strong> : les agents promis quittent leur service (d’abord en Proximité, puis Intervention). Chacun choisit en secret : <strong>partager</strong> ou <strong>revendiquer</strong>.',
-        ])}
-        ${table(['Toi \\ l’autre', 'Il partage', 'Il revendique'], [
-          ['Partager', `${pc(PARTAGE['partager/partager'][0])} chacun, +2 de réputation`, `toi ${pc(PARTAGE['partager/revendiquer'][0])}, lui ${pc(PARTAGE['partager/revendiquer'][1])}`],
-          ['Revendiquer', `toi ${pc(PARTAGE['revendiquer/partager'][0])}, lui ${pc(PARTAGE['revendiquer/partager'][1])}`, `${pc(PARTAGE['revendiquer/revendiquer'][0])} chacun, −3 de satisfaction`],
-        ])}
-        ${ul([
-          'La récompense (10 à 14 k€) est complète si au moins 90 % des agents promis sont venus, divisée par deux au-dessus de 50 %, perdue en dessous (−5 de satisfaction).',
-          'Chaque participant gagne +10 PS et, en cas de succès, +4 de satisfaction.',
-          '<strong>Fiabilité</strong> : chaque zone affiche le nombre de FIPA honorées (partagé et envoyé tous ses agents) sur le nombre de FIPA faites. Elle est visible sur la Carte et au moment de choisir un partenaire.',
-          `Deux mêmes zones ne peuvent pas refaire une FIPA ensemble avant ${FIPA.delaiPaire} tours. Les zones qui n’en ont jamais fait sont sollicitées en priorité.`,
-          'La Gazette révèle qui a partagé et qui a revendiqué.',
-        ])}`,
-    },
-    {
-      id: 'pactes', titre: 'Pactes, défis amicaux et Conseil', html: `
-        <p>Tout se trouve dans l'onglet <strong>Pactes</strong> de la Carte et part avec tes ordres à 20:00.</p>
-        <h3>Les pactes</h3>
-        ${ul([
-          `Un pacte lie deux zones pendant <strong>${PACTE.duree} tours</strong>. Ta proposition part tout de suite en message privé. Si l’autre zone accepte avant 20:00, le pacte est signé le soir même ; sinon elle peut encore répondre le lendemain. Il joue dès le soir qui suit la signature. Même chose pour le défi amical.`,
-          `${PACTE.max} pactes au plus en même temps, un seul avec une même zone. À la fin, chacune gagne ${PACTE.psFin} PS et peut le reconduire.`,
-          `Si ton partenaire ne joue plus pendant ${PACTE.inactif} jours, le pacte s’éteint sans pénalité.`,
-          `Rompre un pacte avant la fin est annoncé dans la Gazette, interdit tout nouveau pacte pendant ${PACTE.blocage} tours et peut valoir un blâme au Conseil.`,
-          'Sur la carte de l’onglet, chaque pacte est un lien de couleur entre deux hôtels de police.',
-        ])}
-        ${table(['Pacte', 'Effet'], Object.values(PACTES).map((p) => [p.nom, esc(p.texte)]))}
-        ${note('Pacte d’enquête : une pièce que vous n’avez ni l’un ni l’autre (une de celles qu’on obtient par les vérifications) est déchirée en deux. L’un reçoit l’en-tête et le début, l’autre la fin, noms masqués : le fait décisif est souvent dans l’autre moitié. Il faut que les deux cliquent « Mettre en commun » avant le 20:00 suivant (le même soir ou l’un après l’autre) pour que chacun ait la pièce entière. Une pièce par affaire tous les deux soirs au plus : le pacte aide sans résoudre l’enquête à votre place.')}
-        <h3>Le défi amical</h3>
-        ${ul([
-          `${DEFI.duree} tours sur une activité que tu fais toi-même : ${Object.values(DEFI_INDICATEURS).map((x) => x.nom.toLowerCase()).join(', ')}.`,
-          `Chacun mise la même somme (${DEFI.mises.filter(Boolean).map((m) => `${m} k€`).join(' ou ')}, ou rien). Le gagnant prend le pot et ${DEFI.prime} k€ de prime du district ; en cas d’égalité, chacun récupère sa mise.`,
-          'La zone défiée répond le jour même (en message) ou le lendemain ; refuser ne coûte rien. Un seul défi à la fois, pas de défi pour une zone en difficulté.',
-        ])}
-        <h3>Coup de main</h3>
-        ${ul([
-          `Seulement vers une zone en péril ou sous tutelle : jusqu’à ${AIDE.budgetMax} k€ (reçus le soir même) et ${AIDE.agentsMax} agents prêtés pour ${AIDE.dureePret} tours. Tu gardes toujours au moins 8 agents.`,
-          'Jusqu’à +5 de réputation, atteints avec 3 agents ou 7,5 k€ (1 agent vaut 2,5 k€) ; une aide plus large rapporte jusqu’à 40 % de plus (+7).',
-        ])}
-        <h3>Le Conseil de police</h3>
-        <p>Chaque dimanche, une voix par zone active, vote secret, résultat à 20:00 (égalité : la première option l'emporte).</p>
-        ${ul([
-          '<strong>Dotation fédérale de 20 k€</strong> : parts égales, ou prime aux zones les plus coopératives (pactes tenus, FIPA honorées, pièces partagées).',
-          `<strong>Fonds de solidarité</strong>, quand une zone est en difficulté : chaque autre zone active lui verse ${SOLIDARITE.parZone} k€.`,
-          '<strong>Blâme</strong> : proposé contre les zones les moins coopératives de la semaine (FIPA revendiquées ou refusées, pactes rompus). Effet : −10 de réputation et −30 PS.',
-          `<strong>Motion de Chef de corps</strong>, une par saison : ${Object.values(MOTIONS_CHEF).map((m) => m.titre.toLowerCase()).join(', ')}.`,
-        ])}
-        <h3>La cellule de crise : les crises du district</h3>
-        <p>Environ tous les 5 jours, le Directeur annonce une crise choisie d’après l’état du district (cambriolages, rodéos, deal, nuits agitées). Le lendemain, chaque zone active vote sur l’HP, en secret jusqu’à 20:00. Le plan gagnant s’applique à tout le district pendant ${CRISE.duree} jours.</p>
-        ${table(['Plan', 'Avantage', 'Prix'], PLANS.map((p) => [`<strong>${p.k}</strong> · ${esc(p.nom)}`, esc(p.plus), esc(p.moins)]))}
-        ${ul([
-          'Une zone, une voix, quelle que soit sa taille. Égalité ou aucune voix : travail discret (B). La Gazette publie le score, pas qui a voté quoi.',
-          `Opération commune : voter C, c’est s’engager (on peut se retirer un soir sur l’HP) ; les autres zones peuvent la rejoindre. Chaque participant engage ${Math.round(CRISE.C.part * 100)} % de ses agents (${CRISE.C.min} au moins), à laisser sans affectation dans les Ordres. Un soir est réussi si au moins les 3/4 des zones qui ont voté C sont là (2 au moins ; celles qui rejoignent comptent aussi) ; il en faut ${CRISE.C.nuitsOk} sur 3.`,
-          `Réussie : chaque zone présente au moins ${CRISE.C.nuitsOk} soirs est récompensée, les autres ont seulement criminalité −${Math.abs(CRISE.C.crimDistrict)}. Ratée : rien de plus. Qui ne participe pas ne paie ni ne gagne.`,
-          'Le bon plan dépend de ta zone : une zone forte en Recherche gagne plus au B, une zone d’Intervention et de Roulage au A. De quoi discuter sur la radio avant le vote.',
-        ])}`,
-    },
-    {
-      id: 'vagues', titre: 'Vagues de délinquance et relèves', html: `
+      id: 'vagues', titre: 'Vagues de délinquance', html: `
         <p>Ce que fait ta zone déborde chez les voisines, en bien comme en mal.</p>
         <h3>Les vagues de délinquance</h3>
         ${ul([
@@ -382,27 +300,18 @@ export function sections() {
           `<strong>Vague subie</strong>, par niveau de force : +${VAGUES.effet.incidents} incidents (Intervention), +${VAGUES.effet.tension} de tension dans le quartier frontalier (Proximité), un dossier en plus (Recherche), −${String(VAGUES.effet.roulageSatisf).replace('.', ',')} de satisfaction (Roulage) ou +${VAGUES.effet.paperasse} de paperasse (Accueil).`,
           `Une zone envoie au plus une vague tous les ${VAGUES.repos} soirs et en reçoit au plus une par soir. Les zones arrivées depuis moins de ${VAGUES.protectionNouveaux} tours et celles sans ordres depuis 2 tours n’en reçoivent pas.`,
           'Tout miser sur un service, c’est donc envoyer des vagues… et laisser un trou ailleurs, où celles des autres arriveront.',
-        ])}
-        <h3>La relève</h3>
-        ${ul([
-          'Quand une opération d’envergure ne réussit qu’à moitié, qu’une affaire disputée est bouclée avec un dispositif juste suffisant, ou parfois quand une vague est brisée, un suspect file vers une zone voisine.',
-          `Le lendemain, cette zone choisit : <strong>le prendre</strong> (${RELEVE.min} à ${RELEVE.max} agents d’Intervention pour la soirée), <strong>« pas l’effectif »</strong> (aucune conséquence, le suspect s’évapore) ou <strong>le transmettre</strong> à une autre de ses voisines (une seule fois).`,
-          `La zone de départ peut ajouter jusqu’à ${RELEVE.appuiMax} agents d’appui. Avec ${RELEVE.requis} agents au total, la capture est assurée ; à un près, une chance sur deux.`,
-          `Capture : +${RELEVE.gain.releve.points} pts, +${RELEVE.gain.releve.reputation} de réputation et +${RELEVE.gain.releve.satisfaction} de satisfaction pour celle qui l’a prise ; +${RELEVE.gain.depart.points} pts et +${RELEVE.gain.depart.reputation} de réputation pour celle qui a passé le relais (+${RELEVE.gain.appui.points} pts par agent d’appui).`,
-          `Une fois sur trois environ, un bonus : les <strong>félicitations du juge</strong> (+${RELEVE.juge.reputation} de réputation, +${RELEVE.juge.moral} de moral), ou une <strong>saisie à partager</strong> : celle qui a fait la capture choisit l’argent (${RELEVE.saisie.argent} k€) ou une voiture anonymisée, l’autre zone reçoit le reste.`,
         ])}`,
     },
     {
       id: 'faillite', titre: 'Péril, tutelle et faillite', html: `
         <p>Une zone est <strong>en péril</strong> dès que l'une de ces conditions est atteinte :</p>
         ${ul([`budget sous ${PERIL.budget} k€ ;`, `moins de ${PERIL.agents} agents disponibles ;`, `moral sous ${PERIL.moral}.`])}
-        <p>Le chef a alors <strong>${PERIL.tours} tours pour redresser la barre</strong>. Un bandeau rouge s'affiche sur l'HP ; les autres zones peuvent lui donner un coup de main (bouton 🤝 Pactes de la Carte) et le Conseil peut voter un fonds de solidarité.</p>
+        <p>Le chef a alors <strong>${PERIL.tours} tours pour redresser la barre</strong>. Un bandeau rouge s'affiche sur l'HP : réduis tes dépenses, remets des agents à l’Accueil et passe en rythme normal.</p>
         <h3>Toujours en péril au bout de ${PERIL.tours} tours : la tutelle</h3>
         <p>La première fois de la saison, la zone passe <strong>sous tutelle pendant ${TUTELLE.tours} tours</strong> : c'est la dernière chance.</p>
         ${ul([
           `Avance de trésorerie de ${k(TUTELLE.avance)} et +${TUTELLE.moral} de moral (la nouvelle direction rassure).`,
-          'Interdit : rythme renforcé, agents de réserve, défis, enchères, et toute grande décision sauf recruter.',
-          'Les autres zones peuvent toujours lui donner un coup de main (jusqu’à +7 de réputation pour elles).',
+          'Interdit : rythme renforcé, agents de réserve, et toute grande décision sauf recruter.',
           `À la fin des ${TUTELLE.tours} tours : si la zone n'est plus en péril, elle retrouve son autonomie ; sinon, c'est la faillite.`,
           'Une zone qui a déjà connu la tutelle cette saison passe directement du péril à la faillite.',
         ])}
@@ -413,39 +322,6 @@ export function sections() {
           '<strong>Classement</strong> : 3 soirs comptés à IPZ 0 dans la moyenne de la saison.',
           'La Gazette lui consacre sa une, et le compteur « District Delta : N tours sans faillite » retombe à zéro.',
           'Le nombre de faillites reste affiché à vie sur le profil. Finir dans le top 3 d’une saison après une faillite donne le badge <strong>Phénix</strong>.',
-        ])}`,
-    },
-    {
-      id: 'ventes', titre: 'La salle des ventes', html: `
-        <p>La salle des ventes met aux enchères des saisies et du matériel. La tuile <strong>Ventes</strong> de l'HP présente la vente en cours.</p>
-        ${ul([
-          'Une vente <strong>tous les deux jours</strong>, avec <strong>trois lots</strong> dont un gros lot (hélicoptère fédéral, véhicule blindé, cellule d’appui renforcée).',
-          '<strong>Jour 1</strong> : enchères visibles. Chaque relance (par paliers de 500 €, 5 par jour au plus) est publiée sur la Radio et compte comme offre.',
-          '<strong>Jour 2</strong> : une seule <strong>offre finale secrète</strong> par lot, dévoilée au coup de marteau de 20:00. Pas besoin d’être en ligne à 19:59.',
-          '<strong>État caché</strong> : le matériel et les véhicules peuvent être comme neufs (effet +50 %), usés ou défectueux (effet −50 %). Une <strong>expertise</strong> (1 agent immobilisé le lendemain) le révèle, plus sûrement avec le Flair de ton chef.',
-          '<strong>Tuyau du priseur</strong> : une fois par vente, ton chef apprend combien d’autres zones s’intéressent à un lot. À offre égale, la <strong>Diplomatie</strong> du chef départage.',
-          '<strong>Gros lot à deux</strong> : deux zones liées par un pacte peuvent mettre leurs offres en commun. Chacune paie sa part, les deux profitent de l’effet.',
-        ])}
-        ${table(['Lot', 'Effet', 'Mise à prix'], Object.values(LOTS).map((l) => [`${l.nom}${l.gros ? ' <span class="tiny muted">(gros lot)</span>' : ''}`, esc(l.effet), `environ ${l.prix} k€`]))}`,
-    },
-    {
-      id: 'chef', titre: 'Le chef de corps', html: `
-        <p>Tu incarnes le chef de ta zone. Son portrait apparaît sur la carte, au classement et dans ta fiche (Profil).</p>
-        ${ul([
-          '<strong>Parcours</strong> : choisi une fois, il donne +2 niveaux dans une compétence.',
-          '<strong>Cinq compétences</strong> (0 à 10) : Gestion, Commandement, Flair, Diplomatie, Proximité. Elles montent par l’usage, selon ce que tu fais chaque jour, avec un plafond quotidien. Elles te suivent de saison en saison.',
-          '<strong>Talents</strong> : 15 à débloquer (niveaux 2, 5 et 8), 3 équipés au plus. Ajouter dans un emplacement vide est libre, remplacer un talent est possible une fois par semaine. Les effets sont petits et situationnels : un vétéran a plus de choix, pas plus de puissance.',
-          '<strong>Jouer entraîne le chef</strong> : chaque réussite aux énigmes et aux mini-jeux (incidents du jour, records) fait aussi progresser une compétence, avec un plafond à part : énigmes, crochetage, empreintes, ADN → Flair ; colis, maintien de l’ordre, bitonal → Commandement ; embouteillage, dossier → Gestion ; réseau, interception → Diplomatie ; incidents de Proximité → Proximité.',
-          '<strong>Agenda</strong> : dans les ordres, où passe le chef aujourd’hui (bureau, commune, terrain, parquet, quartier ou chez un voisin). C’est ce qui nourrit le plus ses compétences.',
-          '<strong>Directeur</strong> : avec une compétence à 4, certains dilemmes proposent une option de plus.',
-          '<strong>Première ligne</strong> : une fois par jour, engage ton chef sur une action (assaut, affaires disputées, relève, enquête, point chaud). Bonus selon sa compétence, 10 % de risque d’être blessé (2 jours d’hôpital, talents coupés).',
-          '<strong>Réseau</strong> : bourgmestre, procureur, délégué syndical et presse. Satisfait, chacun peut te rendre un service par semaine ; mécontent, il peut te gêner.',
-          '<strong>Brevet de carrière</strong> : à 15 niveaux au total, une voie, un titre et un 4e emplacement de talent.',
-          '<strong>Carrière</strong> : états de service, médaille de la plus forte progression de la saison, parrainage des nouveaux chefs.',
-          '<strong>Ta semaine</strong> : trois objectifs par semaine (sa meilleure compétence, sa plus faible, une au hasard), seuls les jours joués comptent ; les trois réussis donnent la médaille de la semaine. Un rival, le chef le plus proche au classement : le meilleur cumul d’IPZ de la semaine gagne le duel.',
-          '<strong>Adjoint</strong> : un jour sans ordres, il tient la zone selon ta consigne (prudent, équilibré, offensif) et mieux encore avec le Commandement du chef. 3 jours sans malus d’absence. À ton retour après 3 jours ou plus : services du réseau rouverts et progression +50 % pendant 3 jours.',
-          '<strong>Appels du réseau</strong> : des dilemmes où un personnage appelle ton chef. Ta réponse change son estime, donc son humeur.',
-          '<strong>Honneurs</strong> : cadre du portrait selon les niveaux (bronze, argent, or, diamant), dix rubans à gagner et à afficher, carte du chef à partager.',
         ])}`,
     },
     {
@@ -561,13 +437,13 @@ export function sections() {
         <p>Ils récompensent l'assiduité et ne se perdent jamais, même d'une saison à l'autre. Maximum ${PS.plafondJour} PS par jour pour ton propre jeu, plus ${PS.plafondEntraide} PS d’entraide (renfort, indices partagés, contribution à l’enquête, FIPA, pactes, grand événement, secteurs tenus dans la zone de non-droit) : aider les autres n’est jamais perdu.</p>
         ${table(['Action', 'PS'], [
           ['Passer ses ordres', `+${PS.ordres}`], ['Bonne réponse à une énigme', `+${PS.queteOk} (tentative ratée : +${PS.queteTentee})`], ['Trois énigmes réussies dans la journée', '+5'],
-          ['Découverte d’un auteur', '+15'], ['Arrestation', '+10'], ['Participer à une FIPA', '+10'], ['Partager un indice', '+5'], ['Indice qui aide une découverte', '+5'],
-          ['Agents envoyés sur un grand événement du district', `+${PS.evenement} pour 3 agents, proportionnel au nombre envoyé (max. +${PS.evenementMax})`], ['Renfort prêté sur une opération d’envergure', `+${RENFORT.psParAgent} par agent prêté`], ['Pacte conclu', `+${PACTE.psAccord}`], ['Pacte mené à son terme', `+${PACTE.psFin}`],
+          ['Découverte d’un auteur', '+15'], ['Arrestation', '+10'], ['Partager un indice', '+5'], ['Indice qui aide une découverte', '+5'],
+          ['Agents envoyés sur un grand événement du district', `+${PS.evenement} pour 3 agents, proportionnel au nombre envoyé (max. +${PS.evenementMax})`], ['Renfort prêté sur une opération d’envergure', `+${RENFORT.psParAgent} par agent prêté`],
           ['Finir une saison classé', `+${PS.finSaison} (podium : +${PS.podium[0]}, +${PS.podium[1]}, +${PS.podium[2]})`], ['Révélation de la saison', `+${PS.revelation}`],
         ])}
         <h3>Grades</h3>
         ${table(['Grade', 'PS', 'Débloque'], GRADES.map((g) => [g.nom, g.ps, esc(g.debloque)]))}
-        <p>Les consignes du pilote et le blason se règlent dans ton Profil ; la motion du Chef de corps dans les Pactes (bouton 🤝 de la Carte). Un blâme du Conseil retire 30 PS ; seule une faillite fait redescendre d'un grade.</p>
+        <p>La consigne de ton adjoint et le blason se règlent dans ton Profil. Seule une faillite fait redescendre d'un grade.</p>
         <h3>La saison</h3>
         ${ul([
           S.state ? `Une saison dure ${SEASON_LENGTH} tours. Le classement se fait à la <strong>moyenne de l’IPZ de tous les jours de la saison</strong>, les plus récents comptant un peu plus. Un jour sans ordres, ton adjoint tient la zone : ce jour compte avec ${CLASSEMENT.decoteAbsent} points d’IPZ de moins.` : `Une saison dure ${SEASON_LENGTH} tours. Le classement se fait à la <strong>moyenne de l’IPZ par tour joué</strong> : une absence ne fait pas baisser ta moyenne.`,
@@ -583,9 +459,8 @@ export function sections() {
     {
       id: 'absences', titre: 'Absences, arrivées et départs', html: `
         ${table(['Situation', 'Ce qui se passe'], [
-          ['Tu n’as pas passé d’ordres', 'Le pilote automatique reprend ta dernière répartition, sans décision, sans dépense et sans engagement. Pas de PS d’ordres.'],
-          ['2 tours sans ordres', '−2 de satisfaction et de moral par tour : le « chef absent » se voit.'],
-          ['3 tours sans ordres', 'Ta zone passe en veille : elle n’est plus sollicitée pour les FIPA et ne vote plus au Conseil.'],
+          ['Tu n’as pas passé d’ordres', `Ton adjoint tient la zone selon ta consigne (${Object.values(CONSIGNES).map((c) => c.nom.toLowerCase()).join(', ')}), réglée dans ton Profil. Pas de PS d’ordres.`],
+          ['3 jours ou plus sans ordres', 'Ton adjoint continue, et te laisse un mot à ton retour : ce qu’il a fait, ce qu’il a vu.'],
           ['Arriver en cours de saison', 'Ta zone démarre avec les ressources moyennes des zones actives. Le classement à la moyenne par tour joué ne pénalise pas les retardataires, et la zone est protégée des manœuvres pendant 5 tours.'],
           ['Quitter la partie', 'Le maître du jeu peut retirer une zone.'],
         ])}`,
@@ -594,8 +469,8 @@ export function sections() {
       id: 'faq', titre: 'Questions fréquentes', html: `
         <h3>Puis-je jouer dans plusieurs parties ?</h3><p>Oui. Touche le nom de la partie sous « Ma ZP » sur l'HP pour ouvrir « Mes parties » : tu peux y rejoindre une partie avec son code d'invitation, créer la tienne (tu en deviens le maître du jeu) et passer de l'une à l'autre. Chaque partie a ses zones, sa Gazette, sa Radio et son classement ; tes grades aussi sont propres à chaque partie.</p>
         <h3>Où trouver le code d'invitation ?</h3><p>Dans « Mes parties », sous le nom de chaque partie, et dans l'espace Maître du jeu avec un message tout prêt à envoyer.</p>
-        <h3>Pourquoi mes ordres n'ont-ils pas eu l'effet prévu ?</h3><p>Lis ton rapport sur l'écran HP : blessés, opération, traque, audition ou FIPA peuvent avoir pris des agents. L'écran Ordres affiche aussi ces prélèvements avant 20:00.</p>
-        <h3>Quelqu'un qui joue plus tôt est-il avantagé ?</h3><p>Non. Tout est résolu en même temps à 20:00 : ordres, accusations, traques, FIPA.</p>
+        <h3>Pourquoi mes ordres n'ont-ils pas eu l'effet prévu ?</h3><p>Lis ton rapport sur l'écran HP : blessés, opération, traque ou non-droit peuvent avoir pris des agents. L'écran Ordres affiche aussi ces prélèvements avant 20:00.</p>
+        <h3>Quelqu'un qui joue plus tôt est-il avantagé ?</h3><p>Non. Les ordres, traques et découvertes sont résolus en même temps à 20:00. L’enquête se joue en direct dans la journée, mais chaque zone a son propre dossier : personne ne prend la pièce d’un autre.</p>
         <h3>Un collègue peut-il voir mes ordres ?</h3><p>Pas avant 20:00. Ensuite, la Gazette raconte ce qui s'est passé.</p>
         <h3>Je me suis trompé à une énigme, puis-je corriger ?</h3><p>Non : une réponse est définitive. C'est voulu.</p>
         <h3>Mes notes de carnet sont-elles visibles des autres ?</h3><p>Non. Elles sont enregistrées avec ton compte, pour cette partie : elles te suivent si tu changes de téléphone, et toi seul les vois.</p>
@@ -618,7 +493,7 @@ export function renderGuide() {
     <header class="col" style="gap:3px"><span class="kicker">Guide du joueur</span><h1 class="big">Comment ça marche</h1>
       <p class="sub">Toutes les règles de Ma ZP. Les chiffres sont ceux du jeu actuel.</p></header>
     <form data-form="guide-search" role="search"><label class="sr" for="guide-q">Rechercher dans le guide</label>
-      <input id="guide-q" class="text" type="search" placeholder="Rechercher : traque, FIPA, paperasse…" value="${esc(S.guideQuery || '')}" autocomplete="off"></form>
+      <input id="guide-q" class="text" type="search" placeholder="Rechercher : traque, spécialité, paperasse…" value="${esc(S.guideQuery || '')}" autocomplete="off"></form>
     ${q ? `<p class="small muted" style="margin:0">${list.length} section${list.length > 1 ? 's' : ''} pour « ${esc(S.guideQuery)} »</p>` : ''}
     <div class="col" style="gap:8px">
       ${list.map((s) => `<details class="gsec" id="g-${s.id}" ${q || ouvert === s.id ? 'open' : ''}><summary>${esc(s.titre)}${icon('chevron', 18)}</summary><div class="gbody">${s.html}</div></details>`).join('')}

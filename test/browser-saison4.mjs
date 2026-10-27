@@ -1,0 +1,82 @@
+// Saison 4 : tour des écrans en mode démo, sur téléphone (et --pc), avec captures et erreurs de console.
+// Usage : servir le dossier (python3 -m http.server 8765) puis node test/browser-saison4.mjs <dossier-captures> [--pc]
+import { createRequire } from 'node:module';
+const require = createRequire(import.meta.url);
+const { chromium } = require('playwright');
+
+const OUT = process.argv[2] || '/tmp/shots-s4';
+const BASE = 'http://127.0.0.1:8765/?demo=1';
+const LARGE = process.argv.includes('--pc');
+const errors = [];
+const browser = await chromium.launch();
+const ctx = await browser.newContext({ viewport: LARGE ? { width: 1440, height: 900 } : { width: 390, height: 844 }, deviceScaleFactor: LARGE ? 1 : 2 });
+const page = await ctx.newPage();
+await page.addInitScript(() => { try { localStorage.setItem('mazp-tuto-s2', 'zappe'); localStorage.setItem('mazp-tuto', 'zappe'); } catch (e) { /* rien */ } });
+page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
+page.on('console', (m) => { if (m.type() === 'error' && !/fonts\.g|Failed to load resource|firebase|gstatic/.test(m.text())) errors.push(`console: ${m.text()}`); });
+const sfx = LARGE ? '-pc' : '';
+const shot = async (name, full = true) => { await page.waitForTimeout(500); await page.screenshot({ path: `${OUT}/${name}${sfx}.png`, fullPage: full }); };
+const action = (a, data = {}) => page.evaluate(([a2, d]) => { const b = document.createElement('button'); b.dataset.action = a2; Object.assign(b.dataset, d); document.body.append(b); b.click(); b.remove(); }, [a, data]);
+const fermerPopups = () => page.evaluate(() => document.querySelectorAll('.aide-wrap').forEach((x) => x.remove()));
+await page.addLocatorHandler(page.locator('.aide-wrap'), fermerPopups);
+
+await page.goto(BASE);
+await page.waitForSelector('[data-action="demo-start"]');
+await page.click('[data-action="demo-start"]');
+await page.waitForSelector('[data-form="signup"]');
+await page.fill('[name="pseudo"]', 'Testeur');
+await page.fill('[name="code"]', '5324');
+await page.fill('[name="nom"]', 'Horizon');
+await page.click('[data-form="signup"] button[type="submit"]');
+await page.waitForSelector('#countdown');
+await page.waitForSelector('[data-action="demo-next"]');
+await page.click('[data-action="demo-next"]'); await page.waitForTimeout(900);
+await page.click('[data-action="demo-next"]'); await page.waitForTimeout(900);
+await fermerPopups();
+await shot('01-accueil');
+await page.goto(`${BASE}#ordres`); await page.waitForTimeout(700); await fermerPopups();
+await shot('02-gestion');
+await action('op-part', { k: 'spe' }); await page.waitForTimeout(300);
+await action('specialite', { k: 'judiciaire' }); await page.waitForTimeout(300);
+await shot('03-gestion-specialite');
+await action('op-part', { k: 'arm' }); await page.waitForTimeout(300);
+await action('arm-acheter', { k: 'gilets' }); await page.waitForTimeout(300);
+await page.evaluate(() => document.querySelector('#ord-arm') && document.querySelector('#ord-arm').scrollIntoView());
+await shot('04-gestion-armurerie', false);
+await action('save-orders'); await page.waitForTimeout(800);
+await page.goto(`${BASE}#enquete`); await page.waitForTimeout(900); await fermerPopups();
+await shot('05-enquete');
+// Lancer une démarche en direct.
+await page.evaluate(() => { const j = document.querySelector('[data-action="journal-fermer"]'); if (j) j.click(); });
+await page.waitForTimeout(400);
+let k = await page.evaluate(() => { const b = [...document.querySelectorAll('button[data-action="dem-lancer"][data-k]')].find((x) => !x.disabled); return b ? b.dataset.k : null; });
+if (!k) k = 'cam';
+if (k) { await action('dem-lancer', { k }); await page.waitForTimeout(1500); } else errors.push('aucune démarche disponible');
+await page.evaluate(() => { const s = document.querySelector('.ed-encours'); if (s) s.scrollIntoView({ block: 'center' }); });
+await shot('06-enquete-demarche', false);
+// Confrontation : la fenêtre de confirmation, puis le verdict en étapes.
+await page.removeLocatorHandler(page.locator('.aide-wrap'));
+await action('accuser', { i: '0' }); await page.waitForTimeout(600);
+await shot('06b-confirmation', false);
+const ok = page.locator('.cf-wrap button[data-c="1"]').first();
+if (await ok.count()) { await ok.click(); await page.waitForTimeout(1500); } else errors.push('pas de bouton de confirmation');
+await action('verdict-ouvrir'); await page.waitForTimeout(600);
+await shot('06c-verdict', false);
+await action('verdict-fermer');
+await page.addLocatorHandler(page.locator('.aide-wrap'), fermerPopups);
+await page.goto(`${BASE}#carte`); await page.waitForTimeout(1200); await fermerPopups();
+await shot('07-carte');
+await page.goto(`${BASE}#quete`); await page.waitForTimeout(900); await fermerPopups();
+await shot('08-enigmes');
+await page.goto(`${BASE}#radio`); await page.waitForTimeout(900); await fermerPopups();
+await shot('09-radio');
+await page.goto(`${BASE}#guide`); await page.waitForTimeout(700); await fermerPopups();
+await shot('10-guide', false);
+await page.goto(`${BASE}#profil`); await page.waitForTimeout(700); await fermerPopups();
+await shot('11-profil');
+await page.goto(`${BASE}#hp`); await page.waitForTimeout(500);
+await page.click('[data-action="demo-next"]').catch(() => {}); await page.waitForTimeout(1200); await fermerPopups();
+await shot('12-accueil-lendemain');
+for (const r of ['gazette', 'classement', 'trophees', 'prive', 'logistique']) { await page.goto(`${BASE}#${r}`); await page.waitForTimeout(600); await fermerPopups(); await shot(`13-${r}`, false); }
+console.log(errors.length ? `ERREURS :\n${[...new Set(errors)].join('\n')}` : 'aucune erreur');
+await browser.close();

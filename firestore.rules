@@ -103,6 +103,8 @@ service cloud.firestore {
           // Ancien portrait du chef de corps (saisons 2 et 3) : toléré dans les profils déjà enregistrés.
           && (!('chef' in request.resource.data) || (request.resource.data.chef is map
               && (!('portrait' in request.resource.data.chef) || (request.resource.data.chef.portrait is string && request.resource.data.chef.portrait.matches('^p[0-9]{2}$')))))
+          // Consigne laissée à l'adjoint (saison 4).
+          && (!('consigne' in request.resource.data) || request.resource.data.consigne in ['prudent', 'equilibre', 'offensif'])
           && request.resource.data.get('retire', false) == (resource == null ? false : resource.data.get('retire', false)));
         allow delete: if master(gid);
       }

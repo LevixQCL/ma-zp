@@ -1,9 +1,8 @@
-import { portraitChef } from './chef.js';
 import { noteCourte } from './nouveautes.js';
 import { partageHtml } from './invitation.js';
 // La Gazette du Delta, le classement, l'espace maître du jeu.
 import { S, esc, icon, tabbar, myZone, zoneName, gradeInfo, fmt1, classementLive } from './common.js';
-import { GRADES, PS, SEASON_LENGTH, IPZ_POIDS, MIN_TOURS_CLASSEMENT, DOCTRINES } from '../engine/constants.js';
+import { GRADES, PS, SEASON_LENGTH, IPZ_POIDS, MIN_TOURS_CLASSEMENT, SPECIALITES } from '../engine/constants.js';
 import { pointsIpz, IPZ_LABELS } from '../engine/zone.js';
 import { apercuDirecteur, REGLAGES, DISTRICT } from '../engine/directeur.js';
 import { affaire, affairesOuvrables } from '../engine/enquete.js';
@@ -101,7 +100,7 @@ function couloir({ z, rang, classe, valeur, max = 100, txt, sous = '', compo = n
     <div class="crs-col">
       <button type="button" class="crs-piste" data-action="voir-hp" data-uid="${esc(z.uid)}" aria-label="${esc(z.nom)} : ${txt}">
         <span class="crs-barre" style="width:${w}%;background:linear-gradient(90deg,${c}40,${c}c0)"></span>
-        <span class="crs-lbl"><span class="crs-nom">${z.chef ? `<span style="display:inline-block;vertical-align:-5px;margin-right:4px">${portraitChef(z.uid, 20, { galons: false })}</span>` : ''}${z.doctrine && DOCTRINES[z.doctrine] ? `${DOCTRINES[z.doctrine].ico} ` : ''}${esc(z.nom)}${me ? ' · toi' : ''}</span><span class="crs-v">${txt}</span></span></button>
+        <span class="crs-lbl"><span class="crs-nom">${z.specialite && SPECIALITES[z.specialite.id] ? `${SPECIALITES[z.specialite.id].ico} ` : ''}${esc(z.nom)}${me ? ' · toi' : ''}</span><span class="crs-v">${txt}</span></span></button>
       ${compo ? `<div class="crs-compo" style="width:${w}%" aria-hidden="true">${COMPO.map(([k, cc]) => `<i style="flex:${Math.max(0.01, compo[k])};background:${cc}"></i>`).join('')}</div>` : ''}
       ${sous ? `<span class="tiny muted">${sous}</span>` : ''}
     </div></div>`;

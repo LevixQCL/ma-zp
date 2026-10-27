@@ -1,8 +1,7 @@
 // Carte isométrique de la saison 2 (vue 3/4) : ma zone ou tout le district en maquette, immeubles éclairés selon la tension,
 // maisons, commerces, tours, arbres, rues et lampadaires ; voitures de police animées (une par patrouille envoyée).
 // Chaque quartier se touche sur toute sa surface (îlot + volume des immeubles) : data-action="quartier".
-// Le dessin fixe est mis en cache par tour ; seuls la sélection et les patrouilles changent à chaque toucher.
-import { quartierActif } from '../engine/quartier.js';
+// Le dessin fixe est mis en cache par tour ; seule la sélection change à chaque toucher.
 import { S, pseudoJoueur } from './common.js';
 import { territoires, WW, HH } from './ville.js';
 import { bezier } from './plan.js';
@@ -19,7 +18,7 @@ export function planIso(st, me, { vue = 'mazone', sel = null, extra = null } = {
   const seed = S.config.seed, reduit = calme();
   const mesT0 = tensionsDe(st, me);
   const ndS = (st.nonDroit && st.nonDroit.secteurs) || {};
-  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, quartierActif(st) ? 'Q' : '', Object.keys(S.players || {}).length, Object.entries(ndS).map(([k, x]) => `${k}:${x.statut}:${Math.round(x.emprise)}:${x.lieutenant ? x.lieutenant.etat : ''}:${Number.isFinite(x.confiance) ? etape(x) : ''}`).join(','), scenesDuSoir(st).map((x) => `${x.cell}${x.type}`).join(','), Object.values(st.zones).map((z) => `${z.uid}:${z.nom}:${z.fondateur ? 1 : 0}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
+  const cle = [seed, st.season, st.turn, me.uid, vue, reduit, Object.keys(S.players || {}).length, Object.entries(ndS).map(([k, x]) => `${k}:${x.statut}:${Math.round(x.emprise)}:${x.lieutenant ? x.lieutenant.etat : ''}:${Number.isFinite(x.confiance) ? etape(x) : ''}`).join(','), scenesDuSoir(st).map((x) => `${x.cell}${x.type}`).join(','), Object.values(st.zones).map((z) => `${z.uid}:${z.nom}:${z.fondateur ? 1 : 0}`).sort().join(','), Object.entries(mesT0).map(([k, v]) => `${k}:${Math.round(v)}`).join(','), me.pointChaud ? me.pointChaud.cell : ''].join('|');
   if (!cache || cache.cle !== cle) cache = { cle, ...dessiner(st, me, seed, vue === 'mazone' ? 'zone' : vue === 'district' ? 'district' : T_VUE(st), reduit) };
   let svg = cache.svg;
   // Non-droit : mes fourgons partent de mon HP vers les secteurs où j'engage des agents ce soir ; ceux des collègues
@@ -52,25 +51,16 @@ export function planIso(st, me, { vue = 'mazone', sel = null, extra = null } = {
     });
     const total = venus.reduce((t, v) => t + v.n, 0);
     // Qui y va ce soir, posé sur le secteur : un pion par zone (à sa couleur, le mien en ambre) et le total d'agents.
-    if (!(calqueND && marqueurs().length)) {
+    {
       const cols = venus.slice(0, 4).map((v) => (v.uid === me.uid ? '#FFB23F' : ((st.zones[v.uid] || {}).couleur || '#9FB0C0')));
       const tw = String(total).length * 4.4 + 3, w = 7 + cols.length * 6.5 + tw, x0 = -w / 2;
       const pions = cols.map((c, i) => `<circle cx="${(x0 + 6 + i * 6.5).toFixed(1)}" cy="0" r="2.7" fill="${c}" stroke="#0B1124" stroke-width=".7"/>`).join('');
       dyn.push(`<g class="iso-qui" transform="translate(${b[0].toFixed(1)} ${(b[1] - 30).toFixed(1)})" pointer-events="none"><rect x="${x0.toFixed(1)}" y="-6.5" width="${w.toFixed(1)}" height="13" rx="6.5" fill="#0B1124" fill-opacity=".9" stroke="#FFB23F" stroke-opacity=".55" stroke-width=".7"/>${pions}<text x="${(x0 + w - 3.5 - tw / 2 + 1.5).toFixed(1)}" y="2.6" text-anchor="middle" class="iso-pbt" style="font-size:7px">${total}</text></g>`);
     }
   }
-  // « Le Quartier » : sur chaque secteur, ce qu'il faut casser ce soir, l'attaque annoncée et les boucliers.
-  for (const m of marqueurs()) { if (!dansCadre(m.k)) continue; const p = cache.pos(Number(m.k), 18); if (p) dyn.push(`<g data-action="secteur" data-c="${m.k}" style="cursor:pointer" transform="translate(${p[0].toFixed(1)} ${p[1].toFixed(1)})">${m.svg}</g>`); }
   // Marqueurs posés par un écran (ex. Main courante de nuit) : { k: quartier, svg, attr, dx, dy }.
   for (const m of extra || []) { const p = cache.pos(Number(m.k), 18); if (p) dyn.push(`<g ${m.attr || ''} style="cursor:pointer" transform="translate(${(p[0] + (m.dx || 0)).toFixed(1)} ${(p[1] + (m.dy || 0)).toFixed(1)})">${m.svg}</g>`); }
   svg = svg.replace('<!--dyn-->', dyn.join(''));
-  // Patrouilles du soir : une voiture visible par agent (3 au plus), pastille bleue avec le nombre.
-  const pat = (S.draft && S.draft.patrouilles) || {};
-  for (const [q, n0] of Object.entries(pat)) {
-    const n = Math.min(3, n0 || 0);
-    for (let k = 0; k < n; k++) svg = svg.replace(`class="pv" data-q="${q}" data-k="${k}" visibility="hidden"`, `class="pv" data-q="${q}" data-k="${k}"`);
-    if (n0) svg = svg.replace(new RegExp(`(class="pb" data-q="${q}"[^>]*?) visibility="hidden">([\\s\\S]*?class="iso-pbt">)0<`), `$1>$2${n0}<`);
-  }
   if (sel != null) svg = svg.replace(`class="sel" data-q="${sel}" visibility="hidden"`, `class="sel" data-q="${sel}"`).replace(`class="nomq" data-q="${sel}" visibility="hidden"`, `class="nomq" data-q="${sel}"`);
   return svg;
 }
@@ -78,9 +68,6 @@ export function planIso(st, me, { vue = 'mazone', sel = null, extra = null } = {
 /** Annonces des collègues pour le non-droit (radio) : branché par la Carte pour éviter un import circulaire. */
 let annonces = () => ({});
 export function brancherAnnoncesND(f) { annonces = f; }
-/** Marqueurs de « Le Quartier » ([{ k, svg }]) : branchés par la Carte. */
-let marqueurs = () => [];
-export function brancherMarqueursQ(f) { marqueurs = f; }
 
 function dessiner(st, me, seed, vue, reduit) {
   const patrouilles = {};
@@ -230,7 +217,7 @@ function dessiner(st, me, seed, vue, reduit) {
       const lab = { emeute: 'Émeute', rodeo: 'Rodéo', livraison: 'Livraison', perquisition: 'Perquisition' };
       const extra = (lt ? `<g transform="translate(10.5 -1)"><title>${lt.nom}${lt.etat === 'garde' ? ' (en garde à vue)' : ''}</title><clipPath id="${id(`lt${i}`)}"><circle r="4.6"/></clipPath><circle r="5.2" fill="${lt.etat === 'garde' ? '#63B0FF' : '#E0625A'}"/><circle r="4.6" fill="#2A2230"/><g clip-path="url(#${id(`lt${i}`)})"><circle cy="-1.2" r="1.9" fill="#0E0B12"/><path d="M-4.2 4.6c.3-2.9 2-4.2 4.2-4.2s3.9 1.3 4.2 4.2z" fill="#0E0B12"/>${PORTRAITS_PRETS ? `<image href="${portraitLieutenant(sND.milieu)}" x="-4.6" y="-4.6" width="9.2" height="9.2" preserveAspectRatio="xMidYMid slice"/>` : ''}</g>${lt.etat === 'garde' ? '<path d="M-2.4 -4.4v8.8M0 -4.6v9.2M2.4 -4.4v8.8" stroke="#9DCBFF" stroke-width=".6"/>' : ''}</g>` : '')
         + (scN ? `<g transform="translate(0 -12)" class="nd-bulle"><rect x="-19" y="-5.5" width="38" height="10" rx="5" fill="#FF7A2A" stroke="#0B1124" stroke-width=".8"/><text y="1.8" text-anchor="middle" style="font:800 5.4px 'Instrument Sans',sans-serif;fill:#1A0A00">${ico[scN.type]} ${lab[scN.type]}</text></g>` : '');
-      etiqND.push(`<g data-action="secteur" data-c="${i}" style="cursor:pointer" transform="translate(${f(px)} ${f(py)})">${extra}${sND.coeur && !repris ? '<path d="M-5 -7L-5 -12.5L-2.5 -9.5L0 -13.5L2.5 -9.5L5 -12.5L5 -7Z" fill="#F3C84B" stroke="#0B1124" stroke-width=".7"/>' : ''}${quartierActif(st) ? '' : `<path d="M0 8L-3 4H3Z" fill="${repris ? '#3DD39A' : '#E0625A'}"/><circle r="6.5" fill="${repris ? '#3DD39A' : '#E0625A'}" stroke="#0B1124" stroke-width="1"/><text y="2.4" text-anchor="middle" class="iso-tn" style="fill:${repris ? '#0B1124' : '#fff'}">${repris ? '✓' : Math.round(sND.emprise)}</text>`}</g>`);
+      etiqND.push(`<g data-action="secteur" data-c="${i}" style="cursor:pointer" transform="translate(${f(px)} ${f(py)})">${extra}${sND.coeur && !repris ? '<path d="M-5 -7L-5 -12.5L-2.5 -9.5L0 -13.5L2.5 -9.5L5 -12.5L5 -7Z" fill="#F3C84B" stroke="#0B1124" stroke-width=".7"/>' : ''}${`<path d="M0 8L-3 4H3Z" fill="${repris ? '#3DD39A' : '#E0625A'}"/><circle r="6.5" fill="${repris ? '#3DD39A' : '#E0625A'}" stroke="#0B1124" stroke-width="1"/><text y="2.4" text-anchor="middle" class="iso-tn" style="fill:${repris ? '#0B1124' : '#fff'}">${repris ? '✓' : Math.round(sND.emprise)}</text>`}</g>`);
     }
     // Zone cliquable : l'îlot et le volume au-dessus (là où sont les immeubles), triée par profondeur.
     if (mien && zoomZone) {
@@ -239,7 +226,7 @@ function dessiner(st, me, seed, vue, reduit) {
       selections.push(`<polygon class="sel" data-q="${i}" visibility="hidden" points="${poly(top)}" fill="#FFB23F" fill-opacity=".14" stroke="#FFB23F" stroke-width="1.2"/>`);
       const nom = c.nom.length > 16 ? `${c.nom.slice(0, 15)}…` : c.nom, lw = 22 + nom.length * 3.9, np = patrouilles[i] || 0;
       const [lx, ly] = P(c.c[0], c.c[1], 30);
-      etiq.push({ lx, ly, lw: 22, h: `<g class="lab" data-action="quartier" data-c="${i}" style="cursor:pointer"><circle r="11" fill="transparent"/><path d="M0 9L-3.5 4.5H3.5Z" fill="${LUM[n.id]}"/><circle r="7.5" fill="${LUM[n.id]}" stroke="#0B1124" stroke-width="1.2"/><text y="2.5" text-anchor="middle" class="iso-tn">${Math.round(t)}</text>${me.pointChaud && String(me.pointChaud.cell) === String(i) ? '<text x="-9" y="-6" style="font-size:8px">🔥</text>' : ''}
+      etiq.push({ lx, ly, lw: 22, h: `<g class="lab" data-action="quartier" data-c="${i}" style="cursor:pointer"><circle r="11" fill="transparent"/><path d="M0 9L-3.5 4.5H3.5Z" fill="${LUM[n.id]}"/><circle r="7.5" fill="${LUM[n.id]}" stroke="#0B1124" stroke-width="1.2"/><text y="2.5" text-anchor="middle" class="iso-tn">${Math.round(t)}</text>
         <g class="pb" data-q="${i}" transform="translate(8 -7)" ${np ? '' : 'visibility="hidden"'}><rect x="-5" y="-4.5" width="10" height="9" rx="4.5" fill="#1F4FA8" stroke="#0B1124" stroke-width=".8"/><text y="2.4" text-anchor="middle" class="iso-pbt">${np}</text></g>
         <g class="nomq" data-q="${i}" visibility="hidden" transform="translate(0 -19)"><rect x="${f(-lw / 2)}" y="-7.5" width="${f(lw)}" height="14" rx="7" fill="#FFB23F"/><text y="2.4" text-anchor="middle" class="iso-nmq">${nom}</text></g></g>` });
     }

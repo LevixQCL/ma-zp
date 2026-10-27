@@ -3,7 +3,7 @@ import { S, esc, fmt1, myZone } from './common.js';
 import { IPZ_POIDS, ECONOMIE, SUBSIDE, TERRAIN, FLAGRANT, DOSSIER, ND, BUDGET_IPZ, scoreBudget, scoreRevenu, MORAL_PALIERS, MORAL } from '../engine/constants.js';
 import { confianceCommune, pointsIpz, IPZ_LABELS, moralMult } from '../engine/zone.js';
 import { terrainDoux } from '../engine/regles.js';
-import { PERIL } from '../engine/rivalites.js';
+import { PERIL } from '../engine/peril.js';
 
 const pc = (w) => `${Math.round(w * 100)} %`;
 const k2 = (v) => String(Math.round(v * 100) / 100).replace('.', ',');
@@ -94,8 +94,8 @@ export const AIDES = {
       '<strong>Chaque soir</strong> : elle revient vers 50. En dessous, de 4 % de l’écart ; au-dessus, d’autant plus vite qu’elle est haute : 4 % jusqu’à 60, 6 % de 60 à 70, 10 % de 70 à 80, 15 % de 80 à 90, 20 % au-delà',
       '<strong>Roulage au-delà de 25 % des effectifs</strong> (40 % avec les caméras) : « chasse aux PV », −2',
     ],
-    monte: 'incidents traités, Proximité, dossiers élucidés, opérations et FIPA réussies, arrestations',
-    baisse: 'incidents ratés, criminalité élevée, vieux dossiers, fiascos, FIPA ratées',
+    monte: 'incidents traités, Proximité, dossiers élucidés, opérations réussies, arrestations',
+    baisse: 'incidents ratés, criminalité élevée, vieux dossiers, fiascos',
     guide: 'guide-zone',
   },
   reputation: {
@@ -109,7 +109,7 @@ export const AIDES = {
       '<strong>Au-dessus de 60</strong> : moins de plaintes contre ta zone',
       '<strong>Chaque soir</strong> : elle revient vers 50. En dessous, de 3 % de l’écart ; au-dessus : 3 % jusqu’à 60, 5 % de 60 à 70, 8 % de 70 à 80, 12 % de 80 à 90, 16 % au-delà',
     ],
-    monte: 'partager des indices, coup de main à une zone en difficulté, FIPA partagées, renforts, secteurs repris à plusieurs, arrestations',
+    monte: 'partager des indices, renforts, secteurs repris à plusieurs, arrestations',
     baisse: 'fausses accusations, blâme du Conseil, fiascos',
     guide: 'guide-zone',
   },

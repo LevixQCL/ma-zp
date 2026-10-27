@@ -1,52 +1,37 @@
 // Écran des ordres du tour.
-import { ligneAgentsFilet } from './filet.js';
-import { agentsService, resumeEquipement } from './materiel.js';
 import { vehiculeSvg } from './scene-hp.js';
 import { effetsPressions } from '../engine/contenu.js';
 import { comparatifModeles } from './modeles.js';
-import { ARTICLES, giletsValides, ttiValides, tasersActifs, fnActifs } from '../engine/materiel.js';
-import { enRodage } from '../engine/brigade.js';
 import { lancerColonne } from './capsules.js';
-import { S, esc, icon, fmt1, tabbar, myZone, zoneName, bonusEnigme, academieResume } from './common.js';
-import { AIDE, themeActif } from '../engine/rivalites.js';
-import { AFFAIRE, SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier, PREPA, coutPrepa } from '../engine/constants.js';
+import { S, esc, icon, fmt1, tabbar, myZone, bonusEnigme, academieResume } from './common.js';
+import { SERVICES, SERVICE_LABELS, RYTHMES, INFRAS, COUTS, DEFAULT_ALLOC, DEPENSES, NIVEAU_MAX, BATIMENTS, BATIMENT_MAX, TRAVAUX_TOURS, ENTRETIEN_ANNEXE, DELAI_ACADEMIE, DUREE_FORMATION, SEASON_LENGTH, SUBSIDE, ROULAGE, seuilChasse, tourEffet, malusEtat, coutEquipement, effetEquip, bonusEquip, multNiveau, multEquip, ECONOMIE, coutFormation, agentsFormation, EQUIP, DOSSIER, valeurDossier, PREPA, coutPrepa } from '../engine/constants.js';
 import { vitesseCombi, MODELES, IDS_MODELES, placesIntervention, agentsMontes, apportAchat, plusUse, prixRevente, modeleDe, RENDEMENT } from '../engine/flotte.js';
-import { agentsFipaCeSoir } from './fipa.js';
 import { vagueServiceHtml } from './vagues.js';
-import { agentsReleve } from '../engine/releve.js';
 import { coutBilan } from '../engine/bilan.js';
-import { participeCommune, agentsCommune } from '../engine/crise.js';
 import { engagementsDuJour } from './engagements.js';
 import { primeHtml } from './prime.js';
-import { criseHtml, criseTodo } from './crise.js';
 import { previsionHtml, suivrePrevision } from './prevision.js';
-import { MAX_DEPENSES, doctrineOuverte, doctrineSemaine2, finFenetreDoctrine, DOCTRINE_SEM2 } from '../engine/regles.js';
-import { DOCTRINES, IDS_DOCTRINES, MAITRISE, coutPrime } from '../engine/constants.js';
-import { pistesOrdresHtml, resumePistes } from './pistes.js';
-import { resumeChefOrdres, emplacementsHtml } from './chef.js';
-import { CHEF } from '../engine/chef.js';
+import { MAX_DEPENSES } from '../engine/regles.js';
+import { coutPrime } from '../engine/constants.js';
+import { agentsService, resumeArmurerie, armurerieHtml, resumeArmurerieOrdres, specialiteHtml, resumeSpecialite } from './armurerie.js';
+import { journeeLive } from './enquete-direct.js';
+import { SPECIALITES, palierSpe, multSpe } from '../engine/constants.js';
+import { ARMURERIE, possede } from '../engine/materiel.js';
 import { demandeRenfortHtml } from './renfort.js';
-import { chefDe, maCandidature, candidaturesRecues, placesRestantes, statutLabel, postulerCtrl, candidatureCtrl } from './affaires.js';
-import { effectifPrevu, capaciteAgents, capaciteAgentsPrevue, capaciteVehicules, coutRecrue, sousTutelle, moralMult, bonusLots } from '../engine/zone.js';
+import { effectifPrevu, capaciteAgents, capaciteAgentsPrevue, capaciteVehicules, coutRecrue, sousTutelle, moralMult } from '../engine/zone.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { agentsND } from './nondroit.js';
-import { COULEUR_ROLE, initiales, echelleBonus } from './equipe.js';
-import { creerEquipe, appliquerNoms, missionsValides, surnomDe, encadrement } from '../engine/equipe.js';
 import { nomSecteur } from '../engine/nondroit.js';
-import { secteurOuvert, ROLE_SERVICE, bonusChef, CHEFS } from '../engine/constants.js';
-import { carteQuartiers, prevoirTensions, niveauTension } from '../engine/quartiers.js';
-import { ficheQuartierHtml, chipsQuartiersHtml, siteHtml, quartierChoisi, resumePatrouilles } from './carte.js';
-import { siteDe } from '../engine/sites.js';
+import { secteurOuvert } from '../engine/constants.js';
+import { niveauTension, QUARTIERS } from '../engine/quartiers.js';
 import { pressionsVisibles } from '../engine/directeur.js';
-import { forceEngagement, multAffaire, agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
+import { agentsDisponibles, blessesActifs, enFormation, capacite, coutDecision, decisionImpossible, effetsOperation, operationActive, NIVEAUX_OPERATION, coutDepenses } from '../engine/zone.js';
 
 function enqueteDraft() {
   const o = S.savedOrders || {};
   return {
-    dilemme: Number.isInteger(o.dilemme) ? o.dilemme : null, demarches: o.demarches || [], appui: o.appui || null, prime: o.prime || null, piste: o.piste ?? null, accusation: o.accusation ?? null, accusation2: o.accusation2 ?? null, confront: o.confront || [], reaud: o.reaud || null, recoup: o.recoup || null, hypo: o.hypo || null, mobile: Number.isInteger(o.mobile) ? o.mobile : null, traque: o.traque || null, partages: o.partages || [],
-    fipa: o.fipa || null, fipaReponse: o.fipaReponse || null, fipaChoix: o.fipaChoix || null,
-    renfort: o.renfort || null, aide: o.aide || null, pacte: o.pacte || null, pacteReponse: o.pacteReponse || null, pacteAccepte: o.pacteAccepte || [], defiAccepte: o.defiAccepte || [], pacteRompre: o.pacteRompre || null, fragment: o.fragment || null, defi: o.defi || null, defiReponse: o.defiReponse || null, votes: o.votes || {}, motionChef: o.motionChef || null, offre: o.offre || null,
-    releve: o.releve || null, releveAppui: o.releveAppui || [], saisie: o.saisie || null, crise: Number.isInteger(o.crise) ? o.crise : null, criseC: o.criseC || null, bilan: o.bilan || {},
+    dilemme: Number.isInteger(o.dilemme) ? o.dilemme : null, appui: o.appui || null, prime: o.prime || null, piste: o.piste ?? null, hypo: o.hypo || null, traque: o.traque || null, partages: o.partages || [],
+    renfort: o.renfort || null, bilan: o.bilan || {},
   };
 }
 
@@ -54,17 +39,12 @@ export function initDraft() {
   const z = myZone();
   const st = S.state;
   const dispo = agentsDisponibles(z, st.turn);
-  const base = S.savedOrders || (z.dernierOrdre ? { alloc: z.dernierOrdre.alloc, rythme: z.dernierOrdre.rythme, patrouilles: z.dernierOrdre.patrouilles, agenda: z.dernierOrdre.agenda } : { alloc: DEFAULT_ALLOC, rythme: 'normal' });
-  const d = JSON.parse(JSON.stringify({ secteurs: base.secteurs || (!S.savedOrders && z.dernierOrdre && z.dernierOrdre.secteurs) || {}, roles: base.roles || (!S.savedOrders && z.dernierOrdre && z.dernierOrdre.roles) || {}, alloc: { ...DEFAULT_ALLOC, ...(base.alloc || {}) }, rythme: base.rythme || 'normal', decision: base.decision || null, engagements: base.engagements || {}, evenement: base.evenement || 0, operation: base.operation || 'complet', patrouilles: base.patrouilles || {}, sansDecision: !!(S.savedOrders && S.savedOrders.sansDecision), depenses: (S.savedOrders && S.savedOrders.depenses) || { reserve: 0, reserveService: 'intervention' }, missions: (S.savedOrders && (S.savedOrders.missions || (S.savedOrders.mission ? [S.savedOrders.mission] : []))) || [], postes: (S.savedOrders && S.savedOrders.postes) || {}, ventes: (S.savedOrders && S.savedOrders.ventes) || [], doctrine: (S.savedOrders && S.savedOrders.doctrine) || null, agenda: (S.savedOrders && S.savedOrders.agenda) || (base.agenda) || null, talents: (S.savedOrders && S.savedOrders.talents) || null, demolir: (S.savedOrders && S.savedOrders.demolir) || null, parrainer: (S.savedOrders && S.savedOrders.parrainer) || null, expertise: (S.savedOrders && S.savedOrders.expertise) || null, chefFront: (S.savedOrders && S.savedOrders.chefFront) || null, reseau: (S.savedOrders && S.savedOrders.reseau) || null, brevet: (S.savedOrders && S.savedOrders.brevet) || null, achat: (S.savedOrders && S.savedOrders.achat) || null, relance: (S.savedOrders && S.savedOrders.relance) || null, parapheur: (S.savedOrders && S.savedOrders.parapheur) || {}, galons: (S.savedOrders && S.savedOrders.galons) || {}, appel: (S.savedOrders && Number.isInteger(S.savedOrders.appel)) ? S.savedOrders.appel : null, galonsReset: (S.savedOrders && S.savedOrders.galonsReset) || null, sortirRang: !!(S.savedOrders && S.savedOrders.sortirRang), materiel: (S.savedOrders && S.savedOrders.materiel) || { masse: [], commandes: [], lancer: null, adherer: [], certifier: false }, tuyau: (S.savedOrders && S.savedOrders.tuyau) || null, finales: (S.savedOrders && S.savedOrders.finales) || {}, pistesNew: (S.savedOrders && S.savedOrders.pistesNew) || [], ...enqueteDraft() }));
-  // Patrouilles : seulement dans mes quartiers.
-  const mesQ = new Set((carteQuartiers(st).deZone[z.uid] || []).map(String));
-  for (const k of Object.keys(d.patrouilles)) if (!mesQ.has(k)) delete d.patrouilles[k];
+  const base = S.savedOrders || (z.dernierOrdre ? { alloc: z.dernierOrdre.alloc, rythme: z.dernierOrdre.rythme } : { alloc: DEFAULT_ALLOC, rythme: 'normal' });
+  const sv = S.savedOrders || {};
+  const d = JSON.parse(JSON.stringify({ secteurs: base.secteurs || (!S.savedOrders && z.dernierOrdre && z.dernierOrdre.secteurs) || {}, roles: base.roles || (!S.savedOrders && z.dernierOrdre && z.dernierOrdre.roles) || {}, alloc: { ...DEFAULT_ALLOC, ...(base.alloc || {}) }, rythme: base.rythme || 'normal', decision: base.decision || null, evenement: base.evenement || 0, operation: base.operation || 'complet', sansDecision: !!sv.sansDecision, depenses: sv.depenses || { reserve: 0, reserveService: 'intervention' }, demolir: sv.demolir || null, achat: sv.achat || null, specialite: sv.specialite || null, materiel: sv.materiel && sv.materiel.acheter ? { acheter: sv.materiel.acheter } : { acheter: null }, ...enqueteDraft() }));
   // Zone de non-droit : seulement les secteurs ouverts ce soir.
   for (const k of Object.keys(d.secteurs)) if (!secteurOuvert(st.nonDroit, k) || !(d.secteurs[k] > 0)) delete d.secteurs[k];
   for (const k of Object.keys(d.roles)) { const r = d.roles[k]; if (!d.secteurs[k] || !r || r.rep + r.desc + r.bouc !== d.secteurs[k]) delete d.roles[k]; }
-  // On ne garde que les engagements sur des affaires encore ouvertes.
-  const ids = new Set(st.affaires.map((a) => a.id));
-  for (const k of Object.keys(d.engagements)) if (!ids.has(k)) delete d.engagements[k];
   // Ajuste la répartition si des agents manquent (blessés, formation…).
   let total = SERVICES.reduce((s, k) => s + d.alloc[k], 0) + engages(d);
   let i = 0;
@@ -77,7 +57,7 @@ export function initDraft() {
 const evenementDuJour = () => !!(S.state.evenement && S.state.evenement.tour === S.state.turn);
 
 function engages(d) {
-  return agentsND(d) + Object.values(d.engagements).reduce((s, e) => s + (e.agents || 0), 0) + (evenementDuJour() ? d.evenement || 0 : 0) + (d.renfort && S.state.zones[d.renfort.cible] && operationActive(S.state.zones[d.renfort.cible], S.state.turn) ? d.renfort.agents || 0 : 0);
+  return agentsND(d) + (evenementDuJour() ? d.evenement || 0 : 0) + (d.renfort && S.state.zones[d.renfort.cible] && operationActive(S.state.zones[d.renfort.cible], S.state.turn) ? d.renfort.agents || 0 : 0);
 }
 
 /**
@@ -85,15 +65,7 @@ function engages(d) {
  * avec un indicateur « bloqué » quand l'engagement n'est plus visible ailleurs à l'écran.
  */
 export function agentsHorsServices() {
-  const st = S.state, d = S.draft, z = myZone(), l = [];
-  for (const [id, e] of Object.entries(d.engagements)) {
-    if (!e.agents) continue;
-    const a = st.affaires.find((x) => x.id === id);
-    const moiChef = a && a.zone === z.uid;
-    const cand = a && !moiChef ? maCandidature(a) : null;
-    const bloque = !a ? 'affaire terminée' : moiChef ? null : !cand ? 'aucune candidature envoyée' : cand.statut === 'refusee' ? 'candidature refusée' : null;
-    l.push({ k: `eng:${id}`, t: `Affaire « ${a ? a.titre : '?'} »`, n: e.agents, bloque });
-  }
+  const st = S.state, d = S.draft, l = [];
   for (const [k, n] of Object.entries(d.secteurs || {})) if (n) l.push({ k: `nd:${k}`, t: `Zone de non-droit · ${esc(nomSecteur(k))}`, n, bloque: secteurOuvert(st.nonDroit, k) ? null : 'secteur fermé' });
   if (d.evenement) l.push({ k: 'ev', t: 'Grand événement du district', n: d.evenement, bloque: evenementDuJour() ? null : 'pas d’événement aujourd’hui', compte: evenementDuJour() });
   if (d.renfort && d.renfort.agents) {
@@ -104,26 +76,19 @@ export function agentsHorsServices() {
   return l;
 }
 
-/**
- * Agents pris dans les services pour la journée (même ordre que la résolution) :
- * opération d'envergure, puis audition, traque et FIPA. Renvoie { s: [[n, motif], …] }.
- */
-/** Agents partis pour la journée hors des services : audition, traque, FIPA. */
+/** L'audition de la victime a-t-elle été lancée aujourd'hui (deux enquêteurs pris pour la journée) ? */
+const auditionDuJour = () => { try { const r = journeeLive(); return !!(r && r.lancees.some((l) => l.k === 'temoin')); } catch { return false; } };
+/** Agents partis pour la journée hors des services : audition et traque. */
 export function missionsEnquete(d) {
   const l = [];
-  if ((d.demarches || []).includes('temoin')) l.push({ k: 'audition', t: 'Audition de la victime (enquête)', n: 2, service: 'recherche' });
+  if (auditionDuJour()) l.push({ k: 'audition', t: 'Audition de la victime (enquête)', n: 2, service: 'recherche' });
   if (d.traque && d.traque.agents) l.push({ k: 'traque', t: 'Traque du suspect (enquête)', n: d.traque.agents, service: 'intervention' });
-  const nr = S.state && myZone() ? agentsReleve(S.state, myZone().uid, d) : 0;
-  if (nr) l.push({ k: 'relève', t: 'Relève (suspect en fuite)', n: nr, service: 'intervention' });
-  if (S.state && myZone() && participeCommune(S.state, myZone().uid, d)) l.push({ k: 'opération commune', t: 'Opération commune du district', n: agentsCommune(myZone(), S.state.turn), service: null });
-  const f = agentsFipaCeSoir();
-  if (f) l.push({ k: 'FIPA', t: 'FIPA (dispositif commun)', n: f, service: null });
   return l;
 }
 
 /**
  * Agents pris dans les services pour la journée (même ordre que la résolution) : opération d'envergure,
- * puis audition, traque et FIPA, qui partent d'abord parmi les agents laissés sans affectation.
+ * puis audition et traque, qui partent d'abord parmi les agents laissés sans affectation.
  * Renvoie { s: [[n, motif], …] } (seulement ce qui manque dans les services).
  */
 export function prisesDuJour(z, d, opx, libres0 = 0) {
@@ -155,8 +120,6 @@ export function estimations() {
   const dep = d.depenses || {};
   const cap = {};
   for (const s of SERVICES) cap[s] = capacite(z, s, eff[s] + (dep.reserve && dep.reserveService === s ? dep.reserve * DEPENSES.reserve.efficacite : 0), { ...opts, bonus: bonusEnigme(s), alloc: eff });
-  // Figures de l'équipe : bonus dans leur service, sauf celle prévue en mission.
-  for (const [sv, x] of Object.entries(encadrement(z.equipe, d.postes, missionsValides(d).map((m) => m.role)))) if (cap[sv]) cap[sv] *= 1 + x.bonus;
   const crim = Math.max(10, Math.min(95, z.criminalite + (pr.criminalite || 0) - (dep.prevention ? 6 : 0)));
   const attendus = Math.max(1, Math.round(1.5 + crim / 14) + (pr.incidents || 0));
   const couverts = Math.min(attendus, Math.floor(cap.intervention / 1.1));
@@ -166,15 +129,14 @@ export function estimations() {
   const capAdmin1 = Math.max(0.3, (capacite(z, 'admin', eff.admin + 1, { ...opts, bonus: bonusEnigme('admin') }) - capacite(z, 'admin', eff.admin, { ...opts, bonus: bonusEnigme('admin') })) * 1.2);
   const amendes = cap.roulage * ECONOMIE.amendeParCapacite;
   const total = SERVICES.reduce((s, k) => s + eff[k], 0) || 1;
-  const chasse = eff.roulage / total > seuilChasse(z) && !((themeActif(S.state, S.state.turn) || {}).id === 'routiere');
+  const chasse = eff.roulage / total > seuilChasse(z);
   const dispo = dispo0;
-  // Les agents en mission d'enquête ou en FIPA sortent du total : ils ne sont plus à répartir.
+  // Les agents en mission d'enquête sortent du total : ils ne sont plus à répartir.
   const reste = resteBase - enquete;
   const coutDep = coutDepenses(dep, z);
   const coutTotal = coutDep + coutBilan(z, d.bilan) + (d.decision && !decisionImpossible(z, d.decision, st.turn) ? coutDecision(z, d.decision) : 0);
-  // Criminalité prévue ce soir : quartiers (patrouilles, point chaud) + pressions du jour et prévention.
-  const prev = Object.values(prevoirTensions(st, z, { patrouilles: d.patrouilles || {}, agentsProx: eff.proximite || 0, capProx: cap.proximite || 0 }));
-  const crimSoir = Math.max(10, Math.min(95, (prev.length ? prev.reduce((a, b) => a + b, 0) / prev.length : z.criminalite) + (crim - z.criminalite)));
+  // Criminalité prévue ce soir (comme le tour des quartiers, sans l'aléa ni la diffusion) : dérive du soir, moins 0,6 par unité de Proximité.
+  const crimSoir = Math.max(10, Math.min(95, crim + QUARTIERS.derive - 0.6 * (cap.proximite || 0)));
   return { crimSoir, attendus, couverts, pap, papV, capAdmin1, amendes, chasse, dispo, reste, resteBase, enquete, opx, coutDep, coutTotal, prises, crim, cap, eff };
 }
 
@@ -195,7 +157,7 @@ let cacheBesoins = { cle: null, val: null };
 /** Besoin de chaque service : le plus petit nombre d'agents qui le remplit, à répartition égale ailleurs. */
 export function besoinsServices(e = estimations()) {
   const z = myZone(), d = S.draft;
-  const cle = JSON.stringify([S.state.turn, d.alloc, d.rythme, d.depenses, d.postes, d.operation, d.missions, d.patrouilles, d.engagements, d.secteurs]);
+  const cle = JSON.stringify([S.state.turn, d.alloc, d.rythme, d.depenses, d.operation, d.secteurs, auditionDuJour(), d.traque]);
   if (cacheBesoins.cle === cle) return cacheBesoins.val;
   const val = {};
   for (const s of SERVICES) {
@@ -226,8 +188,8 @@ export function besoinsServices(e = estimations()) {
   return val;
 }
 /** Bandeau posé sur les agents partis ailleurs pour la journée (un mot), et sa version longue (info-bulle). */
-const MOTIF_COURT = { 'l’opération': 'Opération', audition: 'Audition', traque: 'Traque', 'relève': 'Relève', 'opération commune': 'District', FIPA: 'FIPA' };
-const MOTIF_LONG = { 'l’opération': 'l’opération d’envergure', audition: 'l’audition de la victime (enquête)', traque: 'la traque du suspect (enquête)', 'relève': 'la relève d’un suspect en fuite', 'opération commune': 'l’opération commune du district', FIPA: 'le dispositif FIPA' };
+const MOTIF_COURT = { 'l’opération': 'Opération', audition: 'Audition', traque: 'Traque' };
+const MOTIF_LONG = { 'l’opération': 'l’opération d’envergure', audition: 'l’audition de la victime (enquête)', traque: 'la traque du suspect (enquête)' };
 /** Explication affichée en touchant un groupe d'agents partis ailleurs. */
 function infoMission(s, k, motif) {
   const de = /^[AEIOUÉ]/.test(SERVICE_LABELS[s]) ? `d’${SERVICE_LABELS[s]}` : `de ${SERVICE_LABELS[s]}`;
@@ -268,13 +230,6 @@ const ICO_COL = {
 };
 const icoCol = (k) => `<span class="ic" aria-hidden="true"><svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${ICO_COL[k]}</svg></span>`;
 
-/** Gilets, recyclage TTI, tasers, FN 303 et recrues de la zone (mêmes chiffres que le résumé du Matériel). */
-function chiffresEquip(z) {
-  if (!z || !z.materiel || !S.state) return null;
-  const T = S.state.turn, m = z.materiel, n = z.agents || 0;
-  return { n, g: Math.min(n, giletsValides(m, T).total), a: m.tti ? Math.min(n, ttiValides(m, T, 'af')) : n, tz: tasersActifs(m, T), fz: fnActifs(m, T), r: enRodage(z, T) };
-}
-
 /** Les agents d'un service ce soir : au service (avec leur équipement), places à pourvoir, « en plus », partis en mission. */
 function agentsColonne(s, b, n, e) {
   const groupes = ((e.prises || {})[s] || []).filter(([k]) => k > 0);
@@ -310,18 +265,12 @@ function pastillesService(s, z, e, A) {
   const P = (cls, ic, txt, em = '') => `<span class="pst ${cls}">${ic}<b>${txt}</b>${em ? `<em>${em}</em>` : ''}</span>`;
   const im = (f, sp) => `<img class="${sp ? 'sp' : ''}" src="${f}" alt="" loading="lazy">`;
   const mj = (v, c) => `<span class="mj" aria-hidden="true"><i style="width:${Math.round(Math.max(0, Math.min(1, v)) * 100)}%;background:${c}"></i></span>`;
-  const sg = A.l.filter((a) => a.sg).length;
-  const sansG = sg ? P('r', im('img/materiel/gilets.webp'), sg, 'sans gilet') : '';
+  const sansG = '';
   const l = [];
   if (s === 'intervention') {
     const r = e.attendus - e.couverts;
     l.push(P(r <= 0 ? 'v' : r >= 2 ? 'r' : 'a', icoCol('sir'), `${e.couverts}/${e.attendus}`, 'incid.'));
-    const q = chiffresEquip(z);
-    if (q) {
-      if (q.g >= q.n && q.a >= q.n) l.push(P('v', im('img/materiel/gilets.webp'), `${q.g}/${q.n}`, 'gilets · TTI'));
-      else { l.push(P(q.g < q.n ? 'r' : 'v', im('img/materiel/gilets.webp'), `${q.g}/${q.n}`)); l.push(P(q.a < q.n ? 'r' : '', im('img/materiel/fn303.webp'), `${q.a}/${q.n}`, 'TTI')); }
-      if (q.r) l.push(P('v', im('img/capsules/ag/recrue.webp', 1), q.r > 1 ? `${q.r}×½` : '½', 'recrue'));
-    }
+    if (possede(z, 'gilets')) l.push(P('v', im('img/materiel/gilets.webp'), 'gilets'));
     const fd = z.jaugeFlagrant || 0;
     l.push(`<span class="pst" title="Flagrant délit">${mj(fd, 'var(--red)')}<em>FD</em><b>${Math.round(fd * 100)} %</b></span>`);
   } else if (s === 'proximite') {
@@ -352,8 +301,8 @@ function pastillesService(s, z, e, A) {
   for (const [k, motif] of A.groupes) l.push(P('a', icoCol('out'), k, esc((MOTIF_COURT[motif] || motif).toLowerCase())));
   if (dep.reserve && dep.reserveService === s) l.push(P('a', '', `+${dep.reserve}`, 'de réserve'));
   if (A.au > COL_MAX) l.push(P('', '', `+${A.au - COL_MAX}`, 'hors champ'));
-  const D = z.doctrine && DOCTRINES[z.doctrine];
-  if (D && D.jauge && D.jauge.service === s) l.push(`<span class="pst" title="${esc(D.jauge.nom)}">${mj(valJauge(z), 'var(--amber)')}<em>${D.jauge.ico}</em><b>${Math.round(valJauge(z) * 100)} %</b></span>`);
+  const Sp = jaugeSpeDe(z);
+  if (Sp && Sp.service === s) l.push(`<span class="pst" title="${esc(Sp.jauge.nom)}">${mj(z.jaugeSpe || 0, 'var(--amber)')}<em>${Sp.jauge.ico}</em><b>${Math.round((z.jaugeSpe || 0) * 100)} %</b></span>`);
   return l.join('');
 }
 
@@ -402,7 +351,7 @@ function colonneHtml(z, e) {
     ${cible ? '' : `<span class="col-parking">${cabine}</span>`}
     <div class="col-etages">${SERVICES.map((s2) => etageHtml(s2, z, e, bs, s2 === cible ? cabine : '')).join('')}</div>
   </div>
-  <p class="col-leg tiny muted"><span><i class="sg"></i>sans gilet</span><span><i class="sa"></i>sans TTI</span><span><i class="dm"></i>recrue ½</span><span><i class="ep"></i>en plus</span></p>
+  <p class="col-leg tiny muted"><span><i class="ep"></i>en plus</span></p>
   ${libres ? '' : ''}${(() => { if (typeof requestAnimationFrame === 'function') requestAnimationFrame(lancerColonne); return ''; })()}`;
 }
 
@@ -450,7 +399,7 @@ function feuilleColonne(z, e) {
       <div class="col-lignes">${lignes || '<span class="tiny muted">Personne au service ce soir.</span>'}</div>
       ${A.groupes.length ? '' : '<span class="tiny muted">En mission ou en opération : personne ce soir.</span>'}
       ${dep.reserve && dep.reserveService === s ? `<span class="tiny" style="color:var(--amber-soft)">+ ${dep.reserve} de réserve en renfort</span>` : ''}
-      ${s === 'intervention' ? `<span class="col-fh">Matériel</span>${resumeEquipement()}` : ''}
+      ${s === 'intervention' ? `<span class="col-fh">Armurerie</span>${resumeArmurerie()}` : ''}
       ${jaugesService(z, s)}
       ${prisHtml(e, s)}
       ${s === 'recherche' ? `<span class="col-fh">Dossiers</span><div id="dos-recherche">${dossiersHtml(z, e)}</div>` : ''}
@@ -675,6 +624,14 @@ function detailDecision(z, dec, T) {
   return `<span class="tiny" style="font-weight:700;color:var(--amber)">Ce que ça change · ${cout} k€</span>${l.map((x) => `<p class="small" style="margin:0">${esc(x)}</p>`).join('')}`;
 }
 
+/** Annexes : emplacements libres, et démolition d'une annexe (gratuite, ce soir). */
+function emplacementsHtml(z, d) {
+  const faites = Object.keys(z.infra || {}).filter((k) => z.infra[k] && INFRAS[k]);
+  const max = 3 + ((z.batiments && z.batiments.bureaux) || 1);
+  return `<div class="col" style="gap:4px"><span class="tiny ${faites.length >= max ? 'warn' : 'muted'}">Emplacements d’annexes : ${faites.length} sur ${max} (3 + niveau ${z.batiments.bureaux} des bureaux).${faites.length >= max ? ' Pour en bâtir une autre, agrandis l’hôtel de police ou démolis une annexe.' : ''}</span>
+    ${faites.length ? `<label class="field tiny">Démolir une annexe ce soir (gratuit, sans remboursement)<select class="text" data-change="demolir"><option value="">Aucune</option>${faites.map((k) => `<option value="${k}" ${d.demolir === k ? 'selected' : ''}>${esc(INFRAS[k].nom)}</option>`).join('')}</select></label>` : ''}</div>`;
+}
+
 /** Alerte : dépenses + démarches + décision dépassent la caisse ; la décision, payée en dernier, serait refusée. */
 function avertBudget(z, d) {
   if (!d.decision) return '';
@@ -706,7 +663,7 @@ function suiviDecisionsHtml(z, T) {
   for (const a of z.academie || []) route.push([a.arrivee - 1, `🎓 ${a.n} recrue${a.n > 1 ? 's' : ''} sort${a.n > 1 ? 'ent' : ''} de l’académie → +${a.n} agent${a.n > 1 ? 's' : ''} dans tes ordres le lendemain`]);
   for (const f of z.formations || []) if (!f.fait && f.fin >= T) route.push([f.fin - 1, `📚 Formation ${SERVICE_LABELS[f.service]} → niveau ${z.niveaux[f.service] + 1}${f.agents ? ` · ${f.agents} agents absents d’ici là` : ''}`]);
   if (z.travaux && z.travaux.fin >= T && BATIMENTS[z.travaux.batiment]) route.push([z.travaux.fin, `🏗 ${BATIMENTS[z.travaux.batiment].nom} → niveau ${(z.batiments[z.travaux.batiment] || 0) + 1}`]);
-  for (const c of (z.materiel && z.materiel.commandes) || []) if (c.arrive >= T) route.push([c.arrive, `📦 ${esc((ARTICLES[c.item] && ARTICLES[c.item].nom) || 'Commande')} (${c.lots} lot${c.lots > 1 ? 's' : ''}) en livraison`]);
+  { const k = S.draft && S.draft.materiel && S.draft.materiel.acheter; if (k && ARMURERIE[k]) route.push([T, `${ARMURERIE[k].ico} ${esc(ARMURERIE[k].nom)} livrés à l’armurerie`]); }
   if (!arrive.length && !route.length) return '';
   route.sort((a, b) => a[0] - b[0]);
   return `<section class="card sd" aria-label="Tes décisions d’un soir à l’autre">
@@ -811,7 +768,6 @@ function ventilationHtml(z, e) {
   const prises = [];
   for (const [s, l] of Object.entries(e.prises || {})) for (const [n, m] of l) if (m !== 'l’opération') prises.push([`${m} (pris en ${SERVICE_LABELS[s]}, faute d’agents libres)`, n]);
   const opPris = Object.values(e.opx.pris || {}).reduce((s, v) => s + v, 0); if (opPris) prises.push(['Opération d’envergure (dans les services)', opPris]);
-  const aide = d.aide && d.aide.cible && d.aide.agents ? d.aide.agents : 0;
   const bloques = hors.filter((h) => h.bloque);
   return `<div class="vent col">
     <span class="tiny muted" style="font-weight:700">Effectif</span>
@@ -828,7 +784,6 @@ function ventilationHtml(z, e) {
     ${hors.map((h) => ligne(`${h.t}${h.bloque ? ` <span class="tiny bad">· ${esc(h.bloque)}</span>` : ''}`, h.compte === false ? `(${h.n})` : h.n, h.bloque ? 'bad' : '', btnRap(h.k))).join('')}
     ${ligne(e.reste >= 0 ? '<strong>Sans affectation</strong>' : e.resteBase >= 0 ? '<strong>Manquent pour les missions</strong>' : '<strong>De trop</strong>', `<strong>${Math.abs(e.reste)}</strong>`, `tot ${e.reste > 0 ? 'warn' : e.reste < 0 ? 'bad' : 'ok'}`)}
     ${prises.length ? `<span class="tiny warn" style="margin-top:4px">Pris dans tes services pour la journée : ${prises.map(([t, n]) => `${t} ${n}`).join(' · ')}. Enlève des agents d’un service pour les laisser libres, sinon ces services tourneront avec moins de monde.</span>` : ''}
-    ${aide ? `<span class="tiny muted">Coup de main : ${aide} agent${aide > 1 ? 's' : ''} partiront demain pour ${AIDE.dureePret} tours.</span>` : ''}
     ${academie ? `<span class="tiny muted">À l’académie : ${academie} recrue${academie > 1 ? 's' : ''}, pas encore disponible${academie > 1 ? 's' : ''} (${(academieResume(z, S.state.turn) || {}).texte || "bientôt"}).</span>` : ''}
     ${bloques.length ? `<p class="tiny bad" style="margin:2px 0 0">Des agents sont bloqués : rapatrie-les pour les réaffecter.</p>` : ''}
     <div class="row" style="gap:8px;margin-top:4px;flex-wrap:wrap">
@@ -850,8 +805,7 @@ function amendeParAgentTxt(z) {
   ];
   if (RYTHMES[rythme].mult !== 1) facteurs.push(`rythme ${RYTHMES[rythme].label.toLowerCase()} ${x(RYTHMES[rythme].mult)}`);
   if (z.infra && z.infra.anpr) facteurs.push('caméras ×1,2');
-  const lots = bonusLots(z, 'roulage');
-  if (lots !== 1) facteurs.push(`lots ${x(lots)}`);
+  { const m = multSpe(z, 'roulage'); if (m !== 1) facteurs.push(`spécialité ${x(m)}`); }
   const un = capacite(z, 'roulage', 1, { rythme, turn: T }) * ECONOMIE.amendeParCapacite;
   const alloc = (S.draft && S.draft.alloc) || {};
   const tous = n ? capacite(z, 'roulage', n, { rythme, turn: T, alloc }) * ECONOMIE.amendeParCapacite : 0;
@@ -927,11 +881,9 @@ function aide(s, z) {
 function prisesHtml() {
   const d = S.draft, z = myZone(), l = [];
   if (d.traque && d.traque.agents) l.push(`${d.traque.agents} agent${d.traque.agents > 1 ? 's' : ''} d’Intervention partent en traque`);
-  if ((d.demarches || []).includes('temoin')) l.push('2 agents de Recherche passent la journée sur une audition');
-  const f = agentsFipaCeSoir();
-  if (f) l.push(`${f} agents partent en FIPA (pris d’abord en Proximité)`);
+  if (auditionDuJour()) l.push('2 agents de Recherche passent la journée sur l’audition de la victime');
   const fo = d.decision && d.decision.type === 'former' && agentsFormation(z, d.decision.service) ? `<p class="small muted" style="margin:0">Formation choisie : ${agentsFormation(z, d.decision.service)} agents seront absents demain (${DUREE_FORMATION} tour), ils sortiront alors du total disponible.</p>` : '';
-  return (l.length ? `<p class="small warn" style="margin:0">Enquête et FIPA : ${l.join(' ; ')}. Ils sont retirés du total à répartir ; s’il ne reste pas assez d’agents libres, ils sont pris dans le service indiqué.</p>` : '') + fo;
+  return (l.length ? `<p class="small warn" style="margin:0">Enquête : ${l.join(' ; ')}. Ils sont retirés du total à répartir ; s’il ne reste pas assez d’agents libres, ils sont pris dans le service indiqué.</p>` : '') + fo;
 }
 
 export function situationHtml(z) {
@@ -952,53 +904,14 @@ function ouvertOrdres(k, forcer = false) {
   return !(S.savedOrders && !S.ordersDirty);
 }
 
-/** Mon équipe dans les ordres : bonus de chaque figure, et leurs missions du jour (une figure par destination). */
-function equipeOrdres(z, d) {
-  const equipe = appliquerNoms(JSON.parse(JSON.stringify(z.equipe || creerEquipe(z.uid))), z.uid, (S.player && S.player.equipeNoms) || null);
-  const valides = missionsValides(d);
-  const parRole = Object.fromEntries(valides.map((x) => [x.role, x]));
-  const voulues = (d.missions || []).length;
-  const qui = S.missionQui || null;
-  const nom = (m) => `${m.prenom} ${m.nom}${surnomDe(m) ? ` « ${surnomDe(m)} »` : ''}`;
-  const secteurs = Object.entries(d.secteurs || {}).filter(([, n]) => n > 0);
-  const cible = d.renfort && d.renfort.agents > 0 && S.state.zones[d.renfort.cible] ? S.state.zones[d.renfort.cible] : null;
-  const prise = (cle, role) => valides.find((x) => x.role !== role && (x.type === 'nondroit' ? `nd:${x.secteur}` : 'renfort') === cle);
-  const figureDe = (x) => equipe.find((e) => e.role === x.role);
-  const enc = encadrement(equipe, d.postes, valides.map((x) => x.role));
-  const encDe = (role) => Object.keys(enc).find((s) => enc[s].role === role) || null;
-  const lignes = equipe.map((m) => {
-    const b = Math.round(bonusChef(m.niveau) * 100);
-    const sv = encDe(m.role) || ROLE_SERVICE[m.role], chez = sv !== ROLE_SERVICE[m.role];
-    const voulu = d.postes && d.postes[m.role];
-    const mis = parRole[m.role] || null;
-    const posteOuvert = S.posteQui === m.role && !mis;
-    const choixPoste = posteOuvert ? `<div class="row" style="gap:6px;flex-wrap:wrap">${SERVICES.map((s) => { const o = enc[s] && enc[s].role !== m.role ? equipe.find((e) => e.role === enc[s].role) : null; return `<button type="button" class="chip ${sv === s ? 'on' : ''}" data-action="poste-choix" data-role="${m.role}" data-s="${s}" aria-pressed="${sv === s}">${esc(SERVICE_LABELS[s])}${s === ROLE_SERVICE[m.role] ? ' (le sien)' : o ? ` · remplace ${esc(o.prenom)}` : ''}</button>`; }).join('')}</div><span class="tiny muted">Une figure par service : si la place est prise, les deux figures échangent leurs services.</span>` : '';
-    const choix = qui === m.role && !mis;
-    const btnDest = (cle, attrs, titre, sous) => { const p = prise(cle, m.role); return `<button type="button" class="choice" data-action="mission-ou" data-role="${m.role}" ${attrs} ${p ? 'disabled' : ''}><span>${titre}</span><span class="s">${p ? `déjà : ${esc(figureDe(p) ? figureDe(p).prenom : 'une autre figure')}` : sous}</span></button>`; };
-    const dest = choix ? `<div class="mission-dest">${secteurs.map(([k, n]) => btnDest(`nd:${k}`, `data-type="nondroit" data-secteur="${esc(k)}"`, `Zone de non-droit · ${esc(nomSecteur(k))}`, `avec tes ${n} agent${n > 1 ? 's' : ''} · force +${b} %, blessures ÷2`)).join('')}
-        ${cible ? btnDest('renfort', 'data-type="renfort"', `Renfort chez ${esc(cible.nom)}`, `compte pour ${CHEFS.renfort.agents} agent de plus dans son dispositif`) : ''}
-        ${secteurs.length || cible ? '' : '<p class="tiny muted" style="margin:0">Aucune mission possible ce soir. Une figure accompagne des agents : envoie d’abord des agents en zone de non-droit (Terrain → un secteur → « Agents à l’assaut ») ou prête des agents en renfort à un collègue (Radio).</p>'}</div>` : '';
-    return `<div class="col" style="gap:4px"><div class="membre-o">
-      <span class="avatar" style="background:${COULEUR_ROLE[m.role]};width:30px;height:30px;font-size:12px" aria-hidden="true">${esc(initiales(m))}</span>
-      <span class="col grow" style="gap:1px;min-width:0"><span class="small" style="font-weight:600">${esc(nom(m))}</span>
-        <span class="tiny ${mis ? 'warn' : chez ? 'ok' : 'muted'}">${mis ? (mis.type === 'nondroit' ? `en mission · zone de non-droit, ${esc(nomSecteur(mis.secteur))}` : `en mission · renfort chez ${esc(cible ? cible.nom : 'un collègue')}`) + ` (${esc(SERVICE_LABELS[ROLE_SERVICE[m.role]])} sans son bonus ce soir)` : `encadre ${esc(SERVICE_LABELS[sv])}${chez ? ' ce soir' : ''} : +${b} % d’efficacité${voulu && voulu !== sv ? ` <span class="bad">(${esc(SERVICE_LABELS[voulu])} déjà pris par une figure plus expérimentée)</span>` : ''}`}</span>
-        ${mis ? '' : `<button type="button" class="lien tiny" data-action="poste-qui" data-role="${m.role}" aria-expanded="${posteOuvert}" style="align-self:flex-start;font-size:12px;padding:0;min-height:0">${posteOuvert ? 'fermer' : 'changer de service'}</button>`}</span>
-      ${mis ? `<button type="button" class="btn small ghost" data-action="mission-annuler" data-role="${m.role}">Rappeler</button>` : `<button type="button" class="btn small ${choix ? 'primary' : 'ghost'}" data-action="mission-qui" data-role="${m.role}" aria-expanded="${choix}">Mission</button>`}
-    </div>${choixPoste}${mis ? '' : `<div class="membre-ech">${echelleBonus(m)}</div>`}${dest}</div>`;
-  }).join('');
-  const perdue = voulues > valides.length ? `<p class="tiny bad" style="margin:0">${voulues - valides.length === 1 ? 'Une mission est annulée' : `${voulues - valides.length} missions sont annulées`} : plus d’agents à l’endroit prévu. La figure reste à son service.</p>` : '';
-  return `<div class="col" style="gap:8px">${perdue}${lignes}
-    <p class="tiny muted" style="margin:0">Chaque figure encadre son service, ou celui que tu choisis pour la journée (« changer de service »). Plusieurs figures peuvent aussi partir en mission le même soir, <strong>une par destination</strong> (un secteur de la zone de non-droit, ou le renfort). Leur service perd alors son bonus pour la journée ; chacune gagne un peu d’expérience en plus.</p></div>`;
-}
-
 /** Une ligne repliable de la carte « Ce soir aussi » (même arguments que `pli`, plus une pastille). */
 function pliItem(key, titre, resume, contenu, alerte = false, pastille = null) { return { key, titre, resume, contenu, alerte, pastille }; }
 /** Les sections repliables regroupées dans une seule carte, une ligne chacune. */
-const ICO_PLI = { chef: 'chef', nondroit: 'mur', equipe: 'equipe', affaires: 'poignee', decision: 'star', pistes: 'loupe', depenses: 'euro', reserve: 'renfort' };
+const ICO_PLI = { nondroit: 'mur', decision: 'star', depenses: 'euro', reserve: 'renfort' };
 /** Titres courts des tuiles (le titre complet reste dans le panneau ouvert). */
-const COURT_PLI = { chef: 'Chef', nondroit: 'Non-droit', equipe: 'Équipe', affaires: 'Affaires', decision: 'Décision', pistes: 'Tuyaux', depenses: 'Dépenses', reserve: 'Réserve' };
+const COURT_PLI = { nondroit: 'Non-droit', decision: 'Décision', depenses: 'Dépenses', reserve: 'Réserve' };
 /** Teinte de chaque tuile (icône et liseré). */
-const TEINTE_PLI = { chef: '#FFB23F', nondroit: '#FF8A65', equipe: '#63B0FF', affaires: '#B892FF', decision: '#FFD166', pistes: '#3DD39A', depenses: '#7BD3C8', reserve: '#9DB4FF' };
+const TEINTE_PLI = { nondroit: '#FF8A65', decision: '#FFD166', depenses: '#7BD3C8', reserve: '#9DB4FF' };
 /** Résumé de tuile : sans emoji (l'icône suffit), et « vide » si rien n'est engagé ce soir. */
 const sansEmoji = (s) => String(s).replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, '').replace(/\s{2,}/g, ' ').trim();
 const resumeVide = (s) => /^(aucun|aucune|pas encore)\b/i.test(sansEmoji(s).replace(/<[^>]+>/g, ''));
@@ -1006,6 +919,7 @@ function pliGroupe(items) {
   {
     // Saison 2 : une tuile par sujet ; celle qu'on touche s'ouvre en dessous, sur toute la largeur.
     const l = items.filter(Boolean);
+    if (!l.length) return '';
     const ouv = l.find((x) => S.ordOpen && S.ordOpen[x.key]);
     const ico = (k, t = 18) => `<span class="ord-t-i" style="--t:${TEINTE_PLI[k] || 'var(--amber)'}" aria-hidden="true">${icon(ICO_PLI[k] || 'star', t)}</span>`;
     const estVide = (x) => !(x.pastille || x.alerte) && resumeVide(x.resume) && !(ouv && ouv.key === x.key);
@@ -1023,46 +937,9 @@ function pliGroupe(items) {
 }
 
 
-/** Carte d'une affaire disputée, avec les agents engagés (écran Terrain). */
-export function carteAffaire(a) {
-  const z = myZone(), d = S.draft;
-
-    const eg = d.engagements[a.id] || { agents: 0, acceptes: [] };
-    const force = eg.agents ? Math.round(forceEngagement(z, eg.agents, S.state.turn) * 10) / 10 : 0;
-    const chef = chefDe(a);
-    const moiChef = a.zone === z.uid;
-    const cand = !moiChef && maCandidature(a);
-    const stepper = `<div class="between"><span class="small">${moiChef ? 'Tes agents' : 'Agents proposés'}</span>
-        <span class="stepper"><button type="button" data-action="eng" data-id="${a.id}" data-d="-1" aria-label="Retirer un agent">−</button><span class="n">${eg.agents}</span><button type="button" data-action="eng" data-id="${a.id}" data-d="1" aria-label="Ajouter un agent">+</button></span></div>`;
-    let corps;
-    if (moiChef) {
-      const recues = candidaturesRecues().filter((c) => c.aid === a.id);
-      const acc = recues.filter((c) => c.statut === 'acceptee');
-      const att = recues.filter((c) => c.statut === 'attente').length;
-      const fEquipe = force + acc.reduce((s2, c) => s2 + (S.state.zones[c.uid] ? forceEngagement(S.state.zones[c.uid], c.agents, S.state.turn) : 0), 0);
-      const m = eg.agents ? multAffaire(a, fEquipe) : 0;
-      corps = `${stepper}
-        ${eg.agents ? '' : '<p class="tiny warn" style="margin:0">Sans agents de ta part, l’affaire n’est pas lancée ce soir.</p>'}
-        ${eg.agents ? `<p class="tiny ${m ? (m >= 1 ? 'ok' : '') : 'bad'}" style="margin:0">${m ? `Force de l’équipe ${fmt1(fEquipe)} : environ <strong>${fmt1(a.recompense * m * AFFAIRE.prime)} k€</strong> de prime et ${fmt1(a.recompense * m)} pts (${Math.round(m * 100)} %), à partager selon les agents.${m < 1.3 ? ` Plus de force = plus de gains, jusqu’à 130 % vers ${fmt1(a.forceConseillee * 1.5)}.` : ' Maximum atteint.'}` : `Force de l’équipe ${fmt1(fEquipe)} : sous le minimum (${a.forceMin}), l’affaire échouera.`}</p>` : ''}
-        <p class="tiny muted" style="margin:0">Équipe : ${acc.length ? acc.map((c) => `${esc(S.state.zones[c.uid] ? S.state.zones[c.uid].nom : '?')} (${c.agents})`).join(', ') : 'toi seul pour l’instant'} · places restantes : ${placesRestantes(a)} sur ${a.agentsMax}${att ? ` · <a href="#prive">${att} candidature${att > 1 ? 's' : ''} à traiter</a>` : ''}</p>`;
-    } else if (cand) {
-      corps = `<p class="tiny" style="margin:0">Ta candidature auprès de ${esc(chef ? chef.nom : '?')} : ${statutLabel(cand.statut)}</p>${cand.statut !== 'refusee' ? stepper : eg.agents ? `<div class="between"><span class="tiny bad">${eg.agents} agent${eg.agents > 1 ? 's' : ''} encore réservé${eg.agents > 1 ? 's' : ''} ici</span><button type="button" class="btn small ghost" data-action="rapatrier" data-k="eng:${a.id}">Rapatrier</button></div>` : ''}`;
-    } else {
-      corps = `<p class="tiny muted" style="margin:0">Dirigée par ${chef ? zoneName(chef) : '?'}.</p>${postulerCtrl(a)}`;
-    }
-    const recuesCtl = moiChef ? candidaturesRecues().filter((c) => c.aid === a.id).map((c) => `<div class="col" style="gap:4px"><span class="small" style="font-weight:600">${esc(S.state.zones[c.uid] ? S.state.zones[c.uid].nom : '?')} postule avec ${c.agents} agent${c.agents > 1 ? 's' : ''}</span>${candidatureCtrl(c)}</div>`).join('') : '';
-    return `<div class="card tight">
-      <div class="between"><span style="font-weight:600;font-size:14px">${esc(a.titre)}</span><span class="pill amber">≈ ${fmt1(a.recompense * AFFAIRE.prime)} k€</span></div>
-      <p class="tiny" style="margin:0;color:var(--amber-soft)">Si l’affaire est résolue : prime d’environ ${fmt1(a.recompense * AFFAIRE.prime)} k€ partagée selon les agents engagés, +2 de moral pour chaque zone, de la réputation (+${AFFAIRE.repChef} pour qui dirige, plus pour les renforts), de la satisfaction pour la zone qui dirige, et des points d’IPZ.</p>
-      <p class="tiny muted" style="margin:0">${moiChef ? '<strong style="color:var(--amber)">Chez toi · tu diriges</strong> · ' : ''}Force minimale ${a.forceMin}, conseillée ${a.forceConseillee}${eg.agents ? ` · ta force : <strong style="color:${force >= a.forceConseillee ? 'var(--green-soft)' : 'var(--text)'}">${fmt1(force)}</strong>` : ''} · ${a.tours > 1 ? 'nouvelle affaire' : 'dernier tour'}</p>
-      ${corps}
-      ${recuesCtl}
-    </div>`;
-}
-
 // Prise en main : un nouveau chef de zone découvre les ordres par étapes (les zones arrivées avant cette règle gardent tout).
 const OUVERTURE_DEPUIS = Date.parse('2026-10-09T00:00:00Z');
-const PALIERS_ORDRES = [['depenses', 3, 'Dépenses du jour'], ['nondroit', 5, 'Zone de non-droit'], ['affaires', 5, 'Affaires disputées'], ['equipe', 7, 'Mon équipe (missions des figures)']];
+const PALIERS_ORDRES = [['depenses', 3, 'Dépenses du jour'], ['nondroit', 5, 'Zone de non-droit']];
 export function ouvertureOrdres(z) {
   const jour = ((z && z.toursJoues) || 0) + 1;
   const ancien = !z || !(z.arrivee > OUVERTURE_DEPUIS);
@@ -1075,81 +952,20 @@ export function ouvertureOrdres(z) {
 function barreJauge(ico, nom, v, remplit, gain, cls = '') {
   const p = Math.max(0, Math.min(100, Math.round((v || 0) * 100)));
   return `<details class="jg-d${cls}"><summary class="jg-i"><span class="jg-n">${ico} ${esc(nom)}</span><i class="jg-b"><b style="width:${p}%"></b></i><span class="jg-v">${p} %</span></summary>
-    <p class="jg-x"><span>Se remplit : ${esc(remplit)}.</span> <span>À 100 % : ${esc(gain)}.</span> <a href="#guide-doctrines">Guide</a></p></details>`;
+    <p class="jg-x"><span>Se remplit : ${esc(remplit)}.</span> <span>À 100 % : ${esc(gain)}.</span> <a href="#guide-specialite">Guide</a></p></details>`;
 }
-/** Valeur de la jauge de doctrine (avec la reprise de l'ancienne jauge de saisie). */
-const valJauge = (z) => (z.jaugeDoc != null ? z.jaugeDoc : z.doctrine === 'intervention' ? z.jaugeSaisie : 0) || 0;
-/** Jauges sous un service : flagrant délit sous l'Intervention, et la jauge de la doctrine sous son service. */
+/** Spécialité au palier 3 : sa jauge, et le service qui la remplit. */
+function jaugeSpeDe(z) {
+  const id = z.specialite && z.specialite.id;
+  return id && SPECIALITES[id] && palierSpe(z) >= 3 ? SPECIALITES[id] : null;
+}
+/** Jauges sous un service : flagrant délit sous l'Intervention, et la jauge de la spécialité sous son service. */
 function jaugesService(z, s2) {
   const l = [];
   if (s2 === 'intervention') l.push(barreJauge('🚨', 'Flagrant délit', z.jaugeFlagrant, 'tes patrouilles d’Intervention libres après les incidents du soir', '+3 points, +3 PS, +1 de satisfaction, tension d’un quartier chaud −5'));
-  const D = z.doctrine && DOCTRINES[z.doctrine];
-  if (D && D.jauge && D.jauge.service === s2) l.push(barreJauge(D.jauge.ico, D.jauge.nom, valJauge(z), D.jauge.remplit, D.jauge.gain, ' jg-doc'));
+  const Sp = jaugeSpeDe(z);
+  if (Sp && Sp.service === s2) l.push(barreJauge(Sp.jauge.ico, Sp.jauge.nom, z.jaugeSpe, Sp.jauge.remplit, Sp.jauge.gain, ' jg-doc'));
   return l.length ? `<div class="jg-inter">${l.join('')}</div>` : '';
-}
-/** Jauge d'une doctrine sans service propre (Partenaire) : en tête de l'affectation. */
-function jaugeSansService(z) {
-  const D = z.doctrine && DOCTRINES[z.doctrine];
-  if (!D || !D.jauge || D.jauge.service) return '';
-  return `<div class="jg-inter jg-solo">${barreJauge(D.jauge.ico, D.jauge.nom, valJauge(z), D.jauge.remplit, D.jauge.gain, ' jg-doc')}</div>`;
-}
-/** Fenêtre de choix fermée : rappel de la doctrine en vigueur (une ligne ; un toucher déplie force, prix et jauge). */
-function doctrineFixeeHtml(z) {
-  
-  const D = z.doctrine && DOCTRINES[z.doctrine], T = S.state.turn;
-  const k = 'ord-doc-info', ouv = !!(S.ouverts && S.ouverts[k]);
-  const prochain = T < DOCTRINE_SEM2.debut && !z.doctrineSem2 ? `modifiable les jours ${DOCTRINE_SEM2.debut} et ${DOCTRINE_SEM2.fin}` : 'fixée jusqu’à la fin de la saison';
-  if (!D) return ''; // rien en vigueur ni à choisir : pas de carte vide (le prochain choix s'annonce dans les Ordres le moment venu)
-  const m = z.maitrise || 0;
-  return `<details class="card doctrine-pli" id="ord-doctrine" data-k="${k}" aria-label="Doctrine de la zone" ${ouv ? 'open' : ''}>
-    <summary class="pli-ligne" style="list-style:none"><span class="col grow" style="gap:1px;min-width:0;text-align:left"><span class="kicker">Doctrine en vigueur</span><span class="pli-resume">${D.ico} ${esc(D.nom)}${m ? ` · ${'★'.repeat(m + 1)}` : ''} · <span class="muted">${prochain}</span></span></span>${icon('chevron', 16)}</summary>
-    <div class="col" style="gap:6px;margin-top:8px"><span class="small ok">+ ${esc(D.force)}</span><span class="small bad">− ${esc(D.prix)}</span>
-      ${D.jauge ? `<span class="small">${D.jauge.ico} Jauge « ${esc(D.jauge.nom)} » : ${Math.round(valJauge(z) * 100)} %. Se remplit : ${esc(D.jauge.remplit)}. À 100 % : ${esc(D.jauge.gain)}.</span>` : ''}
-      ${m ? `<span class="tiny muted">Maîtrise ${'★'.repeat(m + 1)} : force +${Math.round(MAITRISE * m * 100)} %.</span>` : ''}
-      <a class="small" href="#guide-doctrines">❔ Le guide des doctrines</a></div></details>`;
-}
-/** Choix de la doctrine (règles v2) : les 3 premiers jours de la saison, puis les jours 8 et 9 pour la 2e semaine. */
-function doctrineHtml(z, d) {
-  if (!doctrineOuverte(S.state, z)) return doctrineFixeeHtml(z);
-  const sem2 = doctrineSemaine2(S.state, z);
-  const reste = finFenetreDoctrine(S.state, z) - S.state.turn;
-  const quand = reste <= 0 ? 'jusqu’à 20:00' : `encore ${reste + 1} jours`;
-  const actuelle = z.doctrine && DOCTRINES[z.doctrine];
-  const revue = !!actuelle && !sem2;
-  const choisie = DOCTRINES[d.doctrine || z.doctrine];
-  const etoiles = (m) => '★'.repeat(m + 1);
-  const statut = sem2 && actuelle ? `nouvelle semaine : garde-la (maîtrise ${etoiles(Math.min(2, (z.maitrise || 0) + 1))}) ou changes-en, ${quand}` : revue ? 'doctrines rééquilibrées : tu peux en changer une fois' : `modifiable ${quand}`;
-  if (choisie && !(S.ouverts && S.ouverts['ord-doctrine'])) {
-    return `<section class="card doctrine-pli" id="ord-doctrine" aria-label="Doctrine de la semaine">
-      <button type="button" class="pli-ligne" data-action="doctrine-ouvrir" aria-expanded="false"><span class="col grow" style="gap:1px;min-width:0;text-align:left"><span class="kicker">Doctrine de la semaine</span><span class="pli-resume">${choisie.ico} ${esc(choisie.nom)} · <span class="muted">${statut}</span></span></span><span class="pli-ok">${icon('check', 14)}</span>${icon('chevron', 16)}</button>
-    </section>`;
-  }
-  return `<section class="card doctrine" id="ord-doctrine" aria-label="Doctrine de la semaine" style="gap:8px;border-color:var(--amber-line)">
-    <div class="between"><span class="kicker">${sem2 ? 'Doctrine de la 2e semaine' : 'Doctrine de la semaine'}</span>${choisie ? '<button type="button" class="lien tiny" data-action="doctrine-replier">replier</button>' : ''}</div>
-    ${sem2 && actuelle ? `<p class="small" style="margin:0;color:var(--amber)"><strong>Nouvelle semaine.</strong> Garde ${actuelle.ico} ${esc(actuelle.nom)} : sa maîtrise passe à ${etoiles(Math.min(2, (z.maitrise || 0) + 1))} (force +${Math.round(MAITRISE * Math.min(2, (z.maitrise || 0) + 1) * 100)} %). Ou changes-en : maîtrise et jauge repartent de zéro. Sans choix ${quand}, tu la gardes.</p>`
-      : `<p class="small" style="margin:0">Une vraie force, un vrai prix, et une jauge qui déborde en récompense. Tu la choisis pour la semaine ; en 2e semaine (jours 8 et 9), tu peux la garder ou en changer. <strong>${reste <= 0 ? 'Dernier jour' : `Encore ${reste + 1} jours`}</strong>. Fais défiler →</p>`}
-    ${revue ? `<p class="small" style="margin:0;color:var(--amber)"><strong>Doctrines rééquilibrées.</strong> Tu as choisi ${actuelle.ico} ${esc(actuelle.nom)} : tu peux la garder ou en changer <strong>une seule fois</strong> (${quand}).</p>` : ''}
-    <div class="doc-l">${IDS_DOCTRINES.map((k) => { const x = DOCTRINES[k]; return `<button type="button" class="choice" data-action="doctrine" data-k="${k}" aria-pressed="${(d.doctrine || z.doctrine) === k}" style="text-align:left;align-items:flex-start">
-      <span style="font-size:15px;font-weight:700">${x.ico} ${esc(x.nom)}${(sem2 ? z.doctrine : z.doctrinePrec) === k ? ' <span class="tiny" style="color:var(--amber)">· maîtrise +1</span>' : ''}</span>
-      <span class="s"><span class="ok">+ ${esc(x.force)}</span><br><span class="bad">− ${esc(x.prix)}</span><br><span class="muted">Brille : ${esc(x.brille)}</span></span></button>`; }).join('')}</div>
-    <a class="small" href="#guide-doctrines" style="text-align:center">❔ Tout comprendre : jauges, flagrants délits, maîtrise</a>
-  </section>`;
-}
-
-/**
- * Patrouilles du soir et point chaud (tour de 20 h) : la fiche du quartier choisi (une case = une patrouille de Proximité),
- * la liste de mes quartiers pour en choisir un autre, et le site sensible. Mêmes actions que sur la Carte
- * (data-action « quartier », « patrouille-n ») : même brouillon d'ordres, validé avec le reste.
- */
-function patrouillesOrdres(z, st, saved) {
-  const rp = resumePatrouilles(st, z);
-  if (!rp) return '';
-  const sel = quartierChoisi(st, z);
-  return partieOrdres('patrouilles', 3, 'Patrouilles du soir', rp.resume, rp.ok ? 'ok' : 'am', () => `<div class="col ord-patrouilles" style="gap:10px">
-      <p class="tiny muted" style="margin:0">Tes agents de Proximité patrouillent partout ; ceux que tu envoies ici se concentrent sur un quartier, où la tension baisse davantage. ${z.pointChaud ? 'Le point chaud 🔥 est désamorcé avec 2 patrouilles.' : ''}</p>
-      ${ficheQuartierHtml(st, z, sel)}
-      ${chipsQuartiersHtml(st, z, sel)}
-      ${siteHtml(siteDe(z))}</div>`, { aria: 'Patrouilles du soir', defaut: !rp.ok && !saved && !S.savedOrders ? true : null });
 }
 
 /** Une partie des Ordres : en-tête numéroté (résumé toujours visible), corps déplié à la demande. */
@@ -1191,30 +1007,19 @@ export function renderOrdres() {
   const z = myZone(), st = S.state, d = S.draft, T = st.turn;
   const e = estimations();
   const bl = blessesActifs(z, T), fo = enFormation(z, T);
-  const others = Object.values(st.zones).filter((x) => x.uid !== z.uid);
   const saved = !!S.savedOrders && !S.ordersDirty;
-  const pap = (v) => (v < 0 ? `−${-v}` : v > 0 ? `+${v}` : '±0');
-  const nbEng = Object.values(d.engagements).filter((x) => x.agents > 0).length;
   const dep = d.depenses || {};
   const cab = (z.cabosses || []).length;
   const depKeys = [...(cab ? ['carrosserie'] : []), 'prime', 'prevention', 'soustraitance', 'enqueteurs', 'revision'];
   const nbDep = (dep.reserve ? 1 : 0) + depKeys.filter((k) => dep[k]).length;
-  // Talent « Rallonge budgétaire » (équipé, chef pas à l'hôpital, pas utilisé depuis 7 jours) : une 3e dépense.
-  const talentsEq = d.talents || (z.chef && z.chef.talents) || [];
-  const rallonge = !!(z.chef && !z.chef.hs && talentsEq.includes('rallonge') && !(z.chef.rallongeT != null && T < z.chef.rallongeT + CHEF.semaine));
-  const maxDep = MAX_DEPENSES + (rallonge ? 1 : 0);
-
-  const nbAgentsAff = Object.values(d.engagements).reduce((s2, x) => s2 + (x.agents || 0), 0);
-  const affairesHtml = `<div class="col" style="gap:8px">${st.affaires.map((a) => { const eg = d.engagements[a.id]; return `<div class="between"><span class="small" style="font-weight:600">${esc(a.titre)}</span><span class="tiny ${eg && eg.agents ? 'ok' : 'muted'}" style="white-space:nowrap">${eg && eg.agents ? `${eg.agents} agent${eg.agents > 1 ? 's' : ''}` : a.zone === z.uid ? 'à lancer' : '—'}</span></div>`; }).join('')}
-      <p class="tiny muted" style="margin:0">Les affaires disputées se gèrent au même endroit : engager tes agents, postuler chez un voisin, accepter les candidatures.${nbAgentsAff ? ` ${nbAgentsAff} agent${nbAgentsAff > 1 ? 's' : ''} engagé${nbAgentsAff > 1 ? 's' : ''}, pris sur tes services.` : ''}</p>
-      <a class="btn small primary block" href="#terrain">Gérer les affaires sur la Carte</a></div>`;
+  const maxDep = MAX_DEPENSES;
 
   const decisionHtml = decisionPicker(z, T, d);
 
   const depensesHtml = `<div class="col" style="gap:6px">
       <p class="tiny muted" style="margin:0">Agents de réserve : ${dep.reserve ? `<strong>${dep.reserve}</strong> en ${SERVICE_LABELS[dep.reserveService]} (${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€)` : 'aucun'} · ${'ils se règlent dans leur tuile'}.</p>
     </div>
-    ${`<p class="tiny ${nbDep >= maxDep ? 'warn' : 'muted'}" style="margin:0">${MAX_DEPENSES} dépenses par jour au plus${rallonge ? ' (3 aujourd’hui : ta rallonge budgétaire est disponible)' : ''} (les agents de réserve comptent pour une, la carrosserie ne compte pas) : ${nbDep - (dep.carrosserie ? 1 : 0)} sur ${maxDep}.</p>`}
+    ${`<p class="tiny ${nbDep >= maxDep ? 'warn' : 'muted'}" style="margin:0">${MAX_DEPENSES} dépenses par jour au plus (les agents de réserve comptent pour une, la carrosserie ne compte pas) : ${nbDep - (dep.carrosserie ? 1 : 0)} sur ${maxDep}.</p>`}
     <div class="col" style="gap:6px">${depKeys.map((k) => `
       <button type="button" class="choice" data-action="dep-toggle" data-k="${k}" aria-pressed="${!!dep[k]}" ${!dep[k] && k !== 'carrosserie' && nbDep - (dep.carrosserie ? 1 : 0) >= maxDep ? 'disabled' : ''} style="flex-direction:row;justify-content:space-between;text-align:left">
         <span class="col" style="gap:1px;align-items:flex-start"><span style="font-size:14px">${esc(DEPENSES[k].nom)}</span><span class="s">${esc(DEPENSES[k].texte)}${k === 'carrosserie' && Array.isArray(dep.carrosserie) && dep.carrosserie.length < cab ? ` · ${dep.carrosserie.length} sur ${cab} choisi${dep.carrosserie.length > 1 ? 's' : ''} depuis l’HP` : ''}${k === 'revision' ? ` · état actuel ${Math.round(100 - z.usure)} %${z.stats && z.stats.risqueAccident != null ? ` · risque d’accident hier ${fmt1(z.stats.risqueAccident)} %` : ''}` : ''}${k === 'carrosserie' ? ` · ${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} : sans réparation, −${Math.min(3, cab)} de satisfaction et de réputation par tour` : ''}</span></span><span class="mono small">${fmt1(k === 'carrosserie' ? coutCarrosserie(z, dep.carrosserie || true) : k === 'prime' ? coutPrime(z, T) : DEPENSES[k].cout)} k€${k === 'prime' && coutPrime(z, T) > DEPENSES.prime.cout ? ' (déjà versée hier)' : ''}</span></button>`).join('')}
@@ -1222,8 +1027,8 @@ export function renderOrdres() {
     <p class="tiny muted" style="margin:0">Payées à 20:00 si le budget le permet (${fmt1(z.budget)} k€). Elles ne sont pas reconduites le lendemain.</p>`;
 
   return `<main class="screen">
-    <header class="between" style="align-items:flex-start;gap:10px"><div class="col" style="gap:3px;min-width:0"><h1 class="big">Ordres du tour ${T}</h1>
-      ${`<p class="sub">${e.dispo} agents${e.enquete ? ` · ${e.enquete} en mission` : ''}${bl || fo || z.absents ? ` · ${bl + fo + (z.absents || 0)} absent${bl + fo + (z.absents || 0) > 1 ? 's' : ''}` : ''} · secrets jusqu’à 20:00</p>`}${(() => { const l = ligneAgentsFilet(); return l ? `<a class="tiny warn" href="#filet" style="text-decoration:none">${esc(l)}</a>` : ''; })()}</div>
+    <header class="between" style="align-items:flex-start;gap:10px"><div class="col" style="gap:3px;min-width:0"><h1 class="big">Gestion · tour ${T}</h1>
+      ${`<p class="sub">${e.dispo} agents${e.enquete ? ` · ${e.enquete} en mission` : ''}${bl || fo || z.absents ? ` · ${bl + fo + (z.absents || 0)} absent${bl + fo + (z.absents || 0) > 1 ? 's' : ''}` : ''} · secrets jusqu’à 20:00</p>`}</div>
       <span class="statut-ordres ${saved ? 'ok' : ''}">${saved ? `${icon('check', 13)} Validés` : S.savedOrders ? 'Modifiés' : 'Pas validés'}</span></header>
 
     ${`<section class="card ord-fiche" aria-label="Ce soir">
@@ -1232,10 +1037,8 @@ export function renderOrdres() {
       : !S.savedOrders && !S.ordersDirty && z.dernierOrdre ? `<button class="btn primary block" data-action="save-orders">Reprendre les ordres d’hier et valider</button>
         <p class="tiny muted" style="margin:-4px 0 0;text-align:center">Ou ajuste ci-dessous, puis valide.</p>` : ''}
 
-    ${(() => { const h = criseHtml(); if (!h) return ''; const t = criseTodo(); return t ? partieOrdres('crise', '🏛', 'Cellule de crise', esc(t.ok ? t.s : 'vote secret avant 20:00 · pas encore voté'), t.ok ? 'ok' : 'am', () => h, { defaut: false }) : `<div id="ord-crise">${h}</div>`; })()}
-    ${doctrineOuverte(st, z) ? partieOrdres('doct', '🧭', 'Doctrine de la semaine', (d.doctrine || z.doctrine) && DOCTRINES[d.doctrine || z.doctrine] ? `${DOCTRINES[d.doctrine || z.doctrine].ico} ${esc(DOCTRINES[d.doctrine || z.doctrine].nom)}${doctrineSemaine2(st, z) && !d.doctrine ? ' · garde-la ou changes-en' : ''}` : 'à choisir', d.doctrine || (z.doctrine && !doctrineSemaine2(st, z)) ? 'ok' : 'am', () => { const sv = S.ouverts; S.ouverts = { ...(sv || {}), 'ord-doctrine': true }; const h = doctrineHtml(z, d); S.ouverts = sv; return h; }, { aria: 'Doctrine de la semaine', defaut: false }) : doctrineHtml(z, d)}
     ${sousTutelle(z, T) ? `<section class="card red" aria-label="Zone sous tutelle"><span class="kicker" style="color:var(--red-soft)">Zone sous tutelle · jusqu’au tour ${z.tutelle.fin}</span>
-      <span class="small">Pas de rythme renforcé, d’agents de réserve, de défi ni d’enchère. Grande décision : recruter seulement.</span></section>` : ''}
+      <span class="small">Pas de rythme renforcé ni d’agents de réserve. Grande décision : recruter seulement.</span></section>` : ''}
     ${primeHtml()}
     ${e.opx.op ? (() => { const op = e.opx.op; const jour = T - op.tourDebut + 1; const couv = Math.round(e.opx.couverture * 100); const niv = { complet: 'Complet', reduit: 'Réduit', aucun: 'Aucun' }[d.operation] || 'Complet'; return `<details class="card red pli-ordres" data-k="ord-op" aria-label="Opération d'envergure" ${ouvertOrdres('ord-op', e.opx.couverture < 0.9 && d.operation !== 'aucun') ? 'open' : ''}>
       <summary><span class="col grow" style="gap:1px;min-width:0"><span class="between" style="gap:8px"><span class="kicker" style="color:var(--red-soft)">Opération d’envergure${op.duree > 1 ? ` · jour ${jour} sur ${op.duree}` : ''}</span><span class="pill amber">${op.recompense} pts</span></span>
@@ -1258,7 +1061,6 @@ export function renderOrdres() {
       ${S.ventilation ? ventilationHtml(z, e) : ''}
       <div class="barre-aff" id="barre-aff" aria-hidden="true">${barreAffectation(e)}</div>
       ${''}
-      ${jaugeSansService(z)}
       ${e.reste > 0 ? placerLibresHtml(e) : ''}
       <div id="col-affect">${colonneHtml(z, e)}</div>
       ${''}
@@ -1270,16 +1072,14 @@ export function renderOrdres() {
 
     ${(() => { const ov = ouvertureOrdres(z); return ov.nouveau.length ? `<p class="small" style="margin:0;color:var(--amber)">Nouveau dans tes ordres : ${ov.nouveau.map(esc).join(', ')}.</p>` : ov.prochain ? `<p class="tiny muted" style="margin:0">Jour ${ov.jour} de ta prise de fonction : ${esc(ov.prochain[2])} s’ouvre au jour ${ov.prochain[1]}.</p>` : ''; })()}
     ${suiviDecisionsHtml(z, T)}
-    ${patrouillesOrdres(z, st, saved)}
+    ${partieOrdres('spe', 3, 'Spécialité', resumeSpecialite(z, d), d.specialite || z.specialite ? 'ok' : 'am', () => specialiteHtml(z, d), { defaut: !z.specialite && !d.specialite ? true : null })}
     ${partieOrdres('decision', 4, 'Grande décision', `${esc(d.decision || d.sansDecision ? decisionLabel(z, d.decision) : 'une seule par soir · pas encore choisie')}${d.decision ? ` · ${coutDecision(z, d.decision)} k€` : ''}`, d.decision || d.sansDecision ? 'ok' : 'am', () => decisionHtml, { defaut: !d.decision && !d.sansDecision })}
     ${partieOrdres('depenses', 5, ouvertureOrdres(z).depenses ? 'Dépenses du jour' : 'Agents de réserve', ouvertureOrdres(z).depenses ? (dep.reserve ? `réserve : ${dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun'} · ` : '') + (cab && !dep.carrosserie ? `${cab} véhicule${cab > 1 ? 's' : ''} cabossé${cab > 1 ? 's' : ''} à réparer${nbDep ? ` · ${nbDep} dépense${nbDep > 1 ? 's' : ''}` : ''}` : nbDep ? `${nbDep} dépense${nbDep > 1 ? 's' : ''} · ${fmt1(e.coutDep)} k€` : 'Aucune') : dep.reserve ? `${dep.reserve} en ${SERVICE_LABELS[dep.reserveService || 'intervention']} · ${fmt1(dep.reserve * DEPENSES.reserve.cout)} k€` : 'Aucun', cab > 0 && !dep.carrosserie ? 'am' : nbDep ? 'ok' : '', () => `${!sousTutelle(z, T) ? `<div class="affect">${reserveHtml(z, d, e)}</div>` : ''}${ouvertureOrdres(z).depenses ? depensesHtml : ''}`)}
-    ${pliGroupe([z.chef ? pliItem('chef', 'Chef de corps', resumeChefOrdres(z, d), `<p class="tiny muted" style="margin:0">Agenda, première ligne, service du réseau et talents se règlent dans l’onglet Chef. Ils partent avec tes ordres de 20:00.</p><a class="btn small primary block" href="#chef">Ouvrir l’onglet Chef</a>`, (z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)), (z.chef.nouveauxTalents || []).some((t) => !(d.talents || z.chef.talents || []).includes(t)) ? 'talent' : null) : null,
+    ${partieOrdres('arm', 6, 'Armurerie', resumeArmurerieOrdres(z, d), d.materiel && d.materiel.acheter ? 'ok' : '', () => armurerieHtml(z, d), { defaut: false })}
+    ${pliGroupe([
     ouvertureOrdres(z).nondroit ? pliItem('nondroit', 'Zone de non-droit', (() => { const n = agentsND(d); const sects = Object.keys(d.secteurs || {}).filter((k) => d.secteurs[k]); return n ? `${n} agent${n > 1 ? 's' : ''} sur ${sects.map((k) => esc(nomSecteur(k))).join(', ')}` : 'Aucun agent ce soir'; })(), `<div class="col" style="gap:6px">${Object.entries(d.secteurs || {}).filter(([, n]) => n).map(([k, n]) => `<div class="between"><span class="small" style="font-weight:600">${esc(nomSecteur(k))}</span><span class="tiny ok">${n} agent${n > 1 ? 's' : ''}</span></div>`).join('')}
       <p class="tiny muted" style="margin:0">Les agents envoyés sont pris sur tes services pour la journée. Qui y va et où : sur la Carte.</p>
       <a class="btn small primary block" href="#terrain">Choisir les secteurs sur la Carte</a></div>`) : null,
-    !ouvertureOrdres(z).equipe ? null : pliItem('equipe', 'Mon équipe', (() => { const ms = missionsValides(d); const m = ms.length === 1 && (z.equipe || []).find((x) => x.role === ms[0].role); const nbP = Object.keys(d.postes || {}).length; if (!ms.length && nbP) return `${nbP} figure${nbP > 1 ? 's changent' : ' change'} de service ce soir`; return ms.length > 1 ? `${ms.length} figures en mission` : m ? `${esc(m.prenom)} en mission ${ms[0].type === 'nondroit' ? 'en zone de non-droit' : 'en renfort'}` : 'Chacun encadre son service'; })(), equipeOrdres(z, d)),
-    st.affaires.length && ouvertureOrdres(z).affaires ? pliItem('affaires', 'Affaires disputées', nbEng ? `${nbEng} affaire${nbEng > 1 ? 's' : ''} engagée${nbEng > 1 ? 's' : ''} sur ${st.affaires.length}` : `${st.affaires.length} affaire${st.affaires.length > 1 ? 's' : ''} ouverte${st.affaires.length > 1 ? 's' : ''} · aucun agent engagé`, `<div class="col" style="gap:8px">${affairesHtml}</div>`) : null,
-    pliItem('pistes', 'Tuyaux', resumePistes(z, d), pistesOrdresHtml(z, d)),
     ])}
 
     <a class="small" href="#guide-ordres" style="text-align:center;padding:10px">Comment fonctionnent les ordres ?</a>
@@ -1289,7 +1089,7 @@ export function renderOrdres() {
 
 /**
  * Situation du jour qui demande des agents dans un service (évasion, conflit…) : combien seront vraiment
- * comptés à 20:00, après l'opération, la relève, l'audition, la FIPA et l'opération commune (comme la résolution).
+ * comptés à 20:00, après l'opération, l'audition et la traque (comme la résolution).
  */
 export function besoinService(sg) {
   const d = S.draft || {};

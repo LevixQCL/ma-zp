@@ -1,15 +1,12 @@
 // Logistique (bâtiments de la zone) et détail du budget : ce qui coûte, ce qui rapporte.
-import { PACTES, pactesDe, partenaire, pacteImpossible } from '../engine/pactes.js';
-import { portraitChef } from './chef.js';
 import { titresDefi } from './defis.js';
 import { S, esc, icon, fmt1, myZone } from './common.js';
-import { gradeFor, LOTS, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, DEPENSES, USURE, nbAnnexes, emplacementsAnnexes } from '../engine/constants.js';
+import { gradeFor, BATIMENTS, BATIMENT_MAX, INFRAS, ENTRETIEN_ANNEXE, PEREQUATION, SUBSIDE, DEPENSES, USURE, nbAnnexes, emplacementsAnnexes } from '../engine/constants.js';
 import { parcVehicules, cabossesChoisis } from '../engine/parc.js';
 import { RELANCE_PS } from '../quests/quests.js';
 import { DECOR, SKINS, decorValide, decorDebloque, conditionDecor, decorCompte, skinsValides, skinDe, earlyBirdEligible, skinsEnVente, psDispo, BOUTIQUE } from '../engine/decor.js';
 import { coutCarrosserie } from '../engine/sinistres.js';
 import { sceneHp, vehiculeSvg } from './scene-hp.js';
-import { fiabilite } from '../engine/fipa.js';
 import { siteDe } from '../engine/sites.js';
 import { iconeSite } from './plan.js';
 import { moyenneIpz, operationActive, fraisFixes, coutDepenses, coutDecision, decisionImpossible, capaciteAgents, capaciteVehicules, effectifPrevu, perequation, subsideAgents } from '../engine/zone.js';
@@ -19,7 +16,7 @@ import { SERVICE_LABELS, scoreRevenu, BUDGET_IPZ, IPZ_POIDS } from '../engine/co
 import { vitesseCombi, MODELES, prixRevente, vitesseVehicule, rendementFlotte, RENDEMENT } from '../engine/flotte.js';
 import { aideBtn } from './aide.js';
 import { jaugeSkinsLigne } from './incidents.js';
-import { PERIL, absT } from '../engine/rivalites.js';
+import { PERIL } from '../engine/peril.js';
 import { estimations, achatVehiculeHtml } from './ordres.js';
 
 const k = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${fmt1(Math.abs(v))} k€`;
@@ -71,7 +68,7 @@ export function ouvrirBudget() {
     <h3 class="compta-t">Tes choix de ce soir</h3>
     ${p.choix.length ? lignes(p.choix) : '<p class="tiny muted" style="margin:0">Aucune dépense prévue dans tes ordres.</p>'}
     <div class="between compta total"><span>Budget estimé après 20:00</span><span class="mono ${p.apres >= 0 ? '' : 'bad'}" style="font-weight:700">${fmt1(p.apres)} k€</span></div>
-    <p class="tiny muted" style="margin:0">Hors imprévus, primes, FIPA et Conseil. Une dépense du jour est refusée si le budget ne suffit pas au moment de la payer.</p>
+    <p class="tiny muted" style="margin:0">Hors imprévus et primes. Une dépense du jour est refusée si le budget ne suffit pas au moment de la payer.</p>
     ${c && c.lignes ? `<h3 class="compta-t">Relevé du dernier tour (tour ${c.tour})</h3>
       ${lignes(c.lignes)}
       <div class="between compta total"><span>${fmt1(c.debut)} k€ → ${fmt1(c.fin)} k€</span><span class="mono ${c.fin - c.debut >= 0 ? 'ok' : 'bad'}">${k(Math.round((c.fin - c.debut) * 10) / 10)}</span></div>` : ''}
@@ -118,7 +115,6 @@ export function sceneZone(z, st, decor = z.decor, skins = skinsValides(z, z.skin
     fondateur: !!z.fondateur,
     affiches: z.affiches || [],
     trace: z.trace && z.trace.tour >= T - 1 && st.zones[z.trace.auteur] ? { type: z.trace.type, couleur: st.zones[z.trace.auteur].couleur } : null,
-    poste: (() => { const p = (st.postes || []).find((x) => x.cible === z.uid && x.jusqua >= absT(st)); return p && st.zones[p.auteur] ? { couleur: st.zones[p.auteur].couleur } : null; })(),
     ...extra,
   });
 }
@@ -207,42 +203,29 @@ export function affichesHtml(z, { moi = false } = {}) {
 }
 
 /** Hôtel de police d'une autre zone (depuis la Carte ou le classement). */
-/** Dans la fiche d'un collègue : le pacte en cours avec lui, ou un raccourci pour lui en proposer un. */
-function pacteVoisinHtml(st, uid) {
-  const me = S.user && S.user.uid;
-  const p = pactesDe(st, me).find((x) => partenaire(x, me) === uid);
-  if (p) return `<a class="pacte-voisin" href="#pactes" data-close><span aria-hidden="true">🤝</span><span class="col grow" style="gap:0"><b>${esc(PACTES[p.type].nom)}</b><span class="tiny muted">${p.etape === 'actif' ? 'pacte en cours avec cette zone' : 'proposé, en attente'}</span></span>${icon('chevron', 16)}</a>`;
-  const r = pacteImpossible(st, me, uid);
-  return `<button type="button" class="btn small primary block" data-action="pacte-avec" data-u="${esc(uid)}" ${r ? 'disabled' : ''}>🤝 Proposer un pacte${r ? ` · ${esc(r)}` : ''}</button>`;
-}
-
 export function ouvrirHpVoisin(uid) {
   const st = S.state, z = st.zones[uid];
   if (!z) return;
   const moi = z.uid === (S.user && S.user.uid);
   const d = moi ? monDecor(z) : decorValide(z, z.decor);
   const annexes = Object.entries(INFRAS).filter(([id]) => z.infra && z.infra[id]).map(([, i]) => i.nom);
-  const lots = (z.lots || []).map((l) => LOTS[l.id] && LOTS[l.id].nom).filter(Boolean);
   ouvrirPanneau(`
     <div class="between" style="align-items:flex-start"><div class="col" style="gap:2px"><span class="mono tiny" style="color:var(--blue-soft)">ZP ${esc(z.code)}</span><h2 id="aide-titre" class="aide-titre" style="margin:0">${esc(z.nom)}</h2>
-      <span class="tiny muted">${moi ? 'Ta zone' : esc((S.players && S.players[uid] && S.players[uid].pseudo) || 'Chef de zone')} · ${esc(gradeFor(z.ps || 0).nom)} · ${(z.trophees || []).length} trophée${(z.trophees || []).length > 1 ? 's' : ''}</span></div>
+      <span class="tiny muted">${moi ? 'Ta zone' : esc((S.players && S.players[uid] && S.players[uid].pseudo) || 'Responsable de zone')} · ${esc(gradeFor(z.ps || 0).nom)} · ${(z.trophees || []).length} trophée${(z.trophees || []).length > 1 ? 's' : ''}</span></div>
       <button class="iconbtn" data-close aria-label="Fermer" style="width:32px;height:32px;margin:-4px -6px 0 0;font-size:20px">×</button></div>
     <div class="scene-voisin">${moi ? sceneZone(z, st, d, mesSkins(z).choix) : sceneZone(z, st, d)}</div>
     ${affichesHtml(z, { moi })}
-    ${!moi ? pacteVoisinHtml(st, uid) : ''}
-    ${z.chef ? `<button type="button" class="btn small outline block" data-action="bureau-ouvrir" data-u="${esc(uid)}">${portraitChef(uid, 22, { galons: false })} Voir son chef de corps</button>` : ''}
     ${titresDefi(uid).length ? `<p class="small" style="margin:0">${titresDefi(uid).map((t) => `🏆 <strong>${esc(t.titre)}</strong> <span class="muted">(défi, niv. ${t.niveau})</span>`).join(' · ')}</p>` : ''}
     <div class="bats hp-logis">
       <div class="bat"><span class="tiny muted">Bâtiment</span><span style="font-weight:700">Niveau ${z.batiments.bureaux}</span></div>
       <div class="bat"><span class="tiny muted">Garage</span><span style="font-weight:700">Niveau ${z.batiments.garage} · ${z.vehicules} véhicule${z.vehicules > 1 ? 's' : ''}</span></div>
     </div>
-    <p class="small" style="margin:0"><span class="muted">Annexes :</span> ${annexes.length ? esc(annexes.join(', ')) : 'aucune'}${lots.length ? `<br><span class="muted">Lots :</span> ${esc(lots.join(', '))}` : ''}</p>
+    <p class="small" style="margin:0"><span class="muted">Annexes :</span> ${annexes.length ? esc(annexes.join(', ')) : 'aucune'}</p>
     ${estChampion(z, st) ? '<p class="small" style="margin:0;color:var(--amber)">★ Champion de la semaine</p>' : ''}
     ${(z.plaques || []).length ? `<p class="small" style="margin:0"><span class="muted">Podium :</span> ${z.plaques.map((pl) => `${pl.rang === 1 ? '1re' : `${pl.rang}e`} place saison ${pl.season}`).join(', ')}</p>` : ''}
     <div class="between small"><span class="muted">IPZ moyen</span><span class="mono">${fmt1(moyenneIpz(z))}</span></div>
-    <div class="between small"><span class="muted">FIPA</span><span>${esc(fiabilite(z))}</span></div>
     ${siteDe(z) ? `<div class="between small"><span class="muted">Site sensible</span><span class="row" style="gap:4px;color:${siteDe(z).couleur}">${iconeSite(siteDe(z).id, siteDe(z).couleur, 14)}${esc(siteDe(z).nom)}</span></div>` : ''}
-    ${z.peril || z.tutelle ? `<p class="small bad" style="margin:0">${z.peril ? 'Zone en péril : un coup de main rapporte de la réputation.' : 'Zone sous tutelle.'}</p>` : ''}
+    ${z.peril || z.tutelle ? `<p class="small bad" style="margin:0">${z.peril ? 'Zone en péril.' : 'Zone sous tutelle.'}</p>` : ''}
     <p class="tiny muted" style="margin:0">Façade ${esc(DECOR.facade.options[d.facade].nom.toLowerCase())} · néon ${esc(DECOR.neon.options[d.neon].nom.toLowerCase())}${d.abords !== 'aucun' ? ` · ${esc(DECOR.abords.options[d.abords].nom.toLowerCase())}` : ''}</p>
     ${moi ? '' : `<button type="button" class="btn block" data-action="ecrire-a" data-uid="${esc(uid)}">✉ Écrire à ${esc(z.nom)}</button>`}`);
 }

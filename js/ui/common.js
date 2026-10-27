@@ -1,5 +1,4 @@
 import { nonLus, invitations } from './prive.js';
-import { aFairePactes } from './pactes.js';
 import { terrainAFaire } from './terrain.js';
 // Outils partagés par tous les écrans.
 import { gradeFor, nextGrade, ENIGMES } from '../engine/constants.js';
@@ -128,8 +127,9 @@ function pastillesVues() {
 }
 function ecrirePastillesVues(v) { try { localStorage.setItem(clePastilles(), JSON.stringify(v)); } catch (e) { /* pas de stockage : la mémoire suffit pour la session */ } }
 
-let chefAFaireTab = () => false;
-export function brancherChefTab(fn) { chefAFaireTab = fn; }
+// Enquête en direct : branchée par app.js (pièces arrivées depuis la dernière visite, verdict tombé).
+let enqueteAFaire = () => '';
+export function brancherEnqueteTab(fn) { enqueteAFaire = fn; }
 // Le central (calque Ma zone de la Carte) : branché par app.js (évite un import circulaire avec central.js).
 // Le compte est gardé une minute du central (ou jusqu'à la prochaine action) : la barre est redessinée à chaque écran.
 let centralAFaire = () => 0, centralCle = () => null, centralMemo = { cle: null, n: 0 };
@@ -144,20 +144,20 @@ export function aFaireCentralTab() {
     return n;
   } catch (e) { return 0; }
 }
+const enqueteAFaireSur = () => { try { return String(enqueteAFaire() || ''); } catch (e) { return ''; } };
 export function tabbar(active, { questBadge = false, radioBadge = false } = {}) {
   const st = S.state, me = S.user && st && st.zones ? st.zones[S.user.uid] : null;
   // L'ancien écran Terrain est un calque de la Carte.
-  const tabs = [['hp', 'HP'], ['ordres', 'Ordres'], ['carte', 'Carte'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['chef', 'Brigade'], ['radio', 'Radio']];
+  const tabs = [['hp', 'Accueil'], ['ordres', 'Gestion'], ['carte', 'Carte'], ['enquete', 'Enquête'], ['quete', 'Énigmes'], ['radio', 'Radio']];
   if (active === 'terrain') active = 'carte';
   const nbJour = slotsCompte().length;
   const faites = (S.questResults || []).some((r) => r && (r.statut === 'delegue' || r.statut === 'quiz')) ? nbJour : slotsCompte().filter((k) => { const r = (S.questResults || [])[k]; return r && (r.statut === 'ok' || r.statut === 'rate'); }).length;
   const dots = {
     ordres: !S.savedOrders || S.ordersDirty,
-    enquete: !!(st && (st.traques || []).length && !(S.draft && S.draft.traque)),
+    enquete: !!(st && (st.traques || []).length && !(S.draft && S.draft.traque)) || !!enqueteAFaireSur(),
     quete: questBadge || faites < nbJour,
-    radio: radioBadge || (() => { const n = nonLus(); return n.radio + n.prive > 0 || invitations().some((i) => !i.fait && i.href !== '#pactes'); })(),
-    carte: aFairePactes().some((x) => !x.fait) || terrainAFaire() > 0,
-    chef: chefAFaireTab(),
+    radio: radioBadge || (() => { const n = nonLus(); return n.radio + n.prive > 0 || invitations().some((i) => !i.fait); })(),
+    carte: terrainAFaire() > 0,
   };
   // Pastille = « du nouveau depuis ta dernière visite » : elle s'éteint quand tu ouvres la page et ne se rallume
   // que si ce qu'elle signale change (nouveau tour, nouvelle demande…). Exception : des ordres modifiés mais
@@ -166,9 +166,8 @@ export function tabbar(active, { questBadge = false, radioBadge = false } = {}) 
   const sig = {
     ordres: T,
     quete: `${T}:${faites}`,
-    carte: `${T}:${dots.carte ? aFairePactes().filter((x) => !x.fait).map((x) => x.titre).join('|') : ''}:${terrainAFaire()}`,
-    enquete: `${T}:${st ? (st.traques || []).length : 0}`,
-    chef: `${T}:${dots.chef ? 1 : 0}`,
+    carte: `${T}:${terrainAFaire()}`,
+    enquete: `${T}:${st ? (st.traques || []).length : 0}:${enqueteAFaireSur()}`,
   };
   const vus = pastillesVues();
   if (sig[active] !== undefined && vus[active] !== sig[active]) { vus[active] = sig[active]; ecrirePastillesVues(vus); }
@@ -177,7 +176,7 @@ export function tabbar(active, { questBadge = false, radioBadge = false } = {}) 
   const nCentral = st && me ? aFaireCentralTab() : 0;
   if (nCentral > 0 && active !== 'carte') dots.carte = true;
   return `<nav class="tabs" aria-label="Navigation principale">${tabs.map(([id, label]) => `
-    <a href="#${id}" ${active === id ? 'aria-current="page"' : ''} ${id === 'enquete' ? 'class="centre"' : ''}>${id === 'enquete' ? `<span class="rond">${icon(id, 26)}</span>` : icon(id)}<span>${id === 'radio' ? 'Radio' : label}</span>${dots[id] ? `<span class="dot" aria-label="${id === 'carte' && nCentral ? `${nCentral} à faire au central` : 'à faire'}"></span>` : ''}</a>`).join('')}
+    <a href="#${id}" ${active === id ? 'aria-current="page"' : ''} ${id === 'enquete' ? 'class="centre"' : ''}>${id === 'enquete' ? `<span class="rond">${icon(id, 26)}</span>` : icon(id)}<span>${label}</span>${dots[id] ? `<span class="dot" aria-label="${id === 'carte' && nCentral ? `${nCentral} à faire au central` : 'à faire'}"></span>` : ''}</a>`).join('')}
   </nav>`;
 }
 

@@ -3,6 +3,8 @@
 // et le vrai mobile nommé pendant la confrontation. Tout part avec les ordres de 20:00, sauf les coups de pouce
 // (lus sur l'appareil, gardés dans le carnet) et les relectures (affichées dès que la pièce qui éclaire est au dossier).
 import { S, esc } from './common.js';
+import { dejaUtilisees, piecesEnRoute } from './enquete-direct.js';
+import { DIRECT } from '../engine/enquete-direct.js';
 import { titrePiece, opposables, pieceRecoupement, RECOUP } from '../engine/enquete.js';
 import { lireCarnet, ecrireCarnet } from './enquete.js';
 
@@ -23,29 +25,27 @@ export function relecturesHtml(aff, f, connus, { petit = false } = {}) {
 /** Bouton « recouper » sous une pièce, et raccourcis vers les pièces qui lui sont reliées par une ficelle. */
 export function recoupBoutons(aff, dos, f, liens = []) {
   if (!aff.recoupements || !opposables(aff, dos).has(f)) return '';
-  const d = S.draft;
-  const prevu = d.recoup && d.recoup.includes(f);
+  const fait = dejaUtilisees().recoup >= DIRECT.recoupParTour;
+  const prevu = piecesEnRoute().some((x) => x.src === 'recoup');
   const relies = [...new Set(liens.filter(([a, b]) => a === f || b === f).map(([a, b]) => (a === f ? b : a)))].filter((x) => opposables(aff, dos).has(x) && x !== f);
   return `<div class="tb-recoup">
-    <button type="button" class="btn small ${prevu ? 'primary' : 'outline'}" data-action="tab-ouvrir" data-tid="rec|${esc(f)}">${prevu ? `✓ Recoupement prévu ce soir` : `🔗 Recouper avec une autre pièce (${RECOUP.cout} k€)`}</button>
-    ${relies.length && !prevu ? `<span class="tiny muted">Reliée par une ficelle à : ${relies.map((x) => `<button type="button" class="tb-lien" data-action="recoup-piece" data-a="${esc(f)}" data-b="${esc(x)}">${esc(nom(aff, x))}</button>`).join(' · ')}</span>` : ''}
+    <button type="button" class="btn small outline" data-action="tab-ouvrir" data-tid="rec|${esc(f)}" ${fait ? 'disabled' : ''}>${prevu ? '🔗 Recoupement en cours' : fait ? '🔗 Recoupement déjà fait aujourd’hui' : `🔗 Recouper avec une autre pièce (${RECOUP.cout} k€)`}</button>
+    ${relies.length && !fait ? `<span class="tiny muted">Reliée par une ficelle à : ${relies.map((x) => `<button type="button" class="tb-lien" data-action="recoup-piece" data-a="${esc(f)}" data-b="${esc(x)}">${esc(nom(aff, x))}</button>`).join(' · ')}</span>` : ''}
   </div>`;
 }
 
 /** Volet du recoupement : la pièce de départ, puis la seconde à lui opposer. */
 export function voletRecoup(aff, dos, f) {
-  const d = S.draft;
   const op = [...opposables(aff, dos)].filter((x) => x !== f);
   const deja = new Set((dos.recoups || []).map((r) => (Array.isArray(r) ? r.join('|') : r)));
+  const fait0 = dejaUtilisees().recoup >= DIRECT.recoupParTour;
   const ligne = (x) => {
-    const on = d.recoup && d.recoup.includes(f) && d.recoup.includes(x);
     const fait = deja.has([f, x].sort().join('|'));
-    return `<button type="button" class="tb-trajet-l ${on ? 'on' : ''}" style="--c:var(--blue-soft)" data-action="recoup-piece" data-a="${esc(f)}" data-b="${esc(x)}" aria-pressed="${on}" ${fait ? 'disabled' : ''}><span>${esc(nom(aff, x))}</span><strong>${on ? '✓' : fait ? 'déjà fait' : ''}</strong></button>`;
+    return `<button type="button" class="tb-trajet-l" style="--c:var(--blue-soft)" data-action="recoup-piece" data-a="${esc(f)}" data-b="${esc(x)}" ${fait || fait0 ? 'disabled' : ''}><span>${esc(nom(aff, x))}</span><strong>${fait ? 'déjà fait' : ''}</strong></button>`;
   };
-  return `<span class="tb-ligne-k" style="color:var(--blue-soft)">Recoupement · ${RECOUP.cout} k€ · un par soir</span><span class="tb-titre">${esc(nom(aff, f))}</span>
-    <p class="small muted" style="margin:0">Choisis la pièce à mettre en face. Tes enquêteurs comparent les deux et vérifient ce qui les relie : certaines paires apprennent du neuf, la plupart rien. « Rien de neuf » ne prouve rien. Résultat ce soir à 20:00.</p>
-    ${op.map(ligne).join('')}
-    ${d.recoup ? '<button type="button" class="btn small ghost" data-action="recoup-annuler">Annuler le recoupement</button>' : ''}`;
+  return `<span class="tb-ligne-k" style="color:var(--blue-soft)">Recoupement · ${RECOUP.cout} k€ · un par jour</span><span class="tb-titre">${esc(nom(aff, f))}</span>
+    <p class="small muted" style="margin:0">${fait0 ? 'Tu as déjà lancé un recoupement aujourd’hui. Reviens après le calcul de 20:00.' : `Touche la pièce à mettre en face : le recoupement part tout de suite et la réponse arrive en ${DIRECT.duree.recoup} minutes environ. Certaines paires apprennent du neuf, la plupart rien. « Rien de neuf » ne prouve rien.`}</p>
+    ${op.map(ligne).join('')}`;
 }
 
 /** Volet de l'hypothèse soumise au juge : qui, et quand. Le juge répond ce soir, à partir du dossier. */
@@ -85,25 +85,22 @@ export function retournerPouce(aff, cle) {
 /** Confrontation : le vrai mobile, en bonus. */
 export function mobileHtml(aff) {
   if (!aff.mobiles) return '';
-  const m = S.draft.mobile;
+  const m = S.mobileSel;
   return `<span class="tb-ligne-k">Et pourquoi ? · bonus si tu vises juste</span>
     ${aff.mobiles.map((t, k) => `<button type="button" class="tb-trajet-l ${m === k ? 'on' : ''}" style="--c:var(--amber)" data-action="mobile-choix" data-m="${k}" aria-pressed="${m === k}"><span>${esc(t)}</span><strong>${m === k ? '✓' : ''}</strong></button>`).join('')}
     <p class="tiny muted" style="margin:0">Facultatif. Un mauvais mobile ne fait pas échouer les aveux.</p>`;
 }
 
-/** Résumé de ce qui part ce soir (volet « Ce soir »). */
+/** Ce qui part à 20:00 (hypothèse au juge), et les raccourcis. */
 export function soirPlusHtml(aff) {
   const d = S.draft;
   const out = [];
-  if (d.recoup) out.push(`<div class="tb-boite-l"><span class="small grow" style="font-weight:600">Recoupement · « ${esc(nom(aff, d.recoup[0]))} » × « ${esc(nom(aff, d.recoup[1]))} »</span><button type="button" class="btn small ghost" data-action="recoup-annuler" aria-label="Annuler le recoupement">✕</button></div>`);
   if (d.hypo && Number.isInteger(d.hypo.i) && Number.isInteger(d.hypo.s)) out.push(`<div class="tb-boite-l"><span class="small grow" style="font-weight:600">Hypothèse au juge · ${esc(aff.suspects[d.hypo.i].prenom)}, ${esc(aff.creneaux[d.hypo.s])}</span><button type="button" class="btn small ghost" data-action="hypo-annuler" aria-label="Annuler l’hypothèse">✕</button></div>`);
   return `${out.join('')}<div class="tb-duo"><button type="button" class="btn small outline" data-action="tab-ouvrir" data-tid="hypo">⚖️ Hypothèse au juge</button>${aff.coupsDePouce ? '<button type="button" class="btn small outline" data-action="tab-ouvrir" data-tid="pouce">💡 Coups de pouce</button>' : ''}</div>`;
 }
 /** Raccourci pour l'action « recouper » : vérifie que les deux pièces sont opposables. */
 export function choisirRecoup(aff, dos, a, b) {
   const op = opposables(aff, dos);
-  if (!op.has(a) || !op.has(b) || a === b) return false;
-  S.draft.recoup = [a, b];
-  return true;
+  return op.has(a) && op.has(b) && a !== b;
 }
 export { pieceRecoupement };
