@@ -4,16 +4,17 @@ import { S, esc } from './common.js';
 import { fondateurAVoir, ouvrirFondateur } from './fondateurs.js';
 
 export const NOTE_MAJ = {
-  id: '2026-11-saison-4',
-  titre: '🚔 Saison 4',
+  // Nouvel identifiant : la carte « grand ménage » s'affiche une fois, même à ceux qui ont vu la précédente.
+  id: '2026-11-saison-4-menage',
+  titre: '🧹 Saison 4 : le grand ménage',
+  intro: 'J’ai compté ce que vous utilisiez vraiment. Certaines fonctions avaient moins de visiteurs que l’accueil un dimanche à 4 h. Trop de boutons, pas assez de jeu : j’ai vidé les placards.',
   action: { label: 'Ouvrir l’enquête', ouvrir: () => { location.hash = '#enquete'; } },
-  // Pop-up à l'ouverture : seulement ce que le joueur va découvrir et aimer.
+  // Pop-up à l'ouverture : ce qui part, pourquoi, et ce qu'on y gagne. Court et léger.
   essentiel: [
-    ['🔎', 'L’enquête en direct', 'lance une démarche quand tu veux : la pièce arrive après son temps de recherche, sans attendre 20:00. Convoque le suspect quand tu es sûr : le verdict tombe sous tes yeux, étape par étape.'],
-    ['🗂️', 'Ton dossier, ton rythme', 'chaque zone a son propre dossier, partager reste un choix. Un échec ne coûte plus la journée : le suspect est relâché quelques heures, tu peux revenir à la charge.'],
-    ['🧭', 'Une spécialité qui grandit', 'Routière, De quartier, Judiciaire ou D’intervention : trois paliers gagnés en jouant, une jauge au dernier. Elle te suit de saison en saison.'],
-    ['🦺', 'L’armurerie', 'cinq achats clairs, gardés pour de bon : gilets, tasers, bodycams, casques et boucliers, radios. Un par soir, utile dès le lendemain.'],
-    ['🧹', 'Un jeu plus léger', 'six onglets, une Gestion plus courte et plus de temps pour l’enquête, la carte et les énigmes.'],
+    ['📦', 'Partis à la pension', 'chef de corps, brigade, pactes, Conseil, FIPA, salle des ventes, crises, relèves, coups de filet et tuyaux. Pot de départ annulé, faute de participants. Tes PS, grades, trophées, skins et bâtiments restent.'],
+    ['🔎', 'L’enquête en direct', 'la pièce arrive quelques heures après ta démarche, le verdict tombe sous tes yeux. Plus besoin d’attendre 20:00 pour savoir si ton suspect craque.'],
+    ['🧭', 'Spécialité et armurerie', 'les doctrines deviennent une spécialité qui grandit avec toi, le magasin une armurerie de cinq achats. Fini les gilets qui périment en douce.'],
+    ['✅', 'Ce qui reste', 'la carte, le non-droit, le Central, les énigmes, les mini-jeux, le Challenge et la Gazette. Je n’ai pas tout jeté, promis.'],
   ],
 
   sections: [
@@ -62,7 +63,7 @@ export function ouvrirNouveautes({ complet = true } = {}) {
   const corps = complet
     ? NOTE_MAJ.sections.filter(([titre]) => (!avant || !SECTION_S2.test(titre)) && !(pasPret() && NOTE_MAJ.sectionPret && NOTE_MAJ.sectionPret.test(titre))).map(([titre, pts]) => `<h3 class="kicker" style="margin:6px 0 0">${esc(titre)}</h3>
       <ul class="aide-liste">${pts.map(([t, x]) => `<li><strong>${esc(t)}</strong> : ${esc(x)}</li>`).join('')}</ul>`).join('')
-    : `<div class="col" style="gap:10px">${NOTE_MAJ.essentiel.map(([ico, t, x]) => `<div class="row" style="gap:10px;align-items:flex-start">
+    : `${NOTE_MAJ.intro ? `<p class="small" style="margin:0;line-height:1.45">${esc(NOTE_MAJ.intro)}</p>` : ''}<div class="col" style="gap:10px">${NOTE_MAJ.essentiel.map(([ico, t, x]) => `<div class="row" style="gap:10px;align-items:flex-start">
         <span aria-hidden="true" style="font-size:22px;line-height:1.1">${ico}</span>
         <span class="small" style="line-height:1.4"><strong>${esc(t)}</strong><br><span class="muted">${esc(x)}</span></span></div>`).join('')}</div>`;
   wrap.innerHTML = `<div class="aide card" role="dialog" aria-modal="true" aria-labelledby="maj-titre">
