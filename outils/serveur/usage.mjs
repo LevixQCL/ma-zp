@@ -49,8 +49,11 @@ for (const p of (await db.collection('parties').get()).docs) {
     }
     const ce = {}, ceK = {};
     for (const c of central.filter((c) => c.uid === u)) { ce[T(c)] = (ce[T(c)] || 0) + 1; ceK[c.k] = (ceK[c.k] || 0) + 1; }
-    const r = {}; for (const m of radio.filter((m) => m.uid === u)) { const d = jour(m.at || 0); r[d] = (r[d] || 0) + 1; }
-    joueurs.push({ t: os.map(T), k, rythmes, dem, conf, acc, reaud, recoup, en, enT, ce, ceK, r,
+    // Radio : messages écrits par le joueur (texte seul) ou automatiques (annonce de non-droit, renfort, enchère, canal ops, appel système).
+    const auto = (m) => !!(m.renfort || m.renfortRep || m.nd || m.enchere || m.canal || m.auto || m.type || /^(🚔|🤝|🚨|🔨)/u.test(String(m.texte || '')));
+    const r = {}, rA = {}; for (const m of radio.filter((m) => m.uid === u)) { const d = jour(m.at || 0); if (auto(m)) rA[d] = (rA[d] || 0) + 1; else r[d] = (r[d] || 0) + 1; }
+    const champs = {}; for (const m of radio.filter((m) => m.uid === u)) for (const k of Object.keys(m)) champs[k] = (champs[k] || 0) + 1;
+    joueurs.push({ t: os.map(T), k, rythmes, dem, conf, acc, reaud, recoup, en, enT, ce, ceK, r, rA, champs,
       pv: prives.filter((x) => (x.participants || []).includes(u)).length,
       z: { joined: z.joinedTurn ?? null, arrivee: z.arrivee ? jour(z.arrivee) : null, sansOrdres: z.toursSansOrdres ?? null, ipz: z.ipz ?? null, agents: z.agents ?? null, ps: z.ps ?? null,
         trophees: Array.isArray(z.trophees) ? z.trophees.length : null, retire: !!(players.find((x) => x.uid === u) || {}).retire, stats: z.stats || null } });
