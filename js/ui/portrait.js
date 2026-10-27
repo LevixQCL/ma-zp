@@ -2,6 +2,41 @@
 // âge, métier) avec une part de hasard tirée du nom. Modelé du visage par dégradés et ombres floutées,
 // iris, reflets, mèches, rides selon l'âge, grain photo et vignettage.
 import { hashString } from '../engine/rng.js';
+import { affaire } from '../engine/enquete.js';
+import { S } from './common.js';
+
+// ───── Saison 4 : visages Midjourney (img/visages), rangés par profil ─────
+// Clé : f/h, âge (30, 48 ou 65), tenue (c : chemise et veste, d : décontractée), puis 4 variantes.
+const VARIANTES = 4;
+const trancheAge = (a) => (!a || a < 40 ? '30' : a <= 56 ? '48' : '65');
+const habille = (s) => ['costume', 'chemise'].includes(tenue(s.role || ''));
+const cleProfil = (s, h = habille(s)) => `${s.f ? 'f' : 'h'}${trancheAge(s.age)}${h ? 'c' : 'd'}`;
+let cacheAffaire = { cle: null, map: null };
+/** Visages des suspects d'une affaire : un par suspect, jamais deux fois le même dans la même affaire. */
+function visagesAffaire(suspects) {
+  const cle = suspects.map((x) => x.nom).join('|');
+  if (cacheAffaire.cle === cle) return cacheAffaire.map;
+  const pris = new Set(), map = {};
+  suspects.forEach((s, i) => {
+    if (s.photo) return;
+    const h = hashString(`${s.nom}#${i}`);
+    // D'abord le bon profil, puis la même tranche d'âge avec l'autre tenue.
+    for (const k of [cleProfil(s), cleProfil(s, !habille(s))]) {
+      for (let d = 0; d < VARIANTES; d++) {
+        const f = `${k}-${(h + d) % VARIANTES}`;
+        if (!pris.has(f)) { pris.add(f); map[s.nom] = f; return; }
+      }
+    }
+  });
+  cacheAffaire = { cle, map };
+  return map;
+}
+function visageDe(s, i) {
+  let aff = null;
+  try { aff = S.state && S.state.enquete ? affaire(S.state, S.state.enquete.n) : null; } catch { aff = null; }
+  if (aff && aff.suspects && aff.suspects.some((x) => x.nom === s.nom)) return visagesAffaire(aff.suspects)[s.nom] || null;
+  return `${cleProfil(s)}-${hashString(`${s.nom}#${i}`) % VARIANTES}`;
+}
 
 // [clair, moyen, ombre, lèvres]
 const PEAUX = [
@@ -120,6 +155,7 @@ function cheveuxAvant(style, c, age, id, h) {
 export function portraitSuspect(s, i, cls = 'tb-face') {
   // Affaire écrite à la main avec de vraies photos d'identité : la photo, au même format que le portrait dessiné.
   if (s.photo) return `<svg class="${cls}" viewBox="0 0 152 146" aria-hidden="true"><image href="${s.photo}" width="152" height="146" preserveAspectRatio="xMidYMid slice"/></svg>`;
+  { const v = visageDe(s, i); if (v) return `<svg class="${cls}" viewBox="0 0 152 146" aria-hidden="true"><image href="img/visages/${v}.webp" width="152" height="146" preserveAspectRatio="xMidYMid slice"/></svg>`; }
   const h = hashString(`${s.nom}#${i}`);
   const pick = (arr, k) => arr[Math.floor(h / k) % arr.length];
   const [clair, peau, ombre, levres] = pick(PEAUX, 3);
