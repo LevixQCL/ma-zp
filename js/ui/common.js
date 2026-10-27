@@ -176,7 +176,7 @@ export function tabbar(active, { questBadge = false, radioBadge = false } = {}) 
   const nCentral = st && me ? aFaireCentralTab() : 0;
   if (nCentral > 0 && active !== 'carte') dots.carte = true;
   return `<nav class="tabs" aria-label="Navigation principale">${tabs.map(([id, label]) => `
-    <a href="#${id}" ${active === id ? 'aria-current="page"' : ''} ${id === 'enquete' ? 'class="centre"' : ''}>${id === 'enquete' ? `<span class="rond">${icon(id, 26)}</span>` : icon(id)}<span>${label}</span>${dots[id] ? `<span class="dot" aria-label="${id === 'carte' && nCentral ? `${nCentral} à faire au central` : 'à faire'}"></span>` : ''}</a>`).join('')}
+    <a href="#${id}" ${active === id ? 'aria-current="page"' : ''} >${icon(id)}<span>${label}</span>${dots[id] ? `<span class="dot" aria-label="${id === 'carte' && nCentral ? `${nCentral} à faire au central` : 'à faire'}"></span>` : ''}</a>`).join('')}
   </nav>`;
 }
 
