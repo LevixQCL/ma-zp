@@ -86,8 +86,6 @@ export const bonusEquip = (z, service, cle) => (EQUIP.actif && z && z.equip ? Ma
 // Dépenses du jour : cumulables avec la grande décision, payées sur le budget du tour.
 // Roulage : au-delà de `seuil` agents, chaque agent de plus compte pour moitié (les automobilistes sont prévenus).
 // « Chasse aux PV » : au-delà de 25 % des effectifs en Roulage (40 % avec les caméras).
-// Affaires disputées : prime versée en plus des points (k€ par point annoncé, multipliée par la qualité du dispositif).
-export const AFFAIRE = { prime: 0.6, repChef: 1 };
 export const ROULAGE = { seuil: 6, auDela: 0.5, chasse: 0.25, chasseCameras: 0.4 };
 /**
  * Moral gagné par un bonus (prime, énigmes, incident réussi) : de moins en moins quand le moral est déjà haut.
@@ -131,16 +129,6 @@ export function tauxDerive(k, v) {
 }
 export const gainMoral = (base, moral) => (base <= 0 ? base : moral < MORAL_PALIERS[0] ? base : moral < MORAL_PALIERS[1] ? Math.ceil(base / 2) : 1);
 export const gainPrime = (moral) => gainMoral(4, moral);
-/**
- * Les figures de l'équipe (une par service) : bonus d'efficacité dans leur service, selon leurs surnoms
- * (`bonus[niveau]`, niveau 0 à 3). Une seule peut partir en mission par jour, son service perd alors son bonus :
- *  - zone de non-droit : force de la zone sur le secteur × (1 + bonus) et risque de blessure × `nd.blessure` ;
- *  - renfort chez un collègue : compte comme `renfort.agents` agent de plus dans son dispositif.
- */
-export const CHEFS = { bonus: [0.03, 0.08, 0.14, 0.2], nd: { blessure: 0.5 }, renfort: { agents: 1 }, xpMission: 3 };
-export const ROLE_SERVICE = { inter: 'intervention', rech: 'recherche', prox: 'proximite', roul: 'roulage', admin: 'admin' };
-/** Bonus d'une figure de niveau `niveau`. */
-export const bonusChef = (niveau) => CHEFS.bonus[Math.max(0, Math.min(3, niveau || 0))];
 // Énigmes du jour : bonus au choix dès 2 bonnes réponses, prime « sans faute » à 3 sur 3.
 // Une énigme ratée ne coûte plus rien (révision d'oct. 2026) : seule la réussite compte.
 export const ENIGMES = { rateeMoral: 0, bonusMoral: 3, bonusBudget: 2, bonusCapacite: 1.1, sansFaute: { budget: 0, moral: 0, ps: 5, jauge: 3 },
@@ -217,9 +205,9 @@ export const INFRAS = {
   // `formation` : la formation Intervention se fait au stand, moins chère et sans agents absents.
   tir:      { nom: 'Stand de tir', cout: 32, effet: 'Intervention +15 %, formation Intervention à moitié prix et sans agents absents, agents deux fois moins souvent blessés', bonus: 1.15, blessure: 0.5, formation: { cout: 2, agents: 0 } },
   // Saison 2 (règles v2) : quatre annexes de plus, dans des emplacements limités (voir emplacementsAnnexes).
-  cachots:  { nom: 'Complexe cellulaire', cout: 23, effet: 'Interpellations (affaires, flagrants délits) +25 % de points, une relève se prend avec un agent de moins, garde à vue : le premier interpellé de chaque affaire balance une pièce d’enquête (1 agent de garde le lendemain)', points: 0.25 },
+  cachots:  { nom: 'Complexe cellulaire', cout: 23, effet: 'Interpellations (affaires, flagrants délits) +25 % de points, garde à vue : le premier interpellé de chaque affaire balance une pièce d’enquête (1 agent de garde le lendemain)', points: 0.25 },
   drone:    { nom: 'Cellule drone', cout: 4.5, effet: 'Non-droit : dès 3 agents engagés, le drone les guide (force +20 %, blessures −30 %). Traque : un survol ajoute un indice sur la planque', force: 1.2, blessure: 0.7, minAgents: 3 },
-  crise:    { nom: 'Salle de crise', cout: 9, effet: 'Non-droit : force +15 % quand au moins deux zones attaquent le même secteur ; crise du district : ta participation compte un agent de plus', coop: 0.15 },
+  crise:    { nom: 'Salle de crise', cout: 9, effet: 'Non-droit : force +15 % quand au moins deux zones attaquent le même secteur', coop: 0.15 },
   sapv:     { nom: 'Assistance aux victimes', cout: 7.5, effet: 'Accueil +20 %, la satisfaction retombe 20 % moins vite, plaintes et audits de l’Inspection deux fois moins fréquents', admin: 1.2, derive: 0.8 },
 };
 /** Annexes de base (avant la saison 2), dessinées et proposées dans toutes les parties. */
@@ -251,14 +239,14 @@ export const RYTHMES = {
 export const GRADES = [
   { nom: 'Aspirant', ps: 0, debloque: '—' },
   { nom: 'Inspecteur', ps: 200, debloque: 'Palette de couleurs étendue' },
-  { nom: 'Inspecteur principal', ps: 600, debloque: 'Consignes du pilote automatique (répartition de secours, situation du jour, enquête, prime)' },
+  { nom: 'Inspecteur principal', ps: 600, debloque: 'Titre d’inspecteur principal au classement et dans la Gazette' },
   { nom: 'Commissaire', ps: 1200, debloque: 'Insigne de grade (étoiles) sur la carte et dans la Gazette' },
   { nom: 'Commissaire divisionnaire', ps: 2000, debloque: 'Blason personnalisé pour sa zone' },
-  { nom: 'Chef de corps', ps: 3000, debloque: 'Proposer une motion au Conseil, une fois par saison' },
+  { nom: 'Chef de corps', ps: 3000, debloque: 'Le plus haut grade : titre de chef de corps au classement et dans la Gazette' },
 ];
 
 export const PS = { ordres: 10, queteOk: 5, queteTentee: 2, noir: 15, evenement: 10, evenementMax: 15, finSaison: 50, podium: [250, 150, 100], revelation: 100, plafondJour: 40, plafondEntraide: 30 };
-// Les PS d'entraide (renfort, pièces partagées, contribution à l'enquête, FIPA, mission collective, secteurs tenus) ont leur propre plafond, en plus des 40.
+// Les PS d'entraide (renfort, pièces partagées, contribution à l'enquête, mission collective, secteurs tenus) ont leur propre plafond, en plus des 40.
 // Événement du district : PS.evenement pour la part attendue (3 agents), proportionnel au nombre d'agents envoyés.
 export const psEvenement = (c) => (c > 0 ? Math.max(1, Math.min(PS.evenementMax, Math.round(PS.evenement * c / 3))) : 0);
 
@@ -303,8 +291,6 @@ export function nextGrade(ps) {
 export const RENFORT = { maxParZone: 4, maxDemande: 6, repParAgent: 1, repMax: 4, psParAgent: 5, indemnite: 0.5, pointsParAgent: 1 };
 // Récompense d'un renfort prêté sur une opération d'envergure : proportionnelle aux agents prêtés.
 export const gainRenfort = (n) => ({ rep: Math.min(RENFORT.repMax, n * RENFORT.repParAgent), ps: n * RENFORT.psParAgent });
-// Affaire disputée : réputation d'une zone venue en renfort selon ses agents (1 → +1, 2-3 → +2, 4 et plus → +3).
-export const repRenfortAffaire = (n) => Math.min(3, 1 + Math.floor(n / 2));
 
 // ───── Zone de non-droit (le centre de la ville) ─────
 // Chaque secteur a une « emprise » du milieu (0 à 100). Les zones y envoient des agents :
@@ -423,32 +409,10 @@ export const REPUTATION = {
   scandale: 60, scandaleMalus: 3,          // (ancien : manœuvre ratée d'une zone bien vue ; les manœuvres ont disparu)
 };
 
-// ───── Salle des ventes (enchères) ─────
-export const LOTS = {
-  chien:     { nom: 'Chien pisteur', texte: 'Un malinois dressé et son maître-chien rejoignent tes enquêteurs.', effet: 'Recherche +15 % jusqu’à la fin de la saison', prix: 5, bonus: { recherche: 1.15 } },
-  drone:     { nom: 'Drone de surveillance', texte: 'Un drone avec caméra thermique, et un agent formé pour le piloter.', effet: 'Intervention +10 % jusqu’à la fin de la saison', prix: 6, bonus: { intervention: 1.1 } },
-  radar:     { nom: 'Radar-tronçon mobile', texte: 'Un radar de vitesse moyenne qu’on déplace d’une route à l’autre.', effet: 'Roulage +15 % jusqu’à la fin de la saison', prix: 4, bonus: { roulage: 1.15 } },
-  analyse:   { nom: 'Logiciel d’analyse criminelle', texte: 'Une licence de logiciel qui trie les dossiers et repère les séries.', effet: 'Accueil et administration +15 % jusqu’à la fin de la saison, et −6 dossiers de paperasse tout de suite', prix: 5, bonus: { admin: 1.15 }, immediat: 'paperasse' },
-  banalise:  { nom: 'Véhicule banalisé saisi', texte: 'Une berline confisquée par la justice, remise en état.', effet: '+1 véhicule tout de suite, même si le garage est plein', prix: 4, immediat: 'vehicule' },
-  prevention:{ nom: 'Subside européen de prévention', texte: 'Un appel à projets gagné sur le fil : éclairage, caméras, animateurs de rue.', effet: 'Criminalité −10 et +4 de satisfaction tout de suite', prix: 4, immediat: 'prevention' },
-  stage:     { nom: 'Stage de formation offert', texte: 'Une place libérée à la dernière minute dans un stage spécialisé.', effet: '+1 niveau de formation dans ton service le plus faible (sans agents immobilisés)', prix: 6, immediat: 'stage' },
-  gilets:    { nom: 'Lot de gilets et de radios', texte: 'Du matériel neuf racheté à une zone qui s’est trop équipée.', effet: 'Équipement de l’Intervention +1 niveau, sans prendre ta grande décision du jour', prix: 3, immediat: 'gilets' },
-  // prix 3 (mise à prix 2 à 4 k€) : toujours sous le coût normal d'un niveau (5 k€ au minimum, puis 7, 9, 11). Avant : 4 à 6 k€, pas plus intéressant qu'équiper soi-même.
-  // Lots réservés aux zones qui ont bonne réputation.
-  parquet:   { nom: 'Convention avec le parquet', texte: 'Le parquet accepte de traiter tes dossiers en priorité.', effet: 'Recherche +20 % jusqu’à la fin de la saison', prix: 7, bonus: { recherche: 1.2 } },
-  quartier:  { nom: 'Bureau de quartier prêté par la commune', texte: 'Un rez-de-chaussée en plein centre, gratuit pour la saison.', effet: 'Proximité +20 % jusqu’à la fin de la saison', prix: 6, bonus: { proximite: 1.2 } },
-  // Saison 2 : gros lots de la vente aux enchères (trop chers pour une zone seule, achetables à deux zones liées par un pacte).
-  helico:    { nom: 'Prêt d’un hélicoptère fédéral', texte: 'La police fédérale prête son hélicoptère et son équipage pour la saison.', effet: 'Intervention +10 % et force d’assaut en non-droit +15 % jusqu’à la fin de la saison', prix: 28, bonus: { intervention: 1.1 }, nd: { force: 0.15 }, gros: true },
-  blinde:    { nom: 'Véhicule blindé saisi', texte: 'Un blindé de transport saisi à un réseau, remis aux normes de la police.', effet: 'Non-droit : force +10 %, blessures divisées par deux jusqu’à la fin de la saison', prix: 24, bonus: {}, nd: { force: 0.1, blessure: 0.5 }, gros: true },
-  cellulef:  { nom: 'Cellule d’appui fédérale (renforcée)', texte: 'Quatre spécialistes fédéraux détachés auprès des zones acheteuses.', effet: '+2 agents tout de suite (salaire à ta charge), même si l’hôtel de police est plein', prix: 22, immediat: 'agents', gros: true },
-  // Non-droit profond : lot saisi dans un atelier de recel (jamais tiré au hasard, seulement mis en vente après une saisie).
-  informatique: { nom: 'Matériel informatique saisi', texte: 'Ordinateurs et téléphones saisis dans un atelier de recel, effacés et remis au service.', effet: 'Recherche +10 % jusqu’à la fin de la saison', prix: 4, bonus: { recherche: 1.1 }, saisie: true },
-  cellule:   { nom: 'Cellule d’appui de la police fédérale', texte: 'Deux spécialistes détachés pour épauler ta zone.', effet: '+2 agents tout de suite (salaire à ta charge), même si l’hôtel de police est plein', prix: 7, immediat: 'agents' },
-};
 
 // ───── Tutelle : dernière chance avant la faillite ─────
 // Une zone encore en péril au bout du délai passe sous tutelle (une fois par saison) :
-// avance de trésorerie, mais plus de défis, d'enchères, d'heures sup ni de grande décision
+// avance de trésorerie, mais plus d'heures sup ni de grande décision
 // (sauf recruter). Si elle est toujours en péril à la fin de la tutelle : faillite.
 export const TUTELLE = { tours: 5, avance: 10, moral: 8 };
 

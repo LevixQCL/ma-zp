@@ -1,25 +1,6 @@
 // Textes du jeu : affaires, événements, coups durs, aléas.
 // Tout est fictif. On peut enrichir ces listes librement.
 
-export const AFFAIRES_DISPUTEES = [
-  'Trafic de pièces auto entre deux communes',
-  'Vols dans les parkings de la gare',
-  'Série de cambriolages de caves',
-  'Réseau de vélos volés revendus en ligne',
-  'Vols de câbles de cuivre sur le chantier du tram',
-  'Escroqueries aux faux techniciens',
-  'Tags en série sur les ponts',
-  'Vols à la tire au marché du dimanche',
-  'Trafic de cigarettes de contrebande',
-  'Rodéos urbains nocturnes',
-  'Vols de catalyseurs',
-  'Faux billets dans les commerces',
-  'Cambriolages de chantiers',
-  'Vols de colis devant les portes',
-  'Arnaque au faux neveu',
-  'Vols de carburant sur les parkings poids lourds',
-];
-
 export const DOSSIERS_LOCAUX = [
   'Vol de vélo électrique', 'Dégradation de voiture', 'Vol dans un véhicule', 'Escroquerie en ligne',
   'Harcèlement téléphonique', 'Vol à l’étalage répété', 'Cambriolage de garage', 'Fraude à la carte bancaire',
