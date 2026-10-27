@@ -1,9 +1,8 @@
 import { lireDemarche, ENQ } from './enquete.js';
-import { creerEquipe } from './equipe.js';
-import { SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, SUBSIDE, REPUTATION, LOTS, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, scoreRevenu, BUDGET_IPZ, CLASSEMENT, coutEquipement, multNiveau, multEquip, coutFormation, PREPA, coutPrepa, multDoctrine, emplacementsAnnexes, nbAnnexes, aAnnexe } from './constants.js';
+import { SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, SUBSIDE, REPUTATION, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, scoreRevenu, BUDGET_IPZ, CLASSEMENT, coutEquipement, multNiveau, multEquip, coutFormation, PREPA, coutPrepa, multSpe, SPECIALITES, emplacementsAnnexes, nbAnnexes, aAnnexe } from './constants.js';
 import { terrainDoux } from './regles.js';
-import { talent, talentVal, AGENDA } from './chef.js';
 import { coutCarrosserie } from './sinistres.js';
+import { multArmurerie, migrerMateriel } from './materiel.js';
 import { cabossesChoisis } from './parc.js';
 import { prixRevente, assurerFlotte, placesIntervention, entretienFlotte, bonusAnonymes, agentsMontes, primeVerte, bonusOrdre, RENDEMENT, MODELES, IDS_MODELES } from './flotte.js';
 
@@ -29,12 +28,12 @@ export function newZone({ uid, code, nom, couleur }, turn, base = {}) {
     criminalite: START.criminalite, paperasse: START.paperasse, paperassePic: START.paperasse,
     dossiers: [], dossierSeq: 0,
     operation: null, pressions: [],
-    renforts: [], peril: null, tutelle: null, tutelleSaison: false, lots: [], faillites: base.faillites ?? 0, motionSaison: false, failliteSaison: false,
+    renforts: [], peril: null, tutelle: null, tutelleSaison: false, faillites: base.faillites ?? 0, failliteSaison: false,
     dernierOrdre: null, toursSansOrdres: 0, toursJoues: 0,
     ipz: 0, ipzSomme: 0, ipzHist: [],
     ps: base.ps ?? 0, badges: base.badges ?? [], titres: base.titres ?? [],
     budgetNegSuite: 0, inspectionCooldown: 0, renforceSuite: 0,
-    stats: { incidents: 0, traites: 0, affairesGagnees: 0, pointsAffaires: 0, dossiersResolus: 0, contributions: 0, evenementsManques: 0, quetesOk: 0, noirs: 0, limier: 0, decouvertes: 0, arrestations: 0, indicesPartages: 0, fipaFaites: 0, fipaHonorees: 0 },
+    stats: { incidents: 0, traites: 0, affairesGagnees: 0, pointsAffaires: 0, dossiersResolus: 0, contributions: 0, evenementsManques: 0, quetesOk: 0, noirs: 0, limier: 0, decouvertes: 0, arrestations: 0, indicesPartages: 0 },
     rapport: [],
   };
 }
@@ -50,6 +49,7 @@ export function fillDefaults(target, tpl) {
   return target;
 }
 
+const OBSOLETES_ZONE = ['chef', 'chefNuit', 'retourChef', 'equipe', 'adjoints', 'candidat', 'styleBrigade', 'appel', 'rodage', 'bonusChefs', 'lots', 'motionSaison', 'motion', 'ruptures', 'remiseAchat', 'pistes', 'filet', 'pointChaud', 'partenaireReste', 'galonsReset', 'votes', 'doctrine', 'maitrise', 'doctrinePrec', 'maitrisePrec', 'doctrineRevue', 'doctrineSem2', 'jaugeDoc', 'jaugeSaisie', 'materiel', 'rapportMat', 'psMarche', 'fonctions'];
 /** Met une zone enregistrée par une ancienne version au format actuel. */
 export function migrateZone(z) {
   const neuf = !z.batiments;
@@ -57,8 +57,14 @@ export function migrateZone(z) {
   fillDefaults(z, newZone({ uid: z.uid, code: z.code, nom: z.nom, couleur: z.couleur }, z.joinedTurn ?? 1));
   // Zones d'avant la logistique : des bâtiments à la taille de leurs effectifs.
   if (neuf) ajusterBatiments(z);
-  if (!z.equipe) z.equipe = creerEquipe(z.uid);
   if (!z.trophees) z.trophees = [];
+  // Saison 4 : champs des systèmes retirés (chef de corps, brigade, ventes, pactes, crises, relèves, filets, pistes…).
+  // Doctrine d'avant la saison 4 : devient la spécialité du même nom, au 2e palier.
+  if (z.doctrine && !z.specialite && Object.hasOwn(SPECIALITES, z.doctrine)) z.specialite = { id: z.doctrine, jours: 3 };
+  if (z.jaugeDoc != null && z.jaugeSpe == null && z.specialite) z.jaugeSpe = z.jaugeDoc;
+  migrerMateriel(z);
+  for (const k of OBSOLETES_ZONE) delete z[k];
+  if (z.stats) for (const k of ['fipaFaites', 'fipaHonorees', 'refusFipa', 'pactesRompus', 'sauvetages', 'releves', 'affairesGagnees', 'pointsAffaires']) delete z.stats[k];
   assurerFlotte(z);
   return z;
 }
@@ -109,7 +115,7 @@ export function perequation(z, state) {
 export function fraisFixes(z, state, { amendes = 0, rythme = 'normal' } = {}) {
   const annexes = Object.values(z.infra || {}).filter(Boolean).length;
   const b = z.batiments;
-  // Agents arrivés pendant la résolution (salle des ventes, débauchage) : ni payés ni subsidiés avant leur premier jour de travail.
+  // Agents arrivés pendant la résolution : ni payés ni subsidiés avant leur premier jour de travail.
   const nouveaux = Math.max(0, Math.min(z.agents, Math.floor(z._nouveaux || 0)));
   const payes = z.agents - nouveaux;
   const nv = nouveaux ? `, sans les ${nouveaux} arrivé${nouveaux > 1 ? 's' : ''} ce soir` : '';
@@ -125,8 +131,8 @@ export function fraisFixes(z, state, { amendes = 0, rythme = 'normal' } = {}) {
     { k: 'radars', l: 'Radars automatiques (caméras)', v: z.infra && z.infra.anpr ? INFRAS.anpr.fixe : 0 },
     { k: 'salaires', l: `Salaires (${payes} agents${nv})`, v: -payes * ECONOMIE.salaire },
     { k: 'vehicules', l: `Entretien des véhicules (${z.vehicules})`, v: -(z.flotte ? entretienFlotte(z) : z.vehicules * ECONOMIE.entretienVehicule) },
-    { k: 'batiments', l: `Entretien des bâtiments (niveaux ${b.bureaux} et ${b.garage})${talent(z, 'gestionnaire') ? ', bon gestionnaire −20 %' : ''}`, v: -(BATIMENTS.bureaux.entretien(b.bureaux) + BATIMENTS.garage.entretien(b.garage)) * talentVal(z, 'gestionnaire', 'entretien', 1) },
-    { k: 'annexes', l: `Entretien des annexes (${annexes})`, v: -annexes * ENTRETIEN_ANNEXE * talentVal(z, 'gestionnaire', 'entretien', 1) },
+    { k: 'batiments', l: `Entretien des bâtiments (niveaux ${b.bureaux} et ${b.garage})`, v: -(BATIMENTS.bureaux.entretien(b.bureaux) + BATIMENTS.garage.entretien(b.garage)) },
+    { k: 'annexes', l: `Entretien des annexes (${annexes})`, v: -annexes * ENTRETIEN_ANNEXE },
     { k: 'rythme', l: 'Heures supplémentaires (rythme renforcé)', v: -(RYTHMES[rythme] ? RYTHMES[rythme].cout : 0) },
   ].filter((x) => x.garder || Math.abs(x.v) >= 0.05);
   for (const x of lignes) { x.v = round1(x.v); delete x.garder; }
@@ -150,14 +156,13 @@ export function agentsDisponibles(zone, turn) {
 
 /**
  * Agents disponibles laissés sans affectation dans les ordres : ce sont eux qui partent
- * en premier en audition, en traque ou en FIPA (avant de puiser dans les services).
+ * en premier en audition ou en traque (avant de puiser dans les services).
  */
 export function agentsLibres(zone, o, turn) {
   if (!o) return 0;
   const services = Object.values(o.alloc || {}).reduce((s, n) => s + (n || 0), 0);
-  const eng = Object.values(o.engagements || {}).reduce((s, e) => s + ((e && e.agents) || 0), 0);
   const nd = Object.values(o.secteurs || {}).reduce((s, n) => s + (n || 0), 0);
-  return Math.max(0, agentsDisponibles(zone, turn) - services - eng - nd - (o.evenement || 0) - ((o.renfort && o.renfort.agents) || 0));
+  return Math.max(0, agentsDisponibles(zone, turn) - services - nd - (o.evenement || 0) - ((o.renfort && o.renfort.agents) || 0));
 }
 
 export function vehiculesDisponibles(zone, turn) {
@@ -189,33 +194,8 @@ export function capacite(zone, service, n, { rythme = 'normal', bonus = 1, turn 
   if (service === 'recherche' && zone.flotte) c *= 1 + bonusAnonymes(zone, turn);
   if (service === 'intervention' && zone.infra.tir) c *= INFRAS.tir.bonus;
   if (service === 'admin') c *= (zone.infra.logiciel ? 1.5 : 1) * (aAnnexe(zone, 'sapv') ? INFRAS.sapv.admin : 1) * adminMult;
-  c *= bonusLots(zone, service);
-  c *= multDoctrine(zone, service);
-  // Agenda du chef (règles v2) : sur le terrain avec ce service.
-  if (zone._agenda && zone._agenda.type === 'terrain' && zone._agenda.service === service) c *= AGENDA.terrain.cap;
+  c *= multSpe(zone, service) * multArmurerie(zone, service);
   return c;
-}
-
-/** Multiplicateur apporté par les lots gagnés aux enchères pour un service. */
-export function bonusLots(zone, service) {
-  let m = 1;
-  // Deux exemplaires du même lot ne se cumulent pas : seul le meilleur compte (un deuxième chien pisteur n'ajoute rien).
-  const meilleur = {};
-  for (const l of zone.lots || []) { const b = LOTS[l.id] && LOTS[l.id].bonus; if (b && b[service]) { const v = l.etat === 'neuf' ? 1 + (b[service] - 1) * 1.5 : l.etat === 'defectueux' ? 1 + (b[service] - 1) * 0.5 : b[service]; meilleur[l.id] = Math.max(meilleur[l.id] || 1, v); } }
-  for (const v of Object.values(meilleur)) m *= v;
-  return m;
-}
-
-/**
- * Récompense d'une affaire disputée selon la force engagée (multiplicateur des points) :
- * sous la force minimale, échec ; entre minimale et conseillée, de 60 % à 100 % ;
- * au-delà, bonus jusqu'à +30 % pour un dispositif une fois et demie plus fort que conseillé.
- */
-export function multAffaire(aff, force) {
-  if (force < aff.forceMin) return 0;
-  const c = aff.forceConseillee;
-  if (force < c) return 0.6 + 0.4 * (force - aff.forceMin) / Math.max(0.1, c - aff.forceMin);
-  return 1 + 0.3 * Math.min(1, (force - c) / (c * 0.5));
 }
 
 /** Force d'un rôle dans la zone de non-droit : le niveau du service qu'il représente compte. */
@@ -245,19 +225,9 @@ export function sanitizeOrders(zone, raw, state) {
   const tutelle = sousTutelle(zone, turn);
   const rythme = typeof o.rythme === 'string' && Object.hasOwn(RYTHMES, o.rythme) && !(tutelle && o.rythme === 'renforce') ? o.rythme : 'normal';
 
-  const affIds = new Set((state.affaires || []).map((a) => a.id));
-  const engagements = {};
-  if (o.engagements && typeof o.engagements === 'object') {
-    for (const [id, e] of Object.entries(o.engagements)) {
-      if (!affIds.has(id) || !e) continue;
-      const n = Math.min(999, Math.max(0, Math.floor(fini(e.agents))));
-      const acceptes = Array.isArray(e.acceptes) ? [...new Set(e.acceptes.filter((u) => typeof u === 'string' && u !== zone.uid))].slice(0, 8) : [];
-      if (n > 0) engagements[id] = { agents: n, acceptes };
-    }
-  }
   const ev = state.evenement && state.evenement.tour === turn ? Math.min(999, Math.max(0, Math.floor(fini(o.evenement)))) : 0;
 
-  // L'événement et les engagements passent d'abord ; les services se partagent le reste.
+  // L'événement, le renfort et le non-droit passent d'abord ; les services se partagent le reste.
   const evenement0 = Math.min(ev, dispo);
   // Renfort envoyé à une zone qui mène une opération d'envergure aujourd'hui.
   let renfort = null;
@@ -300,13 +270,7 @@ export function sanitizeOrders(zone, raw, state) {
     if (!secteurs[k]) { delete secteurs[k]; delete roles[k]; }
   }
   const evenement = evenement0 + (renfort ? renfort.agents : 0) + sumSect(); // agents réservés hors services
-  const sumEng = () => Object.values(engagements).reduce((s, e) => s + e.agents, 0);
-  if (sumEng() + evenement > dispo) {
-    const place = dispo - evenement;
-    const f = sumEng() > 0 ? place / sumEng() : 0;
-    for (const [id, e] of Object.entries(engagements)) { e.agents = Math.floor(e.agents * f); if (e.agents <= 0) delete engagements[id]; }
-  }
-  const reste = Math.max(0, dispo - sumEng() - evenement);
+  const reste = Math.max(0, dispo - evenement);
   const total = SERVICES.reduce((s, k) => s + alloc[k], 0);
   if (total > reste && total > 0) {
     const f = reste / total;
@@ -333,10 +297,9 @@ export function sanitizeOrders(zone, raw, state) {
     reserveService: SERVICES.includes(dp.reserveService) ? dp.reserveService : 'intervention',
     prime: !!dp.prime, prevention: !!dp.prevention, soustraitance: !!dp.soustraitance, enqueteurs: !!dp.enqueteurs, revision: !!dp.revision, carrosserie: carrosserieOrdre(zone, dp.carrosserie),
   };
-  // Enquête et FIPA : validés plus finement pendant la résolution.
+  // Enquête : validée plus finement pendant la résolution.
   const int = (v, a, b) => clamp(Math.floor(fini(v)), a, b);
   const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
-  const cible = (v) => (zoneExiste(v) ? v : '');
   const demarches = Array.isArray(o.demarches) ? [...new Set(o.demarches.filter((x) => typeof x === 'string' && lireDemarche(x)))].slice(0, ENQ.maxDemarches + ENQ.demarcheSolo + 1) : [];
   const accusation = Number.isInteger(o.accusation) && o.accusation >= 0 && o.accusation < ENQ.nbSuspects ? o.accusation : null;
   // Deux complices : le second nom de l'accusation (ignoré dans les autres affaires).
@@ -354,35 +317,6 @@ export function sanitizeOrders(zone, raw, state) {
   const prime = typeof o.prime === 'string' && /^(confiscation|renfort|formation:[a-z]+)$/.test(o.prime) ? o.prime : null;
   const traque = o.traque && typeof o.traque === 'object' ? { n: int(o.traque.n, 0, 1e6), planque: int(o.traque.planque, 0, 5), agents: int(o.traque.agents, 0, 30), ...(o.traque.planque2 != null && o.traque.planque2 !== '' ? { planque2: int(o.traque.planque2, 0, 5) } : {}) } : null;
   const partages = Array.isArray(o.partages) ? o.partages.slice(0, 3).filter((p) => p && typeof p === 'object').map((p) => ({ f: str(p.f), a: str(p.a) })) : [];
-  const fipa = o.fipa && typeof o.fipa === 'object' ? { id: str(o.fipa.id), invite: cible(o.fipa.invite), moi: int(o.fipa.moi, 0, 8), lui: int(o.fipa.lui, 0, 8) } : null;
-  const fipaReponse = o.fipaReponse && typeof o.fipaReponse === 'object' ? { id: str(o.fipaReponse.id), accepte: !!o.fipaReponse.accepte } : null;
-  const fipaChoix = o.fipaChoix && typeof o.fipaChoix === 'object' ? { id: str(o.fipaChoix.id), choix: o.fipaChoix.choix === 'revendiquer' ? 'revendiquer' : 'partager' } : null;
-  const aide = o.aide && typeof o.aide === 'object' ? { cible: cible(o.aide.cible), budget: clamp(Math.round(fini(o.aide.budget) * 10) / 10, 0, 10), agents: int(o.aide.agents, 0, 3) } : null;
-  // Pactes et défis amicaux.
-  const pacte = o.pacte && typeof o.pacte === 'object' && ['terrain', 'enquete', 'achat'].includes(o.pacte.type) ? { cible: cible(o.pacte.cible), type: o.pacte.type } : null;
-  const pacteReponse = o.pacteReponse && typeof o.pacteReponse === 'object' ? { id: str(o.pacteReponse.id), accepte: !!o.pacteReponse.accepte } : null;
-  const pacteRompre = typeof o.pacteRompre === 'string' ? str(o.pacteRompre) : null;
-  const fragment = typeof o.fragment === 'string' ? str(o.fragment) : null;
-  const defi = o.defi && typeof o.defi === 'object' && ['incidents', 'enigmes', 'dossiers'].includes(o.defi.ind) ? { cible: cible(o.defi.cible), ind: o.defi.ind, mise: [0, 3, 5].includes(o.defi.mise) ? o.defi.mise : 0 } : null;
-  const pacteAccepte = (Array.isArray(o.pacteAccepte) ? o.pacteAccepte : []).slice(0, 4).filter((x) => x && typeof x === 'object' && ['terrain', 'enquete', 'achat'].includes(x.type)).map((x) => ({ de: cible(x.de), type: x.type }));
-  const defiAccepte = (Array.isArray(o.defiAccepte) ? o.defiAccepte : []).slice(0, 2).filter((x) => x && typeof x === 'object' && ['incidents', 'enigmes', 'dossiers'].includes(x.ind)).map((x) => ({ de: cible(x.de), ind: x.ind, mise: [0, 3, 5].includes(x.mise) ? x.mise : 0 }));
-  const defiReponse = o.defiReponse && typeof o.defiReponse === 'object' ? { id: str(o.defiReponse.id), accepte: !!o.defiReponse.accepte } : null;
-  const votes = {};
-  if (o.votes && typeof o.votes === 'object') for (const [k2, v] of Object.entries(o.votes)) if (['dotation', 'theme', 'blame', 'chef', 'solidarite'].includes(k2) && Number.isInteger(v)) votes[k2] = clamp(v, 0, 5);
-  const motionChef = ['prime', 'amnistie', 'subside'].includes(o.motionChef) ? o.motionChef : null;
-  // Patrouilles ciblées : { quartier: agents } (validées plus finement pendant la résolution).
-  const patrouilles = {};
-  if (o.patrouilles && typeof o.patrouilles === 'object') {
-    for (const [k2, v] of Object.entries(o.patrouilles).slice(0, 8)) { const n = int(v, 0, 12); if (/^\d{1,4}$/.test(k2) && n > 0) patrouilles[k2] = n; }
-  }
-  const ROLES_M = ['inter', 'rech', 'prox', 'roul', 'admin'];
-  const propreM = (m) => (m && typeof m === 'object' && ROLES_M.includes(m.role) && ['nondroit', 'renfort'].includes(m.type)
-    ? { role: m.role, type: m.type, secteur: /^\d{1,4}$/.test(String(m.secteur || '')) ? String(m.secteur) : '' } : null);
-  const missions = (Array.isArray(o.missions) ? o.missions : o.mission ? [o.mission] : []).slice(0, ROLES_M.length).map(propreM).filter(Boolean);
-  const mission = missions[0] || null;
-  // Service encadré par chaque figure pour la journée (sinon le sien).
-  const SERV = ['intervention', 'proximite', 'recherche', 'roulage', 'admin'];
-  const postes = Object.fromEntries(Object.entries(o.postes && typeof o.postes === 'object' ? o.postes : {}).filter(([r, s]) => ROLES_M.includes(r) && SERV.includes(s)));
   // Dilemme du Directeur : indice du choix (vérifié à la résolution).
   const dilemme = Number.isInteger(o.dilemme) && o.dilemme >= 0 && o.dilemme <= 3 ? o.dilemme : null;
   // Reventes de véhicules : places valides, sans doublon, et il en reste toujours un.
@@ -395,7 +329,7 @@ export function sanitizeOrders(zone, raw, state) {
     const s = Object.hasOwn(state.nonDroit.secteurs, k) ? state.nonDroit.secteurs[k] : null;
     if (s && s.barricade && ['frontal', 'negocier', 'encercler'].includes(v)) tactiques[k] = v;
   }
-  return { tactiques, ventes, dilemme, mission, missions, postes, piste, appui, prime, patrouilles, alloc, rythme, engagements, evenement: evenement0, renfort, secteurs, roles, decision, operation, depenses, demarches, accusation, accusation2, confront, reaud, recoup, hypo, mobile, traque, partages, fipa, fipaReponse, fipaChoix, aide, pacte, pacteReponse, pacteAccepte, pacteRompre, fragment, defi: tutelle ? null : defi, defiReponse, defiAccepte: tutelle ? [] : defiAccepte, votes, motionChef };
+  return { tactiques, ventes, dilemme, piste, appui, prime, alloc, rythme, evenement: evenement0, renfort, secteurs, roles, decision, operation, depenses, demarches, accusation, accusation2, confront, reaud, recoup, hypo, mobile, traque, partages };
 }
 
 /** Coût total des dépenses du jour. */
@@ -438,9 +372,9 @@ export function effetsOperation(zone, alloc, niveau, turn) {
   return { eff, pris, couverture: besoin ? fourni / besoin : 1, op };
 }
 
-/** Ordres du pilote automatique : on reprend la dernière répartition, sans décision ni engagement. */
+/** Ordres du pilote automatique : on reprend la dernière répartition, sans décision. */
 export function autopilotOrders(zone, state) {
-  const base = zone.dernierOrdre ? { alloc: zone.dernierOrdre.alloc, rythme: 'normal', operation: 'reduit', patrouilles: zone.dernierOrdre.patrouilles } : { alloc: DEFAULT_ALLOC, rythme: 'normal', operation: 'reduit' };
+  const base = zone.dernierOrdre ? { alloc: zone.dernierOrdre.alloc, rythme: 'normal', operation: 'reduit' } : { alloc: DEFAULT_ALLOC, rythme: 'normal', operation: 'reduit' };
   // Un oubli d'un jour : les agents restent sur place dans la zone de non-droit. Au-delà, ils rentrent.
   if (zone.dernierOrdre && zone.dernierOrdre.secteurs && (zone.toursSansOrdres || 0) === 0) { base.secteurs = zone.dernierOrdre.secteurs; if (zone.dernierOrdre.roles) base.roles = zone.dernierOrdre.roles; }
   return sanitizeOrders(zone, base, state);
@@ -453,10 +387,9 @@ export function coutDecision(zone, decision) {
   if (!decision) return 0;
   switch (decision.type) {
     case 'recruter': return coutRecrue(zone) * decision.n;
-    // Centrale d'achat (pacte) : formations et équipement moins chers.
-    case 'former': return round1(coutFormation(zone, decision.service) * (1 - (zone.remiseAchat || 0)));
+    case 'former': return round1(coutFormation(zone, decision.service));
     case 'equiper': {
-      const brut = round1((decision.cible === 'vehicule' ? (MODELES[decision.modele] || MODELES.diesel).prix : decision.cible === 'prepa' ? coutPrepa(zone.prepa) : coutEquipement(zone.equip[decision.cible])) * (1 - (zone.remiseAchat || 0)) * (1 - talentVal(zone, 'marches', 'remise', 0)));
+      const brut = round1((decision.cible === 'vehicule' ? (MODELES[decision.modele] || MODELES.diesel).prix : decision.cible === 'prepa' ? coutPrepa(zone.prepa) : coutEquipement(zone.equip[decision.cible])));
       // Reprise : le prix de revente de l'ancien véhicule est déduit.
       return decision.cible === 'vehicule' && repriseValide(zone, decision) ? round1(Math.max(0, brut - prixRevente(zone, decision.reprise))) : brut;
     }

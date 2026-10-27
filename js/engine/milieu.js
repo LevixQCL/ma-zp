@@ -12,7 +12,7 @@
 //     une zone qui écrase tout le monde → représailles annoncées sur son secteur et ses quartiers frontaliers.
 //  4. Des scènes chaque soir : émeute, rodéo, livraison, perquisition, annoncées la veille sur un secteur du milieu.
 //     Les agents présents sur le secteur ce soir-là la règlent ; un mini-jeu réussi (facultatif) compte double.
-//  5. Les saisies (garage, recel, QG) partent à la vente aux enchères ; la moitié du prix revient aux zones qui ont saisi.
+//  5. Les saisies (garage, recel, QG) sont vendues par le parquet ; le produit revient aux zones qui ont saisi.
 import { aAnnexe } from './constants.js';
 import { makeRng } from './rng.js';
 import { clamp, round1, jalon } from './zone.js';
@@ -125,7 +125,7 @@ export function modsAssaut(state, nd, s, engages, T) {
 
 export const TACTIQUES = {
   frontal: { nom: 'Assaut frontal', ico: '💥', texte: 'Le secteur tombe à coup sûr s’il y a de la descente, mais chaque agent en descente risque d’être blessé (10 %).' },
-  negocier: { nom: 'Négocier sa reddition', ico: '🤝', texte: 'Selon la diplomatie des chefs : réussie, il se rend sans combat et lâche un renseignement de plus ; ratée, il gagne une nuit (emprise +10).' },
+  negocier: { nom: 'Négocier sa reddition', ico: '🤝', texte: 'Plus il y a de zones engagées, plus elle a de chances : réussie, il se rend sans combat et lâche un renseignement de plus ; ratée, il gagne une nuit (emprise +10).' },
   encercler: { nom: 'Encercler', ico: '⭕', texte: 'Avec assez de bouclage (aucune fuite) : le secteur tombe, saisies doublées, il ne peut pas filer. Sinon, assaut normal.' },
 };
 
@@ -202,8 +202,8 @@ function chuteParrain(state, nd, s, k, T, parts, push, nomS) {
     jalon(z, `Chute de ${p.nom}`);
     z.rapport.push(`Le milieu : ${p.nom} est tombé ! Le coffre du réseau est saisi (ta part : ${fmt(b)}).`);
   }
-  (nd.saisies ||= []).push({ id: 'blinde', cell: Number(k), parts: Object.fromEntries(parts.map((x) => [x.uid, round1(x.part)])), T });
-  push(14, 'La chute du Parrain', `${cap(p.nom)} est tombé`, `Le Parrain du milieu est arrêté dans son QG de ${nomS}. Son coffre est saisi, son blindé partira à la prochaine vente aux enchères.`);
+  vendreSaisie(state, 'blinde', Object.fromEntries(parts.map((x) => [x.uid, round1(x.part)])));
+  push(14, 'La chute du Parrain', `${cap(p.nom)} est tombé`, `Le Parrain du milieu est arrêté dans son QG de ${nomS}. Son coffre est saisi, son blindé vendu par le parquet.`);
 }
 
 /** Début de nuit : interrogatoires des lieutenants arrêtés la veille. */
@@ -375,13 +375,28 @@ export function seuilScene(state, type) {
   return Math.round(M3.scenes.seuil[type] * (1 + 0.08 * Math.max(0, actives - 6)));
 }
 
-/** Saisies d'une descente réussie (garage, recel) : un lot pour la prochaine vente aux enchères. */
-export function saisieDescente(nd, s, k, butin, fuite, parts, T) {
+/** Biens saisis dans le non-droit : vendus par le parquet, le produit (k€) partagé selon les parts d'influence. */
+export const SAISIES_ND = {
+  blinde: { nom: 'le blindé du Parrain', valeur: 8 },
+  banalise: { nom: 'une berline du garage clandestin', valeur: 3 },
+  informatique: { nom: 'le matériel informatique du recel', valeur: 3 },
+};
+export function vendreSaisie(state, id, parts) {
+  const S = SAISIES_ND[id];
+  if (!S) return;
+  for (const [u, p] of Object.entries(parts || {})) {
+    const z = state.zones[u], b = round1(S.valeur * (Number(p) || 0));
+    if (!z || b <= 0) continue;
+    z.budget = round1(z.budget + b); (z._compta ||= []).push({ k: 'nondroit', l: `Saisie vendue par le parquet : ${S.nom}`, v: b });
+    if (Array.isArray(z.rapport)) z.rapport.push(`Zone de non-droit : ${S.nom} est vendu par le parquet. Ta part du produit : ${fmt(b)}.`);
+  }
+}
+
+/** Saisies d'une descente réussie (garage, recel) : vendues par le parquet, le produit revient aux zones. */
+export function saisieDescente(state, nd, s, k, butin, fuite, parts) {
   if (!nd.v3 || fuite >= M3.fuiteArret || butin < 2) return;
   const id = s.milieu === 'garage' ? 'banalise' : s.milieu === 'recel' ? 'informatique' : null;
-  if (!id) return;
-  if ((nd.saisies || []).some((x) => x.id === id)) return;
-  (nd.saisies ||= []).push({ id, cell: Number(k), parts, T });
+  if (id) vendreSaisie(state, id, parts);
 }
 
 const cap = (t) => (t ? t[0].toUpperCase() + t.slice(1) : t);

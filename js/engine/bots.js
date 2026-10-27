@@ -5,10 +5,7 @@ import { SERVICES, INFRAS, COUTS, BATIMENTS, nbAnnexes, emplacementsAnnexes } fr
 import { makeRng } from './rng.js';
 import { agentsDisponibles, coutDecision, decisionImpossible, operationActive, NIVEAUX_OPERATION, capaciteVehicules } from './zone.js';
 import { affaire, dossierDe, dossierAffaire, faitsConnus, candidats, coutDemarche, DEMARCHES, ENQ, dansMaCellule, pieceDemarche, confrontationOk } from './enquete.js';
-import { fipaPour, invitationImpossible, FIPA } from './fipa.js';
-import { pactesDe, pacteImpossible, defiImpossible, PACTES, DEFI_INDICATEURS } from './pactes.js';
-import { ND, secteurOuvert } from './constants.js';
-import { quartierActif, assurerQuartier, planQuartier, radioQuartier } from './quartier.js';
+import { ND, secteurOuvert, IDS_SPECIALITES } from './constants.js';
 import { partsDe, secteursVoisins, faille, repere, ouvertCeSoir } from './nondroit.js';
 import { seuilScene } from './milieu.js';
 
@@ -29,7 +26,6 @@ export function botOrders(zone, state, style = 'equilibre') {
 
   const dispo = agentsDisponibles(zone, T);
   let reste = dispo;
-  const engagements = {};
   let evenement = 0;
 
   if (state.evenement && state.evenement.tour === T) {
@@ -37,14 +33,7 @@ export function botOrders(zone, state, style = 'equilibre') {
     evenement = Math.min(part, Math.floor(reste / 4));
     reste -= evenement;
   }
-  for (const a of (state.affaires || []).filter((x) => x.zone === zone.uid)) {
-    const envie = style === 'prudent' ? 0.7 : 0.9; // ses propres affaires : presque toujours
-    if (reste > 12 && rng.chance(envie)) {
-      const n = Math.min(reste - 10, a.forceConseillee + rng.int(-1, 2));
-      if (n > 0) { engagements[a.id] = { agents: n, acceptes: [] }; reste -= n; }
-    }
-  }
-  const { secteurs, roles } = quartierActif(state) && state.nonDroit ? botQuartier(zone, state, style, rng, reste) : state.nonDroit ? botNonDroitRoles(zone, state, style, rng, reste) : { secteurs: botNonDroit(zone, state, style, rng, reste), roles: undefined };
+  const { secteurs, roles } = state.nonDroit ? botNonDroitRoles(zone, state, style, rng, reste) : { secteurs: botNonDroit(zone, state, style, rng, reste), roles: undefined };
   reste -= Object.values(secteurs).reduce((a, b) => a + b, 0);
   const poids = { intervention: 0.36, proximite: 0.18, recherche: 0.18, roulage: 0.12, admin: 0.16 };
   if (zone.paperasse > 12) poids.admin += 0.08;
@@ -102,15 +91,11 @@ export function botOrders(zone, state, style = 'equilibre') {
   if (zone.criminalite > 62 && zone.budget > 30) depenses.prevention = true;
   if (zone.moral < 50 && zone.budget > 25) depenses.prime = true;
   if ((zone.cabosses || []).length && zone.budget > 8 && rng.chance(style === 'distrait' ? 0.3 : style === 'agressif' ? 0.6 : 0.9)) depenses.carrosserie = true;
-  // Patrouilles : les robots attentifs envoient 2 agents sur le point chaud annoncé.
-  const patrouilles = {};
-  if (zone.pointChaud && style !== 'distrait' && alloc.proximite >= 2 && rng.chance(style === 'agressif' ? 0.5 : 0.8)) patrouilles[zone.pointChaud.cell] = 2;
   // Le Directeur : les robots attentifs répondent souvent à ce qui est annoncé (feuilleton, fugitif, Fantôme) et aux dilemmes.
   let dilemme = null;
   if (style !== 'distrait') {
     for (const sg of (zone.pressions || []).filter((p) => (p.feuilleton || p.coop) && (p.quartier != null || p.service))) {
       if (!rng.chance(style === 'agressif' ? 0.5 : 0.75)) continue;
-      if (sg.quartier != null && alloc.proximite >= (sg.patrouilles || 2)) patrouilles[sg.quartier] = sg.patrouilles || 2;
       // Soirée chargée (deux demandes) : les robots couvrent la première, et la seconde s'il reste de quoi.
       if (sg.service2 && alloc[sg.service2] < sg.min2 && rng.chance(0.5)) {
         const manque2 = sg.min2 - alloc[sg.service2];
@@ -134,8 +119,10 @@ export function botOrders(zone, state, style = 'equilibre') {
     if (!sct || !sct.barricade || !roles || !roles[k] || !(roles[k].rep + roles[k].desc + roles[k].bouc)) continue;
     tactiques[k] = style === 'prudent' ? 'encercler' : style === 'equilibre' ? (rng.chance(0.4) ? 'negocier' : 'encercler') : 'frontal';
   }
-  const materiel = ordresMaterielRobot(zone, state);
-  return { tactiques, dilemme, patrouilles, alloc, rythme, engagements, secteurs, ...(roles ? { roles } : {}), evenement, decision, operation, depenses, ...(materiel ? { materiel } : {}), ...botEnquete(zone, state, style, rng, alloc), ...botFipa(zone, state, style, rng), ...botRivalites(zone, state, style, rng) };
+  const materiel = ordresMaterielRobot(zone);
+  // Spécialité : choisie une fois, selon le style.
+  const specialite = zone.specialite ? null : { agressif: 'intervention', prudent: 'quartier', distrait: 'routiere' }[style] || IDS_SPECIALITES[rng.int(0, IDS_SPECIALITES.length - 1)];
+  return { tactiques, dilemme, alloc, rythme, secteurs, ...(roles ? { roles } : {}), evenement, decision, operation, depenses, ...(materiel ? { materiel } : {}), ...(specialite ? { specialite } : {}), ...botEnquete(zone, state, style, rng, alloc) };
 }
 
 /**
@@ -173,14 +160,6 @@ function botNonDroit(zone, state, style, rng, reste) {
  * ils complètent le repérage, le bouclage ou la descente qui manque, selon leur point fort.
  * Une partie d'entre eux (distraits, agressifs) fonce en descente sans regarder.
  */
-/** « Le Quartier » : les robots placent comme le bouton « Placer pour moi », plus ou moins souvent selon leur style. */
-function botQuartier(zone, state, style, rng, reste) {
-  assurerQuartier(state);
-  if (style === 'distrait' && rng.chance(0.6)) return { secteurs: {}, roles: {} };
-  if (!rng.chance({ agressif: 0.75, equilibre: 0.65, prudent: 0.5, distrait: 0.5 }[style] || 0.6)) return { secteurs: {}, roles: {} };
-  const n = Math.min(ND.maxTotal, Math.max(0, reste - 13), { agressif: 5, equilibre: 4, prudent: 3, distrait: 3 }[style] || 4);
-  return planQuartier(zone, state, n, radioQuartier(state));
-}
 // Annonces radio simulées entre robots pendant un même tour : chacun lit ce que les précédents ont annoncé.
 // Un robot qui redemande ses ordres dans le même tour ouvre une nouvelle tournée (résultat reproductible).
 const radioBots = { cle: null, ann: {}, vus: new Set() };
@@ -306,69 +285,6 @@ function botEnquete(zone, state, style, rng, alloc) {
     const cp = candidats(a2, faitsConnus(dossierAffaire(state, zone, tr.n)));
     const agents = Math.min(alloc.intervention - 2, ENQ.agentsTraque + (style === 'agressif' ? 1 : 0));
     if (agents >= ENQ.agentsTraque && cp.planques.length <= 2 && rng.chance(0.8)) { const pq = rng.shuffle(cp.planques); out.traque = { n: tr.n, planque: pq[0], agents, ...(pq.length > 1 && (zone.flotte || []).some((v) => v.m === 'anonyme') ? { planque2: pq[1] } : {}) }; break; }
-  }
-  return out;
-}
-
-/** FIPA : invitation, réponse et choix secret des robots. */
-function botFipa(zone, state, style, rng) {
-  const out = {};
-  for (const f of fipaPour(state, zone.uid)) {
-    if (f.etape === 'demande' && f.tourDecision === state.turn && f.demandeur === zone.uid) {
-      const possibles = Object.keys(state.zones).filter((u) => !invitationImpossible(state, f, u));
-      if (possibles.length && style !== 'distrait') {
-        const moi = Math.ceil(f.besoin / 2), lui = f.besoin - moi;
-        out.fipa = { id: f.id, invite: rng.pick(possibles), moi: Math.max(FIPA.minAgents, moi), lui: Math.max(FIPA.minAgents, lui) };
-      }
-    }
-    if (f.etape === 'invite' && f.tourReponse === state.turn && f.partenaire === zone.uid) {
-      out.fipaReponse = { id: f.id, accepte: rng.chance(style === 'prudent' ? 0.6 : 0.85) };
-    }
-    if (f.etape === 'accepte' && f.tourJ === state.turn) {
-      const traitre = style === 'agressif' ? 0.5 : style === 'distrait' ? 0.2 : 0.1;
-      out.fipaChoix = { id: f.id, choix: rng.chance(traitre) ? 'revendiquer' : 'partager' };
-    }
-  }
-  return out;
-}
-
-/** Coup de main, pactes, défis et votes des robots. */
-function botRivalites(zone, state, style, rng) {
-  const out = {};
-  const autres = Object.values(state.zones).filter((z) => z.uid !== zone.uid && z.toursSansOrdres < 3);
-  // Entraide : les robots coopératifs aident une zone en péril.
-  const peril = autres.find((z) => z.peril || z.tutelle);
-  if (peril && style !== 'agressif' && zone.budget > 30 && rng.chance(0.6)) out.aide = { cible: peril.uid, budget: 5, agents: agentsDisponibles(zone, state.turn) > 15 ? 1 : 0 };
-  // Pactes : répondre, mettre en commun les demi-pièces, en proposer de temps en temps.
-  const T = state.turn;
-  for (const p of pactesDe(state, zone.uid)) {
-    if (p.etape === 'propose' && p.b === zone.uid && p.tourReponse === T) out.pacteReponse = { id: p.id, accepte: rng.chance(style === 'prudent' ? 0.5 : 0.75) };
-    if (p.etape === 'actif' && p.frag && !(p.frag.donne && p.frag.donne[zone.uid]) && rng.chance(style === 'distrait' ? 0.6 : 0.85)) out.fragment = p.id;
-  }
-  const libres = autres.filter((z) => !pacteImpossible(state, zone.uid, z.uid));
-  if (libres.length && rng.chance(style === 'agressif' ? 0.04 : 0.1)) out.pacte = { cible: rng.pick(libres).uid, type: rng.pick(Object.keys(PACTES)) };
-  // Défis amicaux.
-  const inv = (state.defis || []).find((d) => d.b === zone.uid && d.etape === 'propose' && d.tourReponse === T);
-  if (inv) out.defiReponse = { id: inv.id, accepte: rng.chance(style === 'prudent' ? 0.3 : 0.6) };
-  const defiables = autres.filter((z) => !defiImpossible(state, zone.uid, z.uid));
-  if (defiables.length && rng.chance(style === 'agressif' ? 0.08 : 0.02)) out.defi = { cible: rng.pick(defiables).uid, ind: rng.pick(Object.keys(DEFI_INDICATEURS)), mise: zone.budget > 30 ? 3 : 0 };
-  // Salle des ventes : vente aux enchères, offre finale secrète sur un lot (et parfois une expertise le premier jour).
-  const v = state.vente;
-  if (v && v.cloture === state.turn && zone.budget > 25 && rng.chance(style === 'agressif' ? 0.5 : style === 'prudent' ? 0.2 : 0.35)) {
-    const lot = rng.pick(v.lots), cur = (v.meneurs && v.meneurs[lot.k] && v.meneurs[lot.k].montant) || lot.prixMin;
-    const montant = Math.min(Math.floor(zone.budget - 20), Math.ceil(cur + rng.int(0, style === 'agressif' ? 5 : 2)));
-    if (montant >= lot.prixMin) out.finales = { [lot.k]: { montant } };
-  } else if (v && v.ouverture === state.turn && zone.agents > 18 && rng.chance(0.15)) out.expertise = rng.pick(v.lots).k;
-  // Conseil.
-  if (state.conseil && state.conseil.tour === state.turn) {
-    out.votes = {};
-    for (const m of state.conseil.motions) {
-      if (m.id === 'dotation') out.votes.dotation = style === 'agressif' ? 0 : rng.chance(0.7) ? 1 : 0;
-      else if (m.id === 'theme') out.votes.theme = rng.int(0, 2);
-      else if (m.id === 'solidarite') out.votes.solidarite = m.cible === zone.uid || rng.chance(style === 'agressif' ? 0.3 : 0.7) ? 1 : 0;
-      else if (m.id === 'blame') out.votes.blame = m.cibles.includes(zone.uid) ? 0 : rng.chance(0.5) ? 1 : 0;
-      else if (m.id === 'chef') out.votes.chef = rng.chance(0.8) ? 1 : 0;
-    }
   }
   return out;
 }

@@ -6,15 +6,12 @@
 // Une zone qui ne joue plus ne bloque personne : son influence s'efface, les autres continuent.
 import { CONFIG } from '../config.js';
 import { nonDroit as geoNonDroit, ville } from '../ui/ville.js';
-import { effetCasquesND, abimer, trouTTI } from './materiel.js';
-import { ND, CHEFS, bonusChef, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND, INFRAS, aAnnexe, LOTS } from './constants.js';
-import { talentVal, talent, noterChef, FRONT, niveauChef } from './chef.js';
+import { effetCasquesND } from './materiel.js';
+import { ND, secteurOuvert, regenSecteur, risqueBlessure, zonesActivesND, INFRAS, aAnnexe } from './constants.js';
 import { makeRng } from './rng.js';
 import { clamp, round1, forceEngagement, forceRole, jalon, noter } from './zone.js';
 import { carteQuartiers, assurerQuartiers } from './quartiers.js';
-import { donnerTrophee, TROPHEE, figure, nomComplet } from './equipe.js';
-import { lies, PACTE } from './pactes.js';
-import { quartierActif, quartierResoudre } from './quartier.js';
+import { donnerTrophee, TROPHEE } from './trophees.js';
 import { assurerMilieu, interrogatoires, modsAssaut, noterDescente, aLaPrise, confianceNuit, finDeNuit, scenesResoudre, saisieDescente, etape, M3, LIEUTENANTS, tactiqueDuSoir, barricades } from './milieu.js';
 
 /** Non-droit « profond » (Parrain, lieutenants, confiance, milieu adaptatif, scènes), en jeu depuis oct. 2026 (les simulations peuvent le couper avec nonDroit.v3 = false). */
@@ -153,12 +150,6 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players =
   const nd = state.nonDroit;
   
   if (ND_V3 && nd.v3 === undefined) nd.v3 = true; // false : désactivé exprès (simulations)
-  // « Le Quartier » (barricades, trois verbes, intentions du milieu) : remplace la règle d'emprise une fois l'interrupteur passé.
-  if (quartierActif(state)) return quartierResoudre(state, uids, ord, push, T, zoneLabel, {
-    prise,
-    retombees: (st, s, k) => retombees(st, s, k, partsDe(s), (s.hier || []).filter((h) => h.r && h.r.bouc).map((h) => ({ u: h.u, n: h.r.bouc })), 0, null),
-    contagion,
-  });
   assurerMilieu(state, nd);
   interrogatoires(state, nd, T, push);
   const rng = makeRng(`${state.seed}:s${state.season}:t${T}:nondroit`);
@@ -187,48 +178,24 @@ export function nonDroitResoudre(state, uids, ord, push, T, zoneLabel, players =
     const ouvert = secteurOuvert(nd, k);
     const engages = ouvert ? uids.filter((u) => ord[u] && ord[u].secteurs && ord[u].secteurs[k] > 0).map((u) => {
       const n = ord[u].secteurs[k];
-      // Une figure de l'équipe en mission sur ce secteur : plus de force, moins de blessés.
-      const mm = (ord[u].missions || (ord[u].mission ? [ord[u].mission] : [])).find((m) => m.type === 'nondroit' && m.secteur === k);
-      const mi = mm ? figure(state.zones[u], mm.role) : null;
-      if (mi) (state.zones[u]._missions ||= []).push(mi.role);
-      const bonus = mi ? bonusChef(mi.niveau) : 0;
-      // Saison 2 : cellule drone (dès 3 agents, le drone guide l'assaut), talent « Tacticien ».
+      // Cellule drone : dès 3 agents, le drone guide l'assaut.
       const zz = state.zones[u];
       const drone = aAnnexe(zz, 'drone') && n >= INFRAS.drone.minAgents;
       const f0 = forceEngagement(zz, n, T) * (drone ? INFRAS.drone.force : 1);
-      // Gros lots de la vente aux enchères (hélicoptère, blindé).
-      // Deux exemplaires du même lot ne se cumulent pas (comme bonusLots) : un seul hélicoptère, un seul blindé comptent.
-      const ndLots = [...new Set((zz.lots || []).map((l) => l.id))].map((id) => LOTS[id] && LOTS[id].nd).filter(Boolean);
-      const fLots = ndLots.reduce((a, x) => a * (1 + (x.force || 0)), 1), bLots = ndLots.reduce((a, x) => a * (x.blessure || 1), 1);
-      const mz = (drone ? INFRAS.drone.force : 1) * fLots * (1 + bonus) * (1 + talentVal(zz, 'tacticien', 'force', 0));
+      const mz = drone ? INFRAS.drone.force : 1;
       const r = (ord[u].roles && ord[u].roles[k]) || { rep: 0, desc: n, bouc: 0 };
       const fr = r ? { rep: forceRole(zz, 'rep', r.rep, T) * mz, desc: forceRole(zz, 'desc', r.desc, T) * mz, bouc: forceRole(zz, 'bouc', r.bouc, T) * mz } : null;
-      const f = fr ? fr.rep * ND.roles.poidsRep + fr.desc + fr.bouc : f0 * fLots * (1 + bonus) * (1 + talentVal(zz, 'tacticien', 'force', 0));
-      return { u, n, f, f0: f, r, fr, chef: mi, drone,
-        risque: (mi ? CHEFS.nd.blessure : 1) * (drone ? INFRAS.drone.blessure : 1) * talentVal(zz, 'tacticien', 'blessure', 1) * bLots };
+      const f = fr ? fr.rep * ND.roles.poidsRep + fr.desc + fr.bouc : f0;
+      return { u, n, f, f0: f, r, fr, drone, risque: drone ? INFRAS.drone.blessure : 1 };
     }) : [];
-    // Chef en première ligne : sur le secteur où la zone engage le plus d'agents.
-    for (const e of engages) { const zz = state.zones[e.u]; if (zz._front === 'nondroit' && zz.chef && !zz._frontUtilise) { const ks = Object.entries((ord[e.u] && ord[e.u].secteurs) || {}).sort((a, b) => b[1] - a[1]); if (ks.length && ks[0][0] === k) { e.f *= 1 + FRONT.nondroit.force * niveauChef(zz.chef, 'commandement'); zz._frontUtilise = `il a mené l’assaut sur ${nomSecteur(k)}`; } } }
     // Salle de crise : +15 % de force quand au moins deux zones attaquent ensemble.
     if (engages.length >= 2) for (const e of engages) if (aAnnexe(state.zones[e.u], 'crise')) { e.f *= 1 + INFRAS.crise.coop; state.zones[e.u].rapport.push(`Salle de crise : coordination avec les autres zones sur ${nomSecteur(k)}, force +${Math.round(INFRAS.crise.coop * 100)} %.`); }
-    for (const e of engages) if (talent(state.zones[e.u], 'tacticien')) noterChef(state.zones[e.u], 'tacticien', `Tacticien : ton assaut sur ${nomSecteur(k)} frappe plus fort (+8 %), avec moins de blessés.`);
-    // Casques et boucliers (magasin) : plus de force et moins de blessés s'il y en a pour tout le monde ; sinon plus de risque.
-    for (const e of engages) { const zz = state.zones[e.u]; if (!zz.materiel) continue; const c = effetCasquesND(zz, e.n);
+    // Casques et boucliers (armurerie) : plus de force et moins de blessés.
+    for (const e of engages) { const zz = state.zones[e.u], c = effetCasquesND(zz);
+      if (c.force === 1) continue;
       e.f *= c.force; e.risque *= c.risque;
-      // Agents sans recyclage TTI avec arme à feu à jour : ils ne peuvent pas partir à l'assaut armés.
-      const ta = zz.materiel.tti ? trouTTI(zz, T, 'af') : 0;
-      if (ta > 0.1) { e.f *= 1 - 0.5 * (ta - 0.1); zz.rapport.push(`Non-droit : ${Math.round(ta * 100)} % de tes agents n’ont plus leur recyclage TTI avec arme à feu, ton assaut sur ${nomSecteur(k)} perd de sa force.`); }
-      const rc = makeRng(`${state.seed}:s${state.season}:t${T}:ndcasques:${k}:${e.u}`);
-      let casse = 0; for (let i = 0; i < Math.floor(e.n / 4); i++) if (rc.chance(0.25)) casse++;
-      const d = casse && zz.materiel.gnep ? abimer(zz, 'gnep', casse, rc) : '';
-      zz.rapport.push(c.part >= 0.5 ? `Casques et boucliers sur ${nomSecteur(k)} : force +${Math.round((c.force - 1) * 100)} %, moins de blessés.${d ? ` ${d}.` : ''}` : `Pas assez de casques et boucliers pour tes ${e.n} agents sur ${nomSecteur(k)} : plus de risque de blessure.`); }
+      zz.rapport.push(`Casques et boucliers sur ${nomSecteur(k)} : force +${Math.round((c.force - 1) * 100)} %, moins de blessés.`); }
     for (const e of engages) if (e.drone) state.zones[e.u].rapport.push(`Cellule drone : le drone survole ${nomSecteur(k)} et guide tes ${e.n} agents (force +${Math.round((INFRAS.drone.force - 1) * 100)} %, moins de blessés).`);
-    // Jumelage non-droit : +20 % de force pour deux zones jumelées sur le même secteur.
-    for (const e of engages) {
-      const jum = engages.filter((x) => x.u !== e.u && lies(state, e.u, x.u, 'terrain', T));
-      if (jum.length) { e.f *= 1 + PACTE.ndBonus; state.zones[e.u].rapport.push(`Jumelage : avec ${jum.map((x) => state.zones[x.u].nom).join(', ')} sur ${nomSecteur(k)}, ta force est majorée de ${Math.round(PACTE.ndBonus * 100)} %.`); }
-    }
-    for (const e of engages) if (e.chef) state.zones[e.u].rapport.push(`Mission : ${nomComplet(e.chef)} mène tes agents à ${nomSecteur(k)} (force +${Math.round(bonusChef(e.chef.niveau) * 100)} %, deux fois moins de risque de blessure).`);
     s.hier = engages.map((e) => ({ u: e.u, n: e.n, ...(e.r ? { r: e.r } : {}) })); // public après 20:00 : qui y était hier soir (et dans quel rôle)
     // Non-droit profond : les agents venus seulement pour la scène du soir ne prennent pas part à l'assaut ni à la garde.
     if (nd.v3) { for (let i = engages.length - 1; i >= 0; i--) { const r = engages[i].r; if (r && r.rep + r.desc + r.bouc === 0) engages.splice(i, 1); else if (r && r.sc) engages[i].n -= r.sc; } }
@@ -515,8 +482,7 @@ function assautRoles(state, nd, s, k, engages, regen0, T, push, res, nom, ord = 
   if (tac) (res.tactiques ||= []).push({ cell: Number(k), ...tac });
   if (tac && tac.choix === 'negocier') {
     const C = M3.carre, lt = s.lieutenant;
-    const niv = Math.max(0, ...engages.map((e) => (state.zones[e.u].chef ? niveauChef(state.zones[e.u].chef, 'diplomatie') || 0 : 0)));
-    const p = Math.min(C.negoMax, C.negoBase + C.negoParNiveau * niv);
+    const p = Math.min(C.negoMax, C.negoBase + C.negoParNiveau * Math.min(4, engages.length));
     const ok = makeRng(`${state.seed}:s${state.season}:t${T}:nego:${k}`).chance(p);
     if (ok) {
       lt.pieces = (lt.pieces || 1) + 1;
@@ -604,7 +570,7 @@ function assautRoles(state, nd, s, k, engages, regen0, T, push, res, nom, ord = 
   }
   if (interp) for (const e of engages) if (fD(e) > 0) stat(e.u, 'ndInterpellations', Math.max(1, Math.round(interp * partB[e.u])));
   noterDescente(nd, k, { fuite, repere: repOK, blesses: 0 });
-  saisieDescente(nd, s, k, butin, fuite, Object.fromEntries(Object.entries(partB).map(([u, p]) => [u, round1(p)])), T);
+  saisieDescente(state, nd, s, k, butin, fuite, Object.fromEntries(Object.entries(partB).map(([u, p]) => [u, round1(p)])));
   (res.descentes ||= []).push({ cell: Number(k), zones: engages.map((e) => e.u), butin: round1(butin), fuite: round1(fuite), interp, repere: repOK });
   if (s.emprise <= 0) {
     prise(state, s, k, T, push, res, nom);

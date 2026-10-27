@@ -2,7 +2,7 @@
 // Chaque élément se débloque avec un grade ou un trophée ; le choix est fait dans le profil du joueur
 // et recopié dans la zone à 20:00 (comme le nom et la couleur), après vérification.
 import { GRADES } from './constants.js';
-import { TROPHEE } from './equipe.js';
+import { TROPHEE } from './trophees.js';
 
 const g = (nom) => ({ grade: nom });
 const t = (id) => ({ trophee: id });

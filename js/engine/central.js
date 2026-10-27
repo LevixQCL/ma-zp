@@ -4,7 +4,7 @@
 // redirige, met une équipe en pause ou en poste, se renseigne. Sans lui, l'adjoint dispatche au bout de 10 minutes.
 // Tout est recalculé à partir des actions horodatées du joueur : même résultat sur tous les appareils, aucun hasard
 // à la résolution. À 20 h, le calcul du tour rejoue la journée (heure des actions donnée par le serveur) et l'inscrit
-// au carnet de la zone : saisies, lot de confiscation, pièce d'enquête, trophées, classement du central.
+// au carnet de la zone : saisies, confiscation, pièce d'enquête, trophées, classement du central.
 import { makeRng } from './rng.js';
 import { carteQuartiers } from './quartiers.js';
 import { vehiculesDisponibles } from './zone.js';
@@ -23,7 +23,8 @@ export const CENTRAL = {
   pts: { maitrise: 3, moyen: 1, deborde: -1, incident: -3, arretee: 4, saisie: 1, rare: 2 },
   fouille: 10,                      // minutes de plus sur place pour fouiller
   chanceFouille: { maitrise: 0.6, arretee: 0.8, moyen: 0.35, deborde: 0.15, incident: 0 },
-  confiscation: 10,                 // valeur de saisies qui fait un lot pour la salle des ventes
+  confiscation: 10,                 // valeur de saisies qui fait une confiscation (vendue par le parquet)
+  produitConfiscation: 2.5,         // k€ versés à la zone à chaque confiscation
   maxActions: 600,
   // Appels par heure selon l'heure de la journée (heure de Bruxelles).
   debit: (h) => (h >= 2 && h < 8 ? 1 : h < 12 && h >= 8 ? 2.4 : h < 18 && h >= 12 ? 3 : h >= 18 && h < 23 ? 3.6 : 2.4),
@@ -56,7 +57,7 @@ const ANNONCES = [
 /** Tous les types d'appel du carnet (titres uniques). */
 export const CARNET_TYPES = [...new Set([...TYPES_C.map((t) => t.titre), ...ANNONCES.map((a) => a.type)])];
 
-// Ce qu'une fouille peut trouver. val : valeur pour la confiscation (salle des ventes) ; piste : un indice pour ton
+// Ce qu'une fouille peut trouver. val : valeur pour la confiscation ; piste : un indice pour ton
 // enquête ; rare : +2 au lieu de +1 ; interp : l'auteur est interpellé.
 export const SAISIES_C = {
   couteau: { nom: 'Couteau', ico: '🔪', val: 1 },
@@ -325,8 +326,8 @@ export function resumeJournee(b) {
 }
 
 /**
- * Inscrit la journée dans le carnet de la zone (z.central) et en tire les effets : lot de confiscation pour la salle
- * des ventes (la moitié du prix revient à la zone), un indice pour son enquête (une fois par jour), rapport du soir.
+ * Inscrit la journée dans le carnet de la zone (z.central) et en tire les effets : confiscation vendue par le parquet
+ * (le produit revient à la zone), un indice pour son enquête (une fois par jour), rapport du soir.
  * `indice()` : ajoute une pièce au dossier d'enquête de la zone (true si fait). Renvoie le résumé.
  */
 export function appliquerCentral(state, uid, b, T, { indice = () => false } = {}) {
@@ -344,13 +345,12 @@ export function appliquerCentral(state, uid, b, T, { indice = () => false } = {}
   for (const id of r.saisies) c.saisies[id] = (c.saisies[id] || 0) + 1;
   c.jauge = Math.min(CENTRAL.confiscation, (c.jauge || 0) + r.valeur);
   const lignes = [`Central : ${r.pts >= 0 ? '+' : ''}${r.pts} points, ${r.gain >= 0 ? '+' : ''}${r.gain} par rapport à l’adjoint seul${r.saisies.length ? ` · saisies : ${r.saisies.map((id) => SAISIES_C[id].nom.toLowerCase()).join(', ')}` : ''}${r.interp ? ` · ${r.interp} interpellation${r.interp > 1 ? 's' : ''}` : ''}.`];
-  // Confiscation : assez de saisies pour un lot, et pas déjà un lot de la zone en attente de vente.
-  const file = (state.saisiesCentral ||= []);
-  if (c.jauge >= CENTRAL.confiscation && !file.some((x) => x.parts && x.parts[uid])) {
+  // Confiscation : assez de biens saisis, le parquet les fait vendre et le produit revient à la zone.
+  if (c.jauge >= CENTRAL.confiscation) {
     c.jauge -= CENTRAL.confiscation;
-    const vehicule = r.saisies.some((id) => id === 'voiture' || id === 'scooter');
-    file.push({ id: vehicule ? 'banalise' : 'informatique', cell: b.capitale, parts: { [uid]: 1 }, src: 'central', T });
-    lignes.push('Central : assez de biens confisqués pour un lot. Il passera à la prochaine salle des ventes ; la moitié du prix te reviendra.');
+    const v = CENTRAL.produitConfiscation;
+    z.budget = Math.round((z.budget + v) * 10) / 10; (z._compta ||= []).push({ k: 'central', l: 'Biens confisqués au central, vendus par le parquet', v });
+    lignes.push(`Central : assez de biens confisqués. Le parquet les fait vendre : +${String(v).replace('.', ',')} k€ pour ta zone.`);
   }
   if (r.pistes && indice()) lignes.push('Central : une saisie parle (téléphone, carte ou carnet). Une pièce de plus dans ton dossier d’enquête.');
   c.dernier = { T, ...r, actions: b.actions };

@@ -155,7 +155,7 @@ export const ENIGMES = { rateeMoral: 0, bonusMoral: 3, bonusBudget: 2, bonusCapa
 /** Chance qu'un agent chargé des énigmes décroche le bonus, selon le moral de la zone. */
 export const chanceDelegue = (moral) => { const d = ENIGMES.delegue; return Math.min(d.max, Math.max(d.min, d.base + ((Number(moral) || 50) - 50) * d.parMoral)); };
 /** Part des effectifs en Roulage au-delà de laquelle joue l'effet « chasse aux PV ». */
-export const seuilChasse = (z) => (z.infra && z.infra.anpr ? ROULAGE.chasseCameras : ROULAGE.chasse) + bonusEquip(z, 'roulage', 'chasse') + forceDoctrine(z, 'chasse');
+export const seuilChasse = (z) => (z.infra && z.infra.anpr ? ROULAGE.chasseCameras : ROULAGE.chasse) + bonusEquip(z, 'roulage', 'chasse') + forceSpe(z, 'chasse');
 
 export const DEPENSES = {
   reserve:      { nom: 'Agents de réserve', cout: 1.5, max: 4, efficacite: 0.8, texte: '1,5 k€ par agent, pour la journée, dans le service de ton choix (efficacité 80 %)' },
@@ -473,39 +473,63 @@ export function tourEffet(decision, turn) {
 
 // ───────────── Révision d'oct. 2026 : règles « v2 » (lots 1 à 3), actives à partir de la saison qui suit la mise à jour ─────────────
 /**
- * Doctrines de zone (choisies au début de chaque saison) : une vraie force, un vrai prix.
- * `cap` : multiplicateur de capacité par service ('*' = tous). Maîtrise (même doctrine d'une saison à l'autre, 0 à 2) :
- * la force grandit de `MAITRISE` par cran (le prix ne bouge pas).
+ * Spécialité de la zone (saison 4, remplace les doctrines) : choisie quand on veut, elle progresse avec les jours joués.
+ * Trois paliers, chacun un effet concret qui s'ajoute aux précédents. En changer remet la progression à zéro.
  */
-export const DOCTRINES = {
-  routiere: { nom: 'Routière', ico: '🚓', force: 'amendes +15 %, « chasse aux PV » repoussée de 15 points d’effectifs ; jauge « Campagne de contrôles » remplie par les amendes : à 100 %, opération sécurité routière (+3 de satisfaction, prime de la commune de 2 000 €)', prix: 'satisfaction −0,15 par jour (les automobilistes râlent) ; au-delà de 30 % des effectifs au Roulage, chaque agent de plus rapporte moitié moins (les contrôles sont connus)', brille: 'opérations de contrôle, besoin d’argent pour bâtir', amendes: 0.15, chasse: 0.15, satJour: -0.15, rendement: 0.3,
-    jauge: { nom: 'Campagne de contrôles', ico: '🚦', service: 'roulage', remplit: '+10 % par 1 000 € d’amendes du soir', gain: '+3 de satisfaction et une prime de la commune de 2 000 €', parK: 0.1, sat: 3, prime: 2 } },
-  quartier: { nom: 'De quartier', ico: '🏘️', force: 'Proximité +10 %, la satisfaction redescend bien moins vite, vagues de délinquance reçues atténuées de moitié ; jauge « Réseau d’îlotiers » remplie par la Proximité : à 100 %, un tuyau (tension du quartier le plus chaud −10, +1 de satisfaction, une chance sur trois d’une pièce d’enquête)', prix: 'Intervention −5 % de capacité', brille: 'fêtes, tensions de quartier, vagues venues des voisins', derive: 0.4, vagues: 0.5, cap: { proximite: 1.10, intervention: 0.95 },
-    jauge: { nom: 'Réseau d’îlotiers', ico: '👂', service: 'proximite', remplit: '+6 % par point de capacité de Proximité', gain: 'tension du quartier le plus chaud −10, +1 de satisfaction, une chance sur trois d’une pièce d’enquête', parCap: 0.06, tension: 10, sat: 1, piece: 0.33 } },
-  judiciaire: { nom: 'Judiciaire', ico: '🔎', force: 'chances de pièce d’enquête +20 %, Recherche +20 % ; jauge « Dossier au parquet » remplie par les dossiers résolus et les démarches d’enquête : à 100 %, le parquet te transmet une pièce d’enquête', prix: 'Intervention −5 % (patrouilles plus minces)', brille: 'semaines d’affaire, appuis PJF, traques', enquete: 0.2, cap: { recherche: 1.20, intervention: 0.95 },
-    jauge: { nom: 'Dossier au parquet', ico: '📁', service: 'recherche', remplit: '+5 % par soir, +25 % par dossier local résolu, +12 % par démarche d’enquête', gain: 'une pièce d’enquête transmise par le parquet (sans affaire en cours : +4 points)', parSoir: 0.05, parDossier: 0.25, parDemarche: 0.12, points: 4 } },
-  intervention: { nom: 'D’intervention', ico: '🚨', force: 'Intervention +10 %, flagrants délits 30 % plus fréquents (chacun : +3 pts, +3 PS, +1 de satisfaction) ; jauge « Saisie » remplie par les incidents traités : à 100 %, 2 000 à 4 000 € d’argent liquide', prix: 'paperasse : chaque incident traité laisse 25 % de PV en plus', brille: 'urgences, zone de non-droit, émeutes, nuits d’orage', flagrant: 0.3, saisie: 2, saisieMax: 4, saisieJauge: 0.1, paperasse: 1.25, cap: { intervention: 1.10 },
-    jauge: { nom: 'Saisie', ico: '💰', service: 'intervention', remplit: '+10 % par incident traité', gain: '2 000 à 4 000 € d’argent liquide' } },
-  partenaire: { nom: 'Partenaire', ico: '🤝', force: 'un renfort envoyé compte pour un agent de plus, plafond des PS d’entraide +50 % ; jauge « Crédit de coopération » remplie par les renforts, relèves et pactes : à 100 %, +3 de réputation et 2 000 € d’indemnité, +1 de réputation pour chacun de tes partenaires', prix: 'capacité −2 % dans tous les services', brille: 'crises de district, assauts de la zone de non-droit, grandes parties', renfort: 1, entraide: 0.5, cap: { '*': 0.98 },
-    jauge: { nom: 'Crédit de coopération', ico: '🤝', service: null, remplit: '+5 % par soir, +35 % par renfort prêté, +35 % par relève prise, +10 % par soir et par pacte en cours, +15 % pour une visite chez un voisin', gain: '+3 de réputation et 2 000 € d’indemnité, +1 de réputation pour chacun de tes partenaires', parSoir: 0.05, parRenfort: 0.35, parReleve: 0.35, parPacte: 0.1, parVisite: 0.15, rep: 3, prime: 2, repPartenaire: 1 } },
+export const PALIERS_SPE = [0, 3, 7]; // jours joués avec la spécialité pour atteindre chaque palier
+export const SPECIALITES = {
+  routiere: { nom: 'Routière', ico: '🚓', service: 'roulage', resume: 'le Roulage, les amendes et la sécurité routière',
+    paliers: [
+      { t: 'Roulage +10 %', cap: { roulage: 1.10 } },
+      { t: 'Amendes +15 %, et la « chasse aux PV » ne commence que 15 points d’effectifs plus loin', amendes: 0.15, chasse: 0.15 },
+      { t: 'Campagne de contrôles : les amendes remplissent une jauge ; pleine, +3 de satisfaction et 2 000 € de la commune', jauge: true },
+    ],
+    jauge: { nom: 'Campagne de contrôles', ico: '🚦', remplit: '+10 % par 1 000 € d’amendes', gain: '+3 de satisfaction et une prime de la commune de 2 000 €', parK: 0.1, sat: 3, prime: 2 } },
+  quartier: { nom: 'De quartier', ico: '🏘️', service: 'proximite', resume: 'la Proximité, les quartiers et la satisfaction',
+    paliers: [
+      { t: 'Proximité +10 %', cap: { proximite: 1.10 } },
+      { t: 'La satisfaction redescend 40 % moins vite, les vagues de délinquance reçues sont atténuées de moitié', derive: 0.6, vagues: 0.5 },
+      { t: 'Réseau d’îlotiers : la Proximité remplit une jauge ; pleine, le quartier le plus tendu se calme et parfois une pièce d’enquête', jauge: true },
+    ],
+    jauge: { nom: 'Réseau d’îlotiers', ico: '👂', remplit: '+6 % par point de capacité de Proximité', gain: 'tension du quartier le plus chaud −10, +1 de satisfaction, une chance sur trois d’une pièce d’enquête', parCap: 0.06, tension: 10, sat: 1, piece: 0.33 } },
+  judiciaire: { nom: 'Judiciaire', ico: '🔎', service: 'recherche', resume: 'la Recherche et l’enquête',
+    paliers: [
+      { t: 'Recherche +15 %', cap: { recherche: 1.15 } },
+      { t: 'Démarches d’enquête 25 % plus rapides, enquête de voisinage +20 %', rapide: 0.25, enquete: 0.2 },
+      { t: 'Dossier au parquet : dossiers et démarches remplissent une jauge ; pleine, le parquet te transmet une pièce', jauge: true },
+    ],
+    jauge: { nom: 'Dossier au parquet', ico: '📁', remplit: '+5 % par soir, +25 % par dossier local résolu, +12 % par démarche d’enquête', gain: 'une pièce d’enquête transmise par le parquet (sans affaire en cours : +4 points)', parSoir: 0.05, parDossier: 0.25, parDemarche: 0.12, points: 4 } },
+  intervention: { nom: 'D’intervention', ico: '🚨', service: 'intervention', resume: 'l’Intervention, les flagrants délits et les saisies',
+    paliers: [
+      { t: 'Intervention +10 %', cap: { intervention: 1.10 } },
+      { t: 'Flagrants délits 30 % plus fréquents (chacun : +3 pts, +3 PS, +1 de satisfaction)', flagrant: 0.3 },
+      { t: 'Saisie : les incidents traités remplissent une jauge ; pleine, 2 000 à 4 000 € d’argent liquide', jauge: true },
+    ],
+    jauge: { nom: 'Saisie', ico: '💰', remplit: '+10 % par incident traité', gain: '2 000 à 4 000 € d’argent liquide', parInc: 0.1, saisie: 2, saisieMax: 4 } },
 };
-export const IDS_DOCTRINES = Object.keys(DOCTRINES);
-export const MAITRISE = 0.15;
-/** Clés de doctrine qui sont un prix ou un seuil : la maîtrise ne les fait pas grandir. */
-const PRIX_DOCTRINE = new Set(['derive', 'vagues', 'usure', 'renforce', 'satJour', 'paperasse', 'rendement']);
-/** Force d'une doctrine pour la clé `cle` (0 si la zone n'a pas cette doctrine), maîtrise comprise. */
-export function forceDoctrine(z, cle) {
-  const d = z && z.doctrine && DOCTRINES[z.doctrine];
-  if (!d || d[cle] == null) return 0;
-  const v = d[cle];
-  return typeof v === 'number' && !PRIX_DOCTRINE.has(cle) ? v * (1 + MAITRISE * (z.maitrise || 0)) : v;
+export const IDS_SPECIALITES = Object.keys(SPECIALITES);
+/** Palier atteint (0 sans spécialité, puis 1 à 3). */
+export function palierSpe(z) {
+  const s = z && z.specialite;
+  if (!s || !Object.hasOwn(SPECIALITES, s.id)) return 0;
+  const j = Number(s.jours) || 0;
+  return PALIERS_SPE.filter((x) => j >= x).length;
 }
-/** Multiplicateur de capacité de la doctrine pour un service (bonus grandi par la maîtrise, malus fixe). */
-export function multDoctrine(z, service) {
-  const d = z && z.doctrine && DOCTRINES[z.doctrine];
-  if (!d || !d.cap) return 1;
-  const m = d.cap[service] ?? d.cap['*'] ?? 1;
-  return m > 1 ? 1 + (m - 1) * (1 + MAITRISE * (z.maitrise || 0)) : m;
+/** Paliers atteints de la spécialité de la zone. */
+const paliersAtteints = (z) => { const n = palierSpe(z); return n ? SPECIALITES[z.specialite.id].paliers.slice(0, n) : []; };
+/** Effet de la spécialité pour la clé `cle` (0 si aucun palier atteint ne le donne). */
+export function forceSpe(z, cle) {
+  let v = 0;
+  for (const p of paliersAtteints(z)) if (typeof p[cle] === 'number') v += p[cle];
+  return v;
+}
+/** La jauge de la spécialité est-elle ouverte (3e palier) ? */
+export const jaugeSpeOuverte = (z) => paliersAtteints(z).some((p) => p.jauge);
+/** Multiplicateur de capacité de la spécialité pour un service. */
+export function multSpe(z, service) {
+  let m = 1;
+  for (const p of paliersAtteints(z)) if (p.cap && p.cap[service]) m *= p.cap[service];
+  return m;
 }
 
 /** Prix de la prime au personnel ce soir : doublé si elle a déjà été versée la veille (règles v2). */

@@ -17,10 +17,9 @@
 // Tout reste déterministe (hasard à graine) : chaque appareil calcule le même tour.
 
 import { clamp, round1, moyenneIpz } from './zone.js';
-import { assurerQuartiers, carteQuartiers, lirePatrouilles } from './quartiers.js';
+import { assurerQuartiers, carteQuartiers } from './quartiers.js';
 import { ALEAS, COUPS_DURS, OPERATIONS, PRESSIONS } from './contenu.js';
 import { siteDe } from './sites.js';
-import { niveauChef, COMPETENCES, noterChef, RESEAU, changerEstime } from './chef.js';
 import { SEASON_LENGTH, BUDGET_IPZ, NIVEAU_MAX, SERVICES, SERVICE_LABELS, coutEquipement, aAnnexe } from './constants.js';
 import { affaire, candidats, faitsConnus, pieceCoupDePouce } from './enquete.js';
 
@@ -40,7 +39,7 @@ export const DIR = {
   pauseFeuilleton: 3,         // tours sans feuilleton après la fin du précédent
   pauseDilemme: 3,            // tours entre deux dilemmes
   district: [8, 12],          // tours entre deux événements de district
-  coop: { chance: 0.35, pause: [3, 5] },   // fugitif à la frontière de deux zones
+  coop: { chance: 0.35, pause: [3, 5], prox: 5 },   // fugitif à la frontière de deux zones (agents de Proximité de chaque côté)
   duo: { chance: 0.3, pause: [4, 6] },     // même feuilleton pour deux zones proches au classement
   fantome: [2, 3],            // tours entre deux apparitions du Fantôme
   routine: 4,                 // jours de répartition identique avant que la rue ne le remarque
@@ -171,21 +170,15 @@ function valence(a) {
 export const ALEAS_POSITIFS = ALEAS.filter((a) => valence(a) > 0);
 export const ALEAS_NEGATIFS = ALEAS.filter((a) => valence(a) <= 0);
 
-/** Le héros du jour : une figure de l'équipe fait la une (éclaircie seulement). */
-const EXPLOITS = [
-  'sauve un enfant tombé dans le canal', 'maîtrise un forcené sans un coup', 'retrouve un randonneur égaré à la nuit tombée',
-  'ramène à sa famille une dame désorientée', 'éteint un début d’incendie dans une cage d’escalier', 'arrête un chauffard en fuite après une course-poursuite à pied',
-];
-
 /**
  * Imprévus du jour (appelé au début de la simulation de la zone) : un aléa léger et/ou un coup dur.
- * @returns {{ alea: object|null, coupDur: object|null, pourquoi: string|null, heros: object|null }}
+ * @returns {{ alea: object|null, coupDur: object|null, pourquoi: string|null }}
  */
 export function imprevusDuJour(state, z, rng) {
   const d = assurerDir(z);
   const ph = d.ph;
   const mi = multI(state);
-  const out = { alea: null, coupDur: null, pourquoi: null, heros: null };
+  const out = { alea: null, coupDur: null, pourquoi: null };
   // Zone absente : seulement de petites bonnes nouvelles, de temps en temps.
   if (!actif(z)) {
     if (rng.chance(0.15)) out.alea = rng.pick(ALEAS_POSITIFS);
@@ -194,11 +187,7 @@ export function imprevusDuJour(state, z, rng) {
   // Aléa léger.
   if (rng.chance(DIR.alea[ph])) {
     const positif = rng.chance(ph === 'eclaircie' ? 1 : clamp(1 - (1 - DIR.aleaPositif[ph]) * mi, 0, 1));
-    if (positif && ph === 'eclaircie' && (z.equipe || []).length && !recent(d, 'heros', 8) && rng.chance(0.3)) {
-      const m = rng.pick(z.equipe);
-      out.heros = { membre: m, exploit: rng.pick(EXPLOITS) };
-      memoriser(d, 'heros');
-    } else {
+    {
       let pool = (positif ? ALEAS_POSITIFS : ALEAS_NEGATIFS).filter((a) => !recent(d, a.id));
       if (!pool.length) pool = positif ? ALEAS_POSITIFS : ALEAS_NEGATIFS;
       // Accueil dégarni depuis plusieurs jours : les tracas internes sont plus fréquents.
@@ -237,7 +226,7 @@ function quartierTendu(state, z, rng, eviter = null) {
   const tri = cells.sort((a, b) => q[b] - q[a]);
   return tri[rng.int(0, Math.min(1, tri.length - 1))];
 }
-const initQuartier = (state, z, rng) => { const cell = quartierTendu(state, z, rng, z.pointChaud && z.pointChaud.cell); return cell ? { cell } : null; };
+const initQuartier = (state, z, rng) => { const cell = quartierTendu(state, z, rng); return cell ? { cell } : null; };
 
 /** Noms possibles de l'ennemi de la saison. */
 export const FANTOMES = ['le Fantôme du Delta', 'la Fouine', 'le Renard des Glacis', 'l’Horloger', 'le Funambule', 'la Couleuvre'];
@@ -271,19 +260,19 @@ export const FEUILLETONS = {
     },
   },
   cambrioleur: {
-    titre: 'Le cambrioleur des toits', besoin: 'proximite', min: 2,
+    titre: 'Le cambrioleur des toits', besoin: 'proximite', min: 5,
     poids: (z, x) => (x.quartiers ? 1 + ((z.dir.neg.proximite || 0) >= 2 ? 2 : 0) + (x.tensionMax >= 60 ? 1 : 0) : 0),
     init: initQuartier,
     etapes: {
       debut: {
-        signe: (s, d) => ({ titre: `Cambrioleur des toits à ${nomQ(s, d.cell)}`, texte: `Deux maisons visitées par les toits. 2 patrouilles à ${nomQ(s, d.cell)} ce soir (Carte).`, quartier: d.cell, patrouilles: 2 }),
-        resoudre: (c, d) => ((c.patrouilles[d.cell] || 0) >= 2
+        signe: (s, d) => ({ titre: `Cambrioleur des toits à ${nomQ(s, d.cell)}`, texte: `Deux maisons visitées par les toits à ${nomQ(s, d.cell)} : 5 agents en Proximité ce soir.`, quartier: d.cell, service: 'proximite', min: 5 }),
+        resoudre: (c, d) => ((c.alloc.proximite || 0) >= 5
           ? { ok: true, fx: { pts: 5, sat: 3, quartier: -8 }, texte: `pris sur le fait à ${nomQ(c.state, d.cell)}`, une: [6, 'Faits divers', `Le cambrioleur des toits arrêté à ${nomQ(c.state, d.cell)}`] }
           : { ok: false, fx: { sat: -2, quartier: 4 }, texte: 'il a encore frappé, la presse s’en empare', suite: 'recidive' }),
       },
       recidive: {
-        signe: (s, d) => ({ titre: 'Le cambrioleur des toits nargue la police', texte: `3 patrouilles à ${nomQ(s, d.cell)} ou une campagne de prévention ce soir.`, quartier: d.cell, patrouilles: 3 }),
-        resoudre: (c, d) => ((c.patrouilles[d.cell] || 0) >= 3 || c.achete.has('prevention')
+        signe: (s, d) => ({ titre: 'Le cambrioleur des toits nargue la police', texte: '6 agents en Proximité ou une campagne de prévention ce soir.', quartier: d.cell, service: 'proximite', min: 6 }),
+        resoudre: (c, d) => ((c.alloc.proximite || 0) >= 6 || c.achete.has('prevention')
           ? { ok: true, fx: { pts: 6, sat: 4, rep: 1, quartier: -8 }, texte: 'enfin coincé, les riverains applaudissent', une: [7, 'Faits divers', 'Fin de cavale pour le cambrioleur des toits'] }
           : { ok: false, fx: { sat: -4, crim: 3, rep: -1 }, texte: 'il court toujours, le quartier perd confiance', une: [5, 'Faits divers', 'Le cambrioleur des toits court toujours'] }),
       },
@@ -296,7 +285,7 @@ export const FEUILLETONS = {
       debut: {
         signe: () => ({ titre: 'Rodéos de motos la nuit', texte: '3 agents en Roulage ce soir pour les coincer.', service: 'roulage', min: 3 }),
         resoudre: (c) => (c.alloc.roulage >= 3
-          ? { ok: true, fx: { pts: 4, sat: 3, budget: 1.5 }, texte: 'motos saisies et revendues aux enchères' }
+          ? { ok: true, fx: { pts: 4, sat: 3, budget: 1.5 }, texte: 'motos saisies, le parquet les fait vendre' }
           : { ok: false, fx: { sat: -2 }, texte: 'les motards ont filé', suite: 'accident' }),
       },
       accident: {
@@ -358,13 +347,13 @@ export const FEUILLETONS = {
     },
   },
   petition: {
-    titre: 'Pétition de quartier', besoin: 'proximite', min: 2,
+    titre: 'Pétition de quartier', besoin: 'proximite', min: 5,
     poids: (z, x) => (x.quartiers && (z.dir.neg.proximite || 0) >= 3 ? 3 : 0),
     init: initQuartier,
     etapes: {
       debut: {
-        signe: (s, d) => ({ titre: `Pétition des habitants de ${nomQ(s, d.cell)}`, texte: `« On ne voit jamais la police ! » 2 patrouilles à ${nomQ(s, d.cell)} ce soir.`, quartier: d.cell, patrouilles: 2 }),
-        resoudre: (c, d) => ((c.patrouilles[d.cell] || 0) >= 2
+        signe: (s, d) => ({ titre: `Pétition des habitants de ${nomQ(s, d.cell)}`, texte: '« On ne voit jamais la police ! » 5 agents en Proximité ce soir.', quartier: d.cell, service: 'proximite', min: 5 }),
+        resoudre: (c, d) => ((c.alloc.proximite || 0) >= 5
           ? { ok: true, fx: { sat: 3, rep: 1, quartier: -6 }, texte: 'les habitants retirent leur pétition' }
           : { ok: false, fx: { sat: -3, rep: -1 }, texte: 'la pétition part chez le bourgmestre', une: [4, 'Quartiers', `Pétition contre l’absence de ${c.label}`] }),
       },
@@ -372,16 +361,16 @@ export const FEUILLETONS = {
   },
   // ── L'ennemi de la saison (lancé par le district, jamais tiré au hasard dans une zone) ──
   fantome: {
-    titre: 'Le Fantôme', district: true, orage: true, besoin: 'proximite', min: 3,
+    titre: 'Le Fantôme', district: true, orage: true, besoin: 'proximite', min: 6,
     poids: () => 0,
     init: initQuartier,
     etapes: {
       debut: {
-        signe: (s, d) => ({ titre: `${majuscule(nomFantome(s))} aperçu à ${nomQ(s, d.cell)}`, texte: `L’ennemi du district rôde : 3 patrouilles à ${nomQ(s, d.cell)} ce soir pour le serrer de près.`, quartier: d.cell, patrouilles: 3 }),
+        signe: (s, d) => ({ titre: `${majuscule(nomFantome(s))} aperçu à ${nomQ(s, d.cell)}`, texte: `L’ennemi du district rôde à ${nomQ(s, d.cell)} : 6 agents en Proximité ce soir pour le serrer de près.`, quartier: d.cell, service: 'proximite', min: 6 }),
         resoudre: (c, d) => {
           const f = c.state.dir && c.state.dir.fantome;
           const nom = nomFantome(c.state);
-          if ((c.patrouilles[d.cell] || 0) >= 3) {
+          if ((c.alloc.proximite || 0) >= 6) {
             if (f) { f.dossier = (f.dossier || 0) + 1; f.pistes = [...(f.pistes || []), c.z.uid].slice(-12); }
             const n = f ? f.dossier : 1;
             return { ok: true, fx: { pts: 5, rep: 2 }, texte: `il file de justesse mais laisse une trace : dossier à ${n} pièce${n > 1 ? 's' : ''}`,
@@ -403,13 +392,13 @@ export const FEUILLETONS = {
           ? 'Le délégué revient : la dernière prime a donné des idées. Heures sup’, vestiaires vétustes, il menace d’un arrêt de travail.'
           : z.dir.mem.greve === 'arret' ? 'Encore la grogne : le dernier arrêt de travail est dans toutes les têtes. Le délégué menace de recommencer.'
             : 'Heures sup’, vestiaires vétustes : le délégué syndical menace d’un arrêt de travail.'),
-        choix: (z) => avecChef(z, [
+        choix: [
           // Règles v2 : plus de réponse « gratuite » en argent : un jour de récupération coûte des agents.
           { l: 'Accorder un jour de récupération', s: '2 agents en récupération 2 jours, +5 de moral' },
           { l: 'Tenir bon', s: 'si le moral est à 50 ou plus ce soir, la grogne retombe ; sinon, arrêt de travail' },
-        ], 'diplomatie', { l: 'Négocier avec le délégué', s: 'la grogne retombe, +3 de moral' }),
+        ],
         defaut: 1,
-        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { moral: 3 }, texte: 'le chef a trouvé les mots, accord sur les vestiaires', mem: { greve: 'tenu' } } : ch === 0
+        resoudre: (c, d, ch) => (ch === 0
           ? ({ ok: true, fx: { bloques: 2, moral: 5 }, texte: 'jour de récupération accordé, la tension retombe', mem: { greve: 'prime' } })
           : c.z.moral >= 50
             ? { ok: true, fx: { moral: 2, rep: 1 }, texte: 'la grogne retombe d’elle-même', mem: { greve: 'tenu' } }
@@ -424,13 +413,12 @@ export const FEUILLETONS = {
       debut: {
         signe: () => ({ titre: 'Un indic veut parler', texte: 'Il attend ta réponse avant 20:00.' }),
         question: 'Un petit voyou prétend savoir quelque chose sur l’affaire en cours. Il demande à être payé.',
-        choix: (z) => avecChef(z, [
+        choix: [
           { l: 'Le payer', s: '−2 k€ : un indice d’enquête' },
           { l: 'Le confier à la Recherche', s: '4 agents en Recherche ce soir : indice gratuit ; sinon il disparaît' },
-        ], 'flair', { l: 'Le cuisiner toi-même', s: 'un indice sans payer, mais il ne reviendra plus jamais' }),
+        ],
         defaut: 1,
         resoudre: (c, d, ch) => {
-          if (ch === 2) return { ok: true, fx: { indice: 1 }, texte: 'le chef l’a retourné en dix minutes ; vexé, il ne reviendra pas', mem: { indic: 'perdu' } };
           if (ch === 0) return { ok: true, fx: { budget: -2, indice: 1 }, texte: 'il a parlé', mem: { indic: 'paye' } };
           return c.alloc.recherche >= 4 ? { ok: true, fx: { indice: 1 }, texte: 'tes enquêteurs l’ont fait parler sans débourser un euro', mem: { indic: 'recherche' } } : { ok: false, fx: {}, texte: 'personne pour l’écouter, il s’est évaporé', mem: { indic: 'perdu' } };
         },
@@ -467,14 +455,14 @@ export const FEUILLETONS = {
       debut: {
         signe: () => ({ titre: 'Une journaliste demande une interview', texte: 'Réponds avant 20:00.' }),
         question: (z) => `La Voix du Delta prépare un portrait de la zone. Ta satisfaction ce matin : ${Math.round(z.satisfaction)}.${z.dir.mem.journaliste === 'amie' ? ' C’est la même journaliste que la dernière fois.' : z.dir.mem.journaliste === 'hostile' ? ' C’est celle qui t’avait étrillé.' : ''}`,
-        choix: (z) => avecChef(z, [
+        choix: [
           { l: 'Accorder l’interview', s: 'satisfaction à 55 ou plus ce soir : bonne presse ; sinon, ça se retourne contre toi' },
           { l: 'Pas de commentaire', s: '−1 de satisfaction' },
-        ], 'proximite', { l: 'Interview préparée avec soin', s: 'bonne presse dès 45 de satisfaction ce soir' }),
+        ],
         defaut: 1,
         resoudre: (c, d, ch) => (ch === 1
           ? { ok: true, fx: { sat: -1 }, texte: '« la police ne souhaite pas s’exprimer »', mem: { journaliste: c.z.dir.mem.journaliste || 'muet' } }
-          : c.z.satisfaction >= (ch === 2 ? 45 : 55)
+          : c.z.satisfaction >= 55
             ? { ok: true, fx: { sat: 4, rep: 2 }, texte: 'portrait élogieux, la journaliste te garde en estime', une: [5, 'Presse', `Portrait flatteur de ${c.label} dans La Voix du Delta`], mem: { journaliste: 'amie' } }
             : { ok: false, fx: { sat: -4, rep: -1 }, texte: 'article au vitriol', une: [5, 'Presse', `${c.label} étrillée par La Voix du Delta`], mem: { journaliste: 'hostile' } }),
       },
@@ -487,12 +475,12 @@ export const FEUILLETONS = {
       debut: {
         signe: () => ({ titre: 'Une proposition de sponsoring', texte: 'Réponds avant 20:00.' }),
         question: 'Le garage Delta Auto offre 4 k€ si son logo est peint sur un de tes combis.',
-        choix: (z) => avecChef(z, [
+        choix: [
           { l: 'Accepter', s: '+4 k€, −2 de réputation' },
           { l: 'Refuser poliment', s: '+1 de réputation' },
-        ], 'gestion', { l: 'Négocier un mécénat discret', s: '+2 k€, sans logo sur le combi' }),
+        ],
         defaut: 1,
-        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { budget: 2 }, texte: 'Delta Auto finance discrètement l’entretien, sans logo', mem: { sponsor: 'refuse' } } : ch === 0
+        resoudre: (c, d, ch) => (ch === 0
           ? { ok: true, fx: { budget: 4, rep: -2 }, texte: 'le combi « Delta Auto » fait sourire le district', une: [2, 'Insolite', `Un combi publicitaire chez ${c.label}`, 'Le logo d’un garage s’affiche désormais sur la portière.'], mem: { sponsor: c.T } }
           : { ok: true, fx: { rep: 1 }, texte: 'la commune salue ton intégrité', mem: { sponsor: 'refuse' } }),
       },
@@ -513,97 +501,6 @@ export const FEUILLETONS = {
         resoudre: (c, d, ch) => (ch === 0
           ? { ok: true, fx: { budget: -1, rep: 1 }, texte: 'portière repeinte en vitesse', mem: { sponsor: 'fini' } }
           : { ok: false, fx: { rep: -3, sat: -2 }, texte: 'la photo du combi fait la une, malaise', une: [5, 'Presse', `Le combi « Delta Auto » de ${c.label} fait jaser`], mem: { sponsor: 'fini' } }),
-      },
-    },
-  },
-  // ── Appels du réseau (saison 2, chef de corps) : un personnage appelle le chef ; l'estime gagnée ou perdue change son humeur. ──
-  appelBourgmestre: {
-    titre: 'Le bourgmestre au téléphone', dilemme: true,
-    poids: (z) => (z.chef ? 0.7 : 0),
-    etapes: {
-      debut: {
-        signe: () => ({ titre: '📞 Le bourgmestre au téléphone', texte: 'Il attend ta réponse avant 20:00.' }),
-        question: 'L’échevin des fêtes voudrait deux agents en grande tenue à la kermesse de demain, « pour l’image ». Le bourgmestre appuie la demande.',
-        choix: (z) => avecChef(z, [
-          { l: 'Envoyer deux agents', s: '2 agents pris demain ; le bourgmestre apprécie, le syndicat grince' },
-          { l: 'Refuser poliment', s: 'aucun agent pris, mais le bourgmestre s’en souviendra' },
-        ], 'diplomatie', { l: 'Proposer les gardiens de la paix communaux', s: 'la commune fournit les gilets, le bourgmestre apprécie' }),
-        defaut: 1,
-        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { estime: { bourgmestre: 1 } }, texte: 'les gardiens de la paix font très bien l’affaire' }
-          : ch === 0 ? { ok: true, fx: { corvee: 2, estime: { bourgmestre: 1, syndicat: -1 } }, texte: 'belle photo dans le bulletin communal' }
-            : { ok: true, fx: { estime: { bourgmestre: -1 } }, texte: 'le bourgmestre raccroche un peu sèchement' }),
-      },
-    },
-  },
-  appelMarche: {
-    titre: 'Les camionnettes du marché', dilemme: true,
-    poids: (z) => (z.chef ? 0.5 : 0),
-    etapes: {
-      debut: {
-        signe: () => ({ titre: '📞 Le bourgmestre et les commerçants', texte: 'Décide avant 20:00.' }),
-        question: 'Le bourgmestre veut qu’on verbalise les camionnettes garées sur la place du marché. Les commerçants menacent d’appeler la presse.',
-        choix: (z) => avecChef(z, [
-          { l: 'Faire verbaliser', s: 'le bourgmestre apprécie, la presse s’en mêle (−1 de satisfaction)' },
-          { l: 'Fermer les yeux', s: '+1 de satisfaction, le bourgmestre est déçu' },
-        ], 'proximite', { l: 'Réunir commerçants et échevin', s: 'un accord sur les horaires de livraison : tout le monde y gagne' }),
-        defaut: 1,
-        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { sat: 1, estime: { bourgmestre: 1 } }, texte: 'un accord signé autour d’un café' }
-          : ch === 0 ? { ok: true, fx: { sat: -1, estime: { bourgmestre: 1, journaliste: -1 } }, texte: 'la place est dégagée, les commerçants ruminent dans le journal' }
-            : { ok: true, fx: { sat: 1, estime: { bourgmestre: -1 } }, texte: 'les commerçants te remercient, le bourgmestre beaucoup moins' }),
-      },
-    },
-  },
-  appelProcureur: {
-    titre: 'Le procureur est pressé', dilemme: true,
-    poids: (z) => (z.chef ? 0.7 : 0),
-    etapes: {
-      debut: {
-        signe: () => ({ titre: '📞 Le procureur au téléphone', texte: 'Réponds avant 20:00.' }),
-        question: 'Le procureur veut un rapport complet sur un trafic de stupéfiants pour demain matin. « Je compte sur vous. »',
-        choix: (z) => avecChef(z, [
-          { l: 'Mettre la Recherche dessus', s: '4 agents en Recherche ce soir : le procureur apprécie ; sinon, il est déçu' },
-          { l: 'Demander un délai', s: 'rien à mobiliser, mais le procureur s’impatiente' },
-        ], 'flair', { l: 'Rédiger toi-même la synthèse', s: 'le procureur apprécie, +1 de réputation' }),
-        defaut: 1,
-        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { rep: 1, estime: { procureur: 1 } }, texte: 'une synthèse limpide, le parquet est conquis' }
-          : ch === 0 ? ((c.alloc.recherche || 0) >= 4 ? { ok: true, fx: { pap: -2, estime: { procureur: 1 } }, texte: 'rapport bouclé dans la nuit' } : { ok: false, fx: { estime: { procureur: -1 } }, texte: 'pas assez d’enquêteurs : le rapport arrive incomplet' })
-            : { ok: true, fx: { estime: { procureur: -1 } }, texte: '« Je vous laisse jusqu’à lundi, mais c’est la dernière fois »' }),
-      },
-    },
-  },
-  appelSyndicat: {
-    titre: 'Le repas de corps', dilemme: true,
-    poids: (z) => (z.chef ? 0.7 : 0),
-    etapes: {
-      debut: {
-        signe: () => ({ titre: '📞 Le délégué syndical', texte: 'Réponds avant 20:00.' }),
-        question: 'Le délégué t’invite au repas de corps de vendredi. Les équipes regardent si le chef viendra.',
-        choix: (z) => avecChef(z, [
-          { l: 'Y aller et payer la tournée', s: '−1 k€, +3 de moral, le délégué apprécie' },
-          { l: 'Décliner, trop de travail', s: 'le délégué le prend mal' },
-        ], 'commandement', { l: 'Y aller et faire un discours', s: '+3 de moral, le délégué apprécie, sans rien payer' }),
-        defaut: 1,
-        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { moral: 3, estime: { syndicat: 1 } }, texte: 'un discours qui a fait lever les verres' }
-          : ch === 0 ? { ok: true, fx: { budget: -1, moral: 3, estime: { syndicat: 1 } }, texte: 'une soirée dont on parlera longtemps' }
-            : { ok: true, fx: { estime: { syndicat: -1 } }, texte: 'ta chaise vide a été remarquée' }),
-      },
-    },
-  },
-  appelPresse: {
-    titre: 'Un « off » avec la presse', dilemme: true,
-    poids: (z) => (z.chef ? 0.6 : 0),
-    etapes: {
-      debut: {
-        signe: () => ({ titre: '📞 La Voix du Delta', texte: 'Réponds avant 20:00.' }),
-        question: 'Une journaliste te propose un échange « off » : elle enquête sur une affaire du parquet et voudrait ton éclairage.',
-        choix: (z) => avecChef(z, [
-          { l: 'Jouer le jeu', s: 'la presse apprécie, le procureur beaucoup moins' },
-          { l: 'Refuser', s: 'le procureur apprécie, la presse est vexée' },
-        ], 'diplomatie', { l: 'Lui offrir un autre sujet', s: 'reportage sur la journée portes ouvertes : la presse apprécie, +1 de satisfaction' }),
-        defaut: 1,
-        resoudre: (c, d, ch) => (ch === 2 ? { ok: true, fx: { sat: 1, estime: { journaliste: 1 } }, texte: 'un joli reportage sur les portes ouvertes' }
-          : ch === 0 ? { ok: true, fx: { estime: { journaliste: 1, procureur: -1 } }, texte: 'l’article sort, le parquet reconnaît ta patte' }
-            : { ok: true, fx: { estime: { journaliste: -1, procureur: 1 } }, texte: 'la journaliste raccroche, le parquet te félicite de ta discrétion' }),
       },
     },
   },
@@ -693,10 +590,6 @@ function appliquer(z, fx, c) {
   if (fx.quartier && c.cell != null && z.quartiers && c.cell in z.quartiers) { z.quartiers[c.cell] = clamp(z.quartiers[c.cell] + fx.quartier, 10, 95); resync(); t.push(`tension du quartier ${plus(fx.quartier)}`); }
   if (fx.bloques) { z.blesses.push({ n: fx.bloques, retour: c.T + 3, motif: 'grève' }); }
   if (fx.corvee) { z.blesses.push({ n: fx.corvee, retour: c.T + 2, motif: 'service d’honneur' }); t.push(`${fx.corvee} agents pris demain`); }
-  if (fx.estime && z.chef) for (const [id, v] of Object.entries(fx.estime)) {
-    changerEstime(z, id, v);
-    t.push(`${RESEAU[id].nom.toLowerCase()} ${v > 0 ? 't’en sait gré' : 't’en veut'}`);
-  }
   if (fx.vhs) { z.vehiculesHS.push({ retour: c.T + 2 }); }
   if (fx.indice) {
     let n = 0;
@@ -712,15 +605,6 @@ export function memoirePlainte(z) {
   if (j === 'amie') return { sat: 3, texte: ' La Voix du Delta prend ta défense : l’effet est réduit de moitié.' };
   if (j === 'hostile') return { sat: -2, texte: ' La Voix du Delta en remet une couche (−2 de plus).' };
   return { sat: 0, texte: '' };
-}
-
-/**
- * Saison 2 : une option de plus quand le chef de corps a le niveau (4) dans la compétence. Jamais la seule bonne
- * réponse : une autre sortie, pas une victoire automatique.
- */
-function avecChef(z, base, comp, extra) {
-  const L = z && z.chef ? niveauChef(z.chef, comp) : 0;
-  return L >= 4 ? [...base, { ...extra, l: extra.l, s: `${COMPETENCES[comp].nom} ${L} : ${extra.s}`, chef: comp }] : base;
 }
 
 // ───── Événements de district ─────
@@ -813,7 +697,7 @@ export function districtNuit(state, T, rng) {
     }
   }
 
-  // 3. Fugitif à la frontière de deux zones : il faut des patrouilles des deux côtés, le même soir.
+  // 3. Fugitif à la frontière de deux zones : il faut de la Proximité des deux côtés, le même soir.
   dd.coop = (dd.coop || []).filter((x) => x.tour >= T1 && state.zones[x.a] && state.zones[x.b]);
   if (!dd.coop.length && T1 >= DIR.premierOrage && T1 <= SEASON_LENGTH - 1 && T1 >= (dd.coopProchain || 0) && rng.chance(DIR.coop.chance)) {
     const paires = frontieres(state, (z) => present(z));
@@ -854,14 +738,14 @@ function pressionsDistrict(state, z, T1) {
   for (const x of (state.dir && state.dir.coop) || []) {
     if (x.tour !== T1 || (z.uid !== x.a && z.uid !== x.b)) continue;
     const moi = z.uid === x.a ? x.ca : x.cb, lui = z.uid === x.a ? x.cb : x.ca, autre = state.zones[z.uid === x.a ? x.b : x.a];
-    out.push({ id: 'coop-fugitif', coop: true, quartier: moi, patrouilles: 2,
+    out.push({ id: 'coop-fugitif', coop: true, quartier: moi, service: 'proximite', min: DIR.coop.prox,
       titre: x.e === 'debut' ? `Fugitif entre ${nomQ(state, moi)} et ${nomQ(state, lui)}` : 'Le fugitif se terre encore à la frontière',
-      texte: `Avec ${label(autre)} : 2 patrouilles à ${nomQ(state, moi)} chez toi et 2 à ${nomQ(state, lui)} chez eux, le même soir.${x.e === 'debut' ? '' : ' Dernière chance.'}`, effet: {} });
+      texte: `Avec ${label(autre)} : ${DIR.coop.prox} agents en Proximité chez toi et ${DIR.coop.prox} chez eux, le même soir.${x.e === 'debut' ? '' : ' Dernière chance.'}`, effet: {} });
   }
   return out;
 }
 
-/** Fugitif à la frontière : résolu avant la simulation des zones (il faut les patrouilles des deux côtés). */
+/** Fugitif à la frontière : résolu avant la simulation des zones (il faut de la Proximité des deux côtés). */
 export function coopResoudre(state, uids, ord, push, T) {
   const dd = state.dir;
   if (!dd || !Array.isArray(dd.coop)) return [];
@@ -869,16 +753,16 @@ export function coopResoudre(state, uids, ord, push, T) {
   for (const x of dd.coop.filter((c) => c.tour === T)) {
     const za = state.zones[x.a], zb = state.zones[x.b];
     if (!za || !zb || !uids.includes(x.a) || !uids.includes(x.b)) { x.fini = true; continue; }
-    const pat = (u, z) => lirePatrouilles(state, z, (ord[u] || {}).patrouilles, ((ord[u] || {}).alloc || {}).proximite || 0);
-    const okA = (pat(x.a, za)[x.ca] || 0) >= 2, okB = (pat(x.b, zb)[x.cb] || 0) >= 2;
+    const prox = (u) => (((ord[u] || {}).alloc || {}).proximite || 0);
+    const okA = prox(x.a) >= DIR.coop.prox, okB = prox(x.b) >= DIR.coop.prox;
     const c = { T };
     if (okA && okB) {
       const fx = x.e === 'debut' ? { pts: 5, rep: 2, sat: 2, ps: 8 } : { pts: 3, rep: 1, sat: 1, ps: 6 };
       for (const [z, autre] of [[za, zb], [zb, za]]) z.rapport.push(`Fugitif à la frontière : coincé avec ${label(autre)} (${appliquer(z, fx, c)}).`);
-      push(9, 'Coopération', `${label(za)} et ${label(zb)} coincent le fugitif`, 'Patrouilles des deux côtés de la frontière, le même soir : il n’avait plus d’issue.', x.a);
+      push(9, 'Coopération', `${label(za)} et ${label(zb)} coincent le fugitif`, 'La Proximité des deux côtés de la frontière, le même soir : il n’avait plus d’issue.', x.a);
       x.fini = true; res.push({ ...x, ok: true });
     } else if (x.e === 'debut') {
-      for (const [z, ok, autre] of [[za, okA, zb], [zb, okB, za]]) z.rapport.push(`Fugitif à la frontière : il a filé. ${ok ? `Tes patrouilles étaient là, pas celles de ${label(autre)}.` : `Il fallait 2 patrouilles chez toi${(z === za ? okB : okA) ? `, celles de ${label(autre)} étaient là` : ''}.`} Il se terre encore : dernière chance demain, ensemble.`);
+      for (const [z, ok, autre] of [[za, okA, zb], [zb, okB, za]]) z.rapport.push(`Fugitif à la frontière : il a filé. ${ok ? `Ta Proximité était là, pas celle de ${label(autre)}.` : `Il fallait ${DIR.coop.prox} agents en Proximité chez toi${(z === za ? okB : okA) ? `, ${label(autre)} était au rendez-vous` : ''}.`} Il se terre encore : dernière chance demain, ensemble.`);
       x.e = 'cavale'; x.tour = T + 1;
     } else {
       for (const [z, ok, autre] of [[za, okA, zb], [zb, okB, za]]) {
@@ -955,8 +839,8 @@ export function directeurNuit(state, z, rng, { T, nextWeekday, forme = 0, PRESSI
     quartiers: Object.keys(assurerQuartiers(state, z)).length > 0,
     tensionMax: Math.max(0, ...Object.values(z.quartiers || {})),
   };
-  // Une zone qui a choisi une doctrine assume sa spécialisation : la rue met deux fois plus de temps à le remarquer.
-  const routine = d.routine >= DIR.routine * (z.doctrine ? 2 : 1);
+  // Une zone spécialisée assume son choix : la rue met deux fois plus de temps à le remarquer.
+  const routine = d.routine >= DIR.routine * (z.specialite ? 2 : 1);
   const allocHier = (z.dernierOrdre && z.dernierOrdre.alloc) || {};
   if (!d.fe && present(z) && d.retour !== T && T1 >= d.cdF && (d.ph === 'calme' || d.ph === 'montee') && rng.chance(Math.min(0.95, DIR.feuilleton * multF(state) * (routine ? 2 : 1)))) {
     const pool = Object.entries(FEUILLETONS)
@@ -1029,7 +913,7 @@ function planifierOperation(z, d, rng, site, T1, partSite, appel) {
 
 /**
  * Pendant la simulation d'une zone : retour d'absence, routine, feuilleton ou dilemme du jour, événement du district.
- * @param c { state, T, o, alloc, patrouilles, rates, achete:Set, indice:()=>bool, rng, push, label, district:[] }
+ * @param c { state, T, o, alloc, rates, achete:Set, indice:()=>bool, rng, push, label, district:[] }
  */
 export function directeurSoir(state, z, c) {
   const d = assurerDir(z);
@@ -1073,7 +957,6 @@ export function directeurSoir(state, z, c) {
       if (v === null) lignes.push(`${def.titre} : sans réponse de ta part, ton adjoint a choisi « ${choix[ch].l} ».`);
     }
     const r = et.resoudre({ ...c, z }, fe.d || {}, ch);
-    if (choix && choix[ch] && choix[ch].chef) noterChef(z, `dir-${fe.id}`, `${COMPETENCES[choix[ch].chef].nom} : ton chef a trouvé une autre sortie (« ${choix[ch].l} »).`);
     const eff = appliquer(z, r.fx || {}, { T: c.T, cell: fe.d && fe.d.cell, indice: c.indice, compta: def.titre });
     lignes.push(`${def.titre}${ch !== null ? ` (« ${choix[ch].l} »)` : ''} : ${r.texte}${eff ? ` (${eff})` : ''}.`);
     if (r.une) c.push(r.une[0], r.une[1], r.une[2], r.une[3] || `${def.titre} : ${r.texte}.`, z.uid);

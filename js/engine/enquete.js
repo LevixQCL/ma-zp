@@ -9,8 +9,7 @@ import { enService } from './flotte.js';
 // siens à prix normal, ceux des autres coûtent le double, d'où l'intérêt de partager.
 // Tout est déterministe : une affaire se recalcule à partir de la graine et de son numéro.
 import { makeRng, hashString } from './rng.js';
-import { bonusEquip, SERVICE_LABELS, forceDoctrine, aAnnexe } from './constants.js';
-import { talent, AGENDA, noterChef, FRONT, niveauChef } from './chef.js';
+import { bonusEquip, SERVICE_LABELS, forceSpe, aAnnexe } from './constants.js';
 import { minutes as minutes3, TRAVAUX_POSSIBLES } from './carte3.js';
 import { affaireMeurtre, VARIANTES_MEURTRE } from './meurtre-mons.js';
 import { affaireMeurtreRampe, evaluerHypothese, VARIANTES_RAMPE } from './meurtre-rampe.js';
@@ -148,7 +147,7 @@ export function maxDemarchesDe(state, z) {
   const d = e && z && z.enquete && z.enquete.n === e.n ? z.enquete : null;
   // Pièces reçues la veille (celles qui arrivent ce soir ne comptent pas : le joueur ne les connaissait pas en choisissant).
   const recu = d && d.pieces.some((p) => p.de && (p.j || 0) >= (e.jour || 1) - 1 && (p.j || 0) < (e.jour || 1));
-  return ENQ.maxDemarches + (recu ? 0 : ENQ.demarcheSolo) + (talent(z, 'intuition') && z._agenda && z._agenda.type === 'parquet' ? 1 : 0);
+  return ENQ.maxDemarches + (recu ? 0 : ENQ.demarcheSolo);
 }
 
 /** Points d'enquête pour une découverte au jour `j`. */
@@ -1401,8 +1400,8 @@ export function enquetePre(state, uids, ord, push) {
       }
       d.accuseJ = e.jour;
       if (paire.every((k) => estAuteur(aff, k))) { d.accuse = aff.coupable; d.accuse2 = aff.complice; justes.push(u); continue; }
-      d.accuse = a; d.accuse2 = a2; d.exclu = true; if (!talent(z, 'renard')) z.reputation -= 3; else noterChef(z, 'renard', 'Vieux renard : accusation rejetée, mais ta réputation n’en souffre pas.');
-      z.rapport.push(`Enquête : accusation rejetée par le parquet. Plus d’accusation possible sur cette affaire (${talent(z, 'renard') ? 'vieux renard : ta réputation n’en souffre pas' : '−3 de réputation'}).`);
+      d.accuse = a; d.accuse2 = a2; d.exclu = true; z.reputation -= 3;
+      z.rapport.push(`Enquête : accusation rejetée par le parquet. Plus d’accusation possible sur cette affaire (−3 de réputation).`);
       continue;
     }
     if (!(restants.length === 1 && restants[0] === a)) {
@@ -1413,8 +1412,8 @@ export function enquetePre(state, uids, ord, push) {
     d.accuse = a; d.accuseJ = e.jour;
     if (a === aff.coupable) justes.push(u);
     else {
-      d.exclu = true; if (!talent(z, 'renard')) z.reputation -= 3; else noterChef(z, 'renard', 'Vieux renard : accusation rejetée, mais ta réputation n’en souffre pas.');
-      z.rapport.push(`Enquête : accusation ${deN(aff.suspects[a].nom)} rejetée par le parquet. Plus d’accusation possible sur cette affaire (${talent(z, 'renard') ? 'vieux renard : ta réputation n’en souffre pas' : '−3 de réputation'}). Tu peux encore aider les autres en partageant tes pièces.`);
+      d.exclu = true; z.reputation -= 3;
+      z.rapport.push(`Enquête : accusation ${deN(aff.suspects[a].nom)} rejetée par le parquet. Plus d’accusation possible sur cette affaire (−3 de réputation). Tu peux encore aider les autres en partageant tes pièces.`);
       // La Gazette ne dit pas qui a été accusé : le nom d'un innocent serait un indice gratuit pour toutes les zones.
       push(6, 'Enquête', `Fausse piste pour ${nomZone(z)}`, `Son accusation dans « ${aff.titre} » est rejetée par le parquet. L’enquête continue pour les autres zones.`, u);
     }
@@ -1599,7 +1598,7 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
   // Enquête de voisinage : plus on a de capacité de Recherche, plus elle rapporte ; une piste prioritaire la concentre.
   const piste = Number.isInteger(o.piste) && o.piste >= 0 && o.piste < aff.suspects.length ? o.piste : null;
   const surPiste = piste !== null && piecesLibres(aff).some((f) => !faitsConnus(d).includes(f) && Number(f.split(':')[1]) === piste);
-  const attendu = chanceVoisinage(state, z.uid, capa.recherche * (1 + bonusEquip(z, 'recherche', 'enquete') + forceDoctrine(z, 'enquete') + (z._agenda && z._agenda.type === 'parquet' ? AGENDA.parquet.enquete : 0) + (z._service === 'procureur' ? 0.15 : 0) + (z._front === 'enquete' && z.chef ? (z._frontUtilise = 'il a mené les interrogatoires de l’enquête', FRONT.enquete.enquete * niveauChef(z.chef, 'flair')) : 0)), surPiste ? piste : null);
+  const attendu = chanceVoisinage(state, z.uid, capa.recherche * (1 + bonusEquip(z, 'recherche', 'enquete') + forceSpe(z, 'enquete')), surPiste ? piste : null);
   const nb = Math.floor(attendu) + (zr.chance(attendu % 1) ? 1 : 0);
   const trouvees = [];
   for (let k = 0; k < nb; k++) {

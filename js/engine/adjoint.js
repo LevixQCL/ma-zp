@@ -1,20 +1,19 @@
-// L'adjoint du chef de corps (saison 2) : il tient la zone les jours sans ordres, mieux que l'ancien pilote
-// automatique, selon la consigne laissée par le joueur et le Commandement du chef (« un bon chef sait déléguer »).
+// L'adjoint : il tient la zone les jours sans ordres, selon la consigne laissée par le joueur.
+// Saison 4 : son savoir-faire est fixe (il adapte la répartition et mène l'opération, sans dépenser plus).
 // Il ne fait jamais mieux qu'un joueur présent : pas de décision d'achat, pas d'enquête, pas d'agenda, et les jours
 // tenus par l'adjoint comptent au classement avec une décote (CLASSEMENT.decoteAbsent, voir zone.js moyenneIpz).
 // Il tient aussi un journal : au retour, le joueur voit ce qui s'est passé pendant son absence.
 import { autopilotOrders, sanitizeOrders, operationActive } from './zone.js';
 import { SERVICES } from './constants.js';
-import { niveauChef } from './chef.js';
 import { MAX_DEPENSES } from './regles.js';
 
 export const ADJOINT = {
   adapte: 3,        // Commandement 3 : il déplace des agents vers la pression du jour
   operations: 5,    // Commandement 5 : il mène l'opération d'envergure en entier
   depenses: 7,      // Commandement 7 : il dépense plus volontiers (prime, prévention, réserve)
+  niveau: 5,        // savoir-faire fixe (saison 4) : adapte et mène l'opération, ne dépense pas plus
   tient: 3,         // jours d'absence sans le malus « chef absent » (au lieu d'un seul)
   journal: 7,       // jours gardés dans son journal
-  retour: { jours: 3, remise: 1.5, duree: 3 }, // absence de 3 jours ou plus : services du réseau rouverts, expérience ×1,5 pendant 3 jours
 };
 export const CONSIGNES = {
   prudent: { nom: 'Prudent', ico: '🛡️', texte: 'ménage le moral : rythme allégé dès que le moral fléchit, pas d’opération risquée' },
@@ -26,19 +25,22 @@ export const IDS_CONSIGNES = Object.keys(CONSIGNES);
 const PRENOMS = [['Julien', 0, 'p02'], ['Sandrine', 1, 'p05'], ['Michaël', 0, 'p08'], ['Valérie', 1, 'p11'], ['Frédéric', 0, 'p13'], ['Stéphanie', 1, 'p16'], ['Christophe', 0, 'p17'], ['Audrey', 1, 'p22'], ['Damien', 0, 'p20'], ['Caroline', 1, 'p24'], ['Nicolas', 0, 'p23'], ['Émilie', 1, 'p03']];
 const NOMS = ['Delvaux', 'Lambert', 'Dubois', 'Peeters', 'Maes', 'Lejeune', 'Collard', 'Renard', 'Hermans', 'Wauters', 'Gilson', 'Leroy'];
 
-/** Crée l'adjoint d'une zone (stable : même graine, même adjoint), avec un portrait différent de celui du chef. */
-export function creerAdjoint(uid, portraitChef) {
+/** Crée l'adjoint d'une zone (stable : même graine, même adjoint). */
+export function creerAdjoint(uid) {
   let h = 0; for (const c of String(uid)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  let i = h % PRENOMS.length;
-  if (PRENOMS[i][2] === portraitChef) i = (i + 1) % PRENOMS.length;
+  const i = h % PRENOMS.length;
   const [prenom, f, portrait] = PRENOMS[i];
   return { prenom, nom: NOMS[(h >>> 4) % NOMS.length], f: !!f, portrait, consigne: 'equilibre', jours: 0, journal: [] };
 }
-export const consigneDe = (z, pf) => (pf && Object.hasOwn(CONSIGNES, pf.consigne) ? pf.consigne : (z.adjoint && z.adjoint.consigne) || 'equilibre');
+/** Consigne laissée par le joueur (profil `consigne`, ou l'ancien `chef.consigne`), sinon celle de l'adjoint. */
+export const consigneDe = (z, p) => {
+  const c = p && (p.consigne || (p.chef && p.chef.consigne));
+  return Object.hasOwn(CONSIGNES, c) ? c : (z.adjoint && z.adjoint.consigne) || 'equilibre';
+};
 
-/** Ce que l'adjoint sait faire, d'après le Commandement du chef (pour l'affichage et les ordres). */
-export function savoirFaire(chef) {
-  const L = niveauChef(chef, 'commandement');
+/** Ce que l'adjoint sait faire (pour l'affichage). */
+export function savoirFaire() {
+  const L = ADJOINT.niveau;
   return [
     { ok: true, t: 'reprend la dernière répartition et règle le rythme selon ta consigne' },
     { ok: L >= ADJOINT.adapte, niv: ADJOINT.adapte, t: 'glisse un agent vers le service mis sous pression ce jour-là' },
@@ -60,7 +62,7 @@ function deplacer(alloc, cible, n, garder = {}) {
 /** Ordres de l'adjoint pour une zone sans ordres ce soir. */
 export function ordresAdjoint(z, state, consigne = 'equilibre') {
   const T = state.turn, base = autopilotOrders(z, state);
-  const L = niveauChef(z.chef, 'commandement');
+  const L = ADJOINT.niveau;
   const o = { ...base, alloc: { ...base.alloc }, depenses: {} };
   const op = operationActive(z, T);
   if (L >= ADJOINT.adapte) {
@@ -87,7 +89,7 @@ export function ordresAdjoint(z, state, consigne = 'equilibre') {
   return sanitizeOrders(z, o, state);
 }
 
-/** Une ligne du journal de l'adjoint (fin de soirée, jour tenu sans le chef). */
+/** Une ligne du journal de l'adjoint (fin de soirée, jour tenu sans le joueur). */
 export function noterJournal(z, T, j) {
   const a = z.adjoint;
   if (!a) return;
