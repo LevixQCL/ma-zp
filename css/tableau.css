@@ -411,7 +411,7 @@ body:has(.demo-banner) .jr-wrap { top: 44px; }
 .e2-photo, .e2-photo > svg, .e2-photo > img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .e2-photo { overflow: hidden; border-radius: inherit; }
 .e2-hero::before { border-radius: inherit; }
-.e2-photo > svg, .e2-photo svg image { object-fit: cover; }
+.e2-photo > svg, .e2-photo svg image, .e2-photo > img { object-fit: cover; }
 .e2-photo > svg { transform: scale(1.06); }
 .e2-photo > svg[viewBox] { width: 100%; height: 100%; }
 .e2-hero::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, rgba(8,12,27,.78) 0, rgba(8,12,27,.15) 34%, rgba(8,12,27,.25) 55%, var(--bg) 100%); }

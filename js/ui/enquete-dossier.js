@@ -10,7 +10,7 @@ import { portraitSuspect } from './portrait.js';
 import { banniereDebrief, debriefsRecents } from './debrief.js';
 import { primeHtml } from './prime.js';
 import { recitAffaire } from '../engine/recit.js';
-import { photoScene, photoUne, photoButin } from './scene-crime.js';
+import { photoScene, photoUne, photoButin, sceneUne } from './scene-crime.js';
 import { photoIndice, aPhoto } from './indices-photo.js';
 import { dossierAffaire3 } from '../engine/dossier.js';
 import { journalHtml, journalAuto } from './journal.js';
@@ -51,7 +51,7 @@ function photoHero(aff) {
 }
 function photoHero0(aff) {
   const d3 = aff.prof ? dossierAffaire3(S.state.seed, aff) : null;
-  if (d3) return photoUne(d3.scene, `e2h${aff.n}`);
+  if (d3) return photoUne(sceneUne(aff, d3.scene), `e2h${aff.n}`);
   if (aff.carte) return photoUne(recitAffaire(S.state.seed, aff).scene, `e2h${aff.n}`);
   return photoUne(/vitrine|bijout|musée|galerie/i.test(aff.lieu || '') ? 'vitrine' : 'entrepot', `e2h${aff.n}`);
 }

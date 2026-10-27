@@ -56,11 +56,20 @@ export function photoScene(type, id = 'sc') {
   </svg>`;
 }
 
+// Photos de la une des affaires générées (rendus Midjourney, img/s4/une-*.webp). Plusieurs variantes : choisie selon le n° de l'affaire.
+const UNE_IMG = { vitrine: ['vitrine', 'vitrine-2'], entrepot: ['entrepot'], musee: ['musee'], cave: ['cave'], conteneur: ['conteneur'], antiquaire: ['antiquaire'] };
+/** Décor de la une : le meurtre généré (boutique d'antiquaire) a sa propre photo. */
+export const sceneUne = (aff, scene) => (aff && aff.meurtre && scene === 'vitrine' ? 'antiquaire' : scene);
+
 /** Photo de façade pour la une : rue de nuit, gyrophares, rubalise. */
 export function photoUne(type, id = 'un') {
   if (type === 'rampe') return photoUneRampe(id);
   if (type === 'corbeau') return photoUneCorbeau(id);
   if (type === 'medaillon') return photoUneMedaillon(id);
+  if (UNE_IMG[type]) {
+    const v = UNE_IMG[type], n = Number((String(id).match(/\d+/) || [0])[0]);
+    return `<img class="tb-photo-svg une-img" src="img/s4/une-${v[n % v.length]}.webp" alt="" loading="lazy" decoding="async" width="1200" height="672">`;
+  }
   const vitrine = type === 'vitrine' || type === 'musee';
   return `<svg viewBox="0 0 200 120" class="tb-photo-svg" aria-hidden="true">
     <defs><radialGradient id="${id}g" cx="22%" cy="70%" r="40%"><stop offset="0" stop-color="rgba(120,170,255,.55)"/><stop offset="1" stop-color="rgba(120,170,255,0)"/></radialGradient>

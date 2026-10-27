@@ -2,7 +2,7 @@
 // d'une affaire « dossier complet », puis reste punaisé au tableau et se rouvre d'un toucher.
 import { S, esc } from './common.js';
 import { dossierAffaire3 } from '../engine/dossier.js';
-import { photoUne } from './scene-crime.js';
+import { photoUne, sceneUne } from './scene-crime.js';
 import { planSvg3 } from './plan3.js';
 import { LIEUX } from '../engine/carte3.js';
 import { planMons } from './planmons.js';
@@ -38,7 +38,7 @@ export function journalHtml(aff) {
       </div>
       <div class="jr-grille">
         <div class="jr-col-photo">
-          <figure class="jr-photo">${photoUne(d.scene, `jr${aff.n}`)}<figcaption>${esc(j.legende)}</figcaption></figure>
+          <figure class="jr-photo">${photoUne(sceneUne(aff, d.scene), `jr${aff.n}`)}<figcaption>${esc(j.legende)}</figcaption></figure>
           <div class="jr-texte">${j.corps.map((p, k) => `<p${k === 0 ? ' class="jr-lettrine"' : ''}>${esc(p)}</p>`).join('')}</div>
         </div>
         <aside class="jr-cote">

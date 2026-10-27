@@ -9,7 +9,7 @@ import { hashString } from '../engine/rng.js';
 import { portraitSuspect } from './portrait.js';
 import { debriefsRecents } from './debrief.js';
 import { recitAffaire } from '../engine/recit.js';
-import { photoScene, photoUne, photoButin } from './scene-crime.js';
+import { photoScene, photoUne, photoButin, sceneUne } from './scene-crime.js';
 import {
   ENQ, ELEMENTS, ELEMENT_NOM, DEMARCHES, SOURCES, CARTE, trajet, hm, affaire, dossierDe, texteFait, titrePiece,
   ficheSuspect, fichePlanque, rebondsPublies, dejaPartagee, pointsDecouverte, dansMaCellule, zonesDuSuspect, celluleDe,
@@ -291,7 +291,7 @@ function elementsHtml(aff, dos, et) {
   // Affaires ouvertes depuis le plan : la une de la Gazette, la photo de la scène et le dépôt de plainte.
   if (d3) {
     const j = d3.journal;
-    out.push(wrap('une', 230, 1.6, `<div class="tb-obj tb-une"><span class="tb-une-titre">La Gazette du Delta</span><span class="tb-une-date">N° ${j.numero} · ${esc(j.date)}</span><span class="tb-k">${esc(j.surtitre)}</span><strong>${esc(j.titre)}</strong><div class="tb-photo">${photoUne(d3.scene, `un${aff.n}`)}</div><span class="tb-legende">${esc(j.legende)}</span><p class="tb-chapo">${esc(j.chapo)}</p><div class="tb-txt">${j.corps.slice(0, 2).map((x) => `<p>${esc(x)}</p>`).join('')}</div><span class="tb-lire">Lire le journal ›</span></div>`, 'w', 'tb-p-jn'));
+    out.push(wrap('une', 230, 1.6, `<div class="tb-obj tb-une"><span class="tb-une-titre">La Gazette du Delta</span><span class="tb-une-date">N° ${j.numero} · ${esc(j.date)}</span><span class="tb-k">${esc(j.surtitre)}</span><strong>${esc(j.titre)}</strong><div class="tb-photo">${photoUne(sceneUne(aff, d3.scene), `un${aff.n}`)}</div><span class="tb-legende">${esc(j.legende)}</span><p class="tb-chapo">${esc(j.chapo)}</p><div class="tb-txt">${j.corps.slice(0, 2).map((x) => `<p>${esc(x)}</p>`).join('')}</div><span class="tb-lire">Lire le journal ›</span></div>`, 'w', 'tb-p-jn'));
     out.push(wrap('scene', 130, 1.7, `<div class="tb-obj tb-polo tb-scene"><div class="tb-photo">${photoScene(d3.scene, `sc${aff.n}`)}</div><span class="tb-prenom" style="font-size:13px">Scène · J1</span><span class="tb-role">${aff.meurtre ? 'touche pour fouiller · 10 plots' : 'photo du labo, plots 1 à 3'}</span></div>`, 'r'));
     if (aff.meurtre) out.push(wrap('frise', 300, 1.6, `<div class="tb-obj tb-frise"><span class="tb-k">Chronologie · ${esc((aff.jourSemaine || 'mardi'))} soir · ${t.frise.length} événement${t.frise.length > 1 ? 's' : ''}</span>${friseSvg(aff, t.frise, { mini: true })}<span class="tb-lire">Reconstituer ›</span></div>`, 'y'));
     if (d3.plainte) out.push(wrap('plainte', 190, 1.6, `<div class="tb-obj tb-pv"><span class="tb-pv-bande">POLICE · DISTRICT DELTA</span><span class="tb-k">PV n° ${esc(numPv(aff, 'plainte'))} · ${esc(d3.plainte.titre)}</span><strong class="tb-pv-qui">${esc(d3.plainte.qui)}</strong><div class="tb-txt">${d3.plainte.lignes.map((x) => `<p>${esc(x)}</p>`).join('')}</div><span class="tb-signature">${esc(d3.victime)}</span></div>`, 'w'));
