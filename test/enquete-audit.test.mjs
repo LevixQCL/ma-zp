@@ -2,13 +2,15 @@
 //  E-01  le plafond de pièces partagées reçues par soir se contournait en « répondant » par une pièce que l'autre avait déjà.
 //  E-02  le témoin tardif prenait l'accusation du suspect n°0 pour « pas d'accusation » (et oubliait les zones exclues).
 //  E-03  dans une affaire écrite, le témoin tardif pouvait livrer une pièce qui exige un mandat, une réaudition ou un recoupement.
-//  E-04  une audition au-delà du plafond de démarches prenait quand même 2 agents de Recherche.
+//  E-04  une audition au-delà du plafond de démarches prenait quand même 2 agents de Recherche (saison 4 : plafond de démarches lancées par jour).
 //  E-12  le malus du parquet laissait une réputation négative en fin de tour.
 // Aucune sortie de contenu d'affaire (pas de spoiler) : seulement des comptes.
 import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import * as ENQ from '../js/engine/enquete.js';
 import { makeRng } from '../js/engine/rng.js';
+import { rejouer, DIRECT } from '../js/engine/enquete-direct.js';
+import { confrontation, demarches } from './aides-enquete.mjs';
 
 const PLAYERS = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' }, C: { code: '3333', nom: 'Charlie' } };
 const BASE = { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal' };
@@ -23,9 +25,9 @@ function partie(seed) {
   st.nextDeadline = ECHEANCE + JOUR;
   return st;
 }
-function tour(st, orders = {}) {
+function tour(st, orders = {}, enqueteActions = null) {
   const o = Object.fromEntries(Object.keys(PLAYERS).map((u) => [u, orders[u] === undefined ? BASE : orders[u]]));
-  const r = resolveTurn(st, { players: PLAYERS, orders: o });
+  const r = resolveTurn(st, { players: PLAYERS, orders: o, enqueteActions });
   r.state.nextDeadline = (st.nextDeadline || ECHEANCE) + JOUR;
   return r;
 }
@@ -58,7 +60,8 @@ const pieces = (st, u) => (st.zones[u].enquete && st.zones[u].enquete.pieces) ||
   const a = ENQ.affaire(st, st.enquete.n);
   if (a.coupable !== 0) {
     const SANS = { alloc: { intervention: 9, proximite: 6, recherche: 0, roulage: 2, admin: 3 }, rythme: 'normal' };
-    st = tour(st, { A: { ...SANS, accusation: 0, confront: [] }, B: SANS, C: SANS }).state;
+    st = tour(st, { A: SANS, B: SANS, C: SANS }, { A: [confrontation(st, 0, { pieces: [] })] }).state;
+    assert.equal(st.zones.A.enquete.exclu, true, 'A confronte le suspect n°0, innocent : affaire retirée');
     while (st.enquete.jour < 5) st = tour(st, { A: SANS, B: SANS, C: SANS }).state;
     assert.equal(pieces(st, 'A').filter((p) => p.src === 'tardif').length, 0, 'témoin tardif versé à une zone qui a accusé le suspect n°0');
   }
@@ -85,16 +88,24 @@ const pieces = (st, u) => (st.zones[u].enquete && st.zones[u].enquete.pieces) ||
   assert.equal(horsLibres, 0, `${horsLibres} pièces tirées hors des pièces libres`);
 }
 
-// E-04 : audition au-delà du plafond de démarches : aucun agent prélevé.
+// E-04 : audition au-delà du plafond de démarches du jour : refusée, aucun agent prélevé.
 {
   const st = tour(partie('audit-e04')).state;
-  const max = ENQ.maxDemarchesDe(st, st.zones.A);
-  const dem = ['cam', 'labo', 'alibi:0', 'temoin'].slice(0, max + 1);
-  assert.ok(dem.indexOf('temoin') >= max, 'audition au-delà du plafond');
-  const c = clone(st);
-  const ord = Object.fromEntries(['A', 'B', 'C'].map((u) => [u, { ...BASE, demarches: u === 'A' ? dem : [], partages: [], accusation: null, _libres: 0 }]));
-  const { prises } = ENQ.enquetePre(c, ['A', 'B', 'C'], ord, () => {});
-  assert.equal((prises.A && prises.A.recherche) || 0, 0, 'agents pris pour une audition non menée');
+  const dem = ['cam', 'labo', 'alibi:0', 'alibi:1', 'alibi:2', 'alibi:3', 'alibi:4'].slice(0, DIRECT.parTour);
+  const passe = (liste) => {
+    const c = clone(st), acts = demarches(c, liste);
+    const ord = Object.fromEntries(['A', 'B', 'C'].map((u) => [u, { ...BASE, partages: [], _libres: 0 }]));
+    let refus = [];
+    const journee = (u, d) => { if (u !== 'A') return null; const r = rejouer({ state: c, z: c.zones.A, agents: 4, budget: 100, limite: c.nextDeadline }, d, acts); refus = r.refus; return r; };
+    const { prises } = ENQ.enquetePre(c, ['A', 'B', 'C'], ord, () => {}, journee);
+    return { prises, refus };
+  };
+  const trop = passe([...dem, 'temoin']);
+  assert.ok(trop.refus.some((x) => x.x.x === 'temoin' && /pas plus de/.test(x.raison)), 'audition au-delà du plafond : refusée');
+  assert.equal((trop.prises.A && trop.prises.A.recherche) || 0, 0, 'agents pris pour une audition non menée');
+  // Témoin : sous le plafond, l'audition est menée et prend ses agents.
+  const ok = passe(['temoin']);
+  assert.equal(ok.prises.A.recherche, ENQ.DEMARCHES.temoin.agents, 'audition menée : agents de Recherche pris');
 }
 
 // E-12 : malus du parquet sur une zone à 0 de réputation : la réputation reste à 0.

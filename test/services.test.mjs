@@ -13,9 +13,9 @@ assert.ok(chanceVoisinage(st, 'a', 50, null) <= VOISINAGE.max);
 const compte = { vois: 0, flag: 0, evite: 0, retard: 0 };
 for (let t = 0; t < 40; t++) {
   const alloc = { intervention: 9, proximite: 3, recherche: 4, roulage: 1, admin: 3 };
-  // Matériel entretenu chaque semaine (recyclage TTI, gilets) : sur 40 tours (3 saisons), une zone qui ne l'entretient jamais
-  // voit ses TTI périmer et perd la marge d'Intervention qui donne les flagrants délits (règle du magasin, oct. 2026).
-  const o = { alloc, piste: st.enquete ? 0 : null, ...(t % 7 === 0 ? { materiel: { recyclage: [{ type: 'af', groupes: 3 }], commandes: [{ item: 'gilets', lots: 2, voie: 'centrale' }] } } : {}) };
+  // Saison 4 : plus de magasin à entretenir ; l'armurerie (tasers : Intervention +5 %) s'achète une fois, pour de bon,
+  // et donne la marge d'Intervention qui fait monter la jauge de flagrant délit.
+  const o = { alloc, piste: st.enquete ? 0 : null, ...(t === 0 ? { materiel: { acheter: 'taser' } } : {}) };
   st = resolveTurn(st, { orders: { a: o }, players }).state;
   const r = st.zones.a.rapport;
   compte.vois += r.filter((l) => l.startsWith('Enquête de voisinage') && l.includes('rapportent')).length;

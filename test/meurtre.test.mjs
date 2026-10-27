@@ -4,6 +4,7 @@ import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { affaire, candidats, confrontationOk, mandatOk, pieceDemarche, texteFait, titrePiece, ENQ } from '../js/engine/enquete.js';
 import { LIEUX_MONS } from '../js/engine/meurtre-mons.js';
 import { dossierAffaire3 } from '../js/engine/dossier.js';
+import { actionsDe } from './aides-enquete.mjs';
 
 const a = affaire({ seed: 'm', meurtreDes: 4 }, 4);
 assert.ok(a.meurtre && a.prof && a.planques.length === 0);
@@ -54,19 +55,24 @@ assert.ok(m.meurtre);
 assert.deepEqual(st.zones.A.enquete.pieces, [], 'pas de pièce d’ouverture');
 // Jour 1 : A demande la perquisition chez Julien sans mandat (refusée) et le légiste.
 st.zones.A.budget = 60; st.zones.B.budget = 60;
-let r = resolveTurn(st, { players, orders: { A: { ...base, demarches: ['moyens:2', 'labo'] }, B: { ...base, accusation: 2, confront: ['c:cafe', 'c:cam', 'doc:journal'] }, C: { ...base, accusation: 0, confront: ['doc:journal', 'doc:pvc', 'occ:0'] } } });
+// Saison 4 : démarches et confrontations sont des actions horodatées de la journée (enqueteActions).
+let r = resolveTurn(st, { players, orders: { A: base, B: base, C: base }, enqueteActions: {
+  A: actionsDe(st, { demarches: ['moyens:2', 'labo'] }),
+  B: actionsDe(st, { accusation: 2, confront: ['c:cafe', 'c:cam', 'doc:journal'] }),
+  C: actionsDe(st, { accusation: 0, confront: ['doc:journal', 'doc:pvc', 'occ:0'] }) } });
 st = r.state;
-assert.ok(st.zones.A.rapport.some((x) => /refusée par le juge/.test(x)));
+assert.ok(!st.zones.A.enquete.pieces.some((p) => p.f === 'moy:2'), 'perquisition refusée par le juge (pas de mandat)');
+assert.ok(st.zones.B.rapport.some((x) => /nie tout et repart libre/.test(x)), 'B : le suspect nie');
 assert.ok(st.zones.A.enquete.pieces.some((p) => p.f === 'c:legiste1'));
 assert.equal(st.zones.B.enquete.exclu, false, 'mauvaises pièces : pas écarté');
 assert.equal(st.zones.B.enquete.accuse, null);
 assert.equal(st.zones.C.enquete.exclu, true, 'mauvaise personne : écarté');
 // A obtient l'alibi de Julien, puis le mandat, puis confronte.
-st = resolveTurn(st, { players, orders: { A: { ...base, demarches: ['alibi:2', 'banque:2'] }, B: base, C: base } }).state;
-st = resolveTurn(st, { players, orders: { A: { ...base, demarches: ['moyens:2'] }, B: base, C: base } }).state;
+st = resolveTurn(st, { players, orders: { A: base, B: base, C: base }, enqueteActions: { A: actionsDe(st, { demarches: ['alibi:2', 'banque:2'] }) } }).state;
+st = resolveTurn(st, { players, orders: { A: base, B: base, C: base }, enqueteActions: { A: actionsDe(st, { demarches: ['moyens:2'] }) } }).state;
 assert.ok(st.zones.A.enquete.pieces.some((p) => p.f === 'moy:2'));
 const avant = st.zones.A.stats.limier;
-r = resolveTurn(st, { players, orders: { A: { ...base, accusation: 2, confront: ['moy:2', 'occ:2', 'doc:journal'] }, B: base, C: base } });
+r = resolveTurn(st, { players, orders: { A: base, B: base, C: base }, enqueteActions: { A: actionsDe(st, { accusation: 2, confront: ['moy:2', 'occ:2', 'doc:journal'] }) } });
 st = r.state;
 assert.ok(st.zones.A.stats.limier > avant, 'aveux : points');
 assert.ok(!st.traques.some((t) => t.n === m.n), 'pas de traque');
@@ -85,11 +91,11 @@ assert.notEqual(affaire(st, st.enquete.n).meurtre, true, 'nouvelle affaire : un 
   let s2 = createGame({ seed: 'reaud' }); s2.meurtreDes = 1; s2.variantes = { 1: 'a' };
   s2 = resolveTurn(s2, { players }).state;
   s2.zones.A.budget = 20;
-  s2 = resolveTurn(s2, { players, orders: { A: { ...base, reaud: { i: 2, f: 'A:2' } }, B: base, C: base } }).state;
-  assert.ok(s2.zones.A.rapport.some((x) => /refusée par le magistrat/.test(x)), 'pas de réaudition sans pièce à charge');
-  s2 = resolveTurn(s2, { players, orders: { A: { ...base, demarches: ['temoin'] }, B: base, C: base } }).state;
-  s2 = resolveTurn(s2, { players, orders: { A: { ...base, reaud: { i: 2, f: 'A:2' } }, B: base, C: base } }).state;
+  s2 = resolveTurn(s2, { players, orders: { A: base, B: base, C: base }, enqueteActions: { A: actionsDe(s2, { reaud: { i: 2, f: 'A:2' } }) } }).state;
+  assert.ok(!s2.zones.A.enquete.pieces.some((p) => p.f === 'Rg:2'), 'pas de réaudition sans pièce à charge (refusée par le magistrat)');
+  s2 = resolveTurn(s2, { players, orders: { A: base, B: base, C: base }, enqueteActions: { A: actionsDe(s2, { demarches: ['temoin'] }) } }).state;
+  s2 = resolveTurn(s2, { players, orders: { A: base, B: base, C: base }, enqueteActions: { A: actionsDe(s2, { reaud: { i: 2, f: 'A:2' } }) } }).state;
   assert.ok(s2.zones.A.enquete.pieces.some((p) => p.f === 'Rg:2'), 'réaudition au dossier');
-  assert.ok(s2.zones.A.rapport.some((x) => /change de version/.test(x)));
+  assert.ok(s2.zones.A.rapport.some((x) => x.includes(titrePiece(affaire(s2, 1), 'Rg:2'))), 'la réaudition est au rapport du soir');
 }
 console.log('OK : affaire de meurtre vérifiée.');

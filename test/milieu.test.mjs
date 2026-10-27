@@ -4,7 +4,6 @@ import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { newZone } from '../js/engine/zone.js';
 import { regenSecteur, ND } from '../js/engine/constants.js';
 import { M3, etape, sceneId, RENSEIGNEMENTS } from '../js/engine/milieu.js';
-import { annoncerVente } from '../js/engine/ventes.js';
 
 const ALLOC = { intervention: 6, proximite: 4, recherche: 4, roulage: 2, admin: 2 };
 function partie(v3 = true) {
@@ -109,13 +108,19 @@ assert.equal(st.nonDroit.scenes[0].nuit, st.turn, 'la scène est pour la prochai
   assert.ok(res.state.nonDroit.memoire.guetteurs, 'le milieu double ses guetteurs');
 }
 
-// 7. Saisie : un lot du non-droit passe à la vente suivante.
+// 7. Saisie : vendue par le parquet, le produit partagé selon les parts (saison 4 : plus de salle des ventes).
 {
+  const { vendreSaisie, SAISIES_ND } = await import('../js/engine/milieu.js');
   const s2 = JSON.parse(JSON.stringify(st));
-  s2.nonDroit.saisies = [{ id: 'banalise', cell: 3, parts: { a: 1 }, T: 1 }];
-  s2.vente = null;
-  const v = annoncerVente(s2, s2.turn);
-  assert.ok(v.lots.some((l) => l.id === 'banalise' && l.saisie), 'lot saisi en vente');
+  const ids = Object.keys(s2.zones).slice(0, 2), [u1, u2] = ids;
+  const b1 = s2.zones[u1].budget, b2 = s2.zones[u2].budget;
+  for (const u of ids) s2.zones[u].rapport = [];
+  vendreSaisie(s2, 'banalise', { [u1]: 0.5, [u2]: 0.5 });
+  assert.ok(Math.abs(s2.zones[u1].budget - (b1 + SAISIES_ND.banalise.valeur / 2)) < 0.06, 'part du produit versée');
+  assert.ok(Math.abs(s2.zones[u2].budget - (b2 + SAISIES_ND.banalise.valeur / 2)) < 0.06);
+  assert.ok(s2.zones[u1].rapport.some((l) => /vendu par le parquet/.test(l)));
+  const b3 = s2.zones[u1].budget; vendreSaisie(s2, 'inconnue', { [u1]: 1 });
+  assert.equal(s2.zones[u1].budget, b3, 'saisie inconnue : rien');
 }
 assert.equal(Object.keys(RENSEIGNEMENTS).length, 5);
 // 8. Renseignement d'une zone qui ne joue plus : compte pour tout le monde au QG.

@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { BOT_PROFILES, botOrders } from '../js/engine/bots.js';
 import { carteQuartiers } from '../js/engine/quartiers.js';
-import { assurerDir, memoirePlainte, adapterIncidents, niveauIncidents, enqueteDirecteur, reglages, apercuDirecteur, parZoneFantome } from '../js/engine/directeur.js';
+import { DIR, assurerDir, memoirePlainte, adapterIncidents, niveauIncidents, enqueteDirecteur, reglages, apercuDirecteur, parZoneFantome } from '../js/engine/directeur.js';
 import { difficulte } from '../js/engine/incidents.js';
 import { dossierDe } from '../js/engine/enquete.js';
 import { makeRng } from '../js/engine/rng.js';
@@ -13,7 +13,7 @@ const alloc = { intervention: 8, proximite: 5, recherche: 3, roulage: 2, admin: 
 const deux = { a: { code: '1111', nom: 'A' }, b: { code: '2222', nom: 'B' }, c: { code: '3333', nom: 'C' } };
 const base = () => resolveTurn(createGame({ seed: 'd2' }), { players: deux }).state;
 
-// 1. Fugitif à la frontière : il faut les deux côtés le même soir.
+// 1. Fugitif à la frontière : il faut les deux côtés le même soir (saison 4 : des agents en Proximité, plus de patrouilles).
 {
   const st = base();
   const c = carteQuartiers(st);
@@ -21,12 +21,13 @@ const base = () => resolveTurn(createGame({ seed: 'd2' }), { players: deux }).st
   for (const ca of c.deZone.a) for (const nb of c.adj[ca]) if (!p && c.proprio(nb) === 'b') p = { ca: String(ca), cb: String(nb) };
   assert.ok(p, 'A et B sont voisines');
   st.dir = { ...(st.dir || {}), coop: [{ id: 'fugitif', a: 'a', b: 'b', ...p, tour: st.turn, e: 'debut' }] };
-  const ord = (pa, pb) => ({ a: { alloc, patrouilles: pa }, b: { alloc, patrouilles: pb }, c: { alloc } });
-  const ok = resolveTurn(st, { orders: ord({ [p.ca]: 2 }, { [p.cb]: 2 }), players: deux });
+  const prox = (oui) => (oui ? { ...alloc, proximite: DIR.coop.prox, intervention: alloc.intervention + alloc.proximite - DIR.coop.prox } : { ...alloc, proximite: DIR.coop.prox - 1, intervention: alloc.intervention + alloc.proximite - DIR.coop.prox + 1 });
+  const ord = (pa, pb) => ({ a: { alloc: prox(pa) }, b: { alloc: prox(pb) }, c: { alloc } });
+  const ok = resolveTurn(st, { orders: ord(true, true), players: deux });
   assert.ok(ok.state.zones.a.rapport.some((l) => l.startsWith('Fugitif à la frontière : coincé')) && ok.state.zones.b.rapport.some((l) => l.startsWith('Fugitif à la frontière : coincé')));
   assert.ok(ok.gazette.breves.concat([ok.gazette.une]).some((n) => n.kicker === 'Coopération'));
-  const seul = resolveTurn(st, { orders: ord({ [p.ca]: 2 }, {}), players: deux }).state;
-  assert.ok(seul.zones.a.rapport.some((l) => l.includes('Tes patrouilles étaient là')), 'A était là, pas B');
+  const seul = resolveTurn(st, { orders: ord(true, false), players: deux }).state;
+  assert.ok(seul.zones.a.rapport.some((l) => l.includes('Ta Proximité était là')), 'A était là, pas B');
   assert.equal(seul.dir.coop[0].e, 'cavale', 'dernière chance le lendemain');
 }
 

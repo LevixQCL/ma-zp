@@ -1257,6 +1257,9 @@ export function enquetePre(state, uids, ord, push, journee = null) {
     const prendre = (u, s, n) => { prises[u] = prises[u] || {}; prises[u][s] = (prises[u][s] || 0) + n; };
     const p = state.enquetePause;
     const res = { actifs: uids.length, n: p.n, titre: p.titre, jour: 0, pause: true, decouverte: null, arrestations: [], fuites: [], classee: false };
+    // Actions de la journée (démarches, confrontations) sans affaire où les rejouer : annulées, rien n'est payé.
+    // (journee renvoie null pour une zone qui n'a rien lancé, un résultat vide sinon.)
+    if (journee) for (const u of uids) if (journee(u, null)) state.zones[u].rapport.push('Enquête : pas d’affaire en cours ce soir, tes démarches sont annulées. La nouvelle affaire s’ouvre ce soir.');
     traquesDuSoir(state, uids, ord, push, prendre, res);
     return { prises, res, lancees: {} };
   }

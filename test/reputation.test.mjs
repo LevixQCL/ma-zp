@@ -1,6 +1,6 @@
 // Subside par agent et effets de la réputation (budget de la commune, coût des recrues).
-// (Remplace encheres.test.mjs : la salle des ventes « un lot par jour » de la saison 1 a été retirée ;
-// la vente aux enchères des saisies a ses propres vérifications dans les simulations de saison 2.)
+// (Remplace encheres.test.mjs : la salle des ventes a été retirée ; depuis la saison 4, les saisies sont vendues
+// par le parquet et le produit est versé directement aux zones, voir milieu.test.mjs et central.test.mjs.)
 import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { SUBSIDE, REPUTATION, COUTS } from '../js/engine/constants.js';
@@ -8,7 +8,7 @@ import { fraisFixes, coutRecrue } from '../js/engine/zone.js';
 
 const players = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' }, C: { code: '3333', nom: 'Charlie' } };
 let s = createGame({ seed: 'ench' });
-assert.ok(s.vente, 'une vente des saisies annoncée dès la création');
+assert.equal(s.vente, undefined, 'plus de salle des ventes (saison 4)');
 s = resolveTurn(s, { players }).state;
 
 // Subside communal : par agent au-delà de l'effectif de départ, plus la confiance (réputation).

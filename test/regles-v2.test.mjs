@@ -1,26 +1,31 @@
 // Révision d'oct. 2026 (lots 1 à 3), seules règles en vigueur depuis le retrait de la saison 1.
 import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
-import { IPZ_POIDS, CLASSEMENT, RYTHMES, DOCTRINES } from '../js/engine/constants.js';
+import { IPZ_POIDS, CLASSEMENT, RYTHMES, SPECIALITES, palierSpe } from '../js/engine/constants.js';
 import { moyenneIpz } from '../js/engine/zone.js';
 
 const players = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' } };
 const base = { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal' };
 
-// Poids, rythme, doctrine, deux dépenses au plus.
+// Poids, rythme, spécialité (ex-doctrine, saison 4), deux dépenses au plus.
 assert.equal(CLASSEMENT.recence, 0.93);
 let s = createGame({ seed: 'v2' });
 s = resolveTurn(s, { players }).state;
 assert.equal(IPZ_POIDS.moral, 0.1); assert.equal(IPZ_POIDS.affaires, 0.35); assert.equal(RYTHMES.allege.moral, 2);
 s.zones.A.budget = 100;
-const r = resolveTurn(s, { players, orders: { A: { ...base, doctrine: 'judiciaire', depenses: { prime: true, prevention: true, soustraitance: true, reserve: 0 } }, B: base } });
+const r = resolveTurn(s, { players, orders: { A: { ...base, specialite: 'judiciaire', depenses: { prime: true, prevention: true, soustraitance: true, reserve: 0 } }, B: base } });
 s = r.state;
-assert.equal(s.zones.A.doctrine, 'judiciaire');
+assert.equal(s.zones.A.specialite.id, 'judiciaire');
 assert.ok(s.zones.A.rapport.some((l) => /refusé : 2 dépenses par jour/.test(l)), 'la 3e dépense est refusée');
-assert.ok(DOCTRINES.judiciaire);
-// La doctrine ne change plus en cours de saison.
-s = resolveTurn(s, { players, orders: { A: { ...base, doctrine: 'routiere' }, B: base } }).state;
-assert.equal(s.zones.A.doctrine, 'judiciaire');
+assert.ok(SPECIALITES.judiciaire);
+// La spécialité progresse avec les jours joués ; en changer remet la progression à zéro.
+s = resolveTurn(s, { players, orders: { A: base, B: base } }).state;
+s = resolveTurn(s, { players, orders: { A: base, B: base } }).state;
+assert.ok(palierSpe(s.zones.A) >= 2, `2e palier après 3 jours joués (jours ${s.zones.A.specialite.jours})`);
+s = resolveTurn(s, { players, orders: { A: { ...base, specialite: 'routiere' }, B: base } }).state;
+assert.equal(s.zones.A.specialite.id, 'routiere');
+assert.ok(s.zones.A.rapport.some((l) => /progression remise à zéro/.test(l)));
+assert.equal(palierSpe(s.zones.A), 1, 'retour au 1er palier');
 // Prime deux jours de suite : prix doublé.
 s.zones.A.budget = 100;
 s = resolveTurn(s, { players, orders: { A: { ...base, depenses: { prime: true } }, B: base } }).state;
@@ -42,4 +47,4 @@ assert.ok(moyenneIpz(zB) > 0, 'une zone en pilote automatique a une moyenne');
   const r2 = resolveTurn(c, { players, orders: { A: { ...base, alloc: { intervention: 10, proximite: 2, recherche: 3, roulage: 2, admin: 3 } }, B: base } });
   assert.ok(r2.state.zones.A.rapport.some((l) => /fête de quartier a débordé/.test(l)), 'ce qui a été laissé de côté est raconté');
 }
-console.log('OK : règles v2 (poids, doctrine, dépenses, prime, classement).');
+console.log('OK : règles v2 (poids, spécialité, dépenses, prime, classement).');

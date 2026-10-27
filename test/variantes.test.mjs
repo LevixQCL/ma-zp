@@ -12,6 +12,7 @@ import { construireDebrief, piecesDisculpantes } from '../js/engine/debrief.js';
 import { photoIndice } from '../js/ui/indices-photo.js';
 import { makeRng } from '../js/engine/rng.js';
 import { empreinte, empreinteAffaire, empreintePhotos } from './empreinte-affaire.mjs';
+import { actionsDe } from './aides-enquete.mjs';
 
 // ── 1. Une affaire ouverte avant les variantes (pas de state.variantes) : strictement l'objet d'avant. ──
 // Empreintes relevées sur le code d'avant les variantes (objet complet, fonctions comprises, et photos des pièces).
@@ -204,15 +205,15 @@ for (const { nom, A, B, reb } of CAS) {
   assert.equal(r.coupable, 4);
   for (const u of 'AB') w.zones[u].budget = 80;
   // Jour 1 : A vérifie l'alibi de Thibault (les badges) ; B confond Grégoire.
-  w = resolveTurn(w, { players, orders: { A: { ...base, demarches: ['alibi:4'] }, B: { ...base, accusation: 1, confront: ['doc:journal', 'doc:pvc', 'A:1'] } } }).state;
+  w = resolveTurn(w, { players, orders: { A: base, B: base }, enqueteActions: { A: actionsDe(w, { demarches: ['alibi:4'] }), B: actionsDe(w, { accusation: 1, confront: ['doc:journal', 'doc:pvc', 'A:1'] }) } }).state;
   assert.ok(w.zones.A.enquete.pieces.some((p) => p.f === 'occ:4'));
   assert.equal(w.zones.B.enquete.exclu, true, 'Grégoire : mauvaise personne');
   // Jour 2 : A perquisitionne chez Thibault et réentend Grégoire face aux badges.
-  w = resolveTurn(w, { players, orders: { A: { ...base, demarches: ['moyens:4'], reaud: { i: 1, f: 'occ:4' } }, B: base } }).state;
+  w = resolveTurn(w, { players, orders: { A: base, B: base }, enqueteActions: { A: actionsDe(w, { demarches: ['moyens:4'], reaud: { i: 1, f: 'occ:4' } }) } }).state;
   assert.ok(w.zones.A.enquete.pieces.some((p) => p.f === 'moy:4'));
   assert.ok(w.zones.A.enquete.pieces.some((p) => p.f === 'Rb:1'));
   // Jour 3 : confrontation avec le mobile.
-  w = resolveTurn(w, { players, orders: { A: { ...base, accusation: 4, confront: ['moy:4', 'Rb:1', 'occ:4'], mobile: 2 }, B: base } }).state;
+  w = resolveTurn(w, { players, orders: { A: base, B: base }, enqueteActions: { A: actionsDe(w, { accusation: 4, confront: ['moy:4', 'Rb:1', 'occ:4'], mobile: 2 }) } }).state;
   assert.ok(w.zones.A.rapport.some((x) => /tu avais aussi compris pourquoi/.test(x)));
   assert.notEqual(w.enquete.n, n, 'affaire close');
   assert.equal(affaire(w, n).variante, 'b', 'relue dans sa variante après la clôture');

@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import { genererJournee, simuler, equipesCentral, distancesCentral, prevoir, resultatC, CENTRAL, SAISIES_C, bilanCentral, appliquerCentral, equipesValides, actionsServeur, fouillable } from '../js/engine/central.js';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { carteQuartiers } from '../js/engine/quartiers.js';
-import { annoncerVente } from '../js/engine/ventes.js';
 
 const cells = [1, 2, 3, 4, 5, 6];
 const adj = { 1: [2, 3, 4, 5, 6], 2: [1, 3], 3: [1, 2, 4], 4: [1, 3, 5], 5: [1, 4, 6], 6: [1, 5] };
@@ -91,12 +90,14 @@ assert.ok(cx && cx.jours === 1 && cx.dernier.T === g.turn && cx.dernier.gain ===
 assert.equal(Object.values(cx.saisies).reduce((t, n) => t + n, 0), b.s.appels.filter((a) => a.saisie).length);
 assert.ok(g2.zones.a.rapport.some((l) => l.startsWith('Central :')));
 assert.equal(g2.zones.b.central, undefined); ok++;
-// 15. Confiscation : une jauge pleine met un lot de la zone dans la prochaine salle des ventes.
+// 15. Confiscation : une jauge pleine fait vendre les biens par le parquet, le produit revient à la zone (saison 4 : plus de salle des ventes).
 const g3 = JSON.parse(JSON.stringify(g)); g3.zones.a.central = { jours: 3, types: {}, saisies: {}, interp: 0, jauge: CENTRAL.confiscation - 1, gainMax: 0, gainSaison: 0, joursSaison: 0, s: g3.season };
+const bud3 = g3.zones.a.budget;
 appliquerCentral(g3, 'a', { ...b, s: { ...b.s, appels: [{ statut: 'maitrise', par: 'toi', titre: 'Rodéo en scooter', saisie: 'scooter' }] } }, g3.turn);
-assert.equal(g3.saisiesCentral.length, 1); assert.equal(g3.saisiesCentral[0].id, 'banalise');
-g3.vente = null; const v = annoncerVente(g3, g3.turn + 1);
-assert.ok(v.lots.some((l) => l.saisie && l.saisie.src === 'central' && l.saisie.parts.a === 1)); assert.equal(g3.saisiesCentral.length, 0); ok++;
+assert.ok(Math.abs(g3.zones.a.budget - (bud3 + CENTRAL.produitConfiscation)) < 0.06, 'produit de la confiscation versé');
+assert.ok(g3.zones.a.central.jauge < CENTRAL.confiscation, 'jauge vidée');
+assert.ok(g3.zones.a.rapport.some((l) => /Le parquet les fait vendre/.test(l)));
+assert.ok(!(g3.saisiesCentral || []).length, 'rien ne part en salle des ventes'); ok++;
 // 16. Heure du serveur : une action antidatée de plus de 3 minutes est ramenée à l'heure où le serveur l'a reçue.
 const debut = 1_000_000_000_000;
 assert.deepEqual(actionsServeur([{ t: 100, k: 'envoi', a: 'x', e: 'C1', at: debut + 101 * 60000 }, { t: 10, k: 'envoi', a: 'y', e: 'C1', at: debut + 200 * 60000 + 5 }, { t: 5, k: 'pause', e: 'PA' }], debut),

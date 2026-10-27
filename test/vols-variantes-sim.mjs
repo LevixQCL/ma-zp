@@ -6,14 +6,16 @@
 // Le joueur ne connaît pas la solution : il fait d'abord les constatations, puis vérifie les suspects encore possibles
 // (en commençant par le mobile quand l'affaire annonce deux complices, puisque le mobile écarte à lui seul), met sa piste
 // prioritaire sur un suspect de sa cellule, et accuse dès que le parquet l'accepterait.
+// Saison 4 : démarches et confrontation passent en actions horodatées (enqueteActions), rejouées à 20:00.
 // node test/vols-variantes-sim.mjs   (SEEDS=… pour changer le nombre de parties ; 40 par défaut)
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { hashString } from '../js/engine/rng.js';
 import { botOrders } from '../js/engine/bots.js';
 import {
-  VARIANTES, affaire, dossierDe, faitsConnus, candidats, accusesPrets, pieceDemarche, coutDemarche, maxDemarchesDe,
+  VARIANTES, affaire, dossierDe, faitsConnus, candidats, accusesPrets, pieceDemarche, coutDemarche,
   dansMaCellule, ENQ,
 } from '../js/engine/enquete.js';
+import { actionsDe } from './aides-enquete.mjs';
 
 const SEEDS = Number(process.env.SEEDS || 40), TOURS = 36;
 const MODES = ['classique', 'complices', 'fauxTemoin', 'fraude'];
@@ -30,7 +32,7 @@ function enqueteAssidue(state, z, uids) {
   const c = candidats(aff, [...connus]).suspects;
   const prets = accusesPrets(aff, d);
   if (prets && !d.exclu && d.accuse === null) { out.accusation = prets[0]; if (prets.length > 1) out.accusation2 = prets[1]; return out; }
-  const nb = maxDemarchesDe(state, z);
+  const nb = 3; // (saison 4 : plus de plafond par agents ; on garde trois démarches par soir)
   let budget = z.budget - 8;
   const prendre = (x) => { const p = coutDemarche(state, z.uid, x); if (out.demarches.length < nb && p <= budget && pieceDemarche(aff, d, x)) { out.demarches.push(x); budget -= p; } };
   for (const k of ['temoin', 'cam', 'labo']) if (!connus.has(`c:${{ temoin: 'mob', cam: 'occ', labo: 'moy' }[k]}`)) prendre(k);
@@ -84,16 +86,19 @@ for (const [profil, uids] of Object.entries(PROFILS)) {
           const aff = affaire(st, e.n);
           dernier = { c: Math.min(...uids.map((u) => candidats(aff, faitsConnus(dossierDe(st, st.zones[u]))).suspects.length)), b: uids.reduce((a, u) => a + st.zones[u].budget, 0) / uids.length, j: e.jour };
         }
-        const orders = {};
+        const orders = {}, enqueteActions = {};
         for (const u of uids) {
           const o = botOrders(st.zones[u], st, 'equilibre') || base[u];
           if (!o) continue;
           base[u] = o;
           // Un enquêteur assidu garde son budget pour l'enquête : pas d'achat sous 45 k€, pas de dépenses de confort.
-          orders[u] = { ...o, decision: st.zones[u].budget > 45 ? o.decision : null, depenses: {}, ...enqueteAssidue(st, st.zones[u], uids) };
+          const { demarches, accusation, accusation2, ...reste } = enqueteAssidue(st, st.zones[u], uids);
+          const { actionsEnquete, ...ob } = o;
+          orders[u] = { ...ob, decision: st.zones[u].budget > 45 ? o.decision : null, depenses: {}, ...reste };
+          enqueteActions[u] = actionsDe(st, { demarches, accusation, accusation2 });
         }
         const jour0 = e ? e.jour : null;
-        const r = resolveTurn(st, { players, orders, nextWeekday: (t + 2) % 7 });
+        const r = resolveTurn(st, { players, orders, enqueteActions, nextWeekday: (t + 2) % 7 });
         if (r.gazette.enquete && r.gazette.enquete.decouverte && compte && !fini) { jours.push(jour0); total++; fini = true; }
         st = r.state;
       }

@@ -5,6 +5,7 @@ import { affaire, ENQ } from '../js/engine/enquete.js';
 import { construireDebrief, piecesCles, piecesDisculpantes } from '../js/engine/debrief.js';
 import { affaireMeurtre } from '../js/engine/meurtre-mons.js';
 import { affaireMeurtreRampe } from '../js/engine/meurtre-rampe.js';
+import { actionsDe } from './aides-enquete.mjs';
 
 const players = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' }, C: { code: '3333', nom: 'Charlie' } };
 const base = { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal' };
@@ -15,7 +16,7 @@ state = resolveTurn(state, { players }).state;
 const aff = affaire(state, state.enquete.n);
 const faux = (aff.coupable + 1) % ENQ.nbSuspects;
 const c = aff.coupable;
-let r = resolveTurn(state, { players, orders: { A: { ...base, demarches: ['labo', `alibi:${c}`] }, B: { ...base, accusation: faux }, C: base } });
+let r = resolveTurn(state, { players, orders: { A: base, B: base, C: base }, enqueteActions: { A: actionsDe(state, { demarches: ['labo', `alibi:${c}`] }), B: actionsDe(state, { accusation: faux }) } });
 state = r.state;
 assert.ok(!r.gazette.enquete.debriefs, 'pas de débrief tant que l’affaire court');
 const aPieces = state.zones.A.enquete.pieces.filter((p) => p.src !== 'ouverture').map((p) => p.f).slice(0, ENQ.maxRecus);
@@ -25,7 +26,7 @@ state = resolveTurn(state, { players, orders: { A: { ...base, partages: aPieces.
   for (const e of ['mob', 'moy', 'occ']) add(`c:${e}`);
   aff.suspects.forEach((sus, i) => { for (const e of ['mob', 'moy', 'occ']) if (!sus.statut[e]) add(`${e}:${i}`); });
   for (const k of ['humidite', 'temperature', 'rive', 'acces']) add(`p:${k}`); }
-r = resolveTurn(state, { players, orders: { A: base, B: base, C: { ...base, accusation: c } } });
+r = resolveTurn(state, { players, orders: { A: base, B: base, C: base }, enqueteActions: { C: actionsDe(state, { accusation: c }) } });
 state = r.state;
 assert.ok(r.gazette.enquete.decouverte);
 assert.ok(!r.gazette.enquete.debriefs, 'à la découverte, la traque commence : pas encore de débrief (la planque resterait secrète)');
@@ -64,7 +65,7 @@ let s2 = createGame({ seed: 'debrief-classee' });
 s2 = resolveTurn(s2, { players }).state;
 let dbc = null;
 for (let i = 0; i < ENQ.dureeMax; i++) {
-  const g = resolveTurn(s2, { players, orders: { A: { ...base, demarches: ['labo'] }, B: base, C: base } }); s2 = g.state;
+  const g = resolveTurn(s2, { players, orders: { A: base, B: base, C: base }, enqueteActions: { A: actionsDe(s2, { demarches: ['labo'] }) } }); s2 = g.state;
   if (g.gazette.enquete.classee) dbc = g.gazette.enquete.debriefs[0];
 }
 assert.ok(dbc && dbc.issue === 'classee' && dbc.jours === ENQ.dureeMax);

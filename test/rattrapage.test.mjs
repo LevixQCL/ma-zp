@@ -7,10 +7,14 @@ import { dossierDe, RATTRAPAGE } from '../js/engine/enquete.js';
 
 let state = createGame({ seed: 'rattrapage' });
 for (const b of BOT_PROFILES) state.zones[b.uid] = newZone(b, 1);
+// Saison 4 : les robots rendent leurs démarches en actions horodatées (actionsEnquete), passées au tour comme celles des joueurs.
+// Échéances de septembre 2026 (avant le lancement de la Rampe, qui mettrait l'enquête en pause).
+const T0 = Date.parse('2026-09-01T18:00:00Z');
 for (let t = 1; t <= 12 && !(state.enquete && state.enquete.jour >= 5); t++) {
-  const orders = {};
-  for (const b of BOT_PROFILES) { const o = botOrders(state.zones[b.uid], state, b.style); if (o) orders[b.uid] = o; }
-  state = resolveTurn(state, { orders, nextWeekday: (t + 1) % 7 }).state;
+  state.nextDeadline = T0 + t * 864e5;
+  const orders = {}, enqueteActions = {};
+  for (const b of BOT_PROFILES) { const o = botOrders(state.zones[b.uid], state, b.style); if (o) { orders[b.uid] = o; enqueteActions[b.uid] = o.actionsEnquete || []; } }
+  state = resolveTurn(state, { orders, enqueteActions, nextWeekday: (t + 1) % 7 }).state;
 }
 assert.ok(state.enquete && state.enquete.jour >= 5, 'affaire en cours');
 const moy = Math.round(BOT_PROFILES.reduce((s, b) => s + state.zones[b.uid].enquete.pieces.length, 0) / BOT_PROFILES.length);

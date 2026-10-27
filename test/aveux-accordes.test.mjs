@@ -3,10 +3,11 @@
 import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { affaire, casDe, ouvrirAffaireMaintenant } from '../js/engine/enquete.js';
+import { confrontation } from './aides-enquete.mjs';
 
 const players = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' }, C: { code: '3333', nom: 'Charlie' } };
 const base = { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal' };
-const nuit = (s, o) => { const r = resolveTurn(s, { players, orders: o }); r.state.nextDeadline += 864e5; return r; };
+const nuit = (s, o, enqueteActions = null) => { const r = resolveTurn(s, { players, orders: o, enqueteActions }); r.state.nextDeadline += 864e5; return r; };
 const O = (x = {}) => ({ A: { ...base, ...(x.A || {}) }, B: { ...base, ...(x.B || {}) }, C: { ...base, ...(x.C || {}) } });
 
 let s = createGame({ seed: 'aveux', turnDeadline: Date.parse('2026-09-28T18:00:00Z') });
@@ -16,7 +17,7 @@ for (let k = 0; k < 3; k++) s = nuit(s, O()).state;
 const n0 = s.enquete.n, aff = affaire(s, n0);
 for (const f of ['moy:1', 'mob:1', 'occ:1']) if (!s.zones.A.enquete.pieces.some((p) => p.f === f)) s.zones.A.enquete.pieces.push({ f, j: 2, src: 'demarche' });
 // Soir 1 : A confronte le bon suspect avec une seule pièce décisive → il nie.
-let r = nuit(s, O({ A: { accusation: aff.coupable, confront: ['moy:1', 'mob:1', 'occ:1'] } }));
+let r = nuit(s, O(), { A: [confrontation(s, aff.coupable, { pieces: ['moy:1', 'mob:1', 'occ:1'] })] });
 s = r.state;
 assert.ok(s.zones.A.rapport.some((l) => /nie tout et repart libre/.test(l) && l.includes(aff.suspects[aff.coupable].nom)));
 assert.equal(s.season, 1);

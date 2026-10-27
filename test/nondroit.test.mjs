@@ -28,7 +28,7 @@ const base = () => {
 let state = base();
 const nd = state.nonDroit;
 assert.equal(Object.keys(nd.secteurs).length, g.cells.length);
-assert.equal(state.affaires.length, 0, 'plus d’affaires disputées');
+assert.equal(state.affaires, undefined, 'plus d’affaires disputées (retirées en saison 4)');
 const coeur = String(g.coeur), s1 = String(g.anneau[0]);
 assert.ok(!secteurOuvert(nd, coeur), 'le Cœur est fermé au départ');
 

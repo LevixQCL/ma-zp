@@ -117,7 +117,9 @@ export function rejouer(ctx, dossier, actions) {
       if (t + DELAI_VERDICT * MIN > limite) { refus.push({ at: t, x, raison: `le parquet ferme : plus de confrontation dans les ${DELAI_VERDICT} minutes avant 20:00` }); continue; }
       if (d.relache[i] && d.relache[i] > t) { refus.push({ at: t, x, raison: `${aff.suspects[i].prenom} vient d’être relâché${aff.suspects[i].f ? 'e' : ''}` }); continue; }
       const fin = t + DELAI_VERDICT * MIN;
-      const c = { at: t, fin, i, i2: Number.isInteger(x.i2) ? x.i2 : null, pieces: [], mobile: Number.isInteger(x.mobile) ? x.mobile : null };
+      // Second nom (deux complices) : un autre suspect de l'affaire, jamais le même deux fois.
+      const i2 = Number.isInteger(x.i2) && x.i2 !== i && x.i2 >= 0 && x.i2 < aff.suspects.length ? x.i2 : null;
+      const c = { at: t, fin, i, i2, pieces: [], mobile: Number.isInteger(x.mobile) ? x.mobile : null };
       if (aff.meurtre) {
         const connus = opposables(aff, ici);
         c.pieces = (Array.isArray(x.pieces) ? x.pieces : []).filter((f) => typeof f === 'string' && connus.has(f)).slice(0, 3);
@@ -129,8 +131,13 @@ export function rejouer(ctx, dossier, actions) {
         const restants = candidats(aff, piecesA(d, t).map((p) => p.f)).suspects;
         const paire = aff.variante === 'complices' ? [i, c.i2] : null;
         const ok = paire ? (Number.isInteger(c.i2) && restants.length === 2 && paire.every((k) => restants.includes(k))) : (restants.length === 1 && restants[0] === i);
-        if (!ok) { c.issue = 'refus'; c.bilan = 'Le parquet refuse : ton dossier n’écarte pas encore tous les autres suspects. Aucune pénalité.'; }
-        else if (paire ? paire.every((k) => estAuteur(aff, k)) : i === aff.coupable) { c.issue = 'identifie'; d.accuse = i; if (paire) d.accuse2 = c.i2; d.accuseT = fin; }
+        if (!ok) {
+          c.issue = 'refus';
+          c.bilan = paire && c.i2 == null ? `Le parquet refuse : dans cette affaire, il attend les deux complices, et ton dossier doit écarter les trois autres suspects. Aucune pénalité.`
+            : 'Le parquet refuse : ton dossier n’écarte pas encore tous les autres suspects. Aucune pénalité.';
+        }
+        // Paire juste, dans un ordre ou dans l'autre : le dossier retient l'exécutant puis le complice (lu par le débrief et la traque).
+        else if (paire ? paire.every((k) => estAuteur(aff, k)) : i === aff.coupable) { c.issue = 'identifie'; d.accuse = aff.coupable; if (paire) d.accuse2 = aff.complice; d.accuseT = fin; }
         else { c.issue = 'innocent'; d.accuse = i; if (paire) d.accuse2 = c.i2; d.exclu = true; d.accuseT = fin; }
       }
       confrontations.push(c);

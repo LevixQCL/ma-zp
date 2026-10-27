@@ -2,8 +2,7 @@
 //  1. la Carte s'ouvre sur « Ma zone » (le central), y compris après un rechargement ; #carte-nondroit et #terrain mènent au non-droit ;
 //  2. aucune étiquette du calque Non-droit (« 🧱 9 ? », « +1🧱 »…) n'est dessinée sur la maquette de Ma zone ;
 //  3. l'HP montre la ligne du central en direct, qui ouvre le central ;
-//  4. patrouilles du soir dans les Ordres (#ordres-patrouilles, #nuit) : un toucher sur une case remplit le même brouillon
-//     d'ordres que la Carte (la ligne « Patrouilles du soir » sous le central le montre aussi) ;
+//  4. saison 4 : les anciens liens des patrouilles (#nuit, #patrouilles) mènent à la Gestion ;
 //  5. #classement-central ouvre l'onglet Central des Classements.
 // Usage : node test/carte-navigation.test.mjs   (lance son propre petit serveur). Échoue (code 1) au moindre écart.
 import http from 'node:http';
@@ -61,25 +60,12 @@ try {
   await aller('#hp'); await aller('#terrain');
   verifier(await calque() === 'nondroit', `#terrain ouvre « ${await calque()} »`);
 
-  // 4. Patrouilles du soir dans les Ordres.
-  await aller('#ordres-patrouilles');
-  verifier(!!(await p.$('#ord-patrouilles .cv-fiche')), '#ordres-patrouilles : la fiche du quartier n’est pas ouverte dans les Ordres');
-  const nbQ = (await p.$$('#ord-patrouilles .cv-ql')).length;
-  verifier(nbQ > 0, 'Ordres : pas de liste des quartiers');
-  const avant = await p.$eval('#ord-patrouilles .op-t span', (e) => e.textContent).catch(() => '');
-  const caseOk = await clic('#ord-patrouilles .cv-case[data-n="1"]:not([disabled])');
-  await p.waitForTimeout(300);
-  if (caseOk) {
-    const apres = await p.$eval('#ord-patrouilles .op-t span', (e) => e.textContent).catch(() => '');
-    verifier(/^1 patrouille/.test(apres) && apres !== avant, `Ordres : la case n’a pas envoyé de patrouille (« ${avant} » → « ${apres} »)`);
-    verifier(!!(await p.$('#ord-patrouilles .cv-fiche')), 'Ordres : la partie Patrouilles s’est refermée après un toucher');
-    verifier(!!(await p.$('.savebar [data-action="save-orders"]')), 'Ordres : pas de barre « Valider » après une patrouille');
-    await aller('#carte-mazone'); // #terrain plus haut a laissé le non-droit choisi pour la session
-    const lien = await p.$eval('.cv-liens a[href="#ordres-patrouilles"]', (e) => e.textContent.replace(/\s+/g, ' ')).catch(() => '');
-    verifier(/1 patrouille/.test(lien), `Carte : la ligne « Patrouilles du soir » ne voit pas la patrouille des Ordres (« ${lien} »)`);
-  } else pb.push('Ordres : aucune case de patrouille utilisable (pas d’agent en Proximité ?)');
-  await aller('#hp'); await aller('#nuit');
-  verifier(!!(await p.$('#ord-patrouilles .cv-fiche')), '#nuit : n’ouvre pas les patrouilles dans les Ordres');
+  // 4. Saison 4 : plus de patrouilles ciblées ; les anciens liens (#nuit, #patrouilles) mènent à la Gestion, sans erreur.
+  for (const h of ['#nuit', '#patrouilles']) {
+    await aller('#hp'); await aller(h);
+    verifier(!!(await p.$('section[aria-label="Affectation des agents"]')), `${h} : n’ouvre pas la Gestion`);
+    verifier(!(await p.$('#ord-patrouilles')), `${h} : la partie Patrouilles existe encore`);
+  }
 
   // 5. Classements : onglet Central.
   await aller('#classement-central');
@@ -97,4 +83,4 @@ try {
 } finally { await b.close(); serveur.close(); }
 
 if (pb.length) { console.error(`ÉCHEC navigation (${pb.length}) :\n - ${pb.join('\n - ')}`); process.exit(1); }
-console.log('Navigation autour du central : OK (calque par défaut, non-droit hors de Ma zone, ligne HP, patrouilles dans les Ordres, classement du central)');
+console.log('Navigation autour du central : OK (calque par défaut, non-droit hors de Ma zone, ligne HP, anciens liens vers la Gestion, classement du central)');

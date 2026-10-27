@@ -17,13 +17,16 @@ assert.equal(Object.keys(s.zones).length, 6);
 
 for (let i = 0; i < 15; i++) {
   s = await b.getState();
-  await b.saveOrders('moi', s.season, s.turn, { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal', decision: i === 1 ? { type: 'construire', infra: 'sport' } : null, engagements: s.affaires[0] ? { [s.affaires[0].id]: { agents: 3, partenaire: null } } : {}, evenement: s.evenement && s.evenement.tour === s.turn ? 3 : 0 });
+  await b.saveOrders('moi', s.season, s.turn, { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal', decision: i === 1 ? { type: 'construire', infra: 'sport' } : null, evenement: s.evenement && s.evenement.tour === s.turn ? 3 : 0 });
+  // Saison 4 : une démarche d'enquête en direct, horodatée par le mode démo comme par le serveur.
+  if (i === 2 && b.saveEnqueteAction) await b.saveEnqueteAction('moi', s.season, s.turn, { k: 'dem', x: 'temoin' });
   await b.saveQuest('moi', s.season, s.turn, 0, { statut: 'ok' }); await b.saveQuest('moi', s.season, s.turn, 1, { statut: 'ok', bonus: 'budget' }); await b.saveQuest('moi', s.season, s.turn, 2, { statut: 'rate' });
   await b.adminForceResolution();
   const n = await resolvePending(b, { hour: 20 });
   assert.equal(n, 1, 'un tour résolu');
   const g = await b.getGazette(s.season, s.turn);
   assert.ok(g && g.une && g.une.titre, 'gazette');
+  if (i === 2) assert.ok((await b.getMesActionsEnquete('moi', s.season, s.turn)).some((x) => x.k === 'dem' && Number.isFinite(x.at)), 'action d’enquête gardée, horodatée');
   if (i === 0) console.log('Une du tour 1 :', g.une.titre, '|', g.rapports.moi.join(' / '));
   if (g.finSaison) console.log('Fin de saison :', g.finSaison.titres.map((t) => t.titre).join(', '));
 }

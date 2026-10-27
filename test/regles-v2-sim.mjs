@@ -1,5 +1,5 @@
 // Révision d'oct. 2026 (lots 1 à 3) : stratégies extrêmes sous les règles v1 et v2, contre les 5 zones robots.
-// Usage : node test/regles-v2-sim.mjs [graines] [v1|v2|doctrines]
+// Usage : node test/regles-v2-sim.mjs [graines] [v1|v2|doctrines (spécialités)]
 const R = new URL('../js/engine/', import.meta.url).href;
 const { createGame, resolveTurn, buildJoinZone } = await import(R + 'resolve.js');
 const { BOT_PROFILES, botOrders } = await import(R + 'bots.js');
@@ -55,12 +55,11 @@ const ENIG = [{ statut: 'ok', bonus: 'budget' }, { statut: 'ok' }, { statut: 'ok
 const MODE = process.argv[3] || 'v2';
 const V = MODE === 'v1' ? 1 : 2;
 const STRATS = MODE === 'builder' ? { 'Adaptatif (réf.)': {}, 'Builder tout': { builder: true }, 'Builder annexes': { builder: 'construire' }, 'Builder formations': { builder: 'former' }, 'Builder matériel': { builder: 'equiper' }, 'Builder tout, J1-J6': { builder: true, tot: 6 } } : MODE === 'doctrines' ? {
-  'Adaptatif sans doctrine': {},
-  'Routière (surplus Roulage)': { doctrine: 'routiere', surplus: 'roulage' },
-  'De quartier (surplus Proximité)': { doctrine: 'quartier', surplus: 'proximite', reserveService: 'proximite' },
-  'Judiciaire (surplus Recherche)': { doctrine: 'judiciaire', surplus: 'recherche' },
-  'D’intervention': { doctrine: 'intervention' },
-  'Partenaire': { doctrine: 'partenaire' },
+  'Adaptatif sans spécialité': {},
+  'Routière (surplus Roulage)': { specialite: 'routiere', surplus: 'roulage' },
+  'De quartier (surplus Proximité)': { specialite: 'quartier', surplus: 'proximite', reserveService: 'proximite' },
+  'Judiciaire (surplus Recherche)': { specialite: 'judiciaire', surplus: 'recherche' },
+  'D’intervention': { specialite: 'intervention' },
 } : MODE==='b' ? {
   'Adaptatif (réf.)': {},
   'Allégé + tout dépenser + énigmes': { rythme: 'allege', toutDepenser: true, garde: 0, enig: true },
@@ -100,7 +99,7 @@ for (const [nom, opt] of Object.entries(STRATS)) {
       for (const b of BOT_PROFILES) { const o = botOrders(state.zones[b.uid], state, b.style); if (o) orders[b.uid] = o; }
       const z = state.zones.moi;
       const joue = z && !opt.jamais && !(opt.stop && t > opt.stop) && !(opt.unSurDeux && t % 2 === 0);
-      if (joue) orders.moi = { ...adaptatif(z, state, opt), ...(opt.doctrine ? { doctrine: opt.doctrine } : {}) };
+      if (joue) orders.moi = { ...adaptatif(z, state, opt), ...(opt.specialite ? { specialite: opt.specialite } : {}) };
       const quests = joue && opt.enig ? { moi: ENIG } : {};
       const r = resolveTurn(state, { orders, quests, nextWeekday: (t + 1) % 7 });
       if (t === 14) fin = r.gazette.classement; else state = r.state;

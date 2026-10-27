@@ -4,7 +4,6 @@ import { createGame, resolveTurn, buildJoinZone } from '../js/engine/resolve.js'
 import { affaire, casDe, ouvrirAffaireMaintenant } from '../js/engine/enquete.js';
 import { SEASON_LENGTH, CLASSEMENT } from '../js/engine/constants.js';
 import { moyenneIpz } from '../js/engine/zone.js';
-import { lireRelances, annoncerVente } from '../js/engine/ventes.js';
 
 const base = { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, rythme: 'normal' };
 const players = { A: { code: '1111', nom: 'Alpha' }, B: { code: '2222', nom: 'Bravo' }, C: { code: '3333', nom: 'Charlie' } };
@@ -44,20 +43,15 @@ const nuit = (s, orders = O()) => { const r = resolveTurn(s, { players, orders }
   assert.ok(r.state.zones.A.rapport.some((l) => /Mise à prix/.test(l)), 'mise à prix versée');
 }
 
-// 3. Chef, Directeur, relèves, zones inactives : rien de daté de l'ancienne saison.
+// 3. Directeur, zones inactives : rien de daté de l'ancienne saison (chef de corps et relèves retirés en saison 4).
 {
   let s = partie('bas-3', 6);
-  s.zones.A.chef.blesse = 15; s.zones.A.chef.services = { procureur: 13 }; s.zones.A.chef.talentsT = 12;
   s.dir = { ...(s.dir || {}), prochain: 18, g: { id: 'x', tour: 16 } };
-  s.releves = [{ tour: 15, etape: 'offre' }];
   s.zones.C.toursSansOrdres = 5;
   s.finSaison = 'soir';
   s = nuit(s, O(['C'])).state;
-  assert.equal(s.zones.A.chef.blesse, undefined);
-  assert.equal(s.zones.A.chef.services, undefined);
-  assert.equal(s.zones.A.chef.talentsT, undefined);
   assert.equal(s.dir.prochain, undefined);
-  assert.equal(s.releves.length, 0);
+  assert.equal(s.zones.A.chef, undefined, 'plus de chef de corps');
   assert.ok(s.zones.C.toursSansOrdres >= 3, 'une zone partie reste inactive');
 }
 
@@ -79,19 +73,4 @@ const nuit = (s, orders = O()) => { const r = resolveTurn(s, { players, orders }
   assert.ok(!d.avantArrivee || d.avantArrivee.v < 100, 'avant-arrivée recalculée');
 }
 
-// 6. Enchères : une relance ne peut pas engager plus que le budget.
-{
-  const s = partie('bas-6', 2);
-  const v = s.vente || annoncerVente(s, s.turn);
-  s.zones.A.budget = 10;
-  const [a, b] = v.lots;
-  const rel = lireRelances(s, [
-    { uid: 'A', vente: v.id, lot: a.k, montant: 8, at: 1 },
-    { uid: 'A', vente: v.id, lot: b.k, montant: 8, at: 2 }, // 16 au total : refusée
-    { uid: 'A', vente: v.id, lot: a.k, montant: 60, at: 3 }, // bluff : refusé
-  ]);
-  assert.equal(rel.parZone.A[a.k], 8);
-  assert.equal(rel.parZone.A[b.k], undefined);
-}
-
-console.log('OK : bascule de saison (affaire, mise à prix, chef, Directeur, relèves, inactifs, adjoint, inscription, enchères).');
+console.log('OK : bascule de saison (affaire, mise à prix, Directeur, inactifs, adjoint, inscription).');

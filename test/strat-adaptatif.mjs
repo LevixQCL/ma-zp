@@ -29,5 +29,5 @@ export function adaptatif(z, state) {
   if (z.moral < 55) achat('prime', 3);
   { const n = Math.min(4, Math.floor(budget / 1.5)); if (n > 0) { depenses.reserve = n; depenses.reserveService = op ? Object.keys(op.besoins)[0] : 'intervention'; } }
   const rythme = op && z.moral > 60 ? 'renforce' : z.moral < 45 ? 'allege' : 'normal';
-  return { alloc: a, rythme, operation: 'complet', depenses, decision, doctrine: 'quartier' };
+  return { alloc: a, rythme, operation: 'complet', depenses, decision, specialite: 'quartier' };
 }

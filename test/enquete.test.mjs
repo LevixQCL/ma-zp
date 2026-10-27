@@ -1,8 +1,8 @@
-// Enquête et FIPA : génération, accusation, traque, partage, FIPA de bout en bout.
+// Enquête : génération, confrontation (actions en direct de la saison 4), traque, partage. (La FIPA a été retirée en saison 4.)
 import assert from 'node:assert/strict';
 import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { genererAffaire, affaire, trajet, candidats, texteFait, pointsDecouverte, ENQ, coutDemarche, celluleDe, celluleSuspect } from '../js/engine/enquete.js';
-import { PARTAGE } from '../js/engine/fipa.js';
+import { actionsDe } from './aides-enquete.mjs';
 
 // 1. Chaque affaire a une solution unique (mobile + moyen + occasion), et il faut croiser les pièces.
 for (let n = 1; n <= 600; n++) {
@@ -101,7 +101,7 @@ let aff = affaire(state, state.enquete.n);
 
 // Jour 1 : B se trompe, A lance deux démarches et partage l'indice d'ouverture (ignoré), C ne fait rien.
 const faux = (aff.coupable + 1) % ENQ.nbSuspects;
-r = resolveTurn(state, { players, orders: { A: { ...base, demarches: ['labo', 'alibi:0'] }, B: { ...base, accusation: faux }, C: base } });
+r = resolveTurn(state, { players, orders: { A: base, B: base, C: base }, enqueteActions: { A: actionsDe(state, { demarches: ['labo', 'alibi:0'] }), B: actionsDe(state, { accusation: faux }) } });
 state = r.state;
 assert.ok(!state.zones.B.enquete.exclu && state.zones.B.enquete.accuse === null, 'accusation sans dossier : refusée sans pénalité');
 assert.ok(state.zones.B.rapport.some((l) => /parquet refuse/.test(l)), 'le refus est expliqué');
@@ -153,7 +153,7 @@ function dossierComplet(st, uid, af) {
 const jour = state.enquete.jour;
 const limierA = state.zones.A.stats.limier;
 dossierComplet(state, 'C', aff); dossierComplet(state, 'A', aff);
-r = resolveTurn(state, { players, orders: { A: base, B: base, C: { ...base, accusation: aff.coupable } } });
+r = resolveTurn(state, { players, orders: { A: base, B: base, C: base }, enqueteActions: { C: actionsDe(state, { accusation: aff.coupable }) } });
 state = r.state;
 assert.ok(r.gazette.enquete.decouverte, 'découverte annoncée');
 assert.equal(state.zones.C.stats.limier, pointsDecouverte(jour));
@@ -201,7 +201,7 @@ assert.equal(fuite.state.traques.length, 0);
 const ancienne = JSON.parse(JSON.stringify(avantTraque)); ancienne.traques[0].tours = 2;
 assert.equal(resolveTurn(ancienne, { players, orders: { A: base, B: base, C: base } }).gazette.enquete.fuites.length, 1, 'ancienne traque ramenée à une nuit');
 
-// 3. Affaire classée au bout de 7 jours sans découverte.
+// 3. Affaire classée au bout de ENQ.dureeMax jours sans découverte.
 let s2 = createGame({ seed: 'classee' });
 s2 = resolveTurn(s2, { players }).state;
 const n0 = s2.enquete.n;
@@ -210,31 +210,4 @@ for (let i = 0; i < ENQ.dureeMax; i++) { const g = resolveTurn(s2, { players, or
 assert.ok(classee, 'affaire classée');
 assert.equal(s2.enquete.n, n0 + 1);
 
-// 4. FIPA de bout en bout, avec un tricheur.
-let s3 = createGame({ seed: 'fipa' });
-s3 = resolveTurn(s3, { players }).state;
-s3.fipas = [{ id: 'fx', demandeur: 'A', titre: 'Braderie annuelle', texte: '', besoin: 8, recompense: 12, etape: 'demande', tourDecision: s3.turn }];
-s3 = resolveTurn(s3, { players, orders: { A: { ...base, fipa: { id: 'fx', invite: 'B', moi: 4, lui: 4 } }, B: base, C: base } }).state;
-assert.equal(s3.fipas.find((f) => f.id === 'fx').etape, 'invite');
-s3 = resolveTurn(s3, { players, orders: { A: base, B: { ...base, fipaReponse: { id: 'fx', accepte: true } }, C: base } }).state;
-assert.equal(s3.fipas.find((f) => f.id === 'fx').etape, 'accepte');
-const budA = s3.zones.A.budget, budB = s3.zones.B.budget;
-const g4 = resolveTurn(s3, { players, orders: { A: { ...base, fipaChoix: { id: 'fx', choix: 'partager' } }, B: { ...base, fipaChoix: { id: 'fx', choix: 'revendiquer' } }, C: base } });
-s3 = g4.state;
-const fr = g4.gazette.fipa.find((x) => x.titre === 'Braderie annuelle');
-assert.ok(fr && fr.mult === 1, 'dispositif complet');
-assert.ok(Math.abs(fr.gainB - 12 * PARTAGE['partager/revendiquer'][1]) < 0.06);
-assert.ok(Math.abs(fr.gainA - 12 * PARTAGE['partager/revendiquer'][0]) < 0.06);
-assert.equal(s3.zones.A.stats.fipaHonorees, 1);
-assert.equal(s3.zones.B.stats.fipaHonorees, 0, 'le tricheur n’est pas compté fiable');
-assert.ok(!s3.fipas.some((f) => f.id === 'fx'));
-void budA; void budB;
-
-// Invitation refusée d'office : même paire trop tôt.
-s3.fipas.push({ id: 'fy', demandeur: 'A', titre: 'Carnaval', texte: '', besoin: 6, recompense: 10, etape: 'demande', tourDecision: s3.turn });
-const satA = s3.zones.A.satisfaction;
-s3 = resolveTurn(s3, { players, orders: { A: { ...base, fipa: { id: 'fy', invite: 'B', moi: 3, lui: 3 } }, B: base, C: base } }).state;
-assert.ok(!s3.fipas.some((f) => f.id === 'fy'), 'paire déjà vue cette semaine : invitation impossible');
-void satA;
-
-console.log('OK : enquête, traque et FIPA vérifiées.');
+console.log('OK : enquête et traque vérifiées.');

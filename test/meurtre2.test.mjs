@@ -5,6 +5,7 @@ import { createGame, resolveTurn } from '../js/engine/resolve.js';
 import { affaire, candidats, confrontationOk, mandatOk, pieceDemarche, texteFait, titrePiece, ENQ, pieceRecoupement, recoupementDe, opposables, pieceReaudition } from '../js/engine/enquete.js';
 import { LIEUX_RAMPE, evaluerHypothese, EVENEMENTS, RECOUPEMENTS, RELECTURES, COUPS_DE_POUCE, CRENEAUX } from '../js/engine/meurtre-rampe.js';
 import { dossierAffaire3 } from '../js/engine/dossier.js';
+import { actionsDe } from './aides-enquete.mjs';
 
 const st0 = { seed: 'r', meurtreDes: 2, meurtre2Des: 4 };
 const a = affaire(st0, 4);
@@ -98,10 +99,10 @@ let m = affaire(st, 4);
 assert.equal(m.cas, 'rampe');
 for (const u of 'ABC') st.zones[u].budget = 80;
 // Jour 1 : A fouille le bureau et vérifie l'alibi de Thibault ; A recoupe le journal et rien (rien) ; B soumet une hypothèse.
-let r = resolveTurn(st, { players, orders: {
-  A: { ...base, demarches: ['temoin', 'alibi:4'], recoup: ['doc:journal', 'doc:pvc'] },
-  B: { ...base, demarches: ['cam'], hypo: { i: 0, s: 2 } },
-  C: { ...base, accusation: 0, confront: ['doc:journal', 'doc:pvc', 'A:0'] },
+let r = resolveTurn(st, { players, orders: { A: base, B: { ...base, hypo: { i: 0, s: 2 } }, C: base }, enqueteActions: {
+  A: actionsDe(st, { demarches: ['temoin', 'alibi:4'], recoup: ['doc:journal', 'doc:pvc'] }),
+  B: actionsDe(st, { demarches: ['cam'] }),
+  C: actionsDe(st, { accusation: 0, confront: ['doc:journal', 'doc:pvc', 'A:0'] }),
 } });
 st = r.state;
 assert.ok(st.zones.A.enquete.pieces.some((p) => p.f === 'c:agenda'));
@@ -110,10 +111,9 @@ assert.ok(st.zones.A.rapport.some((x) => /recoupement .* rien de neuf/.test(x)),
 assert.ok(st.zones.B.rapport.some((x) => /juge d’instruction a lu ton hypothèse/.test(x)));
 assert.equal(st.zones.C.enquete.exclu, true, 'Élodie : mauvaise personne');
 // Jour 2 : A perquisitionne chez Grégoire (mandat grâce aux badges) et réentend Thibault face aux badges ; B recoupe la caméra et le journal.
-r = resolveTurn(st, { players, orders: {
-  A: { ...base, demarches: ['moyens:1'], reaud: { i: 4, f: 'occ:4' } },
-  B: { ...base, recoup: ['c:cam', 'doc:journal'] },
-  C: base,
+r = resolveTurn(st, { players, orders: { A: base, B: base, C: base }, enqueteActions: {
+  A: actionsDe(st, { demarches: ['moyens:1'], reaud: { i: 4, f: 'occ:4' } }),
+  B: actionsDe(st, { recoup: ['c:cam', 'doc:journal'] }),
 } });
 st = r.state;
 assert.ok(st.zones.A.enquete.pieces.some((p) => p.f === 'moy:1'));
@@ -121,7 +121,7 @@ assert.ok(st.zones.A.enquete.pieces.some((p) => p.f === 'Rb:4'));
 assert.ok(st.zones.B.enquete.pieces.some((p) => p.f === 'x:heure' && p.src === 'recoup'));
 // Jour 3 : A confronte Grégoire avec la perquisition, les aveux de Thibault, et nomme le vrai mobile.
 const avant = st.zones.A.stats.limier;
-r = resolveTurn(st, { players, orders: { A: { ...base, accusation: 1, confront: ['moy:1', 'Rb:4', 'occ:4'], mobile: 2 }, B: base, C: base } });
+r = resolveTurn(st, { players, orders: { A: base, B: base, C: base }, enqueteActions: { A: actionsDe(st, { accusation: 1, confront: ['moy:1', 'Rb:4', 'occ:4'], mobile: 2 }) } });
 st = r.state;
 assert.ok(st.zones.A.rapport.some((x) => /tu avais aussi compris pourquoi/.test(x)));
 assert.ok(st.zones.A.stats.limier >= avant + 20 + 30, 'aveux + mobile');
@@ -136,9 +136,9 @@ assert.equal(st.meurtre2Des, 4, 'une seule fois par partie');
   s2 = resolveTurn(s2, { players }).state;
   assert.equal(affaire(s2, s2.enquete.n).cas, 'rampe');
   for (const u of 'ABC') s2.zones[u].budget = 80;
-  for (let k = 0; k < 2; k++) s2 = resolveTurn(s2, { players, orders: { A: { ...base, demarches: ['temoin', 'cam'] }, B: base, C: base } }).state;
+  for (let k = 0; k < 2; k++) s2 = resolveTurn(s2, { players, orders: { A: base, B: base, C: base }, enqueteActions: { A: actionsDe(s2, { demarches: ['temoin', 'cam'] }) } }).state;
   assert.ok(!s2.zones.A.enquete.pieces.some((p) => p.f === 'd:corbeau'), 'pas encore : il faut aussi le message vocal');
-  s2 = resolveTurn(s2, { players, orders: { A: { ...base, demarches: ['banque:2'] }, B: base, C: base } }).state;
+  s2 = resolveTurn(s2, { players, orders: { A: base, B: base, C: base }, enqueteActions: { A: actionsDe(s2, { demarches: ['banque:2'] }) } }).state;
   assert.ok(s2.zones.A.enquete.pieces.some((p) => p.f === 'd:corbeau' && p.src === 'declic'));
   assert.ok(opposables(affaire(s2, s2.enquete.n), s2.zones.A.enquete).has('d:corbeau'));
 }
@@ -159,7 +159,7 @@ console.log('meurtre2 : OK');
   s = tours(s, 1);
   assert.equal(s.enquete.n, 1, 'avant la date : rien');
   s.nextDeadline = MEURTRE2.lancement + 1800e3;
-  const r = resolveTurn(s, { players: players2, orders: { A: { ...b2, demarches: ['cam'] }, B: b2 } });
+  const r = resolveTurn(s, { players: players2, orders: { A: b2, B: b2 }, enqueteActions: { A: actionsDe(s, { demarches: ['cam'] }) } });
   s = r.state;
   assert.equal(s.enquete.n, 2); assert.equal(s.meurtre2Des, 2); assert.equal(affaire(s, 2).cas, 'rampe');
   assert.ok(s.zones.A.rapport.some((x) => /pas d’affaire en cours ce soir/.test(x)));

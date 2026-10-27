@@ -13,6 +13,7 @@ import { construireDebrief } from '../js/engine/debrief.js';
 import { sanitizeOrders } from '../js/engine/zone.js';
 import { botOrders } from '../js/engine/bots.js';
 import { makeRng } from '../js/engine/rng.js';
+import { actionsDe } from './aides-enquete.mjs';
 
 const propre = (t) => !/undefined|NaN|\{e\}|\bnull\b/.test(t);
 
@@ -154,14 +155,21 @@ VARIANTES.force = null;
   const remplir = (u) => { const d = st.zones[u].enquete; for (const f of aff.faits) if (!d.pieces.some((p) => p.f === f)) d.pieces.push({ f, src: 'test', j: 1 }); };
   for (const u of ['A', 'B', 'C']) st.zones[u].enquete = st.zones[u].enquete || { n: aff.n, v: 2, pieces: [], accuse: null, exclu: false };
   remplir('B'); remplir('C');
-  // L'ordre garde le second nom ; un seul nom ne suffit pas.
+  // Saison 4 : l'accusation n'est plus un ordre (confrontation en direct) ; le second nom passe dans l'action.
   const o = sanitizeOrders(st.zones.C, { ...base, accusation: aff.coupable, accusation2: aff.complice }, st);
-  assert.equal(o.accusation2, aff.complice);
-  assert.equal(sanitizeOrders(st.zones.C, { ...base, accusation: 1, accusation2: 1 }, st).accusation2, null);
-  // Robot au dossier complet : il accuse la paire.
+  assert.equal(o.accusation, undefined); assert.equal(o.accusation2, undefined);
+  {
+    // Le même nom deux fois ne vaut pas une paire : refus sans pénalité.
+    const { rejouer } = await import('../js/engine/enquete-direct.js');
+    const x = rejouer({ state: st, z: st.zones.C, agents: 4, budget: 50, limite: Infinity }, st.zones.C.enquete, [{ k: 'confront', i: aff.coupable, i2: aff.coupable, at: 0 }]);
+    assert.equal(x.confrontations[0].i2, null);
+    assert.equal(x.confrontations[0].issue, 'refus');
+  }
+  // Robot au dossier complet : il confronte la paire.
   const bo = botOrders(st.zones.C, st, 'prudent');
-  if (bo && bo.accusation !== null) assert.deepEqual([bo.accusation, bo.accusation2].sort(), auteurs(aff).slice().sort(), 'le robot accuse les deux complices');
-  const r = resolveTurn(st, { players, orders: { A: base, B: { ...base, accusation: aff.coupable }, C: { ...base, accusation: aff.complice, accusation2: aff.coupable } } });
+  const bc = bo && (bo.actionsEnquete || []).find((x) => x.k === 'confront');
+  if (bc) assert.deepEqual([bc.i, bc.i2].sort(), auteurs(aff).slice().sort(), 'le robot confronte les deux complices');
+  const r = resolveTurn(st, { players, orders: { A: base, B: base, C: base }, enqueteActions: { B: actionsDe(st, { accusation: aff.coupable }), C: actionsDe(st, { accusation: aff.complice, accusation2: aff.coupable }) } });
   assert.ok(r.state.zones.B.rapport.some((l) => /attend les deux complices/.test(l)), 'un seul nom : refus expliqué, sans pénalité');
   assert.ok(!r.state.zones.B.enquete || r.state.zones.B.enquete.n !== aff.n || !r.state.zones.B.enquete.exclu);
   const dec = r.gazette.enquete.decouverte;
@@ -193,7 +201,7 @@ VARIANTES.force = null;
     if (aff.variante !== v) continue; // fraude impossible dans ce décor
     const d = st.zones.A.enquete;
     for (const f of aff.faits) if (!d.pieces.some((p) => p.f === f)) d.pieces.push({ f, src: 'test', j: 1 });
-    const r = resolveTurn(st, { players, orders: { A: { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 }, accusation: aff.coupable } } });
+    const r = resolveTurn(st, { players, orders: { A: { alloc: { intervention: 7, proximite: 4, recherche: 4, roulage: 2, admin: 3 } } }, enqueteActions: { A: actionsDe(st, { accusation: aff.coupable }) } });
     assert.ok(r.gazette.enquete.decouverte, `${v} : découverte`);
     const db = construireDebrief(r.state, aff, 'classee', { jour: 1 });
     assert.equal(db.variante.k, v);
