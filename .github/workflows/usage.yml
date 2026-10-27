@@ -1,0 +1,34 @@
+# Analyse d'usage (oct. 2026, temporaire, lancée à la main) : lit les parties (lecture seule) et dépose une copie CHIFFRÉE
+# (clé publique ci-dessous ; seule la clé privée de l'analyse peut la lire). Fichier gardé un jour. À supprimer après l'analyse.
+name: Analyse d'usage
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  usage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm i --no-save firebase-admin@12.7.0
+      - run: node outils/serveur/usage.mjs
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      - name: Chiffrer
+        run: |
+          echo 'LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQm9qQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FZOEFNSUlCaWdLQ0FZRUF1Yi9ETFlWL3VrM2U1M0t0aHJUbwpINXZqYXNzcEREaWxIWlJiaDBMSWQrTmx4U0dSY2FKTzc3K1V4a2U0ckkzQWlYbzJoa0pmU3hJdXp5SEhZUis2CjJVS096V3F0YWpWRmFZeDZHbUlJU3lnNWJxSENURG9WcnljUm9QMUdOSXhoMHNDWTJQVCtMamR4L0RFRUw0SDIKQTlDSjg1bjVFaW5pOVdadTRWcWJLNmtENkxSWDB1cEl6UTJHSDh0bENHN3pHUjNDWTYwVFZMdzd3bVMzUHNKdApNaGRBem5razRqQmYrM1lmdGVLRU96anA2YXFkN2JlRnRnZGVDL0k1dE5oVG90K0oza0xFTkY2NHd1a0YwVDBPCk1SYkVWY1hwa1FZcDZMZ1FsUkRIa3c1Tmk3QlJnMFl0c21VekNSZ24xNDBvdU5XSEV2c3g2dlRQTXJlTm5IRFMKM1JvT3Nndi84V3hVT3piTkt2bUpvNkduT29XM0kzcmdpVi9BSVVyUWFXL1FsRDQwL3lBVnpkRHcyZW9jSWRXSAozb25DTFhpSFEvWXpWZVN4MXFsOTcwMEhCenhUMXpSMTZqOXBFL0w4VmxjQ0JZTDJJSmlJbDFqdm5IMTcxeXYyClJhR0lrZ2pibUdKUWRSSXNuUlAzQml4S3dEbVVIWmUxUGhyUjlvdCtQMjA3QWdNQkFBRT0KLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==' | base64 -d > pub.pem
+          gzip -9 usage.json
+          openssl rand -hex 32 > k.txt
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in usage.json.gz -out usage.enc -pass file:k.txt
+          openssl pkeyutl -encrypt -pubin -inkey pub.pem -in k.txt -out k.enc
+          rm -f usage.json.gz k.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: usage
+          path: |
+            usage.enc
+            k.enc
+          retention-days: 1
