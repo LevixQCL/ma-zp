@@ -4,6 +4,7 @@ import { S, esc, myZone } from './common.js';
 import { ARMURERIE, IDS_ARMURERIE, possede, achatImpossible, entretienArmurerie } from '../engine/materiel.js';
 import { SPECIALITES, IDS_SPECIALITES, PALIERS_SPE, palierSpe } from '../engine/constants.js';
 
+const IMG_SPE = new Set(['quartier', 'judiciaire', 'intervention']);
 const SPRITE = { intervention: 'inter', proximite: 'prox', recherche: 'rech', roulage: 'roul', admin: 'admin' };
 const keur = (v) => `${String(Math.round(v * 10) / 10).replace('.', ',')} k€`;
 
@@ -53,7 +54,7 @@ export function armurerieHtml(z, d) {
     const A = ARMURERIE[x], a = possede(z, x), on = voulu === x, refus = a ? null : achatImpossible(z, x);
     const bloque = !a && !on && (refus || (voulu && voulu !== x));
     return `<button type="button" class="arm-c ${a ? 'a' : ''} ${on ? 'on' : ''}" data-action="arm-acheter" data-k="${x}" aria-pressed="${on}" ${a || bloque ? 'disabled' : ''}>
-      <span class="arm-i" aria-hidden="true">${A.ico}</span>
+      <span class="arm-i" aria-hidden="true"><img src="img/s4/arm-${x}.webp" alt="" loading="lazy" width="48" height="48"></span>
       <span class="arm-t"><b>${esc(A.nom)}</b><span>${esc(A.effet)}</span></span>
       <span class="arm-p">${a ? 'en service' : on ? 'livré à 20:00' : `${keur(A.prix)}${A.entretien ? ` <i>+${keur(A.entretien)}/j</i>` : ''}`}</span></button>`;
   }).join('')}</div>
@@ -80,7 +81,7 @@ export function specialiteHtml(z, d) {
     ${jauge ? `<div class="jg-inter jg-solo"><div class="jg-i"><span class="jg-n">${jauge.ico} ${esc(jauge.nom)}</span><i class="jg-b"><b style="width:${Math.round(Math.min(1, z.jaugeSpe || 0) * 100)}%"></b></i><span class="jg-v">${Math.round(Math.min(1, z.jaugeSpe || 0) * 100)} %</span></div></div>` : ''}
     <div class="spe-l">${IDS_SPECIALITES.map((k) => { const x = SPECIALITES[k], on = choisie === k, ici = actuelle === k;
       return `<button type="button" class="spe-c ${on ? 'on' : ''}" data-action="specialite" data-k="${k}" aria-pressed="${on}">
-        <span class="spe-h"><span class="spe-i" aria-hidden="true">${x.ico}</span><b>${esc(x.nom)}</b>${ici ? '<span class="pill">en cours</span>' : ''}</span>
+        <span class="spe-h"><span class="spe-i" aria-hidden="true">${IMG_SPE.has(k) ? `<img src="img/s4/spe-${k}.webp" alt="" loading="lazy" width="40" height="40">` : x.ico}</span><b>${esc(x.nom)}</b>${ici ? '<span class="pill">en cours</span>' : ''}</span>
         <ol class="spe-p">${x.paliers.map((pl, i) => `<li class="${ici && p > i ? 'ok' : ''}"><span>${i + 1}</span>${esc(pl.t)}</li>`).join('')}</ol></button>`; }).join('')}</div>
     ${actuelle && choisie !== actuelle ? '<p class="tiny warn" style="margin:0">Changer de spécialité la fait repartir du palier 1 et vide sa jauge.</p>' : ''}
     <a class="tiny" href="#guide-specialite">Le guide des spécialités</a>`;

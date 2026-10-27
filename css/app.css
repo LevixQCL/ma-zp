@@ -3240,3 +3240,20 @@ i.sg { background: var(--red); } i.sa { background: #C9A8FF; } i.dm { background
 .vd-rappel { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--amber-line); background: var(--amber-bg); color: var(--amber-hi); font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
 .vd-rappel::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--amber); animation: vdPulse 1.4s ease-in-out infinite; }
 .vd-rappel.fini::before { animation: none; background: var(--green); }
+
+/* ───── Saison 4 : images (rendus 3D sur fond bleu nuit) ───── */
+.arm-i, .spe-i { overflow: hidden; background: #0E1428; }
+.arm-i img, .spe-i img { width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(1.18); }
+.arm-i { width: 52px; height: 52px; border-radius: 14px; }
+.spe-i { width: 40px; height: 40px; border-radius: 12px; }
+.dem { justify-content: flex-start; }
+.dem .l { flex: 1; min-width: 0; }
+.dem-i { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: #0E1428; }
+.dem:disabled .dem-i { filter: grayscale(.6); opacity: .6; }
+.e2-bureau { height: 132px; margin: -16px -16px 0; border-radius: var(--r-lg) var(--r-lg) 0 0; background: url('../img/s4/scene-bureau.webp') center 42% / cover no-repeat; -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+.vd-salle { height: 150px; margin: -22px -20px 0; border-radius: var(--r-lg) var(--r-lg) 0 0; background: url('../img/s4/scene-verdict.webp') center 45% / cover no-repeat; -webkit-mask-image: linear-gradient(#000 60%, transparent); mask-image: linear-gradient(#000 60%, transparent); }
+.accueil-photo { position: fixed; inset: 0; z-index: -1; pointer-events: none; background: url('../img/s4/accueil-tel.webp') center bottom / cover no-repeat; }
+.accueil-photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(12, 17, 36, .2) 0%, rgba(12, 17, 36, .55) 45%, rgba(12, 17, 36, .92) 100%); }
+@media (min-aspect-ratio: 4/5) { .accueil-photo { background-image: url('../img/s4/accueil-pc.webp'); background-position: center 70%; } }
+.dem.compact .p { white-space: nowrap; font-size: 11px; }
+.arm-i { width: 56px; height: 56px; }

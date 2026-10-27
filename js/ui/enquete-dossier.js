@@ -185,6 +185,7 @@ function ceSoirHtml(aff, dos) {
   const u = dejaUtilisees(), occ = enquetesEnCours().length, max = enCoursMax(enqueteursDe(myZone()));
   const peut = !dos.exclu && dos.accuse === null && occ < max && u.dem < DIRECT.parTour;
   return `<section class="card e2-soir" aria-label="Aujourd’hui">
+    <div class="e2-bureau" aria-hidden="true"></div>
     <div class="between"><h2 class="e2-h2">Aujourd’hui</h2><span class="small muted">reste ${fmt1(budgetEnquete())} k€</span></div>
     ${enCoursHtml(aff)}
     ${peut ? '<button type="button" class="btn primary block" data-action="e2-choix">Lancer une démarche</button>' : ''}

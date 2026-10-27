@@ -105,6 +105,7 @@ function pieceHtml(aff, p, { share = true } = {}) {
 }
 
 // Bouton de démarche (constatation ou vérification) : elle part tout de suite, et sa pièce arrive après son temps de recherche.
+const IMG_DEM = new Set(['cam', 'labo', 'temoin', 'alibi', 'moyens', 'banque']);
 const faitsDe = (dos) => new Set(dos.pieces.map((p) => p.f));
 const dureeTxt = (m) => (m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? String(m % 60).padStart(2, '0') : ''}` : `${m} min`);
 export function demBtn(aff, dos, x, label, { compact = false } = {}) {
@@ -118,7 +119,7 @@ export function demBtn(aff, dos, x, label, { compact = false } = {}) {
   }
   const prixTxt = `${e.prix ? `${e.prix} k€` : `${dm.agents} agents`}${e.duree ? ` · ${dureeTxt(e.duree)}` : ''}`;
   return `<button type="button" class="dem ${compact ? 'compact' : ''} ${e.enRoute ? 'enroute' : ''}" data-action="dem-lancer" data-k="${x}" ${raison || e.enRoute ? 'disabled' : ''}>
-    <span class="l">${esc(label)}</span><span class="p">${e.enRoute ? `en route · ${heureBe(e.enRoute.dispo)}` : raison || prixTxt}</span></button>`;
+    ${IMG_DEM.has(x.split(':')[0]) ? `<img class="dem-i" src="img/s4/dem-${x.split(':')[0]}.webp" alt="" loading="lazy" width="36" height="36">` : ''}<span class="l">${esc(label)}</span><span class="p">${e.enRoute ? `en route · ${heureBe(e.enRoute.dispo)}` : raison || prixTxt}</span></button>`;
 }
 
 /** Bandeau : l'affaire précédente est résolue, son auteur identifié est en fuite. */

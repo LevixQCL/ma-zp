@@ -167,6 +167,7 @@ export function verdictHtml() {
     <p class="vd-note">${c.issue === 'aveux' || c.issue === 'identifie' ? 'Les points, la mise à prix et la Gazette tombent à 20:00.' : c.issue === 'innocent' ? 'Tu peux encore partager tes pièces avec les autres zones.' : ''}</p>` : `<p class="vd-attente">Verdict dans ${e.reste} min. Tu peux fermer : il t’attendra ici.</p>`;
   return `<div class="vd-wrap" role="dialog" aria-modal="true" aria-label="Confrontation">
     <div class="vd-carte">
+      <div class="vd-salle" aria-hidden="true"></div>
       <span class="vd-kicker">${aff.meurtre ? 'Confrontation' : 'Devant le parquet'}</span>
       <h2 class="vd-titre">${esc(s.nom)}${Number.isInteger(c.i2) && aff.suspects[c.i2] ? ` et ${esc(aff.suspects[c.i2].nom)}` : ''}</h2>
       <ol class="vd-etapes">${etapes}</ol>

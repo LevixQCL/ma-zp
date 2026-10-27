@@ -1,12 +1,12 @@
 // Écrans de connexion et d'inscription.
-import { S, esc, skyline, cielStyle } from './common.js';
+import { S, esc } from './common.js';
 import { COULEURS_ZONE } from '../engine/constants.js';
 import { codesPris, codeLibre } from '../data/codes.js';
 
 export function renderLogin() {
   const demo = S.backend.mode === 'demo';
   return `<main class="center-screen accueil">
-    <div class="accueil-ciel soir-ciel" aria-hidden="true" style="${cielStyle()}"><i class="soir-astre"></i>${skyline()}</div>
+    <div class="accueil-photo" aria-hidden="true"></div>
     <div class="col accueil-titre">
       <h1 class="brand">Ma ZP</h1>
       <p class="accueil-devise">Gère ta zone. Coopère avec tes voisins. Démasque le coupable.</p>
