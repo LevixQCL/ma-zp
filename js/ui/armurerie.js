@@ -4,7 +4,7 @@ import { S, esc, myZone } from './common.js';
 import { ARMURERIE, IDS_ARMURERIE, possede, achatImpossible, entretienArmurerie } from '../engine/materiel.js';
 import { SPECIALITES, IDS_SPECIALITES, PALIERS_SPE, palierSpe } from '../engine/constants.js';
 
-const IMG_SPE = new Set(['quartier', 'judiciaire', 'intervention']);
+const IMG_SPE = new Set(['routiere', 'quartier', 'judiciaire', 'intervention']);
 const SPRITE = { intervention: 'inter', proximite: 'prox', recherche: 'rech', roulage: 'roul', admin: 'admin' };
 const keur = (v) => `${String(Math.round(v * 10) / 10).replace('.', ',')} k€`;
 
