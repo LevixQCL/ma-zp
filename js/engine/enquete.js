@@ -321,7 +321,16 @@ export function bilanConfrontation(aff, a, pieces) {
     if (p.length < 3) return `Tu tenais de quoi ${la} faire craquer, mais il faut opposer trois pièces : tu n’en avais que ${p.length}.`;
     return `Tu tenais de quoi ${la} faire craquer, mais ${horsSujet > 1 ? `${horsSujet} de tes pièces ne ${la} concernaient pas` : 'une de tes pièces ne ' + la + ' concernait pas'} : ${f ? 'elle' : 'il'} s’y est engouffré${f ? 'e' : ''}. Il faut trois pièces qui ${la} mettent en cause.`;
   }
-  return `${dec ? 'Une seule de tes pièces ' + la + ' mettait' : 'Aucune de tes pièces ne ' + la + ' mettait'} face à ses contradictions : il en faut deux. Une pièce brute ne suffit pas toujours : croiser deux pièces de ton dossier peut en faire une preuve.${horsSujet ? ` Et ${horsSujet > 1 ? `${horsSujet} de tes pièces ne ${la} concernaient pas` : `une de tes pièces ne ${la} concernait pas`}.` : ''}`;
+  const il = f ? 'elle' : 'il', lui = f ? 'elle' : 'lui', accablent = p.length - horsSujet;
+  // Ce que ses pièces font déjà : accabler (comptées) sans contredire (ce qui manque).
+  const etat = !dec && accablent > 0
+    ? `${accablent > 1 ? `Tes ${accablent} pièces ${la} mettent bien en cause` : `Ta pièce ${la} met bien en cause`}, mais ${accablent > 1 ? 'elles l’accablent' : 'elle l’accable'} sans ${la} contredire : il faut au moins deux pièces qui ${la} prennent en défaut.`
+    : `${dec ? 'Une seule de tes pièces ' + la + ' mettait' : 'Aucune de tes pièces ne ' + la + ' mettait'} face à ses contradictions : il en faut deux.`;
+  // Piste : croiser seulement si l'affaire a des recoupements décisifs (pièces « x: »).
+  const conseil = (aff.confront.decisives || []).some((x) => x.startsWith('x:'))
+    ? `Les pièces brutes ne suffisent pas toujours : une démarche sur ${lui}, ou deux pièces de ton dossier croisées, peuvent en faire une preuve.`
+    : `Ici, rien ne se croise : ce qui ${la} contredit vient de démarches sur ${lui}, pas de la scène. Où ${il} était vraiment, ce que cache son domicile, ce qu’${il} a dit ${lui}-même.`;
+  return `${etat} ${conseil}${horsSujet ? ` Et ${horsSujet > 1 ? `${horsSujet} de tes pièces ne ${la} concernaient pas` : `une de tes pièces ne ${la} concernait pas`}.` : ''}`;
 }
 
 // ─────────────────────────────── Contenu ───────────────────────────────
