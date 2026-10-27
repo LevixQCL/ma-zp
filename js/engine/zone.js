@@ -1,4 +1,4 @@
-import { lireDemarche, ENQ } from './enquete.js';
+import { ENQ } from './enquete.js';
 import { SERVICES, MORAL, START, DEFAULT_ALLOC, AGENTS_EN_FORMATION, RYTHMES, IPZ_POIDS, COUTS, INFRAS, NIVEAU_MAX, DEPENSES, RENFORT, BATIMENTS, BATIMENT_MAX, ENTRETIEN_ANNEXE, PEREQUATION, ECONOMIE, SUBSIDE, REPUTATION, ROULAGE, ND, TERRAIN, secteurOuvert, malusEtat, scoreBudget, scoreRevenu, BUDGET_IPZ, CLASSEMENT, coutEquipement, multNiveau, multEquip, coutFormation, PREPA, coutPrepa, multSpe, SPECIALITES, emplacementsAnnexes, nbAnnexes, aAnnexe } from './constants.js';
 import { terrainDoux } from './regles.js';
 import { coutCarrosserie } from './sinistres.js';
@@ -300,18 +300,9 @@ export function sanitizeOrders(zone, raw, state) {
   // Enquête : validée plus finement pendant la résolution.
   const int = (v, a, b) => clamp(Math.floor(fini(v)), a, b);
   const str = (v) => (typeof v === 'string' ? v.slice(0, 64) : '');
-  const demarches = Array.isArray(o.demarches) ? [...new Set(o.demarches.filter((x) => typeof x === 'string' && lireDemarche(x)))].slice(0, ENQ.maxDemarches + ENQ.demarcheSolo + 1) : [];
-  const accusation = Number.isInteger(o.accusation) && o.accusation >= 0 && o.accusation < ENQ.nbSuspects ? o.accusation : null;
-  // Deux complices : le second nom de l'accusation (ignoré dans les autres affaires).
-  const accusation2 = accusation !== null && Number.isInteger(o.accusation2) && o.accusation2 >= 0 && o.accusation2 < ENQ.nbSuspects && o.accusation2 !== accusation ? o.accusation2 : null;
-  // Confrontation (affaire de meurtre) : trois pièces opposées au suspect accusé.
-  const reaud = o.reaud && typeof o.reaud === 'object' && Number.isInteger(o.reaud.i) && o.reaud.i >= 0 && o.reaud.i < 8 && typeof o.reaud.f === 'string' && /^[a-zA-Z]{1,8}:[a-z0-9]{1,12}$/.test(o.reaud.f) ? { i: o.reaud.i, f: o.reaud.f } : null;
-  const confront = Array.isArray(o.confront) ? [...new Set(o.confront.filter((x) => typeof x === 'string' && /^[a-zA-Z]{1,8}:[a-z0-9]{1,12}$/.test(x)))].slice(0, 3) : [];
-  // Recoupement (deux pièces), hypothèse au juge (suspect, créneau), mobile nommé à la confrontation : affaires qui les prévoient.
-  const codeOk = (x) => typeof x === 'string' && /^[a-zA-Z]{1,8}:[a-z0-9]{1,12}$/.test(x);
-  const recoup = Array.isArray(o.recoup) && o.recoup.length === 2 && o.recoup.every(codeOk) && o.recoup[0] !== o.recoup[1] ? [o.recoup[0], o.recoup[1]] : null;
+  // Démarches, réauditions, recoupements et confrontations se jouent en direct (collection « enquete ») ;
+  // restent dans les ordres l'hypothèse au juge (suspect, créneau), la piste prioritaire, l'appui, la traque et les partages.
   const hypo = o.hypo && typeof o.hypo === 'object' && Number.isInteger(o.hypo.i) && o.hypo.i >= 0 && o.hypo.i < 8 && Number.isInteger(o.hypo.s) && o.hypo.s >= 0 && o.hypo.s < 8 ? { i: o.hypo.i, s: o.hypo.s } : null;
-  const mobile = Number.isInteger(o.mobile) && o.mobile >= 0 && o.mobile < 8 ? o.mobile : null;
   const piste = Number.isInteger(o.piste) && o.piste >= 0 && o.piste < ENQ.nbSuspects ? o.piste : null;
   const appui = ['labo', 'rccu'].includes(o.appui) ? o.appui : null;
   const prime = typeof o.prime === 'string' && /^(confiscation|renfort|formation:[a-z]+)$/.test(o.prime) ? o.prime : null;
@@ -329,7 +320,7 @@ export function sanitizeOrders(zone, raw, state) {
     const s = Object.hasOwn(state.nonDroit.secteurs, k) ? state.nonDroit.secteurs[k] : null;
     if (s && s.barricade && ['frontal', 'negocier', 'encercler'].includes(v)) tactiques[k] = v;
   }
-  return { tactiques, ventes, dilemme, piste, appui, prime, alloc, rythme, evenement: evenement0, renfort, secteurs, roles, decision, operation, depenses, demarches, accusation, accusation2, confront, reaud, recoup, hypo, mobile, traque, partages };
+  return { tactiques, ventes, dilemme, piste, appui, prime, alloc, rythme, evenement: evenement0, renfort, secteurs, roles, decision, operation, depenses, hypo, traque, partages };
 }
 
 /** Coût total des dépenses du jour. */

@@ -205,6 +205,24 @@ export async function createFirebaseBackend(config) {
       for (const u of Object.keys(out)) out[u].sort((a, b) => a.at - b.at);
       return out;
     },
+    /** Enquête en direct : une action (démarche, réaudition, recoupement, confrontation), horodatée par le serveur. */
+    async saveEnqueteAction(uid, season, turn, action) {
+      await F.addDoc(col('enquete'), { ...plain(action), uid, season, turn, at: F.serverTimestamp() });
+    },
+    /** Mes actions d'enquête du tour en cours (lisibles par moi seul avant 20:00). */
+    async getMesActionsEnquete(uid, season, turn) {
+      const snap = await F.getDocs(F.query(col('enquete'), F.where('uid', '==', uid), F.where('season', '==', season), F.where('turn', '==', turn)));
+      const out = [];
+      snap.forEach((d) => { const v = d.data(), at = v.at && v.at.toMillis ? v.at.toMillis() : null; if (at == null) return; const { uid: u0, season: s0, turn: t0, at: a0, ...x } = v; out.push({ ...x, at }); });
+      return out.sort((a, b) => a.at - b.at);
+    },
+    async getEnqueteActions(season, turn) {
+      const snap = await F.getDocs(F.query(col('enquete'), F.where('season', '==', season), F.where('turn', '==', turn)));
+      const out = {};
+      snap.forEach((d) => { const v = d.data(), at = v.at && v.at.toMillis ? v.at.toMillis() : null; if (at == null) return; const { uid, season: s0, turn: t0, at: a0, ...x } = v; (out[uid] ||= []).push({ ...x, at }); });
+      for (const u of Object.keys(out)) out[u].sort((a, b) => a.at - b.at);
+      return out;
+    },
     async saveQuest(uid, season, turn, slot, data) {
       await F.setDoc(docIn('quests', `${id3(season, turn, uid)}_${slot}`), plain({ ...data, uid, season, turn, slot, at: Date.now() }));
     },
@@ -266,12 +284,8 @@ export async function createFirebaseBackend(config) {
       const lire = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
       const u1 = F.onSnapshot(F.query(col('radio'), F.orderBy('at', 'desc'), F.limit(80)), (snap) => { recents = lire(snap); envoyer(); }, (e) => console.error(e));
       const u2 = F.onSnapshot(F.query(col('radio'), F.where('at', '>=', Date.now() - 30 * 3600 * 1000)),
-        (snap) => { jour = lire(snap).filter((m) => m.nd || m.renfort || m.enchere); envoyer(); }, (e) => console.error(e));
+        (snap) => { jour = lire(snap).filter((m) => m.nd || m.renfort); envoyer(); }, (e) => console.error(e));
       return () => { u1(); u2(); };
-    },
-    async listEncheres(venteId) {
-      const snap = await F.getDocs(F.query(col('radio'), F.where('enchere.vente', '==', venteId)));
-      return snap.docs.map((d) => { const v = d.data(); return { uid: v.uid, at: v.at, ...v.enchere }; });
     },
     async sendRadio(uid, texte, extra = {}) {
       await F.addDoc(col('radio'), { ...extra, uid, texte: String(texte).slice(0, 280), at: Date.now() });

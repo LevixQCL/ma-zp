@@ -18,6 +18,7 @@ import { materielDuTour } from './materiel.js';
 import { verifierTrophees, donnerTrophee, TROPHEE } from './trophees.js';
 import { clone, clamp, round1, newZone, capaciteAgents, sanitizeOrders, agentsDisponibles, agentsLibres, capacite, coutDecision, fraisFixes, ajusterBatiments, decisionImpossible, operationActive, ipzComposantes, ipzFrom, pointsIpz, moyenneIpz, moralMult, migrateZone, effetsOperation, coutDepenses, ligneIpz, ouvrirJournal, jalon, noter, fermerJournal, vehiculesDisponibles } from './zone.js';
 import { tourQuartiers, assurerQuartiers, carteQuartiers } from './quartiers.js';
+import { rejouer, actionsValides, enqueteursDe } from './enquete-direct.js';
 import { enquetePre, enqueteZone, enquetePost, nouvelleAffaire, indiceBonus, appliquerPrime, pieceSurSuspect, affaire, dossierDe, pieceGardeAVue } from './enquete.js';
 import { creerNonDroit, nonDroitResoudre } from './nondroit.js';
 import { bilanCentral, appliquerCentral, gazetteCentral } from './central.js';
@@ -234,7 +235,14 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
   // Enquête (partages, accusations, traques) : avant la simulation des zones.
   // Les agents laissés sans affectation partent en premier (audition, traque).
   for (const u of uids) ord[u]._libres = agentsLibres(state.zones[u], ord[u], T);
-  const pre = enquetePre(state, uids, ord, push, T, enqueteActions);
+  // Enquête en direct : la journée de chaque zone (démarches, réauditions, recoupements, confrontations), rejouée
+  // sur son dossier avec les enquêteurs et le budget qu'elle avait au début de la journée (ce que son appareil a vu).
+  const journee = enqueteActions ? (u, dossier) => {
+    const z = state.zones[u], l = actionsValides(enqueteActions[u]);
+    if (!l.length) return null;
+    return rejouer({ state, z, agents: enqueteursDe(z), budget: Number(budget0[u]) || 0, limite: Number(state.nextDeadline) || Infinity }, dossier, l);
+  } : null;
+  const pre = enquetePre(state, uids, ord, push, journee);
   parquetDecouverte(state, pre); // identification au stade du malus : mérite partagé
   // Appui fédéral (labo, RCCU) : pièces des analyses réussies aujourd'hui, équipes pour demain.
   appuiResolution(state, uids, ord, players, T, push);
@@ -602,6 +610,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       cap[s] = capacite(z, s, alloc[s] + renfort, { rythme: o.rythme, turn: T, bonus: bonusService === s ? ENIGMES.bonusCapacite : 1, adminMult, alloc });
     }
     capsSoir[uid] = { ...cap };
+    z.enqueteurs = alloc.recherche || 0; // enquêteurs de demain (enquête en direct)
     // Vague de délinquance chassée d'une zone voisine hier soir : absorbée ou subie.
     if (VAGUES.actif) {
       const vg = appliquerVague(state, z, vagueVisee(state, uid, T), cap, { T, zoneLabel, push });
@@ -896,7 +905,7 @@ export function resolveTurn(stateIn, { orders = {}, quests = {}, players = {}, n
       }
     }
     // Spécialité : sa jauge (3e palier) se remplit avec le travail du soir ; un jour joué de plus la fait progresser.
-    if (z.specialite) jaugeSpecialite(state, z, { traites, recettes, cap, resolus, demarches: (o.demarches || []).length }, makeRng(`${state.seed}:s${state.season}:t${T}:doc:${uid}`), push, zoneLabel);
+    if (z.specialite) jaugeSpecialite(state, z, { traites, recettes, cap, resolus, demarches: (pre.lancees && pre.lancees[uid]) || 0 }, makeRng(`${state.seed}:s${state.season}:t${T}:doc:${uid}`), push, zoneLabel);
     if (z._joue) avancerSpecialite(z);
     jalon(z, 'Jauge de la spécialité');
     // Journal de l'adjoint : un jour tenu sans le joueur.

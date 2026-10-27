@@ -109,16 +109,17 @@ export async function resolvePending(backend, { hour = 20, now = () => Date.now(
       // Une seule fois par partie : l'historique des énigmes, pour les compteurs de carrière (classement « Esprit vif »).
       let historiqueEnigmes = null;
       if (!state.enigCarriereInit && backend.listQuestResults) { try { historiqueEnigmes = await backend.listQuestResults(); } catch (e) { console.warn('Historique des énigmes illisible :', e.message); } }
-      // Saison 2 : relances visibles de la vente aux enchères (publiées sur la Radio).
-      let encheres = [];
-      if (state.vente && backend.listEncheres) { try { encheres = await backend.listEncheres(state.vente.id); } catch (e) { console.warn('Relances illisibles :', e.message); } }
       // Central : actions notées avec l'heure du serveur (sans elles, celles du document joueur, en démo).
       let centralActions = null;
       if (backend.getCentralActions) { try { centralActions = await backend.getCentralActions(state.season, state.turn); } catch (e) { console.warn('Actions du central illisibles :', e.message); } }
+      // Enquête en direct : démarches et confrontations de la journée, horodatées par le serveur.
+      // Illisibles : on ne calcule pas (la journée d'enquête serait perdue), le prochain passage réessaiera.
+      let enqueteActions = null;
+      if (backend.getEnqueteActions) { try { enqueteActions = await backend.getEnqueteActions(state.season, state.turn); } catch (e) { console.warn('Actions d’enquête illisibles :', e.message); etatResolution.erreur = `Actions d’enquête illisibles : ${e.message}`; etatResolution.at = Date.now(); break; } }
       const nextDeadline = nextResolutionAfter(state.nextDeadline, hour);
       let next, gazette;
       try {
-        ({ state: next, gazette } = resolveTurn(state, { orders, quests, players, nextWeekday: weekdayBe(nextDeadline), historiqueEnigmes, encheres, graineCentral: CONFIG.seed, centralActions }));
+        ({ state: next, gazette } = resolveTurn(state, { orders, quests, players, nextWeekday: weekdayBe(nextDeadline), historiqueEnigmes, graineCentral: CONFIG.seed, centralActions, enqueteActions }));
       } catch (e) {
         console.error('Calcul du tour impossible :', e);
         etatResolution.erreur = `Calcul du tour ${state.turn} : ${e && e.message ? e.message : e}${e && e.stack ? ' · ' + String(e.stack).split('\n').slice(1, 3).map((l) => l.trim()).join(' · ') : ''}`;

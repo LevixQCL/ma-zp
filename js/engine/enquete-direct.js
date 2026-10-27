@@ -31,6 +31,12 @@ const KINDS = new Set(['dem', 'reaud', 'recoup', 'confront']);
 export function facteurRecherche(agents) {
   return Math.max(0.7, Math.min(1.3, 1.3 - 0.05 * (Number(agents) || 0)));
 }
+/** Enquêteurs de la zone pour la journée : ses agents de Recherche du dernier tour (connus de tous les appareils). */
+export function enqueteursDe(z) {
+  if (z && Number.isFinite(Number(z.enqueteurs))) return Number(z.enqueteurs);
+  const r = z && z.dernierOrdre && z.dernierOrdre.alloc && z.dernierOrdre.alloc.recherche;
+  return Number.isFinite(Number(r)) ? Number(r) : 4;
+}
 export const enCoursMax = (agents) => DIRECT.enCours + ((Number(agents) || 0) >= 8 ? 1 : 0);
 /** Durée (minutes) d'une démarche pour une zone qui a `agents` agents en Recherche. */
 export function dureeDemarche(k, agents) {
@@ -50,7 +56,7 @@ export function actionsValides(liste) {
 
 /**
  * Rejoue les actions d'une zone sur une copie de son dossier.
- * `ctx` : { state, z, agents (Recherche), budget }. Renvoie le dossier enrichi (pièces avec `dispo`), ce qui a été
+ * `ctx` : { state, z, agents (Recherche), budget, limite (heure du prochain 20:00, en ms) }. Renvoie le dossier enrichi (pièces avec `dispo`), ce qui a été
  * dépensé, les confrontations (avec heure du verdict et issue) et les refus (avec la raison), dans l'ordre.
  */
 export function rejouer(ctx, dossier, actions) {
@@ -62,8 +68,10 @@ export function rejouer(ctx, dossier, actions) {
   const confrontations = [], refus = [], lancees = [];
   const enCours = (t) => d.pieces.filter((p) => p.dispo > t && Object.hasOwn(DIRECT.duree, p.src) && p.src !== 'reaud' && p.src !== 'recoup').length;
   const payer = (c, x, t) => { if (budget < c) { refus.push({ at: x.at, x, raison: 'budget insuffisant' }); return false; } budget -= c; depense += c; return true; };
+  const limite = Number(ctx.limite) || Infinity;
   for (const x of actionsValides(actions)) {
     const t = x.at, ici = dossierA(d, t);
+    if (t > limite) continue; // après 20:00 : compte pour la journée suivante
     if (d.exclu || (d.accuse != null && !d.exclu)) { refus.push({ at: t, x, raison: 'affaire terminée pour toi' }); continue; }
     if (x.k === 'dem') {
       const dm = lireDemarche(x.x);
@@ -106,6 +114,7 @@ export function rejouer(ctx, dossier, actions) {
     } else if (x.k === 'confront') {
       const i = Number(x.i);
       if (!(i >= 0 && i < aff.suspects.length)) continue;
+      if (t + DELAI_VERDICT * MIN > limite) { refus.push({ at: t, x, raison: `le parquet ferme : plus de confrontation dans les ${DELAI_VERDICT} minutes avant 20:00` }); continue; }
       if (d.relache[i] && d.relache[i] > t) { refus.push({ at: t, x, raison: `${aff.suspects[i].prenom} vient d’être relâché${aff.suspects[i].f ? 'e' : ''}` }); continue; }
       const fin = t + DELAI_VERDICT * MIN;
       const c = { at: t, fin, i, i2: Number.isInteger(x.i2) ? x.i2 : null, pieces: [], mobile: Number.isInteger(x.mobile) ? x.mobile : null };

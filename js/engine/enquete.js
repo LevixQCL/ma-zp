@@ -124,11 +124,9 @@ export function recalerJourRampe(state) {
 
 export const ENQ_VERSION = 2;
 export const ENQ = {
-  dureeMax: 7,          // jours pour désigner le suspect
+  dureeMax: 10,         // jours pour désigner le suspect (saison 4 : 10, l'enquête se joue en direct)
   traqueTours: 1,       // tours pour l'arrêter ensuite (une seule nuit : les indices sur la planque s'accumulent pendant l'enquête)
   agentsTraque: 2,      // agents d'Intervention minimum pour une interpellation (4 coûtaient plus que l'arrestation ne rapportait : voir l'historique)
-  maxDemarches: 2,      // démarches par tour
-  demarcheSolo: 1,      // démarche en plus pour une zone qui n'a reçu aucune pièce hier ni aujourd'hui (voir maxDemarchesDe)
   maxPartages: 3,       // pièces partagées par tour
   maxRecus: 1,          // pièces partagées reçues « gratuitement » par soir (révision d'oct. 2026 : 2 → 1 ; voir donnant-donnant)
   // Donnant-donnant : deux zones qui s'envoient chacune une pièce le même soir reçoivent toujours celle de l'autre, en plus.
@@ -137,18 +135,6 @@ export const ENQ = {
   attrsTraque: 2,        // caractéristiques de la planque à avoir au dossier pour que le juge autorise la perquisition
   surcoutHorsCellule: 2, // multiplicateur de coût pour un suspect d'une autre cellule
 };
-
-/**
- * Démarches permises ce soir : une 3e pour une zone qui enquête seule (aucune pièce reçue d'une autre zone hier ou aujourd'hui).
- * Révision d'oct. 2026 : seul, 30 % des vols n'étaient jamais résolus ; une cellule active, elle, reçoit jusqu'à 2 pièces par soir.
- */
-export function maxDemarchesDe(state, z) {
-  const e = state && state.enquete;
-  const d = e && z && z.enquete && z.enquete.n === e.n ? z.enquete : null;
-  // Pièces reçues la veille (celles qui arrivent ce soir ne comptent pas : le joueur ne les connaissait pas en choisissant).
-  const recu = d && d.pieces.some((p) => p.de && (p.j || 0) >= (e.jour || 1) - 1 && (p.j || 0) < (e.jour || 1));
-  return ENQ.maxDemarches + (recu ? 0 : ENQ.demarcheSolo);
-}
 
 /** Points d'enquête pour une découverte au jour `j`. */
 export const pointsDecouverte = (j) => Math.max(40, 110 - 10 * j);
@@ -1253,10 +1239,11 @@ export function affaire(state, n) {
 const nomZone = (z) => (z ? `ZP ${z.code} ${z.nom}` : "une zone qui a quitté la partie");
 
 /**
- * Avant la simulation des zones : partages, accusations, traques.
- * Renvoie les agents prélevés par zone et le résultat du jour.
+ * Avant la simulation des zones : partages, journée d'enquête en direct (démarches et confrontations rejouées), traques.
+ * `journee(uid, dossier)` : rejoue la journée d'enquête en direct de la zone (enquete-direct.js) et renvoie le résultat.
+ * Renvoie les agents prélevés par zone, les démarches lancées par zone et le résultat du jour.
  */
-export function enquetePre(state, uids, ord, push) {
+export function enquetePre(state, uids, ord, push, journee = null) {
   // Ancienne version de l'enquête : on repart sur une affaire neuve.
   if (state.enquete && state.enqueteV !== ENQ_VERSION) {
     state.traques = [];
@@ -1270,9 +1257,8 @@ export function enquetePre(state, uids, ord, push) {
     const prendre = (u, s, n) => { prises[u] = prises[u] || {}; prises[u][s] = (prises[u][s] || 0) + n; };
     const p = state.enquetePause;
     const res = { actifs: uids.length, n: p.n, titre: p.titre, jour: 0, pause: true, decouverte: null, arrestations: [], fuites: [], classee: false };
-    for (const u of uids) if ((ord[u].demarches || []).length || ord[u].accusation != null) state.zones[u].rapport.push('Enquête : pas d’affaire en cours ce soir, tes démarches sont annulées. La nouvelle affaire s’ouvre ce soir.');
     traquesDuSoir(state, uids, ord, push, prendre, res);
-    return { prises, res };
+    return { prises, res, lancees: {} };
   }
   if (!state.enquete) nouvelleAffaire(state);
   const e = state.enquete;
@@ -1350,72 +1336,40 @@ export function enquetePre(state, uids, ord, push) {
     if (nonEnvoyees[u] && nonEnvoyees[u].length) z.rapport.push(`Enquête : pas transmise${nonEnvoyees[u].length > 1 ? 's' : ''} : ${nonEnvoyees[u].join(' ; ')}.`);
   }
 
-  // Audition de la victime : deux agents de Recherche pris pour la journée.
-  // Seulement si l'audition fait partie des démarches réellement menées ce soir (même plafond que enqueteZone).
-  for (const u of uids) if ((ord[u].demarches || []).slice(0, maxDemarchesDe(state, state.zones[u])).includes('temoin')) prendre(u, 'recherche', DEMARCHES.temoin.agents);
-
-  // Accusations (une seule par affaire et par zone).
-  const justes = [];
+  // Journée d'enquête en direct : démarches et confrontations de la journée, rejouées dans l'ordre de leurs heures.
+  const justes = [], mobiles = {}, lancees = {};
   // Aveux accordés par le maître du jeu (affaire écrite) : ces zones avaient confronté le bon suspect, la confrontation compte comme réussie.
   const AV = state.aveuxAccordes && state.aveuxAccordes.n === e.n && aff.meurtre ? new Set(state.aveuxAccordes.uids || []) : null;
   delete state.aveuxAccordes;
   for (const u of uids) {
-    const z = state.zones[u], d = z.enquete;
-    const accorde = !!(AV && AV.has(u) && !d.exclu && d.accuse === null);
-    const a = accorde ? aff.coupable : (ord[u] || {}).accusation;
-    if (a === null || a === undefined || d.exclu || d.accuse !== null) continue;
-    if (!(a >= 0 && a < aff.suspects.length)) continue;
-    if (aff.meurtre) {
-      // Confrontation : trois pièces que la zone a (ou connues de tous) opposées au suspect.
-      const connus = new Set([...faitsConnus(d), 'doc:journal', 'doc:pvc', ...aff.suspects.map((_, k) => `A:${k}`)]);
-      const pieces = (Array.isArray(ord[u].confront) ? ord[u].confront : []).filter((f) => typeof f === 'string' && connus.has(f)).slice(0, 3);
-      if (accorde) z.rapport.push(`Enquête : le parquet a revu ta confrontation ${deN(aff.suspects[a].nom)}. Tu tenais le bon suspect : les aveux te sont accordés.`);
-      if (!accorde && a === aff.coupable && !confrontationOk(aff, a, pieces)) {
+    const z = state.zones[u];
+    if (AV && AV.has(u) && !z.enquete.exclu && z.enquete.accuse === null) {
+      z.enquete.accuse = aff.coupable; z.enquete.accuseJ = e.jour; justes.push(u);
+      z.rapport.push(`Enquête : le parquet a revu ta confrontation ${deN(aff.suspects[aff.coupable].nom)}. Tu tenais le bon suspect : les aveux te sont accordés.`);
+      continue;
+    }
+    const r = journee ? journee(u, z.enquete) : null;
+    if (!r || !r.dossier || r.dossier.n !== e.n) continue;
+    z.enquete = r.dossier;
+    lancees[u] = r.lancees.filter((l) => l.k !== 'reaud' && l.k !== 'recoup').length;
+    if (r.depense > 0) { z.budget -= r.depense; (z._compta ||= []).push({ k: 'enquete', l: 'Démarches d’enquête', v: -r.depense }); }
+    // Audition de la victime : deux agents de Recherche pris pour la journée.
+    if (r.lancees.some((l) => l.k === 'temoin')) prendre(u, 'recherche', DEMARCHES.temoin.agents);
+    if (r.lancees.length) z.rapport.push(`Enquête : ${r.lancees.length} démarche${r.lancees.length > 1 ? 's' : ''} aujourd’hui (${r.lancees.map((l) => (l.vide ? `${l.nom.toLowerCase()} : rien de neuf` : `« ${titrePiece(aff, l.f)} »`)).join(', ')}).`);
+    for (const c of r.confrontations) {
+      const s = aff.suspects[c.i];
+      if (c.issue === 'aveux' || c.issue === 'identifie') { z.enquete.accuseJ = e.jour; justes.push(u); if (Number.isInteger(c.mobile)) mobiles[u] = c.mobile; continue; }
+      if (c.issue === 'nie') {
         z.reputation -= 1;
-        // On rappelle les éléments opposés (et ceux qui n'ont pas pu l'être), pour que le joueur sache ce qui a été joué.
-        const nomEl = (f) => (f === 'doc:journal' ? 'le journal du lendemain' : f === 'doc:pvc' ? 'le PV de premières constatations' : `« ${titrePiece(aff, f)} »`);
-        const brut = (Array.isArray(ord[u].confront) ? ord[u].confront : []).filter((f) => typeof f === 'string').slice(0, 3);
-        const ecartes = brut.length - pieces.length;
-        z.rapport.push(`Enquête : confronté${aff.suspects[a].f ? 'e' : ''} à tes pièces${pieces.map(nomEl).filter((x) => !/undefined/.test(x)).length ? ` (${pieces.map(nomEl).filter((x) => !/undefined/.test(x)).join(', ')})` : ''}, ${aff.suspects[a].nom} nie tout et repart libre. ${ecartes > 0 ? `${ecartes} élément${ecartes > 1 ? 's' : ''} choisi${ecartes > 1 ? 's' : ''} n’étai${ecartes > 1 ? 'ent' : 't'} plus dans ton dossier ce soir. ` : ''}${ECHEC_CONFRONT[`${aff.cas}:${aff.variante || 'a'}`] || `${aff.suspects[a].f ? 'Elle' : 'Il'} a réponse à tout.`} ${bilanConfrontation(aff, a, pieces)} (−1 de réputation) Tu peux recommencer demain avec d’autres pièces.`);
+        z.rapport.push(`Enquête : confronté${s.f ? 'e' : ''} à tes pièces, ${s.nom} nie tout et repart libre. ${ECHEC_CONFRONT[`${aff.cas}:${aff.variante || 'a'}`] || ''} ${c.bilan} (−1 de réputation)`.replace(/ {2,}/g, ' '));
         continue;
       }
-      d.accuse = a; d.accuseJ = e.jour;
-      if (a === aff.coupable) { justes.push(u); continue; }
-      d.exclu = true; z.reputation -= 3;
-      z.rapport.push(`Enquête : ${aff.suspects[a].nom} n’avait rien à voir avec ${aff.faitsNom || 'le meurtre'} ; le parquet te retire l’affaire (−3 de réputation). Tu peux encore aider les autres en partageant tes pièces.`);
-      push(6, 'Enquête', `Fausse piste pour ${nomZone(z)}`, `Sa confrontation dans « ${aff.titre} » n’a rien donné. L’enquête continue pour les autres zones.`, u);
-      continue;
-    }
-    // Vol : le parquet exige un dossier qui écarte tous les autres suspects (un nom soufflé ou deviné ne suffit pas).
-    const restants = candidats(aff, faitsConnus(d)).suspects;
-    if (aff.variante === 'complices') {
-      // Deux complices : deux noms, et un dossier qui écarte les trois autres.
-      const a2 = ord[u].accusation2;
-      const paire = Number.isInteger(a2) && a2 !== a && a2 >= 0 && a2 < aff.suspects.length ? [a, a2] : null;
-      if (!paire || !(restants.length === 2 && paire.every((k) => restants.includes(k)))) {
-        z.rapport.push(!paire
-          ? `Enquête : le parquet refuse ton accusation ${deN(aff.suspects[a].nom)} : dans cette affaire, il attend les deux complices, et ton dossier doit écarter les trois autres suspects. Aucune pénalité.`
-          : `Enquête : le parquet refuse ton accusation ${deN(aff.suspects[a].nom)} et ${deN(aff.suspects[a2].nom)} : ton dossier n’écarte pas encore tous les autres suspects. Aucune pénalité : reviens avec les pièces qui le démontrent.`);
-        continue;
-      }
-      d.accuseJ = e.jour;
-      if (paire.every((k) => estAuteur(aff, k))) { d.accuse = aff.coupable; d.accuse2 = aff.complice; justes.push(u); continue; }
-      d.accuse = a; d.accuse2 = a2; d.exclu = true; z.reputation -= 3;
-      z.rapport.push(`Enquête : accusation rejetée par le parquet. Plus d’accusation possible sur cette affaire (−3 de réputation).`);
-      continue;
-    }
-    if (!(restants.length === 1 && restants[0] === a)) {
-      const autres = restants.filter((k) => k !== a).length;
-      z.rapport.push(`Enquête : le parquet refuse ton accusation ${deN(aff.suspects[a].nom)} : ton dossier ${restants.includes(a) ? `n’écarte pas encore ${autres} autre${autres > 1 ? 's' : ''} suspect${autres > 1 ? 's' : ''}` : 'ne tient pas contre ce suspect'}. Aucune pénalité : reviens avec les pièces qui le démontrent.`);
-      continue;
-    }
-    d.accuse = a; d.accuseJ = e.jour;
-    if (a === aff.coupable) justes.push(u);
-    else {
-      d.exclu = true; z.reputation -= 3;
-      z.rapport.push(`Enquête : accusation ${deN(aff.suspects[a].nom)} rejetée par le parquet. Plus d’accusation possible sur cette affaire (−3 de réputation). Tu peux encore aider les autres en partageant tes pièces.`);
+      if (c.issue === 'refus') { z.rapport.push(`Enquête : ${c.bilan}`); continue; }
+      // Mauvais suspect : le parquet retire l'affaire à la zone.
+      z.reputation -= 3;
+      z.rapport.push(`Enquête : ${s.nom} n’avait rien à voir avec ${aff.faitsNom || 'l’affaire'} ; le parquet te retire l’affaire (−3 de réputation). Tu peux encore aider les autres en partageant tes pièces.`);
       // La Gazette ne dit pas qui a été accusé : le nom d'un innocent serait un indice gratuit pour toutes les zones.
-      push(6, 'Enquête', `Fausse piste pour ${nomZone(z)}`, `Son accusation dans « ${aff.titre} » est rejetée par le parquet. L’enquête continue pour les autres zones.`, u);
+      push(6, 'Enquête', `Fausse piste pour ${nomZone(z)}`, `Sa confrontation dans « ${aff.titre} » n’a rien donné. L’enquête continue pour les autres zones.`, u);
     }
   }
   if (justes.length) {
@@ -1446,11 +1400,11 @@ export function enquetePre(state, uids, ord, push) {
       partsPrime(state, [], [...contributeurs], justes);
       // Le vrai mobile, nommé pendant la confrontation : un bonus pour qui a compris toute l'histoire.
       if (aff.mobiles) {
-        const bons = justes.filter((u) => ord[u].mobile === aff.mobileVrai);
+        const bons = justes.filter((u) => mobiles[u] === aff.mobileVrai);
         for (const u of justes) {
           const z = state.zones[u];
           if (bons.includes(u)) { z.stats.limier += POINTS.mobile; z.reputation += 2; z.rapport.push(`Enquête : tu avais aussi compris pourquoi : « ${aff.mobiles[aff.mobileVrai]} » (+${POINTS.mobile} pts d’enquête, +2 de réputation).`); }
-          else if (Number.isInteger(ord[u].mobile)) z.rapport.push(`Enquête : le mobile que tu avançais (« ${aff.mobiles[ord[u].mobile] || '?'} ») n’était pas le bon. Les aveux disent tout dans la Gazette.`);
+          else if (Number.isInteger(mobiles[u])) z.rapport.push(`Enquête : le mobile que tu avançais (« ${aff.mobiles[mobiles[u]] || '?'} ») n’était pas le bon. Les aveux disent tout dans la Gazette.`);
         }
         res.mobileTrouve = bons.map((u) => nomZone(state.zones[u]));
       }
@@ -1464,7 +1418,7 @@ export function enquetePre(state, uids, ord, push) {
   }
 
   traquesDuSoir(state, uids, ord, push, prendre, res);
-  return { prises, res };
+  return { prises, res, lancees };
 }
 
 /** Vrai si le dossier de la zone désigne ce lieu : au moins `ENQ.attrsTraque` caractéristiques de la planque connues, et le lieu y correspond. */
@@ -1563,10 +1517,7 @@ function ajouterDebrief(res, f) {
 
 /** Pendant la simulation d'une zone : démarches payées et résultats, enquête de voisinage. */
 export function enqueteZone(state, z, o, zr, capa, pre) {
-  if (!state.enquete || pre.res.decouverte) {
-    if ((o.demarches || []).length && pre.res.decouverte) z.rapport.push('Enquête : l’affaire est résolue, tes démarches sont annulées.');
-    return;
-  }
+  if (!state.enquete || pre.res.decouverte) return;
   const e = state.enquete;
   const aff = affaire(state, e.n);
   const d = z.enquete;
@@ -1577,22 +1528,6 @@ export function enqueteZone(state, z, o, zr, capa, pre) {
     if (arrivees.length) z.rapport.push(`Enquête : les pièces retardées par le dégât des eaux arrivent (${arrivees.map((x) => `« ${titrePiece(aff, x.f)} »`).join(', ')}).`);
     z.enqueteDiffere = [];
   }
-  const faites = [];
-  for (const x of (o.demarches || []).slice(0, maxDemarchesDe(state, z))) {
-    const dm = lireDemarche(x);
-    const f = dm && pieceDemarche(aff, d, x);
-    if (!f) { if (dm && dm.k === 'moyens' && aff.meurtre && !mandatOk(aff, d, dm.i)) faites.push(`perquisition chez ${aff.suspects[dm.i].nom} refusée par le juge (aucune pièce sérieuse contre ${aff.suspects[dm.i].f ? 'elle' : 'lui'} au dossier)`); continue; }
-    const cout = coutDemarche(state, z.uid, x);
-    if (z.budget < cout) { faites.push(`${dm.dm.nom} refusée (budget insuffisant)`); continue; }
-    z.budget -= cout;
-    if (cout) (z._compta ||= []).push({ k: 'enquete', l: 'Démarches d’enquête', v: -cout });
-    if (z._retardEnquete) { (z.enqueteDiffere ||= []).push({ f, n: e.n, src: dm.k }); faites.push(`« ${titrePiece(aff, f)} » (retardée d’un tour)`); continue; }
-    d.pieces.push({ f, j: e.jour, src: dm.k });
-    faites.push(`« ${titrePiece(aff, f)} »`);
-  }
-  if (faites.length) z.rapport.push(`Enquête : au dossier ce soir : ${faites.join(', ')}.`);
-  if (aff.meurtre && o.reaud) reentendre(aff, z, d, o.reaud, e.jour);
-  if (aff.recoupements && Array.isArray(o.recoup) && o.recoup.length === 2) recouper(aff, z, d, o.recoup, e.jour);
   if (aff.declics) declics(aff, z, d, e.jour);
   if (aff.hypothese && o.hypo) hypotheseAuJuge(aff, z, d, o.hypo);
   // Enquête de voisinage : plus on a de capacité de Recherche, plus elle rapporte ; une piste prioritaire la concentre.
@@ -1624,19 +1559,6 @@ export function pieceReaudition(aff, dossier, i, f) {
   const p = `${r[0]}:${i}`;
   return faitsConnus(dossier).includes(p) ? null : p;
 }
-/** Réaudition (affaire de meurtre) : on oppose une pièce à un suspect ; certaines le font parler. */
-function reentendre(aff, z, d, r, jour) {
-  const i = r.i, s = aff.suspects[i];
-  if (!s || !opposables(aff, d).has(r.f)) return;
-  if (!mandatOk(aff, d, i)) { z.rapport.push(`Enquête : réaudition de ${s.nom} refusée par le magistrat (aucune pièce sérieuse contre ${s.f ? 'elle' : 'lui'} au dossier).`); return; }
-  if (z.budget < REAUD.cout) { z.rapport.push(`Enquête : réaudition de ${s.nom} annulée (budget insuffisant).`); return; }
-  z.budget -= REAUD.cout; (z._compta ||= []).push({ k: 'enquete', l: 'Démarches d’enquête', v: -REAUD.cout });
-  const p = pieceReaudition(aff, d, i, r.f);
-  if (!p) { z.rapport.push(`Enquête : réentendu${s.f ? 'e' : ''} face à « ${titrePiece(aff, r.f)} », ${s.nom} n’a rien à ajouter.`); return; }
-  d.pieces.push({ f: p, j: jour, src: 'reaud' });
-  z.rapport.push(`Enquête : réentendu${s.f ? 'e' : ''} face à « ${titrePiece(aff, r.f)} », ${s.nom} change de version (« ${titrePiece(aff, p)} »).`);
-}
-
 export const RECOUP = { cout: 1 };
 /** Recoupement prévu par l'affaire pour ces deux pièces (dans un sens ou dans l'autre), ou null. */
 export function recoupementDe(aff, a, b) {
@@ -1647,19 +1569,6 @@ export function recoupementDe(aff, a, b) {
 export function pieceRecoupement(aff, dossier, a, b) {
   const r = recoupementDe(aff, a, b);
   return r && !faitsConnus(dossier).includes(r.f) ? r.f : null;
-}
-/** Recoupement (affaire de meurtre) : deux pièces opposées l'une à l'autre ; certaines paires apprennent du neuf. */
-function recouper(aff, z, d, [a, b], jour) {
-  const op = opposables(aff, d);
-  if (!op.has(a) || !op.has(b) || a === b) return;
-  if (z.budget < RECOUP.cout) { z.rapport.push('Enquête : recoupement annulé (budget insuffisant).'); return; }
-  z.budget -= RECOUP.cout; (z._compta ||= []).push({ k: 'enquete', l: 'Démarches d’enquête', v: -RECOUP.cout });
-  // « a|b » et pas [a, b] : Firestore refuse les tableaux dans un tableau (l'enregistrement du tour échouait).
-  d.recoups = [...(d.recoups || []).slice(-30).map((x) => (Array.isArray(x) ? x.join('|') : x)), [a, b].sort().join('|')];
-  const p = pieceRecoupement(aff, d, a, b);
-  if (!p) { z.rapport.push(`Enquête : recoupement de « ${titrePiece(aff, a)} » et « ${titrePiece(aff, b)} » : rien de neuf.`); return; }
-  d.pieces.push({ f: p, j: jour, src: 'recoup' });
-  z.rapport.push(`Enquête : en recoupant « ${titrePiece(aff, a)} » et « ${titrePiece(aff, b)} », tes enquêteurs trouvent du neuf (« ${titrePiece(aff, p)} »).`);
 }
 /** Déclics : une pièce qui arrive d'elle-même quand le dossier contient certaines pièces. */
 function declics(aff, z, d, jour) {

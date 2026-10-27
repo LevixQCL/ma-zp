@@ -226,10 +226,16 @@ function botNonDroitRoles(zone, state, style, rng, reste) {
   return { secteurs, roles };
 }
 
-/** Enquête : constatations d'abord, puis vérifications ciblées ; accusation quand un seul suspect reste. */
+/**
+ * Enquête : constatations d'abord, puis vérifications ciblées ; confrontation quand un seul suspect reste.
+ * Les démarches et la confrontation sont des actions horodatées (`actionsEnquete`, enquête en direct) : le mode démo
+ * et les simulations les passent au calcul du tour comme le serveur passe celles des joueurs.
+ */
 function botEnquete(zone, state, style, rng, alloc) {
-  const out = { demarches: [], accusation: null, accusation2: null, traque: null, partages: [], piste: null };
+  const out = { actionsEnquete: [], traque: null, partages: [], piste: null };
   if (!state.enquete) return out;
+  const fin = Number(state.nextDeadline) || 0, matin = fin - 11 * 3600000;
+  const demarches = [];
   const aff = affaire(state, state.enquete.n);
   const d = dossierDe(state, zone);
   const connus = new Set(faitsConnus(d));
@@ -249,11 +255,13 @@ function botEnquete(zone, state, style, rng, alloc) {
   const envies = [...scenes, ...cibles.map((t) => t.x)];
   let budget = zone.budget - 10;
   for (const x of envies) {
-    if (out.demarches.length >= nb) break;
+    if (demarches.length >= nb) break;
     const prix = coutDemarche(state, zone.uid, x);
     if (prix > budget || !rng.chance(envie)) continue;
-    out.demarches.push(x); budget -= prix;
+    demarches.push(x); budget -= prix;
   }
+  demarches.forEach((x, k) => out.actionsEnquete.push({ k: 'dem', x, at: matin + k * 170 * 60000 + rng.int(0, 600000) }));
+  const confronter = (i, pieces, i2) => out.actionsEnquete.push({ k: 'confront', i, ...(Number.isInteger(i2) ? { i2 } : {}), ...(pieces ? { pieces } : {}), at: fin - 2 * 3600000 - rng.int(0, 3600000) });
   // Piste prioritaire des enquêteurs : un suspect encore possible de sa cellule.
   if (style !== 'distrait') {
     const miens = c.suspects.filter((i) => dansMaCellule(state, zone.uid, i));
@@ -265,13 +273,13 @@ function botEnquete(zone, state, style, rng, alloc) {
     if (!d.exclu && d.accuse === null && c.suspects.length === 1 && rng.chance(0.8)) {
       const dispo2 = [...aff.confront.decisives, ...aff.confront.accablantes].filter((f, k, a) => a.indexOf(f) === k && (f.startsWith('doc:') || connus.has(f)));
       const choix = dispo2.slice(0, 3);
-      if (confrontationOk(aff, c.suspects[0], choix)) { out.accusation = c.suspects[0]; out.confront = choix; }
+      if (confrontationOk(aff, c.suspects[0], choix)) confronter(c.suspects[0], choix);
     }
   } else if (!d.exclu && d.accuse === null) {
     // Deux complices : le robot accuse la paire quand il ne reste qu'elle (l'agressif tente parfois à trois).
     const nA = aff.variante === 'complices' ? 2 : 1;
-    if (c.suspects.length === nA && rng.chance(style === 'distrait' ? 0.5 : 0.85)) { out.accusation = c.suspects[0]; if (nA === 2) out.accusation2 = c.suspects[1]; }
-    else if (style === 'agressif' && c.suspects.length === nA + 1 && rng.chance(0.25)) { if (nA === 1) out.accusation = rng.pick(c.suspects); else { const p = rng.shuffle(c.suspects); out.accusation = p[0]; out.accusation2 = p[1]; } }
+    if (c.suspects.length === nA && rng.chance(style === 'distrait' ? 0.5 : 0.85)) confronter(c.suspects[0], null, nA === 2 ? c.suspects[1] : null);
+    else if (style === 'agressif' && c.suspects.length === nA + 1 && rng.chance(0.25)) { if (nA === 1) confronter(rng.pick(c.suspects)); else { const p = rng.shuffle(c.suspects); confronter(p[0], null, p[1]); } }
   }
   // Partage : les zones coopératives transmettent les pièces de leur cellule.
   // (avec parcimonie : le joueur doit garder de quoi raisonner lui-même).

@@ -7,63 +7,13 @@ import { nextResolutionAfter } from '../engine/time.js';
 import { makeRng } from '../engine/rng.js';
 import { MAX_ZONES, partieComplete } from '../engine/constants.js';
 import { codeDejaPris, MSG_CODE_PRIS } from './codes.js';
-import { creerChef, XP_CUMUL, signatureChef } from '../engine/chef.js';
-import { creerAdjoint } from '../engine/adjoint.js';
-import { tirerObjectifs, cleSemaine, semaineDe } from '../engine/chef-semaine.js';
-
-/** « ?demo=chef » : un chef déjà bien avancé (saison 3), pour voir le bureau, les talents et « Ton chef cette nuit ». */
-const demoChef = () => typeof location !== 'undefined' && /(^|[?&])demo=chef\b/.test(location.search || '');
-function chefAvance(niv, parcours, talents) {
-  const c = creerChef({ parcours });
-  for (const [k, n] of Object.entries(niv)) c.xp[k] = XP_CUMUL[n] + 3;
-  c.talents = talents; c.talentsT = null;
-  return c;
-}
-function preparerDemoChef(st, players, uid) {
-  const z = st.zones[uid], T = st.turn;
-  z.chef = chefAvance({ gestion: 5, commandement: 3, flair: 6, diplomatie: 5, proximite: 2 }, 'enqueteur', ['carnet', 'intuition', 'meneur']);
-  z.chef.medailles = [{ season: 1, comp: 'flair', nom: 'Médaille du mérite judiciaire' }, { season: 2, comp: 'diplomatie', nom: 'Médaille de la coopération' }];
-  z.chef.etats = [
-    { season: 1, rang: 3, sur: 6, moyenne: 58.4, affaires: 2, trophees: 3, faits: ['a identifié 2 auteurs', 'a pris 3 relèves pour ses voisins', 'a réussi 9 incidents du jour'] },
-    { season: 2, rang: 1, sur: 6, moyenne: 64.1, affaires: 3, trophees: 2, faits: ['a identifié 3 auteurs', 'a repris 2 secteurs au milieu', 'a tenu 2 pactes jusqu’au bout'] },
-  ];
-  z.chef.souvenirs = [{ u: 'bot-canal', s: 2, t: 6 }, { u: 'bot-vallee', s: 3, t: 1 }];
-  z.chef.nouveauxTalents = ['marches'];
-  z.chefNuit = { tour: T - 1, signature: signatureChef(z.chef), montees: [{ comp: 'flair', niveau: 8 }], nouveaux: ['renard'], faits: [
-    { id: 'meneur', t: 'Meneur d’hommes : le rythme renforcé a moins pesé sur le moral.' },
-    { id: 'jeux', t: 'Entraînement du jour (mini-jeux et énigmes) : Flair +3, Commandement +1.' },
-    { id: 'visite', t: 'Réunion avec le chef de ZP 5301 Canal : une photo souvenir rejoint ton bureau.' } ] };
-  z.chef.xp.flair = XP_CUMUL[6] + 1;
-  z.ps = 1350; z.affiches = [{ nom: 'Kevin Dumont', titre: 'Vol rue de la Clef', season: 2 }, { nom: 'Sarah Lenoir', titre: 'Cambriolage', season: 2 }];
-  z.satisfaction = 72; z.moral = 48; z.reputation = 63; z.dir = { ...(z.dir || {}), mem: { ...((z.dir && z.dir.mem) || {}), journaliste: 'amie' } };
-  players[uid] = { ...(players[uid] || {}), chef: { portrait: 'p02', parcours: 'enqueteur', devise: 'Toujours un coup d’avance' } };
-  const portraits = ['p05', 'p04', 'p09', 'p12', 'p17', 'p20'];
-  Object.keys(st.zones).filter((u) => u.startsWith('bot')).forEach((u, i) => {
-    st.zones[u].chef = chefAvance({ gestion: 2 + (i % 3), commandement: 4 - (i % 2), flair: 1 + i % 4, diplomatie: 3, proximite: 2 + (i % 3) }, ['intervention', 'gestionnaire', 'ilotier', 'negociateur', 'enqueteur', 'intervention'][i % 6], ['meneur', 'gestionnaire'].slice(0, 1 + (i % 2)));
-    if (players[u]) players[u].chef = { portrait: portraits[i % portraits.length], parcours: st.zones[u].chef.parcours, devise: '' };
-  });
-  // La semaine du chef : objectifs entamés, un duel serré, un adjoint qui vient de rendre les clés.
-  z.chef.objectifs = tirerObjectifs(st, z, T);
-  z.chef.objectifs.liste.forEach((x, i) => { x.prog = i === 0 ? x.cible : Math.max(0, x.cible - 1 - i); x.fait = i === 0; });
-  z.chef.duels = { v: 3, d: 1, serie: 2, serieMax: 3 }; z.chef.hebdo = { semaines: 2, serie: 1, derniere: semaineDe(T) - 1 };
-  z.chef.blessures = 1; z.chef.nbServices = 4; z.chef.lotsGagnes = 1; z.chef.estime = { procureur: 1, syndicat: -1 };
-  z.adjoint = { ...creerAdjoint(uid, 'p02'), jours: 5 };
-  z.retourChef = { tour: T - 1, jours: 3, journal: [{ t: T - 4, ipz: 58.2, inc: '7/8', budget: 41.5, moral: 61, sat: 66 }, { t: T - 3, ipz: 55.9, inc: '6/9', budget: 44.0, moral: 58, sat: 63 }, { t: T - 2, ipz: 56.4, inc: '8/9', budget: 47.2, moral: 57, sat: 62 }] };
-  const w = semaineDe(T), deb = (w - 1) * 7 + 1;
-  z.ipzHist = [...(z.ipzHist || []).filter((h) => h.t < deb), ...Array.from({ length: Math.max(0, T - deb) }, (_, i) => ({ t: deb + i, v: 60 + (i % 3), joue: true }))];
-  st.zones['bot-canal'].ipzHist = Array.from({ length: Math.max(0, T - deb) }, (_, i) => ({ t: deb + i, v: 59 + (i % 4), joue: true }));
-  st.rivaux = { cle: cleSemaine(st, T), w, paires: { [uid]: 'bot-canal', 'bot-canal': uid } };
-  players[uid].chef.ruban = 'duelliste';
-  players['bot-canal'] = { ...(players['bot-canal'] || {}), felicite: { [uid]: st.season } };
-  players['bot-vallee'] = { ...(players['bot-vallee'] || {}), felicite: { [uid]: st.season } };
-}
 
 const KEY = 'mazp-demo-v3';
 const ME = 'moi';
 
 const RADIO_BOTS = [
   'Quelqu’un aurait vu notre combi ? Il n’est jamais revenu du car-wash.',
-  'On cherche un partenaire pour la prochaine affaire disputée. Avis aux amateurs.',
+  'Quelqu’un a du monde pour le non-droit ce soir ? On monte à la gare.',
   'Qui envoie du monde pour l’événement ? On ne va pas tout porter seuls.',
   'Notre paperasse atteint le plafond. Littéralement.',
   'Félicitations à la zone gagnante d’hier soir, bien joué.',
@@ -195,7 +145,6 @@ export function createLocalBackend(config) {
       if (partieComplete(self.state, uid)) throw new Error(`Cette partie est complète (${MAX_ZONES} zones).`);
       if (profile && codeDejaPris(self.state, profile.code, uid)) throw new Error(MSG_CODE_PRIS(profile.code));
       self.state.zones[uid] = buildJoinZone(self.state, uid, profile, self.state.turn);
-      if (db.current === 'demo' && demoChef()) { self.players[uid] = { ...(self.players[uid] || {}), ...(profile || {}) }; preparerDemoChef(self.state, self.players, uid); }
       persist(); emit('state', JSON.parse(JSON.stringify(self.state)));
     },
 
@@ -203,22 +152,12 @@ export function createLocalBackend(config) {
     async getOrders(uid, season, turn) { return (self.orders[key(season, turn)] || {})[uid] || null; },
     async getAllOrders(season, turn) {
       const mine = { ...(self.orders[key(season, turn)] || {}) };
-      // Les robots décident au moment de la résolution.
+      // Les robots décident au moment de la résolution (leur journée d'enquête en direct est rangée à part).
+      const enq = (P().enqueteBots ||= {})[key(season, turn)] = {};
       for (const [uid, p] of Object.entries(self.players)) {
         if (!p.bot || !self.state.zones[uid]) continue;
         const o = botOrders(self.state.zones[uid], self.state, p.style);
-        if (o) mine[uid] = o;
-      }
-      // Les robots qui ont postulé engagent les agents proposés.
-      for (const m of self.prives) {
-        if (!m.candidature || !String(m.de).startsWith('bot') || m.candidature.season !== season || m.candidature.turn !== turn || !mine[m.de]) continue;
-        (mine[m.de].engagements ||= {})[m.candidature.aid] = { agents: m.candidature.agents, acceptes: [] };
-      }
-      // Les robots qui dirigent une affaire intègrent les candidatures qu'ils ont acceptées.
-      for (const m of self.prives) {
-        if (!m.reponse || !m.reponse.accepte || !String(m.de).startsWith('bot') || m.reponse.season !== season || m.reponse.turn !== turn || !mine[m.de]) continue;
-        const e = (mine[m.de].engagements ||= {})[m.reponse.aid];
-        if (e) e.acceptes = [...new Set([...(e.acceptes || []), m.a])];
+        if (o) { mine[uid] = o; enq[uid] = o.actionsEnquete || []; }
       }
       // Les robots coopératifs répondent aux appels à renfort du jour.
       const appels = self.radio.filter((m) => m.renfort && m.renfort.season === season && m.renfort.turn === turn && !String(m.uid).startsWith('bot'));
@@ -228,6 +167,20 @@ export function createLocalBackend(config) {
         for (const [u] of aidants) mine[u] = { ...mine[u], renfort: { cible: appels[appels.length - 1].uid, agents: 2 } };
       }
       return mine;
+    },
+    // Enquête en direct : actions horodatées par l'appareil en démo (par le serveur avec Firebase).
+    async saveEnqueteAction(uid, season, turn, action) {
+      ((P().enquete ||= {})[key(season, turn)] ||= []).push({ ...JSON.parse(JSON.stringify(action)), uid, at: Date.now() });
+      persist();
+    },
+    async getMesActionsEnquete(uid, season, turn) {
+      return (((P().enquete || {})[key(season, turn)]) || []).filter((a) => a.uid === uid).map(({ uid: u0, ...a }) => a);
+    },
+    async getEnqueteActions(season, turn) {
+      const out = {};
+      for (const { uid, ...a } of ((P().enquete || {})[key(season, turn)]) || []) (out[uid] ||= []).push(a);
+      for (const [u, l] of Object.entries(((P().enqueteBots || {})[key(season, turn)]) || {})) out[u] = [...(out[u] || []), ...l];
+      return out;
     },
     async saveQuest(uid, season, turn, slot, data) {
       const t = (self.quests[key(season, turn)] ||= {});
@@ -254,16 +207,6 @@ export function createLocalBackend(config) {
       if (self.state.turn !== prev.turn || self.state.season !== prev.season) return false;
       self.state = next;
       self.gazettes[key(prev.season, prev.turn)] = gazette;
-      // En démo, un robot postule sur chaque affaire que tu diriges.
-      for (const a of next.affaires || []) {
-        if (a.zone !== ME) continue;
-        const bots = Object.entries(self.players).filter(([u, p]) => p.bot && next.zones[u]);
-        if (!bots.length) continue;
-        const [bu] = bots[Math.abs([...a.id].reduce((h, ch) => h * 31 + ch.charCodeAt(0), 7)) % bots.length];
-        const n = 2 + (a.forceMin % 3);
-        self.prives.push({ id: `p${Date.now()}${a.id}`, de: bu, a: ME, participants: [bu, ME], texte: `📋 Candidature sur « ${a.titre} » : je te propose ${n} agents.`, candidature: { aid: a.id, agents: n, season: next.season, turn: next.turn }, at: Date.now() });
-      }
-      emit('prive', self.prives.slice());
       // Un robot commente parfois sur la radio.
       const rng = makeRng(`radio:${prev.season}:${prev.turn}`);
       if (rng.chance(0.6)) {
@@ -273,6 +216,7 @@ export function createLocalBackend(config) {
       }
       // Ménage : on garde les ordres des 3 derniers tours.
       for (const k of Object.keys(self.orders)) { const [s, t] = k.split('-').map(Number); if (s < prev.season || t < prev.turn - 3) delete self.orders[k]; }
+      for (const tab of [P().enquete || {}, P().enqueteBots || {}]) for (const k of Object.keys(tab)) { const [s, t] = k.split('-').map(Number); if (s < prev.season || t < prev.turn - 3) delete tab[k]; }
       persist();
       emit('state', JSON.parse(JSON.stringify(self.state)));
       return true;
@@ -287,17 +231,12 @@ export function createLocalBackend(config) {
       self.prives.push({ ...extra, id: `p${Date.now()}`, de, a, participants: [de, a], texte: String(texte).slice(0, 500), at: Date.now() });
       persist(); emit('prive', self.prives.slice());
       // En démo, la zone robot répond quelques secondes plus tard.
-      if (extra.candidature && String(a).startsWith('bot')) {
-        // En démo, la zone robot accepte la candidature après quelques secondes.
-        const c = extra.candidature;
-        setTimeout(() => { self.prives.push({ id: `p${Date.now()}`, de: a, a: de, participants: [a, de], texte: 'Candidature acceptée, bienvenue dans l’équipe !', reponse: { aid: c.aid, accepte: true, season: c.season, turn: c.turn }, at: Date.now() }); persist(); emit('prive', self.prives.slice()); }, 2000);
-      } else if (String(a).startsWith('bot') && !extra.reponse) {
-        const rep = ['Bien reçu. On en reparle après 20:00.', 'Intéressant… Qu’est-ce que tu proposes en échange ?', 'Ça marche, compte sur moi.', 'Je dois consulter mon chef de corps.', 'Pas cette fois, désolé.'];
+      if (String(a).startsWith('bot') && !extra.reponse) {
+        const rep = ['Bien reçu. On en reparle après 20:00.', 'Intéressant… Qu’est-ce que tu proposes en échange ?', 'Ça marche, compte sur moi.', 'Je regarde ça et je te redis.', 'Pas cette fois, désolé.'];
         setTimeout(() => { self.prives.push({ id: `p${Date.now()}`, de: a, a: de, participants: [a, de], texte: rep[Math.floor(Math.random() * rep.length)], at: Date.now() }); persist(); emit('prive', self.prives.slice()); }, 2500);
       }
     },
     subscribeRadio(cb) { listeners.radio.add(cb); cb(self.radio.slice(-100)); return () => listeners.radio.delete(cb); },
-    async listEncheres(venteId) { return self.radio.filter((m) => m.enchere && m.enchere.vente === venteId).map((m) => ({ uid: m.uid, at: m.at, ...m.enchere })); },
     async sendRadio(uid, texte, extra = {}) {
       self.radio.push({ ...extra, id: `r${Date.now()}`, uid, texte: String(texte).slice(0, 280), at: Date.now() });
       persist(); emit('radio', self.radio.slice(-100));
